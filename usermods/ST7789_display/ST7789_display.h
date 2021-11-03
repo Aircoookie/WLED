@@ -292,33 +292,8 @@ class St7789DisplayUsermod : public Usermod {
         // palette name
         tft.setTextColor(TFT_YELLOW);
         tft.setCursor(0, 168);
-        qComma = 0;
-        insideQuotes = false;
-        printedChars = 0;
-        // Looking for palette name in JSON.
-        for (size_t i = 0; i < strlen_P(JSON_palette_names); i++)
-        {
-        singleJsonSymbol = pgm_read_byte_near(JSON_palette_names + i);
-            switch (singleJsonSymbol)
-            {
-            case '"':
-            insideQuotes = !insideQuotes;
-            break;
-            case '[':
-            case ']':
-            break;
-            case ',':
-            qComma++;
-            default:
-                if (!insideQuotes || (qComma != knownPalette))
-                break;
-            tft.print(singleJsonSymbol);
-            printedChars++;
-            }
-        // The following is modified from the code from the u8g2/u8g8 based code (knownPalette was knownMode)
-        if ((qComma > knownPalette) || (printedChars > tftcharwidth - 1))
-        break;
-        }
+        extractModeName(knownPalette, JSON_palette_names, lineBuffer, tftcharwidth);
+        tft.print(lineBuffer);
 
         tft.setCursor(0, 192);
         tft.setTextColor(TFT_SILVER);

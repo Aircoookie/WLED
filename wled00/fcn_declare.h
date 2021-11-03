@@ -129,7 +129,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
 void serializeState(JsonObject root, bool forPreset = false, bool includeBri = true, bool segmentBounds = true);
 void serializeInfo(JsonObject root);
 void serializeSRNames(JsonArray arr, const char *qstring);
-void extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLen);
+uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLen);
 void serveJson(AsyncWebServerRequest* request);
 bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient = 0);
 

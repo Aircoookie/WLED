@@ -831,10 +831,11 @@ void deserializeModeNames(JsonArray arr, const char *qstring) {
 
 // extracts effect mode (or palette) name from names serialized string
 // caller must provide large enough buffer!
-void extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLen)
+uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLen)
 {
   uint8_t qComma = 0;
   bool insideQuotes = false;
+  bool atFound = false;
   uint8_t printedChars = 0;
   char singleJsonSymbol;
 
@@ -845,7 +846,10 @@ void extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLen)
     switch (singleJsonSymbol) {
       case '"':
         insideQuotes = !insideQuotes;
+        if (!insideQuotes && atFound) atFound = false;
         break;
+      case '@':
+        if (insideQuotes) atFound = true;
       case '[':
       case ']':
         break;
@@ -853,13 +857,12 @@ void extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLen)
         qComma++;
       default:
         if (!insideQuotes || (qComma != mode)) break;
-        dest[printedChars++] = singleJsonSymbol;
+        if (!atFound) dest[printedChars++] = singleJsonSymbol;
     }
     if ((qComma > mode) || (printedChars >= maxLen)) break;
   }
   dest[printedChars] = '\0';
-  char *p = strchr(dest,'@');
-  if (p != nullptr) *p = '\0';
+  return printedChars;
 }
 
 void serveJson(AsyncWebServerRequest* request)
@@ -878,6 +881,13 @@ void serveJson(AsyncWebServerRequest* request)
   else if (url.indexOf(F("eff")) > 0) {
     // this is going to serve raw effect names which will include WLED-SR extensions in names
     request->send_P(200, "application/json", JSON_mode_names);
+    // if we want parsed effect names use this (warning, this will prevent UI from receiving this extension making it useless)
+    //AsyncJsonResponse* response = new AsyncJsonResponse(JSON_BUFFER_SIZE, true);  // array document
+    //JsonArray doc = response->getRoot();
+    //deserializeModeNames(doc, JSON_mode_names); // remove WLED-SR extensions from effect names
+    //response->setLength();
+    //request->send(response);
+    //delete response;
     return;
   }
   else if (url.indexOf("pal") > 0) {
@@ -923,6 +933,8 @@ void serveJson(AsyncWebServerRequest* request)
 
   response->setLength();
   request->send(response);
+
+  delete response;
 }
 
 #define MAX_LIVE_LEDS 180

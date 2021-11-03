@@ -438,6 +438,7 @@ class FourLineDisplayUsermod : public Usermod {
 
     void drawLine(uint8_t line, Line4Type lineType) {
       char lineBuffer[LINE_BUFFER_SIZE];
+      uint8_t printedChars;
       switch(lineType) {
         case FLD_LINE_BRIGHTNESS:
           sprintf_P(lineBuffer, PSTR("Brightness %3d"), bri);
@@ -452,29 +453,22 @@ class FourLineDisplayUsermod : public Usermod {
           drawString(2, line*lineHeight, lineBuffer);
           break;
         case FLD_LINE_MODE:
-          showCurrentEffectOrPalette(knownMode, JSON_mode_names, line);
+          printedChars = extractModeName(knownMode, JSON_mode_names, lineBuffer, LINE_BUFFER_SIZE-1);
+          for (;printedChars < getCols()-2 && printedChars < LINE_BUFFER_SIZE-3; printedChars++) lineBuffer[printedChars]=' ';
+          lineBuffer[printedChars] = 0;
+          drawString(2, line*lineHeight, lineBuffer);
           break;
         case FLD_LINE_PALETTE:
-          showCurrentEffectOrPalette(knownPalette, JSON_palette_names, line);
+          printedChars = extractModeName(knownPalette, JSON_palette_names, lineBuffer, LINE_BUFFER_SIZE-1);
+          for (;printedChars < getCols()-2 && printedChars < LINE_BUFFER_SIZE-3; printedChars++) lineBuffer[printedChars]=' ';
+          lineBuffer[printedChars] = 0;
+          drawString(2, line*lineHeight, lineBuffer);
           break;
         case FLD_LINE_TIME:
         default:
           showTime(false);
           break;
       }
-    }
-
-    /**
-     * Display the current effect or palette (desiredEntry) 
-     * on the appropriate line (row).
-     */
-    void showCurrentEffectOrPalette(int knownMode, const char *qstring, uint8_t row) {
-      char lineBuffer[LINE_BUFFER_SIZE];
-      extractModeName(knownMode, qstring, lineBuffer, LINE_BUFFER_SIZE-1);
-      uint8_t printedChars = strlen(lineBuffer);
-      for (;printedChars < getCols()-2 && printedChars < sizeof(lineBuffer)-2; printedChars++) lineBuffer[printedChars]=' ';
-      lineBuffer[printedChars] = 0;
-      drawString(2, row*lineHeight, lineBuffer);
     }
 
     /**
