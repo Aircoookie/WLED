@@ -34,9 +34,11 @@ void handleDDPPacket(e131_packet_t* p) {
 
   realtimeLock(realtimeTimeoutMs, REALTIME_MODE_DDP);
   
-  for (uint16_t i = start; i < stop; i++) {
-    setRealtimePixel(i, data[c], data[c+1], data[c+2], 0);
-    c+=3;
+  if (!realtimeOverride) {
+    for (uint16_t i = start; i < stop; i++) {
+      setRealtimePixel(i, data[c], data[c+1], data[c+2], 0);
+      c+=3;
+    }
   }
 
   bool push = p->flags & DDP_PUSH_FLAG;
