@@ -835,7 +835,6 @@ uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLe
 {
   uint8_t qComma = 0;
   bool insideQuotes = false;
-  bool atFound = false;
   uint8_t printedChars = 0;
   char singleJsonSymbol;
 
@@ -846,23 +845,22 @@ uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLe
     switch (singleJsonSymbol) {
       case '"':
         insideQuotes = !insideQuotes;
-        if (!insideQuotes && atFound) atFound = false;
         break;
-      case '@':
-        if (insideQuotes) atFound = true;
       case '[':
       case ']':
         break;
       case ',':
-        qComma++;
+        if (!insideQuotes) qComma++;
       default:
         if (!insideQuotes || (qComma != mode)) break;
-        if (!atFound) dest[printedChars++] = singleJsonSymbol;
+        dest[printedChars++] = singleJsonSymbol;
     }
     if ((qComma > mode) || (printedChars >= maxLen)) break;
   }
   dest[printedChars] = '\0';
-  return printedChars;
+  char *pos = strchr(dest,'@');
+  if (pos) *pos = '\0';
+  return strlen(dest);
 }
 
 void serveJson(AsyncWebServerRequest* request)
@@ -933,8 +931,6 @@ void serveJson(AsyncWebServerRequest* request)
 
   response->setLength();
   request->send(response);
-
-  delete response;
 }
 
 #define MAX_LIVE_LEDS 180
