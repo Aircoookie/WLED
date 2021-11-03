@@ -64,6 +64,15 @@ class AsyncJsonResponse: public AsyncAbstractResponse {
 
   public:    
 
+    AsyncJsonResponse(JsonDocument *ref, bool isArray=false) : _jsonBuffer(1), _isValid{false} {
+      _code = 200;
+      _contentType = JSON_MIMETYPE;
+      if(isArray)
+        _root = ref->as<JsonArray>();
+      else
+        _root = ref->as<JsonObject>();
+    }
+
     AsyncJsonResponse(size_t maxJsonBufferSize = DYNAMIC_JSON_DOCUMENT_SIZE, bool isArray=false) : _jsonBuffer(maxJsonBufferSize), _isValid{false} {
       _code = 200;
       _contentType = JSON_MIMETYPE;
