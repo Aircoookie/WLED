@@ -91,11 +91,15 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
     colorUpdated(CALL_MODE_DIRECT_CHANGE);
   } else if (strcmp_P(topic, PSTR("/api")) == 0) {
     if (payload[0] == '{') { //JSON API
-      DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+      //DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+      while (jsonBufferLock) delay(1);
+      jsonBufferLock = true;
+      doc.clear();
       deserializeJson(doc, payloadStr);
       fileDoc = &doc;
       deserializeState(doc.as<JsonObject>());
       fileDoc = nullptr;
+      jsonBufferLock = false;
     } else { //HTTP API
       String apireq = "win&";
       apireq += (char*)payloadStr;

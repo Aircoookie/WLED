@@ -20,14 +20,18 @@ bool applyPreset(byte index, byte callMode)
     deserializeState(fdo, callMode, index);
   } else {
     DEBUGFS_PRINTLN(F("Make read buf"));
-    DynamicJsonDocument fDoc(JSON_BUFFER_SIZE);
-    errorFlag = readObjectFromFileUsingId(filename, index, &fDoc) ? ERR_NONE : ERR_FS_PLOAD;
-    JsonObject fdo = fDoc.as<JsonObject>();
+    //DynamicJsonDocument fDoc(JSON_BUFFER_SIZE);
+    while (jsonBufferLock) delay(1);
+    jsonBufferLock = true;
+    doc.clear();
+    errorFlag = readObjectFromFileUsingId(filename, index, &doc) ? ERR_NONE : ERR_FS_PLOAD;
+    JsonObject fdo = doc.as<JsonObject>();
     if (fdo["ps"] == index) fdo.remove("ps");
     #ifdef WLED_DEBUG_FS
-      serializeJson(fDoc, Serial);
+      serializeJson(doc, Serial);
     #endif
     deserializeState(fdo, callMode, index);
+    jsonBufferLock = false;
   }
 
   if (!errorFlag) {
@@ -40,22 +44,27 @@ bool applyPreset(byte index, byte callMode)
 void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
 {
   if (index == 0 || (index > 250 && persist) || (index<255 && !persist)) return;
-  bool docAlloc = (fileDoc != nullptr);
   JsonObject sObj = saveobj;
 
   const char *filename = persist ? "/presets.json" : "/tmp.json";
 
-  if (!docAlloc) {
+  if (!fileDoc) {
     DEBUGFS_PRINTLN(F("Allocating saving buffer"));
-    DynamicJsonDocument lDoc(JSON_BUFFER_SIZE);
-    sObj = lDoc.to<JsonObject>();
+    //DynamicJsonDocument lDoc(JSON_BUFFER_SIZE);
+    while (jsonBufferLock) delay(1);
+    jsonBufferLock = true;
+    doc.clear();
+    sObj = doc.to<JsonObject>();
     if (pname) sObj["n"] = pname;
+
     DEBUGFS_PRINTLN(F("Save current state"));
     serializeState(sObj, true);
     if (persist) currentPreset = index;
 
-    writeObjectToFileUsingId(filename, index, &lDoc);
-  } else { //from JSON API
+    writeObjectToFileUsingId(filename, index, &doc);
+
+    jsonBufferLock = false;
+  } else { //from JSON API (fileDoc != nullptr)
     DEBUGFS_PRINTLN(F("Reuse recv buffer"));
     sObj.remove(F("psave"));
     sObj.remove(F("v"));

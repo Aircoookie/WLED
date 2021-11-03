@@ -204,13 +204,13 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     }
     strip.setPixelSegment(255);
     strip.trigger();
-// this is now handled using the "frz" toggle.
   } else if (!elem["frz"] && iarr.isNull()) { //return to regular effect
     seg.setOption(SEG_OPTION_FREEZE, false);
   }
   return; // seg.differs(prev);
 }
 
+// deserializes WLED state (fileDoc points to doc object if called from web server)
 bool deserializeState(JsonObject root, byte callMode, byte presetId)
 {
   DEBUG_PRINTLN(F("Deserializing state"));
@@ -324,7 +324,8 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   int8_t ledmap = root[F("ledmap")] | -1;
   if (ledmap >= 0) {
-    strip.deserializeMap(ledmap);
+    //strip.deserializeMap(ledmap); // requires separate JSON buffer
+    loadLedmap = ledmap;
   }
 
   int ps = root[F("psave")] | -1;
