@@ -127,6 +127,7 @@ class FourLineDisplayUsermod : public Usermod {
     uint32_t screenTimeout = SCREEN_TIMEOUT_MS;       // in ms
     bool sleepMode = true;          // allow screen sleep?
     bool clockMode = false;         // display clock
+    bool enabled = true;
 
     // Next variables hold the previous known values to determine if redraw is
     // required.
@@ -150,6 +151,7 @@ class FourLineDisplayUsermod : public Usermod {
 
     // strings to reduce flash memory usage (used more than twice)
     static const char _name[];
+    static const char _enabled[];
     static const char _contrast[];
     static const char _refreshRate[];
     static const char _screenTimeOut[];
@@ -169,7 +171,7 @@ class FourLineDisplayUsermod : public Usermod {
     // gets called once at boot. Do all initialization that doesn't depend on
     // network here
     void setup() {
-      if (type == NONE) return;
+      if (type == NONE || !enabled) return;
       if (type == SSD1306_SPI || type == SSD1306_SPI64) {
         PinManagerPinType pins[5] = { { ioPin[0], true }, { ioPin[1], true}, { ioPin[2], true }, { ioPin[3], true}, { ioPin[4], true }};
         if (!pinManager.allocateMultiplePins(pins, 5, PinOwner::UM_FourLineDisplay)) { type=NONE; return; }
@@ -266,7 +268,7 @@ class FourLineDisplayUsermod : public Usermod {
      * Da loop.
      */
     void loop() {
-      if (millis() - lastUpdate < (clockMode?1000:refreshRate) || strip.isUpdating()) return;
+      if (!enabled || millis() - lastUpdate < (clockMode?1000:refreshRate) || strip.isUpdating()) return;
       lastUpdate = millis();
 
       redraw(false);
@@ -276,40 +278,40 @@ class FourLineDisplayUsermod : public Usermod {
      * Wrappers for screen drawing
      */
     void setFlipMode(uint8_t mode) {
-      if (type==NONE) return;
+      if (type == NONE || !enabled) return;
       u8x8->setFlipMode(mode);
     }
     void setContrast(uint8_t contrast) {
-      if (type==NONE) return;
+      if (type == NONE || !enabled) return;
       u8x8->setContrast(contrast);
     }
     void drawString(uint8_t col, uint8_t row, const char *string, bool ignoreLH=false) {
-      if (type==NONE) return;
+      if (type == NONE || !enabled) return;
       u8x8->setFont(u8x8_font_chroma48medium8_r);
       if (!ignoreLH && lineHeight==2) u8x8->draw1x2String(col, row, string);
       else                            u8x8->drawString(col, row, string);
     }
     void draw2x2String(uint8_t col, uint8_t row, const char *string) {
-      if (type==NONE) return;
+      if (type == NONE || !enabled) return;
       u8x8->setFont(u8x8_font_chroma48medium8_r);
       u8x8->draw2x2String(col, row, string);
     }
     void drawGlyph(uint8_t col, uint8_t row, char glyph, const uint8_t *font, bool ignoreLH=false) {
-      if (type==NONE) return;
+      if (type == NONE || !enabled) return;
       u8x8->setFont(font);
       if (!ignoreLH && lineHeight==2) u8x8->draw1x2Glyph(col, row, glyph);
       else                            u8x8->drawGlyph(col, row, glyph);
     }
     uint8_t getCols() {
-      if (type==NONE) return 0;
+      if (type==NONE || !enabled) return 0;
       return u8x8->getCols();
     }
     void clear() {
-      if (type==NONE) return;
+      if (type == NONE || !enabled) return;
       u8x8->clear();
     }
     void setPowerSave(uint8_t save) {
-      if (type==NONE) return;
+      if (type == NONE || !enabled) return;
       u8x8->setPowerSave(save);
     }
 
@@ -327,7 +329,7 @@ class FourLineDisplayUsermod : public Usermod {
       static bool showName = false;
       unsigned long now = millis();
 
-      if (type==NONE) return;
+      if (type == NONE || !enabled) return;
       if (overlayUntil > 0) {
         if (now >= overlayUntil) {
           // Time to display the overlay has elapsed.
@@ -478,6 +480,7 @@ class FourLineDisplayUsermod : public Usermod {
      * to wake up the screen.
      */
     bool wakeDisplay() {
+      if (type == NONE || !enabled) return false;
       knownHour = 99;
       if (displayTurnedOff) {
         // Turn the display back on
@@ -494,6 +497,8 @@ class FourLineDisplayUsermod : public Usermod {
      * Clears the screen and prints on the middle two lines.
      */
     void overlay(const char* line1, const char *line2, long showHowLong) {
+      if (type == NONE || !enabled) return;
+
       if (displayTurnedOff) {
         // Turn the display back on (includes clear())
         sleepOrClock(false);
@@ -555,6 +560,7 @@ class FourLineDisplayUsermod : public Usermod {
      * the useAMPM configuration.
      */
     void showTime(bool fullScreen = true) {
+      if (type == NONE || !enabled) return;
       char lineBuffer[LINE_BUFFER_SIZE];
 
       updateLocalTime();
@@ -648,6 +654,7 @@ class FourLineDisplayUsermod : public Usermod {
      */
     void addToConfig(JsonObject& root) {
       JsonObject top   = root.createNestedObject(FPSTR(_name));
+      top[FPSTR(_enabled)]       = enabled;
       JsonArray io_pin = top.createNestedArray("pin");
       for (byte i=0; i<5; i++) io_pin.add(ioPin[i]);
       top["help4PinTypes"]       = F("Clk,Data,CS,DC,RST"); // help for Settings page
@@ -682,6 +689,7 @@ class FourLineDisplayUsermod : public Usermod {
         return false;
       }
 
+      enabled       = top[FPSTR(_enabled)] | enabled;
       newType       = top["type"] | newType;
       for (byte i=0; i<5; i++) newPin[i] = top["pin"][i] | ioPin[i];
       flip          = top[FPSTR(_flip)] | flip;
@@ -722,7 +730,7 @@ class FourLineDisplayUsermod : public Usermod {
         if (needsRedraw && !wakeDisplay()) redraw(true);
       }
       // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
-      return !(top[_busClkFrequency]).isNull();
+      return !top[FPSTR(_enabled)].isNull();
     }
 
     /*
@@ -736,6 +744,7 @@ class FourLineDisplayUsermod : public Usermod {
 
 // strings to reduce flash memory usage (used more than twice)
 const char FourLineDisplayUsermod::_name[]            PROGMEM = "4LineDisplay";
+const char FourLineDisplayUsermod::_enabled[]         PROGMEM = "enabled";
 const char FourLineDisplayUsermod::_contrast[]        PROGMEM = "contrast";
 const char FourLineDisplayUsermod::_refreshRate[]     PROGMEM = "refreshRateSec";
 const char FourLineDisplayUsermod::_screenTimeOut[]   PROGMEM = "screenTimeOutSec";
