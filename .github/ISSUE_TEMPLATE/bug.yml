@@ -40,7 +40,7 @@ body:
         - Self-Compiled
     validations:
       required: true
-  - type: textarea
+  - type: input
     id: version
     attributes:
       label: What version of WLED?
