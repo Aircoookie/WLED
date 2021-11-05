@@ -810,8 +810,10 @@ void serveJson(AsyncWebServerRequest* request)
   }
 
   //AsyncJsonResponse* response = new AsyncJsonResponse(JSON_BUFFER_SIZE);
+  while (jsonBufferLock) delay(1);
   jsonBufferLock = true;
   doc.clear();
+
   AsyncJsonResponse *response = new AsyncJsonResponse(&doc);
   JsonObject lDoc = response->getRoot();
 
