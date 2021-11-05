@@ -579,6 +579,11 @@ function parseInfo() {
 function loadInfo(callback=null)
 {
 	var url = (loc?`http://${locip}`:'') + '/json/info';
+	var useWs = (ws && ws.readyState === WebSocket.OPEN);
+	if (useWs) {
+		ws.send('{"v":true}');
+		return;
+	}
 	fetch(url, {
 		method: 'get'
 	})
