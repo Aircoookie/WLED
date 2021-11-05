@@ -86,8 +86,6 @@ void WS2812FX::finalizeInit(void)
       busses.add(defCfg);
     }
   }
-  
-  deserializeMap();
 
   _length = 0;
   for (uint8_t i=0; i<busses.getNumBusses(); i++) {
@@ -1074,7 +1072,7 @@ uint32_t WS2812FX::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8
 }
 
 
-//load custom mapping table from JSON file
+//load custom mapping table from JSON file (called from finalizeInit() or deserializeState())
 void WS2812FX::deserializeMap(uint8_t n) {
   char fileName[32];
   strcpy_P(fileName, PSTR("/ledmap"));
@@ -1092,11 +1090,18 @@ void WS2812FX::deserializeMap(uint8_t n) {
     return;
   }
 
-  DynamicJsonDocument doc(JSON_BUFFER_SIZE);  // full sized buffer for larger maps
+  //DynamicJsonDocument doc(JSON_BUFFER_SIZE);  // full sized buffer for larger maps
+  while (jsonBufferLock) delay(1);
+  jsonBufferLock = true;
+  doc.clear();
+
   DEBUG_PRINT(F("Reading LED map from "));
   DEBUG_PRINTLN(fileName);
 
-  if (!readObjectFromFile(fileName, nullptr, &doc)) return; //if file does not exist just exit
+  if (!readObjectFromFile(fileName, nullptr, &doc)) {
+    jsonBufferLock = false;
+    return; //if file does not exist just exit
+  }
 
   // erase old custom ledmap
   if (customMappingTable != nullptr) {
@@ -1113,6 +1118,8 @@ void WS2812FX::deserializeMap(uint8_t n) {
       customMappingTable[i] = (uint16_t) map[i];
     }
   }
+
+  jsonBufferLock = false;
 }
 
 //gamma 2.8 lookup table used for color correction

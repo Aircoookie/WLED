@@ -165,6 +165,7 @@ void decodeIR(uint32_t code)
   if (decodeIRCustom(code)) return;
   if (irEnabled == 8) { // any remote configurable with ir.json file
     decodeIRJson(code);
+    colorUpdated(CALL_MODE_BUTTON);
     return;
   }
   if (code > 0xFFFFFF) return; //invalid code
@@ -566,16 +567,23 @@ Sample:
 void decodeIRJson(uint32_t code) 
 {
   char objKey[10];
-  const char* cmd;
   String cmdStr;
-  DynamicJsonDocument irDoc(JSON_BUFFER_SIZE);
   JsonObject fdo;
   JsonObject jsonCmdObj;
 
-  sprintf(objKey, "\"0x%X\":", code);
+  //DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+  while (jsonBufferLock) delay(1);
+  jsonBufferLock = true;
+  doc.clear();
 
-  readObjectFromFile("/ir.json", objKey, &irDoc);
-  fdo = irDoc.as<JsonObject>();
+  sprintf_P(objKey, PSTR("\"0x%lX\":"), (unsigned long)code);
+
+  // attempt to read command from ir.json
+  // this may fail for two reasons: ir.json does not exist or IR code not found
+  // if the IR code is not found readObjectFromFile() will clean() doc JSON document
+  // so we can differentiate between the two
+  readObjectFromFile("/ir.json", objKey, &doc);
+  fdo = doc.as<JsonObject>();
   lastValidCode = 0;
   if (fdo.isNull()) {
     //the received code does not exist
@@ -583,8 +591,7 @@ void decodeIRJson(uint32_t code)
     return;
   }
 
-  cmd = fdo["cmd"]; //string
-  cmdStr = String(cmd);
+  cmdStr = fdo["cmd"].as<String>();;
   jsonCmdObj = fdo["cmd"]; //object
 
   if (!cmdStr.isEmpty()) 
@@ -617,16 +624,17 @@ void decodeIRJson(uint32_t code)
       if (!cmdStr.startsWith("win&")) {
         cmdStr = "win&" + cmdStr;
       }
-      handleSet(nullptr, cmdStr, false); 
+      handleSet(nullptr, cmdStr, false);
     }
     colorUpdated(CALL_MODE_BUTTON);
   } else if (!jsonCmdObj.isNull()) {
     // command is JSON object
     //allow applyPreset() to reuse JSON buffer, or it would alloc. a second buffer and run out of mem.
-    fileDoc = &irDoc;
+    fileDoc = &doc;
     deserializeState(jsonCmdObj, CALL_MODE_BUTTON);
     fileDoc = nullptr;
   }
+  jsonBufferLock = false;
 }
 
 void initIR()
@@ -654,9 +662,7 @@ void handleIR()
       {
         if (results.value != 0) // only print results if anything is received ( != 0 )
         {
-          Serial.print("IR recv\r\n0x");
-          Serial.println((uint32_t)results.value, HEX);
-          Serial.println();
+          DEBUG_PRINTF("IR recv: 0x%lX\n", (unsigned long)results.value);
         }
         decodeIR(results.value);
         irrecv->resume();

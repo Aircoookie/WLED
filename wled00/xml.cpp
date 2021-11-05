@@ -316,13 +316,18 @@ void getSettingsJS(byte subPage, char* dest)
   {
     char nS[8];
 
+    // Pin reservations will become unnecessary when settings pages will read cfg.json directly
     // add reserved and usermod pins as d.um_p array
     oappend(SET_F("d.um_p=[6,7,8,9,10,11"));
 
-    DynamicJsonDocument doc(JSON_BUFFER_SIZE/2);
+    //DynamicJsonDocument doc(JSON_BUFFER_SIZE/2);
+    while (jsonBufferLock) delay(1);
+    jsonBufferLock = true;
+    doc.clear();
     JsonObject mods = doc.createNestedObject(F("um"));
     usermods.addToConfig(mods);
     if (!mods.isNull()) fillUMPins(mods);
+    jsonBufferLock = false;
 
     #ifdef WLED_ENABLE_DMX
       oappend(SET_F(",2")); // DMX hardcoded pin
@@ -373,6 +378,7 @@ void getSettingsJS(byte subPage, char* dest)
 
     for (uint8_t s=0; s < busses.getNumBusses(); s++) {
       Bus* bus = busses.getBus(s);
+      if (bus == nullptr) continue;
       char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
       char lc[4] = "LC"; lc[2] = 48+s; lc[3] = 0; //strip length
       char co[4] = "CO"; co[2] = 48+s; co[3] = 0; //strip color order
