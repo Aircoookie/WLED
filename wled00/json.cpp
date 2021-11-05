@@ -809,23 +809,26 @@ void serveJson(AsyncWebServerRequest* request)
     return;
   }
 
-  AsyncJsonResponse* response = new AsyncJsonResponse(JSON_BUFFER_SIZE);
-  JsonObject doc = response->getRoot();
+  //AsyncJsonResponse* response = new AsyncJsonResponse(JSON_BUFFER_SIZE);
+  jsonBufferLock = true;
+  doc.clear();
+  AsyncJsonResponse *response = new AsyncJsonResponse(&doc);
+  JsonObject lDoc = response->getRoot();
 
   switch (subJson)
   {
     case 1: //state
-      serializeState(doc); break;
+      serializeState(lDoc); break;
     case 2: //info
-      serializeInfo(doc); break;
+      serializeInfo(lDoc); break;
     case 4: //node list
-      serializeNodes(doc); break;
+      serializeNodes(lDoc); break;
     case 5: //palettes
-      serializePalettes(doc, request); break;
+      serializePalettes(lDoc, request); break;
     default: //all
-      JsonObject state = doc.createNestedObject("state");
+      JsonObject state = lDoc.createNestedObject("state");
       serializeState(state);
-      JsonObject info = doc.createNestedObject("info");
+      JsonObject info = lDoc.createNestedObject("info");
       serializeInfo(info);
       if (subJson != 3)
       {
@@ -835,10 +838,11 @@ void serveJson(AsyncWebServerRequest* request)
   }
 
   DEBUG_PRINT("JSON buffer size: ");
-  DEBUG_PRINTLN(doc.memoryUsage());
+  DEBUG_PRINTLN(lDoc.memoryUsage());
 
   response->setLength();
   request->send(response);
+  jsonBufferLock = false;
 }
 
 #define MAX_LIVE_LEDS 180
