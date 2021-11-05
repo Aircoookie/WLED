@@ -191,6 +191,8 @@ async function onLoad()
 	var sett = localStorage.getItem('wledUiCfg');
 	if (sett) cfg = mergeDeep(cfg, JSON.parse(sett));
 
+	makeWS();
+
 	applyCfg();
 	if (cfg.theme.bg.url=="" || cfg.theme.bg.url === "https://picsum.photos/1920/1080") {
 		var iUrl = cfg.theme.bg.url;
@@ -235,7 +237,7 @@ async function onLoad()
 		loadPalettesData(redrawPalPrev);
 		loadFX(()=>{
 			loadPresets(()=>{
-				loadInfo(requestJson);
+				if (!lastinfo.ver) loadInfo(requestJson);
 			});
 		});
 	});

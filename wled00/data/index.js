@@ -210,6 +210,8 @@ function onLoad()
 	var sett = localStorage.getItem('wledUiCfg');
 	if (sett) cfg = mergeDeep(cfg, JSON.parse(sett));
 
+	makeWS();
+
 	resetPUtil();
 
 	applyCfg();
@@ -249,7 +251,7 @@ function onLoad()
 		loadPalettesData(redrawPalPrev);
 		loadFX(()=>{
 			loadPresets(()=>{
-				loadInfo(requestJson);
+				if (!lastinfo.ver) loadInfo(requestJson);	// if not filled by WS
 			});
 		});
 	});
