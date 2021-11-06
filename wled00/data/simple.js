@@ -61,7 +61,8 @@ function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3
 function sCol(na, col) {d.documentElement.style.setProperty(na, col);}
 function gId(c) {return d.getElementById(c);}
 function gEBCN(c) {return d.getElementsByClassName(c);}
-function isO(item) { return (item && typeof item === 'object' && !Array.isArray(item)); }
+function isEmpty(o) {return Object.keys(o).length === 0;}
+function isO(i) { return (i && typeof i === 'object' && !Array.isArray(i)); }
 
 function applyCfg()
 {
@@ -237,7 +238,7 @@ async function onLoad()
 		loadPalettesData(redrawPalPrev);
 		loadFX(()=>{
 			loadPresets(()=>{
-				if (!lastinfo.ver) loadInfo(requestJson);
+				if (isO(lastinfo) && isEmpty(lastinfo)) loadInfo(requestJson);	// if not filled by WS
 			});
 		});
 	});
