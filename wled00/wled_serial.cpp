@@ -43,24 +43,24 @@ void handleSerial()
         }
         else if (next == '{') { //JSON API
           bool verboseResponse = false;
+        #ifdef WLED_USE_DYNAMIC_JSON
+          DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+        #else
           while (jsonBufferLock) delay(1);
           jsonBufferLock = true;
           doc.clear();
-          {
-            //DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-            Serial.setTimeout(100);
-            DeserializationError error = deserializeJson(doc, Serial);
-            if (error) {
-              jsonBufferLock = false;
-              return;
-            }
-            fileDoc = &doc;
-            verboseResponse = deserializeState(doc.as<JsonObject>());
-            fileDoc = nullptr;
+        #endif
+          Serial.setTimeout(100);
+          DeserializationError error = deserializeJson(doc, Serial);
+          if (error) {
+            jsonBufferLock = false;
+            return;
           }
+          fileDoc = &doc;
+          verboseResponse = deserializeState(doc.as<JsonObject>());
+          fileDoc = nullptr;
           //only send response if TX pin is unused for other purposes
           if (verboseResponse && !pinManager.isPinAllocated(1)) {
-            //DynamicJsonDocument doc(JSON_BUFFER_SIZE);
             doc.clear();
             JsonObject state = doc.createNestedObject("state");
             serializeState(state);

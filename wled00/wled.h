@@ -597,8 +597,10 @@ WLED_GLOBAL int8_t loadLedmap _INIT(-1);
 // Usermod manager
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
 
+#ifndef WLED_USE_DYNAMIC_JSON
 // global ArduinoJson buffer
 WLED_GLOBAL StaticJsonDocument<JSON_BUFFER_SIZE> doc;
+#endif
 WLED_GLOBAL volatile bool jsonBufferLock _INIT(false);
 
 // enable additional debug output

@@ -571,10 +571,13 @@ void decodeIRJson(uint32_t code)
   JsonObject fdo;
   JsonObject jsonCmdObj;
 
-  //DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+#ifdef WLED_USE_DYNAMIC_JSON
+  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+#else
   while (jsonBufferLock) delay(1);
   jsonBufferLock = true;
   doc.clear();
+#endif
 
   sprintf_P(objKey, PSTR("\"0x%lX\":"), (unsigned long)code);
 

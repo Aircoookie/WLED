@@ -809,12 +809,15 @@ void serveJson(AsyncWebServerRequest* request)
     return;
   }
 
-  //AsyncJsonResponse* response = new AsyncJsonResponse(JSON_BUFFER_SIZE);
+#ifdef WLED_USE_DYNAMIC_JSON
+  AsyncJsonResponse* response = new AsyncJsonResponse(JSON_BUFFER_SIZE);
+#else
   while (jsonBufferLock) delay(1);
   jsonBufferLock = true;
   doc.clear();
-
   AsyncJsonResponse *response = new AsyncJsonResponse(&doc);
+#endif
+
   JsonObject lDoc = response->getRoot();
 
   switch (subJson)

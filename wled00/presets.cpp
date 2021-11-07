@@ -20,10 +20,13 @@ bool applyPreset(byte index, byte callMode)
     deserializeState(fdo, callMode, index);
   } else {
     DEBUGFS_PRINTLN(F("Make read buf"));
-    //DynamicJsonDocument fDoc(JSON_BUFFER_SIZE);
+  #ifdef WLED_USE_DYNAMIC_JSON
+    DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+  #else
     while (jsonBufferLock) delay(1);
     jsonBufferLock = true;
     doc.clear();
+  #endif
     errorFlag = readObjectFromFileUsingId(filename, index, &doc) ? ERR_NONE : ERR_FS_PLOAD;
     JsonObject fdo = doc.as<JsonObject>();
     if (fdo["ps"] == index) fdo.remove("ps");
@@ -50,10 +53,13 @@ void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
 
   if (!fileDoc) {
     DEBUGFS_PRINTLN(F("Allocating saving buffer"));
-    //DynamicJsonDocument lDoc(JSON_BUFFER_SIZE);
+  #ifdef WLED_USE_DYNAMIC_JSON
+    DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+  #else
     while (jsonBufferLock) delay(1);
     jsonBufferLock = true;
     doc.clear();
+  #endif
     sObj = doc.to<JsonObject>();
     if (pname) sObj["n"] = pname;
 
