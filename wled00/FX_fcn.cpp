@@ -1089,10 +1089,13 @@ void WS2812FX::deserializeMap(uint8_t n) {
     return;
   }
 
-  //DynamicJsonDocument doc(JSON_BUFFER_SIZE);  // full sized buffer for larger maps
+#ifdef WLED_USE_DYNAMIC_JSON
+  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+#else
   while (jsonBufferLock) delay(1);
   jsonBufferLock = true;
   doc.clear();
+#endif
 
   DEBUG_PRINT(F("Reading LED map from "));
   DEBUG_PRINTLN(fileName);

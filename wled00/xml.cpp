@@ -253,10 +253,14 @@ void getSettingsJS(byte subPage, char* dest)
     // add reserved and usermod pins as d.um_p array
     oappend(SET_F("d.um_p=[6,7,8,9,10,11"));
 
-    //DynamicJsonDocument doc(JSON_BUFFER_SIZE/2);
+  #ifdef WLED_USE_DYNAMIC_JSON
+    DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+  #else
     while (jsonBufferLock) delay(1);
     jsonBufferLock = true;
     doc.clear();
+  #endif
+  
     JsonObject mods = doc.createNestedObject(F("um"));
     usermods.addToConfig(mods);
     if (!mods.isNull()) fillUMPins(mods);

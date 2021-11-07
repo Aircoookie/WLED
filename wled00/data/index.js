@@ -67,7 +67,7 @@ function sCol(na, col) {d.documentElement.style.setProperty(na, col);}
 function gId(c) {return d.getElementById(c);}
 function gEBCN(c) {return d.getElementsByClassName(c);}
 function isEmpty(o) {return Object.keys(o).length === 0;}
-function isO(i) {return (i && typeof i === 'object' && !Array.isArray(i));}
+function isObj(i) {return (i && typeof i === 'object' && !Array.isArray(i));}
 
 function applyCfg()
 {
@@ -253,7 +253,7 @@ function onLoad()
 		loadPalettesData(redrawPalPrev);
 		loadFX(()=>{
 			loadPresets(()=>{
-				if (isO(lastinfo) && isEmpty(lastinfo)) loadInfo(requestJson);	// if not filled by WS
+				if (isObj(lastinfo) && isEmpty(lastinfo)) loadInfo(requestJson);	// if not filled by WS
 			});
 		});
 	});
@@ -533,7 +533,7 @@ function populatePresets(fromls)
 	pNum = 0;
 	for (var key of (arr||[]))
 	{
-		if (!isO(key[1])) continue;
+		if (!isObj(key[1])) continue;
 		let i = parseInt(key[0]);
 		var qll = key[1].ql;
 		if (qll) pQL.push([i, qll, pName(i)]);
@@ -2297,9 +2297,9 @@ function mergeDeep(target, ...sources)
 	if (!sources.length) return target;
 	const source = sources.shift();
 
-	if (isO(target) && isO(source)) {
+	if (isObj(target) && isObj(source)) {
 		for (const key in source) {
-			if (isO(source[key])) {
+			if (isObj(source[key])) {
 				if (!target[key]) Object.assign(target, { [key]: {} });
 				mergeDeep(target[key], source[key]);
 			} else {

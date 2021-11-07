@@ -110,10 +110,13 @@ void initServer()
     bool verboseResponse = false;
     bool isConfig = false;
     { //scope JsonDocument so it releases its buffer
-      //DynamicJsonDocument jsonBuffer(JSON_BUFFER_SIZE);
+    #ifdef WLED_USE_DYNAMIC_JSON
+      DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+    #else
       while (jsonBufferLock) delay(1);
       jsonBufferLock = true;
       doc.clear();
+    #endif
 
       DeserializationError error = deserializeJson(doc, (uint8_t*)(request->_tempObject));
       JsonObject root = doc.as<JsonObject>();

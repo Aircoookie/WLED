@@ -427,10 +427,13 @@ void deserializeConfigFromFS() {
     return;
   }
 
-  //DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+#ifdef WLED_USE_DYNAMIC_JSON
+  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+#else
   while (jsonBufferLock) delay(1);
   jsonBufferLock = true;
   doc.clear();
+#endif
 
   DEBUG_PRINTLN(F("Reading settings from /cfg.json..."));
 
@@ -454,10 +457,13 @@ void serializeConfig() {
 
   DEBUG_PRINTLN(F("Writing settings to /cfg.json..."));
 
-  //DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+#ifdef WLED_USE_DYNAMIC_JSON
+  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+#else
   while (jsonBufferLock) delay(1);
   jsonBufferLock = true;
   doc.clear();
+#endif
 
   JsonArray rev = doc.createNestedArray("rev");
   rev.add(1); //major settings revision
@@ -771,10 +777,13 @@ void serializeConfig() {
 bool deserializeConfigSec() {
   DEBUG_PRINTLN(F("Reading settings from /wsec.json..."));
 
-  //DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+#ifdef WLED_USE_DYNAMIC_JSON
+  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+#else
   while (jsonBufferLock) delay(1);
   jsonBufferLock = true;
   doc.clear();
+#endif
 
   bool success = readObjectFromFile("/wsec.json", nullptr, &doc);
   if (!success) {
@@ -819,10 +828,13 @@ bool deserializeConfigSec() {
 void serializeConfigSec() {
   DEBUG_PRINTLN(F("Writing settings to /wsec.json..."));
 
-  //DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+#ifdef WLED_USE_DYNAMIC_JSON
+  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+#else
   while (jsonBufferLock) delay(1);
   jsonBufferLock = true;
   doc.clear();
+#endif
 
   JsonObject nw = doc.createNestedObject("nw");
 

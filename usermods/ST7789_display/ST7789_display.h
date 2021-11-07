@@ -55,6 +55,7 @@ class St7789DisplayUsermod : public Usermod {
   private:
     //Private class members. You can declare variables and functions only accessible to your usermod here
     unsigned long lastTime = 0;
+    bool enabled = true;
 
     bool displayTurnedOff = false;
     long lastRedraw = 0;
@@ -140,7 +141,7 @@ class St7789DisplayUsermod : public Usermod {
     void setup()
     {
         PinManagerPinType pins[] = { { TFT_MOSI, true }, { TFT_MISO, false}, { TFT_SCLK, true }, { TFT_CS, true}, { TFT_DC, true}, { TFT_RST, true }, { TFT_BL, true } };
-        if (!pinManager.allocateMultiplePins(pins, 7, PinOwner::UM_FourLineDisplay)) { return; }
+        if (!pinManager.allocateMultiplePins(pins, 7, PinOwner::UM_FourLineDisplay)) { enabled = false; return; }
 
         tft.init();
         tft.setRotation(0);  //Rotation here is set up for the text to be readable with the port on the left. Use 1 to flip.
@@ -321,7 +322,7 @@ class St7789DisplayUsermod : public Usermod {
       if (user.isNull()) user = root.createNestedObject("u");
 
       JsonArray lightArr = user.createNestedArray("ST7789"); //name
-      lightArr.add(F("installed")); //unit
+      lightArr.add(enabled?F("installed"):F("disabled")); //unit
     }
 
 
@@ -362,7 +363,15 @@ class St7789DisplayUsermod : public Usermod {
      */
     void addToConfig(JsonObject& root)
     {
-      //JsonObject top = root.createNestedObject("exampleUsermod");
+      JsonObject top = root.createNestedObject("ST7789");
+      JsonArray pins = top.createNestedArray("pin");
+      pins.add(TFT_MOSI);
+      pins.add(TFT_MISO);
+      pins.add(TFT_SCLK);
+      pins.add(TFT_CS);
+      pins.add(TFT_DC);
+      pins.add(TFT_RST);
+      pins.add(TFT_BL);
       //top["great"] = userVar0; //save this var persistently whenever settings are saved
     }
 

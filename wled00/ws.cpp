@@ -36,10 +36,13 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
         }
         bool verboseResponse = false;
         { //scope JsonDocument so it releases its buffer
-          //DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+        #ifdef WLED_USE_DYNAMIC_JSON
+          DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+        #else
           while (jsonBufferLock) delay(1);
           jsonBufferLock = true;
           doc.clear();
+        #endif
 
           DeserializationError error = deserializeJson(doc, data, len);
           JsonObject root = doc.as<JsonObject>();
@@ -111,10 +114,14 @@ void sendDataWs(AsyncWebSocketClient * client)
   AsyncWebSocketMessageBuffer * buffer;
 
   { //scope JsonDocument so it releases its buffer
-    //DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+  #ifdef WLED_USE_DYNAMIC_JSON
+    DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+  #else
     while (jsonBufferLock) delay(1);
     jsonBufferLock = true;
     doc.clear();
+  #endif
+
     JsonObject state = doc.createNestedObject("state");
     serializeState(state);
     JsonObject info  = doc.createNestedObject("info");
