@@ -58,6 +58,12 @@
 #define USERMOD_ID_RTC                   15     //Usermod "usermod_rtc.h"
 #define USERMOD_ID_ELEKSTUBE_IPS         16     //Usermod "usermod_elekstube_ips.h"
 #define USERMOD_ID_SN_PHOTORESISTOR      17     //Usermod "usermod_sn_photoresistor.h"
+#define USERMOD_ID_BATTERY_STATUS_BASIC  18     //Usermod "usermod_v2_battery_status_basic.h"
+#define USERMOD_ID_PWM_FAN               19     //Usermod "usermod_PWM_fan.h"
+#define USERMOD_ID_BH1750                20     //Usermod "usermod_bh1750.h"
+#define USERMOD_ID_SEVEN_SEGMENT_DISPLAY 21     //Usermod "usermod_v2_seven_segment_display.h"
+#define USERMOD_RGB_ROTARY_ENCODER       22     //Usermod "rgb-rotary-encoder.h"
+#define USERMOD_ID_QUINLED_AN_PENTA      23     //Usermod "quinled-an-penta.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
@@ -111,13 +117,17 @@
 #define DMX_MODE_MULTIPLE_DRGB    5            //every LED is addressed with its own RGB and share a master dimmer (ledCount * 3 + 1 channels)
 #define DMX_MODE_MULTIPLE_RGBW    6            //every LED is addressed with its own RGBW (ledCount * 4 channels)
 
-//Light capability byte (unused) 0bRRCCTTTT
+//Light capability byte (unused) 0bRCCCTTTT
 //bits 0/1/2/3: specifies a type of LED driver. A single "driver" may have different chip models but must have the same protocol/behavior
-//bits 4/5: specifies the class of LED driver - 0b00 (dec. 0-15)  unconfigured/reserved
-//                                            - 0b01 (dec. 16-31) digital (data pin only)
-//                                            - 0b10 (dec. 32-47) analog (PWM)
-//                                            - 0b11 (dec. 48-63) digital (data + clock / SPI)
-//bits 6/7 are reserved and set to 0b00
+//bits 4/5/6: specifies the class of LED driver - 0b000 (dec. 0-15)  unconfigured/reserved
+//                                              - 0b001 (dec. 16-31) digital (data pin only)
+//                                              - 0b010 (dec. 32-47) analog (PWM)
+//                                              - 0b011 (dec. 48-63) digital (data + clock / SPI)
+//                                              - 0b100 (dec. 64-79) unused/reserved
+//                                              - 0b101 (dec. 80-95) digital (data + clock / SPI)
+//                                              - 0b110 (dec. 96-111) unused/reserved
+//                                              - 0b111 (dec. 112-127) unused/reserved
+//bit 7 is reserved and set to 0
 
 #define TYPE_NONE                 0            //light is not configured
 #define TYPE_RESERVED             1            //unused. Might indicate a "virtual" light
@@ -141,6 +151,10 @@
 #define TYPE_APA102              51
 #define TYPE_LPD8806             52
 #define TYPE_P9813               53
+//Network types (master broadcast) (80-95)
+#define TYPE_NET_DDP_RGB         80            //network DDP RGB bus (master broadcast bus)
+#define TYPE_NET_E131_RGB        81            //network E131 RGB bus (master broadcast bus)
+#define TYPE_NET_ARTNET_RGB      82            //network ArtNet RGB bus (master broadcast bus)
 
 #define IS_DIGITAL(t) ((t) & 0x10) //digital are 16-31 and 48-63
 #define IS_PWM(t)     ((t) > 40 && (t) < 46)
@@ -214,6 +228,7 @@
 #define ERR_FS_BEGIN    10  // Could not init filesystem (no partition?)
 #define ERR_FS_QUOTA    11  // The FS is full or the maximum file size is reached
 #define ERR_FS_PLOAD    12  // It was attempted to load a preset that does not exist
+#define ERR_FS_IRLOAD   13  // It was attempted to load an IR JSON cmd, but the "ir.json" file does not exist
 #define ERR_FS_GENERAL  19  // A general unspecified filesystem error occured
 #define ERR_OVERTEMP    30  // An attached temperature sensor has measured above threshold temperature (not implemented)
 #define ERR_OVERCURRENT 31  // An attached current sensor has measured a current above the threshold (not implemented)
@@ -228,10 +243,10 @@
 
 #define NTP_PACKET_SIZE 48
 
-// maximum number of LEDs - more than 1500 LEDs (or 500 DMA "LEDPIN 3" driven ones) will cause a low memory condition on ESP8266
+//maximum number of rendered LEDs - this does not have to match max. physical LEDs, e.g. if there are virtual busses 
 #ifndef MAX_LEDS
 #ifdef ESP8266
-#define MAX_LEDS 1664 // can't rely on memory limit to limit this to 1600 LEDs
+#define MAX_LEDS 1664 //can't rely on memory limit to limit this to 1600 LEDs
 #else
 #define MAX_LEDS 8192
 #endif
@@ -239,7 +254,7 @@
 
 #ifndef MAX_LED_MEMORY
 #ifdef ESP8266
-#define MAX_LED_MEMORY 5000
+#define MAX_LED_MEMORY 4000
 #else
 #define MAX_LED_MEMORY 64000
 #endif
@@ -280,7 +295,7 @@
 
 // Maximum size of node map (list of other WLED instances)
 #ifdef ESP8266
-  #define WLED_MAX_NODES 15
+  #define WLED_MAX_NODES 24
 #else
   #define WLED_MAX_NODES 150
 #endif
@@ -290,7 +305,7 @@
 #ifdef ESP8266
   #define LEDPIN 2    // GPIO2 (D4) on Wemod D1 mini compatible boards
 #else
-  #define LEDPIN 16   // alligns with GPIO2 (D4) on Wemos D1 mini32 compatible boards
+  #define LEDPIN 16   // aligns with GPIO2 (D4) on Wemos D1 mini32 compatible boards
 #endif
 #endif
 

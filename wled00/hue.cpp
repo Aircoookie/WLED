@@ -119,7 +119,7 @@ void onHueData(void* arg, AsyncClient* client, void *data, size_t len)
       const char* apikey = root[0][F("success")][F("username")];
       if (apikey != nullptr && strlen(apikey) < sizeof(hueApiKey))
       {
-        strcpy(hueApiKey, apikey);
+        strlcpy(hueApiKey, apikey, sizeof(hueApiKey));
         hueAuthRequired = false;
         hueNewKey = true;
       }

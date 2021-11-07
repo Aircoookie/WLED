@@ -38,7 +38,7 @@ class AutoSaveUsermod : public Usermod {
     bool applyAutoSaveOnBoot = false;     // do we load auto-saved preset on boot?
 
     // If we've detected the need to auto save, this will be non zero.
-    uint16_t autoSaveAfter = 0;
+    unsigned long autoSaveAfter = 0;
 
     uint8_t knownBrightness = 0;
     uint8_t knownEffectSpeed = 0;
@@ -87,6 +87,12 @@ class AutoSaveUsermod : public Usermod {
       display = (FourLineDisplayUsermod*) usermods.lookup(USERMOD_ID_FOUR_LINE_DISP);
       #endif
       initDone = true;
+      if (enabled && applyAutoSaveOnBoot) applyPreset(autoSavePreset);
+      knownBrightness = bri;
+      knownEffectSpeed = effectSpeed;
+      knownEffectIntensity = effectIntensity;
+      knownMode = strip.getMode();
+      knownPalette = strip.getSegment(0).palette;
     }
 
     // gets called every time WiFi is (re-)connected. Initialize own network
@@ -97,21 +103,11 @@ class AutoSaveUsermod : public Usermod {
      * Da loop.
      */
     void loop() {
-      if (!autoSaveAfterSec || !enabled || strip.isUpdating()) return;  // setting 0 as autosave seconds disables autosave
+      if (!autoSaveAfterSec || !enabled || strip.isUpdating() || currentPreset>0) return;  // setting 0 as autosave seconds disables autosave
 
       unsigned long now = millis();
       uint8_t currentMode = strip.getMode();
       uint8_t currentPalette = strip.getSegment(0).palette;
-      if (firstLoop) {
-        firstLoop = false;
-        if (applyAutoSaveOnBoot) applyPreset(autoSavePreset);
-        knownBrightness = bri;
-        knownEffectSpeed = effectSpeed;
-        knownEffectIntensity = effectIntensity;
-        knownMode = currentMode;
-        knownPalette = currentPalette;
-        return;
-      }
 
       unsigned long wouldAutoSaveAfter = now + autoSaveAfterSec*1000;
       if (knownBrightness != bri) {

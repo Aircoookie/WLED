@@ -58,12 +58,12 @@ public:
   void setMinutesTens()                           { setDigit(MINUTES_TENS); }
   void setHoursOnes()                             { setDigit(HOURS_ONES); }
   void setHoursTens()                             { setDigit(HOURS_TENS); }
-  bool isSecondsOnes()                            { return (digits_map&SECONDS_ONES_MAP > 0); }
-  bool isSecondsTens()                            { return (digits_map&SECONDS_TENS_MAP > 0); }
-  bool isMinutesOnes()                            { return (digits_map&MINUTES_ONES_MAP > 0); }
-  bool isMinutesTens()                            { return (digits_map&MINUTES_TENS_MAP > 0); }
-  bool isHoursOnes()                              { return (digits_map&HOURS_ONES_MAP > 0); }
-  bool isHoursTens()                              { return (digits_map&HOURS_TENS_MAP > 0); }
+  bool isSecondsOnes()                            { return ((digits_map & SECONDS_ONES_MAP) > 0); }
+  bool isSecondsTens()                            { return ((digits_map & SECONDS_TENS_MAP) > 0); }
+  bool isMinutesOnes()                            { return ((digits_map & MINUTES_ONES_MAP) > 0); }
+  bool isMinutesTens()                            { return ((digits_map & MINUTES_TENS_MAP) > 0); }
+  bool isHoursOnes()                              { return ((digits_map & HOURS_ONES_MAP) > 0); }
+  bool isHoursTens()                              { return ((digits_map & HOURS_TENS_MAP) > 0); }
 };
 
 

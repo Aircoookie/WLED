@@ -26,21 +26,21 @@ void onMqttConnect(bool sessionPresent)
   char subuf[38];
 
   if (mqttDeviceTopic[0] != 0) {
-    strcpy(subuf, mqttDeviceTopic);
+    strlcpy(subuf, mqttDeviceTopic, 33);
     mqtt->subscribe(subuf, 0);
     strcat_P(subuf, PSTR("/col"));
     mqtt->subscribe(subuf, 0);
-    strcpy(subuf, mqttDeviceTopic);
+    strlcpy(subuf, mqttDeviceTopic, 33);
     strcat_P(subuf, PSTR("/api"));
     mqtt->subscribe(subuf, 0);
   }
 
   if (mqttGroupTopic[0] != 0) {
-    strcpy(subuf, mqttGroupTopic);
+    strlcpy(subuf, mqttGroupTopic, 33);
     mqtt->subscribe(subuf, 0);
     strcat_P(subuf, PSTR("/col"));
     mqtt->subscribe(subuf, 0);
-    strcpy(subuf, mqttGroupTopic);
+    strlcpy(subuf, mqttGroupTopic, 33);
     strcat_P(subuf, PSTR("/api"));
     mqtt->subscribe(subuf, 0);
   }
@@ -122,22 +122,22 @@ void publishMqtt()
   char subuf[38];
 
   sprintf_P(s, PSTR("%u"), bri);
-  strcpy(subuf, mqttDeviceTopic);
+  strlcpy(subuf, mqttDeviceTopic, 33);
   strcat_P(subuf, PSTR("/g"));
   mqtt->publish(subuf, 0, true, s);
 
   sprintf_P(s, PSTR("#%06X"), (col[3] << 24) | (col[0] << 16) | (col[1] << 8) | (col[2]));
-  strcpy(subuf, mqttDeviceTopic);
+  strlcpy(subuf, mqttDeviceTopic, 33);
   strcat_P(subuf, PSTR("/c"));
   mqtt->publish(subuf, 0, true, s);
 
-  strcpy(subuf, mqttDeviceTopic);
+  strlcpy(subuf, mqttDeviceTopic, 33);
   strcat_P(subuf, PSTR("/status"));
   mqtt->publish(subuf, 0, true, "online");
 
   char apires[1024];
   XML_response(nullptr, apires);
-  strcpy(subuf, mqttDeviceTopic);
+  strlcpy(subuf, mqttDeviceTopic, 33);
   strcat_P(subuf, PSTR("/v"));
   mqtt->publish(subuf, 0, false, apires);
 }
@@ -167,7 +167,7 @@ bool initMqtt()
   mqtt->setClientId(mqttClientID);
   if (mqttUser[0] && mqttPass[0]) mqtt->setCredentials(mqttUser, mqttPass);
 
-  strcpy(mqttStatusTopic, mqttDeviceTopic);
+  strlcpy(mqttStatusTopic, mqttDeviceTopic, 33);
   strcat_P(mqttStatusTopic, PSTR("/status"));
   mqtt->setWill(mqttStatusTopic, 0, true, "offline");
   mqtt->setKeepAlive(MQTT_KEEP_ALIVE_TIME);

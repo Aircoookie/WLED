@@ -1,7 +1,7 @@
 /*
  * More web UI HTML source arrays.
  * This file is auto generated, please don't make any changes manually.
- * Instead, see https://github.com/Aircoookie/WLED/wiki/Add-own-functionality#web-ui
+ * Instead, see https://kno.wled.ge/advanced/custom-features/#changing-web-ui
  * to find out how to easily modify the web UI source!
  */ 
 
@@ -24,7 +24,7 @@ function B(){window.history.back()}function RS(){window.location="/settings"}fun
 const char PAGE_dmxmap[] PROGMEM = R"=====(<!DOCTYPE html><html><head><meta content="width=device-width" name="viewport">
 <title>DMX Map</title><script>
 function B(){window.history.back()}function RS(){window.location="/settings"}function RP(){top.location.href="/"}function FM() {%DMXVARS%
-var t=["SET 0","RED","GREEN","BLUE","WHITE","SHUTTER","SET 255","DISABLED"],n=[];for(i=0;i<512;i++)n.push(7);for(i=0;i<LC;i++)for(FS=CS+CG*i,j=0;j<CN;j++)DA=FS+j,n[DA-1]=CH[j];for(DMXMap="",i=0;i<512;i++)isstart="",(i+1)%10==0&&(isstart="S"),DMXMap+='<div class="anytype '+isstart+" type"+n[i]+'">'+String(i+1)+"<br />"+t[n[i]]+"</div>";document.getElementById("map").innerHTML=DMXMap}
+var n=["SET 0","RED","GREEN","BLUE","WHITE","SHUTTER","SET 255","DISABLED"],o=[];for(i=0;i<512;i++)o.push(7);for(i=0;i<LC;i++)for(FS=CS+CG*i,j=0;j<CN;j++)DA=FS+j,o[DA-1]=CH[j];for(DMXMap="",i=0;i<512;i++)DMXMap+='<div class="anytype type'+o[i]+'">'+String(i+1)+"<br />"+n[o[i]]+"</div>";document.getElementById("map").innerHTML=DMXMap}
 </script><style>
 .anytype{border:1px solid #fff;margin:1px;float:left;width:100px;height:100px}.S{margin:0;border:2px solid #fff}.type7{color:#888;border:1px dotted grey}.type6{color:#fff}.type4{color:#fff;font-weight:700}.type3{color:#00f;font-weight:700}.type2{color:#0f0;font-weight:700}.type1{color:red;font-weight:700}.bt{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.3ch solid #333;display:inline-block;font-size:20px;margin:8px;margin-top:12px}body{font-family:Verdana,sans-serif;text-align:center;background:#222;color:#fff;line-height:200%%;margin:0}
 </style></head><body onload="FM()"><div id="map">...</div></body></html>)=====";
@@ -42,7 +42,7 @@ function B(){window.history.back()}function U(){document.getElementById("uf").st
 .bt{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.3ch solid #333;display:inline-block;font-size:20px;margin:8px;margin-top:12px}input[type=file]{font-size:16px}body{font-family:Verdana,sans-serif;text-align:center;background:#222;color:#fff;line-height:200%}#msg{display:none}
 </style></head><body><h2>WLED Software Update</h2><form method="POST" 
 action="/update" id="uf" enctype="multipart/form-data" onsubmit="U()">
-Installed version: 0.13.0-b2<br>Download the latest binary: <a 
+Installed version: 0.13.0-b4<br>Download the latest binary: <a 
 href="https://github.com/Aircoookie/WLED/releases" target="_blank"><img 
 src="https://img.shields.io/github/release/Aircoookie/WLED.svg?style=flat-square">
 </a><br><input type="file" class="bt" name="update" required><br><input 

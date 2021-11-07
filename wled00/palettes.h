@@ -13,7 +13,7 @@
 #ifndef PalettesWLED_h
 #define PalettesWLED_h
 
-#define GRADIENT_PALETTE_COUNT 43
+#define GRADIENT_PALETTE_COUNT 58
 
 const byte ib_jul01_gp[] PROGMEM = {
     0, 194,  1,  1,
@@ -631,13 +631,220 @@ const byte temperature_gp[] PROGMEM = {
   240,  80,  3,  3,
   255,  80,  3,  3};
 
-  const byte Aurora2[] PROGMEM = {
+  const byte Aurora2_gp[] PROGMEM = {
       0,  17, 177,  13,    //Greenish
      64, 121, 242,   5,    //Greenish
     128,  25, 173, 121,    //Turquoise
     192, 250,  77, 127,    //Pink
     255, 171, 101, 221     //Purple
   };
+
+  // Gradient palette "bhw1_01_gp", originally from
+// http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw1/tn/bhw1_01.png.index.html
+// converted for FastLED with gammas (2.6, 2.2, 2.5)
+// Size: 12 bytes of program space.
+
+const byte retro_clown_gp[] PROGMEM = {
+    0, 227,101,  3,
+  117, 194, 18, 19,
+  255,  92,  8,192};
+
+// Gradient palette "bhw1_04_gp", originally from
+// http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw1/tn/bhw1_04.png.index.html
+// converted for FastLED with gammas (2.6, 2.2, 2.5)
+// Size: 20 bytes of program space.
+
+const byte candy_gp[] PROGMEM = {
+    0, 229,227,  1,
+   15, 227,101,  3,
+  142,  40,  1, 80,
+  198,  17,  1, 79,
+  255,   0,  0, 45};
+
+// Gradient palette "bhw1_05_gp", originally from
+// http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw1/tn/bhw1_05.png.index.html
+// converted for FastLED with gammas (2.6, 2.2, 2.5)
+// Size: 8 bytes of program space.
+
+const byte toxy_reaf_gp[] PROGMEM = {
+    0,   1,221, 53,
+  255,  73,  3,178};
+
+// Gradient palette "bhw1_06_gp", originally from
+// http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw1/tn/bhw1_06.png.index.html
+// converted for FastLED with gammas (2.6, 2.2, 2.5)
+// Size: 16 bytes of program space.
+
+const byte  fairy_reaf_gp[] PROGMEM = {
+    0, 184,  1,128,
+  160,   1,193,182,
+  219, 153,227,190,
+  255, 255,255,255};
+
+// Gradient palette "bhw1_14_gp", originally from
+// http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw1/tn/bhw1_14.png.index.html
+// converted for FastLED with gammas (2.6, 2.2, 2.5)
+// Size: 36 bytes of program space.
+
+const byte semi_blue_gp[] PROGMEM = {
+    0,   0,  0,  0,
+   12,   1,  1,  3,
+   53,   8,  1, 22,
+   80,   4,  6, 89,
+  119,   2, 25,216,
+  145,   7, 10, 99,
+  186,  15,  2, 31,
+  233,   2,  1,  5,
+  255,   0,  0,  0};
+
+// Gradient palette "bhw1_three_gp", originally from
+// http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw1/tn/bhw1_three.png.index.html
+// converted for FastLED with gammas (2.6, 2.2, 2.5)
+// Size: 32 bytes of program space.
+
+const byte pink_candy_gp[] PROGMEM = {
+    0, 255,255,255,
+   45,   7, 12,255,
+  112, 227,  1,127,
+  112, 227,  1,127,
+  140, 255,255,255,
+  155, 227,  1,127,
+  196,  45,  1, 99,
+  255, 255,255,255};
+
+// Gradient palette "bhw1_w00t_gp", originally from
+// http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw1/tn/bhw1_w00t.png.index.html
+// converted for FastLED with gammas (2.6, 2.2, 2.5)
+// Size: 16 bytes of program space.
+
+const byte red_reaf_gp[] PROGMEM = {
+    0,   3, 13, 43,
+  104,  78,141,240,
+  188, 255,  0,  0,
+  255,  28,  1,  1};
+
+
+// Gradient palette "bhw2_23_gp", originally from
+// http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw2/tn/bhw2_23.png.index.html
+// converted for FastLED with gammas (2.6, 2.2, 2.5)
+// Red & Flash in SR
+// Size: 28 bytes of program space.
+
+const byte aqua_flash_gp[] PROGMEM = {
+    0,   0,  0,  0,
+   66,  57,227,233,
+   96, 255,255,  8,
+  124, 255,255,255,
+  153, 255,255,  8,
+  188,  57,227,233,
+  255,   0,  0,  0};
+
+// Gradient palette "bhw2_xc_gp", originally from
+// http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw2/tn/bhw2_xc.png.index.html
+// converted for FastLED with gammas (2.6, 2.2, 2.5)
+// YBlue in SR
+// Size: 28 bytes of program space.
+
+const byte yelblu_hot_gp[] PROGMEM = {
+    0,   4,  2,  9,
+   58,  16,  0, 47,
+  122,  24,  0, 16,
+  158, 144,  9,  1,
+  183, 179, 45,  1,
+  219, 220,114,  2,
+  255, 234,237,  1};
+
+ // Gradient palette "bhw2_45_gp", originally from
+// http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw2/tn/bhw2_45.png.index.html
+// converted for FastLED with gammas (2.6, 2.2, 2.5)
+// Size: 24 bytes of program space.
+
+const byte lite_light_gp[] PROGMEM = {
+    0,   0,  0,  0,
+    9,   1,  1,  1,
+   40,   5,  5,  6,
+   66,   5,  5,  6,
+  101,  10,  1, 12,
+  255,   0,  0,  0};
+
+// Gradient palette "bhw2_22_gp", originally from
+// http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw2/tn/bhw2_22.png.index.html
+// converted for FastLED with gammas (2.6, 2.2, 2.5)
+// Pink Plasma in SR
+// Size: 20 bytes of program space.
+
+const byte red_flash_gp[] PROGMEM = {
+    0,   0,  0,  0,
+   99, 227,  1,  1,
+  130, 249,199, 95,
+  155, 227,  1,  1,
+  255,   0,  0,  0};
+
+// Gradient palette "bhw3_40_gp", originally from
+// http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw3/tn/bhw3_40.png.index.html
+// converted for FastLED with gammas (2.6, 2.2, 2.5)
+// Size: 32 bytes of program space.
+
+const byte blink_red_gp[] PROGMEM = {
+    0,   1,  1,  1,
+   43,   4,  1, 11,
+   76,  10,  1,  3,
+  109, 161,  4, 29,
+  127, 255, 86,123,
+  165, 125, 16,160,
+  204,  35, 13,223,
+  255,  18,  2, 18};
+
+// Gradient palette "bhw3_52_gp", originally from
+// http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw3/tn/bhw3_52.png.index.html
+// converted for FastLED with gammas (2.6, 2.2, 2.5)
+// Yellow2Blue in SR
+// Size: 28 bytes of program space.
+
+const byte red_shift_gp[] PROGMEM = {
+    0,  31,  1, 27,
+   45,  34,  1, 16,
+   99, 137,  5,  9,
+  132, 213,128, 10,
+  175, 199, 22,  1,
+  201, 199,  9,  6,
+  255,   1,  0,  1};
+
+// Gradient palette "bhw4_097_gp", originally from
+// http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw4/tn/bhw4_097.png.index.html
+// converted for FastLED with gammas (2.6, 2.2, 2.5)
+// Yellow2Red in SR
+// Size: 44 bytes of program space.
+
+const byte red_tide_gp[] PROGMEM = {
+    0, 247,  5,  0,
+   28, 255, 67,  1,
+   43, 234, 88, 11,
+   58, 234,176, 51,
+   84, 229, 28,  1,
+  114, 113, 12,  1,
+  140, 255,225, 44,
+  168, 113, 12,  1,
+  196, 244,209, 88,
+  216, 255, 28,  1,
+  255,  53,  1,  1};
+
+// Gradient palette "bhw4_017_gp", originally from
+// http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw4/tn/bhw4_017.png.index.html
+// converted for FastLED with gammas (2.6, 2.2, 2.5)
+// Size: 40 bytes of program space.
+
+const byte candy2_gp[] PROGMEM = {
+    0,  39, 33, 34,
+   25,   4,  6, 15,
+   48,  49, 29, 22,
+   73, 224,173,  1,
+   89, 177, 35,  5,
+  130,   4,  6, 15,
+  163, 255,114,  6,
+  186, 224,173,  1,
+  211,  39, 33, 34,
+  255,   1,  1,  1};
 
 // Single array of defined cpt-city color palettes.
 // This will let us programmatically choose one based on
@@ -686,7 +893,22 @@ const byte* const gGradientPalettes[] PROGMEM = {
   C9_2_gp,                      //52-39 C9 2
   C9_new_gp,                    //53-40 C9 New
   temperature_gp,               //54-41 Temperature
-  Aurora2                       //55-42 Aurora 2
+  Aurora2_gp,                   //55-42 Aurora 2
+  retro_clown_gp,               //56-43 Retro Clown
+  candy_gp,                     //57-44 Candy
+  toxy_reaf_gp,                 //58-45 Toxy Reaf
+  fairy_reaf_gp,                //59-46 Fairy Reaf
+  semi_blue_gp,                 //60-47 Semi Blue
+  pink_candy_gp,                //61-48 Pink Candy
+  red_reaf_gp,                  //62-49 Red Reaf
+  aqua_flash_gp,                //63-50 Aqua Flash
+  yelblu_hot_gp,                //64-51 Yelblu Hot
+  lite_light_gp,                //65-52 Lite Light
+  red_flash_gp,                 //66-53 Red Flash
+  blink_red_gp,                 //67-54 Blink Red
+  red_shift_gp,                 //68-55 Red Shift
+  red_tide_gp,                  //69-56 Red Tide
+  candy2_gp                     //70-57 Candy2
 };
 
 #endif

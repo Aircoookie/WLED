@@ -71,9 +71,11 @@ void decBrightness()
 // apply preset or fallback to a effect and palette if it doesn't exist
 void presetFallback(uint8_t presetID, uint8_t effectID, uint8_t paletteID) 
 {
+  byte prevError = errorFlag;
   if (!applyPreset(presetID, CALL_MODE_BUTTON)) { 
     effectCurrent = effectID;      
     effectPalette = paletteID;
+    errorFlag = prevError; //clear error 12 from non-existent preset
   }
 }
 
@@ -161,7 +163,11 @@ void decodeIR(uint32_t code)
   }
   lastValidCode = 0; irTimesRepeated = 0;
   if (decodeIRCustom(code)) return;
-  if      (code > 0xFFFFFF) return; //invalid code
+  if (irEnabled == 8) { // any remote configurable with ir.json file
+    decodeIRJson(code);
+    return;
+  }
+  if (code > 0xFFFFFF) return; //invalid code
   switch (irEnabled) {
     case 1: 
       if (code > 0xF80000) {
@@ -178,7 +184,7 @@ void decodeIR(uint32_t code)
                                           // "VOL +" controls effect, "VOL -" controls colour/palette, "MUTE" 
                                           // sets bright plain white
     case 7: decodeIR9(code);    break;
-    case 8: decodeIRJson(code); break;   // any remote configurable with ir.json file
+    //case 8: return; // ir.json file, handled above switch statement
     default: return;
   }
 
@@ -568,53 +574,58 @@ void decodeIRJson(uint32_t code)
 
   sprintf(objKey, "\"0x%X\":", code);
 
-  errorFlag = readObjectFromFile("/ir.json", objKey, &irDoc) ? ERR_NONE : ERR_FS_PLOAD;
+  readObjectFromFile("/ir.json", objKey, &irDoc);
   fdo = irDoc.as<JsonObject>();
   lastValidCode = 0;
-  if (!errorFlag) 
+  if (fdo.isNull()) {
+    //the received code does not exist
+    if (!WLED_FS.exists("/ir.json")) errorFlag = ERR_FS_IRLOAD; //warn if IR file itself doesn't exist
+    return;
+  }
+
+  cmd = fdo["cmd"]; //string
+  cmdStr = String(cmd);
+  jsonCmdObj = fdo["cmd"]; //object
+
+  if (!cmdStr.isEmpty()) 
   {
-    cmd = fdo["cmd"];
-    cmdStr = String(cmd);
-    jsonCmdObj = fdo["cmd"];
-    if (!cmdStr.isEmpty()) 
-    {
-      if (cmdStr.startsWith("!")) {
-        // call limited set of C functions
-        if (cmdStr.startsWith(F("!incBri"))) {
-          lastValidCode = code;
-          incBrightness();
-        } else if (cmdStr.startsWith(F("!decBri"))) {
-          lastValidCode = code;
-          decBrightness();
-        } else if (cmdStr.startsWith(F("!presetF"))) { //!presetFallback
-          uint8_t p1 = fdo["PL"] ? fdo["PL"] : 1;
-          uint8_t p2 = fdo["FX"] ? fdo["FX"] : random8(100);
-          uint8_t p3 = fdo["FP"] ? fdo["FP"] : 0;
-          presetFallback(p1, p2, p3);
-        }
-      } else {
-        // HTTP API command
-        if (cmdStr.indexOf("~") || fdo["rpt"]) 
-        {
-          // repeatable action
-          lastValidCode = code;
-        }
-        if (effectCurrent == 0 && cmdStr.indexOf("FP=") > -1) {
-          // setting palette but it wont show because effect is solid
-          effectCurrent = FX_MODE_GRADIENT;
-        }
-        if (!cmdStr.startsWith("win&")) {
-          cmdStr = "win&" + cmdStr;
-        }
-        handleSet(nullptr, cmdStr, false); 
-      }        
-    } else if (!jsonCmdObj.isNull()) {
-      // command is JSON object
-      //allow applyPreset() to reuse JSON buffer, or it would alloc. a second buffer and run out of mem.
-      fileDoc = &irDoc;
-      deserializeState(jsonCmdObj, CALL_MODE_BUTTON);
-      fileDoc = nullptr;
+    if (cmdStr.startsWith("!")) {
+      // call limited set of C functions
+      if (cmdStr.startsWith(F("!incBri"))) {
+        lastValidCode = code;
+        incBrightness();
+      } else if (cmdStr.startsWith(F("!decBri"))) {
+        lastValidCode = code;
+        decBrightness();
+      } else if (cmdStr.startsWith(F("!presetF"))) { //!presetFallback
+        uint8_t p1 = fdo["PL"] ? fdo["PL"] : 1;
+        uint8_t p2 = fdo["FX"] ? fdo["FX"] : random8(MODE_COUNT);
+        uint8_t p3 = fdo["FP"] ? fdo["FP"] : 0;
+        presetFallback(p1, p2, p3);
+      }
+    } else {
+      // HTTP API command
+      if (cmdStr.indexOf("~") || fdo["rpt"]) 
+      {
+        // repeatable action
+        lastValidCode = code;
+      }
+      if (effectCurrent == 0 && cmdStr.indexOf("FP=") > -1) {
+        // setting palette but it wont show because effect is solid
+        effectCurrent = FX_MODE_GRADIENT;
+      }
+      if (!cmdStr.startsWith("win&")) {
+        cmdStr = "win&" + cmdStr;
+      }
+      handleSet(nullptr, cmdStr, false); 
     }
+    colorUpdated(CALL_MODE_BUTTON);
+  } else if (!jsonCmdObj.isNull()) {
+    // command is JSON object
+    //allow applyPreset() to reuse JSON buffer, or it would alloc. a second buffer and run out of mem.
+    fileDoc = &irDoc;
+    deserializeState(jsonCmdObj, CALL_MODE_BUTTON);
+    fileDoc = nullptr;
   }
 }
 

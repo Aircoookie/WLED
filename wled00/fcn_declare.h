@@ -191,10 +191,12 @@ bool isAsterisksOnly(const char* str, byte maxLen);
 void handleSettingsSet(AsyncWebServerRequest *request, byte subPage);
 bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply=true);
 int getNumVal(const String* req, uint16_t pos);
+void parseNumber(const char* str, byte* val, byte minv=0, byte maxv=255);
 bool updateVal(const String* req, const char* key, byte* val, byte minv=0, byte maxv=255);
 
 //udp.cpp
 void notify(byte callMode, bool followUp=false);
+uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, byte *buffer, uint8_t bri=255, bool isRGBW=false);
 void realtimeLock(uint32_t timeoutMs, byte md = REALTIME_MODE_GENERIC);
 void handleNotifications();
 void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w);
@@ -205,6 +207,8 @@ void sendSysInfoUDP();
 class Usermod {
   public:
     virtual void loop() {}
+    virtual void handleOverlayDraw() {}
+    virtual bool handleButton(uint8_t b) { return false; }
     virtual void setup() {}
     virtual void connected() {}
     virtual void addToJsonState(JsonObject& obj) {}
@@ -224,14 +228,13 @@ class UsermodManager {
 
   public:
     void loop();
-
+    void handleOverlayDraw();
+    bool handleButton(uint8_t b);
     void setup();
     void connected();
-
     void addToJsonState(JsonObject& obj);
     void addToJsonInfo(JsonObject& obj);
     void readFromJsonState(JsonObject& obj);
-
     void addToConfig(JsonObject& obj);
     bool readFromConfig(JsonObject& obj);
     void onMqttConnect(bool sessionPresent);

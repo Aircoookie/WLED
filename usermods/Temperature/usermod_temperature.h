@@ -81,7 +81,9 @@ class UsermodTemperature : public Usermod {
       temperature = readDallas();
       lastMeasurement = millis();
       waitingForConversion = false;
-      DEBUG_PRINTF("Read temperature %2.1f.\n", temperature);
+      //DEBUG_PRINTF("Read temperature %2.1f.\n", temperature); // does not work properly on 8266
+      DEBUG_PRINT(F("Read temperature "));
+      DEBUG_PRINTLN(temperature);
     }
 
     bool findSensor() {
@@ -115,14 +117,19 @@ class UsermodTemperature : public Usermod {
         // config says we are enabled
         DEBUG_PRINTLN(F("Allocating temperature pin..."));
         // pin retrieved from cfg.json (readFromConfig()) prior to running setup()
-        if (temperaturePin >= 0 && pinManager.allocatePin(temperaturePin)) {
+        if (temperaturePin >= 0 && pinManager.allocatePin(temperaturePin, true, PinOwner::UM_Temperature)) {
           oneWire = new OneWire(temperaturePin);
-          if (!oneWire->reset())
+          if (!oneWire->reset()) {
             sensorFound = false;   // resetting 1-Wire bus yielded an error
-          else
-            while ((sensorFound=findSensor()) && retries--) delay(25); // try to find sensor
+          } else {
+            while ((sensorFound=findSensor()) && retries--) {
+              delay(25); // try to find sensor
+            }
+          }
         } else {
-          if (temperaturePin >= 0) DEBUG_PRINTLN(F("Temperature pin allocation failed."));
+          if (temperaturePin >= 0) {
+            DEBUG_PRINTLN(F("Temperature pin allocation failed."));
+          }
           temperaturePin = -1;  // allocation failed
           sensorFound = false;
         }
@@ -273,7 +280,7 @@ class UsermodTemperature : public Usermod {
           DEBUG_PRINTLN(F("Re-init temperature."));
           // deallocate pin and release memory
           delete oneWire;
-          pinManager.deallocatePin(temperaturePin);
+          pinManager.deallocatePin(temperaturePin, PinOwner::UM_Temperature);
           temperaturePin = newTemperaturePin;
           // initialise
           setup();

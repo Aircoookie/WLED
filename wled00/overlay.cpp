@@ -18,6 +18,7 @@ void initCronixie()
 }
 
 
+//handleOverlays is essentially the equivalent of usermods.loop
 void handleOverlays()
 {
   initCronixie();
@@ -111,8 +112,8 @@ void _overlayAnalogCountdown()
   }
 }
 
-
 void handleOverlayDraw() {
+  usermods.handleOverlayDraw();
   if (!overlayCurrent) return;
   switch (overlayCurrent)
   {
@@ -120,7 +121,6 @@ void handleOverlayDraw() {
     case 3: _drawOverlayCronixie(); break;
   }
 }
-
 
 /*
  * Support for the Cronixie clock
@@ -359,7 +359,7 @@ void _drawOverlayCronixie()
 }
 
 #else // WLED_DISABLE_CRONIXIE
-byte getSameCodeLength(char code, int index, char const cronixieDisplay[]) {}
+byte getSameCodeLength(char code, int index, char const cronixieDisplay[]) { return 0; }
 void setCronixie() {}
 void _overlayCronixie() {}
 void _drawOverlayCronixie() {}
