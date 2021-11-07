@@ -7,24 +7,35 @@ var selColors;
 var expanded = [false];
 var powered = [true];
 var nlDur = 60, nlTar = 0;
-var nlFade = false;
+var nlMode = false;
 var selectedFx = 0;
 var csel = 0;
 var currentPreset = -1;
 var lastUpdate = 0;
 var segCount = 0, ledCount = 0, lowestUnused = 0, maxSeg = 0, lSeg = 0;
 var pcMode = false, pcModeA = false, lastw = 0;
+var tr = 7;
 var d = document;
 const ranges = RangeTouch.setup('input[type="range"]', {});
 var palettesData;
 var pJson = {};
-var pN = "", pI = 0;
+var pN = "", pI = 0, pNum = 0;
 var pmt = 1, pmtLS = 0, pmtLast = 0;
 var lastinfo = {};
+var ws;
+var fxlist = d.getElementById('fxlist'), pallist = d.getElementById('pallist');
 var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
-	comp :{colors:{picker: true, rgb: false, quick: true, hex: false}, labels:true, pcmbot:false, pid:true}
+	comp :{colors:{picker: true, rgb: false, quick: true, hex: false},
+          labels:true, pcmbot:false, pid:true, seglen:false, css:true, hdays:false}
 };
+var hol = [
+	[0,11,24,4,"https://aircoookie.github.io/xmas.png"], // christmas
+	[0,2,17,1,"https://images.alphacoders.com/491/491123.jpg"], // st. Patrick's day
+	[2022,3,17,2,"https://aircoookie.github.io/easter.png"],
+	[2023,3,9,2,"https://aircoookie.github.io/easter.png"],
+	[2024,2,31,2,"https://aircoookie.github.io/easter.png"]
+];
 
 var cpick = new iro.ColorPicker("#picker", {
 	width: 260,
@@ -151,13 +162,18 @@ function cTheme(light) {
 
 function loadBg(iUrl) {
 	let bg = d.getElementById('bg');
-  let img = d.createElement("img");
-  img.src = iUrl;
-  if (iUrl == "") {
-    var today = new Date();
-    if (today.getMonth() == 11 && (today.getDate() > 23 && today.getDate() < 28)) img.src = "https://aircoookie.github.io/xmas.png";
-    else if (today.getMonth() == 3 && (today.getDate() > 3 && today.getDate() < 6)) img.src = "https://aircoookie.github.io/easter.png";
-  }
+	let img = d.createElement("img");
+	img.src = iUrl;
+	if (iUrl == "") {
+		var today = new Date();
+		for (var i=0; i<hol.length; i++) {
+			var yr = hol[i][0]==0 ? today.getFullYear() : hol[i][0];
+			var hs = new Date(yr,hol[i][1],hol[i][2]);
+			var he = new Date(hs);
+			he.setDate(he.getDate() + hol[i][3]);
+			if (today>=hs && today<=he)	img.src = hol[i][4];
+		}
+	}
 	img.addEventListener('load', (event) => {
 		var a = parseFloat(cfg.theme.alpha.bg);
 		if (isNaN(a)) a = 0.6;
@@ -165,6 +181,21 @@ function loadBg(iUrl) {
 		bg.style.backgroundImage = `url(${img.src})`;
 		img = null;
 	});
+}
+
+function loadSkinCSS(cId)
+{
+	if (!d.getElementById(cId))	// check if element exists
+	{
+		var h  = document.getElementsByTagName('head')[0];
+		var l  = document.createElement('link');
+		l.id   = cId;
+		l.rel  = 'stylesheet';
+		l.type = 'text/css';
+		l.href = (loc?`http://${locip}`:'.') + '/skin.css';
+		l.media = 'all';
+		h.appendChild(l);
+	}
 }
 
 function onLoad() {
@@ -183,7 +214,27 @@ function onLoad() {
 	resetPUtil();
 
 	applyCfg();
-	loadBg(cfg.theme.bg.url);
+	if (cfg.comp.hdays) { //load custom holiday list
+		fetch((loc?`http://${locip}`:'.') + "/holidays.json", {	// may be loaded from external source
+			method: 'get'
+		})
+		.then(res => {
+			//if (!res.ok) showErrorToast();
+			return res.json();
+		})
+		.then(json => {
+			if (Array.isArray(json)) hol = json;
+			//TODO: do some parsing first
+		})
+		.catch(function (error) {
+			console.log("holidays.json does not contain array of holidays. Defaults loaded.");
+		})
+    .finally(function(){
+      loadBg(cfg.theme.bg.url);
+    });
+	} else
+		loadBg(cfg.theme.bg.url);
+	if (cfg.comp.css) loadSkinCSS('skinCss');
 
 	var cd = d.getElementById('csl').children;
 	for (var i = 0; i < cd.length; i++) {
@@ -196,7 +247,7 @@ function onLoad() {
 		setColor(1);
 	});
 	pmtLS = localStorage.getItem('wledPmt');
-	setTimeout(function(){requestJson(null, false);}, 25);
+	setTimeout(function(){requestJson(null, false);}, 50);
 	d.addEventListener("visibilitychange", handleVisibilityChange, false);
 	size();
 	d.getElementById("cv").style.opacity=0;
@@ -292,6 +343,10 @@ function pName(i) {
 	return n;
 }
 
+function isPlaylist(i) {
+	return pJson[i].playlist && pJson[i].playlist.ps;
+}
+
 function papiVal(i) {
 	if (!pJson[i]) return "";
 	var o = Object.assign({},pJson[i]);
@@ -346,8 +401,22 @@ function presetError(empty)
 	if (hasBackup) d.getElementById('bck').value = bckstr;
 }
 
-function loadPresets()
+function loadPresets(callback = null)
 {
+	//1st boot (because there is a callback)
+	if (callback && pmt == pmtLS && pmt > 0) {
+		//we have a copy of the presets in local storage and don't need to fetch another one
+		populatePresets(true);
+		pmtLast = pmt;
+		callback();
+		return;
+	}
+
+	//afterwards
+	if (!callback && pmt == pmtLast) return;
+
+	pmtLast = pmt;
+
 	var url = '/presets.json';
 	if (loc) {
 		url = `http://${locip}/presets.json`;
@@ -371,6 +440,9 @@ function loadPresets()
 		showToast(error, true);
 		console.log(error);
 		presetError(false);
+	})
+	.finally(() => {
+		if (callback) setTimeout(callback,99);
 	});
 }
 
@@ -406,9 +478,9 @@ function populatePresets(fromls)
 	var cn = "";
 	var arr = Object.entries(pJson);
 	arr.sort(cmpP);
-	var added = false;
   pQL = [];
   var is = [];
+  pNum = 0;
 
 	for (var key of (arr||[]))
 	{
@@ -420,15 +492,15 @@ function populatePresets(fromls)
 
     cn += `<div class="seg pres" id="p${i}o">`;
     if (cfg.comp.pid) cn += `<div class="pid">${i}</div>`;
-    cn += `<div class="segname pname" onclick="setPreset(${i})">${pName(i)}</div>
+    cn += `<div class="segname pname" onclick="setPreset(${i})">${isPlaylist(i)?"<i class='icons btn-icon'>&#xe139;</i>":""}${pName(i)}</div>
 			<i class="icons e-icon flr ${expanded[i+100] ? "exp":""}" id="sege${i+100}" onclick="expand(${i+100})">&#xe395;</i>
 			<div class="segin" id="seg${i+100}"></div>
 		</div><br>`;
-		added = true;
+    pNum++;
 	}
 
 	d.getElementById('pcont').innerHTML = cn;
-	if (added) {
+	if (pNum > 0) {
 		if (pmtLS != pmt && pmt != 0) {
 			localStorage.setItem("wledPmt", pmt);
 			pJson["0"] = {};
@@ -439,6 +511,7 @@ function populatePresets(fromls)
       let i = is[a];
       if (expanded[i+100]) expand(i+100, true);
     }
+		makePlSel(arr);
 	} else { presetError(true); }
 	updatePA();
 	populateQL();
@@ -466,7 +539,7 @@ function populateInfo(i)
   }
 
 	var vcn = "Kuuhaku";
-	if (i.ver.startsWith("0.12.")) vcn = "Hikari";
+	if (i.ver.startsWith("0.13.")) vcn = "Toki";
 	if (i.cn) vcn = i.cn;
 
 	cn += `v${i.ver} "${vcn}"<br><br><table class="infot">
@@ -475,8 +548,8 @@ function populateInfo(i)
 	${inforow("Signal strength",i.wifi.signal +"% ("+ i.wifi.rssi, " dBm)")}
 	${inforow("Uptime",getRuntimeStr(i.uptime))}
 	${inforow("Free heap",heap," kB")}
-  ${inforow("Estimated current",pwru)}
-  ${inforow("Frames / second",i.leds.fps)}
+  	${inforow("Estimated current",pwru)}
+  	${inforow("Frames / second",i.leds.fps)}
 	${inforow("MAC address",i.mac)}
 	${inforow("Filesystem",i.fs.u + "/" + i.fs.t + " kB (" +Math.round(i.fs.u*100/i.fs.t) + "%)")}
 	${inforow("Environment",i.arch + " " + i.core + " (" + i.lwip + ")")}
@@ -510,34 +583,39 @@ function populateSegments(s)
 			</div>
 			<i class="icons e-icon flr ${expanded[i] ? "exp":""}" id="sege${i}" onclick="expand(${i})">&#xe395;</i>
 			<div class="segin ${expanded[i] ? "expanded":""}" id="seg${i}">
-			<table class="segt">
-				<tr>
-					<td class="segtd">Start LED</td>
-					<td class="segtd">Stop LED</td>
-				</tr>
-				<tr>
-					<td class="segtd"><input class="noslide segn" id="seg${i}s" type="number" min="0" max="${ledCount-1}" value="${inst.start}" oninput="updateLen(${i})"></td>
-					<td class="segtd"><input class="noslide segn" id="seg${i}e" type="number" min="0" max="${ledCount}" value="${inst.stop}" oninput="updateLen(${i})"></td>
-				</tr>
-			</table>
-			<table class="segt">
-				<tr>
-					<td class="segtd">Grouping</td>
-					<td class="segtd">Spacing</td>
-				</tr>
-				<tr>
-					<td class="segtd"><input class="noslide segn" id="seg${i}grp" type="number" min="1" max="255" value="${inst.grp}" oninput="updateLen(${i})"></td>
-					<td class="segtd"><input class="noslide segn" id="seg${i}spc" type="number" min="0" max="255" value="${inst.spc}" oninput="updateLen(${i})"></td>
-				</tr>
-			</table>
-			<div class="h bp" id="seg${i}len"></div>
-			<i class="icons e-icon pwr ${powered[i] ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})">&#xe08f;</i>
-			<div class="sliderwrap il sws">
-				<input id="seg${i}bri" class="noslide sis" onchange="setSegBri(${i})" oninput="updateTrail(this)" max="255" min="1" type="range" value="${inst.bri}" />
-				<div class="sliderdisplay"></div>
-			</div>
-				<i class="icons e-icon cnf cnf-s" id="segc${i}" onclick="setSeg(${i})">&#xe390;</i>
-				<i class="icons e-icon del" id="segd${i}" onclick="delSeg(${i})">&#xe037;</i>
+				<div class="sbs">
+				<i class="icons e-icon pwr ${powered[i] ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})">&#xe08f;</i>
+				<div class="sliderwrap il sws">
+					<input id="seg${i}bri" class="noslide sis" onchange="setSegBri(${i})" oninput="updateTrail(this)" max="255" min="1" type="range" value="${inst.bri}" />
+					<div class="sliderdisplay"></div>
+				</div>
+				</div>
+				<table class="infot">
+					<tr>
+						<td class="segtd">Start LED</td>
+						<td class="segtd">${cfg.comp.seglen?"Length":"Stop LED"}</td>
+						<td class="segtd">Offset</td>
+					</tr>
+					<tr>
+						<td class="segtd"><input class="noslide segn" id="seg${i}s" type="number" min="0" max="${ledCount-1}" value="${inst.start}" oninput="updateLen(${i})"></td>
+						<td class="segtd"><input class="noslide segn" id="seg${i}e" type="number" min="0" max="${ledCount-(cfg.comp.seglen?inst.start:0)}" value="${inst.stop-(cfg.comp.seglen?inst.start:0)}" oninput="updateLen(${i})"></td>
+						<td class="segtd"><input class="noslide segn" id="seg${i}of" type="number" value="${inst.of}" oninput="updateLen(${i})"></td>
+					</tr>
+				</table>
+				<table class="infot">
+					<tr>
+						<td class="segtd">Grouping</td>
+						<td class="segtd">Spacing</td>
+						<td class="segtd">Apply</td>
+					</tr>
+					<tr>
+						<td class="segtd"><input class="noslide segn" id="seg${i}grp" type="number" min="1" max="255" value="${inst.grp}" oninput="updateLen(${i})"></td>
+						<td class="segtd"><input class="noslide segn" id="seg${i}spc" type="number" min="0" max="255" value="${inst.spc}" oninput="updateLen(${i})"></td>
+						<td class="segtd"><i class="icons e-icon cnf cnf-s" id="segc${i}" onclick="setSeg(${i})">&#xe390;</i></td>
+					</tr>
+				</table>
+				<div class="h" id="seg${i}len"></div>
+				<button class="btn btn-i btn-xs del" id="segd${i}" onclick="delSeg(${i})"><i class="icons btn-icon">&#xe037;</i></button>
 				<label class="check revchkl">
 					Reverse direction
 					<input type="checkbox" id="seg${i}rev" onchange="setRev(${i})" ${inst.rev ? "checked":""}>
@@ -596,7 +674,7 @@ function populateEffects(effects)
 		);
 	}
 
-	d.getElementById('fxlist').innerHTML=html;
+	fxlist.innerHTML=html;
 }
 
 function populatePalettes(palettes)
@@ -619,23 +697,22 @@ function populatePalettes(palettes)
 	var html = `<div class="searchbar"><input type="text" class="search" placeholder="Search" oninput="search(this)" />
   <i class="icons search-cancel-icon" onclick="cancelSearch(this)">&#xe38f;</i></div>`;
 	for (let i = 0; i < palettes.length; i++) {
-		let previewCss = genPalPrevCss(palettes[i].id);
 		html += generateListItemHtml(
 			'palette',
 		    palettes[i].id,
             palettes[i].name,
             'setPalette',
-			`<div class="lstIprev" style="${previewCss}"></div>`,
+			`<div class="lstIprev" style="${genPalPrevCss(palettes[i].id)}"></div>`,
 			palettes[i].class,
         );
 	}
 
-	d.getElementById('selectPalette').innerHTML=html;
+	pallist.innerHTML=html;
 }
 
 function redrawPalPrev()
 {
-	let palettes = d.querySelectorAll('#selectPalette .lstI');
+	let palettes = d.querySelectorAll('#pallist .lstI');
 	for (let i = 0; i < palettes.length; i++) {
 		let id = palettes[i].dataset.id;
 		let lstPrev = palettes[i].querySelector('.lstIprev');
@@ -651,7 +728,6 @@ function genPalPrevCss(id)
 		return;
 	}
 	var paletteData = palettesData[id];
-	var previewCss = "";
 
 	if (!paletteData) {
 		return 'display: none';
@@ -780,8 +856,9 @@ function updateTrail(e, slidercol)
 {
 	if (e==null) return;
 	var max = e.hasAttribute('max') ? e.attributes.max.value : 255;
-	var progress = e.value * 100 / max;
-	progress = parseInt(progress);
+	var perc = e.value * 100 / max;
+	perc = parseInt(perc);
+  if (perc < 50) perc += 2;
 	var scol;
 	switch (slidercol) {
 	case 1: scol = "#f00"; break;
@@ -789,7 +866,7 @@ function updateTrail(e, slidercol)
 	case 3: scol = "#00f"; break;
 	default: scol = "var(--c-f)";
 	}
-	var val = `linear-gradient(90deg, ${scol} ${progress}%, var(--c-4) ${progress}%)`;
+	var val = `linear-gradient(90deg, ${scol} ${perc}%, var(--c-4) ${perc}%)`;
 	e.parentNode.getElementsByClassName('sliderdisplay')[0].style.background = val;
 }
 
@@ -812,7 +889,7 @@ function updateLen(s)
 	if (!d.getElementById(`seg${s}s`)) return;
 	var start = parseInt(d.getElementById(`seg${s}s`).value);
 	var stop	= parseInt(d.getElementById(`seg${s}e`).value);
-	var len = stop - start;
+	var len = stop - (cfg.comp.seglen?0:start);
 	var out = "(delete)";
 	if (len > 1) {
 		out = `${len} LEDs`;
@@ -885,28 +962,154 @@ function cmpP(a, b) {
   return a[1].n.localeCompare(b[1].n,undefined, {numeric: true});
 }
 
+function makeWS() {
+  if (ws) return;
+  ws = new WebSocket('ws://'+(loc?locip:window.location.hostname)+'/ws');
+  ws.onmessage = function(event) {
+    var json = JSON.parse(event.data);
+    if (json.leds) return; //liveview packet
+    clearTimeout(jsonTimeout);
+		jsonTimeout = null;
+		clearErrorToast();
+    d.getElementById('connind').style.backgroundColor = "#079";
+    var info = json.info;
+    d.getElementById('buttonNodes').style.display = (info.ndc > 0 && window.innerWidth > 770) ? "block":"none";
+    lastinfo = info;
+    if (isInfo) {
+      populateInfo(info);
+    }
+    s = json.state;
+    displayRover(info, s);
+		readState(json.state);
+	};
+  ws.onclose = function(event) {
+    d.getElementById('connind').style.backgroundColor = "#831";
+  }
+}
+
+function readState(s,command=false) {
+  isOn = s.on;
+  d.getElementById('sliderBri').value= s.bri;
+  nlA = s.nl.on;
+  nlDur = s.nl.dur;
+  nlTar = s.nl.tbri;
+  nlMode = s.nl.mode;
+  syncSend = s.udpn.send;
+  currentPreset = s.ps;
+  tr = s.transition;
+  d.getElementById('tt').value = tr/10;
+
+  var selc=0; var ind=0;
+  populateSegments(s);
+  for (let i = 0; i < (s.seg||[]).length; i++)
+  {
+    if(s.seg[i].sel) {selc = ind; break;} ind++;
+  }
+  var i=s.seg[selc];
+  if (!i) {
+    showToast('No Segments!', true);
+    updateUI();
+    return;
+  }
+  
+  selColors = i.col;
+  var cd = d.getElementById('csl').children;
+  for (let e = 2; e >= 0; e--)
+  {
+    cd[e].style.backgroundColor = "rgb(" + i.col[e][0] + "," + i.col[e][1] + "," + i.col[e][2] + ")";
+    if (isRgbw) whites[e] = parseInt(i.col[e][3]);
+    selectSlot(csel);
+  }
+  d.getElementById('sliderW').value = whites[csel];
+
+  d.getElementById('sliderSpeed').value = i.sx;
+  d.getElementById('sliderIntensity').value = i.ix;
+
+  // Effects
+  var selFx = fxlist.querySelector(`input[name="fx"][value="${i.fx}"]`);
+  if (selFx) selFx.checked = true;
+  else location.reload(); //effect list is gone (e.g. if restoring tab). Reload.
+
+  var selElement = fxlist.querySelector('.selected');
+  if (selElement) {
+    selElement.classList.remove('selected')
+  }
+  var selectedEffect = fxlist.querySelector(`.lstI[data-id="${i.fx}"]`);
+  selectedEffect.classList.add('selected');
+  selectedFx = i.fx;
+
+  // Palettes
+  pallist.querySelector(`input[name="palette"][value="${i.pal}"]`).checked = true;
+  selElement = pallist.querySelector('.selected');
+  if (selElement) {
+    selElement.classList.remove('selected')
+  }
+  pallist.querySelector(`.lstI[data-id="${i.pal}"]`).classList.add('selected');
+
+  if (!command) {
+    selectedEffect.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+    });
+  }
+
+  if (s.error && s.error != 0) {
+    var errstr = "";
+    switch (s.error) {
+      case 10:
+        errstr = "Could not mount filesystem!";
+        break;
+      case 11:
+        errstr = "Not enough space to save preset!";
+        break;
+      case 12:
+        errstr = "Preset not found.";
+        break;
+      case 19:
+        errstr = "A filesystem error has occured.";
+        break;
+      }
+    showToast('Error ' + s.error + ": " + errstr, true);
+  }
+  updateUI();
+}
+
 var jsonTimeout;
-function requestJson(command, rinfo = true, verbose = true) {
+var reqsLegal = false;
+
+function requestJson(command, rinfo = true) {
 	d.getElementById('connind').style.backgroundColor = "#a90";
+  if (command && !reqsLegal) return; //stop post requests from chrome onchange event on page restore
 	lastUpdate = new Date();
 	if (!jsonTimeout) jsonTimeout = setTimeout(showErrorToast, 3000);
 	var req = null;
-	var e1 = d.getElementById('fxlist');
-	var e2 = d.getElementById('selectPalette');
 
 	var url = rinfo ? '/json/si': (command ? '/json/state':'/json');
 	if (loc) {
 		url = `http://${locip}${url}`;
 	}
 
+  var useWs = ((command || rinfo) && ws && ws.readyState === WebSocket.OPEN);
+
 	var type = command ? 'post':'get';
 	if (command)
 	{
-    command.v = verbose;
+    command.v = true; //get complete API response
     command.time = Math.floor(Date.now() / 1000);
+    var t = d.getElementById('tt');
+    if (t.validity.valid) {
+      var tn = parseInt(t.value*10);
+      if (tn != tr) command.transition = tn;
+    }
 		req = JSON.stringify(command);
-		//console.log(req);
+    if (req.length > 1000) useWs = false; //do not send very long requests over websocket
 	}
+
+  if (useWs) {
+    ws.send(req?req:'{"v":true}');
+    return;
+  }
+
 	fetch
 	(url, {
 		method: type,
@@ -934,19 +1137,21 @@ function requestJson(command, rinfo = true, verbose = true) {
 		}
 		var s = json;
 		
-		if (!command || rinfo) {
-			if (!rinfo) {
-				pmt = json.info.fs.pmt;
-				if (pmt != pmtLS || pmt == 0) {
-					setTimeout(loadPresets,99);
-				}
-				else {
-					populatePresets(true);
-				}
-				pmtLast = pmt;
-
+		if (!command || rinfo) { //we have info object
+			if (!rinfo) { //entire JSON (on load)
 				populateEffects(json.effects);
 				populatePalettes(json.palettes);
+
+				//load palette previews, presets, and open websocket sequentially
+				setTimeout(function(){
+					loadPresets(function(){
+						loadPalettesData(function(){
+							if (!ws && json.info.ws > -1) makeWS();
+						});
+					});
+				},25);
+				
+        reqsLegal = true;
 			}
 
 			var info = json.info;
@@ -968,10 +1173,8 @@ function requestJson(command, rinfo = true, verbose = true) {
       maxSeg = info.leds.maxseg;
 			pmt = info.fs.pmt;
 
-			if (!command && pmt != pmtLast) {
-				setTimeout(loadPresets,99);
-			}
-			pmtLast = pmt;
+			if (!command && rinfo) setTimeout(loadPresets, 99);
+
       d.getElementById('buttonNodes').style.display = (info.ndc > 0 && window.innerWidth > 770) ? "block":"none";
 			lastinfo = info;
 			if (isInfo) {
@@ -979,94 +1182,9 @@ function requestJson(command, rinfo = true, verbose = true) {
 			}
 			s = json.state;
 			displayRover(info, s);
-
-      if (!rinfo) loadPalettesData();
 		}
 
-		isOn = s.on;
-		d.getElementById('sliderBri').value= s.bri;
-		nlA = s.nl.on;
-		nlDur = s.nl.dur;
-		nlTar = s.nl.tbri;
-		nlFade = s.nl.fade;
-		syncSend = s.udpn.send;
-		currentPreset = s.ps;
-		d.getElementById('cyToggle').checked = (s.pl >= 0);
-		d.getElementById('cycs').value = s.ccnf.min;
-		d.getElementById('cyce').value = s.ccnf.max;
-		d.getElementById('cyct').value = s.ccnf.time /10;
-		d.getElementById('cyctt').value = s.transition /10;
-
-		var selc=0; var ind=0;
-		populateSegments(s);
-		for (let i = 0; i < (s.seg||[]).length; i++)
-		{
-			if(s.seg[i].sel) {selc = ind; break;} ind++;
-		}
-		var i=s.seg[selc];
-		if (!i) {
-			showToast('No Segments!', true);
-			updateUI();
-			return;
-		}
-		
-		selColors = i.col;
-		var cd = d.getElementById('csl').children;
-		for (let e = 2; e >= 0; e--)
-		{
-			cd[e].style.backgroundColor = "rgb(" + i.col[e][0] + "," + i.col[e][1] + "," + i.col[e][2] + ")";
-			if (isRgbw) whites[e] = parseInt(i.col[e][3]);
-			selectSlot(csel);
-		}
-		d.getElementById('sliderSpeed').value = whites[csel];
-
-		d.getElementById('sliderSpeed').value = i.sx;
-		d.getElementById('sliderIntensity').value = i.ix;
-
-		// Effects
-		e1.querySelector(`input[name="fx"][value="${i.fx}"]`).checked = true;
-		var selElement = e1.querySelector('.selected');
-		if (selElement) {
-			selElement.classList.remove('selected')
-		}
-		var selectedEffect = e1.querySelector(`.lstI[data-id="${i.fx}"]`);
-		selectedEffect.classList.add('selected');
-		selectedFx = i.fx;
-
-		// Palettes
-		e2.querySelector(`input[name="palette"][value="${i.pal}"]`).checked = true;
-		selElement = e2.querySelector('.selected');
-		if (selElement) {
-			selElement.classList.remove('selected')
-		}
-		e2.querySelector(`.lstI[data-id="${i.pal}"]`).classList.add('selected');
-
-		if (!command) {
-			selectedEffect.scrollIntoView({
-				behavior: 'smooth',
-				block: 'nearest',
-			});
-		}
-
-		if (s.error && s.error != 0) {
-      		var errstr = "";
-      		switch (s.error) {
-				case 10:
-					errstr = "Could not mount filesystem!";
-					break;
-				case 11:
-					errstr = "Not enough space to save preset!";
-					break;
-				case 12:
-					errstr = "The requested preset does not exist.";
-					break;
-				case 19:
-					errstr = "A filesystem error has occured.";
-					break;
-      		}
-      		showToast('Error ' + s.error + ": " + errstr, true);
-    	}
-		updateUI();
+    readState(s,command);
 	})
 	.catch(function (error) {
 		showToast(error, true);
@@ -1077,7 +1195,6 @@ function requestJson(command, rinfo = true, verbose = true) {
 function togglePower() {
 	isOn = !isOn;
 	var obj = {"on": isOn};
-	obj.transition = parseInt(d.getElementById('cyctt').value*10);
 	requestJson(obj);
 }
 
@@ -1085,7 +1202,7 @@ function toggleNl() {
 	nlA = !nlA;
 	if (nlA)
 	{
-		showToast(`Timer active. Your light will turn ${nlTar > 0 ? "on":"off"} ${nlFade ? "over":"after"} ${nlDur} minutes.`);
+		showToast(`Timer active. Your light will turn ${nlTar > 0 ? "on":"off"} ${nlMode ? "over":"after"} ${nlDur} minutes.`);
 	} else {
 		showToast('Timer deactivated.');
 	}
@@ -1112,6 +1229,7 @@ function toggleLiveview() {
 	var url = loc ? `http://${locip}/liveview`:"/liveview";
 	d.getElementById('liveview').src = (isLv) ? url:"about:blank";
 	d.getElementById('buttonSr').className = (isLv) ? "active":"";
+  if (!isLv && ws && ws.readyState === WebSocket.OPEN) ws.send('{"lv":false}');
 	size();
 }
 
@@ -1134,7 +1252,7 @@ function toggleNodes() {
 function makeSeg() {
 	var ns = 0;
 	if (lowestUnused > 0) {
-		var pend = d.getElementById(`seg${lowestUnused -1}e`).value;
+		var pend = parseInt(d.getElementById(`seg${lowestUnused -1}e`).value,10) + (cfg.comp.seglen?parseInt(d.getElementById(`seg${lowestUnused -1}s`).value,10):0);
 		if (pend < ledCount) ns = pend;
 	}
 	var cn = `<div class="seg">
@@ -1146,14 +1264,14 @@ function makeSeg() {
 				<table class="segt">
 					<tr>
 						<td class="segtd">Start LED</td>
-						<td class="segtd">Stop LED</td>
+						<td class="segtd">${cfg.comp.seglen?"Length":"Stop LED"}</td>
 					</tr>
 					<tr>
 						<td class="segtd"><input class="noslide segn" id="seg${lowestUnused}s" type="number" min="0" max="${ledCount-1}" value="${ns}" oninput="updateLen(${lowestUnused})"></td>
-						<td class="segtd"><input class="noslide segn" id="seg${lowestUnused}e" type="number" min="0" max="${ledCount}" value="${ledCount}" oninput="updateLen(${lowestUnused})"></td>
+						<td class="segtd"><input class="noslide segn" id="seg${lowestUnused}e" type="number" min="0" max="${ledCount-(cfg.comp.seglen?ns:0)}" value="${ledCount-(cfg.comp.seglen?ns:0)}" oninput="updateLen(${lowestUnused})"></td>
 					</tr>
 				</table>
-				<div class="h" id="seg${lowestUnused}len">${ledCount - ns} LEDs</div>
+				<div class="h" id="seg${lowestUnused}len">${ledCount - ns} LED${ledCount - ns >1 ? "s":""}</div>
 				<i class="icons e-icon cnf cnf-s half" id="segc${lowestUnused}" onclick="setSeg(${lowestUnused}); resetUtil();">&#xe390;</i>
 			</div>
 		</div>`;
@@ -1165,37 +1283,149 @@ function resetUtil() {
 	d.getElementById('segutil').innerHTML = cn;
 }
 
-function makeP(i) {
+var plJson = {"0":{
+	"ps": [0],	
+	"dur": [100],	
+	"transition": [-1],	//to be inited to default transition dur
+	"repeat": 0,
+	"r": false,
+	"end": 0	
+}};
+
+var plSelContent = "";
+function makePlSel(arr) {
+	plSelContent = "";
+	for (var i = 0; i < arr.length; i++) {
+		var n = arr[i][1].n ? arr[i][1].n : "Preset " + arr[i][0];
+		if (arr[i][1].playlist && arr[i][1].playlist.ps) continue; //remove playlists, sub-playlists not yet supported
+		plSelContent += `<option value=${arr[i][0]}>${n}</option>`
+	}
+}
+
+function refreshPlE(p) {
+	var plEDiv = d.getElementById(`ple${p}`);
+	if (!plEDiv) return;
+	var content = "";
+	for (var i = 0; i < plJson[p].ps.length; i++) {
+		content += makePlEntry(p,i);
+	}
+	plEDiv.innerHTML = content;
+	var dels = plEDiv.getElementsByClassName("btn-pl-del");
+	if (dels.length < 2) dels[0].style.display = "none";
+
+	var sels = d.getElementById(`seg${p+100}`).getElementsByClassName("sel");
+	for (var i of sels) {
+		if (i.dataset.val) {
+			if (parseInt(i.dataset.val) > 0) i.value = i.dataset.val;
+			else plJson[p].ps[i.dataset.index] = parseInt(i.value);
+		}
+	}
+}
+
+//p: preset ID, i: ps index
+function addPl(p,i) {
+	plJson[p].ps.splice(i+1,0,0);
+	plJson[p].dur.splice(i+1,0,plJson[p].dur[i]);
+	plJson[p].transition.splice(i+1,0,plJson[p].transition[i]);
+	refreshPlE(p);
+}
+
+function delPl(p,i) {
+	if (plJson[p].ps.length < 2) return;
+	plJson[p].ps.splice(i,1);
+	plJson[p].dur.splice(i,1);
+	plJson[p].transition.splice(i,1);
+	refreshPlE(p);
+}
+
+function plePs(p,i,field) {
+	plJson[p].ps[i] = parseInt(field.value);
+}
+
+function pleDur(p,i,field) {
+	if (field.validity.valid)
+		plJson[p].dur[i] = Math.floor(field.value*10);
+}
+
+function pleTr(p,i,field) {
+	if (field.validity.valid)
+		plJson[p].transition[i] = Math.floor(field.value*10);
+}
+
+function plR(p) {
+	var pl = plJson[p];
+	pl.r = d.getElementById(`pl${p}rtgl`).checked;
+	if (d.getElementById(`pl${p}rptgl`).checked) { //infinite
+		pl.repeat = 0;
+		delete pl.end;
+		d.getElementById(`pl${p}o1`).style.display = "none";
+	} else {
+		pl.repeat = parseInt(d.getElementById(`pl${p}rp`).value);
+		pl.end = parseInt(d.getElementById(`pl${p}selEnd`).value);
+		d.getElementById(`pl${p}o1`).style.display = "block";
+	}
+}
+
+function makeP(i,pl) {
+  var content = "";
+  if (pl) {
+		var rep = plJson[i].repeat ? plJson[i].repeat : 0;
+		content = `
+  <div class="first c">Playlist Entries</div>
+  <div id="ple${i}"></div><label class="check revchkl">
+    Shuffle
+    <input type="checkbox" id="pl${i}rtgl" onchange="plR(${i})" ${plJson[i].r?"checked":""}>
+    <span class="checkmark schk"></span>
+  </label>
+  <label class="check revchkl">
+    Repeat indefinitely
+    <input type="checkbox" id="pl${i}rptgl" onchange="plR(${i})" ${rep?"":"checked"}>
+    <span class="checkmark schk"></span>
+  </label>
+	<div id="pl${i}o1" style="display:${rep?"block":"none"}">
+  <div class="c">Repeat <input class="noslide" type="number" id="pl${i}rp" oninput="plR(${i})" max=127 min=0 value=${rep>0?rep:1}> times</div>
+  End preset:<br>
+  <select class="btn sel sel-ple" id="pl${i}selEnd" onchange="plR(${i})" data-val=${plJson[i].end?plJson[i].end:0}>
+		<option value=0>None</option>
+    ${plSelContent}
+  </select>
+	</div>
+  <button class="btn btn-i btn-p" onclick="testPl(${i}, this)"><i class='icons btn-icon'>&#xe139;</i>Test</button>`;
+	}
+  else content = `<label class="check revchkl">
+		Include brightness
+		<input type="checkbox" id="p${i}ibtgl" checked>
+		<span class="checkmark schk"></span>
+	</label>
+	<label class="check revchkl">
+		Save segment bounds
+		<input type="checkbox" id="p${i}sbtgl" checked>
+		<span class="checkmark schk"></span>
+	</label>`;
+
 	return `
 	<input type="text" class="ptxt noslide" id="p${i}txt" autocomplete="off" maxlength=32 value="${(i>0)?pName(i):""}" placeholder="Enter name..."/><br>
 	<div class="c">Quick load label: <input type="text" class="stxt noslide" maxlength=2 value="${qlName(i)}" id="p${i}ql" autocomplete="off"/></div>
 	<div class="h">(leave empty for no Quick load button)</div>
+	<div ${pl&&i==0?"style='display:none'":""}>
 	<label class="check revchkl">
-		${(i>0)?"Overwrite with state":"Use current state"}
-		<input type="checkbox" id="p${i}cstgl" onchange="tglCs(${i})" ${(i>0)?"":"checked"}>
-		<span class="checkmark schk"></span>
-	</label><br>
-	<div class="po2" id="p${i}o2">
-		API command<br>
-		<textarea class="noslide" id="p${i}api"></textarea>
+    ${pl?"Show playlist editor":(i>0)?"Overwrite with state":"Use current state"}
+    <input type="checkbox" id="p${i}cstgl" onchange="tglCs(${i})" ${(i==0||pl)?"checked":""}>
+    <span class="checkmark schk"></span>
+  </label><br>
 	</div>
-	<div class="po1" id="p${i}o1">
-		<label class="check revchkl">
-			Include brightness
-			<input type="checkbox" id="p${i}ibtgl" checked>
-			<span class="checkmark schk"></span>
-		</label>
-		<label class="check revchkl">
-			Save segment bounds
-			<input type="checkbox" id="p${i}sbtgl" checked>
-			<span class="checkmark schk"></span>
-		</label>
-	</div>
+  <div class="po2" id="p${i}o2">
+    API command<br>
+    <textarea class="noslide" id="p${i}api"></textarea>
+  </div>
+  <div class="po1" id="p${i}o1">
+		${content}
+  </div>
 	<div class="c">Save to ID <input class="noslide" id="p${i}id" type="number" oninput="checkUsed(${i})" max=250 min=1 value=${(i>0)?i:getLowestUnusedP()}></div>
 	<div class="c">
-		<button class="btn btn-i btn-p" onclick="saveP(${i})"><i class="icons btn-icon">&#xe390;</i>${(i>0)?"Save changes":"Save preset"}</button>
-		${(i>0)?'<button class="btn btn-i btn-p" onclick="delP('+i+')"><i class="icons btn-icon">&#xe037;</i>Delete preset</button>':
-						'<button class="btn btn-p" onclick="resetPUtil()">Cancel</button>'}
+		<button class="btn btn-i btn-p" onclick="saveP(${i},${pl})"><i class="icons btn-icon">&#xe390;</i>Save ${(pl)?"playlist":(i>0)?"changes":"preset"}</button>
+		${(i>0)?'<button class="btn btn-i btn-p" id="p'+i+'del" onclick="delP('+i+')"><i class="icons btn-icon">&#xe037;</i>Delete '+(pl?"playlist":"preset"):
+						'<button class="btn btn-p" onclick="resetPUtil()">Cancel'}</button>
 	</div>
 	<div class="pwarn ${(i>0)?"bp":""} c" id="p${i}warn">
 
@@ -1209,11 +1439,40 @@ function makePUtil() {
 			New preset</div>
 		<div class="segin expanded">
 		${makeP(0)}</div></div>`;
-	updateTrail(d.getElementById('p0p'));
+}
+
+function makePlEntry(p,i) {
+  return `
+  <div class="plentry">
+    <select class="btn sel sel-pl" onchange="plePs(${p},${i},this)" data-val=${plJson[p].ps[i]} data-index=${i}>
+			${plSelContent}
+    </select>
+		<button class="btn btn-i btn-xs btn-pl-del" onclick="delPl(${p},${i})"><i class="icons btn-icon">&#xe037;</i></button>
+		<div class="h plnl">Duration</div><div class="h plnl">Transition</div><div class="h pli">#${i+1}</div><br>
+		<input class="noslide pln" type="number" max=6553.0 min=0.2 step=0.1 oninput="pleDur(${p},${i},this)" value=${plJson[p].dur[i]/10.0}>
+		<input class="noslide pln" type="number" max=65.0 min=0.0 step=0.1 oninput="pleTr(${p},${i},this)" value=${plJson[p].transition[i]/10.0}> s
+		<button class="btn btn-i btn-xs btn-pl-add" onclick="addPl(${p},${i})"><i class="icons btn-icon">&#xe18a;</i></button>
+    <div class="hrz"></div>
+  </div>`;
+}
+
+function makePlUtil() {
+  if (pNum < 2) {
+    showToast("You need at least 2 presets to make a playlist!"); return;
+  }
+	if (plJson[0].transition[0] < 0) plJson[0].transition[0] = tr;
+  d.getElementById('putil').innerHTML = `<div class="seg pres">
+  <div class="segname newseg">
+    New playlist</div>
+  <div class="segin expanded" id="seg100">
+  ${makeP(0,true)}</div></div>`;
+	
+	refreshPlE(0);
 }
 
 function resetPUtil() {
-	var cn = `<button class="btn btn-s btn-i" onclick="makePUtil()"><i class="icons btn-icon">&#xe18a;</i>Create preset</button><br>`;
+	var cn = `<button class="btn btn-s btn-i" onclick="makePUtil()"><i class="icons btn-icon">&#xe18a;</i>Create preset</button><br>
+            <button class="btn btn-s btn-i" onclick="makePlUtil()"><i class='icons btn-icon'>&#xe139;</i>Create playlist</button><br>`;
 	d.getElementById('putil').innerHTML = cn;
 }
 
@@ -1242,13 +1501,15 @@ function setSeg(s){
 	var start = parseInt(d.getElementById(`seg${s}s`).value);
 	var stop	= parseInt(d.getElementById(`seg${s}e`).value);
 	if (stop <= start) {delSeg(s); return;}
-	var obj = {"seg": {"id": s, "start": start, "stop": stop}};
+	var obj = {"seg": {"id": s, "start": start, "stop": (cfg.comp.seglen?start:0)+stop}};
 	if (d.getElementById(`seg${s}grp`))
 	{
 		var grp = parseInt(d.getElementById(`seg${s}grp`).value);
 		var spc = parseInt(d.getElementById(`seg${s}spc`).value);
+		var ofs = parseInt(d.getElementById(`seg${s}of` ).value);
 		obj.seg.grp = grp;
 		obj.seg.spc = spc;
+		obj.seg.of  = ofs;
 	}
 	requestJson(obj);
 }
@@ -1305,22 +1566,21 @@ function setX(ind = null) {
 function setPalette(paletteId = null)
 {
 	if (paletteId === null) {
-		paletteId = parseInt(d.querySelector('#selectPalette input[name="palette"]:checked').value);
+		paletteId = parseInt(d.querySelector('#pallist input[name="palette"]:checked').value);
 	} else {
-		d.querySelector(`#selectPalette input[name="palette"][value="${paletteId}`).checked = true;
+		d.querySelector(`#pallist input[name="palette"][value="${paletteId}`).checked = true;
 	}
-	var selElement = d.querySelector('#selectPalette .selected');
+	var selElement = d.querySelector('#pallist .selected');
 	if (selElement) {
 		selElement.classList.remove('selected')
 	}
-	d.querySelector(`#selectPalette .lstI[data-id="${paletteId}"]`).classList.add('selected');
+	d.querySelector(`#pallist .lstI[data-id="${paletteId}"]`).classList.add('selected');
 	var obj = {"seg": {"pal": paletteId}};
 	requestJson(obj);
 }
 
 function setBri() {
 	var obj = {"bri": parseInt(d.getElementById('sliderBri').value)};
-	obj.transition = parseInt(d.getElementById('cyctt').value*10);
 	requestJson(obj);
 }
 
@@ -1339,17 +1599,6 @@ function setLor(i) {
 	requestJson(obj);
 }
 
-function toggleCY() {
-	var obj = {"pl" : -1};
-	if (d.getElementById('cyToggle').checked)
-	{
-		obj = {"pl": 0, "ccnf": {"min": parseInt(d.getElementById('cycs').value), "max": parseInt(d.getElementById('cyce').value), "time": parseInt(d.getElementById('cyct').value*10)}};
-		obj.transition = parseInt(d.getElementById('cyctt').value*10);
-	}
-
-	requestJson(obj);
-}
-
 function setPreset(i) {
 	var obj = {"ps": i};
 
@@ -1358,12 +1607,14 @@ function setPreset(i) {
 	requestJson(obj);
 }
 
-function saveP(i) {
+function saveP(i,pl) {
 	pI = parseInt(d.getElementById(`p${i}id`).value);
 	if (!pI || pI < 1) pI = (i>0) ? i : getLowestUnusedP();
 	pN = d.getElementById(`p${i}txt`).value;
-	if (pN == "") pN = "Preset " + pI;
+
+	if (pN == "") pN = (pl?"Playlist ":"Preset ") + pI;
 	var obj = {};
+
 	if (!d.getElementById(`p${i}cstgl`).checked) {
 		var raw = d.getElementById(`p${i}api`).value;
 		try {
@@ -1377,15 +1628,21 @@ function saveP(i) {
 				d.getElementById(`p${i}warn`).innerHTML = "&#9888; Syntax error in custom JSON API command";
 				return;
 			} else if (raw.indexOf("Please") == 0) {
-        d.getElementById(`p${i}warn`).innerHTML = "&#9888; Please refresh the page before modifying this preset";
+				d.getElementById(`p${i}warn`).innerHTML = "&#9888; Please refresh the page before modifying this preset";
 				return;
-      }
+			}
 		}
 		obj.o = true;
 	} else {
-		obj.ib = d.getElementById(`p${i}ibtgl`).checked;
-		obj.sb = d.getElementById(`p${i}sbtgl`).checked;
+		if (pl) {
+			obj.playlist = plJson[i];
+			obj.o = true;
+		} else {
+			obj.ib = d.getElementById(`p${i}ibtgl`).checked;
+			obj.sb = d.getElementById(`p${i}sbtgl`).checked;
+		}
 	}
+
 	obj.psave = pI; obj.n = pN;
 	var pQN = d.getElementById(`p${i}ql`).value;
 	if (pQN.length > 0) obj.ql = pQN;
@@ -1407,11 +1664,36 @@ function saveP(i) {
 	resetPUtil();
 }
 
-function delP(i) {
-	var obj = {"pdel": i};
+function testPl(i,bt) {
+	if (bt.dataset.test == 1) {
+		bt.dataset.test = 0;
+		bt.innerHTML = "<i class='icons btn-icon'>&#xe139;</i>Test";
+		stopPl();
+		return;
+	}
+	bt.dataset.test = 1;
+	bt.innerHTML = "<i class='icons btn-icon'>&#xe38f;</i>Stop";
+	var obj = {};
+	obj.playlist = plJson[i];
 	requestJson(obj);
-	delete pJson[i];
-	populatePresets();
+}
+
+function stopPl() {
+	requestJson({playlist:{}})
+}
+
+function delP(i) {
+	var bt = d.getElementById(`p${i}del`);
+	if (bt.dataset.cnf == 1) {
+		var obj = {"pdel": i};
+		requestJson(obj);
+		delete pJson[i];
+		populatePresets();
+	} else {
+		bt.style.color = "#f00";
+		bt.innerHTML = "<i class='icons btn-icon'>&#xe037;</i>Confirm delete";
+		bt.dataset.cnf = 1;
+	}
 }
 
 function selectSlot(b) {
@@ -1511,7 +1793,6 @@ function setColor(sr) {
 	}
 	updateHex();
 	updateRgb();
-	obj.transition = parseInt(d.getElementById('cyctt').value*10);
 	requestJson(obj);
 }
 
@@ -1557,7 +1838,7 @@ function rSegs()
 	requestJson(obj);
 }
 
-function loadPalettesData()
+function loadPalettesData(callback = null)
 {
 	if (palettesData) return;
 	const lsKey = "wledPalx";
@@ -1568,6 +1849,8 @@ function loadPalettesData()
 			var d = new Date();
 			if (palettesDataJson && palettesDataJson.vid == lastinfo.vid) {
 				palettesData = palettesDataJson.p;
+				//redrawPalPrev() //?
+				if (callback) callback();
 				return;
 			}
 		} catch (e) {}
@@ -1580,6 +1863,7 @@ function loadPalettesData()
 			vid: lastinfo.vid
 		}));
 		redrawPalPrev();
+		if (callback) setTimeout(callback, 99); //go on to connect websocket
 	});
 }
 
@@ -1613,7 +1897,6 @@ function getPalettesData(page, callback)
 	.catch(function (error) {
 		showToast(error, true);
 		console.log(error);
-		presetError(false);
 	});
 }
 
@@ -1639,22 +1922,61 @@ function cancelSearch(ic) {
   searchField.focus();
 }
 
+//make sure "dur" and "transition" are arrays with at least the length of "ps"
+function formatArr(pl) {
+	var l = pl.ps.length;
+	if (!Array.isArray(pl.dur)) {
+		var v = pl.dur;
+		if (isNaN(v)) v = 100;
+		pl.dur = [v];
+	}
+	var l2 = pl.dur.length;
+	if (l2 < l)
+	{
+		for (var i = 0; i < l - l2; i++)
+			pl.dur.push(pl.dur[l2-1]);
+	}
+
+	if (!Array.isArray(pl.transition)) {
+		var v = pl.transition;
+		if (isNaN(v)) v = tr;
+		pl.transition = [v];
+	}
+	var l2 = pl.transition.length;
+	if (l2 < l)
+	{
+		for (var i = 0; i < l - l2; i++)
+			pl.transition.push(pl.transition[l2-1]);
+	}
+}
+
 function expand(i,a)
 {
 	if (!a) expanded[i] = !expanded[i];
 	d.getElementById('seg' +i).style.display = (expanded[i]) ? "block":"none";
 	d.getElementById('sege' +i).style.transform = (expanded[i]) ? "rotate(180deg)":"rotate(0deg)";
-	if (i > 100) { //presets
-		var p = i-100;
-		d.getElementById(`p${p}o`).style.background = (expanded[i] || p != currentPreset)?"var(--c-2)":"var(--c-6)";
-		if (d.getElementById('seg' +i).innerHTML == "") {
-      d.getElementById('seg' +i).innerHTML = makeP(p);
-      var papi = papiVal(p);
-      d.getElementById(`p${p}api`).value = papi;
-      if (papi.indexOf("Please") == 0) d.getElementById(`p${p}cstgl`).checked = true;
-      tglCs(p);
-		}
+	if (i < 100) return; //no preset, we are done
+
+	var p = i-100;
+	d.getElementById(`p${p}o`).style.background = (expanded[i] || p != currentPreset)?"var(--c-2)":"var(--c-6)";
+	if (d.getElementById('seg' +i).innerHTML != "") return;
+	if (isPlaylist(p)) {
+		plJson[p] = pJson[p].playlist;
+		//make sure all keys are present in plJson[p]
+		formatArr(plJson[p]);
+		if (isNaN(plJson[p].repeat)) plJson[p].repeat = 0;
+		if (!plJson[p].r) plJson[p].r = false;
+		if (isNaN(plJson[p].end)) plJson[p].end = 0;
+
+		d.getElementById('seg' +i).innerHTML = makeP(p,true);
+		refreshPlE(p);
+	} else {
+		d.getElementById('seg' +i).innerHTML = makeP(p);
 	}
+	var papi = papiVal(p);
+	d.getElementById(`p${p}api`).value = papi;
+	if (papi.indexOf("Please") == 0) d.getElementById(`p${p}cstgl`).checked = true;
+	tglCs(p);
 }
 
 function unfocusSliders() {

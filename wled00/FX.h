@@ -48,9 +48,6 @@
 #define MAX(a,b) ((a)>(b)?(a):(b))
 #endif
 
-/* Disable effects with high flash memory usage (currently TV simulator) - saves 18.5kB */
-//#define WLED_DISABLE_FX_HIGH_FLASH_USE
-
 /* Not used in all effects yet */
 #define WLED_FPS         42
 #define FRAMETIME        (1000/WLED_FPS)
@@ -64,7 +61,9 @@
   /* How much data bytes all segments combined may allocate */
   #define MAX_SEGMENT_DATA  2048
 #else
+#ifndef MAX_NUM_SEGMENTS
   #define MAX_NUM_SEGMENTS    16
+#endif
   #define MAX_NUM_TRANSITIONS 16
   #define MAX_SEGMENT_DATA  8192
 #endif
@@ -78,7 +77,7 @@
 #define SEGENV           _segment_runtimes[_segment_index]
 #define SEGLEN           _virtualSegmentLength
 #define SEGACT           SEGMENT.stop
-#define SPEED_FORMULA_L  5 + (50*(255 - SEGMENT.speed))/SEGLEN
+#define SPEED_FORMULA_L  5U + (50U*(255U - SEGMENT.speed))/SEGLEN
 #define RESET_RUNTIME    memset(_segment_runtimes, 0, sizeof(_segment_runtimes))
 
 // some common colors
@@ -168,7 +167,7 @@
 #define FX_MODE_POLICE_ALL              49
 #define FX_MODE_TWO_DOTS                50
 #define FX_MODE_TWO_AREAS               51
-#define FX_MODE_CIRCUS_COMBUSTUS        52
+#define FX_MODE_RUNNING_DUAL            52
 #define FX_MODE_HALLOWEEN               53
 #define FX_MODE_TRICOLOR_CHASE          54
 #define FX_MODE_TRICOLOR_WIPE           55
@@ -246,9 +245,10 @@ class WS2812FX {
   
   // segment parameters
   public:
-    typedef struct Segment { // 24 bytes
+    typedef struct Segment { // 25 (28 in memory?) bytes
       uint16_t start;
       uint16_t stop; //segment invalid if stop == 0
+      uint16_t offset;
       uint8_t speed;
       uint8_t intensity;
       uint8_t palette;
@@ -319,6 +319,27 @@ class WS2812FX {
         if (options & MIRROR)
           vLength = (vLength + 1) /2;  // divide by 2 if mirror, leave at least a single LED
         return vLength;
+      }
+      uint8_t differs(Segment& b) {
+        uint8_t d = 0;
+        if (start != b.start)         d |= SEG_DIFFERS_BOUNDS;
+        if (stop != b.stop)           d |= SEG_DIFFERS_BOUNDS;
+        if (offset != b.offset)       d |= SEG_DIFFERS_GSO;
+        if (grouping != b.grouping)   d |= SEG_DIFFERS_GSO;
+        if (spacing != b.spacing)     d |= SEG_DIFFERS_GSO;
+        if (opacity != b.opacity)     d |= SEG_DIFFERS_BRI;
+        if (mode != b.mode)           d |= SEG_DIFFERS_FX;
+        if (speed != b.speed)         d |= SEG_DIFFERS_FX;
+        if (intensity != b.intensity) d |= SEG_DIFFERS_FX;
+        if (palette != b.palette)     d |= SEG_DIFFERS_FX;
+
+        if ((options & 0b00101111) != (b.options & 0b00101111)) d |= SEG_DIFFERS_OPT;
+        for (uint8_t i = 0; i < NUM_COLORS; i++)
+        {
+          if (colors[i] != b.colors[i]) d |= SEG_DIFFERS_COL;
+        }
+
+        return d;
       }
     } segment;
 
@@ -505,7 +526,7 @@ class WS2812FX {
       _mode[FX_MODE_POLICE_ALL]              = &WS2812FX::mode_police_all;
       _mode[FX_MODE_TWO_DOTS]                = &WS2812FX::mode_two_dots;
       _mode[FX_MODE_TWO_AREAS]               = &WS2812FX::mode_two_areas;
-      _mode[FX_MODE_CIRCUS_COMBUSTUS]        = &WS2812FX::mode_circus_combustus;
+      _mode[FX_MODE_RUNNING_DUAL]            = &WS2812FX::mode_running_dual;
       _mode[FX_MODE_HALLOWEEN]               = &WS2812FX::mode_halloween;
       _mode[FX_MODE_TRICOLOR_CHASE]          = &WS2812FX::mode_tricolor_chase;
       _mode[FX_MODE_TRICOLOR_WIPE]           = &WS2812FX::mode_tricolor_wipe;
@@ -584,7 +605,7 @@ class WS2812FX {
     }
 
     void
-      finalizeInit(uint16_t countPixels, bool skipFirst),
+      finalizeInit(uint16_t countPixels),
       service(void),
       blur(uint8_t),
       fill(uint32_t),
@@ -609,10 +630,10 @@ class WS2812FX {
 
     bool
       isRgbw = false,
+      isOffRefreshRequred = false, //periodic refresh is required for the strip to remain off.
       gammaCorrectBri = false,
       gammaCorrectCol = true,
       applyToAllSelected = true,
-      segmentsAreIdentical(Segment* a, Segment* b),
       setEffectConfig(uint8_t m, uint8_t s, uint8_t i, uint8_t p),
       // return true if the strip is being sent pixel updates
       isUpdating(void);
@@ -636,6 +657,7 @@ class WS2812FX {
       getColorOrder(void),
       gamma8(uint8_t),
       gamma8_cal(uint8_t, float),
+      sin_gap(uint16_t),
       get_random_wheel_index(uint8_t);
 
     int8_t
@@ -729,7 +751,7 @@ class WS2812FX {
       mode_police_all(void),
       mode_two_dots(void),
       mode_two_areas(void),
-      mode_circus_combustus(void),
+      mode_running_dual(void),
       mode_bicolor_chase(void),
       mode_tricolor_chase(void),
       mode_tricolor_wipe(void),
@@ -802,7 +824,7 @@ class WS2812FX {
     CRGBPalette16 currentPalette;
     CRGBPalette16 targetPalette;
 
-    uint16_t _length, _lengthRaw, _virtualSegmentLength;
+    uint16_t _length, _virtualSegmentLength;
     uint16_t _rand16seed;
     uint8_t _brightness;
     uint16_t _usedSegmentData = 0;
@@ -814,7 +836,6 @@ class WS2812FX {
     void handle_palette(void);
 
     bool
-      _skipFirstMode,
       _triggered;
 
     mode_ptr _mode[MODE_COUNT]; // SRAM footprint: 4 bytes per element
@@ -829,7 +850,7 @@ class WS2812FX {
       dynamic(bool),
       scan(bool),
       theater_chase(uint32_t, uint32_t, bool),
-      running_base(bool),
+      running_base(bool,bool),
       larson_scanner(bool),
       sinelon_base(bool,bool),
       dissolve(uint32_t),
@@ -863,8 +884,8 @@ class WS2812FX {
     uint8_t _segment_index = 0;
     uint8_t _segment_index_palette_last = 99;
     segment _segments[MAX_NUM_SEGMENTS] = { // SRAM footprint: 24 bytes per element
-      // start, stop, speed, intensity, palette, mode, options, grouping, spacing, opacity (unused), color[]
-      { 0, 7, DEFAULT_SPEED, 128, 0, DEFAULT_MODE, NO_OPTIONS, 1, 0, 255, {DEFAULT_COLOR}}
+      // start, stop, offset, speed, intensity, palette, mode, options, grouping, spacing, opacity (unused), color[]
+      {0, 7, 0, DEFAULT_SPEED, 128, 0, DEFAULT_MODE, NO_OPTIONS, 1, 0, 255, {DEFAULT_COLOR}}
     };
     segment_runtime _segment_runtimes[MAX_NUM_SEGMENTS]; // SRAM footprint: 28 bytes per element
     friend class Segment_runtime;
@@ -884,7 +905,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Sparkle","Sparkle Dark","Sparkle+","Strobe","Strobe Rainbow","Strobe Mega","Blink Rainbow","Android","Chase","Chase Random",
 "Chase Rainbow","Chase Flash","Chase Flash Rnd","Rainbow Runner","Colorful","Traffic Light","Sweep Random","Running 2","Aurora","Stream",
 "Scanner","Lighthouse","Fireworks","Rain","Tetrix","Fire Flicker","Gradient","Loading","Police","Police All",
-"Two Dots","Two Areas","Circus","Halloween","Tri Chase","Tri Wipe","Tri Fade","Lightning","ICU","Multi Comet",
+"Two Dots","Two Areas","Running Dual","Halloween","Tri Chase","Tri Wipe","Tri Fade","Lightning","ICU","Multi Comet",
 "Scanner Dual","Stream 2","Oscillate","Pride 2015","Juggle","Palette","Fire 2012","Colorwaves","Bpm","Fill Noise",
 "Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Meteor Smooth","Railway","Ripple",
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
