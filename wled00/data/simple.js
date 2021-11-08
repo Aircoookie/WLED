@@ -61,7 +61,8 @@ function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3
 function sCol(na, col) {d.documentElement.style.setProperty(na, col);}
 function gId(c) {return d.getElementById(c);}
 function gEBCN(c) {return d.getElementsByClassName(c);}
-function isO(item) { return (item && typeof item === 'object' && !Array.isArray(item)); }
+function isEmpty(o) {return Object.keys(o).length === 0;}
+function isObj(i) { return (i && typeof i === 'object' && !Array.isArray(i)); }
 
 function applyCfg()
 {
@@ -191,6 +192,8 @@ async function onLoad()
 	var sett = localStorage.getItem('wledUiCfg');
 	if (sett) cfg = mergeDeep(cfg, JSON.parse(sett));
 
+	makeWS();
+
 	applyCfg();
 	if (cfg.theme.bg.url=="" || cfg.theme.bg.url === "https://picsum.photos/1920/1080") {
 		var iUrl = cfg.theme.bg.url;
@@ -235,7 +238,7 @@ async function onLoad()
 		loadPalettesData(redrawPalPrev);
 		loadFX(()=>{
 			loadPresets(()=>{
-				loadInfo(requestJson);
+				if (isObj(lastinfo) && isEmpty(lastinfo)) loadInfo(requestJson);	// if not filled by WS
 			});
 		});
 	});
@@ -446,7 +449,7 @@ function populatePresets()
 	pNum = 0;
 	for (var key of (arr||[]))
 	{
-		if (!isO(key[1])) continue;
+		if (!isObj(key[1])) continue;
 		let i = parseInt(key[0]);
 		var qll = key[1].ql;
 		if (qll) pQL.push([i, qll, pName(i)]);
@@ -462,9 +465,29 @@ function populatePresets()
 	populateQL();
 }
 
+function parseInfo() {
+	var li   = lastinfo;
+	var name = li.name;
+	gId('namelabel').innerHTML = name;
+//		if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)";
+	if (li.live) name = "(Live) " + name;
+	if (loc)     name = "(L) " + name;
+	d.title     = name;
+	isRgbw      = li.leds.wv;
+	ledCount    = li.leds.count;
+	syncTglRecv = li.str;
+	maxSeg      = li.leds.maxseg;
+	pmt         = li.fs.pmt;
+}
+
 function loadInfo(callback=null)
 {
 	var url = (loc?`http://${locip}`:'') + '/json/info';
+	var useWs = (ws && ws.readyState === WebSocket.OPEN);
+	if (useWs) {
+		ws.send('{"v":true}');
+		return;
+	}
 	fetch(url, {
 		method: 'get'
 	})
@@ -475,18 +498,10 @@ function loadInfo(callback=null)
 	.then(json => {
 		clearErrorToast();
 		lastinfo = json;
-		var name = json.name;
-		gId('namelabel').innerHTML = name;
-//		if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)";
-		if (json.live) name = "(Live) " + name;
-		if (loc) name = "(L) " + name;
-		d.title = name;
-		isRgbw = json.leds.wv;
-		ledCount = json.leds.count;
-		syncTglRecv = json.str;
-		maxSeg = json.leds.maxseg;
-		pmt = json.fs.pmt;
+		parseInfo();
+		showNodes();
 		if (isInfo) populateInfo(json);
+		updateUI();
 		reqsLegal = true;
 		if (!ws && lastinfo.ws > -1) setTimeout(makeWS,500);
 	})
@@ -860,23 +875,14 @@ function makeWS() {
 		clearErrorToast();
 	  	gId('connind').style.backgroundColor = "var(--c-l)";
 		// json object should contain json.info AND json.state (but may not)
-		var info = json.info;
-		if (info) {
-			var name = info.name;
-			lastinfo = info;
-			gId('namelabel').innerHTML = name;
-			//if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)";
-			if (info.live) name = "(Live) " + name;
-			if (loc) name = "(L) " + name;
-			d.title     = name;
-			isRgbw      = info.leds.wv;
-			ledCount    = info.leds.count;
-			syncTglRecv = info.str;
-			maxSeg      = info.leds.maxseg;
-			pmt         = info.fs.pmt;
-			if (isInfo) populateInfo(info);
+		var i = json.info;
+		if (i) {
+			lastinfo = i;
+			parseInfo();
+			showNodes();
+			if (isInfo) populateInfo(i);
 		} else
-			info = lastinfo;
+			i = lastinfo;
 		var s = json.state ? json.state : json;
 		readState(s);
 	};
@@ -1398,9 +1404,9 @@ function mergeDeep(target, ...sources)
 	if (!sources.length) return target;
 	const source = sources.shift();
 
-	if (isO(target) && isO(source)) {
+	if (isObj(target) && isObj(source)) {
 		for (const key in source) {
-			if (isO(source[key])) {
+			if (isObj(source[key])) {
 				if (!target[key]) Object.assign(target, { [key]: {} });
 				mergeDeep(target[key], source[key]);
 			} else {

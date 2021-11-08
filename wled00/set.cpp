@@ -415,7 +415,14 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   //USERMODS
   if (subPage == 8)
   {
+  #ifdef WLED_USE_DYNAMIC_JSON
     DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+  #else
+    while (jsonBufferLock) delay(1);
+    jsonBufferLock = true;
+    doc.clear();
+  #endif
+
     JsonObject um = doc.createNestedObject("um");
 
     size_t args = request->args();
@@ -490,6 +497,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     usermods.readFromConfig(um);  // force change of usermod parameters
   }
 
+  jsonBufferLock = false;
+  
   if (subPage != 2 && (subPage != 6 || !doReboot)) serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)
   if (subPage == 4) alexaInit();
 }

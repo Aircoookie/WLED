@@ -14,6 +14,7 @@ void getStringFromJson(char* dest, const char* src, size_t len) {
 }
 
 bool deserializeConfig(JsonObject doc, bool fromFS) {
+  bool needsSave = false;
   //int rev_major = doc["rev"][0]; // 1
   //int rev_minor = doc["rev"][1]; // 0
 
@@ -411,13 +412,12 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   DEBUG_PRINTLN(F("Starting usermod config."));
   JsonObject usermods_settings = doc["um"];
   if (!usermods_settings.isNull()) {
-    bool allComplete = usermods.readFromConfig(usermods_settings);
-    if (!allComplete && fromFS) serializeConfig();
+    needsSave = usermods.readFromConfig(usermods_settings);
   }
 
-  if (fromFS) return false;
+  if (fromFS) return needsSave;
   doReboot = doc[F("rb")] | doReboot;
-  return (doc["sv"] | true);
+  return (doc["sv"] | needsSave);
 }
 
 void deserializeConfigFromFS() {
@@ -427,19 +427,29 @@ void deserializeConfigFromFS() {
     return;
   }
 
+#ifdef WLED_USE_DYNAMIC_JSON
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+#else
+  while (jsonBufferLock) delay(1);
+  jsonBufferLock = true;
+  doc.clear();
+#endif
 
   DEBUG_PRINTLN(F("Reading settings from /cfg.json..."));
 
   success = readObjectFromFile("/cfg.json", nullptr, &doc);
   if (!success) { //if file does not exist, try reading from EEPROM
     deEEPSettings();
+    jsonBufferLock = false;
     return;
   }
 
   // NOTE: This routine deserializes *and* applies the configuration
   //       Therefore, must also initialize ethernet from this function
-  deserializeConfig(doc.as<JsonObject>(), true);  
+  bool needsSave = deserializeConfig(doc.as<JsonObject>(), true);
+  jsonBufferLock = false;
+
+  if (needsSave) serializeConfig(); // usermods required new prameters
 }
 
 void serializeConfig() {
@@ -447,7 +457,13 @@ void serializeConfig() {
 
   DEBUG_PRINTLN(F("Writing settings to /cfg.json..."));
 
+#ifdef WLED_USE_DYNAMIC_JSON
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+#else
+  while (jsonBufferLock) delay(1);
+  jsonBufferLock = true;
+  doc.clear();
+#endif
 
   JsonArray rev = doc.createNestedArray("rev");
   rev.add(1); //major settings revision
@@ -754,16 +770,26 @@ void serializeConfig() {
   File f = WLED_FS.open("/cfg.json", "w");
   if (f) serializeJson(doc, f);
   f.close();
+  jsonBufferLock = false;
 }
 
 //settings in /wsec.json, not accessible via webserver, for passwords and tokens
 bool deserializeConfigSec() {
   DEBUG_PRINTLN(F("Reading settings from /wsec.json..."));
 
+#ifdef WLED_USE_DYNAMIC_JSON
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+#else
+  while (jsonBufferLock) delay(1);
+  jsonBufferLock = true;
+  doc.clear();
+#endif
 
   bool success = readObjectFromFile("/wsec.json", nullptr, &doc);
-  if (!success) return false;
+  if (!success) {
+    jsonBufferLock = false;
+    return false;
+  }
 
   JsonObject nw_ins_0 = doc["nw"]["ins"][0];
   getStringFromJson(clientPass, nw_ins_0["psk"], 65);
@@ -795,13 +821,20 @@ bool deserializeConfigSec() {
   CJSON(wifiLock, ota[F("lock-wifi")]);
   CJSON(aOtaEnabled, ota[F("aota")]);
 
+  jsonBufferLock = false;
   return true;
 }
 
 void serializeConfigSec() {
   DEBUG_PRINTLN(F("Writing settings to /wsec.json..."));
 
+#ifdef WLED_USE_DYNAMIC_JSON
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+#else
+  while (jsonBufferLock) delay(1);
+  jsonBufferLock = true;
+  doc.clear();
+#endif
 
   JsonObject nw = doc.createNestedObject("nw");
 
@@ -836,4 +869,5 @@ void serializeConfigSec() {
   File f = WLED_FS.open("/wsec.json", "w");
   if (f) serializeJson(doc, f);
   f.close();
+  jsonBufferLock = false;
 }

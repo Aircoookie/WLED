@@ -572,18 +572,25 @@ void decodeIRJson(uint32_t code)
 {
   char objKey[10];
   String cmdStr;
-  DynamicJsonDocument irDoc(JSON_BUFFER_SIZE);
   JsonObject fdo;
   JsonObject jsonCmdObj;
+
+#ifdef WLED_USE_DYNAMIC_JSON
+  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+#else
+  while (jsonBufferLock) delay(1);
+  jsonBufferLock = true;
+  doc.clear();
+#endif
 
   sprintf_P(objKey, PSTR("\"0x%lX\":"), (unsigned long)code);
 
   // attempt to read command from ir.json
   // this may fail for two reasons: ir.json does not exist or IR code not found
-  // if the IR code is not found readObjectFromFile() will clean() irDoc JSON document
+  // if the IR code is not found readObjectFromFile() will clean() doc JSON document
   // so we can differentiate between the two
-  readObjectFromFile("/ir.json", objKey, &irDoc);
-  fdo = irDoc.as<JsonObject>();
+  readObjectFromFile("/ir.json", objKey, &doc);
+  fdo = doc.as<JsonObject>();
   lastValidCode = 0;
   if (fdo.isNull()) {
     //the received code does not exist
@@ -630,10 +637,11 @@ void decodeIRJson(uint32_t code)
   } else if (!jsonCmdObj.isNull()) {
     // command is JSON object
     //allow applyPreset() to reuse JSON buffer, or it would alloc. a second buffer and run out of mem.
-    fileDoc = &irDoc;
+    fileDoc = &doc;
     deserializeState(jsonCmdObj, CALL_MODE_BUTTON);
     fileDoc = nullptr;
   }
+  jsonBufferLock = false;
 }
 
 void initIR()

@@ -216,13 +216,13 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     }
     strip.setPixelSegment(255);
     strip.trigger();
-// this is now handled using the "frz" toggle.
   } else if (!elem["frz"] && iarr.isNull()) { //return to regular effect
     seg.setOption(SEG_OPTION_FREEZE, false);
   }
   return; // seg.differs(prev);
 }
 
+// deserializes WLED state (fileDoc points to doc object if called from web server)
 bool deserializeState(JsonObject root, byte callMode, byte presetId)
 {
   DEBUG_PRINTLN(F("Deserializing state"));
@@ -336,7 +336,8 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   int8_t ledmap = root[F("ledmap")] | -1;
   if (ledmap >= 0) {
-    strip.deserializeMap(ledmap);
+    //strip.deserializeMap(ledmap); // requires separate JSON buffer
+    loadLedmap = ledmap;
   }
 
   byte ps = root[F("psave")];
@@ -912,37 +913,46 @@ void serveJson(AsyncWebServerRequest* request)
     return;
   }
 
+#ifdef WLED_USE_DYNAMIC_JSON
   AsyncJsonResponse* response = new AsyncJsonResponse(JSON_BUFFER_SIZE);
-  JsonObject doc = response->getRoot();
+#else
+  while (jsonBufferLock) delay(1);
+  jsonBufferLock = true;
+  doc.clear(); 
+  AsyncJsonResponse *response = new AsyncJsonResponse(&doc);
+#endif
+
+  JsonObject lDoc = response->getRoot();
 
   switch (subJson)
   {
     case 1: //state
-      serializeState(doc); break;
+      serializeState(lDoc); break;
     case 2: //info
-      serializeInfo(doc); break;
+      serializeInfo(lDoc); break;
     case 4: //node list
-      serializeNodes(doc); break;
+      serializeNodes(lDoc); break;
     case 5: //palettes
-      serializePalettes(doc, request); break;
+      serializePalettes(lDoc, request); break;
     default: //all
-      JsonObject state = doc.createNestedObject("state");
+      JsonObject state = lDoc.createNestedObject("state");
       serializeState(state);
-      JsonObject info = doc.createNestedObject("info");
+      JsonObject info = lDoc.createNestedObject("info");
       serializeInfo(info);
       if (subJson != 3)
       {
-        //doc[F("effects")]  = serialized((const __FlashStringHelper*)JSON_mode_names);
-        JsonArray effects = doc.createNestedArray(F("effects"));
+        //lDoc[F("effects")]  = serialized((const __FlashStringHelper*)JSON_mode_names);
+        JsonArray effects = lDoc.createNestedArray(F("effects"));
         deserializeModeNames(effects, JSON_mode_names); // remove WLED-SR extensions from effect names
-        doc[F("palettes")] = serialized((const __FlashStringHelper*)JSON_palette_names);
+        lDoc[F("palettes")] = serialized((const __FlashStringHelper*)JSON_palette_names);
       }
   }
 
-  DEBUG_PRINTF("JSON buffer size: %u for request: %d\n", doc.memoryUsage(), subJson);
+  DEBUG_PRINTF("JSON buffer size: %u for request: %d\n", lDoc.memoryUsage(), subJson);
 
   response->setLength();
   request->send(response);
+  jsonBufferLock = false;
 }
 
 #define MAX_LIVE_LEDS 180

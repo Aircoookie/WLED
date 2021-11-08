@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2111031
+#define VERSION 2111051
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -597,9 +597,16 @@ WLED_GLOBAL BusManager busses _INIT(BusManager());
 WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
 WLED_GLOBAL BusConfig* busConfigs[WLED_MAX_BUSSES] _INIT({nullptr}); //temporary, to remember values from network callback until after
 WLED_GLOBAL bool doInitBusses _INIT(false);
+WLED_GLOBAL int8_t loadLedmap _INIT(-1);
 
 // Usermod manager
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
+
+// global ArduinoJson buffer
+#ifndef WLED_USE_DYNAMIC_JSON
+WLED_GLOBAL StaticJsonDocument<JSON_BUFFER_SIZE> doc;
+#endif
+WLED_GLOBAL volatile bool jsonBufferLock _INIT(false);
 
 // enable additional debug output
 #ifdef WLED_DEBUG

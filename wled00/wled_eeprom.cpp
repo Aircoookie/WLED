@@ -382,8 +382,15 @@ void deEEP() {
   
   DEBUG_PRINTLN(F("Preset file not found, attempting to load from EEPROM"));
   DEBUGFS_PRINTLN(F("Allocating saving buffer for dEEP"));
-  DynamicJsonDocument dDoc(JSON_BUFFER_SIZE *2);
-  JsonObject sObj = dDoc.to<JsonObject>();
+#ifdef WLED_USE_DYNAMIC_JSON
+  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+#else
+  while (jsonBufferLock) delay(1);
+  jsonBufferLock = true;
+  doc.clear();
+#endif
+
+  JsonObject sObj = doc.to<JsonObject>();
   sObj.createNestedObject("0");
 
   EEPROM.begin(EEPSIZE);
@@ -442,8 +449,6 @@ void deEEP() {
       }
     }
 
-    
-    
     for (uint16_t index = 1; index <= 16; index++) { //copy macros to presets.json
       char m[65];
       readStringFromEEPROM(1024+64*(index-1), m, 64);
@@ -465,8 +470,11 @@ void deEEP() {
     errorFlag = ERR_FS_GENERAL;
     return;
   }
-  serializeJson(dDoc, f);
+  serializeJson(doc, f);
   f.close();
+
+  jsonBufferLock = false;
+
   DEBUG_PRINTLN(F("deEEP complete!"));
 }
 

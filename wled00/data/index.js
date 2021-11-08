@@ -66,6 +66,8 @@ function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3
 function sCol(na, col) {d.documentElement.style.setProperty(na, col);}
 function gId(c) {return d.getElementById(c);}
 function gEBCN(c) {return d.getElementsByClassName(c);}
+function isEmpty(o) {return Object.keys(o).length === 0;}
+function isObj(i) {return (i && typeof i === 'object' && !Array.isArray(i));}
 
 function applyCfg()
 {
@@ -210,6 +212,8 @@ function onLoad()
 	var sett = localStorage.getItem('wledUiCfg');
 	if (sett) cfg = mergeDeep(cfg, JSON.parse(sett));
 
+	makeWS();
+
 	resetPUtil();
 
 	applyCfg();
@@ -249,7 +253,7 @@ function onLoad()
 		loadPalettesData(redrawPalPrev);
 		loadFX(()=>{
 			loadPresets(()=>{
-				loadInfo(requestJson);
+				if (isObj(lastinfo) && isEmpty(lastinfo)) loadInfo(requestJson);	// if not filled by WS
 			});
 		});
 	});
@@ -529,7 +533,7 @@ function populatePresets(fromls)
 	pNum = 0;
 	for (var key of (arr||[]))
 	{
-		if (!isObject(key[1])) continue;
+		if (!isObj(key[1])) continue;
 		let i = parseInt(key[0]);
 		var qll = key[1].ql;
 		if (qll) pQL.push([i, qll, pName(i)]);
@@ -579,6 +583,11 @@ function parseInfo() {
 function loadInfo(callback=null)
 {
 	var url = (loc?`http://${locip}`:'') + '/json/info';
+	var useWs = (ws && ws.readyState === WebSocket.OPEN);
+	if (useWs) {
+		ws.send('{"v":true}');
+		return;
+	}
 	fetch(url, {
 		method: 'get'
 	})
@@ -2283,19 +2292,14 @@ function togglePcMode(fromB = false)
 	lastw = w;
 }
 
-function isObject(item)
-{
-	return (item && typeof item === 'object' && !Array.isArray(item));
-}
-
 function mergeDeep(target, ...sources)
 {
 	if (!sources.length) return target;
 	const source = sources.shift();
 
-	if (isObject(target) && isObject(source)) {
+	if (isObj(target) && isObj(source)) {
 		for (const key in source) {
-			if (isObject(source[key])) {
+			if (isObj(source[key])) {
 				if (!target[key]) Object.assign(target, { [key]: {} });
 				mergeDeep(target[key], source[key]);
 			} else {

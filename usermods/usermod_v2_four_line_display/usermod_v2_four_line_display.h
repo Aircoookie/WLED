@@ -657,8 +657,9 @@ class FourLineDisplayUsermod : public Usermod {
       top[FPSTR(_enabled)]       = enabled;
       JsonArray io_pin = top.createNestedArray("pin");
       for (byte i=0; i<5; i++) io_pin.add(ioPin[i]);
-      top["help4PinTypes"]       = F("Clk,Data,CS,DC,RST"); // help for Settings page
+      top["help4Pins"]           = F("Clk,Data,CS,DC,RST"); // help for Settings page
       top["type"]                = type;
+      top["help4Type"]           = F("1=SSD1306,2=SH1106,3=SSD1306_128x64,4=SSD1305,5=SSD1305_128x64,6=SSD1306_SPI,7=SSD1306_SPI_128x64"); // help for Settings page
       top[FPSTR(_flip)]          = (bool) flip;
       top[FPSTR(_contrast)]      = contrast;
       top[FPSTR(_refreshRate)]   = refreshRate/1000;
