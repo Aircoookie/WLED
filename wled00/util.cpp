@@ -72,7 +72,7 @@ bool oappendi(int i)
 bool oappend(const char* txt)
 {
   uint16_t len = strlen(txt);
-  if (olen + len >= OMAX)
+  if (olen + len >= SETTINGS_STACK_BUF_SIZE)
     return false;        // buffer full
   strcpy(obuf + olen, txt);
   olen += len;
