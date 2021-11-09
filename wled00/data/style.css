@@ -35,6 +35,9 @@ input {
   font-family: Verdana, sans-serif;
   border: 0.5ch solid #333;
 }
+input:disabled {
+  color: #888;
+}
 input[type="number"] {
   width: 4em;
   margin: 2px;

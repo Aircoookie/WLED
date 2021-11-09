@@ -2,6 +2,33 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2110110
+
+-   Version bump to 0.13.0-b4 "Toki"
+-   Added option for bus refresh if off (PR #2259)
+-   New auto segment logic
+-   Fixed current calculations for virtual or non-linear configs (PR #2262)
+
+#### Build 2110060
+
+-   Added virtual network DDP busses (PR #2245)
+-   Allow playlist as end preset in playlist
+-   Improved bus start field UX
+-   Pin reservations improvements (PR #2214)
+
+#### Build 2109220
+
+-   Version bump to 0.13.0-b3 "Toki"
+-   Added segment names (PR #2184)
+-   Improved Police and other effects (PR #2184)
+-   Reverted PR #1902 (Live color correction - will be implemented as usermod) (PR #2175)
+-   Added transitions for segment on/off
+-   Improved number of sparks/stars in Fireworks effect with low number of segments
+-   Fixed segment name edit pencil disappearing with request
+-   Fixed color transition active even if the segment is off
+-   Disallowed file upload with OTA lock active
+-   Fixed analog invert option missing (PR #2219)
+
 #### Build 2109100
 
 -   Added an auto create segments per bus setting

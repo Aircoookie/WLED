@@ -16,6 +16,10 @@ bool isIp(String str) {
 }
 
 void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final){
+  if (otaLock) {
+    if (final) request->send(500, "text/plain", F("Please unlock OTA in security settings!"));
+    return;
+  }
   if(!index){
     request->_tempFile = WLED_FS.open(filename, "w");
     DEBUG_PRINT("Uploading ");
@@ -383,7 +387,7 @@ String dmxProcessor(const String& var)
       mapJS += "\nCN=" + String(DMXChannels) + ";\n";
       mapJS += "CS=" + String(DMXStart) + ";\n";
       mapJS += "CG=" + String(DMXGap) + ";\n";
-      mapJS += "LC=" + String(ledCount) + ";\n";
+      mapJS += "LC=" + String(strip.getLengthTotal()) + ";\n";
       mapJS += "var CH=[";
       for (int i=0;i<15;i++) {
         mapJS += String(DMXFixtureMap[i]) + ",";

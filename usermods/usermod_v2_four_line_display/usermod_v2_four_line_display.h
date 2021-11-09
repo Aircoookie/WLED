@@ -114,6 +114,7 @@ class FourLineDisplayUsermod : public Usermod {
     U8X8 *u8x8 = nullptr;           // pointer to U8X8 display object
     #ifndef FLD_SPI_DEFAULT
     int8_t ioPin[5] = {FLD_PIN_SCL, FLD_PIN_SDA, -1, -1, -1};        // I2C pins: SCL, SDA
+    uint32_t ioFrequency = 400000;  // in Hz (minimum is 100000, baseline is 400000 and maximum should be 3400000)
     DisplayType type = SSD1306;     // display type
     #else
     int8_t ioPin[5] = {FLD_PIN_CLOCKSPI, FLD_PIN_DATASPI, FLD_PIN_CS, FLD_PIN_DC, FLD_PIN_RESET}; // SPI pins: CLK, MOSI, CS, DC, RST
@@ -155,6 +156,7 @@ class FourLineDisplayUsermod : public Usermod {
     static const char _flip[];
     static const char _sleepMode[];
     static const char _clockMode[];
+    static const char _busClkFrequency[];
 
     // If display does not work or looks corrupted check the
     // constructor reference:
@@ -248,6 +250,7 @@ class FourLineDisplayUsermod : public Usermod {
 
       initDone = true;
       DEBUG_PRINTLN(F("Starting display."));
+      if (!(type == SSD1306_SPI || type == SSD1306_SPI64)) u8x8->setBusClock(ioFrequency);  // can be used for SPI too
       u8x8->begin();
       setFlipMode(flip);
       setContrast(contrast); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
@@ -346,8 +349,8 @@ class FourLineDisplayUsermod : public Usermod {
           (knownEffectIntensity != effectIntensity) ||
           (knownMode != strip.getMode()) ||
           (knownPalette != strip.getSegment(0).palette)) {
-        knownHour = 99; // force time update
-        clear();
+        knownHour = 99;   // force time update
+        lastRedraw = now; // update lastRedraw marker
       } else if (sleepMode && !displayTurnedOff && ((now - lastRedraw)/1000)%5 == 0) {
         // change line every 5s
         showName = !showName;
@@ -372,13 +375,13 @@ class FourLineDisplayUsermod : public Usermod {
             break;
         }
         knownHour = 99; // force time update
+        // do not update lastRedraw marker if just switching row contenet
       } else {
         // Nothing to change.
         // Turn off display after 3 minutes with no change.
         if(sleepMode && !displayTurnedOff && (millis() - lastRedraw > screenTimeout)) {
           // We will still check if there is a change in redraw()
           // and turn it back on if it changed.
-          clear(); // force screen clear
           sleepOrClock(true);
         } else if (displayTurnedOff && clockMode) {
           showTime();
@@ -386,9 +389,6 @@ class FourLineDisplayUsermod : public Usermod {
         return;
       }
 
-      // do not update lastRedraw marker if just switching row contenet
-      if (((now - lastRedraw)/1000)%5 != 0) lastRedraw = now;
-      
       // Turn the display back on
       if (displayTurnedOff) sleepOrClock(false);
 
@@ -409,7 +409,7 @@ class FourLineDisplayUsermod : public Usermod {
       center(line, getCols()-2);
       drawString(1, 0, line.c_str());
       // Print `~` char to indicate that SSID is longer, than our display
-      if (knownSsid.length() > getCols()-1) {
+      if (knownSsid.length() > (int)getCols()-1) {
         drawString(getCols() - 1, 0, "~");
       }
 
@@ -523,14 +523,23 @@ class FourLineDisplayUsermod : public Usermod {
      */
     void overlay(const char* line1, const char *line2, long showHowLong) {
       if (displayTurnedOff) {
-        // Turn the display back on
+        // Turn the display back on (includes clear())
         sleepOrClock(false);
+      } else {
+        clear();
       }
 
       // Print the overlay
-      clear();
-      if (line1) drawString(0, 1*lineHeight, line1);
-      if (line2) drawString(0, 2*lineHeight, line2);
+      if (line1) {
+        String buf = line1;
+        center(buf, getCols());
+        drawString(0, 1*lineHeight, buf.c_str());
+      }
+      if (line2) {
+        String buf = line2;
+        center(buf, getCols());
+        drawString(0, 2*lineHeight, buf.c_str());
+      }
       overlayUntil = millis() + showHowLong;
     }
 
@@ -557,6 +566,7 @@ class FourLineDisplayUsermod : public Usermod {
      * Enable sleep (turn the display off) or clock mode.
      */
     void sleepOrClock(bool enabled) {
+      clear();
       if (enabled) {
         if (clockMode) showTime();
         else           setPowerSave(1);
@@ -582,8 +592,6 @@ class FourLineDisplayUsermod : public Usermod {
       if (knownMinute == minuteCurrent && knownHour == hourCurrent) {
         // Time hasn't changed.
         if (!fullScreen) return;
-      } else {
-        //if (fullScreen) clear();
       }
       knownMinute = minuteCurrent;
       knownHour = hourCurrent;
@@ -678,6 +686,7 @@ class FourLineDisplayUsermod : public Usermod {
       top[FPSTR(_screenTimeOut)] = screenTimeout/1000;
       top[FPSTR(_sleepMode)]     = (bool) sleepMode;
       top[FPSTR(_clockMode)]     = (bool) clockMode;
+      top[FPSTR(_busClkFrequency)] = ioFrequency/1000;
       DEBUG_PRINTLN(F("4 Line Display config saved."));
     }
 
@@ -709,6 +718,7 @@ class FourLineDisplayUsermod : public Usermod {
       screenTimeout = (top[FPSTR(_screenTimeOut)] | screenTimeout/1000) * 1000;
       sleepMode     = top[FPSTR(_sleepMode)] | sleepMode;
       clockMode     = top[FPSTR(_clockMode)] | clockMode;
+      ioFrequency   = min(3400, max(100, (int)(top[FPSTR(_busClkFrequency)] | ioFrequency/1000))) * 1000;  // limit frequency
 
       DEBUG_PRINT(FPSTR(_name));
       if (!initDone) {
@@ -734,12 +744,13 @@ class FourLineDisplayUsermod : public Usermod {
           setup();
           needsRedraw |= true;
         }
+        if (!(type == SSD1306_SPI || type == SSD1306_SPI64)) u8x8->setBusClock(ioFrequency); // can be used for SPI too
         setContrast(contrast);
         setFlipMode(flip);
         if (needsRedraw && !wakeDisplay()) redraw(true);
       }
       // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
-      return !(top["pin"][2]).isNull();
+      return !(top[_busClkFrequency]).isNull();
     }
 
     /*
@@ -752,10 +763,11 @@ class FourLineDisplayUsermod : public Usermod {
 };
 
 // strings to reduce flash memory usage (used more than twice)
-const char FourLineDisplayUsermod::_name[]          PROGMEM = "4LineDisplay";
-const char FourLineDisplayUsermod::_contrast[]      PROGMEM = "contrast";
-const char FourLineDisplayUsermod::_refreshRate[]   PROGMEM = "refreshRateSec";
-const char FourLineDisplayUsermod::_screenTimeOut[] PROGMEM = "screenTimeOutSec";
-const char FourLineDisplayUsermod::_flip[]          PROGMEM = "flip";
-const char FourLineDisplayUsermod::_sleepMode[]     PROGMEM = "sleepMode";
-const char FourLineDisplayUsermod::_clockMode[]     PROGMEM = "clockMode";
+const char FourLineDisplayUsermod::_name[]            PROGMEM = "4LineDisplay";
+const char FourLineDisplayUsermod::_contrast[]        PROGMEM = "contrast";
+const char FourLineDisplayUsermod::_refreshRate[]     PROGMEM = "refreshRateSec";
+const char FourLineDisplayUsermod::_screenTimeOut[]   PROGMEM = "screenTimeOutSec";
+const char FourLineDisplayUsermod::_flip[]            PROGMEM = "flip";
+const char FourLineDisplayUsermod::_sleepMode[]       PROGMEM = "sleepMode";
+const char FourLineDisplayUsermod::_clockMode[]       PROGMEM = "clockMode";
+const char FourLineDisplayUsermod::_busClkFrequency[] PROGMEM = "i2c-freq-kHz";

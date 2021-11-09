@@ -506,12 +506,12 @@ function populatePresets(fromls)
 			pJson["0"] = {};
 			localStorage.setItem("wledP", JSON.stringify(pJson));
 		}
-    pmtLS = pmt;
-    for (var a = 0; a < is.length; a++) {
-      let i = is[a];
-      if (expanded[i+100]) expand(i+100, true);
-    }
-		makePlSel(arr);
+		pmtLS = pmt;
+		for (var a = 0; a < is.length; a++) {
+		let i = is[a];
+		if (expanded[i+100]) expand(i+100, true);
+		}
+		//makePlSel(arr);
 	} else { presetError(true); }
 	updatePA();
 	populateQL();
@@ -578,11 +578,13 @@ function populateSegments(s)
 				<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>
 				<span class="checkmark schk"></span>
 			</label>
-			<div class="segname" onclick="selSegEx(${i})">
-				Segment ${i}
+			<div class="segname">
+				<div class="segntxt" onclick="selSegEx(${i})">${inst.n ? inst.n : "Segment "+i}</div>
+        <i class="icons edit-icon ${expanded[i] ? "expanded":""}" id="seg${i}nedit" onclick="tglSegn(${i})">&#xe2c6;</i>
 			</div>
 			<i class="icons e-icon flr ${expanded[i] ? "exp":""}" id="sege${i}" onclick="expand(${i})">&#xe395;</i>
 			<div class="segin ${expanded[i] ? "expanded":""}" id="seg${i}">
+				<input type="text" class="ptxt stxt noslide" id="seg${i}t" autocomplete="off" maxlength=32 value="${inst.n?inst.n:""}" placeholder="Enter name..."/>
 				<div class="sbs">
 				<i class="icons e-icon pwr ${powered[i] ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})">&#xe08f;</i>
 				<div class="sliderwrap il sws">
@@ -649,7 +651,7 @@ function populateSegments(s)
 function populateEffects(effects)
 {
 	var html = `<div class="searchbar"><input type="text" class="search" placeholder="Search" oninput="search(this)" />
-    <i class="icons search-cancel-icon" onclick="cancelSearch(this)">&#xe38f;</i></div>`;
+  <i class="icons search-icon">&#xe0a1;</i><i class="icons search-cancel-icon" onclick="cancelSearch(this)">&#xe38f;</i></div>`;
 
 	effects.shift(); //remove solid
 	for (let i = 0; i < effects.length; i++) {
@@ -695,7 +697,7 @@ function populatePalettes(palettes)
 	});
 	
 	var html = `<div class="searchbar"><input type="text" class="search" placeholder="Search" oninput="search(this)" />
-  <i class="icons search-cancel-icon" onclick="cancelSearch(this)">&#xe38f;</i></div>`;
+  <i class="icons search-icon">&#xe0a1;</i><i class="icons search-cancel-icon" onclick="cancelSearch(this)">&#xe38f;</i></div>`;
 	for (let i = 0; i < palettes.length; i++) {
 		html += generateListItemHtml(
 			'palette',
@@ -1258,9 +1260,11 @@ function makeSeg() {
 	var cn = `<div class="seg">
 			<div class="segname newseg">
 				New segment ${lowestUnused}
+        <i class="icons edit-icon expanded" onclick="tglSegn(${lowestUnused})">&#xe2c6;</i>
 			</div>
 			<br>
 			<div class="segin expanded">
+        <input type="text" class="ptxt stxt noslide" id="seg${lowestUnused}t" autocomplete="off" maxlength=32 value="" placeholder="Enter name..."/>
 				<table class="segt">
 					<tr>
 						<td class="segtd">Start LED</td>
@@ -1292,14 +1296,16 @@ var plJson = {"0":{
 	"end": 0	
 }};
 
-var plSelContent = "";
-function makePlSel(arr) {
-	plSelContent = "";
+function makePlSel(incPl=false) {
+	var plSelContent = "";
+	delete pJson["0"];	// remove filler preset
+	var arr = Object.entries(pJson);
 	for (var i = 0; i < arr.length; i++) {
 		var n = arr[i][1].n ? arr[i][1].n : "Preset " + arr[i][0];
-		if (arr[i][1].playlist && arr[i][1].playlist.ps) continue; //remove playlists, sub-playlists not yet supported
+		if (!incPl && arr[i][1].playlist && arr[i][1].playlist.ps) continue; //remove playlists, sub-playlists not yet supported
 		plSelContent += `<option value=${arr[i][0]}>${n}</option>`
 	}
+	return plSelContent;
 }
 
 function refreshPlE(p) {
@@ -1387,7 +1393,7 @@ function makeP(i,pl) {
   End preset:<br>
   <select class="btn sel sel-ple" id="pl${i}selEnd" onchange="plR(${i})" data-val=${plJson[i].end?plJson[i].end:0}>
 		<option value=0>None</option>
-    ${plSelContent}
+    ${makePlSel(true)}
   </select>
 	</div>
   <button class="btn btn-i btn-p" onclick="testPl(${i}, this)"><i class='icons btn-icon'>&#xe139;</i>Test</button>`;
@@ -1405,7 +1411,7 @@ function makeP(i,pl) {
 
 	return `
 	<input type="text" class="ptxt noslide" id="p${i}txt" autocomplete="off" maxlength=32 value="${(i>0)?pName(i):""}" placeholder="Enter name..."/><br>
-	<div class="c">Quick load label: <input type="text" class="stxt noslide" maxlength=2 value="${qlName(i)}" id="p${i}ql" autocomplete="off"/></div>
+	<div class="c">Quick load label: <input type="text" class="qltxt noslide" maxlength=2 value="${qlName(i)}" id="p${i}ql" autocomplete="off"/></div>
 	<div class="h">(leave empty for no Quick load button)</div>
 	<div ${pl&&i==0?"style='display:none'":""}>
 	<label class="check revchkl">
@@ -1445,7 +1451,7 @@ function makePlEntry(p,i) {
   return `
   <div class="plentry">
     <select class="btn sel sel-pl" onchange="plePs(${p},${i},this)" data-val=${plJson[p].ps[i]} data-index=${i}>
-			${plSelContent}
+		${makePlSel()}
     </select>
 		<button class="btn btn-i btn-xs btn-pl-del" onclick="delPl(${p},${i})"><i class="icons btn-icon">&#xe037;</i></button>
 		<div class="h plnl">Duration</div><div class="h plnl">Transition</div><div class="h pli">#${i+1}</div><br>
@@ -1482,6 +1488,12 @@ function tglCs(i){
 	d.getElementById(`p${i}o2`).style.display = !pss? "block" : "none";
 }
 
+function tglSegn(s)
+{
+  d.getElementById(`seg${s}t`).style.display =
+    (window.getComputedStyle(d.getElementById(`seg${s}t`)).display === "none") ? "inline":"none";
+}
+
 function selSegEx(s)
 {
 	var obj = {"seg":[]};
@@ -1498,10 +1510,11 @@ function selSeg(s){
 }
 
 function setSeg(s){
+	var name  = d.getElementById(`seg${s}t`).value;
 	var start = parseInt(d.getElementById(`seg${s}s`).value);
 	var stop	= parseInt(d.getElementById(`seg${s}e`).value);
 	if (stop <= start) {delSeg(s); return;}
-	var obj = {"seg": {"id": s, "start": start, "stop": (cfg.comp.seglen?start:0)+stop}};
+	var obj = {"seg": {"id": s, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop}};
 	if (d.getElementById(`seg${s}grp`))
 	{
 		var grp = parseInt(d.getElementById(`seg${s}grp`).value);
@@ -1601,9 +1614,8 @@ function setLor(i) {
 
 function setPreset(i) {
 	var obj = {"ps": i};
-
+	if (isPlaylist(i)) obj.on = true;	//force on
 	showToast("Loading preset " + pName(i) +" (" + i + ")");
-
 	requestJson(obj);
 }
 
@@ -1636,6 +1648,7 @@ function saveP(i,pl) {
 	} else {
 		if (pl) {
 			obj.playlist = plJson[i];
+			obj.on = true;
 			obj.o = true;
 		} else {
 			obj.ib = d.getElementById(`p${i}ibtgl`).checked;
@@ -1651,10 +1664,10 @@ function saveP(i,pl) {
 	requestJson(obj);
 	if (obj.o) {
 		pJson[pI] = obj;
-    delete pJson[pI].psave;
-    delete pJson[pI].o;
-    delete pJson[pI].v;
-    delete pJson[pI].time;
+		delete pJson[pI].psave;
+		delete pJson[pI].o;
+		delete pJson[pI].v;
+		delete pJson[pI].time;
 	} else {
 		pJson[pI] = {"n":pN, "win":"Please refresh the page to see this newly saved command."};
 		if (obj.win) pJson[pI].win = obj.win;
@@ -1675,6 +1688,7 @@ function testPl(i,bt) {
 	bt.innerHTML = "<i class='icons btn-icon'>&#xe38f;</i>Stop";
 	var obj = {};
 	obj.playlist = plJson[i];
+	obj.on = true;
 	requestJson(obj);
 }
 
@@ -1955,7 +1969,10 @@ function expand(i,a)
 	if (!a) expanded[i] = !expanded[i];
 	d.getElementById('seg' +i).style.display = (expanded[i]) ? "block":"none";
 	d.getElementById('sege' +i).style.transform = (expanded[i]) ? "rotate(180deg)":"rotate(0deg)";
-	if (i < 100) return; //no preset, we are done
+	if (i < 100) {
+    d.getElementById(`seg${i}nedit`).style.display = (expanded[i]) ? "inline":"none";
+    return; //no preset, we are done
+  }
 
 	var p = i-100;
 	d.getElementById(`p${p}o`).style.background = (expanded[i] || p != currentPreset)?"var(--c-2)":"var(--c-6)";
