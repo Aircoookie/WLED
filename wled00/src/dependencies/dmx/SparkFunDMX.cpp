@@ -27,8 +27,8 @@ Distributed as-is; no warranty is given.
 
 //int enablePin = 21;		//dafault on ESP32
 //int rxPin = 16;
-int enablePin = 4;
-int rxPin = 12;
+int enablePin = 21;
+int rxPin = 16;
 int txPin = 17;
 
 //DMX value array and size. Entry 0 will hold startbyte
