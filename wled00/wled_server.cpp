@@ -392,7 +392,7 @@ void serveMessage(AsyncWebServerRequest* request, uint16_t code, const String& h
 String settingsProcessor(const String& var)
 {
   if (var == "CSS") {
-    char buf[2048];
+    char buf[SETTINGS_STACK_BUF_SIZE];
     buf[0] = 0;
     getSettingsJS(optionType, buf);
     return String(buf);
