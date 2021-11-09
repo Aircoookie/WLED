@@ -60,7 +60,7 @@ void handleDMX()
 }
 
 void initDMX() {
-  dmx.initWrite(512);        // initialize with bus length
+  dmx.init(512);        // initialize with bus length
 }
 
 #else
