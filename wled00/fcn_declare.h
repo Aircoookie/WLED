@@ -95,9 +95,9 @@ void onHueData(void* arg, AsyncClient* client, void *data, size_t len);
 
 //improv.cpp
 void handleImprovPacket();
-void sendImprovStateResponse(uint8_t state, bool error = false, File *f = nullptr);
-void sendImprovInfoResponse(File *f);
-void sendImprovRFCResponse();
+void sendImprovStateResponse(uint8_t state, bool error = false);
+void sendImprovInfoResponse();
+void sendImprovRPCResponse(uint8_t commandId);
 
 //ir.cpp
 bool decodeIRCustom(uint32_t code);

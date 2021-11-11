@@ -720,14 +720,21 @@ void WLED::handleConnection()
       interfacesInited = false;
       initConnection();
     }
-    if (now - lastReconnectAttempt > ((stac) ? 300000 : 20000) && WLED_WIFI_CONFIGURED)
+    if (now - lastReconnectAttempt > ((stac) ? 300000 : 20000) && WLED_WIFI_CONFIGURED) {
+      sendImprovStateResponse(0x03, true);
       initConnection();
+    }
     if (!apActive && now - lastReconnectAttempt > 12000 && (!wasConnected || apBehavior == AP_BEHAVIOR_NO_CONN))
       initAP();
-  } else if (!interfacesInited) {        // newly connected
+  } else if (!interfacesInited) { //newly connected
     DEBUG_PRINTLN("");
     DEBUG_PRINT(F("Connected! IP address: "));
     DEBUG_PRINTLN(Network.localIP());
+    if (improvActive) {
+      if (improvError == 3) sendImprovStateResponse(0x00, true);
+      sendImprovStateResponse(0x04);
+      if (improvActive == 2) sendImprovRPCResponse(0x01);
+    }
     initInterfaces();
     userConnected();
     usermods.connected();

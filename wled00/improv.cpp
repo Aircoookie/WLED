@@ -12,6 +12,8 @@
 
 #define IMPROV_VERSION 1
 
+void parseWiFiCommand(char *rpcData);
+
 enum ImprovPacketType {
   Current_State = 0x01,
   Error_State = 0x02,
@@ -40,11 +42,9 @@ void handleImprovPacket() {
   uint16_t packetByte = 0;
   uint8_t packetLen = 9;
 
-  File f = WLED_FS.open("/improvon.log","a");
-
   bool isProvisioning = false;
-  char ssid[40], pass[70];
-  uint8_t ssidLen = 0, passLen = 0;
+  char rpcData[128];
+  rpcData[0] = 0;
 
   while (!timeout) {
     if (Serial.available() < 1) {
@@ -55,7 +55,7 @@ void handleImprovPacket() {
     }
     byte next = Serial.read();
     DIMPROV_PRINT("Received improv byte: "); DIMPROV_PRINTF("%x\r\n",next);
-    f.write(next);
+    //f.write(next);
     switch (packetByte) {
       case ImprovPacketByte::Version: {
         if (next != IMPROV_VERSION) {
@@ -68,10 +68,18 @@ void handleImprovPacket() {
           DIMPROV_PRINTF("Non RPC-command improv packet type %i\n",next);
           return;
         }
+        if (!improvActive) improvActive = 1;
       } break;
       case ImprovPacketByte::Length: packetLen = 9 + next; break;
       default: {
-        if (packetByte >= packetLen -1) {f.close(); return;}
+        if (packetByte >= packetLen -1) { //this disregards the checksum (except RPC)
+          //f.close();
+          if (isProvisioning) {
+            rpcData[packetByte -10] = next;
+            parseWiFiCommand(rpcData);
+          }
+          return;
+        }
         if (packetByte < 6) { //check header
           if (next != header[packetByte]) {
             DIMPROV_PRINTLN(F("Invalid improv header"));
@@ -84,26 +92,31 @@ void handleImprovPacket() {
               uint8_t improvState = 0x02; //authorized
               if (WLED_WIFI_CONFIGURED) improvState = 0x03; //provisioning
               if (Network.isConnected()) improvState = 0x04; //provisioned
-              sendImprovStateResponse(improvState, false, &f); break;
+              sendImprovStateResponse(improvState, false); 
+              if (improvState == 0x04) sendImprovRPCResponse(ImprovRPCType::Request_State);
+              break;
             }
-            case ImprovRPCType::Request_Info: sendImprovInfoResponse(&f); break;
+            case ImprovRPCType::Request_Info: sendImprovInfoResponse(); break;
             default: {
               DIMPROV_PRINTF("Unknown RPC command %i\n",next);
-              sendImprovStateResponse(0x02, true, &f);
+              sendImprovStateResponse(0x02, true);
             }
           }
-        } else {
-
+        } else if (isProvisioning && packetByte > 9) { //RPC data
+          rpcData[packetByte - 10] = next;
+          if (packetByte > 137) return; //prevent buffer overflow
         }
       }
     }
 
     packetByte++;
   }
-  f.close();
+  if (isProvisioning) parseWiFiCommand(rpcData);
 }
 
-void sendImprovStateResponse(uint8_t state, bool error, File *f) {
+void sendImprovStateResponse(uint8_t state, bool error) {
+  if (!error && improvError > 0 && improvError < 3) sendImprovStateResponse(0x00, true);
+  if (error) improvError = state;
   char out[11] = {'I','M','P','R','O','V'};
   out[6] = IMPROV_VERSION;
   out[7] = error? ImprovPacketType::Error_State : ImprovPacketType::Current_State;
@@ -115,17 +128,16 @@ void sendImprovStateResponse(uint8_t state, bool error, File *f) {
   out[10] = checksum;
   Serial.write(out, 11);
   Serial.write('\n');
-  f->print("S-REPLY");
-  f->write((uint8_t*)out, 11);
 }
 
-void sendImprovRPCResponse() {
+void sendImprovRPCResponse(byte commandId) {
+  if (improvError > 0 && improvError < 3) sendImprovStateResponse(0x00, true);
   uint8_t packetLen = 12;
   char out[64] = {'I','M','P','R','O','V'};
   out[6] = IMPROV_VERSION;
   out[7] = ImprovPacketType::RPC_Response;
   out[8] = 2; //Length (set below)
-  out[9] = ImprovRPCType::Command_Wifi;
+  out[9] = commandId;
   out[10] = 0; //Data len (set below)
   out[11] = '\0'; //URL len (set below)
 
@@ -144,9 +156,12 @@ void sendImprovRPCResponse() {
   for (uint8_t i = 9; i < packetLen -1; i++) checksum += out[i];
   out[packetLen -1] = checksum;
   Serial.write(out, packetLen);
+  Serial.write('\n');
+  improvActive = 1; //no longer provisioning
 }
 
-void sendImprovInfoResponse(File *f) {
+void sendImprovInfoResponse() {
+  if (improvError > 0 && improvError < 3) sendImprovStateResponse(0x00, true);
   uint8_t packetLen = 12;
   char out[128] = {'I','M','P','R','O','V'};
   out[6] = IMPROV_VERSION;
@@ -184,10 +199,39 @@ void sendImprovInfoResponse(File *f) {
   out[packetLen -1] = checksum;
   Serial.write(out, packetLen);
   Serial.write('\n');
-  f->print("REPLY");
-  f->write((uint8_t*)out, packetLen);
 }
 
-void improvConnectWiFi() {
+void parseWiFiCommand(char* rpcData) {
+  uint8_t len = rpcData[0];
+  if (!len || len > 126) return;
+
+  uint8_t checksum = rpcData[len+1];
+  uint8_t sum = 0;
+  for (uint8_t i = 0; i <= len; i++) {
+    sum += rpcData[i];
+  }
+  sum += ImprovRPCType::Command_Wifi;
+  if (checksum != sum) {
+    DIMPROV_PRINTF("Got RPC checksum %i, expected %i",checksum,sum);
+    sendImprovStateResponse(0x01, true);
+    return;
+  }
+
+  uint8_t ssidLen = rpcData[1];
+  if (ssidLen > len -1 || ssidLen > 32) return;
+  memset(clientSSID, 0, 32);
+  memcpy(clientSSID, rpcData+2, ssidLen);
+
+  memset(clientPass, 0, 64);
+  if (len > ssidLen +1) {
+    uint8_t passLen = rpcData[2+ssidLen];
+    memset(clientPass, 0, 64);
+    memcpy(clientPass, rpcData+3+ssidLen, passLen);
+  }
+
+  sendImprovStateResponse(0x03); //provisioning
+  improvActive = 2;
+
   forceReconnect = true;
+  serializeConfig();
 }
