@@ -284,8 +284,8 @@ class BusPwm : public Bus {
 
   void setPixelColor(uint16_t pix, uint32_t c, uint8_t cct) {
     if (pix != 0 || !_valid) return; //only react to first pixel
-    c = colorBalanceFromKelvin(2000+(cct<<5), c); // color correction from CCT (w remains unchanged)
     if (getAutoWhiteMode() != RGBW_MODE_MANUAL_ONLY) c = autoWhiteCalc(c);
+    c = colorBalanceFromKelvin(2000+(cct<<5), c); // color correction from CCT (w remains unchanged)
     uint8_t r = R(c);
     uint8_t g = G(c);
     uint8_t b = B(c);
