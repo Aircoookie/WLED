@@ -16,7 +16,7 @@ enum class AdaState {
   Data_Blue,
   TPM2_Header_Type,
   TPM2_Header_CountHi,
-  TPM2_Header_CountLo
+  TPM2_Header_CountLo,
 };
 
 void handleSerial()
@@ -41,6 +41,7 @@ void handleSerial()
         else if (next == 0xC9) { //TPM2 start byte
           state = AdaState::TPM2_Header_Type;
         }
+        else if (next == 'I') handleImprovPacket();
         else if (next == '{') { //JSON API
           bool verboseResponse = false;
           {
