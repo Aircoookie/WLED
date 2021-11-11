@@ -1603,7 +1603,7 @@ ${makePlSel(true)}
 </div>
 <div class="po2" id="p${i}o2">
     API command<br>
-    <textarea class="noslide" id="p${i}api"></textarea>
+    <textarea class="apitxt" id="p${i}api"></textarea>
 </div>
 <div class="po1" id="p${i}o1">
 	${content}

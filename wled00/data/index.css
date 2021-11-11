@@ -792,13 +792,14 @@ input[type=number] {
 textarea {
 	background: var(--c-2);
 	color: var(--c-f);
-	width: 95%;
+	width: 250px; /* +padding=260px */
 	height: 90px;
 	border-radius: 5px;
-	border: 2px solid #555;
+	border: 2px solid var(--c-5);
 	outline: none;
 	resize: none;
 	font-size: 19px;
+	padding: 5px;
 }
 
 ::selection {
