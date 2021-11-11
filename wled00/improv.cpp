@@ -126,7 +126,7 @@ void sendImprovStateResponse(uint8_t state, bool error) {
   uint8_t checksum = 0;
   for (uint8_t i = 0; i < 10; i++) checksum += out[i];
   out[10] = checksum;
-  Serial.write(out, 11);
+  Serial.write((uint8_t*)out, 11);
   Serial.write('\n');
 }
 
@@ -155,7 +155,7 @@ void sendImprovRPCResponse(byte commandId) {
   uint8_t checksum = 0;
   for (uint8_t i = 9; i < packetLen -1; i++) checksum += out[i];
   out[packetLen -1] = checksum;
-  Serial.write(out, packetLen);
+  Serial.write((uint8_t*)out, packetLen);
   Serial.write('\n');
   improvActive = 1; //no longer provisioning
 }
@@ -197,7 +197,7 @@ void sendImprovInfoResponse() {
   uint8_t checksum = 0;
   for (uint8_t i = 9; i < packetLen -1; i++) checksum += out[i];
   out[packetLen -1] = checksum;
-  Serial.write(out, packetLen);
+  Serial.write((uint8_t*)out, packetLen);
   Serial.write('\n');
 }
 
