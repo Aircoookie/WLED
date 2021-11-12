@@ -260,7 +260,14 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonObject if_nodes = interfaces["nodes"];
   CJSON(nodeListEnabled, if_nodes[F("list")]);
   CJSON(nodeBroadcastEnabled, if_nodes[F("bcast")]);
-  CJSON(specialSearchNodes, if_nodes[F("cusnodes")]);
+  JsonArray if_node_list = if_nodes["cusnodes"]; // not sure if I should be using F here, couldn't understand what it does
+  for (uint8_t i = 0; i < 10; i++) { // 10 is arbitrary defined in settings
+    JsonArray if_node_ip = if_node_list[i];
+    specialSearchNodes[i][0] = if_node_ip[0];
+    specialSearchNodes[i][1] = if_node_ip[1];
+    specialSearchNodes[i][2] = if_node_ip[2];
+    specialSearchNodes[i][3] = if_node_ip[3];
+  }
 
   JsonObject if_live = interfaces["live"];
   CJSON(receiveDirect, if_live["en"]);
@@ -632,7 +639,14 @@ void serializeConfig() {
   JsonObject if_nodes = interfaces.createNestedObject("nodes");
   if_nodes[F("list")] = nodeListEnabled;
   if_nodes[F("bcast")] = nodeBroadcastEnabled;
-  if_nodes[F("cusnodes")] = specialSearchNodes;
+  JsonArray if_node_list = if_nodes.createNestedArray("cusnodes");
+  for (uint8_t i=0; i<10; i++) { //10 is kinda arbitrary, defined in settings
+    JsonArray if_node_ips = if_node_list.createNestedArray();
+    if_node_ips.add(specialSearchNodes[i][0]);
+    if_node_ips.add(specialSearchNodes[i][1]);
+    if_node_ips.add(specialSearchNodes[i][2]);
+    if_node_ips.add(specialSearchNodes[i][3]);
+  }
 
   JsonObject if_live = interfaces.createNestedObject("live");
   if_live["en"] = receiveDirect;
