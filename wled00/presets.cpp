@@ -23,9 +23,10 @@ bool applyPreset(byte index, byte callMode)
   #ifdef WLED_USE_DYNAMIC_JSON
     DynamicJsonDocument doc(JSON_BUFFER_SIZE);
   #else
-    while (jsonBufferLock) delay(1);
-    jsonBufferLock = true;
-    doc.clear();
+    if (!requestJSONBufferLock()) {
+      DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
+      return false;
+    }
   #endif
     errorFlag = readObjectFromFileUsingId(filename, index, &doc) ? ERR_NONE : ERR_FS_PLOAD;
     JsonObject fdo = doc.as<JsonObject>();
@@ -34,7 +35,7 @@ bool applyPreset(byte index, byte callMode)
       serializeJson(doc, Serial);
     #endif
     deserializeState(fdo, callMode, index);
-    jsonBufferLock = false;
+    releaseJSONBufferLock();
   }
 
   if (!errorFlag) {
@@ -56,9 +57,10 @@ void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
   #ifdef WLED_USE_DYNAMIC_JSON
     DynamicJsonDocument doc(JSON_BUFFER_SIZE);
   #else
-    while (jsonBufferLock) delay(1);
-    jsonBufferLock = true;
-    doc.clear();
+    if (!requestJSONBufferLock()) {
+      DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
+      return;
+    }
   #endif
     sObj = doc.to<JsonObject>();
     if (pname) sObj["n"] = pname;
@@ -69,7 +71,7 @@ void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
 
     writeObjectToFileUsingId(filename, index, &doc);
 
-    jsonBufferLock = false;
+    releaseJSONBufferLock();
   } else { //from JSON API (fileDoc != nullptr)
     DEBUGFS_PRINTLN(F("Reuse recv buffer"));
     sObj.remove(F("psave"));

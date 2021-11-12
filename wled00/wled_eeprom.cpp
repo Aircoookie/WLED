@@ -385,9 +385,10 @@ void deEEP() {
 #ifdef WLED_USE_DYNAMIC_JSON
   DynamicJsonDocument doc(JSON_BUFFER_SIZE *2);  // why 2x?
 #else
-  while (jsonBufferLock) delay(1);
-  jsonBufferLock = true;
-  doc.clear();
+  if (!requestJSONBufferLock()) {
+    DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
+    return;
+  }
 #endif
 
   JsonObject sObj = doc.to<JsonObject>();
@@ -473,7 +474,7 @@ void deEEP() {
   serializeJson(doc, f);
   f.close();
 
-  jsonBufferLock = false;
+  releaseJSONBufferLock();
 
   DEBUG_PRINTLN(F("deEEP complete!"));
 }

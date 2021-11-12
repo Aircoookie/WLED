@@ -203,6 +203,17 @@ void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w);
 void refreshNodeList();
 void sendSysInfoUDP();
 
+//util.cpp
+//bool oappend(const char* txt); // append new c string to temp buffer efficiently
+//bool oappendi(int i);          // append new number to temp buffer efficiently
+//void sappend(char stype, const char* key, int val);
+//void sappends(char stype, const char* key, char* val);
+//void prepareHostname(char* hostname);
+//void _setRandomColor(bool _sec, bool fromButton);
+//bool isAsterisksOnly(const char* str, byte maxLen);
+bool requestJSONBufferLock();
+void releaseJSONBufferLock();
+
 //um_manager.cpp
 class Usermod {
   public:

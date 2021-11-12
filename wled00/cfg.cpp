@@ -425,9 +425,10 @@ void deserializeConfigFromFS() {
 #ifdef WLED_USE_DYNAMIC_JSON
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);
 #else
-  while (jsonBufferLock) delay(1);
-  jsonBufferLock = true;
-  doc.clear();
+  if (!requestJSONBufferLock()) {
+    DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
+    return;
+  }
 #endif
 
   DEBUG_PRINTLN(F("Reading settings from /cfg.json..."));
@@ -435,14 +436,14 @@ void deserializeConfigFromFS() {
   success = readObjectFromFile("/cfg.json", nullptr, &doc);
   if (!success) { //if file does not exist, try reading from EEPROM
     deEEPSettings();
-    jsonBufferLock = false;
+    releaseJSONBufferLock();
     return;
   }
 
   // NOTE: This routine deserializes *and* applies the configuration
   //       Therefore, must also initialize ethernet from this function
   bool needsSave = deserializeConfig(doc.as<JsonObject>(), true);
-  jsonBufferLock = false;
+  releaseJSONBufferLock();
 
   if (needsSave) serializeConfig(); // usermods required new prameters
 }
@@ -455,9 +456,10 @@ void serializeConfig() {
 #ifdef WLED_USE_DYNAMIC_JSON
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);
 #else
-  while (jsonBufferLock) delay(1);
-  jsonBufferLock = true;
-  doc.clear();
+  if (!requestJSONBufferLock()) {
+    DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
+    return;
+  }
 #endif
 
   JsonArray rev = doc.createNestedArray("rev");
@@ -763,7 +765,7 @@ void serializeConfig() {
   File f = WLED_FS.open("/cfg.json", "w");
   if (f) serializeJson(doc, f);
   f.close();
-  jsonBufferLock = false;
+  releaseJSONBufferLock();
 }
 
 //settings in /wsec.json, not accessible via webserver, for passwords and tokens
@@ -773,14 +775,15 @@ bool deserializeConfigSec() {
 #ifdef WLED_USE_DYNAMIC_JSON
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);
 #else
-  while (jsonBufferLock) delay(1);
-  jsonBufferLock = true;
-  doc.clear();
+  if (!requestJSONBufferLock()) {
+    DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
+    return false;
+  }
 #endif
 
   bool success = readObjectFromFile("/wsec.json", nullptr, &doc);
   if (!success) {
-    jsonBufferLock = false;
+    releaseJSONBufferLock();
     return false;
   }
 
@@ -814,7 +817,7 @@ bool deserializeConfigSec() {
   CJSON(wifiLock, ota[F("lock-wifi")]);
   CJSON(aOtaEnabled, ota[F("aota")]);
 
-  jsonBufferLock = false;
+  releaseJSONBufferLock();
   return true;
 }
 
@@ -824,9 +827,10 @@ void serializeConfigSec() {
 #ifdef WLED_USE_DYNAMIC_JSON
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);
 #else
-  while (jsonBufferLock) delay(1);
-  jsonBufferLock = true;
-  doc.clear();
+  if (!requestJSONBufferLock()) {
+    DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
+    return;
+  }
 #endif
 
   JsonObject nw = doc.createNestedObject("nw");
@@ -862,5 +866,5 @@ void serializeConfigSec() {
   File f = WLED_FS.open("/wsec.json", "w");
   if (f) serializeJson(doc, f);
   f.close();
-  jsonBufferLock = false;
+  releaseJSONBufferLock();
 }

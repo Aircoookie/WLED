@@ -93,16 +93,16 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
     if (payload[0] == '{') { //JSON API
     #ifdef WLED_USE_DYNAMIC_JSON
       DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+      fileDoc = &doc;
     #else
-      while (jsonBufferLock) delay(1);
-      jsonBufferLock = true;
-      doc.clear();
+      if (!requestJSONBufferLock()) {
+        DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
+        return;
+      }
     #endif
       deserializeJson(doc, payloadStr);
-      fileDoc = &doc;
       deserializeState(doc.as<JsonObject>());
-      fileDoc = nullptr;
-      jsonBufferLock = false;
+      releaseJSONBufferLock();
     } else { //HTTP API
       String apireq = "win&";
       apireq += (char*)payloadStr;
