@@ -374,6 +374,8 @@ void WLED::setup()
     sprintf(mqttClientID + 5, "%*s", 6, escapedMac.c_str() + 6);
   }
 
+  if (Serial.available() > 0 && Serial.peek() == 'I') handleImprovPacket();
+
   strip.service();
 
 #ifndef WLED_DISABLE_OTA
@@ -391,6 +393,8 @@ void WLED::setup()
 #ifdef WLED_ENABLE_DMX
   initDMX();
 #endif
+
+  if (Serial.available() > 0 && Serial.peek() == 'I') handleImprovPacket();
   // HTTP server page init
   initServer();
 
