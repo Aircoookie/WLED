@@ -110,12 +110,14 @@ void initServer()
     bool verboseResponse = false;
     bool isConfig = false;
     { //scope JsonDocument so it releases its buffer
+      DEBUG_PRINTLN(F("HTTP JSON buffer requested."));
     #ifdef WLED_USE_DYNAMIC_JSON
       DynamicJsonDocument doc(JSON_BUFFER_SIZE);
     #else
-      while (jsonBufferLock) delay(1);
-      jsonBufferLock = true;
-      doc.clear();
+      if (!requestJSONBufferLock()) {
+        DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
+        return;
+      }
     #endif
 
       DeserializationError error = deserializeJson(doc, (uint8_t*)(request->_tempObject));
@@ -131,13 +133,13 @@ void initServer()
           serializeJson(root,Serial);
           DEBUG_PRINTLN();
         #endif
-        fileDoc = &doc;  // used for applying presets (presets.cpp)
+        //fileDoc = &doc;  // used for applying presets (presets.cpp)
         verboseResponse = deserializeState(root);
-        fileDoc = nullptr;
+        //fileDoc = nullptr;
       } else {
         verboseResponse = deserializeConfig(root); //use verboseResponse to determine whether cfg change should be saved immediately
       }
-      jsonBufferLock = false;
+      releaseJSONBufferLock();
     }
     if (verboseResponse) {
       if (!isConfig) {

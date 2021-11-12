@@ -575,12 +575,14 @@ void decodeIRJson(uint32_t code)
   JsonObject fdo;
   JsonObject jsonCmdObj;
 
+  DEBUG_PRINTLN(F("IR JSON buffer requested."));
 #ifdef WLED_USE_DYNAMIC_JSON
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);
 #else
-  while (jsonBufferLock) delay(1);
-  jsonBufferLock = true;
-  doc.clear();
+  if (!requestJSONBufferLock()) {
+    DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
+    return;
+  }
 #endif
 
   sprintf_P(objKey, PSTR("\"0x%lX\":"), (unsigned long)code);
@@ -601,6 +603,9 @@ void decodeIRJson(uint32_t code)
   cmdStr = fdo["cmd"].as<String>();;
   jsonCmdObj = fdo["cmd"]; //object
 
+  // command is JSON object
+  //allow applyPreset() to reuse JSON buffer, or it would alloc. a second buffer and run out of mem.
+  //fileDoc = &doc; // used for applying presets (presets.cpp)
   if (!cmdStr.isEmpty()) 
   {
     if (cmdStr.startsWith("!")) {
@@ -635,13 +640,10 @@ void decodeIRJson(uint32_t code)
     }
     colorUpdated(CALL_MODE_BUTTON);
   } else if (!jsonCmdObj.isNull()) {
-    // command is JSON object
-    //allow applyPreset() to reuse JSON buffer, or it would alloc. a second buffer and run out of mem.
-    fileDoc = &doc;
     deserializeState(jsonCmdObj, CALL_MODE_BUTTON);
-    fileDoc = nullptr;
   }
-  jsonBufferLock = false;
+  //fileDoc = nullptr;
+  releaseJSONBufferLock();
 }
 
 void initIR()

@@ -129,3 +129,27 @@ bool isAsterisksOnly(const char* str, byte maxLen)
   //at this point the password contains asterisks only
   return (str[0] != 0); //false on empty string
 }
+
+
+bool requestJSONBufferLock()
+{
+  unsigned long now = millis();
+
+  while (jsonBufferLock && millis()-now < 1000) delay(1); // wait for a second for buffer lock
+
+  if (millis()-now >= 1000) return false; // waiting time-outed
+
+  jsonBufferLock = true;
+  fileDoc = &doc;  // used for applying presets (presets.cpp)
+  doc.clear();
+  return true;
+}
+
+
+void releaseJSONBufferLock()
+{
+#ifndef WLED_USE_DYNAMIC_JSON
+  fileDoc = nullptr;
+  jsonBufferLock = false;
+#endif
+}

@@ -43,22 +43,24 @@ void handleSerial()
         }
         else if (next == '{') { //JSON API
           bool verboseResponse = false;
+          DEBUG_PRINTLN(F("Serial JSON buffer requested."));
         #ifdef WLED_USE_DYNAMIC_JSON
           DynamicJsonDocument doc(JSON_BUFFER_SIZE);
         #else
-          while (jsonBufferLock) delay(1);
-          jsonBufferLock = true;
-          doc.clear();
+          if (!requestJSONBufferLock()) {
+            DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
+            return;
+          }
         #endif
           Serial.setTimeout(100);
           DeserializationError error = deserializeJson(doc, Serial);
           if (error) {
-            jsonBufferLock = false;
+            releaseJSONBufferLock();
             return;
           }
-          fileDoc = &doc;
+          //fileDoc = &doc; // used for applying presets (presets.cpp)
           verboseResponse = deserializeState(doc.as<JsonObject>());
-          fileDoc = nullptr;
+          //fileDoc = nullptr;
 
           //only send response if TX pin is unused for other purposes
           if (verboseResponse && !pinManager.isPinAllocated(1)) {
@@ -70,7 +72,7 @@ void handleSerial()
 
             serializeJson(doc, Serial);
           }
-          jsonBufferLock = false;
+          releaseJSONBufferLock();
         }
         break;
       case AdaState::Header_d:

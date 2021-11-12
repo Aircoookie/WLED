@@ -920,9 +920,10 @@ void serveJson(AsyncWebServerRequest* request)
 #ifdef WLED_USE_DYNAMIC_JSON
   AsyncJsonResponse* response = new AsyncJsonResponse(JSON_BUFFER_SIZE);
 #else
-  while (jsonBufferLock) delay(1);
-  jsonBufferLock = true;
-  doc.clear(); 
+  if (!requestJSONBufferLock()) {
+    DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
+    return;
+  }
   AsyncJsonResponse *response = new AsyncJsonResponse(&doc);
 #endif
 
@@ -956,7 +957,7 @@ void serveJson(AsyncWebServerRequest* request)
 
   response->setLength();
   request->send(response);
-  jsonBufferLock = false;
+  releaseJSONBufferLock();
 }
 
 #define MAX_LIVE_LEDS 180

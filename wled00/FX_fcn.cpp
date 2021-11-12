@@ -1092,16 +1092,17 @@ void WS2812FX::deserializeMap(uint8_t n) {
 #ifdef WLED_USE_DYNAMIC_JSON
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);
 #else
-  while (jsonBufferLock) delay(1);
-  jsonBufferLock = true;
-  doc.clear();
+  if (!requestJSONBufferLock()) {
+    DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
+    return;
+  }
 #endif
 
   DEBUG_PRINT(F("Reading LED map from "));
   DEBUG_PRINTLN(fileName);
 
   if (!readObjectFromFile(fileName, nullptr, &doc)) {
-    jsonBufferLock = false;
+    releaseJSONBufferLock();
     return; //if file does not exist just exit
   }
 
@@ -1121,7 +1122,7 @@ void WS2812FX::deserializeMap(uint8_t n) {
     }
   }
 
-  jsonBufferLock = false;
+  releaseJSONBufferLock();
 }
 
 //gamma 2.8 lookup table used for color correction
