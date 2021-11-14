@@ -1066,6 +1066,7 @@ function updateSelectedFx()
 	var parent = gId('fxlist');
 	var selEffectInput = parent.querySelector(`input[name="fx"][value="${selectedFx}"]`);
 	if (selEffectInput) selEffectInput.checked = true;
+console.log(selEffectInput);
 
 	var selElement = parent.querySelector('.selected');
 	if (selElement) selElement.classList.remove('selected');
@@ -1106,7 +1107,7 @@ function makeWS() {
 		jsonTimeout = null;
 		lastUpdate = new Date();
 		clearErrorToast();
-	  	gId('connind').style.backgroundColor = "var(--c-l)";
+		gId('connind').style.backgroundColor = "var(--c-l)";
 		// json object should contain json.info AND json.state (but may not)
 		var i = json.info;
 		if (i) {

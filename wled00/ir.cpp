@@ -576,14 +576,11 @@ void decodeIRJson(uint32_t code)
   JsonObject jsonCmdObj;
 
   DEBUG_PRINTLN(F("IR JSON buffer requested."));
-#ifdef WLED_USE_DYNAMIC_JSON
+  #ifdef WLED_USE_DYNAMIC_JSON
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-#else
-  if (!requestJSONBufferLock()) {
-    DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
-    return;
-  }
-#endif
+  #else
+  if (!requestJSONBufferLock(6)) return;
+  #endif
 
   sprintf_P(objKey, PSTR("\"0x%lX\":"), (unsigned long)code);
 

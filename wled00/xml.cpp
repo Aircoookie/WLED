@@ -253,14 +253,11 @@ void getSettingsJS(byte subPage, char* dest)
     // add reserved and usermod pins as d.um_p array
     oappend(SET_F("d.um_p=[6,7,8,9,10,11"));
 
-  #ifdef WLED_USE_DYNAMIC_JSON
+    #ifdef WLED_USE_DYNAMIC_JSON
     DynamicJsonDocument doc(2048); // 2k is enough for usermods
-  #else
-    if (!requestJSONBufferLock()) {
-      DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
-      return;
-    }
-  #endif
+    #else
+    if (!requestJSONBufferLock(17)) return;
+    #endif
   
     JsonObject mods = doc.createNestedObject(F("um"));
     usermods.addToConfig(mods);

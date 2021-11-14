@@ -1089,14 +1089,11 @@ void WS2812FX::deserializeMap(uint8_t n) {
     return;
   }
 
-#ifdef WLED_USE_DYNAMIC_JSON
+  #ifdef WLED_USE_DYNAMIC_JSON
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-#else
-  if (!requestJSONBufferLock()) {
-    DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
-    return;
-  }
-#endif
+  #else
+  if (!requestJSONBufferLock(5)) return;
+  #endif
 
   DEBUG_PRINT(F("Reading LED map from "));
   DEBUG_PRINTLN(fileName);

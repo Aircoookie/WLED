@@ -606,7 +606,7 @@ WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
 #ifndef WLED_USE_DYNAMIC_JSON
 WLED_GLOBAL StaticJsonDocument<JSON_BUFFER_SIZE> doc;
 #endif
-WLED_GLOBAL volatile bool jsonBufferLock _INIT(false);
+WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
 
 // enable additional debug output
 #ifdef WLED_DEBUG

@@ -22,14 +22,11 @@ bool applyPreset(byte index, byte callMode)
     deserializeState(fdo, callMode, index);
   } else {
     DEBUG_PRINTLN(F("Apply preset JSON buffer requested."));
-  #ifdef WLED_USE_DYNAMIC_JSON
+    #ifdef WLED_USE_DYNAMIC_JSON
     DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-  #else
-    if (!requestJSONBufferLock()) {
-      DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
-      return false;
-    }
-  #endif
+    #else
+    if (!requestJSONBufferLock(9)) return false;
+    #endif
 
     errorFlag = readObjectFromFileUsingId(filename, index, &doc) ? ERR_NONE : ERR_FS_PLOAD;
     JsonObject fdo = doc.as<JsonObject>();
@@ -57,14 +54,11 @@ void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
 
   if (!fileDoc) {
     DEBUG_PRINTLN(F("Save preset JSON buffer requested."));
-  #ifdef WLED_USE_DYNAMIC_JSON
+    #ifdef WLED_USE_DYNAMIC_JSON
     DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-  #else
-    if (!requestJSONBufferLock()) {
-      DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
-      return;
-    }
-  #endif
+    #else
+    if (!requestJSONBufferLock(10)) return;
+    #endif
 
     sObj = doc.to<JsonObject>();
     if (pname) sObj["n"] = pname;

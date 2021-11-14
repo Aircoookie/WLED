@@ -382,14 +382,11 @@ void deEEP() {
   
   DEBUG_PRINTLN(F("Preset file not found, attempting to load from EEPROM"));
   DEBUGFS_PRINTLN(F("Allocating saving buffer for dEEP"));
-#ifdef WLED_USE_DYNAMIC_JSON
+  #ifdef WLED_USE_DYNAMIC_JSON
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-#else
-  if (!requestJSONBufferLock()) {
-    DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
-    return;
-  }
-#endif
+  #else
+  if (!requestJSONBufferLock(12)) return;
+  #endif
 
   JsonObject sObj = doc.to<JsonObject>();
   sObj.createNestedObject("0");
@@ -469,6 +466,7 @@ void deEEP() {
   File f = WLED_FS.open("/presets.json", "w");
   if (!f) {
     errorFlag = ERR_FS_GENERAL;
+    releaseJSONBufferLock();
     return;
   }
   serializeJson(doc, f);

@@ -917,15 +917,12 @@ void serveJson(AsyncWebServerRequest* request)
     return;
   }
 
-#ifdef WLED_USE_DYNAMIC_JSON
+  #ifdef WLED_USE_DYNAMIC_JSON
   AsyncJsonResponse* response = new AsyncJsonResponse(JSON_BUFFER_SIZE);
-#else
-  if (!requestJSONBufferLock()) {
-    DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
-    return;
-  }
+  #else
+  if (!requestJSONBufferLock(7)) return;
   AsyncJsonResponse *response = new AsyncJsonResponse(&doc);
-#endif
+  #endif
 
   JsonObject lDoc = response->getRoot();
 

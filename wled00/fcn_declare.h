@@ -272,7 +272,7 @@ void sappends(char stype, const char* key, char* val);
 void prepareHostname(char* hostname);
 void _setRandomColor(bool _sec, bool fromButton);
 bool isAsterisksOnly(const char* str, byte maxLen);
-bool requestJSONBufferLock();
+bool requestJSONBufferLock(uint8_t module=255);
 void releaseJSONBufferLock();
 
 //wled_eeprom.cpp

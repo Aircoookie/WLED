@@ -415,14 +415,11 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   //USERMODS
   if (subPage == 8)
   {
-  #ifdef WLED_USE_DYNAMIC_JSON
+    #ifdef WLED_USE_DYNAMIC_JSON
     DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-  #else
-    if (!requestJSONBufferLock()) {
-      DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
-      return;
-    }
-  #endif
+    #else
+    if (!requestJSONBufferLock(11)) return;
+    #endif
 
     JsonObject um = doc.createNestedObject("um");
 

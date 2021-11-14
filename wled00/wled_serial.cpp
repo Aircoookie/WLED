@@ -44,14 +44,11 @@ void handleSerial()
         else if (next == '{') { //JSON API
           bool verboseResponse = false;
           DEBUG_PRINTLN(F("Serial JSON buffer requested."));
-        #ifdef WLED_USE_DYNAMIC_JSON
+          #ifdef WLED_USE_DYNAMIC_JSON
           DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-        #else
-          if (!requestJSONBufferLock()) {
-            DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
-            return;
-          }
-        #endif
+          #else
+          if (!requestJSONBufferLock(13)) return;
+          #endif
           Serial.setTimeout(100);
           DeserializationError error = deserializeJson(doc, Serial);
           if (error) {
