@@ -407,12 +407,12 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   DEBUG_PRINTLN(F("Starting usermod config."));
   JsonObject usermods_settings = doc["um"];
   if (!usermods_settings.isNull()) {
-    needsSave = usermods.readFromConfig(usermods_settings);
+    needsSave = !usermods.readFromConfig(usermods_settings);
   }
 
   if (fromFS) return needsSave;
   doReboot = doc[F("rb")] | doReboot;
-  return (doc["sv"] | needsSave);
+  return (doc["sv"] | true);
 }
 
 void deserializeConfigFromFS() {
