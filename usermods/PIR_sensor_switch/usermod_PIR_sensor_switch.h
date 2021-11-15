@@ -60,11 +60,11 @@ private:
   byte prevPlaylist = 0;
   bool savedState   = false;
 
-  uint32_t offTimerStart = 0;   // off timer start time
-  const byte NotifyUpdateMode = CALL_MODE_NO_NOTIFY; // notification mode for colorUpdated()  CALL_MODE_DIRECT_CHANGE
-  byte sensorPinState = LOW;    // current PIR sensor pin state
-  bool initDone       = false;  // status of initialization
-  bool PIRtriggered   = false;
+  uint32_t offTimerStart = 0;                   // off timer start time
+  byte NotifyUpdateMode  = CALL_MODE_NO_NOTIFY; // notification mode for colorUpdated(): CALL_MODE_NO_NOTIFY or CALL_MODE_DIRECT_CHANGE
+  byte sensorPinState    = LOW;                 // current PIR sensor pin state
+  bool initDone          = false;               // status of initialization
+  bool PIRtriggered      = false;
   unsigned long lastLoop = 0;
 
   // configurable parameters
@@ -87,6 +87,7 @@ private:
   static const char _nightTime[];
   static const char _mqttOnly[];
   static const char _offOnly[];
+  static const char _notify[];
 
   /**
    * check if it is daytime
@@ -129,7 +130,7 @@ private:
           prevPlaylist = 0;
           prevPreset   = 0;
         }
-        applyPreset(m_onPreset);
+        applyPreset(m_onPreset, NotifyUpdateMode);
         return;
       }
       // preset not assigned
@@ -139,14 +140,14 @@ private:
       }
     } else {
       if (m_offPreset) {
-        applyPreset(m_offPreset);
+        applyPreset(m_offPreset, NotifyUpdateMode);
         return;
       } else if (prevPlaylist) {
-        applyPreset(prevPlaylist);
+        applyPreset(prevPlaylist, NotifyUpdateMode);
         prevPlaylist = 0;
         return;
       } else if (prevPreset) {
-        applyPreset(prevPreset);
+        applyPreset(prevPreset, NotifyUpdateMode);
         prevPreset = 0;
         return;
       } else if (savedState) {
@@ -362,6 +363,7 @@ public:
     top[FPSTR(_nightTime)]      = m_nightTimeOnly;
     top[FPSTR(_mqttOnly)]       = m_mqttOnly;
     top[FPSTR(_offOnly)]        = m_offOnly;
+    top[FPSTR(_notify)]         = (NotifyUpdateMode != CALL_MODE_NO_NOTIFY);
     DEBUG_PRINTLN(F("PIR config saved."));
   }
 
@@ -398,6 +400,8 @@ public:
     m_mqttOnly      = top[FPSTR(_mqttOnly)] | m_mqttOnly;
     m_offOnly       = top[FPSTR(_offOnly)] | m_offOnly;
 
+    NotifyUpdateMode = top[FPSTR(_notify)] ? CALL_MODE_DIRECT_CHANGE : CALL_MODE_NO_NOTIFY;
+
     if (!initDone) {
       // reading config prior to setup()
       DEBUG_PRINTLN(F(" config loaded."));
@@ -423,7 +427,7 @@ public:
       DEBUG_PRINTLN(F(" config (re)loaded."));
     }
     // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
-    return !top[FPSTR(_offOnly)].isNull();
+    return !top[FPSTR(_notify)].isNull();
   }
 
   /**
@@ -445,3 +449,4 @@ const char PIRsensorSwitch::_offPreset[]      PROGMEM = "off-preset";
 const char PIRsensorSwitch::_nightTime[]      PROGMEM = "nighttime-only";
 const char PIRsensorSwitch::_mqttOnly[]       PROGMEM = "mqtt-only";
 const char PIRsensorSwitch::_offOnly[]        PROGMEM = "off-only";
+const char PIRsensorSwitch::_notify[]         PROGMEM = "notifications";
