@@ -119,7 +119,9 @@ void initServer()
       DeserializationError error = deserializeJson(doc, (uint8_t*)(request->_tempObject));
       JsonObject root = doc.as<JsonObject>();
       if (error || root.isNull()) {
-        request->send(400, "application/json", F("{\"error\":9}")); return;
+        releaseJSONBufferLock();
+        request->send(400, "application/json", F("{\"error\":9}"));
+        return;
       }
       const String& url = request->url();
       isConfig = url.indexOf("cfg") > -1;
