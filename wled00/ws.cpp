@@ -34,15 +34,11 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
         }
         bool verboseResponse = false;
         { //scope JsonDocument so it releases its buffer
-        #ifdef WLED_USE_DYNAMIC_JSON
+          #ifdef WLED_USE_DYNAMIC_JSON
           DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-          fileDoc = &doc;
-        #else
-          if (!requestJSONBufferLock()) {
-            DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
-            return;
-          }
-        #endif
+          #else
+          if (!requestJSONBufferLock(11)) return;
+          #endif
 
           DeserializationError error = deserializeJson(doc, data, len);
           JsonObject root = doc.as<JsonObject>();
@@ -102,14 +98,11 @@ void sendDataWs(AsyncWebSocketClient * client)
   AsyncWebSocketMessageBuffer * buffer;
 
   { //scope JsonDocument so it releases its buffer
-  #ifdef WLED_USE_DYNAMIC_JSON
+    #ifdef WLED_USE_DYNAMIC_JSON
     DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-  #else
-    if (!requestJSONBufferLock()) {
-      DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
-      return;
-    }
-  #endif
+    #else
+    if (!requestJSONBufferLock(12)) return;
+    #endif
     JsonObject state = doc.createNestedObject("state");
     serializeState(state);
     JsonObject info  = doc.createNestedObject("info");

@@ -106,15 +106,11 @@ void initServer()
     bool verboseResponse = false;
     bool isConfig = false;
     { //scope JsonDocument so it releases its buffer
-    #ifdef WLED_USE_DYNAMIC_JSON
+      #ifdef WLED_USE_DYNAMIC_JSON
       DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-      fileDoc = &doc;
-    #else
-      if (!requestJSONBufferLock()) {
-        DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
-        return;
-      }
-    #endif
+      #else
+      if (!requestJSONBufferLock(14)) return;
+      #endif
 
       DeserializationError error = deserializeJson(doc, (uint8_t*)(request->_tempObject));
       JsonObject root = doc.as<JsonObject>();

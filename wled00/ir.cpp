@@ -571,15 +571,11 @@ void decodeIRJson(uint32_t code)
   JsonObject fdo;
   JsonObject jsonCmdObj;
 
-#ifdef WLED_USE_DYNAMIC_JSON
+  #ifdef WLED_USE_DYNAMIC_JSON
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-  fileDoc = &doc;
-#else
-  if (!requestJSONBufferLock()) {
-    DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
-    return;
-  }
-#endif
+  #else
+  if (!requestJSONBufferLock(13)) return;
+  #endif
 
   sprintf_P(objKey, PSTR("\"0x%lX\":"), (unsigned long)code);
 
@@ -593,6 +589,7 @@ void decodeIRJson(uint32_t code)
   if (fdo.isNull()) {
     //the received code does not exist
     if (!WLED_FS.exists("/ir.json")) errorFlag = ERR_FS_IRLOAD; //warn if IR file itself doesn't exist
+    releaseJSONBufferLock();
     return;
   }
 

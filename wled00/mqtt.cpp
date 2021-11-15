@@ -91,15 +91,11 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
     colorUpdated(CALL_MODE_DIRECT_CHANGE);
   } else if (strcmp_P(topic, PSTR("/api")) == 0) {
     if (payload[0] == '{') { //JSON API
-    #ifdef WLED_USE_DYNAMIC_JSON
+      #ifdef WLED_USE_DYNAMIC_JSON
       DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-      fileDoc = &doc;
-    #else
-      if (!requestJSONBufferLock()) {
-        DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
-        return;
-      }
-    #endif
+      #else
+      if (!requestJSONBufferLock(15)) return;
+      #endif
       deserializeJson(doc, payloadStr);
       deserializeState(doc.as<JsonObject>());
       releaseJSONBufferLock();

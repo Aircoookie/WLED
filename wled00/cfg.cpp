@@ -422,14 +422,11 @@ void deserializeConfigFromFS() {
     return;
   }
 
-#ifdef WLED_USE_DYNAMIC_JSON
+  #ifdef WLED_USE_DYNAMIC_JSON
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-#else
-  if (!requestJSONBufferLock()) {
-    DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
-    return;
-  }
-#endif
+  #else
+  if (!requestJSONBufferLock(1)) return;
+  #endif
 
   DEBUG_PRINTLN(F("Reading settings from /cfg.json..."));
 
@@ -453,14 +450,11 @@ void serializeConfig() {
 
   DEBUG_PRINTLN(F("Writing settings to /cfg.json..."));
 
-#ifdef WLED_USE_DYNAMIC_JSON
+  #ifdef WLED_USE_DYNAMIC_JSON
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-#else
-  if (!requestJSONBufferLock()) {
-    DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
-    return;
-  }
-#endif
+  #else
+  if (!requestJSONBufferLock(2)) return;
+  #endif
 
   JsonArray rev = doc.createNestedArray("rev");
   rev.add(1); //major settings revision
@@ -772,14 +766,11 @@ void serializeConfig() {
 bool deserializeConfigSec() {
   DEBUG_PRINTLN(F("Reading settings from /wsec.json..."));
 
-#ifdef WLED_USE_DYNAMIC_JSON
+  #ifdef WLED_USE_DYNAMIC_JSON
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-#else
-  if (!requestJSONBufferLock()) {
-    DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
-    return false;
-  }
-#endif
+  #else
+  if (!requestJSONBufferLock(3)) return false;
+  #endif
 
   bool success = readObjectFromFile("/wsec.json", nullptr, &doc);
   if (!success) {
@@ -824,14 +815,11 @@ bool deserializeConfigSec() {
 void serializeConfigSec() {
   DEBUG_PRINTLN(F("Writing settings to /wsec.json..."));
 
-#ifdef WLED_USE_DYNAMIC_JSON
+  #ifdef WLED_USE_DYNAMIC_JSON
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-#else
-  if (!requestJSONBufferLock()) {
-    DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
-    return;
-  }
-#endif
+  #else
+  if (!requestJSONBufferLock(4)) return;
+  #endif
 
   JsonObject nw = doc.createNestedObject("nw");
 

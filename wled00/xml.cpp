@@ -320,19 +320,18 @@ void getSettingsJS(byte subPage, char* dest)
     // add reserved and usermod pins as d.um_p array
     oappend(SET_F("d.um_p=[6,7,8,9,10,11"));
 
-  #ifdef WLED_USE_DYNAMIC_JSON
-    DynamicJsonDocument doc(2048);
-  #else
-    if (!requestJSONBufferLock()) {
-      DEBUG_PRINTLN(F("ERROR: Locking JSON buffer failed!"));
-      return;
-    }
-  #endif
+    { // scope so buffer can be released earlier
+    #ifdef WLED_USE_DYNAMIC_JSON
+    DynamicJsonDocument doc(3072);
+    #else
+    if (!requestJSONBufferLock(6)) return;
+    #endif
 
     JsonObject mods = doc.createNestedObject(F("um"));
     usermods.addToConfig(mods);
     if (!mods.isNull()) fillUMPins(mods);
     releaseJSONBufferLock();
+    }
 
     #ifdef WLED_ENABLE_DMX
       oappend(SET_F(",2")); // DMX hardcoded pin
