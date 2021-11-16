@@ -724,8 +724,13 @@ void WLED::handleConnection()
       interfacesInited = false;
       initConnection();
     }
-    if (now - lastReconnectAttempt > ((stac) ? 300000 : 20000) && WLED_WIFI_CONFIGURED) {
+    //send improv failed 6 seconds after second init attempt (24 sec. after provisioning)
+    if (improvActive > 2 && now - lastReconnectAttempt > 6000) {
       sendImprovStateResponse(0x03, true);
+      improvActive = 2;
+    }
+    if (now - lastReconnectAttempt > ((stac) ? 300000 : 18000) && WLED_WIFI_CONFIGURED) {
+      if (improvActive == 2) improvActive = 3;
       initConnection();
     }
     if (!apActive && now - lastReconnectAttempt > 12000 && (!wasConnected || apBehavior == AP_BEHAVIOR_NO_CONN))
@@ -737,7 +742,7 @@ void WLED::handleConnection()
     if (improvActive) {
       if (improvError == 3) sendImprovStateResponse(0x00, true);
       sendImprovStateResponse(0x04);
-      if (improvActive == 2) sendImprovRPCResponse(0x01);
+      if (improvActive > 1) sendImprovRPCResponse(0x01);
     }
     initInterfaces();
     userConnected();

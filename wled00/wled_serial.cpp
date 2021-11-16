@@ -44,8 +44,9 @@ void handleSerial()
         else if (next == 'I') {
           handleImprovPacket();
           return;
-        }
-        else if (next == '{') { //JSON API
+        } else if (next == 'v') {
+          Serial.print("WLED"); Serial.write(' '); Serial.println(VERSION);
+        } else if (next == '{') { //JSON API
           bool verboseResponse = false;
           {
             DynamicJsonDocument doc(JSON_BUFFER_SIZE);
@@ -65,6 +66,7 @@ void handleSerial()
             serializeInfo(info);
 
             serializeJson(doc, Serial);
+            Serial.println();
           }
         }
         break;
