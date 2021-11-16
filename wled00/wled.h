@@ -506,6 +506,10 @@ WLED_GLOBAL byte timerWeekday[] _INIT_N(({ 255, 255, 255, 255, 255, 255, 255, 25
 // blynk
 WLED_GLOBAL bool blynkEnabled _INIT(false);
 
+//improv
+WLED_GLOBAL byte improvActive _INIT(0); //0: no improv packet received, 1: improv active, 2: provisioning
+WLED_GLOBAL byte improvError _INIT(0);
+
 //playlists
 WLED_GLOBAL unsigned long presetCycledTime _INIT(0);
 WLED_GLOBAL int16_t currentPlaylist _INIT(-1);

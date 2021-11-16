@@ -374,6 +374,8 @@ void WLED::setup()
     sprintf(mqttClientID + 5, "%*s", 6, escapedMac.c_str() + 6);
   }
 
+  if (Serial.available() > 0 && Serial.peek() == 'I') handleImprovPacket();
+
   strip.service();
 
 #ifndef WLED_DISABLE_OTA
@@ -391,6 +393,8 @@ void WLED::setup()
 #ifdef WLED_ENABLE_DMX
   initDMX();
 #endif
+
+  if (Serial.available() > 0 && Serial.peek() == 'I') handleImprovPacket();
   // HTTP server page init
   initServer();
 
@@ -720,14 +724,26 @@ void WLED::handleConnection()
       interfacesInited = false;
       initConnection();
     }
-    if (now - lastReconnectAttempt > ((stac) ? 300000 : 20000) && WLED_WIFI_CONFIGURED)
+    //send improv failed 6 seconds after second init attempt (24 sec. after provisioning)
+    if (improvActive > 2 && now - lastReconnectAttempt > 6000) {
+      sendImprovStateResponse(0x03, true);
+      improvActive = 2;
+    }
+    if (now - lastReconnectAttempt > ((stac) ? 300000 : 18000) && WLED_WIFI_CONFIGURED) {
+      if (improvActive == 2) improvActive = 3;
       initConnection();
+    }
     if (!apActive && now - lastReconnectAttempt > 12000 && (!wasConnected || apBehavior == AP_BEHAVIOR_NO_CONN))
       initAP();
-  } else if (!interfacesInited) {        // newly connected
+  } else if (!interfacesInited) { //newly connected
     DEBUG_PRINTLN("");
     DEBUG_PRINT(F("Connected! IP address: "));
     DEBUG_PRINTLN(Network.localIP());
+    if (improvActive) {
+      if (improvError == 3) sendImprovStateResponse(0x00, true);
+      sendImprovStateResponse(0x04);
+      if (improvActive > 1) sendImprovRPCResponse(0x01);
+    }
     initInterfaces();
     userConnected();
     usermods.connected();
