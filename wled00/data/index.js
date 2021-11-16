@@ -1,7 +1,7 @@
 //page js
 var loc = false, locip;
 var noNewSegs = false;
-var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true, isRgbw = false;
+var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true, isRgbw = false, cct = false;
 var whites = [0,0,0];
 var selColors;
 var expanded = [false];
@@ -478,6 +478,7 @@ function loadPalettes(callback = null)
 	})
 	.finally(()=>{
 		if (callback) callback();
+		updateUI();
 	});
 }
 
@@ -503,6 +504,7 @@ function loadFX(callback = null)
 	})
 	.finally(()=>{
 		if (callback) callback();
+		updateUI();
 	});
 }
 
@@ -578,6 +580,7 @@ function parseInfo() {
 	syncTglRecv = li.str;
 	maxSeg      = li.leds.maxseg;
 	pmt         = li.fs.pmt;
+	cct         = li.leds.cct;
 }
 
 function loadInfo(callback=null)
@@ -601,7 +604,6 @@ function loadInfo(callback=null)
 		parseInfo();
 		showNodes();
 		if (isInfo) populateInfo(json);
-		updateUI();
 		reqsLegal = true;
 		if (!ws && lastinfo.ws > -1) setTimeout(makeWS,500);
 	})
@@ -611,6 +613,7 @@ function loadInfo(callback=null)
 	})
 	.finally(()=>{
 		if (callback) callback();
+		updateUI();
 	});
 }
 
@@ -1041,7 +1044,7 @@ function updateUI()
 	updateTrail(gId('sliderC3'));
 
 	gId('wwrap').style.display = (isRgbw) ? "block":"none";
-	gId("wbal").style.display = (lastinfo.leds.cct) ? "block":"none";
+	gId("wbal").style.display = (cct) ? "block":"none";
 
 	updatePA();
 	updateHex();
@@ -1066,7 +1069,6 @@ function updateSelectedFx()
 	var parent = gId('fxlist');
 	var selEffectInput = parent.querySelector(`input[name="fx"][value="${selectedFx}"]`);
 	if (selEffectInput) selEffectInput.checked = true;
-console.log(selEffectInput);
 
 	var selElement = parent.querySelector('.selected');
 	if (selElement) selElement.classList.remove('selected');
