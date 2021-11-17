@@ -299,8 +299,11 @@ void handleIO()
       #ifdef ESP8266
       // turn off built-in LED if strip is turned off
       // this will break digital bus so will need to be reinitialised on On
-      pinMode(LED_BUILTIN, OUTPUT);
-      digitalWrite(LED_BUILTIN, HIGH);
+      PinOwner ledPinOwner = pinManager.getPinOwner(LED_BUILTIN);
+      if (!strip.isOffRefreshRequred && (ledPinOwner == PinOwner::None || ledPinOwner == PinOwner::BusDigital)) {
+        pinMode(LED_BUILTIN, OUTPUT);
+        digitalWrite(LED_BUILTIN, HIGH);
+      }
       #endif
       if (rlyPin>=0) {
         pinMode(rlyPin, OUTPUT);
