@@ -501,7 +501,7 @@ void serializeInfo(JsonObject root)
   leds[F("fps")] = strip.getFps();
   leds[F("maxpwr")] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;
   leds[F("maxseg")] = strip.getMaxSegments();
-  leds[F("seglock")] = false; //will be used in the future to prevent modifications to segment config
+  //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config
 
   root[F("str")] = syncToggleReceive;
 
@@ -563,7 +563,7 @@ void serializeInfo(JsonObject root)
     root[F("resetReason0")] = (int)rtc_get_reset_reason(0);
     root[F("resetReason1")] = (int)rtc_get_reset_reason(1);
   #endif
-  root[F("lwip")] = 0;
+  root[F("lwip")] = 0; //deprecated
   #else
   root[F("arch")] = "esp8266";
   root[F("core")] = ESP.getCoreVersion();
