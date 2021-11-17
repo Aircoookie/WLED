@@ -97,6 +97,12 @@ void onHueConnect(void* arg, AsyncClient* client);
 void sendHuePoll();
 void onHueData(void* arg, AsyncClient* client, void *data, size_t len);
 
+//improv.cpp
+void handleImprovPacket();
+void sendImprovStateResponse(uint8_t state, bool error = false);
+void sendImprovInfoResponse();
+void sendImprovRPCResponse(uint8_t commandId);
+
 //ir.cpp
 //bool decodeIRCustom(uint32_t code);
 void applyRepeatActions();

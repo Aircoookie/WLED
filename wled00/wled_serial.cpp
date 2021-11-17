@@ -16,7 +16,7 @@ enum class AdaState {
   Data_Blue,
   TPM2_Header_Type,
   TPM2_Header_CountHi,
-  TPM2_Header_CountLo
+  TPM2_Header_CountLo,
 };
 
 void handleSerial()
@@ -41,7 +41,12 @@ void handleSerial()
         else if (next == 0xC9) { //TPM2 start byte
           state = AdaState::TPM2_Header_Type;
         }
-        else if (next == '{') { //JSON API
+        else if (next == 'I') {
+          handleImprovPacket();
+          return;
+        } else if (next == 'v') {
+          Serial.print("WLED"); Serial.write(' '); Serial.println(VERSION);
+        } else if (next == '{') { //JSON API
           bool verboseResponse = false;
           DEBUG_PRINTLN(F("Serial JSON buffer requested."));
           #ifdef WLED_USE_DYNAMIC_JSON
@@ -68,6 +73,7 @@ void handleSerial()
             serializeInfo(info);
 
             serializeJson(doc, Serial);
+            Serial.println();
           }
           releaseJSONBufferLock();
         }
