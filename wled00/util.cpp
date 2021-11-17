@@ -157,7 +157,5 @@ void releaseJSONBufferLock()
   DEBUG_PRINT(jsonBufferLock);
   DEBUG_PRINTLN(")");
   fileDoc = nullptr;
-  #ifndef WLED_USE_DYNAMIC_JSON
   jsonBufferLock = 0;
-  #endif
 }
