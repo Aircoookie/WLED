@@ -227,49 +227,23 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     nodeListEnabled = request->hasArg(F("NL"));
     if (!nodeListEnabled) Nodes.clear();
     nodeBroadcastEnabled = request->hasArg(F("NB"));
-    
-    // load special search nodes, because F uses string literal must right out all the strings
-    specialSearchNodes[0][0] = request->hasArg(F("0A"));
-    specialSearchNodes[0][1] = request->hasArg(F("0B"));
-    specialSearchNodes[0][2] = request->hasArg(F("0C"));
-    specialSearchNodes[0][3] = request->hasArg(F("0D"));
-    specialSearchNodes[1][0] = request->hasArg(F("1A"));
-    specialSearchNodes[1][1] = request->hasArg(F("1B"));
-    specialSearchNodes[1][2] = request->hasArg(F("1C"));
-    specialSearchNodes[1][3] = request->hasArg(F("1D"));
-    specialSearchNodes[2][0] = request->hasArg(F("2A"));
-    specialSearchNodes[2][1] = request->hasArg(F("2B"));
-    specialSearchNodes[2][2] = request->hasArg(F("2C"));
-    specialSearchNodes[2][3] = request->hasArg(F("2D"));
-    specialSearchNodes[3][0] = request->hasArg(F("3A"));
-    specialSearchNodes[3][1] = request->hasArg(F("3B"));
-    specialSearchNodes[3][2] = request->hasArg(F("3C"));
-    specialSearchNodes[3][3] = request->hasArg(F("3D"));
-    specialSearchNodes[4][0] = request->hasArg(F("4A"));
-    specialSearchNodes[4][1] = request->hasArg(F("4B"));
-    specialSearchNodes[4][2] = request->hasArg(F("4C"));
-    specialSearchNodes[4][3] = request->hasArg(F("4D"));
-    specialSearchNodes[5][0] = request->hasArg(F("5A"));
-    specialSearchNodes[5][1] = request->hasArg(F("5B"));
-    specialSearchNodes[5][2] = request->hasArg(F("5C"));
-    specialSearchNodes[5][3] = request->hasArg(F("5D"));
-    specialSearchNodes[6][0] = request->hasArg(F("6A"));
-    specialSearchNodes[6][1] = request->hasArg(F("6B"));
-    specialSearchNodes[6][2] = request->hasArg(F("6C"));
-    specialSearchNodes[6][3] = request->hasArg(F("6D"));
-    specialSearchNodes[7][0] = request->hasArg(F("7A"));
-    specialSearchNodes[7][1] = request->hasArg(F("7B"));
-    specialSearchNodes[7][2] = request->hasArg(F("7C"));
-    specialSearchNodes[7][3] = request->hasArg(F("7D"));
-    specialSearchNodes[8][0] = request->hasArg(F("8A"));
-    specialSearchNodes[8][1] = request->hasArg(F("8B"));
-    specialSearchNodes[8][2] = request->hasArg(F("8C"));
-    specialSearchNodes[8][3] = request->hasArg(F("8D"));
-    specialSearchNodes[9][0] = request->hasArg(F("9A"));
-    specialSearchNodes[9][1] = request->hasArg(F("9B"));
-    specialSearchNodes[9][2] = request->hasArg(F("9C"));
-    specialSearchNodes[9][3] = request->hasArg(F("9D"));
-    // end of special search nodes
+
+    char k[3]; k[2] = 0; // the id to store ip part in
+    for (int i = 0; i < 10; i++) {
+      k[0] = 48+i; //ascii 0,1,2,3,4,5,6,7,8,9
+      
+      k[1] = 'A'; // first octet
+      specialSearchNodes[i][0] = request->arg(k).toInt();
+
+      k[1] = 'B'; // second octet
+      specialSearchNodes[i][1] = request->arg(k).toInt();
+
+      k[1] = 'C'; // third octet
+      specialSearchNodes[i][2] = request->arg(k).toInt();
+
+      k[1] = 'D'; // fourth octet
+      specialSearchNodes[i][3] = request->arg(k).toInt();
+    }
 
     receiveDirect = request->hasArg(F("RD"));
     e131SkipOutOfSequence = request->hasArg(F("ES"));

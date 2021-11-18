@@ -474,7 +474,7 @@ void refreshNodeList() /* this function */
 /*********************************************************************************************\
    Broadcast system info to other nodes. (to update node lists)
 \*********************************************************************************************/
-void sendSysInfoUDP(int o1, int o2, int o3, int o4) /* defaults all args to 255, in theory */
+void sendSysInfoUDP(IPAddress targAddr = INADDR_NONE) /* defaults all args to 255, in theory, using INADDR_NONE is safe in theory */
 {
   if (!udp2Connected) return;
 
@@ -512,7 +512,7 @@ void sendSysInfoUDP(int o1, int o2, int o3, int o4) /* defaults all args to 255,
   for (byte i=0; i<sizeof(uint32_t); i++)
     data[40+i] = (build>>(8*i)) & 0xFF;
 
-  IPAddress broadcastIP(o1, o2, o3, o4);
+  IPAddress broadcastIP(targAddr[0], targAddr[1], targAddr[2], targAddr[3]);
   notifier2Udp.beginPacket(broadcastIP, udpPort2);
   notifier2Udp.write(data, sizeof(data));
   notifier2Udp.endPacket();

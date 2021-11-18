@@ -263,10 +263,10 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonArray if_node_list = if_nodes["cusnodes"]; // not sure if I should be using F here, couldn't understand what it does
   for (uint8_t i = 0; i < 10; i++) { // 10 is arbitrary defined in settings
     JsonArray if_node_ip = if_node_list[i];
-    specialSearchNodes[i][0] = if_node_ip[0];
-    specialSearchNodes[i][1] = if_node_ip[1];
-    specialSearchNodes[i][2] = if_node_ip[2];
-    specialSearchNodes[i][3] = if_node_ip[3];
+    CJSON(specialSearchNodes[i][0], if_node_ip[0]);
+    CJSON(specialSearchNodes[i][1], if_node_ip[1]);
+    CJSON(specialSearchNodes[i][2], if_node_ip[2]);
+    CJSON(specialSearchNodes[i][3], if_node_ip[3]);
   }
 
   JsonObject if_live = interfaces["live"];

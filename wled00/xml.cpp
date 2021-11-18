@@ -461,49 +461,16 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("NL"),nodeListEnabled);
     sappend('c',SET_F("NB"),nodeBroadcastEnabled);
 
-    // update special search node list
-    // because F() uses string literal, no for loop here all code written out
-    sappend('v',SET_F("0A"),specialSearchNodes[0][0]);
-    sappend('v',SET_F("0B"),specialSearchNodes[0][1]);
-    sappend('v',SET_F("0C"),specialSearchNodes[0][2]);
-    sappend('v',SET_F("0D"),specialSearchNodes[0][3]);
-    sappend('v',SET_F("1A"),specialSearchNodes[1][0]);
-    sappend('v',SET_F("1B"),specialSearchNodes[1][1]);
-    sappend('v',SET_F("1C"),specialSearchNodes[1][2]);
-    sappend('v',SET_F("1D"),specialSearchNodes[1][3]);
-    sappend('v',SET_F("2A"),specialSearchNodes[2][0]);
-    sappend('v',SET_F("2B"),specialSearchNodes[2][1]);
-    sappend('v',SET_F("2C"),specialSearchNodes[2][2]);
-    sappend('v',SET_F("2D"),specialSearchNodes[2][3]);
-    sappend('v',SET_F("3A"),specialSearchNodes[3][0]);
-    sappend('v',SET_F("3B"),specialSearchNodes[3][1]);
-    sappend('v',SET_F("3C"),specialSearchNodes[3][2]);
-    sappend('v',SET_F("3D"),specialSearchNodes[3][3]);
-    sappend('v',SET_F("4A"),specialSearchNodes[4][0]);
-    sappend('v',SET_F("4B"),specialSearchNodes[4][1]);
-    sappend('v',SET_F("4C"),specialSearchNodes[4][2]);
-    sappend('v',SET_F("4D"),specialSearchNodes[4][3]);
-    sappend('v',SET_F("5A"),specialSearchNodes[5][0]);
-    sappend('v',SET_F("5B"),specialSearchNodes[5][1]);
-    sappend('v',SET_F("5C"),specialSearchNodes[5][2]);
-    sappend('v',SET_F("5D"),specialSearchNodes[5][3]);
-    sappend('v',SET_F("6A"),specialSearchNodes[6][0]);
-    sappend('v',SET_F("6B"),specialSearchNodes[6][1]);
-    sappend('v',SET_F("6C"),specialSearchNodes[6][2]);
-    sappend('v',SET_F("6D"),specialSearchNodes[6][3]);
-    sappend('v',SET_F("7A"),specialSearchNodes[7][0]);
-    sappend('v',SET_F("7B"),specialSearchNodes[7][1]);
-    sappend('v',SET_F("7C"),specialSearchNodes[7][2]);
-    sappend('v',SET_F("7D"),specialSearchNodes[7][3]);
-    sappend('v',SET_F("8A"),specialSearchNodes[8][0]);
-    sappend('v',SET_F("8B"),specialSearchNodes[8][1]);
-    sappend('v',SET_F("8C"),specialSearchNodes[8][2]);
-    sappend('v',SET_F("8D"),specialSearchNodes[8][3]);
-    sappend('v',SET_F("9A"),specialSearchNodes[9][0]);
-    sappend('v',SET_F("9B"),specialSearchNodes[9][1]);
-    sappend('v',SET_F("9C"),specialSearchNodes[9][2]);
-    sappend('v',SET_F("9D"),specialSearchNodes[9][3]);
-    // continue normal settings
+    // a loop for specialSearchNodes (based on staticIP loop)
+    char k[3]; k[2] = 0; // id to save at
+    for (int i = 0; i < 10; i++) 
+    {
+      k[0] = 48+i; //ascii 0,1,2,3,4,5,6,7,8,9
+      k[1] = 'A'; sappend('v', k, specialSearchNodes[i][0]);
+      k[1] = 'B'; sappend('v', k, specialSearchNodes[i][1]);
+      k[1] = 'C'; sappend('v', k, specialSearchNodes[i][2]);
+      k[1] = 'D'; sappend('v', k, specialSearchNodes[i][3]);
+    }
 
     sappend('c',SET_F("RD"),receiveDirect);
     sappend('v',SET_F("EP"),e131Port);
