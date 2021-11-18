@@ -221,10 +221,15 @@ void WLED::loop()
       delete busConfigs[i]; busConfigs[i] = nullptr;
     }
     strip.finalizeInit();
+    loadLedmap = 0;
     if (aligned) strip.makeAutoSegments();
     else strip.fixInvalidSegments();
     yield();
     serializeConfig();
+  }
+  if (loadLedmap >= 0) {
+    strip.deserializeMap(loadLedmap);
+    loadLedmap = -1;
   }
 
   yield();
