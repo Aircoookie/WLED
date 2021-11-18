@@ -205,7 +205,11 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 
         if (set < 2) stop = start + 1;
         for (uint16_t i = start; i < stop; i++) {
-          strip.setPixelColor(i, rgbw[0], rgbw[1], rgbw[2], rgbw[3]);
+          if (strip.gammaCorrectCol) {
+            strip.setPixelColor(i, strip.gamma8(rgbw[0]), strip.gamma8(rgbw[1]), strip.gamma8(rgbw[2]), strip.gamma8(rgbw[3]));
+          } else {
+            strip.setPixelColor(i, rgbw[0], rgbw[1], rgbw[2], rgbw[3]);
+          }
         }
         if (!set) start++;
         set = 0;
@@ -522,7 +526,7 @@ void serializeInfo(JsonObject root)
   leds[F("fps")] = strip.getFps();
   leds[F("maxpwr")] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;
   leds[F("maxseg")] = strip.getMaxSegments();
-  leds[F("seglock")] = false; //will be used in the future to prevent modifications to segment config
+  //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config
 
   root[F("str")] = syncToggleReceive;
 
@@ -584,7 +588,7 @@ void serializeInfo(JsonObject root)
     root[F("resetReason0")] = (int)rtc_get_reset_reason(0);
     root[F("resetReason1")] = (int)rtc_get_reset_reason(1);
   #endif
-  root[F("lwip")] = 0;
+  root[F("lwip")] = 0; //deprecated
   #else
   root[F("arch")] = "esp8266";
   root[F("core")] = ESP.getCoreVersion();

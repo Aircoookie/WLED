@@ -2,6 +2,20 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2111160
+
+-   Version bump to 0.13.0-b5 "Toki"
+-   Improv Serial support (PR #2334)
+-   Button improvements (PR #2284)
+-   Added two time zones (PR #2264, 2311)
+-   JSON in/decrementing support for brightness and presets
+-   Fixed no gamma correction for JSON individual LED control
+-   Preset cycle bugfix
+-   Removed ledCount
+-   LED settings buffer bugfix
+-   Network pin conflict bugfix
+-   Changed default ESP32 partition layout to 4M, 1M FS
+
 #### Build 2110110
 
 -   Version bump to 0.13.0-b4 "Toki"
