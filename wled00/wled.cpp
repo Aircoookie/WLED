@@ -205,7 +205,7 @@ void WLED::loop()
       
       for (uint8_t i = 0; i < 10; i++) {
         // check that ips are valid
-        if (specialSearchNodes[i][0] >= 0 && specialSearchNodes[i][0] < 255) && (specialSearchNodes[i][1] >= 0 && specialSearchNodes[i][1] < 255 && specialSearchNodes[i][2] >= 0 && specialSearchNodes[i][2] < 255 && specialSearchNodes[i][3] >= 0 && specialSearchNodes[i][3] < 255) {
+        if (specialSearchNodes[i][0] >= 0 && specialSearchNodes[i][0] < 255 && specialSearchNodes[i][1] >= 0 && specialSearchNodes[i][1] < 255 && specialSearchNodes[i][2] >= 0 && specialSearchNodes[i][2] < 255 && specialSearchNodes[i][3] >= 0 && specialSearchNodes[i][3] < 255) {
           sendSysInfoUDP(specialSearchNodes[i][0], specialSearchNodes[i][1], specialSearchNodes[i][2], specialSearchNodes[i][3]);
         }
       }

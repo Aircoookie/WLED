@@ -474,7 +474,7 @@ void refreshNodeList() /* this function */
 /*********************************************************************************************\
    Broadcast system info to other nodes. (to update node lists)
 \*********************************************************************************************/
-void sendSysInfoUDP(int o1 = 255, int o2 = 255, int o3 = 255, int o4 = 255)
+void sendSysInfoUDP(int o1, int o2, int o3, int o4) /* defaults all args to 255, in theory */
 {
   if (!udp2Connected) return;
 
