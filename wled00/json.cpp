@@ -830,9 +830,12 @@ void serializeModeData(JsonObject root)
         insideQuotes = !insideQuotes;
         break;
       case '[':
+        if (insideQuotes) lineBuffer += singleJsonSymbol;
         break;
       case ']':
+        if (insideQuotes) {lineBuffer += singleJsonSymbol; break;}
       case ',':
+        if (insideQuotes) {lineBuffer += singleJsonSymbol; break;}
         if (lineBuffer.length() > 0) {
           uint8_t endPos = lineBuffer.indexOf('@');
           if (endPos>0) fxdata.add(lineBuffer.substring(endPos));
