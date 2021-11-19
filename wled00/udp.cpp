@@ -474,7 +474,7 @@ void refreshNodeList() /* this function */
 /*********************************************************************************************\
    Broadcast system info to other nodes. (to update node lists)
 \*********************************************************************************************/
-void sendSysInfoUDP(IPAddress targAddr = INADDR_NONE) /* defaults all args to 255, in theory, using INADDR_NONE is safe in theory */
+void sendSysInfoUDP(IPAddress targAddr) /* defaults all args to 255, in theory, using INADDR_NONE is safe in theory */
 {
   if (!udp2Connected) return;
 
