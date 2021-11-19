@@ -2,7 +2,13 @@
 
 ### Builds after release 0.12.0
 
-#### Build 2111160
+#### Build 2111190
+
+-   Changed default ESP32 LED pin from 16 to 2
+-   Renamed "Running 2" to "Chase 2"
+-   Renamed "Tri Chase" to "Chase 3"
+
+#### Build 2111170
 
 -   Version bump to 0.13.0-b5 "Toki"
 -   Improv Serial support (PR #2334)
@@ -388,6 +394,7 @@
 -   Added support for WESP32 ethernet board (PR #1764)
 -   Added Caching for main UI (PR #1704)
 -   Added Tetrix mode (PR #1729)
+-   Removed Merry Christmas mode (use "Chase 2" - called Running 2 before 0.13.0)
 -   Added memory check on Bus creation
 
 #### Build 2102050
