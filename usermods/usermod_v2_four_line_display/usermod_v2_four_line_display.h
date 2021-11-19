@@ -25,6 +25,10 @@
 
 //The SCL and SDA pins are defined here. 
 #ifdef ARDUINO_ARCH_ESP32
+  #define HW_PIN_SCL 22
+  #define HW_PIN_SDA 21
+  #define HW_PIN_CLOCKSPI 18
+  #define HW_PIN_DATASPI 23
   #ifndef FLD_PIN_SCL
     #define FLD_PIN_SCL 22
   #endif
@@ -47,6 +51,10 @@
     #define FLD_PIN_RESET 26
   #endif
 #else
+  #define HW_PIN_SCL 5
+  #define HW_PIN_SDA 4
+  #define HW_PIN_CLOCKSPI 14
+  #define HW_PIN_DATASPI 13
   #ifndef FLD_PIN_SCL
     #define FLD_PIN_SCL 5
   #endif
@@ -172,80 +180,64 @@ class FourLineDisplayUsermod : public Usermod {
     // network here
     void setup() {
       if (type == NONE || !enabled) return;
+
+      bool isHW;
+      PinOwner po = PinOwner::UM_FourLineDisplay;
       if (type == SSD1306_SPI || type == SSD1306_SPI64) {
-        PinManagerPinType pins[5] = { { ioPin[0], true }, { ioPin[1], true}, { ioPin[2], true }, { ioPin[3], true}, { ioPin[4], true }};
-        if (!pinManager.allocateMultiplePins(pins, 5, PinOwner::UM_FourLineDisplay)) { type=NONE; return; }
+        isHW = (ioPin[0]==HW_PIN_CLOCKSPI && ioPin[1]==HW_PIN_DATASPI);
+        PinManagerPinType pins[5] = { { ioPin[0], true }, { ioPin[1], true }, { ioPin[2], true }, { ioPin[3], true }, { ioPin[4], true }};
+        if (!pinManager.allocateMultiplePins(pins, 5, po)) { type=NONE; return; }
       } else {
-        PinManagerPinType pins[2] = { { ioPin[0], true }, { ioPin[1], true} };
-        if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::UM_FourLineDisplay)) { type=NONE; return; }
+        isHW = (ioPin[0]==HW_PIN_SCL && ioPin[1]==HW_PIN_SDA);
+        PinManagerPinType pins[2] = { { ioPin[0], true }, { ioPin[1], true } };
+        if (ioPin[0]==HW_PIN_SCL && ioPin[1]==HW_PIN_SDA) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
+        if (!pinManager.allocateMultiplePins(pins, 2, po)) { type=NONE; return; }
       }
+
       DEBUG_PRINTLN(F("Allocating display."));
       switch (type) {
         case SSD1306:
-          #ifdef ESP8266
-          if (!(ioPin[0]==5 && ioPin[1]==4))
-            u8x8 = (U8X8 *) new U8X8_SSD1306_128X32_UNIVISION_SW_I2C(ioPin[0], ioPin[1]); // SCL, SDA, reset
-          else
-          #endif
-            u8x8 = (U8X8 *) new U8X8_SSD1306_128X32_UNIVISION_HW_I2C(U8X8_PIN_NONE, ioPin[0], ioPin[1]); // Pins are Reset, SCL, SDA
+          if (!isHW) u8x8 = (U8X8 *) new U8X8_SSD1306_128X32_UNIVISION_SW_I2C(ioPin[0], ioPin[1]); // SCL, SDA, reset
+          else       u8x8 = (U8X8 *) new U8X8_SSD1306_128X32_UNIVISION_HW_I2C(U8X8_PIN_NONE, ioPin[0], ioPin[1]); // Pins are Reset, SCL, SDA
           lineHeight = 1;
           break;
         case SH1106:
-          #ifdef ESP8266
-          if (!(ioPin[0]==5 && ioPin[1]==4))
-            u8x8 = (U8X8 *) new U8X8_SH1106_128X64_WINSTAR_SW_I2C(ioPin[0], ioPin[1]); // SCL, SDA, reset
-          else
-          #endif
-            u8x8 = (U8X8 *) new U8X8_SH1106_128X64_WINSTAR_HW_I2C(U8X8_PIN_NONE, ioPin[0], ioPin[1]); // Pins are Reset, SCL, SDA
+          if (!isHW) u8x8 = (U8X8 *) new U8X8_SH1106_128X64_WINSTAR_SW_I2C(ioPin[0], ioPin[1]); // SCL, SDA, reset
+          else       u8x8 = (U8X8 *) new U8X8_SH1106_128X64_WINSTAR_HW_I2C(U8X8_PIN_NONE, ioPin[0], ioPin[1]); // Pins are Reset, SCL, SDA
           lineHeight = 2;
           break;
         case SSD1306_64:
-          #ifdef ESP8266
-          if (!(ioPin[0]==5 && ioPin[1]==4))
-            u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_SW_I2C(ioPin[0], ioPin[1]); // SCL, SDA, reset
-          else
-          #endif
-            u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_HW_I2C(U8X8_PIN_NONE, ioPin[0], ioPin[1]); // Pins are Reset, SCL, SDA
+          if (!isHW) u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_SW_I2C(ioPin[0], ioPin[1]); // SCL, SDA, reset
+          else       u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_HW_I2C(U8X8_PIN_NONE, ioPin[0], ioPin[1]); // Pins are Reset, SCL, SDA
           lineHeight = 2;
           break;
         case SSD1305:
-          #ifdef ESP8266
-          if (!(ioPin[0]==5 && ioPin[1]==4))
-            u8x8 = (U8X8 *) new U8X8_SSD1305_128X32_NONAME_SW_I2C(ioPin[0], ioPin[1]); // SCL, SDA, reset
-          else
-          #endif
-            u8x8 = (U8X8 *) new U8X8_SSD1305_128X32_ADAFRUIT_HW_I2C(U8X8_PIN_NONE, ioPin[0], ioPin[1]); // Pins are Reset, SCL, SDA
+          if (!isHW) u8x8 = (U8X8 *) new U8X8_SSD1305_128X32_NONAME_SW_I2C(ioPin[0], ioPin[1]); // SCL, SDA, reset
+          else       u8x8 = (U8X8 *) new U8X8_SSD1305_128X32_ADAFRUIT_HW_I2C(U8X8_PIN_NONE, ioPin[0], ioPin[1]); // Pins are Reset, SCL, SDA
           lineHeight = 1;
           break;
         case SSD1305_64:
-          #ifdef ESP8266
-          if (!(ioPin[0]==5 && ioPin[1]==4))
-            u8x8 = (U8X8 *) new U8X8_SSD1305_128X64_ADAFRUIT_SW_I2C(ioPin[0], ioPin[1]); // SCL, SDA, reset
-          else
-          #endif
-            u8x8 = (U8X8 *) new U8X8_SSD1305_128X64_ADAFRUIT_HW_I2C(U8X8_PIN_NONE, ioPin[0], ioPin[1]); // Pins are Reset, SCL, SDA
+          if (!isHW) u8x8 = (U8X8 *) new U8X8_SSD1305_128X64_ADAFRUIT_SW_I2C(ioPin[0], ioPin[1]); // SCL, SDA, reset
+          else       u8x8 = (U8X8 *) new U8X8_SSD1305_128X64_ADAFRUIT_HW_I2C(U8X8_PIN_NONE, ioPin[0], ioPin[1]); // Pins are Reset, SCL, SDA
           lineHeight = 2;
           break;
         case SSD1306_SPI:
-          if (!(ioPin[0]==FLD_PIN_CLOCKSPI && ioPin[1]==FLD_PIN_DATASPI)) // if not overridden these sould be HW accellerated
-            u8x8 = (U8X8 *) new U8X8_SSD1306_128X32_UNIVISION_4W_SW_SPI(ioPin[0], ioPin[1], ioPin[2], ioPin[3], ioPin[4]);
-          else
-            u8x8 = (U8X8 *) new U8X8_SSD1306_128X32_UNIVISION_4W_HW_SPI(ioPin[2], ioPin[3], ioPin[4]); // Pins are cs, dc, reset
+          if (!isHW)  u8x8 = (U8X8 *) new U8X8_SSD1306_128X32_UNIVISION_4W_SW_SPI(ioPin[0], ioPin[1], ioPin[2], ioPin[3], ioPin[4]);
+          else        u8x8 = (U8X8 *) new U8X8_SSD1306_128X32_UNIVISION_4W_HW_SPI(ioPin[2], ioPin[3], ioPin[4]); // Pins are cs, dc, reset
           lineHeight = 1;
           break;
         case SSD1306_SPI64:
-          if (!(ioPin[0]==FLD_PIN_CLOCKSPI && ioPin[1]==FLD_PIN_DATASPI)) // if not overridden these sould be HW accellerated
-            u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_4W_SW_SPI(ioPin[0], ioPin[1], ioPin[2], ioPin[3], ioPin[4]);
-          else
-            u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_4W_HW_SPI(ioPin[2], ioPin[3], ioPin[4]); // Pins are cs, dc, reset
+          if (!isHW) u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_4W_SW_SPI(ioPin[0], ioPin[1], ioPin[2], ioPin[3], ioPin[4]);
+          else       u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_4W_HW_SPI(ioPin[2], ioPin[3], ioPin[4]); // Pins are cs, dc, reset
           lineHeight = 2;
           break;
         default:
           u8x8 = nullptr;
       }
+
       if (nullptr == u8x8) {
           DEBUG_PRINTLN(F("Display init failed."));
-          for (byte i=0; i<5 && ioPin[i]>=0; i++) pinManager.deallocatePin(ioPin[i], PinOwner::UM_FourLineDisplay);
+          pinManager.deallocateMultiplePins((const uint8_t*)ioPin, (type == SSD1306_SPI || type == SSD1306_SPI64) ? 5 : 2, po);
           type = NONE;
           return;
       }
@@ -714,10 +706,10 @@ class FourLineDisplayUsermod : public Usermod {
         for (byte i=0; i<5; i++) if (ioPin[i] != newPin[i]) { pinsChanged = true; break; }
         if (pinsChanged || type!=newType) {
           if (type != NONE) delete u8x8;
-          for (byte i=0; i<5; i++) {
-            if (ioPin[i]>=0) pinManager.deallocatePin(ioPin[i], PinOwner::UM_FourLineDisplay);
-            ioPin[i] = newPin[i];
-          }
+          PinOwner po = PinOwner::UM_FourLineDisplay;
+          if (ioPin[0]==HW_PIN_SCL && ioPin[1]==HW_PIN_SDA) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
+          pinManager.deallocateMultiplePins((const uint8_t *)ioPin, (type == SSD1306_SPI || type == SSD1306_SPI64) ? 5 : 2, po);
+          for (byte i=0; i<5; i++) ioPin[i] = newPin[i];
           if (ioPin[0]<0 || ioPin[1]<0) { // data & clock must be > -1
             type = NONE;
             return true;
