@@ -931,7 +931,7 @@ class WS2812FX {
 //       - Defining SEGCOL(<i>) can override a specific palette using these values (e.g. Color Gradient)
 const char JSON_mode_names[] PROGMEM = R"=====([
 "Solid",
-"Blink@;!;!",
+"Blink@!,;!,!,;!",
 "Breathe@!,;!,!;!",
 "Wipe@!,!;!,!,;!",
 "Wipe Random@!,;;!",
@@ -1020,7 +1020,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Glitter",
 "Candle@Flicker rate,Flicker intensity;!,!,;",
 "Fireworks Starburst",
-"Fireworks 1D@Gravity,Firing side;;!",
+"Fireworks 1D@Gravity,Firing side;!,!,;!",
 "Bouncing Balls@Gravity,# of balls;!,!,;!",
 "Sinelon",
 "Sinelon Dual",

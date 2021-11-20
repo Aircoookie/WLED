@@ -1265,7 +1265,7 @@ function setSliderAndColorControl(idx/*, extra*/)
 	var paOnOff = (extras.length<3  || extras[2]=='')?[]:extras[2].split(",");
   
 	// set html slider items on/off
-	var nSliders = (gId("Effects").children.length - 1) / 2; // p (label) & div for each slider + FX list
+	var nSliders = Math.floor((gId("Effects").children.length - 1) / 2); // p (label) & div for each slider + FX list
 	for (let i=0; i<nSliders; i++) {
 		var slider = gId("slider" + i);
 		var label = gId("sliderLabel" + i);
