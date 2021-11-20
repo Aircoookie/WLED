@@ -870,6 +870,7 @@ void serializeModeNames(JsonArray arr, const char *qstring) {
         break;
       case ']':
       case ',':
+        if (insideQuotes) break;
         if (lineBuffer.length() > 0) {
           uint8_t endPos = lineBuffer.indexOf('@');
           if (endPos>0) arr.add(lineBuffer.substring(0,endPos));
