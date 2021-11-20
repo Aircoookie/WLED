@@ -20,6 +20,7 @@ var tr = 7;
 var d = document;
 const ranges = RangeTouch.setup('input[type="range"]', {});
 var palettesData;
+var fxdata = [];
 var pJson = {}, eJson = {}, lJson = {};
 var pN = "", pI = 0, pNum = 0;
 var pmt = 1, pmtLS = 0, pmtLast = 0;
@@ -252,6 +253,7 @@ function onLoad()
 	loadPalettes(()=>{
 		loadPalettesData(redrawPalPrev);
 		loadFX(()=>{
+			loadFXData();
 			loadPresets(()=>{
 				if (isObj(lastinfo) && isEmpty(lastinfo)) loadInfo(requestJson);	// if not filled by WS
 			});
@@ -501,6 +503,34 @@ function loadFX(callback = null)
 	.catch(function (error) {
 		showToast(error, true);
 		presetError(false);
+	})
+	.finally(()=>{
+		if (callback) callback();
+		updateUI();
+	});
+}
+
+function loadFXData(callback = null)
+{
+	var url = (loc?`http://${locip}`:'') + '/json/fxdata';
+
+	fetch(url, {
+		method: 'get'
+	})
+	.then(res => {
+		if (!res.ok) showErrorToast();
+		return res.json();
+	})
+	.then(json => {
+		clearErrorToast();
+		fxdata = json||[];
+		// add default value for Solid
+		fxdata.shift();
+		fxdata.unshift("@;!;");
+	})
+	.catch(function (error) {
+		fxdata = [];
+		showToast(error, true);
 	})
 	.finally(()=>{
 		if (callback) callback();
@@ -1076,10 +1106,9 @@ function updateSelectedFx()
 	var selectedEffect = parent.querySelector(`.lstI[data-id="${selectedFx}"]`);
 	if (selectedEffect) {
 		selectedEffect.classList.add('selected');
-
 		// WLEDSR: extract the Slider and color control string from the HTML element and set it.
-		sliderControl = selectedEffect.dataset.opt.replace(/&amp;/g, "&");
-		setSliderAndColorControl(selectedFx, sliderControl);
+		//sliderControl = selectedEffect.dataset.opt.replace(/&amp;/g, "&");
+		setSliderAndColorControl(selectedFx /*, sliderControl*/);
 	}
 }
 
@@ -1224,11 +1253,12 @@ function readState(s,command=false)
 }
 
 // WLEDSR: control HTML elements for Slider and Color Control
-function setSliderAndColorControl(idx, extra)
+function setSliderAndColorControl(idx/*, extra*/)
 {
+	if (!(Array.isArray(fxdata) && fxdata.length>idx)) return;
 	var topPosition = 0;
-  	var controlDefined = (extra.substr(0,1) == "@")?true:false;
-	extra = extra.substr(1);
+  	var controlDefined = (fxdata[idx].substr(0,1) == "@")?true:false;
+	var extra = fxdata[idx].substr(1);
 	var extras = (extra == '')?[]:extra.split(";");
 	var slOnOff = (extras.length==0 || extras[0]=='')?[]:extras[0].split(",");
 	var coOnOff = (extras.length<2  || extras[1]=='')?[]:extras[1].split(",");
@@ -1293,7 +1323,7 @@ function setSliderAndColorControl(idx, extra)
 			else if (i==0) btn.innerHTML = "Fx";
 			else if (i==1) btn.innerHTML = "Bg";
 			else btn.innerHTML = "Cs";
-		} else if (!controlDefined || paOnOff.length>0) { // if no controls or palette then all buttons should be shown for color 1..3 palettes
+		} else if (!controlDefined /*|| paOnOff.length>0*/) { // if no controls then all buttons should be shown for color 1..3
 			btn.style.display = "inline";
 			btn.innerHTML = `${i+1}`;
 		} else {

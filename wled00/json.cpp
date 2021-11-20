@@ -813,9 +813,9 @@ void serializeNodes(JsonObject root)
   }
 }
 
-void serializeModeData(JsonObject root)
+void serializeModeData(JsonArray fxdata)
 {
-  JsonArray fxdata = root.createNestedArray("fxdata");
+  //JsonArray fxdata = root.createNestedArray("fxdata");
   String lineBuffer;
   bool insideQuotes = false;
   char singleJsonSymbol;
@@ -958,13 +958,13 @@ void serveJson(AsyncWebServerRequest* request)
   }
 
   #ifdef WLED_USE_DYNAMIC_JSON
-  AsyncJsonResponse* response = new AsyncJsonResponse(JSON_BUFFER_SIZE);
+  AsyncJsonResponse* response = new AsyncJsonResponse(JSON_BUFFER_SIZE, subJson==6);
   #else
   if (!requestJSONBufferLock(7)) return;
-  AsyncJsonResponse *response = new AsyncJsonResponse(&doc);
+  AsyncJsonResponse *response = new AsyncJsonResponse(&doc, subJson==6);
   #endif
 
-  JsonObject lDoc = response->getRoot();
+  JsonVariant lDoc = response->getRoot();
 
   switch (subJson)
   {
@@ -977,7 +977,7 @@ void serveJson(AsyncWebServerRequest* request)
     case 5: //palettes
       serializePalettes(lDoc, request); break;
     case 6: // FX helper data
-      serializeModeData(lDoc); break;
+      serializeModeData(lDoc.as<JsonArray>()); break;
     default: //all
       JsonObject state = lDoc.createNestedObject("state");
       serializeState(state);
