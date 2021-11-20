@@ -3,12 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.13.0-b4
+   @version 0.13.0-b5
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2110110
+#define VERSION 2111170
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -262,7 +262,6 @@ WLED_GLOBAL bool noWifiSleep _INIT(false);
 #endif
 
 // LED CONFIG
-WLED_GLOBAL uint16_t ledCount _INIT(DEFAULT_LED_COUNT);   // overcurrent prevented by ABL
 WLED_GLOBAL bool turnOnAtBoot _INIT(true);                // turn on LEDs at power-up
 WLED_GLOBAL byte bootPreset   _INIT(0);                   // save preset to load after power-up
 
@@ -506,6 +505,10 @@ WLED_GLOBAL byte timerWeekday[] _INIT_N(({ 255, 255, 255, 255, 255, 255, 255, 25
 
 // blynk
 WLED_GLOBAL bool blynkEnabled _INIT(false);
+
+//improv
+WLED_GLOBAL byte improvActive _INIT(0); //0: no improv packet received, 1: improv active, 2: provisioning
+WLED_GLOBAL byte improvError _INIT(0);
 
 //playlists
 WLED_GLOBAL unsigned long presetCycledTime _INIT(0);

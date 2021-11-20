@@ -93,6 +93,12 @@ void onHueConnect(void* arg, AsyncClient* client);
 void sendHuePoll();
 void onHueData(void* arg, AsyncClient* client, void *data, size_t len);
 
+//improv.cpp
+void handleImprovPacket();
+void sendImprovStateResponse(uint8_t state, bool error = false);
+void sendImprovInfoResponse();
+void sendImprovRPCResponse(uint8_t commandId);
+
 //ir.cpp
 bool decodeIRCustom(uint32_t code);
 void applyRepeatActions();
@@ -191,6 +197,7 @@ bool isAsterisksOnly(const char* str, byte maxLen);
 void handleSettingsSet(AsyncWebServerRequest *request, byte subPage);
 bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply=true);
 int getNumVal(const String* req, uint16_t pos);
+void parseNumber(const char* str, byte* val, byte minv=0, byte maxv=255);
 bool updateVal(const String* req, const char* key, byte* val, byte minv=0, byte maxv=255);
 
 //udp.cpp
@@ -207,6 +214,7 @@ class Usermod {
   public:
     virtual void loop() {}
     virtual void handleOverlayDraw() {}
+    virtual bool handleButton(uint8_t b) { return false; }
     virtual void setup() {}
     virtual void connected() {}
     virtual void addToJsonState(JsonObject& obj) {}
@@ -227,7 +235,7 @@ class UsermodManager {
   public:
     void loop();
     void handleOverlayDraw();
-
+    bool handleButton(uint8_t b);
     void setup();
     void connected();
     void addToJsonState(JsonObject& obj);

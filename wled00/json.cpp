@@ -6,6 +6,20 @@
  * JSON API (De)serialization
  */
 
+bool getVal(JsonVariant elem, byte* val, byte vmin=0, byte vmax=255) {
+  if (elem.is<int>()) {
+    *val = elem;
+    return true;
+  } else if (elem.is<const char*>()) {
+    const char* str = elem;
+    size_t len = strnlen(str, 12);
+    if (len == 0 || len > 10) return false;
+    parseNumber(str, val, vmin, vmax);
+    return true;
+  }
+  return false; //key does not exist
+}
+
 void deserializeSegment(JsonObject elem, byte it, byte presetId)
 {
   byte id = elem["id"] | it;
@@ -62,12 +76,10 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   }
   if (stop > start && seg.offset > len -1) seg.offset = len -1;
 
-  int segbri = elem["bri"] | -1;
-  if (segbri == 0) {
-    seg.setOption(SEG_OPTION_ON, 0, id);
-  } else if (segbri > 0) {
-    seg.setOpacity(segbri, id);
-    seg.setOption(SEG_OPTION_ON, 1, id);
+  byte segbri = 0;
+  if (getVal(elem["bri"], &segbri)) {
+    if (segbri > 0) seg.setOpacity(segbri, id);
+    seg.setOption(SEG_OPTION_ON, segbri, id);
   }
 
   bool on = elem["on"] | seg.getOption(SEG_OPTION_ON);
@@ -191,7 +203,11 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 
         if (set < 2) stop = start + 1;
         for (uint16_t i = start; i < stop; i++) {
-          strip.setPixelColor(i, rgbw[0], rgbw[1], rgbw[2], rgbw[3]);
+          if (strip.gammaCorrectCol) {
+            strip.setPixelColor(i, strip.gamma8(rgbw[0]), strip.gamma8(rgbw[1]), strip.gamma8(rgbw[2]), strip.gamma8(rgbw[3]));
+          } else {
+            strip.setPixelColor(i, rgbw[0], rgbw[1], rgbw[2], rgbw[3]);
+          }
         }
         if (!set) start++;
         set = 0;
@@ -210,7 +226,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   strip.applyToAllSelected = false;
   bool stateResponse = root[F("v")] | false;
 
-  bri = root["bri"] | bri;
+  getVal(root["bri"], &bri);
 
   bool on = root["on"] | (bri > 0);
   if (!on != !bri) toggleOnOff();
@@ -314,18 +330,18 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   usermods.readFromJsonState(root);
 
-  int ps = root[F("psave")] | -1;
+  byte ps = root[F("psave")];
   if (ps > 0) {
     savePreset(ps, true, nullptr, root);
   } else {
-    ps = root[F("pdel")] | -1; //deletion
+    ps = root[F("pdel")]; //deletion
     if (ps > 0) {
       deletePreset(ps);
     }
-    ps = root["ps"] | -1; //load preset (clears state request!)
-    if (ps >= 0) {
+
+    if (getVal(root["ps"], &presetCycCurr, 1, 5)) { //load preset (clears state request!)
       if (!presetId) unloadPlaylist(); //stop playlist if preset changed manually
-      applyPreset(ps, callMode);
+      applyPreset(presetCycCurr, callMode);
       return stateResponse;
     }
 
@@ -478,14 +494,14 @@ void serializeInfo(JsonObject root)
   //root[F("cn")] = WLED_CODENAME;
 
   JsonObject leds = root.createNestedObject("leds");
-  leds[F("count")] = ledCount;
+  leds[F("count")] = strip.getLengthTotal();
   leds[F("rgbw")] = strip.isRgbw;
   leds[F("wv")] = strip.isRgbw && (strip.rgbwMode == RGBW_MODE_MANUAL_ONLY || strip.rgbwMode == RGBW_MODE_DUAL); //should a white channel slider be displayed?
   leds[F("pwr")] = strip.currentMilliamps;
   leds[F("fps")] = strip.getFps();
   leds[F("maxpwr")] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;
   leds[F("maxseg")] = strip.getMaxSegments();
-  leds[F("seglock")] = false; //will be used in the future to prevent modifications to segment config
+  //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config
 
   root[F("str")] = syncToggleReceive;
 
@@ -547,7 +563,7 @@ void serializeInfo(JsonObject root)
     root[F("resetReason0")] = (int)rtc_get_reset_reason(0);
     root[F("resetReason1")] = (int)rtc_get_reset_reason(1);
   #endif
-  root[F("lwip")] = 0;
+  root[F("lwip")] = 0; //deprecated
   #else
   root[F("arch")] = "esp8266";
   root[F("core")] = ESP.getCoreVersion();
@@ -841,7 +857,7 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
     #endif
   }
 
-  uint16_t used = ledCount;
+  uint16_t used = strip.getLengthTotal();
   uint16_t n = (used -1) /MAX_LIVE_LEDS +1; //only serve every n'th LED if count over MAX_LIVE_LEDS
   char buffer[2000];
   strcpy_P(buffer, PSTR("{\"leds\":["));

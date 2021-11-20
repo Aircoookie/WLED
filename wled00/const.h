@@ -63,6 +63,7 @@
 #define USERMOD_ID_BH1750                20     //Usermod "usermod_bh1750.h"
 #define USERMOD_ID_SEVEN_SEGMENT_DISPLAY 21     //Usermod "usermod_v2_seven_segment_display.h"
 #define USERMOD_RGB_ROTARY_ENCODER       22     //Usermod "rgb-rotary-encoder.h"
+#define USERMOD_ID_QUINLED_AN_PENTA      23     //Usermod "quinled-an-penta.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
@@ -264,12 +265,20 @@
 #endif
 
 // string temp buffer (now stored in stack locally)
-#define OMAX 2048
+#ifdef ESP8266
+#define SETTINGS_STACK_BUF_SIZE 2048
+#else
+#define SETTINGS_STACK_BUF_SIZE 3096 
+#endif
 
 #ifdef WLED_USE_ETHERNET
-#define E131_MAX_UNIVERSE_COUNT 20
+  #define E131_MAX_UNIVERSE_COUNT 20
 #else
-#define E131_MAX_UNIVERSE_COUNT 10
+  #ifdef ESP8266
+    #define E131_MAX_UNIVERSE_COUNT 9
+  #else
+    #define E131_MAX_UNIVERSE_COUNT 12
+  #endif
 #endif
 
 #define ABL_MILLIAMPS_DEFAULT 850  // auto lower brightness to stay close to milliampere limit
