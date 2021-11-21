@@ -2614,7 +2614,7 @@ uint16_t WS2812FX::mode_glitter()
 
 
 
-//each needs 11 bytes
+//each needs 12 bytes
 //Spark type is used for popcorn, 1D fireworks, and drip
 typedef struct Spark {
   float pos;

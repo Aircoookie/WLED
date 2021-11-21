@@ -247,7 +247,7 @@ class WS2812FX {
   
   // segment parameters
   public:
-    typedef struct Segment { // 30 (33 in memory?) bytes
+    typedef struct Segment { // 30 (32 in memory) bytes
       uint16_t start;
       uint16_t stop; //segment invalid if stop == 0
       uint16_t offset;
