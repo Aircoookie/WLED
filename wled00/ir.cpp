@@ -593,6 +593,7 @@ void decodeIRJson(uint32_t code)
   lastValidCode = 0;
   if (fdo.isNull()) {
     //the received code does not exist
+    releaseJSONBufferLock();
     if (!WLED_FS.exists("/ir.json")) errorFlag = ERR_FS_IRLOAD; //warn if IR file itself doesn't exist
     return;
   }
