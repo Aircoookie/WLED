@@ -279,10 +279,10 @@ public:
     uiDomString += F(":{");
     uiDomString += FPSTR(_enabled);
     if (enabled) {
-      uiDomString += F(":false}});loadInfo();\">");
+      uiDomString += F(":false}});\">");
       uiDomString += F("PIR <i class=\"icons\">&#xe325;</i>");
     } else {
-      uiDomString += F(":true}});loadInfo();\">");
+      uiDomString += F(":true}});\">");
       uiDomString += F("PIR <i class=\"icons\">&#xe08f;</i>");
     }
     uiDomString += F("</button>");

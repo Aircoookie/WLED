@@ -255,7 +255,8 @@ function onLoad()
 		loadFX(()=>{
 			loadFXData();
 			loadPresets(()=>{
-				if (isObj(lastinfo) && isEmpty(lastinfo)) loadInfo(requestJson);	// if not filled by WS
+				//if (isObj(lastinfo) && isEmpty(lastinfo)) loadInfo(requestJson);	// if not filled by WS
+				requestJson();
 			});
 		});
 	});
@@ -1354,23 +1355,21 @@ function requestJson(command=null)
 	gId('connind').style.backgroundColor = "var(--c-r)";
 	if (command && !reqsLegal) return; //stop post requests from chrome onchange event on page restore
 	if (!jsonTimeout) jsonTimeout = setTimeout(showErrorToast, 3000);
-	if (!command) command = {'v':true};
 	var req = null;
-	var url = (loc?`http://${locip}`:'') + '/json/state';
+	var url = (loc?`http://${locip}`:'') + '/json/si';
 	var useWs = (ws && ws.readyState === WebSocket.OPEN);
 	var type = command ? 'post':'get';
-
-	command.v = true; // force complete /json/si API response
-	command.time = Math.floor(Date.now() / 1000);
-
-	var t = gId('tt');
-	if (t.validity.valid && command.transition==null) {
-		var tn = parseInt(t.value*10);
-		if (tn != tr) command.transition = tn;
-	}
-
-	req = JSON.stringify(command);
-	if (req.length > 1000) useWs = false; //do not send very long requests over websocket
+	if (command) {
+		command.v = true; // force complete /json/si API response
+		command.time = Math.floor(Date.now() / 1000);
+		var t = gId('tt');
+		if (t.validity.valid && command.transition==null) {
+			var tn = parseInt(t.value*10);
+			if (tn != tr) command.transition = tn;
+		}
+		req = JSON.stringify(command);
+		if (req.length > 1000) useWs = false; //do not send very long requests over websocket
+	};
 
 	if (useWs) {
 		ws.send(req?req:'{"v":true}');
@@ -1396,6 +1395,11 @@ function requestJson(command=null)
 		gId('connind').style.backgroundColor = "var(--c-g)";
 		if (!json) { showToast('Empty response', true); return; }
 		if (json.success) return;
+		if (json.info) {
+			lastinfo = json.info;
+			parseInfo();
+			if (isInfo) populateInfo();
+		}
 		var s = json.state ? json.state : json;
 		readState(s);
 		reqsLegal = true;
@@ -1451,7 +1455,7 @@ function toggleInfo()
 {
 	if (isNodes) toggleNodes();
 	isInfo = !isInfo;
-	if (isInfo) loadInfo();
+	if (isInfo) requestJson(); // loadInfo();
 	gId('info').style.transform = (isInfo) ? "translateY(0px)":"translateY(100%)";
 	gId('buttonI').className = (isInfo) ? "active":"";
 }

@@ -124,6 +124,7 @@ void sendDataWs(AsyncWebSocketClient * client)
     serializeState(state);
     JsonObject info  = doc.createNestedObject("info");
     serializeInfo(info);
+    DEBUG_PRINTF("JSON buffer size: %u for WS request.\n", doc.memoryUsage());
     size_t len = measureJson(doc);
     buffer = ws.makeBuffer(len);
     if (!buffer) {

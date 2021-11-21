@@ -414,7 +414,7 @@ class MultiRelay : public Usermod {
           uiDomString += i;
           uiDomString += F(",on:");
           uiDomString += _relay[i].state ? "false" : "true";
-          uiDomString += F("}});loadInfo();\">");
+          uiDomString += F("}});\">");
           uiDomString += F("Relay ");
           uiDomString += i;
           uiDomString += F(" <i class=\"icons\">&#xe08f;</i></button>");
