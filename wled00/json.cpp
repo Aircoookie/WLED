@@ -355,10 +355,11 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       deletePreset(ps);
     }
 
-    if (getVal(root["ps"], &presetCycCurr, 1, 5)) { //load preset (clears state request!)
-      DEBUG_PRINTLN(F("Applying preset"));
+    ps = presetCycCurr;
+    if (getVal(root["ps"], &ps, presetCycMin, presetCycMax)) { //load preset (clears state request!)
       if (!presetId) unloadPlaylist(); //stop playlist if preset changed manually
-      applyPreset(presetCycCurr, callMode);
+      if (ps >= presetCycMin && ps <= presetCycMax) presetCycCurr = ps;
+      applyPreset(ps, callMode);
       return stateResponse;
     }
 
