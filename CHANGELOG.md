@@ -2,6 +2,11 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2111220
+
+-   Fixed preset cycle not working from preset called by UI
+-   Reintroduced permanent min. and max. cycle bounds
+
 #### Build 2111190
 
 -   Changed default ESP32 LED pin from 16 to 2
