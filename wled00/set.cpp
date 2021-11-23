@@ -502,62 +502,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 }
 
 
-
-//helper to get int value at a position in string
-int getNumVal(const String* req, uint16_t pos)
-{
-  return req->substring(pos+3).toInt();
-}
-
-
-//helper to get int value with in/decrementing support via ~ syntax
-void parseNumber(const char* str, byte* val, byte minv, byte maxv)
-{
-  if (str == nullptr || str[0] == '\0') return;
-  if (str[0] == 'r') {*val = random8(minv,maxv); return;}
-  if (str[0] == '~') {
-    int out = atoi(str +1);
-    if (out == 0)
-    {
-      if (str[1] == '0') return;
-      if (str[1] == '-')
-      {
-        *val = (int)(*val -1) < (int)minv ? maxv : min((int)maxv,(*val -1)); //-1, wrap around
-      } else {
-        *val = (int)(*val +1) > (int)maxv ? minv : max((int)minv,(*val +1)); //+1, wrap around
-      }
-    } else {
-      out += *val;
-      if (out > maxv) out = maxv;
-      if (out < minv) out = minv;
-      *val = out;
-    }
-  } else
-  {
-    byte p1 = atoi(str);
-    const char* str2 = strchr(str,'~'); //min/max range (for preset cycle, e.g. "1~5~")
-    if (str2) {
-      byte p2 = atoi(str2+1);
-      presetCycMin = p1; presetCycMax = p2;
-      while (isdigit((str2+1)[0])) str2++;
-      parseNumber(str2+1, val, p1, p2);
-    } else {
-      *val = p1;
-    }
-  }
-}
-
-
-bool updateVal(const String* req, const char* key, byte* val, byte minv, byte maxv)
-{
-  int pos = req->indexOf(key);
-  if (pos < 1) return false;
-  if (req->length() < (unsigned int)(pos + 4)) return false;
-  parseNumber(req->c_str() + pos +3, val, minv, maxv);
-  return true;
-}
-
-
 //HTTP API request parser
 bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 {
