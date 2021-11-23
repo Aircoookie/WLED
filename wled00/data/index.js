@@ -589,10 +589,10 @@ function populatePresets(fromls)
 			localStorage.setItem("wledP", JSON.stringify(pJson));
 		}
 		pmtLS = pmt;
-		for (var a = 0; a < is.length; a++) {
-			let i = is[a];
-			if (expanded[i+100]) expand(i+100, true);
-		}
+		//for (var a = 0; a < is.length; a++) {
+		//	let i = is[a];
+		//	if (expanded[i+100]) expand(i+100);
+		//}
 	} else { presetError(true); }
 	updatePA();
 	populateQL();
@@ -1398,7 +1398,7 @@ function requestJson(command=null)
 		if (json.info) {
 			lastinfo = json.info;
 			parseInfo();
-			if (isInfo) populateInfo();
+			if (isInfo) populateInfo(lastinfo);
 		}
 		var s = json.state ? json.state : json;
 		readState(s);
@@ -1504,7 +1504,7 @@ function makeSeg()
 function resetUtil()
 {
 	gId('segutil').innerHTML = '<button class="btn btn-s" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>Add segment</button>';
-	for (var i=0; i<expanded.length; i++) if (expanded[i]) expand(i); // collapse all expanded elements
+	//for (var i=0; i<expanded.length; i++) if (expanded[i]) expand(i); // collapse all expanded elements
 }
 
 var plJson = {"0":{
@@ -1662,7 +1662,7 @@ function makePUtil()
 		block: 'start',
 	});
 	gId('putil').innerHTML = `<div class="pres"><div class="segin expanded">${makeP(0)}</div></div>`;
-	for (var i=0; i<expanded.length; i++) if (expanded[i]) expand(i); // collapse all expanded elements
+	//for (var i=0; i<expanded.length; i++) if (expanded[i]) expand(i); // collapse all expanded elements
 }
 
 function makePlEntry(p,i) {
@@ -2192,10 +2192,15 @@ function formatArr(pl) {
 	}
 }
 
-function expand(i,a)
+function expand(i,a=false)
 {
 	var seg = gId('seg' +i);
-	if (!a) expanded[i] = !expanded[i];
+	if (!a) {
+		var j = i>100 ? 100 : 0;
+		var l = i>100 ? expanded.length : 100;
+		for (; j<l; j++) if (i!=j && expanded[j]) expand(j,true); // collapse all expanded elements
+	}
+	expanded[i] = !expanded[i];
 	seg.style.display = (expanded[i]) ? "block":"none";
 	gId('sege' +i).style.transform = (expanded[i]) ? "rotate(180deg)":"rotate(0deg)";
 

@@ -1031,7 +1031,7 @@ function requestJson(command=null)
 		if (json.info) {
 			lastinfo = json.info;
 			parseInfo();
-			if (isInfo) populateInfo();
+			if (isInfo) populateInfo(lastinfo);
 		}
 		var s = json.state ? json.state : json;
 		readState(s);
