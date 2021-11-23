@@ -42,8 +42,10 @@ bool oappendi(int i)
 bool oappend(const char* txt)
 {
   uint16_t len = strlen(txt);
-  if (olen + len >= OMAX)
+  if (olen + len >= OMAX) {
+    DEBUG_PRINTLN(F("ERROR: oappend: buffer overflow")); // i think this print statement should stay as it would be nice to know if there is overflow
     return false;        // buffer full
+  }
   strcpy(obuf + olen, txt);
   olen += len;
   return true;
