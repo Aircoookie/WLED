@@ -138,6 +138,7 @@ void WS2812FX::service() {
 
       if (!SEGMENT.getOption(SEG_OPTION_FREEZE)) { //only run effect function if not frozen
         _virtualSegmentLength = SEGMENT.virtualLength();
+        busses.setSegmentCCT(SEGMENT.cct, correctWB);
         _bri_t = SEGMENT.opacity; _colors_t[0] = SEGMENT.colors[0]; _colors_t[1] = SEGMENT.colors[1]; _colors_t[2] = SEGMENT.colors[2];
         if (!IS_SEGMENT_ON) _bri_t = 0;
         for (uint8_t t = 0; t < MAX_NUM_TRANSITIONS; t++) {
@@ -156,6 +157,7 @@ void WS2812FX::service() {
     }
   }
   _virtualSegmentLength = 0;
+  busses.setSegmentCCT(-1);
   if(doShow) {
     yield();
     show();
@@ -191,21 +193,6 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
     uint16_t realIndex = realPixelIndex(i);
     uint16_t len = SEGMENT.length();
 
-    // determine if we can do white balance and accurate W calc
-    // NOTE & TODO: does not work correctly with custom mapping if map spans different strips
-    int16_t cct = -1;
-    for (uint8_t b = 0; b < busses.getNumBusses(); b++) {
-      Bus *bus = busses.getBus(b);
-      if (bus == nullptr || !bus->containsPixel(realIndex)) continue;
-      //if (bus == nullptr || bus->getStart()<realIndex || bus->getStart()+bus->getLength()>realIndex) continue;
-      uint8_t busType = bus->getType();
-      if (allowCCT
-        || busType == TYPE_ANALOG_2CH
-        || busType == TYPE_ANALOG_5CH) {
-        if (cct<0) cct = SEGMENT.cct;
-      }
-    }
-
     //color_blend(getpixel, col, _bri_t); (pseudocode for future blending of segments)
     if (_bri_t < 255) {  
       r = scale8(r, _bri_t);
@@ -226,14 +213,14 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
           if (indexMir >= SEGMENT.stop) indexMir -= len;
 
           if (indexMir < customMappingSize) indexMir = customMappingTable[indexMir];
-          busses.setPixelColor(indexMir, col, cct);
+          busses.setPixelColor(indexMir, col);
         }
         /* offset/phase */
         indexSet += SEGMENT.offset;
         if (indexSet >= SEGMENT.stop) indexSet -= len;
 
         if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
-        busses.setPixelColor(indexSet, col, cct);
+        busses.setPixelColor(indexSet, col);
       }
     }
   } else { //live data, etc.
@@ -618,7 +605,7 @@ void WS2812FX::resetSegments() {
   _segments[0].setOption(SEG_OPTION_SELECTED, 1);
   _segments[0].setOption(SEG_OPTION_ON, 1);
   _segments[0].opacity = 255;
-  _segments[0].cct = 128;
+  _segments[0].cct = -1;
 
   for (uint16_t i = 1; i < MAX_NUM_SEGMENTS; i++)
   {
@@ -626,7 +613,7 @@ void WS2812FX::resetSegments() {
     _segments[i].grouping = 1;
     _segments[i].setOption(SEG_OPTION_ON, 1);
     _segments[i].opacity = 255;
-    _segments[i].cct = 128;
+    _segments[i].cct = -1;
     _segments[i].speed = DEFAULT_SPEED;
     _segments[i].intensity = DEFAULT_INTENSITY;
     _segment_runtimes[i].reset();
@@ -1163,3 +1150,4 @@ uint32_t WS2812FX::gamma32(uint32_t color)
 }
 
 WS2812FX* WS2812FX::instance = nullptr;
+int16_t Bus::_cct = -1;

@@ -370,7 +370,7 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(SET_F(");"));
 
     sappend('c',SET_F("MS"),autoSegments);
-    sappend('c',SET_F("CCT"),allowCCT);
+    sappend('c',SET_F("CCT"),correctWB);
 
     for (uint8_t s=0; s < busses.getNumBusses(); s++) {
       Bus* bus = busses.getBus(s);

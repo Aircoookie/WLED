@@ -505,7 +505,7 @@ void serializeInfo(JsonObject root)
   leds[F("count")] = strip.getLengthTotal();
   leds[F("rgbw")] = strip.isRgbw;
   leds[F("wv")] = false;
-  leds["cct"] = allowCCT;
+  leds["cct"] = correctWB;
   for (uint8_t s = 0; s < busses.getNumBusses(); s++) {
     Bus *bus = busses.getBus(s);
     if (bus == nullptr || bus->getLength()==0) break;

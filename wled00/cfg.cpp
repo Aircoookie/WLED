@@ -80,7 +80,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(strip.ablMilliampsMax, hw_led[F("maxpwr")]);
   CJSON(strip.milliampsPerLed, hw_led[F("ledma")]);
   uint8_t rgbwMode = hw_led[F("rgbwm")] | RGBW_MODE_DUAL; // use global setting (legacy)
-  CJSON(allowCCT, hw_led["cct"]);
+  CJSON(correctWB, hw_led["cct"]);
 
   JsonArray ins = hw_led["ins"];
   
@@ -520,7 +520,7 @@ void serializeConfig() {
   hw_led[F("total")] = strip.getLengthTotal(); //no longer read, but provided for compatibility on downgrade
   hw_led[F("maxpwr")] = strip.ablMilliampsMax;
   hw_led[F("ledma")] = strip.milliampsPerLed;
-  hw_led["cct"] = allowCCT;
+  hw_led["cct"] = correctWB;
 
   JsonArray hw_led_ins = hw_led.createNestedArray("ins");
 
