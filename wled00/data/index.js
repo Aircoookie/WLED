@@ -755,6 +755,7 @@ function populateSegments(s)
 			<input type="checkbox" id="seg${i}mi" onchange="setMi(${i})" ${inst.mi ? "checked":""}>
 			<span class="checkmark schk"></span>
 		</label>
+		${i===0 ? '<button id="btnrpt" class="btn btn-xs del" title="Repeat until end" onclick="rptSeg(0)"><i class="icons btn-icon">&#xe22d;</i></button>' : ''}
 	</div>
 </div>`;
 	}
@@ -767,6 +768,8 @@ function populateSegments(s)
 		resetUtil();
 		noNewSegs = false;
 	}
+	if (lSeg>0 || parseInt(gId("seg0e").value)>=(ledCount-(cfg.comp.seglen?inst.start:0))) gId("btnrpt").style.display = "none";
+	console.log(lSeg);
 	for (var i = 0; i <= lSeg; i++) {
 		updateLen(i);
 		updateTrail(gId(`seg${i}bri`));
@@ -1472,29 +1475,31 @@ function toggleNodes()
 function makeSeg()
 {
 	var ns = 0;
-	if (lowestUnused > 0) {
-		var pend = parseInt(gId(`seg${lowestUnused -1}e`).value,10) + (cfg.comp.seglen?parseInt(gId(`seg${lowestUnused -1}s`).value,10):0);
+	var lu = lowestUnused;
+	if (lu > 0) {
+		var pend = parseInt(gId(`seg${lu -1}e`).value,10) + (cfg.comp.seglen?parseInt(gId(`seg${lu -1}s`).value,10):0);
 		if (pend < ledCount) ns = pend;
 	}
 	gId('segutil').scrollIntoView({
 		behavior: 'smooth',
 		block: 'start',
 	});
+	var ct = ledCount-(cfg.comp.seglen?ns:0);
 	var cn = `<div class="seg">
 	<div class="segin expanded">
-		<input type="text" class="ptxt noslide" id="seg${lowestUnused}t" autocomplete="off" maxlength=32 value="" placeholder="New segment ${lowestUnused}"/>
+		<input type="text" class="ptxt noslide" id="seg${lu}t" autocomplete="off" maxlength=32 value="" placeholder="New segment ${lu}"/>
 		<table class="segt">
 			<tr>
 				<td width="38%">Start LED</td>
 				<td width="38%">${cfg.comp.seglen?"LED count":"Stop LED"}</td>
 			</tr>
 			<tr>
-				<td><input class="noslide segn" id="seg${lowestUnused}s" type="number" min="0" max="${ledCount-1}" value="${ns}" oninput="updateLen(${lowestUnused})"></td>
-				<td><input class="noslide segn" id="seg${lowestUnused}e" type="number" min="0" max="${ledCount-(cfg.comp.seglen?ns:0)}" value="${ledCount-(cfg.comp.seglen?ns:0)}" oninput="updateLen(${lowestUnused})"></td>
-				<td><button class="btn btn-xs" onclick="setSeg(${lowestUnused});resetUtil();"><i class="icons bth-icon" id="segc${lowestUnused}">&#xe390;</i></button></td>
+				<td><input class="noslide segn" id="seg${lu}s" type="number" min="0" max="${ledCount-1}" value="${ns}" oninput="updateLen(${lu})"></td>
+				<td><input class="noslide segn" id="seg${lu}e" type="number" min="0" max="${ct}" value="${ct}" oninput="updateLen(${lu})"></td>
+				<td><button class="btn btn-xs" onclick="setSeg(${lu});resetUtil();"><i class="icons bth-icon" id="segc${lu}">&#xe390;</i></button></td>
 			</tr>
 		</table>
-		<div class="h" id="seg${lowestUnused}len">${ledCount - ns} LEDs</div>
+		<div class="h" id="seg${lu}len">${ledCount - ns} LEDs</div>
 		<div class="c"><button class="btn btn-p" onclick="resetUtil()">Cancel</button></div>
 	</div>
 </div>`;
@@ -1740,6 +1745,28 @@ function selSeg(s)
 	requestJson(obj);
 }
 
+function rptSeg(s)
+{
+	var name = gId(`seg${s}t`).value;
+	var start = parseInt(gId(`seg${s}s`).value);
+	var stop = parseInt(gId(`seg${s}e`).value);
+	if (stop == 0) {return;}
+	var rev = gId(`seg${s}rev`).checked;
+	var mi = gId(`seg${s}mi`).checked;
+	var obj = {"seg": {"id": 0, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop}, "rev": rev, "mi": mi, "on": !powered[s], "bri": parseInt(gId(`seg${s}bri`).value)};
+	if (gId(`seg${s}grp`)) {
+		var grp = parseInt(gId(`seg${s}grp`).value);
+		var spc = parseInt(gId(`seg${s}spc`).value);
+		var ofs = parseInt(gId(`seg${s}of` ).value);
+		obj.seg.grp = grp;
+		obj.seg.spc = spc;
+		obj.seg.of  = ofs;
+	}
+	obj.seg.rpt = true;
+	expand(0);
+	requestJson(obj);
+}
+
 function setSeg(s)
 {
 	var name = gId(`seg${s}t`).value;
@@ -1747,8 +1774,7 @@ function setSeg(s)
 	var stop = parseInt(gId(`seg${s}e`).value);
 	if (stop == 0) {delSeg(s); return;}
 	var obj = {"seg": {"id": s, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop}};
-	if (gId(`seg${s}grp`))
-	{
+	if (gId(`seg${s}grp`)) {
 		var grp = parseInt(gId(`seg${s}grp`).value);
 		var spc = parseInt(gId(`seg${s}spc`).value);
 		var ofs = parseInt(gId(`seg${s}of` ).value);
