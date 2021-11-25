@@ -9,6 +9,10 @@ body {
 hr {
   border-color: #666;
 }
+a, a:hover {
+  color: #0af;
+  text-decoration: none;
+}
 button, .btn {
   background: #333;
   color: #fff;

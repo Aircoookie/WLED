@@ -106,6 +106,7 @@ void WLED::loop()
 #endif
     #ifdef WLED_DEBUG
     stripMillis = millis() - stripMillis;
+    if (stripMillis > 50) DEBUG_PRINTLN("Slow strip.");
     avgStripMillis += stripMillis;
     if (stripMillis > maxStripMillis) maxStripMillis = stripMillis;
     #endif
@@ -508,15 +509,15 @@ void WLED::initConnection()
   lastReconnectAttempt = millis();
 
   if (!WLED_WIFI_CONFIGURED) {
-    DEBUG_PRINT(F("No connection configured. "));
-    if (!apActive)
-      initAP();        // instantly go to ap mode
+    DEBUG_PRINTLN(F("No connection configured."));
+    if (!apActive) initAP();        // instantly go to ap mode
     return;
   } else if (!apActive) {
     if (apBehavior == AP_BEHAVIOR_ALWAYS) {
+      DEBUG_PRINTLN(F("Access point ALWAYS enabled."));
       initAP();
     } else {
-      DEBUG_PRINTLN(F("Access point disabled."));
+      DEBUG_PRINTLN(F("Access point disabled (init)."));
       WiFi.softAPdisconnect(true);
       WiFi.mode(WIFI_STA);
     }
@@ -613,8 +614,12 @@ void WLED::handleConnection()
 
   if (now < 2000 && (!WLED_WIFI_CONFIGURED || apBehavior == AP_BEHAVIOR_ALWAYS))
     return;
-  if (lastReconnectAttempt == 0)
+
+  if (lastReconnectAttempt == 0) {
+    DEBUG_PRINTLN(F("lastReconnectAttempt == 0"));
     initConnection();
+    return;
+  }
 
   // reconnect WiFi to clear stale allocations if heap gets too low
   if (now - heapTime > 5000) {
@@ -670,10 +675,13 @@ void WLED::handleConnection()
     }
     if (now - lastReconnectAttempt > ((stac) ? 300000 : 18000) && WLED_WIFI_CONFIGURED) {
       if (improvActive == 2) improvActive = 3;
+      DEBUG_PRINTLN(F("Last reconnect too old."));
       initConnection();
     }
-    if (!apActive && now - lastReconnectAttempt > 12000 && (!wasConnected || apBehavior == AP_BEHAVIOR_NO_CONN))
+    if (!apActive && now - lastReconnectAttempt > 12000 && (!wasConnected || apBehavior == AP_BEHAVIOR_NO_CONN)) {
+      DEBUG_PRINTLN(F("Not connected AP."));
       initAP();
+    }
   } else if (!interfacesInited) { //newly connected
     DEBUG_PRINTLN("");
     DEBUG_PRINT(F("Connected! IP address: "));
@@ -692,7 +700,7 @@ void WLED::handleConnection()
       dnsServer.stop();
       WiFi.softAPdisconnect(true);
       apActive = false;
-      DEBUG_PRINTLN(F("Access point disabled."));
+      DEBUG_PRINTLN(F("Access point disabled (handle)."));
     }
   }
 }
