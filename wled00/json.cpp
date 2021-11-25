@@ -11,8 +11,6 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   byte id = elem["id"] | it;
   if (id >= strip.getMaxSegments()) return;
 
-  bool repeat = elem["rpt"] | false;
-
   WS2812FX::Segment& seg = strip.getSegment(id);
   //WS2812FX::Segment prev;
   //prev = seg; //make a backup so we can tell if something changed
@@ -22,6 +20,23 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   if (stop < 0) {
     uint16_t len = elem[F("len")];
     stop = (len > 0) ? start + len : seg.stop;
+  }
+
+  bool repeat = elem["rpt"] | false;
+  if (repeat && stop>0) {
+    elem.remove("id");  // remove for recursive call
+    elem.remove("rpt"); // remove for recursive call
+    elem.remove("n");   // remove for recursive call
+    uint16_t len = stop - start;
+    for (byte i=1; i<strip.getMaxSegments(); i++) {
+      start = start + len;
+      if (start >= strip.getLengthTotal()) break;
+      elem["start"] = start;
+      elem["stop"]  = start + len;
+      elem["rev"]   = !elem["rev"]; // alternate reverse on even/odd segments
+      deserializeSegment(elem, i, presetId); // recursive call with new id
+    }
+    return;
   }
 
   if (elem["n"]) {
@@ -210,21 +225,6 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     strip.trigger();
   } else if (!elem["frz"] && iarr.isNull()) { //return to regular effect
     seg.setOption(SEG_OPTION_FREEZE, false);
-  }
-
-  if (repeat) {
-    elem.remove("id");
-    elem.remove("rpt");
-    elem.remove("n");
-    len = stop - start;
-    for (byte i=1; i<strip.getMaxSegments(); i++) {
-      start = start + len;
-      if (start >= strip.getLengthTotal()) break;
-      elem["start"] = start;
-      elem["stop"]  = start + len;
-      elem["rev"]   = !elem["rev"];
-      deserializeSegment(elem, i, presetId);
-    }
   }
 
   return; // seg.differs(prev);
