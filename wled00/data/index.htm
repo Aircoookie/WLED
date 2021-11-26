@@ -45,31 +45,37 @@
 <div class ="container">
 	<div id="Colors" class="tabcontent">
 		<div id="picker" class="noslide"></div>
+    <div id="vwrap">
+      <div class="sliderwrap il" id="vwrap">
+				<input id="sliderV" class="noslide" onchange="setColor(0)" oninput="fromV()" max="100" min="0" type="range" value="128" step="any" />
+				<div class="sliderdisplay"></div>
+			</div><br>
+    </div>
+    <div id="wbal">
+			<div class="sliderwrap il">
+				<input id="sliderA" class="noslide" oninput="fromA()" onchange="setBalance(this.value)" max="10091" min="1900" type="range" value="6550" />
+				<div class="sliderdisplay"></div>
+			</div>
+		</div>
 		<div id="rgbwrap">
-			<div class="sliderwrap il">
-				<input id="sliderR" class="noslide" onchange="fromRgb()" max="255" min="0" type="range" value="128" />
+      <p class="labels">RGB color</p>
+			<div class="sliderwrap il" id="rwrap">
+				<input id="sliderR" class="noslide" onchange="setColor(0)" oninput="fromRgb()" max="255" min="0" type="range" value="128" />
 				<div class="sliderdisplay"></div>
 			</div><br>
-			<div class="sliderwrap il">
-				<input id="sliderG" class="noslide" onchange="fromRgb()" max="255" min="0" type="range" value="128" />
+			<div class="sliderwrap il" id="gwrap">
+				<input id="sliderG" class="noslide" onchange="setColor(0)" oninput="fromRgb()" max="255" min="0" type="range" value="128" />
 				<div class="sliderdisplay"></div>
 			</div><br>
-			<div class="sliderwrap il">
-				<input id="sliderB" class="noslide" onchange="fromRgb()" max="255" min="0" type="range" value="128" />
+			<div class="sliderwrap il" id="bwrap">
+				<input id="sliderB" class="noslide" onchange="setColor(0)" oninput="fromRgb()" max="255" min="0" type="range" value="128" />
 				<div class="sliderdisplay"></div>
 			</div><br>
 		</div>
 		<div id="wwrap">
 			<p class="labels">White channel</p>
 			<div class="sliderwrap il">
-				<input id="sliderW" class="noslide" onchange="setColor(0)" max="255" min="0" type="range" value="128" />
-				<div class="sliderdisplay"></div>
-			</div>
-		</div>
-		<div id="wbal">
-			<p class="labels">White balance</p>
-			<div class="sliderwrap il">
-				<input id="sliderA" class="noslide" onchange="setBalance(this.value)" max="255" min="0" type="range" value="128" />
+				<input id="sliderW" class="noslide" onchange="setColor(0)" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
 				<div class="sliderdisplay"></div>
 			</div>
 		</div>

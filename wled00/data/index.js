@@ -4,6 +4,7 @@ var noNewSegs = false;
 var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true, isRgbw = false;
 var whites = [0,0,0];
 var selColors;
+var mcct = false; //manual CCT (if false, CCT from RGB)
 var expanded = [false];
 var powered = [true];
 var nlDur = 60, nlTar = 0;
@@ -40,26 +41,13 @@ var hol = [
 var cpick = new iro.ColorPicker("#picker", {
 	width: 260,
 	wheelLightness: false,
-  wheelAngle: 90,
+  wheelAngle: 270,
+  wheelDirection: "clockwise",
   layout: [
     {
       component: iro.ui.Wheel,
       options: {}
-    },
-    {
-      component: iro.ui.Slider,
-      options: {
-        sliderType: 'value'
-      }
-    }/*,
-    {
-      component: iro.ui.Slider,
-      options: {
-        sliderType: 'kelvin',
-        minTemperature: 2100,
-        maxTemperature: 10000
-      }
-    }*/
+    }
   ]
 });
 
@@ -81,6 +69,7 @@ function applyCfg()
 	var ccfg = cfg.comp.colors;
 	d.getElementById('hexw').style.display = ccfg.hex ? "block":"none";
 	d.getElementById('picker').style.display = ccfg.picker ? "block":"none";
+  d.getElementById('vwrap').style.display = ccfg.picker ? "block":"none";
 	d.getElementById('rgbwrap').style.display = ccfg.rgb ? "block":"none";
 	d.getElementById('qcs-w').style.display = ccfg.quick ? "block":"none";
 	var l = cfg.comp.labels;
@@ -246,6 +235,7 @@ function onLoad() {
 	cpick.on("input:end", function() {
 		setColor(1);
 	});
+  cpick.on("color:change", updatePSliders);
 	pmtLS = localStorage.getItem('wledPmt');
 	setTimeout(function(){requestJson(null, false);}, 50);
 	d.addEventListener("visibilitychange", handleVisibilityChange, false);
@@ -861,7 +851,7 @@ function updateTrail(e)
 	var perc = e.value * 100 / max;
 	perc = parseInt(perc);
   if (perc < 50) perc += 2;
-	var val = `linear-gradient(90deg, var(--c-f) ${perc}%, var(--c-4) ${perc}%)`;
+	var val = `linear-gradient(90deg, var(--bg) ${perc}%, var(--c-4) ${perc}%)`;
 	e.parentNode.getElementsByClassName('sliderdisplay')[0].style.background = val;
 }
 
@@ -932,12 +922,12 @@ function updateUI()
 	updateTrail(d.getElementById('sliderBri'));
 	updateTrail(d.getElementById('sliderSpeed'));
 	updateTrail(d.getElementById('sliderIntensity'));
+  //updateTrail(d.getElementById('sliderW'));
 	d.getElementById('wwrap').style.display = (isRgbw) ? "block":"none";
-	d.getElementById("wbal").style.display = (lastinfo.leds.cct) ? "block":"none";
 
 	updatePA();
-	updateHex();
-	updateRgb();
+	//updateHex();
+	//updateRgb();
 }
 
 function displayRover(i,s)
@@ -1015,8 +1005,8 @@ function readState(s,command=false) {
     if (isRgbw) whites[e] = parseInt(i.col[e][3]);
     selectSlot(csel);
   }
-  d.getElementById('sliderW').value = whites[csel];
-  if (i.cct && i.cct>=0) d.getElementById("sliderA").value = i.cct;
+  //d.getElementById('sliderW').value = whites[csel];
+  if (mcct & i.cct && i.cct>=0) d.getElementById("sliderA").value = i.cct;
 
   d.getElementById('sliderSpeed').value = i.sx;
   d.getElementById('sliderIntensity').value = i.ix;
@@ -1164,6 +1154,9 @@ function requestJson(command, rinfo = true) {
 			}
 			d.title = name;
 			isRgbw = info.leds.wv;
+      mcct = info.leds.cct;
+      let wsld = d.getElementById("wbal");
+      if (mcct) wsld.parentNode.insertBefore(wsld,d.getElementById('qcs-w'));
 			ledCount = info.leds.count;
 			syncTglRecv = info.str;
       maxSeg = info.leds.maxseg;
@@ -1717,8 +1710,9 @@ function selectSlot(b) {
 	cd[csel].style.width="50px";
 	cpick.color.set(cd[csel].style.backgroundColor);
 	d.getElementById('sliderW').value = whites[csel];
-	updateHex();
-	updateRgb();
+  updateTrail(d.getElementById('sliderW'));
+	//updateHex();
+	//updateRgb();
 	redrawPalPrev();
 }
 
@@ -1738,12 +1732,28 @@ function pC(col)
 	setColor(0);
 }
 
+function updatePSliders() {
+  updateRgb();
+  updateHex();
+  var v = d.getElementById('sliderV');
+  v.value = cpick.color.value;
+  var hsv = {"h":cpick.color.hue,"s":cpick.color.saturation,"v":100}; 
+  var c = iro.Color.hsvToRgb(hsv);
+  var cs = 'rgb('+c.r+','+c.g+','+c.b+')';
+  v.parentNode.getElementsByClassName('sliderdisplay')[0].style.setProperty('--bg',cs);
+  updateTrail(v);
+  if (!mcct) d.getElementById('sliderA').value = cpick.color.kelvin;
+}
+
 function updateRgb()
 {
 	var col = cpick.color.rgb;
-	d.getElementById('sliderR').value = col.r;
-	d.getElementById('sliderG').value = col.g;
-	d.getElementById('sliderB').value = col.b;
+	var s = d.getElementById('sliderR');
+	s.value = col.r; updateTrail(s,1);
+	s = d.getElementById('sliderG');
+	s.value = col.g; updateTrail(s,2);
+	s = d.getElementById('sliderB');
+	s.value = col.b; updateTrail(s,3);
 }
 
 function updateHex()
@@ -1774,15 +1784,25 @@ function fromHex()
 	setColor(2);
 }
 
+function fromV()
+{
+  cpick.color.setChannel('hsv', 'v', d.getElementById('sliderV').value);
+}
+
+function fromA()
+{
+  if (!mcct) cpick.color.set({ kelvin: d.getElementById('sliderA').value });
+}
+
 function fromRgb()
 {
 	var r = d.getElementById('sliderR').value;
 	var g = d.getElementById('sliderG').value;
 	var b = d.getElementById('sliderB').value;
 	cpick.color.set(`rgb(${r},${g},${b})`);
-	setColor(0);
 }
 
+//sr 0: from RGB sliders, 1: from picker, 2: from hex
 function setColor(sr) {
 	var cd = d.getElementById('csl').children;
 	if (sr == 1 && cd[csel].style.backgroundColor == 'rgb(0, 0, 0)') cpick.color.setChannel('hsv', 'v', 100);
@@ -1795,13 +1815,14 @@ function setColor(sr) {
 	} else if (csel == 2) {
 		obj = {"seg": {"col": [[],[],[col.r, col.g, col.b, whites[csel]]]}};
 	}
-	updateHex();
-	updateRgb();
+	//updateHex();
+	//updateRgb();
 	requestJson(obj);
 }
 
 function setBalance(b)
 {
+  if (!mcct) {setColor(0); return;}
 	var obj = {"seg": {"cct": parseInt(b)}};
 	requestJson(obj);
 }
