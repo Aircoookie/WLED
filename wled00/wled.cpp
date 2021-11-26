@@ -610,6 +610,9 @@ void WLED::initInterfaces()
 {
   DEBUG_PRINTLN(F("Init STA interfaces"));
 
+  Serial.print("IP address: ");
+  Serial.println(Network.localIP());
+
 #ifndef WLED_DISABLE_HUESYNC
   IPAddress ipAddress = Network.localIP();
   if (hueIP[0] == 0) {
