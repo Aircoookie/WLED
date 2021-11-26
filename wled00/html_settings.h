@@ -118,22 +118,22 @@ id="wreason">800 LEDs per output</span> for the best experience!<br></div><hr
 style="width:260px">Make a segment for each output: <input type="checkbox" 
 name="MS"><br>Custom bus start indices: <input type="checkbox" 
 onchange="tglSi(this.checked)" id="si"><br>White Balance correction: <input 
-type="checkbox" name="CCT"><br>Calculate CCT from RGB: TODO<br>
-CCT blending mode: TODO<br><hr style="width:260px"><div id="btns"></div>
-Touch threshold: <input type="number" class="s" min="0" max="100" name="TT" 
-required><br>IR GPIO: <input type="number" min="-1" max="40" name="IR" 
-onchange="UI()" class="xs"><select name="IT" onchange="UI()"><option value="0">
-Remote disabled</option><option value="1">24-key RGB</option><option value="2">
-24-key with CT</option><option value="3">40-key blue</option><option value="4">
-44-key RGB</option><option value="5">21-key RGB</option><option value="6">
-6-key black</option><option value="7">9-key red</option><option value="8">
-JSON remote</option></select><span style="cursor:pointer" onclick='off("IR")'>
-&nbsp;&#215;</span><br><div id="json" style="display:none">JSON file: <input 
-type="file" name="data" accept=".json"> <input type="button" value="Upload" 
-onclick='uploadFile("/ir.json")'><br></div><div id="toast"></div><a 
-href="https://kno.wled.ge/interfaces/infrared/" target="_blank">IR info</a><br>
-Relay GPIO: <input type="number" min="-1" max="33" name="RL" onchange="UI()" 
-class="xs"> Invert <input type="checkbox" name="RM"><span 
+type="checkbox" name="CCT"><br>Calculate CCT from RGB: <input type="checkbox" 
+name="CR"><br>CCT blending mode: TODO<br><hr style="width:260px"><div id="btns">
+</div>Touch threshold: <input type="number" class="s" min="0" max="100" 
+name="TT" required><br>IR GPIO: <input type="number" min="-1" max="40" 
+name="IR" onchange="UI()" class="xs"><select name="IT" onchange="UI()"><option 
+value="0">Remote disabled</option><option value="1">24-key RGB</option><option 
+value="2">24-key with CT</option><option value="3">40-key blue</option><option 
+value="4">44-key RGB</option><option value="5">21-key RGB</option><option 
+value="6">6-key black</option><option value="7">9-key red</option><option 
+value="8">JSON remote</option></select><span style="cursor:pointer" 
+onclick='off("IR")'>&nbsp;&#215;</span><br><div id="json" style="display:none">
+JSON file: <input type="file" name="data" accept=".json"> <input type="button" 
+value="Upload" onclick='uploadFile("/ir.json")'><br></div><div id="toast"></div>
+<a href="https://kno.wled.ge/interfaces/infrared/" target="_blank">IR info</a>
+<br>Relay GPIO: <input type="number" min="-1" max="33" name="RL" 
+onchange="UI()" class="xs"> Invert <input type="checkbox" name="RM"><span 
 style="cursor:pointer" onclick='off("RL")'>&nbsp;&#215;</span><br><hr 
 style="width:260px"><h3>Defaults</h3>Turn LEDs on after power up/reset: <input 
 type="checkbox" name="BO"><br>Default brightness: <input name="CA" 

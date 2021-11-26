@@ -4,7 +4,6 @@ var noNewSegs = false;
 var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true, isRgbw = false;
 var whites = [0,0,0];
 var selColors;
-var mcct = false; //manual CCT (if false, CCT from RGB)
 var expanded = [false];
 var powered = [true];
 var nlDur = 60, nlTar = 0;
@@ -70,6 +69,7 @@ function applyCfg()
 	d.getElementById('hexw').style.display = ccfg.hex ? "block":"none";
 	d.getElementById('picker').style.display = ccfg.picker ? "block":"none";
   d.getElementById('vwrap').style.display = ccfg.picker ? "block":"none";
+  d.getElementById('kwrap').style.display = ccfg.picker ? "block":"none";
 	d.getElementById('rgbwrap').style.display = ccfg.rgb ? "block":"none";
 	d.getElementById('qcs-w').style.display = ccfg.quick ? "block":"none";
 	var l = cfg.comp.labels;
@@ -922,8 +922,9 @@ function updateUI()
 	updateTrail(d.getElementById('sliderBri'));
 	updateTrail(d.getElementById('sliderSpeed'));
 	updateTrail(d.getElementById('sliderIntensity'));
-  //updateTrail(d.getElementById('sliderW'));
 	d.getElementById('wwrap').style.display = (isRgbw) ? "block":"none";
+  d.getElementById('wbal').style.display = (lastinfo.leds.cct) ? "block":"none";
+  d.getElementById('kwrap').style.display = (lastinfo.leds.cct) ? "none":"block";
 
 	updatePA();
 	//updateHex();
@@ -1006,7 +1007,7 @@ function readState(s,command=false) {
     selectSlot(csel);
   }
   //d.getElementById('sliderW').value = whites[csel];
-  if (mcct & i.cct && i.cct>=0) d.getElementById("sliderA").value = i.cct;
+  if (i.cct != null && i.cct>=0) d.getElementById("sliderA").value = i.cct;
 
   d.getElementById('sliderSpeed').value = i.sx;
   d.getElementById('sliderIntensity').value = i.ix;
@@ -1154,9 +1155,6 @@ function requestJson(command, rinfo = true) {
 			}
 			d.title = name;
 			isRgbw = info.leds.wv;
-      mcct = info.leds.cct;
-      let wsld = d.getElementById("wbal");
-      if (mcct) wsld.parentNode.insertBefore(wsld,d.getElementById('qcs-w'));
 			ledCount = info.leds.count;
 			syncTglRecv = info.str;
       maxSeg = info.leds.maxseg;
@@ -1742,7 +1740,7 @@ function updatePSliders() {
   var cs = 'rgb('+c.r+','+c.g+','+c.b+')';
   v.parentNode.getElementsByClassName('sliderdisplay')[0].style.setProperty('--bg',cs);
   updateTrail(v);
-  if (!mcct) d.getElementById('sliderA').value = cpick.color.kelvin;
+  d.getElementById('sliderK').value = cpick.color.kelvin;
 }
 
 function updateRgb()
@@ -1789,9 +1787,9 @@ function fromV()
   cpick.color.setChannel('hsv', 'v', d.getElementById('sliderV').value);
 }
 
-function fromA()
+function fromK()
 {
-  if (!mcct) cpick.color.set({ kelvin: d.getElementById('sliderA').value });
+  cpick.color.set({ kelvin: d.getElementById('sliderK').value });
 }
 
 function fromRgb()
@@ -1822,7 +1820,6 @@ function setColor(sr) {
 
 function setBalance(b)
 {
-  if (!mcct) {setColor(0); return;}
 	var obj = {"seg": {"cct": parseInt(b)}};
 	requestJson(obj);
 }

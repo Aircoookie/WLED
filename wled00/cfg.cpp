@@ -81,6 +81,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(strip.milliampsPerLed, hw_led[F("ledma")]);
   uint8_t rgbwMode = hw_led[F("rgbwm")] | RGBW_MODE_DUAL; // use global setting (legacy)
   CJSON(correctWB, hw_led["cct"]);
+  CJSON(cctFromRgb, hw_led[F("cr")]);
 
   JsonArray ins = hw_led["ins"];
   
@@ -521,6 +522,7 @@ void serializeConfig() {
   hw_led[F("maxpwr")] = strip.ablMilliampsMax;
   hw_led[F("ledma")] = strip.milliampsPerLed;
   hw_led["cct"] = correctWB;
+  hw_led[F("cr")] = cctFromRgb;
 
   JsonArray hw_led_ins = hw_led.createNestedArray("ins");
 

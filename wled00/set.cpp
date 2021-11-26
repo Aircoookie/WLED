@@ -96,6 +96,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     autoSegments = request->hasArg(F("MS"));
     correctWB = request->hasArg(F("CCT"));
+    cctFromRgb = request->hasArg(F("CR"));
 
     for (uint8_t s = 0; s < WLED_MAX_BUSSES; s++) {
       char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin

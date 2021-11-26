@@ -259,7 +259,7 @@ class WS2812FX {
       uint8_t grouping, spacing;
       uint8_t opacity;
       uint32_t colors[NUM_COLORS];
-      int16_t cct; //-1==auto (no RGB balance correction), 0==1900K, 255==10091K
+      uint16_t cct; //0==1900K, 255==10091K, or Kelvin value >=1900
       char *name;
       bool setColor(uint8_t slot, uint32_t c, uint8_t segn) { //returns true if changed
         if (slot >= NUM_COLORS || segn >= MAX_NUM_SEGMENTS) return false;

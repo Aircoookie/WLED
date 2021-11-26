@@ -388,7 +388,10 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
   root["on"] = seg.getOption(SEG_OPTION_ON);
   byte segbri = seg.opacity;
   root["bri"] = (segbri) ? segbri : 255;
-  root["cct"] = seg.cct;
+  uint16_t cct = seg.cct;
+  if (cct >= 1900) cct = (cct - 1900) >> 5; //convert K to 0-255
+  if (cct > 255) cct = 255;
+  root["cct"] = cct;
 
   if (segmentBounds && seg.name != nullptr) root["n"] = reinterpret_cast<const char *>(seg.name); //not good practice, but decreases required JSON buffer
 
@@ -512,7 +515,7 @@ void serializeInfo(JsonObject root)
     switch (bus->getType()) {
       case TYPE_ANALOG_5CH:
       case TYPE_ANALOG_2CH:
-        leds["cct"] = true;
+        if (!cctFromRgb) leds["cct"] = true;
         break;
     }
     switch (bus->getAutoWhiteMode()) {

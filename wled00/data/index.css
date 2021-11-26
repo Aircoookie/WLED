@@ -471,7 +471,9 @@ img {
 #rwrap .sliderdisplay { --bg: #f00; }
 #gwrap .sliderdisplay { --bg: #0f0; }
 #bwrap .sliderdisplay { --bg: #00f; }
-#wbal .sliderdisplay  { background: linear-gradient(90deg, #ff8f1f 0%, #fff 50%, #cbdbff); }
+#wbal .sliderdisplay, #kwrap .sliderdisplay {
+  background: linear-gradient(90deg, #ff8f1f 0%, #fff 50%, #cbdbff);
+}
 
 .sliderbubble {
     width: 36px;
@@ -534,7 +536,7 @@ input[type=range]:active + .sliderbubble {
 	display: inline;
 	transform: translateX(-50%);
 }
-#wwrap {
+#wwrap, #wbal {
 	display: none;
 }
 
