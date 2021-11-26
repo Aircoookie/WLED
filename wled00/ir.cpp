@@ -654,9 +654,7 @@ void handleIR()
       {
         if (results.value != 0) // only print results if anything is received ( != 0 )
         {
-          Serial.print("IR recv\r\n0x");
-          Serial.println((uint32_t)results.value, HEX);
-          Serial.println();
+          Serial.printf("IR recv: 0x%X\n", (uint32_t)results.value);
         }
         decodeIR(results.value);
         irrecv->resume();
