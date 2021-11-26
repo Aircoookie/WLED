@@ -22,13 +22,14 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     stop = (len > 0) ? start + len : seg.stop;
   }
 
+  // multiply segment 0 (?) if requested untill all LEDs are used
   bool repeat = elem["rpt"] | false;
   if (repeat && stop>0) {
     elem.remove("id");  // remove for recursive call
     elem.remove("rpt"); // remove for recursive call
     elem.remove("n");   // remove for recursive call
     uint16_t len = stop - start;
-    for (byte i=1; i<strip.getMaxSegments(); i++) {
+    for (byte i=id+1; i<strip.getMaxSegments(); i++) {
       start = start + len;
       if (start >= strip.getLengthTotal()) break;
       elem["start"] = start;

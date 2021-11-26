@@ -696,7 +696,7 @@ function populateSegments(s)
 	{
 		segCount++;
 
-		var inst=s.seg[y];
+		var inst = s.seg[y];
 		let i = parseInt(inst.id);
 		powered[i] = inst.on;
 		if (i == lowestUnused) lowestUnused = i+1;
@@ -755,7 +755,7 @@ function populateSegments(s)
 			<input type="checkbox" id="seg${i}mi" onchange="setMi(${i})" ${inst.mi ? "checked":""}>
 			<span class="checkmark schk"></span>
 		</label>
-		${i===0 ? '<button id="btnrpt" class="btn btn-xs del" title="Repeat until end" onclick="rptSeg(0)"><i class="icons btn-icon">&#xe22d;</i></button>' : ''}
+		<div id="btn${i}rpt"></div>
 	</div>
 </div>`;
 	}
@@ -768,8 +768,9 @@ function populateSegments(s)
 		resetUtil();
 		noNewSegs = false;
 	}
-	if (lSeg>0 || parseInt(gId("seg0e").value)>=(ledCount-(cfg.comp.seglen?inst.start:0))) gId("btnrpt").style.display = "none";
-	console.log(lSeg);
+	if (!noNewSegs && (cfg.comp.seglen?parseInt(gId(`seg${lSeg}s`).value):0)+parseInt(gId(`seg${lSeg}e`).value)<ledCount) {
+		gId(`btn${lSeg}rpt`).innerHTML = `<button class="btn btn-xs del" style="right:56px;" title="Repeat until end" onclick="rptSeg(${lSeg})"><i class="icons btn-icon">&#xe22d;</i></button>`;
+	}
 	for (var i = 0; i <= lSeg; i++) {
 		updateLen(i);
 		updateTrail(gId(`seg${i}bri`));
@@ -1763,7 +1764,7 @@ function rptSeg(s)
 		obj.seg.of  = ofs;
 	}
 	obj.seg.rpt = true;
-	expand(0);
+	expand(s);
 	requestJson(obj);
 }
 
