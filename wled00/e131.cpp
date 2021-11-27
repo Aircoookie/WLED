@@ -4,6 +4,9 @@
 #define MAX_4_CH_LEDS_PER_UNIVERSE 128
 #define MAX_CHANNELS_PER_UNIVERSE 512
 
+#ifdef WLED_ENABLE_DMX
+int dmxSavedData[513] = {0};
+#endif
 /*
  * E1.31 handler
  */
@@ -77,8 +80,10 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
   #ifdef WLED_ENABLE_DMX
   // does not act on out-of-order packets yet
   if (e131ProxyUniverse > 0 && uni == e131ProxyUniverse) {
-    for (uint16_t i = 1; i <= dmxChannels; i++)
+    for (uint16_t i = 1; i <= dmxChannels; i++) {
       dmx.write(i, e131_data[i]);
+      dmxSavedData[i] = e131_data[i];
+    }
     dmx.update();
   }
   #endif

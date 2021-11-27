@@ -9,6 +9,8 @@
 
 #ifdef WLED_ENABLE_DMX
 
+extern int dmxSavedData[513];
+
 void handleDMX()
 {
   // don't act, when in DMX Proxy mode if getting DMX packets
@@ -51,6 +53,9 @@ void handleDMX()
           break;
         case 6:        // Sets this channel to 255. Like 0, but more wholesome.
           dmx.write(DMXAddr, 255);
+          break;
+        case 7:
+          dmx.write(DMXAddr, dmxSavedData[j]);
           break;
       }
     }
