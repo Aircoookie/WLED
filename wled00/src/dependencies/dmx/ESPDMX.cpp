@@ -29,7 +29,7 @@
 #define TXPIN 17
 
 bool dmxStarted = false;
-int sendPin = 17;		//dafault on ESP8266
+int sendPin = 4;		//dafault on ESP8266
 
 //DMX value array and size. Entry 0 will hold startbyte
 uint8_t dmxData[dmxMaxChannel] = {};
