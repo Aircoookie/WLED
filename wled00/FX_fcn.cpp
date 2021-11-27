@@ -1153,3 +1153,4 @@ uint32_t WS2812FX::gamma32(uint32_t color)
 
 WS2812FX* WS2812FX::instance = nullptr;
 int16_t Bus::_cct = -1;
+uint8_t Bus::_cctBlend = 0;

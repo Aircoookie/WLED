@@ -119,7 +119,8 @@ style="width:260px">Make a segment for each output: <input type="checkbox"
 name="MS"><br>Custom bus start indices: <input type="checkbox" 
 onchange="tglSi(this.checked)" id="si"><br>White Balance correction: <input 
 type="checkbox" name="CCT"><br>Calculate CCT from RGB: <input type="checkbox" 
-name="CR"><br>CCT blending mode: TODO<br><hr style="width:260px"><div id="btns">
+name="CR"><br>CCT additive blending: <input type="number" class="s" min="0" 
+max="100" name="CB" required> %%<br><hr style="width:260px"><div id="btns">
 </div>Touch threshold: <input type="number" class="s" min="0" max="100" 
 name="TT" required><br>IR GPIO: <input type="number" min="-1" max="40" 
 name="IR" onchange="UI()" class="xs"><select name="IT" onchange="UI()"><option 
@@ -143,7 +144,7 @@ type="number" class="s" min="0" max="255" required> (0-255)<br><br>Apply preset
 type="checkbox" name="GC"> (strongly recommended)<br>
 Use Gamma correction for brightness: <input type="checkbox" name="GB">
  (not recommended)<br><br>Brightness factor: <input name="BF" type="number" 
-class="s" min="1" max="255" required> %<h3>Transitions</h3>Crossfade: <input 
+class="s" min="1" max="255" required> %%<h3>Transitions</h3>Crossfade: <input 
 type="checkbox" name="TF"><br>Transition Time: <input name="TD" type="number" 
 class="l" min="0" max="65500"> ms<br>Enable Palette transitions: <input 
 type="checkbox" name="PF"><h3>Timed light</h3>Default Duration: <input 

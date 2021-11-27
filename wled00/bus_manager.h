@@ -113,6 +113,14 @@ class Bus {
     static  void setCCT(uint16_t cct) {
       _cct = cct;
     }
+		static void setCCTBlend(uint8_t b) {
+			if (b > 100) b = 100;
+			_cctBlend = (b * 127) / 100;
+			//compile-time limiter for hardware that can't power both white channels at max
+			#ifdef WLED_MAX_CCT_BLEND
+				if (_cctBlend > WLED_MAX_CCT_BLEND) _cctBlend = WLED_MAX_CCT_BLEND;
+			#endif
+		}
 
     bool reversed = false;
 
@@ -125,6 +133,7 @@ class Bus {
     bool     _needsRefresh = false;
     uint8_t  _autoWhiteMode = 0;
     static int16_t _cct;
+		static uint8_t _cctBlend;
   
     uint32_t autoWhiteCalc(uint32_t c) {
       if (_autoWhiteMode == RGBW_MODE_MANUAL_ONLY) return c;
@@ -300,19 +309,29 @@ class BusPwm : public Bus {
       cct = (approximateKelvinFromRGB(c) - 1900) >> 5;
     }
 
+		//0 - linear (CCT 127 = 50% warm, 50% cold), 127 - additive CCT blending (CCT 127 = 100% warm, 100% cold)
+		uint8_t ww, cw;
+		if (cct       < _cctBlend) ww = 255;
+		else ww = ((255-cct) * 255) / (255 - _cctBlend);
+
+		if ((255-cct) < _cctBlend) cw = 255;
+		else cw = (cct       * 255) / (255 - _cctBlend);
+
+		ww = (w * ww) / 255; //brightness scaling
+		cw = (w * cw) / 255;
+
     switch (_type) {
       case TYPE_ANALOG_1CH: //one channel (white), relies on auto white calculation
         _data[0] = w;
         break;
       case TYPE_ANALOG_2CH: //warm white + cold white
-        // perhaps a non-linear adjustment would be in order. need to test
-        _data[1] = (w * cct) / 255;
-        _data[0] = (w * (255-cct)) / 255;
+        _data[1] = cw;
+        _data[0] = ww;
         break;
       case TYPE_ANALOG_5CH: //RGB + warm white + cold white
         // perhaps a non-linear adjustment would be in order. need to test
-        _data[4] = (w * cct) / 255;
-        w = (w * (255-cct)) / 255;
+        _data[4] = cw;
+        w = ww;
       case TYPE_ANALOG_4CH: //RGBW
         _data[3] = w;
       case TYPE_ANALOG_3CH: //standard dumb RGB

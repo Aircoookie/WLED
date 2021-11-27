@@ -673,6 +673,7 @@ class WS2812FX {
       paletteFade = 0,
       paletteBlend = 0,
       milliampsPerLed = 55,
+			cctBlending = 0,
       getBrightness(void),
       getMode(void),
       getSpeed(void),
