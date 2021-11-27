@@ -744,7 +744,6 @@ function populateSegments(s)
 		</tr>
 		</table>
 		<div class="h bp" id="seg${i}len"></div>
-		<button class="btn btn-xs del" id="segd${i}" onclick="delSeg(${i})"><i class="icons btn-icon">&#xe037;</i></button>
 		<label class="check revchkl">
 			Reverse direction
 			<input type="checkbox" id="seg${i}rev" onchange="setRev(${i})" ${inst.rev ? "checked":""}>
@@ -755,7 +754,10 @@ function populateSegments(s)
 			<input type="checkbox" id="seg${i}mi" onchange="setMi(${i})" ${inst.mi ? "checked":""}>
 			<span class="checkmark schk"></span>
 		</label>
-		<div id="btn${i}rpt"></div>
+		<div class="del">
+			<button class="btn btn-xs" id="segr${i}" title="Repeat until end" onclick="rptSeg(${i})"><i class="icons btn-icon">&#xe22d;</i></button>
+			<button class="btn btn-xs" id="segd${i}" title="Delete" onclick="delSeg(${i})"><i class="icons btn-icon">&#xe037;</i></button>
+		</div>
 	</div>
 </div>`;
 	}
@@ -768,14 +770,13 @@ function populateSegments(s)
 		resetUtil();
 		noNewSegs = false;
 	}
-	if (!noNewSegs && (cfg.comp.seglen?parseInt(gId(`seg${lSeg}s`).value):0)+parseInt(gId(`seg${lSeg}e`).value)<ledCount) {
-		gId(`btn${lSeg}rpt`).innerHTML = `<button class="btn btn-xs del" style="right:56px;" title="Repeat until end" onclick="rptSeg(${lSeg})"><i class="icons btn-icon">&#xe22d;</i></button>`;
-	}
 	for (var i = 0; i <= lSeg; i++) {
 		updateLen(i);
 		updateTrail(gId(`seg${i}bri`));
-		if (segCount < 2) gId(`segd${lSeg}`).style.display = "none";
+		gId(`segr${lSeg}`).style.display = "none";
 	}
+	if (segCount < 2) gId(`segd${lSeg}`).style.display = "none";
+	if (!noNewSegs && (cfg.comp.seglen?parseInt(gId(`seg${lSeg}s`).value):0)+parseInt(gId(`seg${lSeg}e`).value)<ledCount) gId(`segr${lSeg}`).style.display = "inline";
 	gId('rsbtn').style.display = (segCount > 1) ? "inline":"none";
 }
 
