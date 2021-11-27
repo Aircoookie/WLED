@@ -560,11 +560,8 @@ class BusManager {
   }
 
   void setSegmentCCT(int16_t cct, bool allowWBCorrection = false) {
-    if (cct > 255) { //kelvin value, convert to 0-255
-      if (cct < 1900)  cct = 1900;
-      if (cct > 10091) cct = 10091;
-      if (!allowWBCorrection) cct = (cct - 1900) >> 5;
-    } else if (cct > -1) {
+    if (cct > 255) cct = 255;
+    if (cct >= 0) {
       //if white balance correction allowed, save as kelvin value instead of 0-255
       if (allowWBCorrection) cct = 1900 + (cct << 5);
     } else cct = -1;

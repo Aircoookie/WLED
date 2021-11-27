@@ -86,7 +86,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   if (elem["on"].is<const char*>() && elem["on"].as<const char*>()[0] == 't') on = !on;
   seg.setOption(SEG_OPTION_ON, on, id);
   
-  seg.cct = elem["cct"] | seg.cct;
+  seg.setCCT(elem["cct"] | seg.cct, id);
 
   JsonArray colarr = elem["col"];
   if (!colarr.isNull())
