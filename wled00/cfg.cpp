@@ -225,7 +225,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(macroNl, light_nl["macro"]);
 
   JsonObject def = doc[F("def")];
-  CJSON(bootPreset, def[F("ps")]);
+  CJSON(bootPreset, def["ps"]);
   CJSON(turnOnAtBoot, def["on"]); // true
   CJSON(briS, def["bri"]); // 128
 
@@ -611,7 +611,7 @@ void serializeConfig() {
   light_nl["macro"] = macroNl;
 
   JsonObject def = doc.createNestedObject("def");
-  def[F("ps")] = bootPreset;
+  def["ps"] = bootPreset;
   def["on"] = turnOnAtBoot;
   def["bri"] = briS;
 
