@@ -4,9 +4,6 @@
 #define MAX_4_CH_LEDS_PER_UNIVERSE 128
 #define MAX_CHANNELS_PER_UNIVERSE 512
 
-#ifdef WLED_ENABLE_DMX
-int dmxSavedData[513] = {0};
-#endif
 /*
  * E1.31 handler
  */

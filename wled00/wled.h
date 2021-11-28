@@ -328,6 +328,7 @@ WLED_GLOBAL bool arlsForceMaxBri _INIT(false);                    // enable to f
 #ifdef WLED_ENABLE_DMX
 WLED_GLOBAL DMXESPSerial dmx;
 WLED_GLOBAL uint16_t e131ProxyUniverse _INIT(0);                  // output this E1.31 (sACN) / ArtNet universe via MAX485 (0 = disabled)
+WLED_GLOBAL uint8_t dmxSavedData[513] _INIT({0});
 #endif
 WLED_GLOBAL uint16_t e131Universe _INIT(1);                       // settings for E1.31 (sACN) protocol (only DMX_MODE_MULTIPLE_* can span over consequtive universes)
 WLED_GLOBAL uint16_t e131Port _INIT(5568);                        // DMX in port. E1.31 default is 5568, Art-Net is 6454
