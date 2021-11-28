@@ -49,11 +49,10 @@ struct BusConfig {
   uint8_t skipAmount;
   bool refreshReq;
   uint8_t pins[5] = {LEDPIN, 255, 255, 255, 255};
-  uint8_t autoWhite;
-  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint8_t skip = 0, uint8_t aw = 0) {
+  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint8_t skip = 0) {
     refreshReq = (bool) GET_BIT(busType,7);
     type = busType & 0x7F;  // bit 7 may be/is hacked to include refresh info (1=refresh in off state, 0=no refresh)
-    count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev; skipAmount = skip; autoWhite = aw;
+    count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev; skipAmount = skip;
     uint8_t nPins = 1;
     if (type >= TYPE_NET_DDP_RGB && type < 96) nPins = 4; //virtual network bus. 4 "pins" store IP address
     else if (type > 47) nPins = 2;
@@ -77,10 +76,9 @@ struct BusConfig {
 //parent class of BusDigital, BusPwm, and BusNetwork
 class Bus {
   public:
-    Bus(uint8_t type, uint16_t start, uint8_t aw) {
+    Bus(uint8_t type, uint16_t start) {
       _type = type;
       _start = start;
-      _autoWhiteMode = isRgbw(_type) ? aw : RGBW_MODE_MANUAL_ONLY;
     };
 
     virtual ~Bus() {} //throw the bus under the bus
@@ -96,7 +94,6 @@ class Bus {
     virtual void     setColorOrder() {}
     virtual uint8_t  getColorOrder() { return COL_ORDER_RGB; }
     virtual uint8_t  skippedLeds() { return 0; }
-    inline  uint8_t  getAutoWhiteMode() { return _autoWhiteMode; }
     inline  uint16_t getStart() { return _start; }
     inline  void     setStart(uint16_t start) { _start = start; }
     inline  uint8_t  getType() { return _type; }
@@ -110,7 +107,7 @@ class Bus {
       if (type > TYPE_ONOFF && type <= TYPE_ANALOG_5CH && type != TYPE_ANALOG_3CH) return true;
       return false;
     }
-    static  void setCCT(uint16_t cct) {
+    static void setCCT(uint16_t cct) {
       _cct = cct;
     }
 		static void setCCTBlend(uint8_t b) {
@@ -121,6 +118,8 @@ class Bus {
 				if (_cctBlend > WLED_MAX_CCT_BLEND) _cctBlend = WLED_MAX_CCT_BLEND;
 			#endif
 		}
+		inline static void    setAutoWhiteMode(uint8_t m) { if (m < 4) _autoWhiteMode = m; }
+		inline static uint8_t getAutoWhiteMode() { return _autoWhiteMode; }
 
     bool reversed = false;
 
@@ -131,7 +130,7 @@ class Bus {
     uint16_t _len = 1;
     bool     _valid = false;
     bool     _needsRefresh = false;
-    uint8_t  _autoWhiteMode = 0;
+    static uint8_t _autoWhiteMode;
     static int16_t _cct;
 		static uint8_t _cctBlend;
   
@@ -152,7 +151,7 @@ class Bus {
 
 class BusDigital : public Bus {
   public:
-  BusDigital(BusConfig &bc, uint8_t nr) : Bus(bc.type, bc.start, bc.autoWhite) {
+  BusDigital(BusConfig &bc, uint8_t nr) : Bus(bc.type, bc.start) {
     if (!IS_DIGITAL(bc.type) || !bc.count) return;
     if (!pinManager.allocatePin(bc.pins[0], true, PinOwner::BusDigital)) return;
     _pins[0] = bc.pins[0];
@@ -194,7 +193,7 @@ class BusDigital : public Bus {
   }
 
   void setPixelColor(uint16_t pix, uint32_t c) {
-    c = autoWhiteCalc(c);
+    if (_type == TYPE_SK6812_RGBW || _type == TYPE_TM1814) c = autoWhiteCalc(c);
     if (_cct >= 1900) c = colorBalanceFromKelvin(_cct, c); //color correction from CCT
     if (reversed) pix = _len - pix -1;
     else pix += _skip;
@@ -259,7 +258,7 @@ class BusDigital : public Bus {
 
 class BusPwm : public Bus {
   public:
-  BusPwm(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
+  BusPwm(BusConfig &bc) : Bus(bc.type, bc.start) {
     _valid = false;
     if (!IS_PWM(bc.type)) return;
     uint8_t numPins = NUM_PWM_PINS(bc.type);
@@ -296,7 +295,7 @@ class BusPwm : public Bus {
     if (_type == TYPE_ANALOG_3CH && _cct >= 1900) {
       c = colorBalanceFromKelvin(_cct, c); //color correction from CCT
     }
-    c = autoWhiteCalc(c);
+    if (_type != TYPE_ANALOG_3CH) c = autoWhiteCalc(c);
     uint8_t r = R(c);
     uint8_t g = G(c);
     uint8_t b = B(c);
@@ -408,7 +407,7 @@ class BusPwm : public Bus {
 
 class BusNetwork : public Bus {
   public:
-    BusNetwork(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
+    BusNetwork(BusConfig &bc) : Bus(bc.type, bc.start) {
       _valid = false;
 //      switch (bc.type) {
 //        case TYPE_NET_ARTNET_RGB:

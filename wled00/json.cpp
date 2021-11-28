@@ -518,7 +518,7 @@ void serializeInfo(JsonObject root)
         if (!cctFromRgb) leds["cct"] = true;
         break;
     }
-    switch (bus->getAutoWhiteMode()) {
+    switch (Bus::getAutoWhiteMode()) {
       case RGBW_MODE_MANUAL_ONLY:
       case RGBW_MODE_DUAL:
         if (bus->isRgbw()) leds[F("wv")] = true;
