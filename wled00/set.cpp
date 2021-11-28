@@ -549,6 +549,7 @@ void parseNumber(const char* str, byte* val, byte minv, byte maxv)
     const char* str2 = strchr(str,'~'); //min/max range (for preset cycle, e.g. "1~5~")
     if (str2) {
       byte p2 = atoi(str2+1);
+      presetCycMin = p1; presetCycMax = p2;
       while (isdigit((str2+1)[0])) str2++;
       parseNumber(str2+1, val, p1, p2);
     } else {
@@ -657,17 +658,14 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   pos = req.indexOf(F("PS=")); //saves current in preset
   if (pos > 0) savePreset(getNumVal(&req, pos));
 
-  byte presetCycleMin = 1;
-  byte presetCycleMax = 5;
-
   pos = req.indexOf(F("P1=")); //sets first preset for cycle
-  if (pos > 0) presetCycleMin = getNumVal(&req, pos);
+  if (pos > 0) presetCycMin = getNumVal(&req, pos);
 
   pos = req.indexOf(F("P2=")); //sets last preset for cycle
-  if (pos > 0) presetCycleMax = getNumVal(&req, pos);
+  if (pos > 0) presetCycMax = getNumVal(&req, pos);
 
   //apply preset
-  if (updateVal(&req, "PL=", &presetCycCurr, presetCycleMin, presetCycleMax)) {
+  if (updateVal(&req, "PL=", &presetCycCurr, presetCycMin, presetCycMax)) {
     applyPreset(presetCycCurr);
   }
 

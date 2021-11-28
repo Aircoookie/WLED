@@ -150,21 +150,21 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   //temporary, strip object gets updated via colorUpdated()
   if (id == strip.getMainSegmentId()) {
-    byte effectPrev = effectCurrent;
-    effectCurrent = elem["fx"] | effectCurrent;
-    if (!presetId && effectCurrent != effectPrev) unloadPlaylist(); //stop playlist if active and FX changed manually
+    if (getVal(elem["fx"], &effectCurrent, 1, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 1-255 exact value)
+      if (!presetId) unloadPlaylist(); //stop playlist if active and FX changed manually
+    }
     effectSpeed = elem[F("sx")] | effectSpeed;
     effectIntensity = elem[F("ix")] | effectIntensity;
-    effectPalette = elem["pal"] | effectPalette;
+    getVal(elem["pal"], &effectPalette, 1, strip.getPaletteCount());
   } else { //permanent
-    byte fx = elem["fx"] | seg.mode;
-    if (fx != seg.mode && fx < strip.getModeCount()) {
+    byte fx = seg.mode;
+    if (getVal(elem["fx"], &fx, 1, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 1-255 exact value)
       strip.setMode(id, fx);
       if (!presetId) unloadPlaylist(); //stop playlist if active and FX changed manually
     }
     seg.speed = elem[F("sx")] | seg.speed;
     seg.intensity = elem[F("ix")] | seg.intensity;
-    seg.palette = elem["pal"] | seg.palette;
+    getVal(elem["pal"], &seg.palette, 1, strip.getPaletteCount());
   }
 
   JsonArray iarr = elem[F("i")]; //set individual LEDs
@@ -346,9 +346,11 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       deletePreset(ps);
     }
 
-    if (getVal(root["ps"], &presetCycCurr, 1, 5)) { //load preset (clears state request!)
+    ps = presetCycCurr;
+    if (getVal(root["ps"], &ps, presetCycMin, presetCycMax)) { //load preset (clears state request!)
       if (!presetId) unloadPlaylist(); //stop playlist if preset changed manually
-      applyPreset(presetCycCurr, callMode);
+      if (ps >= presetCycMin && ps <= presetCycMax) presetCycCurr = ps;
+      applyPreset(ps, callMode);
       return stateResponse;
     }
 
@@ -438,7 +440,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
   if (!forPreset) {
     if (errorFlag) root[F("error")] = errorFlag;
 
-    root[F("ps")] = (currentPreset > 0) ? currentPreset : -1;
+    root["ps"] = (currentPreset > 0) ? currentPreset : -1;
     root[F("pl")] = currentPlaylist;
 
     usermods.addToJsonState(root);
