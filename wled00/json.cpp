@@ -86,7 +86,9 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   if (elem["on"].is<const char*>() && elem["on"].as<const char*>()[0] == 't') on = !on;
   seg.setOption(SEG_OPTION_ON, on, id);
   
+	uint8_t cctPrev = seg.cct;
   seg.setCCT(elem["cct"] | seg.cct, id);
+	if (seg.cct != cctPrev && id == strip.getMainSegmentId()) effectChanged = true; //send UDP
 
   JsonArray colarr = elem["col"];
   if (!colarr.isNull())
@@ -145,7 +147,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   //if (pal != seg.palette && pal < strip.getPaletteCount()) strip.setPalette(pal);
   seg.setOption(SEG_OPTION_SELECTED, elem[F("sel")] | seg.getOption(SEG_OPTION_SELECTED));
-  seg.setOption(SEG_OPTION_REVERSED, elem["rev"] | seg.getOption(SEG_OPTION_REVERSED));
+  seg.setOption(SEG_OPTION_REVERSED, elem["rev"]    | seg.getOption(SEG_OPTION_REVERSED));
   seg.setOption(SEG_OPTION_MIRROR  , elem[F("mi")]  | seg.getOption(SEG_OPTION_MIRROR  ));
 
   //temporary, strip object gets updated via colorUpdated()
@@ -385,10 +387,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
   root["on"] = seg.getOption(SEG_OPTION_ON);
   byte segbri = seg.opacity;
   root["bri"] = (segbri) ? segbri : 255;
-  uint16_t cct = seg.cct;
-  if (cct >= 1900) cct = (cct - 1900) >> 5; //convert K to 0-255
-  if (cct > 255) cct = 255;
-  root["cct"] = cct;
+  root["cct"] = seg.cct;
 
   if (segmentBounds && seg.name != nullptr) root["n"] = reinterpret_cast<const char *>(seg.name); //not good practice, but decreases required JSON buffer
 
@@ -505,23 +504,14 @@ void serializeInfo(JsonObject root)
   leds[F("count")] = strip.getLengthTotal();
   leds[F("rgbw")] = strip.isRgbw;
   leds[F("wv")] = false;
-  leds["cct"] = correctWB;
-  for (uint8_t s = 0; s < busses.getNumBusses(); s++) {
-    Bus *bus = busses.getBus(s);
-    if (bus == nullptr || bus->getLength()==0) break;
-    switch (bus->getType()) {
-      case TYPE_ANALOG_5CH:
-      case TYPE_ANALOG_2CH:
-        if (!cctFromRgb) leds["cct"] = true;
-        break;
-    }
-    switch (Bus::getAutoWhiteMode()) {
-      case RGBW_MODE_MANUAL_ONLY:
-      case RGBW_MODE_DUAL:
-        if (bus->isRgbw()) leds[F("wv")] = true;
-        break;
-    }
-  }
+  leds["cct"] = correctWB || strip.hasCCTBus();
+	switch (Bus::getAutoWhiteMode()) {
+		case RGBW_MODE_MANUAL_ONLY:
+		case RGBW_MODE_DUAL:
+			if (strip.isRgbw) leds[F("wv")] = true;
+			break;
+	}
+
   leds[F("pwr")] = strip.currentMilliamps;
   leds[F("fps")] = strip.getFps();
   leds[F("maxpwr")] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;

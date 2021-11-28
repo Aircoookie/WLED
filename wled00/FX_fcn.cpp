@@ -553,6 +553,20 @@ uint16_t WS2812FX::getLengthPhysical(void) {
   return len;
 }
 
+bool WS2812FX::hasCCTBus(void) {
+	if (cctFromRgb && !correctWB) return false;
+	for (uint8_t b = 0; b < busses.getNumBusses(); b++) {
+    Bus *bus = busses.getBus(b);
+    if (bus == nullptr || bus->getLength()==0) break;
+    switch (bus->getType()) {
+      case TYPE_ANALOG_5CH:
+      case TYPE_ANALOG_2CH:
+        return true;
+    }
+  }
+	return false;
+}
+
 void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping, uint8_t spacing) {
   if (n >= MAX_NUM_SEGMENTS) return;
   Segment& seg = _segments[n];

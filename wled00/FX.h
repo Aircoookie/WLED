@@ -665,6 +665,7 @@ class WS2812FX {
       applyToAllSelected = true,
       setEffectConfig(uint8_t m, uint8_t s, uint8_t i, uint8_t p),
       checkSegmentAlignment(void),
+			hasCCTBus(void),
       // return true if the strip is being sent pixel updates
       isUpdating(void);
 
