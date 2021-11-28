@@ -272,9 +272,13 @@
 #endif
 
 #ifdef WLED_USE_ETHERNET
-#define E131_MAX_UNIVERSE_COUNT 20
+  #define E131_MAX_UNIVERSE_COUNT 20
 #else
-#define E131_MAX_UNIVERSE_COUNT 10
+  #ifdef ESP8266
+    #define E131_MAX_UNIVERSE_COUNT 9
+  #else
+    #define E131_MAX_UNIVERSE_COUNT 12
+  #endif
 #endif
 
 #define ABL_MILLIAMPS_DEFAULT 850  // auto lower brightness to stay close to milliampere limit
@@ -309,15 +313,15 @@
 #ifdef ESP8266
   #define LEDPIN 2    // GPIO2 (D4) on Wemod D1 mini compatible boards
 #else
-  #define LEDPIN 16   // aligns with GPIO2 (D4) on Wemos D1 mini32 compatible boards
+  #define LEDPIN 2   // Changed from 16 to restore compatibility with ESP32-pico
 #endif
 #endif
 
 #ifdef WLED_ENABLE_DMX
 #if (LEDPIN == 2)
   #undef LEDPIN
-  #define LEDPIN 3
-  #warning "Pin conflict compiling with DMX and LEDs on pin 2. The default LED pin has been changed to pin 3."
+  #define LEDPIN 1
+  #warning "Pin conflict compiling with DMX and LEDs on pin 2. The default LED pin has been changed to pin 1."
 #endif
 #endif
 

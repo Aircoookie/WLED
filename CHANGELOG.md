@@ -2,6 +2,31 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2111220
+
+-   Fixed preset cycle not working from preset called by UI
+-   Reintroduced permanent min. and max. cycle bounds
+
+#### Build 2111190
+
+-   Changed default ESP32 LED pin from 16 to 2
+-   Renamed "Running 2" to "Chase 2"
+-   Renamed "Tri Chase" to "Chase 3"
+
+#### Build 2111170
+
+-   Version bump to 0.13.0-b5 "Toki"
+-   Improv Serial support (PR #2334)
+-   Button improvements (PR #2284)
+-   Added two time zones (PR #2264, 2311)
+-   JSON in/decrementing support for brightness and presets
+-   Fixed no gamma correction for JSON individual LED control
+-   Preset cycle bugfix
+-   Removed ledCount
+-   LED settings buffer bugfix
+-   Network pin conflict bugfix
+-   Changed default ESP32 partition layout to 4M, 1M FS
+
 #### Build 2110110
 
 -   Version bump to 0.13.0-b4 "Toki"
@@ -374,6 +399,7 @@
 -   Added support for WESP32 ethernet board (PR #1764)
 -   Added Caching for main UI (PR #1704)
 -   Added Tetrix mode (PR #1729)
+-   Removed Merry Christmas mode (use "Chase 2" - called Running 2 before 0.13.0)
 -   Added memory check on Bus creation
 
 #### Build 2102050
