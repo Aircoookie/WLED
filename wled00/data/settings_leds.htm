@@ -350,8 +350,8 @@ ${i+1}:
     }
     function addBtn(i,p,t) {
       var c = gId("btns").innerHTML;
-      var bt = "BT" + i;
-      var be = "BE" + i;
+      var bt = "BT" + String.fromCharCode((i<10?48:55)+i);
+      var be = "BE" + String.fromCharCode((i<10?48:55)+i);
       c += `Button ${i} GPIO: <input type="number" min="-1" max="40" name="${bt}" onchange="UI()" class="xs" value="${p}">`;
       c += `&nbsp;<select name="${be}">`
       c += `<option value="0" ${t==0?"selected":""}>Disabled</option>`;
