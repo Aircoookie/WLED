@@ -85,10 +85,11 @@ class Bus {
 
     virtual void     show() {}
     virtual bool     canShow() { return true; }
-    virtual void     setPixelColor(uint16_t pix, uint32_t c) {};
-    virtual uint32_t getPixelColor(uint16_t pix) { return 0; };
-    virtual void     setBrightness(uint8_t b) {};
-    virtual void     cleanup() {};
+		virtual void     setStatusPixel(uint32_t c) {}
+    virtual void     setPixelColor(uint16_t pix, uint32_t c) {}
+    virtual uint32_t getPixelColor(uint16_t pix) { return 0; }
+    virtual void     setBrightness(uint8_t b) {}
+    virtual void     cleanup() {}
     virtual uint8_t  getPins(uint8_t* pinArray) { return 0; }
     inline  uint16_t getLength() { return _len; }
     virtual void     setColorOrder() {}
@@ -192,6 +193,15 @@ class BusDigital : public Bus {
     PolyBus::setBrightness(_busPtr, _iType, b);
   }
 
+	//If LEDs are skipped, it is possible to use the first as a status LED.
+	//TODO only show if no new show due in the next 50ms
+	void setStatusPixel(uint32_t c) {
+    if (_skip && canShow()) {
+      PolyBus::setPixelColor(_busPtr, _iType, 0, c, _colorOrder);
+      PolyBus::show(_busPtr, _iType);
+    }
+  }
+
   void setPixelColor(uint16_t pix, uint32_t c) {
     if (_type == TYPE_SK6812_RGBW || _type == TYPE_TM1814) c = autoWhiteCalc(c);
     if (_cct >= 1900) c = colorBalanceFromKelvin(_cct, c); //color correction from CCT
@@ -292,10 +302,10 @@ class BusPwm : public Bus {
 
   void setPixelColor(uint16_t pix, uint32_t c) {
     if (pix != 0 || !_valid) return; //only react to first pixel
-    if (_type == TYPE_ANALOG_3CH && _cct >= 1900) {
+		if (_type != TYPE_ANALOG_3CH) c = autoWhiteCalc(c);
+    if (_cct >= 1900 && (_type == TYPE_ANALOG_3CH || _type == TYPE_ANALOG_4CH)) {
       c = colorBalanceFromKelvin(_cct, c); //color correction from CCT
     }
-    if (_type != TYPE_ANALOG_3CH) c = autoWhiteCalc(c);
     uint8_t r = R(c);
     uint8_t g = G(c);
     uint8_t b = B(c);
@@ -561,6 +571,12 @@ class BusManager {
       busses[i]->show();
     }
   }
+
+	void setStatusPixel(uint32_t c) {
+    for (uint8_t i = 0; i < numBusses; i++) {
+			busses[i]->setStatusPixel(c);
+		}
+	}
 
   void setPixelColor(uint16_t pix, uint32_t c, int16_t cct=-1) {
     for (uint8_t i = 0; i < numBusses; i++) {

@@ -1166,6 +1166,8 @@ uint32_t WS2812FX::gamma32(uint32_t color)
 }
 
 WS2812FX* WS2812FX::instance = nullptr;
+
+//Bus static member definition, would belong in bus_manager.cpp
 int16_t Bus::_cct = -1;
 uint8_t Bus::_cctBlend = 0;
 uint8_t Bus::_autoWhiteMode = RGBW_MODE_DUAL;
