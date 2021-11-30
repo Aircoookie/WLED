@@ -82,6 +82,7 @@ void onAlexaChange(EspalexaDevice* dev)
 				uint8_t cctPrev = seg.cct;
 				seg.setCCT(k, segid);
 				if (seg.cct != cctPrev) effectChanged = true; //send UDP
+				col[0]= 0; col[1]= 0; col[2]= 0; col[3]= 255;
 			} else if (strip.isRgbw) {
         switch (ct) { //these values empirically look good on RGBW
           case 199: col[0]=255; col[1]=255; col[2]=255; col[3]=255; break;

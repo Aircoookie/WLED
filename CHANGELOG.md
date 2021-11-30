@@ -2,6 +2,12 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2111300
+
+-		Added CCT and white balance correction support (PR #2285)
+-		Unified UI slider style
+-		Added LED settings config template upload
+
 #### Build 2111220
 
 -   Fixed preset cycle not working from preset called by UI

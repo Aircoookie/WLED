@@ -840,6 +840,7 @@ function loadNodes()
 	});
 }
 
+//update the 'sliderdisplay' background div of a slider for a visual indication of slider position
 function updateTrail(e)
 {
 	if (e==null) return;
@@ -851,6 +852,7 @@ function updateTrail(e)
 	e.parentNode.getElementsByClassName('sliderdisplay')[0].style.background = val;
 }
 
+//rangetouch slider function
 function updateBubble(e)
 {
 	var bubble = e.target.parentNode.getElementsByTagName('output')[0];
@@ -859,11 +861,13 @@ function updateBubble(e)
 	}
 }
 
+//rangetouch slider function
 function toggleBubble(e)
 {
 	e.target.parentNode.querySelector('output').classList.toggle('hidden');
 }
 
+//updates segment length upon input of segment values
 function updateLen(s)
 {
 	if (!d.getElementById(`seg${s}s`)) return;
@@ -889,22 +893,23 @@ function updateLen(s)
 	d.getElementById(`seg${s}len`).innerHTML = out;
 }
 
+//updates background color of currently selected preset
 function updatePA()
 {
-	var ps = d.getElementsByClassName("seg");
+	var ps = d.getElementsByClassName("seg"); //reset all preset buttons
 	for (let i = 0; i < ps.length; i++) {
 		ps[i].style.backgroundColor = "var(--c-2)";
 	}
-	ps = d.getElementsByClassName("psts");
+	ps = d.getElementsByClassName("psts"); //reset all quick selectors
 	for (let i = 0; i < ps.length; i++) {
 		ps[i].style.backgroundColor = "var(--c-2)";
 	}
 	if (currentPreset > 0) {
 		var acv = d.getElementById(`p${currentPreset}o`);
 		if (acv && !expanded[currentPreset+100])
-			acv.style.background = "var(--c-6)";
+			acv.style.background = "var(--c-6)"; //highlight current preset
 		acv = d.getElementById(`p${currentPreset}qlb`);
-		if (acv) acv.style.background = "var(--c-6)";
+		if (acv) acv.style.background = "var(--c-6)"; //highlight quick selector
 	}
 }
 
@@ -922,8 +927,7 @@ function updateUI()
 	d.getElementById('kwrap').style.display = (lastinfo.leds.cct) ? "none":"block";
 
 	updatePA();
-	//updateHex();
-	//updateRgb();
+	updatePSliders();
 }
 
 function displayRover(i,s)
@@ -1001,7 +1005,6 @@ function readState(s,command=false) {
     if (isRgbw) whites[e] = parseInt(i.col[e][3]);
     selectSlot(csel);
   }
-  //d.getElementById('sliderW').value = whites[csel];
   if (i.cct != null && i.cct>=0) d.getElementById("sliderA").value = i.cct;
 
   d.getElementById('sliderSpeed').value = i.sx;
@@ -1701,10 +1704,10 @@ function selectSlot(b) {
 	cd[csel].style.margin="2px";
 	cd[csel].style.width="50px";
 	cpick.color.set(cd[csel].style.backgroundColor);
+	//force slider update on initial load (picker "color:change" not fired if black)
+	if (cd[csel].style.backgroundColor == 'rgb(0, 0, 0)') updatePSliders();
 	d.getElementById('sliderW').value = whites[csel];
 	updateTrail(d.getElementById('sliderW'));
-	//updateHex();
-	//updateRgb();
 	redrawPalPrev();
 }
 
@@ -1725,20 +1728,7 @@ function pC(col)
 }
 
 function updatePSliders() {
-  updateRgb();
-  updateHex();
-  var v = d.getElementById('sliderV');
-  v.value = cpick.color.value;
-  var hsv = {"h":cpick.color.hue,"s":cpick.color.saturation,"v":100}; 
-  var c = iro.Color.hsvToRgb(hsv);
-  var cs = 'rgb('+c.r+','+c.g+','+c.b+')';
-  v.parentNode.getElementsByClassName('sliderdisplay')[0].style.setProperty('--bg',cs);
-  updateTrail(v);
-  d.getElementById('sliderK').value = cpick.color.kelvin;
-}
-
-function updateRgb()
-{
+	//update RGB sliders
 	var col = cpick.color.rgb;
 	var s = d.getElementById('sliderR');
 	s.value = col.r; updateTrail(s,1);
@@ -1746,16 +1736,26 @@ function updateRgb()
 	s.value = col.g; updateTrail(s,2);
 	s = d.getElementById('sliderB');
 	s.value = col.b; updateTrail(s,3);
-}
 
-function updateHex()
-{
-	var str = cpick.color.hexString;
-	str = str.substring(1);
+  //update hex field
+	var str = cpick.color.hexString.substring(1);
 	var w = whites[csel];
 	if (w > 0) str += w.toString(16);
 	d.getElementById('hexc').value = str;
 	d.getElementById('hexcnf').style.backgroundColor = "var(--c-3)";
+
+	//update value slider
+  var v = d.getElementById('sliderV');
+  v.value = cpick.color.value;
+	//background color as if color had full value
+  var hsv = {"h":cpick.color.hue,"s":cpick.color.saturation,"v":100}; 
+  var c = iro.Color.hsvToRgb(hsv);
+  var cs = 'rgb('+c.r+','+c.g+','+c.b+')';
+  v.parentNode.getElementsByClassName('sliderdisplay')[0].style.setProperty('--bg',cs);
+  updateTrail(v);
+
+	//update Kelvin slider
+  d.getElementById('sliderK').value = cpick.color.kelvin;
 }
 
 function hexEnter() {
@@ -1807,8 +1807,6 @@ function setColor(sr) {
 	} else if (csel == 2) {
 		obj = {"seg": {"col": [[],[],[col.r, col.g, col.b, whites[csel]]]}};
 	}
-	//updateHex();
-	//updateRgb();
 	requestJson(obj);
 }
 
