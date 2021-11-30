@@ -264,7 +264,7 @@ void WLED::setup()
   DEBUG_PRINTLN(F("Reading config"));
   deserializeConfigFromFS();
 
-#if STATUSLED
+#if defined(STATUSLED) && STATUSLED>=0
   if (!pinManager.isPinAllocated(STATUSLED)) {
     // NOTE: Special case: The status LED should *NOT* be allocated.
     //       See comments in handleStatusLed().
@@ -711,32 +711,48 @@ void WLED::handleConnection()
 // else turn the status LED off
 void WLED::handleStatusLED()
 {
-  #if STATUSLED
+  #if defined(STATUSLED)
+  uint32_t c = 0;
   static unsigned long ledStatusLastMillis = 0;
   static unsigned short ledStatusType = 0; // current status type - corresponds to number of blinks per second
-  static bool ledStatusState = 0; // the current LED state
+  static bool ledStatusState = false; // the current LED state
 
+  #if STATUSLED>=0
   if (pinManager.isPinAllocated(STATUSLED)) {
     return; //lower priority if something else uses the same pin
   }
+  #endif
 
-  ledStatusType = WLED_CONNECTED ? 0 : 2;
-  if (mqttEnabled && ledStatusType != 2) { // Wi-Fi takes precendence over MQTT
-    ledStatusType = WLED_MQTT_CONNECTED ? 0 : 4;
+  if (WLED_CONNECTED) {
+    c = RGBW32(0,255,0,0);
+    ledStatusType = 2;
+  } else if (WLED_MQTT_CONNECTED) {
+    c = RGBW32(0,128,0,0);
+    ledStatusType = 4;
+  } else if (apActive) {
+    c = RGBW32(0,0,255,0);
+    ledStatusType = 2;
   }
   if (ledStatusType) {
     if (millis() - ledStatusLastMillis >= (1000/ledStatusType)) {
       ledStatusLastMillis = millis();
-      ledStatusState = ledStatusState ? 0 : 1;
+      ledStatusState = !ledStatusState;
+      #if STATUSLED>=0
       digitalWrite(STATUSLED, ledStatusState);
+      #else
+      busses.setStatusPixel(ledStatusState ? c : 0);
+      #endif
     }
   } else {
-    #ifdef STATUSLEDINVERTED
+    #if STATUSLED>=0
+      #ifdef STATUSLEDINVERTED
       digitalWrite(STATUSLED, HIGH);
-    #else
+      #else
       digitalWrite(STATUSLED, LOW);
+      #endif
+    #else
+      busses.setStatusPixel(0);
     #endif
-
   }
   #endif
 }

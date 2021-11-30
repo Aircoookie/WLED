@@ -87,11 +87,12 @@ class Bus {
 
     virtual void     show() {}
     virtual bool     canShow() { return true; }
-    virtual void     setPixelColor(uint16_t pix, uint32_t c) {};
-    virtual void     setPixelColor(uint16_t pix, uint32_t c, uint8_t cct) {};
-    virtual uint32_t getPixelColor(uint16_t pix) { return 0; };
-    virtual void     setBrightness(uint8_t b) {};
-    virtual void     cleanup() {};
+    virtual void     setStatusPixel(uint32_t c) {}
+    virtual void     setPixelColor(uint16_t pix, uint32_t c) {}
+    virtual void     setPixelColor(uint16_t pix, uint32_t c, uint8_t cct) {}
+    virtual uint32_t getPixelColor(uint16_t pix) { return 0; }
+    virtual void     setBrightness(uint8_t b) {}
+    virtual void     cleanup() {}
     virtual uint8_t  getPins(uint8_t* pinArray) { return 0; }
     inline  uint16_t getLength() { return _len; }
     virtual void     setColorOrder() {}
@@ -178,6 +179,13 @@ class BusDigital : public Bus {
     #endif
     _bri = b;
     PolyBus::setBrightness(_busPtr, _iType, b);
+  }
+
+  void setStatusPixel(uint32_t c) {
+    if (_skip && canShow()) {
+      for (uint8_t i=0; i<_skip; i--) PolyBus::setPixelColor(_busPtr, _iType, i, c, _colorOrder);
+      PolyBus::show(_busPtr, _iType);
+    }
   }
 
   void setPixelColor(uint16_t pix, uint32_t c) {
@@ -557,6 +565,10 @@ class BusManager {
     for (uint8_t i = 0; i < numBusses; i++) {
       busses[i]->show();
     }
+  }
+
+  void setStatusPixel(uint32_t c) {
+    for (uint8_t i = 0; i < numBusses; i++) busses[i]->setStatusPixel(c);
   }
 
   void setPixelColor(uint16_t pix, uint32_t c, int16_t cct=-1) {
