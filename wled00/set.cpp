@@ -666,6 +666,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   //apply preset
   if (updateVal(&req, "PL=", &presetCycCurr, presetCycMin, presetCycMax)) {
+		unloadPlaylist();
     applyPreset(presetCycCurr);
   }
 
