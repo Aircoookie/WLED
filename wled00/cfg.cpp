@@ -400,6 +400,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     if (i > 14) break;
     CJSON(DMXFixtureMap[i],dmx_fixmap[i]);
   }
+
+  CJSON(e131ProxyUniverse, dmx[F("e131proxy")]);
   #endif
 
   DEBUG_PRINTLN(F("Starting usermod config."));
@@ -736,8 +738,11 @@ void serializeConfig() {
   dmx[F("start-led")] = DMXStartLED;
 
   JsonArray dmx_fixmap = dmx.createNestedArray(F("fixmap"));
-  for (byte i = 0; i < 15; i++)
+  for (byte i = 0; i < 15; i++) {
     dmx_fixmap.add(DMXFixtureMap[i]);
+  }
+
+  dmx[F("e131proxy")] = e131ProxyUniverse;
   #endif
 
   JsonObject usermods_settings = doc.createNestedObject("um");
