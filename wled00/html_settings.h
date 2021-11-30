@@ -431,7 +431,7 @@ style="color:#fa0">
 Incorrect configuration may require a factory reset or re-flashing of your ESP.
 </div>For security reasons, passwords are not backed up.<h3>About</h3><a 
 href="https://github.com/Aircoookie/WLED/" target="_blank">WLED</a>
- version 0.13.1-bl4<br><br><a 
+ version 0.13.1-bl5<br><br><a 
 href="https://github.com/Aircoookie/WLED/wiki/Contributors-and-credits" 
 target="_blank">Contributors, dependencies and special thanks</a><br>
 A huge thank you to everyone who helped me create WLED!<br><br>

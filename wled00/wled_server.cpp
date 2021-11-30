@@ -189,6 +189,22 @@ void initServer()
     request->send(response);
   });
   
+  server.on("/iro.js", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (handleIfNoneMatchCacheHeader(request)) return;
+    AsyncWebServerResponse *response = request->beginResponse_P(200, "application/javascript", iroJs, iroJs_length);
+    response->addHeader(F("Content-Encoding"),"gzip");
+    setStaticContentCacheHeaders(response);
+    request->send(response);
+  });
+  
+  server.on("/rangetouch.js", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (handleIfNoneMatchCacheHeader(request)) return;
+    AsyncWebServerResponse *response = request->beginResponse_P(200, "application/javascript", rangetouchJs, rangetouchJs_length);
+    response->addHeader(F("Content-Encoding"),"gzip");
+    setStaticContentCacheHeaders(response);
+    request->send(response);
+  });
+  
   //if OTA is allowed
   if (!otaLock){
     #ifdef WLED_ENABLE_FS_EDITOR
