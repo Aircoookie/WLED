@@ -95,6 +95,11 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     uint8_t pins[5] = {255, 255, 255, 255, 255};
 
     autoSegments = request->hasArg(F("MS"));
+    correctWB = request->hasArg(F("CCT"));
+    cctFromRgb = request->hasArg(F("CR"));
+		strip.cctBlending = request->arg(F("CB")).toInt();
+		Bus::setCCTBlend(strip.cctBlending);
+		Bus::setAutoWhiteMode(request->arg(F("AW")).toInt());
 
     for (uint8_t s = 0; s < WLED_MAX_BUSSES; s++) {
       char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
@@ -116,7 +121,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       type = request->arg(lt).toInt();
       type |= request->hasArg(rf) << 7; // off refresh override
       skip = request->hasArg(sl) ? LED_SKIP_AMOUNT : 0;
-
       colorOrder = request->arg(co).toInt();
       start = (request->hasArg(ls)) ? request->arg(ls).toInt() : t;
       if (request->hasArg(lc) && request->arg(lc).toInt() > 0) {
@@ -166,8 +170,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     strip.ablMilliampsMax = request->arg(F("MA")).toInt();
     strip.milliampsPerLed = request->arg(F("LA")).toInt();
     
-    strip.rgbwMode = request->arg(F("AW")).toInt();
-
     briS = request->arg(F("CA")).toInt();
 
     turnOnAtBoot = request->hasArg(F("BO"));

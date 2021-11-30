@@ -329,7 +329,7 @@ void loadSettingsFromEEPROM()
   receiveDirect = !EEPROM.read(2200);
   notifyMacro = EEPROM.read(2201);
 
-  strip.rgbwMode = EEPROM.read(2203);
+  //strip.rgbwMode = EEPROM.read(2203);
   //skipFirstLed = EEPROM.read(2204);
 
   bootPreset = EEPROM.read(389);

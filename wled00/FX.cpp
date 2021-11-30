@@ -1150,10 +1150,10 @@ uint16_t WS2812FX::mode_fire_flicker(void) {
   uint32_t it = now / cycleTime;
   if (SEGENV.step == it) return FRAMETIME;
   
-  byte w = (SEGCOLOR(0) >> 24) & 0xFF;
-  byte r = (SEGCOLOR(0) >> 16) & 0xFF;
-  byte g = (SEGCOLOR(0) >>  8) & 0xFF;
-  byte b = (SEGCOLOR(0)        & 0xFF);
+  byte w = (SEGCOLOR(0) >> 24);
+  byte r = (SEGCOLOR(0) >> 16);
+  byte g = (SEGCOLOR(0) >>  8);
+  byte b = (SEGCOLOR(0)      );
   byte lum = (SEGMENT.palette == 0) ? MAX(w, MAX(r, MAX(g, b))) : 255;
   lum /= (((256-SEGMENT.intensity)/16)+1);
   for(uint16_t i = 0; i < SEGLEN; i++) {
@@ -2117,7 +2117,7 @@ typedef struct Ripple {
 #endif
 uint16_t WS2812FX::ripple_base(bool rainbow)
 {
-  uint16_t maxRipples = min(1 + (SEGLEN >> 2), MAX_RIPPLES);  // 56 max for 18 segment ESP8266
+  uint16_t maxRipples = min(1 + (SEGLEN >> 2), MAX_RIPPLES);  // 56 max for 16 segment ESP8266
   uint16_t dataSize = sizeof(ripple) * maxRipples;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
@@ -2900,7 +2900,6 @@ uint16_t WS2812FX::mode_starburst(void) {
   return FRAMETIME;
 }
 #undef STARBURST_MAX_FRAG
-#undef STARBURST_MAX_STARS
 
 /*
  * Exploding fireworks effect
@@ -3645,7 +3644,7 @@ typedef struct Spotlight {
  */
 uint16_t WS2812FX::mode_dancing_shadows(void)
 {
-  uint8_t numSpotlights = map(SEGMENT.intensity, 0, 255, 2, SPOT_MAX_COUNT);  // 49 on 32 segment ESP32, 17 on 18 segment ESP8266
+  uint8_t numSpotlights = map(SEGMENT.intensity, 0, 255, 2, SPOT_MAX_COUNT);  // 49 on 32 segment ESP32, 17 on 16 segment ESP8266
   bool initialize = SEGENV.aux0 != numSpotlights;
   SEGENV.aux0 = numSpotlights;
 
@@ -3784,7 +3783,7 @@ uint16_t WS2812FX::mode_washing_machine(void) {
   Modified, originally by Mark Kriegsman https://gist.github.com/kriegsman/1f7ccbbfa492a73c015e
 */
 uint16_t WS2812FX::mode_blends(void) {
-  uint16_t dataSize = sizeof(uint32_t) * SEGLEN;  // max segment length of 56 pixels on 18 segment ESP8266
+  uint16_t dataSize = sizeof(uint32_t) * SEGLEN;  // max segment length of 56 pixels on 16 segment ESP8266
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   uint32_t* pixels = reinterpret_cast<uint32_t*>(SEGENV.data);
   uint8_t blendSpeed = map(SEGMENT.intensity, 0, UINT8_MAX, 10, 128);
@@ -4037,7 +4036,7 @@ uint16_t WS2812FX::mode_aurora(void) {
     SEGENV.aux1 = map(SEGMENT.intensity, 0, 255, 2, W_MAX_COUNT);
     SEGENV.aux0 = SEGMENT.intensity;
 
-    if(!SEGENV.allocateData(sizeof(AuroraWave) * SEGENV.aux1)) { // 26 on 32 segment ESP32, 9 on 18 segment ESP8266
+    if(!SEGENV.allocateData(sizeof(AuroraWave) * SEGENV.aux1)) { // 26 on 32 segment ESP32, 9 on 16 segment ESP8266
       return mode_static(); //allocation failed
     }
 

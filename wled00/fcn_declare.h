@@ -67,7 +67,9 @@ void colorRGBtoXY(byte* rgb, float* xy); // only defined if huesync disabled TOD
 
 void colorFromDecOrHexString(byte* rgb, char* in);
 bool colorFromHexString(byte* rgb, const char* in);
-void colorRGBtoRGBW(byte* rgb); //rgb to rgbw (http://codewelt.com/rgbw). (RGBW_MODE_LEGACY)
+
+uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb);
+uint16_t approximateKelvinFromRGB(uint32_t rgb);
 
 //dmx.cpp
 void initDMX();

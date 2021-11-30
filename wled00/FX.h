@@ -165,12 +165,12 @@
 #define FX_MODE_FIRE_FLICKER            45
 #define FX_MODE_GRADIENT                46
 #define FX_MODE_LOADING                 47
-#define FX_MODE_POLICE                  48
-#define FX_MODE_POLICE_ALL              49
+#define FX_MODE_POLICE                  48  // candidate for removal (after below three)
+#define FX_MODE_POLICE_ALL              49  // candidate for removal
 #define FX_MODE_TWO_DOTS                50
-#define FX_MODE_TWO_AREAS               51
+#define FX_MODE_TWO_AREAS               51  // candidate for removal
 #define FX_MODE_RUNNING_DUAL            52
-#define FX_MODE_HALLOWEEN               53
+#define FX_MODE_HALLOWEEN               53  // candidate for removal
 #define FX_MODE_TRICOLOR_CHASE          54
 #define FX_MODE_TRICOLOR_WIPE           55
 #define FX_MODE_TRICOLOR_FADE           56
@@ -231,7 +231,7 @@
 #define FX_MODE_CHUNCHUN               111
 #define FX_MODE_DANCING_SHADOWS        112
 #define FX_MODE_WASHING_MACHINE        113
-#define FX_MODE_CANDY_CANE             114
+#define FX_MODE_CANDY_CANE             114  // candidate for removal
 #define FX_MODE_BLENDS                 115
 #define FX_MODE_TV_SIMULATOR           116
 #define FX_MODE_DYNAMIC_SMOOTH         117
@@ -247,24 +247,37 @@ class WS2812FX {
   
   // segment parameters
   public:
-    typedef struct Segment { // 29 (32 in memory?) bytes
+    typedef struct Segment { // 30 (32 in memory) bytes
       uint16_t start;
       uint16_t stop; //segment invalid if stop == 0
       uint16_t offset;
-      uint8_t speed;
-      uint8_t intensity;
-      uint8_t palette;
-      uint8_t mode;
-      uint8_t options; //bit pattern: msb first: transitional needspixelstate tbd tbd (paused) on reverse selected
-      uint8_t grouping, spacing;
-      uint8_t opacity;
+      uint8_t  speed;
+      uint8_t  intensity;
+      uint8_t  palette;
+      uint8_t  mode;
+      uint8_t  options; //bit pattern: msb first: transitional needspixelstate tbd tbd (paused) on reverse selected
+      uint8_t  grouping, spacing;
+      uint8_t  opacity;
       uint32_t colors[NUM_COLORS];
+      uint8_t  cct; //0==1900K, 255==10091K
       char *name;
       bool setColor(uint8_t slot, uint32_t c, uint8_t segn) { //returns true if changed
         if (slot >= NUM_COLORS || segn >= MAX_NUM_SEGMENTS) return false;
         if (c == colors[slot]) return false;
-        ColorTransition::startTransition(opacity, colors[slot], instance->_transitionDur, segn, slot);
+        uint8_t b = (slot == 1) ? cct : opacity;
+        ColorTransition::startTransition(b, colors[slot], instance->_transitionDur, segn, slot);
         colors[slot] = c; return true;
+      }
+      void setCCT(uint16_t k, uint8_t segn) {
+        if (segn >= MAX_NUM_SEGMENTS) return;
+        if (k > 255) { //kelvin value, convert to 0-255
+          if (k < 1900)  k = 1900;
+          if (k > 10091) k = 10091;
+          k = (k - 1900) >> 5;
+        }
+        if (cct == k) return;
+        ColorTransition::startTransition(cct, colors[1], instance->_transitionDur, segn, 1);
+        cct = k;
       }
       void setOpacity(uint8_t o, uint8_t segn) {
         if (segn >= MAX_NUM_SEGMENTS) return;
@@ -272,10 +285,6 @@ class WS2812FX {
         ColorTransition::startTransition(opacity, colors[0], instance->_transitionDur, segn, 0);
         opacity = o;
       }
-      /*uint8_t actualOpacity() { //respects On/Off state
-        if (!getOption(SEG_OPTION_ON)) return 0;
-        return opacity;
-      }*/
       void setOption(uint8_t n, bool val, uint8_t segn = 255)
       {
         bool prevOn = false;
@@ -445,7 +454,7 @@ class WS2812FX {
         if (t.segment == s) //this is an active transition on the same segment+color
         {
           bool wasTurningOff = (oldBri == 0);
-          t.briOld = t.currentBri(wasTurningOff);
+          t.briOld = t.currentBri(wasTurningOff, slot);
           t.colorOld = t.currentColor(oldCol);
         } else {
           t.briOld = oldBri;
@@ -477,11 +486,15 @@ class WS2812FX {
       uint32_t currentColor(uint32_t colorNew) {
         return instance->color_blend(colorOld, colorNew, progress(true), true);
       }
-      uint8_t currentBri(bool turningOff = false) {
+      uint8_t currentBri(bool turningOff = false, uint8_t slot = 0) {
         uint8_t segn = segment & 0x3F;
         if (segn >= MAX_NUM_SEGMENTS) return 0;
         uint8_t briNew = instance->_segments[segn].opacity;
-        if (!instance->_segments[segn].getOption(SEG_OPTION_ON) || turningOff) briNew = 0;
+        if (slot == 0) {
+          if (!instance->_segments[segn].getOption(SEG_OPTION_ON) || turningOff) briNew = 0;
+        } else { //transition slot 1 brightness for CCT transition
+          briNew = instance->_segments[segn].cct;
+        }
         uint32_t prog = progress() + 1;
         return ((briNew * prog) + (briOld * (0x10000 - prog))) >> 16;
       }
@@ -652,15 +665,16 @@ class WS2812FX {
       applyToAllSelected = true,
       setEffectConfig(uint8_t m, uint8_t s, uint8_t i, uint8_t p),
       checkSegmentAlignment(void),
+			hasCCTBus(void),
       // return true if the strip is being sent pixel updates
       isUpdating(void);
 
     uint8_t
       mainSegment = 0,
-      rgbwMode = RGBW_MODE_DUAL,
       paletteFade = 0,
       paletteBlend = 0,
       milliampsPerLed = 55,
+			cctBlending = 0,
       getBrightness(void),
       getMode(void),
       getSpeed(void),

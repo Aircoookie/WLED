@@ -30,7 +30,6 @@ void toggleOnOff()
   {
     briLast = bri;
     bri = 0;
-    unloadPlaylist();
   }
 }
 
@@ -38,25 +37,15 @@ void toggleOnOff()
 //scales the brightness with the briMultiplier factor
 byte scaledBri(byte in)
 {
-  uint32_t d = in*briMultiplier;
-  uint32_t val = d/100;
+  uint16_t val = ((uint16_t)in*briMultiplier)/100;
   if (val > 255) val = 255;
   return (byte)val;
 }
 
 
 void setAllLeds() {
-  if (strip.isRgbw && strip.rgbwMode == RGBW_MODE_LEGACY)
-  {
-    colorRGBtoRGBW(col);
-    colorRGBtoRGBW(colSec);
-  }
   strip.setColor(0, col[0], col[1], col[2], col[3]);
   strip.setColor(1, colSec[0], colSec[1], colSec[2], colSec[3]);
-  if (strip.isRgbw && strip.rgbwMode == RGBW_MODE_LEGACY)
-  {
-    col[3] = 0; colSec[3] = 0;
-  }
   if (!realtimeMode || !arlsForceMaxBri)
   {
     strip.setBrightness(scaledBri(briT));
@@ -190,8 +179,10 @@ void updateInterfaces(uint8_t callMode)
     espalexaDevice->setColor(col[0], col[1], col[2]);
   }
   #endif
+  #ifndef WLED_DISABLE_BLYNK
   if (callMode != CALL_MODE_BLYNK && 
       callMode != CALL_MODE_NO_NOTIFY) updateBlynk();
+  #endif
   doPublishMqtt = true;
   lastInterfaceUpdate = millis();
 }
@@ -285,7 +276,9 @@ void handleNightlight()
           setLedsStandard();
         }
       }
+      #ifndef WLED_DISABLE_BLYNK
       updateBlynk();
+      #endif
       if (macroNl > 0)
         applyPreset(macroNl);
       nightlightActiveOld = false;

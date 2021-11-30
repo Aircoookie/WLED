@@ -370,9 +370,14 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(SET_F(");"));
 
     sappend('c',SET_F("MS"),autoSegments);
+    sappend('c',SET_F("CCT"),correctWB);
+    sappend('c',SET_F("CR"),cctFromRgb);
+		sappend('v',SET_F("CB"),strip.cctBlending);
+		sappend('v',SET_F("AW"),Bus::getAutoWhiteMode());
 
     for (uint8_t s=0; s < busses.getNumBusses(); s++) {
       Bus* bus = busses.getBus(s);
+      if (bus == nullptr) continue;
       char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
       char lc[4] = "LC"; lc[2] = 48+s; lc[3] = 0; //strip length
       char co[4] = "CO"; co[2] = 48+s; co[3] = 0; //strip color order
@@ -407,7 +412,6 @@ void getSettingsJS(byte subPage, char* dest)
     }
 
     sappend('v',SET_F("CA"),briS);
-    sappend('v',SET_F("AW"),strip.rgbwMode);
 
     sappend('c',SET_F("BO"),turnOnAtBoot);
     sappend('v',SET_F("BP"),bootPreset);

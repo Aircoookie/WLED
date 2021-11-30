@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2111220
+#define VERSION 2111280
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -31,7 +31,7 @@
 #ifndef WLED_DISABLE_MQTT
   #define WLED_ENABLE_MQTT         // saves 12kb
 #endif
-#define WLED_ENABLE_ADALIGHT       // saves 500b only
+#define WLED_ENABLE_ADALIGHT     // saves 500b only (uses GPIO3 (RX) for serial)
 //#define WLED_ENABLE_DMX          // uses 3.5kb (use LEDPIN other than 2)
 #ifndef WLED_DISABLE_LOXONE
   #define WLED_ENABLE_LOXONE       // uses 1.2kb
@@ -269,6 +269,8 @@ WLED_GLOBAL byte bootPreset   _INIT(0);                   // save preset to load
 //if false, only one segment spanning the total LEDs is created,
 //but not on LED settings save if there is more than one segment currently
 WLED_GLOBAL bool autoSegments _INIT(false);
+WLED_GLOBAL bool correctWB _INIT(false); //CCT color correction of RGB color
+WLED_GLOBAL bool cctFromRgb _INIT(true); //CCT is calculated from RGB instead of using seg.cct
 
 WLED_GLOBAL byte col[]    _INIT_N(({ 255, 160, 0, 0 }));  // current RGB(W) primary color. col[] should be updated if you want to change the color.
 WLED_GLOBAL byte colSec[] _INIT_N(({ 0, 0, 0, 0 }));      // current RGB(W) secondary color
@@ -511,7 +513,6 @@ WLED_GLOBAL byte improvActive _INIT(0); //0: no improv packet received, 1: impro
 WLED_GLOBAL byte improvError _INIT(0);
 
 //playlists
-WLED_GLOBAL unsigned long presetCycledTime _INIT(0);
 WLED_GLOBAL int16_t currentPlaylist _INIT(-1);
 //still used for "PL=~" HTTP API command
 WLED_GLOBAL byte presetCycCurr _INIT(0);
@@ -641,6 +642,13 @@ WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
 #endif
 #define WLED_WIFI_CONFIGURED (strlen(clientSSID) >= 1 && strcmp(clientSSID, DEFAULT_CLIENT_SSID) != 0)
 #define WLED_MQTT_CONNECTED (mqtt != nullptr && mqtt->connected())
+
+//color mangling macros
+#define RGBW32(r,g,b,w) (uint32_t((byte(w) << 24) | (byte(r) << 16) | (byte(g) << 8) | (byte(b))))
+#define R(c) (byte((c) >> 16))
+#define G(c) (byte((c) >> 8))
+#define B(c) (byte(c))
+#define W(c) (byte((c) >> 24))
 
 // append new c string to temp buffer efficiently
 bool oappend(const char* txt);
