@@ -8,6 +8,7 @@
 
 bool getVal(JsonVariant elem, byte* val, byte vmin=0, byte vmax=255) {
   if (elem.is<int>()) {
+		if (elem < 0) return false; //ignore e.g. {"ps":-1}
     *val = elem;
     return true;
   } else if (elem.is<const char*>()) {
@@ -152,17 +153,19 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   //temporary, strip object gets updated via colorUpdated()
   if (id == strip.getMainSegmentId()) {
-    if (getVal(elem["fx"], &effectCurrent, 1, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 1-255 exact value)
-      if (!presetId) unloadPlaylist(); //stop playlist if active and FX changed manually
+		byte effectPrev = effectCurrent;
+    if (getVal(elem["fx"], &effectCurrent, 1, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 0-255 exact value)
+      if (!presetId && effectCurrent != effectPrev) unloadPlaylist(); //stop playlist if active and FX changed manually
     }
     effectSpeed = elem[F("sx")] | effectSpeed;
     effectIntensity = elem[F("ix")] | effectIntensity;
     getVal(elem["pal"], &effectPalette, 1, strip.getPaletteCount());
   } else { //permanent
     byte fx = seg.mode;
-    if (getVal(elem["fx"], &fx, 1, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 1-255 exact value)
+		byte fxPrev = fx;
+    if (getVal(elem["fx"], &fx, 1, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 0-255 exact value)
       strip.setMode(id, fx);
-      if (!presetId) unloadPlaylist(); //stop playlist if active and FX changed manually
+      if (!presetId && seg.mode != fxPrev) unloadPlaylist(); //stop playlist if active and FX changed manually
     }
     seg.speed = elem[F("sx")] | seg.speed;
     seg.intensity = elem[F("ix")] | seg.intensity;
