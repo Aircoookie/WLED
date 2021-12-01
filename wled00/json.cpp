@@ -64,7 +64,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   uint16_t grp = elem["grp"] | seg.grouping;
   uint16_t spc = elem[F("spc")] | seg.spacing;
-  strip.setSegment(id, start, stop, grp, spc);
+	uint16_t of = seg.offset;
 
   uint16_t len = 1;
   if (stop > start) len = stop - start;
@@ -73,9 +73,10 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     int offsetAbs = abs(offset);
     if (offsetAbs > len - 1) offsetAbs %= len;
     if (offset < 0) offsetAbs = len - offsetAbs;
-    seg.offset = offsetAbs;
+    of = offsetAbs;
   }
-  if (stop > start && seg.offset > len -1) seg.offset = len -1;
+  if (stop > start && of > len -1) of = len -1;
+	strip.setSegment(id, start, stop, grp, spc, of);
 
   byte segbri = 0;
   if (getVal(elem["bri"], &segbri)) {
