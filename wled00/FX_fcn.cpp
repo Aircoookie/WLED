@@ -137,13 +137,16 @@ void WS2812FX::service() {
       if (!SEGMENT.getOption(SEG_OPTION_FREEZE)) { //only run effect function if not frozen
         _virtualSegmentLength = SEGMENT.virtualLength();
         _bri_t = SEGMENT.opacity; _colors_t[0] = SEGMENT.colors[0]; _colors_t[1] = SEGMENT.colors[1]; _colors_t[2] = SEGMENT.colors[2];
+        uint8_t _cct_t = SEGMENT.cct;
         if (!IS_SEGMENT_ON) _bri_t = 0;
         for (uint8_t t = 0; t < MAX_NUM_TRANSITIONS; t++) {
           if ((transitions[t].segment & 0x3F) != i) continue;
           uint8_t slot = transitions[t].segment >> 6;
           if (slot == 0) _bri_t = transitions[t].currentBri();
+          if (slot == 1) _cct_t = transitions[t].currentBri(false, 1);
           _colors_t[slot] = transitions[t].currentColor(SEGMENT.colors[slot]);
         }
+        if (!cctFromRgb || correctWB) busses.setSegmentCCT(_cct_t, correctWB);
         for (uint8_t c = 0; c < 3; c++) _colors_t[c] = gamma32(_colors_t[c]);
         handle_palette();
         delay = (this->*_mode[SEGMENT.mode])(); //effect function
@@ -154,6 +157,7 @@ void WS2812FX::service() {
     }
   }
   _virtualSegmentLength = 0;
+  busses.setSegmentCCT(-1);
   if(doShow) {
     yield();
     show();
@@ -188,21 +192,6 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
   if (SEGLEN) {//from segment
     uint16_t realIndex = realPixelIndex(i);
     uint16_t len = SEGMENT.length();
-
-    // determine if we can do white balance and accurate W calc
-    // NOTE & TODO: does not work correctly with custom mapping if map spans different strips
-    int16_t cct = -1;
-    for (uint8_t b = 0; b < busses.getNumBusses(); b++) {
-      Bus *bus = busses.getBus(b);
-      if (bus == nullptr || !bus->containsPixel(realIndex)) continue;
-      //if (bus == nullptr || bus->getStart()<realIndex || bus->getStart()+bus->getLength()>realIndex) continue;
-      uint8_t busType = bus->getType();
-      if (allowCCT
-        || busType == TYPE_ANALOG_2CH
-        || busType == TYPE_ANALOG_5CH) {
-        if (cct<0) cct = SEGMENT.cct;
-      }
-    }
 
     //color_blend(getpixel, col, _bri_t); (pseudocode for future blending of segments)
     if (_bri_t < 255) {  
@@ -563,6 +552,20 @@ uint16_t WS2812FX::getLengthPhysical(void) {
   return len;
 }
 
+bool WS2812FX::hasCCTBus(void) {
+	if (cctFromRgb && !correctWB) return false;
+	for (uint8_t b = 0; b < busses.getNumBusses(); b++) {
+    Bus *bus = busses.getBus(b);
+    if (bus == nullptr || bus->getLength()==0) break;
+    switch (bus->getType()) {
+      case TYPE_ANALOG_5CH:
+      case TYPE_ANALOG_2CH:
+        return true;
+    }
+  }
+	return false;
+}
+
 void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping, uint8_t spacing) {
   if (n >= MAX_NUM_SEGMENTS) return;
   Segment& seg = _segments[n];
@@ -617,7 +620,7 @@ void WS2812FX::resetSegments() {
   _segments[0].setOption(SEG_OPTION_SELECTED, 1);
   _segments[0].setOption(SEG_OPTION_ON, 1);
   _segments[0].opacity = 255;
-  _segments[0].cct = 128;
+  _segments[0].cct = 127;
 
   for (uint16_t i = 1; i < MAX_NUM_SEGMENTS; i++)
   {
@@ -625,7 +628,7 @@ void WS2812FX::resetSegments() {
     _segments[i].grouping = 1;
     _segments[i].setOption(SEG_OPTION_ON, 1);
     _segments[i].opacity = 255;
-    _segments[i].cct = 128;
+    _segments[i].cct = 127;
     _segments[i].speed = DEFAULT_SPEED;
     _segments[i].intensity = DEFAULT_INTENSITY;
     _segment_runtimes[i].reset();
@@ -1172,3 +1175,8 @@ uint32_t WS2812FX::gamma32(uint32_t color)
 }
 
 WS2812FX* WS2812FX::instance = nullptr;
+
+//Bus static member definition, would belong in bus_manager.cpp
+int16_t Bus::_cct = -1;
+uint8_t Bus::_cctBlend = 0;
+uint8_t Bus::_autoWhiteMode = RGBW_MODE_DUAL;

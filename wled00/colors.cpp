@@ -73,7 +73,7 @@ void colorKtoRGB(uint16_t kelvin, byte* rgb) //white spectrum to rgb, calc
     g = round(288.1221695283 * pow((temp - 60), -0.0755148492));
     b = 255;
   } 
-  //g += 15; //mod by Aircoookie, a bit less accurate but visibly less pinkish
+  //g += 12; //mod by Aircoookie, a bit less accurate but visibly less pinkish
   rgb[0] = (uint8_t) constrain(r, 0, 255);
   rgb[1] = (uint8_t) constrain(g, 0, 255);
   rgb[2] = (uint8_t) constrain(b, 0, 255);
@@ -245,23 +245,58 @@ void colorRGBtoRGBW(byte* rgb) //rgb to rgbw (http://codewelt.com/rgbw). (RGBW_M
 }
 */
 
-// adjust RGB values based on color temperature in K (range [2800-10200]) (https://en.wikipedia.org/wiki/Color_balance)
-void colorBalanceFromKelvin(uint16_t kelvin, byte *rgb)
-{
-  byte rgbw[4] = {0,0,0,0};
-  colorKtoRGB(kelvin, rgbw);  // convert Kelvin to RGB
-  rgb[0] = ((uint16_t) rgbw[0] * rgb[0]) / 255; // correct R
-  rgb[1] = ((uint16_t) rgbw[1] * rgb[1]) / 255; // correct G
-  rgb[2] = ((uint16_t) rgbw[2] * rgb[2]) / 255; // correct B
-}
+byte correctionRGB[4] = {0,0,0,0};
+uint16_t lastKelvin = 0;
 
+// adjust RGB values based on color temperature in K (range [2800-10200]) (https://en.wikipedia.org/wiki/Color_balance)
 uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb)
 {
-  byte rgbw[4] = {0,0,0,0};
-  colorKtoRGB(kelvin, rgbw);  // convert Kelvin to RGB
-  rgbw[0] = ((uint16_t) rgbw[0] * R(rgb)) / 255; // correct R
-  rgbw[1] = ((uint16_t) rgbw[1] * G(rgb)) / 255; // correct G
-  rgbw[2] = ((uint16_t) rgbw[2] * B(rgb)) / 255; // correct B
-  rgbw[3] =                       W(rgb);
+  //remember so that slow colorKtoRGB() doesn't have to run for every setPixelColor()
+  if (lastKelvin != kelvin) colorKtoRGB(kelvin, correctionRGB);  // convert Kelvin to RGB
+  lastKelvin = kelvin;
+  byte rgbw[4];
+  rgbw[0] = ((uint16_t) correctionRGB[0] * R(rgb)) /255; // correct R
+  rgbw[1] = ((uint16_t) correctionRGB[1] * G(rgb)) /255; // correct G
+  rgbw[2] = ((uint16_t) correctionRGB[2] * B(rgb)) /255; // correct B
+  rgbw[3] =                                W(rgb);
   return colorFromRgbw(rgbw);
+}
+
+//approximates a Kelvin color temperature from an RGB color.
+//this does no check for the "whiteness" of the color,
+//so should be used combined with a saturation check (as done by auto-white)
+//values from http://www.vendian.org/mncharity/dir3/blackbody/UnstableURLs/bbr_color.html (10deg)
+//equation spreadsheet at https://bit.ly/30RkHaN
+//accuracy +-50K from 1900K up to 8000K
+//minimum returned: 1900K, maximum returned: 10091K (range of 8192)
+uint16_t approximateKelvinFromRGB(uint32_t rgb) {
+  //if not either red or blue is 255, color is dimmed. Scale up
+  uint8_t r = R(rgb), b = B(rgb);
+  if (r == b) return 6550; //red == blue at about 6600K (also can't go further if both R and B are 0)
+
+  if (r > b) {
+    //scale blue up as if red was at 255
+    uint16_t scale = 0xFFFF / r; //get scale factor (range 257-65535)
+    b = ((uint16_t)b * scale) >> 8;
+    //For all temps K<6600 R is bigger than B (for full bri colors R=255)
+    //-> Use 9 linear approximations for blackbody radiation blue values from 2000-6600K (blue is always 0 below 2000K)
+    if (b < 33)  return 1900 + b       *6;
+    if (b < 72)  return 2100 + (b-33)  *10;
+    if (b < 101) return 2492 + (b-72)  *14;
+    if (b < 132) return 2900 + (b-101) *16;
+    if (b < 159) return 3398 + (b-132) *19;
+    if (b < 186) return 3906 + (b-159) *22;
+    if (b < 210) return 4500 + (b-186) *25;
+    if (b < 230) return 5100 + (b-210) *30;
+                 return 5700 + (b-230) *34;
+  } else {
+    //scale red up as if blue was at 255
+    uint16_t scale = 0xFFFF / b; //get scale factor (range 257-65535)
+    r = ((uint16_t)r * scale) >> 8;
+    //For all temps K>6600 B is bigger than R (for full bri colors B=255)
+    //-> Use 2 linear approximations for blackbody radiation red values from 6600-10091K (blue is always 0 below 2000K)
+    if (r > 225) return 6600 + (254-r) *50;
+    uint16_t k = 8080 + (225-r) *86;
+    return (k > 10091) ? 10091 : k;
+  }
 }

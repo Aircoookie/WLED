@@ -42,25 +42,12 @@ var hol = [
 var cpick = new iro.ColorPicker("#picker", {
 	width: 260,
 	wheelLightness: false,
-	wheelAngle: 90,
-	layout: [
-    {
-      component: iro.ui.Wheel,
-      options: {}
-    },
-    {
-      component: iro.ui.Slider,
-      options: { sliderType: 'value' }
-    }/*,
-    {
-      component: iro.ui.Slider,
-      options: {
-        sliderType: 'kelvin',
-        minTemperature: 2000,
-        maxTemperature: 10160
-      }
-    }*/
-  ]
+	wheelAngle: 270,
+	wheelDirection: "clockwise",
+	layout: [{
+		component: iro.ui.Wheel,
+		options: {}
+    }]
 });
 
 function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson();}
@@ -78,6 +65,8 @@ function applyCfg()
 	var ccfg = cfg.comp.colors;
 	gId('hexw').style.display = ccfg.hex ? "block":"none";
 	gId('picker').style.display = ccfg.picker ? "block":"none";
+	gId('vwrap').style.display = ccfg.picker ? "block":"none";
+	gId('kwrap').style.display = ccfg.picker ? "block":"none";
 	gId('rgbwrap').style.display = ccfg.rgb ? "block":"none";
 	gId('qcs-w').style.display = ccfg.quick ? "block":"none";
 	var l = cfg.comp.labels;
@@ -204,8 +193,7 @@ function onLoad()
 	if (window.location.protocol == "file:") {
 		loc = true;
 		locip = localStorage.getItem('locIp');
-		if (!locip)
-		{
+		if (!locip) {
 			locip = prompt("File Mode. Please enter WLED IP!");
 			localStorage.setItem('locIp', locip);
 		}
@@ -247,6 +235,7 @@ function onLoad()
 	cpick.on("input:end", function() {
 		setColor(1);
 	});
+	cpick.on("color:change", updatePSliders);
 	pmtLS = localStorage.getItem('wledPmt');
 
 	// Load initial data
@@ -992,6 +981,7 @@ function loadNodes()
 	});
 }
 
+//update the 'sliderdisplay' background div of a slider for a visual indication of slider position
 function updateTrail(e)
 {
 	if (e==null) return;
@@ -1005,12 +995,14 @@ function updateTrail(e)
 	if (b) b.innerHTML = e.value;
 }
 
+//rangetouch slider function
 function toggleBubble(e)
 {
 	var b = e.target.parentNode.parentNode.getElementsByTagName('output')[0];
 	b.classList.toggle('sliderbubbleshow');
 }
 
+//updates segment length upon input of segment values
 function updateLen(s)
 {
 	if (!gId(`seg${s}s`)) return;
@@ -1036,6 +1028,7 @@ function updateLen(s)
 	gId(`seg${s}len`).innerHTML = out;
 }
 
+//updates background color of currently selected preset
 function updatePA()
 {
 	var ps = gEBCN("pres");
@@ -1081,10 +1074,10 @@ function updateUI()
 
 	gId('wwrap').style.display = (isRgbw) ? "block":"none";
 	gId("wbal").style.display = (cct) ? "block":"none";
+	gId('kwrap').style.display = (lastinfo.leds.cct) ? "none":"block";
 
 	updatePA();
-	updateHex();
-	updateRgb();
+	updatePSliders();
 }
 
 function updateSelectedPalette()
@@ -1997,8 +1990,7 @@ function selectSlot(b)
 	cd[csel].classList.add('xxs-w');
 	cpick.color.set(cd[csel].style.backgroundColor);
 	gId('sliderW').value = whites[csel];
-	updateHex();
-	updateRgb();
+	updatePSliders();
 }
 
 var lasth = 0;
@@ -2016,21 +2008,32 @@ function pC(col)
 	setColor(0);
 }
 
-function updateRgb()
-{
+function updatePSliders() {
+	//update RGB sliders
 	var col = cpick.color.rgb;
 	gId('sliderR').value = col.r;
 	gId('sliderG').value = col.g;
 	gId('sliderB').value = col.b;
-}
 
-function updateHex()
-{
-	var str = cpick.color.hexString;
-	str = str.substring(1);
+	//update hex field
+	var str = cpick.color.hexString.substring(1);
 	var w = whites[csel];
 	if (w > 0) str += w.toString(16);
 	gId('hexc').value = str;
+	gId('hexcnf').style.backgroundColor = "var(--c-3)";
+
+	//update value slider
+	var v = gId('sliderV');
+	v.value = cpick.color.value;
+	//background color as if color had full value
+	var hsv = {"h":cpick.color.hue,"s":cpick.color.saturation,"v":100}; 
+	var c = iro.Color.hsvToRgb(hsv);
+	var cs = 'rgb('+c.r+','+c.g+','+c.b+')';
+	v.parentNode.getElementsByClassName('sliderdisplay')[0].style.setProperty('--bg',cs);
+	updateTrail(v);
+
+	//update Kelvin slider
+	gId('sliderK').value = cpick.color.kelvin;
 }
 
 function hexEnter()
@@ -2051,16 +2054,25 @@ function fromHex()
 	setColor(2);
 }
 
+function fromV()
+{
+	cpick.color.setChannel('hsv', 'v', d.getElementById('sliderV').value);
+}
+
+function fromK()
+{
+	cpick.color.set({ kelvin: d.getElementById('sliderK').value });
+}
+
 function fromRgb()
 {
 	var r = gId('sliderR').value;
 	var g = gId('sliderG').value;
 	var b = gId('sliderB').value;
 	cpick.color.set(`rgb(${r},${g},${b})`);
-	setColor(0);
 }
 
-// sets color from picker: 0=all, 1=leaving picker/HSV, 2=ignore white channel
+//sr 0: from RGB sliders, 1: from picker, 2: from hex
 function setColor(sr)
 {
 	var cd = gId('csl').children; // color slots
@@ -2074,8 +2086,12 @@ function setColor(sr)
 	} else if (csel == 2) {
 		obj = {"seg": {"col": [[],[],[col.r, col.g, col.b, whites[csel]]]}};
 	}
-	updateHex();
-	updateRgb();
+	requestJson(obj);
+}
+
+function setBalance(b)
+{
+	var obj = {"seg": {"cct": parseInt(b)}};
 	requestJson(obj);
 }
 

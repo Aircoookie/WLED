@@ -72,7 +72,11 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     uint8_t pins[5] = {255, 255, 255, 255, 255};
 
     autoSegments = request->hasArg(F("MS"));
-    allowCCT = request->hasArg(F("CCT"));
+    correctWB = request->hasArg(F("CCT"));
+    cctFromRgb = request->hasArg(F("CR"));
+		strip.cctBlending = request->arg(F("CB")).toInt();
+		Bus::setCCTBlend(strip.cctBlending);
+		Bus::setAutoWhiteMode(request->arg(F("AW")).toInt());
 
     for (uint8_t s = 0; s < WLED_MAX_BUSSES; s++) {
       char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
@@ -95,7 +99,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       type = request->arg(lt).toInt();
       type |= request->hasArg(rf) << 7; // off refresh override
       skip = request->hasArg(sl) ? LED_SKIP_AMOUNT : 0;
-      awMode = request->arg(aw).toInt();
       colorOrder = request->arg(co).toInt();
       start = (request->hasArg(ls)) ? request->arg(ls).toInt() : t;
       if (request->hasArg(lc) && request->arg(lc).toInt() > 0) {
@@ -599,6 +602,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   //apply preset
   if (updateVal(&req, "PL=", &presetCycCurr, presetCycMin, presetCycMax)) {
+		unloadPlaylist();
     applyPreset(presetCycCurr);
   }
 

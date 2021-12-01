@@ -124,7 +124,7 @@
 //                                              - 0b010 (dec. 32-47) analog (PWM)
 //                                              - 0b011 (dec. 48-63) digital (data + clock / SPI)
 //                                              - 0b100 (dec. 64-79) unused/reserved
-//                                              - 0b101 (dec. 80-95) digital (data + clock / SPI)
+//                                              - 0b101 (dec. 80-95) virtual network busses
 //                                              - 0b110 (dec. 96-111) unused/reserved
 //                                              - 0b111 (dec. 112-127) unused/reserved
 //bit 7 is reserved and set to 0

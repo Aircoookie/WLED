@@ -306,10 +306,11 @@ ${i+1}:
 <option value="52">LPD8806</option>
 <option value="53">P9813</option>
 <option value="41">PWM White</option>
-<option value="42">PWM WWCW</option>
+<option value="42">PWM CCT</option>
 <option value="43">PWM RGB</option>
 <option value="44">PWM RGBW</option>
-<option value="45">PWM RGBWC</option>
+<option value="45">PWM RGB+CCT</option>
+<!--option value="46">PWM RGB+DCCT</option-->
 <option value="80">DDP RGB (network)</option>
 <!--option value="81">E1.31 RGB (network)</option-->
 <!--option value="82">ArtNet RGB (network)</option-->
@@ -334,8 +335,7 @@ ${i+1}:
 <span id="p4d${i}"></span><input type="number" name="L4${i}" min="0" max="33" class="s" onchange="UI()"/>
 <div id="dig${i}r" style="display:inline"><br><span id="rev${i}">Reversed</span>: <input type="checkbox" name="CV${i}"></div>
 <div id="dig${i}s" style="display:inline"><br>Skip 1<sup>st</sup> LED: <input id="sl${i}" type="checkbox" name="SL${i}"></div>
-<div id="dig${i}f" style="display:inline"><br>Off Refresh: <input id="rf${i}" type="checkbox" name="RF${i}">&nbsp;</div>
-<div id="dig${i}a" style="display:inline"><br>Auto-calculate white channel from RGB:<br><select name="AW${i}"><option value=0>None</option><option value=1>Brighter</option><option value=2>Accurate</option><option value=3>Dual</option></select>&nbsp;</div>
+<div id="dig${i}f" style="display:inline"><br>Off Refresh: <input id="rf${i}" type="checkbox" name="RF${i}"></div>
 </div>`;
         f.insertAdjacentHTML("beforeend", cn);
       }
@@ -402,9 +402,9 @@ ${i+1}:
       }
 
       if (!o.files) {
-        alert("This browser doesn't seem to support the `files` property of file inputs.");
+        alert("This browser doesn't support the `files` property of file inputs.");
       } else if (!o.files[0]) {
-        alert("Please select a JSON file before clicking 'Apply'");
+        alert("Please select a JSON file first!");
       } else {
         f = o.files[0];
         fr = new FileReader();
@@ -538,7 +538,7 @@ ${i+1}:
     <br><br>
 		Use Gamma correction for color: <input type="checkbox" name="GC"> (strongly recommended)<br>
 		Use Gamma correction for brightness: <input type="checkbox" name="GB"> (not recommended)<br><br>
-		Brightness factor: <input name="BF" type="number" class="m" min="1" max="255" required> %
+		Brightness factor: <input name="BF" type="number" class="m" min="1" max="255" required> %%
 		<h3>Transitions</h3>
 		Crossfade: <input type="checkbox" name="TF"><br>
 		Transition Time: <input name="TD" type="number" class="xl" min="0" max="65500"> ms<br>
@@ -553,6 +553,19 @@ ${i+1}:
 			<option value="2">Fade Color</option>
 			<option value="3">Sunrise</option>
 		</select>
+		<h3>White management</h3>
+		White Balance correction: <input type="checkbox" name="CCT"> <br>
+		<span class="wc">
+      Auto-calculate white channel from RGB:<br>
+      <select name="AW">
+        <option value=0>None</option>
+        <option value=1>Brighter</option>
+        <option value=2>Accurate</option>
+        <option value=3>Dual</option>
+      </select>
+    <br>
+    Calculate CCT from RGB: <input type="checkbox" name="CR"> <br>
+    CCT additive blending: <input type="number" class="s" min="0" max="100" name="CB" required> %%</span>
     <h3>Advanced</h3>
 		Palette blending:
 		<select name="PB">
