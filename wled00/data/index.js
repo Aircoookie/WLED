@@ -1074,7 +1074,7 @@ function updateUI()
 
 	gId('wwrap').style.display = (isRgbw) ? "block":"none";
 	gId("wbal").style.display = (cct) ? "block":"none";
-	gId('kwrap').style.display = (lastinfo.leds.cct) ? "none":"block";
+	gId('kwrap').style.display = (cct) ? "none":"block";
 
 	updatePA();
 	updatePSliders();
@@ -2029,8 +2029,9 @@ function updatePSliders() {
 	var hsv = {"h":cpick.color.hue,"s":cpick.color.saturation,"v":100}; 
 	var c = iro.Color.hsvToRgb(hsv);
 	var cs = 'rgb('+c.r+','+c.g+','+c.b+')';
-	v.parentNode.getElementsByClassName('sliderdisplay')[0].style.setProperty('--bg',cs);
-	updateTrail(v);
+	//v.parentNode.getElementsByClassName('sliderdisplay')[0].style.setProperty('--bg',cs);
+	v.nextElementSibling.style.backgroundImage = `linear-gradient(90deg, #000 0%, rgb(${c.r},${c.g},${c.b}))`;
+	//updateTrail(v);
 
 	//update Kelvin slider
 	gId('sliderK').value = cpick.color.kelvin;
@@ -2086,12 +2087,6 @@ function setColor(sr)
 	} else if (csel == 2) {
 		obj = {"seg": {"col": [[],[],[col.r, col.g, col.b, whites[csel]]]}};
 	}
-	requestJson(obj);
-}
-
-function setBalance(b)
-{
-	var obj = {"seg": {"cct": parseInt(b)}};
 	requestJson(obj);
 }
 

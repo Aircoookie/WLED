@@ -46,13 +46,15 @@
 <div class ="container">
 	<div id="Colors" class="tabcontent">
 		<div id="picker" class="noslide"></div>
-		<div id="vwrap" class="IL">
+		<div id="vwrap">
+			<p class="labels hd">Value</p>
 			<div class="sliderwrap il">
 				<input id="sliderV" class="noslide" oninput="fromV()" onchange="setColor(0)" max="100" min="0" type="range" value="100" step="any" />
 				<div class="sliderdisplay"></div>
 			</div><br>
 		</div>
 		<div id="kwrap">
+			<p class="labels hd">White balance</p>
 			<div class="sliderwrap il">
 				<input id="sliderK" class="noslide" oninput="fromK()" onchange="setColor(0)" max="10091" min="1900" type="range" value="6550" />
 				<div class="sliderdisplay"></div>
@@ -86,13 +88,13 @@
 				<div class="sliderdisplay"></div>
 			</div>
 		</div>
-		<div id="wbal">
+		<!--div id="wbal">
 			<p class="labels hd">White balance</p>
 			<div class="sliderwrap il">
 				<input id="sliderA" class="noslide" onchange="setBalance(this.value)" max="255" min="0" type="range" value="128" />
 				<div class="sliderdisplay"></div>
 			</div>
-		</div>
+		</div-->
 		<div id="qcs-w">
 			<div class="qcs" onclick="pC('#ff0000');" title="Red" style="background-color:#ff0000;"></div>
 			<div class="qcs" onclick="pC('#ffa000');" title="Orange" style="background-color:#ffa000;"></div>
