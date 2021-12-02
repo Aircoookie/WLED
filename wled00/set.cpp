@@ -67,7 +67,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       }
     }
 
-    uint8_t colorOrder, type, skip, awMode;
+    uint8_t colorOrder, type, skip;
     uint16_t length, start;
     uint8_t pins[5] = {255, 255, 255, 255, 255};
 
@@ -109,7 +109,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
       // actual finalization is done in WLED::loop() (removing old busses and adding new)
       if (busConfigs[s] != nullptr) delete busConfigs[s];
-      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv), skip, awMode);
+      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv), skip);
       doInitBusses = true;
     }
 

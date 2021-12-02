@@ -49,7 +49,7 @@
 //#define DEFAULT_LED_TYPE TYPE_WS2812_RGB
 
 #ifndef PIXEL_COUNTS
-  #define PIXEL_COUNTS 30
+  #define PIXEL_COUNTS DEFAULT_LED_COUNT
 #endif
 
 #ifndef DATA_PINS
@@ -213,14 +213,14 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
           if (indexMir >= SEGMENT.stop) indexMir -= len;
 
           if (indexMir < customMappingSize) indexMir = customMappingTable[indexMir];
-          busses.setPixelColor(indexMir, col, cct);
+          busses.setPixelColor(indexMir, col);
         }
         /* offset/phase */
         indexSet += SEGMENT.offset;
         if (indexSet >= SEGMENT.stop) indexSet -= len;
 
         if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
-        busses.setPixelColor(indexSet, col, cct);
+        busses.setPixelColor(indexSet, col);
       }
     }
   } else { //live data, etc.
@@ -517,7 +517,6 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
   if (i < customMappingSize) i = customMappingTable[i];
   if (i >= _length) return 0;
   
-  // TODO: may need to add IS_REVERSE and IS_MIRROR logic
   return busses.getPixelColor(i);
 }
 
@@ -566,12 +565,14 @@ bool WS2812FX::hasCCTBus(void) {
 	return false;
 }
 
-void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping, uint8_t spacing) {
+void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping, uint8_t spacing, uint16_t offset) {
   if (n >= MAX_NUM_SEGMENTS) return;
   Segment& seg = _segments[n];
 
   //return if neither bounds nor grouping have changed
-  if (seg.start == i1 && seg.stop == i2 && (!grouping || (seg.grouping == grouping && seg.spacing == spacing))) return;
+  if (seg.start == i1 && seg.stop == i2
+			&& (!grouping || (seg.grouping == grouping && seg.spacing == spacing))
+			&& (offset == UINT16_MAX || offset == seg.offset)) return;
 
   if (seg.stop) setRange(seg.start, seg.stop -1, 0); //turn old segment range off
   if (i2 <= i1) //disable segment
@@ -601,6 +602,7 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
     seg.grouping = grouping;
     seg.spacing = spacing;
   }
+	if (offset < UINT16_MAX) seg.offset = offset;
   _segment_runtimes[n].reset();
 }
 

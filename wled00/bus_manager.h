@@ -49,11 +49,10 @@ struct BusConfig {
   uint8_t skipAmount;
   bool refreshReq;
   uint8_t pins[5] = {LEDPIN, 255, 255, 255, 255};
-  uint8_t autoWhite;
-  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint8_t skip = 0, uint8_t aw = 0) {
+  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint8_t skip = 0) {
     refreshReq = (bool) GET_BIT(busType,7);
     type = busType & 0x7F;  // bit 7 may be/is hacked to include refresh info (1=refresh in off state, 0=no refresh)
-    count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev; skipAmount = skip; autoWhite = aw;
+    count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev; skipAmount = skip;
     uint8_t nPins = 1;
     if (type >= TYPE_NET_DDP_RGB && type < 96) nPins = 4; //virtual network bus. 4 "pins" store IP address
     else if (type > 47) nPins = 2;
@@ -153,7 +152,7 @@ class Bus {
 
 class BusDigital : public Bus {
   public:
-  BusDigital(BusConfig &bc, uint8_t nr) : Bus(bc.type, bc.start, bc.autoWhite) {
+  BusDigital(BusConfig &bc, uint8_t nr) : Bus(bc.type, bc.start) {
     if (!IS_DIGITAL(bc.type) || !bc.count) return;
     if (!pinManager.allocatePin(bc.pins[0], true, PinOwner::BusDigital)) return;
     _pins[0] = bc.pins[0];
@@ -209,11 +208,6 @@ class BusDigital : public Bus {
     if (reversed) pix = _len - pix -1;
     else pix += _skip;
     PolyBus::setPixelColor(_busPtr, _iType, pix, c, _colorOrder);
-  }
-
-  void setPixelColor(uint16_t pix, uint32_t c, uint8_t cct) {
-    c = colorBalanceFromKelvin(2000+(cct<<5), c); // color correction from CCT
-    setPixelColor(pix, c);
   }
 
   uint32_t getPixelColor(uint16_t pix) {
@@ -274,7 +268,7 @@ class BusDigital : public Bus {
 
 class BusPwm : public Bus {
   public:
-  BusPwm(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
+  BusPwm(BusConfig &bc) : Bus(bc.type, bc.start) {
     _valid = false;
     if (!IS_PWM(bc.type)) return;
     uint8_t numPins = NUM_PWM_PINS(bc.type);
@@ -305,37 +299,6 @@ class BusPwm : public Bus {
     reversed = bc.reversed;
     _valid = true;
   };
-
-  void setPixelColor(uint16_t pix, uint32_t c, uint8_t cct) {
-    if (pix != 0 || !_valid) return; //only react to first pixel
-    if (getAutoWhiteMode() != RGBW_MODE_MANUAL_ONLY) c = autoWhiteCalc(c);
-    c = colorBalanceFromKelvin(2000+(cct<<5), c); // color correction from CCT (w remains unchanged)
-    uint8_t r = R(c);
-    uint8_t g = G(c);
-    uint8_t b = B(c);
-    uint8_t w = W(c);
-
-    switch (_type) {
-      case TYPE_ANALOG_1CH: //one channel (white), relies on auto white calculation
-        _data[0] = w; //max(r, max(g, max(b, w)));
-        break;
-      case TYPE_ANALOG_2CH: //warm white + cold white
-        // perhaps a non-linear adjustment would be in order. need to test
-        //w = max(r, max(g, max(b, w)));
-        _data[1] = (w * cct) / 255;
-        _data[0] = (w * (255-cct)) / 255;
-        break;
-      case TYPE_ANALOG_5CH: //RGB + warm white + cold white
-        // perhaps a non-linear adjustment would be in order. need to test
-        _data[4] = (w * cct) / 255;
-        w = (w * (255-cct)) / 255;
-      case TYPE_ANALOG_4CH: //RGBW
-        _data[3] = w;
-      case TYPE_ANALOG_3CH: //standard dumb RGB
-        _data[0] = r; _data[1] = g; _data[2] = b;
-        break;
-    }
-  }
 
   void setPixelColor(uint16_t pix, uint32_t c) {
     if (pix != 0 || !_valid) return; //only react to first pixel
@@ -453,7 +416,7 @@ class BusPwm : public Bus {
 
 class BusNetwork : public Bus {
   public:
-    BusNetwork(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
+    BusNetwork(BusConfig &bc) : Bus(bc.type, bc.start) {
       _valid = false;
 //      switch (bc.type) {
 //        case TYPE_NET_ARTNET_RGB:
@@ -619,8 +582,7 @@ class BusManager {
       Bus* b = busses[i];
       uint16_t bstart = b->getStart();
       if (pix < bstart || pix >= bstart + b->getLength()) continue;
-      if (cct<0) busses[i]->setPixelColor(pix - bstart, c);       // no white balance
-      else       busses[i]->setPixelColor(pix - bstart, c, cct);  // do white balance
+      busses[i]->setPixelColor(pix - bstart, c);
     }
   }
 
