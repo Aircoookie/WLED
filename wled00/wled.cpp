@@ -207,7 +207,7 @@ void WLED::loop()
       
       for (uint8_t i = 0; i < 10; i++) {
         // check that ips are valid (these checks may not be valid as unsure of when ip should not be 255)
-        if (specialSearchNodes[i][0] >= 0 && specialSearchNodes[i][0] < 255 && specialSearchNodes[i][1] >= 0 && specialSearchNodes[i][1] < 255 && specialSearchNodes[i][2] >= 0 && specialSearchNodes[i][2] < 255 && specialSearchNodes[i][3] >= 0 && specialSearchNodes[i][3] < 255) {
+        if (specialSearchNodes[i].isSet() && specialSearchNodes[i] != INADDR_NONE) { // check that ip is not 255s
           sendSysInfoUDP(specialSearchNodes[i]);
         }
       }
@@ -279,13 +279,13 @@ void WLED::loop()
   toki.resetTick();
 }
 
-void WLED::setup()
+void WLED::setup() // multiple definitions
 {
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_DISABLE_BROWNOUT_DET)
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detection
   #endif
 
-  Serial.begin(115200);
+  Serial.begin(115200); // something here
   Serial.setTimeout(50);
   DEBUG_PRINTLN();
   DEBUG_PRINT(F("---WLED "));
