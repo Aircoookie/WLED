@@ -356,7 +356,9 @@ void WLED::setup()
   #endif
 
   #ifdef WLED_ENABLE_ADALIGHT
-  if (!pinManager.isPinAllocated(3)) {
+	//Serial RX (Adalight, Improv, Serial JSON) only possible if GPIO3 unused
+	//Serial TX (Debug, Improv, Serial JSON) only possible if GPIO1 unused
+  if (!pinManager.isPinAllocated(3) && !pinManager.isPinAllocated(1)) {
     Serial.println(F("Ada"));
   }
   #endif
