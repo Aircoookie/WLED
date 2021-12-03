@@ -593,7 +593,7 @@ void decodeIRJson(uint32_t code)
     return;
   }
 
-  cmdStr = fdo["cmd"].as<String>();;
+  cmdStr = fdo["cmd"].as<String>();
   jsonCmdObj = fdo["cmd"]; //object
 
   if (!cmdStr.isEmpty()) 

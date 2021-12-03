@@ -2,7 +2,7 @@
 #include "fcn_declare.h"
 #include "const.h"
 
-
+//threading/network callback details: https://github.com/Aircoookie/WLED/pull/2336#discussion_r762276994
 bool requestJSONBufferLock(uint8_t module)
 {
   unsigned long now = millis();
