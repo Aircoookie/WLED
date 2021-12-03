@@ -602,7 +602,7 @@ function parseInfo() {
 	pmt         = li.fs.pmt;
 	cct         = li.leds.cct;
 }
-
+/*
 function loadInfo(callback=null)
 {
 	var url = (loc?`http://${locip}`:'') + '/json/info';
@@ -636,7 +636,7 @@ function loadInfo(callback=null)
 		updateUI();
 	});
 }
-
+*/
 function populateInfo(i)
 {
 	var cn="";
@@ -1213,7 +1213,7 @@ function readState(s,command=false)
 		if (isRgbw) whites[e] = parseInt(w);
 	}
 	selectSlot(csel);
-	gId('sliderW').value = whites[csel];
+	//gId('sliderW').value = whites[csel];
 	if (i.cct && i.cct>=0) gId("sliderA").value = i.cct;
 
 	gId('sliderSpeed').value = i.sx;
@@ -1982,14 +1982,11 @@ function delP(i) {
 
 function selectSlot(b)
 {
-	csel = b;
 	var cd = gId('csl').children;
-	for (let i = 0; i < cd.length; i++) {
-		cd[i].classList.remove('xxs-w');
-	}
-	cd[csel].classList.add('xxs-w');
-	cpick.color.set(cd[csel].style.backgroundColor);
-	gId('sliderW').value = whites[csel];
+	for (let i = 0; i < cd.length; i++) cd[i].classList.remove('xxs-w');
+	cd[b].classList.add('xxs-w');
+	cpick.color.set(cd[b].style.backgroundColor);
+	gId('sliderW').value = whites[b];
 	updatePSliders();
 }
 
@@ -2030,7 +2027,7 @@ function updatePSliders() {
 	var c = iro.Color.hsvToRgb(hsv);
 	var cs = 'rgb('+c.r+','+c.g+','+c.b+')';
 	//v.parentNode.getElementsByClassName('sliderdisplay')[0].style.setProperty('--bg',cs);
-	v.nextElementSibling.style.backgroundImage = `linear-gradient(90deg, #000 0%, rgb(${c.r},${c.g},${c.b}))`;
+	v.nextElementSibling.style.backgroundImage = `linear-gradient(90deg, #000 0%, ${cs})`;
 	//updateTrail(v);
 
 	//update Kelvin slider

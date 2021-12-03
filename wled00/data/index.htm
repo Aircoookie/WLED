@@ -9,6 +9,8 @@
 	<title>WLED</title>
 	<script>function feedback(){}</script>
 	<link rel="stylesheet" href="index.css">
+	<script src="iro.js"></script>
+	<script src="rangetouch.js"></script>
 </head>
 <body onload="onLoad()">
 
@@ -54,8 +56,9 @@
 			</div><br>
 		</div>
 		<div id="kwrap">
-			<p class="labels hd">White balance</p>
+			<p class="labels hd">White from K</p>
 			<div class="sliderwrap il">
+				<!--input id="sliderK" class="noslide" oninput="fromK()" onchange="setBalance(Math.trunc((parseInt(this.value)-2400)/32))" max="10060" min="1900" type="range" value="5964" /-->
 				<input id="sliderK" class="noslide" oninput="fromK()" onchange="setColor(0)" max="10091" min="1900" type="range" value="6550" />
 				<div class="sliderdisplay"></div>
 			</div>
@@ -88,13 +91,13 @@
 				<div class="sliderdisplay"></div>
 			</div>
 		</div>
-		<!--div id="wbal">
+		<div id="wbal">
 			<p class="labels hd">White balance</p>
 			<div class="sliderwrap il">
 				<input id="sliderA" class="noslide" onchange="setBalance(this.value)" max="255" min="0" type="range" value="128" />
 				<div class="sliderdisplay"></div>
 			</div>
-		</div-->
+		</div>
 		<div id="qcs-w">
 			<div class="qcs" onclick="pC('#ff0000');" title="Red" style="background-color:#ff0000;"></div>
 			<div class="qcs" onclick="pC('#ffa000');" title="Orange" style="background-color:#ffa000;"></div>
