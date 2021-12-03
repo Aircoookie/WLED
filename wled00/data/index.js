@@ -1703,14 +1703,15 @@ function selectSlot(b) {
 	cd[csel].style.border="5px solid white";
 	cd[csel].style.margin="2px";
 	cd[csel].style.width="50px";
-	cpick.color.set(cd[csel].style.backgroundColor);
+	setPicker(cd[csel].style.backgroundColor);
 	//force slider update on initial load (picker "color:change" not fired if black)
-	if (cd[csel].style.backgroundColor == 'rgb(0, 0, 0)') updatePSliders();
+	if (cpick.color.value == 0) updatePSliders();
 	d.getElementById('sliderW').value = whites[csel];
 	updateTrail(d.getElementById('sliderW'));
 	redrawPalPrev();
 }
 
+//set the color from a hex string. Used by quick color selectors
 var lasth = 0;
 function pC(col)
 {
@@ -1723,7 +1724,7 @@ function pC(col)
 	} while (Math.abs(col.h - lasth) < 50);
 	lasth = col.h;
 	}
-	cpick.color.set(col);
+	setPicker(col);
 	setColor(0);
 }
 
@@ -1768,12 +1769,18 @@ function fromHex()
 	var str = d.getElementById('hexc').value;
 	whites[csel] = parseInt(str.substring(6), 16);
 	try {
-		cpick.color.set("#" + str.substring(0,6));
+		setPicker("#" + str.substring(0,6));
 	} catch (e) {
-		cpick.color.set("#ffaa00");
+		setPicker("#ffaa00");
 	}
 	if (isNaN(whites[csel])) whites[csel] = 0;
 	setColor(2);
+}
+
+function setPicker(rgb) {
+	var c = new iro.Color(rgb);
+	if (c.value > 0) cpick.color.set(c);
+	else cpick.color.setChannel('hsv', 'v', 0);
 }
 
 function fromV()
@@ -1791,13 +1798,13 @@ function fromRgb()
 	var r = d.getElementById('sliderR').value;
 	var g = d.getElementById('sliderG').value;
 	var b = d.getElementById('sliderB').value;
-	cpick.color.set(`rgb(${r},${g},${b})`);
+	setPicker(`rgb(${r},${g},${b})`);
 }
 
 //sr 0: from RGB sliders, 1: from picker, 2: from hex
 function setColor(sr) {
 	var cd = d.getElementById('csl').children;
-	if (sr == 1 && cd[csel].style.backgroundColor == 'rgb(0, 0, 0)') cpick.color.setChannel('hsv', 'v', 100);
+	if (sr == 1 && cd[csel].style.backgroundColor == "rgb(0, 0, 0)") cpick.color.setChannel('hsv', 'v', 100);
 	cd[csel].style.backgroundColor = cpick.color.rgbString;
 	if (sr != 2) whites[csel] = parseInt(d.getElementById('sliderW').value);
 	var col = cpick.color.rgb;
