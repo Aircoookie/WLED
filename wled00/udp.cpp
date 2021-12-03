@@ -281,6 +281,7 @@ void handleNotifications()
     //apply effects from notification
     if (version < 200 && (receiveNotificationEffects || !someSel))
     {
+      if (currentPlaylist>=0) unloadPlaylist();
       if (udpIn[8] < strip.getModeCount()) effectCurrent = udpIn[8];
       effectSpeed   = udpIn[9];
       if (version > 2) effectIntensity = udpIn[16];

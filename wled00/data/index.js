@@ -1306,6 +1306,7 @@ function setSliderAndColorControl(idx/*, extra*/)
 	// set html color items on/off
 	var cslLabel = '';
 	var sep = '';
+	var hide = true;
 	for (let i=0; i<gId("csl").children.length; i++) {
 		var btn = gId("csl" + i);
 		// if no controlDefined or coOnOff has a value
@@ -1322,13 +1323,23 @@ function setSliderAndColorControl(idx/*, extra*/)
 			else if (i==0) btn.innerHTML = "Fx";
 			else if (i==1) btn.innerHTML = "Bg";
 			else btn.innerHTML = "Cs";
+			hide = false;
 		} else if (!controlDefined /*|| paOnOff.length>0*/) { // if no controls then all buttons should be shown for color 1..3
 			btn.style.display = "inline";
 			btn.innerHTML = `${i+1}`;
+			hide = false;
 		} else {
 			btn.style.display = "none";
 		}
 	}
+	var ccfg = cfg.comp.colors;
+	gId("picker").style.display = hide && ccfg.picker ? "none" : "block";
+	gId("vwrap").style.display = hide && ccfg.picker ? "none" : "block";
+	gId("kwrap").style.display = hide && ccfg.picker && cct ? "none" : "block";
+	gId("wwrap").style.display = hide ? "none" : "block";
+	gId("wbal").style.display  = hide && !cct ? "none" : "block";
+	gId("rgbwrap").style.display = hide && ccfg.rgb ? "none" : "block";
+	gId("qcs-w").style.display = hide && ccfg.quick ? "none" : "block";
 	gId("cslLabel").innerHTML = cslLabel;
   
 	// set palette on/off
@@ -1982,14 +1993,16 @@ function delP(i) {
 
 function selectSlot(b)
 {
+	csel = b;
 	var cd = gId('csl').children;
 	for (let i = 0; i < cd.length; i++) cd[i].classList.remove('xxs-w');
 	cd[b].classList.add('xxs-w');
-	cpick.color.set(cd[b].style.backgroundColor);
+	setPicker(cd[b].style.backgroundColor);
 	gId('sliderW').value = whites[b];
 	updatePSliders();
 }
 
+//set the color from a hex string. Used by quick color selectors
 var lasth = 0;
 function pC(col)
 {
@@ -2001,7 +2014,7 @@ function pC(col)
 		} while (Math.abs(col.h - lasth) < 50);
 		lasth = col.h;
 	}
-	cpick.color.set(col);
+	setPicker(col);
 	setColor(0);
 }
 
@@ -2026,8 +2039,8 @@ function updatePSliders() {
 	var hsv = {"h":cpick.color.hue,"s":cpick.color.saturation,"v":100}; 
 	var c = iro.Color.hsvToRgb(hsv);
 	var cs = 'rgb('+c.r+','+c.g+','+c.b+')';
-	//v.parentNode.getElementsByClassName('sliderdisplay')[0].style.setProperty('--bg',cs);
 	v.nextElementSibling.style.backgroundImage = `linear-gradient(90deg, #000 0%, ${cs})`;
+	//v.parentNode.getElementsByClassName('sliderdisplay')[0].style.setProperty('--bg',cs);
 	//updateTrail(v);
 
 	//update Kelvin slider
@@ -2044,12 +2057,18 @@ function fromHex()
 	var str = gId('hexc').value;
 	whites[csel] = parseInt(str.substring(6), 16);
 	try {
-		cpick.color.set("#" + str.substring(0,6));
+		setPicker("#" + str.substring(0,6));
 	} catch (e) {
-		cpick.color.set("#ffaa00");
+		setPicker("#ffaa00");
 	}
 	if (isNaN(whites[csel])) whites[csel] = 0;
 	setColor(2);
+}
+
+function setPicker(rgb) {
+	var c = new iro.Color(rgb);
+	if (c.value > 0) cpick.color.set(c);
+	else cpick.color.setChannel('hsv', 'v', 0);
 }
 
 function fromV()
@@ -2067,14 +2086,14 @@ function fromRgb()
 	var r = gId('sliderR').value;
 	var g = gId('sliderG').value;
 	var b = gId('sliderB').value;
-	cpick.color.set(`rgb(${r},${g},${b})`);
+	setPicker(`rgb(${r},${g},${b})`);
 }
 
 //sr 0: from RGB sliders, 1: from picker, 2: from hex
 function setColor(sr)
 {
 	var cd = gId('csl').children; // color slots
-	if (sr == 1 && cd[csel].style.backgroundColor == 'rgb(0,0,0)') cpick.color.setChannel('hsv', 'v', 100);
+	if (sr == 1 && cd[csel].style.backgroundColor == "rgb(0, 0, 0)") cpick.color.setChannel('hsv', 'v', 100); // watch out for spaces!!!
 	cd[csel].style.backgroundColor = cpick.color.rgbString;
 	if (sr != 2) whites[csel] = parseInt(gId('sliderW').value);
 	var col = cpick.color.rgb;
@@ -2231,11 +2250,13 @@ function formatArr(pl) {
 function expand(i,a=false)
 {
 	var seg = gId('seg' +i);
+/*
 	if (!a) {
 		var j = i>100 ? 100 : 0;
 		var l = i>100 ? expanded.length : 100;
 		for (; j<l; j++) if (i!=j && expanded[j]) expand(j,true); // collapse all expanded elements
 	}
+*/
 	expanded[i] = !expanded[i];
 	seg.style.display = (expanded[i]) ? "block":"none";
 	gId('sege' +i).style.transform = (expanded[i]) ? "rotate(180deg)":"rotate(0deg)";

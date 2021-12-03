@@ -50,6 +50,7 @@ void parseNumber(const char* str, byte* val, byte minv, byte maxv)
 
 bool getVal(JsonVariant elem, byte* val, byte vmin, byte vmax) {
   if (elem.is<int>()) {
+		if (elem < 0) return false; //ignore e.g. {"ps":-1}
     *val = elem;
     return true;
   } else if (elem.is<const char*>()) {

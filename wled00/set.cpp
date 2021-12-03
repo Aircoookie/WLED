@@ -87,7 +87,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
       char sl[4] = "SL"; sl[2] = 48+s; sl[3] = 0; //skip 1st LED
       char rf[4] = "RF"; rf[2] = 48+s; rf[3] = 0; //refresh required
-      char aw[4] = "AW"; aw[2] = 48+s; aw[3] = 0; //auto white calculate mode
       if (!request->hasArg(lp)) {
         DEBUG_PRINTLN(F("No data.")); break;
       }
