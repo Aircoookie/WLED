@@ -326,7 +326,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   usermods.readFromJsonState(root);
 
-  int8_t ledmap = root[F("ledmap")] | -1;
+  loadLedmap = root[F("ledmap")] | loadLedmap;
 
   byte ps = root[F("psave")];
   if (ps > 0) {

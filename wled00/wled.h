@@ -515,7 +515,7 @@ WLED_GLOBAL byte presetCycCurr _INIT(0);
 // realtime
 WLED_GLOBAL byte realtimeMode _INIT(REALTIME_MODE_INACTIVE);
 WLED_GLOBAL byte realtimeOverride _INIT(REALTIME_OVERRIDE_NONE);
-WLED_GLOBAL IPAddress realtimeIP _INIT_N(((0, 0, 0, 0)));;
+WLED_GLOBAL IPAddress realtimeIP _INIT_N(((0, 0, 0, 0)));
 WLED_GLOBAL unsigned long realtimeTimeout _INIT(0);
 WLED_GLOBAL uint8_t tpmPacketCount _INIT(0);
 WLED_GLOBAL uint16_t tpmPayloadFrameSize _INIT(0);
