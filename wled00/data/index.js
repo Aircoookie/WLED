@@ -1106,8 +1106,7 @@ function updateSelectedFx()
 	if (selectedEffect) {
 		selectedEffect.classList.add('selected');
 		// WLEDSR: extract the Slider and color control string from the HTML element and set it.
-		//sliderControl = selectedEffect.dataset.opt.replace(/&amp;/g, "&");
-		setSliderAndColorControl(selectedFx /*, sliderControl*/);
+		setSliderAndColorControl(selectedFx);
 	}
 }
 
@@ -1197,23 +1196,14 @@ function readState(s,command=false)
 	for (let e = cd.length-1; e >= 0; e--)
 	{
 		var r,g,b,w;
-		//if (Array.isArray(i.col[e])) {
-			r = i.col[e][0];
-			g = i.col[e][1];
-			b = i.col[e][2];
-			if (isRgbw) w = i.col[e][3];
-		//} else {
-		//	// unsigned long RGBW (@blazoncek v2 experimental API implementation, obsolete & will be removed)
-		//	r = (i.col[e]>>16) & 0xFF;
-		//	g = (i.col[e]>> 8) & 0xFF;
-		//	b = (i.col[e]    ) & 0xFF;
-		//	if (isRgbw) w = (i.col[e] >> 24) & 0xFF;
-		//}
+		r = i.col[e][0];
+		g = i.col[e][1];
+		b = i.col[e][2];
+		if (isRgbw) w = i.col[e][3];
 		cd[e].style.backgroundColor = "rgb(" + r + "," + g + "," + b + ")";
 		if (isRgbw) whites[e] = parseInt(w);
 	}
 	selectSlot(csel);
-	//gId('sliderW').value = whites[csel];
 	if (i.cct && i.cct>=0) gId("sliderA").value = i.cct;
 
 	gId('sliderSpeed').value = i.sx;
@@ -1332,6 +1322,8 @@ function setSliderAndColorControl(idx/*, extra*/)
 			btn.style.display = "none";
 		}
 	}
+/*
+	// perhaps too aggressive
 	var ccfg = cfg.comp.colors;
 	gId("picker").style.display = hide && ccfg.picker ? "none" : "block";
 	gId("vwrap").style.display = hide && ccfg.picker ? "none" : "block";
@@ -1340,6 +1332,7 @@ function setSliderAndColorControl(idx/*, extra*/)
 	gId("wbal").style.display  = hide && !cct ? "none" : "block";
 	gId("rgbwrap").style.display = hide && ccfg.rgb ? "none" : "block";
 	gId("qcs-w").style.display = hide && ccfg.quick ? "none" : "block";
+*/
 	gId("cslLabel").innerHTML = cslLabel;
   
 	// set palette on/off
