@@ -316,13 +316,22 @@ void getSettingsJS(byte subPage, char* dest)
   {
     char nS[8];
 
+    // Pin reservations will become unnecessary when settings pages will read cfg.json directly
     // add reserved and usermod pins as d.um_p array
     oappend(SET_F("d.um_p=[6,7,8,9,10,11"));
 
-    DynamicJsonDocument doc(JSON_BUFFER_SIZE/2);
+    { // scope so buffer can be released earlier
+    #ifdef WLED_USE_DYNAMIC_JSON
+    DynamicJsonDocument doc(3072);
+    #else
+    if (!requestJSONBufferLock(6)) return;
+    #endif
+
     JsonObject mods = doc.createNestedObject(F("um"));
     usermods.addToConfig(mods);
     if (!mods.isNull()) fillUMPins(mods);
+    releaseJSONBufferLock();
+    }
 
     #ifdef WLED_ENABLE_DMX
       oappend(SET_F(",2")); // DMX hardcoded pin

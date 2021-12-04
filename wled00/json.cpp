@@ -338,6 +338,8 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   usermods.readFromJsonState(root);
 
+  loadLedmap = root[F("ledmap")] | loadLedmap;
+
   byte ps = root[F("psave")];
   if (ps > 0) {
     savePreset(ps, true, nullptr, root);
@@ -832,23 +834,29 @@ void serveJson(AsyncWebServerRequest* request)
     return;
   }
 
+  #ifdef WLED_USE_DYNAMIC_JSON
   AsyncJsonResponse* response = new AsyncJsonResponse(JSON_BUFFER_SIZE);
-  JsonObject doc = response->getRoot();
+  #else
+  if (!requestJSONBufferLock(17)) return;
+  AsyncJsonResponse *response = new AsyncJsonResponse(&doc);
+  #endif
+
+  JsonObject lDoc = response->getRoot();
 
   switch (subJson)
   {
     case 1: //state
-      serializeState(doc); break;
+      serializeState(lDoc); break;
     case 2: //info
-      serializeInfo(doc); break;
+      serializeInfo(lDoc); break;
     case 4: //node list
-      serializeNodes(doc); break;
+      serializeNodes(lDoc); break;
     case 5: //palettes
-      serializePalettes(doc, request); break;
+      serializePalettes(lDoc, request); break;
     default: //all
-      JsonObject state = doc.createNestedObject("state");
+      JsonObject state = lDoc.createNestedObject("state");
       serializeState(state);
-      JsonObject info = doc.createNestedObject("info");
+      JsonObject info = lDoc.createNestedObject("info");
       serializeInfo(info);
       if (subJson != 3)
       {
@@ -858,10 +866,11 @@ void serveJson(AsyncWebServerRequest* request)
   }
 
   DEBUG_PRINT("JSON buffer size: ");
-  DEBUG_PRINTLN(doc.memoryUsage());
+  DEBUG_PRINTLN(lDoc.memoryUsage());
 
   response->setLength();
   request->send(response);
+  releaseJSONBufferLock();
 }
 
 #define MAX_LIVE_LEDS 180

@@ -522,7 +522,7 @@ WLED_GLOBAL byte presetCycMax _INIT(5);
 // realtime
 WLED_GLOBAL byte realtimeMode _INIT(REALTIME_MODE_INACTIVE);
 WLED_GLOBAL byte realtimeOverride _INIT(REALTIME_OVERRIDE_NONE);
-WLED_GLOBAL IPAddress realtimeIP _INIT_N(((0, 0, 0, 0)));;
+WLED_GLOBAL IPAddress realtimeIP _INIT_N(((0, 0, 0, 0)));
 WLED_GLOBAL unsigned long realtimeTimeout _INIT(0);
 WLED_GLOBAL uint8_t tpmPacketCount _INIT(0);
 WLED_GLOBAL uint16_t tpmPayloadFrameSize _INIT(0);
@@ -599,9 +599,16 @@ WLED_GLOBAL BusManager busses _INIT(BusManager());
 WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
 WLED_GLOBAL BusConfig* busConfigs[WLED_MAX_BUSSES] _INIT({nullptr}); //temporary, to remember values from network callback until after
 WLED_GLOBAL bool doInitBusses _INIT(false);
+WLED_GLOBAL int8_t loadLedmap _INIT(-1);
 
 // Usermod manager
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
+
+#ifndef WLED_USE_DYNAMIC_JSON
+// global ArduinoJson buffer
+WLED_GLOBAL StaticJsonDocument<JSON_BUFFER_SIZE> doc;
+#endif
+WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
 
 // enable additional debug output
 #ifdef WLED_DEBUG
