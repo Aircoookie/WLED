@@ -37,7 +37,8 @@ class UsermodTemperature : public Usermod {
     // used to determine when we can read the sensors temperature
     // we have to wait at least 93.75 ms after requestTemperatures() is called
     unsigned long lastTemperaturesRequest;
-    float temperature = -100; // default to -100, DS18B20 only goes down to -50C
+    float temperature = -100.f; // default to -100, DS18B20 only goes down to -50C
+    bool errorReading = false;
     // indicates requestTemperatures has been called but the sensor measurement is not complete
     bool waitingForConversion = false;
     // flag set at startup if DS18B20 sensor not found, avoids trying to keep getting
@@ -78,9 +79,16 @@ class UsermodTemperature : public Usermod {
     }
 
     void readTemperature() {
-      temperature = readDallas();
-      lastMeasurement = millis();
+      float newTemp = readDallas();
       waitingForConversion = false;
+      if (temperature > -100.f && abs(newTemp-temperature)>10.) {
+        lastMeasurement = millis() - readingInterval + 5000;  // speed up next reading
+        errorReading = true;
+      } else {
+        lastMeasurement = millis();
+        errorReading = false;
+        temperature = newTemp;
+      }
       //DEBUG_PRINTF("Read temperature %2.1f.\n", temperature); // does not work properly on 8266
       DEBUG_PRINT(F("Read temperature "));
       DEBUG_PRINTLN(temperature);
@@ -200,17 +208,21 @@ class UsermodTemperature : public Usermod {
       if (user.isNull()) user = root.createNestedObject("u");
 
       JsonArray temp = user.createNestedArray(FPSTR(_name));
-      //temp.add(F("Loaded."));
 
-      if (temperature <= -100.0 || (!sensorFound && temperature == -1.0)) {
+      if (temperature <= -100.0 || errorReading) {
         temp.add(0);
         temp.add(F(" Sensor Error!"));
         return;
       }
 
       temp.add(degC ? temperature : (float)temperature * 1.8f + 32);
-      if (degC) temp.add(F("°C"));
-      else      temp.add(F("°F"));
+      temp.add(degC ? F("°C") : F("°F"));
+
+      JsonObject sensor = root[F("sensor")];
+      if (sensor.isNull()) sensor = root.createNestedObject(F("sensor"));
+      temp = sensor.createNestedArray(F("temp"));
+      temp.add(degC ? temperature : (float)temperature * 1.8f + 32);
+      temp.add(degC ? F("°C") : F("°F"));
     }
 
     /**

@@ -320,6 +320,10 @@ public:
     } else {
       infoArr.add(F("disabled"));
     }
+
+    JsonObject sensor = root[F("sensor")];
+    if (sensor.isNull()) sensor = root.createNestedObject(F("sensor"));
+    sensor[F("motion")] = sensorPinState || offTimerStart>0 ? true : false;
   }
 
   /**
