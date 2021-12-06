@@ -63,15 +63,25 @@ void initServer()
   DefaultHeaders::Instance().addHeader(F("Access-Control-Allow-Methods"), "*");
   DefaultHeaders::Instance().addHeader(F("Access-Control-Allow-Headers"), "*");
 
- #ifdef WLED_ENABLE_WEBSOCKETS
-    server.on("/liveview", HTTP_GET, [](AsyncWebServerRequest *request){
-      request->send_P(200, "text/html", PAGE_liveviewws);
-    });
- #else
-    server.on("/liveview", HTTP_GET, [](AsyncWebServerRequest *request){
-      request->send_P(200, "text/html", PAGE_liveview);
-    });
-  #endif
+#ifdef WLED_ENABLE_WEBSOCKETS
+  server.on("/liveview", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (handleIfNoneMatchCacheHeader(request)) return;
+    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_liveviewws, PAGE_liveviewws_length);
+    response->addHeader(F("Content-Encoding"),"gzip");
+    setStaticContentCacheHeaders(response);
+    request->send(response);
+    //request->send_P(200, "text/html", PAGE_liveviewws);
+  });
+#else
+  server.on("/liveview", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (handleIfNoneMatchCacheHeader(request)) return;
+    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_liveview, PAGE_liveview_length);
+    response->addHeader(F("Content-Encoding"),"gzip");
+    setStaticContentCacheHeaders(response);
+    request->send(response);
+    //request->send_P(200, "text/html", PAGE_liveview);
+  });
+#endif
   
   //settings page
   server.on("/settings", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -153,27 +163,32 @@ void initServer()
 
   server.on("/version", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(200, "text/plain", (String)VERSION);
-    });
+  });
     
   server.on("/uptime", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(200, "text/plain", (String)millis());
-    });
+  });
     
   server.on("/freeheap", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(200, "text/plain", (String)ESP.getFreeHeap());
-    });
+  });
   
   server.on("/u", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send_P(200, "text/html", PAGE_usermod);
-    });
+    if (handleIfNoneMatchCacheHeader(request)) return;
+    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_usermod, PAGE_usermod_length);
+    response->addHeader(F("Content-Encoding"),"gzip");
+    setStaticContentCacheHeaders(response);
+    request->send(response);
+    //request->send_P(200, "text/html", PAGE_usermod);
+  });
     
   server.on("/url", HTTP_GET, [](AsyncWebServerRequest *request){
     URL_response(request);
-    });
+  });
     
   server.on("/teapot", HTTP_GET, [](AsyncWebServerRequest *request){
     serveMessage(request, 418, F("418. I'm a teapot."), F("(Tangible Embedded Advanced Project Of Twinkling)"), 254);
-    });
+  });
 
   server.on("/upload", HTTP_POST, [](AsyncWebServerRequest *request) {},
         [](AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data,
@@ -221,7 +236,11 @@ void initServer()
     //init ota page
     #ifndef WLED_DISABLE_OTA
     server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
-      request->send_P(200, "text/html", PAGE_update);
+      AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_update, PAGE_update_length);
+      response->addHeader(F("Content-Encoding"),"gzip");
+      setStaticContentCacheHeaders(response);
+      request->send(response);
+      //request->send_P(200, "text/html", PAGE_update);
     });
     
     server.on("/update", HTTP_POST, [](AsyncWebServerRequest *request){
@@ -303,7 +322,11 @@ void initServer()
     if(espalexa.handleAlexaApiCall(request)) return;
     #endif
     if(handleFileRead(request, request->url())) return;
-    request->send_P(404, "text/html", PAGE_404);
+    AsyncWebServerResponse *response = request->beginResponse_P(404, "text/html", PAGE_404, PAGE_404_length);
+    response->addHeader(F("Content-Encoding"),"gzip");
+    setStaticContentCacheHeaders(response);
+    request->send(response);
+    //request->send_P(404, "text/html", PAGE_404);
   });
 }
 
@@ -408,21 +431,22 @@ void serveMessage(AsyncWebServerRequest* request, uint16_t code, const String& h
 
 String settingsProcessor(const String& var)
 {
+  /*
   if (var == "CSS") {
     char buf[SETTINGS_STACK_BUF_SIZE];
     buf[0] = 0;
     getSettingsJS(optionType, buf);
+    obuf = buf;
+    oappend(SET_F("}</script>"));
     return String(buf);
   }
-  
+*/
   #ifdef WLED_ENABLE_DMX
-
   if (var == "DMXMENU") {
     return String(F("<form action=/settings/dmx><button type=submit>DMX Output</button></form>"));
   }
-  
   #endif
-  if (var == "SCSS") return String(FPSTR(PAGE_settingsCss));
+  //if (var == "SCSS") return String(FPSTR(PAGE_settingsCss));
   return String();
 }
 
@@ -447,13 +471,32 @@ String dmxProcessor(const String& var)
 }
 
 
+void serveSettingsJS(AsyncWebServerRequest* request)
+{
+  char buf[SETTINGS_STACK_BUF_SIZE+37];
+  buf[0] = 0;
+  byte subPage = request->arg(F("p")).toInt();
+  if (!subPage || subPage>8) {
+    strcpy_P(buf, PSTR("alert('Settings for this request are not implemented.');"));
+    request->send(501, "application/javascript", buf);
+    return;
+  }
+  strcat_P(buf,PSTR("function GetV(){var d=document;"));
+  getSettingsJS(subPage, buf+strlen(buf));  // this may overflow by 35bytes!!!
+  strcat_P(buf,PSTR("}"));
+  request->send(200, "application/javascript", buf);
+}
+
+
 void serveSettings(AsyncWebServerRequest* request, bool post)
 {
   byte subPage = 0;
   const String& url = request->url();
   if (url.indexOf("sett") >= 0) 
   {
-    if      (url.indexOf("wifi") > 0) subPage = 1;
+    if      (url.indexOf(".js")  > 0) subPage = 254;
+    else if (url.indexOf(".css") > 0) subPage = 253;
+    else if (url.indexOf("wifi") > 0) subPage = 1;
     else if (url.indexOf("leds") > 0) subPage = 2;
     else if (url.indexOf("ui")   > 0) subPage = 3;
     else if (url.indexOf("sync") > 0) subPage = 4;
@@ -502,17 +545,24 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
 
   optionType = subPage;
   
+  AsyncWebServerResponse *response;
   switch (subPage)
   {
-    case 1:   request->send_P(200, "text/html", PAGE_settings_wifi, settingsProcessor); break;
-    case 2:   request->send_P(200, "text/html", PAGE_settings_leds, settingsProcessor); break;
-    case 3:   request->send_P(200, "text/html", PAGE_settings_ui  , settingsProcessor); break;
-    case 4:   request->send_P(200, "text/html", PAGE_settings_sync, settingsProcessor); break;
-    case 5:   request->send_P(200, "text/html", PAGE_settings_time, settingsProcessor); break;
-    case 6:   request->send_P(200, "text/html", PAGE_settings_sec , settingsProcessor); break;
-    case 7:   request->send_P(200, "text/html", PAGE_settings_dmx , settingsProcessor); break;
-    case 8:   request->send_P(200, "text/html", PAGE_settings_um  , settingsProcessor); break;
-    case 255: request->send_P(200, "text/html", PAGE_welcome); break;
-    default:  request->send_P(200, "text/html", PAGE_settings     , settingsProcessor); 
+    case 1:   response = request->beginResponse_P(200, "text/html", PAGE_settings_wifi, PAGE_settings_wifi_length); break;
+    case 2:   response = request->beginResponse_P(200, "text/html", PAGE_settings_leds, PAGE_settings_leds_length); break;
+    case 3:   response = request->beginResponse_P(200, "text/html", PAGE_settings_ui,   PAGE_settings_ui_length);   break;
+    case 4:   response = request->beginResponse_P(200, "text/html", PAGE_settings_sync, PAGE_settings_sync_length); break;
+    case 5:   response = request->beginResponse_P(200, "text/html", PAGE_settings_time, PAGE_settings_time_length); break;
+    case 6:   response = request->beginResponse_P(200, "text/html", PAGE_settings_sec,  PAGE_settings_sec_length);  break;
+    case 7:   response = request->beginResponse_P(200, "text/html", PAGE_settings_dmx,  PAGE_settings_dmx_length);  break;
+    case 8:   response = request->beginResponse_P(200, "text/html", PAGE_settings_um,   PAGE_settings_um_length);   break;
+    case 253: response = request->beginResponse_P(200, "text/css",  PAGE_settingsCss,   PAGE_settingsCss_length);   break;
+    case 254: serveSettingsJS(request); return;
+    case 255: response = request->beginResponse_P(200, "text/html", PAGE_welcome,       PAGE_welcome_length);       break;
+    default:  request->send_P(200, "text/html", PAGE_settings, settingsProcessor); return;
+    //default:  response = request->beginResponse_P(200, "text/html", PAGE_settings, PAGE_settings_length); break;
   }
+  response->addHeader(F("Content-Encoding"),"gzip");
+  setStaticContentCacheHeaders(response);
+  request->send(response);
 }

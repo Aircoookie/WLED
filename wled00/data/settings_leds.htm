@@ -71,7 +71,6 @@
       if (bquot > 100) {var msg = "Too many LEDs for me to handle!"; if (maxM < 10000) msg += "\n\rConsider using an ESP32."; alert(msg);}
       if (d.Sf.checkValidity()) d.Sf.submit(); //https://stackoverflow.com/q/37323914
     }
-		function S(){GetV();checkSi();setABL();}
     function enABL()
     {
       var en = gId('able').checked;
@@ -451,6 +450,7 @@ ${i+1}:
         }
       }
     }
+		function S(){GetV();checkSi();setABL();}
 		function GetV()
 		{
       //values injected by server while sending HTML

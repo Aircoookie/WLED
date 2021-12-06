@@ -18,14 +18,13 @@ var segCount = 0, ledCount = 0, lowestUnused = 0, maxSeg = 0, lSeg = 0;
 var pcMode = false, pcModeA = false, lastw = 0;
 var tr = 7;
 var d = document;
-const ranges = RangeTouch.setup('input[type="range"]', {});
 var palettesData;
 var fxdata = [];
 var pJson = {}, eJson = {}, lJson = {};
 var pN = "", pI = 0, pNum = 0;
 var pmt = 1, pmtLS = 0, pmtLast = 0;
 var lastinfo = {};
-var ws;
+var ws, cpick, ranges;
 var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false},
@@ -38,17 +37,6 @@ var hol = [
 	[2023,3,9,2,"https://aircoookie.github.io/easter.png"],
 	[2024,2,31,2,"https://aircoookie.github.io/easter.png"]
 ];
-
-var cpick = new iro.ColorPicker("#picker", {
-	width: 260,
-	wheelLightness: false,
-	wheelAngle: 270,
-	wheelDirection: "clockwise",
-	layout: [{
-		component: iro.ui.Wheel,
-		options: {}
-    }]
-});
 
 function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson();}
 function sCol(na, col) {d.documentElement.style.setProperty(na, col);}
@@ -232,10 +220,6 @@ function onLoad()
 	for (var i = 0; i < cd.length; i++) cd[i].style.backgroundColor = "rgb(0, 0, 0)";
 	selectSlot(0);
 	updateTablinks(0);
-	cpick.on("input:end", function() {
-		setColor(1);
-	});
-	cpick.on("color:change", updatePSliders);
 	pmtLS = localStorage.getItem('wledPmt');
 
 	// Load initial data
@@ -244,7 +228,6 @@ function onLoad()
 		loadFX(()=>{
 			loadFXData();
 			loadPresets(()=>{
-				//if (isObj(lastinfo) && isEmpty(lastinfo)) loadInfo(requestJson);	// if not filled by WS
 				requestJson();
 			});
 		});
@@ -602,41 +585,7 @@ function parseInfo() {
 	pmt         = li.fs.pmt;
 	cct         = li.leds.cct;
 }
-/*
-function loadInfo(callback=null)
-{
-	var url = (loc?`http://${locip}`:'') + '/json/info';
-	var useWs = (ws && ws.readyState === WebSocket.OPEN);
-	if (useWs) {
-		ws.send('{"v":true}');
-		return;
-	}
-	fetch(url, {
-		method: 'get'
-	})
-	.then(res => {
-		if (!res.ok) showToast('Could not load Info!', true);
-		return res.json();
-	})
-	.then(json => {
-		clearErrorToast();
-		lastinfo = json;
-		parseInfo();
-		showNodes();
-		if (isInfo) populateInfo(json);
-		reqsLegal = true;
-		if (!ws && lastinfo.ws > -1) setTimeout(makeWS,500);
-	})
-	.catch(function (error) {
-		showToast(error, true);
-		console.log(error);
-	})
-	.finally(()=>{
-		if (callback) callback();
-		updateUI();
-	});
-}
-*/
+
 function populateInfo(i)
 {
 	var cn="";

@@ -7,12 +7,39 @@
 	<meta content="yes" name="apple-mobile-web-app-capable">
 	<link rel="shortcut icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAEAGACGAAAAFgAAAIlQTkcNChoKAAAADUlIRFIAAAAQAAAAEAgGAAAAH/P/YQAAAE1JREFUOI1j/P//PwOxgNGeAUMxE9G6cQCKDWAhpADZ2f8PMjBS3QW08QK20KaZC2gfC9hCnqouoNgARgY7zMxAyNlUdQHlXiAlO2MDAD63EVqNHAe0AAAAAElFTkSuQmCC"/>
 	<title>WLED</title>
-	<script>function feedback(){}</script>
+	<script>
+	function feedback(){}
+	var h  = document.getElementsByTagName('head')[0];
+	var l  = document.createElement('script');
+	l.type = 'application/javascript';
+	l.src = 'iro.js';
+	l.addEventListener('load', (e) => {
+		cpick = new iro.ColorPicker("#picker", {
+			width: 260,
+			wheelLightness: false,
+			wheelAngle: 270,
+			wheelDirection: "clockwise",
+			layout: [{
+				component: iro.ui.Wheel,
+				options: {}
+			}]
+		});
+		cpick.on("input:end", () => {setColor(1);});
+		cpick.on("color:change", () => {updatePSliders()});
+		var l  = document.createElement('script');
+		l.type = 'application/javascript';
+		l.src = 'rangetouch.js';
+		l.addEventListener('load', (e) => {
+			ranges = RangeTouch.setup('input[type="range"]', {});
+			onLoad();
+		});
+		setTimeout(function(){h.appendChild(l)},150);
+	});
+	h.appendChild(l);
+	</script>
 	<link rel="stylesheet" href="index.css">
-	<script src="iro.js"></script>
-	<script src="rangetouch.js"></script>
 </head>
-<body onload="onLoad()">
+<body>
 
 <div id="cv" class="overlay">Loading WLED UI...</div>
 <noscript><div class="overlay" style="opacity:1;">Sorry, WLED UI needs JavaScript!</div></noscript>

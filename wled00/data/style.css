@@ -3,7 +3,7 @@ body {
   text-align: center;
   background: #222;
   color: #fff;
-  line-height: 200%%; /* %% because of AsyncWebServer */
+  line-height: 200%; /* %% because of AsyncWebServer */
   margin: 0;
 }
 hr {
@@ -109,9 +109,9 @@ td {
 	position: fixed;
 	text-align: center;
 	z-index: 5;
-	transform: translateX(-50%%); /* %% because of AsyncWebServer */
-  max-width: 90%%; /* %% because of AsyncWebServer */
-	left: 50%%; /* %% because of AsyncWebServer */
+	transform: translateX(-50%); /* %% because of AsyncWebServer */
+  max-width: 90%; /* %% because of AsyncWebServer */
+	left: 50%; /* %% because of AsyncWebServer */
 }
 
 #toast.show {

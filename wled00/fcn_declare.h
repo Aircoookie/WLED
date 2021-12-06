@@ -324,6 +324,7 @@ void serveMessage(AsyncWebServerRequest* request, uint16_t code, const String& h
 String settingsProcessor(const String& var);
 String dmxProcessor(const String& var);
 void serveSettings(AsyncWebServerRequest* request, bool post = false);
+void serveSettingsJS(AsyncWebServerRequest* request);
 
 //ws.cpp
 void handleWs();

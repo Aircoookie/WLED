@@ -600,6 +600,4 @@ void getSettingsJS(byte subPage, char* dest)
     oappendi(usermods.getModCount());
     oappend(";");
   }
-
-  oappend(SET_F("}</script>"));
 }
