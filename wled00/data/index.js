@@ -1185,7 +1185,7 @@ function readState(s,command=false)
 }
 
 // WLEDSR: control HTML elements for Slider and Color Control
-function setSliderAndColorControl(idx/*, extra*/)
+function setSliderAndColorControl(idx)
 {
 	if (!(Array.isArray(fxdata) && fxdata.length>idx)) return;
 	var topPosition = 0;
@@ -1290,7 +1290,7 @@ function setSliderAndColorControl(idx/*, extra*/)
 		// disable label and slider
 		palw.style.display = "none";
 		// if numeric set as selected palette
-		if (paOnOff.length>0 && paOnOff[0]!="" && !isNaN(paOnOff[0])) setPalette(parseInt(paOnOff[0]));
+		if (paOnOff.length>0 && paOnOff[0]!="" && !isNaN(paOnOff[0]) && parseInt(paOnOff[0])!=selectedPal) setPalette(parseInt(paOnOff[0]));
 	}
 }
 
