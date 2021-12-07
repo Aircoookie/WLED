@@ -498,7 +498,8 @@ function loadFXData(callback = null)
 		clearErrorToast();
 		fxdata = json||[];
 		// add default value for Solid
-		fxdata.shift().unshift("@;!;");
+		fxdata.shift()
+		fxdata.unshift("@;!;");
 	})
 	.catch(function (error) {
 		fxdata = [];
