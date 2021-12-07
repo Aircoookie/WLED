@@ -454,8 +454,8 @@ class BusNetwork : public Bus {
 
   void setPixelColor(uint16_t pix, uint32_t c) {
     if (!_valid || pix >= _len) return;
+		if (isRgbw()) c = autoWhiteCalc(c);
     if (_cct >= 1900) c = colorBalanceFromKelvin(_cct, c); //color correction from CCT
-    c = autoWhiteCalc(c);
     uint16_t offset = pix * _UDPchannels;
     _data[offset]   = R(c);
     _data[offset+1] = G(c);
