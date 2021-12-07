@@ -64,7 +64,7 @@ Can help with connectivity issues.<br>
 Do not enable if WiFi is working correctly, increases power consumption.</i><div
  id="ethd"><h3>Ethernet Type</h3><select name="ETH"><option value="0">None
 </option><option value="2">ESP32-POE</option><option value="6">ESP32Deux
-</option><option value="4">QuinLED-ESP32</option><option value="5">
+</option><option value="7">LilyGO-T-ETH-POE</option><option value="4">QuinLED-ESP32</option><option value="5">
 TwilightLord-ESP32</option><option value="3">WESP32</option><option value="1">
 WT32-ETH01</option></select><br><br></div><hr><button type="button" 
 onclick="B()">Back</button><button type="submit">Save & Connect</button></form>
