@@ -9,11 +9,17 @@
 	<title>WLED</title>
 	<script>
 	function feedback(){}
+	// instead of including [script src="iro.js"][/script] and [script src="rangetouch.js"][/script]
+	// (which would be inlined by nodeJS inliner during minimization and compression) we need to load them dynamically
+	// the following is needed to load iro.js and rangetouch.js as consecutive requests to allow ESP8266
+	// to keep up with requests (if requests happent too fast some may not get processed)
+	// it will also call onLoad() after last is loaded (it was removed from [body onload="onLoad()"]).
 	var h  = document.getElementsByTagName('head')[0];
 	var l  = document.createElement('script');
 	l.type = 'application/javascript';
 	l.src = 'iro.js';
 	l.addEventListener('load', (e) => {
+		// after iro is loaded initialize global variable
 		cpick = new iro.ColorPicker("#picker", {
 			width: 260,
 			wheelLightness: false,
@@ -30,14 +36,17 @@
 		l.type = 'application/javascript';
 		l.src = 'rangetouch.js';
 		l.addEventListener('load', (e) => {
+			// after rangetouch is loaded initialize global variable
 			ranges = RangeTouch.setup('input[type="range"]', {});
-			onLoad();
+			onLoad(); // start processing UI
 		});
-		setTimeout(function(){h.appendChild(l)},150);
+		h.appendChild(l); // if this fires too quickly for ESP8266 use next line
+		//setTimeout(function(){h.appendChild(l)},50);
 	});
 	h.appendChild(l);
 	</script>
 	<link rel="stylesheet" href="index.css">
+	<script src="index.js"></script>
 </head>
 <body>
 
@@ -315,6 +324,5 @@
 </div>
 
 <i id="roverstar" class="icons huge" onclick="setLor(0)">&#xe410;</i><br>
-<script src="index.js"></script>
 </body>
 </html>
