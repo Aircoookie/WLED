@@ -729,7 +729,7 @@ function populateEffects()
 
 	effects.unshift({
 		"id": 0,
-		"name": "Solid@;!;"
+		"name": "Solid@;!;0"
 	});
 
 	for (let i = 0; i < effects.length; i++) {
@@ -1282,13 +1282,15 @@ function setSliderAndColorControl(idx/*, extra*/)
 	var palw = gId("palw"); // wrapper
 	var pall = gId("pall");	// list
 	// if not controlDefined or palette has a value
-	if ((!controlDefined) || (paOnOff.length>0 && paOnOff[0]!="")) {
+	if ((!controlDefined) || (paOnOff.length>0 && paOnOff[0]!="" && isNaN(paOnOff[0]))) {
 		palw.style.display = "inline-block";
 		if (paOnOff.length>0 && paOnOff[0] != "!") pall.innerHTML = paOnOff[0];
 		else                                       pall.innerHTML = '<i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i> Color palette';
 	} else {
 		// disable label and slider
 		palw.style.display = "none";
+		// if numeric set as selected palette
+		if (paOnOff.length>0 && paOnOff[0]!="" && !isNaN(paOnOff[0])) setPalette(parseInt(paOnOff[0]));
 	}
 }
 
@@ -1793,7 +1795,7 @@ function setPalette(paletteId = null)
 	if (paletteId === null) {
 		paletteId = parseInt(d.querySelector('#pallist input[name="palette"]:checked').value);
 	} else {
-		d.querySelector(`#pallist input[name="palette"][value="${paletteId}`).checked = true;
+		d.querySelector(`#pallist input[name="palette"][value="${paletteId}"]`).checked = true;
 	}
 	var selElement = d.querySelector('#pallist .selected');
 	if (selElement) {

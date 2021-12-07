@@ -120,7 +120,6 @@ void initServer()
     bool verboseResponse = false;
     bool isConfig = false;
     { //scope JsonDocument so it releases its buffer
-      DEBUG_PRINTLN(F("HTTP JSON buffer requested."));
       #ifdef WLED_USE_DYNAMIC_JSON
       DynamicJsonDocument doc(JSON_BUFFER_SIZE);
       #else
@@ -142,9 +141,7 @@ void initServer()
           serializeJson(root,Serial);
           DEBUG_PRINTLN();
         #endif
-        //fileDoc = &doc;  // used for applying presets (presets.cpp)
         verboseResponse = deserializeState(root);
-        //fileDoc = nullptr;
       } else {
         verboseResponse = deserializeConfig(root); //use verboseResponse to determine whether cfg change should be saved immediately
       }

@@ -40,7 +40,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
           #ifdef WLED_USE_DYNAMIC_JSON
           DynamicJsonDocument doc(JSON_BUFFER_SIZE);
           #else
-          if (!requestJSONBufferLock(15)) return;
+          if (!requestJSONBufferLock(11)) return;
           #endif
 
           DeserializationError error = deserializeJson(doc, data, len);
@@ -49,13 +49,6 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
             releaseJSONBufferLock();
             return;
           }
-          /*
-          #ifdef WLED_DEBUG
-            DEBUG_PRINT(F("Incoming WS: "));
-            serializeJson(root,Serial);
-            DEBUG_PRINTLN();
-          #endif
-          */
           if (root["v"] && root.size() == 1) {
             //if the received value is just "{"v":true}", send only to this client
             verboseResponse = true;
@@ -63,15 +56,13 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
           {
             wsLiveClientId = root["lv"] ? client->id() : 0;
           } else {
-            //fileDoc = &doc; // used for applying presets (presets.cpp)
             verboseResponse = deserializeState(root);
-            //fileDoc = nullptr;
             if (!interfaceUpdateCallMode) {
               //special case, only on playlist load, avoid sending twice in rapid succession
               if (millis() - lastInterfaceUpdate > 1700) verboseResponse = false;
             }
           }
-          releaseJSONBufferLock();
+          releaseJSONBufferLock(); // will clean fileDoc
         }
         //update if it takes longer than 300ms until next "broadcast"
         if (verboseResponse && (millis() - lastInterfaceUpdate < 1700 || !interfaceUpdateCallMode)) sendDataWs(client);
@@ -117,7 +108,7 @@ void sendDataWs(AsyncWebSocketClient * client)
     #ifdef WLED_USE_DYNAMIC_JSON
     DynamicJsonDocument doc(JSON_BUFFER_SIZE);
     #else
-    if (!requestJSONBufferLock(16)) return;
+    if (!requestJSONBufferLock(12)) return;
     #endif
 
     JsonObject state = doc.createNestedObject("state");
@@ -131,13 +122,6 @@ void sendDataWs(AsyncWebSocketClient * client)
       releaseJSONBufferLock();
       return; //out of memory
     }
-/*
-    #ifdef WLED_DEBUG
-      DEBUG_PRINT(F("Outgoing WS: "));
-      serializeJson(doc,Serial);
-      DEBUG_PRINTLN();
-    #endif
-*/
     serializeJson(doc, (char *)buffer->get(), len +1);
     releaseJSONBufferLock();
   } 

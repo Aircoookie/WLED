@@ -67,7 +67,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   uint16_t grp = elem["grp"] | seg.grouping;
   uint16_t spc = elem[F("spc")] | seg.spacing;
-  strip.setSegment(id, start, stop, grp, spc);
+	uint16_t of = seg.offset;
 
   uint16_t len = 1;
   if (stop > start) len = stop - start;
@@ -76,9 +76,10 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     int offsetAbs = abs(offset);
     if (offsetAbs > len - 1) offsetAbs %= len;
     if (offset < 0) offsetAbs = len - offsetAbs;
-    seg.offset = offsetAbs;
+    of = offsetAbs;
   }
-  if (stop > start && seg.offset > len -1) seg.offset = len -1;
+  if (stop > start && of > len -1) of = len -1;
+	strip.setSegment(id, start, stop, grp, spc, of);
 
   byte segbri = 0;
   if (getVal(elem["bri"], &segbri)) {
@@ -159,17 +160,19 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   //temporary, strip object gets updated via colorUpdated()
   if (id == strip.getMainSegmentId()) {
+		byte effectPrev = effectCurrent;
     if (getVal(elem["fx"], &effectCurrent, 1, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 1-255 exact value)
-      if (!presetId) unloadPlaylist(); //stop playlist if active and FX changed manually
+      if (!presetId && effectCurrent != effectPrev) unloadPlaylist(); //stop playlist if active and FX changed manually
     }
     effectSpeed = elem[F("sx")] | effectSpeed;
     effectIntensity = elem[F("ix")] | effectIntensity;
     getVal(elem["pal"], &effectPalette, 1, strip.getPaletteCount());
   } else { //permanent
     byte fx = seg.mode;
+		byte fxPrev = fx;
     if (getVal(elem["fx"], &fx, 1, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 1-255 exact value)
       strip.setMode(id, fx);
-      if (!presetId) unloadPlaylist(); //stop playlist if active and FX changed manually
+      if (!presetId && seg.mode != fxPrev) unloadPlaylist(); //stop playlist if active and FX changed manually
     }
     seg.speed = elem[F("sx")] | seg.speed;
     seg.intensity = elem[F("ix")] | seg.intensity;
@@ -345,11 +348,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   usermods.readFromJsonState(root);
 
-  int8_t ledmap = root[F("ledmap")] | -1;
-  if (ledmap >= 0) {
-    //strip.deserializeMap(ledmap); // requires separate JSON buffer
-    loadLedmap = ledmap;
-  }
+  loadLedmap = root[F("ledmap")] | loadLedmap;
 
   byte ps = root[F("psave")];
   if (ps > 0) {
@@ -960,7 +959,7 @@ void serveJson(AsyncWebServerRequest* request)
   #ifdef WLED_USE_DYNAMIC_JSON
   AsyncJsonResponse* response = new AsyncJsonResponse(JSON_BUFFER_SIZE, subJson==6);
   #else
-  if (!requestJSONBufferLock(7)) return;
+  if (!requestJSONBufferLock(17)) return;
   AsyncJsonResponse *response = new AsyncJsonResponse(&doc, subJson==6);
   #endif
 

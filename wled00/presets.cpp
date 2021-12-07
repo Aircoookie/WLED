@@ -27,7 +27,6 @@ bool applyPreset(byte index, byte callMode)
     #else
     if (!requestJSONBufferLock(9)) return false;
     #endif
-
     errorFlag = readObjectFromFileUsingId(filename, index, &doc) ? ERR_NONE : ERR_FS_PLOAD;
     JsonObject fdo = doc.as<JsonObject>();
     if (fdo["ps"] == index) fdo.remove("ps");
@@ -59,7 +58,6 @@ void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
     #else
     if (!requestJSONBufferLock(10)) return;
     #endif
-
     sObj = doc.to<JsonObject>();
     if (pname) sObj["n"] = pname;
 

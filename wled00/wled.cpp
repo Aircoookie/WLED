@@ -286,8 +286,10 @@ void WLED::setup()
   WiFi.onEvent(WiFiEvent);
   #endif
 
-  #ifdef WLED_ENABLE_ADALIGHT // reserve GPIO3 (RX) pin for ADALight
-  if (!pinManager.isPinAllocated(3)) {
+  #ifdef WLED_ENABLE_ADALIGHT
+	//Serial RX (Adalight, Improv, Serial JSON) only possible if GPIO3 unused
+	//Serial TX (Debug, Improv, Serial JSON) only possible if GPIO1 unused
+  if (!pinManager.isPinAllocated(3) && !pinManager.isPinAllocated(1)) {
     Serial.println(F("Ada"));
     pinManager.allocatePin(3,false);
   } else {

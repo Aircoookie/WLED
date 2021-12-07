@@ -385,7 +385,7 @@ void deEEP() {
   #ifdef WLED_USE_DYNAMIC_JSON
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);
   #else
-  if (!requestJSONBufferLock(12)) return;
+  if (!requestJSONBufferLock(8)) return;
   #endif
 
   JsonObject sObj = doc.to<JsonObject>();
