@@ -575,11 +575,10 @@ void decodeIRJson(uint32_t code)
   JsonObject fdo;
   JsonObject jsonCmdObj;
 
-  DEBUG_PRINTLN(F("IR JSON buffer requested."));
   #ifdef WLED_USE_DYNAMIC_JSON
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);
   #else
-  if (!requestJSONBufferLock(6)) return;
+  if (!requestJSONBufferLock(13)) return;
   #endif
 
   sprintf_P(objKey, PSTR("\"0x%lX\":"), (unsigned long)code);
@@ -593,12 +592,12 @@ void decodeIRJson(uint32_t code)
   lastValidCode = 0;
   if (fdo.isNull()) {
     //the received code does not exist
-    releaseJSONBufferLock();
     if (!WLED_FS.exists("/ir.json")) errorFlag = ERR_FS_IRLOAD; //warn if IR file itself doesn't exist
+    releaseJSONBufferLock();
     return;
   }
 
-  cmdStr = fdo["cmd"].as<String>();;
+  cmdStr = fdo["cmd"].as<String>();
   jsonCmdObj = fdo["cmd"]; //object
 
   // command is JSON object
@@ -638,9 +637,9 @@ void decodeIRJson(uint32_t code)
     }
     colorUpdated(CALL_MODE_BUTTON);
   } else if (!jsonCmdObj.isNull()) {
+    // command is JSON object
     deserializeState(jsonCmdObj, CALL_MODE_BUTTON);
   }
-  //fileDoc = nullptr;
   releaseJSONBufferLock();
 }
 
@@ -669,7 +668,8 @@ void handleIR()
       {
         if (results.value != 0) // only print results if anything is received ( != 0 )
         {
-          DEBUG_PRINTF("IR recv: 0x%lX\n", (unsigned long)results.value);
+          if (!pinManager.isPinAllocated(1)) //GPIO 1 - Serial TX pin
+            Serial.printf_P(PSTR("IR recv: 0x%lX\n"), (unsigned long)results.value);
         }
         decodeIR(results.value);
         irrecv->resume();

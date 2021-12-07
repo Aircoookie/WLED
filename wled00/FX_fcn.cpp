@@ -442,14 +442,14 @@ void WS2812FX::setBrightness(uint8_t b) {
   if (gammaCorrectBri) b = gamma8(b);
   if (_brightness == b) return;
   _brightness = b;
-  _segment_index = 0;
   if (_brightness == 0) { //unfreeze all segments on power off
     for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
     {
       _segments[i].setOption(SEG_OPTION_FREEZE, false);
     }
   }
-  if (SEGENV.next_time > millis() + 22 && millis() - _lastShow > MIN_SHOW_DELAY) show();//apply brightness change immediately if no refresh soon
+	unsigned long t = millis();
+  if (_segment_runtimes[0].next_time > t + 22 && t - _lastShow > MIN_SHOW_DELAY) show(); //apply brightness change immediately if no refresh soon
 }
 
 uint8_t WS2812FX::getMode(void) {
@@ -701,14 +701,35 @@ bool WS2812FX::checkSegmentAlignment() {
 }
 
 //After this function is called, setPixelColor() will use that segment (offsets, grouping, ... will apply)
+//Note: If called in an interrupt (e.g. JSON API), it must be reset with "setPixelColor(255)",
+//otherwise it can lead to a crash on ESP32 because _segment_index is modified while in use by the main thread
+#ifdef ARDUINO_ARCH_ESP32
+uint8_t _segment_index_prev = 0;
+uint16_t _virtualSegmentLength_prev = 0;
+bool _ps_set = false;
+#endif
+
 void WS2812FX::setPixelSegment(uint8_t n)
 {
   if (n < MAX_NUM_SEGMENTS) {
+		#ifdef ARDUINO_ARCH_ESP32
+		if (!_ps_set) {
+			_segment_index_prev = _segment_index;
+			_virtualSegmentLength_prev = _virtualSegmentLength;
+			_ps_set = true;
+		}
+		#endif
     _segment_index = n;
-    _virtualSegmentLength = SEGMENT.length();
+    _virtualSegmentLength = SEGMENT.virtualLength();
   } else {
-    _segment_index = 0;
-    _virtualSegmentLength = 0;
+		_virtualSegmentLength = 0;
+		#ifdef ARDUINO_ARCH_ESP32
+		if (_ps_set) {
+			_segment_index = _segment_index_prev;
+			_virtualSegmentLength = _virtualSegmentLength_prev;
+			_ps_set = false;
+		}
+		#endif
   }
 }
 
@@ -735,13 +756,13 @@ void WS2812FX::setTransition(uint16_t t)
 
 void WS2812FX::setTransitionMode(bool t)
 {
-  unsigned long waitMax = millis() + 20; //refresh after 20 ms if transition enabled
+	unsigned long waitMax = millis() + 20; //refresh after 20 ms if transition enabled
   for (uint16_t i = 0; i < MAX_NUM_SEGMENTS; i++)
   {
-    _segment_index = i;
-    SEGMENT.setOption(SEG_OPTION_TRANSITIONAL, t);
+    _segments[i].setOption(SEG_OPTION_TRANSITIONAL, t);
 
-    if (t && SEGMENT.mode == FX_MODE_STATIC && SEGENV.next_time > waitMax) SEGENV.next_time = waitMax;
+    if (t && _segments[i].mode == FX_MODE_STATIC && _segment_runtimes[i].next_time > waitMax)
+			_segment_runtimes[i].next_time = waitMax;
   }
 }
 
@@ -1097,7 +1118,7 @@ void WS2812FX::deserializeMap(uint8_t n) {
   #ifdef WLED_USE_DYNAMIC_JSON
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);
   #else
-  if (!requestJSONBufferLock(5)) return;
+  if (!requestJSONBufferLock(7)) return;
   #endif
 
   DEBUG_PRINT(F("Reading LED map from "));

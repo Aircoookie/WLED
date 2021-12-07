@@ -161,14 +161,14 @@
 #define FX_MODE_COMET                   41
 #define FX_MODE_FIREWORKS               42
 #define FX_MODE_RAIN                    43
-#define FX_MODE_TETRIX                  44
+#define FX_MODE_TETRIX                  44  //was Merry Christmas prior to 0.12.0 (use "Chase 2" with Red/Green)
 #define FX_MODE_FIRE_FLICKER            45
 #define FX_MODE_GRADIENT                46
 #define FX_MODE_LOADING                 47
 #define FX_MODE_POLICE                  48  // candidate for removal (after below three)
-#define FX_MODE_POLICE_ALL              49  // candidate for removal
+#define FX_MODE_FAIRY                   49  //was Police All prior to 0.13.0-b6 (use "Two Dots" with Red/Blue and full intensity)
 #define FX_MODE_TWO_DOTS                50
-#define FX_MODE_TWO_AREAS               51  // candidate for removal
+#define FX_MODE_FAIRYTWINKLE            51  //was Two Areas prior to 0.13.0-b6 (use "Two Dots" with full intensity)
 #define FX_MODE_RUNNING_DUAL            52
 #define FX_MODE_HALLOWEEN               53  // candidate for removal
 #define FX_MODE_TRICOLOR_CHASE          54
@@ -550,9 +550,9 @@ class WS2812FX {
       _mode[FX_MODE_GRADIENT]                = &WS2812FX::mode_gradient;
       _mode[FX_MODE_LOADING]                 = &WS2812FX::mode_loading;
       _mode[FX_MODE_POLICE]                  = &WS2812FX::mode_police;
-      _mode[FX_MODE_POLICE_ALL]              = &WS2812FX::mode_police_all;
+      _mode[FX_MODE_FAIRY]                   = &WS2812FX::mode_fairy;
       _mode[FX_MODE_TWO_DOTS]                = &WS2812FX::mode_two_dots;
-      _mode[FX_MODE_TWO_AREAS]               = &WS2812FX::mode_two_areas;
+      _mode[FX_MODE_FAIRYTWINKLE]            = &WS2812FX::mode_fairytwinkle;
       _mode[FX_MODE_RUNNING_DUAL]            = &WS2812FX::mode_running_dual;
       _mode[FX_MODE_HALLOWEEN]               = &WS2812FX::mode_halloween;
       _mode[FX_MODE_TRICOLOR_CHASE]          = &WS2812FX::mode_tricolor_chase;
@@ -773,9 +773,9 @@ class WS2812FX {
       mode_gradient(void),
       mode_loading(void),
       mode_police(void),
-      mode_police_all(void),
+      mode_fairy(void),
       mode_two_dots(void),
-      mode_two_areas(void),
+      mode_fairytwinkle(void),
       mode_running_dual(void),
       mode_bicolor_chase(void),
       mode_tricolor_chase(void),
@@ -878,7 +878,7 @@ class WS2812FX {
       chase(uint32_t, uint32_t, uint32_t, bool),
       gradient_base(bool),
       ripple_base(bool),
-      police_base(uint32_t, uint32_t, uint16_t),
+      police_base(uint32_t, uint32_t),
       running(uint32_t, uint32_t, bool theatre=false),
       tricolor_chase(uint32_t, uint32_t),
       twinklefox_base(bool),
@@ -993,9 +993,9 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Gradient",
 "Loading",
 "Police@!,Width;;",
-"Police All@!,Width;;",
+"Fairy",
 "Two Dots@!,Dot size;1,2,Bg;!",
-"Two Areas@!,Size;1,2,Bg;!",
+"Fairy Twinkle",
 "Running Dual",
 "Halloween",
 "Chase 3@!,Size;1,2,3;",

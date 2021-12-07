@@ -420,7 +420,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     #ifdef WLED_USE_DYNAMIC_JSON
     DynamicJsonDocument doc(JSON_BUFFER_SIZE);
     #else
-    if (!requestJSONBufferLock(11)) return;
+    if (!requestJSONBufferLock(5)) return;
     #endif
 
     JsonObject um = doc.createNestedObject("um");

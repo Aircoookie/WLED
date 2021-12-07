@@ -1216,12 +1216,13 @@ uint16_t WS2812FX::mode_loading(void) {
 
 
 //American Police Light with all LEDs Red and Blue 
-uint16_t WS2812FX::police_base(uint32_t color1, uint32_t color2, uint16_t width)
+uint16_t WS2812FX::police_base(uint32_t color1, uint32_t color2)
 {
   uint16_t delay = 1 + (FRAMETIME<<3) / SEGLEN;  // longer segments should change faster
   uint32_t it = now / map(SEGMENT.speed, 0, 255, delay<<4, delay);
   uint16_t offset = it % SEGLEN;
   
+	uint16_t width = ((SEGLEN*(SEGMENT.intensity+1))>>9); //max width is half the strip
   if (!width) width = 1;
   for (uint16_t i = 0; i < width; i++) {
     uint16_t indexR = (offset + i) % SEGLEN;
@@ -1233,26 +1234,11 @@ uint16_t WS2812FX::police_base(uint32_t color1, uint32_t color2, uint16_t width)
 }
 
 
-//American Police Light with all LEDs Red and Blue 
-uint16_t WS2812FX::mode_police_all()
-{
-  return police_base(RED, BLUE, (SEGLEN>>1));
-}
-
-
 //Police Lights Red and Blue 
 uint16_t WS2812FX::mode_police()
 {
   fill(SEGCOLOR(1));
-  return police_base(RED, BLUE, ((SEGLEN*(SEGMENT.intensity+1))>>9)); // max width is half the strip
-}
-
-
-//Police All with custom colors
-uint16_t WS2812FX::mode_two_areas()
-{
-  fill(SEGCOLOR(2));
-  return police_base(SEGCOLOR(0), SEGCOLOR(1), ((SEGLEN*(SEGMENT.intensity+1))>>9)); // max width is half the strip
+  return police_base(RED, BLUE);
 }
 
 
@@ -1262,7 +1248,142 @@ uint16_t WS2812FX::mode_two_dots()
   fill(SEGCOLOR(2));
   uint32_t color2 = (SEGCOLOR(1) == SEGCOLOR(2)) ? SEGCOLOR(0) : SEGCOLOR(1);
 
-  return police_base(SEGCOLOR(0), color2, ((SEGLEN*(SEGMENT.intensity+1))>>9)); // max width is half the strip
+  return police_base(SEGCOLOR(0), color2);
+}
+
+
+/*
+ * Fairy, inspired by https://www.youtube.com/watch?v=zeOw5MZWq24
+ */
+//4 bytes
+typedef struct Flasher {
+  uint16_t stateStart;
+  uint8_t stateDur;
+	bool stateOn;
+} flasher;
+
+#define FLASHERS_PER_ZONE 6
+#define MAX_SHIMMER 92
+
+uint16_t WS2812FX::mode_fairy() {
+	//set every pixel to a 'random' color from palette (using seed so it doesn't change between frames)
+	uint16_t PRNG16 = 5100 + _segment_index;
+	for (uint16_t i = 0; i < SEGLEN; i++) {
+		PRNG16 = (uint16_t)(PRNG16 * 2053) + 1384; //next 'random' number
+		setPixelColor(i, color_from_palette(PRNG16 >> 8, false, false, 0));
+	}
+
+	//amount of flasher pixels depending on intensity (0: none, 255: every LED)
+	if (SEGMENT.intensity == 0) return FRAMETIME;
+	uint8_t flasherDistance = ((255 - SEGMENT.intensity) / 28) +1; //1-10
+	uint16_t numFlashers = (SEGLEN / flasherDistance) +1;
+	
+	uint16_t dataSize = sizeof(flasher) * numFlashers;
+  if (!SEGENV.allocateData(dataSize)) return FRAMETIME; //allocation failed
+	Flasher* flashers = reinterpret_cast<Flasher*>(SEGENV.data);
+	uint16_t now16 = now & 0xFFFF;
+
+	//Up to 11 flashers in one brightness zone, afterwards a new zone for every 6 flashers
+	uint16_t zones = numFlashers/FLASHERS_PER_ZONE;
+	if (!zones) zones = 1;
+	uint8_t flashersInZone = numFlashers/zones;
+	uint8_t flasherBri[FLASHERS_PER_ZONE*2 -1];
+
+	for (uint16_t z = 0; z < zones; z++) {
+		uint16_t flasherBriSum = 0;
+		uint16_t firstFlasher = z*flashersInZone;
+		if (z == zones-1) flashersInZone = numFlashers-(flashersInZone*(zones-1));
+
+		for (uint16_t f = firstFlasher; f < firstFlasher + flashersInZone; f++) {
+			uint16_t stateTime = now16 - flashers[f].stateStart;
+			//random on/off time reached, switch state
+			if (stateTime > flashers[f].stateDur * 10) {
+				flashers[f].stateOn = !flashers[f].stateOn;
+				if (flashers[f].stateOn) {
+					flashers[f].stateDur = 12 + random8(12 + ((255 - SEGMENT.speed) >> 2)); //*10, 250ms to 1250ms
+				} else {
+					flashers[f].stateDur = 20 + random8(6 + ((255 - SEGMENT.speed) >> 2)); //*10, 250ms to 1250ms
+				}
+				//flashers[f].stateDur = 51 + random8(2 + ((255 - SEGMENT.speed) >> 1));
+				flashers[f].stateStart = now16;
+				if (stateTime < 255) {
+					flashers[f].stateStart -= 255 -stateTime; //start early to get correct bri
+					flashers[f].stateDur += 26 - stateTime/10;
+					stateTime = 255 - stateTime;
+				} else {
+					stateTime = 0;
+				}
+			}
+			if (stateTime > 255) stateTime = 255; //for flasher brightness calculation, fades in first 255 ms of state
+			//flasherBri[f - firstFlasher] = (flashers[f].stateOn) ? 255-gamma8((510 - stateTime) >> 1) : gamma8((510 - stateTime) >> 1);
+			flasherBri[f - firstFlasher] = (flashers[f].stateOn) ? stateTime : 255 - (stateTime >> 0);
+			flasherBriSum += flasherBri[f - firstFlasher];
+		}
+		//dim factor, to create "shimmer" as other pixels get less voltage if a lot of flashers are on
+		uint8_t avgFlasherBri = flasherBriSum / flashersInZone;
+		uint8_t globalPeakBri = 255 - ((avgFlasherBri * MAX_SHIMMER) >> 8); //183-255, suitable for 1/5th of LEDs flashers
+
+		for (uint16_t f = firstFlasher; f < firstFlasher + flashersInZone; f++) {
+			uint8_t bri = (flasherBri[f - firstFlasher] * globalPeakBri) / 255;
+			PRNG16 = (uint16_t)(PRNG16 * 2053) + 1384; //next 'random' number
+			uint16_t flasherPos = f*flasherDistance;
+			setPixelColor(flasherPos, color_blend(SEGCOLOR(1), color_from_palette(PRNG16 >> 8, false, false, 0), bri));
+			for (uint16_t i = flasherPos+1; i < flasherPos+flasherDistance && i < SEGLEN; i++) {
+				PRNG16 = (uint16_t)(PRNG16 * 2053) + 1384; //next 'random' number
+				setPixelColor(i, color_from_palette(PRNG16 >> 8, false, false, 0, globalPeakBri));
+			}
+		}
+	}
+	return FRAMETIME;
+}
+
+
+/*
+ * Fairytwinkle. Like Colortwinkle, but starting from all lit and not relying on getPixelColor
+ * Warning: Uses 4 bytes of segment data per pixel
+ */
+uint16_t WS2812FX::mode_fairytwinkle() {
+	uint16_t dataSize = sizeof(flasher) * SEGLEN;
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+	Flasher* flashers = reinterpret_cast<Flasher*>(SEGENV.data);
+	uint16_t now16 = now & 0xFFFF;
+	uint16_t PRNG16 = 5100 + _segment_index;
+
+	uint16_t riseFallTime = 400 + (255-SEGMENT.speed)*3;
+	uint16_t maxDur = riseFallTime/100 + ((255 - SEGMENT.intensity) >> 2) + 13 + ((255 - SEGMENT.intensity) >> 1);
+
+	for (uint16_t f = 0; f < SEGLEN; f++) {
+		uint16_t stateTime = now16 - flashers[f].stateStart;
+		//random on/off time reached, switch state
+		if (stateTime > flashers[f].stateDur * 100) {
+			flashers[f].stateOn = !flashers[f].stateOn;
+			bool init = !flashers[f].stateDur;
+			if (flashers[f].stateOn) {
+				flashers[f].stateDur = riseFallTime/100 + ((255 - SEGMENT.intensity) >> 2) + random8(12 + ((255 - SEGMENT.intensity) >> 1)) +1;
+			} else {
+				flashers[f].stateDur = riseFallTime/100 + random8(3 + ((255 - SEGMENT.speed) >> 6)) +1;
+			}
+			flashers[f].stateStart = now16;
+			stateTime = 0;
+			if (init) {
+				flashers[f].stateStart -= riseFallTime; //start lit
+				flashers[f].stateDur = riseFallTime/100 + random8(12 + ((255 - SEGMENT.intensity) >> 1)) +5; //fire up a little quicker
+				stateTime = riseFallTime;
+			}
+		}
+		if (flashers[f].stateOn && flashers[f].stateDur > maxDur) flashers[f].stateDur = maxDur; //react more quickly on intensity change
+		if (stateTime > riseFallTime) stateTime = riseFallTime; //for flasher brightness calculation, fades in first 255 ms of state
+		uint8_t fadeprog = 255 - ((stateTime * 255) / riseFallTime);
+		uint8_t flasherBri = (flashers[f].stateOn) ? 255-gamma8(fadeprog) : gamma8(fadeprog);
+		uint16_t lastR = PRNG16;
+		uint16_t diff = 0;
+		while (diff < 0x4000) { //make sure colors of two adjacent LEDs differ enough
+			PRNG16 = (uint16_t)(PRNG16 * 2053) + 1384; //next 'random' number
+			diff = (PRNG16 > lastR) ? PRNG16 - lastR : lastR - PRNG16;
+		}
+		setPixelColor(f, color_blend(SEGCOLOR(1), color_from_palette(PRNG16 >> 8, false, false, 0), flasherBri));
+	}
+  return FRAMETIME;
 }
 
 
