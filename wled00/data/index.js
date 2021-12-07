@@ -286,7 +286,7 @@ function showErrorToast()
 	showToast('Connection to light failed!', true);
 }
 
-function clearErrorToast() {gId("toast").className = gId("toast").className.replace("error", "");}
+function clearErrorToast() {gId("toast").classList.remove("error");}
 
 function getRuntimeStr(rt)
 {
@@ -498,8 +498,7 @@ function loadFXData(callback = null)
 		clearErrorToast();
 		fxdata = json||[];
 		// add default value for Solid
-		fxdata.shift();
-		fxdata.unshift("@;!;");
+		fxdata.shift().unshift("@;!;");
 	})
 	.catch(function (error) {
 		fxdata = [];
@@ -547,9 +546,9 @@ function populatePresets(fromls)
 		cn += `<div class="pres" id="p${i}o">`;
 		if (cfg.comp.pid) cn += `<div class="pid">${i}</div>`;
 		cn += `<div class="pname" onclick="setPreset(${i})">${isPlaylist(i)?"<i class='icons btn-icon'>&#xe139;</i>":""}${pName(i)}</div>
-			<i class="icons e-icon flr ${expanded[i+100] ? "exp":""}" id="sege${i+100}" onclick="expand(${i+100})">&#xe395;</i>
-			<div class="segin" id="seg${i+100}"></div>
-		</div>`;
+	<i class="icons e-icon flr ${expanded[i+100] ? "exp":""}" id="sege${i+100}" onclick="expand(${i+100})">&#xe395;</i>
+	<div class="segin" id="seg${i+100}"></div>
+</div>`;
     	pNum++;
 	}
 
@@ -832,15 +831,9 @@ function genPalPrevCss(id)
 		} else {
 			if (selColors) {
 				let e = element[1] - 1;
-				//if (Array.isArray(selColors[e])) {
-					r = selColors[e][0];
-					g = selColors[e][1];
-					b = selColors[e][2];
-				//} else {
-				//	r = (selColors[e]>>16) & 0xFF;
-				//	g = (selColors[e]>> 8) & 0xFF;
-				//	b = (selColors[e]    ) & 0xFF;
-				//}
+				r = selColors[e][0];
+				g = selColors[e][1];
+				b = selColors[e][2];
 			}
 		}
 		if (index === false) {
