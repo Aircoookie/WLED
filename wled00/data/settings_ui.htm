@@ -172,7 +172,7 @@
 		}
 		function H()
 		{
-			window.open("https://github.com/Aircoookie/WLED/wiki/Settings#user-interface-settings");
+			window.open("https://kno.wled.ge/features/settings/#user-interface-settings");
 		}
 		function B()
 		{
@@ -225,7 +225,7 @@
 		<span id="lserr" style="color:red; display:none">&#9888; Could not access local storage. Make sure it is enabled in your browser.</span><hr>
 		</div>
 		<h2>Web Setup</h2>
-		Server description: <input name="DS" maxlength="32"><br>
+		Server description: <input type="text" name="DS" maxlength="32"><br>
     	Sync button toggles both send and receive: <input type="checkbox" name="ST"><br>
     	Enable simplified UI: <input type="checkbox" name="SU"><br>
 		<i>The following UI customization settings are unique both to the WLED device and this browser.<br>
@@ -243,8 +243,8 @@
 		<span id="idonthateyou" style="display:none"><i>Why would you? </i>&#x1F97A;<br></span>
 		<span class="l"></span>: <input type="number" min=0.0 max=1.0 step=0.01 id="theme_alpha_tab" class="agi"><br>
 		<span class="l"></span>: <input type="number" min=0.0 max=1.0 step=0.01 id="theme_alpha_bg" class="agi"><br>
-		<span class="l"></span>: <input id="theme_color_bg" maxlength="9" class="agi"><br>
-		<span class="l">BG image URL</span>: <input id="theme_bg_url" class="agi" oninput="checkRandomBg()"><br>
+		<span class="l"></span>: <input type="text" id="theme_color_bg" maxlength="9" class="agi"><br>
+		<span class="l">BG image URL</span>: <input type="text" id="theme_bg_url" class="agi" oninput="checkRandomBg()"><br>
 		<span class="l">Random BG image</span>: <input type="checkbox" id="theme_bg_random" class="agi cb" onchange="setRandomBg()"><br>
 		<input id="theme_base" class="agi" style="display:none">
 		<span class="l"></span>: <input type="checkbox" id="comp_css" class="agi cb"><br>

@@ -325,9 +325,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     macroCountdown = request->arg(F("MC")).toInt();
     macroNl = request->arg(F("MN")).toInt();
     for (uint8_t i=0; i<WLED_MAX_BUTTONS; i++) {
-      char mp[4] = "MP"; mp[2] = 48+i; mp[3] = 0; // short
-      char ml[4] = "ML"; ml[2] = 48+i; ml[3] = 0; // long
-      char md[4] = "MD"; md[2] = 48+i; md[3] = 0; // double
+      char mp[4] = "MP"; mp[2] = (i<10?48:55)+i; mp[3] = 0; // short
+      char ml[4] = "ML"; ml[2] = (i<10?48:55)+i; ml[3] = 0; // long
+      char md[4] = "MD"; md[2] = (i<10?48:55)+i; md[3] = 0; // double
       //if (!request->hasArg(mp)) break;
       macroButton[i] = request->arg(mp).toInt();      // these will default to 0 if not present
       macroLongPress[i] = request->arg(ml).toInt();

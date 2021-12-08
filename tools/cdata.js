@@ -113,7 +113,7 @@ function writeHtmlGzipped(sourceFile, resultFile, page) {
   console.info("Reading " + sourceFile);
   new inliner(sourceFile, function (error, html) {
     console.info("Inlined " + html.length + " characters");
-    html = filter(html/*.replace("</head>","<script src=\"iro.js\"></script><script src=\"rangetouch.js\"></script></head>")*/, "html-minify-ui");
+    html = filter(html, "html-minify-ui");
     console.info("Minified to " + html.length + " characters");
 
     if (error) {
@@ -252,8 +252,6 @@ writeChunks(
     {
       file: "style.css",
       name: "PAGE_settingsCss",
-      prepend: "=====(<style>",
-      append: "</style>)=====",
       method: "gzip",
       filter: "css-minify",
       mangle: (str) =>
@@ -271,14 +269,10 @@ writeChunks(
     {
       file: "settings_wifi.htm",
       name: "PAGE_settings_wifi",
-      prepend: "=====(",
-      append: ")=====",
       method: "gzip",
       filter: "html-minify",
       mangle: (str) =>
         str
-          //.replace(/\<link rel="stylesheet".*\>/gms, "")
-          //.replace(/\<style\>.*\<\/style\>/gms, "%CSS%%SCSS%")
           .replace(
             /function GetV().*\<\/script\>/gms,
             "</script><script src=\"settings.js?p=1\"></script>"
@@ -287,14 +281,10 @@ writeChunks(
     {
       file: "settings_leds.htm",
       name: "PAGE_settings_leds",
-      prepend: "=====(",
-      append: ")=====",
       method: "gzip",
       filter: "html-minify",
       mangle: (str) =>
         str
-          //.replace(/\<link rel="stylesheet".*\>/gms, "")
-          //.replace(/\<style\>.*\<\/style\>/gms, "%SCSS%")
           .replace(
             /function GetV().*\<\/script\>/gms,
             "</script><script src=\"settings.js?p=2\"></script>"
@@ -303,14 +293,10 @@ writeChunks(
     {
       file: "settings_dmx.htm",
       name: "PAGE_settings_dmx",
-      prepend: "=====(",
-      append: ")=====",
       method: "gzip",
       filter: "html-minify",
       mangle: (str) =>
         str
-          //.replace(/\<link rel="stylesheet".*\>/gms, "")
-          //.replace(/\<style\>.*\<\/style\>/gms, "%CSS%%SCSS%")
           .replace(
             /function GetV().*\<\/script\>/gms,
             "</script><script src=\"settings.js?p=7\"></script>"
@@ -319,14 +305,10 @@ writeChunks(
     {
       file: "settings_ui.htm",
       name: "PAGE_settings_ui",
-      prepend: "=====(",
-      append: ")=====",
       method: "gzip",
       filter: "html-minify",
       mangle: (str) =>
         str
-          //.replace(/\<link rel="stylesheet".*\>/gms, "")
-          //.replace(/\<style\>.*\<\/style\>/gms, "%CSS%%SCSS%")
           .replace(
             /function GetV().*\<\/script\>/gms,
             "</script><script src=\"settings.js?p=3\"></script>"
@@ -335,14 +317,10 @@ writeChunks(
     {
       file: "settings_sync.htm",
       name: "PAGE_settings_sync",
-      prepend: "=====(",
-      append: ")=====",
       method: "gzip",
       filter: "html-minify",
       mangle: (str) =>
         str
-          //.replace(/\<link rel="stylesheet".*\>/gms, "")
-          //.replace(/\<style\>.*\<\/style\>/gms, "%CSS%%SCSS%")
           .replace(
             /function GetV().*\<\/script\>/gms,
             "</script><script src=\"settings.js?p=4\"></script>"
@@ -351,14 +329,10 @@ writeChunks(
     {
       file: "settings_time.htm",
       name: "PAGE_settings_time",
-      prepend: "=====(",
-      append: ")=====",
       method: "gzip",
       filter: "html-minify",
       mangle: (str) =>
         str
-          //.replace(/\<link rel="stylesheet".*\>/gms, "")
-          //.replace(/\<style\>.*\<\/style\>/gms, "%CSS%%SCSS%")
           .replace(
             /function GetV().*\<\/script\>/gms,
             "</script><script src=\"settings.js?p=5\"></script>"
@@ -367,14 +341,10 @@ writeChunks(
     {
       file: "settings_sec.htm",
       name: "PAGE_settings_sec",
-      prepend: "=====(",
-      append: ")=====",
       method: "gzip",
       filter: "html-minify",
       mangle: (str) =>
         str
-          //.replace(/\<link rel="stylesheet".*\>/gms, "")
-          //.replace(/\<style\>.*\<\/style\>/gms, "%CSS%%SCSS%")
           .replace(
             /function GetV().*\<\/script\>/gms,
             "</script><script src=\"settings.js?p=6\"></script>"
@@ -383,14 +353,10 @@ writeChunks(
     {
       file: "settings_um.htm",
       name: "PAGE_settings_um",
-      prepend: "=====(",
-      append: ")=====",
       method: "gzip",
       filter: "html-minify",
       mangle: (str) =>
         str
-          //.replace(/\<link rel="stylesheet".*\>/gms, "")
-          //.replace(/\<style\>.*\<\/style\>/gms, "%CSS%%SCSS%")
           .replace(
             /function GetV().*\<\/script\>/gms,
             "</script><script src=\"settings.js?p=8\"></script>"
@@ -406,8 +372,6 @@ writeChunks(
     {
       file: "usermod.htm",
       name: "PAGE_usermod",
-      prepend: "=====(",
-      append: ")=====",
       method: "gzip",
       filter: "html-minify",
       mangle: (str) =>
@@ -440,40 +404,30 @@ const char PAGE_dmxmap[] PROGMEM = R"=====()=====";
     {
       file: "update.htm",
       name: "PAGE_update",
-      prepend: "=====(",
-      append: ")=====",
       method: "gzip",
       filter: "html-minify",
     },
     {
       file: "welcome.htm",
       name: "PAGE_welcome",
-      prepend: "=====(",
-      append: ")=====",
       method: "gzip",
       filter: "html-minify",
     },
     {
       file: "liveview.htm",
       name: "PAGE_liveview",
-      prepend: "=====(",
-      append: ")=====",
       method: "gzip",
       filter: "html-minify",
     },
     {
       file: "liveviewws.htm",
       name: "PAGE_liveviewws",
-      prepend: "=====(",
-      append: ")=====",
       method: "gzip",
       filter: "html-minify",
     },
     {
       file: "404.htm",
       name: "PAGE_404",
-      prepend: "=====(",
-      append: ")=====",
       method: "gzip",
       filter: "html-minify",
     },

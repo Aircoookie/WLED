@@ -137,3 +137,15 @@ td {
     font-size: 16px;
   }
 }
+
+@media screen and (max-width: 480px) {
+  input[type="checkbox"] {
+    transform: scale(1);
+  }  
+  input[type="number"].s {
+    width: 40px;
+  }
+  input[type="number"].xs {
+    width: 32px;
+  }
+}

@@ -6,14 +6,8 @@
 	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
 	<title>WiFi Settings</title>
 	<script>
-		function H()
-		{
-			window.open("https://github.com/Aircoookie/WLED/wiki/Settings#wifi-settings");
-		}
-		function B()
-		{
-			window.open("/settings","_self");
-		}
+		function H(){window.open("https://kno.wled.ge/features/settings/#wifi-settings");}
+		function B(){window.open("/settings","_self");}
 		function GetV()
 		{
 			//values injected by server while sending HTML
@@ -29,7 +23,7 @@
 		</div>
 		<h2>WiFi setup</h2>
 		<h3>Connect to existing network</h3>
-		Network name (SSID, empty to not connect): <br><input name="CS" maxlength="32"><br>
+		Network name (SSID, empty to not connect): <br><input type="text" name="CS" maxlength="32"><br>
 		Network password: <br> <input type="password" name="CP" maxlength="63"><br>
 		Static IP (leave at 0.0.0.0 for DHCP):<br>
 		<input name="I0" type="number" class="s" min="0" max="255" required> .
@@ -47,10 +41,10 @@
 		<input name="S2" type="number" class="s" min="0" max="255" required> .
 		<input name="S3" type="number" class="s" min="0" max="255" required><br>
 		mDNS address (leave empty for no mDNS):<br/>
-		http:// <input name="CM" maxlength="32"> .local<br>
+		http:// <input type="text" name="CM" maxlength="32"> .local<br>
 		Client IP: <span class="sip"> Not connected </span> <br>
 		<h3>Configure Access Point</h3>
-		AP SSID (leave empty for no AP):<br> <input name="AS" maxlength="32"><br>
+		AP SSID (leave empty for no AP):<br> <input type="text" name="AS" maxlength="32"><br>
 		Hide AP name: <input type="checkbox" name="AH"><br>
 		AP password (leave empty for open):<br> <input type="password" name="AP" maxlength="63" pattern="(.{8,63})|()" title="Empty or min. 8 characters"><br>
 		Access Point WiFi channel: <input name="AC" type="number" class="xs" min="1" max="13" required><br>

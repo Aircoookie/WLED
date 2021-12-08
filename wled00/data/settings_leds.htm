@@ -8,18 +8,10 @@
 	<script>
     var d=document,laprev=55,maxB=1,maxM=4000,maxPB=4096,maxL=1333,maxLbquot=0; //maximum bytes for LED allocation: 4kB for 8266, 32kB for 32
 		var customStarts=false,startsDirty=[];
-    function H()
-		{
-			window.open("https://kno.wled.ge/features/settings/#led-settings");
-		}
-		function B()
-		{
-			window.open("/settings","_self");
-    }
+    function H(){window.open("https://kno.wled.ge/features/settings/#led-settings");}
+		function B(){window.open("/settings","_self");}
     function gId(n){return d.getElementById(n);}
-    function off(n){
-      d.getElementsByName(n)[0].value = -1;
-    }
+    function off(n){d.getElementsByName(n)[0].value = -1;}
     var timeout;
     function showToast(text, error = false)
     {
@@ -313,7 +305,7 @@ ${i+1}:
 <option value="80">DDP RGB (network)</option>
 <!--option value="81">E1.31 RGB (network)</option-->
 <!--option value="82">ArtNet RGB (network)</option-->
-</select>&nbsp;
+</select><br>
 <div id="co${i}" style="display:inline">Color Order:
 <select name="CO${i}">
 <option value="0">GRB</option>
@@ -322,8 +314,7 @@ ${i+1}:
 <option value="3">RBG</option>
 <option value="4">BGR</option>
 <option value="5">GBR</option>
-</select></div>
-<br>
+</select><br></div>
 <span id="psd${i}">Start:</span> <input type="number" name="LS${i}" id="ls${i}" class="l starts" min="0" max="8191" value="${lastEnd(i)}" oninput="startsDirty[${i}]=true;UI();" required />&nbsp;
 <div id="dig${i}c" style="display:inline">Length: <input type="number" name="LC${i}" class="l" min="1" max="${maxPB}" value="1" required oninput="UI()" /></div>
 <br>
