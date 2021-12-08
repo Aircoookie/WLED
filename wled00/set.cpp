@@ -153,8 +153,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     rlyMde = (bool)request->hasArg(F("RM"));
 
     for (uint8_t i=0; i<WLED_MAX_BUTTONS; i++) {
-      char bt[4] = "BT"; bt[2] = 48+i; bt[3] = 0; // button pin
-      char be[4] = "BE"; be[2] = 48+i; be[3] = 0; // button type
+      char bt[4] = "BT"; bt[2] = (i<10?48:55)+i; bt[3] = 0; // button pin (use A,B,C,... if WLED_MAX_BUTTONS>10)
+      char be[4] = "BE"; be[2] = (i<10?48:55)+i; be[3] = 0; // button type (use A,B,C,... if WLED_MAX_BUTTONS>10)
       int hw_btn_pin = request->arg(bt).toInt();
       if (pinManager.allocatePin(hw_btn_pin,false,PinOwner::Button)) {
         btnPin[i] = hw_btn_pin;
@@ -341,9 +341,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     macroCountdown = request->arg(F("MC")).toInt();
     macroNl = request->arg(F("MN")).toInt();
     for (uint8_t i=0; i<WLED_MAX_BUTTONS; i++) {
-      char mp[4] = "MP"; mp[2] = 48+i; mp[3] = 0; // short
-      char ml[4] = "ML"; ml[2] = 48+i; ml[3] = 0; // long
-      char md[4] = "MD"; md[2] = 48+i; md[3] = 0; // double
+      char mp[4] = "MP"; mp[2] = (i<10?48:55)+i; mp[3] = 0; // short
+      char ml[4] = "ML"; ml[2] = (i<10?48:55)+i; ml[3] = 0; // long
+      char md[4] = "MD"; md[2] = (i<10?48:55)+i; md[3] = 0; // double
       //if (!request->hasArg(mp)) break;
       macroButton[i] = request->arg(mp).toInt();      // these will default to 0 if not present
       macroLongPress[i] = request->arg(ml).toInt();
