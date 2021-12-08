@@ -245,7 +245,7 @@
       // memory usage and warnings
       gId('m0').innerHTML = memu;
       bquot = memu / maxM * 100;
-      gId('dbar').style.background = `linear-gradient(90deg, ${bquot > 60 ? (bquot > 90 ? "red":"orange"):"#ccc"} 0 ${bquot}%%, #444 ${bquot}%% 100%%)`;
+      gId('dbar').style.background = `linear-gradient(90deg, ${bquot > 60 ? (bquot > 90 ? "red":"orange"):"#ccc"} 0 ${bquot}%, #444 ${bquot}% 100%)`;
       gId('ledwarning').style.display = (maxLC > Math.min(maxPB,800) || bquot > 80) ? 'inline':'none';
       gId('ledwarning').style.color = (maxLC > Math.max(maxPB,800) || bquot > 100) ? 'red':'orange';
       gId('wreason').innerHTML = (bquot > 80) ? "80% of max. LED memory" +(bquot>100 ? ` (<b>ERROR: Using over ${maxM}B!</b>)` : "") : "800 LEDs per output";
@@ -525,7 +525,6 @@ ${i+1}:
     <option value=8>JSON remote</option>
     </select><span style="cursor: pointer;" onclick="off('IR')">&nbsp;&#215;</span><br>
     <div id="json" style="display:none;">JSON file: <input type="file" name="data" accept=".json"> <input type="button" value="Upload" onclick="uploadFile('/ir.json');"><br></div>
-    <div id="toast"></div>
     <a href="https://kno.wled.ge/interfaces/infrared/" target="_blank">IR info</a><br>
     Relay GPIO: <input type="number" min="-1" max="33" name="RL" onchange="UI()" class="xs"> Invert <input type="checkbox" name="RM"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#215;</span><br>
     <hr style="width:260px">
@@ -536,7 +535,7 @@ ${i+1}:
     <br><br>
 		Use Gamma correction for color: <input type="checkbox" name="GC"> (strongly recommended)<br>
 		Use Gamma correction for brightness: <input type="checkbox" name="GB"> (not recommended)<br><br>
-		Brightness factor: <input name="BF" type="number" class="m" min="1" max="255" required> %%
+		Brightness factor: <input name="BF" type="number" class="m" min="1" max="255" required> %
 		<h3>Transitions</h3>
 		Crossfade: <input type="checkbox" name="TF"><br>
 		Transition Time: <input name="TD" type="number" class="xl" min="0" max="65500"> ms<br>
@@ -563,7 +562,7 @@ ${i+1}:
       </select>
     <br>
     Calculate CCT from RGB: <input type="checkbox" name="CR"> <br>
-    CCT additive blending: <input type="number" class="s" min="0" max="100" name="CB" required> %%</span>
+    CCT additive blending: <input type="number" class="s" min="0" max="100" name="CB" required> %</span>
     <h3>Advanced</h3>
 		Palette blending:
 		<select name="PB">
@@ -577,5 +576,6 @@ ${i+1}:
     <hr>
     <button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 	</form>
+  <div id="toast"></div>
 </body>
 </html>

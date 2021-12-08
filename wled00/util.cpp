@@ -114,7 +114,7 @@ void sappends(char stype, const char* key, char* val)
     case 's': {//string (we can interpret val as char*)
       String buf = val;
       //convert "%" to "%%" to make EspAsyncWebServer happy
-      buf.replace("%","%%");
+      //buf.replace("%","%%");
       oappend("d.Sf.");
       oappend(key);
       oappend(".value=\"");

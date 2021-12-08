@@ -1,9 +1,13 @@
+html {
+	touch-action: manipulation;
+}
 body {
   font-family: Verdana, sans-serif;
+  font-size: 1rem;
   text-align: center;
   background: #222;
   color: #fff;
-  line-height: 200%; /* %% because of AsyncWebServer */
+  line-height: 200%;
   margin: 0;
 }
 hr {
@@ -50,12 +54,13 @@ input {
 input:disabled {
   color: #888;
 }
-input[type="text"] {
-  font-size: medium;
+input[type="text"],
+input[type="number"],
+select {
+    font-size: medium;
 }
 input[type="number"] {
   width: 4em;
-  font-size: medium;
   margin: 2px;
 }
 input[type="number"].xxl {
@@ -76,15 +81,12 @@ input[type="number"].s {
 input[type="number"].xs {
   width: 40px;
 }
-select {
-  margin: 2px;
-  font-size: medium;
-}
 input[type="checkbox"] {
   transform: scale(1.5);
   margin-right: 10px;
 }
 select {
+  margin: 2px;
   background: #333;
   color: #fff;
   font-family: Verdana, sans-serif;
@@ -109,9 +111,9 @@ td {
 	position: fixed;
 	text-align: center;
 	z-index: 5;
-	transform: translateX(-50%); /* %% because of AsyncWebServer */
-  max-width: 90%; /* %% because of AsyncWebServer */
-	left: 50%; /* %% because of AsyncWebServer */
+	transform: translateX(-50%);
+  max-width: 90%;
+	left: 50%;
 }
 
 #toast.show {
@@ -124,4 +126,14 @@ td {
 	opacity: 1;
 	background-color: #b21;
 	animation: fadein 0.5s;
+}
+
+@media screen and (max-width: 767px) {
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="password"] {
+    font-size: 16px;
+  }
 }
