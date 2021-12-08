@@ -40,8 +40,8 @@
 			ranges = RangeTouch.setup('input[type="range"]', {});
 			onLoad(); // start processing UI
 		});
-		h.appendChild(l); // if this fires too quickly for ESP8266 use next line
-		//setTimeout(function(){h.appendChild(l)},50);
+		//h.appendChild(l); // if this fires too quickly for ESP8266 use next line
+		setTimeout(function(){h.appendChild(l)},50);
 	});
 	h.appendChild(l);
 	</script>
