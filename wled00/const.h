@@ -301,6 +301,12 @@
   #define JSON_BUFFER_SIZE 20480
 #endif
 
+#ifdef WLED_USE_DYNAMIC_JSON
+  #define MIN_HEAP_SIZE JSON_BUFFER_SIZE+512
+#else
+  #define MIN_HEAP_SIZE 4096
+#endif
+
 // Maximum size of node map (list of other WLED instances)
 #ifdef ESP8266
   #define WLED_MAX_NODES 24
