@@ -56,3 +56,5 @@ lib_deps =
 * Report the number of seconds until the first read in the info screen instead of sensor error
 2021-04
 * Adaptation for runtime configuration.
+2021-12-11
+* Add up to 8 dallas sensors support
