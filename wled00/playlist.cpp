@@ -119,7 +119,8 @@ int16_t loadPlaylist(JsonObject playlistObj, byte presetId) {
 
 void handlePlaylist() {
   static unsigned long presetCycledTime = 0;
-  if (currentPlaylist < 0 || playlistEntries == nullptr) return;
+  // if fileDoc is not null JSON buffer is in use so just quit
+  if (currentPlaylist < 0 || playlistEntries == nullptr || fileDoc != nullptr) return;
 
   if (millis() - presetCycledTime > (100*playlistEntryDur)) {
     presetCycledTime = millis();
