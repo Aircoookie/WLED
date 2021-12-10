@@ -12,17 +12,47 @@
   #endif
 #endif
 
+#define DS18S20_CHIPID       0x10  // +/-0.5C 9-bit
+#define DS1822_CHIPID        0x22  // +/-2C 12-bit
+#define DS18B20_CHIPID       0x28  // +/-0.5C 12-bit
+#define MAX31850_CHIPID      0x3B  // +/-0.25C 14-bit
+
+#define W1_SKIP_ROM          0xCC
+#define W1_CONVERT_TEMP      0x44
+#define W1_READ_SCRATCHPAD   0xBE
+
+#define DS18X20_MAX_SENSORS  8
+
+
 // the frequency to check temperature, 1 minute
 #ifndef USERMOD_DALLASTEMPERATURE_MEASUREMENT_INTERVAL
 #define USERMOD_DALLASTEMPERATURE_MEASUREMENT_INTERVAL 60000
 #endif
+
+const char kDs18x20Types[] PROGMEM = "DS18x20|DS18S20|DS1822|DS18B20|MAX31850";
+
+uint8_t ds18x20_chipids[] = { 0, DS18S20_CHIPID, DS1822_CHIPID, DS18B20_CHIPID, MAX31850_CHIPID };
+
+struct {
+  float temp;
+  uint16_t numread;
+  uint8_t address[8];
+  uint8_t index;
+  uint8_t valid;
+} ds18x20_sensor[DS18X20_MAX_SENSORS];
+
+struct {
+  char name[17];
+  uint8_t sensors = 0;
+} DS18X20Data;
+
 
 class UsermodTemperature : public Usermod {
 
   private:
 
     bool initDone = false;
-    OneWire *oneWire;
+    OneWire *ds = nullptr;
     // GPIO pin used for sensor (with a default compile-time fallback)
     int8_t temperaturePin = TEMPERATURE_PIN;
     // measurement unit (true==°C, false==°F)
@@ -52,80 +82,110 @@ class UsermodTemperature : public Usermod {
     static const char _readInterval[];
     static const char _parasite[];
 
-    //Dallas sensor quick (& dirty) reading. Credit to - Author: Peter Scargill, August 17th, 2013
-    float readDallas() {
-      byte i;
-      byte data[2];
-      int16_t result;                         // raw data from sensor
-      if (!oneWire->reset()) return -127.0f;  // send reset command and fail fast
-      oneWire->skip();                        // skip ROM
-      oneWire->write(0xBE);                   // read (temperature) from EEPROM
-      for (i=0; i < 2; i++) data[i] = oneWire->read();  // first 2 bytes contain temperature
-      for (i=2; i < 8; i++) oneWire->read();  // read unused bytes  
-      result = (data[1]<<4) | (data[0]>>4);   // we only need whole part, we will add fraction when returning
-      if (data[1]&0x80) result |= 0xFF00;     // fix negative value
-      oneWire->reset();
-      oneWire->skip();                        // skip ROM
-      oneWire->write(0x44,parasite);          // request new temperature reading (without parasite power)
-      return (float)result + ((data[0]&0x0008) ? 0.5f : 0.0f);
-    }
+    void Ds18x20Init(void) {
+      ds = new OneWire(temperaturePin);
 
-    void requestTemperatures() {
-      readDallas();
-      lastTemperaturesRequest = millis();
-      waitingForConversion = true;
-      DEBUG_PRINTLN(F("Requested temperature."));
+      Ds18x20Search();
     }
+    
+    void Ds18x20Search(void) {
+      uint8_t num_sensors=0;
 
-    void readTemperature() {
-      temperature = readDallas();
-      lastMeasurement = millis();
-      waitingForConversion = false;
-      //DEBUG_PRINTF("Read temperature %2.1f.\n", temperature); // does not work properly on 8266
-      DEBUG_PRINT(F("Read temperature "));
-      DEBUG_PRINTLN(temperature);
+      ds->reset_search();
+      for (num_sensors = 0; num_sensors < DS18X20_MAX_SENSORS;) {
+        if (!ds->search(ds18x20_sensor[num_sensors].address)) {
+          ds->reset_search();
+          break;
+        }
+        // If CRC Ok and Type DS18S20, DS1822, DS18B20 or MAX31850
+        if ((OneWire::crc8(ds18x20_sensor[num_sensors].address, 7) == ds18x20_sensor[num_sensors].address[7]) &&
+           ((ds18x20_sensor[num_sensors].address[0] == DS18S20_CHIPID) ||
+            (ds18x20_sensor[num_sensors].address[0] == DS1822_CHIPID) ||
+            (ds18x20_sensor[num_sensors].address[0] == DS18B20_CHIPID) ||
+            (ds18x20_sensor[num_sensors].address[0] == MAX31850_CHIPID))) {
+          num_sensors++;
+        }
+      }
+      for (uint32_t i = 0; i < num_sensors; i++) {
+        ds18x20_sensor[i].index = i;
+      }
+      for (uint32_t i = 0; i < num_sensors; i++) {
+        for (uint32_t j = i + 1; j < num_sensors; j++) {
+          if (uint32_t(ds18x20_sensor[ds18x20_sensor[i].index].address) > uint32_t(ds18x20_sensor[ds18x20_sensor[j].index].address)) {
+            std::swap(ds18x20_sensor[i].index, ds18x20_sensor[j].index);
+          }
+        }
+      }
+      DS18X20Data.sensors = num_sensors;
     }
+    
+    bool Ds18x20Read(uint8_t sensor, float &t) {
+      uint8_t data[12];
+      int8_t sign = 1;
 
-    bool findSensor() {
-      DEBUG_PRINTLN(F("Searching for sensor..."));
-      uint8_t deviceAddress[8] = {0,0,0,0,0,0,0,0};
-      // find out if we have DS18xxx sensor attached
-      oneWire->reset_search();
-      delay(10);
-      while (oneWire->search(deviceAddress)) {
-        DEBUG_PRINTLN(F("Found something..."));
-        if (oneWire->crc8(deviceAddress, 7) == deviceAddress[7]) {
-          switch (deviceAddress[0]) {
-            case 0x10:  // DS18S20
-            case 0x22:  // DS18B20
-            case 0x28:  // DS1822
-            case 0x3B:  // DS1825
-            case 0x42:  // DS28EA00
-              DEBUG_PRINTLN(F("Sensor found."));
-              return true;
+      t = NAN;
+
+      uint8_t index = ds18x20_sensor[sensor].index;
+      if (ds18x20_sensor[index].valid) { ds18x20_sensor[index].valid--; }
+
+      ds->reset();
+      ds->select(ds18x20_sensor[index].address);
+      ds->write(W1_READ_SCRATCHPAD); // Read Scratchpad
+
+      for (uint32_t i = 0; i < 9; i++) {
+        data[i] = ds->read();
+      }
+      if (OneWire::crc8(data, 8) == data[8]) {
+        switch(ds18x20_sensor[index].address[0]) {
+          case DS18S20_CHIPID: {
+            int16_t tempS = (((data[1] << 8) | (data[0] & 0xFE)) << 3) | ((0x10 - data[6]) & 0x0F);
+            t = tempS * 0.0625 - 0.250;
+            ds18x20_sensor[index].valid = 5;
+            return true;
+          }
+          case DS1822_CHIPID:
+          case DS18B20_CHIPID: {
+            uint16_t temp12 = (data[1] << 8) + data[0];
+            if (temp12 > 2047) {
+              temp12 = (~temp12) +1;
+              sign = -1;
+            }
+            t = sign * temp12 * 0.0625;  // Divide by 16
+            ds18x20_sensor[index].valid = 5;
+            return true;
+          }
+          case MAX31850_CHIPID: {
+            int16_t temp14 = (data[1] << 8) + (data[0] & 0xFC);
+            t = temp14 * 0.0625;  // Divide by 16
+            ds18x20_sensor[index].valid = 5;
+            return true;
           }
         }
       }
       return false;
     }
 
+
+    void Ds18x20Convert(void) {
+      ds->reset();
+      ds->write(W1_SKIP_ROM);        // Address all Sensors on Bus
+      ds->write(W1_CONVERT_TEMP);    // start conversion, no parasite power on at the end
+    //  delay(750);                   // 750ms should be enough for 12bit conv
+      lastTemperaturesRequest = millis();
+      waitingForConversion = true;
+    }
+
+
+
   public:
 
     void setup() {
-      int retries = 10;
       if (enabled) {
         // config says we are enabled
         DEBUG_PRINTLN(F("Allocating temperature pin..."));
         // pin retrieved from cfg.json (readFromConfig()) prior to running setup()
         if (temperaturePin >= 0 && pinManager.allocatePin(temperaturePin, true, PinOwner::UM_Temperature)) {
-          oneWire = new OneWire(temperaturePin);
-          if (!oneWire->reset()) {
-            sensorFound = false;   // resetting 1-Wire bus yielded an error
-          } else {
-            while ((sensorFound=findSensor()) && retries--) {
-              delay(25); // try to find sensor
-            }
-          }
+          Ds18x20Init();
         } else {
           if (temperaturePin >= 0) {
             DEBUG_PRINTLN(F("Temperature pin allocation failed."));
@@ -151,28 +211,39 @@ class UsermodTemperature : public Usermod {
       // we are due for a measurement, if we are not already waiting
       // for a conversion to complete, then make a new request for temps
       if (!waitingForConversion) {
-        requestTemperatures();
+        Ds18x20Convert();
         return;
       }
 
       // we were waiting for a conversion to complete, have we waited log enough?
-      if (now - lastTemperaturesRequest >= 100 /* 93.75ms per the datasheet but can be up to 750ms */) {
-        readTemperature();
+      if (now - lastTemperaturesRequest >= 750 /* 93.75ms per the datasheet but can be up to 750ms */) {
+        float t;
+        for (uint8_t i = 0; i < DS18X20Data.sensors; i++) {
+          // 12mS per device
+          if (Ds18x20Read(i, t)) {   // Read temperature
+            ds18x20_sensor[i].temp = t;
+            lastMeasurement = millis();
+            waitingForConversion = false;
+          }
+        }
 
         if (WLED_MQTT_CONNECTED) {
           char subuf[64];
-          strcpy(subuf, mqttDeviceTopic);
-          if (-100 <= temperature) {
-            // dont publish super low temperature as the graph will get messed up
-            // the DallasTemperature library returns -127C or -196.6F when problem
-            // reading the sensor
-            strcat_P(subuf, PSTR("/temperature"));
-            mqtt->publish(subuf, 0, false, String(temperature).c_str());
-            strcat_P(subuf, PSTR("_f"));
-            mqtt->publish(subuf, 0, false, String((float)temperature * 1.8f + 32).c_str());
-          } else {
+          String uiTempString;
+          for (uint8_t i = 0; i < DS18X20Data.sensors; i++) {
+            if (-100 <= ds18x20_sensor[i].temp) {
+              uiTempString = F("/temperature");
+              uiTempString += i;
+              strcpy(subuf, mqttDeviceTopic);
+              strcat(subuf, uiTempString.c_str());
+              if (degC) {              
+                mqtt->publish(subuf, 0, false, String(ds18x20_sensor[i].temp).c_str());
+              } else {
+                mqtt->publish(subuf, 0, false, String((float)ds18x20_sensor[i].temp * 1.8f + 32).c_str());
+              } 
+            }
             // publish something else to indicate status?
-          }
+          } 
         }
       }
     }
@@ -198,19 +269,19 @@ class UsermodTemperature : public Usermod {
 
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
-
-      JsonArray temp = user.createNestedArray(FPSTR(_name));
-      //temp.add(F("Loaded."));
-
-      if (temperature <= -100.0 || (!sensorFound && temperature == -1.0)) {
-        temp.add(0);
-        temp.add(F(" Sensor Error!"));
-        return;
+        String uiTempString;
+        for (uint8_t i = 0; i < DS18X20Data.sensors; i++) {
+          uiTempString = F("Temp ");
+          uiTempString += i;
+          JsonArray temp = user.createNestedArray(uiTempString); // Temperature number
+          temp.add(degC ? ds18x20_sensor[i].temp : (float)ds18x20_sensor[i].temp * 1.8f + 32);
+          if (degC) 
+            temp.add(F("°C"));
+          else
+            temp.add(F("°F"));
       }
 
-      temp.add(degC ? temperature : (float)temperature * 1.8f + 32);
-      if (degC) temp.add(F("°C"));
-      else      temp.add(F("°F"));
+     
     }
 
     /**
@@ -279,7 +350,7 @@ class UsermodTemperature : public Usermod {
         if (newTemperaturePin != temperaturePin) {
           DEBUG_PRINTLN(F("Re-init temperature."));
           // deallocate pin and release memory
-          delete oneWire;
+          delete ds;
           pinManager.deallocatePin(temperaturePin, PinOwner::UM_Temperature);
           temperaturePin = newTemperaturePin;
           // initialise
