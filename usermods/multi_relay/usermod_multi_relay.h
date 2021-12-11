@@ -45,6 +45,9 @@ class MultiRelay : public Usermod {
     // status of initialisation
     bool initDone = false;
 
+    uint16_t periodicBroadcastSec = 60;
+    unsigned long lastBroadcast = 0;
+
     // strings to reduce flash memory usage (used more than twice)
     static const char _name[];
     static const char _enabled[];
@@ -53,7 +56,7 @@ class MultiRelay : public Usermod {
     static const char _activeHigh[];
     static const char _external[];
     static const char _button[];
-
+    static const char _broadcast[];
 
     void publishMqtt(const char* state, int relay) {
       //Check if MQTT Connected, otherwise it will crash the 8266
@@ -68,15 +71,19 @@ class MultiRelay : public Usermod {
      * switch off the strip if the delay has elapsed 
      */
     void handleOffTimer() {
+      unsigned long now = millis();
       bool activeRelays = false;
       for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
-        if (_relay[i].active && _switchTimerStart > 0 && millis() - _switchTimerStart > (_relay[i].delay*1000)) {
+        if (_relay[i].active && _switchTimerStart > 0 && now - _switchTimerStart > (_relay[i].delay*1000)) {
           if (!_relay[i].external) toggleRelay(i);
           _relay[i].active = false;
+        } else if (periodicBroadcastSec && now - lastBroadcast > (periodicBroadcastSec*1000)) {
+          if (_relay[i].pin>=0) publishMqtt(_relay[i].state ? "on" : "off", i);
         }
         activeRelays = activeRelays || _relay[i].active;
       }
       if (!activeRelays) _switchTimerStart = 0;
+      if (periodicBroadcastSec && now - lastBroadcast > (periodicBroadcastSec*1000)) lastBroadcast = now;
     }
 
     /**
@@ -266,7 +273,7 @@ class MultiRelay : public Usermod {
         if (!pinManager.allocatePin(_relay[i].pin,true, PinOwner::UM_MultiRelay)) {
           _relay[i].pin = -1;  // allocation failed
         } else {
-          if (!_relay[i].external) _relay[i].state = offMode;
+          if (!_relay[i].external) _relay[i].state = !offMode;
           switchRelay(i, _relay[i].state);
           _relay[i].active = false;
         }
@@ -477,6 +484,7 @@ class MultiRelay : public Usermod {
       JsonObject top = root.createNestedObject(FPSTR(_name));
 
       top[FPSTR(_enabled)] = enabled;
+      top[FPSTR(_broadcast)] = periodicBroadcastSec;
       for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
         String parName = FPSTR(_relay_str); parName += '-'; parName += i;
         JsonObject relay = top.createNestedObject(parName);
@@ -506,6 +514,8 @@ class MultiRelay : public Usermod {
       }
 
       enabled = top[FPSTR(_enabled)] | enabled;
+      periodicBroadcastSec = top[FPSTR(_broadcast)] | periodicBroadcastSec;
+      periodicBroadcastSec = min(900,max(0,(int)periodicBroadcastSec));
 
       for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
         String parName = FPSTR(_relay_str); parName += '-'; parName += i;
@@ -539,7 +549,9 @@ class MultiRelay : public Usermod {
         for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
           if (_relay[i].pin>=0 && pinManager.allocatePin(_relay[i].pin, true, PinOwner::UM_MultiRelay)) {
             if (!_relay[i].external) {
-              switchRelay(i, offMode);
+              _relay[i].state = !offMode;
+              switchRelay(i, _relay[i].state);
+              _oldMode = offMode;
             }
           } else {
             _relay[i].pin = -1;
@@ -549,7 +561,7 @@ class MultiRelay : public Usermod {
         DEBUG_PRINTLN(F(" config (re)loaded."));
       }
       // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
-      return !top[F("relay-0")][FPSTR(_button)].isNull();
+      return !top[FPSTR(_broadcast)].isNull();
     }
 
     /**
@@ -570,3 +582,4 @@ const char MultiRelay::_delay_str[]  PROGMEM = "delay-s";
 const char MultiRelay::_activeHigh[] PROGMEM = "active-high";
 const char MultiRelay::_external[]   PROGMEM = "external";
 const char MultiRelay::_button[]     PROGMEM = "button";
+const char MultiRelay::_broadcast[]  PROGMEM = "broadcast-sec";

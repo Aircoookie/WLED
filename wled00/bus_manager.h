@@ -91,7 +91,7 @@ class Bus {
     virtual void     setBrightness(uint8_t b) {}
     virtual void     cleanup() {}
     virtual uint8_t  getPins(uint8_t* pinArray) { return 0; }
-    inline  uint16_t getLength() { return _len; }
+    virtual uint16_t getLength() { return _len; }
     virtual void     setColorOrder() {}
     virtual uint8_t  getColorOrder() { return COL_ORDER_RGB; }
     virtual uint8_t  skippedLeds() { return 0; }
@@ -220,7 +220,7 @@ class BusDigital : public Bus {
     return _colorOrder;
   }
 
-  inline uint16_t getLength() {
+  uint16_t getLength() {
     return _len - _skip;
   }
 

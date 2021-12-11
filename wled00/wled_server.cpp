@@ -202,7 +202,6 @@ void initServer()
   });
   
   server.on("/iro.js", HTTP_GET, [](AsyncWebServerRequest *request){
-    if (handleIfNoneMatchCacheHeader(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "application/javascript", iroJs, iroJs_length);
     response->addHeader(F("Content-Encoding"),"gzip");
     setStaticContentCacheHeaders(response);
@@ -210,7 +209,6 @@ void initServer()
   });
   
   server.on("/rangetouch.js", HTTP_GET, [](AsyncWebServerRequest *request){
-    if (handleIfNoneMatchCacheHeader(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "application/javascript", rangetouchJs, rangetouchJs_length);
     response->addHeader(F("Content-Encoding"),"gzip");
     setStaticContentCacheHeaders(response);
