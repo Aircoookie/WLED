@@ -64,6 +64,12 @@ void handleDMX()
 
 void initDMX() {
   dmx.init(512);        // initialize with bus length
+
+  // hard-coded values
+  dmxSavedData[10] = 82;
+  dmxSavedData[11] = 155;
+  dmxSavedData[20] = 90;
+  dmxSavedData[21] = 154;
 }
 
 #else
