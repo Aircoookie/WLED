@@ -74,7 +74,7 @@
 //Notifier callMode
 #define CALL_MODE_INIT           0     //no updates on init, can be used to disable updates
 #define CALL_MODE_DIRECT_CHANGE  1
-#define CALL_MODE_BUTTON         2
+#define CALL_MODE_BUTTON         2     //default button actions applied to selected segments
 #define CALL_MODE_NOTIFICATION   3
 #define CALL_MODE_NIGHTLIGHT     4
 #define CALL_MODE_NO_NOTIFY      5
@@ -84,6 +84,7 @@
 #define CALL_MODE_BLYNK          9
 #define CALL_MODE_ALEXA         10
 #define CALL_MODE_WS_SEND       11     //special call mode, not for notifier, updates websocket only
+#define CALL_MODE_BUTTON_PRESET 12     //button/IR JSON preset/macro
 
 //RGB to RGBW conversion mode
 #define RGBW_MODE_MANUAL_ONLY     0            //No automatic white channel calculation. Manual white channel slider

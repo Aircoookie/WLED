@@ -72,7 +72,7 @@ void decBrightness()
 void presetFallback(uint8_t presetID, uint8_t effectID, uint8_t paletteID) 
 {
   byte prevError = errorFlag;
-  if (!applyPreset(presetID, CALL_MODE_BUTTON)) { 
+  if (!applyPreset(presetID, CALL_MODE_BUTTON_PRESET)) { 
     effectCurrent = effectID;      
     effectPalette = paletteID;
     errorFlag = prevError; //clear error 12 from non-existent preset
@@ -87,7 +87,7 @@ bool decodeIRCustom(uint32_t code)
   {
     //just examples, feel free to modify or remove
     case IRCUSTOM_ONOFF : toggleOnOff(); break;
-    case IRCUSTOM_MACRO1 : applyPreset(1, CALL_MODE_BUTTON); break;
+    case IRCUSTOM_MACRO1 : applyPreset(1, CALL_MODE_BUTTON_PRESET); break;
 
     default: return false;
   }
@@ -631,7 +631,7 @@ void decodeIRJson(uint32_t code)
     colorUpdated(CALL_MODE_BUTTON);
   } else if (!jsonCmdObj.isNull()) {
     // command is JSON object
-    deserializeState(jsonCmdObj, CALL_MODE_BUTTON);
+    deserializeState(jsonCmdObj, CALL_MODE_BUTTON_PRESET);
   }
   releaseJSONBufferLock();
 }
