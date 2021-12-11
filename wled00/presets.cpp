@@ -10,7 +10,15 @@ bool applyPreset(byte index, byte callMode)
 
   const char *filename = index < 255 ? "/presets.json" : "/tmp.json";
 
-  if (fileDoc) {
+	uint8_t core = 1;
+	//crude way to determine if this was called by a network request
+	#ifdef ARDUINO_ARCH_ESP32
+	core = xPortGetCoreID();
+	#endif
+
+	//only allow use of fileDoc from the core responsible for network requests
+	//do not use active network request doc from preset called by main loop (playlist, schedule, ...)
+  if (fileDoc && core) {
     errorFlag = readObjectFromFileUsingId(filename, index, fileDoc) ? ERR_NONE : ERR_FS_PLOAD;
     JsonObject fdo = fileDoc->as<JsonObject>();
     if (fdo["ps"] == index) fdo.remove("ps"); //remove load request for same presets to prevent recursive crash
