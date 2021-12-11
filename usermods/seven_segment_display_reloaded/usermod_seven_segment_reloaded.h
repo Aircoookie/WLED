@@ -9,7 +9,7 @@ class UsermodSSDR : public Usermod {
 private:
   //Runtime variables.
   unsigned long umSSDRLastRefresh = 0;
-  unsigned long umSSDRResfreshTime = 5000;
+  unsigned long umSSDRResfreshTime = 3000;
   bool umSSDRDisplayTime = false;
   bool umSSDRInverted = false;
   bool umSSDRColonblink = true;
@@ -82,6 +82,8 @@ private:
   static const char _str_days[];
   static const char _str_months[];
   static const char _str_years[];
+  static const char _str_minBrightness[];
+  static const char _str_maxBrightness[];
 
 #ifdef USERMOD_ID_SN_PHOTORESISTOR
   Usermod_SN_Photoresistor *ptr;
@@ -232,12 +234,10 @@ private:
 
   void _setMaskToLeds() {
     for(int i = 0; i <= umSSDRLength; i++) {
-      DEBUG_PRINT(umSSDRMask[i]);
       if ((!umSSDRInverted && !umSSDRMask[i]) || (umSSDRInverted && umSSDRMask[i])) {
         strip.setPixelColor(i, 0x000000);
       }
     }
-    DEBUG_PRINTLN("");
   }
 
   void _setAllFalse() {
@@ -317,6 +317,9 @@ private:
     _publishMQTTstr_P(_str_months, umSSDRMonths);
     _publishMQTTstr_P(_str_years, umSSDRYears);
     _publishMQTTstr_P(_str_displayMask, umSSDRDisplayMask);
+
+    _publishMQTTint_P(_str_minBrightness, umSSDRBrightnessMin);
+    _publishMQTTint_P(_str_maxBrightness, umSSDRBrightnessMax);
   }
 
   void _addJSONObject(JsonObject& root) {
@@ -337,6 +340,8 @@ private:
     ssdrObj[FPSTR(_str_days)] = umSSDRDays;
     ssdrObj[FPSTR(_str_months)] = umSSDRMonths;
     ssdrObj[FPSTR(_str_years)] = umSSDRYears;
+    ssdrObj[FPSTR(_str_minBrightness)] = umSSDRBrightnessMin;
+    ssdrObj[FPSTR(_str_maxBrightness)] = umSSDRBrightnessMax;
   }
 
 public:
@@ -372,7 +377,7 @@ public:
       if(bri != 0 && umSSDREnableLDR && (millis() - umSSDRLastRefresh > umSSDRResfreshTime)) {
         if (ptr != nullptr) {
           uint16_t lux = ptr->getLastLDRValue();
-          uint16_t brightness = map(lux, 0, 1000, 30, 255);
+          uint16_t brightness = map(lux, 0, 1000, umSSDRBrightnessMin, umSSDRBrightnessMax);
           if (bri != brightness) {
             bri = brightness;
             colorUpdated(1);
@@ -486,26 +491,32 @@ public:
   bool readFromConfig(JsonObject &root) {
     JsonObject top = root[FPSTR(_str_name)];
 
-    bool configComplete = !top.isNull();
-
-    //if sevenseg section doesn't exist return
-    if (!configComplete) {
-      return configComplete;
+    if (top.isNull()) {
+      DEBUG_PRINT(FPSTR(_str_name));
+      DEBUG_PRINTLN(F(": No config found. (Using defaults.)"));
+      return false;
     }
 
-    configComplete &= getJsonValue(top[FPSTR(_str_timeEnabled)], umSSDRDisplayTime);
-    configComplete &= getJsonValue(top[FPSTR(_str_ldrEnabled)], umSSDREnableLDR);
-    configComplete &= getJsonValue(top[FPSTR(_str_inverted)], umSSDRInverted);
-    configComplete &= getJsonValue(top[FPSTR(_str_colonblink)], umSSDRColonblink);
-    configComplete &= getJsonValue(top[FPSTR(_str_displayMask)], umSSDRDisplayMask);
-    configComplete &= getJsonValue(top[FPSTR(_str_hours)], umSSDRHours);
-    configComplete &= getJsonValue(top[FPSTR(_str_minutes)], umSSDRMinutes);
-    configComplete &= getJsonValue(top[FPSTR(_str_seconds)], umSSDRSeconds);
-    configComplete &= getJsonValue(top[FPSTR(_str_colons)], umSSDRColons);
-    configComplete &= getJsonValue(top[FPSTR(_str_days)], umSSDRDays);
-    configComplete &= getJsonValue(top[FPSTR(_str_months)], umSSDRMonths);
-    configComplete &= getJsonValue(top[FPSTR(_str_years)], umSSDRYears);
-    return configComplete;
+    umSSDRDisplayTime      = (top[FPSTR(_str_timeEnabled)] | umSSDRDisplayTime);
+    umSSDREnableLDR        = (top[FPSTR(_str_ldrEnabled)] | umSSDREnableLDR);
+    umSSDRInverted         = (top[FPSTR(_str_inverted)] | umSSDRInverted);
+    umSSDRColonblink       = (top[FPSTR(_str_colonblink)] | umSSDRColonblink);
+
+    umSSDRDisplayMask      = top[FPSTR(_str_displayMask)] | umSSDRDisplayMask;
+    umSSDRHours            = top[FPSTR(_str_hours)] | umSSDRHours;
+    umSSDRMinutes          = top[FPSTR(_str_minutes)] | umSSDRMinutes;
+    umSSDRSeconds          = top[FPSTR(_str_seconds)] | umSSDRSeconds;
+    umSSDRColons           = top[FPSTR(_str_colons)] | umSSDRColons;
+    umSSDRDays             = top[FPSTR(_str_days)] | umSSDRDays;
+    umSSDRMonths           = top[FPSTR(_str_months)] | umSSDRMonths;
+    umSSDRYears            = top[FPSTR(_str_years)] | umSSDRYears;
+    umSSDRBrightnessMin    = top[FPSTR(_str_minBrightness)] | umSSDRBrightnessMin;
+    umSSDRBrightnessMax    = top[FPSTR(_str_maxBrightness)] | umSSDRBrightnessMax;
+
+    DEBUG_PRINT(FPSTR(_str_name));
+    DEBUG_PRINTLN(F(" config (re)loaded."));
+
+    return true;
   }
   /*
      * getId() allows you to optionally give your V2 usermod an unique ID (please define it in const.h!).
@@ -529,3 +540,5 @@ const char UsermodSSDR::_str_days[]        PROGMEM = "LED-Numbers-Day";
 const char UsermodSSDR::_str_months[]      PROGMEM = "LED-Numbers-Month";
 const char UsermodSSDR::_str_years[]       PROGMEM = "LED-Numbers-Year";
 const char UsermodSSDR::_str_ldrEnabled[]  PROGMEM = "enable-auto-brightness";
+const char UsermodSSDR::_str_minBrightness[]  PROGMEM = "auto-brightness-min";
+const char UsermodSSDR::_str_maxBrightness[]  PROGMEM = "auto-brightness-max";
