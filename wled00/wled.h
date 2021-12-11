@@ -3,12 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.13.0-b4
+   @version 0.13.0-b5
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2110110
+#define VERSION 2111220
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -507,11 +507,17 @@ WLED_GLOBAL byte timerWeekday[] _INIT_N(({ 255, 255, 255, 255, 255, 255, 255, 25
 // blynk
 WLED_GLOBAL bool blynkEnabled _INIT(false);
 
+//improv
+WLED_GLOBAL byte improvActive _INIT(0); //0: no improv packet received, 1: improv active, 2: provisioning
+WLED_GLOBAL byte improvError _INIT(0);
+
 //playlists
 WLED_GLOBAL unsigned long presetCycledTime _INIT(0);
 WLED_GLOBAL int16_t currentPlaylist _INIT(-1);
 //still used for "PL=~" HTTP API command
 WLED_GLOBAL byte presetCycCurr _INIT(0);
+WLED_GLOBAL byte presetCycMin _INIT(1);
+WLED_GLOBAL byte presetCycMax _INIT(5); 
 
 // realtime
 WLED_GLOBAL byte realtimeMode _INIT(REALTIME_MODE_INACTIVE);

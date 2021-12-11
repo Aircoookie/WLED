@@ -220,7 +220,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(macroNl, light_nl["macro"]);
 
   JsonObject def = doc[F("def")];
-  CJSON(bootPreset, def[F("ps")]);
+  CJSON(bootPreset, def["ps"]);
   CJSON(turnOnAtBoot, def["on"]); // true
   CJSON(briS, def["bri"]); // 128
 
@@ -396,10 +396,12 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(DMXStartLED,dmx[F("start-led")]);
 
   JsonArray dmx_fixmap = dmx[F("fixmap")];
-  for (int i=0; i < dmx_fixmap.size(); i++) {
+  for (int i = 0; i < dmx_fixmap.size(); i++) {
     if (i > 14) break;
     CJSON(DMXFixtureMap[i],dmx_fixmap[i]);
   }
+
+  CJSON(e131ProxyUniverse, dmx[F("e131proxy")]);
   #endif
 
   DEBUG_PRINTLN(F("Starting usermod config."));
@@ -593,7 +595,7 @@ void serializeConfig() {
   light_nl["macro"] = macroNl;
 
   JsonObject def = doc.createNestedObject("def");
-  def[F("ps")] = bootPreset;
+  def["ps"] = bootPreset;
   def["on"] = turnOnAtBoot;
   def["bri"] = briS;
 
@@ -736,8 +738,11 @@ void serializeConfig() {
   dmx[F("start-led")] = DMXStartLED;
 
   JsonArray dmx_fixmap = dmx.createNestedArray(F("fixmap"));
-  for (byte i = 0; i < 15; i++)
+  for (byte i = 0; i < 15; i++) {
     dmx_fixmap.add(DMXFixtureMap[i]);
+  }
+
+  dmx[F("e131proxy")] = e131ProxyUniverse;
   #endif
 
   JsonObject usermods_settings = doc.createNestedObject("um");
