@@ -281,6 +281,26 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     if (presetsModifiedTime == 0) presetsModifiedTime = timein;
   }
 
+  JsonVariant fseqVar = root["fseq"];
+  if (fseqVar.is<JsonObject>())
+  {
+    const char* recording_path = fseqVar["file"].as<const char*>();
+    if (recording_path) {
+      int id = -1;
+
+      JsonVariant segVar = fseqVar["seg"];
+      if (segVar) { // playback on segments
+        if (segVar.is<JsonObject>()) { id = segVar["id"] | -1; }  // passed as json object        
+        else if (segVar.is<JsonInteger>()) { id = segVar; }       // passed as integer        
+        else
+          DEBUG_PRINTLN("FSEQ: 'seg' either as integer or as json with 'id':'integer'");
+      };
+
+      WS2812FX::Segment sg = strip.getSegment(id);
+      FSEQFile::loadRecording(recording_path, sg.start, sg.stop);
+    }
+  }
+
   doReboot = root[F("rb")] | doReboot;
 
   realtimeOverride = root[F("lor")] | realtimeOverride;
@@ -540,6 +560,7 @@ void serializeInfo(JsonObject root)
     case REALTIME_MODE_ARTNET:   root["lm"] = F("Art-Net"); break;
     case REALTIME_MODE_TPM2NET:  root["lm"] = F("tpm2.net"); break;
     case REALTIME_MODE_DDP:      root["lm"] = F("DDP"); break;
+    case REALTIME_MODE_FSEQ:     root["lm"] = F("FSEQ Recording (ROM)"); break;
   }
 
   if (realtimeIP[0] == 0)

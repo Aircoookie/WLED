@@ -102,6 +102,7 @@
 #define REALTIME_MODE_ARTNET      6
 #define REALTIME_MODE_TPM2NET     7
 #define REALTIME_MODE_DDP         8
+#define REALTIME_MODE_FSEQ       10            //used 10 instead of 9 to keep compatibility with TPM2RECORD once merged
 
 //realtime override modes
 #define REALTIME_OVERRIDE_NONE    0
