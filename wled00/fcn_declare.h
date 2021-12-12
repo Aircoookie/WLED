@@ -67,7 +67,9 @@ void colorRGBtoXY(byte* rgb, float* xy); // only defined if huesync disabled TOD
 
 void colorFromDecOrHexString(byte* rgb, char* in);
 bool colorFromHexString(byte* rgb, const char* in);
-void colorRGBtoRGBW(byte* rgb); //rgb to rgbw (http://codewelt.com/rgbw). (RGBW_MODE_LEGACY)
+
+uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb);
+uint16_t approximateKelvinFromRGB(uint32_t rgb);
 
 //dmx.cpp
 void initDMX();
@@ -92,6 +94,12 @@ void onHueError(void* arg, AsyncClient* client, int8_t error);
 void onHueConnect(void* arg, AsyncClient* client);
 void sendHuePoll();
 void onHueData(void* arg, AsyncClient* client, void *data, size_t len);
+
+//improv.cpp
+void handleImprovPacket();
+void sendImprovStateResponse(uint8_t state, bool error = false);
+void sendImprovInfoResponse();
+void sendImprovRPCResponse(uint8_t commandId);
 
 //ir.cpp
 bool decodeIRCustom(uint32_t code);
@@ -191,6 +199,7 @@ bool isAsterisksOnly(const char* str, byte maxLen);
 void handleSettingsSet(AsyncWebServerRequest *request, byte subPage);
 bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply=true);
 int getNumVal(const String* req, uint16_t pos);
+void parseNumber(const char* str, byte* val, byte minv=0, byte maxv=255);
 bool updateVal(const String* req, const char* key, byte* val, byte minv=0, byte maxv=255);
 
 //udp.cpp
@@ -202,11 +211,23 @@ void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w);
 void refreshNodeList();
 void sendSysInfoUDP();
 
+//util.cpp
+//bool oappend(const char* txt); // append new c string to temp buffer efficiently
+//bool oappendi(int i);          // append new number to temp buffer efficiently
+//void sappend(char stype, const char* key, int val);
+//void sappends(char stype, const char* key, char* val);
+//void prepareHostname(char* hostname);
+//void _setRandomColor(bool _sec, bool fromButton);
+//bool isAsterisksOnly(const char* str, byte maxLen);
+bool requestJSONBufferLock(uint8_t module=255);
+void releaseJSONBufferLock();
+
 //um_manager.cpp
 class Usermod {
   public:
     virtual void loop() {}
     virtual void handleOverlayDraw() {}
+    virtual bool handleButton(uint8_t b) { return false; }
     virtual void setup() {}
     virtual void connected() {}
     virtual void addToJsonState(JsonObject& obj) {}
@@ -227,7 +248,7 @@ class UsermodManager {
   public:
     void loop();
     void handleOverlayDraw();
-
+    bool handleButton(uint8_t b);
     void setup();
     void connected();
     void addToJsonState(JsonObject& obj);

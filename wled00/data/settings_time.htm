@@ -79,16 +79,16 @@
 		var t = gId("macros");	// table
         var rCnt = t.rows.length;   // get the number of rows.
         var tr = t.insertRow(rCnt); // table row.
-
+		var b = String.fromCharCode((i<10?48:55)+i);
 		var td = document.createElement('td');          // TABLE DEFINITION.
 		td = tr.insertCell(0);
 		td.innerHTML = `Button ${i}:`;
 		td = tr.insertCell(1);
-		td.innerHTML = `<input name="MP${i}" type="number" min="0" max="250" value="${p}" required>`;
+		td.innerHTML = `<input name="MP${b}" type="number" min="0" max="250" value="${p}" required>`;
 		td = tr.insertCell(2);
-		td.innerHTML = `<input name="ML${i}" type="number" min="0" max="250" value="${l}" required>`;
+		td.innerHTML = `<input name="ML${b}" type="number" min="0" max="250" value="${l}" required>`;
 		td = tr.insertCell(3);
-		td.innerHTML = `<input name="MD${i}" type="number" min="0" max="250" value="${d}" required>`;
+		td.innerHTML = `<input name="MD${b}" type="number" min="0" max="250" value="${d}" required>`;
 	}
 	function GetV()
 	{
@@ -130,6 +130,7 @@
 			<option value="18">HST (Hawaii)</option>
 			<option value="19">NOVT (Novosibirsk)</option>
 			<option value="20">AKST/AKDT (Anchorage)</option>
+			<option value="21">MX-CST/CDT</option>
 		</select><br>
 		UTC offset: <input name="UO" type="number" min="-65500" max="65500" required> seconds (max. 18 hours)<br>
 		Current local time is <span class="times">unknown</span>.<br>

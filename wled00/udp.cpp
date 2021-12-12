@@ -4,7 +4,7 @@
  * UDP sync notifier / Realtime / Hyperion / TPM2.NET
  */
 
-#define WLEDPACKETSIZE 37
+#define WLEDPACKETSIZE 39
 #define UDP_IN_MAXSIZE 1472
 #define PRESUMED_NETWORK_DELAY 3 //how many ms could it take on avg to reach the receiver? This will be added to transmitted times
 
@@ -17,6 +17,7 @@ void notify(byte callMode, bool followUp)
     case CALL_MODE_INIT:          return;
     case CALL_MODE_DIRECT_CHANGE: if (!notifyDirect) return; break;
     case CALL_MODE_BUTTON:        if (!notifyButton) return; break;
+		case CALL_MODE_BUTTON_PRESET: if (!notifyButton) return; break;
     case CALL_MODE_NIGHTLIGHT:    if (!notifyDirect) return; break;
     case CALL_MODE_HUE:           if (!notifyHue)    return; break;
     case CALL_MODE_PRESET_CYCLE:  if (!notifyDirect) return; break;
@@ -25,6 +26,7 @@ void notify(byte callMode, bool followUp)
     default: return;
   }
   byte udpOut[WLEDPACKETSIZE];
+	WS2812FX::Segment& mainseg = strip.getSegment(strip.getMainSegmentId());
   udpOut[0] = 0; //0: wled notifier protocol 1: WARLS protocol
   udpOut[1] = callMode;
   udpOut[2] = bri;
@@ -40,8 +42,8 @@ void notify(byte callMode, bool followUp)
   //0: old 1: supports white 2: supports secondary color
   //3: supports FX intensity, 24 byte packet 4: supports transitionDelay 5: sup palette
   //6: supports timebase syncing, 29 byte packet 7: supports tertiary color 8: supports sys time sync, 36 byte packet
-  //9: supports sync groups, 37 byte packet
-  udpOut[11] = 9; 
+  //9: supports sync groups, 37 byte packet 10: supports CCT, 39 byte packet
+  udpOut[11] = 10; 
   udpOut[12] = colSec[0];
   udpOut[13] = colSec[1];
   udpOut[14] = colSec[2];
@@ -50,7 +52,7 @@ void notify(byte callMode, bool followUp)
   udpOut[17] = (transitionDelay >> 0) & 0xFF;
   udpOut[18] = (transitionDelay >> 8) & 0xFF;
   udpOut[19] = effectPalette;
-  uint32_t colTer = strip.getSegment(strip.getMainSegmentId()).colors[2];
+  uint32_t colTer = mainseg.colors[2];
   udpOut[20] = (colTer >> 16) & 0xFF;
   udpOut[21] = (colTer >>  8) & 0xFF;
   udpOut[22] = (colTer >>  0) & 0xFF;
@@ -77,6 +79,11 @@ void notify(byte callMode, bool followUp)
 
   //sync groups
   udpOut[36] = syncGroups;
+	
+	//Might be changed to Kelvin in the future, receiver code should handle that case
+	//0: byte 38 contains 0-255 value, 255: no valid CCT, 1-254: Kelvin value MSB
+	udpOut[37] = strip.hasCCTBus() ? 0 : 255; //check this is 0 for the next value to be significant
+	udpOut[38] = mainseg.cct;
   
   IPAddress broadcastIp;
   broadcastIp = ~uint32_t(Network.subnetMask()) | uint32_t(Network.gatewayIP());
@@ -92,7 +99,8 @@ void notify(byte callMode, bool followUp)
 void realtimeLock(uint32_t timeoutMs, byte md)
 {
   if (!realtimeMode && !realtimeOverride){
-    for (uint16_t i = 0; i < ledCount; i++)
+    uint16_t totalLen = strip.getLengthTotal();
+    for (uint16_t i = 0; i < totalLen; i++)
     {
       strip.setPixelColor(i,0,0,0,0);
     }
@@ -168,10 +176,11 @@ void handleNotifications()
       realtimeLock(realtimeTimeoutMs, REALTIME_MODE_HYPERION);
       if (realtimeOverride) return;
       uint16_t id = 0;
+      uint16_t totalLen = strip.getLengthTotal();
       for (uint16_t i = 0; i < packetSize -2; i += 3)
       {
         setRealtimePixel(id, lbuf[i], lbuf[i+1], lbuf[i+2], 0);
-        id++; if (id >= ledCount) break;
+        id++; if (id >= totalLen) break;
       }
       strip.show();
       return;
@@ -258,6 +267,14 @@ void handleNotifications()
         {
           strip.setColor(2, udpIn[20], udpIn[21], udpIn[22], udpIn[23]); //tertiary color
         }
+				if (version > 9 && version < 200 && udpIn[37] < 255) { //valid CCT/Kelvin value
+					uint8_t cct = udpIn[38];
+					if (udpIn[37] > 0) { //Kelvin
+						cct = (((udpIn[37] << 8) + udpIn[38]) - 1900) >> 5; 
+					}
+					uint8_t segid = strip.getMainSegmentId();
+					strip.getSegment(segid).setCCT(cct, segid);
+				}
       }
     }
 
@@ -339,9 +356,10 @@ void handleNotifications()
     byte numPackets = udpIn[5];
 
     uint16_t id = (tpmPayloadFrameSize/3)*(packetNum-1); //start LED
+    uint16_t totalLen = strip.getLengthTotal();
     for (uint16_t i = 6; i < tpmPayloadFrameSize + 4; i += 3)
     {
-      if (id < ledCount)
+      if (id < totalLen)
       {
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
         id++;
@@ -372,6 +390,7 @@ void handleNotifications()
     }
     if (realtimeOverride) return;
 
+    uint16_t totalLen = strip.getLengthTotal();
     if (udpIn[0] == 1) //warls
     {
       for (uint16_t i = 2; i < packetSize -3; i += 4)
@@ -385,7 +404,7 @@ void handleNotifications()
       {
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
 
-        id++; if (id >= ledCount) break;
+        id++; if (id >= totalLen) break;
       }
     } else if (udpIn[0] == 3) //drgbw
     {
@@ -394,14 +413,14 @@ void handleNotifications()
       {
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
         
-        id++; if (id >= ledCount) break;
+        id++; if (id >= totalLen) break;
       }
     } else if (udpIn[0] == 4) //dnrgb
     {
       uint16_t id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
       for (uint16_t i = 4; i < packetSize -2; i += 3)
       {
-        if (id >= ledCount) break;
+        if (id >= totalLen) break;
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
         id++;
       }
@@ -410,7 +429,7 @@ void handleNotifications()
       uint16_t id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
       for (uint16_t i = 4; i < packetSize -2; i += 4)
       {
-        if (id >= ledCount) break;
+        if (id >= totalLen) break;
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
         id++;
       }
@@ -438,7 +457,7 @@ void handleNotifications()
 void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w)
 {
   uint16_t pix = i + arlsOffset;
-  if (pix < ledCount)
+  if (pix < strip.getLengthTotal())
   {
     if (!arlsDisableGammaCorrection && strip.gammaCorrectCol)
     {
@@ -479,6 +498,7 @@ void sendSysInfoUDP()
   if (!udp2Connected) return;
 
   IPAddress ip = Network.localIP();
+  if (!ip || ip == IPAddress(255,255,255,255)) ip = IPAddress(4,3,2,1);
 
   // TODO: make a nice struct of it and clean up
   //  0: 1 byte 'binary token 255'
