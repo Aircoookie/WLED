@@ -1265,6 +1265,7 @@ function setSliderAndColorControl(idx)
 			btn.style.display = "none";
 		}
 	}
+	selectSlot(0);
 /*
 	// perhaps too aggressive
 	var ccfg = cfg.comp.colors;
