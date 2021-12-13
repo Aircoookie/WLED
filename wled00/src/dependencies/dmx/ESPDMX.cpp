@@ -28,6 +28,8 @@
 #define RXPIN 4
 #define TXPIN 17
 
+HardwareSerial DMXSerial(2);
+
 bool dmxStarted = false;
 int sendPin = 4;		//dafault on ESP8266
 
@@ -39,7 +41,7 @@ int chanSize;
 void DMXESPSerial::init() {
   chanSize = defaultMax;
 
-  Serial1.begin(DMXSPEED, SERIAL_8N1, RXPIN, TXPIN);
+  DMXSerial.begin(DMXSPEED, SERIAL_8N1, RXPIN, TXPIN);
   pinMode(sendPin, OUTPUT);
   dmxStarted = true;
 }
@@ -53,7 +55,7 @@ void DMXESPSerial::init(int chanQuant) {
 
   chanSize = chanQuant;
 
-  Serial1.begin(DMXSPEED, SERIAL_8N1, RXPIN, TXPIN);
+  DMXSerial.begin(DMXSPEED, SERIAL_8N1, RXPIN, TXPIN);
   pinMode(sendPin, OUTPUT);
   dmxStarted = true;
 }
@@ -81,7 +83,7 @@ void DMXESPSerial::write(int Channel, uint8_t value) {
 
 void DMXESPSerial::end() {
   chanSize = 0;
-  Serial1.end();
+  DMXSerial.end();
   dmxStarted = false;
 }
 
@@ -90,19 +92,27 @@ void DMXESPSerial::update() {
 
   //Send break
   digitalWrite(sendPin, HIGH);
-  Serial1.begin(BREAKSPEED, BREAKFORMAT, RXPIN, TXPIN);
-  Serial1.write(0);
-  Serial1.flush();
-  delay(1);
-  Serial1.end();
+  DMXSerial.begin(BREAKSPEED, BREAKFORMAT, RXPIN, TXPIN);
+  DMXSerial.write(0);
+  DMXSerial.flush();
+  delay(10);
+  DMXSerial.end();
+
+  //pinMatrixOutDetach(TXPIN, false, false);
+  //pinMode(TXPIN, OUTPUT);
+  //digitalWrite(TXPIN, LOW); //88 uS break
+  //delayMicroseconds(88);  
+  //digitalWrite(TXPIN, HIGH); //4 Us Mark After Break
+  //delayMicroseconds(1);
+  //pinMatrixOutAttach(TXPIN, U1TXD_OUT_IDX, false, false);
 
   //send data
-  Serial1.begin(DMXSPEED, DMXFORMAT, RXPIN, TXPIN);
+  DMXSerial.begin(DMXSPEED, DMXFORMAT, RXPIN, TXPIN);
   digitalWrite(sendPin, LOW);
-  Serial1.write(dmxData, chanSize);
-  Serial1.flush();
-  delay(1);
-  Serial1.end();
+  DMXSerial.write(dmxData, chanSize);
+  DMXSerial.flush();
+  delay(10);
+  DMXSerial.end();
 }
 
 // Function to update the DMX bus
