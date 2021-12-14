@@ -933,7 +933,7 @@ void serveJson(AsyncWebServerRequest* request)
     AsyncJsonResponse *response = new AsyncJsonResponse(&doc, true);
     #endif
     JsonArray doc = response->getRoot();
-    deserializeModeNames(doc, JSON_mode_names); // remove WLED-SR extensions from effect names
+    serializeModeNames(doc, JSON_mode_names); // remove WLED-SR extensions from effect names
     response->setLength();
     request->send(response);
     delete response;
