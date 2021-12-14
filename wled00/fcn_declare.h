@@ -134,6 +134,9 @@ void serializeState(JsonObject root, bool forPreset = false, bool includeBri = t
 void serializeInfo(JsonObject root);
 void serveJson(AsyncWebServerRequest* request);
 bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient = 0);
+void serializeModeData(JsonArray fxdata);
+void serializeModeNames(JsonArray arr, const char *qstring);
+uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLen);
 
 //led.cpp
 void setValuesFromMainSeg();
