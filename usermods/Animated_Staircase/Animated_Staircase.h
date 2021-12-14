@@ -508,10 +508,10 @@ class Animated_Staircase : public Usermod {
       JsonArray usermodEnabled = staircase.createNestedArray(F("Staircase"));  // name
       String btn = F("<button class=\"btn infobtn\" onclick=\"requestJson({staircase:{enabled:");
       if (enabled) {
-        btn += F("false}},false,false);loadInfo();\">");
+        btn += F("false}});\">");
         btn += F("enabled");
       } else {
-        btn += F("true}},false,false);loadInfo();\">");
+        btn += F("true}});\">");
         btn += F("disabled");
       }
       btn += F("</button>");
