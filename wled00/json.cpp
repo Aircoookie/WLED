@@ -959,7 +959,7 @@ void serveJson(AsyncWebServerRequest* request)
   AsyncJsonResponse *response = new AsyncJsonResponse(&doc, subJson==6);
   #endif
 
-  JsonObject lDoc = response->getRoot();
+  JsonVariant lDoc = response->getRoot();
 
   switch (subJson)
   {
