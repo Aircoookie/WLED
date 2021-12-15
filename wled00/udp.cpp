@@ -84,6 +84,13 @@ void notify(byte callMode, bool followUp)
   notifierUdp.beginPacket(broadcastIp, udpPort);
   notifierUdp.write(udpOut, WLEDPACKETSIZE);
   notifierUdp.endPacket();
+
+  for (auto const& indice : Nodes) {
+    notifierUdp.beginPacket(indice.second.ip, udpPort);
+    notifierUdp.write(udpOut, WLEDPACKETSIZE);
+    notifierUdp.endPacket();
+  }
+
   notificationSentCallMode = callMode;
   notificationSentTime = millis();
   notificationTwoRequired = (followUp)? false:notifyTwice;
