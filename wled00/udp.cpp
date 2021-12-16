@@ -561,6 +561,8 @@ void sendSysInfoUDP()
 // 1440 channels per packet
 #define DDP_CHANNELS_PER_PACKET 1440 // 480 leds
 
+#define DDP_MIN_PACKET_DELAY 12 // minimum time (ms) between each UDP packet
+
 //
 // Send real time UDP updates to the specified client
 //
@@ -571,9 +573,19 @@ void sendSysInfoUDP()
 // isRGBW - true if the buffer contains 4 components per pixel
 
 uint8_t sequenceNumber = 0; // this needs to be shared across all outputs
+uint32_t lastPacket = 0; // last time packet was sent, used for rate limiting
 
 uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8_t *buffer, uint8_t bri, bool isRGBW)  {
   if (!interfacesInited) return 1;  // network not initialised
+  
+  // rate limit UDP data on ESP32 over WiFi -- see https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/lwip.html#limitations
+  #ifdef ARDUINO_ARCH_ESP32
+  if (!Network.isEthernet()) {
+    uint32_t now = millis();
+    if (now - lastPacket < DDP_MIN_PACKET_DELAY * ((uint32_t)length * (isRGBW ? 4 : 3)) / DDP_CHANNELS_PER_PACKET) return 1;
+    lastPacket = now;
+  }
+  #endif
 
   WiFiUDP ddpUdp;
 
