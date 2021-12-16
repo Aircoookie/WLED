@@ -55,13 +55,14 @@ class UsermodTemperature : public Usermod {
     //Dallas sensor quick (& dirty) reading. Credit to - Author: Peter Scargill, August 17th, 2013
     float readDallas() {
       byte i;
-      byte data[2];
+      byte data[9];
       int16_t result;                         // raw data from sensor
       if (!oneWire->reset()) return -127.0f;  // send reset command and fail fast
       oneWire->skip();                        // skip ROM
       oneWire->write(0xBE);                   // read (temperature) from EEPROM
-      for (i=0; i < 2; i++) data[i] = oneWire->read();  // first 2 bytes contain temperature
-      for (i=2; i < 9; i++) oneWire->read();  // read unused bytes  
+      for (i=0; i < 9; i++) data[i] = oneWire->read();  // first 2 bytes contain temperature
+      if (OneWire::crc8(data,8) != data[8]) DEBUG_PRINTLN(F("CRC error reading temperature."));
+//      for (i=2; i < 9; i++) oneWire->read();  // read unused bytes
 //      result = (data[1]<<4) | (data[0]>>4);   // we only need whole part, we will add fraction when returning
 //      if (data[1]&0x80) result |= 0xFF00;     // fix negative value
       oneWire->reset();
