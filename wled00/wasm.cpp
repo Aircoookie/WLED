@@ -212,9 +212,7 @@ void wasm_task(void*)
     runtime->memoryLimit = WASM_MEMORY_LIMIT;
 #endif
 
-    if (wasm_buffer) { //from websockets
-      //app_wasm_len = wasm_buffer_len;
-    } else { //from filesystem (fx.wasm)
+    if (!wasm_buffer) { //from filesystem (fx.wasm)
       wasm_buffer_len = MAX_WASM_BIN_SIZE;
       if (!readToBuffer("/fx.wasm", &wasm_buffer, &wasm_buffer_len)) {
         result = "fload";
@@ -269,15 +267,13 @@ void wasmRun() {
 
   if (wasm_state != WASM_STATE_READY) return;
   if (result) {
-    //Serial.println(F("You fucked up... Majorly..."));
-    Serial.print("If only... ");
+    Serial.print("WASM run error");
     Serial.println(result);
-    //Serial.println("That could save us🥺");
     wasm_state = WASM_STATE_ERROR;
     return;
   }
 
-  result = m3_CallV (fu);
+  result = m3_CallV(fu);
 
   if (result) {
     M3ErrorInfo info;

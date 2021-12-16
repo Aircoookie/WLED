@@ -44,7 +44,7 @@ uint16_t WS2812FX::mode_static(void) {
 uint16_t WS2812FX::mode_custom(void) {
   if (SEGENV.call == 0) wasmfx.init();
   wasmfx.run();
-  return FRAMETIME;
+  return 1;
 }
 
 
@@ -59,7 +59,7 @@ uint16_t WS2812FX::mode_benchmark(void) {
     i=(i+SEGMENT.speed/16+1);
   }
 
-  return FRAMETIME;
+  return 1;
 }
 
 
