@@ -6,41 +6,41 @@
 	<title>Time Settings</title>
 	<script>
     var d=document;
-		function H()
+	function H()
+	{
+		window.open("https://github.com/Aircoookie/WLED/wiki/Settings#time-settings");
+	}
+	function B()
+	{
+		window.open("/settings","_self");
+	}
+	function S()
+	{
+		BTa();GetV();Cs();FC();
+	}
+	function gId(s)
+	{
+		return d.getElementById(s);
+	}
+	function Cs()
+	{
+		gId("cac").style.display="none";
+		gId("coc").style.display="block";
+		gId("ccc").style.display="none";
+		if (gId("ca").selected)
 		{
-			window.open("https://github.com/Aircoookie/WLED/wiki/Settings#time-settings");
+			gId("cac").style.display="block";
 		}
-		function B()
+		if (gId("cc").selected)
 		{
-			window.open("/settings","_self");
+			gId("coc").style.display="none";
+			gId("ccc").style.display="block";
 		}
-		function S()
+		if (gId("cn").selected)
 		{
-			BTa();GetV();Cs();FC();
+			gId("coc").style.display="none";
 		}
-		function gId(s)
-		{
-			return d.getElementById(s);
-		}
-		function Cs()
-		{
-			gId("cac").style.display="none";
-			gId("coc").style.display="block";
-			gId("ccc").style.display="none";
-			if (gId("ca").selected)
-			{
-				gId("cac").style.display="block";
-			}
-			if (gId("cc").selected)
-			{
-				gId("coc").style.display="none";
-				gId("ccc").style.display="block";
-			}
-			if (gId("cn").selected)
-			{
-				gId("coc").style.display="none";
-			}
-		}
+	}
     function BTa()
     {
       var ih="<tr><th>Active</th><th>Hour</th><th>Minute</th><th>Preset</th><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr>";
@@ -49,19 +49,23 @@
         ih+="<tr><td><input name=\"W"+i+"\" id=\"W"+i+"\" type=\"number\" style=\"display:none\"><input id=\"W"+i+"0\" type=\"checkbox\"></td><td><input name=\"H"+i+"\" type=\"number\" min=\"0\" max=\"24\"></td><td><input name=\"N"+i+"\" type=\"number\" min=\"0\" max=\"59\"></td><td><input name=\"T"+i+"\" type=\"number\" min=\"0\" max=\"250\"></td>";
         for (j=1;j<8;j++) ih+="<td><input id=\"W"+i+j+"\" type=\"checkbox\"></td>";
       }
+	  ih+="<tr><td><input name=\"W8\" id=\"W8\" type=\"number\" style=\"display:none\"><input id=\"W80\" type=\"checkbox\"></td><td>Sunrise<input name=\"H8\" value=\"255\" type=\"hidden\"></td><td><input name=\"N8\" type=\"number\" min=\"-59\" max=\"59\"></td><td><input name=\"T8\" type=\"number\" min=\"0\" max=\"250\"></td>";
+      for (j=1;j<8;j++) ih+="<td><input id=\"W8"+j+"\" type=\"checkbox\"></td>";
+      ih+="<tr><td><input name=\"W9\" id=\"W9\" type=\"number\" style=\"display:none\"><input id=\"W90\" type=\"checkbox\"></td><td>Sunset<input name=\"H9\" value=\"255\" type=\"hidden\"></td><td><input name=\"N9\" type=\"number\" min=\"-59\" max=\"59\"><td><input name=\"T9\" type=\"number\" min=\"0\" max=\"250\"></td>";
+      for (j=1;j<8;j++) ih+="<td><input id=\"W9"+j+"\" type=\"checkbox\"></td>";
       gId("TMT").innerHTML=ih;
     }
     function FC()
     {
       for(j=0;j<8;j++)
       {
-        for(i=0;i<8;i++) gId("W"+i+j).checked=gId("W"+i).value>>j&1;
+        for(i=0;i<10;i++) gId("W"+i+j).checked=gId("W"+i).value>>j&1;
       }
     }
     function Wd()
     {
-      a=[0,0,0,0,0,0,0,0];
-      for(i=0;i<8;i++)
+      a=[0,0,0,0,0,0,0,0,0,0];
+      for(i=0;i<10;i++)
       {
         m=1;
         for(j=0;j<8;j++)
@@ -71,10 +75,25 @@
         gId("W"+i).value=a[i];
       }
     }
-		function GetV()
-		{
-			//values injected by server while sending HTML
-		}
+	function addRow(i,p,l,d) {
+		var t = gId("macros");	// table
+        var rCnt = t.rows.length;   // get the number of rows.
+        var tr = t.insertRow(rCnt); // table row.
+		var b = String.fromCharCode((i<10?48:55)+i);
+		var td = document.createElement('td');          // TABLE DEFINITION.
+		td = tr.insertCell(0);
+		td.innerHTML = `Button ${i}:`;
+		td = tr.insertCell(1);
+		td.innerHTML = `<input name="MP${b}" type="number" min="0" max="250" value="${p}" required>`;
+		td = tr.insertCell(2);
+		td.innerHTML = `<input name="ML${b}" type="number" min="0" max="250" value="${l}" required>`;
+		td = tr.insertCell(3);
+		td.innerHTML = `<input name="MD${b}" type="number" min="0" max="250" value="${d}" required>`;
+	}
+	function GetV()
+	{
+		//values injected by server while sending HTML
+	}
 	</script>
 	<style>
 		@import url("style.css");
@@ -103,15 +122,21 @@
 			<option value="10">JST(KST)</option>
 			<option value="11">AEST/AEDT</option>
 			<option value="12">NZST/NZDT</option>
-      <option value="13">North Korea</option>
-      <option value="14">IST (India)</option>
-      <option value="15">CA-Saskatchewan</option>
-      <option value="16">ACST</option>
-      <option value="17">ACST/ACDT</option>
-      <option value="18">HST (Hawaii)</option>
+			<option value="13">North Korea</option>
+			<option value="14">IST (India)</option>
+			<option value="15">CA-Saskatchewan</option>
+			<option value="16">ACST</option>
+			<option value="17">ACST/ACDT</option>
+			<option value="18">HST (Hawaii)</option>
+			<option value="19">NOVT (Novosibirsk)</option>
+			<option value="20">AKST/AKDT (Anchorage)</option>
+			<option value="21">MX-CST/CDT</option>
 		</select><br>
 		UTC offset: <input name="UO" type="number" min="-65500" max="65500" required> seconds (max. 18 hours)<br>
-		Current local time is <span class="times">unknown</span>.
+		Current local time is <span class="times">unknown</span>.<br>
+		Latitude (N): <input name="LT" type="number" min="-66.6" max="66.6" step="0.01">
+		Longitude (E): <input name="LN" type="number" min="-180" max="180" step="0.01">
+		<div id="sun" class="times"></div>
 		<h3>Clock</h3>
 		Clock Overlay:
 		<select name="OL" onchange="Cs()">
@@ -136,15 +161,27 @@
 		Year: 20 <input name="CY" type="number" min="0" max="99" required> Month: <input name="CI" type="number" min="1" max="12" required> Day: <input name="CD" type="number" min="1" max="31" required><br>
 		Hour: <input name="CH" type="number" min="0" max="23" required> Minute: <input name="CM" type="number" min="0" max="59" required> Second: <input name="CS" type="number" min="0" max="59" required><br>
 		<h3>Macro presets</h3>
-    <b>Macros have moved!</b><br>
-    <i>Presets now also can be used as macros to save both JSON and HTTP API commands.<br>
-    Just enter the preset id below!</i>
+    	<b>Macros have moved!</b><br>
+    	<i>Presets now also can be used as macros to save both JSON and HTTP API commands.<br>
+    	Just enter the preset id below!</i>
 		<i>Use 0 for the default action instead of a preset</i><br>
 		Alexa On/Off Preset: <input name="A0" type="number" min="0" max="250" required> <input name="A1" type="number" min="0" max="250" required><br>
-		Button short press Preset: <input name="MP" type="number" min="0" max="250" required><br>
-    Long Press: <input name="ML" type="number" min="0" max="250" required> Double press: <input name="MD" type="number" min="0" max="250" required><br>	
 		Countdown-Over Preset: <input name="MC" type="number" min="0" max="250" required><br>
 		Timed-Light-Over Presets: <input name="MN" type="number" min="0" max="250" required><br>
+		<h3>Button actions</h3>
+		<table style="margin: 0 auto;" id="macros">
+			<thead>
+				<tr>
+					<td>push<br>switch</td>
+					<td>short<br>on-&gt;off</td>
+					<td>long<br>off-&gt;on</td>
+					<td>double<br>N/A</td>
+				</tr>
+			</thead>
+			<tbody>
+			</tbody>
+		</table>
+		<a href="https://github.com/Aircoookie/WLED/wiki/Macros#analog-button" target="_blank">Analog Button setup</a>
 		<h3>Time-controlled presets</h3>
     <div style="display: inline-block">
     <table id="TMT">

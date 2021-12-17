@@ -16,11 +16,13 @@ enum class AdaState {
   Data_Blue,
   TPM2_Header_Type,
   TPM2_Header_CountHi,
-  TPM2_Header_CountLo
+  TPM2_Header_CountLo,
 };
 
 void handleSerial()
 {
+  if (pinManager.isPinAllocated(3)) return;
+  
   #ifdef WLED_ENABLE_ADALIGHT
   static auto state = AdaState::Header_A;
   static uint16_t count = 0;
@@ -32,12 +34,44 @@ void handleSerial()
   while (Serial.available() > 0)
   {
     yield();
-    byte next = Serial.read();
+    byte next = Serial.peek();
     switch (state) {
       case AdaState::Header_A:
         if (next == 'A') state = AdaState::Header_d;
         else if (next == 0xC9) { //TPM2 start byte
           state = AdaState::TPM2_Header_Type;
+        }
+        else if (next == 'I') {
+          handleImprovPacket();
+          return;
+        } else if (next == 'v') {
+          Serial.print("WLED"); Serial.write(' '); Serial.println(VERSION);
+        } else if (next == '{') { //JSON API
+          bool verboseResponse = false;
+          #ifdef WLED_USE_DYNAMIC_JSON
+          DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+          #else
+          if (!requestJSONBufferLock(16)) return;
+          #endif
+          Serial.setTimeout(100);
+          DeserializationError error = deserializeJson(doc, Serial);
+          if (error) {
+            releaseJSONBufferLock();
+            return;
+          }
+          verboseResponse = deserializeState(doc.as<JsonObject>());
+          //only send response if TX pin is unused for other purposes
+          if (verboseResponse && !pinManager.isPinAllocated(1)) {
+            doc.clear();
+            JsonObject state = doc.createNestedObject("state");
+            serializeState(state);
+            JsonObject info  = doc.createNestedObject("info");
+            serializeInfo(info);
+
+            serializeJson(doc, Serial);
+            Serial.println();
+          }
+          releaseJSONBufferLock();
         }
         break;
       case AdaState::Header_d:
@@ -98,6 +132,7 @@ void handleSerial()
         }
         break;
     }
+    Serial.read(); //discard the byte
   }
   #endif
 }

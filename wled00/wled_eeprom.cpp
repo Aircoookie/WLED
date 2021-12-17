@@ -89,11 +89,20 @@ void loadSettingsFromEEPROM()
   if (apChannel > 13 || apChannel < 1) apChannel = 1;
   apHide = EEPROM.read(228);
   if (apHide > 1) apHide = 1;
-  ledCount = EEPROM.read(229) + ((EEPROM.read(398) << 8) & 0xFF00); if (ledCount > MAX_LEDS || ledCount == 0) ledCount = 30;
+  uint16_t length = EEPROM.read(229) + ((EEPROM.read(398) << 8) & 0xFF00); //was ledCount
+  if (length > MAX_LEDS || length == 0) length = 30;
+  uint8_t pins[5] = {2, 255, 255, 255, 255};
+  uint8_t colorOrder = COL_ORDER_GRB;
+  if (lastEEPROMversion > 9) colorOrder = EEPROM.read(383);
+  if (colorOrder > COL_ORDER_GBR) colorOrder = COL_ORDER_GRB;
+  bool skipFirst = EEPROM.read(2204);
+  bool reversed = EEPROM.read(252);
+  BusConfig bc = BusConfig(EEPROM.read(372) ? TYPE_SK6812_RGBW : TYPE_WS2812_RGB, pins, 0, length, colorOrder, reversed, skipFirst);
+  busses.add(bc);
 
   notifyButton = EEPROM.read(230);
   notifyTwice = EEPROM.read(231);
-  buttonEnabled = EEPROM.read(232);
+  buttonType[0] = EEPROM.read(232) ? BTN_TYPE_PUSH : BTN_TYPE_NONE;
 
   staticIP[0] = EEPROM.read(234);
   staticIP[1] = EEPROM.read(235);
@@ -115,7 +124,6 @@ void loadSettingsFromEEPROM()
   }
   receiveNotificationBrightness = EEPROM.read(250);
   fadeTransition = EEPROM.read(251);
-  strip.reverseMode = EEPROM.read(252);
   transitionDelayDefault = EEPROM.read(253) + ((EEPROM.read(254) << 8) & 0xFF00);
   transitionDelay = transitionDelayDefault;
   briMultiplier = EEPROM.read(255);
@@ -144,7 +152,7 @@ void loadSettingsFromEEPROM()
   arlsOffset = EEPROM.read(368);
   if (!EEPROM.read(367)) arlsOffset = -arlsOffset;
   turnOnAtBoot = EEPROM.read(369);
-  useRGBW = EEPROM.read(372);
+  //strip.isRgbw = EEPROM.read(372);
   //374 - strip.paletteFade
   
   apBehavior = EEPROM.read(376);
@@ -158,6 +166,7 @@ void loadSettingsFromEEPROM()
   receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
   
   if (lastEEPROMversion > 4) {
+    #ifndef WLED_DISABLE_HUESYNC
     huePollingEnabled = EEPROM.read(2048);
     //hueUpdatingEnabled = EEPROM.read(2049);
     for (int i = 2050; i < 2054; ++i)
@@ -173,6 +182,7 @@ void loadSettingsFromEEPROM()
     hueApplyBri = EEPROM.read(2104);
     hueApplyColor = EEPROM.read(2105);
     huePollLightId = EEPROM.read(2106);
+    #endif
   }
   if (lastEEPROMversion > 5) {
     overlayMin = EEPROM.read(2150);
@@ -189,18 +199,20 @@ void loadSettingsFromEEPROM()
     countdownSec = EEPROM.read(2161);
     setCountdown();
 
+    #ifndef WLED_DISABLE_CRONIXIE
     readStringFromEEPROM(2165, cronixieDisplay, 6);
     cronixieBacklight = EEPROM.read(2171);
+    #endif
 
     //macroBoot = EEPROM.read(2175);
     macroAlexaOn = EEPROM.read(2176);
     macroAlexaOff = EEPROM.read(2177);
-    macroButton = EEPROM.read(2178);
-    macroLongPress = EEPROM.read(2179);
+    macroButton[0] = EEPROM.read(2178);
+    macroLongPress[0] = EEPROM.read(2179);
     macroCountdown = EEPROM.read(2180);
     macroNl = EEPROM.read(2181);
-    macroDoublePress = EEPROM.read(2182);
-    if (macroDoublePress > 16) macroDoublePress = 0;
+    macroDoublePress[0] = EEPROM.read(2182);
+    if (macroDoublePress[0] > 16) macroDoublePress[0] = 0;
   }
 
   if (lastEEPROMversion > 6)
@@ -238,7 +250,7 @@ void loadSettingsFromEEPROM()
 
   if (lastEEPROMversion > 9)
   {
-    strip.setColorOrder(EEPROM.read(383));
+    //strip.setColorOrder(EEPROM.read(383));
     irEnabled = EEPROM.read(385);
     strip.ablMilliampsMax = EEPROM.read(387) + ((EEPROM.read(388) << 8) & 0xFF00);
   } else if (lastEEPROMversion > 1) //ABL is off by default when updating from version older than 0.8.2
@@ -317,20 +329,8 @@ void loadSettingsFromEEPROM()
   receiveDirect = !EEPROM.read(2200);
   notifyMacro = EEPROM.read(2201);
 
-  strip.rgbwMode = EEPROM.read(2203);
-  skipFirstLed = EEPROM.read(2204);
-
-  if (EEPROM.read(2210) || EEPROM.read(2211) || EEPROM.read(2212))
-  {
-    presetCyclingEnabled = EEPROM.read(2205);
-    presetCycleTime = EEPROM.read(2206) + ((EEPROM.read(2207) << 8) & 0xFF00);
-    if (lastEEPROMversion < 21) presetCycleTime /= 100; //was stored in ms, now is in tenths of a second
-    presetCycleMin = EEPROM.read(2208);
-    presetCycleMax = EEPROM.read(2209);
-    //was presetApplyBri = EEPROM.read(2210);
-    //was presetApplyCol = EEPROM.read(2211);
-    //was presetApplyFx = EEPROM.read(2212);
-  }
+  //strip.rgbwMode = EEPROM.read(2203);
+  //skipFirstLed = EEPROM.read(2204);
 
   bootPreset = EEPROM.read(389);
   wifiLock = EEPROM.read(393);
@@ -344,8 +344,10 @@ void loadSettingsFromEEPROM()
   //custom macro memory (16 slots/ each 64byte)
   //1024-2047 reserved
 
+  #ifndef WLED_DISABLE_BLYNK
   readStringFromEEPROM(2220, blynkApiKey, 35);
   if (strlen(blynkApiKey) < 25) blynkApiKey[0] = 0;
+  #endif
 
   #ifdef WLED_ENABLE_DMX
   // DMX (2530 - 2549)2535
@@ -380,8 +382,13 @@ void deEEP() {
   
   DEBUG_PRINTLN(F("Preset file not found, attempting to load from EEPROM"));
   DEBUGFS_PRINTLN(F("Allocating saving buffer for dEEP"));
-  DynamicJsonDocument dDoc(JSON_BUFFER_SIZE *2);
-  JsonObject sObj = dDoc.to<JsonObject>();
+  #ifdef WLED_USE_DYNAMIC_JSON
+  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+  #else
+  if (!requestJSONBufferLock(8)) return;
+  #endif
+
+  JsonObject sObj = doc.to<JsonObject>();
   sObj.createNestedObject("0");
 
   EEPROM.begin(EEPSIZE);
@@ -407,7 +414,7 @@ void deEEP() {
 
         JsonArray colarr = segObj.createNestedArray("col");
 
-        byte numChannels = (useRGBW)? 4:3;
+        byte numChannels = (strip.isRgbw)? 4:3;
 
         for (uint8_t k = 0; k < 3; k++) //k=0 primary (i+2) k=1 secondary (i+6) k=2 tertiary color (i+12)
         {
@@ -418,10 +425,10 @@ void deEEP() {
           for (byte j = 0; j < numChannels; j++) colX.add(EEPROM.read(memloc + j));
         }
         
-        segObj[F("fx")]  = EEPROM.read(i+10);
+        segObj["fx"]  = EEPROM.read(i+10);
         segObj[F("sx")]  = EEPROM.read(i+11);
         segObj[F("ix")]  = EEPROM.read(i+16);
-        segObj[F("pal")] = EEPROM.read(i+17);
+        segObj["pal"] = EEPROM.read(i+17);
       } else {
         WS2812FX::Segment* seg = strip.getSegments();
         memcpy(seg, EEPROM.getDataPtr() +i+2, 240);
@@ -440,8 +447,6 @@ void deEEP() {
       }
     }
 
-    
-    
     for (uint16_t index = 1; index <= 16; index++) { //copy macros to presets.json
       char m[65];
       readStringFromEEPROM(1024+64*(index-1), m, 64);
@@ -461,10 +466,14 @@ void deEEP() {
   File f = WLED_FS.open("/presets.json", "w");
   if (!f) {
     errorFlag = ERR_FS_GENERAL;
+    releaseJSONBufferLock();
     return;
   }
-  serializeJson(dDoc, f);
+  serializeJson(doc, f);
   f.close();
+
+  releaseJSONBufferLock();
+
   DEBUG_PRINTLN(F("deEEP complete!"));
 }
 
@@ -473,6 +482,10 @@ void deEEPSettings() {
   EEPROM.begin(EEPSIZE);
   loadSettingsFromEEPROM();
   EEPROM.end();
+
+  //call readFromConfig() with an empty object so that usermods can initialize to defaults prior to saving
+  JsonObject empty = JsonObject();
+  usermods.readFromConfig(empty);
 
   serializeConfig();
 }

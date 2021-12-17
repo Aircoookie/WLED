@@ -1,6 +1,439 @@
 ## WLED changelog
 
-### Development versions after 0.11.1 release
+### Builds after release 0.12.0
+
+#### Build 2112080
+
+-		Version bump to 0.13.0-b6 "Toki"
+-		Added "ESP02" (ESP8266 with 2M of flash) to PIO/release binaries
+
+#### Build 2112070
+
+-		Added new effect "Fairy", replacing "Police All"
+-		Added new effect "Fairytwinkle", replacing "Two Areas"
+-		Static single JSON buffer (performance and stability improvement) (PR #2336)
+
+#### Build 2112030
+
+-		Fixed ESP32 crash on Colortwinkles brightness change
+-		Fixed setting picker to black resetting hue and saturation
+-		Fixed auto white mode not saved to config
+
+#### Build 2111300
+
+-		Added CCT and white balance correction support (PR #2285)
+-		Unified UI slider style
+-		Added LED settings config template upload
+
+#### Build 2111220
+
+-   Fixed preset cycle not working from preset called by UI
+-   Reintroduced permanent min. and max. cycle bounds
+
+#### Build 2111190
+
+-   Changed default ESP32 LED pin from 16 to 2
+-   Renamed "Running 2" to "Chase 2"
+-   Renamed "Tri Chase" to "Chase 3"
+
+#### Build 2111170
+
+-   Version bump to 0.13.0-b5 "Toki"
+-   Improv Serial support (PR #2334)
+-   Button improvements (PR #2284)
+-   Added two time zones (PR #2264, 2311)
+-   JSON in/decrementing support for brightness and presets
+-   Fixed no gamma correction for JSON individual LED control
+-   Preset cycle bugfix
+-   Removed ledCount
+-   LED settings buffer bugfix
+-   Network pin conflict bugfix
+-   Changed default ESP32 partition layout to 4M, 1M FS
+
+#### Build 2110110
+
+-   Version bump to 0.13.0-b4 "Toki"
+-   Added option for bus refresh if off (PR #2259)
+-   New auto segment logic
+-   Fixed current calculations for virtual or non-linear configs (PR #2262)
+
+#### Build 2110060
+
+-   Added virtual network DDP busses (PR #2245)
+-   Allow playlist as end preset in playlist
+-   Improved bus start field UX
+-   Pin reservations improvements (PR #2214)
+
+#### Build 2109220
+
+-   Version bump to 0.13.0-b3 "Toki"
+-   Added segment names (PR #2184)
+-   Improved Police and other effects (PR #2184)
+-   Reverted PR #1902 (Live color correction - will be implemented as usermod) (PR #2175)
+-   Added transitions for segment on/off
+-   Improved number of sparks/stars in Fireworks effect with low number of segments
+-   Fixed segment name edit pencil disappearing with request
+-   Fixed color transition active even if the segment is off
+-   Disallowed file upload with OTA lock active
+-   Fixed analog invert option missing (PR #2219)
+
+#### Build 2109100
+
+-   Added an auto create segments per bus setting
+-   Added 15 new palettes from SR branch (PR #2134)
+-   Fixed segment runtime not reset on FX change via HTTP API
+-   Changed AsyncTCP dependency to pbolduc fork v1.2.0
+
+#### Build 2108250
+
+-   Added Sync groups (PR #2150)
+-   Added JSON API over Serial support
+-   Live color correction (PR #1902)
+
+#### Build 2108180
+
+-   Fixed JSON IR remote not working with codes greater than 0xFFFFFF (fixes #2135)
+-   Fixed transition 0 edge case
+
+#### Build 2108170
+
+-   Added application level pong websockets reply (#2139)
+-   Use AsyncTCP 1.0.3 as it mitigates the flickering issue from 0.13.0-b2
+-   Fixed transition manually updated in preset overriden by field value
+
+#### Build 2108050
+
+-   Fixed undesirable color transition from Orange to boot preset color on first boot
+-   Removed misleading Delete button on new playlist with one entry
+-   Updated NeoPixelBus to 2.6.7 and AsyncTCP to 1.1.1
+
+#### Build 2107230
+
+-   Added skinning (extra custom CSS) (PR #2084)
+-   Added presets/config backup/restore (PR #2084)
+-   Added option for using length instead of Stop LED in UI (PR #2048)
+-   Added custom `holidays.json` holiday list (PR #2048)
+
+#### Build 2107100
+
+-   Version bump to 0.13.0-b2 "Toki"
+-   Accept hex color strings in individual LED API
+-   Fixed transition property not applying unless power/bri/color changed next
+-   Moved transition field below segments (temporarily)
+-   Reduced unneeded websockets pushes
+
+#### Build 2107091
+
+-   Fixed presets using wrong call mode (e.g. causing buttons to send UDP under direct change type)
+-   Increased hue buffer
+-   Renamed `NOTIFIER_CALL_MODE_` to `CALL_MODE_`
+
+#### Build 2107090
+
+-   Busses extend total configured LEDs if required
+-   Fixed extra button pins defaulting to 0 on first boot
+
+#### Build 2107080
+
+-   Made Peek use the main websocket connection instead of opening a second one
+-   Temperature usermod fix (from @blazoncek's dev branch)
+
+#### Build 2107070
+
+-   More robust initial resource loading in UI
+-   Added `getJsonValue()` for usermod config parsing (PR #2061)
+-   Fixed preset saving over websocket
+-   Alpha ESP32 S2 support (filesystem does not work) (PR #2067)
+
+#### Build 2107042
+
+-   Updated ArduinoJson to 6.18.1
+-   Improved Twinkleup effect
+-   Fixed preset immediately deselecting when set via HTTP API `PL=`
+
+#### Build 2107041
+
+-   Restored support for "PL=~" mistakenly removed in 2106300
+-   JSON IR improvements
+
+#### Build 2107040
+
+-   Playlist entries are now more compact
+-   Added the possibility to enter negative numbers for segment offset
+
+#### Build 2107021
+
+-   Added WebSockets support to UI
+
+#### Build 2107020
+
+-   Send websockets on every state change
+-   Improved Aurora effect
+
+#### Build 2107011
+
+-   Added MQTT button feedback option (PR #2011)
+
+#### Build 2107010
+
+-   Added JSON IR codes (PR #1941)
+-   Adjusted the width of WiFi and LED settings input fields
+-   Fixed a minor visual issue with slider trail not reaching thumb on low values
+
+#### Build 2106302
+
+-   Fixed settings page broken by using "%" in input fields
+
+#### Build 2106301
+
+-   Fixed a problem with disabled buttons reverting to pin 0 causing conflict
+
+#### Build 2106300
+
+-   Version bump to 0.13.0-b0 "Toki"
+-   BREAKING: Removed preset cycle (use playlists)
+-   BREAKING: Removed `nl.fade`, `leds.pin` and `ccnf` from JSON API
+-   Added playlist editor UI
+-   Reordered segment UI and added offset field
+-   Raised maximum MQTT password length to 64 (closes #1373)
+
+#### Build 2106290
+
+-   Added Offset to segments, allows shifting the LED considered first within a segment
+-   Added `of` property to seg object in JSON API to set offset
+-   Usermod settings improvements (PR #2043, PR #2045)
+
+#### Build 2106250
+
+-   Fixed preset only disabling on second effect/color change
+
+#### Build 2106241
+
+-   BREAKING: Added ability for usermods to force a config save if config incomplete. `readFromConfig()` needs to return a `bool` to indicate if the config is complete
+-   Updated usermods implementing `readFromConfig()`
+-   Auto-create segments based on configured busses
+
+#### Build 2106200
+
+-   Added 2 Ethernet boards and split Ethernet configs into separate file
+
+#### Build 2106180
+
+-   Fixed DOS on Chrome tab restore causing reboot
+
+#### Build 2106170
+
+-   Optimized JSON buffer usage (pre-serialized color arrays)
+
+#### Build 2106140
+
+-   Updated main logo
+-   Reduced flash usage by 0.8kB by using 8-bit instead of 32-bit PNGs for welcome and 404 pages
+-   Added a check to stop Alexa reporting an error if state set by macro differs from the expected state
+
+#### Build 2106100
+
+-   Added support for multiple buttons with various types (PR #1977)
+-   Fixed infinite playlists (PR #2020)
+-   Added `r` to playlist object, allows for shuffle regardless of the `repeat` value
+-   Improved accuracy of NTP time sync
+-   Added possibility for WLED UDP sync to sync system time
+-   Improved UDP sync accuracy, if both sender and receiver are NTP synced
+-   Fixed a cache issue with restored tabs
+-   Cache CORS request
+-   Disable WiFi sleep by default on ESP32
+
+#### Build 2105230
+
+-   No longer retain MQTT `/v` topic to alleviate storage loads on MQTT broker
+-   Fixed Sunrise calculation (atan_t approx. used outside of value range)
+
+#### Build 2105200
+
+-   Fixed WS281x output on ESP32
+-   Fixed potential out-of-bounds write in MQTT
+-   Fixed IR pin not changeable if IR disabled
+-   Fixed XML API <wv> containing -1 on Manual only RGBW mode (see #888, #1783)
+
+#### Build 2105171
+
+-   Always copy MQTT payloads to prevent non-0-terminated strings
+-   Updated ArduinoJson to 6.18.0
+-   Added experimental support for `{"on":"t"}` to toggle on/off state via JSON
+
+#### Build 2105120
+
+-   Fixed possibility of non-0-terminated MQTT payloads
+-   Fixed two warnings regarding integer comparison
+
+#### Build 2105112
+
+-   Usermod settings page no usermods message
+-   Lowered min speed for Drip effect
+
+#### Build 2105111
+
+-   Fixed various Codacy code style and logic issues
+
+#### Build 2105110
+
+-   Added Usermod settings page and configurable usermods (PR #1951)
+-   Added experimental `/json/cfg` endpoint for changing settings from JSON (see #1944, not part of official API)
+
+#### Build 2105070
+
+-   Fixed not turning on after pressing "Off" on IR remote twice (#1950)
+-   Fixed OTA update file selection from Android app (TODO: file type verification in JS, since android can't deal with accept='.bin' attribute)
+
+#### Build 2104220
+
+-   Version bump to 0.12.1-b1 "Hikari"
+-   Release and build script improvements (PR #1844)
+
+#### Build 2104211
+
+-   Replace default TV simulator effect with the version that saves 18k of flash and appears visually identical
+
+#### Build 2104210
+
+-   Added `tb` to JSON state, allowing setting the timebase (set tb=0 to start e.g. wipe effect from the beginning). Receive only.
+-   Slightly raised Solid mode refresh rate to work with LEDs (TM1814) that require refresh rates of at least 2fps
+-   Added sunrise and sunset calculation to the backup JSON time source
+
+#### Build 2104151
+
+-   `NUM_STRIPS` no longer required with compile-time strip defaults
+-   Further optimizations in wled_math.h
+
+#### Build 2104150
+
+-   Added ability to add multiple busses as compile time defaults using the esp32_multistrip usermod define syntax
+
+#### Build 2104141
+
+-   Reduced memory usage by 540b by switching to a different trigonometric approximation
+
+#### Build 2104140
+
+-   Added dynamic location-based Sunrise/Sunset macros (PR #1889)
+-   Improved seasonal background handling (PR #1890)
+-   Fixed instance discovery not working if MQTT not compiled in
+-   Fixed Button, IR, Relay pin not assigned by default (resolves #1891)
+
+#### Build 2104120
+
+-   Added switch support (button macro is switch closing action, long press macro switch opening)
+-   Replaced Circus effect with new Running Dual effect (Circus is Tricolor Chase with Red/White/Black)
+-   Fixed ledmap with multiple segments (PR #1864)
+
+#### Build 2104030
+
+-   Fixed ESP32 crash on Drip effect with reversed segment (#1854)
+-   Added flag `WLED_DISABLE_BROWNOUT_DET` to disable ESP32 brownout detector (off by default)
+
+### WLED release 0.12.0
+
+#### Build 2104020
+
+-   Allow clearing button/IR/relay pin on platforms that don't support negative numbers
+-   Removed AUX pin
+-   Hid some easter eggs, only to be found at easter
+
+### Development versions between 0.11.1 and 0.12.0 releases
+
+#### Build 2103310
+
+-   Version bump to 0.12.0 "Hikari"
+-   Fixed LED settings submission in iOS app
+
+#### Build 2103300
+
+-   Version bump to 0.12.0-b5 "Hikari"
+-   Update to core espressif32@3.2
+-   Fixed IR pin not configurable
+
+#### Build 2103290
+
+-   Version bump to 0.12.0-b4 "Hikari"
+-   Experimental use of espressif32@3.1.1
+-   Fixed RGBW mode disabled after LED settings saved
+-   Fixed infrared support not compiled in if IRPIN is not defined
+
+#### Build 2103230
+
+-   Fixed current estimation
+
+#### Build 2103220
+
+-   Version bump to 0.12.0-b2 "Hikari"
+-   Worked around an issue causing a critical decrease in framerate (wled.cpp l.240 block)
+-   Bump to Espalexa v2.7.0, fixing discovery
+
+#### Build 2103210
+
+-   Version bump to 0.12.0-b1 "Hikari"
+-   More colors visible on Palette preview
+-   Fixed chevron icon not included
+-   Fixed color order override
+-   Cleanup
+
+#### Build 2103200
+
+-   Version bump to 0.12.0-b0 "Hikari"
+-   Added palette preview and search (PR #1637)
+-   Added Reverse checkbox for PWM busses - reverses logic level for on
+-   Fixed various problems with the Playlist feature (PR #1724)
+-   Replaced "Layer" icon with "i" icon for Info button
+-   Chunchun effect more fitting for various segment lengths (PR #1804)
+-   Removed global reverse (in favor of individual bus reverse)
+-   Removed some unused icons from UI icon font
+
+#### Build 2103130
+
+-   Added options for Auto Node discovery
+-   Optimized strings (no string both F() and raw)
+
+#### Build 2103090
+
+-   Added Auto Node discovery (PR #1683)
+-   Added tooltips to quick color selectors for accessibility
+
+#### Build 2103060
+
+-   Auto start field population in bus config
+
+#### Build 2103050
+
+-   Fixed incorrect over-memory indication in LED settings on ESP32
+
+#### Build 2103041
+
+-   Added destructor for BusPwm (fixes #1789)
+
+#### Build 2103040
+
+-   Fixed relay mode inverted when upgrading from 0.11.0
+-   Fixed no more than 2 pins per bus configurable in UI
+-   Changed to non-linear IR brightness steps (PR #1742)
+-   Fixed various warnings (PR #1744)
+-   Added UDP DNRGBW Mode (PR #1704)
+-   Added dynamic LED mapping with ledmap.json file (PR #1738)
+-   Added support for QuinLED-ESP32-Ethernet board
+-   Added support for WESP32 ethernet board (PR #1764)
+-   Added Caching for main UI (PR #1704)
+-   Added Tetrix mode (PR #1729)
+-   Removed Merry Christmas mode (use "Chase 2" - called Running 2 before 0.13.0)
+-   Added memory check on Bus creation
+
+#### Build 2102050
+
+-   Version bump to 0.12.0-a0 "Hikari"
+-   Added FPS indication in info
+-   Bumped max outputs from 7 to 10 busses for ESP32
+
+#### Build 2101310
+
+-   First alpha configurable multipin
 
 #### Build 2101130
 
@@ -158,7 +591,7 @@
 #### Build 2011153
 
 -   Fixed an ESP32 end-of-file issue
--   Fixed useRGBW not read from cfg.json
+-   Fixed strip.isRgbw not read from cfg.json
 
 #### Build 2011152
 

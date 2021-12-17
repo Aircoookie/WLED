@@ -10,31 +10,22 @@
 			margin: 0;
 		}
 		html {
-			--h: 11.55vh;
+			--h: 10.2vh;
 		}
 		button {
 			background: #333;
 			color: #fff;
 			font-family: Verdana, Helvetica, sans-serif;
-			border: 0.3ch solid #333;
-			display: inline-block;
-			font-size: 8vmin;
+			border: 1px solid #333;
+			border-radius: var(--h);
+			font-size: 6vmin;
 			height: var(--h);
-			width: 95%;
-			margin-top: 2.4vh;
+			width: calc(100% - 40px);
+			margin-top: 2vh;
 		}
 	</style>
-	<script>
-	function BB()
-	{
-		if (window.frameElement) {
-			document.getElementById("b").style.display = "none";
-			document.documentElement.style.setProperty('--h',"13.86vh");
-		}
-	}
-	</script>
 </head>
-<body onload="BB()">
+<body>
 <form action="/"><button type=submit id="b">Back</button></form>
 <form action="/settings/wifi"><button type="submit">WiFi Setup</button></form>
 <form action="/settings/leds"><button type="submit">LED Preferences</button></form>
@@ -42,6 +33,7 @@
 <form action="/settings/ui"><button type="submit">User Interface</button></form>
 <form action="/settings/sync"><button type="submit">Sync Interfaces</button></form>
 <form action="/settings/time"><button type="submit">Time & Macros</button></form>
+<form action="/settings/um"><button type="submit">Usermods</button></form>
 <form action="/settings/sec"><button type="submit">Security & Updates</button></form>
 </body>
 </html>

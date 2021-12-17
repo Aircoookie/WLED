@@ -6,29 +6,25 @@
  
 void initCronixie()
 {
-  if (overlayCurrent == 3 && !cronixieInit)
+  if (overlayCurrent == 3 && dP[0] == 255) //if dP[0] is 255, cronixie is not yet init'ed
   {
     setCronixie();
     strip.getSegment(0).grouping = 10; //10 LEDs per digit
-    cronixieInit = true;
-  } else if (cronixieInit && overlayCurrent != 3)
+  } else if (dP[0] < 255 && overlayCurrent != 3)
   {
     strip.getSegment(0).grouping = 1;
-    cronixieInit = false; 
+    dP[0] = 255; 
   }
 }
 
 
+//handleOverlays is essentially the equivalent of usermods.loop
 void handleOverlays()
 {
-  if (millis() - overlayRefreshedTime > overlayRefreshMs)
-  {
-    initCronixie();
-    updateLocalTime();
-    checkTimers();
-    checkCountdown();
-    if (overlayCurrent == 3) _overlayCronixie();//Diamex cronixie clock kit
-    overlayRefreshedTime = millis();
+  initCronixie();
+  if (overlayCurrent == 3) {
+    _overlayCronixie();//Diamex cronixie clock kit
+    strip.trigger();
   }
 }
 
@@ -63,10 +59,9 @@ void _overlayAnalogClock()
   }
   if (analogClock5MinuteMarks)
   {
-    int pix;
-    for (int i = 0; i <= 12; i++)
+    for (byte i = 0; i <= 12; i++)
     {
-      pix = analogClock12pixel + round((overlaySize / 12.0) *i);
+      int pix = analogClock12pixel + round((overlaySize / 12.0) *i);
       if (pix > overlayMax) pix -= overlaySize;
       strip.setPixelColor(pix, 0x00FFAA);
     }
@@ -74,15 +69,14 @@ void _overlayAnalogClock()
   if (!analogClockSecondsTrail) strip.setPixelColor(secondPixel, 0xFF0000);
   strip.setPixelColor(minutePixel, 0x00FF00);
   strip.setPixelColor(hourPixel, 0x0000FF);
-  overlayRefreshMs = 998;
 }
 
 
 void _overlayAnalogCountdown()
 {
-  if (now() < countdownTime)
+  if ((unsigned long)toki.second() < countdownTime)
   {
-    long diff = countdownTime - now();
+    long diff = countdownTime - toki.second();
     double pval = 60;
     if (diff > 31557600L) //display in years if more than 365 days
     {
@@ -116,11 +110,10 @@ void _overlayAnalogCountdown()
       strip.setRange(analogClock12pixel, analogClock12pixel + pixelCnt, ((uint32_t)colSec[3] << 24)| ((uint32_t)colSec[0] << 16) | ((uint32_t)colSec[1] << 8) | colSec[2]);
     }
   }
-  overlayRefreshMs = 998;
 }
 
-
 void handleOverlayDraw() {
+  usermods.handleOverlayDraw();
   if (!overlayCurrent) return;
   switch (overlayCurrent)
   {
@@ -128,7 +121,6 @@ void handleOverlayDraw() {
     case 3: _drawOverlayCronixie(); break;
   }
 }
-
 
 /*
  * Support for the Cronixie clock
@@ -220,8 +212,6 @@ void setCronixie()
 
   DEBUG_PRINT("cset ");
   DEBUG_PRINTLN(cronixieDisplay);
-
-  overlayRefreshMs = 1997; //Only refresh every 2secs if no seconds are displayed
   
   for (int i = 0; i < 6; i++)
   {
@@ -242,8 +232,8 @@ void setCronixie()
       case 'a': dP[i] = 58; i++; break;
       case 'm': dP[i] = 74 + getSameCodeLength('m',i,cronixieDisplay); i = i+dP[i]-74; break;
       case 'M': dP[i] = 24 + getSameCodeLength('M',i,cronixieDisplay); i = i+dP[i]-24; break;
-      case 's': dP[i] = 80 + getSameCodeLength('s',i,cronixieDisplay); i = i+dP[i]-80; overlayRefreshMs = 497; break; //refresh more often bc. of secs
-      case 'S': dP[i] = 30 + getSameCodeLength('S',i,cronixieDisplay); i = i+dP[i]-30; overlayRefreshMs = 497; break;
+      case 's': dP[i] = 80 + getSameCodeLength('s',i,cronixieDisplay); i = i+dP[i]-80; break; //refresh more often bc. of secs
+      case 'S': dP[i] = 30 + getSameCodeLength('S',i,cronixieDisplay); i = i+dP[i]-30; break;
       case 'Y': dP[i] = 36 + getSameCodeLength('Y',i,cronixieDisplay); i = i+dP[i]-36; break; 
       case 'y': dP[i] = 86 + getSameCodeLength('y',i,cronixieDisplay); i = i+dP[i]-86; break; 
       case 'I': dP[i] = 39 + getSameCodeLength('I',i,cronixieDisplay); i = i+dP[i]-39; break;  //Month. Don't ask me why month and minute both start with M.
@@ -369,7 +359,7 @@ void _drawOverlayCronixie()
 }
 
 #else // WLED_DISABLE_CRONIXIE
-byte getSameCodeLength(char code, int index, char const cronixieDisplay[]) {}
+byte getSameCodeLength(char code, int index, char const cronixieDisplay[]) { return 0; }
 void setCronixie() {}
 void _overlayCronixie() {}
 void _drawOverlayCronixie() {}

@@ -64,6 +64,15 @@ class AsyncJsonResponse: public AsyncAbstractResponse {
 
   public:    
 
+    AsyncJsonResponse(JsonDocument *ref, bool isArray=false) : _jsonBuffer(1), _isValid{false} {
+      _code = 200;
+      _contentType = JSON_MIMETYPE;
+      if(isArray)
+        _root = ref->to<JsonArray>();
+      else
+        _root = ref->to<JsonObject>();
+    }
+
     AsyncJsonResponse(size_t maxJsonBufferSize = DYNAMIC_JSON_DOCUMENT_SIZE, bool isArray=false) : _jsonBuffer(maxJsonBufferSize), _isValid{false} {
       _code = 200;
       _contentType = JSON_MIMETYPE;
@@ -84,7 +93,7 @@ class AsyncJsonResponse: public AsyncAbstractResponse {
       return _contentLength;
     }
 
-   size_t getSize() { return _jsonBuffer.size(); }
+    size_t getSize() { return _root.size(); }
 
     size_t _fillBuffer(uint8_t *data, size_t len){
       ChunkPrint dest(data, _sentLength, len);
@@ -144,7 +153,7 @@ public:
   virtual void handleBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) override final {
     if (_onRequest) {
       _contentLength = total;
-      if (total > 0 && request->_tempObject == NULL && total < _maxContentLength) {
+      if (total > 0 && request->_tempObject == NULL && (int)total < _maxContentLength) {
         request->_tempObject = malloc(total);
       }
       if (request->_tempObject != NULL) {

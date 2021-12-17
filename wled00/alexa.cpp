@@ -44,9 +44,12 @@ void onAlexaChange(EspalexaDevice* dev)
       if (bri == 0)
       {
         bri = briLast;
-        colorUpdated(NOTIFIER_CALL_MODE_ALEXA);
+        colorUpdated(CALL_MODE_ALEXA);
       }
-    } else applyPreset(macroAlexaOn);
+    } else {
+      applyPreset(macroAlexaOn, CALL_MODE_ALEXA);
+      if (bri == 0) espalexaDevice->setValue(briLast); //stop Alexa from complaining if macroAlexaOn does not actually turn on
+    }
   } else if (m == EspalexaDeviceProperty::off)
   {
     if (!macroAlexaOff)
@@ -55,29 +58,42 @@ void onAlexaChange(EspalexaDevice* dev)
       {
         briLast = bri;
         bri = 0;
-        colorUpdated(NOTIFIER_CALL_MODE_ALEXA);
+        colorUpdated(CALL_MODE_ALEXA);
       }
-    } else applyPreset(macroAlexaOff);
+    } else {
+      applyPreset(macroAlexaOff, CALL_MODE_ALEXA);
+      if (bri != 0) espalexaDevice->setValue(0); //stop Alexa from complaining if macroAlexaOff does not actually turn off
+    }
   } else if (m == EspalexaDeviceProperty::bri)
   {
     bri = espalexaDevice->getValue();
-    colorUpdated(NOTIFIER_CALL_MODE_ALEXA);
+    colorUpdated(CALL_MODE_ALEXA);
   } else //color
   {
     if (espalexaDevice->getColorMode() == EspalexaColorMode::ct) //shade of white
     {
       uint16_t ct = espalexaDevice->getCt();
-      if (useRGBW)
-      {
+			if (!ct) return;
+			uint16_t k = 1000000 / ct; //mireds to kelvin
+			
+			if (strip.hasCCTBus()) {
+				uint8_t segid = strip.getMainSegmentId();
+				WS2812FX::Segment& seg = strip.getSegment(segid);
+				uint8_t cctPrev = seg.cct;
+				seg.setCCT(k, segid);
+				if (seg.cct != cctPrev) effectChanged = true; //send UDP
+				col[0]= 0; col[1]= 0; col[2]= 0; col[3]= 255;
+			} else if (strip.isRgbw) {
         switch (ct) { //these values empirically look good on RGBW
           case 199: col[0]=255; col[1]=255; col[2]=255; col[3]=255; break;
           case 234: col[0]=127; col[1]=127; col[2]=127; col[3]=255; break;
           case 284: col[0]=  0; col[1]=  0; col[2]=  0; col[3]=255; break;
           case 350: col[0]=130; col[1]= 90; col[2]=  0; col[3]=255; break;
           case 383: col[0]=255; col[1]=153; col[2]=  0; col[3]=255; break;
+					default : colorKtoRGB(k, col);
         }
       } else {
-        colorCTtoRGB(ct, col);
+        colorKtoRGB(k, col);
       }
     } else {
       uint32_t color = espalexaDevice->getRGB();
@@ -87,7 +103,7 @@ void onAlexaChange(EspalexaDevice* dev)
       col[2] = ( color        & 0xFF);
       col[3] = 0;
     }
-    colorUpdated(NOTIFIER_CALL_MODE_ALEXA);
+    colorUpdated(CALL_MODE_ALEXA);
   }
 }
 
