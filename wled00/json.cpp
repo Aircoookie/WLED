@@ -68,6 +68,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   uint16_t grp = elem["grp"] | seg.grouping;
   uint16_t spc = elem[F("spc")] | seg.spacing;
 	uint16_t of = seg.offset;
+  if (!(elem[F("spc")].isNull() && elem["grp"].isNull())) effectChanged = true; //send UDP
 
   uint16_t len = 1;
   if (stop > start) len = stop - start;
