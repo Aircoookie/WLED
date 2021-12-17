@@ -158,6 +158,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   seg.setOption(SEG_OPTION_REVERSED, elem["rev"]    | seg.getOption(SEG_OPTION_REVERSED));
   seg.setOption(SEG_OPTION_MIRROR  , elem[F("mi")]  | seg.getOption(SEG_OPTION_MIRROR  ));
 
+  if (!(elem[F("sel")].isNull() && elem["rev"].isNull() && elem["on"].isNull() && elem[F("mi")].isNull())) effectChanged = true; //send UDP
+
   //temporary, strip object gets updated via colorUpdated()
   if (id == strip.getMainSegmentId()) {
 		byte effectPrev = effectCurrent;

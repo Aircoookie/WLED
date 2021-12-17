@@ -43,7 +43,7 @@
 		//h.appendChild(l); // if this fires too quickly for ESP8266 use next line
 		setTimeout(function(){h.appendChild(l)},50);
 	});
-	h.appendChild(l);
+	setTimeout(function(){h.appendChild(l)},50);
 	</script>
 	<link rel="stylesheet" href="index.css">
 </head>

@@ -209,7 +209,7 @@ function onLoad()
 		.catch(function (error) {
 			console.log("holidays.json does not contain array of holidays. Defaults loaded.");
 		})
-		.finally(function(){
+		.finally(()=>{
 			loadBg(cfg.theme.bg.url);
 		});
 	} else
@@ -271,7 +271,7 @@ function showToast(text, error = false)
 	x.classList.add(error ? "error":"show");
 	clearTimeout(timeout);
 	x.style.animation = 'none';
-	timeout = setTimeout(function(){ x.classList.remove("show"); }, 2900);
+	timeout = setTimeout(()=>{ x.classList.remove("show"); }, 2900);
 	if (error) console.log(text);
 }
 
@@ -711,7 +711,7 @@ function populateSegments(s)
 	for (var i = 0; i <= lSeg; i++) {
 		updateLen(i);
 		updateTrail(gId(`seg${i}bri`));
-		gId(`segr${lSeg}`).style.display = "none";
+		gId(`segr${i}`).style.display = "none";
 	}
 	if (segCount < 2) gId(`segd${lSeg}`).style.display = "none";
 	if (!noNewSegs && (cfg.comp.seglen?parseInt(gId(`seg${lSeg}s`).value):0)+parseInt(gId(`seg${lSeg}e`).value)<ledCount) gId(`segr${lSeg}`).style.display = "inline";
@@ -2052,7 +2052,7 @@ function setBalance(b)
 }
 
 var hc = 0;
-setInterval(function(){if (!isInfo) return; hc+=18; if (hc>300) hc=0; if (hc>200)hc=306; if (hc==144) hc+=36; if (hc==108) hc+=18;
+setInterval(()=>{if (!isInfo) return; hc+=18; if (hc>300) hc=0; if (hc>200)hc=306; if (hc==144) hc+=36; if (hc==108) hc+=18;
 gId('heart').style.color = `hsl(${hc}, 100%, 50%)`;}, 910);
 
 function openGH() { window.open("https://github.com/Aircoookie/WLED/wiki"); }
@@ -2093,9 +2093,9 @@ function loadPalettesData(callback = null)
 	var lsPalData = localStorage.getItem(lsKey);
 	if (lsPalData) {
 		try {
-			lsPalData = JSON.parse(lsPalData);
-			if (lsPalData && lsPalData.vid == lastinfo.vid) {
-				palettesData = lsPalData.p;
+			var d = JSON.parse(lsPalData);
+			if (d && d.vid == d.vid) {
+				palettesData = d.p;
 				if (callback) callback(); 	// redrawPalPrev()
 				return;
 			}
@@ -2103,7 +2103,7 @@ function loadPalettesData(callback = null)
 	}
 
 	palettesData = {};
-	getPalettesData(0, function() {
+	getPalettesData(0, ()=>{
 		localStorage.setItem(lsKey, JSON.stringify({
 			p: palettesData,
 			vid: lastinfo.vid
@@ -2128,10 +2128,10 @@ function getPalettesData(page, callback)
 	})
 	.then(json => {
 		palettesData = Object.assign({}, palettesData, json.p);
-		if (page < json.m) setTimeout(function() { getPalettesData(page + 1, callback); }, 50);
+		if (page < json.m) setTimeout(()=>{ getPalettesData(page + 1, callback); }, 50);
 		else callback();
 	})
-	.catch(function(error) {
+	.catch((error)=>{
 		showToast(error, true);
 		console.log(error);
 	});

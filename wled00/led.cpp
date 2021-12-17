@@ -84,7 +84,7 @@ void colorUpdated(int callMode)
   bool someSel = false;
 
   if (callMode == CALL_MODE_NOTIFICATION) {
-    someSel = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
+    someSel = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects || receiveSegmentOptions);
   }
   
   //Notifier: apply received FX to selected segments only if actually receiving FX
