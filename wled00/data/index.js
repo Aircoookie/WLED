@@ -603,7 +603,6 @@ function populateSegments(s)
 					</tr>
 				</table>
 				<div class="h" id="seg${i}len"></div>
-				<button class="btn btn-i btn-xs del" id="segd${i}" onclick="delSeg(${i})"><i class="icons btn-icon">&#xe037;</i></button>
 				<label class="check revchkl">
 					Reverse direction
 					<input type="checkbox" id="seg${i}rev" onchange="setRev(${i})" ${inst.rev ? "checked":""}>
@@ -614,6 +613,10 @@ function populateSegments(s)
 					<input type="checkbox" id="seg${i}mi" onchange="setMi(${i})" ${inst.mi ? "checked":""}>
 					<span class="checkmark schk"></span>
 				</label>
+				<div class="del">
+					<button class="btn btn-i btn-xs" id="segr${i}" title="Repeat until end" onclick="rptSeg(${i})"><i class="icons btn-icon">&#xe22d;</i></button>
+					<button class="btn btn-i btn-xs" id="segd${i}" title="Delete" onclick="delSeg(${i})"><i class="icons btn-icon">&#xe037;</i></button>
+				</div>
 			</div>
 		</div><br>`;
 	}
@@ -627,10 +630,12 @@ function populateSegments(s)
 		noNewSegs = false;
 	}
 	for (var i = 0; i <= lSeg; i++) {
-	updateLen(i);
-	updateTrail(d.getElementById(`seg${i}bri`));
-	if (segCount < 2) d.getElementById(`segd${lSeg}`).style.display = "none";
+		updateLen(i);
+		updateTrail(d.getElementById(`seg${i}bri`));
+		d.getElementById(`segr${i}`).style.display = "none";
 	}
+	if (segCount < 2) d.getElementById(`segd${lSeg}`).style.display = "none";
+	if (!noNewSegs && (cfg.comp.seglen?parseInt(d.getElementById(`seg${lSeg}s`).value):0)+parseInt(d.getElementById(`seg${lSeg}e`).value)<ledCount) d.getElementById(`segr${lSeg}`).style.display = "inline";
 	d.getElementById('rsbtn').style.display = (segCount > 1) ? "inline":"none";
 }
 
@@ -1539,6 +1544,13 @@ function setSegPwr(s){
 
 function setSegBri(s){
 	var obj = {"seg": {"id": s, "bri": parseInt(d.getElementById(`seg${s}bri`).value)}};
+	requestJson(obj);
+}
+
+function tglFreeze(s=null)
+{
+	var obj = {"seg": {"frz": "t"}}; // toggle
+	if (s!==null) obj.id = s;
 	requestJson(obj);
 }
 

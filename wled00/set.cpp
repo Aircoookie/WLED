@@ -217,7 +217,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     receiveNotificationBrightness = request->hasArg(F("RB"));
     receiveNotificationColor = request->hasArg(F("RC"));
     receiveNotificationEffects = request->hasArg(F("RX"));
-    receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
+    receiveSegmentOptions = request->hasArg(F("SO"));
+    receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects || receiveSegmentOptions);
     notifyDirectDefault = request->hasArg(F("SD"));
     notifyDirect = notifyDirectDefault;
     notifyButton = request->hasArg(F("SB"));
@@ -753,7 +754,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
       strip.applyToAllSelected = true;
       strip.setColor(2, t[0], t[1], t[2], t[3]);
     } else {
-      selseg.setColor(2,((t[0] << 16) + (t[1] << 8) + t[2] + (t[3] << 24)), selectedSeg); // defined above (SS=)
+      selseg.setColor(2, RGBW32(t[0], t[1], t[2], t[3]), selectedSeg); // defined above (SS=)
     }
   }
 

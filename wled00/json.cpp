@@ -37,6 +37,24 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     stop = (len > 0) ? start + len : seg.stop;
   }
 
+  // multiply segment 0 (?) if requested untill all LEDs are used
+  bool repeat = elem["rpt"] | false;
+  if (repeat && stop>0) {
+    elem.remove("id");  // remove for recursive call
+    elem.remove("rpt"); // remove for recursive call
+    elem.remove("n");   // remove for recursive call
+    uint16_t len = stop - start;
+    for (byte i=id+1; i<strip.getMaxSegments(); i++) {
+      start = start + len;
+      if (start >= strip.getLengthTotal()) break;
+      elem["start"] = start;
+      elem["stop"]  = start + len;
+      elem["rev"]   = !elem["rev"]; // alternate reverse on even/odd segments
+      deserializeSegment(elem, i, presetId); // recursive call with new id
+    }
+    return;
+  }
+
   if (elem["n"]) {
     // name field exists
     if (seg.name) { //clear old name
@@ -65,6 +83,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   uint16_t grp = elem["grp"] | seg.grouping;
   uint16_t spc = elem[F("spc")] | seg.spacing;
 	uint16_t of = seg.offset;
+  if (!(elem[F("spc")].isNull() && elem["grp"].isNull())) effectChanged = true; //send UDP
 
   uint16_t len = 1;
   if (stop > start) len = stop - start;
@@ -87,7 +106,10 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   bool on = elem["on"] | seg.getOption(SEG_OPTION_ON);
   if (elem["on"].is<const char*>() && elem["on"].as<const char*>()[0] == 't') on = !on;
   seg.setOption(SEG_OPTION_ON, on, id);
-  
+  bool frz = elem["frz"] | seg.getOption(SEG_OPTION_FREEZE);
+  if (elem["frz"].is<const char*>() && elem["frz"].as<const char*>()[0] == 't') frz = !seg.getOption(SEG_OPTION_FREEZE);
+  seg.setOption(SEG_OPTION_FREEZE, frz, id);
+
 	uint8_t cctPrev = seg.cct;
   seg.setCCT(elem["cct"] | seg.cct, id);
 	if (seg.cct != cctPrev && id == strip.getMainSegmentId()) effectChanged = true; //send UDP
@@ -152,10 +174,12 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   seg.setOption(SEG_OPTION_REVERSED, elem["rev"]    | seg.getOption(SEG_OPTION_REVERSED));
   seg.setOption(SEG_OPTION_MIRROR  , elem[F("mi")]  | seg.getOption(SEG_OPTION_MIRROR  ));
 
+  if (!(elem[F("sel")].isNull() && elem["rev"].isNull() && elem["on"].isNull() && elem[F("mi")].isNull())) effectChanged = true; //send UDP
+
   //temporary, strip object gets updated via colorUpdated()
   if (id == strip.getMainSegmentId()) {
 		byte effectPrev = effectCurrent;
-    if (getVal(elem["fx"], &effectCurrent, 1, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 0-255 exact value)
+    if (getVal(elem["fx"], &effectCurrent, 1, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 1-255 exact value)
       if (!presetId && effectCurrent != effectPrev) unloadPlaylist(); //stop playlist if active and FX changed manually
     }
     effectSpeed = elem[F("sx")] | effectSpeed;
@@ -164,7 +188,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   } else { //permanent
     byte fx = seg.mode;
 		byte fxPrev = fx;
-    if (getVal(elem["fx"], &fx, 1, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 0-255 exact value)
+    if (getVal(elem["fx"], &fx, 1, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 1-255 exact value)
       strip.setMode(id, fx);
       if (!presetId && seg.mode != fxPrev) unloadPlaylist(); //stop playlist if active and FX changed manually
     }
@@ -223,12 +247,13 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     }
     strip.setPixelSegment(255);
     strip.trigger();
-  } else { //return to regular effect
+  } else if (!elem["frz"] && iarr.isNull()) { //return to regular effect
     seg.setOption(SEG_OPTION_FREEZE, false);
   }
   return; // seg.differs(prev);
 }
 
+// deserializes WLED state (fileDoc points to doc object if called from web server)
 bool deserializeState(JsonObject root, byte callMode, byte presetId)
 {
   strip.applyToAllSelected = false;
@@ -391,6 +416,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
   root[F("spc")] = seg.spacing;
   root[F("of")] = seg.offset;
   root["on"] = seg.getOption(SEG_OPTION_ON);
+  root["frz"] = seg.getOption(SEG_OPTION_FREEZE);
   byte segbri = seg.opacity;
   root["bri"] = (segbri) ? segbri : 255;
   root["cct"] = seg.cct;
