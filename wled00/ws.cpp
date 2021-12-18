@@ -117,8 +117,10 @@ void sendDataWs(AsyncWebSocketClient * client)
     serializeInfo(info);
     DEBUG_PRINTF("JSON buffer size: %u for WS request.\n", doc.memoryUsage());
     size_t len = measureJson(doc);
-    buffer = ws.makeBuffer(len);
-    if (!buffer) {
+    size_t heap1 = ESP.getFreeHeap();
+    buffer = ws.makeBuffer(len); // will not allocate correct memory sometimes
+    size_t heap2 = ESP.getFreeHeap();
+    if (!buffer || heap1-heap2<len) {
       releaseJSONBufferLock();
       return; //out of memory
     }
@@ -139,10 +141,13 @@ void handleWs()
 {
   if (millis() - wsLastLiveTime > WS_LIVE_INTERVAL)
   {
+    #ifdef ESP8266
+    ws.cleanupClients(2);
+    #else
     ws.cleanupClients();
+    #endif
     bool success = true;
-    if (wsLiveClientId)
-      success = serveLiveLeds(nullptr, wsLiveClientId);
+    if (wsLiveClientId) success = serveLiveLeds(nullptr, wsLiveClientId);
     wsLastLiveTime = millis();
     if (!success) wsLastLiveTime -= 20; //try again in 20ms if failed due to non-empty WS queue
   }
