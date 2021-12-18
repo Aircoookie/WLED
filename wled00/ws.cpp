@@ -122,6 +122,7 @@ void sendDataWs(AsyncWebSocketClient * client)
     size_t heap2 = ESP.getFreeHeap();
     if (!buffer || heap1-heap2<len) {
       releaseJSONBufferLock();
+      ws.cleanupClients(0); // disconnect all clients to release memory
       return; //out of memory
     }
     serializeJson(doc, (char *)buffer->get(), len +1);

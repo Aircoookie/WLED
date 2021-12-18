@@ -96,7 +96,7 @@ td {
   padding: 2px;
 }
 .d5 {
-  width: 4.5em !important;
+  width: 4rem !important;
 }
 
 #toast {
@@ -130,6 +130,7 @@ td {
 
 @media screen and (max-width: 767px) {
   input[type="text"],
+  input[type="file"],
   input[type="number"],
   input[type="email"],
   input[type="tel"],
@@ -147,5 +148,11 @@ td {
   }
   input[type="number"].xs {
     width: 32px;
+  }
+  input[type="file"] {
+    width: 224px;
+  }
+  #btns select {
+    width: 144px;
   }
 }
