@@ -54,43 +54,40 @@ class UsermodTemperature : public Usermod {
 
     //Dallas sensor quick (& dirty) reading. Credit to - Author: Peter Scargill, August 17th, 2013
     float readDallas() {
-      byte i;
       byte data[9];
       int16_t result;                         // raw data from sensor
-      if (!oneWire->reset()) return -127.0f;  // send reset command and fail fast
-      oneWire->skip();                        // skip ROM
-      oneWire->write(0xBE);                   // read (temperature) from EEPROM
-      for (i=0; i < 9; i++) data[i] = oneWire->read();  // first 2 bytes contain temperature
-      if (OneWire::crc8(data,8) != data[8]) DEBUG_PRINTLN(F("CRC error reading temperature."));
-//      for (i=2; i < 9; i++) oneWire->read();  // read unused bytes
-//      result = (data[1]<<4) | (data[0]>>4);   // we only need whole part, we will add fraction when returning
-//      if (data[1]&0x80) result |= 0xFF00;     // fix negative value
-      oneWire->reset();
-      oneWire->skip();                        // skip ROM
-      oneWire->write(0x44,parasite);          // request new temperature reading (without parasite power)
-//      return (float)result + ((data[0]&0x0008) ? 0.5f : 0.0f);
-      switch(sensorFound) {
-        case 0x10:  // DS18S20 has 9-bit precision
-          //result = (((data[1] << 8) | (data[0] & 0xFE)) << 3) | ((0x10 - data[6]) & 0x0F); //achieving greater than 9-bit precision
-          //return result * 0.0625f - 0.25f;
-          result = (data[1] << 8) | data[0];
-          return float(result) * 0.5f;
-        case 0x22:  // DS18B20
-        case 0x28:  // DS1822
-        case 0x3B:  // DS1825
-        case 0x42:  // DS28EA00
-          result = (data[1]<<4) | (data[0]>>4);   // we only need whole part, we will add fraction when returning
-          if (data[1] & 0x80) result |= 0xF000;   // fix negative value
-          return float(result) + ((data[0] & 0x08) ? 0.5f : 0.0f);
+      float retVal = -127.0f;
+      if (oneWire->reset()) {                 // if reset() fails there are no OneWire devices
+        oneWire->skip();                      // skip ROM
+        oneWire->write(0xBE);                 // read (temperature) from EEPROM
+        delayMicroseconds(250);
+        for (byte i=0; i < 9; i++) data[i] = oneWire->read();  // first 2 bytes contain temperature
+        if (OneWire::crc8(data,8) != data[8]) DEBUG_PRINTLN(F("CRC error reading temperature."));
+        switch(sensorFound) {
+          case 0x10:  // DS18S20 has 9-bit precision
+            result = (data[1] << 8) | data[0];
+            retVal = float(result) * 0.5f;
+            break;
+          case 0x22:  // DS18B20
+          case 0x28:  // DS1822
+          case 0x3B:  // DS1825
+          case 0x42:  // DS28EA00
+            result = (data[1]<<4) | (data[0]>>4);   // we only need whole part, we will add fraction when returning
+            if (data[1] & 0x80) result |= 0xF000;   // fix negative value
+            retVal = float(result) + ((data[0] & 0x08) ? 0.5f : 0.0f);
+            break;
+        }
       }
-      return -127.0f;
+      return retVal;
     }
 
     void requestTemperatures() {
-      readDallas();
+      DEBUG_PRINTLN(F("Requesting temperature."));
+      oneWire->reset();
+      oneWire->skip();                        // skip ROM
+      oneWire->write(0x44,parasite);          // request new temperature reading (TODO: parasite would need special handling)
       lastTemperaturesRequest = millis();
       waitingForConversion = true;
-      DEBUG_PRINTLN(F("Requested temperature."));
     }
 
     void readTemperature() {
