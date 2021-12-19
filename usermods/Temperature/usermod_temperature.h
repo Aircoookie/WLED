@@ -60,9 +60,16 @@ class UsermodTemperature : public Usermod {
       if (oneWire->reset()) {                 // if reset() fails there are no OneWire devices
         oneWire->skip();                      // skip ROM
         oneWire->write(0xBE);                 // read (temperature) from EEPROM
-        delayMicroseconds(250);
-        for (byte i=0; i < 9; i++) data[i] = oneWire->read();  // first 2 bytes contain temperature
-        if (OneWire::crc8(data,8) != data[8]) DEBUG_PRINTLN(F("CRC error reading temperature."));
+        delayMicroseconds(150);
+        oneWire->read_bytes(data, 9);         // first 2 bytes contain temperature
+        #ifdef WLED_DEBUG
+        if (OneWire::crc8(data,8) != data[8]) {
+          DEBUG_PRINTLN(F("CRC error reading temperature."));
+          for (byte i=0; i < 9; i++) DEBUG_PRINTF("0x%02X ", data[i]);
+          DEBUG_PRINT(F(" => "));
+          DEBUG_PRINTF("0x%02X\n", OneWire::crc8(data,8));
+        }
+        #endif
         switch(sensorFound) {
           case 0x10:  // DS18S20 has 9-bit precision
             result = (data[1] << 8) | data[0];
@@ -116,6 +123,7 @@ class UsermodTemperature : public Usermod {
             case 0x42:  // DS28EA00
               DEBUG_PRINTLN(F("Sensor found."));
               sensorFound = deviceAddress[0];
+              DEBUG_PRINTF("0x%02X\n", sensorFound);
               return true;
           }
         }
