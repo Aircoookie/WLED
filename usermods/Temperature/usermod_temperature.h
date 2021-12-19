@@ -60,7 +60,7 @@ class UsermodTemperature : public Usermod {
       if (oneWire->reset()) {                 // if reset() fails there are no OneWire devices
         oneWire->skip();                      // skip ROM
         oneWire->write(0xBE);                 // read (temperature) from EEPROM
-        delayMicroseconds(150);
+        delayMicroseconds(250);
         oneWire->read_bytes(data, 9);         // first 2 bytes contain temperature
         #ifdef WLED_DEBUG
         if (OneWire::crc8(data,8) != data[8]) {
