@@ -11,6 +11,9 @@
  */
 //#include "../usermods/EXAMPLE_v2/usermod_v2_example.h"
 
+//BRIAN ADDED THIS LINE
+#include "../usermods/welican_prism/welican_prism.h"
+
 #ifdef USERMOD_BATTERY_STATUS_BASIC
 #include "../usermods/battery_status_basic/usermod_v2_battery_status_basic.h"
 #endif
@@ -98,10 +101,6 @@
 
 #ifdef USERMOD_SEVEN_SEGMENT
 #include "../usermods/seven_segment_display/usermod_v2_seven_segment_display.h"
-#endif
-
-#ifdef USERMOD_SSDR
-#include "../usermods/seven_segment_display_reloaded/usermod_seven_segment_reloaded.h"
 #endif
 
 #ifdef QUINLED_AN_PENTA
@@ -196,11 +195,10 @@ void registerUsermods()
   usermods.add(new SevenSegmentDisplay());
   #endif
 
-  #ifdef USERMOD_SSDR
-  usermods.add(new UsermodSSDR());
-  #endif
-
   #ifdef QUINLED_AN_PENTA
   usermods.add(new QuinLEDAnPentaUsermod());
   #endif
+
+  //AND THIS
+  usermods.add(new WelicanPrism());
 }

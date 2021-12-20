@@ -1,0 +1,57 @@
+To upload the compiled bin file using ESP Tool:
+
+C:\Users\brs09\Documents\esptool-master\esptool.py --port COM9 write_flash 0x0000 "C:\Users\brs09\Documents\WLED\.pio\build\d1_mini\firmware.bin"
+
+
+Wiring:
+
+D4 - LED Data Out
+
+Encoder 1:
+
+D1 - A 
+D2 - B
+D3 - Button (Pullup open, ground on push)
+
+Endoer 2:
+
+D5 - A
+D6 - B
+D7 - Button
+
+Encoder Looking Down at it
+
+  BTN  BTN
+
+
+  A  G   B
+
+Chaning default AP?
+
+DEFAULT_AP_PASS
+DEFAULT_OTA_PASS
+
+LED Blink when button pressed/encoder turned? Also, how to just disable in general
+
+Changing Picture/Wording on Connect Form
+
+Adding / Removing Functions
+
+There is a function for this in WLED: bool applyPreset(byte index, bool loadBri) The first parameter ist the preset number, the second is optional and defines if the brightness from the preset is loaded or not. The function returns true on successful preset load and false otherwise.
+
+http://wled-ip/edit
+may/does not load on AP mode
+Possible fixes
+Download ace.js from https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.6/ace.js and place in wled00/data/ace.js
+Modify wled00/tools/cdata.json add the following right under the favicon block
+{
+file: "ace.js",
+name: "ace",
+method: "binary",
+},
+Modify wled00/wled_server.cpp add the following right under the favicon function
+server.on("/ace.js", HTTP_GET, [](AsyncWebServerRequest *request){
+request->send_P(200, "text/html", ace, 354518);
+});
+You must run the command "npm run build" as explained on the wiki page https://github.com/Aircoookie/WLED/wiki/Add-own-functionality in the "Changing Web UI" section. This will add ace.js to the wled00/html_other.h file. You can verify this worked by checking if ace.js is at the bottom of this file.
+Build and upload your code
