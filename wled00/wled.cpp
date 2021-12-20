@@ -120,6 +120,7 @@ void WLED::loop()
   if (lastMqttReconnectAttempt > millis()) {
     rolloverMillis++;
     lastMqttReconnectAttempt = 0;
+    strip.restartRuntime();
   }
   if (millis() - lastMqttReconnectAttempt > 30000) {
     lastMqttReconnectAttempt = millis();

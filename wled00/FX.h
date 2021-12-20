@@ -648,6 +648,7 @@ class WS2812FX {
       calcGammaTable(float),
       trigger(void),
       setSegment(uint8_t n, uint16_t start, uint16_t stop, uint8_t grouping = 0, uint8_t spacing = 0, uint16_t offset = UINT16_MAX),
+      restartRuntime(),
       resetSegments(),
       makeAutoSegments(),
       fixInvalidSegments(),

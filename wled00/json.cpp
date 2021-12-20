@@ -320,7 +320,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       byte lowestActive = 99;
       for (byte s = 0; s < strip.getMaxSegments(); s++)
       {
-        WS2812FX::Segment sg = strip.getSegment(s);
+        WS2812FX::Segment &sg = strip.getSegment(s);
         if (sg.isActive())
         {
           if (lowestActive == 99) lowestActive = s;
@@ -486,7 +486,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
   JsonArray seg = root.createNestedArray("seg");
   for (byte s = 0; s < strip.getMaxSegments(); s++)
   {
-    WS2812FX::Segment sg = strip.getSegment(s);
+    WS2812FX::Segment &sg = strip.getSegment(s);
     if (sg.isActive())
     {
       JsonObject seg0 = seg.createNestedObject();
