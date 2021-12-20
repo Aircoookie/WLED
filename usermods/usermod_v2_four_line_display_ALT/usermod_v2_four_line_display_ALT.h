@@ -254,7 +254,6 @@ class FourLineDisplayUsermod : public Usermod {
   private:
 
     bool initDone = false;
-    unsigned long lastTime = 0;
 
     // HW interface & configuration
     U8X8 *u8x8 = nullptr;           // pointer to U8X8 display object
@@ -296,7 +295,7 @@ class FourLineDisplayUsermod : public Usermod {
     bool powerON = true;
 
     bool displayTurnedOff = false;
-    unsigned long lastUpdate = 0;
+    unsigned long nextUpdate = 0;
     unsigned long lastRedraw = 0;
     unsigned long overlayUntil = 0;
     Line4Type lineType = FLD_LINE_BRIGHTNESS;
@@ -401,15 +400,20 @@ class FourLineDisplayUsermod : public Usermod {
 
     // gets called every time WiFi is (re-)connected. Initialize own network
     // interfaces here
-    void connected() {}
+    void connected() {
+      knownSsid = apActive ? apSSID : WiFi.SSID(); //apActive ? WiFi.softAPSSID() : 
+      knownIp = apActive ? IPAddress(4, 3, 2, 1) : Network.localIP();
+      networkOverlay(PSTR("NETWORK INFO"),7000);
+    }
 
     /**
      * Da loop.
      */
     void loop() {
-      if (!enabled || millis() - lastUpdate < (clockMode?1000:refreshRate) || strip.isUpdating()) return;
-      lastUpdate = millis();
-
+      if (!enabled || strip.isUpdating()) return;
+      unsigned long now = millis();
+      if (now < nextUpdate) return;
+      nextUpdate = now + (clockMode?1000:refreshRate);
       redraw(false);
     }
 
@@ -461,9 +465,9 @@ class FourLineDisplayUsermod : public Usermod {
     }
 
     //function to update lastredraw
-      void updateRedrawTime(){
-        lastRedraw = millis();
-      }
+    void updateRedrawTime() {
+      lastRedraw = millis();
+    }
 
     /**
      * Redraw the screen (but only if things have changed
@@ -473,19 +477,18 @@ class FourLineDisplayUsermod : public Usermod {
       unsigned long now = millis();
  
       if (type == NONE || !enabled) return;
-        if (overlayUntil > 0) {
-          if (now >= overlayUntil) {
-            // Time to display the overlay has elapsed.
-            overlayUntil = 0;
-            forceRedraw = true;
-          } else {
-            // We are still displaying the overlay
-            // Don't redraw.
-            return;
-          }
+      if (overlayUntil > 0) {
+        if (now >= overlayUntil) {
+          // Time to display the overlay has elapsed.
+          overlayUntil = 0;
+          forceRedraw = true;
+        } else {
+          // We are still displaying the overlay
+          // Don't redraw.
+          return;
         }
+      }
 
-  
       // Check if values which are shown on display changed from the last time.
       if (forceRedraw) {
           needRedraw = true;
@@ -493,40 +496,42 @@ class FourLineDisplayUsermod : public Usermod {
           powerON = !powerON;
           drawStatusIcons();
           lastRedraw = millis();
+          return;
       } else if (knownnightlight != nightlightActive) {   //trigger moon icon 
           knownnightlight = nightlightActive;
           drawStatusIcons();
-          if (knownnightlight) overlay("    Timer On", 1000, 6);
+          if (knownnightlight) overlay(PSTR("    Timer On"), 3000, 6);
           lastRedraw = millis();
-      }else if (wificonnected != interfacesInited){   //trigger wifi icon
+          return;
+      } else if (wificonnected != interfacesInited) {   //trigger wifi icon
           wificonnected = interfacesInited;
           drawStatusIcons();
           lastRedraw = millis();
+          return;
       } else if (knownMode != effectCurrent) {
           knownMode = effectCurrent;
-          if(displayTurnedOff)needRedraw = true;
+          if (displayTurnedOff) needRedraw = true;
           else showCurrentEffectOrPalette(knownMode, JSON_mode_names, 3);
       } else if (knownPalette != effectPalette) {
            knownPalette = effectPalette;
-           if(displayTurnedOff)needRedraw = true;
+           if (displayTurnedOff) needRedraw = true;
            else showCurrentEffectOrPalette(knownPalette, JSON_palette_names, 2);
       } else if (knownBrightness != bri) {
-          if(displayTurnedOff && nightlightActive){needRedraw = false; knownBrightness = bri;}
-          else if(displayTurnedOff)needRedraw = true;
+          if (displayTurnedOff && nightlightActive){needRedraw = false; knownBrightness = bri;}
+          else if(displayTurnedOff) needRedraw = true;
           else updateBrightness();
       } else if (knownEffectSpeed != effectSpeed) {
-          if(displayTurnedOff)needRedraw = true;
+          if (displayTurnedOff) needRedraw = true;
           else updateSpeed();
       } else if (knownEffectIntensity != effectIntensity) {
-          if(displayTurnedOff)needRedraw = true;
+          if (displayTurnedOff) needRedraw = true;
           else updateIntensity();
       }
-      
 
       if (!needRedraw) {
         // Nothing to change.
         // Turn off display after 1 minutes with no change.
-        if(sleepMode && !displayTurnedOff && (now - lastRedraw > screenTimeout)) {
+        if (sleepMode && !displayTurnedOff && (now - lastRedraw > screenTimeout)) {
           // We will still check if there is a change in redraw()
           // and turn it back on if it changed.
           sleepOrClock(true);
@@ -547,8 +552,6 @@ class FourLineDisplayUsermod : public Usermod {
       }
 
       // Update last known values.
-      knownSsid = apActive ? apSSID : WiFi.SSID(); //apActive ? WiFi.softAPSSID() : 
-      knownIp = apActive ? IPAddress(4, 3, 2, 1) : Network.localIP();
       knownBrightness = bri;
       knownMode = effectCurrent;
       knownPalette = effectPalette;
@@ -575,37 +578,40 @@ class FourLineDisplayUsermod : public Usermod {
       showCurrentEffectOrPalette(knownMode, JSON_mode_names, 3); //Effect Mode info
     }
 
-    void updateBrightness(){
+    void updateBrightness() {
       knownBrightness = bri;
-      if(overlayUntil == 0){
-          brightness100 = (((float)(bri)/255)*100);
-          char lineBuffer[4];
-          sprintf_P(lineBuffer, PSTR("%-3d"), brightness100);
-          drawString(1, lineHeight, lineBuffer);
-          lastRedraw = millis();}
+      if (overlayUntil == 0) {
+        brightness100 = ((uint16_t)bri*100)/255;
+        char lineBuffer[4];
+        sprintf_P(lineBuffer, PSTR("%-3d"), brightness100);
+        drawString(1, lineHeight, lineBuffer);
+        lastRedraw = millis();
+      }
     }
 
-    void updateSpeed(){
+    void updateSpeed() {
       knownEffectSpeed = effectSpeed;
-      if(overlayUntil == 0){
-          fxspeed100 = (((float)(effectSpeed)/255)*100);
-          char lineBuffer[4];
-          sprintf_P(lineBuffer, PSTR("%-3d"), fxspeed100);
-          drawString(5, lineHeight, lineBuffer);
-          lastRedraw = millis();}
+      if (overlayUntil == 0) {
+        fxspeed100 = ((uint16_t)effectSpeed*100)/255;
+        char lineBuffer[4];
+        sprintf_P(lineBuffer, PSTR("%-3d"), fxspeed100);
+        drawString(5, lineHeight, lineBuffer);
+        lastRedraw = millis();
+      }
     }
 
-    void updateIntensity(){
+    void updateIntensity() {
       knownEffectIntensity = effectIntensity;
-      if(overlayUntil == 0){
-          fxintensity100 = (((float)(effectIntensity)/255)*100);
-          char lineBuffer[4];
-          sprintf_P(lineBuffer, PSTR("%-3d"), fxintensity100);
-          drawString(9, lineHeight, lineBuffer);
-          lastRedraw = millis();}
+      if (overlayUntil == 0) {
+        fxintensity100 = ((uint16_t)effectIntensity*100)/255;
+        char lineBuffer[4];
+        sprintf_P(lineBuffer, PSTR("%-3d"), fxintensity100);
+        drawString(9, lineHeight, lineBuffer);
+        lastRedraw = millis();
+      }
     }
 
-    void draw2x2GlyphIcons(){
+    void draw2x2GlyphIcons() {
       if (lineHeight == 2) {
         drawGlyph(1, 0, 1,             u8x8_font_benji_custom_icons_2x2, true);//brightness icon
         drawGlyph(5, 0, 2,             u8x8_font_benji_custom_icons_2x2, true);//speed icon
@@ -621,7 +627,7 @@ class FourLineDisplayUsermod : public Usermod {
       }
     }
 
-    void drawStatusIcons(){
+    void drawStatusIcons() {
       drawGlyph(14, 0, 80 + (wificonnected?0:1),    u8x8_font_open_iconic_embedded_1x1, true); // wifi icon
       drawGlyph(15, 0, 78 + (bri > 0 ? 0 : 3),      u8x8_font_open_iconic_embedded_1x1, true); // power icon
       drawGlyph(13, 0, 66 + (nightlightActive?0:4), u8x8_font_open_iconic_weather_1x1, true);  // moon icon for nighlight mode
@@ -638,8 +644,8 @@ class FourLineDisplayUsermod : public Usermod {
     }
 
     //Draw the arrow for the current setting beiong changed
-    void drawArrow(){
-      if(markColNum != 255 && markLineNum !=255)drawGlyph(markColNum, markLineNum*lineHeight, 69, u8x8_font_open_iconic_play_1x1);
+    void drawArrow() {
+      if (markColNum != 255 && markLineNum !=255) drawGlyph(markColNum, markLineNum*lineHeight, 69, u8x8_font_open_iconic_play_1x1);
     }
 
      //Display the current effect or palette (desiredEntry) 
@@ -657,15 +663,13 @@ class FourLineDisplayUsermod : public Usermod {
         uint8_t smallChars1 = 0;
         uint8_t smallChars2 = 0;
         uint8_t smallChars3 = 0;
-        uint8_t totalCount = 0;
-        char singleJsonSymbol;
 
         // Find the mode name in JSON
         printedChars = extractModeName(inputEffPal, qstring, lineBuffer, LINE_BUFFER_SIZE-1);
         
         if (lineHeight == 2) {                                 // use this code for 8 line display
           if (printedChars < MAX_MODE_LINE_SPACE) {            // use big font if the text fits
-            for (;printedChars < (MAX_MODE_LINE_SPACE-1); printedChars++) {lineBuffer[printedChars]=' '; }
+            for (;printedChars < (MAX_MODE_LINE_SPACE-1); printedChars++) lineBuffer[printedChars]=' ';
             lineBuffer[printedChars] = 0;
             drawString(1, row*lineHeight, lineBuffer);
           } else {                                             // for long names divide the text into 2 lines and print them small
@@ -750,20 +754,33 @@ class FourLineDisplayUsermod : public Usermod {
       // Print the overlay
       clear();
       // First row string
-      if (line1) drawString(0, 0, line1);
+      if (line1) {
+        String l1 = line1;
+        l1.trim();
+        center(l1, getCols());
+        drawString(0, 0, l1.c_str());
+      }
       // Second row with Wifi name
-      String ssidString = knownSsid.substring(0, getCols() > 1 ? getCols() - 2 : 0); //
-      drawString(0, lineHeight, ssidString.c_str());
+      String line = knownSsid.substring(0, getCols() > 1 ? getCols() - 2 : 0);
+      if (line.length() < getCols()) center(line, getCols());
+      drawString(0, lineHeight, line.c_str());
       // Print `~` char to indicate that SSID is longer, than our display
       if (knownSsid.length() > getCols()) {
         drawString(getCols() - 1, 0, "~");
       }
-      // Third row with IP and Psssword in AP Mode
-      drawString(0, lineHeight*2, (knownIp.toString()).c_str());
+      // Third row with IP and Password in AP Mode
+      line = knownIp.toString();
+      center(line, getCols());
+      drawString(0, lineHeight*2, line.c_str());
       if (apActive) {
-        String appassword = apPass;
-        drawString(0, lineHeight*3, appassword.c_str());
-      } 
+        line = apPass;
+        center(line, getCols());
+        drawString(0, lineHeight*3, line.c_str());
+      } else if (strcmp(serverDescription, "WLED") != 0) {
+        line = serverDescription;
+        center(line, getCols());
+        drawString(0, lineHeight*3, line.c_str());
+      }
       overlayUntil = millis() + showHowLong;
     }
 
@@ -793,29 +810,38 @@ class FourLineDisplayUsermod : public Usermod {
      */
     void showTime() {
       if (type == NONE || !enabled) return;
-      if (knownMinute != minute(localTime)) {  //only redraw clock if it has changed
+
       char lineBuffer[LINE_BUFFER_SIZE];
+      static byte lastSecond;
+      byte secondCurrent = second(localTime);
 
-      //updateLocalTime();
-      byte AmPmHour = hour(localTime);
-      boolean isitAM = true;
-      if (useAMPM) {
-        if (AmPmHour > 11) AmPmHour -= 12;
-        if (AmPmHour == 0) AmPmHour  = 12;
-        if (hour(localTime) > 11) isitAM = false;
-      }
-       clear();
-       drawStatusIcons(); //icons power, wifi, timer, etc
+      if (knownMinute != minute(localTime)) {  //only redraw clock if it has changed
+        //updateLocalTime();
+        byte AmPmHour = hour(localTime);
+        boolean isitAM = true;
+        if (useAMPM) {
+          if (AmPmHour > 11) AmPmHour -= 12;
+          if (AmPmHour == 0) AmPmHour  = 12;
+          if (hour(localTime) > 11) isitAM = false;
+        }
 
-      sprintf_P(lineBuffer, PSTR("%s %2d "), monthShortStr(month(localTime)), day(localTime)); 
+        drawStatusIcons(); //icons power, wifi, timer, etc
+
+        sprintf_P(lineBuffer, PSTR("%s %2d "), monthShortStr(month(localTime)), day(localTime)); 
         draw2x2String(DATE_INDENT, lineHeight==1 ? 0 : lineHeight, lineBuffer); // adjust for 8 line displays, draw month and day
 
-      sprintf_P(lineBuffer,PSTR("%2d:%02d"), (useAMPM ? AmPmHour : hour(localTime)), minute(localTime));
+        sprintf_P(lineBuffer,PSTR("%2d:%02d"), (useAMPM ? AmPmHour : hour(localTime)), minute(localTime));
         draw2x2String(TIME_INDENT+2, lineHeight*2, lineBuffer); //draw hour, min. blink ":" depending on odd/even seconds
 
         if (useAMPM) drawString(12, lineHeight*2, (isitAM ? "AM" : "PM"), true); //draw am/pm if using 12 time
-      knownMinute = minute(localTime);
+        knownMinute = minute(localTime);
+      } else {
+        if (secondCurrent == lastSecond) return;
       }
+      lastSecond = secondCurrent;
+      draw2x2String(6, lineHeight*2, secondCurrent%2 ? " " : ":");
+      sprintf_P(lineBuffer, PSTR("%02d"), secondCurrent);
+      drawString(12, lineHeight*2+1, lineBuffer, true); // even with double sized rows print seconds in 1 line
     }
 
     /*

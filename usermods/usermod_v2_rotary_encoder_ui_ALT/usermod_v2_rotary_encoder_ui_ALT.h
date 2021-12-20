@@ -55,7 +55,7 @@ private:
   int fadeAmount = 5;             // Amount to change every step (brightness)
   unsigned long currentTime;
   unsigned long loopTime;
-  unsigned long buttonHoldTIme;
+  unsigned long buttonHoldTime;
   int8_t pinA = ENCODER_DT_PIN;       // DT from encoder
   int8_t pinB = ENCODER_CLK_PIN;      // CLK from encoder
   int8_t pinC = ENCODER_SW_PIN;       // SW from encoder
@@ -63,8 +63,8 @@ private:
   unsigned char button_state = HIGH;
   unsigned char prev_button_state = HIGH;
   bool networkShown = false;
-  uint16_t currentHue1 = 6425; // default reboot color
-  byte currentSat1 = 255; 
+  uint16_t currentHue1 = 16; // default boot color
+  byte currentSat1 = 255;
   
 #ifdef USERMOD_FOUR_LINE_DISPLAY
   FourLineDisplayUsermod *display;
@@ -97,9 +97,9 @@ private:
 
 public:
   /*
-     * setup() is called once at boot. WiFi is not yet connected at this point.
-     * You can use it to initialize variables, sensors or similar.
-     */
+   * setup() is called once at boot. WiFi is not yet connected at this point.
+   * You can use it to initialize variables, sensors or similar.
+   */
   void setup()
   {
     DEBUG_PRINTLN(F("Usermod Rotary Encoder init."));
@@ -141,24 +141,24 @@ public:
   }
 
   /*
-     * connected() is called every time the WiFi is (re)connected
-     * Use it to initialize network interfaces
-     */
+   * connected() is called every time the WiFi is (re)connected
+   * Use it to initialize network interfaces
+   */
   void connected()
   {
     //Serial.println("Connected to WiFi!");
   }
 
   /*
-     * loop() is called continuously. Here you can check for events, read sensors, etc.
-     * 
-     * Tips:
-     * 1. You can use "if (WLED_CONNECTED)" to check for a successful network connection.
-     *    Additionally, "if (WLED_MQTT_CONNECTED)" is available to check for a connection to an MQTT broker.
-     * 
-     * 2. Try to avoid using the delay() function. NEVER use delays longer than 10 milliseconds.
-     *    Instead, use a timer check as shown here.
-     */
+   * loop() is called continuously. Here you can check for events, read sensors, etc.
+   * 
+   * Tips:
+   * 1. You can use "if (WLED_CONNECTED)" to check for a successful network connection.
+   *    Additionally, "if (WLED_MQTT_CONNECTED)" is available to check for a connection to an MQTT broker.
+   * 
+   * 2. Try to avoid using the delay() function. NEVER use delays longer than 10 milliseconds.
+   *    Instead, use a timer check as shown here.
+   */
   void loop()
   {
     currentTime = millis(); // get the current elapsed time
@@ -168,19 +168,19 @@ public:
     // is not yet initialized when setup is called.
     
     if (!currentEffectAndPaletteInitialized) {
-      findCurrentEffectAndPalette();}
+      findCurrentEffectAndPalette();
+    }
 
-    if(modes_alpha_indexes[effectCurrentIndex] != effectCurrent 
-    || palettes_alpha_indexes[effectPaletteIndex] != effectPalette){
+    if (modes_alpha_indexes[effectCurrentIndex] != effectCurrent || palettes_alpha_indexes[effectPaletteIndex] != effectPalette) {
       currentEffectAndPaletteInitialized = false;
-      }
+    }
 
     if (currentTime >= (loopTime + 2)) // 2ms since last check of encoder = 500Hz
     {
       button_state = digitalRead(pinC);
       if (prev_button_state != button_state)
       {
-        if (button_state == HIGH && (millis()-buttonHoldTIme < 3000))
+        if (button_state == HIGH && (millis()-buttonHoldTime < 3000))
         {
           prev_button_state = button_state;
 
@@ -191,25 +191,25 @@ public:
           if (display != nullptr) {
             switch(newState) {
               case 0:
-                changedState = changeState("   Brightness", 1, 0, 1);
+                changedState = changeState(PSTR("Brightness"), 1, 0, 1);
                 break;
               case 1:
-                changedState = changeState("     Speed", 1, 4, 2);
+                changedState = changeState(PSTR("Speed"), 1, 4, 2);
                 break;
               case 2:
-                changedState = changeState("    Intensity", 1 ,8, 3);
+                changedState = changeState(PSTR("Intensity"), 1 ,8, 3);
                 break;
               case 3:
-                changedState = changeState("  Color Palette", 2, 0, 4);
+                changedState = changeState(PSTR("Color Palette"), 2, 0, 4);
                 break;
               case 4:
-                changedState = changeState("     Effect", 3, 0, 5);
+                changedState = changeState(PSTR("Effect"), 3, 0, 5);
                 break;
               case 5:
-                changedState = changeState("   Main Color", 255, 255, 7);
+                changedState = changeState(PSTR("Main Color"), 255, 255, 7);
                 break;
               case 6:
-                changedState = changeState("   Saturation", 255, 255, 8);
+                changedState = changeState(PSTR("Saturation"), 255, 255, 8);
                 break;
             }
           }
@@ -221,11 +221,15 @@ public:
         {
           prev_button_state = button_state;
           networkShown = false;
-          if(!prev_button_state)buttonHoldTIme = millis();
+          if (!prev_button_state) buttonHoldTime = millis();
         }
       }
       
-      if (!prev_button_state && (millis()-buttonHoldTIme > 3000) && !networkShown) displayNetworkInfo(); //long press for network info
+      if (!prev_button_state && (millis()-buttonHoldTime > 3000) && !networkShown) {
+        displayNetworkInfo(); //long press for network info
+        loopTime = currentTime; // Updates loopTime
+        return;
+      }
 
       Enc_A = digitalRead(pinA); // Read encoder pins
       Enc_B = digitalRead(pinB);
@@ -289,9 +293,9 @@ public:
     }
   }
 
-  void displayNetworkInfo(){
+  void displayNetworkInfo() {
     #ifdef USERMOD_FOUR_LINE_DISPLAY
-    display->networkOverlay("  NETWORK INFO", 15000);
+    display->networkOverlay(PSTR("NETWORK INFO"), 10000);
     networkShown = true;
     #endif
   }
@@ -314,17 +318,20 @@ public:
   }
 
   boolean changeState(const char *stateName, byte markedLine, byte markedCol, byte glyph) {
-        #ifdef USERMOD_FOUR_LINE_DISPLAY
-            if (display != nullptr) {
-              if (display->wakeDisplay()) {
-                // Throw away wake up input
-                return false;
-              }
-              display->overlay(stateName, 750, glyph);
-              display->setMarkLine(markedLine, markedCol);
-            }
-          #endif
-            return true;
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    if (display != nullptr) {
+      if (display->wakeDisplay()) {
+        // Throw away wake up input
+        return false;
+      }
+      String line = stateName;
+      //line.trim();
+      display->center(line, display->getCols());
+      display->overlay(line.c_str(), 750, glyph);
+      display->setMarkLine(markedLine, markedCol);
+    }
+  #endif
+    return true;
   }
 
   void lampUdated() {
@@ -336,120 +343,121 @@ public:
   }
 
   void changeBrightness(bool increase) {
-        #ifdef USERMOD_FOUR_LINE_DISPLAY
-            if (display && display->wakeDisplay()) {
-              // Throw away wake up input
-              return;
-            }
-        #endif
-            if (increase) bri = (bri + fadeAmount <= 255) ? (bri + fadeAmount) : 255;
-            else bri = (bri - fadeAmount >= 0) ? (bri - fadeAmount) : 0;
-            lampUdated();
-            #ifdef USERMOD_FOUR_LINE_DISPLAY
-            display->updateBrightness();
-            #endif
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    if (display && display->wakeDisplay()) {
+      // Throw away wake up input
+      return;
+    }
+  #endif
+    if (increase) bri = (bri + fadeAmount <= 255) ? (bri + fadeAmount) : 255;
+    else bri = (bri - fadeAmount >= 0) ? (bri - fadeAmount) : 0;
+    lampUdated();
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    display->updateBrightness();
+  #endif
   }
 
 
   void changeEffect(bool increase) {
-        #ifdef USERMOD_FOUR_LINE_DISPLAY
-            if (display && display->wakeDisplay()) {
-              // Throw away wake up input
-              return;
-            }
-        #endif
-            if (increase) effectCurrentIndex = (effectCurrentIndex + 1 >= strip.getModeCount()) ? 0 : (effectCurrentIndex + 1);
-            else effectCurrentIndex = (effectCurrentIndex - 1 < 0) ? (strip.getModeCount() - 1) : (effectCurrentIndex - 1);
-            effectCurrent = modes_alpha_indexes[effectCurrentIndex];
-            lampUdated();
-            #ifdef USERMOD_FOUR_LINE_DISPLAY
-            display->showCurrentEffectOrPalette(effectCurrent, JSON_mode_names, 3);
-            #endif
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    if (display && display->wakeDisplay()) {
+      // Throw away wake up input
+      return;
+    }
+  #endif
+    if (increase) effectCurrentIndex = (effectCurrentIndex + 1 >= strip.getModeCount()) ? 0 : (effectCurrentIndex + 1);
+    else effectCurrentIndex = (effectCurrentIndex - 1 < 0) ? (strip.getModeCount() - 1) : (effectCurrentIndex - 1);
+    effectCurrent = modes_alpha_indexes[effectCurrentIndex];
+    lampUdated();
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    display->showCurrentEffectOrPalette(effectCurrent, JSON_mode_names, 3);
+  #endif
   }
 
 
   void changeEffectSpeed(bool increase) {
-        #ifdef USERMOD_FOUR_LINE_DISPLAY
-            if (display && display->wakeDisplay()) {
-              // Throw away wake up input
-              return;
-            }
-        #endif
-            if (increase) effectSpeed = (effectSpeed + fadeAmount <= 255) ? (effectSpeed + fadeAmount) : 255;
-            else effectSpeed = (effectSpeed - fadeAmount >= 0) ? (effectSpeed - fadeAmount) : 0;
-            lampUdated();
-            #ifdef USERMOD_FOUR_LINE_DISPLAY
-            display->updateSpeed();
-            #endif
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    if (display && display->wakeDisplay()) {
+      // Throw away wake up input
+      return;
+    }
+  #endif
+    if (increase) effectSpeed = (effectSpeed + fadeAmount <= 255) ? (effectSpeed + fadeAmount) : 255;
+    else effectSpeed = (effectSpeed - fadeAmount >= 0) ? (effectSpeed - fadeAmount) : 0;
+    lampUdated();
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    display->updateSpeed();
+  #endif
   }
 
 
   void changeEffectIntensity(bool increase) {
-        #ifdef USERMOD_FOUR_LINE_DISPLAY
-            if (display && display->wakeDisplay()) {
-              // Throw away wake up input
-              return;
-            }
-        #endif
-            if (increase) effectIntensity = (effectIntensity + fadeAmount <= 255) ? (effectIntensity + fadeAmount) : 255;
-            else effectIntensity = (effectIntensity - fadeAmount >= 0) ? (effectIntensity - fadeAmount) : 0;
-            lampUdated();
-            #ifdef USERMOD_FOUR_LINE_DISPLAY
-            display->updateIntensity();
-            #endif
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    if (display && display->wakeDisplay()) {
+      // Throw away wake up input
+      return;
+    }
+  #endif
+    if (increase) effectIntensity = (effectIntensity + fadeAmount <= 255) ? (effectIntensity + fadeAmount) : 255;
+    else effectIntensity = (effectIntensity - fadeAmount >= 0) ? (effectIntensity - fadeAmount) : 0;
+    lampUdated();
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    display->updateIntensity();
+  #endif
   }
 
 
   void changePalette(bool increase) {
-        #ifdef USERMOD_FOUR_LINE_DISPLAY
-            if (display && display->wakeDisplay()) {
-              // Throw away wake up input
-              return;
-            }
-        #endif
-            if (increase) effectPaletteIndex = (effectPaletteIndex + 1 >= strip.getPaletteCount()) ? 0 : (effectPaletteIndex + 1);
-            else effectPaletteIndex = (effectPaletteIndex - 1 < 0) ? (strip.getPaletteCount() - 1) : (effectPaletteIndex - 1);
-            effectPalette = palettes_alpha_indexes[effectPaletteIndex];
-            lampUdated();
-            #ifdef USERMOD_FOUR_LINE_DISPLAY
-            display->showCurrentEffectOrPalette(effectPalette, JSON_palette_names, 2);
-            #endif
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    if (display && display->wakeDisplay()) {
+      // Throw away wake up input
+      return;
+    }
+  #endif
+    if (increase) effectPaletteIndex = (effectPaletteIndex + 1 >= strip.getPaletteCount()) ? 0 : (effectPaletteIndex + 1);
+    else effectPaletteIndex = (effectPaletteIndex - 1 < 0) ? (strip.getPaletteCount() - 1) : (effectPaletteIndex - 1);
+    effectPalette = palettes_alpha_indexes[effectPaletteIndex];
+    lampUdated();
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    display->showCurrentEffectOrPalette(effectPalette, JSON_palette_names, 2);
+  #endif
   }
 
 
   void changeHue(bool increase){
-        #ifdef USERMOD_FOUR_LINE_DISPLAY
-            if (display && display->wakeDisplay()) {
-              // Throw away wake up input
-              return;
-            }
-        #endif
-
-        if(increase) currentHue1 += 321;
-        else currentHue1 -= 321;
-        colorHStoRGB(currentHue1, currentSat1, col);
-        lampUdated();
-        #ifdef USERMOD_FOUR_LINE_DISPLAY
-        display->updateRedrawTime();
-        #endif
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    if (display && display->wakeDisplay()) {
+      // Throw away wake up input
+      return;
+    }
+  #endif
+    if (increase) { if (currentHue1<256) currentHue1 += 4; else currentHue1 = 0; }
+    else          { if (currentHue1>3)   currentHue1 -= 4; else currentHue1 = 256; }
+    colorHStoRGB(currentHue1*255, currentSat1, col);
+    strip.applyToAllSelected = true;
+    strip.setColor(0, colorFromRgbw(col));
+    lampUdated();
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    display->updateRedrawTime();
+  #endif
   }
 
   void changeSat(bool increase){
-        #ifdef USERMOD_FOUR_LINE_DISPLAY
-            if (display && display->wakeDisplay()) {
-              // Throw away wake up input
-              return;
-            }
-        #endif
-
-        if(increase) currentSat1 = (currentSat1 + 5 <= 255 ? (currentSat1 + 5) : 255);
-        else currentSat1 = (currentSat1 - 5 >= 0 ? (currentSat1 - 5) : 0);
-        colorHStoRGB(currentHue1, currentSat1, col);
-        lampUdated();
-        #ifdef USERMOD_FOUR_LINE_DISPLAY
-        display->updateRedrawTime();
-        #endif
-
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    if (display && display->wakeDisplay()) {
+      // Throw away wake up input
+      return;
+    }
+  #endif
+    if (increase) { if (currentSat1<252) currentSat1 += 4; }
+    else          { if (currentSat1>3)   currentSat1 -= 4; }
+    colorHStoRGB(currentHue1*256, currentSat1, col);
+    strip.applyToAllSelected = true;
+    strip.setColor(0, colorFromRgbw(col));
+    lampUdated();
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    display->updateRedrawTime();
+  #endif
   }
 
   /*
