@@ -90,9 +90,6 @@
 // if SLEEP_MODE_ENABLED.
 #define SCREEN_TIMEOUT_MS  60*1000    // 1 min
 
-#define TIME_INDENT        0
-#define DATE_INDENT        2
-
 // Minimum time between redrawing screen in ms
 #define USER_LOOP_REFRESH_RATE_MS 1000
 
@@ -100,15 +97,6 @@
 #define LINE_BUFFER_SIZE            16+1
 #define MAX_JSON_CHARS              19+1
 #define MAX_MODE_LINE_SPACE         13+1
-
-typedef enum {
-  FLD_LINE_BRIGHTNESS = 0,
-  FLD_LINE_EFFECT_SPEED,
-  FLD_LINE_EFFECT_INTENSITY,
-  FLD_LINE_MODE,
-  FLD_LINE_PALETTE,
-  FLD_LINE_TIME
-} Line4Type;
 
 typedef enum {
   NONE = 0,
@@ -272,6 +260,7 @@ class FourLineDisplayUsermod : public Usermod {
     uint32_t screenTimeout = SCREEN_TIMEOUT_MS;       // in ms
     bool sleepMode = true;          // allow screen sleep?
     bool clockMode = false;         // display clock
+    bool showSeconds = true;        // display clock with seconds
     bool enabled = true;
 
     // needRedraw marks if redraw is required to prevent often redrawing.
@@ -287,6 +276,7 @@ class FourLineDisplayUsermod : public Usermod {
     uint8_t knownMode = 0;
     uint8_t knownPalette = 0;
     uint8_t knownMinute = 99;
+    uint8_t knownHour = 99;
     byte brightness100;
     byte fxspeed100;
     byte fxintensity100;
@@ -298,7 +288,7 @@ class FourLineDisplayUsermod : public Usermod {
     unsigned long nextUpdate = 0;
     unsigned long lastRedraw = 0;
     unsigned long overlayUntil = 0;
-    Line4Type lineType = FLD_LINE_BRIGHTNESS;
+
     // Set to 2 or 3 to mark lines 2 or 3. Other values ignored.
     byte markLineNum = 0;
     byte markColNum = 0;
@@ -312,6 +302,7 @@ class FourLineDisplayUsermod : public Usermod {
     static const char _flip[];
     static const char _sleepMode[];
     static const char _clockMode[];
+    static const char _showSeconds[];
     static const char _busClkFrequency[];
 
     // If display does not work or looks corrupted check the
@@ -413,7 +404,7 @@ class FourLineDisplayUsermod : public Usermod {
       if (!enabled || strip.isUpdating()) return;
       unsigned long now = millis();
       if (now < nextUpdate) return;
-      nextUpdate = now + (clockMode?1000:refreshRate);
+      nextUpdate = now + ((clockMode && showSeconds) ? 1000 : refreshRate);
       redraw(false);
     }
 
@@ -491,6 +482,7 @@ class FourLineDisplayUsermod : public Usermod {
 
       // Check if values which are shown on display changed from the last time.
       if (forceRedraw) {
+          knownHour = 99;
           needRedraw = true;
       } else if ((bri == 0 && powerON) || (bri > 0 && !powerON)) {   //trigger power icon
           powerON = !powerON;
@@ -715,7 +707,7 @@ class FourLineDisplayUsermod : public Usermod {
      */
     bool wakeDisplay() {
       if (type == NONE || !enabled) return false;
-      //knownHour = 99;
+      knownHour = 99;
       if (displayTurnedOff) {
         // Turn the display back on
         sleepOrClock(false);
@@ -776,7 +768,7 @@ class FourLineDisplayUsermod : public Usermod {
         line = apPass;
         center(line, getCols());
         drawString(0, lineHeight*3, line.c_str());
-      } else if (strcmp(serverDescription, "WLED") != 0) {
+      } else if (strcmp(serverDescription, PSTR("WLED")) != 0) {
         line = serverDescription;
         center(line, getCols());
         drawString(0, lineHeight*3, line.c_str());
@@ -814,34 +806,41 @@ class FourLineDisplayUsermod : public Usermod {
       char lineBuffer[LINE_BUFFER_SIZE];
       static byte lastSecond;
       byte secondCurrent = second(localTime);
+      byte minuteCurrent = minute(localTime);
+      byte hourCurrent   = hour(localTime);
 
-      if (knownMinute != minute(localTime)) {  //only redraw clock if it has changed
+      if (knownMinute != minuteCurrent) {  //only redraw clock if it has changed
         //updateLocalTime();
-        byte AmPmHour = hour(localTime);
+        byte AmPmHour = hourCurrent;
         boolean isitAM = true;
         if (useAMPM) {
-          if (AmPmHour > 11) AmPmHour -= 12;
-          if (AmPmHour == 0) AmPmHour  = 12;
-          if (hour(localTime) > 11) isitAM = false;
+          if (AmPmHour > 11) { AmPmHour -= 12; isitAM = false; }
+          if (AmPmHour == 0) { AmPmHour  = 12; }
         }
 
         drawStatusIcons(); //icons power, wifi, timer, etc
 
-        sprintf_P(lineBuffer, PSTR("%s %2d "), monthShortStr(month(localTime)), day(localTime)); 
-        draw2x2String(DATE_INDENT, lineHeight==1 ? 0 : lineHeight, lineBuffer); // adjust for 8 line displays, draw month and day
+        if (knownHour != hourCurrent) {
+          // only update date when hour changes
+          sprintf_P(lineBuffer, PSTR("%s %2d "), monthShortStr(month(localTime)), day(localTime)); 
+          draw2x2String(2, lineHeight==1 ? 0 : lineHeight, lineBuffer); // adjust for 8 line displays, draw month and day
+        }
 
-        sprintf_P(lineBuffer,PSTR("%2d:%02d"), (useAMPM ? AmPmHour : hour(localTime)), minute(localTime));
-        draw2x2String(TIME_INDENT+2, lineHeight*2, lineBuffer); //draw hour, min. blink ":" depending on odd/even seconds
+        sprintf_P(lineBuffer,PSTR("%2d:%02d"), (useAMPM ? AmPmHour : hourCurrent), minuteCurrent);
+        draw2x2String(2, lineHeight*2, lineBuffer); //draw hour, min. blink ":" depending on odd/even seconds
 
         if (useAMPM) drawString(12, lineHeight*2, (isitAM ? "AM" : "PM"), true); //draw am/pm if using 12 time
-        knownMinute = minute(localTime);
+        knownMinute = minuteCurrent;
+        knownHour   = hourCurrent;
       } else {
         if (secondCurrent == lastSecond) return;
       }
-      lastSecond = secondCurrent;
-      draw2x2String(6, lineHeight*2, secondCurrent%2 ? " " : ":");
-      sprintf_P(lineBuffer, PSTR("%02d"), secondCurrent);
-      drawString(12, lineHeight*2+1, lineBuffer, true); // even with double sized rows print seconds in 1 line
+      if (showSeconds && !useAMPM) {
+        lastSecond = secondCurrent;
+        draw2x2String(6, lineHeight*2, secondCurrent%2 ? " " : ":");
+        sprintf_P(lineBuffer, PSTR("%02d"), secondCurrent);
+        drawString(12 + (lineHeight%2), lineHeight*2+1, lineBuffer, true); // even with double sized rows print seconds in 1 line
+      }
     }
 
     /*
@@ -899,6 +898,7 @@ class FourLineDisplayUsermod : public Usermod {
       top[FPSTR(_screenTimeOut)] = screenTimeout/1000;
       top[FPSTR(_sleepMode)]     = (bool) sleepMode;
       top[FPSTR(_clockMode)]     = (bool) clockMode;
+      top[FPSTR(_showSeconds)]   = (bool) showSeconds;
       top[FPSTR(_busClkFrequency)] = ioFrequency/1000;
       DEBUG_PRINTLN(F("4 Line Display config saved."));
     }
@@ -932,6 +932,7 @@ class FourLineDisplayUsermod : public Usermod {
       screenTimeout = (top[FPSTR(_screenTimeOut)] | screenTimeout/1000) * 1000;
       sleepMode     = top[FPSTR(_sleepMode)] | sleepMode;
       clockMode     = top[FPSTR(_clockMode)] | clockMode;
+      showSeconds   = top[FPSTR(_showSeconds)] | showSeconds;
       if (newType == SSD1306_SPI || newType == SSD1306_SPI64)
         ioFrequency = min(20000, max(500, (int)(top[FPSTR(_busClkFrequency)] | ioFrequency/1000))) * 1000;  // limit frequency
       else
@@ -964,6 +965,7 @@ class FourLineDisplayUsermod : public Usermod {
         if (!(type == SSD1306_SPI || type == SSD1306_SPI64)) u8x8->setBusClock(ioFrequency); // can be used for SPI too
         setContrast(contrast);
         setFlipMode(flip);
+        knownHour = 99;
         if (needsRedraw && !wakeDisplay()) redraw(true);
       }
       // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
@@ -988,4 +990,5 @@ const char FourLineDisplayUsermod::_screenTimeOut[]   PROGMEM = "screenTimeOutSe
 const char FourLineDisplayUsermod::_flip[]            PROGMEM = "flip";
 const char FourLineDisplayUsermod::_sleepMode[]       PROGMEM = "sleepMode";
 const char FourLineDisplayUsermod::_clockMode[]       PROGMEM = "clockMode";
+const char FourLineDisplayUsermod::_showSeconds[]     PROGMEM = "showSeconds";
 const char FourLineDisplayUsermod::_busClkFrequency[] PROGMEM = "i2c-freq-kHz";

@@ -461,41 +461,45 @@ public:
   }
 
   /*
-     * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
-     * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
-     * Below it is shown how this could be used for e.g. a light sensor
-     */
+   * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
+   * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
+   * Below it is shown how this could be used for e.g. a light sensor
+   */
   /*
-    void addToJsonInfo(JsonObject& root)
-    {
-      int reading = 20;
-      //this code adds "u":{"Light":[20," lux"]} to the info object
-      JsonObject user = root["u"];
-      if (user.isNull()) user = root.createNestedObject("u");
-      JsonArray lightArr = user.createNestedArray("Light"); //name
-      lightArr.add(reading); //value
-      lightArr.add(" lux"); //unit
-    }
-    */
+  void addToJsonInfo(JsonObject& root)
+  {
+    int reading = 20;
+    //this code adds "u":{"Light":[20," lux"]} to the info object
+    JsonObject user = root["u"];
+    if (user.isNull()) user = root.createNestedObject("u");
+    JsonArray lightArr = user.createNestedArray("Light"); //name
+    lightArr.add(reading); //value
+    lightArr.add(" lux"); //unit
+  }
+  */
 
   /*
-     * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
-     * Values in the state object may be modified by connected clients
-     */
+   * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
+   * Values in the state object may be modified by connected clients
+   */
+  /*
   void addToJsonState(JsonObject &root)
   {
     //root["user0"] = userVar0;
   }
+  */
 
   /*
-     * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
-     * Values in the state object may be modified by connected clients
-     */
+   * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
+   * Values in the state object may be modified by connected clients
+   */
+  /*
   void readFromJsonState(JsonObject &root)
   {
     //userVar0 = root["user0"] | userVar0; //if "user0" key exists in JSON, update, else keep old value
     //if (root["bri"] == 255) Serial.println(F("Don't burn down your garage!"));
   }
+  */
 
   /**
    * addToConfig() (called from set.cpp) stores persistent properties to cfg.json
