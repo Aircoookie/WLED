@@ -2198,7 +2198,9 @@ function expand(i,a=false)
 */
 	expanded[i] = !expanded[i];
 	seg.style.display = (expanded[i]) ? "block":"none";
-	gId('sege' +i).style.transform = (expanded[i]) ? "rotate(180deg)":"rotate(0deg)";
+	//gId('sege' +i).style.transform = (expanded[i]) ? "rotate(180deg)":"rotate(0deg)";
+	if (expanded[i]) gId('sege' +i).classList.add("exp");
+	else             gId('sege' +i).classList.remove("exp");
 
 	if (expanded[i]) gId(i<100?'segutil':'putil').classList.remove(i<100?"staybot":"staytop");
 	else gId(i<100?'segutil':'putil').classList.add(i<100?"staybot":"staytop");

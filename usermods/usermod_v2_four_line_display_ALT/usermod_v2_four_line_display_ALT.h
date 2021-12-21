@@ -784,12 +784,12 @@ class FourLineDisplayUsermod : public Usermod {
       if (enabled) {
         if (clockMode) {
           clear();
-          knownMinute = 99;
+          knownMinute = knownHour = 99;
           showTime();
-        }else           setPowerSave(1);
+        } else
+          setPowerSave(1);
         displayTurnedOff = true;
-      }
-      else {
+      } else {
         setPowerSave(0);
         displayTurnedOff = false;
       }

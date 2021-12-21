@@ -212,8 +212,9 @@ button {
 	transform: rotate(0deg);
 	transition: transform 0.3s;
 	position: absolute;
-	top: 8px;
-	right: 8px;
+	top: 0;
+	right: 0;
+	padding: 8px;
 }
 
 .exp {
