@@ -962,14 +962,14 @@ class FourLineDisplayUsermod : public Usermod {
           setup();
           needsRedraw |= true;
         }
-        if (!(type == SSD1306_SPI || type == SSD1306_SPI64)) u8x8->setBusClock(ioFrequency); // can be used for SPI too
+        /*if (!(type == SSD1306_SPI || type == SSD1306_SPI64))*/ u8x8->setBusClock(ioFrequency); // can be used for SPI too
         setContrast(contrast);
         setFlipMode(flip);
         knownHour = 99;
         if (needsRedraw && !wakeDisplay()) redraw(true);
       }
       // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
-      return !top[FPSTR(_enabled)].isNull();
+      return !top[FPSTR(_showSeconds)].isNull();
     }
 
     /*
