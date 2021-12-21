@@ -299,8 +299,7 @@ void handleNotifications()
           for (uint8_t i = 0; i < srcSegs; i++) {
             WS2812FX::Segment& selseg = strip.getSegment(i);
             for (uint8_t j = 0; j<4; j++) selseg.setOption(j, (udpIn[40+i*3] >> j) & 0x01); //only take into account mirrored, selected, on, reversed
-            selseg.spacing  = udpIn[41+i*3];
-            selseg.grouping = udpIn[42+i*3];
+            strip.setSegment(i, selseg.start, selseg.stop, udpIn[42+i*3], udpIn[41+i*3], selseg.offset); // will also properly reset segments
           }
         }
       }
