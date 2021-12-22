@@ -523,7 +523,7 @@ class FourLineDisplayUsermod : public Usermod {
       if (!needRedraw) {
         // Nothing to change.
         // Turn off display after 1 minutes with no change.
-        if (sleepMode && !displayTurnedOff && (now - lastRedraw > screenTimeout)) {
+        if (sleepMode && !displayTurnedOff && (millis() - lastRedraw > screenTimeout)) {
           // We will still check if there is a change in redraw()
           // and turn it back on if it changed.
           sleepOrClock(true);
@@ -643,7 +643,7 @@ class FourLineDisplayUsermod : public Usermod {
      //Display the current effect or palette (desiredEntry) 
      // on the appropriate line (row). 
     void showCurrentEffectOrPalette(int inputEffPal, const char *qstring, uint8_t row) {
-      char lineBuffer[LINE_BUFFER_SIZE];
+      char lineBuffer[MAX_JSON_CHARS];
       knownMode = effectCurrent;
       knownPalette = effectPalette;
       if (overlayUntil == 0) {
@@ -657,7 +657,7 @@ class FourLineDisplayUsermod : public Usermod {
         uint8_t smallChars3 = 0;
 
         // Find the mode name in JSON
-        printedChars = extractModeName(inputEffPal, qstring, lineBuffer, LINE_BUFFER_SIZE-1);
+        printedChars = extractModeName(inputEffPal, qstring, lineBuffer, MAX_JSON_CHARS-1);
         
         if (lineHeight == 2) {                                 // use this code for 8 line display
           if (printedChars < MAX_MODE_LINE_SPACE) {            // use big font if the text fits
