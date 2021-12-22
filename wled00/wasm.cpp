@@ -249,30 +249,12 @@ void wasm_task(void*)
 void wasmInit()
 {
   if (runtime || env) wasmEnd();
-  //Serial.println("\nWasm3 v" M3_VERSION " (" M3_ARCH "), build " __DATE__ " " __TIME__);
-/*
-#ifdef ESP32
-    // On ESP32, we can launch in a separate thread
-    xTaskCreate(&wasm_task, "wasm3", NATIVE_STACK_SIZE, NULL, 5, NULL);
-#else
-    wasm_task(NULL);
-#endif
-*/
   wasm_task(NULL);
 }
 
-void wasmRun() {
-  //re-init after wasm_buffer refresh
-  if (wasm_state == WASM_STATE_STALE) wasmInit();
+volatile bool wasmRunning = false;
 
-  if (wasm_state != WASM_STATE_READY) return;
-  if (result) {
-    Serial.print("WASM run error");
-    Serial.println(result);
-    wasm_state = WASM_STATE_ERROR;
-    return;
-  }
-
+void wasmRun(void * parameter) {
   result = m3_CallV(fu);
 
   if (result) {
@@ -291,6 +273,40 @@ void wasmRun() {
     }
     wasm_state = WASM_STATE_ERROR;
   }
+	wasmRunning = false;
+	#ifdef ESP32
+	vTaskDelete(NULL);
+	#endif
+}
+
+void wasmRunTask() {
+	//re-init after wasm_buffer refresh
+  if (wasm_state == WASM_STATE_STALE) wasmInit();
+
+  if (wasm_state != WASM_STATE_READY) return;
+
+	if (result) {
+    Serial.print("WASM run error");
+    Serial.println(result);
+    wasm_state = WASM_STATE_ERROR;
+    return;
+  }
+
+	#ifdef ESP32
+    // On ESP32, we can launch in a separate thread
+		wasmRunning = true;
+		unsigned long startTime = millis();
+		TaskHandle_t xHandle = NULL;
+    xTaskCreate(&wasmRun, "wasm3", 8096, NULL, 1, &xHandle);
+		while (wasmRunning) {
+			if (millis() - startTime > 250) { //bail
+				if (xHandle != NULL) vTaskDelete(xHandle);
+				wasmRunning = false;
+			}
+		}
+	#else
+    wasmRun(nullptr); //no hang protection (e.g. "while (true);")
+	#endif
 }
 
 void wasmEnd() {

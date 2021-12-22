@@ -252,7 +252,7 @@ void userLoop();
 
 //wasm.cpp
 void wasmInit();
-void wasmRun();
+void wasmRunTask();
 void wasmEnd();
 
 class WASMFX {
@@ -262,7 +262,7 @@ class WASMFX {
   }
 
   void run() {
-    wasmRun();
+    wasmRunTask();
   }
 
   void end() {
