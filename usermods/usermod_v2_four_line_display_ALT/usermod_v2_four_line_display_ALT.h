@@ -647,24 +647,20 @@ class FourLineDisplayUsermod : public Usermod {
       knownMode = effectCurrent;
       knownPalette = effectPalette;
       if (overlayUntil == 0) {
-        char smallBuffer1[MAX_MODE_LINE_SPACE];
-        char smallBuffer2[MAX_MODE_LINE_SPACE];
-        char smallBuffer3[MAX_MODE_LINE_SPACE+1];
-        bool spaceHit = false;
-        uint8_t printedChars = 0;
-        uint8_t smallChars1 = 0;
-        uint8_t smallChars2 = 0;
-        uint8_t smallChars3 = 0;
-
         // Find the mode name in JSON
-        printedChars = extractModeName(inputEffPal, qstring, lineBuffer, LINE_BUFFER_SIZE-1);
-        
+        uint8_t printedChars = extractModeName(inputEffPal, qstring, lineBuffer, LINE_BUFFER_SIZE-1);
+
         if (lineHeight == 2) {                                 // use this code for 8 line display
+          char smallBuffer1[MAX_MODE_LINE_SPACE];
+          char smallBuffer2[MAX_MODE_LINE_SPACE];
+          uint8_t smallChars1 = 0;
+          uint8_t smallChars2 = 0;
           if (printedChars < MAX_MODE_LINE_SPACE) {            // use big font if the text fits
             for (;printedChars < (MAX_MODE_LINE_SPACE-1); printedChars++) lineBuffer[printedChars]=' ';
             lineBuffer[printedChars] = 0;
             drawString(1, row*lineHeight, lineBuffer);
           } else {                                             // for long names divide the text into 2 lines and print them small
+            bool spaceHit = false;
             for (uint8_t i = 0; i < printedChars; i++) {
               switch (lineBuffer[i]) {
                 case ' ':
@@ -689,6 +685,8 @@ class FourLineDisplayUsermod : public Usermod {
             drawString(1, row*lineHeight+1, smallBuffer2, true);
           }
         } else {                                             // use this code for 4 ling displays
+          char smallBuffer3[MAX_MODE_LINE_SPACE+1];
+          uint8_t smallChars3 = 0;
           if (printedChars > MAX_MODE_LINE_SPACE) printedChars = MAX_MODE_LINE_SPACE;
           for (uint8_t i = 0; i < printedChars; i++) smallBuffer3[smallChars3++] = lineBuffer[i];
           for (; smallChars3 < (MAX_MODE_LINE_SPACE); smallChars3++) smallBuffer3[smallChars3]=' ';
