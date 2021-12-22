@@ -433,7 +433,7 @@ public:
   #endif
     if (increase) { if (currentHue1<256) currentHue1 += 4; else currentHue1 = 0; }
     else          { if (currentHue1>3)   currentHue1 -= 4; else currentHue1 = 256; }
-    colorHStoRGB(currentHue1*255, currentSat1, col);
+    colorHStoRGB(currentHue1*256, currentSat1, col);
     strip.applyToAllSelected = true;
     strip.setColor(0, colorFromRgbw(col));
     lampUdated();
