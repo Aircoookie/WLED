@@ -1263,9 +1263,9 @@ function setSliderAndColorControl(idx)
 			hide = false;
 		} else {
 			btn.style.display = "none";
+			if (i>0 && csel==i) selectSlot(0);
 		}
 	}
-	selectSlot(0);
 /*
 	// perhaps too aggressive
 	var ccfg = cfg.comp.colors;
