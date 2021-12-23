@@ -16,7 +16,7 @@
 	}
 	function S()
 	{
-		BTa();GetV();Cs();FC();
+		BTa();GetV();updLoc();Cs();FC();
 	}
 	function gId(s)
 	{
@@ -74,21 +74,27 @@
         }
         gId("W"+i).value=a[i];
       }
+      if (d.Sf.LTR.value==="S") { d.Sf.LT.value = -1*parseFloat(d.Sf.LT.value); }
+      if (d.Sf.LNR.value==="W") { d.Sf.LN.value = -1*parseFloat(d.Sf.LN.value); }
     }
 	function addRow(i,p,l,d) {
 		var t = gId("macros");	// table
         var rCnt = t.rows.length;   // get the number of rows.
         var tr = t.insertRow(rCnt); // table row.
-
+		var b = String.fromCharCode((i<10?48:55)+i);
 		var td = document.createElement('td');          // TABLE DEFINITION.
 		td = tr.insertCell(0);
 		td.innerHTML = `Button ${i}:`;
 		td = tr.insertCell(1);
-		td.innerHTML = `<input name="MP${i}" type="number" min="0" max="250" value="${p}" required>`;
+		td.innerHTML = `<input name="MP${b}" type="number" min="0" max="250" value="${p}" required>`;
 		td = tr.insertCell(2);
-		td.innerHTML = `<input name="ML${i}" type="number" min="0" max="250" value="${l}" required>`;
+		td.innerHTML = `<input name="ML${b}" type="number" min="0" max="250" value="${l}" required>`;
 		td = tr.insertCell(3);
-		td.innerHTML = `<input name="MD${i}" type="number" min="0" max="250" value="${d}" required>`;
+		td.innerHTML = `<input name="MD${b}" type="number" min="0" max="250" value="${d}" required>`;
+	}
+	function updLoc(i) {
+		if (parseFloat(d.Sf.LT.value)<0) { d.Sf.LTR.value = "S"; d.Sf.LT.value = -1*parseFloat(d.Sf.LT.value); } else d.Sf.LTR.value = "N";
+		if (parseFloat(d.Sf.LN.value)<0) { d.Sf.LNR.value = "W"; d.Sf.LN.value = -1*parseFloat(d.Sf.LN.value); } else d.Sf.LNR.value = "E";
 	}
 	function GetV()
 	{
@@ -130,11 +136,12 @@
 			<option value="18">HST (Hawaii)</option>
 			<option value="19">NOVT (Novosibirsk)</option>
 			<option value="20">AKST/AKDT (Anchorage)</option>
+			<option value="21">MX-CST/CDT</option>
 		</select><br>
 		UTC offset: <input name="UO" type="number" min="-65500" max="65500" required> seconds (max. 18 hours)<br>
 		Current local time is <span class="times">unknown</span>.<br>
-		Latitude (N): <input name="LT" type="number" min="-66.6" max="66.6" step="0.01">
-		Longitude (E): <input name="LN" type="number" min="-180" max="180" step="0.01">
+		Latitude: <select name="LTR"><option value="1">N</option><option value="-1">S</option></select><input name="LT" type="number" min="0" max="66.6" step="0.01"><br>
+		Longitude: <select name="LNR"><option value="1">E</option><option value="-1">W</option></select><input name="LN" type="number" min="0" max="180" step="0.01">
 		<div id="sun" class="times"></div>
 		<h3>Clock</h3>
 		Clock Overlay:
