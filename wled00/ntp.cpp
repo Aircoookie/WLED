@@ -331,10 +331,15 @@ void checkTimers()
     for (uint8_t i = 0; i < 8; i++)
     {
       if (timerMacro[i] != 0
+          && (timerWeekday[i] & 0x01) //timer is enabled
           && (timerHours[i] == hour(localTime) || timerHours[i] == 24) //if hour is set to 24, activate every hour 
           && timerMinutes[i] == minute(localTime)
-          && (timerWeekday[i] & 0x01) //timer is enabled
-          && ((timerWeekday[i] >> weekdayMondayFirst()) & 0x01)) //timer should activate at current day of week
+          && ( (timerDay[i] == 0 && ((timerWeekday[i] >> weekdayMondayFirst()) & 0x01)) //timer should activate at current day of week
+            || (timerDay[i] > 0 && timerDay[i]==day(localTime) && 
+              (timerMonth[i] == 0 || timerMonth[i]==month(localTime) || (timerMonth[i]==13 && month(localTime)%2) || (timerMonth[i]==14 && !(month(localTime)%2)))
+            )
+          )
+        )
       {
         unloadPlaylist();
         applyPreset(timerMacro[i]);

@@ -80,7 +80,9 @@ td {
 .d5 {
   width: 4.5em !important;
 }
-
+.exp {
+	transform: rotate(90deg);
+}
 #toast {
 	opacity: 0;
 	background-color: #444;
