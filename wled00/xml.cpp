@@ -552,6 +552,12 @@ void getSettingsJS(byte subPage, char* dest)
       k[0] = 'N'; sappend('v',k,timerMinutes[i]);
       k[0] = 'T'; sappend('v',k,timerMacro[i]);
       k[0] = 'W'; sappend('v',k,timerWeekday[i]);
+      if (i<8) {
+        k[0] = 'X'; sappend('c',k,timerDay[i]==0);
+        k[0] = 'M'; sappend('v',k,timerMonth[i]);
+        k[0] = 'D'; sappend('v',k,timerDay[i]?timerDay[i]:1);
+
+      }
     }
   }
 

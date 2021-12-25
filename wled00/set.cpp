@@ -336,21 +336,28 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
 
     char k[3]; k[2] = 0;
-    for (int i = 0; i<10; i++)
-    {
+    for (int i = 0; i<10; i++) {
       k[1] = i+48;//ascii 0,1,2,3
-
       k[0] = 'H'; //timer hours
       timerHours[i] = request->arg(k).toInt();
-
       k[0] = 'N'; //minutes
       timerMinutes[i] = request->arg(k).toInt();
-
       k[0] = 'T'; //macros
       timerMacro[i] = request->arg(k).toInt();
-
       k[0] = 'W'; //weekdays
       timerWeekday[i] = request->arg(k).toInt();
+      if (i<8) {
+        k[0] = 'X'; //DOW
+        if (!request->hasArg(k)) {
+          k[0] = 'M'; //month
+          timerMonth[i] = request->arg(k).toInt();
+          k[0] = 'D'; //day
+          timerDay[i] = request->arg(k).toInt();
+        } else {
+          timerMonth[i] = 0;
+          timerDay[i] = 0;
+        }
+      }
     }
   }
 

@@ -379,7 +379,10 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       int act = timer["en"] | actPrev;
       if (act) timerWeekday[it]++;
     }
-
+    if (it<8) {
+      CJSON(timerMonth[it], timer[F("mon")]);
+      CJSON(timerDay[it], timer[F("day")]);
+    }
     it++;
   }
 
@@ -746,6 +749,10 @@ void serializeConfig() {
     timers_ins0["min"] = timerMinutes[i];
     timers_ins0["macro"] = timerMacro[i];
     timers_ins0[F("dow")] = timerWeekday[i] >> 1;
+    if (i<8) {
+      timers_ins0[F("mon")] = timerMonth[i];
+      timers_ins0[F("day")] = timerDay[i];
+    }
   }
 
   JsonObject ota = doc.createNestedObject("ota");
