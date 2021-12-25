@@ -149,10 +149,10 @@ private:
   void _setColons() {
     if ( umSSDRColonblink ) {
       if ( second(localTime) % 2 == 0 ) {
-        _showElements(&umSSDRColons, 0, 1);
+        _showElements(&umSSDRColons, 0, 1, 0);
       }
     } else {
-      _showElements(&umSSDRColons, 0, 1);
+      _showElements(&umSSDRColons, 0, 1, 0);
     }
   }
 
