@@ -131,6 +131,13 @@ void notify(byte callMode, bool followUp)
   notifierUdp.beginPacket(broadcastIp, udpPort);
   notifierUdp.write(udpOut, WLEDPACKETSIZE);
   notifierUdp.endPacket();
+
+  for (auto const& indice : Nodes) {
+    notifierUdp.beginPacket(indice.second.ip, udpPort);
+    notifierUdp.write(udpOut, WLEDPACKETSIZE);
+    notifierUdp.endPacket();
+  }
+
   notificationSentCallMode = callMode;
   notificationSentTime = millis();
   notificationTwoRequired = (followUp)? false:notifyTwice;
@@ -564,7 +571,7 @@ void refreshNodeList()
 /*********************************************************************************************\
    Broadcast system info to other nodes. (to update node lists)
 \*********************************************************************************************/
-void sendSysInfoUDP()
+void sendSysInfoUDP(IPAddress targAddr) /* defaults all args to 255, in theory, using INADDR_NONE is safe in theory */
 {
   if (!udp2Connected) return;
 
@@ -603,7 +610,7 @@ void sendSysInfoUDP()
   for (byte i=0; i<sizeof(uint32_t); i++)
     data[40+i] = (build>>(8*i)) & 0xFF;
 
-  IPAddress broadcastIP(255, 255, 255, 255);
+  IPAddress broadcastIP(targAddr[0], targAddr[1], targAddr[2], targAddr[3]);
   notifier2Udp.beginPacket(broadcastIP, udpPort2);
   notifier2Udp.write(data, sizeof(data));
   notifier2Udp.endPacket();

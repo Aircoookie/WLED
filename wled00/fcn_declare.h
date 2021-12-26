@@ -216,7 +216,7 @@ void realtimeLock(uint32_t timeoutMs, byte md = REALTIME_MODE_GENERIC);
 void handleNotifications();
 void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w);
 void refreshNodeList();
-void sendSysInfoUDP();
+void sendSysInfoUDP(IPAddress targAddr = INADDR_NONE); // INADDR_NONE may not necessarily be safe
 
 //util.cpp
 //bool oappend(const char* txt); // append new c string to temp buffer efficiently

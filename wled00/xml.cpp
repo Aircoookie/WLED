@@ -489,6 +489,18 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("NL"),nodeListEnabled);
     sappend('c',SET_F("NB"),nodeBroadcastEnabled);
 
+    // a loop for specialSearchNodes (based on staticIP loop)
+    char k[4]; k[0] = 'N'; k[3] = '\0'; // id to save at
+    for (int i = 0; i < 10; i++) 
+    {
+      k[1] = 48+i; //ascii 0,1,2,3,4,5,6,7,8,9
+      k[2] = 'A'; sappend('v', k, specialSearchNodes[i][0]);
+      DEBUG_PRINTLN(k);
+      k[2] = 'B'; sappend('v', k, specialSearchNodes[i][1]);
+      k[2] = 'C'; sappend('v', k, specialSearchNodes[i][2]);
+      k[2] = 'D'; sappend('v', k, specialSearchNodes[i][3]);
+    }
+
     sappend('c',SET_F("RD"),receiveDirect);
     sappend('v',SET_F("EP"),e131Port);
     sappend('c',SET_F("ES"),e131SkipOutOfSequence);

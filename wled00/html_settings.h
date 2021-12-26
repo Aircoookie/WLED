@@ -274,15 +274,51 @@ type="checkbox" id="R4" name="R4"></td><td><input type="checkbox" id="R5"
 name="R5"></td><td><input type="checkbox" id="R6" name="R6"></td><td><input 
 type="checkbox" id="R7" name="R7"></td><td><input type="checkbox" id="R8" 
 name="R8"></td></tr></table><br>Receive: <input type="checkbox" name="RB">
- Brightness, <input type="checkbox" name="RC"> Color, and <input 
-type="checkbox" name="RX"> Effects<br><input type="checkbox" name="SO">
- Segment options<br>Send notifications on direct change: <input type="checkbox" 
-name="SD"><br>Send notifications on button press or IR: <input type="checkbox" 
-name="SB"><br>Send Alexa notifications: <input type="checkbox" name="SA"><br>
-Send Philips Hue change notifications: <input type="checkbox" name="SH"><br>
-Send Macro notifications: <input type="checkbox" name="SM"><br>
-Send notifications twice: <input type="checkbox" name="S2"><br><i>
-Reboot required to apply changes.</i><h3>Instance List</h3>
+Brightness, <input type="checkbox" name="RC">Color, and <input type="checkbox" 
+name="RX">Effects<br><input type="checkbox" name="SO"> Segment options<br>
+Send notifications on direct change: <input 
+type="checkbox" name="SD"><br>Send notifications on button press or IR: <input 
+type="checkbox" name="SB"><br>Send Alexa notifications: <input type="checkbox" 
+name="SA"><br>Send Philips Hue change notifications: <input type="checkbox" 
+name="SH"><br>Send Macro notifications: <input type="checkbox" name="SM"><br>
+Send notifications twice: <input type="checkbox" name="S2"><br>10 optional 
+IPs of other WLED devices to specifically search for when syncing: <br><input 
+name="N0A" type="number" min="0" max="255"> . <input name="N0B" 
+type="number" min="0" max="255"> . <input name="N0C" type="number" 
+min="0" max="255"> . <input name="N0D" type="number" 
+min="0" max="255"><br><input name="N1A" type="number" min="0" 
+max="255"> . <input name="N1B" type="number" min="0" 
+max="255"> . <input name="N1C" type="number" min="0" 
+max="255"> . <input name="N1D" type="number" min="0" max="255"><br>
+<input name="N2A" type="number" min="0" max="255"> . <input name="N2B"
+ type="number" min="0" max="255"> . <input name="N2C" type="number" 
+min="0" max="255"> . <input name="N2D" type="number" 
+min="0" max="255"><br><input name="N3A" type="number" min="0" 
+max="255"> . <input name="N3B" type="number" min="0" 
+max="255"> . <input name="N3C" type="number" min="0" 
+max="255"> . <input name="N3D" type="number" min="0" max="255"><br>
+<input name="N4A" type="number" min="0" max="255"> . <input name="N4B"
+ type="number" min="0" max="255"> . <input name="N4C" type="number" 
+min="0" max="255"> . <input name="N4D" type="number" 
+min="0" max="255"><br><input name="N5A" type="number" min="0" 
+max="255"> . <input name="N5B" type="number" min="0" 
+max="255"> . <input name="N5C" type="number" min="0" 
+max="255"> . <input name="N5D" type="number" min="0" max="255"><br>
+<input name="N6A" type="number" min="0" max="255"> . <input name="N6B"
+ type="number" min="0" max="255"> . <input name="N6C" type="number" 
+min="0" max="255"> . <input name="N6D" type="number" 
+min="0" max="255"><br><input name="N7A" type="number" min="0" 
+max="255"> . <input name="N7B" type="number" min="0" 
+max="255"> . <input name="N7C" type="number" min="0" 
+max="255"> . <input name="N7D" type="number" min="0" max="255"><br>
+<input name="N8A" type="number" min="0" max="255"> . <input name="N8B"
+ type="number" min="0" max="255"> . <input name="N8C" type="number" 
+min="0" max="255"> . <input name="N8D" type="number" 
+min="0" max="255"><br><input name="N9A" type="number" min="0" 
+max="255"> . <input name="N9B" type="number" min="0" 
+max="255"> . <input name="N9C" type="number" min="0" 
+max="255"> . <input name="N9D" type="number" min="0" max="255"><br>
+<i>Reboot required to apply changes.</i><h3>Instance List</h3>
 Enable instance list: <input type="checkbox" name="NL"><br>
 Make this instance discoverable: <input type="checkbox" name="NB"><h3>Realtime
 </h3>Receive UDP realtime: <input type="checkbox" name="RD"><br><br><i>

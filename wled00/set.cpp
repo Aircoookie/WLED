@@ -246,6 +246,23 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (!nodeListEnabled) Nodes.clear();
     nodeBroadcastEnabled = request->hasArg(F("NB"));
 
+    char k[4]; k[0] = 'N'; k[2] = '\0'; // the id to store ip part in
+    for (int i = 0; i < 10; i++) {
+      k[1] = 48+i; //ascii 0,1,2,3,4,5,6,7,8,9
+      
+      k[2] = 'A'; // first octet
+      specialSearchNodes[i][0] = request->arg(k).toInt();
+
+      k[2] = 'B'; // second octet
+      specialSearchNodes[i][1] = request->arg(k).toInt();
+
+      k[2] = 'C'; // third octet
+      specialSearchNodes[i][2] = request->arg(k).toInt();
+
+      k[2] = 'D'; // fourth octet
+      specialSearchNodes[i][3] = request->arg(k).toInt();
+    }
+
     receiveDirect = request->hasArg(F("RD"));
     e131SkipOutOfSequence = request->hasArg(F("ES"));
     e131Multicast = request->hasArg(F("EM"));
