@@ -288,7 +288,7 @@ class BusPwm : public Bus {
       if (!pinManager.allocatePin(currentPin, true, PinOwner::BusPwm)) {
         deallocatePins(); return;
       }
-      _pins[i] = currentPin; // store only after allocatePin() succeeds
+      _pins[i] = currentPin; //store only after allocatePin() succeeds
       #ifdef ESP8266
       pinMode(_pins[i], OUTPUT);
       #else
@@ -396,7 +396,7 @@ class BusPwm : public Bus {
 
   private: 
   uint8_t _pins[5] = {255, 255, 255, 255, 255};
-  uint8_t _data[5] = {255, 255, 255, 255, 255};
+  uint8_t _data[5] = {0};
   #ifdef ARDUINO_ARCH_ESP32
   uint8_t _ledcStart = 255;
   #endif
