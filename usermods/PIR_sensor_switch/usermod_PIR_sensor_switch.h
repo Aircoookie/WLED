@@ -118,7 +118,8 @@ private:
    */
   void switchStrip(bool switchOn)
   {
-    if (m_offOnly && bri && (switchOn || (!PIRtriggered && !switchOn))) return;
+    if (m_offOnly && bri && (switchOn || (!PIRtriggered && !switchOn))) return; //if lights on and off only, do nothing
+    if (PIRtriggered && switchOn) return; //if already on and triggered before, do nothing
     PIRtriggered = switchOn;
     if (switchOn) {
       if (m_onPreset) {
