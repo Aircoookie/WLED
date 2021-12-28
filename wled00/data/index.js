@@ -1045,7 +1045,7 @@ function updateSelectedFx()
 	var selElement = parent.querySelector('.selected');
 	if (selElement) {
 		var fx = (parseInt(selElement.dataset.id) == prevFx) && currentPreset==-1;
-		var ps = (prevPS != currentPreset) && currentPreset!=-1;
+		var ps = (prevPS == currentPreset) && currentPreset!=-1;
 		if (fx || ps) return; //already selected
 		selElement.classList.remove('selected');
 	}
@@ -1736,7 +1736,8 @@ function rptSeg(s)
 	if (stop == 0) {return;}
 	var rev = gId(`seg${s}rev`).checked;
 	var mi = gId(`seg${s}mi`).checked;
-	var obj = {"seg": {"id": 0, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop, "rev": rev, "mi": mi, "on": !powered[s], "bri": parseInt(gId(`seg${s}bri`).value)}};
+	var sel = gId(`seg${s}sel`).checked;
+	var obj = {"seg": {"id": 0, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop, "rev": rev, "mi": mi, "on": !powered[s], "bri": parseInt(gId(`seg${s}bri`).value), "sel": sel}};
 	if (gId(`seg${s}grp`)) {
 		var grp = parseInt(gId(`seg${s}grp`).value);
 		var spc = parseInt(gId(`seg${s}spc`).value);
