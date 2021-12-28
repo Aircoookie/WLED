@@ -12,7 +12,7 @@ var selectedFx = 0, prevFx = -1;
 var selectedPal = 0;
 var sliderControl = ""; //WLEDSR: used by togglePcMode
 var csel = 0;
-var currentPreset = -1;
+var currentPreset = -1, prevPS = -1;
 var lastUpdate = 0;
 var segCount = 0, ledCount = 0, lowestUnused = 0, maxSeg = 0, lSeg = 0;
 var pcMode = false, pcModeA = false, lastw = 0;
@@ -1044,7 +1044,9 @@ function updateSelectedFx()
 
 	var selElement = parent.querySelector('.selected');
 	if (selElement) {
-		if (parseInt(selElement.dataset.id) == prevFx) return; //already selected
+		var fx = (parseInt(selElement.dataset.id) == prevFx) && currentPreset==-1;
+		var ps = (prevPS != currentPreset) && currentPreset!=-1;
+		if (fx || ps) return; //already selected
 		selElement.classList.remove('selected');
 	}
 
@@ -1118,6 +1120,7 @@ function readState(s,command=false)
 	nlTar = s.nl.tbri;
 	nlFade = s.nl.fade;
 	syncSend = s.udpn.send;
+	prevPS = currentPreset;
 	if (s.pl<0)	currentPreset = s.ps;
 	else currentPreset = s.pl;
 
@@ -1327,7 +1330,7 @@ function setSliderAndColorControl(idx)
 		// if numeric set as selected palette
 		if (paOnOff.length>0 && paOnOff[0]!="" && !isNaN(paOnOff[0]) && parseInt(paOnOff[0])!=selectedPal) obj.seg.pal = parseInt(paOnOff[0]);
 	}
-	if (!isEmpty(obj.seg)) requestJson(obj); //update default values (may need throttling on ESP8266)
+	if (!isEmpty(obj.seg) && currentPreset==-1) requestJson(obj); //update default values (may need throttling on ESP8266)
 }
 
 var jsonTimeout;
