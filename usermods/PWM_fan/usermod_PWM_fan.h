@@ -148,7 +148,7 @@ class PWMFanUsermod : public Usermod {
       int pwmStep = ((100 - minPWMValuePct) * newPWMvalue) / (7*100);
       int pwmMinimumValue = (minPWMValuePct * newPWMvalue) / 100;
 
-      if ((temp == NAN) || (temp <= 0.0)) {
+      if ((temp == NAN) || (temp <= -100.0)) {
         DEBUG_PRINTLN(F("WARNING: no temperature value available. Cannot do temperature control. Will set PWM fan to 255."));
       } else if (difftemp <= 0.0) {
         // Temperature is below target temperature. Run fan at minimum speed.
