@@ -927,6 +927,11 @@ class WS2812FX {
       transitionProgress(uint8_t tNr);
 };
 
+extern const char JSON_mode_names[];
+extern const char JSON_palette_names[];
+
+// the following has been moved to FX_fcn.cpp instead
+/*
 // WLEDSR: extensions
 // Technical notes
 // ===============
@@ -1014,9 +1019,9 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Stream 2",
 "Oscillate",
 "Pride 2015",
-"Juggle@!,Trail;!,!,;!",
+"Juggle@!=16,Trail=240;!,!,;!",
 "Palette@!,;;!",
-"Fire 2012@Spark rate,Decay;;!",
+"Fire 2012@Spark rate=120,Decay=64;;!",
 "Colorwaves",
 "Bpm",
 "Fill Noise",
@@ -1038,7 +1043,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Spots@Spread,Width;!,!,;!",
 "Spots Fade@Spread,Width;!,!,;!",
 "Glitter",
-"Candle@Flicker rate,Flicker intensity;!,!,;0",
+"Candle@Flicker rate=96,Flicker intensity=224;!,!,;0",
 "Fireworks Starburst",
 "Fireworks 1D@Gravity,Firing side;!,!,;!",
 "Bouncing Balls@Gravity,# of balls;!,!,;!",
@@ -1052,9 +1057,9 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Ripple Rainbow",
 "Heartbeat",
 "Pacifica",
-"Candle Multi@Flicker rate,Flicker intensity;!,!,;0",
+"Candle Multi@Flicker rate=96,Flicker intensity=224;!,!,;0",
 "Solid Glitter@,!;!,,;0",
-"Sunrise@Time [min],;;0",
+"Sunrise@Time [min]=60,;;0",
 "Phased",
 "Twinkleup@!,Intensity;!,!,;!",
 "Noise Pal",
@@ -1081,5 +1086,5 @@ const char JSON_palette_names[] PROGMEM = R"=====([
 "Semi Blue","Pink Candy","Red Reaf","Aqua Flash","Yelblu Hot","Lite Light","Red Flash","Blink Red","Red Shift","Red Tide",
 "Candy2"
 ])=====";
-
+*/
 #endif
