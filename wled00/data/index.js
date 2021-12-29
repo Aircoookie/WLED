@@ -1043,18 +1043,15 @@ function updateSelectedFx()
 	if (selEffectInput) selEffectInput.checked = true;
 
 	var selElement = parent.querySelector('.selected');
-	if (selElement) {
-		var fx = (parseInt(selElement.dataset.id) == prevFx) && currentPreset==-1;
-		var ps = (prevPS == currentPreset) && currentPreset!=-1;
-		if (fx || ps) return; //already selected
-		selElement.classList.remove('selected');
-	}
+	if (selElement) selElement.classList.remove('selected');
 
 	var selectedEffect = parent.querySelector(`.lstI[data-id="${selectedFx}"]`);
 	if (selectedEffect) {
 		selectedEffect.classList.add('selected');
+		var fx = (selectedFx != prevFx) && currentPreset==-1; //effect changed & preset==none
+		var ps = (prevPS != currentPreset) && currentPreset==-1; // preset changed & preset==none
 		// WLEDSR: extract the Slider and color control string from the HTML element and set it.
-		setSliderAndColorControl(selectedFx);
+		setSliderAndColorControl(selectedFx, (fx || ps));
 	}
 }
 
@@ -1212,7 +1209,7 @@ function readState(s,command=false)
 // Note: Effects can override default pattern behaviour
 //       - FadeToBlack can override the background setting
 //       - Defining SEGCOL(<i>) can override a specific palette using these values (e.g. Color Gradient)
-function setSliderAndColorControl(idx)
+function setSliderAndColorControl(idx, applyDef=false)
 {
 	if (!(Array.isArray(fxdata) && fxdata.length>idx)) return;
 	var topPosition = 0;
@@ -1236,9 +1233,9 @@ function setSliderAndColorControl(idx)
 				//embeded default values
 				var dPos = slOnOff[i].indexOf("=");
 				var v = Math.max(0,Math.min(255,parseInt(slOnOff[i].substr(dPos+1))));
-				if      (i==0) { gId("sliderSpeed").value     = v; obj.seg.sx = v; }
-				else if (i==1) { gId("sliderIntensity").value = v; obj.seg.ix = v; }
-				else           { gId("sliderC"+(i-1)).value   = v; obj.seg["C"+(i-1)] = v}
+				if      (i==0) { if (applyDef) gId("sliderSpeed").value     = v; obj.seg.sx = v; }
+				else if (i==1) { if (applyDef) gId("sliderIntensity").value = v; obj.seg.ix = v; }
+				else           { if (applyDef) gId("sliderC"+(i-1)).value   = v; obj.seg["C"+(i-1)] = v}
 				slOnOff[i] = slOnOff[i].substring(0,dPos-1);
 			}
 			if (slOnOff.length>i && slOnOff[i]!="!") label.innerHTML = slOnOff[i];
@@ -1316,7 +1313,7 @@ function setSliderAndColorControl(idx)
 			var dPos = paOnOff[0].indexOf("=");
 			var v = Math.max(0,Math.min(255,parseInt(paOnOff[0].substr(dPos+1))));
 			var p = d.querySelector(`#pallist input[name="palette"][value="${v}"]`);
-			if (p) {
+			if (applyDef && p) {
 				p.checked = true;
 				obj.seg.pal = v;
 			}
@@ -1330,7 +1327,7 @@ function setSliderAndColorControl(idx)
 		// if numeric set as selected palette
 		if (paOnOff.length>0 && paOnOff[0]!="" && !isNaN(paOnOff[0]) && parseInt(paOnOff[0])!=selectedPal) obj.seg.pal = parseInt(paOnOff[0]);
 	}
-	if (!isEmpty(obj.seg) && currentPreset==-1) requestJson(obj); //update default values (may need throttling on ESP8266)
+	if (!isEmpty(obj.seg) && applyDef) requestJson(obj); //update default values (may need throttling on ESP8266)
 }
 
 var jsonTimeout;

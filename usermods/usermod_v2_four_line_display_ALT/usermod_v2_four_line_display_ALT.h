@@ -509,8 +509,8 @@ class FourLineDisplayUsermod : public Usermod {
            if (displayTurnedOff) needRedraw = true;
            else showCurrentEffectOrPalette(knownPalette, JSON_palette_names, 2);
       } else if (knownBrightness != bri) {
-          if (displayTurnedOff && nightlightActive){needRedraw = false; knownBrightness = bri;}
-          else if(displayTurnedOff) needRedraw = true;
+          if (displayTurnedOff && nightlightActive) { needRedraw = false; knownBrightness = bri; }
+          else if (displayTurnedOff) needRedraw = true;
           else updateBrightness();
       } else if (knownEffectSpeed != effectSpeed) {
           if (displayTurnedOff) needRedraw = true;
@@ -531,8 +531,6 @@ class FourLineDisplayUsermod : public Usermod {
           showTime();
         }
         return;
-      } else {
-        clear();
       }
 
       needRedraw = false;
@@ -779,9 +777,9 @@ class FourLineDisplayUsermod : public Usermod {
      * Enable sleep (turn the display off) or clock mode.
      */
     void sleepOrClock(bool enabled) {
+      clear();
       if (enabled) {
         if (clockMode) {
-          clear();
           knownMinute = knownHour = 99;
           showTime();
         } else
@@ -799,7 +797,7 @@ class FourLineDisplayUsermod : public Usermod {
      * the useAMPM configuration.
      */
     void showTime() {
-      if (type == NONE || !enabled) return;
+      if (type == NONE || !enabled || !displayTurnedOff) return;
 
       char lineBuffer[LINE_BUFFER_SIZE];
       static byte lastSecond;
