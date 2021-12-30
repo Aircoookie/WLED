@@ -58,7 +58,7 @@
 <td><button type="button" class="sml" onclick="expand(this,${i})">&gt;</button></td></tr>`;
 			ih+=`<tr><td colspan=5><div id="WD${i}" style="display:none;">`;
 			ih+=`<input name="X${i}" id="TMX${i}" type="checkbox" onchange="tglDOW(${i},this.checked)"><label for="TMX${i}">Use DOW</label>`;
-			ih+=`<table id="TT${i}" style="width:100%;"><tr><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr><tr>`
+			ih+=`<table id="TT${i}" style="width:100%%;"><tr><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr><tr>`
 			for (j=1;j<8;j++) ih+=`<td><input id="W${i}${j}" type="checkbox"></td>`;
 			ih+=`</tr></table><div id="TD${i}">Date:
 <select id="TMM${i}" name="M${i}" onchange="chkMon(this,${i})">
@@ -86,7 +86,7 @@
 <td><input name="N8" class="xs" type="number" min="-59" max="59"></td>
 <td><input name="T8" class="s" type="number" min="0" max="250"></td>
 <td><button type="button" class="sml" onclick="expand(this,8)">&gt;</button></td></tr><tr><td colspan=5>`;
-		ih+=`<div id="WD8"style="display:none;"><table style="width:100%;"><tr><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr><tr>`;
+		ih+=`<div id="WD8"style="display:none;"><table style="width:100%%;"><tr><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr><tr>`;
 		for (j=1;j<8;j++) ih+=`<td><input id="W8${j}" type="checkbox"></td>`;
 		ih+="</tr></table><hr></div></td></tr>";
 		ih+=`<tr><td><input name="W9" id="W9" type="hidden"><input id="W90" type="checkbox"></td>
@@ -94,7 +94,7 @@
 <td><input name="N9" class="xs" type="number" min="-59" max="59"></td>
 <td><input name="T9" class="s" type="number" min="0" max="250"></td>
 <td><button type="button" class="sml" onclick="expand(this,9)">&gt;</button></td></tr><tr><td colspan=5>`;
-		ih+=`<div id="WD9" style="display:none;"><table style="width:100%;"><tr><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr><tr>`;
+		ih+=`<div id="WD9" style="display:none;"><table style="width:100%%;"><tr><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr><tr>`;
 		for (j=1;j<8;j++) ih+=`<td><input id="W9${j}" type="checkbox"></td>`;
 		ih+="</tr></table><hr></div></td></tr>";
 		gId("TMT").innerHTML=ih;
@@ -216,7 +216,7 @@
 		</div>
 		Countdown Mode: <input type="checkbox" name="CE"><br>
 		Countdown Goal:<br>
-		Date: <nowrap>20<input name="CY" class="xs" type="number" min="0" max="99" required>-<input name="CI" class="xs" type="number" min="1" max="12" required>-<input name="CD" class="xs" type="number" min="1" max="31" required></nowrap><br>
+		Date:&nbsp;<nowrap>20<input name="CY" class="xs" type="number" min="0" max="99" required>-<input name="CI" class="xs" type="number" min="1" max="12" required>-<input name="CD" class="xs" type="number" min="1" max="31" required></nowrap><br>
 		Time: <nowrap><input name="CH" class="xs" type="number" min="0" max="23" required>:<input name="CM" class="xs" type="number" min="0" max="59" required>:<input name="CS" class="xs" type="number" min="0" max="59" required></nowrap><br>
 		<h3>Macro presets</h3>
     	<b>Macros have moved!</b><br>
