@@ -39,6 +39,8 @@
   #endif
 #endif
 
+#define WLED_MAX_COLOR_ORDER_MAPPINGS 10
+
 //Usermod IDs
 #define USERMOD_ID_RESERVED               0     //Unused. Might indicate no usermod present
 #define USERMOD_ID_UNSPECIFIED            1     //Default value for a general user mod that does not specify a custom ID
