@@ -340,9 +340,8 @@ bool isTodayInDateRange(byte monthStart, byte dayStart, byte monthEnd, byte dayE
 	}
 
 	//start month and end month are the same
-	if (dayStart == dayEnd) return (d == dayStart && m == monthStart); //just a single day
 	if (dayEnd < dayStart) return (m != monthStart || (d <= dayEnd || d >= dayStart)); //all year, except the designated days in this month
-	return (d >= dayStart && d <= dayEnd); //just the designated days this month
+	return (m == monthStart && d >= dayStart && d <= dayEnd); //just the designated days this month
 }
 
 void checkTimers()
