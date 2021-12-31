@@ -156,9 +156,10 @@ CCT additive blending: <input type="number" class="s" min="0" max="100"
 name="CB" required> %%</span><h3>Advanced</h3>Palette blending: <select 
 name="PB"><option value="0">Linear (wrap if moving)</option><option value="1">
 Linear (always wrap)</option><option value="2">Linear (never wrap)</option>
-<option value="3">None (not recommended)</option></select><br><hr 
-style="width:260px"><div id="cfg">Config template: <input type="file" 
-name="data2" accept=".json"> <input type="button" value="Apply" 
+<option value="3">None (not recommended)</option></select><br>
+Target refresh rate: <input type="number" class="s" min="1" max="120" name="FR" 
+required> FPS<hr style="width:260px"><div id="cfg">Config template: <input 
+type="file" name="data2" accept=".json"> <input type="button" value="Apply" 
 onclick="loadCfg(d.Sf.data2)"><br></div><hr><button type="button" onclick="B()">
 Back</button><button type="submit">Save</button></form></body></html>)=====";
 

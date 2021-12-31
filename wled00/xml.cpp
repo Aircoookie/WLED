@@ -382,6 +382,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("CCT"),correctWB);
     sappend('c',SET_F("CR"),cctFromRgb);
 		sappend('v',SET_F("CB"),strip.cctBlending);
+		sappend('v',SET_F("FR"),strip.getTargetFps());
 		sappend('v',SET_F("AW"),Bus::getAutoWhiteMode());
 
     for (uint8_t s=0; s < busses.getNumBusses(); s++) {

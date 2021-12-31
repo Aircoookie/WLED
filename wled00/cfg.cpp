@@ -85,6 +85,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(cctFromRgb, hw_led[F("cr")]);
 	CJSON(strip.cctBlending, hw_led[F("cb")]);
 	Bus::setCCTBlend(strip.cctBlending);
+	strip.setTargetFps(hw_led["fps"]); //NOP if 0, default 42 FPS
 
   JsonArray ins = hw_led["ins"];
   
@@ -549,6 +550,7 @@ void serializeConfig() {
   hw_led["cct"] = correctWB;
   hw_led[F("cr")] = cctFromRgb;
 	hw_led[F("cb")] = strip.cctBlending;
+	hw_led["fps"] = strip.getTargetFps();
 	hw_led[F("rgbwm")] = Bus::getAutoWhiteMode();
 
   JsonArray hw_led_ins = hw_led.createNestedArray("ins");

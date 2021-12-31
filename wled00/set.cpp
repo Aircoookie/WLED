@@ -100,6 +100,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 		strip.cctBlending = request->arg(F("CB")).toInt();
 		Bus::setCCTBlend(strip.cctBlending);
 		Bus::setAutoWhiteMode(request->arg(F("AW")).toInt());
+		strip.setTargetFps(request->arg(F("FR")).toInt());
 
     for (uint8_t s = 0; s < WLED_MAX_BUSSES; s++) {
       char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
