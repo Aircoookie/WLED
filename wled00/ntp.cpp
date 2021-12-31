@@ -318,6 +318,33 @@ byte weekdayMondayFirst()
   return wd;
 }
 
+bool isTodayInDateRange(byte monthStart, byte dayStart, byte monthEnd, byte dayEnd)
+{
+	if (monthStart == 0 || dayStart == 0) return true;
+	if (monthEnd == 0) monthEnd = monthStart;
+	if (dayEnd == 0) dayEnd = 31;
+	byte d = day(localTime);
+	byte m = month(localTime);
+
+	if (monthStart < monthEnd) {
+		if (m > monthStart && m < monthEnd) return true;
+		if (m == monthStart) return (d >= dayStart);
+		if (m == monthEnd) return (d <= dayEnd);
+		return false;
+	}
+	if (monthEnd < monthStart) { //range spans change of year
+		if (m > monthStart || m < monthEnd) return true;
+		if (m == monthStart) return (d >= dayStart);
+		if (m == monthEnd) return (d <= dayEnd);
+		return false;
+	}
+
+	//start month and end month are the same
+	if (dayStart == dayEnd) return (d == dayStart && m == monthStart); //just a single day
+	if (dayEnd < dayStart) return (m != monthStart || (d <= dayEnd || d >= dayStart)); //all year, except the designated days in this month
+	return (d >= dayStart && d <= dayEnd); //just the designated days this month
+}
+
 void checkTimers()
 {
   if (lastTimerMinute != minute(localTime)) //only check once a new minute begins
@@ -334,12 +361,9 @@ void checkTimers()
           && (timerWeekday[i] & 0x01) //timer is enabled
           && (timerHours[i] == hour(localTime) || timerHours[i] == 24) //if hour is set to 24, activate every hour 
           && timerMinutes[i] == minute(localTime)
-          && ( (timerDay[i] == 0 && ((timerWeekday[i] >> weekdayMondayFirst()) & 0x01)) //timer should activate at current day of week
-            || (timerDay[i] > 0 && timerDay[i]==day(localTime) && 
-              (timerMonth[i] == 0 || timerMonth[i]==month(localTime) || (timerMonth[i]==13 && month(localTime)%2) || (timerMonth[i]==14 && !(month(localTime)%2)))
-            )
-          )
-        )
+          && ((timerWeekday[i] >> weekdayMondayFirst()) & 0x01) //timer should activate at current day of week
+          && isTodayInDateRange(((timerMonth[i] >> 4) & 0x0F), timerDay[i], timerMonth[i] & 0x0F, timerDayEnd[i])
+         )
       {
         unloadPlaylist();
         applyPreset(timerMacro[i]);

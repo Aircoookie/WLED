@@ -6,6 +6,8 @@
 	<title>Time Settings</title>
 	<script>
     var d=document;
+		var ms=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+		var cals = 'style="font-size:27px;margin-top:-6px;cursor:pointer"'; //hack as to not repeat CSS on all pages
 	function H()
 	{
 		window.open("https://kno.wled.ge/features/settings/#time-settings");
@@ -22,11 +24,14 @@
 	{
 		return d.getElementById(s);
 	}
+	function gN(s) {
+		return d.getElementsByName(s)[0];
+	}
 	function expand(o,i)
 	{
-		o.classList.toggle("exp"); 
 		var t = gId("WD"+i);
 		t.style.display = t.style.display!=="none" ? "none" : "";
+		o.innerHTML = t.style.display==="none" ? "&#128467;" : "&#11148;";
 	}
 	function Cs()
 	{
@@ -55,37 +60,24 @@
 <td><input name="H${i}" class="xs" type="number" min="0" max="24"></td>
 <td><input name="N${i}" class="xs" type="number" min="0" max="59"></td>
 <td><input name="T${i}" class="s" type="number" min="0" max="250"></td>
-<td><button type="button" class="sml" onclick="expand(this,${i})">&gt;</button></td></tr>`;
-			ih+=`<tr><td colspan=5><div id="WD${i}" style="display:none;">`;
-			ih+=`<input name="X${i}" id="TMX${i}" type="checkbox" onchange="tglDOW(${i},this.checked)"><label for="TMX${i}">Use DOW</label>`;
-			ih+=`<table id="TT${i}" style="width:100%%;"><tr><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr><tr>`
+<td><div id="CB${i}" onclick="expand(this,${i})" ${cals}>&#128467;</div></td></tr>`;
+			ih+=`<tr><td colspan=5><div id="WD${i}" style="display:none;">Run on weekdays`;
+			ih+=`<table style="width:100%%;"><tr><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr><tr>`
 			for (j=1;j<8;j++) ih+=`<td><input id="W${i}${j}" type="checkbox"></td>`;
-			ih+=`</tr></table><div id="TD${i}">Date:
-<select id="TMM${i}" name="M${i}" onchange="chkMon(this,${i})">
-<option value="0">Every month</option>
-<option value="13">Odd month</option>
-<option value="14">Even month</option>
-<option value="1">Jan</option>
-<option value="2">Feb</option>
-<option value="3">Mar</option>
-<option value="4">Apr</option>
-<option value="5">May</option>
-<option value="6">Jun</option>
-<option value="7">Jul</option>
-<option value="8">Aug</option>
-<option value="9">Sep</option>
-<option value="10">Oct</option>
-<option value="11">Nov</option>
-<option value="12">Dec</option>
-</select><select id="TMD${i}" name="D${i}">`;
-			for (j=1;j<32;j++) ih+=`<option value="${j}">${j}</option>`;
-			ih+="</select></div><hr></div></td></tr>";
+			ih+=`</tr></table>from
+<select name="M${i}">`;
+			for (j=0;j<12;j++) ih+=`<option value="${j+1}">${ms[j]}</option>`;
+			ih+=`</select><input name="D${i}" class="xs" type="number" min="1" max="31"></input> to
+<select name="P${i}">`;
+			for (j=0;j<12;j++) ih+=`<option value="${j+1}">${ms[j]}</option>`;
+			ih+=`</select><input name="E${i}" class="xs" type="number" min="1" max="31"></input>
+		<hr></div></td></tr>`;
 		}
 		ih+=`<tr><td><input name="W8" id="W8" type="hidden"><input id="W80" type="checkbox"></td>
 <td>Sunrise<input name="H8" value="255" type="hidden"></td>
 <td><input name="N8" class="xs" type="number" min="-59" max="59"></td>
 <td><input name="T8" class="s" type="number" min="0" max="250"></td>
-<td><button type="button" class="sml" onclick="expand(this,8)">&gt;</button></td></tr><tr><td colspan=5>`;
+<td><div onclick="expand(this,8)" ${cals}>&#128467;</div></td></tr><tr><td colspan=5>`;
 		ih+=`<div id="WD8"style="display:none;"><table style="width:100%%;"><tr><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr><tr>`;
 		for (j=1;j<8;j++) ih+=`<td><input id="W8${j}" type="checkbox"></td>`;
 		ih+="</tr></table><hr></div></td></tr>";
@@ -93,29 +85,23 @@
 <td>Sunset<input name="H9" value="255" type="hidden"></td>
 <td><input name="N9" class="xs" type="number" min="-59" max="59"></td>
 <td><input name="T9" class="s" type="number" min="0" max="250"></td>
-<td><button type="button" class="sml" onclick="expand(this,9)">&gt;</button></td></tr><tr><td colspan=5>`;
+<td><div onclick="expand(this,9)" ${cals}>&#128467;</div></td></tr><tr><td colspan=5>`;
 		ih+=`<div id="WD9" style="display:none;"><table style="width:100%%;"><tr><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr><tr>`;
 		for (j=1;j<8;j++) ih+=`<td><input id="W9${j}" type="checkbox"></td>`;
 		ih+="</tr></table><hr></div></td></tr>";
 		gId("TMT").innerHTML=ih;
 	}
-	function tglDOW(i,b)
-	{
-		gId("TT"+i).style.display = b ? "table" : "none";
-		gId("TD"+i).style.display = !b ? "block" : "none";
-	}
-	function chkMon(o,i)
-	{
-		const m31 = [1,3,5,7,8,10,12,0,13,14];
-		if (!m31.includes(parseInt(o.value)) && parseInt(gId("TMD"+i).value)>30) gId("TMD"+i).value="30";
-		if (parseInt(o.value)===2 && parseInt(gId("TMD"+i).value)>28) gId("TMD"+i).value="28";
-	}
 	function FC()
 	{
-		for(j=0;j<8;j++)
+		for(i=0;i<10;i++)
 		{
-			for(i=0;i<10;i++) gId("W"+i+j).checked=gId("W"+i).value>>j&1;
-			tglDOW(j,gId('TMX'+j).checked);
+			let wd = gId("W"+i).value;
+			for(j=0;j<8;j++) {
+				gId("W"+i+j).checked=wd>>j&1;
+			}
+			if ((wd&127) != 127 || (i<8 && (gN("M"+i).value != 1 || gN("D"+i).value != 1 || gN("P"+i).value != 12 || gN("E"+i).value != 31))) {
+				expand(gId("CB"+i),i); //expand macros with custom DOW or date range set
+			}
 		}
 	}
 	function Wd()
@@ -221,7 +207,7 @@
 		<h3>Macro presets</h3>
     	<b>Macros have moved!</b><br>
     	<i>Presets now also can be used as macros to save both JSON and HTTP API commands.<br>
-    	Just enter the preset id below!</i>
+    	Just enter the preset ID below!</i>
 		<i>Use 0 for the default action instead of a preset</i><br>
 		Alexa On/Off Preset: <input name="A0" class="m" type="number" min="0" max="250" required> <input name="A1" class="m" type="number" min="0" max="250" required><br>
 		Countdown-Over Preset: <input name="MC" class="m" type="number" min="0" max="250" required><br>

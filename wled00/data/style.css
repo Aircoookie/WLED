@@ -66,7 +66,6 @@ input[type="number"].xs {
 }
 input[type="checkbox"] {
   transform: scale(1.5);
-  margin-right: 10px;
 }
 select {
   background: #333;
@@ -79,9 +78,6 @@ td {
 }
 .d5 {
   width: 4.5em !important;
-}
-.exp {
-	transform: rotate(90deg);
 }
 #toast {
 	opacity: 0;
