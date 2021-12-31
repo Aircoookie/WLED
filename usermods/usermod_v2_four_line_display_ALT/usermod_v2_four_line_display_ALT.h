@@ -386,7 +386,8 @@ class FourLineDisplayUsermod : public Usermod {
       setFlipMode(flip);
       setContrast(contrast); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
       setPowerSave(0);
-      drawString(0, 0, "Loading...");
+      //drawString(0, 0, "Loading...");
+      overlay(PSTR("Loading..."),3000,0);
     }
 
     // gets called every time WiFi is (re-)connected. Initialize own network
@@ -484,6 +485,7 @@ class FourLineDisplayUsermod : public Usermod {
       if (forceRedraw) {
           knownHour = 99;
           needRedraw = true;
+          clear();
       } else if ((bri == 0 && powerON) || (bri > 0 && !powerON)) {   //trigger power icon
           powerON = !powerON;
           drawStatusIcons();
@@ -526,6 +528,7 @@ class FourLineDisplayUsermod : public Usermod {
         if (sleepMode && !displayTurnedOff && (now - lastRedraw > screenTimeout)) {
           // We will still check if there is a change in redraw()
           // and turn it back on if it changed.
+          clear();
           sleepOrClock(true);
         } else if (displayTurnedOff && clockMode) {
           showTime();
@@ -539,6 +542,7 @@ class FourLineDisplayUsermod : public Usermod {
       if (displayTurnedOff) {
         // Turn the display back on
         sleepOrClock(false);
+        clear();
       }
 
       // Update last known values.
@@ -705,6 +709,7 @@ class FourLineDisplayUsermod : public Usermod {
       if (type == NONE || !enabled) return false;
       knownHour = 99;
       if (displayTurnedOff) {
+        clear();
         // Turn the display back on
         sleepOrClock(false);
         redraw(true);
@@ -729,8 +734,10 @@ class FourLineDisplayUsermod : public Usermod {
       if (glyphType > 0) {
         if (lineHeight == 2) drawGlyph(5, 0, glyphType, u8x8_font_benji_custom_icons_6x6, true);
         else                 drawGlyph(7, lineHeight, glyphType, u8x8_font_benji_custom_icons_2x2, true);
+        if (line1) drawString(0, 3*lineHeight, line1);
+      } else {
+        if (line1) drawString(0, 2*(lineHeight-1), line1);
       }
-      if (line1) drawString(0, 3*lineHeight, line1);
       overlayUntil = millis() + showHowLong;
     }
 
@@ -777,7 +784,6 @@ class FourLineDisplayUsermod : public Usermod {
      * Enable sleep (turn the display off) or clock mode.
      */
     void sleepOrClock(bool enabled) {
-      clear();
       if (enabled) {
         if (clockMode) {
           knownMinute = knownHour = 99;
