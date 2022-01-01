@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2201011
+#define VERSION 2201012
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -503,15 +503,17 @@ WLED_GLOBAL byte dP[] _INIT_N(({ 255, 255, 255, 255, 255, 255 }));
 WLED_GLOBAL unsigned long countdownTime _INIT(1514764800L);
 WLED_GLOBAL bool countdownOverTriggered _INIT(true);
 
-// timer
+//timer
 WLED_GLOBAL byte lastTimerMinute  _INIT(0);
 WLED_GLOBAL byte timerHours[]     _INIT_N(({ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }));
 WLED_GLOBAL int8_t timerMinutes[] _INIT_N(({ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }));
 WLED_GLOBAL byte timerMacro[]     _INIT_N(({ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }));
-WLED_GLOBAL byte timerWeekday[]   _INIT_N(({ 255, 255, 255, 255, 255, 255, 255, 255, 255, 255 }));        // weekdays to activate on
-// bit pattern of arr elem: 0b11111111: sun,sat,fri,thu,wed,tue,mon,validity
-WLED_GLOBAL byte timerMonth[]     _INIT_N(({0,0,0,0,0,0,0,0}));
-WLED_GLOBAL byte timerDay[]       _INIT_N(({0,0,0,0,0,0,0,0}));
+//weekdays to activate on, bit pattern of arr elem: 0b11111111: sun,sat,fri,thu,wed,tue,mon,validity
+WLED_GLOBAL byte timerWeekday[]   _INIT_N(({ 255, 255, 255, 255, 255, 255, 255, 255, 255, 255 }));
+//upper 4 bits start, lower 4 bits end month (default 28: start month 1 and end month 12)
+WLED_GLOBAL byte timerMonth[]     _INIT_N(({28,28,28,28,28,28,28,28}));
+WLED_GLOBAL byte timerDay[]       _INIT_N(({1,1,1,1,1,1,1,1}));
+WLED_GLOBAL byte timerDayEnd[]		_INIT_N(({31,31,31,31,31,31,31,31}));
 
 // blynk
 WLED_GLOBAL bool blynkEnabled _INIT(false);

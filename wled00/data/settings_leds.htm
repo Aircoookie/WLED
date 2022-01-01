@@ -353,7 +353,7 @@ ${i+1}:
       c += `<option value="7" ${t==7?"selected":""}>Analog</option>`;
       c += `<option value="8" ${t==8?"selected":""}>Analog inverted</option>`;
       c += `</select>`;
-      c += `<span style="cursor: pointer;" onclick="off('${bt}')">&nbsp;&#215;</span><br>`;
+      c += `<span style="cursor: pointer;" onclick="off('${bt}')">&nbsp;&#x2715;</span><br>`;
       gId("btns").innerHTML = c;
     }
     function tglSi(cs) {
@@ -515,10 +515,10 @@ ${i+1}:
     <option value=6>6-key black</option>
     <option value=7>9-key red</option>
     <option value=8>JSON remote</option>
-    </select><span style="cursor: pointer;" onclick="off('IR')">&nbsp;&#215;</span><br>
+    </select><span style="cursor: pointer;" onclick="off('IR')">&nbsp;&#x2715;</span><br>
     <div id="json" style="display:none;">JSON file: <input type="file" name="data" accept=".json"><button type="button" class="sml" onclick="uploadFile('/ir.json')">Upload</button><br></div>
     <a href="https://kno.wled.ge/interfaces/infrared/" target="_blank">IR info</a><br>
-    Relay GPIO: <input type="number" min="-1" max="33" name="RL" onchange="UI()" class="xs"> Invert <input type="checkbox" name="RM"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#215;</span><br>
+    Relay GPIO: <input type="number" min="-1" max="33" name="RL" onchange="UI()" class="xs"> Invert <input type="checkbox" name="RM"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#x2715;</span><br>
     <hr style="width:260px">
 		<h3>Defaults</h3>
 		Turn LEDs on after power up/reset: <input type="checkbox" name="BO"><br>

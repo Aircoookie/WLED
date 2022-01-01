@@ -355,8 +355,7 @@ uint8_t WS2812FX::getTargetFps() {
 }
 
 void WS2812FX::setTargetFps(uint8_t fps) {
-  if (fps > 0 && fps <= 120) _targetFps = fps;
-	//_targetFps = min(max((int)fps,1),120);
+	if (fps > 0 && fps <= 120) _targetFps = fps;
 	_frametime = 1000 / _targetFps;
 }
 

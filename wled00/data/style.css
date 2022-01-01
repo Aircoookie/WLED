@@ -92,6 +92,9 @@ input[type="checkbox"] {
   transform: scale(1.5);
   margin-right: 10px;
 }
+td input[type="checkbox"] {
+  margin-right: revert;
+}
 select {
   margin: 2px;
   background: #333;
@@ -108,8 +111,12 @@ td {
 .d5 {
   width: 4rem !important;
 }
-.exp {
-	transform: rotate(90deg);
+.cal {
+  font-size:1.5rem;
+  cursor:pointer
+}
+#TMT table {
+  width: 100%;
 }
 #toast {
 	opacity: 0;
