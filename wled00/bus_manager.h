@@ -85,6 +85,12 @@ struct ColorOrderMap {
     if (_count >= WLED_MAX_COLOR_ORDER_MAPPINGS) {
       return;
     }
+    if (len == 0) {
+      return;
+    }
+    if (colorOrder > COL_ORDER_MAX) {
+      return;
+    }
     _mappings[_count].start = start;
     _mappings[_count].len = len;
     _mappings[_count].colorOrder = colorOrder;

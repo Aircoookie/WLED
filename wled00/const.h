@@ -172,6 +172,7 @@
 #define COL_ORDER_RBG             3
 #define COL_ORDER_BGR             4
 #define COL_ORDER_GBR             5
+#define COL_ORDER_MAX             5
 
 
 //Button type
