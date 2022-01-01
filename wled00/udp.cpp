@@ -4,7 +4,7 @@
  * UDP sync notifier / Realtime / Hyperion / TPM2.NET
  */
 
-#define WLEDPACKETSIZE 39
+#define WLEDPACKETSIZE (40+(MAX_NUM_SEGMENTS*3))
 #define UDP_IN_MAXSIZE 1472
 #define PRESUMED_NETWORK_DELAY 3 //how many ms could it take on avg to reach the receiver? This will be added to transmitted times
 
@@ -17,6 +17,7 @@ void notify(byte callMode, bool followUp)
     case CALL_MODE_INIT:          return;
     case CALL_MODE_DIRECT_CHANGE: if (!notifyDirect) return; break;
     case CALL_MODE_BUTTON:        if (!notifyButton) return; break;
+		case CALL_MODE_BUTTON_PRESET: if (!notifyButton) return; break;
     case CALL_MODE_NIGHTLIGHT:    if (!notifyDirect) return; break;
     case CALL_MODE_HUE:           if (!notifyHue)    return; break;
     case CALL_MODE_PRESET_CYCLE:  if (!notifyDirect) return; break;
@@ -41,8 +42,8 @@ void notify(byte callMode, bool followUp)
   //0: old 1: supports white 2: supports secondary color
   //3: supports FX intensity, 24 byte packet 4: supports transitionDelay 5: sup palette
   //6: supports timebase syncing, 29 byte packet 7: supports tertiary color 8: supports sys time sync, 36 byte packet
-  //9: supports sync groups, 37 byte packet 10: supports CCT, 39 byte packet
-  udpOut[11] = 10; 
+  //9: supports sync groups, 37 byte packet 10: supports CCT, 39 byte packet 11: per segment options, variable packet length (40+MAX_NUM_SEGMENTS*3)
+  udpOut[11] = 11; 
   udpOut[12] = colSec[0];
   udpOut[13] = colSec[1];
   udpOut[14] = colSec[2];
@@ -83,7 +84,15 @@ void notify(byte callMode, bool followUp)
 	//0: byte 38 contains 0-255 value, 255: no valid CCT, 1-254: Kelvin value MSB
 	udpOut[37] = strip.hasCCTBus() ? 0 : 255; //check this is 0 for the next value to be significant
 	udpOut[38] = mainseg.cct;
-  
+
+	udpOut[39] = strip.getMaxSegments();
+  for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
+    WS2812FX::Segment &selseg = strip.getSegment(i);
+    udpOut[40+i*3] = selseg.options & 0x0F; //only take into account mirrored, selected, on, reversed
+    udpOut[41+i*3] = selseg.spacing;
+    udpOut[42+i*3] = selseg.grouping;
+  }
+
   IPAddress broadcastIp;
   broadcastIp = ~uint32_t(Network.subnetMask()) | uint32_t(Network.gatewayIP());
 
@@ -282,6 +291,18 @@ void handleNotifications()
     if (version < 200 && (receiveNotificationEffects || !someSel))
     {
       if (currentPlaylist>=0) unloadPlaylist();
+      if (version>10) {
+        if (receiveSegmentOptions) {
+          // will not sync start & stop
+          uint8_t srcSegs = udpIn[39];
+          if (srcSegs > strip.getMaxSegments()) srcSegs = strip.getMaxSegments();
+          for (uint8_t i = 0; i < srcSegs; i++) {
+            WS2812FX::Segment& selseg = strip.getSegment(i);
+            for (uint8_t j = 0; j<4; j++) selseg.setOption(j, (udpIn[40+i*3] >> j) & 0x01); //only take into account mirrored, selected, on, reversed
+            strip.setSegment(i, selseg.start, selseg.stop, udpIn[42+i*3], udpIn[41+i*3], selseg.offset); // will also properly reset segments
+          }
+        }
+      }
       if (udpIn[8] < strip.getModeCount()) effectCurrent = udpIn[8];
       effectSpeed   = udpIn[9];
       if (version > 2) effectIntensity = udpIn[16];
@@ -441,16 +462,17 @@ void handleNotifications()
   // API over UDP
   udpIn[packetSize] = '\0';
 
+  if (!requestJSONBufferLock(18)) return;
   if (udpIn[0] >= 'A' && udpIn[0] <= 'Z') { //HTTP API
     String apireq = "win&";
     apireq += (char*)udpIn;
     handleSet(nullptr, apireq);
   } else if (udpIn[0] == '{') { //JSON API
-    DynamicJsonDocument jsonBuffer(2048);
-    DeserializationError error = deserializeJson(jsonBuffer, udpIn);
-    JsonObject root = jsonBuffer.as<JsonObject>();
+    DeserializationError error = deserializeJson(doc, udpIn);
+    JsonObject root = doc.as<JsonObject>();
     if (!error && !root.isNull()) deserializeState(root);
   }
+  releaseJSONBufferLock();
 }
 
 

@@ -97,6 +97,7 @@ public:
      */
   void setup()
   {
+    DEBUG_PRINTLN(F("Usermod Rotary Encoder init."));
     PinManagerPinType pins[3] = { { pinA, false }, { pinB, false }, { pinC, false } };
     if (!pinManager.allocateMultiplePins(pins, 3, PinOwner::UM_RotaryEncoderUI)) {
       // BUG: configuring this usermod with conflicting pins
@@ -443,14 +444,11 @@ public:
       DEBUG_PRINTLN(F(": No config found. (Using defaults.)"));
       return false;
     }
-    int8_t newDTpin  = pinA;
-    int8_t newCLKpin = pinB;
-    int8_t newSWpin  = pinC;
+    int8_t newDTpin  = top[FPSTR(_DT_pin)]  | pinA;
+    int8_t newCLKpin = top[FPSTR(_CLK_pin)] | pinB;
+    int8_t newSWpin  = top[FPSTR(_SW_pin)]  | pinC;
 
     enabled   = top[FPSTR(_enabled)] | enabled;
-    newDTpin  = top[FPSTR(_DT_pin)]  | newDTpin;
-    newCLKpin = top[FPSTR(_CLK_pin)] | newCLKpin;
-    newSWpin  = top[FPSTR(_SW_pin)]  | newSWpin;
 
     DEBUG_PRINT(FPSTR(_name));
     if (!initDone) {

@@ -78,6 +78,14 @@
   #endif
 #endif
 
+#ifndef FLD_TYPE
+  #ifndef FLD_SPI_DEFAULT
+    #define FLD_TYPE SSD1306
+  #else
+    #define FLD_TYPE SSD1306_SPI
+  #endif
+#endif
+
 // When to time out to the clock or blank the screen
 // if SLEEP_MODE_ENABLED.
 #define SCREEN_TIMEOUT_MS  60*1000    // 1 min
@@ -123,11 +131,11 @@ class FourLineDisplayUsermod : public Usermod {
     #ifndef FLD_SPI_DEFAULT
     int8_t ioPin[5] = {FLD_PIN_SCL, FLD_PIN_SDA, -1, -1, -1};        // I2C pins: SCL, SDA
     uint32_t ioFrequency = 400000;  // in Hz (minimum is 100000, baseline is 400000 and maximum should be 3400000)
-    DisplayType type = SSD1306;     // display type
     #else
     int8_t ioPin[5] = {FLD_PIN_CLOCKSPI, FLD_PIN_DATASPI, FLD_PIN_CS, FLD_PIN_DC, FLD_PIN_RESET}; // SPI pins: CLK, MOSI, CS, DC, RST
-    DisplayType type = SSD1306_SPI; // display type
+    uint32_t ioFrequency = 1000000;  // in Hz (minimum is 500kHz, baseline is 1MHz and maximum should be 20MHz)
     #endif
+    DisplayType type = FLD_TYPE;    // display type
     bool flip = false;              // flip display 180°
     uint8_t contrast = 10;          // screen contrast
     uint8_t lineHeight = 1;         // 1 row or 2 rows
@@ -244,7 +252,7 @@ class FourLineDisplayUsermod : public Usermod {
 
       initDone = true;
       DEBUG_PRINTLN(F("Starting display."));
-      if (!(type == SSD1306_SPI || type == SSD1306_SPI64)) u8x8->setBusClock(ioFrequency);  // can be used for SPI too
+      /*if (!(type == SSD1306_SPI || type == SSD1306_SPI64))*/ u8x8->setBusClock(ioFrequency);  // can be used for SPI too
       u8x8->begin();
       setFlipMode(flip);
       setContrast(contrast); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
@@ -691,7 +699,10 @@ class FourLineDisplayUsermod : public Usermod {
       screenTimeout = (top[FPSTR(_screenTimeOut)] | screenTimeout/1000) * 1000;
       sleepMode     = top[FPSTR(_sleepMode)] | sleepMode;
       clockMode     = top[FPSTR(_clockMode)] | clockMode;
-      ioFrequency   = min(3400, max(100, (int)(top[FPSTR(_busClkFrequency)] | ioFrequency/1000))) * 1000;  // limit frequency
+      if (newType == SSD1306_SPI || newType == SSD1306_SPI64)
+        ioFrequency = min(20000, max(500, (int)(top[FPSTR(_busClkFrequency)] | ioFrequency/1000))) * 1000;  // limit frequency
+      else
+        ioFrequency = min(3400, max(100, (int)(top[FPSTR(_busClkFrequency)] | ioFrequency/1000))) * 1000;  // limit frequency
 
       DEBUG_PRINT(FPSTR(_name));
       if (!initDone) {

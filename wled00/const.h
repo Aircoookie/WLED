@@ -64,6 +64,7 @@
 #define USERMOD_ID_SEVEN_SEGMENT_DISPLAY 21     //Usermod "usermod_v2_seven_segment_display.h"
 #define USERMOD_RGB_ROTARY_ENCODER       22     //Usermod "rgb-rotary-encoder.h"
 #define USERMOD_ID_QUINLED_AN_PENTA      23     //Usermod "quinled-an-penta.h"
+#define USERMOD_ID_SSDR                  24     //Usermod "usermod_v2_seven_segment_display_reloaded.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
@@ -74,7 +75,7 @@
 //Notifier callMode
 #define CALL_MODE_INIT           0     //no updates on init, can be used to disable updates
 #define CALL_MODE_DIRECT_CHANGE  1
-#define CALL_MODE_BUTTON         2
+#define CALL_MODE_BUTTON         2     //default button actions applied to selected segments
 #define CALL_MODE_NOTIFICATION   3
 #define CALL_MODE_NIGHTLIGHT     4
 #define CALL_MODE_NO_NOTIFY      5
@@ -84,6 +85,7 @@
 #define CALL_MODE_BLYNK          9
 #define CALL_MODE_ALEXA         10
 #define CALL_MODE_WS_SEND       11     //special call mode, not for notifier, updates websocket only
+#define CALL_MODE_BUTTON_PRESET 12     //button/IR JSON preset/macro
 
 //RGB to RGBW conversion mode
 #define RGBW_MODE_MANUAL_ONLY     0            //No automatic white channel calculation. Manual white channel slider
@@ -300,6 +302,8 @@
 #else
   #define JSON_BUFFER_SIZE 20480
 #endif
+
+#define MIN_HEAP_SIZE (MAX_LED_MEMORY+2048)
 
 // Maximum size of node map (list of other WLED instances)
 #ifdef ESP8266

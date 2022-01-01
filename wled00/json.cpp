@@ -67,7 +67,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   uint16_t grp = elem["grp"] | seg.grouping;
   uint16_t spc = elem[F("spc")] | seg.spacing;
-  strip.setSegment(id, start, stop, grp, spc);
+	uint16_t of = seg.offset;
+  if (!(elem[F("spc")].isNull() && elem["grp"].isNull())) effectChanged = true; //send UDP
 
   uint16_t len = 1;
   if (stop > start) len = stop - start;
@@ -76,9 +77,10 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     int offsetAbs = abs(offset);
     if (offsetAbs > len - 1) offsetAbs %= len;
     if (offset < 0) offsetAbs = len - offsetAbs;
-    seg.offset = offsetAbs;
+    of = offsetAbs;
   }
-  if (stop > start && seg.offset > len -1) seg.offset = len -1;
+  if (stop > start && of > len -1) of = len -1;
+	strip.setSegment(id, start, stop, grp, spc, of);
 
   byte segbri = 0;
   if (getVal(elem["bri"], &segbri)) {
@@ -157,19 +159,23 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   seg.setOption(SEG_OPTION_REVERSED, elem["rev"]    | seg.getOption(SEG_OPTION_REVERSED));
   seg.setOption(SEG_OPTION_MIRROR  , elem[F("mi")]  | seg.getOption(SEG_OPTION_MIRROR  ));
 
+  if (!(elem[F("sel")].isNull() && elem["rev"].isNull() && elem["on"].isNull() && elem[F("mi")].isNull())) effectChanged = true; //send UDP
+
   //temporary, strip object gets updated via colorUpdated()
   if (id == strip.getMainSegmentId()) {
+		byte effectPrev = effectCurrent;
     if (getVal(elem["fx"], &effectCurrent, 1, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 1-255 exact value)
-      if (!presetId) unloadPlaylist(); //stop playlist if active and FX changed manually
+      if (!presetId && effectCurrent != effectPrev) unloadPlaylist(); //stop playlist if active and FX changed manually
     }
     effectSpeed = elem[F("sx")] | effectSpeed;
     effectIntensity = elem[F("ix")] | effectIntensity;
     getVal(elem["pal"], &effectPalette, 1, strip.getPaletteCount());
   } else { //permanent
     byte fx = seg.mode;
+		byte fxPrev = fx;
     if (getVal(elem["fx"], &fx, 1, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 1-255 exact value)
       strip.setMode(id, fx);
-      if (!presetId) unloadPlaylist(); //stop playlist if active and FX changed manually
+      if (!presetId && seg.mode != fxPrev) unloadPlaylist(); //stop playlist if active and FX changed manually
     }
     seg.speed = elem[F("sx")] | seg.speed;
     seg.intensity = elem[F("ix")] | seg.intensity;
@@ -233,7 +239,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   return; // seg.differs(prev);
 }
 
-// deserializes WLED state (fileDoc points to doc object if called from web server)
+// deserializes WLED state (fileDoc points to doc object (root) if called from web server, MQTT, IR, preset; not from UDP)
 bool deserializeState(JsonObject root, byte callMode, byte presetId)
 {
   DEBUG_PRINTLN(F("Deserializing state"));
@@ -314,7 +320,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       byte lowestActive = 99;
       for (byte s = 0; s < strip.getMaxSegments(); s++)
       {
-        WS2812FX::Segment sg = strip.getSegment(s);
+        WS2812FX::Segment &sg = strip.getSegment(s);
         if (sg.isActive())
         {
           if (lowestActive == 99) lowestActive = s;
@@ -345,11 +351,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   usermods.readFromJsonState(root);
 
-  int8_t ledmap = root[F("ledmap")] | -1;
-  if (ledmap >= 0) {
-    //strip.deserializeMap(ledmap); // requires separate JSON buffer
-    loadLedmap = ledmap;
-  }
+  loadLedmap = root[F("ledmap")] | loadLedmap;
 
   byte ps = root[F("psave")];
   if (ps > 0) {
@@ -484,7 +486,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
   JsonArray seg = root.createNestedArray("seg");
   for (byte s = 0; s < strip.getMaxSegments(); s++)
   {
-    WS2812FX::Segment sg = strip.getSegment(s);
+    WS2812FX::Segment &sg = strip.getSegment(s);
     if (sg.isActive())
     {
       JsonObject seg0 = seg.createNestedObject();
@@ -524,7 +526,7 @@ void serializeInfo(JsonObject root)
   }
   
   leds[F("pwr")] = strip.currentMilliamps;
-  leds[F("fps")] = strip.getFps();
+  leds["fps"] = strip.getFps();
   leds[F("maxpwr")] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;
   leds[F("maxseg")] = strip.getMaxSegments();
   //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config
@@ -957,12 +959,8 @@ void serveJson(AsyncWebServerRequest* request)
     return;
   }
 
-  #ifdef WLED_USE_DYNAMIC_JSON
-  AsyncJsonResponse* response = new AsyncJsonResponse(JSON_BUFFER_SIZE, subJson==6);
-  #else
-  if (!requestJSONBufferLock(7)) return;
+  if (!requestJSONBufferLock(17)) return;
   AsyncJsonResponse *response = new AsyncJsonResponse(&doc, subJson==6);
-  #endif
 
   JsonVariant lDoc = response->getRoot();
 

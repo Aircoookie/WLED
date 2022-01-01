@@ -113,7 +113,7 @@ function writeHtmlGzipped(sourceFile, resultFile, page) {
   console.info("Reading " + sourceFile);
   new inliner(sourceFile, function (error, html) {
     console.info("Inlined " + html.length + " characters");
-    html = filter(html.replace("</head>","<script src=\"iro.js\"></script><script src=\"rangetouch.js\"></script></head>"), "html-minify-ui");
+    html = filter(html, "html-minify-ui");
     console.info("Minified to " + html.length + " characters");
 
     if (error) {
@@ -164,7 +164,8 @@ const char ${s.name}[] PROGMEM = R"${s.prepend || ""}${filter(str, s.filter)}${
     return s.mangle ? s.mangle(chunk) : chunk;
   } else if (s.method == "gzip") {
     const buf = fs.readFileSync(srcDir + "/" + s.file);
-    const str = buf.toString('utf-8');
+    var str = buf.toString('utf-8');
+    if (s.mangle) str = s.mangle(str);
     const zip = zlib.gzipSync(filter(str, s.filter), { level: zlib.constants.Z_BEST_COMPRESSION });
     const result = hexdump(zip.toString('hex'), true);
     const chunk = `
@@ -251,10 +252,11 @@ writeChunks(
     {
       file: "style.css",
       name: "PAGE_settingsCss",
-      prepend: "=====(<style>",
-      append: "</style>)=====",
-      method: "plaintext",
+      method: "gzip",
       filter: "css-minify",
+      mangle: (str) =>
+        str
+          .replace("%%","%")
     },
     {
       file: "settings.htm",
@@ -263,140 +265,102 @@ writeChunks(
       append: ")=====",
       method: "plaintext",
       filter: "html-minify",
-      mangle: (str) =>
-        str
-          .replace("%", "%%")
-          .replace(/User Interface\<\/button\>\<\/form\>/gms, "User Interface\<\/button\>\<\/form\>%DMXMENU%"),
     },
     {
       file: "settings_wifi.htm",
       name: "PAGE_settings_wifi",
-      prepend: "=====(",
-      append: ")=====",
-      method: "plaintext",
+      method: "gzip",
       filter: "html-minify",
       mangle: (str) =>
         str
-          .replace(/\<link rel="stylesheet".*\>/gms, "")
-          .replace(/\<style\>.*\<\/style\>/gms, "%CSS%%SCSS%")
           .replace(
             /function GetV().*\<\/script\>/gms,
-            "function GetV() {var d=document;\n"
-          ),
+            "</script><script src=\"settings.js?p=1\"></script>"
+          )
     },
     {
       file: "settings_leds.htm",
       name: "PAGE_settings_leds",
-      prepend: "=====(",
-      append: ")=====",
-      method: "plaintext",
+      method: "gzip",
       filter: "html-minify",
       mangle: (str) =>
         str
-          .replace(/\<link rel="stylesheet".*\>/gms, "")
-          .replace(/\<style\>.*\<\/style\>/gms, "%CSS%%SCSS%")
           .replace(
             /function GetV().*\<\/script\>/gms,
-            "function GetV() {var d=document;\n"
-          ),
+            "</script><script src=\"settings.js?p=2\"></script>"
+          )
     },
     {
       file: "settings_dmx.htm",
       name: "PAGE_settings_dmx",
-      prepend: "=====(",
-      append: ")=====",
-      method: "plaintext",
+      method: "gzip",
       filter: "html-minify",
-      mangle: (str) => {
-        const nocss = str
-          .replace(/\<link rel="stylesheet".*\>/gms, "")
-          .replace(/\<style\>.*\<\/style\>/gms, "%CSS%%SCSS%")
+      mangle: (str) =>
+        str
           .replace(
             /function GetV().*\<\/script\>/gms,
-            "function GetV() {var d=document;\n"
-          );
-        return `
-#ifdef WLED_ENABLE_DMX
-${nocss}
-#else
-const char PAGE_settings_dmx[] PROGMEM = R"=====()=====";
-#endif
-`;
-      },
+            "</script><script src=\"settings.js?p=7\"></script>"
+          )
     },
     {
       file: "settings_ui.htm",
       name: "PAGE_settings_ui",
-      prepend: "=====(",
-      append: ")=====",
-      method: "plaintext",
+      method: "gzip",
       filter: "html-minify",
       mangle: (str) =>
         str
-          .replace(/\<link rel="stylesheet".*\>/gms, "")
-          .replace(/\<style\>.*\<\/style\>/gms, "%CSS%%SCSS%")
           .replace(
             /function GetV().*\<\/script\>/gms,
-            "function GetV() {var d=document;\n"
-          ),
+            "</script><script src=\"settings.js?p=3\"></script>"
+          )
     },
     {
       file: "settings_sync.htm",
       name: "PAGE_settings_sync",
-      prepend: "=====(",
-      append: ")=====",
-      method: "plaintext",
+      method: "gzip",
       filter: "html-minify",
       mangle: (str) =>
         str
-          .replace(/\<link rel="stylesheet".*\>/gms, "")
-          .replace(/\<style\>.*\<\/style\>/gms, "%CSS%%SCSS%")
-          .replace(/function GetV().*\<\/script\>/gms, "function GetV() {\n"),
+          .replace(
+            /function GetV().*\<\/script\>/gms,
+            "</script><script src=\"settings.js?p=4\"></script>"
+          )
     },
     {
       file: "settings_time.htm",
       name: "PAGE_settings_time",
-      prepend: "=====(",
-      append: ")=====",
-      method: "plaintext",
+      method: "gzip",
       filter: "html-minify",
       mangle: (str) =>
         str
-          .replace(/\<link rel="stylesheet".*\>/gms, "")
-          .replace(/\<style\>.*\<\/style\>/gms, "%CSS%%SCSS%")
-          .replace(/function GetV().*\<\/script\>/gms, "function GetV() {\n"),
+          .replace(
+            /function GetV().*\<\/script\>/gms,
+            "</script><script src=\"settings.js?p=5\"></script>"
+          )
     },
     {
       file: "settings_sec.htm",
       name: "PAGE_settings_sec",
-      prepend: "=====(",
-      append: ")=====",
-      method: "plaintext",
+      method: "gzip",
       filter: "html-minify",
       mangle: (str) =>
         str
-          .replace(/\<link rel="stylesheet".*\>/gms, "")
-          .replace(/\<style\>.*\<\/style\>/gms, "%CSS%%SCSS%")
           .replace(
             /function GetV().*\<\/script\>/gms,
-            "function GetV() {var d=document;\n"
-          ),
+            "</script><script src=\"settings.js?p=6\"></script>"
+          )
     },
     {
       file: "settings_um.htm",
       name: "PAGE_settings_um",
-      prepend: "=====(",
-      append: ")=====",
-      method: "plaintext",
+      method: "gzip",
       filter: "html-minify",
       mangle: (str) =>
         str
-          .replace(/\<link rel="stylesheet".*\>/gms, "")
-          .replace(/\<style\>.*\<\/style\>/gms, "%CSS%%SCSS%")
           .replace(
             /function GetV().*\<\/script\>/gms,
-            "function GetV() {var d=document;\n"
-          ),
+            "</script><script src=\"settings.js?p=8\"></script>"
+          )
     }
   ],
   "wled00/html_settings.h"
@@ -408,9 +372,7 @@ writeChunks(
     {
       file: "usermod.htm",
       name: "PAGE_usermod",
-      prepend: "=====(",
-      append: ")=====",
-      method: "plaintext",
+      method: "gzip",
       filter: "html-minify",
       mangle: (str) =>
         str.replace(/fetch\("http\:\/\/.*\/win/gms, 'fetch("/win'),
@@ -442,41 +404,31 @@ const char PAGE_dmxmap[] PROGMEM = R"=====()=====";
     {
       file: "update.htm",
       name: "PAGE_update",
-      prepend: "=====(",
-      append: ")=====",
-      method: "plaintext",
+      method: "gzip",
       filter: "html-minify",
     },
     {
       file: "welcome.htm",
       name: "PAGE_welcome",
-      prepend: "=====(",
-      append: ")=====",
-      method: "plaintext",
+      method: "gzip",
       filter: "html-minify",
     },
     {
       file: "liveview.htm",
       name: "PAGE_liveview",
-      prepend: "=====(",
-      append: ")=====",
-      method: "plaintext",
+      method: "gzip",
       filter: "html-minify",
     },
     {
       file: "liveviewws.htm",
       name: "PAGE_liveviewws",
-      prepend: "=====(",
-      append: ")=====",
-      method: "plaintext",
+      method: "gzip",
       filter: "html-minify",
     },
     {
       file: "404.htm",
       name: "PAGE_404",
-      prepend: "=====(",
-      append: ")=====",
-      method: "plaintext",
+      method: "gzip",
       filter: "html-minify",
     },
     {

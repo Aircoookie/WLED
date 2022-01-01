@@ -37,11 +37,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
         bool verboseResponse = false;
         { //scope JsonDocument so it releases its buffer
           DEBUG_PRINTLN(F("WS JSON receive buffer requested."));
-          #ifdef WLED_USE_DYNAMIC_JSON
-          DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-          #else
-          if (!requestJSONBufferLock(15)) return;
-          #endif
+          if (!requestJSONBufferLock(11)) return;
 
           DeserializationError error = deserializeJson(doc, data, len);
           JsonObject root = doc.as<JsonObject>();
@@ -49,13 +45,6 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
             releaseJSONBufferLock();
             return;
           }
-          /*
-          #ifdef WLED_DEBUG
-            DEBUG_PRINT(F("Incoming WS: "));
-            serializeJson(root,Serial);
-            DEBUG_PRINTLN();
-          #endif
-          */
           if (root["v"] && root.size() == 1) {
             //if the received value is just "{"v":true}", send only to this client
             verboseResponse = true;
@@ -63,15 +52,13 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
           {
             wsLiveClientId = root["lv"] ? client->id() : 0;
           } else {
-            //fileDoc = &doc; // used for applying presets (presets.cpp)
             verboseResponse = deserializeState(root);
-            //fileDoc = nullptr;
             if (!interfaceUpdateCallMode) {
               //special case, only on playlist load, avoid sending twice in rapid succession
               if (millis() - lastInterfaceUpdate > 1700) verboseResponse = false;
             }
           }
-          releaseJSONBufferLock();
+          releaseJSONBufferLock(); // will clean fileDoc
         }
         //update if it takes longer than 300ms until next "broadcast"
         if (verboseResponse && (millis() - lastInterfaceUpdate < 1700 || !interfaceUpdateCallMode)) sendDataWs(client);
@@ -114,11 +101,7 @@ void sendDataWs(AsyncWebSocketClient * client)
 
   { //scope JsonDocument so it releases its buffer
     DEBUG_PRINTLN(F("WS JSON send buffer requested."));
-    #ifdef WLED_USE_DYNAMIC_JSON
-    DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-    #else
-    if (!requestJSONBufferLock(16)) return;
-    #endif
+    if (!requestJSONBufferLock(12)) return;
 
     JsonObject state = doc.createNestedObject("state");
     serializeState(state);
@@ -126,18 +109,14 @@ void sendDataWs(AsyncWebSocketClient * client)
     serializeInfo(info);
     DEBUG_PRINTF("JSON buffer size: %u for WS request.\n", doc.memoryUsage());
     size_t len = measureJson(doc);
-    buffer = ws.makeBuffer(len);
-    if (!buffer) {
+    size_t heap1 = ESP.getFreeHeap();
+    buffer = ws.makeBuffer(len); // will not allocate correct memory sometimes
+    size_t heap2 = ESP.getFreeHeap();
+    if (!buffer || heap1-heap2<len) {
       releaseJSONBufferLock();
+      ws.cleanupClients(0); // disconnect all clients to release memory
       return; //out of memory
     }
-/*
-    #ifdef WLED_DEBUG
-      DEBUG_PRINT(F("Outgoing WS: "));
-      serializeJson(doc,Serial);
-      DEBUG_PRINTLN();
-    #endif
-*/
     serializeJson(doc, (char *)buffer->get(), len +1);
     releaseJSONBufferLock();
   } 
@@ -155,10 +134,13 @@ void handleWs()
 {
   if (millis() - wsLastLiveTime > WS_LIVE_INTERVAL)
   {
+    #ifdef ESP8266
+    ws.cleanupClients(2);
+    #else
     ws.cleanupClients();
+    #endif
     bool success = true;
-    if (wsLiveClientId)
-      success = serveLiveLeds(nullptr, wsLiveClientId);
+    if (wsLiveClientId) success = serveLiveLeds(nullptr, wsLiveClientId);
     wsLastLiveTime = millis();
     if (!success) wsLastLiveTime -= 20; //try again in 20ms if failed due to non-empty WS queue
   }

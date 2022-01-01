@@ -118,7 +118,8 @@ private:
    */
   void switchStrip(bool switchOn)
   {
-    if (m_offOnly && bri && (switchOn || (!PIRtriggered && !switchOn))) return;
+    if (m_offOnly && bri && (switchOn || (!PIRtriggered && !switchOn))) return; //if lights on and off only, do nothing
+    if (PIRtriggered && switchOn) return; //if already on and triggered before, do nothing
     PIRtriggered = switchOn;
     if (switchOn) {
       if (m_onPreset) {
@@ -188,10 +189,12 @@ private:
       if (sensorPinState == HIGH) {
         offTimerStart = 0;
         if (!m_mqttOnly && (!m_nightTimeOnly || (m_nightTimeOnly && !isDayTime()))) switchStrip(true);
+        else if (NotifyUpdateMode != CALL_MODE_NO_NOTIFY) updateInterfaces(CALL_MODE_WS_SEND);
         publishMqtt("on");
-      } else /*if (bri != 0)*/ {
+      } else {
         // start switch off timer
         offTimerStart = millis();
+        if (NotifyUpdateMode != CALL_MODE_NO_NOTIFY) updateInterfaces(CALL_MODE_WS_SEND);
       }
       return true;
     }
@@ -203,14 +206,13 @@ private:
    */
   bool handleOffTimer()
   {
-    if (offTimerStart > 0 && millis() - offTimerStart > m_switchOffDelay)
-    {
-      if (enabled == true)
-      {
+    if (offTimerStart > 0 && millis() - offTimerStart > m_switchOffDelay) {
+      offTimerStart = 0;
+      if (enabled == true) {
         if (!m_mqttOnly && (!m_nightTimeOnly || (m_nightTimeOnly && !isDayTime()))) switchStrip(false);
+        else if (NotifyUpdateMode != CALL_MODE_NO_NOTIFY) updateInterfaces(CALL_MODE_WS_SEND);
         publishMqtt("off");
       }
-      offTimerStart = 0;
       return true;
     }
     return false;

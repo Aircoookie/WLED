@@ -165,12 +165,12 @@ void WS2812FX::service() {
   _triggered = false;
 }
 
-void WS2812FX::setPixelColor(uint16_t n, uint32_t c) {
+void IRAM_ATTR WS2812FX::setPixelColor(uint16_t n, uint32_t c) {
   setPixelColor(n, R(c), G(c), B(c), W(c));
 }
 
 //used to map from segment index to physical pixel, taking into account grouping, offsets, reverse and mirroring
-uint16_t WS2812FX::realPixelIndex(uint16_t i) {
+uint16_t IRAM_ATTR WS2812FX::realPixelIndex(uint16_t i) {
   int16_t iGroup = i * SEGMENT.groupLength();
 
   /* reverse just an individual segment */
@@ -187,7 +187,7 @@ uint16_t WS2812FX::realPixelIndex(uint16_t i) {
   return realIndex;
 }
 
-void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
+void IRAM_ATTR WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
   if (SEGLEN) {//from segment
     uint16_t realIndex = realPixelIndex(i);
@@ -350,6 +350,16 @@ uint16_t WS2812FX::getFps() {
   return _cumulativeFps +1;
 }
 
+uint8_t WS2812FX::getTargetFps() {
+	return _targetFps;
+}
+
+void WS2812FX::setTargetFps(uint8_t fps) {
+  if (fps > 0 && fps <= 120) _targetFps = fps;
+	//_targetFps = min(max((int)fps,1),120);
+	_frametime = 1000 / _targetFps;
+}
+
 /**
  * Forces the next frame to be computed on all active segments.
  */
@@ -442,14 +452,14 @@ void WS2812FX::setBrightness(uint8_t b) {
   if (gammaCorrectBri) b = gamma8(b);
   if (_brightness == b) return;
   _brightness = b;
-  _segment_index = 0;
   if (_brightness == 0) { //unfreeze all segments on power off
     for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
     {
       _segments[i].setOption(SEG_OPTION_FREEZE, false);
     }
   }
-  if (SEGENV.next_time > millis() + 22 && millis() - _lastShow > MIN_SHOW_DELAY) show();//apply brightness change immediately if no refresh soon
+	unsigned long t = millis();
+  if (_segment_runtimes[0].next_time > t + 22 && t - _lastShow > MIN_SHOW_DELAY) show(); //apply brightness change immediately if no refresh soon
 }
 
 uint8_t WS2812FX::getMode(void) {
@@ -606,8 +616,14 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
   _segment_runtimes[n].reset();
 }
 
+void WS2812FX::restartRuntime() {
+  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) {
+    _segment_runtimes[i].reset();
+  }
+}
+
 void WS2812FX::resetSegments() {
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) if (_segments[i].name) delete _segments[i].name;
+  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) if (_segments[i].name) delete[] _segments[i].name;
   mainSegment = 0;
   memset(_segments, 0, sizeof(_segments));
   //memset(_segment_runtimes, 0, sizeof(_segment_runtimes));
@@ -701,14 +717,35 @@ bool WS2812FX::checkSegmentAlignment() {
 }
 
 //After this function is called, setPixelColor() will use that segment (offsets, grouping, ... will apply)
+//Note: If called in an interrupt (e.g. JSON API), it must be reset with "setPixelColor(255)",
+//otherwise it can lead to a crash on ESP32 because _segment_index is modified while in use by the main thread
+#ifdef ARDUINO_ARCH_ESP32
+uint8_t _segment_index_prev = 0;
+uint16_t _virtualSegmentLength_prev = 0;
+bool _ps_set = false;
+#endif
+
 void WS2812FX::setPixelSegment(uint8_t n)
 {
   if (n < MAX_NUM_SEGMENTS) {
+		#ifdef ARDUINO_ARCH_ESP32
+		if (!_ps_set) {
+			_segment_index_prev = _segment_index;
+			_virtualSegmentLength_prev = _virtualSegmentLength;
+			_ps_set = true;
+		}
+		#endif
     _segment_index = n;
-    _virtualSegmentLength = SEGMENT.length();
+    _virtualSegmentLength = SEGMENT.virtualLength();
   } else {
-    _segment_index = 0;
-    _virtualSegmentLength = 0;
+		_virtualSegmentLength = 0;
+		#ifdef ARDUINO_ARCH_ESP32
+		if (_ps_set) {
+			_segment_index = _segment_index_prev;
+			_virtualSegmentLength = _virtualSegmentLength_prev;
+			_ps_set = false;
+		}
+		#endif
   }
 }
 
@@ -735,20 +772,20 @@ void WS2812FX::setTransition(uint16_t t)
 
 void WS2812FX::setTransitionMode(bool t)
 {
-  unsigned long waitMax = millis() + 20; //refresh after 20 ms if transition enabled
+	unsigned long waitMax = millis() + 20; //refresh after 20 ms if transition enabled
   for (uint16_t i = 0; i < MAX_NUM_SEGMENTS; i++)
   {
-    _segment_index = i;
-    SEGMENT.setOption(SEG_OPTION_TRANSITIONAL, t);
+    _segments[i].setOption(SEG_OPTION_TRANSITIONAL, t);
 
-    if (t && SEGMENT.mode == FX_MODE_STATIC && SEGENV.next_time > waitMax) SEGENV.next_time = waitMax;
+    if (t && _segments[i].mode == FX_MODE_STATIC && _segment_runtimes[i].next_time > waitMax)
+			_segment_runtimes[i].next_time = waitMax;
   }
 }
 
 /*
  * color blend function
  */
-uint32_t WS2812FX::color_blend(uint32_t color1, uint32_t color2, uint16_t blend, bool b16) {
+uint32_t IRAM_ATTR WS2812FX::color_blend(uint32_t color1, uint32_t color2, uint16_t blend, bool b16) {
   if(blend == 0)   return color1;
   uint16_t blendmax = b16 ? 0xFFFF : 0xFF;
   if(blend == blendmax) return color2;
@@ -851,13 +888,13 @@ void WS2812FX::blur(uint8_t blur_amount)
   }
 }
 
-uint16_t WS2812FX::triwave16(uint16_t in)
+uint16_t IRAM_ATTR WS2812FX::triwave16(uint16_t in)
 {
   if (in < 0x8000) return in *2;
   return 0xFFFF - (in - 0x8000)*2;
 }
 
-uint8_t WS2812FX::sin_gap(uint16_t in) {
+uint8_t IRAM_ATTR WS2812FX::sin_gap(uint16_t in) {
   if (in & 0x100) return 0;
   //if (in > 255) return 0;
   return sin8(in + 192); //correct phase shift of sine so that it starts and stops at 0
@@ -924,13 +961,13 @@ uint8_t WS2812FX::get_random_wheel_index(uint8_t pos) {
 }
 
 
-uint32_t WS2812FX::crgb_to_col(CRGB fastled)
+uint32_t IRAM_ATTR WS2812FX::crgb_to_col(CRGB fastled)
 {
   return RGBW32(fastled.red, fastled.green, fastled.blue, 0);
 }
 
 
-CRGB WS2812FX::col_to_crgb(uint32_t color)
+CRGB IRAM_ATTR WS2812FX::col_to_crgb(uint32_t color)
 {
   CRGB fastled_col;
   fastled_col.red =   R(color);
@@ -1053,7 +1090,7 @@ void WS2812FX::handle_palette(void)
  * @param pbri Value to scale the brightness of the returned color by. Default is 255. (no scaling)
  * @returns Single color from palette
  */
-uint32_t WS2812FX::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri)
+uint32_t IRAM_ATTR WS2812FX::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri)
 {
   if (SEGMENT.palette == 0 && mcol < 3) {
     uint32_t color = SEGCOLOR(mcol);
@@ -1094,11 +1131,7 @@ void WS2812FX::deserializeMap(uint8_t n) {
     return;
   }
 
-  #ifdef WLED_USE_DYNAMIC_JSON
-  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-  #else
-  if (!requestJSONBufferLock(5)) return;
-  #endif
+  if (!requestJSONBufferLock(7)) return;
 
   DEBUG_PRINT(F("Reading LED map from "));
   DEBUG_PRINTLN(fileName);
@@ -1182,3 +1215,158 @@ WS2812FX* WS2812FX::instance = nullptr;
 int16_t Bus::_cct = -1;
 uint8_t Bus::_cctBlend = 0;
 uint8_t Bus::_autoWhiteMode = RGBW_MODE_DUAL;
+
+
+// WLEDSR: extensions
+// Technical notes
+// ===============
+// If an effect name is followed by an @, slider and color control is effective.
+// See setSliderAndColorControl in index.js for implementation
+// If not effective then:
+//      - For AC effects (id<128) 2 sliders and 3 colors and the palette will be shown
+//      - For SR effects (id>128) 5 sliders and 3 colors and the palette will be shown
+// If effective (@)
+//      - a ; seperates slider controls (left) from color controls (middle) and palette control (right)
+//      - if left, middle or right is empty no controls are shown
+//      - a , seperates slider controls (max 5) or color controls (max 3). Palette has only one value
+//      - a ! means that the default is used.
+//             - For sliders: Effect speeds, Effect intensity, Custom 1, Custom 2, Custom 3
+//             - For colors: Fx color, Background color, Custom
+//             - For palette: prompt for color palette OR palette ID if numeric (will hide palette selection)
+//
+// Note: If palette is on and no colors are specified 1,2 and 3 is shown in each color circle.
+//       If a color is specified, the 1,2 or 3 is replaced by that specification.
+// Note: Effects can override default pattern behaviour
+//       - FadeToBlack can override the background setting
+//       - Defining SEGCOL(<i>) can override a specific palette using these values (e.g. Color Gradient)
+const char JSON_mode_names[] PROGMEM = R"=====([
+"Solid",
+"Blink@!,;!,!,;!",
+"Breathe@!,;!,!;!",
+"Wipe@!,!;!,!,;!",
+"Wipe Random@!,;;!",
+"Random Colors@!,Fade time;;!",
+"Sweep@!,!;!,!,;!",
+"Dynamic",
+"Colorloop@!,Saturation;;!",
+"Rainbow",
+"Scan@!,# of dots;!,!,;!",
+"Scan Dual@!,# of dots;!,!,;!",
+"Fade",
+"Theater@!,Gap size;!,!,;!",
+"Theater Rainbow",
+"Running@!,Wave width;!,!,;!",
+"Saw@!,Width;!,!,;!",
+"Twinkle",
+"Dissolve",
+"Dissolve Rnd",
+"Sparkle",
+"Sparkle Dark",
+"Sparkle+",
+"Strobe",
+"Strobe Rainbow",
+"Strobe Mega",
+"Blink Rainbow",
+"Android",
+"Chase",
+"Chase Random",
+"Chase Rainbow",
+"Chase Flash",
+"Chase Flash Rnd",
+"Rainbow Runner",
+"Colorful",
+"Traffic Light",
+"Sweep Random",
+"Chase 2@!,Width;!,!,;!",
+"Aurora",
+"Stream",
+"Scanner",
+"Lighthouse",
+"Fireworks",
+"Rain",
+"Tetrix@!,Width;!,!,;!",
+"Fire Flicker",
+"Gradient",
+"Loading",
+"Police@!,Width;;0",
+"Fairy",
+"Two Dots@!,Dot size;1,2,Bg;!",
+"Fairy Twinkle",
+"Running Dual",
+"Halloween",
+"Chase 3@!,Size;1,2,3;0",
+"Tri Wipe@!,Width;1,2,3;0",
+"Tri Fade",
+"Lightning",
+"ICU",
+"Multi Comet",
+"Scanner Dual",
+"Stream 2",
+"Oscillate",
+"Pride 2015",
+"Juggle@!=16,Trail=240;!,!,;!",
+"Palette@!,;;!",
+"Fire 2012@Spark rate=120,Decay=64;;!",
+"Colorwaves",
+"Bpm",
+"Fill Noise",
+"Noise 1",
+"Noise 2",
+"Noise 3",
+"Noise 4",
+"Colortwinkles",
+"Lake",
+"Meteor@!,Trail length;!,!,;!",
+"Meteor Smooth@!,Trail length;!,!,;!",
+"Railway",
+"Ripple",
+"Twinklefox",
+"Twinklecat",
+"Halloween Eyes",
+"Solid Pattern@Fg size,Bg size;Fg,Bg,;!=0",
+"Solid Pattern Tri@,Size;1,2,3;!=0",
+"Spots@Spread,Width;!,!,;!",
+"Spots Fade@Spread,Width;!,!,;!",
+"Glitter",
+"Candle@Flicker rate=96,Flicker intensity=224;!,!,;0",
+"Fireworks Starburst",
+"Fireworks 1D@Gravity,Firing side;!,!,;!",
+"Bouncing Balls@Gravity,# of balls;!,!,;!",
+"Sinelon",
+"Sinelon Dual",
+"Sinelon Rainbow",
+"Popcorn@",
+"Drip@Gravity,# of drips;!,!;!",
+"Plasma@Phase,;1,2,3;!",
+"Percent@,% of fill;!,!,;!",
+"Ripple Rainbow",
+"Heartbeat",
+"Pacifica",
+"Candle Multi@Flicker rate=96,Flicker intensity=224;!,!,;0",
+"Solid Glitter@,!;!,,;0",
+"Sunrise@Time [min]=60,;;0",
+"Phased",
+"Twinkleup@!,Intensity;!,!,;!",
+"Noise Pal",
+"Sine",
+"Phased Noise",
+"Flow",
+"Chunchun@!,Gap size;!,!,;!",
+"Dancing Shadows",
+"Washing Machine",
+"Candy Cane",
+"Blends",
+"TV Simulator",
+"Dynamic Smooth"
+])=====";
+
+const char JSON_palette_names[] PROGMEM = R"=====([
+"Default","* Random Cycle","* Color 1","* Colors 1&2","* Color Gradient","* Colors Only","Party","Cloud","Lava","Ocean",
+"Forest","Rainbow","Rainbow Bands","Sunset","Rivendell","Breeze","Red & Blue","Yellowout","Analogous","Splash",
+"Pastel","Sunset 2","Beech","Vintage","Departure","Landscape","Beach","Sherbet","Hult","Hult 64",
+"Drywet","Jul","Grintage","Rewhi","Tertiary","Fire","Icefire","Cyane","Light Pink","Autumn",
+"Magenta","Magred","Yelmag","Yelblu","Orange & Teal","Tiamat","April Night","Orangery","C9","Sakura",
+"Aurora","Atlantica","C9 2","C9 New","Temperature","Aurora 2","Retro Clown","Candy","Toxy Reaf","Fairy Reaf",
+"Semi Blue","Pink Candy","Red Reaf","Aqua Flash","Yelblu Hot","Lite Light","Red Flash","Blink Red","Red Shift","Red Tide",
+"Candy2"
+])=====";

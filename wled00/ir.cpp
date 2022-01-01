@@ -71,12 +71,10 @@ void decBrightness()
 // apply preset or fallback to a effect and palette if it doesn't exist
 void presetFallback(uint8_t presetID, uint8_t effectID, uint8_t paletteID) 
 {
-  byte prevError = errorFlag;
-  if (!applyPreset(presetID, CALL_MODE_BUTTON)) { 
-    effectCurrent = effectID;      
-    effectPalette = paletteID;
-    errorFlag = prevError; //clear error 12 from non-existent preset
-  }
+  applyPreset(presetID, CALL_MODE_BUTTON_PRESET);
+  //these two will be overwritten if preset exists in handlePresets()
+  effectCurrent = effectID;      
+  effectPalette = paletteID;
 }
 
 /*
@@ -90,7 +88,7 @@ bool decodeIRCustom(uint32_t code)
   {
     //just examples, feel free to modify or remove
     case IRCUSTOM_ONOFF : toggleOnOff(); break;
-    case IRCUSTOM_MACRO1 : applyPreset(1, CALL_MODE_BUTTON); break;
+    case IRCUSTOM_MACRO1 : applyPreset(1, CALL_MODE_BUTTON_PRESET); break;
 
     default: return false;
   }
@@ -575,12 +573,7 @@ void decodeIRJson(uint32_t code)
   JsonObject fdo;
   JsonObject jsonCmdObj;
 
-  DEBUG_PRINTLN(F("IR JSON buffer requested."));
-  #ifdef WLED_USE_DYNAMIC_JSON
-  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-  #else
-  if (!requestJSONBufferLock(6)) return;
-  #endif
+  if (!requestJSONBufferLock(13)) return;
 
   sprintf_P(objKey, PSTR("\"0x%lX\":"), (unsigned long)code);
 
@@ -593,12 +586,12 @@ void decodeIRJson(uint32_t code)
   lastValidCode = 0;
   if (fdo.isNull()) {
     //the received code does not exist
-    releaseJSONBufferLock();
     if (!WLED_FS.exists("/ir.json")) errorFlag = ERR_FS_IRLOAD; //warn if IR file itself doesn't exist
+    releaseJSONBufferLock();
     return;
   }
 
-  cmdStr = fdo["cmd"].as<String>();;
+  cmdStr = fdo["cmd"].as<String>();
   jsonCmdObj = fdo["cmd"]; //object
 
   // command is JSON object
@@ -615,9 +608,9 @@ void decodeIRJson(uint32_t code)
         lastValidCode = code;
         decBrightness();
       } else if (cmdStr.startsWith(F("!presetF"))) { //!presetFallback
-        uint8_t p1 = fdo["PL"] ? fdo["PL"] : 1;
-        uint8_t p2 = fdo["FX"] ? fdo["FX"] : random8(MODE_COUNT);
-        uint8_t p3 = fdo["FP"] ? fdo["FP"] : 0;
+        uint8_t p1 = fdo["PL"] | 1;
+        uint8_t p2 = fdo["FX"] | random8(MODE_COUNT);
+        uint8_t p3 = fdo["FP"] | 0;
         presetFallback(p1, p2, p3);
       }
     } else {
@@ -638,9 +631,9 @@ void decodeIRJson(uint32_t code)
     }
     colorUpdated(CALL_MODE_BUTTON);
   } else if (!jsonCmdObj.isNull()) {
-    deserializeState(jsonCmdObj, CALL_MODE_BUTTON);
+    // command is JSON object
+    deserializeState(jsonCmdObj, CALL_MODE_BUTTON_PRESET);
   }
-  //fileDoc = nullptr;
   releaseJSONBufferLock();
 }
 
@@ -669,7 +662,8 @@ void handleIR()
       {
         if (results.value != 0) // only print results if anything is received ( != 0 )
         {
-          DEBUG_PRINTF("IR recv: 0x%lX\n", (unsigned long)results.value);
+          if (!pinManager.isPinAllocated(1)) //GPIO 1 - Serial TX pin
+            Serial.printf_P(PSTR("IR recv: 0x%lX\n"), (unsigned long)results.value);
         }
         decodeIR(results.value);
         irrecv->resume();

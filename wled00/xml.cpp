@@ -249,21 +249,18 @@ void getSettingsJS(byte subPage, char* dest)
   {
     char nS[8];
 
+
     // Pin reservations will become unnecessary when settings pages will read cfg.json directly
     // add reserved and usermod pins as d.um_p array
     oappend(SET_F("d.um_p=[6,7,8,9,10,11"));
 
-    #ifdef WLED_USE_DYNAMIC_JSON
-    DynamicJsonDocument doc(2048); // 2k is enough for usermods
-    #else
-    if (!requestJSONBufferLock(17)) return;
-    #endif
-  
-    JsonObject mods = doc.createNestedObject(F("um"));
-    usermods.addToConfig(mods);
-    if (!mods.isNull()) fillUMPins(mods);
-
-    releaseJSONBufferLock();
+    if (requestJSONBufferLock(6)) {
+      // if we can't allocate JSON buffer ignore usermod pins
+      JsonObject mods = doc.createNestedObject(F("um"));
+      usermods.addToConfig(mods);
+      if (!mods.isNull()) fillUMPins(mods);
+      releaseJSONBufferLock();
+    }
 
     #ifdef WLED_ENABLE_DMX
       oappend(SET_F(",2")); // DMX hardcoded pin
@@ -335,6 +332,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("CCT"),correctWB);
     sappend('c',SET_F("CR"),cctFromRgb);
 		sappend('v',SET_F("CB"),strip.cctBlending);
+		sappend('v',SET_F("FR"),strip.getTargetFps());
 		sappend('v',SET_F("AW"),Bus::getAutoWhiteMode());
 
     for (uint8_t s=0; s < busses.getNumBusses(); s++) {
@@ -419,6 +417,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("RB"),receiveNotificationBrightness);
     sappend('c',SET_F("RC"),receiveNotificationColor);
     sappend('c',SET_F("RX"),receiveNotificationEffects);
+    sappend('c',SET_F("SO"),receiveSegmentOptions);
     sappend('c',SET_F("SD"),notifyDirectDefault);
     sappend('c',SET_F("SB"),notifyButton);
     sappend('c',SET_F("SH"),notifyHue);
@@ -550,6 +549,12 @@ void getSettingsJS(byte subPage, char* dest)
       k[0] = 'N'; sappend('v',k,timerMinutes[i]);
       k[0] = 'T'; sappend('v',k,timerMacro[i]);
       k[0] = 'W'; sappend('v',k,timerWeekday[i]);
+      if (i<8) {
+        k[0] = 'X'; sappend('c',k,timerDay[i]==0);
+        k[0] = 'M'; sappend('v',k,timerMonth[i]);
+        k[0] = 'D'; sappend('v',k,timerDay[i]?timerDay[i]:1);
+
+      }
     }
   }
 
@@ -600,6 +605,4 @@ void getSettingsJS(byte subPage, char* dest)
     oappendi(usermods.getModCount());
     oappend(";");
   }
-
-  oappend(SET_F("}</script>"));
 }

@@ -8,24 +8,23 @@ var expanded = [false];
 var powered = [true];
 var nlDur = 60, nlTar = 0;
 var nlMode = false;
-var selectedFx = 0;
+var selectedFx = 0, prevFx = -1;
 var selectedPal = 0;
 var sliderControl = ""; //WLEDSR: used by togglePcMode
 var csel = 0;
-var currentPreset = -1;
+var currentPreset = -1, prevPS = -1;
 var lastUpdate = 0;
 var segCount = 0, ledCount = 0, lowestUnused = 0, maxSeg = 0, lSeg = 0;
 var pcMode = false, pcModeA = false, lastw = 0;
 var tr = 7;
 var d = document;
-const ranges = RangeTouch.setup('input[type="range"]', {});
 var palettesData;
 var fxdata = [];
 var pJson = {}, eJson = {}, lJson = {};
 var pN = "", pI = 0, pNum = 0;
 var pmt = 1, pmtLS = 0, pmtLast = 0;
 var lastinfo = {};
-var ws;
+var ws, cpick, ranges;
 var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false},
@@ -38,17 +37,6 @@ var hol = [
 	[2023,3,9,2,"https://aircoookie.github.io/easter.png"],
 	[2024,2,31,2,"https://aircoookie.github.io/easter.png"]
 ];
-
-var cpick = new iro.ColorPicker("#picker", {
-	width: 260,
-	wheelLightness: false,
-	wheelAngle: 270,
-	wheelDirection: "clockwise",
-	layout: [{
-		component: iro.ui.Wheel,
-		options: {}
-    }]
-});
 
 function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson();}
 function sCol(na, col) {d.documentElement.style.setProperty(na, col);}
@@ -221,7 +209,7 @@ function onLoad()
 		.catch(function (error) {
 			console.log("holidays.json does not contain array of holidays. Defaults loaded.");
 		})
-		.finally(function(){
+		.finally(()=>{
 			loadBg(cfg.theme.bg.url);
 		});
 	} else
@@ -232,10 +220,6 @@ function onLoad()
 	for (var i = 0; i < cd.length; i++) cd[i].style.backgroundColor = "rgb(0, 0, 0)";
 	selectSlot(0);
 	updateTablinks(0);
-	cpick.on("input:end", function() {
-		setColor(1);
-	});
-	cpick.on("color:change", updatePSliders);
 	pmtLS = localStorage.getItem('wledPmt');
 
 	// Load initial data
@@ -244,7 +228,6 @@ function onLoad()
 		loadFX(()=>{
 			loadFXData();
 			loadPresets(()=>{
-				//if (isObj(lastinfo) && isEmpty(lastinfo)) loadInfo(requestJson);	// if not filled by WS
 				requestJson();
 			});
 		});
@@ -288,7 +271,7 @@ function showToast(text, error = false)
 	x.classList.add(error ? "error":"show");
 	clearTimeout(timeout);
 	x.style.animation = 'none';
-	timeout = setTimeout(function(){ x.classList.remove("show"); }, 2900);
+	timeout = setTimeout(()=>{ x.classList.remove("show"); }, 2900);
 	if (error) console.log(text);
 }
 
@@ -303,7 +286,7 @@ function showErrorToast()
 	showToast('Connection to light failed!', true);
 }
 
-function clearErrorToast() {gId("toast").className = gId("toast").className.replace("error", "");}
+function clearErrorToast() {gId("toast").classList.remove("error");}
 
 function getRuntimeStr(rt)
 {
@@ -515,7 +498,7 @@ function loadFXData(callback = null)
 		clearErrorToast();
 		fxdata = json||[];
 		// add default value for Solid
-		fxdata.shift();
+		fxdata.shift()
 		fxdata.unshift("@;!;");
 	})
 	.catch(function (error) {
@@ -564,9 +547,9 @@ function populatePresets(fromls)
 		cn += `<div class="pres" id="p${i}o">`;
 		if (cfg.comp.pid) cn += `<div class="pid">${i}</div>`;
 		cn += `<div class="pname" onclick="setPreset(${i})">${isPlaylist(i)?"<i class='icons btn-icon'>&#xe139;</i>":""}${pName(i)}</div>
-			<i class="icons e-icon flr ${expanded[i+100] ? "exp":""}" id="sege${i+100}" onclick="expand(${i+100})">&#xe395;</i>
-			<div class="segin" id="seg${i+100}"></div>
-		</div>`;
+	<i class="icons e-icon flr ${expanded[i+100] ? "exp":""}" id="sege${i+100}" onclick="expand(${i+100})">&#xe395;</i>
+	<div class="segin" id="seg${i+100}"></div>
+</div>`;
     	pNum++;
 	}
 
@@ -602,41 +585,7 @@ function parseInfo() {
 	pmt         = li.fs.pmt;
 	cct         = li.leds.cct;
 }
-/*
-function loadInfo(callback=null)
-{
-	var url = (loc?`http://${locip}`:'') + '/json/info';
-	var useWs = (ws && ws.readyState === WebSocket.OPEN);
-	if (useWs) {
-		ws.send('{"v":true}');
-		return;
-	}
-	fetch(url, {
-		method: 'get'
-	})
-	.then(res => {
-		if (!res.ok) showToast('Could not load Info!', true);
-		return res.json();
-	})
-	.then(json => {
-		clearErrorToast();
-		lastinfo = json;
-		parseInfo();
-		showNodes();
-		if (isInfo) populateInfo(json);
-		reqsLegal = true;
-		if (!ws && lastinfo.ws > -1) setTimeout(makeWS,500);
-	})
-	.catch(function (error) {
-		showToast(error, true);
-		console.log(error);
-	})
-	.finally(()=>{
-		if (callback) callback();
-		updateUI();
-	});
-}
-*/
+
 function populateInfo(i)
 {
 	var cn="";
@@ -762,7 +711,7 @@ function populateSegments(s)
 	for (var i = 0; i <= lSeg; i++) {
 		updateLen(i);
 		updateTrail(gId(`seg${i}bri`));
-		gId(`segr${lSeg}`).style.display = "none";
+		gId(`segr${i}`).style.display = "none";
 	}
 	if (segCount < 2) gId(`segd${lSeg}`).style.display = "none";
 	if (!noNewSegs && (cfg.comp.seglen?parseInt(gId(`seg${lSeg}s`).value):0)+parseInt(gId(`seg${lSeg}e`).value)<ledCount) gId(`segr${lSeg}`).style.display = "inline";
@@ -780,7 +729,7 @@ function populateEffects()
 
 	effects.unshift({
 		"id": 0,
-		"name": "Solid@;!;"
+		"name": "Solid@;!;0"
 	});
 
 	for (let i = 0; i < effects.length; i++) {
@@ -883,15 +832,9 @@ function genPalPrevCss(id)
 		} else {
 			if (selColors) {
 				let e = element[1] - 1;
-				//if (Array.isArray(selColors[e])) {
-					r = selColors[e][0];
-					g = selColors[e][1];
-					b = selColors[e][2];
-				//} else {
-				//	r = (selColors[e]>>16) & 0xFF;
-				//	g = (selColors[e]>> 8) & 0xFF;
-				//	b = (selColors[e]    ) & 0xFF;
-				//}
+				r = selColors[e][0];
+				g = selColors[e][1];
+				b = selColors[e][2];
 			}
 		}
 		if (index === false) {
@@ -1105,8 +1048,10 @@ function updateSelectedFx()
 	var selectedEffect = parent.querySelector(`.lstI[data-id="${selectedFx}"]`);
 	if (selectedEffect) {
 		selectedEffect.classList.add('selected');
+		var fx = (selectedFx != prevFx) && currentPreset==-1; //effect changed & preset==none
+		var ps = (prevPS != currentPreset) && currentPreset==-1; // preset changed & preset==none
 		// WLEDSR: extract the Slider and color control string from the HTML element and set it.
-		setSliderAndColorControl(selectedFx);
+		setSliderAndColorControl(selectedFx, (fx || ps));
 	}
 }
 
@@ -1172,6 +1117,7 @@ function readState(s,command=false)
 	nlTar = s.nl.tbri;
 	nlFade = s.nl.fade;
 	syncSend = s.udpn.send;
+	prevPS = currentPreset;
 	if (s.pl<0)	currentPreset = s.ps;
 	else currentPreset = s.pl;
 
@@ -1235,6 +1181,7 @@ function readState(s,command=false)
 	  showToast('Error ' + s.error + ": " + errstr, true);
 	}
 
+	prevFx = selectedFx;
 	selectedPal = i.pal;
 	selectedFx = i.fx;
 	redrawPalPrev();	// if any color changed (random palette did at least)
@@ -1242,7 +1189,27 @@ function readState(s,command=false)
 }
 
 // WLEDSR: control HTML elements for Slider and Color Control
-function setSliderAndColorControl(idx/*, extra*/)
+// Technical notes
+// ===============
+// If an effect name is followed by an @, slider and color control is effective.
+// If not effective then:
+//      - For AC effects (id<128) 2 sliders and 3 colors and the palette will be shown
+//      - For SR effects (id>128) 5 sliders and 3 colors and the palette will be shown
+// If effective (@)
+//      - a ; seperates slider controls (left) from color controls (middle) and palette control (right)
+//      - if left, middle or right is empty no controls are shown
+//      - a , seperates slider controls (max 5) or color controls (max 3). Palette has only one value
+//      - a ! means that the default is used.
+//             - For sliders: Effect speeds, Effect intensity, Custom 1, Custom 2, Custom 3
+//             - For colors: Fx color, Background color, Custom
+//             - For palette: prompt for color palette OR palette ID if numeric (will hide palette selection)
+//
+// Note: If palette is on and no colors are specified 1,2 and 3 is shown in each color circle.
+//       If a color is specified, the 1,2 or 3 is replaced by that specification.
+// Note: Effects can override default pattern behaviour
+//       - FadeToBlack can override the background setting
+//       - Defining SEGCOL(<i>) can override a specific palette using these values (e.g. Color Gradient)
+function setSliderAndColorControl(idx, applyDef=false)
 {
 	if (!(Array.isArray(fxdata) && fxdata.length>idx)) return;
 	var topPosition = 0;
@@ -1252,15 +1219,25 @@ function setSliderAndColorControl(idx/*, extra*/)
 	var slOnOff = (extras.length==0 || extras[0]=='')?[]:extras[0].split(",");
 	var coOnOff = (extras.length<2  || extras[1]=='')?[]:extras[1].split(",");
 	var paOnOff = (extras.length<3  || extras[2]=='')?[]:extras[2].split(",");
+	var obj = {"seg":{}};
   
 	// set html slider items on/off
-	var nSliders = Math.floor((gId("Effects").children.length - 1) / 2); // p (label) & div for each slider + FX list
+	var nSliders = Math.min(5,Math.floor((gId("Effects").children.length - 1) / 2)); // p (label) & div for each slider + FX list
 	for (let i=0; i<nSliders; i++) {
 		var slider = gId("slider" + i);
 		var label = gId("sliderLabel" + i);
 		// if (not controlDefined and for AC speed or intensity and for SR alle sliders) or slider has a value
 		if ((!controlDefined && i < ((idx<128)?2:nSliders)) || (slOnOff.length>i && slOnOff[i] != "")) {
 			label.style.display = "block";
+			if (slOnOff.length>i && slOnOff[i].indexOf("=")>0) {
+				//embeded default values
+				var dPos = slOnOff[i].indexOf("=");
+				var v = Math.max(0,Math.min(255,parseInt(slOnOff[i].substr(dPos+1))));
+				if      (i==0) { if (applyDef) gId("sliderSpeed").value     = v; obj.seg.sx = v; }
+				else if (i==1) { if (applyDef) gId("sliderIntensity").value = v; obj.seg.ix = v; }
+				else           { if (applyDef) gId("sliderC"+(i-1)).value   = v; obj.seg["C"+(i-1)] = v}
+				slOnOff[i] = slOnOff[i].substring(0,dPos-1);
+			}
 			if (slOnOff.length>i && slOnOff[i]!="!") label.innerHTML = slOnOff[i];
 			else if (i==0)                           label.innerHTML = "Effect speed";
 			else if (i==1)                           label.innerHTML = "Effect intensity";
@@ -1320,33 +1297,37 @@ function setSliderAndColorControl(idx/*, extra*/)
 			hide = false;
 		} else {
 			btn.style.display = "none";
+			if (i>0 && csel==i) selectSlot(0);
 		}
 	}
-/*
-	// perhaps too aggressive
-	var ccfg = cfg.comp.colors;
-	gId("picker").style.display = hide && ccfg.picker ? "none" : "block";
-	gId("vwrap").style.display = hide && ccfg.picker ? "none" : "block";
-	gId("kwrap").style.display = hide && ccfg.picker && cct ? "none" : "block";
-	gId("wwrap").style.display = hide ? "none" : "block";
-	gId("wbal").style.display  = hide && !cct ? "none" : "block";
-	gId("rgbwrap").style.display = hide && ccfg.rgb ? "none" : "block";
-	gId("qcs-w").style.display = hide && ccfg.quick ? "none" : "block";
-*/
 	gId("cslLabel").innerHTML = cslLabel;
   
 	// set palette on/off
 	var palw = gId("palw"); // wrapper
 	var pall = gId("pall");	// list
 	// if not controlDefined or palette has a value
-	if ((!controlDefined) || (paOnOff.length>0 && paOnOff[0]!="")) {
+	if ((!controlDefined) || (paOnOff.length>0 && paOnOff[0]!="" && isNaN(paOnOff[0]))) {
 		palw.style.display = "inline-block";
+		if (paOnOff.length>0 && paOnOff[0].indexOf("=")>0) {
+			//embeded default values
+			var dPos = paOnOff[0].indexOf("=");
+			var v = Math.max(0,Math.min(255,parseInt(paOnOff[0].substr(dPos+1))));
+			var p = d.querySelector(`#pallist input[name="palette"][value="${v}"]`);
+			if (applyDef && p) {
+				p.checked = true;
+				obj.seg.pal = v;
+			}
+			paOnOff[0] = paOnOff[0].substring(0,dPos-1);
+		}
 		if (paOnOff.length>0 && paOnOff[0] != "!") pall.innerHTML = paOnOff[0];
 		else                                       pall.innerHTML = '<i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i> Color palette';
 	} else {
 		// disable label and slider
 		palw.style.display = "none";
+		// if numeric set as selected palette
+		if (paOnOff.length>0 && paOnOff[0]!="" && !isNaN(paOnOff[0]) && parseInt(paOnOff[0])!=selectedPal) obj.seg.pal = parseInt(paOnOff[0]);
 	}
+	if (!isEmpty(obj.seg) && applyDef) requestJson(obj); //update default values (may need throttling on ESP8266)
 }
 
 var jsonTimeout;
@@ -1362,7 +1343,7 @@ function requestJson(command=null)
 	var useWs = (ws && ws.readyState === WebSocket.OPEN);
 	var type = command ? 'post':'get';
 	if (command) {
-		command.v = true; // force complete /json/si API response
+		if (useWs || !command.ps) command.v = true; // force complete /json/si API response (ps is async so no point)
 		command.time = Math.floor(Date.now() / 1000);
 		var t = gId('tt');
 		if (t.validity.valid && command.transition==null) {
@@ -1376,6 +1357,8 @@ function requestJson(command=null)
 	if (useWs) {
 		ws.send(req?req:'{"v":true}');
 		return;
+	} else if (command && command.ps) { //refresh UI if we don't use WS (async loading of presets)
+		setTimeout(requestJson,200);
 	}
 
 	fetch(url, {
@@ -1752,7 +1735,8 @@ function rptSeg(s)
 	if (stop == 0) {return;}
 	var rev = gId(`seg${s}rev`).checked;
 	var mi = gId(`seg${s}mi`).checked;
-	var obj = {"seg": {"id": 0, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop}, "rev": rev, "mi": mi, "on": !powered[s], "bri": parseInt(gId(`seg${s}bri`).value)};
+	var sel = gId(`seg${s}sel`).checked;
+	var obj = {"seg": {"id": 0, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop, "rev": rev, "mi": mi, "on": !powered[s], "bri": parseInt(gId(`seg${s}bri`).value), "sel": sel}};
 	if (gId(`seg${s}grp`)) {
 		var grp = parseInt(gId(`seg${s}grp`).value);
 		var spc = parseInt(gId(`seg${s}spc`).value);
@@ -1850,7 +1834,7 @@ function setPalette(paletteId = null)
 	if (paletteId === null) {
 		paletteId = parseInt(d.querySelector('#pallist input[name="palette"]:checked').value);
 	} else {
-		d.querySelector(`#pallist input[name="palette"][value="${paletteId}`).checked = true;
+		d.querySelector(`#pallist input[name="palette"][value="${paletteId}"]`).checked = true;
 	}
 	var selElement = d.querySelector('#pallist .selected');
 	if (selElement) {
@@ -2106,7 +2090,7 @@ function setBalance(b)
 }
 
 var hc = 0;
-setInterval(function(){if (!isInfo) return; hc+=18; if (hc>300) hc=0; if (hc>200)hc=306; if (hc==144) hc+=36; if (hc==108) hc+=18;
+setInterval(()=>{if (!isInfo) return; hc+=18; if (hc>300) hc=0; if (hc>200)hc=306; if (hc==144) hc+=36; if (hc==108) hc+=18;
 gId('heart').style.color = `hsl(${hc}, 100%, 50%)`;}, 910);
 
 function openGH() { window.open("https://github.com/Aircoookie/WLED/wiki"); }
@@ -2147,9 +2131,9 @@ function loadPalettesData(callback = null)
 	var lsPalData = localStorage.getItem(lsKey);
 	if (lsPalData) {
 		try {
-			lsPalData = JSON.parse(lsPalData);
-			if (lsPalData && lsPalData.vid == lastinfo.vid) {
-				palettesData = lsPalData.p;
+			var d = JSON.parse(lsPalData);
+			if (d && d.vid == d.vid) {
+				palettesData = d.p;
 				if (callback) callback(); 	// redrawPalPrev()
 				return;
 			}
@@ -2157,7 +2141,7 @@ function loadPalettesData(callback = null)
 	}
 
 	palettesData = {};
-	getPalettesData(0, function() {
+	getPalettesData(0, ()=>{
 		localStorage.setItem(lsKey, JSON.stringify({
 			p: palettesData,
 			vid: lastinfo.vid
@@ -2182,10 +2166,10 @@ function getPalettesData(page, callback)
 	})
 	.then(json => {
 		palettesData = Object.assign({}, palettesData, json.p);
-		if (page < json.m) setTimeout(function() { getPalettesData(page + 1, callback); }, 50);
+		if (page < json.m) setTimeout(()=>{ getPalettesData(page + 1, callback); }, 50);
 		else callback();
 	})
-	.catch(function(error) {
+	.catch((error)=>{
 		showToast(error, true);
 		console.log(error);
 	});
@@ -2252,7 +2236,9 @@ function expand(i,a=false)
 */
 	expanded[i] = !expanded[i];
 	seg.style.display = (expanded[i]) ? "block":"none";
-	gId('sege' +i).style.transform = (expanded[i]) ? "rotate(180deg)":"rotate(0deg)";
+	//gId('sege' +i).style.transform = (expanded[i]) ? "rotate(180deg)":"rotate(0deg)";
+	if (expanded[i]) gId('sege' +i).classList.add("exp");
+	else             gId('sege' +i).classList.remove("exp");
 
 	if (expanded[i]) gId(i<100?'segutil':'putil').classList.remove(i<100?"staybot":"staytop");
 	else gId(i<100?'segutil':'putil').classList.add(i<100?"staybot":"staytop");

@@ -76,15 +76,16 @@ bool colorChanged()
 void colorUpdated(int callMode)
 {
   //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (No notification)
-  //                     6: fx changed 7: hue 8: preset cycle 9: blynk 10: alexa
+  //                     6: fx changed 7: hue 8: preset cycle 9: blynk 10: alexa 11: ws send only 12: button preset
   if (callMode != CALL_MODE_INIT && 
       callMode != CALL_MODE_DIRECT_CHANGE && 
-      callMode != CALL_MODE_NO_NOTIFY) strip.applyToAllSelected = true; //if not from JSON api, which directly sets segments
+      callMode != CALL_MODE_NO_NOTIFY &&
+			callMode != CALL_MODE_BUTTON_PRESET) strip.applyToAllSelected = true; //if not from JSON api, which directly sets segments
 
   bool someSel = false;
 
   if (callMode == CALL_MODE_NOTIFICATION) {
-    someSel = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
+    someSel = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects || receiveSegmentOptions);
   }
   
   //Notifier: apply received FX to selected segments only if actually receiving FX

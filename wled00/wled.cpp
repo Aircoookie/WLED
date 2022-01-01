@@ -65,12 +65,14 @@ void WLED::loop()
   yield();
   handleIO();
   handleIR();
+  #ifndef WLED_DISABLE_ALEXA
   handleAlexa();
+  #endif
 
   yield();
 
-  if (doReboot)
-    reset();
+  if (doReboot) reset();
+
   if (doCloseFile) {
     closeFile();
     yield();
@@ -78,21 +80,25 @@ void WLED::loop()
 
   if (!realtimeMode || realtimeOverride)  // block stuff if WARLS/Adalight is enabled
   {
-    if (apActive)
-      dnsServer.processNextRequest();
-#ifndef WLED_DISABLE_OTA
-    if (WLED_CONNECTED && aOtaEnabled)
-      ArduinoOTA.handle();
-#endif
+    if (apActive) dnsServer.processNextRequest();
+    #ifndef WLED_DISABLE_OTA
+    if (WLED_CONNECTED && aOtaEnabled) ArduinoOTA.handle();
+    #endif
     handleNightlight();
     handlePlaylist();
     yield();
 
+    #ifndef WLED_DISABLE_HUESYNC
     handleHue();
-#ifndef WLED_DISABLE_BLYNK
-    handleBlynk();
-#endif
+    yield();
+    #endif
 
+    #ifndef WLED_DISABLE_BLYNK
+    handleBlynk();
+    yield();
+    #endif
+
+    handlePresets();
     yield();
 
     #ifdef WLED_DEBUG
@@ -100,10 +106,10 @@ void WLED::loop()
     #endif
     if (!offMode || strip.isOffRefreshRequred)
       strip.service();
-#ifdef ESP8266
+    #ifdef ESP8266
     else if (!noWifiSleep)
       delay(1); //required to make sure ESP enters modem sleep (see #1184)
-#endif
+    #endif
     #ifdef WLED_DEBUG
     stripMillis = millis() - stripMillis;
     if (stripMillis > 50) DEBUG_PRINTLN("Slow strip.");
@@ -120,6 +126,8 @@ void WLED::loop()
   if (lastMqttReconnectAttempt > millis()) {
     rolloverMillis++;
     lastMqttReconnectAttempt = 0;
+    ntpLastSyncTime = 0;
+    strip.restartRuntime();
   }
   if (millis() - lastMqttReconnectAttempt > 30000) {
     lastMqttReconnectAttempt = millis();
@@ -286,8 +294,10 @@ void WLED::setup()
   WiFi.onEvent(WiFiEvent);
   #endif
 
-  #ifdef WLED_ENABLE_ADALIGHT // reserve GPIO3 (RX) pin for ADALight
-  if (!pinManager.isPinAllocated(3)) {
+  #ifdef WLED_ENABLE_ADALIGHT
+	//Serial RX (Adalight, Improv, Serial JSON) only possible if GPIO3 unused
+	//Serial TX (Debug, Improv, Serial JSON) only possible if GPIO1 unused
+  if (!pinManager.isPinAllocated(3) && !pinManager.isPinAllocated(1)) {
     Serial.println(F("Ada"));
     pinManager.allocatePin(3,false);
   } else {
@@ -624,7 +634,7 @@ void WLED::handleConnection()
   // reconnect WiFi to clear stale allocations if heap gets too low
   if (now - heapTime > 5000) {
     uint32_t heap = ESP.getFreeHeap();
-    if (heap < JSON_BUFFER_SIZE+512 && lastHeap < JSON_BUFFER_SIZE+512) {
+    if (heap < MIN_HEAP_SIZE && lastHeap < MIN_HEAP_SIZE) {
       DEBUG_PRINT(F("Heap too low! "));
       DEBUG_PRINTLN(heap);
       forceReconnect = true;

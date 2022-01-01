@@ -86,8 +86,10 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   Bus::setAutoWhiteMode(hw_led[F("rgbwm")] | Bus::getAutoWhiteMode());
   CJSON(correctWB, hw_led["cct"]);
   CJSON(cctFromRgb, hw_led[F("cr")]);
-	CJSON(strip.cctBlending, hw_led[F("cb")]);
-	Bus::setCCTBlend(strip.cctBlending);
+  CJSON(strip.cctBlending, hw_led[F("cb")]);
+  Bus::setCCTBlend(strip.cctBlending);
+  strip.setTargetFps(hw_led["fps"]); //NOP if 0, default 42 FPS
+  //strip.setTargetFps(hw_led["fps"].isNull() ? WLED_FPS : hw_led["fps"].as<byte>());
 
   JsonArray ins = hw_led["ins"];
   
@@ -242,8 +244,9 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(receiveNotificationColor, if_sync_recv["col"]);
   CJSON(receiveNotificationEffects, if_sync_recv["fx"]);
   CJSON(receiveGroups, if_sync_recv["grp"]);
+  CJSON(receiveSegmentOptions, if_sync_recv["seg"]);
   //! following line might be a problem if called after boot
-  receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
+  receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects || receiveSegmentOptions);
 
   JsonObject if_sync_send = if_sync["send"];
   prev = notifyDirectDefault;
@@ -378,7 +381,10 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       int act = timer["en"] | actPrev;
       if (act) timerWeekday[it]++;
     }
-
+    if (it<8) {
+      CJSON(timerMonth[it], timer[F("mon")]);
+      CJSON(timerDay[it], timer[F("day")]);
+    }
     it++;
   }
 
@@ -429,11 +435,7 @@ void deserializeConfigFromFS() {
     return;
   }
 
-  #ifdef WLED_USE_DYNAMIC_JSON
-  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-  #else
   if (!requestJSONBufferLock(1)) return;
-  #endif
 
   DEBUG_PRINTLN(F("Reading settings from /cfg.json..."));
 
@@ -457,11 +459,7 @@ void serializeConfig() {
 
   DEBUG_PRINTLN(F("Writing settings to /cfg.json..."));
 
-  #ifdef WLED_USE_DYNAMIC_JSON
-  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-  #else
   if (!requestJSONBufferLock(2)) return;
-  #endif
 
   JsonArray rev = doc.createNestedArray("rev");
   rev.add(1); //major settings revision
@@ -543,7 +541,8 @@ void serializeConfig() {
   hw_led["cct"] = correctWB;
   hw_led[F("cr")] = cctFromRgb;
 	hw_led[F("cb")] = strip.cctBlending;
-  hw_led[F("rgbwm")] = Bus::getAutoWhiteMode();
+	hw_led["fps"] = strip.getTargetFps();
+	hw_led[F("rgbwm")] = Bus::getAutoWhiteMode();
 
   JsonArray hw_led_ins = hw_led.createNestedArray("ins");
 
@@ -632,6 +631,7 @@ void serializeConfig() {
   if_sync_recv["col"] = receiveNotificationColor;
   if_sync_recv["fx"] = receiveNotificationEffects;
   if_sync_recv["grp"] = receiveGroups;
+  if_sync_recv["seg"] = receiveSegmentOptions;
 
   JsonObject if_sync_send = if_sync.createNestedObject("send");
   if_sync_send[F("dir")] = notifyDirect;
@@ -744,6 +744,10 @@ void serializeConfig() {
     timers_ins0["min"] = timerMinutes[i];
     timers_ins0["macro"] = timerMacro[i];
     timers_ins0[F("dow")] = timerWeekday[i] >> 1;
+    if (i<8) {
+      timers_ins0[F("mon")] = timerMonth[i];
+      timers_ins0[F("day")] = timerDay[i];
+    }
   }
 
   JsonObject ota = doc.createNestedObject("ota");
@@ -780,11 +784,7 @@ void serializeConfig() {
 bool deserializeConfigSec() {
   DEBUG_PRINTLN(F("Reading settings from /wsec.json..."));
 
-  #ifdef WLED_USE_DYNAMIC_JSON
-  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-  #else
   if (!requestJSONBufferLock(3)) return false;
-  #endif
 
   bool success = readObjectFromFile("/wsec.json", nullptr, &doc);
   if (!success) {
@@ -829,11 +829,7 @@ bool deserializeConfigSec() {
 void serializeConfigSec() {
   DEBUG_PRINTLN(F("Writing settings to /wsec.json..."));
 
-  #ifdef WLED_USE_DYNAMIC_JSON
-  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-  #else
   if (!requestJSONBufferLock(4)) return;
-  #endif
 
   JsonObject nw = doc.createNestedObject("nw");
 

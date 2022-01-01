@@ -19,16 +19,19 @@
 // Change between modes by pressing a button.
 //
 // Dependencies
-// * This usermod REQURES the ModeSortUsermod
 // * This Usermod works best coupled with 
 //   FourLineDisplayUsermod.
 //
-// If FourLineDisplayUsermod is used the folowing options are also inabled
+// If FourLineDisplayUsermod is used the folowing options are also enabled
 //
 // * main color
 // * saturation of main color
 // * display network (long press buttion)
 //
+
+#ifdef USERMOD_MODE_SORT
+  #error "Usermod Mode Sort is no longer required. Remove -D USERMOD_MODE_SORT from platformio.ini"
+#endif
 
 #ifndef ENCODER_DT_PIN
 #define ENCODER_DT_PIN 18
@@ -49,13 +52,73 @@
  #define LAST_UI_STATE 4
 #endif
 
+// Number of modes at the start of the list to not sort
+#define MODE_SORT_SKIP_COUNT 1
+
+// Which list is being sorted
+static char **listBeingSorted;
+
+/**
+ * Modes and palettes are stored as strings that
+ * end in a quote character. Compare two of them.
+ * We are comparing directly within either
+ * JSON_mode_names or JSON_palette_names.
+ */
+static int re_qstringCmp(const void *ap, const void *bp) {
+  char *a = listBeingSorted[*((byte *)ap)];
+  char *b = listBeingSorted[*((byte *)bp)];
+  int i = 0;
+  do {
+    char aVal = pgm_read_byte_near(a + i);
+    if (aVal >= 97 && aVal <= 122) {
+      // Lowercase
+      aVal -= 32;
+    }
+    char bVal = pgm_read_byte_near(b + i);
+    if (bVal >= 97 && bVal <= 122) {
+      // Lowercase
+      bVal -= 32;
+    }
+    // Relly we shouldn't ever get to '\0'
+    if (aVal == '"' || bVal == '"' || aVal == '\0' || bVal == '\0') {
+      // We're done. one is a substring of the other
+      // or something happenend and the quote didn't stop us.
+      if (aVal == bVal) {
+        // Same value, probably shouldn't happen
+        // with this dataset
+        return 0;
+      }
+      else if (aVal == '"' || aVal == '\0') {
+        return -1;
+      }
+      else {
+        return 1;
+      }
+    }
+    if (aVal == bVal) {
+      // Same characters. Move to the next.
+      i++;
+      continue;
+    }
+    // We're done
+    if (aVal < bVal) {
+      return -1;
+    }
+    else {
+      return 1;
+    }
+  } while (true);
+  // We shouldn't get here.
+  return 0;
+}
+
 
 class RotaryEncoderUIUsermod : public Usermod {
 private:
-  int fadeAmount = 5;             // Amount to change every step (brightness)
+  int fadeAmount = 5;                 // Amount to change every step (brightness)
   unsigned long currentTime;
   unsigned long loopTime;
-  unsigned long buttonHoldTIme;
+  unsigned long buttonHoldTime;
   int8_t pinA = ENCODER_DT_PIN;       // DT from encoder
   int8_t pinB = ENCODER_CLK_PIN;      // CLK from encoder
   int8_t pinC = ENCODER_SW_PIN;       // SW from encoder
@@ -63,8 +126,8 @@ private:
   unsigned char button_state = HIGH;
   unsigned char prev_button_state = HIGH;
   bool networkShown = false;
-  uint16_t currentHue1 = 6425; // default reboot color
-  byte currentSat1 = 255; 
+  uint16_t currentHue1 = 16; // default boot color
+  byte currentSat1 = 255;
   
 #ifdef USERMOD_FOUR_LINE_DISPLAY
   FourLineDisplayUsermod *display;
@@ -72,7 +135,16 @@ private:
   void* display = nullptr;
 #endif
 
+  // Pointers the start of the mode names within JSON_mode_names
+  char **modes_qstrings = nullptr;
+
+  // Array of mode indexes in alphabetical order.
   byte *modes_alpha_indexes = nullptr;
+
+  // Pointers the start of the palette names within JSON_palette_names
+  char **palettes_qstrings = nullptr;
+
+  // Array of palette indexes in alphabetical order.
   byte *palettes_alpha_indexes = nullptr;
 
   unsigned char Enc_A;
@@ -95,13 +167,90 @@ private:
   static const char _CLK_pin[];
   static const char _SW_pin[];
 
+  /**
+   * Sort the modes and palettes to the index arrays
+   * modes_alpha_indexes and palettes_alpha_indexes.
+   */
+  void sortModesAndPalettes() {
+    modes_qstrings = re_findModeStrings(JSON_mode_names, strip.getModeCount());
+    modes_alpha_indexes = re_initIndexArray(strip.getModeCount());
+    re_sortModes(modes_qstrings, modes_alpha_indexes, strip.getModeCount(), MODE_SORT_SKIP_COUNT);
+
+    palettes_qstrings = re_findModeStrings(JSON_palette_names, strip.getPaletteCount());
+    palettes_alpha_indexes = re_initIndexArray(strip.getPaletteCount());
+
+    // How many palette names start with '*' and should not be sorted?
+    // (Also skipping the first one, 'Default').
+    int skipPaletteCount = 1;
+    while (pgm_read_byte_near(palettes_qstrings[skipPaletteCount++]) == '*') ;
+    re_sortModes(palettes_qstrings, palettes_alpha_indexes, strip.getPaletteCount(), skipPaletteCount);
+  }
+
+  byte *re_initIndexArray(int numModes) {
+    byte *indexes = (byte *)malloc(sizeof(byte) * numModes);
+    for (byte i = 0; i < numModes; i++) {
+      indexes[i] = i;
+    }
+    return indexes;
+  }
+
+  /**
+   * Return an array of mode or palette names from the JSON string.
+   * They don't end in '\0', they end in '"'. 
+   */
+  char **re_findModeStrings(const char json[], int numModes) {
+    char **modeStrings = (char **)malloc(sizeof(char *) * numModes);
+    uint8_t modeIndex = 0;
+    bool insideQuotes = false;
+    // advance past the mark for markLineNum that may exist.
+    char singleJsonSymbol;
+
+    // Find the mode name in JSON
+    bool complete = false;
+    for (size_t i = 0; i < strlen_P(json); i++) {
+      singleJsonSymbol = pgm_read_byte_near(json + i);
+      if (singleJsonSymbol == '\0') break;
+      switch (singleJsonSymbol) {
+        case '"':
+          insideQuotes = !insideQuotes;
+          if (insideQuotes) {
+            // We have a new mode or palette
+            modeStrings[modeIndex] = (char *)(json + i + 1);
+          }
+          break;
+        case '[':
+          break;
+        case ']':
+          if (!insideQuotes) complete = true;
+          break;
+        case ',':
+          if (!insideQuotes) modeIndex++;
+        default:
+          if (!insideQuotes) break;
+      }
+      if (complete) break;
+    }
+    return modeStrings;
+  }
+
+  /**
+   * Sort either the modes or the palettes using quicksort.
+   */
+  void re_sortModes(char **modeNames, byte *indexes, int count, int numSkip) {
+    listBeingSorted = modeNames;
+    qsort(indexes + numSkip, count - numSkip, sizeof(byte), re_qstringCmp);
+    listBeingSorted = nullptr;
+  }
+
+
 public:
   /*
-     * setup() is called once at boot. WiFi is not yet connected at this point.
-     * You can use it to initialize variables, sensors or similar.
-     */
+   * setup() is called once at boot. WiFi is not yet connected at this point.
+   * You can use it to initialize variables, sensors or similar.
+   */
   void setup()
   {
+    DEBUG_PRINTLN(F("Usermod Rotary Encoder init."));
     PinManagerPinType pins[3] = { { pinA, false }, { pinB, false }, { pinC, false } };
     if (!pinManager.allocateMultiplePins(pins, 3, PinOwner::UM_RotaryEncoderUI)) {
       // BUG: configuring this usermod with conflicting pins
@@ -120,9 +269,7 @@ public:
     currentTime = millis();
     loopTime = currentTime;
 
-    ModeSortUsermod *modeSortUsermod = (ModeSortUsermod*) usermods.lookup(USERMOD_ID_MODE_SORT);
-    modes_alpha_indexes = modeSortUsermod->getModesAlphaIndexes();
-    palettes_alpha_indexes = modeSortUsermod->getPalettesAlphaIndexes();
+    if (!initDone) sortModesAndPalettes();
 
 #ifdef USERMOD_FOUR_LINE_DISPLAY    
     // This Usermod uses FourLineDisplayUsermod for the best experience.
@@ -140,24 +287,24 @@ public:
   }
 
   /*
-     * connected() is called every time the WiFi is (re)connected
-     * Use it to initialize network interfaces
-     */
+   * connected() is called every time the WiFi is (re)connected
+   * Use it to initialize network interfaces
+   */
   void connected()
   {
     //Serial.println("Connected to WiFi!");
   }
 
   /*
-     * loop() is called continuously. Here you can check for events, read sensors, etc.
-     * 
-     * Tips:
-     * 1. You can use "if (WLED_CONNECTED)" to check for a successful network connection.
-     *    Additionally, "if (WLED_MQTT_CONNECTED)" is available to check for a connection to an MQTT broker.
-     * 
-     * 2. Try to avoid using the delay() function. NEVER use delays longer than 10 milliseconds.
-     *    Instead, use a timer check as shown here.
-     */
+   * loop() is called continuously. Here you can check for events, read sensors, etc.
+   * 
+   * Tips:
+   * 1. You can use "if (WLED_CONNECTED)" to check for a successful network connection.
+   *    Additionally, "if (WLED_MQTT_CONNECTED)" is available to check for a connection to an MQTT broker.
+   * 
+   * 2. Try to avoid using the delay() function. NEVER use delays longer than 10 milliseconds.
+   *    Instead, use a timer check as shown here.
+   */
   void loop()
   {
     currentTime = millis(); // get the current elapsed time
@@ -167,19 +314,19 @@ public:
     // is not yet initialized when setup is called.
     
     if (!currentEffectAndPaletteInitialized) {
-      findCurrentEffectAndPalette();}
+      findCurrentEffectAndPalette();
+    }
 
-    if(modes_alpha_indexes[effectCurrentIndex] != effectCurrent 
-    || palettes_alpha_indexes[effectPaletteIndex] != effectPalette){
+    if (modes_alpha_indexes[effectCurrentIndex] != effectCurrent || palettes_alpha_indexes[effectPaletteIndex] != effectPalette) {
       currentEffectAndPaletteInitialized = false;
-      }
+    }
 
     if (currentTime >= (loopTime + 2)) // 2ms since last check of encoder = 500Hz
     {
       button_state = digitalRead(pinC);
       if (prev_button_state != button_state)
       {
-        if (button_state == HIGH && (millis()-buttonHoldTIme < 3000))
+        if (button_state == HIGH && (millis()-buttonHoldTime < 3000))
         {
           prev_button_state = button_state;
 
@@ -190,25 +337,25 @@ public:
           if (display != nullptr) {
             switch(newState) {
               case 0:
-                changedState = changeState("   Brightness", 1, 0, 1);
+                changedState = changeState(PSTR("Brightness"), 1, 0, 1);
                 break;
               case 1:
-                changedState = changeState("     Speed", 1, 4, 2);
+                changedState = changeState(PSTR("Speed"), 1, 4, 2);
                 break;
               case 2:
-                changedState = changeState("    Intensity", 1 ,8, 3);
+                changedState = changeState(PSTR("Intensity"), 1 ,8, 3);
                 break;
               case 3:
-                changedState = changeState("  Color Palette", 2, 0, 4);
+                changedState = changeState(PSTR("Color Palette"), 2, 0, 4);
                 break;
               case 4:
-                changedState = changeState("     Effect", 3, 0, 5);
+                changedState = changeState(PSTR("Effect"), 3, 0, 5);
                 break;
               case 5:
-                changedState = changeState("   Main Color", 255, 255, 7);
+                changedState = changeState(PSTR("Main Color"), 255, 255, 7);
                 break;
               case 6:
-                changedState = changeState("   Saturation", 255, 255, 8);
+                changedState = changeState(PSTR("Saturation"), 255, 255, 8);
                 break;
             }
           }
@@ -220,11 +367,15 @@ public:
         {
           prev_button_state = button_state;
           networkShown = false;
-          if(!prev_button_state)buttonHoldTIme = millis();
+          if (!prev_button_state) buttonHoldTime = millis();
         }
       }
       
-      if (!prev_button_state && (millis()-buttonHoldTIme > 3000) && !networkShown) displayNetworkInfo(); //long press for network info
+      if (!prev_button_state && (millis()-buttonHoldTime > 3000) && !networkShown) {
+        displayNetworkInfo(); //long press for network info
+        loopTime = currentTime; // Updates loopTime
+        return;
+      }
 
       Enc_A = digitalRead(pinA); // Read encoder pins
       Enc_B = digitalRead(pinB);
@@ -288,9 +439,9 @@ public:
     }
   }
 
-  void displayNetworkInfo(){
+  void displayNetworkInfo() {
     #ifdef USERMOD_FOUR_LINE_DISPLAY
-    display->networkOverlay("  NETWORK INFO", 15000);
+    display->networkOverlay(PSTR("NETWORK INFO"), 10000);
     networkShown = true;
     #endif
   }
@@ -313,17 +464,20 @@ public:
   }
 
   boolean changeState(const char *stateName, byte markedLine, byte markedCol, byte glyph) {
-        #ifdef USERMOD_FOUR_LINE_DISPLAY
-            if (display != nullptr) {
-              if (display->wakeDisplay()) {
-                // Throw away wake up input
-                return false;
-              }
-              display->overlay(stateName, 750, glyph);
-              display->setMarkLine(markedLine, markedCol);
-            }
-          #endif
-            return true;
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    if (display != nullptr) {
+      if (display->wakeDisplay()) {
+        // Throw away wake up input
+        return false;
+      }
+      String line = stateName;
+      //line.trim();
+      display->center(line, display->getCols());
+      display->overlay(line.c_str(), 750, glyph);
+      display->setMarkLine(markedLine, markedCol);
+    }
+  #endif
+    return true;
   }
 
   void lampUdated() {
@@ -335,158 +489,158 @@ public:
   }
 
   void changeBrightness(bool increase) {
-        #ifdef USERMOD_FOUR_LINE_DISPLAY
-            if (display && display->wakeDisplay()) {
-              // Throw away wake up input
-              return;
-            }
-        #endif
-            if (increase) bri = (bri + fadeAmount <= 255) ? (bri + fadeAmount) : 255;
-            else bri = (bri - fadeAmount >= 0) ? (bri - fadeAmount) : 0;
-            lampUdated();
-            #ifdef USERMOD_FOUR_LINE_DISPLAY
-            display->updateBrightness();
-            #endif
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    if (display && display->wakeDisplay()) {
+      // Throw away wake up input
+      return;
+    }
+  #endif
+    if (increase) bri = (bri + fadeAmount <= 255) ? (bri + fadeAmount) : 255;
+    else          bri = (bri - fadeAmount >= 0) ? (bri - fadeAmount) : 0;
+    lampUdated();
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    display->updateBrightness();
+  #endif
   }
 
 
   void changeEffect(bool increase) {
-        #ifdef USERMOD_FOUR_LINE_DISPLAY
-            if (display && display->wakeDisplay()) {
-              // Throw away wake up input
-              return;
-            }
-        #endif
-            if (increase) effectCurrentIndex = (effectCurrentIndex + 1 >= strip.getModeCount()) ? 0 : (effectCurrentIndex + 1);
-            else effectCurrentIndex = (effectCurrentIndex - 1 < 0) ? (strip.getModeCount() - 1) : (effectCurrentIndex - 1);
-            effectCurrent = modes_alpha_indexes[effectCurrentIndex];
-            lampUdated();
-            #ifdef USERMOD_FOUR_LINE_DISPLAY
-            display->showCurrentEffectOrPalette(effectCurrent, JSON_mode_names, 3);
-            #endif
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    if (display && display->wakeDisplay()) {
+      // Throw away wake up input
+      return;
+    }
+  #endif
+    effectCurrentIndex = max(min((increase ? effectCurrentIndex+1 : effectCurrentIndex-1), strip.getModeCount()-1), 0);
+    effectCurrent = modes_alpha_indexes[effectCurrentIndex];
+    lampUdated();
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    display->showCurrentEffectOrPalette(effectCurrent, JSON_mode_names, 3);
+  #endif
   }
 
 
   void changeEffectSpeed(bool increase) {
-        #ifdef USERMOD_FOUR_LINE_DISPLAY
-            if (display && display->wakeDisplay()) {
-              // Throw away wake up input
-              return;
-            }
-        #endif
-            if (increase) effectSpeed = (effectSpeed + fadeAmount <= 255) ? (effectSpeed + fadeAmount) : 255;
-            else effectSpeed = (effectSpeed - fadeAmount >= 0) ? (effectSpeed - fadeAmount) : 0;
-            lampUdated();
-            #ifdef USERMOD_FOUR_LINE_DISPLAY
-            display->updateSpeed();
-            #endif
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    if (display && display->wakeDisplay()) {
+      // Throw away wake up input
+      return;
+    }
+  #endif
+    effectSpeed = max(min((increase ? effectSpeed+fadeAmount : effectSpeed-fadeAmount), 255), 0);
+    lampUdated();
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    display->updateSpeed();
+  #endif
   }
 
 
   void changeEffectIntensity(bool increase) {
-        #ifdef USERMOD_FOUR_LINE_DISPLAY
-            if (display && display->wakeDisplay()) {
-              // Throw away wake up input
-              return;
-            }
-        #endif
-            if (increase) effectIntensity = (effectIntensity + fadeAmount <= 255) ? (effectIntensity + fadeAmount) : 255;
-            else effectIntensity = (effectIntensity - fadeAmount >= 0) ? (effectIntensity - fadeAmount) : 0;
-            lampUdated();
-            #ifdef USERMOD_FOUR_LINE_DISPLAY
-            display->updateIntensity();
-            #endif
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    if (display && display->wakeDisplay()) {
+      // Throw away wake up input
+      return;
+    }
+  #endif
+    effectIntensity = max(min((increase ? effectIntensity+fadeAmount : effectIntensity-fadeAmount), 255), 0);
+    lampUdated();
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    display->updateIntensity();
+  #endif
   }
 
 
   void changePalette(bool increase) {
-        #ifdef USERMOD_FOUR_LINE_DISPLAY
-            if (display && display->wakeDisplay()) {
-              // Throw away wake up input
-              return;
-            }
-        #endif
-            if (increase) effectPaletteIndex = (effectPaletteIndex + 1 >= strip.getPaletteCount()) ? 0 : (effectPaletteIndex + 1);
-            else effectPaletteIndex = (effectPaletteIndex - 1 < 0) ? (strip.getPaletteCount() - 1) : (effectPaletteIndex - 1);
-            effectPalette = palettes_alpha_indexes[effectPaletteIndex];
-            lampUdated();
-            #ifdef USERMOD_FOUR_LINE_DISPLAY
-            display->showCurrentEffectOrPalette(effectPalette, JSON_palette_names, 2);
-            #endif
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    if (display && display->wakeDisplay()) {
+      // Throw away wake up input
+      return;
+    }
+  #endif
+    effectPaletteIndex = max(min((increase ? effectPaletteIndex+1 : effectPaletteIndex-1), strip.getPaletteCount()-1), 0);
+    effectPalette = palettes_alpha_indexes[effectPaletteIndex];
+    lampUdated();
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    display->showCurrentEffectOrPalette(effectPalette, JSON_palette_names, 2);
+  #endif
   }
 
 
   void changeHue(bool increase){
-        #ifdef USERMOD_FOUR_LINE_DISPLAY
-            if (display && display->wakeDisplay()) {
-              // Throw away wake up input
-              return;
-            }
-        #endif
-
-        if(increase) currentHue1 += 321;
-        else currentHue1 -= 321;
-        colorHStoRGB(currentHue1, currentSat1, col);
-        lampUdated();
-        #ifdef USERMOD_FOUR_LINE_DISPLAY
-        display->updateRedrawTime();
-        #endif
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    if (display && display->wakeDisplay()) {
+      // Throw away wake up input
+      return;
+    }
+  #endif
+    if (increase) { if (currentHue1<256) currentHue1 += 4; else currentHue1 = 0; }
+    else          { if (currentHue1>3)   currentHue1 -= 4; else currentHue1 = 256; }
+    colorHStoRGB(currentHue1*255, currentSat1, col);
+    strip.applyToAllSelected = true;
+    strip.setColor(0, colorFromRgbw(col));
+    lampUdated();
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    display->updateRedrawTime();
+  #endif
   }
 
   void changeSat(bool increase){
-        #ifdef USERMOD_FOUR_LINE_DISPLAY
-            if (display && display->wakeDisplay()) {
-              // Throw away wake up input
-              return;
-            }
-        #endif
-
-        if(increase) currentSat1 = (currentSat1 + 5 <= 255 ? (currentSat1 + 5) : 255);
-        else currentSat1 = (currentSat1 - 5 >= 0 ? (currentSat1 - 5) : 0);
-        colorHStoRGB(currentHue1, currentSat1, col);
-        lampUdated();
-        #ifdef USERMOD_FOUR_LINE_DISPLAY
-        display->updateRedrawTime();
-        #endif
-
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    if (display && display->wakeDisplay()) {
+      // Throw away wake up input
+      return;
+    }
+  #endif
+    currentSat1 = max(min((increase ? currentSat1+fadeAmount : currentSat1-fadeAmount), 255), 0);
+    colorHStoRGB(currentHue1*256, currentSat1, col);
+    strip.applyToAllSelected = true;
+    strip.setColor(0, colorFromRgbw(col));
+    lampUdated();
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    display->updateRedrawTime();
+  #endif
   }
 
   /*
-     * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
-     * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
-     * Below it is shown how this could be used for e.g. a light sensor
-     */
+   * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
+   * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
+   * Below it is shown how this could be used for e.g. a light sensor
+   */
   /*
-    void addToJsonInfo(JsonObject& root)
-    {
-      int reading = 20;
-      //this code adds "u":{"Light":[20," lux"]} to the info object
-      JsonObject user = root["u"];
-      if (user.isNull()) user = root.createNestedObject("u");
-      JsonArray lightArr = user.createNestedArray("Light"); //name
-      lightArr.add(reading); //value
-      lightArr.add(" lux"); //unit
-    }
-    */
+  void addToJsonInfo(JsonObject& root)
+  {
+    int reading = 20;
+    //this code adds "u":{"Light":[20," lux"]} to the info object
+    JsonObject user = root["u"];
+    if (user.isNull()) user = root.createNestedObject("u");
+    JsonArray lightArr = user.createNestedArray("Light"); //name
+    lightArr.add(reading); //value
+    lightArr.add(" lux"); //unit
+  }
+  */
 
   /*
-     * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
-     * Values in the state object may be modified by connected clients
-     */
+   * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
+   * Values in the state object may be modified by connected clients
+   */
+  /*
   void addToJsonState(JsonObject &root)
   {
     //root["user0"] = userVar0;
   }
+  */
 
   /*
-     * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
-     * Values in the state object may be modified by connected clients
-     */
+   * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
+   * Values in the state object may be modified by connected clients
+   */
+  /*
   void readFromJsonState(JsonObject &root)
   {
     //userVar0 = root["user0"] | userVar0; //if "user0" key exists in JSON, update, else keep old value
     //if (root["bri"] == 255) Serial.println(F("Don't burn down your garage!"));
   }
+  */
 
   /**
    * addToConfig() (called from set.cpp) stores persistent properties to cfg.json
@@ -514,14 +668,11 @@ public:
       DEBUG_PRINTLN(F(": No config found. (Using defaults.)"));
       return false;
     }
-    int8_t newDTpin  = pinA;
-    int8_t newCLKpin = pinB;
-    int8_t newSWpin  = pinC;
+    int8_t newDTpin  = top[FPSTR(_DT_pin)]  | pinA;
+    int8_t newCLKpin = top[FPSTR(_CLK_pin)] | pinB;
+    int8_t newSWpin  = top[FPSTR(_SW_pin)]  | pinC;
 
     enabled   = top[FPSTR(_enabled)] | enabled;
-    newDTpin  = top[FPSTR(_DT_pin)]  | newDTpin;
-    newCLKpin = top[FPSTR(_CLK_pin)] | newCLKpin;
-    newSWpin  = top[FPSTR(_SW_pin)]  | newSWpin;
 
     DEBUG_PRINT(FPSTR(_name));
     if (!initDone) {

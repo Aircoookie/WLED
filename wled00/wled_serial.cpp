@@ -48,22 +48,14 @@ void handleSerial()
           Serial.print("WLED"); Serial.write(' '); Serial.println(VERSION);
         } else if (next == '{') { //JSON API
           bool verboseResponse = false;
-          DEBUG_PRINTLN(F("Serial JSON buffer requested."));
-          #ifdef WLED_USE_DYNAMIC_JSON
-          DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-          #else
-          if (!requestJSONBufferLock(13)) return;
-          #endif
+          if (!requestJSONBufferLock(16)) return;
           Serial.setTimeout(100);
           DeserializationError error = deserializeJson(doc, Serial);
           if (error) {
             releaseJSONBufferLock();
             return;
           }
-          //fileDoc = &doc; // used for applying presets (presets.cpp)
           verboseResponse = deserializeState(doc.as<JsonObject>());
-          //fileDoc = nullptr;
-
           //only send response if TX pin is unused for other purposes
           if (verboseResponse && !pinManager.isPinAllocated(1)) {
             doc.clear();

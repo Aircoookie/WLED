@@ -114,7 +114,7 @@ void sappends(char stype, const char* key, char* val)
     case 's': {//string (we can interpret val as char*)
       String buf = val;
       //convert "%" to "%%" to make EspAsyncWebServer happy
-      buf.replace("%","%%");
+      //buf.replace("%","%%");
       oappend("d.Sf.");
       oappend(key);
       oappend(".value=\"");
@@ -202,6 +202,7 @@ bool isAsterisksOnly(const char* str, byte maxLen)
 }
 
 
+//threading/network callback details: https://github.com/Aircoookie/WLED/pull/2336#discussion_r762276994
 bool requestJSONBufferLock(uint8_t module)
 {
   unsigned long now = millis();

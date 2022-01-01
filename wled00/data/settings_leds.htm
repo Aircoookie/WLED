@@ -3,22 +3,15 @@
 <head>
   <meta charset="utf-8">
 	<meta name="viewport" content="width=500">
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
 	<title>LED Settings</title>
 	<script>
     var d=document,laprev=55,maxB=1,maxM=4000,maxPB=4096,maxL=1333,maxLbquot=0; //maximum bytes for LED allocation: 4kB for 8266, 32kB for 32
 		var customStarts=false,startsDirty=[];
-    function H()
-		{
-			window.open("https://kno.wled.ge/features/settings/#led-settings");
-		}
-		function B()
-		{
-			window.open("/settings","_self");
-    }
+    function H(){window.open("https://kno.wled.ge/features/settings/#led-settings");}
+		function B(){window.open("/settings","_self");}
     function gId(n){return d.getElementById(n);}
-    function off(n){
-      d.getElementsByName(n)[0].value = -1;
-    }
+    function off(n){d.getElementsByName(n)[0].value = -1;}
     var timeout;
     function showToast(text, error = false)
     {
@@ -71,7 +64,6 @@
       if (bquot > 100) {var msg = "Too many LEDs for me to handle!"; if (maxM < 10000) msg += "\n\rConsider using an ESP32."; alert(msg);}
       if (d.Sf.checkValidity()) d.Sf.submit(); //https://stackoverflow.com/q/37323914
     }
-		function S(){GetV();checkSi();setABL();}
     function enABL()
     {
       var en = gId('able').checked;
@@ -246,7 +238,7 @@
       // memory usage and warnings
       gId('m0').innerHTML = memu;
       bquot = memu / maxM * 100;
-      gId('dbar').style.background = `linear-gradient(90deg, ${bquot > 60 ? (bquot > 90 ? "red":"orange"):"#ccc"} 0 ${bquot}%%, #444 ${bquot}%% 100%%)`;
+      gId('dbar').style.background = `linear-gradient(90deg, ${bquot > 60 ? (bquot > 90 ? "red":"orange"):"#ccc"} 0 ${bquot}%, #444 ${bquot}% 100%)`;
       gId('ledwarning').style.display = (maxLC > Math.min(maxPB,800) || bquot > 80) ? 'inline':'none';
       gId('ledwarning').style.color = (maxLC > Math.max(maxPB,800) || bquot > 100) ? 'red':'orange';
       gId('wreason').innerHTML = (bquot > 80) ? "80% of max. LED memory" +(bquot>100 ? ` (<b>ERROR: Using over ${maxM}B!</b>)` : "") : "800 LEDs per output";
@@ -313,7 +305,7 @@ ${i+1}:
 <option value="80">DDP RGB (network)</option>
 <!--option value="81">E1.31 RGB (network)</option-->
 <!--option value="82">ArtNet RGB (network)</option-->
-</select>&nbsp;
+</select><br>
 <div id="co${i}" style="display:inline">Color Order:
 <select name="CO${i}">
 <option value="0">GRB</option>
@@ -322,8 +314,7 @@ ${i+1}:
 <option value="3">RBG</option>
 <option value="4">BGR</option>
 <option value="5">GBR</option>
-</select></div>
-<br>
+</select><br></div>
 <span id="psd${i}">Start:</span> <input type="number" name="LS${i}" id="ls${i}" class="l starts" min="0" max="8191" value="${lastEnd(i)}" oninput="startsDirty[${i}]=true;UI();" required />&nbsp;
 <div id="dig${i}c" style="display:inline">Length: <input type="number" name="LC${i}" class="l" min="1" max="${maxPB}" value="1" required oninput="UI()" /></div>
 <br>
@@ -451,6 +442,7 @@ ${i+1}:
         }
       }
     }
+		function S(){GetV();checkSi();setABL();}
 		function GetV()
 		{
       //values injected by server while sending HTML
@@ -524,8 +516,7 @@ ${i+1}:
     <option value=7>9-key red</option>
     <option value=8>JSON remote</option>
     </select><span style="cursor: pointer;" onclick="off('IR')">&nbsp;&#215;</span><br>
-    <div id="json" style="display:none;">JSON file: <input type="file" name="data" accept=".json"> <input type="button" value="Upload" onclick="uploadFile('/ir.json');"><br></div>
-    <div id="toast"></div>
+    <div id="json" style="display:none;">JSON file: <input type="file" name="data" accept=".json"><button type="button" class="sml" onclick="uploadFile('/ir.json')">Upload</button><br></div>
     <a href="https://kno.wled.ge/interfaces/infrared/" target="_blank">IR info</a><br>
     Relay GPIO: <input type="number" min="-1" max="33" name="RL" onchange="UI()" class="xs"> Invert <input type="checkbox" name="RM"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#215;</span><br>
     <hr style="width:260px">
@@ -536,7 +527,7 @@ ${i+1}:
     <br><br>
 		Use Gamma correction for color: <input type="checkbox" name="GC"> (strongly recommended)<br>
 		Use Gamma correction for brightness: <input type="checkbox" name="GB"> (not recommended)<br><br>
-		Brightness factor: <input name="BF" type="number" class="m" min="1" max="255" required> %%
+		Brightness factor: <input name="BF" type="number" class="m" min="1" max="255" required> %
 		<h3>Transitions</h3>
 		Crossfade: <input type="checkbox" name="TF"><br>
 		Transition Time: <input name="TD" type="number" class="xl" min="0" max="65500"> ms<br>
@@ -563,7 +554,7 @@ ${i+1}:
       </select>
     <br>
     Calculate CCT from RGB: <input type="checkbox" name="CR"> <br>
-    CCT additive blending: <input type="number" class="s" min="0" max="100" name="CB" required> %%</span>
+    CCT additive blending: <input type="number" class="s" min="0" max="100" name="CB" required> %</span>
     <h3>Advanced</h3>
 		Palette blending:
 		<select name="PB">
@@ -572,10 +563,12 @@ ${i+1}:
 			<option value="2">Linear (never wrap)</option>
 			<option value="3">None (not recommended)</option>
 		</select><br>
+		Target refresh rate: <input type="number" class="s" min="1" max="120" name="FR" required> FPS
     <hr style="width:260px">
-    <div id="cfg">Config template: <input type="file" name="data2" accept=".json"> <input type="button" value="Apply" onclick="loadCfg(d.Sf.data2);"><br></div>
+    <div id="cfg">Config template: <input type="file" name="data2" accept=".json"><button type="button" class="sml" onclick="loadCfg(d.Sf.data2)">Apply</button><br></div>
     <hr>
     <button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 	</form>
+  <div id="toast"></div>
 </body>
 </html>

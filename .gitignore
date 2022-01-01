@@ -16,3 +16,4 @@ node_modules
 .idea
 .direnv
 wled-update.sh
+esp01-update.sh

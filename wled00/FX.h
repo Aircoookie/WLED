@@ -48,7 +48,8 @@
 
 /* Not used in all effects yet */
 #define WLED_FPS         42
-#define FRAMETIME        (1000/WLED_FPS)
+#define FRAMETIME_FIXED  (1000/WLED_FPS)
+#define FRAMETIME        _frametime
 
 /* each segment uses 52 bytes of SRAM memory, so if you're application fails because of
   insufficient memory, decreasing MAX_NUM_SEGMENTS may help */
@@ -71,7 +72,7 @@
 #define FAIR_DATA_PER_SEG (MAX_SEGMENT_DATA / MAX_NUM_SEGMENTS)
 
 #define LED_SKIP_AMOUNT  1
-#define MIN_SHOW_DELAY  15
+#define MIN_SHOW_DELAY   (_frametime < 16 ? 8 : 15)
 
 #define NUM_COLORS       3 /* number of colors per segment */
 #define SEGMENT          _segments[_segment_index]
@@ -161,14 +162,14 @@
 #define FX_MODE_COMET                   41
 #define FX_MODE_FIREWORKS               42
 #define FX_MODE_RAIN                    43
-#define FX_MODE_TETRIX                  44
+#define FX_MODE_TETRIX                  44  //was Merry Christmas prior to 0.12.0 (use "Chase 2" with Red/Green)
 #define FX_MODE_FIRE_FLICKER            45
 #define FX_MODE_GRADIENT                46
 #define FX_MODE_LOADING                 47
 #define FX_MODE_POLICE                  48  // candidate for removal (after below three)
-#define FX_MODE_POLICE_ALL              49  // candidate for removal
+#define FX_MODE_FAIRY                   49  //was Police All prior to 0.13.0-b6 (use "Two Dots" with Red/Blue and full intensity)
 #define FX_MODE_TWO_DOTS                50
-#define FX_MODE_TWO_AREAS               51  // candidate for removal
+#define FX_MODE_FAIRYTWINKLE            51  //was Two Areas prior to 0.13.0-b6 (use "Two Dots" with full intensity)
 #define FX_MODE_RUNNING_DUAL            52
 #define FX_MODE_HALLOWEEN               53  // candidate for removal
 #define FX_MODE_TRICOLOR_CHASE          54
@@ -550,9 +551,9 @@ class WS2812FX {
       _mode[FX_MODE_GRADIENT]                = &WS2812FX::mode_gradient;
       _mode[FX_MODE_LOADING]                 = &WS2812FX::mode_loading;
       _mode[FX_MODE_POLICE]                  = &WS2812FX::mode_police;
-      _mode[FX_MODE_POLICE_ALL]              = &WS2812FX::mode_police_all;
+      _mode[FX_MODE_FAIRY]                   = &WS2812FX::mode_fairy;
       _mode[FX_MODE_TWO_DOTS]                = &WS2812FX::mode_two_dots;
-      _mode[FX_MODE_TWO_AREAS]               = &WS2812FX::mode_two_areas;
+      _mode[FX_MODE_FAIRYTWINKLE]            = &WS2812FX::mode_fairytwinkle;
       _mode[FX_MODE_RUNNING_DUAL]            = &WS2812FX::mode_running_dual;
       _mode[FX_MODE_HALLOWEEN]               = &WS2812FX::mode_halloween;
       _mode[FX_MODE_TRICOLOR_CHASE]          = &WS2812FX::mode_tricolor_chase;
@@ -648,12 +649,14 @@ class WS2812FX {
       calcGammaTable(float),
       trigger(void),
       setSegment(uint8_t n, uint16_t start, uint16_t stop, uint8_t grouping = 0, uint8_t spacing = 0, uint16_t offset = UINT16_MAX),
+      restartRuntime(),
       resetSegments(),
       makeAutoSegments(),
       fixInvalidSegments(),
       setPixelColor(uint16_t n, uint32_t c),
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       show(void),
+			setTargetFps(uint8_t fps),
       setPixelSegment(uint8_t n),
       deserializeMap(uint8_t n=0);
 
@@ -684,6 +687,7 @@ class WS2812FX {
       getActiveSegmentsNum(void),
       //getFirstSelectedSegment(void),
       getMainSegmentId(void),
+			getTargetFps(void),
       gamma8(uint8_t),
       gamma8_cal(uint8_t, float),
       sin_gap(uint16_t),
@@ -773,9 +777,9 @@ class WS2812FX {
       mode_gradient(void),
       mode_loading(void),
       mode_police(void),
-      mode_police_all(void),
+      mode_fairy(void),
       mode_two_dots(void),
-      mode_two_areas(void),
+      mode_fairytwinkle(void),
       mode_running_dual(void),
       mode_bicolor_chase(void),
       mode_tricolor_chase(void),
@@ -855,6 +859,8 @@ class WS2812FX {
     uint16_t _usedSegmentData = 0;
     uint16_t _transitionDur = 750;
 
+		uint8_t _targetFps = 42;
+		uint16_t _frametime = (1000/42);
     uint16_t _cumulativeFps = 2;
 
     bool
@@ -878,7 +884,7 @@ class WS2812FX {
       chase(uint32_t, uint32_t, uint32_t, bool),
       gradient_base(bool),
       ripple_base(bool),
-      police_base(uint32_t, uint32_t, uint16_t),
+      police_base(uint32_t, uint32_t),
       running(uint32_t, uint32_t, bool theatre=false),
       tricolor_chase(uint32_t, uint32_t),
       twinklefox_base(bool),
@@ -921,6 +927,11 @@ class WS2812FX {
       transitionProgress(uint8_t tNr);
 };
 
+extern const char JSON_mode_names[];
+extern const char JSON_palette_names[];
+
+// the following has been moved to FX_fcn.cpp instead
+/*
 // WLEDSR: extensions
 // Technical notes
 // ===============
@@ -936,7 +947,7 @@ class WS2812FX {
 //      - a ! means that the default is used.
 //             - For sliders: Effect speeds, Effect intensity, Custom 1, Custom 2, Custom 3
 //             - For colors: Fx color, Background color, Custom
-//             - For palette: prompt Color palette
+//             - For palette: prompt for color palette OR palette ID if numeric (will hide palette selection)
 //
 // Note: If palette is on and no colors are specified 1,2 and 3 is shown in each color circle.
 //       If a color is specified, the 1,2 or 3 is replaced by that specification.
@@ -992,14 +1003,14 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Fire Flicker",
 "Gradient",
 "Loading",
-"Police@!,Width;;",
-"Police All@!,Width;;",
+"Police@!,Width;;0",
+"Fairy",
 "Two Dots@!,Dot size;1,2,Bg;!",
-"Two Areas@!,Size;1,2,Bg;!",
+"Fairy Twinkle",
 "Running Dual",
 "Halloween",
-"Chase 3@!,Size;1,2,3;",
-"Tri Wipe@!,Width;1,2,3;",
+"Chase 3@!,Size;1,2,3;0",
+"Tri Wipe@!,Width;1,2,3;0",
 "Tri Fade",
 "Lightning",
 "ICU",
@@ -1008,9 +1019,9 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Stream 2",
 "Oscillate",
 "Pride 2015",
-"Juggle@!,Trail;!,!,;!",
+"Juggle@!=16,Trail=240;!,!,;!",
 "Palette@!,;;!",
-"Fire 2012@Spark rate,Decay;;!",
+"Fire 2012@Spark rate=120,Decay=64;;!",
 "Colorwaves",
 "Bpm",
 "Fill Noise",
@@ -1027,12 +1038,12 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Twinklefox",
 "Twinklecat",
 "Halloween Eyes",
-"Solid Pattern@Fg size,Bg size;Fg,Bg,;",
-"Solid Pattern Tri@,Size;1,2,3;",
+"Solid Pattern@Fg size,Bg size;Fg,Bg,;0",
+"Solid Pattern Tri@,Size;1,2,3;0",
 "Spots@Spread,Width;!,!,;!",
 "Spots Fade@Spread,Width;!,!,;!",
 "Glitter",
-"Candle@Flicker rate,Flicker intensity;!,!,;",
+"Candle@Flicker rate=96,Flicker intensity=224;!,!,;0",
 "Fireworks Starburst",
 "Fireworks 1D@Gravity,Firing side;!,!,;!",
 "Bouncing Balls@Gravity,# of balls;!,!,;!",
@@ -1046,9 +1057,9 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Ripple Rainbow",
 "Heartbeat",
 "Pacifica",
-"Candle Multi@Flicker rate,Flicker intensity;!,!,;",
-"Solid Glitter@,!;!,,;",
-"Sunrise@Time [min],;;",
+"Candle Multi@Flicker rate=96,Flicker intensity=224;!,!,;0",
+"Solid Glitter@,!;!,,;0",
+"Sunrise@Time [min]=60,;;0",
 "Phased",
 "Twinkleup@!,Intensity;!,!,;!",
 "Noise Pal",
@@ -1075,5 +1086,5 @@ const char JSON_palette_names[] PROGMEM = R"=====([
 "Semi Blue","Pink Candy","Red Reaf","Aqua Flash","Yelblu Hot","Lite Light","Red Flash","Blink Red","Red Shift","Red Tide",
 "Candy2"
 ])=====";
-
+*/
 #endif

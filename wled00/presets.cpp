@@ -4,91 +4,118 @@
  * Methods to handle saving and loading presets to/from the filesystem
  */
 
-// called from: handleSet(), deserializeState(), applyMacro(), handlePlaylist(), checkCountdown(), checkTimers(), handleNightlight(), presetFallback()
-// shortPressAction(), longPressAction(), doublePressAction(), handleSwitch(), onAlexaChange()
+#ifdef ARDUINO_ARCH_ESP32
+static char *tmpRAMbuffer = nullptr;
+#endif
+
+static volatile byte presetToApply = 0;
+static volatile byte callModeToApply = 0;
+
 bool applyPreset(byte index, byte callMode)
 {
-  if (index == 0) return false;
-
-  const char *filename = index < 255 ? "/presets.json" : "/tmp.json";
-
-  if (fileDoc) {
-    errorFlag = readObjectFromFileUsingId(filename, index, fileDoc) ? ERR_NONE : ERR_FS_PLOAD;
-    JsonObject fdo = fileDoc->as<JsonObject>();
-    if (fdo["ps"] == index) fdo.remove("ps"); //remove load request for same presets to prevent recursive crash
-    #ifdef WLED_DEBUG_FS
-      serializeJson(*fileDoc, Serial);
-    #endif
-    deserializeState(fdo, callMode, index);
-  } else {
-    DEBUG_PRINTLN(F("Apply preset JSON buffer requested."));
-    #ifdef WLED_USE_DYNAMIC_JSON
-    DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-    #else
-    if (!requestJSONBufferLock(9)) return false;
-    #endif
-
-    errorFlag = readObjectFromFileUsingId(filename, index, &doc) ? ERR_NONE : ERR_FS_PLOAD;
-    JsonObject fdo = doc.as<JsonObject>();
-    if (fdo["ps"] == index) fdo.remove("ps");
-    #ifdef WLED_DEBUG_FS
-      serializeJson(doc, Serial);
-    #endif
-    deserializeState(fdo, callMode, index);
-    releaseJSONBufferLock();
-  }
-
-  if (!errorFlag) {
-    if (index < 255) currentPreset = index;
-    return true;
-  }
-  return false;
+  presetToApply = index;
+  callModeToApply = callMode;
+  return true;
 }
 
+void handlePresets()
+{
+  if (presetToApply == 0 || fileDoc) return; //JSON buffer allocated (apply preset in next cycle) or no preset waiting
+
+  JsonObject fdo;
+  const char *filename = presetToApply < 255 ? "/presets.json" : "/tmp.json";
+
+  // allocate buffer
+  DEBUG_PRINTLN(F("Apply preset JSON buffer requested."));
+  if (!requestJSONBufferLock(9)) return;  // will also assign fileDoc
+
+  #ifdef ARDUINO_ARCH_ESP32
+  if (presetToApply==255 && tmpRAMbuffer!=nullptr) {
+    deserializeJson(*fileDoc,tmpRAMbuffer);
+    errorFlag = ERR_NONE;
+  } else
+  #endif
+  {
+  errorFlag = readObjectFromFileUsingId(filename, presetToApply, fileDoc) ? ERR_NONE : ERR_FS_PLOAD;
+  }
+  fdo = fileDoc->as<JsonObject>();
+  fdo.remove("ps"); //remove load request for presets to prevent recursive crash
+
+  deserializeState(fdo, callModeToApply, presetToApply);
+
+  #if defined(ARDUINO_ARCH_ESP32)
+  //Aircoookie recommended not to delete buffer
+  if (presetToApply==255 && tmpRAMbuffer!=nullptr) {
+    free(tmpRAMbuffer);
+    tmpRAMbuffer = nullptr;
+  }
+  #endif
+
+  releaseJSONBufferLock(); // will also clear fileDoc
+
+  if (!errorFlag && presetToApply < 255) currentPreset = presetToApply;
+  if (callModeToApply == CALL_MODE_BUTTON_PRESET) errorFlag = ERR_NONE; //ignore error on button press
+  presetToApply = 0; //clear request for preset
+  callModeToApply = 0;
+}
+
+//called from handleSet(PS=) [network callback (fileDoc==nullptr), IR (irrational), deserializeState, UDP] and deserializeState() [network callback (filedoc!=nullptr)]
 void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
 {
   if (index == 0 || (index > 250 && persist) || (index<255 && !persist)) return;
+
   JsonObject sObj = saveobj;
+  bool bufferAllocated = false;
 
   const char *filename = persist ? "/presets.json" : "/tmp.json";
 
   if (!fileDoc) {
+    // called from handleSet() HTTP API
     DEBUG_PRINTLN(F("Save preset JSON buffer requested."));
-    #ifdef WLED_USE_DYNAMIC_JSON
-    DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-    #else
     if (!requestJSONBufferLock(10)) return;
-    #endif
-
-    sObj = doc.to<JsonObject>();
-    if (pname) sObj["n"] = pname;
-
-    DEBUGFS_PRINTLN(F("Save current state"));
-    serializeState(sObj, true);
-    if (persist) currentPreset = index;
-
-    writeObjectToFileUsingId(filename, index, &doc);
-
-    releaseJSONBufferLock();
-  } else { //from JSON API (fileDoc != nullptr)
-    DEBUGFS_PRINTLN(F("Reuse recv buffer"));
-    sObj.remove(F("psave"));
-    sObj.remove(F("v"));
-
-    if (!sObj["o"]) {
-      DEBUGFS_PRINTLN(F("Save current state"));
-      serializeState(sObj, true, sObj["ib"], sObj["sb"]);
-      if (persist) currentPreset = index;
-    }
-    sObj.remove("o");
-    sObj.remove("ib");
-    sObj.remove("sb");
-    sObj.remove(F("error"));
-    sObj.remove(F("time"));
-
-    writeObjectToFileUsingId(filename, index, fileDoc);
+    sObj = fileDoc->to<JsonObject>();
+    bufferAllocated = true;
   }
+  if (pname) sObj["n"] = pname;
+
+  sObj.remove(F("psave"));
+  sObj.remove(F("v"));
+
+  if (!sObj["o"]) {
+    DEBUGFS_PRINTLN(F("Serialize current state"));
+    if (sObj["ib"].isNull() && sObj["sb"].isNull()) serializeState(sObj, true);
+    else                                            serializeState(sObj, true, sObj["ib"], sObj["sb"]);
+    if (persist) currentPreset = index;
+  }
+  sObj.remove("o");
+  sObj.remove("ib");
+  sObj.remove("sb");
+  sObj.remove(F("error"));
+  sObj.remove(F("time"));
+
+  #if defined(ARDUINO_ARCH_ESP32)
+  if (index==255) {
+    if (tmpRAMbuffer!=nullptr) free(tmpRAMbuffer);
+    size_t len = measureJson(*fileDoc) + 1;
+    DEBUG_PRINTLN(len);
+    // if possible use SPI RAM on ESP32
+    #ifdef WLED_USE_PSRAM
+    if (psramFound())
+      tmpRAMbuffer = (char*) ps_malloc(len);
+    else
+    #endif
+      tmpRAMbuffer = (char*) malloc(len);
+    if (tmpRAMbuffer!=nullptr) {
+      serializeJson(*fileDoc, tmpRAMbuffer, len);
+    } else {
+      writeObjectToFileUsingId(filename, index, fileDoc);
+    }
+  } else
+  #endif
+  writeObjectToFileUsingId(filename, index, fileDoc);
+
   if (persist) presetsModifiedTime = toki.second(); //unix time
+  if (bufferAllocated) releaseJSONBufferLock();
   updateFSInfo();
 }
 
