@@ -116,7 +116,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
-#define MODE_COUNT  118
+#define MODE_COUNT  120
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -236,6 +236,8 @@
 #define FX_MODE_BLENDS                 115
 #define FX_MODE_TV_SIMULATOR           116
 #define FX_MODE_DYNAMIC_SMOOTH         117
+#define FX_MODE_FIREWORKS_WOAH         118
+#define FX_MODE_BOUNCING_BALLS_X       119
 
 
 class WS2812FX {
@@ -622,6 +624,8 @@ class WS2812FX {
       _mode[FX_MODE_BLENDS]                  = &WS2812FX::mode_blends;
       _mode[FX_MODE_TV_SIMULATOR]            = &WS2812FX::mode_tv_simulator;
       _mode[FX_MODE_DYNAMIC_SMOOTH]          = &WS2812FX::mode_dynamic_smooth;
+      _mode[FX_MODE_FIREWORKS_WOAH]          = &WS2812FX::mode_fireworks_woah;
+      _mode[FX_MODE_BOUNCING_BALLS_X]        = &WS2812FX::mode_bouncing_balls_X;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -658,7 +662,8 @@ class WS2812FX {
       show(void),
 			setTargetFps(uint8_t fps),
       setPixelSegment(uint8_t n),
-      deserializeMap(uint8_t n=0);
+      deserializeMap(uint8_t n=0),
+      drawAntiAliasing(float fPos, float count, uint32_t color);
 
     bool
       isRgbw = false,
@@ -714,7 +719,8 @@ class WS2812FX {
       gamma32(uint32_t),
       getLastShow(void),
       getPixelColor(uint16_t),
-      getColor(void);
+      getColor(void),
+      AddPreserveRatio(uint32_t,uint32_t);
 
     WS2812FX::Segment&
       getSegment(uint8_t n);
@@ -845,7 +851,9 @@ class WS2812FX {
       mode_candy_cane(void),
       mode_blends(void),
       mode_tv_simulator(void),
-      mode_dynamic_smooth(void);
+      mode_dynamic_smooth(void),
+      mode_fireworks_woah(void),
+      mode_bouncing_balls_X(void);
 
   private:
     uint32_t crgb_to_col(CRGB fastled);
@@ -889,7 +897,8 @@ class WS2812FX {
       tricolor_chase(uint32_t, uint32_t),
       twinklefox_base(bool),
       spots_base(uint16_t),
-      phased_base(uint8_t);
+      phased_base(uint8_t),
+      bouncing_balls(bool crossEffect=false);
 
     CRGB twinklefox_one_twinkle(uint32_t ms, uint8_t salt, bool cat);
     CRGB pacifica_one_layer(uint16_t i, CRGBPalette16& p, uint16_t cistart, uint16_t wavescale, uint8_t bri, uint16_t ioff);
@@ -940,7 +949,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
 "Heartbeat","Pacifica","Candle Multi", "Solid Glitter","Sunrise","Phased","Twinkleup","Noise Pal", "Sine","Phased Noise",
-"Flow","Chunchun","Dancing Shadows","Washing Machine","Candy Cane","Blends","TV Simulator","Dynamic Smooth"
+"Flow","Chunchun","Dancing Shadows","Washing Machine","Candy Cane","Blends","TV Simulator","Dynamic Smooth","Fireworks Woah", "Bouncing Balls X"
 ])=====";
 
 

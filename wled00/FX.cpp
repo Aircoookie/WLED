@@ -2606,6 +2606,28 @@ uint16_t WS2812FX::mode_spots_fade()
 }
 
 
+
+/*
+*  Bouncing Balls Effect
+*/
+uint16_t WS2812FX::mode_bouncing_balls(void)
+{
+ return bouncing_balls(false);
+}
+
+/*
+*  Bouncing Balls Crossing Mirror Effect
+*/
+uint16_t WS2812FX::mode_bouncing_balls_X(void)
+{
+ return bouncing_balls(true);
+}
+
+
+/*
+*  Bouncing Balls Effect Main Function
+*/
+
 //each needs 12 bytes
 typedef struct Ball {
   unsigned long lastBounceTime;
@@ -2613,10 +2635,7 @@ typedef struct Ball {
   float height;
 } ball;
 
-/*
-*  Bouncing Balls Effect
-*/
-uint16_t WS2812FX::mode_bouncing_balls(void) {
+uint16_t WS2812FX::bouncing_balls(bool crossEffect) {
   //allocate segment data
   uint16_t maxNumBalls = 16; 
   uint16_t dataSize = sizeof(ball) * maxNumBalls;
@@ -2639,9 +2658,11 @@ uint16_t WS2812FX::mode_bouncing_balls(void) {
   
   bool hasCol2 = SEGCOLOR(2);
   fill(hasCol2 ? BLACK : SEGCOLOR(1));
+  //fill(hasCol2 ? BLACK : SEGCOLOR(1));
+  // for (int i = 0; i < SEGLEN; i++) {if (random(10) > 5)blendPixelColor(i, BLACK, 100); }  // perhaps add a comet tail option in the future?
   
   for (uint8_t i = 0; i < numBalls; i++) {
-    float timeSinceLastBounce = (time - balls[i].lastBounceTime)/((255-SEGMENT.speed)*8/256 +1);
+    float timeSinceLastBounce = (time - balls[i].lastBounceTime)/((255-SEGMENT.speed)*15/256 +1);
     balls[i].height = 0.5 * gravity * pow(timeSinceLastBounce/1000 , 2.0) + balls[i].impactVelocity * timeSinceLastBounce/1000;
 
     if (balls[i].height < 0) { //start bounce
@@ -2663,8 +2684,12 @@ uint16_t WS2812FX::mode_bouncing_balls(void) {
       color = SEGCOLOR(i % NUM_COLORS);
     }
 
-    uint16_t pos = round(balls[i].height * (SEGLEN - 1));
-    setPixelColor(pos, color);
+    // uint16_t pos = round(balls[i].height * (SEGLEN - 1));
+    // setPixelColor(pos, color);
+    float ballSize = (SEGLEN < 151) ? 1 : (float)SEGLEN/150;            //Ball size increases with pixel count
+    float pos = balls[i].height * (SEGLEN - ballSize);                  //Account for ball size so that is doesnt go “off screen”
+    drawAntiAliasing(pos, ballSize, color);
+    if (crossEffect) drawAntiAliasing((SEGLEN - ballSize) - pos, ballSize, color);
   }
 
   return FRAMETIME;
@@ -4207,5 +4232,153 @@ uint16_t WS2812FX::mode_aurora(void) {
     setPixelColor(i, mixedRgb[0], mixedRgb[1], mixedRgb[2]);
   }
   
+  return FRAMETIME;
+}
+
+/*
+* Fireworks Woah effect
+* actually also based on the video: https://www.reddit.com/r/arduino/comments/c3sd46/i_made_this_fireworks_effect_for_my_led_strips/
+* Speed sets frequency of new starbursts, intensity is the intensity of the burst
+* Random location, color, burst size, and particle directions. Particles have a trailing comet tail
+*/
+
+
+#ifdef ESP8266
+  #include <random>    //ESP8266 wont compile "RandEngineFloat" without this
+#endif
+
+#define MAX_FRAGS 20
+
+
+typedef struct fireworks 
+{
+  struct fragments
+  {
+    float     vel;
+    float     pos;
+    bool      exist = true;
+  };
+  
+  CRGB        color;
+  uint32_t    birth;
+  uint32_t    last;
+  fragments   frag[MAX_FRAGS];
+  float       fragSize;
+  float       fadeTime;
+  bool        alive = false;
+} firework;
+
+
+float RandEngineFloat(float min, float max)
+  {
+    static std::default_random_engine generator(unsigned(time(nullptr)));
+    std::uniform_real_distribution<float> distribution(min, max);
+    return distribution(generator);
+  }
+
+
+uint16_t WS2812FX::mode_fireworks_woah(void) 
+{
+  uint8_t numStars = 1 + (SEGLEN >> 4);
+  if (numStars > 15) numStars = 15;
+  
+  uint16_t dataSize = sizeof(firework) * numStars;
+
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  
+  firework* stars = reinterpret_cast<firework*>(SEGENV.data);
+  
+  float          speedVariable           = SEGLEN >> 2;                         // Try to keep the explosions prepositional to SEGLEN
+  float          particleIgnition        = 250.0f;                              // How long to "flash"
+  float          fadeTimeVariable        = 1000.0f;                             // Fade out time
+  float          fragSizeVariable        = .5f;                                 // Particle size grows with explosion size
+  float          randval = (0.002f / numStars) * ((SEGMENT.speed >> 2) + 1);    // SEGLEN affects numStars affects "time in loop" affects probability of new firework spawn.
+  float          intenseVal = ((SEGMENT.intensity/255.0f) * 3) + 1.1f;
+
+
+
+  if((millis() - SEGENV.aux0) > FRAMETIME)                                      // frame rate needed to keep spawns and tail fades consistant
+  {
+    for (int i = 0; i < SEGLEN; i++){if (random(10) > 3)blendPixelColor(i, BLACK, 96);}  // fade random pixles causing tail affect
+
+    for (int j = 0; j < numStars; j++)                                          // Cycle though array and birth new fireworks
+    {
+      if(stars[j].alive == false)
+      {
+        if (RandEngineFloat(0.0f,1.0f) < randval)
+        {
+          // Pick a random color, location, and explosion size for firework
+          float startPos = RandEngineFloat(0.0f,1.0f) * (SEGLEN-1);
+          float multiplier = RandEngineFloat(1.0F,intenseVal);
+          int numFragments = multiplier * 5;
+          stars[j].color = ColorFromPalette(RainbowColors_p, random8());
+          stars[j].birth = millis();
+          stars[j].last = millis();
+          stars[j].fragSize = multiplier * fragSizeVariable;
+          stars[j].alive = true;
+
+          for (int i=0; i < MAX_FRAGS; i++) 
+          {
+            if (i < numFragments) 
+            {
+              // Pick fragment direction and velocity
+              float absVel = speedVariable * multiplier * (RandEngineFloat(0.2f,1.0f));
+              stars[j].frag[i].vel = RandEngineFloat(0.0f,1.0f) * absVel * 2 - absVel;
+              stars[j].frag[i].pos = startPos;
+              stars[j].frag[i].exist = true;
+              stars[j].fadeTime = (multiplier * 450) + fadeTimeVariable;
+            } else stars[j].frag[i].exist = false;
+          }
+        }
+      }
+    }
+    SEGENV.aux0  = millis();
+  }
+
+
+  for (int j=0; j<numStars; j++)    // Calculate and draw fireworks
+  {
+    if (stars[j].alive) 
+    { 
+      float deltaTime = (millis() - stars[j].last) / 1000.0f;
+      
+      for (int i = 0; i < MAX_FRAGS; i++) 
+      {
+        if (stars[j].frag[i].exist) 
+        {
+          stars[j].frag[i].pos += (stars[j].frag[i].vel * deltaTime);
+          if(stars[j].frag[i].pos < 0 || stars[j].frag[i].pos > SEGLEN - stars[j].fragSize)   // Destroy fragments that are “out of bounds”
+          {
+            stars[j].frag[i].exist = false;
+          }
+          stars[j].frag[i].vel -= (stars[j].frag[i].vel * 1.5) * deltaTime;                   // Adjust velocity 
+        }
+      }
+  
+      stars[j].last = millis();
+      CRGB c = stars[j].color;
+      float fade = 0.0f;
+      float age = millis() - stars[j].birth;
+
+    
+      if (age > particleIgnition + stars[j].fadeTime) {                   // Kill firework and continue
+        stars[j].alive = false;
+        continue;
+      }else if (age < particleIgnition) {
+        c = blend(CRGB::White, c, 255*(age / particleIgnition));          // Flash white for the ignition phase
+      } else{                                                             // Fading firework
+        age -= particleIgnition;
+        fade = (age / stars[j].fadeTime);
+        byte f = 254.5f*fade;
+        c.fadeToBlackBy(f);
+      }
+  
+      float particleSize = (1.0 - fade) * stars[j].fragSize;
+
+      for(int i = 0; i < MAX_FRAGS; i++){
+        if(stars[j].frag[i].exist) drawAntiAliasing(stars[j].frag[i].pos, particleSize, crgb_to_col(c));
+      }
+    }
+  }
   return FRAMETIME;
 }

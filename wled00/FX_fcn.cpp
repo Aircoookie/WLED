@@ -861,6 +861,73 @@ void WS2812FX::fade_out(uint8_t rate) {
 }
 
 /*
+* color adding function, adds colors while preserving the correct RGB ratio of the two combined
+*/
+uint32_t WS2812FX::AddPreserveRatio(uint32_t c1, uint32_t c2)
+  {
+    uint16_t r = R(c1) + R(c2);
+    uint16_t g = G(c1) + G(c2);
+    uint16_t b = B(c1) + B(c2);
+    uint16_t w = W(c1) + W(c2);
+    uint16_t max;
+
+   if (r>g && r>b && r>w) {
+      max = r;
+   } else if (g>b && g>w) {
+      max = g;
+   } else if (b>w){
+      max = b;
+   }else{
+      max = w;
+   }
+   if(max < 256){
+     return RGBW32(r, g, b, w);
+   }else{
+     float ratio = 255.0f / max;
+     return RGBW32(r * ratio, g * ratio, b * ratio, w * ratio);
+   }
+  }
+
+/*
+*  draw moving pixles with anti aliasing
+*  Inspired by Daves Garage Ep. 9 
+*  https://www.youtube.com/watch?v=RF7GekbNmjU&list=PLF2KJ6Gy3cZ7ynsp8s4tnqEFmY15CKhmH&index=7
+*/
+void WS2812FX::drawAntiAliasing(float fPos, float pixelSize, uint32_t color){
+  // Calculate how much the first pixel will hold
+  float calcFirstPixel = 1.0f - (fPos - (long)(fPos));
+  float firstPixel = min(calcFirstPixel, pixelSize);
+  float remaining = min(pixelSize, (SEGLEN)-fPos);
+  int iPos = fPos;
+
+  // Blend (add) in the color of the first partial pixel
+
+  if (remaining > 0.0f)
+  {
+    uint32_t c = AddPreserveRatio(getPixelColor(iPos), color_blend(color, BLACK, 255 * (1.0f - firstPixel)));
+    setPixelColor(iPos++, c);
+    remaining -= firstPixel;
+  }
+
+  // Now draw any full pixels in the middle
+
+  while (remaining > 1.0f)
+  {
+    uint32_t c = AddPreserveRatio(getPixelColor(iPos), color);
+    setPixelColor(iPos++, c);
+    remaining--;
+  }
+
+  // Draw tail pixel, up to a single full pixel
+
+  if (remaining > 0.0f)
+  {
+    uint32_t c = AddPreserveRatio(getPixelColor(iPos), color_blend(color, BLACK, 255 * (1.0f - remaining)));
+    setPixelColor(iPos++, c);
+  }
+}
+
+/*
  * blurs segment content, source: FastLED colorutils.cpp
  */
 void WS2812FX::blur(uint8_t blur_amount)
