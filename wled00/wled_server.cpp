@@ -119,34 +119,30 @@ void initServer()
   AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/json", [](AsyncWebServerRequest *request) {
     bool verboseResponse = false;
     bool isConfig = false;
-    { //scope JsonDocument so it releases its buffer
-      #ifdef WLED_USE_DYNAMIC_JSON
-      DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-      #else
-      if (!requestJSONBufferLock(14)) return;
-      #endif
 
-      DeserializationError error = deserializeJson(doc, (uint8_t*)(request->_tempObject));
-      JsonObject root = doc.as<JsonObject>();
-      if (error || root.isNull()) {
-        releaseJSONBufferLock();
-        request->send(400, "application/json", F("{\"error\":9}"));
-        return;
-      }
-      const String& url = request->url();
-      isConfig = url.indexOf("cfg") > -1;
-      if (!isConfig) {
-        #ifdef WLED_DEBUG
-          DEBUG_PRINTLN(F("Serialized HTTP"));
-          serializeJson(root,Serial);
-          DEBUG_PRINTLN();
-        #endif
-        verboseResponse = deserializeState(root);
-      } else {
-        verboseResponse = deserializeConfig(root); //use verboseResponse to determine whether cfg change should be saved immediately
-      }
+    if (!requestJSONBufferLock(14)) return;
+
+    DeserializationError error = deserializeJson(doc, (uint8_t*)(request->_tempObject));
+    JsonObject root = doc.as<JsonObject>();
+    if (error || root.isNull()) {
       releaseJSONBufferLock();
+      request->send(400, "application/json", F("{\"error\":9}"));
+      return;
     }
+    const String& url = request->url();
+    isConfig = url.indexOf("cfg") > -1;
+    if (!isConfig) {
+      #ifdef WLED_DEBUG
+        DEBUG_PRINTLN(F("Serialized HTTP"));
+        serializeJson(root,Serial);
+        DEBUG_PRINTLN();
+      #endif
+      verboseResponse = deserializeState(root);
+    } else {
+      verboseResponse = deserializeConfig(root); //use verboseResponse to determine whether cfg change should be saved immediately
+    }
+    releaseJSONBufferLock();
+
     if (verboseResponse) {
       if (!isConfig) {
         serveJson(request); return; //if JSON contains "v"

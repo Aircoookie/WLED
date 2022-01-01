@@ -462,16 +462,17 @@ void handleNotifications()
   // API over UDP
   udpIn[packetSize] = '\0';
 
+  if (!requestJSONBufferLock(18)) return;
   if (udpIn[0] >= 'A' && udpIn[0] <= 'Z') { //HTTP API
     String apireq = "win&";
     apireq += (char*)udpIn;
     handleSet(nullptr, apireq);
   } else if (udpIn[0] == '{') { //JSON API
-    DynamicJsonDocument jsonBuffer(2048);
-    DeserializationError error = deserializeJson(jsonBuffer, udpIn);
-    JsonObject root = jsonBuffer.as<JsonObject>();
+    DeserializationError error = deserializeJson(doc, udpIn);
+    JsonObject root = doc.as<JsonObject>();
     if (!error && !root.isNull()) deserializeState(root);
   }
+  releaseJSONBufferLock();
 }
 
 

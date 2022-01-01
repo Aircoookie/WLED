@@ -65,12 +65,14 @@ void WLED::loop()
   yield();
   handleIO();
   handleIR();
+  #ifndef WLED_DISABLE_ALEXA
   handleAlexa();
+  #endif
 
   yield();
 
-  if (doReboot)
-    reset();
+  if (doReboot) reset();
+
   if (doCloseFile) {
     closeFile();
     yield();
@@ -78,21 +80,25 @@ void WLED::loop()
 
   if (!realtimeMode || realtimeOverride)  // block stuff if WARLS/Adalight is enabled
   {
-    if (apActive)
-      dnsServer.processNextRequest();
-#ifndef WLED_DISABLE_OTA
-    if (WLED_CONNECTED && aOtaEnabled)
-      ArduinoOTA.handle();
-#endif
+    if (apActive) dnsServer.processNextRequest();
+    #ifndef WLED_DISABLE_OTA
+    if (WLED_CONNECTED && aOtaEnabled) ArduinoOTA.handle();
+    #endif
     handleNightlight();
     handlePlaylist();
     yield();
 
+    #ifndef WLED_DISABLE_HUESYNC
     handleHue();
-#ifndef WLED_DISABLE_BLYNK
-    handleBlynk();
-#endif
+    yield();
+    #endif
 
+    #ifndef WLED_DISABLE_BLYNK
+    handleBlynk();
+    yield();
+    #endif
+
+    handlePresets();
     yield();
 
     #ifdef WLED_DEBUG
@@ -100,10 +106,10 @@ void WLED::loop()
     #endif
     if (!offMode || strip.isOffRefreshRequred)
       strip.service();
-#ifdef ESP8266
+    #ifdef ESP8266
     else if (!noWifiSleep)
       delay(1); //required to make sure ESP enters modem sleep (see #1184)
-#endif
+    #endif
     #ifdef WLED_DEBUG
     stripMillis = millis() - stripMillis;
     if (stripMillis > 50) DEBUG_PRINTLN("Slow strip.");
