@@ -519,7 +519,7 @@ void serializeInfo(JsonObject root)
 	}
 
   leds[F("pwr")] = strip.currentMilliamps;
-  leds[F("fps")] = strip.getFps();
+  leds["fps"] = strip.getFps();
   leds[F("maxpwr")] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;
   leds[F("maxseg")] = strip.getMaxSegments();
   //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config

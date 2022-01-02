@@ -91,7 +91,7 @@ class Bus {
     virtual void     setBrightness(uint8_t b) {}
     virtual void     cleanup() {}
     virtual uint8_t  getPins(uint8_t* pinArray) { return 0; }
-    inline  uint16_t getLength() { return _len; }
+    virtual uint16_t getLength() { return _len; }
     virtual void     setColorOrder() {}
     virtual uint8_t  getColorOrder() { return COL_ORDER_RGB; }
     virtual uint8_t  skippedLeds() { return 0; }
@@ -220,7 +220,7 @@ class BusDigital : public Bus {
     return _colorOrder;
   }
 
-  inline uint16_t getLength() {
+  uint16_t getLength() {
     return _len - _skip;
   }
 
@@ -288,7 +288,7 @@ class BusPwm : public Bus {
       if (!pinManager.allocatePin(currentPin, true, PinOwner::BusPwm)) {
         deallocatePins(); return;
       }
-      _pins[i] = currentPin; // store only after allocatePin() succeeds
+      _pins[i] = currentPin; //store only after allocatePin() succeeds
       #ifdef ESP8266
       pinMode(_pins[i], OUTPUT);
       #else
@@ -397,7 +397,7 @@ class BusPwm : public Bus {
 
   private: 
   uint8_t _pins[5] = {255, 255, 255, 255, 255};
-  uint8_t _data[5] = {255, 255, 255, 255, 255};
+  uint8_t _data[5] = {0};
   #ifdef ARDUINO_ARCH_ESP32
   uint8_t _ledcStart = 255;
   #endif
