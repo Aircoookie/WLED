@@ -264,7 +264,7 @@ class FourLineDisplayUsermod : public Usermod {
     bool enabled = true;
 
     // needRedraw marks if redraw is required to prevent often redrawing.
-    bool needRedraw = true;
+    //bool needRedraw = true;
 
     // Next variables hold the previous known values to determine if redraw is
     // required.
@@ -466,6 +466,7 @@ class FourLineDisplayUsermod : public Usermod {
      * or if forceRedraw).
      */
     void redraw(bool forceRedraw) {
+      bool needRedraw = false;
       unsigned long now = millis();
  
       if (type == NONE || !enabled) return;
@@ -489,6 +490,7 @@ class FourLineDisplayUsermod : public Usermod {
       } else if ((bri == 0 && powerON) || (bri > 0 && !powerON)) {   //trigger power icon
           powerON = !powerON;
           drawStatusIcons();
+          updateBrightness();
           lastRedraw = millis();
           return;
       } else if (knownnightlight != nightlightActive) {   //trigger moon icon 
@@ -505,27 +507,27 @@ class FourLineDisplayUsermod : public Usermod {
       } else if (knownMode != effectCurrent) {
           knownMode = effectCurrent;
           if (displayTurnedOff) needRedraw = true;
-          else showCurrentEffectOrPalette(knownMode, JSON_mode_names, 3);
+          else { showCurrentEffectOrPalette(knownMode, JSON_mode_names, 3); return; }
       } else if (knownPalette != effectPalette) {
-           knownPalette = effectPalette;
-           if (displayTurnedOff) needRedraw = true;
-           else showCurrentEffectOrPalette(knownPalette, JSON_palette_names, 2);
+          knownPalette = effectPalette;
+          if (displayTurnedOff) needRedraw = true;
+          else { showCurrentEffectOrPalette(knownPalette, JSON_palette_names, 2); return; }
       } else if (knownBrightness != bri) {
           if (displayTurnedOff && nightlightActive) { needRedraw = false; knownBrightness = bri; }
           else if (displayTurnedOff) needRedraw = true;
-          else updateBrightness();
+          else { updateBrightness(); return; }
       } else if (knownEffectSpeed != effectSpeed) {
           if (displayTurnedOff) needRedraw = true;
-          else updateSpeed();
+          else { updateSpeed(); return; }
       } else if (knownEffectIntensity != effectIntensity) {
           if (displayTurnedOff) needRedraw = true;
-          else updateIntensity();
+          else { updateIntensity(); return; }
       }
 
       if (!needRedraw) {
         // Nothing to change.
         // Turn off display after 1 minutes with no change.
-        if (sleepMode && !displayTurnedOff && (now - lastRedraw > screenTimeout)) {
+        if (sleepMode && !displayTurnedOff && (millis() - lastRedraw > screenTimeout)) {
           // We will still check if there is a change in redraw()
           // and turn it back on if it changed.
           clear();
@@ -536,14 +538,10 @@ class FourLineDisplayUsermod : public Usermod {
         return;
       }
 
-      needRedraw = false;
-      lastRedraw = millis();
+      lastRedraw = now;
       
-      if (displayTurnedOff) {
-        // Turn the display back on
-        sleepOrClock(false);
-        clear();
-      }
+      // Turn the display back on
+      wakeDisplay();
 
       // Update last known values.
       knownBrightness = bri;
@@ -707,12 +705,10 @@ class FourLineDisplayUsermod : public Usermod {
      */
     bool wakeDisplay() {
       if (type == NONE || !enabled) return false;
-      knownHour = 99;
       if (displayTurnedOff) {
         clear();
         // Turn the display back on
         sleepOrClock(false);
-        redraw(true);
         return true;
       }
       return false;
@@ -724,13 +720,9 @@ class FourLineDisplayUsermod : public Usermod {
      * Clears the screen and prints.
      */
     void overlay(const char* line1, long showHowLong, byte glyphType) {
-      if (displayTurnedOff) {
-        // Turn the display back on
-        sleepOrClock(false);
-      }
-
+      // Turn the display back on
+      wakeDisplay();
       // Print the overlay
-      clear();
       if (glyphType > 0) {
         if (lineHeight == 2) drawGlyph(5, 0, glyphType, u8x8_font_benji_custom_icons_6x6, true);
         else                 drawGlyph(7, lineHeight, glyphType, u8x8_font_benji_custom_icons_2x2, true);
@@ -742,13 +734,9 @@ class FourLineDisplayUsermod : public Usermod {
     }
 
     void networkOverlay(const char* line1, long showHowLong) {
-      if (displayTurnedOff) {
-        // Turn the display back on
-        sleepOrClock(false);
-      }
+      // Turn the display back on
+      wakeDisplay();
       // Print the overlay
-      clear();
-      // First row string
       if (line1) {
         String l1 = line1;
         l1.trim();
@@ -785,15 +773,15 @@ class FourLineDisplayUsermod : public Usermod {
      */
     void sleepOrClock(bool enabled) {
       if (enabled) {
+        displayTurnedOff = true;
         if (clockMode) {
           knownMinute = knownHour = 99;
           showTime();
         } else
           setPowerSave(1);
-        displayTurnedOff = true;
       } else {
-        setPowerSave(0);
         displayTurnedOff = false;
+        setPowerSave(0);
       }
     }
 
