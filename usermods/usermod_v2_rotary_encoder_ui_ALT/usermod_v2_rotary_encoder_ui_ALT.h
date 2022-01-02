@@ -468,6 +468,7 @@ public:
     if (display != nullptr) {
       if (display->wakeDisplay()) {
         // Throw away wake up input
+        display->redraw(true);
         return false;
       }
       String line = stateName;
@@ -491,6 +492,7 @@ public:
   void changeBrightness(bool increase) {
   #ifdef USERMOD_FOUR_LINE_DISPLAY
     if (display && display->wakeDisplay()) {
+      display->redraw(true);
       // Throw away wake up input
       return;
     }
@@ -507,6 +509,7 @@ public:
   void changeEffect(bool increase) {
   #ifdef USERMOD_FOUR_LINE_DISPLAY
     if (display && display->wakeDisplay()) {
+      display->redraw(true);
       // Throw away wake up input
       return;
     }
@@ -523,6 +526,7 @@ public:
   void changeEffectSpeed(bool increase) {
   #ifdef USERMOD_FOUR_LINE_DISPLAY
     if (display && display->wakeDisplay()) {
+      display->redraw(true);
       // Throw away wake up input
       return;
     }
@@ -538,6 +542,7 @@ public:
   void changeEffectIntensity(bool increase) {
   #ifdef USERMOD_FOUR_LINE_DISPLAY
     if (display && display->wakeDisplay()) {
+      display->redraw(true);
       // Throw away wake up input
       return;
     }
@@ -553,6 +558,7 @@ public:
   void changePalette(bool increase) {
   #ifdef USERMOD_FOUR_LINE_DISPLAY
     if (display && display->wakeDisplay()) {
+      display->redraw(true);
       // Throw away wake up input
       return;
     }

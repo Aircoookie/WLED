@@ -490,19 +490,20 @@ class FourLineDisplayUsermod : public Usermod {
       } else if ((bri == 0 && powerON) || (bri > 0 && !powerON)) {   //trigger power icon
           powerON = !powerON;
           drawStatusIcons();
-          updateBrightness();
-          lastRedraw = millis();
           return;
       } else if (knownnightlight != nightlightActive) {   //trigger moon icon 
           knownnightlight = nightlightActive;
           drawStatusIcons();
-          if (knownnightlight) overlay(PSTR("    Timer On"), 3000, 6);
-          lastRedraw = millis();
+          if (knownnightlight) {
+            String timer = PSTR("Timer On");
+            center(timer,LINE_BUFFER_SIZE-1);
+            overlay(timer.c_str(), 3000, 6);
+            lastRedraw = millis();
+          }
           return;
       } else if (wificonnected != interfacesInited) {   //trigger wifi icon
           wificonnected = interfacesInited;
           drawStatusIcons();
-          lastRedraw = millis();
           return;
       } else if (knownMode != effectCurrent) {
           knownMode = effectCurrent;
@@ -708,33 +709,56 @@ class FourLineDisplayUsermod : public Usermod {
         clear();
         // Turn the display back on
         sleepOrClock(false);
+        lastRedraw = millis();
         return true;
       }
       return false;
     }
 
     /**
-     * Allows you to show one line and a glyph as overlay for a
-     * period of time.
+     * Allows you to show one line and a glyph as overlay for a period of time.
      * Clears the screen and prints.
+     * Used in Rotary Encoder usermod.
      */
     void overlay(const char* line1, long showHowLong, byte glyphType) {
       // Turn the display back on
-      wakeDisplay();
+      if (!wakeDisplay()) clear();
       // Print the overlay
       if (glyphType > 0) {
         if (lineHeight == 2) drawGlyph(5, 0, glyphType, u8x8_font_benji_custom_icons_6x6, true);
         else                 drawGlyph(7, lineHeight, glyphType, u8x8_font_benji_custom_icons_2x2, true);
         if (line1) drawString(0, 3*lineHeight, line1);
       } else {
-        if (line1) drawString(0, 2*(lineHeight-1), line1);
+        if (line1) drawString(0, lineHeight, line1);
+      }
+      overlayUntil = millis() + showHowLong;
+    }
+
+    /**
+     * Allows you to show two lines as overlay for a period of time.
+     * Clears the screen and prints.
+     * Used in Auto Save usermod
+     */
+    void overlay(const char* line1, const char* line2, long showHowLong) {
+      // Turn the display back on
+      if (!wakeDisplay()) clear();
+      // Print the overlay
+      if (line1) {
+        String buf = line1;
+        center(buf, getCols());
+        drawString(0, 1*lineHeight, buf.c_str());
+      }
+      if (line2) {
+        String buf = line2;
+        center(buf, getCols());
+        drawString(0, 2*lineHeight, buf.c_str());
       }
       overlayUntil = millis() + showHowLong;
     }
 
     void networkOverlay(const char* line1, long showHowLong) {
       // Turn the display back on
-      wakeDisplay();
+      if (!wakeDisplay()) clear();
       // Print the overlay
       if (line1) {
         String l1 = line1;
