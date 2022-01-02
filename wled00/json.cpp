@@ -239,7 +239,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   return; // seg.differs(prev);
 }
 
-// deserializes WLED state (fileDoc points to doc object if called from web server)
+// deserializes WLED state (fileDoc points to doc object (root) if called from web server, MQTT, IR, preset; not from UDP)
 bool deserializeState(JsonObject root, byte callMode, byte presetId)
 {
   DEBUG_PRINTLN(F("Deserializing state"));
@@ -526,7 +526,7 @@ void serializeInfo(JsonObject root)
   }
   
   leds[F("pwr")] = strip.currentMilliamps;
-  leds[F("fps")] = strip.getFps();
+  leds["fps"] = strip.getFps();
   leds[F("maxpwr")] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;
   leds[F("maxseg")] = strip.getMaxSegments();
   //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config
@@ -959,12 +959,8 @@ void serveJson(AsyncWebServerRequest* request)
     return;
   }
 
-  #ifdef WLED_USE_DYNAMIC_JSON
-  AsyncJsonResponse* response = new AsyncJsonResponse(JSON_BUFFER_SIZE, subJson==6);
-  #else
   if (!requestJSONBufferLock(17)) return;
   AsyncJsonResponse *response = new AsyncJsonResponse(&doc, subJson==6);
-  #endif
 
   JsonVariant lDoc = response->getRoot();
 

@@ -17,6 +17,7 @@ void notify(byte callMode, bool followUp)
     case CALL_MODE_INIT:          return;
     case CALL_MODE_DIRECT_CHANGE: if (!notifyDirect) return; break;
     case CALL_MODE_BUTTON:        if (!notifyButton) return; break;
+		case CALL_MODE_BUTTON_PRESET: if (!notifyButton) return; break;
     case CALL_MODE_NIGHTLIGHT:    if (!notifyDirect) return; break;
     case CALL_MODE_HUE:           if (!notifyHue)    return; break;
     case CALL_MODE_PRESET_CYCLE:  if (!notifyDirect) return; break;
@@ -461,16 +462,17 @@ void handleNotifications()
   // API over UDP
   udpIn[packetSize] = '\0';
 
+  if (!requestJSONBufferLock(18)) return;
   if (udpIn[0] >= 'A' && udpIn[0] <= 'Z') { //HTTP API
     String apireq = "win&";
     apireq += (char*)udpIn;
     handleSet(nullptr, apireq);
   } else if (udpIn[0] == '{') { //JSON API
-    DynamicJsonDocument jsonBuffer(2048);
-    DeserializationError error = deserializeJson(jsonBuffer, udpIn);
-    JsonObject root = jsonBuffer.as<JsonObject>();
+    DeserializationError error = deserializeJson(doc, udpIn);
+    JsonObject root = doc.as<JsonObject>();
     if (!error && !root.isNull()) deserializeState(root);
   }
+  releaseJSONBufferLock();
 }
 
 

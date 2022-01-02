@@ -48,7 +48,8 @@
 
 /* Not used in all effects yet */
 #define WLED_FPS         42
-#define FRAMETIME        (1000/WLED_FPS)
+#define FRAMETIME_FIXED  (1000/WLED_FPS)
+#define FRAMETIME        _frametime
 
 /* each segment uses 52 bytes of SRAM memory, so if you're application fails because of
   insufficient memory, decreasing MAX_NUM_SEGMENTS may help */
@@ -71,7 +72,7 @@
 #define FAIR_DATA_PER_SEG (MAX_SEGMENT_DATA / MAX_NUM_SEGMENTS)
 
 #define LED_SKIP_AMOUNT  1
-#define MIN_SHOW_DELAY  15
+#define MIN_SHOW_DELAY   (_frametime < 16 ? 8 : 15)
 
 #define NUM_COLORS       3 /* number of colors per segment */
 #define SEGMENT          _segments[_segment_index]
@@ -655,6 +656,7 @@ class WS2812FX {
       setPixelColor(uint16_t n, uint32_t c),
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       show(void),
+			setTargetFps(uint8_t fps),
       setPixelSegment(uint8_t n),
       deserializeMap(uint8_t n=0);
 
@@ -685,6 +687,7 @@ class WS2812FX {
       getActiveSegmentsNum(void),
       //getFirstSelectedSegment(void),
       getMainSegmentId(void),
+			getTargetFps(void),
       gamma8(uint8_t),
       gamma8_cal(uint8_t, float),
       sin_gap(uint16_t),
@@ -856,6 +859,8 @@ class WS2812FX {
     uint16_t _usedSegmentData = 0;
     uint16_t _transitionDur = 750;
 
+		uint8_t _targetFps = 42;
+		uint16_t _frametime = (1000/42);
     uint16_t _cumulativeFps = 2;
 
     bool
@@ -922,6 +927,11 @@ class WS2812FX {
       transitionProgress(uint8_t tNr);
 };
 
+extern const char JSON_mode_names[];
+extern const char JSON_palette_names[];
+
+// the following has been moved to FX_fcn.cpp instead
+/*
 // WLEDSR: extensions
 // Technical notes
 // ===============
@@ -1009,9 +1019,9 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Stream 2",
 "Oscillate",
 "Pride 2015",
-"Juggle@!,Trail;!,!,;!",
+"Juggle@!=16,Trail=240;!,!,;!",
 "Palette@!,;;!",
-"Fire 2012@Spark rate,Decay;;!",
+"Fire 2012@Spark rate=120,Decay=64;;!",
 "Colorwaves",
 "Bpm",
 "Fill Noise",
@@ -1033,7 +1043,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Spots@Spread,Width;!,!,;!",
 "Spots Fade@Spread,Width;!,!,;!",
 "Glitter",
-"Candle@Flicker rate,Flicker intensity;!,!,;0",
+"Candle@Flicker rate=96,Flicker intensity=224;!,!,;0",
 "Fireworks Starburst",
 "Fireworks 1D@Gravity,Firing side;!,!,;!",
 "Bouncing Balls@Gravity,# of balls;!,!,;!",
@@ -1047,9 +1057,9 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Ripple Rainbow",
 "Heartbeat",
 "Pacifica",
-"Candle Multi@Flicker rate,Flicker intensity;!,!,;0",
+"Candle Multi@Flicker rate=96,Flicker intensity=224;!,!,;0",
 "Solid Glitter@,!;!,,;0",
-"Sunrise@Time [min],;;0",
+"Sunrise@Time [min]=60,;;0",
 "Phased",
 "Twinkleup@!,Intensity;!,!,;!",
 "Noise Pal",
@@ -1076,5 +1086,5 @@ const char JSON_palette_names[] PROGMEM = R"=====([
 "Semi Blue","Pink Candy","Red Reaf","Aqua Flash","Yelblu Hot","Lite Light","Red Flash","Blink Red","Red Shift","Red Tide",
 "Candy2"
 ])=====";
-
+*/
 #endif

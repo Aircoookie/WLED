@@ -264,7 +264,7 @@ class FourLineDisplayUsermod : public Usermod {
     bool enabled = true;
 
     // needRedraw marks if redraw is required to prevent often redrawing.
-    bool needRedraw = true;
+    //bool needRedraw = true;
 
     // Next variables hold the previous known values to determine if redraw is
     // required.
@@ -386,7 +386,8 @@ class FourLineDisplayUsermod : public Usermod {
       setFlipMode(flip);
       setContrast(contrast); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
       setPowerSave(0);
-      drawString(0, 0, "Loading...");
+      //drawString(0, 0, "Loading...");
+      overlay(PSTR("Loading..."),3000,0);
     }
 
     // gets called every time WiFi is (re-)connected. Initialize own network
@@ -465,6 +466,7 @@ class FourLineDisplayUsermod : public Usermod {
      * or if forceRedraw).
      */
     void redraw(bool forceRedraw) {
+      bool needRedraw = false;
       unsigned long now = millis();
  
       if (type == NONE || !enabled) return;
@@ -484,9 +486,11 @@ class FourLineDisplayUsermod : public Usermod {
       if (forceRedraw) {
           knownHour = 99;
           needRedraw = true;
+          clear();
       } else if ((bri == 0 && powerON) || (bri > 0 && !powerON)) {   //trigger power icon
           powerON = !powerON;
           drawStatusIcons();
+          updateBrightness();
           lastRedraw = millis();
           return;
       } else if (knownnightlight != nightlightActive) {   //trigger moon icon 
@@ -503,21 +507,21 @@ class FourLineDisplayUsermod : public Usermod {
       } else if (knownMode != effectCurrent) {
           knownMode = effectCurrent;
           if (displayTurnedOff) needRedraw = true;
-          else showCurrentEffectOrPalette(knownMode, JSON_mode_names, 3);
+          else { showCurrentEffectOrPalette(knownMode, JSON_mode_names, 3); return; }
       } else if (knownPalette != effectPalette) {
-           knownPalette = effectPalette;
-           if (displayTurnedOff) needRedraw = true;
-           else showCurrentEffectOrPalette(knownPalette, JSON_palette_names, 2);
+          knownPalette = effectPalette;
+          if (displayTurnedOff) needRedraw = true;
+          else { showCurrentEffectOrPalette(knownPalette, JSON_palette_names, 2); return; }
       } else if (knownBrightness != bri) {
-          if (displayTurnedOff && nightlightActive){needRedraw = false; knownBrightness = bri;}
-          else if(displayTurnedOff) needRedraw = true;
-          else updateBrightness();
+          if (displayTurnedOff && nightlightActive) { needRedraw = false; knownBrightness = bri; }
+          else if (displayTurnedOff) needRedraw = true;
+          else { updateBrightness(); return; }
       } else if (knownEffectSpeed != effectSpeed) {
           if (displayTurnedOff) needRedraw = true;
-          else updateSpeed();
+          else { updateSpeed(); return; }
       } else if (knownEffectIntensity != effectIntensity) {
           if (displayTurnedOff) needRedraw = true;
-          else updateIntensity();
+          else { updateIntensity(); return; }
       }
 
       if (!needRedraw) {
@@ -526,22 +530,18 @@ class FourLineDisplayUsermod : public Usermod {
         if (sleepMode && !displayTurnedOff && (millis() - lastRedraw > screenTimeout)) {
           // We will still check if there is a change in redraw()
           // and turn it back on if it changed.
+          clear();
           sleepOrClock(true);
         } else if (displayTurnedOff && clockMode) {
           showTime();
         }
         return;
-      } else {
-        clear();
       }
 
-      needRedraw = false;
-      lastRedraw = millis();
+      lastRedraw = now;
       
-      if (displayTurnedOff) {
-        // Turn the display back on
-        sleepOrClock(false);
-      }
+      // Turn the display back on
+      wakeDisplay();
 
       // Update last known values.
       knownBrightness = bri;
@@ -647,24 +647,19 @@ class FourLineDisplayUsermod : public Usermod {
       knownMode = effectCurrent;
       knownPalette = effectPalette;
       if (overlayUntil == 0) {
-        char smallBuffer1[MAX_MODE_LINE_SPACE];
-        char smallBuffer2[MAX_MODE_LINE_SPACE];
-        char smallBuffer3[MAX_MODE_LINE_SPACE+1];
-        bool spaceHit = false;
-        uint8_t printedChars = 0;
-        uint8_t smallChars1 = 0;
-        uint8_t smallChars2 = 0;
-        uint8_t smallChars3 = 0;
-
         // Find the mode name in JSON
-        printedChars = extractModeName(inputEffPal, qstring, lineBuffer, MAX_JSON_CHARS-1);
-        
+        uint8_t printedChars = extractModeName(inputEffPal, qstring, lineBuffer, MAX_JSON_CHARS-1);
         if (lineHeight == 2) {                                 // use this code for 8 line display
+          char smallBuffer1[MAX_MODE_LINE_SPACE];
+          char smallBuffer2[MAX_MODE_LINE_SPACE];
+          uint8_t smallChars1 = 0;
+          uint8_t smallChars2 = 0;
           if (printedChars < MAX_MODE_LINE_SPACE) {            // use big font if the text fits
             for (;printedChars < (MAX_MODE_LINE_SPACE-1); printedChars++) lineBuffer[printedChars]=' ';
             lineBuffer[printedChars] = 0;
             drawString(1, row*lineHeight, lineBuffer);
           } else {                                             // for long names divide the text into 2 lines and print them small
+            bool spaceHit = false;
             for (uint8_t i = 0; i < printedChars; i++) {
               switch (lineBuffer[i]) {
                 case ' ':
@@ -689,6 +684,8 @@ class FourLineDisplayUsermod : public Usermod {
             drawString(1, row*lineHeight+1, smallBuffer2, true);
           }
         } else {                                             // use this code for 4 ling displays
+          char smallBuffer3[MAX_MODE_LINE_SPACE+1];
+          uint8_t smallChars3 = 0;
           if (printedChars > MAX_MODE_LINE_SPACE) printedChars = MAX_MODE_LINE_SPACE;
           for (uint8_t i = 0; i < printedChars; i++) smallBuffer3[smallChars3++] = lineBuffer[i];
           for (; smallChars3 < (MAX_MODE_LINE_SPACE); smallChars3++) smallBuffer3[smallChars3]=' ';
@@ -707,11 +704,10 @@ class FourLineDisplayUsermod : public Usermod {
      */
     bool wakeDisplay() {
       if (type == NONE || !enabled) return false;
-      knownHour = 99;
       if (displayTurnedOff) {
+        clear();
         // Turn the display back on
         sleepOrClock(false);
-        redraw(true);
         return true;
       }
       return false;
@@ -723,29 +719,23 @@ class FourLineDisplayUsermod : public Usermod {
      * Clears the screen and prints.
      */
     void overlay(const char* line1, long showHowLong, byte glyphType) {
-      if (displayTurnedOff) {
-        // Turn the display back on
-        sleepOrClock(false);
-      }
-
+      // Turn the display back on
+      wakeDisplay();
       // Print the overlay
-      clear();
       if (glyphType > 0) {
         if (lineHeight == 2) drawGlyph(5, 0, glyphType, u8x8_font_benji_custom_icons_6x6, true);
         else                 drawGlyph(7, lineHeight, glyphType, u8x8_font_benji_custom_icons_2x2, true);
+        if (line1) drawString(0, 3*lineHeight, line1);
+      } else {
+        if (line1) drawString(0, 2*(lineHeight-1), line1);
       }
-      if (line1) drawString(0, 3*lineHeight, line1);
       overlayUntil = millis() + showHowLong;
     }
 
     void networkOverlay(const char* line1, long showHowLong) {
-      if (displayTurnedOff) {
-        // Turn the display back on
-        sleepOrClock(false);
-      }
+      // Turn the display back on
+      wakeDisplay();
       // Print the overlay
-      clear();
-      // First row string
       if (line1) {
         String l1 = line1;
         l1.trim();
@@ -782,16 +772,15 @@ class FourLineDisplayUsermod : public Usermod {
      */
     void sleepOrClock(bool enabled) {
       if (enabled) {
+        displayTurnedOff = true;
         if (clockMode) {
-          clear();
           knownMinute = knownHour = 99;
           showTime();
         } else
           setPowerSave(1);
-        displayTurnedOff = true;
       } else {
-        setPowerSave(0);
         displayTurnedOff = false;
+        setPowerSave(0);
       }
     }
 
@@ -801,7 +790,7 @@ class FourLineDisplayUsermod : public Usermod {
      * the useAMPM configuration.
      */
     void showTime() {
-      if (type == NONE || !enabled) return;
+      if (type == NONE || !enabled || !displayTurnedOff) return;
 
       char lineBuffer[LINE_BUFFER_SIZE];
       static byte lastSecond;

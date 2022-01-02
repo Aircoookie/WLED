@@ -759,15 +759,9 @@ function genPalPrevCss(id)
 		} else {
 			if (selColors) {
 				let e = element[1] - 1;
-				//if (Array.isArray(selColors[e])) {
-					r = selColors[e][0];
-					g = selColors[e][1];
-					b = selColors[e][2];
-				//} else {
-				//	r = (selColors[e]>>16) & 0xFF;
-				//	g = (selColors[e]>> 8) & 0xFF;
-				//	b = (selColors[e]    ) & 0xFF;
-				//}
+				r = selColors[e][0];
+				g = selColors[e][1];
+				b = selColors[e][2];
 			}
 		}
 		if (index === false) {
@@ -931,18 +925,10 @@ function readState(s,command=false)
 	for (let e = cd.length-1; e >= 0; e--)
 	{
 		var r,g,b,w;
-		//if (Array.isArray(i.col[e])) {
-			r = i.col[e][0];
-			g = i.col[e][1];
-			b = i.col[e][2];
-			if (isRgbw) w = i.col[e][3];
-		//} else {
-		//	// unsigned long RGBW (@blazoncek v2 experimental API implementation)
-		//	r = (i.col[e]>>16) & 0xFF;
-		//	g = (i.col[e]>> 8) & 0xFF;
-		//	b = (i.col[e]    ) & 0xFF;
-		//	if (isRgbw) w = (i.col[e] >> 24) & 0xFF;
-		//}
+		r = i.col[e][0];
+		g = i.col[e][1];
+		b = i.col[e][2];
+		if (isRgbw) w = i.col[e][3];
 		cd[e].style.backgroundColor = "rgb(" + r + "," + g + "," + b + ")";
 		if (isRgbw) whites[e] = parseInt(w);
 		selectSlot(csel);
@@ -993,7 +979,7 @@ function requestJson(command=null)
 	var useWs = (ws && ws.readyState === WebSocket.OPEN);
 	var type = command ? 'post':'get';
 	if (command) {
-		command.v = true; // force complete /json/si API response
+		if (useWs || !command.ps) command.v = true; // force complete /json/si API response
 		command.time = Math.floor(Date.now() / 1000);
 		var t = gId('tt');
 		if (t.validity.valid && command.transition==null) {
@@ -1007,6 +993,8 @@ function requestJson(command=null)
 	if (useWs) {
 		ws.send(req?req:'{"v":true}');
 		return;
+	} else if (command && command.ps) { //refresh UI if we don't use WS (async loading of presets)
+		setTimeout(requestJson,200);
 	}
 
 	fetch(url, {

@@ -19,16 +19,19 @@
 // Change between modes by pressing a button.
 //
 // Dependencies
-// * This usermod REQURES the ModeSortUsermod
 // * This Usermod works best coupled with 
 //   FourLineDisplayUsermod.
 //
-// If FourLineDisplayUsermod is used the folowing options are also inabled
+// If FourLineDisplayUsermod is used the folowing options are also enabled
 //
 // * main color
 // * saturation of main color
 // * display network (long press buttion)
 //
+
+#ifdef USERMOD_MODE_SORT
+  #error "Usermod Mode Sort is no longer required. Remove -D USERMOD_MODE_SORT from platformio.ini"
+#endif
 
 #ifndef ENCODER_DT_PIN
 #define ENCODER_DT_PIN 18
@@ -49,10 +52,70 @@
  #define LAST_UI_STATE 4
 #endif
 
+// Number of modes at the start of the list to not sort
+#define MODE_SORT_SKIP_COUNT 1
+
+// Which list is being sorted
+static char **listBeingSorted;
+
+/**
+ * Modes and palettes are stored as strings that
+ * end in a quote character. Compare two of them.
+ * We are comparing directly within either
+ * JSON_mode_names or JSON_palette_names.
+ */
+static int re_qstringCmp(const void *ap, const void *bp) {
+  char *a = listBeingSorted[*((byte *)ap)];
+  char *b = listBeingSorted[*((byte *)bp)];
+  int i = 0;
+  do {
+    char aVal = pgm_read_byte_near(a + i);
+    if (aVal >= 97 && aVal <= 122) {
+      // Lowercase
+      aVal -= 32;
+    }
+    char bVal = pgm_read_byte_near(b + i);
+    if (bVal >= 97 && bVal <= 122) {
+      // Lowercase
+      bVal -= 32;
+    }
+    // Relly we shouldn't ever get to '\0'
+    if (aVal == '"' || bVal == '"' || aVal == '\0' || bVal == '\0') {
+      // We're done. one is a substring of the other
+      // or something happenend and the quote didn't stop us.
+      if (aVal == bVal) {
+        // Same value, probably shouldn't happen
+        // with this dataset
+        return 0;
+      }
+      else if (aVal == '"' || aVal == '\0') {
+        return -1;
+      }
+      else {
+        return 1;
+      }
+    }
+    if (aVal == bVal) {
+      // Same characters. Move to the next.
+      i++;
+      continue;
+    }
+    // We're done
+    if (aVal < bVal) {
+      return -1;
+    }
+    else {
+      return 1;
+    }
+  } while (true);
+  // We shouldn't get here.
+  return 0;
+}
+
 
 class RotaryEncoderUIUsermod : public Usermod {
 private:
-  int fadeAmount = 5;             // Amount to change every step (brightness)
+  int fadeAmount = 5;                 // Amount to change every step (brightness)
   unsigned long currentTime;
   unsigned long loopTime;
   unsigned long buttonHoldTime;
@@ -72,7 +135,16 @@ private:
   void* display = nullptr;
 #endif
 
+  // Pointers the start of the mode names within JSON_mode_names
+  char **modes_qstrings = nullptr;
+
+  // Array of mode indexes in alphabetical order.
   byte *modes_alpha_indexes = nullptr;
+
+  // Pointers the start of the palette names within JSON_palette_names
+  char **palettes_qstrings = nullptr;
+
+  // Array of palette indexes in alphabetical order.
   byte *palettes_alpha_indexes = nullptr;
 
   unsigned char Enc_A;
@@ -94,6 +166,82 @@ private:
   static const char _DT_pin[];
   static const char _CLK_pin[];
   static const char _SW_pin[];
+
+  /**
+   * Sort the modes and palettes to the index arrays
+   * modes_alpha_indexes and palettes_alpha_indexes.
+   */
+  void sortModesAndPalettes() {
+    modes_qstrings = re_findModeStrings(JSON_mode_names, strip.getModeCount());
+    modes_alpha_indexes = re_initIndexArray(strip.getModeCount());
+    re_sortModes(modes_qstrings, modes_alpha_indexes, strip.getModeCount(), MODE_SORT_SKIP_COUNT);
+
+    palettes_qstrings = re_findModeStrings(JSON_palette_names, strip.getPaletteCount());
+    palettes_alpha_indexes = re_initIndexArray(strip.getPaletteCount());
+
+    // How many palette names start with '*' and should not be sorted?
+    // (Also skipping the first one, 'Default').
+    int skipPaletteCount = 1;
+    while (pgm_read_byte_near(palettes_qstrings[skipPaletteCount++]) == '*') ;
+    re_sortModes(palettes_qstrings, palettes_alpha_indexes, strip.getPaletteCount(), skipPaletteCount);
+  }
+
+  byte *re_initIndexArray(int numModes) {
+    byte *indexes = (byte *)malloc(sizeof(byte) * numModes);
+    for (byte i = 0; i < numModes; i++) {
+      indexes[i] = i;
+    }
+    return indexes;
+  }
+
+  /**
+   * Return an array of mode or palette names from the JSON string.
+   * They don't end in '\0', they end in '"'. 
+   */
+  char **re_findModeStrings(const char json[], int numModes) {
+    char **modeStrings = (char **)malloc(sizeof(char *) * numModes);
+    uint8_t modeIndex = 0;
+    bool insideQuotes = false;
+    // advance past the mark for markLineNum that may exist.
+    char singleJsonSymbol;
+
+    // Find the mode name in JSON
+    bool complete = false;
+    for (size_t i = 0; i < strlen_P(json); i++) {
+      singleJsonSymbol = pgm_read_byte_near(json + i);
+      if (singleJsonSymbol == '\0') break;
+      switch (singleJsonSymbol) {
+        case '"':
+          insideQuotes = !insideQuotes;
+          if (insideQuotes) {
+            // We have a new mode or palette
+            modeStrings[modeIndex] = (char *)(json + i + 1);
+          }
+          break;
+        case '[':
+          break;
+        case ']':
+          if (!insideQuotes) complete = true;
+          break;
+        case ',':
+          if (!insideQuotes) modeIndex++;
+        default:
+          if (!insideQuotes) break;
+      }
+      if (complete) break;
+    }
+    return modeStrings;
+  }
+
+  /**
+   * Sort either the modes or the palettes using quicksort.
+   */
+  void re_sortModes(char **modeNames, byte *indexes, int count, int numSkip) {
+    listBeingSorted = modeNames;
+    qsort(indexes + numSkip, count - numSkip, sizeof(byte), re_qstringCmp);
+    listBeingSorted = nullptr;
+  }
+
 
 public:
   /*
@@ -121,9 +269,7 @@ public:
     currentTime = millis();
     loopTime = currentTime;
 
-    ModeSortUsermod *modeSortUsermod = (ModeSortUsermod*) usermods.lookup(USERMOD_ID_MODE_SORT);
-    modes_alpha_indexes = modeSortUsermod->getModesAlphaIndexes();
-    palettes_alpha_indexes = modeSortUsermod->getPalettesAlphaIndexes();
+    if (!initDone) sortModesAndPalettes();
 
 #ifdef USERMOD_FOUR_LINE_DISPLAY    
     // This Usermod uses FourLineDisplayUsermod for the best experience.
@@ -350,7 +496,7 @@ public:
     }
   #endif
     if (increase) bri = (bri + fadeAmount <= 255) ? (bri + fadeAmount) : 255;
-    else bri = (bri - fadeAmount >= 0) ? (bri - fadeAmount) : 0;
+    else          bri = (bri - fadeAmount >= 0) ? (bri - fadeAmount) : 0;
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
     display->updateBrightness();
@@ -365,8 +511,7 @@ public:
       return;
     }
   #endif
-    if (increase) effectCurrentIndex = (effectCurrentIndex + 1 >= strip.getModeCount()) ? 0 : (effectCurrentIndex + 1);
-    else effectCurrentIndex = (effectCurrentIndex - 1 < 0) ? (strip.getModeCount() - 1) : (effectCurrentIndex - 1);
+    effectCurrentIndex = max(min((increase ? effectCurrentIndex+1 : effectCurrentIndex-1), strip.getModeCount()-1), 0);
     effectCurrent = modes_alpha_indexes[effectCurrentIndex];
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
@@ -382,8 +527,7 @@ public:
       return;
     }
   #endif
-    if (increase) effectSpeed = (effectSpeed + fadeAmount <= 255) ? (effectSpeed + fadeAmount) : 255;
-    else effectSpeed = (effectSpeed - fadeAmount >= 0) ? (effectSpeed - fadeAmount) : 0;
+    effectSpeed = max(min((increase ? effectSpeed+fadeAmount : effectSpeed-fadeAmount), 255), 0);
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
     display->updateSpeed();
@@ -398,8 +542,7 @@ public:
       return;
     }
   #endif
-    if (increase) effectIntensity = (effectIntensity + fadeAmount <= 255) ? (effectIntensity + fadeAmount) : 255;
-    else effectIntensity = (effectIntensity - fadeAmount >= 0) ? (effectIntensity - fadeAmount) : 0;
+    effectIntensity = max(min((increase ? effectIntensity+fadeAmount : effectIntensity-fadeAmount), 255), 0);
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
     display->updateIntensity();
@@ -414,8 +557,7 @@ public:
       return;
     }
   #endif
-    if (increase) effectPaletteIndex = (effectPaletteIndex + 1 >= strip.getPaletteCount()) ? 0 : (effectPaletteIndex + 1);
-    else effectPaletteIndex = (effectPaletteIndex - 1 < 0) ? (strip.getPaletteCount() - 1) : (effectPaletteIndex - 1);
+    effectPaletteIndex = max(min((increase ? effectPaletteIndex+1 : effectPaletteIndex-1), strip.getPaletteCount()-1), 0);
     effectPalette = palettes_alpha_indexes[effectPaletteIndex];
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
@@ -449,8 +591,7 @@ public:
       return;
     }
   #endif
-    if (increase) { if (currentSat1<252) currentSat1 += 4; }
-    else          { if (currentSat1>3)   currentSat1 -= 4; }
+    currentSat1 = max(min((increase ? currentSat1+fadeAmount : currentSat1-fadeAmount), 255), 0);
     colorHStoRGB(currentHue1*256, currentSat1, col);
     strip.applyToAllSelected = true;
     strip.setColor(0, colorFromRgbw(col));

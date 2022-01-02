@@ -31,6 +31,13 @@ button, .btn {
   cursor: pointer;
   text-decoration: none;
 }
+button.sml {
+  padding: 8px;
+  border-radius: 20px;
+  font-size: 15px;
+  min-width: 40px;
+  margin: 0 0 0 10px;
+}
 .toprow {
   top: 0;
   position: sticky;
@@ -85,6 +92,9 @@ input[type="checkbox"] {
   transform: scale(1.5);
   margin-right: 10px;
 }
+td input[type="checkbox"] {
+  margin-right: revert;
+}
 select {
   margin: 2px;
   background: #333;
@@ -92,13 +102,22 @@ select {
   font-family: Verdana, sans-serif;
   border: 0.5ch solid #333;
 }
+tr {
+  line-height: 100%;
+}
 td {
   padding: 2px;
 }
 .d5 {
   width: 4rem !important;
 }
-
+.cal {
+  font-size:1.5rem;
+  cursor:pointer
+}
+#TMT table {
+  width: 100%;
+}
 #toast {
 	opacity: 0;
 	background-color: #444;
@@ -140,9 +159,6 @@ td {
 }
 
 @media screen and (max-width: 480px) {
-  input[type="checkbox"] {
-    transform: scale(1);
-  }  
   input[type="number"].s {
     width: 40px;
   }

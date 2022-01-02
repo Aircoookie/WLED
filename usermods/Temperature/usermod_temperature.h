@@ -37,7 +37,7 @@ class UsermodTemperature : public Usermod {
     // used to determine when we can read the sensors temperature
     // we have to wait at least 93.75 ms after requestTemperatures() is called
     unsigned long lastTemperaturesRequest;
-    float temperature = -100.0f; // default to -100, DS18B20 only goes down to -50C
+    float temperature = -127.0f; // default to -127, DS18B20 only goes down to -50C
     // indicates requestTemperatures has been called but the sensor measurement is not complete
     bool waitingForConversion = false;
     // flag set at startup if DS18B20 sensor not found, avoids trying to keep getting
@@ -60,7 +60,6 @@ class UsermodTemperature : public Usermod {
       if (oneWire->reset()) {                 // if reset() fails there are no OneWire devices
         oneWire->skip();                      // skip ROM
         oneWire->write(0xBE);                 // read (temperature) from EEPROM
-        delayMicroseconds(250);
         oneWire->read_bytes(data, 9);         // first 2 bytes contain temperature
         #ifdef WLED_DEBUG
         if (OneWire::crc8(data,8) != data[8]) {
@@ -85,7 +84,8 @@ class UsermodTemperature : public Usermod {
             break;
         }
       }
-      return retVal;
+      for (byte i=1; i<9; i++) data[0] &= data[i];
+      return data[0]==0xFF ? -127.0f : retVal;
     }
 
     void requestTemperatures() {
@@ -176,7 +176,7 @@ class UsermodTemperature : public Usermod {
       }
 
       // we were waiting for a conversion to complete, have we waited log enough?
-      if (now - lastTemperaturesRequest >= 100 /* 93.75ms per the datasheet but can be up to 750ms */) {
+      if (now - lastTemperaturesRequest >= 750 /* 93.75ms per the datasheet but can be up to 750ms */) {
         readTemperature();
 
         if (WLED_MQTT_CONNECTED) {

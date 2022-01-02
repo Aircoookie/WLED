@@ -249,21 +249,17 @@ void getSettingsJS(byte subPage, char* dest)
   {
     char nS[8];
 
+
     // Pin reservations will become unnecessary when settings pages will read cfg.json directly
     // add reserved and usermod pins as d.um_p array
     oappend(SET_F("d.um_p=[6,7,8,9,10,11"));
 
-    { // scope so buffer can be released earlier
-    #ifdef WLED_USE_DYNAMIC_JSON
-    DynamicJsonDocument doc(3072);
-    #else
-    if (!requestJSONBufferLock(6)) return;
-    #endif
-
-    JsonObject mods = doc.createNestedObject(F("um"));
-    usermods.addToConfig(mods);
-    if (!mods.isNull()) fillUMPins(mods);
-    releaseJSONBufferLock();
+    if (requestJSONBufferLock(6)) {
+      // if we can't allocate JSON buffer ignore usermod pins
+      JsonObject mods = doc.createNestedObject(F("um"));
+      usermods.addToConfig(mods);
+      if (!mods.isNull()) fillUMPins(mods);
+      releaseJSONBufferLock();
     }
 
     #ifdef WLED_ENABLE_DMX
@@ -336,6 +332,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("CCT"),correctWB);
     sappend('c',SET_F("CR"),cctFromRgb);
 		sappend('v',SET_F("CB"),strip.cctBlending);
+		sappend('v',SET_F("FR"),strip.getTargetFps());
 		sappend('v',SET_F("AW"),Bus::getAutoWhiteMode());
 
     for (uint8_t s=0; s < busses.getNumBusses(); s++) {
@@ -461,7 +458,7 @@ void getSettingsJS(byte subPage, char* dest)
     memset(fpass,'*',l);
     sappends('s',SET_F("MQPASS"),fpass);
     sappends('s',SET_F("MQCID"),mqttClientID);
-    sappends('s',SET_F("MD"),mqttDeviceTopic);
+    sappends('s',"MD",mqttDeviceTopic);
     sappends('s',SET_F("MG"),mqttGroupTopic);
     sappend('c',SET_F("BM"),buttonPublishMqtt);
     #endif
@@ -552,6 +549,12 @@ void getSettingsJS(byte subPage, char* dest)
       k[0] = 'N'; sappend('v',k,timerMinutes[i]);
       k[0] = 'T'; sappend('v',k,timerMacro[i]);
       k[0] = 'W'; sappend('v',k,timerWeekday[i]);
+      if (i<8) {
+        k[0] = 'M'; sappend('v',k,(timerMonth[i] >> 4) & 0x0F);
+				k[0] = 'P'; sappend('v',k,timerMonth[i] & 0x0F);
+        k[0] = 'D'; sappend('v',k,timerDay[i]);
+				k[0] = 'E'; sappend('v',k,timerDayEnd[i]);
+      }
     }
   }
 

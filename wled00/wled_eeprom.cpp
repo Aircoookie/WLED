@@ -382,11 +382,7 @@ void deEEP() {
   
   DEBUG_PRINTLN(F("Preset file not found, attempting to load from EEPROM"));
   DEBUGFS_PRINTLN(F("Allocating saving buffer for dEEP"));
-  #ifdef WLED_USE_DYNAMIC_JSON
-  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-  #else
   if (!requestJSONBufferLock(8)) return;
-  #endif
 
   JsonObject sObj = doc.to<JsonObject>();
   sObj.createNestedObject("0");

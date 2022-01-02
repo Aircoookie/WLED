@@ -48,11 +48,7 @@ void handleSerial()
           Serial.print("WLED"); Serial.write(' '); Serial.println(VERSION);
         } else if (next == '{') { //JSON API
           bool verboseResponse = false;
-          #ifdef WLED_USE_DYNAMIC_JSON
-          DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-          #else
           if (!requestJSONBufferLock(16)) return;
-          #endif
           Serial.setTimeout(100);
           DeserializationError error = deserializeJson(doc, Serial);
           if (error) {
