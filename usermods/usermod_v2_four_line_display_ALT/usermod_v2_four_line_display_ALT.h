@@ -643,13 +643,12 @@ class FourLineDisplayUsermod : public Usermod {
      //Display the current effect or palette (desiredEntry) 
      // on the appropriate line (row). 
     void showCurrentEffectOrPalette(int inputEffPal, const char *qstring, uint8_t row) {
-      char lineBuffer[LINE_BUFFER_SIZE];
+      char lineBuffer[MAX_JSON_CHARS];
       knownMode = effectCurrent;
       knownPalette = effectPalette;
       if (overlayUntil == 0) {
         // Find the mode name in JSON
-        uint8_t printedChars = extractModeName(inputEffPal, qstring, lineBuffer, LINE_BUFFER_SIZE-1);
-
+        uint8_t printedChars = extractModeName(inputEffPal, qstring, lineBuffer, MAX_JSON_CHARS-1);
         if (lineHeight == 2) {                                 // use this code for 8 line display
           char smallBuffer1[MAX_MODE_LINE_SPACE];
           char smallBuffer2[MAX_MODE_LINE_SPACE];
