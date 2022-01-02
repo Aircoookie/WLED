@@ -654,7 +654,7 @@ void setPaletteColors(JsonArray json, CRGBPalette16 palette)
     for (int i = 0; i < 16; i++) {
       JsonArray colors =  json.createNestedArray();
       CRGB color = palette[i];
-      colors.add((((float)i / (float)16) * 255));
+      colors.add(i<<4);
       colors.add(color.red);
       colors.add(color.green);
       colors.add(color.blue);

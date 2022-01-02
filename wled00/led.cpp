@@ -168,11 +168,9 @@ void colorUpdated(int callMode)
 
 void updateInterfaces(uint8_t callMode)
 {
+  lastInterfaceUpdate = millis();
   sendDataWs();
-  if (callMode == CALL_MODE_WS_SEND) {
-    lastInterfaceUpdate = millis();
-    return;
-  }
+  if (callMode == CALL_MODE_WS_SEND) return;
   
   #ifndef WLED_DISABLE_ALEXA
   if (espalexaDevice != nullptr && callMode != CALL_MODE_ALEXA) {
@@ -185,7 +183,6 @@ void updateInterfaces(uint8_t callMode)
       callMode != CALL_MODE_NO_NOTIFY) updateBlynk();
   #endif
   doPublishMqtt = true;
-  lastInterfaceUpdate = millis();
 }
 
 
