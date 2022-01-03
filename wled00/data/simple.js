@@ -11,16 +11,15 @@ var csel = 0;
 var currentPreset = -1;
 var lastUpdate = 0;
 var segCount = 0, ledCount = 0, lowestUnused = 0, maxSeg = 0, lSeg = 0;
-var lastw = 0;
 var tr = 7;
 var d = document;
-const ranges = RangeTouch.setup('input[type="range"]', {});
 var palettesData;
+var fxdata = [];
 var pJson = {}, eJson = {}, lJson = {};
 var pN = "", pI = 0, pNum = 0;
 var pmt = 1, pmtLS = 0, pmtLast = 0;
 var lastinfo = {};
-var ws;
+var ws, cpick, ranges;
 var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false}, labels:true, pcmbot:false, pid:true, seglen:false}
@@ -32,30 +31,6 @@ var hol = [
 	[2023,3,9,2,"https://aircoookie.github.io/easter.png"],
 	[2024,2,31,2,"https://aircoookie.github.io/easter.png"]
 ];
-
-var cpick = new iro.ColorPicker("#picker", {
-	width: 260,
-	wheelLightness: false,
-	wheelAngle: 90,
-	layout: [
-    {
-      component: iro.ui.Wheel,
-      options: {}
-    },
-    {
-      component: iro.ui.Slider,
-      options: { sliderType: 'value' }
-    }/*,
-    {
-      component: iro.ui.Slider,
-      options: {
-        sliderType: 'kelvin',
-        minTemperature: 2100,
-        maxTemperature: 10000
-      }
-    }*/
-  ]
-});
 
 function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson();}
 function sCol(na, col) {d.documentElement.style.setProperty(na, col);}
@@ -237,13 +212,12 @@ async function onLoad()
 	loadPalettes(()=>{
 		loadPalettesData(redrawPalPrev);
 		loadFX(()=>{
+			loadFXData();
 			loadPresets(()=>{
-				//if (isObj(lastinfo) && isEmpty(lastinfo)) loadInfo(requestJson);	// if not filled by WS
 				requestJson();
 			});
 		});
 	});
-	//updateUI(true);
 
 	d.addEventListener("visibilitychange", handleVisibilityChange, false);
 	size();
@@ -425,6 +399,34 @@ function loadFX(callback = null)
 	});
 }
 
+function loadFXData(callback = null)
+{
+	var url = (loc?`http://${locip}`:'') + '/json/fxdata';
+
+	fetch(url, {
+		method: 'get'
+	})
+	.then(res => {
+		if (!res.ok) showErrorToast();
+		return res.json();
+	})
+	.then(json => {
+		clearErrorToast();
+		fxdata = json||[];
+		// add default value for Solid
+		fxdata.shift()
+		fxdata.unshift("@;!;");
+	})
+	.catch(function (error) {
+		fxdata = [];
+		showToast(error, true);
+	})
+	.finally(()=>{
+		if (callback) callback();
+		updateUI();
+	});
+}
+
 var pQL = [];
 function populateQL()
 {
@@ -500,7 +502,6 @@ function loadInfo(callback=null)
 		clearErrorToast();
 		lastinfo = json;
 		parseInfo();
-		showNodes();
 		if (isInfo) populateInfo(json);
 		updateUI();
 		reqsLegal = true;
@@ -666,20 +667,27 @@ function populateEffects()
 	effects.sort((a,b) => (a.name).localeCompare(b.name));
 	effects.unshift({
 		"id": 0,
-		"name": "Solid",
+		"name": "Solid@;!;0"
 	});
+
 	for (let i = 0; i < effects.length; i++) {
-		var posAt = effects[i].name.indexOf("@");
-		var extra = '';
-		if (posAt > 0)
-			extra = effects[i].name.substr(posAt);
-		else
-			posAt = 999;
-		html += generateListItemHtml(
-			effects[i].id,
-			effects[i].name.substr(0,posAt),
-			'setEffect'
-		);
+		// WLEDSR: add slider and color control to setEffect (used by requestjson)
+		if (effects[i].name.indexOf("Reserved") < 0) {
+			var posAt = effects[i].name.indexOf("@");
+			var extra = '';
+			if (posAt > 0)
+				extra = effects[i].name.substr(posAt);
+			else
+				posAt = 999;
+			html += generateListItemHtml(
+				'fx',
+				effects[i].id,
+				effects[i].name.substr(0,posAt),
+				'setEffect',
+				'','',
+				extra
+			);
+		}
 	}
 	gId('fxlist').innerHTML=html;
 }
@@ -702,11 +710,12 @@ function populatePalettes()
 	var html = "";
 	for (let i = 0; i < palettes.length; i++) {
 		html += generateListItemHtml(
-			palettes[i].id,
-			palettes[i].name,
-			'setPalette',
+			'palette',
+		    palettes[i].id,
+            palettes[i].name,
+            'setPalette',
 			`<div class="lstIprev"></div>`
-		);
+        );
 	}
 	gId('pallist').innerHTML=html;
 }
@@ -779,9 +788,16 @@ function generateOptionItemHtml(id, name)
     return `<option value="${id}">${name}</option>`;
 }
 
-function generateListItemHtml(id, name, clickAction, extraHtml = '')
+function generateListItemHtml(listName, id, name, clickAction, extraHtml = '', extraClass = '', extraPar = '')
 {
-    return `<div class="lstI c" data-id="${id}" onClick="${clickAction}(${id})"><span class="lstIname">${name}</span>${extraHtml}</div>`;
+    return `<div class="lstI ${extraClass}" data-id="${id}" data-opt="${extraPar}" onClick="${clickAction}(${id})">
+	<div class="lstIcontent">
+		<span class="lstIname">
+			${name}
+		</span>
+	</div>
+	${extraHtml}
+</div>`;
 }
 
 function updateTrail(e)
@@ -832,7 +848,9 @@ function updateUI()
 	sel = 0;
 	if (eJson && eJson.length) {
 		for (var i=0; i<eJson.length; i++) if (eJson[i].id == selectedFx) {sel = i; break;}
-		gId('fxBtn').innerHTML = '<i class="icons">&#xe0e8;</i> ' + eJson[sel].name;
+		var posAt = eJson[sel].name.indexOf("@");
+		if (posAt<=0) posAt=999;
+		gId('fxBtn').innerHTML = '<i class="icons">&#xe0e8;</i> ' + eJson[sel].name.substr(0,posAt);
 	}
 
 	updateTrail(gId('sliderBri'));
@@ -843,7 +861,7 @@ function updateUI()
 
 	updatePA(true);
 	redrawPalPrev();
-	updateRgb();
+	updatePSliders();
 
 	var l = cfg.comp.labels; //l = false;
 	var e = d.querySelectorAll('.label');
@@ -874,7 +892,6 @@ function makeWS() {
 		if (i) {
 			lastinfo = i;
 			parseInfo();
-			showNodes();
 			if (isInfo) populateInfo(i);
 		} else
 			i = lastinfo;
@@ -981,11 +998,6 @@ function requestJson(command=null)
 	if (command) {
 		if (useWs || !command.ps) command.v = true; // force complete /json/si API response
 		command.time = Math.floor(Date.now() / 1000);
-		var t = gId('tt');
-		if (t.validity.valid && command.transition==null) {
-			var tn = parseInt(t.value*10);
-			if (tn != tr) command.transition = tn;
-		}
 		req = JSON.stringify(command);
 		if (req.length > 1000) useWs = false; //do not send very long requests over websocket
 	};
@@ -1124,7 +1136,7 @@ function setSegBri(s)
 	requestJson(obj);
 }
 
-function setEffect(ind = null)
+function setEffect(ind = 0)
 {
 	tglFxDropdown();
 	var obj = {"seg": {"fx": parseInt(ind)}};
@@ -1181,7 +1193,7 @@ function selectSlot(b)
 	cpick.color.set(cd[csel].style.backgroundColor);
 	gId('sliderW').value = whites[csel];
 	redrawPalPrev();
-	updateRgb();
+	updatePSliders();
 }
 
 var lasth = 0;
@@ -1199,12 +1211,45 @@ function pC(col)
 	setColor(0);
 }
 
-function updateRgb()
-{
+function updatePSliders() {
+	//update RGB sliders
 	var col = cpick.color.rgb;
 	gId('sliderR').value = col.r;
 	gId('sliderG').value = col.g;
 	gId('sliderB').value = col.b;
+
+	//update hex field
+	var str = cpick.color.hexString.substring(1);
+	var w = whites[csel];
+	if (w > 0) str += w.toString(16);
+
+	//update value slider
+	var v = gId('sliderV');
+	v.value = cpick.color.value;
+	//background color as if color had full value
+	var hsv = {"h":cpick.color.hue,"s":cpick.color.saturation,"v":100}; 
+	var c = iro.Color.hsvToRgb(hsv);
+	var cs = 'rgb('+c.r+','+c.g+','+c.b+')';
+	v.nextElementSibling.style.backgroundImage = `linear-gradient(90deg, #000 0%, ${cs})`;
+
+	//update Kelvin slider
+	gId('sliderK').value = cpick.color.kelvin;
+}
+
+function setPicker(rgb) {
+	var c = new iro.Color(rgb);
+	if (c.value > 0) cpick.color.set(c);
+	else cpick.color.setChannel('hsv', 'v', 0);
+}
+
+function fromV()
+{
+	cpick.color.setChannel('hsv', 'v', d.getElementById('sliderV').value);
+}
+
+function fromK()
+{
+	cpick.color.set({ kelvin: d.getElementById('sliderK').value });
 }
 
 function fromRgb()
@@ -1390,7 +1435,6 @@ function move(e)
 
 function size()
 {
-	w = window.innerWidth;
 	var h = gId('top').clientHeight;
 	sCol('--th', h + "px");
     sCol("--tp", h - (gId(`briwrap`).style.display === "block" ? 0 : gId(`briwrap`).clientTop) + "px");

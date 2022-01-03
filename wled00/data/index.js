@@ -15,7 +15,7 @@ var csel = 0;
 var currentPreset = -1, prevPS = -1;
 var lastUpdate = 0;
 var segCount = 0, ledCount = 0, lowestUnused = 0, maxSeg = 0, lSeg = 0;
-var pcMode = false, pcModeA = false, lastw = 0;
+var pcMode = false, pcModeA = false, lastw = 0, wW;
 var tr = 7;
 var d = document;
 var palettesData;
@@ -2340,7 +2340,7 @@ function showNodes() {
 
 function size()
 {
-	w = window.innerWidth;
+	wW = window.innerWidth;
 	showNodes();
 	var h = gId('top').clientHeight;
 	sCol('--th', h + "px");
@@ -2357,8 +2357,8 @@ function togglePcMode(fromB = false)
 		localStorage.setItem('pcm', pcModeA);
 		pcMode = pcModeA;
 	}
-	if (w < 1250 && !pcMode) return;
-	if (!fromB && ((w < 1250 && lastw < 1250) || (w >= 1250 && lastw >= 1250))) return;
+	if (wW < 1250 && !pcMode) return;
+	if (!fromB && ((wW < 1250 && lastw < 1250) || (wW >= 1250 && lastw >= 1250))) return;
 	openTab(0, true);
 	if (w < 1250) {pcMode = false;}
 	else if (pcModeA && !fromB) pcMode = pcModeA;
@@ -2367,7 +2367,7 @@ function togglePcMode(fromB = false)
 	gId('bot').style.height = (pcMode && !cfg.comp.pcmbot) ? "0":"auto";
 	sCol('--bh', gId('bot').clientHeight + "px");
 	_C.style.width = (pcMode)?'100%':'400%';
-	lastw = w;
+	lastw = wW;
 }
 
 function mergeDeep(target, ...sources)
