@@ -115,11 +115,11 @@ typedef enum {
   Glyphs: 1/1
   BBX Build Mode: 3
   * 4 = custom palette
-*/
+* /
 const uint8_t u8x8_font_benji_custom_icons_1x1[13] U8X8_FONT_SECTION("u8x8_font_benji_custom_icons_1x1") = 
  "\4\4\1\1<n\372\377\275\277\26\34";
 
-/*
+/ *
   Fontname: benji_custom_icons_2x
   Copyright: 
   Glyphs: 8/8
@@ -134,7 +134,7 @@ const uint8_t u8x8_font_benji_custom_icons_1x1[13] U8X8_FONT_SECTION("u8x8_font_
   * 6 = moon
   * 7 = brush
   * 8 = custom saturation
-*/
+* /
 const uint8_t u8x8_font_benji_custom_icons_2x2[261] U8X8_FONT_SECTION("u8x8_font_benji_custom_icons_2x2") = 
   "\1\10\2\2\200\200\14\14\300\340\360\363\363\360\340\300\14\14\200\200\1\1\60\60\3\7\17\317\317\17\7\3"
   "\60\60\1\1\374\370\360\340\340\300\200\0\374\370\360\340\340\300\200\0\77\37\17\7\7\3\1\0\77\37\17\7"
@@ -146,7 +146,7 @@ const uint8_t u8x8_font_benji_custom_icons_2x2[261] U8X8_FONT_SECTION("u8x8_font
   "\0\0\0\0\200\200\14\14\300\340\360\363\363\360\340\300\14\14\200\200\1\1\60\60\3\4\10\310\310\10\4\3"
   "\60\60\1\1";
 
-/*
+/ *
   Fontname: benji_custom_icons_6x
   Copyright: 
   Glyphs: 8/8
@@ -161,7 +161,7 @@ const uint8_t u8x8_font_benji_custom_icons_2x2[261] U8X8_FONT_SECTION("u8x8_font
   * 6 = moon
   * 7 = brush
   * 8 = custom saturation
-*/
+* /
 const uint8_t u8x8_font_benji_custom_icons_6x6[2308] U8X8_FONT_SECTION("u8x8_font_benji_custom_icons_6x6") = 
   "\1\10\6\6\0\0\0\0\0\0\200\300\300\300\300\200\0\0\0\0\0\0\0\0\0\36\77\77\77\77\36\0"
   "\0\0\0\0\0\0\0\0\200\300\300\300\300\200\0\0\0\0\0\0\0\0\0\0\0\0\7\17\17\17\17\7"
@@ -236,6 +236,7 @@ const uint8_t u8x8_font_benji_custom_icons_6x6[2308] U8X8_FONT_SECTION("u8x8_fon
   "\3\3\1\0\0\0\60x\374\374x\60\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
   "\0\0\0\0\0\0\0\0\14\36\77\77\36\14\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
   "\0\0\0";
+*/
 
 class FourLineDisplayUsermod : public Usermod {
 
@@ -484,45 +485,44 @@ class FourLineDisplayUsermod : public Usermod {
 
       // Check if values which are shown on display changed from the last time.
       if (forceRedraw) {
-          knownHour = 99;
-          needRedraw = true;
-          clear();
+        needRedraw = true;
+        clear();
       } else if ((bri == 0 && powerON) || (bri > 0 && !powerON)) {   //trigger power icon
-          powerON = !powerON;
-          drawStatusIcons();
-          return;
+        powerON = !powerON;
+        drawStatusIcons();
+        return;
       } else if (knownnightlight != nightlightActive) {   //trigger moon icon 
-          knownnightlight = nightlightActive;
-          drawStatusIcons();
-          if (knownnightlight) {
-            String timer = PSTR("Timer On");
-            center(timer,LINE_BUFFER_SIZE-1);
-            overlay(timer.c_str(), 3000, 6);
-            lastRedraw = millis();
-          }
-          return;
+        knownnightlight = nightlightActive;
+        drawStatusIcons();
+        if (knownnightlight) {
+          String timer = PSTR("Timer On");
+          center(timer,LINE_BUFFER_SIZE-1);
+          overlay(timer.c_str(), 3000, 6);
+          lastRedraw = millis();
+        }
+        return;
       } else if (wificonnected != interfacesInited) {   //trigger wifi icon
-          wificonnected = interfacesInited;
-          drawStatusIcons();
-          return;
+        wificonnected = interfacesInited;
+        drawStatusIcons();
+        return;
       } else if (knownMode != effectCurrent) {
-          knownMode = effectCurrent;
-          if (displayTurnedOff) needRedraw = true;
-          else { showCurrentEffectOrPalette(knownMode, JSON_mode_names, 3); return; }
+        knownMode = effectCurrent;
+        if (displayTurnedOff) needRedraw = true;
+        else { showCurrentEffectOrPalette(knownMode, JSON_mode_names, 3); return; }
       } else if (knownPalette != effectPalette) {
-          knownPalette = effectPalette;
-          if (displayTurnedOff) needRedraw = true;
-          else { showCurrentEffectOrPalette(knownPalette, JSON_palette_names, 2); return; }
+        knownPalette = effectPalette;
+        if (displayTurnedOff) needRedraw = true;
+        else { showCurrentEffectOrPalette(knownPalette, JSON_palette_names, 2); return; }
       } else if (knownBrightness != bri) {
-          if (displayTurnedOff && nightlightActive) { needRedraw = false; knownBrightness = bri; }
-          else if (displayTurnedOff) needRedraw = true;
-          else { updateBrightness(); return; }
+        if (displayTurnedOff && nightlightActive) { needRedraw = false; knownBrightness = bri; }
+        else if (displayTurnedOff) needRedraw = true;
+        else { updateBrightness(); return; }
       } else if (knownEffectSpeed != effectSpeed) {
-          if (displayTurnedOff) needRedraw = true;
-          else { updateSpeed(); return; }
+        if (displayTurnedOff) needRedraw = true;
+        else { updateSpeed(); return; }
       } else if (knownEffectIntensity != effectIntensity) {
-          if (displayTurnedOff) needRedraw = true;
-          else { updateIntensity(); return; }
+        if (displayTurnedOff) needRedraw = true;
+        else { updateIntensity(); return; }
       }
 
       if (!needRedraw) {
@@ -606,17 +606,17 @@ class FourLineDisplayUsermod : public Usermod {
 
     void draw2x2GlyphIcons() {
       if (lineHeight == 2) {
-        drawGlyph(1, 0, 1,             u8x8_font_benji_custom_icons_2x2, true);//brightness icon
-        drawGlyph(5, 0, 2,             u8x8_font_benji_custom_icons_2x2, true);//speed icon
-        drawGlyph(9, 0, 3,             u8x8_font_benji_custom_icons_2x2, true);//intensity icon
-        drawGlyph(14, 2*lineHeight, 4, u8x8_font_benji_custom_icons_2x2, true);//palette icon
-        drawGlyph(14, 3*lineHeight, 5, u8x8_font_benji_custom_icons_2x2, true);//effect icon
+        drawGlyph( 1,            0, 0x45, u8x8_font_open_iconic_weather_2x2, true);  //brightness icon
+        drawGlyph( 5,            0, 0x48, u8x8_font_open_iconic_play_2x2, true);     //speed icon
+        drawGlyph( 9,            0, 0x4e, u8x8_font_open_iconic_thing_2x2, true);    //intensity icon
+        drawGlyph(14, 2*lineHeight, 0x48, u8x8_font_open_iconic_thing_2x2, true);    //palette icon
+        drawGlyph(14, 3*lineHeight, 0x46, u8x8_font_open_iconic_thing_2x2, true);    //effect icon
       } else {
-        drawGlyph(2, 0, 69,             u8x8_font_open_iconic_weather_1x1);    //brightness icon
-        drawGlyph(6, 0, 72,             u8x8_font_open_iconic_play_1x1);       //speed icon
-        drawGlyph(10, 0, 78,            u8x8_font_open_iconic_thing_1x1);      //intensity icon
-        drawGlyph(15, 2*lineHeight, 4,  u8x8_font_benji_custom_icons_1x1);     //palette icon
-        drawGlyph(15, 3*lineHeight, 70, u8x8_font_open_iconic_thing_1x1);      //effect icon
+        drawGlyph( 2,            0, 0x45, u8x8_font_open_iconic_weather_1x1);  //brightness icon
+        drawGlyph( 6,            0, 0x48, u8x8_font_open_iconic_play_1x1);     //speed icon
+        drawGlyph(10,            0, 0x4e, u8x8_font_open_iconic_thing_1x1);    //intensity icon
+        drawGlyph(15, 2*lineHeight, 0x48, u8x8_font_open_iconic_thing_1x1);    //palette icon
+        drawGlyph(15, 3*lineHeight, 0x46, u8x8_font_open_iconic_thing_1x1);    //effect icon
       }
     }
 
@@ -724,12 +724,49 @@ class FourLineDisplayUsermod : public Usermod {
       // Turn the display back on
       if (!wakeDisplay()) clear();
       // Print the overlay
-      if (glyphType > 0) {
-        if (lineHeight == 2) drawGlyph(5, 0, glyphType, u8x8_font_benji_custom_icons_6x6, true);
-        else                 drawGlyph(7, lineHeight, glyphType, u8x8_font_benji_custom_icons_2x2, true);
-        if (line1) drawString(0, 3*lineHeight, line1);
-      } else {
-        if (line1) drawString(0, lineHeight, line1);
+      switch (glyphType) {
+        case 0:
+          if (lineHeight == 2) drawGlyph(6,          1, 0x4e, u8x8_font_open_iconic_embedded_4x4, true);
+          else                 drawGlyph(7, lineHeight, 0x4e, u8x8_font_open_iconic_embedded_2x2, true);
+          break;
+        case 1:
+          if (lineHeight == 2) drawGlyph(6,          1, 0x45, u8x8_font_open_iconic_weather_4x4, true);
+          else                 drawGlyph(7, lineHeight, 0x45, u8x8_font_open_iconic_weather_2x2, true);
+          break;
+        case 2:
+          if (lineHeight == 2) drawGlyph(6,          1, 0x48, u8x8_font_open_iconic_play_4x4, true);
+          else                 drawGlyph(7, lineHeight, 0x48, u8x8_font_open_iconic_play_2x2, true);
+          break;
+        case 3:
+          if (lineHeight == 2) drawGlyph(6,          1, 0x4e, u8x8_font_open_iconic_thing_4x4, true);
+          else                 drawGlyph(7, lineHeight, 0x4e, u8x8_font_open_iconic_thing_2x2, true);
+          break;
+        case 4:
+          if (lineHeight == 2) drawGlyph(6,          1, 0x48, u8x8_font_open_iconic_thing_4x4, true);
+          else                 drawGlyph(7, lineHeight, 0x48, u8x8_font_open_iconic_thing_2x2, true);
+          break;
+        case 5:
+          if (lineHeight == 2) drawGlyph(6,          1, 0x46, u8x8_font_open_iconic_thing_4x4, true);
+          else                 drawGlyph(7, lineHeight, 0x46, u8x8_font_open_iconic_thing_2x2, true);
+          break;
+        case 6:
+          if (lineHeight == 2) drawGlyph(6,          1, 0x47, u8x8_font_open_iconic_thing_4x4, true);
+          else                 drawGlyph(7, lineHeight, 0x47, u8x8_font_open_iconic_thing_2x2, true);
+          break;
+        case 7:
+          if (lineHeight == 2) drawGlyph(6,          1, 0x4b, u8x8_font_open_iconic_embedded_4x4, true);
+          else                 drawGlyph(7, lineHeight, 0x4b, u8x8_font_open_iconic_embedded_2x2, true);
+          break;
+        case 8:
+          if (lineHeight == 2) drawGlyph(6,          1, 0x44, u8x8_font_open_iconic_weather_4x4, true);
+          else                 drawGlyph(7, lineHeight, 0x44, u8x8_font_open_iconic_weather_2x2, true);
+          break;
+      }
+
+      if (line1) {
+        String buf = line1;
+        center(buf, getCols());
+        drawString(0, (glyphType<255?3:0)*lineHeight, buf.c_str());
       }
       overlayUntil = millis() + showHowLong;
     }

@@ -39,9 +39,17 @@ void handlePresets()
   errorFlag = readObjectFromFileUsingId(filename, presetToApply, fileDoc) ? ERR_NONE : ERR_FS_PLOAD;
   }
   fdo = fileDoc->as<JsonObject>();
-  fdo.remove("ps"); //remove load request for presets to prevent recursive crash
 
-  deserializeState(fdo, callModeToApply, presetToApply);
+  //HTTP API commands
+  const char* httpwin = fdo["win"];
+  if (httpwin) {
+    String apireq = "win&";
+    apireq += httpwin;
+    handleSet(nullptr, apireq, false);
+  } else {
+    fdo.remove("ps"); //remove load request for presets to prevent recursive crash
+    deserializeState(fdo, CALL_MODE_NO_NOTIFY, presetToApply);
+  }
 
   #if defined(ARDUINO_ARCH_ESP32)
   //Aircoookie recommended not to delete buffer
@@ -54,7 +62,10 @@ void handlePresets()
   releaseJSONBufferLock(); // will also clear fileDoc
 
   if (!errorFlag && presetToApply < 255) currentPreset = presetToApply;
-  if (callModeToApply == CALL_MODE_BUTTON_PRESET) errorFlag = ERR_NONE; //ignore error on button press
+
+  colorUpdated(callModeToApply);
+  updateInterfaces(callModeToApply);
+
   presetToApply = 0; //clear request for preset
   callModeToApply = 0;
 }
