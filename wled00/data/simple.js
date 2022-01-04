@@ -1,7 +1,7 @@
 //page js
 var loc = false, locip;
 var noNewSegs = false;
-var isOn = false, isInfo = false, isNodes = false, isRgbw = false;
+var isOn = false, isInfo = false, isNodes = false, isRgbw = false, cct = false;
 var whites = [0,0,0];
 var selColors;
 var powered = [true];
@@ -46,7 +46,8 @@ function applyCfg()
 	if (bg) sCol('--c-1', bg);
 	var ccfg = cfg.comp.colors;
 	//gId('picker').style.display = "none"; // ccfg.picker ? "block":"none";
-	gId('rgbwrap').style.display = ccfg.rgb ? "block":"none";
+	//gId('vwrap').style.display = "none"; // ccfg.picker ? "block":"none";
+	//gId('rgbwrap').style.display = ccfg.rgb ? "block":"none";
 	gId('qcs-w').style.display = ccfg.quick ? "block":"none";
 	var l = cfg.comp.labels; //l = false;
 	var e = d.querySelectorAll('.tab-label');
@@ -481,39 +482,7 @@ function parseInfo() {
 	syncTglRecv = li.str;
 	maxSeg      = li.leds.maxseg;
 	pmt         = li.fs.pmt;
-}
-
-function loadInfo(callback=null)
-{
-	var url = (loc?`http://${locip}`:'') + '/json/info';
-	var useWs = (ws && ws.readyState === WebSocket.OPEN);
-	if (useWs) {
-		ws.send('{"v":true}');
-		return;
-	}
-	fetch(url, {
-		method: 'get'
-	})
-	.then(res => {
-		if (!res.ok) showToast('Could not load Info!', true);
-		return res.json();
-	})
-	.then(json => {
-		clearErrorToast();
-		lastinfo = json;
-		parseInfo();
-		if (isInfo) populateInfo(json);
-		updateUI();
-		reqsLegal = true;
-		if (!ws && lastinfo.ws > -1) setTimeout(makeWS,500);
-	})
-	.catch(function (error) {
-		showToast(error, true);
-		console.log(error);
-	})
-	.finally(()=>{
-		if (callback) callback();
-	});
+	cct         = li.leds.cct;
 }
 
 function populateInfo(i)
@@ -539,7 +508,7 @@ function populateInfo(i)
 	if (i.ver.includes("-bl")) vcn = "Ryujin";
 	if (i.cn) vcn = i.cn;
 
-	cn += `v${i.ver} "${vcn}"<br><br><table class="infot">
+	cn += `v${i.ver} "${vcn}"<br><br><table>
 ${urows}
 ${inforow("Build",i.vid)}
 ${inforow("Signal strength",i.wifi.signal +"% ("+ i.wifi.rssi, " dBm)")}
@@ -856,10 +825,12 @@ function updateUI()
 	updateTrail(gId('sliderBri'));
 	updateTrail(gId('sliderSpeed'));
 	updateTrail(gId('sliderIntensity'));
-	if (isRgbw) gId('wwrap').style.display = "block";
-	gId("wbal").style.display = (lastinfo.leds.cct) ? "block":"none";
 
-	updatePA(true);
+	gId('wwrap').style.display = (isRgbw) ? "block":"none";
+	gId("wbal").style.display = (cct) ? "block":"none";
+	gId('kwrap').style.display = (cct) ? "none":"block";
+
+	updatePA();
 	redrawPalPrev();
 	updatePSliders();
 
@@ -877,7 +848,7 @@ function cmpP(a, b)
 }
 
 function makeWS() {
-	if (ws || lastinfo.ws<0) return;
+	if (ws) return;
 	ws = new WebSocket('ws://'+(loc?locip:window.location.hostname)+'/ws');
 	ws.onmessage = function(event) {
 		var json = JSON.parse(event.data);
@@ -955,7 +926,11 @@ function readState(s,command=false)
 
 	gId('sliderSpeed').value = i.sx;
 	gId('sliderIntensity').value = i.ix;
-
+/*
+	gId('sliderC1').value  = i.f1x ? i.f1x : 0;
+	gId('sliderC2').value  = i.f2x ? i.f2x : 0;
+	gId('sliderC3').value  = i.f3x ? i.f3x : 0;
+*/
 	if (s.error && s.error != 0) {
 	  var errstr = "";
 	  switch (s.error) {
@@ -1054,8 +1029,9 @@ function toggleInfo()
 {
 	if (isNodes) toggleNodes();
 	isInfo = !isInfo;
-	if (isInfo) requestJson(); // loadInfo();
+	if (isInfo) requestJson();
 	gId('info').style.transform = (isInfo) ? "translateY(0px)":"translateY(100%)";
+	gId('buttonI').className = (isInfo) ? "active":"";
 }
 
 function toggleNodes()
@@ -1064,6 +1040,7 @@ function toggleNodes()
 	isNodes = !isNodes;
 	if (isNodes) loadNodes();
 	gId('nodes').style.transform = (isNodes) ? "translateY(0px)":"translateY(100%)";
+	gId('buttonNodes').className = (isNodes) ? "active":"";
 }
 
 function tglBri(b=null)
@@ -1079,6 +1056,7 @@ function tglCP()
 	var p = gId('buttonCP').className === "active";
 	gId('buttonCP').className = !p ? "active":"";
 	gId('picker').style.display = !p ? "block":"none";
+	gId('vwrap').style.display = !p ? "block":"none";
 	gId('rgbwrap').style.display = !p ? "block":"none";
 	var csl = gId(`csl`).style.display === "block";
 	gId('csl').style.display = !csl ? "block":"none";
@@ -1186,12 +1164,10 @@ function selectSlot(b)
 {
 	csel = b;
 	var cd = gId('csl').children;
-	for (let i = 0; i < cd.length; i++) {
-		cd[i].classList.remove('xxs-w');
-	}
-	cd[csel].classList.add('xxs-w');
-	cpick.color.set(cd[csel].style.backgroundColor);
-	gId('sliderW').value = whites[csel];
+	for (let i = 0; i < cd.length; i++) cd[i].classList.remove('xxs-w');
+	cd[b].classList.add('xxs-w');
+	setPicker(cd[b].style.backgroundColor);
+	gId('sliderW').value = whites[b];
 	redrawPalPrev();
 	updatePSliders();
 }
@@ -1207,7 +1183,7 @@ function pC(col)
 		} while (Math.abs(col.h - lasth) < 50);
 		lasth = col.h;
 	}
-	cpick.color.set(col);
+	setPicker(col);
 	setColor(0);
 }
 
@@ -1257,7 +1233,7 @@ function fromRgb()
 	var r = gId('sliderR').value;
 	var g = gId('sliderG').value;
 	var b = gId('sliderB').value;
-	cpick.color.set(`rgb(${r},${g},${b})`);
+	setPicker(`rgb(${r},${g},${b})`);
 	setColor(0);
 }
 
@@ -1265,7 +1241,7 @@ function fromRgb()
 function setColor(sr)
 {
 	var cd = gId('csl').children; // color slots
-	if (sr == 1 && cd[csel].style.backgroundColor == 'rgb(0,0,0)') cpick.color.setChannel('hsv', 'v', 100);
+	if (sr == 1 && cd[csel].style.backgroundColor == 'rgb(0, 0, 0)') cpick.color.setChannel('hsv', 'v', 100);
 	cd[csel].style.backgroundColor = cpick.color.rgbString;
 	if (sr != 2) whites[csel] = parseInt(gId('sliderW').value);
 	var col = cpick.color.rgb;
