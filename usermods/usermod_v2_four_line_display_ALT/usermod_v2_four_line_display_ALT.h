@@ -124,14 +124,14 @@ typedef enum {
   * 8  = contrast
   * 9  = power-standby
   * 10 = wifi
-* /
+*/
 const uint8_t u8x8_4LineDisplay_WLED_icons_1x1[84] U8X8_FONT_SECTION("u8x8_4LineDisplay_WLED_icons_1x1") = 
   "\1\12\1\1\0B\30<<\30B\0~<\30\0~<\30\0p\374\77\216\340\370\360\0<n\372\377"
   "\275\277\26\34\374\374\77\77\374\374\60\60<~~\360\340``\0\200\340\360p\14\16\6\1<~\377\377"
   "\201\201B<\70D\200\217\200D\70\0\2\1\11\311\311\1\2";
 
 
-/ *
+/*
   Fontname: 4LineDisplay_WLED_icons_2x
   Copyright: 
   Glyphs: 9/9
@@ -145,7 +145,7 @@ const uint8_t u8x8_4LineDisplay_WLED_icons_1x1[84] U8X8_FONT_SECTION("u8x8_4Line
   * 7 = brush
   * 8 = contrast
   * 9 = power-standby
-* /
+*/
 const uint8_t u8x8_4LineDisplay_WLED_icons_2x2[292] U8X8_FONT_SECTION("u8x8_4LineDisplay_WLED_icons_2x2") = 
   "\1\11\2\2\200\200\14\14\300\340\360\363\363\360\340\300\14\14\200\200\1\1\60\60\3\7\17\317\317\17\7\3"
   "\60\60\1\1\374\370\360\340\340\300\200\0\374\370\360\340\340\300\200\0\77\37\17\7\7\3\1\0\77\37\17\7"
@@ -158,7 +158,7 @@ const uint8_t u8x8_4LineDisplay_WLED_icons_2x2[292] U8X8_FONT_SECTION("u8x8_4Lin
   "p<\37\7\300\340p\30\0\0\377\377\0\0\30p\340\300\0\0\17\37\70`\340\300\300\300\300\340`\70"
   "\37\17\0";
 
-/ *
+/*
   Fontname: 4LineDisplay_WLED_icons_4x
   Copyright: 
   Glyphs: 9/9
@@ -172,7 +172,7 @@ const uint8_t u8x8_4LineDisplay_WLED_icons_2x2[292] U8X8_FONT_SECTION("u8x8_4Lin
   * 7 = brush
   * 8 = contrast
   * 9 = power-standby
-* /
+*/
 const uint8_t u8x8_4LineDisplay_WLED_icons_4x4[1156] U8X8_FONT_SECTION("u8x8_4LineDisplay_WLED_icons_4x4") = 
   "\1\11\4\4\0\0\0\0`\360\360`\0\0\0\0\0\0\6\17\17\6\0\0\0\0\0\0`\360\360`"
   "\0\0\0\0\200\300\300\200\0\0\0\0\340\370\374\376\376\377\377\377\377\377\377\376\376\374\370\340\0\0\0\0"
@@ -213,7 +213,7 @@ const uint8_t u8x8_4LineDisplay_WLED_icons_4x4[1156] U8X8_FONT_SECTION("u8x8_4Li
   "\0\0\0";
 
 
-/ *
+/*
   Fontname: 4LineDisplay_WLED_icons_6x
   Copyright: 
   Glyphs: 9/9
@@ -227,7 +227,7 @@ const uint8_t u8x8_4LineDisplay_WLED_icons_4x4[1156] U8X8_FONT_SECTION("u8x8_4Li
   * 7 = brush
   * 8 = contrast
   * 9 = power-standby
-* /
+*/
 const uint8_t u8x8_4LineDisplay_WLED_icons_6x6[2596] U8X8_FONT_SECTION("u8x8_4LineDisplay_WLED_icons_6x6") = 
   "\1\11\6\6\0\0\0\0\0\0\200\300\300\300\300\200\0\0\0\0\0\0\0\0\0\36\77\77\77\77\36\0"
   "\0\0\0\0\0\0\0\0\200\300\300\300\300\200\0\0\0\0\0\0\0\0\0\0\0\0\7\17\17\17\17\7"
@@ -311,7 +311,7 @@ const uint8_t u8x8_4LineDisplay_WLED_icons_6x6[2596] U8X8_FONT_SECTION("u8x8_4Li
   "\0\200\200\300\340\370\374\377\377\377\177\37\7\0\0\0\0\0\0\0\0\0\0\0\0\1\3\7\17\37\37\77"
   "\77\177~~~\374\374\374\374\374\374\374\374~~~\177\77\77\37\37\17\7\3\1\0\0\0\0\0\0\0"
   "\0\0\0";
-*/
+
 
 class FourLineDisplayUsermod : public Usermod {
 
@@ -463,7 +463,7 @@ class FourLineDisplayUsermod : public Usermod {
       setContrast(contrast); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
       setPowerSave(0);
       //drawString(0, 0, "Loading...");
-      overlay(PSTR("Loading..."),3000,0);
+      overlay(PSTR("Loading..."),3000,9);
     }
 
     // gets called every time WiFi is (re-)connected. Initialize own network
@@ -681,24 +681,24 @@ class FourLineDisplayUsermod : public Usermod {
 
     void draw2x2GlyphIcons() {
       if (lineHeight == 2) {
-        drawGlyph( 1,            0, 0x45, u8x8_font_open_iconic_weather_2x2, true);  //brightness icon
-        drawGlyph( 5,            0, 0x48, u8x8_font_open_iconic_play_2x2, true);     //speed icon
-        drawGlyph( 9,            0, 0x4e, u8x8_font_open_iconic_thing_2x2, true);    //intensity icon
-        drawGlyph(14, 2*lineHeight, 0x48, u8x8_font_open_iconic_thing_2x2, true);    //palette icon
-        drawGlyph(14, 3*lineHeight, 0x46, u8x8_font_open_iconic_thing_2x2, true);    //effect icon
+        drawGlyph( 1,            0, 1, u8x8_4LineDisplay_WLED_icons_2x2, true); //brightness icon
+        drawGlyph( 5,            0, 2, u8x8_4LineDisplay_WLED_icons_2x2, true); //speed icon
+        drawGlyph( 9,            0, 3, u8x8_4LineDisplay_WLED_icons_2x2, true); //intensity icon
+        drawGlyph(14, 2*lineHeight, 4, u8x8_4LineDisplay_WLED_icons_2x2, true); //palette icon
+        drawGlyph(14, 3*lineHeight, 5, u8x8_4LineDisplay_WLED_icons_2x2, true); //effect icon
       } else {
-        drawGlyph( 2,            0, 0x45, u8x8_font_open_iconic_weather_1x1);  //brightness icon
-        drawGlyph( 6,            0, 0x48, u8x8_font_open_iconic_play_1x1);     //speed icon
-        drawGlyph(10,            0, 0x4e, u8x8_font_open_iconic_thing_1x1);    //intensity icon
-        drawGlyph(15, 2*lineHeight, 0x48, u8x8_font_open_iconic_thing_1x1);    //palette icon
-        drawGlyph(15, 3*lineHeight, 0x46, u8x8_font_open_iconic_thing_1x1);    //effect icon
+        drawGlyph( 2,            0, 1, u8x8_4LineDisplay_WLED_icons_1x1); //brightness icon
+        drawGlyph( 6,            0, 2, u8x8_4LineDisplay_WLED_icons_1x1); //speed icon
+        drawGlyph(10,            0, 3, u8x8_4LineDisplay_WLED_icons_1x1); //intensity icon
+        drawGlyph(15, 2*lineHeight, 4, u8x8_4LineDisplay_WLED_icons_1x1); //palette icon
+        drawGlyph(15, 3*lineHeight, 5, u8x8_4LineDisplay_WLED_icons_1x1); //effect icon
       }
     }
 
     void drawStatusIcons() {
-      drawGlyph(14, 0, 80 + (wificonnected?0:1),    u8x8_font_open_iconic_embedded_1x1, true); // wifi icon
-      drawGlyph(15, 0, 78 + (bri > 0 ? 0 : 3),      u8x8_font_open_iconic_embedded_1x1, true); // power icon
-      drawGlyph(13, 0, 66 + (nightlightActive?0:4), u8x8_font_open_iconic_weather_1x1, true);  // moon icon for nighlight mode
+      drawGlyph(14, 0,   (wificonnected ? 10 : 0), u8x8_4LineDisplay_WLED_icons_1x1, true); // wifi icon
+      drawGlyph(15, 0,          (bri > 0 ? 9 : 0), u8x8_4LineDisplay_WLED_icons_1x1, true); // power icon
+      drawGlyph(13, 0, (nightlightActive ? 6 : 0), u8x8_4LineDisplay_WLED_icons_1x1, true); // moon icon for nighlight mode
     }
     
     /**
@@ -799,45 +799,10 @@ class FourLineDisplayUsermod : public Usermod {
       // Turn the display back on
       if (!wakeDisplay()) clear();
       // Print the overlay
-      switch (glyphType) {
-        case 0:
-          if (lineHeight == 2) drawGlyph(6,          1, 0x4e, u8x8_font_open_iconic_embedded_4x4, true);
-          else                 drawGlyph(7, lineHeight, 0x4e, u8x8_font_open_iconic_embedded_2x2, true);
-          break;
-        case 1:
-          if (lineHeight == 2) drawGlyph(6,          1, 0x45, u8x8_font_open_iconic_weather_4x4, true);
-          else                 drawGlyph(7, lineHeight, 0x45, u8x8_font_open_iconic_weather_2x2, true);
-          break;
-        case 2:
-          if (lineHeight == 2) drawGlyph(6,          1, 0x48, u8x8_font_open_iconic_play_4x4, true);
-          else                 drawGlyph(7, lineHeight, 0x48, u8x8_font_open_iconic_play_2x2, true);
-          break;
-        case 3:
-          if (lineHeight == 2) drawGlyph(6,          1, 0x4e, u8x8_font_open_iconic_thing_4x4, true);
-          else                 drawGlyph(7, lineHeight, 0x4e, u8x8_font_open_iconic_thing_2x2, true);
-          break;
-        case 4:
-          if (lineHeight == 2) drawGlyph(6,          1, 0x48, u8x8_font_open_iconic_thing_4x4, true);
-          else                 drawGlyph(7, lineHeight, 0x48, u8x8_font_open_iconic_thing_2x2, true);
-          break;
-        case 5:
-          if (lineHeight == 2) drawGlyph(6,          1, 0x46, u8x8_font_open_iconic_thing_4x4, true);
-          else                 drawGlyph(7, lineHeight, 0x46, u8x8_font_open_iconic_thing_2x2, true);
-          break;
-        case 6:
-          if (lineHeight == 2) drawGlyph(6,          1, 0x47, u8x8_font_open_iconic_thing_4x4, true);
-          else                 drawGlyph(7, lineHeight, 0x47, u8x8_font_open_iconic_thing_2x2, true);
-          break;
-        case 7:
-          if (lineHeight == 2) drawGlyph(6,          1, 0x4b, u8x8_font_open_iconic_embedded_4x4, true);
-          else                 drawGlyph(7, lineHeight, 0x4b, u8x8_font_open_iconic_embedded_2x2, true);
-          break;
-        case 8:
-          if (lineHeight == 2) drawGlyph(6,          1, 0x44, u8x8_font_open_iconic_weather_4x4, true);
-          else                 drawGlyph(7, lineHeight, 0x44, u8x8_font_open_iconic_weather_2x2, true);
-          break;
+      if (glyphType>0 && glyphType<255) {
+          if (lineHeight == 2) drawGlyph(5,          0, glyphType, u8x8_4LineDisplay_WLED_icons_6x6, true);
+          else                 drawGlyph(7, lineHeight, glyphType, u8x8_4LineDisplay_WLED_icons_2x2, true);
       }
-
       if (line1) {
         String buf = line1;
         center(buf, getCols());
