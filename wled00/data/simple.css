@@ -343,7 +343,7 @@ button:hover {
 }
 #info table .btn, #nodes table .btn {
 	margin: 0;
-	width: 230px;
+	width: 180px;
 }
 #info div, #nodes div {
 	width: 490px;
@@ -482,7 +482,8 @@ input[type=range]::-moz-range-thumb {
 #Colors input[type=range]::-moz-range-thumb {
 	border: 2px solid var(--c-1);
 }
-#kwrap, #wwrap, #wbal {
+
+#picker, #rgbwrap, #kwrap, #vwrap, #wwrap, #wbal {
 	display: none;
 }
 
@@ -497,11 +498,6 @@ input[type=range]::-moz-range-thumb {
 
 #picker {
 	width: 260px;
-	display: none;
-}
-
-#rgbwrap, #wwrap, #wbal {
-	display: none;
 }
 
 #picker, #csl, #segcont {
