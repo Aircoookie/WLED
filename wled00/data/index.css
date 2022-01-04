@@ -537,7 +537,6 @@ img {
 #gwrap .sliderdisplay { background: linear-gradient(90deg, #000 0%, #0f0); }
 #bwrap .sliderdisplay { background: linear-gradient(90deg, #000 0%, #00f); }
 #wwrap .sliderdisplay { background: linear-gradient(90deg, #000 0%, #fff); }
-/*#vwrap .sliderdisplay { background: linear-gradient(90deg, #000 0%, #fff); }*/
 #kwrap .sliderdisplay { background: linear-gradient(90deg, #ff8f1f 0%, #fff 50%, #cbdbff); }
 #wbal  .sliderdisplay { background: linear-gradient(90deg, #ff8f1f 0%, #fff 50%, #cbdbff); }
 

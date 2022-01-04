@@ -46,7 +46,8 @@ function applyCfg()
 	if (bg) sCol('--c-1', bg);
 	var ccfg = cfg.comp.colors;
 	//gId('picker').style.display = "none"; // ccfg.picker ? "block":"none";
-	gId('rgbwrap').style.display = ccfg.rgb ? "block":"none";
+	//gId('vwrap').style.display = "none"; // ccfg.picker ? "block":"none";
+	//gId('rgbwrap').style.display = ccfg.rgb ? "block":"none";
 	gId('qcs-w').style.display = ccfg.quick ? "block":"none";
 	var l = cfg.comp.labels; //l = false;
 	var e = d.querySelectorAll('.tab-label');
