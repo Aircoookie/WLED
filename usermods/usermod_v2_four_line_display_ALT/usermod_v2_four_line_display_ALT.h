@@ -130,7 +130,7 @@ class FourLineDisplayUsermod : public Usermod {
     bool flip = false;              // flip display 180°
     uint8_t contrast = 10;          // screen contrast
     uint8_t lineHeight = 1;         // 1 row or 2 rows
-    uint32_t refreshRate = USER_LOOP_REFRESH_RATE_MS; // in ms
+    uint16_t refreshRate = USER_LOOP_REFRESH_RATE_MS; // in ms
     uint32_t screenTimeout = SCREEN_TIMEOUT_MS;       // in ms
     bool sleepMode = true;          // allow screen sleep?
     bool clockMode = false;         // display clock
@@ -276,7 +276,7 @@ class FourLineDisplayUsermod : public Usermod {
       if (!enabled || strip.isUpdating()) return;
       unsigned long now = millis();
       if (now < nextUpdate) return;
-      nextUpdate = now + ((clockMode && showSeconds) ? 1000 : refreshRate);
+      nextUpdate = now + ((displayTurnedOff && clockMode && showSeconds) ? 1000 : refreshRate);
       redraw(false);
     }
 
@@ -307,6 +307,11 @@ class FourLineDisplayUsermod : public Usermod {
       u8x8->setFont(font);
       if (!ignoreLH && lineHeight==2) u8x8->draw1x2Glyph(col, row, glyph);
       else                            u8x8->drawGlyph(col, row, glyph);
+    }
+    void draw2x2Glyph(uint8_t col, uint8_t row, char glyph, const uint8_t *font) {
+      if (type == NONE || !enabled) return;
+      u8x8->setFont(font);
+      u8x8->draw2x2Glyph(col, row, glyph);
     }
     uint8_t getCols() {
       if (type==NONE || !enabled) return 0;
@@ -367,8 +372,8 @@ class FourLineDisplayUsermod : public Usermod {
         if (knownnightlight) {
           String timer = PSTR("Timer On");
           center(timer,LINE_BUFFER_SIZE-1);
-          overlay(timer.c_str(), 3000, 6);
-          lastRedraw = millis();
+          overlay(timer.c_str(), 2500, 6);
+          //lastRedraw = millis();
         }
         return;
       } else if (wificonnected != interfacesInited) {   //trigger wifi icon
@@ -384,9 +389,8 @@ class FourLineDisplayUsermod : public Usermod {
         if (displayTurnedOff) needRedraw = true;
         else { showCurrentEffectOrPalette(knownPalette, JSON_palette_names, 2); return; }
       } else if (knownBrightness != bri) {
-        if (displayTurnedOff && nightlightActive) { needRedraw = false; knownBrightness = bri; }
-        else if (displayTurnedOff) needRedraw = true;
-        else { updateBrightness(); return; }
+        if (displayTurnedOff && nightlightActive) { knownBrightness = bri; }
+        else if (!displayTurnedOff) { updateBrightness(); return; }
       } else if (knownEffectSpeed != effectSpeed) {
         if (displayTurnedOff) needRedraw = true;
         else { updateSpeed(); return; }
@@ -448,7 +452,7 @@ class FourLineDisplayUsermod : public Usermod {
         char lineBuffer[4];
         sprintf_P(lineBuffer, PSTR("%-3d"), brightness100);
         drawString(1, lineHeight, lineBuffer);
-        lastRedraw = millis();
+        //lastRedraw = millis();
       }
     }
 
@@ -459,7 +463,7 @@ class FourLineDisplayUsermod : public Usermod {
         char lineBuffer[4];
         sprintf_P(lineBuffer, PSTR("%-3d"), fxspeed100);
         drawString(5, lineHeight, lineBuffer);
-        lastRedraw = millis();
+        //lastRedraw = millis();
       }
     }
 
@@ -470,7 +474,7 @@ class FourLineDisplayUsermod : public Usermod {
         char lineBuffer[4];
         sprintf_P(lineBuffer, PSTR("%-3d"), fxintensity100);
         drawString(9, lineHeight, lineBuffer);
-        lastRedraw = millis();
+        //lastRedraw = millis();
       }
     }
 
@@ -482,18 +486,22 @@ class FourLineDisplayUsermod : public Usermod {
         drawGlyph(14, 2*lineHeight, 4, u8x8_4LineDisplay_WLED_icons_2x2, true); //palette icon
         drawGlyph(14, 3*lineHeight, 5, u8x8_4LineDisplay_WLED_icons_2x2, true); //effect icon
       } else {
-        drawGlyph( 2,            0, 1, u8x8_4LineDisplay_WLED_icons_1x1); //brightness icon
-        drawGlyph( 6,            0, 2, u8x8_4LineDisplay_WLED_icons_1x1); //speed icon
-        drawGlyph(10,            0, 3, u8x8_4LineDisplay_WLED_icons_1x1); //intensity icon
-        drawGlyph(15, 2*lineHeight, 4, u8x8_4LineDisplay_WLED_icons_1x1); //palette icon
-        drawGlyph(15, 3*lineHeight, 5, u8x8_4LineDisplay_WLED_icons_1x1); //effect icon
+        drawGlyph( 2, 0, 1, u8x8_4LineDisplay_WLED_icons_1x1); //brightness icon
+        drawGlyph( 6, 0, 2, u8x8_4LineDisplay_WLED_icons_1x1); //speed icon
+        drawGlyph(10, 0, 3, u8x8_4LineDisplay_WLED_icons_1x1); //intensity icon
+        if (markLineNum!=2) drawGlyph(0, 2, 4, u8x8_4LineDisplay_WLED_icons_1x1); //palette icon
+        if (markLineNum!=3) drawGlyph(0, 3, 5, u8x8_4LineDisplay_WLED_icons_1x1); //effect icon
       }
     }
 
     void drawStatusIcons() {
-      drawGlyph(14, 0,   (wificonnected ? 20 : 0), u8x8_4LineDisplay_WLED_icons_1x1, true); // wifi icon
-      drawGlyph(15, 0,          (bri > 0 ? 9 : 0), u8x8_4LineDisplay_WLED_icons_1x1, true); // power icon
-      drawGlyph(13, 0, (nightlightActive ? 6 : 0), u8x8_4LineDisplay_WLED_icons_1x1, true); // moon icon for nighlight mode
+      uint8_t col = 15;
+      uint8_t row = 0;
+      drawGlyph(col, row,   (wificonnected ? 20 : 0), u8x8_4LineDisplay_WLED_icons_1x1, true); // wifi icon
+      if (lineHeight==2) { col--; } else { row++; }
+      drawGlyph(col, row,          (bri > 0 ? 9 : 0), u8x8_4LineDisplay_WLED_icons_1x1, true); // power icon
+      if (lineHeight==2) { col--; } else { row++; }
+      drawGlyph(col, row, (nightlightActive ? 6 : 0), u8x8_4LineDisplay_WLED_icons_1x1, true); // moon icon for nighlight mode
     }
     
     /**
@@ -722,29 +730,27 @@ class FourLineDisplayUsermod : public Usermod {
           if (AmPmHour > 11) { AmPmHour -= 12; isitAM = false; }
           if (AmPmHour == 0) { AmPmHour  = 12; }
         }
-
-        drawStatusIcons(); //icons power, wifi, timer, etc
-
         if (knownHour != hourCurrent) {
           // only update date when hour changes
           sprintf_P(lineBuffer, PSTR("%s %2d "), monthShortStr(month(localTime)), day(localTime)); 
           draw2x2String(2, lineHeight==1 ? 0 : lineHeight, lineBuffer); // adjust for 8 line displays, draw month and day
         }
-
         sprintf_P(lineBuffer,PSTR("%2d:%02d"), (useAMPM ? AmPmHour : hourCurrent), minuteCurrent);
         draw2x2String(2, lineHeight*2, lineBuffer); //draw hour, min. blink ":" depending on odd/even seconds
-
         if (useAMPM) drawString(12, lineHeight*2, (isitAM ? "AM" : "PM"), true); //draw am/pm if using 12 time
+
+        drawStatusIcons(); //icons power, wifi, timer, etc
+
         knownMinute = minuteCurrent;
         knownHour   = hourCurrent;
       } else {
         if (secondCurrent == lastSecond) return;
       }
-      if (showSeconds && !useAMPM) {
+      if (showSeconds) {
         lastSecond = secondCurrent;
         draw2x2String(6, lineHeight*2, secondCurrent%2 ? " " : ":");
         sprintf_P(lineBuffer, PSTR("%02d"), secondCurrent);
-        drawString(12 + (lineHeight%2), lineHeight*2+1, lineBuffer, true); // even with double sized rows print seconds in 1 line
+        drawString(12, lineHeight*2+1, lineBuffer, true); // even with double sized rows print seconds in 1 line
       }
     }
 
@@ -799,7 +805,7 @@ class FourLineDisplayUsermod : public Usermod {
       top["help4Type"]           = F("1=SSD1306,2=SH1106,3=SSD1306_128x64,4=SSD1305,5=SSD1305_128x64,6=SSD1306_SPI,7=SSD1306_SPI_128x64"); // help for Settings page
       top[FPSTR(_flip)]          = (bool) flip;
       top[FPSTR(_contrast)]      = contrast;
-      top[FPSTR(_refreshRate)]   = refreshRate/1000;
+      top[FPSTR(_refreshRate)]   = refreshRate;
       top[FPSTR(_screenTimeOut)] = screenTimeout/1000;
       top[FPSTR(_sleepMode)]     = (bool) sleepMode;
       top[FPSTR(_clockMode)]     = (bool) clockMode;
@@ -833,7 +839,8 @@ class FourLineDisplayUsermod : public Usermod {
       for (byte i=0; i<5; i++) newPin[i] = top["pin"][i] | ioPin[i];
       flip          = top[FPSTR(_flip)] | flip;
       contrast      = top[FPSTR(_contrast)] | contrast;
-      refreshRate   = (top[FPSTR(_refreshRate)] | refreshRate/1000) * 1000;
+      refreshRate   = top[FPSTR(_refreshRate)] | refreshRate;
+      refreshRate   = min(5000, max(250, (int)refreshRate));
       screenTimeout = (top[FPSTR(_screenTimeOut)] | screenTimeout/1000) * 1000;
       sleepMode     = top[FPSTR(_sleepMode)] | sleepMode;
       clockMode     = top[FPSTR(_clockMode)] | clockMode;
@@ -874,7 +881,7 @@ class FourLineDisplayUsermod : public Usermod {
         if (needsRedraw && !wakeDisplay()) redraw(true);
       }
       // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
-      return !top[FPSTR(_showSeconds)].isNull();
+      return !top[FPSTR(_refreshRate)].isNull();
     }
 
     /*
@@ -890,7 +897,7 @@ class FourLineDisplayUsermod : public Usermod {
 const char FourLineDisplayUsermod::_name[]            PROGMEM = "4LineDisplay";
 const char FourLineDisplayUsermod::_enabled[]         PROGMEM = "enabled";
 const char FourLineDisplayUsermod::_contrast[]        PROGMEM = "contrast";
-const char FourLineDisplayUsermod::_refreshRate[]     PROGMEM = "refreshRateSec";
+const char FourLineDisplayUsermod::_refreshRate[]     PROGMEM = "refreshRate-ms";
 const char FourLineDisplayUsermod::_screenTimeOut[]   PROGMEM = "screenTimeOutSec";
 const char FourLineDisplayUsermod::_flip[]            PROGMEM = "flip";
 const char FourLineDisplayUsermod::_sleepMode[]       PROGMEM = "sleepMode";
