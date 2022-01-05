@@ -261,7 +261,7 @@ class FourLineDisplayUsermod : public Usermod {
       setContrast(contrast); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
       setPowerSave(0);
       //drawString(0, 0, "Loading...");
-      overlay(PSTR("Loading..."),3000,9);
+      overlayLogo(PSTR("Loading..."),3000,1);
     }
 
     // gets called every time WiFi is (re-)connected. Initialize own network
@@ -600,6 +600,28 @@ class FourLineDisplayUsermod : public Usermod {
       if (glyphType>0 && glyphType<255) {
           if (lineHeight == 2) drawGlyph(5,          0, glyphType, u8x8_4LineDisplay_WLED_icons_6x6, true);
           else                 drawGlyph(7, lineHeight, glyphType, u8x8_4LineDisplay_WLED_icons_2x2, true);
+      }
+      if (line1) {
+        String buf = line1;
+        center(buf, getCols());
+        drawString(0, (glyphType<255?3:0)*lineHeight, buf.c_str());
+      }
+      overlayUntil = millis() + showHowLong;
+    }
+      /**
+     * Allows you to show one line and a glyph as overlay for a period of time.
+     * Clears the screen and prints.
+     * Used in Rotary Encoder usermod.
+     */
+    void overlayLogo(const char* line1, long showHowLong, byte glyphType) {
+      // Turn the display back on
+      if (!wakeDisplay()) clear();
+      // Print the overlay
+      if (glyphType>0 && glyphType<255) {
+          if (lineHeight == 2){ drawGlyph(2,           1, 1, u8x8_WLED_logo_4x4, true);
+                                drawGlyph(6,           1, 2, u8x8_WLED_logo_4x4, true);
+                                drawGlyph(10,          1, 3, u8x8_WLED_logo_4x4, true);
+          }else                 drawGlyph(7, lineHeight, glyphType, u8x8_4LineDisplay_WLED_icons_2x2, true);
       }
       if (line1) {
         String buf = line1;
