@@ -618,8 +618,11 @@ class FourLineDisplayUsermod : public Usermod {
         drawGlyph( 2, 1, 1, u8x8_WLED_logo_4x4, true);
         drawGlyph( 6, 1, 2, u8x8_WLED_logo_4x4, true);
         drawGlyph(10, 1, 3, u8x8_WLED_logo_4x4, true);
-      } else
-        drawGlyph( 2, 0, 1, u8x8_WLED_logo_4x12);
+      } else {
+        drawGlyph( 2, 0, 1, u8x8_WLED_logo_4x4);
+        drawGlyph( 6, 0, 2, u8x8_WLED_logo_4x4);
+        drawGlyph(10, 0, 3, u8x8_WLED_logo_4x4);
+      }
       overlayUntil = millis() + showHowLong;
     }
 
