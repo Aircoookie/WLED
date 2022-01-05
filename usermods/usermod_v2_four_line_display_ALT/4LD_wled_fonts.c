@@ -23,7 +23,7 @@ const uint8_t u8x8_WLED_logo_4x12[388] U8X8_FONT_SECTION("u8x8_WLED_logo_4x12") 
   "\0\0\377\377\0\77\77\0\0\0\5\7\2\7\5\0\0\0\377\77\300\377\301\376\376\0\0\0\0\0\0\0"
   "\0\0\0";
 
-  /*
+/*
   Fontname: WLED_logo
   Copyright: 
   Glyphs: 3/3

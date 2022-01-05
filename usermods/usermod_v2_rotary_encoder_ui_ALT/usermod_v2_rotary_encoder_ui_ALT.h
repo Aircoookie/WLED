@@ -361,15 +361,15 @@ public:
         bool changedState = true;
         if (newState > LAST_UI_STATE || (newState == 7 && presetHigh==0 && presetLow == 0)) newState = 0;
         if (display != nullptr) {
-          switch(newState) {
-            case 0: changedState = changeState(PSTR("Brightness"),    1,   0, 1); break; //1  = sun
-            case 1: changedState = changeState(PSTR("Speed"),         1,   4, 2); break; //2  = skip forward
-            case 2: changedState = changeState(PSTR("Intensity"),     1,   8, 3); break; //3  = fire
-            case 3: changedState = changeState(PSTR("Color Palette"), 2,   0, 4); break; //4  = custom palette
-            case 4: changedState = changeState(PSTR("Effect"),        3,   0, 5); break; //5  = puzzle piece
-            case 5: changedState = changeState(PSTR("Main Color"),  255, 255, 7); break; //7  = brush
-            case 6: changedState = changeState(PSTR("Saturation"),  255, 255, 8); break; //8  = contrast
-            case 7: changedState = changeState(PSTR("Preset"),      255, 255, 6); break; //6  = moon
+          switch (newState) {
+            case 0: changedState = changeState(PSTR("Brightness"),      1,   0,  1); break; //1  = sun
+            case 1: changedState = changeState(PSTR("Speed"),           1,   4,  2); break; //2  = skip forward
+            case 2: changedState = changeState(PSTR("Intensity"),       1,   8,  3); break; //3  = fire
+            case 3: changedState = changeState(PSTR("Color Palette"),   2,   0,  4); break; //4  = custom palette
+            case 4: changedState = changeState(PSTR("Effect"),          3,   0,  5); break; //5  = puzzle piece
+            case 5: changedState = changeState(PSTR("Main Color"),    255, 255,  7); break; //7  = brush
+            case 6: changedState = changeState(PSTR("Saturation"),    255, 255,  8); break; //8  = contrast
+            case 7: changedState = changeState(PSTR("Preset"),        255, 255, 11); break; //11 = heart
           }
         }
         if (changedState) select_state = newState;

@@ -137,9 +137,6 @@ class FourLineDisplayUsermod : public Usermod {
     bool showSeconds = true;        // display clock with seconds
     bool enabled = true;
 
-    // needRedraw marks if redraw is required to prevent often redrawing.
-    //bool needRedraw = true;
-
     // Next variables hold the previous known values to determine if redraw is
     // required.
     String knownSsid = "";
@@ -261,7 +258,7 @@ class FourLineDisplayUsermod : public Usermod {
       setContrast(contrast); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
       setPowerSave(0);
       //drawString(0, 0, "Loading...");
-      overlayLogo(PSTR("Loading..."),3000,1);
+      overlayLogo(3000);
     }
 
     // gets called every time WiFi is (re-)connected. Initialize own network
@@ -505,8 +502,8 @@ class FourLineDisplayUsermod : public Usermod {
      * pass line and colum info
      */
     void setMarkLine(byte newMarkLineNum, byte newMarkColNum) {
-        markLineNum = newMarkLineNum;
-        markColNum = newMarkColNum;
+      markLineNum = newMarkLineNum;
+      markColNum = newMarkColNum;
     }
 
     //Draw the arrow for the current setting beiong changed
@@ -598,8 +595,8 @@ class FourLineDisplayUsermod : public Usermod {
       if (!wakeDisplay()) clear();
       // Print the overlay
       if (glyphType>0 && glyphType<255) {
-          if (lineHeight == 2) drawGlyph(5,          0, glyphType, u8x8_4LineDisplay_WLED_icons_6x6, true);
-          else                 drawGlyph(7, lineHeight, glyphType, u8x8_4LineDisplay_WLED_icons_2x2, true);
+        if (lineHeight == 2) drawGlyph(5,          0, glyphType, u8x8_4LineDisplay_WLED_icons_6x6, true);
+        else                 drawGlyph(7, lineHeight, glyphType, u8x8_4LineDisplay_WLED_icons_2x2, true);
       }
       if (line1) {
         String buf = line1;
@@ -608,26 +605,21 @@ class FourLineDisplayUsermod : public Usermod {
       }
       overlayUntil = millis() + showHowLong;
     }
-      /**
-     * Allows you to show one line and a glyph as overlay for a period of time.
+
+    /**
+     * Allows you to show Akemi WLED logo overlay for a period of time.
      * Clears the screen and prints.
-     * Used in Rotary Encoder usermod.
      */
-    void overlayLogo(const char* line1, long showHowLong, byte glyphType) {
+    void overlayLogo(long showHowLong) {
       // Turn the display back on
       if (!wakeDisplay()) clear();
       // Print the overlay
-      if (glyphType>0 && glyphType<255) {
-          if (lineHeight == 2){ drawGlyph(2,           1, 1, u8x8_WLED_logo_4x4, true);
-                                drawGlyph(6,           1, 2, u8x8_WLED_logo_4x4, true);
-                                drawGlyph(10,          1, 3, u8x8_WLED_logo_4x4, true);
-          }else                 drawGlyph(7, lineHeight, glyphType, u8x8_4LineDisplay_WLED_icons_2x2, true);
-      }
-      if (line1) {
-        String buf = line1;
-        center(buf, getCols());
-        drawString(0, (glyphType<255?3:0)*lineHeight, buf.c_str());
-      }
+      if (lineHeight == 2) {
+        drawGlyph( 2, 1, 1, u8x8_WLED_logo_4x4, true);
+        drawGlyph( 6, 1, 2, u8x8_WLED_logo_4x4, true);
+        drawGlyph(10, 1, 3, u8x8_WLED_logo_4x4, true);
+      } else
+        drawGlyph( 2, 0, 1, u8x8_WLED_logo_4x12);
       overlayUntil = millis() + showHowLong;
     }
 
