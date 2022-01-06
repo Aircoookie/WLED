@@ -555,11 +555,11 @@ function populateSegments(s)
 	<output class="sliderbubble"></output>
 </div>`;
 		}
-		if (gId('buttonBri').className !== 'active') tglBri(true);
+		//if (gId('buttonBri').className !== 'active') tglBri(true);
 	} else {
-		tglBri(false);
+		//tglBri(false);
 	}
-	gId('buttonBri').style.display = (segCount > 1) ? "block" : "none";
+	//gId('buttonBri').style.display = (segCount > 1) ? "block" : "none";
 	gId('segcont').innerHTML = cn;
 	for (var i = 0; i < segCount && i<4; i++) updateTrail(gId(`seg${i}bri`));
 }
@@ -1044,12 +1044,12 @@ function toggleNodes()
 }
 
 function tglBri(b=null)
-{
+{/*
 	if (b===null) b = gId(`briwrap`).style.display === "block";
 	gId('briwrap').style.display = !b ? "block":"none";
 	gId('buttonBri').className = !b ? "active":"";
 	size();
-}
+*/}
 
 function tglCP()
 {
@@ -1060,8 +1060,8 @@ function tglCP()
 	gId('rgbwrap').style.display = !p ? "block":"none";
 	var csl = gId(`csl`).style.display === "block";
 	gId('csl').style.display = !csl ? "block":"none";
-	var ps = gId(`Presets`).style.display === "block";
-	gId('Presets').style.display = !ps ? "block":"none";
+	//var ps = gId(`Presets`).style.display === "block";
+	//gId('Presets').style.display = !ps ? "block":"none";
 }
 
 function tglCs(i)
