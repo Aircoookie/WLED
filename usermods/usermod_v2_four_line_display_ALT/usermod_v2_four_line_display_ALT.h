@@ -258,7 +258,7 @@ class FourLineDisplayUsermod : public Usermod {
       setContrast(contrast); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
       setPowerSave(0);
       //drawString(0, 0, "Loading...");
-      overlayLogo(3000);
+      overlayLogo(3500);
     }
 
     // gets called every time WiFi is (re-)connected. Initialize own network
@@ -587,7 +587,7 @@ class FourLineDisplayUsermod : public Usermod {
         clear();
         // Turn the display back on
         sleepOrClock(false);
-        lastRedraw = millis();
+        //lastRedraw = millis();
         return true;
       }
       return false;
@@ -623,13 +623,49 @@ class FourLineDisplayUsermod : public Usermod {
       if (!wakeDisplay()) clear();
       // Print the overlay
       if (lineHeight == 2) {
-        drawGlyph( 2, 1, 1, u8x8_WLED_logo_4x4, true);
-        drawGlyph( 6, 1, 2, u8x8_WLED_logo_4x4, true);
-        drawGlyph(10, 1, 3, u8x8_WLED_logo_4x4, true);
+        //add a bit of randomness
+        switch (millis()%3) {
+          case 0:
+            //WLED
+            draw2x2Glyph( 0, 2, 1, u8x8_wled_logo_2x2);
+            draw2x2Glyph( 4, 2, 2, u8x8_wled_logo_2x2);
+            draw2x2Glyph( 8, 2, 3, u8x8_wled_logo_2x2);
+            draw2x2Glyph(12, 2, 4, u8x8_wled_logo_2x2);
+            break;
+          case 1:
+            //WLED Akemi
+            drawGlyph( 2, 2, 1, u8x8_wled_logo_akemi_4x4, true);
+            drawGlyph( 6, 2, 2, u8x8_wled_logo_akemi_4x4, true);
+            drawGlyph(10, 2, 3, u8x8_wled_logo_akemi_4x4, true);
+            break;
+          case 2:
+            //Akemi
+            //draw2x2Glyph( 4, 0, 12, u8x8_4LineDisplay_WLED_icons_4x4);
+            drawGlyph( 5, 0, 12, u8x8_4LineDisplay_WLED_icons_6x6, true);
+            drawString(6, 6, "WLED");
+            break;
+        }
       } else {
-        drawGlyph( 2, 0, 1, u8x8_WLED_logo_4x4);
-        drawGlyph( 6, 0, 2, u8x8_WLED_logo_4x4);
-        drawGlyph(10, 0, 3, u8x8_WLED_logo_4x4);
+        switch (millis()%3) {
+          case 0:
+            //WLED
+            draw2x2Glyph( 0, 0, 1, u8x8_wled_logo_2x2);
+            draw2x2Glyph( 4, 0, 2, u8x8_wled_logo_2x2);
+            draw2x2Glyph( 8, 0, 3, u8x8_wled_logo_2x2);
+            draw2x2Glyph(12, 0, 4, u8x8_wled_logo_2x2);
+            break;
+          case 1:
+            //WLED Akemi
+            drawGlyph( 2, 0, 1, u8x8_wled_logo_akemi_4x4);
+            drawGlyph( 6, 0, 2, u8x8_wled_logo_akemi_4x4);
+            drawGlyph(10, 0, 3, u8x8_wled_logo_akemi_4x4);
+            break;
+          case 2:
+            //Akemi
+            //drawGlyph( 6, 0, 12, u8x8_4LineDisplay_WLED_icons_4x4);
+            draw2x2Glyph( 6, 0, 12, u8x8_4LineDisplay_WLED_icons_2x2);
+            break;
+        }
       }
       overlayUntil = millis() + showHowLong;
     }
@@ -874,11 +910,12 @@ class FourLineDisplayUsermod : public Usermod {
           setup();
           needsRedraw |= true;
         }
-        /*if (!(type == SSD1306_SPI || type == SSD1306_SPI64))*/ u8x8->setBusClock(ioFrequency); // can be used for SPI too
+        u8x8->setBusClock(ioFrequency); // can be used for SPI too
         setContrast(contrast);
         setFlipMode(flip);
         knownHour = 99;
         if (needsRedraw && !wakeDisplay()) redraw(true);
+        else overlayLogo(3500);
       }
       // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
       return !top[FPSTR(_refreshRate)].isNull();

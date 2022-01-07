@@ -1,5 +1,6 @@
 #pragma once
 
+//WLED custom fonts, curtesy of @Benji (https://github.com/Proto-molecule)
 
 /*
   Fontname: wled_logo_akemi_4x4
@@ -33,6 +34,7 @@ const uint8_t u8x8_wled_logo_akemi_4x4[388] U8X8_FONT_SECTION("u8x8_wled_logo_ak
   * this logo ...WLED/images/wled_logo_akemi.png
   * encoded = 1, 2, 3
 */
+/*
 const uint8_t u8x8_wled_logo_akemi_5x5[604] U8X8_FONT_SECTION("u8x8_wled_logo_akemi_5x5") = 
   "\1\3\5\5\0\0\0\0\0\0\0\0\0\0\0\0\340\340\374\14\354\14\354\14|\14\354\14||\14\354"
   "\14\374\340\340\0\0\0\0\0\0\0\200\0\0\0\200\200\0\200\200\0\0\0\0\377\377\377\376\377\376\377\377"
@@ -53,7 +55,7 @@ const uint8_t u8x8_wled_logo_akemi_5x5[604] U8X8_FONT_SECTION("u8x8_wled_logo_ak
   "\200\0\0\0\1\303\347\357gc\61\0\3\3\377\377\3\7\37\177s\343\300\303s{\37\17\7\3\377\377"
   "\3\3\377\377\3\37\77scp<\36\17\3\1\0\0\0\0\0\0\0\37\37\0\0\0\1\1\1\0\1"
   "\1\1\0\0\0\0\377\377\0\0\37\37\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
-
+*/
 
 /*
   Fontname: wled_logo_2x2
@@ -79,6 +81,7 @@ const uint8_t u8x8_wled_logo_2x2[133] U8X8_FONT_SECTION("u8x8_wled_logo_2x2") =
   * this logo  https://cdn.discordapp.com/attachments/706623245935444088/927361780613799956/wled_scaled.png
   * encode map = 1, 2, 3, 4
 */
+/*
 const uint8_t u8x8_wled_logo_4x4[517] U8X8_FONT_SECTION("u8x8_wled_logo_4x4") = 
   "\1\4\4\4\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\374\374\374\374\374\374\374\374\374"
   "\0\0\0\0\0\0\0\0\0\0\0\0\0\300\300\300\300\300\377\377\377\377\377\0\0\0\0\0\0\0\0\0"
@@ -97,7 +100,7 @@ const uint8_t u8x8_wled_logo_4x4[517] U8X8_FONT_SECTION("u8x8_wled_logo_4x4") =
   "\377\377\377\377\37\37\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\377\377\377\377\377\0\0\0\0\377"
   "\377\377\377\377\370\370\370\370\370\370\0\0\0\0\0\0\0\0\370\370\370\370\377\377\377\377\377\370\370\370\370\377"
   "\7\7\7\7";
-
+*/
 
 
 /*
@@ -182,6 +185,7 @@ const uint8_t u8x8_4LineDisplay_WLED_icons_2x2[389] U8X8_FONT_SECTION("u8x8_4Lin
   * 11 = heart  
   * 12 = Akemi
 */
+/*
 const uint8_t u8x8_4LineDisplay_WLED_icons_4x4[1540] U8X8_FONT_SECTION("u8x8_4LineDisplay_WLED_icons_4x4") = 
   "\1\14\4\4\0\0\0\0`\360\360`\0\0\0\0\0\0\6\17\17\6\0\0\0\0\0\0`\360\360`"
   "\0\0\0\0\200\300\300\200\0\0\0\0\340\370\374\376\376\377\377\377\377\377\377\376\376\374\370\340\0\0\0\0"
@@ -232,8 +236,7 @@ const uint8_t u8x8_4LineDisplay_WLED_icons_4x4[1540] U8X8_FONT_SECTION("u8x8_4Li
   "\340\300\340@\2\4\4\35x\340\200\0\30\237\377\177\36\376\376\37\37\377\377\37\177\377\237\30\0\200\340x"
   "\34\5\4\2\0\0\0\0\0\1\3\3\3\1\0\0\0\17\17\0\0\17\17\0\0\0\1\3\3\3\1\0"
   "\0\0\0";
-
-
+*/
 
 /*
   Fontname: 4LineDisplay_WLED_icons_6x
@@ -366,13 +369,14 @@ const uint8_t u8x8_4LineDisplay_WLED_icons_6x6[3460] U8X8_FONT_SECTION("u8x8_4Li
 
 
 
- /*
+/*
   Fontname: akemi_8x8
   Copyright: Created with Fony 1.4.7
   Glyphs: 1/1
   BBX Build Mode: 3
   * 12 = Akemi
 */
+/*
 const uint8_t u8x8_akemi_8x8[516] U8X8_FONT_SECTION("u8x8_akemi_8x8") = 
   "\14\14\10\10\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
   "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
@@ -391,3 +395,4 @@ const uint8_t u8x8_akemi_8x8[516] U8X8_FONT_SECTION("u8x8_akemi_8x8") =
   "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\1\1\7\7\7\7\7\7\1\1\0\0\0\0\0\0\377\377"
   "\377\377\0\0\0\0\377\377\377\377\0\0\0\0\0\0\1\1\7\7\7\7\7\7\1\1\0\0\0\0\0\0"
   "\0\0\0";
+*/
