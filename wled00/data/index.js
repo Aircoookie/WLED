@@ -632,7 +632,8 @@ function populateSegments(s)
 	for (var i = 0; i <= lSeg; i++) {
 		updateLen(i);
 		updateTrail(d.getElementById(`seg${i}bri`));
-		d.getElementById(`segr${i}`).style.display = "none";
+		let segr = d.getElementById(`segr${i}`);
+		if (segr) segr.style.display = "none";
 	}
 	if (segCount < 2) d.getElementById(`segd${lSeg}`).style.display = "none";
 	if (!noNewSegs && (cfg.comp.seglen?parseInt(d.getElementById(`seg${lSeg}s`).value):0)+parseInt(d.getElementById(`seg${lSeg}e`).value)<ledCount) d.getElementById(`segr${lSeg}`).style.display = "inline";
@@ -877,7 +878,7 @@ function updateLen(s)
 {
 	if (!d.getElementById(`seg${s}s`)) return;
 	var start = parseInt(d.getElementById(`seg${s}s`).value);
-	var stop	= parseInt(d.getElementById(`seg${s}e`).value);
+	var stop  = parseInt(d.getElementById(`seg${s}e`).value);
 	var len = stop - (cfg.comp.seglen?0:start);
 	var out = "(delete)";
 	if (len > 1) {
