@@ -4,7 +4,7 @@
  * UDP sync notifier / Realtime / Hyperion / TPM2.NET
  */
 
-#define WLEDPACKETSIZE (40+(MAX_NUM_SEGMENTS*3))
+#define WLEDPACKETSIZE (40+(MAX_NUM_SEGMENTS*22))
 #define UDP_IN_MAXSIZE 1472
 #define PRESUMED_NETWORK_DELAY 3 //how many ms could it take on avg to reach the receiver? This will be added to transmitted times
 
@@ -88,9 +88,28 @@ void notify(byte callMode, bool followUp)
 	udpOut[39] = strip.getMaxSegments();
   for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
     WS2812FX::Segment &selseg = strip.getSegment(i);
-    udpOut[40+i*3] = selseg.options & 0x0F; //only take into account mirrored, selected, on, reversed
-    udpOut[41+i*3] = selseg.spacing;
-    udpOut[42+i*3] = selseg.grouping;
+    udpOut[40+i*22] = selseg.grouping;
+    udpOut[41+i*22] = selseg.spacing;
+    udpOut[42+i*22] = selseg.offset >> 8; //not sure about this
+    udpOut[43+i*22] = selseg.offset & 0xFF; //not sure about this
+    udpOut[44+i*22] = selseg.options & 0x0F; //only take into account mirrored, selected, on, reversed
+    udpOut[45+i*22] = selseg.opacity;
+    udpOut[46+i*22] = selseg.mode;
+    udpOut[47+i*22] = selseg.speed;
+    udpOut[48+i*22] = selseg.intensity;
+    udpOut[49+i*22] = selseg.palette;
+    udpOut[50+i*22] = R(selseg.colors[0]);
+    udpOut[51+i*22] = G(selseg.colors[0]);
+    udpOut[52+i*22] = B(selseg.colors[0]);
+    udpOut[53+i*22] = W(selseg.colors[0]);
+    udpOut[54+i*22] = R(selseg.colors[1]);
+    udpOut[55+i*22] = G(selseg.colors[1]);
+    udpOut[56+i*22] = B(selseg.colors[1]);
+    udpOut[57+i*22] = W(selseg.colors[1]);
+    udpOut[58+i*22] = R(selseg.colors[2]);
+    udpOut[59+i*22] = G(selseg.colors[2]);
+    udpOut[60+i*22] = B(selseg.colors[2]);
+    udpOut[61+i*22] = W(selseg.colors[2]);
   }
 
   IPAddress broadcastIp;
@@ -298,8 +317,18 @@ void handleNotifications()
           if (srcSegs > strip.getMaxSegments()) srcSegs = strip.getMaxSegments();
           for (uint8_t i = 0; i < srcSegs; i++) {
             WS2812FX::Segment& selseg = strip.getSegment(i);
-            for (uint8_t j = 0; j<4; j++) selseg.setOption(j, (udpIn[40+i*3] >> j) & 0x01); //only take into account mirrored, selected, on, reversed
-            strip.setSegment(i, selseg.start, selseg.stop, udpIn[42+i*3], udpIn[41+i*3], selseg.offset); // will also properly reset segments
+            for (uint8_t j = 0; j<4; j++) selseg.setOption(j, (udpIn[44+i*22] >> j) & 0x01); //only take into account mirrored, selected, on, reversed
+            uint16_t offset  = udpIn[42+i*22]<<8 | udpIn[43+i*22];
+            selseg.setOpacity(udpOut[45+i*22], i);
+            //strip.setEffectConfig(udpOut[46+i*22], udpOut[47+i*22], udpOut[48+i*22], udpOut[49+i*22]); //affects all selected segments
+            strip.setMode(i, udpOut[46+i*22]);
+            selseg.speed     = udpOut[47+i*22];
+            selseg.intensity = udpOut[48+i*22];
+            selseg.palette   = udpOut[49+i*22];
+            selseg.setColor(0, RGBW32(udpIn[50+i*22],udpIn[51+i*22],udpIn[52+i*22],udpIn[53+i*22]), i);
+            selseg.setColor(1, RGBW32(udpIn[54+i*22],udpIn[55+i*22],udpIn[56+i*22],udpIn[57+i*22]), i);
+            selseg.setColor(2, RGBW32(udpIn[58+i*22],udpIn[59+i*22],udpIn[60+i*22],udpIn[61+i*22]), i);
+            strip.setSegment(i, selseg.start, selseg.stop, udpIn[40+i*22], udpIn[41+i*22], offset); // will also properly reset segments
           }
         }
       }
@@ -462,17 +491,18 @@ void handleNotifications()
   // API over UDP
   udpIn[packetSize] = '\0';
 
-  if (!requestJSONBufferLock(18)) return;
-  if (udpIn[0] >= 'A' && udpIn[0] <= 'Z') { //HTTP API
-    String apireq = "win&";
-    apireq += (char*)udpIn;
-    handleSet(nullptr, apireq);
-  } else if (udpIn[0] == '{') { //JSON API
-    DeserializationError error = deserializeJson(doc, udpIn);
-    JsonObject root = doc.as<JsonObject>();
-    if (!error && !root.isNull()) deserializeState(root);
+  if (requestJSONBufferLock(18)) {
+    if (udpIn[0] >= 'A' && udpIn[0] <= 'Z') { //HTTP API
+      String apireq = "win&";
+      apireq += (char*)udpIn;
+      handleSet(nullptr, apireq);
+    } else if (udpIn[0] == '{') { //JSON API
+      DeserializationError error = deserializeJson(doc, udpIn);
+      JsonObject root = doc.as<JsonObject>();
+      if (!error && !root.isNull()) deserializeState(root);
+    }
+    releaseJSONBufferLock();
   }
-  releaseJSONBufferLock();
 }
 
 
