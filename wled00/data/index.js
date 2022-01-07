@@ -2335,7 +2335,7 @@ function move(e)
 }
 
 function showNodes() {
-	gId('buttonNodes').style.display = (lastinfo.ndc > 0 && (w > 797 || (w > 539 && w < 720))) ? "block":"none";
+	gId('buttonNodes').style.display = (lastinfo.ndc > 0 && (wW > 797 || (wW > 539 && wW < 720))) ? "block":"none";
 }
 
 function size()
