@@ -89,8 +89,8 @@ void notify(byte callMode, bool followUp)
   for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
     WS2812FX::Segment &selseg = strip.getSegment(i);
     udpOut[40+i*3] = selseg.options & 0x0F; //only take into account mirrored, selected, on, reversed
-    udpOut[41+i*3] = selseg.spacing;
-    udpOut[42+i*3] = selseg.grouping;
+    udpOut[41+i*3] = selseg.grouping;
+    udpOut[42+i*3] = selseg.spacing;
   }
 
   IPAddress broadcastIp;
