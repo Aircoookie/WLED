@@ -1496,6 +1496,29 @@ function selSeg(s){
 	requestJson(obj, false);
 }
 
+function rptSeg(s)
+{
+	var name = d.getElementById(`seg${s}t`).value;
+	var start = parseInt(d.getElementById(`seg${s}s`).value);
+	var stop = parseInt(d.getElementById(`seg${s}e`).value);
+	if (stop == 0) {return;}
+	var rev = d.getElementById(`seg${s}rev`).checked;
+	var mi = d.getElementById(`seg${s}mi`).checked;
+	var sel = d.getElementById(`seg${s}sel`).checked;
+	var obj = {"seg": {"id": 0, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop, "rev": rev, "mi": mi, "on": !powered[s], "bri": parseInt(d.getElementById(`seg${s}bri`).value), "sel": sel}};
+	if (d.getElementById(`seg${s}grp`)) {
+		var grp = parseInt(d.getElementById(`seg${s}grp`).value);
+		var spc = parseInt(d.getElementById(`seg${s}spc`).value);
+		var ofs = parseInt(d.getElementById(`seg${s}of` ).value);
+		obj.seg.grp = grp;
+		obj.seg.spc = spc;
+		obj.seg.of  = ofs;
+	}
+	obj.seg.rpt = true;
+	expand(s);
+	requestJson(obj);
+}
+
 function setSeg(s){
 	var name  = d.getElementById(`seg${s}t`).value;
 	var start = parseInt(d.getElementById(`seg${s}s`).value);
