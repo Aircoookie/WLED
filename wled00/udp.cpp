@@ -319,12 +319,13 @@ void handleNotifications()
             WS2812FX::Segment& selseg = strip.getSegment(i);
             for (uint8_t j = 0; j<4; j++) selseg.setOption(j, (udpIn[44+i*22] >> j) & 0x01); //only take into account mirrored, selected, on, reversed
             uint16_t offset  = udpIn[42+i*22]<<8 | udpIn[43+i*22];
-            selseg.setOpacity(udpOut[45+i*22], i);
-            //strip.setEffectConfig(udpOut[46+i*22], udpOut[47+i*22], udpOut[48+i*22], udpOut[49+i*22]); //affects all selected segments
-            strip.setMode(i, udpOut[46+i*22]);
-            selseg.speed     = udpOut[47+i*22];
-            selseg.intensity = udpOut[48+i*22];
-            selseg.palette   = udpOut[49+i*22];
+            selseg.setOpacity(udpIn[45+i*22], i);
+            //strip.setEffectConfig(udpIn[46+i*22], udpIn[47+i*22], udpIn[48+i*22], udpIn[49+i*22]); //affects all selected segments
+            //strip.setMode(i, udpIn[46+i*22]);
+            selseg.mode      = udpIn[46+i*22];
+            selseg.speed     = udpIn[47+i*22];
+            selseg.intensity = udpIn[48+i*22];
+            selseg.palette   = udpIn[49+i*22];
             selseg.setColor(0, RGBW32(udpIn[50+i*22],udpIn[51+i*22],udpIn[52+i*22],udpIn[53+i*22]), i);
             selseg.setColor(1, RGBW32(udpIn[54+i*22],udpIn[55+i*22],udpIn[56+i*22],udpIn[57+i*22]), i);
             selseg.setColor(2, RGBW32(udpIn[58+i*22],udpIn[59+i*22],udpIn[60+i*22],udpIn[61+i*22]), i);
