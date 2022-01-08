@@ -198,15 +198,15 @@ function onLoad()
 		fetch((loc?`http://${locip}`:'.') + "/holidays.json", {	// may be loaded from external source
 			method: 'get'
 		})
-		.then(res => {
+		.then((res)=>{
 			//if (!res.ok) showErrorToast();
 			return res.json();
 		})
-		.then(json => {
+		.then((json)=>{
 			if (Array.isArray(json)) hol = json;
 			//TODO: do some parsing first
 		})
-		.catch(function (error) {
+		.catch((e)=>{
 			console.log("holidays.json does not contain array of holidays. Defaults loaded.");
 		})
 		.finally(()=>{
@@ -421,9 +421,8 @@ function loadPresets(callback = null)
 		pJson = json;
 		populatePresets();
 	})
-	.catch(function (error) {
-		showToast(error, true);
-		console.log(error);
+	.catch((e)=>{
+		showToast(e, true);
 		presetError(false);
 	})
 	.finally(()=>{
@@ -438,17 +437,17 @@ function loadPalettes(callback = null)
 	fetch(url, {
 		method: 'get'
 	})
-	.then(res => {
+	.then((res)=>{
 		if (!res.ok) showErrorToast();
 		return res.json();
 	})
-	.then(json => {
+	.then((json)=>{
 		clearErrorToast();
 		lJson = Object.entries(json);
 		populatePalettes();
 	})
-	.catch(function (error) {
-		showToast(error, true);
+	.catch((e)=>{
+		showToast(e, true);
 		presetError(false);
 	})
 	.finally(()=>{
@@ -464,17 +463,17 @@ function loadFX(callback = null)
 	fetch(url, {
 		method: 'get'
 	})
-	.then(res => {
+	.then((res)=>{
 		if (!res.ok) showErrorToast();
 		return res.json();
 	})
-	.then(json => {
+	.then((json)=>{
 		clearErrorToast();
 		eJson = Object.entries(json);
 		populateEffects();
 	})
-	.catch(function (error) {
-		showToast(error, true);
+	.catch((e)=>{
+		showToast(e, true);
 		presetError(false);
 	})
 	.finally(()=>{
@@ -490,20 +489,20 @@ function loadFXData(callback = null)
 	fetch(url, {
 		method: 'get'
 	})
-	.then(res => {
+	.then((res)=>{
 		if (!res.ok) showErrorToast();
 		return res.json();
 	})
-	.then(json => {
+	.then((json)=>{
 		clearErrorToast();
 		fxdata = json||[];
 		// add default value for Solid
 		fxdata.shift()
 		fxdata.unshift("@;!;");
 	})
-	.catch(function (error) {
+	.catch((e)=>{
 		fxdata = [];
-		showToast(error, true);
+		showToast(e, true);
 	})
 	.finally(()=>{
 		if (callback) callback();
@@ -910,17 +909,16 @@ function loadNodes()
 	fetch(url, {
 		method: 'get'
 	})
-	.then(res => {
+	.then((res)=>{
 		if (!res.ok) showToast('Could not load Node list!', true);
 		return res.json();
 	})
-	.then(json => {
+	.then((json)=>{
 		clearErrorToast();
 		populateNodes(lastinfo, json);
 	})
-	.catch(function (error) {
-		showToast(error, true);
-		console.log(error);
+	.catch((e)=>{
+		showToast(e, true);
 	});
 }
 
@@ -1074,8 +1072,8 @@ function cmpP(a, b)
 function makeWS() {
 	if (ws) return;
 	ws = new WebSocket('ws://'+(loc?locip:window.location.hostname)+'/ws');
-	ws.onmessage = function(event) {
-		var json = JSON.parse(event.data);
+	ws.onmessage = (e)=>{
+		var json = JSON.parse(e.data);
 		if (json.leds) return; //liveview packet
 		clearTimeout(jsonTimeout);
 		jsonTimeout = null;
@@ -1095,11 +1093,12 @@ function makeWS() {
 		displayRover(i, s);
 		readState(s);
 	};
-	ws.onclose = function(event) {
+	ws.onclose = (e)=>{
 		gId('connind').style.backgroundColor = "var(--c-r)";
 		ws = null;
+		if (lastinfo.ws > -1) setTimeout(makeWS,500); //retry WS connection
 	}
-	ws.onopen = function(event) {
+	ws.onopen = (e)=>{
 		ws.send("{'v':true}");
 		reqsLegal = true;
 		clearErrorToast();
@@ -1389,9 +1388,9 @@ function requestJson(command=null)
 		readState(s);
 		reqsLegal = true;
 	})
-	.catch(function (error) {
-		showToast(error, true);
-		console.log(error);
+	.catch((e)=>{
+		showToast(e, true);
+		console.log(e);
 	});
 }
 
