@@ -176,14 +176,14 @@ async function onLoad()
 		fetch((loc?`http://${locip}`:'.') + "/holidays.json", {
 			method: 'get'
 		})
-		.then(res => {
+		.then((res)=>{
 			return res.json();
 		})
-		.then(json => {
+		.then((json)=>{
 			if (Array.isArray(json)) hol = json;
 			//TODO: do some parsing first
 		})
-		.catch(function(error){
+		.catch((e)=>{
 			console.log("holidays.json does not contain array of holidays. Defaults loaded.");
 		})
 		.finally(()=>{
@@ -204,7 +204,7 @@ async function onLoad()
 	var cd = gId('csl').children;
 	for (var i = 0; i < cd.length; i++) cd[i].style.backgroundColor = "rgb(0, 0, 0)";
 	selectSlot(0);
-	cpick.on("input:end", function() {
+	cpick.on("input:end", ()=>{
 		setColor(1);
 	});
 	pmtLS = localStorage.getItem('wledPmt');
@@ -239,7 +239,8 @@ function showToast(text, error = false)
 	x.className = error ? "error":"show";
 	clearTimeout(timeout);
 	x.style.animation = 'none';
-	timeout = setTimeout(function(){ x.classList.remove("show"); }, 2900);
+	timeout = setTimeout(()=>{ x.classList.remove("show"); }, 2900);
+	if (error) console.log(text);
 }
 
 function showErrorToast()
@@ -547,12 +548,14 @@ function populateSegments(s)
 		<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>
 		<span class="checkmark schk"></span>
 	</label>
-	<i class="icons slider-icon pwr ${powered[i] ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})" title="${inst.n}">&#xe08f;</i>
-	<div id="sliderSeg${i}Bri" class="sliderwrap il">
-		<input id="seg${i}bri" class="noslide" onchange="setSegBri(${i})" oninput="updateTrail(this)" max="255" min="1" type="range" value="${inst.bri}" />
-		<div class="sliderdisplay"></div>
+	<div class="il">
+		<i class="icons slider-icon pwr ${powered[i] ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})" title="${inst.n}">&#xe08f;</i>
+		<div id="sliderSeg${i}Bri" class="sliderwrap il">
+			<input id="seg${i}bri" class="noslide" onchange="setSegBri(${i})" oninput="updateTrail(this)" max="255" min="1" type="range" value="${inst.bri}" />
+			<div class="sliderdisplay"></div>
+		</div>
+		<output class="sliderbubble"></output>
 	</div>
-	<output class="sliderbubble"></output>
 </div>`;
 		}
 		//if (gId('buttonBri').className !== 'active') tglBri(true);
@@ -769,6 +772,7 @@ function generateListItemHtml(listName, id, name, clickAction, extraHtml = '', e
 </div>`;
 }
 
+//update the 'sliderdisplay' background div of a slider for a visual indication of slider position
 function updateTrail(e)
 {
 	if (e==null) return;
@@ -776,15 +780,17 @@ function updateTrail(e)
 	var perc = e.value * 100 / max;
 	perc = parseInt(perc);
 	if (perc < 50) perc += 2;
-	e.parentNode.getElementsByClassName('sliderdisplay')[0].style.background = `linear-gradient(90deg, var(--c-f) ${perc}%, var(--c-4) ${perc}%)`;
-	var bubble = e.parentNode.parentNode.getElementsByTagName('output')[0];
-	if (bubble) bubble.innerHTML = e.value;
+	var val = `linear-gradient(90deg, var(--c-f) ${perc}%, var(--c-4) ${perc}%)`;
+	e.parentNode.getElementsByClassName('sliderdisplay')[0].style.background = val;
+	var b = e.parentNode.parentNode.getElementsByTagName('output')[0];
+	if (b) b.innerHTML = e.value;
 }
 
+//rangetouch slider function
 function toggleBubble(e)
 {
-	var bubble = e.target.parentNode.parentNode.getElementsByTagName('output')[0];
-	bubble.classList.toggle('sliderbubbleshow');
+	var b = e.target.parentNode.parentNode.getElementsByTagName('output')[0];
+	b.classList.toggle('sliderbubbleshow');
 }
 
 function updatePA()
@@ -850,8 +856,8 @@ function cmpP(a, b)
 function makeWS() {
 	if (ws) return;
 	ws = new WebSocket('ws://'+(loc?locip:window.location.hostname)+'/ws');
-	ws.onmessage = function(event) {
-		var json = JSON.parse(event.data);
+	ws.onmessage = (e)=>{
+		var json = JSON.parse(e.data);
 		if (json.leds) return; //liveview packet
 		clearTimeout(jsonTimeout);
 		jsonTimeout = null;
@@ -869,11 +875,12 @@ function makeWS() {
 		var s = json.state ? json.state : json;
 		readState(s);
 	};
-	ws.onclose = function(event) {
+	ws.onclose = (e)=>{
 		gId('connind').style.backgroundColor = "var(--c-r)";
 		ws = null;
+		if (lastinfo.ws > -1) setTimeout(makeWS,500);
 	}
-	ws.onopen = function(event) {
+	ws.onopen = (e)=>{
 		ws.send("{'v':true}");
 		reqsLegal = true;
 		clearErrorToast();
@@ -1042,15 +1049,15 @@ function toggleNodes()
 	gId('nodes').style.transform = (isNodes) ? "translateY(0px)":"translateY(100%)";
 	gId('buttonNodes').className = (isNodes) ? "active":"";
 }
-
+/*
 function tglBri(b=null)
-{/*
+{
 	if (b===null) b = gId(`briwrap`).style.display === "block";
 	gId('briwrap').style.display = !b ? "block":"none";
 	gId('buttonBri').className = !b ? "active":"";
 	size();
-*/}
-
+}
+*/
 function tglCP()
 {
 	var p = gId('buttonCP').className === "active";
@@ -1058,8 +1065,8 @@ function tglCP()
 	gId('picker').style.display = !p ? "block":"none";
 	gId('vwrap').style.display = !p ? "block":"none";
 	gId('rgbwrap').style.display = !p ? "block":"none";
-	var csl = gId(`csl`).style.display === "block";
-	gId('csl').style.display = !csl ? "block":"none";
+	var csl = gId('Slots').style.display === "block";
+	gId('Slots').style.display = !csl ? "block":"none";
 	//var ps = gId(`Presets`).style.display === "block";
 	//gId('Presets').style.display = !ps ? "block":"none";
 }
@@ -1262,7 +1269,7 @@ function setBalance(b)
 }
 
 var hc = 0;
-setInterval(function(){if (!isInfo) return; hc+=18; if (hc>300) hc=0; if (hc>200)hc=306; if (hc==144) hc+=36; if (hc==108) hc+=18;
+setInterval(()=>{if (!isInfo) return; hc+=18; if (hc>300) hc=0; if (hc>200)hc=306; if (hc==144) hc+=36; if (hc==108) hc+=18;
 gId('heart').style.color = `hsl(${hc}, 100%, 50%)`;}, 910);
 
 function openGH() { window.open("https://github.com/Aircoookie/WLED/wiki"); }
@@ -1296,7 +1303,7 @@ function loadPalettesData(callback = null)
 	}
 
 	palettesData = {};
-	getPalettesData(0, function() {
+	getPalettesData(0, ()=>{
 		localStorage.setItem(lsKey, JSON.stringify({
 			p: palettesData,
 			vid: lastinfo.vid
@@ -1315,18 +1322,17 @@ function getPalettesData(page, callback)
 			"Content-type": "application/json; charset=UTF-8"
 		}
 	})
-	.then(res => {
+	.then((res)=>{
 		if (!res.ok) showErrorToast();
 		return res.json();
 	})
-	.then(json => {
+	.then((json)=>{
 		palettesData = Object.assign({}, palettesData, json.p);
-		if (page < json.m) setTimeout(function() { getPalettesData(page + 1, callback); }, 50);
+		if (page < json.m) setTimeout(()=>{ getPalettesData(page + 1, callback); }, 50);
 		else callback();
 	})
-	.catch(function(error) {
-		showToast(error, true);
-		console.log(error);
+	.catch((e)=>{
+		showToast(e, true);
 	});
 }
 
