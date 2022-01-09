@@ -178,6 +178,7 @@ class UsermodTemperature : public Usermod {
       // we were waiting for a conversion to complete, have we waited log enough?
       if (now - lastTemperaturesRequest >= 750 /* 93.75ms per the datasheet but can be up to 750ms */) {
         readTemperature();
+        if (getTemperatureC() < -100.0f) lastMeasurement = now - readingInterval + 300; // force new measurement in 300ms
 
         if (WLED_MQTT_CONNECTED) {
           char subuf[64];
