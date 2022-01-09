@@ -279,6 +279,7 @@ void handleButton()
   if (analog) lastRead = millis();
 }
 
+#ifdef ESP32_DATA_IDLE_HIGH
 void esp32RMTInvertIdle()
 {
   bool idle_out;
@@ -296,6 +297,7 @@ void esp32RMTInvertIdle()
     rmt_set_idle_level(ch, idle_out, lvl);
   }
 }
+#endif
 
 void handleIO()
 {
