@@ -221,9 +221,9 @@ void handleButton()
     if (usermods.handleButton(b)) continue; // did usermod handle buttons
 
     if ((buttonType[b] == BTN_TYPE_ANALOG || buttonType[b] == BTN_TYPE_ANALOG_INVERTED) && millis() - lastRead > 250) {   // button is not a button but a potentiometer
-      if (b+1 == WLED_MAX_BUTTONS) lastRead = millis();
       handleAnalog(b); continue;
     }
+    if (b+1 == WLED_MAX_BUTTONS) lastRead = millis();
 
     //button is not momentary, but switch. This is only suitable on pins whose on-boot state does not matter (NOT gpio0)
     if (buttonType[b] == BTN_TYPE_SWITCH || buttonType[b] == BTN_TYPE_PIR_SENSOR) {
