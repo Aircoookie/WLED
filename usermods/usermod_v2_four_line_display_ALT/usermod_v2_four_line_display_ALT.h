@@ -2,6 +2,7 @@
 
 #include "wled.h"
 #include <U8x8lib.h> // from https://github.com/olikraus/u8g2/
+#include "4LD_wled_fonts.c"
 
 //
 // Insired by the usermod_v2_four_line_display
@@ -109,133 +110,6 @@ typedef enum {
   SSD1306_SPI64 // U8X8_SSD1306_128X64_NONAME_HW_SPI
 } DisplayType;
 
-/*
-  Fontname: benji_custom_icons_1x
-  Copyright:
-  Glyphs: 1/1
-  BBX Build Mode: 3
-  * 4 = custom palette
-*/
-const uint8_t u8x8_font_benji_custom_icons_1x1[13] U8X8_FONT_SECTION("u8x8_font_benji_custom_icons_1x1") = 
- "\4\4\1\1<n\372\377\275\277\26\34";
-
-/*
-  Fontname: benji_custom_icons_2x
-  Copyright: 
-  Glyphs: 8/8
-  BBX Build Mode: 3
-  // all the icons uses are consolidated into a single library to simplify code
-  // these are just the required icons stripped from the U8x8 libraries in addition to a few new custom icons
-  * 1 = sun
-  * 2 = skip forward
-  * 3 = fire
-  * 4 = custom palette
-  * 5 = puzzle piece
-  * 6 = moon
-  * 7 = brush
-  * 8 = custom saturation
-*/
-const uint8_t u8x8_font_benji_custom_icons_2x2[261] U8X8_FONT_SECTION("u8x8_font_benji_custom_icons_2x2") = 
-  "\1\10\2\2\200\200\14\14\300\340\360\363\363\360\340\300\14\14\200\200\1\1\60\60\3\7\17\317\317\17\7\3"
-  "\60\60\1\1\374\370\360\340\340\300\200\0\374\370\360\340\340\300\200\0\77\37\17\7\7\3\1\0\77\37\17\7"
-  "\7\3\1\0\0\200\340\360\377\376\374\360\0\0\300\200\0\0\0\0\17\77\177\377\17\7\301\340\370\374\377\377"
-  "\377|\0\0\360\370\234\236\376\363\363\377\377\363\363\376><\370\360\3\17\77yy\377\377\377\377\317\17\17"
-  "\17\17\7\3\360\360\360\360\366\377\377\366\360\360\360\360\0\0\0\0\377\377\377\377\237\17\17\237\377\377\377\377"
-  "\6\17\17\6\340\370\374\376\377\340\200\0\0\0\0\0\0\0\0\0\3\17\37\77\177\177\177\377\376|||"
-  "\70\30\14\0\0\0\0\0\0\0\0``\360\370|<\36\7\2\0\300\360\376\377\177\77\36\0\1\1\0"
-  "\0\0\0\0\200\200\14\14\300\340\360\363\363\360\340\300\14\14\200\200\1\1\60\60\3\4\10\310\310\10\4\3"
-  "\60\60\1\1";
-
-/*
-  Fontname: benji_custom_icons_6x
-  Copyright: 
-  Glyphs: 8/8
-  BBX Build Mode: 3
-  // 6x6 icons libraries take up a lot of memory thus all the icons uses are consolidated into a single library
-  // these are just the required icons stripped from the U8x8 libraries in addition to a few new custom icons
-  * 1 = sun
-  * 2 = skip forward
-  * 3 = fire
-  * 4 = custom palette
-  * 5 = puzzle piece
-  * 6 = moon
-  * 7 = brush
-  * 8 = custom saturation
-*/
-const uint8_t u8x8_font_benji_custom_icons_6x6[2308] U8X8_FONT_SECTION("u8x8_font_benji_custom_icons_6x6") = 
-  "\1\10\6\6\0\0\0\0\0\0\200\300\300\300\300\200\0\0\0\0\0\0\0\0\0\36\77\77\77\77\36\0"
-  "\0\0\0\0\0\0\0\0\200\300\300\300\300\200\0\0\0\0\0\0\0\0\0\0\0\0\7\17\17\17\17\7"
-  "\0\0\0\0\200\300\340\340\340\360\360\360\360\360\360\340\340\340\300\200\0\0\0\0\7\17\17\17\17\7\0\0"
-  "\0\0\0\0\300\340\340\340\340\300\0\0\0\0\0\0\340\374\376\377\377\377\377\377\377\377\377\377\377\377\377\377"
-  "\377\377\377\377\377\376\374\340\0\0\0\0\0\0\300\340\340\340\340\300\3\7\7\7\7\3\0\0\0\0\0\0"
-  "\7\77\177\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\177\77\7\0\0\0\0\0\0\3\7"
-  "\7\7\7\3\0\0\0\0\0\0\340\360\360\360\360\340\0\0\0\0\1\3\7\7\7\17\17\17\17\17\17\7"
-  "\7\7\3\1\0\0\0\0\340\360\360\360\360\340\0\0\0\0\0\0\0\0\0\0\0\0\1\3\3\3\3\1"
-  "\0\0\0\0\0\0\0\0\0x\374\374\374\374x\0\0\0\0\0\0\0\0\0\1\3\3\3\3\1\0\0"
-  "\0\0\0\0\300\200\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\300\200\0\0"
-  "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\377\377\377\376\376\374\370\360\360\340\300\200"
-  "\200\0\0\0\0\0\0\0\0\0\0\0\377\377\377\376\376\374\370\360\360\340\300\200\200\0\0\0\0\0\0\0"
-  "\0\0\0\0\377\377\377\377\377\377\377\377\377\377\377\377\377\377\376\374\374\370\360\340\340\300\200\0\377\377\377\377"
-  "\377\377\377\377\377\377\377\377\377\377\376\374\374\370\360\340\340\300\200\0\377\377\377\377\377\377\377\377\377\377\377\377"
-  "\377\377\177\77\77\37\17\7\7\3\1\0\377\377\377\377\377\377\377\377\377\377\377\377\377\377\177\77\77\37\17\7"
-  "\7\3\1\0\377\377\377\177\177\77\37\17\17\7\3\1\1\0\0\0\0\0\0\0\0\0\0\0\377\377\377\177"
-  "\177\77\37\17\17\7\3\1\1\0\0\0\0\0\0\0\0\0\0\0\3\1\0\0\0\0\0\0\0\0\0\0"
-  "\0\0\0\0\0\0\0\0\0\0\0\0\3\1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-  "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\1\376\374\374\370\360\340\300\200\0\0\0\0\0\0\0"
-  "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\200\340\360\374"
-  "\377\377\377\377\377\377\377\377\377\376\370\300\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-  "\0\0\0\0\0\0\300\340\360\374\376\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\37\0\0\0\0"
-  "\0\0\4\370\360\360\340\300\200\0\0\0\0\0\0\0\0\0\0\0\370\377\377\377\377\377\377\377\377\377\377\377"
-  "\377\377\377\377\377\177\77\37\7\3\0\0\0\0\0\200\300\360\374\377\377\377\377\377\377\377\376\370\340\0\0\0"
-  "\0\0\0\0\3\37\177\377\377\377\377\377\377\377\377\377\77\17\7\1\0\0\0\0\0\200\300\360\370\374\376\377"
-  "\377\377\377\377\377\377\377\377\377\377\377\377\377\377\0\0\0\0\0\0\0\0\0\1\3\7\17\37\77\77\177\200"
-  "\0\0\0\0\0\0\340\374\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\177\77\17\1\0\0"
-  "\0\0\0\0\0\0\0\0\0\0\0\200\300\340\340\360\360\370|<>>>~\377\377\377\377\377\377\377\177"
-  "\77\36\36\36\36<|\370\370\360\360\340\340\200\0\0\0\0\0\0\0\0\300\360\374\376\377\377\377\377\377\377"
-  "\377\360\340\300\300\300\300\340\360\377\377\377\377\377\377\370\360\340\340\340\340\360\370\377\377\377\377\377\377\377\377\377"
-  "\374\360\340\200\360\377\377\377\377\377\207\3\1\1\1\1\3\207\377\377\377\377\377\377\377\377\377\377\377\377\377\377"
-  "\377\377\377\377\377\377\377\207\3\1\1\1\1\3\207\377\377\377\377\377\17\377\377\377\377\377\377\377\376~>>"
-  "\77\77\177\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\376\376\376\376\377\377\377"
-  "\177\77\37\7\0\0\3\17\77\177\377\377\360\340\300\300\300\300\340\360\377\377\377\377\377\377\377\377\377\377\77\17"
-  "\17\7\7\7\7\7\7\7\7\7\3\3\3\3\1\0\0\0\0\0\0\0\0\0\0\0\0\1\3\7\17\37"
-  "\37\77\77\177\177\177\377\377\377\377\377\377\377\377\377~\30\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-  "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\370\374\376\377\377\377\377\377\377\376\374\360\0\0\0\0"
-  "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\360\360\360\360\360\360\360\360\360\360\360\360"
-  "\360\363\377\377\377\377\377\377\377\377\363\360\360\360\360\360\360\360\360\360\360\360\360\360\0\0\0\0\0\0\0\0"
-  "\0\0\0\0\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377"
-  "\377\377\377\377\377\377\377\377\0\0\0\0\0\0\0\0\0\0\0\0\377\377\377\377\377\377\377\377\377\377\377\377"
-  "\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\374\374\376\376\377\377\377\377"
-  "\377\376\374\360\377\377\377\377\377\377\377\377\377\377\377\377\177\77\37\17\17\17\17\17\17\37\77\177\377\377\377\377"
-  "\377\377\377\377\377\377\377\377\3\3\7\7\17\17\17\17\7\7\3\0\377\377\377\377\377\377\377\377\377\377\377\377"
-  "\360\300\0\0\0\0\0\0\0\0\300\360\377\377\377\377\377\377\377\377\377\377\377\377\0\0\0\0\0\0\0\0"
-  "\0\0\0\0\0\0\0\0\0\200\300\340\360\360\370\374\374\376\376\7\0\0\0\0\0\0\0\0\0\0\0\0"
-  "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\300\360\374\376\377\377\377\377\377\377\377"
-  "\377\377\377\340\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-  "\0\0\0\0\374\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\374\360\300\200\0\0\0\0\0\0\0"
-  "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\17\177\377\377\377\377\377\377\377\377\377\377"
-  "\377\377\377\377\377\377\377\377\377\377\376\374\370\360\360\340\340\300\300\300\200\200\200\200\0\0\0\0\0\0\200\200"
-  "\200\200\0\0\0\0\1\7\37\77\177\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377"
-  "\377\377\377\377\377\377\377\377\377\377\377\377\377\177\77\37\7\1\0\0\0\0\0\0\0\0\0\0\1\3\3\7"
-  "\17\17\37\37\37\77\77\77\77\177\177\177\177\177\177\77\77\77\77\37\37\37\17\17\7\3\3\1\0\0\0\0"
-  "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-  "\0\0\0\0\0\0\200\200\300\340\360\360\370\374\374\376\377~\34\10\0\0\0\0\0\0\0\0\0\0\0\0"
-  "\0\0\0\0\0\0\0\0\0\0\0\200\300\300\340\360\360\370\374\376\376\377\377\377\377\377\377\177\77\17\7\3"
-  "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\4\6\17\17\37\77\177\377"
-  "\377\377\377\377\377\377\77\37\7\3\1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\300\370\374\376"
-  "\376\377\377\377\377\377\377\376\376\374\370\340\0\0\0\0\3\17\7\3\1\0\0\0\0\0\0\0\0\0\0\0"
-  "\0\0\0\0\0\0\0\0\0\0\200\360\377\377\377\377\377\377\377\377\377\377\377\377\377\377\177\17\0\0\0\0"
-  "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0`px\374\376\377\377\377\377\377\377"
-  "\177\177\177\77\77\37\17\7\3\1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-  "\0\0\0\0\0\0\0\0\0\0\0\200\300\300\200\0\0\0\0\0\0\0\0\0\14\36\77\77\36\14\0\0"
-  "\0\0\0\0\0\0\0\200\300\300\200\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\3\7\17\17\7\3"
-  "\0\200\300\340\360\360\370\370\370\374\374\374\374\370\370\370\360\360\340\300\200\0\3\7\17\17\7\3\0\0\0\0"
-  "\0\0\0\0\300\340\360\360\340\300\0\0\0\0\340\374\377\177\177\177\177\177\177\177\177\177\177\177\177\177\177\177"
-  "\177\177\177\177\177\377\374\340\0\0\0\0\300\340\360\360\340\300\0\0\0\1\3\3\1\0\0\0\0\0\1\17"
-  "\77\177\370\340\300\200\200\0\0\0\0\0\0\0\0\200\200\300\340\370\177\77\17\1\0\0\0\0\0\1\3\3"
-  "\1\0\0\0\0\0\0\0\0\0\60x\374\374x\60\0\0\0\1\3\3\7\7\7\16\16\16\16\7\7\7"
-  "\3\3\1\0\0\0\60x\374\374x\60\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-  "\0\0\0\0\0\0\0\0\14\36\77\77\36\14\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-  "\0\0\0";
 
 class FourLineDisplayUsermod : public Usermod {
 
@@ -256,15 +130,12 @@ class FourLineDisplayUsermod : public Usermod {
     bool flip = false;              // flip display 180°
     uint8_t contrast = 10;          // screen contrast
     uint8_t lineHeight = 1;         // 1 row or 2 rows
-    uint32_t refreshRate = USER_LOOP_REFRESH_RATE_MS; // in ms
+    uint16_t refreshRate = USER_LOOP_REFRESH_RATE_MS; // in ms
     uint32_t screenTimeout = SCREEN_TIMEOUT_MS;       // in ms
     bool sleepMode = true;          // allow screen sleep?
     bool clockMode = false;         // display clock
     bool showSeconds = true;        // display clock with seconds
     bool enabled = true;
-
-    // needRedraw marks if redraw is required to prevent often redrawing.
-    bool needRedraw = true;
 
     // Next variables hold the previous known values to determine if redraw is
     // required.
@@ -387,7 +258,7 @@ class FourLineDisplayUsermod : public Usermod {
       setContrast(contrast); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
       setPowerSave(0);
       //drawString(0, 0, "Loading...");
-      overlay(PSTR("Loading..."),3000,0);
+      overlayLogo(3500);
     }
 
     // gets called every time WiFi is (re-)connected. Initialize own network
@@ -405,7 +276,7 @@ class FourLineDisplayUsermod : public Usermod {
       if (!enabled || strip.isUpdating()) return;
       unsigned long now = millis();
       if (now < nextUpdate) return;
-      nextUpdate = now + ((clockMode && showSeconds) ? 1000 : refreshRate);
+      nextUpdate = now + ((displayTurnedOff && clockMode && showSeconds) ? 1000 : refreshRate);
       redraw(false);
     }
 
@@ -437,6 +308,11 @@ class FourLineDisplayUsermod : public Usermod {
       if (!ignoreLH && lineHeight==2) u8x8->draw1x2Glyph(col, row, glyph);
       else                            u8x8->drawGlyph(col, row, glyph);
     }
+    void draw2x2Glyph(uint8_t col, uint8_t row, char glyph, const uint8_t *font) {
+      if (type == NONE || !enabled) return;
+      u8x8->setFont(font);
+      u8x8->draw2x2Glyph(col, row, glyph);
+    }
     uint8_t getCols() {
       if (type==NONE || !enabled) return 0;
       return u8x8->getCols();
@@ -466,6 +342,7 @@ class FourLineDisplayUsermod : public Usermod {
      * or if forceRedraw).
      */
     void redraw(bool forceRedraw) {
+      bool needRedraw = false;
       unsigned long now = millis();
  
       if (type == NONE || !enabled) return;
@@ -483,49 +360,49 @@ class FourLineDisplayUsermod : public Usermod {
 
       // Check if values which are shown on display changed from the last time.
       if (forceRedraw) {
-          knownHour = 99;
-          needRedraw = true;
-          clear();
+        needRedraw = true;
+        clear();
       } else if ((bri == 0 && powerON) || (bri > 0 && !powerON)) {   //trigger power icon
-          powerON = !powerON;
-          drawStatusIcons();
-          lastRedraw = millis();
-          return;
+        powerON = !powerON;
+        drawStatusIcons();
+        return;
       } else if (knownnightlight != nightlightActive) {   //trigger moon icon 
-          knownnightlight = nightlightActive;
-          drawStatusIcons();
-          if (knownnightlight) overlay(PSTR("    Timer On"), 3000, 6);
-          lastRedraw = millis();
-          return;
+        knownnightlight = nightlightActive;
+        drawStatusIcons();
+        if (knownnightlight) {
+          String timer = PSTR("Timer On");
+          center(timer,LINE_BUFFER_SIZE-1);
+          overlay(timer.c_str(), 2500, 6);
+          //lastRedraw = millis();
+        }
+        return;
       } else if (wificonnected != interfacesInited) {   //trigger wifi icon
-          wificonnected = interfacesInited;
-          drawStatusIcons();
-          lastRedraw = millis();
-          return;
+        wificonnected = interfacesInited;
+        drawStatusIcons();
+        return;
       } else if (knownMode != effectCurrent) {
-          knownMode = effectCurrent;
-          if (displayTurnedOff) needRedraw = true;
-          else showCurrentEffectOrPalette(knownMode, JSON_mode_names, 3);
+        knownMode = effectCurrent;
+        if (displayTurnedOff) needRedraw = true;
+        else { showCurrentEffectOrPalette(knownMode, JSON_mode_names, 3); return; }
       } else if (knownPalette != effectPalette) {
-           knownPalette = effectPalette;
-           if (displayTurnedOff) needRedraw = true;
-           else showCurrentEffectOrPalette(knownPalette, JSON_palette_names, 2);
+        knownPalette = effectPalette;
+        if (displayTurnedOff) needRedraw = true;
+        else { showCurrentEffectOrPalette(knownPalette, JSON_palette_names, 2); return; }
       } else if (knownBrightness != bri) {
-          if (displayTurnedOff && nightlightActive) { needRedraw = false; knownBrightness = bri; }
-          else if (displayTurnedOff) needRedraw = true;
-          else updateBrightness();
+        if (displayTurnedOff && nightlightActive) { knownBrightness = bri; }
+        else if (!displayTurnedOff) { updateBrightness(); return; }
       } else if (knownEffectSpeed != effectSpeed) {
-          if (displayTurnedOff) needRedraw = true;
-          else updateSpeed();
+        if (displayTurnedOff) needRedraw = true;
+        else { updateSpeed(); return; }
       } else if (knownEffectIntensity != effectIntensity) {
-          if (displayTurnedOff) needRedraw = true;
-          else updateIntensity();
+        if (displayTurnedOff) needRedraw = true;
+        else { updateIntensity(); return; }
       }
 
       if (!needRedraw) {
         // Nothing to change.
         // Turn off display after 1 minutes with no change.
-        if (sleepMode && !displayTurnedOff && (now - lastRedraw > screenTimeout)) {
+        if (sleepMode && !displayTurnedOff && (millis() - lastRedraw > screenTimeout)) {
           // We will still check if there is a change in redraw()
           // and turn it back on if it changed.
           clear();
@@ -536,14 +413,10 @@ class FourLineDisplayUsermod : public Usermod {
         return;
       }
 
-      needRedraw = false;
-      lastRedraw = millis();
+      lastRedraw = now;
       
-      if (displayTurnedOff) {
-        // Turn the display back on
-        sleepOrClock(false);
-        clear();
-      }
+      // Turn the display back on
+      wakeDisplay();
 
       // Update last known values.
       knownBrightness = bri;
@@ -579,7 +452,7 @@ class FourLineDisplayUsermod : public Usermod {
         char lineBuffer[4];
         sprintf_P(lineBuffer, PSTR("%-3d"), brightness100);
         drawString(1, lineHeight, lineBuffer);
-        lastRedraw = millis();
+        //lastRedraw = millis();
       }
     }
 
@@ -590,7 +463,7 @@ class FourLineDisplayUsermod : public Usermod {
         char lineBuffer[4];
         sprintf_P(lineBuffer, PSTR("%-3d"), fxspeed100);
         drawString(5, lineHeight, lineBuffer);
-        lastRedraw = millis();
+        //lastRedraw = millis();
       }
     }
 
@@ -601,30 +474,34 @@ class FourLineDisplayUsermod : public Usermod {
         char lineBuffer[4];
         sprintf_P(lineBuffer, PSTR("%-3d"), fxintensity100);
         drawString(9, lineHeight, lineBuffer);
-        lastRedraw = millis();
+        //lastRedraw = millis();
       }
     }
 
     void draw2x2GlyphIcons() {
       if (lineHeight == 2) {
-        drawGlyph(1, 0, 1,             u8x8_font_benji_custom_icons_2x2, true);//brightness icon
-        drawGlyph(5, 0, 2,             u8x8_font_benji_custom_icons_2x2, true);//speed icon
-        drawGlyph(9, 0, 3,             u8x8_font_benji_custom_icons_2x2, true);//intensity icon
-        drawGlyph(14, 2*lineHeight, 4, u8x8_font_benji_custom_icons_2x2, true);//palette icon
-        drawGlyph(14, 3*lineHeight, 5, u8x8_font_benji_custom_icons_2x2, true);//effect icon
+        drawGlyph( 1,            0, 1, u8x8_4LineDisplay_WLED_icons_2x2, true); //brightness icon
+        drawGlyph( 5,            0, 2, u8x8_4LineDisplay_WLED_icons_2x2, true); //speed icon
+        drawGlyph( 9,            0, 3, u8x8_4LineDisplay_WLED_icons_2x2, true); //intensity icon
+        drawGlyph(14, 2*lineHeight, 4, u8x8_4LineDisplay_WLED_icons_2x2, true); //palette icon
+        drawGlyph(14, 3*lineHeight, 5, u8x8_4LineDisplay_WLED_icons_2x2, true); //effect icon
       } else {
-        drawGlyph(2, 0, 69,             u8x8_font_open_iconic_weather_1x1);    //brightness icon
-        drawGlyph(6, 0, 72,             u8x8_font_open_iconic_play_1x1);       //speed icon
-        drawGlyph(10, 0, 78,            u8x8_font_open_iconic_thing_1x1);      //intensity icon
-        drawGlyph(15, 2*lineHeight, 4,  u8x8_font_benji_custom_icons_1x1);     //palette icon
-        drawGlyph(15, 3*lineHeight, 70, u8x8_font_open_iconic_thing_1x1);      //effect icon
+        drawGlyph( 2, 0, 1, u8x8_4LineDisplay_WLED_icons_1x1); //brightness icon
+        drawGlyph( 6, 0, 2, u8x8_4LineDisplay_WLED_icons_1x1); //speed icon
+        drawGlyph(10, 0, 3, u8x8_4LineDisplay_WLED_icons_1x1); //intensity icon
+        if (markLineNum!=2) drawGlyph(0, 2, 4, u8x8_4LineDisplay_WLED_icons_1x1); //palette icon
+        if (markLineNum!=3) drawGlyph(0, 3, 5, u8x8_4LineDisplay_WLED_icons_1x1); //effect icon
       }
     }
 
     void drawStatusIcons() {
-      drawGlyph(14, 0, 80 + (wificonnected?0:1),    u8x8_font_open_iconic_embedded_1x1, true); // wifi icon
-      drawGlyph(15, 0, 78 + (bri > 0 ? 0 : 3),      u8x8_font_open_iconic_embedded_1x1, true); // power icon
-      drawGlyph(13, 0, 66 + (nightlightActive?0:4), u8x8_font_open_iconic_weather_1x1, true);  // moon icon for nighlight mode
+      uint8_t col = 15;
+      uint8_t row = 0;
+      drawGlyph(col, row,   (wificonnected ? 20 : 0), u8x8_4LineDisplay_WLED_icons_1x1, true); // wifi icon
+      if (lineHeight==2) { col--; } else { row++; }
+      drawGlyph(col, row,          (bri > 0 ? 9 : 0), u8x8_4LineDisplay_WLED_icons_1x1, true); // power icon
+      if (lineHeight==2) { col--; } else { row++; }
+      drawGlyph(col, row, (nightlightActive ? 6 : 0), u8x8_4LineDisplay_WLED_icons_1x1, true); // moon icon for nighlight mode
     }
     
     /**
@@ -633,25 +510,24 @@ class FourLineDisplayUsermod : public Usermod {
      * pass line and colum info
      */
     void setMarkLine(byte newMarkLineNum, byte newMarkColNum) {
-        markLineNum = newMarkLineNum;
-        markColNum = newMarkColNum;
+      markLineNum = newMarkLineNum;
+      markColNum = newMarkColNum;
     }
 
     //Draw the arrow for the current setting beiong changed
     void drawArrow() {
-      if (markColNum != 255 && markLineNum !=255) drawGlyph(markColNum, markLineNum*lineHeight, 69, u8x8_font_open_iconic_play_1x1);
+      if (markColNum != 255 && markLineNum !=255) drawGlyph(markColNum, markLineNum*lineHeight, 21, u8x8_4LineDisplay_WLED_icons_1x1);
     }
 
      //Display the current effect or palette (desiredEntry) 
      // on the appropriate line (row). 
     void showCurrentEffectOrPalette(int inputEffPal, const char *qstring, uint8_t row) {
-      char lineBuffer[LINE_BUFFER_SIZE];
+      char lineBuffer[MAX_JSON_CHARS];
       knownMode = effectCurrent;
       knownPalette = effectPalette;
       if (overlayUntil == 0) {
         // Find the mode name in JSON
-        uint8_t printedChars = extractModeName(inputEffPal, qstring, lineBuffer, LINE_BUFFER_SIZE-1);
-
+        uint8_t printedChars = extractModeName(inputEffPal, qstring, lineBuffer, MAX_JSON_CHARS-1);
         if (lineHeight == 2) {                                 // use this code for 8 line display
           char smallBuffer1[MAX_MODE_LINE_SPACE];
           char smallBuffer2[MAX_MODE_LINE_SPACE];
@@ -707,48 +583,119 @@ class FourLineDisplayUsermod : public Usermod {
      */
     bool wakeDisplay() {
       if (type == NONE || !enabled) return false;
-      knownHour = 99;
       if (displayTurnedOff) {
         clear();
         // Turn the display back on
         sleepOrClock(false);
-        redraw(true);
+        //lastRedraw = millis();
         return true;
       }
       return false;
     }
 
     /**
-     * Allows you to show one line and a glyph as overlay for a
-     * period of time.
+     * Allows you to show one line and a glyph as overlay for a period of time.
      * Clears the screen and prints.
+     * Used in Rotary Encoder usermod.
      */
     void overlay(const char* line1, long showHowLong, byte glyphType) {
-      if (displayTurnedOff) {
-        // Turn the display back on
-        sleepOrClock(false);
-      }
-
+      // Turn the display back on
+      if (!wakeDisplay()) clear();
       // Print the overlay
-      clear();
-      if (glyphType > 0) {
-        if (lineHeight == 2) drawGlyph(5, 0, glyphType, u8x8_font_benji_custom_icons_6x6, true);
-        else                 drawGlyph(7, lineHeight, glyphType, u8x8_font_benji_custom_icons_2x2, true);
-        if (line1) drawString(0, 3*lineHeight, line1);
+      if (glyphType>0 && glyphType<255) {
+        if (lineHeight == 2) drawGlyph(5,          0, glyphType, u8x8_4LineDisplay_WLED_icons_6x6, true);
+        else                 drawGlyph(7, lineHeight, glyphType, u8x8_4LineDisplay_WLED_icons_2x2, true);
+      }
+      if (line1) {
+        String buf = line1;
+        center(buf, getCols());
+        drawString(0, (glyphType<255?3:0)*lineHeight, buf.c_str());
+      }
+      overlayUntil = millis() + showHowLong;
+    }
+
+    /**
+     * Allows you to show Akemi WLED logo overlay for a period of time.
+     * Clears the screen and prints.
+     */
+    void overlayLogo(long showHowLong) {
+      // Turn the display back on
+      if (!wakeDisplay()) clear();
+      // Print the overlay
+      if (lineHeight == 2) {
+        //add a bit of randomness
+        switch (millis()%3) {
+          case 0:
+            //WLED
+            draw2x2Glyph( 0, 2, 1, u8x8_wled_logo_2x2);
+            draw2x2Glyph( 4, 2, 2, u8x8_wled_logo_2x2);
+            draw2x2Glyph( 8, 2, 3, u8x8_wled_logo_2x2);
+            draw2x2Glyph(12, 2, 4, u8x8_wled_logo_2x2);
+            break;
+          case 1:
+            //WLED Akemi
+            drawGlyph( 2, 2, 1, u8x8_wled_logo_akemi_4x4, true);
+            drawGlyph( 6, 2, 2, u8x8_wled_logo_akemi_4x4, true);
+            drawGlyph(10, 2, 3, u8x8_wled_logo_akemi_4x4, true);
+            break;
+          case 2:
+            //Akemi
+            //draw2x2Glyph( 4, 0, 12, u8x8_4LineDisplay_WLED_icons_4x4);
+            drawGlyph( 5, 0, 12, u8x8_4LineDisplay_WLED_icons_6x6, true);
+            drawString(6, 6, "WLED");
+            break;
+        }
       } else {
-        if (line1) drawString(0, 2*(lineHeight-1), line1);
+        switch (millis()%3) {
+          case 0:
+            //WLED
+            draw2x2Glyph( 0, 0, 1, u8x8_wled_logo_2x2);
+            draw2x2Glyph( 4, 0, 2, u8x8_wled_logo_2x2);
+            draw2x2Glyph( 8, 0, 3, u8x8_wled_logo_2x2);
+            draw2x2Glyph(12, 0, 4, u8x8_wled_logo_2x2);
+            break;
+          case 1:
+            //WLED Akemi
+            drawGlyph( 2, 0, 1, u8x8_wled_logo_akemi_4x4);
+            drawGlyph( 6, 0, 2, u8x8_wled_logo_akemi_4x4);
+            drawGlyph(10, 0, 3, u8x8_wled_logo_akemi_4x4);
+            break;
+          case 2:
+            //Akemi
+            //drawGlyph( 6, 0, 12, u8x8_4LineDisplay_WLED_icons_4x4);
+            draw2x2Glyph( 6, 0, 12, u8x8_4LineDisplay_WLED_icons_2x2);
+            break;
+        }
+      }
+      overlayUntil = millis() + showHowLong;
+    }
+
+    /**
+     * Allows you to show two lines as overlay for a period of time.
+     * Clears the screen and prints.
+     * Used in Auto Save usermod
+     */
+    void overlay(const char* line1, const char* line2, long showHowLong) {
+      // Turn the display back on
+      if (!wakeDisplay()) clear();
+      // Print the overlay
+      if (line1) {
+        String buf = line1;
+        center(buf, getCols());
+        drawString(0, 1*lineHeight, buf.c_str());
+      }
+      if (line2) {
+        String buf = line2;
+        center(buf, getCols());
+        drawString(0, 2*lineHeight, buf.c_str());
       }
       overlayUntil = millis() + showHowLong;
     }
 
     void networkOverlay(const char* line1, long showHowLong) {
-      if (displayTurnedOff) {
-        // Turn the display back on
-        sleepOrClock(false);
-      }
+      // Turn the display back on
+      if (!wakeDisplay()) clear();
       // Print the overlay
-      clear();
-      // First row string
       if (line1) {
         String l1 = line1;
         l1.trim();
@@ -785,15 +732,15 @@ class FourLineDisplayUsermod : public Usermod {
      */
     void sleepOrClock(bool enabled) {
       if (enabled) {
+        displayTurnedOff = true;
         if (clockMode) {
           knownMinute = knownHour = 99;
           showTime();
         } else
           setPowerSave(1);
-        displayTurnedOff = true;
       } else {
-        setPowerSave(0);
         displayTurnedOff = false;
+        setPowerSave(0);
       }
     }
 
@@ -819,29 +766,27 @@ class FourLineDisplayUsermod : public Usermod {
           if (AmPmHour > 11) { AmPmHour -= 12; isitAM = false; }
           if (AmPmHour == 0) { AmPmHour  = 12; }
         }
-
-        drawStatusIcons(); //icons power, wifi, timer, etc
-
         if (knownHour != hourCurrent) {
           // only update date when hour changes
           sprintf_P(lineBuffer, PSTR("%s %2d "), monthShortStr(month(localTime)), day(localTime)); 
           draw2x2String(2, lineHeight==1 ? 0 : lineHeight, lineBuffer); // adjust for 8 line displays, draw month and day
         }
-
         sprintf_P(lineBuffer,PSTR("%2d:%02d"), (useAMPM ? AmPmHour : hourCurrent), minuteCurrent);
         draw2x2String(2, lineHeight*2, lineBuffer); //draw hour, min. blink ":" depending on odd/even seconds
-
         if (useAMPM) drawString(12, lineHeight*2, (isitAM ? "AM" : "PM"), true); //draw am/pm if using 12 time
+
+        drawStatusIcons(); //icons power, wifi, timer, etc
+
         knownMinute = minuteCurrent;
         knownHour   = hourCurrent;
       } else {
         if (secondCurrent == lastSecond) return;
       }
-      if (showSeconds && !useAMPM) {
+      if (showSeconds) {
         lastSecond = secondCurrent;
         draw2x2String(6, lineHeight*2, secondCurrent%2 ? " " : ":");
         sprintf_P(lineBuffer, PSTR("%02d"), secondCurrent);
-        drawString(12 + (lineHeight%2), lineHeight*2+1, lineBuffer, true); // even with double sized rows print seconds in 1 line
+        drawString(12, lineHeight*2+1, lineBuffer, true); // even with double sized rows print seconds in 1 line
       }
     }
 
@@ -896,7 +841,7 @@ class FourLineDisplayUsermod : public Usermod {
       top["help4Type"]           = F("1=SSD1306,2=SH1106,3=SSD1306_128x64,4=SSD1305,5=SSD1305_128x64,6=SSD1306_SPI,7=SSD1306_SPI_128x64"); // help for Settings page
       top[FPSTR(_flip)]          = (bool) flip;
       top[FPSTR(_contrast)]      = contrast;
-      top[FPSTR(_refreshRate)]   = refreshRate/1000;
+      top[FPSTR(_refreshRate)]   = refreshRate;
       top[FPSTR(_screenTimeOut)] = screenTimeout/1000;
       top[FPSTR(_sleepMode)]     = (bool) sleepMode;
       top[FPSTR(_clockMode)]     = (bool) clockMode;
@@ -930,7 +875,8 @@ class FourLineDisplayUsermod : public Usermod {
       for (byte i=0; i<5; i++) newPin[i] = top["pin"][i] | ioPin[i];
       flip          = top[FPSTR(_flip)] | flip;
       contrast      = top[FPSTR(_contrast)] | contrast;
-      refreshRate   = (top[FPSTR(_refreshRate)] | refreshRate/1000) * 1000;
+      refreshRate   = top[FPSTR(_refreshRate)] | refreshRate;
+      refreshRate   = min(5000, max(250, (int)refreshRate));
       screenTimeout = (top[FPSTR(_screenTimeOut)] | screenTimeout/1000) * 1000;
       sleepMode     = top[FPSTR(_sleepMode)] | sleepMode;
       clockMode     = top[FPSTR(_clockMode)] | clockMode;
@@ -964,14 +910,15 @@ class FourLineDisplayUsermod : public Usermod {
           setup();
           needsRedraw |= true;
         }
-        /*if (!(type == SSD1306_SPI || type == SSD1306_SPI64))*/ u8x8->setBusClock(ioFrequency); // can be used for SPI too
+        u8x8->setBusClock(ioFrequency); // can be used for SPI too
         setContrast(contrast);
         setFlipMode(flip);
         knownHour = 99;
         if (needsRedraw && !wakeDisplay()) redraw(true);
+        else overlayLogo(3500);
       }
       // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
-      return !top[FPSTR(_showSeconds)].isNull();
+      return !top[FPSTR(_refreshRate)].isNull();
     }
 
     /*
@@ -987,7 +934,7 @@ class FourLineDisplayUsermod : public Usermod {
 const char FourLineDisplayUsermod::_name[]            PROGMEM = "4LineDisplay";
 const char FourLineDisplayUsermod::_enabled[]         PROGMEM = "enabled";
 const char FourLineDisplayUsermod::_contrast[]        PROGMEM = "contrast";
-const char FourLineDisplayUsermod::_refreshRate[]     PROGMEM = "refreshRateSec";
+const char FourLineDisplayUsermod::_refreshRate[]     PROGMEM = "refreshRate-ms";
 const char FourLineDisplayUsermod::_screenTimeOut[]   PROGMEM = "screenTimeOutSec";
 const char FourLineDisplayUsermod::_flip[]            PROGMEM = "flip";
 const char FourLineDisplayUsermod::_sleepMode[]       PROGMEM = "sleepMode";

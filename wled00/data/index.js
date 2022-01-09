@@ -15,7 +15,7 @@ var csel = 0;
 var currentPreset = -1, prevPS = -1;
 var lastUpdate = 0;
 var segCount = 0, ledCount = 0, lowestUnused = 0, maxSeg = 0, lSeg = 0;
-var pcMode = false, pcModeA = false, lastw = 0;
+var pcMode = false, pcModeA = false, lastw = 0, wW;
 var tr = 7;
 var d = document;
 var palettesData;
@@ -198,15 +198,15 @@ function onLoad()
 		fetch((loc?`http://${locip}`:'.') + "/holidays.json", {	// may be loaded from external source
 			method: 'get'
 		})
-		.then(res => {
+		.then((res)=>{
 			//if (!res.ok) showErrorToast();
 			return res.json();
 		})
-		.then(json => {
+		.then((json)=>{
 			if (Array.isArray(json)) hol = json;
 			//TODO: do some parsing first
 		})
-		.catch(function (error) {
+		.catch((e)=>{
 			console.log("holidays.json does not contain array of holidays. Defaults loaded.");
 		})
 		.finally(()=>{
@@ -421,9 +421,8 @@ function loadPresets(callback = null)
 		pJson = json;
 		populatePresets();
 	})
-	.catch(function (error) {
-		showToast(error, true);
-		console.log(error);
+	.catch((e)=>{
+		showToast(e, true);
 		presetError(false);
 	})
 	.finally(()=>{
@@ -438,17 +437,17 @@ function loadPalettes(callback = null)
 	fetch(url, {
 		method: 'get'
 	})
-	.then(res => {
+	.then((res)=>{
 		if (!res.ok) showErrorToast();
 		return res.json();
 	})
-	.then(json => {
+	.then((json)=>{
 		clearErrorToast();
 		lJson = Object.entries(json);
 		populatePalettes();
 	})
-	.catch(function (error) {
-		showToast(error, true);
+	.catch((e)=>{
+		showToast(e, true);
 		presetError(false);
 	})
 	.finally(()=>{
@@ -464,17 +463,17 @@ function loadFX(callback = null)
 	fetch(url, {
 		method: 'get'
 	})
-	.then(res => {
+	.then((res)=>{
 		if (!res.ok) showErrorToast();
 		return res.json();
 	})
-	.then(json => {
+	.then((json)=>{
 		clearErrorToast();
 		eJson = Object.entries(json);
 		populateEffects();
 	})
-	.catch(function (error) {
-		showToast(error, true);
+	.catch((e)=>{
+		showToast(e, true);
 		presetError(false);
 	})
 	.finally(()=>{
@@ -490,20 +489,20 @@ function loadFXData(callback = null)
 	fetch(url, {
 		method: 'get'
 	})
-	.then(res => {
+	.then((res)=>{
 		if (!res.ok) showErrorToast();
 		return res.json();
 	})
-	.then(json => {
+	.then((json)=>{
 		clearErrorToast();
 		fxdata = json||[];
 		// add default value for Solid
 		fxdata.shift()
 		fxdata.unshift("@;!;");
 	})
-	.catch(function (error) {
+	.catch((e)=>{
 		fxdata = [];
-		showToast(error, true);
+		showToast(e, true);
 	})
 	.finally(()=>{
 		if (callback) callback();
@@ -910,17 +909,16 @@ function loadNodes()
 	fetch(url, {
 		method: 'get'
 	})
-	.then(res => {
+	.then((res)=>{
 		if (!res.ok) showToast('Could not load Node list!', true);
 		return res.json();
 	})
-	.then(json => {
+	.then((json)=>{
 		clearErrorToast();
 		populateNodes(lastinfo, json);
 	})
-	.catch(function (error) {
-		showToast(error, true);
-		console.log(error);
+	.catch((e)=>{
+		showToast(e, true);
 	});
 }
 
@@ -1074,8 +1072,8 @@ function cmpP(a, b)
 function makeWS() {
 	if (ws) return;
 	ws = new WebSocket('ws://'+(loc?locip:window.location.hostname)+'/ws');
-	ws.onmessage = function(event) {
-		var json = JSON.parse(event.data);
+	ws.onmessage = (e)=>{
+		var json = JSON.parse(e.data);
 		if (json.leds) return; //liveview packet
 		clearTimeout(jsonTimeout);
 		jsonTimeout = null;
@@ -1095,11 +1093,12 @@ function makeWS() {
 		displayRover(i, s);
 		readState(s);
 	};
-	ws.onclose = function(event) {
+	ws.onclose = (e)=>{
 		gId('connind').style.backgroundColor = "var(--c-r)";
 		ws = null;
+		if (lastinfo.ws > -1) setTimeout(makeWS,500); //retry WS connection
 	}
-	ws.onopen = function(event) {
+	ws.onopen = (e)=>{
 		ws.send("{'v':true}");
 		reqsLegal = true;
 		clearErrorToast();
@@ -1236,7 +1235,7 @@ function setSliderAndColorControl(idx, applyDef=false)
 				if      (i==0) { if (applyDef) gId("sliderSpeed").value     = v; obj.seg.sx = v; }
 				else if (i==1) { if (applyDef) gId("sliderIntensity").value = v; obj.seg.ix = v; }
 				else           { if (applyDef) gId("sliderC"+(i-1)).value   = v; obj.seg["C"+(i-1)] = v}
-				slOnOff[i] = slOnOff[i].substring(0,dPos-1);
+				slOnOff[i] = slOnOff[i].substring(0,dPos);
 			}
 			if (slOnOff.length>i && slOnOff[i]!="!") label.innerHTML = slOnOff[i];
 			else if (i==0)                           label.innerHTML = "Effect speed";
@@ -1389,9 +1388,9 @@ function requestJson(command=null)
 		readState(s);
 		reqsLegal = true;
 	})
-	.catch(function (error) {
-		showToast(error, true);
-		console.log(error);
+	.catch((e)=>{
+		showToast(e, true);
+		console.log(e);
 	});
 }
 
@@ -2335,12 +2334,12 @@ function move(e)
 }
 
 function showNodes() {
-	gId('buttonNodes').style.display = (lastinfo.ndc > 0 && (w > 797 || (w > 539 && w < 720))) ? "block":"none";
+	gId('buttonNodes').style.display = (lastinfo.ndc > 0 && (wW > 797 || (wW > 539 && wW < 720))) ? "block":"none";
 }
 
 function size()
 {
-	w = window.innerWidth;
+	wW = window.innerWidth;
 	showNodes();
 	var h = gId('top').clientHeight;
 	sCol('--th', h + "px");
@@ -2357,8 +2356,8 @@ function togglePcMode(fromB = false)
 		localStorage.setItem('pcm', pcModeA);
 		pcMode = pcModeA;
 	}
-	if (w < 1250 && !pcMode) return;
-	if (!fromB && ((w < 1250 && lastw < 1250) || (w >= 1250 && lastw >= 1250))) return;
+	if (wW < 1250 && !pcMode) return;
+	if (!fromB && ((wW < 1250 && lastw < 1250) || (wW >= 1250 && lastw >= 1250))) return;
 	openTab(0, true);
 	if (w < 1250) {pcMode = false;}
 	else if (pcModeA && !fromB) pcMode = pcModeA;
@@ -2367,7 +2366,7 @@ function togglePcMode(fromB = false)
 	gId('bot').style.height = (pcMode && !cfg.comp.pcmbot) ? "0":"auto";
 	sCol('--bh', gId('bot').clientHeight + "px");
 	_C.style.width = (pcMode)?'100%':'400%';
-	lastw = w;
+	lastw = wW;
 }
 
 function mergeDeep(target, ...sources)

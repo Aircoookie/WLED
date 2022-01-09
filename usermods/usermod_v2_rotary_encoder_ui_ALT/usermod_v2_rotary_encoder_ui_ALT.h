@@ -47,7 +47,7 @@
 
 // The last UI state, remove color and saturation option if diplay not active(too many options)
 #ifdef USERMOD_FOUR_LINE_DISPLAY
- #define LAST_UI_STATE 6
+ #define LAST_UI_STATE 7
 #else
  #define LAST_UI_STATE 4
 #endif
@@ -115,17 +115,20 @@ static int re_qstringCmp(const void *ap, const void *bp) {
 
 class RotaryEncoderUIUsermod : public Usermod {
 private:
-  int fadeAmount = 5;                 // Amount to change every step (brightness)
-  unsigned long currentTime;
+  int8_t fadeAmount = 5;              // Amount to change every step (brightness)
   unsigned long loopTime;
-  unsigned long buttonHoldTime;
+
+  unsigned long buttonPressedTime = 0;
+  unsigned long buttonWaitTime = 0;
+  bool buttonPressedBefore = false;
+  bool buttonLongPressed = false;
+
   int8_t pinA = ENCODER_DT_PIN;       // DT from encoder
   int8_t pinB = ENCODER_CLK_PIN;      // CLK from encoder
   int8_t pinC = ENCODER_SW_PIN;       // SW from encoder
-  unsigned char select_state = 0;     // 0: brightness, 1: effect, 2: effect speed
-  unsigned char button_state = HIGH;
-  unsigned char prev_button_state = HIGH;
-  bool networkShown = false;
+
+  unsigned char select_state = 0;     // 0: brightness, 1: effect, 2: effect speed, ...
+
   uint16_t currentHue1 = 16; // default boot color
   byte currentSat1 = 255;
   
@@ -157,6 +160,9 @@ private:
   uint8_t knownMode = 0;
   uint8_t knownPalette = 0;
 
+  byte presetHigh = 0;
+  byte presetLow = 0;
+
   bool initDone = false;
   bool enabled = true;
 
@@ -166,6 +172,8 @@ private:
   static const char _DT_pin[];
   static const char _CLK_pin[];
   static const char _SW_pin[];
+  static const char _presetHigh[];
+  static const char _presetLow[];
 
   /**
    * Sort the modes and palettes to the index arrays
@@ -266,8 +274,7 @@ public:
     pinMode(pinA, INPUT_PULLUP);
     pinMode(pinB, INPUT_PULLUP);
     pinMode(pinC, INPUT_PULLUP);
-    currentTime = millis();
-    loopTime = currentTime;
+    loopTime = millis();
 
     if (!initDone) sortModesAndPalettes();
 
@@ -307,7 +314,8 @@ public:
    */
   void loop()
   {
-    currentTime = millis(); // get the current elapsed time
+    if (!enabled || strip.isUpdating()) return;
+    unsigned long currentTime = millis(); // get the current elapsed time
 
     // Initialize effectCurrentIndex and effectPaletteIndex to
     // current state. We do it here as (at least) effectCurrent
@@ -323,58 +331,48 @@ public:
 
     if (currentTime >= (loopTime + 2)) // 2ms since last check of encoder = 500Hz
     {
-      button_state = digitalRead(pinC);
-      if (prev_button_state != button_state)
-      {
-        if (button_state == HIGH && (millis()-buttonHoldTime < 3000))
-        {
-          prev_button_state = button_state;
+      loopTime = currentTime; // Updates loopTime
 
-          char newState = select_state + 1;
-          if (newState > LAST_UI_STATE) newState = 0;
-          
-          bool changedState = true;
-          if (display != nullptr) {
-            switch(newState) {
-              case 0:
-                changedState = changeState(PSTR("Brightness"), 1, 0, 1);
-                break;
-              case 1:
-                changedState = changeState(PSTR("Speed"), 1, 4, 2);
-                break;
-              case 2:
-                changedState = changeState(PSTR("Intensity"), 1 ,8, 3);
-                break;
-              case 3:
-                changedState = changeState(PSTR("Color Palette"), 2, 0, 4);
-                break;
-              case 4:
-                changedState = changeState(PSTR("Effect"), 3, 0, 5);
-                break;
-              case 5:
-                changedState = changeState(PSTR("Main Color"), 255, 255, 7);
-                break;
-              case 6:
-                changedState = changeState(PSTR("Saturation"), 255, 255, 8);
-                break;
-            }
-          }
-          if (changedState) {
-            select_state = newState;
+      bool buttonPressed = !digitalRead(pinC); //0=pressed, 1=released
+      if (buttonPressed) {
+        if (!buttonPressedBefore) buttonPressedTime = currentTime;
+        buttonPressedBefore = true;
+        if (currentTime-buttonPressedTime > 3000) {
+          if (!buttonLongPressed) displayNetworkInfo(); //long press for network info
+          buttonLongPressed = true;
+        }
+      } else if (!buttonPressed && buttonPressedBefore) {
+        bool doublePress = buttonWaitTime;
+        buttonWaitTime = 0;
+        if (!buttonLongPressed) {
+          if (doublePress) {
+            toggleOnOff();
+            lampUdated();
+          } else {
+            buttonWaitTime = currentTime;
           }
         }
-        else
-        {
-          prev_button_state = button_state;
-          networkShown = false;
-          if (!prev_button_state) buttonHoldTime = millis();
-        }
+        buttonLongPressed = false;
+        buttonPressedBefore = false;
       }
-      
-      if (!prev_button_state && (millis()-buttonHoldTime > 3000) && !networkShown) {
-        displayNetworkInfo(); //long press for network info
-        loopTime = currentTime; // Updates loopTime
-        return;
+      if (buttonWaitTime && currentTime-buttonWaitTime>350 && !buttonPressedBefore) {
+        buttonWaitTime = 0;
+        char newState = select_state + 1;
+        bool changedState = true;
+        if (newState > LAST_UI_STATE || (newState == 7 && presetHigh==0 && presetLow == 0)) newState = 0;
+        if (display != nullptr) {
+          switch (newState) {
+            case 0: changedState = changeState(PSTR("Brightness"),      1,   0,  1); break; //1  = sun
+            case 1: changedState = changeState(PSTR("Speed"),           1,   4,  2); break; //2  = skip forward
+            case 2: changedState = changeState(PSTR("Intensity"),       1,   8,  3); break; //3  = fire
+            case 3: changedState = changeState(PSTR("Color Palette"),   2,   0,  4); break; //4  = custom palette
+            case 4: changedState = changeState(PSTR("Effect"),          3,   0,  5); break; //5  = puzzle piece
+            case 5: changedState = changeState(PSTR("Main Color"),    255, 255,  7); break; //7  = brush
+            case 6: changedState = changeState(PSTR("Saturation"),    255, 255,  8); break; //8  = contrast
+            case 7: changedState = changeState(PSTR("Preset"),        255, 255, 11); break; //11 = heart
+          }
+        }
+        if (changedState) select_state = newState;
       }
 
       Enc_A = digitalRead(pinA); // Read encoder pins
@@ -384,65 +382,37 @@ public:
         if (Enc_B == LOW)    //changes to LOW so that then encoder registers a change at the very end of a pulse
         { // B is high so clockwise
           switch(select_state) {
-            case 0:
-              changeBrightness(true);
-              break;
-            case 1:
-              changeEffectSpeed(true);
-              break;
-            case 2:
-              changeEffectIntensity(true);
-              break;
-            case 3:
-              changePalette(true);
-              break;
-            case 4:
-              changeEffect(true);
-              break;
-            case 5:
-              changeHue(true);
-              break;
-            case 6:
-              changeSat(true);
-              break;
+            case 0: changeBrightness(true);      break;
+            case 1: changeEffectSpeed(true);     break;
+            case 2: changeEffectIntensity(true); break;
+            case 3: changePalette(true);         break;
+            case 4: changeEffect(true);          break;
+            case 5: changeHue(true);             break;
+            case 6: changeSat(true);             break;
+            case 7: changePreset(true);          break;
           }
         }
         else if (Enc_B == HIGH)
         { // B is low so counter-clockwise
           switch(select_state) {
-            case 0:
-              changeBrightness(false);
-              break;
-            case 1:
-              changeEffectSpeed(false);
-              break;
-            case 2:
-              changeEffectIntensity(false);
-              break;
-            case 3:
-              changePalette(false);
-              break;
-            case 4:
-              changeEffect(false);
-              break;
-            case 5:
-              changeHue(false);
-              break;
-            case 6:
-              changeSat(false);
-              break;
+            case 0: changeBrightness(false);      break;
+            case 1: changeEffectSpeed(false);     break;
+            case 2: changeEffectIntensity(false); break;
+            case 3: changePalette(false);         break;
+            case 4: changeEffect(false);          break;
+            case 5: changeHue(false);             break;
+            case 6: changeSat(false);             break;
+            case 7: changePreset(false);          break;
           }
         }
       }
       Enc_A_prev = Enc_A;     // Store value of A for next time
-      loopTime = currentTime; // Updates loopTime
     }
   }
 
   void displayNetworkInfo() {
     #ifdef USERMOD_FOUR_LINE_DISPLAY
     display->networkOverlay(PSTR("NETWORK INFO"), 10000);
-    networkShown = true;
     #endif
   }
 
@@ -468,12 +438,10 @@ public:
     if (display != nullptr) {
       if (display->wakeDisplay()) {
         // Throw away wake up input
+        display->redraw(true);
         return false;
       }
-      String line = stateName;
-      //line.trim();
-      display->center(line, display->getCols());
-      display->overlay(line.c_str(), 750, glyph);
+      display->overlay(stateName, 750, glyph);
       display->setMarkLine(markedLine, markedCol);
     }
   #endif
@@ -491,12 +459,12 @@ public:
   void changeBrightness(bool increase) {
   #ifdef USERMOD_FOUR_LINE_DISPLAY
     if (display && display->wakeDisplay()) {
+      display->redraw(true);
       // Throw away wake up input
       return;
     }
   #endif
-    if (increase) bri = (bri + fadeAmount <= 255) ? (bri + fadeAmount) : 255;
-    else          bri = (bri - fadeAmount >= 0) ? (bri - fadeAmount) : 0;
+    bri = max(min((increase ? bri+fadeAmount : bri-fadeAmount), 255), 0);
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
     display->updateBrightness();
@@ -507,6 +475,7 @@ public:
   void changeEffect(bool increase) {
   #ifdef USERMOD_FOUR_LINE_DISPLAY
     if (display && display->wakeDisplay()) {
+      display->redraw(true);
       // Throw away wake up input
       return;
     }
@@ -523,6 +492,7 @@ public:
   void changeEffectSpeed(bool increase) {
   #ifdef USERMOD_FOUR_LINE_DISPLAY
     if (display && display->wakeDisplay()) {
+      display->redraw(true);
       // Throw away wake up input
       return;
     }
@@ -538,6 +508,7 @@ public:
   void changeEffectIntensity(bool increase) {
   #ifdef USERMOD_FOUR_LINE_DISPLAY
     if (display && display->wakeDisplay()) {
+      display->redraw(true);
       // Throw away wake up input
       return;
     }
@@ -553,6 +524,7 @@ public:
   void changePalette(bool increase) {
   #ifdef USERMOD_FOUR_LINE_DISPLAY
     if (display && display->wakeDisplay()) {
+      display->redraw(true);
       // Throw away wake up input
       return;
     }
@@ -569,13 +541,13 @@ public:
   void changeHue(bool increase){
   #ifdef USERMOD_FOUR_LINE_DISPLAY
     if (display && display->wakeDisplay()) {
+      display->redraw(true);
       // Throw away wake up input
       return;
     }
   #endif
-    if (increase) { if (currentHue1<256) currentHue1 += 4; else currentHue1 = 0; }
-    else          { if (currentHue1>3)   currentHue1 -= 4; else currentHue1 = 256; }
-    colorHStoRGB(currentHue1*255, currentSat1, col);
+    currentHue1 = max(min((increase ? currentHue1+fadeAmount : currentHue1-fadeAmount), 255), 0);
+    colorHStoRGB(currentHue1*256, currentSat1, col);
     strip.applyToAllSelected = true;
     strip.setColor(0, colorFromRgbw(col));
     lampUdated();
@@ -587,6 +559,7 @@ public:
   void changeSat(bool increase){
   #ifdef USERMOD_FOUR_LINE_DISPLAY
     if (display && display->wakeDisplay()) {
+      display->redraw(true);
       // Throw away wake up input
       return;
     }
@@ -596,6 +569,29 @@ public:
     strip.applyToAllSelected = true;
     strip.setColor(0, colorFromRgbw(col));
     lampUdated();
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    display->updateRedrawTime();
+  #endif
+  }
+
+  void changePreset(bool increase) {
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    if (display && display->wakeDisplay()) {
+      display->redraw(true);
+      // Throw away wake up input
+      return;
+    }
+  #endif
+    if (presetHigh && presetLow && presetHigh > presetLow) {
+      String apireq = F("win&PL=~");
+      if (!increase) apireq += '-';
+      apireq += F("&P1=");
+      apireq += presetLow;
+      apireq += F("&P2=");
+      apireq += presetHigh;
+      handleSet(nullptr, apireq, false);
+      lampUdated();
+    }
   #ifdef USERMOD_FOUR_LINE_DISPLAY
     display->updateRedrawTime();
   #endif
@@ -652,6 +648,8 @@ public:
     top[FPSTR(_DT_pin)]  = pinA;
     top[FPSTR(_CLK_pin)] = pinB;
     top[FPSTR(_SW_pin)]  = pinC;
+    top[FPSTR(_presetLow)]  = presetLow;
+    top[FPSTR(_presetHigh)] = presetHigh;
     DEBUG_PRINTLN(F("Rotary Encoder config saved."));
   }
 
@@ -672,7 +670,12 @@ public:
     int8_t newCLKpin = top[FPSTR(_CLK_pin)] | pinB;
     int8_t newSWpin  = top[FPSTR(_SW_pin)]  | pinC;
 
-    enabled   = top[FPSTR(_enabled)] | enabled;
+    presetHigh = top[FPSTR(_presetHigh)] | presetHigh;
+    presetLow  = top[FPSTR(_presetLow)]  | presetLow;
+    presetHigh = MIN(250,MAX(0,presetHigh));
+    presetLow  = MIN(250,MAX(0,presetLow));
+
+    enabled    = top[FPSTR(_enabled)] | enabled;
 
     DEBUG_PRINT(FPSTR(_name));
     if (!initDone) {
@@ -699,7 +702,7 @@ public:
       }
     }
     // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
-    return !top[FPSTR(_enabled)].isNull();
+    return !top[FPSTR(_presetHigh)].isNull();
   }
 
   /*
@@ -713,8 +716,10 @@ public:
 };
 
 // strings to reduce flash memory usage (used more than twice)
-const char RotaryEncoderUIUsermod::_name[]     PROGMEM = "Rotary-Encoder";
-const char RotaryEncoderUIUsermod::_enabled[]  PROGMEM = "enabled";
-const char RotaryEncoderUIUsermod::_DT_pin[]   PROGMEM = "DT-pin";
-const char RotaryEncoderUIUsermod::_CLK_pin[]  PROGMEM = "CLK-pin";
-const char RotaryEncoderUIUsermod::_SW_pin[]   PROGMEM = "SW-pin";
+const char RotaryEncoderUIUsermod::_name[]       PROGMEM = "Rotary-Encoder";
+const char RotaryEncoderUIUsermod::_enabled[]    PROGMEM = "enabled";
+const char RotaryEncoderUIUsermod::_DT_pin[]     PROGMEM = "DT-pin";
+const char RotaryEncoderUIUsermod::_CLK_pin[]    PROGMEM = "CLK-pin";
+const char RotaryEncoderUIUsermod::_SW_pin[]     PROGMEM = "SW-pin";
+const char RotaryEncoderUIUsermod::_presetHigh[] PROGMEM = "preset-high";
+const char RotaryEncoderUIUsermod::_presetLow[]  PROGMEM = "preset-low";

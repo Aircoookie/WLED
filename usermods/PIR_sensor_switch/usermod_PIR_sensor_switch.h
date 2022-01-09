@@ -58,7 +58,6 @@ private:
 
   byte prevPreset   = 0;
   byte prevPlaylist = 0;
-  bool savedState   = false;
 
   uint32_t offTimerStart = 0;                   // off timer start time
   byte NotifyUpdateMode  = CALL_MODE_NO_NOTIFY; // notification mode for colorUpdated(): CALL_MODE_NO_NOTIFY or CALL_MODE_DIRECT_CHANGE
@@ -77,6 +76,7 @@ private:
   bool m_mqttOnly           = false;          // flag to send MQTT message only (assuming it is enabled)
   // flag to enable triggering only if WLED is initially off (LEDs are not on, preventing running effect being overwritten by PIR)
   bool m_offOnly            = false;
+  bool m_offMode            = offMode;
 
   // strings to reduce flash memory usage (used more than twice)
   static const char _name[];
@@ -123,13 +123,15 @@ private:
     PIRtriggered = switchOn;
     if (switchOn) {
       if (m_onPreset) {
-        if (currentPlaylist>0)    prevPlaylist = currentPlaylist;
-        else if (currentPreset>0) prevPreset   = currentPreset;
-        else {
+        if (currentPlaylist>0 && !offMode) {
+          prevPlaylist = currentPlaylist;
+          unloadPlaylist();
+        } else if (currentPreset>0 && !offMode) {
+          prevPreset   = currentPreset;
+        } else {
           saveTemporaryPreset();
-          savedState   = true;
           prevPlaylist = 0;
-          prevPreset   = 0;
+          prevPreset   = 255;
         }
         applyPreset(m_onPreset, NotifyUpdateMode);
         return;
@@ -148,12 +150,9 @@ private:
         prevPlaylist = 0;
         return;
       } else if (prevPreset) {
-        applyPreset(prevPreset, NotifyUpdateMode);
+        if (prevPreset<255) applyPreset(prevPreset, NotifyUpdateMode);
+        else                applyTemporaryPreset();
         prevPreset = 0;
-        return;
-      } else if (savedState) {
-        applyTemporaryPreset();
-        savedState = false;
         return;
       }
       // preset not assigned

@@ -7,10 +7,47 @@
 	<meta content="yes" name="apple-mobile-web-app-capable">
 	<link rel="shortcut icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAEAGACGAAAAFgAAAIlQTkcNChoKAAAADUlIRFIAAAAQAAAAEAgGAAAAH/P/YQAAAE1JREFUOI1j/P//PwOxgNGeAUMxE9G6cQCKDWAhpADZ2f8PMjBS3QW08QK20KaZC2gfC9hCnqouoNgARgY7zMxAyNlUdQHlXiAlO2MDAD63EVqNHAe0AAAAAElFTkSuQmCC"/>
 	<title>WLED</title>
-	<script>function feedback(){}</script>
+	<script>
+	function feedback(){}
+	// instead of including [script src="iro.js"][/script] and [script src="rangetouch.js"][/script]
+	// (which would be inlined by nodeJS inliner during minimization and compression) we need to load them dynamically
+	// the following is needed to load iro.js and rangetouch.js as consecutive requests to allow ESP8266
+	// to keep up with requests (if requests happent too fast some may not get processed)
+	// it will also call onLoad() after last is loaded (it was removed from [body onload="onLoad()"]).
+	var h  = document.getElementsByTagName('head')[0];
+	var l  = document.createElement('script');
+	l.type = 'application/javascript';
+	l.src = 'iro.js';
+	l.addEventListener('load', (e) => {
+		// after iro is loaded initialize global variable
+		cpick = new iro.ColorPicker("#picker", {
+			width: 260,
+			wheelLightness: false,
+			wheelAngle: 270,
+			wheelDirection: "clockwise",
+			layout: [{
+				component: iro.ui.Wheel,
+				options: {}
+			}]
+		});
+		cpick.on("input:end", () => {setColor(1);});
+		cpick.on("color:change", () => {updatePSliders()});
+		var l  = document.createElement('script');
+		l.type = 'application/javascript';
+		l.src = 'rangetouch.js';
+		l.addEventListener('load', (e) => {
+			// after rangetouch is loaded initialize global variable
+			ranges = RangeTouch.setup('input[type="range"]', {});
+			onLoad(); // start processing UI
+		});
+		//h.appendChild(l); // if this fires too quickly for ESP8266 use next line
+		setTimeout(function(){h.appendChild(l)},50);
+	});
+	setTimeout(function(){h.appendChild(l)},50);
+	</script>
 	<link rel="stylesheet" href="simple.css">
 </head>
-<body onload="onLoad()">
+<body>
 
 <div id="cv" class="overlay">Loading WLED UI...</div>
 <noscript><div class="overlay" style="opacity:1;">Sorry, WLED UI needs JavaScript!</div></noscript>
@@ -24,7 +61,7 @@
 			<button id="buttonNodes" onclick="toggleNodes()"><i class="icons">&#xe22d;</i><p class="tab-label">Nodes</p></button></div>
 			<button onclick="window.location.href='/settings';"><i class="icons">&#xe0a2;</i><p class="tab-label">Config</p></button>
             <button id="buttonCP" onclick="tglCP()"><i class="icons">&#xe2b3;</i><p class="tab-label">Expand</p></button>
-            <button id="buttonBri" onclick="tglBri()"><i class="icons">&#xe2a6;</i><p class="tab-label">Brightness</p></button>
+            <!--button id="buttonBri" onclick="tglBri()"><i class="icons">&#xe2a6;</i><p class="tab-label">Brightness</p></button-->
 		</div>
 		<div id="briwrap">
 			<p class="label hd">Global brightness</p>
@@ -42,60 +79,88 @@
 
 <div class ="container">
     <div class="tabcontent">
-		<div id="qcs-w" class="center">
-			<div class="qcs" onclick="pC('#ff0000');" title="Red" style="background-color:#ff0000;"></div>
-			<div class="qcs" onclick="pC('#ffa000');" title="Orange" style="background-color:#ffa000;"></div>
-			<div class="qcs" onclick="pC('#ffc800');" title="Yellow" style="background-color:#ffc800;"></div>
-			<div class="qcs" onclick="pC('#ffe0a0');" title="Warm White" style="background-color:#ffe0a0;"></div>
-			<div class="qcs" onclick="pC('#ffffff');" title="White" style="background-color:#ffffff;"></div>
-			<div class="qcs qcsb" onclick="pC('#000000');" title="Black" style="background-color:#000000;"></div><br>
-			<div class="qcs" onclick="pC('#ff00ff');" title="Pink" style="background-color:#ff00ff;"></div>
-			<div class="qcs" onclick="pC('#0000ff');" title="Blue" style="background-color:#0000ff;"></div>
-			<div class="qcs" onclick="pC('#00ffc8');" title="Cyan" style="background-color:#00ffc8;"></div>
-			<div class="qcs" onclick="pC('#08ff00');" title="Green" style="background-color:#08ff00;"></div>
-			<div class="qcs" onclick="pC('rnd');" title="Random" style="background:linear-gradient(to right, red, orange, yellow, green, blue, purple);transform: translateY(-11px);">R</div>
-		</div>
-		<div id="csl" class="center" style="display: none;">
-			<button class="xxs btn" onclick="selectSlot(0);">1</button>
-			<button class="xxs btn" onclick="selectSlot(1);">2</button>
-			<button class="xxs btn" onclick="selectSlot(2);">3</button>
+		<div id="QuickLoad" class="center">
+			<p class="label h">Quick Load</p>
+        	<div id="pql"></div>
 		</div>
 
-        <div id="picker" class="center"></div>
-
-		<div id="rgbwrap" class="center">
-			<div id="rwrap" class="il">
-				<div class="sliderwrap il">
-					<input id="sliderR" onchange="fromRgb()" max="255" min="0" type="range" value="128" />
-					<div class="sliderdisplay"></div>
-				</div>
-			</div><br>
-			<div id="gwrap" class="il">
-				<div class="sliderwrap il">
-					<input id="sliderG" onchange="fromRgb()" max="255" min="0" type="range" value="128" />
-					<div class="sliderdisplay"></div>
-				</div>
-			</div><br>
-			<div id="bwrap" class="il">
-				<div class="sliderwrap il">
-					<input id="sliderB" onchange="fromRgb()" max="255" min="0" type="range" value="128" />
-					<div class="sliderdisplay"></div>
-				</div>
-			</div><br>
-		</div>
-
-        <div id="wwrap" class="center">
-			<p class="label hd">White channel</p>
-			<div class="sliderwrap il">
-				<input id="sliderW" onchange="setColor(0)" max="255" min="0" type="range" value="128" />
-				<div class="sliderdisplay"></div>
+		<div id="QCS" class="center">
+			<p class="label h">Solid color</p>
+			<div id="qcs-w" class="center">
+				<div class="qcs" onclick="pC('#ff0000');" title="Red" style="background-color:#ff0000;"></div>
+				<div class="qcs" onclick="pC('#ffa000');" title="Orange" style="background-color:#ffa000;"></div>
+				<div class="qcs" onclick="pC('#ffc800');" title="Yellow" style="background-color:#ffc800;"></div>
+				<div class="qcs" onclick="pC('#ffe0a0');" title="Warm White" style="background-color:#ffe0a0;"></div>
+				<div class="qcs" onclick="pC('#ffffff');" title="White" style="background-color:#ffffff;"></div>
+				<div class="qcs qcsb" onclick="pC('#000000');" title="Black" style="background-color:#000000;"></div><br>
+				<div class="qcs" onclick="pC('#ff00ff');" title="Pink" style="background-color:#ff00ff;"></div>
+				<div class="qcs" onclick="pC('#0000ff');" title="Blue" style="background-color:#0000ff;"></div>
+				<div class="qcs" onclick="pC('#00ffc8');" title="Cyan" style="background-color:#00ffc8;"></div>
+				<div class="qcs" onclick="pC('#08ff00');" title="Green" style="background-color:#08ff00;"></div>
+				<div class="qcs" onclick="pC('rnd');" title="Random" style="background:linear-gradient(to right, red, orange, yellow, green, blue, purple);transform: translateY(-11px);">R</div>
 			</div>
 		</div>
-		<div id="wbal">
-			<p class="labels hd">White balance</p>
-			<div class="sliderwrap il">
-				<input id="sliderA" onchange="setBalance(this.value)" max="255" min="0" type="range" value="128" />
-				<div class="sliderdisplay"></div>
+
+		<div id="picker" class="center"></div>
+
+		<div id="Colors" class="center">
+			<div id="vwrap">
+				<!--p class="label h">Value</p-->
+				<div class="sliderwrap il">
+					<input id="sliderV" class="noslide" oninput="fromV()" onchange="setColor(0)" max="100" min="0" type="range" value="100" step="any" />
+					<div class="sliderdisplay"></div>
+				</div><br>
+			</div>
+			<div id="kwrap">
+				<!--p class="label h">Temperature</p-->
+				<div class="sliderwrap il">
+					<input id="sliderK" class="noslide" oninput="fromK()" onchange="setColor(0)" max="10091" min="1900" type="range" value="6550" />
+					<div class="sliderdisplay"></div>
+				</div>
+			</div>
+			<div id="rgbwrap" class="center">
+				<p class="label h">RGB channels</p>
+				<div id="rwrap" class="il">
+					<div class="sliderwrap il">
+						<input id="sliderR" onchange="fromRgb()" max="255" min="0" type="range" value="128" />
+						<div class="sliderdisplay"></div>
+					</div>
+				</div><br>
+				<div id="gwrap" class="il">
+					<div class="sliderwrap il">
+						<input id="sliderG" onchange="fromRgb()" max="255" min="0" type="range" value="128" />
+						<div class="sliderdisplay"></div>
+					</div>
+				</div><br>
+				<div id="bwrap" class="il">
+					<div class="sliderwrap il">
+						<input id="sliderB" onchange="fromRgb()" max="255" min="0" type="range" value="128" />
+						<div class="sliderdisplay"></div>
+					</div>
+				</div><br>
+			</div>
+			<div id="wwrap" class="center">
+				<p class="label h">White channel</p>
+				<div class="sliderwrap il">
+					<input id="sliderW" onchange="setColor(0)" max="255" min="0" type="range" value="128" />
+					<div class="sliderdisplay"></div>
+				</div>
+			</div>
+			<div id="wbal">
+				<p class="label h">White balance</p>
+				<div class="sliderwrap il">
+					<input id="sliderA" onchange="setBalance(this.value)" max="255" min="0" type="range" value="128" />
+					<div class="sliderdisplay"></div>
+				</div>
+			</div>
+		</div>
+
+		<div id="Slots" class="center">
+        	<p class="label h">Color slots</p>
+			<div id="csl" class="center" style="display: none;">
+				<button class="xxs btn" onclick="selectSlot(0);">1</button>
+				<button class="xxs btn" onclick="selectSlot(1);">2</button>
+				<button class="xxs btn" onclick="selectSlot(2);">3</button>
 			</div>
 		</div>
 
@@ -103,17 +168,12 @@
 			<div id="segcont"></div>
 		</div>
 
-		<div id="QuickLoad" class="center">
-			<p class="label h">Quick Load</p>
-        	<div id="pql"></div>
-		</div>
-
-		<div id="Presets" class="center" style="display:none;">
+		<div id="Presets" class="center">
         	<p class="label h">Presets</p>
 			<div class="fnd">
 				<input type="text" class="fnd" placeholder="Search" oninput="search(this,'pcont')" onfocus="search(this)" />
-				<span onclick="clean(this)" class="icons">&#xe38f;</span>
-				<div class="icons"><svg xmlns='http://www.w3.org/2000/svg' class='fndIcn'><circle cx='8' cy='8' r='6' /><line x1='12' y1='12' x2='24' y2='12' transform='rotate(45,12,12)' /></svg></div>
+				<i class="icons clear-icon" onclick="clean(this);">&#xe38f;</i>
+				<i class="icons search-icon">&#xe0a1;</i>
 			</div>
 			<div id="pcont" class="list"></div>
 		</div>
@@ -142,8 +202,8 @@
 				<div id="fxDropdown" class="dd-content">
 					<div class="fnd">
 						<input type="text" class="fnd" placeholder="Search" oninput="search(this,'fxlist')" onfocus="search(this)" />
-						<span onclick="clean(this)" class="icons">&#xe38f;</span>
-						<div class="icons"><svg xmlns='http://www.w3.org/2000/svg' class='fndIcn'><circle cx='8' cy='8' r='6' /><line x1='12' y1='12' x2='24' y2='12' transform='rotate(45,12,12)' /></svg></div>
+						<i class="icons clear-icon" onclick="clean(this);">&#xe38f;</i>
+						<i class="icons search-icon">&#xe0a1;</i>
 					</div>
 					<div id="fxlist" class="list">
 						<div class="lstI" data-id="0" onClick="setX(0)"><a href="#0" onClick="setX(0)">Solid</a></div>
@@ -152,8 +212,8 @@
 				<div id="palDropdown" class="dd-content">
 					<div class="fnd">
 						<input type="text" class="fnd" placeholder="Search" oninput="search(this,'pallist')" onfocus="search(this)" />
-						<span onclick="clean(this)" class="icons">&#xe38f;</span>
-						<div class="icons"><svg xmlns='http://www.w3.org/2000/svg' class='fndIcn'><circle cx='8' cy='8' r='6' /><line x1='12' y1='12' x2='24' y2='12' transform='rotate(45,12,12)' /></svg></div>
+						<i class="icons clear-icon" onclick="clean(this);">&#xe38f;</i>
+						<i class="icons search-icon">&#xe0a1;</i>
 					</div>
 					<div id="pallist" class="list">
 						<div class="lstI" data-id="0" onClick="setPalette(0)"><a href="#0" onClick="setPalette(0)">Default</a><div class="lstIprev"></div></div>
