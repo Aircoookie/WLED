@@ -279,6 +279,29 @@ void handleButton()
   if (analog) lastRead = millis();
 }
 
+void esp32RMTInvertIdle()
+{
+  bool idle_out;
+  for (uint8_t u = 0; u < busses.getNumBusses(); u++)
+  {
+    Bus *bus = busses.getBus(u);
+    if (!bus || bus->getLength()==0 || !IS_DIGITAL(bus->getType())) continue;
+    //assumes that bus number to rmt channel mapping stays 1:1
+    rmt_channel_t ch = static_cast<rmt_channel_t>(u);
+    rmt_idle_level_t lvl;
+    rmt_get_idle_level(ch, &idle_out, &lvl);
+    if (lvl == RMT_IDLE_LEVEL_HIGH) lvl = RMT_IDLE_LEVEL_LOW;
+    else if (lvl == RMT_IDLE_LEVEL_LOW) lvl = RMT_IDLE_LEVEL_HIGH;
+    else continue;
+    rmt_set_idle_level(ch, idle_out, lvl);
+    Serial.print(u);
+    Serial.print(" ");
+    Serial.print(idle_out);
+    Serial.print(" ");
+    Serial.println(lvl == RMT_IDLE_LEVEL_HIGH);
+  }
+}
+
 void handleIO()
 {
   handleButton();
@@ -289,6 +312,9 @@ void handleIO()
     lastOnTime = millis();
     if (offMode)
     {
+      #ifdef ESP32_DATA_IDLE_HIGH
+      esp32RMTInvertIdle();
+      #endif
       if (rlyPin>=0) {
         pinMode(rlyPin, OUTPUT);
         digitalWrite(rlyPin, rlyMde);
@@ -306,6 +332,9 @@ void handleIO()
         pinMode(LED_BUILTIN, OUTPUT);
         digitalWrite(LED_BUILTIN, HIGH);
       }
+      #endif
+      #ifdef ESP32_DATA_IDLE_HIGH
+      esp32RMTInvertIdle();
       #endif
       if (rlyPin>=0) {
         pinMode(rlyPin, OUTPUT);
