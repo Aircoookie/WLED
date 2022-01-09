@@ -294,11 +294,6 @@ void esp32RMTInvertIdle()
     else if (lvl == RMT_IDLE_LEVEL_LOW) lvl = RMT_IDLE_LEVEL_HIGH;
     else continue;
     rmt_set_idle_level(ch, idle_out, lvl);
-    Serial.print(u);
-    Serial.print(" ");
-    Serial.print(idle_out);
-    Serial.print(" ");
-    Serial.println(lvl == RMT_IDLE_LEVEL_HIGH);
   }
 }
 
