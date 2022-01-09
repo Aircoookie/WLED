@@ -32,6 +32,8 @@ static const bool switchDefaults[NUM_SWITCH_PINS] = { MQTTSWITCHDEFAULTS};
 #undef ON
 #undef OFF
 
+static uint32_t switchAllocationFailed = 0;
+
 class UsermodMqttSwitch: public Usermod
 {
 private:
@@ -46,9 +48,13 @@ public:
 
     void setup()
     {
-        for (int pinNr = 0; pinNr < NUM_SWITCH_PINS; pinNr++) {
-            setState(pinNr, switchDefaults[pinNr]);
-            pinMode(switchPins[pinNr], OUTPUT);
+        for (unsigned pinNr = 0; pinNr < NUM_SWITCH_PINS; pinNr++) {
+            if (pinManager.allocatePin(switchPins[pinNr], true, PinOwner::UM_MqttSwitch)) {
+                setState(pinNr, switchDefaults[pinNr]);
+                pinMode(switchPins[pinNr], OUTPUT);
+            } else {
+                bitSet(switchAllocationFailed, pinNr);
+            }
         }
     }
 
@@ -78,7 +84,7 @@ public:
 
     void setState(uint8_t pinNr, bool active)
     {
-        if (pinNr > NUM_SWITCH_PINS)
+        if (pinNr > NUM_SWITCH_PINS || bitRead(switchAllocationFailed, pinNr))
             return;
         switchState[pinNr] = active;
         digitalWrite((char) switchPins[pinNr], (char) (switchInvert[pinNr] ? !active : active));
@@ -91,7 +97,9 @@ inline void UsermodMqttSwitch::onMqttConnect(bool sessionPresent)
     if (mqttDeviceTopic[0] == 0)
         return;
 
-    for (int pinNr = 0; pinNr < NUM_SWITCH_PINS; pinNr++) {
+    for (unsigned pinNr = 0; pinNr < NUM_SWITCH_PINS; pinNr++) {
+        if (bitRead(switchAllocationFailed, pinNr))
+            continue;
         char buf[128];
         StaticJsonDocument<1024> json;
         sprintf(buf, "%s Switch %d", serverDescription, pinNr + 1);
@@ -128,7 +136,7 @@ inline void UsermodMqttSwitch::onMqttConnect(bool sessionPresent)
 inline void UsermodMqttSwitch::onMqttMessage(char *topic, char *payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total)
 {
     //Note: Payload is not necessarily null terminated. Check "len" instead.
-    for (int pinNr = 0; pinNr < NUM_SWITCH_PINS; pinNr++) {
+    for (unsigned pinNr = 0; pinNr < NUM_SWITCH_PINS; pinNr++) {
         char buf[64];
         sprintf(buf, "%s/switch/%d/set", mqttDeviceTopic, pinNr);
         if (strcmp(topic, buf) == 0) {
@@ -143,10 +151,8 @@ inline void UsermodMqttSwitch::updateState(uint8_t pinNr)
 {
     if (!mqttInitialized)
         return;
-
-    if (pinNr > NUM_SWITCH_PINS)
+    if (pinNr > NUM_SWITCH_PINS || bitRead(switchAllocationFailed, pinNr))
         return;
-
     char buf[64];
     sprintf(buf, "%s/switch/%d/state", mqttDeviceTopic, pinNr);
     if (switchState[pinNr]) {
