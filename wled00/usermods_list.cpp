@@ -108,6 +108,10 @@
 #include "../usermods/quinled-an-penta/quinled-an-penta.h"
 #endif
 
+#ifdef MQTTSWITCHPINS
+#include "../usermods/mqtt_switch_v2/usermod_mqtt_switch.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -202,5 +206,9 @@ void registerUsermods()
 
   #ifdef QUINLED_AN_PENTA
   usermods.add(new QuinLEDAnPentaUsermod());
+  #endif
+
+  #ifdef MQTTSWITCHPINS
+  usermods.add(new UsermodMqttSwitch());
   #endif
 }
