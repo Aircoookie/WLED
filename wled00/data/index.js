@@ -1235,7 +1235,7 @@ function setSliderAndColorControl(idx, applyDef=false)
 				if      (i==0) { if (applyDef) gId("sliderSpeed").value     = v; obj.seg.sx = v; }
 				else if (i==1) { if (applyDef) gId("sliderIntensity").value = v; obj.seg.ix = v; }
 				else           { if (applyDef) gId("sliderC"+(i-1)).value   = v; obj.seg["C"+(i-1)] = v}
-				slOnOff[i] = slOnOff[i].substring(0,dPos-1);
+				slOnOff[i] = slOnOff[i].substring(0,dPos);
 			}
 			if (slOnOff.length>i && slOnOff[i]!="!") label.innerHTML = slOnOff[i];
 			else if (i==0)                           label.innerHTML = "Effect speed";
