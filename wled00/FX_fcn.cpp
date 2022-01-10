@@ -1277,7 +1277,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Traffic Light",
 "Sweep Random",
 "Chase 2@!,Width;!,!,;!",
-"Aurora@!=8,!;1,2,3;!=50",
+"Aurora@!=24,!;1,2,3;!=50",
 "Stream",
 "Scanner",
 "Lighthouse",

@@ -1316,7 +1316,7 @@ function setSliderAndColorControl(idx, applyDef=false)
 				p.checked = true;
 				obj.seg.pal = v;
 			}
-			paOnOff[0] = paOnOff[0].substring(0,dPos-1);
+			paOnOff[0] = paOnOff[0].substring(0,dPos);
 		}
 		if (paOnOff.length>0 && paOnOff[0] != "!") pall.innerHTML = paOnOff[0];
 		else                                       pall.innerHTML = '<i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i> Color palette';
