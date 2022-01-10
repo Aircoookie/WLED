@@ -4,7 +4,9 @@
  * UDP sync notifier / Realtime / Hyperion / TPM2.NET
  */
 
-#define WLEDPACKETSIZE (40+(MAX_NUM_SEGMENTS*22))
+#define UDP_SEG_SIZE 22
+#define SEG_OFFSET (41+(MAX_NUM_SEGMENTS*UDP_SEG_SIZE))
+#define WLEDPACKETSIZE (41+(MAX_NUM_SEGMENTS*UDP_SEG_SIZE)+0)
 #define UDP_IN_MAXSIZE 1472
 #define PRESUMED_NETWORK_DELAY 3 //how many ms could it take on avg to reach the receiver? This will be added to transmitted times
 
@@ -86,31 +88,36 @@ void notify(byte callMode, bool followUp)
 	udpOut[38] = mainseg.cct;
 
 	udpOut[39] = strip.getMaxSegments();
+  udpOut[40] = UDP_SEG_SIZE; //size of each loop iteration (one segment)
   for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
     WS2812FX::Segment &selseg = strip.getSegment(i);
-    udpOut[40+i*22] = selseg.grouping;
-    udpOut[41+i*22] = selseg.spacing;
-    udpOut[42+i*22] = selseg.offset >> 8; //not sure about this
-    udpOut[43+i*22] = selseg.offset & 0xFF; //not sure about this
-    udpOut[44+i*22] = selseg.options & 0x0F; //only take into account mirrored, selected, on, reversed
-    udpOut[45+i*22] = selseg.opacity;
-    udpOut[46+i*22] = selseg.mode;
-    udpOut[47+i*22] = selseg.speed;
-    udpOut[48+i*22] = selseg.intensity;
-    udpOut[49+i*22] = selseg.palette;
-    udpOut[50+i*22] = R(selseg.colors[0]);
-    udpOut[51+i*22] = G(selseg.colors[0]);
-    udpOut[52+i*22] = B(selseg.colors[0]);
-    udpOut[53+i*22] = W(selseg.colors[0]);
-    udpOut[54+i*22] = R(selseg.colors[1]);
-    udpOut[55+i*22] = G(selseg.colors[1]);
-    udpOut[56+i*22] = B(selseg.colors[1]);
-    udpOut[57+i*22] = W(selseg.colors[1]);
-    udpOut[58+i*22] = R(selseg.colors[2]);
-    udpOut[59+i*22] = G(selseg.colors[2]);
-    udpOut[60+i*22] = B(selseg.colors[2]);
-    udpOut[61+i*22] = W(selseg.colors[2]);
+  	uint16_t ofs = 41 + i*UDP_SEG_SIZE; //start of segment offset byte
+    udpOut[0 +ofs] = selseg.grouping;
+    udpOut[1 +ofs] = selseg.spacing;
+    udpOut[2 +ofs] = selseg.offset >> 8;
+    udpOut[3 +ofs] = selseg.offset & 0xFF;
+    udpOut[4 +ofs] = selseg.options & 0x0F; //only take into account mirrored, selected, on, reversed
+    udpOut[5 +ofs] = selseg.opacity;
+    udpOut[6 +ofs] = selseg.mode;
+    udpOut[7 +ofs] = selseg.speed;
+    udpOut[8 +ofs] = selseg.intensity;
+    udpOut[9 +ofs] = selseg.palette;
+    udpOut[10+ofs] = R(selseg.colors[0]);
+    udpOut[11+ofs] = G(selseg.colors[0]);
+    udpOut[12+ofs] = B(selseg.colors[0]);
+    udpOut[13+ofs] = W(selseg.colors[0]);
+    udpOut[14+ofs] = R(selseg.colors[1]);
+    udpOut[15+ofs] = G(selseg.colors[1]);
+    udpOut[16+ofs] = B(selseg.colors[1]);
+    udpOut[17+ofs] = W(selseg.colors[1]);
+    udpOut[18+ofs] = R(selseg.colors[2]);
+    udpOut[19+ofs] = G(selseg.colors[2]);
+    udpOut[20+ofs] = B(selseg.colors[2]);
+    udpOut[21+ofs] = W(selseg.colors[2]);
   }
+
+	//uint16_t offs = SEG_OFFSET;
+	//next value to be added has index: udpOut[offs + 0]
 
   IPAddress broadcastIp;
   broadcastIp = ~uint32_t(Network.subnetMask()) | uint32_t(Network.gatewayIP());
@@ -310,35 +317,36 @@ void handleNotifications()
     if (version < 200 && (receiveNotificationEffects || !someSel))
     {
       if (currentPlaylist>=0) unloadPlaylist();
-      if (version>10) {
-        if (receiveSegmentOptions) {
-          // will not sync start & stop
-          uint8_t srcSegs = udpIn[39];
-          if (srcSegs > strip.getMaxSegments()) srcSegs = strip.getMaxSegments();
-          for (uint8_t i = 0; i < srcSegs; i++) {
-            WS2812FX::Segment& selseg = strip.getSegment(i);
-            for (uint8_t j = 0; j<4; j++) selseg.setOption(j, (udpIn[44+i*22] >> j) & 0x01); //only take into account mirrored, selected, on, reversed
-            uint16_t offset  = udpIn[42+i*22]<<8 | udpIn[43+i*22];
-            selseg.setOpacity(udpIn[45+i*22], i);
-            //strip.setEffectConfig(udpIn[46+i*22], udpIn[47+i*22], udpIn[48+i*22], udpIn[49+i*22]); //affects all selected segments
-            //strip.setMode(i, udpIn[46+i*22]);
-            selseg.mode      = udpIn[46+i*22];
-            selseg.speed     = udpIn[47+i*22];
-            selseg.intensity = udpIn[48+i*22];
-            selseg.palette   = udpIn[49+i*22];
-            selseg.setColor(0, RGBW32(udpIn[50+i*22],udpIn[51+i*22],udpIn[52+i*22],udpIn[53+i*22]), i);
-            selseg.setColor(1, RGBW32(udpIn[54+i*22],udpIn[55+i*22],udpIn[56+i*22],udpIn[57+i*22]), i);
-            selseg.setColor(2, RGBW32(udpIn[58+i*22],udpIn[59+i*22],udpIn[60+i*22],udpIn[61+i*22]), i);
-            strip.setSegment(i, selseg.start, selseg.stop, udpIn[40+i*22], udpIn[41+i*22], offset); // will also properly reset segments
-          }
-        }
-      }
-      if (udpIn[8] < strip.getModeCount()) effectCurrent = udpIn[8];
-      effectSpeed   = udpIn[9];
-      if (version > 2) effectIntensity = udpIn[16];
-      if (version > 4 && udpIn[19] < strip.getPaletteCount()) effectPalette = udpIn[19];
-      if (version > 5)
-      {
+      if (version > 10 && receiveSegmentOptions) {
+				//does not sync start & stop
+				uint8_t srcSegs = udpIn[39];
+				if (srcSegs > strip.getMaxSegments()) srcSegs = strip.getMaxSegments();
+				for (uint8_t i = 0; i < srcSegs; i++) {
+					WS2812FX::Segment& selseg = strip.getSegment(i);
+					uint16_t ofs = 41 + i*UDP_SEG_SIZE; //start of segment offset byte
+					for (uint8_t j = 0; j<4; j++) selseg.setOption(j, (udpIn[44+i*22] >> j) & 0x01); //only take into account mirrored, selected, on, reversed
+					uint16_t offset  = udpIn[2+ofs]<<8 | udpIn[3+ofs];
+					selseg.setOpacity(udpIn[4+ofs], i);
+					if (i == strip.getMainSegmentId()) { //temporary, to make transition work on main segment
+						//TODO
+					} else { //permanent
+						strip.setMode(i, udpIn[5+ofs]);
+						selseg.speed     = udpIn[6+ofs];
+						selseg.intensity = udpIn[7+ofs];
+						selseg.palette   = udpIn[8+ofs];
+					}
+					selseg.setColor(0, RGBW32(udpIn[10+ofs],udpIn[11+ofs],udpIn[12+ofs],udpIn[13+ofs]), i);
+					selseg.setColor(1, RGBW32(udpIn[14+ofs],udpIn[15+ofs],udpIn[16+ofs],udpIn[17+ofs]), i);
+					selseg.setColor(2, RGBW32(udpIn[18+ofs],udpIn[19+ofs],udpIn[20+ofs],udpIn[21+ofs]), i);
+					strip.setSegment(i, selseg.start, selseg.stop, udpIn[0+ofs], udpIn[1+ofs], offset); //also properly resets segments
+				}
+      } else { //simple effect sync, applies to all selected
+				if (udpIn[8] < strip.getModeCount()) effectCurrent = udpIn[8];
+      	effectSpeed   = udpIn[9];
+      	if (version > 2) effectIntensity = udpIn[16];
+    		if (version > 4 && udpIn[19] < strip.getPaletteCount()) effectPalette = udpIn[19];
+			}
+      if (version > 5) {
         uint32_t t = (udpIn[25] << 24) | (udpIn[26] << 16) | (udpIn[27] << 8) | (udpIn[28]);
         t += PRESUMED_NETWORK_DELAY; //adjust trivially for network delay
         t -= millis();
