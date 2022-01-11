@@ -139,8 +139,8 @@ class FourLineDisplayUsermod : public Usermod {
 
     // Next variables hold the previous known values to determine if redraw is
     // required.
-    String knownSsid = "";
-    IPAddress knownIp;
+    String knownSsid = apSSID;
+    IPAddress knownIp = IPAddress(4, 3, 2, 1);
     uint8_t knownBrightness = 0;
     uint8_t knownEffectSpeed = 0;
     uint8_t knownEffectIntensity = 0;
@@ -161,8 +161,8 @@ class FourLineDisplayUsermod : public Usermod {
     unsigned long overlayUntil = 0;
 
     // Set to 2 or 3 to mark lines 2 or 3. Other values ignored.
-    byte markLineNum = 0;
-    byte markColNum = 0;
+    byte markLineNum = 255;
+    byte markColNum = 255;
 
     // strings to reduce flash memory usage (used more than twice)
     static const char _name[];
@@ -264,8 +264,8 @@ class FourLineDisplayUsermod : public Usermod {
     // gets called every time WiFi is (re-)connected. Initialize own network
     // interfaces here
     void connected() {
-      knownSsid = apActive ? apSSID : WiFi.SSID(); //apActive ? WiFi.softAPSSID() : 
-      knownIp = apActive ? IPAddress(4, 3, 2, 1) : Network.localIP();
+      knownSsid = WiFi.SSID();       //apActive ? apSSID : WiFi.SSID(); //apActive ? WiFi.softAPSSID() : 
+      knownIp   = Network.localIP(); //apActive ? IPAddress(4, 3, 2, 1) : Network.localIP();
       networkOverlay(PSTR("NETWORK INFO"),7000);
     }
 
@@ -358,6 +358,12 @@ class FourLineDisplayUsermod : public Usermod {
         }
       }
 
+      if (apActive && WLED_WIFI_CONFIGURED && now<15000) {
+        knownSsid = apSSID;
+        networkOverlay(PSTR("NETWORK INFO"),30000);
+        return;
+      }
+
       // Check if values which are shown on display changed from the last time.
       if (forceRedraw) {
         needRedraw = true;
@@ -407,7 +413,7 @@ class FourLineDisplayUsermod : public Usermod {
           // and turn it back on if it changed.
           clear();
           sleepOrClock(true);
-        } else if (displayTurnedOff && clockMode) {
+        } else if (displayTurnedOff && ntpEnabled) {
           showTime();
         }
         return;
@@ -489,8 +495,8 @@ class FourLineDisplayUsermod : public Usermod {
         drawGlyph( 2, 0, 1, u8x8_4LineDisplay_WLED_icons_1x1); //brightness icon
         drawGlyph( 6, 0, 2, u8x8_4LineDisplay_WLED_icons_1x1); //speed icon
         drawGlyph(10, 0, 3, u8x8_4LineDisplay_WLED_icons_1x1); //intensity icon
-        if (markLineNum!=2) drawGlyph(0, 2, 4, u8x8_4LineDisplay_WLED_icons_1x1); //palette icon
-        if (markLineNum!=3) drawGlyph(0, 3, 5, u8x8_4LineDisplay_WLED_icons_1x1); //effect icon
+        drawGlyph(15, 2, 4, u8x8_4LineDisplay_WLED_icons_1x1); //palette icon
+        drawGlyph(15, 3, 5, u8x8_4LineDisplay_WLED_icons_1x1); //effect icon
       }
     }
 
@@ -500,7 +506,7 @@ class FourLineDisplayUsermod : public Usermod {
       drawGlyph(col, row,   (wificonnected ? 20 : 0), u8x8_4LineDisplay_WLED_icons_1x1, true); // wifi icon
       if (lineHeight==2) { col--; } else { row++; }
       drawGlyph(col, row,          (bri > 0 ? 9 : 0), u8x8_4LineDisplay_WLED_icons_1x1, true); // power icon
-      if (lineHeight==2) { col--; } else { row++; }
+      if (lineHeight==2) { col--; } else { row++; col = row = 0; }
       drawGlyph(col, row, (nightlightActive ? 6 : 0), u8x8_4LineDisplay_WLED_icons_1x1, true); // moon icon for nighlight mode
     }
     
@@ -693,17 +699,17 @@ class FourLineDisplayUsermod : public Usermod {
     }
 
     void networkOverlay(const char* line1, long showHowLong) {
+      String line;
       // Turn the display back on
       if (!wakeDisplay()) clear();
       // Print the overlay
       if (line1) {
-        String l1 = line1;
-        l1.trim();
-        center(l1, getCols());
-        drawString(0, 0, l1.c_str());
+        line = line1;
+        center(line, getCols());
+        drawString(0, 0, line.c_str());
       }
       // Second row with Wifi name
-      String line = knownSsid.substring(0, getCols() > 1 ? getCols() - 2 : 0);
+      line = knownSsid.substring(0, getCols() > 1 ? getCols() - 2 : 0);
       if (line.length() < getCols()) center(line, getCols());
       drawString(0, lineHeight, line.c_str());
       // Print `~` char to indicate that SSID is longer, than our display
@@ -714,15 +720,14 @@ class FourLineDisplayUsermod : public Usermod {
       line = knownIp.toString();
       center(line, getCols());
       drawString(0, lineHeight*2, line.c_str());
+      line = "";
       if (apActive) {
         line = apPass;
-        center(line, getCols());
-        drawString(0, lineHeight*3, line.c_str());
-      } else if (strcmp(serverDescription, PSTR("WLED")) != 0) {
+      } else if (strcmp(serverDescription, "WLED") != 0) {
         line = serverDescription;
-        center(line, getCols());
-        drawString(0, lineHeight*3, line.c_str());
       }
+      center(line, getCols());
+      drawString(0, lineHeight*3, line.c_str());
       overlayUntil = millis() + showHowLong;
     }
 
@@ -733,7 +738,7 @@ class FourLineDisplayUsermod : public Usermod {
     void sleepOrClock(bool enabled) {
       if (enabled) {
         displayTurnedOff = true;
-        if (clockMode) {
+        if (clockMode && ntpEnabled) {
           knownMinute = knownHour = 99;
           showTime();
         } else

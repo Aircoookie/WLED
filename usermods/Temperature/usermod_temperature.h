@@ -37,7 +37,7 @@ class UsermodTemperature : public Usermod {
     // used to determine when we can read the sensors temperature
     // we have to wait at least 93.75 ms after requestTemperatures() is called
     unsigned long lastTemperaturesRequest;
-    float temperature = -127.0f; // default to -127, DS18B20 only goes down to -50C
+    float temperature;
     // indicates requestTemperatures has been called but the sensor measurement is not complete
     bool waitingForConversion = false;
     // flag set at startup if DS18B20 sensor not found, avoids trying to keep getting
@@ -136,6 +136,7 @@ class UsermodTemperature : public Usermod {
     void setup() {
       int retries = 10;
       sensorFound = 0;
+      temperature = -127.0f; // default to -127, DS18B20 only goes down to -50C
       if (enabled) {
         // config says we are enabled
         DEBUG_PRINTLN(F("Allocating temperature pin..."));
@@ -159,7 +160,7 @@ class UsermodTemperature : public Usermod {
     }
 
     void loop() {
-      if (!enabled || strip.isUpdating()) return;
+      if (!enabled || !sensorFound || strip.isUpdating()) return;
 
       unsigned long now = millis();
 
