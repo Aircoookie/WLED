@@ -39,7 +39,11 @@
   #endif
 #endif
 
+#ifdef ESP8266
+#define WLED_MAX_COLOR_ORDER_MAPPINGS 5
+#else
 #define WLED_MAX_COLOR_ORDER_MAPPINGS 10
+#endif
 
 //Usermod IDs
 #define USERMOD_ID_RESERVED               0     //Unused. Might indicate no usermod present

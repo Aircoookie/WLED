@@ -141,10 +141,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char xs[4] = "XS"; xs[2] = 48+s; xs[3] = 0; //start LED
       char xc[4] = "XC"; xc[2] = 48+s; xc[3] = 0; //strip length
       char xo[4] = "XO"; xo[2] = 48+s; xo[3] = 0; //color order
-      start = request->arg(xs).toInt();
-      length = request->arg(xc).toInt();
-      colorOrder = request->arg(xo).toInt();
-      com.add(start, length, colorOrder);
+      if (request->hasArg(xs)) {
+        start = request->arg(xs).toInt();
+        length = request->arg(xc).toInt();
+        colorOrder = request->arg(xo).toInt();
+        com.add(start, length, colorOrder);
+      }
     }
     busses.updateColorOrderMap(com);
 
