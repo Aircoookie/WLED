@@ -128,6 +128,7 @@ class UsermodTemperature : public Usermod {
           }
         }
       }
+      DEBUG_PRINTLN(F("Sensor NOT found."));
       return false;
     }
 
@@ -162,6 +163,7 @@ class UsermodTemperature : public Usermod {
     void loop() {
       if (!enabled || !sensorFound || strip.isUpdating()) return;
 
+      static uint8_t errorCount = 0;
       unsigned long now = millis();
 
       // check to see if we are due for taking a measurement
@@ -179,7 +181,12 @@ class UsermodTemperature : public Usermod {
       // we were waiting for a conversion to complete, have we waited log enough?
       if (now - lastTemperaturesRequest >= 750 /* 93.75ms per the datasheet but can be up to 750ms */) {
         readTemperature();
-        if (getTemperatureC() < -100.0f) lastMeasurement = now - readingInterval + 300; // force new measurement in 300ms
+        if (getTemperatureC() < -100.0f) {
+          if (++errorCount > 10) sensorFound = 0;
+          lastMeasurement = now - readingInterval + 300; // force new measurement in 300ms
+          return;
+        }
+        errorCount = 0;
 
         if (WLED_MQTT_CONNECTED) {
           char subuf[64];
