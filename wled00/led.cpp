@@ -31,7 +31,6 @@ void toggleOnOff()
     briLast = bri;
     bri = 0;
   }
-  colorChanged = true;
 }
 
 
@@ -45,8 +44,8 @@ byte scaledBri(byte in)
 
 
 void setAllLeds() {
-  strip.setColor(0, col[0], col[1], col[2], col[3]);
-  strip.setColor(1, colSec[0], colSec[1], colSec[2], colSec[3]);
+  strip.setColor(0, RGBW32(col[0], col[1], col[2], col[3]));
+  strip.setColor(1, RGBW32(colSec[0], colSec[1], colSec[2], colSec[3]));
   if (!realtimeMode || !arlsForceMaxBri)
   {
     strip.setBrightness(scaledBri(briT));
@@ -66,17 +65,18 @@ void colorUpdated(int callMode)
 {
   //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (No notification)
   //                     6: fx changed 7: hue 8: preset cycle 9: blynk 10: alexa 11: ws send only 12: button preset
-  if (callMode != CALL_MODE_INIT && 
-      callMode != CALL_MODE_DIRECT_CHANGE && 
-      callMode != CALL_MODE_NO_NOTIFY &&
-      callMode != CALL_MODE_BUTTON_PRESET) strip.applyToAllSelected = true; //if not from JSON api, which directly sets segments
+//  if (callMode != CALL_MODE_INIT && 
+//      callMode != CALL_MODE_DIRECT_CHANGE && 
+//      callMode != CALL_MODE_NO_NOTIFY &&
+//      callMode != CALL_MODE_BUTTON_PRESET) strip.applyToAllSelected = true; //if not from JSON api, which directly sets segments
 
   if (effectChanged || colorChanged) {
     effectChanged = false;
+    colorChanged = false;
     if (realtimeTimeout == UINT32_MAX) realtimeTimeout = 0;
     currentPreset = 0; //something changed, so we are no longer in the preset
         
-    notify(callMode);
+    if (callMode != CALL_MODE_NOTIFICATION && callMode != CALL_MODE_NO_NOTIFY) notify(callMode);
     
     //set flag to update blynk, ws and mqtt
     interfaceUpdateCallMode = callMode;
@@ -86,9 +86,6 @@ void colorUpdated(int callMode)
       interfaceUpdateCallMode = CALL_MODE_NIGHTLIGHT;
     }
   }
-  
-  if (!colorChanged) return; //following code is for e.g. initiating transitions
-  colorChanged = false;
   
   if (callMode != CALL_MODE_NO_NOTIFY && nightlightActive && (nightlightMode == NL_MODE_FADE || nightlightMode == NL_MODE_COLORFADE)) {
     briNlT = bri;
@@ -110,7 +107,9 @@ void colorUpdated(int callMode)
     jsonTransitionOnce = false;
     strip.setTransition(transitionDelayTemp);
     if (transitionDelayTemp == 0) {
-      setLedsStandard();
+      //setLedsStandard();
+      briOld = briT = bri;
+      if (!realtimeMode || !arlsForceMaxBri) strip.setBrightness(scaledBri(briT));
       strip.trigger();
       return;
     }
@@ -124,7 +123,9 @@ void colorUpdated(int callMode)
     transitionStartTime = millis();
   } else {
     strip.setTransition(0);
-    setLedsStandard();
+    //setLedsStandard();
+    briOld = briT = bri;
+    if (!realtimeMode || !arlsForceMaxBri) strip.setBrightness(scaledBri(briT));
     strip.trigger();
   }
 }
@@ -182,6 +183,12 @@ void handleTransitions()
 
 void handleNightlight()
 {
+  static unsigned long lastNlUpdate;
+  unsigned long now = millis();
+  if (now < 100 && lastNlUpdate > 0) lastNlUpdate = 0; //take care of millis() rollover
+  if (now - lastNlUpdate < 100) return; //allow only 10 NL updates per second
+  lastNlUpdate = now;
+
   if (nightlightActive)
   {
     if (!nightlightActiveOld) //init

@@ -282,24 +282,23 @@ void handleNotifications()
     
     bool someSel = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
     //apply colors from notification
-    if (receiveNotificationColor || !someSel)
-    {
-      col[0] = udpIn[3];
-      col[1] = udpIn[4];
-      col[2] = udpIn[5];
+    if (receiveNotificationColor || !someSel) {
+      if (version < 11 || !receiveSegmentOptions) {
+        col[0] = udpIn[3];
+        col[1] = udpIn[4];
+        col[2] = udpIn[5];
+      }
       if (version > 0) //sending module's white val is intended
       {
-        col[3] = udpIn[10];
-        if (version > 1)
-        {
+        if (version < 11 || !receiveSegmentOptions) col[3] = udpIn[10];
+        if (version > 1 && (version < 11 || !receiveSegmentOptions)) {
           colSec[0] = udpIn[12];
           colSec[1] = udpIn[13];
           colSec[2] = udpIn[14];
           colSec[3] = udpIn[15];
         }
-        if (version > 6)
-        {
-          strip.setColor(2, udpIn[20], udpIn[21], udpIn[22], udpIn[23]); //tertiary color
+        if (version > 6 && (version < 11 || !receiveSegmentOptions)) {
+          strip.setColor(2, RGBW32(udpIn[20], udpIn[21], udpIn[22], udpIn[23])); //tertiary color
         }
 				if (version > 9 && version < 200 && udpIn[37] < 255) { //valid CCT/Kelvin value
 					uint8_t cct = udpIn[38];
