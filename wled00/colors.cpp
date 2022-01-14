@@ -22,11 +22,6 @@ void colorFromUint24(uint32_t in, bool secondary)
   _col[2] = B(in);
 }
 
-//store color components in uint32_t
-uint32_t colorFromRgbw(byte* rgbw) {
-  return RGBW32(rgbw[0], rgbw[1], rgbw[2], rgbw[3]);
-}
-
 //relatively change white brightness, minumum A=5
 void relativeChangeWhite(int8_t amount, byte lowerBoundary)
 {
@@ -259,7 +254,7 @@ uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb)
   rgbw[1] = ((uint16_t) correctionRGB[1] * G(rgb)) /255; // correct G
   rgbw[2] = ((uint16_t) correctionRGB[2] * B(rgb)) /255; // correct B
   rgbw[3] =                                W(rgb);
-  return colorFromRgbw(rgbw);
+  return RGBW32(rgbw[0],rgbw[1],rgbw[2],rgbw[3]);
 }
 
 //approximates a Kelvin color temperature from an RGB color.
