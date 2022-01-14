@@ -31,6 +31,7 @@ void toggleOnOff()
     briLast = bri;
     bri = 0;
   }
+  colorChanged = true;
 }
 
 
@@ -61,18 +62,6 @@ void setLedsStandard()
 }
 
 
-bool colorChanged()
-{
-  for (byte i=0; i<4; i++)
-  {
-    if (col[i] != colIT[i]) return true;
-    if (colSec[i] != colSecIT[i]) return true;
-  }
-  if (bri != briIT) return true;
-  return false;
-}
-
-
 void colorUpdated(int callMode)
 {
   //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (No notification)
@@ -80,25 +69,9 @@ void colorUpdated(int callMode)
   if (callMode != CALL_MODE_INIT && 
       callMode != CALL_MODE_DIRECT_CHANGE && 
       callMode != CALL_MODE_NO_NOTIFY &&
-			callMode != CALL_MODE_BUTTON_PRESET) strip.applyToAllSelected = true; //if not from JSON api, which directly sets segments
+      callMode != CALL_MODE_BUTTON_PRESET) strip.applyToAllSelected = true; //if not from JSON api, which directly sets segments
 
-  bool someSel = false;
-
-  if (callMode == CALL_MODE_NOTIFICATION) {
-    someSel = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects || receiveSegmentOptions);
-  }
-  
-  //Notifier: apply received FX to selected segments only if actually receiving FX
-  if (someSel) strip.applyToAllSelected = receiveNotificationEffects;
-
-  bool fxChanged = strip.setEffectConfig(effectCurrent, effectSpeed, effectIntensity, effectPalette) || effectChanged;
-  bool colChanged = colorChanged();
-
-  //Notifier: apply received color to selected segments only if actually receiving color
-  if (someSel) strip.applyToAllSelected = receiveNotificationColor;
-
-  if (fxChanged || colChanged)
-  {
+  if (effectChanged || colorChanged) {
     effectChanged = false;
     if (realtimeTimeout == UINT32_MAX) realtimeTimeout = 0;
     currentPreset = 0; //something changed, so we are no longer in the preset
@@ -108,57 +81,48 @@ void colorUpdated(int callMode)
     //set flag to update blynk, ws and mqtt
     interfaceUpdateCallMode = callMode;
   } else {
-    if (nightlightActive && !nightlightActiveOld && 
-        callMode != CALL_MODE_NOTIFICATION && 
-        callMode != CALL_MODE_NO_NOTIFY)
-    {
+    if (nightlightActive && !nightlightActiveOld && callMode != CALL_MODE_NOTIFICATION && callMode != CALL_MODE_NO_NOTIFY) {
       notify(CALL_MODE_NIGHTLIGHT); 
       interfaceUpdateCallMode = CALL_MODE_NIGHTLIGHT;
     }
   }
   
-  if (!colChanged) return; //following code is for e.g. initiating transitions
+  if (!colorChanged) return; //following code is for e.g. initiating transitions
+  colorChanged = false;
   
-  if (callMode != CALL_MODE_NO_NOTIFY && nightlightActive && (nightlightMode == NL_MODE_FADE || nightlightMode == NL_MODE_COLORFADE))
-  {
+  if (callMode != CALL_MODE_NO_NOTIFY && nightlightActive && (nightlightMode == NL_MODE_FADE || nightlightMode == NL_MODE_COLORFADE)) {
     briNlT = bri;
     nightlightDelayMs -= (millis() - nightlightStartTime);
     nightlightStartTime = millis();
   }
-  for (byte i=0; i<4; i++)
-  {
-    colIT[i] = col[i];
-    colSecIT[i] = colSec[i];
-  }
-  if (briT == 0)
-  {
+  if (briT == 0) {
     if (callMode != CALL_MODE_NOTIFICATION) resetTimebase(); //effect start from beginning
   }
 
-  briIT = bri;
   if (bri > 0) briLast = bri;
 
   //deactivate nightlight if target brightness is reached
   if (bri == nightlightTargetBri && callMode != CALL_MODE_NO_NOTIFY && nightlightMode != NL_MODE_SUN) nightlightActive = false;
   
-  if (fadeTransition)
-  {
+  if (fadeTransition) {
     //set correct delay if not using notification delay
     if (callMode != CALL_MODE_NOTIFICATION && !jsonTransitionOnce) transitionDelayTemp = transitionDelay;
     jsonTransitionOnce = false;
     strip.setTransition(transitionDelayTemp);
-    if (transitionDelayTemp == 0) {setLedsStandard(); strip.trigger(); return;}
-    
-    if (transitionActive)
-    {
+    if (transitionDelayTemp == 0) {
+      setLedsStandard();
+      strip.trigger();
+      return;
+    }
+
+    if (transitionActive) {
       briOld = briT;
       tperLast = 0;
     }
     strip.setTransitionMode(true);
     transitionActive = true;
     transitionStartTime = millis();
-  } else
-  {
+  } else {
     strip.setTransition(0);
     setLedsStandard();
     strip.trigger();

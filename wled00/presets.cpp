@@ -102,6 +102,7 @@ void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
   sObj.remove("o");
   sObj.remove("ib");
   sObj.remove("sb");
+  sObj.remove(F("sc"));
   sObj.remove(F("error"));
   sObj.remove(F("time"));
 

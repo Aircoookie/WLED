@@ -10,7 +10,6 @@ var nlDur = 60, nlTar = 0;
 var nlMode = false;
 var selectedFx = 0, prevFx = -1;
 var selectedPal = 0;
-var sliderControl = ""; //WLEDSR: used by togglePcMode
 var csel = 0;
 var currentPreset = -1, prevPS = -1;
 var lastUpdate = 0;
@@ -1612,6 +1611,11 @@ ${makePlSel(true)}
 	Save segment bounds
 	<input type="checkbox" id="p${i}sbtgl" checked>
 	<span class="checkmark schk"></span>
+</label>
+<label class="check revchkl">
+	Checked segments only
+	<input type="checkbox" id="p${i}sbchk">
+	<span class="checkmark schk"></span>
 </label>`;
 
 	return `<input type="text" class="ptxt noslide" id="p${i}txt" autocomplete="off" maxlength=32 value="${(i>0)?pName(i):""}" placeholder="Enter name..."/>
@@ -1909,6 +1913,7 @@ function saveP(i,pl)
 		} else {
 			obj.ib = gId(`p${i}ibtgl`).checked;
 			obj.sb = gId(`p${i}sbtgl`).checked;
+			obj.sc = gId(`p${i}sbchk`).checked;
 		}
 	}
 
