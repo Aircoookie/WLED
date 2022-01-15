@@ -146,14 +146,11 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
       }
 
       if (!colValid) continue;
-      if (id == strip.getMainSegmentId() && i < 2) //temporary, to make transition work on main segment
-      {
-        if (i == 0) {col[0] = rgbw[0]; col[1] = rgbw[1]; col[2] = rgbw[2]; col[3] = rgbw[3];}
-        if (i == 1) {colSec[0] = rgbw[0]; colSec[1] = rgbw[1]; colSec[2] = rgbw[2]; colSec[3] = rgbw[3];}
-      } else { //normal case, apply directly to segment
-        seg.setColor(i, ((rgbw[3] << 24) | ((rgbw[0]&0xFF) << 16) | ((rgbw[1]&0xFF) << 8) | ((rgbw[2]&0xFF))), id);
-        if (seg.mode == FX_MODE_STATIC) strip.trigger(); //instant refresh
-      }
+
+      uint32_t color = RGBW32(rgbw[0],rgbw[1],rgbw[2],rgbw[3]);
+      colorChanged |= (seg.colors[i] != color);
+      seg.setColor(i, color, id);
+      if (seg.mode == FX_MODE_STATIC) strip.trigger(); //instant refresh
     }
   }
 
@@ -176,26 +173,18 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   if (!(elem[F("sel")].isNull() && elem["rev"].isNull() && elem["on"].isNull() && elem[F("mi")].isNull())) effectChanged = true; //send UDP
 
-  //temporary, strip object gets updated via colorUpdated()
-  if (id == strip.getMainSegmentId()) {
-		byte effectPrev = effectCurrent;
-    if (getVal(elem["fx"], &effectCurrent, 1, strip.getModeCount())) { //load effect ('r' random (1-255), '~' inc/dec (1-255), 0-255 exact value)
-      if (!presetId && effectCurrent != effectPrev) unloadPlaylist(); //stop playlist if active and FX changed manually
-    }
-    effectSpeed = elem[F("sx")] | effectSpeed;
-    effectIntensity = elem[F("ix")] | effectIntensity;
-    getVal(elem["pal"], &effectPalette, 1, strip.getPaletteCount());
-  } else { //permanent
-    byte fx = seg.mode;
-		byte fxPrev = fx;
-    if (getVal(elem["fx"], &fx, 1, strip.getModeCount())) { //load effect ('r' random (1-255), '~' inc/dec (1-255), 0-255 exact value)
-      strip.setMode(id, fx);
-      if (!presetId && seg.mode != fxPrev) unloadPlaylist(); //stop playlist if active and FX changed manually
-    }
-    seg.speed = elem[F("sx")] | seg.speed;
-    seg.intensity = elem[F("ix")] | seg.intensity;
-    getVal(elem["pal"], &seg.palette, 1, strip.getPaletteCount());
+  byte fx = seg.mode;
+  byte fxPrev = fx;
+  if (getVal(elem["fx"], &fx, 1, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 1-255 exact value)
+    strip.setMode(id, fx);
+    if (!presetId && seg.mode != fxPrev) effectChanged = true; //send UDP
   }
+  byte prevSpd = seg.speed;
+  byte prevInt = seg.intensity;
+  byte prevPal = seg.palette;
+  if (getVal(elem[F("sx")], &seg.speed, 0, 255) && !presetId && prevSpd != seg.speed)                       effectChanged = true; //also supports inc/decrementing and random
+  if (getVal(elem[F("ix")], &seg.intensity, 0, 255) && !presetId && prevInt != seg.intensity)               effectChanged = true; //also supports inc/decrementing and random
+  if (getVal(elem["pal"], &seg.palette, 1, strip.getPaletteCount()) && !presetId && prevPal != seg.palette) effectChanged = true; //also supports inc/decrementing and random
 
   JsonArray iarr = elem[F("i")]; //set individual LEDs
   if (!iarr.isNull()) {
@@ -289,16 +278,16 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   tr = root[F("tb")] | -1;
   if (tr >= 0) strip.timebase = ((uint32_t)tr) - millis();
 
-  JsonObject nl = root["nl"];
+  JsonObject nl       = root["nl"];
   nightlightActive    = nl["on"]      | nightlightActive;
   nightlightDelayMins = nl[F("dur")]  | nightlightDelayMins;
   nightlightMode      = nl[F("mode")] | nightlightMode;
   nightlightTargetBri = nl[F("tbri")] | nightlightTargetBri;
 
-  JsonObject udpn = root["udpn"];
+  JsonObject udpn      = root["udpn"];
   notifyDirect         = udpn["send"] | notifyDirect;
   receiveNotifications = udpn["recv"] | receiveNotifications;
-  bool noNotification  = udpn[F("nn")]; //send no notification just for this request
+  if ((bool)udpn[F("nn")]) callMode = CALL_MODE_NO_NOTIFY; //send no notification just for this request
 
   unsigned long timein = root[F("time")] | UINT32_MAX; //backup time source if NTP not synced
   if (timein != UINT32_MAX) {
@@ -319,22 +308,21 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   byte prevMain = strip.getMainSegmentId();
   strip.mainSegment = root[F("mainseg")] | prevMain;
-  if (strip.getMainSegmentId() != prevMain) setValuesFromMainSeg();
+  //if (strip.getMainSegmentId() != prevMain) setValuesFromMainSeg();
 
   int it = 0;
   JsonVariant segVar = root["seg"];
   if (segVar.is<JsonObject>())
   {
     int id = segVar["id"] | -1;
-    
-    if (id < 0) { //set all selected segments
+    //if "seg" is not an array and ID not specified, apply to all selected/checked segments
+    if (id < 0) {
+      //apply all selected segments
       bool didSet = false;
       byte lowestActive = 99;
-      for (byte s = 0; s < strip.getMaxSegments(); s++)
-      {
-        WS2812FX::Segment sg = strip.getSegment(s);
-        if (sg.isActive())
-        {
+      for (byte s = 0; s < strip.getMaxSegments(); s++) {
+        WS2812FX::Segment &sg = strip.getSegment(s);
+        if (sg.isActive()) {
           if (lowestActive == 99) lowestActive = s;
           if (sg.isSelected()) {
             deserializeSegment(segVar, s, presetId);
@@ -342,9 +330,10 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
           }
         }
       }
+      //TODO: not sure if it is good idea to change first active but unselected segment
       if (!didSet && lowestActive < strip.getMaxSegments()) deserializeSegment(segVar, lowestActive, presetId);
-    } else { //set only the segment with the specified ID
-      deserializeSegment(segVar, it, presetId);
+    } else {
+      deserializeSegment(segVar, id, presetId); //apply only the segment with the specified ID
     }
   } else {
     JsonArray segs = segVar.as<JsonArray>();
@@ -354,6 +343,8 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       it++;
     }
   }
+  setValuesFromMainSeg(); //to make transition work on main segment
+  if (effectChanged) unloadPlaylist(); //if any of the effect parameter changed unload playlist
 
   #ifndef WLED_DISABLE_CRONIXIE
     if (root["nx"].is<const char*>()) {
@@ -394,12 +385,13 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   JsonObject playlist = root[F("playlist")];
   if (!playlist.isNull() && loadPlaylist(playlist, presetId)) {
     //do not notify here, because the first playlist entry will do
-    noNotification = true;
+    if (root["on"].isNull()) callMode = CALL_MODE_NO_NOTIFY;
+    else callMode = CALL_MODE_DIRECT_CHANGE;  // possible bugfix for playlist only containing HTTP API preset FX=~
   } else {
     interfaceUpdateCallMode = CALL_MODE_WS_SEND;
   }
 
-  colorUpdated(noNotification ? CALL_MODE_NO_NOTIFY : callMode);
+  colorUpdated(callMode);
 
   return stateResponse;
 }
@@ -423,35 +415,35 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
 
   if (segmentBounds && seg.name != nullptr) root["n"] = reinterpret_cast<const char *>(seg.name); //not good practice, but decreases required JSON buffer
 
-  char colstr[70]; colstr[0] = '['; colstr[1] = '\0'; //max len 68 (5 chan, all 255)
-
-	for (uint8_t i = 0; i < 3; i++)
-	{
+  // to conserve RAM we will serialize the col array manually
+  // this will reduce RAM footprint from ~300 bytes to 84 bytes per segment
+  char colstr[70]; colstr[0] = '['; colstr[1] = '\0';  //max len 68 (5 chan, all 255)
+  const char *format = strip.isRgbw ? PSTR("[%u,%u,%u,%u]") : PSTR("[%u,%u,%u]");
+  for (uint8_t i = 0; i < 3; i++)
+  {
     byte segcol[4]; byte* c = segcol;
-
     if (id == strip.getMainSegmentId() && i < 2) //temporary, to make transition work on main segment
     {
       c = (i == 0)? col:colSec;
     } else {
-      segcol[0] = (byte)(seg.colors[i] >> 16); segcol[1] = (byte)(seg.colors[i] >> 8);
-      segcol[2] = (byte)(seg.colors[i]);       segcol[3] = (byte)(seg.colors[i] >> 24);
+      segcol[0] = R(seg.colors[i]);
+      segcol[1] = G(seg.colors[i]);
+      segcol[2] = B(seg.colors[i]);
+      segcol[3] = W(seg.colors[i]);
     }
-
     char tmpcol[22];
-    if (strip.isRgbw) sprintf_P(tmpcol, PSTR("[%u,%u,%u,%u]"), c[0], c[1], c[2], c[3]);
-    else              sprintf_P(tmpcol, PSTR("[%u,%u,%u]"),   c[0], c[1], c[2]);
-
-    strcat(colstr, i<2 ? strcat(tmpcol,",") : tmpcol);
-	}
-  strcat(colstr,"]");
+    sprintf_P(tmpcol, format, (unsigned)c[0], (unsigned)c[1], (unsigned)c[2], (unsigned)c[3]);
+    strcat(colstr, i<2 ? strcat_P(tmpcol, PSTR(",")) : tmpcol);
+  }
+  strcat_P(colstr, PSTR("]"));
   root["col"] = serialized(colstr);
 
-	root["fx"]  = seg.mode;
+	root["fx"]     = seg.mode;
 	root[F("sx")]  = seg.speed;
 	root[F("ix")]  = seg.intensity;
-	root["pal"] = seg.palette;
+	root["pal"]    = seg.palette;
 	root[F("sel")] = seg.isSelected();
-	root["rev"] = seg.getOption(SEG_OPTION_REVERSED);
+	root["rev"]    = seg.getOption(SEG_OPTION_REVERSED);
   root[F("mi")]  = seg.getOption(SEG_OPTION_MIRROR);
 }
 
@@ -464,7 +456,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
   }
 
   if (!forPreset) {
-    if (errorFlag) root[F("error")] = errorFlag;
+    if (errorFlag) {root[F("error")] = errorFlag; errorFlag = ERR_NONE;} //prevent error message to persist on screen
 
     root["ps"] = (currentPreset > 0) ? currentPreset : -1;
     root[F("pl")] = currentPlaylist;
@@ -492,11 +484,9 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
   root[F("mainseg")] = strip.getMainSegmentId();
 
   JsonArray seg = root.createNestedArray("seg");
-  for (byte s = 0; s < strip.getMaxSegments(); s++)
-  {
-    WS2812FX::Segment sg = strip.getSegment(s);
-    if (sg.isActive())
-    {
+  for (byte s = 0; s < strip.getMaxSegments(); s++) {
+    WS2812FX::Segment &sg = strip.getSegment(s);
+    if (sg.isActive()) {
       JsonObject seg0 = seg.createNestedObject();
       serializeSegment(seg0, sg, s, forPreset, segmentBounds);
     } else if (forPreset && segmentBounds) { //disable segments not part of preset
@@ -622,8 +612,10 @@ void serializeInfo(JsonObject root)
   #endif
 
   root[F("freeheap")] = ESP.getFreeHeap();
+  #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
+  if (psramFound()) root[F("psram")] = ESP.getFreePsram();
+  #endif
   root[F("uptime")] = millis()/1000 + rolloverMillis*4294967;
-
 
   usermods.addToJsonInfo(root);
 
@@ -671,7 +663,7 @@ void setPaletteColors(JsonArray json, CRGBPalette16 palette)
     for (int i = 0; i < 16; i++) {
       JsonArray colors =  json.createNestedArray();
       CRGB color = palette[i];
-      colors.add((((float)i / (float)16) * 255));
+      colors.add(i<<4);
       colors.add(color.red);
       colors.add(color.green);
       colors.add(color.blue);
@@ -903,13 +895,13 @@ void serveJson(AsyncWebServerRequest* request)
 
 bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
 {
+  #ifdef WLED_ENABLE_WEBSOCKETS
   AsyncWebSocketClient * wsc = nullptr;
   if (!request) { //not HTTP, use Websockets
-    #ifdef WLED_ENABLE_WEBSOCKETS
     wsc = ws.client(wsClient);
     if (!wsc || wsc->queueLength() > 0) return false; //only send if queue free
-    #endif
   }
+  #endif
 
   uint16_t used = strip.getLengthTotal();
   uint16_t n = (used -1) /MAX_LIVE_LEDS +1; //only serve every n'th LED if count over MAX_LIVE_LEDS

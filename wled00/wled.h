@@ -16,6 +16,7 @@
 // ESP8266-01 (blue) got too little storage space to work with WLED. 0.10.2 is the last release supporting this unit.
 
 // ESP8266-01 (black) has 1MB flash and can thus fit the whole program, although OTA update is not possible. Use 1M(128K SPIFFS).
+// 2-step OTA may still be possible: https://github.com/Aircoookie/WLED/issues/2040#issuecomment-981111096
 // Uncomment some of the following lines to disable features:
 // Alternatively, with platformio pass your chosen flags to your custom build target in platformio_override.ini
 
@@ -417,9 +418,6 @@ WLED_GLOBAL bool interfacesInited _INIT(false);
 WLED_GLOBAL bool wasConnected _INIT(false);
 
 // color
-WLED_GLOBAL byte colIT[]     _INIT_N(({ 0, 0, 0, 0 }));         // color that was last sent to LEDs
-WLED_GLOBAL byte colSecIT[]  _INIT_N(({ 0, 0, 0, 0 }));
-
 WLED_GLOBAL byte lastRandomIndex _INIT(0);        // used to save last random color so the new one is not the same
 
 // transitions
@@ -470,6 +468,7 @@ WLED_GLOBAL byte effectSpeed _INIT(128);
 WLED_GLOBAL byte effectIntensity _INIT(128);
 WLED_GLOBAL byte effectPalette _INIT(0);
 WLED_GLOBAL bool effectChanged _INIT(false);
+WLED_GLOBAL bool colorChanged _INIT(false);
 
 // network
 WLED_GLOBAL bool udpConnected _INIT(false), udp2Connected _INIT(false), udpRgbConnected _INIT(false);

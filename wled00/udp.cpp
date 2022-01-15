@@ -282,24 +282,26 @@ void handleNotifications()
     
     bool someSel = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
     //apply colors from notification
-    if (receiveNotificationColor || !someSel)
-    {
-      col[0] = udpIn[3];
-      col[1] = udpIn[4];
-      col[2] = udpIn[5];
+    if (receiveNotificationColor || !someSel) {
+      if (version < 11 || !receiveSegmentOptions) {
+        // only change col[] if not syncing full segments
+        col[0] = udpIn[3];
+        col[1] = udpIn[4];
+        col[2] = udpIn[5];
+      }
       if (version > 0) //sending module's white val is intended
       {
-        col[3] = udpIn[10];
-        if (version > 1)
-        {
+        // only change col[3] if not syncing full segments
+        if (version < 11 || !receiveSegmentOptions) col[3] = udpIn[10];
+        if (version > 1 && (version < 11 || !receiveSegmentOptions)) {
+          // only change colSec[] if not syncing full segments
           colSec[0] = udpIn[12];
           colSec[1] = udpIn[13];
           colSec[2] = udpIn[14];
           colSec[3] = udpIn[15];
         }
-        if (version > 6)
-        {
-          strip.setColor(2, udpIn[20], udpIn[21], udpIn[22], udpIn[23]); //tertiary color
+        if (version > 6 && (version < 11 || !receiveSegmentOptions)) {
+          strip.setColor(2, RGBW32(udpIn[20], udpIn[21], udpIn[22], udpIn[23])); //tertiary color
         }
 				if (version > 9 && version < 200 && udpIn[37] < 255) { //valid CCT/Kelvin value
 					uint8_t cct = udpIn[38];
@@ -324,22 +326,20 @@ void handleNotifications()
 				for (uint8_t i = 0; i < srcSegs; i++) {
 					WS2812FX::Segment& selseg = strip.getSegment(i);
 					uint16_t ofs = 41 + i*UDP_SEG_SIZE; //start of segment offset byte
-					for (uint8_t j = 0; j<4; j++) selseg.setOption(j, (udpIn[44+i*22] >> j) & 0x01); //only take into account mirrored, selected, on, reversed
-					uint16_t offset  = udpIn[2+ofs]<<8 | udpIn[3+ofs];
-					selseg.setOpacity(udpIn[4+ofs], i);
-					if (i == strip.getMainSegmentId()) { //temporary, to make transition work on main segment
-						//TODO
-					} else { //permanent
-						strip.setMode(i, udpIn[5+ofs]);
-						selseg.speed     = udpIn[6+ofs];
-						selseg.intensity = udpIn[7+ofs];
-						selseg.palette   = udpIn[8+ofs];
-					}
+					for (uint8_t j = 0; j<4; j++) selseg.setOption(j, (udpIn[4 +ofs] >> j) & 0x01); //only take into account mirrored, selected, on, reversed
+					selseg.setOpacity( udpIn[5+ofs], i);
+          strip.setMode(i,   udpIn[6+ofs]);
+          selseg.speed     = udpIn[7+ofs];
+          selseg.intensity = udpIn[8+ofs];
+          selseg.palette   = udpIn[9+ofs];
 					selseg.setColor(0, RGBW32(udpIn[10+ofs],udpIn[11+ofs],udpIn[12+ofs],udpIn[13+ofs]), i);
 					selseg.setColor(1, RGBW32(udpIn[14+ofs],udpIn[15+ofs],udpIn[16+ofs],udpIn[17+ofs]), i);
 					selseg.setColor(2, RGBW32(udpIn[18+ofs],udpIn[19+ofs],udpIn[20+ofs],udpIn[21+ofs]), i);
-					strip.setSegment(i, selseg.start, selseg.stop, udpIn[0+ofs], udpIn[1+ofs], offset); //also properly resets segments
+					strip.setSegment(i, selseg.start, selseg.stop, udpIn[0+ofs], udpIn[1+ofs], (udpIn[2+ofs]<<8 | udpIn[3+ofs])); //also properly resets segments
 				}
+        setValuesFromMainSeg();
+        effectChanged = true;
+        colorChanged = true;
       } else { //simple effect sync, applies to all selected
 				if (udpIn[8] < strip.getModeCount()) effectCurrent = udpIn[8];
       	effectSpeed   = udpIn[9];
