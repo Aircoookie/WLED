@@ -100,6 +100,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 		strip.cctBlending = request->arg(F("CB")).toInt();
 		Bus::setCCTBlend(strip.cctBlending);
 		Bus::setAutoWhiteMode(request->arg(F("AW")).toInt());
+		strip.setTargetFps(request->arg(F("FR")).toInt());
 
     for (uint8_t s = 0; s < WLED_MAX_BUSSES; s++) {
       char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
@@ -353,21 +354,27 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
 
     char k[3]; k[2] = 0;
-    for (int i = 0; i<10; i++)
-    {
-      k[1] = i+48;//ascii 0,1,2,3
-
+    for (int i = 0; i<10; i++) {
+      k[1] = i+48;//ascii 0,1,2,3,...
       k[0] = 'H'; //timer hours
       timerHours[i] = request->arg(k).toInt();
-
       k[0] = 'N'; //minutes
       timerMinutes[i] = request->arg(k).toInt();
-
       k[0] = 'T'; //macros
       timerMacro[i] = request->arg(k).toInt();
-
       k[0] = 'W'; //weekdays
       timerWeekday[i] = request->arg(k).toInt();
+      if (i<8) {
+				k[0] = 'M'; //start month
+				timerMonth[i] = request->arg(k).toInt() & 0x0F;
+				timerMonth[i] <<= 4;
+				k[0] = 'P'; //end month
+				timerMonth[i] += (request->arg(k).toInt() & 0x0F);
+				k[0] = 'D'; //start day
+				timerDay[i] = request->arg(k).toInt();
+				k[0] = 'E'; //end day
+				timerDayEnd[i] = request->arg(k).toInt();
+      }
     }
   }
 
