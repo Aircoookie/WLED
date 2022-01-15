@@ -284,14 +284,17 @@ void handleNotifications()
     //apply colors from notification
     if (receiveNotificationColor || !someSel) {
       if (version < 11 || !receiveSegmentOptions) {
+        // only change col[] if not syncing full segments
         col[0] = udpIn[3];
         col[1] = udpIn[4];
         col[2] = udpIn[5];
       }
       if (version > 0) //sending module's white val is intended
       {
+        // only change col[3] if not syncing full segments
         if (version < 11 || !receiveSegmentOptions) col[3] = udpIn[10];
         if (version > 1 && (version < 11 || !receiveSegmentOptions)) {
+          // only change colSec[] if not syncing full segments
           colSec[0] = udpIn[12];
           colSec[1] = udpIn[13];
           colSec[2] = udpIn[14];

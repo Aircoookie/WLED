@@ -65,21 +65,17 @@ void colorUpdated(int callMode)
 {
   //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (No notification)
   //                     6: fx changed 7: hue 8: preset cycle 9: blynk 10: alexa 11: ws send only 12: button preset
-//  if (callMode != CALL_MODE_INIT && 
-//      callMode != CALL_MODE_DIRECT_CHANGE && 
-//      callMode != CALL_MODE_NO_NOTIFY &&
-//      callMode != CALL_MODE_BUTTON_PRESET) strip.applyToAllSelected = true; //if not from JSON api, which directly sets segments
 
-  if (effectChanged || colorChanged) {
-    effectChanged = false;
-    colorChanged = false;
+  if (bri != briOld || effectChanged || colorChanged) {
     if (realtimeTimeout == UINT32_MAX) realtimeTimeout = 0;
-    currentPreset = 0; //something changed, so we are no longer in the preset
+    if (effectChanged) currentPreset = 0; //something changed, so we are no longer in the preset
         
     if (callMode != CALL_MODE_NOTIFICATION && callMode != CALL_MODE_NO_NOTIFY) notify(callMode);
     
     //set flag to update blynk, ws and mqtt
     interfaceUpdateCallMode = callMode;
+    effectChanged = false;
+    colorChanged = false;
   } else {
     if (nightlightActive && !nightlightActiveOld && callMode != CALL_MODE_NOTIFICATION && callMode != CALL_MODE_NO_NOTIFY) {
       notify(CALL_MODE_NIGHTLIGHT); 

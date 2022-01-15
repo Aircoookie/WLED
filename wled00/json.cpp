@@ -162,14 +162,14 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   byte fxPrev = fx;
   if (getVal(elem["fx"], &fx, 1, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 1-255 exact value)
     strip.setMode(id, fx);
-    if (!presetId && seg.mode != fxPrev) {
-      effectChanged = true; //send UDP
-      unloadPlaylist(); //stop playlist if active and FX changed manually
-    }
+    if (!presetId && seg.mode != fxPrev) effectChanged = true; //send UDP
   }
-  seg.speed = elem[F("sx")] | seg.speed;
-  seg.intensity = elem[F("ix")] | seg.intensity;
-  getVal(elem["pal"], &seg.palette, 1, strip.getPaletteCount());
+  byte prevSpd = seg.speed;
+  byte prevInt = seg.intensity;
+  byte prevPal = seg.palette;
+  if (getVal(elem[F("sx")], &seg.speed, 0, 255) && !presetId && prevSpd != seg.speed)                       effectChanged = true; //also supports inc/decrementing and random
+  if (getVal(elem[F("ix")], &seg.intensity, 0, 255) && !presetId && prevInt != seg.intensity)               effectChanged = true; //also supports inc/decrementing and random
+  if (getVal(elem["pal"], &seg.palette, 1, strip.getPaletteCount()) && !presetId && prevPal != seg.palette) effectChanged = true; //also supports inc/decrementing and random
 
   JsonArray iarr = elem[F("i")]; //set individual LEDs
   if (!iarr.isNull()) {
@@ -332,6 +332,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     }
   }
   setValuesFromMainSeg(); //to make transition work on main segment
+  if (effectChanged) unloadPlaylist(); //if any of the effect parameter changed unload playlist
 
   #ifndef WLED_DISABLE_CRONIXIE
     if (root["nx"].is<const char*>()) {

@@ -63,7 +63,6 @@ void handlePresets()
 
   if (!errorFlag && presetToApply < 255) currentPreset = presetToApply;
 
-  effectChanged = true; //force UDP notification
   colorUpdated(callModeToApply);
   updateInterfaces(callModeToApply);
 
