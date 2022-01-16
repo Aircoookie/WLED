@@ -136,6 +136,7 @@ class FourLineDisplayUsermod : public Usermod {
     bool clockMode = false;         // display clock
     bool showSeconds = true;        // display clock with seconds
     bool enabled = true;
+    bool contrastFixForType3 = false;
 
     // Next variables hold the previous known values to determine if redraw is
     // required.
@@ -175,6 +176,7 @@ class FourLineDisplayUsermod : public Usermod {
     static const char _clockMode[];
     static const char _showSeconds[];
     static const char _busClkFrequency[];
+    static const char _contrastFixForType3[];
 
     // If display does not work or looks corrupted check the
     // constructor reference:
@@ -215,8 +217,13 @@ class FourLineDisplayUsermod : public Usermod {
           lineHeight = 2;
           break;
         case SSD1306_64:
-          if (!isHW) u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_SW_I2C(ioPin[0], ioPin[1]); // SCL, SDA, reset
-          else       u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_HW_I2C(U8X8_PIN_NONE, ioPin[0], ioPin[1]); // Pins are Reset, SCL, SDA
+          if (contrastFixForType3){
+              if (!isHW) u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_VCOMH0_SW_I2C(ioPin[0], ioPin[1]); // SCL, SDA, reset
+              else       u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_VCOMH0_HW_I2C(U8X8_PIN_NONE, ioPin[0], ioPin[1]); // Pins are Reset, SCL, SDA
+            }else{
+              if (!isHW) u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_SW_I2C(ioPin[0], ioPin[1]); // SCL, SDA, reset
+              else       u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_HW_I2C(U8X8_PIN_NONE, ioPin[0], ioPin[1]); // Pins are Reset, SCL, SDA
+            }
           lineHeight = 2;
           break;
         case SSD1305:
@@ -492,11 +499,11 @@ class FourLineDisplayUsermod : public Usermod {
         drawGlyph(14, 2*lineHeight, 4, u8x8_4LineDisplay_WLED_icons_2x2, true); //palette icon
         drawGlyph(14, 3*lineHeight, 5, u8x8_4LineDisplay_WLED_icons_2x2, true); //effect icon
       } else {
-        drawGlyph( 2, 0, 1, u8x8_4LineDisplay_WLED_icons_1x1); //brightness icon
-        drawGlyph( 6, 0, 2, u8x8_4LineDisplay_WLED_icons_1x1); //speed icon
-        drawGlyph(10, 0, 3, u8x8_4LineDisplay_WLED_icons_1x1); //intensity icon
-        drawGlyph(15, 2, 4, u8x8_4LineDisplay_WLED_icons_1x1); //palette icon
-        drawGlyph(15, 3, 5, u8x8_4LineDisplay_WLED_icons_1x1); //effect icon
+        drawGlyph( 1, 0, 1, u8x8_4LineDisplay_WLED_icons_2x1); //brightness icon
+        drawGlyph( 5, 0, 2, u8x8_4LineDisplay_WLED_icons_2x1); //speed icon
+        drawGlyph(9, 0, 3, u8x8_4LineDisplay_WLED_icons_2x1); //intensity icon
+        drawGlyph(14, 2, 4, u8x8_4LineDisplay_WLED_icons_2x1); //palette icon
+        drawGlyph(14, 3, 5, u8x8_4LineDisplay_WLED_icons_2x1); //effect icon
       }
     }
 
@@ -569,11 +576,11 @@ class FourLineDisplayUsermod : public Usermod {
             drawString(1, row*lineHeight+1, smallBuffer2, true);
           }
         } else {                                             // use this code for 4 ling displays
-          char smallBuffer3[MAX_MODE_LINE_SPACE+1];
+          char smallBuffer3[MAX_MODE_LINE_SPACE];
           uint8_t smallChars3 = 0;
-          if (printedChars > MAX_MODE_LINE_SPACE) printedChars = MAX_MODE_LINE_SPACE;
+          if (printedChars > MAX_MODE_LINE_SPACE-1) printedChars = MAX_MODE_LINE_SPACE-1;
           for (uint8_t i = 0; i < printedChars; i++) smallBuffer3[smallChars3++] = lineBuffer[i];
-          for (; smallChars3 < (MAX_MODE_LINE_SPACE); smallChars3++) smallBuffer3[smallChars3]=' ';
+          for (; smallChars3 < (MAX_MODE_LINE_SPACE-1); smallChars3++) smallBuffer3[smallChars3]=' ';
           smallBuffer3[smallChars3] = 0;
           drawString(1, row*lineHeight, smallBuffer3, true);
         }
@@ -609,8 +616,8 @@ class FourLineDisplayUsermod : public Usermod {
       if (!wakeDisplay()) clear();
       // Print the overlay
       if (glyphType>0 && glyphType<255) {
-        if (lineHeight == 2) drawGlyph(5,          0, glyphType, u8x8_4LineDisplay_WLED_icons_6x6, true);
-        else                 drawGlyph(7, lineHeight, glyphType, u8x8_4LineDisplay_WLED_icons_2x2, true);
+        if (lineHeight == 2) drawGlyph(5, 0, glyphType, u8x8_4LineDisplay_WLED_icons_6x6, true);
+        else                 drawGlyph(6, 0, glyphType, u8x8_4LineDisplay_WLED_icons_3x3, true);
       }
       if (line1) {
         String buf = line1;
@@ -846,6 +853,7 @@ class FourLineDisplayUsermod : public Usermod {
       top["help4Type"]           = F("1=SSD1306,2=SH1106,3=SSD1306_128x64,4=SSD1305,5=SSD1305_128x64,6=SSD1306_SPI,7=SSD1306_SPI_128x64"); // help for Settings page
       top[FPSTR(_flip)]          = (bool) flip;
       top[FPSTR(_contrast)]      = contrast;
+      top[FPSTR(_contrastFixForType3)]     = (bool) contrastFixForType3;
       top[FPSTR(_refreshRate)]   = refreshRate;
       top[FPSTR(_screenTimeOut)] = screenTimeout/1000;
       top[FPSTR(_sleepMode)]     = (bool) sleepMode;
@@ -886,6 +894,7 @@ class FourLineDisplayUsermod : public Usermod {
       sleepMode     = top[FPSTR(_sleepMode)] | sleepMode;
       clockMode     = top[FPSTR(_clockMode)] | clockMode;
       showSeconds   = top[FPSTR(_showSeconds)] | showSeconds;
+      contrastFixForType3   = top[FPSTR(_contrastFixForType3)] | contrastFixForType3;
       if (newType == SSD1306_SPI || newType == SSD1306_SPI64)
         ioFrequency = min(20000, max(500, (int)(top[FPSTR(_busClkFrequency)] | ioFrequency/1000))) * 1000;  // limit frequency
       else
@@ -946,3 +955,4 @@ const char FourLineDisplayUsermod::_sleepMode[]       PROGMEM = "sleepMode";
 const char FourLineDisplayUsermod::_clockMode[]       PROGMEM = "clockMode";
 const char FourLineDisplayUsermod::_showSeconds[]     PROGMEM = "showSeconds";
 const char FourLineDisplayUsermod::_busClkFrequency[] PROGMEM = "i2c-freq-kHz";
+const char FourLineDisplayUsermod::_contrastFixForType3[]     PROGMEM = "contrastFixForType3";
