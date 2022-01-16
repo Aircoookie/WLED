@@ -227,9 +227,11 @@ function onLoad()
 		loadPalettesData(redrawPalPrev);
 		loadFX(()=>{
 			loadFXData();
-			loadPresets(()=>{
-				requestJson();
-			});
+			setTimeout(()=>{ //ESP8266 can't handle quick requests
+				loadPresets(()=>{
+					requestJson();
+				});
+			},100);
 		});
 	});
 	resetUtil();
@@ -498,7 +500,7 @@ function loadFXData(callback = null)
 		fxdata = json||[];
 		// add default value for Solid
 		fxdata.shift()
-		fxdata.unshift("@;!;");
+		fxdata.unshift("@;!;0");
 	})
 	.catch((e)=>{
 		fxdata = [];
