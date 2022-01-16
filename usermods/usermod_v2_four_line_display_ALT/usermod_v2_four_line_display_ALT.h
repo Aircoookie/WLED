@@ -386,30 +386,29 @@ class FourLineDisplayUsermod : public Usermod {
           String timer = PSTR("Timer On");
           center(timer,LINE_BUFFER_SIZE-1);
           overlay(timer.c_str(), 2500, 6);
-          //lastRedraw = millis();
         }
         return;
       } else if (wificonnected != interfacesInited) {   //trigger wifi icon
         wificonnected = interfacesInited;
         drawStatusIcons();
         return;
-      } else if (knownMode != effectCurrent) {
-        knownMode = effectCurrent;
+      } else if (knownMode != effectCurrent || knownPalette != effectPalette) {
         if (displayTurnedOff) needRedraw = true;
-        else { showCurrentEffectOrPalette(knownMode, JSON_mode_names, 3); return; }
-      } else if (knownPalette != effectPalette) {
-        knownPalette = effectPalette;
-        if (displayTurnedOff) needRedraw = true;
-        else { showCurrentEffectOrPalette(knownPalette, JSON_palette_names, 2); return; }
+        else { 
+          if (knownPalette != effectPalette) { showCurrentEffectOrPalette(effectPalette, JSON_palette_names, 2); knownPalette = effectPalette; }
+          if (knownMode    != effectCurrent) { showCurrentEffectOrPalette(effectCurrent, JSON_mode_names, 3); knownMode = effectCurrent; }
+          lastRedraw = now;
+          return;
+        }
       } else if (knownBrightness != bri) {
         if (displayTurnedOff && nightlightActive) { knownBrightness = bri; }
-        else if (!displayTurnedOff) { updateBrightness(); return; }
+        else if (!displayTurnedOff) { updateBrightness(); lastRedraw = now; return; }
       } else if (knownEffectSpeed != effectSpeed) {
         if (displayTurnedOff) needRedraw = true;
-        else { updateSpeed(); return; }
+        else { updateSpeed(); lastRedraw = now; return; }
       } else if (knownEffectIntensity != effectIntensity) {
         if (displayTurnedOff) needRedraw = true;
-        else { updateIntensity(); return; }
+        else { updateIntensity(); lastRedraw = now; return; }
       }
 
       if (!needRedraw) {
@@ -432,13 +431,13 @@ class FourLineDisplayUsermod : public Usermod {
       wakeDisplay();
 
       // Update last known values.
-      knownBrightness = bri;
-      knownMode = effectCurrent;
-      knownPalette = effectPalette;
-      knownEffectSpeed = effectSpeed;
+      knownBrightness      = bri;
+      knownMode            = effectCurrent;
+      knownPalette         = effectPalette;
+      knownEffectSpeed     = effectSpeed;
       knownEffectIntensity = effectIntensity;
-      knownnightlight = nightlightActive;
-      wificonnected = interfacesInited;
+      knownnightlight      = nightlightActive;
+      wificonnected        = interfacesInited;
 
       // Do the actual drawing
       // First row: Icons
@@ -501,9 +500,9 @@ class FourLineDisplayUsermod : public Usermod {
       } else {
         drawGlyph( 1, 0, 1, u8x8_4LineDisplay_WLED_icons_2x1); //brightness icon
         drawGlyph( 5, 0, 2, u8x8_4LineDisplay_WLED_icons_2x1); //speed icon
-        drawGlyph(9, 0, 3, u8x8_4LineDisplay_WLED_icons_2x1); //intensity icon
-        drawGlyph(14, 2, 4, u8x8_4LineDisplay_WLED_icons_2x1); //palette icon
-        drawGlyph(14, 3, 5, u8x8_4LineDisplay_WLED_icons_2x1); //effect icon
+        drawGlyph( 9, 0, 3, u8x8_4LineDisplay_WLED_icons_2x1); //intensity icon
+        drawGlyph(15, 2, 4, u8x8_4LineDisplay_WLED_icons_1x1); //palette icon
+        drawGlyph(15, 3, 5, u8x8_4LineDisplay_WLED_icons_1x1); //effect icon
       }
     }
 
@@ -513,7 +512,7 @@ class FourLineDisplayUsermod : public Usermod {
       drawGlyph(col, row,   (wificonnected ? 20 : 0), u8x8_4LineDisplay_WLED_icons_1x1, true); // wifi icon
       if (lineHeight==2) { col--; } else { row++; }
       drawGlyph(col, row,          (bri > 0 ? 9 : 0), u8x8_4LineDisplay_WLED_icons_1x1, true); // power icon
-      if (lineHeight==2) { col--; } else { row++; col = row = 0; }
+      if (lineHeight==2) { col--; } else { col = row = 0; }
       drawGlyph(col, row, (nightlightActive ? 6 : 0), u8x8_4LineDisplay_WLED_icons_1x1, true); // moon icon for nighlight mode
     }
     
@@ -536,11 +535,13 @@ class FourLineDisplayUsermod : public Usermod {
      // on the appropriate line (row). 
     void showCurrentEffectOrPalette(int inputEffPal, const char *qstring, uint8_t row) {
       char lineBuffer[MAX_JSON_CHARS];
-      knownMode = effectCurrent;
-      knownPalette = effectPalette;
       if (overlayUntil == 0) {
         // Find the mode name in JSON
         uint8_t printedChars = extractModeName(inputEffPal, qstring, lineBuffer, MAX_JSON_CHARS-1);
+        if (lineBuffer[0]=='*' && lineBuffer[1]==' ') {
+          for (byte i=2; i<=printedChars; i++) lineBuffer[i-2] = lineBuffer[i]; //include '\0'
+          printedChars -= 2;
+        }
         if (lineHeight == 2) {                                 // use this code for 8 line display
           char smallBuffer1[MAX_MODE_LINE_SPACE];
           char smallBuffer2[MAX_MODE_LINE_SPACE];
@@ -576,15 +577,12 @@ class FourLineDisplayUsermod : public Usermod {
             drawString(1, row*lineHeight+1, smallBuffer2, true);
           }
         } else {                                             // use this code for 4 ling displays
-          char smallBuffer3[MAX_MODE_LINE_SPACE];
+          char smallBuffer3[MAX_MODE_LINE_SPACE+1];          // uses 1x1 icon for mode/palette
           uint8_t smallChars3 = 0;
-          if (printedChars > MAX_MODE_LINE_SPACE-1) printedChars = MAX_MODE_LINE_SPACE-1;
-          for (uint8_t i = 0; i < printedChars; i++) smallBuffer3[smallChars3++] = lineBuffer[i];
-          for (; smallChars3 < (MAX_MODE_LINE_SPACE-1); smallChars3++) smallBuffer3[smallChars3]=' ';
+          for (uint8_t i = 0; i < MAX_MODE_LINE_SPACE; i++) smallBuffer3[smallChars3++] = (i >= printedChars) ? ' ' : lineBuffer[i];
           smallBuffer3[smallChars3] = 0;
           drawString(1, row*lineHeight, smallBuffer3, true);
         }
-        lastRedraw = millis();
       }
     }
 
