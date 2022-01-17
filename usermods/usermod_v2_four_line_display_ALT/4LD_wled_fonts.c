@@ -5,7 +5,7 @@
 
 /*
   Fontname: wled_logo_akemi_4x4
-  Copyright: 
+  Copyright: Benji (https://github.com/proto-molecule)
   Glyphs: 3/3
   BBX Build Mode: 3
   * this logo ...WLED/images/wled_logo_akemi.png
@@ -29,7 +29,7 @@ const uint8_t u8x8_wled_logo_akemi_4x4[388] U8X8_FONT_SECTION("u8x8_wled_logo_ak
 
 /*
   Fontname: wled_logo_akemi_5x5
-  Copyright: Created with Fony 1.4.7
+  Copyright: Benji (https://github.com/proto-molecule)
   Glyphs: 3/3
   BBX Build Mode: 3
   * this logo ...WLED/images/wled_logo_akemi.png
@@ -60,7 +60,7 @@ const uint8_t u8x8_wled_logo_akemi_5x5[604] U8X8_FONT_SECTION("u8x8_wled_logo_ak
 
 /*
   Fontname: wled_logo_2x2
-  Copyright: Created with Fony 1.4.7
+  Copyright: Benji (https://github.com/proto-molecule)
   Glyphs: 4/4
   BBX Build Mode: 3
   * this logo  https://cdn.discordapp.com/attachments/706623245935444088/927361780613799956/wled_scaled.png
@@ -106,7 +106,7 @@ const uint8_t u8x8_wled_logo_4x4[517] U8X8_FONT_SECTION("u8x8_wled_logo_4x4") =
 
 /*
   Fontname: 4LineDisplay_WLED_icons_1x
-  Copyright: 
+  Copyright: Benji (https://github.com/proto-molecule)
   Glyphs: 13/13
   BBX Build Mode: 3
   * 1  = sun
@@ -136,7 +136,7 @@ const uint8_t u8x8_4LineDisplay_WLED_icons_1x1[172] U8X8_FONT_SECTION("u8x8_4Lin
 
 /*
   Fontname: 4LineDisplay_WLED_icons_2x1
-  Copyright: Created with Fony 1.4.7
+  Copyright: Benji (https://github.com/proto-molecule)
   Glyphs: 11/11
   BBX Build Mode: 3
   * 1  = sun
@@ -197,7 +197,7 @@ const uint8_t u8x8_4LineDisplay_WLED_icons_2x2[389] U8X8_FONT_SECTION("u8x8_4Lin
 
 /*
   Fontname: 4LineDisplay_WLED_icons_3x
-  Copyright: Created with Fony 1.4.7
+  Copyright: Benji (https://github.com/proto-molecule)
   Glyphs: 11/11
   BBX Build Mode: 3
   * 1  = sun
@@ -247,7 +247,7 @@ const uint8_t u8x8_4LineDisplay_WLED_icons_3x3[868] U8X8_FONT_SECTION("u8x8_4Lin
 
 /*
   Fontname: 4LineDisplay_WLED_icons_4x
-  Copyright: 
+  Copyright: Benji (https://github.com/proto-molecule)
   Glyphs: 11/11
   BBX Build Mode: 3
   * 1  = sun
@@ -318,7 +318,7 @@ const uint8_t u8x8_4LineDisplay_WLED_icons_4x4[1540] U8X8_FONT_SECTION("u8x8_4Li
 
 /*
   Fontname: 4LineDisplay_WLED_icons_6x
-  Copyright: 
+  Copyright: Benji (https://github.com/proto-molecule)
   Glyphs: 11/11
   BBX Build Mode: 3
   * 1  = sun
@@ -334,6 +334,7 @@ const uint8_t u8x8_4LineDisplay_WLED_icons_4x4[1540] U8X8_FONT_SECTION("u8x8_4Li
   * 11 = heart
   * 12 = Akemi
 */
+// you can replace this (wasteful) font by using 3x3 variant with draw2x2Glyph()
 const uint8_t u8x8_4LineDisplay_WLED_icons_6x6[3460] U8X8_FONT_SECTION("u8x8_4LineDisplay_WLED_icons_6x6") = 
   "\1\14\6\6\0\0\0\0\0\0\200\300\300\300\300\200\0\0\0\0\0\0\0\0\0\36\77\77\77\77\36\0"
   "\0\0\0\0\0\0\0\0\200\300\300\300\300\200\0\0\0\0\0\0\0\0\0\0\0\0\7\17\17\17\17\7"
@@ -449,7 +450,7 @@ const uint8_t u8x8_4LineDisplay_WLED_icons_6x6[3460] U8X8_FONT_SECTION("u8x8_4Li
 
 /*
   Fontname: akemi_8x8
-  Copyright: Created with Fony 1.4.7
+  Copyright: Benji (https://github.com/proto-molecule)
   Glyphs: 1/1
   BBX Build Mode: 3
   * 12 = Akemi

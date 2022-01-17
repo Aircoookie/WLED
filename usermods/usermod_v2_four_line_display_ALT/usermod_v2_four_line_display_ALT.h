@@ -259,7 +259,7 @@ class FourLineDisplayUsermod : public Usermod {
 
       initDone = true;
       DEBUG_PRINTLN(F("Starting display."));
-      /*if (!(type == SSD1306_SPI || type == SSD1306_SPI64))*/ u8x8->setBusClock(ioFrequency);  // can be used for SPI too
+      u8x8->setBusClock(ioFrequency);  // can be used for SPI too
       u8x8->begin();
       setFlipMode(flip);
       setContrast(contrast); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
@@ -539,6 +539,7 @@ class FourLineDisplayUsermod : public Usermod {
         // Find the mode name in JSON
         uint8_t printedChars = extractModeName(inputEffPal, qstring, lineBuffer, MAX_JSON_CHARS-1);
         if (lineBuffer[0]=='*' && lineBuffer[1]==' ') {
+          // remove "* " from dynamic palettes
           for (byte i=2; i<=printedChars; i++) lineBuffer[i-2] = lineBuffer[i]; //include '\0'
           printedChars -= 2;
         }
@@ -548,7 +549,7 @@ class FourLineDisplayUsermod : public Usermod {
           uint8_t smallChars1 = 0;
           uint8_t smallChars2 = 0;
           if (printedChars < MAX_MODE_LINE_SPACE) {            // use big font if the text fits
-            for (;printedChars < (MAX_MODE_LINE_SPACE-1); printedChars++) lineBuffer[printedChars]=' ';
+            while (printedChars < (MAX_MODE_LINE_SPACE-1)) lineBuffer[printedChars++]=' ';
             lineBuffer[printedChars] = 0;
             drawString(1, row*lineHeight, lineBuffer);
           } else {                                             // for long names divide the text into 2 lines and print them small
@@ -569,10 +570,10 @@ class FourLineDisplayUsermod : public Usermod {
                   break;
               }
             }
-            for (; smallChars1 < (MAX_MODE_LINE_SPACE-1); smallChars1++) smallBuffer1[smallChars1]=' ';
+            while (smallChars1 < (MAX_MODE_LINE_SPACE-1)) smallBuffer1[smallChars1++]=' ';
             smallBuffer1[smallChars1] = 0;
             drawString(1, row*lineHeight, smallBuffer1, true);
-            for (; smallChars2 < (MAX_MODE_LINE_SPACE-1); smallChars2++) smallBuffer2[smallChars2]=' '; 
+            while (smallChars2 < (MAX_MODE_LINE_SPACE-1)) smallBuffer2[smallChars2++]=' '; 
             smallBuffer2[smallChars2] = 0;
             drawString(1, row*lineHeight+1, smallBuffer2, true);
           }
@@ -614,7 +615,7 @@ class FourLineDisplayUsermod : public Usermod {
       if (!wakeDisplay()) clear();
       // Print the overlay
       if (glyphType>0 && glyphType<255) {
-        if (lineHeight == 2) drawGlyph(5, 0, glyphType, u8x8_4LineDisplay_WLED_icons_6x6, true);
+        if (lineHeight == 2) drawGlyph(5, 0, glyphType, u8x8_4LineDisplay_WLED_icons_6x6, true); // use 3x3 font with draw2x2Glyph() if flash runs short and comment out 6x6 font
         else                 drawGlyph(6, 0, glyphType, u8x8_4LineDisplay_WLED_icons_3x3, true);
       }
       if (line1) {
@@ -651,7 +652,7 @@ class FourLineDisplayUsermod : public Usermod {
             break;
           case 2:
             //Akemi
-            //draw2x2Glyph( 4, 0, 12, u8x8_4LineDisplay_WLED_icons_4x4);
+            //draw2x2Glyph( 5, 0, 12, u8x8_4LineDisplay_WLED_icons_3x3); // use this if flash runs short and comment out 6x6 font
             drawGlyph( 5, 0, 12, u8x8_4LineDisplay_WLED_icons_6x6, true);
             drawString(6, 6, "WLED");
             break;
@@ -673,7 +674,7 @@ class FourLineDisplayUsermod : public Usermod {
             break;
           case 2:
             //Akemi
-            //drawGlyph( 6, 0, 12, u8x8_4LineDisplay_WLED_icons_4x4);
+            //drawGlyph( 6, 0, 12, u8x8_4LineDisplay_WLED_icons_4x4); // a bit nicer, but uses extra 1.5k flash
             draw2x2Glyph( 6, 0, 12, u8x8_4LineDisplay_WLED_icons_2x2);
             break;
         }
@@ -953,4 +954,4 @@ const char FourLineDisplayUsermod::_sleepMode[]       PROGMEM = "sleepMode";
 const char FourLineDisplayUsermod::_clockMode[]       PROGMEM = "clockMode";
 const char FourLineDisplayUsermod::_showSeconds[]     PROGMEM = "showSeconds";
 const char FourLineDisplayUsermod::_busClkFrequency[] PROGMEM = "i2c-freq-kHz";
-const char FourLineDisplayUsermod::_contrastFixForType3[]     PROGMEM = "contrastFixForType3";
+const char FourLineDisplayUsermod::_contrastFixForType3[] PROGMEM = "contrastFixForType3";
