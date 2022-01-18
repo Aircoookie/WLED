@@ -119,6 +119,7 @@ class FourLineDisplayUsermod : public Usermod {
 
     // HW interface & configuration
     U8X8 *u8x8 = nullptr;           // pointer to U8X8 display object
+
     #ifndef FLD_SPI_DEFAULT
     int8_t ioPin[5] = {FLD_PIN_SCL, FLD_PIN_SDA, -1, -1, -1};        // I2C pins: SCL, SDA
     uint32_t ioFrequency = 400000;  // in Hz (minimum is 100000, baseline is 400000 and maximum should be 3400000)
@@ -126,6 +127,7 @@ class FourLineDisplayUsermod : public Usermod {
     int8_t ioPin[5] = {FLD_PIN_CLOCKSPI, FLD_PIN_DATASPI, FLD_PIN_CS, FLD_PIN_DC, FLD_PIN_RESET}; // SPI pins: CLK, MOSI, CS, DC, RST
     uint32_t ioFrequency = 1000000;  // in Hz (minimum is 500kHz, baseline is 1MHz and maximum should be 20MHz)
     #endif
+
     DisplayType type = FLD_TYPE;    // display type
     bool flip = false;              // flip display 180°
     uint8_t contrast = 10;          // screen contrast
@@ -136,7 +138,7 @@ class FourLineDisplayUsermod : public Usermod {
     bool clockMode = false;         // display clock
     bool showSeconds = true;        // display clock with seconds
     bool enabled = true;
-    bool contrastFixForType3 = false;
+    bool contrastFix = false;
 
     // Next variables hold the previous known values to determine if redraw is
     // required.
@@ -176,13 +178,22 @@ class FourLineDisplayUsermod : public Usermod {
     static const char _clockMode[];
     static const char _showSeconds[];
     static const char _busClkFrequency[];
-    static const char _contrastFixForType3[];
+    static const char _contrastFix[];
 
     // If display does not work or looks corrupted check the
     // constructor reference:
     // https://github.com/olikraus/u8g2/wiki/u8x8setupcpp
     // or check the gallery:
     // https://github.com/olikraus/u8g2/wiki/gallery
+
+    // some displays need this to properly apply contrast
+    void setVcomh(bool highContrast) {
+      u8x8_t *u8x8_struct = u8x8->getU8x8();
+      u8x8_cad_StartTransfer(u8x8_struct);
+      u8x8_cad_SendCmd(u8x8_struct, 0x0db); //address of value
+      u8x8_cad_SendArg(u8x8_struct, highContrast ? 0x000 : 0x040); //value 0 for fix, reboot resets default back to 64
+      u8x8_cad_EndTransfer(u8x8_struct);
+    }
 
   public:
 
@@ -191,9 +202,9 @@ class FourLineDisplayUsermod : public Usermod {
     void setup() {
       if (type == NONE || !enabled) return;
 
-      bool isHW;
+      bool isHW, isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64);
       PinOwner po = PinOwner::UM_FourLineDisplay;
-      if (type == SSD1306_SPI || type == SSD1306_SPI64) {
+      if (isSPI) {
         isHW = (ioPin[0]==HW_PIN_CLOCKSPI && ioPin[1]==HW_PIN_DATASPI);
         PinManagerPinType pins[5] = { { ioPin[0], true }, { ioPin[1], true }, { ioPin[2], true }, { ioPin[3], true }, { ioPin[4], true }};
         if (!pinManager.allocateMultiplePins(pins, 5, po)) { type=NONE; return; }
@@ -205,46 +216,72 @@ class FourLineDisplayUsermod : public Usermod {
       }
 
       DEBUG_PRINTLN(F("Allocating display."));
+/*
+// At some point it may be good to not new/delete U8X8 object but use this instead
+// (does not currently work)
+//-------------------------------------------------------------------------------
+      switch (type) {
+        case SSD1306:
+          u8x8_Setup(u8x8.getU8x8(), u8x8_d_ssd1306_128x32_univision, u8x8_cad_ssd13xx_fast_i2c, u8x8_byte_arduino_sw_i2c, u8x8_gpio_and_delay_arduino);
+          break;
+        case SH1106:
+          u8x8_Setup(u8x8.getU8x8(), u8x8_d_sh1106_128x64_winstar, u8x8_cad_ssd13xx_i2c, u8x8_byte_arduino_sw_i2c, u8x8_gpio_and_delay_arduino);
+          break;
+        case SSD1306_64:
+          u8x8_Setup(u8x8.getU8x8(), u8x8_d_ssd1306_128x64_noname, u8x8_cad_ssd13xx_fast_i2c, u8x8_byte_arduino_sw_i2c, u8x8_gpio_and_delay_arduino);
+          break;
+        case SSD1305:
+          u8x8_Setup(u8x8.getU8x8(), u8x8_d_ssd1305_128x32_adafruit, u8x8_cad_ssd13xx_i2c, u8x8_byte_arduino_hw_i2c, u8x8_gpio_and_delay_arduino);
+          break;
+        case SSD1305_64:
+          u8x8_Setup(u8x8.getU8x8(), u8x8_d_ssd1305_128x64_adafruit, u8x8_cad_ssd13xx_i2c, u8x8_byte_arduino_sw_i2c, u8x8_gpio_and_delay_arduino);
+          break;
+        case SSD1306_SPI:
+          u8x8_Setup(u8x8.getU8x8(), u8x8_d_ssd1306_128x32_univision, u8x8_cad_001, u8x8_byte_arduino_4wire_sw_spi, u8x8_gpio_and_delay_arduino);
+          break;
+        case SSD1306_SPI64:
+          u8x8_Setup(u8x8.getU8x8(), u8x8_d_ssd1306_128x64_noname, u8x8_cad_001, u8x8_byte_arduino_4wire_sw_spi, u8x8_gpio_and_delay_arduino);
+          break;
+        default:
+          type = NONE;
+          return;
+      }
+      if (isSPI) {
+        if (!isHW) u8x8_SetPin_4Wire_SW_SPI(u8x8.getU8x8(), ioPin[0], ioPin[1], ioPin[2], ioPin[3], ioPin[4]);
+        else       u8x8_SetPin_4Wire_HW_SPI(u8x8.getU8x8(), ioPin[2], ioPin[3], ioPin[4]); // Pins are cs, dc, reset
+      } else {
+        if (!isHW) u8x8_SetPin_SW_I2C(u8x8.getU8x8(), ioPin[0], ioPin[1], U8X8_PIN_NONE); // SCL, SDA, reset
+        else       u8x8_SetPin_HW_I2C(u8x8.getU8x8(), U8X8_PIN_NONE, ioPin[0], ioPin[1]); // Pins are Reset, SCL, SDA
+      }
+*/
       switch (type) {
         case SSD1306:
           if (!isHW) u8x8 = (U8X8 *) new U8X8_SSD1306_128X32_UNIVISION_SW_I2C(ioPin[0], ioPin[1]); // SCL, SDA, reset
           else       u8x8 = (U8X8 *) new U8X8_SSD1306_128X32_UNIVISION_HW_I2C(U8X8_PIN_NONE, ioPin[0], ioPin[1]); // Pins are Reset, SCL, SDA
-          lineHeight = 1;
           break;
         case SH1106:
           if (!isHW) u8x8 = (U8X8 *) new U8X8_SH1106_128X64_WINSTAR_SW_I2C(ioPin[0], ioPin[1]); // SCL, SDA, reset
           else       u8x8 = (U8X8 *) new U8X8_SH1106_128X64_WINSTAR_HW_I2C(U8X8_PIN_NONE, ioPin[0], ioPin[1]); // Pins are Reset, SCL, SDA
-          lineHeight = 2;
           break;
         case SSD1306_64:
-          if (contrastFixForType3){
-              if (!isHW) u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_VCOMH0_SW_I2C(ioPin[0], ioPin[1]); // SCL, SDA, reset
-              else       u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_VCOMH0_HW_I2C(U8X8_PIN_NONE, ioPin[0], ioPin[1]); // Pins are Reset, SCL, SDA
-            }else{
-              if (!isHW) u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_SW_I2C(ioPin[0], ioPin[1]); // SCL, SDA, reset
-              else       u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_HW_I2C(U8X8_PIN_NONE, ioPin[0], ioPin[1]); // Pins are Reset, SCL, SDA
-            }
-          lineHeight = 2;
+          if (!isHW) u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_SW_I2C(ioPin[0], ioPin[1]); // SCL, SDA, reset
+          else       u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_HW_I2C(U8X8_PIN_NONE, ioPin[0], ioPin[1]); // Pins are Reset, SCL, SDA
           break;
         case SSD1305:
           if (!isHW) u8x8 = (U8X8 *) new U8X8_SSD1305_128X32_NONAME_SW_I2C(ioPin[0], ioPin[1]); // SCL, SDA, reset
           else       u8x8 = (U8X8 *) new U8X8_SSD1305_128X32_ADAFRUIT_HW_I2C(U8X8_PIN_NONE, ioPin[0], ioPin[1]); // Pins are Reset, SCL, SDA
-          lineHeight = 1;
           break;
         case SSD1305_64:
           if (!isHW) u8x8 = (U8X8 *) new U8X8_SSD1305_128X64_ADAFRUIT_SW_I2C(ioPin[0], ioPin[1]); // SCL, SDA, reset
           else       u8x8 = (U8X8 *) new U8X8_SSD1305_128X64_ADAFRUIT_HW_I2C(U8X8_PIN_NONE, ioPin[0], ioPin[1]); // Pins are Reset, SCL, SDA
-          lineHeight = 2;
           break;
         case SSD1306_SPI:
           if (!isHW)  u8x8 = (U8X8 *) new U8X8_SSD1306_128X32_UNIVISION_4W_SW_SPI(ioPin[0], ioPin[1], ioPin[2], ioPin[3], ioPin[4]);
           else        u8x8 = (U8X8 *) new U8X8_SSD1306_128X32_UNIVISION_4W_HW_SPI(ioPin[2], ioPin[3], ioPin[4]); // Pins are cs, dc, reset
-          lineHeight = 1;
           break;
         case SSD1306_SPI64:
           if (!isHW) u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_4W_SW_SPI(ioPin[0], ioPin[1], ioPin[2], ioPin[3], ioPin[4]);
           else       u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_4W_HW_SPI(ioPin[2], ioPin[3], ioPin[4]); // Pins are cs, dc, reset
-          lineHeight = 2;
           break;
         default:
           u8x8 = nullptr;
@@ -252,20 +289,22 @@ class FourLineDisplayUsermod : public Usermod {
 
       if (nullptr == u8x8) {
           DEBUG_PRINTLN(F("Display init failed."));
-          pinManager.deallocateMultiplePins((const uint8_t*)ioPin, (type == SSD1306_SPI || type == SSD1306_SPI64) ? 5 : 2, po);
+          pinManager.deallocateMultiplePins((const uint8_t*)ioPin, isSPI ? 5 : 2, po);
           type = NONE;
           return;
       }
 
-      initDone = true;
+      lineHeight = u8x8->getRows() > 4 ? 2 : 1;
       DEBUG_PRINTLN(F("Starting display."));
       u8x8->setBusClock(ioFrequency);  // can be used for SPI too
       u8x8->begin();
       setFlipMode(flip);
+      setVcomh(contrastFix);
       setContrast(contrast); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
       setPowerSave(0);
       //drawString(0, 0, "Loading...");
       overlayLogo(3500);
+      initDone = true;
     }
 
     // gets called every time WiFi is (re-)connected. Initialize own network
@@ -852,7 +891,7 @@ class FourLineDisplayUsermod : public Usermod {
       top["help4Type"]           = F("1=SSD1306,2=SH1106,3=SSD1306_128x64,4=SSD1305,5=SSD1305_128x64,6=SSD1306_SPI,7=SSD1306_SPI_128x64"); // help for Settings page
       top[FPSTR(_flip)]          = (bool) flip;
       top[FPSTR(_contrast)]      = contrast;
-      top[FPSTR(_contrastFixForType3)]     = (bool) contrastFixForType3;
+      top[FPSTR(_contrastFix)]   = (bool) contrastFix;
       top[FPSTR(_refreshRate)]   = refreshRate;
       top[FPSTR(_screenTimeOut)] = screenTimeout/1000;
       top[FPSTR(_sleepMode)]     = (bool) sleepMode;
@@ -893,7 +932,7 @@ class FourLineDisplayUsermod : public Usermod {
       sleepMode     = top[FPSTR(_sleepMode)] | sleepMode;
       clockMode     = top[FPSTR(_clockMode)] | clockMode;
       showSeconds   = top[FPSTR(_showSeconds)] | showSeconds;
-      contrastFixForType3   = top[FPSTR(_contrastFixForType3)] | contrastFixForType3;
+      contrastFix   = top[FPSTR(_contrastFix)] | contrastFix;
       if (newType == SSD1306_SPI || newType == SSD1306_SPI64)
         ioFrequency = min(20000, max(500, (int)(top[FPSTR(_busClkFrequency)] | ioFrequency/1000))) * 1000;  // limit frequency
       else
@@ -922,16 +961,18 @@ class FourLineDisplayUsermod : public Usermod {
           } else type = newType;
           setup();
           needsRedraw |= true;
+        } else {
+          u8x8->setBusClock(ioFrequency); // can be used for SPI too
+          setVcomh(contrastFix);
+          setContrast(contrast);
+          setFlipMode(flip);
         }
-        u8x8->setBusClock(ioFrequency); // can be used for SPI too
-        setContrast(contrast);
-        setFlipMode(flip);
         knownHour = 99;
         if (needsRedraw && !wakeDisplay()) redraw(true);
         else overlayLogo(3500);
       }
       // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
-      return !top[FPSTR(_refreshRate)].isNull();
+      return !top[FPSTR(_contrastFix)].isNull();
     }
 
     /*
@@ -954,4 +995,4 @@ const char FourLineDisplayUsermod::_sleepMode[]       PROGMEM = "sleepMode";
 const char FourLineDisplayUsermod::_clockMode[]       PROGMEM = "clockMode";
 const char FourLineDisplayUsermod::_showSeconds[]     PROGMEM = "showSeconds";
 const char FourLineDisplayUsermod::_busClkFrequency[] PROGMEM = "i2c-freq-kHz";
-const char FourLineDisplayUsermod::_contrastFixForType3[] PROGMEM = "contrastFixForType3";
+const char FourLineDisplayUsermod::_contrastFix[]     PROGMEM = "contrastFix";
