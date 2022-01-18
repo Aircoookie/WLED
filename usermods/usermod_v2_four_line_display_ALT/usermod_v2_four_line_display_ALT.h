@@ -118,6 +118,7 @@ class FourLineDisplayUsermod : public Usermod {
     bool initDone = false;
 
     // HW interface & configuration
+    typedef u8x8_t(*u8x8prt);
     U8X8 *u8x8 = nullptr;           // pointer to U8X8 display object
     #ifndef FLD_SPI_DEFAULT
     int8_t ioPin[5] = {FLD_PIN_SCL, FLD_PIN_SDA, -1, -1, -1};        // I2C pins: SCL, SDA
@@ -136,7 +137,7 @@ class FourLineDisplayUsermod : public Usermod {
     bool clockMode = false;         // display clock
     bool showSeconds = true;        // display clock with seconds
     bool enabled = true;
-    bool contrastFixForType3 = false;
+    bool contrastFix = false;
 
     // Next variables hold the previous known values to determine if redraw is
     // required.
@@ -176,7 +177,7 @@ class FourLineDisplayUsermod : public Usermod {
     static const char _clockMode[];
     static const char _showSeconds[];
     static const char _busClkFrequency[];
-    static const char _contrastFixForType3[];
+    static const char _contrastFix[];
 
     // If display does not work or looks corrupted check the
     // constructor reference:
@@ -217,13 +218,8 @@ class FourLineDisplayUsermod : public Usermod {
           lineHeight = 2;
           break;
         case SSD1306_64:
-          if (contrastFixForType3){
-              if (!isHW) u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_VCOMH0_SW_I2C(ioPin[0], ioPin[1]); // SCL, SDA, reset
-              else       u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_VCOMH0_HW_I2C(U8X8_PIN_NONE, ioPin[0], ioPin[1]); // Pins are Reset, SCL, SDA
-            }else{
               if (!isHW) u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_SW_I2C(ioPin[0], ioPin[1]); // SCL, SDA, reset
               else       u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_HW_I2C(U8X8_PIN_NONE, ioPin[0], ioPin[1]); // Pins are Reset, SCL, SDA
-            }
           lineHeight = 2;
           break;
         case SSD1305:
@@ -260,8 +256,10 @@ class FourLineDisplayUsermod : public Usermod {
       initDone = true;
       DEBUG_PRINTLN(F("Starting display."));
       /*if (!(type == SSD1306_SPI || type == SSD1306_SPI64))*/ u8x8->setBusClock(ioFrequency);  // can be used for SPI too
+      u8x8prt u8x8struct = u8x8->getU8x8();
       u8x8->begin();
       setFlipMode(flip);
+      setVcomh(u8x8struct);
       setContrast(contrast); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
       setPowerSave(0);
       //drawString(0, 0, "Loading...");
@@ -293,6 +291,13 @@ class FourLineDisplayUsermod : public Usermod {
     void setFlipMode(uint8_t mode) {
       if (type == NONE || !enabled) return;
       u8x8->setFlipMode(mode);
+    }
+    void setVcomh(u8x8_t *u8x8_struct){
+      if(contrastFix){
+        u8x8_cad_StartTransfer(u8x8_struct);
+        u8x8_cad_SendCmd(u8x8_struct, 0x0db );  //address of value
+        u8x8_cad_SendArg(u8x8_struct, 0x000 );  //value 0 for fix, reboot resets default back to 64
+        u8x8_cad_EndTransfer(u8x8_struct);}
     }
     void setContrast(uint8_t contrast) {
       if (type == NONE || !enabled) return;
@@ -851,7 +856,7 @@ class FourLineDisplayUsermod : public Usermod {
       top["help4Type"]           = F("1=SSD1306,2=SH1106,3=SSD1306_128x64,4=SSD1305,5=SSD1305_128x64,6=SSD1306_SPI,7=SSD1306_SPI_128x64"); // help for Settings page
       top[FPSTR(_flip)]          = (bool) flip;
       top[FPSTR(_contrast)]      = contrast;
-      top[FPSTR(_contrastFixForType3)]     = (bool) contrastFixForType3;
+      top[FPSTR(_contrastFix)]     = (bool) contrastFix;
       top[FPSTR(_refreshRate)]   = refreshRate;
       top[FPSTR(_screenTimeOut)] = screenTimeout/1000;
       top[FPSTR(_sleepMode)]     = (bool) sleepMode;
@@ -892,7 +897,7 @@ class FourLineDisplayUsermod : public Usermod {
       sleepMode     = top[FPSTR(_sleepMode)] | sleepMode;
       clockMode     = top[FPSTR(_clockMode)] | clockMode;
       showSeconds   = top[FPSTR(_showSeconds)] | showSeconds;
-      contrastFixForType3   = top[FPSTR(_contrastFixForType3)] | contrastFixForType3;
+      contrastFix   = top[FPSTR(_contrastFix)] | contrastFix;
       if (newType == SSD1306_SPI || newType == SSD1306_SPI64)
         ioFrequency = min(20000, max(500, (int)(top[FPSTR(_busClkFrequency)] | ioFrequency/1000))) * 1000;  // limit frequency
       else
@@ -953,4 +958,4 @@ const char FourLineDisplayUsermod::_sleepMode[]       PROGMEM = "sleepMode";
 const char FourLineDisplayUsermod::_clockMode[]       PROGMEM = "clockMode";
 const char FourLineDisplayUsermod::_showSeconds[]     PROGMEM = "showSeconds";
 const char FourLineDisplayUsermod::_busClkFrequency[] PROGMEM = "i2c-freq-kHz";
-const char FourLineDisplayUsermod::_contrastFixForType3[]     PROGMEM = "contrastFixForType3";
+const char FourLineDisplayUsermod::_contrastFix[]     PROGMEM = "contrastFix";
