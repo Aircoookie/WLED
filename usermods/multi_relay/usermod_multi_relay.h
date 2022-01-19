@@ -55,12 +55,12 @@ class MultiRelay : public Usermod {
     static const char _button[];
 
 
-    void publishMqtt(const char* state, int relay) {
+    void publishMqtt(int relay) {
       //Check if MQTT Connected, otherwise it will crash the 8266
       if (WLED_MQTT_CONNECTED){
         char subuf[64];
         sprintf_P(subuf, PSTR("%s/relay/%d"), mqttDeviceTopic, relay);
-        mqtt->publish(subuf, 0, false, state);
+        mqtt->publish(subuf, 0, false, _relay[relay].state ? "on" : "off");
       }
     }
 
@@ -105,7 +105,7 @@ class MultiRelay : public Usermod {
             for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
               int value = getValue(p->value(), ',', i);
               if (value==-1) {
-                error = F("There must be as much arugments as relays");
+                error = F("There must be as many arguments as relays");
               } else {
                 // Switch
                 if (_relay[i].external) switchRelay(i, (bool)value);
@@ -118,7 +118,7 @@ class MultiRelay : public Usermod {
             for (int i=0;i<MULTI_RELAY_MAX_RELAYS;i++) {
               int value = getValue(p->value(), ',', i);
               if (value==-1) {
-                error = F("There must be as mutch arugments as relays");
+                error = F("There must be as many arguments as relays");
               } else {
                 // Toggle
                 if (value && _relay[i].external) toggleRelay(i);
@@ -199,7 +199,7 @@ class MultiRelay : public Usermod {
       _relay[relay].state = mode;
       pinMode(_relay[relay].pin, OUTPUT);
       digitalWrite(_relay[relay].pin, mode ? !_relay[relay].mode : _relay[relay].mode);
-      publishMqtt(mode ? "on" : "off", relay);
+      publishMqtt(relay);
     }
 
     /**
@@ -252,6 +252,49 @@ class MultiRelay : public Usermod {
         strcpy(subuf, mqttDeviceTopic);
         strcat_P(subuf, PSTR("/relay/#"));
         mqtt->subscribe(subuf, 0);
+        publishHomeAssistantAutodiscovery();
+        for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
+            publishMqtt(i); //publish current state
+        }
+      }
+    }
+
+    void publishHomeAssistantAutodiscovery() {
+      for (uint8_t i = 0; i < MULTI_RELAY_MAX_RELAYS; i++) {
+        char uid[16], json_str[1024], buf[128];
+        size_t payload_size;
+        sprintf(uid, "%s_sw%d", escapedMac.c_str(), i);
+
+        if (_relay[i].pin >= 0 && _relay[i].external) {
+          StaticJsonDocument<1024> json;
+          sprintf(buf, "%s Switch %d", serverDescription, i); //max length: 33 + 8 + 3 = 44
+          json[F("name")] = buf;
+
+          sprintf(buf, "%s/relay/%d", mqttDeviceTopic, i); //max length: 33 + 7 + 3 = 43
+          json["~"] = buf;
+          strcat(buf, "/command");
+          mqtt->subscribe(buf, 0);
+
+          json[F("stat_t")] = "~";
+          json[F("cmd_t")] = "~/command";
+          json[F("pl_off")] = F("off");
+          json[F("pl_on")] = F("on");
+          json[F("uniq_id")] = uid;
+
+          strcpy(buf, mqttDeviceTopic); //max length: 33 + 7 = 40
+          strcat(buf, "/status");
+          json[F("avty_t")] = buf;
+          json[F("pl_avail")] = F("online");
+          json[F("pl_not_avail")] = F("offline");
+          //TODO: dev
+          payload_size = serializeJson(json, json_str);
+        } else {
+          //Unpublish disabled or internal relays
+          json_str[0] = 0;
+          payload_size = 0;
+        }
+        sprintf(buf, "homeassistant/switch/%s/config", uid);
+        mqtt->publish(buf, 0, true, json_str, payload_size);
       }
     }
 
