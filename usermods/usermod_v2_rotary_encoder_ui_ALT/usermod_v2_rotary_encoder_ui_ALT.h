@@ -163,6 +163,8 @@ private:
   byte presetHigh = 0;
   byte presetLow = 0;
 
+  bool applyToAll = true;
+
   bool initDone = false;
   bool enabled = true;
 
@@ -174,6 +176,7 @@ private:
   static const char _SW_pin[];
   static const char _presetHigh[];
   static const char _presetLow[];
+  static const char _applyToAll[];
 
   /**
    * Sort the modes and palettes to the index arrays
@@ -452,6 +455,7 @@ public:
     //bool fxChanged = strip.setEffectConfig(effectCurrent, effectSpeed, effectIntensity, effectPalette);
     //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (No notification)
     // 6: fx changed 7: hue 8: preset cycle 9: blynk 10: alexa
+    setValuesFromMainSeg(); //to make transition work on main segment
     colorUpdated(CALL_MODE_DIRECT_CHANGE);
     updateInterfaces(CALL_MODE_DIRECT_CHANGE);
   }
@@ -482,6 +486,17 @@ public:
   #endif
     effectCurrentIndex = max(min((increase ? effectCurrentIndex+1 : effectCurrentIndex-1), strip.getModeCount()-1), 0);
     effectCurrent = modes_alpha_indexes[effectCurrentIndex];
+    effectChanged = true;
+    if (applyToAll) {
+      for (byte i=0; i<strip.getMaxSegments(); i++) {
+        WS2812FX::Segment& seg = strip.getSegment(i);
+        if (!seg.isActive()) continue;
+        strip.setMode(i, effectCurrent);
+      }
+    } else {
+      WS2812FX::Segment& seg = strip.getSegment(strip.getMainSegmentId());
+      strip.setMode(strip.getMainSegmentId(), effectCurrent);
+    }
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
     display->showCurrentEffectOrPalette(effectCurrent, JSON_mode_names, 3);
@@ -498,6 +513,17 @@ public:
     }
   #endif
     effectSpeed = max(min((increase ? effectSpeed+fadeAmount : effectSpeed-fadeAmount), 255), 0);
+    effectChanged = true;
+    if (applyToAll) {
+      for (byte i=0; i<strip.getMaxSegments(); i++) {
+        WS2812FX::Segment& seg = strip.getSegment(i);
+        if (!seg.isActive()) continue;
+        seg.speed = effectSpeed;
+      }
+    } else {
+      WS2812FX::Segment& seg = strip.getSegment(strip.getMainSegmentId());
+      seg.speed = effectSpeed;
+    }
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
     display->updateSpeed();
@@ -514,6 +540,17 @@ public:
     }
   #endif
     effectIntensity = max(min((increase ? effectIntensity+fadeAmount : effectIntensity-fadeAmount), 255), 0);
+    effectChanged = true;
+    if (applyToAll) {
+      for (byte i=0; i<strip.getMaxSegments(); i++) {
+        WS2812FX::Segment& seg = strip.getSegment(i);
+        if (!seg.isActive()) continue;
+        seg.intensity = effectIntensity;
+      }
+    } else {
+      WS2812FX::Segment& seg = strip.getSegment(strip.getMainSegmentId());
+      seg.intensity = effectIntensity;
+    }
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
     display->updateIntensity();
@@ -531,6 +568,17 @@ public:
   #endif
     effectPaletteIndex = max(min((increase ? effectPaletteIndex+1 : effectPaletteIndex-1), strip.getPaletteCount()-1), 0);
     effectPalette = palettes_alpha_indexes[effectPaletteIndex];
+    effectChanged = true;
+    if (applyToAll) {
+      for (byte i=0; i<strip.getMaxSegments(); i++) {
+        WS2812FX::Segment& seg = strip.getSegment(i);
+        if (!seg.isActive()) continue;
+        seg.palette = effectPalette;
+      }
+    } else {
+      WS2812FX::Segment& seg = strip.getSegment(strip.getMainSegmentId());
+      seg.palette = effectPalette;
+    }
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
     display->showCurrentEffectOrPalette(effectPalette, JSON_palette_names, 2);
@@ -548,8 +596,17 @@ public:
   #endif
     currentHue1 = max(min((increase ? currentHue1+fadeAmount : currentHue1-fadeAmount), 255), 0);
     colorHStoRGB(currentHue1*256, currentSat1, col);
-    strip.applyToAllSelected = true;
-    strip.setColor(0, colorFromRgbw(col));
+    colorChanged = true; 
+    if (applyToAll) {
+      for (byte i=0; i<strip.getMaxSegments(); i++) {
+        WS2812FX::Segment& seg = strip.getSegment(i);
+        if (!seg.isActive()) continue;
+        seg.colors[0] = RGBW32(col[0], col[1], col[2], col[3]);
+      }
+    } else {
+      WS2812FX::Segment& seg = strip.getSegment(strip.getMainSegmentId());
+      seg.colors[0] = RGBW32(col[0], col[1], col[2], col[3]);
+    }
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
     display->updateRedrawTime();
@@ -566,8 +623,16 @@ public:
   #endif
     currentSat1 = max(min((increase ? currentSat1+fadeAmount : currentSat1-fadeAmount), 255), 0);
     colorHStoRGB(currentHue1*256, currentSat1, col);
-    strip.applyToAllSelected = true;
-    strip.setColor(0, colorFromRgbw(col));
+    if (applyToAll) {
+      for (byte i=0; i<strip.getMaxSegments(); i++) {
+        WS2812FX::Segment& seg = strip.getSegment(i);
+        if (!seg.isActive()) continue;
+        seg.colors[0] = RGBW32(col[0], col[1], col[2], col[3]);
+      }
+    } else {
+      WS2812FX::Segment& seg = strip.getSegment(strip.getMainSegmentId());
+      seg.colors[0] = RGBW32(col[0], col[1], col[2], col[3]);
+    }
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
     display->updateRedrawTime();
@@ -650,6 +715,7 @@ public:
     top[FPSTR(_SW_pin)]  = pinC;
     top[FPSTR(_presetLow)]  = presetLow;
     top[FPSTR(_presetHigh)] = presetHigh;
+    top[FPSTR(_applyToAll)] = applyToAll;
     DEBUG_PRINTLN(F("Rotary Encoder config saved."));
   }
 
@@ -676,6 +742,7 @@ public:
     presetLow  = MIN(250,MAX(0,presetLow));
 
     enabled    = top[FPSTR(_enabled)] | enabled;
+    applyToAll = top[FPSTR(_applyToAll)] | applyToAll;
 
     DEBUG_PRINT(FPSTR(_name));
     if (!initDone) {
@@ -702,7 +769,7 @@ public:
       }
     }
     // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
-    return !top[FPSTR(_presetHigh)].isNull();
+    return !top[FPSTR(_applyToAll)].isNull();
   }
 
   /*
@@ -723,3 +790,4 @@ const char RotaryEncoderUIUsermod::_CLK_pin[]    PROGMEM = "CLK-pin";
 const char RotaryEncoderUIUsermod::_SW_pin[]     PROGMEM = "SW-pin";
 const char RotaryEncoderUIUsermod::_presetHigh[] PROGMEM = "preset-high";
 const char RotaryEncoderUIUsermod::_presetLow[]  PROGMEM = "preset-low";
+const char RotaryEncoderUIUsermod::_applyToAll[] PROGMEM = "apply-2-all-seg";
