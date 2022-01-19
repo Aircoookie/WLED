@@ -47,7 +47,7 @@
 
 // The last UI state, remove color and saturation option if diplay not active(too many options)
 #ifdef USERMOD_FOUR_LINE_DISPLAY
- #define LAST_UI_STATE 7
+ #define LAST_UI_STATE 8
 #else
  #define LAST_UI_STATE 4
 #endif
@@ -159,6 +159,9 @@ private:
   uint8_t effectPaletteIndex = 0;
   uint8_t knownMode = 0;
   uint8_t knownPalette = 0;
+
+  uint8_t currentCCT = 128;
+  bool isRgbw = false;
 
   byte presetHigh = 0;
   byte presetLow = 0;
@@ -279,6 +282,14 @@ public:
     pinMode(pinC, INPUT_PULLUP);
     loopTime = millis();
 
+    for (uint8_t s = 0; s < busses.getNumBusses(); s++) {
+      Bus *bus = busses.getBus(s);
+      if (!bus || bus->getLength()==0) break;
+      isRgbw |= bus->isRgbw();
+    }
+
+    currentCCT = (approximateKelvinFromRGB(RGBW32(col[0], col[1], col[2], col[3])) - 1900) >> 5;
+
     if (!initDone) sortModesAndPalettes();
 
 #ifdef USERMOD_FOUR_LINE_DISPLAY    
@@ -358,11 +369,11 @@ public:
         buttonLongPressed = false;
         buttonPressedBefore = false;
       }
-      if (buttonWaitTime && currentTime-buttonWaitTime>350 && !buttonPressedBefore) {
+      if (buttonWaitTime && currentTime-buttonWaitTime>350 && !buttonPressedBefore) { //same speed as in button.cpp
         buttonWaitTime = 0;
         char newState = select_state + 1;
         bool changedState = true;
-        if (newState > LAST_UI_STATE || (newState == 7 && presetHigh==0 && presetLow == 0)) newState = 0;
+        if (newState > LAST_UI_STATE || (newState == 8 && presetHigh==0 && presetLow == 0)) newState = 0;
         if (display != nullptr) {
           switch (newState) {
             case 0: changedState = changeState(PSTR("Brightness"),      1,   0,  1); break; //1  = sun
@@ -372,7 +383,8 @@ public:
             case 4: changedState = changeState(PSTR("Effect"),          3,   0,  5); break; //5  = puzzle piece
             case 5: changedState = changeState(PSTR("Main Color"),    255, 255,  7); break; //7  = brush
             case 6: changedState = changeState(PSTR("Saturation"),    255, 255,  8); break; //8  = contrast
-            case 7: changedState = changeState(PSTR("Preset"),        255, 255, 11); break; //11 = heart
+            case 7: changedState = changeState(PSTR("CCT"),           255, 255, 10); break; //10 = star
+            case 8: changedState = changeState(PSTR("Preset"),        255, 255, 11); break; //11 = heart
           }
         }
         if (changedState) select_state = newState;
@@ -392,7 +404,8 @@ public:
             case 4: changeEffect(true);          break;
             case 5: changeHue(true);             break;
             case 6: changeSat(true);             break;
-            case 7: changePreset(true);          break;
+            case 7: changeCCT(true);             break;
+            case 8: changePreset(true);          break;
           }
         }
         else if (Enc_B == HIGH)
@@ -405,7 +418,8 @@ public:
             case 4: changeEffect(false);          break;
             case 5: changeHue(false);             break;
             case 6: changeSat(false);             break;
-            case 7: changePreset(false);          break;
+            case 7: changeCCT(false);             break;
+            case 8: changePreset(false);          break;
           }
         }
       }
@@ -467,6 +481,7 @@ public:
       // Throw away wake up input
       return;
     }
+    display->updateRedrawTime();
   #endif
     bri = max(min((increase ? bri+fadeAmount : bri-fadeAmount), 255), 0);
     lampUdated();
@@ -483,6 +498,7 @@ public:
       // Throw away wake up input
       return;
     }
+    display->updateRedrawTime();
   #endif
     effectCurrentIndex = max(min((increase ? effectCurrentIndex+1 : effectCurrentIndex-1), strip.getModeCount()-1), 0);
     effectCurrent = modes_alpha_indexes[effectCurrentIndex];
@@ -494,7 +510,7 @@ public:
         strip.setMode(i, effectCurrent);
       }
     } else {
-      WS2812FX::Segment& seg = strip.getSegment(strip.getMainSegmentId());
+      //WS2812FX::Segment& seg = strip.getSegment(strip.getMainSegmentId());
       strip.setMode(strip.getMainSegmentId(), effectCurrent);
     }
     lampUdated();
@@ -511,6 +527,7 @@ public:
       // Throw away wake up input
       return;
     }
+    display->updateRedrawTime();
   #endif
     effectSpeed = max(min((increase ? effectSpeed+fadeAmount : effectSpeed-fadeAmount), 255), 0);
     effectChanged = true;
@@ -538,6 +555,7 @@ public:
       // Throw away wake up input
       return;
     }
+    display->updateRedrawTime();
   #endif
     effectIntensity = max(min((increase ? effectIntensity+fadeAmount : effectIntensity-fadeAmount), 255), 0);
     effectChanged = true;
@@ -565,6 +583,7 @@ public:
       // Throw away wake up input
       return;
     }
+    display->updateRedrawTime();
   #endif
     effectPaletteIndex = max(min((increase ? effectPaletteIndex+1 : effectPaletteIndex-1), strip.getPaletteCount()-1), 0);
     effectPalette = palettes_alpha_indexes[effectPaletteIndex];
@@ -593,6 +612,7 @@ public:
       // Throw away wake up input
       return;
     }
+    display->updateRedrawTime();
   #endif
     currentHue1 = max(min((increase ? currentHue1+fadeAmount : currentHue1-fadeAmount), 255), 0);
     colorHStoRGB(currentHue1*256, currentSat1, col);
@@ -608,9 +628,6 @@ public:
       seg.colors[0] = RGBW32(col[0], col[1], col[2], col[3]);
     }
     lampUdated();
-  #ifdef USERMOD_FOUR_LINE_DISPLAY
-    display->updateRedrawTime();
-  #endif
   }
 
   void changeSat(bool increase){
@@ -620,6 +637,7 @@ public:
       // Throw away wake up input
       return;
     }
+    display->updateRedrawTime();
   #endif
     currentSat1 = max(min((increase ? currentSat1+fadeAmount : currentSat1-fadeAmount), 255), 0);
     colorHStoRGB(currentHue1*256, currentSat1, col);
@@ -634,9 +652,6 @@ public:
       seg.colors[0] = RGBW32(col[0], col[1], col[2], col[3]);
     }
     lampUdated();
-  #ifdef USERMOD_FOUR_LINE_DISPLAY
-    display->updateRedrawTime();
-  #endif
   }
 
   void changePreset(bool increase) {
@@ -646,6 +661,7 @@ public:
       // Throw away wake up input
       return;
     }
+    display->updateRedrawTime();
   #endif
     if (presetHigh && presetLow && presetHigh > presetLow) {
       String apireq = F("win&PL=~");
@@ -657,9 +673,29 @@ public:
       handleSet(nullptr, apireq, false);
       lampUdated();
     }
+  }
+
+  void changeCCT(bool increase){
   #ifdef USERMOD_FOUR_LINE_DISPLAY
+    if (display && display->wakeDisplay()) {
+      display->redraw(true);
+      // Throw away wake up input
+      return;
+    }
     display->updateRedrawTime();
   #endif
+    currentCCT = max(min((increase ? currentCCT+fadeAmount : currentCCT-fadeAmount), 255), 0);
+//    if (applyToAll) {
+      for (byte i=0; i<strip.getMaxSegments(); i++) {
+        WS2812FX::Segment& seg = strip.getSegment(i);
+        if (!seg.isActive()) continue;
+        seg.setCCT(currentCCT, i);
+      }
+//    } else {
+//      WS2812FX::Segment& seg = strip.getSegment(strip.getMainSegmentId());
+//      seg.setCCT(currentCCT, strip.getMainSegmentId());
+//    }
+    lampUdated();
   }
 
   /*
