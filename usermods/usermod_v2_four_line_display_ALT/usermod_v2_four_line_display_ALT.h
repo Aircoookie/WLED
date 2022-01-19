@@ -840,6 +840,72 @@ class FourLineDisplayUsermod : public Usermod {
       }
     }
 
+    /**
+     * handleButton() can be used to override default button behaviour. Returning true
+     * will prevent button working in a default way.
+     * Replicating button.cpp
+     */
+    bool handleButton(uint8_t b) {
+      yield();
+      if (!enabled
+       || b // butto 0 only
+       || buttonType[b] == BTN_TYPE_SWITCH
+       || buttonType[b] == BTN_TYPE_NONE
+       || buttonType[b] == BTN_TYPE_RESERVED
+       || buttonType[b] == BTN_TYPE_PIR_SENSOR
+       || buttonType[b] == BTN_TYPE_ANALOG
+       || buttonType[b] == BTN_TYPE_ANALOG_INVERTED) {
+        return false;
+      }
+
+      unsigned long now = millis();
+      static bool buttonPressedBefore = false;
+      static bool buttonLongPressed = false;
+      static unsigned long buttonPressedTime = 0;
+      static unsigned long buttonWaitTime = 0;
+      bool handled = false;
+
+      //momentary button logic
+      if (isButtonPressed(b)) { //pressed
+
+        if (!buttonPressedBefore) buttonPressedTime = now;
+        buttonPressedBefore = true;
+
+        if (now - buttonPressedTime > 600) { //long press
+          buttonLongPressed = true;
+        }
+
+      } else if (!isButtonPressed(b) && buttonPressedBefore) { //released
+
+        long dur = now - buttonPressedTime;
+        if (dur < 50) {
+          buttonPressedBefore = false;
+          return true;
+        } //too short "press", debounce
+
+        bool doublePress = buttonWaitTime; //did we have short press before?
+        buttonWaitTime = 0;
+
+        if (!buttonLongPressed) { //short press
+          // if this is second release within 350ms it is a double press (buttonWaitTime!=0)
+          //TODO: handleButton() handles button 0 without preset in a different way for double click
+          if (doublePress) {
+            networkOverlay(PSTR("NETWORK INFO"),7000);
+            handled = true;
+          } else  {
+            buttonWaitTime = now;
+          }
+        }
+        buttonPressedBefore = false;
+        buttonLongPressed = false;
+      }
+      // if 450ms elapsed since last press/release it is a short press
+      if (buttonWaitTime && now - buttonWaitTime > 350 && !buttonPressedBefore) {
+        buttonWaitTime = 0;
+      }
+      return handled;
+    }
+  
     /*
      * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
      * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
