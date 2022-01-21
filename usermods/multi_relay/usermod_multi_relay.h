@@ -310,7 +310,7 @@ class MultiRelay : public Usermod {
         if (!pinManager.allocatePin(_relay[i].pin,true, PinOwner::UM_MultiRelay)) {
           _relay[i].pin = -1;  // allocation failed
         } else {
-          if (!_relay[i].external) _relay[i].state = offMode;
+          if (!_relay[i].external) _relay[i].state = !offMode;
           switchRelay(i, _relay[i].state);
           _relay[i].active = false;
         }
@@ -399,6 +399,8 @@ class MultiRelay : public Usermod {
         buttonPressedBefore[b] = true;
 
         if (now - buttonPressedTime[b] > 600) { //long press
+          //longPressAction(b); //not exposed
+          //handled = false; //use if you want to pass to default behaviour
           buttonLongPressed[b] = true;
         }
 
@@ -415,7 +417,8 @@ class MultiRelay : public Usermod {
         if (!buttonLongPressed[b]) { //short press
           // if this is second release within 350ms it is a double press (buttonWaitTime!=0)
           if (doublePress) {
-            //doublePressAction(b);
+            //doublePressAction(b); //not exposed
+            //handled = false; //use if you want to pass to default behaviour
           } else  {
             buttonWaitTime[b] = now;
           }
@@ -423,9 +426,10 @@ class MultiRelay : public Usermod {
         buttonPressedBefore[b] = false;
         buttonLongPressed[b] = false;
       }
-      // if 450ms elapsed since last press/release it is a short press
+      // if 350ms elapsed since last press/release it is a short press
       if (buttonWaitTime[b] && now - buttonWaitTime[b] > 350 && !buttonPressedBefore[b]) {
         buttonWaitTime[b] = 0;
+        //shortPressAction(b); //not exposed
         for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
           if (_relay[i].pin>=0 && _relay[i].button == b) {
             toggleRelay(i);
