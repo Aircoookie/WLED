@@ -258,15 +258,15 @@ void handleButton()
         WLED::instance().initAP(true);
       } else if (!buttonLongPressed[b]) { //short press
         //NOTE: this interferes with double click handling in usermods so it is commented out
-        //if (b == 0 && !macroDoublePress[b]) { //don't wait for double press on button 0 if no double press macro set
-        //  shortPressAction(b);
-        //} else { //double press if less than 350 ms between current press and previous short press release (buttonWaitTime!=0)
+        if (b == 0 && !macroDoublePress[b]) { //don't wait for double press on button 0 if no double press macro set
+          shortPressAction(b);
+        } else { //double press if less than 350 ms between current press and previous short press release (buttonWaitTime!=0)
           if (doublePress) {
             doublePressAction(b);
           } else {
             buttonWaitTime[b] = now;
           }
-        //}
+        }
       }
       buttonPressedBefore[b] = false;
       buttonLongPressed[b] = false;

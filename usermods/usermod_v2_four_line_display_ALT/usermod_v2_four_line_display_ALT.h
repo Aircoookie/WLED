@@ -863,7 +863,7 @@ class FourLineDisplayUsermod : public Usermod {
       static bool buttonLongPressed = false;
       static unsigned long buttonPressedTime = 0;
       static unsigned long buttonWaitTime = 0;
-      bool handled = false;
+      bool handled = true;
 
       //momentary button logic
       if (isButtonPressed(b)) { //pressed
@@ -873,8 +873,10 @@ class FourLineDisplayUsermod : public Usermod {
 
         if (now - buttonPressedTime > 600) { //long press
           buttonLongPressed = true;
+          //TODO: handleButton() handles button 0 without preset in a different way for double click
+          //so we need to override with same behaviour
           longPressAction(0);
-          handled = true;
+          //handled = false;
         }
 
       } else if (!isButtonPressed(b) && buttonPressedBefore) { //released
@@ -901,11 +903,13 @@ class FourLineDisplayUsermod : public Usermod {
         buttonPressedBefore = false;
         buttonLongPressed = false;
       }
-      // if 450ms elapsed since last press/release it is a short press
+      // if 350ms elapsed since last press/release it is a short press
       if (buttonWaitTime && now - buttonWaitTime > 350 && !buttonPressedBefore) {
         buttonWaitTime = 0;
+        //TODO: handleButton() handles button 0 without preset in a different way for double click
+        //so we need to override with same behaviour
         shortPressAction(0);
-        handled = true;
+        //handled = false;
       }
       return handled;
     }
