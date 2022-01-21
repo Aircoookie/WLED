@@ -20,7 +20,7 @@ body{text-align:center;background:#222;height:100px;margin:0}html{--h:10.2vh}but
 </button></form><form action="/settings/sync"><button type="submit">
 Sync Interfaces</button></form><form action="/settings/time"><button 
 type="submit">Time & Macros</button></form><form action="/settings/um"><button 
-type="submit">Usermods</button></form><form action="/settings/sec"><button 
+type="submit">Usermods</button></form>%DMXMENU%<form action="/settings/sec"><button 
 type="submit">Security & Updates</button></form></body></html>)=====";
 
 
