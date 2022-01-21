@@ -23,6 +23,8 @@ void updateBlynk();
 
 //button.cpp
 void shortPressAction(uint8_t b=0);
+void longPressAction(uint8_t b=0);
+void doublePressAction(uint8_t b=0);
 bool isButtonPressed(uint8_t b=0);
 void handleButton();
 void handleIO();

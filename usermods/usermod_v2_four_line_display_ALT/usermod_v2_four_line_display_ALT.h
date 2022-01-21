@@ -873,6 +873,8 @@ class FourLineDisplayUsermod : public Usermod {
 
         if (now - buttonPressedTime > 600) { //long press
           buttonLongPressed = true;
+          longPressAction(0);
+          handled = true;
         }
 
       } else if (!isButtonPressed(b) && buttonPressedBefore) { //released
@@ -902,6 +904,8 @@ class FourLineDisplayUsermod : public Usermod {
       // if 450ms elapsed since last press/release it is a short press
       if (buttonWaitTime && now - buttonWaitTime > 350 && !buttonPressedBefore) {
         buttonWaitTime = 0;
+        shortPressAction(0);
+        handled = true;
       }
       return handled;
     }
