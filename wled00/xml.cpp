@@ -371,6 +371,19 @@ void getSettingsJS(byte subPage, char* dest)
       oappend(SET_F("mA\";"));
     }
 
+    oappend(SET_F("resetCOM("));
+    oappend(itoa(WLED_MAX_COLOR_ORDER_MAPPINGS,nS,10));
+    oappend(SET_F(");"));
+    const ColorOrderMap& com = busses.getColorOrderMap();
+    for (uint8_t s=0; s < com.count(); s++) {
+      const ColorOrderMapEntry* entry = com.get(s);
+      if (entry == nullptr) break;
+      oappend(SET_F("addCOM("));
+      oappend(itoa(entry->start,nS,10));  oappend(",");
+      oappend(itoa(entry->len,nS,10));  oappend(",");
+      oappend(itoa(entry->colorOrder,nS,10));  oappend(");");
+    }
+
     sappend('v',SET_F("CA"),briS);
 
     sappend('c',SET_F("BO"),turnOnAtBoot);

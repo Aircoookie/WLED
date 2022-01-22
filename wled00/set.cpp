@@ -113,6 +113,20 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       doInitBusses = true;
     }
 
+    ColorOrderMap com = {};
+    for (uint8_t s = 0; s < WLED_MAX_COLOR_ORDER_MAPPINGS; s++) {
+      char xs[4] = "XS"; xs[2] = 48+s; xs[3] = 0; //start LED
+      char xc[4] = "XC"; xc[2] = 48+s; xc[3] = 0; //strip length
+      char xo[4] = "XO"; xo[2] = 48+s; xo[3] = 0; //color order
+      if (request->hasArg(xs)) {
+        start = request->arg(xs).toInt();
+        length = request->arg(xc).toInt();
+        colorOrder = request->arg(xo).toInt();
+        com.add(start, length, colorOrder);
+      }
+    }
+    busses.updateColorOrderMap(com);
+
     // upate other pins
     int hw_ir_pin = request->arg(F("IR")).toInt();
     if (pinManager.allocatePin(hw_ir_pin,false, PinOwner::IR)) {
