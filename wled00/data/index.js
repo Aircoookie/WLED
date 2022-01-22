@@ -2094,8 +2094,15 @@ function setBalance(b)
 }
 
 var hc = 0;
-setInterval(()=>{if (!isInfo) return; hc+=18; if (hc>300) hc=0; if (hc>200)hc=306; if (hc==144) hc+=36; if (hc==108) hc+=18;
-gId('heart').style.color = `hsl(${hc}, 100%, 50%)`;}, 910);
+setInterval(()=>{
+	if (!isInfo) return;
+	hc+=18;
+	if (hc>300) hc=0;
+	if (hc>200)hc=306;
+	if (hc==144) hc+=36;
+	if (hc==108) hc+=18;
+	gId('heart').style.color = `hsl(${hc}, 100%, 50%)`;
+}, 910);
 
 function openGH() { window.open("https://github.com/Aircoookie/WLED/wiki"); }
 
@@ -2364,7 +2371,7 @@ function togglePcMode(fromB = false)
 	if (wW < 1250 && !pcMode) return;
 	if (!fromB && ((wW < 1250 && lastw < 1250) || (wW >= 1250 && lastw >= 1250))) return;
 	openTab(0, true);
-	if (w < 1250) {pcMode = false;}
+	if (wW < 1250) {pcMode = false;}
 	else if (pcModeA && !fromB) pcMode = pcModeA;
 	updateTablinks(0);
 	gId('buttonPcm').className = (pcMode) ? "active":"";
