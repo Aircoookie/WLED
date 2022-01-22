@@ -45,6 +45,8 @@ class MultiRelay : public Usermod {
     // status of initialisation
     bool initDone = false;
 
+    bool HAautodiscovery = false;
+
     uint16_t periodicBroadcastSec = 60;
     unsigned long lastBroadcast = 0;
 
@@ -57,6 +59,7 @@ class MultiRelay : public Usermod {
     static const char _external[];
     static const char _button[];
     static const char _broadcast[];
+    static const char _HAautodiscovery[];
 
     void publishMqtt(int relay) {
       //Check if MQTT Connected, otherwise it will crash the 8266
@@ -259,7 +262,7 @@ class MultiRelay : public Usermod {
         strcpy(subuf, mqttDeviceTopic);
         strcat_P(subuf, PSTR("/relay/#"));
         mqtt->subscribe(subuf, 0);
-        publishHomeAssistantAutodiscovery();
+        if (HAautodiscovery) publishHomeAssistantAutodiscovery();
         for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
           if (_relay[i].pin<0) continue;
           publishMqtt(i); //publish current state
@@ -547,6 +550,7 @@ class MultiRelay : public Usermod {
         relay[FPSTR(_external)]   = _relay[i].external;
         relay[FPSTR(_button)]     = _relay[i].button;
       }
+      top[FPSTR(_HAautodiscovery)] = HAautodiscovery;
       DEBUG_PRINTLN(F("MultiRelay config saved."));
     }
 
@@ -569,6 +573,7 @@ class MultiRelay : public Usermod {
       enabled = top[FPSTR(_enabled)] | enabled;
       periodicBroadcastSec = top[FPSTR(_broadcast)] | periodicBroadcastSec;
       periodicBroadcastSec = min(900,max(0,(int)periodicBroadcastSec));
+      HAautodiscovery = top[FPSTR(_HAautodiscovery)] | HAautodiscovery;
 
       for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
         String parName = FPSTR(_relay_str); parName += '-'; parName += i;
@@ -636,3 +641,4 @@ const char MultiRelay::_activeHigh[] PROGMEM = "active-high";
 const char MultiRelay::_external[]   PROGMEM = "external";
 const char MultiRelay::_button[]     PROGMEM = "button";
 const char MultiRelay::_broadcast[]  PROGMEM = "broadcast-sec";
+const char MultiRelay::_HAautodiscovery[] PROGMEM = "HA-autodiscovery";
