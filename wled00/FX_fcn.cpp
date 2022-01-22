@@ -390,7 +390,7 @@ uint8_t WS2812FX::getPaletteCount()
 
 //TODO effect transitions
 
-
+/*
 bool WS2812FX::setEffectConfig(uint8_t m, uint8_t s, uint8_t in, uint8_t p) {
   Segment& seg = _segments[getMainSegmentId()];
   uint8_t modePrev = seg.mode, speedPrev = seg.speed, intensityPrev = seg.intensity, palettePrev = seg.palette;
@@ -425,7 +425,7 @@ bool WS2812FX::setEffectConfig(uint8_t m, uint8_t s, uint8_t in, uint8_t p) {
 void WS2812FX::setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
   setColor(slot, RGBW32(r, g, b, w));
 }
-
+*/
 void WS2812FX::setColor(uint8_t slot, uint32_t c) {
   if (slot >= NUM_COLORS) return;
 

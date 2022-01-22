@@ -4,7 +4,9 @@
  * UDP sync notifier / Realtime / Hyperion / TPM2.NET
  */
 
-#define WLEDPACKETSIZE (40+(MAX_NUM_SEGMENTS*3))
+#define UDP_SEG_SIZE 22
+#define SEG_OFFSET (41+(MAX_NUM_SEGMENTS*UDP_SEG_SIZE))
+#define WLEDPACKETSIZE (41+(MAX_NUM_SEGMENTS*UDP_SEG_SIZE)+0)
 #define UDP_IN_MAXSIZE 1472
 #define PRESUMED_NETWORK_DELAY 3 //how many ms could it take on avg to reach the receiver? This will be added to transmitted times
 
@@ -86,12 +88,36 @@ void notify(byte callMode, bool followUp)
 	udpOut[38] = mainseg.cct;
 
 	udpOut[39] = strip.getMaxSegments();
+  udpOut[40] = UDP_SEG_SIZE; //size of each loop iteration (one segment)
   for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
     WS2812FX::Segment &selseg = strip.getSegment(i);
-    udpOut[40+i*3] = selseg.options & 0x0F; //only take into account mirrored, selected, on, reversed
-    udpOut[41+i*3] = selseg.spacing;
-    udpOut[42+i*3] = selseg.grouping;
+  	uint16_t ofs = 41 + i*UDP_SEG_SIZE; //start of segment offset byte
+    udpOut[0 +ofs] = selseg.grouping;
+    udpOut[1 +ofs] = selseg.spacing;
+    udpOut[2 +ofs] = selseg.offset >> 8;
+    udpOut[3 +ofs] = selseg.offset & 0xFF;
+    udpOut[4 +ofs] = selseg.options & 0x0F; //only take into account mirrored, selected, on, reversed
+    udpOut[5 +ofs] = selseg.opacity;
+    udpOut[6 +ofs] = selseg.mode;
+    udpOut[7 +ofs] = selseg.speed;
+    udpOut[8 +ofs] = selseg.intensity;
+    udpOut[9 +ofs] = selseg.palette;
+    udpOut[10+ofs] = R(selseg.colors[0]);
+    udpOut[11+ofs] = G(selseg.colors[0]);
+    udpOut[12+ofs] = B(selseg.colors[0]);
+    udpOut[13+ofs] = W(selseg.colors[0]);
+    udpOut[14+ofs] = R(selseg.colors[1]);
+    udpOut[15+ofs] = G(selseg.colors[1]);
+    udpOut[16+ofs] = B(selseg.colors[1]);
+    udpOut[17+ofs] = W(selseg.colors[1]);
+    udpOut[18+ofs] = R(selseg.colors[2]);
+    udpOut[19+ofs] = G(selseg.colors[2]);
+    udpOut[20+ofs] = B(selseg.colors[2]);
+    udpOut[21+ofs] = W(selseg.colors[2]);
   }
+
+	//uint16_t offs = SEG_OFFSET;
+	//next value to be added has index: udpOut[offs + 0]
 
   IPAddress broadcastIp;
   broadcastIp = ~uint32_t(Network.subnetMask()) | uint32_t(Network.gatewayIP());
@@ -256,24 +282,26 @@ void handleNotifications()
     
     bool someSel = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
     //apply colors from notification
-    if (receiveNotificationColor || !someSel)
-    {
-      col[0] = udpIn[3];
-      col[1] = udpIn[4];
-      col[2] = udpIn[5];
+    if (receiveNotificationColor || !someSel) {
+      if (version < 11 || !receiveSegmentOptions) {
+        // only change col[] if not syncing full segments
+        col[0] = udpIn[3];
+        col[1] = udpIn[4];
+        col[2] = udpIn[5];
+      }
       if (version > 0) //sending module's white val is intended
       {
-        col[3] = udpIn[10];
-        if (version > 1)
-        {
+        // only change col[3] if not syncing full segments
+        if (version < 11 || !receiveSegmentOptions) col[3] = udpIn[10];
+        if (version > 1 && (version < 11 || !receiveSegmentOptions)) {
+          // only change colSec[] if not syncing full segments
           colSec[0] = udpIn[12];
           colSec[1] = udpIn[13];
           colSec[2] = udpIn[14];
           colSec[3] = udpIn[15];
         }
-        if (version > 6)
-        {
-          strip.setColor(2, udpIn[20], udpIn[21], udpIn[22], udpIn[23]); //tertiary color
+        if (version > 6 && (version < 11 || !receiveSegmentOptions)) {
+          strip.setColor(2, RGBW32(udpIn[20], udpIn[21], udpIn[22], udpIn[23])); //tertiary color
         }
 				if (version > 9 && version < 200 && udpIn[37] < 255) { //valid CCT/Kelvin value
 					uint8_t cct = udpIn[38];
@@ -291,24 +319,34 @@ void handleNotifications()
     if (version < 200 && (receiveNotificationEffects || !someSel))
     {
       if (currentPlaylist>=0) unloadPlaylist();
-      if (version>10) {
-        if (receiveSegmentOptions) {
-          // will not sync start & stop
-          uint8_t srcSegs = udpIn[39];
-          if (srcSegs > strip.getMaxSegments()) srcSegs = strip.getMaxSegments();
-          for (uint8_t i = 0; i < srcSegs; i++) {
-            WS2812FX::Segment& selseg = strip.getSegment(i);
-            for (uint8_t j = 0; j<4; j++) selseg.setOption(j, (udpIn[40+i*3] >> j) & 0x01); //only take into account mirrored, selected, on, reversed
-            strip.setSegment(i, selseg.start, selseg.stop, udpIn[42+i*3], udpIn[41+i*3], selseg.offset); // will also properly reset segments
-          }
-        }
-      }
-      if (udpIn[8] < strip.getModeCount()) effectCurrent = udpIn[8];
-      effectSpeed   = udpIn[9];
-      if (version > 2) effectIntensity = udpIn[16];
-      if (version > 4 && udpIn[19] < strip.getPaletteCount()) effectPalette = udpIn[19];
-      if (version > 5)
-      {
+      if (version > 10 && receiveSegmentOptions) {
+				//does not sync start & stop
+				uint8_t srcSegs = udpIn[39];
+				if (srcSegs > strip.getMaxSegments()) srcSegs = strip.getMaxSegments();
+				for (uint8_t i = 0; i < srcSegs; i++) {
+					WS2812FX::Segment& selseg = strip.getSegment(i);
+					uint16_t ofs = 41 + i*UDP_SEG_SIZE; //start of segment offset byte
+					for (uint8_t j = 0; j<4; j++) selseg.setOption(j, (udpIn[4 +ofs] >> j) & 0x01); //only take into account mirrored, selected, on, reversed
+					selseg.setOpacity( udpIn[5+ofs], i);
+          strip.setMode(i,   udpIn[6+ofs]);
+          selseg.speed     = udpIn[7+ofs];
+          selseg.intensity = udpIn[8+ofs];
+          selseg.palette   = udpIn[9+ofs];
+					selseg.setColor(0, RGBW32(udpIn[10+ofs],udpIn[11+ofs],udpIn[12+ofs],udpIn[13+ofs]), i);
+					selseg.setColor(1, RGBW32(udpIn[14+ofs],udpIn[15+ofs],udpIn[16+ofs],udpIn[17+ofs]), i);
+					selseg.setColor(2, RGBW32(udpIn[18+ofs],udpIn[19+ofs],udpIn[20+ofs],udpIn[21+ofs]), i);
+					strip.setSegment(i, selseg.start, selseg.stop, udpIn[0+ofs], udpIn[1+ofs], (udpIn[2+ofs]<<8 | udpIn[3+ofs])); //also properly resets segments
+				}
+        setValuesFromMainSeg();
+        effectChanged = true;
+        colorChanged = true;
+      } else { //simple effect sync, applies to all selected
+				if (udpIn[8] < strip.getModeCount()) effectCurrent = udpIn[8];
+      	effectSpeed   = udpIn[9];
+      	if (version > 2) effectIntensity = udpIn[16];
+    		if (version > 4 && udpIn[19] < strip.getPaletteCount()) effectPalette = udpIn[19];
+			}
+      if (version > 5) {
         uint32_t t = (udpIn[25] << 24) | (udpIn[26] << 16) | (udpIn[27] << 8) | (udpIn[28]);
         t += PRESUMED_NETWORK_DELAY; //adjust trivially for network delay
         t -= millis();
@@ -462,17 +500,18 @@ void handleNotifications()
   // API over UDP
   udpIn[packetSize] = '\0';
 
-  if (!requestJSONBufferLock(18)) return;
-  if (udpIn[0] >= 'A' && udpIn[0] <= 'Z') { //HTTP API
-    String apireq = "win&";
-    apireq += (char*)udpIn;
-    handleSet(nullptr, apireq);
-  } else if (udpIn[0] == '{') { //JSON API
-    DeserializationError error = deserializeJson(doc, udpIn);
-    JsonObject root = doc.as<JsonObject>();
-    if (!error && !root.isNull()) deserializeState(root);
+  if (requestJSONBufferLock(18)) {
+    if (udpIn[0] >= 'A' && udpIn[0] <= 'Z') { //HTTP API
+      String apireq = "win&";
+      apireq += (char*)udpIn;
+      handleSet(nullptr, apireq);
+    } else if (udpIn[0] == '{') { //JSON API
+      DeserializationError error = deserializeJson(doc, udpIn);
+      JsonObject root = doc.as<JsonObject>();
+      if (!error && !root.isNull()) deserializeState(root);
+    }
+    releaseJSONBufferLock();
   }
-  releaseJSONBufferLock();
 }
 
 

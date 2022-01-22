@@ -257,6 +257,7 @@ void handleButton()
       if (b == 0 && dur > WLED_LONG_AP) { //long press on button 0 (when released)
         WLED::instance().initAP(true);
       } else if (!buttonLongPressed[b]) { //short press
+        //NOTE: this interferes with double click handling in usermods so it is commented out
         if (b == 0 && !macroDoublePress[b]) { //don't wait for double press on button 0 if no double press macro set
           shortPressAction(b);
         } else { //double press if less than 350 ms between current press and previous short press release (buttonWaitTime!=0)

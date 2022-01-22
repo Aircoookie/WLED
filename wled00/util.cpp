@@ -187,7 +187,7 @@ void _setRandomColor(bool _sec, bool fromButton)
   } else {
     colorHStoRGB(lastRandomIndex*256,255,col);
   }
-  if (fromButton) colorUpdated(2);
+  if (fromButton) colorUpdated(CALL_MODE_BUTTON);
 }
 
 

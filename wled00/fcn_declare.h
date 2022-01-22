@@ -23,6 +23,8 @@ void updateBlynk();
 
 //button.cpp
 void shortPressAction(uint8_t b=0);
+void longPressAction(uint8_t b=0);
+void doublePressAction(uint8_t b=0);
 bool isButtonPressed(uint8_t b=0);
 void handleButton();
 void handleIO();
@@ -58,7 +60,7 @@ bool getJsonValue(const JsonVariant& element, DestType& destination, const Defau
 //colors.cpp
 void colorFromUint32(uint32_t in, bool secondary = false);
 void colorFromUint24(uint32_t in, bool secondary = false);
-uint32_t colorFromRgbw(byte* rgbw);
+inline uint32_t colorFromRgbw(byte* rgbw) { return uint32_t((byte(rgbw[3]) << 24) | (byte(rgbw[0]) << 16) | (byte(rgbw[1]) << 8) | (byte(rgbw[2]))); }
 void relativeChangeWhite(int8_t amount, byte lowerBoundary = 0);
 void colorHStoRGB(uint16_t hue, byte sat, byte* rgb); //hue, sat to rgb
 void colorKtoRGB(uint16_t kelvin, byte* rgb);
@@ -146,7 +148,6 @@ void resetTimebase();
 void toggleOnOff();
 void setAllLeds();
 void setLedsStandard();
-bool colorChanged();
 void colorUpdated(int callMode);
 void updateInterfaces(uint8_t callMode);
 void handleTransitions();

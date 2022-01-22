@@ -2,9 +2,10 @@
 
 //WLED custom fonts, curtesy of @Benji (https://github.com/Proto-molecule)
 
+
 /*
   Fontname: wled_logo_akemi_4x4
-  Copyright: 
+  Copyright: Benji (https://github.com/proto-molecule)
   Glyphs: 3/3
   BBX Build Mode: 3
   * this logo ...WLED/images/wled_logo_akemi.png
@@ -28,7 +29,7 @@ const uint8_t u8x8_wled_logo_akemi_4x4[388] U8X8_FONT_SECTION("u8x8_wled_logo_ak
 
 /*
   Fontname: wled_logo_akemi_5x5
-  Copyright: Created with Fony 1.4.7
+  Copyright: Benji (https://github.com/proto-molecule)
   Glyphs: 3/3
   BBX Build Mode: 3
   * this logo ...WLED/images/wled_logo_akemi.png
@@ -59,7 +60,7 @@ const uint8_t u8x8_wled_logo_akemi_5x5[604] U8X8_FONT_SECTION("u8x8_wled_logo_ak
 
 /*
   Fontname: wled_logo_2x2
-  Copyright: Created with Fony 1.4.7
+  Copyright: Benji (https://github.com/proto-molecule)
   Glyphs: 4/4
   BBX Build Mode: 3
   * this logo  https://cdn.discordapp.com/attachments/706623245935444088/927361780613799956/wled_scaled.png
@@ -105,7 +106,7 @@ const uint8_t u8x8_wled_logo_4x4[517] U8X8_FONT_SECTION("u8x8_wled_logo_4x4") =
 
 /*
   Fontname: 4LineDisplay_WLED_icons_1x
-  Copyright: 
+  Copyright: Benji (https://github.com/proto-molecule)
   Glyphs: 13/13
   BBX Build Mode: 3
   * 1  = sun
@@ -132,6 +133,33 @@ const uint8_t u8x8_4LineDisplay_WLED_icons_1x1[172] U8X8_FONT_SECTION("u8x8_4Lin
   "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\2\1\11\311"
   "\311\1\2\0\0~<<\30\30\0";
 
+
+/*
+  Fontname: 4LineDisplay_WLED_icons_2x1
+  Copyright: Benji (https://github.com/proto-molecule)
+  Glyphs: 11/11
+  BBX Build Mode: 3
+  * 1  = sun
+  * 2  = skip forward
+  * 3  = fire
+  * 4  = custom palette
+  * 5  = puzzle piece
+  * 6  = moon
+  * 7  = brush
+  * 8  = contrast
+  * 9  = power-standby
+  * 10 = star
+  * 11 = heart  
+  * 12 = Akemi
+*/
+const uint8_t u8x8_4LineDisplay_WLED_icons_2x1[196] U8X8_FONT_SECTION("u8x8_4LineDisplay_WLED_icons_2x1") = 
+  "\1\14\2\1\20\20BB\30\30<\275\275<\30\30BB\20\20\377~<<\70\30\20\0\377~<<"
+  "\70\30\20\0\60p\370\374\77>\236\214\300\340\370\360\360\340\0\0\34<v\326\336\375\375\377\277\275=>"
+  "\66\66<\34\374\374\374\374~\77\77~\374\374\374\374 pp \30<~~\377\370\360\360\340\340\340\340"
+  "@@ \0\200\300\340\360\360p`\10\34\34\16\6\6\3\0\0\70|~\376\376\377\377\377\201\201\203\202"
+  "\302Fl\70\70xL\204\200\200\217\217\200\200\204Lx\70\0\0\10\10\30\330x|\77\77|x\330\30"
+  "\10\10\0\0\14\36\37\77\77\177~\374\374~\177\77\77\37\36\14\24\64 \60>\26\367\33\375\36>\60"
+  " \64\24";
 
 
 /*
@@ -168,8 +196,58 @@ const uint8_t u8x8_4LineDisplay_WLED_icons_2x2[389] U8X8_FONT_SECTION("u8x8_4Lin
   "\24\30\16\2";
 
 /*
+  Fontname: 4LineDisplay_WLED_icons_3x
+  Copyright: Benji (https://github.com/proto-molecule)
+  Glyphs: 11/11
+  BBX Build Mode: 3
+  * 1  = sun
+  * 2  = skip forward
+  * 3  = fire
+  * 4  = custom palette
+  * 5  = puzzle piece
+  * 6  = moon
+  * 7  = brush
+  * 8  = contrast
+  * 9  = power-standby
+  * 10 = star
+  * 11 = heart  
+  * 12 = Akemi
+*/
+const uint8_t u8x8_4LineDisplay_WLED_icons_3x3[868] U8X8_FONT_SECTION("u8x8_4LineDisplay_WLED_icons_3x3") = 
+  "\1\14\3\3\0\0\34\34\34\0\200\300\300\340\347\347\347\340\300\300\200\0\34\34\34\0\0\0\34\34\34\0"
+  "\0>\377\377\377\377\377\377\377\377\377\377\377>\0\0\34\34\34\0\0\0\16\16\16\0\0\1\1\3ss"
+  "s\3\1\1\0\0\34\34\34\0\0\0\370\360\340\300\300\200\0\0\0\0\0\0\370\360\340\300\300\200\0\0"
+  "\0\0\0\0\377\377\377\377\377\377\377\376~<\70\20\377\377\377\377\377\377\377\376~<\70\20\37\17\17\7"
+  "\3\1\1\0\0\0\0\0\37\17\17\7\3\1\1\0\0\0\0\0\0\0\0\0\0\300\361\376\374\370\360\300"
+  "\0\0\0\0\0\0\0\0\0\0\0\0\300\370\374\376\377\377\377\377\377\177\77\17\6\0\200\342\374\370\360\340"
+  "\200\0\0\0\1\17\37\77\177\377\7\3\0\200\360\370\374\376\377\377\377\377\377\377\77\0\0\0\0\200\340\360"
+  "\370\370\374\316\206\206\317\377\377\377\317\206\206\316\374\374\370\360\340\200<\377\377\371\360py\377\377\377\377\377"
+  "\377\377\377\377\377\377\363\341\341\363\377\177\0\1\7\17\34\70x|\377\377\377\377\367\363c\3\3\3\3\1"
+  "\1\1\0\0\300\300\300\300\300\300\300\316\377\377\377\316\300\300\300\300\300\300\0\0\0\0\0\0\377\377\377\377"
+  "\377\377\377\377\377\377\377\377\377\377\377\377\377\377\300\300\340\340\340\300\377\377\377\377\377\377\377\307\3\3\3\307"
+  "\377\377\377\377\377\377\1\1\3\3\3\1\0\300\340\370\374\374\376\377\0\0\0\0\0\0\0\0\0\0\0\0"
+  "\0\0\0\0>\377\377\377\377\377\377\377\377\374\360\340\300\300\200\200\0\0\0\0\0\0\200\200\0\1\7\17"
+  "\37\37\77\177\177\177\177\377\377\377\177\177\177\77\77\37\17\7\3\0\0\0\0\0\0\0\0\0\0\0\0\0"
+  "\200\200\300\340\340\360\370\374|>\17\6\0\0\0\0\0\340\340\360\360\360\342\303\7\17\37\77\37\7\3\1"
+  "\0\0\0\0\0\200\340\360\377\377\377\377\177\77\37\17\0\0\0\0\0\0\0\0\0\0\0\0\0\200\340\360"
+  "\370\374\374\376\376\376\377\377\7\7\7\6\16\16\34\70\360\340\300\0|\377\377\377\377\377\377\377\377\377\377\377"
+  "\0\0\0\0\0\0\0\0\0\377\377\377\0\3\7\17\37\77\177\177\377\377\377\377\340\340\340\340pp\70<"
+  "\37\17\3\0\0\0\200\300\340\340\300\0\0\377\377\377\0\0\300\340\340\300\200\0\0\0\0\0\370\376\377\17"
+  "\3\0\0\0\0\17\17\17\0\0\0\0\0\3\17\377\376\370\0\0\0\7\17\37<xp\340\340\340\340\340"
+  "\340\340\340px<\37\17\3\0\0\0\0\0\0\0\0\0\0\0\0\0\300\370\376\370\200\0\0\0\0\0"
+  "\0\0\0\0\0\2\6\16\36\36>~\376\376\377\377\377\377\377\376\376~>\36\16\6\6\2\0\0\0\0"
+  "\0\300x<\37\17\17\7\3\7\17\17\37<x\300\0\0\0\0\200\300\340\360\360\370\370\370\360\360\340\300"
+  "\200\300\340\360\360\370\370\370\360\360\340\200\17\37\77\177\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377"
+  "\177\77\37\17\0\0\0\0\0\1\3\7\17\37\77\177\177\77\37\17\7\3\1\0\0\0\0\0\0\0\0\0"
+  "\0\0\0\200\300\340\360\370\370\370p`\300\200\0\0\0\0\0\0&,f\300\0\0\300\377\377\357\357\357"
+  "\363\370\377\377\377\377\300\0\0\306l&\0\0\0\1\7\16\14\6\7\1\177\177\0\177\177\1\7\6\14\16"
+  "\7\1\0";
+
+
+
+/*
   Fontname: 4LineDisplay_WLED_icons_4x
-  Copyright: 
+  Copyright: Benji (https://github.com/proto-molecule)
   Glyphs: 11/11
   BBX Build Mode: 3
   * 1  = sun
@@ -240,7 +318,7 @@ const uint8_t u8x8_4LineDisplay_WLED_icons_4x4[1540] U8X8_FONT_SECTION("u8x8_4Li
 
 /*
   Fontname: 4LineDisplay_WLED_icons_6x
-  Copyright: 
+  Copyright: Benji (https://github.com/proto-molecule)
   Glyphs: 11/11
   BBX Build Mode: 3
   * 1  = sun
@@ -256,6 +334,7 @@ const uint8_t u8x8_4LineDisplay_WLED_icons_4x4[1540] U8X8_FONT_SECTION("u8x8_4Li
   * 11 = heart
   * 12 = Akemi
 */
+// you can replace this (wasteful) font by using 3x3 variant with draw2x2Glyph()
 const uint8_t u8x8_4LineDisplay_WLED_icons_6x6[3460] U8X8_FONT_SECTION("u8x8_4LineDisplay_WLED_icons_6x6") = 
   "\1\14\6\6\0\0\0\0\0\0\200\300\300\300\300\200\0\0\0\0\0\0\0\0\0\36\77\77\77\77\36\0"
   "\0\0\0\0\0\0\0\0\200\300\300\300\300\200\0\0\0\0\0\0\0\0\0\0\0\0\7\17\17\17\17\7"
@@ -371,7 +450,7 @@ const uint8_t u8x8_4LineDisplay_WLED_icons_6x6[3460] U8X8_FONT_SECTION("u8x8_4Li
 
 /*
   Fontname: akemi_8x8
-  Copyright: Created with Fony 1.4.7
+  Copyright: Benji (https://github.com/proto-molecule)
   Glyphs: 1/1
   BBX Build Mode: 3
   * 12 = Akemi
