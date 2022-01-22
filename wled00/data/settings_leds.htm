@@ -360,6 +360,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
       gId("com_entries").insertAdjacentHTML("beforeend", b);
       gId("xo"+i).value = co;
       btnCOM(i+1);
+      UI();
     }
 
     function remCOM() {
@@ -368,6 +369,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
       if (i === 0) return;
       entries[i-1].remove();
       btnCOM(i-1);
+      UI();
     }
 
     function resetCOM(_newMaxCOOverrides=undefined) {
@@ -454,7 +456,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
         let lines = e.target.result;
         var c = JSON.parse(lines); 
         if (c.hw) {
-          if (c.hw.led) {
+          if (c.hw.led) {
             for (var i=0; i<10; i++) addLEDs(-1);
             var l = c.hw.led;
             l.ins.forEach((v,i,a)=>{
@@ -560,8 +562,8 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
       Color Order Override:
       <div id="com_entries"></div>
       <hr style="width:260px">
-      <button type="button" id="com_add" onclick="addCOM();UI()" style="display:none;border-radius:20px;height:36px;">+</button>
-      <button type="button" id="com_rem" onclick="remCOM();UI()" style="display:none;border-radius:20px;width:36px;height:36px;">-</button><br>
+      <button type="button" id="com_add" onclick="addCOM()">+</button>
+      <button type="button" id="com_rem" onclick="remCOM()">-</button><br>
     </div>
     <hr style="width:260px">
     <div id="btns"></div>
