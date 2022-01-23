@@ -38,9 +38,14 @@
 		l.addEventListener('load', (e) => {
 			// after rangetouch is loaded initialize global variable
 			ranges = RangeTouch.setup('input[type="range"]', {});
-			onLoad(); // start processing UI
+			let stateCheck = setInterval(() => {
+				if (document.readyState === 'complete') {
+					clearInterval(stateCheck);
+					// document ready, start processing UI
+					onLoad();
+				}
+			}, 100);
 		});
-		//h.appendChild(l); // if this fires too quickly for ESP8266 use next line
 		setTimeout(function(){h.appendChild(l)},50);
 	});
 	setTimeout(function(){h.appendChild(l)},50);
