@@ -4,11 +4,11 @@
  * Physical IO
  */
 
-#define WLED_DEBOUNCE_THRESHOLD 50 //only consider button input of at least 50ms as valid (debouncing)
-#define WLED_LONG_PRESS 600 //long press if button is released after held for at least 600ms
-#define WLED_DOUBLE_PRESS 350 //double press if another press within 350ms after a short press
-#define WLED_LONG_REPEATED_ACTION 300 //how often a repeated action (e.g. dimming) is fired on long press on button IDs >0
-#define WLED_LONG_AP 6000 //how long the button needs to be held to activate WLED-AP
+#define WLED_DEBOUNCE_THRESHOLD     50 //only consider button input of at least 50ms as valid (debouncing)
+#define WLED_LONG_PRESS            600 //long press if button is released after held for at least 600ms
+#define WLED_DOUBLE_PRESS          350 //double press if another press within 350ms after a short press
+#define WLED_LONG_REPEATED_ACTION  333 //how often a repeated action (e.g. dimming) is fired on long press on button IDs >0
+#define WLED_LONG_AP              6000 //how long the button needs to be held to activate WLED-AP
 
 static const char _mqtt_topic_button[] PROGMEM = "%s/button/%d";  // optimize flash usage
 
@@ -17,7 +17,7 @@ void shortPressAction(uint8_t b)
   if (!macroButton[b]) {
     switch (b) {
       case 0: toggleOnOff(); colorUpdated(CALL_MODE_BUTTON); break;
-      default: ++effectCurrent %= strip.getModeCount(); colorUpdated(CALL_MODE_BUTTON); break;
+      case 1: ++effectCurrent %= strip.getModeCount(); effectChanged = true; colorUpdated(CALL_MODE_BUTTON); break;
     }
   } else {
     applyPreset(macroButton[b], CALL_MODE_BUTTON_PRESET);
@@ -36,7 +36,7 @@ void longPressAction(uint8_t b)
   if (!macroLongPress[b]) {
     switch (b) {
       case 0: _setRandomColor(false,true); break;
-      default: bri += 8; colorUpdated(CALL_MODE_BUTTON); buttonPressedTime[b] = millis(); break; // repeatable action
+      case 1: bri += 8; colorUpdated(CALL_MODE_BUTTON); buttonPressedTime[b] = millis(); break; // repeatable action
     }
   } else {
     applyPreset(macroLongPress[b], CALL_MODE_BUTTON_PRESET);
@@ -55,7 +55,7 @@ void doublePressAction(uint8_t b)
   if (!macroDoublePress[b]) {
     switch (b) {
       //case 0: toggleOnOff(); colorUpdated(CALL_MODE_BUTTON); break; //instant short press on button 0 if no macro set
-      default: ++effectPalette %= strip.getPaletteCount(); colorUpdated(CALL_MODE_BUTTON); break;
+      case 1: ++effectPalette %= strip.getPaletteCount(); effectChanged = true; colorUpdated(CALL_MODE_BUTTON); break;
     }
   } else {
     applyPreset(macroDoublePress[b], CALL_MODE_BUTTON_PRESET);
@@ -242,7 +242,7 @@ void handleButton()
         if (!buttonLongPressed[b]) longPressAction(b);
         else if (b) { //repeatable action (~3 times per s) on button > 0
           longPressAction(b);
-          buttonPressedTime[b] = now - WLED_LONG_REPEATED_ACTION; //300ms
+          buttonPressedTime[b] = now - WLED_LONG_REPEATED_ACTION; //333ms
         }
         buttonLongPressed[b] = true;
       }
