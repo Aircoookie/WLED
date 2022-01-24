@@ -360,7 +360,8 @@ button {
 
 #slider0, #slider1, #slider2, #slider3, #slider4 {
 	background: var(--c-2);
-	width: 310px;
+	max-width: 310px;
+	min-width: 280px;
 	margin: auto;
 	border-radius: 15px;
 }
