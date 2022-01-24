@@ -37,7 +37,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     stop = (len > 0) ? start + len : seg.stop;
   }
 
-  // multiply segment 0 (?) if requested untill all LEDs are used
+  //repeat, multiplies segment until all LEDs are used, or max segments reached
   bool repeat = elem["rpt"] | false;
   if (repeat && stop>0) {
     elem.remove("id");  // remove for recursive call
