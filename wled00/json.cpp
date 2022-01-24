@@ -725,9 +725,6 @@ void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
 
   for (int i = start; i < end; i++) {
     JsonArray curPalette = palettes.createNestedArray(String(i));
-    CRGB prim;
-    CRGB sec;
-    CRGB ter;
     switch (i) {
       case 0: //default palette
         setPaletteColors(curPalette, PartyColors_p); 

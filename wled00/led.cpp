@@ -129,8 +129,8 @@ void colorUpdated(int callMode)
 
 void updateInterfaces(uint8_t callMode)
 {
-  lastInterfaceUpdate = millis();
   sendDataWs();
+	lastInterfaceUpdate = millis();
   if (callMode == CALL_MODE_WS_SEND) return;
   
   #ifndef WLED_DISABLE_ALEXA
