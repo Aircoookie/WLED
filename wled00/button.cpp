@@ -254,7 +254,11 @@ void handleButton()
       bool doublePress = buttonWaitTime[b]; //did we have a short press before?
       buttonWaitTime[b] = 0;
 
-      if (b == 0 && dur > WLED_LONG_AP) { //long press on button 0 (when released)
+      if (b == 0 && dur > 2*WLED_LONG_AP) { //very long press on button 0 (when released)
+        WLED_FS.format();
+        clearEEPROM();
+        doReboot = true;
+      } else if (b == 0 && dur > WLED_LONG_AP) { //long press on button 0 (when released)
         WLED::instance().initAP(true);
       } else if (!buttonLongPressed[b]) { //short press
         //NOTE: this interferes with double click handling in usermods so it is commented out
