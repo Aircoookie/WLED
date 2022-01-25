@@ -513,7 +513,7 @@ void WLED::initConnection()
   if (staticIP[0] != 0 && staticGateway[0] != 0) {
     WiFi.config(staticIP, staticGateway, staticSubnet, IPAddress(1, 1, 1, 1));
   } else {
-    WiFi.config(0U, 0U, 0U);
+    WiFi.config(IPAddress((uint32_t)0), IPAddress((uint32_t)0), IPAddress((uint32_t)0));
   }
 
   lastReconnectAttempt = millis();

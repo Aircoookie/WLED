@@ -71,10 +71,14 @@
   #include <ESPmDNS.h>
   #include <AsyncTCP.h>
   //#include "SPIFFS.h"
-  #ifndef CONFIG_LITTLEFS_FOR_IDF_3_2
-    #define CONFIG_LITTLEFS_FOR_IDF_3_2
+  #if ESP_IDF_VERSION_MAJOR < 4
+    #ifndef CONFIG_LITTLEFS_FOR_IDF_3_2
+      #define CONFIG_LITTLEFS_FOR_IDF_3_2
+    #endif
+    #include <LITTLEFS.h>
+  #else
+    #include <LittleFS.h>
   #endif
-  #include <LITTLEFS.h>
 #endif
 
 #include "src/dependencies/network/Network.h"
@@ -176,7 +180,11 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
 #ifdef ESP8266
   #define WLED_FS LittleFS
 #else
-  #define WLED_FS LITTLEFS
+  #if ESP_IDF_VERSION_MAJOR < 4
+    #define WLED_FS LITTLEFS
+  #else
+    #define WLED_FS LittleFS
+  #endif
 #endif
 
 // GLOBAL VARIABLES

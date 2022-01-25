@@ -40,7 +40,7 @@ When relay is switched it will publish a message:
 
 1. Register the usermod by adding `#include "../usermods/multi_relay/usermod_multi_relay.h"` at the top and `usermods.add(new MultiRelay());` at the bottom of `usermods_list.cpp`.
 or
-2. Use `#define USERMOD_MULTI_RELAY` in wled.h or `-D USERMOD_MULTI_RELAY`in your platformio.ini
+2. Use `#define USERMOD_MULTI_RELAY` in wled.h or `-D USERMOD_MULTI_RELAY` in your platformio.ini
 
 You can override the default maximum number (4) of relays by defining MULTI_RELAY_MAX_RELAYS.
 

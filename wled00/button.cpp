@@ -85,7 +85,7 @@ bool isButtonPressed(uint8_t i)
       if (digitalRead(btnPin[i]) == HIGH) return true;
       break;
     case BTN_TYPE_TOUCH:
-      #ifdef ARDUINO_ARCH_ESP32
+      #if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C3)
       if (touchRead(btnPin[i]) <= touchThreshold) return true;
       #endif
       break;
