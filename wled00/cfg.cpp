@@ -123,6 +123,22 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   }
   if (hw_led["rev"]) busses.getBus(0)->reversed = true; //set 0.11 global reversed setting for first bus
 
+  // read color order map configuration
+  JsonArray hw_com = hw[F("com")];
+  if (!hw_com.isNull()) {
+    ColorOrderMap com = {};
+    uint8_t s = 0;
+    for (JsonObject entry : hw_com) {
+      if (s > WLED_MAX_COLOR_ORDER_MAPPINGS) break;
+      uint16_t start = entry[F("start")] | 0;
+      uint16_t len = entry[F("len")] | 0;
+      uint8_t colorOrder = (int)entry[F("order")];
+      com.add(start, len, colorOrder);
+      s++;
+    }
+    busses.updateColorOrderMap(com);
+  }
+
   // read multiple button configuration
   JsonObject btn_obj = hw["btn"];
   JsonArray hw_btn_ins = btn_obj[F("ins")];
@@ -572,6 +588,18 @@ void serializeConfig() {
     ins["type"] = bus->getType() & 0x7F;
     ins["ref"] = bus->isOffRefreshRequired();
     ins[F("rgbw")] = bus->isRgbw();
+  }
+
+  JsonArray hw_com = hw.createNestedArray(F("com"));
+  const ColorOrderMap& com = busses.getColorOrderMap();
+  for (uint8_t s = 0; s < com.count(); s++) {
+    const ColorOrderMapEntry *entry = com.get(s);
+    if (!entry) break;
+
+    JsonObject co = hw_com.createNestedObject();
+    co[F("start")] = entry->start;
+    co[F("len")] = entry->len;
+    co[F("order")] = entry->colorOrder;
   }
 
   // button(s)

@@ -6,7 +6,7 @@
 	<title>LED Settings</title>
 	<script>
     var d=document,laprev=55,maxB=1,maxM=4000,maxPB=4096,maxL=1333,maxLbquot=0; //maximum bytes for LED allocation: 4kB for 8266, 32kB for 32
-		var customStarts=false,startsDirty=[];
+		var customStarts=false,startsDirty=[],maxCOOverrides=5;
     function H()
 		{
 			window.open("https://kno.wled.ge/features/settings/#led-settings");
@@ -347,6 +347,53 @@ ${i+1}:
 
       if (!init) UI();
     }
+
+    function addCOM(start=0,len=1,co=0) {
+      var i = d.getElementsByClassName("com_entry").length;
+      if (i >= 10) return;
+
+      var b = `<div class="com_entry">
+<hr style="width:260px">
+${i+1}: Start: <input type="number" name="XS${i}" id="xs${i}" class="l starts" min="0" max="65535" value="${start}" oninput="UI();" required="">&nbsp;
+Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65535" value="${len}" required="" oninput="UI()">
+<div style="display:inline">Color Order:
+<select id="xo${i}" name="XO${i}">
+<option value="0">GRB</option>
+<option value="1">RGB</option>
+<option value="2">BRG</option>
+<option value="3">RBG</option>
+<option value="4">BGR</option>
+<option value="5">GBR</option>
+</select>
+</div><br></div>`;
+      gId("com_entries").insertAdjacentHTML("beforeend", b);
+      gId("xo"+i).value = co;
+      btnCOM(i+1);
+    }
+
+    function remCOM() {
+      var entries = d.getElementsByClassName("com_entry");
+      var i = entries.length;
+      if (i === 0) return;
+      entries[i-1].remove();
+      btnCOM(i-1);
+    }
+
+    function resetCOM(_newMaxCOOverrides=undefined) {
+      if (_newMaxCOOverrides) {
+        maxCOOverrides = _newMaxCOOverrides;
+      }
+      for (let e of d.getElementsByClassName("com_entry")) {
+        e.remove();
+      }
+      btnCOM(0);
+    }
+
+    function btnCOM(i) {
+      gId("com_add").style.display = (i<maxCOOverrides) ? "inline":"none";
+      gId("com_rem").style.display = (i>0) ? "inline":"none";
+    }
+
     function addBtn(i,p,t) {
       var c = gId("btns").innerHTML;
       var bt = "BT" + String.fromCharCode((i<10?48:55)+i);;
@@ -431,6 +478,12 @@ ${i+1}:
               d.getElementsByName("CV"+i)[0].checked = v.rev;
             });
           }
+          if(c.hw.com) {
+            resetCOM();
+            c.hw.com.forEach(e => {
+              addCOM(e.start, e.len, e.order);
+            });
+          }
           if (c.hw.btn) {
             var b = c.hw.btn;
             if (Array.isArray(b.ins)) gId("btns").innerHTML = "";
@@ -509,6 +562,14 @@ ${i+1}:
     <hr style="width:260px">
     Make a segment for each output: <input type="checkbox" name="MS"> <br>
     Custom bus start indices: <input type="checkbox" onchange="tglSi(this.checked)" id="si"> <br>
+    <hr style="width:260px">
+    <div id="color_order_mapping">
+      Color Order Override:
+      <div id="com_entries"></div>
+      <hr style="width:260px">
+      <button type="button" id="com_add" onclick="addCOM();UI()" style="display:none;border-radius:20px;height:36px;">+</button>
+      <button type="button" id="com_rem" onclick="remCOM();UI()" style="display:none;border-radius:20px;width:36px;height:36px;">-</button><br>
+    </div>
     <hr style="width:260px">
     <div id="btns"></div>
     Touch threshold: <input type="number" class="s" min="0" max="100" name="TT" required><br>
