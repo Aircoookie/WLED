@@ -1,13 +1,15 @@
 #ifndef WLED_CONST_H
 #define WLED_CONST_H
 
+#include "const_ledclock.h"
+
 /*
  * Readability defines and their associated numerical values + compile-time constants
  */
 
 //Defaults
-#define DEFAULT_CLIENT_SSID "Your_Network"
-#define DEFAULT_AP_PASS     "wled1234"
+#define DEFAULT_CLIENT_SSID "Wi-Fi-SSID"
+#define DEFAULT_AP_PASS     ""
 #define DEFAULT_OTA_PASS    "wledota"
 
 //increase if you need more
@@ -334,7 +336,7 @@
 #endif
 
 #ifndef DEFAULT_LED_COUNT
-  #define DEFAULT_LED_COUNT 30
+  #define DEFAULT_LED_COUNT 58
 #endif
 
 #endif

@@ -383,7 +383,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     {
       WLED_FS.format();
       clearEEPROM();
-      serveMessage(request, 200, F("All Settings erased."), F("Connect to WLED-AP to setup again"),255);
+      serveMessage(request, 200, F("All Settings erased."), F("Connect to '" AP_NAME "' to setup again"),255);
       doReboot = true;
     }
 

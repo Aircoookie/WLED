@@ -371,16 +371,16 @@ void WLED::setup()
   escapedMac.toLowerCase();
   if (strcmp(cmDNS, "x") == 0)        // fill in unique mdns default
   {
-    strcpy_P(cmDNS, PSTR("wled-"));
-    sprintf(cmDNS + 5, "%*s", 6, escapedMac.c_str() + 6);
+    strcpy_P(cmDNS, PSTR(MDNS_PREFIX "-"));
+    sprintf(cmDNS + strlen(cmDNS), "%*s", 6, escapedMac.c_str() + 6);
   }
   if (mqttDeviceTopic[0] == 0) {
-    strcpy_P(mqttDeviceTopic, PSTR("wled/"));
-    sprintf(mqttDeviceTopic + 5, "%*s", 6, escapedMac.c_str() + 6);
+    strcpy_P(mqttDeviceTopic, PSTR(MQTT_DEVICE_TOPIC "/"));
+    sprintf(mqttDeviceTopic + strlen(mqttDeviceTopic), "%*s", 6, escapedMac.c_str() + 6);
   }
   if (mqttClientID[0] == 0) {
-    strcpy_P(mqttClientID, PSTR("WLED-"));
-    sprintf(mqttClientID + 5, "%*s", 6, escapedMac.c_str() + 6);
+    strcpy_P(mqttClientID, PSTR(MQTT_CLIENT_ID "-"));
+    sprintf(mqttClientID + strlen(mqttClientID), "%*s", 6, escapedMac.c_str() + 6);
   }
 
   if (Serial.available() > 0 && Serial.peek() == 'I') handleImprovPacket();
@@ -443,7 +443,7 @@ void WLED::initAP(bool resetAP)
     return;
 
   if (!apSSID[0] || resetAP)
-    strcpy_P(apSSID, PSTR("WLED-AP"));
+    strcpy_P(apSSID, PSTR(AP_NAME));
   if (resetAP)
     strcpy_P(apPass, PSTR(DEFAULT_AP_PASS));
   DEBUG_PRINT(F("Opening access point "));
