@@ -223,10 +223,12 @@ WLED_GLOBAL int8_t btnPin[WLED_MAX_BUTTONS] _INIT({0});
 #else
 WLED_GLOBAL int8_t btnPin[WLED_MAX_BUTTONS] _INIT({BTNPIN});
 #endif
-#ifndef RLYPIN
-WLED_GLOBAL int8_t rlyPin _INIT(12);
-#else
+#ifdef RLYPIN
 WLED_GLOBAL int8_t rlyPin _INIT(RLYPIN);
+#elif CONFIG_IDF_TARGET_ESP32C3
+WLED_GLOBAL int8_t rlyPin _INIT(11);
+#else
+WLED_GLOBAL int8_t rlyPin _INIT(12);
 #endif
 //Relay mode (1 = active high, 0 = active low, flipped in cfg.json)
 #ifndef RLYMDE
