@@ -307,7 +307,7 @@
 #ifdef ESP8266
   #define JSON_BUFFER_SIZE 10240
 #else
-  #define JSON_BUFFER_SIZE 20480
+  #define JSON_BUFFER_SIZE 24576
 #endif
 
 #define MIN_HEAP_SIZE (MAX_LED_MEMORY+2048)
