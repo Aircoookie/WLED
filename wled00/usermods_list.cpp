@@ -108,6 +108,10 @@
 #include "../usermods/quinled-an-penta/quinled-an-penta.h"
 #endif
 
+#ifdef USERMOD_LEDCLOCK
+#include "um_ledclock.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -202,5 +206,9 @@ void registerUsermods()
 
   #ifdef QUINLED_AN_PENTA
   usermods.add(new QuinLEDAnPentaUsermod());
+  #endif
+
+  #ifdef USERMOD_LEDCLOCK
+  usermods.add(new UsermodLedClock());
   #endif
 }
