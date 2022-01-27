@@ -909,7 +909,11 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
 
   for (uint16_t i= 0; i < used; i += n)
   {
-    olen += sprintf(obuf + olen, "\"%06X\",", strip.getPixelColor(i) & 0xFFFFFF);
+    uint32_t c = strip.getPixelColor(i);
+    uint8_t r = qadd8(W(c), R(c)); //add white channel to RGB channels as a simple RGBW -> RGB map
+    uint8_t g = qadd8(W(c), G(c));
+    uint8_t b = qadd8(W(c), B(c));
+    olen += sprintf(obuf + olen, "\"%06X\",", RGBW32(r,g,b,0));
   }
   olen -= 1;
   oappend((const char*)F("],\"n\":"));

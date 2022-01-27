@@ -2,6 +2,13 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2201260
+
+-   Initial ESP32-C3 and ESP32-S2 support (PRs #2452, )
+-   Full segment sync (PR #2427)
+-   Allow overriding of color order by ranges (PR #2463) 
+-   Added white channel to Peek
+
 #### Build 2112080
 
 -		Version bump to 0.13.0-b6 "Toki"
