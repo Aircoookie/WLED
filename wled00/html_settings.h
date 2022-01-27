@@ -66,7 +66,7 @@ const uint8_t PAGE_settingsCss[] PROGMEM = {
 const char PAGE_settings[] PROGMEM = R"=====(<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta 
 content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" 
 name="viewport"><title>WLED Settings</title><style>
-body{text-align:center;background:#222;height:100px;margin:0}html{--h:10.2vh}button{background:#333;color:#fff;font-family:Verdana,Helvetica,sans-serif;display:inline-block;border:1px solid #333;border-radius:var(--h);font-size:6vmin;height:var(--h);width:calc(100%%% - 40px);margin-top:2vh}
+body{text-align:center;background:#222;height:100px;margin:0}html{--h:10.2vh}button{background:#333;color:#fff;font-family:Verdana,Helvetica,sans-serif;display:inline-block;border:1px solid #333;border-radius:var(--h);font-size:6vmin;height:var(--h);width:calc(100%% - 40px);margin-top:2vh}
 </style></head><body><form action="/"><button type="submit" id="b">Back</button>
 </form><form action="/settings/wifi"><button type="submit">WiFi Setup</button>
 </form><form action="/settings/leds"><button type="submit">LED Preferences
@@ -74,7 +74,7 @@ body{text-align:center;background:#222;height:100px;margin:0}html{--h:10.2vh}but
 </button></form>%DMXMENU%<form action="/settings/sync"><button type="submit">
 Sync Interfaces</button></form><form action="/settings/time"><button 
 type="submit">Time & Macros</button></form><form action="/settings/um"><button 
-type="submit">Usermods</button></form>%DMXMENU%<form action="/settings/sec"><button 
+type="submit">Usermods</button></form><form action="/settings/sec"><button 
 type="submit">Security & Updates</button></form></body></html>)=====";
 
 

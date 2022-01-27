@@ -264,11 +264,7 @@ writeChunks(
       prepend: "=====(",
       append: ")=====",
       method: "plaintext",
-      filter: "html-minify",
-      mangle: (str) =>
-        str
-          .replace("%", "%%")
-          .replace(/Usermods\<\/button\>\<\/form\>/gms, "Usermods\<\/button\>\<\/form\>%DMXMENU%"),
+      filter: "html-minify"
     },
     {
       file: "settings_wifi.htm",
