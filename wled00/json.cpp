@@ -176,6 +176,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   byte fx = seg.mode;
   byte fxPrev = fx;
   if (getVal(elem["fx"], &fx, 1, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 1-255 exact value)
+    if (!presetId && currentPlaylist>=0) unloadPlaylist();
     strip.setMode(id, fx);
     if (!presetId && seg.mode != fxPrev) effectChanged = true; //send UDP
   }
@@ -344,7 +345,6 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     }
   }
   setValuesFromMainSeg(); //to make transition work on main segment
-  if (effectChanged) unloadPlaylist(); //if any of the effect parameter changed unload playlist
 
   #ifndef WLED_DISABLE_CRONIXIE
     if (root["nx"].is<const char*>()) {
