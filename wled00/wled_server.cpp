@@ -420,27 +420,7 @@ void serveMessage(AsyncWebServerRequest* request, uint16_t code, const String& h
 }
 
 
-String settingsProcessor(const String& var)
-{
-  /*
-  if (var == "CSS") {
-    char buf[SETTINGS_STACK_BUF_SIZE];
-    buf[0] = 0;
-    getSettingsJS(optionType, buf);
-    obuf = buf;
-    oappend(SET_F("}</script>"));
-    return String(buf);
-  }
-*/
-  #ifdef WLED_ENABLE_DMX
-  if (var == "DMXMENU") {
-    return String(F("<form action=/settings/dmx><button type=submit>DMX Output</button></form>"));
-  }
-  #endif
-  //if (var == "SCSS") return String(FPSTR(PAGE_settingsCss));
-  return String();
-}
-
+#ifdef WLED_ENABLE_DMX
 String dmxProcessor(const String& var)
 {
   String mapJS;
@@ -460,6 +440,7 @@ String dmxProcessor(const String& var)
   
   return mapJS;
 }
+#endif
 
 
 void serveSettingsJS(AsyncWebServerRequest* request)
@@ -467,7 +448,7 @@ void serveSettingsJS(AsyncWebServerRequest* request)
   char buf[SETTINGS_STACK_BUF_SIZE+37];
   buf[0] = 0;
   byte subPage = request->arg(F("p")).toInt();
-  if (!subPage || subPage>8) {
+  if (subPage<0 || subPage>8) {
     strcpy_P(buf, PSTR("alert('Settings for this request are not implemented.');"));
     request->send(501, "application/javascript", buf);
     return;
@@ -493,10 +474,8 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     else if (url.indexOf("sync") > 0) subPage = 4;
     else if (url.indexOf("time") > 0) subPage = 5;
     else if (url.indexOf("sec")  > 0) subPage = 6;
-    #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
     else if (url.indexOf("dmx")  > 0) subPage = 7;
-    #endif
-    else if (url.indexOf("um")  > 0) subPage = 8;
+    else if (url.indexOf("um")   > 0) subPage = 8;
   } else subPage = 255; //welcome page
 
   if (subPage == 1 && wifiLock && otaLock)
@@ -550,8 +529,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     case 253: response = request->beginResponse_P(200, "text/css",  PAGE_settingsCss,   PAGE_settingsCss_length);   break;
     case 254: serveSettingsJS(request); return;
     case 255: response = request->beginResponse_P(200, "text/html", PAGE_welcome,       PAGE_welcome_length);       break;
-    default:  request->send_P(200, "text/html", PAGE_settings, settingsProcessor); return;
-    //default:  response = request->beginResponse_P(200, "text/html", PAGE_settings, PAGE_settings_length); break;
+    default:  response = request->beginResponse_P(200, "text/html", PAGE_settings,      PAGE_settings_length);      break;
   }
   response->addHeader(F("Content-Encoding"),"gzip");
   setStaticContentCacheHeaders(response);

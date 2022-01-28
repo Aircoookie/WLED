@@ -261,10 +261,14 @@ writeChunks(
     {
       file: "settings.htm",
       name: "PAGE_settings",
-      prepend: "=====(",
-      append: ")=====",
-      method: "plaintext",
-      filter: "html-minify"
+      method: "gzip",
+      filter: "html-minify",
+      mangle: (str) =>
+        str
+          .replace(
+            /function GetV().*\<\/script\>/gms,
+            "</script><script src=\"settings/settings.js?p=0\"></script>"
+          )
     },
     {
       file: "settings_wifi.htm",

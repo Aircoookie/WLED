@@ -4,6 +4,12 @@
 	<meta charset="UTF-8">
 	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
 	<title>WLED Settings</title>
+	<script>
+		var d=document;
+		function gId(n){return d.getElementById(n);}
+		function S(){GetV();}
+		function GetV(){}
+	</script>
 	<style>
 		body {
 			text-align: center;
@@ -23,17 +29,17 @@
 			border-radius: var(--h);
 			font-size: 6vmin;
 			height: var(--h);
-			width: calc(100%% - 40px);	/* needed for AsyncWebServer parsing */
+			width: calc(100% - 40px);
 			margin-top: 2vh;
 		}
 	</style>
 </head>
-<body>
+<body onload="S()">
 <form action="/"><button type=submit id="b">Back</button></form>
 <form action="/settings/wifi"><button type="submit">WiFi Setup</button></form>
 <form action="/settings/leds"><button type="submit">LED Preferences</button></form>
 <form action="/settings/ui"><button type="submit">User Interface</button></form>
-%DMXMENU%<!--form action="/settings/dmx"><button type="submit">DMX Output</button></form-->
+<form action="/settings/dmx"><button id="dmxbtn" style="display: none;" type="submit">DMX Output</button></form>
 <form action="/settings/sync"><button type="submit">Sync Interfaces</button></form>
 <form action="/settings/time"><button type="submit">Time & Macros</button></form>
 <form action="/settings/um"><button type="submit">Usermods</button></form>

@@ -176,7 +176,14 @@ void getSettingsJS(byte subPage, char* dest)
   obuf = dest;
   olen = 0;
 
-  if (subPage <1 || subPage >8) return;
+  if (subPage <0 || subPage >8) return;
+
+  if (subPage == 0)
+  {
+  #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
+    oappend(PSTR("gId('dmxbtn').style.display='';"));
+  #endif
+  }
 
   if (subPage == 1)
   {
