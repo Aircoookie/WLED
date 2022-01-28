@@ -274,11 +274,11 @@ type="checkbox" id="R4" name="R4"></td><td><input type="checkbox" id="R5"
 name="R5"></td><td><input type="checkbox" id="R6" name="R6"></td><td><input 
 type="checkbox" id="R7" name="R7"></td><td><input type="checkbox" id="R8" 
 name="R8"></td></tr></table><br>Receive: <input type="checkbox" name="RB">
-Brightness, <input type="checkbox" name="RC">Color, and <input type="checkbox" 
-name="RX">Effects<br><input type="checkbox" name="SO">Segment options<br>
-Send notifications on direct change: <input type="checkbox" name="SD"><br>
-Send notifications on button press or IR: <input type="checkbox" name="SB"><br>
-Send Alexa notifications: <input type="checkbox" name="SA"><br>
+ Brightness, <input type="checkbox" name="RC"> Color, and <input 
+type="checkbox" name="RX"> Effects<br><input type="checkbox" name="SO">
+ Segment options<br>Send notifications on direct change: <input type="checkbox" 
+name="SD"><br>Send notifications on button press or IR: <input type="checkbox" 
+name="SB"><br>Send Alexa notifications: <input type="checkbox" name="SA"><br>
 Send Philips Hue change notifications: <input type="checkbox" name="SH"><br>
 Send Macro notifications: <input type="checkbox" name="SM"><br>
 Send notifications twice: <input type="checkbox" name="S2"><br><i>

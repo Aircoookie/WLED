@@ -956,9 +956,10 @@ function cmpP(a, b) {
 function makeWS() {
 	if (ws) return;
 	ws = new WebSocket('ws://'+(loc?locip:window.location.hostname)+'/ws');
+  ws.binaryType = "arraybuffer";
 	ws.onmessage = function(event) {
+    if (event.data instanceof ArrayBuffer) return; //liveview packet
 		var json = JSON.parse(event.data);
-		if (json.leds) return; //liveview packet
 		clearTimeout(jsonTimeout);
 		jsonTimeout = null;
 		clearErrorToast();

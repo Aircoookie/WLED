@@ -113,7 +113,7 @@ struct ColorOrderMap {
     return &(_mappings[n]);
   }
 
-  inline uint8_t getPixelColorOrder(uint16_t pix, uint8_t defaultColorOrder) const {
+  inline IRAM_ATTR uint8_t getPixelColorOrder(uint16_t pix, uint8_t defaultColorOrder) const {
     if (_count == 0) return defaultColorOrder;
 
     for (uint8_t i = 0; i < _count; i++) {
@@ -640,7 +640,7 @@ class BusManager {
 		}
 	}
 
-  void setPixelColor(uint16_t pix, uint32_t c, int16_t cct=-1) {
+  void IRAM_ATTR setPixelColor(uint16_t pix, uint32_t c, int16_t cct=-1) {
     for (uint8_t i = 0; i < numBusses; i++) {
       Bus* b = busses[i];
       uint16_t bstart = b->getStart();
