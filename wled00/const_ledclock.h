@@ -7,4 +7,6 @@
 #define MQTT_DEVICE_TOPIC "ledclock"
 #define MQTT_CLIENT_ID "LEDCLOCK"
 
+#define BUZZERPIN 12
+
 #endif

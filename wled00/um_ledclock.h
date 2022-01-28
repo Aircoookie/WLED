@@ -2,6 +2,14 @@
 
 #include "wled.h"
 #include "7segmdisp.h"
+#include "beeper.h"
+
+unsigned long Timer::_millis() {
+	return millis();
+}
+
+static uint16_t beep_startup[] { 3, 440, 100, 0, 20, 880, 100 };
+static uint16_t beep_connected[] { 5, 880, 100, 0, 20, 880, 100, 0, 20, 880, 100 };
 
 class UsermodLedClock : public Usermod {
 
@@ -16,6 +24,8 @@ private:
 
     LedBasedRowDisplay display;
 
+    Beeper beeper;
+
     time_t p;
 
 public:
@@ -25,7 +35,8 @@ public:
         sep(&strip),
         dMinutesT(&strip, 2),
         dMinutesO(&strip, 2),
-        display(5, &dHoursT, &dHoursO, &sep, &dMinutesT, &dMinutesO) {}
+        display(5, &dHoursT, &dHoursO, &sep, &dMinutesT, &dMinutesO),
+        beeper(0, BUZZERPIN) {}
 
     void setup() {
         // digit 1
@@ -72,9 +83,13 @@ public:
         display.setColor(false, CRGB::Black);
         display.setColor(true, CRGB::Red);
         display.setMode(LedBasedDisplayMode::SET_OFF_LEDS);
+
+        beeper.play(beep_startup);
     }
 
     void loop() {
+        beeper.update();
+
         if (p != localTime) {
             p = localTime;
 
@@ -86,6 +101,10 @@ public:
             dMinutesT.setDigit(minute(p) / 10);
             dMinutesO.setDigit(minute(p) % 10);
         }
+    }
+
+    void connected() {
+        beeper.play(beep_connected);
     }
 
     void handleOverlayDraw() {
