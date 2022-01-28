@@ -77,7 +77,7 @@
 <td>Sunrise<input name="H8" value="255" type="hidden"></td>
 <td><input name="N8" class="xs" type="number" min="-59" max="59"></td>
 <td><input name="T8" class="s" type="number" min="0" max="250"></td>
-<td><div onclick="expand(this,8)" ${cals}>&#128467;</div></td></tr><tr><td colspan=5>`;
+<td><div id="CB8" onclick="expand(this,8)" ${cals}>&#128467;</div></td></tr><tr><td colspan=5>`;
 		ih+=`<div id="WD8"style="display:none;"><table style="width:100%%;"><tr><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr><tr>`;
 		for (j=1;j<8;j++) ih+=`<td><input id="W8${j}" type="checkbox"></td>`;
 		ih+="</tr></table><hr></div></td></tr>";
@@ -85,7 +85,7 @@
 <td>Sunset<input name="H9" value="255" type="hidden"></td>
 <td><input name="N9" class="xs" type="number" min="-59" max="59"></td>
 <td><input name="T9" class="s" type="number" min="0" max="250"></td>
-<td><div onclick="expand(this,9)" ${cals}>&#128467;</div></td></tr><tr><td colspan=5>`;
+<td><div id="CB9" onclick="expand(this,9)" ${cals}>&#128467;</div></td></tr><tr><td colspan=5>`;
 		ih+=`<div id="WD9" style="display:none;"><table style="width:100%%;"><tr><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr><tr>`;
 		for (j=1;j<8;j++) ih+=`<td><input id="W9${j}" type="checkbox"></td>`;
 		ih+="</tr></table><hr></div></td></tr>";
