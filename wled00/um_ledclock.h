@@ -11,6 +11,28 @@ unsigned long Timer::_millis() {
 static uint16_t beep_startup[] { 3, 440, 100, 0, 20, 880, 100 };
 static uint16_t beep_connected[] { 5, 880, 100, 0, 20, 880, 100, 0, 20, 880, 100 };
 
+uint8_t brightness() {
+    static uint16_t values[BRIGHTNESS_SAMPLES];
+    static int i = 0;
+    static long total;
+    static uint8_t current;
+
+    total -= values[i];
+    values[i] = analogRead(BRIGHTNESS_PIN);
+    total += values[i];
+
+    i++;
+    i %= BRIGHTNESS_SAMPLES;
+
+    uint8_t target = map(total / BRIGHTNESS_SAMPLES, 0, 4095, MIN_BRIGHTNESS, MAX_BRIGHTNESS);
+
+    if (abs(target - current) > BRIGHTNESS_THRESHOLD) {
+        current = target;
+    }
+
+    return current;
+}
+
 class UsermodLedClock : public Usermod {
 
 private:
@@ -28,6 +50,8 @@ private:
 
     time_t p;
 
+    uint8_t br;
+
 public:
     UsermodLedClock():
         dHoursT(&strip, 2),
@@ -36,7 +60,7 @@ public:
         dMinutesT(&strip, 2),
         dMinutesO(&strip, 2),
         display(5, &dHoursT, &dHoursO, &sep, &dMinutesT, &dMinutesO),
-        beeper(0, BUZZERPIN) {}
+        beeper(0, BUZZER_PIN) {}
 
     void setup() {
         // digit 1
@@ -84,6 +108,8 @@ public:
         display.setColor(true, CRGB::Red);
         display.setMode(LedBasedDisplayMode::SET_OFF_LEDS);
 
+        pinMode(BRIGHTNESS_PIN, INPUT);
+
         beeper.play(beep_startup);
     }
 
@@ -101,6 +127,8 @@ public:
             dMinutesT.setDigit(minute(p) / 10);
             dMinutesO.setDigit(minute(p) % 10);
         }
+
+        br = brightness();
     }
 
     void connected() {
@@ -109,6 +137,10 @@ public:
 
     void handleOverlayDraw() {
         display.update();
+        if (bri != br) {
+            bri = br;
+            colorUpdated(1);
+        }
     }
 
     uint16_t getId() {
