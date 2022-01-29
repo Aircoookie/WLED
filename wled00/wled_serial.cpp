@@ -19,6 +19,15 @@ enum class AdaState {
   TPM2_Header_CountLo,
 };
 
+void update_baud_rate(int rate){
+  if (!pinManager.isPinAllocated(1)){
+    Serial.print("ATTENTION! Baud rate is changing to "); Serial.println(rate);
+    delay(100);
+    Serial.end();
+    Serial.begin(rate);    
+    }
+  }
+  
 void handleSerial()
 {
   if (pinManager.isPinAllocated(3)) return;
@@ -30,6 +39,8 @@ void handleSerial()
   static byte check = 0x00;
   static byte red   = 0x00;
   static byte green = 0x00;
+
+  uint16_t nBytes = 0;
   
   while (Serial.available() > 0)
   {
@@ -46,6 +57,40 @@ void handleSerial()
           return;
         } else if (next == 'v') {
           Serial.print("WLED"); Serial.write(' '); Serial.println(VERSION);
+     
+        } else if ( next == 0xB0 ){ update_baud_rate( 115200 );
+        } else if ( next == 0xB1 ){ update_baud_rate( 230400 );
+        } else if ( next == 0xB2 ){ update_baud_rate( 460800 );
+        } else if ( next == 0xB3 ){ update_baud_rate( 500000 );
+        } else if ( next == 0xB4 ){ update_baud_rate( 576000 );
+        } else if ( next == 0xB5 ){ update_baud_rate( 921600 );
+        } else if ( next == 0xB6 ){ update_baud_rate( 1000000 );
+        } else if ( next == 0xB7 ){ update_baud_rate( 1500000 );
+        
+        } else if (next == 'l'){ // LED Data return in JSON blob. Slow, but easy to use on the other end.
+          if (!pinManager.isPinAllocated(1)){
+            uint16_t used = strip.getLengthTotal();
+            Serial.print("[");
+            for (uint16_t i=0; i<used; i+=1){
+              Serial.print(strip.getPixelColor(i));
+              if (i != used-1) {Serial.print(",");}}
+            Serial.println("]");}
+            
+        } else if (next == 'L'){ // LED Data returned as bytes. Faster, and slightly less easy to use on the other end.
+          if (!pinManager.isPinAllocated(1)){
+            // first byte sent back denotes number of color bytes. 0x00 RGB, 0x01 RGBW, 0x02 ??? etc
+            if (strip.isRgbw){ // alternate idea, merge the white channel down into RGB like recent websocket update. or perhaps 0x02 should be merged white chanel
+              Serial.write(0x01);
+              nBytes = 4;}
+            else{
+              Serial.write(0x00);
+              nBytes = 3;}
+            uint16_t used = strip.getLengthTotal();
+            for (uint16_t i=0; i<used; i+=1){
+              uint32_t thing = strip.getPixelColor(i);
+              Serial.write((byte *) &thing, nBytes);}
+            Serial.println();}
+            
         } else if (next == '{') { //JSON API
           bool verboseResponse = false;
           #ifdef WLED_USE_DYNAMIC_JSON
