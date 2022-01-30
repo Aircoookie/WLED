@@ -2091,7 +2091,7 @@ uint16_t WS2812FX::mode_colortwinkle()
       }
     }
   }
-  return FRAMETIME;
+  return FRAMETIME_FIXED;
 }
 
 
@@ -2876,7 +2876,7 @@ uint16_t WS2812FX::candle(bool multi)
     }
   }
 
-  return FRAMETIME;
+  return FRAMETIME_FIXED;
 }
 
 uint16_t WS2812FX::mode_candle()

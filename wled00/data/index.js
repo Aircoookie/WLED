@@ -603,7 +603,6 @@ function populateSegments(s)
 					</tr>
 				</table>
 				<div class="h" id="seg${i}len"></div>
-				<button class="btn btn-i btn-xs del" id="segd${i}" onclick="delSeg(${i})"><i class="icons btn-icon">&#xe037;</i></button>
 				<label class="check revchkl">
 					Reverse direction
 					<input type="checkbox" id="seg${i}rev" onchange="setRev(${i})" ${inst.rev ? "checked":""}>
@@ -614,6 +613,10 @@ function populateSegments(s)
 					<input type="checkbox" id="seg${i}mi" onchange="setMi(${i})" ${inst.mi ? "checked":""}>
 					<span class="checkmark schk"></span>
 				</label>
+				<div class="del">
+					<button class="btn btn-i btn-xs" id="segr${i}" title="Repeat until end" onclick="rptSeg(${i})"><i class="icons btn-icon">&#xe22d;</i></button>
+					<button class="btn btn-i btn-xs" id="segd${i}" title="Delete" onclick="delSeg(${i})"><i class="icons btn-icon">&#xe037;</i></button>
+				</div>
 			</div>
 		</div><br>`;
 	}
@@ -627,10 +630,13 @@ function populateSegments(s)
 		noNewSegs = false;
 	}
 	for (var i = 0; i <= lSeg; i++) {
-	updateLen(i);
-	updateTrail(d.getElementById(`seg${i}bri`));
-	if (segCount < 2) d.getElementById(`segd${lSeg}`).style.display = "none";
+		updateLen(i);
+		updateTrail(d.getElementById(`seg${i}bri`));
+		let segr = d.getElementById(`segr${i}`);
+		if (segr) segr.style.display = "none";
 	}
+	if (segCount < 2) d.getElementById(`segd${lSeg}`).style.display = "none";
+	if (!noNewSegs && (cfg.comp.seglen?parseInt(d.getElementById(`seg${lSeg}s`).value):0)+parseInt(d.getElementById(`seg${lSeg}e`).value)<ledCount) d.getElementById(`segr${lSeg}`).style.display = "inline";
 	d.getElementById('rsbtn').style.display = (segCount > 1) ? "inline":"none";
 }
 
@@ -872,7 +878,7 @@ function updateLen(s)
 {
 	if (!d.getElementById(`seg${s}s`)) return;
 	var start = parseInt(d.getElementById(`seg${s}s`).value);
-	var stop	= parseInt(d.getElementById(`seg${s}e`).value);
+	var stop  = parseInt(d.getElementById(`seg${s}e`).value);
 	var len = stop - (cfg.comp.seglen?0:start);
 	var out = "(delete)";
 	if (len > 1) {
@@ -1491,6 +1497,29 @@ function selSeg(s){
 	requestJson(obj, false);
 }
 
+function rptSeg(s)
+{
+	var name = d.getElementById(`seg${s}t`).value;
+	var start = parseInt(d.getElementById(`seg${s}s`).value);
+	var stop = parseInt(d.getElementById(`seg${s}e`).value);
+	if (stop == 0) {return;}
+	var rev = d.getElementById(`seg${s}rev`).checked;
+	var mi = d.getElementById(`seg${s}mi`).checked;
+	var sel = d.getElementById(`seg${s}sel`).checked;
+	var obj = {"seg": {"id": s, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop, "rev": rev, "mi": mi, "on": !powered[s], "bri": parseInt(d.getElementById(`seg${s}bri`).value), "sel": sel}};
+	if (d.getElementById(`seg${s}grp`)) {
+		var grp = parseInt(d.getElementById(`seg${s}grp`).value);
+		var spc = parseInt(d.getElementById(`seg${s}spc`).value);
+		var ofs = parseInt(d.getElementById(`seg${s}of` ).value);
+		obj.seg.grp = grp;
+		obj.seg.spc = spc;
+		obj.seg.of  = ofs;
+	}
+	obj.seg.rpt = true;
+	expand(s);
+	requestJson(obj);
+}
+
 function setSeg(s){
 	var name  = d.getElementById(`seg${s}t`).value;
 	var start = parseInt(d.getElementById(`seg${s}s`).value);
@@ -1539,6 +1568,13 @@ function setSegPwr(s){
 
 function setSegBri(s){
 	var obj = {"seg": {"id": s, "bri": parseInt(d.getElementById(`seg${s}bri`).value)}};
+	requestJson(obj);
+}
+
+function tglFreeze(s=null)
+{
+	var obj = {"seg": {"frz": "t"}}; // toggle
+	if (s!==null) obj.id = s;
 	requestJson(obj);
 }
 

@@ -39,6 +39,12 @@
   #endif
 #endif
 
+#ifdef ESP8266
+#define WLED_MAX_COLOR_ORDER_MAPPINGS 5
+#else
+#define WLED_MAX_COLOR_ORDER_MAPPINGS 10
+#endif
+
 //Usermod IDs
 #define USERMOD_ID_RESERVED               0     //Unused. Might indicate no usermod present
 #define USERMOD_ID_UNSPECIFIED            1     //Default value for a general user mod that does not specify a custom ID
@@ -171,6 +177,7 @@
 #define COL_ORDER_RBG             3
 #define COL_ORDER_BGR             4
 #define COL_ORDER_GBR             5
+#define COL_ORDER_MAX             5
 
 
 //Button type

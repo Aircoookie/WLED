@@ -609,11 +609,12 @@ input[type=range]:active + .sliderbubble {
 	width: 216px;
 }
 .btn-xs {
-  width: 39px;
+	width: 42px;
+	height: 42px;
 	margin: 2px 0 0 0;
 }
 .btn-pl-add {
-	margin-left: 9px;
+	margin-left: 5px;
 }
 
 
@@ -645,7 +646,7 @@ input[type=range]:active + .sliderbubble {
 .sel-pl {
   width: 192px;
   background-position: 168px 16px;
-  margin: 8px 7px 0 0;
+  margin: 8px 3px 0 0;
 }
 
 .sel-ple {

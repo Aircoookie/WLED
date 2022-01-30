@@ -193,6 +193,7 @@ void WLED::loop()
   if (lastMqttReconnectAttempt > millis()) {
     rolloverMillis++;
     lastMqttReconnectAttempt = 0;
+    ntpLastSyncTime = 0;
     strip.restartRuntime();
   }
   if (millis() - lastMqttReconnectAttempt > 30000) {
@@ -572,7 +573,7 @@ void WLED::initConnection()
   if (staticIP[0] != 0 && staticGateway[0] != 0) {
     WiFi.config(staticIP, staticGateway, staticSubnet, IPAddress(1, 1, 1, 1));
   } else {
-    WiFi.config(0U, 0U, 0U);
+    WiFi.config(IPAddress((uint32_t)0), IPAddress((uint32_t)0), IPAddress((uint32_t)0));
   }
 
   lastReconnectAttempt = millis();
@@ -683,8 +684,10 @@ void WLED::handleConnection()
 
   if (now < 2000 && (!WLED_WIFI_CONFIGURED || apBehavior == AP_BEHAVIOR_ALWAYS))
     return;
-  if (lastReconnectAttempt == 0)
+  if (lastReconnectAttempt == 0) {
     initConnection();
+    return;
+  }
 
   // reconnect WiFi to clear stale allocations if heap gets too low
   if (now - heapTime > 5000) {
