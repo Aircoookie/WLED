@@ -189,7 +189,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   JsonArray iarr = elem[F("i")]; //set individual LEDs
   if (!iarr.isNull()) {
-    strip.setPixelSegment(id);
+    uint8_t oldSegId = strip.setPixelSegment(id);
 
     //freeze and init to black
     if (!seg.getOption(SEG_OPTION_FREEZE)) {
@@ -235,7 +235,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         set = 0;
       }
     }
-    strip.setPixelSegment(255);
+    strip.setPixelSegment(oldSegId);
     strip.trigger();
   } else if (!elem["frz"] && iarr.isNull()) { //return to regular effect
     seg.setOption(SEG_OPTION_FREEZE, false);

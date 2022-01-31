@@ -716,36 +716,16 @@ bool WS2812FX::checkSegmentAlignment() {
 }
 
 //After this function is called, setPixelColor() will use that segment (offsets, grouping, ... will apply)
-//Note: If called in an interrupt (e.g. JSON API), it must be reset with "setPixelColor(255)",
+//Note: If called in an interrupt (e.g. JSON API), original segment must be restored,
 //otherwise it can lead to a crash on ESP32 because _segment_index is modified while in use by the main thread
-#ifdef ARDUINO_ARCH_ESP32
-uint8_t _segment_index_prev = 0;
-uint16_t _virtualSegmentLength_prev = 0;
-bool _ps_set = false;
-#endif
-
-void WS2812FX::setPixelSegment(uint8_t n)
+uint8_t WS2812FX::setPixelSegment(uint8_t n)
 {
+  uint8_t prevSegId = _segment_index;
   if (n < MAX_NUM_SEGMENTS) {
-		#ifdef ARDUINO_ARCH_ESP32
-		if (!_ps_set) {
-			_segment_index_prev = _segment_index;
-			_virtualSegmentLength_prev = _virtualSegmentLength;
-			_ps_set = true;
-		}
-		#endif
     _segment_index = n;
     _virtualSegmentLength = SEGMENT.virtualLength();
-  } else {
-		_virtualSegmentLength = 0;
-		#ifdef ARDUINO_ARCH_ESP32
-		if (_ps_set) {
-			_segment_index = _segment_index_prev;
-			_virtualSegmentLength = _virtualSegmentLength_prev;
-			_ps_set = false;
-		}
-		#endif
   }
+  return prevSegId;
 }
 
 void WS2812FX::setRange(uint16_t i, uint16_t i2, uint32_t col)
