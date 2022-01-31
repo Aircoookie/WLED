@@ -344,4 +344,8 @@
   #define DEFAULT_LED_COUNT 30
 #endif
 
+#ifndef DMX_MAX_FIXTURE_COUNT
+#define DMX_MAX_FIXTURE_COUNT 10
+#endif
+
 #endif

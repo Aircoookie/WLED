@@ -152,6 +152,7 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
 #include "NodeStruct.h"
 #include "pin_manager.h"
 #include "bus_manager.h"
+#include "dmx.h"
 
 #ifndef CLIENT_SSID
   #define CLIENT_SSID DEFAULT_CLIENT_SSID
@@ -344,7 +345,18 @@ WLED_GLOBAL uint16_t e131ProxyUniverse _INIT(0);                  // output this
 WLED_GLOBAL uint16_t e131Universe _INIT(1);                       // settings for E1.31 (sACN) protocol (only DMX_MODE_MULTIPLE_* can span over consequtive universes)
 WLED_GLOBAL uint16_t e131Port _INIT(5568);                        // DMX in port. E1.31 default is 5568, Art-Net is 6454
 WLED_GLOBAL byte DMXMode _INIT(DMX_MODE_MULTIPLE_RGB);            // DMX mode (s.a.)
-WLED_GLOBAL uint16_t DMXAddress _INIT(1);                         // DMX start address of fixture, a.k.a. first Channel [for E1.31 (sACN) protocol]
+WLED_GLOBAL DMXFixture DMXFixtures[DMX_MAX_FIXTURE_COUNT] _INIT_N(({                 // DMX fixture configuration
+  {1,0,0,(uint16_t)-1},
+  {0},
+  {0},
+  {0},
+  {0},
+  {0},
+  {0},
+  {0},
+  {0},
+  {0},
+}));
 WLED_GLOBAL byte DMXOldDimmer _INIT(0);                           // only update brightness on change
 WLED_GLOBAL byte e131LastSequenceNumber[E131_MAX_UNIVERSE_COUNT]; // to detect packet loss
 WLED_GLOBAL bool e131Multicast _INIT(false);                      // multicast or unicast
