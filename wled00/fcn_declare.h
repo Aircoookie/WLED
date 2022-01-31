@@ -222,6 +222,7 @@ void sendSysInfoUDP();
 //bool isAsterisksOnly(const char* str, byte maxLen);
 bool requestJSONBufferLock(uint8_t module=255);
 void releaseJSONBufferLock();
+uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLen);
 
 //um_manager.cpp
 class Usermod {
