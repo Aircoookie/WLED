@@ -174,7 +174,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   JsonArray iarr = elem[F("i")]; //set individual LEDs
   if (!iarr.isNull()) {
-    strip.setPixelSegment(id);
+    uint8_t oldSegId = strip.setPixelSegment(id);
 
     //freeze and init to black
     if (!seg.getOption(SEG_OPTION_FREEZE)) {
@@ -220,7 +220,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         set = 0;
       }
     }
-    strip.setPixelSegment(255);
+    strip.setPixelSegment(oldSegId);
     strip.trigger();
   } else if (!elem["frz"] && iarr.isNull()) { //return to regular effect
     seg.setOption(SEG_OPTION_FREEZE, false);
@@ -874,41 +874,6 @@ void serializeModeNames(JsonArray arr, const char *qstring) {
   }
 }
 
-// extracts effect mode (or palette) name from names serialized string
-// caller must provide large enough buffer!
-uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLen)
-{
-  uint8_t qComma = 0;
-  bool insideQuotes = false;
-  uint8_t printedChars = 0;
-  char singleJsonSymbol;
-  size_t len = strlen_P(src);
-
-  // Find the mode name in JSON
-  for (size_t i = 0; i < len; i++) {
-    singleJsonSymbol = pgm_read_byte_near(src + i);
-    if (singleJsonSymbol == '\0') break;
-    switch (singleJsonSymbol) {
-      case '"':
-        insideQuotes = !insideQuotes;
-        break;
-      case '[':
-      case ']':
-        break;
-      case ',':
-        if (!insideQuotes) qComma++;
-      default:
-        if (!insideQuotes || (qComma != mode)) break;
-        dest[printedChars++] = singleJsonSymbol;
-    }
-    if ((qComma > mode) || (printedChars >= maxLen)) break;
-  }
-  dest[printedChars] = '\0';
-  char *pos = strchr(dest,'@');
-  if (pos) *pos = '\0';
-  return strlen(dest);
-}
-
 void serveJson(AsyncWebServerRequest* request)
 {
   byte subJson = 0;
@@ -925,14 +890,16 @@ void serveJson(AsyncWebServerRequest* request)
   }
   else if (url.indexOf(F("eff")) > 0) {
     // this is going to serve raw effect names which will include WLED-SR extensions in names
-    request->send_P(200, "application/json", JSON_mode_names);
-    // if we want parsed effect names use this (warning, this will prevent UI from receiving this extension making it useless)
-    //AsyncJsonResponse* response = new AsyncJsonResponse(JSON_BUFFER_SIZE, true);  // array document
-    //JsonArray doc = response->getRoot();
-    //deserializeModeNames(doc, JSON_mode_names); // remove WLED-SR extensions from effect names
-    //response->setLength();
-    //request->send(response);
-    //delete response;
+    if (requestJSONBufferLock(19)) {
+      AsyncJsonResponse* response = new AsyncJsonResponse(&doc, true);  // array document
+      JsonArray lDoc = response->getRoot();
+      serializeModeNames(lDoc, JSON_mode_names); // remove WLED-SR extensions from effect names
+      response->setLength();
+      request->send(response);
+      releaseJSONBufferLock();
+    } else {
+      request->send_P(200, "application/json", JSON_mode_names);
+    }
     return;
   }
   else if (url.indexOf("pal") > 0) {

@@ -657,7 +657,6 @@ class WS2812FX {
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       show(void),
 			setTargetFps(uint8_t fps),
-      setPixelSegment(uint8_t n),
       deserializeMap(uint8_t n=0);
 
     bool
@@ -688,6 +687,7 @@ class WS2812FX {
       //getFirstSelectedSegment(void),
       getMainSegmentId(void),
 			getTargetFps(void),
+      setPixelSegment(uint8_t n),
       gamma8(uint8_t),
       gamma8_cal(uint8_t, float),
       sin_gap(uint16_t),

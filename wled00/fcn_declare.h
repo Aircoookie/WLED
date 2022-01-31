@@ -138,7 +138,6 @@ void serializeState(JsonObject root, bool forPreset = false, bool includeBri = t
 void serializeInfo(JsonObject root);
 void serializeModeNames(JsonArray arr, const char *qstring);
 void serializeModeData(JsonObject root);
-uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLen);
 void serveJson(AsyncWebServerRequest* request);
 bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient = 0);
 
@@ -283,6 +282,7 @@ void _setRandomColor(bool _sec,bool fromButton=false);
 bool isAsterisksOnly(const char* str, byte maxLen);
 bool requestJSONBufferLock(uint8_t module=255);
 void releaseJSONBufferLock();
+uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLen);
 
 //wled_eeprom.cpp
 void applyMacro(byte index);
