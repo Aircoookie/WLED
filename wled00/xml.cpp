@@ -551,6 +551,7 @@ void getSettingsJS(byte subPage, char* dest)
     
     sappends('m',SET_F("(\"sip\")[0]"),hueErrorString);
     #endif
+    sappend('v',SET_F("BD"),serialBaud);
   }
 
   if (subPage == 5)

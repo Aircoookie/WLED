@@ -433,9 +433,9 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
     }
     char tmpcol[22];
     sprintf_P(tmpcol, format, (unsigned)c[0], (unsigned)c[1], (unsigned)c[2], (unsigned)c[3]);
-    strcat(colstr, i<2 ? strcat_P(tmpcol, PSTR(",")) : tmpcol);
+    strcat(colstr, i<2 ? strcat(tmpcol, ",") : tmpcol);
   }
-  strcat_P(colstr, PSTR("]"));
+  strcat(colstr, "]");
   root["col"] = serialized(colstr);
 
   root["fx"]     = seg.mode;
