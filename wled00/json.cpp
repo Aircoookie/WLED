@@ -829,10 +829,12 @@ void serveJson(AsyncWebServerRequest* request)
   else if (url.indexOf("si")    > 0) subJson = 3;
   else if (url.indexOf("nodes") > 0) subJson = 4;
   else if (url.indexOf("palx")  > 0) subJson = 5;
+  #ifdef WLED_ENABLE_JSONLIVE
   else if (url.indexOf("live")  > 0) {
     serveLiveLeds(request);
     return;
   }
+  #endif
   else if (url.indexOf(F("eff")) > 0) {
     request->send_P(200, "application/json", JSON_mode_names);
     return;
@@ -888,6 +890,7 @@ void serveJson(AsyncWebServerRequest* request)
   releaseJSONBufferLock();
 }
 
+#ifdef WLED_ENABLE_JSONLIVE
 #define MAX_LIVE_LEDS 180
 
 bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
@@ -929,3 +932,4 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
   #endif
   return true;
 }
+#endif

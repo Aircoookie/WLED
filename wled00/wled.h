@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2201260
+#define VERSION 2201280
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -34,6 +34,7 @@
 #endif
 #define WLED_ENABLE_ADALIGHT     // saves 500b only (uses GPIO3 (RX) for serial)
 //#define WLED_ENABLE_DMX          // uses 3.5kb (use LEDPIN other than 2)
+//#define WLED_ENABLE_JSONLIVE     // peek LED output via /json/live (WS binary peek is always enabled)
 #ifndef WLED_DISABLE_LOXONE
   #define WLED_ENABLE_LOXONE       // uses 1.2kb
 #endif
@@ -70,8 +71,7 @@
   #include "esp_wifi.h"
   #include <ESPmDNS.h>
   #include <AsyncTCP.h>
-  //#include "SPIFFS.h"
-  #if ESP_IDF_VERSION_MAJOR < 4
+  #if LOROL_LITTLEFS
     #ifndef CONFIG_LITTLEFS_FOR_IDF_3_2
       #define CONFIG_LITTLEFS_FOR_IDF_3_2
     #endif
@@ -177,7 +177,7 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
 #ifdef ESP8266
   #define WLED_FS LittleFS
 #else
-  #if ESP_IDF_VERSION_MAJOR < 4
+  #if LOROL_LITTLEFS
     #define WLED_FS LITTLEFS
   #else
     #define WLED_FS LittleFS
