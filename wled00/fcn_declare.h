@@ -280,6 +280,7 @@ void clearEEPROM();
 
 //wled_serial.cpp
 void handleSerial();
+void updateBaudRate(uint32_t rate);
 
 //wled_server.cpp
 bool isIp(String str);

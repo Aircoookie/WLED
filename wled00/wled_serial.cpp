@@ -21,9 +21,9 @@ enum class AdaState {
 
 uint16_t currentBaud = 1152; //default baudrate 115200 (divided by 100)
 
-void updateBaudRate(int rate){
+void updateBaudRate(uint32_t rate){
   uint16_t rate100 = rate/100;
-  if (rate100 == currentBaud) return;
+  if (rate100 == currentBaud || rate100 < 96) return;
   currentBaud = rate100;
 
   if (!pinManager.isPinAllocated(1) || pinManager.getPinOwner(1) == PinOwner::DebugOut){
