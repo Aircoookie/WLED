@@ -71,15 +71,14 @@
   #include "esp_wifi.h"
   #include <ESPmDNS.h>
   #include <AsyncTCP.h>
-  //#include "SPIFFS.h"
-  //#if ESP_IDF_VERSION_MAJOR < 4
-  //  #ifndef CONFIG_LITTLEFS_FOR_IDF_3_2
-  //    #define CONFIG_LITTLEFS_FOR_IDF_3_2
-  //  #endif
-  //  #include <LITTLEFS.h>
-  //#else
+  #if LOROL_LITTLEFS
+    #ifndef CONFIG_LITTLEFS_FOR_IDF_3_2
+      #define CONFIG_LITTLEFS_FOR_IDF_3_2
+    #endif
+    #include <LITTLEFS.h>
+  #else
     #include <LittleFS.h>
-  //#endif
+  #endif
 #endif
 
 #include "src/dependencies/network/Network.h"
@@ -175,15 +174,15 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
 #endif
 
 //Filesystem to use for preset and config files. SPIFFS or LittleFS on ESP8266, SPIFFS only on ESP32 (now using LITTLEFS port by lorol)
-//#ifdef ESP8266
+#ifdef ESP8266
   #define WLED_FS LittleFS
-//#else
-//  #if ESP_IDF_VERSION_MAJOR < 4
-//    #define WLED_FS LITTLEFS
-//  #else
-//    #define WLED_FS LittleFS
-//  #endif
-//#endif
+#else
+  #if LOROL_LITTLEFS
+    #define WLED_FS LITTLEFS
+  #else
+    #define WLED_FS LittleFS
+  #endif
+#endif
 
 // GLOBAL VARIABLES
 // both declared and defined in header (solution from http://www.keil.com/support/docs/1868.htm)

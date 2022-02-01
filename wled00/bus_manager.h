@@ -113,7 +113,7 @@ struct ColorOrderMap {
     return &(_mappings[n]);
   }
 
-  inline uint8_t getPixelColorOrder(uint16_t pix, uint8_t defaultColorOrder) const {
+  inline uint8_t IRAM_ATTR getPixelColorOrder(uint16_t pix, uint8_t defaultColorOrder) const {
     if (_count == 0) return defaultColorOrder;
 
     for (uint8_t i = 0; i < _count; i++) {
