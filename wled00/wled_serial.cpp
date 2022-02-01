@@ -19,14 +19,20 @@ enum class AdaState {
   TPM2_Header_CountLo,
 };
 
-void update_baud_rate(int rate){
-  if (!pinManager.isPinAllocated(1)){
-    Serial.print("ATTENTION! Baud rate is changing to "); Serial.println(rate);
-    delay(100);
-    Serial.end();
-    Serial.begin(rate);    
-    }
+uint16_t currentBaud = 1152; //default baudrate 115200 (divided by 100)
+
+void updateBaudRate(int rate){
+  uint16_t rate100 = rate/100;
+  if (rate100 == currentBaud) return;
+  currentBaud = rate100;
+
+  if (!pinManager.isPinAllocated(1) || pinManager.getPinOwner(1) == PinOwner::DebugOut){
+    Serial.print(F("Baud is now ")); Serial.println(rate);
   }
+
+  Serial.flush();
+  Serial.begin(rate);
+}
   
 void handleSerial()
 {
@@ -58,39 +64,40 @@ void handleSerial()
         } else if (next == 'v') {
           Serial.print("WLED"); Serial.write(' '); Serial.println(VERSION);
      
-        } else if ( next == 0xB0 ){ update_baud_rate( 115200 );
-        } else if ( next == 0xB1 ){ update_baud_rate( 230400 );
-        } else if ( next == 0xB2 ){ update_baud_rate( 460800 );
-        } else if ( next == 0xB3 ){ update_baud_rate( 500000 );
-        } else if ( next == 0xB4 ){ update_baud_rate( 576000 );
-        } else if ( next == 0xB5 ){ update_baud_rate( 921600 );
-        } else if ( next == 0xB6 ){ update_baud_rate( 1000000 );
-        } else if ( next == 0xB7 ){ update_baud_rate( 1500000 );
+        } else if (next == 0xB0) {updateBaudRate( 115200);
+        } else if (next == 0xB1) {updateBaudRate( 230400);
+        } else if (next == 0xB2) {updateBaudRate( 460800);
+        } else if (next == 0xB3) {updateBaudRate( 500000);
+        } else if (next == 0xB4) {updateBaudRate( 576000);
+        } else if (next == 0xB5) {updateBaudRate( 921600);
+        } else if (next == 0xB6) {updateBaudRate(1000000);
+        } else if (next == 0xB7) {updateBaudRate(1500000);
         
-        } else if (next == 'l'){ // LED Data return in JSON blob. Slow, but easy to use on the other end.
-          if (!pinManager.isPinAllocated(1)){
+        } else if (next == 'l') { //RGB(W) LED data return as JSON array. Slow, but easy to use on the other end.
+          if (!pinManager.isPinAllocated(1) || pinManager.getPinOwner(1) == PinOwner::DebugOut){
             uint16_t used = strip.getLengthTotal();
-            Serial.print("[");
-            for (uint16_t i=0; i<used; i+=1){
+            Serial.write('[');
+            for (uint16_t i=0; i<used; i+=1) {
               Serial.print(strip.getPixelColor(i));
-              if (i != used-1) {Serial.print(",");}}
-            Serial.println("]");}
-            
-        } else if (next == 'L'){ // LED Data returned as bytes. Faster, and slightly less easy to use on the other end.
-          if (!pinManager.isPinAllocated(1)){
-            // first byte sent back denotes number of color bytes. 0x00 RGB, 0x01 RGBW, 0x02 ??? etc
-            if (strip.isRgbw){ // alternate idea, merge the white channel down into RGB like recent websocket update. or perhaps 0x02 should be merged white chanel
-              Serial.write(0x01);
-              nBytes = 4;}
-            else{
-              Serial.write(0x00);
-              nBytes = 3;}
+              if (i != used-1) Serial.write(',');
+            }
+            Serial.println("]");
+          }  
+        } else if (next == 'L') { //RGB LED data returned as bytes in tpm2 format. Faster, and slightly less easy to use on the other end.
+          if (!pinManager.isPinAllocated(1) || pinManager.getPinOwner(1) == PinOwner::DebugOut) {
+            Serial.write(0xC9); Serial.write(0xDA);
             uint16_t used = strip.getLengthTotal();
-            for (uint16_t i=0; i<used; i+=1){
-              uint32_t thing = strip.getPixelColor(i);
-              Serial.write((byte *) &thing, nBytes);}
-            Serial.println();}
-            
+            uint16_t len = used*3;
+            Serial.write((len << 8) & 0xFF);
+            Serial.write( len       & 0xFF);
+            for (uint16_t i=0; i < used; i++) {
+              uint32_t c = strip.getPixelColor(i);
+              Serial.write(qadd8(W(c), R(c))); //R, add white channel to RGB channels as a simple RGBW -> RGB map
+              Serial.write(qadd8(W(c), G(c))); //G
+              Serial.write(qadd8(W(c), B(c))); //B
+            }
+            Serial.write(0x36); Serial.write('\n');
+          }
         } else if (next == '{') { //JSON API
           bool verboseResponse = false;
           #ifdef WLED_USE_DYNAMIC_JSON
@@ -106,7 +113,7 @@ void handleSerial()
           }
           verboseResponse = deserializeState(doc.as<JsonObject>());
           //only send response if TX pin is unused for other purposes
-          if (verboseResponse && !pinManager.isPinAllocated(1)) {
+          if (verboseResponse && (!pinManager.isPinAllocated(1) || pinManager.getPinOwner(1) == PinOwner::DebugOut)) {
             doc.clear();
             JsonObject state = doc.createNestedObject("state");
             serializeState(state);
