@@ -23,6 +23,8 @@ void updateBlynk();
 
 //button.cpp
 void shortPressAction(uint8_t b=0);
+void longPressAction(uint8_t b=0);
+void doublePressAction(uint8_t b=0);
 bool isButtonPressed(uint8_t b=0);
 void handleButton();
 void handleIO();
@@ -191,7 +193,9 @@ void handlePlaylist();
 
 //presets.cpp
 bool applyPreset(byte index, byte callMode = CALL_MODE_DIRECT_CHANGE);
+inline bool applyTemporaryPreset() {return applyPreset(255);};
 void savePreset(byte index, bool persist = true, const char* pname = nullptr, JsonObject saveobj = JsonObject());
+inline void saveTemporaryPreset() {savePreset(255, false);};
 void deletePreset(byte index);
 
 //set.cpp
