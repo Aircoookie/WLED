@@ -780,6 +780,29 @@ uint16_t WS2812FX::mode_chase_random(void) {
   return chase(SEGCOLOR(1), (SEGCOLOR(2)) ? SEGCOLOR(2) : SEGCOLOR(0), SEGCOLOR(0), false);
 }
 
+/*
+ * Special chase which sets up like an old school multicolor light string.
+ */
+uint16_t WS2812FX::mode_chase_christmas(void) {
+  uint32_t cycleTime = 50 + ((255 - SEGMENT.speed)<<1);
+  uint32_t it = now / cycleTime;  // iterator
+  uint8_t width = (1 + (SEGMENT.intensity>>4)); // value of 1-16 for each colour
+  // static when speed is zero
+  uint8_t index = (SEGMENT.speed==0) ? width*5 : it % (width*5);
+  
+  for (uint16_t i = 0; i < SEGLEN; i++, index++) {
+    if (index > (width*5)-1) index = 0;
+
+    uint32_t color = RED;
+    if (index > 4*width-1) color = BLUE;
+    else if (index > 3*width-1) color = GREEN;
+    else if (index > 2*width-1) color = 0xFFC400;
+    else if (index > width-1) color = 0x9900FF;
+
+    setPixelColor(SEGLEN - i -1, color);
+  }
+  return FRAMETIME;
+}
 
 /*
  * Primary, secondary running on rainbow.

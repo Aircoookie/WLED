@@ -116,7 +116,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
-#define MODE_COUNT  118
+#define MODE_COUNT  119
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -236,6 +236,7 @@
 #define FX_MODE_BLENDS                 115
 #define FX_MODE_TV_SIMULATOR           116
 #define FX_MODE_DYNAMIC_SMOOTH         117
+#define FX_MODE_CHASE_CHRISTMAS        119
 
 
 class WS2812FX {
@@ -622,6 +623,7 @@ class WS2812FX {
       _mode[FX_MODE_BLENDS]                  = &WS2812FX::mode_blends;
       _mode[FX_MODE_TV_SIMULATOR]            = &WS2812FX::mode_tv_simulator;
       _mode[FX_MODE_DYNAMIC_SMOOTH]          = &WS2812FX::mode_dynamic_smooth;
+      _mode[FX_MODE_CHASE_CHRISTMAS]         = &WS2812FX::mode_chase_christmas;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -820,6 +822,7 @@ class WS2812FX {
       mode_starburst(void),
       mode_exploding_fireworks(void),
       mode_bouncing_balls(void),
+      mode_chase_christmas(void),
       mode_sinelon(void),
       mode_sinelon_dual(void),
       mode_sinelon_rainbow(void),
@@ -940,7 +943,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
 "Heartbeat","Pacifica","Candle Multi", "Solid Glitter","Sunrise","Phased","Twinkleup","Noise Pal", "Sine","Phased Noise",
-"Flow","Chunchun","Dancing Shadows","Washing Machine","Candy Cane","Blends","TV Simulator","Dynamic Smooth"
+"Flow","Chunchun","Dancing Shadows","Washing Machine","Candy Cane","Blends","TV Simulator","Dynamic Smooth","Chase Christmas"
 ])=====";
 
 
