@@ -1069,9 +1069,13 @@ function displayRover(i,s)
 function cmpP(a, b)
 {
 	if (!a[1].n) return (a[0] > b[0]);
-	// playlists follow presets
-	var name = (a[1].playlist ? '~' : ' ') + a[1].n;
-	return name.localeCompare((b[1].playlist ? '~' : ' ') + b[1].n, undefined, {numeric: true});
+	// sort playlists first, followed by presets with characters and last presets with special 1st character
+	const c = a[1].n.charCodeAt(0);
+	const d = b[1].n.charCodeAt(0);
+	if ((c>47 && c<58) || (c>64 && c<91) || (c>96 && c<123) || c>255) x = '='; else x = '>';
+	if ((d>47 && d<58) || (d>64 && d<91) || (d>96 && d<123) || d>255) y = '='; else y = '>';
+	const n = (a[1].playlist ? '<' : x) + a[1].n;
+	return n.localeCompare((b[1].playlist ? '<' : y) + b[1].n, undefined, {numeric: true});
 }
 
 function makeWS() {

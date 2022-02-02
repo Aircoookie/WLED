@@ -25,7 +25,7 @@ void handlePresets()
   if (presetToApply == 0 || fileDoc) return; //JSON buffer allocated (apply preset in next cycle) or no preset waiting
 
   JsonObject fdo;
-  const char *filename = presetToApply < 255 ? PSTR("/presets.json") : PSTR("/tmp.json");
+  const char *filename = presetToApply < 255 ? "/presets.json" : "/tmp.json";
 
   // allocate buffer
   DEBUG_PRINTLN(F("Apply preset JSON buffer requested."));
@@ -83,7 +83,7 @@ void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
   JsonObject sObj = saveobj;
   bool bufferAllocated = false;
 
-  const char *filename = persist ? PSTR("/presets.json") : PSTR("/tmp.json");
+  const char *filename = persist ? "/presets.json" : "/tmp.json";
 
   if (!fileDoc) {
     // called from handleSet() HTTP API
