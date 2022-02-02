@@ -555,7 +555,6 @@ class WS2812FX {
       _mode[FX_MODE_TWO_DOTS]                = &WS2812FX::mode_two_dots;
       _mode[FX_MODE_FAIRYTWINKLE]            = &WS2812FX::mode_fairytwinkle;
       _mode[FX_MODE_RUNNING_DUAL]            = &WS2812FX::mode_running_dual;
-      _mode[FX_MODE_HALLOWEEN]               = &WS2812FX::mode_halloween;
       _mode[FX_MODE_TRICOLOR_CHASE]          = &WS2812FX::mode_tricolor_chase;
       _mode[FX_MODE_TRICOLOR_WIPE]           = &WS2812FX::mode_tricolor_wipe;
       _mode[FX_MODE_TRICOLOR_FADE]           = &WS2812FX::mode_tricolor_fade;
@@ -773,7 +772,6 @@ class WS2812FX {
       mode_fireworks(void),
       mode_rain(void),
       mode_tetrix(void),
-      mode_halloween(void),
       mode_fire_flicker(void),
       mode_gradient(void),
       mode_loading(void),
@@ -936,13 +934,13 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Sparkle","Sparkle Dark","Sparkle+","Strobe","Strobe Rainbow","Strobe Mega","Blink Rainbow","Android","Chase","Chase Random",
 "Chase Rainbow","Chase Flash","Chase Flash Rnd","Rainbow Runner","Colorful","Traffic Light","Sweep Random","Chase 2","Aurora","Stream",
 "Scanner","Lighthouse","Fireworks","Rain","Tetrix","Fire Flicker","Gradient","Loading","Police","Fairy",
-"Two Dots","Fairytwinkle","Running Dual","Halloween","Chase 3","Tri Wipe","Tri Fade","Lightning","ICU","Multi Comet",
+"Two Dots","Fairytwinkle","Running Dual","Chase Christmas","Chase 3","Tri Wipe","Tri Fade","Lightning","ICU","Multi Comet",
 "Scanner Dual","Stream 2","Oscillate","Pride 2015","Juggle","Palette","Fire 2012","Colorwaves","Bpm","Fill Noise",
 "Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Meteor Smooth","Railway","Ripple",
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
 "Heartbeat","Pacifica","Candle Multi", "Solid Glitter","Sunrise","Phased","Twinkleup","Noise Pal", "Sine","Phased Noise",
-"Flow","Chunchun","Dancing Shadows","Washing Machine","Candy Cane","Blends","TV Simulator","Dynamic Smooth","Chase Christmas"
+"Flow","Chunchun","Dancing Shadows","Washing Machine","Candy Cane","Blends","TV Simulator","Dynamic Smooth"
 ])=====";
 
 
