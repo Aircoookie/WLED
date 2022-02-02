@@ -195,7 +195,7 @@ void handlePlaylist();
 
 //presets.cpp
 void handlePresets();
-bool applyPreset(byte index, byte callMode = CALL_MODE_DIRECT_CHANGE);
+bool applyPreset(byte index, byte callMode = CALL_MODE_DIRECT_CHANGE, bool fromJson = false);
 inline bool applyTemporaryPreset() {return applyPreset(255);};
 void savePreset(byte index, bool persist = true, const char* pname = nullptr, JsonObject saveobj = JsonObject());
 inline void saveTemporaryPreset() {savePreset(255, false);};

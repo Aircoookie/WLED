@@ -163,7 +163,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   if (getVal(elem["fx"], &fx, 1, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 1-255 exact value)
     if (!presetId && currentPlaylist>=0) unloadPlaylist();
     strip.setMode(id, fx);
-    if (!presetId && seg.mode != fxPrev) effectChanged = true; //send UDP
+    if (!presetId && fx != fxPrev) effectChanged = true; //send UDP
   }
   byte prevSpd = seg.speed;
   byte prevInt = seg.intensity;
@@ -357,9 +357,8 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
     ps = presetCycCurr;
     if (getVal(root["ps"], &ps, presetCycMin, presetCycMax)) { //load preset (clears state request!)
-      if (!presetId) unloadPlaylist(); //stop playlist if preset changed manually
       if (ps >= presetCycMin && ps <= presetCycMax) presetCycCurr = ps;
-      applyPreset(ps, callMode);
+      applyPreset(ps, callMode, true);
       return stateResponse;
     }
 

@@ -10,11 +10,13 @@ static char *tmpRAMbuffer = nullptr;
 
 static volatile byte presetToApply = 0;
 static volatile byte callModeToApply = 0;
+static volatile bool checkPlaylist = false;
 
-bool applyPreset(byte index, byte callMode)
+bool applyPreset(byte index, byte callMode, bool fromJson)
 {
   presetToApply = index;
   callModeToApply = callMode;
+  checkPlaylist = fromJson;
   return true;
 }
 
@@ -23,7 +25,7 @@ void handlePresets()
   if (presetToApply == 0 || fileDoc) return; //JSON buffer allocated (apply preset in next cycle) or no preset waiting
 
   JsonObject fdo;
-  const char *filename = presetToApply < 255 ? "/presets.json" : "/tmp.json";
+  const char *filename = presetToApply < 255 ? PSTR("/presets.json") : PSTR("/tmp.json");
 
   // allocate buffer
   DEBUG_PRINTLN(F("Apply preset JSON buffer requested."));
@@ -48,6 +50,8 @@ void handlePresets()
     handleSet(nullptr, apireq, false);
   } else {
     fdo.remove("ps"); //remove load request for presets to prevent recursive crash
+    // if we applyPreset from JSON and preset contains "seg" we must unload playlist
+    if (checkPlaylist && !fdo["seg"].isNull()) unloadPlaylist();
     deserializeState(fdo, CALL_MODE_NO_NOTIFY, presetToApply);
   }
 
@@ -68,6 +72,7 @@ void handlePresets()
 
   presetToApply = 0; //clear request for preset
   callModeToApply = 0;
+  checkPlaylist = false;
 }
 
 //called from handleSet(PS=) [network callback (fileDoc==nullptr), IR (irrational), deserializeState, UDP] and deserializeState() [network callback (filedoc!=nullptr)]
@@ -78,7 +83,7 @@ void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
   JsonObject sObj = saveobj;
   bool bufferAllocated = false;
 
-  const char *filename = persist ? "/presets.json" : "/tmp.json";
+  const char *filename = persist ? PSTR("/presets.json") : PSTR("/tmp.json");
 
   if (!fileDoc) {
     // called from handleSet() HTTP API
