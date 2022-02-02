@@ -236,7 +236,7 @@
 #define FX_MODE_BLENDS                 115
 #define FX_MODE_TV_SIMULATOR           116
 #define FX_MODE_DYNAMIC_SMOOTH         117
-#define FX_MODE_CHASE_CHRISTMAS        119
+#define FX_MODE_CHASE_CHRISTMAS        118
 
 
 class WS2812FX {
