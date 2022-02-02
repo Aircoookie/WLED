@@ -287,7 +287,11 @@ function showErrorToast()
 	showToast('Connection to light failed!', true);
 }
 
-function clearErrorToast() {gId("toast").classList.remove("error");}
+function clearErrorToast()
+{
+	clearTimeout(timeout);
+	timeout = setTimeout(()=>{gId("toast").classList.remove("error");}, 10000);
+}
 
 function getRuntimeStr(rt)
 {
