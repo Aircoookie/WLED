@@ -16,14 +16,33 @@ void alexaInit()
 {
   if (alexaEnabled && WLED_CONNECTED)
   {
-    if (espalexaDevice == nullptr) //only init once
+    if (espalexa.getDeviceCount() == 0) //only init once
     {
+      // the original configured device for keeping old behavior
       espalexaDevice = new EspalexaDevice(alexaInvocationName, onAlexaChange, EspalexaDeviceType::extendedcolor);
       espalexa.addDevice(espalexaDevice);
+      // 9 further devices with names Effect 1-9 (in German) for switching presets 1-9 on (off and other commands will work like before)
+      // switch on e.g. by saying (in German): "Alexa, Effekt eins anschalten"
+      espalexaDevice = new EspalexaDevice("Effekt eins", onAlexaChange, EspalexaDeviceType::extendedcolor);
+      espalexa.addDevice(espalexaDevice);
+      espalexaDevice = new EspalexaDevice("Effekt zwei", onAlexaChange, EspalexaDeviceType::extendedcolor);
+      espalexa.addDevice(espalexaDevice);
+      espalexaDevice = new EspalexaDevice("Effekt drei", onAlexaChange, EspalexaDeviceType::extendedcolor);
+      espalexa.addDevice(espalexaDevice);
+      espalexaDevice = new EspalexaDevice("Effekt vier", onAlexaChange, EspalexaDeviceType::extendedcolor);
+      espalexa.addDevice(espalexaDevice);
+      espalexaDevice = new EspalexaDevice("Effekt fünf", onAlexaChange, EspalexaDeviceType::extendedcolor);
+      espalexa.addDevice(espalexaDevice);
+      espalexaDevice = new EspalexaDevice("Effekt sechs", onAlexaChange, EspalexaDeviceType::extendedcolor);
+      espalexa.addDevice(espalexaDevice);
+      espalexaDevice = new EspalexaDevice("Effekt sieben", onAlexaChange, EspalexaDeviceType::extendedcolor);
+      espalexa.addDevice(espalexaDevice);
+      espalexaDevice = new EspalexaDevice("Effekt acht", onAlexaChange, EspalexaDeviceType::extendedcolor);
+      espalexa.addDevice(espalexaDevice);
+      espalexaDevice = new EspalexaDevice("Effekt neun", onAlexaChange, EspalexaDeviceType::extendedcolor);
+      espalexa.addDevice(espalexaDevice);
       espalexa.begin(&server);
-    } else {
-      espalexaDevice->setName(alexaInvocationName);
-    }
+    } 
   }
 }
 
@@ -35,20 +54,39 @@ void handleAlexa()
 
 void onAlexaChange(EspalexaDevice* dev)
 {
+  espalexaDevice = dev;
   EspalexaDeviceProperty m = espalexaDevice->getLastChangedProperty();
+  String name = espalexaDevice->getName();
   
   if (m == EspalexaDeviceProperty::on)
   {
-    if (!macroAlexaOn)
+    if (name == alexaInvocationName) 
     {
-      if (bri == 0)
+      // keep the old switch-on behavior for the configured name
+      if (!macroAlexaOn)
       {
-        bri = briLast;
-        colorUpdated(CALL_MODE_ALEXA);
+        if (bri == 0)
+        {
+          bri = briLast;
+          colorUpdated(CALL_MODE_ALEXA);
+        }
+      } else {
+        applyPreset(macroAlexaOn, CALL_MODE_ALEXA);
+        if (bri == 0) espalexaDevice->setValue(briLast); //stop Alexa from complaining if macroAlexaOn does not actually turn on
       }
     } else {
-      applyPreset(macroAlexaOn, CALL_MODE_ALEXA);
-      if (bri == 0) espalexaDevice->setValue(briLast); //stop Alexa from complaining if macroAlexaOn does not actually turn on
+      // new switch-on behavior for devices 1-9 which switch on presets 1-9
+      byte preset = 0;
+      if (name == "Effekt eins") preset = 1;
+      else if (name == "Effekt zwei") preset = 2;
+      else if (name == "Effekt drei") preset = 3;
+      else if (name == "Effekt vier") preset = 4;
+      else if (name == "Effekt fünf") preset = 5;
+      else if (name == "Effekt sechs") preset = 6;
+      else if (name == "Effekt sieben") preset = 7;
+      else if (name == "Effekt acht") preset = 8;
+      else if (name == "Effekt neun") preset = 9;
+      applyPreset(preset,CALL_MODE_ALEXA);
     }
   } else if (m == EspalexaDeviceProperty::off)
   {

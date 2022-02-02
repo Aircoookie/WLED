@@ -359,6 +359,11 @@ public:
     return false;
   }
 
+  // get device count
+  uint8_t getDeviceCount() {
+    return currentDeviceCount;
+  }
+
   //service loop
   void loop() {
     #ifndef ESPALEXA_ASYNC
