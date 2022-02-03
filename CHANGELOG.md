@@ -2,9 +2,17 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2202030
+
+-   Switched to binary format for WebSockets peek (PR #2516)
+-   Playlist bugfix
+-   Added `extractModeName()` utility function
+-   Added serial out (PR #2517)
+-   Added configurable baud rate
+
 #### Build 2201260
 
--   Initial ESP32-C3 and ESP32-S2 support (PRs #2452, )
+-   Initial ESP32-C3 and ESP32-S2 support (PRs #2452, #2454, #2502)
 -   Full segment sync (PR #2427)
 -   Allow overriding of color order by ranges (PR #2463) 
 -   Added white channel to Peek
