@@ -214,6 +214,10 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     rlyMde = !relay["rev"];
   }
 
+  CJSON(serialBaud, hw[F("baud")]);
+  if (serialBaud < 96 || serialBaud > 15000) serialBaud = 1152;
+  updateBaudRate(serialBaud *100);
+
   //int hw_status_pin = hw[F("status")]["pin"]; // -1
 
   JsonObject light = doc[F("light")];
@@ -625,6 +629,8 @@ void serializeConfig() {
   JsonObject hw_relay = hw.createNestedObject(F("relay"));
   hw_relay["pin"] = rlyPin;
   hw_relay["rev"] = !rlyMde;
+
+  hw[F("baud")] = serialBaud;
 
   //JsonObject hw_status = hw.createNestedObject("status");
   //hw_status["pin"] = -1;

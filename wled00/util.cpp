@@ -234,7 +234,7 @@ void releaseJSONBufferLock()
 
 
 // extracts effect mode (or palette) name from names serialized string
-// caller must provide large enough buffer!
+// caller must provide large enough buffer for name (incluing SR extensions)!
 uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLen)
 {
   uint8_t qComma = 0;
@@ -260,7 +260,6 @@ uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLe
       default:
         if (!insideQuotes || (qComma != mode)) break;
         dest[printedChars++] = singleJsonSymbol;
-        break;
     }
     if ((qComma > mode) || (printedChars >= maxLen)) break;
   }

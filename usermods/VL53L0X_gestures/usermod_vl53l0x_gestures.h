@@ -74,7 +74,7 @@ class UsermodVL53L0XGestures : public Usermod {
 
 
     void loop() {
-      if (!enabled) return;
+      if (!enabled || strip.isUpdating()) return;
       if (millis() - lastTime > VL53L0X_DELAY_MS)
       {
         lastTime = millis();

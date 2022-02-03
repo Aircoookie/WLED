@@ -164,7 +164,7 @@ class MPU6050Driver : public Usermod {
      */
     void loop() {
       // if programming failed, don't try to do anything
-      if (!enabled || !dmpReady) return;
+      if (!enabled || !dmpReady || strip.isUpdating()) return;
 
       // wait for MPU interrupt or extra packet(s) available
       if (!mpuInterrupt && fifoCount < packetSize) return;

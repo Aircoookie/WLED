@@ -139,7 +139,9 @@ void serializeInfo(JsonObject root);
 void serializeModeNames(JsonArray arr, const char *qstring);
 void serializeModeData(JsonObject root);
 void serveJson(AsyncWebServerRequest* request);
+#ifdef WLED_ENABLE_JSONLIVE
 bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient = 0);
+#endif
 
 //led.cpp
 void setValuesFromMainSeg();
@@ -314,6 +316,7 @@ void clearEEPROM();
 
 //wled_serial.cpp
 void handleSerial();
+void updateBaudRate(uint32_t rate);
 
 //wled_server.cpp
 bool isIp(String str);

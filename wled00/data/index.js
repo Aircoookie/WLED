@@ -289,8 +289,14 @@ function showErrorToast()
 
 function clearErrorToast()
 {
-	clearTimeout(timeout);
-	timeout = setTimeout(()=>{gId("toast").classList.remove("error");}, 10000);
+	var x = gId("toast");
+	if (x.classList.contains("error")) {
+		clearTimeout(timeout);
+		timeout = setTimeout(()=>{
+			x.classList.remove("show");
+			x.classList.remove("error");
+		}, 10000);
+	}
 }
 
 function getRuntimeStr(rt)
@@ -422,7 +428,6 @@ function loadPresets(callback = null)
 		return res.json();
 	})
 	.then(json => {
-		clearErrorToast();
 		pJson = json;
 		populatePresets();
 	})
@@ -447,7 +452,6 @@ function loadPalettes(callback = null)
 		return res.json();
 	})
 	.then((json)=>{
-		clearErrorToast();
 		lJson = Object.entries(json);
 		populatePalettes();
 	})
@@ -473,7 +477,6 @@ function loadFX(callback = null)
 		return res.json();
 	})
 	.then((json)=>{
-		clearErrorToast();
 		eJson = Object.entries(json);
 		populateEffects();
 	})
@@ -499,7 +502,6 @@ function loadFXData(callback = null)
 		return res.json();
 	})
 	.then((json)=>{
-		clearErrorToast();
 		fxdata = json||[];
 		// add default value for Solid
 		fxdata.shift()
@@ -1081,7 +1083,9 @@ function cmpP(a, b)
 function makeWS() {
 	if (ws) return;
 	ws = new WebSocket('ws://'+(loc?locip:window.location.hostname)+'/ws');
+	ws.binaryType = "arraybuffer";
 	ws.onmessage = (e)=>{
+    	if (e.data instanceof ArrayBuffer) return; //liveview packet
 		var json = JSON.parse(e.data);
 		if (json.leds) return; //liveview packet
 		clearTimeout(jsonTimeout);
@@ -1110,7 +1114,6 @@ function makeWS() {
 	ws.onopen = (e)=>{
 		ws.send("{'v':true}");
 		reqsLegal = true;
-		clearErrorToast();
 	}
 }
 

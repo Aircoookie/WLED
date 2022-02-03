@@ -130,6 +130,34 @@ void sendDataWs(AsyncWebSocketClient * client)
   }
 }
 
+#define MAX_LIVE_LEDS_WS 256
+
+bool sendLiveLedsWs(uint32_t wsClient)
+{
+  AsyncWebSocketClient * wsc = ws.client(wsClient);
+  if (!wsc || wsc->queueLength() > 0) return false; //only send if queue free
+
+  uint16_t used = strip.getLengthTotal();
+  uint16_t n = (used -1) /MAX_LIVE_LEDS_WS +1; //only serve every n'th LED if count over MAX_LIVE_LEDS
+  AsyncWebSocketMessageBuffer * wsBuf = ws.makeBuffer(2 + MIN(used, MAX_LIVE_LEDS_WS)*3);
+  if (!wsBuf) return false; //out of memory
+  uint8_t* buffer = wsBuf->get();
+  buffer[0] = 'L';
+  buffer[1] = 1; //version
+
+  uint16_t pos = 2;
+  for (uint16_t i= 0; i < used; i += n)
+  {
+    uint32_t c = strip.getPixelColor(i);
+    buffer[pos++] = qadd8(W(c), R(c)); //R, add white channel to RGB channels as a simple RGBW -> RGB map
+    buffer[pos++] = qadd8(W(c), G(c)); //G
+    buffer[pos++] = qadd8(W(c), B(c)); //B
+  }
+
+  wsc->binary(wsBuf);
+  return true;
+}
+
 void handleWs()
 {
   if (millis() - wsLastLiveTime > WS_LIVE_INTERVAL)
@@ -140,7 +168,7 @@ void handleWs()
     ws.cleanupClients();
     #endif
     bool success = true;
-    if (wsLiveClientId) success = serveLiveLeds(nullptr, wsLiveClientId);
+    if (wsLiveClientId) success = sendLiveLedsWs(wsLiveClientId);
     wsLastLiveTime = millis();
     if (!success) wsLastLiveTime -= 20; //try again in 20ms if failed due to non-empty WS queue
   }

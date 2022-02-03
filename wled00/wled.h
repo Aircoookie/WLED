@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2202022
+#define VERSION 2202031
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -34,6 +34,7 @@
 #endif
 //#define WLED_ENABLE_ADALIGHT     // saves 500b only (uses GPIO3 (RX) for serial)
 //#define WLED_ENABLE_DMX          // uses 3.5kb (use LEDPIN other than 2)
+//#define WLED_ENABLE_JSONLIVE     // peek LED output via /json/live (WS binary peek is always enabled)
 #ifndef WLED_DISABLE_LOXONE
   #define WLED_ENABLE_LOXONE       // uses 1.2kb
 #endif
@@ -70,8 +71,7 @@
   #include "esp_wifi.h"
   #include <ESPmDNS.h>
   #include <AsyncTCP.h>
-  //#include "SPIFFS.h"
-  #if ESP_IDF_VERSION_MAJOR < 4
+  #if LOROL_LITTLEFS
     #ifndef CONFIG_LITTLEFS_FOR_IDF_3_2
       #define CONFIG_LITTLEFS_FOR_IDF_3_2
     #endif
@@ -180,7 +180,7 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
 #ifdef ESP8266
   #define WLED_FS LittleFS
 #else
-  #if ESP_IDF_VERSION_MAJOR < 4
+  #if LOROL_LITTLEFS
     #define WLED_FS LITTLEFS
   #else
     #define WLED_FS LittleFS
@@ -375,11 +375,13 @@ WLED_GLOBAL bool hueApplyBri _INIT(true);
 WLED_GLOBAL bool hueApplyColor _INIT(true);
 #endif
 
+WLED_GLOBAL uint16_t serialBaud _INIT(1152); // serial baud rate, multiply by 100
+
 // Time CONFIG
-WLED_GLOBAL bool ntpEnabled _INIT(false);         // get internet time. Only required if you use clock overlays or time-activated macros
-WLED_GLOBAL bool useAMPM _INIT(false);            // 12h/24h clock format
-WLED_GLOBAL byte currentTimezone _INIT(0);        // Timezone ID. Refer to timezones array in wled10_ntp.ino
-WLED_GLOBAL int utcOffsetSecs _INIT(0);           // Seconds to offset from UTC before timzone calculation
+WLED_GLOBAL bool ntpEnabled _INIT(false);    // get internet time. Only required if you use clock overlays or time-activated macros
+WLED_GLOBAL bool useAMPM _INIT(false);       // 12h/24h clock format
+WLED_GLOBAL byte currentTimezone _INIT(0);   // Timezone ID. Refer to timezones array in wled10_ntp.ino
+WLED_GLOBAL int utcOffsetSecs _INIT(0);      // Seconds to offset from UTC before timzone calculation
 
 WLED_GLOBAL byte overlayDefault _INIT(0);                               // 0: no overlay 1: analog clock 2: single-digit clock 3: cronixie
 WLED_GLOBAL byte overlayMin _INIT(0), overlayMax _INIT(DEFAULT_LED_COUNT - 1);   // boundaries of overlay mode

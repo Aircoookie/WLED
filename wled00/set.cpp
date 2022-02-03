@@ -293,6 +293,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     hueStoreAllowed = true;
     reconnectHue();
     #endif
+
+    t = request->arg(F("BD")).toInt();
+    if (t >= 96 && t <= 15000) serialBaud = t;
+    updateBaudRate(serialBaud *100);
   }
 
   //TIME

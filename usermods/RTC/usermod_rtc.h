@@ -32,6 +32,7 @@ class RTCUsermod : public Usermod {
     }
 
     void loop() {
+      if (strip.isUpdating()) return;
       if (!disabled && toki.isTick()) {
         time_t t = toki.second();
         if (t != RTC.get()) RTC.set(t); //set RTC to NTP/UI-provided value
