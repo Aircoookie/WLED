@@ -48,7 +48,8 @@
 
 /* Not used in all effects yet */
 #define WLED_FPS         42
-#define FRAMETIME        (1000/WLED_FPS)
+#define FRAMETIME_FIXED  (1000/WLED_FPS)
+#define FRAMETIME        _frametime
 
 /* each segment uses 52 bytes of SRAM memory, so if you're application fails because of
   insufficient memory, decreasing MAX_NUM_SEGMENTS may help */
@@ -71,7 +72,7 @@
 #define FAIR_DATA_PER_SEG (MAX_SEGMENT_DATA / MAX_NUM_SEGMENTS)
 
 #define LED_SKIP_AMOUNT  1
-#define MIN_SHOW_DELAY  15
+#define MIN_SHOW_DELAY   (_frametime < 16 ? 8 : 15)
 
 #define NUM_COLORS       3 /* number of colors per segment */
 #define SEGMENT          _segments[_segment_index]
@@ -648,13 +649,14 @@ class WS2812FX {
       calcGammaTable(float),
       trigger(void),
       setSegment(uint8_t n, uint16_t start, uint16_t stop, uint8_t grouping = 0, uint8_t spacing = 0, uint16_t offset = UINT16_MAX),
+      restartRuntime(),
       resetSegments(),
       makeAutoSegments(),
       fixInvalidSegments(),
       setPixelColor(uint16_t n, uint32_t c),
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       show(void),
-      setPixelSegment(uint8_t n),
+			setTargetFps(uint8_t fps),
       deserializeMap(uint8_t n=0);
 
     bool
@@ -684,6 +686,8 @@ class WS2812FX {
       getActiveSegmentsNum(void),
       //getFirstSelectedSegment(void),
       getMainSegmentId(void),
+			getTargetFps(void),
+      setPixelSegment(uint8_t n),
       gamma8(uint8_t),
       gamma8_cal(uint8_t, float),
       sin_gap(uint16_t),
@@ -855,6 +859,8 @@ class WS2812FX {
     uint16_t _usedSegmentData = 0;
     uint16_t _transitionDur = 750;
 
+		uint8_t _targetFps = 42;
+		uint16_t _frametime = (1000/42);
     uint16_t _cumulativeFps = 2;
 
     bool

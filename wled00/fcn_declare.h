@@ -15,12 +15,16 @@ void handleAlexa();
 void onAlexaChange(EspalexaDevice* dev);
 
 //blynk.cpp
+#ifndef WLED_DISABLE_BLYNK
 void initBlynk(const char* auth, const char* host, uint16_t port);
 void handleBlynk();
 void updateBlynk();
+#endif
 
 //button.cpp
 void shortPressAction(uint8_t b=0);
+void longPressAction(uint8_t b=0);
+void doublePressAction(uint8_t b=0);
 bool isButtonPressed(uint8_t b=0);
 void handleButton();
 void handleIO();
@@ -56,7 +60,7 @@ bool getJsonValue(const JsonVariant& element, DestType& destination, const Defau
 //colors.cpp
 void colorFromUint32(uint32_t in, bool secondary = false);
 void colorFromUint24(uint32_t in, bool secondary = false);
-uint32_t colorFromRgbw(byte* rgbw);
+inline uint32_t colorFromRgbw(byte* rgbw) { return uint32_t((byte(rgbw[3]) << 24) | (byte(rgbw[0]) << 16) | (byte(rgbw[1]) << 8) | (byte(rgbw[2]))); }
 void relativeChangeWhite(int8_t amount, byte lowerBoundary = 0);
 void colorHStoRGB(uint16_t hue, byte sat, byte* rgb); //hue, sat to rgb
 void colorKtoRGB(uint16_t kelvin, byte* rgb);
@@ -133,10 +137,11 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
 void serializeState(JsonObject root, bool forPreset = false, bool includeBri = true, bool segmentBounds = true);
 void serializeInfo(JsonObject root);
 void serveJson(AsyncWebServerRequest* request);
-bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient = 0);
 void serializeModeData(JsonArray fxdata);
 void serializeModeNames(JsonArray arr, const char *qstring);
-uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLen);
+#ifdef WLED_ENABLE_JSONLIVE
+bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient = 0);
+#endif
 
 //led.cpp
 void setValuesFromMainSeg();
@@ -144,7 +149,6 @@ void resetTimebase();
 void toggleOnOff();
 void setAllLeds();
 void setLedsStandard();
-bool colorChanged();
 void colorUpdated(int callMode);
 void updateInterfaces(uint8_t callMode);
 void handleTransitions();
@@ -193,7 +197,9 @@ void handlePlaylist();
 
 //presets.cpp
 bool applyPreset(byte index, byte callMode = CALL_MODE_DIRECT_CHANGE);
+inline bool applyTemporaryPreset() {return applyPreset(255);};
 void savePreset(byte index, bool persist = true, const char* pname = nullptr, JsonObject saveobj = JsonObject());
+inline void saveTemporaryPreset() {savePreset(255, false);};
 void deletePreset(byte index);
 
 //set.cpp
@@ -224,6 +230,7 @@ void sendSysInfoUDP();
 //bool isAsterisksOnly(const char* str, byte maxLen);
 bool requestJSONBufferLock(uint8_t module=255);
 void releaseJSONBufferLock();
+uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLen);
 
 //um_manager.cpp
 class Usermod {
@@ -282,6 +289,7 @@ void clearEEPROM();
 
 //wled_serial.cpp
 void handleSerial();
+void updateBaudRate(uint32_t rate);
 
 //wled_server.cpp
 bool isIp(String str);

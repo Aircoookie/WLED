@@ -100,6 +100,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 		strip.cctBlending = request->arg(F("CB")).toInt();
 		Bus::setCCTBlend(strip.cctBlending);
 		Bus::setAutoWhiteMode(request->arg(F("AW")).toInt());
+		strip.setTargetFps(request->arg(F("FR")).toInt());
 
     for (uint8_t s = 0; s < WLED_MAX_BUSSES; s++) {
       char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
@@ -134,6 +135,20 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv), skip);
       doInitBusses = true;
     }
+
+    ColorOrderMap com = {};
+    for (uint8_t s = 0; s < WLED_MAX_COLOR_ORDER_MAPPINGS; s++) {
+      char xs[4] = "XS"; xs[2] = 48+s; xs[3] = 0; //start LED
+      char xc[4] = "XC"; xc[2] = 48+s; xc[3] = 0; //strip length
+      char xo[4] = "XO"; xo[2] = 48+s; xo[3] = 0; //color order
+      if (request->hasArg(xs)) {
+        start = request->arg(xs).toInt();
+        length = request->arg(xc).toInt();
+        colorOrder = request->arg(xo).toInt();
+        com.add(start, length, colorOrder);
+      }
+    }
+    busses.updateColorOrderMap(com);
 
     // upate other pins
     int hw_ir_pin = request->arg(F("IR")).toInt();
@@ -217,7 +232,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     receiveNotificationBrightness = request->hasArg(F("RB"));
     receiveNotificationColor = request->hasArg(F("RC"));
     receiveNotificationEffects = request->hasArg(F("RX"));
-    receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
+    receiveSegmentOptions = request->hasArg(F("SO"));
+    receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects || receiveSegmentOptions);
     notifyDirectDefault = request->hasArg(F("SD"));
     notifyDirect = notifyDirectDefault;
     notifyButton = request->hasArg(F("SB"));
@@ -293,6 +309,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     hueStoreAllowed = true;
     reconnectHue();
     #endif
+
+    t = request->arg(F("BD")).toInt();
+    if (t >= 96 && t <= 15000) serialBaud = t;
+    updateBaudRate(serialBaud *100);
   }
 
   //TIME
@@ -306,6 +326,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     //start ntp if not already connected
     if (ntpEnabled && WLED_CONNECTED && !ntpConnected) ntpConnected = ntpUdp.begin(ntpLocalPort);
+    ntpLastSyncTime = 0; // force new NTP query
 
     longitude = request->arg(F("LN")).toFloat();
     latitude = request->arg(F("LT")).toFloat();
@@ -351,21 +372,27 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
 
     char k[3]; k[2] = 0;
-    for (int i = 0; i<10; i++)
-    {
-      k[1] = i+48;//ascii 0,1,2,3
-
+    for (int i = 0; i<10; i++) {
+      k[1] = i+48;//ascii 0,1,2,3,...
       k[0] = 'H'; //timer hours
       timerHours[i] = request->arg(k).toInt();
-
       k[0] = 'N'; //minutes
       timerMinutes[i] = request->arg(k).toInt();
-
       k[0] = 'T'; //macros
       timerMacro[i] = request->arg(k).toInt();
-
       k[0] = 'W'; //weekdays
       timerWeekday[i] = request->arg(k).toInt();
+      if (i<8) {
+				k[0] = 'M'; //start month
+				timerMonth[i] = request->arg(k).toInt() & 0x0F;
+				timerMonth[i] <<= 4;
+				k[0] = 'P'; //end month
+				timerMonth[i] += (request->arg(k).toInt() & 0x0F);
+				k[0] = 'D'; //start day
+				timerDay[i] = request->arg(k).toInt();
+				k[0] = 'E'; //end day
+				timerDayEnd[i] = request->arg(k).toInt();
+      }
     }
   }
 
@@ -585,7 +612,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   DEBUG_PRINT(F("API req: "));
   DEBUG_PRINTLN(req);
 
-  strip.applyToAllSelected = false;
+  strip.applyToAllSelected = true;
 
   //segment select (sets main segment)
   byte prevMain = strip.getMainSegmentId();
@@ -596,22 +623,28 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   byte selectedSeg = strip.getMainSegmentId();
   if (selectedSeg != prevMain) setValuesFromMainSeg();
 
+  //snapshot to check if request changed values later, temporary.
+  byte prevCol[4]    = {col[0], col[1], col[2], col[3]};
+  byte prevColSec[4] = {colSec[0], colSec[1], colSec[2], colSec[3]};
+  byte prevEffect    = effectCurrent;
+  byte prevSpeed     = effectSpeed;
+  byte prevIntensity = effectIntensity;
+  byte prevPalette   = effectPalette;
+
   pos = req.indexOf(F("SS="));
   if (pos > 0) {
     byte t = getNumVal(&req, pos);
-    if (t < strip.getMaxSegments()) selectedSeg = t;
+    if (t < strip.getMaxSegments()) {
+      selectedSeg = t;
+      strip.applyToAllSelected = false;
+    }
   }
 
   WS2812FX::Segment& selseg = strip.getSegment(selectedSeg);
   pos = req.indexOf(F("SV=")); //segment selected
   if (pos > 0) {
     byte t = getNumVal(&req, pos);
-    if (t == 2) {
-      for (uint8_t i = 0; i < strip.getMaxSegments(); i++)
-      {
-        strip.getSegment(i).setOption(SEG_OPTION_SELECTED, 0);
-      }
-    }
+    if (t == 2) for (uint8_t i = 0; i < strip.getMaxSegments(); i++) strip.getSegment(i).setOption(SEG_OPTION_SELECTED, 0); // unselect other segments
     selseg.setOption(SEG_OPTION_SELECTED, t);
   }
 
@@ -677,26 +710,21 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     applyPreset(presetCycCurr);
   }
 
-  //snapshot to check if request changed values later, temporary.
-  byte prevCol[4] = {col[0], col[1], col[2], col[3]};
-  byte prevColSec[4] = {colSec[0], colSec[1], colSec[2], colSec[3]};
-  byte prevEffect = effectCurrent;
-  byte prevSpeed = effectSpeed;
-  byte prevIntensity = effectIntensity;
-  byte prevPalette = effectPalette;
-
   //set brightness
   updateVal(&req, "&A=", &bri);
 
+  bool col0Changed = false, col1Changed = false, col2Changed = false;
   //set colors
   updateVal(&req, "&R=", &col[0]);
   updateVal(&req, "&G=", &col[1]);
   updateVal(&req, "&B=", &col[2]);
   updateVal(&req, "&W=", &col[3]);
+  for (byte i=0; i<4; i++) if (prevCol[i]!=col[i]) col0Changed = colorChanged = true;
   updateVal(&req, "R2=", &colSec[0]);
   updateVal(&req, "G2=", &colSec[1]);
   updateVal(&req, "B2=", &colSec[2]);
   updateVal(&req, "W2=", &colSec[3]);
+  for (byte i=0; i<4; i++) if (prevColSec[i]!=colSec[i]) col1Changed = colorChanged = true;
 
   #ifdef WLED_ENABLE_LOXONE
   //lox parser
@@ -727,52 +755,64 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     if (pos > 0) {
       tempsat = getNumVal(&req, pos);
     }
-    colorHStoRGB(temphue,tempsat,(req.indexOf(F("H2"))>0)? colSec:col);
+    byte sec = req.indexOf(F("H2"));
+    colorHStoRGB(temphue, tempsat, (sec>0) ? colSec : col);
+    if (sec>0) col1Changed = true;
+    else       col0Changed = true;
+    colorChanged = true;
   }
 
   //set white spectrum (kelvin)
   pos = req.indexOf(F("&K="));
   if (pos > 0) {
-    colorKtoRGB(getNumVal(&req, pos),(req.indexOf(F("K2"))>0)? colSec:col);
+    byte sec = req.indexOf(F("K2"));
+    colorKtoRGB(getNumVal(&req, pos), (sec>0) ? colSec : col);
+    if (sec>0) col1Changed = true;
+    else       col0Changed = true;
+    colorChanged = true;
   }
 
   //set color from HEX or 32bit DEC
+  byte tmpCol[4];
   pos = req.indexOf(F("CL="));
   if (pos > 0) {
     colorFromDecOrHexString(col, (char*)req.substring(pos + 3).c_str());
+    selseg.setColor(0, RGBW32(col[0], col[1], col[2], col[3]), selectedSeg); // defined above (SS= or main)
+    col0Changed = colorChanged = true;
   }
   pos = req.indexOf(F("C2="));
   if (pos > 0) {
     colorFromDecOrHexString(colSec, (char*)req.substring(pos + 3).c_str());
+    selseg.setColor(1, RGBW32(colSec[0], colSec[1], colSec[2], colSec[3]), selectedSeg); // defined above (SS= or main)
+    col1Changed = colorChanged = true;
   }
   pos = req.indexOf(F("C3="));
   if (pos > 0) {
-    byte t[4];
-    colorFromDecOrHexString(t, (char*)req.substring(pos + 3).c_str());
-    if (selectedSeg != strip.getMainSegmentId()) {
-      strip.applyToAllSelected = true;
-      strip.setColor(2, t[0], t[1], t[2], t[3]);
-    } else {
-      selseg.setColor(2,((t[0] << 16) + (t[1] << 8) + t[2] + (t[3] << 24)), selectedSeg); // defined above (SS=)
-    }
+    colorFromDecOrHexString(tmpCol, (char*)req.substring(pos + 3).c_str());
+    selseg.setColor(2, RGBW32(tmpCol[0], tmpCol[1], tmpCol[2], tmpCol[3]), selectedSeg); // defined above (SS= or main)
+    col2Changed = colorChanged = true;
   }
 
   //set to random hue SR=0->1st SR=1->2nd
   pos = req.indexOf(F("SR"));
   if (pos > 0) {
-    _setRandomColor(getNumVal(&req, pos));
+    byte sec = getNumVal(&req, pos);
+    _setRandomColor(sec);
+    if (sec>0) col1Changed = true;
+    else       col0Changed = true;
+    colorChanged = true;
   }
 
   //swap 2nd & 1st
   pos = req.indexOf(F("SC"));
   if (pos > 0) {
     byte temp;
-    for (uint8_t i=0; i<4; i++)
-    {
-      temp = col[i];
-      col[i] = colSec[i];
+    for (uint8_t i=0; i<4; i++) {
+      temp      = col[i];
+      col[i]    = colSec[i];
       colSec[i] = temp;
     }
+    col0Changed = col1Changed = colorChanged = true;
   }
 
   //set effect parameters
@@ -780,6 +820,11 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   updateVal(&req, "SX=", &effectSpeed);
   updateVal(&req, "IX=", &effectIntensity);
   updateVal(&req, "FP=", &effectPalette, 0, strip.getPaletteCount()-1);
+  strip.setMode(selectedSeg, effectCurrent);
+  selseg.speed     = effectSpeed;
+  selseg.intensity = effectIntensity;
+  selseg.palette   = effectPalette;
+  if (effectCurrent != prevEffect || effectSpeed != prevSpeed || effectIntensity != prevIntensity || effectPalette != prevPalette) effectChanged = true;
 
   //set advanced overlay
   pos = req.indexOf(F("OL="));
@@ -910,45 +955,21 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   //you can add more if you need
 
   //apply to all selected manually to prevent #1618. Temporary
-  bool col0Changed = false, col1Changed = false;
-  for (uint8_t i = 0; i < 4; i++) {
-    if (col[i] != prevCol[i]) col0Changed = true;
-    if (colSec[i] != prevColSec[i]) col1Changed = true;
-  }
-  for (uint8_t i = 0; i < strip.getMaxSegments(); i++)
-  {
-    WS2812FX::Segment& seg = strip.getSegment(i);
-    if (!seg.isSelected()) continue;
-    if (effectCurrent != prevEffect) {
-      strip.setMode(i, effectCurrent);
-      effectChanged = true;
-    }
-    if (effectSpeed != prevSpeed) {
-      seg.speed = effectSpeed;
-      effectChanged = true;
-    }
-    if (effectIntensity != prevIntensity) {
-      seg.intensity = effectIntensity;
-      effectChanged = true;
-    }
-    if (effectPalette != prevPalette) {
-      seg.palette = effectPalette;
-      effectChanged = true;
+  if (strip.applyToAllSelected) {
+    for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
+      WS2812FX::Segment& seg = strip.getSegment(i);
+      if (!seg.isActive() || !seg.isSelected() || i == selectedSeg) continue;
+      if (effectCurrent != prevEffect)      strip.setMode(i, effectCurrent);
+      if (effectSpeed != prevSpeed)         seg.speed     = effectSpeed;
+      if (effectIntensity != prevIntensity) seg.intensity = effectIntensity;
+      if (effectPalette != prevPalette)     seg.palette   = effectPalette;
+      if (col0Changed) seg.colors[0] = RGBW32(col[0],    col[1],    col[2],    col[3]);
+      if (col1Changed) seg.colors[1] = RGBW32(colSec[0], colSec[1], colSec[2], colSec[3]);
+      if (col2Changed) seg.colors[2] = RGBW32(tmpCol[0], tmpCol[1], tmpCol[2], tmpCol[3]);
     }
   }
-
-  if (col0Changed) {
-    if (selectedSeg == strip.getMainSegmentId()) {
-      strip.applyToAllSelected = true;
-      strip.setColor(0, colorFromRgbw(col));
-    }
-  }
-  if (col1Changed) {
-    if (selectedSeg == strip.getMainSegmentId()) {
-      strip.applyToAllSelected = true;
-      strip.setColor(1, colorFromRgbw(colSec));
-    }
-  }
+  strip.applyToAllSelected = false;
+  setValuesFromMainSeg();
   //end of temporary fix code
 
   if (!apply) return true; //when called by JSON API, do not call colorUpdated() here
@@ -956,8 +977,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   //internal call, does not send XML response
   pos = req.indexOf(F("IN"));
   if (pos < 1) XML_response(request);
-
-  strip.applyToAllSelected = false;
 
   pos = req.indexOf(F("&NN")); //do not send UDP notifications this time
   colorUpdated((pos > 0) ? CALL_MODE_NO_NOTIFY : CALL_MODE_DIRECT_CHANGE);

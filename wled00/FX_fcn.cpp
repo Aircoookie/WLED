@@ -165,12 +165,12 @@ void WS2812FX::service() {
   _triggered = false;
 }
 
-void WS2812FX::setPixelColor(uint16_t n, uint32_t c) {
+void IRAM_ATTR WS2812FX::setPixelColor(uint16_t n, uint32_t c) {
   setPixelColor(n, R(c), G(c), B(c), W(c));
 }
 
 //used to map from segment index to physical pixel, taking into account grouping, offsets, reverse and mirroring
-uint16_t WS2812FX::realPixelIndex(uint16_t i) {
+uint16_t IRAM_ATTR WS2812FX::realPixelIndex(uint16_t i) {
   int16_t iGroup = i * SEGMENT.groupLength();
 
   /* reverse just an individual segment */
@@ -187,7 +187,7 @@ uint16_t WS2812FX::realPixelIndex(uint16_t i) {
   return realIndex;
 }
 
-void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
+void IRAM_ATTR WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
   if (SEGLEN) {//from segment
     uint16_t realIndex = realPixelIndex(i);
@@ -348,6 +348,15 @@ bool WS2812FX::isUpdating() {
 uint16_t WS2812FX::getFps() {
   if (millis() - _lastShow > 2000) return 0;
   return _cumulativeFps +1;
+}
+
+uint8_t WS2812FX::getTargetFps() {
+	return _targetFps;
+}
+
+void WS2812FX::setTargetFps(uint8_t fps) {
+	if (fps > 0 && fps <= 120) _targetFps = fps;
+	_frametime = 1000 / _targetFps;
 }
 
 /**
@@ -606,8 +615,14 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
   _segment_runtimes[n].reset();
 }
 
+void WS2812FX::restartRuntime() {
+  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) {
+    _segment_runtimes[i].reset();
+  }
+}
+
 void WS2812FX::resetSegments() {
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) if (_segments[i].name) delete _segments[i].name;
+  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) if (_segments[i].name) delete[] _segments[i].name;
   mainSegment = 0;
   memset(_segments, 0, sizeof(_segments));
   //memset(_segment_runtimes, 0, sizeof(_segment_runtimes));
@@ -701,36 +716,16 @@ bool WS2812FX::checkSegmentAlignment() {
 }
 
 //After this function is called, setPixelColor() will use that segment (offsets, grouping, ... will apply)
-//Note: If called in an interrupt (e.g. JSON API), it must be reset with "setPixelColor(255)",
+//Note: If called in an interrupt (e.g. JSON API), original segment must be restored,
 //otherwise it can lead to a crash on ESP32 because _segment_index is modified while in use by the main thread
-#ifdef ARDUINO_ARCH_ESP32
-uint8_t _segment_index_prev = 0;
-uint16_t _virtualSegmentLength_prev = 0;
-bool _ps_set = false;
-#endif
-
-void WS2812FX::setPixelSegment(uint8_t n)
+uint8_t WS2812FX::setPixelSegment(uint8_t n)
 {
+  uint8_t prevSegId = _segment_index;
   if (n < MAX_NUM_SEGMENTS) {
-		#ifdef ARDUINO_ARCH_ESP32
-		if (!_ps_set) {
-			_segment_index_prev = _segment_index;
-			_virtualSegmentLength_prev = _virtualSegmentLength;
-			_ps_set = true;
-		}
-		#endif
     _segment_index = n;
     _virtualSegmentLength = SEGMENT.virtualLength();
-  } else {
-		_virtualSegmentLength = 0;
-		#ifdef ARDUINO_ARCH_ESP32
-		if (_ps_set) {
-			_segment_index = _segment_index_prev;
-			_virtualSegmentLength = _virtualSegmentLength_prev;
-			_ps_set = false;
-		}
-		#endif
   }
+  return prevSegId;
 }
 
 void WS2812FX::setRange(uint16_t i, uint16_t i2, uint32_t col)
@@ -769,7 +764,7 @@ void WS2812FX::setTransitionMode(bool t)
 /*
  * color blend function
  */
-uint32_t WS2812FX::color_blend(uint32_t color1, uint32_t color2, uint16_t blend, bool b16) {
+uint32_t IRAM_ATTR WS2812FX::color_blend(uint32_t color1, uint32_t color2, uint16_t blend, bool b16) {
   if(blend == 0)   return color1;
   uint16_t blendmax = b16 ? 0xFFFF : 0xFF;
   if(blend == blendmax) return color2;
@@ -872,13 +867,13 @@ void WS2812FX::blur(uint8_t blur_amount)
   }
 }
 
-uint16_t WS2812FX::triwave16(uint16_t in)
+uint16_t IRAM_ATTR WS2812FX::triwave16(uint16_t in)
 {
   if (in < 0x8000) return in *2;
   return 0xFFFF - (in - 0x8000)*2;
 }
 
-uint8_t WS2812FX::sin_gap(uint16_t in) {
+uint8_t IRAM_ATTR WS2812FX::sin_gap(uint16_t in) {
   if (in & 0x100) return 0;
   //if (in > 255) return 0;
   return sin8(in + 192); //correct phase shift of sine so that it starts and stops at 0
@@ -945,13 +940,13 @@ uint8_t WS2812FX::get_random_wheel_index(uint8_t pos) {
 }
 
 
-uint32_t WS2812FX::crgb_to_col(CRGB fastled)
+uint32_t IRAM_ATTR WS2812FX::crgb_to_col(CRGB fastled)
 {
   return RGBW32(fastled.red, fastled.green, fastled.blue, 0);
 }
 
 
-CRGB WS2812FX::col_to_crgb(uint32_t color)
+CRGB IRAM_ATTR WS2812FX::col_to_crgb(uint32_t color)
 {
   CRGB fastled_col;
   fastled_col.red =   R(color);
@@ -1074,7 +1069,7 @@ void WS2812FX::handle_palette(void)
  * @param pbri Value to scale the brightness of the returned color by. Default is 255. (no scaling)
  * @returns Single color from palette
  */
-uint32_t WS2812FX::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri)
+uint32_t IRAM_ATTR WS2812FX::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri)
 {
   if (SEGMENT.palette == 0 && mcol < 3) {
     uint32_t color = SEGCOLOR(mcol);

@@ -382,6 +382,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("CCT"),correctWB);
     sappend('c',SET_F("CR"),cctFromRgb);
 		sappend('v',SET_F("CB"),strip.cctBlending);
+		sappend('v',SET_F("FR"),strip.getTargetFps());
 		sappend('v',SET_F("AW"),Bus::getAutoWhiteMode());
 
     for (uint8_t s=0; s < busses.getNumBusses(); s++) {
@@ -418,6 +419,19 @@ void getSettingsJS(byte subPage, char* dest)
       olen -= 2; //delete ";
       oappendi(strip.currentMilliamps);
       oappend(SET_F("mA\";"));
+    }
+
+    oappend(SET_F("resetCOM("));
+    oappend(itoa(WLED_MAX_COLOR_ORDER_MAPPINGS,nS,10));
+    oappend(SET_F(");"));
+    const ColorOrderMap& com = busses.getColorOrderMap();
+    for (uint8_t s=0; s < com.count(); s++) {
+      const ColorOrderMapEntry* entry = com.get(s);
+      if (entry == nullptr) break;
+      oappend(SET_F("addCOM("));
+      oappend(itoa(entry->start,nS,10));  oappend(",");
+      oappend(itoa(entry->len,nS,10));  oappend(",");
+      oappend(itoa(entry->colorOrder,nS,10));  oappend(");");
     }
 
     sappend('v',SET_F("CA"),briS);
@@ -465,6 +479,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("RB"),receiveNotificationBrightness);
     sappend('c',SET_F("RC"),receiveNotificationColor);
     sappend('c',SET_F("RX"),receiveNotificationEffects);
+    sappend('c',SET_F("SO"),receiveSegmentOptions);
     sappend('c',SET_F("SD"),notifyDirectDefault);
     sappend('c',SET_F("SB"),notifyButton);
     sappend('c',SET_F("SH"),notifyHue);
@@ -505,7 +520,7 @@ void getSettingsJS(byte subPage, char* dest)
     memset(fpass,'*',l);
     sappends('s',SET_F("MQPASS"),fpass);
     sappends('s',SET_F("MQCID"),mqttClientID);
-    sappends('s',SET_F("MD"),mqttDeviceTopic);
+    sappends('s',"MD",mqttDeviceTopic);
     sappends('s',SET_F("MG"),mqttGroupTopic);
     sappend('c',SET_F("BM"),buttonPublishMqtt);
     #endif
@@ -536,6 +551,7 @@ void getSettingsJS(byte subPage, char* dest)
     
     sappends('m',SET_F("(\"sip\")[0]"),hueErrorString);
     #endif
+    sappend('v',SET_F("BD"),serialBaud);
   }
 
   if (subPage == 5)
@@ -596,6 +612,12 @@ void getSettingsJS(byte subPage, char* dest)
       k[0] = 'N'; sappend('v',k,timerMinutes[i]);
       k[0] = 'T'; sappend('v',k,timerMacro[i]);
       k[0] = 'W'; sappend('v',k,timerWeekday[i]);
+      if (i<8) {
+        k[0] = 'M'; sappend('v',k,(timerMonth[i] >> 4) & 0x0F);
+				k[0] = 'P'; sappend('v',k,timerMonth[i] & 0x0F);
+        k[0] = 'D'; sappend('v',k,timerDay[i]);
+				k[0] = 'E'; sappend('v',k,timerDayEnd[i]);
+      }
     }
   }
 
