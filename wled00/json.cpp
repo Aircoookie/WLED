@@ -33,7 +33,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   uint16_t start = elem["start"] | seg.start;
   int stop = elem["stop"] | -1;
   if (stop < 0) {
-    uint16_t len = elem[F("len")];
+    uint16_t len = elem["len"];
     stop = (len > 0) ? start + len : seg.stop;
   }
 
@@ -281,8 +281,8 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   JsonObject nl       = root["nl"];
   nightlightActive    = nl["on"]      | nightlightActive;
-  nightlightDelayMins = nl[F("dur")]  | nightlightDelayMins;
-  nightlightMode      = nl[F("mode")] | nightlightMode;
+  nightlightDelayMins = nl["dur"]  | nightlightDelayMins;
+  nightlightMode      = nl["mode"] | nightlightMode;
   nightlightTargetBri = nl[F("tbri")] | nightlightTargetBri;
 
   JsonObject udpn      = root["udpn"];
@@ -403,7 +403,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
     root["start"] = seg.start;
     root["stop"] = seg.stop;
   }
-  if (!forPreset) root[F("len")] = seg.stop - seg.start;
+  if (!forPreset) root["len"] = seg.stop - seg.start;
   root["grp"] = seg.grouping;
   root[F("spc")] = seg.spacing;
   root[F("of")] = seg.offset;
@@ -465,8 +465,8 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
 
     JsonObject nl = root.createNestedObject("nl");
     nl["on"] = nightlightActive;
-    nl[F("dur")] = nightlightDelayMins;
-    nl[F("mode")] = nightlightMode;
+    nl["dur"] = nightlightDelayMins;
+    nl["mode"] = nightlightMode;
     nl[F("tbri")] = nightlightTargetBri;
     if (nightlightActive) {
       nl[F("rem")] = (nightlightDelayMs - (millis() - nightlightStartTime)) / 1000; // seconds remaining
