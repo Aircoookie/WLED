@@ -50,6 +50,24 @@ bool applyPreset(byte index, byte callMode)
   return false;
 }
 
+String getPresetName(byte index) 
+{
+  String name="";
+  DEBUGFS_PRINTLN(F("Make read buf"));
+  #ifdef WLED_USE_DYNAMIC_JSON
+  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+  #else
+  if (!requestJSONBufferLock(9)) return "";
+  #endif
+  if (readObjectFromFileUsingId("/presets.json", index, &doc))
+  { 
+    JsonObject fdo = doc.as<JsonObject>();
+    if (fdo["n"] ) name = (const char*)(fdo["n"]);
+  }
+  releaseJSONBufferLock();
+  return name;
+}
+
 void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
 {
   if (index == 0 || (index > 250 && persist) || (index<255 && !persist)) return;

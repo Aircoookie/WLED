@@ -398,6 +398,12 @@ public:
     }
   }
 
+  void removeAllDevices()
+  {
+    currentDeviceCount=0;
+    return;
+  }
+
   // returns device index or 0 on failure
   uint8_t addDevice(EspalexaDevice* d)
   {

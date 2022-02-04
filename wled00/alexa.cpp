@@ -16,34 +16,26 @@ void alexaInit()
 {
   if (alexaEnabled && WLED_CONNECTED)
   {
-    if (espalexa.getDeviceCount() == 0) //only init once
+    espalexa.removeAllDevices();
+    // up to 9 first devices (index 0 to 8) serve for switching on up to nine presets (index 1 to 9), 
+    // names are identical as the preset names, switching off can be done by switching off any of them
+    for (byte presetIndex=1; presetIndex<=9; ++presetIndex) 
     {
-      // the original configured device for keeping old behavior
+      String name = getPresetName(presetIndex);
+      if (name != "") 
+      {
+        espalexaDevice = new EspalexaDevice(name.c_str(), onAlexaChange, EspalexaDeviceType::extendedcolor);
+        espalexa.addDevice(espalexaDevice);
+      }
+    }
+    // the original configured device for keeping old behavior
+    if (String(alexaInvocationName) != "") 
+    {
       espalexaDevice = new EspalexaDevice(alexaInvocationName, onAlexaChange, EspalexaDeviceType::extendedcolor);
       espalexa.addDevice(espalexaDevice);
-      // 9 further devices with names Effect 1-9 (in German) for switching presets 1-9 on (off and other commands will work like before)
-      // switch on e.g. by saying (in German): "Alexa, Effekt eins anschalten"
-      espalexaDevice = new EspalexaDevice("Effekt eins", onAlexaChange, EspalexaDeviceType::extendedcolor);
-      espalexa.addDevice(espalexaDevice);
-      espalexaDevice = new EspalexaDevice("Effekt zwei", onAlexaChange, EspalexaDeviceType::extendedcolor);
-      espalexa.addDevice(espalexaDevice);
-      espalexaDevice = new EspalexaDevice("Effekt drei", onAlexaChange, EspalexaDeviceType::extendedcolor);
-      espalexa.addDevice(espalexaDevice);
-      espalexaDevice = new EspalexaDevice("Effekt vier", onAlexaChange, EspalexaDeviceType::extendedcolor);
-      espalexa.addDevice(espalexaDevice);
-      espalexaDevice = new EspalexaDevice("Effekt fünf", onAlexaChange, EspalexaDeviceType::extendedcolor);
-      espalexa.addDevice(espalexaDevice);
-      espalexaDevice = new EspalexaDevice("Effekt sechs", onAlexaChange, EspalexaDeviceType::extendedcolor);
-      espalexa.addDevice(espalexaDevice);
-      espalexaDevice = new EspalexaDevice("Effekt sieben", onAlexaChange, EspalexaDeviceType::extendedcolor);
-      espalexa.addDevice(espalexaDevice);
-      espalexaDevice = new EspalexaDevice("Effekt acht", onAlexaChange, EspalexaDeviceType::extendedcolor);
-      espalexa.addDevice(espalexaDevice);
-      espalexaDevice = new EspalexaDevice("Effekt neun", onAlexaChange, EspalexaDeviceType::extendedcolor);
-      espalexa.addDevice(espalexaDevice);
-      espalexa.begin(&server);
-    } 
-  }
+    }
+    espalexa.begin(&server);
+  } 
 }
 
 void handleAlexa()
@@ -75,17 +67,18 @@ void onAlexaChange(EspalexaDevice* dev)
         if (bri == 0) espalexaDevice->setValue(briLast); //stop Alexa from complaining if macroAlexaOn does not actually turn on
       }
     } else {
-      // new switch-on behavior for devices 1-9 which switch on presets 1-9
+      // new switch-on behavior for preset devices
       byte preset = 0;
-      if (name == "Effekt eins") preset = 1;
-      else if (name == "Effekt zwei") preset = 2;
-      else if (name == "Effekt drei") preset = 3;
-      else if (name == "Effekt vier") preset = 4;
-      else if (name == "Effekt fünf") preset = 5;
-      else if (name == "Effekt sechs") preset = 6;
-      else if (name == "Effekt sieben") preset = 7;
-      else if (name == "Effekt acht") preset = 8;
-      else if (name == "Effekt neun") preset = 9;
+      // as we don't know if the default device created with alexaInvocationName exists, 
+      // we loop over all devices, we should never hit alexaInvationName in this else branch
+      for (byte alexaIndex=0; alexaIndex<espalexa.getDeviceCount(); ++alexaIndex)
+      {
+        if (name == espalexa.getDevice(alexaIndex)->getName())
+        {
+          preset = alexaIndex+1; // remember preset 1 device was added first (index 0), preset 2 second (index 1) etc.
+          break;
+        }
+      }
       applyPreset(preset,CALL_MODE_ALEXA);
     }
   } else if (m == EspalexaDeviceProperty::off)
