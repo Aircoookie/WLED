@@ -660,8 +660,6 @@ class WS2812FX {
       deserializeMap(uint8_t n=0);
 
     bool
-      isRgbw = false,
-      isOffRefreshRequred = false, //periodic refresh is required for the strip to remain off.
       gammaCorrectBri = false,
       gammaCorrectCol = true,
       applyToAllSelected = true,
@@ -864,6 +862,8 @@ class WS2812FX {
     uint16_t _cumulativeFps = 2;
 
     bool
+      _isOffRefreshRequired = false, //periodic refresh is required for the strip to remain off.
+      _hasWhiteChannel = false,
       _triggered;
 
     mode_ptr _mode[MODE_COUNT]; // SRAM footprint: 4 bytes per element
@@ -925,6 +925,10 @@ class WS2812FX {
     uint16_t
       realPixelIndex(uint16_t i),
       transitionProgress(uint8_t tNr);
+  
+  public:
+    inline bool hasWhiteChannel(void) {return _hasWhiteChannel;}
+    inline bool isOffRefreshRequired(void) {return _isOffRefreshRequired;}
 };
 
 //10 names per line

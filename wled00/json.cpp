@@ -418,7 +418,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
   // to conserve RAM we will serialize the col array manually
   // this will reduce RAM footprint from ~300 bytes to 84 bytes per segment
   char colstr[70]; colstr[0] = '['; colstr[1] = '\0';  //max len 68 (5 chan, all 255)
-  const char *format = strip.isRgbw ? PSTR("[%u,%u,%u,%u]") : PSTR("[%u,%u,%u]");
+  const char *format = strip.hasWhiteChannel() ? PSTR("[%u,%u,%u,%u]") : PSTR("[%u,%u,%u]");
   for (uint8_t i = 0; i < 3; i++)
   {
     byte segcol[4]; byte* c = segcol;
@@ -524,13 +524,13 @@ void serializeInfo(JsonObject root)
 
   JsonObject leds = root.createNestedObject("leds");
   leds[F("count")] = strip.getLengthTotal();
-  leds[F("rgbw")] = strip.isRgbw;
+  leds[F("rgbw")] = strip.hasWhiteChannel();
   leds[F("wv")] = false;
   leds["cct"] = correctWB || strip.hasCCTBus();
   switch (Bus::getAutoWhiteMode()) {
     case RGBW_MODE_MANUAL_ONLY:
     case RGBW_MODE_DUAL:
-      if (strip.isRgbw) leds[F("wv")] = true;
+      if (strip.hasWhiteChannel()) leds[F("wv")] = true;
       break;
   }
 
