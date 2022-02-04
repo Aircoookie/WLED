@@ -79,7 +79,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonObject hw = doc[F("hw")];
 
   // initialize LED pins and lengths prior to other HW (except for ethernet)
-  JsonObject hw_led = hw[F("led")];
+  JsonObject hw_led = hw["led"];
 
   CJSON(strip.ablMilliampsMax, hw_led[F("maxpwr")]);
   CJSON(strip.milliampsPerLed, hw_led[F("ledma")]);
@@ -108,7 +108,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
         if (i>4) break;
       }
 
-      uint16_t length = elm[F("len")] | 1;
+      uint16_t length = elm["len"] | 1;
       uint8_t colorOrder = (int)elm[F("order")];
       uint8_t skipFirst = elm[F("skip")];
       uint16_t start = elm["start"] | 0;
@@ -133,8 +133,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     uint8_t s = 0;
     for (JsonObject entry : hw_com) {
       if (s > WLED_MAX_COLOR_ORDER_MAPPINGS) break;
-      uint16_t start = entry[F("start")] | 0;
-      uint16_t len = entry[F("len")] | 0;
+      uint16_t start = entry["start"] | 0;
+      uint16_t len = entry["len"] | 0;
       uint8_t colorOrder = (int)entry[F("order")];
       com.add(start, len, colorOrder);
       s++;
@@ -232,29 +232,29 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   if (light_gc_col > 1.5) strip.gammaCorrectCol = true;
   else if (light_gc_col > 0.5) strip.gammaCorrectCol = false;
 
-  JsonObject light_tr = light[F("tr")];
-  CJSON(fadeTransition, light_tr[F("mode")]);
+  JsonObject light_tr = light["tr"];
+  CJSON(fadeTransition, light_tr["mode"]);
   int tdd = light_tr["dur"] | -1;
   if (tdd >= 0) transitionDelayDefault = tdd * 100;
   CJSON(strip.paletteFade, light_tr["pal"]);
 
   JsonObject light_nl = light["nl"];
-  CJSON(nightlightMode, light_nl[F("mode")]);
+  CJSON(nightlightMode, light_nl["mode"]);
   byte prev = nightlightDelayMinsDefault;
-  CJSON(nightlightDelayMinsDefault, light_nl[F("dur")]);
+  CJSON(nightlightDelayMinsDefault, light_nl["dur"]);
   if (nightlightDelayMinsDefault != prev) nightlightDelayMins = nightlightDelayMinsDefault;
 
   CJSON(nightlightTargetBri, light_nl[F("tbri")]);
   CJSON(macroNl, light_nl["macro"]);
 
-  JsonObject def = doc[F("def")];
+  JsonObject def = doc["def"];
   CJSON(bootPreset, def["ps"]);
   CJSON(turnOnAtBoot, def["on"]); // true
   CJSON(briS, def["bri"]); // 128
 
   JsonObject interfaces = doc["if"];
 
-  JsonObject if_sync = interfaces[F("sync")];
+  JsonObject if_sync = interfaces["sync"];
   CJSON(udpPort, if_sync[F("port0")]); // 21324
   CJSON(udpPort2, if_sync[F("port1")]); // 65506
 
@@ -292,7 +292,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(e131Universe, if_live_dmx[F("uni")]);
   CJSON(e131SkipOutOfSequence, if_live_dmx[F("seqskip")]);
   CJSON(DMXAddress, if_live_dmx[F("addr")]);
-  CJSON(DMXMode, if_live_dmx[F("mode")]);
+  CJSON(DMXMode, if_live_dmx["mode"]);
 
   tdd = if_live[F("timeout")] | -1;
   if (tdd >= 0) realtimeTimeoutMs = tdd * 100;
@@ -577,7 +577,7 @@ void serializeConfig() {
     if (!bus || bus->getLength()==0) break;
     JsonObject ins = hw_led_ins.createNestedObject();
     ins["start"] = bus->getStart();
-    ins[F("len")] = bus->getLength();
+    ins["len"] = bus->getLength();
     JsonArray ins_pin = ins.createNestedArray("pin");
     uint8_t pins[5];
     uint8_t nPins = bus->getPins(pins);
@@ -587,7 +587,7 @@ void serializeConfig() {
     ins[F("skip")] = bus->skippedLeds();
     ins["type"] = bus->getType() & 0x7F;
     ins["ref"] = bus->isOffRefreshRequired();
-    ins[F("rgbw")] = bus->isRgbw();
+    //ins[F("rgbw")] = bus->isRgbw();
   }
 
   JsonArray hw_com = hw.createNestedArray(F("com"));
@@ -597,8 +597,8 @@ void serializeConfig() {
     if (!entry) break;
 
     JsonObject co = hw_com.createNestedObject();
-    co[F("start")] = entry->start;
-    co[F("len")] = entry->len;
+    co["start"] = entry->start;
+    co["len"] = entry->len;
     co[F("order")] = entry->colorOrder;
   }
 
@@ -645,12 +645,12 @@ void serializeConfig() {
   light_gc["col"] = (strip.gammaCorrectCol) ? 2.8 : 1.0;
 
   JsonObject light_tr = light.createNestedObject("tr");
-  light_tr[F("mode")] = fadeTransition;
+  light_tr["mode"] = fadeTransition;
   light_tr["dur"] = transitionDelayDefault / 100;
   light_tr["pal"] = strip.paletteFade;
 
   JsonObject light_nl = light.createNestedObject("nl");
-  light_nl[F("mode")] = nightlightMode;
+  light_nl["mode"] = nightlightMode;
   light_nl["dur"] = nightlightDelayMinsDefault;
   light_nl[F("tbri")] = nightlightTargetBri;
   light_nl["macro"] = macroNl;
@@ -695,7 +695,7 @@ void serializeConfig() {
   if_live_dmx[F("uni")] = e131Universe;
   if_live_dmx[F("seqskip")] = e131SkipOutOfSequence;
   if_live_dmx[F("addr")] = DMXAddress;
-  if_live_dmx[F("mode")] = DMXMode;
+  if_live_dmx["mode"] = DMXMode;
 
   if_live[F("timeout")] = realtimeTimeoutMs / 100;
   if_live[F("maxbri")] = arlsForceMaxBri;

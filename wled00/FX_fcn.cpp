@@ -68,7 +68,7 @@
 void WS2812FX::finalizeInit(void)
 {
   RESET_RUNTIME;
-  isRgbw = isOffRefreshRequred = false;
+  _hasWhiteChannel = _isOffRefreshRequired = false;
 
   //if busses failed to load, add default (fresh install, FS issue, ...)
   if (busses.getNumBusses() == 0) {
@@ -93,9 +93,9 @@ void WS2812FX::finalizeInit(void)
     if (bus == nullptr) continue;
     if (bus->getStart() + bus->getLength() > MAX_LEDS) break;
     //RGBW mode is enabled if at least one of the strips is RGBW
-    isRgbw |= bus->isRgbw();
+    _hasWhiteChannel |= bus->isRgbw();
     //refresh is required to remain off if at least one of the strips requires the refresh.
-    isOffRefreshRequred |= bus->isOffRefreshRequired();
+    _isOffRefreshRequired |= bus->isOffRefreshRequired();
     uint16_t busEnd = bus->getStart() + bus->getLength();
     if (busEnd > _length) _length = busEnd;
     #ifdef ESP8266

@@ -104,7 +104,7 @@ void WLED::loop()
     #ifdef WLED_DEBUG
     unsigned long stripMillis = millis();
     #endif
-    if (!offMode || strip.isOffRefreshRequred)
+    if (!offMode || strip.isOffRefreshRequired())
       strip.service();
     #ifdef ESP8266
     else if (!noWifiSleep)

@@ -18,7 +18,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   uint16_t start = elem["start"] | seg.start;
   int stop = elem["stop"] | -1;
   if (stop < 0) {
-    uint16_t len = elem[F("len")];
+    uint16_t len = elem["len"];
     stop = (len > 0) ? start + len : seg.stop;
   }
 
@@ -269,8 +269,8 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   JsonObject nl       = root["nl"];
   nightlightActive    = nl["on"]      | nightlightActive;
-  nightlightDelayMins = nl[F("dur")]  | nightlightDelayMins;
-  nightlightMode      = nl[F("mode")] | nightlightMode;
+  nightlightDelayMins = nl["dur"]  | nightlightDelayMins;
+  nightlightMode      = nl["mode"] | nightlightMode;
   nightlightTargetBri = nl[F("tbri")] | nightlightTargetBri;
 
   JsonObject udpn      = root["udpn"];
@@ -392,7 +392,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
     root["start"] = seg.start;
     root["stop"] = seg.stop;
   }
-  if (!forPreset) root[F("len")] = seg.stop - seg.start;
+  if (!forPreset) root["len"] = seg.stop - seg.start;
   root["grp"] = seg.grouping;
   root[F("spc")] = seg.spacing;
   root[F("of")] = seg.offset;
@@ -407,7 +407,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
   // to conserve RAM we will serialize the col array manually
   // this will reduce RAM footprint from ~300 bytes to 84 bytes per segment
   char colstr[70]; colstr[0] = '['; colstr[1] = '\0';  //max len 68 (5 chan, all 255)
-  const char *format = strip.isRgbw ? PSTR("[%u,%u,%u,%u]") : PSTR("[%u,%u,%u]");
+  const char *format = strip.hasWhiteChannel() ? PSTR("[%u,%u,%u,%u]") : PSTR("[%u,%u,%u]");
   for (uint8_t i = 0; i < 3; i++)
   {
     byte segcol[4]; byte* c = segcol;
@@ -455,8 +455,8 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
 
     JsonObject nl = root.createNestedObject("nl");
     nl["on"] = nightlightActive;
-    nl[F("dur")] = nightlightDelayMins;
-    nl[F("mode")] = nightlightMode;
+    nl["dur"] = nightlightDelayMins;
+    nl["mode"] = nightlightMode;
     nl[F("tbri")] = nightlightTargetBri;
     if (nightlightActive) {
       nl[F("rem")] = (nightlightDelayMs - (millis() - nightlightStartTime)) / 1000; // seconds remaining
@@ -496,14 +496,14 @@ void serializeInfo(JsonObject root)
 
   JsonObject leds = root.createNestedObject("leds");
   leds[F("count")] = strip.getLengthTotal();
-  leds[F("rgbw")] = strip.isRgbw;
+  leds[F("rgbw")] = strip.hasWhiteChannel();
   leds[F("wv")] = false;
   
   leds["cct"] = correctWB || strip.hasCCTBus();
   switch (Bus::getAutoWhiteMode()) {
     case RGBW_MODE_MANUAL_ONLY:
     case RGBW_MODE_DUAL:
-      if (strip.isRgbw) leds[F("wv")] = true;
+      if (strip.hasWhiteChannel()) leds[F("wv")] = true;
       break;
   }
 
