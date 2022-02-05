@@ -1,3 +1,15 @@
+# Welcome to siggel's fork of project WLED!
+
+This fork just serves for elaborating contributions to the original WLED project which is described below the banner. 
+
+**My major intent for improvement currently is to be able to call different presets "by name" using Alexa Echo devices, e.g. "Alexa, turn Rainbow on", "Alexa, turn Firework on" etc.** This is achieved by creating individual Alexa devices for up to 9 presets (preset index 1-9 in WLED given the names like intended for use with Alexa). If you already used your WLED device with Alexa before you will need to delete it's device(s) in Alexa and then let Alexa search for devices again. Yes, Alexa will find up to 10 devices: the one configured within WLED plus up to 9 devices with your preset names. Probably you need to repeat that deletion+searching-procedure each time you change names of your first 9 presets, I had no need for renaming yet, so I did not try.
+
+This fork will not be kept up-to-date at a regular basis, but I rather hope that my contributions will move to the original project some day. 
+
+Of course you may try my code or flash the provided D1 mini firmware.bin from [here](https://github.com/siggel/WLED/releases) if you consider it useful. The same license and disclaimer apply as given for the original WLED project below. Be aware that I'm far less familiar with the code than the original authors, so - although it works for me - the risk for harmful bugs may be higher.
+
+Please find the original readme below:
+
 <p align="center">
   <img src="/images/wled_logo_akemi.png">
   <a href="https://github.com/Aircoookie/WLED/releases"><img src="https://img.shields.io/github/release/Aircoookie/WLED.svg?style=flat-square"></a>
