@@ -17,21 +17,16 @@ void alexaInit()
   if (alexaEnabled && WLED_CONNECTED)
   {
     espalexa.removeAllDevices();
-    // up to 9 first devices (index 0 to 8) serve for switching on up to nine presets (index 1 to 9), 
+    // the original configured device for keeping old behavior (added first, i.e. index 0)
+    espalexaDevice = new EspalexaDevice(alexaInvocationName, onAlexaChange, EspalexaDeviceType::extendedcolor);
+    espalexa.addDevice(espalexaDevice);
+    // up to 9 devices (added second, third, ... i.e. index 1 to 9) serve for switching on up to nine presets (preset IDs 1 to 9 in WLED), 
     // names are identical as the preset names, switching off can be done by switching off any of them
     for (byte presetIndex=1; presetIndex<=9; ++presetIndex) 
     {
       String name = getPresetName(presetIndex);
-      if (name != "") 
-      {
-        espalexaDevice = new EspalexaDevice(name.c_str(), onAlexaChange, EspalexaDeviceType::extendedcolor);
-        espalexa.addDevice(espalexaDevice);
-      }
-    }
-    // the original configured device for keeping old behavior
-    if (String(alexaInvocationName) != "") 
-    {
-      espalexaDevice = new EspalexaDevice(alexaInvocationName, onAlexaChange, EspalexaDeviceType::extendedcolor);
+      if (name == "") break; // no more presets
+      espalexaDevice = new EspalexaDevice(name.c_str(), onAlexaChange, EspalexaDeviceType::extendedcolor);
       espalexa.addDevice(espalexaDevice);
     }
     espalexa.begin(&server);
@@ -69,13 +64,12 @@ void onAlexaChange(EspalexaDevice* dev)
     } else {
       // new switch-on behavior for preset devices
       byte preset = 0;
-      // as we don't know if the default device created with alexaInvocationName exists, 
-      // we loop over all devices, we should never hit alexaInvationName in this else branch
-      for (byte alexaIndex=0; alexaIndex<espalexa.getDeviceCount(); ++alexaIndex)
+      // find the index with the right name, leave out index 0 (device with alexaInvocationName does not occur in this else branch)
+      for (byte alexaIndex=1; alexaIndex<espalexa.getDeviceCount(); ++alexaIndex)
       {
         if (name == espalexa.getDevice(alexaIndex)->getName())
         {
-          preset = alexaIndex+1; // remember preset 1 device was added first (index 0), preset 2 second (index 1) etc.
+          preset = alexaIndex; // in alexaInit() preset 1 device was added second (index 1), preset 2 third (index 2) etc.
           break;
         }
       }
