@@ -48,7 +48,7 @@
 #ifdef USERMOD_FOUR_LINE_DISPLAY
   #ifdef USE_ALT_DISPlAY
     #include "../usermods/usermod_v2_four_line_display_ALT/usermod_v2_four_line_display_ALT.h"
-  #else 
+  #else
     #include "../usermods/usermod_v2_four_line_display/usermod_v2_four_line_display.h"
   #endif
 #endif
@@ -106,6 +106,10 @@
 
 #ifdef QUINLED_AN_PENTA
 #include "../usermods/quinled-an-penta/quinled-an-penta.h"
+#endif
+
+#ifdef USERMOD_BUTTONS_SEND_MQTT
+#include "../usermods/buttons_only_send_mqtt/usermod_v2_buttons_send_mqtt.h"
 #endif
 
 void registerUsermods()
@@ -202,5 +206,9 @@ void registerUsermods()
 
   #ifdef QUINLED_AN_PENTA
   usermods.add(new QuinLEDAnPentaUsermod());
+  #endif
+
+  #ifdef USERMOD_BUTTONS_SEND_MQTT
+  usermods.add(new ButtonsSendMqtt());
   #endif
 }
