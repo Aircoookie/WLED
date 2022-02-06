@@ -11,6 +11,7 @@ void colorFromUint32(uint32_t in, bool secondary)
   _col[1] = G(in);
   _col[2] = B(in);
   _col[3] = W(in);
+  colorChanged = true;
 }
 
 //load a color without affecting the white channel
@@ -20,6 +21,7 @@ void colorFromUint24(uint32_t in, bool secondary)
   _col[0] = R(in);
   _col[1] = G(in);
   _col[2] = B(in);
+  colorChanged = true;
 }
 
 //relatively change white brightness, minumum A=5
@@ -29,6 +31,7 @@ void relativeChangeWhite(int8_t amount, byte lowerBoundary)
   if (new_val > 0xFF) new_val = 0xFF;
   else if (new_val < lowerBoundary) new_val = lowerBoundary;
   col[3] = new_val;
+  colorChanged = true;
 }
 
 void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) //hue, sat to rgb

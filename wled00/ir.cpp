@@ -77,39 +77,41 @@ void presetFallback(uint8_t presetID, uint8_t effectID, uint8_t paletteID)
   effectPalette = paletteID;
 }
 
-/*
- * This is no longer needed due to JSON IR mod
- *
-//Add what your custom IR codes should trigger here. Guide: https://github.com/Aircoookie/WLED/wiki/Infrared-Control
-//IR codes themselves can be defined directly after "case" or in "ir_codes.h"
-bool decodeIRCustom(uint32_t code)
-{
-  switch (code)
-  {
-    //just examples, feel free to modify or remove
-    case IRCUSTOM_ONOFF : toggleOnOff(); break;
-    case IRCUSTOM_MACRO1 : applyPreset(1, CALL_MODE_BUTTON_PRESET); break;
-
-    default: return false;
-  }
-  if (code != IRCUSTOM_MACRO1) colorUpdated(CALL_MODE_BUTTON); //don't update color again if we apply macro, it already does it
-  return true;
-}
-*/
-
 void relativeChange(byte* property, int8_t amount, byte lowerBoundary, byte higherBoundary)
 {
   int16_t new_val = (int16_t) *property + amount;
   if (new_val > higherBoundary) new_val = higherBoundary;
   else if (new_val < lowerBoundary) new_val = lowerBoundary;
-  *property = (byte)constrain(new_val,0.1,255.1);
+  *property = (byte)constrain(new_val, 0, 255);
+}
+
+void changeEffect(uint8_t fx)
+{
+  //byte selectedSeg = strip.getMainSegmentId();
+  //WS2812FX::Segment& selseg = strip.getSegment(selectedSeg);
+  strip.setMode(strip.getMainSegmentId(), fx);
+  effectCurrent = fx;
+  effectChanged = true;
+}
+
+void changePalette(uint8_t pal)
+{
+  byte selectedSeg = strip.getMainSegmentId();
+  WS2812FX::Segment& selseg = strip.getSegment(selectedSeg);
+  selseg.palette = pal;
+  effectPalette = pal;
+  effectChanged = true;
 }
 
 void changeEffectSpeed(int8_t amount)
 {
+  byte selectedSeg = strip.getMainSegmentId();
+  WS2812FX::Segment& selseg = strip.getSegment(selectedSeg);
   if (effectCurrent != 0) {
     int16_t new_val = (int16_t) effectSpeed + amount;
-    effectSpeed = (byte)constrain(new_val,0.1,255.1);
+    effectSpeed = (byte)constrain(new_val,0,255);
+    selseg.speed = effectSpeed;
+    effectChanged = true;
   } else {                              // if Effect == "solid Color", change the hue of the primary color
     CRGB fastled_col;
     fastled_col.red =   col[0];
@@ -124,6 +126,7 @@ void changeEffectSpeed(int8_t amount)
     col[0] = fastled_col.red; 
     col[1] = fastled_col.green; 
     col[2] = fastled_col.blue;
+    colorChanged = true;
   }
 
   if(amount > 0) lastRepeatableAction = ACTION_SPEED_UP;
@@ -133,9 +136,13 @@ void changeEffectSpeed(int8_t amount)
 
 void changeEffectIntensity(int8_t amount)
 {
+  byte selectedSeg = strip.getMainSegmentId();
+  WS2812FX::Segment& selseg = strip.getSegment(selectedSeg);
   if (effectCurrent != 0) {
     int16_t new_val = (int16_t) effectIntensity + amount;
-    effectIntensity = (byte)constrain(new_val,0.1,255.1);
+    effectIntensity = (byte)constrain(new_val,0,255);
+    selseg.intensity = effectIntensity;
+    effectChanged = true;
   } else {                                            // if Effect == "solid Color", change the saturation of the primary color
     CRGB fastled_col;
     fastled_col.red =   col[0];
@@ -143,11 +150,12 @@ void changeEffectIntensity(int8_t amount)
     fastled_col.blue =  col[2];
     CHSV prim_hsv = rgb2hsv_approximate(fastled_col);
     int16_t new_val = (int16_t) prim_hsv.s + amount;
-    prim_hsv.s = (byte)constrain(new_val,0.1,255.1);  // constrain to 0-255
+    prim_hsv.s = (byte)constrain(new_val,0,255);  // constrain to 0-255
     hsv2rgb_rainbow(prim_hsv, fastled_col);
     col[0] = fastled_col.red; 
     col[1] = fastled_col.green; 
     col[2] = fastled_col.blue;
+    colorChanged = true;
   }
 
   if(amount > 0) lastRepeatableAction = ACTION_INTENSITY_UP;
@@ -266,11 +274,11 @@ void decodeIR24(uint32_t code)
     case IR24_PURPLE    : colorFromUint32(COLOR_PURPLE);    break;
     case IR24_MAGENTA   : colorFromUint32(COLOR_MAGENTA);   break;
     case IR24_PINK      : colorFromUint32(COLOR_PINK);      break;
-    case IR24_WHITE     : colorFromUint32(COLOR_WHITE);        effectCurrent = 0;  break;
-    case IR24_FLASH     : presetFallback(1, FX_MODE_COLORTWINKLE, effectPalette);  break;
-    case IR24_STROBE    : presetFallback(2, FX_MODE_RAINBOW_CYCLE, effectPalette); break;
-    case IR24_FADE      : presetFallback(3, FX_MODE_BREATH, effectPalette);        break;
-    case IR24_SMOOTH    : presetFallback(4, FX_MODE_RAINBOW, effectPalette);       break;
+    case IR24_WHITE     : colorFromUint32(COLOR_WHITE); changeEffect(FX_MODE_STATIC); break;
+    case IR24_FLASH     : presetFallback(1, FX_MODE_COLORTWINKLE, effectPalette);     break;
+    case IR24_STROBE    : presetFallback(2, FX_MODE_RAINBOW_CYCLE, effectPalette);    break;
+    case IR24_FADE      : presetFallback(3, FX_MODE_BREATH, effectPalette);           break;
+    case IR24_SMOOTH    : presetFallback(4, FX_MODE_RAINBOW, effectPalette);          break;
     default: return;
   }
   lastValidCode = code;
@@ -298,7 +306,7 @@ void decodeIR24OLD(uint32_t code)
     case IR24_OLD_PURPLE    : colorFromUint32(COLOR_PURPLE);       break;
     case IR24_OLD_MAGENTA   : colorFromUint32(COLOR_MAGENTA);      break;
     case IR24_OLD_PINK      : colorFromUint32(COLOR_PINK);         break;
-    case IR24_OLD_WHITE     : colorFromUint32(COLOR_WHITE); effectCurrent = 0; break;
+    case IR24_OLD_WHITE     : colorFromUint32(COLOR_WHITE); changeEffect(FX_MODE_STATIC); break;
     case IR24_OLD_FLASH     : presetFallback(1, FX_MODE_COLORTWINKLE, 0);      break;
     case IR24_OLD_STROBE    : presetFallback(2, FX_MODE_RAINBOW_CYCLE, 0);     break;
     case IR24_OLD_FADE      : presetFallback(3, FX_MODE_BREATH, 0);            break;
@@ -330,13 +338,11 @@ void decodeIR24CT(uint32_t code)
     case IR24_CT_PURPLE     : colorFromUint32(COLOR_PURPLE);       break;
     case IR24_CT_MAGENTA    : colorFromUint32(COLOR_MAGENTA);      break;
     case IR24_CT_PINK       : colorFromUint32(COLOR_PINK);         break;
-    case IR24_CT_COLDWHITE  : colorFromUint32(COLOR2_COLDWHITE);    effectCurrent = 0;  break;
-    case IR24_CT_WARMWHITE  : colorFromUint32(COLOR2_WARMWHITE);    effectCurrent = 0;  break;
-    case IR24_CT_CTPLUS     : colorFromUint32(COLOR2_COLDWHITE2);   effectCurrent = 0;  break;
-    case IR24_CT_CTMINUS    : colorFromUint32(COLOR2_WARMWHITE2);   effectCurrent = 0;  break;
-    case IR24_CT_MEMORY   : {
-      if (col[3] > 0) col[3] = 0; 
-      else colorFromUint32(COLOR2_NEUTRALWHITE); effectCurrent = 0; }                   break;
+    case IR24_CT_COLDWHITE  : colorFromUint32(COLOR2_COLDWHITE);    changeEffect(FX_MODE_STATIC); break;
+    case IR24_CT_WARMWHITE  : colorFromUint32(COLOR2_WARMWHITE);    changeEffect(FX_MODE_STATIC); break;
+    case IR24_CT_CTPLUS     : colorFromUint32(COLOR2_COLDWHITE2);   changeEffect(FX_MODE_STATIC); break;
+    case IR24_CT_CTMINUS    : colorFromUint32(COLOR2_WARMWHITE2);   changeEffect(FX_MODE_STATIC); break;
+    case IR24_CT_MEMORY     : colorFromUint32(COLOR2_NEUTRALWHITE); changeEffect(FX_MODE_STATIC); break;
     default: return; 
   }
   lastValidCode = code;
@@ -364,21 +370,31 @@ void decodeIR40(uint32_t code)
     case IR40_PURPLE       : colorFromUint24(COLOR_PURPLE);                              break;
     case IR40_MAGENTA      : colorFromUint24(COLOR_MAGENTA);                             break;
     case IR40_PINK         : colorFromUint24(COLOR_PINK);                                break;
-    case IR40_WARMWHITE2   : {
-      if (strip.hasWhiteChannel()) {colorFromUint32(COLOR2_WARMWHITE2);   effectCurrent = 0; }    
-      else                          colorFromUint24(COLOR_WARMWHITE2);                       }   break;
-    case IR40_WARMWHITE    : {
-      if (strip.hasWhiteChannel()) {colorFromUint32(COLOR2_WARMWHITE);    effectCurrent = 0; }    
-      else                          colorFromUint24(COLOR_WARMWHITE);                        }   break;
-    case IR40_WHITE        : {
-      if (strip.hasWhiteChannel()) {colorFromUint32(COLOR2_NEUTRALWHITE); effectCurrent = 0; }    
-      else                          colorFromUint24(COLOR_NEUTRALWHITE);                     }   break;
-    case IR40_COLDWHITE    : {
-      if (strip.hasWhiteChannel()) {colorFromUint32(COLOR2_COLDWHITE);    effectCurrent = 0; }   
-      else                          colorFromUint24(COLOR_COLDWHITE);                        }   break;
-    case IR40_COLDWHITE2    : {
-      if (strip.hasWhiteChannel()) {colorFromUint32(COLOR2_COLDWHITE2);   effectCurrent = 0; }   
-      else                          colorFromUint24(COLOR_COLDWHITE2);                       }   break;
+    case IR40_WARMWHITE2   :
+      if (strip.hasWhiteChannel())  colorFromUint32(COLOR2_WARMWHITE2);
+      else                          colorFromUint24(COLOR_WARMWHITE2);
+      changeEffect(FX_MODE_STATIC);
+      break;
+    case IR40_WARMWHITE    :
+      if (strip.hasWhiteChannel())  colorFromUint32(COLOR2_WARMWHITE);
+      else                          colorFromUint24(COLOR_WARMWHITE);
+      changeEffect(FX_MODE_STATIC);
+      break;
+    case IR40_WHITE        :
+      if (strip.hasWhiteChannel())  colorFromUint32(COLOR2_NEUTRALWHITE);
+      else                          colorFromUint24(COLOR_NEUTRALWHITE);
+      changeEffect(FX_MODE_STATIC);
+      break;
+    case IR40_COLDWHITE    :
+      if (strip.hasWhiteChannel())  colorFromUint32(COLOR2_COLDWHITE);
+      else                          colorFromUint24(COLOR_COLDWHITE);
+      changeEffect(FX_MODE_STATIC);
+      break;
+    case IR40_COLDWHITE2    :
+      if (strip.hasWhiteChannel())  colorFromUint32(COLOR2_COLDWHITE2);
+      else                          colorFromUint24(COLOR_COLDWHITE2);
+      changeEffect(FX_MODE_STATIC);
+      break;
     case IR40_WPLUS        : relativeChangeWhite(10);                                    break;
     case IR40_WMINUS       : relativeChangeWhite(-10, 5);                                break;
     case IR40_WOFF         : whiteLast = col[3]; col[3] = 0;                             break;
@@ -421,43 +437,63 @@ void decodeIR44(uint32_t code)
     case IR44_PURPLE      : colorFromUint24(COLOR_PURPLE);                              break;
     case IR44_MAGENTA     : colorFromUint24(COLOR_MAGENTA);                             break;
     case IR44_PINK        : colorFromUint24(COLOR_PINK);                                break;
-    case IR44_WHITE       : {
-      if (strip.hasWhiteChannel()) {
-        if (col[3] > 0) col[3] = 0; 
-        else {              colorFromUint32(COLOR2_NEUTRALWHITE); effectCurrent = 0; }
-      } else                colorFromUint24(COLOR_NEUTRALWHITE);                     }  break;
-    case IR44_WARMWHITE2  : {
-      if (strip.hasWhiteChannel()) {colorFromUint32(COLOR2_WARMWHITE2);   effectCurrent = 0; }    
-      else                          colorFromUint24(COLOR_WARMWHITE2);                       }  break;
-    case IR44_WARMWHITE   : {
-      if (strip.hasWhiteChannel()) {colorFromUint32(COLOR2_WARMWHITE);    effectCurrent = 0; }    
-      else                          colorFromUint24(COLOR_WARMWHITE);                        }  break;
-    case IR44_COLDWHITE   : {
-      if (strip.hasWhiteChannel()) {colorFromUint32(COLOR2_COLDWHITE);    effectCurrent = 0; }   
-      else                          colorFromUint24(COLOR_COLDWHITE);                        }  break;
-    case IR44_COLDWHITE2  : {
-      if (strip.hasWhiteChannel()) {colorFromUint32(COLOR2_COLDWHITE2);   effectCurrent = 0; }    
-      else                          colorFromUint24(COLOR_COLDWHITE2);                       }  break;
-    case IR44_REDPLUS     : relativeChange(&effectCurrent,  1, 0, MODE_COUNT);          break;
-    case IR44_REDMINUS    : relativeChange(&effectCurrent, -1, 0);                      break;
-    case IR44_GREENPLUS   : relativeChange(&effectPalette,  1, 0, strip.getPaletteCount() -1);     break;
-    case IR44_GREENMINUS  : relativeChange(&effectPalette, -1, 0);                      break;
-    case IR44_BLUEPLUS    : changeEffectIntensity( 16);                                 break;
-    case IR44_BLUEMINUS   : changeEffectIntensity(-16);                                 break;
-    case IR44_QUICK       : changeEffectSpeed( 16);                                     break;
-    case IR44_SLOW        : changeEffectSpeed(-16);                                     break;
+    case IR44_WHITE       :
+      if (strip.hasWhiteChannel()) colorFromUint32(COLOR2_NEUTRALWHITE);
+      else                         colorFromUint24(COLOR_NEUTRALWHITE);
+      changeEffect(FX_MODE_STATIC);
+      break;
+    case IR44_WARMWHITE2  :
+      if (strip.hasWhiteChannel())  colorFromUint32(COLOR2_WARMWHITE2);
+      else                          colorFromUint24(COLOR_WARMWHITE2);
+      changeEffect(FX_MODE_STATIC);
+      break;
+    case IR44_WARMWHITE   :
+      if (strip.hasWhiteChannel())  colorFromUint32(COLOR2_WARMWHITE);
+      else                          colorFromUint24(COLOR_WARMWHITE);
+      changeEffect(FX_MODE_STATIC);
+      break;
+    case IR44_COLDWHITE   :
+      if (strip.hasWhiteChannel())  colorFromUint32(COLOR2_COLDWHITE);
+      else                          colorFromUint24(COLOR_COLDWHITE);
+      changeEffect(FX_MODE_STATIC);
+      break;
+    case IR44_COLDWHITE2  :
+      if (strip.hasWhiteChannel())  colorFromUint32(COLOR2_COLDWHITE2);
+      else                          colorFromUint24(COLOR_COLDWHITE2);
+      changeEffect(FX_MODE_STATIC);
+      break;
+    case IR44_REDPLUS     : 
+      relativeChange(&effectCurrent,  1, 0, MODE_COUNT);
+      changeEffect(effectCurrent);
+      break;
+    case IR44_REDMINUS    :
+      relativeChange(&effectCurrent, -1, 0);
+      changeEffect(effectCurrent);
+      break;
+    case IR44_GREENPLUS   :
+      relativeChange(&effectPalette,  1, 0, strip.getPaletteCount() -1);
+      changePalette(effectPalette);
+      break;
+    case IR44_GREENMINUS  :
+      relativeChange(&effectPalette, -1, 0);
+      changePalette(effectPalette);
+      break;
+    case IR44_BLUEPLUS    : changeEffectIntensity( 16);                  break;
+    case IR44_BLUEMINUS   : changeEffectIntensity(-16);                  break;
+    case IR44_QUICK       : changeEffectSpeed( 16);                      break;
+    case IR44_SLOW        : changeEffectSpeed(-16);                      break;
     case IR44_DIY1        : presetFallback(1, FX_MODE_STATIC,        0); break;
     case IR44_DIY2        : presetFallback(2, FX_MODE_BREATH,        0); break;
     case IR44_DIY3        : presetFallback(3, FX_MODE_FIRE_FLICKER,  0); break;
     case IR44_DIY4        : presetFallback(4, FX_MODE_RAINBOW,       0); break;
     case IR44_DIY5        : presetFallback(5, FX_MODE_METEOR_SMOOTH, 0); break;
     case IR44_DIY6        : presetFallback(6, FX_MODE_RAIN,          0); break;
-    case IR44_AUTO        : effectCurrent = FX_MODE_STATIC;                             break;
-    case IR44_FLASH       : effectCurrent = FX_MODE_PALETTE;                            break;
-    case IR44_JUMP3       : bri = 63;                                                   break;
-    case IR44_JUMP7       : bri = 127;                                                  break;
-    case IR44_FADE3       : bri = 191;                                                  break;
-    case IR44_FADE7       : bri = 255;                                                  break;
+    case IR44_AUTO        : changeEffect(FX_MODE_STATIC);                break;
+    case IR44_FLASH       : changeEffect(FX_MODE_PALETTE);               break;
+    case IR44_JUMP3       : bri = 63;                                    break;
+    case IR44_JUMP7       : bri = 127;                                   break;
+    case IR44_FADE3       : bri = 191;                                   break;
+    case IR44_FADE7       : bri = 255;                                   break;
   }
   lastValidCode = code;
 }
@@ -481,7 +517,7 @@ void decodeIR21(uint32_t code)
     case IR21_DEEPBLUE:  colorFromUint32(COLOR_DEEPBLUE);  break;
     case IR21_PURPLE:    colorFromUint32(COLOR_PURPLE);    break;
     case IR21_PINK:      colorFromUint32(COLOR_PINK);      break;
-    case IR21_WHITE:     colorFromUint32(COLOR_WHITE);           effectCurrent = 0;  break;
+    case IR21_WHITE:     colorFromUint32(COLOR_WHITE); changeEffect(FX_MODE_STATIC); break;
     case IR21_FLASH:     presetFallback(1, FX_MODE_COLORTWINKLE,  0); break;
     case IR21_STROBE:    presetFallback(2, FX_MODE_RAINBOW_CYCLE, 0); break;
     case IR21_FADE:      presetFallback(3, FX_MODE_BREATH,        0); break;
@@ -497,9 +533,13 @@ void decodeIR6(uint32_t code)
     case IR6_POWER: toggleOnOff();                                          break;
     case IR6_CHANNEL_UP: incBrightness();                                   break;
     case IR6_CHANNEL_DOWN: decBrightness();                                 break;
-    case IR6_VOLUME_UP:   relativeChange(&effectCurrent, 1, 0, MODE_COUNT); break;  // next effect
+    case IR6_VOLUME_UP:
+      relativeChange(&effectCurrent, 1, 0, MODE_COUNT); // next effect
+      changeEffect(effectCurrent);
+      break;
     case IR6_VOLUME_DOWN:                                                           // next palette
       relativeChange(&effectPalette, 1, 0, strip.getPaletteCount() -1); 
+      changePalette(effectPalette);
       switch(lastIR6ColourIdx) {
         case 0: colorFromUint32(COLOR_RED);       break;
         case 1: colorFromUint32(COLOR_REDDISH);   break;
@@ -517,8 +557,14 @@ void decodeIR6(uint32_t code)
         default:                                  break;
       }
       lastIR6ColourIdx++;
-      if(lastIR6ColourIdx > 12) lastIR6ColourIdx = 0;                      break;
-    case IR6_MUTE: effectCurrent = 0; effectPalette = 0; colorFromUint32(COLOR_WHITE); bri=255; break;
+      if(lastIR6ColourIdx > 12) lastIR6ColourIdx = 0;
+      break;
+    case IR6_MUTE: 
+      changeEffect(FX_MODE_STATIC);
+      changePalette(0);
+      colorFromUint32(COLOR_WHITE);
+      bri=255;
+      break;
   }
   lastValidCode = code;
 }
@@ -530,13 +576,13 @@ void decodeIR9(uint32_t code)
     case IR9_A          : presetFallback(1, FX_MODE_COLORTWINKLE, effectPalette);  break;
     case IR9_B          : presetFallback(2, FX_MODE_RAINBOW_CYCLE, effectPalette); break;
     case IR9_C          : presetFallback(3, FX_MODE_BREATH, effectPalette);        break;
-    case IR9_UP         : incBrightness();                                            break;
-    case IR9_DOWN       : decBrightness();                                            break;
+    case IR9_UP         : incBrightness();                                         break;
+    case IR9_DOWN       : decBrightness();                                         break;
     //case IR9_UP         : changeEffectIntensity(16);         break;
     //case IR9_DOWN       : changeEffectIntensity(-16);     break;
-    case IR9_LEFT       : changeEffectSpeed(-16);                                     break;
-    case IR9_RIGHT      : changeEffectSpeed(16);                                      break;
-    case IR9_SELECT     : relativeChange(&effectCurrent, 1, 0, MODE_COUNT);           break;
+    case IR9_LEFT       : changeEffectSpeed(-16);                                  break;
+    case IR9_RIGHT      : changeEffectSpeed(16);                                   break;
+    case IR9_SELECT     : relativeChange(&effectCurrent, 1, 0, MODE_COUNT); changeEffect(effectCurrent); break;
     default: return;
   }
   lastValidCode = code;
@@ -629,7 +675,7 @@ void decodeIRJson(uint32_t code)
       }
       handleSet(nullptr, cmdStr, false);
     }
-    colorUpdated(CALL_MODE_BUTTON);
+    //colorUpdated(CALL_MODE_BUTTON);
   } else if (!jsonCmdObj.isNull()) {
     // command is JSON object
     deserializeState(jsonCmdObj, CALL_MODE_BUTTON_PRESET);
