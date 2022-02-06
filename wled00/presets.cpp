@@ -112,6 +112,7 @@ void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
   }
   if (persist) presetsModifiedTime = toki.second(); //unix time
   updateFSInfo();
+  alexaInit();
 }
 
 void deletePreset(byte index) {
