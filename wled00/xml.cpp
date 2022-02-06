@@ -418,6 +418,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("TT"),touchThreshold);
     sappend('v',SET_F("IR"),irPin);
     sappend('v',SET_F("IT"),irEnabled);
+    sappend('c',SET_F("MSO"),!irApplyToAllSelected);
   }
 
   if (subPage == 3)

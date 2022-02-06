@@ -11,6 +11,13 @@ void colorFromUint32(uint32_t in, bool secondary)
   _col[1] = G(in);
   _col[2] = B(in);
   _col[3] = W(in);
+  if (strip.applyToAllSelected) {
+    for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
+      WS2812FX::Segment& seg = strip.getSegment(i);
+      if (!seg.isActive() || !seg.isSelected()) continue;
+      seg.colors[secondary?1:0] = in;
+    }
+  }
   colorChanged = true;
 }
 
@@ -21,6 +28,13 @@ void colorFromUint24(uint32_t in, bool secondary)
   _col[0] = R(in);
   _col[1] = G(in);
   _col[2] = B(in);
+  if (strip.applyToAllSelected) {
+    for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
+      WS2812FX::Segment& seg = strip.getSegment(i);
+      if (!seg.isActive() || !seg.isSelected()) continue;
+      seg.colors[secondary?1:0] = in & 0xFFFFFF;
+    }
+  }
   colorChanged = true;
 }
 

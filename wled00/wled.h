@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2202031
+#define VERSION 2202061
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -309,6 +309,7 @@ WLED_GLOBAL bool nodeBroadcastEnabled _INIT(true);
 
 WLED_GLOBAL byte buttonType[WLED_MAX_BUTTONS]  _INIT({BTN_TYPE_PUSH});
 WLED_GLOBAL byte irEnabled      _INIT(0);     // Infrared receiver
+WLED_GLOBAL bool irApplyToAllSelected _INIT(true); //apply IR to all selected segments
 
 WLED_GLOBAL uint16_t udpPort    _INIT(21324); // WLED notifier default port
 WLED_GLOBAL uint16_t udpPort2   _INIT(65506); // WLED notifier supplemental port

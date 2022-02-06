@@ -579,6 +579,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
     <option value=7>9-key red</option>
     <option value=8>JSON remote</option>
     </select><span style="cursor: pointer;" onclick="off('IR')">&nbsp;&#x2715;</span><br>
+    Apply IR button to main segment only: <input type="checkbox" name="MSO"><br>
     <div id="json" style="display:none;">JSON file: <input type="file" name="data" accept=".json"><button type="button" class="sml" onclick="uploadFile('/ir.json')">Upload</button><br></div>
     <a href="https://kno.wled.ge/interfaces/infrared/" target="_blank">IR info</a><br>
     Relay GPIO: <input type="number" min="-1" max="33" name="RL" onchange="UI()" class="xs"> Invert <input type="checkbox" name="RM"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#x2715;</span><br>

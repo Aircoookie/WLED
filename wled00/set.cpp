@@ -135,6 +135,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       irPin = -1;
     }
     irEnabled = request->arg(F("IT")).toInt();
+    irApplyToAllSelected = !request->hasArg(F("MSO"));
 
     int hw_rly_pin = request->arg(F("RL")).toInt();
     if (pinManager.allocatePin(hw_rly_pin,true, PinOwner::Relay)) {

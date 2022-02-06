@@ -108,7 +108,7 @@ void sendImprovRPCResponse(uint8_t commandId);
 //ir.cpp
 //bool decodeIRCustom(uint32_t code);
 void applyRepeatActions();
-void relativeChange(byte* property, int8_t amount, byte lowerBoundary = 0, byte higherBoundary = 0xFF);
+byte relativeChange(byte property, int8_t amount, byte lowerBoundary = 0, byte higherBoundary = 0xFF);
 void changeEffectSpeed(int8_t amount);
 void changeEffectIntensity(int8_t amount);
 void decodeIR(uint32_t code);
