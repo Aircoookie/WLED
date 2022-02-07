@@ -194,51 +194,54 @@ void decodeIR(uint32_t code)
 }
 
 void applyRepeatActions(){
-  
-    if (lastRepeatableAction == ACTION_BRIGHT_UP)
-    { 
-      incBrightness(); colorUpdated(CALL_MODE_BUTTON);
-    }
-    else if (lastRepeatableAction == ACTION_BRIGHT_DOWN )
-    {
-      decBrightness(); colorUpdated(CALL_MODE_BUTTON);
-    }
 
-    if (lastRepeatableAction == ACTION_SPEED_UP)
-    { 
-      changeEffectSpeed(lastRepeatableValue); colorUpdated(CALL_MODE_BUTTON);
-    }
-    else if (lastRepeatableAction == ACTION_SPEED_DOWN )
-    {
-      changeEffectSpeed(lastRepeatableValue); colorUpdated(CALL_MODE_BUTTON);
-    }
-
-    if (lastRepeatableAction == ACTION_INTENSITY_UP)
-    { 
-      changeEffectIntensity(lastRepeatableValue); colorUpdated(CALL_MODE_BUTTON);
-    }
-    else if (lastRepeatableAction == ACTION_INTENSITY_DOWN )
-    {
-      changeEffectIntensity(lastRepeatableValue); colorUpdated(CALL_MODE_BUTTON);
-    }
-
-    if (lastValidCode == IR40_WPLUS)
-    { 
-      relativeChangeWhite(10); colorUpdated(CALL_MODE_BUTTON);
-    }
-    else if (lastValidCode == IR40_WMINUS)
-    {
-      relativeChangeWhite(-10, 5); colorUpdated(CALL_MODE_BUTTON);
-    }
-    else if ((lastValidCode == IR24_ON || lastValidCode == IR40_ON) && irTimesRepeated > 7 )
-    {
-      nightlightActive = true;
-      nightlightStartTime = millis();
-      colorUpdated(CALL_MODE_BUTTON);
-    }
-    else if (irEnabled == 8) 
+    if (irEnabled == 8) 
     {
       decodeIRJson(lastValidCode);
+    }
+    else
+      {
+      if (lastRepeatableAction == ACTION_BRIGHT_UP)
+      { 
+        incBrightness(); colorUpdated(CALL_MODE_BUTTON);
+      }
+      else if (lastRepeatableAction == ACTION_BRIGHT_DOWN )
+      {
+        decBrightness(); colorUpdated(CALL_MODE_BUTTON);
+      }
+
+      if (lastRepeatableAction == ACTION_SPEED_UP)
+      { 
+        changeEffectSpeed(lastRepeatableValue); colorUpdated(CALL_MODE_BUTTON);
+      }
+      else if (lastRepeatableAction == ACTION_SPEED_DOWN )
+      {
+        changeEffectSpeed(lastRepeatableValue); colorUpdated(CALL_MODE_BUTTON);
+      }
+
+      if (lastRepeatableAction == ACTION_INTENSITY_UP)
+      { 
+        changeEffectIntensity(lastRepeatableValue); colorUpdated(CALL_MODE_BUTTON);
+      }
+      else if (lastRepeatableAction == ACTION_INTENSITY_DOWN )
+      {
+        changeEffectIntensity(lastRepeatableValue); colorUpdated(CALL_MODE_BUTTON);
+      }
+
+      if (lastValidCode == IR40_WPLUS)
+      { 
+        relativeChangeWhite(10); colorUpdated(CALL_MODE_BUTTON);
+      }
+      else if (lastValidCode == IR40_WMINUS)
+      {
+        relativeChangeWhite(-10, 5); colorUpdated(CALL_MODE_BUTTON);
+      }
+      else if ((lastValidCode == IR24_ON || lastValidCode == IR40_ON) && irTimesRepeated > 7 )
+      {
+        nightlightActive = true;
+        nightlightStartTime = millis();
+        colorUpdated(CALL_MODE_BUTTON);
+      }
     }
 }
 
