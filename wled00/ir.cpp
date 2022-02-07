@@ -250,53 +250,32 @@ void decodeIR(uint32_t code)
   colorUpdated(CALL_MODE_BUTTON); //for notifier, IR is considered a button input
 }
 
-void applyRepeatActions(){
-  
-    if (lastRepeatableAction == ACTION_BRIGHT_UP)
-    { 
-      incBrightness(); colorUpdated(CALL_MODE_BUTTON);
-    }
-    else if (lastRepeatableAction == ACTION_BRIGHT_DOWN )
-    {
-      decBrightness(); colorUpdated(CALL_MODE_BUTTON);
-    }
+void applyRepeatActions()
+{  
+  if (irEnabled == 8) {
+    decodeIRJson(lastValidCode);
+    return;
+  } else switch (lastRepeatableAction) {
+    case ACTION_BRIGHT_UP :      incBrightness();                            colorUpdated(CALL_MODE_BUTTON); return;
+    case ACTION_BRIGHT_DOWN :    decBrightness();                            colorUpdated(CALL_MODE_BUTTON); return;
+    case ACTION_SPEED_UP :       changeEffectSpeed(lastRepeatableValue);     colorUpdated(CALL_MODE_BUTTON); return;
+    case ACTION_SPEED_DOWN :     changeEffectSpeed(lastRepeatableValue);     colorUpdated(CALL_MODE_BUTTON); return;
+    case ACTION_INTENSITY_UP :   changeEffectIntensity(lastRepeatableValue); colorUpdated(CALL_MODE_BUTTON); return;
+    case ACTION_INTENSITY_DOWN : changeEffectIntensity(lastRepeatableValue); colorUpdated(CALL_MODE_BUTTON); return;
+    default: break;
+  }
 
-    if (lastRepeatableAction == ACTION_SPEED_UP)
-    { 
-      changeEffectSpeed(lastRepeatableValue); colorUpdated(CALL_MODE_BUTTON);
-    }
-    else if (lastRepeatableAction == ACTION_SPEED_DOWN )
-    {
-      changeEffectSpeed(lastRepeatableValue); colorUpdated(CALL_MODE_BUTTON);
-    }
-
-    if (lastRepeatableAction == ACTION_INTENSITY_UP)
-    { 
-      changeEffectIntensity(lastRepeatableValue); colorUpdated(CALL_MODE_BUTTON);
-    }
-    else if (lastRepeatableAction == ACTION_INTENSITY_DOWN )
-    {
-      changeEffectIntensity(lastRepeatableValue); colorUpdated(CALL_MODE_BUTTON);
-    }
-
-    if (lastValidCode == IR40_WPLUS)
-    { 
-      relativeChangeWhite(10); colorUpdated(CALL_MODE_BUTTON);
-    }
-    else if (lastValidCode == IR40_WMINUS)
-    {
-      relativeChangeWhite(-10, 5); colorUpdated(CALL_MODE_BUTTON);
-    }
-    else if ((lastValidCode == IR24_ON || lastValidCode == IR40_ON) && irTimesRepeated > 7 )
-    {
-      nightlightActive = true;
-      nightlightStartTime = millis();
-      colorUpdated(CALL_MODE_BUTTON);
-    }
-    else if (irEnabled == 8) 
-    {
-      decodeIRJson(lastValidCode);
-    }
+  if (lastValidCode == IR40_WPLUS) { 
+    relativeChangeWhite(10);
+    colorUpdated(CALL_MODE_BUTTON);
+  } else if (lastValidCode == IR40_WMINUS) {
+    relativeChangeWhite(-10, 5);
+    colorUpdated(CALL_MODE_BUTTON);
+  } else if ((lastValidCode == IR24_ON || lastValidCode == IR40_ON) && irTimesRepeated > 7 ) {
+    nightlightActive = true;
+    nightlightStartTime = millis();
+    colorUpdated(CALL_MODE_BUTTON);
+  }
 }
 
 void decodeIR24(uint32_t code)
