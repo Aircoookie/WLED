@@ -665,7 +665,8 @@ class WS2812FX {
       applyToAllSelected = true,
       setEffectConfig(uint8_t m, uint8_t s, uint8_t i, uint8_t p),
       checkSegmentAlignment(void),
-			hasCCTBus(void),
+      hasRGBWBus(void),
+      hasCCTBus(void),
       // return true if the strip is being sent pixel updates
       isUpdating(void);
 
@@ -684,7 +685,9 @@ class WS2812FX {
       getActiveSegmentsNum(void),
       //getFirstSelectedSegment(void),
       getMainSegmentId(void),
-			getTargetFps(void),
+      getLastActiveSegmentId(void),
+      getTargetFps(void),
+      getLightCapabilities(uint8_t segn),
       setPixelSegment(uint8_t n),
       gamma8(uint8_t),
       gamma8_cal(uint8_t, float),

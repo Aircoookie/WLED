@@ -524,9 +524,9 @@ void serializeInfo(JsonObject root)
 
   JsonObject leds = root.createNestedObject("leds");
   leds[F("count")] = strip.getLengthTotal();
-  leds[F("rgbw")] = strip.hasWhiteChannel();
+  leds[F("rgbw")] = strip.hasRGBWBus(); //deprecated, use lc in info.seg array
   leds[F("wv")] = false;
-  leds["cct"] = correctWB || strip.hasCCTBus();
+  leds["cct"] = correctWB || strip.hasCCTBus(); //deprecated, use lc in info.seg array
   switch (Bus::getAutoWhiteMode()) {
     case RGBW_MODE_MANUAL_ONLY:
     case RGBW_MODE_DUAL:
@@ -539,6 +539,19 @@ void serializeInfo(JsonObject root)
   leds[F("maxpwr")] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;
   leds[F("maxseg")] = strip.getMaxSegments();
   //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config
+  
+  uint8_t totalLC = 0;
+  JsonArray seg = root.createNestedArray("seg");
+  uint8_t nSegs = strip.getLastActiveSegmentId();
+  for (byte s = 0; s <= nSegs; s++) {
+    WS2812FX::Segment &sg = strip.getSegment(s);
+    JsonObject seg0 = seg.createNestedObject();
+    uint8_t lc = strip.getLightCapabilities(s);
+    totalLC |= lc;
+    seg0["lc"] = strip.getLightCapabilities(s);
+  }
+
+  leds["lc"] = totalLC;
 
   root[F("str")] = syncToggleReceive;
 

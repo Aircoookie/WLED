@@ -500,6 +500,13 @@ uint8_t WS2812FX::getMainSegmentId(void) {
   return 0;
 }
 
+uint8_t WS2812FX::getLastActiveSegmentId(void) {
+  for (uint8_t i = MAX_NUM_SEGMENTS -1; i > 0; i--) {
+    if (_segments[i].isActive()) return i;
+  }
+  return 0;
+}
+
 uint8_t WS2812FX::getActiveSegmentsNum(void) {
   uint8_t c = 0;
   for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
@@ -558,6 +565,56 @@ uint16_t WS2812FX::getLengthPhysical(void) {
     len += bus->getLength();
   }
   return len;
+}
+
+//TODO add light capability method to Bus class instead of type handling here
+uint8_t WS2812FX::getLightCapabilities(uint8_t segn) {
+  if (segn >= MAX_NUM_SEGMENTS) return 0;
+  Segment& seg = _segments[segn];
+  if (!seg.isActive()) return 0;
+  uint8_t capabilities = 0;
+  uint8_t awm = Bus::getAutoWhiteMode();
+  bool whiteSlider = (awm == RGBW_MODE_DUAL || awm == RGBW_MODE_MANUAL_ONLY);
+
+  for (uint8_t b = 0; b < busses.getNumBusses(); b++) {
+    Bus *bus = busses.getBus(b);
+    if (bus == nullptr || bus->getLength()==0) break;
+    if (bus->getStart() >= seg.stop) continue;
+    if (bus->getStart() + bus->getLength() <= seg.start) continue;
+
+    uint8_t type = bus->getType();
+    if (!whiteSlider || (type != TYPE_ANALOG_1CH && (cctFromRgb || type != TYPE_ANALOG_2CH)))
+    {
+      capabilities |= 0x01; //segment supports RGB (full color)
+    }
+    if (bus->isRgbw() && whiteSlider) capabilities |= 0x02; //segment supports white channel
+    if (!cctFromRgb) {
+      switch (type) {
+        case TYPE_ANALOG_5CH:
+        case TYPE_ANALOG_2CH:
+          capabilities |= 0x04; //segment supports white CCT 
+      }
+    }
+    if (correctWB && type != TYPE_ANALOG_1CH) capabilities |= 0x04; //white balance correction (uses CCT slider)
+  }
+
+  return capabilities;
+}
+
+//used for JSON API info.leds.rgbw. Little practical use, deprecate with info.leds.rgbw.
+//returns if there is an RGBW bus (supports RGB and White, not only white)
+//not influenced by auto-white mode, also true if white slider does not affect output white channel
+bool WS2812FX::hasRGBWBus(void) {
+	for (uint8_t b = 0; b < busses.getNumBusses(); b++) {
+    Bus *bus = busses.getBus(b);
+    if (bus == nullptr || bus->getLength()==0) break;
+    switch (bus->getType()) {
+      case TYPE_SK6812_RGBW:
+      case TYPE_TM1814:
+        return true;
+    }
+  }
+	return false;
 }
 
 bool WS2812FX::hasCCTBus(void) {
