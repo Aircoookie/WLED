@@ -132,6 +132,13 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
     byte bi = gpio - 8*by;
     bitWrite(pinAlloc[by], bi, true);
     ownerTag[gpio] = tag;
+    #ifdef WLED_DEBUG
+    DEBUG_PRINT(F("PIN ALLOC: Pin ")); 
+    DEBUG_PRINT(gpio);
+    DEBUG_PRINT(F(" allocated by "));
+    DebugPrintOwnerTag(tag);
+    DEBUG_PRINTLN(F(""));
+    #endif
   }
   return true;
 }
@@ -155,7 +162,14 @@ bool PinManagerClass::allocatePin(byte gpio, bool output, PinOwner tag)
   byte bi = gpio - 8*by;
   bitWrite(pinAlloc[by], bi, true);
   ownerTag[gpio] = tag;
-  
+  #ifdef WLED_DEBUG
+  DEBUG_PRINT(F("PIN ALLOC: Pin ")); 
+  DEBUG_PRINT(gpio);
+  DEBUG_PRINT(F(" allocated by "));
+  DebugPrintOwnerTag(tag);
+  DEBUG_PRINTLN(F(""));
+  #endif  
+
   return true;
 }
 
