@@ -225,7 +225,7 @@ WLED_GLOBAL int8_t btnPin[WLED_MAX_BUTTONS] _INIT({0});
 WLED_GLOBAL int8_t btnPin[WLED_MAX_BUTTONS] _INIT({BTNPIN});
 #endif
 #ifndef RLYPIN
-WLED_GLOBAL int8_t rlyPin _INIT(12);
+WLED_GLOBAL int8_t rlyPin _INIT(-1);
 #else
 WLED_GLOBAL int8_t rlyPin _INIT(RLYPIN);
 #endif
