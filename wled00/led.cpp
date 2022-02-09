@@ -6,8 +6,14 @@
 void setValuesFromMainSeg()
 {
   WS2812FX::Segment& seg = strip.getSegment(strip.getMainSegmentId());
-  colorFromUint32(seg.colors[0]);
-  colorFromUint32(seg.colors[1], true);
+  col[0] = R(seg.colors[0]);
+  col[1] = G(seg.colors[0]);
+  col[2] = B(seg.colors[0]);
+  col[3] = W(seg.colors[0]);
+  colSec[0] = R(seg.colors[1]);
+  colSec[1] = G(seg.colors[1]);
+  colSec[2] = B(seg.colors[1]);
+  colSec[3] = W(seg.colors[1]);
   effectCurrent = seg.mode;
   effectSpeed = seg.speed;
   effectIntensity = seg.intensity;
