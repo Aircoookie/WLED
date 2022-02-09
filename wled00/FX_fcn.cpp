@@ -572,11 +572,9 @@ uint16_t WS2812FX::getLengthPhysical(void) {
   return len;
 }
 
-//TODO add light capability method to Bus class instead of type handling here
-uint8_t WS2812FX::getLightCapabilities(uint8_t segn) {
+uint8_t WS2812FX::Segment::capabilities(uint8_t segn) {
   if (segn >= MAX_NUM_SEGMENTS) return 0;
-  Segment& seg = _segments[segn];
-  if (!seg.isActive()) return 0;
+  if (!isActive()) return 0;
   uint8_t capabilities = 0;
   uint8_t awm = Bus::getAutoWhiteMode();
   bool whiteSlider = (awm == RGBW_MODE_DUAL || awm == RGBW_MODE_MANUAL_ONLY);
@@ -584,8 +582,8 @@ uint8_t WS2812FX::getLightCapabilities(uint8_t segn) {
   for (uint8_t b = 0; b < busses.getNumBusses(); b++) {
     Bus *bus = busses.getBus(b);
     if (bus == nullptr || bus->getLength()==0) break;
-    if (bus->getStart() >= seg.stop) continue;
-    if (bus->getStart() + bus->getLength() <= seg.start) continue;
+    if (bus->getStart() >= stop) continue;
+    if (bus->getStart() + bus->getLength() <= start) continue;
 
     uint8_t type = bus->getType();
     if (!whiteSlider || (type != TYPE_ANALOG_1CH && (cctFromRgb || type != TYPE_ANALOG_2CH)))
@@ -602,8 +600,12 @@ uint8_t WS2812FX::getLightCapabilities(uint8_t segn) {
     }
     if (correctWB && type != TYPE_ANALOG_1CH) capabilities |= 0x04; //white balance correction (uses CCT slider)
   }
-
   return capabilities;
+}
+
+uint8_t WS2812FX::getLightCapabilities(uint8_t segn) {
+  if (segn >= MAX_NUM_SEGMENTS) return 0;
+  return _segments[segn].capabilities(segn);
 }
 
 //used for JSON API info.leds.rgbw. Little practical use, deprecate with info.leds.rgbw.

@@ -355,6 +355,7 @@ class WS2812FX {
 
         return d;
       }
+      uint8_t capabilities(uint8_t segn=0);
     } segment;
 
   // segment runtime parameters
