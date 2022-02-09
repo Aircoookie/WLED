@@ -541,14 +541,12 @@ void serializeInfo(JsonObject root)
   //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config
   
   uint8_t totalLC = 0;
-  JsonArray seg = root.createNestedArray("seg");
+  JsonArray lcarr = leds.createNestedArray(F("seglc"));
   uint8_t nSegs = strip.getLastActiveSegmentId();
   for (byte s = 0; s <= nSegs; s++) {
-    WS2812FX::Segment &sg = strip.getSegment(s);
-    JsonObject seg0 = seg.createNestedObject();
     uint8_t lc = strip.getLightCapabilities(s);
     totalLC |= lc;
-    seg0["lc"] = lc;
+    lcarr.add(lc);
   }
 
   leds["lc"] = totalLC;
