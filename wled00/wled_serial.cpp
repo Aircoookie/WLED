@@ -45,7 +45,7 @@ void handleSerial()
   static byte check = 0x00;
   static byte red   = 0x00;
   static byte green = 0x00;
-  
+
   while (Serial.available() > 0)
   {
     yield();

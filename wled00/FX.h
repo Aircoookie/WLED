@@ -81,7 +81,6 @@
 #define SEGLEN           _virtualSegmentLength
 #define SEGACT           SEGMENT.stop
 #define SPEED_FORMULA_L  5U + (50U*(255U - SEGMENT.speed))/SEGLEN
-#define RESET_RUNTIME    memset(_segment_runtimes, 0, sizeof(_segment_runtimes))
 
 // some common colors
 #define RED        (uint32_t)0xFF0000
@@ -409,8 +408,9 @@ class WS2812FX {
        * Flags that before the next effect is calculated,
        * the internal segment state should be reset. 
        * Call resetIfRequired before calling the next effect function.
+       * Safe to call from interrupts and network requests.
        */
-      inline void reset() { _requiresReset = true; }
+      inline void markForReset() { _requiresReset = true; }
       private:
         uint16_t _dataLen = 0;
         bool _requiresReset = false;
