@@ -524,9 +524,9 @@ void serializeInfo(JsonObject root)
 
   JsonObject leds = root.createNestedObject("leds");
   leds[F("count")] = strip.getLengthTotal();
-  leds[F("rgbw")] = strip.hasRGBWBus(); //deprecated, use lc in info.seg array
-  leds[F("wv")] = false;
-  leds["cct"] = correctWB || strip.hasCCTBus();
+  leds[F("rgbw")] = strip.hasRGBWBus();         //deprecated, use info.leds.lc
+  leds[F("wv")] = false;                        //deprecated, use info.leds.lc
+  leds["cct"] = correctWB || strip.hasCCTBus(); //deprecated, use info.leds.lc
   switch (Bus::getAutoWhiteMode()) {
     case RGBW_MODE_MANUAL_ONLY:
     case RGBW_MODE_DUAL:
@@ -544,7 +544,7 @@ void serializeInfo(JsonObject root)
   JsonArray lcarr = leds.createNestedArray(F("seglc"));
   uint8_t nSegs = strip.getLastActiveSegmentId();
   for (byte s = 0; s <= nSegs; s++) {
-    uint8_t lc = strip.getLightCapabilities(s);
+    uint8_t lc = strip.getSegment(s).getLightCapabilities();
     totalLC |= lc;
     lcarr.add(lc);
   }
