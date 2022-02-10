@@ -206,6 +206,44 @@ void changeEffectIntensity(int8_t amount)
   lastRepeatableValue = amount;
 }
 
+void changeColor(uint32_t c, int16_t cct=-1)
+{
+  if (strip.applyToAllSelected) {
+    // main segment may not be selected!
+    for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
+      WS2812FX::Segment& seg = strip.getSegment(i);
+      if (!seg.isActive() || !seg.isSelected()) continue;
+      byte capabilities = seg.capabilities();
+      uint32_t mask = 0;
+      bool isRGB = GET_BIT(capabilities, 0); // when RGBW_MODE_AUTO_ACCURATE this is always true
+      bool hasW  = GET_BIT(capabilities, 1);
+      bool isCCT = GET_BIT(capabilities, 2);
+      if (isRGB) mask |= 0x00FFFFFF; // RGB
+      if (hasW)  mask |= 0xFF000000; // white
+      if (hasW && (Bus::getAutoWhiteMode() == RGBW_MODE_AUTO_ACCURATE) && (c & 0xFF000000)) { // white channel & white specified
+        seg.setColor(0, c | 0xFFFFFF, i); // for accurate mode we fake white
+      } else if (c & mask) seg.setColor(0, c & mask, i); // only apply if not black
+      if (isCCT && cct >= 0) seg.setCCT(cct, i);
+    }
+  } else {
+    byte i = strip.getMainSegmentId();
+    WS2812FX::Segment& seg = strip.getSegment(i);
+    byte capabilities = seg.capabilities();
+    uint32_t mask = 0;
+    bool isRGB = GET_BIT(capabilities, 0);
+    bool hasW  = GET_BIT(capabilities, 1);
+    bool isCCT = GET_BIT(capabilities, 2);
+    if (isRGB) mask |= 0x00FFFFFF; // RGB
+    if (hasW)  mask |= 0xFF000000; // white
+    if (hasW && (Bus::getAutoWhiteMode() == RGBW_MODE_AUTO_ACCURATE) && (c & 0xFF000000)) { // white channel & white specified
+      seg.setColor(0, c | 0xFFFFFF, i); // for accurate mode we fake white
+    } else if (c & mask) seg.setColor(0, c & mask, i); // only apply if not black
+    if (isCCT && cct >= 0) seg.setCCT(cct, i);
+  }
+  setValuesFromMainSeg(); //make transitions graceful
+  colorChanged = true;
+}
+
 void decodeIR(uint32_t code)
 {
   if (code == 0xFFFFFFFF) //repeated code, continue brightness up/down
@@ -281,30 +319,30 @@ void applyRepeatActions()
 void decodeIR24(uint32_t code)
 {
   switch (code) {
-    case IR24_BRIGHTER  : incBrightness();                                            break;
-    case IR24_DARKER    : decBrightness();                                            break;
-    case IR24_OFF    : if (bri > 0) briLast = bri; bri = 0;                           break;
-    case IR24_ON        : bri = briLast;                                              break;
-    case IR24_RED       : colorFromUint32(COLOR_RED);                                 break;
-    case IR24_REDDISH   : colorFromUint32(COLOR_REDDISH);                             break;
-    case IR24_ORANGE    : colorFromUint32(COLOR_ORANGE);                              break;
-    case IR24_YELLOWISH : colorFromUint32(COLOR_YELLOWISH);                           break;
-    case IR24_YELLOW    : colorFromUint32(COLOR_YELLOW);                              break;
-    case IR24_GREEN     : colorFromUint32(COLOR_GREEN);                               break;
-    case IR24_GREENISH  : colorFromUint32(COLOR_GREENISH);                            break;
-    case IR24_TURQUOISE : colorFromUint32(COLOR_TURQUOISE);                           break;
-    case IR24_CYAN      : colorFromUint32(COLOR_CYAN);                                break;
-    case IR24_AQUA      : colorFromUint32(COLOR_AQUA);                                break;
-    case IR24_BLUE      : colorFromUint32(COLOR_BLUE);                                break;
-    case IR24_DEEPBLUE  : colorFromUint32(COLOR_DEEPBLUE);                            break;
-    case IR24_PURPLE    : colorFromUint32(COLOR_PURPLE);                              break;
-    case IR24_MAGENTA   : colorFromUint32(COLOR_MAGENTA);                             break;
-    case IR24_PINK      : colorFromUint32(COLOR_PINK);                                break;
-    case IR24_WHITE     : colorFromUint32(COLOR_WHITE); changeEffect(FX_MODE_STATIC); break;
-    case IR24_FLASH     : presetFallback(1, FX_MODE_COLORTWINKLE, effectPalette);     break;
-    case IR24_STROBE    : presetFallback(2, FX_MODE_RAINBOW_CYCLE, effectPalette);    break;
-    case IR24_FADE      : presetFallback(3, FX_MODE_BREATH, effectPalette);           break;
-    case IR24_SMOOTH    : presetFallback(4, FX_MODE_RAINBOW, effectPalette);          break;
+    case IR24_BRIGHTER  : incBrightness();                                         break;
+    case IR24_DARKER    : decBrightness();                                         break;
+    case IR24_OFF    : if (bri > 0) briLast = bri; bri = 0;                        break;
+    case IR24_ON        : bri = briLast;                                           break;
+    case IR24_RED       : changeColor(COLOR_RED);                                  break;
+    case IR24_REDDISH   : changeColor(COLOR_REDDISH);                              break;
+    case IR24_ORANGE    : changeColor(COLOR_ORANGE);                               break;
+    case IR24_YELLOWISH : changeColor(COLOR_YELLOWISH);                            break;
+    case IR24_YELLOW    : changeColor(COLOR_YELLOW);                               break;
+    case IR24_GREEN     : changeColor(COLOR_GREEN);                                break;
+    case IR24_GREENISH  : changeColor(COLOR_GREENISH);                             break;
+    case IR24_TURQUOISE : changeColor(COLOR_TURQUOISE);                            break;
+    case IR24_CYAN      : changeColor(COLOR_CYAN);                                 break;
+    case IR24_AQUA      : changeColor(COLOR_AQUA);                                 break;
+    case IR24_BLUE      : changeColor(COLOR_BLUE);                                 break;
+    case IR24_DEEPBLUE  : changeColor(COLOR_DEEPBLUE);                             break;
+    case IR24_PURPLE    : changeColor(COLOR_PURPLE);                               break;
+    case IR24_MAGENTA   : changeColor(COLOR_MAGENTA);                              break;
+    case IR24_PINK      : changeColor(COLOR_PINK);                                 break;
+    case IR24_WHITE     : changeColor(COLOR_WHITE); changeEffect(FX_MODE_STATIC);  break;
+    case IR24_FLASH     : presetFallback(1, FX_MODE_COLORTWINKLE, effectPalette);  break;
+    case IR24_STROBE    : presetFallback(2, FX_MODE_RAINBOW_CYCLE, effectPalette); break;
+    case IR24_FADE      : presetFallback(3, FX_MODE_BREATH, effectPalette);        break;
+    case IR24_SMOOTH    : presetFallback(4, FX_MODE_RAINBOW, effectPalette);       break;
     default: return;
   }
   lastValidCode = code;
@@ -313,30 +351,30 @@ void decodeIR24(uint32_t code)
 void decodeIR24OLD(uint32_t code)
 {
   switch (code) {
-    case IR24_OLD_BRIGHTER  : incBrightness();                                            break;
-    case IR24_OLD_DARKER    : decBrightness();                                            break;
-    case IR24_OLD_OFF       : if (bri > 0) briLast = bri; bri = 0;                        break;
-    case IR24_OLD_ON        : bri = briLast;                                              break;
-    case IR24_OLD_RED       : colorFromUint32(COLOR_RED);                                 break;
-    case IR24_OLD_REDDISH   : colorFromUint32(COLOR_REDDISH);                             break;
-    case IR24_OLD_ORANGE    : colorFromUint32(COLOR_ORANGE);                              break;
-    case IR24_OLD_YELLOWISH : colorFromUint32(COLOR_YELLOWISH);                           break;
-    case IR24_OLD_YELLOW    : colorFromUint32(COLOR_YELLOW);                              break;
-    case IR24_OLD_GREEN     : colorFromUint32(COLOR_GREEN);                               break;
-    case IR24_OLD_GREENISH  : colorFromUint32(COLOR_GREENISH);                            break;
-    case IR24_OLD_TURQUOISE : colorFromUint32(COLOR_TURQUOISE);                           break;
-    case IR24_OLD_CYAN      : colorFromUint32(COLOR_CYAN);                                break;
-    case IR24_OLD_AQUA      : colorFromUint32(COLOR_AQUA);                                break;
-    case IR24_OLD_BLUE      : colorFromUint32(COLOR_BLUE);                                break;
-    case IR24_OLD_DEEPBLUE  : colorFromUint32(COLOR_DEEPBLUE);                            break;
-    case IR24_OLD_PURPLE    : colorFromUint32(COLOR_PURPLE);                              break;
-    case IR24_OLD_MAGENTA   : colorFromUint32(COLOR_MAGENTA);                             break;
-    case IR24_OLD_PINK      : colorFromUint32(COLOR_PINK);                                break;
-    case IR24_OLD_WHITE     : colorFromUint32(COLOR_WHITE); changeEffect(FX_MODE_STATIC); break;
-    case IR24_OLD_FLASH     : presetFallback(1, FX_MODE_COLORTWINKLE, 0);                 break;
-    case IR24_OLD_STROBE    : presetFallback(2, FX_MODE_RAINBOW_CYCLE, 0);                break;
-    case IR24_OLD_FADE      : presetFallback(3, FX_MODE_BREATH, 0);                       break;
-    case IR24_OLD_SMOOTH    : presetFallback(4, FX_MODE_RAINBOW, 0);                      break;
+    case IR24_OLD_BRIGHTER  : incBrightness();                                         break;
+    case IR24_OLD_DARKER    : decBrightness();                                         break;
+    case IR24_OLD_OFF       : if (bri > 0) briLast = bri; bri = 0;                     break;
+    case IR24_OLD_ON        : bri = briLast;                                           break;
+    case IR24_OLD_RED       : changeColor(COLOR_RED);                                  break;
+    case IR24_OLD_REDDISH   : changeColor(COLOR_REDDISH);                              break;
+    case IR24_OLD_ORANGE    : changeColor(COLOR_ORANGE);                               break;
+    case IR24_OLD_YELLOWISH : changeColor(COLOR_YELLOWISH);                            break;
+    case IR24_OLD_YELLOW    : changeColor(COLOR_YELLOW);                               break;
+    case IR24_OLD_GREEN     : changeColor(COLOR_GREEN);                                break;
+    case IR24_OLD_GREENISH  : changeColor(COLOR_GREENISH);                             break;
+    case IR24_OLD_TURQUOISE : changeColor(COLOR_TURQUOISE);                            break;
+    case IR24_OLD_CYAN      : changeColor(COLOR_CYAN);                                 break;
+    case IR24_OLD_AQUA      : changeColor(COLOR_AQUA);                                 break;
+    case IR24_OLD_BLUE      : changeColor(COLOR_BLUE);                                 break;
+    case IR24_OLD_DEEPBLUE  : changeColor(COLOR_DEEPBLUE);                             break;
+    case IR24_OLD_PURPLE    : changeColor(COLOR_PURPLE);                               break;
+    case IR24_OLD_MAGENTA   : changeColor(COLOR_MAGENTA);                              break;
+    case IR24_OLD_PINK      : changeColor(COLOR_PINK);                                 break;
+    case IR24_OLD_WHITE     : changeColor(COLOR_WHITE); changeEffect(FX_MODE_STATIC); break;
+    case IR24_OLD_FLASH     : presetFallback(1, FX_MODE_COLORTWINKLE, 0);              break;
+    case IR24_OLD_STROBE    : presetFallback(2, FX_MODE_RAINBOW_CYCLE, 0);             break;
+    case IR24_OLD_FADE      : presetFallback(3, FX_MODE_BREATH, 0);                    break;
+    case IR24_OLD_SMOOTH    : presetFallback(4, FX_MODE_RAINBOW, 0);                   break;
     default: return;
   }
   lastValidCode = code;
@@ -345,30 +383,30 @@ void decodeIR24OLD(uint32_t code)
 void decodeIR24CT(uint32_t code)
 {
   switch (code) {
-    case IR24_CT_BRIGHTER   : incBrightness();                                                    break;
-    case IR24_CT_DARKER     : decBrightness();                                                    break;
-    case IR24_CT_OFF        : if (bri > 0) briLast = bri; bri = 0;                                break;
-    case IR24_CT_ON         : bri = briLast;                                                      break;
-    case IR24_CT_RED        : colorFromUint32(COLOR_RED);                                         break;
-    case IR24_CT_REDDISH    : colorFromUint32(COLOR_REDDISH);                                     break;
-    case IR24_CT_ORANGE     : colorFromUint32(COLOR_ORANGE);                                      break;
-    case IR24_CT_YELLOWISH  : colorFromUint32(COLOR_YELLOWISH);                                   break;
-    case IR24_CT_YELLOW     : colorFromUint32(COLOR_YELLOW);                                      break;
-    case IR24_CT_GREEN      : colorFromUint32(COLOR_GREEN);                                       break;
-    case IR24_CT_GREENISH   : colorFromUint32(COLOR_GREENISH);                                    break;
-    case IR24_CT_TURQUOISE  : colorFromUint32(COLOR_TURQUOISE);                                   break;
-    case IR24_CT_CYAN       : colorFromUint32(COLOR_CYAN);                                        break;
-    case IR24_CT_AQUA       : colorFromUint32(COLOR_AQUA);                                        break;
-    case IR24_CT_BLUE       : colorFromUint32(COLOR_BLUE);                                        break;
-    case IR24_CT_DEEPBLUE   : colorFromUint32(COLOR_DEEPBLUE);                                    break;
-    case IR24_CT_PURPLE     : colorFromUint32(COLOR_PURPLE);                                      break;
-    case IR24_CT_MAGENTA    : colorFromUint32(COLOR_MAGENTA);                                     break;
-    case IR24_CT_PINK       : colorFromUint32(COLOR_PINK);                                        break;
-    case IR24_CT_COLDWHITE  : colorFromUint32(COLOR2_COLDWHITE);    changeEffect(FX_MODE_STATIC); break;
-    case IR24_CT_WARMWHITE  : colorFromUint32(COLOR2_WARMWHITE);    changeEffect(FX_MODE_STATIC); break;
-    case IR24_CT_CTPLUS     : colorFromUint32(COLOR2_COLDWHITE2);   changeEffect(FX_MODE_STATIC); break;
-    case IR24_CT_CTMINUS    : colorFromUint32(COLOR2_WARMWHITE2);   changeEffect(FX_MODE_STATIC); break;
-    case IR24_CT_MEMORY     : colorFromUint32(COLOR2_NEUTRALWHITE); changeEffect(FX_MODE_STATIC); break;
+    case IR24_CT_BRIGHTER   : incBrightness();                     break;
+    case IR24_CT_DARKER     : decBrightness();                     break;
+    case IR24_CT_OFF        : if (bri > 0) briLast = bri; bri = 0; break;
+    case IR24_CT_ON         : bri = briLast;                       break;
+    case IR24_CT_RED        : changeColor(COLOR_RED);              break;
+    case IR24_CT_REDDISH    : changeColor(COLOR_REDDISH);          break;
+    case IR24_CT_ORANGE     : changeColor(COLOR_ORANGE);           break;
+    case IR24_CT_YELLOWISH  : changeColor(COLOR_YELLOWISH);        break;
+    case IR24_CT_YELLOW     : changeColor(COLOR_YELLOW);           break;
+    case IR24_CT_GREEN      : changeColor(COLOR_GREEN);            break;
+    case IR24_CT_GREENISH   : changeColor(COLOR_GREENISH);         break;
+    case IR24_CT_TURQUOISE  : changeColor(COLOR_TURQUOISE);        break;
+    case IR24_CT_CYAN       : changeColor(COLOR_CYAN);             break;
+    case IR24_CT_AQUA       : changeColor(COLOR_AQUA);             break;
+    case IR24_CT_BLUE       : changeColor(COLOR_BLUE);             break;
+    case IR24_CT_DEEPBLUE   : changeColor(COLOR_DEEPBLUE);         break;
+    case IR24_CT_PURPLE     : changeColor(COLOR_PURPLE);           break;
+    case IR24_CT_MAGENTA    : changeColor(COLOR_MAGENTA);          break;
+    case IR24_CT_PINK       : changeColor(COLOR_PINK);             break;
+    case IR24_CT_COLDWHITE  : changeColor(COLOR_COLDWHITE2,                                             255); changeEffect(FX_MODE_STATIC); break;
+    case IR24_CT_WARMWHITE  : changeColor(COLOR_WARMWHITE2,                                               0); changeEffect(FX_MODE_STATIC); break;
+    case IR24_CT_CTPLUS     : changeColor(COLOR_COLDWHITE, strip.getSegment(strip.getMainSegmentId()).cct+1); changeEffect(FX_MODE_STATIC); break;
+    case IR24_CT_CTMINUS    : changeColor(COLOR_WARMWHITE, strip.getSegment(strip.getMainSegmentId()).cct-1); changeEffect(FX_MODE_STATIC); break;
+    case IR24_CT_MEMORY     : changeColor(COLOR_NEUTRALWHITE,                                           127); changeEffect(FX_MODE_STATIC); break;
     default: return; 
   }
   lastValidCode = code;
@@ -381,46 +419,26 @@ void decodeIR40(uint32_t code)
     case IR40_BMINUS       : decBrightness();                            break;
     case IR40_OFF          : if (bri > 0) briLast = bri; bri = 0;        break;
     case IR40_ON           : bri = briLast;                              break;
-    case IR40_RED          : colorFromUint24(COLOR_RED);                 break;
-    case IR40_REDDISH      : colorFromUint24(COLOR_REDDISH);             break;
-    case IR40_ORANGE       : colorFromUint24(COLOR_ORANGE);              break;
-    case IR40_YELLOWISH    : colorFromUint24(COLOR_YELLOWISH);           break;
-    case IR40_YELLOW       : colorFromUint24(COLOR_YELLOW);              break;
-    case IR40_GREEN        : colorFromUint24(COLOR_GREEN);               break;
-    case IR40_GREENISH     : colorFromUint24(COLOR_GREENISH);            break;
-    case IR40_TURQUOISE    : colorFromUint24(COLOR_TURQUOISE);           break;
-    case IR40_CYAN         : colorFromUint24(COLOR_CYAN);                break;
-    case IR40_AQUA         : colorFromUint24(COLOR_AQUA);                break;
-    case IR40_BLUE         : colorFromUint24(COLOR_BLUE);                break;
-    case IR40_DEEPBLUE     : colorFromUint24(COLOR_DEEPBLUE);            break;
-    case IR40_PURPLE       : colorFromUint24(COLOR_PURPLE);              break;
-    case IR40_MAGENTA      : colorFromUint24(COLOR_MAGENTA);             break;
-    case IR40_PINK         : colorFromUint24(COLOR_PINK);                break;
-    case IR40_WARMWHITE2   :
-      if (strip.hasWhiteChannel())  colorFromUint32(COLOR2_WARMWHITE2);
-      else                          colorFromUint24(COLOR_WARMWHITE2);
-      changeEffect(FX_MODE_STATIC);
-      break;
-    case IR40_WARMWHITE    :
-      if (strip.hasWhiteChannel())  colorFromUint32(COLOR2_WARMWHITE);
-      else                          colorFromUint24(COLOR_WARMWHITE);
-      changeEffect(FX_MODE_STATIC);
-      break;
-    case IR40_WHITE        :
-      if (strip.hasWhiteChannel())  colorFromUint32(COLOR2_NEUTRALWHITE);
-      else                          colorFromUint24(COLOR_NEUTRALWHITE);
-      changeEffect(FX_MODE_STATIC);
-      break;
-    case IR40_COLDWHITE    :
-      if (strip.hasWhiteChannel())  colorFromUint32(COLOR2_COLDWHITE);
-      else                          colorFromUint24(COLOR_COLDWHITE);
-      changeEffect(FX_MODE_STATIC);
-      break;
-    case IR40_COLDWHITE2    :
-      if (strip.hasWhiteChannel())  colorFromUint32(COLOR2_COLDWHITE2);
-      else                          colorFromUint24(COLOR_COLDWHITE2);
-      changeEffect(FX_MODE_STATIC);
-      break;
+    case IR40_RED          : changeColor(COLOR_RED);                     break;
+    case IR40_REDDISH      : changeColor(COLOR_REDDISH);                 break;
+    case IR40_ORANGE       : changeColor(COLOR_ORANGE);                  break;
+    case IR40_YELLOWISH    : changeColor(COLOR_YELLOWISH);               break;
+    case IR40_YELLOW       : changeColor(COLOR_YELLOW);                  break;
+    case IR40_GREEN        : changeColor(COLOR_GREEN);                   break;
+    case IR40_GREENISH     : changeColor(COLOR_GREENISH);                break;
+    case IR40_TURQUOISE    : changeColor(COLOR_TURQUOISE);               break;
+    case IR40_CYAN         : changeColor(COLOR_CYAN);                    break;
+    case IR40_AQUA         : changeColor(COLOR_AQUA);                    break;
+    case IR40_BLUE         : changeColor(COLOR_BLUE);                    break;
+    case IR40_DEEPBLUE     : changeColor(COLOR_DEEPBLUE);                break;
+    case IR40_PURPLE       : changeColor(COLOR_PURPLE);                  break;
+    case IR40_MAGENTA      : changeColor(COLOR_MAGENTA);                 break;
+    case IR40_PINK         : changeColor(COLOR_PINK);                    break;
+    case IR40_WARMWHITE2   : changeColor(COLOR_WARMWHITE2,     0); changeEffect(FX_MODE_STATIC); break;
+    case IR40_WARMWHITE    : changeColor(COLOR_WARMWHITE,     63); changeEffect(FX_MODE_STATIC); break;
+    case IR40_WHITE        : changeColor(COLOR_NEUTRALWHITE, 127); changeEffect(FX_MODE_STATIC); break;
+    case IR40_COLDWHITE    : changeColor(COLOR_COLDWHITE,    191); changeEffect(FX_MODE_STATIC); break;
+    case IR40_COLDWHITE2   : changeColor(COLOR_COLDWHITE2,   255); changeEffect(FX_MODE_STATIC); break;
     case IR40_WPLUS        : relativeChangeWhite(10);                    break;
     case IR40_WMINUS       : relativeChangeWhite(-10, 5);                break;
     case IR40_WOFF         : whiteLast = col[3]; col[3] = 0;             break;
@@ -445,51 +463,31 @@ void decodeIR40(uint32_t code)
 void decodeIR44(uint32_t code)
 {
   switch (code) {
-    case IR44_BPLUS       : incBrightness();                                            break;
-    case IR44_BMINUS      : decBrightness();                                            break;
-    case IR44_OFF         : if (bri > 0) briLast = bri; bri = 0;                        break;
-    case IR44_ON          : bri = briLast;                                              break;
-    case IR44_RED         : colorFromUint24(COLOR_RED);                                 break;
-    case IR44_REDDISH     : colorFromUint24(COLOR_REDDISH);                             break;
-    case IR44_ORANGE      : colorFromUint24(COLOR_ORANGE);                              break;
-    case IR44_YELLOWISH   : colorFromUint24(COLOR_YELLOWISH);                           break;
-    case IR44_YELLOW      : colorFromUint24(COLOR_YELLOW);                              break;
-    case IR44_GREEN       : colorFromUint24(COLOR_GREEN);                               break;
-    case IR44_GREENISH    : colorFromUint24(COLOR_GREENISH);                            break;
-    case IR44_TURQUOISE   : colorFromUint24(COLOR_TURQUOISE);                           break;
-    case IR44_CYAN        : colorFromUint24(COLOR_CYAN);                                break;
-    case IR44_AQUA        : colorFromUint24(COLOR_AQUA);                                break;
-    case IR44_BLUE        : colorFromUint24(COLOR_BLUE);                                break;
-    case IR44_DEEPBLUE    : colorFromUint24(COLOR_DEEPBLUE);                            break;
-    case IR44_PURPLE      : colorFromUint24(COLOR_PURPLE);                              break;
-    case IR44_MAGENTA     : colorFromUint24(COLOR_MAGENTA);                             break;
-    case IR44_PINK        : colorFromUint24(COLOR_PINK);                                break;
-    case IR44_WHITE       :
-      if (strip.hasWhiteChannel()) colorFromUint32(COLOR2_NEUTRALWHITE);
-      else                         colorFromUint24(COLOR_NEUTRALWHITE);
-      changeEffect(FX_MODE_STATIC);
-      break;
-    case IR44_WARMWHITE2  :
-      if (strip.hasWhiteChannel())  colorFromUint32(COLOR2_WARMWHITE2);
-      else                          colorFromUint24(COLOR_WARMWHITE2);
-      changeEffect(FX_MODE_STATIC);
-      break;
-    case IR44_WARMWHITE   :
-      if (strip.hasWhiteChannel())  colorFromUint32(COLOR2_WARMWHITE);
-      else                          colorFromUint24(COLOR_WARMWHITE);
-      changeEffect(FX_MODE_STATIC);
-      break;
-    case IR44_COLDWHITE   :
-      if (strip.hasWhiteChannel())  colorFromUint32(COLOR2_COLDWHITE);
-      else                          colorFromUint24(COLOR_COLDWHITE);
-      changeEffect(FX_MODE_STATIC);
-      break;
-    case IR44_COLDWHITE2  :
-      if (strip.hasWhiteChannel())  colorFromUint32(COLOR2_COLDWHITE2);
-      else                          colorFromUint24(COLOR_COLDWHITE2);
-      changeEffect(FX_MODE_STATIC);
-      break;
-    case IR44_REDPLUS     : changeEffect(relativeChange(effectCurrent,  1, 0, MODE_COUNT -1));              break;
+    case IR44_BPLUS       : incBrightness();                             break;
+    case IR44_BMINUS      : decBrightness();                             break;
+    case IR44_OFF         : if (bri > 0) briLast = bri; bri = 0;         break;
+    case IR44_ON          : bri = briLast;                               break;
+    case IR44_RED         : changeColor(COLOR_RED);                      break;
+    case IR44_REDDISH     : changeColor(COLOR_REDDISH);                  break;
+    case IR44_ORANGE      : changeColor(COLOR_ORANGE);                   break;
+    case IR44_YELLOWISH   : changeColor(COLOR_YELLOWISH);                break;
+    case IR44_YELLOW      : changeColor(COLOR_YELLOW);                   break;
+    case IR44_GREEN       : changeColor(COLOR_GREEN);                    break;
+    case IR44_GREENISH    : changeColor(COLOR_GREENISH);                 break;
+    case IR44_TURQUOISE   : changeColor(COLOR_TURQUOISE);                break;
+    case IR44_CYAN        : changeColor(COLOR_CYAN);                     break;
+    case IR44_AQUA        : changeColor(COLOR_AQUA);                     break;
+    case IR44_BLUE        : changeColor(COLOR_BLUE);                     break;
+    case IR44_DEEPBLUE    : changeColor(COLOR_DEEPBLUE);                 break;
+    case IR44_PURPLE      : changeColor(COLOR_PURPLE);                   break;
+    case IR44_MAGENTA     : changeColor(COLOR_MAGENTA);                  break;
+    case IR44_PINK        : changeColor(COLOR_PINK);                     break;
+    case IR44_WHITE       : changeColor(COLOR_NEUTRALWHITE, 127); changeEffect(FX_MODE_STATIC);  break;
+    case IR44_WARMWHITE2  : changeColor(COLOR_WARMWHITE2,     0); changeEffect(FX_MODE_STATIC);  break;
+    case IR44_WARMWHITE   : changeColor(COLOR_WARMWHITE,     63); changeEffect(FX_MODE_STATIC);  break;
+    case IR44_COLDWHITE   : changeColor(COLOR_COLDWHITE,    191); changeEffect(FX_MODE_STATIC);  break;
+    case IR44_COLDWHITE2  : changeColor(COLOR_COLDWHITE2,   255); changeEffect(FX_MODE_STATIC);  break;
+    case IR44_REDPLUS     : changeEffect(relativeChange(effectCurrent,  1, 0, MODE_COUNT -1));               break;
     case IR44_REDMINUS    : changeEffect(relativeChange(effectCurrent, -1, 0, MODE_COUNT -1));               break;
     case IR44_GREENPLUS   : changePalette(relativeChange(effectPalette,  1, 0, strip.getPaletteCount() -1)); break;
     case IR44_GREENMINUS  : changePalette(relativeChange(effectPalette, -1, 0, strip.getPaletteCount() -1)); break;
@@ -517,27 +515,27 @@ void decodeIR44(uint32_t code)
 void decodeIR21(uint32_t code)
 {
     switch (code) {
-      case IR21_BRIGHTER:  incBrightness();                                            break;
-      case IR21_DARKER:    decBrightness();                                            break;
-      case IR21_OFF:       if (bri > 0) briLast = bri; bri = 0;                        break;
-      case IR21_ON:        bri = briLast;                                              break;
-      case IR21_RED:       colorFromUint32(COLOR_RED);                                 break;
-      case IR21_REDDISH:   colorFromUint32(COLOR_REDDISH);                             break;
-      case IR21_ORANGE:    colorFromUint32(COLOR_ORANGE);                              break;
-      case IR21_YELLOWISH: colorFromUint32(COLOR_YELLOWISH);                           break;
-      case IR21_GREEN:     colorFromUint32(COLOR_GREEN);                               break;
-      case IR21_GREENISH:  colorFromUint32(COLOR_GREENISH);                            break;
-      case IR21_TURQUOISE: colorFromUint32(COLOR_TURQUOISE);                           break;
-      case IR21_CYAN:      colorFromUint32(COLOR_CYAN);                                break;
-      case IR21_BLUE:      colorFromUint32(COLOR_BLUE);                                break;
-      case IR21_DEEPBLUE:  colorFromUint32(COLOR_DEEPBLUE);                            break;
-      case IR21_PURPLE:    colorFromUint32(COLOR_PURPLE);                              break;
-      case IR21_PINK:      colorFromUint32(COLOR_PINK);                                break;
-      case IR21_WHITE:     colorFromUint32(COLOR_WHITE); changeEffect(FX_MODE_STATIC); break;
-      case IR21_FLASH:     presetFallback(1, FX_MODE_COLORTWINKLE,  0);                break;
-      case IR21_STROBE:    presetFallback(2, FX_MODE_RAINBOW_CYCLE, 0);                break;
-      case IR21_FADE:      presetFallback(3, FX_MODE_BREATH,        0);                break;
-      case IR21_SMOOTH:    presetFallback(4, FX_MODE_RAINBOW,       0);                break;
+      case IR21_BRIGHTER:  incBrightness();                                        break;
+      case IR21_DARKER:    decBrightness();                                        break;
+      case IR21_OFF:       if (bri > 0) briLast = bri; bri = 0;                    break;
+      case IR21_ON:        bri = briLast;                                          break;
+      case IR21_RED:       changeColor(COLOR_RED);                                 break;
+      case IR21_REDDISH:   changeColor(COLOR_REDDISH);                             break;
+      case IR21_ORANGE:    changeColor(COLOR_ORANGE);                              break;
+      case IR21_YELLOWISH: changeColor(COLOR_YELLOWISH);                           break;
+      case IR21_GREEN:     changeColor(COLOR_GREEN);                               break;
+      case IR21_GREENISH:  changeColor(COLOR_GREENISH);                            break;
+      case IR21_TURQUOISE: changeColor(COLOR_TURQUOISE);                           break;
+      case IR21_CYAN:      changeColor(COLOR_CYAN);                                break;
+      case IR21_BLUE:      changeColor(COLOR_BLUE);                                break;
+      case IR21_DEEPBLUE:  changeColor(COLOR_DEEPBLUE);                            break;
+      case IR21_PURPLE:    changeColor(COLOR_PURPLE);                              break;
+      case IR21_PINK:      changeColor(COLOR_PINK);                                break;
+      case IR21_WHITE:     changeColor(COLOR_WHITE); changeEffect(FX_MODE_STATIC); break;
+      case IR21_FLASH:     presetFallback(1, FX_MODE_COLORTWINKLE,  0);            break;
+      case IR21_STROBE:    presetFallback(2, FX_MODE_RAINBOW_CYCLE, 0);            break;
+      case IR21_FADE:      presetFallback(3, FX_MODE_BREATH,        0);            break;
+      case IR21_SMOOTH:    presetFallback(4, FX_MODE_RAINBOW,       0);            break;
       default: return;
     }
     lastValidCode = code;
@@ -552,25 +550,25 @@ void decodeIR6(uint32_t code)
     case IR6_VOLUME_UP:    changeEffect(relativeChange(effectCurrent, 1, 0, MODE_COUNT -1)); break;
     case IR6_VOLUME_DOWN:  changePalette(relativeChange(effectPalette, 1, 0, strip.getPaletteCount() -1));
       switch(lastIR6ColourIdx) {
-        case 0: colorFromUint32(COLOR_RED);       break;
-        case 1: colorFromUint32(COLOR_REDDISH);   break;
-        case 2: colorFromUint32(COLOR_ORANGE);    break;
-        case 3: colorFromUint32(COLOR_YELLOWISH); break;
-        case 4: colorFromUint32(COLOR_GREEN);     break;
-        case 5: colorFromUint32(COLOR_GREENISH);  break;
-        case 6: colorFromUint32(COLOR_TURQUOISE); break;
-        case 7: colorFromUint32(COLOR_CYAN);      break;
-        case 8: colorFromUint32(COLOR_BLUE);      break;
-        case 9: colorFromUint32(COLOR_DEEPBLUE);  break;
-        case 10:colorFromUint32(COLOR_PURPLE);    break;
-        case 11:colorFromUint32(COLOR_PINK);      break;
-        case 12:colorFromUint32(COLOR_WHITE);     break;
-        default:                                  break;
+        case 0: changeColor(COLOR_RED);       break;
+        case 1: changeColor(COLOR_REDDISH);   break;
+        case 2: changeColor(COLOR_ORANGE);    break;
+        case 3: changeColor(COLOR_YELLOWISH); break;
+        case 4: changeColor(COLOR_GREEN);     break;
+        case 5: changeColor(COLOR_GREENISH);  break;
+        case 6: changeColor(COLOR_TURQUOISE); break;
+        case 7: changeColor(COLOR_CYAN);      break;
+        case 8: changeColor(COLOR_BLUE);      break;
+        case 9: changeColor(COLOR_DEEPBLUE);  break;
+        case 10:changeColor(COLOR_PURPLE);    break;
+        case 11:changeColor(COLOR_PINK);      break;
+        case 12:changeColor(COLOR_WHITE);     break;
+        default:                              break;
       }
       lastIR6ColourIdx++;
       if(lastIR6ColourIdx > 12) lastIR6ColourIdx = 0;
       break;
-    case IR6_MUTE: changeEffect(FX_MODE_STATIC); changePalette(0); colorFromUint32(COLOR_WHITE); bri=255; break;
+    case IR6_MUTE: changeEffect(FX_MODE_STATIC); changePalette(0); changeColor(COLOR_WHITE); bri=255; break;
     default: return;
   }
   lastValidCode = code;

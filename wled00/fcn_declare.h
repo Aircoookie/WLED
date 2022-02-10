@@ -58,8 +58,6 @@ bool getJsonValue(const JsonVariant& element, DestType& destination, const Defau
 
 
 //colors.cpp
-void colorFromUint32(uint32_t in, bool secondary = false);
-void colorFromUint24(uint32_t in, bool secondary = false);
 inline uint32_t colorFromRgbw(byte* rgbw) { return uint32_t((byte(rgbw[3]) << 24) | (byte(rgbw[0]) << 16) | (byte(rgbw[1]) << 8) | (byte(rgbw[2]))); }
 void relativeChangeWhite(int8_t amount, byte lowerBoundary = 0);
 void colorHStoRGB(uint16_t hue, byte sat, byte* rgb); //hue, sat to rgb
@@ -109,8 +107,6 @@ void sendImprovRPCResponse(uint8_t commandId);
 //bool decodeIRCustom(uint32_t code);
 void applyRepeatActions();
 byte relativeChange(byte property, int8_t amount, byte lowerBoundary = 0, byte higherBoundary = 0xFF);
-void changeEffectSpeed(int8_t amount);
-void changeEffectIntensity(int8_t amount);
 void decodeIR(uint32_t code);
 void decodeIR24(uint32_t code);
 void decodeIR24OLD(uint32_t code);

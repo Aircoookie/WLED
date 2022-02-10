@@ -560,6 +560,37 @@ uint16_t WS2812FX::getLengthPhysical(void) {
   return len;
 }
 
+uint8_t WS2812FX::Segment::capabilities() {
+  if (!isActive()) return 0;
+  uint8_t capabilities = 0;
+  uint8_t awm = Bus::getAutoWhiteMode();
+  bool whiteSlider = (awm == RGBW_MODE_DUAL || awm == RGBW_MODE_MANUAL_ONLY);
+
+  for (uint8_t b = 0; b < busses.getNumBusses(); b++) {
+    Bus *bus = busses.getBus(b);
+    if (bus == nullptr || bus->getLength()==0) break;
+    if (bus->getStart() >= stop) continue;
+    if (bus->getStart() + bus->getLength() <= start) continue;
+
+    uint8_t type = bus->getType();
+    if (!whiteSlider || (type != TYPE_ANALOG_1CH && (cctFromRgb || type != TYPE_ANALOG_2CH)))
+    {
+      capabilities |= 0x01; //segment supports RGB (full color)
+    }
+    if (bus->isRgbw()) capabilities |= 0x02; //segment supports white channel
+    if (whiteSlider)   capabilities |= 0x08; //segment allows white channel adjustments
+    if (!cctFromRgb) {
+      switch (type) {
+        case TYPE_ANALOG_5CH:
+        case TYPE_ANALOG_2CH:
+          capabilities |= 0x04; //segment supports white CCT 
+      }
+    }
+    if (correctWB && type != TYPE_ANALOG_1CH) capabilities |= 0x04; //white balance correction (uses CCT slider)
+  }
+  return capabilities;
+}
+
 bool WS2812FX::hasCCTBus(void) {
 	if (cctFromRgb && !correctWB) return false;
 	for (uint8_t b = 0; b < busses.getNumBusses(); b++) {
