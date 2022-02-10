@@ -720,11 +720,13 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   updateVal(&req, "&B=", &col[2]);
   updateVal(&req, "&W=", &col[3]);
   for (byte i=0; i<4; i++) if (prevCol[i]!=col[i]) col0Changed = colorChanged = true;
+  if (col0Changed) selseg.setColor(0, RGBW32(col[0], col[1], col[2], col[3]), selectedSeg);
   updateVal(&req, "R2=", &colSec[0]);
   updateVal(&req, "G2=", &colSec[1]);
   updateVal(&req, "B2=", &colSec[2]);
   updateVal(&req, "W2=", &colSec[3]);
   for (byte i=0; i<4; i++) if (prevColSec[i]!=colSec[i]) col1Changed = colorChanged = true;
+  if (col1Changed) selseg.setColor(1, RGBW32(colSec[0], colSec[1], colSec[2], colSec[3]), selectedSeg);
 
   #ifdef WLED_ENABLE_LOXONE
   //lox parser
@@ -963,8 +965,8 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
       if (effectSpeed != prevSpeed)         seg.speed     = effectSpeed;
       if (effectIntensity != prevIntensity) seg.intensity = effectIntensity;
       if (effectPalette != prevPalette)     seg.palette   = effectPalette;
-      if (col0Changed) seg.colors[0] = RGBW32(col[0],    col[1],    col[2],    col[3]);
-      if (col1Changed) seg.colors[1] = RGBW32(colSec[0], colSec[1], colSec[2], colSec[3]);
+      if (col0Changed) seg.setColor(0, RGBW32(col[0],    col[1],    col[2],    col[3]), i);    // use transitions
+      if (col1Changed) seg.setColor(1, RGBW32(colSec[0], colSec[1], colSec[2], colSec[3]), i); // use transitions
       if (col2Changed) seg.colors[2] = RGBW32(tmpCol[0], tmpCol[1], tmpCol[2], tmpCol[3]);
     }
   }
