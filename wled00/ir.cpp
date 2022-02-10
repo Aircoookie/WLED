@@ -213,7 +213,7 @@ void changeColor(uint32_t c, int16_t cct=-1)
     for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
       WS2812FX::Segment& seg = strip.getSegment(i);
       if (!seg.isActive() || !seg.isSelected()) continue;
-      byte capabilities = seg.capabilities();
+      byte capabilities = seg.getLightCapabilities();
       uint32_t mask = 0;
       bool isRGB = GET_BIT(capabilities, 0); // when RGBW_MODE_AUTO_ACCURATE this is always true
       bool hasW  = GET_BIT(capabilities, 1);
@@ -228,7 +228,7 @@ void changeColor(uint32_t c, int16_t cct=-1)
   } else {
     byte i = strip.getMainSegmentId();
     WS2812FX::Segment& seg = strip.getSegment(i);
-    byte capabilities = seg.capabilities();
+    byte capabilities = seg.getLightCapabilities();
     uint32_t mask = 0;
     bool isRGB = GET_BIT(capabilities, 0);
     bool hasW  = GET_BIT(capabilities, 1);

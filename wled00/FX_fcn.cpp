@@ -565,7 +565,29 @@ uint16_t WS2812FX::getLengthPhysical(void) {
   return len;
 }
 
-uint8_t WS2812FX::Segment::capabilities() {
+uint8_t WS2812FX::Segment::differs(Segment& b) {
+  uint8_t d = 0;
+  if (start != b.start)         d |= SEG_DIFFERS_BOUNDS;
+  if (stop != b.stop)           d |= SEG_DIFFERS_BOUNDS;
+  if (offset != b.offset)       d |= SEG_DIFFERS_GSO;
+  if (grouping != b.grouping)   d |= SEG_DIFFERS_GSO;
+  if (spacing != b.spacing)     d |= SEG_DIFFERS_GSO;
+  if (opacity != b.opacity)     d |= SEG_DIFFERS_BRI;
+  if (mode != b.mode)           d |= SEG_DIFFERS_FX;
+  if (speed != b.speed)         d |= SEG_DIFFERS_FX;
+  if (intensity != b.intensity) d |= SEG_DIFFERS_FX;
+  if (palette != b.palette)     d |= SEG_DIFFERS_FX;
+
+  if ((options & 0b00101111) != (b.options & 0b00101111)) d |= SEG_DIFFERS_OPT;
+  for (uint8_t i = 0; i < NUM_COLORS; i++)
+  {
+    if (colors[i] != b.colors[i]) d |= SEG_DIFFERS_COL;
+  }
+
+  return d;
+}
+
+uint8_t WS2812FX::Segment::getLightCapabilities() {
   if (!isActive()) return 0;
   uint8_t capabilities = 0;
   uint8_t awm = Bus::getAutoWhiteMode();
@@ -689,7 +711,7 @@ void WS2812FX::resetSegments() {
   _segment_runtimes[0].markForReset();
 }
 
-void WS2812FX::makeAutoSegments() {
+void WS2812FX::makeAutoSegments(bool forceReset) {
   if (autoSegments) { //make one segment per bus
     uint16_t segStarts[MAX_NUM_SEGMENTS] = {0};
     uint16_t segStops [MAX_NUM_SEGMENTS] = {0};
@@ -715,9 +737,15 @@ void WS2812FX::makeAutoSegments() {
       setSegment(i, segStarts[i], segStops[i]);
     }
   } else {
-    //expand the main seg to the entire length, but only if there are no other segments
+    //expand the main seg to the entire length, but only if there are no other segments, or reset is forced
     uint8_t mainSeg = getMainSegmentId();
     
+    if (forceReset) {
+      for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) {
+        setSegment(i, 0, 0);
+      }
+    }
+
     if (getActiveSegmentsNum() < 2) {
       setSegment(mainSeg, 0, _length);
     }
