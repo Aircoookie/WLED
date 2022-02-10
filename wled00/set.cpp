@@ -888,8 +888,8 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
       if (effectSpeed != prevSpeed)         seg.speed     = effectSpeed;
       if (effectIntensity != prevIntensity) seg.intensity = effectIntensity;
       if (effectPalette != prevPalette)     seg.palette   = effectPalette;
-      if (col0Changed) seg.colors[0] = RGBW32(col[0],    col[1],    col[2],    col[3]);
-      if (col1Changed) seg.colors[1] = RGBW32(colSec[0], colSec[1], colSec[2], colSec[3]);
+      if (col0Changed) seg.setColor(0, RGBW32(col[0],    col[1],    col[2],    col[3]), i);    // use transitions
+      if (col1Changed) seg.setColor(1, RGBW32(colSec[0], colSec[1], colSec[2], colSec[3]), i); // use transitions
       if (col2Changed) seg.colors[2] = RGBW32(tmpCol[0], tmpCol[1], tmpCol[2], tmpCol[3]);
     }
   }
