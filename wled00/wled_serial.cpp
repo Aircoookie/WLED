@@ -46,8 +46,6 @@ void handleSerial()
   static byte red   = 0x00;
   static byte green = 0x00;
 
-  uint16_t nBytes = 0;
-  
   while (Serial.available() > 0)
   {
     yield();
