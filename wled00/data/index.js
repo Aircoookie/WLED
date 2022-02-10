@@ -1613,7 +1613,7 @@ ${makePlSel(true)}
 </select></div>
 </div>
 <div class="c"><button class="btn btn-p" onclick="testPl(${i}, this)"><i class='icons btn-icon'>&#xe139;</i>Test</button></div>`;
-	} else
+	} else {
 		content =
 `<label class="check revchkl">
 	Include brightness
@@ -1630,6 +1630,12 @@ ${makePlSel(true)}
 	<input type="checkbox" id="p${i}sbchk">
 	<span class="checkmark schk"></span>
 </label>`;
+		if (Array.isArray(lastinfo.maps) && lastinfo.maps.length>0) {
+			content += `<div class="sel">Ledmap:&nbsp;<select class="sel sel-p" id="p${i}lmp"><option value="">None</option>`;
+			for (const k of (lastinfo.maps||[])) content += `<option value="${k}"${(i>0 && pJson[i].ledmap==k)?" selected":""}>${k}</option>`;
+			content += "</select></div>";
+		}
+	}
 
 	return `<input type="text" class="ptxt noslide" id="p${i}txt" autocomplete="off" maxlength=32 value="${(i>0)?pName(i):""}" placeholder="Enter name..."/>
 <div class="c">Quick load label: <input type="text" class="stxt noslide" maxlength=2 value="${qlName(i)}" id="p${i}ql" autocomplete="off"/></div>
@@ -1927,6 +1933,7 @@ function saveP(i,pl)
 			obj.ib = gId(`p${i}ibtgl`).checked;
 			obj.sb = gId(`p${i}sbtgl`).checked;
 			obj.sc = gId(`p${i}sbchk`).checked;
+			if (gId(`p${i}lmp`).value!=="") obj.ledmap = gId(`p${i}lmp`).value;
 		}
 	}
 

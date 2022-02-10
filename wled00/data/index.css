@@ -727,7 +727,7 @@ input[type=range]::-moz-range-thumb {
 .sel {
 	margin: 5px 0 10px;
 }
-.sel-pl, .sel-ple {
+.sel-p, .sel-pl, .sel-ple {
 	padding: 4px;
 	margin: 0;
 	font-size: 19px;
@@ -747,6 +747,9 @@ input[type=range]::-moz-range-thumb {
 }
 .cl {
 	width: 42px;
+}
+.sel-p {
+	min-width: 3em;
 }
 .sel-pl {
 	width: 100%;
