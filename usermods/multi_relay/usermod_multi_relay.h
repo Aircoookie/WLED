@@ -272,7 +272,7 @@ class MultiRelay : public Usermod {
 
     void publishHomeAssistantAutodiscovery() {
       for (uint8_t i = 0; i < MULTI_RELAY_MAX_RELAYS; i++) {
-        char uid[16], json_str[1024], buf[128];
+        char uid[24], json_str[1024], buf[128];
         size_t payload_size;
         sprintf_P(uid, PSTR("%s_sw%d"), escapedMac.c_str(), i);
 

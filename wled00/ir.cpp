@@ -254,6 +254,7 @@ void decodeIR(uint32_t code)
   }
   lastValidCode = 0; irTimesRepeated = 0;
   //if (decodeIRCustom(code)) return;
+  lastRepeatableAction = ACTION_NONE;
   if (irEnabled == 8) { // any remote configurable with ir.json file
     decodeIRJson(code);
     colorUpdated(CALL_MODE_BUTTON);
@@ -289,7 +290,7 @@ void decodeIR(uint32_t code)
 }
 
 void applyRepeatActions()
-{  
+{
   if (irEnabled == 8) {
     decodeIRJson(lastValidCode);
     return;
@@ -302,7 +303,6 @@ void applyRepeatActions()
     case ACTION_INTENSITY_DOWN : changeEffectIntensity(lastRepeatableValue); colorUpdated(CALL_MODE_BUTTON); return;
     default: break;
   }
-
   if (lastValidCode == IR40_WPLUS) { 
     relativeChangeWhite(10);
     colorUpdated(CALL_MODE_BUTTON);

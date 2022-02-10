@@ -72,21 +72,23 @@ void doublePressAction(uint8_t b)
 bool isButtonPressed(uint8_t i)
 {
   if (btnPin[i]<0) return false;
+  uint8_t pin = btnPin[i];
+
   switch (buttonType[i]) {
     case BTN_TYPE_NONE:
     case BTN_TYPE_RESERVED:
       break;
     case BTN_TYPE_PUSH:
     case BTN_TYPE_SWITCH:
-      if (digitalRead(btnPin[i]) == LOW) return true;
+      if (digitalRead(pin) == LOW) return true;
       break;
     case BTN_TYPE_PUSH_ACT_HIGH:
     case BTN_TYPE_PIR_SENSOR:
-      if (digitalRead(btnPin[i]) == HIGH) return true;
+      if (digitalRead(pin) == HIGH) return true;
       break;
     case BTN_TYPE_TOUCH:
       #if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C3)
-      if (touchRead(btnPin[i]) <= touchThreshold) return true;
+      if (touchRead(pin) <= touchThreshold) return true;
       #endif
       break;
   }
