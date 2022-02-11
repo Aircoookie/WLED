@@ -1387,8 +1387,8 @@ function makeP(i,pl) {
 	</select>
 </div>
 <button class="btn btn-i btn-p" onclick="testPl(${i}, this)"><i class='icons btn-icon'>&#xe139;</i>Test</button>`;
-	}
-  else content = `<label class="check revchkl">
+	} else {
+		content = `<label class="check revchkl">
 	Include brightness
 	<input type="checkbox" id="p${i}ibtgl" checked>
 	<span class="checkmark schk"></span>
@@ -1398,6 +1398,12 @@ function makeP(i,pl) {
 	<input type="checkbox" id="p${i}sbtgl" checked>
 	<span class="checkmark schk"></span>
 </label>`;
+		if (Array.isArray(lastinfo.maps) && lastinfo.maps.length>0) {
+			content += `<div class="sel">Ledmap:&nbsp;<select class="btn sel sel-p" id="p${i}lmp"><option value="">None</option>`;
+			for (const k of (lastinfo.maps||[])) content += `<option value="${k}"${(i>0 && pJson[i].ledmap==k)?" selected":""}>${k}</option>`;
+			content += "</select></div>";
+		}
+	}
 
 	return `<input type="text" class="ptxt noslide" id="p${i}txt" autocomplete="off" maxlength=32 value="${(i>0)?pName(i):""}" placeholder="Enter name..."/><br>
 <div class="c">Quick load label: <input type="text" class="qltxt noslide" maxlength=2 value="${qlName(i)}" id="p${i}ql" autocomplete="off"/></div>
@@ -1672,6 +1678,7 @@ function saveP(i,pl) {
 		} else {
 			obj.ib = d.getElementById(`p${i}ibtgl`).checked;
 			obj.sb = d.getElementById(`p${i}sbtgl`).checked;
+			if (gId(`p${i}lmp`).value!=="") obj.ledmap = parseInt(gId(`p${i}lmp`).value);
 		}
 	}
 

@@ -574,6 +574,16 @@ void serializeInfo(JsonObject root)
   root[F("fxcount")] = strip.getModeCount();
   root[F("palcount")] = strip.getPaletteCount();
 
+  JsonArray ledmaps = root.createNestedArray(F("maps"));
+  for (uint8_t i=0; i<10; i++) {
+    char fileName[16];
+    strcpy_P(fileName, PSTR("/ledmap"));
+    if (i) sprintf(fileName +7, "%d", i);
+    strcat(fileName, ".json");
+    bool isFile = WLED_FS.exists(fileName);
+    if (isFile || i==0) ledmaps.add(i);
+  }
+
   JsonObject wifi_info = root.createNestedObject("wifi");
   wifi_info[F("bssid")] = WiFi.BSSIDstr();
   int qrssi = WiFi.RSSI();

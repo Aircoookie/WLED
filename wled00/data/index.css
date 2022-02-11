@@ -643,6 +643,10 @@ input[type=range]:active + .sliderbubble {
 	width: 42px;
 }
 
+.sel-p {
+	width: 5.5em;
+	background-position: 4em 16px;
+}
 .sel-pl {
   width: 192px;
   background-position: 168px 16px;
