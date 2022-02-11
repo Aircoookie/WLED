@@ -1933,7 +1933,7 @@ function saveP(i,pl)
 			obj.ib = gId(`p${i}ibtgl`).checked;
 			obj.sb = gId(`p${i}sbtgl`).checked;
 			obj.sc = gId(`p${i}sbchk`).checked;
-			if (gId(`p${i}lmp`).value!=="") obj.ledmap = gId(`p${i}lmp`).value;
+			if (gId(`p${i}lmp`).value!=="") obj.ledmap = parseInt(gId(`p${i}lmp`).value);
 		}
 	}
 

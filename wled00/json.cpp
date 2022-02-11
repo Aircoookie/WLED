@@ -562,7 +562,7 @@ void serializeInfo(JsonObject root)
     if (i) sprintf(fileName +7, "%d", i);
     strcat(fileName, ".json");
     bool isFile = WLED_FS.exists(fileName);
-    if (isFile) ledmaps.add(i);
+    if (isFile || i==0) ledmaps.add(i);
   }
 
   JsonObject wifi_info = root.createNestedObject("wifi");

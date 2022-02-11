@@ -749,7 +749,7 @@ input[type=range]::-moz-range-thumb {
 	width: 42px;
 }
 .sel-p {
-	min-width: 3em;
+	width: 4.5em;
 }
 .sel-pl {
 	width: 100%;
