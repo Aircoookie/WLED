@@ -414,7 +414,7 @@ void deEEP() {
 
         JsonArray colarr = segObj.createNestedArray("col");
 
-        byte numChannels = (strip.isRgbw)? 4:3;
+        byte numChannels = (strip.hasWhiteChannel())? 4:3;
 
         for (uint8_t k = 0; k < 3; k++) //k=0 primary (i+2) k=1 secondary (i+6) k=2 tertiary color (i+12)
         {

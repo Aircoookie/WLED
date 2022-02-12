@@ -162,6 +162,7 @@ void decodeIR(uint32_t code)
     return;
   }
   lastValidCode = 0; irTimesRepeated = 0;
+  lastRepeatableAction = ACTION_NONE;
   if (decodeIRCustom(code)) return;
   if (irEnabled == 8) { // any remote configurable with ir.json file
     decodeIRJson(code);
@@ -193,53 +194,31 @@ void decodeIR(uint32_t code)
   colorUpdated(CALL_MODE_BUTTON); //for notifier, IR is considered a button input
 }
 
-void applyRepeatActions(){
-  
-    if (lastRepeatableAction == ACTION_BRIGHT_UP)
-    { 
-      incBrightness(); colorUpdated(CALL_MODE_BUTTON);
-    }
-    else if (lastRepeatableAction == ACTION_BRIGHT_DOWN )
-    {
-      decBrightness(); colorUpdated(CALL_MODE_BUTTON);
-    }
-
-    if (lastRepeatableAction == ACTION_SPEED_UP)
-    { 
-      changeEffectSpeed(lastRepeatableValue); colorUpdated(CALL_MODE_BUTTON);
-    }
-    else if (lastRepeatableAction == ACTION_SPEED_DOWN )
-    {
-      changeEffectSpeed(lastRepeatableValue); colorUpdated(CALL_MODE_BUTTON);
-    }
-
-    if (lastRepeatableAction == ACTION_INTENSITY_UP)
-    { 
-      changeEffectIntensity(lastRepeatableValue); colorUpdated(CALL_MODE_BUTTON);
-    }
-    else if (lastRepeatableAction == ACTION_INTENSITY_DOWN )
-    {
-      changeEffectIntensity(lastRepeatableValue); colorUpdated(CALL_MODE_BUTTON);
-    }
-
-    if (lastValidCode == IR40_WPLUS)
-    { 
-      relativeChangeWhite(10); colorUpdated(CALL_MODE_BUTTON);
-    }
-    else if (lastValidCode == IR40_WMINUS)
-    {
-      relativeChangeWhite(-10, 5); colorUpdated(CALL_MODE_BUTTON);
-    }
-    else if ((lastValidCode == IR24_ON || lastValidCode == IR40_ON) && irTimesRepeated > 7 )
-    {
-      nightlightActive = true;
-      nightlightStartTime = millis();
-      colorUpdated(CALL_MODE_BUTTON);
-    }
-    else if (irEnabled == 8) 
-    {
-      decodeIRJson(lastValidCode);
-    }
+void applyRepeatActions()
+{
+  if (irEnabled == 8) {
+    decodeIRJson(lastValidCode);
+    return;
+  } else switch (lastRepeatableAction) {
+    case ACTION_BRIGHT_UP :      incBrightness();                            colorUpdated(CALL_MODE_BUTTON); return;
+    case ACTION_BRIGHT_DOWN :    decBrightness();                            colorUpdated(CALL_MODE_BUTTON); return;
+    case ACTION_SPEED_UP :       changeEffectSpeed(lastRepeatableValue);     colorUpdated(CALL_MODE_BUTTON); return;
+    case ACTION_SPEED_DOWN :     changeEffectSpeed(lastRepeatableValue);     colorUpdated(CALL_MODE_BUTTON); return;
+    case ACTION_INTENSITY_UP :   changeEffectIntensity(lastRepeatableValue); colorUpdated(CALL_MODE_BUTTON); return;
+    case ACTION_INTENSITY_DOWN : changeEffectIntensity(lastRepeatableValue); colorUpdated(CALL_MODE_BUTTON); return;
+    default: break;
+  }
+  if (lastValidCode == IR40_WPLUS) { 
+    relativeChangeWhite(10);
+    colorUpdated(CALL_MODE_BUTTON);
+  } else if (lastValidCode == IR40_WMINUS) {
+    relativeChangeWhite(-10, 5);
+    colorUpdated(CALL_MODE_BUTTON);
+  } else if ((lastValidCode == IR24_ON || lastValidCode == IR40_ON) && irTimesRepeated > 7 ) {
+    nightlightActive = true;
+    nightlightStartTime = millis();
+    colorUpdated(CALL_MODE_BUTTON);
+  }
 }
 
 void decodeIR24(uint32_t code)
@@ -363,20 +342,20 @@ void decodeIR40(uint32_t code)
     case IR40_MAGENTA      : colorFromUint24(COLOR_MAGENTA);                             break;
     case IR40_PINK         : colorFromUint24(COLOR_PINK);                                break;
     case IR40_WARMWHITE2   : {
-      if (strip.isRgbw) {        colorFromUint32(COLOR2_WARMWHITE2);   effectCurrent = 0; }    
-      else                  colorFromUint24(COLOR_WARMWHITE2);                       }   break;
+      if (strip.hasWhiteChannel()) {colorFromUint32(COLOR2_WARMWHITE2);   effectCurrent = 0; }    
+      else                          colorFromUint24(COLOR_WARMWHITE2);                       }   break;
     case IR40_WARMWHITE    : {
-      if (strip.isRgbw) {        colorFromUint32(COLOR2_WARMWHITE);    effectCurrent = 0; }    
-      else                  colorFromUint24(COLOR_WARMWHITE);                        }   break;
+      if (strip.hasWhiteChannel()) {colorFromUint32(COLOR2_WARMWHITE);    effectCurrent = 0; }    
+      else                          colorFromUint24(COLOR_WARMWHITE);                        }   break;
     case IR40_WHITE        : {
-      if (strip.isRgbw) {        colorFromUint32(COLOR2_NEUTRALWHITE); effectCurrent = 0; }    
-      else                  colorFromUint24(COLOR_NEUTRALWHITE);                     }   break;
+      if (strip.hasWhiteChannel()) {colorFromUint32(COLOR2_NEUTRALWHITE); effectCurrent = 0; }    
+      else                          colorFromUint24(COLOR_NEUTRALWHITE);                     }   break;
     case IR40_COLDWHITE    : {
-      if (strip.isRgbw) {        colorFromUint32(COLOR2_COLDWHITE);    effectCurrent = 0; }   
-      else                  colorFromUint24(COLOR_COLDWHITE);                        }   break;
+      if (strip.hasWhiteChannel()) {colorFromUint32(COLOR2_COLDWHITE);    effectCurrent = 0; }   
+      else                          colorFromUint24(COLOR_COLDWHITE);                        }   break;
     case IR40_COLDWHITE2    : {
-      if (strip.isRgbw) {        colorFromUint32(COLOR2_COLDWHITE2);   effectCurrent = 0; }   
-      else                  colorFromUint24(COLOR_COLDWHITE2);                       }   break;
+      if (strip.hasWhiteChannel()) {colorFromUint32(COLOR2_COLDWHITE2);   effectCurrent = 0; }   
+      else                          colorFromUint24(COLOR_COLDWHITE2);                       }   break;
     case IR40_WPLUS        : relativeChangeWhite(10);                                    break;
     case IR40_WMINUS       : relativeChangeWhite(-10, 5);                                break;
     case IR40_WOFF         : whiteLast = col[3]; col[3] = 0;                             break;
@@ -420,22 +399,22 @@ void decodeIR44(uint32_t code)
     case IR44_MAGENTA     : colorFromUint24(COLOR_MAGENTA);                             break;
     case IR44_PINK        : colorFromUint24(COLOR_PINK);                                break;
     case IR44_WHITE       : {
-      if (strip.isRgbw) {
+      if (strip.hasWhiteChannel()) {
         if (col[3] > 0) col[3] = 0; 
         else {              colorFromUint32(COLOR2_NEUTRALWHITE); effectCurrent = 0; }
       } else                colorFromUint24(COLOR_NEUTRALWHITE);                     }  break;
     case IR44_WARMWHITE2  : {
-      if (strip.isRgbw) {        colorFromUint32(COLOR2_WARMWHITE2);   effectCurrent = 0; }    
-      else                  colorFromUint24(COLOR_WARMWHITE2);                       }  break;
+      if (strip.hasWhiteChannel()) {colorFromUint32(COLOR2_WARMWHITE2);   effectCurrent = 0; }    
+      else                          colorFromUint24(COLOR_WARMWHITE2);                       }  break;
     case IR44_WARMWHITE   : {
-      if (strip.isRgbw) {        colorFromUint32(COLOR2_WARMWHITE);    effectCurrent = 0; }    
-      else                  colorFromUint24(COLOR_WARMWHITE);                        }  break;
+      if (strip.hasWhiteChannel()) {colorFromUint32(COLOR2_WARMWHITE);    effectCurrent = 0; }    
+      else                          colorFromUint24(COLOR_WARMWHITE);                        }  break;
     case IR44_COLDWHITE   : {
-      if (strip.isRgbw) {        colorFromUint32(COLOR2_COLDWHITE);    effectCurrent = 0; }   
-      else                  colorFromUint24(COLOR_COLDWHITE);                        }  break;
+      if (strip.hasWhiteChannel()) {colorFromUint32(COLOR2_COLDWHITE);    effectCurrent = 0; }   
+      else                          colorFromUint24(COLOR_COLDWHITE);                        }  break;
     case IR44_COLDWHITE2  : {
-      if (strip.isRgbw) {        colorFromUint32(COLOR2_COLDWHITE2);   effectCurrent = 0; }    
-      else                  colorFromUint24(COLOR_COLDWHITE2);                       }  break;
+      if (strip.hasWhiteChannel()) {colorFromUint32(COLOR2_COLDWHITE2);   effectCurrent = 0; }    
+      else                          colorFromUint24(COLOR_COLDWHITE2);                       }  break;
     case IR44_REDPLUS     : relativeChange(&effectCurrent,  1, 0, MODE_COUNT);          break;
     case IR44_REDMINUS    : relativeChange(&effectCurrent, -1, 0);                      break;
     case IR44_GREENPLUS   : relativeChange(&effectPalette,  1, 0, strip.getPaletteCount() -1);     break;

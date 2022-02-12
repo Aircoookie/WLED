@@ -81,7 +81,6 @@
 #define SEGLEN           _virtualSegmentLength
 #define SEGACT           SEGMENT.stop
 #define SPEED_FORMULA_L  5U + (50U*(255U - SEGMENT.speed))/SEGLEN
-#define RESET_RUNTIME    memset(_segment_runtimes, 0, sizeof(_segment_runtimes))
 
 // some common colors
 #define RED        (uint32_t)0xFF0000
@@ -409,8 +408,9 @@ class WS2812FX {
        * Flags that before the next effect is calculated,
        * the internal segment state should be reset. 
        * Call resetIfRequired before calling the next effect function.
+       * Safe to call from interrupts and network requests.
        */
-      inline void reset() { _requiresReset = true; }
+      inline void markForReset() { _requiresReset = true; }
       private:
         uint16_t _dataLen = 0;
         bool _requiresReset = false;
@@ -660,8 +660,6 @@ class WS2812FX {
       deserializeMap(uint8_t n=0);
 
     bool
-      isRgbw = false,
-      isOffRefreshRequred = false, //periodic refresh is required for the strip to remain off.
       gammaCorrectBri = false,
       gammaCorrectCol = true,
       applyToAllSelected = true,
@@ -864,6 +862,8 @@ class WS2812FX {
     uint16_t _cumulativeFps = 2;
 
     bool
+      _isOffRefreshRequired = false, //periodic refresh is required for the strip to remain off.
+      _hasWhiteChannel = false,
       _triggered;
 
     mode_ptr _mode[MODE_COUNT]; // SRAM footprint: 4 bytes per element
@@ -925,6 +925,10 @@ class WS2812FX {
     uint16_t
       realPixelIndex(uint16_t i),
       transitionProgress(uint8_t tNr);
+  
+  public:
+    inline bool hasWhiteChannel(void) {return _hasWhiteChannel;}
+    inline bool isOffRefreshRequired(void) {return _isOffRefreshRequired;}
 };
 
 //10 names per line
