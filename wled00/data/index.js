@@ -534,7 +534,7 @@ function populateQL()
 function populatePresets(fromls)
 {
 	if (fromls) pJson = JSON.parse(localStorage.getItem("wledP"));
-	if (!pJson) {pJson={};return};
+	if (!pJson) {setTimeout(loadPresets,250); return;}
 	delete pJson["0"];
 	var cn = `<p class="labels">All presets</p>`;
 	var arr = Object.entries(pJson);
@@ -2255,9 +2255,11 @@ function formatArr(pl) {
 	}
 }
 
-function expand(i,a=false)
+function expand(i/*,a=false*/)
 {
 	var seg = gId('seg' +i);
+	let util = i<100?'segutil':'putil';
+	let stay = i<100?"staybot":"staytop";
 /*
 	if (!a) {
 		var j = i>100 ? 100 : 0;
@@ -2268,16 +2270,18 @@ function expand(i,a=false)
 	expanded[i] = !expanded[i];
 	seg.style.display = (expanded[i]) ? "block":"none";
 	//gId('sege' +i).style.transform = (expanded[i]) ? "rotate(180deg)":"rotate(0deg)";
-	if (expanded[i]) gId('sege' +i).classList.add("exp");
-	else             gId('sege' +i).classList.remove("exp");
-
-	if (expanded[i]) gId(i<100?'segutil':'putil').classList.remove(i<100?"staybot":"staytop");
-	else gId(i<100?'segutil':'putil').classList.add(i<100?"staybot":"staytop");
+	if (expanded[i]) {
+		gId('sege' +i).classList.add("exp");
+		gId(util).classList.remove(stay);
+	} else {
+		gId('sege' +i).classList.remove("exp");
+		gId(util).classList.add(stay);
+	}
 
 	if (i >= 100) {
 		var p = i-100;
 		gId(`p${p}o`).classList.toggle('expand');
-		if (seg.innerHTML === "") {
+		if (expanded[i]) {
 			if (isPlaylist(p)) {
 				plJson[p] = pJson[p].playlist;
 				//make sure all keys are present in plJson[p]
@@ -2291,10 +2295,9 @@ function expand(i,a=false)
 			} else {
 				seg.innerHTML = makeP(p);
 			}
-
 			var papi = papiVal(p);
 			gId(`p${p}api`).value = papi;
-			if (papi.indexOf("Please") == 0) gId(`p${p}cstgl`).checked = true;
+			if (papi.indexOf("Please") == 0) gId(`p${p}cstgl`).checked = false;
 			tglCs(p);
 		} else
 			seg.innerHTML = "";
