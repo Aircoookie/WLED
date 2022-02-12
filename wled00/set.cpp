@@ -484,12 +484,15 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       // check if parameters represent array
       if (name.endsWith("[]")) {
         name.replace("[]","");
+        value.replace(",",".");      // just in case conversion
         if (!subObj[name].is<JsonArray>()) {
           JsonArray ar = subObj.createNestedArray(name);
-          ar.add(value.toInt());
+          if (value.indexOf(".") >= 0) ar.add(value.toFloat());  // we do have a float
+          else                         ar.add(value.toInt());    // we may have an int
           j=0;
         } else {
-          subObj[name].add(value.toInt());
+          if (value.indexOf(".") >= 0) subObj[name].add(value.toFloat());  // we do have a float
+          else                         subObj[name].add(value.toInt());    // we may have an int
           j++;
         }
         DEBUG_PRINT("[");
