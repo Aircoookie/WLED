@@ -329,10 +329,10 @@ void handleNotifications()
         for (uint8_t i = 0; i < srcSegs; i++) {
           uint16_t ofs = 41 + i*udpIn[40]; //start of segment offset byte
           uint8_t id = udpIn[0 +ofs];
-          if (id > strip.getMaxSegments()) continue;
+          if (id > strip.getMaxSegments()) break;
           WS2812FX::Segment& selseg = strip.getSegment(id);
           //bytes 1+2 contain start, 3+4 stop, unused at this time
-          for (uint8_t j = 0; j<4; j++) selseg.setOption(j, (udpIn[9 +ofs] >> j) & 0x01); //only take into account mirrored, selected, on, reversed
+          for (uint8_t j = 0; j<4; j++) selseg.setOption(j, (udpIn[9 +ofs] >> j) & 0x01, id); //only take into account mirrored, selected, on, reversed
           selseg.setOpacity(udpIn[10+ofs], id);
           if (applyEffects) {
             strip.setMode(id,  udpIn[11+ofs]);
