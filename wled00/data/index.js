@@ -1524,8 +1524,8 @@ function rptSeg(s)
 function setSeg(s){
 	var name  = d.getElementById(`seg${s}t`).value;
 	var start = parseInt(d.getElementById(`seg${s}s`).value);
-	var stop	= parseInt(d.getElementById(`seg${s}e`).value);
-	if (stop <= start) {delSeg(s); return;}
+	var stop  = parseInt(d.getElementById(`seg${s}e`).value);
+	if ((cfg.comp.seglen && stop == 0) || (!cfg.comp.seglen && stop <= start)) {delSeg(s); return;}
 	var obj = {"seg": {"id": s, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop}};
 	if (d.getElementById(`seg${s}grp`))
 	{
