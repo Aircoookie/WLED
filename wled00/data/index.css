@@ -382,7 +382,7 @@ button {
 }
 
 .modal button:hover {
-  background-color: var(--c-tba);
+  background-color: var(--c-4);
 }
 
 #info {
