@@ -287,9 +287,8 @@ class WS2812FX {
       }
       void setOption(uint8_t n, bool val, uint8_t segn = 255)
       {
-        bool prevOn = false;
+        bool prevOn = getOption(n);
         if (n == SEG_OPTION_ON) {
-          prevOn = getOption(SEG_OPTION_ON);
           if (!val && prevOn) { //fade off
             ColorTransition::startTransition(opacity, colors[0], instance->_transitionDur, segn, 0);
           }
@@ -304,6 +303,10 @@ class WS2812FX {
 
         if (n == SEG_OPTION_ON && val && !prevOn) { //fade on
           ColorTransition::startTransition(0, colors[0], instance->_transitionDur, segn, 0);
+        }
+        if (n == SEG_OPTION_SELECTED && !val && prevOn) {
+          //choose a new main segment if the main segment is deselected
+          if (segn == instance->_mainSegment) instance->setMainSegmentId(0);
         }
       }
       bool getOption(uint8_t n)
@@ -649,6 +652,7 @@ class WS2812FX {
       calcGammaTable(float),
       trigger(void),
       setSegment(uint8_t n, uint16_t start, uint16_t stop, uint8_t grouping = 0, uint8_t spacing = 0, uint16_t offset = UINT16_MAX),
+      setMainSegmentId(uint8_t n),
       restartRuntime(),
       resetSegments(),
       makeAutoSegments(),
@@ -662,27 +666,21 @@ class WS2812FX {
     bool
       gammaCorrectBri = false,
       gammaCorrectCol = true,
-      applyToAllSelected = true,
-      setEffectConfig(uint8_t m, uint8_t s, uint8_t i, uint8_t p),
       checkSegmentAlignment(void),
 			hasCCTBus(void),
       // return true if the strip is being sent pixel updates
       isUpdating(void);
 
     uint8_t
-      mainSegment = 0,
       paletteFade = 0,
       paletteBlend = 0,
       milliampsPerLed = 55,
 			cctBlending = 0,
       getBrightness(void),
-      getMode(void),
-      getSpeed(void),
       getModeCount(void),
       getPaletteCount(void),
       getMaxSegments(void),
       getActiveSegmentsNum(void),
-      //getFirstSelectedSegment(void),
       getMainSegmentId(void),
 			getTargetFps(void),
       setPixelSegment(uint8_t n),
@@ -714,11 +712,9 @@ class WS2812FX {
       getPixelColor(uint16_t),
       getColor(void);
 
-    WS2812FX::Segment&
-      getSegment(uint8_t n);
-
-    WS2812FX::Segment_runtime
-      getSegmentRuntime(void);
+    WS2812FX::Segment
+      &getSegment(uint8_t n),
+      &getMainSegment(void);
 
     WS2812FX::Segment*
       getSegments(void);
@@ -912,6 +908,8 @@ class WS2812FX {
     
     uint8_t _segment_index = 0;
     uint8_t _segment_index_palette_last = 99;
+    uint8_t _mainSegment;
+
     segment _segments[MAX_NUM_SEGMENTS] = { // SRAM footprint: 24 bytes per element
       // start, stop, offset, speed, intensity, palette, mode, options, grouping, spacing, opacity (unused), color[]
       {0, 7, 0, DEFAULT_SPEED, 128, 0, DEFAULT_MODE, NO_OPTIONS, 1, 0, 255, {DEFAULT_COLOR}}

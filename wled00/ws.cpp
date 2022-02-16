@@ -56,13 +56,13 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
             verboseResponse = deserializeState(root);
             if (!interfaceUpdateCallMode) {
               //special case, only on playlist load, avoid sending twice in rapid succession
-              if (millis() - lastInterfaceUpdate > 1700) verboseResponse = false;
+              if (millis() - lastInterfaceUpdate > (INTERFACE_UPDATE_COOLDOWN -300)) verboseResponse = false;
             }
           }
           releaseJSONBufferLock(); // will clean fileDoc
         }
         //update if it takes longer than 300ms until next "broadcast"
-        if (verboseResponse && (millis() - lastInterfaceUpdate < 1700 || !interfaceUpdateCallMode)) sendDataWs(client);
+        if (verboseResponse && (millis() - lastInterfaceUpdate < (INTERFACE_UPDATE_COOLDOWN -300) || !interfaceUpdateCallMode)) sendDataWs(client);
       }
     } else {
       //message is comprised of multiple frames or the frame is split into multiple packets

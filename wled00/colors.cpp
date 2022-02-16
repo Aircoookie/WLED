@@ -4,6 +4,12 @@
  * Color conversion methods
  */
 
+void setRandomColor(byte* rgb)
+{
+  lastRandomIndex = strip.get_random_wheel_index(lastRandomIndex);
+  colorHStoRGB(lastRandomIndex*256,255,rgb);
+}
+
 void colorFromUint32(uint32_t in, bool secondary)
 {
   byte *_col = secondary ? colSec : col;

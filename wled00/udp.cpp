@@ -28,37 +28,39 @@ void notify(byte callMode, bool followUp)
     default: return;
   }
   byte udpOut[WLEDPACKETSIZE];
-  WS2812FX::Segment& mainseg = strip.getSegment(strip.getMainSegmentId());
+  WS2812FX::Segment& mainseg = strip.getMainSegment();
   udpOut[0] = 0; //0: wled notifier protocol 1: WARLS protocol
   udpOut[1] = callMode;
   udpOut[2] = bri;
-  udpOut[3] = col[0];
-  udpOut[4] = col[1];
-  udpOut[5] = col[2];
+  uint32_t col = mainseg.colors[0];
+  udpOut[3] = R(col);
+  udpOut[4] = G(col);
+  udpOut[5] = B(col);
   udpOut[6] = nightlightActive;
   udpOut[7] = nightlightDelayMins;
-  udpOut[8] = effectCurrent;
-  udpOut[9] = effectSpeed;
-  udpOut[10] = col[3];
+  udpOut[8] = mainseg.mode;
+  udpOut[9] = mainseg.speed;
+  udpOut[10] = W(col);
   //compatibilityVersionByte: 
   //0: old 1: supports white 2: supports secondary color
   //3: supports FX intensity, 24 byte packet 4: supports transitionDelay 5: sup palette
   //6: supports timebase syncing, 29 byte packet 7: supports tertiary color 8: supports sys time sync, 36 byte packet
   //9: supports sync groups, 37 byte packet 10: supports CCT, 39 byte packet 11: per segment options, variable packet length (40+MAX_NUM_SEGMENTS*3)
-  udpOut[11] = 11; 
-  udpOut[12] = colSec[0];
-  udpOut[13] = colSec[1];
-  udpOut[14] = colSec[2];
-  udpOut[15] = colSec[3];
-  udpOut[16] = effectIntensity;
+  udpOut[11] = 11;
+  col = mainseg.colors[1];
+  udpOut[12] = R(col);
+  udpOut[13] = G(col);
+  udpOut[14] = B(col);
+  udpOut[15] = W(col);
+  udpOut[16] = mainseg.intensity;
   udpOut[17] = (transitionDelay >> 0) & 0xFF;
   udpOut[18] = (transitionDelay >> 8) & 0xFF;
-  udpOut[19] = effectPalette;
-  uint32_t colTer = mainseg.colors[2];
-  udpOut[20] = (colTer >> 16) & 0xFF;
-  udpOut[21] = (colTer >>  8) & 0xFF;
-  udpOut[22] = (colTer >>  0) & 0xFF;
-  udpOut[23] = (colTer >> 24) & 0xFF;
+  udpOut[19] = mainseg.palette;
+  col = mainseg.colors[2];
+  udpOut[20] = R(col);
+  udpOut[21] = G(col);
+  udpOut[22] = B(col);
+  udpOut[23] = W(col);
   
   udpOut[24] = followUp;
   uint32_t t = millis() + strip.timebase;
@@ -357,7 +359,6 @@ void handleNotifications()
             strip.setSegment(id, selseg.start, selseg.stop, udpIn[5+ofs], udpIn[6+ofs], selseg.offset);
           }
         }
-        setValuesFromMainSeg();
         effectChanged = true;
         colorChanged = true;
       }
@@ -411,7 +412,6 @@ void handleNotifications()
     if (nightlightActive) nightlightDelayMins = udpIn[7];
     
     if (receiveNotificationBrightness || !someSel) bri = udpIn[2];
-    strip.applyToAllSelected = !(version > 10 && receiveSegmentOptions);
     colorUpdated(CALL_MODE_NOTIFICATION);
     return;
   }

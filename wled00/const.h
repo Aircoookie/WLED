@@ -344,4 +344,6 @@
   #define DEFAULT_LED_COUNT 30
 #endif
 
+#define INTERFACE_UPDATE_COOLDOWN 2000 //time in ms to wait between websockets, alexa, and MQTT updates
+
 #endif
