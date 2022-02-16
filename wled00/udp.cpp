@@ -322,16 +322,20 @@ void handleNotifications()
     if (version < 200)
     {
       if (applyEffects && currentPlaylist >= 0) unloadPlaylist();
-      if (version > 10 && receiveSegmentOptions) {
-        //does not sync start & stop
-        uint8_t srcSegs = udpIn[39];
-        //if (srcSegs > strip.getMaxSegments()) srcSegs = strip.getMaxSegments();
-        for (uint8_t i = 0; i < srcSegs; i++) {
+      if (version > 10 && (receiveSegmentOptions || receiveSegmentBounds)) {
+        uint8_t numSrcSegs = udpIn[39];
+        for (uint8_t i = 0; i < numSrcSegs; i++) {
           uint16_t ofs = 41 + i*udpIn[40]; //start of segment offset byte
           uint8_t id = udpIn[0 +ofs];
           if (id > strip.getMaxSegments()) continue;
           WS2812FX::Segment& selseg = strip.getSegment(id);
-          //bytes 1+2 contain start, 3+4 stop, unused at this time
+          uint16_t start  = (udpIn[1+ofs] << 8 | udpIn[2+ofs]);
+          uint16_t stop   = (udpIn[3+ofs] << 8 | udpIn[4+ofs]);
+          uint16_t offset = (udpIn[7+ofs] << 8 | udpIn[8+ofs]);
+          if (!receiveSegmentOptions) {
+            strip.setSegment(id, start, stop, selseg.grouping, selseg.spacing, offset);
+            continue;
+          }
           for (uint8_t j = 0; j<4; j++) selseg.setOption(j, (udpIn[9 +ofs] >> j) & 0x01); //only take into account mirrored, selected, on, reversed
           selseg.setOpacity(udpIn[10+ofs], id);
           if (applyEffects) {
@@ -346,12 +350,19 @@ void handleNotifications()
             selseg.setColor(2, RGBW32(udpIn[23+ofs],udpIn[24+ofs],udpIn[25+ofs],udpIn[26+ofs]), id);
             selseg.setCCT(udpIn[27+ofs], id);
           }
-          strip.setSegment(id, selseg.start, selseg.stop, udpIn[5+ofs], udpIn[6+ofs], (udpIn[7+ofs]<<8 | udpIn[8+ofs])); //also properly resets segments
+          //setSegment() also properly resets segments
+          if (receiveSegmentBounds) {
+            strip.setSegment(id, start, stop, udpIn[5+ofs], udpIn[6+ofs], offset);
+          } else {
+            strip.setSegment(id, selseg.start, selseg.stop, udpIn[5+ofs], udpIn[6+ofs], selseg.offset);
+          }
         }
         setValuesFromMainSeg();
         effectChanged = true;
         colorChanged = true;
-      } else if (applyEffects) { //simple effect sync, applies to all selected
+      }
+      
+      if (applyEffects && (version < 11 || !receiveSegmentOptions)) { //simple effect sync, applies to all selected
         if (udpIn[8] < strip.getModeCount()) effectCurrent = udpIn[8];
         effectSpeed   = udpIn[9];
         if (version > 2) effectIntensity = udpIn[16];
@@ -400,6 +411,7 @@ void handleNotifications()
     if (nightlightActive) nightlightDelayMins = udpIn[7];
     
     if (receiveNotificationBrightness || !someSel) bri = udpIn[2];
+    strip.applyToAllSelected = !(version > 10 && receiveSegmentOptions);
     colorUpdated(CALL_MODE_NOTIFICATION);
     return;
   }

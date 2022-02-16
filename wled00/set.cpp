@@ -233,6 +233,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     receiveNotificationColor = request->hasArg(F("RC"));
     receiveNotificationEffects = request->hasArg(F("RX"));
     receiveSegmentOptions = request->hasArg(F("SO"));
+    receiveSegmentBounds = request->hasArg(F("SG"));
     receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects || receiveSegmentOptions);
     notifyDirectDefault = request->hasArg(F("SD"));
     notifyDirect = notifyDirectDefault;
