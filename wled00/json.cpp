@@ -162,8 +162,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   }
   #endif
 
-  //if (pal != seg.palette && pal < strip.getPaletteCount()) strip.setPalette(pal);
-  seg.setOption(SEG_OPTION_SELECTED, elem[F("sel")] | seg.getOption(SEG_OPTION_SELECTED), id);
+  seg.setOption(SEG_OPTION_SELECTED, elem[F("sel")] | seg.getOption(SEG_OPTION_SELECTED));
   seg.setOption(SEG_OPTION_REVERSED, elem["rev"]    | seg.getOption(SEG_OPTION_REVERSED));
   seg.setOption(SEG_OPTION_MIRROR  , elem[F("mi")]  | seg.getOption(SEG_OPTION_MIRROR  ));
 
@@ -231,7 +230,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   } else if (!elem["frz"] && iarr.isNull()) { //return to regular effect
     seg.setOption(SEG_OPTION_FREEZE, false);
   }
-  if (!presetId && seg.differs(prev)) effectChanged = true;
+  //send UDP if not in preset and something changed that is not just selection
+  if (!presetId && (seg.differs(prev) & 0x7F)) effectChanged = true;
   return;
 }
 
@@ -331,6 +331,9 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       it++;
     }
   }
+
+  //refresh main segment (ensure it is selected, if there are any selected segments)
+  strip.setMainSegmentId(strip.getMainSegmentId());
 
   #ifndef WLED_DISABLE_CRONIXIE
     if (root["nx"].is<const char*>()) {

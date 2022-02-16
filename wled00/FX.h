@@ -287,8 +287,9 @@ class WS2812FX {
       }
       void setOption(uint8_t n, bool val, uint8_t segn = 255)
       {
-        bool prevOn = getOption(n);
+        bool prevOn = false;
         if (n == SEG_OPTION_ON) {
+          prevOn = getOption(SEG_OPTION_ON);
           if (!val && prevOn) { //fade off
             ColorTransition::startTransition(opacity, colors[0], instance->_transitionDur, segn, 0);
           }
@@ -303,10 +304,6 @@ class WS2812FX {
 
         if (n == SEG_OPTION_ON && val && !prevOn) { //fade on
           ColorTransition::startTransition(0, colors[0], instance->_transitionDur, segn, 0);
-        }
-        if (n == SEG_OPTION_SELECTED && !val && prevOn) {
-          //choose a new main segment if the main segment is deselected
-          if (segn == instance->_mainSegment) instance->setMainSegmentId(0);
         }
       }
       bool getOption(uint8_t n)
@@ -350,7 +347,8 @@ class WS2812FX {
         if (intensity != b.intensity) d |= SEG_DIFFERS_FX;
         if (palette != b.palette)     d |= SEG_DIFFERS_FX;
 
-        if ((options & 0b00101111) != (b.options & 0b00101111)) d |= SEG_DIFFERS_OPT;
+        if ((options & 0b00101110) != (b.options & 0b00101110)) d |= SEG_DIFFERS_OPT;
+        if ((options & 0x01) != (b.options & 0x01)) d |= SEG_DIFFERS_SEL;
         for (uint8_t i = 0; i < NUM_COLORS; i++)
         {
           if (colors[i] != b.colors[i]) d |= SEG_DIFFERS_COL;

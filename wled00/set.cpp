@@ -635,8 +635,8 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   pos = req.indexOf(F("SV=")); //segment selected
   if (pos > 0) {
     byte t = getNumVal(&req, pos);
-    if (t == 2) for (uint8_t i = 0; i < strip.getMaxSegments(); i++) strip.getSegment(i).setOption(SEG_OPTION_SELECTED, 0, i); // unselect other segments
-    selseg.setOption(SEG_OPTION_SELECTED, t, selectedSeg);
+    if (t == 2) for (uint8_t i = 0; i < strip.getMaxSegments(); i++) strip.getSegment(i).setOption(SEG_OPTION_SELECTED, 0); // unselect other segments
+    selseg.setOption(SEG_OPTION_SELECTED, t);
   }
 
   uint16_t startI = selseg.start;

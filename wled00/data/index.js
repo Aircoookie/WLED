@@ -1507,7 +1507,7 @@ function rptSeg(s)
 	var rev = d.getElementById(`seg${s}rev`).checked;
 	var mi = d.getElementById(`seg${s}mi`).checked;
 	var sel = d.getElementById(`seg${s}sel`).checked;
-	var obj = {"seg": {"id": s, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop, "rev": rev, "mi": mi, "on": !powered[s], "bri": parseInt(d.getElementById(`seg${s}bri`).value), "sel": sel}};
+	var obj = {"seg": {"id": s, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop, "rev": rev, "mi": mi, "on": powered[s], "bri": parseInt(d.getElementById(`seg${s}bri`).value), "sel": sel}};
 	if (d.getElementById(`seg${s}grp`)) {
 		var grp = parseInt(d.getElementById(`seg${s}grp`).value);
 		var spc = parseInt(d.getElementById(`seg${s}spc`).value);

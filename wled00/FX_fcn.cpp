@@ -551,7 +551,7 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
       delete[] seg.name;
       seg.name = nullptr;
     }
-    //if main segment is deleted, set first active as main segment
+    //if main segment is deleted, set first selected/active as main segment
     if (n == _mainSegment) setMainSegmentId(0);
     return;
   }
