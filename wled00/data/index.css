@@ -381,6 +381,10 @@ button {
 	overflow: auto;
 }
 
+.modal button:hover {
+  background-color: var(--c-4);
+}
+
 #info {
 	z-index: 3;
 }
