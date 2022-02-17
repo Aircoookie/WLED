@@ -280,6 +280,12 @@ function showToast(text, error = false) {
 }
 
 function showErrorToast() {
+	if (ws && ws.readyState === WebSocket.OPEN) {
+		// if we received a timeout force WS reconnect
+		ws.close();
+		ws = null;
+		if (lastinfo.ws > -1) setTimeout(makeWS,500);
+	}
 	showToast('Connection to light failed!', true);
 }
 function clearErrorToast() {
