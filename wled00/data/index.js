@@ -956,7 +956,7 @@ function cmpP(a, b) {
 function makeWS() {
 	if (ws) return;
 	ws = new WebSocket('ws://'+(loc?locip:window.location.hostname)+'/ws');
-  ws.binaryType = "arraybuffer";
+	ws.binaryType = "arraybuffer";
 	ws.onmessage = function(event) {
     if (event.data instanceof ArrayBuffer) return; //liveview packet
 		var json = JSON.parse(event.data);
@@ -974,9 +974,15 @@ function makeWS() {
 		displayRover(info, s);
 		readState(json.state);
 	};
-	ws.onclose = function(event) {
-    	d.getElementById('connind').style.backgroundColor = "#831";
-  	}
+	ws.onclose = (e)=>{
+		d.getElementById('connind').style.backgroundColor = "#831";
+		ws = null;
+		if (lastinfo.ws > -1) setTimeout(makeWS,500); //retry WS connection
+	}
+	ws.onopen = (e)=>{
+		ws.send("{'v':true}");
+		reqsLegal = true;
+	}
 }
 
 function readState(s,command=false) {
