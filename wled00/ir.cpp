@@ -676,12 +676,18 @@ void decodeIRJson(uint32_t code)
       if (!cmdStr.startsWith("win&")) {
         cmdStr = "win&" + cmdStr;
       }
-      handleSet(nullptr, cmdStr, false);
+      handleSet(nullptr, cmdStr, false); // no colorUpdated() call here
     }
-    //colorUpdated(CALL_MODE_BUTTON);
-  } else if (!jsonCmdObj.isNull()) {
+  } else {
     // command is JSON object
-    deserializeState(jsonCmdObj, CALL_MODE_BUTTON_PRESET);
+    if (jsonCmdObj[F("psave")].isNull()) deserializeState(jsonCmdObj, CALL_MODE_BUTTON_PRESET);
+    else {
+      uint8_t psave = jsonCmdObj[F("psave")].as<int>();
+      char pname[33];
+      sprintf_P(pname, PSTR("IR Preset %d"), psave);
+      fdo.clear();
+      if (psave > 0 && psave < 251) savePreset(psave, true, pname, fdo);
+    }
   }
   releaseJSONBufferLock();
 }
