@@ -575,7 +575,7 @@ void decodeIRJson(uint32_t code)
   cmdStr = fdo["cmd"].as<String>();
   jsonCmdObj = fdo["cmd"]; //object
 
-  if (!cmdStr.isEmpty()) 
+  if (jsonCmdObj.isNull()) 
   {
     if (cmdStr.startsWith("!")) {
       // call limited set of C functions
