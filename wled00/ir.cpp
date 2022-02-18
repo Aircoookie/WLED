@@ -605,9 +605,10 @@ void decodeIRJson(uint32_t code)
       if (!cmdStr.startsWith("win&")) {
         cmdStr = "win&" + cmdStr;
       }
+      fdo.clear(); //clear JSON buffer (it is no longer needed)
       handleSet(nullptr, cmdStr, false); // no colorUpdated() call here
     }
-  } else if (!jsonCmdObj.isNull()) {
+  } else {
     // command is JSON object
     if (jsonCmdObj[F("psave")].isNull()) deserializeState(jsonCmdObj, CALL_MODE_BUTTON_PRESET);
     else {
