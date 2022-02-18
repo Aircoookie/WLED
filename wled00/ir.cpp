@@ -646,7 +646,7 @@ void decodeIRJson(uint32_t code)
   // command is JSON object
   //allow applyPreset() to reuse JSON buffer, or it would alloc. a second buffer and run out of mem.
   //fileDoc = &doc; // used for applying presets (presets.cpp)
-  if (!cmdStr.isEmpty()) 
+  if (jsonCmdObj.isNull())  // we could also use: fdo["cmd"].is<String>()
   {
     if (cmdStr.startsWith("!")) {
       // call limited set of C functions
