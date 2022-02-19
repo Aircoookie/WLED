@@ -514,7 +514,7 @@ void handleNotifications()
 
   if (requestJSONBufferLock(18)) {
     if (udpIn[0] >= 'A' && udpIn[0] <= 'Z') { //HTTP API
-      String apireq = "win&";
+      String apireq = "win"; apireq += '&'; // reduce flash string usage
       apireq += (char*)udpIn;
       handleSet(nullptr, apireq);
     } else if (udpIn[0] == '{') { //JSON API

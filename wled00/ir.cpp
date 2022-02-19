@@ -664,20 +664,11 @@ void decodeIRJson(uint32_t code)
       }
     } else {
       // HTTP API command
-      if (cmdStr.indexOf("~") || fdo["rpt"]) 
-      {
-        // repeatable action
-        lastValidCode = code;
-      }
-      if (effectCurrent == 0 && cmdStr.indexOf("FP=") > -1) {
-        // setting palette but it wont show because effect is solid
-        effectCurrent = FX_MODE_GRADIENT;
-      }
-      if (!cmdStr.startsWith("win&")) {
-        cmdStr = "win&" + cmdStr;
-      }
-      fdo.clear(); //clear JSON buffer (it is no longer needed)
-      handleSet(nullptr, cmdStr, false); // no colorUpdated() call here
+      String apireq = "win"; apireq += '&';                        // reduce flash string usage
+      if (cmdStr.indexOf("~") || fdo["rpt"]) lastValidCode = code; // repeatable action
+      if (!cmdStr.startsWith(apireq)) cmdStr = apireq + cmdStr;    // if no "win&" prefix
+      fdo.clear();                                                 // clear JSON buffer (it is no longer needed)
+      handleSet(nullptr, cmdStr, false);                           // no colorUpdated() call here
     }
   } else {
     // command is JSON object

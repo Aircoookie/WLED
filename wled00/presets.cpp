@@ -45,7 +45,7 @@ void handlePresets()
   //HTTP API commands
   const char* httpwin = fdo["win"];
   if (httpwin) {
-    String apireq = "win&";
+    String apireq = "win"; apireq += '&'; // reduce flash string usage
     apireq += httpwin;
     handleSet(nullptr, apireq, false);
   } else {

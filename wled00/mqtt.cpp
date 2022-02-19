@@ -96,7 +96,7 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
       deserializeJson(doc, payloadStr);
       deserializeState(doc.as<JsonObject>());
     } else { //HTTP API
-      String apireq = "win&";
+      String apireq = "win"; apireq += '&'; // reduce flash string usage
       apireq += (char*)payloadStr;
       handleSet(nullptr, apireq);
     }

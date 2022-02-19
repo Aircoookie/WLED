@@ -365,7 +365,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     //HTTP API commands
     const char* httpwin = root["win"];
     if (httpwin) {
-      String apireq = "win&";
+      String apireq = "win"; apireq += '&'; // reduce flash string usage
       apireq += httpwin;
       handleSet(nullptr, apireq, false);
     }
