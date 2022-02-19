@@ -585,7 +585,8 @@ uint8_t WS2812FX::Segment::differs(Segment& b) {
   if (intensity != b.intensity) d |= SEG_DIFFERS_FX;
   if (palette != b.palette)     d |= SEG_DIFFERS_FX;
 
-  if ((options & 0b00101111) != (b.options & 0b00101111)) d |= SEG_DIFFERS_OPT;
+  if ((options & 0b00101110) != (b.options & 0b00101110)) d |= SEG_DIFFERS_OPT;
+  if ((options & 0x01) != (b.options & 0x01)) d |= SEG_DIFFERS_SEL;
   for (uint8_t i = 0; i < NUM_COLORS; i++)
   {
     if (colors[i] != b.colors[i]) d |= SEG_DIFFERS_COL;
