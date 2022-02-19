@@ -334,28 +334,8 @@ class WS2812FX {
           vLength = (vLength + 1) /2;  // divide by 2 if mirror, leave at least a single LED
         return vLength;
       }
-      uint8_t differs(Segment& b) {
-        uint8_t d = 0;
-        if (start != b.start)         d |= SEG_DIFFERS_BOUNDS;
-        if (stop != b.stop)           d |= SEG_DIFFERS_BOUNDS;
-        if (offset != b.offset)       d |= SEG_DIFFERS_GSO;
-        if (grouping != b.grouping)   d |= SEG_DIFFERS_GSO;
-        if (spacing != b.spacing)     d |= SEG_DIFFERS_GSO;
-        if (opacity != b.opacity)     d |= SEG_DIFFERS_BRI;
-        if (mode != b.mode)           d |= SEG_DIFFERS_FX;
-        if (speed != b.speed)         d |= SEG_DIFFERS_FX;
-        if (intensity != b.intensity) d |= SEG_DIFFERS_FX;
-        if (palette != b.palette)     d |= SEG_DIFFERS_FX;
-
-        if ((options & 0b00101110) != (b.options & 0b00101110)) d |= SEG_DIFFERS_OPT;
-        if ((options & 0x01) != (b.options & 0x01)) d |= SEG_DIFFERS_SEL;
-        for (uint8_t i = 0; i < NUM_COLORS; i++)
-        {
-          if (colors[i] != b.colors[i]) d |= SEG_DIFFERS_COL;
-        }
-
-        return d;
-      }
+      uint8_t differs(Segment& b);
+      uint8_t getLightCapabilities();
     } segment;
 
   // segment runtime parameters
@@ -653,7 +633,7 @@ class WS2812FX {
       setMainSegmentId(uint8_t n),
       restartRuntime(),
       resetSegments(),
-      makeAutoSegments(),
+      makeAutoSegments(bool forceReset = false),
       fixInvalidSegments(),
       setPixelColor(uint16_t n, uint32_t c),
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
@@ -665,7 +645,8 @@ class WS2812FX {
       gammaCorrectBri = false,
       gammaCorrectCol = true,
       checkSegmentAlignment(void),
-			hasCCTBus(void),
+      hasRGBWBus(void),
+      hasCCTBus(void),
       // return true if the strip is being sent pixel updates
       isUpdating(void);
 
@@ -680,7 +661,8 @@ class WS2812FX {
       getMaxSegments(void),
       getActiveSegmentsNum(void),
       getMainSegmentId(void),
-			getTargetFps(void),
+      getLastActiveSegmentId(void),
+      getTargetFps(void),
       setPixelSegment(uint8_t n),
       gamma8(uint8_t),
       gamma8_cal(uint8_t, float),

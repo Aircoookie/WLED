@@ -460,6 +460,13 @@ uint8_t WS2812FX::getMainSegmentId(void) {
   return _mainSegment;
 }
 
+uint8_t WS2812FX::getLastActiveSegmentId(void) {
+  for (uint8_t i = MAX_NUM_SEGMENTS -1; i > 0; i--) {
+    if (_segments[i].isActive()) return i;
+  }
+  return 0;
+}
+
 uint8_t WS2812FX::getActiveSegmentsNum(void) {
   uint8_t c = 0;
   for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
@@ -518,6 +525,77 @@ uint16_t WS2812FX::getLengthPhysical(void) {
     len += bus->getLength();
   }
   return len;
+}
+
+uint8_t WS2812FX::Segment::differs(Segment& b) {
+  uint8_t d = 0;
+  if (start != b.start)         d |= SEG_DIFFERS_BOUNDS;
+  if (stop != b.stop)           d |= SEG_DIFFERS_BOUNDS;
+  if (offset != b.offset)       d |= SEG_DIFFERS_GSO;
+  if (grouping != b.grouping)   d |= SEG_DIFFERS_GSO;
+  if (spacing != b.spacing)     d |= SEG_DIFFERS_GSO;
+  if (opacity != b.opacity)     d |= SEG_DIFFERS_BRI;
+  if (mode != b.mode)           d |= SEG_DIFFERS_FX;
+  if (speed != b.speed)         d |= SEG_DIFFERS_FX;
+  if (intensity != b.intensity) d |= SEG_DIFFERS_FX;
+  if (palette != b.palette)     d |= SEG_DIFFERS_FX;
+
+  if ((options & 0b00101110) != (b.options & 0b00101110)) d |= SEG_DIFFERS_OPT;
+  if ((options & 0x01) != (b.options & 0x01)) d |= SEG_DIFFERS_SEL;
+  
+  for (uint8_t i = 0; i < NUM_COLORS; i++)
+  {
+    if (colors[i] != b.colors[i]) d |= SEG_DIFFERS_COL;
+  }
+
+  return d;
+}
+
+uint8_t WS2812FX::Segment::getLightCapabilities() {
+  if (!isActive()) return 0;
+  uint8_t capabilities = 0;
+  uint8_t awm = Bus::getAutoWhiteMode();
+  bool whiteSlider = (awm == RGBW_MODE_DUAL || awm == RGBW_MODE_MANUAL_ONLY);
+
+  for (uint8_t b = 0; b < busses.getNumBusses(); b++) {
+    Bus *bus = busses.getBus(b);
+    if (bus == nullptr || bus->getLength()==0) break;
+    if (bus->getStart() >= stop) continue;
+    if (bus->getStart() + bus->getLength() <= start) continue;
+
+    uint8_t type = bus->getType();
+    if (!whiteSlider || (type != TYPE_ANALOG_1CH && (cctFromRgb || type != TYPE_ANALOG_2CH)))
+    {
+      capabilities |= 0x01; //segment supports RGB (full color)
+    }
+    if (bus->isRgbw() && whiteSlider) capabilities |= 0x02; //segment supports white channel
+    if (!cctFromRgb) {
+      switch (type) {
+        case TYPE_ANALOG_5CH:
+        case TYPE_ANALOG_2CH:
+          capabilities |= 0x04; //segment supports white CCT 
+      }
+    }
+    if (correctWB && type != TYPE_ANALOG_1CH) capabilities |= 0x04; //white balance correction (uses CCT slider)
+  }
+  return capabilities;
+}
+
+//used for JSON API info.leds.rgbw. Little practical use, deprecate with info.leds.rgbw.
+//returns if there is an RGBW bus (supports RGB and White, not only white)
+//not influenced by auto-white mode, also true if white slider does not affect output white channel
+bool WS2812FX::hasRGBWBus(void) {
+	for (uint8_t b = 0; b < busses.getNumBusses(); b++) {
+    Bus *bus = busses.getBus(b);
+    if (bus == nullptr || bus->getLength()==0) break;
+    switch (bus->getType()) {
+      case TYPE_SK6812_RGBW:
+      case TYPE_TM1814:
+      case TYPE_ANALOG_4CH:
+        return true;
+    }
+  }
+	return false;
 }
 
 bool WS2812FX::hasCCTBus(void) {
@@ -604,7 +682,7 @@ void WS2812FX::resetSegments() {
   _segment_runtimes[0].markForReset();
 }
 
-void WS2812FX::makeAutoSegments() {
+void WS2812FX::makeAutoSegments(bool forceReset) {
   if (autoSegments) { //make one segment per bus
     uint16_t segStarts[MAX_NUM_SEGMENTS] = {0};
     uint16_t segStops [MAX_NUM_SEGMENTS] = {0};
@@ -630,8 +708,14 @@ void WS2812FX::makeAutoSegments() {
       setSegment(i, segStarts[i], segStops[i]);
     }
   } else {
-    //expand the main seg to the entire length, but only if there are no other segments
+    //expand the main seg to the entire length, but only if there are no other segments, or reset is forced
     uint8_t mainSeg = getMainSegmentId();
+
+    if (forceReset) {
+      for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) {
+        setSegment(i, 0, 0);
+      }
+    }
     
     if (getActiveSegmentsNum() < 2) {
       setSegment(mainSeg, 0, _length);
