@@ -393,62 +393,19 @@ uint8_t WS2812FX::getPaletteCount()
   return 13 + GRADIENT_PALETTE_COUNT;
 }
 
-//TODO effect transitions
-
-
-bool WS2812FX::setEffectConfig(uint8_t m, uint8_t s, uint8_t in, uint8_t p) {
-  Segment& seg = _segments[getMainSegmentId()];
-  uint8_t modePrev = seg.mode, speedPrev = seg.speed, intensityPrev = seg.intensity, palettePrev = seg.palette;
-
-  bool applied = false;
-  
-  if (applyToAllSelected) {
-    for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-    {
-      if (_segments[i].isSelected())
-      {
-        _segments[i].speed = s;
-        _segments[i].intensity = in;
-        _segments[i].palette = p;
-        setMode(i, m);
-        applied = true;
-      }
-    }
-  } 
-  
-  if (!applyToAllSelected || !applied) {
-    seg.speed = s;
-    seg.intensity = in;
-    seg.palette = p;
-    setMode(mainSegment, m);
-  }
-  
-  if (seg.mode != modePrev || seg.speed != speedPrev || seg.intensity != intensityPrev || seg.palette != palettePrev) return true;
-  return false;
-}
-
 void WS2812FX::setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
   setColor(slot, RGBW32(r, g, b, w));
 }
 
+//applies to all active and selected segments
 void WS2812FX::setColor(uint8_t slot, uint32_t c) {
   if (slot >= NUM_COLORS) return;
 
-  bool applied = false;
-  
-  if (applyToAllSelected) {
-    for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-    {
-      if (_segments[i].isSelected()) {
-        _segments[i].setColor(slot, c, i);
-        applied = true;
-      }
+  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
+  {
+    if (_segments[i].isActive() && _segments[i].isSelected()) {
+      _segments[i].setColor(slot, c, i);
     }
-  }
-
-  if (!applyToAllSelected || !applied) {
-    uint8_t mainseg = getMainSegmentId();
-    _segments[mainseg].setColor(slot, c, mainseg);
   }
 }
 
@@ -466,14 +423,6 @@ void WS2812FX::setBrightness(uint8_t b) {
   if (_segment_runtimes[0].next_time > t + 22 && t - _lastShow > MIN_SHOW_DELAY) show(); //apply brightness change immediately if no refresh soon
 }
 
-uint8_t WS2812FX::getMode(void) {
-  return _segments[getMainSegmentId()].mode;
-}
-
-uint8_t WS2812FX::getSpeed(void) {
-  return _segments[getMainSegmentId()].speed;
-}
-
 uint8_t WS2812FX::getBrightness(void) {
   return _brightness;
 }
@@ -482,27 +431,33 @@ uint8_t WS2812FX::getMaxSegments(void) {
   return MAX_NUM_SEGMENTS;
 }
 
-/*uint8_t WS2812FX::getFirstSelectedSegment(void)
-{
+void WS2812FX::setMainSegmentId(uint8_t n) {
+  if (n >= MAX_NUM_SEGMENTS) return;
+  if (_segments[n].isActive() && _segments[n].isSelected()) {
+    _mainSegment = n; return;
+  }
   for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
   {
-    if (_segments[i].isActive() && _segments[i].isSelected()) return i;
+    if (_segments[i].isActive() && _segments[i].isSelected()) {
+      _mainSegment = i; return;
+    }
   }
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) //if none selected, get first active
+  //if none selected, use supplied n if active, or first active
+  if (_segments[n].isActive()) {
+    _mainSegment = n; return;
+  }
+  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
   {
-    if (_segments[i].isActive()) return i;
+    if (_segments[i].isActive()) {
+      _mainSegment = i; return;
+    }
   }
-  return 0;
-}*/
+  _mainSegment = 0;
+  return;
+}
 
 uint8_t WS2812FX::getMainSegmentId(void) {
-  if (mainSegment >= MAX_NUM_SEGMENTS) return 0;
-  if (_segments[mainSegment].isActive()) return mainSegment;
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) //get first active
-  {
-    if (_segments[i].isActive()) return i;
-  }
-  return 0;
+  return _mainSegment;
 }
 
 uint8_t WS2812FX::getActiveSegmentsNum(void) {
@@ -539,8 +494,8 @@ WS2812FX::Segment& WS2812FX::getSegment(uint8_t id) {
   return _segments[id];
 }
 
-WS2812FX::Segment_runtime WS2812FX::getSegmentRuntime(void) {
-  return SEGENV;
+WS2812FX::Segment& WS2812FX::getMainSegment(void) {
+  return _segments[getMainSegmentId()];
 }
 
 WS2812FX::Segment* WS2812FX::getSegments(void) {
@@ -596,17 +551,8 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
       delete[] seg.name;
       seg.name = nullptr;
     }
-    if (n == mainSegment) //if main segment is deleted, set first active as main segment
-    {
-      for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-      {
-        if (_segments[i].isActive()) {
-          mainSegment = i;
-          return;
-        }
-      }
-      mainSegment = 0; //should not happen (always at least one active segment)
-    }
+    //if main segment is deleted, set first selected/active as main segment
+    if (n == _mainSegment) setMainSegmentId(0);
     return;
   }
   if (i1 < _length) seg.start = i1;
@@ -628,7 +574,7 @@ void WS2812FX::restartRuntime() {
 
 void WS2812FX::resetSegments() {
   for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) if (_segments[i].name) delete[] _segments[i].name;
-  mainSegment = 0;
+  _mainSegment = 0;
   memset(_segments, 0, sizeof(_segments));
   //memset(_segment_runtimes, 0, sizeof(_segment_runtimes));
   _segment_index = 0;

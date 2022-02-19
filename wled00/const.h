@@ -226,6 +226,7 @@
 #define SEG_DIFFERS_FX         0x08
 #define SEG_DIFFERS_BOUNDS     0x10
 #define SEG_DIFFERS_GSO        0x20
+#define SEG_DIFFERS_SEL        0x80
 
 //Playlist option byte
 #define PL_OPTION_SHUFFLE      0x01
@@ -343,5 +344,7 @@
 #ifndef DEFAULT_LED_COUNT
   #define DEFAULT_LED_COUNT 30
 #endif
+
+#define INTERFACE_UPDATE_COOLDOWN 2000 //time in ms to wait between websockets, alexa, and MQTT updates
 
 #endif

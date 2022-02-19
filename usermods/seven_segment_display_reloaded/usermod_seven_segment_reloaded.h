@@ -391,7 +391,7 @@ public:
           uint16_t brightness = map(lux, 0, 1000, umSSDRBrightnessMin, umSSDRBrightnessMax);
           if (bri != brightness) {
             bri = brightness;
-            colorUpdated(1);
+            stateUpdated(1);
           }
         }
         umSSDRLastRefresh = millis();
