@@ -56,13 +56,13 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
             verboseResponse = deserializeState(root);
             if (!interfaceUpdateCallMode) {
               //special case, only on playlist load, avoid sending twice in rapid succession
-              if (millis() - lastInterfaceUpdate > 1700) verboseResponse = false;
+              if (millis() - lastInterfaceUpdate > (INTERFACE_UPDATE_COOLDOWN -300)) verboseResponse = false;
             }
           }
           releaseJSONBufferLock(); // will clean fileDoc
         }
         //update if it takes longer than 300ms until next "broadcast"
-        if (verboseResponse && (millis() - lastInterfaceUpdate < 1700 || !interfaceUpdateCallMode)) sendDataWs(client);
+        if (verboseResponse && (millis() - lastInterfaceUpdate < (INTERFACE_UPDATE_COOLDOWN -300) || !interfaceUpdateCallMode)) sendDataWs(client);
       }
     } else {
       //message is comprised of multiple frames or the frame is split into multiple packets
@@ -108,9 +108,13 @@ void sendDataWs(AsyncWebSocketClient * client)
     JsonObject info  = doc.createNestedObject("info");
     serializeInfo(info);
     size_t len = measureJson(doc);
-    buffer = ws.makeBuffer(len);
-    if (!buffer) {
+    size_t heap1 = ESP.getFreeHeap();
+    buffer = ws.makeBuffer(len); // will not allocate correct memory sometimes
+    size_t heap2 = ESP.getFreeHeap();
+    if (!buffer || heap1-heap2<len) {
       releaseJSONBufferLock();
+      ws.closeAll(1013); //code 1013 = temporary overload, try again later
+      ws.cleanupClients(0); //disconnect all clients to release memory
       return; //out of memory
     }
     serializeJson(doc, (char *)buffer->get(), len +1);
@@ -155,7 +159,11 @@ void handleWs()
 {
   if (millis() - wsLastLiveTime > WS_LIVE_INTERVAL)
   {
+    #ifdef ESP8266
+    ws.cleanupClients(3);
+    #else
     ws.cleanupClients();
+    #endif
     bool success = true;
     if (wsLiveClientId)
       success = sendLiveLedsWs(wsLiveClientId);

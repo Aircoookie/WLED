@@ -86,7 +86,7 @@ private:
   static const char _str_minBrightness[];
   static const char _str_maxBrightness[];
 
-#ifdef USERMOD_ID_SN_PHOTORESISTOR
+#ifdef USERMOD_SN_PHOTORESISTOR
   Usermod_SN_Photoresistor *ptr;
 #else
   void* ptr = nullptr;
@@ -371,7 +371,7 @@ public:
     }
     _setAllFalse();
 
-    #ifdef USERMOD_ID_SN_PHOTORESISTOR
+    #ifdef USERMOD_SN_PHOTORESISTOR
       ptr = (Usermod_SN_Photoresistor*) usermods.lookup(USERMOD_ID_SN_PHOTORESISTOR);
     #endif
     DEBUG_PRINTLN(F("Setup done"));
@@ -391,7 +391,7 @@ public:
           uint16_t brightness = map(lux, 0, 1000, umSSDRBrightnessMin, umSSDRBrightnessMax);
           if (bri != brightness) {
             bri = brightness;
-            colorUpdated(1);
+            stateUpdated(1);
           }
         }
         umSSDRLastRefresh = millis();
