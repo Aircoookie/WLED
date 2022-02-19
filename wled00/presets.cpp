@@ -80,6 +80,7 @@ void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
 {
   if (index == 0 || (index > 250 && persist) || (index<255 && !persist)) return;
 
+  char tmp[12];
   JsonObject sObj = saveobj;
   bool bufferAllocated = false;
 
@@ -92,7 +93,10 @@ void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
     sObj = fileDoc->to<JsonObject>();
     bufferAllocated = true;
   }
-  if (pname) sObj["n"] = pname;
+  if (sObj["n"].isNull() && pname == nullptr) {
+    sprintf_P(tmp, PSTR("Preset %d"), index);
+    sObj["n"] = tmp;
+  } else if (pname) sObj["n"] = pname;
 
   sObj.remove(F("psave"));
   sObj.remove(F("v"));
