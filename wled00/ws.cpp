@@ -113,7 +113,8 @@ void sendDataWs(AsyncWebSocketClient * client)
     size_t heap2 = ESP.getFreeHeap();
     if (!buffer || heap1-heap2<len) {
       releaseJSONBufferLock();
-      ws.cleanupClients(0); // disconnect all clients to release memory
+      ws.closeAll(1013); //code 1013 = temporary overload, try again later
+      ws.cleanupClients(0); //disconnect all clients to release memory
       return; //out of memory
     }
     serializeJson(doc, (char *)buffer->get(), len +1);
@@ -159,7 +160,7 @@ void handleWs()
   if (millis() - wsLastLiveTime > WS_LIVE_INTERVAL)
   {
     #ifdef ESP8266
-    ws.cleanupClients(2);
+    ws.cleanupClients(3);
     #else
     ws.cleanupClients();
     #endif

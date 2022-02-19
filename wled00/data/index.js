@@ -215,7 +215,7 @@ function onLoad() {
 			//TODO: do some parsing first
 		})
 		.catch(function (error) {
-			console.log("holidays.json does not contain array of holidays. Defaults loaded.");
+			console.log("No array of holidays in holidays.json. Defaults loaded.");
 		})
 		.finally(function(){
 			loadBg(cfg.theme.bg.url);
@@ -280,12 +280,8 @@ function showToast(text, error = false) {
 }
 
 function showErrorToast() {
-	if (ws && ws.readyState === WebSocket.OPEN) {
-		// if we received a timeout force WS reconnect
-		ws.close();
-		ws = null;
-		if (lastinfo.ws > -1) setTimeout(makeWS,500);
-	}
+	// if we received a timeout force WS reconnect
+	reconnectWS();
 	showToast('Connection to light failed!', true);
 }
 function clearErrorToast() {
@@ -959,6 +955,13 @@ function cmpP(a, b) {
 	return a[1].n.localeCompare(b[1].n,undefined, {numeric: true});
 }
 
+//forces a WebSockets reconnect if timeout (error toast), or successful HTTP response to JSON request
+function reconnectWS() {
+	if (ws) ws.close();
+	ws = null;
+	if (lastinfo && lastinfo.ws > -1) setTimeout(makeWS,500);
+}
+
 function makeWS() {
 	if (ws) return;
 	ws = new WebSocket('ws://'+(loc?locip:window.location.hostname)+'/ws');
@@ -981,12 +984,13 @@ function makeWS() {
 		readState(json.state);
 	};
 	ws.onclose = (e)=>{
+		//if there is already a new web socket open, do not null ws
+		if (ws && ws.readyState === WebSocket.OPEN) return;
+
 		d.getElementById('connind').style.backgroundColor = "#831";
 		ws = null;
-		if (lastinfo.ws > -1) setTimeout(makeWS,500); //retry WS connection
 	}
 	ws.onopen = (e)=>{
-		ws.send("{'v':true}");
 		reqsLegal = true;
 	}
 }
@@ -1140,6 +1144,7 @@ function requestJson(command, rinfo = true) {
 			return;
 		}
 		var s = json;
+		if (reqsLegal && !ws) reconnectWS();
 		
 		if (!command || rinfo) { //we have info object
 			if (!rinfo) { //entire JSON (on load)
@@ -1155,7 +1160,7 @@ function requestJson(command, rinfo = true) {
 					});
 				},25);
 				
-		        reqsLegal = true;
+				reqsLegal = true;
 			}
 
 			var info = json.info;
@@ -1188,7 +1193,7 @@ function requestJson(command, rinfo = true) {
 			displayRover(info, s);
 		}
 
-	    readState(s,command);
+		readState(s,command);
 	})
 	.catch(function (error) {
 		showToast(error, true);
@@ -1464,8 +1469,8 @@ function makePlEntry(p,i) {
 }
 
 function makePlUtil() {
-  if (pNum < 2) {
-    showToast("You need at least 2 presets to make a playlist!"); return;
+  if (pNum < 1) {
+    showToast("Please make a preset first!"); return;
   }
 	if (plJson[0].transition[0] < 0) plJson[0].transition[0] = tr;
   d.getElementById('putil').innerHTML = `<div class="seg pres">
