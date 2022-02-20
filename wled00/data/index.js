@@ -1112,7 +1112,7 @@ function makeWS() {
 		if (lastinfo.ws > -1) setTimeout(makeWS,500); //retry WS connection
 	}
 	ws.onopen = (e)=>{
-		ws.send("{'v':true}");
+		//ws.send("{'v':true}"); //unnecessary (https://github.com/Aircoookie/WLED/blob/master/wled00/ws.cpp#L18)
 		reqsLegal = true;
 	}
 }
