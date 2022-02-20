@@ -16,7 +16,7 @@ void shortPressAction(uint8_t b)
 {
   if (!macroButton[b]) {
     switch (b) {
-      case 0: toggleOnOff(); colorUpdated(CALL_MODE_BUTTON); break;
+      case 0: toggleOnOff(); stateUpdated(CALL_MODE_BUTTON); break;
       case 1: ++effectCurrent %= strip.getModeCount(); effectChanged = true; colorUpdated(CALL_MODE_BUTTON); break;
     }
   } else {
@@ -35,8 +35,8 @@ void longPressAction(uint8_t b)
 {
   if (!macroLongPress[b]) {
     switch (b) {
-      case 0: _setRandomColor(false,true); break;
-      case 1: bri += 8; colorUpdated(CALL_MODE_BUTTON); buttonPressedTime[b] = millis(); break; // repeatable action
+      case 0: setRandomColor(col); colorUpdated(CALL_MODE_BUTTON); break;
+      case 1: bri += 8; stateUpdated(CALL_MODE_BUTTON); buttonPressedTime[b] = millis(); break; // repeatable action
     }
   } else {
     applyPreset(macroLongPress[b], CALL_MODE_BUTTON_PRESET);
@@ -55,7 +55,7 @@ void doublePressAction(uint8_t b)
   if (!macroDoublePress[b]) {
     switch (b) {
       //case 0: toggleOnOff(); colorUpdated(CALL_MODE_BUTTON); break; //instant short press on button 0 if no macro set
-      case 1: ++effectPalette %= strip.getPaletteCount(); effectChanged = true; colorUpdated(CALL_MODE_BUTTON); break;
+      case 1: ++effectPalette %= strip.getPaletteCount(); colorUpdated(CALL_MODE_BUTTON); break;
     }
   } else {
     applyPreset(macroDoublePress[b], CALL_MODE_BUTTON_PRESET);
@@ -109,12 +109,12 @@ void handleSwitch(uint8_t b)
     if (!buttonPressedBefore[b]) { // on -> off
       if (macroButton[b]) applyPreset(macroButton[b], CALL_MODE_BUTTON_PRESET);
       else { //turn on
-        if (!bri) {toggleOnOff(); colorUpdated(CALL_MODE_BUTTON);}
+        if (!bri) {toggleOnOff(); stateUpdated(CALL_MODE_BUTTON);}
       } 
     } else {  // off -> on
       if (macroLongPress[b]) applyPreset(macroLongPress[b], CALL_MODE_BUTTON_PRESET);
       else { //turn off
-        if (bri) {toggleOnOff(); colorUpdated(CALL_MODE_BUTTON);}
+        if (bri) {toggleOnOff(); stateUpdated(CALL_MODE_BUTTON);}
       } 
     }
 
@@ -161,36 +161,17 @@ void handleAnalog(uint8_t b)
     } else if (macroDoublePress[b] == 249) {
       // effect speed
       effectSpeed = aRead;
-      effectChanged = true;
-      for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
-        WS2812FX::Segment& seg = strip.getSegment(i);
-        if (!seg.isSelected()) continue;
-        seg.speed = effectSpeed;
-      }
     } else if (macroDoublePress[b] == 248) {
       // effect intensity
       effectIntensity = aRead;
-      effectChanged = true;
-      for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
-        WS2812FX::Segment& seg = strip.getSegment(i);
-        if (!seg.isSelected()) continue;
-        seg.intensity = effectIntensity;
-      }
     } else if (macroDoublePress[b] == 247) {
       // selected palette
       effectPalette = map(aRead, 0, 252, 0, strip.getPaletteCount()-1);
-      effectChanged = true;
-      for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
-        WS2812FX::Segment& seg = strip.getSegment(i);
-        if (!seg.isSelected()) continue;
-        seg.palette = effectPalette;
-      }
     } else if (macroDoublePress[b] == 200) {
       // primary color, hue, full saturation
       colorHStoRGB(aRead*256,255,col);
     } else {
       // otherwise use "double press" for segment selection
-      //uint8_t mainSeg = strip.getMainSegmentId();
       WS2812FX::Segment& seg = strip.getSegment(macroDoublePress[b]);
       if (aRead == 0) {
         seg.setOption(SEG_OPTION_ON, 0); // off
@@ -263,8 +244,8 @@ void handleButton()
       } else if (b == 0 && dur > WLED_LONG_AP) { //long press on button 0 (when released)
         WLED::instance().initAP(true);
       } else if (!buttonLongPressed[b]) { //short press
-        //NOTE: this interferes with double click handling in usermods so it is commented out
-        if (b == 0 && !macroDoublePress[b]) { //don't wait for double press on button 0 if no double press macro set
+        //NOTE: this interferes with double click handling in usermods so usermod needs to implement full button handling
+        if (b != 1 && !macroDoublePress[b]) { //don't wait for double press on buttons without a default action if no double press macro set
           shortPressAction(b);
         } else { //double press if less than 350 ms between current press and previous short press release (buttonWaitTime!=0)
           if (doublePress) {

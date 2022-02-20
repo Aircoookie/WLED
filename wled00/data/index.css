@@ -425,6 +425,10 @@ button {
 	overflow: auto;
 }
 
+.modal button:hover {
+	background-color: var(--c-4);
+}
+
 #info, #nodes {
 	z-index: 3;
 }

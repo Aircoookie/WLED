@@ -188,8 +188,6 @@ function onLoad()
 	var sett = localStorage.getItem('wledUiCfg');
 	if (sett) cfg = mergeDeep(cfg, JSON.parse(sett));
 
-	makeWS();
-
 	resetPUtil();
 
 	applyCfg();
@@ -206,7 +204,7 @@ function onLoad()
 			//TODO: do some parsing first
 		})
 		.catch((e)=>{
-			console.log("holidays.json does not contain array of holidays. Defaults loaded.");
+			console.log("No array of holidays in holidays.json. Defaults loaded.");
 		})
 		.finally(()=>{
 			loadBg(cfg.theme.bg.url);
@@ -228,7 +226,7 @@ function onLoad()
 			loadFXData();
 			setTimeout(()=>{ //ESP8266 can't handle quick requests
 				loadPresets(()=>{
-					requestJson();
+					requestJson();	// will create WS
 				});
 			},100);
 		});
@@ -276,14 +274,9 @@ function showToast(text, error = false)
 	if (error) console.log(text);
 }
 
-function showErrorToast()
-{
-	if (ws && ws.readyState === WebSocket.OPEN) {
-		// if we received a timeout force WS reconnect
-		ws.close();
-		ws = null;
-		if (lastinfo.ws > -1) setTimeout(makeWS,500);
-	}
+function showErrorToast() {
+	// if we received a timeout force WS reconnect
+	setTimeout(makeWS,500);
 	showToast('Connection to light failed!', true);
 }
 
@@ -1081,13 +1074,14 @@ function cmpP(a, b)
 }
 
 function makeWS() {
-	if (ws) return;
+	if (ws) { ws.close(); ws=null; }
+	if (lastinfo.ws < 0) return;
 	ws = new WebSocket('ws://'+(loc?locip:window.location.hostname)+'/ws');
 	ws.binaryType = "arraybuffer";
 	ws.onmessage = (e)=>{
     	if (e.data instanceof ArrayBuffer) return; //liveview packet
 		var json = JSON.parse(e.data);
-		if (json.leds) return; //liveview packet
+		if (json.leds) return; //JSON liveview packet
 		clearTimeout(jsonTimeout);
 		jsonTimeout = null;
 		lastUpdate = new Date();
@@ -1108,8 +1102,7 @@ function makeWS() {
 	};
 	ws.onclose = (e)=>{
 		gId('connind').style.backgroundColor = "var(--c-r)";
-		ws = null;
-		if (lastinfo.ws > -1) setTimeout(makeWS,500); //retry WS connection
+		setTimeout(makeWS,500); //retry WS connection
 	}
 	ws.onopen = (e)=>{
 		//ws.send("{'v':true}"); //unnecessary (https://github.com/Aircoookie/WLED/blob/master/wled00/ws.cpp#L18)
@@ -1398,6 +1391,7 @@ function requestJson(command=null)
 		}
 		var s = json.state ? json.state : json;
 		readState(s);
+		makeWS();
 		reqsLegal = true;
 	})
 	.catch((e)=>{

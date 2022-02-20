@@ -349,8 +349,8 @@ class FourLineDisplayUsermod : public Usermod {
           (knownBrightness != bri) ||
           (knownEffectSpeed != effectSpeed) ||
           (knownEffectIntensity != effectIntensity) ||
-          (knownMode != strip.getMode()) ||
-          (knownPalette != strip.getSegment(0).palette)) {
+          (knownMode != strip.getMainSegment().mode) ||
+          (knownPalette != strip.getMainSegment().palette)) {
         knownHour = 99;   // force time update
         lastRedraw = now; // update lastRedraw marker
       } else if (sleepMode && !displayTurnedOff && ((now - lastRedraw)/1000)%5 == 0) {
@@ -398,8 +398,8 @@ class FourLineDisplayUsermod : public Usermod {
       knownSsid = apActive ? WiFi.softAPSSID() : WiFi.SSID();
       knownIp = apActive ? IPAddress(4, 3, 2, 1) : Network.localIP();
       knownBrightness = bri;
-      knownMode = strip.getMode();
-      knownPalette = strip.getSegment(0).palette;
+      knownMode = strip.getMainSegment().mode;
+      knownPalette = strip.getMainSegment().palette;
       knownEffectSpeed = effectSpeed;
       knownEffectIntensity = effectIntensity;
 

@@ -179,18 +179,6 @@ void prepareHostname(char* hostname)
 }
 
 
-void _setRandomColor(bool _sec, bool fromButton)
-{
-  lastRandomIndex = strip.get_random_wheel_index(lastRandomIndex);
-  if (_sec){
-    colorHStoRGB(lastRandomIndex*256,255,colSec);
-  } else {
-    colorHStoRGB(lastRandomIndex*256,255,col);
-  }
-  if (fromButton) colorUpdated(CALL_MODE_BUTTON);
-}
-
-
 bool isAsterisksOnly(const char* str, byte maxLen)
 {
   for (byte i = 0; i < maxLen; i++) {

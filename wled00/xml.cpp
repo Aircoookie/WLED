@@ -72,6 +72,7 @@ void XML_response(AsyncWebServerRequest *request, char* dest)
   if (request != nullptr) request->send(200, "text/xml", obuf);
 }
 
+//Deprecated, use of /json/state and presets recommended instead
 void URL_response(AsyncWebServerRequest *request)
 {
   char sbuf[256];
@@ -439,6 +440,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("RC"),receiveNotificationColor);
     sappend('c',SET_F("RX"),receiveNotificationEffects);
     sappend('c',SET_F("SO"),receiveSegmentOptions);
+    sappend('c',SET_F("SG"),receiveSegmentBounds);
     sappend('c',SET_F("SD"),notifyDirectDefault);
     sappend('c',SET_F("SB"),notifyButton);
     sappend('c',SET_F("SH"),notifyHue);

@@ -88,7 +88,7 @@ byte relativeChange(byte property, int8_t amount, byte lowerBoundary, byte highe
 
 void changeEffect(uint8_t fx)
 {
-  if (strip.applyToAllSelected) {
+  if (irApplyToAllSelected) {
     for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
       WS2812FX::Segment& seg = strip.getSegment(i);
       if (!seg.isActive() || !seg.isSelected()) continue;
@@ -103,7 +103,7 @@ void changeEffect(uint8_t fx)
 
 void changePalette(uint8_t pal)
 {
-  if (strip.applyToAllSelected) {
+  if (irApplyToAllSelected) {
     for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
       WS2812FX::Segment& seg = strip.getSegment(i);
       if (!seg.isActive() || !seg.isSelected()) continue;
@@ -121,7 +121,7 @@ void changeEffectSpeed(int8_t amount)
   if (effectCurrent != 0) {
     int16_t new_val = (int16_t) effectSpeed + amount;
     effectSpeed = (byte)constrain(new_val,0,255);
-    if (strip.applyToAllSelected) {
+    if (irApplyToAllSelected) {
       for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
         WS2812FX::Segment& seg = strip.getSegment(i);
         if (!seg.isActive() || !seg.isSelected()) continue;
@@ -145,7 +145,7 @@ void changeEffectSpeed(int8_t amount)
     col[0] = fastled_col.red; 
     col[1] = fastled_col.green; 
     col[2] = fastled_col.blue;
-    if (strip.applyToAllSelected) {
+    if (irApplyToAllSelected) {
       for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
         WS2812FX::Segment& seg = strip.getSegment(i);
         if (!seg.isActive() || !seg.isSelected()) continue;
@@ -167,7 +167,7 @@ void changeEffectIntensity(int8_t amount)
   if (effectCurrent != 0) {
     int16_t new_val = (int16_t) effectIntensity + amount;
     effectIntensity = (byte)constrain(new_val,0,255);
-    if (strip.applyToAllSelected) {
+    if (irApplyToAllSelected) {
       for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
         WS2812FX::Segment& seg = strip.getSegment(i);
         if (!seg.isActive() || !seg.isSelected()) continue;
@@ -189,7 +189,7 @@ void changeEffectIntensity(int8_t amount)
     col[0] = fastled_col.red; 
     col[1] = fastled_col.green; 
     col[2] = fastled_col.blue;
-    if (strip.applyToAllSelected) {
+    if (irApplyToAllSelected) {
       for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
         WS2812FX::Segment& seg = strip.getSegment(i);
         if (!seg.isActive() || !seg.isSelected()) continue;
@@ -208,7 +208,7 @@ void changeEffectIntensity(int8_t amount)
 
 void changeColor(uint32_t c, int16_t cct=-1)
 {
-  if (strip.applyToAllSelected) {
+  if (irApplyToAllSelected) {
     // main segment may not be selected!
     for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
       WS2812FX::Segment& seg = strip.getSegment(i);
@@ -262,8 +262,6 @@ void decodeIR(uint32_t code)
   }
   if (code > 0xFFFFFF) return; //invalid code
 
-  strip.applyToAllSelected = irApplyToAllSelected;
-
   switch (irEnabled) {
     case 1: 
       if (code > 0xF80000) {
@@ -282,8 +280,6 @@ void decodeIR(uint32_t code)
     case 7: decodeIR9(code);     break;
     //case 8: return; // ir.json file, handled above switch statement
   }
-
-  strip.applyToAllSelected = false;
 
   if (nightlightActive && bri == 0) nightlightActive = false;
   colorUpdated(CALL_MODE_BUTTON); //for notifier, IR is considered a button input
@@ -643,9 +639,6 @@ void decodeIRJson(uint32_t code)
   cmdStr = fdo["cmd"].as<String>();
   jsonCmdObj = fdo["cmd"]; //object
 
-  // command is JSON object
-  //allow applyPreset() to reuse JSON buffer, or it would alloc. a second buffer and run out of mem.
-  //fileDoc = &doc; // used for applying presets (presets.cpp)
   if (jsonCmdObj.isNull())  // we could also use: fdo["cmd"].is<String>()
   {
     if (cmdStr.startsWith("!")) {

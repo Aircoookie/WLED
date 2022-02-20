@@ -106,7 +106,7 @@ class UsermodVL53L0XGestures : public Usermod {
             // set brightness according to range
             bri = (VL53L0X_MAX_RANGE_MM - max(range, VL53L0X_MIN_RANGE_OFFSET)) * 255 / (VL53L0X_MAX_RANGE_MM - VL53L0X_MIN_RANGE_OFFSET);
             DEBUG_PRINTF(F("new brightness: %d"), bri);
-            colorUpdated(1);
+            stateUpdated(1);
           }
         } else if (wasMotionBefore) { //released
           long dur = millis() - motionStartTime;

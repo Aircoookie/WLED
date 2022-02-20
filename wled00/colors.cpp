@@ -4,6 +4,12 @@
  * Color conversion methods
  */
 
+void setRandomColor(byte* rgb)
+{
+  lastRandomIndex = strip.get_random_wheel_index(lastRandomIndex);
+  colorHStoRGB(lastRandomIndex*256,255,rgb);
+}
+
 //relatively change white brightness, minumum A=5
 void relativeChangeWhite(int8_t amount, byte lowerBoundary)
 {

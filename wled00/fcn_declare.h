@@ -73,6 +73,8 @@ bool colorFromHexString(byte* rgb, const char* in);
 uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb);
 uint16_t approximateKelvinFromRGB(uint32_t rgb);
 
+void setRandomColor(byte* rgb);
+
 //dmx.cpp
 void initDMX();
 void handleDMX();
@@ -143,9 +145,10 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient = 0);
 void setValuesFromMainSeg();
 void resetTimebase();
 void toggleOnOff();
-void setAllLeds();
-void setLedsStandard();
-void colorUpdated(int callMode);
+void applyBri();
+void applyFinalBri();
+void colorUpdated(byte callMode);
+void stateUpdated(byte callMode);
 void updateInterfaces(uint8_t callMode);
 void handleTransitions();
 void handleNightlight();
@@ -276,7 +279,6 @@ bool oappendi(int i);          // append new number to temp buffer efficiently
 void sappend(char stype, const char* key, int val);
 void sappends(char stype, const char* key, char* val);
 void prepareHostname(char* hostname);
-void _setRandomColor(bool _sec,bool fromButton=false);
 bool isAsterisksOnly(const char* str, byte maxLen);
 bool requestJSONBufferLock(uint8_t module=255);
 void releaseJSONBufferLock();

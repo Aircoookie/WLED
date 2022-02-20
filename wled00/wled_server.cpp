@@ -175,6 +175,7 @@ void initServer()
     //request->send_P(200, "text/html", PAGE_usermod);
   });
     
+  //Deprecated, use of /json/state and presets recommended instead
   server.on("/url", HTTP_GET, [](AsyncWebServerRequest *request){
     URL_response(request);
   });

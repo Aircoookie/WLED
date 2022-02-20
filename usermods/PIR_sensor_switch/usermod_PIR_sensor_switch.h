@@ -60,7 +60,7 @@ private:
   byte prevPlaylist = 0;
 
   uint32_t offTimerStart = 0;                   // off timer start time
-  byte NotifyUpdateMode  = CALL_MODE_NO_NOTIFY; // notification mode for colorUpdated(): CALL_MODE_NO_NOTIFY or CALL_MODE_DIRECT_CHANGE
+  byte NotifyUpdateMode  = CALL_MODE_NO_NOTIFY; // notification mode for stateUpdated(): CALL_MODE_NO_NOTIFY or CALL_MODE_DIRECT_CHANGE
   byte sensorPinState    = LOW;                 // current PIR sensor pin state
   bool initDone          = false;               // status of initialization
   bool PIRtriggered      = false;
@@ -139,7 +139,7 @@ private:
       // preset not assigned
       if (bri == 0) {
         bri = briLast;
-        colorUpdated(NotifyUpdateMode);
+        stateUpdated(NotifyUpdateMode);
       }
     } else {
       if (m_offPreset) {
@@ -159,7 +159,7 @@ private:
       if (bri != 0) {
         briLast = bri;
         bri = 0;
-        colorUpdated(NotifyUpdateMode);
+        stateUpdated(NotifyUpdateMode);
       }
     }
   }
