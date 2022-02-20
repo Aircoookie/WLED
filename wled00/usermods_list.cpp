@@ -108,6 +108,10 @@
 #include "../usermods/quinled-an-penta/quinled-an-penta.h"
 #endif
 
+#ifdef WHITEPIXEL
+#include "../usermods/WhitePixel/usermod_whitepixel.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -202,5 +206,9 @@ void registerUsermods()
 
   #ifdef QUINLED_AN_PENTA
   usermods.add(new QuinLEDAnPentaUsermod());
+  #endif
+
+  #ifdef WHITEPIXEL
+  usermods.add(new WhitePixelUsermod());
   #endif
 }

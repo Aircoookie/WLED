@@ -26,6 +26,17 @@
 #include "wled.h"
 #include "FX.h"
 #include "palettes.h"
+// *
+// * USERMOD WHITEPIXEL
+// *
+#ifdef WHITEPIXEL
+#include "../usermods/WhitePixel/usermod_whitepixel.h"
+// WhitePixelUsermod wp;
+int whitePixel = MAX_NUM_SEGMENTS;
+#endif
+// *
+// *
+// *
 
 /*
   Custom per-LED mapping has moved!
@@ -144,6 +155,14 @@ void WS2812FX::service() {
         _bri_t = SEGMENT.opacity; _colors_t[0] = SEGMENT.colors[0]; _colors_t[1] = SEGMENT.colors[1]; _colors_t[2] = SEGMENT.colors[2];
         uint8_t _cct_t = SEGMENT.cct;
         if (!IS_SEGMENT_ON) _bri_t = 0;
+// *
+// * USERMOD WHITEPIXEL (START)
+// *
+        #ifdef WHITEPIXEL
+        // * #if processed pixel == white pixel: disable transistion and gamma correction
+        if (i != whitePixel) {
+          // Serial.println(whitePixel);
+        #endif
         for (uint8_t t = 0; t < MAX_NUM_TRANSITIONS; t++) {
           if ((transitions[t].segment & 0x3F) != i) continue;
           uint8_t slot = transitions[t].segment >> 6;
@@ -153,6 +172,13 @@ void WS2812FX::service() {
         }
         if (!cctFromRgb || correctWB) busses.setSegmentCCT(_cct_t, correctWB);
         for (uint8_t c = 0; c < 3; c++) _colors_t[c] = gamma32(_colors_t[c]);
+        #ifdef WHITEPIXEL
+        // * #endif
+        }
+        #endif
+// *
+// *
+// *
         handle_palette();
         delay = (this->*_mode[SEGMENT.mode])(); //effect function
         if (SEGMENT.mode != FX_MODE_HALLOWEEN_EYES) SEGENV.call++;
