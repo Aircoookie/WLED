@@ -5,13 +5,40 @@
  */
 void setValuesFromMainSeg()
 {
-  WS2812FX::Segment& seg = strip.getSegment(strip.getMainSegmentId());
+  WS2812FX::Segment& seg = strip.getMainSegment();
   colorFromUint32(seg.colors[0]);
   colorFromUint32(seg.colors[1], true);
   effectCurrent = seg.mode;
   effectSpeed = seg.speed;
   effectIntensity = seg.intensity;
   effectPalette = seg.palette;
+}
+
+
+//applies global legacy values (col, colSec, effectCurrent...)
+void applyValuesToSelectedSegs()
+{
+  //copy of main segment to tell if value was updated
+  WS2812FX::Segment mainsegPrev = strip.getMainSegment();
+  for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
+    WS2812FX::Segment& seg = strip.getSegment(i);
+    if (i != strip.getMainSegmentId() && (!seg.isActive() || !seg.isSelected())) continue;
+
+    if (effectSpeed != mainsegPrev.speed) {
+      seg.speed = effectSpeed; effectChanged = true;}
+    if (effectIntensity != mainsegPrev.intensity) {
+      seg.intensity = effectIntensity; effectChanged = true;}
+    if (effectPalette != mainsegPrev.palette) {
+      seg.palette = effectPalette; effectChanged = true;}
+    if (effectCurrent != mainsegPrev.mode) {
+      strip.setMode(i, effectCurrent); effectChanged = true;}
+    uint32_t col0 = RGBW32(col[0],col[1],col[2],col[3]);
+    uint32_t col1 = RGBW32(colSec[0], colSec[1], colSec[2], colSec[3]);
+    if (col0 != mainsegPrev.colors[0]) {
+      seg.setColor(0, col0, i); colorChanged = true;}
+    if (col1 != mainsegPrev.colors[1]) {
+      seg.setColor(1, col1, i); colorChanged = true;}
+  }
 }
 
 
@@ -43,9 +70,8 @@ byte scaledBri(byte in)
 }
 
 
-void setAllLeds() {
-  strip.setColor(0, RGBW32(col[0], col[1], col[2], col[3]));
-  strip.setColor(1, RGBW32(colSec[0], colSec[1], colSec[2], colSec[3]));
+//applies global brightness
+void applyBri() {
   if (!realtimeMode || !arlsForceMaxBri)
   {
     strip.setBrightness(scaledBri(briT));
@@ -53,18 +79,20 @@ void setAllLeds() {
 }
 
 
-void setLedsStandard()
-{
+//applies global brightness and sets it as the "current" brightness (no transition)
+void applyFinalBri() {
   briOld = bri;
   briT = bri;
-  setAllLeds();
+  applyBri();
 }
 
 
-void colorUpdated(int callMode)
-{
+//called after every state changes, schedules interface updates, handles brightness transition and nightlight activation
+//unlike colorUpdated(), does NOT apply any colors or FX to segments
+void stateUpdated(byte callMode) {
   //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (No notification)
   //                     6: fx changed 7: hue 8: preset cycle 9: blynk 10: alexa 11: ws send only 12: button preset
+  setValuesFromMainSeg();
 
   if (bri != briOld || effectChanged || colorChanged) {
     if (realtimeTimeout == UINT32_MAX) realtimeTimeout = 0;
@@ -103,9 +131,7 @@ void colorUpdated(int callMode)
     jsonTransitionOnce = false;
     strip.setTransition(transitionDelayTemp);
     if (transitionDelayTemp == 0) {
-      //setLedsStandard();
-      briOld = briT = bri;
-      if (!realtimeMode || !arlsForceMaxBri) strip.setBrightness(scaledBri(briT));
+      applyFinalBri();
       strip.trigger();
       return;
     }
@@ -119,9 +145,7 @@ void colorUpdated(int callMode)
     transitionStartTime = millis();
   } else {
     strip.setTransition(0);
-    //setLedsStandard();
-    briOld = briT = bri;
-    if (!realtimeMode || !arlsForceMaxBri) strip.setBrightness(scaledBri(briT));
+    applyFinalBri();
     strip.trigger();
   }
 }
@@ -150,7 +174,7 @@ void updateInterfaces(uint8_t callMode)
 void handleTransitions()
 {
   //handle still pending interface update
-  if (interfaceUpdateCallMode && millis() - lastInterfaceUpdate > 2000)
+  if (interfaceUpdateCallMode && millis() - lastInterfaceUpdate > INTERFACE_UPDATE_COOLDOWN)
   {
     updateInterfaces(interfaceUpdateCallMode);
     interfaceUpdateCallMode = 0; //disable
@@ -165,15 +189,22 @@ void handleTransitions()
       strip.setTransitionMode(false);
       transitionActive = false;
       tperLast = 0;
-      setLedsStandard();
+      applyFinalBri();
       return;
     }
     if (tper - tperLast < 0.004) return;
     tperLast = tper;
     briT    = briOld   +((bri    - briOld   )*tper);
     
-    setAllLeds();
+    applyBri();
   }
+}
+
+
+//legacy method, applies values from col, effectCurrent, ... to selected segments
+void colorUpdated(byte callMode){
+  applyValuesToSelectedSegs();
+  stateUpdated(callMode);
 }
 
 
@@ -239,7 +270,7 @@ void handleNightlight()
           effectSpeed = colNlT[1];
           effectPalette = colNlT[2];
           toggleOnOff();
-          setLedsStandard();
+          applyFinalBri();
         }
       }
       #ifndef WLED_DISABLE_BLYNK

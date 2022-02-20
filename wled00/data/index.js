@@ -215,7 +215,7 @@ function onLoad() {
 			//TODO: do some parsing first
 		})
 		.catch(function (error) {
-			console.log("holidays.json does not contain array of holidays. Defaults loaded.");
+			console.log("No array of holidays in holidays.json. Defaults loaded.");
 		})
 		.finally(function(){
 			loadBg(cfg.theme.bg.url);
@@ -280,6 +280,8 @@ function showToast(text, error = false) {
 }
 
 function showErrorToast() {
+	// if we received a timeout force WS reconnect
+	reconnectWS();
 	showToast('Connection to light failed!', true);
 }
 function clearErrorToast() {
@@ -953,10 +955,17 @@ function cmpP(a, b) {
 	return a[1].n.localeCompare(b[1].n,undefined, {numeric: true});
 }
 
+//forces a WebSockets reconnect if timeout (error toast), or successful HTTP response to JSON request
+function reconnectWS() {
+	if (ws) ws.close();
+	ws = null;
+	if (lastinfo && lastinfo.ws > -1) setTimeout(makeWS,500);
+}
+
 function makeWS() {
 	if (ws) return;
 	ws = new WebSocket('ws://'+(loc?locip:window.location.hostname)+'/ws');
-  ws.binaryType = "arraybuffer";
+	ws.binaryType = "arraybuffer";
 	ws.onmessage = function(event) {
     if (event.data instanceof ArrayBuffer) return; //liveview packet
 		var json = JSON.parse(event.data);
@@ -974,9 +983,16 @@ function makeWS() {
 		displayRover(info, s);
 		readState(json.state);
 	};
-	ws.onclose = function(event) {
-    	d.getElementById('connind').style.backgroundColor = "#831";
-  	}
+	ws.onclose = (e)=>{
+		//if there is already a new web socket open, do not null ws
+		if (ws && ws.readyState === WebSocket.OPEN) return;
+
+		d.getElementById('connind').style.backgroundColor = "#831";
+		ws = null;
+	}
+	ws.onopen = (e)=>{
+		reqsLegal = true;
+	}
 }
 
 function readState(s,command=false) {
@@ -1128,6 +1144,7 @@ function requestJson(command, rinfo = true) {
 			return;
 		}
 		var s = json;
+		if (reqsLegal && !ws) reconnectWS();
 		
 		if (!command || rinfo) { //we have info object
 			if (!rinfo) { //entire JSON (on load)
@@ -1143,7 +1160,7 @@ function requestJson(command, rinfo = true) {
 					});
 				},25);
 				
-		        reqsLegal = true;
+				reqsLegal = true;
 			}
 
 			var info = json.info;
@@ -1176,7 +1193,7 @@ function requestJson(command, rinfo = true) {
 			displayRover(info, s);
 		}
 
-	    readState(s,command);
+		readState(s,command);
 	})
 	.catch(function (error) {
 		showToast(error, true);
@@ -1452,8 +1469,8 @@ function makePlEntry(p,i) {
 }
 
 function makePlUtil() {
-  if (pNum < 2) {
-    showToast("You need at least 2 presets to make a playlist!"); return;
+  if (pNum < 1) {
+    showToast("Please make a preset first!"); return;
   }
 	if (plJson[0].transition[0] < 0) plJson[0].transition[0] = tr;
   d.getElementById('putil').innerHTML = `<div class="seg pres">
@@ -1507,7 +1524,7 @@ function rptSeg(s)
 	var rev = d.getElementById(`seg${s}rev`).checked;
 	var mi = d.getElementById(`seg${s}mi`).checked;
 	var sel = d.getElementById(`seg${s}sel`).checked;
-	var obj = {"seg": {"id": s, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop, "rev": rev, "mi": mi, "on": !powered[s], "bri": parseInt(d.getElementById(`seg${s}bri`).value), "sel": sel}};
+	var obj = {"seg": {"id": s, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop, "rev": rev, "mi": mi, "on": powered[s], "bri": parseInt(d.getElementById(`seg${s}bri`).value), "sel": sel}};
 	if (d.getElementById(`seg${s}grp`)) {
 		var grp = parseInt(d.getElementById(`seg${s}grp`).value);
 		var spc = parseInt(d.getElementById(`seg${s}spc`).value);
@@ -1524,8 +1541,8 @@ function rptSeg(s)
 function setSeg(s){
 	var name  = d.getElementById(`seg${s}t`).value;
 	var start = parseInt(d.getElementById(`seg${s}s`).value);
-	var stop	= parseInt(d.getElementById(`seg${s}e`).value);
-	if (stop <= start) {delSeg(s); return;}
+	var stop  = parseInt(d.getElementById(`seg${s}e`).value);
+	if ((cfg.comp.seglen && stop == 0) || (!cfg.comp.seglen && stop <= start)) {delSeg(s); return;}
 	var obj = {"seg": {"id": s, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop}};
 	if (d.getElementById(`seg${s}grp`))
 	{

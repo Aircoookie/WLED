@@ -55,7 +55,7 @@ void onAlexaChange(EspalexaDevice* dev)
         if (bri == 0)
         {
           bri = briLast;
-          colorUpdated(CALL_MODE_ALEXA);
+        stateUpdated(CALL_MODE_ALEXA);
         }
       } else 
       {
@@ -88,7 +88,7 @@ void onAlexaChange(EspalexaDevice* dev)
       {
         briLast = bri;
         bri = 0;
-        colorUpdated(CALL_MODE_ALEXA);
+        stateUpdated(CALL_MODE_ALEXA);
       }
     } else 
     {
@@ -102,7 +102,7 @@ void onAlexaChange(EspalexaDevice* dev)
   } else if (m == EspalexaDeviceProperty::bri)
   {
     bri = espalexaDevice->getValue();
-    colorUpdated(CALL_MODE_ALEXA);
+    stateUpdated(CALL_MODE_ALEXA);
   } else //color
   {
     if (espalexaDevice->getColorMode() == EspalexaColorMode::ct) //shade of white
@@ -114,9 +114,7 @@ void onAlexaChange(EspalexaDevice* dev)
 			if (strip.hasCCTBus()) {
 				uint8_t segid = strip.getMainSegmentId();
 				WS2812FX::Segment& seg = strip.getSegment(segid);
-				uint8_t cctPrev = seg.cct;
 				seg.setCCT(k, segid);
-				if (seg.cct != cctPrev) effectChanged = true; //send UDP
 				col[0]= 0; col[1]= 0; col[2]= 0; col[3]= 255;
 			} else if (strip.hasWhiteChannel()) {
         switch (ct) { //these values empirically look good on RGBW

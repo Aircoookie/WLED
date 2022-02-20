@@ -2,6 +2,17 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2202200
+
+-   Added `info.leds.seglc` per-segment light capability info (PR #2552)
+-   Fixed `info.leds.rgbw` behavior
+-   Segment bounds sync (PR #2547)
+-   WebSockets auto reconnection and error handling
+-   Disable relay pin by default (PR #2531)
+-   Various fixes (ESP32 touch pin 33, floats, PR #2530, #2534, #2538)
+-   Deprecated `info.leds.cct`, `info.leds.wv` and `info.leds.rgbw`
+-   Deprecated `/url` endpoint
+
 #### Build 2202030
 
 -   Switched to binary format for WebSockets peek (PR #2516)
@@ -19,26 +30,26 @@
 
 #### Build 2112080
 
--		Version bump to 0.13.0-b6 "Toki"
--		Added "ESP02" (ESP8266 with 2M of flash) to PIO/release binaries
+-   Version bump to 0.13.0-b6 "Toki"
+-   Added "ESP02" (ESP8266 with 2M of flash) to PIO/release binaries
 
 #### Build 2112070
 
--		Added new effect "Fairy", replacing "Police All"
--		Added new effect "Fairytwinkle", replacing "Two Areas"
--		Static single JSON buffer (performance and stability improvement) (PR #2336)
+-   Added new effect "Fairy", replacing "Police All"
+-   Added new effect "Fairytwinkle", replacing "Two Areas"
+-   Static single JSON buffer (performance and stability improvement) (PR #2336)
 
 #### Build 2112030
 
--		Fixed ESP32 crash on Colortwinkles brightness change
--		Fixed setting picker to black resetting hue and saturation
--		Fixed auto white mode not saved to config
+-   Fixed ESP32 crash on Colortwinkles brightness change
+-   Fixed setting picker to black resetting hue and saturation
+-   Fixed auto white mode not saved to config
 
 #### Build 2111300
 
--		Added CCT and white balance correction support (PR #2285)
--		Unified UI slider style
--		Added LED settings config template upload
+-   Added CCT and white balance correction support (PR #2285)
+-   Unified UI slider style
+-   Added LED settings config template upload
 
 #### Build 2111220
 

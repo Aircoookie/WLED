@@ -393,62 +393,19 @@ uint8_t WS2812FX::getPaletteCount()
   return 13 + GRADIENT_PALETTE_COUNT;
 }
 
-//TODO effect transitions
-
-
-bool WS2812FX::setEffectConfig(uint8_t m, uint8_t s, uint8_t in, uint8_t p) {
-  Segment& seg = _segments[getMainSegmentId()];
-  uint8_t modePrev = seg.mode, speedPrev = seg.speed, intensityPrev = seg.intensity, palettePrev = seg.palette;
-
-  bool applied = false;
-  
-  if (applyToAllSelected) {
-    for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-    {
-      if (_segments[i].isSelected())
-      {
-        _segments[i].speed = s;
-        _segments[i].intensity = in;
-        _segments[i].palette = p;
-        setMode(i, m);
-        applied = true;
-      }
-    }
-  } 
-  
-  if (!applyToAllSelected || !applied) {
-    seg.speed = s;
-    seg.intensity = in;
-    seg.palette = p;
-    setMode(mainSegment, m);
-  }
-  
-  if (seg.mode != modePrev || seg.speed != speedPrev || seg.intensity != intensityPrev || seg.palette != palettePrev) return true;
-  return false;
-}
-
 void WS2812FX::setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
   setColor(slot, RGBW32(r, g, b, w));
 }
 
+//applies to all active and selected segments
 void WS2812FX::setColor(uint8_t slot, uint32_t c) {
   if (slot >= NUM_COLORS) return;
 
-  bool applied = false;
-  
-  if (applyToAllSelected) {
-    for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-    {
-      if (_segments[i].isSelected()) {
-        _segments[i].setColor(slot, c, i);
-        applied = true;
-      }
+  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
+  {
+    if (_segments[i].isActive() && _segments[i].isSelected()) {
+      _segments[i].setColor(slot, c, i);
     }
-  }
-
-  if (!applyToAllSelected || !applied) {
-    uint8_t mainseg = getMainSegmentId();
-    _segments[mainseg].setColor(slot, c, mainseg);
   }
 }
 
@@ -466,14 +423,6 @@ void WS2812FX::setBrightness(uint8_t b) {
   if (_segment_runtimes[0].next_time > t + 22 && t - _lastShow > MIN_SHOW_DELAY) show(); //apply brightness change immediately if no refresh soon
 }
 
-uint8_t WS2812FX::getMode(void) {
-  return _segments[getMainSegmentId()].mode;
-}
-
-uint8_t WS2812FX::getSpeed(void) {
-  return _segments[getMainSegmentId()].speed;
-}
-
 uint8_t WS2812FX::getBrightness(void) {
   return _brightness;
 }
@@ -482,24 +431,37 @@ uint8_t WS2812FX::getMaxSegments(void) {
   return MAX_NUM_SEGMENTS;
 }
 
-/*uint8_t WS2812FX::getFirstSelectedSegment(void)
-{
+void WS2812FX::setMainSegmentId(uint8_t n) {
+  if (n >= MAX_NUM_SEGMENTS) return;
+  if (_segments[n].isActive() && _segments[n].isSelected()) {
+    _mainSegment = n; return;
+  }
   for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
   {
-    if (_segments[i].isActive() && _segments[i].isSelected()) return i;
+    if (_segments[i].isActive() && _segments[i].isSelected()) {
+      _mainSegment = i; return;
+    }
   }
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) //if none selected, get first active
+  //if none selected, use supplied n if active, or first active
+  if (_segments[n].isActive()) {
+    _mainSegment = n; return;
+  }
+  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
   {
-    if (_segments[i].isActive()) return i;
+    if (_segments[i].isActive()) {
+      _mainSegment = i; return;
+    }
   }
-  return 0;
-}*/
+  _mainSegment = 0;
+  return;
+}
 
 uint8_t WS2812FX::getMainSegmentId(void) {
-  if (mainSegment >= MAX_NUM_SEGMENTS) return 0;
-  if (_segments[mainSegment].isActive()) return mainSegment;
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) //get first active
-  {
+  return _mainSegment;
+}
+
+uint8_t WS2812FX::getLastActiveSegmentId(void) {
+  for (uint8_t i = MAX_NUM_SEGMENTS -1; i > 0; i--) {
     if (_segments[i].isActive()) return i;
   }
   return 0;
@@ -539,8 +501,8 @@ WS2812FX::Segment& WS2812FX::getSegment(uint8_t id) {
   return _segments[id];
 }
 
-WS2812FX::Segment_runtime WS2812FX::getSegmentRuntime(void) {
-  return SEGENV;
+WS2812FX::Segment& WS2812FX::getMainSegment(void) {
+  return _segments[getMainSegmentId()];
 }
 
 WS2812FX::Segment* WS2812FX::getSegments(void) {
@@ -563,6 +525,77 @@ uint16_t WS2812FX::getLengthPhysical(void) {
     len += bus->getLength();
   }
   return len;
+}
+
+uint8_t WS2812FX::Segment::differs(Segment& b) {
+  uint8_t d = 0;
+  if (start != b.start)         d |= SEG_DIFFERS_BOUNDS;
+  if (stop != b.stop)           d |= SEG_DIFFERS_BOUNDS;
+  if (offset != b.offset)       d |= SEG_DIFFERS_GSO;
+  if (grouping != b.grouping)   d |= SEG_DIFFERS_GSO;
+  if (spacing != b.spacing)     d |= SEG_DIFFERS_GSO;
+  if (opacity != b.opacity)     d |= SEG_DIFFERS_BRI;
+  if (mode != b.mode)           d |= SEG_DIFFERS_FX;
+  if (speed != b.speed)         d |= SEG_DIFFERS_FX;
+  if (intensity != b.intensity) d |= SEG_DIFFERS_FX;
+  if (palette != b.palette)     d |= SEG_DIFFERS_FX;
+
+  if ((options & 0b00101110) != (b.options & 0b00101110)) d |= SEG_DIFFERS_OPT;
+  if ((options & 0x01) != (b.options & 0x01)) d |= SEG_DIFFERS_SEL;
+  
+  for (uint8_t i = 0; i < NUM_COLORS; i++)
+  {
+    if (colors[i] != b.colors[i]) d |= SEG_DIFFERS_COL;
+  }
+
+  return d;
+}
+
+uint8_t WS2812FX::Segment::getLightCapabilities() {
+  if (!isActive()) return 0;
+  uint8_t capabilities = 0;
+  uint8_t awm = Bus::getAutoWhiteMode();
+  bool whiteSlider = (awm == RGBW_MODE_DUAL || awm == RGBW_MODE_MANUAL_ONLY);
+
+  for (uint8_t b = 0; b < busses.getNumBusses(); b++) {
+    Bus *bus = busses.getBus(b);
+    if (bus == nullptr || bus->getLength()==0) break;
+    if (bus->getStart() >= stop) continue;
+    if (bus->getStart() + bus->getLength() <= start) continue;
+
+    uint8_t type = bus->getType();
+    if (!whiteSlider || (type != TYPE_ANALOG_1CH && (cctFromRgb || type != TYPE_ANALOG_2CH)))
+    {
+      capabilities |= 0x01; //segment supports RGB (full color)
+    }
+    if (bus->isRgbw() && whiteSlider) capabilities |= 0x02; //segment supports white channel
+    if (!cctFromRgb) {
+      switch (type) {
+        case TYPE_ANALOG_5CH:
+        case TYPE_ANALOG_2CH:
+          capabilities |= 0x04; //segment supports white CCT 
+      }
+    }
+    if (correctWB && type != TYPE_ANALOG_1CH) capabilities |= 0x04; //white balance correction (uses CCT slider)
+  }
+  return capabilities;
+}
+
+//used for JSON API info.leds.rgbw. Little practical use, deprecate with info.leds.rgbw.
+//returns if there is an RGBW bus (supports RGB and White, not only white)
+//not influenced by auto-white mode, also true if white slider does not affect output white channel
+bool WS2812FX::hasRGBWBus(void) {
+	for (uint8_t b = 0; b < busses.getNumBusses(); b++) {
+    Bus *bus = busses.getBus(b);
+    if (bus == nullptr || bus->getLength()==0) break;
+    switch (bus->getType()) {
+      case TYPE_SK6812_RGBW:
+      case TYPE_TM1814:
+      case TYPE_ANALOG_4CH:
+        return true;
+    }
+  }
+	return false;
 }
 
 bool WS2812FX::hasCCTBus(void) {
@@ -596,17 +629,8 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
       delete[] seg.name;
       seg.name = nullptr;
     }
-    if (n == mainSegment) //if main segment is deleted, set first active as main segment
-    {
-      for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-      {
-        if (_segments[i].isActive()) {
-          mainSegment = i;
-          return;
-        }
-      }
-      mainSegment = 0; //should not happen (always at least one active segment)
-    }
+    //if main segment is deleted, set first selected/active as main segment
+    if (n == _mainSegment) setMainSegmentId(0);
     return;
   }
   if (i1 < _length) seg.start = i1;
@@ -628,7 +652,7 @@ void WS2812FX::restartRuntime() {
 
 void WS2812FX::resetSegments() {
   for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) if (_segments[i].name) delete[] _segments[i].name;
-  mainSegment = 0;
+  _mainSegment = 0;
   memset(_segments, 0, sizeof(_segments));
   //memset(_segment_runtimes, 0, sizeof(_segment_runtimes));
   _segment_index = 0;
@@ -658,7 +682,7 @@ void WS2812FX::resetSegments() {
   _segment_runtimes[0].markForReset();
 }
 
-void WS2812FX::makeAutoSegments() {
+void WS2812FX::makeAutoSegments(bool forceReset) {
   if (autoSegments) { //make one segment per bus
     uint16_t segStarts[MAX_NUM_SEGMENTS] = {0};
     uint16_t segStops [MAX_NUM_SEGMENTS] = {0};
@@ -684,8 +708,14 @@ void WS2812FX::makeAutoSegments() {
       setSegment(i, segStarts[i], segStops[i]);
     }
   } else {
-    //expand the main seg to the entire length, but only if there are no other segments
+    //expand the main seg to the entire length, but only if there are no other segments, or reset is forced
     uint8_t mainSeg = getMainSegmentId();
+
+    if (forceReset) {
+      for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) {
+        setSegment(i, 0, 0);
+      }
+    }
     
     if (getActiveSegmentsNum() < 2) {
       setSegment(mainSeg, 0, _length);

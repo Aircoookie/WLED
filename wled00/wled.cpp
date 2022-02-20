@@ -27,7 +27,7 @@ void WLED::reset()
   while (millis() - dly < 450) {
     yield();        // enough time to send response to client
   }
-  setAllLeds();
+  applyBri();
   DEBUG_PRINTLN(F("MODULE RESET"));
   ESP.restart();
 }

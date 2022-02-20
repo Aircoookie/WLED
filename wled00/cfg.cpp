@@ -261,6 +261,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(receiveNotificationEffects, if_sync_recv["fx"]);
   CJSON(receiveGroups, if_sync_recv["grp"]);
   CJSON(receiveSegmentOptions, if_sync_recv["seg"]);
+  CJSON(receiveSegmentBounds, if_sync_recv["sb"]);
   //! following line might be a problem if called after boot
   receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects || receiveSegmentOptions);
 
@@ -673,9 +674,10 @@ void serializeConfig() {
   JsonObject if_sync_recv = if_sync.createNestedObject("recv");
   if_sync_recv["bri"] = receiveNotificationBrightness;
   if_sync_recv["col"] = receiveNotificationColor;
-  if_sync_recv["fx"] = receiveNotificationEffects;
+  if_sync_recv["fx"]  = receiveNotificationEffects;
   if_sync_recv["grp"] = receiveGroups;
   if_sync_recv["seg"] = receiveSegmentOptions;
+  if_sync_recv["sb"]  = receiveSegmentBounds;
 
   JsonObject if_sync_send = if_sync.createNestedObject("send");
   if_sync_send[F("dir")] = notifyDirect;
