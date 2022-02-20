@@ -57,11 +57,13 @@ void onAlexaChange(EspalexaDevice* dev)
           bri = briLast;
           colorUpdated(CALL_MODE_ALEXA);
         }
-      } else {
+      } else 
+      {
         applyPreset(macroAlexaOn, CALL_MODE_ALEXA);
         if (bri == 0) espalexaDevice->setValue(briLast); //stop Alexa from complaining if macroAlexaOn does not actually turn on
       }
-    } else {
+    } else 
+    {
       // new switch-on behavior for preset devices
       byte preset = 0;
       // find the index with the right name, leave out index 0 (device with alexaInvocationName does not occur in this else branch)
@@ -70,10 +72,13 @@ void onAlexaChange(EspalexaDevice* dev)
         if (name == espalexa.getDevice(alexaIndex)->getName())
         {
           preset = alexaIndex; // in alexaInit() preset 1 device was added second (index 1), preset 2 third (index 2) etc.
-          break;
+        } else
+        {
+          espalexa.getDevice(alexaIndex)->setValue(0); // set other presets off
         }
       }
       applyPreset(preset,CALL_MODE_ALEXA);
+      espalexa.getDevice(0)->setValue(espalexaDevice->getValue()); // set alexaInvocationName device to the current value
     }
   } else if (m == EspalexaDeviceProperty::off)
   {
@@ -85,9 +90,14 @@ void onAlexaChange(EspalexaDevice* dev)
         bri = 0;
         colorUpdated(CALL_MODE_ALEXA);
       }
-    } else {
+    } else 
+    {
       applyPreset(macroAlexaOff, CALL_MODE_ALEXA);
       if (bri != 0) espalexaDevice->setValue(0); //stop Alexa from complaining if macroAlexaOff does not actually turn off
+    }
+    for (byte alexaIndex=0; alexaIndex<espalexa.getDeviceCount(); ++alexaIndex)
+    {
+      espalexa.getDevice(alexaIndex)->setValue(0);
     }
   } else if (m == EspalexaDeviceProperty::bri)
   {
