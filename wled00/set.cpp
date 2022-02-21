@@ -795,14 +795,16 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   //apply colors to selected segment, and main color array if applicable
   for (byte i=0; i<4; i++) if (colIn[i]!=col[i]) col0Changed = colorChanged = true;
-  if (col0Changed) selseg.setColor(0, RGBW32(colIn[0], colIn[1], colIn[2], colIn[3]), selectedSeg);
-  if (!singleSegment) {
+  if (singleSegment) {
+    if (col0Changed) selseg.setColor(0, RGBW32(colIn[0], colIn[1], colIn[2], colIn[3]), selectedSeg);
+  } else {
     for (byte i=0; i<4; i++) col[i] = colIn[i];
   }
 
   for (byte i=0; i<4; i++) if (colInSec[i]!=colSec[i]) col1Changed = colorChanged = true;
-  if (col1Changed) selseg.setColor(1, RGBW32(colInSec[0], colInSec[1], colInSec[2], colInSec[3]), selectedSeg);
-  if (!singleSegment) {
+  if (singleSegment) {
+    if (col1Changed) selseg.setColor(1, RGBW32(colInSec[0], colInSec[1], colInSec[2], colInSec[3]), selectedSeg);
+  } else {
     for (byte i=0; i<4; i++) colSec[i] = colInSec[i];
   }
 
@@ -811,12 +813,13 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   updateVal(&req, "SX=", &speedIn);
   updateVal(&req, "IX=", &intensityIn);
   updateVal(&req, "FP=", &paletteIn, 0, strip.getPaletteCount()-1);
-  strip.setMode(selectedSeg, effectIn);
-  selseg.speed     = speedIn;
-  selseg.intensity = intensityIn;
-  selseg.palette   = paletteIn;
   if (effectIn != effectCurrent || speedIn != effectSpeed || intensityIn != effectIntensity || paletteIn != effectPalette) effectChanged = true;
-  if (!singleSegment) {
+  if (singleSegment) {
+    strip.setMode(selectedSeg, effectIn);
+    selseg.speed     = speedIn;
+    selseg.intensity = intensityIn;
+    selseg.palette   = paletteIn;
+  } else {
     effectCurrent = effectIn;
     effectSpeed = speedIn;
     effectIntensity = intensityIn;
