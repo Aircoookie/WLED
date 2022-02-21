@@ -587,8 +587,8 @@ function populateSegments(s)
 						<td class="segtd">Offset</td>
 					</tr>
 					<tr>
-						<td class="segtd"><input class="noslide segn" id="seg${i}s" type="number" min="0" max="${ledCount-1}" value="${inst.start}" oninput="updateLen(${i})"></td>
-						<td class="segtd"><input class="noslide segn" id="seg${i}e" type="number" min="0" max="${ledCount-(cfg.comp.seglen?inst.start:0)}" value="${inst.stop-(cfg.comp.seglen?inst.start:0)}" oninput="updateLen(${i})"></td>
+						<td class="segtd"><input class="noslide segn" id="seg${i}s" type="number" min="0" max="${ledCount-1}" value="${inst.start}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
+						<td class="segtd"><input class="noslide segn" id="seg${i}e" type="number" min="0" max="${ledCount-(cfg.comp.seglen?inst.start:0)}" value="${inst.stop-(cfg.comp.seglen?inst.start:0)}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
 						<td class="segtd"><input class="noslide segn" id="seg${i}of" type="number" value="${inst.of}" oninput="updateLen(${i})"></td>
 					</tr>
 				</table>
@@ -599,8 +599,8 @@ function populateSegments(s)
 						<td class="segtd">Apply</td>
 					</tr>
 					<tr>
-						<td class="segtd"><input class="noslide segn" id="seg${i}grp" type="number" min="1" max="255" value="${inst.grp}" oninput="updateLen(${i})"></td>
-						<td class="segtd"><input class="noslide segn" id="seg${i}spc" type="number" min="0" max="255" value="${inst.spc}" oninput="updateLen(${i})"></td>
+						<td class="segtd"><input class="noslide segn" id="seg${i}grp" type="number" min="1" max="255" value="${inst.grp}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
+						<td class="segtd"><input class="noslide segn" id="seg${i}spc" type="number" min="0" max="255" value="${inst.spc}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
 						<td class="segtd"><i class="icons e-icon cnf cnf-s" id="segc${i}" onclick="setSeg(${i})">&#xe390;</i></td>
 					</tr>
 				</table>
@@ -1278,8 +1278,8 @@ function makeSeg() {
 				<td class="segtd">${cfg.comp.seglen?"Length":"Stop LED"}</td>
 			</tr>
 			<tr>
-				<td class="segtd"><input class="noslide segn" id="seg${lowestUnused}s" type="number" min="0" max="${ledCount-1}" value="${ns}" oninput="updateLen(${lowestUnused})"></td>
-				<td class="segtd"><input class="noslide segn" id="seg${lowestUnused}e" type="number" min="0" max="${ledCount-(cfg.comp.seglen?ns:0)}" value="${ledCount-(cfg.comp.seglen?ns:0)}" oninput="updateLen(${lowestUnused})"></td>
+				<td class="segtd"><input class="noslide segn" id="seg${lowestUnused}s" type="number" min="0" max="${ledCount-1}" value="${ns}" oninput="updateLen(${lowestUnused})" onkeydown="segEnter(${lowestUnused})"></td>
+				<td class="segtd"><input class="noslide segn" id="seg${lowestUnused}e" type="number" min="0" max="${ledCount-(cfg.comp.seglen?ns:0)}" value="${ledCount-(cfg.comp.seglen?ns:0)}" oninput="updateLen(${lowestUnused})" onkeydown="segEnter(${lowestUnused})"></td>
 			</tr>
 		</table>
 		<div class="h" id="seg${lowestUnused}len">${ledCount - ns} LED${ledCount - ns >1 ? "s":""}</div>
@@ -1816,6 +1816,10 @@ function updatePSliders() {
 function hexEnter() {
 	d.getElementById('hexcnf').style.backgroundColor = "var(--c-6)";
 	if(event.keyCode == 13) fromHex();
+}
+
+function segEnter(s) {
+	if(event.keyCode == 13) setSeg(s);
 }
 
 function fromHex()
