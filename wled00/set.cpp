@@ -779,7 +779,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     colorFromDecOrHexString(tmpCol, (char*)req.substring(pos + 3).c_str());
     uint32_t col2 = RGBW32(tmpCol[0], tmpCol[1], tmpCol[2], tmpCol[3]);
     selseg.setColor(2, col2, selectedSeg); // defined above (SS= or main)
-    colorChanged = true;
+    stateChanged = true;
     if (!singleSegment) strip.setColor(2, col2);
   }
 
@@ -805,14 +805,14 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   // apply colors to selected segment, and all selected segments if applicable
   if (col0Changed) {
-    colorChanged = true;
+    stateChanged = true;
     uint32_t colIn0 = RGBW32(colIn[0], colIn[1], colIn[2], colIn[3]);
     selseg.setColor(0, colIn0, selectedSeg);
     if (!singleSegment) strip.setColor(0, colIn0);
   }
 
   if (col1Changed) {
-    colorChanged = true;
+    stateChanged = true;
     uint32_t colIn1 = RGBW32(colInSec[0], colInSec[1], colInSec[2], colInSec[3]);
     selseg.setColor(1, colIn1, selectedSeg);
     if (!singleSegment) strip.setColor(1, colIn1);
@@ -828,7 +828,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   intensityChanged = updateVal(&req, "IX=", &intensityIn);
   paletteChanged   = updateVal(&req, "FP=", &paletteIn, 0, strip.getPaletteCount()-1);
   
-  effectChanged = (fxModeChanged || speedChanged || intensityChanged || paletteChanged);
+  stateChanged |= (fxModeChanged || speedChanged || intensityChanged || paletteChanged);
 
   for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
     WS2812FX::Segment& seg = strip.getSegment(i);

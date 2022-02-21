@@ -501,7 +501,7 @@ public:
   #endif
     effectCurrentIndex = max(min((increase ? effectCurrentIndex+1 : effectCurrentIndex-1), strip.getModeCount()-1), 0);
     effectCurrent = modes_alpha_indexes[effectCurrentIndex];
-    effectChanged = true;
+    stateChanged = true;
     if (applyToAll) {
       for (byte i=0; i<strip.getMaxSegments(); i++) {
         WS2812FX::Segment& seg = strip.getSegment(i);
@@ -529,7 +529,7 @@ public:
     display->updateRedrawTime();
   #endif
     effectSpeed = max(min((increase ? effectSpeed+fadeAmount : effectSpeed-fadeAmount), 255), 0);
-    effectChanged = true;
+    stateChanged = true;
     if (applyToAll) {
       for (byte i=0; i<strip.getMaxSegments(); i++) {
         WS2812FX::Segment& seg = strip.getSegment(i);
@@ -557,7 +557,7 @@ public:
     display->updateRedrawTime();
   #endif
     effectIntensity = max(min((increase ? effectIntensity+fadeAmount : effectIntensity-fadeAmount), 255), 0);
-    effectChanged = true;
+    stateChanged = true;
     if (applyToAll) {
       for (byte i=0; i<strip.getMaxSegments(); i++) {
         WS2812FX::Segment& seg = strip.getSegment(i);
@@ -586,7 +586,7 @@ public:
   #endif
     effectPaletteIndex = max(min((increase ? effectPaletteIndex+1 : effectPaletteIndex-1), strip.getPaletteCount()-1), 0);
     effectPalette = palettes_alpha_indexes[effectPaletteIndex];
-    effectChanged = true;
+    stateChanged = true;
     if (applyToAll) {
       for (byte i=0; i<strip.getMaxSegments(); i++) {
         WS2812FX::Segment& seg = strip.getSegment(i);
@@ -615,7 +615,7 @@ public:
   #endif
     currentHue1 = max(min((increase ? currentHue1+fadeAmount : currentHue1-fadeAmount), 255), 0);
     colorHStoRGB(currentHue1*256, currentSat1, col);
-    colorChanged = true; 
+    stateChanged = true; 
     if (applyToAll) {
       for (byte i=0; i<strip.getMaxSegments(); i++) {
         WS2812FX::Segment& seg = strip.getSegment(i);

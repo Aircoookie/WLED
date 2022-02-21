@@ -359,8 +359,7 @@ void handleNotifications()
             strip.setSegment(id, selseg.start, selseg.stop, udpIn[5+ofs], udpIn[6+ofs], selseg.offset);
           }
         }
-        effectChanged = true;
-        colorChanged = true;
+        stateChanged = true;
       }
       
       if (applyEffects && (version < 11 || !receiveSegmentOptions)) { //simple effect sync, applies to all selected

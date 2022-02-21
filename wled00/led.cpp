@@ -25,19 +25,19 @@ void applyValuesToSelectedSegs()
     if (i != strip.getMainSegmentId() && (!seg.isActive() || !seg.isSelected())) continue;
 
     if (effectSpeed != mainsegPrev.speed) {
-      seg.speed = effectSpeed; effectChanged = true;}
+      seg.speed = effectSpeed; stateChanged = true;}
     if (effectIntensity != mainsegPrev.intensity) {
-      seg.intensity = effectIntensity; effectChanged = true;}
+      seg.intensity = effectIntensity; stateChanged = true;}
     if (effectPalette != mainsegPrev.palette) {
-      seg.palette = effectPalette; effectChanged = true;}
+      seg.palette = effectPalette; stateChanged = true;}
     if (effectCurrent != mainsegPrev.mode) {
-      strip.setMode(i, effectCurrent); effectChanged = true;}
+      strip.setMode(i, effectCurrent); stateChanged = true;}
     uint32_t col0 = RGBW32(col[0],col[1],col[2],col[3]);
     uint32_t col1 = RGBW32(colSec[0], colSec[1], colSec[2], colSec[3]);
     if (col0 != mainsegPrev.colors[0]) {
-      seg.setColor(0, col0, i); colorChanged = true;}
+      seg.setColor(0, col0, i); stateChanged = true;}
     if (col1 != mainsegPrev.colors[1]) {
-      seg.setColor(1, col1, i); colorChanged = true;}
+      seg.setColor(1, col1, i); stateChanged = true;}
   }
 }
 
@@ -94,16 +94,15 @@ void stateUpdated(byte callMode) {
   //                     6: fx changed 7: hue 8: preset cycle 9: blynk 10: alexa 11: ws send only 12: button preset
   setValuesFromMainSeg();
 
-  if (bri != briOld || effectChanged || colorChanged) {
+  if (bri != briOld || stateChanged) {
     if (realtimeTimeout == UINT32_MAX) realtimeTimeout = 0;
-    if (effectChanged) currentPreset = 0; //something changed, so we are no longer in the preset
+    if (stateChanged) currentPreset = 0; //something changed, so we are no longer in the preset
         
     if (callMode != CALL_MODE_NOTIFICATION && callMode != CALL_MODE_NO_NOTIFY) notify(callMode);
     
     //set flag to update blynk, ws and mqtt
     interfaceUpdateCallMode = callMode;
-    effectChanged = false;
-    colorChanged = false;
+    stateChanged = false;
   } else {
     if (nightlightActive && !nightlightActiveOld && callMode != CALL_MODE_NOTIFICATION && callMode != CALL_MODE_NO_NOTIFY) {
       notify(CALL_MODE_NIGHTLIGHT); 
