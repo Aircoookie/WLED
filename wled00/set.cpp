@@ -762,10 +762,10 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
       WS2812FX::Segment& seg = strip.getSegment(i);
       if (!seg.isActive() || !seg.isSelected() || i == selectedSeg) continue;
-      if (effectCurrent   != effectIn)    strip.setMode(i, effectCurrent);
-      if (effectSpeed     != speedIn)     seg.speed     = effectSpeed;
-      if (effectIntensity != intensityIn) seg.intensity = effectIntensity;
-      if (effectPalette   != paletteIn)   seg.palette   = effectPalette;
+      if (effectCurrent   != effectIn)    strip.setMode(i, effectIn);
+      if (effectSpeed     != speedIn)     seg.speed     = speedIn;
+      if (effectIntensity != intensityIn) seg.intensity = intensityIn;
+      if (effectPalette   != paletteIn)   seg.palette   = paletteIn;
       if (col0Changed) seg.setColor(0, RGBW32(colIn[0],       colIn[1],    colIn[2],    colIn[3]), i); // use transitions
       if (col1Changed) seg.setColor(1, RGBW32(colInSec[0], colInSec[1], colInSec[2], colInSec[3]), i); // use transitions
       if (col2Changed) seg.colors[2] = RGBW32(tmpCol[0],     tmpCol[1],   tmpCol[2],   tmpCol[3]);
