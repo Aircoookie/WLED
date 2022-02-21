@@ -951,6 +951,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   }
   //you can add more if you need
 
+  if (!singleSegment) applyValuesToSelectedSegs();
   if (!apply) return true; //when called by JSON API, do not call colorUpdated() here
   
   //internal call, does not send XML response
@@ -958,7 +959,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (pos < 1) XML_response(request);
 
   pos = req.indexOf(F("&NN")); //do not send UDP notifications this time
-  colorUpdated((pos > 0) ? CALL_MODE_NO_NOTIFY : CALL_MODE_DIRECT_CHANGE);
+  stateUpdated((pos > 0) ? CALL_MODE_NO_NOTIFY : CALL_MODE_DIRECT_CHANGE);
 
   return true;
 }
