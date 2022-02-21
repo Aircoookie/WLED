@@ -612,14 +612,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   byte selectedSeg = strip.getMainSegmentId();
   if (selectedSeg != prevMain) setValuesFromMainSeg();
 
-  //temporary values, do not write direcly to global values of only setting a single segment
-  byte colIn[4]      = {col[0], col[1], col[2], col[3]};
-  byte colInSec[4]   = {colSec[0], colSec[1], colSec[2], colSec[3]};
-  byte effectIn      = effectCurrent;
-  byte speedIn       = effectSpeed;
-  byte intensityIn   = effectIntensity;
-  byte paletteIn     = effectPalette;
-
   bool singleSegment = false;
 
   pos = req.indexOf(F("SS="));
@@ -638,6 +630,16 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     if (t == 2) for (uint8_t i = 0; i < strip.getMaxSegments(); i++) strip.getSegment(i).setOption(SEG_OPTION_SELECTED, 0); // unselect other segments
     selseg.setOption(SEG_OPTION_SELECTED, t);
   }
+
+  //temporary values, do not write direcly to global values if only setting a single segment
+  uint32_t col0 = selseg.colors[0];
+  uint32_t col1 = selseg.colors[1];
+  byte colIn[4]    = {R(col0), G(col0), B(col0), W(col0)};
+  byte colInSec[4] = {R(col1), G(col1), B(col1), W(col1)};
+  byte effectIn    = selseg.mode;
+  byte speedIn     = selseg.speed;
+  byte intensityIn = selseg.intensity;
+  byte paletteIn   = selseg.palette;
 
   uint16_t startI = selseg.start;
   uint16_t stopI  = selseg.stop;
