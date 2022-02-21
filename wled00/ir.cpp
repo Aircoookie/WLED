@@ -660,11 +660,16 @@ void decodeIRJson(uint32_t code)
       String apireq = "win"; apireq += '&';                        // reduce flash string usage
       if (cmdStr.indexOf("~") || fdo["rpt"]) lastValidCode = code; // repeatable action
       if (!cmdStr.startsWith(apireq)) cmdStr = apireq + cmdStr;    // if no "win&" prefix
+      if (!irApplyToAllSelected && cmdStr.indexOf(F("SS="))<0) {
+        char tmp[10];
+        sprintf_P(tmp, PSTR("&SS=%d"), strip.getMainSegmentId());
+        cmdStr += tmp;
+      }
       fdo.clear();                                                 // clear JSON buffer (it is no longer needed)
       handleSet(nullptr, cmdStr, false);                           // no colorUpdated() call here
     }
   } else {
-    // command is JSON object
+    // command is JSON object (TODO: currently will not handle irApplyToAllSelected correctly)
     if (jsonCmdObj[F("psave")].isNull()) deserializeState(jsonCmdObj, CALL_MODE_BUTTON_PRESET);
     else {
       uint8_t psave = jsonCmdObj[F("psave")].as<int>();

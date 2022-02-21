@@ -550,7 +550,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   byte selectedSeg = strip.getMainSegmentId();
   if (selectedSeg != prevMain) setValuesFromMainSeg();
 
-  //temporary values, do not write direcly to global values of only setting a single segment
+  //temporary values, do not write direcly to global values if only setting a single segment
   byte colIn[4]      = {col[0], col[1], col[2], col[3]};
   byte colInSec[4]   = {colSec[0], colSec[1], colSec[2], colSec[3]};
   byte effectIn      = effectCurrent;
@@ -642,16 +642,20 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   //set brightness
   updateVal(&req, "&A=", &bri);
 
-  bool col0Changed = false, col1Changed = false;
+  bool col0Changed = false, col1Changed = false, col2Changed = false;
   //set colors
-  updateVal(&req, "&R=", &col[0]);
-  updateVal(&req, "&G=", &col[1]);
-  updateVal(&req, "&B=", &col[2]);
-  updateVal(&req, "&W=", &col[3]);
-  updateVal(&req, "R2=", &colSec[0]);
-  updateVal(&req, "G2=", &colSec[1]);
-  updateVal(&req, "B2=", &colSec[2]);
-  updateVal(&req, "W2=", &colSec[3]);
+  updateVal(&req, "&R=", &colIn[0]);
+  updateVal(&req, "&G=", &colIn[1]);
+  updateVal(&req, "&B=", &colIn[2]);
+  updateVal(&req, "&W=", &colIn[3]);
+  for (byte i=0; i<4; i++) if (colIn[i]!=col[i]) col0Changed = colorChanged = true;
+  if (col0Changed) selseg.setColor(0, RGBW32(colIn[0], colIn[1], colIn[2], colIn[3]), selectedSeg); // use transitions
+  updateVal(&req, "R2=", &colInSec[0]);
+  updateVal(&req, "G2=", &colInSec[1]);
+  updateVal(&req, "B2=", &colInSec[2]);
+  updateVal(&req, "W2=", &colInSec[3]);
+  for (byte i=0; i<4; i++) if (colInSec[i]!=colSec[i]) col1Changed = colorChanged = true;
+  if (col1Changed) selseg.setColor(1, RGBW32(colInSec[0], colInSec[1], colInSec[2], colInSec[3]), selectedSeg); // use transitions
 
   #ifdef WLED_ENABLE_LOXONE
   //lox parser
@@ -684,6 +688,9 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     }
     byte sec = req.indexOf(F("H2"));
     colorHStoRGB(temphue, tempsat, (sec>0) ? colInSec : colIn);
+    if (sec>0) col1Changed = true;
+    else       col0Changed = true;
+    colorChanged = true;
   }
 
   //set white spectrum (kelvin)
@@ -691,6 +698,9 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (pos > 0) {
     byte sec = req.indexOf(F("K2"));
     colorKtoRGB(getNumVal(&req, pos), (sec>0) ? colInSec : colIn);
+    if (sec>0) col1Changed = true;
+    else       col0Changed = true;
+    colorChanged = true;
   }
 
   //set color from HEX or 32bit DEC
@@ -698,18 +708,20 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   pos = req.indexOf(F("CL="));
   if (pos > 0) {
     colorFromDecOrHexString(colIn, (char*)req.substring(pos + 3).c_str());
+    selseg.setColor(0, RGBW32(colIn[0], colIn[1], colIn[2], colIn[3]), selectedSeg); // defined above (SS= or main)
+    col0Changed = colorChanged = true;
   }
   pos = req.indexOf(F("C2="));
   if (pos > 0) {
     colorFromDecOrHexString(colInSec, (char*)req.substring(pos + 3).c_str());
+    selseg.setColor(1, RGBW32(colInSec[0], colInSec[1], colInSec[2], colInSec[3]), selectedSeg); // defined above (SS= or main)
+    col1Changed = colorChanged = true;
   }
   pos = req.indexOf(F("C3="));
   if (pos > 0) {
     colorFromDecOrHexString(tmpCol, (char*)req.substring(pos + 3).c_str());
-    uint32_t col2 = RGBW32(tmpCol[0], tmpCol[1], tmpCol[2], tmpCol[3]);
-    selseg.setColor(2, col2, selectedSeg); // defined above (SS= or main)
-    colorChanged = true;
-    if (!singleSegment) strip.setColor(2, col2);
+    selseg.setColor(2, RGBW32(tmpCol[0], tmpCol[1], tmpCol[2], tmpCol[3]), selectedSeg); // defined above (SS= or main)
+    col2Changed = colorChanged = true;
   }
 
   //set to random hue SR=0->1st SR=1->2nd
@@ -717,6 +729,9 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (pos > 0) {
     byte sec = getNumVal(&req, pos);
     setRandomColor(sec? colInSec : colIn);
+    if (sec>0) col1Changed = true;
+    else       col0Changed = true;
+    colorChanged = true;
   }
 
   //swap 2nd & 1st
@@ -728,19 +743,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
       colIn[i]    = colInSec[i];
       colInSec[i] = temp;
     }
-  }
-
-  //apply colors to selected segment, and main color array if applicable
-  for (byte i=0; i<4; i++) if (colIn[i]!=col[i]) col0Changed = colorChanged = true;
-  if (col0Changed) selseg.setColor(0, RGBW32(colIn[0], colIn[1], colIn[2], colIn[3]), selectedSeg);
-  if (!singleSegment) {
-    for (byte i=0; i<4; i++) col[i] = colIn[i];
-  }
-
-  for (byte i=0; i<4; i++) if (colInSec[i]!=colSec[i]) col1Changed = colorChanged = true;
-  if (col1Changed) selseg.setColor(1, RGBW32(colInSec[0], colInSec[1], colInSec[2], colInSec[3]), selectedSeg);
-  if (!singleSegment) {
-    for (byte i=0; i<4; i++) colSec[i] = colInSec[i];
+    col0Changed = col1Changed = colorChanged = true;
   }
 
   //set effect parameters
@@ -753,12 +756,22 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   selseg.intensity = intensityIn;
   selseg.palette   = paletteIn;
   if (effectIn != effectCurrent || speedIn != effectSpeed || intensityIn != effectIntensity || paletteIn != effectPalette) effectChanged = true;
+
+  //apply to all selected manually to prevent #1618.
   if (!singleSegment) {
-    effectCurrent = effectIn;
-    effectSpeed = speedIn;
-    effectIntensity = intensityIn;
-    effectPalette = paletteIn;
+    for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
+      WS2812FX::Segment& seg = strip.getSegment(i);
+      if (!seg.isActive() || !seg.isSelected() || i == selectedSeg) continue;
+      if (effectCurrent   != effectIn)    strip.setMode(i, effectCurrent);
+      if (effectSpeed     != speedIn)     seg.speed     = effectSpeed;
+      if (effectIntensity != intensityIn) seg.intensity = effectIntensity;
+      if (effectPalette   != paletteIn)   seg.palette   = effectPalette;
+      if (col0Changed) seg.setColor(0, RGBW32(colIn[0],       colIn[1],    colIn[2],    colIn[3]), i); // use transitions
+      if (col1Changed) seg.setColor(1, RGBW32(colInSec[0], colInSec[1], colInSec[2], colInSec[3]), i); // use transitions
+      if (col2Changed) seg.colors[2] = RGBW32(tmpCol[0],     tmpCol[1],   tmpCol[2],   tmpCol[3]);
+    }
   }
+  setValuesFromMainSeg(); // will fill col[] and cloSec[] as well as effectCurrent, ...
 
   //set advanced overlay
   pos = req.indexOf(F("OL="));

@@ -147,6 +147,7 @@ void resetTimebase();
 void toggleOnOff();
 void applyBri();
 void applyFinalBri();
+void applyValuesToSelectedSegs();
 void colorUpdated(byte callMode);
 void stateUpdated(byte callMode);
 void updateInterfaces(uint8_t callMode);

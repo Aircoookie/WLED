@@ -5,7 +5,7 @@
  */
 void setValuesFromMainSeg()
 {
-  WS2812FX::Segment& seg = strip.getSegment(strip.getMainSegmentId());
+  WS2812FX::Segment& seg = strip.getMainSegment();
   col[0] = R(seg.colors[0]);
   col[1] = G(seg.colors[0]);
   col[2] = B(seg.colors[0]);
@@ -14,10 +14,10 @@ void setValuesFromMainSeg()
   colSec[1] = G(seg.colors[1]);
   colSec[2] = B(seg.colors[1]);
   colSec[3] = W(seg.colors[1]);
-  effectCurrent = seg.mode;
-  effectSpeed = seg.speed;
+  effectCurrent   = seg.mode;
+  effectSpeed     = seg.speed;
   effectIntensity = seg.intensity;
-  effectPalette = seg.palette;
+  effectPalette   = seg.palette;
 }
 
 
