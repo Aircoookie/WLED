@@ -631,7 +631,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     selseg.setOption(SEG_OPTION_SELECTED, t);
   }
 
-  //temporary values, do not write direcly to global values if only setting a single segment
+  // temporary values, write directly to segments, globals are updated by setValuesFromMainSeg()
   uint32_t col0 = selseg.colors[0];
   uint32_t col1 = selseg.colors[1];
   byte colIn[4]    = {R(col0), G(col0), B(col0), W(col0)};
@@ -708,15 +708,15 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   bool col0Changed = false, col1Changed = false;
   //set colors
-  updateVal(&req, "&R=", &colIn[0]);
-  updateVal(&req, "&G=", &colIn[1]);
-  updateVal(&req, "&B=", &colIn[2]);
-  updateVal(&req, "&W=", &colIn[3]);
+  col0Changed |= updateVal(&req, "&R=", &colIn[0]);
+  col0Changed |= updateVal(&req, "&G=", &colIn[1]);
+  col0Changed |= updateVal(&req, "&B=", &colIn[2]);
+  col0Changed |= updateVal(&req, "&W=", &colIn[3]);
 
-  updateVal(&req, "R2=", &colInSec[0]);
-  updateVal(&req, "G2=", &colInSec[1]);
-  updateVal(&req, "B2=", &colInSec[2]);
-  updateVal(&req, "W2=", &colInSec[3]);
+  col1Changed |= updateVal(&req, "R2=", &colInSec[0]);
+  col1Changed |= updateVal(&req, "G2=", &colInSec[1]);
+  col1Changed |= updateVal(&req, "B2=", &colInSec[2]);
+  col1Changed |= updateVal(&req, "W2=", &colInSec[3]);
 
   #ifdef WLED_ENABLE_LOXONE
   //lox parser
@@ -726,6 +726,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     if (parseLx(lxValue, colIn)) {
       bri = 255;
       nightlightActive = false; //always disable nightlight when toggling
+      col0Changed = true;
     }
   }
   pos = req.indexOf(F("LY=")); // Lox secondary color
@@ -734,6 +735,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     if(parseLx(lxValue, colInSec)) {
       bri = 255;
       nightlightActive = false; //always disable nightlight when toggling
+      col1Changed = true;
     }
   }
   #endif
@@ -749,6 +751,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     }
     byte sec = req.indexOf(F("H2"));
     colorHStoRGB(temphue, tempsat, (sec>0) ? colInSec : colIn);
+    col0Changed |= (!sec); col1Changed |= sec;
   }
 
   //set white spectrum (kelvin)
@@ -756,6 +759,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (pos > 0) {
     byte sec = req.indexOf(F("K2"));
     colorKtoRGB(getNumVal(&req, pos), (sec>0) ? colInSec : colIn);
+    col0Changed |= (!sec); col1Changed |= sec;
   }
 
   //set color from HEX or 32bit DEC
@@ -763,10 +767,12 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   pos = req.indexOf(F("CL="));
   if (pos > 0) {
     colorFromDecOrHexString(colIn, (char*)req.substring(pos + 3).c_str());
+    col0Changed = true;
   }
   pos = req.indexOf(F("C2="));
   if (pos > 0) {
     colorFromDecOrHexString(colInSec, (char*)req.substring(pos + 3).c_str());
+    col1Changed = true;
   }
   pos = req.indexOf(F("C3="));
   if (pos > 0) {
@@ -782,6 +788,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (pos > 0) {
     byte sec = getNumVal(&req, pos);
     setRandomColor(sec? colInSec : colIn);
+    col0Changed |= (!sec); col1Changed |= sec;
   }
 
   //swap 2nd & 1st
@@ -793,39 +800,43 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
       colIn[i]    = colInSec[i];
       colInSec[i] = temp;
     }
+    col0Changed = col1Changed = true;
   }
 
-  //apply colors to selected segment, and main color array if applicable
-  for (byte i=0; i<4; i++) if (colIn[i]!=col[i]) col0Changed = colorChanged = true;
-  if (singleSegment) {
-    if (col0Changed) selseg.setColor(0, RGBW32(colIn[0], colIn[1], colIn[2], colIn[3]), selectedSeg);
-  } else {
-    for (byte i=0; i<4; i++) col[i] = colIn[i];
+  // apply colors to selected segment, and all selected segments if applicable
+  if (col0Changed) {
+    colorChanged = true;
+    uint32_t colIn0 = RGBW32(colIn[0], colIn[1], colIn[2], colIn[3]);
+    selseg.setColor(0, colIn0, selectedSeg);
+    if (!singleSegment) strip.setColor(0, colIn0);
   }
 
-  for (byte i=0; i<4; i++) if (colInSec[i]!=colSec[i]) col1Changed = colorChanged = true;
-  if (singleSegment) {
-    if (col1Changed) selseg.setColor(1, RGBW32(colInSec[0], colInSec[1], colInSec[2], colInSec[3]), selectedSeg);
-  } else {
-    for (byte i=0; i<4; i++) colSec[i] = colInSec[i];
+  if (col1Changed) {
+    colorChanged = true;
+    uint32_t colIn1 = RGBW32(colInSec[0], colInSec[1], colInSec[2], colInSec[3]);
+    selseg.setColor(1, colIn1, selectedSeg);
+    if (!singleSegment) strip.setColor(1, colIn1);
   }
 
-  //set effect parameters
-  if (updateVal(&req, "FX=", &effectIn, 0, strip.getModeCount()-1) && request != nullptr) unloadPlaylist();  //unload playlist if changing FX using web request
-  updateVal(&req, "SX=", &speedIn);
-  updateVal(&req, "IX=", &intensityIn);
-  updateVal(&req, "FP=", &paletteIn, 0, strip.getPaletteCount()-1);
-  if (effectIn != effectCurrent || speedIn != effectSpeed || intensityIn != effectIntensity || paletteIn != effectPalette) effectChanged = true;
-  if (singleSegment) {
-    strip.setMode(selectedSeg, effectIn);
-    selseg.speed     = speedIn;
-    selseg.intensity = intensityIn;
-    selseg.palette   = paletteIn;
-  } else {
-    effectCurrent = effectIn;
-    effectSpeed = speedIn;
-    effectIntensity = intensityIn;
-    effectPalette = paletteIn;
+  bool fxModeChanged = false, speedChanged = false, intensityChanged = false, paletteChanged = false;
+  // set effect parameters
+  if (updateVal(&req, "FX=", &effectIn, 0, strip.getModeCount()-1)) {
+    if (request != nullptr) unloadPlaylist(); // unload playlist if changing FX using web request
+    fxModeChanged = true;
+  }
+  speedChanged     = updateVal(&req, "SX=", &speedIn);
+  intensityChanged = updateVal(&req, "IX=", &intensityIn);
+  paletteChanged   = updateVal(&req, "FP=", &paletteIn, 0, strip.getPaletteCount()-1);
+  
+  effectChanged = (fxModeChanged || speedChanged || intensityChanged || paletteChanged);
+
+  for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
+    WS2812FX::Segment& seg = strip.getSegment(i);
+    if (i != selectedSeg && (singleSegment || !seg.isActive() || !seg.isSelected())) continue;
+    if (fxModeChanged)    strip.setMode(i, effectIn);
+    if (speedChanged)     seg.speed = speedIn;
+    if (intensityChanged) seg.intensity = intensityIn;
+    if (paletteChanged)   seg.palette = paletteIn;
   }
 
   //set advanced overlay
@@ -954,10 +965,10 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (pos > 0) {
     userVar1 = getNumVal(&req, pos);
   }
-  //you can add more if you need
+  // you can add more if you need
 
-  if (!singleSegment) applyValuesToSelectedSegs();
-  if (!apply) return true; //when called by JSON API, do not call colorUpdated() here
+  // global col[], effectCurrent, ... are updated in stateChanged()
+  if (!apply) return true; // when called by JSON API, do not call colorUpdated() here
   
   //internal call, does not send XML response
   pos = req.indexOf(F("IN"));
