@@ -120,17 +120,13 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         byte sz = colX.size();
         if (sz == 0) continue; //do nothing on empty array
 
-        byte cp = copyArray(colX, rgbw, 4);      
-        if (cp == 1 && rgbw[0] == 0) 
-          seg.setColor(i, 0, id);
+        byte cp = copyArray(colX, rgbw, 4);
         colValid = true;
       }
 
       if (!colValid) continue;
 
-      uint32_t color = RGBW32(rgbw[0],rgbw[1],rgbw[2],rgbw[3]);
-      colorChanged |= (seg.colors[i] != color);
-      seg.setColor(i, color, id);
+      seg.setColor(i, RGBW32(rgbw[0],rgbw[1],rgbw[2],rgbw[3]), id);
       if (seg.mode == FX_MODE_STATIC) strip.trigger(); //instant refresh
     }
   }
@@ -216,7 +212,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     seg.setOption(SEG_OPTION_FREEZE, false);
   }
   //send UDP if not in preset and something changed that is not just selection
-  if (!presetId && (seg.differs(prev) & 0x7F)) effectChanged = true;
+  if (!presetId && (seg.differs(prev) & 0x7F)) stateChanged = true;
   return;
 }
 

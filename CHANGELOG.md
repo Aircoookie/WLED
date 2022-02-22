@@ -2,6 +2,11 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2202210
+
+-   Fixed HTTP API commands not applying to all selected segments if called from JSON
+-   Improved Stream effects, no longer rely on LED state and won't fade out at low brightness
+
 #### Build 2202200
 
 -   Added `info.leds.seglc` per-segment light capability info (PR #2552)

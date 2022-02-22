@@ -240,7 +240,7 @@ void initServer()
       {
         serveMessage(request, 500, F("Failed updating firmware!"), F("Please check your file and retry!"), 254); return;
       }
-      serveMessage(request, 200, F("Successfully updated firmware!"), F("Please wait while the module reboots..."), 131); 
+      serveMessage(request, 200, F("Successfully updated firmware!"), F("Rebooting..."), 131); 
       doReboot = true;
     },[](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final){
       if(!index){

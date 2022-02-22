@@ -25,6 +25,7 @@
 */
 
 #include "FX.h"
+#include "wled.h"
 
 #define IBN 5100
 #define PALETTE_SOLID_WRAP (paletteBlend == 1 || paletteBlend == 3)
@@ -936,7 +937,7 @@ uint16_t WS2812FX::mode_chase_flash_random(void) {
   } else {
     SEGENV.step = (SEGENV.step + 1) % SEGLEN;
 
-    if(SEGENV.step == 0) {
+    if (SEGENV.step == 0) {
       SEGENV.aux0 = get_random_wheel_index(SEGENV.aux0);
     }
   }
@@ -965,8 +966,7 @@ uint16_t WS2812FX::running(uint32_t color1, uint32_t color2, bool theatre) {
     setPixelColor(i,col);
   }
 
-  if (it != SEGENV.step )
-  {
+  if (it != SEGENV.step) {
     SEGENV.aux0 = (SEGENV.aux0 +1) % (theatre ? width : (width<<1));
     SEGENV.step = it;
   }
@@ -996,26 +996,34 @@ uint16_t WS2812FX::mode_halloween(void) {
 
 
 /*
- * Random colored pixels running.
+ * Random colored pixels running. ("Stream")
  */
 uint16_t WS2812FX::mode_running_random(void) {
   uint32_t cycleTime = 25 + (3 * (uint32_t)(255 - SEGMENT.speed));
   uint32_t it = now / cycleTime;
-  if (SEGENV.aux1 == it) return FRAMETIME;
+  if (SEGENV.call == 0) SEGENV.aux0 = random16(); // random seed for PRNG on start
 
-  for(uint16_t i=SEGLEN-1; i > 0; i--) {
-    setPixelColor( i, getPixelColor( i - 1));
-  }
+  uint8_t zoneSize = ((255-SEGMENT.intensity) >> 4) +1;
+  uint16_t PRNG16 = SEGENV.aux0;
 
-  if(SEGENV.step == 0) {
-    SEGENV.aux0 = get_random_wheel_index(SEGENV.aux0);
-    setPixelColor(0, color_wheel(SEGENV.aux0));
-  }
-
-  SEGENV.step++;
-  if (SEGENV.step > (uint8_t)((255-SEGMENT.intensity) >> 4))
-  {
-    SEGENV.step = 0;
+  uint8_t z = it % zoneSize;
+  bool nzone = (!z && it != SEGENV.aux1);
+  for (uint16_t i=SEGLEN-1; i > 0; i--) {
+    if (nzone || z >= zoneSize) {
+      uint8_t lastrand = PRNG16 >> 8;
+      int16_t diff = 0;
+      while (abs(diff) < 42) { // make sure the difference between adjacent colors is big enough
+        PRNG16 = (uint16_t)(PRNG16 * 2053) + 13849; // next zone, next 'random' number
+        diff = (PRNG16 >> 8) - lastrand;
+      }
+      if (nzone) {
+        SEGENV.aux0 = PRNG16; // save next starting seed
+        nzone = false;
+      }
+      z = 0;
+    }
+    setPixelColor(i, color_wheel(PRNG16 >> 8));
+    z++;
   }
 
   SEGENV.aux1 = it;
@@ -1589,26 +1597,36 @@ uint16_t WS2812FX::mode_dual_larson_scanner(void){
 
 
 /*
- * Running random pixels
+ * Running random pixels ("Stream 2")
  * Custom mode by Keith Lord: https://github.com/kitesurfer1404/WS2812FX/blob/master/src/custom/RandomChase.h
  */
 uint16_t WS2812FX::mode_random_chase(void)
 {
+  if (SEGENV.call == 0) {
+    SEGENV.step = RGBW32(random8(), random8(), random8(), 0);
+    SEGENV.aux0 = random16();
+  }
+  uint16_t prevSeed = random16_get_seed(); // save seed so we can restore it at the end of the function
   uint32_t cycleTime = 25 + (3 * (uint32_t)(255 - SEGMENT.speed));
   uint32_t it = now / cycleTime;
-  if (SEGENV.step == it) return FRAMETIME;
+  uint32_t color = SEGENV.step;
+  random16_set_seed(SEGENV.aux0);
 
   for(uint16_t i = SEGLEN -1; i > 0; i--) {
-    setPixelColor(i, getPixelColor(i-1));
+    uint8_t r = random8(6) != 0 ? (color >> 16 & 0xFF) : random8();
+    uint8_t g = random8(6) != 0 ? (color >> 8  & 0xFF) : random8();
+    uint8_t b = random8(6) != 0 ? (color       & 0xFF) : random8();
+    color = RGBW32(r, g, b, 0);
+    setPixelColor(i, r, g, b);
+    if (i == SEGLEN -1 && SEGENV.aux1 != (it & 0xFFFF)) { //new first color in next frame
+      SEGENV.step = color;
+      SEGENV.aux0 = random16_get_seed();
+    }
   }
-  uint32_t color = getPixelColor(0);
-  if (SEGLEN > 1) color = getPixelColor( 1);
-  uint8_t r = random8(6) != 0 ? (color >> 16 & 0xFF) : random8();
-  uint8_t g = random8(6) != 0 ? (color >> 8  & 0xFF) : random8();
-  uint8_t b = random8(6) != 0 ? (color       & 0xFF) : random8();
-  setPixelColor(0, r, g, b);
 
-  SEGENV.step = it;
+  SEGENV.aux1 = it & 0xFFFF;
+
+  random16_set_seed(prevSeed); // restore original seed so other effects can use "random" PRNG
   return FRAMETIME;
 }
 

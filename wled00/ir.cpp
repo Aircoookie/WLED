@@ -98,7 +98,7 @@ void changeEffect(uint8_t fx)
     strip.setMode(strip.getMainSegmentId(), fx);
   }
   effectCurrent = fx;
-  effectChanged = true;
+  stateChanged = true;
 }
 
 void changePalette(uint8_t pal)
@@ -113,7 +113,7 @@ void changePalette(uint8_t pal)
     strip.getSegment(strip.getMainSegmentId()).palette = pal;
   }
   effectPalette = pal;
-  effectChanged = true;
+  stateChanged = true;
 }
 
 void changeEffectSpeed(int8_t amount)
@@ -130,7 +130,6 @@ void changeEffectSpeed(int8_t amount)
     } else {
       strip.getSegment(strip.getMainSegmentId()).speed = effectSpeed;
     }
-    effectChanged = true;
   } else {                              // if Effect == "solid Color", change the hue of the primary color
     CRGB fastled_col;
     fastled_col.red =   col[0];
@@ -154,8 +153,8 @@ void changeEffectSpeed(int8_t amount)
     } else {
       strip.getSegment(strip.getMainSegmentId()).colors[0] = RGBW32(col[0], col[1], col[2], col[3]);
     }
-    colorChanged = true;
   }
+  stateChanged = true;
 
   if(amount > 0) lastRepeatableAction = ACTION_SPEED_UP;
   if(amount < 0) lastRepeatableAction = ACTION_SPEED_DOWN;
@@ -176,7 +175,6 @@ void changeEffectIntensity(int8_t amount)
     } else {
       strip.getSegment(strip.getMainSegmentId()).speed = effectIntensity;
     }
-    effectChanged = true;
   } else {                                            // if Effect == "solid Color", change the saturation of the primary color
     CRGB fastled_col;
     fastled_col.red =   col[0];
@@ -198,8 +196,8 @@ void changeEffectIntensity(int8_t amount)
     } else {
       strip.getSegment(strip.getMainSegmentId()).colors[0] = RGBW32(col[0], col[1], col[2], col[3]);
     }
-    colorChanged = true;
   }
+  stateChanged = true;
 
   if(amount > 0) lastRepeatableAction = ACTION_INTENSITY_UP;
   if(amount < 0) lastRepeatableAction = ACTION_INTENSITY_DOWN;
@@ -241,7 +239,7 @@ void changeColor(uint32_t c, int16_t cct=-1)
     if (isCCT && cct >= 0) seg.setCCT(cct, i);
   }
   setValuesFromMainSeg(); //make transitions graceful
-  colorChanged = true;
+  stateChanged = true;
 }
 
 void decodeIR(uint32_t code)
@@ -257,7 +255,7 @@ void decodeIR(uint32_t code)
   lastRepeatableAction = ACTION_NONE;
   if (irEnabled == 8) { // any remote configurable with ir.json file
     decodeIRJson(code);
-    colorUpdated(CALL_MODE_BUTTON);
+    stateUpdated(CALL_MODE_BUTTON);
     return;
   }
   if (code > 0xFFFFFF) return; //invalid code
@@ -666,7 +664,7 @@ void decodeIRJson(uint32_t code)
         cmdStr += tmp;
       }
       fdo.clear();                                                 // clear JSON buffer (it is no longer needed)
-      handleSet(nullptr, cmdStr, false);                           // no colorUpdated() call here
+      handleSet(nullptr, cmdStr, false);                           // no stateUpdated() call here
     }
   } else {
     // command is JSON object (TODO: currently will not handle irApplyToAllSelected correctly)

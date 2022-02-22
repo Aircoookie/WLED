@@ -665,8 +665,8 @@ function populateSegments(s)
 			<td>Offset</td>
 		</tr>
 		<tr>
-			<td><input class="noslide segn" id="seg${i}s" type="number" min="0" max="${ledCount-1}" value="${inst.start}" oninput="updateLen(${i})"></td>
-			<td><input class="noslide segn" id="seg${i}e" type="number" min="0" max="${ledCount-(cfg.comp.seglen?inst.start:0)}" value="${inst.stop-(cfg.comp.seglen?inst.start:0)}" oninput="updateLen(${i})"></td>
+			<td><input class="noslide segn" id="seg${i}s" type="number" min="0" max="${ledCount-1}" value="${inst.start}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
+			<td><input class="noslide segn" id="seg${i}e" type="number" min="0" max="${ledCount-(cfg.comp.seglen?inst.start:0)}" value="${inst.stop-(cfg.comp.seglen?inst.start:0)}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
 			<td><input class="noslide segn" id="seg${i}of" type="number" value="${inst.of}" oninput="updateLen(${i})"></td>
 		</tr>
 		<tr>
@@ -675,8 +675,8 @@ function populateSegments(s)
 			<td>Apply</td>
 		</tr>
 		<tr>
-			<td><input class="noslide segn" id="seg${i}grp" type="number" min="1" max="255" value="${inst.grp}" oninput="updateLen(${i})"></td>
-			<td><input class="noslide segn" id="seg${i}spc" type="number" min="0" max="255" value="${inst.spc}" oninput="updateLen(${i})"></td>
+			<td><input class="noslide segn" id="seg${i}grp" type="number" min="1" max="255" value="${inst.grp}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
+			<td><input class="noslide segn" id="seg${i}spc" type="number" min="0" max="255" value="${inst.spc}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
 			<td><button class="btn btn-xs" onclick="setSeg(${i})"><i class="icons btn-icon" id="segc${i}">&#xe390;</i></button></td>
 		</tr>
 		</table>
@@ -1481,8 +1481,8 @@ function makeSeg()
 				<td width="38%">${cfg.comp.seglen?"LED count":"Stop LED"}</td>
 			</tr>
 			<tr>
-				<td><input class="noslide segn" id="seg${lu}s" type="number" min="0" max="${ledCount-1}" value="${ns}" oninput="updateLen(${lu})"></td>
-				<td><input class="noslide segn" id="seg${lu}e" type="number" min="0" max="${ct}" value="${ct}" oninput="updateLen(${lu})"></td>
+				<td><input class="noslide segn" id="seg${lu}s" type="number" min="0" max="${ledCount-1}" value="${ns}" oninput="updateLen(${lu})" onkeydown="segEnter(${lu})"></td>
+				<td><input class="noslide segn" id="seg${lu}e" type="number" min="0" max="${ct}" value="${ct}" oninput="updateLen(${lu})" onkeydown="segEnter(${lu})"></td>
 				<td><button class="btn btn-xs" onclick="setSeg(${lu});resetUtil();"><i class="icons bth-icon" id="segc${lu}">&#xe390;</i></button></td>
 			</tr>
 		</table>
@@ -2045,6 +2045,10 @@ function updatePSliders() {
 function hexEnter()
 {
 	if(event.keyCode == 13) fromHex();
+}
+
+function segEnter(s) {
+	if(event.keyCode == 13) setSeg(s);
 }
 
 function fromHex()
