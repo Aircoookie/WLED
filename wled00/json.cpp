@@ -120,7 +120,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         byte sz = colX.size();
         if (sz == 0) continue; //do nothing on empty array
 
-        byte cp = copyArray(colX, rgbw, 4);
+        copyArray(colX, rgbw, 4);
         colValid = true;
       }
 

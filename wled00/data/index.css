@@ -955,14 +955,15 @@ input[type=number]::-webkit-outer-spin-button {
 	border-radius: 10px;
 }
 
+.radio:hover input ~ .radiomark,
 .check:hover input ~ .checkmark {
 	background-color: var(--c-4);
 }
-
+/*
 .check input:checked ~ .checkmark {
 	background-color: var(--c-6);
 }
-
+*/
 .checkmark:after, .radiomark:after {
 	content: "";
 	position: absolute;
@@ -1062,11 +1063,11 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .selected { /* has to be after .lstI */
-	background: var(--c-5);
+	background: var(--c-4);
 }
 
 .lstI:hover, #pcont .selected:hover {
-    background: var(--c-4);
+    background: var(--c-5);
 }
 
 #pcont .expand, #pcont .expand:hover {

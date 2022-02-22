@@ -560,10 +560,6 @@ function populatePresets(fromls)
 			localStorage.setItem("wledP", JSON.stringify(pJson));
 		}
 		pmtLS = pmt;
-		//for (var a = 0; a < is.length; a++) {
-		//	let i = is[a];
-		//	if (expanded[i+100]) expand(i+100);
-		//}
 	} else { presetError(true); }
 	updatePA();
 	populateQL();
@@ -639,7 +635,7 @@ function populateSegments(s)
 		if (i == lowestUnused) lowestUnused = i+1;
 		if (i > lSeg) lSeg = i;
 
-		cn += `<div class="seg">
+		cn += `<div class="seg ${i==s.mainseg ? 'selected' : ''}" id="seg${i}wrp">
 	<label class="check schkl">
 		&nbsp;
 		<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>
