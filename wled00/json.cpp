@@ -135,7 +135,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         byte sz = colX.size();
         if (sz == 0) continue; //do nothing on empty array
 
-        byte cp = copyArray(colX, rgbw, 4);
+        copyArray(colX, rgbw, 4);
         colValid = true;
       }
 
@@ -327,9 +327,6 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       it++;
     }
   }
-
-  //refresh main segment (ensure it is selected, if there are any selected segments)
-  strip.setMainSegmentId(strip.getMainSegmentId());
 
   #ifndef WLED_DISABLE_CRONIXIE
     if (root["nx"].is<const char*>()) {

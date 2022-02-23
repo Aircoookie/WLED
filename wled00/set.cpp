@@ -604,13 +604,12 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   DEBUG_PRINTLN(req);
 
   //segment select (sets main segment)
-  byte prevMain = strip.getMainSegmentId();
   pos = req.indexOf(F("SM="));
   if (pos > 0) {
     strip.setMainSegmentId(getNumVal(&req, pos));
   }
-  byte selectedSeg = strip.getMainSegmentId();
-  if (selectedSeg != prevMain) setValuesFromMainSeg();
+
+  byte selectedSeg = strip.getFirstSelectedSegId();
 
   bool singleSegment = false;
 
@@ -631,7 +630,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     selseg.setOption(SEG_OPTION_SELECTED, t);
   }
 
-  // temporary values, write directly to segments, globals are updated by setValuesFromMainSeg()
+  // temporary values, write directly to segments, globals are updated by setValuesFromFirstSelectedSeg()
   uint32_t col0 = selseg.colors[0];
   uint32_t col1 = selseg.colors[1];
   byte colIn[4]    = {R(col0), G(col0), B(col0), W(col0)};
@@ -969,13 +968,13 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   // global col[], effectCurrent, ... are updated in stateChanged()
   if (!apply) return true; // when called by JSON API, do not call colorUpdated() here
-  
-  //internal call, does not send XML response
-  pos = req.indexOf(F("IN"));
-  if (pos < 1) XML_response(request);
 
   pos = req.indexOf(F("&NN")); //do not send UDP notifications this time
   stateUpdated((pos > 0) ? CALL_MODE_NO_NOTIFY : CALL_MODE_DIRECT_CHANGE);
+
+  // internal call, does not send XML response
+  pos = req.indexOf(F("IN"));
+  if (pos < 1) XML_response(request);
 
   return true;
 }

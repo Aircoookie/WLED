@@ -622,6 +622,7 @@ class WS2812FX {
       setMode(uint8_t segid, uint8_t m),
       setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       setColor(uint8_t slot, uint32_t c),
+      setCCT(uint16_t k),
       setBrightness(uint8_t b),
       setRange(uint16_t i, uint16_t i2, uint32_t col),
       setShowCallback(show_callback cb),
@@ -660,6 +661,7 @@ class WS2812FX {
       getPaletteCount(void),
       getMaxSegments(void),
       getActiveSegmentsNum(void),
+      getFirstSelectedSegId(void),
       getMainSegmentId(void),
       getLastActiveSegmentId(void),
       getTargetFps(void),
@@ -689,11 +691,11 @@ class WS2812FX {
       currentColor(uint32_t colorNew, uint8_t tNr),
       gamma32(uint32_t),
       getLastShow(void),
-      getPixelColor(uint16_t),
-      getColor(void);
+      getPixelColor(uint16_t);
 
     WS2812FX::Segment
       &getSegment(uint8_t n),
+      &getFirstSelectedSeg(void),
       &getMainSegment(void);
 
     WS2812FX::Segment*
