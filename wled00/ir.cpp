@@ -95,7 +95,7 @@ void changeEffect(uint8_t fx)
       strip.setMode(i, fx);
     }
   } else {
-    strip.setMode(strip.getMainSegmentId(), fx);
+    strip.setMode(strip.getFirstSelectedSegId(), fx);
   }
   effectCurrent = fx;
   stateChanged = true;
@@ -110,7 +110,7 @@ void changePalette(uint8_t pal)
       seg.palette = pal;
     }
   } else {
-    strip.getSegment(strip.getMainSegmentId()).palette = pal;
+    strip.getFirstSelectedSeg().palette = pal;
   }
   effectPalette = pal;
   stateChanged = true;
@@ -128,7 +128,7 @@ void changeEffectSpeed(int8_t amount)
         seg.speed = effectSpeed;
       }
     } else {
-      strip.getSegment(strip.getMainSegmentId()).speed = effectSpeed;
+      strip.getFirstSelectedSeg().speed = effectSpeed;
     }
   } else {                              // if Effect == "solid Color", change the hue of the primary color
     CRGB fastled_col;
@@ -151,7 +151,7 @@ void changeEffectSpeed(int8_t amount)
         seg.colors[0] = RGBW32(col[0], col[1], col[2], col[3]);
       }    
     } else {
-      strip.getSegment(strip.getMainSegmentId()).colors[0] = RGBW32(col[0], col[1], col[2], col[3]);
+      strip.getFirstSelectedSeg().colors[0] = RGBW32(col[0], col[1], col[2], col[3]);
     }
   }
   stateChanged = true;
@@ -173,7 +173,7 @@ void changeEffectIntensity(int8_t amount)
         seg.intensity = effectIntensity;
       }
     } else {
-      strip.getSegment(strip.getMainSegmentId()).speed = effectIntensity;
+      strip.getFirstSelectedSeg().speed = effectIntensity;
     }
   } else {                                            // if Effect == "solid Color", change the saturation of the primary color
     CRGB fastled_col;
@@ -194,7 +194,7 @@ void changeEffectIntensity(int8_t amount)
         seg.colors[0] = RGBW32(col[0], col[1], col[2], col[3]);
       }
     } else {
-      strip.getSegment(strip.getMainSegmentId()).colors[0] = RGBW32(col[0], col[1], col[2], col[3]);
+      strip.getFirstSelectedSeg().colors[0] = RGBW32(col[0], col[1], col[2], col[3]);
     }
   }
   stateChanged = true;
@@ -224,7 +224,7 @@ void changeColor(uint32_t c, int16_t cct=-1)
       if (isCCT && cct >= 0) seg.setCCT(cct, i);
     }
   } else {
-    byte i = strip.getMainSegmentId();
+    byte i = strip.getFirstSelectedSegId();
     WS2812FX::Segment& seg = strip.getSegment(i);
     byte capabilities = seg.getLightCapabilities();
     uint32_t mask = 0;
@@ -238,7 +238,7 @@ void changeColor(uint32_t c, int16_t cct=-1)
     } else if (c & mask) seg.setColor(0, c & mask, i); // only apply if not black
     if (isCCT && cct >= 0) seg.setCCT(cct, i);
   }
-  setValuesFromMainSeg(); //make transitions graceful
+  setValuesFromFirstSelectedSeg(); //make transitions graceful
   stateChanged = true;
 }
 

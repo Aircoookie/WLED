@@ -67,7 +67,7 @@ void XML_response(AsyncWebServerRequest *request, char* dest)
     oappend(SET_F(" (live)"));
   }
   oappend(SET_F("</ds><ss>"));
-  oappendi(strip.getMainSegmentId());
+  oappendi(strip.getFirstSelectedSegId());
   oappend(SET_F("</ss></vs>"));
   if (request != nullptr) request->send(200, "text/xml", obuf);
 }
