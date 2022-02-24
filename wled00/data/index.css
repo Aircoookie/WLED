@@ -591,8 +591,8 @@ input[type=range]:active + .sliderbubble {
 	border: 0px solid white;
 	border-radius: 25px;
 	transition-duration: 0.5s;
-	-webkit-backface-visibility: hidden;
-	-webkit-transform:translate3d(0,0,0);
+	/*-webkit-backface-visibility: hidden;
+	-webkit-transform:translate3d(0,0,0);*/
 }
 
 .btn-s {
