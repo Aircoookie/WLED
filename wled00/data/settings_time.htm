@@ -6,6 +6,7 @@
 	<title>Time Settings</title>
 	<script>
     var d=document;
+		var el=false;
 		var ms=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 		var cals = 'style="font-size:27px;margin-top:-6px;cursor:pointer"'; //hack as to not repeat CSS on all pages
 	function H()
@@ -130,6 +131,20 @@
 		td = tr.insertCell(3);
 		td.innerHTML = `<input name="MD${b}" type="number" class="s" min="0" max="250" value="${d}" required>`;
 	}
+	function getLoc() {
+		if (!el) {
+			window.addEventListener("message", (event) => {
+				if (event.origin !== "https://locate.wled.me") return;
+				if (event.data instanceof Object) {
+					d.Sf.LT.value = event.data.lat;
+					d.Sf.LN.value = event.data.lon;
+					updLoc();
+				}
+			}, false);
+			el = true;
+		}
+		window.open("https://locate.wled.me","_blank");
+	}
 	function updLoc(i) {
 		if (parseFloat(d.Sf.LT.value)<0) { d.Sf.LTR.value = "S"; d.Sf.LT.value = -1*parseFloat(d.Sf.LT.value); } else d.Sf.LTR.value = "N";
 		if (parseFloat(d.Sf.LN.value)<0) { d.Sf.LNR.value = "W"; d.Sf.LN.value = -1*parseFloat(d.Sf.LN.value); } else d.Sf.LNR.value = "E";
@@ -179,7 +194,9 @@
 		UTC offset: <input name="UO" type="number" min="-65500" max="65500" required> seconds (max. 18 hours)<br>
 		Current local time is <span class="times">unknown</span>.<br>
 		Latitude: <select name="LTR"><option value="N">N</option><option value="S">S</option></select><input name="LT" type="number" class="xl" min="0" max="66.6" step="0.01"><br>
-		Longitude: <select name="LNR"><option value="E">E</option><option value="W">W</option></select><input name="LN" type="number" class="xl" min="0" max="180" step="0.01">
+		Longitude: <select name="LNR"><option value="E">E</option><option value="W">W</option></select><input name="LN" type="number" class="xl" min="0" max="180" step="0.01"><br>
+		<button type="button" id="locbtn" onclick="getLoc()">Get location</button>
+		<div><i>(opens new tab, only works in browser)</i></div>
 		<div id="sun" class="times"></div>
 		<h3>Clock</h3>
 		Clock Overlay:
