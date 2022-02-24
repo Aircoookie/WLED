@@ -1728,7 +1728,8 @@ function tglSegn(s)
 function selSegEx(s)
 {
 	var obj = {"seg":[]};
-	for (let i=0; i<=lSeg; i++) obj.seg.push({"sel":(i==s)?true:false});
+	for (let i=0; i<=lSeg; i++) obj.seg.push({"id":i,"sel":(i==s)?true:false});
+	obj.mainseg = s;
 	requestJson(obj);
 }
 
