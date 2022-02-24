@@ -1070,6 +1070,9 @@ input[type=number]::-webkit-outer-spin-button {
     background: var(--c-5);
 }
 
+.selected input[type=number],
+.selected input[type=text],
+.selected button.btn,
 #pcont .expand, #pcont .expand:hover {
 	background-color: var(--c-2);
 }
@@ -1142,6 +1145,7 @@ input[type="text"].fnd:focus {
 	background-color: var(--c-4);
 }
 
+.selected button.btn:hover,
 input[type="text"].fnd:not(:placeholder-shown),
 input[type="text"].fnd:hover {
 	background-color: var(--c-3);

@@ -274,9 +274,8 @@ function showToast(text, error = false)
 	if (error) console.log(text);
 }
 
-function showErrorToast() {
-	// if we received a timeout force WS reconnect
-	setTimeout(makeWS,500);
+function showErrorToast()
+{
 	showToast('Connection to light failed!', true);
 }
 
@@ -1070,8 +1069,8 @@ function cmpP(a, b)
 }
 
 function makeWS() {
-	if (ws) { ws.close(); ws=null; }
-	if (lastinfo.ws < 0) return;
+	//if (ws) { ws.close(); ws=null; }
+	if (ws || lastinfo.ws < 0) return;
 	ws = new WebSocket('ws://'+(loc?locip:window.location.hostname)+'/ws');
 	ws.binaryType = "arraybuffer";
 	ws.onmessage = (e)=>{
@@ -1098,7 +1097,8 @@ function makeWS() {
 	};
 	ws.onclose = (e)=>{
 		gId('connind').style.backgroundColor = "var(--c-r)";
-		setTimeout(makeWS,500); //retry WS connection
+		setTimeout(makeWS,1500); //retry WS connection
+		ws = null;
 	}
 	ws.onopen = (e)=>{
 		//ws.send("{'v':true}"); //unnecessary (https://github.com/Aircoookie/WLED/blob/master/wled00/ws.cpp#L18)
@@ -1337,7 +1337,7 @@ function requestJson(command=null)
 {
 	gId('connind').style.backgroundColor = "var(--c-r)";
 	if (command && !reqsLegal) return; //stop post requests from chrome onchange event on page restore
-	if (!jsonTimeout) jsonTimeout = setTimeout(showErrorToast, 3000);
+	if (!jsonTimeout) jsonTimeout = setTimeout(()=>{if (ws) ws.close(); ws=null; showErrorToast()}, 3000);
 	var req = null;
 	var url = (loc?`http://${locip}`:'') + '/json/si';
 	var useWs = (ws && ws.readyState === WebSocket.OPEN);
@@ -1358,7 +1358,7 @@ function requestJson(command=null)
 		ws.send(req?req:'{"v":true}');
 		return;
 	} else if (command && command.ps) { //refresh UI if we don't use WS (async loading of presets)
-		setTimeout(requestJson,200);
+		setTimeout(requestJson,250);
 	}
 
 	fetch(url, {
@@ -1369,12 +1369,12 @@ function requestJson(command=null)
 		body: req
 	})
 	.then(res => {
+		clearTimeout(jsonTimeout);
+		jsonTimeout = null;
 		if (!res.ok) showErrorToast();
 		return res.json();
 	})
 	.then(json => {
-		clearTimeout(jsonTimeout);
-		jsonTimeout = null;
 		lastUpdate = new Date();
 		clearErrorToast();
 		gId('connind').style.backgroundColor = "var(--c-g)";
@@ -1387,7 +1387,7 @@ function requestJson(command=null)
 		}
 		var s = json.state ? json.state : json;
 		readState(s);
-		makeWS();
+		if (!(ws && ws.readyState === WebSocket.OPEN)) makeWS();
 		reqsLegal = true;
 	})
 	.catch((e)=>{
