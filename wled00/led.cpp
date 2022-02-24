@@ -3,7 +3,7 @@
 /*
  * LED methods
  */
-void setValuesFromMainSeg()
+void setValuesFromFirstSelectedSeg()
 {
   WS2812FX::Segment& seg = strip.getMainSegment();
   col[0] = R(seg.colors[0]);
@@ -21,23 +21,25 @@ void setValuesFromMainSeg()
 }
 
 
-//applies global legacy values (col, colSec, effectCurrent...)
+// applies global legacy values (col, colSec, effectCurrent...)
+// problem: if the first selected segment already has the value to be set, other selected segments are not updated
 void applyValuesToSelectedSegs()
 {
-  //copy of main segment to tell if value was updated
-  WS2812FX::Segment mainsegPrev = strip.getMainSegment();
+  // copy of first selected segment to tell if value was updated
+  uint8_t firstSel = strip.getFirstSelectedSegId();
+  WS2812FX::Segment selsegPrev = strip.getSegment(firstSel);
   for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
     WS2812FX::Segment& seg = strip.getSegment(i);
-    if (i != strip.getMainSegmentId() && (!seg.isActive() || !seg.isSelected())) continue;
+    if (i != firstSel && (!seg.isActive() || !seg.isSelected())) continue;
 
-    if (effectSpeed     != mainsegPrev.speed)     {seg.speed     = effectSpeed;     stateChanged = true;}
-    if (effectIntensity != mainsegPrev.intensity) {seg.intensity = effectIntensity; stateChanged = true;}
-    if (effectPalette   != mainsegPrev.palette)   {seg.palette   = effectPalette;   stateChanged = true;}
-    if (effectCurrent   != mainsegPrev.mode)      {strip.setMode(i, effectCurrent); stateChanged = true;}
+    if (effectSpeed     != selsegPrev.speed)     {seg.speed     = effectSpeed;     stateChanged = true;}
+    if (effectIntensity != selsegPrev.intensity) {seg.intensity = effectIntensity; stateChanged = true;}
+    if (effectPalette   != selsegPrev.palette)   {seg.palette   = effectPalette;   stateChanged = true;}
+    if (effectCurrent   != selsegPrev.mode)      {strip.setMode(i, effectCurrent); stateChanged = true;}
     uint32_t col0 = RGBW32(   col[0],    col[1],    col[2],    col[3]);
     uint32_t col1 = RGBW32(colSec[0], colSec[1], colSec[2], colSec[3]);
-    if (col0 != mainsegPrev.colors[0])            {seg.setColor(0, col0, i);        stateChanged = true;}
-    if (col1 != mainsegPrev.colors[1])            {seg.setColor(1, col1, i);        stateChanged = true;}
+    if (col0 != selsegPrev.colors[0])            {seg.setColor(0, col0, i);        stateChanged = true;}
+    if (col1 != selsegPrev.colors[1])            {seg.setColor(1, col1, i);        stateChanged = true;}
   }
 }
 
@@ -92,7 +94,7 @@ void applyFinalBri() {
 void stateUpdated(byte callMode) {
   //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (No notification)
   //                     6: fx changed 7: hue 8: preset cycle 9: blynk 10: alexa 11: ws send only 12: button preset
-  setValuesFromMainSeg();
+  setValuesFromFirstSelectedSeg();
 
   if (bri != briOld || stateChanged) {
     if (realtimeTimeout == UINT32_MAX) realtimeTimeout = 0;
@@ -231,7 +233,7 @@ void handleNightlight()
         colNlT[1] = effectSpeed;
         colNlT[2] = effectPalette;
 
-        strip.setMode(strip.getMainSegmentId(), FX_MODE_STATIC); //make sure seg runtime is reset if left in sunrise mode
+        strip.setMode(strip.getFirstSelectedSegId(), FX_MODE_STATIC); // make sure seg runtime is reset if it was in sunrise mode
         effectCurrent = FX_MODE_SUNRISE;
         effectSpeed = nightlightDelayMins;
         effectPalette = 0;

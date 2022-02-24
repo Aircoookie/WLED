@@ -211,8 +211,10 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   } else if (!elem["frz"] && iarr.isNull()) { //return to regular effect
     seg.setOption(SEG_OPTION_FREEZE, false);
   }
-  //send UDP if not in preset and something changed that is not just selection
-  if (!presetId && (seg.differs(prev) & 0x7F)) stateChanged = true;
+  // send UDP if not in preset and something changed that is not just selection
+  //if (!presetId && (seg.differs(prev) & 0x7F)) stateChanged = true;
+  // send UDP if something changed that is not just selection
+  if (seg.differs(prev) & 0x7F) stateChanged = true;
   return;
 }
 
@@ -314,9 +316,6 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       it++;
     }
   }
-
-  //refresh main segment (ensure it is selected, if there are any selected segments)
-  strip.setMainSegmentId(strip.getMainSegmentId());
 
   #ifndef WLED_DISABLE_CRONIXIE
     if (root["nx"].is<const char*>()) {

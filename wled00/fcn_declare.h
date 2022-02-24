@@ -142,7 +142,7 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient = 0);
 #endif
 
 //led.cpp
-void setValuesFromMainSeg();
+void setValuesFromFirstSelectedSeg();
 void resetTimebase();
 void toggleOnOff();
 void applyBri();

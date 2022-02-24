@@ -292,28 +292,19 @@ void handleNotifications()
 
     //apply colors from notification to main segment, only if not syncing full segments
     if ((receiveNotificationColor || !someSel) && (version < 11 || !receiveSegmentOptions)) {
-      col[0] = udpIn[3];
-      col[1] = udpIn[4];
-      col[2] = udpIn[5];
-      if (version > 0) //sending module's white val is intended
-      {
-        col[3] = udpIn[10];
-        if (version > 1) {
-          colSec[0] = udpIn[12];
-          colSec[1] = udpIn[13];
-          colSec[2] = udpIn[14];
-          colSec[3] = udpIn[15];
-        }
-        if (version > 6) {
-          strip.setColor(2, RGBW32(udpIn[20], udpIn[21], udpIn[22], udpIn[23])); //tertiary color
-          if (version > 9 && version < 200 && udpIn[37] < 255) { //valid CCT/Kelvin value
-            uint8_t cct = udpIn[38];
-            if (udpIn[37] > 0) { //Kelvin
-              cct = (((udpIn[37] << 8) + udpIn[38]) - 1900) >> 5; 
-            }
-            uint8_t segid = strip.getMainSegmentId();
-            strip.getSegment(segid).setCCT(cct, segid);
+      // primary color, only apply white if intented (version > 0)
+      strip.setColor(0, RGBW32(udpIn[3], udpIn[4], udpIn[5], (version > 0) ? udpIn[10] : 0));
+      if (version > 1) {
+        strip.setColor(1, RGBW32(udpIn[12], udpIn[13], udpIn[14], udpIn[15])); // secondary color
+      }
+      if (version > 6) {
+        strip.setColor(2, RGBW32(udpIn[20], udpIn[21], udpIn[22], udpIn[23])); // tertiary color
+        if (version > 9 && version < 200 && udpIn[37] < 255) { // valid CCT/Kelvin value
+          uint8_t cct = udpIn[38];
+          if (udpIn[37] > 0) { //Kelvin
+            cct = (((udpIn[37] << 8) + udpIn[38]) - 1900) >> 5; 
           }
+          strip.setCCT(cct);
         }
       }
     }
@@ -362,11 +353,17 @@ void handleNotifications()
         stateChanged = true;
       }
       
-      if (applyEffects && (version < 11 || !receiveSegmentOptions)) { //simple effect sync, applies to all selected
-        if (udpIn[8] < strip.getModeCount()) effectCurrent = udpIn[8];
-        effectSpeed   = udpIn[9];
-        if (version > 2) effectIntensity = udpIn[16];
-        if (version > 4 && udpIn[19] < strip.getPaletteCount()) effectPalette = udpIn[19];
+      // simple effect sync, applies to all selected segments
+      if (applyEffects && (version < 11 || !receiveSegmentOptions)) {
+        for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
+          WS2812FX::Segment& seg = strip.getSegment(i);
+          if (!seg.isActive() || !seg.isSelected()) continue;
+          if (udpIn[8] < strip.getModeCount()) strip.setMode(i, udpIn[8]);
+          seg.speed = udpIn[9];
+          if (version > 2) seg.intensity = udpIn[16];
+          if (version > 4 && udpIn[19] < strip.getPaletteCount()) seg.palette = udpIn[19];
+        }
+        stateChanged = true;
       }
 
       if (applyEffects && version > 5) {
@@ -411,7 +408,7 @@ void handleNotifications()
     if (nightlightActive) nightlightDelayMins = udpIn[7];
     
     if (receiveNotificationBrightness || !someSel) bri = udpIn[2];
-    colorUpdated(CALL_MODE_NOTIFICATION);
+    stateUpdated(CALL_MODE_NOTIFICATION);
     return;
   }
 
