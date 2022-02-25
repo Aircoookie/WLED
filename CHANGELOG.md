@@ -2,6 +2,12 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2202222
+
+-   Version bump to 0.13.0-b7 "Toki"
+-   Fixed HTTP API commands not applying to all selected segments in some conditions
+-   Blynk support is not compiled in by default on ESP32 builds
+
 #### Build 2202210
 
 -   Fixed HTTP API commands not applying to all selected segments if called from JSON

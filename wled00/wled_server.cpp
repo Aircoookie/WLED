@@ -196,9 +196,9 @@ void initServer()
     server.on("/update", HTTP_POST, [](AsyncWebServerRequest *request){
       if (Update.hasError())
       {
-        serveMessage(request, 500, F("Failed updating firmware!"), F("Please check your file and retry!"), 254); return;
+        serveMessage(request, 500, F("Update failed!"), F("Please check your file and retry!"), 254); return;
       }
-      serveMessage(request, 200, F("Successfully updated firmware!"), F("Rebooting..."), 131); 
+      serveMessage(request, 200, F("Update successful!"), F("Rebooting..."), 131); 
       doReboot = true;
     },[](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final){
       if(!index){
@@ -220,7 +220,7 @@ void initServer()
     
     #else
     server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
-      serveMessage(request, 501, "Not implemented", F("OTA updates are disabled in this build."), 254);
+      serveMessage(request, 501, "Not implemented", F("OTA updating is disabled in this build."), 254);
     });
     #endif
   } else

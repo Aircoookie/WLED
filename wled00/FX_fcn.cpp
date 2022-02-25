@@ -409,6 +409,15 @@ void WS2812FX::setColor(uint8_t slot, uint32_t c) {
   }
 }
 
+void WS2812FX::setCCT(uint16_t k) {
+  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
+  {
+    if (_segments[i].isActive() && _segments[i].isSelected()) {
+      _segments[i].setCCT(k, i);
+    }
+  }
+}
+
 void WS2812FX::setBrightness(uint8_t b) {
   if (gammaCorrectBri) b = gamma8(b);
   if (_brightness == b) return;
@@ -431,18 +440,19 @@ uint8_t WS2812FX::getMaxSegments(void) {
   return MAX_NUM_SEGMENTS;
 }
 
-void WS2812FX::setMainSegmentId(uint8_t n) {
-  if (n >= MAX_NUM_SEGMENTS) return;
-  if (_segments[n].isActive() && _segments[n].isSelected()) {
-    _mainSegment = n; return;
-  }
+uint8_t WS2812FX::getFirstSelectedSegId(void)
+{
   for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
   {
-    if (_segments[i].isActive() && _segments[i].isSelected()) {
-      _mainSegment = i; return;
-    }
+    if (_segments[i].isActive() && _segments[i].isSelected()) return i;
   }
-  //if none selected, use supplied n if active, or first active
+  // if none selected, use the main segment
+  return getMainSegmentId();
+}
+
+void WS2812FX::setMainSegmentId(uint8_t n) {
+  if (n >= MAX_NUM_SEGMENTS) return;
+  //use supplied n if active, or first active
   if (_segments[n].isActive()) {
     _mainSegment = n; return;
   }
@@ -476,10 +486,6 @@ uint8_t WS2812FX::getActiveSegmentsNum(void) {
   return c;
 }
 
-uint32_t WS2812FX::getColor(void) {
-  return _segments[getMainSegmentId()].colors[0];
-}
-
 uint32_t WS2812FX::getPixelColor(uint16_t i)
 {
   i = realPixelIndex(i);
@@ -499,6 +505,10 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
 WS2812FX::Segment& WS2812FX::getSegment(uint8_t id) {
   if (id >= MAX_NUM_SEGMENTS) return _segments[0];
   return _segments[id];
+}
+
+WS2812FX::Segment& WS2812FX::getFirstSelectedSeg(void) {
+  return _segments[getFirstSelectedSegId()];
 }
 
 WS2812FX::Segment& WS2812FX::getMainSegment(void) {
@@ -629,7 +639,7 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
       delete[] seg.name;
       seg.name = nullptr;
     }
-    //if main segment is deleted, set first selected/active as main segment
+    // if main segment is deleted, set first active as main segment
     if (n == _mainSegment) setMainSegmentId(0);
     return;
   }
