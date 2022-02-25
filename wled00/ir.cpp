@@ -94,10 +94,11 @@ void changeEffect(uint8_t fx)
       if (!seg.isActive() || !seg.isSelected()) continue;
       strip.setMode(i, fx);
     }
+    setValuesFromFirstSelectedSeg();
   } else {
-    strip.setMode(strip.getFirstSelectedSegId(), fx);
+    strip.setMode(strip.getMainSegmentId(), fx);
+    setValuesFromMainSeg();
   }
-  effectCurrent = fx;
   stateChanged = true;
 }
 
@@ -109,10 +110,11 @@ void changePalette(uint8_t pal)
       if (!seg.isActive() || !seg.isSelected()) continue;
       seg.palette = pal;
     }
+    setValuesFromFirstSelectedSeg();
   } else {
-    strip.getFirstSelectedSeg().palette = pal;
+    strip.getMainSegment().palette = pal;
+    setValuesFromMainSeg();
   }
-  effectPalette = pal;
   stateChanged = true;
 }
 
@@ -127,31 +129,33 @@ void changeEffectSpeed(int8_t amount)
         if (!seg.isActive() || !seg.isSelected()) continue;
         seg.speed = effectSpeed;
       }
+      setValuesFromFirstSelectedSeg();
     } else {
-      strip.getFirstSelectedSeg().speed = effectSpeed;
+      strip.getMainSegment().speed = effectSpeed;
+      setValuesFromMainSeg();
     }
-  } else {                              // if Effect == "solid Color", change the hue of the primary color
+  } else { // if Effect == "solid Color", change the hue of the primary color
+    WS2812FX::Segment& sseg = irApplyToAllSelected ? strip.getFirstSelectedSeg() : strip.getMainSegment();
     CRGB fastled_col;
-    fastled_col.red =   col[0];
-    fastled_col.green = col[1];
-    fastled_col.blue =  col[2];
+    fastled_col.red   = R(sseg.colors[0]);
+    fastled_col.green = G(sseg.colors[0]);
+    fastled_col.blue  = B(sseg.colors[0]);
     CHSV prim_hsv = rgb2hsv_approximate(fastled_col);
-    int16_t new_val = (int16_t) prim_hsv.h + amount;
+    int16_t new_val = (int16_t)prim_hsv.h + amount;
     if (new_val > 255) new_val -= 255;  // roll-over if  bigger than 255
     if (new_val < 0) new_val += 255;    // roll-over if smaller than 0
     prim_hsv.h = (byte)new_val;
     hsv2rgb_rainbow(prim_hsv, fastled_col);
-    col[0] = fastled_col.red; 
-    col[1] = fastled_col.green; 
-    col[2] = fastled_col.blue;
     if (irApplyToAllSelected) {
       for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
         WS2812FX::Segment& seg = strip.getSegment(i);
         if (!seg.isActive() || !seg.isSelected()) continue;
-        seg.colors[0] = RGBW32(col[0], col[1], col[2], col[3]);
-      }    
+        seg.colors[0] = RGBW32(fastled_col.red, fastled_col.green, fastled_col.blue, W(sseg.colors[0]));
+      }
+      setValuesFromFirstSelectedSeg();
     } else {
-      strip.getFirstSelectedSeg().colors[0] = RGBW32(col[0], col[1], col[2], col[3]);
+      strip.getMainSegment().colors[0] = RGBW32(fastled_col.red, fastled_col.green, fastled_col.blue, W(sseg.colors[0]));
+      setValuesFromMainSeg();
     }
   }
   stateChanged = true;
@@ -172,29 +176,31 @@ void changeEffectIntensity(int8_t amount)
         if (!seg.isActive() || !seg.isSelected()) continue;
         seg.intensity = effectIntensity;
       }
+      setValuesFromFirstSelectedSeg();
     } else {
-      strip.getFirstSelectedSeg().speed = effectIntensity;
+      strip.getMainSegment().speed = effectIntensity;
+      setValuesFromMainSeg();
     }
-  } else {                                            // if Effect == "solid Color", change the saturation of the primary color
+  } else { // if Effect == "solid Color", change the saturation of the primary color
+    WS2812FX::Segment& sseg = irApplyToAllSelected ? strip.getFirstSelectedSeg() : strip.getMainSegment();
     CRGB fastled_col;
-    fastled_col.red =   col[0];
-    fastled_col.green = col[1];
-    fastled_col.blue =  col[2];
+    fastled_col.red   = R(sseg.colors[0]);
+    fastled_col.green = G(sseg.colors[0]);
+    fastled_col.blue  = B(sseg.colors[0]);
     CHSV prim_hsv = rgb2hsv_approximate(fastled_col);
     int16_t new_val = (int16_t) prim_hsv.s + amount;
     prim_hsv.s = (byte)constrain(new_val,0,255);  // constrain to 0-255
     hsv2rgb_rainbow(prim_hsv, fastled_col);
-    col[0] = fastled_col.red; 
-    col[1] = fastled_col.green; 
-    col[2] = fastled_col.blue;
     if (irApplyToAllSelected) {
       for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
         WS2812FX::Segment& seg = strip.getSegment(i);
         if (!seg.isActive() || !seg.isSelected()) continue;
-        seg.colors[0] = RGBW32(col[0], col[1], col[2], col[3]);
+        seg.colors[0] = RGBW32(fastled_col.red, fastled_col.green, fastled_col.blue, W(sseg.colors[0]));
       }
+      setValuesFromFirstSelectedSeg();
     } else {
-      strip.getFirstSelectedSeg().colors[0] = RGBW32(col[0], col[1], col[2], col[3]);
+      strip.getMainSegment().colors[0] = RGBW32(fastled_col.red, fastled_col.green, fastled_col.blue, W(sseg.colors[0]));
+      setValuesFromMainSeg();
     }
   }
   stateChanged = true;
@@ -223,8 +229,9 @@ void changeColor(uint32_t c, int16_t cct=-1)
       } else if (c & mask) seg.setColor(0, c & mask, i); // only apply if not black
       if (isCCT && cct >= 0) seg.setCCT(cct, i);
     }
+    setValuesFromFirstSelectedSeg();
   } else {
-    byte i = strip.getFirstSelectedSegId();
+    byte i = strip.getMainSegmentId();
     WS2812FX::Segment& seg = strip.getSegment(i);
     byte capabilities = seg.getLightCapabilities();
     uint32_t mask = 0;
@@ -237,8 +244,8 @@ void changeColor(uint32_t c, int16_t cct=-1)
       seg.setColor(0, c | 0xFFFFFF, i); // for accurate mode we fake white
     } else if (c & mask) seg.setColor(0, c & mask, i); // only apply if not black
     if (isCCT && cct >= 0) seg.setCCT(cct, i);
+    setValuesFromMainSeg();
   }
-  setValuesFromFirstSelectedSeg(); //make transitions graceful
   stateChanged = true;
 }
 
@@ -345,30 +352,30 @@ void decodeIR24(uint32_t code)
 void decodeIR24OLD(uint32_t code)
 {
   switch (code) {
-    case IR24_OLD_BRIGHTER  : incBrightness();                                         break;
-    case IR24_OLD_DARKER    : decBrightness();                                         break;
-    case IR24_OLD_OFF       : if (bri > 0) briLast = bri; bri = 0;                     break;
-    case IR24_OLD_ON        : bri = briLast;                                           break;
-    case IR24_OLD_RED       : changeColor(COLOR_RED);                                  break;
-    case IR24_OLD_REDDISH   : changeColor(COLOR_REDDISH);                              break;
-    case IR24_OLD_ORANGE    : changeColor(COLOR_ORANGE);                               break;
-    case IR24_OLD_YELLOWISH : changeColor(COLOR_YELLOWISH);                            break;
-    case IR24_OLD_YELLOW    : changeColor(COLOR_YELLOW);                               break;
-    case IR24_OLD_GREEN     : changeColor(COLOR_GREEN);                                break;
-    case IR24_OLD_GREENISH  : changeColor(COLOR_GREENISH);                             break;
-    case IR24_OLD_TURQUOISE : changeColor(COLOR_TURQUOISE);                            break;
-    case IR24_OLD_CYAN      : changeColor(COLOR_CYAN);                                 break;
-    case IR24_OLD_AQUA      : changeColor(COLOR_AQUA);                                 break;
-    case IR24_OLD_BLUE      : changeColor(COLOR_BLUE);                                 break;
-    case IR24_OLD_DEEPBLUE  : changeColor(COLOR_DEEPBLUE);                             break;
-    case IR24_OLD_PURPLE    : changeColor(COLOR_PURPLE);                               break;
-    case IR24_OLD_MAGENTA   : changeColor(COLOR_MAGENTA);                              break;
-    case IR24_OLD_PINK      : changeColor(COLOR_PINK);                                 break;
+    case IR24_OLD_BRIGHTER  : incBrightness();                                        break;
+    case IR24_OLD_DARKER    : decBrightness();                                        break;
+    case IR24_OLD_OFF       : if (bri > 0) briLast = bri; bri = 0;                    break;
+    case IR24_OLD_ON        : bri = briLast;                                          break;
+    case IR24_OLD_RED       : changeColor(COLOR_RED);                                 break;
+    case IR24_OLD_REDDISH   : changeColor(COLOR_REDDISH);                             break;
+    case IR24_OLD_ORANGE    : changeColor(COLOR_ORANGE);                              break;
+    case IR24_OLD_YELLOWISH : changeColor(COLOR_YELLOWISH);                           break;
+    case IR24_OLD_YELLOW    : changeColor(COLOR_YELLOW);                              break;
+    case IR24_OLD_GREEN     : changeColor(COLOR_GREEN);                               break;
+    case IR24_OLD_GREENISH  : changeColor(COLOR_GREENISH);                            break;
+    case IR24_OLD_TURQUOISE : changeColor(COLOR_TURQUOISE);                           break;
+    case IR24_OLD_CYAN      : changeColor(COLOR_CYAN);                                break;
+    case IR24_OLD_AQUA      : changeColor(COLOR_AQUA);                                break;
+    case IR24_OLD_BLUE      : changeColor(COLOR_BLUE);                                break;
+    case IR24_OLD_DEEPBLUE  : changeColor(COLOR_DEEPBLUE);                            break;
+    case IR24_OLD_PURPLE    : changeColor(COLOR_PURPLE);                              break;
+    case IR24_OLD_MAGENTA   : changeColor(COLOR_MAGENTA);                             break;
+    case IR24_OLD_PINK      : changeColor(COLOR_PINK);                                break;
     case IR24_OLD_WHITE     : changeColor(COLOR_WHITE); changeEffect(FX_MODE_STATIC); break;
-    case IR24_OLD_FLASH     : presetFallback(1, FX_MODE_COLORTWINKLE, 0);              break;
-    case IR24_OLD_STROBE    : presetFallback(2, FX_MODE_RAINBOW_CYCLE, 0);             break;
-    case IR24_OLD_FADE      : presetFallback(3, FX_MODE_BREATH, 0);                    break;
-    case IR24_OLD_SMOOTH    : presetFallback(4, FX_MODE_RAINBOW, 0);                   break;
+    case IR24_OLD_FLASH     : presetFallback(1, FX_MODE_COLORTWINKLE, 0);             break;
+    case IR24_OLD_STROBE    : presetFallback(2, FX_MODE_RAINBOW_CYCLE, 0);            break;
+    case IR24_OLD_FADE      : presetFallback(3, FX_MODE_BREATH, 0);                   break;
+    case IR24_OLD_SMOOTH    : presetFallback(4, FX_MODE_RAINBOW, 0);                  break;
     default: return;
   }
   lastValidCode = code;

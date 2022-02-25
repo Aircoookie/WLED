@@ -3,9 +3,12 @@
 /*
  * LED methods
  */
-void setValuesFromFirstSelectedSeg()
+
+void setValuesFromMainSeg()          { setValuesFromSegment(strip.getMainSegmentId()); }
+void setValuesFromFirstSelectedSeg() { setValuesFromSegment(strip.getFirstSelectedSegId()); }
+void setValuesFromSegment(uint8_t s)
 {
-  WS2812FX::Segment& seg = strip.getFirstSelectedSeg();
+  WS2812FX::Segment& seg = strip.getSegment(s);
   col[0] = R(seg.colors[0]);
   col[1] = G(seg.colors[0]);
   col[2] = B(seg.colors[0]);
