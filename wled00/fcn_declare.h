@@ -108,11 +108,9 @@ void sendImprovInfoResponse();
 void sendImprovRPCResponse(uint8_t commandId);
 
 //ir.cpp
-bool decodeIRCustom(uint32_t code);
+//bool decodeIRCustom(uint32_t code);
 void applyRepeatActions();
-void relativeChange(byte* property, int8_t amount, byte lowerBoundary = 0, byte higherBoundary = 0xFF);
-void changeEffectSpeed(int8_t amount);
-void changeEffectIntensity(int8_t amount);
+byte relativeChange(byte property, int8_t amount, byte lowerBoundary = 0, byte higherBoundary = 0xFF);
 void decodeIR(uint32_t code);
 void decodeIR24(uint32_t code);
 void decodeIR24OLD(uint32_t code);
@@ -144,6 +142,8 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient = 0);
 #endif
 
 //led.cpp
+void setValuesFromSegment(uint8_t s);
+void setValuesFromMainSeg();
 void setValuesFromFirstSelectedSeg();
 void resetTimebase();
 void toggleOnOff();

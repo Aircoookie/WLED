@@ -196,6 +196,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     }
   }
   CJSON(irEnabled, hw["ir"]["type"]);
+  CJSON(irApplyToAllSelected, hw["ir"]["sel"]);
 
   JsonObject relay = hw[F("relay")];
   int hw_relay_pin = relay["pin"] | -2;
@@ -399,15 +400,15 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       if (act) timerWeekday[it]++;
     }
     if (it<8) {
-			JsonObject start = timer["start"];
-			byte startm = start["mon"];
-			if (startm) timerMonth[it] = (startm << 4);
+      JsonObject start = timer["start"];
+      byte startm = start["mon"];
+      if (startm) timerMonth[it] = (startm << 4);
       CJSON(timerDay[it], start["day"]);
-			JsonObject end = timer["end"];
-			CJSON(timerDayEnd[it], end["day"]);
-			byte endm = end["mon"];
-			if (startm) timerMonth[it] += endm & 0x0F;
-			if (!(timerMonth[it] & 0x0F)) timerMonth[it] += 12; //default end month to 12
+      JsonObject end = timer["end"];
+      CJSON(timerDayEnd[it], end["day"]);
+      byte endm = end["mon"];
+      if (startm) timerMonth[it] += endm & 0x0F;
+      if (!(timerMonth[it] & 0x0F)) timerMonth[it] += 12; //default end month to 12
     }
     it++;
   }
@@ -630,6 +631,7 @@ void serializeConfig() {
   JsonObject hw_ir = hw.createNestedObject("ir");
   hw_ir["pin"] = irPin;
   hw_ir["type"] = irEnabled;  // the byte 'irEnabled' does contain the IR-Remote Type ( 0=disabled )
+  hw_ir["sel"] = irApplyToAllSelected;
 
   JsonObject hw_relay = hw.createNestedObject(F("relay"));
   hw_relay["pin"] = rlyPin;
@@ -791,11 +793,11 @@ void serializeConfig() {
     timers_ins0["macro"] = timerMacro[i];
     timers_ins0[F("dow")] = timerWeekday[i] >> 1;
     if (i<8) {
-			JsonObject start = timers_ins0.createNestedObject("start");
+      JsonObject start = timers_ins0.createNestedObject("start");
       start["mon"] = (timerMonth[i] >> 4) & 0xF;
       start["day"] = timerDay[i];
-			JsonObject end = timers_ins0.createNestedObject("end");
-			end["mon"] = timerMonth[i] & 0xF;
+      JsonObject end = timers_ins0.createNestedObject("end");
+      end["mon"] = timerMonth[i] & 0xF;
       end["day"] = timerDayEnd[i];
     }
   }

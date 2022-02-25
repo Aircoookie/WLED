@@ -3,15 +3,24 @@
 /*
  * LED methods
  */
-void setValuesFromFirstSelectedSeg()
+
+void setValuesFromMainSeg()          { setValuesFromSegment(strip.getMainSegmentId()); }
+void setValuesFromFirstSelectedSeg() { setValuesFromSegment(strip.getFirstSelectedSegId()); }
+void setValuesFromSegment(uint8_t s)
 {
-  WS2812FX::Segment& seg = strip.getFirstSelectedSeg();
-  colorFromUint32(seg.colors[0]);
-  colorFromUint32(seg.colors[1], true);
-  effectCurrent = seg.mode;
-  effectSpeed = seg.speed;
+  WS2812FX::Segment& seg = strip.getSegment(s);
+  col[0] = R(seg.colors[0]);
+  col[1] = G(seg.colors[0]);
+  col[2] = B(seg.colors[0]);
+  col[3] = W(seg.colors[0]);
+  colSec[0] = R(seg.colors[1]);
+  colSec[1] = G(seg.colors[1]);
+  colSec[2] = B(seg.colors[1]);
+  colSec[3] = W(seg.colors[1]);
+  effectCurrent   = seg.mode;
+  effectSpeed     = seg.speed;
   effectIntensity = seg.intensity;
-  effectPalette = seg.palette;
+  effectPalette   = seg.palette;
 }
 
 
@@ -26,20 +35,14 @@ void applyValuesToSelectedSegs()
     WS2812FX::Segment& seg = strip.getSegment(i);
     if (i != firstSel && (!seg.isActive() || !seg.isSelected())) continue;
 
-    if (effectSpeed != selsegPrev.speed) {
-      seg.speed = effectSpeed; stateChanged = true;}
-    if (effectIntensity != selsegPrev.intensity) {
-      seg.intensity = effectIntensity; stateChanged = true;}
-    if (effectPalette != selsegPrev.palette) {
-      seg.palette = effectPalette; stateChanged = true;}
-    if (effectCurrent != selsegPrev.mode) {
-      strip.setMode(i, effectCurrent); stateChanged = true;}
-    uint32_t col0 = RGBW32(col[0],col[1],col[2],col[3]);
+    if (effectSpeed     != selsegPrev.speed)     {seg.speed     = effectSpeed;     stateChanged = true;}
+    if (effectIntensity != selsegPrev.intensity) {seg.intensity = effectIntensity; stateChanged = true;}
+    if (effectPalette   != selsegPrev.palette)   {seg.palette   = effectPalette;   stateChanged = true;}
+    if (effectCurrent   != selsegPrev.mode)      {strip.setMode(i, effectCurrent); stateChanged = true;}
+    uint32_t col0 = RGBW32(   col[0],    col[1],    col[2],    col[3]);
     uint32_t col1 = RGBW32(colSec[0], colSec[1], colSec[2], colSec[3]);
-    if (col0 != selsegPrev.colors[0]) {
-      seg.setColor(0, col0, i); stateChanged = true;}
-    if (col1 != selsegPrev.colors[1]) {
-      seg.setColor(1, col1, i); stateChanged = true;}
+    if (col0 != selsegPrev.colors[0])            {seg.setColor(0, col0, i);        stateChanged = true;}
+    if (col1 != selsegPrev.colors[1])            {seg.setColor(1, col1, i);        stateChanged = true;}
   }
 }
 
