@@ -145,6 +145,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       irPin = -1;
     }
     irEnabled = request->arg(F("IT")).toInt();
+    irApplyToAllSelected = !request->hasArg(F("MSO"));
 
     int hw_rly_pin = request->arg(F("RL")).toInt();
     if (pinManager.allocatePin(hw_rly_pin,true, PinOwner::Relay)) {
@@ -795,7 +796,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (pos > 0) {
     byte temp;
     for (uint8_t i=0; i<4; i++) {
-      temp      = colIn[i];
+      temp        = colIn[i];
       colIn[i]    = colInSec[i];
       colInSec[i] = temp;
     }
@@ -829,13 +830,14 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   
   stateChanged |= (fxModeChanged || speedChanged || intensityChanged || paletteChanged);
 
+  // apply to main and all selected segments to prevent #1618.
   for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
     WS2812FX::Segment& seg = strip.getSegment(i);
-    if (i != selectedSeg && (singleSegment || !seg.isActive() || !seg.isSelected())) continue;
+    if (i != selectedSeg && (singleSegment || !seg.isActive() || !seg.isSelected())) continue; // skip non main segments if not applying to all
     if (fxModeChanged)    strip.setMode(i, effectIn);
-    if (speedChanged)     seg.speed = speedIn;
+    if (speedChanged)     seg.speed     = speedIn;
     if (intensityChanged) seg.intensity = intensityIn;
-    if (paletteChanged)   seg.palette = paletteIn;
+    if (paletteChanged)   seg.palette   = paletteIn;
   }
 
   //set advanced overlay
