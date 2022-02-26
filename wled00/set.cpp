@@ -830,7 +830,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   
   stateChanged |= (fxModeChanged || speedChanged || intensityChanged || paletteChanged);
 
-  //apply to main and all selected segments to prevent #1618.
+  // apply to main and all selected segments to prevent #1618.
   for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
     WS2812FX::Segment& seg = strip.getSegment(i);
     if (i != selectedSeg && (singleSegment || !seg.isActive() || !seg.isSelected())) continue; // skip non main segments if not applying to all
@@ -839,7 +839,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     if (intensityChanged) seg.intensity = intensityIn;
     if (paletteChanged)   seg.palette   = paletteIn;
   }
-  setValuesFromFirstSelectedSeg(); // will fill col[] and cloSec[] as well as effectCurrent, ...
 
   //set advanced overlay
   pos = req.indexOf(F("OL="));
