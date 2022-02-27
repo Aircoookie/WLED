@@ -776,7 +776,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     if (intensityChanged) seg.intensity = intensityIn;
     if (paletteChanged)   seg.palette   = paletteIn;
   }
-  setValuesFromFirstSelectedSeg(); // will fill col[] and cloSec[] as well as effectCurrent, ...
 
   //set advanced overlay
   pos = req.indexOf(F("OL="));

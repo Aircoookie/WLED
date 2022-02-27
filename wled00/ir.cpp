@@ -249,17 +249,27 @@ void changeColor(uint32_t c, int16_t cct=-1)
   stateChanged = true;
 }
 
+void changeWhite(int8_t amount, int16_t cct=-1)
+{
+  WS2812FX::Segment& seg = irApplyToAllSelected ? strip.getFirstSelectedSeg() : strip.getMainSegment();
+  byte r = R(seg.colors[0]);
+  byte g = G(seg.colors[0]);
+  byte b = B(seg.colors[0]);
+  byte w = relativeChange(W(seg.colors[0]), amount, 5);
+  changeColor(RGBW32(r, g, b, w), cct);
+}
+
 void decodeIR(uint32_t code)
 {
-  if (code == 0xFFFFFFFF) //repeated code, continue brightness up/down
-  {
+  if (code == 0xFFFFFFFF) {
+    //repeated code, continue brightness up/down
     irTimesRepeated++;
     applyRepeatActions();
     return;
   }
   lastValidCode = 0; irTimesRepeated = 0;
-  //if (decodeIRCustom(code)) return;
   lastRepeatableAction = ACTION_NONE;
+
   if (irEnabled == 8) { // any remote configurable with ir.json file
     decodeIRJson(code);
     stateUpdated(CALL_MODE_BUTTON);
@@ -269,25 +279,22 @@ void decodeIR(uint32_t code)
 
   switch (irEnabled) {
     case 1: 
-      if (code > 0xF80000) {
-        decodeIR24OLD(code);            // white 24-key remote (old) - it sends 0xFF0000 values
-      } else {
-        decodeIR24(code);               // 24-key remote - 0xF70000 to 0xF80000
-      }
+      if (code > 0xF80000) decodeIR24OLD(code); // white 24-key remote (old) - it sends 0xFF0000 values
+      else                 decodeIR24(code);    // 24-key remote - 0xF70000 to 0xF80000
       break;
-    case 2: decodeIR24CT(code);  break; // white 24-key remote with CW, WW, CT+ and CT- keys
-    case 3: decodeIR40(code);    break; // blue  40-key remote with 25%, 50%, 75% and 100% keys
-    case 4: decodeIR44(code);    break; // white 44-key remote with color-up/down keys and DIY1 to 6 keys 
-    case 5: decodeIR21(code);    break; // white 21-key remote  
-    case 6: decodeIR6(code);     break; // black 6-key learning remote defaults: "CH" controls brightness,
-                                        // "VOL +" controls effect, "VOL -" controls colour/palette, "MUTE" 
-                                        // sets bright plain white
-    case 7: decodeIR9(code);     break;
+    case 2: decodeIR24CT(code); break; // white 24-key remote with CW, WW, CT+ and CT- keys
+    case 3: decodeIR40(code);   break; // blue  40-key remote with 25%, 50%, 75% and 100% keys
+    case 4: decodeIR44(code);   break; // white 44-key remote with color-up/down keys and DIY1 to 6 keys 
+    case 5: decodeIR21(code);   break; // white 21-key remote  
+    case 6: decodeIR6(code);    break; // black 6-key learning remote defaults: "CH" controls brightness,
+                                       // "VOL +" controls effect, "VOL -" controls colour/palette, "MUTE" 
+                                       // sets bright plain white
+    case 7: decodeIR9(code);    break;
     //case 8: return; // ir.json file, handled above switch statement
   }
 
   if (nightlightActive && bri == 0) nightlightActive = false;
-  colorUpdated(CALL_MODE_BUTTON); //for notifier, IR is considered a button input
+  stateUpdated(CALL_MODE_BUTTON); //for notifier, IR is considered a button input
 }
 
 void applyRepeatActions()
@@ -296,24 +303,24 @@ void applyRepeatActions()
     decodeIRJson(lastValidCode);
     return;
   } else switch (lastRepeatableAction) {
-    case ACTION_BRIGHT_UP :      incBrightness();                            colorUpdated(CALL_MODE_BUTTON); return;
-    case ACTION_BRIGHT_DOWN :    decBrightness();                            colorUpdated(CALL_MODE_BUTTON); return;
-    case ACTION_SPEED_UP :       changeEffectSpeed(lastRepeatableValue);     colorUpdated(CALL_MODE_BUTTON); return;
-    case ACTION_SPEED_DOWN :     changeEffectSpeed(lastRepeatableValue);     colorUpdated(CALL_MODE_BUTTON); return;
-    case ACTION_INTENSITY_UP :   changeEffectIntensity(lastRepeatableValue); colorUpdated(CALL_MODE_BUTTON); return;
-    case ACTION_INTENSITY_DOWN : changeEffectIntensity(lastRepeatableValue); colorUpdated(CALL_MODE_BUTTON); return;
+    case ACTION_BRIGHT_UP :      incBrightness();                            stateUpdated(CALL_MODE_BUTTON); return;
+    case ACTION_BRIGHT_DOWN :    decBrightness();                            stateUpdated(CALL_MODE_BUTTON); return;
+    case ACTION_SPEED_UP :       changeEffectSpeed(lastRepeatableValue);     stateUpdated(CALL_MODE_BUTTON); return;
+    case ACTION_SPEED_DOWN :     changeEffectSpeed(lastRepeatableValue);     stateUpdated(CALL_MODE_BUTTON); return;
+    case ACTION_INTENSITY_UP :   changeEffectIntensity(lastRepeatableValue); stateUpdated(CALL_MODE_BUTTON); return;
+    case ACTION_INTENSITY_DOWN : changeEffectIntensity(lastRepeatableValue); stateUpdated(CALL_MODE_BUTTON); return;
     default: break;
   }
-  if (lastValidCode == IR40_WPLUS) { 
-    relativeChangeWhite(10);
-    colorUpdated(CALL_MODE_BUTTON);
+  if (lastValidCode == IR40_WPLUS) {
+    changeWhite(10);
+    stateUpdated(CALL_MODE_BUTTON);
   } else if (lastValidCode == IR40_WMINUS) {
-    relativeChangeWhite(-10, 5);
-    colorUpdated(CALL_MODE_BUTTON);
+    changeWhite(-10);
+    stateUpdated(CALL_MODE_BUTTON);
   } else if ((lastValidCode == IR24_ON || lastValidCode == IR40_ON) && irTimesRepeated > 7 ) {
     nightlightActive = true;
     nightlightStartTime = millis();
-    colorUpdated(CALL_MODE_BUTTON);
+    stateUpdated(CALL_MODE_BUTTON);
   }
 }
 
@@ -415,6 +422,11 @@ void decodeIR24CT(uint32_t code)
 
 void decodeIR40(uint32_t code)
 {
+  WS2812FX::Segment& seg = irApplyToAllSelected ? strip.getFirstSelectedSeg() : strip.getMainSegment();
+  byte r = R(seg.colors[0]);
+  byte g = G(seg.colors[0]);
+  byte b = B(seg.colors[0]);
+  byte w = W(seg.colors[0]);
   switch (code) {
     case IR40_BPLUS        : incBrightness();                            break;
     case IR40_BMINUS       : decBrightness();                            break;
@@ -440,10 +452,10 @@ void decodeIR40(uint32_t code)
     case IR40_WHITE        : changeColor(COLOR_NEUTRALWHITE, 127); changeEffect(FX_MODE_STATIC); break;
     case IR40_COLDWHITE    : changeColor(COLOR_COLDWHITE,    191); changeEffect(FX_MODE_STATIC); break;
     case IR40_COLDWHITE2   : changeColor(COLOR_COLDWHITE2,   255); changeEffect(FX_MODE_STATIC); break;
-    case IR40_WPLUS        : relativeChangeWhite(10);                    break;
-    case IR40_WMINUS       : relativeChangeWhite(-10, 5);                break;
-    case IR40_WOFF         : whiteLast = col[3]; col[3] = 0;             break;
-    case IR40_WON          : col[3] = whiteLast;                         break;
+    case IR40_WPLUS        : changeWhite(10);                            break;
+    case IR40_WMINUS       : changeWhite(-10);                           break;
+    case IR40_WOFF         : if (w) whiteLast = w; changeColor(RGBW32(r, g, b, 0));              break;
+    case IR40_WON          : changeColor(RGBW32(r, g, b, whiteLast));    break;
     case IR40_W25          : bri = 63;                                   break;
     case IR40_W50          : bri = 127;                                  break;
     case IR40_W75          : bri = 191;                                  break;
