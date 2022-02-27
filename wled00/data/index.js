@@ -1213,7 +1213,7 @@ function setSliderAndColorControl(idx, applyDef=false)
 {
 	if (!(Array.isArray(fxdata) && fxdata.length>idx)) return;
 	var topPosition = 0;
-  	var controlDefined = (fxdata[idx].substr(0,1) == "@")?true:false;
+  	var controlDefined = (fxdata[idx].substr(0,1) == "@");
 	var extra = fxdata[idx].substr(1);
 	var extras = (extra == '')?[]:extra.split(";");
 	var slOnOff = (extras.length==0 || extras[0]=='')?[]:extras[0].split(",");
@@ -1728,7 +1728,7 @@ function tglSegn(s)
 function selSegEx(s)
 {
 	var obj = {"seg":[]};
-	for (let i=0; i<=lSeg; i++) obj.seg.push({"id":i,"sel":(i==s)?true:false});
+	for (let i=0; i<=lSeg; i++) obj.seg.push({"id":i,"sel":(i==s)});
 	obj.mainseg = s;
 	requestJson(obj);
 }
