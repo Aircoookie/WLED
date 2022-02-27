@@ -370,7 +370,7 @@ function presetError(empty)
 	} catch (e) {
 
 	}
-	var cn = `<div class="seg c">`;
+	var cn = `<div class="pres c">`;
 	if (empty)
 		cn += `You have no presets yet!`;
 	else
@@ -479,9 +479,9 @@ function populatePresets(fromls)
 		if (qll) pQL.push([i, qll]);
 		is.push(i);
 
-		cn += `<div class="seg pres" id="p${i}o">`;
+		cn += `<div class="pres" id="p${i}o">`;
 		if (cfg.comp.pid) cn += `<div class="pid">${i}</div>`;
-		cn += `<div class="segname pname" onclick="setPreset(${i})">${isPlaylist(i)?"<i class='icons btn-icon'>&#xe139;</i>":""}${pName(i)}</div>
+		cn += `<div class="${isPlaylist(i)?'plname':'pname'}" onclick="setPreset(${i})">${isPlaylist(i)?"<i class='icons btn-icon'>&#xe139;</i>":""}${pName(i)}</div>
 				<i class="icons e-icon flr ${expanded[i+100] ? "exp":""}" id="sege${i+100}" onclick="expand(${i+100})">&#xe395;</i>
 				<div class="segin" id="seg${i+100}"></div>
 			</div><br>`;
@@ -560,7 +560,7 @@ function populateSegments(s)
 		if (i == lowestUnused) lowestUnused = i+1;
 		if (i > lSeg) lSeg = i;
 
-		cn += `<div class="seg">
+		cn += `<div class="seg ${i==s.mainseg ? 'selected' : ''}">
 			<label class="check schkl">
 				&nbsp;
 				<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>
@@ -904,9 +904,10 @@ function updateLen(s)
 //updates background color of currently selected preset
 function updatePA()
 {
-	var ps = d.getElementsByClassName("seg"); //reset all preset buttons
+	var ps = d.getElementsByClassName("pres"); //reset all preset buttons
 	for (let i = 0; i < ps.length; i++) {
-		ps[i].style.backgroundColor = "var(--c-2)";
+		//ps[i].style.backgroundColor = "var(--c-2)";
+		ps[i].classList.remove("selected");
 	}
 	ps = d.getElementsByClassName("psts"); //reset all quick selectors
 	for (let i = 0; i < ps.length; i++) {
@@ -915,9 +916,12 @@ function updatePA()
 	if (currentPreset > 0) {
 		var acv = d.getElementById(`p${currentPreset}o`);
 		if (acv && !expanded[currentPreset+100])
-			acv.style.background = "var(--c-6)"; //highlight current preset
+			//acv.style.background = "var(--c-6)"; //highlight current preset
+			acv.classList.add("selected");
 		acv = d.getElementById(`p${currentPreset}qlb`);
-		if (acv) acv.style.background = "var(--c-6)"; //highlight quick selector
+		if (acv)
+			//acv.style.background = "var(--c-6)"; //highlight quick selector
+			acv.classList.add("selected");
 	}
 }
 
@@ -952,7 +956,14 @@ function compare(a, b) {
 }
 function cmpP(a, b) {
 	if (!a[1].n) return (a[0] > b[0]);
-	return a[1].n.localeCompare(b[1].n,undefined, {numeric: true});
+	//return a[1].n.localeCompare(b[1].n,undefined, {numeric: true});
+	// sort playlists first, followed by presets with characters and last presets with special 1st character
+	const c = a[1].n.charCodeAt(0);
+	const d = b[1].n.charCodeAt(0);
+	if ((c>47 && c<58) || (c>64 && c<91) || (c>96 && c<123) || c>255) x = '='; else x = '>';
+	if ((d>47 && d<58) || (d>64 && d<91) || (d>96 && d<123) || d>255) y = '='; else y = '>';
+	const n = (a[1].playlist ? '<' : x) + a[1].n;
+	return n.localeCompare((b[1].playlist ? '<' : y) + b[1].n, undefined, {numeric: true});
 }
 
 //forces a WebSockets reconnect if timeout (error toast), or successful HTTP response to JSON request
@@ -1446,8 +1457,8 @@ ${(i>0)? ('<div class="h">ID ' +i+ '</div>'):""}`;
 }
 
 function makePUtil() {
-	d.getElementById('putil').innerHTML = `<div class="seg pres">
-	<div class="segname newseg">
+	d.getElementById('putil').innerHTML = `<div class="pres">
+	<div class="pname newseg">
 		New preset</div>
 	<div class="segin expanded">
 	${makeP(0)}</div></div>`;
@@ -1473,8 +1484,8 @@ function makePlUtil() {
     showToast("Please make a preset first!"); return;
   }
 	if (plJson[0].transition[0] < 0) plJson[0].transition[0] = tr;
-  d.getElementById('putil').innerHTML = `<div class="seg pres">
-  <div class="segname newseg">
+  d.getElementById('putil').innerHTML = `<div class="pres">
+  <div class="pname newseg">
     New playlist</div>
   <div class="segin expanded" id="seg100">
   ${makeP(0,true)}</div></div>`;
@@ -1503,9 +1514,8 @@ function tglSegn(s)
 function selSegEx(s)
 {
 	var obj = {"seg":[]};
-	for (let i=0; i<=lSeg; i++){
-		obj.seg.push({"sel":(i==s)?true:false});
-	}
+	for (let i=0; i<=lSeg; i++) obj.seg.push({"id":i,"sel":(i==s)});
+	obj.mainseg = s;
 	requestJson(obj);
 }
 
