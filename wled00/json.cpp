@@ -728,8 +728,7 @@ void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
         curPalette.add("c2");
         curPalette.add("c1");
         break;
-      case 5: {//primary + secondary (+tert if not off), more distinct
-      
+      case 5: //primary + secondary (+tert if not off), more distinct
         curPalette.add("c1");
         curPalette.add("c1");
         curPalette.add("c1");
@@ -746,7 +745,7 @@ void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
         curPalette.add("c3");
         curPalette.add("c3");
         curPalette.add("c1");
-        break;}
+        break;
       case 6: //Party colors
         setPaletteColors(curPalette, PartyColors_p);
         break;
@@ -768,14 +767,12 @@ void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
       case 12: //Rainbow stripe colors
         setPaletteColors(curPalette, RainbowStripeColors_p);
         break;
-
       default:
-        if (i < 13) {
-          break;
-        }
+        {
         byte tcp[72];
         memcpy_P(tcp, (byte*)pgm_read_dword(&(gGradientPalettes[i - 13])), 72);
         setPaletteColors(curPalette, tcp);
+        }
         break;
     }
   }

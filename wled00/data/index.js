@@ -3,7 +3,6 @@ var loc = false, locip;
 var noNewSegs = false;
 var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true, isRgbw = false, cct = false;
 var whites = [0,0,0];
-var selColors;
 var expanded = [false];
 var powered = [true];
 var nlDur = 60, nlTar = 0;
@@ -636,7 +635,6 @@ function populateSegments(s)
 
 		cn += `<div class="seg ${i==s.mainseg ? 'selected' : ''}" id="seg${i}wrp">
 	<label class="check schkl">
-		&nbsp;
 		<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>
 		<span class="checkmark schk"></span>
 	</label>
@@ -677,12 +675,16 @@ function populateSegments(s)
 		</table>
 		<div class="h bp" id="seg${i}len"></div>
 		<label class="check revchkl">
+			<span class="lstIname">
 			Reverse direction
+			</span>
 			<input type="checkbox" id="seg${i}rev" onchange="setRev(${i})" ${inst.rev ? "checked":""}>
 			<span class="checkmark schk"></span>
 		</label>
 		<label class="check revchkl">
+			<span class="lstIname">
 			Mirror effect
+			</span>
 			<input type="checkbox" id="seg${i}mi" onchange="setMi(${i})" ${inst.mi ? "checked":""}>
 			<span class="checkmark schk"></span>
 		</label>
@@ -809,27 +811,24 @@ function genPalPrevCss(id)
 
 	var gradient = [];
 	for (let j = 0; j < paletteData.length; j++) {
-		const element = paletteData[j];
-		let r;
-		let g;
-		let b;
+		const e = paletteData[j];
+		let r, g, b;
 		let index = false;
-		if (Array.isArray(element)) {
-			index = element[0]/255*100;
-			r = element[1];
-			g = element[2];
-			b = element[3];
-		} else if (element == 'r') {
+		if (Array.isArray(e)) {
+			index = e[0]/255*100;
+			r = e[1];
+			g = e[2];
+			b = e[3];
+		} else if (e == 'r') {
 			r = Math.random() * 255;
 			g = Math.random() * 255;
 			b = Math.random() * 255;
 		} else {
-			if (selColors) {
-				let e = element[1] - 1;
-				r = selColors[e][0];
-				g = selColors[e][1];
-				b = selColors[e][2];
-			}
+			let i = e[1] - 1;
+			var cd = gId('csl').children;
+			r = parseInt(cd[i].dataset.r);
+			g = parseInt(cd[i].dataset.g);
+			b = parseInt(cd[i].dataset.b);
 		}
 		if (index === false) {
 			index = j / paletteData.length * 100;
@@ -845,15 +844,14 @@ function generateListItemHtml(listName, id, name, clickAction, extraHtml = '', e
 {
     return `<div class="lstI${id==0?' sticky':''} ${extraClass}" data-id="${id}" data-opt="${extraPar}" onClick="${clickAction}(${id})">
 	<label class="radio schkl" onclick="event.preventDefault()">
-		&nbsp;
 		<input type="radio" value="${id}" name="${listName}">
 		<span class="radiomark schk"></span>
+		<div class="lstIcontent">
+			<span class="lstIname">
+				${name}
+			</span>
+		</div>
 	</label>
-	<div class="lstIcontent">
-		<span class="lstIname">
-			${name}
-		</span>
-	</div>
 	${extraHtml}
 </div>`;
 }
@@ -967,14 +965,9 @@ function updateLen(s)
 //updates background color of currently selected preset
 function updatePA()
 {
-	var ps = gEBCN("pres");
-	for (let i = 0; i < ps.length; i++) {
-		ps[i].classList.remove('selected');;
-	}
-	ps = gEBCN("psts");
-	for (let i = 0; i < ps.length; i++) {
-		ps[i].classList.remove('selected');;
-	}
+	let ps;
+	ps = gEBCN("pres"); for (let p of ps) p.classList.remove('selected');
+	ps = gEBCN("psts"); for (let p of ps) p.classList.remove('selected');
 	if (currentPreset > 0) {
 		var acv = gId(`p${currentPreset}o`);
 		if (acv && !expanded[currentPreset+100]) {
@@ -1137,15 +1130,13 @@ function readState(s,command=false)
 		return;
 	}
   
-	selColors = i.col;
 	var cd = gId('csl').children;
-	for (let e = cd.length-1; e >= 0; e--)
-	{
-		var r,g,b,w;
-		r = i.col[e][0];
-		g = i.col[e][1];
-		b = i.col[e][2];
-		if (isRgbw) w = i.col[e][3];
+	for (let e = cd.length-1; e >= 0; e--) {
+		let r,g,b,w;
+		r = cd[e].dataset.r = i.col[e][0];
+		g = cd[e].dataset.g = i.col[e][1];
+		b = cd[e].dataset.b = i.col[e][2];
+		if (isRgbw) w = cd[e].dataset.w = i.col[e][3];
 		cd[e].style.backgroundColor = "rgb(" + r + "," + g + "," + b + ")";
 		if (isRgbw) whites[e] = parseInt(w);
 	}
@@ -1259,7 +1250,7 @@ function setSliderAndColorControl(idx, applyDef=false)
 	gId("fxFind").style.top = topPosition + "px";
 	topPosition += 42;
 	var fxList = gId("fxlist");
-	for (var i=0; i<fxList.children.length; i++) fxList.children[i].style.top = null; // remove top
+	for (let f of fxList.children) f.style.top = null; // remove top
 	var selected = fxList.querySelector('.selected');
 	var sticky = fxList.querySelector('.sticky');
 	if (sticky) {
@@ -1606,17 +1597,23 @@ ${makePlSel(true)}
 	} else {
 		content =
 `<label class="check revchkl">
+	<span class="lstIname">
 	Include brightness
+	</span>
 	<input type="checkbox" id="p${i}ibtgl" checked>
 	<span class="checkmark schk"></span>
 </label>
 <label class="check revchkl">
+	<span class="lstIname">
 	Save segment bounds
+	</span>
 	<input type="checkbox" id="p${i}sbtgl" checked>
 	<span class="checkmark schk"></span>
 </label>
 <label class="check revchkl">
+	<span class="lstIname">
 	Checked segments only
+	</span>
 	<input type="checkbox" id="p${i}sbchk">
 	<span class="checkmark schk"></span>
 </label>`;
@@ -1632,7 +1629,9 @@ ${makePlSel(true)}
 <div class="h">(leave empty for no Quick load button)</div>
 <div ${pl&&i==0?"style='display:none'":""}>
 <label class="check revchkl">
-    ${pl?"Show playlist editor":(i>0)?"Overwrite with state":"Use current state"}
+	<span class="lstIname">
+	${pl?"Show playlist editor":(i>0)?"Overwrite with state":"Use current state"}
+	</span>
     <input type="checkbox" id="p${i}cstgl" onchange="tglCs(${i})" ${(i==0||pl)?"checked":""}>
     <span class="checkmark schk"></span>
   </label>
@@ -2250,28 +2249,18 @@ function formatArr(pl) {
 	}
 }
 
-function expand(i/*,a=false*/)
+function expand(i, c=false)
 {
 	var seg = gId('seg' +i);
 	let util = i<100?'segutil':'putil';
 	let stay = i<100?"staybot":"staytop";
-/*
-	if (!a) {
-		var j = i>100 ? 100 : 0;
-		var l = i>100 ? expanded.length : 100;
-		for (; j<l; j++) if (i!=j && expanded[j]) expand(j,true); // collapse all expanded elements
-	}
-*/
+
+	if (!c && i>100) for (let j=100; j<expanded.length; j++) if (i!=j && expanded[j]) expand(j,true); // collapse all expanded presets
+
 	expanded[i] = !expanded[i];
-	seg.style.display = (expanded[i]) ? "block":"none";
-	//gId('sege' +i).style.transform = (expanded[i]) ? "rotate(180deg)":"rotate(0deg)";
-	if (expanded[i]) {
-		gId('sege' +i).classList.add("exp");
-		gId(util).classList.remove(stay);
-	} else {
-		gId('sege' +i).classList.remove("exp");
-		gId(util).classList.add(stay);
-	}
+	seg.classList.toggle("expanded");
+	gId('sege' +i).classList.toggle("exp");
+	gId(util).classList.toggle(stay);
 
 	if (i >= 100) {
 		var p = i-100;
