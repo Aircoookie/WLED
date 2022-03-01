@@ -365,6 +365,12 @@ writeChunks(
             /function GetV().*\<\/script\>/gms,
             "</script><script src=\"settings.js?p=8\"></script>"
           )
+    },
+    {
+      file: "settings_pin.htm",
+      name: "PAGE_settings_pin",
+      method: "gzip",
+      filter: "html-minify"
     }
   ],
   "wled00/html_settings.h"

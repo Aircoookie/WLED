@@ -584,6 +584,7 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == 6)
   {
+    sappends('s',SET_F("PIN"),settingsPIN);
     sappend('c',SET_F("NO"),otaLock);
     sappend('c',SET_F("OW"),wifiLock);
     sappend('c',SET_F("AO"),aOtaEnabled);

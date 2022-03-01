@@ -320,6 +320,7 @@ void updateBaudRate(uint32_t rate);
 
 //wled_server.cpp
 bool isIp(String str);
+void createEditHandler(bool enable);
 bool captivePortal(AsyncWebServerRequest *request);
 void initServer();
 void serveIndexOrWelcome(AsyncWebServerRequest *request);

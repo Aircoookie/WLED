@@ -21,9 +21,7 @@ const uint8_t PAGE_usermod[] PROGMEM = {
 const char PAGE_msg[] PROGMEM = R"=====(<!DOCTYPE html><html><head><meta content="width=device-width" name="viewport">
 <title>WLED Message</title><script>
 function B(){window.history.back()}function RS(){window.location="/settings"}function RP(){top.location.href="/"}
-</script><style>
-.bt{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.3ch solid #333;display:inline-block;font-size:20px;margin:8px;margin-top:12px}body{font-family:Verdana,sans-serif;text-align:center;background:#222;color:#fff;line-height:200%%;margin:0}
-</style></head><body><h2>%MSG%</body></html>)=====";
+</script><style>@import url("style.css");</style></head><body><h2>%MSG%</body></html>)=====";
 
 
 #ifdef WLED_ENABLE_DMX

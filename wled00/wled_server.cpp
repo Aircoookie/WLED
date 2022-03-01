@@ -18,8 +18,8 @@ bool isIp(String str) {
   return true;
 }
 
-void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final){
-  if (otaLock) {
+void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {
+  if (otaLock || !correctPIN) {
     if (final) request->send(500, "text/plain", F("Please unlock OTA in security settings!"));
     return;
   }
@@ -27,15 +27,39 @@ void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t
     request->_tempFile = WLED_FS.open(filename, "w");
     DEBUG_PRINT("Uploading ");
     DEBUG_PRINTLN(filename);
-    if (filename == "/presets.json") presetsModifiedTime = toki.second();
+    if (filename == F("/presets.json")) presetsModifiedTime = toki.second();
   }
   if (len) {
     request->_tempFile.write(data,len);
   }
   if (final) {
     request->_tempFile.close();
-    request->send(200, "text/plain", F("File Uploaded!"));
+    if (filename == F("/cfg.json")) {
+      doReboot = true;
+      request->send(200, "text/plain", F("Configuration restore successful.\nRebooting..."));
+    } else
+      request->send(200, "text/plain", F("File Uploaded!"));
     cacheInvalidate++;
+  }
+}
+
+void createEditHandler(bool enable) {
+  if (enable) {
+    #ifdef WLED_ENABLE_FS_EDITOR
+      #ifdef ARDUINO_ARCH_ESP32
+      editHandler = &server.addHandler(new SPIFFSEditor(WLED_FS));//http_username,http_password));
+      #else
+      editHandler = &server.addHandler(new SPIFFSEditor("","",WLED_FS));//http_username,http_password));
+      #endif
+    #else
+      editHandler = server.on("/edit", HTTP_GET, [](AsyncWebServerRequest *request){
+        serveMessage(request, 501, "Not implemented", F("The FS editor is disabled in this build."), 254);
+      });
+    #endif
+  } else {
+    editHandler = &server.on("/edit", HTTP_GET, [](AsyncWebServerRequest *request){
+      serveMessage(request, 500, "Access Denied", F("Please unlock settings page!"), 254);
+    });
   }
 }
 
@@ -86,6 +110,14 @@ void initServer()
   //settings page
   server.on("/settings", HTTP_GET, [](AsyncWebServerRequest *request){
     serveSettings(request);
+  });
+  
+  server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (handleIfNoneMatchCacheHeader(request)) return;
+    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/css",  PAGE_settingsCss,   PAGE_settingsCss_length);
+    response->addHeader(F("Content-Encoding"),"gzip");
+    setStaticContentCacheHeaders(response);
+    request->send(response);
   });
   
   server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -212,37 +244,30 @@ void initServer()
     request->send(response);
   });
   
+  createEditHandler(correctPIN);
+
+#ifndef WLED_DISABLE_OTA
   //if OTA is allowed
-  if (!otaLock){
-    #ifdef WLED_ENABLE_FS_EDITOR
-     #ifdef ARDUINO_ARCH_ESP32
-      server.addHandler(new SPIFFSEditor(WLED_FS));//http_username,http_password));
-     #else
-      server.addHandler(new SPIFFSEditor("","",WLED_FS));//http_username,http_password));
-     #endif
-    #else
-    server.on("/edit", HTTP_GET, [](AsyncWebServerRequest *request){
-      serveMessage(request, 501, "Not implemented", F("The FS editor is disabled in this build."), 254);
-    });
-    #endif
+  if (!otaLock) {
     //init ota page
-    #ifndef WLED_DISABLE_OTA
     server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
-      AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_update, PAGE_update_length);
+      AsyncWebServerResponse *response;
+      if (correctPIN) response = request->beginResponse_P(200, "text/html", PAGE_update, PAGE_update_length);
+      else            response = request->beginResponse_P(200, "text/html", PAGE_settings_pin,  PAGE_settings_pin_length);
       response->addHeader(F("Content-Encoding"),"gzip");
       setStaticContentCacheHeaders(response);
       request->send(response);
-      //request->send_P(200, "text/html", PAGE_update);
     });
     
     server.on("/update", HTTP_POST, [](AsyncWebServerRequest *request){
-      if (Update.hasError())
-      {
-        serveMessage(request, 500, F("Update failed!"), F("Please check your file and retry!"), 254); return;
+      if (Update.hasError() || !correctPIN) {
+        serveMessage(request, 500, F("Update failed!"), F("Please check your file and retry!"), 254);
+      } else {
+        serveMessage(request, 200, F("Update successful!"), F("Rebooting..."), 131); 
+        doReboot = true;
       }
-      serveMessage(request, 200, F("Update successful!"), F("Rebooting..."), 131); 
-      doReboot = true;
     },[](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final){
+      if (!correctPIN) return;
       if(!index){
         DEBUG_PRINTLN(F("OTA Update Start"));
         #ifdef ESP8266
@@ -259,21 +284,16 @@ void initServer()
         }
       }
     });
-    
-    #else
-    server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
-      serveMessage(request, 501, "Not implemented", F("OTA updating is disabled in this build."), 254);
-    });
-    #endif
-  } else
-  {
-    server.on("/edit", HTTP_GET, [](AsyncWebServerRequest *request){
-      serveMessage(request, 500, "Access Denied", F("Please unlock OTA in security settings!"), 254);
-    });
+  } else {
     server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
       serveMessage(request, 500, "Access Denied", F("Please unlock OTA in security settings!"), 254);
     });
   }
+#else
+  server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
+    serveMessage(request, 501, "Not implemented", F("OTA updating is disabled in this build."), 254);
+  });
+#endif
 
 
   #ifdef WLED_ENABLE_DMX
@@ -479,6 +499,10 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     else if (url.indexOf("um")   > 0) subPage = 8;
   } else subPage = 255; //welcome page
 
+  if (subPage > 0 && subPage < 9 && strlen(settingsPIN)>0 && !correctPIN) {
+    subPage = 252;  // require PIN
+  }
+
   if (subPage == 1 && wifiLock && otaLock)
   {
     serveMessage(request, 500, "Access Denied", F("Please unlock OTA in security settings!"), 254); return;
@@ -496,16 +520,21 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
       case 3: strcpy_P(s, PSTR("UI")); break;
       case 4: strcpy_P(s, PSTR("Sync")); break;
       case 5: strcpy_P(s, PSTR("Time")); break;
-      case 6: strcpy_P(s, PSTR("Security")); strcpy_P(s2, PSTR("Rebooting, please wait ~10 seconds...")); break;
+      case 6: strcpy_P(s, PSTR("Security")); if (doReboot) strcpy_P(s2, PSTR("Rebooting, please wait ~10 seconds...")); break;
       case 7: strcpy_P(s, PSTR("DMX")); break;
       case 8: strcpy_P(s, PSTR("Usermods")); break;
+      case 252: strcpy_P(s, correctPIN ? PSTR("PIN accepted") : PSTR("PIN rejected"));
     }
 
-    strcat_P(s, PSTR(" settings saved."));
+    if (subPage != 252) strcat_P(s, PSTR(" settings saved."));
+    else {
+      server.removeHandler(editHandler);
+      createEditHandler(correctPIN);
+    }
     if (!s2[0]) strcpy_P(s2, PSTR("Redirecting..."));
 
-    if (!doReboot) serveMessage(request, 200, s, s2, (subPage == 1 || subPage == 6) ? 129 : 1);
-    if (subPage == 6) doReboot = true;
+    serveMessage(request, 200, s, s2, (subPage == 1 || (subPage == 6 && doReboot)) ? 129 : (correctPIN ? 1 : 10));
+    //if (subPage == 6) doReboot = true;
 
     return;
   }
@@ -527,6 +556,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     case 6:   response = request->beginResponse_P(200, "text/html", PAGE_settings_sec,  PAGE_settings_sec_length);  break;
     case 7:   response = request->beginResponse_P(200, "text/html", PAGE_settings_dmx,  PAGE_settings_dmx_length);  break;
     case 8:   response = request->beginResponse_P(200, "text/html", PAGE_settings_um,   PAGE_settings_um_length);   break;
+    case 252: response = request->beginResponse_P(200, "text/html", PAGE_settings_pin,  PAGE_settings_pin_length);  break;
     case 253: response = request->beginResponse_P(200, "text/css",  PAGE_settingsCss,   PAGE_settingsCss_length);   break;
     case 254: serveSettingsJS(request); return;
     case 255: response = request->beginResponse_P(200, "text/html", PAGE_welcome,       PAGE_welcome_length);       break;
