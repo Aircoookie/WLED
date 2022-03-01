@@ -981,7 +981,7 @@ input[type=number]::-webkit-outer-spin-button {
 	border-radius: 20px;
 	text-align: left;
 	transition: background-color 0.5s;
-	filter: brightness(1);
+	filter: brightness(1); /* required for slider background to render? */
 }
 
 .selected {
@@ -989,7 +989,7 @@ input[type=number]::-webkit-outer-spin-button {
 }
 /* "selected" CSS class is applied to the segment when it is the main segment.
 	By default, do not highlight. Can be overridden by skin.css */
-.selected .seg {
+.selected.seg {
 	background-color: var(--c-2); /* var(--c-4); */
 }
 .selected .checkmark, .selected .radiokmark {

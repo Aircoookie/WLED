@@ -2,6 +2,14 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2203011
+
+-   IR rewrite (PR #2561), supports CCT
+-   Added locate button to Time settings
+-   CSS fixes and adjustments
+-   Consistent Tab indentation in index JS and CSS
+-   Added initial contribution style guideline
+
 #### Build 2202222
 
 -   Version bump to 0.13.0-b7 "Toki"
