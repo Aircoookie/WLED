@@ -585,6 +585,13 @@ input[type=range]:active + .sliderbubble {
 	-webkit-transform:translate3d(0,0,0);*/
 }
 
+/* Small round button (color selectors, icon-only round buttons) */
+.xxs {
+	width: 40px;
+	margin: 6px;
+}
+
+/* Segments/presets auxiliary buttons (Add segment, Create preset, ...) */
 .btn-s {
 	width: 276px;
 	background-color: var(--c-2);
@@ -596,53 +603,65 @@ input[type=range]:active + .sliderbubble {
 	margin: 0px 8px 4px 0;
 	vertical-align: middle;
 }
-.btna-icon {
-	margin: 0px;
-}
+
+/* Wide button used in presets (Save, playlist test, delete) */
 .btn-p {
 	width: 216px;
 }
-.btn-xs {
-	width: 42px;
-	height: 42px;
-	margin: 2px 0 0 0;
+
+/* Delete preset from playlist button */
+.btn-pl-del {
+	margin: 0 0 0 3px;
 }
+
+/* Add preset to playlist "+" button */
 .btn-pl-add {
-	margin-left: 5px;
+	margin: 3px 0 0 8px;
 }
 
-
+/* Quick color select buttons wrapper div */
 #qcs-w {
 	margin-top: 10px;
 }
+
+/* Quick color select buttons */
 .qcs {
 	padding: 14px;
 	margin: 2px;
 	border-radius: 14px;
 	display: inline-block;
 }
+
+/* Quick color select Black button (has white border) */
 .qcsb {
 	padding: 13px;
 	border: 1px solid var(--c-f);
 }
+
+/* Hex color input wrapper div */
 #hexw {
 	margin-top: 5px;
 	display: none;
 }
+
+/* Transition time input */
 #tt {
 	text-align: center;
 }
 
+/* Color slot select buttons (1,2,3) */
 .cl {
 	width: 42px;
 }
 
+/* Playlist preset select */
 .sel-pl {
 	width: 192px;
 	background-position: 168px 16px;
 	margin: 8px 3px 0 0;
 }
 
+/* Playlist end preset select */
 .sel-ple {
 	width: 216px;
 	background-position: 192px 16px;
@@ -650,7 +669,6 @@ input[type=range]:active + .sliderbubble {
 
 select {
 	-webkit-appearance: none;
-	-moz-appearance: none;
 	appearance: none;
 	background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' fill='white'><polygon points='0,0 100,0 50,50'/></svg>") no-repeat;
 	background-size: 12px;
@@ -681,7 +699,6 @@ input[type=number], input[type=text] {
 	outline: none;
 	width: 50px;
 	-webkit-appearance: textfield;
-		 -moz-appearance: textfield;
 					appearance: textfield;
 }
 
@@ -706,18 +723,18 @@ input[type=text] {
 	text-align: center;
 }
 
-.ptxt {
-	width: 200px !important;
-	margin: 26px 0 6px 12px !important;
+input[type=text].ptxt {
+	width: 200px;
+	margin: 26px 0 6px 12px;
 }
 
-.stxt {
+input[type=text].stxt {
 	display: none;
-	margin-top: 6px !important;
+	margin-top: 6px;
 }
 
-.qltxt {
-	width: 50px !important;
+input[type=text].qltxt {
+	width: 50px;
 }
 
 input[type=number]:focus, input[type=text]:focus {
@@ -801,11 +818,7 @@ input[type=number]::-webkit-outer-spin-button {
 	padding: 6px 0 0 0;
 }
 
-.xxs {
-	width: 40px;
-	margin: 6px;
-}
-
+/* Quick preset select buttons */
 .psts {
 	background-color: var(--c-3);
 	color: var(--c-f);
@@ -814,15 +827,12 @@ input[type=number]::-webkit-outer-spin-button {
 	height: 40px;
 }
 
+/* Segment apply button (checkmark) */
 .cnf {
 	color: var(--c-f);
 	cursor: pointer;
 	background: var(--c-3);
 	border-radius: 5px;
-}
-
-/* Segment apply button (checkmark) */
-.cnf-s {
 	padding: 8.5px 21px 5px;
 	display: inline;
 }
@@ -842,8 +852,6 @@ input[type=number]::-webkit-outer-spin-button {
 	position: absolute;
 	bottom: 8px;
 	right: 8px;
-	color: var(--c-f);
-	cursor: pointer;
 }
 
 .check, .radio {
@@ -1109,6 +1117,10 @@ input[type="text"].search:not(:placeholder-shown) {
 	width: auto;
 	height: 2px;
 	background-color: var(--c-b);
+}
+
+.no-margin {
+	margin: 0;
 }
 
 ::-webkit-scrollbar {
