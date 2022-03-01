@@ -576,7 +576,7 @@ function populateSegments(s)
 				<div class="sbs">
 				<i class="icons e-icon pwr ${powered[i] ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})">&#xe08f;</i>
 				<div class="sliderwrap il sws">
-					<input id="seg${i}bri" class="noslide sis" onchange="setSegBri(${i})" oninput="updateTrail(this)" max="255" min="1" type="range" value="${inst.bri}" />
+					<input id="seg${i}bri" class="noslide" onchange="setSegBri(${i})" oninput="updateTrail(this)" max="255" min="1" type="range" value="${inst.bri}" />
 					<div class="sliderdisplay"></div>
 				</div>
 				</div>
@@ -1283,18 +1283,19 @@ function makeSeg() {
 	<br>
 	<div class="segin expanded">
 		<input type="text" class="ptxt stxt noslide" id="seg${lowestUnused}t" autocomplete="off" maxlength=32 value="" placeholder="Enter name..."/>
-		<table class="segt">
+		<table class="infot">
 			<tr>
 				<td class="segtd">Start LED</td>
 				<td class="segtd">${cfg.comp.seglen?"Length":"Stop LED"}</td>
+				<td class="segtd">Apply</td>
 			</tr>
 			<tr>
 				<td class="segtd"><input class="noslide segn" id="seg${lowestUnused}s" type="number" min="0" max="${ledCount-1}" value="${ns}" oninput="updateLen(${lowestUnused})" onkeydown="segEnter(${lowestUnused})"></td>
 				<td class="segtd"><input class="noslide segn" id="seg${lowestUnused}e" type="number" min="0" max="${ledCount-(cfg.comp.seglen?ns:0)}" value="${ledCount-(cfg.comp.seglen?ns:0)}" oninput="updateLen(${lowestUnused})" onkeydown="segEnter(${lowestUnused})"></td>
+				<td class="segtd"><i class="icons e-icon cnf cnf-s" id="segc${lowestUnused}" onclick="setSeg(${lowestUnused}); resetUtil();">&#xe390;</i></td>
 			</tr>
 		</table>
 		<div class="h" id="seg${lowestUnused}len">${ledCount - ns} LED${ledCount - ns >1 ? "s":""}</div>
-		<i class="icons e-icon cnf cnf-s half" id="segc${lowestUnused}" onclick="setSeg(${lowestUnused}); resetUtil();">&#xe390;</i>
 	</div>
 </div>`;
 	d.getElementById('segutil').innerHTML = cn;
@@ -1511,11 +1512,14 @@ function tglSegn(s)
     (window.getComputedStyle(d.getElementById(`seg${s}t`)).display === "none") ? "inline":"none";
 }
 
+// Select only the clicked segment and unselect all others
 function selSegEx(s)
 {
 	var obj = {"seg":[]};
 	for (let i=0; i<=lSeg; i++) obj.seg.push({"id":i,"sel":(i==s)});
-	obj.mainseg = s;
+	// optionally, force mainseg to be first selected
+	// WLED internally regards the first selected as mainseg regardless of this as long as any segment is selected
+	//obj.mainseg = s;
 	requestJson(obj);
 }
 
@@ -1530,7 +1534,7 @@ function rptSeg(s)
 	var name = d.getElementById(`seg${s}t`).value;
 	var start = parseInt(d.getElementById(`seg${s}s`).value);
 	var stop = parseInt(d.getElementById(`seg${s}e`).value);
-	if (stop == 0) {return;}
+	if (stop == 0) return;
 	var rev = d.getElementById(`seg${s}rev`).checked;
 	var mi = d.getElementById(`seg${s}mi`).checked;
 	var sel = d.getElementById(`seg${s}sel`).checked;
@@ -1819,15 +1823,17 @@ function updatePSliders() {
   v.parentNode.getElementsByClassName('sliderdisplay')[0].style.setProperty('--bg',cs);
   updateTrail(v);
 
-	//update Kelvin slider
+	// update Kelvin slider
   d.getElementById('sliderK').value = cpick.color.kelvin;
 }
 
+// Fired when a key is pressed while in the HEX color input
 function hexEnter() {
 	d.getElementById('hexcnf').style.backgroundColor = "var(--c-6)";
 	if(event.keyCode == 13) fromHex();
 }
 
+// Fired when a key is pressed while in a segment input
 function segEnter(s) {
 	if(event.keyCode == 13) setSeg(s);
 }

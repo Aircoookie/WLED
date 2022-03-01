@@ -45,8 +45,6 @@ body {
 	text-align: center;
 	-webkit-touch-callout: none;
 		-webkit-user-select: none;
-			 -moz-user-select: none;
-				-ms-user-select: none;
 						user-select: none;
 	-webkit-tap-highlight-color: transparent;
   scrollbar-width: 6px;
@@ -126,11 +124,6 @@ button {
 .infot {
 	table-layout: fixed;
 	width: 100%;
-}
-
-.segt {
-	table-layout: fixed;
-	width: 76%;
 }
 
 .segtd {
@@ -554,12 +547,9 @@ input[type=range]:active + .sliderbubble {
 	margin: 0px -20px 5px -6px;
 }
 
+/* Segment brightness slider wrapper div */
 .sws {
-	width: 230px;
-}
-
-.sis {
-	width: 214px !important;
+	margin-left: -7px;
 }
 
 .hd {
@@ -763,9 +753,6 @@ input[type=number]::-webkit-outer-spin-button {
 .pname, .plname, .segname {
 	position: absolute;
 	left: 50%;
-	text-align: center;
-	overflow: hidden;
-	text-overflow: clip;
 	transform: translateX(-50%);
 	white-space: nowrap;
 	cursor: pointer;
@@ -778,15 +765,18 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .segname {
-	top: 2px;
+	top: 0px;
 	padding: 9px 0;
 }
 .pname, .plname {
 	width: 208px;
 	padding: 8px 0;
+	text-align: center;
+	overflow: hidden;
+	text-overflow: clip;
 }
 .pname {
-	top: 2px;
+	top: 1px;
 }
 .plname {
 	top:0;
@@ -831,15 +821,13 @@ input[type=number]::-webkit-outer-spin-button {
 	border-radius: 5px;
 }
 
+/* Segment apply button (checkmark) */
 .cnf-s {
-	/*position: absolute;
-	bottom: 100px;
-	right: 23px;*/
-	padding: 9px 22px 7px;
-	margin: 0;
+	padding: 8.5px 21px 5px;
 	display: inline;
 }
 
+/* Segment power button icon */
 .pwr {
 	color: var(--c-6);
 	transform: translate(2px, 3px);
@@ -848,11 +836,6 @@ input[type=number]::-webkit-outer-spin-button {
 
 .act {
 	color: var(--c-f);
-}
-
-.half {
-	padding: 7.5px;
-	bottom: 35px;
 }
 
 .del {
@@ -899,7 +882,6 @@ input[type=number]::-webkit-outer-spin-button {
 
 .checkmark, .radiomark {
 	position: absolute;
-	top: 6px;
 	left: 0;
 	height: 24px;
 	width: 24px;
@@ -908,9 +890,14 @@ input[type=number]::-webkit-outer-spin-button {
 	/*border: 1px solid var(--c-2);*/
 }
 
+.checkmark {
+	top: 6px;
+}
+
 .radiomark {
 	border-radius: 50%;
 	background-color: transparent;
+	top: 7px;
 }
 
 .schk {
@@ -932,13 +919,13 @@ input[type=number]::-webkit-outer-spin-button {
 
 
 .check:hover input ~ .checkmark {
-	background-color: var(--c-4);
+	background-color: var(--c-5);
 }
-/*
+
 .check input:checked ~ .checkmark {
 	background-color: var(--c-6);
 }
-*/
+
 .checkmark:after, .radiomark:after {
 	content: "";
 	position: absolute;
@@ -950,7 +937,7 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .check .checkmark:after {
-	left: 9px;
+	left: 8px;
 	top: 4px;
 	width: 5px;
 	height: 10px;
@@ -962,11 +949,11 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .radio .radiomark:after {
-	width: 14px;
-	height: 14px;
+	width: 12px;
+	height: 12px;
 	top: 50%;
 	left: 50%;
-	margin: -7px;
+	margin: -6px;
 	border-radius: 50%;
 	background: var(--c-f);
 }
@@ -1000,8 +987,13 @@ input[type=number]::-webkit-outer-spin-button {
 .selected {
 	background-color: var(--c-4);
 }
+/* "selected" CSS class is applied to the segment when it is the main segment.
+	By default, do not highlight. Can be overridden by skin.css */
+.selected .seg {
+	background-color: var(--c-2); /* var(--c-4); */
+}
 .selected .checkmark, .selected .radiokmark {
-	background-color: var(--c-6);
+	background-color: var(--c-4); /* var(--c-6); */
 }
 
 .list {
@@ -1023,7 +1015,7 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .lstI:hover {
-    background: var(--c-4);
+	background: var(--c-4);
 }
 
 .lstI:last-child {
@@ -1073,10 +1065,10 @@ input[type="text"].search {
 	display: block;
 	width: 230px;
 	box-sizing: border-box;
-  padding: 8px 8px 9px 38px;
-  margin: 6px auto 0 auto;
+	padding: 8px 8px 9px 38px;
+	margin: 6px auto 0 auto;
 	text-align: left;
-  background-color: var(--c-3);
+	background-color: var(--c-3);
 }
 
 input[type="text"].search:focus {
