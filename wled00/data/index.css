@@ -47,8 +47,8 @@ body {
 		-webkit-user-select: none;
 						user-select: none;
 	-webkit-tap-highlight-color: transparent;
-  scrollbar-width: 6px;
-  scrollbar-color: var(--c-sb) transparent;
+	scrollbar-width: 6px;
+	scrollbar-color: var(--c-sb) transparent;
 }
 
 html,
@@ -91,7 +91,7 @@ button {
 	bottom: calc(var(--bh) + 6px);
 	right: 4px;
 	color: var(--c-6);
-  cursor: pointer;
+	cursor: pointer;
 	writing-mode: vertical-rl;
 }
 
@@ -160,25 +160,25 @@ button {
 }
 
 .edit-icon {
-  position: absolute;
-  right: -26px;
-  top: 10px;
-  display: none;
+	position: absolute;
+	right: -26px;
+	top: 10px;
+	display: none;
 }
 
 .search-icon {
-  position: absolute;
-  left: 8px;
-  top: 10px;
-  pointer-events: none;
+	position: absolute;
+	left: 8px;
+	top: 10px;
+	pointer-events: none;
 }
 
 .search-cancel-icon {
-  position: absolute;
-  right: 8px;
-  top: 9px;
-  cursor: pointer;
-  display: none;
+	position: absolute;
+	right: 8px;
+	top: 9px;
+	cursor: pointer;
+	display: none;
 }
 
 .flr {
@@ -279,7 +279,7 @@ button {
 	padding-top: 0;
 	margin-top: 11px;
 	height: calc(100% - 11px);
-  -webkit-overflow-scrolling: touch;
+	-webkit-overflow-scrolling: touch;
 }
 
 .smooth { transition: transform	calc(var(--f, 1)*.5s) ease-out }
@@ -325,7 +325,7 @@ button {
 
 #fxb0 {
 	margin-bottom: 2px;
-  filter: drop-shadow(0 0 1px #000);
+	filter: drop-shadow(0 0 1px #000);
 }
 
 .first {
@@ -375,7 +375,7 @@ button {
 }
 
 .modal button:hover {
-  background-color: var(--c-4);
+	background-color: var(--c-4);
 }
 
 #info {
@@ -387,7 +387,7 @@ button {
 }
 
 #ndlt {
-  margin: 12px 0;
+	margin: 12px 0;
 }
 
 .valtd i {
@@ -423,7 +423,7 @@ button {
 }
 
 #kn td {
-  padding-bottom: 12px;
+	padding-bottom: 12px;
 }
 
 #lv {
@@ -462,27 +462,27 @@ img {
 	border-radius: 17px;
 	pointer-events: none;
 	z-index: -1;
-  --bg: var(--c-f);
+	--bg: var(--c-f);
 }
 
 #rwrap .sliderdisplay { --bg: #f00; }
 #gwrap .sliderdisplay { --bg: #0f0; }
 #bwrap .sliderdisplay { --bg: #00f; }
 #wbal .sliderdisplay, #kwrap .sliderdisplay {
-  background: linear-gradient(90deg, #ff8f1f 0%, #fff 50%, #cbdbff);
+	background: linear-gradient(90deg, #ff8f1f 0%, #fff 50%, #cbdbff);
 }
 
 .sliderbubble {
-    width: 36px;
-    line-height: 24px;
-    background: var(--c-3);
-    position: absolute;
-    transform: translateX(-50%);
-    border-radius: 12px;
-    margin-left: 12px;
-    margin-top: 3px;
-    padding: 0px;
-    display: inline;
+	width: 36px;
+	line-height: 24px;
+	background: var(--c-3);
+	position: absolute;
+	transform: translateX(-50%);
+	border-radius: 12px;
+	margin-left: 12px;
+	margin-top: 3px;
+	padding: 0px;
+	display: inline;
 }
 
 .hidden {
@@ -577,7 +577,7 @@ input[type=range]:active + .sliderbubble {
 	font-size: 19px;
 	background-color: var(--c-3);
 	color: var(--c-f);
-  cursor: pointer;
+	cursor: pointer;
 	border: 0px solid white;
 	border-radius: 25px;
 	transition-duration: 0.5s;
@@ -630,7 +630,7 @@ input[type=range]:active + .sliderbubble {
 	display: none;
 }
 #tt {
-  text-align: center;
+	text-align: center;
 }
 
 .cl {
@@ -638,14 +638,14 @@ input[type=range]:active + .sliderbubble {
 }
 
 .sel-pl {
-  width: 192px;
-  background-position: 168px 16px;
-  margin: 8px 3px 0 0;
+	width: 192px;
+	background-position: 168px 16px;
+	margin: 8px 3px 0 0;
 }
 
 .sel-ple {
 	width: 216px;
-  background-position: 192px 16px;
+	background-position: 192px 16px;
 }
 
 select {
@@ -698,7 +698,7 @@ textarea {
 }
 
 ::selection {
-  background: var(--c-b);
+	background: var(--c-b);
 }
 
 input[type=text] {
@@ -712,7 +712,7 @@ input[type=text] {
 }
 
 .stxt {
-  display: none;
+	display: none;
 	margin-top: 6px !important;
 }
 
@@ -746,7 +746,7 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .segn {
-  border-radius: 5px !important;
+	border-radius: 5px !important;
 	margin: 3px 0 6px 0 !important;
 }
 
@@ -759,9 +759,9 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .segntxt {
-  max-width: 160px;
-  overflow: hidden;
-  text-overflow: clip;
+	max-width: 160px;
+	overflow: hidden;
+	text-overflow: clip;
 }
 
 .segname {
@@ -783,13 +783,13 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .pid {
-  position: absolute;
-  top: 0px;
-  left: 0px;
-  padding: 11px 0px 0px 11px;
-  font-size: 16px;
-  width: 20px;
-  text-align: center;
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	padding: 11px 0px 0px 11px;
+	font-size: 16px;
+	width: 20px;
+	text-align: center;
 	color: var(--c-b);
 }
 
@@ -867,9 +867,9 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .fxchkl {
-  position: absolute;
-  top: 0px;
-  left: 8px;
+	position: absolute;
+	top: 0px;
+	left: 8px;
 }
 
 .check input, .radio input {
@@ -981,7 +981,7 @@ input[type=number]::-webkit-outer-spin-button {
 	border-radius: 20px;
 	text-align: left;
 	transition: background-color 0.5s;
-  	filter: brightness(1);
+	filter: brightness(1);
 }
 
 .selected {
@@ -999,19 +999,19 @@ input[type=number]::-webkit-outer-spin-button {
 .list {
 	position: relative;
 	transition: background-color 0.5s;
-  margin: auto auto 10px;
-  padding-bottom: 10px;
-  width: 230px;
+	margin: auto auto 10px;
+	padding-bottom: 10px;
+	width: 230px;
 }
 
 .lstI {
-  position: sticky;
-  overflow: hidden;
+	position: sticky;
+	overflow: hidden;
 }
 
 .fxbtn {
-  margin: 20px auto;
-  padding: 8px 0;
+	margin: 20px auto;
+	padding: 8px 0;
 }
 
 .lstI:hover {
@@ -1038,7 +1038,7 @@ input[type=number]::-webkit-outer-spin-button {
 .lstI.selected {
 	background: var(--c-5);
 	top: 95px;
-  bottom: -11px;
+	bottom: -11px;
 }
 
 .lstI.sticky {
@@ -1049,16 +1049,16 @@ input[type=number]::-webkit-outer-spin-button {
 	margin: 3px 0;
 	white-space: nowrap;
 	cursor: pointer;
-  font-size: 19px;
+	font-size: 19px;
 }
 
 .lstIprev {
 	width: 220px;
 	height: 5px;
 	margin: auto;
-  position: absolute;
-  bottom: 0px;
-  left: 5px;
+	position: absolute;
+	bottom: 0px;
+	left: 5px;
 }
 
 input[type="text"].search {
@@ -1106,9 +1106,9 @@ input[type="text"].search:not(:placeholder-shown) {
 }
 
 .hrz {
-  width: auto;
-  height: 2px;
-  background-color: var(--c-b);
+	width: auto;
+	height: 2px;
+	background-color: var(--c-b);
 }
 
 ::-webkit-scrollbar {
@@ -1128,8 +1128,8 @@ input[type="text"].search:not(:placeholder-shown) {
 
 @media all and (max-width: 335px) {
 	.sliderbubble {
-    display: none;
-  }
+		display: none;
+	}
 }
 
 @media all and (max-width: 550px) and (min-width: 374px) {
@@ -1154,6 +1154,6 @@ input[type="text"].search:not(:placeholder-shown) {
 
 @media all and (max-width: 1249px) {
 	#buttonPcm {
-	display: none;
+		display: none;
 	}
 }
