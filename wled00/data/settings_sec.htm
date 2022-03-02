@@ -7,25 +7,11 @@
 	<title>Misc Settings</title>
 	<script>
 		var d = document;
-		function H()
-		{
-			window.open("https://kno.wled.ge/features/settings/#security-settings");
-		}
-		function B()
-		{
-			window.open("/settings","_self");
-		}
-		function U()
-		{
-			window.open("/update","_self");
-		}
-		function gId(s)
-		{
-			return d.getElementById(s);
-		}
-		function isObject(item) {
-			return (item && typeof item === 'object' && !Array.isArray(item));
-		}
+		function H() { window.open("https://kno.wled.ge/features/settings/#security-settings"); }
+		function B() { window.open("/settings","_self"); }
+		function U() { window.open("/update","_self"); }
+		function gId(s) { return d.getElementById(s); }
+		function isObj(o) { return (o && typeof o === 'object' && !Array.isArray(o)); }
 		var timeout;
 		function showToast(text, error = false)
 		{
@@ -47,6 +33,12 @@
 			fO.value = '';
 			return false;
 	    }
+		function checkNum(o) {
+			// numeric keys only
+			if ([8,9,13,37,39,46,48,49,50,51,52,53,54,55,56,57,127].includes(event.keyCode)) return true;
+			event.preventDefault();
+			return false;
+		}
 		function GetV()
 		{
 			//values injected by server while sending HTML
@@ -63,7 +55,7 @@
 		<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 		</div>
 		<h2>Security & Update setup</h2>
-		Settings PIN: <input type="number" name="PIN" size="4" maxlength="4" minlength="4"><br>
+		Settings PIN: <input type="password" name="PIN" size="4" maxlength="4" minlength="4" onkeydown="checkNum(this)"><br>
 		Lock wireless (OTA) software update: <input type="checkbox" name="NO"><br>
 		Passphrase: <input type="password" name="OP" maxlength="32"><br>
 		To enable OTA, for security reasons you need to also enter the correct password!<br>

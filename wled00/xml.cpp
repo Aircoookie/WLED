@@ -177,7 +177,7 @@ void getSettingsJS(byte subPage, char* dest)
   obuf = dest;
   olen = 0;
 
-  if (subPage <0 || subPage >8) return;
+  if (subPage <0 || subPage >9) return;
 
   if (subPage == 0)
   {
@@ -629,5 +629,20 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(SET_F("numM="));
     oappendi(usermods.getModCount());
     oappend(";");
+  }
+
+  if (subPage == 9) // update
+  {
+    sappends('m',SET_F("(\"sip\")[0]"),(char*)F("WLED "));
+    olen -= 2; //delete ";
+    oappend(versionString);
+    #ifdef ARDUINO_ARCH_ESP32
+    oappend(SET_F("<br>(ESP32"));
+    #else
+    oappend(SET_F("<br>(ESP8266"));
+    #endif
+    oappend(SET_F(" build "));
+    oappendi(VERSION);
+    oappend(SET_F(")\";"));
   }
 }

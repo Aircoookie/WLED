@@ -95,6 +95,9 @@ input[type="checkbox"] {
 td input[type="checkbox"] {
   margin-right: revert;
 }
+input[type=file] {
+  font-size: 16px
+}
 select {
   margin: 2px;
   background: #333;
@@ -118,6 +121,11 @@ td {
 #TMT table {
   width: 100%;
 }
+
+#msg {
+  display: none;
+}
+
 #toast {
 	opacity: 0;
 	background-color: #444;

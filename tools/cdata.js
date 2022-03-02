@@ -416,6 +416,12 @@ const char PAGE_dmxmap[] PROGMEM = R"=====()=====";
       name: "PAGE_update",
       method: "gzip",
       filter: "html-minify",
+      mangle: (str) =>
+        str
+          .replace(
+            /function GetV().*\<\/script\>/gms,
+            "</script><script src=\"settings.js?p=9\"></script>"
+          )
     },
     {
       file: "welcome.htm",

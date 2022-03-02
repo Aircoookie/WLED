@@ -112,6 +112,10 @@ void initServer()
     serveSettings(request);
   });
   
+  server.on("/settings.js", HTTP_GET, [](AsyncWebServerRequest *request){
+    serveSettingsJS(request);
+  });
+  
   server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
     if (handleIfNoneMatchCacheHeader(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/css",  PAGE_settingsCss,   PAGE_settingsCss_length);
@@ -469,7 +473,7 @@ void serveSettingsJS(AsyncWebServerRequest* request)
   char buf[SETTINGS_STACK_BUF_SIZE+37];
   buf[0] = 0;
   byte subPage = request->arg(F("p")).toInt();
-  if (subPage<0 || subPage>8) {
+  if (subPage<0 || subPage>9) {
     strcpy_P(buf, PSTR("alert('Settings for this request are not implemented.');"));
     request->send(501, "application/javascript", buf);
     return;
