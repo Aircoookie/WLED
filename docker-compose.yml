@@ -1,0 +1,15 @@
+version: "2"
+services:
+  node:
+    image: "node:11"
+    user: "node"
+    working_dir: /home/node/app
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./:/home/node/app
+    expose:
+      - "8081"
+    command: >
+      sh -c "npm install &&
+             npm run build"
