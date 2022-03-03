@@ -989,14 +989,17 @@ input[type=number]::-webkit-outer-spin-button {
 	background-color: var(--c-2);
 	color: var(--c-f);
 	border: 0px solid var(--c-f);
-	border-radius: 24px;
 	text-align: left;
 	transition: background-color 0.5s;
   	filter: brightness(1);
 	font-size: 19px;
 }
 
+.seg {
+	border-radius: 16px;
+}
 .pres {
+	border-radius: 24px;
 	min-height: 24px;
 }
 
