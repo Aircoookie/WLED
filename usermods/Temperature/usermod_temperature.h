@@ -98,9 +98,16 @@ class UsermodTemperature : public Usermod {
     }
 
     void readTemperature() {
-      temperature = readDallas();
-      lastMeasurement = millis();
+      float newTemp = readDallas();
       waitingForConversion = false;
+      if (temperature > -100.f && abs(newTemp-temperature)>10.) {
+        lastMeasurement = millis() - readingInterval + 5000;  // speed up next reading
+        errorReading = true;
+      } else {
+        lastMeasurement = millis();
+        errorReading = false;
+        temperature = newTemp;
+      }
       //DEBUG_PRINTF("Read temperature %2.1f.\n", temperature); // does not work properly on 8266
       DEBUG_PRINT(F("Read temperature "));
       DEBUG_PRINTLN(temperature);
@@ -229,7 +236,6 @@ class UsermodTemperature : public Usermod {
       if (user.isNull()) user = root.createNestedObject("u");
 
       JsonArray temp = user.createNestedArray(FPSTR(_name));
-      //temp.add(F("Loaded."));
 
       if (temperature <= -100.0f) {
         temp.add(0);
@@ -237,9 +243,14 @@ class UsermodTemperature : public Usermod {
         return;
       }
 
-      temp.add(degC ? getTemperatureC() : getTemperatureF());
-      if (degC) temp.add(F("°C"));
-      else      temp.add(F("°F"));
+      temp.add(degC ? temperature : (float)temperature * 1.8f + 32);
+      temp.add(degC ? F("°C") : F("°F"));
+
+      JsonObject sensor = root[F("sensor")];
+      if (sensor.isNull()) sensor = root.createNestedObject(F("sensor"));
+      temp = sensor.createNestedArray(F("temp"));
+      temp.add(degC ? temperature : (float)temperature * 1.8f + 32);
+      temp.add(degC ? F("°C") : F("°F"));
     }
 
     /**
