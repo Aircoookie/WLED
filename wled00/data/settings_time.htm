@@ -32,7 +32,7 @@
 	{
 		var t = gId("WD"+i);
 		t.style.display = t.style.display!=="none" ? "none" : "";
-		o.innerHTML = t.style.display==="none" ? "&#128467;" : "&#x2715;";
+		o.innerHTML = t.style.display==="none" ? "&#128197;" : "&#x2715;";
 	}
 	function Cs()
 	{
@@ -100,7 +100,7 @@
 			for(j=0;j<8;j++) {
 				gId("W"+i+j).checked=wd>>j&1;
 			}
-			if ((wd&127) != 127 || (i<8 && (gN("M"+i).value != 1 || gN("D"+i).value != 1 || gN("P"+i).value != 12 || gN("E"+i).value != 31))) {
+			if ((wd&254) != 254 || (i<8 && (gN("M"+i).value != 1 || gN("D"+i).value != 1 || gN("P"+i).value != 12 || gN("E"+i).value != 31))) {
 				expand(gId("CB"+i),i); //expand macros with custom DOW or date range set
 			}
 		}
