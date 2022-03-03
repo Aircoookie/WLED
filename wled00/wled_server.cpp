@@ -507,7 +507,8 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     subPage = 252;  // require PIN
   }
 
-  if (subPage == 1 && wifiLock && otaLock)
+  // if OTA locked or too frequent PIN entry requests fail hard
+  if ((subPage == 1 && wifiLock && otaLock) || (post && !correctPIN && millis()-lastEditTime < 3000))
   {
     serveMessage(request, 500, "Access Denied", F("Please unlock OTA in security settings!"), 254); return;
   }
@@ -527,7 +528,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
       case 6: strcpy_P(s, PSTR("Security")); if (doReboot) strcpy_P(s2, PSTR("Rebooting, please wait ~10 seconds...")); break;
       case 7: strcpy_P(s, PSTR("DMX")); break;
       case 8: strcpy_P(s, PSTR("Usermods")); break;
-      case 252: strcpy_P(s, correctPIN ? PSTR("PIN accepted") : PSTR("PIN rejected"));
+      case 252: strcpy_P(s, correctPIN ? PSTR("PIN accepted") : PSTR("PIN rejected")); break;
     }
 
     if (subPage != 252) strcat_P(s, PSTR(" settings saved."));
