@@ -5,9 +5,6 @@
  * Sending XML status files to client
  */
 
-//macro to convert F to const
-#define SET_F(x)  (const char*)F(x)
-
 //build XML response to HTTP /win API request
 void XML_response(AsyncWebServerRequest *request, char* dest)
 {
@@ -244,7 +241,7 @@ void getSettingsJS(byte subPage, char* dest)
   obuf = dest;
   olen = 0;
 
-  if (subPage <1 || subPage >8) return;
+  if (subPage <1 || subPage >9) return;
 
   if (subPage == 1)
   {
@@ -626,6 +623,7 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == 6)
   {
+    sappends('s',SET_F("PIN"),settingsPIN);
     sappend('c',SET_F("NO"),otaLock);
     sappend('c',SET_F("OW"),wifiLock);
     sappend('c',SET_F("AO"),aOtaEnabled);
@@ -672,5 +670,18 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(";");
   }
 
-  oappend(SET_F("}</script>"));
+  if (subPage == 9) // update
+  {
+    sappends('m',SET_F("(\"sip\")[0]"),(char*)F("WLED "));
+    olen -= 2; //delete ";
+    oappend(versionString);
+    #ifdef ARDUINO_ARCH_ESP32
+    oappend(SET_F("<br>(ESP32"));
+    #else
+    oappend(SET_F("<br>(ESP8266"));
+    #endif
+    oappend(SET_F(" build "));
+    oappendi(VERSION);
+    oappend(SET_F(")\";"));
+  }
 }

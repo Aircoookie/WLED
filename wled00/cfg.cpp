@@ -872,6 +872,9 @@ bool deserializeConfigSec() {
   getStringFromJson(hueApiKey, interfaces["hue"][F("key")], 47);
 #endif
 
+  getStringFromJson(settingsPIN, doc["pin"], 5);
+  correctPIN = !strlen(settingsPIN);
+
   JsonObject ota = doc["ota"];
   getStringFromJson(otaPass, ota[F("pwd")], 33);
   CJSON(otaLock, ota[F("lock")]);
@@ -914,6 +917,8 @@ void serializeConfigSec() {
   JsonObject if_hue = interfaces.createNestedObject("hue");
   if_hue[F("key")] = hueApiKey;
 #endif
+
+  doc["pin"] = settingsPIN;
 
   JsonObject ota = doc.createNestedObject("ota");
   ota[F("pwd")] = otaPass;

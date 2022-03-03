@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta name="viewport" content="width=500">
+	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+	<meta charset="utf-8">
+	<title>Misc Settings</title>
+	<script>
+		var d = document;
+		function H() { window.open("https://kno.wled.ge/features/settings/#security-settings"); }
+		function B() { window.open("/settings","_self"); }
+		function gId(s) { return d.getElementById(s); }
+		function isObj(item) { return (item && typeof item === 'object' && !Array.isArray(item)); }
+	</script>
+	<style>
+		body {
+			font-family: Verdana, sans-serif;
+			text-align: center;
+			background: #222;
+			color: #fff;
+			line-height: 200%;
+			margin: 0;
+		}
+		hr {
+			border-color: #666;
+		}
+		button, .btn {
+			background: #333;
+			color: #fff;
+			font-family: Verdana, sans-serif;
+			border: 0.3ch solid #333;
+			display: inline-block;
+			font-size: 20px;
+			margin: 12px 8px 8px;
+			padding: 1px 6px;
+			cursor: pointer;
+			text-decoration: none;
+		}
+		.helpB {
+			text-align: left;
+			position: absolute;
+			width: 60px;
+		}
+	</style>
+</head>
+<body>
+	<form id="form_s" name="Sf" method="post">
+		<div class="helpB"><button type="button" onclick="H()">?</button></div>
+		<button type="button" onclick="B()">Back</button><button type="submit">Submit</button><hr>
+		<h2>Please enter settings PIN code</h2>
+		<input type="password" name="PIN" size="4" maxlength="4" minlength="4"><br>
+        <hr>
+		<button type="button" onclick="B()">Back</button><button type="submit">Submit</button>
+	</form>
+</body>
+</html>

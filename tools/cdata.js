@@ -348,6 +348,20 @@ const char PAGE_settings_dmx[] PROGMEM = R"=====()=====";
             /function GetV().*\<\/script\>/gms,
             "function GetV() {var d=document;\n"
           ),
+    },
+    {
+      file: "settings_pin.htm",
+      name: "PAGE_settings_pin",
+      prepend: "=====(",
+      append: ")=====",
+      method: "plaintext",
+      filter: "html-minify",
+      mangle: (str) =>
+        str
+          .replace(
+            /function GetV().*\<\/script\>/gms,
+            "function GetV() {var d=document;\n"
+          )
     }
   ],
   "wled00/html_settings.h"
