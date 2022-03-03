@@ -421,10 +421,6 @@ button {
 	overflow: auto;
 }
 
-.modal button:hover {
-	background-color: var(--c-4);
-}
-
 #info, #nodes {
 	z-index: 3;
 }
@@ -1136,11 +1132,11 @@ input[type="text"].fnd:hover {
 	display: none;
 }
 
-.segin .btn {
+.modal .btn, .segin .btn {
 	border: 1px solid var(--c-3);
 	background-color: var(--c-3);
 }
-.segin .btn:hover {
+.modal .btn:hover, .segin .btn:hover {
 	border: 1px solid var(--c-5);
 	background-color: var(--c-5);
 }
