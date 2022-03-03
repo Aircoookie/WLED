@@ -98,16 +98,9 @@ class UsermodTemperature : public Usermod {
     }
 
     void readTemperature() {
-      float newTemp = readDallas();
+      temperature = readDallas();
+      lastMeasurement = millis();
       waitingForConversion = false;
-      if (temperature > -100.f && abs(newTemp-temperature)>10.) {
-        lastMeasurement = millis() - readingInterval + 5000;  // speed up next reading
-        errorReading = true;
-      } else {
-        lastMeasurement = millis();
-        errorReading = false;
-        temperature = newTemp;
-      }
       //DEBUG_PRINTF("Read temperature %2.1f.\n", temperature); // does not work properly on 8266
       DEBUG_PRINT(F("Read temperature "));
       DEBUG_PRINTLN(temperature);
@@ -243,7 +236,7 @@ class UsermodTemperature : public Usermod {
         return;
       }
 
-      temp.add(degC ? temperature : (float)temperature * 1.8f + 32);
+      temp.add(degC ? getTemperatureC() : getTemperatureF());
       temp.add(degC ? F("°C") : F("°F"));
 
       JsonObject sensor = root[F("sensor")];
