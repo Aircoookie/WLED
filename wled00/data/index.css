@@ -588,6 +588,7 @@ input[type=range]:active + .sliderbubble {
 /* Small round button (color selectors, icon-only round buttons) */
 .xxs {
 	width: 40px;
+	height: 40px;
 	margin: 6px;
 }
 
@@ -651,7 +652,14 @@ input[type=range]:active + .sliderbubble {
 
 /* Color slot select buttons (1,2,3) */
 .cl {
-	width: 42px;
+	width: 38.5px;
+	height: 38.5px;
+	margin: 7px;
+	background-color: #000;
+	box-shadow: 0 0 0 1.5px #fff;
+}
+.selected.cl {
+	box-shadow: 0 0 0 5px #fff;
 }
 
 /* Playlist preset select */

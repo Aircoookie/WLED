@@ -3,13 +3,13 @@ var loc = false, locip;
 var noNewSegs = false;
 var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true, isRgbw = false;
 var whites = [0,0,0];
-var selColors;
+var colors = [[0,0,0],[0,0,0],[0,0,0]];
 var expanded = [false];
 var powered = [true];
 var nlDur = 60, nlTar = 0;
 var nlMode = false;
 var selectedFx = 0;
-var csel = 0;
+var csel = 0; // selected color slot (0-2)
 var currentPreset = -1;
 var lastUpdate = 0;
 var segCount = 0, ledCount = 0, lowestUnused = 0, maxSeg = 0, lSeg = 0;
@@ -60,6 +60,24 @@ function sCol(na, col) {
 	d.documentElement.style.setProperty(na, col);
 }
 
+// returns RGB color from a given slot s 0-2 from color array a
+function rgbStr(a, s) {
+	return "rgb(" + a[s][0] + "," + a[s][1] + "," + a[s][2] + ")";
+}
+
+// brightness approximation for selecting white as text color if background bri < 127, and black if higher
+function rgbBri(a, s) {
+	var R = a[s][0], G = a[s][1], B = a[s][2];
+	return 0.2126*R + 0.7152*G + 0.0722*B;
+}
+
+// sets background of color slot selectors
+function setCSL(a, s) {
+	var cd = d.getElementsByClassName('cl')[s];
+	cd.style.backgroundColor = rgbStr(a, s);
+	cd.style.color = rgbBri(a, s) > 127 ? "#000":"#fff";
+}
+
 function applyCfg()
 {
 	cTheme(cfg.theme.base === "light");
@@ -74,8 +92,8 @@ function applyCfg()
 	d.getElementById('qcs-w').style.display = ccfg.quick ? "block":"none";
 	var l = cfg.comp.labels;
 	var e = d.querySelectorAll('.tab-label');
-	for (var i=0; i<e.length; i++)
-		e[i].style.display = l ? "block":"none";
+	for (var i of e)
+		i.style.display = l ? "block":"none";
 	e = d.querySelector('.hd');
 	e.style.display = l ? "block":"none";
 	sCol('--tbp',l ? "14px 14px 10px 14px":"10px 22px 4px 22px");
@@ -224,10 +242,6 @@ function onLoad() {
 		loadBg(cfg.theme.bg.url);
 	if (cfg.comp.css) loadSkinCSS('skinCss');
 
-	var cd = d.getElementById('csl').children;
-	for (var i = 0; i < cd.length; i++) {
-		cd[i].style.backgroundColor = "rgb(0, 0, 0)";
-	}
 	selectSlot(0);
 	updateTablinks(0);
 	resetUtil();
@@ -753,11 +767,11 @@ function genPalPrevCss(id)
 			g = Math.random() * 255;
 			b = Math.random() * 255;
 		} else {
-			if (selColors) {
+			if (colors) {
 				let pos = element[1] - 1;
-				r = selColors[pos][0];
-				g = selColors[pos][1];
-				b = selColors[pos][2];
+				r = colors[pos][0];
+				g = colors[pos][1];
+				b = colors[pos][2];
 			}
 		}
 		if (index === false) {
@@ -1030,11 +1044,10 @@ function readState(s,command=false) {
 		return;
 	}
 	
-	selColors = i.col;
-	var cd = d.getElementById('csl').children;
+	colors = i.col;
 	for (let e = 2; e >= 0; e--)
 	{
-		cd[e].style.backgroundColor = "rgb(" + i.col[e][0] + "," + i.col[e][1] + "," + i.col[e][2] + ")";
+		setCSL(colors, e);
 		if (isRgbw) whites[e] = parseInt(i.col[e][3]);
 		selectSlot(csel);
 	}
@@ -1761,16 +1774,12 @@ function delP(i) {
 
 function selectSlot(b) {
 	csel = b;
-	var cd = d.getElementById('csl').children;
-	for (let i = 0; i < cd.length; i++) {
-		cd[i].style.border="2px solid white";
-		cd[i].style.margin="5px";
-		cd[i].style.width="42px";
+	var cd = d.getElementsByClassName('cl');
+	for (var i of cd) {
+		i.classList.remove("selected");
 	}
-	cd[csel].style.border="5px solid white";
-	cd[csel].style.margin="2px";
-	cd[csel].style.width="50px";
-	setPicker(cd[csel].style.backgroundColor);
+	cd[csel].classList.add("selected");
+	setPicker(rgbStr(colors, csel));
 	//force slider update on initial load (picker "color:change" not fired if black)
 	if (cpick.color.value == 0) updatePSliders();
 	d.getElementById('sliderW').value = whites[csel];
@@ -1876,11 +1885,11 @@ function fromRgb()
 
 //sr 0: from RGB sliders, 1: from picker, 2: from hex
 function setColor(sr) {
-	var cd = d.getElementById('csl').children;
-	if (sr == 1 && cd[csel].style.backgroundColor == "rgb(0, 0, 0)") cpick.color.setChannel('hsv', 'v', 100);
-	cd[csel].style.backgroundColor = cpick.color.rgbString;
+	if (sr == 1 && colors[csel][0] == 0 && colors[csel][1] == 0 && colors[csel][2] == 0) cpick.color.setChannel('hsv', 'v', 100);
 	if (sr != 2) whites[csel] = parseInt(d.getElementById('sliderW').value);
 	var col = cpick.color.rgb;
+	colors[csel] = [col.r, col.g, col.b, whites[csel]];
+	setCSL(colors, csel);
 	var obj = {"seg": {"col": [[col.r, col.g, col.b, whites[csel]],[],[]]}};
 	if (csel == 1) {
 		obj = {"seg": {"col": [[],[col.r, col.g, col.b, whites[csel]],[]]}};
