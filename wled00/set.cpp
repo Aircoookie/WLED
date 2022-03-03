@@ -7,9 +7,18 @@
 //called upon POST settings form submit
 void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 {
+  // PIN code request
+  if (subPage == 252)
+  {
+    correctPIN = (strlen(settingsPIN)==0 || strncmp(settingsPIN, request->arg(F("PIN")).c_str(), 4)==0);
+    lastEditTime = millis();
+    return;
+  }
 
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 7: DMX 8: usermods
   if (subPage <1 || subPage >8) return;
+
+  if (correctPIN) lastEditTime = millis();
 
   //WIFI SETTINGS
   if (subPage == 1)
@@ -393,6 +402,14 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       doReboot = true;
     }
 
+    if (request->hasArg(F("PIN"))) {
+      const char *pin = request->arg(F("PIN")).c_str();
+      if (strlen(pin) == 4 || strlen(pin) == 0) {
+        strlcpy(settingsPIN, pin, 5);
+        settingsPIN[4] = 0;
+      }
+    }
+
     bool pwdCorrect = !otaLock; //always allow access if ota not locked
     if (request->hasArg(F("OP")))
     {
@@ -408,11 +425,14 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     if (pwdCorrect) //allow changes if correct pwd or no ota active
     {
+      bool oldOTALock = otaLock;
       otaLock = request->hasArg(F("NO"));
       wifiLock = request->hasArg(F("OW"));
       aOtaEnabled = request->hasArg(F("AO"));
+      doReboot = (otaLock ^ oldOTALock);
     }
   }
+
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
   if (subPage == 7)
   {
@@ -526,7 +546,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     releaseJSONBufferLock();
   }
-  
+
   if (subPage != 2 && (subPage != 6 || !doReboot)) serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)
   if (subPage == 4) alexaInit();
 }

@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2202281
+#define VERSION 2203042
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -417,6 +417,9 @@ WLED_GLOBAL byte macroDoublePress[WLED_MAX_BUTTONS]   _INIT({0});
 WLED_GLOBAL bool otaLock     _INIT(false);  // prevents OTA firmware updates without password. ALWAYS enable if system exposed to any public networks
 WLED_GLOBAL bool wifiLock    _INIT(false);  // prevents access to WiFi settings when OTA lock is enabled
 WLED_GLOBAL bool aOtaEnabled _INIT(true);   // ArduinoOTA allows easy updates directly from the IDE. Careful, it does not auto-disable when OTA lock is on
+WLED_GLOBAL char settingsPIN[5] _INIT("");  // PIN for settings pages
+WLED_GLOBAL bool correctPIN     _INIT(true);
+WLED_GLOBAL unsigned long lastEditTime _INIT(0);
 
 WLED_GLOBAL uint16_t userVar0 _INIT(0), userVar1 _INIT(0); //available for use in usermod
 
@@ -603,6 +606,13 @@ WLED_GLOBAL byte optionType;
 WLED_GLOBAL bool doReboot _INIT(false);        // flag to initiate reboot from async handlers
 WLED_GLOBAL bool doPublishMqtt _INIT(false);
 
+// status led
+#if defined(STATUSLED)
+WLED_GLOBAL unsigned long ledStatusLastMillis _INIT(0);
+WLED_GLOBAL uint8_t ledStatusType _INIT(0); // current status type - corresponds to number of blinks per second
+WLED_GLOBAL bool ledStatusState _INIT(false); // the current LED state
+#endif
+
 // server library objects
 WLED_GLOBAL AsyncWebServer server _INIT_N(((80)));
 #ifdef WLED_ENABLE_WEBSOCKETS
@@ -610,6 +620,7 @@ WLED_GLOBAL AsyncWebSocket ws _INIT_N((("/ws")));
 #endif
 WLED_GLOBAL AsyncClient* hueClient _INIT(NULL);
 WLED_GLOBAL AsyncMqttClient* mqtt _INIT(NULL);
+WLED_GLOBAL AsyncWebHandler *editHandler _INIT(nullptr);
 
 // udp interface objects
 WLED_GLOBAL WiFiUDP notifierUdp, rgbUdp, notifier2Udp;

@@ -139,6 +139,13 @@ void WLED::loop()
     yield();
   }
 
+  // 15min PIN time-out
+  if (strlen(settingsPIN)>0 && millis() - lastEditTime > 900000) {
+    correctPIN = false;
+    server.removeHandler(editHandler);
+    createEditHandler(correctPIN);
+  }
+
   //LED settings have been saved, re-init busses
   //This code block causes severe FPS drop on ESP32 with the original "if (busConfigs[0] != nullptr)" conditional. Investigate! 
   if (doInitBusses) {
@@ -723,9 +730,6 @@ void WLED::handleStatusLED()
 {
   #if defined(STATUSLED)
   uint32_t c = 0;
-  static unsigned long ledStatusLastMillis = 0;
-  static unsigned short ledStatusType = 0; // current status type - corresponds to number of blinks per second
-  static bool ledStatusState = false; // the current LED state
 
   #if STATUSLED>=0
   if (pinManager.isPinAllocated(STATUSLED)) {
