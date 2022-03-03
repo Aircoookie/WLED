@@ -52,7 +52,7 @@ function applyCfg()
 	gId('hexw').style.display = ccfg.hex ? "block":"none";
 	gId('picker').style.display = ccfg.picker ? "block":"none";
 	gId('vwrap').style.display = ccfg.picker ? "block":"none";
-	gId('kwrap').style.display = ccfg.picker ? "block":"none";
+	//gId('kwrap').style.display = ccfg.picker ? "block":"none";
 	gId('rgbwrap').style.display = ccfg.rgb ? "block":"none";
 	gId('qcs-w').style.display = ccfg.quick ? "block":"none";
 	var l = cfg.comp.labels;
@@ -514,7 +514,7 @@ function populateQL()
 	var cn = "";
 	if (pQL.length > 0) {
 		pQL.sort((a,b) => (a[0]>b[0]));
-		cn += `<p class="labels">Quick load</p>`;
+		cn += `<p class="labels hd">Quick load</p>`;
 		for (var key of (pQL||[])) {
 			cn += `<button class="btn btn-xs psts" id="p${key[0]}qlb" title="${key[2]?key[2]:''}" onclick="setPreset(${key[0]});">${key[1]}</button>`;
 		}
@@ -527,7 +527,7 @@ function populatePresets(fromls)
 	if (fromls) pJson = JSON.parse(localStorage.getItem("wledP"));
 	if (!pJson) {setTimeout(loadPresets,250); return;}
 	delete pJson["0"];
-	var cn = `<p class="labels">All presets</p>`;
+	var cn = `<p class="labels hd">All presets</p>`;
 	var arr = Object.entries(pJson);
 	arr.sort(cmpP);
 	pQL = [];
@@ -633,7 +633,7 @@ function populateSegments(s)
 		if (i == lowestUnused) lowestUnused = i+1;
 		if (i > lSeg) lSeg = i;
 
-		cn += `<div class="seg ${i==s.mainseg ? 'selected' : ''}" id="seg${i}wrp">
+		cn += `<div class="seg ${i==s.mainseg ? 'selected' : ''} ${expanded[i] ? "expanded":""}" id="seg${i}">
 	<label class="check schkl">
 		<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>
 		<span class="checkmark schk"></span>
@@ -649,7 +649,7 @@ function populateSegments(s)
 			<div class="sliderdisplay"></div>
 		</div>
 	</div>
-	<div class="segin ${expanded[i] ? "expanded":""}" id="seg${i}">
+	<div class="segin" id="seg${i}in">
 		<input type="text" class="ptxt noslide" id="seg${i}t" autocomplete="off" maxlength=32 value="${inst.n?inst.n:""}" placeholder="Enter name..."/>
 		<table class="infot segt">
 		<tr>
@@ -1248,7 +1248,7 @@ function setSliderAndColorControl(idx, applyDef=false)
   
 	// set top position of the effect list
 	gId("fxFind").style.top = topPosition + "px";
-	topPosition += 42;
+	topPosition += 40;
 	var fxList = gId("fxlist");
 	for (let f of fxList.children) f.style.top = null; // remove top
 	var selected = fxList.querySelector('.selected');
@@ -1379,6 +1379,7 @@ function requestJson(command=null)
 		var s = json.state ? json.state : json;
 		readState(s);
 		if (!(ws && ws.readyState === WebSocket.OPEN)) makeWS();
+		if (!pJson) loadPresets();
 		reqsLegal = true;
 	})
 	.catch((e)=>{
@@ -1483,7 +1484,6 @@ function makeSeg()
 function resetUtil()
 {
 	gId('segutil').innerHTML = '<button class="btn btn-s" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>Add segment</button>';
-	//for (var i=0; i<expanded.length; i++) if (expanded[i]) expand(i); // collapse all expanded elements
 }
 
 var plJson = {"0":{
@@ -1660,7 +1660,6 @@ function makePUtil()
 		block: 'start',
 	});
 	gId('putil').innerHTML = `<div class="pres"><div class="segin expanded">${makeP(0)}</div></div>`;
-	//for (var i=0; i<expanded.length; i++) if (expanded[i]) expand(i); // collapse all expanded elements
 }
 
 function makePlEntry(p,i) {
@@ -2262,9 +2261,10 @@ function expand(i, c=false)
 	gId('sege' +i).classList.toggle("exp");
 	gId(util).classList.toggle(stay);
 
+	// presets
 	if (i >= 100) {
 		var p = i-100;
-		gId(`p${p}o`).classList.toggle('expand');
+		gId(`p${p}o`).classList.toggle('expanded');
 		if (expanded[i]) {
 			if (isPlaylist(p)) {
 				plJson[p] = pJson[p].playlist;

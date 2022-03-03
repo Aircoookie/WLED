@@ -310,15 +310,11 @@ button {
 
 #segutil, #segutil2, #segcont, #putil, #pcont, #pql {
 	width: 280px;
-	margin: 0 auto;
+	margin: 10px auto 0;
 }
 
 #segutil .seg {
 	margin: 10px 0;
-}
-
-#segcont, #segutil, #putil {
-	padding: 10px 0 0;
 }
 
 .smooth { transition: transform	calc(var(--f, 1)*.5s) ease-out }
@@ -663,18 +659,16 @@ input[type=range]::-moz-range-thumb {
 	transform:translate3d(0,0,0);
 	overflow: clip;
 	text-overflow: clip;
+	border: 1px solid var(--c-2);
+	background-color: var(--c-2);
 }
 .btn:hover {
-	border: 1px solid var(--c-4);
+	border: 1px solid var(--c-5);
 	background-color: var(--c-5);
-}
-.btn {
-	border: 1px solid var(--c-1);
-	background-color: var(--c-2);
 }
 .btn-s {
 	width: 100%;
-	margin: 0 0 10px;
+	margin: 0;
 }
 .btn-icon {
 	margin: -4px 4px 0 0;
@@ -683,7 +677,7 @@ input[type=range]::-moz-range-thumb {
 }
 .btn-n {
 	width: 230px;
-	margin: 0 8px 10px 0;
+	margin: 0 8px 0 0;
 }
 .btn-p {
 	width: 120px;
@@ -762,7 +756,7 @@ option {
 input[type=number], input[type=text] {
 	background: var(--c-3);
 	color: var(--c-f);
-	border: 1px solid var(--c-2);
+	border: 0px solid var(--c-2);
 	border-radius: 5px;
 	padding: 8px;
 	margin: 6px 6px 6px 0;
@@ -827,21 +821,22 @@ input[type=number]::-webkit-outer-spin-button {
 }
 */
 .segname, .pname {
-	padding: 4px 0;
+	/*padding: 4px 0;*/
 	white-space: nowrap;
 	cursor: pointer;
 	text-align: center;
 	overflow: hidden;
 	text-overflow: clip;
+	line-height: 24px;
 }
 
 .segpwr {
-	padding: 4px 0 4px 8px;
+	padding: 4px 0 0 8px;
 }
 
 .pid {
 	position: absolute;
-	top: 0px;
+	top: 2px;
 	left: 0px;
 	padding: 12px 0px 0px 12px;
 	font-size: 16px;
@@ -993,16 +988,20 @@ input[type=number]::-webkit-outer-spin-button {
 .seg, .pres {
 	position: relative;
 	display: block;
-	padding: 8px 0;
+	padding: 10px 0;
 	margin: 0 0 10px;
 	background-color: var(--c-2);
 	color: var(--c-f);
 	border: 0px solid var(--c-f);
-	border-radius: 20px;
+	border-radius: 24px;
 	text-align: left;
 	transition: background-color 0.5s;
   	filter: brightness(1);
 	font-size: 19px;
+}
+
+.pres {
+	min-height: 24px;
 }
 
 .seg:last-child {
@@ -1015,10 +1014,6 @@ input[type=number]::-webkit-outer-spin-button {
 	left: 8px;
 }
 
-.pres {
-	padding-bottom: 4px;
-}
-
 .list {
 	position: relative;
 	width: 280px;
@@ -1029,15 +1024,15 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .lstI {
-	display: flex;
+	/*display: flex;*/
 	align-items: center;
 	padding: 8px 10px;
     cursor: pointer;
 	background-color: var(--c-2);
 	overflow: hidden;
 	position: sticky;
-	border: 1px solid var(--c-2);
-	border-radius: 25px;
+	/*border: 1px solid var(--c-2);*/
+	border-radius: 24px;
 	margin: 10px auto 0;
 	min-height: 24px;
 }
@@ -1046,22 +1041,18 @@ input[type=number]::-webkit-outer-spin-button {
 	background: var(--c-4);
 }
 
-#pcont .pres:hover, #pcont .selected:hover,
+#segcont .seg:hover:not([class*="expanded"]),
+#pcont .pres:hover:not([class*="expanded"]),
+#pcont .selected:hover:not([class*="expanded"]),
 .lstI:hover {
-	border: 1px solid var(--c-5);
+	/*border: 1px solid var(--c-5);*/
     background: var(--c-5);
-}
-
-#pcont .expand, #pcont .expand:hover {
-	border: 1px solid var(--c-1);
-	background-color: var(--c-2);
 }
 
 .selected .checkmark,
 .selected .radiomark,
 .selected input[type=number],
-.selected input[type=text],
-.selected button.btn {
+.selected input[type=text] {
 	background-color: var(--c-3);
 }
 
@@ -1073,22 +1064,22 @@ input[type=number]::-webkit-outer-spin-button {
 .lstI.sticky, .lstI.selected {
 	z-index: 1;
 }
-/*
+/* calculated in index.js
 #fxlist .lstI.selected {
 	top: 142px;
 }
 */
 #pallist .lstI.selected {
-	top: 84px;
+	top: 82px;
 }
 /* must be after .selected */
-/*
+/* calculated in index.js
 #fxlist .lstI.sticky {
 	top: 99px;
 }
 */
 #pallist .lstI.sticky {
-	top: 42px;
+	top: 40px;
 }
 
 .lstIcontent {
@@ -1098,7 +1089,7 @@ input[type=number]::-webkit-outer-spin-button {
 	text-align: left;
 	display: inline-block;*/
 	position: relative;
-	left: 40px;
+	/*left: 40px;*/
 }
 
 .lstIname {
@@ -1128,35 +1119,34 @@ input[type="text"].fnd {
 	text-align: left;
 	border-radius: 25px;
 	background: var(--c-2);
-	border: 1px solid var(--c-3);
+	/*border: 1px solid var(--c-3);*/
 }
 
 input[type="text"].fnd:focus {
 	background-color: var(--c-4);
 }
 
-.selected button.btn:hover,
 input[type="text"].fnd:not(:placeholder-shown),
 input[type="text"].fnd:hover {
 	background-color: var(--c-3);
 }
 
 .segin {
-	padding: 0 8px 8px;
+	padding: 8px;
 	display: none;
 }
 
 .segin .btn {
-	border: 1px solid var(--c-2);
+	border: 1px solid var(--c-3);
 	background-color: var(--c-3);
 }
 .segin .btn:hover {
-	border: 1px solid var(--c-4);
+	border: 1px solid var(--c-5);
 	background-color: var(--c-5);
 }
 
 .check input:checked ~ .checkmark:after, .radio input:checked ~ .radiomark:after,
-.expanded {
+.expanded, .expanded .segin {
 	display: block;
 }
 
