@@ -3,13 +3,14 @@ var loc = false, locip;
 var noNewSegs = false;
 var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true, isRgbw = false, cct = false;
 var whites = [0,0,0];
+var colors = [[0,0,0],[0,0,0],[0,0,0]];
 var expanded = [false];
 var powered = [true];
 var nlDur = 60, nlTar = 0;
 var nlMode = false;
 var selectedFx = 0, prevFx = -1;
 var selectedPal = 0;
-var csel = 0;
+var csel = 0; // selected color slot (0-2)
 var currentPreset = -1, prevPS = -1;
 var lastUpdate = 0;
 var segCount = 0, ledCount = 0, lowestUnused = 0, maxSeg = 0, lSeg = 0;
@@ -43,6 +44,19 @@ function gEBCN(c) {return d.getElementsByClassName(c);}
 function isEmpty(o) {return Object.keys(o).length === 0;}
 function isObj(i) {return (i && typeof i === 'object' && !Array.isArray(i));}
 
+// returns RGB color from a given slot s 0-2 from color array a
+function rgbStr(a) {return "rgb(" + a.r + "," + a.g + "," + a.b + ")";}
+
+// brightness approximation for selecting white as text color if background bri < 127, and black if higher
+function rgbBri(a) {return 0.2126*parseInt(a.r) + 0.7152*parseInt(a.g) + 0.0722*parseInt(a.b);}
+
+// sets background of color slot selectors
+function setCSL(cs)
+{
+	cs.style.backgroundColor = rgbStr(cs.dataset);
+	cs.style.color = rgbBri(cs.dataset) > 127 ? "#000":"#fff"; // if text has no CSS "shadow"
+}
+
 function applyCfg()
 {
 	cTheme(cfg.theme.base === "light");
@@ -57,7 +71,7 @@ function applyCfg()
 	gId('qcs-w').style.display = ccfg.quick ? "block":"none";
 	var l = cfg.comp.labels;
 	var e = d.querySelectorAll('.tab-label');
-	for (var i=0; i<e.length; i++) e[i].style.display = l ? "block":"none";
+	for (let i of e) i.style.display = l ? "block":"none";
 	e = d.querySelector('.hd');
 	e.style.display = l ? "block":"none";
 	sCol('--tbp',l ? "14px 14px 10px 14px":"10px 22px 4px 22px");
@@ -212,8 +226,6 @@ function onLoad()
 		loadBg(cfg.theme.bg.url);
 	if (cfg.comp.css) loadSkinCSS('skinCss');
 
-	var cd = gId('csl').children;
-	for (var i = 0; i < cd.length; i++) cd[i].style.backgroundColor = "rgb(0, 0, 0)";
 	selectSlot(0);
 	updateTablinks(0);
 	pmtLS = localStorage.getItem('wledPmt');
@@ -1132,13 +1144,11 @@ function readState(s,command=false)
   
 	var cd = gId('csl').children;
 	for (let e = cd.length-1; e >= 0; e--) {
-		let r,g,b,w;
-		r = cd[e].dataset.r = i.col[e][0];
-		g = cd[e].dataset.g = i.col[e][1];
-		b = cd[e].dataset.b = i.col[e][2];
-		if (isRgbw) w = cd[e].dataset.w = i.col[e][3];
-		cd[e].style.backgroundColor = "rgb(" + r + "," + g + "," + b + ")";
-		if (isRgbw) whites[e] = parseInt(w);
+		cd[e].dataset.r = i.col[e][0];
+		cd[e].dataset.g = i.col[e][1];
+		cd[e].dataset.b = i.col[e][2];
+		cd[e].style.backgroundColor = rgbStr(cd[e].dataset); // or: setCSL(cd[e]);
+		if (isRgbw) { let w = cd[e].dataset.w = i.col[e][3]; whites[e] = parseInt(w); }
 	}
 	selectSlot(csel);
 	if (i.cct && i.cct>=0) gId("sliderA").value = i.cct;
@@ -1985,7 +1995,7 @@ function selectSlot(b)
 {
 	csel = b;
 	var cd = gId('csl').children;
-	for (let i = 0; i < cd.length; i++) cd[i].classList.remove('xxs-w');
+	for (let i of cd) i.classList.remove('xxs-w');
 	cd[b].classList.add('xxs-w');
 	setPicker(cd[b].style.backgroundColor);
 	gId('sliderW').value = whites[b];
@@ -2087,10 +2097,15 @@ function fromRgb()
 function setColor(sr)
 {
 	var cd = gId('csl').children; // color slots
-	if (sr == 1 && cd[csel].style.backgroundColor == "rgb(0, 0, 0)") cpick.color.setChannel('hsv', 'v', 100); // watch out for spaces!!!
-	cd[csel].style.backgroundColor = cpick.color.rgbString;
+	let cdd = cd[csel].dataset;
+	if (sr == 1 && cdd.r == "0" && cdd.g == "0" && cdd.b == "0") cpick.color.setChannel('hsv', 'v', 100);
 	if (sr != 2) whites[csel] = parseInt(gId('sliderW').value);
 	var col = cpick.color.rgb;
+	cdd.r = col.r;
+	cdd.g = col.g;
+	cdd.b = col.b;
+	if (isRgbw) cdd.w = whites[csel];
+	cd[csel].style.backgroundColor = rgbStr(cd[csel].dataset); // or: setCSL(cd[csel]);
 	var obj = {"seg": {"col": [[col.r, col.g, col.b, whites[csel]],[],[]]}};
 	if (csel == 1) {
 		obj = {"seg": {"col": [[],[col.r, col.g, col.b, whites[csel]],[]]}};

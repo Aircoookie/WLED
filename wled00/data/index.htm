@@ -151,9 +151,9 @@
 			<div class="qcs" onclick="pC('rnd');" title="Random" style="background:linear-gradient(to right, red, orange, yellow, green, blue, purple);transform: translateY(-11px);">R</div>
 		</div>
 		<div id="csl">
-			<button id="csl0" class="btn xxs" onclick="selectSlot(0);">1</button>
-			<button id="csl1" class="btn xxs" onclick="selectSlot(1);">2</button>
-			<button id="csl2" class="btn xxs" onclick="selectSlot(2);">3</button>
+			<button id="csl0" class="btn xxs cl" onclick="selectSlot(0);">1</button>
+			<button id="csl1" class="btn xxs cl" onclick="selectSlot(1);">2</button>
+			<button id="csl2" class="btn xxs cl" onclick="selectSlot(2);">3</button>
 		</div>
 		<p class="labels hd h" id="cslLabel"></p>
 		<div id="hexw">
@@ -195,7 +195,7 @@
 	<div id="Effects" class="tabcontent">
 		<p class="labels" id="sliderLabel0">Effect speed</p>
 		<div class="staytop" id="slider0">
-			<i class="icons slider-icon" onclick="tglFreeze()">&#xe325;</i>
+			<i class="icons slider-icon" style="cursor: pointer;" onclick="tglFreeze()">&#xe325;</i>
 			<div class="sliderwrap il">
 				<input id="sliderSpeed" class="noslide" onchange="setSpeed()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
 				<div class="sliderdisplay"></div>
@@ -204,7 +204,7 @@
 		</div>
 		<p class="labels" id="sliderLabel1">Effect intensity</p>
 		<div class="staytop" id="slider1">
-			<i class="icons slider-icon" onclick="tglLabels()">&#xe409;</i>
+			<i class="icons slider-icon" style="cursor: pointer;" onclick="tglLabels()">&#xe409;</i>
 			<div class="sliderwrap il">
 				<input id="sliderIntensity" class="noslide" onchange="setIntensity()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
 				<div class="sliderdisplay"></div>

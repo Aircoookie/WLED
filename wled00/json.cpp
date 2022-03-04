@@ -185,7 +185,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         JsonArray icol = iarr[i];
         if (!icol.isNull()) { //array, e.g. [255,0,0]
           byte sz = icol.size();
-          if (sz > 0 || sz < 5) copyArray(icol, rgbw);
+          if (sz > 0 && sz < 5) copyArray(icol, rgbw);
         } else { //hex string, e.g. "FF0000"
           byte brgbw[] = {0,0,0,0};
           const char* hexCol = iarr[i];
