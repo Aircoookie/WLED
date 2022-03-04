@@ -552,6 +552,8 @@ void parseNumber(const char* str, byte* val, byte minv, byte maxv)
 {
   if (str == nullptr || str[0] == '\0') return;
   if (str[0] == 'r') {*val = random8(minv,maxv); return;}
+  bool wrap = false;
+  if (str[0] == 'w' && strlen(str) > 1) {str++; wrap = true;}
   if (str[0] == '~') {
     int out = atoi(str +1);
     if (out == 0)
@@ -564,9 +566,13 @@ void parseNumber(const char* str, byte* val, byte minv, byte maxv)
         *val = (int)(*val +1) > (int)maxv ? minv : max((int)minv,(*val +1)); //+1, wrap around
       }
     } else {
-      out += *val;
-      if (out > maxv) out = maxv;
-      if (out < minv) out = minv;
+      if (wrap && *val == maxv && out > 0) out = minv;
+      else if (wrap && *val == minv && out < 0) out = maxv;
+      else { 
+        out += *val;
+        if (out > maxv) out = maxv;
+        if (out < minv) out = minv;
+      }
       *val = out;
     }
   } else
