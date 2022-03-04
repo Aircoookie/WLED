@@ -1,7 +1,8 @@
 //page js
 var loc = false, locip;
 var noNewSegs = false;
-var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true, isRgbw = false;
+var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true;
+var hasWhite = false, hasRGB = false, hasCCT = false;
 var whites = [0,0,0];
 var colors = [[0,0,0],[0,0,0],[0,0,0]];
 var expanded = [false];
@@ -60,6 +61,10 @@ function sCol(na, col) {
 	d.documentElement.style.setProperty(na, col);
 }
 
+function isRgbBlack(a, s) {
+	return (a[s][0] == 0 && a[s][1] == 0 && a[s][2] == 0);
+}
+
 // returns RGB color from a given slot s 0-2 from color array a
 function rgbStr(a, s) {
 	return "rgb(" + a[s][0] + "," + a[s][1] + "," + a[s][2] + ")";
@@ -72,10 +77,20 @@ function rgbBri(a, s) {
 }
 
 // sets background of color slot selectors
-function setCSL(a, s) {
+function setCSL(s) {
 	var cd = d.getElementsByClassName('cl')[s];
-	cd.style.backgroundColor = rgbStr(a, s);
-	cd.style.color = rgbBri(a, s) > 127 ? "#000":"#fff";
+	var w = whites[s];
+	if (hasRGB && !isRgbBlack(colors, s)) {
+		cd.style.background = rgbStr(colors, s);
+		cd.style.color = rgbBri(colors, s) > 127 ? "#000":"#fff";
+		if (hasWhite && w > 0) {
+			cd.style.background = `linear-gradient(180deg, ${rgbStr(colors, s)} 30%, ${rgbStr([[w,w,w]], 0)})`;
+		}
+	} else {
+		if (!hasWhite) w = 0;
+		cd.style.background = rgbStr([[w,w,w]], 0);
+		cd.style.color = w > 127 ? "#000":"#fff";
+	}
 }
 
 function applyCfg()
@@ -83,13 +98,7 @@ function applyCfg()
 	cTheme(cfg.theme.base === "light");
 	var bg = cfg.theme.color.bg;
 	if (bg) sCol('--c-1', bg);
-	var ccfg = cfg.comp.colors;
-	d.getElementById('hexw').style.display = ccfg.hex ? "block":"none";
-	d.getElementById('picker').style.display = ccfg.picker ? "block":"none";
-	d.getElementById('vwrap').style.display = ccfg.picker ? "block":"none";
-	d.getElementById('kwrap').style.display = ccfg.picker ? "block":"none";
-	d.getElementById('rgbwrap').style.display = ccfg.rgb ? "block":"none";
-	d.getElementById('qcs-w').style.display = ccfg.quick ? "block":"none";
+	if (lastinfo.leds) updateUI(); // update component visibility
 	var l = cfg.comp.labels;
 	var e = d.querySelectorAll('.tab-label');
 	for (var i of e)
@@ -918,22 +927,19 @@ function updateLen(s)
 function updatePA()
 {
 	var ps = d.getElementsByClassName("pres"); //reset all preset buttons
-	for (let i = 0; i < ps.length; i++) {
-		//ps[i].style.backgroundColor = "var(--c-2)";
-		ps[i].classList.remove("selected");
+	for (var i of ps) {
+		i.classList.remove("selected");
 	}
 	ps = d.getElementsByClassName("psts"); //reset all quick selectors
-	for (let i = 0; i < ps.length; i++) {
-		ps[i].style.backgroundColor = "var(--c-2)";
+	for (var i of ps) {
+		i.classList.remove("selected");
 	}
 	if (currentPreset > 0) {
 		var acv = d.getElementById(`p${currentPreset}o`);
 		if (acv && !expanded[currentPreset+100])
-			//acv.style.background = "var(--c-6)"; //highlight current preset
 			acv.classList.add("selected");
 		acv = d.getElementById(`p${currentPreset}qlb`);
 		if (acv)
-			//acv.style.background = "var(--c-6)"; //highlight quick selector
 			acv.classList.add("selected");
 	}
 }
@@ -947,9 +953,15 @@ function updateUI()
 	updateTrail(d.getElementById('sliderBri'));
 	updateTrail(d.getElementById('sliderSpeed'));
 	updateTrail(d.getElementById('sliderIntensity'));
-	d.getElementById('wwrap').style.display = (isRgbw) ? "block":"none";
-	d.getElementById('wbal').style.display = (lastinfo.leds.cct) ? "block":"none";
-	d.getElementById('kwrap').style.display = (lastinfo.leds.cct) ? "none":"block";
+	d.getElementById('wwrap').style.display = (hasWhite) ? "block":"none";
+	d.getElementById('wbal').style.display = (hasCCT) ? "block":"none";
+	var ccfg = cfg.comp.colors;
+	d.getElementById('hexw').style.display = ccfg.hex ? "block":"none";
+	d.getElementById('pwrap').style.display = (hasRGB && ccfg.picker) ? "block":"none";
+	d.getElementById('kwrap').style.display = (hasRGB && !hasCCT && ccfg.picker) ? "block":"none";
+	d.getElementById('rgbwrap').style.display = (hasRGB && ccfg.rgb) ? "block":"none";
+	d.getElementById('qcs-w').style.display = (hasRGB && ccfg.quick) ? "block":"none";
+	d.getElementById('palwrap').style.display = hasRGB ? "block":"none";
 
 	updatePA();
 	updatePSliders();
@@ -1031,13 +1043,32 @@ function readState(s,command=false) {
 	tr = s.transition;
 	d.getElementById('tt').value = tr/10;
 
-	var selc=0; var ind=0;
 	populateSegments(s);
+	var selc=0;
+	var sellvl=0; // 0: selc is invalid, 1: selc is mainseg, 2: selc is first selected
+	hasRGB = hasWhite = hasCCT = false;
 	for (let i = 0; i < (s.seg||[]).length; i++)
 	{
-		if(s.seg[i].sel) {selc = ind; break;} ind++;
+		if (sellvl == 0 && s.seg[i].id == s.mainseg) {
+			selc = i;
+			sellvl = 1;
+		}
+		if (s.seg[i].sel) {
+			if (sellvl < 2) selc = i; // get first selected segment
+			sellvl = 2;
+			var lc = lastinfo.leds.seglc[s.seg[i].id];
+			hasRGB   |= lc & 0x01;
+			hasWhite |= lc & 0x02;
+			hasCCT   |= lc & 0x04;
+		}
 	}
 	var i=s.seg[selc];
+	if (sellvl == 1) {
+		var lc = lastinfo.leds.seglc[i.id];
+		hasRGB   = lc & 0x01;
+		hasWhite = lc & 0x02;
+		hasCCT   = lc & 0x04;
+	}
 	if (!i) {
 		showToast('No Segments!', true);
 		updateUI();
@@ -1047,8 +1078,8 @@ function readState(s,command=false) {
 	colors = i.col;
 	for (let e = 2; e >= 0; e--)
 	{
-		setCSL(colors, e);
-		if (isRgbw) whites[e] = parseInt(i.col[e][3]);
+		if (i.col[e].length > 3) whites[e] = parseInt(i.col[e][3]);
+		setCSL(e);
 		selectSlot(csel);
 	}
 	if (i.cct != null && i.cct>=0) d.getElementById("sliderA").value = i.cct;
@@ -1199,7 +1230,6 @@ function requestJson(command, rinfo = true) {
 				name = "(L) " + name;
 			}
 			d.title = name;
-			isRgbw = info.leds.wv;
 			ledCount = info.leds.count;
 			syncTglRecv = info.str;
 			maxSeg = info.leds.maxseg;
@@ -1889,13 +1919,9 @@ function setColor(sr) {
 	if (sr != 2) whites[csel] = parseInt(d.getElementById('sliderW').value);
 	var col = cpick.color.rgb;
 	colors[csel] = [col.r, col.g, col.b, whites[csel]];
-	setCSL(colors, csel);
-	var obj = {"seg": {"col": [[col.r, col.g, col.b, whites[csel]],[],[]]}};
-	if (csel == 1) {
-		obj = {"seg": {"col": [[],[col.r, col.g, col.b, whites[csel]],[]]}};
-	} else if (csel == 2) {
-		obj = {"seg": {"col": [[],[],[col.r, col.g, col.b, whites[csel]]]}};
-	}
+	setCSL(csel);
+	var obj = {"seg": {"col": [[],[],[]]}};
+	obj.seg.col[csel] = colors[csel];
 	requestJson(obj);
 }
 
