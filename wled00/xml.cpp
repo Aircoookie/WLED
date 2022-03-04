@@ -614,9 +614,9 @@ void getSettingsJS(byte subPage, char* dest)
       k[0] = 'W'; sappend('v',k,timerWeekday[i]);
       if (i<8) {
         k[0] = 'M'; sappend('v',k,(timerMonth[i] >> 4) & 0x0F);
-				k[0] = 'P'; sappend('v',k,timerMonth[i] & 0x0F);
+        k[0] = 'P'; sappend('v',k,timerMonth[i] & 0x0F);
         k[0] = 'D'; sappend('v',k,timerDay[i]);
-				k[0] = 'E'; sappend('v',k,timerDayEnd[i]);
+        k[0] = 'E'; sappend('v',k,timerDayEnd[i]);
       }
     }
   }
@@ -683,5 +683,7 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(SET_F(" build "));
     oappendi(VERSION);
     oappend(SET_F(")\";"));
+  } else {
+    oappend(SET_F("}</script>"));
   }
 }
