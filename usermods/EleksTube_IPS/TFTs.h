@@ -34,7 +34,14 @@ private:
   }
 
   uint16_t output_buffer[TFT_HEIGHT][TFT_WIDTH];
-  
+  int16_t w = 135, h = 240, x = 0, y = 0, bufferedDigit = 255;
+
+  void drawBuffer() {
+    bool oldSwapBytes = getSwapBytes();
+    setSwapBytes(true);
+    pushImage(x, y, w, h, (uint16_t *)output_buffer);
+    setSwapBytes(oldSwapBytes);
+  }
 
   // These BMP functions are stolen directly from the TFT_SPIFFS_BMP example in the TFT_eSPI library.
   // Unfortunately, they aren't part of the library itself, so I had to copy them.
@@ -52,15 +59,16 @@ private:
     size_t sz = bmpFS.size();
     if (sz > 64800) {
       bmpFS.close();
-      return(false);
+      return false;
     }
 
     uint16_t r, g, b, dimming = 255;
-    int16_t w, h, y, row, col;
+    int16_t row, col;
 
     //draw img that is shorter than 240pix into the center
     w = 135;
     h = sz / (w * 2);
+    x = 0;
     y = (height() - h) /2;
     
     uint8_t lineBuffer[w * 2];
@@ -101,14 +109,11 @@ private:
       }
     }
 
-    bool oldSwapBytes = getSwapBytes();
-    setSwapBytes(true);
-    pushImage(0, y, 135, h, (uint16_t *)output_buffer);
-    setSwapBytes(oldSwapBytes);
+    drawBuffer();
 
     bmpFS.close();
 
-    return(true);
+    return true;
   }
 
   bool drawBmp(const char *filename) {
@@ -117,37 +122,52 @@ private:
     // Open requested file on SD card
     bmpFS = WLED_FS.open(filename, "r");
 
-    uint32_t seekOffset;
-    int16_t w, h, row;
-    uint16_t r, g, b, dimming = 255;
+    uint32_t seekOffset, headerSize, paletteSize = 0;
+    int16_t row;
+    uint16_t r, g, b, dimming = 255, bitDepth;
 
     uint16_t magic = read16(bmpFS);
-    if (magic == 0xFFFF) {
+    if (magic != ('B' | ('M' << 8))) { // File not found or not a BMP
       Serial.println(F("BMP not found!"));
       bmpFS.close();
-      return(false);
+      return false;
     }
 
-    read32(bmpFS);
-    read32(bmpFS);
-    seekOffset = read32(bmpFS);
-    read32(bmpFS);
-    w = read32(bmpFS);
-    h = read32(bmpFS);
+    read32(bmpFS); // filesize in bytes
+    read32(bmpFS); // reserved
+    seekOffset = read32(bmpFS); // start of bitmap
+    headerSize = read32(bmpFS); // header size
+    w = read32(bmpFS); // width
+    h = read32(bmpFS); // height
+    read16(bmpFS); // color planes (must be 1)
+    bitDepth = read16(bmpFS);
 
-    if ((read16(bmpFS) != 1) || (read16(bmpFS) != 24) || (read32(bmpFS) != 0)) {
+    if (read32(bmpFS) != 0 || (bitDepth != 24 && bitDepth != 1 && bitDepth != 4 && bitDepth != 8)) {
       Serial.println(F("BMP format not recognized."));
       bmpFS.close();
-      return(false);
+      return false;
     }
 
-    //draw img that is shorter than 240pix into the center
-    int16_t y = (height() - h) /2;
+    uint32_t palette[256];
+    if (bitDepth <= 8) // 1,4,8 bit bitmap: read color palette
+    {
+      read32(bmpFS); read32(bmpFS); read32(bmpFS); // size, w resolution, h resolution
+      paletteSize = read32(bmpFS);
+      if (paletteSize == 0) paletteSize = bitDepth * bitDepth; //if 0, size is 2^bitDepth
+      bmpFS.seek(14 + headerSize); // start of color palette
+      for (uint16_t i = 0; i < paletteSize; i++) {
+        palette[i] = read32(bmpFS);
+      }
+    }
+
+    // draw img that is shorter than 240pix into the center
+    x = (width() - w) /2;
+    y = (height() - h) /2;
 
     bmpFS.seek(seekOffset);
 
-    uint16_t padding = (4 - ((w * 3) & 3)) & 3;
-    uint8_t lineBuffer[w * 3 + padding];
+    uint32_t lineSize = ((bitDepth * w +31) >> 5) * 4;
+    uint8_t lineBuffer[lineSize];
     
     uint8_t serviceStrip = (!realtimeMode || realtimeOverride) ? 7 : 0;
     // row is decremented as the BMP image is drawn bottom up
@@ -159,12 +179,28 @@ private:
       #ifdef ELEKSTUBE_DIMMING
       dimming=bri;
       #endif
-      // Convert 24 to 16 bit colours while copying to output buffer.
+      // Convert 24 to 16 bit colors while copying to output buffer.
       for (uint16_t col = 0; col < w; col++)
       {
-        b = *bptr++;
-        g = *bptr++;
-        r = *bptr++;
+        if (bitDepth == 24) {
+          b = *bptr++;
+          g = *bptr++;
+          r = *bptr++;
+        } else {
+          uint32_t c = 0;
+          if (bitDepth == 8) {
+            c = palette[*bptr++];
+          }
+          else if (bitDepth == 4) {
+            c = palette[(*bptr >> ((col & 0x01)?0:4)) & 0x0F];
+            if (col & 0x01) bptr++;
+          }
+          else { // bitDepth == 1
+            c = palette[(*bptr >> (7 - (col & 0x07))) & 0x01];
+            if ((col & 0x07) == 0x07) bptr++;
+          }
+          b = c; g = c >> 8; r = c >> 16;
+        }
         if (dimming != 255) { // only dimm when needed
           b *= dimming;
           g *= dimming;
@@ -173,17 +209,14 @@ private:
           g = g >> 8;
           r = r >> 8;
         }
-        output_buffer[row][col] = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
+        output_buffer[row][col] = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | ((b & 0xFF) >> 3);
       }
     }
     
-    bool oldSwapBytes = getSwapBytes();
-    setSwapBytes(true);
-    pushImage(0, y, w, h, (uint16_t *)output_buffer);
-    setSwapBytes(oldSwapBytes);
+    drawBuffer();
 
     bmpFS.close();
-    return(true);
+    return true;
   }
 
   bool drawClk(const char *filename) {
@@ -196,24 +229,24 @@ private:
     {
       Serial.print("File not found: ");
       Serial.println(filename);
-      return(false);
+      return false;
     }
 
-    uint16_t  r, g, b, dimming = 255, magic;
-    int16_t w, h, row, col;
+    uint16_t r, g, b, dimming = 255, magic;
+    int16_t row, col;
     
     magic = read16(bmpFS);
     if (magic != 0x4B43) { // look for "CK" header
       Serial.print(F("File not a CLK. Magic: "));
       Serial.println(magic);
       bmpFS.close();
-      return(false);
+      return false;
     }
 
     w = read16(bmpFS);
     h = read16(bmpFS);
-    int16_t x = (width() - w) / 2;
-    int16_t y = (height() - h) / 2;
+    x = (width() - w) / 2;
+    y = (height() - h) / 2;
     
     uint8_t lineBuffer[w * 2];
     
@@ -253,13 +286,10 @@ private:
       }
     }
 
-    bool oldSwapBytes = getSwapBytes();
-    setSwapBytes(true);
-    pushImage(0, y, w, h, (uint16_t *)output_buffer);
-    setSwapBytes(oldSwapBytes);
+    drawBuffer();
 
     bmpFS.close();
-    return(true);
+    return true;
   }
 
 
@@ -286,26 +316,33 @@ public:
 
   void showDigit(uint8_t digit) {
     chip_select.setDigit(digit);
+    uint8_t digitToDraw = digits[digit];
 
-    if (digits[digit] == blanked) {
+    if (digitToDraw == blanked) {
       fillScreen(TFT_BLACK); return;
     }
 
-    // Filenames are no bigger than "255.bmp\0"
+    // if last digit was the same, skip loading from FS to buffer
+    if (digitToDraw == bufferedDigit) drawBuffer();
+
+    // Filenames are no bigger than "254.bmp\0"
     char file_name[10];
     // Fastest, raw RGB565
-    sprintf(file_name, "/%d.bin", digits[digit]);
+    sprintf(file_name, "/%d.bin", digitToDraw);
     if (WLED_FS.exists(file_name)) {
-      drawBin(file_name); return;
+      if (drawBin(file_name)) bufferedDigit = digitToDraw;
+      return;
     }
-    // Fast, see https://github.com/aly-fly/EleksTubeHAX on how to create this clk format
-    sprintf(file_name, "/%d.clk", digits[digit]);
+    // Fast, raw RGB565, see https://github.com/aly-fly/EleksTubeHAX on how to create this clk format
+    sprintf(file_name, "/%d.clk", digitToDraw);
     if (WLED_FS.exists(file_name)) {
-      drawClk(file_name); return;
+      if (drawClk(file_name)) bufferedDigit = digitToDraw;
+      return;
     }
-    // Slow, regular RGB888 bmp
-    sprintf(file_name, "/%d.bmp", digits[digit]);
-    drawBmp(file_name);
+    // Slow, regular RGB888 or 1,4,8 bit palette BMP
+    sprintf(file_name, "/%d.bmp", digitToDraw);
+    if (drawBmp(file_name)) bufferedDigit = digitToDraw;
+    return;
   } 
 
   void setDigit(uint8_t digit, uint8_t value, show_t show=yes) {
