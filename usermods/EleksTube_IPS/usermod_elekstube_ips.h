@@ -21,6 +21,8 @@ class ElekstubeIPSUsermod : public Usermod {
           set[i] = false; //display HHMMSS time
         }
       }
+
+      
       uint8_t hr = hour(localTime);
       uint8_t hrTens = hr/10;
       uint8_t mi = minute(localTime);
@@ -37,6 +39,9 @@ class ElekstubeIPSUsermod : public Usermod {
     unsigned long lastTime = 0;
   public:
 
+    uint8_t lastBri;
+    TFTs::show_t fshow=TFTs::yes;
+
     void setup() {
       tfts.begin();
       tfts.fillScreen(TFT_BLACK);
@@ -49,7 +54,14 @@ class ElekstubeIPSUsermod : public Usermod {
     void loop() {
       if (toki.isTick()) {
         updateLocalTime();
-        updateClockDisplay();
+        #ifdef ELEKSTUBE_DIMMING
+        if (bri != lastBri) {
+            fshow=TFTs::force;
+            lastBri = bri;
+        }   
+        #endif
+        updateClockDisplay(fshow);
+        fshow=TFTs::yes;
       }
     }
 
