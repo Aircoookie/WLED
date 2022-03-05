@@ -39,8 +39,8 @@ class ElekstubeIPSUsermod : public Usermod {
     unsigned long lastTime = 0;
   public:
 
-    uint8_t OldBrightness;
-    TFTs::show_t fshow;
+    uint8_t lastBri;
+    TFTs::show_t fshow=TFTs::yes;
 
     void setup() {
       tfts.begin();
@@ -54,10 +54,12 @@ class ElekstubeIPSUsermod : public Usermod {
     void loop() {
       if (toki.isTick()) {
         updateLocalTime();
-        if ( bri != OldBrightness ) {
+        #ifdef ELEKSTUBE_DIMMING
+        if (bri != lastBri) {
             fshow=TFTs::force;
-            OldBrightness=bri;
+            lastBri = bri;
         }   
+        #endif
         updateClockDisplay(fshow);
         fshow=TFTs::yes;
       }
