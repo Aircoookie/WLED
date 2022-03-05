@@ -533,7 +533,8 @@ input[type=range]:active + .sliderbubble {
 	display: inline;
 	transform: translateX(-50%);
 }
-#wwrap, #wbal {
+/* hide color controls until enabled in updateUI() */
+#pwrap, #wwrap, #wbal, #rgbwrap, #palwrap {
 	display: none;
 }
 
@@ -564,10 +565,6 @@ input[type=range]:active + .sliderbubble {
 #picker {
 	margin: 10px auto;
 	width: 260px;
-}
-
-#rgbwrap {
-	display: none;
 }
 
 .btn {
@@ -623,6 +620,7 @@ input[type=range]:active + .sliderbubble {
 /* Quick color select buttons wrapper div */
 #qcs-w {
 	margin-top: 10px;
+	display: none;
 }
 
 /* Quick color select buttons */

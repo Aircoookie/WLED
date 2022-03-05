@@ -44,13 +44,15 @@
 
 <div class ="container">
 	<div id="Colors" class="tabcontent">
-		<div id="picker" class="noslide"></div>
-    <div id="vwrap">
-      <div class="sliderwrap il" id="vwrap">
-				<input id="sliderV" class="noslide" oninput="fromV()" onchange="setColor(0)" max="100" min="0" type="range" value="128" step="any" />
-				<div class="sliderdisplay"></div>
-			</div><br>
-    </div>
+		<div id="pwrap">
+			<div id="picker" class="noslide"></div>
+			<div id="vwrap">
+				<div class="sliderwrap il" id="vwrap">
+					<input id="sliderV" class="noslide" oninput="fromV()" onchange="setColor(0)" max="100" min="0" type="range" value="128" step="any" />
+					<div class="sliderdisplay"></div>
+				</div><br>
+			</div>
+		</div>
     <div id="kwrap">
 			<div class="sliderwrap il">
 				<input id="sliderK" class="noslide" oninput="fromK()" onchange="setColor(0)" max="10091" min="1900" type="range" value="6550" />
@@ -108,32 +110,26 @@
 			<input id="hexc" type="text" class="noslide" onkeydown="hexEnter()" autocomplete="off" maxlength="8" />
 			<button id="hexcnf" class="xxs btn" onclick="fromHex();"><i class="icons no-margin">&#xe390;</i></button>
 		</div>
-		<p class="labels">
-			<i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i>
-			Color palette
-		</p>
-		<div class="il">
-			<div id="pallist" class="list">
-				<div class="lstI" data-id="0">
-					<label class="check schkl">
-						&nbsp;
-						<input type="radio" value="${palettes[i].id}" name="palette" onChange="setPalette()">
-						<span class="radiomark schk"></span>
-					</label>
-					<div class="lstIcontent">
-						<span class="lstIname">
-							Default
-						</span>
+		<div id="palwrap">
+			<p class="labels">
+				<i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i>
+				Color palette
+			</p>
+			<div class="il">
+				<div id="pallist" class="list">
+					<div class="lstI" data-id="0">
+						<label class="check schkl">
+							&nbsp;
+							<input type="radio" value="${palettes[i].id}" name="palette" onChange="setPalette()">
+							<span class="radiomark schk"></span>
+						</label>
+						<div class="lstIcontent">
+							<span class="lstIname">
+								Default
+							</span>
+						</div>
 					</div>
 				</div>
-				<div class="lstI">
-					<div class="lstIcontent">
-						<span class="lstIname">
-							Loading...
-						</span>
-					</div>
-				</div>
-
 			</div>
 		</div>
 	</div>
