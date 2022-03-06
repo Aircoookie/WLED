@@ -1,13 +1,31 @@
 #include "beeper.h"
 
+static uint16_t singleBeep[3];
+
 Beeper::Beeper(uint8_t channel, uint8_t pin) : _channel(channel), _beep_timer(0) {
     ledcAttachPin(pin, channel);
+}
+
+void Beeper::beep(uint16_t frequency, uint16_t duration) {
+    if (duration == 0) {
+        ledcWriteTone(_channel, frequency);
+    } else {
+        singleBeep[0] = 1;
+        singleBeep[1] = frequency;
+        singleBeep[2] = duration;
+        play(singleBeep);
+    }
 }
 
 void Beeper::play(uint16_t* beep) {
     _current_beep = beep;
     _current_note = 0;
     _total_notes = *beep;
+}
+
+void Beeper::mute() {
+    ledcWriteTone(_channel, 0);
+    _current_beep = 0;
 }
 
 void Beeper::update() {

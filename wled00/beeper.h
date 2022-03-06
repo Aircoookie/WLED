@@ -9,7 +9,9 @@ class Beeper {
 
 public:
     Beeper(uint8_t channel, uint8_t pin);
+    void beep(uint16_t frequency, uint16_t duration = 0);
     void play(uint16_t* beep);
+    void mute();
     void update();
 
 private:
