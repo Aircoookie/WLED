@@ -2784,16 +2784,9 @@ uint16_t WS2812FX::mode_popcorn(void) {
   if (numPopcorn == 0) numPopcorn = 1;
 
   for(uint8_t i = 0; i < numPopcorn; i++) {
-    bool isActive = popcorn[i].pos >= 0.0f;
-
-    if (isActive) { // if kernel is active, update its position
+    if (popcorn[i].pos >= 0.0f) { // if kernel is active, update its position
       popcorn[i].pos += popcorn[i].vel;
       popcorn[i].vel += gravity;
-      uint32_t col = color_wheel(popcorn[i].colIndex);
-      if (!SEGMENT.palette && popcorn[i].colIndex < NUM_COLORS) col = SEGCOLOR(popcorn[i].colIndex);
-      
-      uint16_t ledIndex = popcorn[i].pos;
-      if (ledIndex < SEGLEN) setPixelColor(ledIndex, col);
     } else { // if kernel is inactive, randomly pop it
       if (random8() < 2) { // POP!!!
         popcorn[i].pos = 0.01f;
@@ -2811,6 +2804,13 @@ uint16_t WS2812FX::mode_popcorn(void) {
           popcorn[i].colIndex = col;
         }
       }
+    }
+    if (popcorn[i].pos >= 0.0f) { // draw now active popcorn (either active before or just popped)
+      uint32_t col = color_wheel(popcorn[i].colIndex);
+      if (!SEGMENT.palette && popcorn[i].colIndex < NUM_COLORS) col = SEGCOLOR(popcorn[i].colIndex);
+      
+      uint16_t ledIndex = popcorn[i].pos;
+      if (ledIndex < SEGLEN) setPixelColor(ledIndex, col);
     }
   }
 
