@@ -2,6 +2,14 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2203060
+
+-   Dynamic hiding of unused color controls in UI (PR #2567)
+-   Removed native Cronixie support and added Cronixie usermod
+-   Fixed disabled timed preset expanding calendar
+-   Fixed Color Order setting shown for analog busses
+-   Fixed incorrect operator (#2566)
+
 #### Build 2203011
 
 -   IR rewrite (PR #2561), supports CCT

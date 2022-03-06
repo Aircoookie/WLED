@@ -333,10 +333,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     analogClock5MinuteMarks = request->hasArg(F("O5"));
     analogClockSecondsTrail = request->hasArg(F("OS"));
 
-    #ifndef WLED_DISABLE_CRONIXIE
-    strlcpy(cronixieDisplay,request->arg(F("CX")).c_str(),7);
-    cronixieBacklight = request->hasArg(F("CB"));
-    #endif
     countdownMode = request->hasArg(F("CE"));
     countdownYear = request->arg(F("CY")).toInt();
     countdownMonth = request->arg(F("CI")).toInt();
@@ -944,24 +940,9 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   pos = req.indexOf(F("RB"));
   if (pos > 0) doReboot = true;
 
-  //cronixie
-  #ifndef WLED_DISABLE_CRONIXIE
-  //mode, 1 countdown
+  // clock mode, 0: normal, 1: countdown
   pos = req.indexOf(F("NM="));
   if (pos > 0) countdownMode = (req.charAt(pos+3) != '0');
-  
-  pos = req.indexOf(F("NX=")); //sets digits to code
-  if (pos > 0) {
-    strlcpy(cronixieDisplay, req.substring(pos + 3, pos + 9).c_str(), 7);
-    setCronixie();
-  }
-
-  pos = req.indexOf(F("NB="));
-  if (pos > 0) //sets backlight
-  {
-    cronixieBacklight = (req.charAt(pos+3) != '0');
-  }
-  #endif
 
   pos = req.indexOf(F("U0=")); //user var 0
   if (pos > 0) {

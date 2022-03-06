@@ -11,6 +11,8 @@ class ElekstubeIPSUsermod : public Usermod {
     static const char _tubeSeg[];
     static const char _digitOffset[];
 
+    char cronixieDisplay[7] = "HHMMSS";
+
     TFTs tfts;
     void updateClockDisplay(TFTs::show_t show=TFTs::yes) {
       bool set[6] = {false}; 
@@ -123,6 +125,7 @@ class ElekstubeIPSUsermod : public Usermod {
      */
     void addToJsonState(JsonObject& root)
     {
+      root["nx"] = cronixieDisplay;
       root[FPSTR(_digitOffset)] = tfts.digitOffset;
     }
 
@@ -133,6 +136,10 @@ class ElekstubeIPSUsermod : public Usermod {
      */
     void readFromJsonState(JsonObject& root)
     {
+      if (root["nx"].is<const char*>()) {
+        strncpy(cronixieDisplay, root["nx"], 6);
+      }
+
       uint8_t digitOffsetPrev = tfts.digitOffset;
       tfts.digitOffset = root[FPSTR(_digitOffset)] | tfts.digitOffset;
       if (tfts.digitOffset > 240) tfts.digitOffset = 240;

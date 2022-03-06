@@ -177,16 +177,9 @@ void calculateSunriseAndSunset();
 void setTimeFromAPI(uint32_t timein);
 
 //overlay.cpp
-void initCronixie();
-void handleOverlays();
 void handleOverlayDraw();
 void _overlayAnalogCountdown();
 void _overlayAnalogClock();
-
-byte getSameCodeLength(char code, int index, char const cronixieDisplay[]);
-void setCronixie();
-void _overlayCronixie();    
-void _drawOverlayCronixie();
 
 //playlist.cpp
 void shufflePlaylist();

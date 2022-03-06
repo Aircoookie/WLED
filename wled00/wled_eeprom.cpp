@@ -199,11 +199,6 @@ void loadSettingsFromEEPROM()
     countdownSec = EEPROM.read(2161);
     setCountdown();
 
-    #ifndef WLED_DISABLE_CRONIXIE
-    readStringFromEEPROM(2165, cronixieDisplay, 6);
-    cronixieBacklight = EEPROM.read(2171);
-    #endif
-
     //macroBoot = EEPROM.read(2175);
     macroAlexaOn = EEPROM.read(2176);
     macroAlexaOff = EEPROM.read(2177);

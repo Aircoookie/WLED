@@ -169,7 +169,6 @@ void handleTime() {
     updateLocalTime();
     checkTimers();
     checkCountdown();
-    handleOverlays();
   }
 }
 

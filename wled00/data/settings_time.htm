@@ -36,22 +36,7 @@
 	}
 	function Cs()
 	{
-		gId("cac").style.display="none";
-		gId("coc").style.display="block";
-		gId("ccc").style.display="none";
-		if (gId("ca").selected)
-		{
-			gId("cac").style.display="block";
-		}
-		if (gId("cc").selected)
-		{
-			gId("coc").style.display="none";
-			gId("ccc").style.display="block";
-		}
-		if (gId("cn").selected)
-		{
-			gId("coc").style.display="none";
-		}
+		gId("cac").style.display=(gN("OL").checked)?"block":"none";
 	}
 	function BTa()
 	{
@@ -199,23 +184,12 @@
 		<div><i>(opens new tab, only works in browser)</i></div>
 		<div id="sun" class="times"></div>
 		<h3>Clock</h3>
-		Clock Overlay:
-		<select name="OL" onchange="Cs()">
-			<option value="0" id="cn" selected>None</option>
-			<option value="1" id="ca">Analog Clock</option>
-			<option value="2">Single Digit Clock</option>
-			<option value="3" id="cc">Cronixie Clock</option>
-		</select><br>
-		<div id="coc">
-		First LED: <input name="O1" type="number" min="0" max="255" required> Last LED: <input name="O2" type="number" min="0" max="255" required><br>
-			<div id="cac">
+		Analog Clock overlay: <input type="checkbox" name="OL" onchange="Cs()"><br>
+		<div id="cac">
+			First LED: <input name="O1" type="number" min="0" max="255" required> Last LED: <input name="O2" type="number" min="0" max="255" required><br>
 			12h LED: <input name="OM" type="number" min="0" max="255" required><br>
-			Show 5min marks: <input type="checkbox" name="O5"><br></div>
+			Show 5min marks: <input type="checkbox" name="O5"><br>
 			Seconds (as trail): <input type="checkbox" name="OS"><br>
-		</div>
-		<div id="ccc">
-		Cronixie Display: <input name="CX" maxlength="6"><br>
-		Cronixie Backlight: <input type="checkbox" name="CB"><br>
 		</div>
 		Countdown Mode: <input type="checkbox" name="CE"><br>
 		Countdown Goal:<br>
