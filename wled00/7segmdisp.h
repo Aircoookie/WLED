@@ -78,6 +78,7 @@
 
 enum LedBasedDisplayMode {
 
+    SET_NO_LEDS,
     SET_OFF_LEDS,
     SET_ON_LEDS,
     SET_ALL_LEDS

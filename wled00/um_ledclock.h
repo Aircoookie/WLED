@@ -11,6 +11,9 @@ unsigned long Timer::_millis() {
 static uint16_t beep_startup[] { 3, 440, 100, 0, 20, 880, 100 };
 static uint16_t beep_connected[] { 5, 880, 100, 0, 20, 880, 100, 0, 20, 880, 100 };
 
+static CRGB selfTestColors[] = { CRGB::Red, CRGB::Green, CRGB::Blue };
+static uint8_t selfTestColorCount = sizeof(selfTestColors) / sizeof(CRGB);
+
 uint8_t brightness() {
     static uint16_t values[BRIGHTNESS_SAMPLES];
     static int i = 0;
@@ -52,6 +55,11 @@ private:
 
     uint8_t br;
 
+    Timer selfTestTimer;
+    uint8_t selfTestCycle = 0;
+    uint8_t selfTestIdx = 0;
+    bool selfTestDone = false;
+
 public:
     UsermodLedClock():
         dHoursT(&strip, 2),
@@ -60,7 +68,8 @@ public:
         dMinutesT(&strip, 2),
         dMinutesO(&strip, 2),
         display(5, &dHoursT, &dHoursO, &sep, &dMinutesT, &dMinutesO),
-        beeper(0, BUZZER_PIN) {}
+        beeper(0, BUZZER_PIN),
+        selfTestTimer(20) {}
 
     void setup() {
         // digit 1
@@ -116,19 +125,32 @@ public:
     void loop() {
         beeper.update();
 
-        if (p != localTime) {
-            p = localTime;
+        if (selfTestDone) {
+            if (p != localTime) {
+                p = localTime;
 
-            dHoursT.setDigit(hour(p) / 10);
-            dHoursO.setDigit(hour(p) % 10);
+                dHoursT.setDigit(hour(p) / 10);
+                dHoursO.setDigit(hour(p) % 10);
 
-            sep.setState(second(p) % 2);
+                sep.setState(second(p) % 2);
 
-            dMinutesT.setDigit(minute(p) / 10);
-            dMinutesO.setDigit(minute(p) % 10);
+                dMinutesT.setDigit(minute(p) / 10);
+                dMinutesO.setDigit(minute(p) % 10);
+            }
+
+            br = brightness();
+        } else {
+            if (selfTestTimer.fire()) {
+                selfTestIdx++;
+                if (selfTestIdx >= strip.getLengthTotal()) {
+                    selfTestIdx = 0;
+                    selfTestCycle++;
+                    if (selfTestCycle >= selfTestColorCount) {
+                        selfTestDone = true;
+                    }
+                }
+            }
         }
-
-        br = brightness();
     }
 
     void connected() {
@@ -136,10 +158,22 @@ public:
     }
 
     void handleOverlayDraw() {
-        display.update();
-        if (bri != br) {
-            bri = br;
-            colorUpdated(1);
+        if (selfTestDone) {
+            display.update();
+            if (bri != br) {
+                bri = br;
+                colorUpdated(1);
+            }
+        } else {
+            for (uint8_t i = 0, n = strip.getLengthTotal(); i < n; ++i) {
+                CRGB color = i <= selfTestIdx
+                    ? selfTestColors[selfTestCycle]
+                    : (selfTestCycle > 0
+                        ? selfTestColors[selfTestCycle - 1]
+                        : CRGB::Black);
+
+                strip.setPixelColor(i, color.r, color.g, color.b);
+            }
         }
     }
 

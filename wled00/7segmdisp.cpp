@@ -1,6 +1,6 @@
 #include "7segmdisp.h"
 
-CRGB dummy;
+static CRGB dummy;
 
 void LedBasedDisplay::setRowColor(uint8_t row, bool state, CRGB color) {
     for (uint8_t c = 0, n = columnCount(); c < n; ++c) {
@@ -142,7 +142,6 @@ void SevenSegmentDisplay::update() {
                 uint8_t segmIdx = _7SEG_IDX(seg, i);
                 CRGB c = (on ? _onColors : _offColors)[segmIdx];
                 _leds->setPixelColor(_indices[segmIdx], c.red, c.green, c.blue);
-
             }
         }
 
@@ -375,7 +374,7 @@ void LedBasedRowDisplay::setLedColor(uint8_t row, uint8_t column, bool state, CR
     uint8_t c = column;
     for (uint8_t i = 0; i < _displayCount; i++) {
         uint8_t cc = _displays[i]->columnCount();
-        if (_displays[i]->columnCount() - 1 < c) {
+        if (cc - 1 < c) {
             c -= cc;
         } else {
             _displays[i]->setLedColor(row, c, state, color);
