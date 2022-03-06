@@ -35,6 +35,8 @@ private:
 
   uint16_t output_buffer[TFT_HEIGHT][TFT_WIDTH];
   int16_t w = 135, h = 240, x = 0, y = 0, bufferedDigit = 255;
+  uint16_t digitR, digitG, digitB, dimming = 255;
+  uint32_t digitColor = 0;
 
   void drawBuffer() {
     bool oldSwapBytes = getSwapBytes();
@@ -75,10 +77,6 @@ private:
 
     if (!realtimeMode || realtimeOverride) strip.service();
 
-    #ifdef ELEKSTUBE_DIMMING
-    dimming=bri;
-    #endif
-
     // 0,0 coordinates are top left
     for (row = 0; row < h; row++) {
 
@@ -88,7 +86,7 @@ private:
       // Colors are already in 16-bit R5, G6, B5 format
       for (col = 0; col < w; col++)
       {
-        if (dimming == 255) { // not needed, copy directly
+        if (dimming == 255 && !digitColor) { // not needed, copy directly
           output_buffer[row][col] = (lineBuffer[col*2+1] << 8) | (lineBuffer[col*2]);
         } else {
           // 16 BPP pixel format: R5, G6, B5 ; bin: RRRR RGGG GGGB BBBB
@@ -98,12 +96,14 @@ private:
           r = (PixM) & 0xF8;
           g = ((PixM << 5) | (PixL >> 3)) & 0xFC;
           b = (PixL << 3) & 0xF8;
-          r *= dimming;
-          g *= dimming;
-          b *= dimming;
-          r = r >> 8;
-          g = g >> 8;
-          b = b >> 8;
+          r *= dimming; g *= dimming; b *= dimming;
+          r  = r  >> 8; g  = g  >> 8; b  = b  >> 8;
+          if (digitColor) { // grayscale pixel coloring
+            uint8_t l = (r > g) ? ((r > b) ? r:b) : ((g > b) ? g:b);
+            r = g = b = l;
+            r *= digitR; g *= digitG; b *= digitB;
+            r  = r >> 8; g  = g >> 8; b  = b >> 8;
+          }
           output_buffer[row][col] = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
         }
       }
@@ -176,9 +176,6 @@ private:
       bmpFS.read(lineBuffer, sizeof(lineBuffer));
       uint8_t*  bptr = lineBuffer;
       
-      #ifdef ELEKSTUBE_DIMMING
-      dimming=bri;
-      #endif
       // Convert 24 to 16 bit colors while copying to output buffer.
       for (uint16_t col = 0; col < w; col++)
       {
@@ -202,12 +199,15 @@ private:
           b = c; g = c >> 8; r = c >> 16;
         }
         if (dimming != 255) { // only dimm when needed
-          b *= dimming;
-          g *= dimming;
-          r *= dimming;
-          b = b >> 8;
-          g = g >> 8;
-          r = r >> 8;
+          r *= dimming; g *= dimming; b *= dimming;
+          r  = r  >> 8; g  = g  >> 8; b  = b  >> 8;
+        }
+        if (digitColor) { // grayscale pixel coloring
+          uint8_t l = (r > g) ? ((r > b) ? r:b) : ((g > b) ? g:b);
+          r = g = b = l;
+
+          r *= digitR; g *= digitG; b *= digitB;
+          r  = r >> 8; g  = g >> 8; b  = b >> 8;
         }
         output_buffer[row][col] = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | ((b & 0xFF) >> 3);
       }
@@ -250,10 +250,6 @@ private:
     
     uint8_t lineBuffer[w * 2];
     
-    #ifdef ELEKSTUBE_DIMMING
-    dimming=bri;
-    #endif
-    
     if (!realtimeMode || realtimeOverride) strip.service();
 
     // 0,0 coordinates are top left
@@ -265,7 +261,7 @@ private:
       // Colors are already in 16-bit R5, G6, B5 format
       for (col = 0; col < w; col++)
       {
-        if (dimming == 255) { // not needed, copy directly
+        if (dimming == 255 && !digitColor) { // not needed, copy directly
           output_buffer[row][col+x] = (lineBuffer[col*2+1] << 8) | (lineBuffer[col*2]);
         } else {
           // 16 BPP pixel format: R5, G6, B5 ; bin: RRRR RGGG GGGB BBBB
@@ -275,12 +271,14 @@ private:
           r = (PixM) & 0xF8;
           g = ((PixM << 5) | (PixL >> 3)) & 0xFC;
           b = (PixL << 3) & 0xF8;
-          r *= dimming;
-          g *= dimming;
-          b *= dimming;
-          r = r >> 8;
-          g = g >> 8;
-          b = b >> 8;
+          r *= dimming; g *= dimming; b *= dimming;
+          r  = r  >> 8; g  = g  >> 8; b  = b  >> 8;
+          if (digitColor) { // grayscale pixel coloring
+            uint8_t l = (r > g) ? ((r > b) ? r:b) : ((g > b) ? g:b);
+            r = g = b = l;
+            r *= digitR; g *= digitG; b *= digitB;
+            r  = r >> 8; g  = g >> 8; b  = b >> 8;
+          }
           output_buffer[row][col+x] = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
         }
       }
@@ -301,6 +299,9 @@ public:
   enum show_t { no, yes, force };
   // A digit of 0xFF means blank the screen.
   const static uint8_t blanked = 255;
+
+  uint8_t tubeSegment = 1;
+  uint8_t digitOffset = 0;
   
   void begin() {
     pinMode(TFT_ENABLE_PIN, OUTPUT);
@@ -317,13 +318,15 @@ public:
   void showDigit(uint8_t digit) {
     chip_select.setDigit(digit);
     uint8_t digitToDraw = digits[digit];
+    if (digitToDraw < 10) digitToDraw += digitOffset;
 
     if (digitToDraw == blanked) {
       fillScreen(TFT_BLACK); return;
     }
 
     // if last digit was the same, skip loading from FS to buffer
-    if (digitToDraw == bufferedDigit) drawBuffer();
+    if (!digitColor && digitToDraw == bufferedDigit) drawBuffer();
+    digitR = R(digitColor); digitG = G(digitColor); digitB = B(digitColor);
 
     // Filenames are no bigger than "254.bmp\0"
     char file_name[10];
@@ -347,15 +350,27 @@ public:
 
   void setDigit(uint8_t digit, uint8_t value, show_t show=yes) {
     uint8_t old_value = digits[digit];
-    digits[digit] = value; 
+    digits[digit] = value;
+
+    // Color in grayscale bitmaps if Segment 1 exists
+    // TODO If secondary and tertiary are black, color all in primary,
+    // else color first three from Seg 1 color slots and last three from Seg 2 color slots
+    WS2812FX::Segment& seg1 = strip.getSegment(tubeSegment);
+    if (seg1.isActive()) {
+      digitColor = strip.getPixelColor(seg1.start + digit);
+      dimming = seg1.opacity;
+    } else {
+      digitColor = 0;
+      dimming = 255;
+    }
 
     if (show != no && (old_value != value || show == force)) {
       showDigit(digit);
     }
   }
-  uint8_t getDigit(uint8_t digit)                 { return digits[digit]; }
+  uint8_t getDigit(uint8_t digit) {return digits[digit];}
 
-  void showAllDigits()               { for (uint8_t digit=0; digit < NUM_DIGITS; digit++) showDigit(digit); }
+  void showAllDigits()            {for (uint8_t digit=0; digit < NUM_DIGITS; digit++) showDigit(digit);}
 
   // Making chip_select public so we don't have to proxy all methods, and the caller can just use it directly.
   ChipSelect chip_select;
