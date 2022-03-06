@@ -363,10 +363,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(latitude, if_ntp[F("lt")]);
 
   JsonObject ol = doc[F("ol")];
-  prev = overlayDefault;
-  CJSON(overlayDefault ,ol[F("clock")]); // 0
+  CJSON(overlayCurrent ,ol[F("clock")]); // 0
   CJSON(countdownMode, ol[F("cntdwn")]);
-  if (prev != overlayDefault) overlayCurrent = overlayDefault;
 
   CJSON(overlayMin, ol["min"]);
   CJSON(overlayMax, ol[F("max")]);
@@ -772,7 +770,7 @@ void serializeConfig() {
   if_ntp[F("lt")] = latitude;
 
   JsonObject ol = doc.createNestedObject("ol");
-  ol[F("clock")] = overlayDefault;
+  ol[F("clock")] = overlayCurrent;
   ol[F("cntdwn")] = countdownMode;
 
   ol["min"] = overlayMin;

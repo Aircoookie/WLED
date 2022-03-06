@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2203060
+#define VERSION 2203061
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -383,7 +383,7 @@ WLED_GLOBAL bool useAMPM _INIT(false);       // 12h/24h clock format
 WLED_GLOBAL byte currentTimezone _INIT(0);   // Timezone ID. Refer to timezones array in wled10_ntp.ino
 WLED_GLOBAL int utcOffsetSecs _INIT(0);      // Seconds to offset from UTC before timzone calculation
 
-WLED_GLOBAL byte overlayDefault _INIT(0);                               // 0: no overlay 1: analog clock 2: was single-digit clock 3: was cronixie
+WLED_GLOBAL byte overlayCurrent _INIT(0);    // 0: no overlay 1: analog clock 2: was single-digit clock 3: was cronixie
 WLED_GLOBAL byte overlayMin _INIT(0), overlayMax _INIT(DEFAULT_LED_COUNT - 1);   // boundaries of overlay mode
 
 WLED_GLOBAL byte analogClock12pixel _INIT(0);               // The pixel in your strip where "midnight" would be
@@ -495,9 +495,6 @@ WLED_GLOBAL unsigned long hueLastRequestSent _INIT(0);
 WLED_GLOBAL bool hueAuthRequired _INIT(false);
 WLED_GLOBAL bool hueReceived _INIT(false);
 WLED_GLOBAL bool hueStoreAllowed _INIT(false), hueNewKey _INIT(false);
-
-// overlays
-WLED_GLOBAL byte overlayCurrent _INIT(overlayDefault);
 
 // countdown
 WLED_GLOBAL unsigned long countdownTime _INIT(1514764800L);

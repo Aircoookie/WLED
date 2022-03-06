@@ -575,7 +575,7 @@ void getSettingsJS(byte subPage, char* dest)
       sprintf_P(tm, PSTR("Sunrise: %02d:%02d Sunset: %02d:%02d"), hour(sunrise), minute(sunrise), hour(sunset), minute(sunset));
       sappends('m',SET_F("(\"times\")[1]"),tm);
     }
-    sappend('i',SET_F("OL"),overlayCurrent);
+    sappend('c',SET_F("OL"),overlayCurrent);
     sappend('v',SET_F("O1"),overlayMin);
     sappend('v',SET_F("O2"),overlayMax);
     sappend('v',SET_F("OM"),analogClock12pixel);

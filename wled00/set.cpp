@@ -322,10 +322,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     // force a sunrise/sunset re-calculation
     calculateSunriseAndSunset(); 
 
-    if (request->hasArg(F("OL"))) {
-      overlayDefault = request->arg(F("OL")).toInt();
-      overlayCurrent = overlayDefault;
-    }
+    overlayCurrent = request->hasArg(F("OL")) ? 1 : 0;
 
     overlayMin = request->arg(F("O1")).toInt();
     overlayMax = request->arg(F("O2")).toInt();

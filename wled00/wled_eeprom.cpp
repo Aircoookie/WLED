@@ -141,8 +141,7 @@ void loadSettingsFromEEPROM()
   useAMPM = EEPROM.read(329);
   strip.gammaCorrectBri = EEPROM.read(330);
   strip.gammaCorrectCol = EEPROM.read(331);
-  overlayDefault = EEPROM.read(332);
-  if (lastEEPROMversion < 8 && overlayDefault > 0) overlayDefault--; //overlay mode 1 (solid) was removed
+  overlayCurrent = EEPROM.read(332);
 
   alexaEnabled = EEPROM.read(333);
 
@@ -360,8 +359,6 @@ void loadSettingsFromEEPROM()
   //2551 - 2559 reserved for Usermods, usable by default
   //2560 - 2943 usable, NOT reserved (need to increase EEPSIZE accordingly, new WLED core features may override this section)
   //2944 - 3071 reserved for Usermods (need to increase EEPSIZE to 3072 in const.h)
-
-  overlayCurrent = overlayDefault;
 }
 
 
