@@ -215,7 +215,7 @@ function onLoad() {
 			//TODO: do some parsing first
 		})
 		.catch(function (error) {
-			console.log("holidays.json does not contain array of holidays. Defaults loaded.");
+			console.log("No array of holidays in holidays.json. Defaults loaded.");
 		})
 		.finally(function(){
 			loadBg(cfg.theme.bg.url);
@@ -280,6 +280,8 @@ function showToast(text, error = false) {
 }
 
 function showErrorToast() {
+	// if we received a timeout force WS reconnect
+	reconnectWS();
 	showToast('Connection to light failed!', true);
 }
 function clearErrorToast() {
@@ -585,8 +587,8 @@ function populateSegments(s)
 						<td class="segtd">Offset</td>
 					</tr>
 					<tr>
-						<td class="segtd"><input class="noslide segn" id="seg${i}s" type="number" min="0" max="${ledCount-1}" value="${inst.start}" oninput="updateLen(${i})"></td>
-						<td class="segtd"><input class="noslide segn" id="seg${i}e" type="number" min="0" max="${ledCount-(cfg.comp.seglen?inst.start:0)}" value="${inst.stop-(cfg.comp.seglen?inst.start:0)}" oninput="updateLen(${i})"></td>
+						<td class="segtd"><input class="noslide segn" id="seg${i}s" type="number" min="0" max="${ledCount-1}" value="${inst.start}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
+						<td class="segtd"><input class="noslide segn" id="seg${i}e" type="number" min="0" max="${ledCount-(cfg.comp.seglen?inst.start:0)}" value="${inst.stop-(cfg.comp.seglen?inst.start:0)}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
 						<td class="segtd"><input class="noslide segn" id="seg${i}of" type="number" value="${inst.of}" oninput="updateLen(${i})"></td>
 					</tr>
 				</table>
@@ -597,13 +599,12 @@ function populateSegments(s)
 						<td class="segtd">Apply</td>
 					</tr>
 					<tr>
-						<td class="segtd"><input class="noslide segn" id="seg${i}grp" type="number" min="1" max="255" value="${inst.grp}" oninput="updateLen(${i})"></td>
-						<td class="segtd"><input class="noslide segn" id="seg${i}spc" type="number" min="0" max="255" value="${inst.spc}" oninput="updateLen(${i})"></td>
+						<td class="segtd"><input class="noslide segn" id="seg${i}grp" type="number" min="1" max="255" value="${inst.grp}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
+						<td class="segtd"><input class="noslide segn" id="seg${i}spc" type="number" min="0" max="255" value="${inst.spc}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
 						<td class="segtd"><i class="icons e-icon cnf cnf-s" id="segc${i}" onclick="setSeg(${i})">&#xe390;</i></td>
 					</tr>
 				</table>
 				<div class="h" id="seg${i}len"></div>
-				<button class="btn btn-i btn-xs del" id="segd${i}" onclick="delSeg(${i})"><i class="icons btn-icon">&#xe037;</i></button>
 				<label class="check revchkl">
 					Reverse direction
 					<input type="checkbox" id="seg${i}rev" onchange="setRev(${i})" ${inst.rev ? "checked":""}>
@@ -614,6 +615,10 @@ function populateSegments(s)
 					<input type="checkbox" id="seg${i}mi" onchange="setMi(${i})" ${inst.mi ? "checked":""}>
 					<span class="checkmark schk"></span>
 				</label>
+				<div class="del">
+					<button class="btn btn-i btn-xs" id="segr${i}" title="Repeat until end" onclick="rptSeg(${i})"><i class="icons btn-icon">&#xe22d;</i></button>
+					<button class="btn btn-i btn-xs" id="segd${i}" title="Delete" onclick="delSeg(${i})"><i class="icons btn-icon">&#xe037;</i></button>
+				</div>
 			</div>
 		</div><br>`;
 	}
@@ -627,10 +632,13 @@ function populateSegments(s)
 		noNewSegs = false;
 	}
 	for (var i = 0; i <= lSeg; i++) {
-	updateLen(i);
-	updateTrail(d.getElementById(`seg${i}bri`));
-	if (segCount < 2) d.getElementById(`segd${lSeg}`).style.display = "none";
+		updateLen(i);
+		updateTrail(d.getElementById(`seg${i}bri`));
+		let segr = d.getElementById(`segr${i}`);
+		if (segr) segr.style.display = "none";
 	}
+	if (segCount < 2) d.getElementById(`segd${lSeg}`).style.display = "none";
+	if (!noNewSegs && (cfg.comp.seglen?parseInt(d.getElementById(`seg${lSeg}s`).value):0)+parseInt(d.getElementById(`seg${lSeg}e`).value)<ledCount) d.getElementById(`segr${lSeg}`).style.display = "inline";
 	d.getElementById('rsbtn').style.display = (segCount > 1) ? "inline":"none";
 }
 
@@ -872,7 +880,7 @@ function updateLen(s)
 {
 	if (!d.getElementById(`seg${s}s`)) return;
 	var start = parseInt(d.getElementById(`seg${s}s`).value);
-	var stop	= parseInt(d.getElementById(`seg${s}e`).value);
+	var stop  = parseInt(d.getElementById(`seg${s}e`).value);
 	var len = stop - (cfg.comp.seglen?0:start);
 	var out = "(delete)";
 	if (len > 1) {
@@ -947,12 +955,20 @@ function cmpP(a, b) {
 	return a[1].n.localeCompare(b[1].n,undefined, {numeric: true});
 }
 
+//forces a WebSockets reconnect if timeout (error toast), or successful HTTP response to JSON request
+function reconnectWS() {
+	if (ws) ws.close();
+	ws = null;
+	if (lastinfo && lastinfo.ws > -1) setTimeout(makeWS,500);
+}
+
 function makeWS() {
 	if (ws) return;
 	ws = new WebSocket('ws://'+(loc?locip:window.location.hostname)+'/ws');
+	ws.binaryType = "arraybuffer";
 	ws.onmessage = function(event) {
+    if (event.data instanceof ArrayBuffer) return; //liveview packet
 		var json = JSON.parse(event.data);
-		if (json.leds) return; //liveview packet
 		clearTimeout(jsonTimeout);
 		jsonTimeout = null;
 		clearErrorToast();
@@ -967,9 +983,16 @@ function makeWS() {
 		displayRover(info, s);
 		readState(json.state);
 	};
-	ws.onclose = function(event) {
-    	d.getElementById('connind').style.backgroundColor = "#831";
-  	}
+	ws.onclose = (e)=>{
+		//if there is already a new web socket open, do not null ws
+		if (ws && ws.readyState === WebSocket.OPEN) return;
+
+		d.getElementById('connind').style.backgroundColor = "#831";
+		ws = null;
+	}
+	ws.onopen = (e)=>{
+		reqsLegal = true;
+	}
 }
 
 function readState(s,command=false) {
@@ -1121,6 +1144,7 @@ function requestJson(command, rinfo = true) {
 			return;
 		}
 		var s = json;
+		if (reqsLegal && !ws) reconnectWS();
 		
 		if (!command || rinfo) { //we have info object
 			if (!rinfo) { //entire JSON (on load)
@@ -1136,7 +1160,7 @@ function requestJson(command, rinfo = true) {
 					});
 				},25);
 				
-		        reqsLegal = true;
+				reqsLegal = true;
 			}
 
 			var info = json.info;
@@ -1169,7 +1193,7 @@ function requestJson(command, rinfo = true) {
 			displayRover(info, s);
 		}
 
-	    readState(s,command);
+		readState(s,command);
 	})
 	.catch(function (error) {
 		showToast(error, true);
@@ -1254,8 +1278,8 @@ function makeSeg() {
 				<td class="segtd">${cfg.comp.seglen?"Length":"Stop LED"}</td>
 			</tr>
 			<tr>
-				<td class="segtd"><input class="noslide segn" id="seg${lowestUnused}s" type="number" min="0" max="${ledCount-1}" value="${ns}" oninput="updateLen(${lowestUnused})"></td>
-				<td class="segtd"><input class="noslide segn" id="seg${lowestUnused}e" type="number" min="0" max="${ledCount-(cfg.comp.seglen?ns:0)}" value="${ledCount-(cfg.comp.seglen?ns:0)}" oninput="updateLen(${lowestUnused})"></td>
+				<td class="segtd"><input class="noslide segn" id="seg${lowestUnused}s" type="number" min="0" max="${ledCount-1}" value="${ns}" oninput="updateLen(${lowestUnused})" onkeydown="segEnter(${lowestUnused})"></td>
+				<td class="segtd"><input class="noslide segn" id="seg${lowestUnused}e" type="number" min="0" max="${ledCount-(cfg.comp.seglen?ns:0)}" value="${ledCount-(cfg.comp.seglen?ns:0)}" oninput="updateLen(${lowestUnused})" onkeydown="segEnter(${lowestUnused})"></td>
 			</tr>
 		</table>
 		<div class="h" id="seg${lowestUnused}len">${ledCount - ns} LED${ledCount - ns >1 ? "s":""}</div>
@@ -1445,8 +1469,8 @@ function makePlEntry(p,i) {
 }
 
 function makePlUtil() {
-  if (pNum < 2) {
-    showToast("You need at least 2 presets to make a playlist!"); return;
+  if (pNum < 1) {
+    showToast("Please make a preset first!"); return;
   }
 	if (plJson[0].transition[0] < 0) plJson[0].transition[0] = tr;
   d.getElementById('putil').innerHTML = `<div class="seg pres">
@@ -1491,11 +1515,34 @@ function selSeg(s){
 	requestJson(obj, false);
 }
 
+function rptSeg(s)
+{
+	var name = d.getElementById(`seg${s}t`).value;
+	var start = parseInt(d.getElementById(`seg${s}s`).value);
+	var stop = parseInt(d.getElementById(`seg${s}e`).value);
+	if (stop == 0) {return;}
+	var rev = d.getElementById(`seg${s}rev`).checked;
+	var mi = d.getElementById(`seg${s}mi`).checked;
+	var sel = d.getElementById(`seg${s}sel`).checked;
+	var obj = {"seg": {"id": s, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop, "rev": rev, "mi": mi, "on": powered[s], "bri": parseInt(d.getElementById(`seg${s}bri`).value), "sel": sel}};
+	if (d.getElementById(`seg${s}grp`)) {
+		var grp = parseInt(d.getElementById(`seg${s}grp`).value);
+		var spc = parseInt(d.getElementById(`seg${s}spc`).value);
+		var ofs = parseInt(d.getElementById(`seg${s}of` ).value);
+		obj.seg.grp = grp;
+		obj.seg.spc = spc;
+		obj.seg.of  = ofs;
+	}
+	obj.seg.rpt = true;
+	expand(s);
+	requestJson(obj);
+}
+
 function setSeg(s){
 	var name  = d.getElementById(`seg${s}t`).value;
 	var start = parseInt(d.getElementById(`seg${s}s`).value);
-	var stop	= parseInt(d.getElementById(`seg${s}e`).value);
-	if (stop <= start) {delSeg(s); return;}
+	var stop  = parseInt(d.getElementById(`seg${s}e`).value);
+	if ((cfg.comp.seglen && stop == 0) || (!cfg.comp.seglen && stop <= start)) {delSeg(s); return;}
 	var obj = {"seg": {"id": s, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop}};
 	if (d.getElementById(`seg${s}grp`))
 	{
@@ -1539,6 +1586,13 @@ function setSegPwr(s){
 
 function setSegBri(s){
 	var obj = {"seg": {"id": s, "bri": parseInt(d.getElementById(`seg${s}bri`).value)}};
+	requestJson(obj);
+}
+
+function tglFreeze(s=null)
+{
+	var obj = {"seg": {"frz": "t"}}; // toggle
+	if (s!==null) obj.id = s;
 	requestJson(obj);
 }
 
@@ -1762,6 +1816,10 @@ function updatePSliders() {
 function hexEnter() {
 	d.getElementById('hexcnf').style.backgroundColor = "var(--c-6)";
 	if(event.keyCode == 13) fromHex();
+}
+
+function segEnter(s) {
+	if(event.keyCode == 13) setSeg(s);
 }
 
 function fromHex()

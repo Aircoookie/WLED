@@ -105,7 +105,7 @@
 			<button class="xxs cl btn" onclick="selectSlot(2);">3</button>
 		</div>
 		<div id="hexw">
-			<input id="hexc" type="text" class="noslide" onkeydown="hexEnter(this)" autocomplete="off" maxlength="8" />
+			<input id="hexc" type="text" class="noslide" onkeydown="hexEnter()" autocomplete="off" maxlength="8" />
 			<button id="hexcnf" class="xxs btn" onclick="fromHex();"><i class="icons btna-icon">&#xe390;</i></button>
 		</div>
 		<p class="labels">
@@ -141,7 +141,7 @@
 	<div id="Effects" class="tabcontent">
 		<p class="labels">Effect speed</p>
 		<div class="staytop">
-			<i class="icons slider-icon">&#xe325;</i>
+			<i class="icons slider-icon" onclick="tglFreeze()">&#xe325;</i>
 			<div class="sliderwrap il">
 				<input id="sliderSpeed" class="noslide" onchange="setSpeed()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
 				<output class="sliderbubble hidden"></output>

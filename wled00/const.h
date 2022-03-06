@@ -41,6 +41,12 @@
   #endif
 #endif
 
+#ifdef ESP8266
+#define WLED_MAX_COLOR_ORDER_MAPPINGS 5
+#else
+#define WLED_MAX_COLOR_ORDER_MAPPINGS 10
+#endif
+
 //Usermod IDs
 #define USERMOD_ID_RESERVED               0     //Unused. Might indicate no usermod present
 #define USERMOD_ID_UNSPECIFIED            1     //Default value for a general user mod that does not specify a custom ID
@@ -173,6 +179,7 @@
 #define COL_ORDER_RBG             3
 #define COL_ORDER_BGR             4
 #define COL_ORDER_GBR             5
+#define COL_ORDER_MAX             5
 
 
 //Button type
@@ -222,6 +229,7 @@
 #define SEG_DIFFERS_FX         0x08
 #define SEG_DIFFERS_BOUNDS     0x10
 #define SEG_DIFFERS_GSO        0x20
+#define SEG_DIFFERS_SEL        0x80
 
 //Playlist option byte
 #define PL_OPTION_SHUFFLE      0x01
@@ -301,7 +309,7 @@
 
 // Size of buffer for API JSON object (increase for more segments)
 #ifdef ESP8266
-  #define JSON_BUFFER_SIZE 9216
+  #define JSON_BUFFER_SIZE 10240
 #else
   #define JSON_BUFFER_SIZE 20480
 #endif
@@ -339,5 +347,7 @@
 #ifndef DEFAULT_LED_COUNT
   #define DEFAULT_LED_COUNT 58
 #endif
+
+#define INTERFACE_UPDATE_COOLDOWN 2000 //time in ms to wait between websockets, alexa, and MQTT updates
 
 #endif

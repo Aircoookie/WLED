@@ -27,7 +27,7 @@ void WLED::reset()
   while (millis() - dly < 450) {
     yield();        // enough time to send response to client
   }
-  setAllLeds();
+  applyBri();
   DEBUG_PRINTLN(F("MODULE RESET"));
   ESP.restart();
 }
@@ -177,7 +177,7 @@ void WLED::loop()
 
     yield();
 
-    if (!offMode || strip.isOffRefreshRequred)
+    if (!offMode || strip.isOffRefreshRequired())
       strip.service();
 #ifdef ESP8266
     else if (!noWifiSleep)
@@ -573,7 +573,7 @@ void WLED::initConnection()
   if (staticIP[0] != 0 && staticGateway[0] != 0) {
     WiFi.config(staticIP, staticGateway, staticSubnet, IPAddress(1, 1, 1, 1));
   } else {
-    WiFi.config(0U, 0U, 0U);
+    WiFi.config(IPAddress((uint32_t)0), IPAddress((uint32_t)0), IPAddress((uint32_t)0));
   }
 
   lastReconnectAttempt = millis();

@@ -52,7 +52,7 @@ void XML_response(AsyncWebServerRequest *request, char* dest)
   oappend(SET_F("</ix><fp>"));
   oappendi(effectPalette);
   oappend(SET_F("</fp><wv>"));
-  if (strip.isRgbw) {
+  if (strip.hasWhiteChannel()) {
    oappendi(col[3]);
   } else {
    oappend("-1");
@@ -70,11 +70,12 @@ void XML_response(AsyncWebServerRequest *request, char* dest)
     oappend(SET_F(" (live)"));
   }
   oappend(SET_F("</ds><ss>"));
-  oappendi(strip.getMainSegmentId());
+  oappendi(strip.getFirstSelectedSegId());
   oappend(SET_F("</ss></vs>"));
   if (request != nullptr) request->send(200, "text/xml", obuf);
 }
 
+//Deprecated, use of /json/state and presets recommended instead
 void URL_response(AsyncWebServerRequest *request)
 {
   char sbuf[256];
@@ -421,6 +422,19 @@ void getSettingsJS(byte subPage, char* dest)
       oappend(SET_F("mA\";"));
     }
 
+    oappend(SET_F("resetCOM("));
+    oappend(itoa(WLED_MAX_COLOR_ORDER_MAPPINGS,nS,10));
+    oappend(SET_F(");"));
+    const ColorOrderMap& com = busses.getColorOrderMap();
+    for (uint8_t s=0; s < com.count(); s++) {
+      const ColorOrderMapEntry* entry = com.get(s);
+      if (entry == nullptr) break;
+      oappend(SET_F("addCOM("));
+      oappend(itoa(entry->start,nS,10));  oappend(",");
+      oappend(itoa(entry->len,nS,10));  oappend(",");
+      oappend(itoa(entry->colorOrder,nS,10));  oappend(");");
+    }
+
     sappend('v',SET_F("CA"),briS);
 
     sappend('c',SET_F("BO"),turnOnAtBoot);
@@ -466,6 +480,8 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("RB"),receiveNotificationBrightness);
     sappend('c',SET_F("RC"),receiveNotificationColor);
     sappend('c',SET_F("RX"),receiveNotificationEffects);
+    sappend('c',SET_F("SO"),receiveSegmentOptions);
+    sappend('c',SET_F("SG"),receiveSegmentBounds);
     sappend('c',SET_F("SD"),notifyDirectDefault);
     sappend('c',SET_F("SB"),notifyButton);
     sappend('c',SET_F("SH"),notifyHue);
@@ -537,6 +553,7 @@ void getSettingsJS(byte subPage, char* dest)
     
     sappends('m',SET_F("(\"sip\")[0]"),hueErrorString);
     #endif
+    sappend('v',SET_F("BD"),serialBaud);
   }
 
   if (subPage == 5)
