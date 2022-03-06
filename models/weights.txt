@@ -1,0 +1,18 @@
+Part     Weight*  Pieces  Total
+-------------------------------
+Base        86g        1    86g
+Bottom      32g        1    32g
+Colon        9g        1     9g
+Digit       40g        4   160g
+-------------------------------
+                           287g
+
+Part     Weight*  Pieces  Total
+-------------------------------
+Segment     ~6g       28  ~168g
+Dot         ~1g        2    ~2g
+-------------------------------
+                          ~170g
+
+* Excluding skirt/brim, and
+  supports.
