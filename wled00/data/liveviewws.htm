@@ -51,7 +51,7 @@
       ws.send("{'lv':true}");
     } else {
       console.info("Peek WS opening");
-      ws = new WebSocket("ws://"+document.location.host+"/ws");
+      ws = new WebSocket((window.location.protocol == "https:"?"wss":"ws")+"://"+document.location.host+"/ws");
       ws.onopen = function () {
         console.info("Peek WS open");
         ws.send("{'lv':true}");
