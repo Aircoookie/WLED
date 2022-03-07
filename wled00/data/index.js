@@ -1190,7 +1190,7 @@ function readState(s,command=false)
 		cd[e].dataset.g = i.col[e][1];
 		cd[e].dataset.b = i.col[e][2];
 		cd[e].style.backgroundColor = rgbStr(cd[e].dataset); // or: setCSL(cd[e]);
-		if (isRgbw) { let w = cd[e].dataset.w = i.col[e][3]; whites[e] = parseInt(w); }
+		if (hasWhite) { let w = cd[e].dataset.w = i.col[e][3]; whites[e] = parseInt(w); }
 	}
 	selectSlot(csel);
 	if (i.cct != null && i.cct>=0) gId("sliderA").value = i.cct;
@@ -2150,7 +2150,7 @@ function setColor(sr)
 	cdd.r = col.r;
 	cdd.g = col.g;
 	cdd.b = col.b;
-	if (isRgbw) cdd.w = whites[csel];
+	if (hasWhite) cdd.w = whites[csel];
 	cd[csel].style.backgroundColor = rgbStr(cd[csel].dataset); // or: setCSL(cd[csel]);
 	var obj = {"seg": {"col": [[col.r, col.g, col.b, whites[csel]],[],[]]}};
 	if (csel == 1) {
