@@ -430,7 +430,7 @@ button {
 }
 
 #ndlt {
-  margin: 12px 0;
+	margin: 12px 0;
 }
 
 #roverstar {
@@ -692,7 +692,10 @@ input[type=range]::-moz-range-thumb {
 }
 #qcs-w {
 	margin-top: 10px;
+	display: none;
 }
+
+/* Quick color select buttons */
 .qcs {
 	margin: 2px;
 	border-radius: 14px;
@@ -701,12 +704,16 @@ input[type=range]::-moz-range-thumb {
 	height: 28px;
 	line-height: 28px;
 }
+
+/* Quick color select Black button (has white border) */
 .qcsb {
 	width: 26px;
 	height: 26px;
 	line-height: 26px;
 	border: 1px solid var(--c-f);
 }
+
+/* Hex color input wrapper div */
 #hexw {
 	margin-top: 5px;
 	display: none;
@@ -728,7 +735,7 @@ select/*, .sel-p, .sel-pl, .sel-ple*/ {
 	transform:translate3d(0,0,0);
 }
 #tt {
-  text-align: center;
+	text-align: center;
 }
 .cl {
 	background-color: #000;
@@ -829,6 +836,12 @@ input[type=number]::-webkit-outer-spin-button {
 .segpwr {
 	padding: 4px 0 0 8px;
 }
+.pname {
+	top: 1px;
+}
+.plname {
+	top:0;
+}
 
 .pid {
 	position: absolute;
@@ -887,8 +900,6 @@ input[type=number]::-webkit-outer-spin-button {
 	position: absolute;
 	bottom: 8px;
 	right: 8px;
-	color: var(--c-f);
-	cursor: pointer;
 }
 
 .check, .radio {
@@ -942,7 +953,7 @@ input[type=number]::-webkit-outer-spin-button {
 
 .radio:hover input ~ .radiomark,
 .check:hover input ~ .checkmark {
-	background-color: var(--c-4);
+	background-color: var(--c-5);
 }
 
 .checkmark:after, .radiomark:after {

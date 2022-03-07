@@ -84,6 +84,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(strip.ablMilliampsMax, hw_led[F("maxpwr")]);
   CJSON(strip.milliampsPerLed, hw_led[F("ledma")]);
   Bus::setAutoWhiteMode(hw_led[F("rgbwm")] | Bus::getAutoWhiteMode());
+  strip.fixInvalidSegments(); // refreshes segment light capabilities (in case auto white mode changed)
   CJSON(correctWB, hw_led["cct"]);
   CJSON(cctFromRgb, hw_led[F("cr")]);
 	CJSON(strip.cctBlending, hw_led[F("cb")]);
@@ -94,7 +95,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   
   if (fromFS || !ins.isNull()) {
     uint8_t s = 0;  // bus iterator
-    busses.removeAll();
+    if (fromFS) busses.removeAll(); // can't safely manipulate busses directly in network callback
     uint32_t mem = 0;
     for (JsonObject elm : ins) {
       if (s >= WLED_MAX_BUSSES) break;
@@ -116,11 +117,17 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       uint8_t ledType = elm["type"] | TYPE_WS2812_RGB;
       bool reversed = elm["rev"];
       bool refresh = elm["ref"] | false;
-      ledType |= refresh << 7;  // hack bit 7 to indicate strip requires off refresh
+      ledType |= refresh << 7; // hack bit 7 to indicate strip requires off refresh
       s++;
-      BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst);
-      mem += BusManager::memUsage(bc);
-      if (mem <= MAX_LED_MEMORY && busses.getNumBusses() <= WLED_MAX_BUSSES) busses.add(bc);  // finalization will be done in WLED::beginStrip()
+      if (fromFS) {
+        BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst);
+        mem += BusManager::memUsage(bc);
+        if (mem <= MAX_LED_MEMORY && busses.getNumBusses() <= WLED_MAX_BUSSES) busses.add(bc);  // finalization will be done in WLED::beginStrip()
+      } else {
+        if (busConfigs[s] != nullptr) delete busConfigs[s];
+        busConfigs[s] = new BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst);
+        doInitBusses = true;
+      }
     }
     // finalization done in beginStrip()
   }
@@ -359,10 +366,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(latitude, if_ntp[F("lt")]);
 
   JsonObject ol = doc[F("ol")];
-  prev = overlayDefault;
-  CJSON(overlayDefault ,ol[F("clock")]); // 0
+  CJSON(overlayCurrent ,ol[F("clock")]); // 0
   CJSON(countdownMode, ol[F("cntdwn")]);
-  if (prev != overlayDefault) overlayCurrent = overlayDefault;
 
   CJSON(overlayMin, ol["min"]);
   CJSON(overlayMax, ol[F("max")]);
@@ -761,7 +766,7 @@ void serializeConfig() {
   if_ntp[F("lt")] = latitude;
 
   JsonObject ol = doc.createNestedObject("ol");
-  ol[F("clock")] = overlayDefault;
+  ol[F("clock")] = overlayCurrent;
   ol[F("cntdwn")] = countdownMode;
 
   ol["min"] = overlayMin;

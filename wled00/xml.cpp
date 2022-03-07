@@ -257,7 +257,6 @@ void getSettingsJS(byte subPage, char* dest)
   {
     char nS[8];
 
-
     // Pin reservations will become unnecessary when settings pages will read cfg.json directly
     // add reserved and usermod pins as d.um_p array
     oappend(SET_F("d.um_p=[6,7,8,9,10,11"));
@@ -533,16 +532,13 @@ void getSettingsJS(byte subPage, char* dest)
       sprintf_P(tm, PSTR("Sunrise: %02d:%02d Sunset: %02d:%02d"), hour(sunrise), minute(sunrise), hour(sunset), minute(sunset));
       sappends('m',SET_F("(\"times\")[1]"),tm);
     }
-    sappend('i',SET_F("OL"),overlayCurrent);
+    sappend('c',SET_F("OL"),overlayCurrent);
     sappend('v',SET_F("O1"),overlayMin);
     sappend('v',SET_F("O2"),overlayMax);
     sappend('v',SET_F("OM"),analogClock12pixel);
     sappend('c',SET_F("OS"),analogClockSecondsTrail);
     sappend('c',SET_F("O5"),analogClock5MinuteMarks);
-    #ifndef WLED_DISABLE_CRONIXIE
-    sappends('s',SET_F("CX"),cronixieDisplay);
-    sappend('c',SET_F("CB"),cronixieBacklight);
-    #endif
+
     sappend('c',SET_F("CE"),countdownMode);
     sappend('v',SET_F("CY"),countdownYear);
     sappend('v',SET_F("CI"),countdownMonth);

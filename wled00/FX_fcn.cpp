@@ -152,7 +152,14 @@ void WS2812FX::service() {
           _colors_t[slot] = transitions[t].currentColor(SEGMENT.colors[slot]);
         }
         if (!cctFromRgb || correctWB) busses.setSegmentCCT(_cct_t, correctWB);
-        for (uint8_t c = 0; c < 3; c++) _colors_t[c] = gamma32(_colors_t[c]);
+        _no_rgb = !(SEGMENT.getLightCapabilities() & 0x01);
+        for (uint8_t c = 0; c < NUM_COLORS; c++) {
+          // if segment is not RGB capable, treat RGB channels of main segment colors as if 0
+          // this prevents Dual mode with white value 0 from setting White channel from inaccessible RGB values
+          // If not RGB capable, also treat palette as if default (0), as palettes set white channel to 0
+          if (_no_rgb) _colors_t[c] = _colors_t[c] & 0xFF000000;
+          _colors_t[c] = gamma32(_colors_t[c]);
+        }
         handle_palette();
         delay = (this->*_mode[SEGMENT.mode])(); //effect function
         if (SEGMENT.mode != FX_MODE_HALLOWEEN_EYES) SEGENV.call++;
@@ -561,8 +568,10 @@ uint8_t WS2812FX::Segment::differs(Segment& b) {
   return d;
 }
 
-uint8_t WS2812FX::Segment::getLightCapabilities() {
-  if (!isActive()) return 0;
+void WS2812FX::Segment::refreshLightCapabilities() {
+  if (!isActive()) {
+    _capabilities = 0; return;
+  }
   uint8_t capabilities = 0;
   uint8_t awm = Bus::getAutoWhiteMode();
   bool whiteSlider = (awm == RGBW_MODE_DUAL || awm == RGBW_MODE_MANUAL_ONLY);
@@ -589,7 +598,7 @@ uint8_t WS2812FX::Segment::getLightCapabilities() {
     }
     if (correctWB && type != TYPE_ANALOG_1CH) capabilities |= 0x04; //white balance correction (uses CCT slider)
   }
-  return capabilities;
+  _capabilities = capabilities;
 }
 
 //used for JSON API info.leds.rgbw. Little practical use, deprecate with info.leds.rgbw.
@@ -628,7 +637,8 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
   Segment& seg = _segments[n];
 
   //return if neither bounds nor grouping have changed
-  if (seg.start == i1 && seg.stop == i2
+  bool boundsUnchanged = (seg.start == i1 && seg.stop == i2);
+  if (boundsUnchanged
 			&& (!grouping || (seg.grouping == grouping && seg.spacing == spacing))
 			&& (offset == UINT16_MAX || offset == seg.offset)) return;
 
@@ -653,6 +663,7 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
   }
 	if (offset < UINT16_MAX) seg.offset = offset;
   _segment_runtimes[n].markForReset();
+  if (!boundsUnchanged) seg.refreshLightCapabilities();
 }
 
 void WS2812FX::restartRuntime() {
@@ -748,6 +759,8 @@ void WS2812FX::fixInvalidSegments() {
   {
     if (_segments[i].start >= _length) setSegment(i, 0, 0); 
     if (_segments[i].stop  >  _length) setSegment(i, _segments[i].start, _length);
+    // this is always called as the last step after finalizeInit(), update covered bus types
+    getSegment(i).refreshLightCapabilities();
   }
 }
 
@@ -1123,22 +1136,17 @@ void WS2812FX::handle_palette(void)
  */
 uint32_t IRAM_ATTR WS2812FX::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri)
 {
-  if (SEGMENT.palette == 0 && mcol < 3) {
+  if ((SEGMENT.palette == 0 && mcol < 3) || _no_rgb) {
     uint32_t color = SEGCOLOR(mcol);
-    if (pbri != 255) {
-      CRGB crgb_color = col_to_crgb(color);
-      crgb_color.nscale8_video(pbri);
-      return crgb_to_col(crgb_color);
-    } else {
-      return color;
-    }
+    if (pbri == 255) return color;
+    return RGBW32(scale8_video(R(color),pbri), scale8_video(G(color),pbri), scale8_video(B(color),pbri), scale8_video(W(color),pbri));
   }
 
   uint8_t paletteIndex = i;
   if (mapping && SEGLEN > 1) paletteIndex = (i*255)/(SEGLEN -1);
   if (!wrap) paletteIndex = scale8(paletteIndex, 240); //cut off blend at palette "end"
   CRGB fastled_col;
-  fastled_col = ColorFromPalette( currentPalette, paletteIndex, pbri, (paletteBlend == 3)? NOBLEND:LINEARBLEND);
+  fastled_col = ColorFromPalette(currentPalette, paletteIndex, pbri, (paletteBlend == 3)? NOBLEND:LINEARBLEND);
 
   return crgb_to_col(fastled_col);
 }

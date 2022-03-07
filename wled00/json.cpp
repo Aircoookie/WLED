@@ -317,12 +317,6 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     }
   }
 
-  #ifndef WLED_DISABLE_CRONIXIE
-    if (root["nx"].is<const char*>()) {
-      strncpy(cronixieDisplay, root["nx"], 6);
-    }
-  #endif
-
   usermods.readFromJsonState(root);
 
   loadLedmap = root[F("ledmap")] | loadLedmap;
@@ -608,7 +602,7 @@ void serializeInfo(JsonObject root)
   #ifndef WLED_DISABLE_BLYNK
   os += 0x20;
   #endif
-  #ifndef WLED_DISABLE_CRONIXIE
+  #ifdef USERMOD_CRONIXIE
   os += 0x10;
   #endif
   #ifndef WLED_DISABLE_FILESYSTEM

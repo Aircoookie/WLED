@@ -284,10 +284,10 @@ void decodeIR(uint32_t code)
       break;
     case 2: decodeIR24CT(code); break; // white 24-key remote with CW, WW, CT+ and CT- keys
     case 3: decodeIR40(code);   break; // blue  40-key remote with 25%, 50%, 75% and 100% keys
-    case 4: decodeIR44(code);   break; // white 44-key remote with color-up/down keys and DIY1 to 6 keys 
-    case 5: decodeIR21(code);   break; // white 21-key remote  
+    case 4: decodeIR44(code);   break; // white 44-key remote with color-up/down keys and DIY1 to 6 keys
+    case 5: decodeIR21(code);   break; // white 21-key remote
     case 6: decodeIR6(code);    break; // black 6-key learning remote defaults: "CH" controls brightness,
-                                       // "VOL +" controls effect, "VOL -" controls colour/palette, "MUTE" 
+                                       // "VOL +" controls effect, "VOL -" controls colour/palette, "MUTE"
                                        // sets bright plain white
     case 7: decodeIR9(code);    break;
     //case 8: return; // ir.json file, handled above switch statement

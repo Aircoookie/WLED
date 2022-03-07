@@ -1,9 +1,9 @@
 //page js
 var loc = false, locip;
 var noNewSegs = false;
-var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true, isRgbw = false, cct = false;
+var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true;
+var hasWhite = false, hasRGB = false, hasCCT = false;
 var whites = [0,0,0];
-var colors = [[0,0,0],[0,0,0],[0,0,0]];
 var expanded = [false];
 var powered = [true];
 var nlDur = 60, nlTar = 0;
@@ -44,7 +44,10 @@ function gEBCN(c) {return d.getElementsByClassName(c);}
 function isEmpty(o) {return Object.keys(o).length === 0;}
 function isObj(i) {return (i && typeof i === 'object' && !Array.isArray(i));}
 
-// returns RGB color from a given slot s 0-2 from color array a
+// returns true if dataset R, G & B values are 0
+function isRgbBlack(a) {return (parseInt(a.r) == 0 && parseInt(a.g) == 0 && parseInt(a.b) == 0);}
+
+// returns RGB color from a given dataset
 function rgbStr(a) {return "rgb(" + a.r + "," + a.g + "," + a.b + ")";}
 
 // brightness approximation for selecting white as text color if background bri < 127, and black if higher
@@ -53,8 +56,18 @@ function rgbBri(a) {return 0.2126*parseInt(a.r) + 0.7152*parseInt(a.g) + 0.0722*
 // sets background of color slot selectors
 function setCSL(cs)
 {
-	cs.style.backgroundColor = rgbStr(cs.dataset);
-	cs.style.color = rgbBri(cs.dataset) > 127 ? "#000":"#fff"; // if text has no CSS "shadow"
+	let w = whites[parseInt(cs.id.substr(3))];
+	if (hasRGB && !isRgbBlack(cs.dataset)) {
+		cs.style.backgroundColor = rgbStr(cs.dataset);
+		cs.style.color = rgbBri(cs.dataset) > 127 ? "#000":"#fff"; // if text has no CSS "shadow"
+		if (hasWhite && w > 0) {
+			cs.style.background = `linear-gradient(180deg, ${rgbStr(cs.dataset)} 30%, rgb(${w},${w},${w}))`;
+		}
+	} else {
+		if (!hasWhite) w = 0;
+		cd.style.background = `rgb(${w},${w},${w})`;
+		cd.style.color = w > 127 ? "#000":"#fff";
+	}
 }
 
 function applyCfg()
@@ -62,13 +75,17 @@ function applyCfg()
 	cTheme(cfg.theme.base === "light");
 	var bg = cfg.theme.color.bg;
 	if (bg) sCol('--c-1', bg);
+	if (lastinfo.leds) updateUI(); // update component visibility
+/*
 	var ccfg = cfg.comp.colors;
 	gId('hexw').style.display = ccfg.hex ? "block":"none";
-	gId('picker').style.display = ccfg.picker ? "block":"none";
-	gId('vwrap').style.display = ccfg.picker ? "block":"none";
-	//gId('kwrap').style.display = ccfg.picker ? "block":"none";
-	gId('rgbwrap').style.display = ccfg.rgb ? "block":"none";
-	gId('qcs-w').style.display = ccfg.quick ? "block":"none";
+	gId('picker').style.display = (hasRGB && ccfg.picker) ? "block":"none";
+	gId('vwrap').style.display = (hasRGB && ccfg.picker) ? "block":"none";
+	gId('kwrap').style.display = (hasRGB && !hasCCT && ccfg.picker) ? "block":"none";
+	gId('rgbwrap').style.display = (hasRGB && ccfg.rgb) ? "block":"none";
+	gId('qcs-w').style.display = (hasRGB && ccfg.quick) ? "block":"none";
+	gId('palw').style.display = hasRGB ? "block":"none";
+*/
 	var l = cfg.comp.labels;
 	var e = d.querySelectorAll('.tab-label');
 	for (let i of e) i.style.display = l ? "block":"none";
@@ -583,12 +600,10 @@ function parseInfo() {
 	if (li.live) name = "(Live) " + name;
 	if (loc)     name = "(L) " + name;
 	d.title     = name;
-	isRgbw      = li.leds.wv;
 	ledCount    = li.leds.count;
 	syncTglRecv = li.str;
 	maxSeg      = li.leds.maxseg;
 	pmt         = li.fs.pmt;
-	cct         = li.leds.cct;
 }
 
 function populateInfo(i)
@@ -1013,9 +1028,16 @@ function updateUI()
 	updateTrail(gId('sliderC2'));
 	updateTrail(gId('sliderC3'));
 
-	gId('wwrap').style.display = (isRgbw) ? "block":"none";
-	gId("wbal").style.display = (cct) ? "block":"none";
-	gId('kwrap').style.display = (cct) ? "none":"block";
+	gId('wwrap').style.display = (hasWhite) ? "block":"none";
+	gId('wbal').style.display = (hasCCT) ? "block":"none";
+	var ccfg = cfg.comp.colors;
+	gId('hexw').style.display = ccfg.hex ? "block":"none";
+	gId('picker').style.display = (hasRGB && ccfg.picker) ? "block":"none";
+	gId('vwrap').style.display = (hasRGB && ccfg.picker) ? "block":"none";
+	gId('kwrap').style.display = (hasRGB && !hasCCT && ccfg.picker) ? "block":"none";
+	gId('rgbwrap').style.display = (hasRGB && ccfg.rgb) ? "block":"none";
+	gId('qcs-w').style.display = (hasRGB && ccfg.quick) ? "block":"none";
+	gId('palw').style.display = hasRGB ? "block":"none";
 
 	updatePA();
 	updatePSliders();
@@ -1129,13 +1151,33 @@ function readState(s,command=false)
 	tr = s.transition;
 	gId('tt').value = tr/10;
   
-	var selc=0; var ind=0;
 	populateSegments(s);
+	var selc=0;
+	var sellvl=0; // 0: selc is invalid, 1: selc is mainseg, 2: selc is first selected
+	hasRGB = hasWhite = hasCCT = false;
 	for (let i = 0; i < (s.seg||[]).length; i++)
 	{
-		if(s.seg[i].sel) {selc = ind; break;} ind++;
+		if (sellvl == 0 && s.seg[i].id == s.mainseg) {
+			selc = i;
+			sellvl = 1;
+		}
+		if (s.seg[i].sel) {
+			if (sellvl < 2) selc = i; // get first selected segment
+			sellvl = 2;
+			var lc = lastinfo.leds.seglc[s.seg[i].id];
+			hasRGB   |= lc & 0x01;
+			hasWhite |= lc & 0x02;
+			hasCCT   |= lc & 0x04;
+		}
+		//if(s.seg[i].sel) {selc = ind; break;} ind++;
 	}
 	var i=s.seg[selc];
+	if (sellvl == 1) {
+		var lc = lastinfo.leds.seglc[i.id];
+		hasRGB   = lc & 0x01;
+		hasWhite = lc & 0x02;
+		hasCCT   = lc & 0x04;
+	}
 	if (!i) {
 		showToast('No Segments!', true);
 		updateUI();
@@ -1151,7 +1193,7 @@ function readState(s,command=false)
 		if (isRgbw) { let w = cd[e].dataset.w = i.col[e][3]; whites[e] = parseInt(w); }
 	}
 	selectSlot(csel);
-	if (i.cct && i.cct>=0) gId("sliderA").value = i.cct;
+	if (i.cct != null && i.cct>=0) gId("sliderA").value = i.cct;
 
 	gId('sliderSpeed').value = i.sx;
 	gId('sliderIntensity').value = i.ix;
@@ -1998,8 +2040,12 @@ function selectSlot(b)
 	for (let i of cd) i.classList.remove('xxs-w');
 	cd[b].classList.add('xxs-w');
 	setPicker(cd[b].style.backgroundColor);
+	//force slider update on initial load (picker "color:change" not fired if black)
+	if (cpick.color.value == 0) updatePSliders();
 	gId('sliderW').value = whites[b];
-	updatePSliders();
+	updateTrail(gId('sliderW'));
+	redrawPalPrev();
+	//updatePSliders();
 }
 
 //set the color from a hex string. Used by quick color selectors

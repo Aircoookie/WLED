@@ -157,7 +157,7 @@
           }
           gId("rf"+n).onclick = (t == 31) ? (function(){return false}) : (function(){});  // prevent change for TM1814
           isRGBW |= (t == 30 || t == 31 || (t > 40 && t < 46 && t != 43)); // RGBW checkbox, TYPE_xxxx values from const.h
-          gId("co"+n).style.display = ((t>=80 && t<96) || t == 41 || t == 42) ? "none":"inline";  // hide color order for PWM W & WW/CW
+          gId("co"+n).style.display = ((t>=80 && t<96) || (t > 40 && t < 48)) ? "none":"inline";  // hide color order for PWM
           gId("dig"+n+"c").style.display = (t > 40 && t < 48) ? "none":"inline";  // hide count for analog
           gId("dig"+n+"r").style.display = (t>=80 && t<96) ? "none":"inline";  // hide reversed for virtual
           gId("dig"+n+"s").style.display = ((t>=80 && t<96) || (t > 40 && t < 48)) ? "none":"inline";  // hide skip 1st for virtual & analog
@@ -180,7 +180,7 @@
         var n  = LCs[i].name.substring(2);    // bus number
         // do we have a led count field
         if (nm=="LC") {
-          var c=parseInt(LCs[i].value,10); //get LED gount
+          var c=parseInt(LCs[i].value,10); //get LED count
           if (!customStarts || !startsDirty[n]) gId("ls"+n).value=sLC; //update start value
           gId("ls"+n).disabled = !customStarts; //enable/disable field editing
           if(c){

@@ -108,6 +108,10 @@
 #include "../usermods/seven_segment_display_reloaded/usermod_seven_segment_reloaded.h"
 #endif
 
+#ifdef USERMOD_CRONIXIE
+#include "../usermods/Cronixie/usermod_cronixie.h"
+#endif
+
 #ifdef QUINLED_AN_PENTA
 #include "../usermods/quinled-an-penta/quinled-an-penta.h"
 #endif
@@ -206,6 +210,10 @@ void registerUsermods()
 
   #ifdef USERMOD_SSDR
   usermods.add(new UsermodSSDR());
+  #endif
+
+  #ifdef USERMOD_CRONIXIE
+  usermods.add(new UsermodCronixie());
   #endif
 
   #ifdef QUINLED_AN_PENTA
