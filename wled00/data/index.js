@@ -1000,7 +1000,7 @@ function reconnectWS() {
 
 function makeWS() {
 	if (ws) return;
-	ws = new WebSocket('ws://'+(loc?locip:window.location.hostname)+'/ws');
+	ws = new WebSocket((window.location.protocol == 'https:'?'wss':'ws')+'://'+(loc?locip:window.location.hostname)+'/ws');
 	ws.binaryType = "arraybuffer";
 	ws.onmessage = function(event) {
 		if (event.data instanceof ArrayBuffer) return; //liveview packet
