@@ -1028,16 +1028,16 @@ function updateUI()
 	updateTrail(gId('sliderC2'));
 	updateTrail(gId('sliderC3'));
 
-	gId('wwrap').style.display = (hasWhite) ? "block":"none";
-	gId('wbal').style.display = (hasCCT) ? "block":"none";
+	gId('wwrap').style.display = (hasWhite) ? "block":"none"; // white channel
+	gId('wbal').style.display = (hasCCT) ? "block":"none";    // white balance
 	var ccfg = cfg.comp.colors;
-	gId('hexw').style.display = ccfg.hex ? "block":"none";
-	gId('picker').style.display = (hasRGB && ccfg.picker) ? "block":"none";
-	gId('vwrap').style.display = (hasRGB && ccfg.picker) ? "block":"none";
-	gId('kwrap').style.display = (hasRGB && !hasCCT && ccfg.picker) ? "block":"none";
-	gId('rgbwrap').style.display = (hasRGB && ccfg.rgb) ? "block":"none";
-	gId('qcs-w').style.display = (hasRGB && ccfg.quick) ? "block":"none";
-	gId('palw').style.display = hasRGB ? "block":"none";
+	gId('hexw').style.display = ccfg.hex ? "block":"none";    // HEX input
+	gId('picker').style.display = (hasRGB && ccfg.picker) ? "block":"none"; // color picker wheel
+	gId('vwrap').style.display = (hasRGB && ccfg.picker) ? "block":"none";  // brightness (value) slider
+	gId('kwrap').style.display = (hasRGB && !hasCCT && ccfg.picker) ? "block":"none"; // Kelvin slider
+	gId('rgbwrap').style.display = (hasRGB && ccfg.rgb) ? "block":"none";   // RGB sliders
+	gId('qcs-w').style.display = (hasRGB && ccfg.quick) ? "block":"none";   // quick selection
+	gId('palw').style.display = hasRGB ? "block":"none";                    // palettes
 
 	updatePA();
 	updatePSliders();
@@ -1098,7 +1098,7 @@ function cmpP(a, b)
 function makeWS() {
 	//if (ws) { ws.close(); ws=null; }
 	if (ws || lastinfo.ws < 0) return;
-	ws = new WebSocket('ws://'+(loc?locip:window.location.hostname)+'/ws');
+	ws = new WebSocket((window.location.protocol == "https:"?"wss":"ws")+'://'+(loc?locip:window.location.hostname)+'/ws');
 	ws.binaryType = "arraybuffer";
 	ws.onmessage = (e)=>{
     	if (e.data instanceof ArrayBuffer) return; //liveview packet
@@ -1165,18 +1165,18 @@ function readState(s,command=false)
 			if (sellvl < 2) selc = i; // get first selected segment
 			sellvl = 2;
 			var lc = lastinfo.leds.seglc[s.seg[i].id];
-			hasRGB   |= lc & 0x01;
-			hasWhite |= lc & 0x02;
-			hasCCT   |= lc & 0x04;
+			hasRGB   |= !!(lc & 0x01);
+			hasWhite |= !!(lc & 0x08);
+			hasCCT   |= !!(lc & 0x04);
 		}
 		//if(s.seg[i].sel) {selc = ind; break;} ind++;
 	}
 	var i=s.seg[selc];
 	if (sellvl == 1) {
 		var lc = lastinfo.leds.seglc[i.id];
-		hasRGB   = lc & 0x01;
-		hasWhite = lc & 0x02;
-		hasCCT   = lc & 0x04;
+		hasRGB   = !!(lc & 0x01);
+		hasWhite = !!(lc & 0x08);
+		hasCCT   = !!(lc & 0x04);
 	}
 	if (!i) {
 		showToast('No Segments!', true);

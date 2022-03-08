@@ -477,7 +477,7 @@ void serializeInfo(JsonObject root)
       if (strip.hasWhiteChannel()) leds[F("wv")] = true;
       break;
   }
-
+/*
   JsonArray leds_pin = leds.createNestedArray("pin");
   for (uint8_t s=0; s<busses.getNumBusses(); s++) {
     Bus *bus = busses.getBus(s);
@@ -485,7 +485,7 @@ void serializeInfo(JsonObject root)
     bus->getPins(pins);
     leds_pin.add(pins[0]); // need to elaborate this for multipin strips
   }
-  
+*/
   leds[F("pwr")] = strip.currentMilliamps;
   leds["fps"] = strip.getFps();
   leds[F("maxpwr")] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;
