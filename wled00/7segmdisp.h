@@ -74,7 +74,9 @@
 
 #define _7SEG_IDX(seg, i) (seg * _ledsPerSegment + i)
 
-#define _7SEG_MODE(mode, state) (mode == LedBasedDisplayMode::SET_ALL_LEDS || state && mode == LedBasedDisplayMode::SET_ON_LEDS || !state && mode == LedBasedDisplayMode::SET_OFF_LEDS)
+#define _7SEG_MODE(mode, state) (mode == LedBasedDisplayMode::SET_ALL_LEDS || (state && mode == LedBasedDisplayMode::SET_ON_LEDS) || (!state && mode == LedBasedDisplayMode::SET_OFF_LEDS))
+
+#define _7SEG_COORD_UNDEF 255
 
 enum LedBasedDisplayMode {
 
@@ -84,6 +86,16 @@ enum LedBasedDisplayMode {
     SET_ALL_LEDS
 };
 
+struct Coords {
+    uint8_t row;
+    uint8_t col;
+    Coords(uint8_t _row, uint8_t _col) : row(_row), col(_col) {}
+    Coords() : row(_7SEG_COORD_UNDEF), col(_7SEG_COORD_UNDEF) {}
+    bool isValid() {
+        return row != _7SEG_COORD_UNDEF && col != _7SEG_COORD_UNDEF;
+    }
+};
+
 class LedBasedDisplay {
 
     public:
@@ -91,6 +103,8 @@ class LedBasedDisplay {
 
         virtual uint8_t rowCount() = 0;
         virtual uint8_t columnCount() = 0;
+
+        virtual Coords coordsOfIndex(uint16_t index) = 0;
 
         virtual CRGB* getLedColor(uint8_t row, uint8_t column, bool state) = 0;
         virtual void setLedColor(uint8_t row, uint8_t column, bool state, CRGB color) = 0;
@@ -113,6 +127,8 @@ class SevenSegmentDisplay : public LedBasedDisplay {
 
         virtual uint8_t rowCount() override;
         virtual uint8_t columnCount() override;
+
+        virtual Coords coordsOfIndex(uint16_t index) override;
 
         virtual CRGB* getLedColor(uint8_t row, uint8_t column, bool state) override;
         virtual void setLedColor(uint8_t row, uint8_t column, bool state, CRGB color) override;
@@ -151,6 +167,8 @@ class SeparatorDisplay : public LedBasedDisplay {
         virtual uint8_t rowCount() override;
         virtual uint8_t columnCount() override;
 
+        virtual Coords coordsOfIndex(uint16_t index) override;
+
         virtual CRGB* getLedColor(uint8_t row, uint8_t column, bool state) override;
         virtual void setLedColor(uint8_t row, uint8_t column, bool state, CRGB color) override;
 
@@ -186,6 +204,8 @@ class LedBasedRowDisplay : public LedBasedDisplay {
 
         virtual uint8_t rowCount() override;
         virtual uint8_t columnCount() override;
+
+        virtual Coords coordsOfIndex(uint16_t index) override;
 
         virtual CRGB* getLedColor(uint8_t row, uint8_t column, bool state) override;
         virtual void setLedColor(uint8_t row, uint8_t column, bool state, CRGB color) override;

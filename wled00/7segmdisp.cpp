@@ -49,6 +49,36 @@ uint8_t SevenSegmentDisplay::columnCount() {
     return _ledsPerSegment + 2;
 }
 
+Coords SevenSegmentDisplay::coordsOfIndex(uint16_t index) {
+    Coords coords;
+    for (int i = 0, n = 7 * _ledsPerSegment; i < n; ++i) {
+        if (_indices[i] == index) {
+            uint8_t seg = i / _ledsPerSegment;
+            uint8_t idx = i % _ledsPerSegment;
+            switch (seg) {
+            case _7SEG_SEG_A: coords.row = 0; break;
+            case _7SEG_SEG_B:
+            case _7SEG_SEG_F: coords.row = idx + 1; break;
+            case _7SEG_SEG_C:
+            case _7SEG_SEG_E: coords.row = _ledsPerSegment + 1 + idx + 1; break;
+            case _7SEG_SEG_D: coords.row = _ledsPerSegment + 1 + _ledsPerSegment + 1; break;
+            case _7SEG_SEG_G: coords.row = _ledsPerSegment + 1; break;
+            }
+            switch (seg) {
+            case _7SEG_SEG_A:
+            case _7SEG_SEG_D:
+            case _7SEG_SEG_G: coords.col = idx + 1; break;
+            case _7SEG_SEG_B:
+            case _7SEG_SEG_C: coords.col = _ledsPerSegment + 1; break;
+            case _7SEG_SEG_E:
+            case _7SEG_SEG_F: coords.col = 0; break;
+            }
+            return coords;
+        }
+    }
+    return coords;
+}
+
 CRGB* SevenSegmentDisplay::getLedColor(uint8_t row, uint8_t column, bool state) {
     uint8_t lastRow = (_ledsPerSegment + 1) * 2;
 
@@ -259,6 +289,15 @@ uint8_t SeparatorDisplay::columnCount() {
     return max + 1;
 }
 
+Coords SeparatorDisplay::coordsOfIndex(uint16_t index) {
+    for (uint8_t i = 0; i < _ledCount; ++i) {
+        if (_mappings[i].index == index) {
+            return Coords(_mappings[i].row, _mappings[i].column);
+        }
+    }
+    return Coords();
+}
+
 CRGB* SeparatorDisplay::getLedColor(uint8_t row, uint8_t column, bool state) {
     for (uint8_t i = 0; i < _ledCount; ++i) {
         if (_mappings[i].row == row && _mappings[i].column == column) {
@@ -356,6 +395,20 @@ uint8_t LedBasedRowDisplay::columnCount() {
     return columnCount;
 }
 
+Coords LedBasedRowDisplay::coordsOfIndex(uint16_t index) {
+    uint8_t columnCount = 0;
+    for (uint8_t i = 0; i < _displayCount; i++) {
+        Coords coords = _displays[i]->coordsOfIndex(index);
+        if (coords.isValid()) {
+            coords.col += columnCount;
+            return coords;
+        } else {
+            columnCount += _displays[i]->columnCount();
+        }
+    }
+    return Coords();
+}
+
 CRGB* LedBasedRowDisplay::getLedColor(uint8_t row, uint8_t column, bool state) {
     uint8_t c = column;
     for (uint8_t i = 0; i < _displayCount; i++) {
@@ -366,7 +419,6 @@ CRGB* LedBasedRowDisplay::getLedColor(uint8_t row, uint8_t column, bool state) {
             return _displays[i]->getLedColor(row, c, state);
         }
     }
-
     return &dummy;
 }
 
