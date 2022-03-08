@@ -237,6 +237,7 @@ class Usermod {
   public:
     virtual void loop() {}
     virtual void handleOverlayDraw() {}
+    virtual void rollbackOverlayDraw() {}
     virtual bool handleButton(uint8_t b) { return false; }
     virtual void setup() {}
     virtual void connected() {}
@@ -258,6 +259,7 @@ class UsermodManager {
   public:
     void loop();
     void handleOverlayDraw();
+    void rollbackOverlayDraw();
     bool handleButton(uint8_t b);
     void setup();
     void connected();

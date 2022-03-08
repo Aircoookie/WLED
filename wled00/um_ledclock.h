@@ -60,6 +60,9 @@ private:
     uint8_t selfTestIdx = 0;
     bool selfTestDone = false;
 
+    uint32_t* backup = 0;
+    uint16_t backupLength = 0;
+
 public:
     UsermodLedClock():
         dHoursT(&strip, 2),
@@ -138,7 +141,9 @@ public:
                 dMinutesO.setDigit(minute(p) % 10);
             }
 
-            br = brightness();
+            if (!strip.isUpdating()) {
+                br = brightness();
+            }
         } else {
             if (selfTestTimer.fire()) {
                 selfTestIdx++;
@@ -159,10 +164,15 @@ public:
 
     void handleOverlayDraw() {
         if (selfTestDone) {
+            allocBackup(strip.getLengthTotal());
+            for (int i = 0; i < backupLength; ++i) {
+                backup[i] = strip.getPixelColor(i);
+            }
+
             display.update();
             if (bri != br) {
                 bri = br;
-                colorUpdated(1);
+                stateUpdated(CALL_MODE_DIRECT_CHANGE);
             }
         } else {
             for (uint8_t i = 0, n = strip.getLengthTotal(); i < n; ++i) {
@@ -174,6 +184,19 @@ public:
 
                 strip.setPixelColor(i, color.r, color.g, color.b);
             }
+        }
+    }
+
+    void rollbackOverlayDraw() {
+        for (int i = 0, n = min(strip.getLengthTotal(), backupLength); i < n; ++i) {
+            strip.setPixelColor(i, backup[i]);
+        }
+    }
+
+    void allocBackup(uint16_t length) {
+        if (backupLength != length) {
+            backupLength = length;
+            backup = (uint32_t *) realloc(backup, sizeof(uint32_t) * length);
         }
     }
 

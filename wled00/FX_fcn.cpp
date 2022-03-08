@@ -336,6 +336,7 @@ void WS2812FX::show(void) {
   if (diff > 0) fpsCurr = 1000 / diff;
   _cumulativeFps = (3 * _cumulativeFps + fpsCurr) >> 2;
   _lastShow = now;
+  usermods.rollbackOverlayDraw();
 }
 
 /**
