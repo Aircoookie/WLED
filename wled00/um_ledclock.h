@@ -164,11 +164,7 @@ public:
 
     void handleOverlayDraw() {
         if (selfTestDone) {
-            allocBackup(strip.getLengthTotal());
-            for (int i = 0; i < backupLength; ++i) {
-                backup[i] = strip.getPixelColor(i);
-            }
-
+            backupStrip();
             display.update();
             if (bri != br) {
                 bri = br;
@@ -188,15 +184,23 @@ public:
     }
 
     void rollbackOverlayDraw() {
-        for (int i = 0, n = min(strip.getLengthTotal(), backupLength); i < n; ++i) {
-            strip.setPixelColor(i, backup[i]);
-        }
+        rollbackStrip();
     }
 
-    void allocBackup(uint16_t length) {
+    void backupStrip() {
+        uint16_t length = strip.getLengthTotal();
         if (backupLength != length) {
             backupLength = length;
             backup = (uint32_t *) realloc(backup, sizeof(uint32_t) * length);
+        }
+        for (int i = 0; i < length; ++i) {
+            backup[i] = strip.getPixelColor(i);
+        }
+    }
+
+    void rollbackStrip() {
+        for (int i = 0, n = min(strip.getLengthTotal(), backupLength); i < n; ++i) {
+            strip.setPixelColor(i, backup[i]);
         }
     }
 
