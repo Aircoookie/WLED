@@ -3,7 +3,6 @@ var loc = false, locip;
 var noNewSegs = false;
 var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true;
 var hasWhite = false, hasRGB = false, hasCCT = false;
-var whites = [0,0,0];
 var expanded = [false];
 var powered = [true];
 var nlDur = 60, nlTar = 0;
@@ -56,17 +55,18 @@ function rgbBri(a) {return 0.2126*parseInt(a.r) + 0.7152*parseInt(a.g) + 0.0722*
 // sets background of color slot selectors
 function setCSL(cs)
 {
-	let w = whites[parseInt(cs.id.substr(3))];
+	let w = cs.dataset.w ? parseInt(cs.dataset.w) : 0;
+	let hasShadow = getComputedStyle(cs).textShadow;
 	if (hasRGB && !isRgbBlack(cs.dataset)) {
 		cs.style.backgroundColor = rgbStr(cs.dataset);
-		cs.style.color = rgbBri(cs.dataset) > 127 ? "#000":"#fff"; // if text has no CSS "shadow"
+		if (!hasShadow) cs.style.color = rgbBri(cs.dataset) > 127 ? "#000":"#fff"; // if text has no CSS "shadow"
 		if (hasWhite && w > 0) {
 			cs.style.background = `linear-gradient(180deg, ${rgbStr(cs.dataset)} 30%, rgb(${w},${w},${w}))`;
 		}
 	} else {
 		if (!hasWhite) w = 0;
-		cd.style.background = `rgb(${w},${w},${w})`;
-		cd.style.color = w > 127 ? "#000":"#fff";
+		cs.style.background = `rgb(${w},${w},${w})`;
+		if (!hasShadow) cs.style.color = w > 127 ? "#000":"#fff";
 	}
 }
 
@@ -1189,8 +1189,9 @@ function readState(s,command=false)
 		cd[e].dataset.r = i.col[e][0];
 		cd[e].dataset.g = i.col[e][1];
 		cd[e].dataset.b = i.col[e][2];
-		cd[e].style.backgroundColor = rgbStr(cd[e].dataset); // or: setCSL(cd[e]);
-		if (hasWhite) { let w = cd[e].dataset.w = i.col[e][3]; whites[e] = parseInt(w); }
+		if (hasWhite) { let w = cd[e].dataset.w = i.col[e][3]; }
+		//cd[e].style.backgroundColor = rgbStr(cd[e].dataset); // or: 
+		setCSL(cd[e]);
 	}
 	selectSlot(csel);
 	if (i.cct != null && i.cct>=0) gId("sliderA").value = i.cct;
@@ -1436,7 +1437,6 @@ function requestJson(command=null)
 	})
 	.catch((e)=>{
 		showToast(e, true);
-		console.log(e);
 	});
 }
 
@@ -2042,7 +2042,7 @@ function selectSlot(b)
 	setPicker(cd[b].style.backgroundColor);
 	//force slider update on initial load (picker "color:change" not fired if black)
 	if (cpick.color.value == 0) updatePSliders();
-	gId('sliderW').value = whites[b];
+	gId('sliderW').value = parseInt(cd[b].dataset.w);
 	updateTrail(gId('sliderW'));
 	redrawPalPrev();
 	//updatePSliders();
@@ -2073,7 +2073,7 @@ function updatePSliders() {
 
 	//update hex field
 	var str = cpick.color.hexString.substring(1);
-	var w = whites[csel];
+	var w = parseInt(gId("csl").children[csel].dataset.w);
 	if (w > 0) str += w.toString(16);
 	gId('hexc').value = str;
 	gId('hexcnf').style.backgroundColor = "var(--c-3)";
@@ -2105,13 +2105,13 @@ function segEnter(s) {
 function fromHex()
 {
 	var str = gId('hexc').value;
-	whites[csel] = parseInt(str.substring(6), 16);
+	let w = parseInt(str.substring(6), 16);
 	try {
 		setPicker("#" + str.substring(0,6));
 	} catch (e) {
 		setPicker("#ffaa00");
 	}
-	if (isNaN(whites[csel])) whites[csel] = 0;
+	gId("csl").children[csel].dataset.w = isNaN(w) ? 0 : w;
 	setColor(2);
 }
 
@@ -2144,19 +2144,21 @@ function setColor(sr)
 {
 	var cd = gId('csl').children; // color slots
 	let cdd = cd[csel].dataset;
-	if (sr == 1 && cdd.r == "0" && cdd.g == "0" && cdd.b == "0") cpick.color.setChannel('hsv', 'v', 100);
-	if (sr != 2) whites[csel] = parseInt(gId('sliderW').value);
+	let w = 0, r,g,b;
+	if (sr == 1 && isRgbBlack(cdd)) cpick.color.setChannel('hsv', 'v', 100);
+	if (sr != 2 && hasWhite) w = parseInt(gId('sliderW').value);
 	var col = cpick.color.rgb;
-	cdd.r = col.r;
-	cdd.g = col.g;
-	cdd.b = col.b;
-	if (hasWhite) cdd.w = whites[csel];
-	cd[csel].style.backgroundColor = rgbStr(cd[csel].dataset); // or: setCSL(cd[csel]);
-	var obj = {"seg": {"col": [[col.r, col.g, col.b, whites[csel]],[],[]]}};
+	cdd.r = r = hasRGB ? col.r : w;
+	cdd.g = g = hasRGB ? col.g : w;
+	cdd.b = b = hasRGB ? col.b : w;
+	cdd.w = w;
+	//cd[csel].style.backgroundColor = rgbStr(cd[csel].dataset); // or: 
+	setCSL(cd[csel]);
+	var obj = {"seg": {"col": [[r, g, b, w],[],[]]}};
 	if (csel == 1) {
-		obj = {"seg": {"col": [[],[col.r, col.g, col.b, whites[csel]],[]]}};
+		obj = {"seg": {"col": [[],[r, g, b, w],[]]}};
 	} else if (csel == 2) {
-		obj = {"seg": {"col": [[],[],[col.r, col.g, col.b, whites[csel]]]}};
+		obj = {"seg": {"col": [[],[],[r, g, b, w]]}};
 	}
 	requestJson(obj);
 }
@@ -2256,7 +2258,6 @@ function getPalettesData(page, callback)
 	})
 	.catch((error)=>{
 		showToast(error, true);
-		console.log(error);
 	});
 }
 

@@ -224,7 +224,7 @@ void changeColor(uint32_t c, int16_t cct=-1)
       bool isCCT = GET_BIT(capabilities, 2);
       if (isRGB) mask |= 0x00FFFFFF; // RGB
       if (hasW)  mask |= 0xFF000000; // white
-      if (hasW && (Bus::getAutoWhiteMode() == RGBW_MODE_AUTO_ACCURATE) && (c & 0xFF000000)) { // white channel & white specified
+      if (hasW && (strip.autoWhiteMode == RGBW_MODE_AUTO_ACCURATE) && (c & 0xFF000000)) { // white channel & white specified
         seg.setColor(0, c | 0xFFFFFF, i); // for accurate mode we fake white
       } else if (c & mask) seg.setColor(0, c & mask, i); // only apply if not black
       if (isCCT && cct >= 0) seg.setCCT(cct, i);
@@ -240,7 +240,7 @@ void changeColor(uint32_t c, int16_t cct=-1)
     bool isCCT = GET_BIT(capabilities, 2);
     if (isRGB) mask |= 0x00FFFFFF; // RGB
     if (hasW)  mask |= 0xFF000000; // white
-    if (hasW && (Bus::getAutoWhiteMode() == RGBW_MODE_AUTO_ACCURATE) && (c & 0xFF000000)) { // white channel & white specified
+    if (hasW && (strip.autoWhiteMode == RGBW_MODE_AUTO_ACCURATE) && (c & 0xFF000000)) { // white channel & white specified
       seg.setColor(0, c | 0xFFFFFF, i); // for accurate mode we fake white
     } else if (c & mask) seg.setColor(0, c & mask, i); // only apply if not black
     if (isCCT && cct >= 0) seg.setCCT(cct, i);

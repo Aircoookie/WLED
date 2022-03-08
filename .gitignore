@@ -3,7 +3,6 @@
 .pioenvs
 .piolibdeps
 .vscode
-!.vscode/extensions.json
 /wled00/Release
 /wled00/extLibs
 /platformio_override.ini
@@ -17,3 +16,4 @@ node_modules
 .direnv
 wled-update.sh
 esp01-update.sh
+/wled00/LittleFS
