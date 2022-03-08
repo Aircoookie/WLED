@@ -84,10 +84,11 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     autoSegments = request->hasArg(F("MS"));
     correctWB = request->hasArg(F("CCT"));
     cctFromRgb = request->hasArg(F("CR"));
-		strip.cctBlending = request->arg(F("CB")).toInt();
-		Bus::setCCTBlend(strip.cctBlending);
-		Bus::setAutoWhiteMode(request->arg(F("AW")).toInt());
-		strip.setTargetFps(request->arg(F("FR")).toInt());
+    strip.cctBlending = request->arg(F("CB")).toInt();
+    Bus::setCCTBlend(strip.cctBlending);
+    strip.autoWhiteMode = (request->arg(F("AW")).toInt());
+    Bus::setAutoWhiteMode(strip.autoWhiteMode);
+    strip.setTargetFps(request->arg(F("FR")).toInt());
 
     for (uint8_t s = 0; s < WLED_MAX_BUSSES; s++) {
       char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin

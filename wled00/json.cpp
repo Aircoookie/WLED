@@ -497,15 +497,6 @@ void serializeInfo(JsonObject root)
 
   JsonObject leds = root.createNestedObject("leds");
   leds[F("count")] = strip.getLengthTotal();
-  leds[F("rgbw")] = strip.hasRGBWBus();         //deprecated, use info.leds.lc
-  leds[F("wv")] = false;                        //deprecated, use info.leds.lc
-  leds["cct"] = correctWB || strip.hasCCTBus(); //deprecated, use info.leds.lc
-  switch (Bus::getAutoWhiteMode()) {
-    case RGBW_MODE_MANUAL_ONLY:
-    case RGBW_MODE_DUAL:
-      if (strip.hasWhiteChannel()) leds[F("wv")] = true;
-      break;
-  }
 
   leds[F("pwr")] = strip.currentMilliamps;
   leds["fps"] = strip.getFps();
@@ -523,6 +514,10 @@ void serializeInfo(JsonObject root)
   }
 
   leds["lc"] = totalLC;
+
+  leds[F("rgbw")] = strip.hasRGBWBus(); // deprecated, use info.leds.lc
+  leds[F("wv")]   = totalLC & 0x02;     // deprecated, true if white slider should be displayed for any segment
+  leds["cct"]     = totalLC & 0x04;     // deprecated, use info.leds.lc
 
   root[F("str")] = syncToggleReceive;
 

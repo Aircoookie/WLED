@@ -2,6 +2,12 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2203080
+
+-   Disabled auto white mode in segments with no RGB bus
+-   Fixed hostname string not 0-terminated 
+-   Fixed Popcorn mode not lighting first LED on pop
+
 #### Build 2203060
 
 -   Dynamic hiding of unused color controls in UI (PR #2567)
