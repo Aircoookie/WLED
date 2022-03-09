@@ -588,8 +588,8 @@ void WS2812FX::Segment::refreshLightCapabilities() {
       }
     }
     if (correctWB && type != TYPE_ANALOG_1CH) capabilities |= 0x04; //white balance correction (uses CCT slider)
-    bool whiteSlider = (bus->getAutoWhiteMode() == RGBW_MODE_DUAL || bus->getAutoWhiteMode() == RGBW_MODE_MANUAL_ONLY);
-    if (whiteSlider || (bus->isRgbw() && !(capabilities & 0x01))) capabilities |= 0x08; // segment allows white channel adjustments or has white and is not RGB -> show W slider
+    bool whiteSlider = (bus->getAutoWhiteMode() == RGBW_MODE_DUAL || bus->getAutoWhiteMode() == RGBW_MODE_MANUAL_ONLY); // white slider allowed
+    if (bus->isRgbw() && (whiteSlider || !(capabilities & 0x01))) capabilities |= 0x08; // allow white channel adjustments (AWM allows or is not RGB)
   }
   _capabilities = capabilities;
 }

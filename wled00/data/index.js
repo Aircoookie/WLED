@@ -1166,7 +1166,7 @@ function readState(s,command=false)
 			sellvl = 2;
 			var lc = lastinfo.leds.seglc[s.seg[i].id];
 			hasRGB   |= !!(lc & 0x01);
-			hasWhite |= !!(lc & 0x08);
+			hasWhite |= !!(lc & 0x08); // & 0x02 contains W channel
 			hasCCT   |= !!(lc & 0x04);
 		}
 		//if(s.seg[i].sel) {selc = ind; break;} ind++;
@@ -1175,7 +1175,7 @@ function readState(s,command=false)
 	if (sellvl == 1) {
 		var lc = lastinfo.leds.seglc[i.id];
 		hasRGB   = !!(lc & 0x01);
-		hasWhite = !!(lc & 0x08);
+		hasWhite = !!(lc & 0x08); // & 0x02 contains W channel
 		hasCCT   = !!(lc & 0x04);
 	}
 	if (!i) {
