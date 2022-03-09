@@ -1037,7 +1037,7 @@ function updateUI()
 	gId('kwrap').style.display = (hasRGB && !hasCCT && ccfg.picker) ? "block":"none"; // Kelvin slider
 	gId('rgbwrap').style.display = (hasRGB && ccfg.rgb) ? "block":"none";   // RGB sliders
 	gId('qcs-w').style.display = (hasRGB && ccfg.quick) ? "block":"none";   // quick selection
-	gId('palw').style.display = hasRGB ? "block":"none";                    // palettes
+	//gId('palw').style.display = hasRGB ? "block":"none";                    // palettes
 
 	updatePA();
 	updatePSliders();
@@ -1345,10 +1345,10 @@ function setSliderAndColorControl(idx, applyDef=false)
   
 	// set palette on/off
 	var palw = gId("palw"); // wrapper
-	var pall = gId("pall");	// list
+	var pall = gId("pall");	// label
 	// if not controlDefined or palette has a value
 	if ((!controlDefined) || (paOnOff.length>0 && paOnOff[0]!="" && isNaN(paOnOff[0]))) {
-		palw.style.display = "inline-block";
+		palw.style.display = hasRGB ? "inline-block" : "none";
 		if (paOnOff.length>0 && paOnOff[0].indexOf("=")>0) {
 			// embeded default values
 			var dPos = paOnOff[0].indexOf("=");
