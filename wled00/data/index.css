@@ -528,7 +528,6 @@ img {
 	height: 28px;
 	top: 0; bottom: 0;
 	left: 0; right: 0;
-	/*border: 1px solid var(--c-b);*/
 }
 #rwrap .sliderdisplay { background: linear-gradient(90deg, #000 0%, #f00); }
 #gwrap .sliderdisplay { background: linear-gradient(90deg, #000 0%, #0f0); }
@@ -557,6 +556,7 @@ output.sliderbubbleshow {
 	opacity: 1;
 }
 
+/* wrapper divs hidden by default */
 #rgbwrap, #kwrap, #wwrap, #wbal, #qcs-w, #hexw {
 	display: none;
 }
@@ -690,6 +690,8 @@ input[type=range]::-moz-range-thumb {
 	margin: 0;
 	white-space: nowrap;
 }
+
+/* Quick color select wrapper div */
 #qcs-w {
 	margin-top: 10px;
 }
@@ -813,15 +815,7 @@ input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button {
 	-webkit-appearance: none;
 }
-/*
-.segntxt {
-	max-width: 160px;
-	overflow: hidden;
-	text-overflow: clip;
-}
-*/
 .segname, .pname {
-	/*padding: 4px 0;*/
 	white-space: nowrap;
 	cursor: pointer;
 	text-align: center;
@@ -1040,7 +1034,6 @@ input[type=number]::-webkit-outer-spin-button {
 	background-color: var(--c-2);
 	overflow: hidden;
 	position: sticky;
-	/*border: 1px solid var(--c-2);*/
 	border-radius: 24px;
 	margin: 10px auto 0;
 	min-height: 24px;
@@ -1054,7 +1047,6 @@ input[type=number]::-webkit-outer-spin-button {
 #pcont .pres:hover:not([class*="expanded"]),
 #pcont .selected:hover:not([class*="expanded"]),
 .lstI:hover {
-	/*border: 1px solid var(--c-5);*/
     background: var(--c-5);
 }
 
@@ -1105,15 +1097,14 @@ input[type=number]::-webkit-outer-spin-button {
 	white-space: nowrap;
 }
 
+/* palette preview */
 .lstIprev {
-/*
 	width: 100%;
 	height: 7px;
 	position: absolute;
 	bottom: 0;
 	left: 0;
 	z-index: -1;
-*/
 }
 
 .fnd {
@@ -1130,7 +1121,6 @@ input[type="text"].fnd {
 	text-align: left;
 	border-radius: 25px;
 	background: var(--c-2);
-	/*border: 1px solid var(--c-3);*/
 }
 
 input[type="text"].fnd:focus {

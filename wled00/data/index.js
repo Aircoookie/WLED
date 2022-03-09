@@ -252,7 +252,7 @@ function onLoad()
 		loadPalettesData(redrawPalPrev);
 		loadFX(()=>{
 			loadFXData();
-			setTimeout(()=>{ //ESP8266 can't handle quick requests
+			setTimeout(()=>{ // ESP8266 can't handle quick requests
 				loadPresets(()=>{
 					requestJson();	// will create WS
 				});
@@ -424,16 +424,16 @@ function presetError(empty)
 
 function loadPresets(callback = null)
 {
-	//1st boot (because there is a callback)
+	// 1st boot (because there is a callback)
 	if (callback && pmt == pmtLS && pmt > 0) {
-		//we have a copy of the presets in local storage and don't need to fetch another one
+		// we have a copy of the presets in local storage and don't need to fetch another one
 		populatePresets(true);
 		pmtLast = pmt;
 		callback();
 		return;
 	}
 
-	//afterwards
+	// afterwards
 	if (!callback && pmt == pmtLast) return;
 
 	pmtLast = pmt;
@@ -596,7 +596,7 @@ function parseInfo() {
 	var li   = lastinfo;
 	var name = li.name;
 	gId('namelabel').innerHTML = name;
-//		if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)";
+	//if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)";
 	if (li.live) name = "(Live) " + name;
 	if (loc)     name = "(L) " + name;
 	d.title     = name;
@@ -746,7 +746,7 @@ function populateEffects()
     var effects = eJson;
 	var html = "";
 
-	effects.shift(); //remove solid
+	effects.shift(); // remove solid
 	for (let i = 0; i < effects.length; i++) effects[i] = {id: effects[i][0], name:effects[i][1]};
 	effects.sort((a,b) => (a.name).localeCompare(b.name));
 
@@ -781,7 +781,7 @@ function populateEffects()
 function populatePalettes()
 {
     var palettes = lJson;
-	palettes.shift(); //remove default
+	palettes.shift(); // remove default
 	for (let i = 0; i < palettes.length; i++) {
 		palettes[i] = {
 			"id": palettes[i][0],
@@ -942,7 +942,7 @@ function loadNodes()
 	});
 }
 
-//update the 'sliderdisplay' background div of a slider for a visual indication of slider position
+// update the 'sliderdisplay' background div of a slider for a visual indication of slider position
 function updateTrail(e)
 {
 	if (e==null) return;
@@ -956,14 +956,14 @@ function updateTrail(e)
 	if (b) b.innerHTML = e.value;
 }
 
-//rangetouch slider function
+// rangetouch slider function
 function toggleBubble(e)
 {
 	var b = e.target.parentNode.parentNode.getElementsByTagName('output')[0];
 	b.classList.toggle('sliderbubbleshow');
 }
 
-//updates segment length upon input of segment values
+// updates segment length upon input of segment values
 function updateLen(s)
 {
 	if (!gId(`seg${s}s`)) return;
@@ -989,7 +989,7 @@ function updateLen(s)
 	gId(`seg${s}len`).innerHTML = out;
 }
 
-//updates background color of currently selected preset
+// updates background color of currently selected preset
 function updatePA()
 {
 	let ps;
@@ -1068,7 +1068,7 @@ function updateSelectedFx()
 	var selectedEffect = parent.querySelector(`.lstI[data-id="${selectedFx}"]`);
 	if (selectedEffect) {
 		selectedEffect.classList.add('selected');
-		var fx = (selectedFx != prevFx) && currentPreset==-1; //effect changed & preset==none
+		var fx = (selectedFx != prevFx) && currentPreset==-1; // effect changed & preset==none
 		var ps = (prevPS != currentPreset) && currentPreset==-1; // preset changed & preset==none
 		// WLEDSR: extract the Slider and color control string from the HTML element and set it.
 		setSliderAndColorControl(selectedFx, (fx || ps));
@@ -1096,14 +1096,13 @@ function cmpP(a, b)
 }
 
 function makeWS() {
-	//if (ws) { ws.close(); ws=null; }
 	if (ws || lastinfo.ws < 0) return;
 	ws = new WebSocket((window.location.protocol == "https:"?"wss":"ws")+'://'+(loc?locip:window.location.hostname)+'/ws');
 	ws.binaryType = "arraybuffer";
 	ws.onmessage = (e)=>{
-    	if (e.data instanceof ArrayBuffer) return; //liveview packet
+    	if (e.data instanceof ArrayBuffer) return; // liveview packet
 		var json = JSON.parse(e.data);
-		if (json.leds) return; //JSON liveview packet
+		if (json.leds) return; // JSON liveview packet
 		clearTimeout(jsonTimeout);
 		jsonTimeout = null;
 		lastUpdate = new Date();
@@ -1124,11 +1123,11 @@ function makeWS() {
 	};
 	ws.onclose = (e)=>{
 		gId('connind').style.backgroundColor = "var(--c-r)";
-		setTimeout(makeWS,1500); //retry WS connection
+		setTimeout(makeWS,1500); // retry WS connection
 		ws = null;
 	}
 	ws.onopen = (e)=>{
-		//ws.send("{'v':true}"); //unnecessary (https://github.com/Aircoookie/WLED/blob/master/wled00/ws.cpp#L18)
+		//ws.send("{'v':true}"); // unnecessary (https://github.com/Aircoookie/WLED/blob/master/wled00/ws.cpp#L18)
 		reqsLegal = true;
 	}
 }
@@ -1169,7 +1168,6 @@ function readState(s,command=false)
 			hasWhite |= !!(lc & 0x08); // & 0x02 contains W channel
 			hasCCT   |= !!(lc & 0x04);
 		}
-		//if(s.seg[i].sel) {selc = ind; break;} ind++;
 	}
 	var i=s.seg[selc];
 	if (sellvl == 1) {
@@ -1190,7 +1188,6 @@ function readState(s,command=false)
 		cd[e].dataset.g = i.col[e][1];
 		cd[e].dataset.b = i.col[e][2];
 		if (hasWhite) { let w = cd[e].dataset.w = i.col[e][3]; }
-		//cd[e].style.backgroundColor = rgbStr(cd[e].dataset); // or: 
 		setCSL(cd[e]);
 	}
 	selectSlot(csel);
@@ -1228,7 +1225,7 @@ function readState(s,command=false)
 	prevFx = selectedFx;
 	selectedPal = i.pal;
 	selectedFx = i.fx;
-	redrawPalPrev();	// if any color changed (random palette did at least)
+	redrawPalPrev(); // if any color changed (random palette did at least)
 	updateUI();
 }
 
@@ -1274,7 +1271,7 @@ function setSliderAndColorControl(idx, applyDef=false)
 		if ((!controlDefined && i < ((idx<128)?2:nSliders)) || (slOnOff.length>i && slOnOff[i] != "")) {
 			label.style.display = "block";
 			if (slOnOff.length>i && slOnOff[i].indexOf("=")>0) {
-				//embeded default values
+				// embeded default values
 				var dPos = slOnOff[i].indexOf("=");
 				var v = Math.max(0,Math.min(255,parseInt(slOnOff[i].substr(dPos+1))));
 				if      (i==0) { if (applyDef) gId("sliderSpeed").value     = v; obj.seg.sx = v; }
@@ -1353,7 +1350,7 @@ function setSliderAndColorControl(idx, applyDef=false)
 	if ((!controlDefined) || (paOnOff.length>0 && paOnOff[0]!="" && isNaN(paOnOff[0]))) {
 		palw.style.display = "inline-block";
 		if (paOnOff.length>0 && paOnOff[0].indexOf("=")>0) {
-			//embeded default values
+			// embeded default values
 			var dPos = paOnOff[0].indexOf("=");
 			var v = Math.max(0,Math.min(255,parseInt(paOnOff[0].substr(dPos+1))));
 			var p = d.querySelector(`#pallist input[name="palette"][value="${v}"]`);
@@ -1371,7 +1368,7 @@ function setSliderAndColorControl(idx, applyDef=false)
 		// if numeric set as selected palette
 		if (paOnOff.length>0 && paOnOff[0]!="" && !isNaN(paOnOff[0]) && parseInt(paOnOff[0])!=selectedPal) obj.seg.pal = parseInt(paOnOff[0]);
 	}
-	if (!isEmpty(obj.seg) && applyDef) requestJson(obj); //update default values (may need throttling on ESP8266)
+	if (!isEmpty(obj.seg) && applyDef) requestJson(obj); // update default values (may need throttling on ESP8266)
 }
 
 var jsonTimeout;
@@ -1380,7 +1377,7 @@ var reqsLegal = false;
 function requestJson(command=null)
 {
 	gId('connind').style.backgroundColor = "var(--c-r)";
-	if (command && !reqsLegal) return; //stop post requests from chrome onchange event on page restore
+	if (command && !reqsLegal) return; // stop post requests from chrome onchange event on page restore
 	if (!jsonTimeout) jsonTimeout = setTimeout(()=>{if (ws) ws.close(); ws=null; showErrorToast()}, 3000);
 	var req = null;
 	var url = (loc?`http://${locip}`:'') + '/json/si';
@@ -1395,13 +1392,13 @@ function requestJson(command=null)
 			if (tn != tr) command.transition = tn;
 		}
 		req = JSON.stringify(command);
-		if (req.length > 1000) useWs = false; //do not send very long requests over websocket
+		if (req.length > 1000) useWs = false; // do not send very long requests over websocket
 	};
 
 	if (useWs) {
 		ws.send(req?req:'{"v":true}');
 		return;
-	} else if (command && command.ps) { //refresh UI if we don't use WS (async loading of presets)
+	} else if (command && command.ps) { // refresh UI if we don't use WS (async loading of presets)
 		setTimeout(requestJson,250);
 	}
 
@@ -1485,7 +1482,7 @@ function toggleInfo()
 {
 	if (isNodes) toggleNodes();
 	isInfo = !isInfo;
-	if (isInfo) requestJson(); // loadInfo();
+	if (isInfo) requestJson();
 	gId('info').style.transform = (isInfo) ? "translateY(0px)":"translateY(100%)";
 	gId('buttonI').className = (isInfo) ? "active":"";
 }
@@ -1541,7 +1538,7 @@ function resetUtil()
 var plJson = {"0":{
 	"ps": [0],
 	"dur": [100],
-	"transition": [-1],	//to be inited to default transition dur
+	"transition": [-1],	// to be inited to default transition dur
 	"repeat": 0,
 	"r": false,
 	"end": 0
@@ -1553,7 +1550,7 @@ function makePlSel(incPl=false) {
 	var arr = Object.entries(pJson);
 	for (var i = 0; i < arr.length; i++) {
 		var n = arr[i][1].n ? arr[i][1].n : "Preset " + arr[i][0];
-		if (!incPl && arr[i][1].playlist && arr[i][1].playlist.ps) continue; //remove playlists, sub-playlists not yet supported
+		if (!incPl && arr[i][1].playlist && arr[i][1].playlist.ps) continue; // remove playlists, sub-playlists not yet supported
 		plSelContent += `<option value=${arr[i][0]}>${n}</option>`
 	}
 	return plSelContent;
@@ -1580,7 +1577,7 @@ function refreshPlE(p) {
 	}
 }
 
-//p: preset ID, i: ps index
+// p: preset ID, i: ps index
 function addPl(p,i) {
 	plJson[p].ps.splice(i+1,0,0);
 	plJson[p].dur.splice(i+1,0,plJson[p].dur[i]);
@@ -1613,7 +1610,7 @@ function pleTr(p,i,field) {
 function plR(p) {
 	var pl = plJson[p];
 	pl.r = gId(`pl${p}rtgl`).checked;
-	if (gId(`pl${p}rptgl`).checked) { //infinite
+	if (gId(`pl${p}rptgl`).checked) { // infinite
 		pl.repeat = 0;
 		delete pl.end;
 		gId(`pl${p}o1`).style.display = "none";
@@ -1935,7 +1932,7 @@ function setLor(i)
 function setPreset(i)
 {
 	var obj = {"ps": i};
-	if (isPlaylist(i)) obj.on = true;	//force on
+	if (isPlaylist(i)) obj.on = true; // force on
 	showToast("Loading preset " + pName(i) +" (" + i + ")");
 	requestJson(obj);
 }
@@ -1997,7 +1994,7 @@ function saveP(i,pl)
 	}
 	populatePresets();
 	resetPUtil();
-	if (i>0) expand(pI+100);	// collapse edited preset or expand created preset.
+	if (i>0) expand(pI+100); // collapse edited preset or expand created preset.
 }
 
 function testPl(i,bt) {
@@ -2040,15 +2037,14 @@ function selectSlot(b)
 	for (let i of cd) i.classList.remove('xxs-w');
 	cd[b].classList.add('xxs-w');
 	setPicker(cd[b].style.backgroundColor);
-	//force slider update on initial load (picker "color:change" not fired if black)
+	// force slider update on initial load (picker "color:change" not fired if black)
 	if (cpick.color.value == 0) updatePSliders();
 	gId('sliderW').value = parseInt(cd[b].dataset.w);
 	//updateTrail(gId('sliderW'));
 	redrawPalPrev();
-	//updatePSliders();
 }
 
-//set the color from a hex string. Used by quick color selectors
+// set the color from a hex string. Used by quick color selectors
 var lasth = 0;
 function pC(col)
 {
@@ -2065,31 +2061,29 @@ function pC(col)
 }
 
 function updatePSliders() {
-	//update RGB sliders
+	// update RGB sliders
 	var col = cpick.color.rgb;
 	gId('sliderR').value = col.r;
 	gId('sliderG').value = col.g;
 	gId('sliderB').value = col.b;
 
-	//update hex field
+	// update hex field
 	var str = cpick.color.hexString.substring(1);
 	var w = parseInt(gId("csl").children[csel].dataset.w);
 	if (w > 0) str += w.toString(16);
 	gId('hexc').value = str;
 	gId('hexcnf').style.backgroundColor = "var(--c-3)";
 
-	//update value slider
+	// update value slider
 	var v = gId('sliderV');
 	v.value = cpick.color.value;
-	//background color as if color had full value
+	// background color as if color had full value
 	var hsv = {"h":cpick.color.hue,"s":cpick.color.saturation,"v":100}; 
 	var c = iro.Color.hsvToRgb(hsv);
 	var cs = 'rgb('+c.r+','+c.g+','+c.b+')';
 	v.nextElementSibling.style.backgroundImage = `linear-gradient(90deg, #000 0%, ${cs})`;
-	//v.parentNode.getElementsByClassName('sliderdisplay')[0].style.setProperty('--bg',cs);
-	//updateTrail(v);
 
-	//update Kelvin slider
+	// update Kelvin slider
 	gId('sliderK').value = cpick.color.kelvin;
 }
 
@@ -2147,13 +2141,12 @@ function fromRgb()
 function fromW()
 {
 	let w = gId('sliderW');
-	//updateTrail(w);
 	let cd = gId('csl').children; // color slots
 	cd[csel].dataset.w = w.value;
 	setCSL(cd[csel]);
 }
 
-//sr 0: from RGB sliders, 1: from picker, 2: from hex
+// sr 0: from RGB sliders, 1: from picker, 2: from hex
 function setColor(sr)
 {
 	var cd = gId('csl').children; // color slots
@@ -2166,7 +2159,6 @@ function setColor(sr)
 	cdd.g = g = hasRGB ? col.g : w;
 	cdd.b = b = hasRGB ? col.b : w;
 	cdd.w = w;
-	//cd[csel].style.backgroundColor = rgbStr(cd[csel].dataset); // or: 
 	setCSL(cd[csel]);
 	var obj = {"seg": {"col": [[r, g, b, w],[],[]]}};
 	if (csel == 1) {
@@ -2235,7 +2227,7 @@ function loadPalettesData(callback = null)
 			var d = JSON.parse(lsPalData);
 			if (d && d.vid == d.vid) {
 				palettesData = d.p;
-				if (callback) callback(); 	// redrawPalPrev()
+				if (callback) callback(); // actually redrawPalPrev()
 				return;
 			}
 		} catch (e) {}
@@ -2247,7 +2239,7 @@ function loadPalettesData(callback = null)
 			p: palettesData,
 			vid: lastinfo.vid
 		}));
-		if (callback) setTimeout(callback, 99); //redrawPalPrev()
+		if (callback) setTimeout(callback, 99); // actually redrawPalPrev()
 	});
 }
 
@@ -2296,7 +2288,7 @@ function clean(c)
 	i.dispatchEvent(new Event('input'));
 }
 
-//make sure "dur" and "transition" are arrays with at least the length of "ps"
+// make sure "dur" and "transition" are arrays with at least the length of "ps"
 function formatArr(pl) {
 	var l = pl.ps.length;
 	if (!Array.isArray(pl.dur)) {
@@ -2344,7 +2336,7 @@ function expand(i, c=false)
 		if (expanded[i]) {
 			if (isPlaylist(p)) {
 				plJson[p] = pJson[p].playlist;
-				//make sure all keys are present in plJson[p]
+				// make sure all keys are present in plJson[p]
 				formatArr(plJson[p]);
 				if (isNaN(plJson[p].repeat)) plJson[p].repeat = 0;
 				if (!plJson[p].r) plJson[p].r = false;
@@ -2376,7 +2368,7 @@ function unfocusSliders()
 	gId("sliderIntensity").blur();
 }
 
-//sliding UI
+// sliding UI
 const _C = d.querySelector('.container'), N = 4;
 
 let iSlide = 0, x0 = null, scrollS = 0, locked = false, w;
