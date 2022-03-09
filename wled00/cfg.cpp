@@ -81,11 +81,10 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   // initialize LED pins and lengths prior to other HW (except for ethernet)
   JsonObject hw_led = hw["led"];
 
+  uint8_t autoWhiteMode = RGBW_MODE_MANUAL_ONLY;
   CJSON(strip.ablMilliampsMax, hw_led[F("maxpwr")]);
   CJSON(strip.milliampsPerLed, hw_led[F("ledma")]);
-  CJSON(strip.autoWhiteMode,   hw_led[F("rgbwm")]);
-  Bus::setAutoWhiteMode(strip.autoWhiteMode);
-  strip.fixInvalidSegments(); // refreshes segment light capabilities (in case auto white mode changed)
+  CJSON(autoWhiteMode, hw_led[F("rgbwm")]); // backwards compatibility
   CJSON(correctWB, hw_led["cct"]);
   CJSON(cctFromRgb, hw_led[F("cr")]);
   CJSON(strip.cctBlending, hw_led[F("cb")]);
@@ -119,14 +118,15 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       bool reversed = elm["rev"];
       bool refresh = elm["ref"] | false;
       ledType |= refresh << 7; // hack bit 7 to indicate strip requires off refresh
+      uint8_t AWmode = elm[F("rgbwm")] | autoWhiteMode; // backwards compatible
       s++;
       if (fromFS) {
-        BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst);
+        BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode);
         mem += BusManager::memUsage(bc);
         if (mem <= MAX_LED_MEMORY && busses.getNumBusses() <= WLED_MAX_BUSSES) busses.add(bc);  // finalization will be done in WLED::beginStrip()
       } else {
         if (busConfigs[s] != nullptr) delete busConfigs[s];
-        busConfigs[s] = new BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst);
+        busConfigs[s] = new BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode);
         doInitBusses = true;
       }
     }
@@ -576,7 +576,6 @@ void serializeConfig() {
   hw_led[F("cr")] = cctFromRgb;
   hw_led[F("cb")] = strip.cctBlending;
   hw_led["fps"] = strip.getTargetFps();
-  hw_led[F("rgbwm")] = strip.autoWhiteMode;
 
   JsonArray hw_led_ins = hw_led.createNestedArray("ins");
 
@@ -595,7 +594,7 @@ void serializeConfig() {
     ins[F("skip")] = bus->skippedLeds();
     ins["type"] = bus->getType() & 0x7F;
     ins["ref"] = bus->isOffRefreshRequired();
-    //ins[F("rgbw")] = bus->isRgbw();
+    ins[F("rgbwm")] = bus->getAutoWhiteMode();
   }
 
   JsonArray hw_com = hw.createNestedArray(F("com"));

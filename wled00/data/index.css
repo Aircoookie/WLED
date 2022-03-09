@@ -557,7 +557,7 @@ output.sliderbubbleshow {
 	opacity: 1;
 }
 
-#rgbwrap, #kwrap, #wwrap, #wbal {
+#rgbwrap, #kwrap, #wwrap, #wbal, #qcs-w, #hexw {
 	display: none;
 }
 
@@ -692,7 +692,6 @@ input[type=range]::-moz-range-thumb {
 }
 #qcs-w {
 	margin-top: 10px;
-	display: none;
 }
 
 /* Quick color select buttons */
@@ -716,7 +715,6 @@ input[type=range]::-moz-range-thumb {
 /* Hex color input wrapper div */
 #hexw {
 	margin-top: 5px;
-	display: none;
 }
 
 select/*, .sel-p, .sel-pl, .sel-ple*/ {
@@ -804,7 +802,6 @@ input[type=text] {
 }
 
 .stxt {
-	/*display: none;*/
 	width: 50px !important;
 }
 
@@ -1109,12 +1106,14 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .lstIprev {
+/*
 	width: 100%;
 	height: 7px;
 	position: absolute;
 	bottom: 0;
 	left: 0;
 	z-index: -1;
+*/
 }
 
 .fnd {

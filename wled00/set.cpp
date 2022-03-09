@@ -76,7 +76,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       }
     }
 
-    uint8_t colorOrder, type, skip;
+    uint8_t colorOrder, type, skip, awmode;
     uint16_t length, start;
     uint8_t pins[5] = {255, 255, 255, 255, 255};
 
@@ -85,8 +85,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     cctFromRgb = request->hasArg(F("CR"));
     strip.cctBlending = request->arg(F("CB")).toInt();
     Bus::setCCTBlend(strip.cctBlending);
-    strip.autoWhiteMode = (request->arg(F("AW")).toInt());
-    Bus::setAutoWhiteMode(strip.autoWhiteMode);
     strip.setTargetFps(request->arg(F("FR")).toInt());
 
     for (uint8_t s = 0; s < WLED_MAX_BUSSES; s++) {
@@ -98,6 +96,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
       char sl[4] = "SL"; sl[2] = 48+s; sl[3] = 0; //skip 1st LED
       char rf[4] = "RF"; rf[2] = 48+s; rf[3] = 0; //refresh required
+      char aw[4] = "AW"; aw[2] = 48+s; aw[3] = 0; //auto white mode
       if (!request->hasArg(lp)) {
         DEBUG_PRINTLN(F("No data.")); break;
       }
@@ -116,10 +115,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       } else {
         break;  // no parameter
       }
-
+      awmode = request->arg(aw).toInt();
       // actual finalization is done in WLED::loop() (removing old busses and adding new)
       if (busConfigs[s] != nullptr) delete busConfigs[s];
-      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv), skip);
+      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv), skip, awmode);
       doInitBusses = true;
     }
 

@@ -126,7 +126,7 @@
 		<div id="wwrap">
 			<p class="labels hd">White channel</p>
 			<div id="whibri" class="sliderwrap il">
-				<input id="sliderW" class="noslide" onchange="setColor(0)" max="255" min="0" type="range" value="128" />
+				<input id="sliderW" class="noslide" oninput="fromW()" onchange="setColor(0)" max="255" min="0" type="range" value="128" />
 				<div class="sliderdisplay"></div>
 			</div>
 		</div>
@@ -168,10 +168,10 @@
 				<i class="icons search-icon">&#xe0a1;</i>
 			</div>
 			<div id="pallist" class="list">
+				<!--div class="lstIprev">
 				<div class="lstI" data-id="0">
 					<label class="radio schkl">
-						&nbsp;
-						<input type="radio" value="${palettes[i].id}" name="palette" onChange="setPalette()">
+						<input type="radio" value="0" name="palette" onChange="setPalette()" checked>
 						<span class="radiomark schk"></span>
 					</label>
 					<div class="lstIcontent">
@@ -180,6 +180,8 @@
 						</span>
 					</div>
 				</div>
+				</div-->
+				<div class="lstIprev">
 				<div class="lstI">
 					<div class="lstIcontent">
 						<span class="lstIname">
@@ -187,6 +189,7 @@
 						</span>
 					</div>
 				</div>
+			</div>
 			</div>
 		</div>
 	</div>

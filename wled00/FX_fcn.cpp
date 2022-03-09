@@ -87,7 +87,7 @@ void WS2812FX::finalizeInit(void)
       uint16_t start = prevLen;
       uint16_t count = defCounts[(i < defNumCounts) ? i : defNumCounts -1];
       prevLen += count;
-      BusConfig defCfg = BusConfig(DEFAULT_LED_TYPE, defPin, start, count, COL_ORDER_GRB);
+      BusConfig defCfg = BusConfig(DEFAULT_LED_TYPE, defPin, start, count, COL_ORDER_GRB, false, 0, RGBW_MODE_MANUAL_ONLY);
       busses.add(defCfg);
     }
   }
@@ -157,13 +157,8 @@ void WS2812FX::service() {
         }
         handle_palette();
 
-        // if segment is not RGB capable, force None auto white mode
-        // If not RGB capable, also treat palette as if default (0), as palettes set white channel to 0
-        _no_rgb = !(SEGMENT.getLightCapabilities() & 0x01);
-        if (_no_rgb) Bus::setAutoWhiteMode(RGBW_MODE_MANUAL_ONLY);
         delay = (this->*_mode[SEGMENT.mode])(); //effect function
         if (SEGMENT.mode != FX_MODE_HALLOWEEN_EYES) SEGENV.call++;
-        Bus::setAutoWhiteMode(strip.autoWhiteMode);
       }
 
       SEGENV.next_time = nowUp + delay;
@@ -574,24 +569,17 @@ void WS2812FX::Segment::refreshLightCapabilities() {
     _capabilities = 0; return;
   }
   uint8_t capabilities = 0;
-  uint8_t awm = instance->autoWhiteMode;
-  bool whiteSlider = (awm == RGBW_MODE_DUAL || awm == RGBW_MODE_MANUAL_ONLY);
-  bool segHasValidBus = false;
 
   for (uint8_t b = 0; b < busses.getNumBusses(); b++) {
     Bus *bus = busses.getBus(b);
     if (bus == nullptr || bus->getLength()==0) break;
+    if (!bus->isOk()) continue;
     if (bus->getStart() >= stop) continue;
     if (bus->getStart() + bus->getLength() <= start) continue;
 
-    segHasValidBus = true;
     uint8_t type = bus->getType();
-    if (type != TYPE_ANALOG_1CH && (cctFromRgb || type != TYPE_ANALOG_2CH))
-    {
-      capabilities |= 0x01; // segment supports RGB (full color)
-    }
-    if (bus->isRgbw()) capabilities |= 0x02; //segment supports white channel
-    if (whiteSlider || (bus->isRgbw() && !(capabilities & 0x01))) capabilities |= 0x08; //segment allows white channel adjustments
+    if (type != TYPE_ANALOG_1CH && (cctFromRgb || type != TYPE_ANALOG_2CH)) capabilities |= 0x01; // segment supports RGB (full color)
+    if (bus->isRgbw()) capabilities |= 0x02; // segment supports white channel
     if (!cctFromRgb) {
       switch (type) {
         case TYPE_ANALOG_5CH:
@@ -600,10 +588,9 @@ void WS2812FX::Segment::refreshLightCapabilities() {
       }
     }
     if (correctWB && type != TYPE_ANALOG_1CH) capabilities |= 0x04; //white balance correction (uses CCT slider)
+    bool whiteSlider = (bus->getAutoWhiteMode() == RGBW_MODE_DUAL || bus->getAutoWhiteMode() == RGBW_MODE_MANUAL_ONLY);
+    if (whiteSlider || (bus->isRgbw() && !(capabilities & 0x01))) capabilities |= 0x08; // segment allows white channel adjustments or has white and is not RGB -> show W slider
   }
-  // if seg has any bus, but no bus has RGB, it by definition supports white (at least for now)
-  // In case of no RGB, disregard auto white mode and always show a white slider
-  if (segHasValidBus && !(capabilities & 0x01)) capabilities |= 0x02; // segment supports white channel
   _capabilities = capabilities;
 }
 
@@ -1259,7 +1246,6 @@ WS2812FX* WS2812FX::instance = nullptr;
 //Bus static member definition, would belong in bus_manager.cpp
 int16_t Bus::_cct = -1;
 uint8_t Bus::_cctBlend = 0;
-uint8_t Bus::_autoWhiteMode = RGBW_MODE_DUAL;
 
 
 // WLEDSR: extensions

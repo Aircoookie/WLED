@@ -56,7 +56,7 @@ function rgbBri(a) {return 0.2126*parseInt(a.r) + 0.7152*parseInt(a.g) + 0.0722*
 function setCSL(cs)
 {
 	let w = cs.dataset.w ? parseInt(cs.dataset.w) : 0;
-	let hasShadow = getComputedStyle(cs).textShadow;
+	let hasShadow = getComputedStyle(cs).textShadow !== "none";
 	if (hasRGB && !isRgbBlack(cs.dataset)) {
 		cs.style.backgroundColor = rgbStr(cs.dataset);
 		if (!hasShadow) cs.style.color = rgbBri(cs.dataset) > 127 ? "#000":"#fff"; // if text has no CSS "shadow"
@@ -2043,7 +2043,7 @@ function selectSlot(b)
 	//force slider update on initial load (picker "color:change" not fired if black)
 	if (cpick.color.value == 0) updatePSliders();
 	gId('sliderW').value = parseInt(cd[b].dataset.w);
-	updateTrail(gId('sliderW'));
+	//updateTrail(gId('sliderW'));
 	redrawPalPrev();
 	//updatePSliders();
 }
@@ -2123,12 +2123,12 @@ function setPicker(rgb) {
 
 function fromV()
 {
-	cpick.color.setChannel('hsv', 'v', d.getElementById('sliderV').value);
+	cpick.color.setChannel('hsv', 'v', gId('sliderV').value);
 }
 
 function fromK()
 {
-	cpick.color.set({ kelvin: d.getElementById('sliderK').value });
+	cpick.color.set({ kelvin: gId('sliderK').value });
 }
 
 function fromRgb()
@@ -2137,6 +2137,20 @@ function fromRgb()
 	var g = gId('sliderG').value;
 	var b = gId('sliderB').value;
 	setPicker(`rgb(${r},${g},${b})`);
+	let cd = gId('csl').children; // color slots
+	cd[csel].dataset.r = r;
+	cd[csel].dataset.g = g;
+	cd[csel].dataset.b = b;
+	setCSL(cd[csel]);
+}
+
+function fromW()
+{
+	let w = gId('sliderW');
+	//updateTrail(w);
+	let cd = gId('csl').children; // color slots
+	cd[csel].dataset.w = w.value;
+	setCSL(cd[csel]);
 }
 
 //sr 0: from RGB sliders, 1: from picker, 2: from hex

@@ -340,7 +340,6 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("CR"),cctFromRgb);
     sappend('v',SET_F("CB"),strip.cctBlending);
     sappend('v',SET_F("FR"),strip.getTargetFps());
-    sappend('v',SET_F("AW"),strip.autoWhiteMode);
 
     for (uint8_t s=0; s < busses.getNumBusses(); s++) {
       Bus* bus = busses.getBus(s);
@@ -353,6 +352,7 @@ void getSettingsJS(byte subPage, char* dest)
       char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
       char sl[4] = "SL"; sl[2] = 48+s; sl[3] = 0; //skip 1st LED
       char rf[4] = "RF"; rf[2] = 48+s; rf[3] = 0; //off refresh
+      char aw[4] = "AW"; aw[2] = 48+s; aw[3] = 0; //auto white mode
       oappend(SET_F("addLEDs(1);"));
       uint8_t pins[5];
       uint8_t nPins = bus->getPins(pins);
@@ -367,6 +367,7 @@ void getSettingsJS(byte subPage, char* dest)
       sappend('c',cv,bus->reversed);
       sappend('c',sl,bus->skippedLeds());
       sappend('c',rf,bus->isOffRefreshRequired());
+      sappend('v',aw,bus->getAutoWhiteMode());
     }
     sappend('v',SET_F("MA"),strip.ablMilliampsMax);
     sappend('v',SET_F("LA"),strip.milliampsPerLed);
