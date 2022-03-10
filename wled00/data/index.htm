@@ -182,50 +182,52 @@
 	</div>
 
 	<div id="Effects" class="tabcontent">
-		<p class="labels" id="sliderLabel0">Effect speed</p>
-		<div class="staytop" id="slider0">
-			<i class="icons slider-icon" style="cursor: pointer;" onclick="tglFreeze()">&#xe325;</i>
-			<div class="sliderwrap il">
-				<input id="sliderSpeed" class="noslide" onchange="setSpeed()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
-				<div class="sliderdisplay"></div>
+		<div id="sliders">
+			<p class="labels" id="sliderLabel0">Effect speed</p>
+			<div class="staytop" id="slider0">
+				<i class="icons slider-icon" style="cursor: pointer;" onclick="tglFreeze()">&#xe325;</i>
+				<div class="sliderwrap il">
+					<input id="sliderSpeed" class="noslide" onchange="setSpeed()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
+					<div class="sliderdisplay"></div>
+				</div>
+				<output class="sliderbubble"></output>
 			</div>
-			<output class="sliderbubble"></output>
-		</div>
-		<p class="labels" id="sliderLabel1">Effect intensity</p>
-		<div class="staytop" id="slider1">
-			<i class="icons slider-icon" style="cursor: pointer;" onclick="tglLabels()">&#xe409;</i>
-			<div class="sliderwrap il">
-				<input id="sliderIntensity" class="noslide" onchange="setIntensity()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
-				<div class="sliderdisplay"></div>
+			<p class="labels" id="sliderLabel1">Effect intensity</p>
+			<div class="staytop" id="slider1">
+				<i class="icons slider-icon" style="cursor: pointer;" onclick="tglLabels()">&#xe409;</i>
+				<div class="sliderwrap il">
+					<input id="sliderIntensity" class="noslide" onchange="setIntensity()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
+					<div class="sliderdisplay"></div>
+				</div>
+				<output class="sliderbubble"></output>
 			</div>
-			<output class="sliderbubble"></output>
-		</div>
-		<p class="labels" id="sliderLabel2">Custom 1</p>
-		<div class="staytop" id="slider2">
-			<i class="icons slider-icon">&#xe410;</i>
-			<div class="sliderwrap il">
-				<input id="sliderC1" class="noslide" onchange="setFFT1()" oninput="updateTrail(this)" max="255" min="0" type="range" value="6" />
-				<div class="sliderdisplay"></div>
+			<p class="labels" id="sliderLabel2">Custom 1</p>
+			<div class="staytop" id="slider2">
+				<i class="icons slider-icon">&#xe410;</i>
+				<div class="sliderwrap il">
+					<input id="sliderC1" class="noslide" onchange="setFFT1()" oninput="updateTrail(this)" max="255" min="0" type="range" value="6" />
+					<div class="sliderdisplay"></div>
+				</div>
+				<output class="sliderbubble"></output>
 			</div>
-			<output class="sliderbubble"></output>
-		</div>
-		<p class="labels" id="sliderLabel3">Custom 2</p>
-		<div class="staytop" id="slider3">
-			<i class="icons slider-icon">&#xe410;</i>
-			<div class="sliderwrap il">
-				<input id="sliderC2" class="noslide" onchange="setFFT2()" oninput="updateTrail(this)" max="255" min="0" type="range" value="6" />
-				<div class="sliderdisplay"></div>
+			<p class="labels" id="sliderLabel3">Custom 2</p>
+			<div class="staytop" id="slider3">
+				<i class="icons slider-icon">&#xe410;</i>
+				<div class="sliderwrap il">
+					<input id="sliderC2" class="noslide" onchange="setFFT2()" oninput="updateTrail(this)" max="255" min="0" type="range" value="6" />
+					<div class="sliderdisplay"></div>
+				</div>
+				<output class="sliderbubble"></output>
 			</div>
-			<output class="sliderbubble"></output>
-		</div>
-		<p class="labels" id="sliderLabel4">Custom 3</p>
-		<div class="staytop" id="slider4">
-			<i class="icons slider-icon">&#xe410;</i>
-			<div class="sliderwrap il">
-				<input id="sliderC3" class="noslide" onchange="setFFT3()" oninput="updateTrail(this)" max="255" min="0" type="range" value="6" />
-				<div class="sliderdisplay"></div>
+			<p class="labels" id="sliderLabel4">Custom 3</p>
+			<div class="staytop" id="slider4">
+				<i class="icons slider-icon">&#xe410;</i>
+				<div class="sliderwrap il">
+					<input id="sliderC3" class="noslide" onchange="setFFT3()" oninput="updateTrail(this)" max="255" min="0" type="range" value="6" />
+					<div class="sliderdisplay"></div>
+				</div>
+				<output class="sliderbubble"></output>
 			</div>
-			<output class="sliderbubble"></output>
 		</div>
 		<div class="il">
 			<p class="labels hd" id="modeLabel">Effect mode</p>
@@ -235,7 +237,15 @@
 				<i class="icons search-icon">&#xe0a1;</i>
 			</div>
 			<div id="fxlist" class="list">
-				Loading...
+				<div class="lstI">
+					<label class="radio schkl" onclick="loadFX()"> 
+						<div class="lstIcontent">
+							<span class="lstIname">
+								Loading...
+							</span>
+						</div>
+					</label>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -253,12 +263,18 @@
 	</div>
 
 	<div id="Presets" class="tabcontent">
-		<div id="putil" class="staytop">
-		</div>
 		<div id="pql">
 		</div>
-		<div id="pcont">
+		<p class="labels hd">Presets</p>
+		<div class="staytop fnd" id="psFind">
+			<input type="text" class="fnd" placeholder="Search" oninput="search(this,'pcont')" onfocus="search(this,'pcont')" />
+			<i class="icons clear-icon" onclick="clean(this);">&#xe38f;</i>
+			<i class="icons search-icon">&#xe0a1;</i>
+		</div>
+		<div id="pcont" class="list">
 			<span onclick="loadPresets()">Loading...</span>
+		</div>
+		<div id="putil" class="staybot">
 		</div>
 	</div>
 </div>
@@ -271,7 +287,7 @@
 </div>
 
 <div id="connind"></div>
-<div id="toast"></div>
+<div id="toast" onclick="clearErrorToast(100);"></div>
 <div id="namelabel" onclick="toggleNodes()"></div>
 <div id="info" class="modal">
 	<div id="imgw">

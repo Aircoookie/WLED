@@ -931,12 +931,6 @@ uint16_t IRAM_ATTR WS2812FX::triwave16(uint16_t in)
   return 0xFFFF - (in - 0x8000)*2;
 }
 
-uint8_t IRAM_ATTR WS2812FX::sin_gap(uint16_t in) {
-  if (in & 0x100) return 0;
-  //if (in > 255) return 0;
-  return sin8(in + 192); //correct phase shift of sine so that it starts and stops at 0
-}
-
 /*
  * Generates a tristate square wave w/ attac & decay 
  * @param x input value 0-255

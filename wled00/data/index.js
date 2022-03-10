@@ -294,6 +294,7 @@ function showToast(text, error = false)
 {
 	if (error) gId('connind').style.backgroundColor = "var(--c-r)";
 	var x = gId("toast");
+	if (error) text += '<i class="icons btn-icon" style="transform:rotate(45deg);position:absolute;top:10px;right:0px;" onclick="clearErrorToast(100);">&#xe18a;</i>';
 	x.innerHTML = text;
 	x.classList.add(error ? "error":"show");
 	clearTimeout(timeout);
@@ -307,7 +308,7 @@ function showErrorToast()
 	showToast('Connection to light failed!', true);
 }
 
-function clearErrorToast()
+function clearErrorToast(n=10000)
 {
 	var x = gId("toast");
 	if (x.classList.contains("error")) {
@@ -315,7 +316,7 @@ function clearErrorToast()
 		timeout = setTimeout(()=>{
 			x.classList.remove("show");
 			x.classList.remove("error");
-		}, 10000);
+		}, n);
 	}
 }
 
@@ -401,7 +402,7 @@ function presetError(empty)
 		if (bckstr.length > 10) hasBackup = true;
 	} catch (e) {}
 
-	var cn = `<div class="seg c" style="padding:8px;">`;
+	var cn = `<div class="pres c" ${empty?'style="padding:8px;"':'onclick="loadPresets()" style="cursor:pointer;padding:8px;"'}>`;
 	if (empty)
 		cn += `You have no presets yet!`;
 	else
@@ -436,8 +437,6 @@ function loadPresets(callback = null)
 	// afterwards
 	if (!callback && pmt == pmtLast) return;
 
-	pmtLast = pmt;
-
 	var url = (loc?`http://${locip}`:'') + '/presets.json';
 
 	fetch(url, {
@@ -449,6 +448,7 @@ function loadPresets(callback = null)
 	})
 	.then(json => {
 		pJson = json;
+		pmtLast = pmt;
 		populatePresets();
 	})
 	.catch((e)=>{
@@ -477,7 +477,6 @@ function loadPalettes(callback = null)
 	})
 	.catch((e)=>{
 		showToast(e, true);
-		presetError(false);
 	})
 	.finally(()=>{
 		if (callback) callback();
@@ -502,7 +501,6 @@ function loadFX(callback = null)
 	})
 	.catch((e)=>{
 		showToast(e, true);
-		presetError(false);
 	})
 	.finally(()=>{
 		if (callback) callback();
@@ -556,7 +554,7 @@ function populatePresets(fromls)
 	if (fromls) pJson = JSON.parse(localStorage.getItem("wledP"));
 	if (!pJson) {setTimeout(loadPresets,250); return;}
 	delete pJson["0"];
-	var cn = `<p class="labels hd">All presets</p>`;
+	var cn = "";
 	var arr = Object.entries(pJson);
 	arr.sort(cmpP);
 	pQL = [];
@@ -570,11 +568,11 @@ function populatePresets(fromls)
 		if (qll) pQL.push([i, qll, pName(i)]);
 		is.push(i);
 
-		cn += `<div class="pres" id="p${i}o">`;
+		cn += `<div class="pres lstI" id="p${i}o">`;
 		if (cfg.comp.pid) cn += `<div class="pid">${i}</div>`;
-		cn += `<div class="pname" onclick="setPreset(${i})">${isPlaylist(i)?"<i class='icons btn-icon'>&#xe139;</i>":""}${pName(i)}</div>
+		cn += `<div class="pname lstIname" onclick="setPreset(${i})">${isPlaylist(i)?"<i class='icons btn-icon'>&#xe139;</i>":""}${pName(i)}</div>
 	<i class="icons e-icon flr ${expanded[i+100] ? "exp":""}" id="sege${i+100}" onclick="expand(${i+100})">&#xe395;</i>
-	<div class="segin" id="seg${i+100}"></div>
+	<div class="presin lstIcontent" id="seg${i+100}"></div>
 </div>`;
     	pNum++;
 	}
@@ -1263,7 +1261,7 @@ function setSliderAndColorControl(idx, applyDef=false)
 	var obj = {"seg":{}};
   
 	// set html slider items on/off
-	var nSliders = Math.min(5,Math.floor((gId("Effects").children.length - 1) / 2)); // p (label) & div for each slider + FX list
+	var nSliders = Math.min(5,Math.floor((gId("sliders").children.length - 1) / 2)); // p (label) & div for each slider + FX list
 	for (let i=0; i<nSliders; i++) {
 		var slider = gId("slider" + i);
 		var label = gId("sliderLabel" + i);
@@ -1703,11 +1701,6 @@ ${(i>0)? ('<div class="h">ID ' +i+ '</div>'):""}`;
 
 function makePUtil()
 {
-	gId('putil').classList.remove("staytop");
-	gId('putil').scrollIntoView({
-		behavior: 'smooth',
-		block: 'start',
-	});
 	gId('putil').innerHTML = `<div class="pres"><div class="segin expanded">${makeP(0)}</div></div>`;
 }
 
@@ -1724,9 +1717,9 @@ function makePlEntry(p,i) {
 		<td class="c"><button class="btn btn-pl-add" onclick="addPl(${p},${i})"><i class="icons btn-icon">&#xe18a;</i></button></td>
 	</tr>
 	<tr>
-		<td class="h">Duration</td>
-		<td class="h">Transition</td>
-		<td class="h">#${i+1}</td>
+		<td class="c">Duration</td>
+		<td class="c">Transition</td>
+		<td class="c">#${i+1}</td>
 	</tr>
 	<tr>
 		<td class="c" width="40%"><input class="noslide segn" type="number" placeholder="Duration" max=6553.0 min=0.2 step=0.1 oninput="pleDur(${p},${i},this)" value="${plJson[p].dur[i]/10.0}">s</td>
@@ -1743,21 +1736,14 @@ function makePlUtil()
 		showToast("You need at least 2 presets to make a playlist!"); //return;
 	}
 	if (plJson[0].transition[0] < 0) plJson[0].transition[0] = tr;
-	gId('putil').classList.remove("staytop");
-	gId('putil').scrollIntoView({
-		behavior: 'smooth',
-		block: 'start',
-	});
 	gId('putil').innerHTML = `<div class="pres"><div class="segin expanded" id="seg100">${makeP(0,true)}</div></div>`;
 	refreshPlE(0);
 }
 
 function resetPUtil()
 {
-	gId('putil').classList.add("staytop");
-	var cn = `<button class="btn btn-n" onclick="makePUtil()"><i class="icons btn-icon">&#xe18a;</i>New&nbsp;preset</button>`+
-             `<button class="btn btn-xs" onclick="makePlUtil()"><i class="icons btn-icon">&#xe139;</i></button>`;
-	gId('putil').innerHTML = cn;
+	gId('putil').innerHTML = `<button class="btn btn-s" onclick="makePUtil()"><i class="icons btn-icon">&#xe18a;</i>New&nbsp;preset</button><br>`+
+	`<button class="btn btn-s" onclick="makePlUtil()"><i class="icons btn-icon">&#xe139;</i>New&nbsp;playlist</button>`;
 }
 
 function tglCs(i)
@@ -2160,12 +2146,8 @@ function setColor(sr)
 	cdd.b = b = hasRGB ? col.b : w;
 	cdd.w = w;
 	setCSL(cd[csel]);
-	var obj = {"seg": {"col": [[r, g, b, w],[],[]]}};
-	if (csel == 1) {
-		obj = {"seg": {"col": [[],[r, g, b, w],[]]}};
-	} else if (csel == 2) {
-		obj = {"seg": {"col": [[],[],[r, g, b, w]]}};
-	}
+	var obj = {"seg": {"col": [[],[],[]]}};
+	obj.seg.col[csel] = [r, g, b, w];
 	requestJson(obj);
 }
 
@@ -2353,11 +2335,13 @@ function expand(i, c=false)
 			tglCs(p);
 		} else
 			seg.innerHTML = "";
+	} else {
+		gId('seg' +i +'in').classList.toggle("expanded");
 	}
 
 	seg.parentElement.scrollIntoView({
 		behavior: 'smooth',
-		block: (expanded[i]?'start':'center'),
+		block: /*(expanded[i]?'start':*/'center'/*)*/,
 	});
 }
 

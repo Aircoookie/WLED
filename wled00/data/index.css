@@ -139,19 +139,21 @@ button {
 }
 
 .segt TD {
+	padding: 2px !important;
 	text-align: center;
 	/*text-transform: uppercase;*/
 }
 .segt TD, .plentry TD {
-	font-size: 14px;
+	font-size: 13px;
 	padding: 0;
 	vertical-align: middle;
 }
+/*
 .segt TD.h, .plentry TD.h {
 	font-size: 13px;
 	padding: 2px 0 0;
 }
-
+*/
 .keytd {
 	text-align: left;
 }
@@ -317,6 +319,20 @@ button {
 	margin: 10px 0;
 }
 
+#pcont {
+	margin-bottom: 10px;
+}
+
+#putil {
+	padding: 0 0 10px;
+	margin: 0 auto;
+}
+
+#putil .btn-n, #putil .btn-s {
+	/*box-shadow: 0 0 0 5px var(--c-1);*/
+	margin-bottom: 10px;
+}
+
 .smooth { transition: transform	calc(var(--f, 1)*.5s) ease-out }
 
 .tab-label {
@@ -386,7 +402,7 @@ button {
 	color: var(--c-f);
 	text-align: center;
 	border-radius: 5px;
-	padding: 16px;
+	padding: 22px;
 	position: fixed;
 	z-index: 5;
 	left: 50%;
@@ -655,8 +671,8 @@ input[type=range]::-moz-range-thumb {
 	transform:translate3d(0,0,0);
 	overflow: clip;
 	text-overflow: clip;
-	border: 1px solid var(--c-2);
-	background-color: var(--c-2);
+	border: 1px solid var(--c-3);
+	background-color: var(--c-3);
 }
 .btn:hover {
 	border: 1px solid var(--c-5);
@@ -680,12 +696,16 @@ input[type=range]::-moz-range-thumb {
 	margin: 5px 0;
 }
 .btn-xs, .btn-pl-del, .btn-pl-add {
-	width: 42px;
-	height: 42px;
+	width: 42px !important;
+	height: 42px !important;
 }
 .btn-xs {
 	margin: 2px 0 0 0;
 }
+#putil .btn-xs {
+	margin: 0;
+}
+
 .btn-pl-del, .btn-pl-add {
 	margin: 0;
 	white-space: nowrap;
@@ -762,11 +782,10 @@ input[type=number], input[type=text] {
 	border: 0px solid var(--c-2);
 	border-radius: 5px;
 	padding: 8px;
-	margin: 6px 6px 6px 0;
+	/*margin: 6px 6px 6px 0;*/
 	font-size: 19px;
 	transition: background-color 0.2s;
 	outline: none;
-	width: 50px;
 	-webkit-appearance: textfield;
 	-moz-appearance: textfield;
 	appearance: textfield;
@@ -774,12 +793,13 @@ input[type=number], input[type=text] {
 
 input[type=number] {
 	text-align: right;
+	width: 50px;
 }
 
 textarea {
 	background: var(--c-2);
 	color: var(--c-f);
-	width: 250px; /* +padding=260px */
+	width: calc(100% - 14px); /* +padding=260px */
 	height: 90px;
 	border-radius: 5px;
 	border: 2px solid var(--c-5);
@@ -789,17 +809,21 @@ textarea {
 	padding: 5px;
 }
 
+.apitxt {
+	height: 7em;
+}
+
 ::selection {
 	background: var(--c-b);
 }
 
 input[type=text] {
-	width: 100px;
+	width: calc(100% - 24px);
 	text-align: center;
 }
 
 .ptxt {
-    width: 240px !important;
+    /*width: 236px !important;*/
     margin: 0 4px 4px !important;
 }
 
@@ -836,9 +860,9 @@ input[type=number]::-webkit-outer-spin-button {
 
 .pid {
 	position: absolute;
-	top: 2px;
-	left: 0px;
-	padding: 12px 0px 0px 12px;
+	top: 8px;
+	left: 12px;
+	/*padding: 10px 0 0 12px;*/
 	font-size: 16px;
 	text-align: center;
 	color: var(--c-b);
@@ -1044,9 +1068,7 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 #segcont .seg:hover:not([class*="expanded"]),
-#pcont .pres:hover:not([class*="expanded"]),
-#pcont .selected:hover:not([class*="expanded"]),
-.lstI:hover {
+.lstI:hover:not([class*="expanded"]) {
     background: var(--c-5);
 }
 
@@ -1064,6 +1086,11 @@ input[type=number]::-webkit-outer-spin-button {
 
 .lstI.sticky, .lstI.selected {
 	z-index: 1;
+}
+
+#pcont .selected {
+	bottom: 114px;
+	top: 40px;
 }
 /* calculated in index.js
 #fxlist .lstI.selected {
@@ -1085,8 +1112,8 @@ input[type=number]::-webkit-outer-spin-button {
 
 .lstIcontent {
 	/*width: 100%;
-	vertical-align: middle;
-	padding: 0 20px 0 5px;
+	vertical-align: middle;*/
+	padding: 0; /*20px 0 5px;
 	text-align: left;
 	display: inline-block;*/
 	position: relative;
@@ -1110,6 +1137,8 @@ input[type=number]::-webkit-outer-spin-button {
 .fnd {
 	width: 280px;
 	margin: 0 auto;
+	/*border-radius: 25px;
+	box-shadow: 0 0 0 5px var(--c-1);*/
 }
 
 input[type="text"].fnd {
@@ -1133,22 +1162,29 @@ input[type="text"].fnd:hover {
 }
 
 .segin {
-	padding: 8px;
-	display: none;
+	padding: 8px 8px 0;
+}
+.presin {
+	padding: 8px 0 0;
 }
 
-.modal .btn, .segin .btn {
-	border: 1px solid var(--c-3);
-	background-color: var(--c-3);
+.btn-s, .btn-n {
+	border: 1px solid var(--c-2);
+	background-color: var(--c-2);
 }
 .modal .btn:hover, .segin .btn:hover {
 	border: 1px solid var(--c-5);
 	background-color: var(--c-5);
 }
 
+/* must be after .expanded */
+.pres .lstIcontent, .segin {
+	display: none;
+}
+
 .check input:checked ~ .checkmark:after, .radio input:checked ~ .radiomark:after,
-.expanded, .expanded .segin {
-	display: block;
+.expanded {
+	display: block !important;
 }
 
 .c {
