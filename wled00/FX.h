@@ -625,7 +625,7 @@ class WS2812FX {
       setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       setColor(uint8_t slot, uint32_t c),
       setCCT(uint16_t k),
-      setBrightness(uint8_t b),
+      setBrightness(uint8_t b, bool direct = false),
       setRange(uint16_t i, uint16_t i2, uint32_t col),
       setShowCallback(show_callback cb),
       setTransition(uint16_t t),

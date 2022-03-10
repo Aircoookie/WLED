@@ -177,7 +177,12 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   if (!iarr.isNull()) {
     uint8_t oldSegId = strip.setPixelSegment(id);
 
-    //freeze and init to black
+    // set brightness immediately and disable transition
+    transitionDelayTemp = 0;
+    jsonTransitionOnce = true;
+    strip.setBrightness(scaledBri(bri), true);
+
+    // freeze and init to black
     if (!seg.getOption(SEG_OPTION_FREEZE)) {
       seg.setOption(SEG_OPTION_FREEZE, true);
       strip.fill(0);
@@ -263,7 +268,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     transitionDelayTemp *= 100;
     jsonTransitionOnce = true;
   }
-  strip.setTransition(transitionDelayTemp);
+  strip.setTransition(transitionDelayTemp); // required here for color transitions to have correct duration
 
   tr = root[F("tb")] | -1;
   if (tr >= 0) strip.timebase = ((uint32_t)tr) - millis();
@@ -290,10 +295,16 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   realtimeOverride = root[F("lor")] | realtimeOverride;
   if (realtimeOverride > 2) realtimeOverride = REALTIME_OVERRIDE_ALWAYS;
 
+  bool liveEnabled = false;
   if (root.containsKey("live")) {
     bool lv = root["live"];
-    if (lv) realtimeLock(65000); //enter realtime without timeout
-    else    realtimeTimeout = 0; //cancel realtime mode immediately
+    if (lv) {
+      transitionDelayTemp = 0;
+      jsonTransitionOnce = true;
+      liveEnabled = true; // triggers realtimeLock() below
+      realtimeLock(65000);
+    }
+    else realtimeTimeout = 0; //cancel realtime mode immediately
   }
 
   strip.setMainSegmentId(root[F("mainseg")] | strip.getMainSegmentId());
@@ -370,6 +381,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   }
 
   stateUpdated(callMode);
+  if (liveEnabled) realtimeTimeout = UINT32_MAX; // force indefinite timeout if this request contained {"live":true}
 
   return stateResponse;
 }

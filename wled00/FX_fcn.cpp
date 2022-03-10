@@ -133,7 +133,8 @@ void WS2812FX::service() {
 
     if (!SEGMENT.isActive()) continue;
 
-    if(nowUp > SEGENV.next_time || _triggered || (doShow && SEGMENT.mode == 0)) //last is temporary
+    // last condition ensures all solid segments are updated at the same time
+    if(nowUp > SEGENV.next_time || _triggered || (doShow && SEGMENT.mode == 0))
     {
       if (SEGMENT.grouping == 0) SEGMENT.grouping = 1; //sanity check
       doShow = true;
@@ -426,7 +427,7 @@ void WS2812FX::setCCT(uint16_t k) {
   }
 }
 
-void WS2812FX::setBrightness(uint8_t b) {
+void WS2812FX::setBrightness(uint8_t b, bool direct) {
   if (gammaCorrectBri) b = gamma8(b);
   if (_brightness == b) return;
   _brightness = b;
@@ -436,8 +437,13 @@ void WS2812FX::setBrightness(uint8_t b) {
       _segments[i].setOption(SEG_OPTION_FREEZE, false);
     }
   }
-	unsigned long t = millis();
-  if (_segment_runtimes[0].next_time > t + 22 && t - _lastShow > MIN_SHOW_DELAY) show(); //apply brightness change immediately if no refresh soon
+  if (direct) {
+    // would be dangerous if applied immediately (could exceed ABL), but will not output until the next show()
+    busses.setBrightness(b);
+  } else {
+	  unsigned long t = millis();
+    if (_segment_runtimes[0].next_time > t + 22 && t - _lastShow > MIN_SHOW_DELAY) show(); //apply brightness change immediately if no refresh soon
+  }
 }
 
 uint8_t WS2812FX::getBrightness(void) {

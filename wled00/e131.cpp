@@ -130,7 +130,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
       if (DMXOldDimmer != e131_data[DMXAddress+0]) {
         DMXOldDimmer = e131_data[DMXAddress+0];
         bri = e131_data[DMXAddress+0];
-        strip.setBrightness(bri);
+        strip.setBrightness(bri, true);
       }
       for (uint16_t i = 0; i < totalLen; i++)
         setRealtimePixel(i, e131_data[DMXAddress+1], e131_data[DMXAddress+2], e131_data[DMXAddress+3], wChannel);
@@ -184,7 +184,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
           previousLeds = 0;
           // First DMX address is dimmer in DMX_MODE_MULTIPLE_DRGB mode.
           if (DMXMode == DMX_MODE_MULTIPLE_DRGB) {
-            strip.setBrightness(e131_data[dmxOffset++]);
+            strip.setBrightness(e131_data[dmxOffset++], true);
           }
         } else {
           // All subsequent universes start at the first channel.
