@@ -671,8 +671,12 @@ class WS2812FX {
       setPixelSegment(uint8_t n),
       gamma8(uint8_t),
       gamma8_cal(uint8_t, float),
-      sin_gap(uint16_t),
       get_random_wheel_index(uint8_t);
+
+    inline uint8_t sin_gap(uint16_t in) {
+      if (in & 0x100) return 0;
+      return sin8(in + 192); // correct phase shift of sine so that it starts and stops at 0
+    }
 
     int8_t
       tristate_square8(uint8_t x, uint8_t pulsewidth, uint8_t attdec);
