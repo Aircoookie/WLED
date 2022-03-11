@@ -166,6 +166,15 @@ class Bus {
       if (type > TYPE_ONOFF && type <= TYPE_ANALOG_5CH && type != TYPE_ANALOG_3CH) return true;
       return false;
     }
+    virtual bool hasRGB() {
+      if (_type == TYPE_WS2812_1CH || _type == TYPE_WS2812_WWA || _type == TYPE_ANALOG_1CH || _type == TYPE_ANALOG_2CH || _type == TYPE_ONOFF) return false;
+      return true;
+    }
+    virtual bool hasWhite() {
+      if (_type == TYPE_SK6812_RGBW || _type == TYPE_TM1814 || _type == TYPE_WS2812_1CH || _type == TYPE_WS2812_WWA ||
+          _type == TYPE_ANALOG_1CH || _type == TYPE_ANALOG_2CH || _type == TYPE_ANALOG_4CH || _type == TYPE_ANALOG_5CH) return true;
+      return false;
+    }
     static void setCCT(uint16_t cct) {
       _cct = cct;
     }
@@ -509,6 +518,9 @@ class BusNetwork : public Bus {
       _broadcastLock = false;
       _valid = true;
     };
+
+  bool hasRGB() { return true; }
+  bool hasWhite() { return _rgbw; }
 
   void setPixelColor(uint16_t pix, uint32_t c) {
     if (!_valid || pix >= _len) return;
