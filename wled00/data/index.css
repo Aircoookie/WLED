@@ -148,12 +148,7 @@ button {
 	padding: 0;
 	vertical-align: middle;
 }
-/*
-.segt TD.h, .plentry TD.h {
-	font-size: 13px;
-	padding: 2px 0 0;
-}
-*/
+
 .keytd {
 	text-align: left;
 }
@@ -312,25 +307,28 @@ button {
 
 #segutil, #segutil2, #segcont, #putil, #pcont, #pql {
 	width: 280px;
+	min-height: 42px;
+}
+
+#segutil, #segcont, #pcont, #pql {
 	margin: 10px auto 0;
+}
+
+#segutil2 {
+	margin: 0 auto;
 }
 
 #segutil .seg {
 	margin: 10px 0;
 }
 
-#pcont {
+#segcont, #pcont {
 	margin-bottom: 10px;
 }
 
 #putil {
-	padding: 0 0 10px;
+	/*padding: 0 0 10px;*/
 	margin: 0 auto;
-}
-
-#putil .btn-n, #putil .btn-s {
-	/*box-shadow: 0 0 0 5px var(--c-1);*/
-	margin-bottom: 10px;
 }
 
 .smooth { transition: transform	calc(var(--f, 1)*.5s) ease-out }
@@ -362,7 +360,7 @@ button {
 	position: -webkit-sticky;
 	position: sticky;
 	top: 0;
-	z-index: 1;
+	z-index: 2;
     margin: 0 auto auto;
 }
 
@@ -438,11 +436,11 @@ button {
 }
 
 #info, #nodes {
-	z-index: 3;
+	z-index: 4;
 }
 
 #rover {
-	z-index: 2;
+	z-index: 3;
 }
 
 #ndlt {
@@ -473,7 +471,6 @@ button {
 }
 
 #kv, #kn {
-	/*max-width: 490px;*/
 	display: inline-block;
 }
 
@@ -529,10 +526,6 @@ img {
 	position: absolute;
 	top: 13px; left: 8px; right: 8px;
 	height: 4px;
-/*
-	top: 12.5px; bottom: 12.5px;
-	left: 13px; right: 13px;
-*/
 	background: var(--c-4);
 	border-radius: 16px;
 	pointer-events: none;
@@ -656,6 +649,7 @@ input[type=range]::-moz-range-thumb {
 	width: 260px;
 }
 
+/* buttons */
 .btn {
 	padding: 8px;
 	margin: 10px 4px;
@@ -675,8 +669,8 @@ input[type=range]::-moz-range-thumb {
 	background-color: var(--c-3);
 }
 .btn:hover {
-	border: 1px solid var(--c-5);
-	background-color: var(--c-5);
+	border: 1px solid var(--c-5) !important;
+	background-color: var(--c-5) !important;
 }
 .btn-s {
 	width: 100%;
@@ -704,6 +698,15 @@ input[type=range]::-moz-range-thumb {
 }
 #putil .btn-xs {
 	margin: 0;
+}
+
+#putil .btn-s {
+	width: 135px;
+}
+
+#segutil .btn-s, #segutil2 .btn-s, #putil .btn-s {
+	background-color: var(--c-3);
+	border: 1px solid var(--c-3);
 }
 
 .btn-pl-del, .btn-pl-add {
@@ -858,11 +861,11 @@ input[type=number]::-webkit-outer-spin-button {
 	top:0;
 }
 
+/* preset id number */
 .pid {
 	position: absolute;
 	top: 8px;
 	left: 12px;
-	/*padding: 10px 0 0 12px;*/
 	font-size: 16px;
 	text-align: center;
 	color: var(--c-b);
@@ -917,6 +920,7 @@ input[type=number]::-webkit-outer-spin-button {
 	right: 8px;
 }
 
+/* radiobuttons and checkmarks */
 .check, .radio {
 	display: block;
 	position: relative;
@@ -1009,10 +1013,11 @@ input[type=number]::-webkit-outer-spin-button {
 	margin-bottom: 5px;
 }
 
+/* segment & preset wrapper */
 .seg, .pres {
 	position: relative;
 	display: block;
-	padding: 10px 0;
+	padding: 8px 0;
 	margin: 0 0 10px;
 	background-color: var(--c-2);
 	color: var(--c-f);
@@ -1037,10 +1042,11 @@ input[type=number]::-webkit-outer-spin-button {
 
 .seg .schkl {
 	position: absolute;
-	top: 8px;
-	left: 8px;
+	top: 7px;
+	left: 9px;
 }
 
+/* list wrapper */
 .list {
 	position: relative;
 	width: 280px;
@@ -1050,8 +1056,8 @@ input[type=number]::-webkit-outer-spin-button {
 	line-height: 24px;
 }
 
+/* list item */
 .lstI {
-	/*display: flex;*/
 	align-items: center;
 	padding: 8px 10px;
     cursor: pointer;
@@ -1063,6 +1069,7 @@ input[type=number]::-webkit-outer-spin-button {
 	min-height: 24px;
 }
 
+/* selected item/element */
 .selected { /* has to be after .lstI */
 	background: var(--c-4);
 }
@@ -1079,6 +1086,7 @@ input[type=number]::-webkit-outer-spin-button {
 	background-color: var(--c-3);
 }
 
+/* selected list item */
 .lstI.selected {
 	top: 0;
 	bottom: 0;
@@ -1089,42 +1097,38 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 #pcont .selected {
-	bottom: 114px;
+	bottom: 42px;
 	top: 40px;
 }
 /* calculated in index.js
 #fxlist .lstI.selected {
-	top: 142px;
+	top: 142px !important;
 }
 */
 #pallist .lstI.selected {
 	top: 82px;
 }
-/* must be after .selected */
 /* calculated in index.js
 #fxlist .lstI.sticky {
-	top: 99px;
+	top: 99px !important;
 }
 */
 #pallist .lstI.sticky {
 	top: 40px;
 }
 
+/* list item content */
 .lstIcontent {
-	/*width: 100%;
-	vertical-align: middle;*/
-	padding: 0; /*20px 0 5px;
-	text-align: left;
-	display: inline-block;*/
+	padding: 0;
 	position: relative;
-	/*left: 40px;*/
 }
 
+/* list item name (for sorting) */
 .lstIname {
 	white-space: nowrap;
 }
 
-/* palette preview */
+/* list item palette preview */
 .lstIprev {
 	width: 100%;
 	height: 7px;
@@ -1134,11 +1138,10 @@ input[type=number]::-webkit-outer-spin-button {
 	z-index: -1;
 }
 
+/* find/search element */
 .fnd {
 	width: 280px;
 	margin: 0 auto;
-	/*border-radius: 25px;
-	box-shadow: 0 0 0 5px var(--c-1);*/
 }
 
 input[type="text"].fnd {
@@ -1161,9 +1164,12 @@ input[type="text"].fnd:hover {
 	background-color: var(--c-3);
 }
 
+/* segment inner (expanded) content */
 .segin {
 	padding: 8px 8px 0;
 }
+
+/* preset inner/expanded content */
 .presin {
 	padding: 8px 0 0;
 }
@@ -1177,7 +1183,7 @@ input[type="text"].fnd:hover {
 	background-color: var(--c-5);
 }
 
-/* must be after .expanded */
+/* hidden list items, must be after .expanded */
 .pres .lstIcontent, .segin {
 	display: none;
 }

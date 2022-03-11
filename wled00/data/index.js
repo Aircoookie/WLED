@@ -89,8 +89,8 @@ function applyCfg()
 	var l = cfg.comp.labels;
 	var e = d.querySelectorAll('.tab-label');
 	for (let i of e) i.style.display = l ? "block":"none";
-	e = d.querySelector('.hd');
-	e.style.display = l ? "block":"none";
+	//e = d.querySelector('.hd');
+	//e.style.display = l ? "block":"none";
 	sCol('--tbp',l ? "14px 14px 10px 14px":"10px 22px 4px 22px");
 	sCol('--bbp',l ? "9px 0 7px 0":"10px 0 4px 0");
 	sCol('--bhd',l ? "block":"none");
@@ -1267,7 +1267,7 @@ function setSliderAndColorControl(idx, applyDef=false)
 		var label = gId("sliderLabel" + i);
 		// if (not controlDefined and for AC speed or intensity and for SR alle sliders) or slider has a value
 		if ((!controlDefined && i < ((idx<128)?2:nSliders)) || (slOnOff.length>i && slOnOff[i] != "")) {
-			label.style.display = "block";
+			//label.style.display = "block";
 			if (slOnOff.length>i && slOnOff[i].indexOf("=")>0) {
 				// embeded default values
 				var dPos = slOnOff[i].indexOf("=");
@@ -1281,7 +1281,7 @@ function setSliderAndColorControl(idx, applyDef=false)
 			else if (i==0)                           label.innerHTML = "Effect speed";
 			else if (i==1)                           label.innerHTML = "Effect intensity";
 			else                                     label.innerHTML = "Custom" + (i-1);
-			label.style.top = "auto";
+			//label.style.top = "auto";
 			slider.style.display = "block";
 			slider.style.top = topPosition + "px";
 			topPosition += 28; // increase top position for the next control
@@ -1289,7 +1289,7 @@ function setSliderAndColorControl(idx, applyDef=false)
 		} else {
 			// disable label and slider
 			slider.style.display = "none";
-			label.style.display = "none";
+			//label.style.display = "none";
 		}
 	}
 	if (topPosition>0) topPosition += 2;
@@ -1530,7 +1530,10 @@ function makeSeg()
 
 function resetUtil()
 {
-	gId('segutil').innerHTML = '<button class="btn btn-s" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>Add segment</button>';
+//	gId('segutil').innerHTML = '<button class="btn btn-s" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>segment</button>';
+	gId('segutil').innerHTML = '<div class="seg btn btn-s" style="border-radius:24px;">'
+	+ '<label class="check schkl"><input type="checkbox" onchange="selSegAll(this)"><span class="checkmark schk"></span></label>'
+	+ '<div class="segname" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>segment</div></div>';
 }
 
 var plJson = {"0":{
@@ -1701,7 +1704,14 @@ ${(i>0)? ('<div class="h">ID ' +i+ '</div>'):""}`;
 
 function makePUtil()
 {
-	gId('putil').innerHTML = `<div class="pres"><div class="segin expanded">${makeP(0)}</div></div>`;
+	let p = gId('putil');
+	p.classList.remove('staybot');
+	p.innerHTML = `<div class="pres"><div class="segin expanded">${makeP(0)}</div></div>`;
+	p.scrollIntoView({
+		behavior: 'smooth',
+		block: 'center'
+	});
+	gId('psFind').classList.remove('staytop');
 }
 
 function makePlEntry(p,i) {
@@ -1736,14 +1746,23 @@ function makePlUtil()
 		showToast("You need at least 2 presets to make a playlist!"); //return;
 	}
 	if (plJson[0].transition[0] < 0) plJson[0].transition[0] = tr;
-	gId('putil').innerHTML = `<div class="pres"><div class="segin expanded" id="seg100">${makeP(0,true)}</div></div>`;
+	let p = gId('putil');
+	p.classList.remove('staybot');
+	p.innerHTML = `<div class="pres"><div class="segin expanded" id="seg100">${makeP(0,true)}</div></div>`;
 	refreshPlE(0);
+	p.scrollIntoView({
+		behavior: 'smooth',
+		block: 'center'
+	});
+	gId('psFind').classList.remove('staytop');
 }
 
 function resetPUtil()
 {
-	gId('putil').innerHTML = `<button class="btn btn-s" onclick="makePUtil()"><i class="icons btn-icon">&#xe18a;</i>New&nbsp;preset</button><br>`+
-	`<button class="btn btn-s" onclick="makePlUtil()"><i class="icons btn-icon">&#xe139;</i>New&nbsp;playlist</button>`;
+	gId('psFind').classList.add('staytop');
+	gId('putil').classList.add('staybot');
+	gId('putil').innerHTML = `<button class="btn btn-s" onclick="makePUtil()" style="float:left;"><i class="icons btn-icon">&#xe18a;</i>preset</button>`
+	+ `<button class="btn btn-s" onclick="makePlUtil()" style="float:right;"><i class="icons btn-icon">&#xe18a;<!--&#xe139;--></i>playlist</button>`;
 }
 
 function tglCs(i)
@@ -1756,6 +1775,14 @@ function tglCs(i)
 function tglSegn(s)
 {
 	d.gId(`seg${s}t`).style.display = (window.getComputedStyle(d.gId(`seg${s}t`)).display === "none") ? "inline":"none";
+}
+
+function selSegAll(o)
+{
+	//o.checked = true;
+	var obj = {"seg":[]};
+	for (let i=0; i<=lSeg; i++) obj.seg.push({"id":i,"sel":o.checked});
+	requestJson(obj);
 }
 
 function selSegEx(s)

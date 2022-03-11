@@ -182,8 +182,8 @@
 	</div>
 
 	<div id="Effects" class="tabcontent">
-		<div id="sliders">
-			<p class="labels" id="sliderLabel0">Effect speed</p>
+		<span id="sliders">
+			<p class="labels hd" id="sliderLabel0">Effect speed</p>
 			<div class="staytop" id="slider0">
 				<i class="icons slider-icon" style="cursor: pointer;" onclick="tglFreeze()">&#xe325;</i>
 				<div class="sliderwrap il">
@@ -192,7 +192,7 @@
 				</div>
 				<output class="sliderbubble"></output>
 			</div>
-			<p class="labels" id="sliderLabel1">Effect intensity</p>
+			<p class="labels hd" id="sliderLabel1">Effect intensity</p>
 			<div class="staytop" id="slider1">
 				<i class="icons slider-icon" style="cursor: pointer;" onclick="tglLabels()">&#xe409;</i>
 				<div class="sliderwrap il">
@@ -201,7 +201,7 @@
 				</div>
 				<output class="sliderbubble"></output>
 			</div>
-			<p class="labels" id="sliderLabel2">Custom 1</p>
+			<p class="labels hd" id="sliderLabel2">Custom 1</p>
 			<div class="staytop" id="slider2">
 				<i class="icons slider-icon">&#xe410;</i>
 				<div class="sliderwrap il">
@@ -210,7 +210,7 @@
 				</div>
 				<output class="sliderbubble"></output>
 			</div>
-			<p class="labels" id="sliderLabel3">Custom 2</p>
+			<p class="labels hd" id="sliderLabel3">Custom 2</p>
 			<div class="staytop" id="slider3">
 				<i class="icons slider-icon">&#xe410;</i>
 				<div class="sliderwrap il">
@@ -219,7 +219,7 @@
 				</div>
 				<output class="sliderbubble"></output>
 			</div>
-			<p class="labels" id="sliderLabel4">Custom 3</p>
+			<p class="labels hd" id="sliderLabel4">Custom 3</p>
 			<div class="staytop" id="slider4">
 				<i class="icons slider-icon">&#xe410;</i>
 				<div class="sliderwrap il">
@@ -228,7 +228,7 @@
 				</div>
 				<output class="sliderbubble"></output>
 			</div>
-		</div>
+		</span>
 		<div class="il">
 			<p class="labels hd" id="modeLabel">Effect mode</p>
 			<div class="staytop fnd" id="fxFind">
@@ -295,17 +295,12 @@
 	</div><br>
 	<div id="kv">Loading...</div><br>
 	<div>
-	<!--table>
-		<tr>
-			<td class="keytd"--><button class="btn" onclick="requestJson()">Refresh</button><!--/td>
-			<td class="valtd"--><button class="btn" onclick="toggleInfo()">Close Info</button><!--/td>
-		</tr>
-		<tr>
-			<td class="keytd"--><button class="btn" onclick="toggleNodes()">Instance List</button><!--/td>
-			<td class="valtd"--><button class="btn" id="resetbtn" onclick="cnfReset()">Reboot WLED</button><!--/td>
-		</tr>
-	</table-->
-	</div><br>
+		<button class="btn" onclick="requestJson()">Refresh</button>
+		<button class="btn" onclick="toggleInfo()">Close Info</button>
+		<button class="btn" onclick="toggleNodes()">Instance List</button>
+		<button class="btn" id="resetbtn" onclick="cnfReset()">Reboot WLED</button>
+	</div>
+	<br>
 	<span class="h">Made with <span id="heart">&#10084;&#xFE0E;</span> by Aircoookie and the <a href="https://wled.discourse.group/" target="_blank">WLED community</a></span>
 </div>
 
@@ -313,13 +308,10 @@
 	<div id="ndlt">WLED instances</div>
 	<div id="kn">Loading...</div><br>
 	<div>
-	<!--table>
-		<tr>
-			<td class="keytd"--><button class="btn infobtn" onclick="loadNodes()">Refresh</button><!--/td>
-			<td class="valtd"--><button class="btn infobtn" onclick="toggleNodes()">Close list</button><!--/td>
-		</tr>
-	</table-->
-	</div><br>
+		<button class="btn infobtn" onclick="loadNodes()">Refresh</button>
+		<button class="btn infobtn" onclick="toggleNodes()">Close list</button>
+	</div>
+	<br>
 </div>
 
 <div id="rover" class="modal">
