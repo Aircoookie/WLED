@@ -153,13 +153,13 @@ void realtimeLock(uint32_t timeoutMs, byte md)
     if (timeoutMs == 255001 || timeoutMs == 65000) realtimeTimeout = UINT32_MAX;
   }
   // if strip is off (bri==0) and not already in RTM
-  if (bri == 0 && !realtimeMode) {
-    strip.setBrightness(scaledBri(briLast));
+  if (briT == 0 && !realtimeMode) {
+    strip.setBrightness(scaledBri(briLast), true);
   }
   realtimeMode = md;
 
-  if (arlsForceMaxBri && !realtimeOverride) strip.setBrightness(scaledBri(255));
-  if (md == REALTIME_MODE_GENERIC) strip.show();
+  if (arlsForceMaxBri && !realtimeOverride) strip.setBrightness(scaledBri(255), true);
+  if (briT > 0 && md == REALTIME_MODE_GENERIC) strip.show();
 }
 
 

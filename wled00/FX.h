@@ -625,7 +625,7 @@ class WS2812FX {
       setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       setColor(uint8_t slot, uint32_t c),
       setCCT(uint16_t k),
-      setBrightness(uint8_t b),
+      setBrightness(uint8_t b, bool direct = false),
       setRange(uint16_t i, uint16_t i2, uint32_t col),
       setShowCallback(show_callback cb),
       setTransition(uint16_t t),
@@ -672,10 +672,10 @@ class WS2812FX {
       gamma8_cal(uint8_t, float),
       get_random_wheel_index(uint8_t);
 
-      inline uint8_t sin_gap(uint16_t in) {
-        if (in & 0x100) return 0;
-        return sin8(in + 192); //correct phase shift of sine so that it starts and stops at 0
-      }
+    inline uint8_t sin_gap(uint16_t in) {
+      if (in & 0x100) return 0;
+      return sin8(in + 192); // correct phase shift of sine so that it starts and stops at 0
+    }
 
     int8_t
       tristate_square8(uint8_t x, uint8_t pulsewidth, uint8_t attdec);
