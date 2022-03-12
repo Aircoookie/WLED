@@ -294,7 +294,7 @@ function showToast(text, error = false)
 {
 	if (error) gId('connind').style.backgroundColor = "var(--c-r)";
 	var x = gId("toast");
-	if (error) text += '<i class="icons btn-icon" style="transform:rotate(45deg);position:absolute;top:10px;right:0px;" onclick="clearErrorToast(100);">&#xe18a;</i>';
+	//if (error) text += '<i class="icons btn-icon" style="transform:rotate(45deg);position:absolute;top:10px;right:0px;" onclick="clearErrorToast(100);">&#xe18a;</i>';
 	x.innerHTML = text;
 	x.classList.add(error ? "error":"show");
 	clearTimeout(timeout);
@@ -674,7 +674,7 @@ function populateSegments(s)
 			<div class="sliderdisplay"></div>
 		</div>
 	</div>
-	<div class="segin" id="seg${i}in">
+	<div class="segin  ${expanded[i] ? "expanded":""}" id="seg${i}in">
 		<input type="text" class="ptxt noslide" id="seg${i}t" autocomplete="off" maxlength=32 value="${inst.n?inst.n:""}" placeholder="Enter name..."/>
 		<table class="infot segt">
 		<tr>
@@ -700,16 +700,12 @@ function populateSegments(s)
 		</table>
 		<div class="h bp" id="seg${i}len"></div>
 		<label class="check revchkl">
-			<span class="lstIname">
 			Reverse direction
-			</span>
 			<input type="checkbox" id="seg${i}rev" onchange="setRev(${i})" ${inst.rev ? "checked":""}>
 			<span class="checkmark schk"></span>
 		</label>
 		<label class="check revchkl">
-			<span class="lstIname">
 			Mirror effect
-			</span>
 			<input type="checkbox" id="seg${i}mi" onchange="setMi(${i})" ${inst.mi ? "checked":""}>
 			<span class="checkmark schk"></span>
 		</label>
@@ -733,6 +729,7 @@ function populateSegments(s)
 		updateLen(i);
 		updateTrail(gId(`seg${i}bri`));
 		gId(`segr${i}`).style.display = "none";
+		if (!gId(`seg${i}sel`).checked) gId(`selall`).checked = false;
 	}
 	if (segCount < 2) gId(`segd${lSeg}`).style.display = "none";
 	if (!noNewSegs && (cfg.comp.seglen?parseInt(gId(`seg${lSeg}s`).value):0)+parseInt(gId(`seg${lSeg}e`).value)<ledCount) gId(`segr${lSeg}`).style.display = "inline";
@@ -1267,7 +1264,6 @@ function setSliderAndColorControl(idx, applyDef=false)
 		var label = gId("sliderLabel" + i);
 		// if (not controlDefined and for AC speed or intensity and for SR alle sliders) or slider has a value
 		if ((!controlDefined && i < ((idx<128)?2:nSliders)) || (slOnOff.length>i && slOnOff[i] != "")) {
-			//label.style.display = "block";
 			if (slOnOff.length>i && slOnOff[i].indexOf("=")>0) {
 				// embeded default values
 				var dPos = slOnOff[i].indexOf("=");
@@ -1282,6 +1278,7 @@ function setSliderAndColorControl(idx, applyDef=false)
 			else if (i==1)                           label.innerHTML = "Effect intensity";
 			else                                     label.innerHTML = "Custom" + (i-1);
 			//label.style.top = "auto";
+			label.style.display = "block";
 			slider.style.display = "block";
 			slider.style.top = topPosition + "px";
 			topPosition += 28; // increase top position for the next control
@@ -1289,7 +1286,7 @@ function setSliderAndColorControl(idx, applyDef=false)
 		} else {
 			// disable label and slider
 			slider.style.display = "none";
-			//label.style.display = "none";
+			label.style.display = "none";
 		}
 	}
 	if (topPosition>0) topPosition += 2;
@@ -1361,7 +1358,8 @@ function setSliderAndColorControl(idx, applyDef=false)
 		if (paOnOff.length>0 && paOnOff[0] != "!") pall.innerHTML = paOnOff[0];
 		else                                       pall.innerHTML = '<i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i> Color palette';
 	} else {
-		// disable label and slider
+		// disable palett list
+		pall.innerHTML = '<i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i> Color palette not used';
 		palw.style.display = "none";
 		// if numeric set as selected palette
 		if (paOnOff.length>0 && paOnOff[0]!="" && !isNaN(paOnOff[0]) && parseInt(paOnOff[0])!=selectedPal) obj.seg.pal = parseInt(paOnOff[0]);
@@ -1531,8 +1529,8 @@ function makeSeg()
 function resetUtil()
 {
 //	gId('segutil').innerHTML = '<button class="btn btn-s" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>segment</button>';
-	gId('segutil').innerHTML = '<div class="seg btn btn-s" style="border-radius:24px;">'
-	+ '<label class="check schkl"><input type="checkbox" onchange="selSegAll(this)"><span class="checkmark schk"></span></label>'
+	gId('segutil').innerHTML = '<div class="seg btn btn-s" style="border-radius:24px;padding:0;">'
+	+ '<label class="check schkl"><input type="checkbox" id="selall" onchange="selSegAll(this)"><span class="checkmark schk"></span></label>'
 	+ '<div class="segname" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>segment</div></div>';
 }
 
@@ -1787,6 +1785,7 @@ function selSegAll(o)
 
 function selSegEx(s)
 {
+	gId(`selall`).checked = false;
 	var obj = {"seg":[]};
 	for (let i=0; i<=lSeg; i++) obj.seg.push({"id":i,"sel":(i==s)});
 	obj.mainseg = s;
@@ -1795,6 +1794,7 @@ function selSegEx(s)
 
 function selSeg(s)
 {
+	gId(`selall`).checked = false;
 	var sel = gId(`seg${s}sel`).checked;
 	var obj = {"seg": {"id": s, "sel": sel}};
 	requestJson(obj);

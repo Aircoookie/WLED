@@ -365,7 +365,7 @@ button {
 }
 
 .staybot {
-	bottom: 0;
+	bottom: 5px;
 }
 
 #slider0, #slider1, #slider2, #slider3, #slider4 {
@@ -779,7 +779,8 @@ option {
 	background-color: var(--c-3);
 	color: var(--c-f);
 }
-input[type=number], input[type=text] {
+input[type=number],
+input[type=text] {
 	background: var(--c-3);
 	color: var(--c-f);
 	border: 0px solid var(--c-2);
@@ -797,6 +798,28 @@ input[type=number], input[type=text] {
 input[type=number] {
 	text-align: right;
 	width: 50px;
+}
+
+input[type=text] {
+	text-align: center;
+}
+
+input[type=number]:focus,
+input[type=text]:focus {
+	background: var(--c-6);
+}
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+	-webkit-appearance: none;
+}
+
+#hexw input[type=text] {
+	width: 6em;
+}
+
+input[type=text].ptxt {
+	width: calc(100% - 24px);
 }
 
 textarea {
@@ -820,11 +843,6 @@ textarea {
 	background: var(--c-b);
 }
 
-input[type=text] {
-	width: calc(100% - 24px);
-	text-align: center;
-}
-
 .ptxt {
     /*width: 236px !important;*/
     margin: 0 4px 4px !important;
@@ -834,14 +852,6 @@ input[type=text] {
 	width: 50px !important;
 }
 
-input[type=number]:focus, input[type=text]:focus {
-	background: var(--c-6);
-}
-
-input[type=number]::-webkit-inner-spin-button,
-input[type=number]::-webkit-outer-spin-button {
-	-webkit-appearance: none;
-}
 .segname, .pname {
 	white-space: nowrap;
 	cursor: pointer;
@@ -849,10 +859,11 @@ input[type=number]::-webkit-outer-spin-button {
 	overflow: hidden;
 	text-overflow: clip;
 	line-height: 24px;
+	padding: 8px 0;
 }
 
 .segpwr {
-	padding: 4px 0 0 8px;
+	padding: 4px 0 4px 8px;
 }
 .pname {
 	top: 1px;
@@ -906,7 +917,7 @@ input[type=number]::-webkit-outer-spin-button {
 
 .pwr {
 	color: var(--c-6);
-	transform: translate(2px, 3px);
+	transform: translate(2px, 2px);
 	cursor: pointer;
 }
 
@@ -924,16 +935,16 @@ input[type=number]::-webkit-outer-spin-button {
 .check, .radio {
 	display: block;
 	position: relative;
-	padding-bottom: 32px;
-	margin-bottom: 14px;
+	/*padding-bottom: 32px;*/
+	/*margin-bottom: 14px;*/
 	cursor: pointer;
 }
-
+/*
 .schkl {
 	padding: 2px 0 0;
 	margin: 0;
 }
-
+*/
 .revchkl {
 	padding: 4px 0px 0px 35px;
 	margin-bottom: 0px;
@@ -960,7 +971,8 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .radiomark {
-	top: 1px;
+	top: 8px;
+	left: 8px;
 	height: 22px;
 	width: 22px;
 	border-radius: 50%;
@@ -1017,7 +1029,7 @@ input[type=number]::-webkit-outer-spin-button {
 .seg, .pres {
 	position: relative;
 	display: block;
-	padding: 8px 0;
+	/*padding: 8px 0;*/
 	margin: 0 0 10px;
 	background-color: var(--c-2);
 	color: var(--c-f);
@@ -1030,6 +1042,7 @@ input[type=number]::-webkit-outer-spin-button {
 
 .seg {
 	border-radius: 16px;
+	padding-bottom: 4px;
 }
 .pres {
 	border-radius: 24px;
@@ -1059,14 +1072,14 @@ input[type=number]::-webkit-outer-spin-button {
 /* list item */
 .lstI {
 	align-items: center;
-	padding: 8px 10px;
+	/*padding: 8px 10px;*/
     cursor: pointer;
 	background-color: var(--c-2);
 	overflow: hidden;
 	position: sticky;
 	border-radius: 24px;
 	margin: 10px auto 0;
-	min-height: 24px;
+	min-height: 40px;
 }
 
 /* selected item/element */
@@ -1089,15 +1102,16 @@ input[type=number]::-webkit-outer-spin-button {
 /* selected list item */
 .lstI.selected {
 	top: 0;
-	bottom: 0;
+	bottom: 5px;
 }
 
-.lstI.sticky, .lstI.selected {
+.lstI.sticky,
+.lstI.selected {
 	z-index: 1;
 }
 
 #pcont .selected {
-	bottom: 42px;
+	bottom: 52px;
 	top: 40px;
 }
 /* calculated in index.js
@@ -1119,7 +1133,7 @@ input[type=number]::-webkit-outer-spin-button {
 
 /* list item content */
 .lstIcontent {
-	padding: 0;
+	padding: 8px 0;
 	position: relative;
 }
 
@@ -1164,21 +1178,19 @@ input[type="text"].fnd:hover {
 	background-color: var(--c-3);
 }
 
-/* segment inner (expanded) content */
-.segin {
-	padding: 8px 8px 0;
-}
-
-/* preset inner/expanded content */
+/* segment & preset inner/expanded content */
+.segin,
 .presin {
-	padding: 8px 0 0;
+	padding: 8px;
 }
 
-.btn-s, .btn-n {
+.btn-s,
+.btn-n {
 	border: 1px solid var(--c-2);
 	background-color: var(--c-2);
 }
-.modal .btn:hover, .segin .btn:hover {
+.modal .btn:hover,
+.segin .btn:hover {
 	border: 1px solid var(--c-5);
 	background-color: var(--c-5);
 }
@@ -1188,7 +1200,8 @@ input[type="text"].fnd:hover {
 	display: none;
 }
 
-.check input:checked ~ .checkmark:after, .radio input:checked ~ .radiomark:after,
+.check input:checked ~ .checkmark:after,
+.radio input:checked ~ .radiomark:after,
 .expanded {
 	display: block !important;
 }
