@@ -945,8 +945,8 @@ function updateTrail(e)
 	var perc = e.value * 100 / max;
 	perc = parseInt(perc);
 	if (perc < 50) perc += 2;
-	var val = `linear-gradient(90deg, var(--c-f) ${perc}%, var(--c-4) ${perc}%)`;
-	e.parentNode.getElementsByClassName('sliderdisplay')[0].style.background = val;
+	var val = `linear-gradient(90deg, var(--bg) ${perc}%, var(--c-4) ${perc}%)`;
+	e.parentNode.getElementsByClassName('sliderdisplay')[0].style.backgroundImage = val;
 	var b = e.parentNode.parentNode.getElementsByTagName('output')[0];
 	if (b) b.innerHTML = e.value;
 }
@@ -2049,7 +2049,7 @@ function selectSlot(b)
 	var cd = gId('csl').children;
 	for (let i of cd) i.classList.remove('xxs-w');
 	cd[b].classList.add('xxs-w');
-	setPicker(cd[b].style.backgroundColor);
+	setPicker(rgbStr(cd[b].dataset));
 	// force slider update on initial load (picker "color:change" not fired if black)
 	if (cpick.color.value == 0) updatePSliders();
 	gId('sliderW').value = parseInt(cd[b].dataset.w);
@@ -2149,6 +2149,9 @@ function fromRgb()
 	cd[csel].dataset.g = g;
 	cd[csel].dataset.b = b;
 	setCSL(cd[csel]);
+	//updateTrail(gId('sliderR'));
+	//updateTrail(gId('sliderG'));
+	//updateTrail(gId('sliderB'));
 }
 
 function fromW()
@@ -2157,6 +2160,7 @@ function fromW()
 	let cd = gId('csl').children; // color slots
 	cd[csel].dataset.w = w.value;
 	setCSL(cd[csel]);
+	//updateTrail(w);
 }
 
 // sr 0: from RGB sliders, 1: from picker, 2: from hex
