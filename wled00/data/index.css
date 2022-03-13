@@ -538,9 +538,9 @@ img {
 	top: 0; bottom: 0;
 	left: 0; right: 0;
 }
-#rwrap .sliderdisplay { background: linear-gradient(90deg, #000 0%, #f00); }
-#gwrap .sliderdisplay { background: linear-gradient(90deg, #000 0%, #0f0); }
-#bwrap .sliderdisplay { background: linear-gradient(90deg, #000 0%, #00f); }
+#rwrap .sliderdisplay { --bg: #f00; background: linear-gradient(90deg, #000 0%, #f00); }
+#gwrap .sliderdisplay { --bg: #0f0; background: linear-gradient(90deg, #000 0%, #0f0); }
+#bwrap .sliderdisplay { --bg: #00f; background: linear-gradient(90deg, #000 0%, #00f); }
 #wwrap .sliderdisplay { background: linear-gradient(90deg, #000 0%, #fff); }
 #kwrap .sliderdisplay { background: linear-gradient(90deg, #ff8f1f 0%, #fff 50%, #cbdbff); }
 #wbal  .sliderdisplay { background: linear-gradient(90deg, #ff8f1f 0%, #fff 50%, #cbdbff); }
@@ -976,6 +976,7 @@ textarea {
 	height: 22px;
 	width: 22px;
 	border-radius: 50%;
+	background-color: transparent;
 }
 
 .checkmark {

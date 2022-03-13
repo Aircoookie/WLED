@@ -75,29 +75,17 @@ function applyCfg()
 	cTheme(cfg.theme.base === "light");
 	var bg = cfg.theme.color.bg;
 	if (bg) sCol('--c-1', bg);
-	if (lastinfo.leds) updateUI(); // update component visibility
-/*
-	var ccfg = cfg.comp.colors;
-	gId('hexw').style.display = ccfg.hex ? "block":"none";
-	gId('picker').style.display = (hasRGB && ccfg.picker) ? "block":"none";
-	gId('vwrap').style.display = (hasRGB && ccfg.picker) ? "block":"none";
-	gId('kwrap').style.display = (hasRGB && !hasCCT && ccfg.picker) ? "block":"none";
-	gId('rgbwrap').style.display = (hasRGB && ccfg.rgb) ? "block":"none";
-	gId('qcs-w').style.display = (hasRGB && ccfg.quick) ? "block":"none";
-	gId('palw').style.display = hasRGB ? "block":"none";
-*/
 	var l = cfg.comp.labels;
 	var e = d.querySelectorAll('.tab-label');
 	for (let i of e) i.style.display = l ? "block":"none";
-	//e = d.querySelector('.hd');
-	//e.style.display = l ? "block":"none";
 	sCol('--tbp',l ? "14px 14px 10px 14px":"10px 22px 4px 22px");
 	sCol('--bbp',l ? "9px 0 7px 0":"10px 0 4px 0");
-	sCol('--bhd',l ? "block":"none");
+	sCol('--bhd',l ? "block":"none"); // show/hide labels
 	sCol('--bmt',l ? "0px":"5px");
 	sCol('--t-b', cfg.theme.alpha.tab);
 	size();
 	localStorage.setItem('wledUiCfg', JSON.stringify(cfg));
+	if (lastinfo.leds) updateUI(); // update component visibility
 }
 
 function tglHex()
@@ -115,6 +103,12 @@ function tglTheme()
 function tglLabels()
 {
 	cfg.comp.labels = !cfg.comp.labels;
+	applyCfg();
+}
+
+function tglRgb()
+{
+	cfg.comp.colors.rgb = !cfg.comp.colors.rgb;
 	applyCfg();
 }
 
