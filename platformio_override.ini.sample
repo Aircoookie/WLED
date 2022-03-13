@@ -47,3 +47,6 @@ build_flags = ${common.build_flags_esp8266}
 ;   
 ; set the name of the module - make sure there is a quote-backslash-quote before the name and a backslash-quote-quote after the name
 ;   -D SERVERNAME="\"WLED\""
+;   
+; set the number of LEDs
+;   -DEFAULT_LED_COUNT=30
