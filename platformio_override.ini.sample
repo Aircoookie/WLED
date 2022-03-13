@@ -44,3 +44,6 @@ build_flags = ${common.build_flags_esp8266}
 ;   for the Magic Home LED Controller use PWM pins 5,12,13,15
 ;   for the H801 controller use PINs 15,13,12,14 (W2 = 04)
 ;   for the BW-LT11 controller use PINs 12,4,14,5
+;   
+; set the name of the module - make sure there is a quote-backslash-quote before the name and a backslash-quote-quote after the name
+;   -D SERVERNAME="\"WLED\""
