@@ -19,6 +19,11 @@ build_flags = ${common.build_flags_esp8266}
 ; *** Use custom settings from file my_config.h
    -DWLED_USE_MY_CONFIG
 ; *********************************************************************
+;
+;
+; *** To use the below defines/overrides, copy and paste each onto it's own line just below build_flags in the section above.
+; 
+; disable specific features
 ;  -D WLED_DISABLE_OTA
 ;  -D WLED_DISABLE_ALEXA
 ;  -D WLED_DISABLE_BLYNK
