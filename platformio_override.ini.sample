@@ -54,7 +54,7 @@ build_flags = ${common.build_flags_esp8266}
 ;   -D SERVERNAME="\"WLED\""
 ;   
 ; set the number of LEDs
-;   -DEFAULT_LED_COUNT=30
+;   -D DEFAULT_LED_COUNT=30
 ;   
 ; set milliampere limit when using ESP pin to power leds
 ;   -D ABL_MILLIAMPS_DEFAULT =850
