@@ -43,9 +43,8 @@ body {
 	font-size: 17px;
 	color: var(--c-f);
 	text-align: center;
-	-webkit-touch-callout: none;
-		-webkit-user-select: none;
-						user-select: none;
+	-webkit-user-select: none;
+	user-select: none;
 	-webkit-tap-highlight-color: transparent;
 	scrollbar-width: 6px;
 	scrollbar-color: var(--c-sb) transparent;
@@ -488,8 +487,24 @@ img {
 .hidden {
 	display: none;
 }
+/* 
+    Disables scrolling while using the color picker:
+    -webkit-touch-callout: none; 
+    touch-action: none!important; 
+*/
+div.IroColorPicker {
+	-webkit-touch-callout: none;
+	touch-action: none;
+}
 
-input[type=range] {
+/* 
+    Disables scrolling while using a slider:
+    -webkit-touch-callout: none; 
+    touch-action: none!important; 
+*/
+input[type="range"] {
+	-webkit-touch-callout: none;
+	touch-action: none !important;
 	-webkit-appearance: none;
 	width: 220px;
 	padding: 0px;
