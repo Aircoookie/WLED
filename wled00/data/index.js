@@ -100,14 +100,9 @@ function applyCfg()
 	if (bg) sCol('--c-1', bg);
 	if (lastinfo.leds) updateUI(); // update component visibility
 	var l = cfg.comp.labels;
-	var e = d.querySelectorAll('.tab-label');
-	for (var i of e)
-		i.style.display = l ? "block":"none";
-	e = d.querySelector('.hd');
-	e.style.display = l ? "block":"none";
 	sCol('--tbp',l ? "14px 14px 10px 14px":"10px 22px 4px 22px");
 	sCol('--bbp',l ? "9px 0 7px 0":"10px 0 4px 0");
-	sCol('--bhd',l ? "block":"none");
+	sCol('--bhd',l ? "block":"none"); // hides/shows button labels
 	sCol('--bmt',l ? "0px":"5px");
 	sCol('--t-b', cfg.theme.alpha.tab);
 	size();
@@ -1076,12 +1071,12 @@ function readState(s,command=false) {
 	}
 	
 	colors = i.col;
-	for (let e = 2; e >= 0; e--)
+	for (let e = 0; e < 3; e++)
 	{
 		if (i.col[e].length > 3) whites[e] = parseInt(i.col[e][3]);
 		setCSL(e);
-		selectSlot(csel);
 	}
+	selectSlot(csel);
 	if (i.cct != null && i.cct>=0) d.getElementById("sliderA").value = i.cct;
 
 	d.getElementById('sliderSpeed').value = i.sx;

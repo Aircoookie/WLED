@@ -2,6 +2,13 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2203140
+
+-   Added factory reset by pressing button 0 for >10 seconds
+-   Added ability to set presets from DMX Effect mode
+-   Simplified label hiding JS in user interface
+-   Fixed JSON `{"live":true}` indefinite realtime mode
+
 #### Build 2203080
 
 -   Disabled auto white mode in segments with no RGB bus
