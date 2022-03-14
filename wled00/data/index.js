@@ -76,13 +76,12 @@ function applyCfg()
 	var bg = cfg.theme.color.bg;
 	if (bg) sCol('--c-1', bg);
 	var l = cfg.comp.labels;
-	var e = d.querySelectorAll('.tab-label');
-	for (let i of e) i.style.display = l ? "block":"none";
-	sCol('--tbp',l ? "14px 14px 10px 14px":"10px 22px 4px 22px");
-	sCol('--bbp',l ? "9px 0 7px 0":"10px 0 4px 0");
-	sCol('--bhd',l ? "block":"none"); // show/hide labels
-	sCol('--bmt',l ? "0px":"5px");
+	sCol('--tbp', l ? "14px 14px 10px 14px":"10px 22px 4px 22px");
+	sCol('--bbp', l ? "9px 0 7px 0":"10px 0 4px 0");
+	sCol('--bhd', l ? "block":"none"); // show/hide labels
+	sCol('--bmt', l ? "0px":"5px");
 	sCol('--t-b', cfg.theme.alpha.tab);
+	sCol('--sgp', !cfg.comp.segpwr ? "block":"none"); // show/hide segment power
 	size();
 	localStorage.setItem('wledUiCfg', JSON.stringify(cfg));
 	if (lastinfo.leds) updateUI(); // update component visibility
@@ -661,14 +660,14 @@ function populateSegments(s)
 		${inst.n ? inst.n : "Segment "+i}
 	</div>
 	<i class="icons e-icon flr ${expanded[i] ? "exp":""}" id="sege${i}" onclick="expand(${i})">&#xe395;</i>
-	<div class="segpwr">
+	<div id="segp${i}" class="sbs ${expanded[i] ? "expanded":""}">
 		<i class="icons e-icon pwr ${powered[i] ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})">&#xe08f;</i>
 		<div class="sliderwrap il">
 			<input id="seg${i}bri" class="noslide" onchange="setSegBri(${i})" oninput="updateTrail(this)" max="255" min="1" type="range" value="${inst.bri}" />
 			<div class="sliderdisplay"></div>
 		</div>
 	</div>
-	<div class="segin  ${expanded[i] ? "expanded":""}" id="seg${i}in">
+	<div class="segin ${expanded[i] ? "expanded":""}" id="seg${i}in">
 		<input type="text" class="ptxt noslide" id="seg${i}t" autocomplete="off" maxlength=32 value="${inst.n?inst.n:""}" placeholder="Enter name..."/>
 		<table class="infot segt">
 		<tr>
@@ -935,12 +934,14 @@ function loadNodes()
 function updateTrail(e)
 {
 	if (e==null) return;
-	var max = e.hasAttribute('max') ? e.attributes.max.value : 255;
-	var perc = e.value * 100 / max;
-	perc = parseInt(perc);
-	if (perc < 50) perc += 2;
-	var val = `linear-gradient(90deg, var(--bg) ${perc}%, var(--c-4) ${perc}%)`;
-	e.parentNode.getElementsByClassName('sliderdisplay')[0].style.backgroundImage = val;
+	let sd = e.parentNode.getElementsByClassName('sliderdisplay')[0];
+	if (sd && getComputedStyle(sd).getPropertyValue("--bg") !== "none") {
+		var max = e.hasAttribute('max') ? e.attributes.max.value : 255;
+		var perc = Math.round(e.value * 100 / max);
+		if (perc < 50) perc += 2;
+		var val = `linear-gradient(90deg, var(--bg) ${perc}%, var(--c-4) ${perc}%)`;
+		sd.style.backgroundImage = val;
+	}
 	var b = e.parentNode.parentNode.getElementsByTagName('output')[0];
 	if (b) b.innerHTML = e.value;
 }
@@ -1016,6 +1017,13 @@ function updateUI()
 	updateTrail(gId('sliderC1'));
 	updateTrail(gId('sliderC2'));
 	updateTrail(gId('sliderC3'));
+
+	if (hasRGB) {
+		updateTrail(gId('sliderR'));
+		updateTrail(gId('sliderG'));
+		updateTrail(gId('sliderB'));	
+	}
+	if (hasWhite) updateTrail(gId('sliderW'));
 
 	gId('wwrap').style.display = (hasWhite) ? "block":"none"; // white channel
 	gId('wbal').style.display = (hasCCT) ? "block":"none";    // white balance
@@ -2047,7 +2055,7 @@ function selectSlot(b)
 	// force slider update on initial load (picker "color:change" not fired if black)
 	if (cpick.color.value == 0) updatePSliders();
 	gId('sliderW').value = parseInt(cd[b].dataset.w);
-	//updateTrail(gId('sliderW'));
+	updateTrail(gId('sliderW'));
 	redrawPalPrev();
 }
 
@@ -2088,7 +2096,7 @@ function updatePSliders() {
 	var hsv = {"h":cpick.color.hue,"s":cpick.color.saturation,"v":100}; 
 	var c = iro.Color.hsvToRgb(hsv);
 	var cs = 'rgb('+c.r+','+c.g+','+c.b+')';
-	v.nextElementSibling.style.backgroundImage = `linear-gradient(90deg, #000 0%, ${cs})`;
+	v.nextElementSibling.style.backgroundImage = `linear-gradient(90deg, #000 -15%, ${cs})`;
 
 	// update Kelvin slider
 	gId('sliderK').value = cpick.color.kelvin;
@@ -2120,6 +2128,9 @@ function setPicker(rgb) {
 	var c = new iro.Color(rgb);
 	if (c.value > 0) cpick.color.set(c);
 	else cpick.color.setChannel('hsv', 'v', 0);
+	updateTrail(gId('sliderR'));
+	updateTrail(gId('sliderG'));
+	updateTrail(gId('sliderB'));
 }
 
 function fromV()
@@ -2143,9 +2154,6 @@ function fromRgb()
 	cd[csel].dataset.g = g;
 	cd[csel].dataset.b = b;
 	setCSL(cd[csel]);
-	//updateTrail(gId('sliderR'));
-	//updateTrail(gId('sliderG'));
-	//updateTrail(gId('sliderB'));
 }
 
 function fromW()
@@ -2154,7 +2162,7 @@ function fromW()
 	let cd = gId('csl').children; // color slots
 	cd[csel].dataset.w = w.value;
 	setCSL(cd[csel]);
-	//updateTrail(w);
+	updateTrail(w);
 }
 
 // sr 0: from RGB sliders, 1: from picker, 2: from hex
@@ -2333,6 +2341,7 @@ function expand(i, c=false)
 
 	expanded[i] = !expanded[i];
 	seg.classList.toggle("expanded");
+	gId('segp' +i).classList.toggle("expanded");
 	gId('sege' +i).classList.toggle("exp");
 	gId(util).classList.toggle(stay);
 

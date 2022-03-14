@@ -31,6 +31,7 @@
 	--tbp: 14px 14px 10px 14px;
 	--bbp: 9px 0 7px 0;
 	--bhd: none;
+	--sgp: "block";
 	--bmt: 0px;
 }
 
@@ -327,7 +328,6 @@ button {
 }
 
 #putil {
-	/*padding: 0 0 10px;*/
 	margin: 0 auto;
 }
 
@@ -336,6 +336,7 @@ button {
 .tab-label {
 	margin: 0 0 -5px 0;
 	padding-bottom: 4px;
+	display: var(--bhd);
 }
 
 .overlay {
@@ -524,8 +525,8 @@ img {
 .sliderdisplay {
 	content:'';
 	position: absolute;
-	top: 13px; left: 8px; right: 8px;
-	height: 4px;
+	top: 12px; left: 8px; right: 8px;
+	height: 5px;
 	background: var(--c-4);
 	border-radius: 16px;
 	pointer-events: none;
@@ -533,17 +534,17 @@ img {
 	--bg: var(--c-f);
 }
 
-#Colors .sliderdisplay {
-	height: 28px;
-	top: 0; bottom: 0;
-	left: 0; right: 0;
-}
-#rwrap .sliderdisplay { --bg: #f00; background: linear-gradient(90deg, #000 0%, #f00); }
-#gwrap .sliderdisplay { --bg: #0f0; background: linear-gradient(90deg, #000 0%, #0f0); }
-#bwrap .sliderdisplay { --bg: #00f; background: linear-gradient(90deg, #000 0%, #00f); }
-#wwrap .sliderdisplay { background: linear-gradient(90deg, #000 0%, #fff); }
-#kwrap .sliderdisplay { background: linear-gradient(90deg, #ff8f1f 0%, #fff 50%, #cbdbff); }
+#rwrap .sliderdisplay { --bg: none; background: linear-gradient(90deg, #000 -15%, #f00); } /* -15% since #000 is too dark */
+#gwrap .sliderdisplay { --bg: none; background: linear-gradient(90deg, #000 -15%, #0f0); } /* -15% since #000 is too dark */
+#bwrap .sliderdisplay { --bg: none; background: linear-gradient(90deg, #000 -15%, #00f); } /* -15% since #000 is too dark */
+#wwrap .sliderdisplay { --bg: none; background: linear-gradient(90deg, #000 -15%, #fff); } /* -15% since #000 is too dark */
+#kwrap .sliderdisplay,
 #wbal  .sliderdisplay { background: linear-gradient(90deg, #ff8f1f 0%, #fff 50%, #cbdbff); }
+
+/* wrapper divs hidden by default */
+#rgbwrap, #kwrap, #wwrap, #wbal, #qcs-w, #hexw {
+	display: none;
+}
 
 .sliderbubble {
 	width: 24px;
@@ -565,11 +566,6 @@ output.sliderbubbleshow {
 	opacity: 1;
 }
 
-/* wrapper divs hidden by default */
-#rgbwrap, #kwrap, #wwrap, #wbal, #qcs-w, #hexw {
-	display: none;
-}
-
 input[type=range] {
 	-webkit-appearance: none;
 	width: 100%;
@@ -577,11 +573,6 @@ input[type=range] {
 	margin: 0;
 	background-color: transparent;
 	cursor: pointer;
-}
-
-#Colors input[type=range] {
-	width: 252px;
-	margin: 0;
 }
 
 input[type=range]:focus {
@@ -618,13 +609,14 @@ input[type=range]::-moz-range-thumb {
 #Colors input[type=range]::-webkit-slider-thumb {
 	height: 18px;
 	width: 18px;
-	border: 2px solid #000;
+	border: 2px solid var(--c-1);
 	margin-top: 5px;
 }
 #Colors input[type=range]::-moz-range-thumb {
 	border: 2px solid var(--c-1);
 }
 
+/* Slider wrapper div */
 .sliderwrap {
 	height: 30px;
 	width: 230px;
@@ -635,6 +627,7 @@ input[type=range]::-moz-range-thumb {
 	margin: 10px 0 0;
 }
 
+/* Dynamically hide brightness slider label */
 .hd {
 	display: var(--bhd);
 }
@@ -644,9 +637,13 @@ input[type=range]::-moz-range-thumb {
 	margin-top: var(--bmt);
 }
 
-#picker {
-	margin: 10px auto 0;
+#picker, #rgbwrap, #kwrap, #wwrap, #wbal, #vwrap, #qcs-w, #hexw, #pall {
+	margin: 0 auto;
 	width: 260px;
+}
+
+#picker {
+	margin-top: 10px;
 }
 
 /* buttons */
@@ -862,9 +859,12 @@ textarea {
 	padding: 8px 0;
 }
 
-.segpwr {
+/* segment power wrapper */
+.sbs {
 	padding: 4px 0 4px 8px;
+	display: var(--sgp);
 }
+
 .pname {
 	top: 1px;
 }
@@ -935,16 +935,9 @@ textarea {
 .check, .radio {
 	display: block;
 	position: relative;
-	/*padding-bottom: 32px;*/
-	/*margin-bottom: 14px;*/
 	cursor: pointer;
 }
-/*
-.schkl {
-	padding: 2px 0 0;
-	margin: 0;
-}
-*/
+
 .revchkl {
 	padding: 4px 0px 0px 35px;
 	margin-bottom: 0px;
@@ -1030,7 +1023,6 @@ textarea {
 .seg, .pres {
 	position: relative;
 	display: block;
-	/*padding: 8px 0;*/
 	margin: 0 0 10px;
 	background-color: var(--c-2);
 	color: var(--c-f);
@@ -1039,15 +1031,8 @@ textarea {
 	transition: background-color 0.5s;
   	filter: brightness(1);
 	font-size: 19px;
-}
-
-.seg {
-	border-radius: 16px;
-	padding-bottom: 4px;
-}
-.pres {
-	border-radius: 24px;
-	min-height: 24px;
+	border-radius: 21px;
+	min-height: 42px;
 }
 
 .seg:last-child {
@@ -1073,7 +1058,6 @@ textarea {
 /* list item */
 .lstI {
 	align-items: center;
-	/*padding: 8px 10px;*/
     cursor: pointer;
 	background-color: var(--c-2);
 	overflow: hidden;
@@ -1084,7 +1068,7 @@ textarea {
 }
 
 /* selected item/element */
-.selected { /* has to be after .lstI */
+.selected { /* has to be after .lstI since !important is not ok */
 	background: var(--c-4);
 }
 
