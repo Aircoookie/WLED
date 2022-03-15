@@ -56,7 +56,7 @@ void savePreset(byte index, const char* pname, JsonObject saveobj)
   char tmp[12];
   JsonObject sObj = saveobj;
 
-  bool persist = (index == 255);
+  bool persist = (index != 255);
   const char *filename = persist ? "/presets.json" : "/tmp.json";
 
   if (!fileDoc) {

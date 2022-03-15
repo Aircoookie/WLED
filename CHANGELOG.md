@@ -1,5 +1,12 @@
 ## WLED changelog
 
+### WLED release 0.13.1
+
+#### Build 2203150
+
+-   Version bump to v0.13.1 "Toki"
+-   Fix persistent preset bug, preventing save of new presets
+
 ### WLED release 0.13.0
 
 #### Build 2203142
