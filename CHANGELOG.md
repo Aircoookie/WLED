@@ -1,6 +1,14 @@
 ## WLED changelog
 
-### Builds after release 0.12.0
+### WLED release 0.13.0
+
+#### Build 2203142
+
+-   Release of WLED v0.13.0 "Toki"
+-   Reduce APA102 hardware SPI frequency to 5Mhz
+-   Remove `persistent` parameter in `savePreset()`
+
+### Builds between releases 0.12.0 and 0.13.0
 
 #### Build 2203140
 
