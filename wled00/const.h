@@ -39,6 +39,12 @@
   #endif
 #endif
 
+#ifdef ESP8266
+#define WLED_MAX_COLOR_ORDER_MAPPINGS 5
+#else
+#define WLED_MAX_COLOR_ORDER_MAPPINGS 10
+#endif
+
 //Usermod IDs
 #define USERMOD_ID_RESERVED               0     //Unused. Might indicate no usermod present
 #define USERMOD_ID_UNSPECIFIED            1     //Default value for a general user mod that does not specify a custom ID
@@ -64,6 +70,8 @@
 #define USERMOD_ID_SEVEN_SEGMENT_DISPLAY 21     //Usermod "usermod_v2_seven_segment_display.h"
 #define USERMOD_RGB_ROTARY_ENCODER       22     //Usermod "rgb-rotary-encoder.h"
 #define USERMOD_ID_QUINLED_AN_PENTA      23     //Usermod "quinled-an-penta.h"
+#define USERMOD_ID_SSDR                  24     //Usermod "usermod_v2_seven_segment_display_reloaded.h"
+#define USERMOD_ID_CRONIXIE              25     //Usermod "usermod_cronixie.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
@@ -74,7 +82,7 @@
 //Notifier callMode
 #define CALL_MODE_INIT           0     //no updates on init, can be used to disable updates
 #define CALL_MODE_DIRECT_CHANGE  1
-#define CALL_MODE_BUTTON         2
+#define CALL_MODE_BUTTON         2     //default button actions applied to selected segments
 #define CALL_MODE_NOTIFICATION   3
 #define CALL_MODE_NIGHTLIGHT     4
 #define CALL_MODE_NO_NOTIFY      5
@@ -84,6 +92,7 @@
 #define CALL_MODE_BLYNK          9
 #define CALL_MODE_ALEXA         10
 #define CALL_MODE_WS_SEND       11     //special call mode, not for notifier, updates websocket only
+#define CALL_MODE_BUTTON_PRESET 12     //button/IR JSON preset/macro
 
 //RGB to RGBW conversion mode
 #define RGBW_MODE_MANUAL_ONLY     0            //No automatic white channel calculation. Manual white channel slider
@@ -124,7 +133,7 @@
 //                                              - 0b010 (dec. 32-47) analog (PWM)
 //                                              - 0b011 (dec. 48-63) digital (data + clock / SPI)
 //                                              - 0b100 (dec. 64-79) unused/reserved
-//                                              - 0b101 (dec. 80-95) digital (data + clock / SPI)
+//                                              - 0b101 (dec. 80-95) virtual network busses
 //                                              - 0b110 (dec. 96-111) unused/reserved
 //                                              - 0b111 (dec. 112-127) unused/reserved
 //bit 7 is reserved and set to 0
@@ -168,6 +177,7 @@
 #define COL_ORDER_RBG             3
 #define COL_ORDER_BGR             4
 #define COL_ORDER_GBR             5
+#define COL_ORDER_MAX             5
 
 
 //Button type
@@ -217,6 +227,7 @@
 #define SEG_DIFFERS_FX         0x08
 #define SEG_DIFFERS_BOUNDS     0x10
 #define SEG_DIFFERS_GSO        0x20
+#define SEG_DIFFERS_SEL        0x80
 
 //Playlist option byte
 #define PL_OPTION_SHUFFLE      0x01
@@ -296,9 +307,15 @@
 
 // Size of buffer for API JSON object (increase for more segments)
 #ifdef ESP8266
-  #define JSON_BUFFER_SIZE 9216
+  #define JSON_BUFFER_SIZE 10240
 #else
   #define JSON_BUFFER_SIZE 20480
+#endif
+
+#ifdef WLED_USE_DYNAMIC_JSON
+  #define MIN_HEAP_SIZE JSON_BUFFER_SIZE+512
+#else
+  #define MIN_HEAP_SIZE 4096
 #endif
 
 // Maximum size of node map (list of other WLED instances)
@@ -313,20 +330,22 @@
 #ifdef ESP8266
   #define LEDPIN 2    // GPIO2 (D4) on Wemod D1 mini compatible boards
 #else
-  #define LEDPIN 16   // aligns with GPIO2 (D4) on Wemos D1 mini32 compatible boards
+  #define LEDPIN 2   // Changed from 16 to restore compatibility with ESP32-pico
 #endif
 #endif
 
 #ifdef WLED_ENABLE_DMX
 #if (LEDPIN == 2)
   #undef LEDPIN
-  #define LEDPIN 3
-  #warning "Pin conflict compiling with DMX and LEDs on pin 2. The default LED pin has been changed to pin 3."
+  #define LEDPIN 1
+  #warning "Pin conflict compiling with DMX and LEDs on pin 2. The default LED pin has been changed to pin 1."
 #endif
 #endif
 
 #ifndef DEFAULT_LED_COUNT
   #define DEFAULT_LED_COUNT 30
 #endif
+
+#define INTERFACE_UPDATE_COOLDOWN 2000 //time in ms to wait between websockets, alexa, and MQTT updates
 
 #endif

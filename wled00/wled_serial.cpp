@@ -148,6 +148,21 @@ enum class AdaState {
   TPM2_Header_CountLo,
 };
 
+uint16_t currentBaud = 1152; //default baudrate 115200 (divided by 100)
+
+void updateBaudRate(uint32_t rate){
+  uint16_t rate100 = rate/100;
+  if (rate100 == currentBaud || rate100 < 96) return;
+  currentBaud = rate100;
+
+  if (!pinManager.isPinAllocated(1) || pinManager.getPinOwner(1) == PinOwner::DebugOut){
+    Serial.print(F("Baud is now ")); Serial.println(rate);
+  }
+
+  Serial.flush();
+  Serial.begin(rate);
+}
+  
 void handleSerial()
 {
   if (pinManager.isPinAllocated(3)) return;
@@ -159,7 +174,7 @@ void handleSerial()
   static byte check = 0x00;
   static byte red   = 0x00;
   static byte green = 0x00;
-  
+
   while (Serial.available() > 0)
   {
     yield();
@@ -175,20 +190,58 @@ void handleSerial()
           return;
         } else if (next == 'v') {
           Serial.print("WLED"); Serial.write(' '); Serial.println(VERSION);
+     
+        } else if (next == 0xB0) {updateBaudRate( 115200);
+        } else if (next == 0xB1) {updateBaudRate( 230400);
+        } else if (next == 0xB2) {updateBaudRate( 460800);
+        } else if (next == 0xB3) {updateBaudRate( 500000);
+        } else if (next == 0xB4) {updateBaudRate( 576000);
+        } else if (next == 0xB5) {updateBaudRate( 921600);
+        } else if (next == 0xB6) {updateBaudRate(1000000);
+        } else if (next == 0xB7) {updateBaudRate(1500000);
+        
+        } else if (next == 'l') { //RGB(W) LED data return as JSON array. Slow, but easy to use on the other end.
+          if (!pinManager.isPinAllocated(1) || pinManager.getPinOwner(1) == PinOwner::DebugOut){
+            uint16_t used = strip.getLengthTotal();
+            Serial.write('[');
+            for (uint16_t i=0; i<used; i+=1) {
+              Serial.print(strip.getPixelColor(i));
+              if (i != used-1) Serial.write(',');
+            }
+            Serial.println("]");
+          }  
+        } else if (next == 'L') { //RGB LED data returned as bytes in tpm2 format. Faster, and slightly less easy to use on the other end.
+          if (!pinManager.isPinAllocated(1) || pinManager.getPinOwner(1) == PinOwner::DebugOut) {
+            Serial.write(0xC9); Serial.write(0xDA);
+            uint16_t used = strip.getLengthTotal();
+            uint16_t len = used*3;
+            Serial.write((len << 8) & 0xFF);
+            Serial.write( len       & 0xFF);
+            for (uint16_t i=0; i < used; i++) {
+              uint32_t c = strip.getPixelColor(i);
+              Serial.write(qadd8(W(c), R(c))); //R, add white channel to RGB channels as a simple RGBW -> RGB map
+              Serial.write(qadd8(W(c), G(c))); //G
+              Serial.write(qadd8(W(c), B(c))); //B
+            }
+            Serial.write(0x36); Serial.write('\n');
+          }
         } else if (next == '{') { //JSON API
           bool verboseResponse = false;
-          {
-            DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-            Serial.setTimeout(100);
-            DeserializationError error = deserializeJson(doc, Serial);
-            if (error) return;
-            fileDoc = &doc;
-            verboseResponse = deserializeState(doc.as<JsonObject>());
-            fileDoc = nullptr;
+          #ifdef WLED_USE_DYNAMIC_JSON
+          DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+          #else
+          if (!requestJSONBufferLock(16)) return;
+          #endif
+          Serial.setTimeout(100);
+          DeserializationError error = deserializeJson(doc, Serial);
+          if (error) {
+            releaseJSONBufferLock();
+            return;
           }
+          verboseResponse = deserializeState(doc.as<JsonObject>());
           //only send response if TX pin is unused for other purposes
-          if (verboseResponse && !pinManager.isPinAllocated(1)) {
-            DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+          if (verboseResponse && (!pinManager.isPinAllocated(1) || pinManager.getPinOwner(1) == PinOwner::DebugOut)) {
+            doc.clear();
             JsonObject state = doc.createNestedObject("state");
             serializeState(state);
             JsonObject info  = doc.createNestedObject("info");
@@ -197,6 +250,7 @@ void handleSerial()
             serializeJson(doc, Serial);
             Serial.println();
           }
+          releaseJSONBufferLock();
         }
         break;
       case AdaState::Header_d:
@@ -249,7 +303,6 @@ void handleSerial()
         if (!realtimeOverride) setRealtimePixel(pixel++, red, green, blue, 0);
         if (--count > 0) state = AdaState::Data_Red;
         else {
-          if (!realtimeMode && bri == 0) strip.setBrightness(briLast);
           realtimeLock(realtimeTimeoutMs, REALTIME_MODE_ADALIGHT);
 
           if (!realtimeOverride) strip.show();

@@ -169,7 +169,6 @@ void handleTime() {
     updateLocalTime();
     checkTimers();
     checkCountdown();
-    handleOverlays();
   }
 }
 
@@ -318,6 +317,32 @@ byte weekdayMondayFirst()
   return wd;
 }
 
+bool isTodayInDateRange(byte monthStart, byte dayStart, byte monthEnd, byte dayEnd)
+{
+	if (monthStart == 0 || dayStart == 0) return true;
+	if (monthEnd == 0) monthEnd = monthStart;
+	if (dayEnd == 0) dayEnd = 31;
+	byte d = day(localTime);
+	byte m = month(localTime);
+
+	if (monthStart < monthEnd) {
+		if (m > monthStart && m < monthEnd) return true;
+		if (m == monthStart) return (d >= dayStart);
+		if (m == monthEnd) return (d <= dayEnd);
+		return false;
+	}
+	if (monthEnd < monthStart) { //range spans change of year
+		if (m > monthStart || m < monthEnd) return true;
+		if (m == monthStart) return (d >= dayStart);
+		if (m == monthEnd) return (d <= dayEnd);
+		return false;
+	}
+
+	//start month and end month are the same
+	if (dayEnd < dayStart) return (m != monthStart || (d <= dayEnd || d >= dayStart)); //all year, except the designated days in this month
+	return (m == monthStart && d >= dayStart && d <= dayEnd); //just the designated days this month
+}
+
 void checkTimers()
 {
   if (lastTimerMinute != minute(localTime)) //only check once a new minute begins
@@ -331,11 +356,14 @@ void checkTimers()
     for (uint8_t i = 0; i < 8; i++)
     {
       if (timerMacro[i] != 0
+          && (timerWeekday[i] & 0x01) //timer is enabled
           && (timerHours[i] == hour(localTime) || timerHours[i] == 24) //if hour is set to 24, activate every hour 
           && timerMinutes[i] == minute(localTime)
-          && (timerWeekday[i] & 0x01) //timer is enabled
-          && ((timerWeekday[i] >> weekdayMondayFirst()) & 0x01)) //timer should activate at current day of week
+          && ((timerWeekday[i] >> weekdayMondayFirst()) & 0x01) //timer should activate at current day of week
+          && isTodayInDateRange(((timerMonth[i] >> 4) & 0x0F), timerDay[i], timerMonth[i] & 0x0F, timerDayEnd[i])
+         )
       {
+        unloadPlaylist();
         applyPreset(timerMacro[i]);
       }
     }
@@ -349,6 +377,7 @@ void checkTimers()
           && (timerWeekday[8] & 0x01) //timer is enabled
           && ((timerWeekday[8] >> weekdayMondayFirst()) & 0x01)) //timer should activate at current day of week
       {
+        unloadPlaylist();
         applyPreset(timerMacro[8]);
         DEBUG_PRINTF("Sunrise macro %d triggered.",timerMacro[8]);
       }
@@ -363,6 +392,7 @@ void checkTimers()
           && (timerWeekday[9] & 0x01) //timer is enabled
           && ((timerWeekday[9] >> weekdayMondayFirst()) & 0x01)) //timer should activate at current day of week
       {
+        unloadPlaylist();
         applyPreset(timerMacro[9]);
         DEBUG_PRINTF("Sunset macro %d triggered.",timerMacro[9]);
       }
