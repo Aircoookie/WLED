@@ -301,7 +301,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     #endif
 
     t = request->arg(F("BD")).toInt();
-    if (t >= 96 && t <= 15000) serialBaud = t;
+    if (t >= 96 && t <= 40000) serialBaud = t;
     updateBaudRate(serialBaud *100);
   }
 

@@ -350,7 +350,7 @@ Press the pushlink button on the bridge, after that save this page!</b><br>
 </option><option value="5000">500000</option><option value="5760">576000
 </option><option value="9216">921600</option><option value="10000">1000000
 </option><option value="15000">1500000</option><option value="20000">2000000
-</option></select><br><i>
+</option><option value="40000">4000000</option></select><br><i>
 Keep at 115200 to use Improv. Some boards may not support high rates.</i><hr>
 <button type="button" onclick="B()">Back</button><button type="submit">Save
 </button></form></body></html>)=====";

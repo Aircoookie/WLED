@@ -116,10 +116,9 @@ void handleSerial()
         case AwaProtocol::FLETCHER2:
             if (input == fletcher2) 
             {
-              if (!realtimeMode && bri == 0) strip.setBrightness(briLast);
-              realtimeLock(realtimeTimeoutMs, REALTIME_MODE_ADALIGHT);
+				realtimeLock(realtimeTimeoutMs, REALTIME_MODE_ADALIGHT);
 
-              if (!realtimeOverride) strip.show();
+				if (!realtimeOverride) strip.show();
             }
             state = AwaProtocol::HEADER_A;
             break;
