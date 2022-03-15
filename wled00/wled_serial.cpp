@@ -146,9 +146,9 @@ enum class AdaState {
   TPM2_Header_Type,
   TPM2_Header_CountHi,
   TPM2_Header_CountLo,
-};
+};*/
 
-uint16_t currentBaud = 1152; //default baudrate 115200 (divided by 100)
+uint16_t currentBaud = 20000; //default baudrate 115200 (divided by 100)
 
 void updateBaudRate(uint32_t rate){
   uint16_t rate100 = rate/100;
@@ -163,7 +163,7 @@ void updateBaudRate(uint32_t rate){
   Serial.begin(rate);
 }
   
-void handleSerial()
+/*void handleSerial()
 {
   if (pinManager.isPinAllocated(3)) return;
   
