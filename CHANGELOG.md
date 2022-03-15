@@ -1,6 +1,28 @@
 ## WLED changelog
 
-### Builds after release 0.12.0
+### WLED release 0.13.1
+
+#### Build 2203150
+
+-   Version bump to v0.13.1 "Toki"
+-   Fix persistent preset bug, preventing save of new presets
+
+### WLED release 0.13.0
+
+#### Build 2203142
+
+-   Release of WLED v0.13.0 "Toki"
+-   Reduce APA102 hardware SPI frequency to 5Mhz
+-   Remove `persistent` parameter in `savePreset()`
+
+### Builds between releases 0.12.0 and 0.13.0
+
+#### Build 2203140
+
+-   Added factory reset by pressing button 0 for >10 seconds
+-   Added ability to set presets from DMX Effect mode
+-   Simplified label hiding JS in user interface
+-   Fixed JSON `{"live":true}` indefinite realtime mode
 
 #### Build 2203080
 

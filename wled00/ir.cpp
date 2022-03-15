@@ -699,7 +699,7 @@ void decodeIRJson(uint32_t code)
       char pname[33];
       sprintf_P(pname, PSTR("IR Preset %d"), psave);
       fdo.clear();
-      if (psave > 0 && psave < 251) savePreset(psave, true, pname, fdo);
+      if (psave > 0 && psave < 251) savePreset(psave, pname, fdo);
     }
   }
   releaseJSONBufferLock();

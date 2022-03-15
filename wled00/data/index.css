@@ -287,6 +287,7 @@ button {
 .tab-label {
 	margin: 0 0 -5px 0;
 	padding-bottom: 4px;
+	display: var(--bhd);
 }
 
 .overlay {
@@ -538,12 +539,14 @@ input[type=range]:active + .sliderbubble {
 	display: none;
 }
 
+/* Slider wrapper div */
 .sliderwrap {
 	height: 30px;
 	width: 240px;
 	position: relative;
 }
 
+/* Segment power button + brightness slider wrapper div */
 .sbs {
 	margin: 0px -20px 5px -6px;
 }
@@ -553,6 +556,7 @@ input[type=range]:active + .sliderbubble {
 	margin-left: -7px;
 }
 
+/* Dynamically hide brightness slider label */
 .hd {
 	display: var(--bhd);
 }
