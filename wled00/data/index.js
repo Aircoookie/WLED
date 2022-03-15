@@ -2335,15 +2335,15 @@ function expand(i, c=false)
 {
 	var seg = gId('seg' +i);
 	let util = i<100?'segutil':'putil';
-	let stay = i<100?"staybot":"staytop";
+	//let stay = i<100?"staybot":"staytop";
 
 	if (!c && i>100) for (let j=100; j<expanded.length; j++) if (i!=j && expanded[j]) expand(j,true); // collapse all expanded presets
 
 	expanded[i] = !expanded[i];
 	seg.classList.toggle("expanded");
-	gId('segp' +i).classList.toggle("expanded");
+	if (i<100) gId('segp' +i).classList.toggle("expanded");
 	gId('sege' +i).classList.toggle("exp");
-	gId(util).classList.toggle(stay);
+	gId(util).classList.toggle("staybot");
 
 	// presets
 	if (i >= 100) {
