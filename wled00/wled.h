@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2203141
+#define VERSION 2203151
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -296,7 +296,11 @@ WLED_GLOBAL uint16_t transitionDelay _INIT(750);    // default crossfade duratio
 WLED_GLOBAL byte briMultiplier _INIT(100);          // % of brightness to set (to limit power, if you set it to 50 and set bri to 255, actual brightness will be 127)
 
 // User Interface CONFIG
-WLED_GLOBAL char serverDescription[33] _INIT("WLED");  // Name of module
+#ifndef SERVERNAME
+WLED_GLOBAL char serverDescription[33] _INIT("WLED");  // Name of module - use default
+#else
+WLED_GLOBAL char serverDescription[33] _INIT(SERVERNAME);  // use predefined name
+#endif
 WLED_GLOBAL bool syncToggleReceive     _INIT(false);   // UIs which only have a single button for sync should toggle send+receive if this is true, only send otherwise
 WLED_GLOBAL bool simplifiedUI          _INIT(false);   // enable simplified UI
 WLED_GLOBAL byte cacheInvalidate       _INIT(0);       // used to invalidate browser cache when switching from regular to simplified UI

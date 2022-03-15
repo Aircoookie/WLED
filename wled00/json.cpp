@@ -335,7 +335,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   byte ps = root[F("psave")];
   if (ps > 0) {
     DEBUG_PRINTLN(F("Saving preset"));
-    savePreset(ps, true, nullptr, root);
+    savePreset(ps, nullptr, root);
   } else {
     ps = root[F("pdel")]; //deletion
     if (ps > 0) {

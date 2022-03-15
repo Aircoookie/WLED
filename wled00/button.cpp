@@ -4,11 +4,12 @@
  * Physical IO
  */
 
-#define WLED_DEBOUNCE_THRESHOLD     50 //only consider button input of at least 50ms as valid (debouncing)
-#define WLED_LONG_PRESS            600 //long press if button is released after held for at least 600ms
-#define WLED_DOUBLE_PRESS          350 //double press if another press within 350ms after a short press
-#define WLED_LONG_REPEATED_ACTION  333 //how often a repeated action (e.g. dimming) is fired on long press on button IDs >0
-#define WLED_LONG_AP              6000 //how long the button needs to be held to activate WLED-AP
+#define WLED_DEBOUNCE_THRESHOLD      50 // only consider button input of at least 50ms as valid (debouncing)
+#define WLED_LONG_PRESS             600 // long press if button is released after held for at least 600ms
+#define WLED_DOUBLE_PRESS           350 // double press if another press within 350ms after a short press
+#define WLED_LONG_REPEATED_ACTION   300 // how often a repeated action (e.g. dimming) is fired on long press on button IDs >0
+#define WLED_LONG_AP               5000 // how long button 0 needs to be held to activate WLED-AP
+#define WLED_LONG_FACTORY_RESET   10000 // how long button 0 needs to be held to trigger a factory reset
 
 static const char _mqtt_topic_button[] PROGMEM = "%s/button/%d";  // optimize flash usage
 
@@ -237,12 +238,14 @@ void handleButton()
       bool doublePress = buttonWaitTime[b]; //did we have a short press before?
       buttonWaitTime[b] = 0;
 
-      if (b == 0 && dur > 2*WLED_LONG_AP) { //very long press on button 0 (when released)
-        WLED_FS.format();
-        clearEEPROM();
-        doReboot = true;
-      } else if (b == 0 && dur > WLED_LONG_AP) { //long press on button 0 (when released)
-        WLED::instance().initAP(true);
+      if (b == 0 && dur > WLED_LONG_AP) { // long press on button 0 (when released)
+        if (dur > WLED_LONG_FACTORY_RESET) { // factory reset if pressed > 10 seconds
+          WLED_FS.format();
+          clearEEPROM();
+          doReboot = true;
+        } else {
+          WLED::instance().initAP(true);
+        }
       } else if (!buttonLongPressed[b]) { //short press
         //NOTE: this interferes with double click handling in usermods so usermod needs to implement full button handling
         if (b != 1 && !macroDoublePress[b]) { //don't wait for double press on buttons without a default action if no double press macro set
