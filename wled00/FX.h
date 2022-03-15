@@ -609,7 +609,7 @@ class WS2812FX {
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
       targetPalette = CloudColors_p;
-      ablMilliampsMax = 850;
+      ablMilliampsMax = ABL_MILLIAMPS_DEFAULT;
       currentMilliamps = 0;
       timebase = 0;
       resetSegments();
