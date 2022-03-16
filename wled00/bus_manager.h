@@ -588,7 +588,7 @@ class BusManager {
   //utility to get the approx. memory usage of a given BusConfig
   static uint32_t memUsage(BusConfig &bc) {
     uint8_t type = bc.type;
-    uint16_t len = bc.count;
+    uint16_t len = bc.count + bc.skipAmount;
     if (type > 15 && type < 32) {
       #ifdef ESP8266
         if (bc.pins[0] == 3) { //8266 DMA uses 5x the mem
