@@ -60,6 +60,11 @@
   #define DEFAULT_LED_TYPE TYPE_WS2812_RGB
 #endif
 
+#ifndef DEFAULT_LED_COLOR_ORDER
+  #define DEFAULT_LED_COLOR_ORDER COL_ORDER_GRB  //default to GRB
+#endif
+
+
 #if MAX_NUM_SEGMENTS < WLED_MAX_BUSSES
   #error "Max segments must be at least max number of busses!"
 #endif
@@ -87,7 +92,7 @@ void WS2812FX::finalizeInit(void)
       uint16_t start = prevLen;
       uint16_t count = defCounts[(i < defNumCounts) ? i : defNumCounts -1];
       prevLen += count;
-      BusConfig defCfg = BusConfig(DEFAULT_LED_TYPE, defPin, start, count, COL_ORDER_GRB, false, 0, RGBW_MODE_MANUAL_ONLY);
+      BusConfig defCfg = BusConfig(DEFAULT_LED_TYPE, defPin, start, count, DEFAULT_LED_COLOR_ORDER, false, 0, RGBW_MODE_MANUAL_ONLY);
       busses.add(defCfg);
     }
   }
