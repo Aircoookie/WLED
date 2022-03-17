@@ -45,7 +45,7 @@
       } 
     }
 
-    var ws = ws;
+    var ws;
     if (ws && ws.readyState === WebSocket.OPEN) {
       console.info("Peek uses top WS");
       ws.send("{'lv':true}");
