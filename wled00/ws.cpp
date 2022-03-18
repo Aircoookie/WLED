@@ -144,7 +144,7 @@ bool sendLiveLedsWs(uint32_t wsClient)
   buffer[1] = 1; //version
 
   uint16_t pos = 2;
-  for (uint16_t i= 0; pos < bufSize -3; i += n)
+  for (uint16_t i= 0; pos < bufSize -2; i += n)
   {
     uint32_t c = strip.getPixelColor(i);
     buffer[pos++] = qadd8(W(c), R(c)); //R, add white channel to RGB channels as a simple RGBW -> RGB map
