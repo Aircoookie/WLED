@@ -2,6 +2,11 @@
 
 ### Builds after release 0.13.1
 
+#### Build 2203190
+
+-   Fixed `/json/cfg` unable to set busses (#2589)
+-   Fixed Peek with odd LED counts > 255 (#2586)
+
 #### Build 2203160
 
 -   Version bump to v0.13.2-a0 "Toki"
