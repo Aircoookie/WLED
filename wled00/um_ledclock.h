@@ -5,7 +5,7 @@
 #include "beeper.h"
 
 unsigned long Timer::_millis() {
-	return millis();
+    return millis();
 }
 
 static uint16_t beep_startup[] { 3, 440, 100, 0, 20, 880, 100 };
@@ -13,6 +13,8 @@ static uint16_t beep_connected[] { 5, 880, 100, 0, 20, 880, 100, 0, 20, 880, 100
 
 static CRGB selfTestColors[] = { CRGB::Red, CRGB::Green, CRGB::Blue };
 static uint8_t selfTestColorCount = sizeof(selfTestColors) / sizeof(CRGB);
+
+static uint16_t normalizedSensorRading;
 
 uint8_t brightness() {
     static uint16_t values[BRIGHTNESS_SAMPLES];
@@ -27,7 +29,9 @@ uint8_t brightness() {
     i++;
     i %= BRIGHTNESS_SAMPLES;
 
-    uint8_t target = map(total / BRIGHTNESS_SAMPLES, 0, 4095, MIN_BRIGHTNESS, MAX_BRIGHTNESS);
+    normalizedSensorRading = total / BRIGHTNESS_SAMPLES;
+
+    uint8_t target = map(normalizedSensorRading, 0, ADC_MAX_VALUE, MIN_BRIGHTNESS, MAX_BRIGHTNESS);
 
     if (abs(target - current) > BRIGHTNESS_THRESHOLD) {
         current = target;
@@ -160,6 +164,15 @@ public:
 
     void connected() {
         beeper.play(beep_connected);
+    }
+
+    void addToJsonInfo(JsonObject& root) {
+        JsonObject user = root["u"];
+        if (user.isNull()) user = root.createNestedObject("u");
+        JsonArray lightArr = user.createNestedArray("Light sensor");
+        double reading = normalizedSensorRading;
+        lightArr.add((reading / ADC_MAX_VALUE) * ADC_MAX_VOLTAGE);
+        lightArr.add("V");
     }
 
     void handleOverlayDraw() {
