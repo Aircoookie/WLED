@@ -23,7 +23,4 @@
 */
 
 #define MAX_LEDS 58
-
 #define USERMOD_LEDCLOCK
-
-// #define WLED_DEBUG
