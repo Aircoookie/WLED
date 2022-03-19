@@ -656,7 +656,7 @@ void sendSysInfoUDP()
 uint8_t sequenceNumber = 0; // this needs to be shared across all outputs
 
 uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8_t *buffer, uint8_t bri, bool isRGBW)  {
-  if (!interfacesInited || !client[0] || !length) return 1;  // network not initialised or dummy/unset IP address
+  if (!(apActive || interfacesInited) || !client[0] || !length) return 1;  // network not initialised or dummy/unset IP address  031522 ajn added check for ap 
 
   WiFiUDP ddpUdp;
 

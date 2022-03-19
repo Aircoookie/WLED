@@ -119,7 +119,6 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       bool refresh = elm["ref"] | false;
       ledType |= refresh << 7; // hack bit 7 to indicate strip requires off refresh
       uint8_t AWmode = elm[F("rgbwm")] | autoWhiteMode; // backwards compatible
-      s++;
       if (fromFS) {
         BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode);
         mem += BusManager::memUsage(bc);
@@ -129,6 +128,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
         busConfigs[s] = new BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode);
         doInitBusses = true;
       }
+      s++;
     }
     // finalization done in beginStrip()
   }
@@ -458,7 +458,9 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   }
 
   if (fromFS) return needsSave;
+  // if from /json/cfg
   doReboot = doc[F("rb")] | doReboot;
+  if (doInitBusses) return false; // no save needed, will do after bus init in wled.cpp loop
   return (doc["sv"] | true);
 }
 

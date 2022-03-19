@@ -28,7 +28,7 @@ void WLED::reset()
     yield();        // enough time to send response to client
   }
   applyBri();
-  DEBUG_PRINTLN(F("MODULE RESET"));
+  DEBUG_PRINTLN(F("WLED RESET"));
   ESP.restart();
 }
 
@@ -71,7 +71,8 @@ void WLED::loop()
 
   yield();
 
-  if (doReboot) reset();
+  if (doReboot && !doInitBusses) // if busses have to be inited & saved, wait until next iteration
+    reset();
 
   if (doCloseFile) {
     closeFile();
