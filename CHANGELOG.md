@@ -2,6 +2,10 @@
 
 ### Builds after release 0.13.1
 
+#### Build 2203191
+
+-   Fixed sunrise/set calculation (once again)
+
 #### Build 2203190
 
 -   Fixed `/json/cfg` unable to set busses (#2589)
