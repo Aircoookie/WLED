@@ -27,8 +27,8 @@ void WLED::reset()
   while (millis() - dly < 450) {
     yield();        // enough time to send response to client
   }
-  setAllLeds();
-  DEBUG_PRINTLN(F("MODULE RESET"));
+  applyBri();
+  DEBUG_PRINTLN(F("WLED RESET"));
   ESP.restart();
 }
 
@@ -62,18 +62,19 @@ void prepareHostname(char* hostname)
       hostname[pos] = '-';
       pos++;
     }
-      // else do nothing - no leading hyphens and do not include hyphens for all other characters.
-      pC++;
+    // else do nothing - no leading hyphens and do not include hyphens for all other characters.
+    pC++;
+  }
+  // if the hostname is left blank, use the mac address/default mdns name
+  if (pos < 6) {
+    sprintf(hostname + 5, "%*s", 6, escapedMac.c_str() + 6);
+  } else { //last character must not be hyphen
+    hostname[pos] = '\0'; // terminate string
+    while (pos > 0 && hostname[pos -1] == '-') {
+      hostname[pos -1] = '\0';
+      pos--;
     }
-    // if the hostname is left blank, use the mac address/default mdns name
-    if (pos < 6) {
-      sprintf(hostname + 5, "%*s", 6, escapedMac.c_str() + 6);
-    } else { //last character must not be hyphen
-      while (pos > 0 && hostname[pos -1] == '-') {
-        hostname[pos -1] = 0;
-        pos--;
-      }
-    }
+  }
 }
 
 //handle Ethernet connection event
@@ -151,7 +152,7 @@ void WLED::loop()
 
   yield();
 
-  if (doReboot)
+  if (doReboot && !doInitBusses) // if busses have to be inited & saved, wait until next iteration
     reset();
   if (doCloseFile) {
     closeFile();
@@ -177,7 +178,7 @@ void WLED::loop()
 
     yield();
 
-    if (!offMode || strip.isOffRefreshRequred)
+    if (!offMode || strip.isOffRefreshRequired())
       strip.service();
 #ifdef ESP8266
     else if (!noWifiSleep)
@@ -573,7 +574,7 @@ void WLED::initConnection()
   if (staticIP[0] != 0 && staticGateway[0] != 0) {
     WiFi.config(staticIP, staticGateway, staticSubnet, IPAddress(1, 1, 1, 1));
   } else {
-    WiFi.config(0U, 0U, 0U);
+    WiFi.config(IPAddress((uint32_t)0), IPAddress((uint32_t)0), IPAddress((uint32_t)0));
   }
 
   lastReconnectAttempt = millis();

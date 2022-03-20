@@ -111,7 +111,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
       return;  // nothing to do
       break;
 
-    case DMX_MODE_SINGLE_RGB:
+    case DMX_MODE_SINGLE_RGB: // RGB only
       if (uni != e131Universe) return;
       if (dmxChannels-DMXAddress+1 < 3) return;
       realtimeLock(realtimeTimeoutMs, mde);
@@ -121,7 +121,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
         setRealtimePixel(i, e131_data[DMXAddress+0], e131_data[DMXAddress+1], e131_data[DMXAddress+2], wChannel);
       break;
 
-    case DMX_MODE_SINGLE_DRGB:
+    case DMX_MODE_SINGLE_DRGB: // Dimmer + RGB
       if (uni != e131Universe) return;
       if (dmxChannels-DMXAddress+1 < 4) return;
       realtimeLock(realtimeTimeoutMs, mde);
@@ -130,15 +130,19 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
       if (DMXOldDimmer != e131_data[DMXAddress+0]) {
         DMXOldDimmer = e131_data[DMXAddress+0];
         bri = e131_data[DMXAddress+0];
-        strip.setBrightness(bri);
+        strip.setBrightness(bri, true);
       }
       for (uint16_t i = 0; i < totalLen; i++)
         setRealtimePixel(i, e131_data[DMXAddress+1], e131_data[DMXAddress+2], e131_data[DMXAddress+3], wChannel);
       break;
 
-    case DMX_MODE_EFFECT:
+    case DMX_MODE_EFFECT: // Length 1: Apply Preset ID, length 11-13: apply effect config
       if (uni != e131Universe) return;
-      if (dmxChannels-DMXAddress+1 < 11) return;
+      if (dmxChannels-DMXAddress+1 < 11) {
+        if (dmxChannels-DMXAddress+1 > 1) return;
+        applyPreset(e131_data[DMXAddress+0], CALL_MODE_NOTIFICATION);
+        return;
+      }
       if (DMXOldDimmer != e131_data[DMXAddress+0]) {
         DMXOldDimmer = e131_data[DMXAddress+0];
         bri = e131_data[DMXAddress+0];
@@ -180,7 +184,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
           previousLeds = 0;
           // First DMX address is dimmer in DMX_MODE_MULTIPLE_DRGB mode.
           if (DMXMode == DMX_MODE_MULTIPLE_DRGB) {
-            strip.setBrightness(e131_data[dmxOffset++]);
+            strip.setBrightness(e131_data[dmxOffset++], true);
           }
         } else {
           // All subsequent universes start at the first channel.

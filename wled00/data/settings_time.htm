@@ -6,6 +6,7 @@
 	<title>Time Settings</title>
 	<script>
     var d=document;
+		var el=false;
 		var ms=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 		var cals = 'style="font-size:27px;margin-top:-6px;cursor:pointer"'; //hack as to not repeat CSS on all pages
 	function H()
@@ -31,26 +32,11 @@
 	{
 		var t = gId("WD"+i);
 		t.style.display = t.style.display!=="none" ? "none" : "";
-		o.innerHTML = t.style.display==="none" ? "&#128467;" : "&#x2715;";
+		o.innerHTML = t.style.display==="none" ? "&#128197;" : "&#x2715;";
 	}
 	function Cs()
 	{
-		gId("cac").style.display="none";
-		gId("coc").style.display="block";
-		gId("ccc").style.display="none";
-		if (gId("ca").selected)
-		{
-			gId("cac").style.display="block";
-		}
-		if (gId("cc").selected)
-		{
-			gId("coc").style.display="none";
-			gId("ccc").style.display="block";
-		}
-		if (gId("cn").selected)
-		{
-			gId("coc").style.display="none";
-		}
+		gId("cac").style.display=(gN("OL").checked)?"block":"none";
 	}
 	function BTa()
 	{
@@ -77,7 +63,7 @@
 <td>Sunrise<input name="H8" value="255" type="hidden"></td>
 <td><input name="N8" class="xs" type="number" min="-59" max="59"></td>
 <td><input name="T8" class="s" type="number" min="0" max="250"></td>
-<td><div onclick="expand(this,8)" ${cals}>&#128467;</div></td></tr><tr><td colspan=5>`;
+<td><div id="CB8" onclick="expand(this,8)" ${cals}>&#128467;</div></td></tr><tr><td colspan=5>`;
 		ih+=`<div id="WD8"style="display:none;"><table style="width:100%%;"><tr><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr><tr>`;
 		for (j=1;j<8;j++) ih+=`<td><input id="W8${j}" type="checkbox"></td>`;
 		ih+="</tr></table><hr></div></td></tr>";
@@ -85,7 +71,7 @@
 <td>Sunset<input name="H9" value="255" type="hidden"></td>
 <td><input name="N9" class="xs" type="number" min="-59" max="59"></td>
 <td><input name="T9" class="s" type="number" min="0" max="250"></td>
-<td><div onclick="expand(this,9)" ${cals}>&#128467;</div></td></tr><tr><td colspan=5>`;
+<td><div id="CB9" onclick="expand(this,9)" ${cals}>&#128467;</div></td></tr><tr><td colspan=5>`;
 		ih+=`<div id="WD9" style="display:none;"><table style="width:100%%;"><tr><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr><tr>`;
 		for (j=1;j<8;j++) ih+=`<td><input id="W9${j}" type="checkbox"></td>`;
 		ih+="</tr></table><hr></div></td></tr>";
@@ -99,7 +85,7 @@
 			for(j=0;j<8;j++) {
 				gId("W"+i+j).checked=wd>>j&1;
 			}
-			if ((wd&127) != 127 || (i<8 && (gN("M"+i).value != 1 || gN("D"+i).value != 1 || gN("P"+i).value != 12 || gN("E"+i).value != 31))) {
+			if ((wd&254) != 254 || (i<8 && (gN("M"+i).value != 1 || gN("D"+i).value != 1 || gN("P"+i).value != 12 || gN("E"+i).value != 31))) {
 				expand(gId("CB"+i),i); //expand macros with custom DOW or date range set
 			}
 		}
@@ -129,6 +115,20 @@
 		td.innerHTML = `<input name="ML${b}" type="number" class="s" min="0" max="250" value="${l}" required>`;
 		td = tr.insertCell(3);
 		td.innerHTML = `<input name="MD${b}" type="number" class="s" min="0" max="250" value="${d}" required>`;
+	}
+	function getLoc() {
+		if (!el) {
+			window.addEventListener("message", (event) => {
+				if (event.origin !== "https://locate.wled.me") return;
+				if (event.data instanceof Object) {
+					d.Sf.LT.value = event.data.lat;
+					d.Sf.LN.value = event.data.lon;
+					updLoc();
+				}
+			}, false);
+			el = true;
+		}
+		window.open("https://locate.wled.me","_blank");
 	}
 	function updLoc(i) {
 		if (parseFloat(d.Sf.LT.value)<0) { d.Sf.LTR.value = "S"; d.Sf.LT.value = -1*parseFloat(d.Sf.LT.value); } else d.Sf.LTR.value = "N";
@@ -179,26 +179,17 @@
 		UTC offset: <input name="UO" type="number" min="-65500" max="65500" required> seconds (max. 18 hours)<br>
 		Current local time is <span class="times">unknown</span>.<br>
 		Latitude: <select name="LTR"><option value="N">N</option><option value="S">S</option></select><input name="LT" type="number" class="xl" min="0" max="66.6" step="0.01"><br>
-		Longitude: <select name="LNR"><option value="E">E</option><option value="W">W</option></select><input name="LN" type="number" class="xl" min="0" max="180" step="0.01">
+		Longitude: <select name="LNR"><option value="E">E</option><option value="W">W</option></select><input name="LN" type="number" class="xl" min="0" max="180" step="0.01"><br>
+		<button type="button" id="locbtn" onclick="getLoc()">Get location</button>
+		<div><i>(opens new tab, only works in browser)</i></div>
 		<div id="sun" class="times"></div>
 		<h3>Clock</h3>
-		Clock Overlay:
-		<select name="OL" onchange="Cs()">
-			<option value="0" id="cn" selected>None</option>
-			<option value="1" id="ca">Analog Clock</option>
-			<option value="2">Single Digit Clock</option>
-			<option value="3" id="cc">Cronixie Clock</option>
-		</select><br>
-		<div id="coc">
-		First LED: <input name="O1" type="number" min="0" max="255" required> Last LED: <input name="O2" type="number" min="0" max="255" required><br>
-			<div id="cac">
+		Analog Clock overlay: <input type="checkbox" name="OL" onchange="Cs()"><br>
+		<div id="cac">
+			First LED: <input name="O1" type="number" min="0" max="255" required> Last LED: <input name="O2" type="number" min="0" max="255" required><br>
 			12h LED: <input name="OM" type="number" min="0" max="255" required><br>
-			Show 5min marks: <input type="checkbox" name="O5"><br></div>
+			Show 5min marks: <input type="checkbox" name="O5"><br>
 			Seconds (as trail): <input type="checkbox" name="OS"><br>
-		</div>
-		<div id="ccc">
-		Cronixie Display: <input name="CX" maxlength="6"><br>
-		Cronixie Backlight: <input type="checkbox" name="CB"><br>
 		</div>
 		Countdown Mode: <input type="checkbox" name="CE"><br>
 		Countdown Goal:<br>
