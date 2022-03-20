@@ -192,7 +192,7 @@
 #define BTN_TYPE_ANALOG_INVERTED  8
 
 //Ethernet board types
-#define WLED_NUM_ETH_TYPES        7
+#define WLED_NUM_ETH_TYPES        8
 
 #define WLED_ETH_NONE             0
 #define WLED_ETH_WT32_ETH01       1
