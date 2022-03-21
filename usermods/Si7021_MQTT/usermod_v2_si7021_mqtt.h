@@ -48,19 +48,19 @@ private:
 
   void _mqttInitialize()
   {
-    mqttTemperatureTopic = String(mqttDeviceTopic) + "/temperature";
-    mqttHumidityTopic = String(mqttDeviceTopic) + "/humidity";
-    mqttHeatIndexTopic = String(mqttDeviceTopic) + "/heat_index";
-    mqttDewPointTopic = String(mqttDeviceTopic) + "/dew_point";
-    mqttAbsoluteHumidityTopic = String(mqttDeviceTopic) + "/absolute_humidity";
+    mqttTemperatureTopic = String(mqttDeviceTopic) + "/si7021_temperature";
+    mqttHumidityTopic = String(mqttDeviceTopic) + "/si7021_humidity";
+    mqttHeatIndexTopic = String(mqttDeviceTopic) + "/si7021_heat_index";
+    mqttDewPointTopic = String(mqttDeviceTopic) + "/si7021_dew_point";
+    mqttAbsoluteHumidityTopic = String(mqttDeviceTopic) + "/si7021_absolute_humidity";
 
     String t = String("homeassistant/sensor/") + mqttClientID + "/temperature/config";
 
     _createMqttSensor("temperature", mqttTemperatureTopic, "temperature", "°C");
     _createMqttSensor("humidity", mqttHumidityTopic, "humidity", "%");
-    _createMqttSensor("heat_index", mqttHeatIndexTopic, "heat_index", "");
-    _createMqttSensor("dew_point", mqttDewPointTopic, "dew_point", "°C");
-    _createMqttSensor("absolute_humidity", mqttAbsoluteHumidityTopic, "absolute_humidity", "g/m³");
+    _createMqttSensor("heat_index", mqttHeatIndexTopic, "", "");
+    _createMqttSensor("dew_point", mqttDewPointTopic, "", "°C");
+    _createMqttSensor("absolute_humidity", mqttAbsoluteHumidityTopic, "", "g/m³");
   }
 
   void _createMqttSensor(const String &name, const String &topic, const String &deviceClass, const String &unitOfMeasurement)
@@ -91,7 +91,7 @@ private:
     // Serial.println(t);
     // Serial.println(temp);
 
-    mqtt->publish(t.c_str(), 0, true, temp.c_str());
+    mqtt->publish(t.c_str(), 0, false, temp.c_str());
   }
 
   void _updateSensorData()
@@ -163,11 +163,11 @@ public:
         // Create string populated with user defined device topic from the UI,
         // and the read temperature, humidity and pressure.
         // Then publish to MQTT server.
-        mqtt->publish(mqttTemperatureTopic.c_str(), 0, true, String(sensorTemperature).c_str());
-        mqtt->publish(mqttHumidityTopic.c_str(), 0, true, String(sensorHumidity).c_str());
-        mqtt->publish(mqttHeatIndexTopic.c_str(), 0, true, String(sensorHeatIndex).c_str());
-        mqtt->publish(mqttDewPointTopic.c_str(), 0, true, String(sensorDewPoint).c_str());
-        mqtt->publish(mqttAbsoluteHumidityTopic.c_str(), 0, true, String(sensorAbsoluteHumidity).c_str());
+        mqtt->publish(mqttTemperatureTopic.c_str(), 0, false, String(sensorTemperature).c_str());
+        mqtt->publish(mqttHumidityTopic.c_str(), 0, false, String(sensorHumidity).c_str());
+        mqtt->publish(mqttHeatIndexTopic.c_str(), 0, false, String(sensorHeatIndex).c_str());
+        mqtt->publish(mqttDewPointTopic.c_str(), 0, false, String(sensorDewPoint).c_str());
+        mqtt->publish(mqttAbsoluteHumidityTopic.c_str(), 0, false, String(sensorAbsoluteHumidity).c_str());
       }
       else
       {
