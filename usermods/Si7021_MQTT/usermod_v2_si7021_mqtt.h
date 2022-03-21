@@ -139,8 +139,7 @@ public:
 
     if (tempTimer > nextMeasure)
     {
-      // nextMeasure = tempTimer + 60000; // Schedule next measure in 60 seconds
-      nextMeasure = tempTimer + 10000; // debug
+      nextMeasure = tempTimer + 60000; // Schedule next measure in 60 seconds
 
       if (!initialized)
       {
