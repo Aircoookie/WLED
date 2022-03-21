@@ -3,17 +3,10 @@
 // this is remixed from usermod_v2_SensorsToMqtt.h (sensors_to_mqtt usermod)
 
 #include "wled.h"
-// #include <Arduino.h>
-// #include <Wire.h>
-// #include <Adafruit_Sensor.h>
-// #include <Adafruit_BMP280.h>
-// #include <Adafruit_CCS811.h>
 #include <Adafruit_Si7021.h>
 #include <EnvironmentCalculations.h> // BME280 extended measurements
 
-// Adafruit_BMP280 bmp;
 Adafruit_Si7021 si7021;
-// Adafruit_CCS811 ccs811;
 
 #ifdef ARDUINO_ARCH_ESP32 //ESP32 boards
 uint8_t SCL_PIN = 22;
@@ -23,7 +16,7 @@ uint8_t SCL_PIN = 5;
 uint8_t SDA_PIN = 4;
 #endif
 
-class Si7021_MQTT : public Usermod
+class Si7021_MQTT_HA : public Usermod
 {
 private:
   bool initialized = false;
@@ -52,7 +45,7 @@ private:
   void _initialize()
   {
     initialized = si7021.begin();
-    Serial.printf("Si7021_MQTT: initialized = %d\n", initialized);
+    Serial.printf("Si7021_MQTT_HA: initialized = %d\n", initialized);
   }
 
   void _mqttInitialize()
@@ -101,7 +94,7 @@ private:
 
     String payload;
     serializeJson(doc, payload);
-    // Serial.println("Si7021_MQTT:");
+    // Serial.println("Si7021_MQTT_HA:");
     // Serial.println(t);
     // Serial.println(temp);
 
@@ -120,7 +113,7 @@ private:
 
 
     // char ch = 248; // "°"
-    Serial.print("Si7021_MQTT: Temperature: ");
+    Serial.print("Si7021_MQTT_HA: Temperature: ");
     Serial.print(sensorTemperature, 2);
     Serial.print("\tHumidity: ");
     Serial.print(sensorHumidity, 2);
@@ -162,9 +155,9 @@ public:
   void setup()
   {
     // if (enabled) {
-      Serial.println("Si7021_MQTT: Starting!");
+      Serial.println("Si7021_MQTT_HA: Starting!");
       Wire.begin(SDA_PIN, SCL_PIN);
-      Serial.println("Si7021_MQTT: Initializing sensors.. ");
+      Serial.println("Si7021_MQTT_HA: Initializing sensors.. ");
       _initialize();
     // }
   }
@@ -185,7 +178,7 @@ public:
 
       if (!initialized)
       {
-        Serial.println("Si7021_MQTT: Error! Sensors not initialized in loop()!");
+        Serial.println("Si7021_MQTT_HA: Error! Sensors not initialized in loop()!");
         _initialize();
         return; // lets try again next loop
       }
@@ -212,7 +205,7 @@ public:
       }
       else
       {
-        Serial.println("Si7021_MQTT: Missing MQTT connection. Not publishing data");
+        Serial.println("Si7021_MQTT_HA: Missing MQTT connection. Not publishing data");
         mqttInitialized = false;
       }
     }
@@ -220,7 +213,7 @@ public:
 };
 
 // strings to reduce flash memory usage (used more than twice)
-const char Si7021_MQTT::_name[]                   PROGMEM = "Si7021 MQTT (Home Assistant)";
-const char Si7021_MQTT::_enabled[]                PROGMEM = "enabled";
-const char Si7021_MQTT::_sendAdditionalSensors[]  PROGMEM = "Send Dew Point, Abs. Humidity and Heat Index";
-const char Si7021_MQTT::_haAutoDiscovery[]        PROGMEM = "Home Assistant MQTT Auto-Discovery";
+const char Si7021_MQTT_HA::_name[]                   PROGMEM = "Si7021 MQTT (Home Assistant)";
+const char Si7021_MQTT_HA::_enabled[]                PROGMEM = "enabled";
+const char Si7021_MQTT_HA::_sendAdditionalSensors[]  PROGMEM = "send Dew Point, Abs. Humidity and Heat Index";
+const char Si7021_MQTT_HA::_haAutoDiscovery[]        PROGMEM = "Home Assistant MQTT Auto-Discovery";
