@@ -39,6 +39,15 @@ private:
   String mqttDewPointTopic = "";
   String mqttAbsoluteHumidityTopic = "";
   unsigned long nextMeasure = 0;
+  bool enabled = false;
+  bool haAutoDiscovery = true;
+  bool sendAdditionalSensors = true;
+
+  // strings to reduce flash memory usage (used more than twice)
+  static const char _name[];
+  static const char _enabled[];
+  static const char _sendAdditionalSensors[];
+  static const char _haAutoDiscovery[];
 
   void _initialize()
   {
@@ -124,12 +133,40 @@ private:
   }
 
 public:
+  void addToConfig(JsonObject& root)
+  {
+    JsonObject top = root.createNestedObject(FPSTR(_name));
+    // top["great"] = userVar0; //save these vars persistently whenever settings are saved
+    top[FPSTR(_enabled)] = enabled;
+    top[FPSTR(_sendAdditionalSensors)] = sendAdditionalSensors;
+    top[FPSTR(_haAutoDiscovery)] = haAutoDiscovery;
+  }
+
+  bool readFromConfig(JsonObject& root)
+  {
+    // default settings values could be set here (or below using the 3-argument getJsonValue()) instead of in the class definition or constructor
+    // setting them inside readFromConfig() is slightly more robust, handling the rare but plausible use case of single value being missing after boot (e.g. if the cfg.json was manually edited and a value was removed)
+
+    JsonObject top = root[FPSTR(_name)];
+
+    bool configComplete = !top.isNull();
+
+    // configComplete &= getJsonValue(top["great"], userVar0);
+    configComplete &= getJsonValue(top[FPSTR(_enabled)], enabled);
+    configComplete &= getJsonValue(top[FPSTR(_sendAdditionalSensors)], sendAdditionalSensors);
+    configComplete &= getJsonValue(top[FPSTR(_haAutoDiscovery)], haAutoDiscovery);
+
+    return configComplete;
+  }
+
   void setup()
   {
-    Serial.println("Si7021_MQTT: Starting!");
-    Wire.begin(SDA_PIN, SCL_PIN);
-    Serial.println("Si7021_MQTT: Initializing sensors.. ");
-    _initialize();
+    // if (enabled) {
+      Serial.println("Si7021_MQTT: Starting!");
+      Wire.begin(SDA_PIN, SCL_PIN);
+      Serial.println("Si7021_MQTT: Initializing sensors.. ");
+      _initialize();
+    // }
   }
 
   // gets called every time WiFi is (re-)connected.
@@ -181,3 +218,9 @@ public:
     }
   }
 };
+
+// strings to reduce flash memory usage (used more than twice)
+const char Si7021_MQTT::_name[]                   PROGMEM = "Si7021 MQTT (Home Assistant)";
+const char Si7021_MQTT::_enabled[]                PROGMEM = "enabled";
+const char Si7021_MQTT::_sendAdditionalSensors[]  PROGMEM = "Send Dew Point, Abs. Humidity and Heat Index";
+const char Si7021_MQTT::_haAutoDiscovery[]        PROGMEM = "Home Assistant MQTT Auto-Discovery";
