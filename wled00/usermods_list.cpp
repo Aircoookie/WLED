@@ -112,6 +112,10 @@
 #include "../usermods/quinled-an-penta/quinled-an-penta.h"
 #endif
 
+#ifdef USERMOD_SI7021_MQTT
+#include "../usermods/Si7021_MQTT/usermod_v2_si7021_mqtt.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -210,5 +214,9 @@ void registerUsermods()
 
   #ifdef QUINLED_AN_PENTA
   usermods.add(new QuinLEDAnPentaUsermod());
+  #endif
+
+  #ifdef USERMOD_SI7021_MQTT
+  usermods.add(new Si7021_MQTT());
   #endif
 }
