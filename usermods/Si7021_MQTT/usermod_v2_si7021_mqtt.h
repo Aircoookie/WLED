@@ -114,7 +114,7 @@ private:
     Serial.print(sensorHeatIndex, 2);
     Serial.print("\tDew Point: ");
     Serial.print(sensorDewPoint, 2);
-    Serial.print("\tAbsolute tHumidity: ");
+    Serial.print("\tAbsolute Humidity: ");
     Serial.println(sensorAbsoluteHumidity, 2);
   }
 
