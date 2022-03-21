@@ -16,4 +16,5 @@ Add to `lib_deps` in platformio.ini:
 
 ```
 adafruit/Adafruit Si7021 Library @ 1.4.0
+BME280@~3.0.0
 ```
