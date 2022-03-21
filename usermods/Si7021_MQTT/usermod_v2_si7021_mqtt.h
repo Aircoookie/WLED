@@ -9,6 +9,7 @@
 // #include <Adafruit_BMP280.h>
 // #include <Adafruit_CCS811.h>
 #include <Adafruit_Si7021.h>
+#include <EnvironmentCalculations.h> // BME280 extended measurements
 
 // Adafruit_BMP280 bmp;
 Adafruit_Si7021 si7021;
@@ -27,10 +28,16 @@ class Si7021_MQTT : public Usermod
 private:
   bool initialized = false;
   bool mqttInitialized = false;
-  float SensorTemperature = 0;
-  float SensorHumidity = 0;
+  float sensorTemperature = 0;
+  float sensorHumidity = 0;
+  float sensorHeatIndex = 0;
+  float sensorDewPoint = 0;
+  float sensorAbsoluteHumidity= 0;
   String mqttTemperatureTopic = "";
   String mqttHumidityTopic = "";
+  String mqttHeatIndexTopic = "";
+  String mqttDewPointTopic = "";
+  String mqttAbsoluteHumidityTopic = "";
   unsigned long nextMeasure = 0;
 
   void _initialize()
@@ -43,11 +50,17 @@ private:
   {
     mqttTemperatureTopic = String(mqttDeviceTopic) + "/temperature";
     mqttHumidityTopic = String(mqttDeviceTopic) + "/humidity";
+    mqttHeatIndexTopic = String(mqttDeviceTopic) + "/heat_index";
+    mqttDewPointTopic = String(mqttDeviceTopic) + "/dew_point";
+    mqttAbsoluteHumidityTopic = String(mqttDeviceTopic) + "/absolute_humidity";
 
     String t = String("homeassistant/sensor/") + mqttClientID + "/temperature/config";
 
     _createMqttSensor("temperature", mqttTemperatureTopic, "temperature", "°C");
     _createMqttSensor("humidity", mqttHumidityTopic, "humidity", "%");
+    _createMqttSensor("heat_index", mqttHeatIndexTopic, "heat_index", "");
+    _createMqttSensor("dew_point", mqttDewPointTopic, "dew_point", "°C");
+    _createMqttSensor("absolute_humidity", mqttAbsoluteHumidityTopic, "absolute_humidity", "g/m³");
   }
 
   void _createMqttSensor(const String &name, const String &topic, const String &deviceClass, const String &unitOfMeasurement)
@@ -83,14 +96,26 @@ private:
 
   void _updateSensorData()
   {
-    SensorTemperature = si7021.readTemperature();
-    SensorHumidity = si7021.readHumidity();
+    sensorTemperature = si7021.readTemperature();
+    sensorHumidity = si7021.readHumidity();
+
+    EnvironmentCalculations::TempUnit envTempUnit(EnvironmentCalculations::TempUnit_Celsius);
+    sensorHeatIndex = EnvironmentCalculations::HeatIndex(sensorTemperature, sensorHumidity, envTempUnit);
+    sensorDewPoint = EnvironmentCalculations::DewPoint(sensorTemperature, sensorHumidity, envTempUnit);
+    sensorAbsoluteHumidity = EnvironmentCalculations::AbsoluteHumidity(sensorTemperature, sensorHumidity, envTempUnit);
+
 
     // char ch = 248; // "°"
     Serial.print("Si7021_MQTT: Temperature: ");
-    Serial.print(SensorTemperature, 2);
+    Serial.print(sensorTemperature, 2);
     Serial.print("\tHumidity: ");
-    Serial.println(SensorHumidity, 2);
+    Serial.print(sensorHumidity, 2);
+    Serial.print("\tHeat Index: ");
+    Serial.print(sensorHeatIndex, 2);
+    Serial.print("\tDew Point: ");
+    Serial.print(sensorDewPoint, 2);
+    Serial.print("\tAbsolute tHumidity: ");
+    Serial.println(sensorAbsoluteHumidity, 2);
   }
 
 public:
@@ -138,8 +163,11 @@ public:
         // Create string populated with user defined device topic from the UI,
         // and the read temperature, humidity and pressure.
         // Then publish to MQTT server.
-        mqtt->publish(mqttTemperatureTopic.c_str(), 0, true, String(SensorTemperature).c_str());
-        mqtt->publish(mqttHumidityTopic.c_str(), 0, true, String(SensorHumidity).c_str());
+        mqtt->publish(mqttTemperatureTopic.c_str(), 0, true, String(sensorTemperature).c_str());
+        mqtt->publish(mqttHumidityTopic.c_str(), 0, true, String(sensorHumidity).c_str());
+        mqtt->publish(mqttHeatIndexTopic.c_str(), 0, true, String(sensorHeatIndex).c_str());
+        mqtt->publish(mqttDewPointTopic.c_str(), 0, true, String(sensorDewPoint).c_str());
+        mqtt->publish(mqttAbsoluteHumidityTopic.c_str(), 0, true, String(sensorAbsoluteHumidity).c_str());
       }
       else
       {
