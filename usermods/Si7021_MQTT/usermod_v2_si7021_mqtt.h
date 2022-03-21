@@ -56,21 +56,26 @@ private:
 
     String t = String("homeassistant/sensor/") + mqttClientID + "/temperature/config";
 
-    _createMqttSensor("temperature", mqttTemperatureTopic, "temperature", "°C");
-    _createMqttSensor("humidity", mqttHumidityTopic, "humidity", "%");
-    _createMqttSensor("heat_index", mqttHeatIndexTopic, "", "");
-    _createMqttSensor("dew_point", mqttDewPointTopic, "", "°C");
-    _createMqttSensor("absolute_humidity", mqttAbsoluteHumidityTopic, "", "g/m³");
+    _createMqttSensor("temperature", "Temperature", mqttTemperatureTopic, "temperature", "°C");
+    _createMqttSensor("humidity", "Humidity", mqttHumidityTopic, "humidity", "%");
+    _createMqttSensor("heat_index", "Heat Index", mqttHeatIndexTopic, "", "");
+    _createMqttSensor("dew_point", "Dew Point", mqttDewPointTopic, "", "°C");
+    _createMqttSensor("absolute_humidity", "Absolute Humidity", mqttAbsoluteHumidityTopic, "", "g/m³");
   }
 
-  void _createMqttSensor(const String &name, const String &topic, const String &deviceClass, const String &unitOfMeasurement)
+  void _createMqttSensor(
+    const String &name, 
+    const String &friendly_name, 
+    const String &state_topic, 
+    const String &deviceClass, 
+    const String &unitOfMeasurement)
   {
-    String t = String("homeassistant/sensor/") + mqttClientID + "/" + name + "/config";
+    String topic = String("homeassistant/sensor/") + mqttClientID + "/" + name + "/config";
 
     StaticJsonDocument<300> doc;
 
-    doc["name"] = name;
-    doc["state_topic"] = topic;
+    doc["name"] = String(serverDescription) + " " + friendly_name;
+    doc["state_topic"] = state_topic;
     doc["unique_id"] = String(mqttClientID) + name;
     if (unitOfMeasurement != "")
       doc["unit_of_measurement"] = unitOfMeasurement;
@@ -79,19 +84,19 @@ private:
     doc["expire_after"] = 1800;
 
     JsonObject device = doc.createNestedObject("device"); // attach the sensor to the same device
-    device["identifiers"] = String("wled-sensor-") + mqttClientID;
-    device["manufacturer"] = "Aircoookie";
+    device["name"] = String(serverDescription);
     device["model"] = "WLED";
+    device["manufacturer"] = "Aircoookie";
+    device["identifiers"] = String("wled-") + String(serverDescription);
     device["sw_version"] = VERSION;
-    device["name"] = mqttClientID;
 
-    String temp;
-    serializeJson(doc, temp);
+    String payload;
+    serializeJson(doc, payload);
     // Serial.println("Si7021_MQTT:");
     // Serial.println(t);
     // Serial.println(temp);
 
-    mqtt->publish(t.c_str(), 0, false, temp.c_str());
+    mqtt->publish(topic.c_str(), 0, false, payload.c_str());
   }
 
   void _updateSensorData()
