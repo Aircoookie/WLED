@@ -7,7 +7,7 @@ Some text describing this.
 Add to `build_flags` in platformio.ini:
 
 ```
-   -D USERMOD_SI7021_MQTT_HA_HA
+   -D USERMOD_SI7021_MQTT_HA
 ```
 
 ## Dependencies

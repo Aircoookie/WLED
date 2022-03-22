@@ -113,7 +113,7 @@
 #endif
 
 #ifdef USERMOD_SI7021_MQTT_HA
-#include "../usermods/Si7021_MQTT_HA/si7021_mqtt_ha.h"
+#include "../usermods/Si7021_MQTT_HA/usermod_si7021_mqtt_ha.h"
 #endif
 
 void registerUsermods()

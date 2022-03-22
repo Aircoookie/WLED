@@ -26,11 +26,11 @@ class Si7021_MQTT_HA : public Usermod
     float sensorHeatIndex = 0;
     float sensorDewPoint = 0;
     float sensorAbsoluteHumidity= 0;
-    String mqttTemperatureTopic = "";
-    String mqttHumidityTopic = "";
-    String mqttHeatIndexTopic = "";
-    String mqttDewPointTopic = "";
-    String mqttAbsoluteHumidityTopic = "";
+    String mqttTemperatureTopic = String(mqttDeviceTopic) + "/si7021_temperature";
+    String mqttHumidityTopic = String(mqttDeviceTopic) + "/si7021_humidity";
+    String mqttHeatIndexTopic = String(mqttDeviceTopic) + "/si7021_heat_index";
+    String mqttDewPointTopic = String(mqttDeviceTopic) + "/si7021_dew_point";
+    String mqttAbsoluteHumidityTopic = String(mqttDeviceTopic) + "/si7021_absolute_humidity";
     unsigned long nextMeasure = 0;
     bool enabled = false;
     bool haAutoDiscovery = true;
@@ -50,12 +50,6 @@ class Si7021_MQTT_HA : public Usermod
 
     void _initializeMqtt()
     {
-      mqttTemperatureTopic = String(mqttDeviceTopic) + "/si7021_temperature";
-      mqttHumidityTopic = String(mqttDeviceTopic) + "/si7021_humidity";
-      mqttHeatIndexTopic = String(mqttDeviceTopic) + "/si7021_heat_index";
-      mqttDewPointTopic = String(mqttDeviceTopic) + "/si7021_dew_point";
-      mqttAbsoluteHumidityTopic = String(mqttDeviceTopic) + "/si7021_absolute_humidity";
-
       if (haAutoDiscovery) {
         _publishHAMqttSensor("temperature", "Temperature", mqttTemperatureTopic, "temperature", "°C");
         _publishHAMqttSensor("humidity", "Humidity", mqttHumidityTopic, "humidity", "%");
@@ -214,6 +208,11 @@ class Si7021_MQTT_HA : public Usermod
           mqttInitialized = false;
         }
       }
+    }
+    
+    uint16_t getId()
+    {
+      return USERMOD_ID_SI7021_MQTT_HA;
     }
 };
 

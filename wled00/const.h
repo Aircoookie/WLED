@@ -72,6 +72,7 @@
 #define USERMOD_ID_QUINLED_AN_PENTA      23     //Usermod "quinled-an-penta.h"
 #define USERMOD_ID_SSDR                  24     //Usermod "usermod_v2_seven_segment_display_reloaded.h"
 #define USERMOD_ID_CRONIXIE              25     //Usermod "usermod_cronixie.h"
+#define USERMOD_ID_SI7021_MQTT_HA        26     //Usermod "usermod_si7021_mqtt_ha.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
