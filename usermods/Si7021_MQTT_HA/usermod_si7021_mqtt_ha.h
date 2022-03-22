@@ -19,18 +19,18 @@ uint8_t SDA_PIN = 4;
 class Si7021_MQTT_HA : public Usermod
 {
   private:
-    bool initialized = false;
+    bool sensorInitialized = false;
     bool mqttInitialized = false;
     float sensorTemperature = 0;
     float sensorHumidity = 0;
     float sensorHeatIndex = 0;
     float sensorDewPoint = 0;
     float sensorAbsoluteHumidity= 0;
-    String mqttTemperatureTopic = String(mqttDeviceTopic) + "/si7021_temperature";
-    String mqttHumidityTopic = String(mqttDeviceTopic) + "/si7021_humidity";
-    String mqttHeatIndexTopic = String(mqttDeviceTopic) + "/si7021_heat_index";
-    String mqttDewPointTopic = String(mqttDeviceTopic) + "/si7021_dew_point";
-    String mqttAbsoluteHumidityTopic = String(mqttDeviceTopic) + "/si7021_absolute_humidity";
+    String mqttTemperatureTopic = "";
+    String mqttHumidityTopic = "";
+    String mqttHeatIndexTopic = "";
+    String mqttDewPointTopic = "";
+    String mqttAbsoluteHumidityTopic = "";
     unsigned long nextMeasure = 0;
     bool enabled = false;
     bool haAutoDiscovery = true;
@@ -44,12 +44,22 @@ class Si7021_MQTT_HA : public Usermod
 
     void _initializeSensor()
     {
-      initialized = si7021.begin();
-      Serial.printf("Si7021_MQTT_HA: initialized = %d\n", initialized);
+      sensorInitialized = si7021.begin();
+      Serial.printf("Si7021_MQTT_HA: sensorInitialized = %d\n", sensorInitialized);
     }
 
     void _initializeMqtt()
     {
+      mqttTemperatureTopic = String(mqttDeviceTopic) + "/si7021_temperature";
+      mqttHumidityTopic = String(mqttDeviceTopic) + "/si7021_humidity";
+      mqttHeatIndexTopic = String(mqttDeviceTopic) + "/si7021_heat_index";
+      mqttDewPointTopic = String(mqttDeviceTopic) + "/si7021_dew_point";
+      mqttAbsoluteHumidityTopic = String(mqttDeviceTopic) + "/si7021_absolute_humidity";
+
+      // Update and publish sensor data
+      _updateSensorData();
+      _publishSensorData();
+
       if (haAutoDiscovery) {
         _publishHAMqttSensor("temperature", "Temperature", mqttTemperatureTopic, "temperature", "°C");
         _publishHAMqttSensor("humidity", "Humidity", mqttHumidityTopic, "humidity", "%");
@@ -59,6 +69,8 @@ class Si7021_MQTT_HA : public Usermod
           _publishHAMqttSensor("absolute_humidity", "Absolute Humidity", mqttAbsoluteHumidityTopic, "", "g/m³");
         }
       }
+      
+      mqttInitialized = true;
     }
 
     void _publishHAMqttSensor(
@@ -68,33 +80,35 @@ class Si7021_MQTT_HA : public Usermod
       const String &deviceClass, 
       const String &unitOfMeasurement)
     {
-      String topic = String("homeassistant/sensor/") + mqttClientID + "/" + name + "/config";
+      if (WLED_MQTT_CONNECTED) {
+        String topic = String("homeassistant/sensor/") + mqttClientID + "/" + name + "/config";
 
-      StaticJsonDocument<300> doc;
+        StaticJsonDocument<300> doc;
 
-      doc["name"] = String(serverDescription) + " " + friendly_name;
-      doc["state_topic"] = state_topic;
-      doc["unique_id"] = String(mqttClientID) + name;
-      if (unitOfMeasurement != "")
-        doc["unit_of_measurement"] = unitOfMeasurement;
-      if (deviceClass != "")
-        doc["device_class"] = deviceClass;
-      doc["expire_after"] = 1800;
+        doc["name"] = String(serverDescription) + " " + friendly_name;
+        doc["state_topic"] = state_topic;
+        doc["unique_id"] = String(mqttClientID) + name;
+        if (unitOfMeasurement != "")
+          doc["unit_of_measurement"] = unitOfMeasurement;
+        if (deviceClass != "")
+          doc["device_class"] = deviceClass;
+        doc["expire_after"] = 1800;
 
-      JsonObject device = doc.createNestedObject("device"); // attach the sensor to the same device
-      device["name"] = String(serverDescription);
-      device["model"] = "WLED";
-      device["manufacturer"] = "Aircoookie";
-      device["identifiers"] = String("wled-") + String(serverDescription);
-      device["sw_version"] = VERSION;
+        JsonObject device = doc.createNestedObject("device"); // attach the sensor to the same device
+        device["name"] = String(serverDescription);
+        device["model"] = "WLED";
+        device["manufacturer"] = "Aircoookie";
+        device["identifiers"] = String("wled-") + String(serverDescription);
+        device["sw_version"] = VERSION;
 
-      String payload;
-      serializeJson(doc, payload);
-      // Serial.println("Si7021_MQTT_HA:");
-      // Serial.println(t);
-      // Serial.println(temp);
+        String payload;
+        serializeJson(doc, payload);
+        // Serial.println("Si7021_MQTT_HA:");
+        // Serial.println(t);
+        // Serial.println(temp);
 
-      mqtt->publish(topic.c_str(), 0, false, payload.c_str());
+        mqtt->publish(topic.c_str(), 0, false, payload.c_str());
+      }
     }
 
     void _updateSensorData()
@@ -125,6 +139,19 @@ class Si7021_MQTT_HA : public Usermod
         Serial.println("");
     }
 
+    void _publishSensorData()
+    {
+      if (WLED_MQTT_CONNECTED) {
+        mqtt->publish(mqttTemperatureTopic.c_str(), 0, false, String(sensorTemperature).c_str());
+        mqtt->publish(mqttHumidityTopic.c_str(), 0, false, String(sensorHumidity).c_str());
+        if (sendAdditionalSensors) {
+          mqtt->publish(mqttHeatIndexTopic.c_str(), 0, false, String(sensorHeatIndex).c_str());
+          mqtt->publish(mqttDewPointTopic.c_str(), 0, false, String(sensorDewPoint).c_str());
+          mqtt->publish(mqttAbsoluteHumidityTopic.c_str(), 0, false, String(sensorAbsoluteHumidity).c_str());
+        }
+      }
+    }
+
   public:
     void addToConfig(JsonObject& root)
     {
@@ -147,6 +174,11 @@ class Si7021_MQTT_HA : public Usermod
       return configComplete;
     }
 
+    void onMqttConnect(bool sessionPresent) {
+      if (mqttDeviceTopic[0] != 0)
+        _initializeMqtt();
+    }
+
     void setup()
     {
       if (enabled) {
@@ -165,45 +197,29 @@ class Si7021_MQTT_HA : public Usermod
 
     void loop()
     {
+      yield();
       if (!enabled || strip.isUpdating()) return; // !sensorFound || 
 
       unsigned long tempTimer = millis();
 
-      if (tempTimer > nextMeasure)
-      {
+      if (tempTimer > nextMeasure) {
         nextMeasure = tempTimer + 60000; // Schedule next measure in 60 seconds
 
-        if (!initialized)
-        {
+        if (!sensorInitialized) {
           Serial.println("Si7021_MQTT_HA: Error! Sensors not initialized in loop()!");
           _initializeSensor();
           return; // lets try again next loop
         }
 
-        if (mqtt != nullptr && mqtt->connected())
-        {
+        if (WLED_MQTT_CONNECTED) {
           if (!mqttInitialized)
-          {
             _initializeMqtt();
-            mqttInitialized = true;
-          }
 
-          // Update sensor data
+          // Update and publish sensor data
           _updateSensorData();
-
-          // Create string populated with user defined device topic from the UI,
-          // and the read temperature, humidity and pressure.
-          // Then publish to MQTT server.
-          mqtt->publish(mqttTemperatureTopic.c_str(), 0, false, String(sensorTemperature).c_str());
-          mqtt->publish(mqttHumidityTopic.c_str(), 0, false, String(sensorHumidity).c_str());
-          if (sendAdditionalSensors) {
-            mqtt->publish(mqttHeatIndexTopic.c_str(), 0, false, String(sensorHeatIndex).c_str());
-            mqtt->publish(mqttDewPointTopic.c_str(), 0, false, String(sensorDewPoint).c_str());
-            mqtt->publish(mqttAbsoluteHumidityTopic.c_str(), 0, false, String(sensorAbsoluteHumidity).c_str());
-          }
+          _publishSensorData();
         }
-        else
-        {
+        else {
           Serial.println("Si7021_MQTT_HA: Missing MQTT connection. Not publishing data");
           mqttInitialized = false;
         }
@@ -219,5 +235,5 @@ class Si7021_MQTT_HA : public Usermod
 // strings to reduce flash memory usage (used more than twice)
 const char Si7021_MQTT_HA::_name[]                   PROGMEM = "Si7021 MQTT (Home Assistant)";
 const char Si7021_MQTT_HA::_enabled[]                PROGMEM = "enabled";
-const char Si7021_MQTT_HA::_sendAdditionalSensors[]  PROGMEM = "send Dew Point, Abs. Humidity and Heat Index";
+const char Si7021_MQTT_HA::_sendAdditionalSensors[]  PROGMEM = "Send Dew Point, Abs. Humidity and Heat Index";
 const char Si7021_MQTT_HA::_haAutoDiscovery[]        PROGMEM = "Home Assistant MQTT Auto-Discovery";
