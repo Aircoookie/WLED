@@ -112,6 +112,10 @@
 #include "../usermods/quinled-an-penta/quinled-an-penta.h"
 #endif
 
+#ifdef USERMOD_WIZLIGHTS
+#include "../usermods/wizlights/wizlights.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -209,6 +213,10 @@ void registerUsermods()
   #endif
 
   #ifdef QUINLED_AN_PENTA
+  usermods.add(new QuinLEDAnPentaUsermod());
+  #endif
+
+  #ifdef USERMOD_WIZLIGHTS
   usermods.add(new QuinLEDAnPentaUsermod());
   #endif
 }
