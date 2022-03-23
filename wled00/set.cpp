@@ -18,8 +18,8 @@ bool isAsterisksOnly(const char* str, byte maxLen)
 void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 {
 
-  //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 7: DMX 8: usermods
-  if (subPage <1 || subPage >8) return;
+  //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 7: DMX 8: usermods 9: clock
+  if (subPage <1 || subPage >9) return;
 
   //WIFI SETTINGS
   if (subPage == 1)
@@ -532,7 +532,41 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     releaseJSONBufferLock();
   }
-  
+
+  // Clock
+  if (subPage == 9) {
+    LedClockSettings* settings = dynamic_cast<LedClockSettings *>(usermods.lookup(USERMOD_ID_LEDCLOCK));
+
+    // booleans
+    settings->autoBrightness = false;
+
+    size_t args = request->args();
+    for (size_t i=0; i<args; i++) {
+      String name = request->argName(i);
+      String value = request->arg(i);
+
+      if (name == ledClockSettingsKeyAutoBrightness) {
+        settings->autoBrightness = true;
+      } else if (name == ledClockSettingsKeyMinBrightness) {
+        settings->minBrightness = value.toInt();
+      } else if (name == ledClockSettingsKeyMaxBrightness) {
+        settings->maxBrightness = value.toInt();
+      } else if (name == ledClockSettingsKeySeparatorMode) {
+        settings->separatorMode = (SeparatorMode) value.toInt();
+      }
+    }
+
+    // make sure we have proper values
+    settings->minBrightness = constrain(settings->minBrightness, 1, 254);
+    settings->maxBrightness = constrain(settings->maxBrightness, 2, 255);
+
+    if (settings->maxBrightness <= settings->minBrightness) {
+      settings->maxBrightness = settings->minBrightness + 1;
+    }
+
+    settings->separatorMode = constrain(settings->separatorMode, SeparatorMode::ON, SeparatorMode::BLINK);
+  }
+
   if (subPage != 2 && (subPage != 6 || !doReboot)) serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)
   if (subPage == 4) alexaInit();
 }

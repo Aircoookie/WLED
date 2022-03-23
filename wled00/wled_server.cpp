@@ -384,6 +384,8 @@ String settingsProcessor(const String& var)
   
   #endif
   if (var == "SCSS") return String(FPSTR(PAGE_settingsCss));
+  if (var == "LCSCSS") return String(FPSTR(PAGE_ledClockSettingsCss));
+  if (var == "RTJS") return String(FPSTR(PAGE_rangeTouchJs));
   return String();
 }
 
@@ -424,6 +426,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     else if (url.indexOf("dmx")  > 0) subPage = 7;
     #endif
     else if (url.indexOf("um")  > 0) subPage = 8;
+    else if (url.indexOf("ledclock")  > 0) subPage = 9;
   } else subPage = 255; //welcome page
 
   if (subPage == 1 && wifiLock && otaLock)
@@ -446,6 +449,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
       case 6: strcpy_P(s, PSTR("Security")); strcpy_P(s2, PSTR("Rebooting, please wait ~10 seconds...")); break;
       case 7: strcpy_P(s, PSTR("DMX")); break;
       case 8: strcpy_P(s, PSTR("Usermods")); break;
+      case 9: strcpy_P(s, PSTR("Clock")); break;
     }
 
     strcat_P(s, PSTR(" settings saved."));
@@ -473,6 +477,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     case 6:   request->send_P(200, "text/html", PAGE_settings_sec , settingsProcessor); break;
     case 7:   request->send_P(200, "text/html", PAGE_settings_dmx , settingsProcessor); break;
     case 8:   request->send_P(200, "text/html", PAGE_settings_um  , settingsProcessor); break;
+    case 9:   request->send_P(200, "text/html", PAGE_settings_ledclock, settingsProcessor); break;
     case 255: request->send_P(200, "text/html", PAGE_welcome); break;
     default:  request->send_P(200, "text/html", PAGE_settings     , settingsProcessor); 
   }

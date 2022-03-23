@@ -4,6 +4,12 @@
 #include "7segmdisp.h"
 #include "beeper.h"
 
+const char * ledClockSettingsKey = "ledclock";
+const char * ledClockSettingsKeyAutoBrightness = "autb";
+const char * ledClockSettingsKeyMinBrightness = "minb";
+const char * ledClockSettingsKeyMaxBrightness = "maxb";
+const char * ledClockSettingsKeySeparatorMode = "sepm";
+
 unsigned long Timer::_millis() {
     return millis();
 }
@@ -16,7 +22,7 @@ static uint8_t selfTestColorCount = sizeof(selfTestColors) / sizeof(CRGB);
 
 static uint16_t normalizedSensorRading;
 
-uint8_t brightness() {
+uint8_t brightness(uint8_t minBrightness, uint8_t maxBrightness) {
     static uint16_t values[BRIGHTNESS_SAMPLES];
     static int i = 0;
     static long total;
@@ -31,7 +37,7 @@ uint8_t brightness() {
 
     normalizedSensorRading = total / BRIGHTNESS_SAMPLES;
 
-    uint8_t target = map(normalizedSensorRading, 0, ADC_MAX_VALUE, MIN_BRIGHTNESS, MAX_BRIGHTNESS);
+    uint8_t target = map(normalizedSensorRading, 0, ADC_MAX_VALUE, minBrightness, maxBrightness);
 
     if (abs(target - current) > BRIGHTNESS_THRESHOLD) {
         current = target;
@@ -40,7 +46,7 @@ uint8_t brightness() {
     return current;
 }
 
-class UsermodLedClock : public Usermod {
+class UsermodLedClock : public Usermod, public LedClockSettings {
 
 private:
     SevenSegmentDisplay dHoursT;
@@ -68,6 +74,7 @@ private:
     uint16_t backupLength = 0;
 
 public:
+
     UsermodLedClock():
         dHoursT(&strip, 2),
         dHoursO(&strip, 2),
@@ -139,14 +146,18 @@ public:
                 dHoursT.setDigit(hour(p) / 10);
                 dHoursO.setDigit(hour(p) % 10);
 
-                sep.setState(second(p) % 2);
+                switch (separatorMode) {
+                case SeparatorMode::ON: sep.setState(true); break;
+                case SeparatorMode::OFF: sep.setState(false); break;
+                case SeparatorMode::BLINK: sep.setState(second(p) % 2); break;
+                }
 
                 dMinutesT.setDigit(minute(p) / 10);
                 dMinutesO.setDigit(minute(p) % 10);
             }
 
             if (!strip.isUpdating()) {
-                br = brightness();
+                br = brightness(minBrightness, maxBrightness);
             }
         } else {
             if (selfTestTimer.fire()) {
@@ -175,11 +186,33 @@ public:
         lightArr.add("V");
     }
 
+    void addToConfig(JsonObject& root) {
+        JsonObject top = root.createNestedObject(ledClockSettingsKey);
+
+        top[ledClockSettingsKeyAutoBrightness] = autoBrightness;
+        top[ledClockSettingsKeyMinBrightness] = minBrightness;
+        top[ledClockSettingsKeyMaxBrightness] = maxBrightness;
+        top[ledClockSettingsKeySeparatorMode] = separatorMode;
+    }
+
+    bool readFromConfig(JsonObject& root) {
+        JsonObject top = root[ledClockSettingsKey];
+
+        bool configComplete = !top.isNull();
+
+        configComplete &= getJsonValue(top[ledClockSettingsKeyAutoBrightness], autoBrightness, true);
+        configComplete &= getJsonValue(top[ledClockSettingsKeyMinBrightness], minBrightness, 50);
+        configComplete &= getJsonValue(top[ledClockSettingsKeyMaxBrightness], maxBrightness, 255);
+        configComplete &= getJsonValue(top[ledClockSettingsKeySeparatorMode], separatorMode, SeparatorMode::BLINK);
+
+        return configComplete;
+    }
+
     void handleOverlayDraw() {
         if (selfTestDone) {
             backupStrip();
             display.update();
-            if (bri != br) {
+            if (autoBrightness && bri > 0 && bri != br) {
                 bri = br;
                 stateUpdated(CALL_MODE_DIRECT_CHANGE);
             }

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta name="viewport" content="width=500">
+	<meta charset="utf-8">
+	<title>Clock Settings</title>
+	<script src="rangetouch.js"></script>
+	<script>
+		var d = document;
+		function B()
+		{
+			window.open("/settings","_self");
+		}
+    	function gId(s) { return d.getElementById(s); }
+		function showBrCtrlVal() {
+			gId('minbv').innerText = d.Sf.minb.value;
+			gId('maxbv').innerText = d.Sf.maxb.value;
+		}
+		function adjustRange(start) {
+			if (start) {
+				d.Sf.minb.value = Math.min(parseInt(d.Sf.minb.value), parseInt(d.Sf.maxb.value) - 1);
+			} else {
+				d.Sf.maxb.value = Math.max(parseInt(d.Sf.maxb.value), parseInt(d.Sf.minb.value) + 1);
+			}
+		}
+		function updateBrCtrl() {
+			var enabled = d.Sf.autb.checked;
+			gId('brctrl').style.opacity = enabled ? '1' : '.5';
+			d.Sf.minb.disabled = !enabled;
+			d.Sf.maxb.disabled = !enabled;
+			showBrCtrlVal();
+		}
+		function init() {
+			RangeTouch.setup('input[type="range"]', {});
+			updateBrCtrl();
+		}
+		function GetV()
+		{
+			//values injected by server while sending HTML
+		}
+	</script>
+	<style>
+		/* will be removed by build script. */
+		@import url("style.css");
+		@import url("style_ledclock.css");
+		body {
+			line-height: 200%;
+		}
+	</style>
+	<style type="text/css">
+		#brctrl {
+			transition: opacity 0.4s;
+		}
+	</style>
+</head>
+<body onload="GetV();init()">
+	<form id="form_s" name="Sf" method="post">
+		<button type="button" onclick="B()">Back</button><button type="submit">Save</button>
+		<hr>
+		<h2>Clock Settings</h2>
+    	<h3>Brightness Control</h3>
+		<input type="checkbox" name="autb" onchange="updateBrCtrl()"> Automatic brightness control:<br>
+		<div id="brctrl" class="il">
+			Minimum brightness: <span id="minbv"></span><br>
+			<div class="sliderwrap il">
+				<input id="minb" name="minb" max="249" min="1" type="range" oninput="adjustRange(false);showBrCtrlVal()" />
+				<div class="sliderdisplay"></div>
+			</div><br>
+			Maximum brightness: <span id="maxbv"></span><br>
+			<div class="sliderwrap il">
+				<input id="maxb" name="maxb" max="255" min="2" type="range" oninput="adjustRange(true);showBrCtrlVal()" />
+				<div class="sliderdisplay"></div>
+			</div><br>
+		</div>
+		<h3>Hour-minute Separator</h3>
+		Display mode:
+		<select name="sepm">
+			<option value="0">On</option>
+			<option value="1">Off</option>
+			<option value="2">Blink</option>
+		</select><br><br>
+		<hr>
+		<div id="toast"></div>
+		<button type="button" onclick="B()">Back</button><button type="submit">Save</button>
+	</form>
+</body>
+</html>

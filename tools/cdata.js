@@ -47,6 +47,12 @@ function strReplace(str, search, replacement) {
   return str.split(search).join(replacement);
 }
 
+const ledClockVersion = fs.readFileSync('ledclockversion.txt', {encoding: 'utf8'});
+function adoptLedClockVersionAndRepo(html) {
+  html = strReplace(html, "##LEDCLOCKVERSION##", ledClockVersion);
+  return html;
+}
+
 function adoptVersionAndRepo(html) {
   let repoUrl = packageJson.repository ? packageJson.repository.url : undefined;
   if (repoUrl) {
@@ -62,7 +68,7 @@ function adoptVersionAndRepo(html) {
     html = strReplace(html, "##VERSION##", version);
   }
 
-  return html;
+  return adoptLedClockVersionAndRepo(html);
 }
 
 function writeHtmlGzipped(sourceFile, resultFile) {
@@ -129,6 +135,15 @@ function filter(str, type) {
     return MinifyHTML(str, {
       collapseWhitespace: true,
       conservativeCollapse: true,
+      maxLineLength: 80,
+      minifyCSS: true,
+      minifyJS: true, 
+      continueOnParseError: false,
+      removeComments: true,
+    });
+  } else if (type == "js-minify") {
+    return MinifyHTML(`<script>${str}</script>`, {
+      collapseWhitespace: true,
       maxLineLength: 80,
       minifyCSS: true,
       minifyJS: true, 
@@ -348,7 +363,42 @@ const char PAGE_settings_dmx[] PROGMEM = R"=====()=====";
             /function GetV().*\<\/script\>/gms,
             "function GetV() {var d=document;\n"
           ),
-    }
+    },
+    {
+      file: "settings_ledclock.htm",
+      name: "PAGE_settings_ledclock",
+      prepend: "=====(",
+      append: ")=====",
+      method: "plaintext",
+      filter: "html-minify",
+      mangle: (str) =>
+        str
+          .replace(/\<script src=".*?"\>.*?\<\/script\>/gms, "%RTJS%")
+          .replace(/\<link rel="stylesheet".*?\>/gms, "")
+          .replace(/\<style\>.*?\<\/style\>/gms, "%CSS%%SCSS%%LCSCSS%")
+          .replace(
+            /function GetV().*\<\/script\>/gms,
+            "function GetV() {var d=document;\n"
+          ),
+    },
+    {
+      file: "style_ledclock.css",
+      name: "PAGE_ledClockSettingsCss",
+      prepend: "=====(<style>",
+      append: "</style>)=====",
+      method: "plaintext",
+      filter: "css-minify",
+      mangle: (str) => str.replaceAll("%", '%%'), // % to %% because of AsyncWebServer
+    },
+    {
+      file: "rangetouch.js",
+      name: "PAGE_rangeTouchJs",
+      prepend: "=====(",
+      append: ")=====",
+      method: "plaintext",
+      filter: "js-minify",
+      mangle: (str) => str.replaceAll("%", '%%'), // % to %% because of AsyncWebServer
+    },
   ],
   "wled00/html_settings.h"
 );

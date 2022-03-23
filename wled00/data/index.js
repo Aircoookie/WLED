@@ -530,9 +530,10 @@ function populateInfo(i)
 	if (i.ver.startsWith("0.13.")) vcn = "Toki";
 	if (i.cn) vcn = i.cn;
 
-	cn += `v${i.ver} "${vcn}"<br><br><table class="infot">
+	cn += `<table class="infot">
 	${urows}
-	${inforow("Build",i.vid)}
+	${inforow("Led Clock version",'v##LEDCLOCKVERSION##')}
+	${inforow("WLED version",`v${i.ver} ${i.vid}`)}
 	${inforow("Signal strength",i.wifi.signal +"% ("+ i.wifi.rssi, " dBm)")}
 	${inforow("Uptime",getRuntimeStr(i.uptime))}
 	${inforow("Free heap",heap," kB")}

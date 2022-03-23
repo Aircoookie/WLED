@@ -1,0 +1,9 @@
+#buttonNl,
+#imgw {
+	display: none;
+}
+
+#clock {
+    z-index: 4;
+    transition: transform 0.4s, background-color 0.4s;
+}

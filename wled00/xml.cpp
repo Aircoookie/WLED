@@ -244,7 +244,7 @@ void getSettingsJS(byte subPage, char* dest)
   obuf = dest;
   olen = 0;
 
-  if (subPage <1 || subPage >8) return;
+  if (subPage <1 || subPage >9) return;
 
   if (subPage == 1)
   {
@@ -669,6 +669,17 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(SET_F("numM="));
     oappendi(usermods.getModCount());
     oappend(";");
+  }
+
+  if (subPage == 9) //clock
+  {
+    LedClockSettings* settings = dynamic_cast<LedClockSettings *>(usermods.lookup(USERMOD_ID_LEDCLOCK));
+    if (settings != nullptr) {
+      sappend('c', ledClockSettingsKeyAutoBrightness, settings->autoBrightness);
+      sappend('v', ledClockSettingsKeyMinBrightness, settings->minBrightness);
+      sappend('v', ledClockSettingsKeyMaxBrightness, settings->maxBrightness);
+      sappend('i', ledClockSettingsKeySeparatorMode, settings->separatorMode);
+    }
   }
 
   oappend(SET_F("}</script>"));

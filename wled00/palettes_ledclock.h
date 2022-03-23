@@ -1,24 +1,5 @@
-// ignore the content of this file and
-// use definitions form 'palettes_ledclock.h'
-// to avoid conflicts and ease migration
-#ifndef PalettesWLED_h
-#define PalettesWLED_h
-#include "palettes_ledclock.h"
-#endif
-/*
- * Color palettes for FastLED effects (65-73).
- */
-
-// From ColorWavesWithPalettes by Mark Kriegsman: https://gist.github.com/kriegsman/8281905786e8b2632aeb
-// Unfortunaltely, these are stored in RAM!
-
-// Gradient palette "ib_jul01_gp", originally from
-// http://soliton.vm.bytemark.co.uk/pub/cpt-city/ing/xmas/tn/ib_jul01.png.index.html
-// converted for FastLED with gammas (2.6, 2.2, 2.5)
-// Size: 16 bytes of program space.
-
-#ifndef PalettesWLED_h
-#define PalettesWLED_h
+#ifndef PalettesLedClock_h
+#define PalettesLedClock_h
 
 #define GRADIENT_PALETTE_COUNT 58
 
