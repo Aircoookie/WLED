@@ -148,16 +148,18 @@ void realtimeLock(uint32_t timeoutMs, byte md)
     }
   }
 
-  realtimeTimeout = millis() + timeoutMs;
-  if (timeoutMs == 255001 || timeoutMs == 65000) realtimeTimeout = UINT32_MAX;
+  if (realtimeTimeout != UINT32_MAX) {
+    realtimeTimeout = millis() + timeoutMs;
+    if (timeoutMs == 255001 || timeoutMs == 65000) realtimeTimeout = UINT32_MAX;
+  }
   // if strip is off (bri==0) and not already in RTM
-  if (bri == 0 && !realtimeMode) {
-    strip.setBrightness(scaledBri(briLast));
+  if (briT == 0 && !realtimeMode) {
+    strip.setBrightness(scaledBri(briLast), true);
   }
   realtimeMode = md;
 
-  if (arlsForceMaxBri && !realtimeOverride) strip.setBrightness(scaledBri(255));
-  if (md == REALTIME_MODE_GENERIC) strip.show();
+  if (arlsForceMaxBri && !realtimeOverride) strip.setBrightness(scaledBri(255), true);
+  if (briT > 0 && md == REALTIME_MODE_GENERIC) strip.show();
 }
 
 
@@ -652,19 +654,16 @@ void sendSysInfoUDP()
 uint8_t sequenceNumber = 0; // this needs to be shared across all outputs
 
 uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8_t *buffer, uint8_t bri, bool isRGBW)  {
-  if (!interfacesInited) return 1;  // network not initialised
+  if (!interfacesInited || !client[0] || !length) return 1;  // network not initialised or dummy/unset IP address
 
   WiFiUDP ddpUdp;
 
   switch (type) {
     case 0: // DDP
     {
-      // calclate the number of UDP packets we need to send
+      // calculate the number of UDP packets we need to send
       uint16_t channelCount = length * 3; // 1 channel for every R,G,B value
-      uint16_t packetCount = channelCount / DDP_CHANNELS_PER_PACKET;
-      if (channelCount % DDP_CHANNELS_PER_PACKET) {
-        packetCount++;
-      }
+      uint16_t packetCount = ((channelCount-1) / DDP_CHANNELS_PER_PACKET) +1;
 
       // there are 3 channels per RGB pixel
       uint32_t channel = 0; // TODO: allow specifying the start channel

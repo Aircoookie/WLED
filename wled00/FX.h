@@ -247,7 +247,7 @@ class WS2812FX {
   
   // segment parameters
   public:
-    typedef struct Segment { // 30 (32 in memory) bytes
+    typedef struct Segment { // 31 (32 in memory) bytes
       uint16_t start;
       uint16_t stop; //segment invalid if stop == 0
       uint16_t offset;
@@ -260,6 +260,7 @@ class WS2812FX {
       uint8_t  opacity;
       uint32_t colors[NUM_COLORS];
       uint8_t  cct; //0==1900K, 255==10091K
+      uint8_t  _capabilities;
       char *name;
       bool setColor(uint8_t slot, uint32_t c, uint8_t segn) { //returns true if changed
         if (slot >= NUM_COLORS || segn >= MAX_NUM_SEGMENTS) return false;
@@ -335,7 +336,8 @@ class WS2812FX {
         return vLength;
       }
       uint8_t differs(Segment& b);
-      uint8_t getLightCapabilities();
+      inline uint8_t getLightCapabilities() {return _capabilities;}
+      void refreshLightCapabilities();
     } segment;
 
   // segment runtime parameters
@@ -607,7 +609,7 @@ class WS2812FX {
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
       targetPalette = CloudColors_p;
-      ablMilliampsMax = 2500;
+      ablMilliampsMax = 850;
       currentMilliamps = 0;
       timebase = 0;
       resetSegments();
@@ -623,7 +625,7 @@ class WS2812FX {
       setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       setColor(uint8_t slot, uint32_t c),
       setCCT(uint16_t k),
-      setBrightness(uint8_t b),
+      setBrightness(uint8_t b, bool direct = false),
       setRange(uint16_t i, uint16_t i2, uint32_t col),
       setShowCallback(show_callback cb),
       setTransition(uint16_t t),
@@ -655,7 +657,8 @@ class WS2812FX {
       paletteFade = 0,
       paletteBlend = 0,
       milliampsPerLed = 55,
-			cctBlending = 0,
+      autoWhiteMode = RGBW_MODE_DUAL,
+      cctBlending = 0,
       getBrightness(void),
       getModeCount(void),
       getPaletteCount(void),
@@ -668,8 +671,12 @@ class WS2812FX {
       setPixelSegment(uint8_t n),
       gamma8(uint8_t),
       gamma8_cal(uint8_t, float),
-      sin_gap(uint16_t),
       get_random_wheel_index(uint8_t);
+
+    inline uint8_t sin_gap(uint16_t in) {
+      if (in & 0x100) return 0;
+      return sin8(in + 192); // correct phase shift of sine so that it starts and stops at 0
+    }
 
     int8_t
       tristate_square8(uint8_t x, uint8_t pulsewidth, uint8_t attdec);
@@ -887,14 +894,15 @@ class WS2812FX {
 
     uint32_t _colors_t[3];
     uint8_t _bri_t;
+    bool _no_rgb = false;
     
     uint8_t _segment_index = 0;
     uint8_t _segment_index_palette_last = 99;
     uint8_t _mainSegment;
 
     segment _segments[MAX_NUM_SEGMENTS] = { // SRAM footprint: 24 bytes per element
-      // start, stop, offset, speed, intensity, palette, mode, options, grouping, spacing, opacity (unused), color[]
-      {0, 7, 0, DEFAULT_SPEED, 128, 0, DEFAULT_MODE, NO_OPTIONS, 1, 0, 255, {DEFAULT_COLOR}}
+      // start, stop, offset, speed, intensity, palette, mode, options, grouping, spacing, opacity (unused), color[], capabilities
+      {0, 7, 0, DEFAULT_SPEED, 128, 0, DEFAULT_MODE, NO_OPTIONS, 1, 0, 255, {DEFAULT_COLOR}, 0}
     };
     segment_runtime _segment_runtimes[MAX_NUM_SEGMENTS]; // SRAM footprint: 28 bytes per element
     friend class Segment_runtime;

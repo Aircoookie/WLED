@@ -1,6 +1,50 @@
 ## WLED changelog
 
-### Builds after release 0.12.0
+### WLED release 0.13.1
+
+#### Build 2203150
+
+-   Version bump to v0.13.1 "Toki"
+-   Fix persistent preset bug, preventing save of new presets
+
+### WLED release 0.13.0
+
+#### Build 2203142
+
+-   Release of WLED v0.13.0 "Toki"
+-   Reduce APA102 hardware SPI frequency to 5Mhz
+-   Remove `persistent` parameter in `savePreset()`
+
+### Builds between releases 0.12.0 and 0.13.0
+
+#### Build 2203140
+
+-   Added factory reset by pressing button 0 for >10 seconds
+-   Added ability to set presets from DMX Effect mode
+-   Simplified label hiding JS in user interface
+-   Fixed JSON `{"live":true}` indefinite realtime mode
+
+#### Build 2203080
+
+-   Disabled auto white mode in segments with no RGB bus
+-   Fixed hostname string not 0-terminated 
+-   Fixed Popcorn mode not lighting first LED on pop
+
+#### Build 2203060
+
+-   Dynamic hiding of unused color controls in UI (PR #2567)
+-   Removed native Cronixie support and added Cronixie usermod
+-   Fixed disabled timed preset expanding calendar
+-   Fixed Color Order setting shown for analog busses
+-   Fixed incorrect operator (#2566)
+
+#### Build 2203011
+
+-   IR rewrite (PR #2561), supports CCT
+-   Added locate button to Time settings
+-   CSS fixes and adjustments
+-   Consistent Tab indentation in index JS and CSS
+-   Added initial contribution style guideline
 
 #### Build 2202222
 

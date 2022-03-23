@@ -73,6 +73,8 @@
 #define USERMOD_RGB_ROTARY_ENCODER       22     //Usermod "rgb-rotary-encoder.h"
 #define USERMOD_ID_QUINLED_AN_PENTA      23     //Usermod "quinled-an-penta.h"
 #define USERMOD_ID_SSDR                  24     //Usermod "usermod_v2_seven_segment_display_reloaded.h"
+#define USERMOD_ID_CRONIXIE              25     //Usermod "usermod_cronixie.h"
+
 #define USERMOD_ID_LEDCLOCK              99
 
 //Access point behavior
@@ -345,7 +347,7 @@
 #endif
 
 #ifndef DEFAULT_LED_COUNT
-  #define DEFAULT_LED_COUNT 58
+  #define DEFAULT_LED_COUNT 30
 #endif
 
 #define INTERFACE_UPDATE_COOLDOWN 2000 //time in ms to wait between websockets, alexa, and MQTT updates

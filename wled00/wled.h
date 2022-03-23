@@ -3,12 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.13.0-b7
+   @version 0.13.1
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2202222
+#define VERSION 2203150
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -26,7 +26,6 @@
 // You can choose some of these features to disable:
 //#define WLED_DISABLE_ALEXA       // saves 11kb
 //#define WLED_DISABLE_BLYNK       // saves 6kb
-//#define WLED_DISABLE_CRONIXIE    // saves 3kb
 //#define WLED_DISABLE_HUESYNC     // saves 4kb
 //#define WLED_DISABLE_INFRARED    // there is no pin left for this on ESP8266-01, saves 12kb
 #ifndef WLED_DISABLE_MQTT
@@ -294,7 +293,11 @@ WLED_GLOBAL uint16_t transitionDelay _INIT(750);    // default crossfade duratio
 WLED_GLOBAL byte briMultiplier _INIT(100);          // % of brightness to set (to limit power, if you set it to 50 and set bri to 255, actual brightness will be 127)
 
 // User Interface CONFIG
-WLED_GLOBAL char serverDescription[33] _INIT(SERVER_DESC);  // Name of module
+#ifndef SERVERNAME
+WLED_GLOBAL char serverDescription[33] _INIT("WLED");  // Name of module - use default
+#else
+WLED_GLOBAL char serverDescription[33] _INIT(SERVERNAME);  // use predefined name
+#endif
 WLED_GLOBAL bool syncToggleReceive     _INIT(false);   // UIs which only have a single button for sync should toggle send+receive if this is true, only send otherwise
 
 // Sync CONFIG
@@ -303,7 +306,12 @@ WLED_GLOBAL bool nodeListEnabled _INIT(true);
 WLED_GLOBAL bool nodeBroadcastEnabled _INIT(true);
 
 WLED_GLOBAL byte buttonType[WLED_MAX_BUTTONS]  _INIT({BTN_TYPE_PUSH});
-WLED_GLOBAL byte irEnabled      _INIT(0);     // Infrared receiver
+#if defined(IRTYPE) && defined(IRPIN)
+WLED_GLOBAL byte irEnabled      _INIT(IRTYPE); // Infrared receiver
+#else
+WLED_GLOBAL byte irEnabled      _INIT(0);     // Infrared receiver disabled
+#endif
+WLED_GLOBAL bool irApplyToAllSelected _INIT(true); //apply IR to all selected segments
 
 WLED_GLOBAL uint16_t udpPort    _INIT(21324); // WLED notifier default port
 WLED_GLOBAL uint16_t udpPort2   _INIT(65506); // WLED notifier supplemental port
@@ -379,17 +387,12 @@ WLED_GLOBAL bool useAMPM _INIT(false);       // 12h/24h clock format
 WLED_GLOBAL byte currentTimezone _INIT(0);   // Timezone ID. Refer to timezones array in wled10_ntp.ino
 WLED_GLOBAL int utcOffsetSecs _INIT(0);      // Seconds to offset from UTC before timzone calculation
 
-WLED_GLOBAL byte overlayDefault _INIT(0);                               // 0: no overlay 1: analog clock 2: single-digit clock 3: cronixie
+WLED_GLOBAL byte overlayCurrent _INIT(0);    // 0: no overlay 1: analog clock 2: was single-digit clock 3: was cronixie
 WLED_GLOBAL byte overlayMin _INIT(0), overlayMax _INIT(DEFAULT_LED_COUNT - 1);   // boundaries of overlay mode
 
 WLED_GLOBAL byte analogClock12pixel _INIT(0);               // The pixel in your strip where "midnight" would be
 WLED_GLOBAL bool analogClockSecondsTrail _INIT(false);      // Display seconds as trail of LEDs instead of a single pixel
 WLED_GLOBAL bool analogClock5MinuteMarks _INIT(false);      // Light pixels at every 5-minute position
-
-#ifndef WLED_DISABLE_CRONIXIE
-WLED_GLOBAL char cronixieDisplay[7] _INIT("HHMMSS");        // Cronixie Display mask. See wled13_cronixie.ino
-WLED_GLOBAL bool cronixieBacklight _INIT(true);             // Allow digits to be back-illuminated
-#endif
 
 WLED_GLOBAL bool countdownMode _INIT(false);                         // Clock will count down towards date
 WLED_GLOBAL byte countdownYear _INIT(20), countdownMonth _INIT(1);   // Countdown target date, year is last two digits
@@ -496,12 +499,6 @@ WLED_GLOBAL unsigned long hueLastRequestSent _INIT(0);
 WLED_GLOBAL bool hueAuthRequired _INIT(false);
 WLED_GLOBAL bool hueReceived _INIT(false);
 WLED_GLOBAL bool hueStoreAllowed _INIT(false), hueNewKey _INIT(false);
-
-// overlays
-WLED_GLOBAL byte overlayCurrent _INIT(overlayDefault);
-
-// cronixie
-WLED_GLOBAL byte dP[] _INIT_N(({ 255, 255, 255, 255, 255, 255 }));
 
 // countdown
 WLED_GLOBAL unsigned long countdownTime _INIT(1514764800L);

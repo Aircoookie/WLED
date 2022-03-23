@@ -27,7 +27,7 @@ A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control 
 - Presets can be used to automatically execute API calls  
 - Nightlight function (gradually dims down)  
 - Full OTA software updatability (HTTP + ArduinoOTA), password protectable  
-- Configurable analog clock + support for the Cronixie kit by Diamex  
+- Configurable analog clock (Cronixie, 7-segment and EleksTube IPS clock support via usermods) 
 - Configurable Auto Brightness limit for safer operation  
 - Filesystem-based config for easier backup of presets and settings  
 

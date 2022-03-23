@@ -177,7 +177,12 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   if (!iarr.isNull()) {
     uint8_t oldSegId = strip.setPixelSegment(id);
 
-    //freeze and init to black
+    // set brightness immediately and disable transition
+    transitionDelayTemp = 0;
+    jsonTransitionOnce = true;
+    strip.setBrightness(scaledBri(bri), true);
+
+    // freeze and init to black
     if (!seg.getOption(SEG_OPTION_FREEZE)) {
       seg.setOption(SEG_OPTION_FREEZE, true);
       strip.fill(0);
@@ -200,7 +205,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         JsonArray icol = iarr[i];
         if (!icol.isNull()) { //array, e.g. [255,0,0]
           byte sz = icol.size();
-          if (sz > 0 || sz < 5) copyArray(icol, rgbw);
+          if (sz > 0 && sz < 5) copyArray(icol, rgbw);
         } else { //hex string, e.g. "FF0000"
           byte brgbw[] = {0,0,0,0};
           const char* hexCol = iarr[i];
@@ -263,7 +268,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     transitionDelayTemp *= 100;
     jsonTransitionOnce = true;
   }
-  strip.setTransition(transitionDelayTemp);
+  strip.setTransition(transitionDelayTemp); // required here for color transitions to have correct duration
 
   tr = root[F("tb")] | -1;
   if (tr >= 0) strip.timebase = ((uint32_t)tr) - millis();
@@ -290,10 +295,16 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   realtimeOverride = root[F("lor")] | realtimeOverride;
   if (realtimeOverride > 2) realtimeOverride = REALTIME_OVERRIDE_ALWAYS;
 
+  bool liveEnabled = false;
   if (root.containsKey("live")) {
     bool lv = root["live"];
-    if (lv) realtimeLock(65000); //enter realtime without timeout
-    else    realtimeTimeout = 0; //cancel realtime mode immediately
+    if (lv) {
+      transitionDelayTemp = 0;
+      jsonTransitionOnce = true;
+      liveEnabled = true; // triggers realtimeLock() below
+      realtimeLock(65000);
+    }
+    else realtimeTimeout = 0; //cancel realtime mode immediately
   }
 
   strip.setMainSegmentId(root[F("mainseg")] | strip.getMainSegmentId());
@@ -330,19 +341,13 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     }
   }
 
-  #ifndef WLED_DISABLE_CRONIXIE
-    if (root["nx"].is<const char*>()) {
-      strncpy(cronixieDisplay, root["nx"], 6);
-    }
-  #endif
-
   usermods.readFromJsonState(root);
 
   loadLedmap = root[F("ledmap")] | loadLedmap;
 
   byte ps = root[F("psave")];
   if (ps > 0) {
-    savePreset(ps, true, nullptr, root);
+    savePreset(ps, nullptr, root);
   } else {
     ps = root[F("pdel")]; //deletion
     if (ps > 0) {
@@ -376,6 +381,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   }
 
   stateUpdated(callMode);
+  if (liveEnabled) realtimeTimeout = UINT32_MAX; // force indefinite timeout if this request contained {"live":true}
 
   return stateResponse;
 }
@@ -503,15 +509,6 @@ void serializeInfo(JsonObject root)
 
   JsonObject leds = root.createNestedObject("leds");
   leds[F("count")] = strip.getLengthTotal();
-  leds[F("rgbw")] = strip.hasRGBWBus();         //deprecated, use info.leds.lc
-  leds[F("wv")] = false;                        //deprecated, use info.leds.lc
-  leds["cct"] = correctWB || strip.hasCCTBus(); //deprecated, use info.leds.lc
-  switch (Bus::getAutoWhiteMode()) {
-    case RGBW_MODE_MANUAL_ONLY:
-    case RGBW_MODE_DUAL:
-      if (strip.hasWhiteChannel()) leds[F("wv")] = true;
-      break;
-  }
 
   leds[F("pwr")] = strip.currentMilliamps;
   leds["fps"] = strip.getFps();
@@ -529,6 +526,10 @@ void serializeInfo(JsonObject root)
   }
 
   leds["lc"] = totalLC;
+
+  leds[F("rgbw")] = strip.hasRGBWBus(); // deprecated, use info.leds.lc
+  leds[F("wv")]   = totalLC & 0x02;     // deprecated, true if white slider should be displayed for any segment
+  leds["cct"]     = totalLC & 0x04;     // deprecated, use info.leds.lc
 
   root[F("str")] = syncToggleReceive;
 
@@ -619,7 +620,7 @@ void serializeInfo(JsonObject root)
   #ifndef WLED_DISABLE_BLYNK
   os += 0x20;
   #endif
-  #ifndef WLED_DISABLE_CRONIXIE
+  #ifdef USERMOD_CRONIXIE
   os += 0x10;
   #endif
   #ifndef WLED_DISABLE_FILESYSTEM

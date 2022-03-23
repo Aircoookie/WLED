@@ -3,22 +3,15 @@
 <head>
   <meta charset="utf-8">
 	<meta name="viewport" content="width=500">
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
 	<title>LED Settings</title>
 	<script>
     var d=document,laprev=55,maxB=1,maxM=4000,maxPB=4096,maxL=1333,maxLbquot=0; //maximum bytes for LED allocation: 4kB for 8266, 32kB for 32
 		var customStarts=false,startsDirty=[],maxCOOverrides=5;
-    function H()
-		{
-			window.open("https://kno.wled.ge/features/settings/#led-settings");
-		}
-		function B()
-		{
-			window.open("/settings","_self");
-    }
+    function H(){window.open("https://kno.wled.ge/features/settings/#led-settings");}
+		function B(){window.open("/settings","_self");}
     function gId(n){return d.getElementById(n);}
-    function off(n){
-      d.getElementsByName(n)[0].value = -1;
-    }
+    function off(n){d.getElementsByName(n)[0].value = -1;}
     var timeout;
     function showToast(text, error = false)
     {
@@ -71,7 +64,6 @@
       if (bquot > 100) {var msg = "Too many LEDs for me to handle!"; if (maxM < 10000) msg += "\n\rConsider using an ESP32."; alert(msg);}
       if (d.Sf.checkValidity()) d.Sf.submit(); //https://stackoverflow.com/q/37323914
     }
-		function S(){GetV();checkSi();setABL();}
     function enABL()
     {
       var en = gId('able').checked;
@@ -165,7 +157,7 @@
           }
           gId("rf"+n).onclick = (t == 31) ? (function(){return false}) : (function(){});  // prevent change for TM1814
           isRGBW |= (t == 30 || t == 31 || (t > 40 && t < 46 && t != 43)); // RGBW checkbox, TYPE_xxxx values from const.h
-          gId("co"+n).style.display = ((t>=80 && t<96) || t == 41 || t == 42) ? "none":"inline";  // hide color order for PWM W & WW/CW
+          gId("co"+n).style.display = ((t>=80 && t<96) || (t > 40 && t < 48)) ? "none":"inline";  // hide color order for PWM
           gId("dig"+n+"c").style.display = (t > 40 && t < 48) ? "none":"inline";  // hide count for analog
           gId("dig"+n+"r").style.display = (t>=80 && t<96) ? "none":"inline";  // hide reversed for virtual
           gId("dig"+n+"s").style.display = ((t>=80 && t<96) || (t > 40 && t < 48)) ? "none":"inline";  // hide skip 1st for virtual & analog
@@ -188,13 +180,13 @@
         var n  = LCs[i].name.substring(2);    // bus number
         // do we have a led count field
         if (nm=="LC") {
-          var c=parseInt(LCs[i].value,10);
-          if (!customStarts || !startsDirty[n]) gId("ls"+n).value=sLC;
-          gId("ls"+n).disabled = !customStarts;
+          var c=parseInt(LCs[i].value,10); //get LED count
+          if (!customStarts || !startsDirty[n]) gId("ls"+n).value=sLC; //update start value
+          gId("ls"+n).disabled = !customStarts; //enable/disable field editing
           if(c){
-            var s = parseInt(gId("ls"+n).value);
-            if (s+c > sLC) sLC = s+c;
-            if(c>maxLC)maxLC=c;
+            var s = parseInt(gId("ls"+n).value); //start value
+            if (s+c > sLC) sLC = s+c; //update total count
+            if(c>maxLC)maxLC=c; //max per output
             var t = parseInt(d.getElementsByName("LT"+n)[0].value); // LED type SELECT
             if (t<80) sPC+=c; //virtual out busses do not count towards physical LEDs
           } // increase led count
@@ -313,7 +305,7 @@ ${i+1}:
 <option value="80">DDP RGB (network)</option>
 <!--option value="81">E1.31 RGB (network)</option-->
 <!--option value="82">ArtNet RGB (network)</option-->
-</select>&nbsp;
+</select><br>
 <div id="co${i}" style="display:inline">Color Order:
 <select name="CO${i}">
 <option value="0">GRB</option>
@@ -322,8 +314,7 @@ ${i+1}:
 <option value="3">RBG</option>
 <option value="4">BGR</option>
 <option value="5">GBR</option>
-</select></div>
-<br>
+</select><br></div>
 <span id="psd${i}">Start:</span> <input type="number" name="LS${i}" id="ls${i}" class="l starts" min="0" max="8191" value="${lastEnd(i)}" oninput="startsDirty[${i}]=true;UI();" required />&nbsp;
 <div id="dig${i}c" style="display:inline">Length: <input type="number" name="LC${i}" class="l" min="1" max="${maxPB}" value="1" required oninput="UI()" /></div>
 <br>
@@ -369,6 +360,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
       gId("com_entries").insertAdjacentHTML("beforeend", b);
       gId("xo"+i).value = co;
       btnCOM(i+1);
+      UI();
     }
 
     function remCOM() {
@@ -377,6 +369,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
       if (i === 0) return;
       entries[i-1].remove();
       btnCOM(i-1);
+      UI();
     }
 
     function resetCOM(_newMaxCOOverrides=undefined) {
@@ -396,8 +389,8 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
 
     function addBtn(i,p,t) {
       var c = gId("btns").innerHTML;
-      var bt = "BT" + String.fromCharCode((i<10?48:55)+i);;
-      var be = "BE" + String.fromCharCode((i<10?48:55)+i);;
+      var bt = "BT" + String.fromCharCode((i<10?48:55)+i);
+      var be = "BE" + String.fromCharCode((i<10?48:55)+i);
       c += `Button ${i} GPIO: <input type="number" min="-1" max="40" name="${bt}" onchange="UI()" class="xs" value="${p}">`;
       c += `&nbsp;<select name="${be}">`
       c += `<option value="0" ${t==0?"selected":""}>Disabled</option>`;
@@ -463,7 +456,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
         let lines = e.target.result;
         var c = JSON.parse(lines); 
         if (c.hw) {
-          if (c.hw.led) {
+          if (c.hw.led) {
             for (var i=0; i<10; i++) addLEDs(-1);
             var l = c.hw.led;
             l.ins.forEach((v,i,a)=>{
@@ -504,6 +497,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
         }
       }
     }
+		function S(){GetV();checkSi();setABL();}
 		function GetV()
 		{
       //values injected by server while sending HTML
@@ -584,8 +578,8 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
     <option value=7>9-key red</option>
     <option value=8>JSON remote</option>
     </select><span style="cursor: pointer;" onclick="off('IR')">&nbsp;&#215;</span><br>
+    Apply IR change to main segment only: <input type="checkbox" name="MSO"><br>
     <div id="json" style="display:none;">JSON file: <input type="file" name="data" accept=".json"> <input type="button" value="Upload" onclick="uploadFile('/ir.json');"><br></div>
-    <div id="toast"></div>
     <a href="https://kno.wled.ge/interfaces/infrared/" target="_blank">IR info</a><br>
     Relay GPIO: <input type="number" min="-1" max="33" name="RL" onchange="UI()" class="xs"> Invert <input type="checkbox" name="RM"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#215;</span><br>
     <hr style="width:260px">
@@ -638,5 +632,6 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
     <hr>
     <button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 	</form>
+  <div id="toast"></div>
 </body>
 </html>
