@@ -217,6 +217,6 @@ void registerUsermods()
   #endif
 
   #ifdef USERMOD_WIZLIGHTS
-  usermods.add(new QuinLEDAnPentaUsermod());
+  usermods.add(new WizLightsUsermod());
   #endif
 }
