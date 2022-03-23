@@ -296,7 +296,9 @@
   #endif
 #endif
 
+#ifndef ABL_MILLIAMPS_DEFAULT
 #define ABL_MILLIAMPS_DEFAULT 850  // auto lower brightness to stay close to milliampere limit
+#endif
 
 // PWM settings
 #ifndef WLED_PWM_FREQ
