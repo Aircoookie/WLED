@@ -112,6 +112,10 @@
 #include "../usermods/quinled-an-penta/quinled-an-penta.h"
 #endif
 
+#ifdef USERMOD_MY9291
+#include "../usermods/MY9291/usermode_MY9291.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -210,5 +214,9 @@ void registerUsermods()
 
   #ifdef QUINLED_AN_PENTA
   usermods.add(new QuinLEDAnPentaUsermod());
+  #endif
+
+  #ifdef USERMOD_MY9291
+  usermods.add(new MY9291Usermod());
   #endif
 }
