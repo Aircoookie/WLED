@@ -242,6 +242,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     nodeBroadcastEnabled = request->hasArg(F("NB"));
 
     receiveDirect = request->hasArg(F("RD"));
+    useMainSegmentOnly = request->hasArg(F("MO"));
     e131SkipOutOfSequence = request->hasArg(F("ES"));
     e131Multicast = request->hasArg(F("EM"));
     t = request->arg(F("EP")).toInt();

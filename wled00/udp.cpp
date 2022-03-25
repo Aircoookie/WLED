@@ -140,17 +140,30 @@ void notify(byte callMode, bool followUp)
 
 void realtimeLock(uint32_t timeoutMs, byte md)
 {
-  if (!realtimeMode && !realtimeOverride){
-    uint16_t totalLen = strip.getLengthTotal();
-    for (uint16_t i = 0; i < totalLen; i++)
-    {
-      strip.setPixelColor(i,0,0,0,0);
+  if (!realtimeMode) {
+    uint16_t stop, start;
+    if (useMainSegmentOnly) {
+      WS2812FX::Segment& mainseg = strip.getMainSegment();
+      start = mainseg.start;
+      stop  = mainseg.stop;
+    } else {
+      start = 0;
+      stop  = strip.getLengthTotal();
+    }
+    // clear strip/segment
+    if (useMainSegmentOnly || !realtimeOverride) for (uint16_t i = start; i < stop; i++) strip.setPixelColor(i,0,0,0,0);
+    // if WLED was off and using main segment only, turn non-main segments off
+    if (useMainSegmentOnly && bri == 0) {
+      for (uint8_t s=0; s < strip.getMaxSegments(); s++) {
+        if (s != strip.getMainSegmentId()) strip.getSegment(s).setOption(SEG_OPTION_ON, 0, s);
+        else                               strip.getSegment(s).setOption(SEG_OPTION_ON, 1, s);
+      }
     }
   }
 
   if (realtimeTimeout != UINT32_MAX) {
-    realtimeTimeout = millis() + timeoutMs;
     if (timeoutMs == 255001 || timeoutMs == 65000) realtimeTimeout = UINT32_MAX;
+    else                                           realtimeTimeout = millis() + timeoutMs;
   }
   // if strip is off (bri==0) and not already in RTM
   if (briT == 0 && !realtimeMode) {
@@ -218,7 +231,7 @@ void handleNotifications()
       uint8_t lbuf[packetSize];
       rgbUdp.read(lbuf, packetSize);
       realtimeLock(realtimeTimeoutMs, REALTIME_MODE_HYPERION);
-      if (realtimeOverride) return;
+      if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) return;
       uint16_t id = 0;
       uint16_t totalLen = strip.getLengthTotal();
       for (uint16_t i = 0; i < packetSize -2; i += 3)
@@ -226,7 +239,7 @@ void handleNotifications()
         setRealtimePixel(id, lbuf[i], lbuf[i+1], lbuf[i+2], 0);
         id++; if (id >= totalLen) break;
       }
-      strip.show();
+      if (!(realtimeMode && useMainSegmentOnly)) strip.show();
       return;
     } 
   }
@@ -429,7 +442,7 @@ void handleNotifications()
 
     realtimeIP = (isSupp) ? notifier2Udp.remoteIP() : notifierUdp.remoteIP();
     realtimeLock(realtimeTimeoutMs, REALTIME_MODE_TPM2NET);
-    if (realtimeOverride) return;
+    if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) return;
 
     tpmPacketCount++; //increment the packet count
     if (tpmPacketCount == 1) tpmPayloadFrameSize = (udpIn[2] << 8) + udpIn[3]; //save frame size for the whole payload if this is the first packet
@@ -469,7 +482,7 @@ void handleNotifications()
     } else {
       realtimeLock(udpIn[1]*1000 +1, REALTIME_MODE_UDP);
     }
-    if (realtimeOverride) return;
+    if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) return;
 
     uint16_t totalLen = strip.getLengthTotal();
     if (udpIn[0] == 1) //warls

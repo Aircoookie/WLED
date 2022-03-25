@@ -273,32 +273,11 @@ void getSettingsJS(byte subPage, char* dest)
       oappend(SET_F(",2")); // DMX hardcoded pin
     #endif
 
-    #ifdef WLED_ENABLE_ADALIGHT
-    // inform settings page that pin 3 is used by ADALights if not aleready used by strip (previous setup)
-    // NOTE: this will prohibit pin 3 use on new installs
-    /*
-    {
-      bool pin3used = false;
-      for (uint8_t s=0; s < busses.getNumBusses(); s++) {
-        Bus* bus = busses.getBus(s);
-        uint8_t pins[5];
-        uint8_t nPins = bus->getPins(pins);
-        for (uint8_t i = 0; i < nPins; i++) {
-          if (pins[i] == 3) {
-            pin3used = true;
-            break;
-          }
-        }
-        if (pin3used) break;
-      }
-      if (!pin3used && pinManager.isPinAllocated(3)) oappend(SET_F(",3")); // ADALight (RX) pin
-    }
-    */
-    #endif
-
     #ifdef WLED_DEBUG
       oappend(SET_F(",1")); // debug output (TX) pin
     #endif
+
+    //Note: Using pin 3 (RX) disables Adalight / Serial JSON
 
     #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
       if (psramFound()) oappend(SET_F(",16,17")); // GPIO16 & GPIO17 reserved for SPI RAM
@@ -451,6 +430,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("NB"),nodeBroadcastEnabled);
 
     sappend('c',SET_F("RD"),receiveDirect);
+    sappend('c',SET_F("MO"),useMainSegmentOnly);
     sappend('v',SET_F("EP"),e131Port);
     sappend('c',SET_F("ES"),e131SkipOutOfSequence);
     sappend('c',SET_F("EM"),e131Multicast);

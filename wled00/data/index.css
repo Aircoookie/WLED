@@ -665,9 +665,12 @@ input[type=range]::-moz-range-thumb {
 	border: 1px solid var(--c-3);
 	background-color: var(--c-3);
 }
+#segutil .btn-s:hover,
+#segutil2 .btn-s:hover,
+#putil .btn-s:hover,
 .btn:hover {
-	border: 1px solid var(--c-5) !important;
-	background-color: var(--c-5) !important;
+	border: 1px solid var(--c-5) /*!important*/;
+	background-color: var(--c-5) /*!important*/;
 }
 .btn-s {
 	width: 100%;
@@ -917,7 +920,7 @@ textarea {
 
 .pwr {
 	color: var(--c-6);
-	transform: translate(2px, 2px);
+	transform: translate(1px, 1px);
 	cursor: pointer;
 }
 
@@ -1041,7 +1044,7 @@ textarea {
 
 .seg .schkl {
 	position: absolute;
-	top: 7px;
+	top: 8px;
 	left: 9px;
 }
 

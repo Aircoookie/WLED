@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2203161
+#define VERSION 2203251
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -31,7 +31,7 @@
 #ifndef WLED_DISABLE_MQTT
   #define WLED_ENABLE_MQTT         // saves 12kb
 #endif
-//#define WLED_ENABLE_ADALIGHT     // saves 500b only (uses GPIO3 (RX) for serial)
+#define WLED_ENABLE_ADALIGHT       // saves 500b only (uses GPIO3 (RX) for serial)
 //#define WLED_ENABLE_DMX          // uses 3.5kb (use LEDPIN other than 2)
 //#define WLED_ENABLE_JSONLIVE     // peek LED output via /json/live (WS binary peek is always enabled)
 #ifndef WLED_DISABLE_LOXONE
@@ -545,6 +545,7 @@ WLED_GLOBAL IPAddress realtimeIP _INIT_N(((0, 0, 0, 0)));
 WLED_GLOBAL unsigned long realtimeTimeout _INIT(0);
 WLED_GLOBAL uint8_t tpmPacketCount _INIT(0);
 WLED_GLOBAL uint16_t tpmPayloadFrameSize _INIT(0);
+WLED_GLOBAL bool useMainSegmentOnly _INIT(false);
 
 // mqtt
 WLED_GLOBAL unsigned long lastMqttReconnectAttempt _INIT(0);

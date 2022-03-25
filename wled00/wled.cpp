@@ -79,7 +79,7 @@ void WLED::loop()
     yield();
   }
 
-  if (!realtimeMode || realtimeOverride)  // block stuff if WARLS/Adalight is enabled
+  if (!realtimeMode || realtimeOverride || (realtimeMode && useMainSegmentOnly))  // block stuff if WARLS/Adalight is enabled
   {
     if (apActive) dnsServer.processNextRequest();
     #ifndef WLED_DISABLE_OTA
@@ -303,13 +303,10 @@ void WLED::setup()
   #endif
 
   #ifdef WLED_ENABLE_ADALIGHT
-	//Serial RX (Adalight, Improv, Serial JSON) only possible if GPIO3 unused
-	//Serial TX (Debug, Improv, Serial JSON) only possible if GPIO1 unused
+  //Serial RX (Adalight, Improv, Serial JSON) only possible if GPIO3 unused
+  //Serial TX (Debug, Improv, Serial JSON) only possible if GPIO1 unused
   if (!pinManager.isPinAllocated(3) && !pinManager.isPinAllocated(1)) {
     Serial.println(F("Ada"));
-    pinManager.allocatePin(3,false);
-  } else {
-    DEBUG_PRINTLN(F("ADALight disabled due to GPIO3 being used."));
   }
   #endif
 
