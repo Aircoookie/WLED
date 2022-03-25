@@ -72,7 +72,8 @@
 #define USERMOD_ID_QUINLED_AN_PENTA      23     //Usermod "quinled-an-penta.h"
 #define USERMOD_ID_SSDR                  24     //Usermod "usermod_v2_seven_segment_display_reloaded.h"
 #define USERMOD_ID_CRONIXIE              25     //Usermod "usermod_cronixie.h"
-#define USERMOD_ID_MY9291                26     //Usermod "usermod_MY9291.h"
+#define USERMOD_ID_WIZLIGHTS             26     //Usermod "wizlights.h"
+#define USERMOD_ID_MY9291                27     //Usermod "usermod_MY9291.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
@@ -193,7 +194,7 @@
 #define BTN_TYPE_ANALOG_INVERTED  8
 
 //Ethernet board types
-#define WLED_NUM_ETH_TYPES        7
+#define WLED_NUM_ETH_TYPES        8
 
 #define WLED_ETH_NONE             0
 #define WLED_ETH_WT32_ETH01       1

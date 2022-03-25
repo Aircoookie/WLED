@@ -27,9 +27,7 @@ class MY9291Usermod : public Usermod {
     }
 
     void loop() {
-      // uint32_t c = getPixelColor(0);
-      WS2812FX::Segment& seg = strip.getSegment(0);
-      uint32_t c = seg.colors[0];
+      uint32_t c = strip.getPixelColor(0);
       int w = ((c >> 24) & 0xff) * bri / 255.0;
       int r = ((c >> 16) & 0xff) * bri / 255.0;
       int g = ((c >> 8) & 0xff) * bri / 255.0;

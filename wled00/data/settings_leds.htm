@@ -96,9 +96,11 @@
       UI();
     }
     //returns mem usage
-    function getMem(t, len, p0) {
+    function getMem(t, n) {
+      let len = parseInt(d.getElementsByName("LC"+n)[0].value);
+      len += parseInt(d.getElementsByName("SL"+n)[0].value); // skipped LEDs are allocated too
       if (t < 32) {
-        if (maxM < 10000 && p0==3) {    //8266 DMA uses 5x the mem
+        if (maxM < 10000 && d.getElementsByName("L0"+n)[0].value == 3) { //8266 DMA uses 5x the mem
           if (t > 29) return len*20; //RGBW
           return len*15;
         } else if (maxM >= 10000) //ESP32 RMT uses double buffer?
@@ -133,7 +135,7 @@
           gId("p1d"+n).innerHTML = (t> 49 && t<64) ? "Clk GPIO:" : "";
           var LK = d.getElementsByName("L1"+n)[0]; // clock pin
 
-          memu += getMem(t, d.getElementsByName("LC"+n)[0].value, d.getElementsByName("L0"+n)[0].value); // calc memory
+          memu += getMem(t, n); // calc memory
 
           // enumerate pins
           for (p=1; p<5; p++) {
@@ -324,7 +326,7 @@ ${i+1}:
 <span id="p3d${i}"></span><input type="number" name="L3${i}" min="0" max="33" class="xs" onchange="UI()"/>
 <span id="p4d${i}"></span><input type="number" name="L4${i}" min="0" max="33" class="xs" onchange="UI()"/>
 <div id="dig${i}r" style="display:inline"><br><span id="rev${i}">Reversed</span>: <input type="checkbox" name="CV${i}"></div>
-<div id="dig${i}s" style="display:inline"><br>Skip 1<sup>st</sup> LED: <input id="sl${i}" type="checkbox" name="SL${i}"></div>
+<div id="dig${i}s" style="display:inline"><br>Skip first LEDs: <input type="number" name="SL${i}" min="0" max="255" oninput="UI()"></div>
 <div id="dig${i}f" style="display:inline"><br>Off Refresh: <input id="rf${i}" type="checkbox" name="RF${i}"></div>
 </div>`;
         f.insertAdjacentHTML("beforeend", cn);
@@ -466,7 +468,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
               d.getElementsByName("LS"+i)[0].value = v.start;
               d.getElementsByName("LC"+i)[0].value = v.len;
               d.getElementsByName("CO"+i)[0].value = v.order;
-              d.getElementsByName("SL"+i)[0].checked = v.skip;
+              d.getElementsByName("SL"+i)[0].value = v.skip;
               d.getElementsByName("RF"+i)[0].checked = v.ref;
               d.getElementsByName("CV"+i)[0].checked = v.rev;
             });

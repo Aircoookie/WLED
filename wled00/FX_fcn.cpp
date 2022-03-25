@@ -82,6 +82,7 @@ void WS2812FX::finalizeInit(void)
 
   //if busses failed to load, add default (fresh install, FS issue, ...)
   if (busses.getNumBusses() == 0) {
+    DEBUG_PRINTLN(F("No busses, init default"));
     const uint8_t defDataPins[] = {DATA_PINS};
     const uint16_t defCounts[] = {PIXEL_COUNTS};
     const uint8_t defNumBusses = ((sizeof defDataPins) / (sizeof defDataPins[0]));
