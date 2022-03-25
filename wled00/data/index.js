@@ -1696,6 +1696,8 @@ function setIntensity() {
 
 function setLor(i) {
 	var obj = {"lor": i};
+	// allow canceling live mode (if sender crashes)
+	if (i===0 && lastinfo.live && ["","Hyperion","UDP"].includes(lastinfo.lm)) { obj.live = false; obj.v = true; }
 	requestJson(obj);
 }
 

@@ -275,8 +275,8 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   JsonObject nl       = root["nl"];
   nightlightActive    = nl["on"]      | nightlightActive;
-  nightlightDelayMins = nl["dur"]  | nightlightDelayMins;
-  nightlightMode      = nl["mode"] | nightlightMode;
+  nightlightDelayMins = nl["dur"]     | nightlightDelayMins;
+  nightlightMode      = nl["mode"]    | nightlightMode;
   nightlightTargetBri = nl[F("tbri")] | nightlightTargetBri;
 
   JsonObject udpn      = root["udpn"];
@@ -292,22 +292,24 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   doReboot = root[F("rb")] | doReboot;
 
+  strip.setMainSegmentId(root[F("mainseg")] | strip.getMainSegmentId()); // must be before realtimeLock() if "live"
+
   realtimeOverride = root[F("lor")] | realtimeOverride;
   if (realtimeOverride > 2) realtimeOverride = REALTIME_OVERRIDE_ALWAYS;
 
-  bool liveEnabled = false;
   if (root.containsKey("live")) {
-    bool lv = root["live"];
-    if (lv) {
+    if (root["live"].as<bool>()) {
       transitionDelayTemp = 0;
       jsonTransitionOnce = true;
-      liveEnabled = true; // triggers realtimeLock() below
       realtimeLock(65000);
+    } else {
+      if (realtimeOverride == REALTIME_OVERRIDE_ONCE) realtimeOverride = REALTIME_OVERRIDE_NONE;
+      strip.setBrightness(scaledBri(bri));
+      realtimeTimeout = 0; //cancel realtime mode immediately
+      realtimeMode = REALTIME_MODE_INACTIVE; // inform UI immediatelly
+      realtimeIP[0] = 0;
     }
-    else realtimeTimeout = 0; //cancel realtime mode immediately
   }
-
-  strip.setMainSegmentId(root[F("mainseg")] | strip.getMainSegmentId());
 
   int it = 0;
   JsonVariant segVar = root["seg"];
@@ -381,7 +383,6 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   }
 
   stateUpdated(callMode);
-  if (liveEnabled) realtimeTimeout = UINT32_MAX; // force indefinite timeout if this request contained {"live":true}
 
   return stateResponse;
 }
@@ -463,7 +464,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     udpn["send"] = notifyDirect;
     udpn["recv"] = receiveNotifications;
 
-    root[F("lor")] = realtimeOverride;
+    root[F("lor")] = realtimeOverride || (realtimeMode && useMainSegmentOnly);
   }
 
   root[F("mainseg")] = strip.getMainSegmentId();
@@ -536,6 +537,7 @@ void serializeInfo(JsonObject root)
   root[F("name")] = serverDescription;
   root[F("udpport")] = udpPort;
   root["live"] = (bool)realtimeMode;
+  root[F("mso")] = useMainSegmentOnly;  // using main segment only for live
 
   switch (realtimeMode) {
     case REALTIME_MODE_INACTIVE: root["lm"] = ""; break;

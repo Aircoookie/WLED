@@ -290,7 +290,8 @@ Send notifications twice: <input type="checkbox" name="S2"><br><i>
 Reboot required to apply changes.</i><h3>Instance List</h3>
 Enable instance list: <input type="checkbox" name="NL"><br>
 Make this instance discoverable: <input type="checkbox" name="NB"><h3>Realtime
-</h3>Receive UDP realtime: <input type="checkbox" name="RD"><br><br><i>
+</h3>Receive UDP realtime: <input type="checkbox" name="RD"><br>
+Use main segment only: <input type="checkbox" name="MO"><br><br><i>
 Network DMX input</i><br>Type: <select name="DI" onchange="SP(),adj()"><option 
 value="5568">E1.31 (sACN)</option><option value="6454">Art-Net</option><option 
 value="0" selected="selected">Custom port</option></select><br><div id="xp">
