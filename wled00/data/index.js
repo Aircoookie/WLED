@@ -538,7 +538,8 @@ function populateQL()
 		for (var key of (pQL||[])) {
 			cn += `<button class="btn btn-xs psts" id="p${key[0]}qlb" title="${key[2]?key[2]:''}" onclick="setPreset(${key[0]});">${key[1]}</button>`;
 		}
-	}
+		gId('pql').classList.add("expanded");
+	} else gId('pql').classList.remove("expanded");
 	gId('pql').innerHTML = cn;
 }
 
@@ -651,6 +652,13 @@ function populateSegments(s)
 		if (i == lowestUnused) lowestUnused = i+1;
 		if (i > lSeg) lSeg = i;
 
+		let segp = `<div id="segp${i}" class="sbs ${expanded[i] ? "expanded":""}">
+		<i class="icons e-icon pwr ${powered[i] ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})">&#xe08f;</i>
+		<div class="sliderwrap il">
+			<input id="seg${i}bri" class="noslide" onchange="setSegBri(${i})" oninput="updateTrail(this)" max="255" min="1" type="range" value="${inst.bri}" />
+			<div class="sliderdisplay"></div>
+		</div>
+	</div>`;
 		cn += `<div class="seg ${i==s.mainseg ? 'selected' : ''} ${expanded[i] ? "expanded":""}" id="seg${i}">
 	<label class="check schkl">
 		<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>
@@ -660,13 +668,7 @@ function populateSegments(s)
 		${inst.n ? inst.n : "Segment "+i}
 	</div>
 	<i class="icons e-icon flr ${expanded[i] ? "exp":""}" id="sege${i}" onclick="expand(${i})">&#xe395;</i>
-	<div id="segp${i}" class="sbs ${expanded[i] ? "expanded":""}">
-		<i class="icons e-icon pwr ${powered[i] ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})">&#xe08f;</i>
-		<div class="sliderwrap il">
-			<input id="seg${i}bri" class="noslide" onchange="setSegBri(${i})" oninput="updateTrail(this)" max="255" min="1" type="range" value="${inst.bri}" />
-			<div class="sliderdisplay"></div>
-		</div>
-	</div>
+	${cfg.comp.segpwr?segp:''}
 	<div class="segin ${expanded[i] ? "expanded":""}" id="seg${i}in">
 		<input type="text" class="ptxt noslide" id="seg${i}t" autocomplete="off" maxlength=32 value="${inst.n?inst.n:""}" placeholder="Enter name..."/>
 		<table class="infot segt">
@@ -707,6 +709,7 @@ function populateSegments(s)
 			<button class="btn btn-xs" id="segd${i}" title="Delete" onclick="delSeg(${i})"><i class="icons btn-icon">&#xe037;</i></button>
 		</div>
 	</div>
+	${cfg.comp.segpwr?'':segp}
 </div>`;
 	}
 

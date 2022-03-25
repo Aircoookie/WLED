@@ -329,6 +329,7 @@ button {
 
 #putil {
 	margin: 0 auto;
+	padding: 5px 0;
 }
 
 .smooth { transition: transform	calc(var(--f, 1)*.5s) ease-out }
@@ -376,6 +377,8 @@ button {
 	margin: auto;
 	border-radius: 15px;
 }
+
+#pql,
 #sliderLabel2, #sliderLabel3, #sliderLabel4,
 #slider2, #slider3, #slider4 {
 	display: none;
@@ -1170,6 +1173,7 @@ input[type="text"].fnd:hover {
 .segin,
 .presin {
 	padding: 8px;
+	position: relative;
 }
 
 .btn-s,
