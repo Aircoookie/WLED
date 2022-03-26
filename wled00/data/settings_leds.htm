@@ -613,16 +613,15 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
 		<h3>White management</h3>
 		White Balance correction: <input type="checkbox" name="CCT"> <br>
 		<span class="wc">
-    <!--
-      Auto-calculate white channel from RGB:<br>
+      Global override for Auto-calculate white:<br>
       <select name="AW">
+        <option value=255>Disabled</option>
         <option value=0>None</option>
         <option value=1>Brighter</option>
         <option value=2>Accurate</option>
         <option value=3>Dual</option>
       </select>
     <br>
-    -->
     Calculate CCT from RGB: <input type="checkbox" name="CR"> <br>
     CCT additive blending: <input type="number" class="s" min="0" max="100" name="CB" required> %</span>
     <h3>Advanced</h3>

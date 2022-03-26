@@ -319,6 +319,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("CR"),cctFromRgb);
     sappend('v',SET_F("CB"),strip.cctBlending);
     sappend('v',SET_F("FR"),strip.getTargetFps());
+    sappend('v',SET_F("AW"),strip.autoWhiteMode);
 
     for (uint8_t s=0; s < busses.getNumBusses(); s++) {
       Bus* bus = busses.getBus(s);
@@ -346,7 +347,7 @@ void getSettingsJS(byte subPage, char* dest)
       sappend('c',cv,bus->reversed);
       sappend('v',sl,bus->skippedLeds());
       sappend('c',rf,bus->isOffRefreshRequired());
-      sappend('v',aw,bus->getAutoWhiteMode());
+      sappend('v',aw,bus->getAWMode());
     }
     sappend('v',SET_F("MA"),strip.ablMilliampsMax);
     sappend('v',SET_F("LA"),strip.milliampsPerLed);

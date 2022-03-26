@@ -603,7 +603,8 @@ void WS2812FX::Segment::refreshLightCapabilities() {
       }
     }
     if (correctWB && type != TYPE_ANALOG_1CH) capabilities |= 0x04; //white balance correction (uses CCT slider)
-    bool whiteSlider = (bus->getAutoWhiteMode() == RGBW_MODE_DUAL || bus->getAutoWhiteMode() == RGBW_MODE_MANUAL_ONLY); // white slider allowed
+    uint8_t aWM = Bus::getAutoWhiteMode()<255 ? Bus::getAutoWhiteMode() : bus->getAWMode();
+    bool whiteSlider = (aWM == RGBW_MODE_DUAL || aWM == RGBW_MODE_MANUAL_ONLY); // white slider allowed
     if (bus->isRgbw() && (whiteSlider || !(capabilities & 0x01))) capabilities |= 0x08; // allow white channel adjustments (AWM allows or is not RGB)
   }
   _capabilities = capabilities;
@@ -1255,6 +1256,7 @@ WS2812FX* WS2812FX::instance = nullptr;
 //Bus static member definition, would belong in bus_manager.cpp
 int16_t Bus::_cct = -1;
 uint8_t Bus::_cctBlend = 0;
+uint8_t Bus::_gAWM = 255;
 
 
 // WLEDSR: extensions

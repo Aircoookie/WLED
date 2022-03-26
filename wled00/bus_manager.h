@@ -186,8 +186,10 @@ class Bus {
 				if (_cctBlend > WLED_MAX_CCT_BLEND) _cctBlend = WLED_MAX_CCT_BLEND;
 			#endif
 		}
-		inline void    setAutoWhiteMode(uint8_t m) { if (m < 4) _autoWhiteMode = m; }
-		inline uint8_t getAutoWhiteMode() { return _autoWhiteMode; }
+		inline        void    setAWMode(uint8_t m)        { if (m < 4) _autoWhiteMode = m; }
+		inline        uint8_t getAWMode()                 { return _autoWhiteMode; }
+    inline static void    setAutoWhiteMode(uint8_t m) { if (m < 4) _gAWM = m; else _gAWM = 255; }
+    inline static uint8_t getAutoWhiteMode()          { return _gAWM; }
 
     bool reversed = false;
 
@@ -198,20 +200,23 @@ class Bus {
     uint16_t _len = 1;
     bool     _valid = false;
     bool     _needsRefresh = false;
-    uint8_t _autoWhiteMode;
-    static int16_t _cct;
-		static uint8_t _cctBlend;
+    uint8_t  _autoWhiteMode;
+    static uint8_t _gAWM;     // definition in FX_fcn.cpp
+    static int16_t _cct;      // definition in FX_fcn.cpp
+		static uint8_t _cctBlend; // definition in FX_fcn.cpp
   
     uint32_t autoWhiteCalc(uint32_t c) {
-      if (_autoWhiteMode == RGBW_MODE_MANUAL_ONLY) return c;
+      uint8_t aWM = _autoWhiteMode;
+      if (_gAWM < 255) aWM = _gAWM;
+      if (aWM == RGBW_MODE_MANUAL_ONLY) return c;
       uint8_t w = W(c);
       //ignore auto-white calculation if w>0 and mode DUAL (DUAL behaves as BRIGHTER if w==0)
-      if (w > 0 && _autoWhiteMode == RGBW_MODE_DUAL) return c;
+      if (w > 0 && aWM == RGBW_MODE_DUAL) return c;
       uint8_t r = R(c);
       uint8_t g = G(c);
       uint8_t b = B(c);
       w = r < g ? (r < b ? r : b) : (g < b ? g : b);
-      if (_autoWhiteMode == RGBW_MODE_AUTO_ACCURATE) { r -= w; g -= w; b -= w; } //subtract w in ACCURATE mode
+      if (aWM == RGBW_MODE_AUTO_ACCURATE) { r -= w; g -= w; b -= w; } //subtract w in ACCURATE mode
       return RGBW32(r, g, b, w);
     }
 };
@@ -594,9 +599,7 @@ class BusNetwork : public Bus {
 
 class BusManager {
   public:
-  BusManager() {
-
-  };
+  BusManager() {};
 
   //utility to get the approx. memory usage of a given BusConfig
   static uint32_t memUsage(BusConfig &bc) {

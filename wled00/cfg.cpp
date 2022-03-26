@@ -84,7 +84,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   uint8_t autoWhiteMode = RGBW_MODE_MANUAL_ONLY;
   CJSON(strip.ablMilliampsMax, hw_led[F("maxpwr")]);
   CJSON(strip.milliampsPerLed, hw_led[F("ledma")]);
-  CJSON(autoWhiteMode, hw_led[F("rgbwm")]); // backwards compatibility
+  CJSON(strip.autoWhiteMode, hw_led[F("rgbwm")]); // global override
+  Bus::setAutoWhiteMode(strip.autoWhiteMode);
   CJSON(correctWB, hw_led["cct"]);
   CJSON(cctFromRgb, hw_led[F("cr")]);
   CJSON(strip.cctBlending, hw_led[F("cb")]);
@@ -118,7 +119,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       bool reversed = elm["rev"];
       bool refresh = elm["ref"] | false;
       ledType |= refresh << 7; // hack bit 7 to indicate strip requires off refresh
-      uint8_t AWmode = elm[F("rgbwm")] | autoWhiteMode; // backwards compatible
+      uint8_t AWmode = elm[F("rgbwm")] | autoWhiteMode;
       if (fromFS) {
         BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode);
         mem += BusManager::memUsage(bc);
@@ -575,6 +576,7 @@ void serializeConfig() {
   hw_led[F("total")] = strip.getLengthTotal(); //no longer read, but provided for compatibility on downgrade
   hw_led[F("maxpwr")] = strip.ablMilliampsMax;
   hw_led[F("ledma")] = strip.milliampsPerLed;
+  hw_led[F("rgbwm")] = strip.autoWhiteMode;    // global override
   hw_led["cct"] = correctWB;
   hw_led[F("cr")] = cctFromRgb;
   hw_led[F("cb")] = strip.cctBlending;
@@ -597,7 +599,7 @@ void serializeConfig() {
     ins[F("skip")] = bus->skippedLeds();
     ins["type"] = bus->getType() & 0x7F;
     ins["ref"] = bus->isOffRefreshRequired();
-    ins[F("rgbwm")] = bus->getAutoWhiteMode();
+    ins[F("rgbwm")] = bus->getAWMode();
   }
 
   JsonArray hw_com = hw.createNestedArray(F("com"));
