@@ -180,29 +180,29 @@ button {
 }
 
 .edit-icon {
-	position: absolute;
-	right: -26px;
-	top: 10px;
+	/*position: absolute;*/
+	/*right: -26px;*/
+	/*top: 10px;*/
 	display: none;
 }
 
 .search-icon {
 	position: absolute;
-	top: 10px;
-	left: 13px;
+	top: 8px;
+	left: 12px;
 	pointer-events: none;
 	width: 24px;
 	height: 24px;
-	margin-top: -1px;
+	/*margin-top: -1px;*/
 }
 
 .clear-icon {
 	position: absolute;
 	display: none;
-	top: 10px;
-	right: 13px;
+	top: 8px;
+	right: 9px;
 	cursor: pointer;
-	margin-top: -1px;
+	/*margin-top: -1px;*/
 }
 
 .flr {
@@ -215,6 +215,7 @@ button {
 	padding: 8px;
 }
 
+.expanded .flr,
 .exp {
 	transform: rotate(180deg);
 }
@@ -311,24 +312,19 @@ button {
 	min-height: 42px;
 }
 
-#segutil, #segcont, #pcont, #pql {
-	margin: 10px auto 0;
+#putil, #segutil, #segutil2 {
+	margin: 13px auto 0;
 }
 
-#segutil2 {
+#segutil .segin {
+	padding-top: 12px;
+}
+
+#pql, #segcont, #pcont {
 	margin: 0 auto;
-}
-
-#segutil .seg {
-	margin: 10px 0;
-}
-
-#segcont, #pcont {
-	margin-bottom: 10px;
 }
 
 #putil {
-	margin: 0 auto;
 	padding: 5px 0;
 }
 
@@ -737,7 +733,7 @@ input[type=range]::-moz-range-thumb {
 	width: 26px;
 	height: 26px;
 	line-height: 26px;
-	border: 1px solid var(--c-f);
+	border: 1px solid #fff;
 }
 
 /* Hex color input wrapper div */
@@ -849,6 +845,7 @@ textarea {
 .ptxt {
     /*width: 236px !important;*/
     margin: 0 4px 4px !important;
+	display: none;
 }
 
 .stxt {
@@ -912,7 +909,7 @@ textarea {
 	/*box-shadow: 0 0 0 5px #fff;*/
 }
 
-.qcs, .xxs, #namelabel {
+.qcs, #namelabel {
 	text-shadow: -1px -1px 0 var(--c-4), 1px -1px 0 var(--c-4), -1px 1px 0 var(--c-4), 1px 1px 0 var(--c-4);
 }
 
@@ -1027,27 +1024,28 @@ textarea {
 
 /* segment & preset wrapper */
 .seg, .pres {
-	position: relative;
-	display: block;
-	margin: 0 0 10px;
-	background-color: var(--c-2);
+	/*position: relative;*/
+	/*display: block;*/
+	/*margin: 0 0 10px;*/
+	/*background-color: var(--c-2);*/
 	color: var(--c-f);
 	border: 0px solid var(--c-f);
 	text-align: left;
 	transition: background-color 0.5s;
-  	filter: brightness(1);
+  	/*filter: brightness(1);*/
 	font-size: 19px;
-	border-radius: 21px;
-	min-height: 42px;
+	/*border-radius: 21px;*/
+	/*min-height: 40px;*/
+	min-width: 280px;
 }
-
+/*
 .seg:last-child {
 	margin: 0;
 }
-
+*/
 .seg .schkl {
 	position: absolute;
-	top: 8px;
+	top: 7px;
 	left: 9px;
 }
 
@@ -1068,9 +1066,13 @@ textarea {
 	background-color: var(--c-2);
 	overflow: hidden;
 	position: sticky;
-	border-radius: 24px;
-	margin: 10px auto 0;
+	border-radius: 21px;
+	margin: 13px auto 0;
 	min-height: 40px;
+}
+
+#segutil .lstI {
+	margin-top: 0;
 }
 
 /* selected item/element */
@@ -1101,8 +1103,8 @@ textarea {
 	z-index: 1;
 }
 
-#pcont .selected {
-	bottom: 52px;
+#pcont .selected:not([class*="expanded"]) {
+	bottom: 60px;
 	top: 40px;
 }
 /* calculated in index.js
@@ -1124,7 +1126,7 @@ textarea {
 
 /* list item content */
 .lstIcontent {
-	padding: 8px 0;
+	padding: 9px 0 7px;
 	position: relative;
 }
 
@@ -1153,10 +1155,10 @@ input[type="text"].fnd {
 	display: block;
 	width: 100%;
 	box-sizing: border-box;
-    padding: 8px 40px 8px 52px;
+    padding: 8px 40px 8px 44px;
     margin: 5px auto 0;
 	text-align: left;
-	border-radius: 25px;
+	border-radius: 21px;
 	background: var(--c-2);
 }
 
@@ -1194,8 +1196,11 @@ input[type="text"].fnd:hover {
 
 .check input:checked ~ .checkmark:after,
 .radio input:checked ~ .radiomark:after,
+.show,
+.expanded .edit-icon,
+.expanded .segin, .expanded .presin, .expanded .sbs,
 .expanded {
-	display: block !important;
+	display: inline-block !important;
 }
 
 .c {

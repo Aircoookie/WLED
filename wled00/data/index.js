@@ -3,8 +3,6 @@ var loc = false, locip;
 var noNewSegs = false;
 var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true;
 var hasWhite = false, hasRGB = false, hasCCT = false;
-var expanded = [false];
-var powered = [true];
 var nlDur = 60, nlTar = 0;
 var nlMode = false;
 var selectedFx = 0, prevFx = -1;
@@ -564,8 +562,9 @@ function populatePresets(fromls)
 
 		cn += `<div class="pres lstI" id="p${i}o">`;
 		if (cfg.comp.pid) cn += `<div class="pid">${i}</div>`;
-		cn += `<div class="pname lstIname" onclick="setPreset(${i})">${isPlaylist(i)?"<i class='icons btn-icon'>&#xe139;</i>":""}${pName(i)}</div>
-	<i class="icons e-icon flr ${expanded[i+100] ? "exp":""}" id="sege${i+100}" onclick="expand(${i+100})">&#xe395;</i>
+		cn += `<div class="pname lstIname" onclick="setPreset(${i})">${isPlaylist(i)?"<i class='icons btn-icon'>&#xe139;</i>":""}${pName(i)}
+	<i class="icons edit-icon" id="p${i}nedit" onclick="tglSegn(${i+100})">&#xe2c6;</i></div>
+	<i class="icons e-icon flr" id="sege${i+100}" onclick="expand(${i+100})">&#xe395;</i>
 	<div class="presin lstIcontent" id="seg${i+100}"></div>
 </div>`;
     	pNum++;
@@ -648,28 +647,31 @@ function populateSegments(s)
 
 		var inst = s.seg[y];
 		let i = parseInt(inst.id);
-		powered[i] = inst.on;
 		if (i == lowestUnused) lowestUnused = i+1;
 		if (i > lSeg) lSeg = i;
 
-		let segp = `<div id="segp${i}" class="sbs ${expanded[i] ? "expanded":""}">
-		<i class="icons e-icon pwr ${powered[i] ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})">&#xe08f;</i>
+		let sg = gId(`seg${i}`);
+		let exp = sg ? sg.classList.contains("expanded") : false;
+
+		let segp = `<div id="segp${i}" class="sbs">
+		<i class="icons e-icon pwr ${inst.on ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})">&#xe08f;</i>
 		<div class="sliderwrap il">
 			<input id="seg${i}bri" class="noslide" onchange="setSegBri(${i})" oninput="updateTrail(this)" max="255" min="1" type="range" value="${inst.bri}" />
 			<div class="sliderdisplay"></div>
 		</div>
 	</div>`;
-		cn += `<div class="seg ${i==s.mainseg ? 'selected' : ''} ${expanded[i] ? "expanded":""}" id="seg${i}">
+		cn += `<div class="seg lstI ${i==s.mainseg ? 'selected' : ''} ${exp ? "expanded":""}" id="seg${i}">
 	<label class="check schkl">
 		<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>
 		<span class="checkmark schk"></span>
 	</label>
 	<div class="segname" onclick="selSegEx(${i})">
 		${inst.n ? inst.n : "Segment "+i}
+		<i class="icons edit-icon" id="seg${i}nedit" onclick="tglSegn(${i})">&#xe2c6;</i>
 	</div>
-	<i class="icons e-icon flr ${expanded[i] ? "exp":""}" id="sege${i}" onclick="expand(${i})">&#xe395;</i>
+	<i class="icons e-icon flr" id="sege${i}" onclick="expand(${i})">&#xe395;</i>
 	${cfg.comp.segpwr?segp:''}
-	<div class="segin ${expanded[i] ? "expanded":""}" id="seg${i}in">
+	<div class="segin" id="seg${i}in">
 		<input type="text" class="ptxt noslide" id="seg${i}t" autocomplete="off" maxlength=32 value="${inst.n?inst.n:""}" placeholder="Enter name..."/>
 		<table class="infot segt">
 		<tr>
@@ -990,12 +992,12 @@ function updatePA()
 	ps = gEBCN("psts"); for (let p of ps) p.classList.remove('selected');
 	if (currentPreset > 0) {
 		var acv = gId(`p${currentPreset}o`);
-		if (acv && !expanded[currentPreset+100]) {
+		if (acv /*&& !acv.classList.contains("expanded")*/) {
 			acv.classList.add('selected');
 			// scroll selected preset into view (on WS refresh)
 			acv.scrollIntoView({
 				behavior: 'smooth',
-				block: 'center',
+				block: 'center'
 			});
 		}
 		acv = gId(`p${currentPreset}qlb`);
@@ -1137,7 +1139,7 @@ function readState(s,command=false)
 	if (!s) return false;
 
 	isOn = s.on;
-	gId('sliderBri').value= s.bri;
+	gId('sliderBri').value = s.bri;
 	nlA = s.nl.on;
 	nlDur = s.nl.dur;
 	nlTar = s.nl.tbri;
@@ -1510,9 +1512,9 @@ function makeSeg()
 		block: 'start',
 	});
 	var ct = ledCount-(cfg.comp.seglen?ns:0);
-	var cn = `<div class="seg">
-	<div class="segin expanded">
-		<input type="text" class="ptxt noslide" id="seg${lu}t" autocomplete="off" maxlength=32 value="" placeholder="New segment ${lu}"/>
+	var cn = `<div class="seg lstI expanded">
+	<div class="segin">
+		<input type="text" class="noslide" id="seg${lu}t" autocomplete="off" maxlength=32 value="" placeholder="New segment ${lu}"/>
 		<table class="segt">
 			<tr>
 				<td width="38%">Start LED</td>
@@ -1777,7 +1779,11 @@ function tglCs(i)
 
 function tglSegn(s)
 {
-	d.gId(`seg${s}t`).style.display = (window.getComputedStyle(d.gId(`seg${s}t`)).display === "none") ? "inline":"none";
+	let t = gId(s<100?`seg${s}t`:`p${s-100}txt`);
+	if (t) t.classList.toggle("show");
+	//if (t) t.style.display = (getComputedStyle(t).display === "none") ? "inline":"none";
+	event.preventDefault();
+	event.stopPropagation();
 }
 
 function selSegAll(o)
@@ -1814,7 +1820,8 @@ function rptSeg(s)
 	var rev = gId(`seg${s}rev`).checked;
 	var mi = gId(`seg${s}mi`).checked;
 	var sel = gId(`seg${s}sel`).checked;
-	var obj = {"seg": {"id": s, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop, "rev": rev, "mi": mi, "on": !powered[s], "bri": parseInt(gId(`seg${s}bri`).value), "sel": sel}};
+	var pwr = gId(`seg${s}pwr`).classList.contains("act");
+	var obj = {"seg": {"id": s, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop, "rev": rev, "mi": mi, "on": !pwr, "bri": parseInt(gId(`seg${s}bri`).value), "sel": sel}};
 	if (gId(`seg${s}grp`)) {
 		var grp = parseInt(gId(`seg${s}grp`).value);
 		var spc = parseInt(gId(`seg${s}spc`).value);
@@ -1852,7 +1859,6 @@ function delSeg(s)
 		showToast("You need to have multiple segments to delete one!");
 		return;
 	}
-	expanded[s] = false;
 	segCount--;
 	var obj = {"seg": {"id": s, "stop": 0}};
 	requestJson(obj);
@@ -1874,7 +1880,8 @@ function setMi(s)
 
 function setSegPwr(s)
 {
-	var obj = {"seg": {"id": s, "on": !powered[s]}};
+	var pwr = gId(`seg${s}pwr`).classList.contains("act");
+	var obj = {"seg": {"id": s, "on": !pwr}};
 	requestJson(obj);
 }
 
@@ -2014,7 +2021,6 @@ function saveP(i,pl)
 	}
 	populatePresets();
 	resetPUtil();
-	if (i>0) expand(pI+100); // collapse edited preset or expand created preset.
 }
 
 function testPl(i,bt) {
@@ -2336,25 +2342,18 @@ function formatArr(pl) {
 	}
 }
 
-function expand(i, c=false)
+function expand(i)
 {
-	var seg = gId('seg' +i);
-	let util = i<100?'segutil':'putil';
-	//let stay = i<100?"staybot":"staytop";
+	var seg = i<100 ? gId('seg' +i) : gId(`p${i-100}o`);
+	let ps = gId("pcont").children; // preset wrapper
+	if (i>100) for (let p of ps) { p.classList.remove("selected"); if (p!==seg) p.classList.remove("expanded"); } // collapse all other presets & remove selected
 
-	if (!c && i>100) for (let j=100; j<expanded.length; j++) if (i!=j && expanded[j]) expand(j,true); // collapse all expanded presets
-
-	expanded[i] = !expanded[i];
 	seg.classList.toggle("expanded");
-	if (i<100) gId('segp' +i).classList.toggle("expanded");
-	gId('sege' +i).classList.toggle("exp");
-	gId(util).classList.toggle("staybot");
 
 	// presets
 	if (i >= 100) {
 		var p = i-100;
-		gId(`p${p}o`).classList.toggle('expanded');
-		if (expanded[i]) {
+		if (seg.classList.contains('expanded')) {
 			if (isPlaylist(p)) {
 				plJson[p] = pJson[p].playlist;
 				// make sure all keys are present in plJson[p]
@@ -2362,25 +2361,28 @@ function expand(i, c=false)
 				if (isNaN(plJson[p].repeat)) plJson[p].repeat = 0;
 				if (!plJson[p].r) plJson[p].r = false;
 				if (isNaN(plJson[p].end)) plJson[p].end = 0;
-
-				seg.innerHTML = makeP(p,true);
+				gId('seg' +i).innerHTML = makeP(p,true);
 				refreshPlE(p);
 			} else {
-				seg.innerHTML = makeP(p);
+				gId('seg' +i).innerHTML = makeP(p);
 			}
 			var papi = papiVal(p);
 			gId(`p${p}api`).value = papi;
 			if (papi.indexOf("Please") == 0) gId(`p${p}cstgl`).checked = false;
 			tglCs(p);
-		} else
-			seg.innerHTML = "";
-	} else {
-		gId('seg' +i +'in').classList.toggle("expanded");
+			gId('putil').classList.remove("staybot");
+		} else {
+			updatePA();
+			gId('seg' +i).innerHTML = "";
+			gId('putil').classList.add("staybot");
+		}
+//	} else {
+//		gId('segutil').classList.toggle("staybot");
 	}
 
-	seg.parentElement.scrollIntoView({
+	seg.scrollIntoView({
 		behavior: 'smooth',
-		block: /*(expanded[i]?'start':*/'center'/*)*/,
+		block: 'center'
 	});
 }
 
