@@ -98,11 +98,12 @@ button {
 
 #namelabel {
 	position: fixed;
-	bottom: calc(var(--bh) + 6px);
-	right: 6px;
-	color: var(--c-b);
+	bottom: var(--bh);
+	right: 0;
+	color: var(--c-d);
 	cursor: pointer;
-	writing-mode: vertical-rl;
+	/* writing-mode: vertical-rl; */
+	transform: rotate(-90deg) translate(30px,20px);
 }
 
 .bri {
@@ -932,6 +933,18 @@ textarea {
 	position: absolute;
 	bottom: 8px;
 	right: 8px;
+}
+
+.frz {
+	left: 36px;
+	position: absolute;
+	top: -3px;
+	cursor: pointer;
+	padding: 8px;
+}
+
+.expanded .frz {
+	display: none;
 }
 
 /* radiobuttons and checkmarks */

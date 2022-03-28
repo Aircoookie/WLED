@@ -146,6 +146,7 @@ void realtimeLock(uint32_t timeoutMs, byte md)
       WS2812FX::Segment& mainseg = strip.getMainSegment();
       start = mainseg.start;
       stop  = mainseg.stop;
+      mainseg.setOption(SEG_OPTION_FREEZE, true, strip.getMainSegmentId());
     } else {
       start = 0;
       stop  = strip.getLengthTotal();
@@ -155,8 +156,8 @@ void realtimeLock(uint32_t timeoutMs, byte md)
     // if WLED was off and using main segment only, turn non-main segments off
     if (useMainSegmentOnly && bri == 0) {
       for (uint8_t s=0; s < strip.getMaxSegments(); s++) {
-        if (s != strip.getMainSegmentId()) strip.getSegment(s).setOption(SEG_OPTION_ON, 0, s);
-        else                               strip.getSegment(s).setOption(SEG_OPTION_ON, 1, s);
+        if (s != strip.getMainSegmentId()) strip.getSegment(s).setOption(SEG_OPTION_ON, false, s);
+        else                               strip.getSegment(s).setOption(SEG_OPTION_ON, true, s);
       }
     }
   }
@@ -205,6 +206,7 @@ void handleNotifications()
   if (realtimeMode && millis() > realtimeTimeout)
   {
     if (realtimeOverride == REALTIME_OVERRIDE_ONCE) realtimeOverride = REALTIME_OVERRIDE_NONE;
+    if (useMainSegmentOnly) strip.getMainSegment().setOption(SEG_OPTION_FREEZE, false, strip.getMainSegmentId());
     strip.setBrightness(scaledBri(bri));
     realtimeMode = REALTIME_MODE_INACTIVE;
     realtimeIP[0] = 0;

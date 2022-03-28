@@ -583,18 +583,18 @@ function populatePresets(fromls)
 	populateQL();
 }
 
-function parseInfo() {
-	var li   = lastinfo;
-	var name = li.name;
+function parseInfo(i) {
+	lastinfo = i;
+	var name = i.name;
 	gId('namelabel').innerHTML = name;
 	//if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)";
-	if (li.live) name = "(Live) " + name;
-	if (loc)     name = "(L) " + name;
+	if (i.live) name = "(Live) " + name;
+	if (loc)    name = "(L) " + name;
 	d.title     = name;
-	ledCount    = li.leds.count;
-	syncTglRecv = li.str;
-	maxSeg      = li.leds.maxseg;
-	pmt         = li.fs.pmt;
+	ledCount    = i.leds.count;
+	syncTglRecv = i.str;
+	maxSeg      = i.leds.maxseg;
+	pmt         = i.fs.pmt;
 }
 
 function populateInfo(i)
@@ -639,6 +639,7 @@ ${inforow("Environment",i.arch + " " + i.core + " (" + i.lwip + ")")}
 function populateSegments(s)
 {
 	var cn = "";
+	let li = lastinfo;
 	segCount = 0; lowestUnused = 0; lSeg = 0;
 
 	for (var y = 0; y < (s.seg||[]).length; y++)
@@ -665,6 +666,7 @@ function populateSegments(s)
 		<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>
 		<span class="checkmark schk"></span>
 	</label>
+	<i class="icons e-icon frz" id="seg${i}frz" onclick="event.preventDefault();tglFreeze(${i});">&#x${inst.frz ? (li.live && li.liveseg==i?'e410':'e0e8') : 'e325'};</i>
 	<div class="segname" onclick="selSegEx(${i})">
 		${inst.n ? inst.n : "Segment "+i}
 		<i class="icons edit-icon" id="seg${i}nedit" onclick="tglSegn(${i})">&#xe2c6;</i>
@@ -1079,7 +1081,7 @@ function updateSelectedFx()
 
 function displayRover(i,s)
 {
-	gId('rover').style.transform = (i.live && s.lor == 0) ? "translateY(0px)":"translateY(100%)";
+	gId('rover').style.transform = (i.live && s.lor == 0 && i.liveseg<0) ? "translateY(0px)":"translateY(100%)";
 	var sour = i.lip ? i.lip:""; if (sour.length > 2) sour = " from " + sour;
 	gId('lv').innerHTML = `WLED is receiving live ${i.lm} data${sour}`;
 	gId('roverstar').style.display = (i.live && s.lor) ? "block":"none";
@@ -1113,8 +1115,7 @@ function makeWS() {
 		// json object should contain json.info AND json.state (but may not)
 		var i = json.info;
 		if (i) {
-			lastinfo = i;
-			parseInfo();
+			parseInfo(i);
 			showNodes();
 			if (isInfo) populateInfo(i);
 		} else
@@ -1425,8 +1426,7 @@ function requestJson(command=null)
 		if (!json) { showToast('Empty response', true); return; }
 		if (json.success) return;
 		if (json.info) {
-			lastinfo = json.info;
-			parseInfo();
+			parseInfo(json.info);
 			if (isInfo) populateInfo(lastinfo);
 		}
 		var s = json.state ? json.state : json;
@@ -1894,7 +1894,7 @@ function setSegBri(s)
 function tglFreeze(s=null)
 {
 	var obj = {"seg": {"frz": "t"}}; // toggle
-	if (s!==null) obj.id = s;
+	if (s!==null) obj.seg.id = s;
 	requestJson(obj);
 }
 
@@ -1951,8 +1951,6 @@ function setIntensity()
 function setLor(i)
 {
 	var obj = {"lor": i};
-	// allow canceling live mode (if sender crashes)
-	if (i===0 && lastinfo.live && ["","Hyperion","UDP"].includes(lastinfo.lm)) { obj.live = false; obj.v = true; }
 	requestJson(obj);
 }
 
@@ -2376,8 +2374,6 @@ function expand(i)
 			gId('seg' +i).innerHTML = "";
 			gId('putil').classList.add("staybot");
 		}
-//	} else {
-//		gId('segutil').classList.toggle("staybot");
 	}
 
 	seg.scrollIntoView({
