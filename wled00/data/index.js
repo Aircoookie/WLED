@@ -1444,6 +1444,11 @@ function togglePower()
 {
 	isOn = !isOn;
 	var obj = {"on": isOn};
+	if (isOn && lastinfo && lastinfo.live && lastinfo.liveseg>=0) {
+		obj.live = false;
+		obj.seg = [];
+		obj.seg[0] = {"id": lastinfo.liveseg, "frz": false};
+	}
 	requestJson(obj);
 }
 
