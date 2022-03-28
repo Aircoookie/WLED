@@ -864,6 +864,18 @@ input[type=number]::-webkit-outer-spin-button {
 	right: 8px;
 }
 
+.frz {
+	left: 36px;
+	position: absolute;
+	top: -2px;
+	cursor: pointer;
+	padding: 8px;
+}
+
+.expanded .frz {
+	display: none;
+}
+
 .check, .radio {
 	display: inline-block;
 	position: relative;

@@ -131,7 +131,7 @@ void WS2812FX::service() {
 
   for(uint8_t i=0; i < MAX_NUM_SEGMENTS; i++)
   {
-    if (realtimeMode && useMainSegmentOnly && i == getMainSegmentId()) continue;
+    //if (realtimeMode && useMainSegmentOnly && i == getMainSegmentId()) continue;
 
     _segment_index = i;
 

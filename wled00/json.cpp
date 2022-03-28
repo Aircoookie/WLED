@@ -228,8 +228,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     }
     strip.setPixelSegment(oldSegId);
     strip.trigger();
-  } else if (!elem["frz"] && iarr.isNull()) { //return to regular effect
-    seg.setOption(SEG_OPTION_FREEZE, false);
+//  } else if (!elem["frz"] && iarr.isNull()) { //return to regular effect
+//    seg.setOption(SEG_OPTION_FREEZE, false);
   }
   // send UDP if not in preset and something changed that is not just selection
   //if (!presetId && (seg.differs(prev) & 0x7F)) stateChanged = true;
@@ -464,7 +464,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     udpn["send"] = notifyDirect;
     udpn["recv"] = receiveNotifications;
 
-    root[F("lor")] = realtimeOverride || (realtimeMode && useMainSegmentOnly);
+    root[F("lor")] = realtimeOverride;
   }
 
   root[F("mainseg")] = strip.getMainSegmentId();
@@ -537,7 +537,8 @@ void serializeInfo(JsonObject root)
   root[F("name")] = serverDescription;
   root[F("udpport")] = udpPort;
   root["live"] = (bool)realtimeMode;
-  root[F("mso")] = useMainSegmentOnly;  // using main segment only for live
+  root[F("liveseg")] = useMainSegmentOnly ? strip.getMainSegmentId() : -1;  // if using main segment only for live
+  //root[F("mso")] = useMainSegmentOnly;  // using main segment only for live
 
   switch (realtimeMode) {
     case REALTIME_MODE_INACTIVE: root["lm"] = ""; break;
