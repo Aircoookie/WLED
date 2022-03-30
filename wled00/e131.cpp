@@ -177,7 +177,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
         const uint16_t dmxChannelsPerLed = is4Chan ? 4 : 3;
         const uint16_t ledsPerUniverse = is4Chan ? MAX_4_CH_LEDS_PER_UNIVERSE : MAX_3_CH_LEDS_PER_UNIVERSE;
         if (realtimeOverride) return;
-        uint16_t previousLeds, dmxOffset;
+        uint16_t previousLeds, dmxOffset, ledsTotal;
         if (previousUniverses == 0) {
           if (dmxChannels-DMXAddress < 1) return;
           dmxOffset = DMXAddress;
@@ -186,13 +186,15 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
           if (DMXMode == DMX_MODE_MULTIPLE_DRGB) {
             strip.setBrightness(e131_data[dmxOffset++], true);
           }
+          ledsTotal = (dmxChannels - dmxOffset + 1) / dmxChannelsPerLed;
         } else {
           // All subsequent universes start at the first channel.
           dmxOffset = (protocol == P_ARTNET) ? 0 : 1;
-          uint16_t ledsInFirstUniverse = (MAX_CHANNELS_PER_UNIVERSE - DMXAddress) / dmxChannelsPerLed;
+          uint16_t dimmerOffset = (DMXMode == DMX_MODE_MULTIPLE_DRGB) ? 1 : 0;
+          uint16_t ledsInFirstUniverse = ((MAX_CHANNELS_PER_UNIVERSE - DMXAddress + 1) - dimmerOffset) / dmxChannelsPerLed;
           previousLeds = ledsInFirstUniverse + (previousUniverses - 1) * ledsPerUniverse;
+          ledsTotal = previousLeds + (dmxChannels / dmxChannelsPerLed);
         }
-        uint16_t ledsTotal = previousLeds + (dmxChannels - dmxOffset +1) / dmxChannelsPerLed;
         if (!is4Chan) {
           for (uint16_t i = previousLeds; i < ledsTotal; i++) {
             setRealtimePixel(i, e131_data[dmxOffset], e131_data[dmxOffset+1], e131_data[dmxOffset+2], 0);
