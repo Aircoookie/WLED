@@ -55,7 +55,7 @@ class WordClockUsermod : public Usermod {
       { 66,  67,  68,  69,  -1,  -1}, // 03: drei
       { 73,  74,  75,  76,  -1,  -1}, // 04: vier
       { 51,  52,  53,  54,  -1,  -1}, // 05: fünf
-      { 77,  78,  79,  80, 104,  -1}, // 06: sechs
+      { 77,  78,  79,  80,  81,  -1}, // 06: sechs
       { 88,  89,  90,  91,  92,  93}, // 07: sieben
       { 84,  85,  86,  87,  -1,  -1}, // 08: acht
       {102, 103, 104, 105,  -1,  -1}, // 09: neun
@@ -256,7 +256,7 @@ class WordClockUsermod : public Usermod {
     void loop() {
 
       // do it every 5 seconds
-      if (millis() - lastTime > 1000) 
+      if (millis() - lastTime > 5000) 
       {
         // check the time
         int minutes = minute(localTime);
