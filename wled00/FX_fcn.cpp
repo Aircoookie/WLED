@@ -748,12 +748,6 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
         setSegment(i, 0, 0);
       }
     }
-    
-    if (forceReset) {
-      for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) {
-        setSegment(i, 0, 0);
-      }
-    }
 
     if (getActiveSegmentsNum() < 2) {
       setSegment(mainSeg, 0, _length);

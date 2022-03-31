@@ -225,6 +225,7 @@ void initServer()
                       size_t len, bool final) {handleUpload(request, filename, index, data, len, final);}
   );
 
+#ifdef WLED_ENABLE_SIMPLE_UI
   server.on("/simple.htm", HTTP_GET, [](AsyncWebServerRequest *request){
     if (handleFileRead(request, "/simple.htm")) return;
     if (handleIfNoneMatchCacheHeader(request)) return;
@@ -233,7 +234,8 @@ void initServer()
     setStaticContentCacheHeaders(response);
     request->send(response);
   });
-  
+#endif
+
   server.on("/iro.js", HTTP_GET, [](AsyncWebServerRequest *request){
     AsyncWebServerResponse *response = request->beginResponse_P(200, "application/javascript", iroJs, iroJs_length);
     response->addHeader(F("Content-Encoding"),"gzip");
@@ -388,7 +390,7 @@ void serveIndex(AsyncWebServerRequest* request)
   if (handleIfNoneMatchCacheHeader(request)) return;
 
   AsyncWebServerResponse *response;
-#ifndef WLED_DISABLE_SIMPLE_UI
+#ifdef WLED_ENABLE_SIMPLE_UI
   if (simplifiedUI)
     response = request->beginResponse_P(200, "text/html", PAGE_simple, PAGE_simple_L);
   else

@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2203282
+#define VERSION 2203310
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -143,7 +143,7 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
 
 #include "fcn_declare.h"
 #include "html_ui.h"
-#ifndef WLED_DISABLE_SIMPLE_UI
+#ifdef WLED_ENABLE_SIMPLE_UI
 #include "html_simple.h"
 #endif
 #include "html_settings.h"
@@ -461,13 +461,12 @@ WLED_GLOBAL byte colNlT[] _INIT_N(({ 0, 0, 0, 0 }));        // current nightligh
 
 // brightness
 WLED_GLOBAL unsigned long lastOnTime _INIT(0);
-WLED_GLOBAL bool offMode _INIT(!turnOnAtBoot);
-WLED_GLOBAL byte bri _INIT(briS);
-WLED_GLOBAL byte briOld _INIT(0);
-WLED_GLOBAL byte briT _INIT(0);
-WLED_GLOBAL byte briIT _INIT(0);
-WLED_GLOBAL byte briLast _INIT(128);          // brightness before turned off. Used for toggle function
-WLED_GLOBAL byte whiteLast _INIT(128);        // white channel before turned off. Used for toggle function
+WLED_GLOBAL bool offMode             _INIT(!turnOnAtBoot);
+WLED_GLOBAL byte bri                 _INIT(briS);          // global brightness (set)
+WLED_GLOBAL byte briOld              _INIT(0);             // global brightnes while in transition loop (previous iteration)
+WLED_GLOBAL byte briT                _INIT(0);             // global brightness during transition
+WLED_GLOBAL byte briLast             _INIT(128);           // brightness before turned off. Used for toggle function
+WLED_GLOBAL byte whiteLast           _INIT(128);           // white channel before turned off. Used for toggle function
 
 // button
 WLED_GLOBAL bool buttonPublishMqtt                            _INIT(false);

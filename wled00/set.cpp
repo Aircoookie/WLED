@@ -205,7 +205,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   {
     strlcpy(serverDescription, request->arg(F("DS")).c_str(), 33);
     syncToggleReceive = request->hasArg(F("ST"));
-  #ifndef WLED_DISABLE_SIMPLE_UI
+  #ifdef WLED_ENABLE_SIMPLE_UI
     if (simplifiedUI ^ request->hasArg(F("SU"))) {
       // UI selection changed, invalidate browser cache
       cacheInvalidate++;
