@@ -1,5 +1,6 @@
 #buttonNl,
-#imgw {
+#imgw,
+#imgw + br {
 	display: none;
 }
 

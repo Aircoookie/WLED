@@ -182,8 +182,14 @@ public:
                 if (p != localTime) {
                     p = localTime;
 
-                    dHoursT.setDigit(hour(p) / 10);
-                    dHoursO.setDigit(hour(p) % 10);
+                    int hr = hour(p);
+                    if (useAMPM) {
+                        if (hr > 11) hr -= 12;
+                        if (hr == 0) hr  = 12;
+                    }
+
+                    dHoursT.setDigit(hr / 10);
+                    dHoursO.setDigit(hr % 10);
 
                     switch (separatorMode) {
                     case SeparatorMode::ON: sep.setState(true); break;
