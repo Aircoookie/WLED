@@ -29,7 +29,7 @@ input[type=range] {
 	margin: 0px 10px 0px 10px;
 	background-color: transparent;
 	cursor: pointer;
-  border: 0;
+	border: 0;
 }
 
 input[type=range]:focus {

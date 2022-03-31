@@ -15,11 +15,22 @@
 #define BRIGHTNESS_THRESHOLD 5
 #define BRIGHTNESS_PIN 34
 
+#define STOPWATCH_MAX_LAP_TIMES 100
+
 extern const char * ledClockSettingsKey;
 extern const char * ledClockSettingsKeyAutoBrightness;
 extern const char * ledClockSettingsKeyMinBrightness;
 extern const char * ledClockSettingsKeyMaxBrightness;
 extern const char * ledClockSettingsKeySeparatorMode;
+
+extern const char * ledClockStateKey;
+extern const char * ledClockStateKeyMode;
+extern const char * ledClockStateKeyStopwatch;
+extern const char * ledClockStateKeyStopwatchRunning;
+extern const char * ledClockStateKeyStopwatchElapsed;
+extern const char * ledClockStateKeyStopwatchLapTimes;
+extern const char * ledClockStateKeyStopwatchLapTimeNr;
+extern const char * ledClockStateKeyStopwatchLastLapTime;
 
 enum SeparatorMode {
     ON, OFF, BLINK

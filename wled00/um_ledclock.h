@@ -10,6 +10,17 @@ const char * ledClockSettingsKeyMinBrightness = "minb";
 const char * ledClockSettingsKeyMaxBrightness = "maxb";
 const char * ledClockSettingsKeySeparatorMode = "sepm";
 
+const char * ledClockStateKey = "ledclock";
+const char * ledClockStateKeyCommand = "cmd";
+const char * ledClockStateKeyMode = "mode";
+const char * ledClockStateKeyStopwatch = "stopw";
+const char * ledClockStateKeyStopwatchRunning = "runs";
+const char * ledClockStateKeyStopwatchPaused = "pause";
+const char * ledClockStateKeyStopwatchElapsed = "elap";
+const char * ledClockStateKeyStopwatchLapTimes = "lapt";
+const char * ledClockStateKeyStopwatchLapTimeNr = "lapnr";
+const char * ledClockStateKeyStopwatchLastLapTime = "lalap";
+
 unsigned long Timer::_millis() {
     return millis();
 }
@@ -49,6 +60,20 @@ uint8_t brightness(uint8_t minBrightness, uint8_t maxBrightness) {
 class UsermodLedClock : public Usermod, public LedClockSettings {
 
 private:
+    enum Mode {
+
+        ClockMode, TimerMode, StopwatchMode
+    };
+
+    enum Command {
+        StopwatchStart,
+        StopwatchPause,
+        StopwatchReset,
+        StopwatchLapTime,
+
+        NoOp = 99
+    };
+
     SevenSegmentDisplay dHoursT;
     SevenSegmentDisplay dHoursO;
 
@@ -73,6 +98,17 @@ private:
     uint32_t* backup = 0;
     uint16_t backupLength = 0;
 
+    Mode mode = Mode::ClockMode;
+
+    Timer stopwatchTimer;
+    bool stopwatchRunnig = false;
+    bool stopwatchPaused = false;
+    unsigned long stopwatchElapsed = 0;
+    unsigned long stopwatchPrevLapTime = 0;
+    unsigned long stopwatchLapTimes[STOPWATCH_MAX_LAP_TIMES];
+    uint8_t stopwatchLapTimeIdx = 0;
+    uint32_t stopwatchLaptimeNr = 0;
+
 public:
 
     UsermodLedClock():
@@ -83,11 +119,12 @@ public:
         dMinutesO(&strip, 2),
         display(5, &dHoursT, &dHoursO, &sep, &dMinutesT, &dMinutesO),
         beeper(0, BUZZER_PIN),
-        selfTestTimer(20) {}
+        selfTestTimer(20),
+        stopwatchTimer(0) {}
 
     void setup() {
         // digit 1
-        dHoursT.setShowZero(false);
+        dHoursT.setShowZero(false); //TODO config
         dHoursT.mapSegment(_7SEG_SEG_A, 6, 7);
         dHoursT.mapSegment(_7SEG_SEG_B, 8, 9);
         dHoursT.mapSegment(_7SEG_SEG_C, 12, 13);
@@ -140,20 +177,78 @@ public:
         beeper.update();
 
         if (selfTestDone) {
-            if (p != localTime) {
-                p = localTime;
+            switch (mode) {
+            case Mode::ClockMode:
+                if (p != localTime) {
+                    p = localTime;
 
-                dHoursT.setDigit(hour(p) / 10);
-                dHoursO.setDigit(hour(p) % 10);
+                    dHoursT.setDigit(hour(p) / 10);
+                    dHoursO.setDigit(hour(p) % 10);
 
-                switch (separatorMode) {
-                case SeparatorMode::ON: sep.setState(true); break;
-                case SeparatorMode::OFF: sep.setState(false); break;
-                case SeparatorMode::BLINK: sep.setState(second(p) % 2); break;
+                    switch (separatorMode) {
+                    case SeparatorMode::ON: sep.setState(true); break;
+                    case SeparatorMode::OFF: sep.setState(false); break;
+                    case SeparatorMode::BLINK: sep.setState(second(p) % 2); break;
+                    }
+
+                    dMinutesT.setDigit(minute(p) / 10);
+                    dMinutesO.setDigit(minute(p) % 10);
                 }
+                break;
+            case Mode::TimerMode:
+                break;
+            case Mode::StopwatchMode:
+                if (stopwatchRunnig) {
+                    unsigned long elapsed = stopwatchPaused
+                        ? stopwatchElapsed
+                        : (stopwatchElapsed + stopwatchTimer.elapsed());
 
-                dMinutesT.setDigit(minute(p) / 10);
-                dMinutesO.setDigit(minute(p) % 10);
+                    bool on = stopwatchPaused
+                        ? ((stopwatchTimer.elapsed() / 1000) % 2) // blinking syncs to elapsed time since paused
+                        : ((stopwatchElapsed + stopwatchTimer.elapsed() / 1000) % 2); // blinking syncs to stopwatch elapsed time
+
+                    if (!stopwatchPaused || on) {
+                        if (elapsed < 60000) {
+                            unsigned long seconds = elapsed / 1000;
+                            unsigned long hundredths = (elapsed % 1000) / 10;
+                            dHoursT.setDigit(seconds / 10);
+                            dHoursO.setDigit(seconds % 10);
+                            dMinutesT.setDigit(hundredths / 10);
+                            dMinutesO.setDigit(hundredths % 10);
+                        } else if (elapsed < 3600000) {
+                            unsigned long minutes = elapsed / 60000;
+                            unsigned long seconds = (elapsed % 60000) / 1000;
+                            dHoursT.setDigit(minutes / 10);
+                            dHoursO.setDigit(minutes % 10);
+                            dMinutesT.setDigit(seconds / 10);
+                            dMinutesO.setDigit(seconds % 10);
+                        } else {
+                            unsigned long hours = elapsed / 3600000;
+                            unsigned long minutes = (elapsed % 3600000) / 60000;
+                            dHoursT.setDigit(hours / 10);
+                            dHoursO.setDigit(hours % 10);
+                            dMinutesT.setDigit(minutes / 10);
+                            dMinutesO.setDigit(minutes % 10);
+                        }
+                    } else {
+                        dHoursT.setSymbol(_7SEG_SYM_EMPTY);
+                        dHoursO.setSymbol(_7SEG_SYM_EMPTY);
+                        sep.setState(false);
+                        dMinutesT.setSymbol(_7SEG_SYM_EMPTY);
+                        dMinutesO.setSymbol(_7SEG_SYM_EMPTY);
+                    }
+
+                    sep.setState(on);
+                } else {
+                    dHoursT.setDigit(0);
+                    dHoursO.setDigit(0);
+                    sep.setState(true);
+                    dMinutesT.setDigit(0);
+                    dMinutesO.setDigit(0);
+                }
+                break;
+            default:
+                break;
             }
 
             if (!strip.isUpdating()) {
@@ -184,6 +279,87 @@ public:
         double reading = normalizedSensorRading;
         lightArr.add((reading / ADC_MAX_VALUE) * ADC_MAX_VOLTAGE);
         lightArr.add("V");
+    }
+
+    void addToJsonState(JsonObject& root) {
+        JsonObject state = root.createNestedObject(ledClockStateKey);
+        state[ledClockStateKeyMode] = mode;
+        if (mode == Mode::StopwatchMode) {
+            JsonObject stopwatch = state.createNestedObject(ledClockStateKeyStopwatch);
+
+            stopwatch[ledClockStateKeyStopwatchRunning] = stopwatchRunnig;
+            stopwatch[ledClockStateKeyStopwatchPaused] = stopwatchPaused;
+            stopwatch[ledClockStateKeyStopwatchElapsed] = stopwatchRunnig
+                ? (stopwatchPaused
+                    ? stopwatchElapsed
+                    : (stopwatchElapsed + stopwatchTimer.elapsed()))
+                : 0;
+
+            JsonArray arr = stopwatch.createNestedArray(ledClockStateKeyStopwatchLapTimes);
+            for (uint8_t i = stopwatchLapTimeIdx; i > 0; --i) {
+                arr.add(stopwatchLapTimes[i - 1]);
+            }
+            if (stopwatchLaptimeNr != stopwatchLapTimeIdx) {
+                for (uint8_t i = STOPWATCH_MAX_LAP_TIMES; i > stopwatchLapTimeIdx; --i) {
+                    arr.add(stopwatchLapTimes[i - 1]);
+                }
+            }
+
+            stopwatch[ledClockStateKeyStopwatchLapTimeNr] = stopwatchLaptimeNr;
+            stopwatch[ledClockStateKeyStopwatchLastLapTime] = stopwatchPrevLapTime;
+        }
+    }
+
+    void readFromJsonState(JsonObject& root) {
+        JsonObject state = root[ledClockStateKey];
+        if (!state.isNull()) {
+            Mode m = state[ledClockStateKeyMode] | mode;
+            if (m != mode) {
+                if (m != Mode::StopwatchMode) {
+                    resetStopwatch();
+                }
+                mode = m;
+            }
+            Command c = state[ledClockStateKeyCommand] | Command::NoOp;
+            switch (c) {
+            case Command::StopwatchStart:
+                stopwatchRunnig = true;
+                stopwatchPaused = false;
+                stopwatchTimer.setOriginToNow();
+                break;
+            case Command::StopwatchPause:
+                stopwatchRunnig = true;
+                stopwatchPaused = true;
+                stopwatchElapsed += stopwatchTimer.elapsed();
+                stopwatchTimer.setOriginToNow();
+                break;
+            case Command::StopwatchReset:
+                resetStopwatch();
+                break;
+            case Command::StopwatchLapTime:
+                if (stopwatchRunnig && !stopwatchPaused) {
+                    unsigned long elapsed = stopwatchElapsed + stopwatchTimer.elapsed();
+                    stopwatchLapTimes[stopwatchLapTimeIdx++] = elapsed - stopwatchPrevLapTime;
+                    stopwatchPrevLapTime = elapsed;
+                    if (stopwatchLapTimeIdx == STOPWATCH_MAX_LAP_TIMES) {
+                        stopwatchLapTimeIdx = 0;
+                    }
+                    stopwatchLaptimeNr++;
+                }
+                break;
+            default:
+                break;
+            }
+        }
+    }
+
+    void resetStopwatch() {
+        stopwatchRunnig = false;
+        stopwatchPaused = false;
+        stopwatchElapsed = 0;
+        stopwatchPrevLapTime = 0;
+        stopwatchLapTimeIdx = 0;
+        stopwatchLaptimeNr = 0;
     }
 
     void addToConfig(JsonObject& root) {

@@ -3,7 +3,124 @@
 	display: none;
 }
 
-#clock {
+.icons {
+    position: relative;
+    top: 0.125rem;
+}
+
+#lc-clock {
     z-index: 4;
     transition: transform 0.4s, background-color 0.4s;
+
+
+
+    display: flex;
+    flex-direction: column;
+}
+
+#lc-clock .btn.lc-mode {
+    width: auto;
+    margin: 0;
+    padding: 8px 14px 8px 10px;
+}
+
+#lc-clock hr {
+    border-color: #666;
+}
+
+#lc-modes {
+    padding: 1rem 0;
+    overflow: hidden;
+
+
+    flex-grow: 1;
+}
+
+#lc-modes > div {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    transition: transform .4s ease-in-out;
+
+
+
+    height: 100%;
+}
+
+#lc-modes > div > div {
+    width: 100%;
+    flex-shrink: 0;
+
+
+    display: flex;
+    flex-direction: column;
+    row-gap: 1rem;
+}
+
+#lc-clock button {
+    transition: background-color .5s, opacity .4s;
+}
+
+#lc-clock button:disabled {
+    opacity: .5;
+}
+
+#lc-clock button:disabled:hover {
+    background-color: var(--c-3);
+}
+
+#lc-mode-stopwatch button {
+    width: auto;
+    margin: 0;
+    padding: 8px 14px 8px 10px;
+}
+
+#lc-laptimes {
+    display: none;
+    grid-template-columns: max-content max-content max-content;
+    justify-content: center;
+    gap: .5rem 2rem;
+    height: 100%;
+    overflow-y: scroll;
+    font-size: 1rem;
+    padding: 1rem 0;
+    box-sizing: border-box;
+}
+
+#lc-laptimes h4 {
+    margin: 0;
+}
+
+#lc-laptimes small {
+    color: var(--c-8);
+    padding-left: 0.1rem;
+}
+
+#lc-laptimes .fader {
+    flex-grow: 1;
+}
+
+.fader {
+    position: relative;
+    overflow: hidden;
+}
+
+.fader::before,
+.fader::after {
+    content: '';
+    display: block;
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 1rem;
+}
+
+.fader::before {
+    top: 0;
+    background: linear-gradient(180deg, var(--c-2) 0%, rgba(0,0,0,0) 100%)
+}
+
+.fader::after {
+    bottom: 0;
+    background: linear-gradient(0deg, var(--c-2) 0%, rgba(0,0,0,0) 100%)
 }

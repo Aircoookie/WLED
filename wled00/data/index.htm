@@ -21,7 +21,7 @@
 	<div class="tab top">
 		<div class="btnwrap">
 			<button id="buttonPower" onclick="togglePower()" class="tgl"><i class="icons">&#xe08f;</i><p class="tab-label">Power</p></button>
-			<button id="buttonClock" onclick="toggleClock()"><i class="icons">&#xe000;</i><p class="tab-label">Clock</p></button>
+			<button id="lc-buttonClock" onclick="LC.toggleClock()"><i class="icons">&#xe000;</i><p class="tab-label">Clock</p></button>
 			<button id="buttonNl" onclick="toggleNl()"><i class="icons">&#xe2a2;</i><p class="tab-label">Timer</p></button>
 			<button id="buttonSync" onclick="toggleSync()"><i class="icons">&#xe116;</i><p class="tab-label">Sync</p></button>
 			<button id="buttonSr" onclick="toggleLiveview()"><i class="icons">&#xe410;</i><p class="tab-label">Peek</p></button>
@@ -210,9 +210,36 @@
 <span style="display: none" class="h">Made with <span id="heart">&#10084;&#xFE0E;</span> by Aircoookie and the WLED community</span>
 </div>
 
-<div id="clock" class="modal">
-	<h3>Clock</h3>
-	<button class="btn infobtn" onclick="toggleClock()">Close</button><br>
+<div id="lc-clock" class="modal">
+	<div id="lc-header">
+		<h3>Clock Mode</h3>
+		<button class="btn infobtn lc-mode" onclick="LC.setMode(0)"><i class="icons no-margin">&#xe000;</i> Clock</button>
+		<button class="btn infobtn lc-mode" onclick="LC.setMode(1)"><i class="icons no-margin">&#xe001;</i> Timer</button>
+		<button class="btn infobtn lc-mode" onclick="LC.setMode(2)"><i class="icons no-margin">&#xe325;</i> Stopwatch</button>
+		<hr>
+	</div>
+	<div id="lc-modes">
+		<div>
+			<div id="lc-mode-clock">The device shows the current time.<br><br><button class="btn infobtn" onclick="location.href='/settings/time'">Settings</button></div>
+			<div id="lc-mode-timer">timer</div>
+			<div id="lc-mode-stopwatch">
+				<div id="lc-stopwatch-buttons">
+					<button id="lc-sw-reset" class="btn infobtn" onclick="LC.stopwatchReset()"><i class="icons no-margin">&#xe116;</i> Reset</button>
+					<button id="lc-sw-toggle" class="btn infobtn" onclick="LC.stopwatchToggle()"><i class="icons no-margin">&#xe002;</i> <span>Start</span></button>
+					<button id="lc-sw-laptime" class="btn infobtn" onclick="LC.stopwatchLapTime()"><i class="icons no-margin">&#xe004;</i> Lap Time</button>
+				</div>
+				<div class="fader">
+					<div id="lc-laptimes">
+						<h4>#</h4><h4>Lap Time</h4><h4>Split Time</h4>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div id="lc-footer">
+		<hr>
+		<button class="btn infobtn" onclick="LC.toggleClock()">Close</button><br>
+	</div>
 </div>
 
 <div id="nodes" class="modal">

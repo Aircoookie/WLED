@@ -961,6 +961,7 @@ function updateUI()
 
 	updatePA();
 	updatePSliders();
+	LC.updateUI();
 }
 
 function displayRover(i,s)
@@ -1129,6 +1130,7 @@ function readState(s,command=false) {
 			}
 		showToast('Error ' + s.error + ": " + errstr, true);
 	}
+	LC.readState(s, command);
 	updateUI();
 }
 
