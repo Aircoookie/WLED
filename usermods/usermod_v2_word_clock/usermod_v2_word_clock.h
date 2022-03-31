@@ -63,7 +63,7 @@ class WordClockUsermod : public Usermod
       {102, 103, 104, 105,  -1,  -1}, // 09: neun
       { 99, 100, 101, 102,  -1,  -1}, // 10: zehn
       { 49,  50,  51,  -1,  -1,  -1}, // 11: elf
-      { 95,  96,  97,  98,  99,  -1}  // 12: zwölf and 00: null
+      { 94,  95,  96,  97,  98,  -1}  // 12: zwölf and 00: null
     };
 
     // mask "it is"
