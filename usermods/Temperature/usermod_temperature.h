@@ -229,7 +229,6 @@ class UsermodTemperature : public Usermod {
       if (user.isNull()) user = root.createNestedObject("u");
 
       JsonArray temp = user.createNestedArray(FPSTR(_name));
-      //temp.add(F("Loaded."));
 
       if (temperature <= -100.0f) {
         temp.add(0);
@@ -238,8 +237,13 @@ class UsermodTemperature : public Usermod {
       }
 
       temp.add(degC ? getTemperatureC() : getTemperatureF());
-      if (degC) temp.add(F("°C"));
-      else      temp.add(F("°F"));
+      temp.add(degC ? F("°C") : F("°F"));
+
+      JsonObject sensor = root[F("sensor")];
+      if (sensor.isNull()) sensor = root.createNestedObject(F("sensor"));
+      temp = sensor.createNestedArray(F("temp"));
+      temp.add(degC ? temperature : (float)temperature * 1.8f + 32);
+      temp.add(degC ? F("°C") : F("°F"));
     }
 
     /**

@@ -90,20 +90,17 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
     colorFromDecOrHexString(col, (char*)payloadStr);
     colorUpdated(CALL_MODE_DIRECT_CHANGE);
   } else if (strcmp_P(topic, PSTR("/api")) == 0) {
+    DEBUG_PRINTLN(F("MQTT JSON buffer requested."));
+    if (!requestJSONBufferLock(15)) { delete[] payloadStr; return; }
     if (payload[0] == '{') { //JSON API
-      #ifdef WLED_USE_DYNAMIC_JSON
-      DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-      #else
-      if (!requestJSONBufferLock(15)) return;
-      #endif
       deserializeJson(doc, payloadStr);
       deserializeState(doc.as<JsonObject>());
-      releaseJSONBufferLock();
     } else { //HTTP API
-      String apireq = "win&";
+      String apireq = "win"; apireq += '&'; // reduce flash string usage
       apireq += (char*)payloadStr;
       handleSet(nullptr, apireq);
     }
+    releaseJSONBufferLock();
   } else if (strlen(topic) != 0) {
     // non standard topic, check with usermods
     usermods.onMqttMessage(topic, payloadStr);

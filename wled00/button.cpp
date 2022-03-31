@@ -18,7 +18,7 @@ void shortPressAction(uint8_t b)
   if (!macroButton[b]) {
     switch (b) {
       case 0: toggleOnOff(); stateUpdated(CALL_MODE_BUTTON); break;
-      case 1: ++effectCurrent %= strip.getModeCount(); colorUpdated(CALL_MODE_BUTTON); break;
+      case 1: ++effectCurrent %= strip.getModeCount(); stateChanged = true; colorUpdated(CALL_MODE_BUTTON); break;
     }
   } else {
     applyPreset(macroButton[b], CALL_MODE_BUTTON_PRESET);
@@ -195,6 +195,7 @@ void handleButton()
 {
   static unsigned long lastRead = 0UL;
   bool analog = false;
+  unsigned long now = millis();
 
   for (uint8_t b=0; b<WLED_MAX_BUTTONS; b++) {
     #ifdef ESP8266
@@ -205,7 +206,7 @@ void handleButton()
 
     if (usermods.handleButton(b)) continue; // did usermod handle buttons
 
-    if ((buttonType[b] == BTN_TYPE_ANALOG || buttonType[b] == BTN_TYPE_ANALOG_INVERTED) && millis() - lastRead > 250) {   // button is not a button but a potentiometer
+    if ((buttonType[b] == BTN_TYPE_ANALOG || buttonType[b] == BTN_TYPE_ANALOG_INVERTED) && now - lastRead > 250) {   // button is not a button but a potentiometer
       analog = true;
       handleAnalog(b); continue;
     }
@@ -218,21 +219,21 @@ void handleButton()
     //momentary button logic
     if (isButtonPressed(b)) { //pressed
 
-      if (!buttonPressedBefore[b]) buttonPressedTime[b] = millis();
+      if (!buttonPressedBefore[b]) buttonPressedTime[b] = now;
       buttonPressedBefore[b] = true;
 
-      if (millis() - buttonPressedTime[b] > WLED_LONG_PRESS) { //long press
+      if (now - buttonPressedTime[b] > WLED_LONG_PRESS) { //long press
         if (!buttonLongPressed[b]) longPressAction(b);
         else if (b) { //repeatable action (~3 times per s) on button > 0
           longPressAction(b);
-          buttonPressedTime[b] = millis() - WLED_LONG_REPEATED_ACTION; //300ms
+          buttonPressedTime[b] = now - WLED_LONG_REPEATED_ACTION; //333ms
         }
         buttonLongPressed[b] = true;
       }
 
     } else if (!isButtonPressed(b) && buttonPressedBefore[b]) { //released
 
-      long dur = millis() - buttonPressedTime[b];
+      long dur = now - buttonPressedTime[b];
       if (dur < WLED_DEBOUNCE_THRESHOLD) {buttonPressedBefore[b] = false; continue;} //too short "press", debounce
       bool doublePress = buttonWaitTime[b]; //did we have a short press before?
       buttonWaitTime[b] = 0;
@@ -246,13 +247,14 @@ void handleButton()
           WLED::instance().initAP(true);
         }
       } else if (!buttonLongPressed[b]) { //short press
+        //NOTE: this interferes with double click handling in usermods so usermod needs to implement full button handling
         if (b != 1 && !macroDoublePress[b]) { //don't wait for double press on buttons without a default action if no double press macro set
           shortPressAction(b);
         } else { //double press if less than 350 ms between current press and previous short press release (buttonWaitTime!=0)
           if (doublePress) {
             doublePressAction(b);
           } else {
-            buttonWaitTime[b] = millis();
+            buttonWaitTime[b] = now;
           }
         }
       }
@@ -261,12 +263,12 @@ void handleButton()
     }
 
     //if 350ms elapsed since last short press release it is a short press
-    if (buttonWaitTime[b] && millis() - buttonWaitTime[b] > WLED_DOUBLE_PRESS && !buttonPressedBefore[b]) {
+    if (buttonWaitTime[b] && now - buttonWaitTime[b] > WLED_DOUBLE_PRESS && !buttonPressedBefore[b]) {
       buttonWaitTime[b] = 0;
       shortPressAction(b);
     }
   }
-  if (analog) lastRead = millis();
+  if (analog) lastRead = now;
 }
 
 void handleIO()

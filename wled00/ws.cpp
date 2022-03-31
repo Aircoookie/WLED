@@ -16,9 +16,11 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
   if(type == WS_EVT_CONNECT){
     //client connected
     sendDataWs(client);
+    DEBUG_PRINTLN(F("WS client connected."));
   } else if(type == WS_EVT_DISCONNECT){
     //client disconnected
     if (client->id() == wsLiveClientId) wsLiveClientId = 0;
+    DEBUG_PRINTLN(F("WS client disconnected."));
   } else if(type == WS_EVT_DATA){
     //data packet
     AwsFrameInfo * info = (AwsFrameInfo*)arg;
@@ -34,11 +36,8 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
         }
         bool verboseResponse = false;
         { //scope JsonDocument so it releases its buffer
-          #ifdef WLED_USE_DYNAMIC_JSON
-          DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-          #else
+          DEBUG_PRINTLN(F("WS JSON receive buffer requested."));
           if (!requestJSONBufferLock(11)) return;
-          #endif
 
           DeserializationError error = deserializeJson(doc, data, len);
           JsonObject root = doc.as<JsonObject>();
@@ -82,12 +81,15 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
           }
         }
       }
+      DEBUG_PRINTLN(F("WS multipart message."));
     }
   } else if(type == WS_EVT_ERROR){
     //error was received from the other end
+    DEBUG_PRINTLN(F("WS error."));
 
   } else if(type == WS_EVT_PONG){
     //pong message was received (in response to a ping request maybe)
+    DEBUG_PRINTLN(F("WS pong."));
 
   }
 }
@@ -98,15 +100,14 @@ void sendDataWs(AsyncWebSocketClient * client)
   AsyncWebSocketMessageBuffer * buffer;
 
   { //scope JsonDocument so it releases its buffer
-    #ifdef WLED_USE_DYNAMIC_JSON
-    DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-    #else
+    DEBUG_PRINTLN(F("WS JSON send buffer requested."));
     if (!requestJSONBufferLock(12)) return;
-    #endif
+
     JsonObject state = doc.createNestedObject("state");
     serializeState(state);
     JsonObject info  = doc.createNestedObject("info");
     serializeInfo(info);
+    DEBUG_PRINTF("JSON buffer size: %u for WS request.\n", doc.memoryUsage());
     size_t len = measureJson(doc);
     size_t heap1 = ESP.getFreeHeap();
     buffer = ws.makeBuffer(len); // will not allocate correct memory sometimes
@@ -120,10 +121,13 @@ void sendDataWs(AsyncWebSocketClient * client)
     serializeJson(doc, (char *)buffer->get(), len +1);
     releaseJSONBufferLock();
   } 
+  DEBUG_PRINT(F("Sending WS data "));
   if (client) {
     client->text(buffer);
+    DEBUG_PRINTLN(F("to a single client."));
   } else {
     ws.textAll(buffer);
+    DEBUG_PRINTLN(F("to multiple clients."));
   }
 }
 
@@ -166,8 +170,7 @@ void handleWs()
     ws.cleanupClients();
     #endif
     bool success = true;
-    if (wsLiveClientId)
-      success = sendLiveLedsWs(wsLiveClientId);
+    if (wsLiveClientId) success = sendLiveLedsWs(wsLiveClientId);
     wsLastLiveTime = millis();
     if (!success) wsLastLiveTime -= 20; //try again in 20ms if failed due to non-empty WS queue
   }

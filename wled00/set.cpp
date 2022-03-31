@@ -3,23 +3,22 @@
 /*
  * Receives client input
  */
-bool isAsterisksOnly(const char* str, byte maxLen)
-{
-  for (byte i = 0; i < maxLen; i++) {
-    if (str[i] == 0) break;
-    if (str[i] != '*') return false;
-  }
-  //at this point the password contains asterisks only
-  return (str[0] != 0); //false on empty string
-}
-
 
 //called upon POST settings form submit
 void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 {
+  // PIN code request
+  if (subPage == 252)
+  {
+    correctPIN = (strlen(settingsPIN)==0 || strncmp(settingsPIN, request->arg(F("PIN")).c_str(), 4)==0);
+    lastEditTime = millis();
+    return;
+  }
 
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 7: DMX 8: usermods
   if (subPage <1 || subPage >8) return;
+
+  if (correctPIN) lastEditTime = millis();
 
   //WIFI SETTINGS
   if (subPage == 1)
@@ -77,7 +76,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       }
     }
 
-    uint8_t colorOrder, type, skip;
+    uint8_t colorOrder, type, skip, awmode;
     uint16_t length, start;
     uint8_t pins[5] = {255, 255, 255, 255, 255};
 
@@ -99,6 +98,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
       char sl[4] = "SL"; sl[2] = 48+s; sl[3] = 0; //skip first N LEDs
       char rf[4] = "RF"; rf[2] = 48+s; rf[3] = 0; //refresh required
+      char aw[4] = "AW"; aw[2] = 48+s; aw[3] = 0; //auto white mode
       if (!request->hasArg(lp)) {
         DEBUG_PRINTLN(F("No data.")); break;
       }
@@ -117,10 +117,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       } else {
         break;  // no parameter
       }
-
+      awmode = request->arg(aw).toInt();
       // actual finalization is done in WLED::loop() (removing old busses and adding new)
       if (busConfigs[s] != nullptr) delete busConfigs[s];
-      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv), skip);
+      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv), skip, awmode);
       doInitBusses = true;
     }
 
@@ -205,6 +205,13 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   {
     strlcpy(serverDescription, request->arg(F("DS")).c_str(), 33);
     syncToggleReceive = request->hasArg(F("ST"));
+  #ifdef WLED_ENABLE_SIMPLE_UI
+    if (simplifiedUI ^ request->hasArg(F("SU"))) {
+      // UI selection changed, invalidate browser cache
+      cacheInvalidate++;
+    }
+    simplifiedUI = request->hasArg(F("SU"));
+  #endif
   }
 
   //SYNC
@@ -237,6 +244,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     nodeBroadcastEnabled = request->hasArg(F("NB"));
 
     receiveDirect = request->hasArg(F("RD"));
+    useMainSegmentOnly = request->hasArg(F("MO"));
     e131SkipOutOfSequence = request->hasArg(F("ES"));
     e131Multicast = request->hasArg(F("EM"));
     t = request->arg(F("EP")).toInt();
@@ -390,6 +398,14 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       doReboot = true;
     }
 
+    if (request->hasArg(F("PIN"))) {
+      const char *pin = request->arg(F("PIN")).c_str();
+      if (strlen(pin) == 4 || strlen(pin) == 0) {
+        strlcpy(settingsPIN, pin, 5);
+        settingsPIN[4] = 0;
+      }
+    }
+
     bool pwdCorrect = !otaLock; //always allow access if ota not locked
     if (request->hasArg(F("OP")))
     {
@@ -405,11 +421,14 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     if (pwdCorrect) //allow changes if correct pwd or no ota active
     {
+      bool oldOTALock = otaLock;
       otaLock = request->hasArg(F("NO"));
       wifiLock = request->hasArg(F("OW"));
       aOtaEnabled = request->hasArg(F("AO"));
+      doReboot = (otaLock ^ oldOTALock);
     }
   }
+
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
   if (subPage == 7)
   {
@@ -443,11 +462,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   //USERMODS
   if (subPage == 8)
   {
-    #ifdef WLED_USE_DYNAMIC_JSON
-    DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-    #else
     if (!requestJSONBufferLock(5)) return;
-    #endif
 
     JsonObject um = doc.createNestedObject("um");
 
@@ -527,71 +542,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     releaseJSONBufferLock();
   }
-  
+
   if (subPage != 2 && (subPage != 6 || !doReboot)) serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)
   if (subPage == 4) alexaInit();
-}
-
-
-
-//helper to get int value at a position in string
-int getNumVal(const String* req, uint16_t pos)
-{
-  return req->substring(pos+3).toInt();
-}
-
-
-//helper to get int value with in/decrementing support via ~ syntax
-void parseNumber(const char* str, byte* val, byte minv, byte maxv)
-{
-  if (str == nullptr || str[0] == '\0') return;
-  if (str[0] == 'r') {*val = random8(minv,maxv); return;}
-  bool wrap = false;
-  if (str[0] == 'w' && strlen(str) > 1) {str++; wrap = true;}
-  if (str[0] == '~') {
-    int out = atoi(str +1);
-    if (out == 0)
-    {
-      if (str[1] == '0') return;
-      if (str[1] == '-')
-      {
-        *val = (int)(*val -1) < (int)minv ? maxv : min((int)maxv,(*val -1)); //-1, wrap around
-      } else {
-        *val = (int)(*val +1) > (int)maxv ? minv : max((int)minv,(*val +1)); //+1, wrap around
-      }
-    } else {
-      if (wrap && *val == maxv && out > 0) out = minv;
-      else if (wrap && *val == minv && out < 0) out = maxv;
-      else { 
-        out += *val;
-        if (out > maxv) out = maxv;
-        if (out < minv) out = minv;
-      }
-      *val = out;
-    }
-  } else
-  {
-    byte p1 = atoi(str);
-    const char* str2 = strchr(str,'~'); //min/max range (for preset cycle, e.g. "1~5~")
-    if (str2) {
-      byte p2 = atoi(str2+1);
-      presetCycMin = p1; presetCycMax = p2;
-      while (isdigit((str2+1)[0])) str2++;
-      parseNumber(str2+1, val, p1, p2);
-    } else {
-      *val = p1;
-    }
-  }
-}
-
-
-bool updateVal(const String* req, const char* key, byte* val, byte minv, byte maxv)
-{
-  int pos = req->indexOf(key);
-  if (pos < 1) return false;
-  if (req->length() < (unsigned int)(pos + 4)) return false;
-  parseNumber(req->c_str() + pos +3, val, minv, maxv);
-  return true;
 }
 
 
@@ -780,7 +733,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     uint32_t col2 = RGBW32(tmpCol[0], tmpCol[1], tmpCol[2], tmpCol[3]);
     selseg.setColor(2, col2, selectedSeg); // defined above (SS= or main)
     stateChanged = true;
-    if (!singleSegment) strip.setColor(2, col2);
+    if (!singleSegment) strip.setColor(2, col2); // will set color to all active & selected segments
   }
 
   //set to random hue SR=0->1st SR=1->2nd
@@ -808,14 +761,14 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     stateChanged = true;
     uint32_t colIn0 = RGBW32(colIn[0], colIn[1], colIn[2], colIn[3]);
     selseg.setColor(0, colIn0, selectedSeg);
-    if (!singleSegment) strip.setColor(0, colIn0);
+    if (!singleSegment) strip.setColor(0, colIn0); // will set color to all active & selected segments
   }
 
   if (col1Changed) {
     stateChanged = true;
     uint32_t colIn1 = RGBW32(colInSec[0], colInSec[1], colInSec[2], colInSec[3]);
     selseg.setColor(1, colIn1, selectedSeg);
-    if (!singleSegment) strip.setColor(1, colIn1);
+    if (!singleSegment) strip.setColor(1, colIn1); // will set color to all active & selected segments
   }
 
   bool fxModeChanged = false, speedChanged = false, intensityChanged = false, paletteChanged = false;

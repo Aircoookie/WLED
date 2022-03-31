@@ -140,17 +140,31 @@ void notify(byte callMode, bool followUp)
 
 void realtimeLock(uint32_t timeoutMs, byte md)
 {
-  if (!realtimeMode && !realtimeOverride){
-    uint16_t totalLen = strip.getLengthTotal();
-    for (uint16_t i = 0; i < totalLen; i++)
-    {
-      strip.setPixelColor(i,0,0,0,0);
+  if (!realtimeMode) {
+    uint16_t stop, start;
+    if (useMainSegmentOnly) {
+      WS2812FX::Segment& mainseg = strip.getMainSegment();
+      start = mainseg.start;
+      stop  = mainseg.stop;
+      mainseg.setOption(SEG_OPTION_FREEZE, true, strip.getMainSegmentId());
+    } else {
+      start = 0;
+      stop  = strip.getLengthTotal();
+    }
+    // clear strip/segment
+    if (useMainSegmentOnly || !realtimeOverride) for (uint16_t i = start; i < stop; i++) strip.setPixelColor(i,0,0,0,0);
+    // if WLED was off and using main segment only, turn non-main segments off
+    if (useMainSegmentOnly && bri == 0) {
+      for (uint8_t s=0; s < strip.getMaxSegments(); s++) {
+        if (s != strip.getMainSegmentId()) strip.getSegment(s).setOption(SEG_OPTION_ON, false, s);
+        else                               strip.getSegment(s).setOption(SEG_OPTION_ON, true, s);
+      }
     }
   }
 
   if (realtimeTimeout != UINT32_MAX) {
-    realtimeTimeout = millis() + timeoutMs;
     if (timeoutMs == 255001 || timeoutMs == 65000) realtimeTimeout = UINT32_MAX;
+    else                                           realtimeTimeout = millis() + timeoutMs;
   }
   // if strip is off (bri==0) and not already in RTM
   if (briT == 0 && !realtimeMode) {
@@ -192,6 +206,7 @@ void handleNotifications()
   if (realtimeMode && millis() > realtimeTimeout)
   {
     if (realtimeOverride == REALTIME_OVERRIDE_ONCE) realtimeOverride = REALTIME_OVERRIDE_NONE;
+    if (useMainSegmentOnly) strip.getMainSegment().setOption(SEG_OPTION_FREEZE, false, strip.getMainSegmentId());
     strip.setBrightness(scaledBri(bri));
     realtimeMode = REALTIME_MODE_INACTIVE;
     realtimeIP[0] = 0;
@@ -218,7 +233,7 @@ void handleNotifications()
       uint8_t lbuf[packetSize];
       rgbUdp.read(lbuf, packetSize);
       realtimeLock(realtimeTimeoutMs, REALTIME_MODE_HYPERION);
-      if (realtimeOverride) return;
+      if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) return;
       uint16_t id = 0;
       uint16_t totalLen = strip.getLengthTotal();
       for (uint16_t i = 0; i < packetSize -2; i += 3)
@@ -226,7 +241,7 @@ void handleNotifications()
         setRealtimePixel(id, lbuf[i], lbuf[i+1], lbuf[i+2], 0);
         id++; if (id >= totalLen) break;
       }
-      strip.show();
+      if (!(realtimeMode && useMainSegmentOnly)) strip.show();
       return;
     } 
   }
@@ -322,7 +337,7 @@ void handleNotifications()
         for (uint8_t i = 0; i < numSrcSegs; i++) {
           uint16_t ofs = 41 + i*udpIn[40]; //start of segment offset byte
           uint8_t id = udpIn[0 +ofs];
-          if (id > strip.getMaxSegments()) continue;
+          if (id > strip.getMaxSegments()) break;
           WS2812FX::Segment& selseg = strip.getSegment(id);
           uint16_t start  = (udpIn[1+ofs] << 8 | udpIn[2+ofs]);
           uint16_t stop   = (udpIn[3+ofs] << 8 | udpIn[4+ofs]);
@@ -331,7 +346,7 @@ void handleNotifications()
             strip.setSegment(id, start, stop, selseg.grouping, selseg.spacing, offset);
             continue;
           }
-          for (uint8_t j = 0; j<4; j++) selseg.setOption(j, (udpIn[9 +ofs] >> j) & 0x01); //only take into account mirrored, selected, on, reversed
+          for (uint8_t j = 0; j<4; j++) selseg.setOption(j, (udpIn[9 +ofs] >> j) & 0x01, id); //only take into account mirrored, selected, on, reversed
           selseg.setOpacity(udpIn[10+ofs], id);
           if (applyEffects) {
             strip.setMode(id,  udpIn[11+ofs]);
@@ -429,7 +444,7 @@ void handleNotifications()
 
     realtimeIP = (isSupp) ? notifier2Udp.remoteIP() : notifierUdp.remoteIP();
     realtimeLock(realtimeTimeoutMs, REALTIME_MODE_TPM2NET);
-    if (realtimeOverride) return;
+    if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) return;
 
     tpmPacketCount++; //increment the packet count
     if (tpmPacketCount == 1) tpmPayloadFrameSize = (udpIn[2] << 8) + udpIn[3]; //save frame size for the whole payload if this is the first packet
@@ -469,7 +484,7 @@ void handleNotifications()
     } else {
       realtimeLock(udpIn[1]*1000 +1, REALTIME_MODE_UDP);
     }
-    if (realtimeOverride) return;
+    if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) return;
 
     uint16_t totalLen = strip.getLengthTotal();
     if (udpIn[0] == 1) //warls
@@ -522,15 +537,17 @@ void handleNotifications()
   // API over UDP
   udpIn[packetSize] = '\0';
 
-  if (udpIn[0] >= 'A' && udpIn[0] <= 'Z') { //HTTP API
-    String apireq = "win&";
-    apireq += (char*)udpIn;
-    handleSet(nullptr, apireq);
-  } else if (udpIn[0] == '{') { //JSON API
-    DynamicJsonDocument jsonBuffer(2048);
-    DeserializationError error = deserializeJson(jsonBuffer, udpIn);
-    JsonObject root = jsonBuffer.as<JsonObject>();
-    if (!error && !root.isNull()) deserializeState(root);
+  if (requestJSONBufferLock(18)) {
+    if (udpIn[0] >= 'A' && udpIn[0] <= 'Z') { //HTTP API
+      String apireq = "win"; apireq += '&'; // reduce flash string usage
+      apireq += (char*)udpIn;
+      handleSet(nullptr, apireq);
+    } else if (udpIn[0] == '{') { //JSON API
+      DeserializationError error = deserializeJson(doc, udpIn);
+      JsonObject root = doc.as<JsonObject>();
+      if (!error && !root.isNull()) deserializeState(root);
+    }
+    releaseJSONBufferLock();
   }
 }
 

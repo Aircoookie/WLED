@@ -161,7 +161,6 @@ private:
   uint8_t knownPalette = 0;
 
   uint8_t currentCCT = 128;
-  bool isRgbw = false;
 
   byte presetHigh = 0;
   byte presetLow = 0;
@@ -281,12 +280,6 @@ public:
     pinMode(pinB, INPUT_PULLUP);
     pinMode(pinC, INPUT_PULLUP);
     loopTime = millis();
-
-    for (uint8_t s = 0; s < busses.getNumBusses(); s++) {
-      Bus *bus = busses.getBus(s);
-      if (!bus || bus->getLength()==0) break;
-      isRgbw |= bus->isRgbw();
-    }
 
     currentCCT = (approximateKelvinFromRGB(RGBW32(col[0], col[1], col[2], col[3])) - 1900) >> 5;
 

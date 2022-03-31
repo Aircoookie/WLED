@@ -1,5 +1,10 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta name="viewport" content="width=500"><meta charset="utf-8"><title>DMX Settings</title>
+<html lang="en">
+<head>
+  <meta name="viewport" content="width=500">
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+  <meta charset="utf-8">
+  <title>DMX Settings</title>
 <script>
 function GCH(num) {
   d=document;
@@ -31,14 +36,14 @@ function mMap(){
 function S(){GCH(15);GetV();mMap();}function H(){window.open("https://github.com/Aircoookie/WLED/wiki/DMX");}function B(){window.history.back();}
 function GetV(){}
 </script>
-<style>
-	@import url("style.css");
-</style>
+<style>@import url("style.css");</style>
 </head>
 <body onload="S()">
 <form id="form_s" name="Sf" method="post">
+<div class="toprow">
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
+</div>
 <h2>Imma firin ma lazer (if it has DMX support)</h2><!-- TODO: Change to something less-meme-related //-->
 
 Proxy Universe <input name=PU type=number min=0 max=63999 required> from E1.31 to DMX (0=disabled)<br>

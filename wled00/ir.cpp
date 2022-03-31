@@ -71,12 +71,10 @@ void decBrightness()
 // apply preset or fallback to a effect and palette if it doesn't exist
 void presetFallback(uint8_t presetID, uint8_t effectID, uint8_t paletteID) 
 {
-  byte prevError = errorFlag;
-  if (!applyPreset(presetID, CALL_MODE_BUTTON_PRESET)) { 
-    effectCurrent = effectID;
-    effectPalette = paletteID;
-    errorFlag = prevError; //clear error 12 from non-existent preset
-  }
+  applyPreset(presetID, CALL_MODE_BUTTON_PRESET);
+  //these two will be overwritten if preset exists in handlePresets()
+  effectCurrent = effectID;      
+  effectPalette = paletteID;
 }
 
 byte relativeChange(byte property, int8_t amount, byte lowerBoundary, byte higherBoundary)
@@ -221,13 +219,14 @@ void changeColor(uint32_t c, int16_t cct=-1)
       if (!seg.isActive() || !seg.isSelected()) continue;
       byte capabilities = seg.getLightCapabilities();
       uint32_t mask = 0;
-      bool isRGB = GET_BIT(capabilities, 0); // when RGBW_MODE_AUTO_ACCURATE this is always true
-      bool hasW  = GET_BIT(capabilities, 1);
-      bool isCCT = GET_BIT(capabilities, 2);
+      bool isRGB   = GET_BIT(capabilities, 0);  // is segment RGB capable
+      bool hasW    = GET_BIT(capabilities, 1);  // do we have white/CCT channel
+      bool isCCT   = GET_BIT(capabilities, 2);  // is segment CCT capable
+      bool wSlider = GET_BIT(capabilities, 3);  // is white auto calculated (white slider NOT shown in UI)
       if (isRGB) mask |= 0x00FFFFFF; // RGB
       if (hasW)  mask |= 0xFF000000; // white
-      if (hasW && (strip.autoWhiteMode == RGBW_MODE_AUTO_ACCURATE) && (c & 0xFF000000)) { // white channel & white specified
-        seg.setColor(0, c | 0xFFFFFF, i); // for accurate mode we fake white
+      if (hasW && !wSlider && (c & 0xFF000000)) { // segment has white channel & white channel is auto calculated & white specified
+        seg.setColor(0, c | 0xFFFFFF, i); // for accurate/brighter mode we fake white (since button may not set white color to 0xFFFFFF)
       } else if (c & mask) seg.setColor(0, c & mask, i); // only apply if not black
       if (isCCT && cct >= 0) seg.setCCT(cct, i);
     }
@@ -237,13 +236,14 @@ void changeColor(uint32_t c, int16_t cct=-1)
     WS2812FX::Segment& seg = strip.getSegment(i);
     byte capabilities = seg.getLightCapabilities();
     uint32_t mask = 0;
-    bool isRGB = GET_BIT(capabilities, 0);
-    bool hasW  = GET_BIT(capabilities, 1);
-    bool isCCT = GET_BIT(capabilities, 2);
+    bool isRGB   = GET_BIT(capabilities, 0);  // is segment RGB capable
+    bool hasW    = GET_BIT(capabilities, 1);  // do we have white/CCT channel
+    bool isCCT   = GET_BIT(capabilities, 2);  // is segment CCT capable
+    bool wSlider = GET_BIT(capabilities, 3);  // is white auto calculated (white slider NOT shown in UI)
     if (isRGB) mask |= 0x00FFFFFF; // RGB
     if (hasW)  mask |= 0xFF000000; // white
-    if (hasW && (strip.autoWhiteMode == RGBW_MODE_AUTO_ACCURATE) && (c & 0xFF000000)) { // white channel & white specified
-      seg.setColor(0, c | 0xFFFFFF, i); // for accurate mode we fake white
+    if (hasW && !wSlider && (c & 0xFF000000)) { // segment has white channel & white channel is auto calculated & white specified
+      seg.setColor(0, c | 0xFFFFFF, i); // for accurate/brighter mode we fake white (since button may not set white color to 0xFFFFFF)
     } else if (c & mask) seg.setColor(0, c & mask, i); // only apply if not black
     if (isCCT && cct >= 0) seg.setCCT(cct, i);
     setValuesFromMainSeg();
@@ -637,11 +637,7 @@ void decodeIRJson(uint32_t code)
   JsonObject fdo;
   JsonObject jsonCmdObj;
 
-  #ifdef WLED_USE_DYNAMIC_JSON
-  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-  #else
   if (!requestJSONBufferLock(13)) return;
-  #endif
 
   sprintf_P(objKey, PSTR("\"0x%lX\":"), (unsigned long)code);
 

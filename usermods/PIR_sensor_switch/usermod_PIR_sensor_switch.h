@@ -58,7 +58,6 @@ private:
 
   byte prevPreset   = 0;
   byte prevPlaylist = 0;
-  bool savedState   = false;
 
   uint32_t offTimerStart = 0;                   // off timer start time
   byte NotifyUpdateMode  = CALL_MODE_NO_NOTIFY; // notification mode for stateUpdated(): CALL_MODE_NO_NOTIFY or CALL_MODE_DIRECT_CHANGE
@@ -77,6 +76,7 @@ private:
   bool m_mqttOnly           = false;          // flag to send MQTT message only (assuming it is enabled)
   // flag to enable triggering only if WLED is initially off (LEDs are not on, preventing running effect being overwritten by PIR)
   bool m_offOnly            = false;
+  bool m_offMode            = offMode;
 
   // strings to reduce flash memory usage (used more than twice)
   static const char _name[];
@@ -118,17 +118,20 @@ private:
    */
   void switchStrip(bool switchOn)
   {
-    if (m_offOnly && bri && (switchOn || (!PIRtriggered && !switchOn))) return;
+    if (m_offOnly && bri && (switchOn || (!PIRtriggered && !switchOn))) return; //if lights on and off only, do nothing
+    if (PIRtriggered && switchOn) return; //if already on and triggered before, do nothing
     PIRtriggered = switchOn;
     if (switchOn) {
       if (m_onPreset) {
-        if (currentPlaylist>0)    prevPlaylist = currentPlaylist;
-        else if (currentPreset>0) prevPreset   = currentPreset;
-        else {
+        if (currentPlaylist>0 && !offMode) {
+          prevPlaylist = currentPlaylist;
+          unloadPlaylist();
+        } else if (currentPreset>0 && !offMode) {
+          prevPreset   = currentPreset;
+        } else {
           saveTemporaryPreset();
-          savedState   = true;
           prevPlaylist = 0;
-          prevPreset   = 0;
+          prevPreset   = 255;
         }
         applyPreset(m_onPreset, NotifyUpdateMode);
         return;
@@ -147,12 +150,9 @@ private:
         prevPlaylist = 0;
         return;
       } else if (prevPreset) {
-        applyPreset(prevPreset, NotifyUpdateMode);
+        if (prevPreset<255) applyPreset(prevPreset, NotifyUpdateMode);
+        else                applyTemporaryPreset();
         prevPreset = 0;
-        return;
-      } else if (savedState) {
-        applyTemporaryPreset();
-        savedState = false;
         return;
       }
       // preset not assigned
@@ -188,10 +188,12 @@ private:
       if (sensorPinState == HIGH) {
         offTimerStart = 0;
         if (!m_mqttOnly && (!m_nightTimeOnly || (m_nightTimeOnly && !isDayTime()))) switchStrip(true);
+        else if (NotifyUpdateMode != CALL_MODE_NO_NOTIFY) updateInterfaces(CALL_MODE_WS_SEND);
         publishMqtt("on");
-      } else /*if (bri != 0)*/ {
+      } else {
         // start switch off timer
         offTimerStart = millis();
+        if (NotifyUpdateMode != CALL_MODE_NO_NOTIFY) updateInterfaces(CALL_MODE_WS_SEND);
       }
       return true;
     }
@@ -203,14 +205,13 @@ private:
    */
   bool handleOffTimer()
   {
-    if (offTimerStart > 0 && millis() - offTimerStart > m_switchOffDelay)
-    {
-      if (enabled == true)
-      {
+    if (offTimerStart > 0 && millis() - offTimerStart > m_switchOffDelay) {
+      offTimerStart = 0;
+      if (enabled == true) {
         if (!m_mqttOnly && (!m_nightTimeOnly || (m_nightTimeOnly && !isDayTime()))) switchStrip(false);
+        else if (NotifyUpdateMode != CALL_MODE_NO_NOTIFY) updateInterfaces(CALL_MODE_WS_SEND);
         publishMqtt("off");
       }
-      offTimerStart = 0;
       return true;
     }
     return false;
@@ -320,6 +321,10 @@ public:
     } else {
       infoArr.add(F("disabled"));
     }
+
+    JsonObject sensor = root[F("sensor")];
+    if (sensor.isNull()) sensor = root.createNestedObject(F("sensor"));
+    sensor[F("motion")] = sensorPinState || offTimerStart>0 ? true : false;
   }
 
   /**

@@ -31,7 +31,7 @@
 #ifndef WLED_DISABLE_MQTT
   #define WLED_ENABLE_MQTT         // saves 12kb
 #endif
-#define WLED_ENABLE_ADALIGHT     // saves 500b only (uses GPIO3 (RX) for serial)
+#define WLED_ENABLE_ADALIGHT       // saves 500b only (uses GPIO3 (RX) for serial)
 //#define WLED_ENABLE_DMX          // uses 3.5kb (use LEDPIN other than 2)
 //#define WLED_ENABLE_JSONLIVE     // peek LED output via /json/live (WS binary peek is always enabled)
 #ifndef WLED_DISABLE_LOXONE
@@ -143,6 +143,9 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
 
 #include "fcn_declare.h"
 #include "html_ui.h"
+#ifdef WLED_ENABLE_SIMPLE_UI
+#include "html_simple.h"
+#endif
 #include "html_settings.h"
 #include "html_other.h"
 #include "FX.h"
@@ -299,6 +302,8 @@ WLED_GLOBAL char serverDescription[33] _INIT("WLED");  // Name of module - use d
 WLED_GLOBAL char serverDescription[33] _INIT(SERVERNAME);  // use predefined name
 #endif
 WLED_GLOBAL bool syncToggleReceive     _INIT(false);   // UIs which only have a single button for sync should toggle send+receive if this is true, only send otherwise
+WLED_GLOBAL bool simplifiedUI          _INIT(false);   // enable simplified UI
+WLED_GLOBAL byte cacheInvalidate       _INIT(0);       // used to invalidate browser cache when switching from regular to simplified UI
 
 // Sync CONFIG
 WLED_GLOBAL NodesMap Nodes;
@@ -410,6 +415,9 @@ WLED_GLOBAL byte macroDoublePress[WLED_MAX_BUTTONS]   _INIT({0});
 WLED_GLOBAL bool otaLock     _INIT(false);  // prevents OTA firmware updates without password. ALWAYS enable if system exposed to any public networks
 WLED_GLOBAL bool wifiLock    _INIT(false);  // prevents access to WiFi settings when OTA lock is enabled
 WLED_GLOBAL bool aOtaEnabled _INIT(true);   // ArduinoOTA allows easy updates directly from the IDE. Careful, it does not auto-disable when OTA lock is on
+WLED_GLOBAL char settingsPIN[5] _INIT("");  // PIN for settings pages
+WLED_GLOBAL bool correctPIN     _INIT(true);
+WLED_GLOBAL unsigned long lastEditTime _INIT(0);
 
 WLED_GLOBAL uint16_t userVar0 _INIT(0), userVar1 _INIT(0); //available for use in usermod
 
@@ -453,13 +461,12 @@ WLED_GLOBAL byte colNlT[] _INIT_N(({ 0, 0, 0, 0 }));        // current nightligh
 
 // brightness
 WLED_GLOBAL unsigned long lastOnTime _INIT(0);
-WLED_GLOBAL bool offMode _INIT(!turnOnAtBoot);
-WLED_GLOBAL byte bri _INIT(briS);
-WLED_GLOBAL byte briOld _INIT(0);
-WLED_GLOBAL byte briT _INIT(0);
-WLED_GLOBAL byte briIT _INIT(0);
-WLED_GLOBAL byte briLast _INIT(128);          // brightness before turned off. Used for toggle function
-WLED_GLOBAL byte whiteLast _INIT(128);        // white channel before turned off. Used for toggle function
+WLED_GLOBAL bool offMode             _INIT(!turnOnAtBoot);
+WLED_GLOBAL byte bri                 _INIT(briS);          // global brightness (set)
+WLED_GLOBAL byte briOld              _INIT(0);             // global brightnes while in transition loop (previous iteration)
+WLED_GLOBAL byte briT                _INIT(0);             // global brightness during transition
+WLED_GLOBAL byte briLast             _INIT(128);           // brightness before turned off. Used for toggle function
+WLED_GLOBAL byte whiteLast           _INIT(128);           // white channel before turned off. Used for toggle function
 
 // button
 WLED_GLOBAL bool buttonPublishMqtt                            _INIT(false);
@@ -537,6 +544,7 @@ WLED_GLOBAL IPAddress realtimeIP _INIT_N(((0, 0, 0, 0)));
 WLED_GLOBAL unsigned long realtimeTimeout _INIT(0);
 WLED_GLOBAL uint8_t tpmPacketCount _INIT(0);
 WLED_GLOBAL uint16_t tpmPayloadFrameSize _INIT(0);
+WLED_GLOBAL bool useMainSegmentOnly _INIT(false);
 
 // mqtt
 WLED_GLOBAL unsigned long lastMqttReconnectAttempt _INIT(0);
@@ -590,6 +598,13 @@ WLED_GLOBAL byte optionType;
 WLED_GLOBAL bool doReboot _INIT(false);        // flag to initiate reboot from async handlers
 WLED_GLOBAL bool doPublishMqtt _INIT(false);
 
+// status led
+#if defined(STATUSLED)
+WLED_GLOBAL unsigned long ledStatusLastMillis _INIT(0);
+WLED_GLOBAL uint8_t ledStatusType _INIT(0); // current status type - corresponds to number of blinks per second
+WLED_GLOBAL bool ledStatusState _INIT(false); // the current LED state
+#endif
+
 // server library objects
 WLED_GLOBAL AsyncWebServer server _INIT_N(((80)));
 #ifdef WLED_ENABLE_WEBSOCKETS
@@ -597,6 +612,7 @@ WLED_GLOBAL AsyncWebSocket ws _INIT_N((("/ws")));
 #endif
 WLED_GLOBAL AsyncClient* hueClient _INIT(NULL);
 WLED_GLOBAL AsyncMqttClient* mqtt _INIT(NULL);
+WLED_GLOBAL AsyncWebHandler *editHandler _INIT(nullptr);
 
 // udp interface objects
 WLED_GLOBAL WiFiUDP notifierUdp, rgbUdp, notifier2Udp;
@@ -615,10 +631,8 @@ WLED_GLOBAL int8_t loadLedmap _INIT(-1);
 // Usermod manager
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
 
-#ifndef WLED_USE_DYNAMIC_JSON
 // global ArduinoJson buffer
 WLED_GLOBAL StaticJsonDocument<JSON_BUFFER_SIZE> doc;
-#endif
 WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
 
 // enable additional debug output
@@ -661,17 +675,15 @@ WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
 #define WLED_WIFI_CONFIGURED (strlen(clientSSID) >= 1 && strcmp(clientSSID, DEFAULT_CLIENT_SSID) != 0)
 #define WLED_MQTT_CONNECTED (mqtt != nullptr && mqtt->connected())
 
+//macro to convert F to const
+#define SET_F(x)  (const char*)F(x)
+
 //color mangling macros
 #define RGBW32(r,g,b,w) (uint32_t((byte(w) << 24) | (byte(r) << 16) | (byte(g) << 8) | (byte(b))))
 #define R(c) (byte((c) >> 16))
 #define G(c) (byte((c) >> 8))
 #define B(c) (byte(c))
 #define W(c) (byte((c) >> 24))
-
-// append new c string to temp buffer efficiently
-bool oappend(const char* txt);
-// append new number to temp buffer efficiently
-bool oappendi(int i);
 
 class WLED {
 public:

@@ -31,6 +31,9 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   getStringFromJson(cmDNS, id[F("mdns")], 33);
   getStringFromJson(serverDescription, id[F("name")], 33);
   getStringFromJson(alexaInvocationName, id[F("inv")], 33);
+#ifdef WLED_ENABLE_SIMPLE_UI
+  CJSON(simplifiedUI, id[F("sui")]);
+#endif
 
   JsonObject nw_ins_0 = doc["nw"]["ins"][0];
   getStringFromJson(clientSSID, nw_ins_0[F("ssid")], 33);
@@ -78,11 +81,11 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   // initialize LED pins and lengths prior to other HW (except for ethernet)
   JsonObject hw_led = hw["led"];
 
+  uint8_t autoWhiteMode = RGBW_MODE_MANUAL_ONLY;
   CJSON(strip.ablMilliampsMax, hw_led[F("maxpwr")]);
   CJSON(strip.milliampsPerLed, hw_led[F("ledma")]);
-  CJSON(strip.autoWhiteMode,   hw_led[F("rgbwm")]);
+  CJSON(strip.autoWhiteMode, hw_led[F("rgbwm")]); // global override
   Bus::setAutoWhiteMode(strip.autoWhiteMode);
-  strip.fixInvalidSegments(); // refreshes segment light capabilities (in case auto white mode changed)
   CJSON(correctWB, hw_led["cct"]);
   CJSON(cctFromRgb, hw_led[F("cr")]);
   CJSON(strip.cctBlending, hw_led[F("cb")]);
@@ -116,13 +119,14 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       bool reversed = elm["rev"];
       bool refresh = elm["ref"] | false;
       ledType |= refresh << 7; // hack bit 7 to indicate strip requires off refresh
+      uint8_t AWmode = elm[F("rgbwm")] | autoWhiteMode;
       if (fromFS) {
-        BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst);
+        BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode);
         mem += BusManager::memUsage(bc);
         if (mem <= MAX_LED_MEMORY && busses.getNumBusses() <= WLED_MAX_BUSSES) busses.add(bc);  // finalization will be done in WLED::beginStrip()
       } else {
         if (busConfigs[s] != nullptr) delete busConfigs[s];
-        busConfigs[s] = new BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst);
+        busConfigs[s] = new BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode);
         doInitBusses = true;
       }
       s++;
@@ -291,6 +295,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   JsonObject if_live = interfaces["live"];
   CJSON(receiveDirect, if_live["en"]);
+  CJSON(useMainSegmentOnly, if_live[F("mso")]);
   CJSON(e131Port, if_live["port"]); // 5568
   if (e131Port == DDP_DEFAULT_PORT) e131Port = E131_DEFAULT_PORT; // prevent double DDP port allocation
   CJSON(e131Multicast, if_live[F("mc")]);
@@ -468,11 +473,7 @@ void deserializeConfigFromFS() {
     return;
   }
 
-  #ifdef WLED_USE_DYNAMIC_JSON
-  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-  #else
   if (!requestJSONBufferLock(1)) return;
-  #endif
 
   DEBUG_PRINTLN(F("Reading settings from /cfg.json..."));
 
@@ -496,11 +497,7 @@ void serializeConfig() {
 
   DEBUG_PRINTLN(F("Writing settings to /cfg.json..."));
 
-  #ifdef WLED_USE_DYNAMIC_JSON
-  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-  #else
   if (!requestJSONBufferLock(2)) return;
-  #endif
 
   JsonArray rev = doc.createNestedArray("rev");
   rev.add(1); //major settings revision
@@ -512,6 +509,9 @@ void serializeConfig() {
   id[F("mdns")] = cmDNS;
   id[F("name")] = serverDescription;
   id[F("inv")] = alexaInvocationName;
+#ifdef WLED_ENABLE_SIMPLE_UI
+  id[F("sui")] = simplifiedUI;
+#endif
 
   JsonObject nw = doc.createNestedObject("nw");
 
@@ -582,7 +582,7 @@ void serializeConfig() {
   hw_led[F("cr")] = cctFromRgb;
   hw_led[F("cb")] = strip.cctBlending;
   hw_led["fps"] = strip.getTargetFps();
-  hw_led[F("rgbwm")] = strip.autoWhiteMode;
+  hw_led[F("rgbwm")] = strip.autoWhiteMode;    // global override
 
   JsonArray hw_led_ins = hw_led.createNestedArray("ins");
 
@@ -601,7 +601,7 @@ void serializeConfig() {
     ins[F("skip")] = bus->skippedLeds();
     ins["type"] = bus->getType() & 0x7F;
     ins["ref"] = bus->isOffRefreshRequired();
-    //ins[F("rgbw")] = bus->isRgbw();
+    ins[F("rgbwm")] = bus->getAWMode();
   }
 
   JsonArray hw_com = hw.createNestedArray(F("com"));
@@ -704,6 +704,7 @@ void serializeConfig() {
 
   JsonObject if_live = interfaces.createNestedObject("live");
   if_live["en"] = receiveDirect;
+  if_live[F("mso")] = useMainSegmentOnly;
   if_live["port"] = e131Port;
   if_live[F("mc")] = e131Multicast;
 
@@ -844,11 +845,7 @@ void serializeConfig() {
 bool deserializeConfigSec() {
   DEBUG_PRINTLN(F("Reading settings from /wsec.json..."));
 
-  #ifdef WLED_USE_DYNAMIC_JSON
-  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-  #else
   if (!requestJSONBufferLock(3)) return false;
-  #endif
 
   bool success = readObjectFromFile("/wsec.json", nullptr, &doc);
   if (!success) {
@@ -880,6 +877,9 @@ bool deserializeConfigSec() {
   getStringFromJson(hueApiKey, interfaces["hue"][F("key")], 47);
 #endif
 
+  getStringFromJson(settingsPIN, doc["pin"], 5);
+  correctPIN = !strlen(settingsPIN);
+
   JsonObject ota = doc["ota"];
   getStringFromJson(otaPass, ota[F("pwd")], 33);
   CJSON(otaLock, ota[F("lock")]);
@@ -893,11 +893,7 @@ bool deserializeConfigSec() {
 void serializeConfigSec() {
   DEBUG_PRINTLN(F("Writing settings to /wsec.json..."));
 
-  #ifdef WLED_USE_DYNAMIC_JSON
-  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-  #else
   if (!requestJSONBufferLock(4)) return;
-  #endif
 
   JsonObject nw = doc.createNestedObject("nw");
 
@@ -922,6 +918,8 @@ void serializeConfigSec() {
   JsonObject if_hue = interfaces.createNestedObject("hue");
   if_hue[F("key")] = hueApiKey;
 #endif
+
+  doc["pin"] = settingsPIN;
 
   JsonObject ota = doc.createNestedObject("ota");
   ota[F("pwd")] = otaPass;

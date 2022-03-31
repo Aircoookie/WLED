@@ -316,14 +316,10 @@
 #ifdef ESP8266
   #define JSON_BUFFER_SIZE 10240
 #else
-  #define JSON_BUFFER_SIZE 20480
+  #define JSON_BUFFER_SIZE 24576
 #endif
 
-#ifdef WLED_USE_DYNAMIC_JSON
-  #define MIN_HEAP_SIZE JSON_BUFFER_SIZE+512
-#else
-  #define MIN_HEAP_SIZE 4096
-#endif
+#define MIN_HEAP_SIZE (MAX_LED_MEMORY+2048)
 
 // Maximum size of node map (list of other WLED instances)
 #ifdef ESP8266
@@ -334,10 +330,10 @@
 
 //this is merely a default now and can be changed at runtime
 #ifndef LEDPIN
-#ifdef ESP8266
+#if defined(ESP8266) || (defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)) //TODO: add define for PICO boards
   #define LEDPIN 2    // GPIO2 (D4) on Wemod D1 mini compatible boards
 #else
-  #define LEDPIN 2   // Changed from 16 to restore compatibility with ESP32-pico
+  #define LEDPIN 16   // aligns with GPIO2 (D4) on Wemos D1 mini32 compatible boards
 #endif
 #endif
 

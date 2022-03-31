@@ -3,6 +3,7 @@
 <head lang="en">
     <meta charset="utf-8">
     <meta name="viewport" content="width=500">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
     <title>Usermod Settings</title>
     <script>
     var d = document;
@@ -81,10 +82,10 @@
                 case "number":
                     c = `value="${o}"`;
                     if (f.substr(-3)==="pin") {
-                        c += ' max="39" min="-1" style="width:40px;"';
+                        c += ' max="39" min="-1" class="s"';
                         t = "int";
                     } else {
-                        c += ' step="any" style="width:100px;"';
+                        c += ' step="any" class="xxl"';
                     }
                     break;
                 default:
@@ -133,9 +134,7 @@
     }
     function GetV() {}
     </script>
-    <style>
-        @import url("style.css");
-    </style>
+    <style>@import url("style.css");</style>
 </head>
 
 <body onload="S()">

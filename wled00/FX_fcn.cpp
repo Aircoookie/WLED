@@ -93,7 +93,7 @@ void WS2812FX::finalizeInit(void)
       uint16_t start = prevLen;
       uint16_t count = defCounts[(i < defNumCounts) ? i : defNumCounts -1];
       prevLen += count;
-      BusConfig defCfg = BusConfig(DEFAULT_LED_TYPE, defPin, start, count, DEFAULT_LED_COLOR_ORDER);
+      BusConfig defCfg = BusConfig(DEFAULT_LED_TYPE, defPin, start, count, DEFAULT_LED_COLOR_ORDER, false, 0, RGBW_MODE_MANUAL_ONLY);
       busses.add(defCfg);
     }
   }
@@ -147,7 +147,7 @@ void WS2812FX::service() {
       uint16_t delay = FRAMETIME;
 
       if (!SEGMENT.getOption(SEG_OPTION_FREEZE)) { //only run effect function if not frozen
-        _virtualSegmentLength = SEGMENT.virtualLength();
+        SEGLEN = SEGMENT.virtualLength();
         _bri_t = SEGMENT.opacity; _colors_t[0] = SEGMENT.colors[0]; _colors_t[1] = SEGMENT.colors[1]; _colors_t[2] = SEGMENT.colors[2];
         uint8_t _cct_t = SEGMENT.cct;
         if (!IS_SEGMENT_ON) _bri_t = 0;
@@ -164,19 +164,14 @@ void WS2812FX::service() {
         }
         handle_palette();
 
-        // if segment is not RGB capable, force None auto white mode
-        // If not RGB capable, also treat palette as if default (0), as palettes set white channel to 0
-        _no_rgb = !(SEGMENT.getLightCapabilities() & 0x01);
-        if (_no_rgb) Bus::setAutoWhiteMode(RGBW_MODE_MANUAL_ONLY);
         delay = (this->*_mode[SEGMENT.mode])(); //effect function
         if (SEGMENT.mode != FX_MODE_HALLOWEEN_EYES) SEGENV.call++;
-        Bus::setAutoWhiteMode(strip.autoWhiteMode);
       }
 
       SEGENV.next_time = nowUp + delay;
     }
   }
-  _virtualSegmentLength = 0;
+  SEGLEN = 0;
   busses.setSegmentCCT(-1);
   if(doShow) {
     yield();
@@ -185,34 +180,11 @@ void WS2812FX::service() {
   _triggered = false;
 }
 
-void IRAM_ATTR WS2812FX::setPixelColor(uint16_t n, uint32_t c) {
-  setPixelColor(n, R(c), G(c), B(c), W(c));
-}
-
-//used to map from segment index to physical pixel, taking into account grouping, offsets, reverse and mirroring
-uint16_t IRAM_ATTR WS2812FX::realPixelIndex(uint16_t i) {
-  int16_t iGroup = i * SEGMENT.groupLength();
-
-  /* reverse just an individual segment */
-  int16_t realIndex = iGroup;
-  if (IS_REVERSE) {
-    if (IS_MIRROR) {
-      realIndex = (SEGMENT.length() - 1) / 2 - iGroup;  //only need to index half the pixels
-    } else {
-      realIndex = (SEGMENT.length() - 1) - iGroup;
-    }
-  }
-
-  realIndex += SEGMENT.start;
-  return realIndex;
-}
-
 void IRAM_ATTR WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
-  if (SEGLEN) {//from segment
-    uint16_t realIndex = realPixelIndex(i);
-    uint16_t len = SEGMENT.length();
+  uint8_t segIdx;
 
+  if (SEGLEN) { // SEGLEN!=0 -> from segment/FX
     //color_blend(getpixel, col, _bri_t); (pseudocode for future blending of segments)
     if (_bri_t < 255) {  
       r = scale8(r, _bri_t);
@@ -220,30 +192,48 @@ void IRAM_ATTR WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte 
       b = scale8(b, _bri_t);
       w = scale8(w, _bri_t);
     }
+    segIdx = _segment_index;
+  } else // from live/realtime
+    segIdx = _mainSegment;
+
+  if (SEGLEN || (realtimeMode && useMainSegmentOnly)) {
     uint32_t col = RGBW32(r, g, b, w);
+    uint16_t len = _segments[segIdx].length();
 
-    /* Set all the pixels in the group */
-    for (uint16_t j = 0; j < SEGMENT.grouping; j++) {
-      uint16_t indexSet = realIndex + (IS_REVERSE ? -j : j);
-      if (indexSet >= SEGMENT.start && indexSet < SEGMENT.stop) {
-        if (IS_MIRROR) { //set the corresponding mirrored pixel
-          uint16_t indexMir = SEGMENT.stop - indexSet + SEGMENT.start - 1;
-          /* offset/phase */
-          indexMir += SEGMENT.offset;
-          if (indexMir >= SEGMENT.stop) indexMir -= len;
+    // get physical pixel address (taking into account start, grouping, spacing [and offset])
+    i = i * _segments[segIdx].groupLength();
+    if (_segments[segIdx].options & REVERSE) { // is segment reversed?
+      if (_segments[segIdx].options & MIRROR) { // is segment mirrored?
+        i = (len - 1) / 2 - i;  //only need to index half the pixels
+      } else {
+        i = (len - 1) - i;
+      }
+    }
+    i += _segments[segIdx].start;
 
+    // set all the pixels in the group
+    for (uint16_t j = 0; j < _segments[segIdx].grouping; j++) {
+      uint16_t indexSet = i + ((_segments[segIdx].options & REVERSE) ? -j : j);
+      if (indexSet >= _segments[segIdx].start && indexSet < _segments[segIdx].stop) {
+
+        if (_segments[segIdx].options & MIRROR) { //set the corresponding mirrored pixel
+          uint16_t indexMir = _segments[segIdx].stop - indexSet + _segments[segIdx].start - 1;          
+          indexMir += _segments[segIdx].offset; // offset/phase
+
+          if (indexMir >= _segments[segIdx].stop) indexMir -= len;
           if (indexMir < customMappingSize) indexMir = customMappingTable[indexMir];
+
           busses.setPixelColor(indexMir, col);
         }
-        /* offset/phase */
-        indexSet += SEGMENT.offset;
-        if (indexSet >= SEGMENT.stop) indexSet -= len;
+        indexSet += _segments[segIdx].offset; // offset/phase
 
+        if (indexSet >= _segments[segIdx].stop) indexSet -= len;
         if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
+
         busses.setPixelColor(indexSet, col);
       }
     }
-  } else { //live data, etc.
+  } else {
     if (i < customMappingSize) i = customMappingTable[i];
     busses.setPixelColor(i, RGBW32(r, g, b, w));
   }
@@ -408,10 +398,6 @@ uint8_t WS2812FX::getPaletteCount()
   return 13 + GRADIENT_PALETTE_COUNT;
 }
 
-void WS2812FX::setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
-  setColor(slot, RGBW32(r, g, b, w));
-}
-
 //applies to all active and selected segments
 void WS2812FX::setColor(uint8_t slot, uint32_t c) {
   if (slot >= NUM_COLORS) return;
@@ -508,7 +494,13 @@ uint8_t WS2812FX::getActiveSegmentsNum(void) {
 
 uint32_t WS2812FX::getPixelColor(uint16_t i)
 {
-  i = realPixelIndex(i);
+  // get physical pixel
+  i = i * SEGMENT.groupLength();;
+  if (IS_REVERSE) {
+    if (IS_MIRROR) i = (SEGMENT.length() - 1) / 2 - i;  //only need to index half the pixels
+    else           i = (SEGMENT.length() - 1) - i;
+  }
+  i += SEGMENT.start;
 
   if (SEGLEN) {
     /* offset/phase */
@@ -523,7 +515,7 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
 }
 
 WS2812FX::Segment& WS2812FX::getSegment(uint8_t id) {
-  if (id >= MAX_NUM_SEGMENTS) return _segments[0];
+  if (id >= MAX_NUM_SEGMENTS) return _segments[getMainSegmentId()];
   return _segments[id];
 }
 
@@ -587,22 +579,17 @@ void WS2812FX::Segment::refreshLightCapabilities() {
   }
   uint8_t capabilities = 0;
   uint8_t awm = instance->autoWhiteMode;
-  bool whiteSlider = (awm == RGBW_MODE_DUAL || awm == RGBW_MODE_MANUAL_ONLY);
-  bool segHasValidBus = false;
 
   for (uint8_t b = 0; b < busses.getNumBusses(); b++) {
     Bus *bus = busses.getBus(b);
     if (bus == nullptr || bus->getLength()==0) break;
+    if (!bus->isOk()) continue;
     if (bus->getStart() >= stop) continue;
     if (bus->getStart() + bus->getLength() <= start) continue;
 
-    segHasValidBus = true;
     uint8_t type = bus->getType();
-    if (type != TYPE_ANALOG_1CH && (cctFromRgb || type != TYPE_ANALOG_2CH))
-    {
-      capabilities |= 0x01; // segment supports RGB (full color)
-    }
-    if (bus->isRgbw() && whiteSlider) capabilities |= 0x02; // segment supports white channel
+    if (type != TYPE_ANALOG_1CH && (cctFromRgb || type != TYPE_ANALOG_2CH)) capabilities |= 0x01; // segment supports RGB (full color)
+    if (bus->isRgbw()) capabilities |= 0x02; // segment supports white channel
     if (!cctFromRgb) {
       switch (type) {
         case TYPE_ANALOG_5CH:
@@ -611,10 +598,10 @@ void WS2812FX::Segment::refreshLightCapabilities() {
       }
     }
     if (correctWB && type != TYPE_ANALOG_1CH) capabilities |= 0x04; //white balance correction (uses CCT slider)
+    uint8_t aWM = Bus::getAutoWhiteMode()<255 ? Bus::getAutoWhiteMode() : bus->getAWMode();
+    bool whiteSlider = (awm == RGBW_MODE_DUAL || awm == RGBW_MODE_MANUAL_ONLY) || (aWM == RGBW_MODE_DUAL || aWM == RGBW_MODE_MANUAL_ONLY); // white slider allowed
+    if (bus->isRgbw() && (whiteSlider || !(capabilities & 0x01))) capabilities |= 0x08; // allow white channel adjustments (AWM allows or is not RGB)
   }
-  // if seg has any bus, but no bus has RGB, it by definition supports white (at least for now)
-  // In case of no RGB, disregard auto white mode and always show a white slider
-  if (segHasValidBus && !(capabilities & 0x01)) capabilities |= 0x02; // segment supports white channel
   _capabilities = capabilities;
 }
 
@@ -799,7 +786,7 @@ uint8_t WS2812FX::setPixelSegment(uint8_t n)
   uint8_t prevSegId = _segment_index;
   if (n < MAX_NUM_SEGMENTS) {
     _segment_index = n;
-    _virtualSegmentLength = SEGMENT.virtualLength();
+    SEGLEN = SEGMENT.virtualLength();
   }
   return prevSegId;
 }
@@ -1175,11 +1162,7 @@ void WS2812FX::deserializeMap(uint8_t n) {
     return;
   }
 
-  #ifdef WLED_USE_DYNAMIC_JSON
-  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-  #else
   if (!requestJSONBufferLock(7)) return;
-  #endif
 
   DEBUG_PRINT(F("Reading LED map from "));
   DEBUG_PRINTLN(fileName);
@@ -1262,4 +1245,159 @@ WS2812FX* WS2812FX::instance = nullptr;
 //Bus static member definition, would belong in bus_manager.cpp
 int16_t Bus::_cct = -1;
 uint8_t Bus::_cctBlend = 0;
-uint8_t Bus::_autoWhiteMode = RGBW_MODE_DUAL;
+uint8_t Bus::_gAWM = 255;
+
+
+// WLEDSR: extensions
+// Technical notes
+// ===============
+// If an effect name is followed by an @, slider and color control is effective.
+// See setSliderAndColorControl in index.js for implementation
+// If not effective then:
+//      - For AC effects (id<128) 2 sliders and 3 colors and the palette will be shown
+//      - For SR effects (id>128) 5 sliders and 3 colors and the palette will be shown
+// If effective (@)
+//      - a ; seperates slider controls (left) from color controls (middle) and palette control (right)
+//      - if left, middle or right is empty no controls are shown
+//      - a , seperates slider controls (max 5) or color controls (max 3). Palette has only one value
+//      - a ! means that the default is used.
+//             - For sliders: Effect speeds, Effect intensity, Custom 1, Custom 2, Custom 3
+//             - For colors: Fx color, Background color, Custom
+//             - For palette: prompt for color palette OR palette ID if numeric (will hide palette selection)
+//
+// Note: If palette is on and no colors are specified 1,2 and 3 is shown in each color circle.
+//       If a color is specified, the 1,2 or 3 is replaced by that specification.
+// Note: Effects can override default pattern behaviour
+//       - FadeToBlack can override the background setting
+//       - Defining SEGCOL(<i>) can override a specific palette using these values (e.g. Color Gradient)
+const char JSON_mode_names[] PROGMEM = R"=====([
+"Solid",
+"Blink@!,;!,!,;!",
+"Breathe@!,;!,!;!",
+"Wipe@!,!;!,!,;!",
+"Wipe Random@!,;1,2,3;!",
+"Random Colors@!,Fade time;1,2,3;!",
+"Sweep@!,!;!,!,;!",
+"Dynamic@!,!;1,2,3;!",
+"Colorloop@!,Saturation;1,2,3;!",
+"Rainbow@!,Size;1,2,3;!",
+"Scan@!,# of dots;!,!,;!",
+"Scan Dual@!,# of dots;!,!,;!",
+"Fade@!,;!,!,;!",
+"Theater@!,Gap size;!,!,;!",
+"Theater Rainbow@!,Gap size;1,2,3;!",
+"Running@!,Wave width;!,!,;!",
+"Saw@!,Width;!,!,;!",
+"Twinkle@!,;!,!,;!",
+"Dissolve@Repeat speed,Dissolve speed;!,!,;!",
+"Dissolve Rnd@Repeat speed,Dissolve speed;,!,;!",
+"Sparkle@!,;!,!,;!",
+"Sparkle Dark@!,!;Bg,Fx,;!",
+"Sparkle+@!,!;Bg,Fx,;!",
+"Strobe@!,;!,!,;!",
+"Strobe Rainbow@!,;,!,;!",
+"Strobe Mega@!,!;!,!,;!",
+"Blink Rainbow@Frequency,Blink duration;!,!,;!",
+"Android@!,Width;!,!,;!",
+"Chase@!,Width;!,!,!;!",
+"Chase Random@!,Width;!,,!;!",
+"Chase Rainbow@!,Width;!,!,;0",
+"Chase Flash@!,;Bg,Fx,!;!",
+"Chase Flash Rnd@!,;,Fx,;!",
+"Rainbow Runner@!,Size;Bg,,;!",
+"Colorful@!,Saturation;1,2,3;!",
+"Traffic Light@!,;,!,;!",
+"Sweep Random",
+"Chase 2@!,Width;!,!,;!",
+"Aurora@!=24,!;1,2,3;!=50",
+"Stream",
+"Scanner",
+"Lighthouse",
+"Fireworks@Sharpness=96,Frequency=192;!,2,;!=11",
+"Rain@Fade rate=128,Frequency=128;!,2,;!",
+"Tetrix@!=224,Width=0;!,!,;!=11",
+"Fire Flicker@!,!;!,,;!",
+"Gradient@!,Spread=16;!,!,;!",
+"Loading@!,Fade=16;!,!,;!",
+"Police@!,Width;,Bg,;0",
+"Fairy",
+"Two Dots@!,Dot size;1,2,Bg;!",
+"Fairy Twinkle",
+"Running Dual",
+"Halloween",
+"Chase 3@!,Size;1,2,3;0",
+"Tri Wipe@!,Width;1,2,3;0",
+"Tri Fade",
+"Lightning",
+"ICU",
+"Multi Comet",
+"Scanner Dual",
+"Stream 2",
+"Oscillate",
+"Pride 2015@!,;;",
+"Juggle@!=16,Trail=240;!,!,;!",
+"Palette@!,;1,2,3;!",
+"Fire 2012@Spark rate=120,Decay=64;1,2,3;!",
+"Colorwaves",
+"Bpm@!=64,;1,2,3;!",
+"Fill Noise",
+"Noise 1",
+"Noise 2",
+"Noise 3",
+"Noise 4",
+"Colortwinkles@Fade speed,Spawn speed;1,2,3;!",
+"Lake@!,;1,2,3;!",
+"Meteor@!,Trail length;!,!,;!",
+"Meteor Smooth@!,Trail length;!,!,;!",
+"Railway",
+"Ripple",
+"Twinklefox",
+"Twinklecat",
+"Halloween Eyes",
+"Solid Pattern@Fg size,Bg size;Fg,Bg,;!=0",
+"Solid Pattern Tri@,Size;1,2,3;!=0",
+"Spots@Spread,Width;!,!,;!",
+"Spots Fade@Spread,Width;!,!,;!",
+"Glitter",
+"Candle@Flicker rate=96,Flicker intensity=224;!,!,;0",
+"Fireworks Starburst",
+"Fireworks 1D@Gravity,Firing side;!,!,;!",
+"Bouncing Balls@Gravity,# of balls;!,!,;!",
+"Sinelon",
+"Sinelon Dual",
+"Sinelon Rainbow",
+"Popcorn",
+"Drip@Gravity,# of drips;!,!;!",
+"Plasma@Phase,;1,2,3;!",
+"Percent@,% of fill;!,!,;!",
+"Ripple Rainbow",
+"Heartbeat@!,!;!,!,;!",
+"Pacifica",
+"Candle Multi@Flicker rate=96,Flicker intensity=224;!,!,;0",
+"Solid Glitter@,!;!,,;0",
+"Sunrise@Time [min]=60,;;0",
+"Phased",
+"Twinkleup@!,Intensity;!,!,;!",
+"Noise Pal",
+"Sine",
+"Phased Noise",
+"Flow",
+"Chunchun@!,Gap size;!,!,;!",
+"Dancing Shadows@!,# of shadows;!,,;!",
+"Washing Machine",
+"Candy Cane@!,Width;;",
+"Blends@Shift speed,Blend speed;1,2,3,!",
+"TV Simulator",
+"Dynamic Smooth"
+])=====";
+
+const char JSON_palette_names[] PROGMEM = R"=====([
+"Default","* Random Cycle","* Color 1","* Colors 1&2","* Color Gradient","* Colors Only","Party","Cloud","Lava","Ocean",
+"Forest","Rainbow","Rainbow Bands","Sunset","Rivendell","Breeze","Red & Blue","Yellowout","Analogous","Splash",
+"Pastel","Sunset 2","Beech","Vintage","Departure","Landscape","Beach","Sherbet","Hult","Hult 64",
+"Drywet","Jul","Grintage","Rewhi","Tertiary","Fire","Icefire","Cyane","Light Pink","Autumn",
+"Magenta","Magred","Yelmag","Yelblu","Orange & Teal","Tiamat","April Night","Orangery","C9","Sakura",
+"Aurora","Atlantica","C9 2","C9 New","Temperature","Aurora 2","Retro Clown","Candy","Toxy Reaf","Fairy Reaf",
+"Semi Blue","Pink Candy","Red Reaf","Aqua Flash","Yelblu Hot","Lite Light","Red Flash","Blink Red","Red Shift","Red Tide",
+"Candy2"
+])=====";

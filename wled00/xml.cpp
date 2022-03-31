@@ -5,9 +5,6 @@
  * Sending XML status files to client
  */
 
-//macro to convert F to const
-#define SET_F(x)  (const char*)F(x)
-
 //build XML response to HTTP /win API request
 void XML_response(AsyncWebServerRequest *request, char* dest)
 {
@@ -124,70 +121,6 @@ void URL_response(AsyncWebServerRequest *request)
   if (request != nullptr) request->send(200, "text/html", obuf);
 }
 
-//append a numeric setting to string buffer
-void sappend(char stype, const char* key, int val)
-{
-  char ds[] = "d.Sf.";
-
-  switch(stype)
-  {
-    case 'c': //checkbox
-      oappend(ds);
-      oappend(key);
-      oappend(".checked=");
-      oappendi(val);
-      oappend(";");
-      break;
-    case 'v': //numeric
-      oappend(ds);
-      oappend(key);
-      oappend(".value=");
-      oappendi(val);
-      oappend(";");
-      break;
-    case 'i': //selectedIndex
-      oappend(ds);
-      oappend(key);
-      oappend(SET_F(".selectedIndex="));
-      oappendi(val);
-      oappend(";");
-      break;
-  }
-}
-
-//append a string setting to buffer
-void sappends(char stype, const char* key, char* val)
-{
-  switch(stype)
-  {
-    case 's': { //string (we can interpret val as char*)
-      oappend("d.Sf.");
-      oappend(key);
-      oappend(".value=\"");
-      //convert "%" to "%%" to make EspAsyncWebServer happy
-      char buf[130];
-      uint8_t len = strlen(val) +1;
-      uint8_t s = 0;
-      for (uint8_t i = 0; i < len; i++) {
-        buf[i+s] = val[i];
-        if (val[i] == '%') {
-          s++; buf[i+s] = '%';
-        }
-      }
-
-      oappend(buf);
-      oappend("\";");
-      break; }
-    case 'm': //message
-      oappend(SET_F("d.getElementsByClassName"));
-      oappend(key);
-      oappend(SET_F(".innerHTML=\""));
-      oappend(val);
-      oappend("\";");
-      break;
-  }
-}
-
 void extractPin(JsonObject &obj, const char *key) {
   if (obj[key].is<JsonArray>()) {
     JsonArray pins = obj[key].as<JsonArray>();
@@ -244,7 +177,14 @@ void getSettingsJS(byte subPage, char* dest)
   obuf = dest;
   olen = 0;
 
-  if (subPage <1 || subPage >8) return;
+  if (subPage <0 || subPage >9) return;
+
+  if (subPage == 0)
+  {
+  #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
+    oappend(PSTR("gId('dmxbtn').style.display='';"));
+  #endif
+  }
 
   if (subPage == 1)
   {
@@ -321,28 +261,23 @@ void getSettingsJS(byte subPage, char* dest)
     // add reserved and usermod pins as d.um_p array
     oappend(SET_F("d.um_p=[6,7,8,9,10,11"));
 
-    { // scope so buffer can be released earlier
-    #ifdef WLED_USE_DYNAMIC_JSON
-    DynamicJsonDocument doc(3072);
-    #else
-    if (!requestJSONBufferLock(6)) return;
-    #endif
-
-    JsonObject mods = doc.createNestedObject(F("um"));
-    usermods.addToConfig(mods);
-    if (!mods.isNull()) fillUMPins(mods);
-    releaseJSONBufferLock();
+    if (requestJSONBufferLock(6)) {
+      // if we can't allocate JSON buffer ignore usermod pins
+      JsonObject mods = doc.createNestedObject(F("um"));
+      usermods.addToConfig(mods);
+      if (!mods.isNull()) fillUMPins(mods);
+      releaseJSONBufferLock();
     }
 
     #ifdef WLED_ENABLE_DMX
       oappend(SET_F(",2")); // DMX hardcoded pin
     #endif
 
-    //Note: Using pin 3 (RX) disables Adalight / Serial JSON
-
     #ifdef WLED_DEBUG
       oappend(SET_F(",1")); // debug output (TX) pin
     #endif
+
+    //Note: Using pin 3 (RX) disables Adalight / Serial JSON
 
     #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
       if (psramFound()) oappend(SET_F(",16,17")); // GPIO16 & GPIO17 reserved for SPI RAM
@@ -397,6 +332,7 @@ void getSettingsJS(byte subPage, char* dest)
       char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
       char sl[4] = "SL"; sl[2] = 48+s; sl[3] = 0; //skip 1st LED
       char rf[4] = "RF"; rf[2] = 48+s; rf[3] = 0; //off refresh
+      char aw[4] = "AW"; aw[2] = 48+s; aw[3] = 0; //auto white mode
       oappend(SET_F("addLEDs(1);"));
       uint8_t pins[5];
       uint8_t nPins = bus->getPins(pins);
@@ -411,6 +347,7 @@ void getSettingsJS(byte subPage, char* dest)
       sappend('c',cv,bus->reversed);
       sappend('v',sl,bus->skippedLeds());
       sappend('c',rf,bus->isOffRefreshRequired());
+      sappend('v',aw,bus->getAWMode());
     }
     sappend('v',SET_F("MA"),strip.ablMilliampsMax);
     sappend('v',SET_F("LA"),strip.milliampsPerLed);
@@ -469,6 +406,9 @@ void getSettingsJS(byte subPage, char* dest)
   {
     sappends('s',SET_F("DS"),serverDescription);
     sappend('c',SET_F("ST"),syncToggleReceive);
+  #ifdef WLED_ENABLE_SIMPLE_UI
+    sappend('c',SET_F("SU"),simplifiedUI);
+  #endif
   }
 
   if (subPage == 4)
@@ -493,6 +433,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("NB"),nodeBroadcastEnabled);
 
     sappend('c',SET_F("RD"),receiveDirect);
+    sappend('c',SET_F("MO"),useMainSegmentOnly);
     sappend('v',SET_F("EP"),e131Port);
     sappend('c',SET_F("ES"),e131SkipOutOfSequence);
     sappend('c',SET_F("EM"),e131Multicast);
@@ -623,6 +564,7 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == 6)
   {
+    sappends('s',SET_F("PIN"),settingsPIN);
     sappend('c',SET_F("NO"),otaLock);
     sappend('c',SET_F("OW"),wifiLock);
     sappend('c',SET_F("AO"),aOtaEnabled);
@@ -669,5 +611,18 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(";");
   }
 
-  oappend(SET_F("}</script>"));
+  if (subPage == 9) // update
+  {
+    sappends('m',SET_F("(\"sip\")[0]"),(char*)F("WLED "));
+    olen -= 2; //delete ";
+    oappend(versionString);
+    #ifdef ARDUINO_ARCH_ESP32
+    oappend(SET_F("<br>(ESP32"));
+    #else
+    oappend(SET_F("<br>(ESP8266"));
+    #endif
+    oappend(SET_F(" build "));
+    oappendi(VERSION);
+    oappend(SET_F(")\";"));
+  }
 }

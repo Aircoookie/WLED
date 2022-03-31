@@ -141,10 +141,21 @@
 #define B_SS_LPD_3 NeoPixelBrightnessBus<Lpd8806GrbFeature, Lpd8806Method>
 
 //WS2801
-//#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801Spi40MhzMethod>
-//#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801Spi20MhzMethod>
-//#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801SpiMethod>     // 10MHz
-#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801Spi2MhzMethod> //slower, more compatible
+#if defined(WLED_WS2801_SPEED_KHZ) && WLED_WS2801_SPEED_KHZ==40000
+#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801Spi40MhzMethod>    // fastest bus speed (not existing method?)
+#elif defined(WLED_WS2801_SPEED_KHZ) && WLED_WS2801_SPEED_KHZ==20000
+#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801Spi20MhzMethod>    // 20MHz
+#elif defined(WLED_WS2801_SPEED_KHZ) && WLED_WS2801_SPEED_KHZ==10000
+#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801SpiMethod>         // 10MHz
+#elif defined(WLED_WS2801_SPEED_KHZ) && WLED_WS2801_SPEED_KHZ==2000
+#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801Spi2MhzMethod>     //slower, more compatible
+#elif defined(WLED_WS2801_SPEED_KHZ) && WLED_WS2801_SPEED_KHZ==1000
+#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801Spi1MhzMethod>     //slower, more compatible
+#elif defined(WLED_WS2801_SPEED_KHZ) && WLED_WS2801_SPEED_KHZ==500
+#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801Spi500KhzMethod>   //slower, more compatible
+#else
+#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801Spi2MhzMethod>     // 2MHz; slower, more compatible
+#endif
 #define B_SS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801Method>
 
 //P9813
@@ -423,11 +434,6 @@ class PolyBus {
     uint8_t w = c >> 24;
     RgbwColor col;
 
-    //TODO make color order override possible on a per-strip basis
-    #ifdef COLOR_ORDER_OVERRIDE
-    if (pix >= COO_MIN && pix < COO_MAX) co = COO_ORDER;
-    #endif
-
     //reorder channels to selected order
     switch (co)
     {
@@ -623,10 +629,6 @@ class PolyBus {
       case I_SS_P98_3: col = (static_cast<B_SS_P98_3*>(busPtr))->GetPixelColor(pix); break;
     }
     
-    #ifdef COLOR_ORDER_OVERRIDE
-    if (pix >= COO_MIN && pix < COO_MAX) co = COO_ORDER;
-    #endif
-
     switch (co)
     {
       //                    W               G              R               B
@@ -711,7 +713,10 @@ class PolyBus {
       #ifdef ESP8266
       if (pins[0] == P_8266_HS_MOSI && pins[1] == P_8266_HS_CLK) isHSPI = true;
       #else
-        if(!num) isHSPI = true; // temporary hack to limit use of hardware SPI to a single SPI peripheral: only allow ESP32 hardware serial on segment 0
+      // temporary hack to limit use of hardware SPI to a single SPI peripheral: only allow ESP32 hardware serial on segment 0
+      if (!num) isHSPI = true;
+      //if (num==0 && pins[0] == P_32_VS_MOSI && pins[1] == P_32_VS_CLK) isHSPI = true; // no nultiplexing, up to 80MHz clock
+      //if (num==1 && pins[0] == P_32_HS_MOSI && pins[1] == P_32_HS_CLK) isHSPI = true;
       #endif
       uint8_t t = I_NONE;
       switch (busType) {

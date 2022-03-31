@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
 	<meta name="viewport" content="width=500">
+	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
 	<meta charset="utf-8">
 	<title>Time Settings</title>
 	<script>
     var d=document;
-		var el=false;
-		var ms=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-		var cals = 'style="font-size:27px;margin-top:-6px;cursor:pointer"'; //hack as to not repeat CSS on all pages
+	var el=false;
+	var ms=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 	function H()
 	{
 		window.open("https://kno.wled.ge/features/settings/#time-settings");
@@ -40,21 +40,19 @@
 	}
 	function BTa()
 	{
-		var ih="<tr><th>En.</th><th>Hour</th><th>Minute</th><th>Preset</th><th></th></tr>";
+		var ih="<thead><tr><th>En.</th><th>Hour</th><th>Minute</th><th>Preset</th><th></th></tr></thead>";
 		for (i=0;i<8;i++) {
 			ih+=`<tr><td><input name="W${i}" id="W${i}" type="hidden"><input id="W${i}0" type="checkbox"></td>
 <td><input name="H${i}" class="xs" type="number" min="0" max="24"></td>
 <td><input name="N${i}" class="xs" type="number" min="0" max="59"></td>
 <td><input name="T${i}" class="s" type="number" min="0" max="250"></td>
-<td><div id="CB${i}" onclick="expand(this,${i})" ${cals}>&#128467;</div></td></tr>`;
-			ih+=`<tr><td colspan=5><div id="WD${i}" style="display:none;">Run on weekdays`;
-			ih+=`<table style="width:100%%;"><tr><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr><tr>`
+<td><div id="CB${i}" onclick="expand(this,${i})" class="cal">&#128197;</div></td></tr>`;
+			ih+=`<tr><td colspan=5><div id="WD${i}" style="display:none;background-color:#444;"><hr>Run on weekdays`;
+			ih+=`<table><tr><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr><tr>`
 			for (j=1;j<8;j++) ih+=`<td><input id="W${i}${j}" type="checkbox"></td>`;
-			ih+=`</tr></table>from
-<select name="M${i}">`;
+			ih+=`</tr></table>from <select name="M${i}">`;
 			for (j=0;j<12;j++) ih+=`<option value="${j+1}">${ms[j]}</option>`;
-			ih+=`</select><input name="D${i}" class="xs" type="number" min="1" max="31"></input> to
-<select name="P${i}">`;
+			ih+=`</select><input name="D${i}" class="xs" type="number" min="1" max="31"></input> to <select name="P${i}">`;
 			for (j=0;j<12;j++) ih+=`<option value="${j+1}">${ms[j]}</option>`;
 			ih+=`</select><input name="E${i}" class="xs" type="number" min="1" max="31"></input>
 		<hr></div></td></tr>`;
@@ -63,16 +61,16 @@
 <td>Sunrise<input name="H8" value="255" type="hidden"></td>
 <td><input name="N8" class="xs" type="number" min="-59" max="59"></td>
 <td><input name="T8" class="s" type="number" min="0" max="250"></td>
-<td><div id="CB8" onclick="expand(this,8)" ${cals}>&#128467;</div></td></tr><tr><td colspan=5>`;
-		ih+=`<div id="WD8"style="display:none;"><table style="width:100%%;"><tr><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr><tr>`;
+<td><div id="CB8" onclick="expand(this,8)" class="cal">&#128197;</div></td></tr><tr><td colspan=5>`;
+		ih+=`<div id="WD8" style="display:none;background-color:#444;"><hr><table><tr><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr><tr>`;
 		for (j=1;j<8;j++) ih+=`<td><input id="W8${j}" type="checkbox"></td>`;
 		ih+="</tr></table><hr></div></td></tr>";
 		ih+=`<tr><td><input name="W9" id="W9" type="hidden"><input id="W90" type="checkbox"></td>
 <td>Sunset<input name="H9" value="255" type="hidden"></td>
 <td><input name="N9" class="xs" type="number" min="-59" max="59"></td>
 <td><input name="T9" class="s" type="number" min="0" max="250"></td>
-<td><div id="CB9" onclick="expand(this,9)" ${cals}>&#128467;</div></td></tr><tr><td colspan=5>`;
-		ih+=`<div id="WD9" style="display:none;"><table style="width:100%%;"><tr><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr><tr>`;
+<td><div id="CB9" onclick="expand(this,9)" class="cal">&#128197;</div></td></tr><tr><td colspan=5>`;
+		ih+=`<div id="WD9" style="display:none;background-color:#444;"><hr><table><tr><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr><tr>`;
 		for (j=1;j<8;j++) ih+=`<td><input id="W9${j}" type="checkbox"></td>`;
 		ih+="</tr></table><hr></div></td></tr>";
 		gId("TMT").innerHTML=ih;
@@ -139,14 +137,14 @@
 		//values injected by server while sending HTML
 	}
 	</script>
-	<style>
-		@import url("style.css");
-	</style>
+	<style>@import url("style.css");</style>
 </head>
 <body onload="S()">
 	<form id="form_s" name="Sf" method="post" onsubmit="Wd()">
+		<div class="toprow">
 		<div class="helpB"><button type="button" onclick="H()">?</button></div>
 		<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
+		</div>
 		<h2>Time setup</h2>
 		Get time from NTP server: <input type="checkbox" name="NT"><br>
     	<input type="text" name="NS" maxlength="32"><br>
@@ -194,11 +192,11 @@
 		Countdown Mode: <input type="checkbox" name="CE"><br>
 		Countdown Goal:<br>
 		Date:&nbsp;<nowrap>20<input name="CY" class="xs" type="number" min="0" max="99" required>-<input name="CI" class="xs" type="number" min="1" max="12" required>-<input name="CD" class="xs" type="number" min="1" max="31" required></nowrap><br>
-		Time: <nowrap><input name="CH" class="xs" type="number" min="0" max="23" required>:<input name="CM" class="xs" type="number" min="0" max="59" required>:<input name="CS" class="xs" type="number" min="0" max="59" required></nowrap><br>
+		Time:&nbsp;<nowrap><input name="CH" class="xs" type="number" min="0" max="23" required>:<input name="CM" class="xs" type="number" min="0" max="59" required>:<input name="CS" class="xs" type="number" min="0" max="59" required></nowrap><br>
 		<h3>Macro presets</h3>
-    	<b>Macros have moved!</b><br>
-    	<i>Presets now also can be used as macros to save both JSON and HTTP API commands.<br>
-    	Just enter the preset ID below!</i>
+		<b>Macros have moved!</b><br>
+		<i>Presets now also can be used as macros to save both JSON and HTTP API commands.<br>
+		Just enter the preset ID below!</i>
 		<i>Use 0 for the default action instead of a preset</i><br>
 		Alexa On/Off Preset: <input name="A0" class="m" type="number" min="0" max="250" required> <input name="A1" class="m" type="number" min="0" max="250" required><br>
 		Countdown-Over Preset: <input name="MC" class="m" type="number" min="0" max="250" required><br>

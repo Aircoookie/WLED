@@ -6,21 +6,6 @@
  * JSON API (De)serialization
  */
 
-bool getVal(JsonVariant elem, byte* val, byte vmin=0, byte vmax=255) {
-  if (elem.is<int>()) {
-    if (elem < 0) return false; //ignore e.g. {"ps":-1}
-    *val = elem;
-    return true;
-  } else if (elem.is<const char*>()) {
-    const char* str = elem;
-    size_t len = strnlen(str, 12);
-    if (len == 0 || len > 10) return false;
-    parseNumber(str, val, vmin, vmax);
-    return true;
-  }
-  return false; //key does not exist
-}
-
 void deserializeSegment(JsonObject elem, byte it, byte presetId)
 {
   byte id = elem["id"] | it;
@@ -228,8 +213,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     }
     strip.setPixelSegment(oldSegId);
     strip.trigger();
-  } else if (!elem["frz"] && iarr.isNull()) { //return to regular effect
-    seg.setOption(SEG_OPTION_FREEZE, false);
+//  } else if (!elem["frz"] && iarr.isNull()) { //return to regular effect
+//    seg.setOption(SEG_OPTION_FREEZE, false);
   }
   // send UDP if not in preset and something changed that is not just selection
   //if (!presetId && (seg.differs(prev) & 0x7F)) stateChanged = true;
@@ -275,8 +260,8 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   JsonObject nl       = root["nl"];
   nightlightActive    = nl["on"]      | nightlightActive;
-  nightlightDelayMins = nl["dur"]  | nightlightDelayMins;
-  nightlightMode      = nl["mode"] | nightlightMode;
+  nightlightDelayMins = nl["dur"]     | nightlightDelayMins;
+  nightlightMode      = nl["mode"]    | nightlightMode;
   nightlightTargetBri = nl[F("tbri")] | nightlightTargetBri;
 
   JsonObject udpn      = root["udpn"];
@@ -292,22 +277,24 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   doReboot = root[F("rb")] | doReboot;
 
+  strip.setMainSegmentId(root[F("mainseg")] | strip.getMainSegmentId()); // must be before realtimeLock() if "live"
+
   realtimeOverride = root[F("lor")] | realtimeOverride;
   if (realtimeOverride > 2) realtimeOverride = REALTIME_OVERRIDE_ALWAYS;
 
-  bool liveEnabled = false;
   if (root.containsKey("live")) {
-    bool lv = root["live"];
-    if (lv) {
+    if (root["live"].as<bool>()) {
       transitionDelayTemp = 0;
       jsonTransitionOnce = true;
-      liveEnabled = true; // triggers realtimeLock() below
       realtimeLock(65000);
+    } else {
+      if (realtimeOverride == REALTIME_OVERRIDE_ONCE) realtimeOverride = REALTIME_OVERRIDE_NONE;
+      strip.setBrightness(scaledBri(bri));
+      realtimeTimeout = 0; //cancel realtime mode immediately
+      realtimeMode = REALTIME_MODE_INACTIVE; // inform UI immediatelly
+      realtimeIP[0] = 0;
     }
-    else realtimeTimeout = 0; //cancel realtime mode immediately
   }
-
-  strip.setMainSegmentId(root[F("mainseg")] | strip.getMainSegmentId());
 
   int it = 0;
   JsonVariant segVar = root["seg"];
@@ -317,18 +304,18 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     //if "seg" is not an array and ID not specified, apply to all selected/checked segments
     if (id < 0) {
       //apply all selected segments
-      bool didSet = false;
+      //bool didSet = false;
       for (byte s = 0; s < strip.getMaxSegments(); s++) {
         WS2812FX::Segment &sg = strip.getSegment(s);
         if (sg.isActive()) {
           if (sg.isSelected()) {
             deserializeSegment(segVar, s, presetId);
-            didSet = true;
+            //didSet = true;
           }
         }
       }
-      //if none selected, apply to the main segment
-      if (!didSet) deserializeSegment(segVar, strip.getMainSegmentId(), presetId);
+      //TODO: not sure if it is good idea to change first active but unselected segment
+      //if (!didSet) deserializeSegment(segVar, strip.getMainSegmentId(), presetId);
     } else {
       deserializeSegment(segVar, id, presetId); //apply only the segment with the specified ID
     }
@@ -356,16 +343,15 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
     ps = presetCycCurr;
     if (getVal(root["ps"], &ps, presetCycMin, presetCycMax)) { //load preset (clears state request!)
-      if (!presetId) unloadPlaylist(); //stop playlist if preset changed manually
       if (ps >= presetCycMin && ps <= presetCycMax) presetCycCurr = ps;
-      applyPreset(ps, callMode);
+      applyPreset(ps, callMode, true);
       return stateResponse;
     }
 
     //HTTP API commands
     const char* httpwin = root["win"];
     if (httpwin) {
-      String apireq = "win&";
+      String apireq = "win"; apireq += '&'; // reduce flash string usage
       apireq += httpwin;
       handleSet(nullptr, apireq, false);
     }
@@ -381,7 +367,6 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   }
 
   stateUpdated(callMode);
-  if (liveEnabled) realtimeTimeout = UINT32_MAX; // force indefinite timeout if this request contained {"live":true}
 
   return stateResponse;
 }
@@ -438,6 +423,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     root["on"] = (bri > 0);
     root["bri"] = briLast;
     root[F("transition")] = transitionDelay/100; //in 100ms
+    root[F("tdd")] = transitionDelayDefault/100; //in 100ms
   }
 
   if (!forPreset) {
@@ -468,9 +454,11 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
 
   root[F("mainseg")] = strip.getMainSegmentId();
 
+  bool selectedSegmentsOnly = root[F("sc")] | false;
   JsonArray seg = root.createNestedArray("seg");
   for (byte s = 0; s < strip.getMaxSegments(); s++) {
     WS2812FX::Segment &sg = strip.getSegment(s);
+    if (selectedSegmentsOnly && !sg.isSelected()) continue;
     if (sg.isActive()) {
       JsonObject seg0 = seg.createNestedObject();
       serializeSegment(seg0, sg, s, forPreset, segmentBounds);
@@ -481,26 +469,6 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
   }
 }
 
-//by https://github.com/tzapu/WiFiManager/blob/master/WiFiManager.cpp
-int getSignalQuality(int rssi)
-{
-    int quality = 0;
-
-    if (rssi <= -100)
-    {
-        quality = 0;
-    }
-    else if (rssi >= -50)
-    {
-        quality = 100;
-    }
-    else
-    {
-        quality = 2 * (rssi + 100);
-    }
-    return quality;
-}
-
 void serializeInfo(JsonObject root)
 {
   root[F("ver")] = versionString;
@@ -509,7 +477,6 @@ void serializeInfo(JsonObject root)
 
   JsonObject leds = root.createNestedObject("leds");
   leds[F("count")] = strip.getLengthTotal();
-
   leds[F("pwr")] = strip.currentMilliamps;
   leds["fps"] = strip.getFps();
   leds[F("maxpwr")] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;
@@ -536,6 +503,7 @@ void serializeInfo(JsonObject root)
   root[F("name")] = serverDescription;
   root[F("udpport")] = udpPort;
   root["live"] = (bool)realtimeMode;
+  root[F("liveseg")] = useMainSegmentOnly ? strip.getMainSegmentId() : -1;  // if using main segment only for live
 
   switch (realtimeMode) {
     case REALTIME_MODE_INACTIVE: root["lm"] = ""; break;
@@ -564,6 +532,16 @@ void serializeInfo(JsonObject root)
 
   root[F("fxcount")] = strip.getModeCount();
   root[F("palcount")] = strip.getPaletteCount();
+
+  JsonArray ledmaps = root.createNestedArray(F("maps"));
+  for (uint8_t i=0; i<10; i++) {
+    char fileName[16];
+    strcpy_P(fileName, PSTR("/ledmap"));
+    if (i) sprintf(fileName +7, "%d", i);
+    strcat_P(fileName, PSTR(".json"));
+    bool isFile = WLED_FS.exists(fileName);
+    if (isFile || i==0) ledmaps.add(i);
+  }
 
   JsonObject wifi_info = root.createNestedObject("wifi");
   wifi_info[F("bssid")] = WiFi.BSSIDstr();
@@ -740,8 +718,7 @@ void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
         curPalette.add("c2");
         curPalette.add("c1");
         break;
-      case 5: {//primary + secondary (+tert if not off), more distinct
-      
+      case 5: //primary + secondary (+tert if not off), more distinct
         curPalette.add("c1");
         curPalette.add("c1");
         curPalette.add("c1");
@@ -758,7 +735,7 @@ void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
         curPalette.add("c3");
         curPalette.add("c3");
         curPalette.add("c1");
-        break;}
+        break;
       case 6: //Party colors
         setPaletteColors(curPalette, PartyColors_p);
         break;
@@ -780,14 +757,12 @@ void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
       case 12: //Rainbow stripe colors
         setPaletteColors(curPalette, RainbowStripeColors_p);
         break;
-
       default:
-        if (i < 13) {
-          break;
-        }
+        {
         byte tcp[72];
         memcpy_P(tcp, (byte*)pgm_read_dword(&(gGradientPalettes[i - 13])), 72);
         setPaletteColors(curPalette, tcp);
+        }
         break;
     }
   }
@@ -811,6 +786,78 @@ void serializeNodes(JsonObject root)
   }
 }
 
+void serializeModeData(JsonArray fxdata)
+{
+  //JsonArray fxdata = root.createNestedArray("fxdata");
+  String lineBuffer;
+  bool insideQuotes = false;
+  char singleJsonSymbol;
+  size_t len = strlen_P(JSON_mode_names);
+
+  // Find the mode name in JSON
+  for (size_t i = 0; i < len; i++) {
+    singleJsonSymbol = pgm_read_byte_near(JSON_mode_names + i);
+    if (singleJsonSymbol == '\0') break;
+    switch (singleJsonSymbol) {
+      case '"':
+        insideQuotes = !insideQuotes;
+        break;
+      case '[':
+        if (insideQuotes) lineBuffer += singleJsonSymbol;
+        break;
+      case ']':
+        if (insideQuotes) {lineBuffer += singleJsonSymbol; break;}
+      case ',':
+        if (insideQuotes) {lineBuffer += singleJsonSymbol; break;}
+        if (lineBuffer.length() > 0) {
+          uint8_t endPos = lineBuffer.indexOf('@');
+          if (endPos>0) fxdata.add(lineBuffer.substring(endPos));
+          else          fxdata.add("");
+          lineBuffer.clear();
+        }
+        break;
+      default:
+        if (!insideQuotes) break;
+        lineBuffer += singleJsonSymbol;
+    }
+  }
+}
+
+// deserializes mode names string into JsonArray
+// also removes WLED-SR extensions (@...) from deserialised names
+void serializeModeNames(JsonArray arr, const char *qstring) {
+  String lineBuffer;
+  bool insideQuotes = false;
+  char singleJsonSymbol;
+  size_t len = strlen_P(qstring);
+
+  // Find the mode name in JSON
+  for (size_t i = 0; i < len; i++) {
+    singleJsonSymbol = pgm_read_byte_near(qstring + i);
+    if (singleJsonSymbol == '\0') break;
+    switch (singleJsonSymbol) {
+      case '"':
+        insideQuotes = !insideQuotes;
+        break;
+      case '[':
+        break;
+      case ']':
+      case ',':
+        if (insideQuotes) break;
+        if (lineBuffer.length() > 0) {
+          uint8_t endPos = lineBuffer.indexOf('@');
+          if (endPos>0) arr.add(lineBuffer.substring(0,endPos));
+          else          arr.add(lineBuffer);
+          lineBuffer.clear();
+        }
+        break;
+      default:
+        if (!insideQuotes) break;
+        lineBuffer += singleJsonSymbol;
+    }
+  }
+}
+
 void serveJson(AsyncWebServerRequest* request)
 {
   byte subJson = 0;
@@ -820,6 +867,7 @@ void serveJson(AsyncWebServerRequest* request)
   else if (url.indexOf("si")    > 0) subJson = 3;
   else if (url.indexOf("nodes") > 0) subJson = 4;
   else if (url.indexOf("palx")  > 0) subJson = 5;
+  else if (url.indexOf("fxda")  > 0) subJson = 6;
   #ifdef WLED_ENABLE_JSONLIVE
   else if (url.indexOf("live")  > 0) {
     serveLiveLeds(request);
@@ -827,7 +875,17 @@ void serveJson(AsyncWebServerRequest* request)
   }
   #endif
   else if (url.indexOf(F("eff")) > 0) {
-    request->send_P(200, "application/json", JSON_mode_names);
+    // this is going to serve raw effect names which will include WLED-SR extensions in names
+    if (requestJSONBufferLock(19)) {
+      AsyncJsonResponse* response = new AsyncJsonResponse(&doc, true);  // array document
+      JsonArray lDoc = response->getRoot();
+      serializeModeNames(lDoc, JSON_mode_names); // remove WLED-SR extensions from effect names
+      response->setLength();
+      request->send(response);
+      releaseJSONBufferLock();
+    } else {
+      request->send_P(200, "application/json", JSON_mode_names);
+    }
     return;
   }
   else if (url.indexOf("pal") > 0) {
@@ -842,14 +900,10 @@ void serveJson(AsyncWebServerRequest* request)
     return;
   }
 
-  #ifdef WLED_USE_DYNAMIC_JSON
-  AsyncJsonResponse* response = new AsyncJsonResponse(JSON_BUFFER_SIZE);
-  #else
   if (!requestJSONBufferLock(17)) return;
-  AsyncJsonResponse *response = new AsyncJsonResponse(&doc);
-  #endif
+  AsyncJsonResponse *response = new AsyncJsonResponse(&doc, subJson==6);
 
-  JsonObject lDoc = response->getRoot();
+  JsonVariant lDoc = response->getRoot();
 
   switch (subJson)
   {
@@ -861,6 +915,8 @@ void serveJson(AsyncWebServerRequest* request)
       serializeNodes(lDoc); break;
     case 5: //palettes
       serializePalettes(lDoc, request); break;
+    case 6: // FX helper data
+      serializeModeData(lDoc.as<JsonArray>()); break;
     default: //all
       JsonObject state = lDoc.createNestedObject("state");
       serializeState(state);
@@ -868,13 +924,14 @@ void serveJson(AsyncWebServerRequest* request)
       serializeInfo(info);
       if (subJson != 3)
       {
-        doc[F("effects")]  = serialized((const __FlashStringHelper*)JSON_mode_names);
-        doc[F("palettes")] = serialized((const __FlashStringHelper*)JSON_palette_names);
+        //lDoc[F("effects")]  = serialized((const __FlashStringHelper*)JSON_mode_names);
+        JsonArray effects = lDoc.createNestedArray(F("effects"));
+        serializeModeNames(effects, JSON_mode_names); // remove WLED-SR extensions from effect names
+        lDoc[F("palettes")] = serialized((const __FlashStringHelper*)JSON_palette_names);
       }
   }
 
-  DEBUG_PRINT("JSON buffer size: ");
-  DEBUG_PRINTLN(lDoc.memoryUsage());
+  DEBUG_PRINTF("JSON buffer size: %u for request: %d\n", lDoc.memoryUsage(), subJson);
 
   response->setLength();
   request->send(response);

@@ -133,6 +133,8 @@ bool deserializeState(JsonObject root, byte callMode = CALL_MODE_DIRECT_CHANGE, 
 void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset = false, bool segmentBounds = true);
 void serializeState(JsonObject root, bool forPreset = false, bool includeBri = true, bool segmentBounds = true);
 void serializeInfo(JsonObject root);
+void serializeModeNames(JsonArray arr, const char *qstring);
+void serializeModeData(JsonObject root);
 void serveJson(AsyncWebServerRequest* request);
 #ifdef WLED_ENABLE_JSONLIVE
 bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient = 0);
@@ -188,7 +190,8 @@ int16_t loadPlaylist(JsonObject playlistObject, byte presetId = 0);
 void handlePlaylist();
 
 //presets.cpp
-bool applyPreset(byte index, byte callMode = CALL_MODE_DIRECT_CHANGE);
+void handlePresets();
+bool applyPreset(byte index, byte callMode = CALL_MODE_DIRECT_CHANGE, bool fromJson = false);
 inline bool applyTemporaryPreset() {return applyPreset(255);};
 void savePreset(byte index, const char* pname = nullptr, JsonObject saveobj = JsonObject());
 inline void saveTemporaryPreset() {savePreset(255);};
@@ -198,9 +201,6 @@ void deletePreset(byte index);
 bool isAsterisksOnly(const char* str, byte maxLen);
 void handleSettingsSet(AsyncWebServerRequest *request, byte subPage);
 bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply=true);
-int getNumVal(const String* req, uint16_t pos);
-void parseNumber(const char* str, byte* val, byte minv=0, byte maxv=255);
-bool updateVal(const String* req, const char* key, byte* val, byte minv=0, byte maxv=255);
 
 //udp.cpp
 void notify(byte callMode, bool followUp=false);
@@ -211,16 +211,9 @@ void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w);
 void refreshNodeList();
 void sendSysInfoUDP();
 
-//util.cpp
-//bool oappend(const char* txt); // append new c string to temp buffer efficiently
-//bool oappendi(int i);          // append new number to temp buffer efficiently
-//void sappend(char stype, const char* key, int val);
-//void sappends(char stype, const char* key, char* val);
-//void prepareHostname(char* hostname);
-//bool isAsterisksOnly(const char* str, byte maxLen);
-bool requestJSONBufferLock(uint8_t module=255);
-void releaseJSONBufferLock();
-uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLen);
+//network.cpp
+int getSignalQuality(int rssi);
+void WiFiEvent(WiFiEvent_t event);
 
 //um_manager.cpp
 class Usermod {
@@ -271,11 +264,48 @@ void userSetup();
 void userConnected();
 void userLoop();
 
+//util.cpp
+int getNumVal(const String* req, uint16_t pos);
+void parseNumber(const char* str, byte* val, byte minv=0, byte maxv=255);
+bool getVal(JsonVariant elem, byte* val, byte minv=0, byte maxv=255);
+bool updateVal(const String* req, const char* key, byte* val, byte minv=0, byte maxv=255);
+bool oappend(const char* txt); // append new c string to temp buffer efficiently
+bool oappendi(int i);          // append new number to temp buffer efficiently
+void sappend(char stype, const char* key, int val);
+void sappends(char stype, const char* key, char* val);
+void prepareHostname(char* hostname);
+bool isAsterisksOnly(const char* str, byte maxLen);
+bool requestJSONBufferLock(uint8_t module=255);
+void releaseJSONBufferLock();
+uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLen);
+
 //wled_eeprom.cpp
 void applyMacro(byte index);
 void deEEP();
 void deEEPSettings();
 void clearEEPROM();
+
+//wled_math.cpp
+#ifndef WLED_USE_REAL_MATH
+  template <typename T> T atan_t(T x);
+  float cos_t(float phi);
+  float sin_t(float x);
+  float tan_t(float x);
+  float acos_t(float x);
+  float asin_t(float x);
+  float floor_t(float x);
+  float fmod_t(float num, float denom);
+#else
+  #include <math.h>
+  #define sin_t sin
+  #define cos_t cos
+  #define tan_t tan
+  #define asin_t asin
+  #define acos_t acos
+  #define atan_t atan
+  #define fmod_t fmod
+  #define floor_t floor
+#endif
 
 //wled_serial.cpp
 void handleSerial();
@@ -283,6 +313,7 @@ void updateBaudRate(uint32_t rate);
 
 //wled_server.cpp
 bool isIp(String str);
+void createEditHandler(bool enable);
 bool captivePortal(AsyncWebServerRequest *request);
 void initServer();
 void serveIndexOrWelcome(AsyncWebServerRequest *request);
@@ -292,6 +323,7 @@ void serveMessage(AsyncWebServerRequest* request, uint16_t code, const String& h
 String settingsProcessor(const String& var);
 String dmxProcessor(const String& var);
 void serveSettings(AsyncWebServerRequest* request, bool post = false);
+void serveSettingsJS(AsyncWebServerRequest* request);
 
 //ws.cpp
 void handleWs();
@@ -301,8 +333,6 @@ void sendDataWs(AsyncWebSocketClient * client = nullptr);
 //xml.cpp
 void XML_response(AsyncWebServerRequest *request, char* dest = nullptr);
 void URL_response(AsyncWebServerRequest *request);
-void sappend(char stype, const char* key, int val);
-void sappends(char stype, const char* key, char* val);
 void getSettingsJS(byte subPage, char* dest);
 
 #endif
