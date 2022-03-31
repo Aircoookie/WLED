@@ -14,10 +14,9 @@
  * diplayItIs: enable/disable display of "Es ist" on the clock.
  */
 
-//class name. Use something descriptive and leave the ": public Usermod" part :)
-class WordClockUsermod : public Usermod {
+class WordClockUsermod : public Usermod 
+{
   private:
-    //Private class members. You can declare variables and functions only accessible to your usermod here
     unsigned long lastTime = 0;
     int lastTimeMinutes = -1;
 
@@ -25,12 +24,14 @@ class WordClockUsermod : public Usermod {
     bool usermodActive = false;
     bool displayItIs = false;
     
+    // defines for mask sizes
     #define maskSizeLeds        114
     #define maskSizeMinutes     12
     #define maskSizeHours       6
     #define maskSizeItIs        5
     #define maskSizeMinuteDots  4
 
+    // "minute" masks
     const int maskMinutes[12][maskSizeMinutes] = 
     {
       {107, 108, 109,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1}, // :00
@@ -47,6 +48,7 @@ class WordClockUsermod : public Usermod {
       {  7,   8,   9,  10,  33,  34,  35,  -1,  -1,  -1,  -1,  -1}  // :55 fünf vor
     };
 
+    // hour masks
     const int maskHours[13][maskSizeHours] = 
     {
       { 55,  56,  57,  -1,  -1,  -1}, // 01: ein
@@ -64,10 +66,13 @@ class WordClockUsermod : public Usermod {
       { 95,  96,  97,  98,  99,  -1}  // 12: zwölf and 00: null
     };
 
+    // mask "it is"
     const int maskItIs[maskSizeItIs] = {0, 1, 3, 4, 5};
 
+    // mask minute dots
     const int maskMinuteDots[maskSizeMinuteDots] = {110, 111, 112, 113};
 
+    // overall mask to define which LEDs are on
     int maskLedsOn[maskSizeLeds] = 
     {
       0,0,0,0,0,0,0,0,0,0,0,
@@ -86,10 +91,13 @@ class WordClockUsermod : public Usermod {
     // update led mask
     void updateLedMask(const int wordMask[], int arraySize)
     {
+      // loop over array
       for (int x=0; x < arraySize; x++) 
       {
+        // check if mask has a valid LED number
         if (wordMask[x] >= 0 && wordMask[x] < maskSizeLeds)
         {
+          // turn LED on
           maskLedsOn[wordMask[x]] = 1;
         }
       }
@@ -100,16 +108,19 @@ class WordClockUsermod : public Usermod {
     {
       int index = hours;
 
+      // handle 00:xx as 12:xx
       if (hours == 0)
       {
         index = 12;
       }
 
+      // check if we get an overrun of 12 o´clock
       if (hours == 13)
       {
         index = 1;
       }
 
+      // special handling for "ein Uhr" instead of "eins Uhr"
       if (hours == 1 && fullClock == true)
       {
         index = 0;
@@ -129,12 +140,16 @@ class WordClockUsermod : public Usermod {
     // set minutes dot
     void setSingleMinuteDots(int minutes)
     {
+      // modulo to get minute dots
       int minutesDotCount = minutes % 5;
 
+      // check if minute dots are active
       if (minutesDotCount > 0)
       {
+        // activate all minute dots until number is reached
         for (int i = 0; i < minutesDotCount; i++)
         {
+          // activate LED
           maskLedsOn[maskMinuteDots[i]] = 1;  
         }
       }
@@ -231,16 +246,16 @@ class WordClockUsermod : public Usermod {
      * setup() is called once at boot. WiFi is not yet connected at this point.
      * You can use it to initialize variables, sensors or similar.
      */
-    void setup() {
-      //Serial.println("Hello from my usermod!");
+    void setup() 
+    {
     }
 
     /*
      * connected() is called every time the WiFi is (re)connected
      * Use it to initialize network interfaces
      */
-    void connected() {
-      //Serial.println("Connected to WiFi!");
+    void connected() 
+    {
     }
 
     /*
@@ -261,13 +276,13 @@ class WordClockUsermod : public Usermod {
         // check the time
         int minutes = minute(localTime);
 
-        // check if we already updatet this minute
+        // check if we already updated this minute
         if (lastTimeMinutes != minutes)
         {
           // update the display with new time
           updateDisplay(hourFormat12(localTime), minute(localTime));
 
-          // remember last update
+          // remember last update time
           lastTimeMinutes = minutes;
         }
 
@@ -300,7 +315,7 @@ class WordClockUsermod : public Usermod {
      * Values in the state object may be modified by connected clients
      */
     void readFromJsonState(JsonObject& root)
-    {;
+    {
     }
 
     /*
