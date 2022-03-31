@@ -938,7 +938,7 @@ textarea {
 .frz {
 	left: 36px;
 	position: absolute;
-	top: -3px;
+	top: -1px;
 	cursor: pointer;
 	padding: 8px;
 }

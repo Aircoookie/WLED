@@ -666,7 +666,7 @@ function populateSegments(s)
 		<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>
 		<span class="checkmark schk"></span>
 	</label>
-	<i class="icons e-icon frz" id="seg${i}frz" onclick="event.preventDefault();tglFreeze(${i});">&#x${inst.frz ? (li.live && li.liveseg==i?'e410':'e0e8') : 'e325'};</i>
+	<i class="icons e-icon frz" id="seg${i}frz" onclick="event.preventDefault();tglFreeze(${i});" style="display:${inst.frz?"inline":"none"}">&#x${li.live && li.liveseg==i?'e410':'e325'};</i>
 	<div class="segname" onclick="selSegEx(${i})">
 		${inst.n ? inst.n : "Segment "+i}
 		<i class="icons edit-icon" id="seg${i}nedit" onclick="tglSegn(${i})">&#xe2c6;</i>
@@ -738,7 +738,7 @@ function populateSegments(s)
 
 function populateEffects()
 {
-    var effects = eJson;
+  var effects = eJson;
 	var html = "";
 
 	effects.shift(); // remove solid
@@ -1899,7 +1899,11 @@ function setSegBri(s)
 function tglFreeze(s=null)
 {
 	var obj = {"seg": {"frz": "t"}}; // toggle
-	if (s!==null) obj.seg.id = s;
+	if (s!==null) {
+		obj.seg.id = s;
+		// if live segment, enter live override (which also unfreezes)
+		if (lastinfo && s==lastinfo.liveseg && lastinfo.live) obj = {"lor":1};
+	}
 	requestJson(obj);
 }
 

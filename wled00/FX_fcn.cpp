@@ -131,6 +131,8 @@ void WS2812FX::service() {
 
   for(uint8_t i=0; i < MAX_NUM_SEGMENTS; i++)
   {
+    //if (realtimeMode && useMainSegmentOnly && i == getMainSegmentId()) continue;
+
     _segment_index = i;
 
     // reset the segment runtime data if needed, called before isActive to ensure deleted
@@ -199,7 +201,7 @@ void IRAM_ATTR WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte 
   if (SEGLEN || (realtimeMode && useMainSegmentOnly)) {
     uint32_t col = RGBW32(r, g, b, w);
     uint16_t len = _segments[segIdx].length();
-
+    
     // get physical pixel address (taking into account start, grouping, spacing [and offset])
     i = i * _segments[segIdx].groupLength();
     if (_segments[segIdx].options & REVERSE) { // is segment reversed?
@@ -215,7 +217,6 @@ void IRAM_ATTR WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte 
     for (uint16_t j = 0; j < _segments[segIdx].grouping; j++) {
       uint16_t indexSet = i + ((_segments[segIdx].options & REVERSE) ? -j : j);
       if (indexSet >= _segments[segIdx].start && indexSet < _segments[segIdx].stop) {
-
         if (_segments[segIdx].options & MIRROR) { //set the corresponding mirrored pixel
           uint16_t indexMir = _segments[segIdx].stop - indexSet + _segments[segIdx].start - 1;          
           indexMir += _segments[segIdx].offset; // offset/phase

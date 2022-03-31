@@ -73,6 +73,8 @@
 #define USERMOD_ID_SSDR                  24     //Usermod "usermod_v2_seven_segment_display_reloaded.h"
 #define USERMOD_ID_CRONIXIE              25     //Usermod "usermod_cronixie.h"
 #define USERMOD_ID_WIZLIGHTS             26     //Usermod "wizlights.h"
+#define USERMOD_ID_WORDCLOCK             27     //Usermod "usermod_v2_word_clock.h"
+#define USERMOD_ID_MY9291                28     //Usermod "usermod_MY9291.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot

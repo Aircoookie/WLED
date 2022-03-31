@@ -116,6 +116,14 @@
 #include "../usermods/wizlights/wizlights.h"
 #endif
 
+#ifdef USERMOD_WORDCLOCK
+#include "../usermods/usermod_v2_word_clock/usermod_v2_word_clock.h"
+#endif
+
+#ifdef USERMOD_MY9291
+#include "../usermods/MY9291/usermode_MY9291.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -218,5 +226,13 @@ void registerUsermods()
 
   #ifdef USERMOD_WIZLIGHTS
   usermods.add(new WizLightsUsermod());
+  #endif
+  
+  #ifdef USERMOD_WORDCLOCK
+  usermods.add(new WordClockUsermod());
+  #endif
+
+  #ifdef USERMOD_MY9291
+  usermods.add(new MY9291Usermod());
   #endif
 }
