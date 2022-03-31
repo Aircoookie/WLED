@@ -140,26 +140,51 @@ void notify(byte callMode, bool followUp)
 
 void realtimeLock(uint32_t timeoutMs, byte md)
 {
-  if (!realtimeMode && !realtimeOverride){
-    uint16_t totalLen = strip.getLengthTotal();
-    for (uint16_t i = 0; i < totalLen; i++)
-    {
-      strip.setPixelColor(i,0,0,0,0);
+  if (!realtimeMode && !realtimeOverride) {
+    uint16_t stop, start;
+    if (useMainSegmentOnly) {
+      WS2812FX::Segment& mainseg = strip.getMainSegment();
+      start = mainseg.start;
+      stop  = mainseg.stop;
+      mainseg.setOption(SEG_OPTION_FREEZE, true, strip.getMainSegmentId());
+    } else {
+      start = 0;
+      stop  = strip.getLengthTotal();
     }
+    // clear strip/segment
+    for (uint16_t i = start; i < stop; i++) strip.setPixelColor(i,0,0,0,0);
+    // if WLED was off and using main segment only, freeze non-main segments so they stay off
+    if (useMainSegmentOnly && bri == 0) {
+      for (uint8_t s=0; s < strip.getMaxSegments(); s++) {
+        strip.getSegment(s).setOption(SEG_OPTION_FREEZE, true, s);
+      }
+    }
+  }
+  // if strip is off (bri==0) and not already in RTM
+  if (briT == 0 && !realtimeMode && !realtimeOverride) {
+    strip.setBrightness(scaledBri(briLast), true);
   }
 
   if (realtimeTimeout != UINT32_MAX) {
-    realtimeTimeout = millis() + timeoutMs;
-    if (timeoutMs == 255001 || timeoutMs == 65000) realtimeTimeout = UINT32_MAX;
-  }
-  // if strip is off (bri==0) and not already in RTM
-  if (briT == 0 && !realtimeMode) {
-    strip.setBrightness(scaledBri(briLast), true);
+    realtimeTimeout = (timeoutMs == 255001 || timeoutMs == 65000) ? UINT32_MAX : millis() + timeoutMs;
   }
   realtimeMode = md;
 
-  if (arlsForceMaxBri && !realtimeOverride) strip.setBrightness(scaledBri(255), true);
+  if (realtimeOverride) return;
+  if (arlsForceMaxBri) strip.setBrightness(scaledBri(255), true);
   if (briT > 0 && md == REALTIME_MODE_GENERIC) strip.show();
+}
+
+void exitRealtime() {
+  if (!realtimeMode) return;
+  if (realtimeOverride == REALTIME_OVERRIDE_ONCE) realtimeOverride = REALTIME_OVERRIDE_NONE;
+  strip.setBrightness(scaledBri(bri));
+  realtimeTimeout = 0; // cancel realtime mode immediately
+  realtimeMode = REALTIME_MODE_INACTIVE; // inform UI immediately
+  realtimeIP[0] = 0;
+  if (useMainSegmentOnly) { // unfreeze live segment again
+    strip.getMainSegment().setOption(SEG_OPTION_FREEZE, false, strip.getMainSegmentId());
+  }
 }
 
 
@@ -189,13 +214,7 @@ void handleNotifications()
   }
 
   //unlock strip when realtime UDP times out
-  if (realtimeMode && millis() > realtimeTimeout)
-  {
-    if (realtimeOverride == REALTIME_OVERRIDE_ONCE) realtimeOverride = REALTIME_OVERRIDE_NONE;
-    strip.setBrightness(scaledBri(bri));
-    realtimeMode = REALTIME_MODE_INACTIVE;
-    realtimeIP[0] = 0;
-  }
+  if (realtimeMode && millis() > realtimeTimeout) exitRealtime();
 
   //receive UDP notifications
   if (!udpConnected) return;

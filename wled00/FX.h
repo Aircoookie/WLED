@@ -46,6 +46,11 @@
 #define MAX(a,b) ((a)>(b)?(a):(b))
 #endif
 
+//color mangling macros
+#ifndef RGBW32
+#define RGBW32(r,g,b,w) (uint32_t((byte(w) << 24) | (byte(r) << 16) | (byte(g) << 8) | (byte(b))))
+#endif
+
 /* Not used in all effects yet */
 #define WLED_FPS         42
 #define FRAMETIME_FIXED  (1000/WLED_FPS)
@@ -637,11 +642,12 @@ class WS2812FX {
       resetSegments(),
       makeAutoSegments(bool forceReset = false),
       fixInvalidSegments(),
-      setPixelColor(uint16_t n, uint32_t c),
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       show(void),
 			setTargetFps(uint8_t fps),
       deserializeMap(uint8_t n=0);
+
+    inline void setPixelColor(uint16_t n, uint32_t c) {setPixelColor(n, byte(c>>16), byte(c>>8), byte(c), byte(c>>24));}
 
     bool
       gammaCorrectBri = false,
@@ -910,7 +916,6 @@ class WS2812FX {
     friend class ColorTransition;
 
     uint16_t
-      realPixelIndex(uint16_t i),
       transitionProgress(uint8_t tNr);
   
   public:

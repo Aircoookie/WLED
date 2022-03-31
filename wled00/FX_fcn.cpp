@@ -131,6 +131,8 @@ void WS2812FX::service() {
 
   for(uint8_t i=0; i < MAX_NUM_SEGMENTS; i++)
   {
+    //if (realtimeMode && useMainSegmentOnly && i == getMainSegmentId()) continue;
+
     _segment_index = i;
 
     // reset the segment runtime data if needed, called before isActive to ensure deleted
@@ -185,34 +187,11 @@ void WS2812FX::service() {
   _triggered = false;
 }
 
-void IRAM_ATTR WS2812FX::setPixelColor(uint16_t n, uint32_t c) {
-  setPixelColor(n, R(c), G(c), B(c), W(c));
-}
-
-//used to map from segment index to physical pixel, taking into account grouping, offsets, reverse and mirroring
-uint16_t IRAM_ATTR WS2812FX::realPixelIndex(uint16_t i) {
-  int16_t iGroup = i * SEGMENT.groupLength();
-
-  /* reverse just an individual segment */
-  int16_t realIndex = iGroup;
-  if (IS_REVERSE) {
-    if (IS_MIRROR) {
-      realIndex = (SEGMENT.length() - 1) / 2 - iGroup;  //only need to index half the pixels
-    } else {
-      realIndex = (SEGMENT.length() - 1) - iGroup;
-    }
-  }
-
-  realIndex += SEGMENT.start;
-  return realIndex;
-}
-
 void IRAM_ATTR WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
-  if (SEGLEN) {//from segment
-    uint16_t realIndex = realPixelIndex(i);
-    uint16_t len = SEGMENT.length();
+  uint8_t segIdx;
 
+  if (SEGLEN) { // SEGLEN!=0 -> from segment/FX
     //color_blend(getpixel, col, _bri_t); (pseudocode for future blending of segments)
     if (_bri_t < 255) {  
       r = scale8(r, _bri_t);
@@ -220,30 +199,48 @@ void IRAM_ATTR WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte 
       b = scale8(b, _bri_t);
       w = scale8(w, _bri_t);
     }
+    segIdx = _segment_index;
+  } else // from live/realtime
+    segIdx = _mainSegment;
+
+  if (SEGLEN || (realtimeMode && useMainSegmentOnly)) {
     uint32_t col = RGBW32(r, g, b, w);
+    uint16_t len = _segments[segIdx].length();
 
-    /* Set all the pixels in the group */
-    for (uint16_t j = 0; j < SEGMENT.grouping; j++) {
-      uint16_t indexSet = realIndex + (IS_REVERSE ? -j : j);
-      if (indexSet >= SEGMENT.start && indexSet < SEGMENT.stop) {
-        if (IS_MIRROR) { //set the corresponding mirrored pixel
-          uint16_t indexMir = SEGMENT.stop - indexSet + SEGMENT.start - 1;
-          /* offset/phase */
-          indexMir += SEGMENT.offset;
-          if (indexMir >= SEGMENT.stop) indexMir -= len;
+    // get physical pixel address (taking into account start, grouping, spacing [and offset])
+    i = i * _segments[segIdx].groupLength();
+    if (_segments[segIdx].options & REVERSE) { // is segment reversed?
+      if (_segments[segIdx].options & MIRROR) { // is segment mirrored?
+        i = (len - 1) / 2 - i;  //only need to index half the pixels
+      } else {
+        i = (len - 1) - i;
+      }
+    }
+    i += _segments[segIdx].start;
 
+    // set all the pixels in the group
+    for (uint16_t j = 0; j < _segments[segIdx].grouping; j++) {
+      uint16_t indexSet = i + ((_segments[segIdx].options & REVERSE) ? -j : j);
+      if (indexSet >= _segments[segIdx].start && indexSet < _segments[segIdx].stop) {
+
+        if (_segments[segIdx].options & MIRROR) { //set the corresponding mirrored pixel
+          uint16_t indexMir = _segments[segIdx].stop - indexSet + _segments[segIdx].start - 1;          
+          indexMir += _segments[segIdx].offset; // offset/phase
+
+          if (indexMir >= _segments[segIdx].stop) indexMir -= len;
           if (indexMir < customMappingSize) indexMir = customMappingTable[indexMir];
+
           busses.setPixelColor(indexMir, col);
         }
-        /* offset/phase */
-        indexSet += SEGMENT.offset;
-        if (indexSet >= SEGMENT.stop) indexSet -= len;
+        indexSet += _segments[segIdx].offset; // offset/phase
 
+        if (indexSet >= _segments[segIdx].stop) indexSet -= len;
         if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
+
         busses.setPixelColor(indexSet, col);
       }
     }
-  } else { //live data, etc.
+  } else {
     if (i < customMappingSize) i = customMappingTable[i];
     busses.setPixelColor(i, RGBW32(r, g, b, w));
   }
@@ -508,7 +505,13 @@ uint8_t WS2812FX::getActiveSegmentsNum(void) {
 
 uint32_t WS2812FX::getPixelColor(uint16_t i)
 {
-  i = realPixelIndex(i);
+  // get physical pixel
+  i = i * SEGMENT.groupLength();;
+  if (IS_REVERSE) {
+    if (IS_MIRROR) i = (SEGMENT.length() - 1) / 2 - i;  //only need to index half the pixels
+    else           i = (SEGMENT.length() - 1) - i;
+  }
+  i += SEGMENT.start;
 
   if (SEGLEN) {
     /* offset/phase */
@@ -523,7 +526,7 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
 }
 
 WS2812FX::Segment& WS2812FX::getSegment(uint8_t id) {
-  if (id >= MAX_NUM_SEGMENTS) return _segments[0];
+  if (id >= MAX_NUM_SEGMENTS) return _segments[getMainSegmentId()];
   return _segments[id];
 }
 

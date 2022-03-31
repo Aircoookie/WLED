@@ -291,6 +291,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   JsonObject if_live = interfaces["live"];
   CJSON(receiveDirect, if_live["en"]);
+  CJSON(useMainSegmentOnly, if_live[F("mso")]);
   CJSON(e131Port, if_live["port"]); // 5568
   if (e131Port == DDP_DEFAULT_PORT) e131Port = E131_DEFAULT_PORT; // prevent double DDP port allocation
   CJSON(e131Multicast, if_live[F("mc")]);
@@ -704,6 +705,7 @@ void serializeConfig() {
 
   JsonObject if_live = interfaces.createNestedObject("live");
   if_live["en"] = receiveDirect;
+  if_live[F("mso")] = useMainSegmentOnly;
   if_live["port"] = e131Port;
   if_live[F("mc")] = e131Multicast;
 

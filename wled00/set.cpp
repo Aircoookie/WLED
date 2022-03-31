@@ -237,6 +237,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     nodeBroadcastEnabled = request->hasArg(F("NB"));
 
     receiveDirect = request->hasArg(F("RD"));
+    useMainSegmentOnly = request->hasArg(F("MO"));
     e131SkipOutOfSequence = request->hasArg(F("ES"));
     e131Multicast = request->hasArg(F("EM"));
     t = request->arg(F("EP")).toInt();
@@ -933,6 +934,9 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (pos > 0) {
     realtimeOverride = getNumVal(&req, pos);
     if (realtimeOverride > 2) realtimeOverride = REALTIME_OVERRIDE_ALWAYS;
+    if (realtimeMode && useMainSegmentOnly) {
+      strip.getMainSegment().setOption(SEG_OPTION_FREEZE, !realtimeOverride, strip.getMainSegmentId());
+    }
   }
 
   pos = req.indexOf(F("RB"));
