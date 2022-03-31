@@ -690,8 +690,11 @@ void WS2812FX::resetSegments() {
   memset(_segments, 0, sizeof(_segments));
   //memset(_segment_runtimes, 0, sizeof(_segment_runtimes));
   _segment_index = 0;
+  _segments[0].palette = DEFAULT_PALETTE;
   _segments[0].mode = DEFAULT_MODE;
   _segments[0].colors[0] = DEFAULT_COLOR;
+  _segments[0].colors[1] = DEFAULT_COLOR1;
+  _segments[0].colors[2] = DEFAULT_COLOR2;
   _segments[0].start = 0;
   _segments[0].speed = DEFAULT_SPEED;
   _segments[0].intensity = DEFAULT_INTENSITY;
@@ -704,7 +707,11 @@ void WS2812FX::resetSegments() {
 
   for (uint16_t i = 1; i < MAX_NUM_SEGMENTS; i++)
   {
-    _segments[i].colors[0] = color_wheel(i*51);
+    _segments[i].palette = DEFAULT_PALETTE;
+    _segments[i].mode = DEFAULT_MODE;
+    _segments[i].colors[0] = DEFAULT_COLOR;
+    _segments[i].colors[1] = DEFAULT_COLOR1;
+    _segments[i].colors[2] = DEFAULT_COLOR2;
     _segments[i].grouping = 1;
     _segments[i].setOption(SEG_OPTION_ON, 1);
     _segments[i].opacity = 255;
