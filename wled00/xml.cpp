@@ -677,6 +677,7 @@ void getSettingsJS(byte subPage, char* dest)
       sappend('v', ledClockSettingsKeyMinBrightness, settings->minBrightness);
       sappend('v', ledClockSettingsKeyMaxBrightness, settings->maxBrightness);
       sappend('i', ledClockSettingsKeySeparatorMode, settings->separatorMode);
+      sappend('c', ledClockSettingsKeyHideZero, settings->hideZero);
     }
   }
 

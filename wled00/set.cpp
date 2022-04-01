@@ -534,6 +534,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     // booleans
     settings->autoBrightness = false;
+    settings->hideZero = false;
 
     size_t args = request->args();
     for (size_t i=0; i<args; i++) {
@@ -548,6 +549,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         settings->maxBrightness = value.toInt();
       } else if (name == ledClockSettingsKeySeparatorMode) {
         settings->separatorMode = (SeparatorMode) value.toInt();
+      } else if (name == ledClockSettingsKeyHideZero) {
+        settings->hideZero = true;
       }
     }
 
@@ -560,6 +563,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
 
     settings->separatorMode = constrain(settings->separatorMode, SeparatorMode::ON, SeparatorMode::BLINK);
+
+    settings->applySettings();
   }
 
   if (subPage != 2 && (subPage != 6 || !doReboot)) serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)

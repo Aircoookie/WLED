@@ -500,8 +500,9 @@ type="range" oninput="adjustRange(!1),showBrCtrlVal()"><div
 class="sliderdisplay"></div></div><br>Maximum brightness: <span id="maxbv">
 </span><br><div class="sliderwrap il"><input id="maxb" name="maxb" max="255" 
 min="2" type="range" oninput="adjustRange(!0),showBrCtrlVal()"><div 
-class="sliderdisplay"></div></div><br></div><h3>Hour-minute Separator</h3>
-Display mode: <select name="sepm"><option value="0">On</option><option 
+class="sliderdisplay"></div></div><br></div><h3>Display Settings</h3><input 
+type="checkbox" name="hidzer"> Hide leading zero (hours)<br>
+Hour-minute Separator: <select name="sepm"><option value="0">On</option><option 
 value="1">Off</option><option value="2">Blink</option></select><br><br><hr><div 
 id="toast"></div><button type="button" onclick="B()">Back</button><button 
 type="submit">Save</button></form></body></html>)=====";

@@ -9,6 +9,7 @@ const char * ledClockSettingsKeyAutoBrightness = "autb";
 const char * ledClockSettingsKeyMinBrightness = "minb";
 const char * ledClockSettingsKeyMaxBrightness = "maxb";
 const char * ledClockSettingsKeySeparatorMode = "sepm";
+const char * ledClockSettingsKeyHideZero = "hidzer";
 
 const char * ledClockStateKey = "ledclock";
 const char * ledClockStateKeyCommand = "cmd";
@@ -124,7 +125,7 @@ public:
 
     void setup() {
         // digit 1
-        dHoursT.setShowZero(false); //TODO config
+        dHoursT.setShowZero(!hideZero);
         dHoursT.mapSegment(_7SEG_SEG_A, 6, 7);
         dHoursT.mapSegment(_7SEG_SEG_B, 8, 9);
         dHoursT.mapSegment(_7SEG_SEG_C, 12, 13);
@@ -375,6 +376,7 @@ public:
         top[ledClockSettingsKeyMinBrightness] = minBrightness;
         top[ledClockSettingsKeyMaxBrightness] = maxBrightness;
         top[ledClockSettingsKeySeparatorMode] = separatorMode;
+        top[ledClockSettingsKeyHideZero] = hideZero;
     }
 
     bool readFromConfig(JsonObject& root) {
@@ -386,8 +388,13 @@ public:
         configComplete &= getJsonValue(top[ledClockSettingsKeyMinBrightness], minBrightness, 50);
         configComplete &= getJsonValue(top[ledClockSettingsKeyMaxBrightness], maxBrightness, 255);
         configComplete &= getJsonValue(top[ledClockSettingsKeySeparatorMode], separatorMode, SeparatorMode::BLINK);
+        configComplete &= getJsonValue(top[ledClockSettingsKeyHideZero], hideZero, true);
 
         return configComplete;
+    }
+
+    void applySettings() {
+        dHoursT.setShowZero(!hideZero);
     }
 
     void handleOverlayDraw() {

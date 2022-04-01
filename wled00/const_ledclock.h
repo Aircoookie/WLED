@@ -22,6 +22,7 @@ extern const char * ledClockSettingsKeyAutoBrightness;
 extern const char * ledClockSettingsKeyMinBrightness;
 extern const char * ledClockSettingsKeyMaxBrightness;
 extern const char * ledClockSettingsKeySeparatorMode;
+extern const char * ledClockSettingsKeyHideZero;
 
 extern const char * ledClockStateKey;
 extern const char * ledClockStateKeyMode;
@@ -44,6 +45,9 @@ public:
     uint8_t minBrightness = 50; // must NOT be lower than 1
     uint8_t maxBrightness = 255;
     SeparatorMode separatorMode = SeparatorMode::BLINK;
+    bool hideZero = true;
+
+    virtual void applySettings() = 0;
 };
 
 #endif
