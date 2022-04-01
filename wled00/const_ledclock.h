@@ -25,13 +25,21 @@ extern const char * ledClockSettingsKeySeparatorMode;
 extern const char * ledClockSettingsKeyHideZero;
 
 extern const char * ledClockStateKey;
+
 extern const char * ledClockStateKeyMode;
 extern const char * ledClockStateKeyStopwatch;
+
 extern const char * ledClockStateKeyStopwatchRunning;
 extern const char * ledClockStateKeyStopwatchElapsed;
 extern const char * ledClockStateKeyStopwatchLapTimes;
 extern const char * ledClockStateKeyStopwatchLapTimeNr;
 extern const char * ledClockStateKeyStopwatchLastLapTime;
+
+extern const char * ledClockStateKeyTimer;
+extern const char * ledClockStateKeyTimerRunning;
+extern const char * ledClockStateKeyTimerPaused;
+extern const char * ledClockStateKeyTimerLeft;
+extern const char * ledClockStateKeyTimerValue;
 
 enum SeparatorMode {
     ON, OFF, BLINK

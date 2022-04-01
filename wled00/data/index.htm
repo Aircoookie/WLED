@@ -11,7 +11,7 @@
 	<link rel="stylesheet" href="index.css">
 	<link rel="stylesheet" href="index_ledclock.css">
 </head>
-<body onload="onLoad()">
+<body onload="onLoad();LC.onLoad()">
 
 <div id="cv" class="overlay">Loading WLED UI...</div>
 <noscript><div class="overlay" style="opacity:1;">Sorry, WLED UI needs JavaScript!</div></noscript>
@@ -222,10 +222,22 @@
 		<div>
 			<div id="lc-mode-clock">
 				<span>The device shows the current time.</span>
-				<button class="btn infobtn" onclick="location.href='/settings/time'">Time &amp; Macros</button>
-				<button class="btn infobtn" onclick="location.href='/settings/clock'">Clock Settings</button>
+				<button class="btn infobtn" onclick="location.href='/settings/time'"><i class="icons no-margin">&#xe0a2;</i> Time &amp; Macros</button>
+				<button class="btn infobtn" onclick="location.href='/settings/clock'"><i class="icons no-margin">&#xe0a2;</i> Clock Settings</button>
 			</div>
-			<div id="lc-mode-timer">timer</div>
+			<div id="lc-mode-timer">
+				<div id="lc-timer-input">
+					<select id="lc-timer-h" oninput="LC.timerSet()"></select><small>h</small>
+					<select id="lc-timer-m" oninput="LC.timerSet()"></select><small>m</small>
+					<select id="lc-timer-s" oninput="LC.timerSet()"></select><small>s</small>
+				</div>
+				<div id="lc-timer-buttons">
+					<button id="lc-tm-reset" class="btn infobtn" onclick="LC.timerReset()"><i class="icons no-margin">&#xe116;</i> Reset</button>
+					<button id="lc-tm-toggle" class="btn infobtn" onclick="LC.timerToggle()"><i class="icons no-margin">&#xe002;</i> <span>Start</span></button>
+					<button id="lc-tm-incr" class="btn infobtn" onclick="LC.timerIncrease(60000)"><i class="icons no-margin">&#xe18a;</i> 1 Minute</button>
+				</div>
+				<button class="btn infobtn" onclick="location.href='/settings/clock#timer'"><i class="icons no-margin">&#xe0a2;</i> Timer Settings</button>
+			</div>
 			<div id="lc-mode-stopwatch">
 				<div id="lc-stopwatch-buttons">
 					<button id="lc-sw-reset" class="btn infobtn" onclick="LC.stopwatchReset()"><i class="icons no-margin">&#xe116;</i> Reset</button>
@@ -237,6 +249,7 @@
 						<h4>#</h4><h4>Lap Time</h4><h4>Split Time</h4>
 					</div>
 				</div>
+				<button class="btn infobtn" onclick="location.href='/settings/clock#stopwatch'"><i class="icons no-margin">&#xe0a2;</i> Stopwatch Settings</button>
 			</div>
 		</div>
 	</div>

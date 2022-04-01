@@ -17,14 +17,27 @@ LC = {
     stateKeyStopwatchLapTimeNr: 'lapnr',
     stateKeyStopwatchLastLapTime: 'lalap',
 
+    stateKeyTimer: 'timer',
+    stateKeyTimerRunning: 'runs',
+    stateKeyTimerPaused: 'pause',
+    stateKeyTimerLeft: 'left',
+    stateKeyTimerValue: 'val',
+
     commands: {
         stopwatchStart: 0,
         stopwatchPause: 1,
         stopwatchReset: 2,
-        stopwatchLapTime: 3
+        stopwatchLapTime: 3,
+
+        timerStart: 4,
+        timerPause: 5,
+        timerReset: 6,
+        timerIncrease: 7,
+        timerSet: 8
     },
 
     mode: 0,
+
     stopwatchRunning: false,
     stopwatchPaused: false,
     stopwatchElapsed: 0,
@@ -32,10 +45,18 @@ LC = {
     stopwatchLapTimeNr: 0,
     stopwatchLastLapTime: 0,
 
-    issueCommand: function(cmd) {
+    timerRunning: false,
+    timerPaused: false,
+    timerLeft: 0,
+    timerValue: 0,
+
+    issueCommand: function(cmd, params = {}) {
         requestJson({
             [LC.stateKey]: {
-                [LC.stateKeyCommand]: cmd
+                ...params,
+                ...{
+                    [LC.stateKeyCommand]: cmd
+                }
             }
         });
     },
@@ -76,6 +97,18 @@ LC = {
             LC.stopwatchLapTimeNr = 0;
             LC.stopwatchLastLapTime = 0;
         }
+        if (root[LC.stateKeyTimer] != undefined) {
+            var tm = root[LC.stateKeyTimer];
+            LC.timerRunning = tm[LC.stateKeyTimerRunning];
+            LC.timerPaused = tm[LC.stateKeyTimerPaused];
+            LC.timerLeft = tm[LC.stateKeyTimerLeft];
+            LC.timerValue = tm[LC.stateKeyTimerValue];
+        } else {
+            LC.timerRunning = false;
+            LC.timerPaused = false;
+            LC.timerLeft = 0;
+            LC.timerValue = 0;
+        }
     },
 
     formatMillis(millis) {
@@ -114,7 +147,7 @@ LC = {
             } else if (count < n) {
                 var anchor = grid.querySelector('h4:last-of-type');
                 for (var i = 0, n = n - count; i < n; ++i) {
-                    anchor.insertAdjacentHTML('afterend', '<span></span><span></span><span></span>');
+                    anchor.insertAdjacentHTML('afterend', '<span style="opacity:0"></span><span style="opacity:0"></span><span style="opacity:0"></span>');
                 }
             }
 
@@ -125,13 +158,39 @@ LC = {
             var spanIdx = 0;
             var split = LC.stopwatchLastLapTime;
             LC.stopwatchLapTimes.forEach(t => {
-                spans[spanIdx++].innerText = `${curr}.`;
-                spans[spanIdx++].innerHTML = LC.formatMillis(t);
-                spans[spanIdx++].innerHTML = LC.formatMillis(split);
+                var span1 = spans[spanIdx++];
+                span1.innerText = `${curr}.`;
+                setTimeout(() => { span1.style.opacity = '1'; }, 10);
+
+                var span2 = spans[spanIdx++];
+                span2.innerHTML = LC.formatMillis(t);
+                setTimeout(() => { span2.style.opacity = '1'; }, 10);
+
+                var span3 = spans[spanIdx++];
+                span3.innerHTML = LC.formatMillis(split);
+                setTimeout(() => { span3.style.opacity = '1'; }, 10);
+
                 curr--;
                 split -= t;
             });
         }
+
+        d.querySelectorAll('#lc-timer-input select').forEach(sel => {
+            sel.disabled = LC.timerRunning;
+        });
+
+        d.querySelector('#lc-tm-reset').disabled = !LC.timerRunning;
+        d.querySelector('#lc-tm-toggle').disabled = LC.timerLeft == 0;
+        d.querySelector('#lc-tm-toggle > i').innerHTML = !LC.timerRunning || LC.timerPaused ? '&#xe002;' : '&#xe003;';
+        d.querySelector('#lc-tm-toggle > span').innerText = LC.timerRunning ? (LC.timerPaused ? 'Resume' : 'Pause') : 'Start';
+        d.querySelector('#lc-tm-incr').disabled = !LC.timerRunning || LC.timerPaused;
+
+        var val = LC.timerValue;
+        d.querySelector('#lc-timer-h').value = `${Math.trunc(val / 3600000).toFixed(0)}`;
+        val %= 3600000;
+        d.querySelector('#lc-timer-m').value = `${Math.trunc(val / 60000).toFixed(0)}`;
+        val %= 60000;
+        d.querySelector('#lc-timer-s').value = `${Math.trunc(val / 1000).toFixed(0)}`;
     },
 
     setMode: function(mode) {
@@ -156,6 +215,46 @@ LC = {
 
     stopwatchLapTime: function() {
         LC.issueCommand(LC.commands.stopwatchLapTime);
+    },
+
+    timerReset: function() {
+        LC.issueCommand(LC.commands.timerReset);
+    },
+
+    timerToggle: function() {
+        if (!LC.timerRunning || LC.timerPaused) {
+            LC.issueCommand(LC.commands.timerStart);
+        } else {
+            LC.issueCommand(LC.commands.timerPause);
+        }
+    },
+
+    timerIncrease: function(millis) {
+        LC.issueCommand(LC.commands.timerIncrease, {
+            [LC.stateKeyTimerValue]: millis
+        });
+    },
+
+    timerSet: function() {
+        var millis = ((parseInt(d.querySelector('#lc-timer-h').value) * 3600)
+            + (parseInt(d.querySelector('#lc-timer-m').value) * 60)
+            + parseInt(d.querySelector('#lc-timer-s').value)) * 1000;
+
+        LC.issueCommand(LC.commands.timerSet, {
+            [LC.stateKeyTimerValue]: millis
+        });
+    },
+
+    initTimer: function() {
+        d.querySelectorAll('#lc-timer-input select').forEach(s => {
+            for (var i = 0; i < 60; ++i) {
+                s.insertAdjacentHTML('beforeend', `<option value="${i}">${i}</option>`);
+            }
+        });
+    },
+
+    onLoad: function() {
+        LC.initTimer();
     }
 };
 

@@ -55,6 +55,9 @@
 }
 
 #lc-clock button {
+    width: auto;
+    margin: 0;
+    padding: 8px 14px 8px 10px;
     transition: background-color .5s, opacity .4s;
 }
 
@@ -66,8 +69,13 @@
     background-color: var(--c-3);
 }
 
-#lc-mode-clock {
+#lc-mode-clock,
+#lc-mode-timer {
     justify-content: center;
+    align-items: center;
+}
+
+#lc-mode-stopwatch {
     align-items: center;
 }
 
@@ -77,12 +85,6 @@
 
 #lc-mode-clock span {
     margin-bottom: 1rem;
-}
-
-#lc-mode-stopwatch button {
-    width: auto;
-    margin: 0;
-    padding: 8px 14px 8px 10px;
 }
 
 #lc-laptimes {
@@ -95,19 +97,39 @@
     font-size: 1rem;
     padding: 1rem 0;
     box-sizing: border-box;
+    align-content: start;
 }
 
 #lc-laptimes h4 {
     margin: 0;
 }
 
-#lc-laptimes small {
+#lc-laptimes span {
+    transition: opacity .4s;
+}
+
+#lc-clock small {
     color: var(--c-8);
     padding-left: 0.1rem;
 }
 
-#lc-laptimes .fader {
+#lc-mode-stopwatch .fader {
     flex-grow: 1;
+    align-self: stretch;
+}
+
+#lc-mode-timer {
+    row-gap: 2rem !important;
+}
+
+#lc-mode-timer select {
+	background: #333;
+	color: #fff;
+	font-family: Verdana, sans-serif;
+	border: 0.5ch solid #333;
+    appearance: auto;
+    padding: unset !important;
+    font-size: 1.1rem;
 }
 
 .fader {
