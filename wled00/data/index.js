@@ -666,7 +666,7 @@ function populateSegments(s)
 		<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>
 		<span class="checkmark schk"></span>
 	</label>
-	<i class="icons e-icon frz" id="seg${i}frz" onclick="event.preventDefault();tglFreeze(${i});" style="display:${inst.frz?"inline":"none"}">&#x${li.live && li.liveseg==i?'e410':'e325'};</i>
+	<i class="icons e-icon frz" id="seg${i}frz" onclick="event.preventDefault();tglFreeze(${i});">&#x${inst.frz ? (li.live && li.liveseg==i?'e410':'e0e8') : 'e325'};</i>
 	<div class="segname" onclick="selSegEx(${i})">
 		${inst.n ? inst.n : "Segment "+i}
 		<i class="icons edit-icon" id="seg${i}nedit" onclick="tglSegn(${i})">&#xe2c6;</i>
@@ -996,11 +996,13 @@ function updatePA()
 		var acv = gId(`p${currentPreset}o`);
 		if (acv /*&& !acv.classList.contains("expanded")*/) {
 			acv.classList.add('selected');
+			/*
 			// scroll selected preset into view (on WS refresh)
 			acv.scrollIntoView({
 				behavior: 'smooth',
 				block: 'center'
 			});
+			*/
 		}
 		acv = gId(`p${currentPreset}qlb`);
 		if (acv) acv.classList.add('selected');
@@ -1190,7 +1192,7 @@ function readState(s,command=false)
 		cd[e].dataset.r = i.col[e][0];
 		cd[e].dataset.g = i.col[e][1];
 		cd[e].dataset.b = i.col[e][2];
-		if (hasWhite) { let w = cd[e].dataset.w = i.col[e][3]; }
+		if (hasWhite) { cd[e].dataset.w = i.col[e][3]; }
 		setCSL(cd[e]);
 	}
 	selectSlot(csel);
@@ -1308,7 +1310,7 @@ function setSliderAndColorControl(idx, applyDef=false)
 	var sticky = fxList.querySelector('.sticky');
 	if (sticky) {
 		sticky.style.top = topPosition + "px";
-		topPosition += 42;
+		topPosition += 40;
 	}
 	if (selected && !selected.style.top) { // is the sticky element also selected one?
 		selected.style.top = topPosition + "px";
@@ -2401,7 +2403,7 @@ function unfocusSliders()
 // sliding UI
 const _C = d.querySelector('.container'), N = 4;
 
-let iSlide = 0, x0 = null, scrollS = 0, locked = false, w;
+let iSlide = 0, x0 = null, scrollS = 0, locked = false;
 
 function unify(e) {	return e.changedTouches ? e.changedTouches[0] : e; }
 
@@ -2434,7 +2436,7 @@ function move(e)
 	var clientX = unify(e).clientX;
 	var dx = clientX - x0;
 	var s = Math.sign(dx);
-	var f = +(s*dx/w).toFixed(2);
+	var f = +(s*dx/wW).toFixed(2);
 
 	if((clientX != 0) &&
 		(iSlide > 0 || s < 0) && (iSlide < N - 1 || s > 0) &&

@@ -310,10 +310,10 @@ button {
 
 #segutil, #segutil2, #segcont, #putil, #pcont, #pql {
 	width: 280px;
-	min-height: 42px;
 }
 
 #putil, #segutil, #segutil2 {
+	min-height: 42px;
 	margin: 13px auto 0;
 }
 
@@ -938,7 +938,7 @@ textarea {
 .frz {
 	left: 36px;
 	position: absolute;
-	top: -1px;
+	top: -3px;
 	cursor: pointer;
 	padding: 8px;
 }
@@ -1082,6 +1082,7 @@ textarea {
 	border-radius: 21px;
 	margin: 13px auto 0;
 	min-height: 40px;
+	border: 1px solid var(--c-2);
 }
 
 #segutil .lstI {
@@ -1108,7 +1109,7 @@ textarea {
 /* selected list item */
 .lstI.selected {
 	top: 0;
-	bottom: 5px;
+	bottom: 0;
 }
 
 .lstI.sticky,
@@ -1124,17 +1125,17 @@ textarea {
 #fxlist .lstI.selected {
 	top: 142px !important;
 }
-*/
-#pallist .lstI.selected {
-	top: 82px;
-}
-/* calculated in index.js
+
 #fxlist .lstI.sticky {
 	top: 99px !important;
 }
 */
 #pallist .lstI.sticky {
-	top: 40px;
+	top: 42px;
+}
+
+#pallist .lstI.selected {
+	top: 84px;
 }
 
 /* list item content */
@@ -1173,6 +1174,7 @@ input[type="text"].fnd {
 	text-align: left;
 	border-radius: 21px;
 	background: var(--c-2);
+	border: 1px solid var(--c-3);
 }
 
 input[type="text"].fnd:focus {
