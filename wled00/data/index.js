@@ -1190,7 +1190,7 @@ function readState(s,command=false)
 		cd[e].dataset.r = i.col[e][0];
 		cd[e].dataset.g = i.col[e][1];
 		cd[e].dataset.b = i.col[e][2];
-		if (hasWhite) { let w = cd[e].dataset.w = i.col[e][3]; }
+		if (hasWhite) { cd[e].dataset.w = i.col[e][3]; }
 		setCSL(cd[e]);
 	}
 	selectSlot(csel);
@@ -2397,7 +2397,7 @@ function unfocusSliders()
 // sliding UI
 const _C = d.querySelector('.container'), N = 4;
 
-let iSlide = 0, x0 = null, scrollS = 0, locked = false, w;
+let iSlide = 0, x0 = null, scrollS = 0, locked = false;
 
 function unify(e) {	return e.changedTouches ? e.changedTouches[0] : e; }
 
@@ -2430,7 +2430,7 @@ function move(e)
 	var clientX = unify(e).clientX;
 	var dx = clientX - x0;
 	var s = Math.sign(dx);
-	var f = +(s*dx/w).toFixed(2);
+	var f = +(s*dx/wW).toFixed(2);
 
 	if((clientX != 0) &&
 		(iSlide > 0 || s < 0) && (iSlide < N - 1 || s > 0) &&
