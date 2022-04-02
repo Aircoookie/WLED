@@ -996,11 +996,13 @@ function updatePA()
 		var acv = gId(`p${currentPreset}o`);
 		if (acv /*&& !acv.classList.contains("expanded")*/) {
 			acv.classList.add('selected');
+			/*
 			// scroll selected preset into view (on WS refresh)
 			acv.scrollIntoView({
 				behavior: 'smooth',
 				block: 'center'
 			});
+			*/
 		}
 		acv = gId(`p${currentPreset}qlb`);
 		if (acv) acv.classList.add('selected');
@@ -1301,7 +1303,7 @@ function setSliderAndColorControl(idx, applyDef=false)
   
 	// set top position of the effect list
 	gId("fxFind").style.top = topPosition + "px";
-	topPosition += 40;
+	topPosition += 42;
 	var fxList = gId("fxlist");
 	for (let f of fxList.children) f.style.top = null; // remove top
 	var selected = fxList.querySelector('.selected');
