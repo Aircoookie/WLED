@@ -58,6 +58,10 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
 
   if (protocol == P_ARTNET)
   {
+    if (p->art_opcode == ARTNET_OPCODE_OPPOLL) {
+      handleArtnetPollReply(clientIP);
+      return;
+    }
     uni = p->art_universe;
     dmxChannels = htons(p->art_length);
     e131_data = p->art_data;
@@ -213,4 +217,199 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
   }
 
   e131NewData = true;
+}
+
+void handleArtnetPollReply(IPAddress ipAddress) {
+  prepareArtnetPollReply();
+
+  uint16_t startUniverse = e131Universe;
+  uint16_t endUniverse = e131Universe;
+
+  switch (DMXMode) {
+    case DMX_MODE_DISABLED:
+      return;  // nothing to do
+      break;
+
+    case DMX_MODE_SINGLE_RGB:
+    case DMX_MODE_SINGLE_DRGB:
+    case DMX_MODE_EFFECT:
+      break;  // 1 universe is enough
+
+    case DMX_MODE_MULTIPLE_DRGB:
+    case DMX_MODE_MULTIPLE_RGB:
+    case DMX_MODE_MULTIPLE_RGBW:
+      {
+        bool is4Chan = (DMXMode == DMX_MODE_MULTIPLE_RGBW);
+        const uint16_t dmxChannelsPerLed = is4Chan ? 4 : 3;
+
+        const uint16_t totalLen = strip.getLengthTotal();
+        const uint16_t availDMXLen = MAX_CHANNELS_PER_UNIVERSE - DMXAddress + 1;
+
+        if ((totalLen * dmxChannelsPerLed) > availDMXLen) {
+          const uint16_t ledsPerUniverse = is4Chan ? MAX_4_CH_LEDS_PER_UNIVERSE : MAX_3_CH_LEDS_PER_UNIVERSE;
+          const uint16_t dimmerOffset = (DMXMode == DMX_MODE_MULTIPLE_DRGB) ? 1 : 0;
+          const uint16_t remainLED = totalLen - ((availDMXLen - dimmerOffset) / dmxChannelsPerLed);
+
+          endUniverse += (remainLED / ledsPerUniverse);
+
+          if ((remainLED % ledsPerUniverse) > 0) {
+            endUniverse++;
+          }
+
+          if ((endUniverse - startUniverse) > E131_MAX_UNIVERSE_COUNT) {
+            endUniverse = startUniverse + E131_MAX_UNIVERSE_COUNT - 1;
+          }
+        }
+        break;
+      }
+    default:
+      DEBUG_PRINTLN(F("unknown E1.31 DMX mode"));
+      return;  // nothing to do
+      break;
+  }
+
+  for (uint16_t i = startUniverse; i <= endUniverse; ++i) {
+    sendArtnetPollReply(ipAddress, i);
+    yield();
+  }
+}
+
+void prepareArtnetPollReply() {
+  // Art-Net
+  artnetPollReply.reply_id[0] = 0x41;
+  artnetPollReply.reply_id[1] = 0x72;
+  artnetPollReply.reply_id[2] = 0x74;
+  artnetPollReply.reply_id[3] = 0x2d;
+  artnetPollReply.reply_id[4] = 0x4e;
+  artnetPollReply.reply_id[5] = 0x65;
+  artnetPollReply.reply_id[6] = 0x74;
+  artnetPollReply.reply_id[7] = 0x00;
+
+  artnetPollReply.reply_opcode = ARTNET_OPCODE_OPPOLLREPLY;
+
+  IPAddress localIP = Network.localIP();
+  for (uint8_t i = 0; i < 4; i++) {
+    artnetPollReply.reply_ip[i] = localIP[i];
+  }
+
+  artnetPollReply.reply_port = ARTNET_DEFAULT_PORT;
+
+  char wledVersion[] = TOSTRING(WLED_VERSION);
+  char * numberEnd = wledVersion;
+  artnetPollReply.reply_version_h = (uint8_t)strtol(numberEnd, &numberEnd, 10);
+  numberEnd++;
+  artnetPollReply.reply_version_l = (uint8_t)strtol(numberEnd, &numberEnd, 10);
+
+  // Switch values depend on universe, set before sending
+  artnetPollReply.reply_net_sw = 0x00;
+  artnetPollReply.reply_sub_sw = 0x00;
+
+  artnetPollReply.reply_oem_h = 0x00;
+  artnetPollReply.reply_oem_l = 0x00;
+
+  artnetPollReply.reply_ubea_ver = 0x00;
+
+  // Indicators in Normal Mode
+  // All or part of Port-Address programmed by network or Web browser
+  artnetPollReply.reply_status_1 = 0xE0;
+
+  artnetPollReply.reply_esta_man = 0x0000;
+
+  strlcpy((char *)(artnetPollReply.reply_short_name), serverDescription, 18);
+  strlcpy((char *)(artnetPollReply.reply_long_name), serverDescription, 64);
+
+  artnetPollReply.reply_node_report[0] = '\0';
+
+  artnetPollReply.reply_num_ports_h = 0x00;
+  artnetPollReply.reply_num_ports_l = 0x01; // One output port
+
+  artnetPollReply.reply_port_types[0] = 0x80; // Output DMX data
+  artnetPollReply.reply_port_types[1] = 0x00;
+  artnetPollReply.reply_port_types[2] = 0x00;
+  artnetPollReply.reply_port_types[3] = 0x00;
+
+  // No inputs
+  artnetPollReply.reply_good_input[0] = 0x00;
+  artnetPollReply.reply_good_input[1] = 0x00;
+  artnetPollReply.reply_good_input[2] = 0x00;
+  artnetPollReply.reply_good_input[3] = 0x00;
+
+  // One output
+  artnetPollReply.reply_good_output_a[0] = 0x80; // Data is being transmitted
+  artnetPollReply.reply_good_output_a[1] = 0x00;
+  artnetPollReply.reply_good_output_a[2] = 0x00;
+  artnetPollReply.reply_good_output_a[3] = 0x00;
+
+  // Values depend on universe, set before sending
+  artnetPollReply.reply_sw_in[0] = 0x00;
+  artnetPollReply.reply_sw_in[1] = 0x00;
+  artnetPollReply.reply_sw_in[2] = 0x00;
+  artnetPollReply.reply_sw_in[3] = 0x00;
+
+  // Values depend on universe, set before sending
+  artnetPollReply.reply_sw_out[0] = 0x00;
+  artnetPollReply.reply_sw_out[1] = 0x00;
+  artnetPollReply.reply_sw_out[2] = 0x00;
+  artnetPollReply.reply_sw_out[3] = 0x00;
+
+  artnetPollReply.reply_sw_video = 0x00;
+  artnetPollReply.reply_sw_macro = 0x00;
+  artnetPollReply.reply_sw_remote = 0x00;
+
+  artnetPollReply.reply_spare[0] = 0x00;
+  artnetPollReply.reply_spare[1] = 0x00;
+  artnetPollReply.reply_spare[2] = 0x00;
+
+  // A DMX to / from Art-Net device
+  artnetPollReply.reply_style = 0x00;
+
+  Network.localMAC(artnetPollReply.reply_mac);
+
+  for (uint8_t i = 0; i < 4; i++) {
+    artnetPollReply.reply_bind_ip[i] = localIP[i];
+  }
+
+  artnetPollReply.reply_bind_index = 1;
+
+  // Product supports web browser configuration
+  // Node’s IP is DHCP or manually configured
+  // Node is DHCP capable
+  // Node supports 15 bit Port-Address (Art-Net 3 or 4)
+  // Node is able to switch between ArtNet and sACN
+  artnetPollReply.reply_status_2 = (staticIP[0] == 0) ? 0x1F : 0x1D;
+
+  // RDM is disabled
+  // Output style is continuous
+  artnetPollReply.reply_good_output_b[0] = 0xC0;
+  artnetPollReply.reply_good_output_b[1] = 0xC0;
+  artnetPollReply.reply_good_output_b[2] = 0xC0;
+  artnetPollReply.reply_good_output_b[3] = 0xC0;
+
+  // Fail-over state: Hold last state
+  // Node does not support fail-over
+  artnetPollReply.reply_status_3 = 0x00;
+
+  for (uint8_t i = 0; i < 21; i++) {
+    artnetPollReply.reply_filler[i] = 0x00;
+  }
+}
+
+void sendArtnetPollReply(IPAddress ipAddress, uint16_t portAddress) {
+  artnetPollReply.reply_net_sw = (uint8_t)((portAddress >> 8) & 0x007F);
+  artnetPollReply.reply_sub_sw = (uint8_t)((portAddress >> 4) & 0x000F);
+  artnetPollReply.reply_sw_out[0] = (uint8_t)(portAddress & 0x000F);
+
+  sprintf((char *)artnetPollReply.reply_node_report, "#0001 [%04u] OK - WLED version: " TOSTRING(WLED_VERSION), pollReplyCount);
+  
+  if (pollReplyCount < 9999) {
+    pollReplyCount++;
+  } else {
+    pollReplyCount = 0;
+  }
+
+  pollReplyUDP.beginPacket(ipAddress, ARTNET_DEFAULT_PORT);
+  pollReplyUDP.write(artnetPollReply.raw, sizeof(ArtPollReply));
+  pollReplyUDP.endPacket();
+
+  artnetPollReply.reply_bind_index++;
 }
