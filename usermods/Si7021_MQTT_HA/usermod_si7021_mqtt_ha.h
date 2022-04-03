@@ -103,9 +103,6 @@ class Si7021_MQTT_HA : public Usermod
 
         String payload;
         serializeJson(doc, payload);
-        // Serial.println("Si7021_MQTT_HA:");
-        // Serial.println(t);
-        // Serial.println(temp);
 
         mqtt->publish(topic.c_str(), 0, true, payload.c_str());
       }
@@ -116,11 +113,10 @@ class Si7021_MQTT_HA : public Usermod
       sensorTemperature = si7021.readTemperature();
       sensorHumidity = si7021.readHumidity();
 
-      // char ch = 248; // "°"
-      Serial.print("Si7021_MQTT_HA: Temperature: ");
-      Serial.print(sensorTemperature, 2);
-      Serial.print("\tHumidity: ");
-      Serial.print(sensorHumidity, 2);
+      // Serial.print("Si7021_MQTT_HA: Temperature: ");
+      // Serial.print(sensorTemperature, 2);
+      // Serial.print("\tHumidity: ");
+      // Serial.print(sensorHumidity, 2);
 
       if (sendAdditionalSensors) {
         EnvironmentCalculations::TempUnit envTempUnit(EnvironmentCalculations::TempUnit_Celsius);
@@ -128,15 +124,15 @@ class Si7021_MQTT_HA : public Usermod
         sensorDewPoint = EnvironmentCalculations::DewPoint(sensorTemperature, sensorHumidity, envTempUnit);
         sensorAbsoluteHumidity = EnvironmentCalculations::AbsoluteHumidity(sensorTemperature, sensorHumidity, envTempUnit);
 
-        Serial.print("\tHeat Index: ");
-        Serial.print(sensorHeatIndex, 2);
-        Serial.print("\tDew Point: ");
-        Serial.print(sensorDewPoint, 2);
-        Serial.print("\tAbsolute Humidity: ");
-        Serial.println(sensorAbsoluteHumidity, 2);
+        // Serial.print("\tHeat Index: ");
+        // Serial.print(sensorHeatIndex, 2);
+        // Serial.print("\tDew Point: ");
+        // Serial.print(sensorDewPoint, 2);
+        // Serial.print("\tAbsolute Humidity: ");
+        // Serial.println(sensorAbsoluteHumidity, 2);
       }
-      else
-        Serial.println("");
+      // else
+      //   Serial.println("");
     }
 
     void _publishSensorData()
