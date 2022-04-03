@@ -241,14 +241,13 @@ void handleArtnetPollReply(IPAddress ipAddress) {
       {
         bool is4Chan = (DMXMode == DMX_MODE_MULTIPLE_RGBW);
         const uint16_t dmxChannelsPerLed = is4Chan ? 4 : 3;
-
+        const uint16_t ledsPerUniverse = is4Chan ? MAX_4_CH_LEDS_PER_UNIVERSE : MAX_3_CH_LEDS_PER_UNIVERSE;
+        const uint16_t dimmerOffset = (DMXMode == DMX_MODE_MULTIPLE_DRGB) ? 1 : 0;
+        const uint16_t ledsInFirstUniverse = ((MAX_CHANNELS_PER_UNIVERSE - DMXAddress + 1) - dimmerOffset) / dmxChannelsPerLed;
         const uint16_t totalLen = strip.getLengthTotal();
-        const uint16_t availDMXLen = MAX_CHANNELS_PER_UNIVERSE - DMXAddress + 1;
 
-        if ((totalLen * dmxChannelsPerLed) > availDMXLen) {
-          const uint16_t ledsPerUniverse = is4Chan ? MAX_4_CH_LEDS_PER_UNIVERSE : MAX_3_CH_LEDS_PER_UNIVERSE;
-          const uint16_t dimmerOffset = (DMXMode == DMX_MODE_MULTIPLE_DRGB) ? 1 : 0;
-          const uint16_t remainLED = totalLen - ((availDMXLen - dimmerOffset) / dmxChannelsPerLed);
+        if (totalLen > ledsInFirstUniverse) {
+          const int16_t remainLED = totalLen - ledsInFirstUniverse;
 
           endUniverse += (remainLED / ledsPerUniverse);
 
