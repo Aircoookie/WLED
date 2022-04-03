@@ -6,6 +6,7 @@
 	<title>Clock Settings</title>
 	<script src="rangetouch.js"></script>
 	<script>
+		var lcBeeps = [];
 		var d = document;
 		function B()
 		{
@@ -30,8 +31,33 @@
 			d.Sf.maxb.disabled = !enabled;
 			showBrCtrlVal();
 		}
+		function beep(beep) {
+			fetch('/json/state', {
+				method: 'post',
+				headers: {
+					'Content-type': 'application/json; charset=UTF-8'
+				},
+				body: JSON.stringify({
+					ledclock: {
+						cmd: 99,
+						beep: beep
+					}
+				})
+			}).catch(e => console.log(e));
+		}
 		function init() {
+			var selects = d.querySelectorAll('.beeptable select');
+			selects.forEach(s => s.insertAdjacentHTML('beforeend', `<option value="255">None</option>`));
+			for (var i in lcBeeps) {
+				selects.forEach(s => s.insertAdjacentHTML('beforeend', `<option value="${i}">${lcBeeps[i]}</option>`));
+			}
+			selects.forEach(s => s.addEventListener('input', e => {
+				var b = parseInt(e.target.value);
+				if (b != 255) beep(b);
+			}));
+
 			RangeTouch.setup('input[type="range"]', {});
+
 			updateBrCtrl();
 		}
 		function GetV()
@@ -51,14 +77,23 @@
 		#brctrl {
 			transition: opacity 0.4s;
 		}
+		.beeptable {
+			display: grid;
+			grid-template-columns: max-content max-content;
+			justify-items: end;
+			row-gap: .2rem;
+			column-gap: .3rem;
+			justify-content: center;
+		}
 	</style>
 </head>
-<body onload="GetV();init()">
+<body onload="init();GetV()">
 	<form id="form_s" name="Sf" method="post">
 		<button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 		<hr>
-		<h2>Clock Settings</h2>
-    	<h3>Brightness Control</h3>
+		<h2>LED Clock Settings</h2>
+
+		<h3>Brightness Control</h3>
 		<input type="checkbox" name="autb" onchange="updateBrCtrl()"> Automatic brightness control:<br>
 		<div id="brctrl" class="il">
 			Minimum brightness: <span id="minbv"></span><br>
@@ -72,6 +107,7 @@
 				<div class="sliderdisplay"></div>
 			</div><br>
 		</div>
+
 		<h3>Display Settings</h3>
 		<input type="checkbox" name="hidzer"> Hide leading zero (hours)<br>
 		Hour-minute Separator:
@@ -79,7 +115,50 @@
 			<option value="0">On</option>
 			<option value="1">Off</option>
 			<option value="2">Blink</option>
-		</select><br><br>
+		</select>
+
+		<h3>Beeps</h3>
+		<input type="checkbox" name="bmute"> Mute all beeps
+
+		<h4 id="clock">Beeps on events:</h4>
+		<div class="beeptable">
+			<span>Startup:</span><select name="bstartup"></select>
+			<span>Wi-Fi connected:</span><select name="bwifi"></select>
+		</div>
+
+		<h4 id="clock">Clock beeps on:</h4>
+		<div class="beeptable">
+			<span>Each minute:</span><select name="clbm"></select>
+			<span>Each hour:</span><select name="clbh"></select>
+		</div>
+
+		<h4 id="timer">Timer beeps on:</h4>
+		<div class="beeptable">
+			<span>Time setting:</span><select name="tmbset"></select>
+			<span>Start:</span><select name="tmbstart"></select>
+			<span>Pause:</span><select name="tmbpause"></select>
+			<span>Resume:</span><select name="tmbresume"></select>
+			<span>Reset:</span><select name="tmbreset"></select>
+			<span>Time addition:</span><select name="tmbtinc"></select>
+			<span>Each hour:</span><select name="tmbh"></select>
+			<span>Each minute:</span><select name="tmbm"></select>
+			<span>Secs. of last min.:</span><select name="tmbs"></select>
+			<span>Timeout:</span><select name="tmbto"></select>
+		</div>
+
+		<h4 id="stopwatch">Stopwatch beeps on:</h4>
+		<div class="beeptable">
+			<span>Start:</span><select name="swbstart"></select>
+			<span>Pause:</span><select name="swbpause"></select>
+			<span>Resume:</span><select name="swbresume"></select>
+			<span>Reset:</span><select name="swbreset"></select>
+			<span>Secs. of first min.:</span><select name="swbs"></select>
+			<span>Each minute:</span><select name="swbm"></select>
+			<span>Each hour:</span><select name="swbh"></select>
+			<span>Lap time:</span><select name="swblapt"></select>
+		</div>
+
+		<br>
 		<hr>
 		<div id="toast"></div>
 		<button type="button" onclick="B()">Back</button><button type="submit">Save</button>

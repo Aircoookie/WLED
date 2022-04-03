@@ -386,6 +386,7 @@ String settingsProcessor(const String& var)
   if (var == "SCSS") return String(FPSTR(PAGE_settingsCss));
   if (var == "LCSCSS") return String(FPSTR(PAGE_ledClockSettingsCss));
   if (var == "RTJS") return String(FPSTR(PAGE_rangeTouchJs));
+  if (var == "LCBEEPSJS") return String(FPSTR(JSON_ledclock_beeps));
   return String();
 }
 

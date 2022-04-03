@@ -373,6 +373,7 @@ const char PAGE_settings_dmx[] PROGMEM = R"=====()=====";
       filter: "html-minify",
       mangle: (str) =>
         str
+          .replace(/lcBeeps\s*=\s*\[\s*\]/gms, "lcBeeps=%LCBEEPSJS%")
           .replace(/\<script src=".*?"\>.*?\<\/script\>/gms, "%RTJS%")
           .replace(/\<link rel="stylesheet".*?\>/gms, "")
           .replace(/\<style\>.*?\<\/style\>/gms, "%CSS%%SCSS%%LCSCSS%")

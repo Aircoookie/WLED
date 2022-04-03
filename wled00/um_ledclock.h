@@ -4,45 +4,175 @@
 #include "7segmdisp.h"
 #include "beeper.h"
 
-const char * ledClockSettingsKey = "ledclock";
-const char * ledClockSettingsKeyAutoBrightness = "autb";
-const char * ledClockSettingsKeyMinBrightness = "minb";
-const char * ledClockSettingsKeyMaxBrightness = "maxb";
-const char * ledClockSettingsKeySeparatorMode = "sepm";
-const char * ledClockSettingsKeyHideZero = "hidzer";
+const char
 
-const char * ledClockStateKey = "ledclock";
+    *LedClockSettingsKeys::root = "ledclock",
 
-const char * ledClockStateKeyCommand = "cmd";
-const char * ledClockStateKeyMode = "mode";
+    *LedClockSettingsKeys::Brightness::autom = "autb",
+    *LedClockSettingsKeys::Brightness::min = "minb",
 
-const char * ledClockStateKeyStopwatch = "stopw";
-const char * ledClockStateKeyStopwatchRunning = "runs";
-const char * ledClockStateKeyStopwatchPaused = "pause";
-const char * ledClockStateKeyStopwatchElapsed = "elap";
-const char * ledClockStateKeyStopwatchLapTimes = "lapt";
-const char * ledClockStateKeyStopwatchLapTimeNr = "lapnr";
-const char * ledClockStateKeyStopwatchLastLapTime = "lalap";
+    *LedClockSettingsKeys::Brightness::max = "maxb",
+    *LedClockSettingsKeys::Display::separatorMode = "sepm",
+    *LedClockSettingsKeys::Display::hideZero = "hidzer",
 
-const char * ledClockStateKeyTimer = "timer";
-const char * ledClockStateKeyTimerRunning = "runs";
-const char * ledClockStateKeyTimerPaused = "pause";
-const char * ledClockStateKeyTimerLeft = "left";
-const char * ledClockStateKeyTimerValue = "val";
+    *LedClockSettingsKeys::Beeps::mute = "bmute",
+
+    *LedClockSettingsKeys::Beeps::startup = "bstartup",
+    *LedClockSettingsKeys::Beeps::wifi = "bwifi",
+
+    *LedClockSettingsKeys::Beeps::Clock::minute = "clbm",
+    *LedClockSettingsKeys::Beeps::Clock::hour = "clbh",
+
+    *LedClockSettingsKeys::Beeps::Timer::set = "tmbset",
+    *LedClockSettingsKeys::Beeps::Timer::start = "tmbstart",
+    *LedClockSettingsKeys::Beeps::Timer::pause = "tmbpause",
+    *LedClockSettingsKeys::Beeps::Timer::resume = "tmbresume",
+    *LedClockSettingsKeys::Beeps::Timer::reset = "tmbreset",
+    *LedClockSettingsKeys::Beeps::Timer::increase = "tmbtinc",
+    *LedClockSettingsKeys::Beeps::Timer::hour = "tmbh",
+    *LedClockSettingsKeys::Beeps::Timer::minute = "tmbm",
+    *LedClockSettingsKeys::Beeps::Timer::second = "tmbs",
+    *LedClockSettingsKeys::Beeps::Timer::timeout = "tmbto",
+
+    *LedClockSettingsKeys::Beeps::Stopwatch::start = "swbstart",
+    *LedClockSettingsKeys::Beeps::Stopwatch::pause = "swbpause",
+    *LedClockSettingsKeys::Beeps::Stopwatch::resume = "swbresume",
+    *LedClockSettingsKeys::Beeps::Stopwatch::reset = "swbreset",
+    *LedClockSettingsKeys::Beeps::Stopwatch::second = "swbs",
+    *LedClockSettingsKeys::Beeps::Stopwatch::minute = "swbm",
+    *LedClockSettingsKeys::Beeps::Stopwatch::hour = "swbh",
+    *LedClockSettingsKeys::Beeps::Stopwatch::lapTime = "swblapt",
+
+    *LedClockStateKeys::root = "ledclock",
+
+    *LedClockStateKeys::command = "cmd",
+    *LedClockStateKeys::mode = "mode",
+    *LedClockStateKeys::beep = "beep",
+
+    *LedClockStateKeys::Timer::root = "timer",
+    *LedClockStateKeys::Timer::running = "runs",
+    *LedClockStateKeys::Timer::paused = "pause",
+    *LedClockStateKeys::Timer::left = "left",
+    *LedClockStateKeys::Timer::value = "val",
+
+    *LedClockStateKeys::Stopwatch::root = "stopw",
+    *LedClockStateKeys::Stopwatch::running = "runs",
+    *LedClockStateKeys::Stopwatch::paused = "pause",
+    *LedClockStateKeys::Stopwatch::elapsed = "elap",
+    *LedClockStateKeys::Stopwatch::lapTimes = "lapt",
+    *LedClockStateKeys::Stopwatch::lapTimeNr = "lapnr",
+    *LedClockStateKeys::Stopwatch::lastLapTime = "lalap";
 
 unsigned long Timer::_millis() {
     return millis();
 }
 
-static uint16_t beep_startup[] { 3, 440, 100, 0, 20, 880, 100 };
-static uint16_t beep_connected[] { 5, 880, 100, 0, 20, 880, 100, 0, 20, 880, 100 };
+static uint16_t beep_1x_330_short[] { 1, 330, 50 };
+static uint16_t beep_2x_330_short[] { 3, 330, 50, 0, 20, 330, 50 };
+static uint16_t beep_3x_330_short[] { 5, 330, 50, 0, 20, 330, 50, 0, 20, 330, 50 };
+
+static uint16_t beep_1x_440_short[] { 1, 440, 50 };
+static uint16_t beep_2x_440_short[] { 3, 440, 50, 0, 20, 440, 50 };
+static uint16_t beep_3x_440_short[] { 5, 440, 50, 0, 20, 440, 50, 0, 20, 440, 50 };
+
+static uint16_t beep_1x_880_short[] { 1, 880, 50 };
+static uint16_t beep_2x_880_short[] { 3, 880, 50, 0, 20, 880, 50 };
+static uint16_t beep_3x_880_short[] { 5, 880, 50, 0, 20, 880, 50, 0, 20, 880, 50 };
+
+static uint16_t beep_1x_330_medium[] { 1, 330, 100 };
+static uint16_t beep_2x_330_medium[] { 3, 330, 100, 0, 20, 330, 100 };
+static uint16_t beep_3x_330_medium[] { 5, 330, 100, 0, 20, 330, 100, 0, 20, 330, 100 };
+
+static uint16_t beep_1x_440_medium[] { 1, 440, 100 };
+static uint16_t beep_2x_440_medium[] { 3, 440, 100, 0, 20, 440, 100 };
+static uint16_t beep_3x_440_medium[] { 5, 440, 100, 0, 20, 440, 100, 0, 20, 440, 100 };
+
+static uint16_t beep_1x_880_medium[] { 1, 880, 100 };
+static uint16_t beep_2x_880_medium[] { 3, 880, 100, 0, 20, 880, 100 };
+static uint16_t beep_3x_880_medium[] { 5, 880, 100, 0, 20, 880, 100, 0, 20, 880, 100 };
+
+static uint16_t beep_1x_330_long[] { 1, 330, 200 };
+static uint16_t beep_2x_330_long[] { 3, 330, 200, 0, 40, 330, 200 };
+static uint16_t beep_3x_330_long[] { 5, 330, 200, 0, 40, 330, 200, 0, 40, 330, 200 };
+
+static uint16_t beep_1x_440_long[] { 1, 440, 200 };
+static uint16_t beep_2x_440_long[] { 3, 440, 200, 0, 40, 440, 200 };
+static uint16_t beep_3x_440_long[] { 5, 440, 200, 0, 40, 440, 200, 0, 40, 440, 200 };
+
+static uint16_t beep_1x_880_long[] { 1, 880, 200 };
+static uint16_t beep_2x_880_long[] { 3, 880, 200, 0, 40, 880, 200 };
+static uint16_t beep_3x_880_long[] { 5, 880, 200, 0, 40, 880, 200, 0, 40, 880, 200 };
+
+static uint16_t beep_440_880_short[] { 3, 440, 50, 0, 20, 880, 50 };
+static uint16_t beep_880_440_short[] { 3, 880, 50, 0, 20, 440, 50 };
+
+static uint16_t beep_440_880_medium[] { 3, 440, 100, 0, 20, 880, 100 };
+static uint16_t beep_880_440_medium[] { 3, 880, 100, 0, 20, 440, 100 };
+
+static uint16_t beep_440_880_long[] { 3, 440, 200, 0, 40, 880, 200 };
+static uint16_t beep_880_440_long[] { 3, 880, 200, 0, 40, 440, 200 };
+
+static uint16_t beep_turn_up[] { 7, 740, 100, 0, 20, 831, 100, 0, 20, 880, 100, 0, 20, 932, 100 };
+static uint16_t beep_turn_down[] { 7, 932, 100, 0, 20, 880, 100, 0, 20, 831, 100, 0, 20, 740, 100 };
+
+static uint16_t beep_flip_up[] { 3, 261, 50, 0, 20, 440, 50 };
+static uint16_t beep_flip_down[] { 3, 440, 50, 0, 20, 261, 50 };
+
+static uint16_t beep_tadaaa[] { 3, 1047, 100, 0, 50, 1047, 300 };
+
+static uint16_t* beeps[] {
+    beep_1x_330_short,
+    beep_2x_330_short,
+    beep_3x_330_short,
+    beep_1x_440_short,
+    beep_2x_440_short,
+    beep_3x_440_short,
+    beep_1x_880_short,
+    beep_2x_880_short,
+    beep_3x_880_short,
+    beep_1x_330_medium,
+    beep_2x_330_medium,
+    beep_3x_330_medium,
+    beep_1x_440_medium,
+    beep_2x_440_medium,
+    beep_3x_440_medium,
+    beep_1x_880_medium,
+    beep_2x_880_medium,
+    beep_3x_880_medium,
+    beep_1x_330_long,
+    beep_2x_330_long,
+    beep_3x_330_long,
+    beep_1x_440_long,
+    beep_2x_440_long,
+    beep_3x_440_long,
+    beep_1x_880_long,
+    beep_2x_880_long,
+    beep_3x_880_long,
+    beep_440_880_short,
+    beep_880_440_short,
+    beep_440_880_medium,
+    beep_880_440_medium,
+    beep_440_880_long,
+    beep_880_440_long,
+    beep_turn_up,
+    beep_turn_down,
+    beep_flip_up,
+    beep_flip_down,
+    beep_tadaaa
+};
+
+static uint8_t beepCount = sizeof(beeps) / sizeof(uint16_t*);
+
+uint8_t LedClockSettings::constrainBeep(uint8_t beep) {
+    return beep == BEEP_SILENT ? beep : constrain(beep, 0, beepCount - 1);
+}
 
 static CRGB selfTestColors[] = { CRGB::Red, CRGB::Green, CRGB::Blue };
 static uint8_t selfTestColorCount = sizeof(selfTestColors) / sizeof(CRGB);
 
 static uint16_t normalizedSensorRading;
 
-uint8_t brightness(uint8_t minBrightness, uint8_t maxBrightness) {
+static uint8_t brightness(uint8_t minBrightness, uint8_t maxBrightness) {
     static uint16_t values[BRIGHTNESS_SAMPLES];
     static int i = 0;
     static long total;
@@ -64,6 +194,44 @@ uint8_t brightness(uint8_t minBrightness, uint8_t maxBrightness) {
     }
 
     return current;
+}
+
+enum TimeChange {
+    HOUR, MINUTE, SECOND, NONE
+};
+
+static TimeChange timeChangeTime(time_t t, bool clear = false) {
+    static time_t prev = t;
+    if (clear) prev = t;
+    TimeChange c;
+    if (hour(prev) != hour(t)) {
+        c = HOUR;
+    } else if (minute(prev) != minute(t)) {
+        c = MINUTE;
+    } else if (second(prev) != second(t)) {
+        c = SECOND;
+    } else {
+        c = NONE;
+    }
+    prev = t;
+    return c;
+}
+
+static TimeChange timeChangeMillis(unsigned long millis, bool clear = false) {
+    static unsigned long prev = millis;
+    if (clear) prev = millis;
+    TimeChange c;
+    if ((prev / 3600000) != (millis / 3600000)) {
+        c = HOUR;
+    } else if ((prev / 60000) != (millis / 60000)) {
+        c = MINUTE;
+    } else if ((prev / 1000) != (millis / 1000)) {
+        c = SECOND;
+    } else {
+        c = NONE;
+    }
+    prev = millis;
+    return c;
 }
 
 class UsermodLedClock : public Usermod, public LedClockSettings {
@@ -192,7 +360,13 @@ public:
 
         pinMode(BRIGHTNESS_PIN, INPUT);
 
-        beeper.play(beep_startup);
+        beep(beepStartup);
+    }
+
+    void beep(uint8_t beep) {
+        if (!muteBeeps && beep < beepCount) {
+            beeper.play(beeps[beep]);
+        }
     }
 
     void clearDisplay() {
@@ -233,6 +407,11 @@ public:
         if (selfTestDone) {
             switch (mode) {
             case Mode::ClockMode:
+                switch (timeChangeTime(localTime)) {
+                case HOUR: beep(clockBeepHour); break;
+                case MINUTE: beep(clockBeepMinute); break;
+                default: break;
+                }
                 if (p != localTime) {
                     p = localTime;
 
@@ -271,10 +450,18 @@ public:
                     }
 
                     if (left == 0) {
+                        beep(timerBeepTimeout);
                         timerLeft = 0;
                         timerRunnig = false;
                         timerPaused = false;
                         sendDataWs();
+                    } else {
+                        switch (timeChangeMillis(left)) {
+                        case HOUR: beep(timerBeepHour); break;
+                        case MINUTE: beep(timerBeepMinute); break;
+                        case SECOND: if (left < 60000) beep(timerBeepSecond); break;
+                        default: break;
+                        }
                     }
 
                     bool on = timerPaused
@@ -302,6 +489,13 @@ public:
                     bool on = stopwatchPaused
                         ? ((stopwatchTimer.elapsed() / 1000) % 2) // blinking syncs to elapsed time since paused
                         : ((elapsed / 1000) % 2); // blinking syncs to stopwatch elapsed time
+
+                    switch (timeChangeMillis(elapsed)) {
+                    case HOUR: beep(stopwatchBeepHour); break;
+                    case MINUTE: beep(stopwatchBeepMinute); break;
+                    case SECOND: if (elapsed < 60000) beep(stopwatchBeepSecond); break;
+                    default: break;
+                    }
 
                     if (!stopwatchPaused || on) {
                         displayMillis(elapsed);
@@ -337,7 +531,7 @@ public:
     }
 
     void connected() {
-        beeper.play(beep_connected);
+        beep(beepWiFi);
     }
 
     void addToJsonInfo(JsonObject& root) {
@@ -350,21 +544,21 @@ public:
     }
 
     void addToJsonState(JsonObject& root) {
-        JsonObject state = root.createNestedObject(ledClockStateKey);
-        state[ledClockStateKeyMode] = mode;
+        JsonObject state = root.createNestedObject(LedClockStateKeys::root);
+        state[LedClockStateKeys::mode] = mode;
         switch (mode) {
         case Mode::StopwatchMode: {
-            JsonObject stopwatch = state.createNestedObject(ledClockStateKeyStopwatch);
+            JsonObject stopwatch = state.createNestedObject(LedClockStateKeys::Stopwatch::root);
 
-            stopwatch[ledClockStateKeyStopwatchRunning] = stopwatchRunnig;
-            stopwatch[ledClockStateKeyStopwatchPaused] = stopwatchPaused;
-            stopwatch[ledClockStateKeyStopwatchElapsed] = stopwatchRunnig
+            stopwatch[LedClockStateKeys::Stopwatch::running] = stopwatchRunnig;
+            stopwatch[LedClockStateKeys::Stopwatch::paused] = stopwatchPaused;
+            stopwatch[LedClockStateKeys::Stopwatch::elapsed] = stopwatchRunnig
                 ? (stopwatchPaused
                     ? stopwatchElapsed
                     : (stopwatchElapsed + stopwatchTimer.elapsed()))
                 : 0;
 
-            JsonArray arr = stopwatch.createNestedArray(ledClockStateKeyStopwatchLapTimes);
+            JsonArray arr = stopwatch.createNestedArray(LedClockStateKeys::Stopwatch::lapTimes);
             for (uint8_t i = stopwatchLapTimeIdx; i > 0; --i) {
                 arr.add(stopwatchLapTimes[i - 1]);
             }
@@ -374,22 +568,22 @@ public:
                 }
             }
 
-            stopwatch[ledClockStateKeyStopwatchLapTimeNr] = stopwatchLaptimeNr;
-            stopwatch[ledClockStateKeyStopwatchLastLapTime] = stopwatchPrevLapTime;
+            stopwatch[LedClockStateKeys::Stopwatch::lapTimeNr] = stopwatchLaptimeNr;
+            stopwatch[LedClockStateKeys::Stopwatch::lastLapTime] = stopwatchPrevLapTime;
             break;
         }
         case Mode::TimerMode: {
-            JsonObject timer = state.createNestedObject(ledClockStateKeyTimer);
+            JsonObject timer = state.createNestedObject(LedClockStateKeys::Timer::root);
 
-            timer[ledClockStateKeyTimerRunning] = timerRunnig;
-            timer[ledClockStateKeyTimerPaused] = timerPaused;
-            timer[ledClockStateKeyTimerLeft] = timerRunnig
+            timer[LedClockStateKeys::Timer::running] = timerRunnig;
+            timer[LedClockStateKeys::Timer::paused] = timerPaused;
+            timer[LedClockStateKeys::Timer::left] = timerRunnig
                 ? (timerPaused
                     ? timerLeft
                     : (timerLeft - timerTimer.elapsed()))
                 : timerValue;
 
-            timer[ledClockStateKeyTimerValue] = timerValue;
+            timer[LedClockStateKeys::Timer::value] = timerValue;
             break;
         }
         default:
@@ -398,9 +592,9 @@ public:
     }
 
     void readFromJsonState(JsonObject& root) {
-        JsonObject state = root[ledClockStateKey];
+        JsonObject state = root[LedClockStateKeys::root];
         if (!state.isNull()) {
-            Mode m = state[ledClockStateKeyMode] | mode;
+            Mode m = state[LedClockStateKeys::mode] | mode;
             if (m != mode) {
                 if (m != Mode::StopwatchMode) {
                     resetStopwatch();
@@ -409,25 +603,43 @@ public:
                     resetTimer();
                 }
                 mode = m;
+                if (mode == Mode::ClockMode) {
+                    timeChangeTime(localTime, true);
+                }
             }
-            Command c = state[ledClockStateKeyCommand] | Command::NoOp;
+
+            uint8_t b = state[LedClockStateKeys::beep] | 255;
+            if (b < beepCount) {
+                beeper.play(beeps[b]);
+            }
+
+            Command c = state[LedClockStateKeys::command] | Command::NoOp;
             switch (c) {
             case Command::StopwatchStart:
-                stopwatchRunnig = true;
+                timeChangeMillis(0, true);
+                if (stopwatchRunnig) {
+                    beep(stopwatchBeepResume);
+                } else {
+                    beep(stopwatchBeepStart);
+                    stopwatchRunnig = true;
+                }
                 stopwatchPaused = false;
                 stopwatchTimer.setOriginToNow();
                 break;
             case Command::StopwatchPause:
+                beep(stopwatchBeepPause);
                 stopwatchRunnig = true;
                 stopwatchPaused = true;
                 stopwatchElapsed += stopwatchTimer.elapsed();
                 stopwatchTimer.setOriginToNow();
                 break;
             case Command::StopwatchReset:
+                beep(stopwatchBeepReset);
                 resetStopwatch();
                 break;
             case Command::StopwatchLapTime:
                 if (stopwatchRunnig && !stopwatchPaused) {
+                    beep(stopwatchBeepLapTime);
                     unsigned long elapsed = stopwatchElapsed + stopwatchTimer.elapsed();
                     stopwatchLapTimes[stopwatchLapTimeIdx++] = elapsed - stopwatchPrevLapTime;
                     stopwatchPrevLapTime = elapsed;
@@ -438,32 +650,43 @@ public:
                 }
                 break;
             case Command::TimerStart:
+                if (timerRunnig) {
+                    beep(timerBeepResume);
+                } else {
+                    beep(timerBeepStart);
+                }
                 if (timerLeft == 0) {
                     timerLeft = timerValue;
                 }
+                timeChangeMillis(timerLeft, true);
                 timerRunnig = true;
                 timerPaused = false;
                 timerTimer.setOriginToNow();
                 break;
             case Command::TimerPause:
+                beep(timerBeepPause);
                 timerRunnig = true;
                 timerPaused = true;
                 timerLeft -= timerTimer.elapsed();
                 timerTimer.setOriginToNow();
                 break;
             case Command::TimerReset:
+                beep(timerBeepReset);
                 resetTimer();
                 break;
             case Command::TimerIncrease: {
                 if (timerRunnig && !timerPaused) {
-                    unsigned long val = state[ledClockStateKeyTimerValue];
+                    beep(timerBeepIncrease);
+                    unsigned long val = state[LedClockStateKeys::Timer::value];
                     timerLeft += val;
+                    timeChangeMillis(timerLeft, true);
                 }
                 break;
             }
             case Command::TimerSet: {
                 if (!timerRunnig) {
-                    unsigned long val = state[ledClockStateKeyTimerValue];
+                    beep(timerBeepSet);
+                    unsigned long val = state[LedClockStateKeys::Timer::value];
                     timerValue = val;
                     timerLeft = val;
                 }
@@ -491,25 +714,83 @@ public:
     }
 
     void addToConfig(JsonObject& root) {
-        JsonObject top = root.createNestedObject(ledClockSettingsKey);
+        JsonObject top = root.createNestedObject(LedClockSettingsKeys::root);
 
-        top[ledClockSettingsKeyAutoBrightness] = autoBrightness;
-        top[ledClockSettingsKeyMinBrightness] = minBrightness;
-        top[ledClockSettingsKeyMaxBrightness] = maxBrightness;
-        top[ledClockSettingsKeySeparatorMode] = separatorMode;
-        top[ledClockSettingsKeyHideZero] = hideZero;
+        top[LedClockSettingsKeys::Brightness::autom] = autoBrightness;
+        top[LedClockSettingsKeys::Brightness::min] = minBrightness;
+        top[LedClockSettingsKeys::Brightness::max] = maxBrightness;
+
+        top[LedClockSettingsKeys::Display::separatorMode] = separatorMode;
+        top[LedClockSettingsKeys::Display::hideZero] = hideZero;
+
+        top[LedClockSettingsKeys::Beeps::mute] = muteBeeps;
+
+        top[LedClockSettingsKeys::Beeps::startup] = beepStartup;
+        top[LedClockSettingsKeys::Beeps::wifi] = beepWiFi;
+
+        top[LedClockSettingsKeys::Beeps::Clock::hour] = clockBeepHour;
+        top[LedClockSettingsKeys::Beeps::Clock::minute] = clockBeepMinute;
+
+        top[LedClockSettingsKeys::Beeps::Timer::set] = timerBeepSet;
+        top[LedClockSettingsKeys::Beeps::Timer::start] = timerBeepStart;
+        top[LedClockSettingsKeys::Beeps::Timer::pause] = timerBeepPause;
+        top[LedClockSettingsKeys::Beeps::Timer::resume] = timerBeepResume;
+        top[LedClockSettingsKeys::Beeps::Timer::reset] = timerBeepReset;
+        top[LedClockSettingsKeys::Beeps::Timer::increase] = timerBeepIncrease;
+        top[LedClockSettingsKeys::Beeps::Timer::hour] = timerBeepHour;
+        top[LedClockSettingsKeys::Beeps::Timer::minute] = timerBeepMinute;
+        top[LedClockSettingsKeys::Beeps::Timer::second] = timerBeepSecond;
+        top[LedClockSettingsKeys::Beeps::Timer::timeout] = timerBeepTimeout;
+
+        top[LedClockSettingsKeys::Beeps::Stopwatch::start] = stopwatchBeepStart;
+        top[LedClockSettingsKeys::Beeps::Stopwatch::pause] = stopwatchBeepPause;
+        top[LedClockSettingsKeys::Beeps::Stopwatch::resume] = stopwatchBeepResume;
+        top[LedClockSettingsKeys::Beeps::Stopwatch::reset] = stopwatchBeepReset;
+        top[LedClockSettingsKeys::Beeps::Stopwatch::second] = stopwatchBeepSecond;
+        top[LedClockSettingsKeys::Beeps::Stopwatch::minute] = stopwatchBeepMinute;
+        top[LedClockSettingsKeys::Beeps::Stopwatch::hour] = stopwatchBeepHour;
+        top[LedClockSettingsKeys::Beeps::Stopwatch::lapTime] = stopwatchBeepLapTime;
     }
 
     bool readFromConfig(JsonObject& root) {
-        JsonObject top = root[ledClockSettingsKey];
+        JsonObject top = root[LedClockSettingsKeys::root];
 
         bool configComplete = !top.isNull();
 
-        configComplete &= getJsonValue(top[ledClockSettingsKeyAutoBrightness], autoBrightness, true);
-        configComplete &= getJsonValue(top[ledClockSettingsKeyMinBrightness], minBrightness, 50);
-        configComplete &= getJsonValue(top[ledClockSettingsKeyMaxBrightness], maxBrightness, 255);
-        configComplete &= getJsonValue(top[ledClockSettingsKeySeparatorMode], separatorMode, SeparatorMode::BLINK);
-        configComplete &= getJsonValue(top[ledClockSettingsKeyHideZero], hideZero, true);
+        configComplete &= getJsonValue(top[LedClockSettingsKeys::Brightness::autom], autoBrightness, true);
+        configComplete &= getJsonValue(top[LedClockSettingsKeys::Brightness::min], minBrightness, 50);
+        configComplete &= getJsonValue(top[LedClockSettingsKeys::Brightness::max], maxBrightness, 255);
+
+        configComplete &= getJsonValue(top[LedClockSettingsKeys::Display::separatorMode], separatorMode, SeparatorMode::BLINK);
+        configComplete &= getJsonValue(top[LedClockSettingsKeys::Display::hideZero], hideZero, true);
+
+        configComplete &= getJsonValue(top[LedClockSettingsKeys::Beeps::mute], muteBeeps, false);
+
+        configComplete &= getJsonValue(top[LedClockSettingsKeys::Beeps::startup], beepStartup, 33);
+        configComplete &= getJsonValue(top[LedClockSettingsKeys::Beeps::wifi], beepWiFi, 27);
+
+        configComplete &= getJsonValue(top[LedClockSettingsKeys::Beeps::Clock::minute], clockBeepMinute, BEEP_SILENT);
+        configComplete &= getJsonValue(top[LedClockSettingsKeys::Beeps::Clock::hour], clockBeepHour, BEEP_SILENT);
+
+        configComplete &= getJsonValue(top[LedClockSettingsKeys::Beeps::Timer::set], timerBeepSet, 35);
+        configComplete &= getJsonValue(top[LedClockSettingsKeys::Beeps::Timer::start], timerBeepStart, 12);
+        configComplete &= getJsonValue(top[LedClockSettingsKeys::Beeps::Timer::pause], timerBeepPause, 9);
+        configComplete &= getJsonValue(top[LedClockSettingsKeys::Beeps::Timer::resume], timerBeepResume, 12);
+        configComplete &= getJsonValue(top[LedClockSettingsKeys::Beeps::Timer::reset], timerBeepReset, 16);
+        configComplete &= getJsonValue(top[LedClockSettingsKeys::Beeps::Timer::increase], timerBeepIncrease, 35);
+        configComplete &= getJsonValue(top[LedClockSettingsKeys::Beeps::Timer::hour], timerBeepHour, 8);
+        configComplete &= getJsonValue(top[LedClockSettingsKeys::Beeps::Timer::minute], timerBeepMinute, 7);
+        configComplete &= getJsonValue(top[LedClockSettingsKeys::Beeps::Timer::second], timerBeepSecond, 6);
+        configComplete &= getJsonValue(top[LedClockSettingsKeys::Beeps::Timer::timeout], timerBeepTimeout, 37);
+
+        configComplete &= getJsonValue(top[LedClockSettingsKeys::Beeps::Stopwatch::start], stopwatchBeepStart, 12);
+        configComplete &= getJsonValue(top[LedClockSettingsKeys::Beeps::Stopwatch::pause], stopwatchBeepPause, 9);
+        configComplete &= getJsonValue(top[LedClockSettingsKeys::Beeps::Stopwatch::resume], stopwatchBeepResume, 12);
+        configComplete &= getJsonValue(top[LedClockSettingsKeys::Beeps::Stopwatch::reset], stopwatchBeepReset, 16);
+        configComplete &= getJsonValue(top[LedClockSettingsKeys::Beeps::Stopwatch::second], stopwatchBeepSecond, 6);
+        configComplete &= getJsonValue(top[LedClockSettingsKeys::Beeps::Stopwatch::minute], stopwatchBeepMinute, 7);
+        configComplete &= getJsonValue(top[LedClockSettingsKeys::Beeps::Stopwatch::hour], stopwatchBeepHour, 8);
+        configComplete &= getJsonValue(top[LedClockSettingsKeys::Beeps::Stopwatch::lapTime], stopwatchBeepLapTime, 35);
 
         return configComplete;
     }

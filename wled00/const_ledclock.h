@@ -1,4 +1,5 @@
 #include "inttypes.h"
+#include "Arduino.h"
 
 #ifndef WLED_CONST_LEDCLOCK_H
 #define WLED_CONST_LEDCLOCK_H
@@ -17,37 +18,65 @@
 
 #define STOPWATCH_MAX_LAP_TIMES 100
 
-extern const char * ledClockSettingsKey;
-extern const char * ledClockSettingsKeyAutoBrightness;
-extern const char * ledClockSettingsKeyMinBrightness;
-extern const char * ledClockSettingsKeyMaxBrightness;
-extern const char * ledClockSettingsKeySeparatorMode;
-extern const char * ledClockSettingsKeyHideZero;
+#define BEEP_SILENT 255
 
-extern const char * ledClockStateKey;
+class LedClockSettingsKeys {
+public:
+    static const char *root;
 
-extern const char * ledClockStateKeyMode;
-extern const char * ledClockStateKeyStopwatch;
+    class Brightness {
+    public:
+        static const char *autom, *min, *max;
+    };
 
-extern const char * ledClockStateKeyStopwatchRunning;
-extern const char * ledClockStateKeyStopwatchElapsed;
-extern const char * ledClockStateKeyStopwatchLapTimes;
-extern const char * ledClockStateKeyStopwatchLapTimeNr;
-extern const char * ledClockStateKeyStopwatchLastLapTime;
+    class Display {
+    public:
+        static const char *separatorMode, *hideZero;
+    };
 
-extern const char * ledClockStateKeyTimer;
-extern const char * ledClockStateKeyTimerRunning;
-extern const char * ledClockStateKeyTimerPaused;
-extern const char * ledClockStateKeyTimerLeft;
-extern const char * ledClockStateKeyTimerValue;
+    class Beeps {
+    public:
+        static const char *mute, *startup, *wifi;
 
-enum SeparatorMode {
-    ON, OFF, BLINK
+        class Clock {
+        public:
+            static const char *minute, *hour;
+        };
+
+        class Timer {
+        public:
+            static const char *set, *start, *pause, *resume, *reset, *increase, *hour, *minute, *second, *timeout;
+        };
+
+        class Stopwatch {
+        public:
+            static const char *start, *pause, *resume, *reset, *second, *minute, *hour, *lapTime;
+        };
+    };
+};
+
+class LedClockStateKeys {
+public:
+    static const char *root, *command, *mode, *beep;
+
+    class Timer {
+    public:
+        static const char *root, *running, *paused, *left, *value;
+    };
+
+    class Stopwatch{
+    public:
+        static const char *root, *running, *paused, *elapsed, *lapTimes, *lapTimeNr, *lastLapTime;
+    };
 };
 
 class LedClockSettings {
 
 public:
+    enum SeparatorMode {
+        ON, OFF, BLINK
+    };
+
     virtual ~LedClockSettings() {}
     bool autoBrightness = true;
     uint8_t minBrightness = 50; // must NOT be lower than 1
@@ -55,7 +84,57 @@ public:
     SeparatorMode separatorMode = SeparatorMode::BLINK;
     bool hideZero = true;
 
+    bool muteBeeps = false;
+
+    uint8_t beepStartup, beepWiFi;
+    uint8_t clockBeepMinute, clockBeepHour;
+    uint8_t timerBeepSet, timerBeepStart, timerBeepPause, timerBeepResume, timerBeepReset, timerBeepIncrease, timerBeepHour, timerBeepMinute, timerBeepSecond, timerBeepTimeout;
+    uint8_t stopwatchBeepStart, stopwatchBeepPause, stopwatchBeepResume, stopwatchBeepReset, stopwatchBeepSecond, stopwatchBeepMinute, stopwatchBeepHour, stopwatchBeepLapTime;
+
     virtual void applySettings() = 0;
+
+    static uint8_t constrainBeep(uint8_t beep);
 };
+
+const char JSON_ledclock_beeps[] PROGMEM = R"=====([
+"1x 330Hz (short)",
+"2x 330Hz (short)",
+"3x 330Hz (short)",
+"1x 440Hz (short)",
+"2x 440Hz (short)",
+"3x 440Hz (short)",
+"1x 880Hz (short)",
+"2x 880Hz (short)",
+"3x 880Hz (short)",
+"1x 330Hz (medium)",
+"2x 330Hz (medium)",
+"3x 330Hz (medium)",
+"1x 440Hz (medium)",
+"2x 440Hz (medium)",
+"3x 440Hz (medium)",
+"1x 880Hz (medium)",
+"2x 880Hz (medium)",
+"3x 880Hz (medium)",
+"1x 330Hz (long)",
+"2x 330Hz (long)",
+"3x 330Hz (long)",
+"1x 440Hz (long)",
+"2x 440Hz (long)",
+"3x 440Hz (long)",
+"1x 880Hz (long)",
+"2x 880Hz (long)",
+"3x 880Hz (long)",
+"440/880Hz (short)",
+"880/440Hz (short)",
+"440/880Hz (medium)",
+"880/440Hz (medium)",
+"440/880Hz (long)",
+"880/440Hz (long)",
+"Turn Up",
+"Turn Down",
+"Flip Up",
+"Flip Down",
+"Tadaaa"
+])=====";
 
 #endif

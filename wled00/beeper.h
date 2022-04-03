@@ -16,7 +16,7 @@ public:
 
 private:
     uint8_t _channel;
-    uint16_t* _current_beep;
+    uint16_t* _current_beep = 0;
     uint16_t _current_note;
     uint16_t _total_notes;
     Timer _beep_timer;

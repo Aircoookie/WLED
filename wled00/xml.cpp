@@ -673,11 +673,39 @@ void getSettingsJS(byte subPage, char* dest)
   {
     LedClockSettings* settings = dynamic_cast<LedClockSettings *>(usermods.lookup(USERMOD_ID_LEDCLOCK));
     if (settings != nullptr) {
-      sappend('c', ledClockSettingsKeyAutoBrightness, settings->autoBrightness);
-      sappend('v', ledClockSettingsKeyMinBrightness, settings->minBrightness);
-      sappend('v', ledClockSettingsKeyMaxBrightness, settings->maxBrightness);
-      sappend('i', ledClockSettingsKeySeparatorMode, settings->separatorMode);
-      sappend('c', ledClockSettingsKeyHideZero, settings->hideZero);
+      sappend('c', LedClockSettingsKeys::Brightness::autom, settings->autoBrightness);
+      sappend('v', LedClockSettingsKeys::Brightness::min, settings->minBrightness);
+      sappend('v', LedClockSettingsKeys::Brightness::max, settings->maxBrightness);
+      sappend('i', LedClockSettingsKeys::Display::separatorMode, settings->separatorMode);
+      sappend('c', LedClockSettingsKeys::Display::hideZero, settings->hideZero);
+
+      sappend('c', LedClockSettingsKeys::Beeps::mute, settings->muteBeeps);
+
+      sappend('v', LedClockSettingsKeys::Beeps::startup, settings->beepStartup);
+      sappend('v', LedClockSettingsKeys::Beeps::wifi, settings->beepWiFi);
+
+      sappend('v', LedClockSettingsKeys::Beeps::Clock::hour, settings->clockBeepHour);
+      sappend('v', LedClockSettingsKeys::Beeps::Clock::minute, settings->clockBeepMinute);
+
+      sappend('v', LedClockSettingsKeys::Beeps::Timer::set, settings->timerBeepSet);
+      sappend('v', LedClockSettingsKeys::Beeps::Timer::start, settings->timerBeepStart);
+      sappend('v', LedClockSettingsKeys::Beeps::Timer::pause, settings->timerBeepPause);
+      sappend('v', LedClockSettingsKeys::Beeps::Timer::resume, settings->timerBeepResume);
+      sappend('v', LedClockSettingsKeys::Beeps::Timer::reset, settings->timerBeepReset);
+      sappend('v', LedClockSettingsKeys::Beeps::Timer::increase, settings->timerBeepIncrease);
+      sappend('v', LedClockSettingsKeys::Beeps::Timer::hour, settings->timerBeepHour);
+      sappend('v', LedClockSettingsKeys::Beeps::Timer::minute, settings->timerBeepMinute);
+      sappend('v', LedClockSettingsKeys::Beeps::Timer::second, settings->timerBeepSecond);
+      sappend('v', LedClockSettingsKeys::Beeps::Timer::timeout, settings->timerBeepTimeout);
+
+      sappend('v', LedClockSettingsKeys::Beeps::Stopwatch::start, settings->stopwatchBeepStart);
+      sappend('v', LedClockSettingsKeys::Beeps::Stopwatch::pause, settings->stopwatchBeepPause);
+      sappend('v', LedClockSettingsKeys::Beeps::Stopwatch::resume, settings->stopwatchBeepResume);
+      sappend('v', LedClockSettingsKeys::Beeps::Stopwatch::reset, settings->stopwatchBeepReset);
+      sappend('v', LedClockSettingsKeys::Beeps::Stopwatch::second, settings->stopwatchBeepSecond);
+      sappend('v', LedClockSettingsKeys::Beeps::Stopwatch::minute, settings->stopwatchBeepMinute);
+      sappend('v', LedClockSettingsKeys::Beeps::Stopwatch::hour, settings->stopwatchBeepHour);
+      sappend('v', LedClockSettingsKeys::Beeps::Stopwatch::lapTime, settings->stopwatchBeepLapTime);
     }
   }
 
