@@ -566,6 +566,7 @@ function populateInfo(i)
 function populateSegments(s)
 {
 	var cn = "";
+	let li = lastinfo;
 	segCount = 0; lowestUnused = 0; lSeg = 0;
 
 	for (var y = 0; y < (s.seg||[]).length; y++)
@@ -584,6 +585,7 @@ function populateSegments(s)
 				<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>
 				<span class="checkmark schk"></span>
 			</label>
+			<i class="icons e-icon frz" id="seg${i}frz" onclick="event.preventDefault();tglFreeze(${i});" style="display:${inst.frz?"inline":"none"}">&#x${li.live && li.liveseg==i?'e410':'e325'};</i>
 			<div class="segname">
 				<div class="segntxt" onclick="selSegEx(${i})">${inst.n ? inst.n : "Segment "+i}</div>
 				<i class="icons edit-icon ${expanded[i] ? "expanded":""}" id="seg${i}nedit" onclick="tglSegn(${i})">&#xe2c6;</i>
@@ -964,7 +966,7 @@ function updateUI()
 
 function displayRover(i,s)
 {
-	d.getElementById('rover').style.transform = (i.live && s.lor == 0) ? "translateY(0px)":"translateY(100%)";
+	d.getElementById('rover').style.transform = (i.live && s.lor == 0 && i.liveseg<0) ? "translateY(0px)":"translateY(100%)";
 	var sour = i.lip ? i.lip:""; if (sour.length > 2) sour = " from " + sour;
 	d.getElementById('lv').innerHTML = `WLED is receiving live ${i.lm} data${sour}`;
 	d.getElementById('roverstar').style.display = (i.live && s.lor) ? "block":"none";
@@ -1643,7 +1645,11 @@ function setSegBri(s){
 function tglFreeze(s=null)
 {
 	var obj = {"seg": {"frz": "t"}}; // toggle
-	if (s!==null) obj.id = s;
+	if (s!==null) {
+		obj.seg.id = s;
+		// if live segment, enter live override (which also unfreezes)
+		if (lastinfo && s==lastinfo.liveseg && lastinfo.live) obj = {"lor":1};
+	}
 	requestJson(obj);
 }
 

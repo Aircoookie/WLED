@@ -57,7 +57,10 @@ build_flags = ${common.build_flags_esp8266}
 ;   -D DEFAULT_LED_COUNT=30
 ;   
 ; set milliampere limit when using ESP pin to power leds
-;   -D ABL_MILLIAMPS_DEFAULT =850
+;   -D ABL_MILLIAMPS_DEFAULT=850
 ;
 ; enable IR by setting remote type
-;   -D IRTYPE=0 //0 Remote disabled | 1 24-key RGB | 2 24-key with CT | 3 40-key blue | 4 40-key RGB | 5 21-key RGB | 6 6-key black | 7 9-key red | 8 JSON remote
+;   -D IRTYPE=0 ;0 Remote disabled | 1 24-key RGB | 2 24-key with CT | 3 40-key blue | 4 40-key RGB | 5 21-key RGB | 6 6-key black | 7 9-key red | 8 JSON remote
+;   
+; set default color order of your led strip
+;   -D DEFAULT_LED_COLOR_ORDER=COL_ORDER_GRB

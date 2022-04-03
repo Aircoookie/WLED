@@ -46,6 +46,11 @@
 #define MAX(a,b) ((a)>(b)?(a):(b))
 #endif
 
+//color mangling macros
+#ifndef RGBW32
+#define RGBW32(r,g,b,w) (uint32_t((byte(w) << 24) | (byte(r) << 16) | (byte(g) << 8) | (byte(b))))
+#endif
+
 /* Not used in all effects yet */
 #define WLED_FPS         42
 #define FRAMETIME_FIXED  (1000/WLED_FPS)
@@ -71,7 +76,6 @@
   assuming each segment uses the same amount of data. 256 for ESP8266, 640 for ESP32. */
 #define FAIR_DATA_PER_SEG (MAX_SEGMENT_DATA / MAX_NUM_SEGMENTS)
 
-#define LED_SKIP_AMOUNT  1
 #define MIN_SHOW_DELAY   (_frametime < 16 ? 8 : 15)
 
 #define NUM_COLORS       3 /* number of colors per segment */
@@ -609,7 +613,7 @@ class WS2812FX {
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
       targetPalette = CloudColors_p;
-      ablMilliampsMax = 850;
+      ablMilliampsMax = ABL_MILLIAMPS_DEFAULT;
       currentMilliamps = 0;
       timebase = 0;
       resetSegments();
@@ -638,11 +642,12 @@ class WS2812FX {
       resetSegments(),
       makeAutoSegments(bool forceReset = false),
       fixInvalidSegments(),
-      setPixelColor(uint16_t n, uint32_t c),
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       show(void),
 			setTargetFps(uint8_t fps),
       deserializeMap(uint8_t n=0);
+
+    inline void setPixelColor(uint16_t n, uint32_t c) {setPixelColor(n, byte(c>>16), byte(c>>8), byte(c), byte(c>>24));}
 
     bool
       gammaCorrectBri = false,
@@ -911,7 +916,6 @@ class WS2812FX {
     friend class ColorTransition;
 
     uint16_t
-      realPixelIndex(uint16_t i),
       transitionProgress(uint8_t tNr);
   
   public:

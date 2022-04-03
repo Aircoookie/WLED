@@ -97,7 +97,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char lt[4] = "LT"; lt[2] = 48+s; lt[3] = 0; //strip type
       char ls[4] = "LS"; ls[2] = 48+s; ls[3] = 0; //strip start LED
       char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
-      char sl[4] = "SL"; sl[2] = 48+s; sl[3] = 0; //skip 1st LED
+      char sl[4] = "SL"; sl[2] = 48+s; sl[3] = 0; //skip first N LEDs
       char rf[4] = "RF"; rf[2] = 48+s; rf[3] = 0; //refresh required
       if (!request->hasArg(lp)) {
         DEBUG_PRINTLN(F("No data.")); break;
@@ -109,7 +109,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       }
       type = request->arg(lt).toInt();
       type |= request->hasArg(rf) << 7; // off refresh override
-      skip = request->hasArg(sl) ? LED_SKIP_AMOUNT : 0;
+      skip = request->arg(sl).toInt();
       colorOrder = request->arg(co).toInt();
       start = (request->hasArg(ls)) ? request->arg(ls).toInt() : t;
       if (request->hasArg(lc) && request->arg(lc).toInt() > 0) {
@@ -237,6 +237,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     nodeBroadcastEnabled = request->hasArg(F("NB"));
 
     receiveDirect = request->hasArg(F("RD"));
+    useMainSegmentOnly = request->hasArg(F("MO"));
     e131SkipOutOfSequence = request->hasArg(F("ES"));
     e131Multicast = request->hasArg(F("EM"));
     t = request->arg(F("EP")).toInt();
@@ -933,6 +934,9 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (pos > 0) {
     realtimeOverride = getNumVal(&req, pos);
     if (realtimeOverride > 2) realtimeOverride = REALTIME_OVERRIDE_ALWAYS;
+    if (realtimeMode && useMainSegmentOnly) {
+      strip.getMainSegment().setOption(SEG_OPTION_FREEZE, !realtimeOverride, strip.getMainSegmentId());
+    }
   }
 
   pos = req.indexOf(F("RB"));

@@ -18,6 +18,7 @@
 float cos_t(float phi)
 {
   float x = modd(phi, TWO_PI);
+  if (x < 0) x = -1 * x;
   int8_t sign = 1;
   if (x > PI)
   {

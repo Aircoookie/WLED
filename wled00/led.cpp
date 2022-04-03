@@ -100,7 +100,6 @@ void stateUpdated(byte callMode) {
   setValuesFromFirstSelectedSeg();
 
   if (bri != briOld || stateChanged) {
-    if (realtimeTimeout == UINT32_MAX) realtimeTimeout = 0;
     if (stateChanged) currentPreset = 0; //something changed, so we are no longer in the preset
         
     if (callMode != CALL_MODE_NOTIFICATION && callMode != CALL_MODE_NO_NOTIFY) notify(callMode);
