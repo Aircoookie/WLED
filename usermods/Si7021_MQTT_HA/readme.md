@@ -17,6 +17,8 @@ dew_point: $mqttDeviceTopic/si7021_dew_point
 absolute_humidity: $mqttDeviceTopic/si7021_absolute_humidity
 ```
 
+Sensor data will be updated/send every 60 seconds.
+
 This usermod also supports Home Assistant Auto Discovery.
 
 ## Settings via Usermod Setup
