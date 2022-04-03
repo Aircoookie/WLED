@@ -107,7 +107,7 @@ class Si7021_MQTT_HA : public Usermod
         // Serial.println(t);
         // Serial.println(temp);
 
-        mqtt->publish(topic.c_str(), 0, false, payload.c_str());
+        mqtt->publish(topic.c_str(), 0, true, payload.c_str());
       }
     }
 
