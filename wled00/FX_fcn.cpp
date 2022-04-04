@@ -131,7 +131,6 @@ void WS2812FX::service() {
 
   for(uint8_t i=0; i < MAX_NUM_SEGMENTS; i++)
   {
-    // freezing main segment will acheve the same as following
     //if (realtimeMode && useMainSegmentOnly && i == getMainSegmentId()) continue;
 
     _segment_index = i;

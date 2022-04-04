@@ -230,12 +230,22 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   bool stateResponse = root[F("v")] | false;
 
+  bool onBefore = bri;
   getVal(root["bri"], &bri);
 
   bool on = root["on"] | (bri > 0);
   if (!on != !bri) toggleOnOff();
 
   if (root["on"].is<const char*>() && root["on"].as<const char*>()[0] == 't') toggleOnOff();
+
+  if (bri && !onBefore) { // unfreeze all segments when turning on
+    for (uint8_t s=0; s < strip.getMaxSegments(); s++) {
+      strip.getSegment(s).setOption(SEG_OPTION_FREEZE, false, s);
+    }
+    if (realtimeMode && !realtimeOverride && useMainSegmentOnly) { // keep live segment frozen if live
+      strip.getMainSegment().setOption(SEG_OPTION_FREEZE, true, strip.getMainSegmentId());
+    }
+  }
 
   int tr = -1;
   if (!presetId || currentPlaylist < 0) { //do not apply transition time from preset if playlist active, as it would override playlist transition times
@@ -283,6 +293,9 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   realtimeOverride = root[F("lor")] | realtimeOverride;
   if (realtimeOverride > 2) realtimeOverride = REALTIME_OVERRIDE_ALWAYS;
+  if (realtimeMode && useMainSegmentOnly) {
+    strip.getMainSegment().setOption(SEG_OPTION_FREEZE, !realtimeOverride, strip.getMainSegmentId());
+  }
 
   if (root.containsKey("live")) {
     if (root["live"].as<bool>()) {
@@ -290,11 +303,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       jsonTransitionOnce = true;
       realtimeLock(65000);
     } else {
-      if (realtimeOverride == REALTIME_OVERRIDE_ONCE) realtimeOverride = REALTIME_OVERRIDE_NONE;
-      strip.setBrightness(scaledBri(bri));
-      realtimeTimeout = 0; //cancel realtime mode immediately
-      realtimeMode = REALTIME_MODE_INACTIVE; // inform UI immediatelly
-      realtimeIP[0] = 0;
+      exitRealtime();
     }
   }
 
@@ -508,7 +517,7 @@ void serializeInfo(JsonObject root)
   root[F("udpport")] = udpPort;
   root["live"] = (bool)realtimeMode;
   root[F("liveseg")] = useMainSegmentOnly ? strip.getMainSegmentId() : -1;  // if using main segment only for live
-//  root[F("mso")] = useMainSegmentOnly;  // using main segment only for live
+  //root[F("mso")] = useMainSegmentOnly;  // using main segment only for live
 
   switch (realtimeMode) {
     case REALTIME_MODE_INACTIVE: root["lm"] = ""; break;

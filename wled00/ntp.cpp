@@ -466,6 +466,7 @@ void calculateSunriseAndSunset() {
     int minUTC = getSunriseUTC(year(localTime), month(localTime), day(localTime), latitude, longitude);
     if (minUTC) {
       // there is a sunrise
+      if (minUTC < 0) minUTC += 24*60; // add a day if negative
       tim_0.tm_hour = minUTC / 60;
       tim_0.tm_min = minUTC % 60;
       sunrise = tz->toLocal(mktime(&tim_0) + utcOffsetSecs);
@@ -477,6 +478,7 @@ void calculateSunriseAndSunset() {
     minUTC = getSunriseUTC(year(localTime), month(localTime), day(localTime), latitude, longitude, true);
     if (minUTC) {
       // there is a sunset
+      if (minUTC < 0) minUTC += 24*60; // add a day if negative
       tim_0.tm_hour = minUTC / 60;
       tim_0.tm_min = minUTC % 60;
       sunset = tz->toLocal(mktime(&tim_0) + utcOffsetSecs);
