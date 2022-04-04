@@ -57,8 +57,6 @@
 			}));
 
 			RangeTouch.setup('input[type="range"]', {});
-
-			updateBrCtrl();
 		}
 		function GetV()
 		{
@@ -87,7 +85,7 @@
 		}
 	</style>
 </head>
-<body onload="init();GetV()">
+<body onload="init();GetV();updateBrCtrl()">
 	<form id="form_s" name="Sf" method="post">
 		<button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 		<hr>
@@ -98,7 +96,7 @@
 		<div id="brctrl" class="il">
 			Minimum brightness: <span id="minbv"></span><br>
 			<div class="sliderwrap il">
-				<input id="minb" name="minb" max="249" min="1" type="range" oninput="adjustRange(false);showBrCtrlVal()" />
+				<input id="minb" name="minb" max="254" min="1" type="range" oninput="adjustRange(false);showBrCtrlVal()" />
 				<div class="sliderdisplay"></div>
 			</div><br>
 			Maximum brightness: <span id="maxbv"></span><br>

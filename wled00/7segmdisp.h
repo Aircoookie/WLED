@@ -2,7 +2,12 @@
 #define __7SEGMENTDISP_H
 
 #include <stdarg.h>
-#include <wled.h>
+
+#define FASTLED_INTERNAL
+#define USE_GET_MILLISECOND_TIMER
+#include <FastLED.h>
+#undef FASTLED_INTERNAL
+#undef USE_GET_MILLISECOND_TIMER
 
 // 0x00000000
 //    GFEDCBA
@@ -76,7 +81,10 @@
 
 #define _7SEG_MODE(mode, state) (mode == LedBasedDisplayMode::SET_ALL_LEDS || (state && mode == LedBasedDisplayMode::SET_ON_LEDS) || (!state && mode == LedBasedDisplayMode::SET_OFF_LEDS))
 
+#define _7SEG_INDEX_UNDEF 255
 #define _7SEG_COORD_UNDEF 255
+
+typedef void (*LedBasedDisplayOutput)(uint8_t, uint8_t, uint8_t, uint8_t);
 
 enum LedBasedDisplayMode {
 
@@ -104,6 +112,7 @@ class LedBasedDisplay {
         virtual uint8_t rowCount() = 0;
         virtual uint8_t columnCount() = 0;
 
+        virtual uint8_t indexOfCoords(uint8_t row, uint8_t column) = 0;
         virtual Coords coordsOfIndex(uint16_t index) = 0;
 
         virtual CRGB* getLedColor(uint8_t row, uint8_t column, bool state) = 0;
@@ -121,13 +130,14 @@ class LedBasedDisplay {
 class SevenSegmentDisplay : public LedBasedDisplay {
 
     public:
-        SevenSegmentDisplay(WS2812FX* leds, uint8_t ledsPerSegment);
+        SevenSegmentDisplay(LedBasedDisplayOutput output, uint8_t ledsPerSegment);
 
         virtual ~SevenSegmentDisplay() override;
 
         virtual uint8_t rowCount() override;
         virtual uint8_t columnCount() override;
 
+        virtual uint8_t indexOfCoords(uint8_t row, uint8_t column) override;
         virtual Coords coordsOfIndex(uint16_t index) override;
 
         virtual CRGB* getLedColor(uint8_t row, uint8_t column, bool state) override;
@@ -144,7 +154,7 @@ class SevenSegmentDisplay : public LedBasedDisplay {
         void setShowZero(boolean showZero);
 
     private:
-        WS2812FX* _leds;
+        LedBasedDisplayOutput _output;
         CRGB* _offColors;
         CRGB* _onColors;
 
@@ -155,18 +165,21 @@ class SevenSegmentDisplay : public LedBasedDisplay {
         boolean _showZero;
 
         LedBasedDisplayMode _mode;
+
+        uint8_t internalIndex(uint8_t row, uint8_t column);
 };
 
 class SeparatorDisplay : public LedBasedDisplay {
 
     public:
-        SeparatorDisplay(WS2812FX* leds);
+        SeparatorDisplay(LedBasedDisplayOutput output);
 
         virtual ~SeparatorDisplay() override;
 
         virtual uint8_t rowCount() override;
         virtual uint8_t columnCount() override;
 
+        virtual uint8_t indexOfCoords(uint8_t row, uint8_t column) override;
         virtual Coords coordsOfIndex(uint16_t index) override;
 
         virtual CRGB* getLedColor(uint8_t row, uint8_t column, bool state) override;
@@ -188,7 +201,7 @@ class SeparatorDisplay : public LedBasedDisplay {
             CRGB onColor;
         };
 
-        WS2812FX* _leds;
+        LedBasedDisplayOutput _output;
         uint8_t _ledCount;
         struct _Mapping* _mappings;
         bool _state;
@@ -205,6 +218,7 @@ class LedBasedRowDisplay : public LedBasedDisplay {
         virtual uint8_t rowCount() override;
         virtual uint8_t columnCount() override;
 
+        virtual uint8_t indexOfCoords(uint8_t row, uint8_t column) override;
         virtual Coords coordsOfIndex(uint16_t index) override;
 
         virtual CRGB* getLedColor(uint8_t row, uint8_t column, bool state) override;

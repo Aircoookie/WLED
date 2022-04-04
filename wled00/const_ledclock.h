@@ -96,6 +96,10 @@ public:
     static uint8_t constrainBeep(uint8_t beep);
 };
 
+class LedBasedDisplay; // forward declaration
+
+LedBasedDisplay* ledClockDisplay();
+
 const char JSON_ledclock_beeps[] PROGMEM = R"=====([
 "1x 330Hz (short)",
 "2x 330Hz (short)",

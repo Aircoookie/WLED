@@ -234,6 +234,10 @@ static TimeChange timeChangeMillis(unsigned long millis, bool clear = false) {
     return c;
 }
 
+static void outputPixel(uint8_t i, uint8_t r, uint8_t g, uint8_t b) {
+    strip.setPixelColor(i, r, g, b);
+}
+
 class UsermodLedClock : public Usermod, public LedClockSettings {
 
 private:
@@ -301,16 +305,20 @@ private:
 public:
 
     UsermodLedClock():
-        dHoursT(&strip, 2),
-        dHoursO(&strip, 2),
-        sep(&strip),
-        dMinutesT(&strip, 2),
-        dMinutesO(&strip, 2),
+        dHoursT(&outputPixel, 2),
+        dHoursO(&outputPixel, 2),
+        sep(&outputPixel),
+        dMinutesT(&outputPixel, 2),
+        dMinutesO(&outputPixel, 2),
         display(5, &dHoursT, &dHoursO, &sep, &dMinutesT, &dMinutesO),
         beeper(0, BUZZER_PIN),
         selfTestTimer(20),
         stopwatchTimer(0),
         timerTimer(0) {}
+
+    LedBasedDisplay* getDisplay() {
+        return &display;
+    }
 
     void setup() {
         // digit 1
@@ -845,3 +853,8 @@ public:
         return USERMOD_ID_LEDCLOCK;
     }
 };
+
+LedBasedDisplay* ledClockDisplay() {
+    UsermodLedClock* mod = (UsermodLedClock*) usermods.lookup(USERMOD_ID_LEDCLOCK);
+    return mod->getDisplay();
+}
