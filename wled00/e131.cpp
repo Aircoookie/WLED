@@ -270,7 +270,6 @@ void handleArtnetPollReply(IPAddress ipAddress) {
 
   for (uint16_t i = startUniverse; i <= endUniverse; ++i) {
     sendArtnetPollReply(ipAddress, i);
-    yield();
   }
 }
 
