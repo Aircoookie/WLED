@@ -312,7 +312,7 @@ public:
         dMinutesO(&outputPixel, 2),
         display(5, &dHoursT, &dHoursO, &sep, &dMinutesT, &dMinutesO),
         beeper(0, BUZZER_PIN),
-        selfTestTimer(20),
+        selfTestTimer(10),
         stopwatchTimer(0),
         timerTimer(0) {}
 
