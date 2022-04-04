@@ -84,14 +84,14 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
   #endif
 
   // only listen for universes we're handling & allocated memory
-  if (uni >= (e131Universe + E131_MAX_UNIVERSE_COUNT)) return;
+  if (uni < e131Universe || uni >= (e131Universe + E131_MAX_UNIVERSE_COUNT)) return;
 
   uint8_t previousUniverses = uni - e131Universe;
 
   if (e131SkipOutOfSequence)
-    if (seq < e131LastSequenceNumber[uni-e131Universe] && seq > 20 && e131LastSequenceNumber[uni-e131Universe] < 250){
+    if (seq < e131LastSequenceNumber[previousUniverses] && seq > 20 && e131LastSequenceNumber[previousUniverses] < 250){
       DEBUG_PRINT("skipping E1.31 frame (last seq=");
-      DEBUG_PRINT(e131LastSequenceNumber[uni-e131Universe]);
+      DEBUG_PRINT(e131LastSequenceNumber[previousUniverses]);
       DEBUG_PRINT(", current seq=");
       DEBUG_PRINT(seq);
       DEBUG_PRINT(", universe=");
@@ -99,14 +99,22 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
       DEBUG_PRINTLN(")");
       return;
     }
-  e131LastSequenceNumber[uni-e131Universe] = seq;
+  e131LastSequenceNumber[previousUniverses] = seq;
 
   // update status info
   realtimeIP = clientIP;
   byte wChannel = 0;
   uint16_t totalLen = strip.getLengthTotal();
-  uint16_t availDMXLen = dmxChannels - DMXAddress + 1;
+  uint16_t availDMXLen = 0;
   uint16_t dataOffset = DMXAddress;
+
+  // For legacy DMX start address 0 the available DMX length offset is 0
+  const uint16_t dmxLenOffset = (DMXAddress == 0) ? 0 : 1;
+
+  // Check if DMX start address fits in available channels
+  if (dmxChannels >= DMXAddress) {
+    availDMXLen = (dmxChannels - DMXAddress) + dmxLenOffset;
+  }
 
   // DMX data in Art-Net packet starts at index 0, for E1.31 at index 1
   if (protocol == P_ARTNET && dataOffset > 0) {
@@ -121,8 +129,10 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
     case DMX_MODE_SINGLE_RGB: // RGB only
       if (uni != e131Universe) return;
       if (availDMXLen < 3) return;
+
       realtimeLock(realtimeTimeoutMs, mde);
       if (realtimeOverride) return;
+
       wChannel = (availDMXLen > 3) ? e131_data[dataOffset+3] : 0;
       for (uint16_t i = 0; i < totalLen; i++)
         setRealtimePixel(i, e131_data[dataOffset+0], e131_data[dataOffset+1], e131_data[dataOffset+2], wChannel);
@@ -131,14 +141,17 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
     case DMX_MODE_SINGLE_DRGB: // Dimmer + RGB
       if (uni != e131Universe) return;
       if (availDMXLen < 4) return;
+
       realtimeLock(realtimeTimeoutMs, mde);
       if (realtimeOverride) return;
+
       wChannel = (availDMXLen > 4) ? e131_data[dataOffset+4] : 0;
-      if (DMXOldDimmer != e131_data[dataOffset+0]) {
-        DMXOldDimmer = e131_data[dataOffset+0];
+
+      if (bri != e131_data[dataOffset+0]) {
         bri = e131_data[dataOffset+0];
         strip.setBrightness(bri, true);
       }
+
       for (uint16_t i = 0; i < totalLen; i++)
         setRealtimePixel(i, e131_data[dataOffset+1], e131_data[dataOffset+2], e131_data[dataOffset+3], wChannel);
       break;
@@ -150,10 +163,11 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
         applyPreset(e131_data[dataOffset+0], CALL_MODE_NOTIFICATION);
         return;
       }
-      if (DMXOldDimmer != e131_data[dataOffset+0]) {
-        DMXOldDimmer = e131_data[dataOffset+0];
+
+      if (bri != e131_data[dataOffset+0]) {
         bri = e131_data[dataOffset+0];
       }
+
       if (e131_data[dataOffset+1] < MODE_COUNT)
         effectCurrent = e131_data[dataOffset+ 1];
       effectSpeed     = e131_data[dataOffset+ 2];  // flickers
@@ -179,19 +193,19 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
     case DMX_MODE_MULTIPLE_RGB:
     case DMX_MODE_MULTIPLE_RGBW:
       {
-        realtimeLock(realtimeTimeoutMs, mde);
         bool is4Chan = (DMXMode == DMX_MODE_MULTIPLE_RGBW);
         const uint16_t dmxChannelsPerLed = is4Chan ? 4 : 3;
         const uint16_t ledsPerUniverse = is4Chan ? MAX_4_CH_LEDS_PER_UNIVERSE : MAX_3_CH_LEDS_PER_UNIVERSE;
-        if (realtimeOverride) return;
+        uint8_t stripBrightness = bri;
         uint16_t previousLeds, dmxOffset, ledsTotal;
+
         if (previousUniverses == 0) {
           if (availDMXLen < 1) return;
           dmxOffset = dataOffset;
           previousLeds = 0;
           // First DMX address is dimmer in DMX_MODE_MULTIPLE_DRGB mode.
           if (DMXMode == DMX_MODE_MULTIPLE_DRGB) {
-            strip.setBrightness(e131_data[dmxOffset++], true);
+            stripBrightness = dmxOffset++;
             ledsTotal = (availDMXLen - 1) / dmxChannelsPerLed;
           } else {
             ledsTotal = availDMXLen / dmxChannelsPerLed;
@@ -199,11 +213,31 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
         } else {
           // All subsequent universes start at the first channel.
           dmxOffset = (protocol == P_ARTNET) ? 0 : 1;
-          uint16_t dimmerOffset = (DMXMode == DMX_MODE_MULTIPLE_DRGB) ? 1 : 0;
-          uint16_t ledsInFirstUniverse = ((MAX_CHANNELS_PER_UNIVERSE - DMXAddress + 1) - dimmerOffset) / dmxChannelsPerLed;
+          const uint16_t dimmerOffset = (DMXMode == DMX_MODE_MULTIPLE_DRGB) ? 1 : 0;
+          uint16_t ledsInFirstUniverse = (((MAX_CHANNELS_PER_UNIVERSE - DMXAddress) + dmxLenOffset) - dimmerOffset) / dmxChannelsPerLed;
           previousLeds = ledsInFirstUniverse + (previousUniverses - 1) * ledsPerUniverse;
           ledsTotal = previousLeds + (dmxChannels / dmxChannelsPerLed);
         }
+
+        // All LEDs already have values
+        if (previousLeds >= totalLen) {
+          return;
+        }
+
+        realtimeLock(realtimeTimeoutMs, mde);
+        if (realtimeOverride) return;
+
+        if (ledsTotal > totalLen) {
+          ledsTotal = totalLen;
+        }
+
+        if (DMXMode == DMX_MODE_MULTIPLE_DRGB && previousUniverses == 0) {
+          if (bri != stripBrightness) {
+            bri = stripBrightness;
+            strip.setBrightness(bri, true);
+          }
+        }
+        
         if (!is4Chan) {
           for (uint16_t i = previousLeds; i < ledsTotal; i++) {
             setRealtimePixel(i, e131_data[dmxOffset], e131_data[dmxOffset+1], e131_data[dmxOffset+2], 0);

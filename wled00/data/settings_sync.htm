@@ -7,7 +7,7 @@ function gId(s)
 }
 function H(){window.open("https://kno.wled.ge/interfaces/udp-notifier/");}
 function B(){window.open("/settings","_self");}
-function adj(){if (d.Sf.DI.value == 6454) {if (d.Sf.DA.value == 1) d.Sf.DA.value = 0; if (d.Sf.EU.value == 1) d.Sf.EU.value = 0;}
+function adj(){if (d.Sf.DI.value == 6454) {if (d.Sf.DA.value == 0) d.Sf.DA.value = 1; if (d.Sf.EU.value == 1) d.Sf.EU.value = 0;}
                else if (d.Sf.DI.value == 5568) {if (d.Sf.DA.value == 0) d.Sf.DA.value = 1; if (d.Sf.EU.value == 0) d.Sf.EU.value = 1;} }
 function FC()
 {
@@ -109,7 +109,7 @@ Multicast: <input type="checkbox" name="EM"><br>
 Start universe: <input name="EU" type="number" min="0" max="63999" required><br>
 <i>Reboot required.</i> Check out <a href="https://github.com/LedFx/LedFx" target="_blank">LedFx</a>!<br>
 Skip out-of-sequence packets: <input type="checkbox" name="ES"><br>
-DMX start address: <input name="DA" type="number" min="0" max="510" required><br>
+DMX start address: <input name="DA" type="number" min="1" max="510" required><br>
 DMX mode:
 <select name=DM>
 <option value=0>Disabled</option>
