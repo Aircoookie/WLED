@@ -205,7 +205,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
           previousLeds = 0;
           // First DMX address is dimmer in DMX_MODE_MULTIPLE_DRGB mode.
           if (DMXMode == DMX_MODE_MULTIPLE_DRGB) {
-            stripBrightness = dmxOffset++;
+            stripBrightness = e131_data[dmxOffset++];
             ledsTotal = (availDMXLen - 1) / dmxChannelsPerLed;
           } else {
             ledsTotal = availDMXLen / dmxChannelsPerLed;
