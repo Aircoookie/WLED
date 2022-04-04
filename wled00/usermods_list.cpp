@@ -124,6 +124,10 @@
 #include "../usermods/MY9291/usermode_MY9291.h"
 #endif
 
+#ifdef USERMOD_SI7021_MQTT_HA
+#include "../usermods/Si7021_MQTT_HA/usermod_si7021_mqtt_ha.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -234,5 +238,9 @@ void registerUsermods()
 
   #ifdef USERMOD_MY9291
   usermods.add(new MY9291Usermod());
+  #endif
+  
+  #ifdef USERMOD_SI7021_MQTT_HA
+  usermods.add(new Si7021_MQTT_HA());
   #endif
 }
