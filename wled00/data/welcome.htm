@@ -17,10 +17,8 @@
     button {
       outline: none;
       cursor: pointer;
-      padding: 8px;
+      padding: 8px 14px;
       margin: 10px;
-      width: 230px;
-      text-transform: uppercase;
       font-family: helvetica;
       font-size: 19px;
       background-color: #333;
@@ -35,7 +33,12 @@
       image-rendering: pixelated;
       image-rendering: crisp-edges;
       margin: 4vh 0 0 0;
-      animation: fi 1s;
+      animation: fi 1s, hue 5s infinite;
+    }
+
+    @keyframes hue {
+      0% { filter: hue-rotate(0deg); }
+      100%  { filter: hue-rotate(360deg); }
     }
     
     @keyframes fi {
@@ -46,18 +49,27 @@
     .main {
       animation: fi 1.5s .7s both;
     }
+
+    small {
+      opacity: .5;
+    }
 	</style>
 </head>
 <body>
-<img alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAG0AAAAfCAMAAADazLOuAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAABLUExURQAAAAB81gCU/zKq///mo7sWMN8bO+ZIYtZaAP9rAP+HMsCiG+TAIOnMS0KqNU7KPnLUZOrq6v///4CAgGhoaL+/v6CgoExMTAAAAAlm4O8AAAAZdFJOU////////////////////////////////wABNAq3AAAACXBIWXMAAA7DAAAOwwHHb6hkAAACN0lEQVRIS73VjVLCMBAEYIr8CYKkrdj3f1J37zaXFCpTO+piaDgbPq9px9VQ0qyrvKj4q6m0Zr1h+M7xF1zRmnWzqV9/0d2jttGotO1uv9dUObwej5oqp7fzWVPl8n69aprzoOUUbbvdIbV3OLwitXc6vSG1d7m8I3feSEN0j2CeNbOY4MxigjOLCc4sZsTV2l1cCyy4wIILLLjAxtykltq2rbTU+qi01N5rXNO2leaFORoija2l5MM5a02ac9Ya16Sk5tgaPrUpjZub0BL6YqSxKwbH77XUUmSkJXSl8QtaMuyJhq5maL5nTKVpZC13VmtMpTFT2g4vJjTuGfMzzXftiUZnhdtgb1xofvypRon5TjNnxYN9zJo6K5ruSIzQtGuVZn0x91rKvdHBvm39E7SyZ4y06Gz8BDBFKzsXmhcwyfsGZ9VpbhoiCinaxPNmGWmWWrNU2jB0q6HvOhN1JUtCixQtp2g51ZVUXIPS2RMAD++T2nY/DrDjOMDO4wC7jmNYj3d73nrXug8Yt9uNB8xNU1cKNXWlUFNXCjV1pZhGTE83m2vWfYf/NGj4Bg1zu5JD3/MnH5ZWfLOksbmGWGjgXMN5/C2GXYGFFW9Nmtle6Xut0Gm+JsayCj8z0nhjGvYJzVf4aSzmNYsr+u7Q2JIdoX3YOQjOslmsW1jJ3120nE9gfo79hTaNdcsqVR610lvO47pllae9ReZ805zKo2a3iaY5c75pTmVCA6dJ5H7N0sr/asPwBehb7ifEhusRAAAAAElFTkSuQmCC">
+<img alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAAAhCAMAAABp/VBiAAAACXBIWXMAAAsTAAALEwEAmpwYAAAFyGlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4gPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgNi4wLWMwMDIgNzkuMTY0NDYwLCAyMDIwLzA1LzEyLTE2OjA0OjE3ICAgICAgICAiPiA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPiA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIiB4bWxuczpzdEV2dD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL3NUeXBlL1Jlc291cmNlRXZlbnQjIiB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgMjEuMiAoV2luZG93cykiIHhtcDpDcmVhdGVEYXRlPSIyMDIyLTA0LTA1VDA5OjUwOjA0KzAyOjAwIiB4bXA6TWV0YWRhdGFEYXRlPSIyMDIyLTA0LTA1VDA5OjUwOjA0KzAyOjAwIiB4bXA6TW9kaWZ5RGF0ZT0iMjAyMi0wNC0wNVQwOTo1MDowNCswMjowMCIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDo4ODlkM2Q5Mi02ZmU2LTlmNDktYjJhYi1lMWI2MjMxZDM5MDgiIHhtcE1NOkRvY3VtZW50SUQ9ImFkb2JlOmRvY2lkOnBob3Rvc2hvcDo1ZTNjMGZkMC04M2FmLTJmNDQtOWFiYS1jY2E0YzA2MmQyYTkiIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDpkYTVkY2IwYS1jYzBlLTY2NGUtYTQyMS0yNmMzMmQ0ZTg1MTAiIGRjOmZvcm1hdD0iaW1hZ2UvcG5nIiBwaG90b3Nob3A6Q29sb3JNb2RlPSIzIj4gPHhtcE1NOkhpc3Rvcnk+IDxyZGY6U2VxPiA8cmRmOmxpIHN0RXZ0OmFjdGlvbj0iY3JlYXRlZCIgc3RFdnQ6aW5zdGFuY2VJRD0ieG1wLmlpZDpkYTVkY2IwYS1jYzBlLTY2NGUtYTQyMS0yNmMzMmQ0ZTg1MTAiIHN0RXZ0OndoZW49IjIwMjItMDQtMDVUMDk6NTA6MDQrMDI6MDAiIHN0RXZ0OnNvZnR3YXJlQWdlbnQ9IkFkb2JlIFBob3Rvc2hvcCAyMS4yIChXaW5kb3dzKSIvPiA8cmRmOmxpIHN0RXZ0OmFjdGlvbj0ic2F2ZWQiIHN0RXZ0Omluc3RhbmNlSUQ9InhtcC5paWQ6ODg5ZDNkOTItNmZlNi05ZjQ5LWIyYWItZTFiNjIzMWQzOTA4IiBzdEV2dDp3aGVuPSIyMDIyLTA0LTA1VDA5OjUwOjA0KzAyOjAwIiBzdEV2dDpzb2Z0d2FyZUFnZW50PSJBZG9iZSBQaG90b3Nob3AgMjEuMiAoV2luZG93cykiIHN0RXZ0OmNoYW5nZWQ9Ii8iLz4gPC9yZGY6U2VxPiA8L3htcE1NOkhpc3Rvcnk+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+iejc5AAAAJZQTFRFAAAAAAr/AB//AE7/MgD/TgD/awD/lAD/pAD/2AD//wC4/wDx////AAr/AB//AEH/AE7/AF7/AJz/GBgbHAD/IgD/JwD/MgD/OwD/PwD/RwD/TgD/awD/iAD/lAD/lgD/pAD/qQD/vgD/zQD/0wD/1QD/2AD/3AD/5QD/9gD99wD79wD8/wCU/wCj/wCy/wC4/wDl/wDxIQ9YzgAAAA10Uk5TAAAAAAAAAAAAAAAAAO1IeEgAAALFSURBVFjD7dhpkxIxEAZgdL0dluNFhOVY5RaU4///OZN0ju50ZlzXKms+7PsJQnfmYQqSqXQAdFSQRQ01FHeKM3ZK3Y2d8cIz4G0lA/zgMYVm6BcPWPFPHlt6Az5X+ZTfWUDt+MJjO++B19WdC9Dv960QsxmQz7aG9JlcuRCpxbwUPpPbTc1oygQQ1Cl8JvdGWCVf393WmRZizYSus8KVCYHLJbTgfIb0GaASYrVKQsznDjiZQPoM0AiTLwJzoQGu5c/DAq/p7cUAEYHn7Ld000IDXMXP5wYIB5xknfdemHwRiCagHbpyoQOiCDQjBEQzEApoqggI5nsSsPoLYPVsYMWAzNcEFEMeSG80kJfWA+m1BPIqD+S+NgKFr4XA5LtrL5B87QWi5cDgi0BoYLbKxIW6CkIGhAZCA1l3BEIDxYU9EBoIbELiOsjKPoEBoYF6xhUbegcPhAZiEBP+xVCz2W18s5HCrIzdWo0pz6i6i52DQS7EeAy1tT8+8jvodqHDgV/hdIrA4zHH7Pd6xsWCdU+nDjga5Z29Hr+Dw6HbScZWqIH5w8LBCpPvFH9QRyPMgfsCcIHkm7rvPDLCHNhL1xxaIBwwFxqgFLo7mIQERAIiB+ZCBwQHgoDIgb0aIJqAVQSiBggNhAaiAMQ/AMXQ/wTSmxfgC7BlQL6ui3+xBFI0kG/bHijaCUiRQN5ZB8RXH+BNWKiXIXgfgNj6INtJdiH4GBbqbz7Ah7CTPISwnaQbglcNwOizQgIiAZfwwOhzwgRMvh0tmcxnhQRMvgRMvi51+mWwCkICMp8XgvtIaIa2Wy5M8+x2Ugjui8IHlrA7dbtSCL9Mh0cHAgofCaVvSUPbGqASQvhKwrg9ZcLSI5M+yaJTJnW8VRqrOQorlpa6UYw84Oo8W9h8APdHYfnL6ZO9YtVTvm/9CWF5xmywpjM/WgR+Az34hPVkF8WwAAAAAElFTkSuQmCC">
 <div class="main">
-<h1>Welcome to WLED!</h1>
-<h3>Thank you for installing my application!</h3>
-<b>Next steps:</b><br><br>
-Connect the module to your local WiFi here!<br>
-<button onclick="window.location.href='/settings/wifi'">WiFi settings</button><br>
-<i>Just trying this out in AP mode?</i><br>
-<button onclick="window.location.href='/sliders'">To the controls!</button><br>
+<br>
+<h1>Welcome!</h1>
+<br><br>
+Would you like to connect to your local Wi-Fi?
+<br><br>
+<button onclick="window.location.href='/settings/wifi'">Wi-Fi Settings</button>
+<br><br><br>
+Or just tune some settings directly?
+<br><br>
+<button onclick="window.location.href='/sliders'">Control Interface</button><br>
+<br><br><br>
+<small>The LED Clock firmware is built upon<br>the awesome WLED project.</small>
 </div>
 </body>
 </html>
