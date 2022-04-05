@@ -5,9 +5,9 @@
 
 const byte ib_jul01_gp[] PROGMEM = {
     0, 194,  1,  1,
-   94,   1, 29, 18,
+   94,   0,107, 64,
   132,  57,131, 28,
-  255, 113,  1,  1};
+  255, 148,  0,  0};
 
 // Gradient palette "es_vintage_57_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/es/vintage/tn/es_vintage_57.png.index.html
@@ -15,11 +15,10 @@ const byte ib_jul01_gp[] PROGMEM = {
 // Size: 20 bytes of program space.
 
 const byte es_vintage_57_gp[] PROGMEM = {
-    0,   2,  1,  1,
-   53,  18,  1,  0,
-  104,  69, 29,  1,
+    0,  89, 36,  8,
+   52, 129, 59,  8,
   153, 167,135, 10,
-  255,  46, 56,  4};
+  255,  80, 97, 10};
 
 
 // Gradient palette "es_vintage_01_gp", originally from
@@ -28,14 +27,13 @@ const byte es_vintage_57_gp[] PROGMEM = {
 // Size: 32 bytes of program space.
 
 const byte es_vintage_01_gp[] PROGMEM = {
-    0,   4,  1,  1,
-   51,  16,  0,  1,
-   76,  97,104,  3,
+    0, 128, 57,  0,
+   36, 140,  3, 12,
+   76, 173,138, 11,
   101, 255,131, 19,
-  127,  67,  9,  4,
-  153,  16,  0,  1,
-  229,   4,  1,  1,
-  255,   4,  1,  1};
+  127, 163, 65,  0,
+  152, 177, 72,  2,
+  255, 126,  1,  1};
 
 
 // Gradient palette "es_rivendell_15_gp", originally from
@@ -44,11 +42,11 @@ const byte es_vintage_01_gp[] PROGMEM = {
 // Size: 20 bytes of program space.
 
 const byte es_rivendell_15_gp[] PROGMEM = {
-    0,   1, 14,  5,
-  101,  16, 36, 14,
-  165,  56, 68, 30,
-  242, 150,156, 99,
-  255, 150,156, 99};
+    0,  14, 93, 52,
+  101,  43, 83, 40,
+  165,  87,106, 47,
+  242, 216,223,154,
+  255, 223,230,158};
 
 
 // Gradient palette "rgi_15_gp", originally from
@@ -58,15 +56,15 @@ const byte es_rivendell_15_gp[] PROGMEM = {
 // Edited to be brighter
 
 const byte rgi_15_gp[] PROGMEM = {
-    0,   4,  1, 70,
-   31,  55,  1, 30,
+    0,  58, 52,162,
+   31, 123, 20, 75,
    63, 255,  4,  7,
-   95,  59,  2, 29,
-  127,  11,  3, 50,
-  159,  39,  8, 60,
-  191, 112, 19, 40,
-  223,  78, 11, 39,
-  255,  29,  8, 59};
+   95, 142, 26, 80,
+  127,  42, 23,135,
+  159,  88, 20,133,
+  191, 159, 35, 64,
+  223, 174, 41, 96,
+  255,  68, 23,130};
 
 
 // Gradient palette "retro2_16_gp", originally from
@@ -111,10 +109,10 @@ const byte es_pinksplash_08_gp[] PROGMEM = {
 // Size: 16 bytes of program space.
 
 const byte es_ocean_breeze_036_gp[] PROGMEM = {
-    0,   1,  6,  7,
-   89,   1, 99,111,
-  153, 144,209,255,
-  255,   0, 73, 82};
+    0,  27,131,152,
+   87,  23,158,176,
+  153, 173,221,255,
+  255,   6,103,116};
 
 
 // Gradient palette "departure_gp", originally from
@@ -123,9 +121,9 @@ const byte es_ocean_breeze_036_gp[] PROGMEM = {
 // Size: 88 bytes of program space.
 
 const byte departure_gp[] PROGMEM = {
-    0,   8,  3,  0,
-   42,  23,  7,  0,
-   63,  75, 38,  6,
+    0, 117, 51, 11,
+   42,  94, 41, 18,
+   64, 119, 63, 14,
    84, 169, 99, 38,
   106, 213,169,119,
   116, 255,255,255,
@@ -133,8 +131,8 @@ const byte departure_gp[] PROGMEM = {
   148,  22,255, 24,
   170,   0,255,  0,
   191,   0,136,  0,
-  212,   0, 55,  0,
-  255,   0, 55,  0};
+  212,  16,117, 16,
+  255,  10,113, 10};
 
 
 // Gradient palette "es_landscape_64_gp", originally from
@@ -143,9 +141,8 @@ const byte departure_gp[] PROGMEM = {
 // Size: 36 bytes of program space.
 
 const byte es_landscape_64_gp[] PROGMEM = {
-    0,   0,  0,  0,
-   37,   2, 25,  1,
-   76,  15,115,  5,
+    0,  21, 86, 22,
+   54,  15,115,  5,
   127,  79,213,  1,
   128, 126,211, 47,
   130, 188,209,247,
@@ -160,12 +157,11 @@ const byte es_landscape_64_gp[] PROGMEM = {
 // Size: 24 bytes of program space.
 
 const byte es_landscape_33_gp[] PROGMEM = {
-    0,   1,  5,  0,
-   19,  32, 23,  1,
+    0,  96, 47, 21,
    38, 161, 55,  1,
    63, 229,144,  1,
    66,  39,142, 74,
-  255,   1,  4,  1};
+  255,  34, 83, 34};
 
 
 // Gradient palette "rainbowsherbet_gp", originally from
@@ -203,14 +199,14 @@ const byte gr65_hult_gp[] PROGMEM = {
 // Size: 32 bytes of program space.
 
 const byte gr64_hult_gp[] PROGMEM = {
-    0,   1,124,109,
-   66,   1, 93, 79,
-  104,  52, 65,  1,
+    0,  15,143,128,
+   66,  11,127,109,
+  104,  88,105, 17,
   130, 115,127,  1,
-  150,  52, 65,  1,
-  201,   1, 86, 72,
-  239,   0, 55, 45,
-  255,   0, 55, 45};
+  150,  80, 98,  9,
+  201,  24,129,111,
+  239,   6,132,109,
+  255,   0,133,108};
 
 
 // Gradient palette "GMT_drywet_gp", originally from
@@ -219,13 +215,12 @@ const byte gr64_hult_gp[] PROGMEM = {
 // Size: 28 bytes of program space.
 
 const byte GMT_drywet_gp[] PROGMEM = {
-    0,  47, 30,  2,
+    0, 143, 96, 20,
    42, 213,147, 24,
    84, 103,219, 52,
   127,   3,219,207,
-  170,   1, 48,214,
-  212,   1,  1,111,
-  255,   1,  7, 33};
+  184,   1, 48,214,
+  255,   1, 28,147};
 
 
 // Gradient palette "ib15_gp", originally from
@@ -234,12 +229,12 @@ const byte GMT_drywet_gp[] PROGMEM = {
 // Size: 24 bytes of program space.
 
 const byte ib15_gp[] PROGMEM = {
-    0, 113, 91,147,
-   72, 157, 88, 78,
+    0, 138, 89,212,
+   72, 180,111,100,
    89, 208, 85, 33,
   107, 255, 29, 11,
-  141, 137, 31, 39,
-  255,  59, 33, 89};
+  141, 178, 46, 57,
+  255, 113, 55,179};
 
 
 // Gradient palette "Tertiary_01_gp", originally from
@@ -249,9 +244,9 @@ const byte ib15_gp[] PROGMEM = {
 
 const byte Tertiary_01_gp[] PROGMEM = {
     0,   0,  1,255,
-   63,   3, 68, 45,
+   63,  19,144,100,
   127,  23,255,  0,
-  191, 100, 68,  1,
+  191, 196,143, 28,
   255, 255,  1,  4};
 
 
@@ -261,18 +256,15 @@ const byte Tertiary_01_gp[] PROGMEM = {
 // Size: 52 bytes of program space.
 
 const byte lava_gp[] PROGMEM = {
-    0,   0,  0,  0,
-   46,  18,  0,  0,
-   96, 113,  0,  0,
-  108, 142,  3,  1,
-  119, 175, 17,  1,
-  146, 213, 44,  2,
-  174, 255, 82,  4,
-  188, 255,115,  4,
-  202, 255,156,  4,
-  218, 255,203,  4,
-  234, 255,255,  4,
-  244, 255,255, 71,
+    0, 179,  0,  0,
+   42, 175, 17,  1,
+   98, 213, 44,  2,
+  119, 255, 82,  4,
+  136, 255,115,  4,
+  157, 255,156,  4,
+  176, 255,203,  4,
+  195, 255,255,  4,
+  212, 255,255, 71,
   255, 255,255,255};
 
 
@@ -282,8 +274,7 @@ const byte lava_gp[] PROGMEM = {
 // Size: 28 bytes of program space.
 
 const byte fierce_ice_gp[] PROGMEM = {
-    0,   0,  0,  0,
-   59,   0,  9, 45,
+    0,   0,  9,133,
   119,   0, 38,255,
   149,   3,100,255,
   180,  23,199,255,
@@ -316,17 +307,17 @@ const byte Colorfull_gp[] PROGMEM = {
 // Size: 44 bytes of program space.
 
 const byte Pink_Purple_gp[] PROGMEM = {
-    0,  19,  2, 39,
-   25,  26,  4, 45,
-   51,  33,  6, 52,
-   76,  68, 62,125,
+    0,  90,  0,194,
+   25,  82,  0,153,
+   51, 134, 16,218,
+   76,  64, 49,196,
   102, 118,187,240,
   109, 163,215,247,
   114, 217,244,255,
   122, 159,149,221,
   149, 113, 78,188,
   183, 128, 57,155,
-  255, 146, 40,123};
+  255, 171, 23,139};
 
 
 // Gradient palette "Sunset_Real_gp", originally from
@@ -335,13 +326,13 @@ const byte Pink_Purple_gp[] PROGMEM = {
 // Size: 28 bytes of program space.
 
 const byte Sunset_Real_gp[] PROGMEM = {
-    0, 120,  0,  0,
+    0, 163,  0,  0,
    22, 179, 22,  0,
    51, 255,104,  0,
    85, 167, 22, 18,
-  135, 100,  0,103,
+  135, 171,  2,177,
   198,  16,  0,130,
-  255,   0,  0,160};
+  255,  66, 66,255};
 
 
 // Gradient palette "Sunset_Yellow_gp", originally from
@@ -350,7 +341,7 @@ const byte Sunset_Real_gp[] PROGMEM = {
 // Size: 44 bytes of program space.
 
 const byte Sunset_Yellow_gp[] PROGMEM = {
-    0,  10, 62,123,
+    0,   0, 95,204,
    36,  56,130,103,
    87, 153,225, 85,
   100, 199,217, 68,
@@ -372,18 +363,14 @@ const byte Beech_gp[] PROGMEM = {
     0, 255,252,214,
    12, 255,252,214,
    22, 255,252,214,
-   26, 190,191,115,
-   28, 137,141, 52,
-   28, 112,255,205,
+   31, 112,255,205,
    50,  51,246,214,
    71,  17,235,226,
    93,   2,193,199,
   120,   0,156,174,
-  133,   1,101,115,
-  136,   1, 59, 71,
-  136,   7,131,170,
-  208,   1, 90,151,
-  255,   0, 56,133};
+  139,   0,156,204,
+  208, 122,202,255,
+  255,   0,106,255};
 
 
 // Gradient palette "Another_Sunset_gp", originally from
@@ -392,14 +379,13 @@ const byte Beech_gp[] PROGMEM = {
 // Size: 32 bytes of program space.
 
 const byte Another_Sunset_gp[] PROGMEM = {
-    0, 110, 49, 11,
-   29,  55, 34, 10,
-   68,  22, 22,  9,
-   68, 239,124,  8,
+    0, 163, 63,  0,
+   68, 255,102,  0,
+   73, 239,124,  8,
    97, 220,156, 27,
   124, 203,193, 61,
-  178,  33, 53, 56,
-  255,   0,  1, 52};
+  178,  79,221,243,
+  255,   0,  3,194};
 
 
 
@@ -411,19 +397,17 @@ const byte Another_Sunset_gp[] PROGMEM = {
 // Size: 52 bytes of program space.
 
 const byte es_autumn_19_gp[] PROGMEM = {
-    0,  26,  1,  1,
-   51,  67,  4,  1,
-   84, 118, 14,  1,
-  104, 137,152, 52,
-  112, 113, 65,  1,
-  122, 133,149, 59,
-  124, 137,152, 52,
-  135, 113, 65,  1,
-  142, 139,154, 46,
-  163, 113, 13,  1,
-  204,  55,  3,  1,
-  249,  17,  1,  1,
-  255,  17,  1,  1};
+    0, 175, 97,  8,
+   51, 166, 35, 28,
+   79, 160, 35, 19,
+  104, 193,148, 51,
+  112, 171,105, 18,
+  124, 162,157, 17,
+  135, 158, 96, 16,
+  144, 181,139, 23,
+  169, 170, 32, 14,
+  204, 144, 19, 14,
+  255, 210, 63, 15};
 
 
 // Gradient palette "BlacK_Blue_Magenta_White_gp", originally from
@@ -432,9 +416,9 @@ const byte es_autumn_19_gp[] PROGMEM = {
 // Size: 28 bytes of program space.
 
 const byte BlacK_Blue_Magenta_White_gp[] PROGMEM = {
-    0,   0,  0,  0,
-   42,   0,  0, 45,
-   84,   0,  0,255,
+    0,   0, 10,153,
+   32, 166,  0,255,
+   74, 255,107,201,
   127,  42,  0,255,
   170, 255,  0,255,
   212, 255, 55,255,
@@ -447,8 +431,8 @@ const byte BlacK_Blue_Magenta_White_gp[] PROGMEM = {
 // Size: 20 bytes of program space.
 
 const byte BlacK_Magenta_Red_gp[] PROGMEM = {
-    0,   0,  0,  0,
-   63,  42,  0, 45,
+    0, 112,  0,153,
+   63, 145,  9,154,
   127, 255,  0,255,
   191, 255,  0, 45,
   255, 255,  0,  0};
@@ -460,8 +444,8 @@ const byte BlacK_Magenta_Red_gp[] PROGMEM = {
 // Size: 28 bytes of program space.
 
 const byte BlacK_Red_Magenta_Yellow_gp[] PROGMEM = {
-    0,   0,  0,  0,
-   42,  42,  0,  0,
+    0, 168,  0,  0,
+   41, 251,132, 35,
    84, 255,  0,  0,
   127, 255,  0, 45,
   170, 255,  0,255,
@@ -530,10 +514,10 @@ const byte Orangery_gp[] PROGMEM = {
     0, 255, 95, 23,
    30, 255, 82,  0,
    60, 223, 13,  8,
-   90, 144, 44,  2,
+   90, 254,120, 62,
   120, 255,110, 17,
   150, 255, 69,  0,
-  180, 158, 13, 11,
+  180, 194,  3,  0,
   210, 241, 82, 17,
   255, 213, 37,  4};
 
@@ -608,16 +592,14 @@ const byte temperature_gp[] PROGMEM = {
    70,   3,130,151,
    84,  23,156,149,
    99,  67,182,112,
-  113, 121,201, 52,
-  127, 142,203, 11,
-  141, 224,223,  1,
-  155, 252,187,  2,
-  170, 247,147,  1,
-  184, 237, 87,  1,
-  198, 229, 43,  1,
-  226, 171,  2,  2,
-  240,  80,  3,  3,
-  255,  80,  3,  3};
+  119, 121,201, 52,
+  134, 142,203, 11,
+  149, 224,223,  1,
+  167, 252,187,  2,
+  186, 247,147,  1,
+  202, 237, 87,  1,
+  222, 229, 43,  1,
+  255, 230,  0,  0};
 
   const byte Aurora2_gp[] PROGMEM = {
       0,  17, 177,  13,    //Greenish
@@ -633,9 +615,9 @@ const byte temperature_gp[] PROGMEM = {
 // Size: 12 bytes of program space.
 
 const byte retro_clown_gp[] PROGMEM = {
-    0, 227,101,  3,
-  117, 194, 18, 19,
-  255,  92,  8,192};
+    0, 255,111,  0,
+  117, 230, 30, 30,
+  255, 115,  0,255};
 
 // Gradient palette "bhw1_04_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw1/tn/bhw1_04.png.index.html
@@ -645,9 +627,9 @@ const byte retro_clown_gp[] PROGMEM = {
 const byte candy_gp[] PROGMEM = {
     0, 229,227,  1,
    15, 227,101,  3,
-  142,  40,  1, 80,
-  198,  17,  1, 79,
-  255,   0,  0, 45};
+  142, 128,  8,247,
+  198,  11, 90,193,
+  255,   0,  0,204};
 
 // Gradient palette "bhw1_05_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw1/tn/bhw1_05.png.index.html
@@ -656,14 +638,14 @@ const byte candy_gp[] PROGMEM = {
 
 const byte toxy_reaf_gp[] PROGMEM = {
     0,   1,221, 53,
-  255,  73,  3,178};
+  255, 102,  0,255};
 
 // Gradient palette "bhw1_06_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw1/tn/bhw1_06.png.index.html
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 16 bytes of program space.
 
-const byte  fairy_reaf_gp[] PROGMEM = {
+const byte fairy_reaf_gp[] PROGMEM = {
     0, 184,  1,128,
   160,   1,193,182,
   219, 153,227,190,
@@ -675,15 +657,11 @@ const byte  fairy_reaf_gp[] PROGMEM = {
 // Size: 36 bytes of program space.
 
 const byte semi_blue_gp[] PROGMEM = {
-    0,   0,  0,  0,
-   12,   1,  1,  3,
-   53,   8,  1, 22,
-   80,   4,  6, 89,
-  119,   2, 25,216,
-  145,   7, 10, 99,
-  186,  15,  2, 31,
-  233,   2,  1,  5,
-  255,   0,  0,  0};
+    0,   0, 64,214,
+   65,   0,157,255,
+  126,   2, 25,216,
+  186,  20,134,255,
+  255,   0, 38,189};
 
 // Gradient palette "bhw1_three_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw1/tn/bhw1_three.png.index.html
@@ -692,12 +670,11 @@ const byte semi_blue_gp[] PROGMEM = {
 
 const byte pink_candy_gp[] PROGMEM = {
     0, 255,255,255,
-   45,   7, 12,255,
-  112, 227,  1,127,
-  112, 227,  1,127,
-  140, 255,255,255,
-  155, 227,  1,127,
-  196,  45,  1, 99,
+   45, 201,  5,255,
+   98, 227,  1,127,
+  131, 254,154,236,
+  160, 227,  1,127,
+  196, 181, 33,192,
   255, 255,255,255};
 
 // Gradient palette "bhw1_w00t_gp", originally from
@@ -706,10 +683,10 @@ const byte pink_candy_gp[] PROGMEM = {
 // Size: 16 bytes of program space.
 
 const byte red_reaf_gp[] PROGMEM = {
-    0,   3, 13, 43,
+    0,   0, 43,173,
   104,  78,141,240,
   188, 255,  0,  0,
-  255,  28,  1,  1};
+  255, 168,  0,  0};
 
 
 // Gradient palette "bhw2_23_gp", originally from
@@ -719,13 +696,13 @@ const byte red_reaf_gp[] PROGMEM = {
 // Size: 28 bytes of program space.
 
 const byte aqua_flash_gp[] PROGMEM = {
-    0,   0,  0,  0,
+    0,   0,139,199,
    66,  57,227,233,
    96, 255,255,  8,
   124, 255,255,255,
   153, 255,255,  8,
   188,  57,227,233,
-  255,   0,  0,  0};
+  255,   0,176,235};
 
 // Gradient palette "bhw2_xc_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw2/tn/bhw2_xc.png.index.html
@@ -734,13 +711,12 @@ const byte aqua_flash_gp[] PROGMEM = {
 // Size: 28 bytes of program space.
 
 const byte yelblu_hot_gp[] PROGMEM = {
-    0,   4,  2,  9,
-   58,  16,  0, 47,
-  122,  24,  0, 16,
-  158, 144,  9,  1,
-  183, 179, 45,  1,
-  219, 220,114,  2,
-  255, 234,237,  1};
+    0,  56,  0,199,
+   58, 122, 74,217,
+  158, 190, 23, 14,
+  183, 218, 71, 22,
+  219, 245,139, 25,
+  255, 251,255,  0};
 
  // Gradient palette "bhw2_45_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw2/tn/bhw2_45.png.index.html
@@ -748,12 +724,12 @@ const byte yelblu_hot_gp[] PROGMEM = {
 // Size: 24 bytes of program space.
 
 const byte lite_light_gp[] PROGMEM = {
-    0,   0,  0,  0,
-    9,   1,  1,  1,
-   40,   5,  5,  6,
-   66,   5,  5,  6,
-  101,  10,  1, 12,
-  255,   0,  0,  0};
+    0, 176,176,176,
+   25, 222,222,222,
+   68, 199,236,255,
+  125, 255,251,229,
+  202, 248,229,255,
+  255, 176,176,176};
 
 // Gradient palette "bhw2_22_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw2/tn/bhw2_22.png.index.html
@@ -762,11 +738,11 @@ const byte lite_light_gp[] PROGMEM = {
 // Size: 20 bytes of program space.
 
 const byte red_flash_gp[] PROGMEM = {
-    0,   0,  0,  0,
-   99, 227,  1,  1,
-  130, 249,199, 95,
-  155, 227,  1,  1,
-  255,   0,  0,  0};
+    0, 148,  0,  0,
+   70, 227,  1,  1,
+  126, 249,199, 95,
+  186, 227,  1,  1,
+  255, 153,  0,  0};
 
 // Gradient palette "bhw3_40_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw3/tn/bhw3_40.png.index.html
@@ -774,14 +750,14 @@ const byte red_flash_gp[] PROGMEM = {
 // Size: 32 bytes of program space.
 
 const byte blink_red_gp[] PROGMEM = {
-    0,   1,  1,  1,
-   43,   4,  1, 11,
-   76,  10,  1,  3,
+    0, 168,  0,115,
+   43, 130, 77,255,
+   76, 151, 53, 74,
   109, 161,  4, 29,
   127, 255, 86,123,
   165, 125, 16,160,
   204,  35, 13,223,
-  255,  18,  2, 18};
+  255, 168,  0,168};
 
 // Gradient palette "bhw3_52_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw3/tn/bhw3_52.png.index.html
@@ -790,13 +766,13 @@ const byte blink_red_gp[] PROGMEM = {
 // Size: 28 bytes of program space.
 
 const byte red_shift_gp[] PROGMEM = {
-    0,  31,  1, 27,
-   45,  34,  1, 16,
-   99, 137,  5,  9,
+    0, 173,  0,110,
+   45, 189,  0, 82,
+   99, 199, 35, 41,
   132, 213,128, 10,
   175, 199, 22,  1,
   201, 199,  9,  6,
-  255,   1,  0,  1};
+  255, 184, 89,  0};
 
 // Gradient palette "bhw4_097_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw4/tn/bhw4_097.png.index.html
@@ -810,12 +786,12 @@ const byte red_tide_gp[] PROGMEM = {
    43, 234, 88, 11,
    58, 234,176, 51,
    84, 229, 28,  1,
-  114, 113, 12,  1,
+  114, 225, 63, 45,
   140, 255,225, 44,
-  168, 113, 12,  1,
+  168, 253, 50, 28,
   196, 244,209, 88,
   216, 255, 28,  1,
-  255,  53,  1,  1};
+  255, 163,  0,  0};
 
 // Gradient palette "bhw4_017_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw4/tn/bhw4_017.png.index.html
@@ -823,16 +799,16 @@ const byte red_tide_gp[] PROGMEM = {
 // Size: 40 bytes of program space.
 
 const byte candy2_gp[] PROGMEM = {
-    0,  39, 33, 34,
-   25,   4,  6, 15,
-   48,  49, 29, 22,
+    0, 254, 42, 77,
+   25, 185, 70, 70,
+   48, 255, 98, 41,
    73, 224,173,  1,
-   89, 177, 35,  5,
-  130,   4,  6, 15,
+   89, 216, 52, 19,
+  130, 255,169, 71,
   163, 255,114,  6,
   186, 224,173,  1,
-  211,  39, 33, 34,
-  255,   1,  1,  1};
+  211, 254, 88,115,
+  255, 179,  0,  0};
 
 // Single array of defined cpt-city color palettes.
 // This will let us programmatically choose one based on

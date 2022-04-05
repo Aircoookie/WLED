@@ -1,0 +1,355 @@
+<html>
+    <head>
+        <title>Gradient Editor</title>
+        <style>
+            body {
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+                padding: 0 2rem;
+                margin: 0;
+                overflow: hidden;
+                user-select: none;
+            }
+            #grad {
+                height: 100px;
+                position: relative;
+            }
+            #grad span {
+                display: block;
+                width: calc(1rem - 2px);
+                height: calc(1rem - 2px);
+                position: absolute;
+                bottom: -.5rem;
+                border: 1px solid #fff;
+                border-radius: .5rem;
+                cursor: ew-resize;
+                filter: drop-shadow(0px 0px 2px #555);
+                z-index: 999;
+            }
+            #grad span.ghost {
+                opacity: .5;
+                pointer-events: none;
+            }
+            #grad span.boundary {
+                cursor: unset;
+            }
+            #grad span.selected {
+                border-color: rgb(0, 153, 255);
+                border-width: 2px;
+                width: calc(1rem - 4px);
+                height: calc(1rem - 4px);
+            }
+            #grads {
+                flex: 1;
+            }
+            #points {
+                flex: 1;
+            }
+            #color {
+                width: 2rem;
+                position: relative;
+            }
+            #code {
+                flex: 1;
+            }
+            #buttons {
+                display: flex;
+            }
+            #buttons button {
+                flex: 1;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="grad"></div>
+        <input id="color" type="color" value="#000" oninput="colorSelect()">
+        <select id="grads" size="20" oninput="gradSelect()"></select>
+        <div id="buttons">
+            <button onclick="readCode()">Read</button>
+            <button onclick="writeCode()">Write</button>
+        </div>
+        <textarea id="code"></textarea>
+        <script>
+            const p1 = /const\s+byte\s+([a-zA-Z0-9_]+)\s*\[\s*\]\s*PROGMEM\s*=\s*{\s*((?:\s*[0-9]+\s*,?)+)\s*};/gm;
+            const p2 = /((?:\s*[0-9]+\s*,??\s*){4}),?/gm;
+
+            const gd = document.querySelector('#grad');
+            const gs = document.querySelector('#grads');
+            const cs = document.querySelector('#color');
+            const ta = document.querySelector('#code');
+
+            var grads = [];
+            var grad = undefined;
+            var point = undefined;
+
+            var drag = false;
+            var points = [];
+            var color = undefined;
+
+            function getGhost() {
+                return gd.querySelector('span.ghost');
+            }
+
+            function removeGhost() {
+                var span = getGhost();
+                if (span) {
+                    span.remove();
+                }
+            }
+
+            function addGhost() {
+                removeGhost();
+                gd.insertAdjacentHTML('beforeend', `<span class="ghost"></span>`);
+            }
+
+            function getPos(e) {
+                var rect = gd.getBoundingClientRect();
+                return (e.pageX - rect.x) / rect.width;
+            }
+
+            function updateGhost(e) {
+                var span = getGhost();
+                if (span) {
+                    var pos = getPos(e);
+                    var percent = pos * 100;
+                    span.style.left = `calc(${percent}% - .5rem)`;
+                    var col = getColorAt(pos);
+                    span.style.background = `rgba(${col.r}, ${col.g}, ${col.b}, 1)`;
+                }
+            }
+
+            function componentToHex(c) {
+                var hex = c.toString(16);
+                return hex.length == 1 ? "0" + hex : hex;
+            }
+
+            function rgbToHex(r, g, b) {
+                return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+            }
+
+            function hexToRgb(hex) {
+                var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                return result ? {
+                    r: parseInt(result[1], 16),
+                    g: parseInt(result[2], 16),
+                    b: parseInt(result[3], 16)
+                } : null;
+            }
+
+            function parse() {
+                grads = [];
+                var m = ta.value.matchAll(p1);
+                for (const match of m) {
+                    var pts = [...match[2].matchAll(p2)].map(m => m[1].split(',').map(s => parseInt(s.trim()))).map(a => ({ pos: a[0], color: {r: a[1], g: a[2], b: a[3]}}));
+                    var grad = {
+                        name: match[1],
+                        points: pts
+                    };
+                    grads.push(grad);
+                }
+            }
+
+            function fillGradsSelect() {
+                gs.querySelectorAll('option').forEach(o => o.remove());
+                grads.forEach((g, i) => gs.insertAdjacentHTML('beforeend', `<option value="${i}">${g.name}</option>`));
+            }
+
+            function selectPoint(el) {
+                gd.querySelectorAll('span').forEach(el => el.classList.remove('selected'));
+                el.classList.add('selected');
+                var idx = parseInt(el.dataset.idx);
+                point = grad.points[idx];
+                var percent = point.pos / 255 * 100;
+                cs.style.left = `calc(${percent}% - 1rem)`;
+                cs.value = rgbToHex(point.color.r, point.color.g, point.color.b);
+            }
+
+            function generateGradient() {
+                gd.querySelectorAll('span').forEach(o => o.remove());
+
+                var g = grad.points.map((p, i) => {
+                    var percent = p.pos / 255 * 100;
+
+                    gd.insertAdjacentHTML('beforeend', `<span data-idx="${i}"></span>`);
+
+                    var span = gd.querySelector(`span[data-idx="${i}"]`);
+                    span.style.left = `calc(${percent}% - .5rem)`;
+                    span.style.background = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, 1)`;
+
+                    if (i > 0 && i < grad.points.length - 1) {
+                        span.addEventListener('mousedown', e => {
+                            drag = true;
+                            points = [];
+                            var skip = parseInt(span.dataset.idx);
+                            for (var i in grad.points) {
+                                if (i != skip) {
+                                    points.push(grad.points[i]);
+                                } else {
+                                    color = grad.points[i].color;
+                                }
+                            }
+                        });
+
+                        span.addEventListener('contextmenu', e => {
+                            e.preventDefault();
+                            e.target.remove();
+                            var pts = [];
+                            var skip = parseInt(span.dataset.idx);
+                            for (var i in grad.points) {
+                                if (i != skip) {
+                                    pts.push(grad.points[i]);
+                                }
+                            }
+                            grad.points = pts;
+                            generateGradient();
+                            return false;
+                        });
+                    } else {
+                        span.addEventListener('contextmenu', e => {
+                            e.preventDefault();
+                            return false;
+                        });
+
+                        span.classList.add('boundary');
+                    }
+
+                    span.addEventListener('mouseup', e => selectPoint(e.target));
+
+                    return `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, 1) ${percent}%`
+                }).join(', ');
+
+                gd.style.background = `linear-gradient(90deg, ${g})`;
+            }
+
+            function getColorAt(pos) {
+                for (var i in grad.points) {
+                    var p = grad.points[i];
+                    var ppos = p.pos / 255;
+                    if (ppos > pos) {
+                        var prevp = grad.points[i - 1];
+                        var prevppos = prevp.pos / 255;
+                        var f = (pos - prevppos) / (ppos - prevppos);
+                        return {
+                            r: Math.round(prevp.color.r + (p.color.r - prevp.color.r) * f),
+                            g: Math.round(prevp.color.g + (p.color.g - prevp.color.g) * f),
+                            b: Math.round(prevp.color.b + (p.color.b - prevp.color.b) * f)
+                        };
+                    }
+                }
+                return { r: 0, g: 0, b: 0 };
+            }
+
+            function readCode() {
+                parse();
+                fillGradsSelect();
+            }
+
+            function writeCode() {
+                ta.value = ta.value.replaceAll(p1, (match, name, values) => {
+                    var grad = grads.find(el => el.name == name);
+                    var v;
+                    if (grad != undefined) {
+                        v = grad.points.map(p => [
+                            p.pos.toFixed(0).padStart(5, ' '),
+                            p.color.r.toFixed(0).padStart(4, ' '),
+                            p.color.g.toFixed(0).padStart(3, ' '),
+                            p.color.b.toFixed(0).padStart(3, ' ')
+                        ].join(',')).join(',\n')
+                    } else {
+                        v = values;
+                    }
+                    console.log()
+                    return `const byte ${name}[] PROGMEM = {\n${v}};`;
+                });
+            }
+
+            function gradSelect() {
+                grad = grads[gs.value];
+                generateGradient();
+                point = undefined;
+            }
+
+            function colorSelect() {
+                if (point != undefined) {
+                    point.color = hexToRgb(cs.value);
+                    generateGradient();
+                }
+            }
+
+            document.addEventListener('mousemove', e => {
+                if (drag) {
+                    var pos = getPos(e);
+                    var pts = [];
+                    var added = false;
+                    for (var i in points) {
+                        var p = points[i];
+                        var ppos = p.pos / 255;
+                        if (ppos > pos && !added) {
+                            added = true;
+                            pts.push({
+                                pos: Math.round(pos * 255),
+                                color: color
+                            });
+                        }
+                        pts.push(p);
+                    }
+                    grad.points = pts;
+                    generateGradient();
+                }
+            });
+
+            document.addEventListener('mouseup', e => {
+                if (drag) {
+                    drag = false;
+                }
+            });
+
+            gd.addEventListener('mouseover', e => {
+                if (e.target == gd && grad != undefined && !drag) {
+                    addGhost();
+                    updateGhost(e);
+                }
+            });
+
+            gd.addEventListener('mouseout', e => {
+                if (e.target == gd) {
+                    removeGhost();
+                }
+            });
+
+            gd.addEventListener('mousemove', e => {
+                updateGhost(e);
+            });
+
+            gd.addEventListener('mouseup', e => {
+                var span = getGhost();
+                if (span) {
+                    var pos = getPos(e);
+                    var col = getColorAt(pos);
+                    var pts = [];
+                    var added = false;
+                    var idx;
+                    for (var i in grad.points) {
+                        var p = grad.points[i];
+                        var ppos = p.pos / 255;
+                        if (ppos > pos && !added) {
+                            added = true;
+                            pts.push({
+                                pos: Math.round(pos * 255),
+                                color: col
+                            });
+                            idx = i;
+                        }
+                        pts.push(p);
+                    }
+                    grad.points = pts;
+                    generateGradient();
+                    selectPoint(gd.querySelector(`span[data-idx="${idx}"]`));
+                    addGhost();
+                    updateGhost(e);
+                }
+            });
+        </script>
+    </body>
+</html>
