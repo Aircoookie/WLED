@@ -35,7 +35,7 @@
 	    }
 		function checkNum(o) {
 			// numeric keys only
-			if ([8,9,13,37,39,46,48,49,50,51,52,53,54,55,56,57,127].includes(event.keyCode)) return true;
+			if ([8,9,13,37,39,46,48,49,50,51,52,53,54,55,56,57,96,97,98,99,100,101,102,103,104,105,127].includes(event.keyCode)) return true;
 			event.preventDefault();
 			return false;
 		}
@@ -55,7 +55,7 @@
 		<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 		</div>
 		<h2>Security & Update setup</h2>
-		Settings PIN: <input type="password" name="PIN" size="4" maxlength="4" minlength="4" onkeydown="checkNum(this)"><br>
+		Settings PIN: <input type="password" name="PIN" size="4" maxlength="4" minlength="4" pattern="[0-9]*" inputmode="numeric" onkeydown="checkNum(this)"><br>
 		Lock wireless (OTA) software update: <input type="checkbox" name="NO"><br>
 		Passphrase: <input type="password" name="OP" maxlength="32"><br>
 		To enable OTA, for security reasons you need to also enter the correct password!<br>
