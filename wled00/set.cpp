@@ -558,7 +558,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   //segment select (sets main segment)
   pos = req.indexOf(F("SM="));
-  if (pos > 0) {
+  if (pos > 0 && !realtimeMode) {
     strip.setMainSegmentId(getNumVal(&req, pos));
   }
 
