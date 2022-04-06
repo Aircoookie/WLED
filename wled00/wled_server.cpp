@@ -74,10 +74,10 @@ void initServer()
     serveSettings(request);
   });
   
-  server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){
-    if(!handleFileRead(request, "/favicon.ico"))
+  server.on("/favicon.svg", HTTP_GET, [](AsyncWebServerRequest *request){
+    if(!handleFileRead(request, "/favicon.svg"))
     {
-      request->send_P(200, "image/x-icon", favicon, 156);
+      request->send_P(200, "image/svg+xml", favicon, favicon_length);
     }
   });
   

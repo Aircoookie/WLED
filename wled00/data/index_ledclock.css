@@ -29,7 +29,8 @@
 }
 
 #lc-clock hr {
-    border-color: #666;
+    border: 1px solid var(--c-3);
+    transition: border-color .5s;
 }
 
 #lc-modes {
@@ -123,13 +124,14 @@
 }
 
 #lc-mode-timer select {
-	background: #333;
-	color: #fff;
+	background: var(--c-3);
+	color: var(--c-f);
 	font-family: Verdana, sans-serif;
-	border: 0.5ch solid #333;
+	border: 0.5ch solid var(--c-3);
     appearance: auto;
     padding: unset !important;
     font-size: 1.1rem;
+    transition: background-color .5s, opacity .4s, border-color .5s;
 }
 
 .fader {
