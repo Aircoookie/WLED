@@ -1686,7 +1686,7 @@ ${makePlSel(true)}
 		}
 	}
 
-	return `<input type="text" class="ptxt noslide" id="p${i}txt" autocomplete="off" maxlength=32 value="${(i>0)?pName(i):""}" placeholder="Enter name..."/>
+	return `<input type="text" class="ptxt noslide ${i==0?'show':''}" id="p${i}txt" autocomplete="off" maxlength=32 value="${(i>0)?pName(i):""}" placeholder="Enter name..."/>
 <div class="c">Quick load label: <input type="text" class="stxt noslide" maxlength=2 value="${qlName(i)}" id="p${i}ql" autocomplete="off"/></div>
 <div class="h">(leave empty for no Quick load button)</div>
 <div ${pl&&i==0?"style='display:none'":""}>
@@ -1718,7 +1718,8 @@ function makePUtil()
 {
 	let p = gId('putil');
 	p.classList.remove('staybot');
-	p.innerHTML = `<div class="pres"><div class="segin expanded">${makeP(0)}</div></div>`;
+	p.classList.add('pres');
+	p.innerHTML = `<div class="presin expanded">${makeP(0)}</div>`;
 	p.scrollIntoView({
 		behavior: 'smooth',
 		block: 'center'
@@ -1772,8 +1773,10 @@ function makePlUtil()
 function resetPUtil()
 {
 	gId('psFind').classList.add('staytop');
-	gId('putil').classList.add('staybot');
-	gId('putil').innerHTML = `<button class="btn btn-s" onclick="makePUtil()" style="float:left;"><i class="icons btn-icon">&#xe18a;</i>preset</button>`
+	let p = gId('putil');
+	p.classList.add('staybot');
+	p.classList.remove('pres');
+	p.innerHTML = `<button class="btn btn-s" onclick="makePUtil()" style="float:left;"><i class="icons btn-icon">&#xe18a;</i>preset</button>`
 	+ `<button class="btn btn-s" onclick="makePlUtil()" style="float:right;"><i class="icons btn-icon">&#xe18a;<!--&#xe139;--></i>playlist</button>`;
 }
 
@@ -1788,14 +1791,12 @@ function tglSegn(s)
 {
 	let t = gId(s<100?`seg${s}t`:`p${s-100}txt`);
 	if (t) t.classList.toggle("show");
-	//if (t) t.style.display = (getComputedStyle(t).display === "none") ? "inline":"none";
 	event.preventDefault();
 	event.stopPropagation();
 }
 
 function selSegAll(o)
 {
-	//o.checked = true;
 	var obj = {"seg":[]};
 	for (let i=0; i<=lSeg; i++) obj.seg.push({"id":i,"sel":o.checked});
 	requestJson(obj);
