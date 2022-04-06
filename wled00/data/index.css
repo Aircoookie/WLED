@@ -436,10 +436,20 @@ button {
 	overflow: auto;
 }
 
+.close {
+	position: sticky;
+	top: 0;
+	float: right;
+}
+
 #info, #nodes {
 	z-index: 4;
 }
-
+/*
+#nodes {
+	height: calc(100% - var(--th) - 15px);
+}
+*/
 #rover {
 	z-index: 3;
 }
@@ -474,7 +484,12 @@ button {
 #kv, #kn {
 	display: inline-block;
 }
-
+/*
+#kn {
+	height: 90%;
+	overflow: scroll;
+}
+*/
 #info table, #nodes table {
 	table-layout: fixed;
 	width: 100%;
@@ -491,7 +506,7 @@ button {
 	margin: 0;
 }
 #info div, #nodes div {
-	width: 490px;
+	max-width: 490px;
 	margin: 0 auto;
 }
 
@@ -703,7 +718,11 @@ input[type=range]::-moz-range-thumb {
 #putil .btn-s {
 	width: 135px;
 }
-
+/*
+#nodes .infobtn {
+	width: 45%;
+}
+*/
 #segutil .btn-s, #segutil2 .btn-s, #putil .btn-s {
 	background-color: var(--c-3);
 	border: 1px solid var(--c-3);
@@ -1010,6 +1029,10 @@ textarea {
 	height: 10px;
 	border: solid var(--c-f);
 	border-width: 0 3px 3px 0;
+}
+
+.rot45,
+.check .checkmark:after {
 	-webkit-transform: rotate(45deg);
 	-ms-transform: rotate(45deg);
 	transform: rotate(45deg);
@@ -1040,14 +1063,14 @@ textarea {
 	/*position: relative;*/
 	/*display: block;*/
 	/*margin: 0 0 10px;*/
-	/*background-color: var(--c-2);*/
+	background-color: var(--c-2);
 	color: var(--c-f);
 	border: 0px solid var(--c-f);
 	text-align: left;
 	transition: background-color 0.5s;
   	/*filter: brightness(1);*/
 	font-size: 19px;
-	/*border-radius: 21px;*/
+	border-radius: 21px;
 	/*min-height: 40px;*/
 	min-width: 280px;
 }
