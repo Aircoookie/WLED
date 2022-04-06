@@ -74,7 +74,7 @@ const byte rgi_15_gp[] PROGMEM = {
 
 const byte retro2_16_gp[] PROGMEM = {
     0, 188,135,  1,
-  255,  46,  7,  1};
+  255, 133, 53,  0};
 
 
 // Gradient palette "Analogous_1_gp", originally from
@@ -477,38 +477,38 @@ const byte Orange_Teal_gp[] PROGMEM = {
 //Custom palette by Aircoookie
 
 const byte Tiamat_gp[] PROGMEM = {
-    0,   1,  2, 14, //gc
-   33,   2,  5, 35, //gc from 47, 61,126
-  100,  13,135, 92, //gc from 88,242,247
-  120,  43,255,193, //gc from 135,255,253
-  140, 247,  7,249, //gc from 252, 69,253
-  160, 193, 17,208, //gc from 231, 96,237
-  180,  39,255,154, //gc from 130, 77,213
-  200,   4,213,236, //gc from 57,122,248
-  220,  39,252,135, //gc from 177,254,255
-  240, 193,213,253, //gc from 203,239,253
+    0,   0, 12,143,
+   33,  60, 69,175,
+  100,  13,135, 92,
+  120,  43,255,193,
+  140, 247,  7,249,
+  160, 193, 17,208,
+  180,  39,255,154,
+  200,   4,213,236,
+  220,  39,252,135,
+  240, 193,213,253,
   255, 255,249,255};
   
 //Custom palette by Aircoookie
 
 const byte April_Night_gp[] PROGMEM = {
-    0,   1,  5, 45, //deep blue
-   10,   1,  5, 45,
-   25,   5,169,175, //light blue
-   40,   1,  5, 45,
-   61,   1,  5, 45,
-   76,  45,175, 31, //green
-   91,   1,  5, 45,
-  112,   1,  5, 45,
-  127, 249,150,  5, //yellow
-  143,   1,  5, 45,
-  162,   1,  5, 45,
-  178, 255, 92,  0, //pastel orange
-  193,   1,  5, 45,
-  214,   1,  5, 45,
-  229, 223, 45, 72, //pink
-  244,   1,  5, 45,
-  255,   1,  5, 45};
+    0,   0, 13,153,
+   10,   0, 16,194,
+   25,   5,169,175,
+   40,   0, 80,184,
+   61,   2, 97,  0,
+   76,  45,175, 31,
+   91,  25,104, 24,
+  112, 158,100,  0,
+  127, 249,150,  5,
+  143, 157, 92,  1,
+  162, 188, 76,  1,
+  178, 255, 92,  0,
+  193, 179, 71,  0,
+  214, 163,  0, 41,
+  229, 223, 45, 72,
+  244, 138,  0, 41,
+  255,  92,  0, 63};
 
 const byte Orangery_gp[] PROGMEM = {
     0, 255, 95, 23,
@@ -523,13 +523,13 @@ const byte Orangery_gp[] PROGMEM = {
 
 //inspired by Mark Kriegsman https://gist.github.com/kriegsman/756ea6dcae8e30845b5a
 const byte C9_gp[] PROGMEM = {
-    0, 184,  4,  0, //red
+    0, 184,  4,  0,
    60, 184,  4,  0,
-   65, 144, 44,  2, //amber
+   65, 144, 44,  2,
   125, 144, 44,  2,
-  130,   4, 96,  2, //green
+  130,   4, 96,  2,
   190,   4, 96,  2,
-  195,   7,  7, 88, //blue
+  195,   7,  7, 88,
   255,   7,  7, 88};
 
 const byte Sakura_gp[] PROGMEM = {
@@ -540,43 +540,44 @@ const byte Sakura_gp[] PROGMEM = {
   255, 223, 13, 17};
 
 const byte Aurora_gp[] PROGMEM = {
-    0,   1,  5, 45, //deep blue
-   64,   0,200, 23,
-  128,   0,255,  0, //green
-  170,   0,243, 45,
-  200,   0,135,  7,
-  255,   1,  5, 45};//deep blue
+    0,   0, 99,204,
+   54,   0,200, 23,
+   92,   0,255,157,
+  126,  56,252,255,
+  167,   0,245,139,
+  200,   0,184,  9,
+  255,   0, 91,209};//deep blue
 
 const byte Atlantica_gp[] PROGMEM = {
-    0,   0, 28,112, //#001C70
-   50,  32, 96,255, //#2060FF
+    0,   0, 46,184,
+   50,  32, 96,255,
   100,   0,243, 45,
-  150,  12, 95, 82, //#0C5F52
-  200,  25,190, 95, //#19BE5F
+  150,  24,140,122,
+  200,  25,190, 95,
   255,  40,170, 80};//#28AA50
 
   const byte C9_2_gp[] PROGMEM = {
-    0,   6, 126,   2, //green
-   45,   6, 126,   2,
-   45,   4,  30, 114, //blue
-   90,   4,  30, 114,
-   90, 255,   5,   0, //red
-  135, 255,   5,   0,
-  135, 196,  57,   2, //amber
-  180, 196,  57,   2,
-  180, 137,  85,   2, //yellow
-  255, 137,  85,   2};
+    0,   6,126,  2,
+   45,   6,126,  2,
+   45,   4, 30,114,
+   90,   4, 30,114,
+   90, 255,  5,  0,
+  135, 255,  5,  0,
+  135, 196, 57,  2,
+  180, 196, 57,  2,
+  180, 137, 85,  2,
+  255, 137, 85,  2};
 
   //C9, but brighter and with a less purple blue
   const byte C9_new_gp[] PROGMEM = {
-    0, 255,   5,   0, //red
-   60, 255,   5,   0,
-   60, 196,  57,   2, //amber (start 61?)
-  120, 196,  57,   2, 
-  120,   6, 126,   2, //green (start 126?)
-  180,   6, 126,   2,
-  180,   4,  30, 114, //blue (start 191?)
-  255,   4,  30, 114};
+    0, 255,  5,  0,
+   60, 255,  5,  0,
+   60, 196, 57,  2,
+  120, 196, 57,  2,
+  120,   6,126,  2,
+  180,   6,126,  2,
+  180,   4, 30,114,
+  255,   4, 30,114};
   
 // Gradient palette "temperature_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/arendal/tn/temperature.png.index.html
@@ -602,12 +603,11 @@ const byte temperature_gp[] PROGMEM = {
   255, 230,  0,  0};
 
   const byte Aurora2_gp[] PROGMEM = {
-      0,  17, 177,  13,    //Greenish
-     64, 121, 242,   5,    //Greenish
-    128,  25, 173, 121,    //Turquoise
-    192, 250,  77, 127,    //Pink
-    255, 171, 101, 221     //Purple
-  };
+    0,  17,177, 13,
+   64, 121,242,  5,
+  128,  25,173,121,
+  192, 250, 77,127,
+  255, 171,101,221};
 
   // Gradient palette "bhw1_01_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw1/tn/bhw1_01.png.index.html
@@ -725,10 +725,11 @@ const byte yelblu_hot_gp[] PROGMEM = {
 
 const byte lite_light_gp[] PROGMEM = {
     0, 176,176,176,
-   25, 222,222,222,
-   68, 199,236,255,
-  125, 255,251,229,
-  202, 248,229,255,
+   26, 222,222,222,
+   70,  22,176,254,
+  126, 255,229, 82,
+  181, 225,144,254,
+  227, 222,222,222,
   255, 176,176,176};
 
 // Gradient palette "bhw2_22_gp", originally from
@@ -874,5 +875,137 @@ const byte* const gGradientPalettes[] PROGMEM = {
   red_tide_gp,                  //69-56 Red Tide
   candy2_gp                     //70-57 Candy2
 };
+
+// Palettes ported from FastLED
+// These are not included in the above list,
+// but are loaded manually from code
+
+#define LC_SERIALIZE_FL_PAL(pal) { byte tcp[72]; memcpy_P(tcp, pal, 72); setPaletteColors(curPalette, tcp); }
+#define LC_LOAD_FL_PAL(pal) { byte tcp[72]; memcpy_P(tcp, pal, 72); targetPalette.loadDynamicGradientPalette(tcp); }
+
+const byte flCloudColors_gp[] PROGMEM = {
+    0,   0,  0,255,
+   17,  52, 52,234,
+   34,  88,182,254,
+   99,   1, 52,254,
+  123,   0,  0,255,
+  152,   0,129,209,
+  170, 135,206,235,
+  187, 135,206,235,
+  204, 173,216,230,
+  221, 255,255,255,
+  238, 173,216,230,
+  255, 135,206,235};
+
+const byte flLavaColors_gp[] PROGMEM = {
+    0, 219,  0,  0,
+   18, 255,  0,  0,
+   34, 255,162,  0,
+   51, 255,255,255,
+   66, 255,162,  0,
+   82, 255,  0,  0,
+  124, 139,  0,  0,
+  164, 255,  0,  0,
+  182, 255,165,  0,
+  200, 255,255,255,
+  219, 255,165,  0,
+  237, 255,  0,  0,
+  255, 139,  0,  0};
+
+const byte flOceanColors_gp[] PROGMEM = {
+    0,   9,  9,211,
+   17,   6,  6,193,
+   34,  39, 39,236,
+   51,   0,  0,173,
+   68,   0,  0,194,
+   85,   0,  0,205,
+  102,  46,139, 87,
+  119,   0,128,128,
+  136,  95,158,160,
+  153,   0,  0,255,
+  170,   0,139,139,
+  187, 100,149,237,
+  204, 127,255,212,
+  221,  46,139, 87,
+  238,   0,255,255,
+  255, 135,206,250};
+
+const byte flForestColors_gp[] PROGMEM = {
+    0,   0,153,  0,
+   17,   0,138,  0,
+   34, 119,180, 14,
+   51,   0,100,  0,
+   68,   0,128,  0,
+   85,  34,139, 34,
+  103, 134,187, 27,
+  119,   0,128,  0,
+  136,  65,200,124,
+  153, 102,205,170,
+  170,  50,205, 50,
+  187, 154,205, 50,
+  204, 144,238,144,
+  221, 124,252,  0,
+  238, 102,205,170,
+  255,  34,139, 34};
+
+/// HSV Rainbow
+const byte flRainbowColors_gp[] PROGMEM = {
+    0, 255,  0,  0,
+   17, 235, 47,  0,
+   34, 255,128,  0,
+   51, 240,180,  0,
+   69, 214,214,  0,
+   85,  92,230,  0,
+  102,   0,255,  0,
+  119,   0,213, 42,
+  137,   0,219,110,
+  153,   0,105,209,
+  170,   0,  0,255,
+  187,  47,  0,235,
+  204, 107,  0,214,
+  221, 171,  0,173,
+  238, 204,  0,102,
+  255, 213,  0, 43};
+
+/// HSV Rainbow colors with alternatating stripes of black
+const byte flRainbowStripeColors_gp[] PROGMEM = {
+    0, 255,  0,  0,
+   33, 214, 41,  0,
+   34, 171, 85,  0,
+   67, 171,128,  0,
+   68, 171,171,  0,
+  101,  87,212,  0,
+  102,   0,255,  0,
+  135,   0,214, 41,
+  136,   0,171, 85,
+  169,   0, 86,169,
+  170,   0,  0,255,
+  203,  46,  0,210,
+  204,  85,  0,171,
+  237, 129,  0,127,
+  238, 171,  0, 85,
+  255, 255,  0,  0};
+
+/// HSV color ramp: blue purple ping red orange yellow (and back)
+/// Basically, everything but the greens, which tend to make
+/// people's skin look unhealthy.  This palette is good for
+/// lighting at a club or party, where it'll be shining on people.
+const byte flPartyColors_gp[] PROGMEM = {
+    0, 120,  0,240,
+   18, 189,  0,176,
+   34, 199,  0, 83,
+   51, 229,  0, 27,
+   68, 232, 23,  0,
+   85, 219, 84,  0,
+  102, 230,161,  0,
+  118, 219,219,  0,
+  136, 219,110,  0,
+  153, 221, 34,  0,
+  170, 242,  0, 14,
+  187, 194,  0, 62,
+  204, 179,  0,140,
+  221, 110,  0,189,
+  238,  47,  0,208,
+  255,   0,  7,249};
 
 #endif

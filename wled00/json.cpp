@@ -760,25 +760,25 @@ void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
         curPalette.add("c1");
         break;}
       case 6: //Party colors
-        setPaletteColors(curPalette, PartyColors_p);
+        LC_SERIALIZE_FL_PAL(flPartyColors_gp);
         break;
       case 7: //Cloud colors
-        setPaletteColors(curPalette, CloudColors_p);
+        LC_SERIALIZE_FL_PAL(flCloudColors_gp);
         break;
       case 8: //Lava colors
-        setPaletteColors(curPalette, LavaColors_p);
+        LC_SERIALIZE_FL_PAL(flLavaColors_gp);
         break;
       case 9: //Ocean colors
-        setPaletteColors(curPalette, OceanColors_p);
+        LC_SERIALIZE_FL_PAL(flOceanColors_gp);
         break;
       case 10: //Forest colors
-        setPaletteColors(curPalette, ForestColors_p);
+        LC_SERIALIZE_FL_PAL(flForestColors_gp);
         break;
       case 11: //Rainbow colors
-        setPaletteColors(curPalette, RainbowColors_p);
+        LC_SERIALIZE_FL_PAL(flRainbowColors_gp);
         break;
       case 12: //Rainbow stripe colors
-        setPaletteColors(curPalette, RainbowStripeColors_p);
+        LC_SERIALIZE_FL_PAL(flRainbowStripeColors_gp);
         break;
 
       default:
