@@ -85,8 +85,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     cctFromRgb = request->hasArg(F("CR"));
     strip.cctBlending = request->arg(F("CB")).toInt();
     Bus::setCCTBlend(strip.cctBlending);
-    strip.autoWhiteMode = (request->arg(F("AW")).toInt());
-    Bus::setAutoWhiteMode(strip.autoWhiteMode);
+    Bus::setAutoWhiteMode(request->arg(F("AW")).toInt());
     strip.setTargetFps(request->arg(F("FR")).toInt());
 
     for (uint8_t s = 0; s < WLED_MAX_BUSSES; s++) {
