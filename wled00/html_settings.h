@@ -452,7 +452,7 @@ onclick='uploadFile(d.Sf.data2,"/cfg.json")'><br></div><div style="color:#fa0">
 Incorrect configuration may require a factory reset or re-flashing of your ESP.
 </div>For security reasons, passwords are not backed up.<h3 id="about">About
 </h3><a href="https://github.com/imeszaros/ledclock/" target="_blank">Led Clock
-</a> version 0.0.1<br><br>(c) 2022 István Mészáros<br><i>Licensed under the <a 
+</a> version 1.0.0a<br><br>(c) 2022 István Mészáros<br><i>Licensed under the <a 
 href="https://github.com/Aircoookie/WLED/blob/master/LICENSE" target="_blank">
 MIT license</a></i>,<br>Built upon the excellent software:<br><br><a 
 href="https://github.com/Aircoookie/WLED/" target="_blank">WLED</a>
