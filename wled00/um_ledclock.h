@@ -687,7 +687,16 @@ public:
                     beep(timerBeepIncrease);
                     unsigned long val = state[LedClockStateKeys::Timer::value];
                     timerLeft += val;
-                    timeChangeMillis(timerLeft, true);
+
+                    unsigned long el = timerTimer.elapsed();
+                    unsigned long left;
+                    if (el > timerLeft) {
+                        left = 0;
+                    } else {
+                        left = timerLeft - el;
+                    }
+
+                    timeChangeMillis(left, true);
                 }
                 break;
             }
