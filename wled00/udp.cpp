@@ -185,6 +185,7 @@ void exitRealtime() {
   if (useMainSegmentOnly) { // unfreeze live segment again
     strip.getMainSegment().setOption(SEG_OPTION_FREEZE, false, strip.getMainSegmentId());
   }
+  updateInterfaces(CALL_MODE_WS_SEND);
 }
 
 
