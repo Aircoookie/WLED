@@ -326,7 +326,7 @@ button {
 }
 
 #putil {
-	padding: 5px 0;
+	padding: 5px 0 0;
 }
 
 .smooth { transition: transform	calc(var(--f, 1)*.5s) ease-out }
@@ -445,11 +445,7 @@ button {
 #info, #nodes {
 	z-index: 4;
 }
-/*
-#nodes {
-	height: calc(100% - var(--th) - 15px);
-}
-*/
+
 #rover {
 	z-index: 3;
 }
@@ -484,12 +480,7 @@ button {
 #kv, #kn {
 	display: inline-block;
 }
-/*
-#kn {
-	height: 90%;
-	overflow: scroll;
-}
-*/
+
 #info table, #nodes table {
 	table-layout: fixed;
 	width: 100%;
@@ -718,11 +709,11 @@ input[type=range]::-moz-range-thumb {
 #putil .btn-s {
 	width: 135px;
 }
-/*
+
 #nodes .infobtn {
-	width: 45%;
+	margin: 0;
 }
-*/
+
 #segutil .btn-s, #segutil2 .btn-s, #putil .btn-s {
 	background-color: var(--c-3);
 	border: 1px solid var(--c-3);
@@ -1074,6 +1065,11 @@ textarea {
 	/*min-height: 40px;*/
 	min-width: 280px;
 }
+
+.seg {
+	top: auto !important;	/* prevent sticky */
+	bottom: auto !important;
+}
 /*
 .seg:last-child {
 	margin: 0;
@@ -1141,8 +1137,8 @@ textarea {
 }
 
 #pcont .selected:not([class*="expanded"]) {
-	bottom: 60px;
-	top: 40px;
+	bottom: 52px;
+	top: 42px;
 }
 /* calculated in index.js
 #fxlist .lstI.selected {
@@ -1153,12 +1149,12 @@ textarea {
 	top: 99px !important;
 }
 */
-#pallist .lstI.sticky {
-	top: 42px;
-}
-
 #pallist .lstI.selected {
 	top: 84px;
+}
+
+#pallist .lstI.sticky {
+	top: 42px;
 }
 
 /* list item content */
@@ -1214,6 +1210,7 @@ input[type="text"].fnd:hover {
 .presin {
 	padding: 8px;
 	position: relative;
+	width: 264px;
 }
 
 .btn-s,
@@ -1290,8 +1287,11 @@ input[type="text"].fnd:hover {
 }
 
 @media all and (max-width: 550px) and (min-width: 374px) {
-	#info .btn, #nodes .btn {
-		width: 150px;
+	#info table .btn, #nodes table .btn {
+		width: 200px;
+	}
+	#info .infobtn, #nodes .infobtn {
+		width: 145px;
 	}
 	#info div, #nodes div {
 		width: 320px;
