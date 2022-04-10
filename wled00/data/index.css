@@ -98,12 +98,12 @@ button {
 
 #namelabel {
 	position: fixed;
-	bottom: var(--bh);
-	right: 0;
+	bottom: calc(var(--bh) + 6px);
+	right: 6px;
 	color: var(--c-d);
 	cursor: pointer;
-	/* writing-mode: vertical-rl; */
-	transform: rotate(-90deg) translate(30px,20px);
+	writing-mode: vertical-rl;
+	transform: rotate(180deg);
 }
 
 .bri {
