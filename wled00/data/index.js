@@ -1297,7 +1297,8 @@ function setSliderAndColorControl(idx, applyDef=false)
 			label.classList.add("hide");
 		}
 	}
-	topPosition += 10; // +padding
+	if (topPosition>0) { topPosition += 5; gId("sliders").style.paddingTop = "5px"; }
+	else gId("sliders").style.padding = 0;
 
 	// set size of fx list
 	gId("fx").style.height = `calc(100% - ${topPosition}px)`;
