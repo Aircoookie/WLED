@@ -157,6 +157,9 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   getVal(elem[F("sx")], &seg.speed, 0, 255);
   getVal(elem[F("ix")], &seg.intensity, 0, 255);
   getVal(elem["pal"], &seg.palette, 1, strip.getPaletteCount());
+  getVal(elem[F("c1x")], &seg.c1x, 0, 255);
+  getVal(elem[F("c2x")], &seg.c2x, 0, 255);
+  getVal(elem[F("c3x")], &seg.c3x, 0, 255);
 
   JsonArray iarr = elem[F("i")]; //set individual LEDs
   if (!iarr.isNull()) {
@@ -422,6 +425,9 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
   root[F("sx")]  = seg.speed;
   root[F("ix")]  = seg.intensity;
   root["pal"]    = seg.palette;
+  root[F("c1x")] = seg.c1x;
+  root[F("c2x")] = seg.c2x;
+  root[F("c3x")] = seg.c3x;
   root[F("sel")] = seg.isSelected();
   root["rev"]    = seg.getOption(SEG_OPTION_REVERSED);
   root[F("mi")]  = seg.getOption(SEG_OPTION_MIRROR);

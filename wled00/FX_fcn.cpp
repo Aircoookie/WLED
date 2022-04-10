@@ -201,7 +201,7 @@ void IRAM_ATTR WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte 
   if (SEGLEN || (realtimeMode && useMainSegmentOnly)) {
     uint32_t col = RGBW32(r, g, b, w);
     uint16_t len = _segments[segIdx].length();
-    
+
     // get physical pixel address (taking into account start, grouping, spacing [and offset])
     i = i * _segments[segIdx].groupLength();
     if (_segments[segIdx].options & REVERSE) { // is segment reversed?
@@ -217,6 +217,7 @@ void IRAM_ATTR WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte 
     for (uint16_t j = 0; j < _segments[segIdx].grouping; j++) {
       uint16_t indexSet = i + ((_segments[segIdx].options & REVERSE) ? -j : j);
       if (indexSet >= _segments[segIdx].start && indexSet < _segments[segIdx].stop) {
+
         if (_segments[segIdx].options & MIRROR) { //set the corresponding mirrored pixel
           uint16_t indexMir = _segments[segIdx].stop - indexSet + _segments[segIdx].start - 1;          
           indexMir += _segments[segIdx].offset; // offset/phase
@@ -562,6 +563,9 @@ uint8_t WS2812FX::Segment::differs(Segment& b) {
   if (speed != b.speed)         d |= SEG_DIFFERS_FX;
   if (intensity != b.intensity) d |= SEG_DIFFERS_FX;
   if (palette != b.palette)     d |= SEG_DIFFERS_FX;
+  if (c1x != b.c1x)             d |= SEG_DIFFERS_FX;
+  if (c2x != b.c2x)             d |= SEG_DIFFERS_FX;
+  if (c3x != b.c3x)             d |= SEG_DIFFERS_FX;
 
   if ((options & 0b00101110) != (b.options & 0b00101110)) d |= SEG_DIFFERS_OPT;
   if ((options & 0x01) != (b.options & 0x01)) d |= SEG_DIFFERS_SEL;
@@ -693,6 +697,9 @@ void WS2812FX::resetSegments() {
   _segments[0].setOption(SEG_OPTION_ON, 1);
   _segments[0].opacity = 255;
   _segments[0].cct = 127;
+  _segments[0].c1x = 0;
+  _segments[0].c2x = 0;
+  _segments[0].c3x = 0;
 
   for (uint16_t i = 1; i < MAX_NUM_SEGMENTS; i++)
   {
@@ -703,6 +710,9 @@ void WS2812FX::resetSegments() {
     _segments[i].cct = 127;
     _segments[i].speed = DEFAULT_SPEED;
     _segments[i].intensity = DEFAULT_INTENSITY;
+    _segments[i].c1x = 0;
+    _segments[i].c2x = 0;
+    _segments[i].c3x = 0;
     _segment_runtimes[i].markForReset();
   }
   _segment_runtimes[0].markForReset();
@@ -742,7 +752,7 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
         setSegment(i, 0, 0);
       }
     }
-    
+
     if (getActiveSegmentsNum() < 2) {
       setSegment(mainSeg, 0, _length);
     }
