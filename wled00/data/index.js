@@ -1297,27 +1297,12 @@ function setSliderAndColorControl(idx, applyDef=false)
 			label.classList.add("hide");
 		}
 	}
-	/*if (topPosition>0)*/ topPosition += 10; // +padding
+	if (topPosition>0) { topPosition += 5; gId("sliders").style.paddingTop = "5px"; }
+	else gId("sliders").style.padding = 0;
 
 	// set size of fx list
 	gId("fx").style.height = `calc(100% - ${topPosition}px)`;
 
-/*
-	// set top position of the effect list
-	gId("fxFind").style.top = topPosition + "px";
-	topPosition += 42;
-	var fxList = gId("fxlist");
-	for (let f of fxList.children) f.style.top = null; // remove top
-	var selected = fxList.querySelector('.selected');
-	var sticky = fxList.querySelector('.sticky');
-	if (sticky) {
-		sticky.style.top = topPosition + "px";
-		topPosition += 42;
-	}
-	if (selected && !selected.style.top) { // is the sticky element also selected one?
-		selected.style.top = topPosition + "px";
-	}
-*/
 	// set html color items on/off
 	var cslLabel = '';
 	var sep = '';

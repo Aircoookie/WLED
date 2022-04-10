@@ -372,10 +372,6 @@ button {
 	overflow-y: scroll;
 }
 
-#sliders {
-	padding: 5px 0;
-}
-
 #sliders .labels {
 	padding-top: 3px;
 }
