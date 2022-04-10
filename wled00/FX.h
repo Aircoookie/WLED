@@ -251,7 +251,7 @@ class WS2812FX {
   
   // segment parameters
   public:
-    typedef struct Segment { // 31 (32 in memory) bytes
+    typedef struct Segment { // 34 (35 in memory) bytes
       uint16_t start;
       uint16_t stop; //segment invalid if stop == 0
       uint16_t offset;
@@ -265,6 +265,7 @@ class WS2812FX {
       uint32_t colors[NUM_COLORS];
       uint8_t  cct; //0==1900K, 255==10091K
       uint8_t  _capabilities;
+      uint8_t c1x, c2x, c3x; // custom FX parameters
       char *name;
       bool setColor(uint8_t slot, uint32_t c, uint8_t segn) { //returns true if changed
         if (slot >= NUM_COLORS || segn >= MAX_NUM_SEGMENTS) return false;

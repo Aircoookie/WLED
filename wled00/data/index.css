@@ -367,28 +367,39 @@ button {
 	bottom: 5px;
 }
 
+#fx {
+	height: calc(100% - 121px);
+	overflow-y: scroll;
+}
+
+#sliders {
+	padding: 5px 0;
+}
+
+#sliders .labels {
+	padding-top: 3px;
+}
+
 #slider0, #slider1, #slider2, #slider3, #slider4 {
 	background: var(--c-2);
 	max-width: 310px;
 	min-width: 280px;
-	margin: auto;
+	margin: 0 auto 5px;
 	border-radius: 15px;
 }
 
-#pql,
+/*
 #sliderLabel2, #sliderLabel3, #sliderLabel4,
-#slider2, #slider3, #slider4 {
+#slider2, #slider3, #slider4,
+*/
+#pql {
 	display: none;
 }
-/*
-#slider1 {
-	top: 28px;
+
+.hide {
+	display: none !important;
 }
 
-#fxFind {
-	top: 58px;
-}
-*/
 .first {
 	margin-top: 10px;
 }
@@ -627,7 +638,9 @@ input[type=range]::-moz-range-thumb {
 	height: 30px;
 	width: 230px;
 	position: relative;
+	z-index: 0;
 }
+
 #Colors .sliderwrap {
 	width: 260px;
 	margin: 10px 0 0;
@@ -752,7 +765,7 @@ input[type=range]::-moz-range-thumb {
 	margin-top: 5px;
 }
 
-select/*, .sel-p, .sel-pl, .sel-ple*/ {
+select {
 	padding: 4px;
 	margin: 0;
 	font-size: 19px;
@@ -1141,15 +1154,15 @@ textarea {
 	bottom: 52px;
 	top: 42px;
 }
-/* calculated in index.js
+
 #fxlist .lstI.selected {
-	top: 142px !important;
+	top: 84px;
 }
 
 #fxlist .lstI.sticky {
-	top: 99px !important;
+	top: 42px;
 }
-*/
+
 #pallist .lstI.selected {
 	top: 84px;
 }
@@ -1221,8 +1234,8 @@ input[type="text"].fnd:hover {
 }
 .modal .btn:hover,
 .segin .btn:hover {
-	border: 1px solid var(--c-5);
-	background-color: var(--c-5);
+	border: 1px solid var(--c-5) /*!important*/;
+	background-color: var(--c-5) /*!important*/;
 }
 
 /* hidden list items, must be after .expanded */

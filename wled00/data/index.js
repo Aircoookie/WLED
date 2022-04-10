@@ -1200,10 +1200,9 @@ function readState(s,command=false)
 
 	gId('sliderSpeed').value = i.sx;
 	gId('sliderIntensity').value = i.ix;
-
-	gId('sliderC1').value  = i.f1x ? i.f1x : 0;
-	gId('sliderC2').value  = i.f2x ? i.f2x : 0;
-	gId('sliderC3').value  = i.f3x ? i.f3x : 0;
+	gId('sliderC1').value  = i.c1x ? i.c1x : 0;
+	gId('sliderC2').value  = i.c2x ? i.c2x : 0;
+	gId('sliderC3').value  = i.c3x ? i.c3x : 0;
 
 	if (s.error && s.error != 0) {
 	  var errstr = "";
@@ -1268,7 +1267,7 @@ function setSliderAndColorControl(idx, applyDef=false)
 	var obj = {"seg":{}};
   
 	// set html slider items on/off
-	var nSliders = Math.min(5,Math.floor((gId("sliders").children.length - 1) / 2)); // p (label) & div for each slider + FX list
+	var nSliders = Math.min(5,Math.floor(gId("sliders").children.length / 2)); // p (label) & div for each slider
 	for (let i=0; i<nSliders; i++) {
 		var slider = gId("slider" + i);
 		var label = gId("sliderLabel" + i);
@@ -1287,20 +1286,23 @@ function setSliderAndColorControl(idx, applyDef=false)
 			else if (i==0)                           label.innerHTML = "Effect speed";
 			else if (i==1)                           label.innerHTML = "Effect intensity";
 			else                                     label.innerHTML = "Custom" + (i-1);
-			//label.style.top = "auto";
-			label.style.display = "block";
-			slider.style.display = "block";
-			slider.style.top = topPosition + "px";
-			topPosition += 28; // increase top position for the next control
+			label.classList.remove("hide");
+			slider.classList.remove("hide");
+			if (getComputedStyle(label).display === "block") topPosition += 58; // increase top position for the next control
+			else topPosition += 35;
 			slider.setAttribute('title',label.innerHTML);
 		} else {
 			// disable label and slider
-			slider.style.display = "none";
-			label.style.display = "none";
+			slider.classList.add("hide");
+			label.classList.add("hide");
 		}
 	}
-	if (topPosition>0) topPosition += 2;
-  
+	/*if (topPosition>0)*/ topPosition += 10; // +padding
+
+	// set size of fx list
+	gId("fx").style.height = `calc(100% - ${topPosition}px)`;
+
+/*
 	// set top position of the effect list
 	gId("fxFind").style.top = topPosition + "px";
 	topPosition += 42;
@@ -1315,7 +1317,7 @@ function setSliderAndColorControl(idx, applyDef=false)
 	if (selected && !selected.style.top) { // is the sticky element also selected one?
 		selected.style.top = topPosition + "px";
 	}
-
+*/
 	// set html color items on/off
 	var cslLabel = '';
 	var sep = '';
@@ -1957,6 +1959,17 @@ function setSpeed()
 function setIntensity()
 {
 	var obj = {"seg": {"ix": parseInt(gId('sliderIntensity').value)}};
+	requestJson(obj);
+}
+
+function setCustom(i=1)
+{
+	if (i<1 || i>3) return;
+	var obj = {"seg": {}};
+	var val = parseInt(gId(`sliderC${i}`).value);
+	if      (i===3) obj.seg.c3x = val;
+	else if (i===2) obj.seg.c2x = val;
+	else            obj.seg.c1x = val;
 	requestJson(obj);
 }
 
