@@ -241,13 +241,16 @@ function onLoad()
 	// Load initial data
 	loadPalettes(()=>{
 		loadPalettesData(redrawPalPrev);
-		loadFX(()=>{
-			loadFXData();
-			setTimeout(()=>{ // ESP8266 can't handle quick requests
-				loadPresets(()=>{
-					requestJson();	// will create WS
-				});
-			},100);
+		// fill effect extra data array
+		loadFXData(()=>{
+			// load and populate effects
+			loadFX(()=>{
+				setTimeout(()=>{ // ESP8266 can't handle quick requests
+					loadPresets(()=>{
+						requestJson();	// will create WS
+					});
+				},100);
+			});
 		});
 	});
 	resetUtil();
@@ -747,24 +750,19 @@ function populateEffects()
 
 	effects.unshift({
 		"id": 0,
-		"name": "Solid@;!;0"
+		"name": "Solid"
 	});
 
 	for (let i = 0; i < effects.length; i++) {
 		// WLEDSR: add slider and color control to setX (used by requestjson)
 		if (effects[i].name.indexOf("Reserved") < 0) {
-			var posAt = effects[i].name.indexOf("@");
-			var extra = '';
-			if (posAt > 0)
-				extra = effects[i].name.substr(posAt);
-			else
-				posAt = 999;
+			var extra = !(Array.isArray(fxdata) && fxdata.length>i) ? '' : fxdata[i].substr(1);
 			html += generateListItemHtml(
 				'fx',
 				effects[i].id,
-				effects[i].name.substr(0,posAt),
+				effects[i].name,
 				'setX',
-				'','',
+				'',
 				extra
 			);
 		}
@@ -862,9 +860,9 @@ function genPalPrevCss(id)
 	return `background: linear-gradient(to right,${gradient.join()});`;
 }
 
-function generateListItemHtml(listName, id, name, clickAction, extraHtml = '', extraClass = '', extraPar = '')
+function generateListItemHtml(listName, id, name, clickAction, extraHtml = '', extraPar = '')
 {
-    return `<div class="lstI${id==0?' sticky':''} ${extraClass}" data-id="${id}" data-opt="${extraPar}" onClick="${clickAction}(${id})">
+    return `<div class="lstI${id==0?' sticky':''}" data-id="${id}" data-opt="${extraPar}" onClick="${clickAction}(${id})">
 	<label class="radio schkl" onclick="event.preventDefault()">
 		<input type="radio" value="${id}" name="${listName}">
 		<span class="radiomark schk"></span>
@@ -2306,10 +2304,13 @@ function search(f,l=null)
 	f.nextElementSibling.style.display=(f.value!=='')?'block':'none';
 	if (!l) return;
 	var el = gId(l).querySelectorAll('.lstI');
-	for (i = 0; i < el.length; i++) {
+	for (i = (l==='pcont'?0:1); i < el.length; i++) {
 		var it = el[i];
 		var itT = it.querySelector('.lstIname').innerText.toUpperCase();
 		it.style.display = itT.indexOf(f.value.toUpperCase())>-1?'':'none';
+		// cleaner but longer
+		//if (itT.indexOf(f.value.toUpperCase()) > -1) it.classList.remove('hide');
+		//else                                         it.classList.add('hide');
 	}
 }
 
