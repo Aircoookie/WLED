@@ -10,7 +10,7 @@ You need at least two kinds of material, an opaque and a translucent one. See th
 
 ## Electronics
 
-First of all, you need the PCBs. Making them yourself could be quite a challenge since tha main board is a double sided design and the other two boards have a non-square outline which can be best CNC-milled or hand made with a router. Therefore I would recommend ordering them form a prototyping PCB service. I hade them made at JLC PCB and the quality they arrived in is very convincing. Check out the [designs](sch-pcb/readme.md) and [gerber files](gerber/readme.md).
+First of all, you need the PCBs. Making them yourself could be quite a challenge since tha main board is a double sided design and the other two boards have a non-square outline which can be best CNC-milled or hand made with a router. Therefore I would recommend ordering them form a prototyping PCB service. I had them made at JLC PCB and the quality they arrived in is very convincing. Check out the [designs](sch-pcb/readme.md) and [gerber files](gerber/readme.md).
 
 The following table shows the required components. The datasheets show the exact pieces I used in my design and realization.
 

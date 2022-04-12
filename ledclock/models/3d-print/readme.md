@@ -6,13 +6,13 @@ These tables below show which material to use for which part and how much of it 
 
 ## Approximate opaque material demand:
 
-| Part   | Weight* | Pieces |  Total   | Supports |
-|--------|--------:|-------:|---------:|:--------:|
-| Base   |     86g |      1 |    86g   |    No    |
-| Bottom |     32g |      1 |    32g   |  Manual  |
-| Colon  |      9g |      1 |     9g   |  Manual  |
-| Digit  |     40g |      4 |   160g   |  Manual  |
-|        |         |        | **287g** |          |
+| Part                 | Weight* | Pieces |  Total   | Supports |
+|----------------------|--------:|-------:|---------:|:--------:|
+| [Base](base.3mf)     |     86g |      1 |    86g   |    No    |
+| [Bottom](bottom.3mf) |     32g |      1 |    32g   |  Manual  |
+| [Colon](colon.3mf)   |      9g |      1 |     9g   |  Manual  |
+| [Digit](digit.3mf)   |     40g |      4 |   160g   |  Manual  |
+|                      |         |        | **287g** |          |
 
 *\* Excluding skirt/brim, and supports.*
 
@@ -20,11 +20,11 @@ The above weights were measured using my recommendation for an opaque material: 
 
 ## Approximate translucent material demand:
 
-| Part    | Weight* | Pieces |   Total   | Supports |
-|---------|--------:|-------:|----------:|:--------:|
-| Segment |    ~6g  |     28 |   ~168g   |  Manual  |
-| Dot     |    ~1g  |      2 |     ~2g   |  Manual  |
-|         |         |        | **~170g** |          |
+| Part                     | Weight* | Pieces |   Total   | Supports | Notes |
+|--------------------------|--------:|-------:|----------:|:--------:|-------|
+| [Segments](segments.3mf) |    ~6g  |     28 |   ~168g   |  Manual  | File contains the 7 segments for a single digit, print it four times. |
+| [Dots](dots.3mf)         |    ~1g  |      2 |     ~2g   |  Manual  | File contains both dots, print once. |
+|                          |         |        | **~170g** |          | |
 
 *\* Excluding skirt/brim, and supports.*
 
