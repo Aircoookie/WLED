@@ -85,8 +85,8 @@ void WS2812FX::finalizeInit(void)
     DEBUG_PRINTLN(F("No busses, init default"));
     const uint8_t defDataPins[] = {DATA_PINS};
     const uint16_t defCounts[] = {PIXEL_COUNTS};
-    const uint8_t defNumBusses = ((sizeof defDataPins) / (sizeof defDataPins[0]));  // min 1
-    const uint8_t defNumCounts = ((sizeof defCounts) / (sizeof defCounts[0]));      // min 1
+    const uint8_t defNumBusses = ((sizeof defDataPins) / (sizeof defDataPins[0]));
+    const uint8_t defNumCounts = ((sizeof defCounts)   / (sizeof defCounts[0]));
     uint16_t prevLen = 0;
     for (uint8_t i = 0; i < defNumBusses && i < WLED_MAX_BUSSES; i++) {
       uint8_t defPin[] = {defDataPins[i]};
@@ -399,11 +399,7 @@ uint8_t WS2812FX::getPaletteCount()
 {
   return 13 + GRADIENT_PALETTE_COUNT;
 }
-/*
-void WS2812FX::setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
-  setColor(slot, RGBW32(r, g, b, w));
-}
-*/
+
 //applies to all active and selected segments
 void WS2812FX::setColor(uint8_t slot, uint32_t c) {
   if (slot >= NUM_COLORS) return;

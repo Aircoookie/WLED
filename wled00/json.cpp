@@ -229,8 +229,6 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 // deserializes WLED state (fileDoc points to doc object if called from web server)
 bool deserializeState(JsonObject root, byte callMode, byte presetId)
 {
-  DEBUG_PRINTLN(F("Deserializing state"));
-
   bool stateResponse = root[F("v")] | false;
 
   bool onBefore = bri;
@@ -349,12 +347,10 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   byte ps = root[F("psave")];
   if (ps > 0) {
-    DEBUG_PRINTLN(F("Saving preset"));
     savePreset(ps, nullptr, root);
   } else {
     ps = root[F("pdel")]; //deletion
     if (ps > 0) {
-      DEBUG_PRINTLN(F("Deleting preset"));
       deletePreset(ps);
     }
 
@@ -524,7 +520,6 @@ void serializeInfo(JsonObject root)
   root[F("udpport")] = udpPort;
   root["live"] = (bool)realtimeMode;
   root[F("liveseg")] = useMainSegmentOnly ? strip.getMainSegmentId() : -1;  // if using main segment only for live
-  //root[F("mso")] = useMainSegmentOnly;  // using main segment only for live
 
   switch (realtimeMode) {
     case REALTIME_MODE_INACTIVE: root["lm"] = ""; break;
@@ -559,7 +554,7 @@ void serializeInfo(JsonObject root)
     char fileName[16];
     strcpy_P(fileName, PSTR("/ledmap"));
     if (i) sprintf(fileName +7, "%d", i);
-    strcat(fileName, ".json");
+    strcat_P(fileName, PSTR(".json"));
     bool isFile = WLED_FS.exists(fileName);
     if (isFile || i==0) ledmaps.add(i);
   }

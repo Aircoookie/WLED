@@ -741,7 +741,7 @@ function populateSegments(s)
 
 function populateEffects()
 {
-    var effects = eJson;
+	var effects = eJson;
 	var html = "";
 
 	effects.shift(); // remove solid
@@ -1762,7 +1762,7 @@ function resetPUtil()
 	p.classList.add('staybot');
 	p.classList.remove('pres');
 	p.innerHTML = `<button class="btn btn-s" onclick="makePUtil()" style="float:left;"><i class="icons btn-icon">&#xe18a;</i>preset</button>`
-	+ `<button class="btn btn-s" onclick="makePlUtil()" style="float:right;"><i class="icons btn-icon">&#xe18a;<!--&#xe139;--></i>playlist</button>`;
+	+ `<button class="btn btn-s" onclick="makePlUtil()" style="float:right;"><i class="icons btn-icon">&#xe18a;</i>playlist</button>`;
 }
 
 function tglCs(i)
