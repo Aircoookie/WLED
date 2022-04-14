@@ -149,7 +149,7 @@ void WS2812FX::service() {
       uint16_t delay = FRAMETIME;
 
       if (!SEGMENT.getOption(SEG_OPTION_FREEZE)) { //only run effect function if not frozen
-        _virtualSegmentLength = SEGMENT.virtualLength();
+        SEGLEN = SEGMENT.virtualLength();
         _bri_t = SEGMENT.opacity; _colors_t[0] = SEGMENT.colors[0]; _colors_t[1] = SEGMENT.colors[1]; _colors_t[2] = SEGMENT.colors[2];
         uint8_t _cct_t = SEGMENT.cct;
         if (!IS_SEGMENT_ON) _bri_t = 0;
@@ -166,19 +166,14 @@ void WS2812FX::service() {
         }
         handle_palette();
 
-        // if segment is not RGB capable, force None auto white mode
-        // If not RGB capable, also treat palette as if default (0), as palettes set white channel to 0
-        _no_rgb = !(SEGMENT.getLightCapabilities() & 0x01);
-        if (_no_rgb) Bus::setAutoWhiteMode(RGBW_MODE_MANUAL_ONLY);
         delay = (this->*_mode[SEGMENT.mode])(); //effect function
         if (SEGMENT.mode != FX_MODE_HALLOWEEN_EYES) SEGENV.call++;
-        Bus::setAutoWhiteMode(strip.autoWhiteMode);
       }
 
       SEGENV.next_time = nowUp + delay;
     }
   }
-  _virtualSegmentLength = 0;
+  SEGLEN = 0;
   busses.setSegmentCCT(-1);
   if(doShow) {
     yield();
@@ -572,6 +567,9 @@ uint8_t WS2812FX::Segment::differs(Segment& b) {
   if (speed != b.speed)         d |= SEG_DIFFERS_FX;
   if (intensity != b.intensity) d |= SEG_DIFFERS_FX;
   if (palette != b.palette)     d |= SEG_DIFFERS_FX;
+  if (c1x != b.c1x)             d |= SEG_DIFFERS_FX;
+  if (c2x != b.c2x)             d |= SEG_DIFFERS_FX;
+  if (c3x != b.c3x)             d |= SEG_DIFFERS_FX;
 
   if ((options & 0b00101110) != (b.options & 0b00101110)) d |= SEG_DIFFERS_OPT;
   if ((options & 0x01) != (b.options & 0x01)) d |= SEG_DIFFERS_SEL;
@@ -709,6 +707,9 @@ void WS2812FX::resetSegments() {
   _segments[0].setOption(SEG_OPTION_ON, 1);
   _segments[0].opacity = 255;
   _segments[0].cct = 127;
+  _segments[0].c1x = 0;
+  _segments[0].c2x = 0;
+  _segments[0].c3x = 0;
 
   for (uint16_t i = 1; i < MAX_NUM_SEGMENTS; i++)
   {
@@ -719,6 +720,9 @@ void WS2812FX::resetSegments() {
     _segments[i].cct = 127;
     _segments[i].speed = DEFAULT_SPEED;
     _segments[i].intensity = DEFAULT_INTENSITY;
+    _segments[i].c1x = 0;
+    _segments[i].c2x = 0;
+    _segments[i].c3x = 0;
     _segment_runtimes[i].markForReset();
   }
   _segment_runtimes[0].markForReset();
@@ -747,6 +751,7 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
       s++;
     }
     for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) {
+      _segments[i].setOption(SEG_OPTION_SELECTED, true, i);
       setSegment(i, segStarts[i], segStops[i]);
     }
   } else {
@@ -758,7 +763,7 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
         setSegment(i, 0, 0);
       }
     }
-    
+
     if (getActiveSegmentsNum() < 2) {
       setSegment(mainSeg, 0, _length);
     }
@@ -802,7 +807,7 @@ uint8_t WS2812FX::setPixelSegment(uint8_t n)
   uint8_t prevSegId = _segment_index;
   if (n < MAX_NUM_SEGMENTS) {
     _segment_index = n;
-    _virtualSegmentLength = SEGMENT.virtualLength();
+    SEGLEN = SEGMENT.virtualLength();
   }
   return prevSegId;
 }
@@ -1178,11 +1183,7 @@ void WS2812FX::deserializeMap(uint8_t n) {
     return;
   }
 
-  #ifdef WLED_USE_DYNAMIC_JSON
-  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-  #else
   if (!requestJSONBufferLock(7)) return;
-  #endif
 
   DEBUG_PRINT(F("Reading LED map from "));
   DEBUG_PRINTLN(fileName);
@@ -1266,3 +1267,158 @@ WS2812FX* WS2812FX::instance = nullptr;
 int16_t Bus::_cct = -1;
 uint8_t Bus::_cctBlend = 0;
 uint8_t Bus::_autoWhiteMode = RGBW_MODE_DUAL;
+
+
+// WLEDSR: extensions
+// Technical notes
+// ===============
+// If an effect name is followed by an @, slider and color control is effective.
+// See setSliderAndColorControl in index.js for implementation
+// If not effective then:
+//      - For AC effects (id<128) 2 sliders and 3 colors and the palette will be shown
+//      - For SR effects (id>128) 5 sliders and 3 colors and the palette will be shown
+// If effective (@)
+//      - a ; seperates slider controls (left) from color controls (middle) and palette control (right)
+//      - if left, middle or right is empty no controls are shown
+//      - a , seperates slider controls (max 5) or color controls (max 3). Palette has only one value
+//      - a ! means that the default is used.
+//             - For sliders: Effect speeds, Effect intensity, Custom 1, Custom 2, Custom 3
+//             - For colors: Fx color, Background color, Custom
+//             - For palette: prompt for color palette OR palette ID if numeric (will hide palette selection)
+//
+// Note: If palette is on and no colors are specified 1,2 and 3 is shown in each color circle.
+//       If a color is specified, the 1,2 or 3 is replaced by that specification.
+// Note: Effects can override default pattern behaviour
+//       - FadeToBlack can override the background setting
+//       - Defining SEGCOL(<i>) can override a specific palette using these values (e.g. Color Gradient)
+const char JSON_mode_names[] PROGMEM = R"=====([
+"Solid",
+"Blink@!,;!,!,;!",
+"Breathe@!,;!,!;!",
+"Wipe@!,!;!,!,;!",
+"Wipe Random@!,;1,2,3;!",
+"Random Colors@!,Fade time;1,2,3;!",
+"Sweep@!,!;!,!,;!",
+"Dynamic@!,!;1,2,3;!",
+"Colorloop@!,Saturation;1,2,3;!",
+"Rainbow@!,Size;1,2,3;!",
+"Scan@!,# of dots;!,!,;!",
+"Scan Dual@!,# of dots;!,!,;!",
+"Fade@!,;!,!,;!",
+"Theater@!,Gap size;!,!,;!",
+"Theater Rainbow@!,Gap size;1,2,3;!",
+"Running@!,Wave width;!,!,;!",
+"Saw@!,Width;!,!,;!",
+"Twinkle@!,;!,!,;!",
+"Dissolve@Repeat speed,Dissolve speed;!,!,;!",
+"Dissolve Rnd@Repeat speed,Dissolve speed;,!,;!",
+"Sparkle@!,;!,!,;!",
+"Sparkle Dark@!,!;Bg,Fx,;!",
+"Sparkle+@!,!;Bg,Fx,;!",
+"Strobe@!,;!,!,;!",
+"Strobe Rainbow@!,;,!,;!",
+"Strobe Mega@!,!;!,!,;!",
+"Blink Rainbow@Frequency,Blink duration;!,!,;!",
+"Android@!,Width;!,!,;!",
+"Chase@!,Width;!,!,!;!",
+"Chase Random@!,Width;!,,!;!",
+"Chase Rainbow@!,Width;!,!,;0",
+"Chase Flash@!,;Bg,Fx,!;!",
+"Chase Flash Rnd@!,;,Fx,;!",
+"Rainbow Runner@!,Size;Bg,,;!",
+"Colorful@!,Saturation;1,2,3;!",
+"Traffic Light@!,;,!,;!",
+"Sweep Random",
+"Chase 2@!,Width;!,!,;!",
+"Aurora@!=24,!;1,2,3;!=50",
+"Stream",
+"Scanner",
+"Lighthouse",
+"Fireworks@Sharpness=96,Frequency=192;!,2,;!=11",
+"Rain@Fade rate=128,Frequency=128;!,2,;!",
+"Tetrix@!=224,Width=0;!,!,;!=11",
+"Fire Flicker@!,!;!,,;!",
+"Gradient@!,Spread=16;!,!,;!",
+"Loading@!,Fade=16;!,!,;!",
+"Police@!,Width;,Bg,;0",
+"Fairy",
+"Two Dots@!,Dot size;1,2,Bg;!",
+"Fairy Twinkle",
+"Running Dual",
+"Halloween",
+"Chase 3@!,Size;1,2,3;0",
+"Tri Wipe@!,Width;1,2,3;0",
+"Tri Fade",
+"Lightning",
+"ICU",
+"Multi Comet",
+"Scanner Dual",
+"Stream 2",
+"Oscillate",
+"Pride 2015@!,;;",
+"Juggle@!=16,Trail=240;!,!,;!",
+"Palette@!,;1,2,3;!",
+"Fire 2012@Spark rate=120,Decay=64;1,2,3;!",
+"Colorwaves",
+"Bpm@!=64,;1,2,3;!",
+"Fill Noise",
+"Noise 1",
+"Noise 2",
+"Noise 3",
+"Noise 4",
+"Colortwinkles@Fade speed,Spawn speed;1,2,3;!",
+"Lake@!,;1,2,3;!",
+"Meteor@!,Trail length;!,!,;!",
+"Meteor Smooth@!,Trail length;!,!,;!",
+"Railway",
+"Ripple",
+"Twinklefox",
+"Twinklecat",
+"Halloween Eyes",
+"Solid Pattern@Fg size,Bg size;Fg,Bg,;!=0",
+"Solid Pattern Tri@,Size;1,2,3;!=0",
+"Spots@Spread,Width;!,!,;!",
+"Spots Fade@Spread,Width;!,!,;!",
+"Glitter",
+"Candle@Flicker rate=96,Flicker intensity=224;!,!,;0",
+"Fireworks Starburst",
+"Fireworks 1D@Gravity,Firing side;!,!,;!",
+"Bouncing Balls@Gravity,# of balls;!,!,;!",
+"Sinelon",
+"Sinelon Dual",
+"Sinelon Rainbow",
+"Popcorn",
+"Drip@Gravity,# of drips;!,!;!",
+"Plasma@Phase,;1,2,3;!",
+"Percent@,% of fill;!,!,;!",
+"Ripple Rainbow",
+"Heartbeat@!,!;!,!,;!",
+"Pacifica",
+"Candle Multi@Flicker rate=96,Flicker intensity=224;!,!,;0",
+"Solid Glitter@,!;!,,;0",
+"Sunrise@Time [min]=60,;;0",
+"Phased",
+"Twinkleup@!,Intensity;!,!,;!",
+"Noise Pal",
+"Sine",
+"Phased Noise",
+"Flow",
+"Chunchun@!,Gap size;!,!,;!",
+"Dancing Shadows@!,# of shadows;!,,;!",
+"Washing Machine",
+"Candy Cane@!,Width;;",
+"Blends@Shift speed,Blend speed;1,2,3,!",
+"TV Simulator",
+"Dynamic Smooth"
+])=====";
+
+const char JSON_palette_names[] PROGMEM = R"=====([
+"Default","* Random Cycle","* Color 1","* Colors 1&2","* Color Gradient","* Colors Only","Party","Cloud","Lava","Ocean",
+"Forest","Rainbow","Rainbow Bands","Sunset","Rivendell","Breeze","Red & Blue","Yellowout","Analogous","Splash",
+"Pastel","Sunset 2","Beech","Vintage","Departure","Landscape","Beach","Sherbet","Hult","Hult 64",
+"Drywet","Jul","Grintage","Rewhi","Tertiary","Fire","Icefire","Cyane","Light Pink","Autumn",
+"Magenta","Magred","Yelmag","Yelblu","Orange & Teal","Tiamat","April Night","Orangery","C9","Sakura",
+"Aurora","Atlantica","C9 2","C9 New","Temperature","Aurora 2","Retro Clown","Candy","Toxy Reaf","Fairy Reaf",
+"Semi Blue","Pink Candy","Red Reaf","Aqua Flash","Yelblu Hot","Lite Light","Red Flash","Blink Red","Red Shift","Red Tide",
+"Candy2"
+])=====";
