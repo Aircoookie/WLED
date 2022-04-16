@@ -125,7 +125,7 @@ class WizLightsUsermod : public Usermod {
       configComplete &= getJsonValue(top["Send Delay (ms)"],              sendDelay,          0);     // Optional delay after sending each UDP message
       configComplete &= getJsonValue(top["Use Enhanced White *"],         useEnhancedWhite,   false); // When color is white use wiz white LEDs instead of mixing RGB
       configComplete &= getJsonValue(top["* Warm White Value (0-255)"],   warmWhite,          0);     // Warm White LED value for Enhanced White
-      configComplete &= getJsonValue(top["* Cold White Value (0-255)"],   coldWhite,          150);   // Cold White LED value for Enhanced White
+      configComplete &= getJsonValue(top["* Cold White Value (0-255)"],   coldWhite,          50);   // Cold White LED value for Enhanced White
       configComplete &= getJsonValue(top["Always Force Update"],          forceUpdate,        false); // Update wiz light every loop, even if color value has not changed
       configComplete &= getJsonValue(top["Force Update Every x Minutes"], forceUpdateMinutes, 5);     // Update wiz light if color value has not changed, every x minutes
       
