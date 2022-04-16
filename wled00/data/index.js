@@ -240,14 +240,13 @@ function onLoad()
 
 	// Load initial data
 	loadPalettes(()=>{
-		loadPalettesData(redrawPalPrev);
 		// fill effect extra data array
 		loadFXData(()=>{
 			// load and populate effects
 			loadFX(()=>{
 				setTimeout(()=>{ // ESP8266 can't handle quick requests
-					loadPresets(()=>{
-						requestJson();	// will create WS
+					loadPalettesData(()=>{
+						requestJson();// will load presets and create WS
 					});
 				},100);
 			});
@@ -1418,8 +1417,13 @@ function requestJson(command=null)
 		}
 		var s = json.state ? json.state : json;
 		readState(s);
-		if (!(ws && ws.readyState === WebSocket.OPEN)) makeWS();
-		if (!pJson) loadPresets();
+
+		//load presets, and open websocket sequentially
+		setTimeout(function(){
+			loadPresets(function(){
+				if (!(ws && ws.readyState === WebSocket.OPEN)) makeWS();
+			});
+		},25);
 		reqsLegal = true;
 	})
 	.catch((e)=>{
@@ -1530,7 +1534,7 @@ function resetUtil()
 //	gId('segutil').innerHTML = '<button class="btn btn-s" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>segment</button>';
 	gId('segutil').innerHTML = '<div class="seg btn btn-s" style="border-radius:24px;padding:0;">'
 	+ '<label class="check schkl"><input type="checkbox" id="selall" onchange="selSegAll(this)"><span class="checkmark schk"></span></label>'
-	+ '<div class="segname" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>segment</div></div>';
+	+ '<div class="segname" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>Add segment</div></div>';
 }
 
 var plJson = {"0":{
@@ -1814,7 +1818,7 @@ function rptSeg(s)
 	var mi = gId(`seg${s}mi`).checked;
 	var sel = gId(`seg${s}sel`).checked;
 	var pwr = gId(`seg${s}pwr`).classList.contains("act");
-	var obj = {"seg": {"id": s, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop, "rev": rev, "mi": mi, "on": !pwr, "bri": parseInt(gId(`seg${s}bri`).value), "sel": sel}};
+	var obj = {"seg": {"id": s, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop, "rev": rev, "mi": mi, "on": pwr, "bri": parseInt(gId(`seg${s}bri`).value), "sel": sel}};
 	if (gId(`seg${s}grp`)) {
 		var grp = parseInt(gId(`seg${s}grp`).value);
 		var spc = parseInt(gId(`seg${s}spc`).value);
@@ -2259,7 +2263,7 @@ function loadPalettesData(callback = null)
 			var d = JSON.parse(lsPalData);
 			if (d && d.vid == d.vid) {
 				palettesData = d.p;
-				if (callback) callback(); // actually redrawPalPrev()
+				if (callback) callback();
 				return;
 			}
 		} catch (e) {}
@@ -2271,7 +2275,8 @@ function loadPalettesData(callback = null)
 			p: palettesData,
 			vid: lastinfo.vid
 		}));
-		if (callback) setTimeout(callback, 99); // actually redrawPalPrev()
+		redrawPalPrev();
+		if (callback) setTimeout(callback, 99);
 	});
 }
 
