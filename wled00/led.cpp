@@ -171,17 +171,14 @@ void updateInterfaces(uint8_t callMode)
       callMode != CALL_MODE_NO_NOTIFY) updateBlynk();
   #endif
   doPublishMqtt = true;
+  interfaceUpdateCallMode = 0; //disable
 }
 
 
 void handleTransitions()
 {
   //handle still pending interface update
-  if (interfaceUpdateCallMode && millis() - lastInterfaceUpdate > INTERFACE_UPDATE_COOLDOWN)
-  {
-    updateInterfaces(interfaceUpdateCallMode);
-    interfaceUpdateCallMode = 0; //disable
-  }
+  if (interfaceUpdateCallMode && millis() - lastInterfaceUpdate > INTERFACE_UPDATE_COOLDOWN) updateInterfaces(interfaceUpdateCallMode);
   if (doPublishMqtt) publishMqtt();
   
   if (transitionActive && transitionDelayTemp > 0)

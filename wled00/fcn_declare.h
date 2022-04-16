@@ -105,7 +105,6 @@ void sendImprovInfoResponse();
 void sendImprovRPCResponse(uint8_t commandId);
 
 //ir.cpp
-//bool decodeIRCustom(uint32_t code);
 void applyRepeatActions();
 byte relativeChange(byte property, int8_t amount, byte lowerBoundary = 0, byte higherBoundary = 0xFF);
 void decodeIR(uint32_t code);
@@ -190,7 +189,7 @@ int16_t loadPlaylist(JsonObject playlistObject, byte presetId = 0);
 void handlePlaylist();
 
 //presets.cpp
-void handlePresets();
+void handlePresets(bool force = false);
 bool applyPreset(byte index, byte callMode = CALL_MODE_DIRECT_CHANGE, bool fromJson = false);
 inline bool applyTemporaryPreset() {return applyPreset(255);};
 void savePreset(byte index, const char* pname = nullptr, JsonObject saveobj = JsonObject());

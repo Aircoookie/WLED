@@ -34,34 +34,32 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
           client->text(F("pong"));
           return;
         }
-        bool verboseResponse = false;
-        { //scope JsonDocument so it releases its buffer
-          DEBUG_PRINTLN(F("WS JSON receive buffer requested."));
-          if (!requestJSONBufferLock(11)) return;
 
-          DeserializationError error = deserializeJson(doc, data, len);
-          JsonObject root = doc.as<JsonObject>();
-          if (error || root.isNull()) {
-            releaseJSONBufferLock();
-            return;
-          }
-          if (root["v"] && root.size() == 1) {
-            //if the received value is just "{"v":true}", send only to this client
-            verboseResponse = true;
-          } else if (root.containsKey("lv"))
-          {
-            wsLiveClientId = root["lv"] ? client->id() : 0;
-          } else {
-            verboseResponse = deserializeState(root);
-            if (!interfaceUpdateCallMode) {
-              //special case, only on playlist load, avoid sending twice in rapid succession
-              if (millis() - lastInterfaceUpdate > (INTERFACE_UPDATE_COOLDOWN -300)) verboseResponse = false;
-            }
-          }
-          releaseJSONBufferLock(); // will clean fileDoc
+        bool verboseResponse = false;
+        DEBUG_PRINTLN(F("WS JSON receive buffer requested."));
+        if (!requestJSONBufferLock(11)) return;
+
+        DeserializationError error = deserializeJson(doc, data, len);
+        JsonObject root = doc.as<JsonObject>();
+        if (error || root.isNull()) {
+          releaseJSONBufferLock();
+          return;
         }
-        //update if it takes longer than 300ms until next "broadcast"
-        if (verboseResponse && (millis() - lastInterfaceUpdate < (INTERFACE_UPDATE_COOLDOWN -300) || !interfaceUpdateCallMode)) sendDataWs(client);
+        if (root["v"] && root.size() == 1) {
+          //if the received value is just "{"v":true}", send only to this client
+          verboseResponse = true;
+        } else if (root.containsKey("lv")) {
+          wsLiveClientId = root["lv"] ? client->id() : 0;
+        } else {
+          verboseResponse = deserializeState(root);
+        }
+        releaseJSONBufferLock(); // will clean fileDoc
+
+        // force broadcast in 500ms after upadting client
+        if (verboseResponse) {
+          sendDataWs(client);
+          lastInterfaceUpdate = millis() - (INTERFACE_UPDATE_COOLDOWN -500);
+        }
       }
     } else {
       //message is comprised of multiple frames or the frame is split into multiple packets
@@ -99,28 +97,30 @@ void sendDataWs(AsyncWebSocketClient * client)
   if (!ws.count()) return;
   AsyncWebSocketMessageBuffer * buffer;
 
-  { //scope JsonDocument so it releases its buffer
-    DEBUG_PRINTLN(F("WS JSON send buffer requested."));
-    if (!requestJSONBufferLock(12)) return;
+  DEBUG_PRINTLN(F("WS JSON send buffer requested."));
+  if (!requestJSONBufferLock(12)) return;
 
-    JsonObject state = doc.createNestedObject("state");
-    serializeState(state);
-    JsonObject info  = doc.createNestedObject("info");
-    serializeInfo(info);
-    DEBUG_PRINTF("JSON buffer size: %u for WS request.\n", doc.memoryUsage());
-    size_t len = measureJson(doc);
-    size_t heap1 = ESP.getFreeHeap();
-    buffer = ws.makeBuffer(len); // will not allocate correct memory sometimes
-    size_t heap2 = ESP.getFreeHeap();
-    if (!buffer || heap1-heap2<len) {
-      releaseJSONBufferLock();
-      ws.closeAll(1013); //code 1013 = temporary overload, try again later
-      ws.cleanupClients(0); //disconnect all clients to release memory
-      return; //out of memory
-    }
-    serializeJson(doc, (char *)buffer->get(), len +1);
+  JsonObject state = doc.createNestedObject("state");
+  serializeState(state);
+  JsonObject info  = doc.createNestedObject("info");
+  serializeInfo(info);
+
+  DEBUG_PRINTF("JSON buffer size: %u for WS request.\n", doc.memoryUsage());
+  size_t len = measureJson(doc);
+
+  size_t heap1 = ESP.getFreeHeap();
+  buffer = ws.makeBuffer(len); // will not allocate correct memory sometimes
+  size_t heap2 = ESP.getFreeHeap();
+  if (!buffer || heap1-heap2<len) {
     releaseJSONBufferLock();
-  } 
+    ws.closeAll(1013); //code 1013 = temporary overload, try again later
+    ws.cleanupClients(0); //disconnect all clients to release memory
+    return; //out of memory
+  }
+
+  serializeJson(doc, (char *)buffer->get(), len +1);
+  releaseJSONBufferLock();
+
   DEBUG_PRINT(F("Sending WS data "));
   if (client) {
     client->text(buffer);

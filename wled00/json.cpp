@@ -220,13 +220,13 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 //    seg.setOption(SEG_OPTION_FREEZE, false);
   }
   // send UDP if not in preset and something changed that is not just selection
-  //if (!presetId && (seg.differs(prev) & 0x7F)) stateChanged = true;
-  // send UDP if something changed that is not just selection
-  if (seg.differs(prev) & 0x7F) stateChanged = true;
+  // send UDP if something changed that is not just selection or segment power/opacity
+  if ((seg.differs(prev) & 0x7E) && seg.getOption(SEG_OPTION_ON)==prev.getOption(SEG_OPTION_ON)) stateChanged = true;
   return;
 }
 
 // deserializes WLED state (fileDoc points to doc object if called from web server)
+// presetId is non-0 if called from handlePreset()
 bool deserializeState(JsonObject root, byte callMode, byte presetId)
 {
   bool stateResponse = root[F("v")] | false;
@@ -357,7 +357,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     ps = presetCycCurr;
     if (getVal(root["ps"], &ps, presetCycMin, presetCycMax)) { //load preset (clears state request!)
       if (ps >= presetCycMin && ps <= presetCycMax) presetCycCurr = ps;
-      applyPreset(ps, callMode, true);
+      applyPreset(ps, callMode, !presetId);  // may clear root object and replace it by preset content if presetId==0
       return stateResponse;
     }
 
@@ -375,8 +375,6 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     //do not notify here, because the first playlist entry will do
     if (root["on"].isNull()) callMode = CALL_MODE_NO_NOTIFY;
     else callMode = CALL_MODE_DIRECT_CHANGE;  // possible bugfix for playlist only containing HTTP API preset FX=~
-  } else {
-    interfaceUpdateCallMode = CALL_MODE_WS_SEND;
   }
 
   stateUpdated(callMode);
