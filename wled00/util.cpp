@@ -258,7 +258,5 @@ uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLe
     if ((qComma > mode) || (printedChars >= maxLen)) break;
   }
   dest[printedChars] = '\0';
-  //char *pos = strchr(dest,'@');
-  //if (pos) *pos = '\0';
   return strlen(dest);
 }
