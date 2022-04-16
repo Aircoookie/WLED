@@ -144,7 +144,7 @@ class WizLightsUsermod : public Usermod {
 
 
    // Create label for the usermod page (I cannot make it work with JSON arrays...)
-    String getJsonLabel(uint8_t i) {return "WiZ Light IP #" + String(i);}
+    String getJsonLabel(uint8_t i) {return "WiZ Light IP #" + String(i+1);}
         
     uint16_t getId(){return USERMOD_ID_WIZLIGHTS;}
 };
