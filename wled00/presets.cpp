@@ -17,15 +17,40 @@ bool applyPreset(byte index, byte callMode, bool fromJson)
   presetToApply = index;
   callModeToApply = callMode;
   checkPlaylist = fromJson;
+  // the following is needed in case of HTTP JSON API call to return correct state to the caller
+  // fromJson is true in case when deserializeState() was called with presetId==0
+  if (fromJson) handlePresets(true); // force immediate processing
   return true;
 }
 
-void handlePresets()
+void handlePresets(bool force)
 {
-  if (presetToApply == 0 || fileDoc) return; //JSON buffer allocated (apply preset in next cycle) or no preset waiting
+  if (presetToApply == 0 || (fileDoc && !force)) return; // JSON buffer already allocated and not force apply or no preset waiting
 
   JsonObject fdo;
   const char *filename = presetToApply < 255 ? "/presets.json" : "/tmp.json";
+
+  //crude way to determine if this was called by a network request
+  uint8_t core = 1;
+  #ifdef ARDUINO_ARCH_ESP32
+  core = xPortGetCoreID();
+  #endif
+  //only allow use of fileDoc from the core responsible for network requests (AKA HTTP JSON API)
+  //do not use active network request doc from preset called by main loop (playlist, schedule, ...)
+  if (fileDoc && core && force && presetToApply < 255) {
+    // this will overwrite doc with preset content but applyPreset() is the last in such case and content of doc is no longer needed
+    errorFlag = readObjectFromFileUsingId(filename, presetToApply, fileDoc) ? ERR_NONE : ERR_FS_PLOAD;
+    JsonObject fdo = fileDoc->as<JsonObject>();
+    // if we applyPreset from JSON and preset contains "seg" we must unload playlist
+    if (checkPlaylist && !fdo["seg"].isNull()) unloadPlaylist();
+    fdo.remove("ps"); //remove load request for presets to prevent recursive crash
+    deserializeState(fdo, callModeToApply, presetToApply);
+    if (!errorFlag) currentPreset = presetToApply;
+    presetToApply = 0; //clear request for preset
+    callModeToApply = 0;
+    checkPlaylist = false;
+    return;
+  }
 
   // allocate buffer
   DEBUG_PRINTLN(F("Apply preset JSON buffer requested."));
@@ -45,9 +70,11 @@ void handlePresets()
   //HTTP API commands
   const char* httpwin = fdo["win"];
   if (httpwin) {
-    String apireq = "win"; apireq += '&'; // reduce flash string usage
+    String apireq = "win"; // reduce flash string usage
+    apireq += F("&IN&");   // internal call
     apireq += httpwin;
     handleSet(nullptr, apireq, false);
+    setValuesFromFirstSelectedSeg(); // fills legacy values
   } else {
     fdo.remove("ps"); //remove load request for presets to prevent recursive crash
     // if we applyPreset from JSON and preset contains "seg" we must unload playlist
