@@ -79,6 +79,10 @@ class WizLightsUsermod : public Usermod {
 
     // TODO: Check millis() rollover
     void loop() {
+      
+      // Make sure we are connected first
+      if (!WLED_CONNECTED) return;
+      
       unsigned long ellapsedTime = millis() - lastTime;
       if (ellapsedTime > updateInterval) {
         bool update = false;
