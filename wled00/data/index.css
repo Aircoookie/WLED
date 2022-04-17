@@ -16,9 +16,10 @@
 	--c-c: #ccc;
 	--c-e: #eee;
 	--c-d: #ddd;
-	--c-r: #e42;
-	--c-g: #4e2;
+	--c-r: #c32;
+	--c-g: #2c1;
 	--c-l: #48a;
+	--c-y: #a90;
 	--t-b: 0.5;
 	--c-o: rgba(34, 34, 34, 0.9);
 	--c-tb : rgba(34, 34, 34, var(--t-b));
@@ -1173,6 +1174,7 @@ textarea {
 .fnd {
 	width: 280px;
 	margin: 0 auto;
+	position: relative;
 }
 
 input[type="text"].fnd {

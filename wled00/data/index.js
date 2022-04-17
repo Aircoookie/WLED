@@ -240,14 +240,13 @@ function onLoad()
 
 	// Load initial data
 	loadPalettes(()=>{
-		loadPalettesData(redrawPalPrev);
 		// fill effect extra data array
 		loadFXData(()=>{
 			// load and populate effects
 			loadFX(()=>{
 				setTimeout(()=>{ // ESP8266 can't handle quick requests
-					loadPresets(()=>{
-						requestJson();	// will create WS
+					loadPalettesData(()=>{
+						requestJson();// will load presets and create WS
 					});
 				},100);
 			});
@@ -1104,7 +1103,7 @@ function makeWS() {
 	ws = new WebSocket((window.location.protocol == "https:"?"wss":"ws")+'://'+(loc?locip:window.location.hostname)+'/ws');
 	ws.binaryType = "arraybuffer";
 	ws.onmessage = (e)=>{
-    	if (e.data instanceof ArrayBuffer) return; // liveview packet
+		if (e.data instanceof ArrayBuffer) return; // liveview packet
 		var json = JSON.parse(e.data);
 		if (json.leds) return; // JSON liveview packet
 		clearTimeout(jsonTimeout);
@@ -1367,7 +1366,7 @@ var reqsLegal = false;
 
 function requestJson(command=null)
 {
-	gId('connind').style.backgroundColor = "var(--c-r)";
+	gId('connind').style.backgroundColor = "var(--c-y)";
 	if (command && !reqsLegal) return; // stop post requests from chrome onchange event on page restore
 	if (!jsonTimeout) jsonTimeout = setTimeout(()=>{if (ws) ws.close(); ws=null; showErrorToast()}, 3000);
 	var req = null;
@@ -1418,8 +1417,12 @@ function requestJson(command=null)
 		}
 		var s = json.state ? json.state : json;
 		readState(s);
-		if (!(ws && ws.readyState === WebSocket.OPEN)) makeWS();
-		if (!pJson) loadPresets();
+		//load presets, and open websocket sequentially
+		setTimeout(()=>{
+			loadPresets(()=>{
+				if (!(ws && ws.readyState === WebSocket.OPEN)) makeWS();
+			});
+		},25);
 		reqsLegal = true;
 	})
 	.catch((e)=>{
@@ -1814,7 +1817,7 @@ function rptSeg(s)
 	var mi = gId(`seg${s}mi`).checked;
 	var sel = gId(`seg${s}sel`).checked;
 	var pwr = gId(`seg${s}pwr`).classList.contains("act");
-	var obj = {"seg": {"id": s, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop, "rev": rev, "mi": mi, "on": !pwr, "bri": parseInt(gId(`seg${s}bri`).value), "sel": sel}};
+	var obj = {"seg": {"id": s, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop, "rev": rev, "mi": mi, "on": pwr, "bri": parseInt(gId(`seg${s}bri`).value), "sel": sel}};
 	if (gId(`seg${s}grp`)) {
 		var grp = parseInt(gId(`seg${s}grp`).value);
 		var spc = parseInt(gId(`seg${s}spc`).value);
@@ -2259,7 +2262,7 @@ function loadPalettesData(callback = null)
 			var d = JSON.parse(lsPalData);
 			if (d && d.vid == d.vid) {
 				palettesData = d.p;
-				if (callback) callback(); // actually redrawPalPrev()
+				if (callback) callback();
 				return;
 			}
 		} catch (e) {}
@@ -2271,7 +2274,8 @@ function loadPalettesData(callback = null)
 			p: palettesData,
 			vid: lastinfo.vid
 		}));
-		if (callback) setTimeout(callback, 99); // actually redrawPalPrev()
+		redrawPalPrev()
+		if (callback) setTimeout(callback, 99);
 	});
 }
 
