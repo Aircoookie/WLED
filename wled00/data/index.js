@@ -1103,7 +1103,7 @@ function makeWS() {
 	ws = new WebSocket((window.location.protocol == "https:"?"wss":"ws")+'://'+(loc?locip:window.location.hostname)+'/ws');
 	ws.binaryType = "arraybuffer";
 	ws.onmessage = (e)=>{
-    	if (e.data instanceof ArrayBuffer) return; // liveview packet
+		if (e.data instanceof ArrayBuffer) return; // liveview packet
 		var json = JSON.parse(e.data);
 		if (json.leds) return; // JSON liveview packet
 		clearTimeout(jsonTimeout);
@@ -1366,7 +1366,7 @@ var reqsLegal = false;
 
 function requestJson(command=null)
 {
-	gId('connind').style.backgroundColor = "var(--c-r)";
+	gId('connind').style.backgroundColor = "var(--c-y)";
 	if (command && !reqsLegal) return; // stop post requests from chrome onchange event on page restore
 	if (!jsonTimeout) jsonTimeout = setTimeout(()=>{if (ws) ws.close(); ws=null; showErrorToast()}, 3000);
 	var req = null;
