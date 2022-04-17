@@ -349,7 +349,7 @@ button {
 .staytop, .staybot {
 	display: block;
 	position: -webkit-sticky;
-	position: sticky;
+	position: sticky !important;
 	top: 0;
 	z-index: 2;
     margin: 0 auto auto;
@@ -1177,7 +1177,7 @@ textarea {
 	position: relative;
 }
 
-input[type="text"].fnd {
+.fnd input[type="text"] {
 	display: block;
 	width: 100%;
 	box-sizing: border-box;
@@ -1189,12 +1189,12 @@ input[type="text"].fnd {
 	border: 1px solid var(--c-3);
 }
 
-input[type="text"].fnd:focus {
+.fnd input[type="text"]:focus {
 	background-color: var(--c-4);
 }
 
-input[type="text"].fnd:not(:placeholder-shown),
-input[type="text"].fnd:hover {
+.fnd input[type="text"]:not(:placeholder-shown),
+.fnd input[type="text"]:hover {
 	background-color: var(--c-3);
 }
 
