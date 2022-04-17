@@ -1193,6 +1193,7 @@ textarea {
 .fnd {
 	width: 280px;
 	margin: 0 auto;
+	position: relative;
 }
 
 input[type="text"].fnd {
