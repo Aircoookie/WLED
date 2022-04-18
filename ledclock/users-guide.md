@@ -49,7 +49,7 @@ At the *add* screen you can add the clock manually by entering its IP address, b
 
 ![Discover Lights](images/screenshot-app-discover.png)
 
-The clock should be now visible in the list, and the only thing left to get it is simply tapping on it once, which will bring its controls up.
+The clock should be now visible in the list. Simply tap on it once to bring its control interface up.
 
 ![Device Selection](images/screenshot-app-select.png)
 
@@ -158,7 +158,7 @@ Note that when the automatic brightness control is enabled, you cannot set the b
 
 ### 8.2. Display Settings
 
-You can control whether leading zero should be displayed or not. If the *Hide leading hero (hours)* is checked, hours before 10 will be shown as **8:35** instead of **08:35**.
+You can control whether leading zero should be displayed or not. If the *Hide leading zero (hours)* is checked, hours before 10 will be shown as **8:35** instead of **08:35**.
 
 ![Display Settings](images/screenshot-display-settings.png)
 
