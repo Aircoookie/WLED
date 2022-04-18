@@ -37,7 +37,7 @@ The following table shows the required components. The datasheets show the exact
 | [TEPT5700 ambient light sensor](datasheets/tept5700.pdf) | 1 | See the [application notes](datasheets/appnote-tept5700.pdf). |
 | [ESP32-WROOM-32E 4MB](datasheets/esp32-wroom-32e_esp32-wroom-32ue_datasheet_en.pdf) | 1 | See the [pinout](datasheets/esp32-pinout-chip-esp-wroom-32.png). |
 | [CP2102N USB->UART interface](datasheets/cp2102n-datasheet.pdf) | 1 | |
-| [4-pin wire to board connector male 90deg. with 2mm raster](datasheets/nxw-04k_en_10034352.gif) | 5 | Either SMD or THT, depeding the PCB you choose. |
+| [4-pin wire to board connector male 90deg. with 2mm raster](datasheets/nxw-04k_en_10034352.gif) | 5 | Either SMD or THT, depending the PCB you choose. |
 | [4-pin wire to board connector female with 2mm raster](datasheets/nxg-04_en_10031380.pdf) | 5 | |
 | [4-pin wire to board connector pin](datasheets/nxg-t_en_10030915.pdf) | 20 | |
 | 0.22 mm<sup>2</sup> stranded wire | 58 | 4 distinct colors; quantity is in cm and is for each color separately. |

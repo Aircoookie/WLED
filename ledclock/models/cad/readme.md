@@ -1,6 +1,6 @@
 # CAD Models
 
-All designs were made with Fusion360, if you also use it, you only need to open a sigle file that includes everything you need:
+All designs were made with Fusion360, if you also use it, you only need to open a single file that includes everything you need:
 
 - [led-clock.f3z](led-clock.f3z)
 

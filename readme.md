@@ -11,11 +11,11 @@ A customizable 7-segment style Wi-Fi connected clock powered by [WLED](https://g
 
 ## Overview
 
-The clock has three essential parts: a 3D-printed enclousre, the electronics and the firmware.
+The clock has three essential parts: a 3D-printed enclosure, the electronics and the firmware.
 
 **The enclosure** was designed in Fusion 360. 3D printing it requires two kinds of materials, an opaque and a translucent one. The clock is ~40 cm wide, so a 3D printer with a large build area is necessary to print the base platform and bottom plate.
 
-**The electronics** are fairly simple: the heart of the project is an ESP32 chip which dirves 58 pieces of WS2812b individually adressable LED chips. The LEDs form four 7-segment displays (each segment has two LEDs) and a separator consisting of two LEDs. An USB interface circuitry is also included for easy firmware upgrades. There's also an amibient light sensor for automatic brightness control, and a small piezo speaker for making some noise.
+**The electronics** are fairly simple: the heart of the project is an ESP32 chip which drives 58 pieces of WS2812b individually addressable LED chips. The LEDs form four 7-segment displays (each segment has two LEDs) and a separator consisting of two LEDs. An USB interface circuitry is also included for easy firmware upgrades. There's also an ambient light sensor for automatic brightness control, and a small piezo speaker for making some noise.
 
 **The firmware** is powered by the awesome project [WLED](https://github.com/Aircoookie/WLED). It is pre-configured with all the correct parameters, hides all irrelevant settings and features but provides additional functionality specific to this project.
 
