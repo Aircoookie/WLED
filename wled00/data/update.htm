@@ -3,7 +3,7 @@
 
 <head>
     <meta content='width=device-width' name='viewport'>
-    <title>WLED Update</title>
+    <title>LED Clock Update</title>
     <script>function B() { window.history.back() }
     function U() {document.getElementById("uf").style.display="none";document.getElementById("msg").style.display="block";}
     </script>
@@ -38,11 +38,11 @@
 </head>
 
 <body>
-    <h2>WLED Software Update</h2>
+    <h2>Software Update</h2>
     <form method='POST' action='/update' id='uf' enctype='multipart/form-data' onsubmit="U()">
-      Installed version: ##VERSION##<br>
-      Download the latest binary: <a href="https://github.com/Aircoookie/WLED/releases" target="_blank">
-      <img src="https://img.shields.io/github/release/Aircoookie/WLED.svg?style=flat-square"></a><br>
+      Installed version: ##LEDCLOCKVERSION##<br>
+      Download the latest binary: <a href="https://github.com/imeszaros/ledclock/releases" target="_blank">
+      <img src="https://img.shields.io/github/release/imeszaros/ledclock.svg?style=flat-square"></a><br>
       <input type='file' class="bt" name='update' required><br> <!--should have accept='.bin', but it prevents file upload from android app-->
       <input type='submit' class="bt" value='Update!' ><br>
       <button type="button" class="bt" onclick="B()">Back</button></form>

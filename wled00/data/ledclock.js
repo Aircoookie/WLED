@@ -267,3 +267,5 @@ toggleNodes = function() {
     if (LC.isClock) LC.toggleClock();
     LC.toggleNodesOld();
 }
+
+hol = []; // disable holiday backgrounds
