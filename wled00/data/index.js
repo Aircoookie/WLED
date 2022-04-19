@@ -29,9 +29,11 @@ var cfg = {
 var hol = [
 	[0,11,24,4,"https://aircoookie.github.io/xmas.png"], // christmas
 	[0,2,17,1,"https://images.alphacoders.com/491/491123.jpg"], // st. Patrick's day
-	[2022,3,17,2,"https://aircoookie.github.io/easter.png"],
+	[2025,3,20,2,"https://aircoookie.github.io/easter.png"],
 	[2023,3,9,2,"https://aircoookie.github.io/easter.png"],
-	[2024,2,31,2,"https://aircoookie.github.io/easter.png"]
+	[2024,2,31,2,"https://aircoookie.github.io/easter.png"],
+	[0,6,4,1,"https://initiate.alphacoders.com/download/wallpaper/516792/images/jpg/510921363292536"], // 4th of July
+	[0,0,1,1,"https://initiate.alphacoders.com/download/wallpaper/1198800/images/jpg/2522807481585600"] // new year
 ];
 
 function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson();}
