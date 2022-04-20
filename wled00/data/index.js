@@ -1554,7 +1554,7 @@ function makePlSel(incPl=false) {
 	for (var i = 0; i < arr.length; i++) {
 		var n = arr[i][1].n ? arr[i][1].n : "Preset " + arr[i][0];
 		if (!incPl && arr[i][1].playlist && arr[i][1].playlist.ps) continue; // remove playlists, sub-playlists not yet supported
-		plSelContent += `<option value=${arr[i][0]}>${n}</option>`
+		plSelContent += `<option value="${arr[i][0]}">${n}</option>`
 	}
 	return plSelContent;
 }
@@ -1641,7 +1641,8 @@ function makeP(i,pl) {
 <div class="c">Repeat <input class="noslide" type="number" id="pl${i}rp" oninput="plR(${i})" max=127 min=0 value=${rep>0?rep:1}> times</div>
 <div class="sel">End preset:<br>
 <select class="sel sel-ple" id="pl${i}selEnd" onchange="plR(${i})" data-val=${plJson[i].end?plJson[i].end:0}>
-	<option value=0>None</option>
+<option value="0">None</option>
+<option value="255">Restore preset</option>
 ${makePlSel(true)}
 </select></div>
 </div>
