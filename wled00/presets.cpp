@@ -75,8 +75,8 @@ void handlePresets(bool force)
   //HTTP API commands
   const char* httpwin = fdo["win"];
   if (httpwin) {
-    String apireq = "win"; apireq += '&'; // reduce flash string usage
-    apireq += F("IN&"); // interenal call
+    String apireq = "win"; // reduce flash string usage
+    apireq += F("&IN&"); // internal call
     apireq += httpwin;
     handleSet(nullptr, apireq, false);
     setValuesFromFirstSelectedSeg(); // fills legacy values
