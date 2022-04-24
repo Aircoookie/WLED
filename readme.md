@@ -4,6 +4,7 @@
   <a href="https://raw.githubusercontent.com/imeszaros/ledclock/master/LICENSE"><img src="https://img.shields.io/github/license/imeszaros/ledclock?color=blue&style=flat-square"></a>
   <a href="https://github.com/Aircoookie/WLED-App"><img src="https://img.shields.io/badge/app-wled-blue.svg?style=flat-square"></a>
   <a href="https://www.thingiverse.com/thing:5365230"><img src="https://img.shields.io/badge/models-thingiverse-blue.svg?style=flat-square"></a>
+  <a href="https://ko-fi.com/imeszaros"><img src="https://img.shields.io/badge/support-ko--fi.com-gold"></a>
 </p>
 
 # LED Clock
@@ -61,4 +62,9 @@ This repository has all information you need to make this project:
 - [Bill of materials](/ledclock/bill-of-materials.md)
 - [Detailed assembly guide with pictures](/ledclock/assembly-guide.md)
 
+## Do you like it?
+
+You can buy me a coffee to support my work: https://ko-fi.com/imeszaros
+
 Do you need help? Have you built the clock? Feel free to [contact me](https://github.com/imeszaros).
+
