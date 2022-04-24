@@ -216,8 +216,6 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     }
     strip.setPixelSegment(oldSegId);
     strip.trigger();
-//  } else if (!elem["frz"] && iarr.isNull()) { //return to regular effect
-//    seg.setOption(SEG_OPTION_FREEZE, false);
   }
   // send UDP if not in preset and something changed that is not just selection
   // send UDP if something changed that is not just selection or segment power/opacity

@@ -10,13 +10,11 @@ static char *tmpRAMbuffer = nullptr;
 
 static volatile byte presetToApply = 0;
 static volatile byte callModeToApply = 0;
-static volatile bool checkPlaylist = false;
 
 bool applyPreset(byte index, byte callMode, bool fromJson)
 {
   presetToApply = index;
   callModeToApply = callMode;
-  checkPlaylist = fromJson;
   // the following is needed in case of HTTP JSON API call to return correct state to the caller
   // fromJson is true in case when deserializeState() was called with presetId==0
   if (fromJson) handlePresets(true); // force immediate processing
@@ -25,6 +23,8 @@ bool applyPreset(byte index, byte callMode, bool fromJson)
 
 void handlePresets(bool force)
 {
+  bool changePreset = false;
+
   if (presetToApply == 0 || (fileDoc && !force)) return; // JSON buffer already allocated and not force apply or no preset waiting
 
   JsonObject fdo;
@@ -40,17 +40,22 @@ void handlePresets(bool force)
   if (fileDoc && core && force && presetToApply < 255) {
     // this will overwrite doc with preset content but applyPreset() is the last in such case and content of doc is no longer needed
     errorFlag = readObjectFromFileUsingId(filename, presetToApply, fileDoc) ? ERR_NONE : ERR_FS_PLOAD;
+
     JsonObject fdo = fileDoc->as<JsonObject>();
-    // if we applyPreset from JSON and preset contains "seg" we must unload playlist
-    if (checkPlaylist && !fdo["seg"].isNull()) unloadPlaylist();
+    if (!fdo["seg"].isNull()) unloadPlaylist(); // if preset contains "seg" we must unload playlist
+    if (!fdo["seg"].isNull() || !fdo["on"].isNull() || !fdo["bri"].isNull() || !fdo["ps"].isNull() || !fdo[F("playlist")].isNull() || !fdo["win"].isNull()) changePreset = true;
     fdo.remove("ps"); //remove load request for presets to prevent recursive crash
     deserializeState(fdo, callModeToApply, presetToApply);
-    if (!errorFlag) currentPreset = presetToApply;
+    if (!errorFlag && changePreset) currentPreset = presetToApply;
+
+    colorUpdated(callModeToApply);
+
     presetToApply = 0; //clear request for preset
     callModeToApply = 0;
-    checkPlaylist = false;
     return;
   }
+
+  if (force) return; // something went wrong with force option (most likely WS request), quit and wait for async load
 
   // allocate buffer
   DEBUG_PRINTLN(F("Apply preset JSON buffer requested."));
@@ -75,12 +80,13 @@ void handlePresets(bool force)
     apireq += httpwin;
     handleSet(nullptr, apireq, false);
     setValuesFromFirstSelectedSeg(); // fills legacy values
+    changePreset = true;
   } else {
+    if (!fdo["seg"].isNull() || !fdo["on"].isNull() || !fdo["bri"].isNull() || !fdo["nl"].isNull() || !fdo["ps"].isNull() || !fdo[F("playlist")].isNull() || !fdo["win"].isNull()) changePreset = true;
     fdo.remove("ps"); //remove load request for presets to prevent recursive crash
-    // if we applyPreset from JSON and preset contains "seg" we must unload playlist
-    if (checkPlaylist && !fdo["seg"].isNull()) unloadPlaylist();
     deserializeState(fdo, CALL_MODE_NO_NOTIFY, presetToApply);
   }
+  if (!errorFlag && presetToApply < 255 && changePreset) currentPreset = presetToApply;
 
   #if defined(ARDUINO_ARCH_ESP32)
   //Aircoookie recommended not to delete buffer
@@ -91,15 +97,11 @@ void handlePresets(bool force)
   #endif
 
   releaseJSONBufferLock(); // will also clear fileDoc
-
-  if (!errorFlag && presetToApply < 255) currentPreset = presetToApply;
-
   colorUpdated(callModeToApply);
   updateInterfaces(callModeToApply);
 
   presetToApply = 0; //clear request for preset
   callModeToApply = 0;
-  checkPlaylist = false;
 }
 
 //called from handleSet(PS=) [network callback (fileDoc==nullptr), IR (irrational), deserializeState, UDP] and deserializeState() [network callback (filedoc!=nullptr)]

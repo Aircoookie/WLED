@@ -1376,7 +1376,7 @@ function requestJson(command=null)
 	var useWs = (ws && ws.readyState === WebSocket.OPEN);
 	var type = command ? 'post':'get';
 	if (command) {
-		if (useWs || !command.ps) command.v = true; // force complete /json/si API response (ps is async so no point)
+		command.v = true; // force complete /json/si API response
 		command.time = Math.floor(Date.now() / 1000);
 		var t = gId('tt');
 		if (t.validity.valid && command.transition==null) {
@@ -1390,8 +1390,6 @@ function requestJson(command=null)
 	if (useWs) {
 		ws.send(req?req:'{"v":true}');
 		return;
-	} else if (command && command.ps) { // refresh UI if we don't use WS (async loading of presets)
-		setTimeout(requestJson,250);
 	}
 
 	fetch(url, {
