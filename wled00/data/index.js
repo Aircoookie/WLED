@@ -2275,7 +2275,7 @@ function loadPalettesData(callback = null)
 			p: palettesData,
 			vid: lastinfo.vid
 		}));
-		redrawPalPrev()
+		redrawPalPrev();
 		if (callback) setTimeout(callback, 99);
 	});
 }
