@@ -29,9 +29,11 @@ var cfg = {
 var hol = [
 	[0,11,24,4,"https://aircoookie.github.io/xmas.png"], // christmas
 	[0,2,17,1,"https://images.alphacoders.com/491/491123.jpg"], // st. Patrick's day
-	[2022,3,17,2,"https://aircoookie.github.io/easter.png"],
+	[2025,3,20,2,"https://aircoookie.github.io/easter.png"],
 	[2023,3,9,2,"https://aircoookie.github.io/easter.png"],
-	[2024,2,31,2,"https://aircoookie.github.io/easter.png"]
+	[2024,2,31,2,"https://aircoookie.github.io/easter.png"],
+	[0,6,4,1,"https://initiate.alphacoders.com/download/wallpaper/516792/images/jpg/510921363292536"], // 4th of July
+	[0,0,1,1,"https://initiate.alphacoders.com/download/wallpaper/1198800/images/jpg/2522807481585600"] // new year
 ];
 
 function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson();}
@@ -1374,7 +1376,7 @@ function requestJson(command=null)
 	var useWs = (ws && ws.readyState === WebSocket.OPEN);
 	var type = command ? 'post':'get';
 	if (command) {
-		if (useWs || !command.ps) command.v = true; // force complete /json/si API response (ps is async so no point)
+		command.v = true; // force complete /json/si API response
 		command.time = Math.floor(Date.now() / 1000);
 		var t = gId('tt');
 		if (t.validity.valid && command.transition==null) {
@@ -1388,8 +1390,6 @@ function requestJson(command=null)
 	if (useWs) {
 		ws.send(req?req:'{"v":true}');
 		return;
-	} else if (command && command.ps) { // refresh UI if we don't use WS (async loading of presets)
-		setTimeout(requestJson,250);
 	}
 
 	fetch(url, {
@@ -1418,9 +1418,9 @@ function requestJson(command=null)
 		var s = json.state ? json.state : json;
 		readState(s);
 
-		//load presets, and open websocket sequentially
-		setTimeout(function(){
-			loadPresets(function(){
+		//load presets and open websocket sequentially
+		setTimeout(()=>{
+			loadPresets(()=>{
 				if (!(ws && ws.readyState === WebSocket.OPEN)) makeWS();
 			});
 		},25);
