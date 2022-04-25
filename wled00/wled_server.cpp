@@ -112,13 +112,11 @@ void initServer()
     serveSettings(request);
   });
   
-  server.on("/settings.js", HTTP_GET, [](AsyncWebServerRequest *request){
-    serveSettingsJS(request);
-  });
+  // "settings.js" request also handled by serveSettings()
   
   server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
     if (handleIfNoneMatchCacheHeader(request)) return;
-    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/css",  PAGE_settingsCss,   PAGE_settingsCss_length);
+    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/css", PAGE_settingsCss, PAGE_settingsCss_length);
     response->addHeader(F("Content-Encoding"),"gzip");
     setStaticContentCacheHeaders(response);
     request->send(response);
@@ -257,15 +255,14 @@ void initServer()
   if (!otaLock) {
     //init ota page
     server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
-      AsyncWebServerResponse *response;
-      if (correctPIN) response = request->beginResponse_P(200, "text/html", PAGE_update, PAGE_update_length);
-      else            response = request->beginResponse_P(200, "text/html", PAGE_settings_pin,  PAGE_settings_pin_length);
-      response->addHeader(F("Content-Encoding"),"gzip");
-      setStaticContentCacheHeaders(response);
-      request->send(response);
+      serveSettings(request); // checks for "upd" in URL and handles PIN
     });
     
     server.on("/update", HTTP_POST, [](AsyncWebServerRequest *request){
+      if (!correctPIN) {
+        serveSettings(request, true); // handle PIN page POST request
+        return;
+      }
       if (Update.hasError() || !correctPIN) {
         serveMessage(request, 500, F("Update failed!"), F("Please check your file and retry!"), 254);
       } else {
@@ -489,9 +486,11 @@ void serveSettingsJS(AsyncWebServerRequest* request)
 
 void serveSettings(AsyncWebServerRequest* request, bool post)
 {
-  byte subPage = 0;
+  byte subPage = 0, originalSubPage = 0;
   const String& url = request->url();
-  if (url.indexOf("sett") >= 0) 
+
+  if (url.indexOf("upd") >= 0) subPage = 251;
+  else if (url.indexOf("sett") >= 0) 
   {
     if      (url.indexOf(".js")  > 0) subPage = 254;
     else if (url.indexOf(".css") > 0) subPage = 253;
@@ -505,8 +504,9 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     else if (url.indexOf("um")   > 0) subPage = 8;
   } else subPage = 255; //welcome page
 
-  if (subPage > 0 && subPage < 9 && strlen(settingsPIN)>0 && !correctPIN) {
-    subPage = 252;  // require PIN
+  if (!correctPIN && strlen(settingsPIN) > 0 && ((subPage > 0 && subPage < 9) || subPage == 251)) {
+    originalSubPage = subPage;
+    subPage = 252; // require PIN
   }
 
   // if OTA locked or too frequent PIN entry requests fail hard
@@ -533,22 +533,23 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
       case 252: strcpy_P(s, correctPIN ? PSTR("PIN accepted") : PSTR("PIN rejected")); break;
     }
 
-    if (subPage != 252) strcat_P(s, PSTR(" settings saved."));
-    else {
+    if (subPage == 252) {
       server.removeHandler(editHandler);
       createEditHandler(correctPIN);
+    } else
+      strcat_P(s, PSTR(" settings saved."));
+
+    if (subPage == 252 && correctPIN) {
+      subPage = originalSubPage; // on correct PIN load settings page the user intended
+    } else {
+      if (!s2[0]) strcpy_P(s2, PSTR("Redirecting..."));
+
+      serveMessage(request, 200, s, s2, (subPage == 1 || (subPage == 6 && doReboot)) ? 129 : (correctPIN ? 1 : 3));
+      //if (subPage == 6) doReboot = true;
+
+      return;
     }
-    if (!s2[0]) strcpy_P(s2, PSTR("Redirecting..."));
-
-    serveMessage(request, 200, s, s2, (subPage == 1 || (subPage == 6 && doReboot)) ? 129 : (correctPIN ? 1 : 10));
-    //if (subPage == 6) doReboot = true;
-
-    return;
   }
-  
-  #ifdef WLED_DISABLE_MOBILE_UI //disable welcome page if not enough storage
-   if (subPage == 255) {serveIndex(request); return;}
-  #endif
 
   optionType = subPage;
   
@@ -563,6 +564,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     case 6:   response = request->beginResponse_P(200, "text/html", PAGE_settings_sec,  PAGE_settings_sec_length);  break;
     case 7:   response = request->beginResponse_P(200, "text/html", PAGE_settings_dmx,  PAGE_settings_dmx_length);  break;
     case 8:   response = request->beginResponse_P(200, "text/html", PAGE_settings_um,   PAGE_settings_um_length);   break;
+    case 251: response = request->beginResponse_P(200, "text/html", PAGE_update,        PAGE_update_length);        break;
     case 252: response = request->beginResponse_P(200, "text/html", PAGE_settings_pin,  PAGE_settings_pin_length);  break;
     case 253: response = request->beginResponse_P(200, "text/css",  PAGE_settingsCss,   PAGE_settingsCss_length);   break;
     case 254: serveSettingsJS(request); return;

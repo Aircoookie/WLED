@@ -57,6 +57,7 @@
 		</div>
 		<h2>Security & Update setup</h2>
 		Settings PIN: <input type="password" id="PIN" name="PIN" size="4" maxlength="4" minlength="4" onkeydown="checkNum(this)" pattern="[0-9]*" inputmode="numeric" title="Please enter a 4 digit number"><br>
+		&#9888; Unencrypted transmission. Do NOT use your banking, door, or SIM pin!<br><br>
 		Lock wireless (OTA) software update: <input type="checkbox" name="NO"><br>
 		Passphrase: <input type="password" name="OP" maxlength="32"><br>
 		To enable OTA, for security reasons you need to also enter the correct password!<br>
@@ -66,7 +67,7 @@
 		Deny access to WiFi settings if locked: <input type="checkbox" name="OW"><br><br>
 		Factory reset: <input type="checkbox" name="RS"><br>
 		All settings and presets will be erased.<br><br>
-		HTTP traffic is unencrypted. An attacker in the same network can intercept form data!
+		&#9888; HTTP traffic is unencrypted. An attacker in the same network can intercept form data!
 		<hr>
 		<h3>Software Update</h3>
 		<button type="button" onclick="U()">Manual OTA Update</button><br>
