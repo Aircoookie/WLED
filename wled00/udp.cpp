@@ -238,7 +238,7 @@ void handleNotifications()
       uint8_t lbuf[packetSize];
       rgbUdp.read(lbuf, packetSize);
       realtimeLock(realtimeTimeoutMs, REALTIME_MODE_HYPERION);
-      if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) return;
+      if (realtimeOverride) return;
       uint16_t id = 0;
       uint16_t totalLen = strip.getLengthTotal();
       for (uint16_t i = 0; i < packetSize -2; i += 3)
@@ -449,7 +449,7 @@ void handleNotifications()
 
     realtimeIP = (isSupp) ? notifier2Udp.remoteIP() : notifierUdp.remoteIP();
     realtimeLock(realtimeTimeoutMs, REALTIME_MODE_TPM2NET);
-    if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) return;
+    if (realtimeOverride) return;
 
     tpmPacketCount++; //increment the packet count
     if (tpmPacketCount == 1) tpmPayloadFrameSize = (udpIn[2] << 8) + udpIn[3]; //save frame size for the whole payload if this is the first packet
@@ -489,7 +489,7 @@ void handleNotifications()
     } else {
       realtimeLock(udpIn[1]*1000 +1, REALTIME_MODE_UDP);
     }
-    if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) return;
+    if (realtimeOverride) return;
 
     uint16_t totalLen = strip.getLengthTotal();
     if (udpIn[0] == 1) //warls

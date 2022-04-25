@@ -34,7 +34,7 @@ void handleDDPPacket(e131_packet_t* p) {
 
   realtimeLock(realtimeTimeoutMs, REALTIME_MODE_DDP);
   
-  if (!realtimeOverride || (realtimeMode && useMainSegmentOnly)) {
+  if (!realtimeOverride) {
     for (uint16_t i = start; i < stop; i++) {
       setRealtimePixel(i, data[c], data[c+1], data[c+2], 0);
       c+=3;
@@ -122,7 +122,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
       if (uni != e131Universe) return;
       if (availDMXLen < 3) return;
       realtimeLock(realtimeTimeoutMs, mde);
-      if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) return;
+      if (realtimeOverride) return;
       wChannel = (availDMXLen > 3) ? e131_data[dataOffset+3] : 0;
       for (uint16_t i = 0; i < totalLen; i++)
         setRealtimePixel(i, e131_data[dataOffset+0], e131_data[dataOffset+1], e131_data[dataOffset+2], wChannel);
@@ -132,7 +132,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
       if (uni != e131Universe) return;
       if (availDMXLen < 4) return;
       realtimeLock(realtimeTimeoutMs, mde);
-      if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) return;
+      if (realtimeOverride) return;
       wChannel = (availDMXLen > 4) ? e131_data[dataOffset+4] : 0;
       if (DMXOldDimmer != e131_data[dataOffset+0]) {
         DMXOldDimmer = e131_data[dataOffset+0];
@@ -183,7 +183,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
         bool is4Chan = (DMXMode == DMX_MODE_MULTIPLE_RGBW);
         const uint16_t dmxChannelsPerLed = is4Chan ? 4 : 3;
         const uint16_t ledsPerUniverse = is4Chan ? MAX_4_CH_LEDS_PER_UNIVERSE : MAX_3_CH_LEDS_PER_UNIVERSE;
-        if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) return;
+        if (realtimeOverride) return;
         uint16_t previousLeds, dmxOffset, ledsTotal;
         if (previousUniverses == 0) {
           if (availDMXLen < 1) return;

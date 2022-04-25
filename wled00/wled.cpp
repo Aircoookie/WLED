@@ -79,7 +79,7 @@ void WLED::loop()
     yield();
   }
 
-  if (!realtimeMode || realtimeOverride || (realtimeMode && useMainSegmentOnly))  // block stuff if WARLS/Adalight is enabled
+  if (!realtimeMode || realtimeOverride || useMainSegmentOnly)  // block stuff if WARLS/Adalight is enabled
   {
     if (apActive) dnsServer.processNextRequest();
     #ifndef WLED_DISABLE_OTA
