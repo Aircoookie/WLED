@@ -564,7 +564,11 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == 6)
   {
-    sappends('s',SET_F("PIN"),settingsPIN);
+    byte l = strlen(settingsPIN);
+    char fpass[l+1]; //fill PIN field with 0000
+    fpass[l] = 0;
+    memset(fpass,'0',l);
+    sappends('s',SET_F("PIN"),fpass);
     sappend('c',SET_F("NO"),otaLock);
     sappend('c',SET_F("OW"),wifiLock);
     sappend('c',SET_F("AO"),aOtaEnabled);

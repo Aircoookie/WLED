@@ -96,7 +96,8 @@ td input[type="checkbox"] {
   margin-right: revert;
 }
 input[type=file] {
-  font-size: 16px
+  font-size: 16px;
+  margin-top: 10px;
 }
 select {
   margin: 2px;

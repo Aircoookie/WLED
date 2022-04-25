@@ -16,9 +16,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   }
 
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 7: DMX 8: usermods
-  if (subPage <1 || subPage >8) return;
-
-  if (correctPIN) lastEditTime = millis();
+  if (subPage <1 || subPage >8 || !correctPIN) return;
 
   //WIFI SETTINGS
   if (subPage == 1)
@@ -399,8 +397,13 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     if (request->hasArg(F("PIN"))) {
       const char *pin = request->arg(F("PIN")).c_str();
-      if (strlen(pin) == 4 || strlen(pin) == 0) {
-        strlcpy(settingsPIN, pin, 5);
+      size_t pinLen = strlen(pin);
+      if (pinLen == 4 || pinLen == 0) {
+        int numZeros = 0;
+        for (uint32_t i = 0; i < pinLen; i++) numZeros += (pin[i] == '0');
+        if (numZeros < pinLen || pinLen == 0) { // ignore 0000 input (placeholder)
+          strlcpy(settingsPIN, pin, 5);
+        }
         settingsPIN[4] = 0;
       }
     }
@@ -410,21 +413,21 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     {
       if (otaLock && strcmp(otaPass,request->arg(F("OP")).c_str()) == 0)
       {
-        pwdCorrect = true;
+        // brute force protection: do not unlock even if correct if last save was less than 3 seconds ago
+        if (millis() - lastEditTime > 3000) pwdCorrect = true;
       }
       if (!otaLock && request->arg(F("OP")).length() > 0)
       {
-        strlcpy(otaPass,request->arg(F("OP")).c_str(), 33);
+        strlcpy(otaPass,request->arg(F("OP")).c_str(), 33); // set new OTA password
       }
     }
 
     if (pwdCorrect) //allow changes if correct pwd or no ota active
     {
-      bool oldOTALock = otaLock;
       otaLock = request->hasArg(F("NO"));
       wifiLock = request->hasArg(F("OW"));
       aOtaEnabled = request->hasArg(F("AO"));
-      doReboot = (otaLock ^ oldOTALock);
+      createEditHandler(correctPIN && !otaLock);
     }
   }
 
@@ -542,7 +545,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     releaseJSONBufferLock();
   }
 
-  if (subPage != 2 && (subPage != 6 || !doReboot)) serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)
+  lastEditTime = millis();
+  if (subPage != 2 && !doReboot) serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)
   if (subPage == 4) alexaInit();
 }
 

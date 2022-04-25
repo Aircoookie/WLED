@@ -430,7 +430,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   if (pwd != nullptr && strncmp(otaPass, pwd, 33) == 0) pwdCorrect = true;
 
   if (pwdCorrect) { //only accept these values from cfg.json if ota is unlocked (else from wsec.json)
-    CJSON(otaLock, ota[F("lock")]);
+    CJSON(otaLock, ota["lock"]);
     CJSON(wifiLock, ota[F("lock-wifi")]);
     CJSON(aOtaEnabled, ota[F("aota")]);
     getStringFromJson(otaPass, pwd, 33); //normally not present due to security
@@ -811,7 +811,7 @@ void serializeConfig() {
   }
 
   JsonObject ota = doc.createNestedObject("ota");
-  ota[F("lock")] = otaLock;
+  ota["lock"] = otaLock;
   ota[F("lock-wifi")] = wifiLock;
   ota[F("pskl")] = strlen(otaPass);
   ota[F("aota")] = aOtaEnabled;
@@ -881,7 +881,7 @@ bool deserializeConfigSec() {
 
   JsonObject ota = doc["ota"];
   getStringFromJson(otaPass, ota[F("pwd")], 33);
-  CJSON(otaLock, ota[F("lock")]);
+  CJSON(otaLock, ota["lock"]);
   CJSON(wifiLock, ota[F("lock-wifi")]);
   CJSON(aOtaEnabled, ota[F("aota")]);
 
@@ -922,7 +922,7 @@ void serializeConfigSec() {
 
   JsonObject ota = doc.createNestedObject("ota");
   ota[F("pwd")] = otaPass;
-  ota[F("lock")] = otaLock;
+  ota["lock"] = otaLock;
   ota[F("lock-wifi")] = wifiLock;
   ota[F("aota")] = aOtaEnabled;
 

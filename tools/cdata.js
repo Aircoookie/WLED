@@ -267,7 +267,7 @@ writeChunks(
         str
           .replace(
             /function GetV().*\<\/script\>/gms,
-            "</script><script src=\"settings/settings.js?p=0\"></script>"
+            "</script><script src=\"/settings/s.js?p=0\"></script>"
           )
     },
     {
@@ -279,7 +279,7 @@ writeChunks(
         str
           .replace(
             /function GetV().*\<\/script\>/gms,
-            "</script><script src=\"settings.js?p=1\"></script>"
+            "</script><script src=\"/settings/s.js?p=1\"></script>"
           )
     },
     {
@@ -291,7 +291,7 @@ writeChunks(
         str
           .replace(
             /function GetV().*\<\/script\>/gms,
-            "</script><script src=\"settings.js?p=2\"></script>"
+            "</script><script src=\"/settings/s.js?p=2\"></script>"
           )
     },
     {
@@ -303,7 +303,7 @@ writeChunks(
         str
           .replace(
             /function GetV().*\<\/script\>/gms,
-            "</script><script src=\"settings.js?p=7\"></script>"
+            "</script><script src=\"/settings/s.js?p=7\"></script>"
           )
     },
     {
@@ -315,7 +315,7 @@ writeChunks(
         str
           .replace(
             /function GetV().*\<\/script\>/gms,
-            "</script><script src=\"settings.js?p=3\"></script>"
+            "</script><script src=\"/settings/s.js?p=3\"></script>"
           )
     },
     {
@@ -327,7 +327,7 @@ writeChunks(
         str
           .replace(
             /function GetV().*\<\/script\>/gms,
-            "</script><script src=\"settings.js?p=4\"></script>"
+            "</script><script src=\"/settings/s.js?p=4\"></script>"
           )
     },
     {
@@ -339,7 +339,7 @@ writeChunks(
         str
           .replace(
             /function GetV().*\<\/script\>/gms,
-            "</script><script src=\"settings.js?p=5\"></script>"
+            "</script><script src=\"/settings/s.js?p=5\"></script>"
           )
     },
     {
@@ -351,7 +351,7 @@ writeChunks(
         str
           .replace(
             /function GetV().*\<\/script\>/gms,
-            "</script><script src=\"settings.js?p=6\"></script>"
+            "</script><script src=\"/settings/s.js?p=6\"></script>"
           )
     },
     {
@@ -363,7 +363,7 @@ writeChunks(
         str
           .replace(
             /function GetV().*\<\/script\>/gms,
-            "</script><script src=\"settings.js?p=8\"></script>"
+            "</script><script src=\"/settings/s.js?p=8\"></script>"
           )
     },
     {
@@ -420,7 +420,7 @@ const char PAGE_dmxmap[] PROGMEM = R"=====()=====";
         str
           .replace(
             /function GetV().*\<\/script\>/gms,
-            "</script><script src=\"settings.js?p=9\"></script>"
+            "</script><script src=\"/settings/s.js?p=9\"></script>"
           )
     },
     {

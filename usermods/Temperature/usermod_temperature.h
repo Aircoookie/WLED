@@ -233,17 +233,21 @@ class UsermodTemperature : public Usermod {
       if (temperature <= -100.0f) {
         temp.add(0);
         temp.add(F(" Sensor Error!"));
-        return;
+      } else {
+        temp.add(degC ? getTemperatureC() : getTemperatureF());
+        temp.add(degC ? F("°C") : F("°F"));
       }
 
-      temp.add(degC ? getTemperatureC() : getTemperatureF());
-      temp.add(degC ? F("°C") : F("°F"));
-
-      JsonObject sensor = root[F("sensor")];
-      if (sensor.isNull()) sensor = root.createNestedObject(F("sensor"));
-      temp = sensor.createNestedArray(F("temp"));
-      temp.add(degC ? temperature : (float)temperature * 1.8f + 32);
-      temp.add(degC ? F("°C") : F("°F"));
+      JsonArray sensors = root[F("sensor")];
+      if (sensors.isNull()) sensors = root.createNestedArray(F("sensor"));
+      JsonObject s = sensors.createNestedObject();
+      s["type"] = "T";
+      s["val"]  = degC ? temperature : (float)temperature * 1.8f + 32);
+      s["unit"] = degC ? F("°C") : F("°F"));
+      if (temperature <= -100.0f) {
+        s["val"] = nullptr;
+        s[F("error")] = 1;
+      }
     }
 
     /**
