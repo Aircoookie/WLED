@@ -362,6 +362,12 @@ button {
 #fx {
 	height: calc(100% - 121px);
 	overflow-y: scroll;
+	padding-left: 6px; /* compensate scroll bar */
+}
+
+#sliders {
+	width: 310px;
+	margin: 0 auto;
 }
 
 #sliders .labels {

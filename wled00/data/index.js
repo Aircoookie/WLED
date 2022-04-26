@@ -1038,8 +1038,10 @@ function updateUI()
 	var ccfg = cfg.comp.colors;
 	gId('hexw').style.display = ccfg.hex ? "block":"none";    // HEX input
 	gId('picker').style.display = (hasRGB && ccfg.picker) ? "block":"none"; // color picker wheel
-	gId('vwrap').style.display = (hasRGB && ccfg.picker) ? "block":"none";  // brightness (value) slider
-	gId('kwrap').style.display = (hasRGB && !hasCCT && ccfg.picker) ? "block":"none"; // Kelvin slider
+	gId('hwrap').style.display = (hasRGB && !ccfg.picker) ? "block":"none"; // color picker wheel
+	gId('swrap').style.display = (hasRGB && !ccfg.picker) ? "block":"none"; // color picker wheel
+	gId('vwrap').style.display = (hasRGB /*&& ccfg.picker*/) ? "block":"none";  // brightness (value) slider
+	gId('kwrap').style.display = (hasRGB && !hasCCT /*&& ccfg.picker*/) ? "block":"none"; // Kelvin slider
 	gId('rgbwrap').style.display = (hasRGB && ccfg.rgb) ? "block":"none";   // RGB sliders
 	gId('qcs-w').style.display = (hasRGB && ccfg.quick) ? "block":"none";   // quick selection
 	//gId('palw').style.display = hasRGB ? "block":"none";                    // palettes
@@ -2110,14 +2112,21 @@ function updatePSliders() {
 	gId('hexc').value = str;
 	gId('hexcnf').style.backgroundColor = "var(--c-3)";
 
-	// update value slider
-	var v = gId('sliderV');
-	v.value = cpick.color.value;
-	// background color as if color had full value
-	var hsv = {"h":cpick.color.hue,"s":cpick.color.saturation,"v":100}; 
-	var c = iro.Color.hsvToRgb(hsv);
-	var cs = 'rgb('+c.r+','+c.g+','+c.b+')';
-	v.nextElementSibling.style.backgroundImage = `linear-gradient(90deg, #000 -15%, ${cs})`;
+	// update HSV sliders
+	var c;
+	let h = cpick.color.hue;
+	let s = cpick.color.saturation;
+	let v = cpick.color.value;
+
+	gId("sliderH").value = h;
+	gId("sliderS").value = s;
+	gId('sliderV').value = v;
+
+	c = iro.Color.hsvToRgb({"h":h,"s":100,"v":100});
+	gId("sliderS").nextElementSibling.style.backgroundImage = 'linear-gradient(90deg, #aaa -15%, rgb('+c.r+','+c.g+','+c.b+'))';
+
+	c = iro.Color.hsvToRgb({"h":h,"s":s,"v":100});
+	gId('sliderV').nextElementSibling.style.backgroundImage = 'linear-gradient(90deg, #000 -15%, rgb('+c.r+','+c.g+','+c.b+'))';
 
 	// update Kelvin slider
 	gId('sliderK').value = cpick.color.kelvin;
@@ -2152,6 +2161,16 @@ function setPicker(rgb) {
 	updateTrail(gId('sliderR'));
 	updateTrail(gId('sliderG'));
 	updateTrail(gId('sliderB'));
+}
+
+function fromH()
+{
+	cpick.color.setChannel('hsv', 'h', gId('sliderH').value);
+}
+
+function fromS()
+{
+	cpick.color.setChannel('hsv', 's', gId('sliderS').value);
 }
 
 function fromV()

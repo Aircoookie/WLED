@@ -88,6 +88,20 @@
 <div class ="container">
 	<div id="Colors" class="tabcontent">
 		<div id="picker" class="noslide"></div>
+		<div id="hwrap">
+			<!--p class="labels hd">Hue</p-->
+			<div class="sliderwrap il">
+				<input id="sliderH" class="noslide" oninput="fromH()" onchange="setColor(0)" max="359" min="0" type="range" value="0" step="any">
+				<div class="sliderdisplay" style="background: linear-gradient(90deg, #f00 2%, #ff0 19%, #0f0 35%, #0ff 52%, #00f 68%, #f0f 85%, #f00)"></div>
+			</div><br>
+		</div>
+		<div id="swrap">
+			<!--p class="labels hd">Saturation</p-->
+			<div class="sliderwrap il">
+				<input id="sliderS" class="noslide" oninput="fromS()" onchange="setColor(0)" max="100" min="0" type="range" value="100" step="any">
+				<div class="sliderdisplay" style="background: linear-gradient(90deg, #aaa 0%, #f00)"></div>
+			</div><br>
+		</div>
 		<div id="vwrap">
 			<!--p class="labels hd">Value</p-->
 			<div class="sliderwrap il">
