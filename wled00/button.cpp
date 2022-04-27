@@ -81,6 +81,7 @@ bool isButtonPressed(uint8_t i)
       break;
     case BTN_TYPE_PUSH:
     case BTN_TYPE_SWITCH:
+    case BTN_TYPE_MULTIWAY:
       if (digitalRead(pin) == LOW) return true;
       break;
     case BTN_TYPE_PUSH_ACT_HIGH:
@@ -110,12 +111,12 @@ void handleSwitch(uint8_t b)
     if (!buttonPressedBefore[b]) { // on -> off
       if (macroButton[b]) applyPreset(macroButton[b], CALL_MODE_BUTTON_PRESET);
       else { //turn on
-        if (!bri) {toggleOnOff(); stateUpdated(CALL_MODE_BUTTON);}
+        if (!bri || buttonType[b] == BTN_TYPE_MULTIWAY) {toggleOnOff(); stateUpdated(CALL_MODE_BUTTON);}
       } 
     } else {  // off -> on
       if (macroLongPress[b]) applyPreset(macroLongPress[b], CALL_MODE_BUTTON_PRESET);
       else { //turn off
-        if (bri) {toggleOnOff(); stateUpdated(CALL_MODE_BUTTON);}
+        if (bri || buttonType[b] == BTN_TYPE_MULTIWAY) {toggleOnOff(); stateUpdated(CALL_MODE_BUTTON);}
       } 
     }
 
@@ -211,7 +212,7 @@ void handleButton()
     }
 
     //button is not momentary, but switch. This is only suitable on pins whose on-boot state does not matter (NOT gpio0)
-    if (buttonType[b] == BTN_TYPE_SWITCH || buttonType[b] == BTN_TYPE_PIR_SENSOR) {
+    if (buttonType[b] == BTN_TYPE_SWITCH || buttonType[b] == BTN_TYPE_PIR_SENSOR || buttonType[b] == BTN_TYPE_MULTIWAY) {
       handleSwitch(b); continue;
     }
 
