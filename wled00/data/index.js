@@ -1419,7 +1419,8 @@ function requestJson(command=null)
 		}
 		var s = json.state ? json.state : json;
 		readState(s);
-		//load presets, and open websocket sequentially
+
+		//load presets and open websocket sequentially
 		setTimeout(()=>{
 			loadPresets(()=>{
 				if (!(ws && ws.readyState === WebSocket.OPEN)) makeWS();
@@ -2328,6 +2329,7 @@ function search(f,l=null)
 	f.nextElementSibling.style.display=(f.value!=='')?'block':'none';
 	if (!l) return;
 	var el = gId(l).querySelectorAll('.lstI');
+	// filter list items but leave (Default & Solid) always visible
 	for (i = (l==='pcont'?0:1); i < el.length; i++) {
 		var it = el[i];
 		var itT = it.querySelector('.lstIname').innerText.toUpperCase();

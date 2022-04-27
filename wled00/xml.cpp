@@ -319,7 +319,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("CR"),cctFromRgb);
     sappend('v',SET_F("CB"),strip.cctBlending);
     sappend('v',SET_F("FR"),strip.getTargetFps());
-    sappend('v',SET_F("AW"),strip.autoWhiteMode);
+    sappend('v',SET_F("AW"),Bus::getAutoWhiteMode());
 
     for (uint8_t s=0; s < busses.getNumBusses(); s++) {
       Bus* bus = busses.getBus(s);
@@ -564,7 +564,11 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == 6)
   {
-    sappends('s',SET_F("PIN"),settingsPIN);
+    byte l = strlen(settingsPIN);
+    char fpass[l+1]; //fill PIN field with 0000
+    fpass[l] = 0;
+    memset(fpass,'0',l);
+    sappends('s',SET_F("PIN"),fpass);
     sappend('c',SET_F("NO"),otaLock);
     sappend('c',SET_F("OW"),wifiLock);
     sappend('c',SET_F("AO"),aOtaEnabled);

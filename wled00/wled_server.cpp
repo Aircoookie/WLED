@@ -7,6 +7,11 @@
 bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest* request);
 void setStaticContentCacheHeaders(AsyncWebServerResponse *response);
 
+// define flash strings once (saves flash memory)
+static const char s_redirecting[] PROGMEM = "Redirecting...";
+static const char s_content_enc[] PROGMEM = "Content-Encoding";
+static const char s_unlock_ota [] PROGMEM = "Please unlock OTA in security settings!";
+
 //Is this an IP?
 bool isIp(String str) {
   for (size_t i = 0; i < str.length(); i++) {
@@ -20,7 +25,7 @@ bool isIp(String str) {
 
 void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {
   if (otaLock || !correctPIN) {
-    if (final) request->send(500, "text/plain", F("Please unlock OTA in security settings!"));
+    if (final) request->send(500, "text/plain", FPSTR(s_unlock_ota));
     return;
   }
   if (!index) {
@@ -44,6 +49,7 @@ void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t
 }
 
 void createEditHandler(bool enable) {
+  if (editHandler != nullptr) server.removeHandler(editHandler);
   if (enable) {
     #ifdef WLED_ENABLE_FS_EDITOR
       #ifdef ARDUINO_ARCH_ESP32
@@ -57,8 +63,9 @@ void createEditHandler(bool enable) {
       });
     #endif
   } else {
-    editHandler = &server.on("/edit", HTTP_GET, [](AsyncWebServerRequest *request){
-      serveMessage(request, 500, "Access Denied", F("Please unlock settings page!"), 254);
+    editHandler = &server.on("/edit", HTTP_ANY, [](AsyncWebServerRequest *request){
+      serveMessage(request, 500, "Access Denied", otaLock ? FPSTR(s_unlock_ota) : F("Please enter PIN in settings!"), 254);
+      //serveSettings(request,request->method() == HTTP_POST); // request PIN
     });
   }
 }
@@ -91,7 +98,7 @@ void initServer()
   server.on("/liveview", HTTP_GET, [](AsyncWebServerRequest *request){
     if (handleIfNoneMatchCacheHeader(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_liveviewws, PAGE_liveviewws_length);
-    response->addHeader(F("Content-Encoding"),"gzip");
+    response->addHeader(FPSTR(s_content_enc),"gzip");
     setStaticContentCacheHeaders(response);
     request->send(response);
     //request->send_P(200, "text/html", PAGE_liveviewws);
@@ -100,7 +107,7 @@ void initServer()
   server.on("/liveview", HTTP_GET, [](AsyncWebServerRequest *request){
     if (handleIfNoneMatchCacheHeader(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_liveview, PAGE_liveview_length);
-    response->addHeader(F("Content-Encoding"),"gzip");
+    response->addHeader(FPSTR(s_content_enc),"gzip");
     setStaticContentCacheHeaders(response);
     request->send(response);
     //request->send_P(200, "text/html", PAGE_liveview);
@@ -112,14 +119,12 @@ void initServer()
     serveSettings(request);
   });
   
-  server.on("/settings.js", HTTP_GET, [](AsyncWebServerRequest *request){
-    serveSettingsJS(request);
-  });
+  // "/settings/settings.js&p=x" request also handled by serveSettings()
   
   server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
     if (handleIfNoneMatchCacheHeader(request)) return;
-    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/css",  PAGE_settingsCss,   PAGE_settingsCss_length);
-    response->addHeader(F("Content-Encoding"),"gzip");
+    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/css", PAGE_settingsCss, PAGE_settingsCss_length);
+    response->addHeader(FPSTR(s_content_enc),"gzip");
     setStaticContentCacheHeaders(response);
     request->send(response);
   });
@@ -205,7 +210,7 @@ void initServer()
   server.on("/u", HTTP_GET, [](AsyncWebServerRequest *request){
     if (handleIfNoneMatchCacheHeader(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_usermod, PAGE_usermod_length);
-    response->addHeader(F("Content-Encoding"),"gzip");
+    response->addHeader(FPSTR(s_content_enc),"gzip");
     setStaticContentCacheHeaders(response);
     request->send(response);
     //request->send_P(200, "text/html", PAGE_usermod);
@@ -230,7 +235,7 @@ void initServer()
     if (handleFileRead(request, "/simple.htm")) return;
     if (handleIfNoneMatchCacheHeader(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_simple, PAGE_simple_L);
-    response->addHeader(F("Content-Encoding"),"gzip");
+    response->addHeader(FPSTR(s_content_enc),"gzip");
     setStaticContentCacheHeaders(response);
     request->send(response);
   });
@@ -238,63 +243,59 @@ void initServer()
 
   server.on("/iro.js", HTTP_GET, [](AsyncWebServerRequest *request){
     AsyncWebServerResponse *response = request->beginResponse_P(200, "application/javascript", iroJs, iroJs_length);
-    response->addHeader(F("Content-Encoding"),"gzip");
+    response->addHeader(FPSTR(s_content_enc),"gzip");
     setStaticContentCacheHeaders(response);
     request->send(response);
   });
   
   server.on("/rangetouch.js", HTTP_GET, [](AsyncWebServerRequest *request){
     AsyncWebServerResponse *response = request->beginResponse_P(200, "application/javascript", rangetouchJs, rangetouchJs_length);
-    response->addHeader(F("Content-Encoding"),"gzip");
+    response->addHeader(FPSTR(s_content_enc),"gzip");
     setStaticContentCacheHeaders(response);
     request->send(response);
   });
   
-  createEditHandler(correctPIN);
+  createEditHandler(correctPIN && !otaLock);
 
 #ifndef WLED_DISABLE_OTA
-  //if OTA is allowed
-  if (!otaLock) {
-    //init ota page
-    server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
-      AsyncWebServerResponse *response;
-      if (correctPIN) response = request->beginResponse_P(200, "text/html", PAGE_update, PAGE_update_length);
-      else            response = request->beginResponse_P(200, "text/html", PAGE_settings_pin,  PAGE_settings_pin_length);
-      response->addHeader(F("Content-Encoding"),"gzip");
-      setStaticContentCacheHeaders(response);
-      request->send(response);
-    });
-    
-    server.on("/update", HTTP_POST, [](AsyncWebServerRequest *request){
-      if (Update.hasError() || !correctPIN) {
-        serveMessage(request, 500, F("Update failed!"), F("Please check your file and retry!"), 254);
+  //init ota page
+  server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (otaLock) {
+      serveMessage(request, 500, "Access Denied", FPSTR(s_unlock_ota), 254);
+    } else
+      serveSettings(request); // checks for "upd" in URL and handles PIN
+  });
+  
+  server.on("/update", HTTP_POST, [](AsyncWebServerRequest *request){
+    if (!correctPIN) {
+      serveSettings(request, true); // handle PIN page POST request
+      return;
+    }
+    if (Update.hasError() || otaLock) {
+      serveMessage(request, 500, F("Update failed!"), F("Please check your file and retry!"), 254);
+    } else {
+      serveMessage(request, 200, F("Update successful!"), F("Rebooting..."), 131); 
+      doReboot = true;
+    }
+  },[](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final){
+    if (!correctPIN || otaLock) return;
+    if(!index){
+      DEBUG_PRINTLN(F("OTA Update Start"));
+      lastEditTime = millis(); // make sure PIN does not lock during update
+      #ifdef ESP8266
+      Update.runAsync(true);
+      #endif
+      Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000);
+    }
+    if(!Update.hasError()) Update.write(data, len);
+    if(final){
+      if(Update.end(true)){
+        DEBUG_PRINTLN(F("Update Success"));
       } else {
-        serveMessage(request, 200, F("Update successful!"), F("Rebooting..."), 131); 
-        doReboot = true;
+        DEBUG_PRINTLN(F("Update Failed"));
       }
-    },[](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final){
-      if (!correctPIN) return;
-      if(!index){
-        DEBUG_PRINTLN(F("OTA Update Start"));
-        #ifdef ESP8266
-        Update.runAsync(true);
-        #endif
-        Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000);
-      }
-      if(!Update.hasError()) Update.write(data, len);
-      if(final){
-        if(Update.end(true)){
-          DEBUG_PRINTLN(F("Update Success"));
-        } else {
-          DEBUG_PRINTLN(F("Update Failed"));
-        }
-      }
-    });
-  } else {
-    server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
-      serveMessage(request, 500, "Access Denied", F("Please unlock OTA in security settings!"), 254);
-    });
-  }
+    }
+  });
 #else
   server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
     serveMessage(request, 501, "Not implemented", F("OTA updating is disabled in this build."), 254);
@@ -341,7 +342,7 @@ void initServer()
     #endif
     if(handleFileRead(request, request->url())) return;
     AsyncWebServerResponse *response = request->beginResponse_P(404, "text/html", PAGE_404, PAGE_404_length);
-    response->addHeader(F("Content-Encoding"),"gzip");
+    response->addHeader(FPSTR(s_content_enc),"gzip");
     setStaticContentCacheHeaders(response);
     request->send(response);
     //request->send_P(404, "text/html", PAGE_404);
@@ -397,7 +398,7 @@ void serveIndex(AsyncWebServerRequest* request)
 #endif
     response = request->beginResponse_P(200, "text/html", PAGE_index, PAGE_index_L);
 
-  response->addHeader(F("Content-Encoding"),"gzip");
+  response->addHeader(FPSTR(s_content_enc),"gzip");
   setStaticContentCacheHeaders(response);
   request->send(response);
 }
@@ -475,9 +476,14 @@ void serveSettingsJS(AsyncWebServerRequest* request)
   char buf[SETTINGS_STACK_BUF_SIZE+37];
   buf[0] = 0;
   byte subPage = request->arg(F("p")).toInt();
-  if (subPage<0 || subPage>9) {
+  if (subPage > 9) {
     strcpy_P(buf, PSTR("alert('Settings for this request are not implemented.');"));
     request->send(501, "application/javascript", buf);
+    return;
+  }
+  if (subPage > 0 && !correctPIN && strlen(settingsPIN)>0) {
+    strcpy_P(buf, PSTR("alert('PIN incorrect.');"));
+    request->send(403, "application/javascript", buf);
     return;
   }
   strcat_P(buf,PSTR("function GetV(){var d=document;"));
@@ -489,8 +495,9 @@ void serveSettingsJS(AsyncWebServerRequest* request)
 
 void serveSettings(AsyncWebServerRequest* request, bool post)
 {
-  byte subPage = 0;
+  byte subPage = 0, originalSubPage = 0;
   const String& url = request->url();
+
   if (url.indexOf("sett") >= 0) 
   {
     if      (url.indexOf(".js")  > 0) subPage = 254;
@@ -503,16 +510,21 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     else if (url.indexOf("sec")  > 0) subPage = 6;
     else if (url.indexOf("dmx")  > 0) subPage = 7;
     else if (url.indexOf("um")   > 0) subPage = 8;
-  } else subPage = 255; //welcome page
+    else if (url.indexOf("lock") > 0) subPage = 251;
+  }
+  else if (url.indexOf("/update") >= 0) subPage = 9; // update page, for PIN check
+  //else if (url.indexOf("/edit")   >= 0) subPage = 10;
+  else subPage = 255; // welcome page
 
-  if (subPage > 0 && subPage < 9 && strlen(settingsPIN)>0 && !correctPIN) {
-    subPage = 252;  // require PIN
+  if (!correctPIN && strlen(settingsPIN) > 0 && (subPage > 0 && subPage < 11)) {
+    originalSubPage = subPage;
+    subPage = 252; // require PIN
   }
 
   // if OTA locked or too frequent PIN entry requests fail hard
   if ((subPage == 1 && wifiLock && otaLock) || (post && !correctPIN && millis()-lastEditTime < 3000))
   {
-    serveMessage(request, 500, "Access Denied", F("Please unlock OTA in security settings!"), 254); return;
+    serveMessage(request, 500, "Access Denied", FPSTR(s_unlock_ota), 254); return;
   }
 
   if (post) { //settings/set POST request, saving
@@ -533,24 +545,20 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
       case 252: strcpy_P(s, correctPIN ? PSTR("PIN accepted") : PSTR("PIN rejected")); break;
     }
 
-    if (subPage != 252) strcat_P(s, PSTR(" settings saved."));
-    else {
-      server.removeHandler(editHandler);
-      createEditHandler(correctPIN);
+    if (subPage == 252) {
+      createEditHandler(correctPIN && !otaLock);
+    } else
+      strcat_P(s, PSTR(" settings saved."));
+
+    if (subPage == 252 && correctPIN) {
+      subPage = originalSubPage; // on correct PIN load settings page the user intended
+    } else {
+      if (!s2[0]) strcpy_P(s2, s_redirecting);
+
+      serveMessage(request, 200, s, s2, (subPage == 1 || (subPage == 6 && doReboot)) ? 129 : (correctPIN ? 1 : 3));
+      return;
     }
-    if (!s2[0]) strcpy_P(s2, PSTR("Redirecting..."));
-
-    serveMessage(request, 200, s, s2, (subPage == 1 || (subPage == 6 && doReboot)) ? 129 : (correctPIN ? 1 : 10));
-    //if (subPage == 6) doReboot = true;
-
-    return;
   }
-  
-  #ifdef WLED_DISABLE_MOBILE_UI //disable welcome page if not enough storage
-   if (subPage == 255) {serveIndex(request); return;}
-  #endif
-
-  optionType = subPage;
   
   AsyncWebServerResponse *response;
   switch (subPage)
@@ -563,13 +571,20 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     case 6:   response = request->beginResponse_P(200, "text/html", PAGE_settings_sec,  PAGE_settings_sec_length);  break;
     case 7:   response = request->beginResponse_P(200, "text/html", PAGE_settings_dmx,  PAGE_settings_dmx_length);  break;
     case 8:   response = request->beginResponse_P(200, "text/html", PAGE_settings_um,   PAGE_settings_um_length);   break;
+    case 9:   response = request->beginResponse_P(200, "text/html", PAGE_update,        PAGE_update_length);        break;
+    case 251: {
+      correctPIN = !strlen(settingsPIN); // lock if a pin is set
+      createEditHandler(correctPIN && !otaLock);
+      serveMessage(request, 200, strlen(settingsPIN) > 0 ? PSTR("Settings locked") : PSTR("No PIN set"), FPSTR(s_redirecting), 1);
+      return;
+    }
     case 252: response = request->beginResponse_P(200, "text/html", PAGE_settings_pin,  PAGE_settings_pin_length);  break;
     case 253: response = request->beginResponse_P(200, "text/css",  PAGE_settingsCss,   PAGE_settingsCss_length);   break;
     case 254: serveSettingsJS(request); return;
     case 255: response = request->beginResponse_P(200, "text/html", PAGE_welcome,       PAGE_welcome_length);       break;
     default:  response = request->beginResponse_P(200, "text/html", PAGE_settings,      PAGE_settings_length);      break;
   }
-  response->addHeader(F("Content-Encoding"),"gzip");
+  response->addHeader(FPSTR(s_content_enc),"gzip");
   setStaticContentCacheHeaders(response);
   request->send(response);
 }
