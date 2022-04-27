@@ -88,6 +88,20 @@
 <div class ="container">
 	<div id="Colors" class="tabcontent">
 		<div id="picker" class="noslide"></div>
+		<div id="hwrap">
+			<!--p class="labels hd">Hue</p-->
+			<div class="sliderwrap il">
+				<input id="sliderH" class="noslide" oninput="fromH()" onchange="setColor(0)" max="359" min="0" type="range" value="0" step="any">
+				<div class="sliderdisplay" style="background: linear-gradient(90deg, #f00 2%, #ff0 19%, #0f0 35%, #0ff 52%, #00f 68%, #f0f 85%, #f00)"></div>
+			</div><br>
+		</div>
+		<div id="swrap">
+			<!--p class="labels hd">Saturation</p-->
+			<div class="sliderwrap il">
+				<input id="sliderS" class="noslide" oninput="fromS()" onchange="setColor(0)" max="100" min="0" type="range" value="100" step="any">
+				<div class="sliderdisplay" style="background: linear-gradient(90deg, #aaa 0%, #f00)"></div>
+			</div><br>
+		</div>
 		<div id="vwrap">
 			<!--p class="labels hd">Value</p-->
 			<div class="sliderwrap il">
@@ -222,7 +236,7 @@
 				<output class="sliderbubble"></output>
 			</div>
 			<p class="labels hd" id="sliderLabel2">Custom 1</p>
-			<div id="slider2">
+			<div id="slider2" class="hide">
 				<i class="icons slider-icon">&#xe410;</i>
 				<div class="sliderwrap il">
 					<input id="sliderC1" class="noslide" onchange="setCustom(1)" oninput="updateTrail(this)" max="255" min="0" type="range" value="6" />
@@ -231,7 +245,7 @@
 				<output class="sliderbubble"></output>
 			</div>
 			<p class="labels hd" id="sliderLabel3">Custom 2</p>
-			<div id="slider3">
+			<div id="slider3" class="hide">
 				<i class="icons slider-icon">&#xe0a2;</i>
 				<div class="sliderwrap il">
 					<input id="sliderC2" class="noslide" onchange="setCustom(2)" oninput="updateTrail(this)" max="255" min="0" type="range" value="6" />
@@ -240,7 +254,7 @@
 				<output class="sliderbubble"></output>
 			</div>
 			<p class="labels hd" id="sliderLabel4">Custom 3</p>
-			<div id="slider4">
+			<div id="slider4" class="hide">
 				<i class="icons slider-icon">&#xe0e8;</i>
 				<div class="sliderwrap il">
 					<input id="sliderC3" class="noslide" onchange="setCustom(3)" oninput="updateTrail(this)" max="255" min="0" type="range" value="6" />
