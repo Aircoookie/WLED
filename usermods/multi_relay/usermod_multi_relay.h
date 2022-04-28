@@ -6,6 +6,10 @@
   #define MULTI_RELAY_MAX_RELAYS 4
 #endif
 
+#ifndef MULTI_RELAY_PINS
+  #define MULTI_RELAY_PINS -1
+#endif
+
 #define WLED_DEBOUNCE_THRESHOLD 50 //only consider button input of at least 50ms as valid (debouncing)
 
 #define ON  true
@@ -177,8 +181,9 @@ class MultiRelay : public Usermod {
      * constructor
      */
     MultiRelay() {
+      const int8_t defPins[] = {MULTI_RELAY_PINS};
       for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
-        _relay[i].pin      = -1;
+        _relay[i].pin      = i<sizeof(defPins) ? defPins[i] : -1;
         _relay[i].delay    = 0;
         _relay[i].mode     = false;
         _relay[i].active   = false;
@@ -619,7 +624,7 @@ class MultiRelay : public Usermod {
         DEBUG_PRINTLN(F(" config (re)loaded."));
       }
       // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
-      return !top[FPSTR(_broadcast)].isNull();
+      return !top[FPSTR(_HAautodiscovery)].isNull();
     }
 
     /**
