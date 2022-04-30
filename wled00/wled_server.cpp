@@ -64,7 +64,7 @@ void createEditHandler(bool enable) {
     #endif
   } else {
     editHandler = &server.on("/edit", HTTP_ANY, [](AsyncWebServerRequest *request){
-      serveMessage(request, 500, "Access Denied", otaLock ? FPSTR(s_unlock_ota) : F("Please enter PIN in settings!"), 254);
+      serveMessage(request, 500, "Access Denied", /*otaLock ? FPSTR(s_unlock_ota) :*/ F("Please enter PIN in settings!"), 254);
       //serveSettings(request,request->method() == HTTP_POST); // request PIN
     });
   }
@@ -255,7 +255,7 @@ void initServer()
     request->send(response);
   });
   
-  createEditHandler(correctPIN && !otaLock);
+  createEditHandler(correctPIN /*&& !otaLock*/);
 
 #ifndef WLED_DISABLE_OTA
   //init ota page
@@ -546,7 +546,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     }
 
     if (subPage == 252) {
-      createEditHandler(correctPIN && !otaLock);
+      createEditHandler(correctPIN /*&& !otaLock*/);
     } else
       strcat_P(s, PSTR(" settings saved."));
 
@@ -574,7 +574,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     case 9:   response = request->beginResponse_P(200, "text/html", PAGE_update,        PAGE_update_length);        break;
     case 251: {
       correctPIN = !strlen(settingsPIN); // lock if a pin is set
-      createEditHandler(correctPIN && !otaLock);
+      createEditHandler(correctPIN /*&& !otaLock*/);
       serveMessage(request, 200, strlen(settingsPIN) > 0 ? PSTR("Settings locked") : PSTR("No PIN set"), FPSTR(s_redirecting), 1);
       return;
     }

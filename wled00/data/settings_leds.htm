@@ -160,6 +160,8 @@
           gId("rf"+n).onclick = (t == 31) ? (function(){return false}) : (function(){});  // prevent change for TM1814
           isRGBW |= (t == 30 || t == 31 || (t > 40 && t < 46 && t != 43)); // RGBW checkbox, TYPE_xxxx values from const.h
           gId("co"+n).style.display = ((t>=80 && t<96) || (t > 40 && t < 48)) ? "none":"inline";  // hide color order for PWM
+          gId("dig"+n+"w").style.display = (t == 30 || t == 31) ? "inline":"none";  // show swap channels dropdown
+          if (!(t == 30 || t == 31)) d.getElementsByName("WO"+n)[0].value = 0; // reset swapping
           gId("dig"+n+"c").style.display = (t > 40 && t < 48) ? "none":"inline";  // hide count for analog
           gId("dig"+n+"r").style.display = (t>=80 && t<96) ? "none":"inline";  // hide reversed for virtual
           gId("dig"+n+"s").style.display = ((t>=80 && t<96) || (t > 40 && t < 48)) ? "none":"inline";  // hide skip 1st for virtual & analog
@@ -317,10 +319,12 @@ ${i+1}:
 <option value="3">RBG</option>
 <option value="4">BGR</option>
 <option value="5">GBR</option>
-</select><br></div>
+</select></div>
+<div id="dig${i}w" style="display:none">Swap: <select name="WO${i}"><option value="0">None</option><option value="1">W & B</option><option value="2">W & G</option><option value="3">W & R</option></select></div>
+<div>
 <span id="psd${i}">Start:</span> <input type="number" name="LS${i}" id="ls${i}" class="l starts" min="0" max="8191" value="${lastEnd(i)}" oninput="startsDirty[${i}]=true;UI();" required />&nbsp;
-<div id="dig${i}c" style="display:inline">Length: <input type="number" name="LC${i}" class="l" min="1" max="${maxPB}" value="1" required oninput="UI()" /></div>
-<br>
+<div id="dig${i}c" style="display:inline">Length: <input type="number" name="LC${i}" class="l" min="1" max="${maxPB}" value="1" required oninput="UI()" /></div><br>
+</div>
 <span id="p0d${i}">GPIO:</span> <input type="number" name="L0${i}" min="0" max="33" required class="s" onchange="UI()"/>
 <span id="p1d${i}"></span><input type="number" name="L1${i}" min="0" max="33" class="s" onchange="UI()"/>
 <span id="p2d${i}"></span><input type="number" name="L2${i}" min="0" max="33" class="s" onchange="UI()"/>
@@ -420,7 +424,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
         var v = parseInt(gId("ls"+(i-1)).value) + parseInt(d.getElementsByName("LC"+(i-1))[0].value);
         if (v != parseInt(gId("ls"+i).value)) {cs = true; startsDirty[i] = true;}
       }
-      if (parseInt(gId("ls0").value) != 0) {cs = true; startsDirty[0] = true;}
+      if (gId("ls0") && parseInt(gId("ls0").value) != 0) {cs = true; startsDirty[0] = true;}
       gId("si").checked = cs;
       tglSi(cs);
     }

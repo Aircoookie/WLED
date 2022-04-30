@@ -663,7 +663,6 @@ class WS2812FX {
       paletteFade = 0,
       paletteBlend = 0,
       milliampsPerLed = 55,
-      autoWhiteMode = RGBW_MODE_DUAL,
       cctBlending = 0,
       getBrightness(void),
       getModeCount(void),

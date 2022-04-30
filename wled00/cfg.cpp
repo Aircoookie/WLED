@@ -84,8 +84,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   uint8_t autoWhiteMode = RGBW_MODE_MANUAL_ONLY;
   CJSON(strip.ablMilliampsMax, hw_led[F("maxpwr")]);
   CJSON(strip.milliampsPerLed, hw_led[F("ledma")]);
-  CJSON(strip.autoWhiteMode, hw_led[F("rgbwm")]); // global override
-  Bus::setAutoWhiteMode(strip.autoWhiteMode);
+  Bus::setAutoWhiteMode(hw_led[F("rgbwm")] | 255);
   CJSON(correctWB, hw_led["cct"]);
   CJSON(cctFromRgb, hw_led[F("cr")]);
   CJSON(strip.cctBlending, hw_led[F("cb")]);
@@ -578,11 +577,11 @@ void serializeConfig() {
   hw_led[F("total")] = strip.getLengthTotal(); //no longer read, but provided for compatibility on downgrade
   hw_led[F("maxpwr")] = strip.ablMilliampsMax;
   hw_led[F("ledma")] = strip.milliampsPerLed;
-  hw_led[F("rgbwm")] = strip.autoWhiteMode;    // global override
   hw_led["cct"] = correctWB;
   hw_led[F("cr")] = cctFromRgb;
   hw_led[F("cb")] = strip.cctBlending;
   hw_led["fps"] = strip.getTargetFps();
+  hw_led[F("rgbwm")] = Bus::getAutoWhiteMode();    // global override
 
   JsonArray hw_led_ins = hw_led.createNestedArray("ins");
 

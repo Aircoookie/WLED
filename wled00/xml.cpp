@@ -333,6 +333,7 @@ void getSettingsJS(byte subPage, char* dest)
       char sl[4] = "SL"; sl[2] = 48+s; sl[3] = 0; //skip 1st LED
       char rf[4] = "RF"; rf[2] = 48+s; rf[3] = 0; //off refresh
       char aw[4] = "AW"; aw[2] = 48+s; aw[3] = 0; //auto white mode
+      char wo[4] = "WO"; wo[2] = 48+s; wo[3] = 0; //swap channels
       oappend(SET_F("addLEDs(1);"));
       uint8_t pins[5];
       uint8_t nPins = bus->getPins(pins);
@@ -342,12 +343,13 @@ void getSettingsJS(byte subPage, char* dest)
       }
       sappend('v',lc,bus->getLength());
       sappend('v',lt,bus->getType());
-      sappend('v',co,bus->getColorOrder());
+      sappend('v',co,bus->getColorOrder() & 0x0F);
       sappend('v',ls,bus->getStart());
       sappend('c',cv,bus->reversed);
       sappend('v',sl,bus->skippedLeds());
       sappend('c',rf,bus->isOffRefreshRequired());
       sappend('v',aw,bus->getAWMode());
+      sappend('v',wo,bus->getColorOrder() >> 4);
     }
     sappend('v',SET_F("MA"),strip.ablMilliampsMax);
     sappend('v',SET_F("LA"),strip.milliampsPerLed);

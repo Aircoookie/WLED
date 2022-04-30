@@ -143,8 +143,7 @@ void WLED::loop()
   // 15min PIN time-out
   if (strlen(settingsPIN)>0 && millis() - lastEditTime > 900000) {
     correctPIN = false;
-    server.removeHandler(editHandler);
-    createEditHandler(correctPIN);
+    createEditHandler(false);
   }
 
   //LED settings have been saved, re-init busses

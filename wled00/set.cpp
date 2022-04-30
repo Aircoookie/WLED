@@ -16,9 +16,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   }
 
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 7: DMX 8: usermods
-  if (subPage <1 || subPage >8) return;
-
-  if (correctPIN) lastEditTime = millis();
+  if (subPage <1 || subPage >8 || !correctPIN) return;
 
   //WIFI SETTINGS
   if (subPage == 1)
@@ -76,7 +74,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       }
     }
 
-    uint8_t colorOrder, type, skip, awmode;
+    uint8_t colorOrder, type, skip, awmode, channelSwap;
     uint16_t length, start;
     uint8_t pins[5] = {255, 255, 255, 255, 255};
 
@@ -85,8 +83,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     cctFromRgb = request->hasArg(F("CR"));
     strip.cctBlending = request->arg(F("CB")).toInt();
     Bus::setCCTBlend(strip.cctBlending);
-    strip.autoWhiteMode = (request->arg(F("AW")).toInt());
-    Bus::setAutoWhiteMode(strip.autoWhiteMode);
+    Bus::setAutoWhiteMode(request->arg(F("AW")).toInt());
     strip.setTargetFps(request->arg(F("FR")).toInt());
 
     for (uint8_t s = 0; s < WLED_MAX_BUSSES; s++) {
@@ -99,6 +96,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char sl[4] = "SL"; sl[2] = 48+s; sl[3] = 0; //skip first N LEDs
       char rf[4] = "RF"; rf[2] = 48+s; rf[3] = 0; //refresh required
       char aw[4] = "AW"; aw[2] = 48+s; aw[3] = 0; //auto white mode
+      char wo[4] = "WO"; wo[2] = 48+s; wo[3] = 0; //channel swap
       if (!request->hasArg(lp)) {
         DEBUG_PRINTLN(F("No data.")); break;
       }
@@ -118,9 +116,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         break;  // no parameter
       }
       awmode = request->arg(aw).toInt();
+      channelSwap = (type == TYPE_SK6812_RGBW || type == TYPE_TM1814) ? request->arg(wo).toInt() : 0;
       // actual finalization is done in WLED::loop() (removing old busses and adding new)
       if (busConfigs[s] != nullptr) delete busConfigs[s];
-      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv), skip, awmode);
+      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder | (channelSwap<<4), request->hasArg(cv), skip, awmode);
       doInitBusses = true;
     }
 
@@ -400,8 +399,13 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     if (request->hasArg(F("PIN"))) {
       const char *pin = request->arg(F("PIN")).c_str();
-      if (strlen(pin) == 4 || strlen(pin) == 0) {
-        strlcpy(settingsPIN, pin, 5);
+      uint8_t pinLen = strlen(pin);
+      if (pinLen == 4 || pinLen == 0) {
+        uint8_t numZeros = 0;
+        for (uint8_t i = 0; i < pinLen; i++) numZeros += (pin[i] == '0');
+        if (numZeros < pinLen || pinLen == 0) { // ignore 0000 input (placeholder)
+          strlcpy(settingsPIN, pin, 5);
+        }
         settingsPIN[4] = 0;
       }
     }
@@ -411,21 +415,21 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     {
       if (otaLock && strcmp(otaPass,request->arg(F("OP")).c_str()) == 0)
       {
-        pwdCorrect = true;
+        // brute force protection: do not unlock even if correct if last save was less than 3 seconds ago
+        if (millis() - lastEditTime > 3000) pwdCorrect = true;
       }
       if (!otaLock && request->arg(F("OP")).length() > 0)
       {
-        strlcpy(otaPass,request->arg(F("OP")).c_str(), 33);
+        strlcpy(otaPass,request->arg(F("OP")).c_str(), 33); // set new OTA password
       }
     }
 
     if (pwdCorrect) //allow changes if correct pwd or no ota active
     {
-      bool oldOTALock = otaLock;
       otaLock = request->hasArg(F("NO"));
       wifiLock = request->hasArg(F("OW"));
       aOtaEnabled = request->hasArg(F("AO"));
-      doReboot = (otaLock ^ oldOTALock);
+      //createEditHandler(correctPIN && !otaLock);
     }
   }
 
@@ -543,7 +547,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     releaseJSONBufferLock();
   }
 
-  if (subPage != 2 && (subPage != 6 || !doReboot)) serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)
+  lastEditTime = millis();
+  if (subPage != 2 && !doReboot) serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)
   if (subPage == 4) alexaInit();
 }
 
