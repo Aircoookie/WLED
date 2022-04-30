@@ -116,10 +116,11 @@ struct ColorOrderMap {
 
   inline uint8_t IRAM_ATTR getPixelColorOrder(uint16_t pix, uint8_t defaultColorOrder) const {
     if (_count == 0) return defaultColorOrder;
-
+    // upper nibble containd W swap information
+    uint8_t swapW = defaultColorOrder >> 4;
     for (uint8_t i = 0; i < _count; i++) {
       if (pix >= _mappings[i].start && pix < (_mappings[i].start + _mappings[i].len)) {
-        return _mappings[i].colorOrder;
+        return _mappings[i].colorOrder | (swapW << 4);
       }
     }
     return defaultColorOrder;
@@ -303,7 +304,8 @@ class BusDigital : public Bus {
   }
 
   void setColorOrder(uint8_t colorOrder) {
-    if (colorOrder > 5) return;
+    // upper nibble contains W swap information
+    if ((colorOrder & 0x0F) > 5) return;
     _colorOrder = colorOrder;
   }
 
