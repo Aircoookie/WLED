@@ -57,7 +57,7 @@
 		</div>
 		<h2>Security & Update setup</h2>
 		Settings PIN: <input type="password" id="PIN" name="PIN" size="4" maxlength="4" minlength="4" onkeydown="checkNum(this)" pattern="[0-9]*" inputmode="numeric" title="Please enter a 4 digit number"><br>
-		&#9888; Unencrypted transmission. Do NOT use your banking, door, or SIM pin!<br><br>
+		<div style="color: #fa0;">&#9888; Unencrypted transmission. Be prudent when selecting PIN, do NOT use your banking, door, SIM, etc. pin!</div><br><br>
 		Lock wireless (OTA) software update: <input type="checkbox" name="NO"><br>
 		Passphrase: <input type="password" name="OP" maxlength="32"><br>
 		To enable OTA, for security reasons you need to also enter the correct password!<br>
@@ -67,7 +67,7 @@
 		Deny access to WiFi settings if locked: <input type="checkbox" name="OW"><br><br>
 		Factory reset: <input type="checkbox" name="RS"><br>
 		All settings and presets will be erased.<br><br>
-		&#9888; HTTP traffic is unencrypted. An attacker in the same network can intercept form data!
+		<div style="color: #fa0;">&#9888; Unencrypted transmission. An attacker on the same network can intercept form data!</div>
 		<hr>
 		<h3>Software Update</h3>
 		<button type="button" onclick="U()">Manual OTA Update</button><br>
@@ -75,9 +75,9 @@
 		<hr>
 		<h3>Backup & Restore</h3>
 		<a class="btn lnk" href="/presets.json?download" target="download-frame">Backup presets</a><br>
-		<div>Restore presets<br><input type="file" name="data" accept=".json"> <input type="button" value="Upload" onclick="uploadFile(d.Sf.data,'/presets.json');"><br></div><br>
+		<div>Restore presets<br><input type="file" name="data" accept=".json"> <button type="button" onclick="uploadFile(d.Sf.data,'/presets.json');">Upload</button><br></div><br>
 		<a class="btn lnk" href="/cfg.json?download" target="download-frame">Backup configuration</a><br>
-		<div>Restore configuration<br><input type="file" name="data2" accept=".json"> <input type="button" value="Upload" onclick="uploadFile(d.Sf.data2,'/cfg.json');"><br></div>
+		<div>Restore configuration<br><input type="file" name="data2" accept=".json"> <button type="button" onclick="uploadFile(d.Sf.data2,'/cfg.json');">Upload</button><br></div>
 		<div style="color: #fa0;">&#9888; Restoring presets/configuration will OVERWRITE your current presets/configuration.<br>
 		Incorrect configuration may require a factory reset or re-flashing of your ESP.</div>
 		For security reasons, passwords are not backed up.

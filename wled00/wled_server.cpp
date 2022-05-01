@@ -11,6 +11,7 @@ void setStaticContentCacheHeaders(AsyncWebServerResponse *response);
 static const char s_redirecting[] PROGMEM = "Redirecting...";
 static const char s_content_enc[] PROGMEM = "Content-Encoding";
 static const char s_unlock_ota [] PROGMEM = "Please unlock OTA in security settings!";
+static const char s_unlock_cfg [] PROGMEM = "Please unlock settings using PIN code!";
 
 //Is this an IP?
 bool isIp(String str) {
@@ -24,8 +25,8 @@ bool isIp(String str) {
 }
 
 void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {
-  if (otaLock || !correctPIN) {
-    if (final) request->send(500, "text/plain", FPSTR(s_unlock_ota));
+  if (!correctPIN) {
+    if (final) request->send(500, "text/plain", FPSTR(s_unlock_cfg));
     return;
   }
   if (!index) {
@@ -64,8 +65,7 @@ void createEditHandler(bool enable) {
     #endif
   } else {
     editHandler = &server.on("/edit", HTTP_ANY, [](AsyncWebServerRequest *request){
-      serveMessage(request, 500, "Access Denied", /*otaLock ? FPSTR(s_unlock_ota) :*/ F("Please enter PIN in settings!"), 254);
-      //serveSettings(request,request->method() == HTTP_POST); // request PIN
+      serveMessage(request, 500, "Access Denied", FPSTR(s_unlock_cfg), 254);
     });
   }
 }
@@ -255,7 +255,7 @@ void initServer()
     request->send(response);
   });
   
-  createEditHandler(correctPIN /*&& !otaLock*/);
+  createEditHandler(correctPIN);
 
 #ifndef WLED_DISABLE_OTA
   //init ota page
@@ -546,7 +546,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     }
 
     if (subPage == 252) {
-      createEditHandler(correctPIN /*&& !otaLock*/);
+      createEditHandler(correctPIN);
     } else
       strcat_P(s, PSTR(" settings saved."));
 
@@ -574,7 +574,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     case 9:   response = request->beginResponse_P(200, "text/html", PAGE_update,        PAGE_update_length);        break;
     case 251: {
       correctPIN = !strlen(settingsPIN); // lock if a pin is set
-      createEditHandler(correctPIN /*&& !otaLock*/);
+      createEditHandler(correctPIN);
       serveMessage(request, 200, strlen(settingsPIN) > 0 ? PSTR("Settings locked") : PSTR("No PIN set"), FPSTR(s_redirecting), 1);
       return;
     }
