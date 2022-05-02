@@ -11,6 +11,8 @@
 // - - - - -
 
 /* ----- LIBRARIES ----- */
+#ifdef ESP8266
+
 #include <Arduino.h>
 
 #include "ESPDMX.h"
@@ -103,3 +105,5 @@ void DMXESPSerial::update() {
 }
 
 // Function to update the DMX bus
+
+#endif

@@ -14,6 +14,8 @@ Distributed as-is; no warranty is given.
 ******************************************************************************/
 
 /* ----- LIBRARIES ----- */
+#ifdef ESP32
+
 #include <Arduino.h>
 
 #include "SparkFunDMX.h"
@@ -151,3 +153,5 @@ void SparkFunDMX::update() {
 }
 
 // Function to update the DMX bus
+
+#endif
