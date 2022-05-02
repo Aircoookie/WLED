@@ -17,9 +17,15 @@ void handleDMX()
   // don't act, when in DMX Proxy mode
   if (e131ProxyUniverse != 0) return;
 
-  // TODO: calculate brightness manually if no shutter channel is set
-
   uint8_t brightness = strip.getBrightness();
+
+  bool calc_brightness = true;
+
+   // check if no shutter channel is set
+   for (byte i = 0; i < DMXChannels; i++)
+   {
+     if (DMXFixtureMap[i] == 5) calc_brightness = false;
+   }
 
   uint16_t len = strip.getLengthTotal();
   for (int i = DMXStartLED; i < len; i++) {        // uses the amount of LEDs as fixture count
@@ -38,16 +44,16 @@ void handleDMX()
           dmx.write(DMXAddr, 0);
           break;
         case 1:        // Red
-          dmx.write(DMXAddr, r);
+          dmx.write(DMXAddr, calc_brightness ? (r * brightness) / 255 : r);
           break;
         case 2:        // Green
-          dmx.write(DMXAddr, g);
+          dmx.write(DMXAddr, calc_brightness ? (g * brightness) / 255 : g);
           break;
         case 3:        // Blue
-          dmx.write(DMXAddr, b);
+          dmx.write(DMXAddr, calc_brightness ? (b * brightness) / 255 : b);
           break;
         case 4:        // White
-          dmx.write(DMXAddr, w);
+          dmx.write(DMXAddr, calc_brightness ? (w * brightness) / 255 : w);
           break;
         case 5:        // Shutter channel. Controls the brightness.
           dmx.write(DMXAddr, brightness);
