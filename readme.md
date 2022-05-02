@@ -3,6 +3,7 @@
   <a href="https://github.com/imeszaros/ledclock/releases"><img src="https://img.shields.io/github/release/imeszaros/ledclock.svg?style=flat-square"></a>
   <a href="https://raw.githubusercontent.com/imeszaros/ledclock/master/LICENSE"><img src="https://img.shields.io/github/license/imeszaros/ledclock?color=blue&style=flat-square"></a>
   <a href="https://github.com/Aircoookie/WLED-App"><img src="https://img.shields.io/badge/app-wled-blue.svg?style=flat-square"></a>
+  <a href="https://www.printables.com/model/189433-wi-fi-connected-led-clock-powered-by-wled"><img src="https://img.shields.io/badge/models-printables-orange.svg?style=flat-square"></a>
   <a href="https://www.thingiverse.com/thing:5365230"><img src="https://img.shields.io/badge/models-thingiverse-blue.svg?style=flat-square"></a>
   <a href="https://ko-fi.com/imeszaros"><img src="https://img.shields.io/badge/support-ko--fi.com-gold"></a>
 </p>
