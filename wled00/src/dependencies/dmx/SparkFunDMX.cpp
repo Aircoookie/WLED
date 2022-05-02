@@ -21,14 +21,14 @@ Distributed as-is; no warranty is given.
 #include "SparkFunDMX.h"
 #include <HardwareSerial.h>
 
-#define dmxMaxChannel  513
+#define dmxMaxChannel  512
 #define defaultMax 32
 
 #define DMXSPEED       250000
 #define DMXFORMAT      SERIAL_8N2
 
-int enablePin = 26;		// disable the enable pin because it is not needed
-int rxPin = 25;       // disable the receiving pin because it is not needed
+int enablePin = -1;		// disable the enable pin because it is not needed
+int rxPin = -1;       // disable the receiving pin because it is not needed
 int txPin = 2;        // transmit DMX data over this pin (default is pin 2)
 
 //DMX value array and size. Entry 0 will hold startbyte
