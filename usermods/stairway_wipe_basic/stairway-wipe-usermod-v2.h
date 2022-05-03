@@ -124,12 +124,12 @@ class StairwayWipeUsermod : public Usermod {
 
     void addToConfig(JsonObject& root)
     {
-      JsonObject top = root.createNestedObject("exampleUsermod");
+      JsonObject top = root.createNestedObject("stairwipeBasic");
       top["WipeState"] = wipeState;
     }
     bool readFromConfig(JsonObject& root)
     {
-      JsonObject top = root["exampleUsermod"];
+      JsonObject top = root["stairwipeBasic"];
       bool configComplete = !top.isNull();
       configComplete &= getJsonValue(top["WipeState"], wipeState);
       return configComplete;
