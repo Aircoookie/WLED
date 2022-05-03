@@ -15,7 +15,7 @@ class StairwayWipeUsermod : public Usermod {
   private:
     //Private class members. You can declare variables and functions only accessible to your usermod here
     unsigned long lastTime = 0;
-    byte wipeState = 1; //0: inactive 1: wiping 2: solid
+    byte wipeState = 0; //0: inactive 1: wiping 2: solid
     unsigned long timeStaticStart = 0;
     uint16_t previousUserVar0 = 0;
 
@@ -116,24 +116,5 @@ class StairwayWipeUsermod : public Usermod {
     userVar0 = 0;
     previousUserVar0 = 0;
     }
-
-
-
-   //More methods can be added in the future, this example will then be extended.
-   //Your usermod will remain compatible as it does not need to implement all methods from the Usermod base class!
-
-    void addToConfig(JsonObject& root)
-    {
-      JsonObject top = root.createNestedObject("stairwipeBasic");
-      top["WipeState"] = wipeState;
-    }
-    bool readFromConfig(JsonObject& root)
-    {
-      JsonObject top = root["stairwipeBasic"];
-      bool configComplete = !top.isNull();
-      configComplete &= getJsonValue(top["WipeState"], wipeState);
-      return configComplete;
-    }
-
 };
 
