@@ -26,6 +26,8 @@ Distributed as-is; no warranty is given.
 
 #define DMXSPEED       250000
 #define DMXFORMAT      SERIAL_8N2
+#define BREAKSPEED     83333
+#define BREAKFORMAT    SERIAL_8N1
 
 int enablePin = -1;		// disable the enable pin because it is not needed
 int rxPin = -1;       // disable the receiving pin because it is not needed
@@ -117,15 +119,16 @@ void SparkFunDMX::write(int Channel, uint8_t value) {
 void SparkFunDMX::update() {
   if (_READWRITE == _WRITE)
   {
-	DMXSerial.begin(DMXSPEED, DMXFORMAT, rxPin, txPin);//Begin the Serial port
-    pinMatrixOutDetach(txPin, false, false); //Detach our
-    pinMode(txPin, OUTPUT); 
-    digitalWrite(txPin, LOW); //88 uS break
-    delayMicroseconds(88);  
-    digitalWrite(txPin, HIGH); //4 Us Mark After Break
-    delayMicroseconds(1);
-    pinMatrixOutAttach(txPin, U2TXD_OUT_IDX, false, false);
-
+    //Send DMX break
+    digitalWrite(txPin, HIGH);
+    DMXSerial.begin(BREAKSPEED, BREAKFORMAT, rxPin, txPin);//Begin the Serial port
+    DMXSerial.write(0);
+    DMXSerial.flush();
+    delay(1);
+    DMXSerial.end();
+    
+    //Send DMX data
+    DMXSerial.begin(DMXSPEED, DMXFORMAT, rxPin, txPin);//Begin the Serial port
     DMXSerial.write(dmxData, chanSize);
     DMXSerial.flush();
     DMXSerial.end();//clear our DMX array, end the Hardware Serial port
