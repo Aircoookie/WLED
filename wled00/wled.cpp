@@ -276,6 +276,15 @@ void WLED::loop()
   loops++;
 #endif        // WLED_DEBUG
   toki.resetTick();
+
+#if WLED_WATCHDOG_TIMEOUT > 0
+  // we finished our mainloop, reset the watchdog timer
+  #ifdef ARDUINO_ARCH_ESP32
+    esp_task_wdt_reset();
+  #else
+    ESP.wdtFeed();
+  #endif
+#endif
 }
 
 void WLED::setup()
@@ -301,6 +310,22 @@ void WLED::setup()
 #endif
   DEBUG_PRINT(F("heap "));
   DEBUG_PRINTLN(ESP.getFreeHeap());
+
+#if WLED_WATCHDOG_TIMEOUT > 0
+#ifdef ARDUINO_ARCH_ESP32
+  esp_err_t watchdog = esp_task_wdt_init(WLED_WATCHDOG_TIMEOUT, true);
+  DEBUG_PRINT(F("Enable watchdog "));
+  if (watchdog == ESP_OK) {
+    DEBUG_PRINTLN(F(" OK"));
+  } else {
+    DEBUG_PRINTLN(watchdog);
+  }
+  esp_task_wdt_add(NULL);
+#else
+  // any timeout possible ?
+  ESP.wdtEnable(WLED_WATCHDOG_TIMEOUT * 1000);
+#endif
+#endif
 
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
   if (psramFound()) {
