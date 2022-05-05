@@ -128,6 +128,10 @@
 #include "../usermods/Si7021_MQTT_HA/usermod_si7021_mqtt_ha.h"
 #endif
 
+#ifdef STAIRWAY_WIPE_BASIC
+#include "../usermods/stairway_wipe_basic/stairway-wipe-usermod-v2.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -242,5 +246,9 @@ void registerUsermods()
   
   #ifdef USERMOD_SI7021_MQTT_HA
   usermods.add(new Si7021_MQTT_HA());
+  #endif
+
+  #ifdef STAIRWAY_WIPE_BASIC
+  usermods.add(new StairwayWipeUsermod());
   #endif
 }
