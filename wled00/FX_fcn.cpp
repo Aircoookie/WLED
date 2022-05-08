@@ -733,7 +733,18 @@ void WS2812FX::resetSegments() {
 }
 
 void WS2812FX::makeAutoSegments(bool forceReset) {
-  if (autoSegments) { //make one segment per bus
+  if (isMatrix) {
+    // only create 1 2D segment
+    uint8_t mainSeg = getMainSegmentId();
+    if (forceReset) {
+      for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) {
+        setSegment(i, 0, 0);
+      }
+    }
+    if (getActiveSegmentsNum() < 2) {
+      setSegment(mainSeg, 0, matrixWidth, 1, 0, 0, 0, matrixHeight);
+    }
+  } else if (autoSegments) { //make one segment per bus
     uint16_t segStarts[MAX_NUM_SEGMENTS] = {0};
     uint16_t segStops [MAX_NUM_SEGMENTS] = {0};
     uint8_t s = 0;

@@ -134,10 +134,8 @@ void IRAM_ATTR WS2812FX::setPixelColorXY(uint16_t x, uint16_t y, byte r, byte g,
   }
   uint32_t col = RGBW32(r, g, b, w);
 
-  uint16_t width  = _segments[segIdx].virtualWidth();   // segment width in logical pixels
-  uint16_t height = _segments[segIdx].virtualHeight();  // segment height in logical pixels
-  if (_segments[segIdx].options & MIRROR     ) width  = (width  + 1) /2;  // divide by 2 if mirror, leave at least a single LED
-  if (_segments[segIdx].options & MIRROR_Y_2D) height = (height + 1) /2;  // divide by 2 if mirror, leave at least a single LED
+  uint16_t width  = _segments[segIdx].virtualWidth();   // segment width in logical pixels (includes mirror)
+  uint16_t height = _segments[segIdx].virtualHeight();  // segment height in logical pixels (includes mirror)
   if (_segments[segIdx].options & TRANSPOSED ) { uint16_t t = x; x = y; y = t; } // swap X & Y if segment transposed
 
   x *= _segments[segIdx].groupLength();
@@ -157,12 +155,12 @@ void IRAM_ATTR WS2812FX::setPixelColorXY(uint16_t x, uint16_t y, byte r, byte g,
       busses.setPixelColor(index, col);
 
       if (_segments[segIdx].options & MIRROR) { //set the corresponding horizontally mirrored pixel
-        index = XY(_segments[segIdx].stop - xX - 1, yY, segIdx);
+        index = XY(_segments[segIdx].width() - xX - 1, yY, segIdx);
         if (index < customMappingSize) index = customMappingTable[index];
         busses.setPixelColor(index, col);
       }
       if (_segments[segIdx].options & MIRROR_Y_2D) { //set the corresponding vertically mirrored pixel
-        index = XY(xX, _segments[segIdx].stopY - yY - 1, segIdx);
+        index = XY(xX, _segments[segIdx].height() - yY - 1, segIdx);
         if (index < customMappingSize) index = customMappingTable[index];
         busses.setPixelColor(index, col);
       }
@@ -176,8 +174,6 @@ uint32_t WS2812FX::getPixelColorXY(uint16_t x, uint16_t y)
   uint8_t segIdx  = _segment_index;
   uint16_t width  = _segments[segIdx].virtualWidth();   // segment width in logical pixels
   uint16_t height = _segments[segIdx].virtualHeight();  // segment height in logical pixels
-  if (_segments[segIdx].options & MIRROR     ) width  = (width  + 1) /2;  // divide by 2 if mirror, leave at least a single LED
-  if (_segments[segIdx].options & MIRROR_Y_2D) height = (height + 1) /2;  // divide by 2 if mirror, leave at least a single LED
   if (_segments[segIdx].options & TRANSPOSED ) { uint16_t t = x; x = y; y = t; } // swap X & Y if segment transposed
 
   x *= _segments[segIdx].groupLength();
