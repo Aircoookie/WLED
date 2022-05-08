@@ -2346,7 +2346,7 @@ uint16_t WS2812FX::mode_ripple_rainbow(void) {
 // incandescent bulbs change color as they get dim down.
 #define COOL_LIKE_INCANDESCENT 1
 
-CRGB IRAM_ATTR WS2812FX::twinklefox_one_twinkle(uint32_t ms, uint8_t salt, bool cat)
+CRGB WS2812FX::twinklefox_one_twinkle(uint32_t ms, uint8_t salt, bool cat)
 {
   // Overall twinkle speed (changed)
   uint16_t ticks = ms / SEGENV.aux0;
@@ -4227,3 +4227,70 @@ uint16_t WS2812FX::mode_aurora(void) {
   
   return FRAMETIME;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+//***************************  2D routines  ***********************************
+
+// sample 2D routine
+uint16_t WS2812FX::mode_2DBlackHole_A() {            // By: Stepko https://editor.soulmatelights.com/gallery/1012 , Modified by: Andrew Tuline
+  uint16_t w = SEGMENT.virtualWidth();
+  uint16_t h = SEGMENT.virtualHeight();
+  uint16_t dataSize = sizeof(CRGB) * w * h;
+
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+
+  uint16_t x, y;
+
+  // initialize on first call
+  if (SEGENV.call == 0) {
+    for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+      leds[x + y * w] = CRGB::Black;
+    }
+  }
+
+  fadeToBlackBy(32, leds);  // create fading trails
+  float t = (float)(millis())/128;
+  for (byte i = 0; i < 8; i++) {
+    x = beatsin8(SEGMENT.c1x>>3, 0, w - 1, 0, ((i % 2) ? 128 : 0) + t * i);
+    y = beatsin8(10            , 0, h - 1, 0, ((i % 2) ? 192 : 64) + t * i);
+    leds[x + y * w] += CHSV(i*32, 255, 255);
+  }
+  for (byte i = 0; i < 8; i++) {
+    x = beatsin8(SEGMENT.c2x>>3, w/4, w - 1 - w/4, 0, ((i % 2) ? 128 : 0) + t * i);
+    y = beatsin8(SEGMENT.c3x>>3, h/4, h - 1 - h/4, 0, ((i % 2) ? 192 : 64) + t * i);
+    leds[x + y * w] += CHSV(i*32, 255, 255);
+  }
+  leds[w/2 * (1 + h)] = CHSV(0,0,255);
+  blur2d(16, leds);
+
+  for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+    uint16_t o = x + y * w;
+    setPixelColorXY(x, y, leds[o]);
+  }
+  return FRAMETIME;
+} // mode_2DBlackHole()
+
+// same as above not using leds[]
+uint16_t WS2812FX::mode_2DBlackHole_B() {            // By: Stepko https://editor.soulmatelights.com/gallery/1012 , Modified by: Andrew Tuline
+  uint16_t w = SEGMENT.virtualWidth();
+  uint16_t h = SEGMENT.virtualHeight();
+  uint16_t x, y;
+
+  fade_out2D(32);  // create fading trails
+  float t = (float)(millis())/128;
+  for (byte i = 0; i < 8; i++) {
+    x = beatsin8(SEGMENT.c1x>>3, 0, w - 1, 0, ((i % 2) ? 128 : 0) + t * i);
+    y = beatsin8(10            , 0, h - 1, 0, ((i % 2) ? 192 : 64) + t * i);
+    setPixelColorXY(x, y, col_to_crgb(getPixelColorXY(x,y)) + CHSV(i*32, 255, 255));
+  }
+  for (byte i = 0; i < 8; i++) {
+    x = beatsin8(SEGMENT.c2x>>3, w/4, w - 1 - w/4, 0, ((i % 2) ? 128 : 0) + t * i);
+    y = beatsin8(SEGMENT.c3x>>3, h/4, h - 1 - h/4, 0, ((i % 2) ? 192 : 64) + t * i);
+    setPixelColorXY(x, y, col_to_crgb(getPixelColorXY(x,y)) + CHSV(i*32, 255, 255));
+  }
+  setPixelColorXY(w/2, h/2, WHITE);
+  blur2d(16);
+  return FRAMETIME;
+} // mode_2DBlackHole()
+

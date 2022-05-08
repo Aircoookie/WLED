@@ -38,6 +38,9 @@
 #define DEFAULT_SPEED      (uint8_t)128
 #define DEFAULT_INTENSITY  (uint8_t)128
 #define DEFAULT_COLOR      (uint32_t)0xFFAA00
+#define DEFAULT_C1         (uint8_t)128
+#define DEFAULT_C2         (uint8_t)128
+#define DEFAULT_C3         (uint8_t)128
 
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
@@ -109,6 +112,9 @@
 // bit    0: segment is selected
 #define NO_OPTIONS   (uint8_t)0x00
 #define TRANSITIONAL (uint8_t)0x80
+#define TRANSPOSED   (uint8_t)0x40 // rotated 90deg & reversed
+#define REVERSE_Y_2D (uint8_t)0x20
+#define MIRROR_Y_2D  (uint8_t)0x10
 #define MIRROR       (uint8_t)0x08
 #define SEGMENT_ON   (uint8_t)0x04
 #define REVERSE      (uint8_t)0x02
@@ -118,8 +124,11 @@
 #define IS_SEGMENT_ON   ((SEGMENT.options & SEGMENT_ON  ) == SEGMENT_ON  )
 #define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
+#define IS_REVERSE_Y_2D ((SEGMENT.options & REVERSE_Y_2D) == REVERSE_Y_2D)
+#define IS_MIRROR_Y_2D  ((SEGMENT.options & MIRROR_Y_2D ) == MIRROR_Y_2D )
+#define IS_TRANSPOSED   ((SEGMENT.options & TRANSPOSED  ) == TRANSPOSED  )
 
-#define MODE_COUNT  118
+#define MODE_COUNT  120
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -239,6 +248,8 @@
 #define FX_MODE_BLENDS                 115
 #define FX_MODE_TV_SIMULATOR           116
 #define FX_MODE_DYNAMIC_SMOOTH         117
+#define FX_MODE_BLACK_HOLE_A           118
+#define FX_MODE_BLACK_HOLE_B           119
 
 
 class WS2812FX {
@@ -249,24 +260,35 @@ class WS2812FX {
 
   static WS2812FX* instance;
   
-  // segment parameters
   public:
-    typedef struct Segment { // 34 (35 in memory) bytes
-      uint16_t start;
-      uint16_t stop; //segment invalid if stop == 0
+
+  // segment parameters
+    typedef struct Segment { // 35 (36 in memory) bytes
+      uint16_t start; // start index / start X coordinate 2D (left)
+      uint16_t stop;  // stop index / stop X coordinate 2D (right); segment is invalid if stop == 0
       uint16_t offset;
       uint8_t  speed;
       uint8_t  intensity;
       uint8_t  palette;
       uint8_t  mode;
-      uint8_t  options; //bit pattern: msb first: transitional needspixelstate tbd tbd (paused) on reverse selected
+      uint16_t options; //bit pattern: msb first: [transposed mirrorY reverseY] transitional (tbd) paused needspixelstate mirrored on reverse selected
       uint8_t  grouping, spacing;
       uint8_t  opacity;
       uint32_t colors[NUM_COLORS];
       uint8_t  cct; //0==1900K, 255==10091K
       uint8_t  _capabilities;
-      uint8_t c1x, c2x, c3x; // custom FX parameters
+      uint8_t  c1x, c2x, c3x; // custom FX parameters
+      uint16_t startY;  // start Y coodrinate 2D (top)
+      uint16_t stopY;   // stop Y coordinate 2D (bottom)
       char *name;
+      inline bool     getOption(uint8_t n)   { return ((options >> n) & 0x01); }
+      inline bool     isSelected()           { return getOption(0); }
+      inline bool     isActive()             { return stop > start; }
+      inline uint16_t width()                { return options & TRANSPOSED ? stopY - startY : stop - start; }
+      inline uint16_t height()               { return options & TRANSPOSED ? stop - start : stopY - startY; }
+      inline uint16_t length()               { return width(); }
+      inline uint16_t groupLength()          { return grouping + spacing; }
+      inline uint8_t  getLightCapabilities() { return _capabilities; }
       bool setColor(uint8_t slot, uint32_t c, uint8_t segn) { //returns true if changed
         if (slot >= NUM_COLORS || segn >= MAX_NUM_SEGMENTS) return false;
         if (c == colors[slot]) return false;
@@ -291,8 +313,7 @@ class WS2812FX {
         ColorTransition::startTransition(opacity, colors[0], instance->_transitionDur, segn, 0);
         opacity = o;
       }
-      void setOption(uint8_t n, bool val, uint8_t segn = 255)
-      {
+      void setOption(uint8_t n, bool val, uint8_t segn = 255) {
         bool prevOn = false;
         if (n == SEG_OPTION_ON) {
           prevOn = getOption(SEG_OPTION_ON);
@@ -300,48 +321,31 @@ class WS2812FX {
             ColorTransition::startTransition(opacity, colors[0], instance->_transitionDur, segn, 0);
           }
         }
-
-        if (val) {
-          options |= 0x01 << n;
-        } else
-        {
-          options &= ~(0x01 << n);
-        }
-
+        if (val) options |=   0x01 << n;
+        else     options &= ~(0x01 << n);
         if (n == SEG_OPTION_ON && val && !prevOn) { //fade on
           ColorTransition::startTransition(0, colors[0], instance->_transitionDur, segn, 0);
         }
       }
-      bool getOption(uint8_t n)
-      {
-        return ((options >> n) & 0x01);
+      uint16_t virtualWidth() {
+        uint16_t groupLen = groupLength();
+        uint16_t vWidth = (width() + groupLen - 1) / groupLen;
+        if (options & MIRROR) vWidth = (vWidth + 1) /2;  // divide by 2 if mirror, leave at least a single LED
+        return vWidth;
       }
-      inline bool isSelected()
-      {
-        return getOption(0);
+      uint16_t virtualHeight() {
+        uint16_t groupLen = groupLength();
+        uint16_t vHeight = (height() + groupLen - 1) / groupLen;
+        if (options & MIRROR_Y_2D) vHeight = (vHeight + 1) /2;  // divide by 2 if mirror, leave at least a single LED
+        return vHeight;
       }
-      inline bool isActive()
-      {
-        return stop > start;
-      }
-      inline uint16_t length()
-      {
-        return stop - start;
-      }
-      inline uint16_t groupLength()
-      {
-        return grouping + spacing;
-      }
-      uint16_t virtualLength()
-      {
+      uint16_t virtualLength() {
         uint16_t groupLen = groupLength();
         uint16_t vLength = (length() + groupLen - 1) / groupLen;
-        if (options & MIRROR)
-          vLength = (vLength + 1) /2;  // divide by 2 if mirror, leave at least a single LED
+        if (options & MIRROR) vLength = (vLength + 1) /2;  // divide by 2 if mirror, leave at least a single LED
         return vLength;
       }
       uint8_t differs(Segment& b);
-      inline uint8_t getLightCapabilities() {return _capabilities;}
       void refreshLightCapabilities();
     } segment;
 
@@ -610,6 +614,8 @@ class WS2812FX {
       _mode[FX_MODE_BLENDS]                  = &WS2812FX::mode_blends;
       _mode[FX_MODE_TV_SIMULATOR]            = &WS2812FX::mode_tv_simulator;
       _mode[FX_MODE_DYNAMIC_SMOOTH]          = &WS2812FX::mode_dynamic_smooth;
+      _mode[FX_MODE_BLACK_HOLE_A]            = &WS2812FX::mode_2DBlackHole_A;
+      _mode[FX_MODE_BLACK_HOLE_B]            = &WS2812FX::mode_2DBlackHole_B;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -637,7 +643,7 @@ class WS2812FX {
       setTransitionMode(bool t),
       calcGammaTable(float),
       trigger(void),
-      setSegment(uint8_t n, uint16_t start, uint16_t stop, uint8_t grouping = 0, uint8_t spacing = 0, uint16_t offset = UINT16_MAX),
+      setSegment(uint8_t n, uint16_t start, uint16_t stop, uint8_t grouping = 0, uint8_t spacing = 0, uint16_t offset = UINT16_MAX, uint16_t startY=0, uint16_t stopY=0),
       setMainSegmentId(uint8_t n),
       restartRuntime(),
       resetSegments(),
@@ -835,6 +841,62 @@ class WS2812FX {
       mode_tv_simulator(void),
       mode_dynamic_smooth(void);
 
+// 2D support (panels)
+    bool
+      isMatrix = false;
+
+    uint8_t
+      hPanels = 1,
+      vPanels = 1;
+
+    uint16_t
+      panelH = 8,
+      panelW = 8,
+      matrixWidth = DEFAULT_LED_COUNT,
+      matrixHeight = 1;
+
+    #define WLED_MAX_PANELS 64
+    typedef struct panel_bitfield_t {
+      unsigned char
+        bottomStart : 1, // starts at bottom?
+        rightStart  : 1, // starts on right?
+        vertical    : 1, // is vertical?
+        serpentine  : 1; // is serpentine?
+    } Panel;
+    Panel
+      matrix = {0,0,0,0},
+      panel[WLED_MAX_PANELS] = {{0,0,0,0}};
+
+    void
+      setUpMatrix(),
+      setPixelColorXY(uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
+      fill2D(uint32_t),
+      blur1d(fract8 blur_amount, CRGB* leds=nullptr),
+      blur2d(fract8 blur_amount, CRGB* leds=nullptr),
+      blurRows(fract8 blur_amount, CRGB* leds=nullptr),
+      blurColumns(fract8 blur_amount, CRGB* leds=nullptr),
+      fill_solid(const struct CRGB& color, CRGB* leds=nullptr),
+      fade_out2D(uint8_t r),
+      fadeToBlackBy(uint8_t fadeBy, CRGB* leds=nullptr),
+      nscale8(uint8_t scale, CRGB* leds=nullptr),
+      setPixels(CRGB* leds);
+
+    inline void setPixelColorXY(uint16_t x, uint16_t y, uint32_t c) { setPixelColorXY(x, y, byte(c>>16), byte(c>>8), byte(c), byte(c>>24)); }
+    inline void setPixelColorXY(uint16_t x, uint16_t y, CRGB &c) { setPixelColorXY(x, y, c.red, c.green, c.blue); }
+
+    uint16_t
+      XY(uint16_t x, uint16_t y, uint8_t seg=255);
+
+    uint32_t
+      getPixelColorXY(uint16_t, uint16_t);
+
+  // 2D modes
+  uint16_t
+    mode_2DBlackHole_A(),
+    mode_2DBlackHole_B();
+
+// end 2D support
+
   private:
     uint32_t crgb_to_col(CRGB fastled);
     CRGB col_to_crgb(uint32_t);
@@ -905,9 +967,9 @@ class WS2812FX {
     uint8_t _segment_index_palette_last = 99;
     uint8_t _mainSegment;
 
-    segment _segments[MAX_NUM_SEGMENTS] = { // SRAM footprint: 24 bytes per element
-      // start, stop, offset, speed, intensity, palette, mode, options, grouping, spacing, opacity (unused), color[], capabilities
-      {0, 7, 0, DEFAULT_SPEED, 128, 0, DEFAULT_MODE, NO_OPTIONS, 1, 0, 255, {DEFAULT_COLOR}, 0}
+    segment _segments[MAX_NUM_SEGMENTS] = { // SRAM footprint: 27 bytes per element
+      // start, stop, offset, speed, intensity, palette, mode, options, grouping, spacing, opacity (unused), color[], capabilities, custom 1, custom 2, custom 3
+      {0, 7, 0, DEFAULT_SPEED, DEFAULT_INTENSITY, 0, DEFAULT_MODE, NO_OPTIONS, 1, 0, 255, {DEFAULT_COLOR}, 0, DEFAULT_C1, DEFAULT_C2, DEFAULT_C3, 0, 1}
     };
     segment_runtime _segment_runtimes[MAX_NUM_SEGMENTS]; // SRAM footprint: 28 bytes per element
     friend class Segment_runtime;

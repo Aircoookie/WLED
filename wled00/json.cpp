@@ -20,6 +20,9 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     uint16_t len = elem["len"];
     stop = (len > 0) ? start + len : seg.stop;
   }
+  // 2D segments
+  uint16_t startY = elem["startY"] | seg.startY;
+  uint16_t stopY = elem["stopY"] | seg.stopY;
 
   //repeat, multiplies segment until all LEDs are used, or max segments reached
   bool repeat = elem["rpt"] | false;
@@ -31,6 +34,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     for (byte i=id+1; i<strip.getMaxSegments(); i++) {
       start = start + len;
       if (start >= strip.getLengthTotal()) break;
+      //TODO: add support for 2D
       elem["start"] = start;
       elem["stop"]  = start + len;
       elem["rev"]   = !elem["rev"]; // alternate reverse on even/odd segments
@@ -78,7 +82,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     of = offsetAbs;
   }
   if (stop > start && of > len -1) of = len -1;
-  strip.setSegment(id, start, stop, grp, spc, of);
+  strip.setSegment(id, start, stop, grp, spc, of, startY, stopY);
 
   byte segbri = 0;
   if (getVal(elem["bri"], &segbri)) {
@@ -146,6 +150,10 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   seg.setOption(SEG_OPTION_SELECTED, elem[F("sel")] | seg.getOption(SEG_OPTION_SELECTED));
   seg.setOption(SEG_OPTION_REVERSED, elem["rev"]    | seg.getOption(SEG_OPTION_REVERSED));
   seg.setOption(SEG_OPTION_MIRROR  , elem[F("mi")]  | seg.getOption(SEG_OPTION_MIRROR  ));
+  // 2D options
+  seg.setOption(SEG_OPTION_REVERSED_Y, elem[F("rY")] | seg.getOption(SEG_OPTION_REVERSED_Y));
+  seg.setOption(SEG_OPTION_MIRROR_Y  , elem[F("mY")] | seg.getOption(SEG_OPTION_MIRROR_Y  ));
+  seg.setOption(SEG_OPTION_TRANSPOSE , elem[F("tp")] | seg.getOption(SEG_OPTION_TRANSPOSE ));
 
   byte fx = seg.mode;
   if (getVal(elem["fx"], &fx, 1, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 1-255 exact value)
@@ -189,7 +197,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
           set = 2;
         }
       } else { //color
-        int rgbw[] = {0,0,0,0};
+        uint8_t rgbw[] = {0,0,0,0};
         JsonArray icol = iarr[i];
         if (!icol.isNull()) { //array, e.g. [255,0,0]
           byte sz = icol.size();
@@ -386,6 +394,10 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
   if (segmentBounds) {
     root["start"] = seg.start;
     root["stop"] = seg.stop;
+    if (strip.isMatrix) {
+      root[F("startY")] = seg.startY;
+      root[F("stopY")]  = seg.stopY;
+    }
   }
   if (!forPreset) root["len"] = seg.stop - seg.start;
   root["grp"] = seg.grouping;
@@ -427,6 +439,11 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
   root[F("sel")] = seg.isSelected();
   root["rev"]    = seg.getOption(SEG_OPTION_REVERSED);
   root[F("mi")]  = seg.getOption(SEG_OPTION_MIRROR);
+  if (strip.isMatrix) {
+    root[F("rY")] = seg.getOption(SEG_OPTION_REVERSED_Y);
+    root[F("mY")] = seg.getOption(SEG_OPTION_MIRROR_Y);
+    root[F("tp")] = seg.getOption(SEG_OPTION_TRANSPOSE);
+  }
 }
 
 void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segmentBounds)
@@ -494,7 +511,13 @@ void serializeInfo(JsonObject root)
   leds[F("maxpwr")] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;
   leds[F("maxseg")] = strip.getMaxSegments();
   //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config
-  
+
+  if (strip.isMatrix) {
+    JsonObject matrix = leds.createNestedObject("matrix");
+    matrix["w"] = strip.matrixWidth;
+    matrix["h"] = strip.matrixHeight;
+  }
+
   uint8_t totalLC = 0;
   JsonArray lcarr = leds.createNestedArray(F("seglc"));
   uint8_t nSegs = strip.getLastActiveSegmentId();

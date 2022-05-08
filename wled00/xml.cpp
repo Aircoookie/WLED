@@ -177,7 +177,7 @@ void getSettingsJS(byte subPage, char* dest)
   obuf = dest;
   olen = 0;
 
-  if (subPage <0 || subPage >9) return;
+  if (subPage <0 || subPage >10) return;
 
   if (subPage == 0)
   {
@@ -630,5 +630,34 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(SET_F(" build "));
     oappendi(VERSION);
     oappend(SET_F(")\";"));
+  }
+
+  if (subPage == 10) // 2D matrices
+  {
+    sappend('v',SET_F("SOMP"),strip.isMatrix);
+    oappend(SET_F("resetPanels();"));
+    if (strip.isMatrix) {
+      sappend('v',SET_F("PH"),strip.panelH);
+      sappend('v',SET_F("PW"),strip.panelW);
+      sappend('v',SET_F("MPH"),strip.hPanels);
+      sappend('v',SET_F("MPV"),strip.vPanels);
+      sappend('v',SET_F("PB"),strip.matrix.bottomStart);
+      sappend('v',SET_F("PR"),strip.matrix.rightStart);
+      sappend('v',SET_F("PV"),strip.matrix.vertical);
+      sappend('c',SET_F("PS"),strip.matrix.serpentine);
+      // panels
+      for (uint8_t i=0; i<strip.hPanels*strip.vPanels; i++) {
+        char n[5];
+        oappend(SET_F("addPanel("));
+        oappend(itoa(i,n,10));
+        oappend(SET_F(");"));
+        char pO[8]; sprintf_P(pO, PSTR("P%d"), i);
+        uint8_t l = strlen(pO); pO[l+1] = 0;
+        pO[l] = 'B'; sappend('v',pO,strip.panel[i].bottomStart);
+        pO[l] = 'R'; sappend('v',pO,strip.panel[i].rightStart);
+        pO[l] = 'V'; sappend('v',pO,strip.panel[i].vertical);
+        pO[l] = 'S'; sappend('c',pO,strip.panel[i].serpentine);
+      }
+    }
   }
 }

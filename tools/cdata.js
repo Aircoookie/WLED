@@ -367,6 +367,18 @@ writeChunks(
           )
     },
     {
+      file: "settings_2D.htm",
+      name: "PAGE_settings_2D",
+      method: "gzip",
+      filter: "html-minify",
+      mangle: (str) =>
+        str
+          .replace(
+            /function GetV().*\<\/script\>/gms,
+            "</script><script src=\"/settings/s.js?p=10\"></script>"
+          )
+    },
+    {
       file: "settings_pin.htm",
       name: "PAGE_settings_pin",
       method: "gzip",

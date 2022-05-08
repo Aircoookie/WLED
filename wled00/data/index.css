@@ -972,6 +972,11 @@ textarea {
 	margin-top: 8px;
 }
 
+TD .revchkl {
+	padding: 0 0 0 32px;
+	margin-top: 0;
+}
+
 .check input, .radio input {
 	position: absolute;
 	opacity: 0;
@@ -1039,6 +1044,10 @@ textarea {
 	margin: -7px;
 	border-radius: 50%;
 	background: var(--c-f);
+}
+
+TD .checkmark, TD .radiomark {
+	top: -6px;
 }
 
 .h {

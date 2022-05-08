@@ -20,6 +20,7 @@ var pJson = {}, eJson = {}, lJson = {};
 var pN = "", pI = 0, pNum = 0;
 var pmt = 1, pmtLS = 0, pmtLast = 0;
 var lastinfo = {};
+var isM = false, mw = 0, mh=0;
 var ws, cpick, ranges;
 var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
@@ -599,6 +600,10 @@ function parseInfo(i) {
 	syncTglRecv = i.str;
 	maxSeg      = i.leds.maxseg;
 	pmt         = i.fs.pmt;
+	// do we have a matrix set-up
+	mw = i.leds.matrix ? i.leds.matrix.w : 0;
+	mh = i.leds.matrix ? i.leds.matrix.h : 0;
+	isM = mw>0 && mh>0;
 }
 
 function populateInfo(i)
@@ -665,6 +670,13 @@ function populateSegments(s)
 			<div class="sliderdisplay"></div>
 		</div>
 	</div>`;
+		let rvXck = `<label class="check revchkl">Reverse ${isM?'':'direction'}<input type="checkbox" id="seg${i}rev" onchange="setRev(${i})" ${inst.rev?"checked":""}><span class="checkmark schk"></span></label>`;
+		let miXck = `<label class="check revchkl">Mirror<input type="checkbox" id="seg${i}mi" onchange="setMi(${i})" ${inst.mi?"checked":""}><span class="checkmark schk"></span></label>`;
+		let rvYck = "", miYck ="";
+		if (isM) {
+			rvYck = `<label class="check revchkl">Reverse<input type="checkbox" id="seg${i}rY" onchange="setRevY(${i})" ${inst.rY?"checked":""}><span class="checkmark schk"></span></label>`;
+			miYck = `<label class="check revchkl">Mirror<input type="checkbox" id="seg${i}mY" onchange="setMiY(${i})" ${inst.mY?"checked":""}><span class="checkmark schk"></span></label>`;
+		}
 		cn += `<div class="seg lstI ${i==s.mainseg ? 'selected' : ''} ${exp ? "expanded":""}" id="seg${i}">
 	<label class="check schkl">
 		<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>
@@ -681,19 +693,25 @@ function populateSegments(s)
 		<input type="text" class="ptxt noslide" id="seg${i}t" autocomplete="off" maxlength=32 value="${inst.n?inst.n:""}" placeholder="Enter name..."/>
 		<table class="infot segt">
 		<tr>
-			<td>Start LED</td>
-			<td>${cfg.comp.seglen?"LED count":"Stop LED"}</td>
-			<td>Offset</td>
+			<td>${isM?'Start X':'Start LED'}</td>
+			<td>${isM?(cfg.comp.seglen?"Width":"Stop X"):(cfg.comp.seglen?"LED count":"Stop LED")}</td>
+			<td>${isM?'':'Offset'}</td>
 		</tr>
 		<tr>
-			<td><input class="noslide segn" id="seg${i}s" type="number" min="0" max="${ledCount-1}" value="${inst.start}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
-			<td><input class="noslide segn" id="seg${i}e" type="number" min="0" max="${ledCount-(cfg.comp.seglen?inst.start:0)}" value="${inst.stop-(cfg.comp.seglen?inst.start:0)}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
-			<td><input class="noslide segn" id="seg${i}of" type="number" value="${inst.of}" oninput="updateLen(${i})"></td>
+			<td><input class="noslide segn" id="seg${i}s" type="number" min="0" max="${(isM?mw:ledCount)-1}" value="${inst.start}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
+			<td><input class="noslide segn" id="seg${i}e" type="number" min="0" max="${(isM?mw:ledCount)-(cfg.comp.seglen?inst.start:0)}" value="${inst.stop-(cfg.comp.seglen?inst.start:0)}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
+			<td style="text-align:revert;">${isM?miXck+'<br>'+rvXck:''}<input class="noslide segn ${isM?'hide':''}" id="seg${i}of" type="number" value="${inst.of}" oninput="updateLen(${i})"></td>
 		</tr>
+		${isM ? '<tr><td>Start Y</td><td>'+(cfg.comp.seglen?'Height':'Stop Y')+'</td><td></td></tr>'+
+		'<tr>'+
+			'<td><input class="noslide segn" id="seg'+i+'sY" type="number" min="0" max="'+(mh-1)+'" value="'+inst.startY+'" oninput="updateLen('+i+')" onkeydown="segEnter('+i+')"></td>'+
+			'<td><input class="noslide segn" id="seg'+i+'eY" type="number" min="0" max="'+(mh-(cfg.comp.seglen?inst.startY:0))+'" value="'+(inst.stopY-(cfg.comp.seglen?inst.start:0))+'" oninput="updateLen('+i+')" onkeydown="segEnter('+i+')"></td>'+
+			'<td style="text-align:revert;">'+miYck+'<br>'+rvYck+'</td>'+
+		'</tr>':''}
 		<tr>
 			<td>Grouping</td>
 			<td>Spacing</td>
-			<td>Apply</td>
+			<td><!--Apply--></td>
 		</tr>
 		<tr>
 			<td><input class="noslide segn" id="seg${i}grp" type="number" min="1" max="255" value="${inst.grp}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
@@ -702,14 +720,10 @@ function populateSegments(s)
 		</tr>
 		</table>
 		<div class="h bp" id="seg${i}len"></div>
+		${!isM?rvXck:''}
 		<label class="check revchkl">
-			Reverse direction
-			<input type="checkbox" id="seg${i}rev" onchange="setRev(${i})" ${inst.rev ? "checked":""}>
-			<span class="checkmark schk"></span>
-		</label>
-		<label class="check revchkl">
-			Mirror effect
-			<input type="checkbox" id="seg${i}mi" onchange="setMi(${i})" ${inst.mi ? "checked":""}>
+			${isM?'Transpose':'Mirror effect'}
+			<input type="checkbox" id="seg${i}${isM?'tp':'mi'}" onchange="${(isM?'setTp(':'setMi(')+i})" ${isM?(inst.tp?"checked":""):(inst.mi?"checked":"")}>
 			<span class="checkmark schk"></span>
 		</label>
 		<div class="del">
@@ -736,7 +750,7 @@ function populateSegments(s)
 		if (!gId(`seg${i}sel`).checked) gId(`selall`).checked = false;
 	}
 	if (segCount < 2) gId(`segd${lSeg}`).style.display = "none";
-	if (!noNewSegs && (cfg.comp.seglen?parseInt(gId(`seg${lSeg}s`).value):0)+parseInt(gId(`seg${lSeg}e`).value)<ledCount) gId(`segr${lSeg}`).style.display = "inline";
+	if (!isM && !noNewSegs && (cfg.comp.seglen?parseInt(gId(`seg${lSeg}s`).value):0)+parseInt(gId(`seg${lSeg}e`).value)<ledCount) gId(`segr${lSeg}`).style.display = "inline";
 	gId('rsbtn').style.display = (segCount > 1) ? "inline":"none";
 }
 
@@ -966,6 +980,11 @@ function updateLen(s)
 	var start = parseInt(gId(`seg${s}s`).value);
 	var stop = parseInt(gId(`seg${s}e`).value);
 	var len = stop - (cfg.comp.seglen?0:start);
+	if (isM) {
+		start = parseInt(gId(`seg${s}sY`).value);
+		stop = parseInt(gId(`seg${s}eY`).value);
+		len *= (stop-(cfg.comp.seglen?0:start));
+	}
 	var out = "(delete)";
 	if (len > 1) {
 		out = `${len} LEDs`;
@@ -1280,7 +1299,7 @@ function setSliderAndColorControl(idx, applyDef=false)
 				var v = Math.max(0,Math.min(255,parseInt(slOnOff[i].substr(dPos+1))));
 				if      (i==0) { if (applyDef) gId("sliderSpeed").value     = v; obj.seg.sx = v; }
 				else if (i==1) { if (applyDef) gId("sliderIntensity").value = v; obj.seg.ix = v; }
-				else           { if (applyDef) gId("sliderC"+(i-1)).value   = v; obj.seg["C"+(i-1)] = v}
+				else           { if (applyDef) gId("sliderC"+(i-1)).value   = v; obj.seg["c"+(i-1)+"x"] = v}
 				slOnOff[i] = slOnOff[i].substring(0,dPos);
 			}
 			if (slOnOff.length>i && slOnOff[i]!="!") label.innerHTML = slOnOff[i];
@@ -1501,6 +1520,7 @@ function makeSeg()
 {
 	var ns = 0;
 	var lu = lowestUnused;
+	let li = lastinfo;
 	if (lu > 0) {
 		var pend = parseInt(gId(`seg${lu -1}e`).value,10) + (cfg.comp.seglen?parseInt(gId(`seg${lu -1}s`).value,10):0);
 		if (pend < ledCount) ns = pend;
@@ -1515,14 +1535,19 @@ function makeSeg()
 		<input type="text" class="noslide" id="seg${lu}t" autocomplete="off" maxlength=32 value="" placeholder="New segment ${lu}"/>
 		<table class="segt">
 			<tr>
-				<td width="38%">Start LED</td>
-				<td width="38%">${cfg.comp.seglen?"LED count":"Stop LED"}</td>
+				<td width="38%">${isM?'Start X':'Start LED'}</td>
+				<td width="38%">${isM?(cfg.comp.seglen?"Width":"Stop X"):(cfg.comp.seglen?"LED count":"Stop LED")}</td>
 			</tr>
 			<tr>
 				<td><input class="noslide segn" id="seg${lu}s" type="number" min="0" max="${ledCount-1}" value="${ns}" oninput="updateLen(${lu})" onkeydown="segEnter(${lu})"></td>
 				<td><input class="noslide segn" id="seg${lu}e" type="number" min="0" max="${ct}" value="${ct}" oninput="updateLen(${lu})" onkeydown="segEnter(${lu})"></td>
 				<td><button class="btn btn-xs" onclick="setSeg(${lu});resetUtil();"><i class="icons bth-icon" id="segc${lu}">&#xe390;</i></button></td>
 			</tr>
+			${isM ? '<tr><td>Start Y</td><td>'+(cfg.comp.seglen?'Height':'Stop Y')+'</td></tr>'+
+			'<tr>'+
+				'<td><input class="noslide segn" id="seg'+lu+'sY" type="number" min="0" max="'+(mh-1)+'" value="'+0+'" oninput="updateLen('+lu+')" onkeydown="segEnter('+lu+')"></td>'+
+				'<td><input class="noslide segn" id="seg'+lu+'eY" type="number" min="0" max="'+mh+'" value="'+mh+'" oninput="updateLen('+lu+')" onkeydown="segEnter('+lu+')"></td>'+
+			'</tr>':''}
 		</table>
 		<div class="h" id="seg${lu}len">${ledCount - ns} LEDs</div>
 		<div class="c"><button class="btn btn-p" onclick="resetUtil()">Cancel</button></div>
@@ -1813,6 +1838,7 @@ function selSeg(s)
 
 function rptSeg(s)
 {
+	//TODO: 2D support
 	var name = gId(`seg${s}t`).value;
 	var start = parseInt(gId(`seg${s}s`).value);
 	var stop = parseInt(gId(`seg${s}e`).value);
@@ -1842,6 +1868,12 @@ function setSeg(s)
 	var stop = parseInt(gId(`seg${s}e`).value);
 	if ((cfg.comp.seglen && stop == 0) || (!cfg.comp.seglen && stop <= start)) {delSeg(s); return;}
 	var obj = {"seg": {"id": s, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop}};
+	if (isM) {
+		var startY = parseInt(gId(`seg${s}sY`).value);
+		var stopY = parseInt(gId(`seg${s}eY`).value);
+		obj.seg.startY = startY;
+		obj.seg.stopY = (cfg.comp.seglen?startY:0)+stopY;
+	}
 	if (gId(`seg${s}grp`)) {
 		var grp = parseInt(gId(`seg${s}grp`).value);
 		var spc = parseInt(gId(`seg${s}spc`).value);
@@ -1871,10 +1903,31 @@ function setRev(s)
 	requestJson(obj);
 }
 
+function setRevY(s)
+{
+	var rev = gId(`seg${s}rY`).checked;
+	var obj = {"seg": {"id": s, "rY": rev}};
+	requestJson(obj);
+}
+
 function setMi(s)
 {
 	var mi = gId(`seg${s}mi`).checked;
 	var obj = {"seg": {"id": s, "mi": mi}};
+	requestJson(obj);
+}
+
+function setMiY(s)
+{
+	var mi = gId(`seg${s}mY`).checked;
+	var obj = {"seg": {"id": s, "mY": mi}};
+	requestJson(obj);
+}
+
+function setTp(s)
+{
+	var tp = gId(`seg${s}tp`).checked;
+	var obj = {"seg": {"id": s, "tp": tp}};
 	requestJson(obj);
 }
 

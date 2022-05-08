@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=500">
+	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+	<title>2D Set-up</title>
+	<script>
+	var d=document;
+	function H(){window.open("https://kno.wled.ge/features/2D");}
+	function B(){window.open("/settings","_self");}
+	function gId(n){return d.getElementById(n);}
+
+	var maxPanels=64;
+	function UI(change=false)
+	{
+		if (gId("somp").value === "0") {
+			gId("mpdiv").style.display = "none";
+			resetPanels();
+			return;
+		}
+
+		gId("mpdiv").style.display = "block";
+		maxPanels = parseInt(d.Sf.MPH.value) * parseInt(d.Sf.MPV.value);
+
+		let i = gId("panels").children.length;
+		if (i<maxPanels) for (let j=i; j<maxPanels; j++) addPanel(j);
+		if (i>maxPanels) for (let j=i; j>maxPanels; j--) remPanel();
+		//btnPanel(gId("panels").children.length);
+	}
+
+	function addPanels() {
+		let h = parseInt(d.Sf.MPH.value);
+		let v = parseInt(d.Sf.MPV.value);
+		for (let i=0; i<h*v; i++) addPanel(i);
+	}
+
+	function addPanel(i=0) {
+		let p = gId("panels");
+		if (p.children.length >= maxPanels) return;
+		let b = `<div id="pnl${i}">${i===0?"":'<hr style="width:260px">'}Panel ${i}<br>1<sup>st</sup> LED: <select name="P${i}B">
+	<option value="0">Top</option>
+	<option value="1">Bottom</option>
+</select><select name="P${i}R">
+	<option value="0">Left</option>
+	<option value="1">Right</option>
+</select><br>
+Orientation: <select name="P${i}V">
+	<option value="0">Horizontal</option>
+	<option value="1">Vertical</option>
+</select><br>
+Serpentine: <input type="checkbox" name="P${i}S"></div>`;
+		p.insertAdjacentHTML("beforeend", b);
+	}
+
+    function remPanel() {
+		let p = gId("panels").children;
+      	var i = p.length;
+      	if (i <= 1) return;
+      	p[i-1].remove();
+    }
+
+	function resetPanels() {
+		d.Sf.MPH.value = 1;
+		d.Sf.MPV.value = 1;
+		for (let e of gId("panels").children) e.remove();
+	}
+
+	function btnPanel(i) {
+		gId("pnl_add").style.display = (i<maxPanels) ? "inline":"none";
+		gId("pnl_rem").style.display = (i>1) ? "inline":"none";
+	}
+
+	function S() {GetV();UI()}
+	//values injected by server while sending HTML
+	function GetV() {}
+	</script>
+	<style>@import url("style.css");</style>
+</head>
+<body onload="S()">
+	<form id="form_s" name="Sf" method="post">
+	<div class="toprow">
+		<div class="helpB"><button type="button" onclick="H()">?</button></div>
+		<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
+	</div>
+	<h2>2D setup</h2>
+    Strip or panel:
+	<select id="somp" name="SOMP" onchange="resetPanels();addPanels();UI();" >
+		<option value="0">1D Strip</option>
+		<option value="1">2D Matrix</option>
+	</select><br>
+	<div id="mpdiv" style="display:none;">
+		<h3>2D Matrix</h3>
+		Panel dimensions (WxH): <input name="PW" type="number" min="1" max="128" value="8"> x <input name="PH" type="number" min="1" max="128" value="8"><br>
+		Horizontal panels: <input name="MPH" type="number" min="1" max="8" value="1" oninput="UI()">
+		Vertical panels: <input name="MPV" type="number" min="1" max="8" value="1" oninput="UI()"><br>
+		1<sup>st</sup> panel: <select name="PB">
+			<option value="0">Top</option>
+			<option value="1">Bottom</option>
+		</select><select name="PR">
+			<option value="0">Left</option>
+			<option value="1">Right</option>
+		</select><br>
+		Orientation: <select name="PV">
+			<option value="0">Horizontal</option>
+			<option value="1">Vertical</option>
+		</select><br>
+		Serpentine: <input type="checkbox" name="PS">
+		<hr style="width:260px">
+		<i>A matrix is made of 1 or more physical led panels of the same dimensions.<br>
+		Panels should be arranged from top-left to bottom-right order, starting with lower panel number on the left (or top if transposed).<br>
+		Each panel can have different orientation and/or starting point and/or layout.</i><br>
+		<hr style="width:260px">
+		<h3>2D Panel layout</h3>
+		<div id="panels">
+		</div>
+		<!--
+		<button type="button" class="xs" id="pnl_add" onclick="addPanel()">+</button>
+		<button type="button" class="xs" id="pnl_rem" onclick="remPanel()">-</button>
+		-->
+	</div>
+	<hr>
+	<button type="button" onclick="B()">Back</button><button type="submit">Save</button>
+	</form>
+</body>
+</html>

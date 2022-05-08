@@ -18,31 +18,33 @@
 			margin: 0;
 		}
 		html {
-			--h: 10.2vh;
+			--h: 9vh;
 		}
 		button {
 			background: #333;
 			color: #fff;
 			font-family: Verdana, Helvetica, sans-serif;
-			display: inline-block;
+			display: block;
 			border: 1px solid #333;
 			border-radius: var(--h);
 			font-size: 6vmin;
 			height: var(--h);
 			width: calc(100% - 40px);
 			margin-top: 2vh;
+			cursor: pointer;
 		}
 	</style>
 </head>
 <body onload="S()">
-<form action="/"><button type=submit id="b">Back</button></form>
-<form action="/settings/wifi"><button type="submit">WiFi Setup</button></form>
-<form action="/settings/leds"><button type="submit">LED Preferences</button></form>
-<form action="/settings/ui"><button type="submit">User Interface</button></form>
-<form action="/settings/dmx"><button id="dmxbtn" style="display: none;" type="submit">DMX Output</button></form>
-<form action="/settings/sync"><button type="submit">Sync Interfaces</button></form>
-<form action="/settings/time"><button type="submit">Time & Macros</button></form>
-<form action="/settings/um"><button type="submit">Usermods</button></form>
-<form action="/settings/sec"><button type="submit">Security & Updates</button></form>
+<button type=submit id="b" onclick="window.location='/'">Back</button>
+<button type="submit" onclick="window.location='./settings/wifi'">WiFi Setup</button>
+<button type="submit" onclick="window.location='./settings/leds'">LED Preferences</button>
+<button type="submit" onclick="window.location='./settings/2D'">2D Configuration</button>
+<button type="submit" onclick="window.location='./settings/ui'">User Interface</button>
+<button id="dmxbtn" style="display: none;" type="submit" onclick="window.location='./settings/dmx'">DMX Output</button>
+<button type="submit" onclick="window.location='./settings/sync'">Sync Interfaces</button>
+<button type="submit" onclick="window.location='./settings/time'">Time & Macros</button>
+<button type="submit" onclick="window.location='./settings/um'">Usermods</button>
+<button type="submit" onclick="window.location='./settings/sec'">Security & Updates</button>
 </body>
 </html>

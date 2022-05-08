@@ -476,7 +476,7 @@ void serveSettingsJS(AsyncWebServerRequest* request)
   char buf[SETTINGS_STACK_BUF_SIZE+37];
   buf[0] = 0;
   byte subPage = request->arg(F("p")).toInt();
-  if (subPage > 9) {
+  if (subPage > 10) {
     strcpy_P(buf, PSTR("alert('Settings for this request are not implemented.');"));
     request->send(501, "application/javascript", buf);
     return;
@@ -510,6 +510,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     else if (url.indexOf("sec")  > 0) subPage = 6;
     else if (url.indexOf("dmx")  > 0) subPage = 7;
     else if (url.indexOf("um")   > 0) subPage = 8;
+    else if (url.indexOf("2D")   > 0) subPage = 10;
     else if (url.indexOf("lock") > 0) subPage = 251;
   }
   else if (url.indexOf("/update") >= 0) subPage = 9; // update page, for PIN check
@@ -542,6 +543,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
       case 6: strcpy_P(s, PSTR("Security")); if (doReboot) strcpy_P(s2, PSTR("Rebooting, please wait ~10 seconds...")); break;
       case 7: strcpy_P(s, PSTR("DMX")); break;
       case 8: strcpy_P(s, PSTR("Usermods")); break;
+      case 10: strcpy_P(s, PSTR("2D")); break;
       case 252: strcpy_P(s, correctPIN ? PSTR("PIN accepted") : PSTR("PIN rejected")); break;
     }
 
@@ -572,6 +574,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     case 7:   response = request->beginResponse_P(200, "text/html", PAGE_settings_dmx,  PAGE_settings_dmx_length);  break;
     case 8:   response = request->beginResponse_P(200, "text/html", PAGE_settings_um,   PAGE_settings_um_length);   break;
     case 9:   response = request->beginResponse_P(200, "text/html", PAGE_update,        PAGE_update_length);        break;
+    case 10:  response = request->beginResponse_P(200, "text/html", PAGE_settings_2D,   PAGE_settings_2D_length);   break;
     case 251: {
       correctPIN = !strlen(settingsPIN); // lock if a pin is set
       createEditHandler(correctPIN);

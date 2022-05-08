@@ -91,6 +91,41 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   Bus::setCCTBlend(strip.cctBlending);
   strip.setTargetFps(hw_led["fps"]); //NOP if 0, default 42 FPS
 
+  // 2D Matrix Settings
+  JsonObject matrix = hw_led[F("matrix")];
+  if (!matrix.isNull()) {
+    strip.isMatrix = true;
+    CJSON(strip.panelH,  matrix[F("ph")]);
+    CJSON(strip.panelW,  matrix[F("pw")]);
+    CJSON(strip.hPanels, matrix[F("mph")]);
+    CJSON(strip.vPanels, matrix[F("mpv")]);
+    CJSON(strip.matrix.bottomStart, matrix[F("pb")]);
+    CJSON(strip.matrix.rightStart,  matrix[F("pr")]);
+    CJSON(strip.matrix.vertical,    matrix[F("pv")]);
+    CJSON(strip.matrix.serpentine,  matrix[F("ps")]);
+
+    JsonArray panels = matrix[F("panels")];
+    uint8_t s = 0;
+    if (!panels.isNull()) {
+      for (JsonObject pnl : panels) {
+        CJSON(strip.panel[s].bottomStart, pnl["b"]);
+        CJSON(strip.panel[s].rightStart, pnl["r"]);
+        CJSON(strip.panel[s].vertical, pnl["v"]);
+        CJSON(strip.panel[s].serpentine, pnl["s"]);
+        if (++s >= WLED_MAX_PANELS) break; // max panels reached
+      }
+    }
+    // clear remaining panels
+    for (; s<WLED_MAX_PANELS; s++) {
+      strip.panel[s].bottomStart = 0;
+      strip.panel[s].rightStart = 0;
+      strip.panel[s].vertical = 0;
+      strip.panel[s].serpentine = 0;
+    }
+
+    strip.setUpMatrix();
+  }
+
   JsonArray ins = hw_led["ins"];
   
   if (fromFS || !ins.isNull()) {
@@ -582,6 +617,28 @@ void serializeConfig() {
   hw_led[F("cb")] = strip.cctBlending;
   hw_led["fps"] = strip.getTargetFps();
   hw_led[F("rgbwm")] = Bus::getAutoWhiteMode();    // global override
+
+  // 2D Matrix Settings
+  if (strip.isMatrix) {
+    JsonObject matrix = hw_led.createNestedObject(F("matrix"));
+    matrix[F("ph")] = strip.panelH;
+    matrix[F("pw")] = strip.panelW;
+    matrix[F("mph")] = strip.hPanels;
+    matrix[F("mpv")] = strip.vPanels;
+    matrix[F("pb")] = strip.matrix.bottomStart;
+    matrix[F("pr")] = strip.matrix.rightStart;
+    matrix[F("pv")] = strip.matrix.vertical;
+    matrix[F("ps")] = strip.matrix.serpentine;
+
+    JsonArray panels = matrix.createNestedArray(F("panels"));
+    for (uint8_t i=0; i<strip.hPanels*strip.vPanels; i++) {
+      JsonObject pnl = panels.createNestedObject();
+      pnl["b"] = strip.panel[i].bottomStart;
+      pnl["r"] = strip.panel[i].rightStart;
+      pnl["v"] = strip.panel[i].vertical;
+      pnl["s"] = strip.panel[i].serpentine;
+    }
+  }
 
   JsonArray hw_led_ins = hw_led.createNestedArray("ins");
 

@@ -184,23 +184,27 @@ void WS2812FX::service() {
 
 void IRAM_ATTR WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
-  uint8_t segIdx;
+  uint8_t segIdx = SEGLEN ? _segment_index : _mainSegment;
+  if (isMatrix) {
+    // map linear pixel into 2D segment area (even for 1D segments, expanding vertically)
+    uint16_t h = _segments[segIdx].height();  // segment height in logical pixels
+    uint8_t  l = _segments[segIdx].groupLength();
+    for (uint16_t y = 0; y < h; y += l) { // expand 1D effect vertically
+      setPixelColorXY(i, y, r, g, b, w);
+    }
+    return;
+  }
 
-  if (SEGLEN) { // SEGLEN!=0 -> from segment/FX
+  if (SEGLEN || (realtimeMode && useMainSegmentOnly)) {
     //color_blend(getpixel, col, _bri_t); (pseudocode for future blending of segments)
-    if (_bri_t < 255) {  
+    if (SEGLEN && _bri_t < 255) {  // SEGLEN!=0 -> from segment/FX
       r = scale8(r, _bri_t);
       g = scale8(g, _bri_t);
       b = scale8(b, _bri_t);
       w = scale8(w, _bri_t);
     }
-    segIdx = _segment_index;
-  } else // from live/realtime
-    segIdx = _mainSegment;
-
-  if (SEGLEN || (realtimeMode && useMainSegmentOnly)) {
     uint32_t col = RGBW32(r, g, b, w);
-    uint16_t len = _segments[segIdx].length();
+    uint16_t len = _segments[segIdx].length();  // length of segment in number of pixels
 
     // get physical pixel address (taking into account start, grouping, spacing [and offset])
     i = i * _segments[segIdx].groupLength();
@@ -211,7 +215,7 @@ void IRAM_ATTR WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte 
         i = (len - 1) - i;
       }
     }
-    i += _segments[segIdx].start;
+    i += _segments[segIdx].start; // starting pixel in a group
 
     // set all the pixels in the group
     for (uint16_t j = 0; j < _segments[segIdx].grouping; j++) {
@@ -221,15 +225,13 @@ void IRAM_ATTR WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte 
         if (_segments[segIdx].options & MIRROR) { //set the corresponding mirrored pixel
           uint16_t indexMir = _segments[segIdx].stop - indexSet + _segments[segIdx].start - 1;          
           indexMir += _segments[segIdx].offset; // offset/phase
-
-          if (indexMir >= _segments[segIdx].stop) indexMir -= len;
+          if (indexMir >= _segments[segIdx].stop) indexMir -= len; // wrap
           if (indexMir < customMappingSize) indexMir = customMappingTable[indexMir];
 
           busses.setPixelColor(indexMir, col);
         }
         indexSet += _segments[segIdx].offset; // offset/phase
-
-        if (indexSet >= _segments[segIdx].stop) indexSet -= len;
+        if (indexSet >= _segments[segIdx].stop) indexSet -= len; // wrap
         if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
 
         busses.setPixelColor(indexSet, col);
@@ -496,6 +498,8 @@ uint8_t WS2812FX::getActiveSegmentsNum(void) {
 
 uint32_t WS2812FX::getPixelColor(uint16_t i)
 {
+  if (isMatrix) return getPixelColorXY(i, 0);
+
   // get physical pixel
   i = i * SEGMENT.groupLength();;
   if (IS_REVERSE) {
@@ -566,14 +570,13 @@ uint8_t WS2812FX::Segment::differs(Segment& b) {
   if (c1x != b.c1x)             d |= SEG_DIFFERS_FX;
   if (c2x != b.c2x)             d |= SEG_DIFFERS_FX;
   if (c3x != b.c3x)             d |= SEG_DIFFERS_FX;
+  if (startY != b.startY)       d |= SEG_DIFFERS_BOUNDS;
+  if (stopY != b.stopY)         d |= SEG_DIFFERS_BOUNDS;
 
   if ((options & 0b00101110) != (b.options & 0b00101110)) d |= SEG_DIFFERS_OPT;
-  if ((options & 0x01) != (b.options & 0x01)) d |= SEG_DIFFERS_SEL;
+  if ((options & 0x01) != (b.options & 0x01))             d |= SEG_DIFFERS_SEL;
   
-  for (uint8_t i = 0; i < NUM_COLORS; i++)
-  {
-    if (colors[i] != b.colors[i]) d |= SEG_DIFFERS_COL;
-  }
+  for (uint8_t i = 0; i < NUM_COLORS; i++) if (colors[i] != b.colors[i]) d |= SEG_DIFFERS_COL;
 
   return d;
 }
@@ -640,12 +643,15 @@ bool WS2812FX::hasCCTBus(void) {
 	return false;
 }
 
-void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping, uint8_t spacing, uint16_t offset) {
+void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping, uint8_t spacing, uint16_t offset, uint16_t startY, uint16_t stopY) {
   if (n >= MAX_NUM_SEGMENTS) return;
   Segment& seg = _segments[n];
 
   //return if neither bounds nor grouping have changed
   bool boundsUnchanged = (seg.start == i1 && seg.stop == i2);
+  if (isMatrix) {
+    boundsUnchanged &= (seg.startY == startY && seg.stopY == stopY);
+  }
   if (boundsUnchanged
 			&& (!grouping || (seg.grouping == grouping && seg.spacing == spacing))
 			&& (offset == UINT16_MAX || offset == seg.offset)) return;
@@ -662,9 +668,17 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
     if (n == _mainSegment) setMainSegmentId(0);
     return;
   }
-  if (i1 < _length) seg.start = i1;
-  seg.stop = i2;
-  if (i2 > _length) seg.stop = _length;
+  if (isMatrix) {
+    if (i1 < matrixWidth) seg.start = i1;
+    seg.stop = i2 > matrixWidth ? matrixWidth : i2;
+    if (startY < matrixHeight) seg.startY = startY;
+    seg.stopY = stopY > matrixHeight ? matrixHeight : MAX(1,stopY);
+  } else {
+    if (i1 < _length) seg.start = i1;
+    seg.stop = i2 > _length ? _length : i2;
+    seg.startY = 0;
+    seg.stopY  = 1;
+  }
   if (grouping) {
     seg.grouping = grouping;
     seg.spacing = spacing;
@@ -1157,6 +1171,8 @@ uint32_t IRAM_ATTR WS2812FX::color_from_palette(uint16_t i, bool mapping, bool w
 
 //load custom mapping table from JSON file (called from finalizeInit() or deserializeState())
 void WS2812FX::deserializeMap(uint8_t n) {
+  if (isMatrix) return; // 2D support creates its own ledmap
+
   char fileName[32];
   strcpy_P(fileName, PSTR("/ledmap"));
   if (n) sprintf(fileName +7, "%d", n);
@@ -1399,7 +1415,9 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Candy Cane@!,Width;;",
 "Blends@Shift speed,Blend speed;1,2,3,!",
 "TV Simulator",
-"Dynamic Smooth"
+"Dynamic Smooth",
+"2D Black Hole A@!,!,C1,C2,C3;!;!",
+"2D Black Hole B@!,!,C1,C2,C3;!;!"
 ])=====";
 
 const char JSON_palette_names[] PROGMEM = R"=====([

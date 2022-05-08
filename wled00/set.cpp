@@ -15,8 +15,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     return;
   }
 
-  //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 7: DMX 8: usermods
-  if (subPage <1 || subPage >8 || !correctPIN) return;
+  //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 7: DMX 8: usermods 9: N/A 10: 2D
+  if (subPage <1 || subPage >10 || !correctPIN) return;
 
   //WIFI SETTINGS
   if (subPage == 1)
@@ -545,6 +545,30 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     usermods.readFromConfig(um);  // force change of usermod parameters
 
     releaseJSONBufferLock();
+  }
+
+  //2D panels
+  if (subPage == 10)
+  {
+    strip.isMatrix = request->arg(F("SOMP")).toInt();
+    strip.panelH   = MAX(1,MIN(128,request->arg(F("PH")).toInt()));
+    strip.panelW   = MAX(1,MIN(128,request->arg(F("PW")).toInt()));
+    strip.hPanels  = MAX(1,MIN(8,request->arg(F("MPH")).toInt()));
+    strip.vPanels  = MAX(1,MIN(8,request->arg(F("MPV")).toInt()));
+    strip.matrix.bottomStart = request->arg(F("PB")).toInt();
+    strip.matrix.rightStart  = request->arg(F("PR")).toInt();
+    strip.matrix.vertical    = request->arg(F("PV")).toInt();
+    strip.matrix.serpentine  = request->hasArg(F("PS"));
+    for (uint8_t i=0; i<WLED_MAX_PANELS; i++) {
+      char pO[8]; sprintf_P(pO, PSTR("P%d"), i);
+      uint8_t l = strlen(pO); pO[l+1] = 0;
+      pO[l] = 'B'; if (!request->hasArg(pO)) break;
+      pO[l] = 'B'; strip.panel[i].bottomStart = request->arg(pO).toInt();
+      pO[l] = 'R'; strip.panel[i].rightStart  = request->arg(pO).toInt();
+      pO[l] = 'V'; strip.panel[i].vertical    = request->arg(pO).toInt();
+      pO[l] = 'S'; strip.panel[i].serpentine  = request->hasArg(pO);
+    }
+    strip.setUpMatrix(); // will check limits
   }
 
   lastEditTime = millis();
