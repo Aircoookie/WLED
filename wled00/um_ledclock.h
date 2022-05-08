@@ -867,3 +867,7 @@ LedBasedDisplay* ledClockDisplay() {
     UsermodLedClock* mod = (UsermodLedClock*) usermods.lookup(USERMOD_ID_LEDCLOCK);
     return mod->getDisplay();
 }
+
+void ledClockTimeUpdated() {
+    timeChangeTime(localTime, true);
+}

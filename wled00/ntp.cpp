@@ -260,6 +260,7 @@ bool checkNTPResponse()
   // if time changed re-calculate sunrise/sunset
   updateLocalTime();
   calculateSunriseAndSunset();
+  ledClockTimeUpdated();
   return true;
 }
 
@@ -499,6 +500,7 @@ void setTimeFromAPI(uint32_t timein) {
   if (diff >= 60U) {
     updateLocalTime();
     calculateSunriseAndSunset();
+    ledClockTimeUpdated();
   }
   if (presetsModifiedTime == 0) presetsModifiedTime = timein;
 }
