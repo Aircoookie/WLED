@@ -655,6 +655,7 @@ class WS2812FX {
       deserializeMap(uint8_t n=0);
 
     inline void setPixelColor(uint16_t n, uint32_t c) {setPixelColor(n, byte(c>>16), byte(c>>8), byte(c), byte(c>>24));}
+    inline void setPixelColor(uint16_t n, CRGB &c)    {setPixelColor(n, c.red, c.green, c.blue);}
 
     bool
       gammaCorrectBri = false,
