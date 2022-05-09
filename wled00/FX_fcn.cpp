@@ -152,7 +152,7 @@ void WS2812FX::service() {
         SEGLEN = SEGMENT.virtualLength();
         _bri_t = SEGMENT.opacity; _colors_t[0] = SEGMENT.colors[0]; _colors_t[1] = SEGMENT.colors[1]; _colors_t[2] = SEGMENT.colors[2];
         uint8_t _cct_t = SEGMENT.cct;
-        if (!IS_SEGMENT_ON) _bri_t = 0;
+        if (!SEGMENT.getOption(SEG_OPTION_ON)) _bri_t = 0;
         for (uint8_t t = 0; t < MAX_NUM_TRANSITIONS; t++) {
           if ((transitions[t].segment & 0x3F) != i) continue;
           uint8_t slot = transitions[t].segment >> 6;
@@ -208,8 +208,8 @@ void IRAM_ATTR WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte 
 
     // get physical pixel address (taking into account start, grouping, spacing [and offset])
     i = i * _segments[segIdx].groupLength();
-    if (_segments[segIdx].options & REVERSE) { // is segment reversed?
-      if (_segments[segIdx].options & MIRROR) { // is segment mirrored?
+    if (_segments[segIdx].getOption(SEG_OPTION_REVERSED)) { // is segment reversed?
+      if (_segments[segIdx].getOption(SEG_OPTION_MIRROR)) { // is segment mirrored?
         i = (len - 1) / 2 - i;  //only need to index half the pixels
       } else {
         i = (len - 1) - i;
@@ -219,10 +219,10 @@ void IRAM_ATTR WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte 
 
     // set all the pixels in the group
     for (uint16_t j = 0; j < _segments[segIdx].grouping; j++) {
-      uint16_t indexSet = i + ((_segments[segIdx].options & REVERSE) ? -j : j);
+      uint16_t indexSet = i + ((_segments[segIdx].getOption(SEG_OPTION_REVERSED)) ? -j : j);
       if (indexSet >= _segments[segIdx].start && indexSet < _segments[segIdx].stop) {
 
-        if (_segments[segIdx].options & MIRROR) { //set the corresponding mirrored pixel
+        if (_segments[segIdx].getOption(SEG_OPTION_MIRROR)) { //set the corresponding mirrored pixel
           uint16_t indexMir = _segments[segIdx].stop - indexSet + _segments[segIdx].start - 1;          
           indexMir += _segments[segIdx].offset; // offset/phase
           if (indexMir >= _segments[segIdx].stop) indexMir -= len; // wrap
@@ -502,9 +502,9 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
 
   // get physical pixel
   i = i * SEGMENT.groupLength();;
-  if (IS_REVERSE) {
-    if (IS_MIRROR) i = (SEGMENT.length() - 1) / 2 - i;  //only need to index half the pixels
-    else           i = (SEGMENT.length() - 1) - i;
+  if (SEGMENT.getOption(SEG_OPTION_REVERSED)) {
+    if (SEGMENT.getOption(SEG_OPTION_MIRROR)) i = (SEGMENT.length() - 1) / 2 - i;  //only need to index half the pixels
+    else                                      i = (SEGMENT.length() - 1) - i;
   }
   i += SEGMENT.start;
 

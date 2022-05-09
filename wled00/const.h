@@ -225,7 +225,7 @@
 #define SEG_OPTION_TRANSITIONAL   7
 #define SEG_OPTION_REVERSED_Y     8
 #define SEG_OPTION_MIRROR_Y       9
-#define SEG_OPTION_TRANSPOSE     10
+#define SEG_OPTION_TRANSPOSED    10
 
 //Segment differs return byte
 #define SEG_DIFFERS_BRI        0x01

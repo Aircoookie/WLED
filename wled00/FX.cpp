@@ -1851,23 +1851,31 @@ uint16_t WS2812FX::mode_fire_2012()
 {
   uint32_t it = now >> 5; //div 32
   uint16_t nFlames = SEGMENT.virtualHeight();
-  uint16_t q = SEGLEN>>2; // a quarter of segment
+  uint16_t q = nFlames>>2; // a quarter of segment height
 
   if (!SEGENV.allocateData(SEGLEN*nFlames)) return mode_static(); //allocation failed
   
   byte* heat = SEGENV.data;
 
-  for (uint16_t f = 0; f < nFlames; f++) {
-    if (it != SEGENV.step) {
-      uint8_t ignition = max(3,SEGLEN/10);  // ignition area: 10% of segment length or minimum 3 pixels
+  if (SEGENV.call == 0) {
+    DEBUG_PRINTLN(nFlames);
+    DEBUG_PRINTLN(SEGLEN);
+    DEBUG_PRINTLN(nFlames*SEGLEN);
+    DEBUG_PRINTLN(q);
+  }
 
+  if (it != SEGENV.step) {
+    SEGENV.step = it;
+    uint8_t ignition = max(3,SEGLEN/10);  // ignition area: 10% of segment length or minimum 3 pixels
+
+    for (uint16_t f = 0; f < nFlames; f++) {
       // Step 1.  Cool down every cell a little
       for (uint16_t i = 0; i < SEGLEN; i++) {
         uint8_t cool = (((20 + SEGMENT.speed /3) * 10) / SEGLEN);
         // 2D enhancement: cool sides of the flame a bit more
-        if (nFlames>1) {
-          if (i < q)   cool += (uint16_t)((cool * (q-i))/SEGLEN);      // cool sides a bit more
-          if (i > 3*q) cool += (uint16_t)((cool * (SEGLEN-i))/SEGLEN); // cool sides a bit more
+        if (nFlames>5) {
+          if (f < q)   qadd8(cool, (uint16_t)((cool *       (q-f))/nFlames)); // cool segment sides a bit more
+          if (f > 3*q) qadd8(cool, (uint16_t)((cool * (nFlames-f))/nFlames)); // cool segment sides a bit more
         }
         uint8_t temp = qsub8(heat[i+SEGLEN*f], random8(0, cool + 2));
         heat[i+SEGLEN*f] = (temp==0 && i<ignition) ? 16 : temp; // prevent ignition area from becoming black
@@ -1883,14 +1891,13 @@ uint16_t WS2812FX::mode_fire_2012()
         uint8_t y = random8(ignition);
         if (y < SEGLEN) heat[y+SEGLEN*f] = qadd8(heat[y+SEGLEN*f], random8(160,255));
       }
-      SEGENV.step = it;
-    }
 
-    // Step 4.  Map from heat cells to LED colors
-    for (uint16_t j = 0; j < SEGLEN; j++) {
-      CRGB color = ColorFromPalette(currentPalette, MIN(heat[j],240), 255, LINEARBLEND);
-      if (nFlames==1) setPixelColor(j, color);
-      else            setPixelColorXY(j, f, color);
+      // Step 4.  Map from heat cells to LED colors
+      for (uint16_t j = 0; j < SEGLEN; j++) {
+        CRGB color = ColorFromPalette(currentPalette, MIN(heat[j+SEGLEN*f],240), 255, LINEARBLEND);
+        if (isMatrix) setPixelColorXY(j, f, color);
+        else          setPixelColor(j, color);
+      }
     }
   }
   return FRAMETIME;
@@ -3730,7 +3737,7 @@ uint16_t WS2812FX::mode_flow(void)
     {
       uint8_t colorIndex = (i * 255 / zoneLen) - counter;
       uint16_t led = (z & 0x01) ? i : (zoneLen -1) -i;
-      if (IS_REVERSE) led = (zoneLen -1) -led;
+      if (SEGMENT.getOption(SEG_OPTION_REVERSED)) led = (zoneLen -1) -led;
       setPixelColor(pos + led, color_from_palette(colorIndex, false, true, 255));
     }
   }
@@ -4300,7 +4307,7 @@ uint16_t WS2812FX::mode_2DBlackHole_B() {            // By: Stepko https://edito
     setPixelColorXY(x, y, col_to_crgb(getPixelColorXY(x,y)) + CHSV(i*32, 255, 255));
   }
   setPixelColorXY(w/2, h/2, WHITE);
-  blur2d(16);
+  //blur2d(16);
   return FRAMETIME;
 } // mode_2DBlackHole()
 

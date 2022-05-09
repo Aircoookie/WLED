@@ -153,7 +153,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   // 2D options
   seg.setOption(SEG_OPTION_REVERSED_Y, elem[F("rY")] | seg.getOption(SEG_OPTION_REVERSED_Y));
   seg.setOption(SEG_OPTION_MIRROR_Y  , elem[F("mY")] | seg.getOption(SEG_OPTION_MIRROR_Y  ));
-  seg.setOption(SEG_OPTION_TRANSPOSE , elem[F("tp")] | seg.getOption(SEG_OPTION_TRANSPOSE ));
+  seg.setOption(SEG_OPTION_TRANSPOSED, elem[F("tp")] | seg.getOption(SEG_OPTION_TRANSPOSED));
 
   byte fx = seg.mode;
   if (getVal(elem["fx"], &fx, 1, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 1-255 exact value)
@@ -442,7 +442,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
   if (strip.isMatrix) {
     root[F("rY")] = seg.getOption(SEG_OPTION_REVERSED_Y);
     root[F("mY")] = seg.getOption(SEG_OPTION_MIRROR_Y);
-    root[F("tp")] = seg.getOption(SEG_OPTION_TRANSPOSE);
+    root[F("tp")] = seg.getOption(SEG_OPTION_TRANSPOSED);
   }
 }
 

@@ -111,22 +111,14 @@
 // bit    1: reverse segment
 // bit    0: segment is selected
 #define NO_OPTIONS   (uint8_t)0x00
-#define TRANSITIONAL (uint8_t)0x80
-#define TRANSPOSED   (uint8_t)0x40 // rotated 90deg & reversed
-#define REVERSE_Y_2D (uint8_t)0x20
-#define MIRROR_Y_2D  (uint8_t)0x10
-#define MIRROR       (uint8_t)0x08
-#define SEGMENT_ON   (uint8_t)0x04
-#define REVERSE      (uint8_t)0x02
-#define SELECTED     (uint8_t)0x01
-#define IS_TRANSITIONAL ((SEGMENT.options & TRANSITIONAL) == TRANSITIONAL)
-#define IS_MIRROR       ((SEGMENT.options & MIRROR      ) == MIRROR      )
-#define IS_SEGMENT_ON   ((SEGMENT.options & SEGMENT_ON  ) == SEGMENT_ON  )
-#define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
-#define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
-#define IS_REVERSE_Y_2D ((SEGMENT.options & REVERSE_Y_2D) == REVERSE_Y_2D)
-#define IS_MIRROR_Y_2D  ((SEGMENT.options & MIRROR_Y_2D ) == MIRROR_Y_2D )
-#define IS_TRANSPOSED   ((SEGMENT.options & TRANSPOSED  ) == TRANSPOSED  )
+#define TRANSPOSED   (uint8_t)0x400 // rotated 90deg & reversed
+#define REVERSE_Y_2D (uint8_t)0x200
+#define MIRROR_Y_2D  (uint8_t)0x100
+#define TRANSITIONAL (uint8_t)0x080
+#define MIRROR       (uint8_t)0x008
+#define SEGMENT_ON   (uint8_t)0x004
+#define REVERSE      (uint8_t)0x002
+#define SELECTED     (uint8_t)0x001
 
 #define MODE_COUNT  120
 
@@ -284,8 +276,8 @@ class WS2812FX {
       inline bool     getOption(uint8_t n)   { return ((options >> n) & 0x01); }
       inline bool     isSelected()           { return getOption(0); }
       inline bool     isActive()             { return stop > start; }
-      inline uint16_t width()                { return options & TRANSPOSED ? stopY - startY : stop - start; }
-      inline uint16_t height()               { return options & TRANSPOSED ? stop - start : stopY - startY; }
+      inline uint16_t width()                { return getOption(SEG_OPTION_TRANSPOSED) ? stopY - startY : stop - start; }
+      inline uint16_t height()               { return getOption(SEG_OPTION_TRANSPOSED) ? stop - start : stopY - startY; }
       inline uint16_t length()               { return width(); }
       inline uint16_t groupLength()          { return grouping + spacing; }
       inline uint8_t  getLightCapabilities() { return _capabilities; }
