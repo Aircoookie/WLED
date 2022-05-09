@@ -185,12 +185,11 @@ void WS2812FX::service() {
 void IRAM_ATTR WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
   uint8_t segIdx = SEGLEN ? _segment_index : _mainSegment;
-  if (isMatrix) {
+  if (isMatrix && SEGLEN) {
     // map linear pixel into 2D segment area (even for 1D segments, expanding vertically)
-    uint16_t h = _segments[segIdx].height();  // segment height in logical pixels
-    uint8_t  l = _segments[segIdx].groupLength();
-    for (uint16_t y = 0; y < h; y += l) { // expand 1D effect vertically
-      setPixelColorXY(i, y, r, g, b, w);
+    uint16_t h = _segments[segIdx].virtualHeight();  // segment height in logical pixels
+    for (uint16_t y = 0; y < h; y++) { // expand 1D effect vertically
+      setPixelColorXY(i, y * _segments[segIdx].groupLength(), r, g, b, w);
     }
     return;
   }
@@ -711,9 +710,9 @@ void WS2812FX::resetSegments() {
   _segments[0].setOption(SEG_OPTION_ON, 1);
   _segments[0].opacity = 255;
   _segments[0].cct = 127;
-  _segments[0].c1x = 0;
-  _segments[0].c2x = 0;
-  _segments[0].c3x = 0;
+  _segments[0].c1x = DEFAULT_C1;
+  _segments[0].c2x = DEFAULT_C2;
+  _segments[0].c3x = DEFAULT_C3;
 
   for (uint16_t i = 1; i < MAX_NUM_SEGMENTS; i++)
   {
@@ -724,9 +723,9 @@ void WS2812FX::resetSegments() {
     _segments[i].cct = 127;
     _segments[i].speed = DEFAULT_SPEED;
     _segments[i].intensity = DEFAULT_INTENSITY;
-    _segments[i].c1x = 0;
-    _segments[i].c2x = 0;
-    _segments[i].c3x = 0;
+    _segments[i].c1x = DEFAULT_C1;
+    _segments[i].c2x = DEFAULT_C2;
+    _segments[i].c3x = DEFAULT_C3;
     _segment_runtimes[i].markForReset();
   }
   _segment_runtimes[0].markForReset();
@@ -891,8 +890,11 @@ uint32_t IRAM_ATTR WS2812FX::color_blend(uint32_t color1, uint32_t color2, uint1
  * Fills segment with color
  */
 void WS2812FX::fill(uint32_t c) {
-  for(uint16_t i = 0; i < SEGLEN; i++) {
-    setPixelColor(i, c);
+  uint16_t w = SEGMENT.virtualWidth();  // same as SEGLEN
+  uint16_t h = SEGMENT.virtualHeight();
+  for(uint16_t y = 0; y < h; y++) for (uint16_t x = 0; x < w; x++) {
+    if (isMatrix) setPixelColorXY(x, y, c);
+    else          setPixelColor(x, c);
   }
 }
 
@@ -908,6 +910,8 @@ void WS2812FX::blendPixelColor(uint16_t n, uint32_t color, uint8_t blend)
  * fade out function, higher rate = quicker fade
  */
 void WS2812FX::fade_out(uint8_t rate) {
+  uint16_t w = SEGMENT.virtualWidth();  // same as SEGLEN
+  uint16_t h = SEGMENT.virtualHeight();
   rate = (255-rate) >> 1;
   float mappedRate = float(rate) +1.1;
 
@@ -917,8 +921,8 @@ void WS2812FX::fade_out(uint8_t rate) {
   int g2 = G(color);
   int b2 = B(color);
 
-  for(uint16_t i = 0; i < SEGLEN; i++) {
-    color = getPixelColor(i);
+  for(uint16_t y = 0; y < h; y++) for (uint16_t x = 0; x < w; x++) {
+    color = isMatrix ? getPixelColorXY(x, y) : getPixelColor(x);
     int w1 = W(color);
     int r1 = R(color);
     int g1 = G(color);
@@ -935,7 +939,8 @@ void WS2812FX::fade_out(uint8_t rate) {
     gdelta += (g2 == g1) ? 0 : (g2 > g1) ? 1 : -1;
     bdelta += (b2 == b1) ? 0 : (b2 > b1) ? 1 : -1;
 
-    setPixelColor(i, r1 + rdelta, g1 + gdelta, b1 + bdelta, w1 + wdelta);
+    if (isMatrix) setPixelColorXY(x, y, r1 + rdelta, g1 + gdelta, b1 + bdelta, w1 + wdelta);
+    else          setPixelColor(x, r1 + rdelta, g1 + gdelta, b1 + bdelta, w1 + wdelta);
   }
 }
 
@@ -1427,8 +1432,16 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Blends@Shift speed,Blend speed;1,2,3,!",
 "TV Simulator",
 "Dynamic Smooth",
-"2D Black Hole A@!,!,C1,C2,C3;!;!",
-"2D Black Hole B@!,!,C1,C2,C3;!;!"
+"2D Black Hole@!,!,Inner X,Outer X,Outer Y;!,!,!;!",
+"2D DNA",
+"2D DNA Spiral",
+"2D Drift",
+"2D Firenoise",
+"2D Frizzles",
+"2D Hipnotic",
+"2D Lissajous",
+"2D Matrix@!,!,Fade,Matrix?;!,!,!;!",
+"2D Akemi@!,!;!,!;!"
 ])=====";
 
 const char JSON_palette_names[] PROGMEM = R"=====([

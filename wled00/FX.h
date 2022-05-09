@@ -120,8 +120,6 @@
 #define REVERSE      (uint8_t)0x002
 #define SELECTED     (uint8_t)0x001
 
-#define MODE_COUNT  120
-
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
 #define FX_MODE_BREATH                   2
@@ -240,8 +238,18 @@
 #define FX_MODE_BLENDS                 115
 #define FX_MODE_TV_SIMULATOR           116
 #define FX_MODE_DYNAMIC_SMOOTH         117
-#define FX_MODE_BLACK_HOLE_A           118
-#define FX_MODE_BLACK_HOLE_B           119
+#define FX_MODE_BLACK_HOLE             118
+#define FX_MODE_DNA                    119
+#define FX_MODE_DNA_SPIRAL             120
+#define FX_MODE_DRIFT                  121
+#define FX_MODE_FIRENOISE              122
+#define FX_MODE_FRIZZLES               123
+#define FX_MODE_HIPNOTIC               124
+#define FX_MODE_LISSAJOUS              125
+#define FX_MODE_MATRIX                 126
+#define FX_MODE_AKEMI                  127
+
+#define MODE_COUNT                     128
 
 
 class WS2812FX {
@@ -606,8 +614,16 @@ class WS2812FX {
       _mode[FX_MODE_BLENDS]                  = &WS2812FX::mode_blends;
       _mode[FX_MODE_TV_SIMULATOR]            = &WS2812FX::mode_tv_simulator;
       _mode[FX_MODE_DYNAMIC_SMOOTH]          = &WS2812FX::mode_dynamic_smooth;
-      _mode[FX_MODE_BLACK_HOLE_A]            = &WS2812FX::mode_2DBlackHole_A;
-      _mode[FX_MODE_BLACK_HOLE_B]            = &WS2812FX::mode_2DBlackHole_B;
+      _mode[FX_MODE_BLACK_HOLE]              = &WS2812FX::mode_2DBlackHole;
+      _mode[FX_MODE_DNA]                     = &WS2812FX::mode_2Ddna;
+      _mode[FX_MODE_DNA_SPIRAL]              = &WS2812FX::mode_2DDNASpiral;
+      _mode[FX_MODE_DRIFT]                   = &WS2812FX::mode_2DDrift;
+      _mode[FX_MODE_FIRENOISE]               = &WS2812FX::mode_2Dfirenoise;
+      _mode[FX_MODE_FRIZZLES]                = &WS2812FX::mode_2DFrizzles;
+      _mode[FX_MODE_HIPNOTIC]                = &WS2812FX::mode_2DHiphotic;
+      _mode[FX_MODE_LISSAJOUS]               = &WS2812FX::mode_2DLissajous;
+      _mode[FX_MODE_MATRIX]                  = &WS2812FX::mode_2Dmatrix;
+      _mode[FX_MODE_AKEMI]                   = &WS2812FX::mode_2DAkemi;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -863,30 +879,37 @@ class WS2812FX {
     void
       setUpMatrix(),
       setPixelColorXY(uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
-      fill2D(uint32_t),
-      blur1d(fract8 blur_amount, CRGB* leds=nullptr),
-      blur2d(fract8 blur_amount, CRGB* leds=nullptr),
-      blurRows(fract8 blur_amount, CRGB* leds=nullptr),
-      blurColumns(fract8 blur_amount, CRGB* leds=nullptr),
-      fill_solid(const struct CRGB& color, CRGB* leds=nullptr),
-      fade_out2D(uint8_t r),
-      fadeToBlackBy(uint8_t fadeBy, CRGB* leds=nullptr),
-      nscale8(uint8_t scale, CRGB* leds=nullptr),
+      blur1d(CRGB* leds, fract8 blur_amount),
+      blur2d(CRGB* leds, fract8 blur_amount),
+      blurRow(uint16_t row, fract8 blur_amount, CRGB* leds=nullptr),
+      blurCol(uint16_t col, fract8 blur_amount, CRGB* leds=nullptr),
+      fill_solid(CRGB* leds, const struct CRGB& color),
+      fadeToBlackBy(CRGB* leds, uint8_t fadeBy),
+      nscale8(CRGB* leds, uint8_t scale),
       setPixels(CRGB* leds);
 
     inline void setPixelColorXY(uint16_t x, uint16_t y, uint32_t c) { setPixelColorXY(x, y, byte(c>>16), byte(c>>8), byte(c), byte(c>>24)); }
     inline void setPixelColorXY(uint16_t x, uint16_t y, CRGB &c) { setPixelColorXY(x, y, c.red, c.green, c.blue); }
 
     uint16_t
-      XY(uint16_t x, uint16_t y, uint8_t seg=255);
+      XY(uint16_t, uint16_t),
+      getPixelIndex(uint16_t x, uint16_t y, uint8_t seg=255);
 
     uint32_t
       getPixelColorXY(uint16_t, uint16_t);
 
   // 2D modes
   uint16_t
-    mode_2DBlackHole_A(),
-    mode_2DBlackHole_B();
+    mode_2DBlackHole(void),
+    mode_2Ddna(void),
+    mode_2DDNASpiral(void),
+    mode_2DDrift(void),
+    mode_2Dfirenoise(void),
+    mode_2DFrizzles(void),
+    mode_2DHiphotic(void),
+    mode_2DLissajous(void),
+    mode_2Dmatrix(void),
+    mode_2DAkemi(void);
 
 // end 2D support
 
@@ -922,6 +945,7 @@ class WS2812FX {
       color_wipe(bool, bool),
       dynamic(bool),
       scan(bool),
+      fireworks_base(CRGB*),
       running_base(bool,bool),
       larson_scanner(bool),
       sinelon_base(bool,bool),
