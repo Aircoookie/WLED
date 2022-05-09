@@ -71,18 +71,15 @@ void WS2812FX::setUpMatrix() {
           startL = (matrix.vertical ? y : x) * panelW + (matrix.vertical ? x : y) * matrixWidth * panelH; // logical index (top-left corner)
           startP = p * panelW * panelH; // physical index (top-left corner)
 
-          for (uint16_t l=0; l<panelH; l++) {
-            y = panel[h*j + i].bottomStart ? (panelH - l - 1) : l;
-            for (uint16_t k=0; k<panelW; k++) {
-              x = panel[h*j + i].rightStart ? (panelW - k - 1) : k;
-              if (panel[h*j + i].vertical) {
-                y = (panel[h*j + i].serpentine && x%2) ? (panelH - y - 1) : y;
-                offset = y + x * panelH;
-              } else {
-                x = (panel[h*j + i].serpentine && y%2) ? (panelW - x - 1) : x;
-                offset = x + y * panelW;
-              }
-              customMappingTable[startL + k + l * matrixWidth] = startP + offset;
+          uint8_t H = panel[h*j + i].vertical ? panelW : panelH;
+          uint8_t W = panel[h*j + i].vertical ? panelH : panelW;
+          for (uint16_t l=0, q=0; l<H; l++) {
+            for (uint16_t k=0; k<W; k++, q++) {
+              y = (panel[h*j + i].vertical ? panel[h*j + i].rightStart : panel[h*j + i].bottomStart) ? H - l - 1 : l;
+              x = (panel[h*j + i].vertical ? panel[h*j + i].bottomStart : panel[h*j + i].rightStart) ? W - k - 1 : k;
+              x = (panel[h*j + i].serpentine && l%2) ? (W - x - 1) : x;
+              offset = (panel[h*j + i].vertical ? y : x) + (panel[h*j + i].vertical ? x : y) * matrixWidth;
+              customMappingTable[startL + offset] = startP + q;
             }
           }
         }

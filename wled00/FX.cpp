@@ -1850,38 +1850,48 @@ uint16_t WS2812FX::mode_palette()
 uint16_t WS2812FX::mode_fire_2012()
 {
   uint32_t it = now >> 5; //div 32
+  uint16_t nFlames = SEGMENT.virtualHeight();
+  uint16_t q = SEGLEN>>2; // a quarter of segment
 
-  if (!SEGENV.allocateData(SEGLEN)) return mode_static(); //allocation failed
+  if (!SEGENV.allocateData(SEGLEN*nFlames)) return mode_static(); //allocation failed
   
   byte* heat = SEGENV.data;
 
-  if (it != SEGENV.step)
-  {
-    uint8_t ignition = max(7,SEGLEN/10);  // ignition area: 10% of segment length or minimum 7 pixels
-    
-    // Step 1.  Cool down every cell a little
-    for (uint16_t i = 0; i < SEGLEN; i++) {
-      uint8_t temp = qsub8(heat[i], random8(0, (((20 + SEGMENT.speed /3) * 10) / SEGLEN) + 2));
-      heat[i] = (temp==0 && i<ignition) ? 16 : temp; // prevent ignition area from becoming black
-    }
-  
-    // Step 2.  Heat from each cell drifts 'up' and diffuses a little
-    for (uint16_t k= SEGLEN -1; k > 1; k--) {
-      heat[k] = (heat[k - 1] + (heat[k - 2]<<1) ) / 3;  // heat[k-2] multiplied by 2
-    }
-    
-    // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
-    if (random8() <= SEGMENT.intensity) {
-      uint8_t y = random8(ignition);
-      if (y < SEGLEN) heat[y] = qadd8(heat[y], random8(160,255));
-    }
-    SEGENV.step = it;
-  }
+  for (uint16_t f = 0; f < nFlames; f++) {
+    if (it != SEGENV.step) {
+      uint8_t ignition = max(3,SEGLEN/10);  // ignition area: 10% of segment length or minimum 3 pixels
 
-  // Step 4.  Map from heat cells to LED colors
-  for (uint16_t j = 0; j < SEGLEN; j++) {
-    CRGB color = ColorFromPalette(currentPalette, MIN(heat[j],240), 255, LINEARBLEND);
-    setPixelColor(j, color.red, color.green, color.blue);
+      // Step 1.  Cool down every cell a little
+      for (uint16_t i = 0; i < SEGLEN; i++) {
+        uint8_t cool = (((20 + SEGMENT.speed /3) * 10) / SEGLEN);
+        // 2D enhancement: cool sides of the flame a bit more
+        if (nFlames>1) {
+          if (i < q)   cool += (uint16_t)((cool * (q-i))/SEGLEN);      // cool sides a bit more
+          if (i > 3*q) cool += (uint16_t)((cool * (SEGLEN-i))/SEGLEN); // cool sides a bit more
+        }
+        uint8_t temp = qsub8(heat[i+SEGLEN*f], random8(0, cool + 2));
+        heat[i+SEGLEN*f] = (temp==0 && i<ignition) ? 16 : temp; // prevent ignition area from becoming black
+      }
+
+      // Step 2.  Heat from each cell drifts 'up' and diffuses a little
+      for (uint16_t k= SEGLEN -1; k > 1; k--) {
+        heat[k+SEGLEN*f] = (heat[k+SEGLEN*f - 1] + (heat[k+SEGLEN*f - 2]<<1) ) / 3;  // heat[k-2] multiplied by 2
+      }
+
+      // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
+      if (random8() <= SEGMENT.intensity) {
+        uint8_t y = random8(ignition);
+        if (y < SEGLEN) heat[y+SEGLEN*f] = qadd8(heat[y+SEGLEN*f], random8(160,255));
+      }
+      SEGENV.step = it;
+    }
+
+    // Step 4.  Map from heat cells to LED colors
+    for (uint16_t j = 0; j < SEGLEN; j++) {
+      CRGB color = ColorFromPalette(currentPalette, MIN(heat[j],240), 255, LINEARBLEND);
+      if (nFlames==1) setPixelColor(j, color);
+      else            setPixelColorXY(j, f, color);
+    }
   }
   return FRAMETIME;
 }
