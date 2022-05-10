@@ -1432,16 +1432,16 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Blends@Shift speed,Blend speed;1,2,3,!",
 "TV Simulator",
 "Dynamic Smooth",
-"2D Black Hole@Fade rate,Inner Y freq,Inner X freq,Outer X freq,Outer Y freq;!,!,!;!",
-"2D DNA",
-"2D DNA Spiral",
-"2D Drift",
-"2D Firenoise",
-"2D Frizzles",
-"2D Hipnotic",
-"2D Lissajous",
-"2D Matrix@!,!,Fade,Matrix?;!,!,!;!",
-"2D Akemi@!,!;!,!;!"
+"2D Black Hole@Fade rate,Outer Y freq.,Outer X freq.,Inner X freq.,Inner Y freq.;;",
+"2D DNA@Scroll speed,Blur;;!",
+"2D DNA Spiral@Scroll speed,Blur;;!",
+"2D Drift@Rotation speed,Blur amount;;!",
+"2D Firenoise@X scale,Y scale;;",
+"2D Frizzles@X frequency,Y frequency;;!",
+"2D Hipnotic@X scale,Y scale;;!",
+"2D Lissajous@X frequency,Fadetime;;!",
+"2D Matrix@Falling speed,Spawning rate,Trail,Custom color;Spawn,Trail;",
+"2D Akemi@Color speed,Dance;Head palette,Arms & Legs,Eyes & Mouth;Face palette"
 ])=====";
 
 const char JSON_palette_names[] PROGMEM = R"=====([
