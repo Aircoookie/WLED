@@ -434,7 +434,7 @@ void WLED::beginStrip()
 
   if (turnOnAtBoot) {
     if (briS > 0) bri = briS;
-    else if (bri == 0) bri = 128;
+    else if (bri == 0) bri = DEFAULT_BRIGHTNESS;
   } else {
     briLast = briS; bri = 0;
   }

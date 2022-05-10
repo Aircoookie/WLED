@@ -707,7 +707,7 @@ void WS2812FX::resetSegments() {
   _segments[0].grouping = 1;
   _segments[0].setOption(SEG_OPTION_SELECTED, 1);
   _segments[0].setOption(SEG_OPTION_ON, 1);
-  _segments[0].opacity = 255;
+  _segments[0].opacity = DEFAULT_SEGMENT_OPACITY;
   _segments[0].cct = 127;
 
   for (uint16_t i = 1; i < MAX_NUM_SEGMENTS; i++)
@@ -715,7 +715,7 @@ void WS2812FX::resetSegments() {
     _segments[i].colors[0] = color_wheel(i*51);
     _segments[i].grouping = 1;
     _segments[i].setOption(SEG_OPTION_ON, 1);
-    _segments[i].opacity = 255;
+    _segments[i].opacity = DEFAULT_SEGMENT_OPACITY;
     _segments[i].cct = 127;
     _segments[i].speed = DEFAULT_SPEED;
     _segments[i].intensity = DEFAULT_INTENSITY;

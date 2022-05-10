@@ -286,7 +286,7 @@ WLED_GLOBAL bool cctFromRgb _INIT(false); //CCT is calculated from RGB instead o
 
 WLED_GLOBAL byte col[]    _INIT_N(({ 255, 160, 0, 0 }));  // current RGB(W) primary color. col[] should be updated if you want to change the color.
 WLED_GLOBAL byte colSec[] _INIT_N(({ 0, 0, 0, 0 }));      // current RGB(W) secondary color
-WLED_GLOBAL byte briS     _INIT(128);                     // default brightness
+WLED_GLOBAL byte briS     _INIT(DEFAULT_BRIGHTNESS);      // default brightness
 
 WLED_GLOBAL byte nightlightTargetBri _INIT(0);      // brightness after nightlight is over
 WLED_GLOBAL byte nightlightDelayMins _INIT(60);

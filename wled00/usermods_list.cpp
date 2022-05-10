@@ -128,6 +128,10 @@
 #include "../usermods/Si7021_MQTT_HA/usermod_si7021_mqtt_ha.h"
 #endif
 
+#ifdef USEMOD_NV_SEGMENTS
+#include "../usermods/usermod_v2_nonvolatile_segments/usermod_v2_nonvolatile_segments.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -242,5 +246,9 @@ void registerUsermods()
   
   #ifdef USERMOD_SI7021_MQTT_HA
   usermods.add(new Si7021_MQTT_HA());
+  #endif
+
+  #ifdef USEMOD_NV_SEGMENTS
+  usermods.add(new UsermodNonvolatileSegments());
   #endif
 }
