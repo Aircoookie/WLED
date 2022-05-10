@@ -1432,7 +1432,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Blends@Shift speed,Blend speed;1,2,3,!",
 "TV Simulator",
 "Dynamic Smooth",
-"2D Black Hole@!,!,Inner X,Outer X,Outer Y;!,!,!;!",
+"2D Black Hole@Fade rate,Inner Y freq,Inner X freq,Outer X freq,Outer Y freq;!,!,!;!",
 "2D DNA",
 "2D DNA Spiral",
 "2D Drift",

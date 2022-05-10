@@ -4244,6 +4244,8 @@ uint16_t WS2812FX::mode_aurora(void) {
 
 // Black hole
 uint16_t WS2812FX::mode_2DBlackHole(void) {            // By: Stepko https://editor.soulmatelights.com/gallery/1012 , Modified by: Andrew Tuline
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
   uint16_t w = SEGMENT.virtualWidth();
   uint16_t h = SEGMENT.virtualHeight();
   uint16_t dataSize = sizeof(CRGB) * w * h;
@@ -4260,19 +4262,23 @@ uint16_t WS2812FX::mode_2DBlackHole(void) {            // By: Stepko https://edi
     }
   }
 
-  fadeToBlackBy(leds, 32);  // create fading trails
-  float t = (float)(millis())/128;
+  fadeToBlackBy(leds, 16 + (SEGMENT.speed>>3)); // create fading trails
+  float t = (float)(millis())/128;              // timebase
+  // inner stars
   for (byte i = 0; i < 8; i++) {
-    x = beatsin8(SEGMENT.c1x>>3, 0, w - 1, 0, ((i % 2) ? 128 : 0) + t * i);
-    y = beatsin8(10            , 0, h - 1, 0, ((i % 2) ? 192 : 64) + t * i);
+    x = beatsin8(SEGMENT.c1x>>3,       0, w - 1, 0, ((i % 2) ? 128 : 0) + t * i);
+    y = beatsin8(SEGMENT.intensity>>3, 0, h - 1, 0, ((i % 2) ? 192 : 64) + t * i);
     leds[XY(x,y)] += CHSV(i*32, 255, 255);
   }
+  // outer stars
   for (byte i = 0; i < 8; i++) {
     x = beatsin8(SEGMENT.c2x>>3, w/4, w - 1 - w/4, 0, ((i % 2) ? 128 : 0) + t * i);
     y = beatsin8(SEGMENT.c3x>>3, h/4, h - 1 - h/4, 0, ((i % 2) ? 192 : 64) + t * i);
     leds[XY(x,y)] += CHSV(i*32, 255, 255);
   }
+  // central white dot
   leds[XY(w/2,h/2)] = CHSV(0,0,255);
+  // blur everything a bit
   blur2d(leds, 16);
 
   for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
@@ -4286,6 +4292,8 @@ uint16_t WS2812FX::mode_2DBlackHole(void) {            // By: Stepko https://edi
 //      2D DNA     //
 /////////////////////
 uint16_t WS2812FX::mode_2Ddna(void) {         // dna originally by by ldirko at https://pastebin.com/pCkkkzcs. Updated by Preyy. WLED conversion by Andrew Tuline.
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
   uint16_t width  = SEGMENT.virtualWidth();
   uint16_t height = SEGMENT.virtualHeight();
   uint16_t dataSize = sizeof(CRGB) * width * height;
@@ -4311,6 +4319,8 @@ uint16_t WS2812FX::mode_2Ddna(void) {         // dna originally by by ldirko at 
 //     2D DNA Spiral   //
 /////////////////////////
 uint16_t WS2812FX::mode_2DDNASpiral() {               // By: ldirko  https://editor.soulmatelights.com/gallery/810 , modified by: Andrew Tuline
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
   uint16_t width  = SEGMENT.virtualWidth();
   uint16_t height = SEGMENT.virtualHeight();
   uint16_t dataSize = sizeof(CRGB) * width * height;
@@ -4351,6 +4361,8 @@ uint16_t WS2812FX::mode_2DDNASpiral() {               // By: ldirko  https://edi
 //     2D Drift        //
 /////////////////////////
 uint16_t WS2812FX::mode_2DDrift() {              // By: Stepko   https://editor.soulmatelights.com/gallery/884-drift , Modified by: Andrew Tuline
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
   uint16_t width  = SEGMENT.virtualWidth();
   uint16_t height = SEGMENT.virtualHeight();
   uint16_t dataSize = sizeof(CRGB) * width * height;
@@ -4379,6 +4391,8 @@ uint16_t WS2812FX::mode_2DDrift() {              // By: Stepko   https://editor.
 //     2D Firenoise     //
 //////////////////////////
 uint16_t WS2812FX::mode_2Dfirenoise(void) {               // firenoise2d. By Andrew Tuline. Yet another short routine.
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
   uint16_t width  = SEGMENT.virtualWidth();
   uint16_t height = SEGMENT.virtualHeight();
   uint16_t dataSize = sizeof(CRGB) * width * height;
@@ -4410,6 +4424,8 @@ uint16_t WS2812FX::mode_2Dfirenoise(void) {               // firenoise2d. By And
 //     2D Frizzles          //
 //////////////////////////////
 uint16_t WS2812FX::mode_2DFrizzles(void) {                 // By: Stepko https://editor.soulmatelights.com/gallery/640-color-frizzles , Modified by: Andrew Tuline
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
   uint16_t width  = SEGMENT.virtualWidth();
   uint16_t height = SEGMENT.virtualHeight();
   uint16_t dataSize = sizeof(CRGB) * width * height;
@@ -4435,6 +4451,8 @@ uint16_t WS2812FX::mode_2DFrizzles(void) {                 // By: Stepko https:/
 //     2D Hiphotic     //
 /////////////////////////
 uint16_t WS2812FX::mode_2DHiphotic() {                        //  By: ldirko  https://editor.soulmatelights.com/gallery/810 , Modified by: Andrew Tuline
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
   uint16_t width  = SEGMENT.virtualWidth();
   uint16_t height = SEGMENT.virtualHeight();
   uint16_t dataSize = sizeof(CRGB) * width * height;
@@ -4462,6 +4480,8 @@ uint16_t WS2812FX::mode_2DHiphotic() {                        //  By: ldirko  ht
 //     2D Lissajous         //
 //////////////////////////////
 uint16_t WS2812FX::mode_2DLissajous(void) {            // By: Andrew Tuline
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
   uint16_t width  = SEGMENT.virtualWidth();
   uint16_t height = SEGMENT.virtualHeight();
   uint16_t dataSize = sizeof(CRGB) * width * height;
@@ -4490,6 +4510,8 @@ uint16_t WS2812FX::mode_2DLissajous(void) {            // By: Andrew Tuline
 //    2D Matrix      //
 ///////////////////////
 uint16_t WS2812FX::mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy Williams. Adapted by Andrew Tuline & improved by merkisoft and ewowi.
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
   uint16_t width  = SEGMENT.virtualWidth();
   uint16_t height = SEGMENT.virtualHeight();
   uint16_t dataSize = sizeof(CRGB) * width * height;
@@ -4550,6 +4572,8 @@ uint16_t WS2812FX::mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy
 } // mode_2Dmatrix()
 
 uint16_t WS2812FX::mode_2DAkemi(void) {
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
   uint16_t width  = SEGMENT.virtualWidth();
   uint16_t height = SEGMENT.virtualHeight();
 
