@@ -1110,18 +1110,18 @@ uint16_t WS2812FX::mode_fireworks() {
   bool valid1 = (SEGENV.aux0 < SEGLEN);
   bool valid2 = (SEGENV.aux1 < SEGLEN);
   uint32_t sv1 = 0, sv2 = 0;
-  if (valid1) sv1 = getPixelColor(SEGENV.aux0);
+  if (valid1) sv1 = getPixelColor(SEGENV.aux0); // get spark color
   if (valid2) sv2 = getPixelColor(SEGENV.aux1);
   blur(255-SEGMENT.speed);
-  if (valid1) setPixelColor(SEGENV.aux0, sv1);
-  if (valid2) setPixelColor(SEGENV.aux1, sv2);
+  if (valid1) setPixelColor(SEGENV.aux0, sv1);  // restore spark color after blur
+  if (valid2) setPixelColor(SEGENV.aux1, sv2);  // restore old spark color after blur
 
   for (uint16_t i=0; i<MAX(1, SEGLEN/20); i++) {
     if (random8(129 - (SEGMENT.intensity >> 1)) == 0) {
-      uint16_t index = random(SEGLEN);
+      uint16_t index = random16(SEGLEN);
       setPixelColor(index, color_from_palette(random8(), false, false, 0));
-      SEGENV.aux1 = SEGENV.aux0;
-      SEGENV.aux0 = index;
+      SEGENV.aux1 = SEGENV.aux0;  // old spark
+      SEGENV.aux0 = index;        // remember where spark occured
     }
   }
   return FRAMETIME;
@@ -1139,12 +1139,12 @@ uint16_t WS2812FX::mode_rain()
     for(uint16_t i = 0; i < SEGLEN - 1; i++) {
       setPixelColor(i, getPixelColor(i+1));
     }
-    setPixelColor(SEGLEN -1, ctemp);
-    SEGENV.aux0++;
+    setPixelColor(SEGLEN -1, ctemp); // wrap around
+    SEGENV.aux0++;  // increase spark index
     SEGENV.aux1++;
-    if (SEGENV.aux0 == 0) SEGENV.aux0 = UINT16_MAX;
-    if (SEGENV.aux1 == 0) SEGENV.aux0 = UINT16_MAX;
-    if (SEGENV.aux0 == SEGLEN) SEGENV.aux0 = 0;
+    if (SEGENV.aux0 == 0) SEGENV.aux0 = UINT16_MAX; // reset previous spark positiom
+    if (SEGENV.aux1 == 0) SEGENV.aux0 = UINT16_MAX; // reset previous spark positiom
+    if (SEGENV.aux0 == SEGLEN) SEGENV.aux0 = 0;     // ignore
     if (SEGENV.aux1 == SEGLEN) SEGENV.aux1 = 0;
   }
   return mode_fireworks();
@@ -4370,23 +4370,24 @@ uint16_t WS2812FX::mode_2DDrift() {              // By: Stepko   https://editor.
   uint16_t height = SEGMENT.virtualHeight();
   uint16_t dataSize = sizeof(CRGB) * width * height;
 
+  if (width<8 || height<8) return mode_static();
+
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
 
-  #define CenterX ((width / 2) - 0.5)
-  #define CenterY ((height / 2) - 0.5)
-  const byte maxDim = max(width, height);
   fadeToBlackBy(leds, 128);
-  unsigned long t = millis() / (32 - SEGMENT.speed/8);
-  for (float i = 1; i < maxDim / 2; i += 0.25) {
-    float angle = radians(t * (maxDim / 2 - i));
-    uint16_t myX = (uint16_t)(CenterX + sin_t(angle) * i);
-    uint16_t myY = (uint16_t)(CenterY + cos_t(angle) * i);
-    leds[XY( myX, myY)] += ColorFromPalette(currentPalette, (i * 20) + (t / 20), 255, LINEARBLEND);
-  }
-  blur2d(leds, SEGMENT.intensity/8);
 
-  setPixels(leds);       // Use this ONLY if we're going to display via leds[x] method.
+  const uint16_t maxDim = MAX(width, height)/2;
+  unsigned long t = millis() / (32 - (SEGMENT.speed>>3));
+  for (float i = 1; i < maxDim; i += 0.25) {
+    float angle = radians(t * (maxDim - i));
+    uint16_t myX = (width>>1)  + (uint16_t)(sin_t(angle) * i) + (width%2);
+    uint16_t myY = (height>>1) + (uint16_t)(cos_t(angle) * i) + (height%2);
+    leds[XY(myX,myY)] = ColorFromPalette(currentPalette, (i * 20) + (t / 20), 255, LINEARBLEND);
+  }
+  blur2d(leds, SEGMENT.intensity>>3);
+
+  setPixels(leds);
   return FRAMETIME;
 } // mode_2DDrift()
 
