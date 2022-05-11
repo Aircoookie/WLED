@@ -2489,8 +2489,8 @@ uint16_t WS2812FX::mode_twinklecat()
 
 
 //inspired by https://www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/#LEDStripEffectBlinkingHalloweenEyes
-#define HALLOWEEN_EYE_SPACE 3
-#define HALLOWEEN_EYE_WIDTH 1
+#define HALLOWEEN_EYE_SPACE (2*MAX(1,SEGLEN>>5))
+#define HALLOWEEN_EYE_WIDTH MAX(1,SEGLEN>>5)
 
 uint16_t WS2812FX::mode_halloween_eyes()
 {  
@@ -2518,7 +2518,7 @@ uint16_t WS2812FX::mode_halloween_eyes()
     if (fadestage > 255) fadestage = 255;
     uint32_t c = color_blend(color_from_palette(SEGENV.aux1 & 0xFF, false, false, 0), SEGCOLOR(1), fadestage);
     
-    for (uint16_t i = 0; i < HALLOWEEN_EYE_WIDTH; i++) {
+    for (uint16_t i = 0; i < MAX(HALLOWEEN_EYE_WIDTH,SEGLEN>>5); i++) {
       if (isMatrix) {
         setPixelColorXY(startPos    + i, SEGMENT.offset, c);
         setPixelColorXY(start2ndEye + i, SEGMENT.offset, c);
