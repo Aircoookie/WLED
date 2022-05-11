@@ -2506,6 +2506,7 @@ uint16_t WS2812FX::mode_halloween_eyes()
   if (state == 0) { //spawn eyes
     SEGENV.aux0 = random16(0, SEGLEN - eyeLength); //start pos
     SEGENV.aux1 = random8(); //color
+    if (isMatrix) SEGMENT.offset = random16(SEGMENT.virtualHeight()-1); // a hack: reuse offset since it is not used in matrices
     state = 1;
   }
   
@@ -2517,20 +2518,22 @@ uint16_t WS2812FX::mode_halloween_eyes()
     if (fadestage > 255) fadestage = 255;
     uint32_t c = color_blend(color_from_palette(SEGENV.aux1 & 0xFF, false, false, 0), SEGCOLOR(1), fadestage);
     
-    for (uint16_t i = 0; i < HALLOWEEN_EYE_WIDTH; i++)
-    {
-      setPixelColor(startPos    + i, c);
-      setPixelColor(start2ndEye + i, c);
+    for (uint16_t i = 0; i < HALLOWEEN_EYE_WIDTH; i++) {
+      if (isMatrix) {
+        setPixelColorXY(startPos    + i, SEGMENT.offset, c);
+        setPixelColorXY(start2ndEye + i, SEGMENT.offset, c);
+      } else {
+        setPixelColor(startPos    + i, c);
+        setPixelColor(start2ndEye + i, c);
+      }
     }
   }
 
-  if (now - SEGENV.step > stateTime)
-  {
+  if (now - SEGENV.step > stateTime) {
     state++;
     if (state > 2) state = 0;
     
-    if (state < 2)
-    {
+    if (state < 2) {
       stateTime = 100 + (255 - SEGMENT.intensity)*10; //eye fade time
     } else {
       uint16_t eyeOffTimeBase = (255 - SEGMENT.speed)*10;

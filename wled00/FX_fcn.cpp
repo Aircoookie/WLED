@@ -1367,7 +1367,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Two Dots@!,Dot size;1,2,Bg;!",
 "Fairy Twinkle",
 "Running Dual",
-"Halloween",
+"Halloween@Duration,Eye fade time;Fx,Bg,;!",
 "Chase 3@!,Size;1,2,3;0",
 "Tri Wipe@!,Width;1,2,3;0",
 "Tri Fade",

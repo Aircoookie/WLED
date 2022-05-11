@@ -187,8 +187,14 @@ uint32_t WS2812FX::getPixelColorXY(uint16_t x, uint16_t y) {
   return busses.getPixelColor(index);
 }
 
+/*
+ * Blends the specified color with the existing pixel color.
+ */
+void WS2812FX::blendPixelColorXY(uint16_t x, uint16_t y, uint32_t color, uint8_t blend) {
+  setPixelColorXY(x, y, color_blend(getPixelColorXY(x,y), color, blend));
+}
 
-// blurRows: perform a blur1d on every row of a rectangular matrix
+// blurRow: perform a blur on a row of a rectangular matrix
 void WS2812FX::blurRow(uint16_t row, fract8 blur_amount, CRGB* leds) {
   uint16_t width  = SEGMENT.virtualWidth();
   uint16_t height = SEGMENT.virtualHeight();
@@ -209,9 +215,8 @@ void WS2812FX::blurRow(uint16_t row, fract8 blur_amount, CRGB* leds) {
   }
 }
 
-// blurColumns: perform a blur1d on each column of a rectangular matrix
-void WS2812FX::blurCol(uint16_t col, fract8 blur_amount, CRGB* leds)
-{
+// blurCol: perform a blur on a column of a rectangular matrix
+void WS2812FX::blurCol(uint16_t col, fract8 blur_amount, CRGB* leds) {
   uint16_t width  = SEGMENT.virtualWidth();
   uint16_t height = SEGMENT.virtualHeight();
   if (col >= width) return;

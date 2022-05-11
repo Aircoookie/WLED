@@ -330,19 +330,19 @@ class WS2812FX {
       uint16_t virtualWidth() {
         uint16_t groupLen = groupLength();
         uint16_t vWidth = (width() + groupLen - 1) / groupLen;
-        if (options & MIRROR) vWidth = (vWidth + 1) /2;  // divide by 2 if mirror, leave at least a single LED
+        if (getOption(SEG_OPTION_MIRROR)) vWidth = (vWidth + 1) /2;  // divide by 2 if mirror, leave at least a single LED
         return vWidth;
       }
       uint16_t virtualHeight() {
         uint16_t groupLen = groupLength();
         uint16_t vHeight = (height() + groupLen - 1) / groupLen;
-        if (options & MIRROR_Y_2D) vHeight = (vHeight + 1) /2;  // divide by 2 if mirror, leave at least a single LED
+        if (getOption(SEG_OPTION_MIRROR_Y)) vHeight = (vHeight + 1) /2;  // divide by 2 if mirror, leave at least a single LED
         return vHeight;
       }
       uint16_t virtualLength() {
         uint16_t groupLen = groupLength();
         uint16_t vLength = (length() + groupLen - 1) / groupLen;
-        if (options & MIRROR) vLength = (vLength + 1) /2;  // divide by 2 if mirror, leave at least a single LED
+        if (getOption(SEG_OPTION_MIRROR)) vLength = (vLength + 1) /2;  // divide by 2 if mirror, leave at least a single LED
         return vLength;
       }
       uint8_t differs(Segment& b);
@@ -879,6 +879,7 @@ class WS2812FX {
     void
       setUpMatrix(),
       setPixelColorXY(uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
+      blendPixelColorXY(uint16_t x, uint16_t y, uint32_t color, uint8_t blend),
       blur1d(CRGB* leds, fract8 blur_amount),
       blur2d(CRGB* leds, fract8 blur_amount),
       blurRow(uint16_t row, fract8 blur_amount, CRGB* leds=nullptr),
