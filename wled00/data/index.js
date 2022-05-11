@@ -604,6 +604,7 @@ function parseInfo(i) {
 	mw = i.leds.matrix ? i.leds.matrix.w : 0;
 	mh = i.leds.matrix ? i.leds.matrix.h : 0;
 	isM = mw>0 && mh>0;
+	if (!isM) hide2DModes();
 }
 
 function populateInfo(i)
@@ -2377,6 +2378,15 @@ function getPalettesData(page, callback)
 	});
 }
 
+function hide2DModes()
+{
+	var el = gId('fxlist').querySelectorAll('.lstI');
+	for (let it of el) {
+		var itT = it.querySelector('.lstIname').innerText;
+		if (itT.indexOf("2D ") >= 0) it.style.display = 'none';
+	}
+}
+
 function search(f,l=null)
 {
 	f.nextElementSibling.style.display=(f.value!=='')?'block':'none';
@@ -2386,10 +2396,7 @@ function search(f,l=null)
 	for (i = (l==='pcont'?0:1); i < el.length; i++) {
 		var it = el[i];
 		var itT = it.querySelector('.lstIname').innerText.toUpperCase();
-		it.style.display = itT.indexOf(f.value.toUpperCase())>-1?'':'none';
-		// cleaner but longer
-		//if (itT.indexOf(f.value.toUpperCase()) > -1) it.classList.remove('hide');
-		//else                                         it.classList.add('hide');
+		it.style.display = (itT.indexOf(f.value.toUpperCase())<0 || (!isM && l==='fxlist' && itT.indexOf("2D")>=0)) ? 'none' : '';
 	}
 }
 
