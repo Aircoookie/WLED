@@ -2518,7 +2518,7 @@ uint16_t WS2812FX::mode_halloween_eyes()
     if (fadestage > 255) fadestage = 255;
     uint32_t c = color_blend(color_from_palette(SEGENV.aux1 & 0xFF, false, false, 0), SEGCOLOR(1), fadestage);
     
-    for (uint16_t i = 0; i < MAX(HALLOWEEN_EYE_WIDTH,SEGLEN>>5); i++) {
+    for (uint16_t i = 0; i < HALLOWEEN_EYE_WIDTH; i++) {
       if (isMatrix) {
         setPixelColorXY(startPos    + i, SEGMENT.offset, c);
         setPixelColorXY(start2ndEye + i, SEGMENT.offset, c);
