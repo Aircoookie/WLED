@@ -5,10 +5,21 @@ Control WLED with Clapping / Tapping / Knocking
 
 Settings
 ---
+* Enable
+  * Enable/Disable Clap Control.
 * Clap Timeout (ms)
   * How much you can delay between claps before Clap Control will assume the clapping has ended and act accordingly.
 * Bounce Delay (ms)
-  * Helps remove multiple activations in a very short time due to bounce. If unsure, leave as is.
+  * Helps remove multiple activations in a very short time due to bounce.
+  * Acts as a cooldown after a clap is detected. If unsure, leave as is.
+* Serial Output Level
+  * Sends Clap updates over serial connection as JSON.
+  * 0: Disabled
+  * 1: Send Clap update when preset is applied.
+    * Example: {"claps":3,"preset":1}
+  * 2: Send Clap update even when preset is not applied.
+    * Example: {"claps":2}
+    * Example: {"claps":3,"preset":1}
 * Pin
   * Pin to read from for sensor
 * Invert
@@ -20,7 +31,8 @@ Settings
 
 Supported Sensors
 ---
-* FC-04 sound sensor
+* FC-04 sound sensor Module
+* SW-420 Vibration Sensor Module (inverted)
 * Any sensor that pulls LOW when activated (or HIGH if Invert is enabled) 
 
 
