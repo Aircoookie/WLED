@@ -2,21 +2,17 @@
 
 #include "wled.h"
 
-// TODO
-//   pin handler
-//   secret tap/knock
-
 #define MAX_CLAPS 10
 
 class clapControlUsermod : public Usermod {
   private:
 
-    int8_t clapSensorPin;
-    int clapDelay;
-    int bounceDelay;
-    bool invertSensorHL;
-    bool enabled;
-    int serialOutputLevel;
+    int8_t clapSensorPin;  // pin to be used by sensor
+    int clapDelay;         // time after last clap to end session and apply presets
+    int bounceDelay;       // cooldown time after each new clap is first detected, helps with sensor bounce and timing
+    bool invertSensorHL;   // invert HIGH/LOW for sensor
+    bool enabled;          // enable / disable clap control
+    int serialOutputLevel; // 0: disabled, 1: data when preset applied, 2: data on claps with preset if applied
     
     bool clap              = false; // Is there a clap being detected right now
     int clapCount          = 0;     // The number of claps in this session, resets after clapDelay timeout
@@ -54,7 +50,7 @@ class clapControlUsermod : public Usermod {
 
         else{
        
-          // check if clapping session has ended
+          // Check if clapping session has ended
           if (clapCount > 0 && millis() - lastClap >= clapDelay){
             for (int i=1; i<=MAX_CLAPS; i++){        
               if (clapCount == i && clapsToPreset[i] > 0){
@@ -64,12 +60,12 @@ class clapControlUsermod : public Usermod {
               }
             }
            
-           if (serialOutputLevel==1 && loadPreset>0) serialOutput(clapCount, loadPreset);  
-           else if (serialOutputLevel==2) serialOutput(clapCount, loadPreset);  
-
+           if (serialOutputLevel > 0){
+            serialOutput(clapCount, loadPreset);
+           }
+           
            clapCount = 0;
            loadPreset = 0;
-           
           }
         }
       }     
@@ -124,19 +120,20 @@ class clapControlUsermod : public Usermod {
     }
 
 
-    
+
+    // Send JSON blobs with clap and preset data out over serial if enabled
     void serialOutput(int claps, int preset){
-      Serial.write("{");
-      Serial.write("\"claps\":");
-      Serial.print(claps);
-
-      if (preset>0){
-        Serial.write(",\"preset\":");
-        Serial.print(preset);
+      if (serialOutputLevel>=2 || (serialOutputLevel==1 && preset>0)){
+        Serial.write("{\"claps\":");
+        Serial.print(claps);
+        
+        if (preset>0){
+          Serial.write(",\"preset\":");
+          Serial.print(preset);
+        }
+        
+        Serial.println("}");
       }
-
-      Serial.write("}");
-      Serial.println();
     }
 
 
