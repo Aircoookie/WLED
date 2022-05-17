@@ -4085,7 +4085,7 @@ uint16_t mode_dancing_shadows(void)
       spotlights[i].type = random8(SPOT_TYPES_COUNT);
     }
 
-    uint32_t color = SEGMENT.color_from_palette(spotlights[i].colorIdx, false, false, 0);
+    uint32_t color = SEGMENT.color_from_palette(spotlights[i].colorIdx, false, false, 255);
     int start = spotlights[i].position;
 
     if (spotlights[i].width <= 1) {
