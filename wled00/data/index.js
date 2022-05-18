@@ -350,7 +350,7 @@ function checkUsed(i)
 	if (pJson[id] && (i == 0 || id != i))
 		gId(`p${i}warn`).innerHTML = `&#9888; Overwriting ${pName(id)}!`;
 	else
-		gId(`p${i}warn`).innerHTML = "";
+		gId(`p${i}warn`).innerHTML = id>250?"&#9888; ID must be 250 or less.":"";
 }
 
 function pName(i)
@@ -2035,6 +2035,7 @@ function saveP(i,pl)
 {
 	pI = parseInt(gId(`p${i}id`).value);
 	if (!pI || pI < 1) pI = (i>0) ? i : getLowestUnusedP();
+	if (pI > 250) {alert("Preset ID must be 250 or less."); return;}
 	pN = gId(`p${i}txt`).value;
 	if (pN == "") pN = (pl?"Playlist ":"Preset ") + pI;
 	var obj = {};
