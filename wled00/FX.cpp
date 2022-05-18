@@ -3377,31 +3377,49 @@ uint16_t WS2812FX::mode_percent(void) {
 }
 
 /*
-/ Modulates the brightness similar to a heartbeat
-*/
+ * Modulates the brightness similar to a heartbeat
+ * tries to draw an ECG aproximation
+ */
 uint16_t WS2812FX::mode_heartbeat(void) {
   uint8_t bpm = 40 + (SEGMENT.speed >> 4);
   uint32_t msPerBeat = (60000 / bpm);
   uint32_t secondBeat = (msPerBeat / 3);
 
+  unsigned long beatTimer = now - SEGENV.step;
+
   uint32_t bri_lower = SEGENV.aux1;
-  bri_lower = bri_lower * 2042 / (2048 + SEGMENT.intensity);
+
+  if (beatTimer > secondBeat-100 && beatTimer <= secondBeat) {
+    bri_lower = (UINT16_MAX*3/4) * (secondBeat - beatTimer) / 100;
+  } else if (beatTimer > msPerBeat-100 && beatTimer <= msPerBeat) {
+    bri_lower = UINT16_MAX * (msPerBeat - beatTimer) / 100;
+  } else
+    bri_lower = bri_lower * 2042 / (2048 + SEGMENT.intensity);
   SEGENV.aux1 = bri_lower;
 
-  unsigned long beatTimer = millis() - SEGENV.step;
-  if((beatTimer > secondBeat) && !SEGENV.aux0) { // time for the second beat?
-    SEGENV.aux1 = UINT16_MAX; //full bri
+  if ((beatTimer > secondBeat) && !SEGENV.aux0) { // time for the second beat?
+    SEGENV.aux1 = UINT16_MAX*3/4; //full bri
     SEGENV.aux0 = 1;
   }
-  if(beatTimer > msPerBeat) { // time to reset the beat timer?
+  if (beatTimer > msPerBeat) { // time to reset the beat timer?
     SEGENV.aux1 = UINT16_MAX; //full bri
     SEGENV.aux0 = 0;
-    SEGENV.step = millis();
+    SEGENV.step = now;
   }
 
-  for (uint16_t i = 0; i < SEGLEN; i++) {
-    setPixelColor(i, color_blend(color_from_palette(i, true, PALETTE_SOLID_WRAP, 0), SEGCOLOR(1), 255 - (SEGENV.aux1 >> 8)));
-  }
+  if (isMatrix) {
+    uint16_t w = SEGMENT.virtualWidth();
+    uint16_t h = SEGMENT.virtualHeight();
+    uint16_t tb = now & 0x000007FF;
+    uint16_t x = tb * w/2048; // ~2s per width
+    uint16_t y = h * 9 / 16;
+    y += ((((SEGENV.aux0 ? 7 : -9) * (int)h) / 8) * SEGENV.aux1) / UINT16_MAX;
+    fade_out(0);
+    setPixelColorXY(x, y, SEGCOLOR(0));
+  } else
+    for (uint16_t i = 0; i < SEGLEN; i++) {
+      setPixelColor(i, color_blend(color_from_palette(i, true, PALETTE_SOLID_WRAP, 0), SEGCOLOR(1), 255 - (SEGENV.aux1 >> 8)));
+    }
 
   return FRAMETIME;
 }
@@ -4267,14 +4285,14 @@ uint16_t WS2812FX::mode_2DBlackHole(void) {            // By: Stepko https://edi
 
   fadeToBlackBy(leds, 16 + (SEGMENT.speed>>3)); // create fading trails
   float t = (float)(millis())/128;              // timebase
-  // inner stars
+  // outer stars
   for (byte i = 0; i < 8; i++) {
     x = beatsin8(SEGMENT.c1x>>3,       0, w - 1, 0, ((i % 2) ? 128 : 0) + t * i);
     y = beatsin8(SEGMENT.intensity>>3, 0, h - 1, 0, ((i % 2) ? 192 : 64) + t * i);
     leds[XY(x,y)] += CHSV(i*32, 255, 255);
   }
-  // outer stars
-  for (byte i = 0; i < 8; i++) {
+  // inner stars
+  for (byte i = 0; i < 4; i++) {
     x = beatsin8(SEGMENT.c2x>>3, w/4, w - 1 - w/4, 0, ((i % 2) ? 128 : 0) + t * i);
     y = beatsin8(SEGMENT.c3x>>3, h/4, h - 1 - h/4, 0, ((i % 2) ? 192 : 64) + t * i);
     leds[XY(x,y)] += CHSV(i*32, 255, 255);
