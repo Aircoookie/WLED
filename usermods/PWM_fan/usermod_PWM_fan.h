@@ -38,6 +38,7 @@ class PWMFanUsermod : public Usermod {
     #ifdef ARDUINO_ARCH_ESP32
     uint8_t pwmChannel = 255;
     #endif
+    bool lockFan = false;
 
     #ifdef USERMOD_DALLASTEMPERATURE
     UsermodTemperature* tempUM;
@@ -60,6 +61,8 @@ class PWMFanUsermod : public Usermod {
     static const char _tachoUpdateSec[];
     static const char _minPWMValuePct[];
     static const char _IRQperRotation[];
+    static const char _speed[];
+    static const char _lock[];
 
     void initTacho(void) {
       if (tachoPin < 0 || !pinManager.allocatePin(tachoPin, false, PinOwner::UM_Unspecified)){
@@ -205,7 +208,7 @@ class PWMFanUsermod : public Usermod {
       if ((now - msLastTachoMeasurement) < (tachoUpdateSec * 1000)) return;
 
       updateTacho();
-      setFanPWMbasedOnTemperature();
+      if (!lockFan) setFanPWMbasedOnTemperature();
     }
 
     /*
@@ -233,9 +236,19 @@ class PWMFanUsermod : public Usermod {
      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    //void readFromJsonState(JsonObject& root) {
-    //  if (!initDone) return;  // prevent crash on boot applyPreset()
-    //}
+    void readFromJsonState(JsonObject& root) {
+      if (!initDone || !enabled) return;  // prevent crash on boot applyPreset()
+      JsonObject usermod = root[FPSTR(_name)];
+      if (!usermod.isNull()) {
+        if (!usermod[FPSTR(_speed)].isNull() && usermod[FPSTR(_speed)].is<int>()) {
+          int pwmValuePct = usermod[FPSTR(_speed)].as<int>();
+          updateFanSpeed((MAX(0,MIN(100,pwmValuePct)) * 255) / 100);
+        }
+        if (!usermod[FPSTR(_lock)].isNull() && usermod[FPSTR(_lock)].is<bool>()) {
+          lockFan = usermod[FPSTR(_lock)].as<bool>();
+        }
+      }
+    }
 
     /*
      * addToConfig() can be used to add custom persistent settings to the cfg.json file in the "um" (usermod) object.
@@ -337,3 +350,5 @@ const char PWMFanUsermod::_temperature[]    PROGMEM = "target-temp-C";
 const char PWMFanUsermod::_tachoUpdateSec[] PROGMEM = "tacho-update-s";
 const char PWMFanUsermod::_minPWMValuePct[] PROGMEM = "min-PWM-percent";
 const char PWMFanUsermod::_IRQperRotation[] PROGMEM = "IRQs-per-rotation";
+const char PWMFanUsermod::_speed[]          PROGMEM = "speed";
+const char PWMFanUsermod::_lock[]           PROGMEM = "lock";
