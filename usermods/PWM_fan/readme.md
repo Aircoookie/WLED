@@ -30,7 +30,16 @@ _NOTE:_ You may also need to tweak Dallas Temperature usermod sampling frequency
 
 No special requirements.
 
+## Control PWM fan speed using JSON API
+
+You can use e.g. `{"PWM-fan":{"speed":30,"lock":true}}` to set fan speed to 30 percent of maximum speed (replace 30 with arbitrary value between 0 and 100) and lock the speed.
+If you include `speed` property you can set fan speed in percent (%) of maximum speed.
+If you include `lock` property you can lock (_true_) or unlock (_false_) fan speed.
+If the fan speed is unlocked it will revert to temperature controlled speed on next update cycle. Once fan speed is locked it will remain so until it is unlocked by next API call.
+
 ## Change Log
 
 2021-10
 * First public release
+2022-05
+* Added JSON API call to allow changing of speed
