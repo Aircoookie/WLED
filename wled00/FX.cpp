@@ -5411,3 +5411,74 @@ uint16_t WS2812FX::mode_2DAkemi(void) {
   */
   return FRAMETIME;
 } // mode_2DAkemi
+
+/////////////////////////
+//     2D spaceships   //
+/////////////////////////
+uint16_t WS2812FX::mode_2Dspaceships(void) {    //// Space ships by stepko (c)05.02.21 [https://editor.soulmatelights.com/gallery/639-space-ships], adapted by Blaz Kristan
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
+  uint16_t width  = SEGMENT.virtualWidth();
+  uint16_t height = SEGMENT.virtualHeight();
+  uint16_t dataSize = sizeof(CRGB) * width * height;
+
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+
+  if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
+
+  uint32_t tb = now >> 12;  // every ~4s
+  if (tb != SEGENV.step) {
+    if (SEGENV.aux0 >= 7) SEGENV.aux0 = 0;
+    else SEGENV.aux0++;
+    SEGENV.step = tb;
+  }
+
+  fadeToBlackBy(leds, SEGMENT.speed>>4);
+  switch (SEGENV.aux0) {
+    case 0:
+      moveX(leds, 1);
+      break;
+    case 1:
+      moveX(leds, 1);
+      moveY(leds, -1);
+      break;
+    case 2:
+      moveY(leds, -1);
+      break;
+    case 3:
+      moveX(leds, -1);
+      moveY(leds, -1);
+      break;
+    case 4:
+      moveX(leds, -1);
+      break;
+    case 5:
+      moveX(leds, -1);
+      moveY(leds, 1);
+      break;
+    case 6:
+      moveY(leds, 1);
+      break;
+    case 7:
+      moveX(leds, 1);
+      moveY(leds, 1);
+      break;
+  }
+  for (byte i = 0; i < 8; i++) {
+    byte x = beatsin8(12 + i, 2, width - 3);
+    byte y = beatsin8(15 + i, 2, height - 3);
+    CRGB color = ColorFromPalette(currentPalette, beatsin8(12 + i, 0, 255), 255);
+    leds[XY(x, y)] += color;
+    if (width > 24 || height > 24) {
+      leds[XY(x + 1, y)] += color;
+      leds[XY(x - 1, y)] += color;
+      leds[XY(x, y + 1)] += color;
+      leds[XY(x, y - 1)] += color;
+    }
+  }
+  blur2d(leds, SEGMENT.intensity>>3);
+
+  setPixels(leds);
+  return FRAMETIME;
+}

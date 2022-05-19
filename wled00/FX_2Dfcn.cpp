@@ -262,6 +262,47 @@ void WS2812FX::blur2d(CRGB* leds, fract8 blur_amount) {
   for (uint16_t k = 0; k < width; k++)  blurCol(k, blur_amount, leds); // blur all columns
 }
 
+void WS2812FX::moveX(CRGB *leds, int8_t delta) {
+  uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN
+  uint16_t height = SEGMENT.virtualHeight();
+  if (delta) {
+    if (delta > 0) {
+      for (uint8_t y = 0; y < height; y++) {
+        for (uint8_t x = 0; x < width; x++) {
+          leds[XY(x, y)] = leds[XY(x + delta, y)];
+        }
+      }
+    } else {
+      for (uint8_t y = 0; y < height; y++) {
+        for (uint8_t x = width - 1; x > 0; x--) {
+          leds[XY(x, y)] = leds[XY(x + delta, y)];
+        }
+      }
+    }
+  }
+}
+
+void WS2812FX::moveY(CRGB *leds, int8_t delta) {
+  uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN
+  uint16_t height = SEGMENT.virtualHeight();
+  if (delta) {
+    if (delta > 0) {
+      for (uint8_t x = 0; x < height; x++) {
+        for (uint8_t y = 0; y < width; y++) {
+          leds[XY(x, y)] = leds[XY(x, y + delta)];
+        }
+      }
+    } else {
+      for (uint8_t x = 0; x < height; x++) {
+        for (uint8_t y = width - 1; y > 0; y--) {
+          leds[XY(x, y)] = leds[XY(x, y + delta)];
+        }
+      }
+    }
+  }
+}
+
+
 //ewowi20210628: new functions moved from colorutils: add segment awareness
 
 void WS2812FX::fill_solid(CRGB* leds, const struct CRGB& color) {

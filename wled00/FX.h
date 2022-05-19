@@ -261,8 +261,9 @@
 #define FX_MODE_SUN_RADIATION          138
 #define FX_MODE_TARTAN                 139
 #define FX_MODE_WAVERLY                140
+#define FX_MODE_SPACESHIPS             141
 
-#define MODE_COUNT                     141
+#define MODE_COUNT                     142
 
 
 class WS2812FX {
@@ -650,6 +651,7 @@ class WS2812FX {
       _mode[FX_MODE_TARTAN]                  = &WS2812FX::mode_2Dtartan;
       _mode[FX_MODE_WAVERLY]                 = &WS2812FX::mode_2DWaverly;
       _mode[FX_MODE_AKEMI]                   = &WS2812FX::mode_2DAkemi;
+      _mode[FX_MODE_SPACESHIPS]              = &WS2812FX::mode_2Dspaceships;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -910,6 +912,8 @@ class WS2812FX {
       blur2d(CRGB* leds, fract8 blur_amount),
       blurRow(uint16_t row, fract8 blur_amount, CRGB* leds=nullptr),
       blurCol(uint16_t col, fract8 blur_amount, CRGB* leds=nullptr),
+      moveX(CRGB *leds, int8_t delta),
+      moveY(CRGB *leds, int8_t delta),
       fill_solid(CRGB* leds, const struct CRGB& color),
       fadeToBlackBy(CRGB* leds, uint8_t fadeBy),
       nscale8(CRGB* leds, uint8_t scale),
@@ -949,7 +953,8 @@ class WS2812FX {
     mode_2DSunradiation(void),
     mode_2Dtartan(void),
     mode_2DWaverly(void),
-    mode_2DAkemi(void);
+    mode_2DAkemi(void),
+    mode_2Dspaceships(void);
 
 // end 2D support
 
