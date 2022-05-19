@@ -5482,3 +5482,72 @@ uint16_t WS2812FX::mode_2Dspaceships(void) {    //// Space ships by stepko (c)05
   setPixels(leds);
   return FRAMETIME;
 }
+
+/////////////////////////
+//     2D Crazy Bees   //
+/////////////////////////
+//// Crazy bees by stepko (c)12.02.21 [https://editor.soulmatelights.com/gallery/651-crazy-bees], adapted by Blaz Kristan
+#define MAX_BEES 5
+uint16_t WS2812FX::mode_2Dcrazybees(void) {
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
+  uint16_t width  = SEGMENT.virtualWidth();
+  uint16_t height = SEGMENT.virtualHeight();
+  uint16_t dataSize = sizeof(CRGB) * width * height;
+
+  byte n = MIN(MAX_BEES, (width * height) / 256 + 1);
+
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+
+  static struct {
+    uint8_t posX, posY, aimX, aimY, hue;
+    int8_t deltaX, deltaY, signX, signY, error;
+    void aimed(uint16_t width, uint16_t height) {
+      randomSeed(millis());
+      aimX = random8(0, width);
+      aimY = random8(0, height);
+      hue = random8();
+      deltaX = abs(aimX - posX);
+      deltaY = abs(aimY - posY);
+      signX = posX < aimX ? 1 : -1;
+      signY = posY < aimY ? 1 : -1;
+      error = deltaX - deltaY;
+    };
+  } bee[MAX_BEES];
+
+  if (SEGENV.call == 0) {
+    fill_solid(leds, CRGB::Black);
+    for (byte i = 0; i < n; i++) {
+      bee[i].posX = random8(0, width);
+      bee[i].posY = random8(0, height);
+      bee[i].aimed(width, height);
+    }
+  }
+
+  fadeToBlackBy(leds, SEGMENT.speed>>4);
+  for (byte i = 0; i < n; i++) {
+    leds[XY(bee[i].aimX + 1, bee[i].aimY)] += CHSV(bee[i].hue, 255, 255);
+    leds[XY(bee[i].aimX, bee[i].aimY + 1)] += CHSV(bee[i].hue, 255, 255);
+    leds[XY(bee[i].aimX - 1, bee[i].aimY)] += CHSV(bee[i].hue, 255, 255);
+    leds[XY(bee[i].aimX, bee[i].aimY - 1)] += CHSV(bee[i].hue, 255, 255);
+    if (bee[i].posX != bee[i].aimX || bee[i].posY != bee[i].aimY) {
+      leds[XY(bee[i].posX, bee[i].posY)] = CHSV(bee[i].hue, 60, 255);
+      int8_t error2 = bee[i].error * 2;
+      if (error2 > -bee[i].deltaY) {
+        bee[i].error -= bee[i].deltaY;
+        bee[i].posX += bee[i].signX;
+      }
+      if (error2 < bee[i].deltaX) {
+        bee[i].error += bee[i].deltaX;
+        bee[i].posY += bee[i].signY;
+      }
+    } else {
+      bee[i].aimed(width, height);
+    }
+  }
+  blur2d(leds, SEGMENT.intensity>>3);
+
+  setPixels(leds);
+  return FRAMETIME;
+}

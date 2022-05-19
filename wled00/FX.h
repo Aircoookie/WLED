@@ -262,8 +262,9 @@
 #define FX_MODE_TARTAN                 139
 #define FX_MODE_WAVERLY                140
 #define FX_MODE_SPACESHIPS             141
+#define FX_MODE_CRAZYBEES              142
 
-#define MODE_COUNT                     142
+#define MODE_COUNT                     143
 
 
 class WS2812FX {
@@ -652,6 +653,7 @@ class WS2812FX {
       _mode[FX_MODE_WAVERLY]                 = &WS2812FX::mode_2DWaverly;
       _mode[FX_MODE_AKEMI]                   = &WS2812FX::mode_2DAkemi;
       _mode[FX_MODE_SPACESHIPS]              = &WS2812FX::mode_2Dspaceships;
+      _mode[FX_MODE_CRAZYBEES]               = &WS2812FX::mode_2Dcrazybees;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -954,7 +956,8 @@ class WS2812FX {
     mode_2Dtartan(void),
     mode_2DWaverly(void),
     mode_2DAkemi(void),
-    mode_2Dspaceships(void);
+    mode_2Dspaceships(void),
+    mode_2Dcrazybees(void);
 
 // end 2D support
 
