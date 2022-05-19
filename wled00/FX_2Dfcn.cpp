@@ -110,7 +110,7 @@ void WS2812FX::setUpMatrix() {
 uint16_t IRAM_ATTR WS2812FX::XY(uint16_t x, uint16_t y) {
   uint16_t width  = SEGMENT.virtualWidth();   // segment width in logical pixels
   if (SEGMENT.getOption(SEG_OPTION_TRANSPOSED)) { uint16_t t = x; x = y; y = t; } // swap X & Y if segment transposed
-  return x + y * width;
+  return (x%width) + (y%SEGMENT.virtualHeight()) * width;
 }
 
 // getPixelIndex(x,y,seg) - returns an index of segment pixel in a matrix layout
