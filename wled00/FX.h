@@ -248,8 +248,21 @@
 #define FX_MODE_LISSAJOUS              125
 #define FX_MODE_MATRIX                 126
 #define FX_MODE_AKEMI                  127
+#define FX_MODE_COLORED_BURSTS         128
+#define FX_MODE_GAMEOFLIFE             129
+#define FX_MODE_JULIA                  130
+#define FX_MODE_MEATBALS               131
+#define FX_MODE_2DNOISE                132
+#define FX_MODE_PLASMA_BALL            133
+#define FX_MODE_POLAR_LIGHTS           134
+#define FX_MODE_PULSER                 135
+#define FX_MODE_SINDOTS                136
+#define FX_MODE_SQUARED_SWIRL          137
+#define FX_MODE_SUN_RADIATION          138
+#define FX_MODE_TARTAN                 139
+#define FX_MODE_WAVERLY                140
 
-#define MODE_COUNT                     128
+#define MODE_COUNT                     141
 
 
 class WS2812FX {
@@ -615,14 +628,27 @@ class WS2812FX {
       _mode[FX_MODE_TV_SIMULATOR]            = &WS2812FX::mode_tv_simulator;
       _mode[FX_MODE_DYNAMIC_SMOOTH]          = &WS2812FX::mode_dynamic_smooth;
       _mode[FX_MODE_BLACK_HOLE]              = &WS2812FX::mode_2DBlackHole;
+      _mode[FX_MODE_COLORED_BURSTS]          = &WS2812FX::mode_2DColoredBursts;
       _mode[FX_MODE_DNA]                     = &WS2812FX::mode_2Ddna;
       _mode[FX_MODE_DNA_SPIRAL]              = &WS2812FX::mode_2DDNASpiral;
       _mode[FX_MODE_DRIFT]                   = &WS2812FX::mode_2DDrift;
       _mode[FX_MODE_FIRENOISE]               = &WS2812FX::mode_2Dfirenoise;
       _mode[FX_MODE_FRIZZLES]                = &WS2812FX::mode_2DFrizzles;
       _mode[FX_MODE_HIPNOTIC]                = &WS2812FX::mode_2DHiphotic;
+      _mode[FX_MODE_JULIA]                   = &WS2812FX::mode_2DJulia;
+      _mode[FX_MODE_GAMEOFLIFE]              = &WS2812FX::mode_2Dgameoflife;
       _mode[FX_MODE_LISSAJOUS]               = &WS2812FX::mode_2DLissajous;
       _mode[FX_MODE_MATRIX]                  = &WS2812FX::mode_2Dmatrix;
+      _mode[FX_MODE_MEATBALS]                = &WS2812FX::mode_2Dmetaballs;
+      _mode[FX_MODE_2DNOISE]                 = &WS2812FX::mode_2Dnoise;
+      _mode[FX_MODE_PLASMA_BALL]             = &WS2812FX::mode_2DPlasmaball;
+      _mode[FX_MODE_POLAR_LIGHTS]            = &WS2812FX::mode_2DPolarLights;
+      _mode[FX_MODE_PULSER]                  = &WS2812FX::mode_2DPulser;
+      _mode[FX_MODE_SINDOTS]                 = &WS2812FX::mode_2DSindots;
+      _mode[FX_MODE_SQUARED_SWIRL]           = &WS2812FX::mode_2Dsquaredswirl;
+      _mode[FX_MODE_SUN_RADIATION]           = &WS2812FX::mode_2DSunradiation;
+      _mode[FX_MODE_TARTAN]                  = &WS2812FX::mode_2Dtartan;
+      _mode[FX_MODE_WAVERLY]                 = &WS2812FX::mode_2DWaverly;
       _mode[FX_MODE_AKEMI]                   = &WS2812FX::mode_2DAkemi;
 
       _brightness = DEFAULT_BRIGHTNESS;
@@ -902,14 +928,27 @@ class WS2812FX {
   // 2D modes
   uint16_t
     mode_2DBlackHole(void),
+    mode_2DColoredBursts(void),
     mode_2Ddna(void),
     mode_2DDNASpiral(void),
     mode_2DDrift(void),
     mode_2Dfirenoise(void),
     mode_2DFrizzles(void),
+    mode_2Dgameoflife(void),
     mode_2DHiphotic(void),
+    mode_2DJulia(void),
     mode_2DLissajous(void),
     mode_2Dmatrix(void),
+    mode_2Dmetaballs(void),
+    mode_2Dnoise(void),
+    mode_2DPlasmaball(void),
+    mode_2DPolarLights(void),
+    mode_2DPulser(void),
+    mode_2DSindots(void),
+    mode_2Dsquaredswirl(void),
+    mode_2DSunradiation(void),
+    mode_2Dtartan(void),
+    mode_2DWaverly(void),
     mode_2DAkemi(void);
 
 // end 2D support

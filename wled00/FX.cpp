@@ -3378,27 +3378,28 @@ uint16_t WS2812FX::mode_percent(void) {
 
 /*
  * Modulates the brightness similar to a heartbeat
- * tries to draw an ECG aproximation
+ * tries to draw an ECG aproximation on a 2D matrix
  */
 uint16_t WS2812FX::mode_heartbeat(void) {
-  uint8_t bpm = 40 + (SEGMENT.speed >> 4);
-  uint32_t msPerBeat = (60000 / bpm);
+  uint8_t bpm = 40 + (SEGMENT.speed >> 3);
+  uint32_t msPerBeat = (60000L / bpm);
   uint32_t secondBeat = (msPerBeat / 3);
-
+  uint32_t bri_lower = SEGENV.aux1;
   unsigned long beatTimer = now - SEGENV.step;
 
-  uint32_t bri_lower = SEGENV.aux1;
-
-  if (beatTimer > secondBeat-100 && beatTimer <= secondBeat) {
-    bri_lower = (UINT16_MAX*3/4) * (secondBeat - beatTimer) / 100;
-  } else if (beatTimer > msPerBeat-100 && beatTimer <= msPerBeat) {
-    bri_lower = UINT16_MAX * (msPerBeat - beatTimer) / 100;
+  if (isMatrix) {
+    if (beatTimer > secondBeat-100 && beatTimer <= secondBeat) {
+      bri_lower = (UINT16_MAX*3L/4) * (secondBeat - beatTimer) / 100;
+    } else if (beatTimer > msPerBeat-100 && beatTimer <= msPerBeat) {
+      bri_lower = UINT16_MAX * (msPerBeat - beatTimer) / 100;
+    } else
+      bri_lower = bri_lower * 9 / 10; // reduce 10% each pass
   } else
     bri_lower = bri_lower * 2042 / (2048 + SEGMENT.intensity);
   SEGENV.aux1 = bri_lower;
 
   if ((beatTimer > secondBeat) && !SEGENV.aux0) { // time for the second beat?
-    SEGENV.aux1 = UINT16_MAX*3/4; //full bri
+    SEGENV.aux1 = isMatrix ? UINT16_MAX*3L/4 : UINT16_MAX; //3/4 bri
     SEGENV.aux0 = 1;
   }
   if (beatTimer > msPerBeat) { // time to reset the beat timer?
@@ -3408,18 +3409,25 @@ uint16_t WS2812FX::mode_heartbeat(void) {
   }
 
   if (isMatrix) {
-    uint16_t w = SEGMENT.virtualWidth();
+    uint16_t w = SEGMENT.virtualWidth(); // same as SEGLEN
     uint16_t h = SEGMENT.virtualHeight();
     uint16_t tb = now & 0x000007FF;
     uint16_t x = tb * w/2048; // ~2s per width
-    uint16_t y = h * 9 / 16;
-    y += ((((SEGENV.aux0 ? 7 : -9) * (int)h) / 8) * SEGENV.aux1) / UINT16_MAX;
-    fade_out(0);
-    setPixelColorXY(x, y, SEGCOLOR(0));
-  } else
+    float y = h * 0.5625f;
+    if (SEGENV.aux0) {
+      // we are in second beat
+      y += (SEGENV.aux1 * 0.4375f * h) / UINT16_MAX;
+    } else {
+      // we are drawing 1st beat
+      y -= (SEGENV.aux1 * 0.5625f * h) / UINT16_MAX;
+    }
+    fade_out(SEGMENT.intensity>>4);
+    setPixelColorXY(x, (uint16_t)y, color_from_palette(x, true, PALETTE_SOLID_WRAP, 0));
+  } else {
     for (uint16_t i = 0; i < SEGLEN; i++) {
       setPixelColor(i, color_blend(color_from_palette(i, true, PALETTE_SOLID_WRAP, 0), SEGCOLOR(1), 255 - (SEGENV.aux1 >> 8)));
     }
+  }
 
   return FRAMETIME;
 }
@@ -4278,9 +4286,10 @@ uint16_t WS2812FX::mode_2DBlackHole(void) {            // By: Stepko https://edi
 
   // initialize on first call
   if (SEGENV.call == 0) {
-    for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
-      leds[XY(x,y)] = CRGB::Black;
-    }
+    fill_solid(leds, CRGB::Black);
+    //for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+    //  leds[XY(x,y)] = CRGB::Black;
+    //}
   }
 
   fadeToBlackBy(leds, 16 + (SEGMENT.speed>>3)); // create fading trails
@@ -4309,6 +4318,63 @@ uint16_t WS2812FX::mode_2DBlackHole(void) {            // By: Stepko https://edi
   return FRAMETIME;
 } // mode_2DBlackHole()
 
+////////////////////////////
+//     2D Colored Bursts  //
+////////////////////////////
+uint16_t WS2812FX::mode_2DColoredBursts() {              // By: ldirko   https://editor.soulmatelights.com/gallery/819-colored-bursts , modified by: Andrew Tuline
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
+  uint16_t w = SEGMENT.virtualWidth();
+  uint16_t h = SEGMENT.virtualHeight();
+  uint16_t dataSize = sizeof(CRGB) * w * h;
+
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+
+  if (SEGENV.call == 0) {
+    fill_solid(leds, CRGB::Black);
+    //for (uint16_t i = 0; i < w*h; i++) leds[i] = CRGB::Black;
+    SEGENV.aux0 = 0; // start with red hue
+  }
+
+  bool dot = false;
+  bool grad = true;
+
+  byte numLines = SEGMENT.intensity/16 + 1;
+
+  SEGENV.aux0++;  // hue
+  fadeToBlackBy(leds, 40);
+
+  for (byte i = 0; i < numLines; i++) {
+    byte x1 = beatsin8(2 + SEGMENT.speed/16, 0, (w - 1));
+    byte x2 = beatsin8(1 + SEGMENT.speed/16, 0, (w - 1));
+    byte y1 = beatsin8(5 + SEGMENT.speed/16, 0, (h - 1), 0, i * 24);
+    byte y2 = beatsin8(3 + SEGMENT.speed/16, 0, (h - 1), 0, i * 48 + 64);
+    CRGB color = ColorFromPalette(currentPalette, i * 255 / numLines + (SEGENV.aux0&0xFF), 255, LINEARBLEND);
+
+    byte xsteps = abs8(x1 - y1) + 1;
+    byte ysteps = abs8(x2 - y2) + 1;
+    byte steps = xsteps >= ysteps ? xsteps : ysteps;
+
+    for (byte i = 1; i <= steps; i++) {
+      byte dx = lerp8by8(x1, y1, i * 255 / steps);
+      byte dy = lerp8by8(x2, y2, i * 255 / steps);
+      int index = XY(dx, dy);
+      leds[index] += color;           // change to += for brightness look
+      if (grad) leds[index] %= (i * 255 / steps); //Draw gradient line
+    }
+
+    if (dot) { //add white point at the ends of line
+      leds[XY(x1, x2)] += CRGB::White;
+      leds[XY(y1, y2)] += CRGB::White;
+    }
+  }
+  blur2d(leds, 4);
+
+  setPixels(leds);       // Use this ONLY if we're going to display via leds[x] method.
+  return FRAMETIME;
+} // mode_2DColoredBursts()
+
 /////////////////////
 //      2D DNA     //
 /////////////////////
@@ -4321,6 +4387,8 @@ uint16_t WS2812FX::mode_2Ddna(void) {         // dna originally by by ldirko at 
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+
+  if (SEGENV.call == 0) fill_solid(leds, 0);
 
   fadeToBlackBy(leds, 64);
 
@@ -4349,24 +4417,28 @@ uint16_t WS2812FX::mode_2DDNASpiral() {               // By: ldirko  https://edi
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
 
+  if (SEGENV.call == 0) {
+    fill_solid(leds, CRGB::Black);
+    SEGENV.aux0 = 0; // hue
+  }
+
   uint8_t speeds = SEGMENT.speed/2;
   uint8_t freq = SEGMENT.intensity/8;
 
-  static byte hue = 0;
   uint32_t ms = millis() / 20;
   nscale8(leds, 120);
 
   for (uint16_t i = 0; i < height; i++) {
     uint16_t x  = beatsin8(speeds, 0, width - 1, 0, i * freq) + beatsin8(speeds - 7, 0, width - 1, 0, i * freq + 128);
     uint16_t x1 = beatsin8(speeds, 0, width - 1, 0, 128 + i * freq) + beatsin8(speeds - 7, 0, width - 1, 0, 128 + 64 + i * freq);
-    hue = i * 128 / width + ms; //ewowi20210629: not width - 1 to avoid crash if width = 1
+    SEGENV.aux0 = i * 128 / width + ms; //ewowi20210629: not width - 1 to avoid crash if width = 1
     if ((i + ms / 8) & 3) {
       x = x / 2; x1 = x1 / 2;
       byte steps = abs8(x - x1) + 1;
       for (byte k = 1; k <= steps; k++) {
         byte dx = lerp8by8(x, x1, k * 255 / steps);
         uint16_t index = XY(dx, i);
-        leds[index] += ColorFromPalette(currentPalette, hue, 255, LINEARBLEND);
+        leds[index] += ColorFromPalette(currentPalette, SEGENV.aux0, 255, LINEARBLEND);
         leds[index] %= (k * 255 / steps); //for draw gradient line
       }
       leds[XY(x, i)]  += CRGB::DarkSlateGray;
@@ -4392,6 +4464,8 @@ uint16_t WS2812FX::mode_2DDrift() {              // By: Stepko   https://editor.
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+
+  if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
 
   fadeToBlackBy(leds, 128);
 
@@ -4421,6 +4495,8 @@ uint16_t WS2812FX::mode_2Dfirenoise(void) {               // firenoise2d. By And
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+
+  if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
 
   uint16_t xscale = SEGMENT.intensity*4;
   uint32_t yscale = SEGMENT.speed*8;
@@ -4455,6 +4531,8 @@ uint16_t WS2812FX::mode_2DFrizzles(void) {                 // By: Stepko https:/
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
 
+  if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
+
   fadeToBlackBy(leds, 16);
   for (byte i = 8; i > 0; i--) {
     leds[XY(beatsin8(SEGMENT.speed/8 + i, 0, width - 1), beatsin8(SEGMENT.intensity/8 - i, 0, height - 1))] += ColorFromPalette(currentPalette, beatsin8(12, 0, 255), 255, LINEARBLEND);
@@ -4468,6 +4546,131 @@ uint16_t WS2812FX::mode_2DFrizzles(void) {                 // By: Stepko https:/
 ///////////////////////////////////////////
 //   2D Cellular Automata Game of life   //
 ///////////////////////////////////////////
+typedef struct ColorCount {
+  CRGB color;
+  int8_t  count;
+} colorCount;
+// TODO: crashes ESP, uses static vars
+uint16_t WS2812FX::mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https://natureofcode.com/book/chapter-7-cellular-automata/ and https://github.com/DougHaber/nlife-color
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
+  uint16_t width  = SEGMENT.virtualWidth();
+  uint16_t height = SEGMENT.virtualHeight();
+  uint16_t dataSize = sizeof(CRGB) * width * height;
+
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+
+  if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
+
+  //slow down based on speed parameter
+  if (now - SEGENV.step >= ((255-SEGMENT.speed)*4)) {
+    SEGENV.step = now;
+
+    CRGB prevLeds[32*32]; //MAX_LED causes a panic, but this will do
+
+    //array of patterns. Needed to identify repeating patterns. A pattern is one iteration of leds, without the color (on/off only)
+    const int patternsSize = (width + height) * 2; //seems to be a good value to catch also repetition in moving patterns
+    if (!SEGENV.allocateData(sizeof(String) * patternsSize)) return mode_static(); //allocation failed
+    String* patterns = reinterpret_cast<String*>(SEGENV.data);
+
+    CRGB backgroundColor = SEGCOLOR(1);
+
+    static unsigned long resetMillis; //triggers reset if more than 3 seconds from now
+
+    if (SEGENV.call == 0) { //effect starts
+      //check if no pixels on screen (there could be due to previous effect, which we then take as starting point)
+      bool allZero = true;
+      for (int x = 0; x < width && allZero; x++) for (int y = 0; y < height && allZero; y++)
+        if (leds[XY(x,y)].r > 10 || leds[XY(x,y)].g > 10 || leds[XY(x,y)].b > 10) //looks like some pixels are not completely off
+          allZero = false;
+      if (!allZero)
+        resetMillis = now; //avoid reset
+    }
+
+    //reset leds if effect repeats (wait 3 seconds after repetition)
+    if (now - resetMillis > 3000) {
+      resetMillis = now;
+
+      random16_set_seed(now); //seed the random generator
+
+      //give the leds random state and colors (based on intensity, colors from palette or all posible colors are chosen)
+      for (int x = 0; x < width; x++) for (int y = 0; y < height; y++) {
+        uint8_t state = random8()%2;
+        if (state == 0)
+          leds[XY(x,y)] = backgroundColor;
+        else
+          leds[XY(x,y)] = SEGMENT.intensity < 128?(CRGB)color_wheel(random8()):CRGB(random8(), random8(), random8());
+      }
+
+      //init patterns
+      SEGENV.aux0 = 0; //ewowi20210629: pka static! patternsize: round robin index of next slot to add pattern
+      for (int i=0; i<patternsSize; i++) patterns[i] = "";
+    }
+    else {
+      //copy previous leds
+      for (int x = 0; x < width; x++) for (int y = 0; y < height; y++) prevLeds[XY(x,y)] = leds[XY(x,y)];
+
+      //calculate new leds
+      for (int x = 0; x < width; x++) for (int y = 0; y < height; y++) {
+        colorCount colorsCount[9];//count the different colors in the 9*9 matrix
+        for (int i=0; i<9; i++) colorsCount[i] = {backgroundColor, 0}; //init colorsCount
+
+        //iterate through neighbors and count them and their different colors
+        int neighbors = 0;
+        for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) { //iterate through 9*9 matrix
+          uint16_t xy = XY((x+i+width)%width, (y+j+height)%height); //cell xy to check
+
+          // count different neighbours and colors, except the centre cell
+          if (xy != XY(x,y) && prevLeds[xy] != backgroundColor) {
+            neighbors++;
+            bool colorFound = false;
+            int i;
+            for (i=0; i<9 && colorsCount[i].count != 0; i++)
+              if (colorsCount[i].color == prevLeds[xy]) {
+                colorsCount[i].count++;
+                colorFound = true;
+              }
+
+            if (!colorFound) colorsCount[i] = {prevLeds[xy], 1}; //add new color found in the array
+          }
+        } // i,j
+
+        // Rules of Life
+        if      ((leds[XY(x,y)] != backgroundColor) && (neighbors <  2)) leds[XY(x,y)] = backgroundColor; // Loneliness
+        else if ((leds[XY(x,y)] != backgroundColor) && (neighbors >  3)) leds[XY(x,y)] = backgroundColor; // Overpopulation
+        else if ((leds[XY(x,y)] == backgroundColor) && (neighbors == 3)) {                                // Reproduction
+          //find dominantcolor and assign to cell
+          colorCount dominantColorCount = {backgroundColor, 0};
+          for (int i=0; i<9 && colorsCount[i].count != 0; i++)
+            if (colorsCount[i].count > dominantColorCount.count) dominantColorCount = colorsCount[i];
+          if (dominantColorCount.count > 0) leds[XY(x,y)] = dominantColorCount.color; //assign the dominant color
+        }
+        // else do nothing!
+      } //x,y
+
+      //create new pattern
+      String pattern = "";
+      for (int x = 0; x < width; x+=MAX(width/8,1)) for (int y = 0; y < height; y+=MAX(height/8,1))
+        pattern += leds[XY(x,y)] == backgroundColor?" ":"o"; //string representation if on/off
+
+      //check if repetition of patterns occurs
+      bool repetition = false;
+      for (int i=0; i<patternsSize && !repetition; i++)
+        repetition = patterns[(SEGENV.aux0 - 1 - i + patternsSize)%patternsSize] == pattern;
+
+      //add current pattern to array and increase index (round robin)
+      patterns[SEGENV.aux0] = pattern;
+      SEGENV.aux0 = (SEGENV.aux0+1)%patternsSize;
+
+      if (!repetition) resetMillis = now; //if no repetition avoid reset
+    } //not reset
+
+    setPixels(leds);
+  } //millis
+
+  return FRAMETIME;
+} // mode_2Dgameoflife()
 
 /////////////////////////
 //     2D Hiphotic     //
@@ -4482,7 +4685,9 @@ uint16_t WS2812FX::mode_2DHiphotic() {                        //  By: ldirko  ht
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
 
-  uint32_t a = millis() / 8;
+  if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
+
+  uint32_t a = now / 8;
 
   for (uint16_t x = 0; x < width; x++) {
     for (uint16_t y = 0; y < height; y++) {
@@ -4497,6 +4702,118 @@ uint16_t WS2812FX::mode_2DHiphotic() {                        //  By: ldirko  ht
 /////////////////////////
 //     2D Julia        //
 /////////////////////////
+// Sliders are:
+// intensity = Maximum number of iterations per pixel.
+// Custom1 = Location of X centerpoint
+// Custom2 = Location of Y centerpoint
+// Custom3 = Size of the area (small value = smaller area)
+typedef struct Julia {
+  float xcen;
+  float ycen;
+  float xymag;
+} julia;
+
+uint16_t WS2812FX::mode_2DJulia(void) {                           // An animated Julia set by Andrew Tuline.
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
+  uint16_t width  = SEGMENT.virtualWidth();
+  uint16_t height = SEGMENT.virtualHeight();
+
+  if (!SEGENV.allocateData(sizeof(julia))) return mode_static();  // We use this method for allocating memory for static variables.
+  Julia* julias = reinterpret_cast<Julia*>(SEGENV.data);          // Because 'static' doesn't work with SEGMENTS.
+
+  float reAl;
+  float imAg;
+
+  if (SEGENV.call == 0) {           // Reset the center if we've just re-started this animation.
+    julias->xcen = 0.;
+    julias->ycen = 0.;
+    julias->xymag = 1.0;
+
+    SEGMENT.c1x = 128;              // Make sure the location widgets are centered to start.
+    SEGMENT.c2x = 128;
+    SEGMENT.c3x = 128;
+    SEGMENT.intensity = 24;
+  }
+
+  julias->xcen = julias->xcen + (float)(SEGMENT.c1x - 128)/100000.;
+  julias->ycen = julias->ycen + (float)(SEGMENT.c2x - 128)/100000.;
+  julias->xymag = julias->xymag + (float)(SEGMENT.c3x-128)/100000.;
+  if (julias->xymag < 0.01) julias->xymag = 0.01;
+  if (julias->xymag > 1.0) julias->xymag = 1.0;
+
+  float xmin = julias->xcen - julias->xymag;
+  float xmax = julias->xcen + julias->xymag;
+  float ymin = julias->ycen - julias->xymag;
+  float ymax = julias->ycen + julias->xymag;
+
+  // Whole set should be within -1.2,1.2 to -.8 to 1.
+  xmin = constrain(xmin,-1.2,1.2);
+  xmax = constrain(xmax,-1.2,1.2);
+  ymin = constrain(ymin,-.8,1.0);
+  ymax = constrain(ymax,-.8,1.0);
+
+  float dx;                       // Delta x is mapped to the matrix size.
+  float dy;                       // Delta y is mapped to the matrix size.
+
+  int maxIterations = 15;         // How many iterations per pixel before we give up. Make it 8 bits to match our range of colours.
+  float maxCalc = 16.0;           // How big is each calculation allowed to be before we give up.
+
+  maxIterations = SEGMENT.intensity/2;
+
+
+  // Resize section on the fly for some animaton.
+  reAl = -0.94299;                // PixelBlaze example
+  imAg = 0.3162;
+
+  reAl += sin((float)millis()/305.)/20.;
+  imAg += sin((float)millis()/405.)/20.;
+
+  dx = (xmax - xmin) / (width);     // Scale the delta x and y values to our matrix size.
+  dy = (ymax - ymin) / (height);
+
+  // Start y
+  float y = ymin;
+  for (int j = 0; j < height; j++) {
+
+    // Start x
+    float x = xmin;
+    for (int i = 0; i < width; i++) {
+
+      // Now we test, as we iterate z = z^2 + c does z tend towards infinity?
+      float a = x;
+      float b = y;
+      int iter = 0;
+
+      while (iter < maxIterations) {    // Here we determine whether or not we're out of bounds.
+        float aa = a * a;
+        float bb = b * b;
+        float len = aa + bb;
+        if (len > maxCalc) {            // |z| = sqrt(a^2+b^2) OR z^2 = a^2+b^2 to save on having to perform a square root.
+          break;  // Bail
+        }
+
+       // This operation corresponds to z -> z^2+c where z=a+ib c=(x,y). Remember to use 'foil'.
+        b = 2*a*b + imAg;
+        a = aa - bb + reAl;
+        iter++;
+      } // while
+
+      // We color each pixel based on how long it takes to get to infinity, or black if it never gets there.
+      if (iter == maxIterations) {
+        setPixelColorXY(i, j, 0);
+      } else {
+        setPixelColorXY(i, j, color_from_palette(iter*255/maxIterations, false, PALETTE_SOLID_WRAP, 0));
+      }
+      x += dx;
+    }
+    y += dy;
+  }
+//  blur2d( leds, 64);
+
+  return FRAMETIME;
+} // mode_2DJulia()
+
 
 //////////////////////////////
 //     2D Lissajous         //
@@ -4511,22 +4828,23 @@ uint16_t WS2812FX::mode_2DLissajous(void) {            // By: Andrew Tuline
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
 
+  if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
+
   fadeToBlackBy(leds, SEGMENT.intensity);
 
   for (int i=0; i < 256; i ++) {
 
-    uint8_t xlocn = sin8(millis()/2+i*SEGMENT.speed/64);
-    uint8_t ylocn = cos8(millis()/2+i*128/64);
+    uint8_t xlocn = sin8(now/2+i*SEGMENT.speed/64);
+    uint8_t ylocn = cos8(now/2+i*128/64);
 
     xlocn = map(xlocn,0,255,0,width-1);
     ylocn = map(ylocn,0,255,0,height-1);
-    leds[XY(xlocn,ylocn)] = ColorFromPalette(currentPalette, millis()/100+i, 255, LINEARBLEND);
+    leds[XY(xlocn,ylocn)] = ColorFromPalette(currentPalette, now/100+i, 255, LINEARBLEND);
   }
 
   setPixels(leds);
   return FRAMETIME;
 } // mode_2DLissajous()
-
 
 ///////////////////////
 //    2D Matrix      //
@@ -4541,7 +4859,7 @@ uint16_t WS2812FX::mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
 
-  if (SEGENV.call == 0) fill_solid(leds, 0);
+  if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
 
   uint8_t fade = map(SEGMENT.c1x, 0, 255, 50, 250);    // equals trail size
   uint8_t speed = (256-SEGMENT.speed) >> map(MIN(height, 150), 0, 150, 0, 3);    // slower speeds for small displays
@@ -4556,8 +4874,8 @@ uint16_t WS2812FX::mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy
     trailColor = CRGB(27,130,39);
   }
 
-  if (millis() - SEGENV.step >= speed) {
-    SEGENV.step = millis();
+  if (now - SEGENV.step >= speed) {
+    SEGENV.step = now;
     for (int16_t row=height-1; row>=0; row--) {
       for (int16_t col=0; col<width; col++) {
         if (leds[XY(col, row)] == spawnColor) {
@@ -4593,6 +4911,422 @@ uint16_t WS2812FX::mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy
   return FRAMETIME;
 } // mode_2Dmatrix()
 
+/////////////////////////
+//     2D Metaballs    //
+/////////////////////////
+uint16_t WS2812FX::mode_2Dmetaballs(void) {   // Metaballs by Stefan Petrick. Cannot have one of the dimensions be 2 or less. Adapted by Andrew Tuline.
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
+  uint16_t width  = SEGMENT.virtualWidth();
+  uint16_t height = SEGMENT.virtualHeight();
+  uint16_t dataSize = sizeof(CRGB) * width * height;
+
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+
+  if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
+
+  float speed = 1;
+
+  // get some 2 random moving points
+  uint8_t x2 = inoise8(millis() * speed, 25355, 685 ) / 16;
+  uint8_t y2 = inoise8(millis() * speed, 355, 11685 ) / 16;
+
+  uint8_t x3 = inoise8(millis() * speed, 55355, 6685 ) / 16;
+  uint8_t y3 = inoise8(millis() * speed, 25355, 22685 ) / 16;
+
+  // and one Lissajou function
+  uint8_t x1 = beatsin8(23 * speed, 0, 15);
+  uint8_t y1 = beatsin8(28 * speed, 0, 15);
+
+  for (uint16_t y = 0; y < height; y++) {
+    for (uint16_t x = 0; x < width; x++) {
+      // calculate distances of the 3 points from actual pixel
+      // and add them together with weightening
+      uint16_t  dx =  abs(x - x1);
+      uint16_t  dy =  abs(y - y1);
+      uint16_t dist = 2 * sqrt((dx * dx) + (dy * dy));
+
+      dx =  abs(x - x2);
+      dy =  abs(y - y2);
+      dist += sqrt((dx * dx) + (dy * dy));
+
+      dx =  abs(x - x3);
+      dy =  abs(y - y3);
+      dist += sqrt((dx * dx) + (dy * dy));
+
+      // inverse result
+      byte color = 1000 / dist;
+
+      // map color between thresholds
+      if (color > 0 and color < 60) {
+        leds[XY(x, y)] = ColorFromPalette(currentPalette, color * 9, 255);
+      } else {
+        leds[XY(x, y)] = ColorFromPalette(currentPalette, 0, 255);
+      }
+      // show the 3 points, too
+      leds[XY(x1,y1)] = CRGB(255, 255,255);
+      leds[XY(x2,y2)] = CRGB(255, 255,255);
+      leds[XY(x3,y3)] = CRGB(255, 255,255);
+    }
+  }
+  setPixels(leds);
+
+  return FRAMETIME;
+} // mode_2Dmetaballs()
+
+//////////////////////
+//    2D Noise      //
+//////////////////////
+uint16_t WS2812FX::mode_2Dnoise(void) {                  // By Andrew Tuline
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
+  uint16_t width  = SEGMENT.virtualWidth();
+  uint16_t height = SEGMENT.virtualHeight();
+  uint16_t scale  = SEGMENT.intensity+2;
+
+  for (uint16_t y = 0; y < height; y++) {
+    for (uint16_t x = 0; x < width; x++) {
+      uint8_t pixelHue8 = inoise8(x * scale, y * scale, millis() / (16 - SEGMENT.speed/16));
+      setPixelColorXY(x, y, crgb_to_col(ColorFromPalette(currentPalette, pixelHue8)));
+    }
+  }
+
+  return FRAMETIME;
+} // mode_2Dnoise()
+
+//////////////////////////////
+//     2D Plasma Ball       //
+//////////////////////////////
+uint16_t WS2812FX::mode_2DPlasmaball(void) {                   // By: Stepko https://editor.soulmatelights.com/gallery/659-plasm-ball , Modified by: Andrew Tuline
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
+  uint16_t width  = SEGMENT.virtualWidth();
+  uint16_t height = SEGMENT.virtualHeight();
+  uint16_t dataSize = sizeof(CRGB) * width * height;
+
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+
+  if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
+
+  fadeToBlackBy(leds, 64);
+  double t = millis() / (33 - SEGMENT.speed/8);
+  for (uint16_t i = 0; i < width; i++) {
+    uint16_t thisVal = inoise8(i * 30, t, t);
+    uint16_t thisMax = map(thisVal, 0, 255, 0, width);
+    for (uint16_t j = 0; j < height; j++) {
+      uint16_t thisVal_ = inoise8(t, j * 30, t);
+      uint16_t thisMax_ = map(thisVal_, 0, 255, 0, height);
+      uint16_t x = (i + thisMax_ - (width * 2 - width) / 2);
+      uint16_t y = (j + thisMax - (width * 2 - width) / 2);
+      uint16_t cx = (i + thisMax_);
+      uint16_t cy = (j + thisMax);
+
+      leds[XY(i, j)] += ((x - y > -2) && (x - y < 2)) ||
+                        ((width - 1 - x - y) > -2 && (width - 1 - x - y < 2)) ||
+                        (width - cx == 0) ||
+                        (width - 1 - cx == 0) ||
+                        ((height - cy == 0) ||
+                        (height - 1 - cy == 0)) ? ColorFromPalette(currentPalette, beat8(5), thisVal, LINEARBLEND) : CHSV(0, 0, 0);
+    }
+  }
+  blur2d(leds, 4);
+
+  setPixels(leds);
+  return FRAMETIME;
+} // mode_2DPlasmaball()
+
+////////////////////////////////
+//  2D Polar Lights           //
+////////////////////////////////
+static float fmap(const float x, const float in_min, const float in_max, const float out_min, const float out_max) {
+  return (out_max - out_min) * (x - in_min) / (in_max - in_min) + out_min;
+}
+// TODO: uses static vars
+uint16_t WS2812FX::mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevskyy  https://editor.soulmatelights.com/gallery/762-polar-lights , Modified by: Andrew Tuline
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
+  uint16_t width  = SEGMENT.virtualWidth();
+  uint16_t height = SEGMENT.virtualHeight();
+  uint16_t dataSize = sizeof(CRGB) * width * height;
+
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+
+  if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
+
+  CRGBPalette16 currentPalette  = {0x000000, 0x003300, 0x006600, 0x009900, 0x00cc00, 0x00ff00, 0x33ff00, 0x66ff00, 0x99ff00, 0xccff00, 0xffff00, 0xffcc00, 0xff9900, 0xff6600, 0xff3300, 0xff0000};
+
+  float adjustHeight = fmap(height, 8, 32, 28, 12);
+
+  uint16_t adjScale = map(width, 8, 64, 310, 63);
+
+  static unsigned long timer;        // Cannot be uint16_t value (aka aux0)
+
+  if (SEGENV.aux1 != SEGMENT.c1x/12) {   // Hacky palette rotation. We need that black.
+
+    SEGENV.aux1 = SEGMENT.c1x;
+    for (int i = 0; i < 16; i++) {
+      long ilk;
+      ilk = (long)currentPalette[i].r << 16;
+      ilk += (long)currentPalette[i].g << 8;
+      ilk += (long)currentPalette[i].b;
+      ilk = (ilk << SEGENV.aux1) | (ilk >> (24 - SEGENV.aux1));
+      currentPalette[i].r = ilk >> 16;
+      currentPalette[i].g = ilk >> 8;
+      currentPalette[i].b = ilk;
+    }
+  }
+
+  uint16_t _scale = map(SEGMENT.intensity, 1, 255, 30, adjScale);
+  byte _speed = map(SEGMENT.speed, 1, 255, 128, 16);
+
+  for (uint16_t x = 0; x < width; x++) {
+    for (uint16_t y = 0; y < height; y++) {
+      timer++;
+      leds[XY(x, y)] = ColorFromPalette(currentPalette,
+                         qsub8(
+                           inoise8(SEGENV.aux0 % 2 + x * _scale,
+                             y * 16 +timer % 16,
+                             timer / _speed),
+                           fabs((float)height / 2 - (float)y) * adjustHeight));
+    }
+  }
+
+  setPixels(leds);
+  return FRAMETIME;
+} // mode_2DPolarLights()
+
+/////////////////////////
+//     2D Pulser       //
+/////////////////////////
+uint16_t WS2812FX::mode_2DPulser(void) {                       // By: ldirko   https://editor.soulmatelights.com/gallery/878-pulse-test , modifed by: Andrew Tuline
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
+  uint16_t width  = SEGMENT.virtualWidth();
+  uint16_t height = SEGMENT.virtualHeight();
+  uint16_t dataSize = sizeof(CRGB) * width * height;
+
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+
+  if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
+
+  byte r = 16;
+  uint16_t a = now / (18 - SEGMENT.speed / 16);
+  byte x = (a / 14) % width;
+  byte y = (sin8(a * 5) + sin8(a * 4) + sin8(a * 2)) / 3 * r / 255;
+  uint16_t index = XY(x, (height / 2 - r / 2 + y) % width);
+  leds[index] = ColorFromPalette(currentPalette, y * 16 - 100, 255, LINEARBLEND);
+  blur2d(leds, SEGMENT.intensity / 16);
+
+  setPixels(leds);       // Use this ONLY if we're going to display via leds[x] method.
+  return FRAMETIME;
+} // mode_2DPulser()
+
+/////////////////////////
+//     2D Sindots      //
+/////////////////////////
+uint16_t WS2812FX::mode_2DSindots(void) {                             // By: ldirko   https://editor.soulmatelights.com/gallery/597-sin-dots , modified by: Andrew Tuline
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
+  uint16_t width  = SEGMENT.virtualWidth();
+  uint16_t height = SEGMENT.virtualHeight();
+  uint16_t dataSize = sizeof(CRGB) * width * height;
+
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+
+  if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
+
+  fadeToBlackBy(leds, 15);
+  byte t1 = millis() / (257 - SEGMENT.speed); // 20;
+  byte t2 = sin8(t1) / 4 * 2;
+  for (uint16_t i = 0; i < 13; i++) {
+    byte x = sin8(t1 + i * SEGMENT.intensity/8)*(width-1)/255;  //   max index now 255x15/255=15!
+    byte y = sin8(t2 + i * SEGMENT.intensity/8)*(height-1)/255;  //  max index now 255x15/255=15!
+    leds[XY(x, y)] = ColorFromPalette(currentPalette, i * 255 / 13, 255, LINEARBLEND);
+  }
+  blur2d(leds, 16);
+
+  setPixels(leds);       // Use this ONLY if we're going to display via leds[x] method.
+  return FRAMETIME;
+} // mode_2DSindots()
+
+//////////////////////////////
+//     2D Squared Swirl     //
+//////////////////////////////
+// custom3 affects the blur amount.
+uint16_t WS2812FX::mode_2Dsquaredswirl(void) {            // By: Mark Kriegsman. https://gist.github.com/kriegsman/368b316c55221134b160
+                                                          // Modifed by: Andrew Tuline
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
+  uint16_t width  = SEGMENT.virtualWidth();
+  uint16_t height = SEGMENT.virtualHeight();
+  uint16_t dataSize = sizeof(CRGB) * width * height;
+
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+
+  if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
+
+  const uint8_t kBorderWidth = 2;
+
+  fadeToBlackBy(leds, 24);
+  // uint8_t blurAmount = dim8_raw( beatsin8(20,64,128) );  //3,64,192
+  uint8_t blurAmount = SEGMENT.c3x;
+  blur2d(leds, blurAmount);
+
+  // Use two out-of-sync sine waves
+  uint8_t  i = beatsin8(19, kBorderWidth, width-kBorderWidth);
+  uint8_t  j = beatsin8(22, kBorderWidth, width-kBorderWidth);
+  uint8_t  k = beatsin8(17, kBorderWidth, width-kBorderWidth);
+  uint8_t  m = beatsin8(18, kBorderWidth, height-kBorderWidth);
+  uint8_t  n = beatsin8(15, kBorderWidth, height-kBorderWidth);
+  uint8_t  p = beatsin8(20, kBorderWidth, height-kBorderWidth);
+
+  uint16_t ms = millis();
+
+  leds[XY(i, m)] += ColorFromPalette(currentPalette, ms/29, 255, LINEARBLEND);
+  leds[XY(j, n)] += ColorFromPalette(currentPalette, ms/41, 255, LINEARBLEND);
+  leds[XY(k, p)] += ColorFromPalette(currentPalette, ms/73, 255, LINEARBLEND);
+
+  setPixels(leds);
+
+  return FRAMETIME;
+} // mode_2Dsquaredswirl()
+
+//////////////////////////////
+//     2D Sun Radiation     //
+//////////////////////////////
+// TODO: uses static vars, Does not yet support segment
+uint16_t WS2812FX::mode_2DSunradiation(void) {                   // By: ldirko https://editor.soulmatelights.com/gallery/599-sun-radiation  , modified by: Andrew Tuline
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
+  uint16_t width  = SEGMENT.virtualWidth();
+  uint16_t height = SEGMENT.virtualHeight();
+  uint16_t dataSize = sizeof(CRGB) * width * height;
+
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+
+  if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
+
+  static CRGB chsvLut[256];
+  static byte bump[1156];             // Don't go beyond a 32x32 matrix!!!  or (SEGMENT.width+2) * (mtrixHeight+2)
+
+  if (SEGMENT.intensity != SEGENV.aux0) {
+    SEGENV.aux0 = SEGMENT.intensity;
+    for (int j = 0; j < 256; j++) {
+      chsvLut[j] = HeatColor(j /( 3.0-(float)(SEGMENT.intensity)/128.)); //256 pallette color
+    }
+  }
+
+  unsigned long t = millis() / 4;
+  int index = 0;
+  uint8_t someVal = SEGMENT.speed/4;             // Was 25.
+  for (uint16_t j = 0; j < (height + 2); j++) {
+    for (uint16_t i = 0; i < (width + 2); i++) {
+      byte col = (inoise8_raw(i * someVal, j * someVal, t)) / 2;
+      bump[index++] = col;
+    }
+  }
+
+  int yindex = width + 3;
+  int16_t vly = -(height / 2 + 1);
+  for (uint16_t y = 0; y < height; y++) {
+    ++vly;
+    int16_t vlx = -(width / 2 + 1);
+    for (uint16_t x = 0; x < width; x++) {
+      ++vlx;
+      int8_t nx = bump[x + yindex + 1] - bump[x + yindex - 1];
+      int8_t ny = bump[x + yindex + (width + 2)] - bump[x + yindex - (width + 2)];
+      byte difx = abs8(vlx * 7 - nx);
+      byte dify = abs8(vly * 7 - ny);
+      int temp = difx * difx + dify * dify;
+      int col = 255 - temp / 8; //8 its a size of effect
+      if (col < 0) col = 0;
+      leds[XY(x, y)] = chsvLut[col]; //thx sutubarosu ))
+    }
+    yindex += (width + 2);
+  }
+
+  setPixels(leds);
+  return FRAMETIME;
+} // mode_2DSunradiation()
+
+/////////////////////////
+//     2D Tartan       //
+/////////////////////////
+uint16_t WS2812FX::mode_2Dtartan(void) {          // By: Elliott Kember  https://editor.soulmatelights.com/gallery/3-tartan , Modified by: Andrew Tuline
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
+  uint16_t width  = SEGMENT.virtualWidth();
+  uint16_t height = SEGMENT.virtualHeight();
+  uint16_t dataSize = sizeof(CRGB) * width * height;
+
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+
+  if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
+
+  uint8_t hue;
+  int offsetX = beatsin16(3, -360, 360);
+  int offsetY = beatsin16(2, -360, 360);
+
+  for (uint16_t x = 0; x < width; x++) {
+    for (uint16_t y = 0; y < height; y++) {
+      uint16_t index = XY(x, y);
+      hue = x * beatsin16(10, 1, 10) + offsetY;
+      leds[index] = ColorFromPalette(currentPalette, hue, sin8(x * SEGMENT.speed + offsetX) * sin8(x * SEGMENT.speed + offsetX) / 255, LINEARBLEND);
+      hue = y * 3 + offsetX;
+      leds[index] += ColorFromPalette(currentPalette, hue, sin8(y * SEGMENT.intensity + offsetY) * sin8(y * SEGMENT.intensity + offsetY) / 255, LINEARBLEND);
+    }
+  }
+
+  setPixels(leds);       // Use this ONLY if we're going to display via leds[x] method.
+  return FRAMETIME;
+} // mode_2DTartan()
+
+/////////////////////////
+//    * 2D Waverly     //
+/////////////////////////
+uint16_t WS2812FX::mode_2DWaverly(void) {                                       // By: Stepko, https://editor.soulmatelights.com/gallery/652-wave , modified by Andrew Tuline
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
+  uint16_t width  = SEGMENT.virtualWidth();
+  uint16_t height = SEGMENT.virtualHeight();
+  uint16_t dataSize = sizeof(CRGB) * width * height;
+
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+
+  if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
+
+  fadeToBlackBy(leds, SEGMENT.speed);
+
+  long t = now / 2;
+  for (uint16_t i = 0; i < width; i++) {
+    //uint8_t tmpSound = (soundAgc) ? sampleAgc : sampleAvg;
+
+    uint16_t thisVal = /*tmpSound*/((SEGMENT.intensity>>6)+1) * inoise8(i * 45 , t , t)/64;
+    uint16_t thisMax = map(thisVal, 0, 512, 0, height);
+
+    for (uint16_t j = 0; j < thisMax; j++) {
+      leds[XY(i, j)] += ColorFromPalette(currentPalette, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND);
+      leds[XY((width - 1) - i, (height - 1) - j)] += ColorFromPalette(currentPalette, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND);
+    }
+  }
+  blur2d(leds, 16);
+
+  setPixels(leds);
+  return FRAMETIME;
+} // mode_2DWaverly()
+
+/////////////////////////
+//     2D Akemi        //
+/////////////////////////
 uint16_t WS2812FX::mode_2DAkemi(void) {
   if (!isMatrix) return mode_static(); // not a 2D set-up
 

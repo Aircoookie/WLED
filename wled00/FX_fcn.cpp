@@ -1441,7 +1441,20 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "2D Hipnotic@X scale,Y scale;;!",
 "2D Lissajous@X frequency,Fadetime;;!",
 "2D Matrix@Falling speed,Spawning rate,Trail,Custom color;Spawn,Trail;",
-"2D Akemi@Color speed,Dance;Head palette,Arms & Legs,Eyes & Mouth;Face palette"
+"2D Akemi@Color speed,Dance;Head palette,Arms & Legs,Eyes & Mouth;Face palette",
+"2D Colored Bursts@Speed,Number of lines;;!",
+"2D Game Of Life@!,Palette;!,!;!",
+"2D Julia@,Max iterations per pixel,X center,Y center,Area size;;!",
+"2D Metaballs@;;",
+"2D Noise@Speed,Scale;;!",
+"2D Plasma Ball@Speed;;!",
+"2D Polar Lights@Speed,X scale,Palette;;",
+"2D Pulser@Speed,Blur;;!",
+"2D Sindots@Speed,Dot distance;;!",
+"2D Squared Swirl@,,,,Blur;,,;!",
+"2D Sun Radiation@Variance,Brightness;;",
+"2D Tartan@X scale,Y scale;;!",
+"2D Waverly@Fade rate,Sensitivity;;!",
 ])=====";
 
 const char JSON_palette_names[] PROGMEM = R"=====([
