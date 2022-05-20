@@ -332,3 +332,18 @@ void WS2812FX::setPixels(CRGB* leds) {
   uint16_t h = SEGMENT.virtualHeight();
   for (uint16_t y = 0; y < h; y++) for (uint16_t x = 0; x < w; x++) setPixelColorXY(x, y, leds[XY(x,y)]);
 }
+
+//line function
+void WS2812FX::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1,CRGB c) {
+  
+  uint16_t dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
+  uint16_t dy = abs(y1-y0), sy = y0<y1 ? 1 : -1; 
+  uint16_t err = (dx>dy ? dx : -dy)/2, e2;
+  for(;;){
+    setPixelColorXY(x0,y0,c);
+    if (x0==x1 && y0==y1) break;
+    e2 = err;
+    if (e2 >-dx) { err -= dy; x0 += sx; }
+    if (e2 < dy) { err += dx; y0 += sy; }
+  }
+}
