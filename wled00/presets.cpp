@@ -58,7 +58,6 @@ void handlePresets(bool force)
   if (force) return; // something went wrong with force option (most likely WS request), quit and wait for async load
 
   // allocate buffer
-  DEBUG_PRINTLN(F("Apply preset JSON buffer requested."));
   if (!requestJSONBufferLock(9)) return;  // will also assign fileDoc
 
   #ifdef ARDUINO_ARCH_ESP32
@@ -117,7 +116,6 @@ void savePreset(byte index, const char* pname, JsonObject saveobj)
 
   if (!fileDoc) {
     // called from handleSet() HTTP API
-    DEBUG_PRINTLN(F("Save preset JSON buffer requested."));
     if (!requestJSONBufferLock(10)) return;
     sObj = fileDoc->to<JsonObject>();
     bufferAllocated = true;

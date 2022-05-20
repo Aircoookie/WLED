@@ -263,8 +263,10 @@
 #define FX_MODE_WAVERLY                140
 #define FX_MODE_SPACESHIPS             141
 #define FX_MODE_CRAZYBEES              142
+#define FX_MODE_GHOST_RIDER            143
+#define FX_MODE_BLOBS                  144
 
-#define MODE_COUNT                     143
+#define MODE_COUNT                     145
 
 
 class WS2812FX {
@@ -654,6 +656,8 @@ class WS2812FX {
       _mode[FX_MODE_AKEMI]                   = &WS2812FX::mode_2DAkemi;
       _mode[FX_MODE_SPACESHIPS]              = &WS2812FX::mode_2Dspaceships;
       _mode[FX_MODE_CRAZYBEES]               = &WS2812FX::mode_2Dcrazybees;
+      _mode[FX_MODE_GHOST_RIDER]             = &WS2812FX::mode_2Dghostrider;
+      _mode[FX_MODE_BLOBS]                   = &WS2812FX::mode_2Dfloatingblobs;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -916,11 +920,13 @@ class WS2812FX {
       blurCol(uint16_t col, fract8 blur_amount, CRGB* leds=nullptr),
       moveX(CRGB *leds, int8_t delta),
       moveY(CRGB *leds, int8_t delta),
-      fill_solid(CRGB* leds, const struct CRGB& color),
+      fill_solid(CRGB* leds, CRGB c),
+      fill_circle(CRGB* leds, uint16_t cx, uint16_t cy, uint8_t radius, CRGB c),
       fadeToBlackBy(CRGB* leds, uint8_t fadeBy),
       nscale8(CRGB* leds, uint8_t scale),
       setPixels(CRGB* leds),
-      drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c, CRGB *leds = nullptr);
+      drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c, CRGB *leds = nullptr),
+      wu_pixel(CRGB *leds, uint32_t x, uint32_t y, CRGB c);
 
     inline void setPixelColorXY(uint16_t x, uint16_t y, uint32_t c) { setPixelColorXY(x, y, byte(c>>16), byte(c>>8), byte(c), byte(c>>24)); }
     inline void setPixelColorXY(uint16_t x, uint16_t y, CRGB c)     { setPixelColorXY(x, y, c.red, c.green, c.blue); }
@@ -959,7 +965,9 @@ class WS2812FX {
     mode_2DWaverly(void),
     mode_2DAkemi(void),
     mode_2Dspaceships(void),
-    mode_2Dcrazybees(void);
+    mode_2Dcrazybees(void),
+    mode_2Dghostrider(void),
+    mode_2Dfloatingblobs(void);
 
 // end 2D support
 

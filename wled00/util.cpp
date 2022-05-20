@@ -211,6 +211,9 @@ bool requestJSONBufferLock(uint8_t module)
   }
 
   jsonBufferLock = module ? module : 255;
+  DEBUG_PRINT(F("JSON buffer locked. ("));
+  DEBUG_PRINT(jsonBufferLock);
+  DEBUG_PRINTLN(")");
   fileDoc = &doc;  // used for applying presets (presets.cpp)
   doc.clear();
   return true;

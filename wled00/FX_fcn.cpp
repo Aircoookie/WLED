@@ -1456,7 +1456,9 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "2D Tartan@X scale,Y scale;;!",
 "2D Waverly@Fade rate,Sensitivity;;!",
 "2D Spaceships@Fade rate,Blur;!,!,!;!",
-"2D Crazy Bees@Fade rate,Blur;;"
+"2D Crazy Bees@Fade rate,Blur;;",
+"2D Ghost Rider@Fade rate,Blur;;",
+"2D Blobs@!,# blobs;!,!,!;!"
 ])=====";
 
 const char JSON_palette_names[] PROGMEM = R"=====([

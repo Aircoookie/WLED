@@ -4562,11 +4562,11 @@ uint16_t WS2812FX::mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired
 
   if (!SEGENV.allocateData(dataSize*2)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
-  CRGB *prevLeds = reinterpret_cast<CRGB*>(SEGENV.data) + dataSize;
+  CRGB *prevLeds = reinterpret_cast<CRGB*>(SEGENV.data + dataSize);
 
   CRGB backgroundColor = SEGCOLOR(1);
 
-  if (SEGENV.call == 0 || now - resetMillis > 20000) {
+  if (SEGENV.call == 0 || now - resetMillis > 5000) {
     resetMillis = now;
 
     random16_set_seed(now); //seed the random generator
@@ -4632,7 +4632,8 @@ uint16_t WS2812FX::mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired
   } //x,y
 
   // calculate CRC16 of leds[]
-  uint16_t crc = crc16((const unsigned char*)leds, dataSize);
+  uint16_t crc = crc16((const unsigned char*)leds, dataSize-1);
+
   // check if we had same CRC and reset if needed
   if (!(crc == SEGENV.aux0 || crc == SEGENV.aux1)) resetMillis = now; //if no repetition avoid reset
   // remeber last two
@@ -5533,3 +5534,193 @@ uint16_t WS2812FX::mode_2Dcrazybees(void) {
   setPixels(leds);
   return FRAMETIME;
 }
+
+/////////////////////////
+//     2D Ghost Rider  //
+/////////////////////////
+//// Ghost Rider by stepko (c)2021 [https://editor.soulmatelights.com/gallery/716-ghost-rider], adapted by Blaz Kristan
+#define LIGHTERS_AM 64  // max lighters (adequate for 32x32 matrix)
+uint16_t WS2812FX::mode_2Dghostrider(void) {
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
+  uint16_t width  = SEGMENT.virtualWidth();
+  uint16_t height = SEGMENT.virtualHeight();
+  uint16_t dataSize = sizeof(CRGB) * width * height;
+
+  typedef struct Lighter {
+    int      gPosX;
+    int      gPosY;
+    uint16_t gAngle;
+    int8_t   angleSpeed;
+    uint16_t lightersPosX[LIGHTERS_AM];
+    uint16_t lightersPosY[LIGHTERS_AM];
+    uint16_t Angle[LIGHTERS_AM];
+    uint16_t time[LIGHTERS_AM];
+    bool     reg[LIGHTERS_AM];
+    int8_t   Vspeed;
+  } lighter_t;
+
+  if (!SEGENV.allocateData(dataSize + sizeof(lighter_t))) return mode_static(); //allocation failed
+  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+  lighter_t *lighter = reinterpret_cast<lighter_t*>(SEGENV.data + dataSize);
+
+  if (SEGENV.call == 0) {
+    fill_solid(leds, CRGB::Black);
+    randomSeed(now);
+    lighter->angleSpeed = random(-10, 10);
+    lighter->Vspeed = 5;
+    lighter->gPosX = (width/2) * 10;
+    lighter->gPosY = (height/2) * 10;
+    for (byte i = 0; i < LIGHTERS_AM; i++) {
+      lighter->lightersPosX[i] = lighter->gPosX;
+      lighter->lightersPosY[i] = lighter->gPosY + i;
+      lighter->time[i] = i * 2;
+    }
+  }
+
+  fadeToBlackBy(leds, SEGMENT.speed>>2);
+
+  CRGB color = CRGB::White;
+  wu_pixel(leds, lighter->gPosX * 256 / 10, lighter->gPosY * 256 / 10, color);
+
+  lighter->gPosX += lighter->Vspeed * sin_t(radians(lighter->gAngle));
+  lighter->gPosY += lighter->Vspeed * cos_t(radians(lighter->gAngle));
+  lighter->gAngle += lighter->angleSpeed;
+  if (lighter->gPosX < 0)                 lighter->gPosX = (width - 1) * 10;
+  if (lighter->gPosX > (width - 1) * 10)  lighter->gPosX = 0;
+  if (lighter->gPosY < 0)                 lighter->gPosY = (height - 1) * 10;
+  if (lighter->gPosY > (height - 1) * 10) lighter->gPosY = 0;
+  for (byte i = 0; i < LIGHTERS_AM; i++) {
+    lighter->time[i] += random8(5, 20);
+    if (lighter->time[i] >= 255 ||
+       (lighter->lightersPosX[i] <= 0) ||
+        (lighter->lightersPosX[i] >= (width - 1) * 10) ||
+        (lighter->lightersPosY[i] <= 0) ||
+        (lighter->lightersPosY[i] >= (height - 1) * 10)) {
+      lighter->reg[i] = true;
+    }
+    if (lighter->reg[i]) {
+      lighter->lightersPosY[i] = lighter->gPosY;
+      lighter->lightersPosX[i] = lighter->gPosX;
+      lighter->Angle[i] = lighter->gAngle + random(-10, 10);
+      lighter->time[i] = 0;
+      lighter->reg[i] = false;
+    } else {
+      lighter->lightersPosX[i] += -7 * sin_t(radians(lighter->Angle[i]));
+      lighter->lightersPosY[i] += -7 * cos_t(radians(lighter->Angle[i]));
+    }
+    wu_pixel(leds, lighter->lightersPosX[i] * 256 / 10, lighter->lightersPosY[i] * 256 / 10, ColorFromPalette(currentPalette, (256 - lighter->time[i])));
+  }
+  blur2d(leds, SEGMENT.intensity>>3);
+
+  setPixels(leds);
+  return FRAMETIME;
+}
+
+////////////////////////////
+//     2D Floating Blobs  //
+////////////////////////////
+//// Floating Blobs by stepko (c)2021 [https://editor.soulmatelights.com/gallery/573-blobs], adapted by Blaz Kristan
+#define MAX_BLOBS 8
+uint16_t WS2812FX::mode_2Dfloatingblobs(void) {
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
+  uint16_t width  = SEGMENT.virtualWidth();
+  uint16_t height = SEGMENT.virtualHeight();
+  uint16_t dataSize = sizeof(CRGB) * width * height;
+
+  typedef struct Blob {
+    float x[MAX_BLOBS], y[MAX_BLOBS];
+    float sX[MAX_BLOBS], sY[MAX_BLOBS]; // speed
+    float r[MAX_BLOBS];
+    bool grow[MAX_BLOBS];
+    byte color[MAX_BLOBS];
+  } blob_t;
+
+  uint8_t Amount = (SEGMENT.intensity>>5) + 1; // NOTE: be sure to update MAX_BLOBS if you change this
+
+  if (!SEGENV.allocateData(dataSize + sizeof(blob_t))) return mode_static(); //allocation failed
+  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+  blob_t *blob = reinterpret_cast<blob_t*>(SEGENV.data + dataSize);
+
+  if (SEGENV.call == 0) {
+    fill_solid(leds, CRGB::Black);
+    DEBUG_PRINT(F("sizeof blob "));
+    DEBUG_PRINTLN(sizeof(blob_t));
+    DEBUG_PRINTLN(F("Init begin."));
+    for (byte i = 0; i < MAX_BLOBS; i++) {
+      blob->r[i] = random8(1, width/4);
+      blob->sX[i] = (float) random8(5, 11) / (float)(257 - SEGMENT.speed) / 4.0; // speed x
+      blob->sY[i] = (float) random8(5, 11) / (float)(257 - SEGMENT.speed) / 4.0; // speed y
+      blob->x[i] = random8(0, width-1);
+      blob->y[i] = random8(0, height-1);
+      blob->color[i] = random8();
+      blob->grow[i] = (blob->r[i] < 1.);
+      if (blob->sX[i] == 0) blob->sX[i] = 1;
+      if (blob->sY[i] == 0) blob->sY[i] = 1;
+    }
+    DEBUG_PRINTLN(F("Init done."));
+  }
+
+  fadeToBlackBy(leds, 20);
+
+  // Bounce balls around
+  for (byte i = 0; i < Amount; i++) {
+    // change radius if needed
+    if (blob->grow[i]) {
+      // enlarge radius until it is >= 4
+      blob->r[i] += (fabs(blob->sX[i]) > fabs(blob->sY[i]) ? fabs(blob->sX[i]) : fabs(blob->sY[i])) * 0.05;
+      if (blob->r[i] >= MIN(width/4,4.)) {
+        blob->grow[i] = false;
+      }
+    } else {
+      // reduce radius until it is < 1
+      blob->r[i] -= (fabs(blob->sX[i]) > fabs(blob->sY[i]) ? fabs(blob->sX[i]) : fabs(blob->sY[i])) * 0.05;
+      if (blob->r[i] < 1.) {
+        blob->grow[i] = true; 
+        blob->color[i] = random(0, 255);
+      }
+    }
+    if (blob->r[i] > 1.)
+      fill_circle(leds, blob->y[i], blob->x[i], blob->r[i], ColorFromPalette(currentPalette, blob->color[i]));
+    else
+      leds[XY(blob->y[i], blob->x[i])] += ColorFromPalette(currentPalette, blob->color[i]);
+    //----------------------
+    if (blob->x[i] + blob->r[i] >= width - 1)
+      blob->x[i] += (blob->sX[i] * ((width - 1 - blob->x[i]) / blob->r[i] + 0.005));
+    else if (blob->x[i] - blob->r[i] <= 0)
+      blob->x[i] += (blob->sX[i] * (blob->x[i] / blob->r[i] + 0.005));
+    else
+      blob->x[i] += blob->sX[i];
+    //-----------------------
+    if (blob->y[i] + blob->r[i] >= height - 1)
+      blob->y[i] += (blob->sY[i] * ((height - 1 - blob->y[i]) / blob->r[i] + 0.005));
+    else if (blob->y[i] - blob->r[i] <= 0)
+      blob->y[i] += (blob->sY[i] * (blob->y[i] / blob->r[i] + 0.005));
+    else
+      blob->y[i] += blob->sY[i];
+    //------------------------
+    if (blob->x[i] < 0.01) {
+      blob->sX[i] = (float) random8(5, 11) / (257 - SEGMENT.speed) / 4.0;
+      blob->x[i] = 0.01;
+    } else if (blob->x[i] > width - 1.01) {
+      blob->sX[i] = (float) random8(5, 11) / (257 - SEGMENT.speed) / 4.0;
+      blob->sX[i] = -blob->sX[i];
+      blob->x[i] = width - 1.01;
+    }
+    //----------------------
+    if (blob->y[i] < 0.01) {
+      blob->sY[i] = (float) random8(5, 11) / (257 - SEGMENT.speed) / 4.0;
+      blob->y[i] = 0.01;
+    } else if (blob->y[i] > height - 1.01) {
+      blob->sY[i] = (float) random8(5, 11) / (257 - SEGMENT.speed) / 4.0;
+      blob->sY[i] = -blob->sY[i];
+      blob->y[i] = height - 1.01;
+    }
+  }
+  blur2d(leds, 16);
+
+  setPixels(leds);
+  return FRAMETIME;
+}
+#undef MAX_BLOBS

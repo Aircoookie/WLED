@@ -305,12 +305,22 @@ void WS2812FX::moveY(CRGB *leds, int8_t delta) {
 
 //ewowi20210628: new functions moved from colorutils: add segment awareness
 
-void WS2812FX::fill_solid(CRGB* leds, const struct CRGB& color) {
+void WS2812FX::fill_solid(CRGB* leds, CRGB color) {
   uint16_t w  = SEGMENT.virtualWidth();
   uint16_t h = SEGMENT.virtualHeight();
   for(uint16_t y = 0; y < h; y++) for (uint16_t x = 0; x < w; x++) {
     if (leds) leds[XY(x,y)] = color;
     else setPixelColorXY(x, y, color);
+  }
+}
+
+// by stepko, taken from https://editor.soulmatelights.com/gallery/573-blobs
+void WS2812FX::fill_circle(CRGB* leds, uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
+  for (int16_t y = -radius; y <= radius; y++) {
+    for (int16_t x = -radius; x <= radius; x++) {
+      if (x * x + y * y <= radius * radius)
+        leds[XY(cx + x, cy + y)] += col;
+    }
   }
 }
 
@@ -347,3 +357,20 @@ void WS2812FX::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB
     if (e2 < dy) { err += dx; y0 += sy; }
   }
 }
+
+#define WU_WEIGHT(a,b) ((uint8_t) (((a)*(b)+(a)+(b))>>8))
+void WS2812FX::wu_pixel(CRGB *leds, uint32_t x, uint32_t y, CRGB c) {      //awesome wu_pixel procedure by reddit u/sutaburosu
+  // extract the fractional parts and derive their inverses
+  uint8_t xx = x & 0xff, yy = y & 0xff, ix = 255 - xx, iy = 255 - yy;
+  // calculate the intensities for each affected pixel
+  uint8_t wu[4] = {WU_WEIGHT(ix, iy), WU_WEIGHT(xx, iy),
+                   WU_WEIGHT(ix, yy), WU_WEIGHT(xx, yy)};
+  // multiply the intensities by the colour, and saturating-add them to the pixels
+  for (uint8_t i = 0; i < 4; i++) {
+    uint16_t xy = XY((x >> 8) + (i & 1), (y >> 8) + ((i >> 1) & 1));
+    leds[xy].r = qadd8(leds[xy].r, c.r * wu[i] >> 8);
+    leds[xy].g = qadd8(leds[xy].g, c.g * wu[i] >> 8);
+    leds[xy].b = qadd8(leds[xy].b, c.b * wu[i] >> 8);
+  }
+}
+#undef WU_WEIGHT

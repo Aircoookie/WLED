@@ -36,7 +36,6 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
         }
 
         bool verboseResponse = false;
-        DEBUG_PRINTLN(F("WS JSON receive buffer requested."));
         if (!requestJSONBufferLock(11)) return;
 
         DeserializationError error = deserializeJson(doc, data, len);
@@ -97,7 +96,8 @@ void sendDataWs(AsyncWebSocketClient * client)
   if (!ws.count()) return;
   AsyncWebSocketMessageBuffer * buffer;
 
-  DEBUG_PRINTLN(F("WS JSON send buffer requested."));
+  while (strip.isUpdating()) yield();
+  
   if (!requestJSONBufferLock(12)) return;
 
   JsonObject state = doc.createNestedObject("state");
