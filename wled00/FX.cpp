@@ -4311,10 +4311,11 @@ uint16_t WS2812FX::mode_2DBlackHole(void) {            // By: Stepko https://edi
   // blur everything a bit
   blur2d(leds, 16);
 
-  for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
-    uint16_t o = x + y * w;
-    setPixelColorXY(x, y, leds[o]);
-  }
+//  for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+//    uint16_t o = x + y * w;
+//    setPixelColorXY(x, y, leds[o]);
+//  }
+  setPixels(leds);
   return FRAMETIME;
 } // mode_2DBlackHole()
 
@@ -4551,114 +4552,95 @@ typedef struct ColorCount {
   int8_t  count;
 } colorCount;
 
+static unsigned long resetMillis; //triggers reset if more than 3 seconds from now
 uint16_t WS2812FX::mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https://natureofcode.com/book/chapter-7-cellular-automata/ and https://github.com/DougHaber/nlife-color
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  uint16_t width  = SEGMENT.virtualWidth();
-  uint16_t height = SEGMENT.virtualHeight();
-  uint16_t dataSize = sizeof(CRGB) * width * height;
+  const uint16_t width  = SEGMENT.virtualWidth();
+  const uint16_t height = SEGMENT.virtualHeight();
+  const uint16_t dataSize = sizeof(CRGB) * width * height;
 
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  if (!SEGENV.allocateData(dataSize*2)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+  CRGB *prevLeds = reinterpret_cast<CRGB*>(SEGENV.data) + dataSize;
 
-  if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
+  CRGB backgroundColor = SEGCOLOR(1);
 
-  //slow down based on speed parameter
-  if (now - SEGENV.step >= ((255-SEGMENT.speed)*4U)) {
-    SEGENV.step = now;
+  if (SEGENV.call == 0 || now - resetMillis > 20000) {
+    resetMillis = now;
 
-    //array of patterns. Needed to identify repeating patterns. A pattern is one iteration of leds, without the color (on/off only)
-    const int patternsSize = (width + height) * 2; //seems to be a good value to catch also repetition in moving patterns
-    unsigned long long patterns[patternsSize];
+    random16_set_seed(now); //seed the random generator
 
-    CRGB backgroundColor = SEGCOLOR(1);
-
-    static unsigned long resetMillis = now - 3000; //triggers reset if more than 3 seconds from now
-
-    if (SEGENV.call == 0) { //effect starts
-      for (int i=0; i<patternsSize; i++) patterns[i] = 0;
+    //give the leds random state and colors (based on intensity, colors from palette or all posible colors are chosen)
+    for (int x = 0; x < width; x++) for (int y = 0; y < height; y++) {
+      uint8_t state = random8()%2;
+      if (state == 0)
+        leds[XY(x,y)] = backgroundColor;
+      else
+        leds[XY(x,y)] = (CRGB)color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0);
     }
 
-    //reset leds if effect repeats (wait 3 seconds after repetition)
-    if (now - resetMillis > 3000) {
-      resetMillis = now;
+    fill_solid(prevLeds, CRGB::Black);
 
-      random16_set_seed(now); //seed the random generator
+    SEGENV.aux1 = 0;
+    SEGENV.aux0 = 0xFFFF;
+  }
 
-      //give the leds random state and colors (based on intensity, colors from palette or all posible colors are chosen)
-      for (int x = 0; x < width; x++) for (int y = 0; y < height; y++) {
-        uint8_t state = random8()%2;
-        if (state == 0)
-          leds[XY(x,y)] = backgroundColor;
-        else
-          leds[XY(x,y)] = SEGMENT.intensity < 128?(CRGB)color_wheel(random8()):CRGB(random8(), random8(), random8());
-      }
+  //copy previous leds (save previous generation)
+  for (int x = 0; x < width; x++) for (int y = 0; y < height; y++) prevLeds[XY(x,y)] = leds[XY(x,y)];
 
-      //init patterns
-      SEGENV.aux0 = 0; //ewowi20210629: pka static! patternsize: round robin index of next slot to add pattern
-      for (int i=0; i<patternsSize; i++) patterns[i] = 0;
+  //calculate new leds
+  for (int x = 0; x < width; x++) for (int y = 0; y < height; y++) {
+    colorCount colorsCount[9];//count the different colors in the 9*9 matrix
+    for (int i=0; i<9; i++) colorsCount[i] = {backgroundColor, 0}; //init colorsCount
 
-    } else {
+    //iterate through neighbors and count them and their different colors
+    int neighbors = 0;
+    for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) { //iterate through 9*9 matrix
+      // wrap around segment
+      int16_t xx = x+i, yy = y+j;
+      if (x+i < 0) xx = width-1;  else if (x+i >= width)  xx = 0;
+      if (y+j < 0) yy = height-1; else if (y+j >= height) yy = 0;
+      uint16_t xy = XY(xx, yy); // previous cell xy to check
 
-      //calculate new leds
-      for (int x = 1; x < width-1; x++) for (int y = 1; y < height-1; y++) {
-        colorCount colorsCount[9];//count the different colors in the 9*9 matrix
-        for (int i=0; i<9; i++) colorsCount[i] = {backgroundColor, 0}; //init colorsCount
-
-        //iterate through neighbors and count them and their different colors
-        int neighbors = 0;
-        for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) { //iterate through 9*9 matrix
-          uint16_t xy = XY(x+i, y+j); //cell xy to check
-
-          // count different neighbours and colors, except the centre cell
-          if (xy != XY(x,y) && leds[xy] != backgroundColor) {
-            neighbors++;
-            bool colorFound = false;
-            int i;
-            for (i=0; i<9 && colorsCount[i].count != 0; i++)
-              if (colorsCount[i].color == leds[xy]) {
-                colorsCount[i].count++;
-                colorFound = true;
-              }
-
-            if (!colorFound) colorsCount[i] = {leds[xy], 1}; //add new color found in the array
+      // count different neighbours and colors, except the centre cell
+      if (xy != XY(x,y) && prevLeds[xy] != backgroundColor) {
+        neighbors++;
+        bool colorFound = false;
+        int k;
+        for (k=0; k<9 && colorsCount[i].count != 0; k++)
+          if (colorsCount[k].color == prevLeds[xy]) {
+            colorsCount[k].count++;
+            colorFound = true;
           }
-        } // i,j
 
-        // Rules of Life
-        if      ((leds[XY(x,y)] != backgroundColor) && (neighbors <  2)) leds[XY(x,y)] = backgroundColor; // Loneliness
-        else if ((leds[XY(x,y)] != backgroundColor) && (neighbors >  3)) leds[XY(x,y)] = backgroundColor; // Overpopulation
-        else if ((leds[XY(x,y)] == backgroundColor) && (neighbors == 3)) {                                // Reproduction
-          //find dominantcolor and assign to cell
-          colorCount dominantColorCount = {backgroundColor, 0};
-          for (int i=0; i<9 && colorsCount[i].count != 0; i++)
-            if (colorsCount[i].count > dominantColorCount.count) dominantColorCount = colorsCount[i];
-          if (dominantColorCount.count > 0) leds[XY(x,y)] = dominantColorCount.color; //assign the dominant color
-        }
-        // else do nothing!
-      } //x,y
+        if (!colorFound) colorsCount[k] = {prevLeds[xy], 1}; //add new color found in the array
+      }
+    } // i,j
 
-      //create new pattern
-      unsigned long long pattern = 0;
-      for (int x = 0; x < width; x+=MAX(width/8,1)) for (int y = 0; y < height; y+=MAX(height/8,1))
-        pattern = (pattern<<1) | !(leds[XY(x,y)] == backgroundColor);
+    // Rules of Life
+    if      ((leds[XY(x,y)] != backgroundColor) && (neighbors <  2)) leds[XY(x,y)] = backgroundColor; // Loneliness
+    else if ((leds[XY(x,y)] != backgroundColor) && (neighbors >  3)) leds[XY(x,y)] = backgroundColor; // Overpopulation
+    else if ((leds[XY(x,y)] == backgroundColor) && (neighbors == 3)) {                                // Reproduction
+      //find dominantcolor and assign to cell
+      colorCount dominantColorCount = {backgroundColor, 0};
+      for (int i=0; i<9 && colorsCount[i].count != 0; i++)
+        if (colorsCount[i].count > dominantColorCount.count) dominantColorCount = colorsCount[i];
+      if (dominantColorCount.count > 0) leds[XY(x,y)] = dominantColorCount.color; //assign the dominant color
+    }
+    // else do nothing!
+  } //x,y
 
-      //check if repetition of patterns occurs
-      bool repetition = false;
-      for (int i=0; i<patternsSize && !repetition; i++)
-        repetition = patterns[(SEGENV.aux0 - 1 - i + patternsSize)%patternsSize] == pattern;
+  // calculate CRC16 of leds[]
+  uint16_t crc = crc16((const unsigned char*)leds, dataSize);
+  // check if we had same CRC and reset if needed
+  if (!(crc == SEGENV.aux0 || crc == SEGENV.aux1)) resetMillis = now; //if no repetition avoid reset
+  // remeber last two
+  SEGENV.aux1 = SEGENV.aux0;
+  SEGENV.aux0 = crc;
 
-      //add current pattern to array and increase index (round robin)
-      patterns[SEGENV.aux0] = pattern;
-      SEGENV.aux0 = (++SEGENV.aux0)%patternsSize;
-
-      if (!repetition) resetMillis = now; //if no repetition avoid reset
-    } //not reset
-
-    setPixels(leds);
-  } //millis
-
-  return FRAMETIME;
+  setPixels(leds);
+  return FRAMETIME_FIXED * (128-(SEGMENT.speed>>1)); // update only when appropriate time passes (in 42 FPS slots)
 } // mode_2Dgameoflife()
 
 /////////////////////////

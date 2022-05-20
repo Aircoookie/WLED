@@ -1443,7 +1443,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "2D Matrix@Falling speed,Spawning rate,Trail,Custom color;Spawn,Trail;",
 "2D Akemi@Color speed,Dance;Head palette,Arms & Legs,Eyes & Mouth;Face palette",
 "2D Colored Bursts@Speed,Number of lines;;!",
-"2D Game Of Life@!,Palette;!,!;!",
+"2D Game Of Life@!,;!,!;!",
 "2D Julia@,Max iterations per pixel,X center,Y center,Area size;;!",
 "2D Metaballs@Speed;!,!,!;!",
 "2D Noise@Speed,Scale;!,!,!;!",

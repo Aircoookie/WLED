@@ -334,13 +334,13 @@ void WS2812FX::setPixels(CRGB* leds) {
 }
 
 //line function
-void WS2812FX::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1,CRGB c) {
-  
-  uint16_t dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
-  uint16_t dy = abs(y1-y0), sy = y0<y1 ? 1 : -1; 
-  uint16_t err = (dx>dy ? dx : -dy)/2, e2;
-  for(;;){
-    setPixelColorXY(x0,y0,c);
+void WS2812FX::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c, CRGB *leds) {
+  int16_t dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
+  int16_t dy = abs(y1-y0), sy = y0<y1 ? 1 : -1; 
+  int16_t err = (dx>dy ? dx : -dy)/2, e2;
+  for (;;) {
+    if (leds == nullptr) setPixelColorXY(x0,y0,c);
+    else                 leds[XY(x0,y0)] = c;
     if (x0==x1 && y0==y1) break;
     e2 = err;
     if (e2 >-dx) { err -= dy; x0 += sx; }

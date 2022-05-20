@@ -260,3 +260,15 @@ uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLe
   dest[printedChars] = '\0';
   return strlen(dest);
 }
+
+uint16_t crc16(const unsigned char* data_p, size_t length) {
+  uint8_t x;
+  uint16_t crc = 0xFFFF;
+  if (!length) return 0x1D0F;
+  while (length--) {
+    x = crc >> 8 ^ *data_p++;
+    x ^= x>>4;
+    crc = (crc << 8) ^ ((uint16_t)(x << 12)) ^ ((uint16_t)(x <<5)) ^ ((uint16_t)x);
+  }
+  return crc;
+}

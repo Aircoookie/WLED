@@ -920,10 +920,11 @@ class WS2812FX {
       fadeToBlackBy(CRGB* leds, uint8_t fadeBy),
       nscale8(CRGB* leds, uint8_t scale),
       setPixels(CRGB* leds),
-      drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1,CRGB c);
+      drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c, CRGB *leds = nullptr);
 
     inline void setPixelColorXY(uint16_t x, uint16_t y, uint32_t c) { setPixelColorXY(x, y, byte(c>>16), byte(c>>8), byte(c), byte(c>>24)); }
-    inline void setPixelColorXY(uint16_t x, uint16_t y, CRGB &c) { setPixelColorXY(x, y, c.red, c.green, c.blue); }
+    inline void setPixelColorXY(uint16_t x, uint16_t y, CRGB c)     { setPixelColorXY(x, y, c.red, c.green, c.blue); }
+    inline void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint32_t c) { drawLine(x0, y0, x1, y1, CRGB(byte(c>>16), byte(c>>8), byte(c))); }
 
     uint16_t
       XY(uint16_t, uint16_t),

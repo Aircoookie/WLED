@@ -304,7 +304,7 @@ function showErrorToast()
 	showToast('Connection to light failed!', true);
 }
 
-function clearErrorToast(n=10000)
+function clearErrorToast(n=5000)
 {
 	var x = gId("toast");
 	if (x.classList.contains("error")) {
@@ -943,7 +943,7 @@ function loadNodes()
 		return res.json();
 	})
 	.then((json)=>{
-		clearErrorToast();
+		clearErrorToast(100);
 		populateNodes(lastinfo, json);
 	})
 	.catch((e)=>{
@@ -1429,7 +1429,7 @@ function requestJson(command=null)
 	})
 	.then(json => {
 		lastUpdate = new Date();
-		clearErrorToast();
+		clearErrorToast(3000);
 		gId('connind').style.backgroundColor = "var(--c-g)";
 		if (!json) { showToast('Empty response', true); return; }
 		if (json.success) return;
