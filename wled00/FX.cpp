@@ -3069,9 +3069,11 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
 
   uint16_t numSparks = min(2 + (SEGLEN >> 1), maxSparks);
   uint16_t dataSize = sizeof(spark) * numSparks;
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  if (!SEGENV.allocateData(dataSize + sizeof(float))) return mode_static(); //allocation failed
+  float *dying_gravity = reinterpret_cast<float*>(SEGENV.data + dataSize);
 
-  if (dataSize != SEGENV.aux1) { //reset to flare if sparks were reallocated
+  if (dataSize != SEGENV.aux1) { //reset to flare if sparks were reallocated (it may be good idea to reset segment if bounds change)
+    *dying_gravity = 0.0f;
     SEGENV.aux0 = 0;
     SEGENV.aux1 = dataSize;
   }
@@ -3120,7 +3122,6 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
      */
     int nSparks = flare->pos;
     nSparks = constrain(nSparks, 0, numSparks);
-    static float dying_gravity;
   
     // initialize sparks
     if (SEGENV.aux0 == 2) {
@@ -3134,14 +3135,14 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
         sparks[i].vel *= -gravity *50;
       } 
       //sparks[1].col = 345; // this will be our known spark 
-      dying_gravity = gravity/2; 
+      *dying_gravity = gravity/2; 
       SEGENV.aux0 = 3;
     }
   
     if (sparks[1].col > 4) {//&& sparks[1].pos > 0) { // as long as our known spark is lit, work with all the sparks
       for (int i = 1; i < nSparks; i++) { 
         sparks[i].pos += sparks[i].vel; 
-        sparks[i].vel += dying_gravity; 
+        sparks[i].vel += *dying_gravity; 
         if (sparks[i].col > 3) sparks[i].col -= 4; 
 
         if (sparks[i].pos > 0 && sparks[i].pos < SEGLEN) {
@@ -3159,7 +3160,7 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
           setPixelColor(int(sparks[i].pos), c.red, c.green, c.blue);
         }
       }
-      dying_gravity *= .99; // as sparks burn out they fall slower
+      *dying_gravity *= .99; // as sparks burn out they fall slower
     } else {
       SEGENV.aux0 = 6 + random8(10); //wait for this many frames
     }
@@ -3480,8 +3481,6 @@ uint16_t WS2812FX::mode_pacifica()
   // Increment the four "color index start" counters, one for each wave layer.
   // Each is incremented at a different speed, and the speeds vary over time.
   uint16_t sCIStart1 = SEGENV.aux0, sCIStart2 = SEGENV.aux1, sCIStart3 = SEGENV.step, sCIStart4 = SEGENV.step >> 16;
-  //static uint16_t sCIStart1, sCIStart2, sCIStart3, sCIStart4;
-  //uint32_t deltams = 26 + (SEGMENT.speed >> 3);
   uint32_t deltams = (FRAMETIME >> 2) + ((FRAMETIME * SEGMENT.speed) >> 7);
   uint64_t deltat = (now >> 2) + ((now * SEGMENT.speed) >> 7);
   now = deltat;
@@ -3621,20 +3620,18 @@ uint16_t WS2812FX::mode_sunrise() {
 uint16_t WS2812FX::phased_base(uint8_t moder) {                  // We're making sine waves here. By Andrew Tuline.
 
   uint8_t allfreq = 16;                                          // Base frequency.
-  //float* phasePtr = reinterpret_cast<float*>(SEGENV.step);       // Phase change value gets calculated.
-  static float phase = 0;//phasePtr[0];
+  float *phase = reinterpret_cast<float*>(&SEGENV.step);         // Phase change value gets calculated (float fits into unsigned long).
   uint8_t cutOff = (255-SEGMENT.intensity);                      // You can change the number of pixels.  AKA INTENSITY (was 192).
   uint8_t modVal = 5;//SEGMENT.fft1/8+1;                         // You can change the modulus. AKA FFT1 (was 5).
 
-  uint8_t index = now/64;                                    // Set color rotation speed
-  phase += SEGMENT.speed/32.0;                                   // You can change the speed of the wave. AKA SPEED (was .4)
-  //phasePtr[0] = phase; 
+  uint8_t index = now/64;                                        // Set color rotation speed
+  *phase += SEGMENT.speed/32.0;                                  // You can change the speed of the wave. AKA SPEED (was .4)
 
   for (int i = 0; i < SEGLEN; i++) {
     if (moder == 1) modVal = (inoise8(i*10 + i*10) /16);         // Let's randomize our mod length with some Perlin noise.
     uint16_t val = (i+1) * allfreq;                              // This sets the frequency of the waves. The +1 makes sure that leds[0] is used.
     if (modVal == 0) modVal = 1;
-    val += phase * (i % modVal +1) /2;                           // This sets the varying phase change of the waves. By Andrew Tuline.
+    val += *phase * (i % modVal +1) /2;                          // This sets the varying phase change of the waves. By Andrew Tuline.
     uint8_t b = cubicwave8(val);                                 // Now we make an 8 bit sinewave.
     b = (b > cutOff) ? (b - cutOff) : 0;                         // A ternary operator to cutoff the light.
     setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(index, false, false, 0), b));
@@ -4552,7 +4549,6 @@ typedef struct ColorCount {
   int8_t  count;
 } colorCount;
 
-static unsigned long resetMillis; //triggers reset if more than 3 seconds from now
 uint16_t WS2812FX::mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https://natureofcode.com/book/chapter-7-cellular-automata/ and https://github.com/DougHaber/nlife-color
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
@@ -4560,14 +4556,15 @@ uint16_t WS2812FX::mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired
   const uint16_t height = SEGMENT.virtualHeight();
   const uint16_t dataSize = sizeof(CRGB) * width * height;
 
-  if (!SEGENV.allocateData(dataSize*2)) return mode_static(); //allocation failed
+  if (!SEGENV.allocateData(dataSize*2 + sizeof(unsigned long))) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
   CRGB *prevLeds = reinterpret_cast<CRGB*>(SEGENV.data + dataSize);
+  unsigned long *resetMillis = reinterpret_cast<unsigned long*>(SEGENV.data + 2*dataSize); // triggers reset
 
   CRGB backgroundColor = SEGCOLOR(1);
 
-  if (SEGENV.call == 0 || now - resetMillis > 5000) {
-    resetMillis = now;
+  if (SEGENV.call == 0 || now - *resetMillis > 5000) {
+    *resetMillis = now;
 
     random16_set_seed(now); //seed the random generator
 
@@ -4635,7 +4632,7 @@ uint16_t WS2812FX::mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired
   uint16_t crc = crc16((const unsigned char*)leds, dataSize-1);
 
   // check if we had same CRC and reset if needed
-  if (!(crc == SEGENV.aux0 || crc == SEGENV.aux1)) resetMillis = now; //if no repetition avoid reset
+  if (!(crc == SEGENV.aux0 || crc == SEGENV.aux1)) *resetMillis = now; //if no repetition avoid reset
   // remeber last two
   SEGENV.aux1 = SEGENV.aux0;
   SEGENV.aux0 = crc;
@@ -4693,8 +4690,8 @@ uint16_t WS2812FX::mode_2DJulia(void) {                           // An animated
   uint16_t width  = SEGMENT.virtualWidth();
   uint16_t height = SEGMENT.virtualHeight();
 
-  if (!SEGENV.allocateData(sizeof(julia))) return mode_static();  // We use this method for allocating memory for static variables.
-  Julia* julias = reinterpret_cast<Julia*>(SEGENV.data);          // Because 'static' doesn't work with SEGMENTS.
+  if (!SEGENV.allocateData(sizeof(julia))) return mode_static();
+  Julia* julias = reinterpret_cast<Julia*>(SEGENV.data);
 
   float reAl;
   float imAg;
@@ -5026,7 +5023,7 @@ uint16_t WS2812FX::mode_2DPlasmaball(void) {                   // By: Stepko htt
 static float fmap(const float x, const float in_min, const float in_max, const float out_min, const float out_max) {
   return (out_max - out_min) * (x - in_min) / (in_max - in_min) + out_min;
 }
-// TODO: uses static vars
+
 uint16_t WS2812FX::mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevskyy  https://editor.soulmatelights.com/gallery/762-polar-lights , Modified by: Andrew Tuline
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
@@ -5034,21 +5031,19 @@ uint16_t WS2812FX::mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevs
   uint16_t height = SEGMENT.virtualHeight();
   uint16_t dataSize = sizeof(CRGB) * width * height;
 
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  if (!SEGENV.allocateData(dataSize + sizeof(unsigned long))) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+  unsigned long *timer = reinterpret_cast<unsigned long*>(SEGENV.data + dataSize);
 
-  if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
-
-  //CRGBPalette16 currentPalette  = {0x000000, 0x003300, 0x006600, 0x009900, 0x00cc00, 0x00ff00, 0x33ff00, 0x66ff00, 0x99ff00, 0xccff00, 0xffff00, 0xffcc00, 0xff9900, 0xff6600, 0xff3300, 0xff0000};
+  if (SEGENV.call == 0) {
+    *timer = 0;
+    fill_solid(leds, CRGB::Black);
+  }
 
   float adjustHeight = fmap(height, 8, 32, 28, 12);
-
   uint16_t adjScale = map(width, 8, 64, 310, 63);
 
-  static unsigned long timer;        // Cannot be uint16_t value (aka aux0)
-
   if (SEGENV.aux1 != SEGMENT.c1x/12) {   // Hacky palette rotation. We need that black.
-
     SEGENV.aux1 = SEGMENT.c1x;
     for (int i = 0; i < 16; i++) {
       long ilk;
@@ -5067,10 +5062,10 @@ uint16_t WS2812FX::mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevs
 
   for (uint16_t x = 0; x < width; x++) {
     for (uint16_t y = 0; y < height; y++) {
-      timer++;
+      (*timer)++;
       leds[XY(x, y)] = ColorFromPalette(currentPalette,
                          qsub8(
-                           inoise8(SEGENV.aux0 % 2 + x * _scale, y * 16 +timer % 16, timer / _speed),
+                           inoise8(SEGENV.aux0 % 2 + x * _scale, y * 16 + *timer % 16, *timer / _speed),
                            fabs((float)height / 2 - (float)y) * adjustHeight));
     }
   }
@@ -5179,7 +5174,6 @@ uint16_t WS2812FX::mode_2Dsquaredswirl(void) {            // By: Mark Kriegsman.
 //////////////////////////////
 //     2D Sun Radiation     //
 //////////////////////////////
-// TODO: uses static vars, Does not yet support segment
 uint16_t WS2812FX::mode_2DSunradiation(void) {                   // By: ldirko https://editor.soulmatelights.com/gallery/599-sun-radiation  , modified by: Andrew Tuline
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
@@ -5187,20 +5181,11 @@ uint16_t WS2812FX::mode_2DSunradiation(void) {                   // By: ldirko h
   uint16_t height = SEGMENT.virtualHeight();
   uint16_t dataSize = sizeof(CRGB) * width * height;
 
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  if (!SEGENV.allocateData(dataSize + (sizeof(byte)*(width+2)*(height+2)))) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+  byte *bump = reinterpret_cast<byte*>(SEGENV.data + dataSize);
 
   if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
-
-  static CRGB chsvLut[256];
-  static byte bump[1156];             // Don't go beyond a 32x32 matrix!!! or (width+2) * (mtrixHeight+2)
-
-  if (SEGMENT.intensity != SEGENV.aux0) {
-    SEGENV.aux0 = SEGMENT.intensity;
-    for (int j = 0; j < 256; j++) {
-      chsvLut[j] = HeatColor(j /( 3.0-(float)(SEGMENT.intensity)/128.)); //256 pallette color
-    }
-  }
 
   unsigned long t = millis() / 4;
   int index = 0;
@@ -5226,7 +5211,7 @@ uint16_t WS2812FX::mode_2DSunradiation(void) {                   // By: ldirko h
       int temp = difx * difx + dify * dify;
       int col = 255 - temp / 8; //8 its a size of effect
       if (col < 0) col = 0;
-      leds[XY(x, y)] = chsvLut[col]; //thx sutubarosu ))
+      leds[XY(x, y)] = HeatColor(col / (3.0f-(float)(SEGMENT.intensity)/128.f));
     }
     yindex += (width + 2);
   }
@@ -5480,10 +5465,7 @@ uint16_t WS2812FX::mode_2Dcrazybees(void) {
 
   byte n = MIN(MAX_BEES, (width * height) / 256 + 1);
 
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
-
-  static struct {
+  typedef struct Bee {
     uint8_t posX, posY, aimX, aimY, hue;
     int8_t deltaX, deltaY, signX, signY, error;
     void aimed(uint16_t width, uint16_t height) {
@@ -5497,7 +5479,11 @@ uint16_t WS2812FX::mode_2Dcrazybees(void) {
       signY = posY < aimY ? 1 : -1;
       error = deltaX - deltaY;
     };
-  } bee[MAX_BEES];
+  } bee_t;
+
+  if (!SEGENV.allocateData(dataSize) + sizeof(bee_t)*MAX_BEES) return mode_static(); //allocation failed
+  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+  bee_t *bee = reinterpret_cast<bee_t*>(SEGENV.data + dataSize);
 
   if (SEGENV.call == 0) {
     fill_solid(leds, CRGB::Black);
