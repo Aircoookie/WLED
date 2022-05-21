@@ -237,7 +237,8 @@ uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLe
   if (src == JSON_mode_names) {
     if (mode < MODE_COUNT) {
       char lineBuffer[256];
-      strcpy_P(lineBuffer, (const char*)pgm_read_dword(&(WS2812FX::_modeData[mode])));
+      //strcpy_P(lineBuffer, (const char*)pgm_read_dword(&(WS2812FX::_modeData[mode])));
+      strcpy_P(lineBuffer, WS2812FX::_modeData[mode]);
       if (strlen(lineBuffer) > 0) {
         size_t j = 0;
         for (; j < maxLen; j++) {

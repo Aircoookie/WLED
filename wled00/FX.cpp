@@ -5911,7 +5911,7 @@ static const char *_data_FX_MODE_BLOBS PROGMEM = "2D Blobs@!,# blobs;!,!,!;!";
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // mode data
-const char * const WS2812FX::_modeData[] PROGMEM = {
+const char *WS2812FX::_modeData[] = {
   _data_FX_MODE_STATIC,
   _data_FX_MODE_BLINK,
   _data_FX_MODE_BREATH,
