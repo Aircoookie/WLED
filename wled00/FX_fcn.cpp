@@ -1313,7 +1313,9 @@ uint8_t Bus::_gAWM = 255;
 // Note: Effects can override default pattern behaviour
 //       - FadeToBlack can override the background setting
 //       - Defining SEGCOL(<i>) can override a specific palette using these values (e.g. Color Gradient)
-const char JSON_mode_names[] PROGMEM = R"=====([
+const char JSON_mode_names[] PROGMEM = R"=====(["Modenames have moved"])=====";
+/*
+R"=====([
 "Solid",
 "Blink@!,;!,!,;!",
 "Breathe@!,;!,!;!",
@@ -1460,6 +1462,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "2D Ghost Rider@Fade rate,Blur;!,!,!;!",
 "2D Blobs@!,# blobs;!,!,!;!"
 ])=====";
+*/
 
 const char JSON_palette_names[] PROGMEM = R"=====([
 "Default","* Random Cycle","* Color 1","* Colors 1&2","* Color Gradient","* Colors Only","Party","Cloud","Lava","Ocean",

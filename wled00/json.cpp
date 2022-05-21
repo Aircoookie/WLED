@@ -823,6 +823,17 @@ void serializeNodes(JsonObject root)
 
 void serializeModeData(JsonArray fxdata)
 {
+  for (size_t i = 0; i < MODE_COUNT; i++) {
+    //char buffer[256];
+    //strcpy_P(buffer, (const char*)pgm_read_dword(&(WS2812FX::_modeData[i])));
+    String lineBuffer = (const char*)pgm_read_dword(&(WS2812FX::_modeData[i]));
+    if (lineBuffer.length() > 0) {
+      uint8_t endPos = lineBuffer.indexOf('@');
+      if (endPos>0) fxdata.add(lineBuffer.substring(endPos));
+      else          fxdata.add("");
+    }
+  }
+/*
   //JsonArray fxdata = root.createNestedArray("fxdata");
   String lineBuffer;
   bool insideQuotes = false;
@@ -856,11 +867,21 @@ void serializeModeData(JsonArray fxdata)
         lineBuffer += singleJsonSymbol;
     }
   }
+*/
 }
 
 // deserializes mode names string into JsonArray
 // also removes WLED-SR extensions (@...) from deserialised names
 void serializeModeNames(JsonArray arr, const char *qstring) {
+  for (size_t i = 0; i < MODE_COUNT; i++) {
+    String lineBuffer = (const char*)pgm_read_dword(&(WS2812FX::_modeData[i]));
+    if (lineBuffer.length() > 0) {
+      uint8_t endPos = lineBuffer.indexOf('@');
+      if (endPos>0) arr.add(lineBuffer.substring(0,endPos));
+      else          arr.add(lineBuffer);
+    }
+  }
+/*
   String lineBuffer;
   bool insideQuotes = false;
   char singleJsonSymbol;
@@ -891,6 +912,7 @@ void serializeModeNames(JsonArray arr, const char *qstring) {
         lineBuffer += singleJsonSymbol;
     }
   }
+*/
 }
 
 void serveJson(AsyncWebServerRequest* request)

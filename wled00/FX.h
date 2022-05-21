@@ -277,10 +277,10 @@ class WS2812FX {
 
   static WS2812FX* instance;
   
-  // mode (effect) name and its slider control data array
-  static const char *_modeData[MODE_COUNT];
-
   public:
+
+  // mode (effect) name and its slider control data array
+  static const char * const _modeData[MODE_COUNT];
 
   // segment parameters
     typedef struct Segment { // 35 (36 in memory) bytes

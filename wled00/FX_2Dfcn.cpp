@@ -106,10 +106,12 @@ void WS2812FX::setUpMatrix() {
   }
 }
 
-// XY(x,y) - gets pixel index within current segment (takes into account transposed segment)
+// XY(x,y) - gets pixel index within current segment
 uint16_t IRAM_ATTR WS2812FX::XY(uint16_t x, uint16_t y) {
-  uint16_t width  = SEGMENT.virtualWidth();   // segment width in logical pixels (is already transposed)
-  uint16_t height = SEGMENT.virtualHeight();  // segment height in logical pixels (is already transposed)
+  uint16_t width  = SEGMENT.virtualWidth();   // segment width in logical pixels
+  uint16_t height = SEGMENT.virtualHeight();  // segment height in logical pixels
+/*
+  // it may be unnecessary to perform transpose since pixels should be always addressed using XY() function
   if (SEGMENT.getOption(SEG_OPTION_TRANSPOSED)) {
     uint16_t t;
     // swap X & Y if segment transposed
@@ -117,6 +119,7 @@ uint16_t IRAM_ATTR WS2812FX::XY(uint16_t x, uint16_t y) {
     // swap width & height if segment transposed
     t = width; width = height; height = t;
   }
+*/
   return (x%width) + (y%height) * width;
 }
 

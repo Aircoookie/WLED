@@ -234,6 +234,22 @@ void releaseJSONBufferLock()
 // caller must provide large enough buffer for name (incluing SR extensions)!
 uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLen)
 {
+  if (src == JSON_mode_names) {
+    if (mode < MODE_COUNT) {
+      char lineBuffer[256];
+      strcpy_P(lineBuffer, (const char*)pgm_read_dword(&(WS2812FX::_modeData[mode])));
+      if (strlen(lineBuffer) > 0) {
+        size_t j = 0;
+        for (; j < maxLen; j++) {
+          if (lineBuffer[j] == '\0' || lineBuffer[j] == '@') break;
+          dest[j] = lineBuffer[j];
+        }
+        dest[j] = 0; // terminate string
+      }
+      return strlen(dest);
+    } else return 0;
+  }
+
   uint8_t qComma = 0;
   bool insideQuotes = false;
   uint8_t printedChars = 0;
