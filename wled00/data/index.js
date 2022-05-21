@@ -1221,9 +1221,9 @@ function readState(s,command=false)
 
 	gId('sliderSpeed').value = i.sx;
 	gId('sliderIntensity').value = i.ix;
-	gId('sliderC1').value  = i.c1x ? i.c1x : 0;
-	gId('sliderC2').value  = i.c2x ? i.c2x : 0;
-	gId('sliderC3').value  = i.c3x ? i.c3x : 0;
+	gId('sliderC1').value  = i.c1 ? i.c1 : 0;
+	gId('sliderC2').value  = i.c2 ? i.c2 : 0;
+	gId('sliderC3').value  = i.c3 ? i.c3 : 0;
 
 	if (s.error && s.error != 0) {
 	  var errstr = "";
@@ -2011,9 +2011,9 @@ function setCustom(i=1)
 	if (i<1 || i>3) return;
 	var obj = {"seg": {}};
 	var val = parseInt(gId(`sliderC${i}`).value);
-	if      (i===3) obj.seg.c3x = val;
-	else if (i===2) obj.seg.c2x = val;
-	else            obj.seg.c1x = val;
+	if      (i===3) obj.seg.c3 = val;
+	else if (i===2) obj.seg.c2 = val;
+	else            obj.seg.c1 = val;
 	requestJson(obj);
 }
 

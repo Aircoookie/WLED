@@ -106,20 +106,27 @@ void WS2812FX::setUpMatrix() {
   }
 }
 
-// XY(x,y) - gets pixel index within current segment
+// XY(x,y) - gets pixel index within current segment (takes into account transposed segment)
 uint16_t IRAM_ATTR WS2812FX::XY(uint16_t x, uint16_t y) {
-  uint16_t width  = SEGMENT.virtualWidth();   // segment width in logical pixels
-  if (SEGMENT.getOption(SEG_OPTION_TRANSPOSED)) { uint16_t t = x; x = y; y = t; } // swap X & Y if segment transposed
-  return (x%width) + (y%SEGMENT.virtualHeight()) * width;
+  uint16_t width  = SEGMENT.virtualWidth();   // segment width in logical pixels (is already transposed)
+  uint16_t height = SEGMENT.virtualHeight();  // segment height in logical pixels (is already transposed)
+  if (SEGMENT.getOption(SEG_OPTION_TRANSPOSED)) {
+    uint16_t t;
+    // swap X & Y if segment transposed
+    t = x; x = y; y = t;
+    // swap width & height if segment transposed
+    t = width; width = height; height = t;
+  }
+  return (x%width) + (y%height) * width;
 }
 
-// getPixelIndex(x,y,seg) - returns an index of segment pixel in a matrix layout
+// get2DPixelIndex(x,y,seg) - returns an index of segment pixel in a matrix layout
 // index still needs to undergo ledmap processing to represent actual physical pixel
 // matrix is always organized by matrixHeight number of matrixWidth pixels from top to bottom, left to right
-// so: pixel at getPixelIndex(5,6) in a 2D segment with [start=10, stop=19, startY=20, stopY=29 : 10x10 pixels]
+// so: pixel at get2DPixelIndex(5,6) in a 2D segment with [start=10, stop=19, startY=20, stopY=29 : 10x10 pixels]
 // corresponds to pixel with logical index of 847 (0 based) if a 2D segment belongs to a 32x32 matrix.
 // math: (matrixWidth * (startY + y)) + start + x => (32 * (20+6)) + 10 + 5 = 847
-uint16_t IRAM_ATTR WS2812FX::getPixelIndex(uint16_t x, uint16_t y, uint8_t seg) {
+uint16_t IRAM_ATTR WS2812FX::get2DPixelIndex(uint16_t x, uint16_t y, uint8_t seg) {
   if (seg == 255) seg = _segment_index;
   x %= _segments[seg].width();  // just in case constrain x (wrap around)
   y %= _segments[seg].height(); // just in case constrain y (wrap around)
@@ -152,17 +159,17 @@ void IRAM_ATTR WS2812FX::setPixelColorXY(uint16_t x, uint16_t y, byte r, byte g,
       if (SEGMENT.getOption(SEG_OPTION_REVERSED)  ) xX = SEGMENT.width()  - xX - 1;
       if (SEGMENT.getOption(SEG_OPTION_REVERSED_Y)) yY = SEGMENT.height() - yY - 1;
 
-      index = getPixelIndex(xX, yY);
+      index = get2DPixelIndex(xX, yY);
       if (index < customMappingSize) index = customMappingTable[index];
       busses.setPixelColor(index, col);
 
       if (SEGMENT.getOption(SEG_OPTION_MIRROR)) { //set the corresponding horizontally mirrored pixel
-        index = getPixelIndex(SEGMENT.width() - xX - 1, yY);
+        index = get2DPixelIndex(SEGMENT.width() - xX - 1, yY);
         if (index < customMappingSize) index = customMappingTable[index];
         busses.setPixelColor(index, col);
       }
       if (SEGMENT.getOption(SEG_OPTION_MIRROR_Y)) { //set the corresponding vertically mirrored pixel
-        index = getPixelIndex(xX, SEGMENT.height() - yY - 1);
+        index = get2DPixelIndex(xX, SEGMENT.height() - yY - 1);
         if (index < customMappingSize) index = customMappingTable[index];
         busses.setPixelColor(index, col);
       }
@@ -181,7 +188,7 @@ uint32_t WS2812FX::getPixelColorXY(uint16_t x, uint16_t y) {
   if (SEGMENT.getOption(SEG_OPTION_REVERSED)  ) x = SEGMENT.width()  - x - 1;
   if (SEGMENT.getOption(SEG_OPTION_REVERSED_Y)) y = SEGMENT.height() - y - 1;
 
-  uint16_t index = getPixelIndex(x, y);
+  uint16_t index = get2DPixelIndex(x, y);
   if (index < customMappingSize) index = customMappingTable[index];
 
   return busses.getPixelColor(index);

@@ -277,6 +277,9 @@ class WS2812FX {
 
   static WS2812FX* instance;
   
+  // mode (effect) name and its slider control data array
+  static const char *_modeData[MODE_COUNT];
+
   public:
 
   // segment parameters
@@ -294,7 +297,7 @@ class WS2812FX {
       uint32_t colors[NUM_COLORS];
       uint8_t  cct; //0==1900K, 255==10091K
       uint8_t  _capabilities;
-      uint8_t  c1x, c2x, c3x; // custom FX parameters
+      uint8_t  custom1, custom2, custom3; // custom FX parameters
       uint16_t startY;  // start Y coodrinate 2D (top)
       uint16_t stopY;   // stop Y coordinate 2D (bottom)
       char *name;
@@ -344,6 +347,7 @@ class WS2812FX {
           ColorTransition::startTransition(0, colors[0], instance->_transitionDur, segn, 0);
         }
       }
+      // 2D matrix
       uint16_t virtualWidth() {
         uint16_t groupLen = groupLength();
         uint16_t vWidth = (width() + groupLen - 1) / groupLen;
@@ -356,6 +360,7 @@ class WS2812FX {
         if (getOption(SEG_OPTION_MIRROR_Y)) vHeight = (vHeight + 1) /2;  // divide by 2 if mirror, leave at least a single LED
         return vHeight;
       }
+      // 1D strip
       uint16_t virtualLength() {
         uint16_t groupLen = groupLength();
         uint16_t vLength = (length() + groupLen - 1) / groupLen;
@@ -934,7 +939,7 @@ class WS2812FX {
 
     uint16_t
       XY(uint16_t, uint16_t),
-      getPixelIndex(uint16_t x, uint16_t y, uint8_t seg=255);
+      get2DPixelIndex(uint16_t x, uint16_t y, uint8_t seg=255);
 
     uint32_t
       getPixelColorXY(uint16_t, uint16_t);
