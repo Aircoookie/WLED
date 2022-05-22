@@ -1927,46 +1927,47 @@ static const char *_data_FX_MODE_PALETTE PROGMEM = "Palette@!,;1,2,3;!";
 
 uint16_t WS2812FX::mode_fire_2012()
 {
+  uint16_t height = SEGMENT.virtualWidth();  // same as SEGLEN on 1D
+  uint16_t width  = SEGMENT.virtualHeight(); // they are actually transposed for the effect purpose to support 1D as well as 2D
   uint32_t it = now >> 5; //div 32
-  uint16_t nFlames = SEGMENT.virtualHeight();
-  uint16_t q = nFlames>>2; // a quarter of segment height
+  uint16_t q = width>>2; // a quarter of segment height
 
-  if (!SEGENV.allocateData(SEGLEN*nFlames)) return mode_static(); //allocation failed
+  if (!SEGENV.allocateData(height*width)) return mode_static(); //allocation failed
   
   byte* heat = SEGENV.data;
 
   if (it != SEGENV.step) {
     SEGENV.step = it;
-    uint8_t ignition = max(3,SEGLEN/10);  // ignition area: 10% of segment length or minimum 3 pixels
+    uint8_t ignition = max(3,height/10);  // ignition area: 10% of segment length or minimum 3 pixels
 
-    for (uint16_t f = 0; f < nFlames; f++) {
+    for (uint16_t f = 0; f < width; f++) {
       // Step 1.  Cool down every cell a little
-      for (uint16_t i = 0; i < SEGLEN; i++) {
-        uint8_t cool = (((20 + SEGMENT.speed /3) * 10) / SEGLEN);
+      for (uint16_t i = 0; i < height; i++) {
+        uint8_t cool = (((20 + SEGMENT.speed /3) * 10) / height);
         // 2D enhancement: cool sides of the flame a bit more
-        if (nFlames>5) {
-          if (f < q)   qadd8(cool, (uint16_t)((cool *       (q-f))/nFlames)); // cool segment sides a bit more
-          if (f > 3*q) qadd8(cool, (uint16_t)((cool * (nFlames-f))/nFlames)); // cool segment sides a bit more
+        if (width>5) {
+          if (f < q)   cool = qadd8(cool, (uint16_t)((cool *     (q-f))/width)); // cool segment sides a bit more
+          if (f > 3*q) cool = qadd8(cool, (uint16_t)((cool * (width-f))/width));  // cool segment sides a bit more
         }
-        uint8_t temp = qsub8(heat[i+SEGLEN*f], random8(0, cool + 2));
-        heat[i+SEGLEN*f] = (temp==0 && i<ignition) ? 16 : temp; // prevent ignition area from becoming black
+        uint8_t temp = qsub8(heat[i+height*f], random8(0, cool + 2));
+        heat[i+height*f] = (temp==0 && i<ignition) ? 16 : temp; // prevent ignition area from becoming black
       }
 
       // Step 2.  Heat from each cell drifts 'up' and diffuses a little
-      for (uint16_t k= SEGLEN -1; k > 1; k--) {
-        heat[k+SEGLEN*f] = (heat[k+SEGLEN*f - 1] + (heat[k+SEGLEN*f - 2]<<1) ) / 3;  // heat[k-2] multiplied by 2
+      for (uint16_t k= height -1; k > 1; k--) {
+        heat[k+height*f] = (heat[k+height*f - 1] + (heat[k+height*f - 2]<<1) ) / 3;  // heat[k-2] multiplied by 2
       }
 
       // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
       if (random8() <= SEGMENT.intensity) {
         uint8_t y = random8(ignition);
-        if (y < SEGLEN) heat[y+SEGLEN*f] = qadd8(heat[y+SEGLEN*f], random8(160,255));
+        if (y < height) heat[y+height*f] = qadd8(heat[y+height*f], random8(160,255));
       }
 
       // Step 4.  Map from heat cells to LED colors
-      for (uint16_t j = 0; j < SEGLEN; j++) {
-        CRGB color = ColorFromPalette(currentPalette, MIN(heat[j+SEGLEN*f],240), 255, LINEARBLEND);
-        if (isMatrix) setPixelColorXY(j, f, color);
+      for (uint16_t j = 0; j < height; j++) {
+        CRGB color = ColorFromPalette(currentPalette, MIN(heat[j+height*f],240), 255, LINEARBLEND);
+        if (isMatrix) setPixelColorXY(f, j, color);
         else          setPixelColor(j, color);
       }
     }
@@ -2881,8 +2882,8 @@ static const char *_data_FX_MODE_GLITTER PROGMEM = "Glitter";
 //each needs 11 bytes
 //Spark type is used for popcorn, 1D fireworks, and drip
 typedef struct Spark {
-  float pos;
-  float vel;
+  float pos, posX;
+  float vel, velX;
   uint16_t col;
   uint8_t colIndex;
 } spark;
@@ -3174,9 +3175,13 @@ static const char *_data_FX_MODE_STARBURST PROGMEM = "Fireworks Starburst";
 /*
  * Exploding fireworks effect
  * adapted from: http://www.anirama.com/1000leds/1d-fireworks/
+ * adapted for 2D WLED by blazoncek (Blaz Kristan)
  */
 uint16_t WS2812FX::mode_exploding_fireworks(void)
 {
+  uint16_t height = SEGMENT.virtualWidth();  // same as SEGLEN on 1D
+  uint16_t width  = SEGMENT.virtualHeight(); // they are actually transposed for the effect purpose to support 1D as well as 2D
+
   //allocate segment data
   uint16_t maxData = FAIR_DATA_PER_SEG; //ESP8266: 256 ESP32: 640
   uint8_t segs = getActiveSegmentsNum();
@@ -3184,7 +3189,7 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
   if (segs <= (MAX_NUM_SEGMENTS /4)) maxData *= 2; //ESP8266: 1024 if <= 4 segs ESP32: 2560 if <= 8 segs
   int maxSparks = maxData / sizeof(spark); //ESP8266: max. 21/42/85 sparks/seg, ESP32: max. 53/106/213 sparks/seg
 
-  uint16_t numSparks = min(2 + (SEGLEN >> 1), maxSparks);
+  uint16_t numSparks = min(2 + (height >> 1), maxSparks);
   uint16_t dataSize = sizeof(spark) * numSparks;
   if (!SEGENV.allocateData(dataSize + sizeof(float))) return mode_static(); //allocation failed
   float *dying_gravity = reinterpret_cast<float*>(SEGENV.data + dataSize);
@@ -3195,38 +3200,38 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
     SEGENV.aux1 = dataSize;
   }
 
-  fill(BLACK);
-  
-  bool actuallyReverse = SEGMENT.getOption(SEG_OPTION_REVERSED);
-  //have fireworks start in either direction based on intensity
-  SEGMENT.setOption(SEG_OPTION_REVERSED, SEGENV.step);
+  //fill(BLACK);
+  fade_out(252);
   
   Spark* sparks = reinterpret_cast<Spark*>(SEGENV.data);
   Spark* flare = sparks; //first spark is flare data
 
   float gravity = -0.0004 - (SEGMENT.speed/800000.0); // m/s/s
-  gravity *= SEGLEN;
+  gravity *= height;
   
   if (SEGENV.aux0 < 2) { //FLARE
     if (SEGENV.aux0 == 0) { //init flare
       flare->pos = 0;
+      flare->posX = isMatrix ? random16(width) : (SEGMENT.intensity > random8()); // will enable random firing side on 1D
       uint16_t peakHeight = 75 + random8(180); //0-255
-      peakHeight = (peakHeight * (SEGLEN -1)) >> 8;
+      peakHeight = (peakHeight * (height -1)) >> 8;
       flare->vel = sqrt(-2.0 * gravity * peakHeight);
+      flare->velX = isMatrix ? (random8(6)-3)/23 : 0; // no X velocity on 1D
       flare->col = 255; //brightness
-
       SEGENV.aux0 = 1; 
     }
     
     // launch 
     if (flare->vel > 12 * gravity) {
       // flare
-      setPixelColor(int(flare->pos),flare->col,flare->col,flare->col);
-  
-      flare->pos += flare->vel;
-      flare->pos = constrain(flare->pos, 0, SEGLEN-1);
-      flare->vel += gravity;
-      flare->col -= 2;
+      if (isMatrix) setPixelColorXY(int(flare->posX), int(flare->pos), flare->col, flare->col, flare->col);
+      else          setPixelColor(int(flare->posX) ? height-int(flare->pos)-1 : int(flare->pos), flare->col, flare->col, flare->col);
+      flare->pos  += flare->vel;
+      flare->posX += flare->velX;
+      flare->pos  = constrain(flare->pos, 0, height-1);
+      flare->posX = constrain(flare->posX, 0, width-isMatrix);
+      flare->vel  += gravity;
+      flare->col  -= 2;
     } else {
       SEGENV.aux0 = 2;  // ready to explode
     }
@@ -3243,13 +3248,16 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
     // initialize sparks
     if (SEGENV.aux0 == 2) {
       for (int i = 1; i < nSparks; i++) { 
-        sparks[i].pos = flare->pos; 
-        sparks[i].vel = (float(random16(0, 20000)) / 10000.0) - 0.9; // from -0.9 to 1.1
-        sparks[i].col = 345;//abs(sparks[i].vel * 750.0); // set colors before scaling velocity to keep them bright 
+        sparks[i].pos  = flare->pos;
+        sparks[i].posX = flare->posX;
+        sparks[i].vel  = (float(random16(0, 20000)) / 10000.0) - 0.9; // from -0.9 to 1.1
+        sparks[i].velX = isMatrix ? (float(random16(0, 20000)) / 10000.0) - 0.9 : 0; // from -0.9 to 1.1
+        sparks[i].col  = 345;//abs(sparks[i].vel * 750.0); // set colors before scaling velocity to keep them bright 
         //sparks[i].col = constrain(sparks[i].col, 0, 345); 
         sparks[i].colIndex = random8();
-        sparks[i].vel *= flare->pos/SEGLEN; // proportional to height 
-        sparks[i].vel *= -gravity *50;
+        sparks[i].vel  *= flare->pos/height; // proportional to height 
+        sparks[i].velX *= isMatrix ? flare->posX/width : 0; // proportional to width
+        sparks[i].vel  *= -gravity *50;
       } 
       //sparks[1].col = 345; // this will be our known spark 
       *dying_gravity = gravity/2; 
@@ -3257,12 +3265,15 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
     }
   
     if (sparks[1].col > 4) {//&& sparks[1].pos > 0) { // as long as our known spark is lit, work with all the sparks
-      for (int i = 1; i < nSparks; i++) { 
-        sparks[i].pos += sparks[i].vel; 
-        sparks[i].vel += *dying_gravity; 
+      for (int i = 1; i < nSparks; i++) {
+        sparks[i].pos  += sparks[i].vel;
+        sparks[i].posX += sparks[i].velX;
+        sparks[i].vel  += *dying_gravity;
+        sparks[i].velX += isMatrix ? *dying_gravity : 0;
         if (sparks[i].col > 3) sparks[i].col -= 4; 
 
-        if (sparks[i].pos > 0 && sparks[i].pos < SEGLEN) {
+        if (sparks[i].pos > 0 && sparks[i].pos < height) {
+          if (isMatrix && !(sparks[i].posX > 0 && sparks[i].posX < width)) continue;
           uint16_t prog = sparks[i].col;
           uint32_t spColor = (SEGMENT.palette) ? color_wheel(sparks[i].colIndex) : SEGCOLOR(0);
           CRGB c = CRGB::Black; //HeatColor(sparks[i].col);
@@ -3274,10 +3285,11 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
             c.g = qsub8(c.g, cooling);
             c.b = qsub8(c.b, cooling * 2);
           }
-          setPixelColor(int(sparks[i].pos), c.red, c.green, c.blue);
+          if (isMatrix) setPixelColorXY(int(sparks[i].posX), int(sparks[i].pos), c.red, c.green, c.blue);
+          else          setPixelColor(int(sparks[i].posX) ? height-int(sparks[i].pos)-1 : int(sparks[i].pos), c.red, c.green, c.blue);
         }
       }
-      *dying_gravity *= .99; // as sparks burn out they fall slower
+      *dying_gravity *= .8; // as sparks burn out they fall slower
     } else {
       SEGENV.aux0 = 6 + random8(10); //wait for this many frames
     }
@@ -3285,12 +3297,9 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
     SEGENV.aux0--;
     if (SEGENV.aux0 < 4) {
       SEGENV.aux0 = 0; //back to flare
-      SEGENV.step = actuallyReverse ^ (SEGMENT.intensity > random8()); //decide firing side
     }
   }
 
-  SEGMENT.setOption(SEG_OPTION_REVERSED, actuallyReverse);
-  
   return FRAMETIME;  
 }
 #undef MAX_SPARKS
