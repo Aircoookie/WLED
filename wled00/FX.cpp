@@ -5625,24 +5625,6 @@ static const char *_data_FX_MODE_SPACESHIPS PROGMEM = "2D Spaceships@Fade rate,B
 /////////////////////////
 //// Crazy bees by stepko (c)12.02.21 [https://editor.soulmatelights.com/gallery/651-crazy-bees], adapted by Blaz Kristan
 #define MAX_BEES 5
-
-typedef struct Bee {
-  uint8_t posX, posY, aimX, aimY, hue;
-  int8_t deltaX, deltaY, signX, signY, error;
-} bee_t;
-
-static void aimed(bee_t &bee, uint16_t width, uint16_t height) {
-  randomSeed(millis());
-  bee.aimX = random8(0, width);
-  bee.aimY = random8(0, height);
-  bee.hue = random8();
-  bee.deltaX = abs(bee.aimX - bee.posX);
-  bee.deltaY = abs(bee.aimY - bee.posY);
-  bee.signX = bee.posX < bee.aimX ? 1 : -1;
-  bee.signY = bee.posY < bee.aimY ? 1 : -1;
-  bee.error = bee.deltaX - bee.deltaY;
-};
-
 uint16_t WS2812FX::mode_2Dcrazybees(void) {
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
@@ -5652,7 +5634,23 @@ uint16_t WS2812FX::mode_2Dcrazybees(void) {
 
   byte n = MIN(MAX_BEES, (width * height) / 256 + 1);
 
-  if (!SEGENV.allocateData(dataSize) + sizeof(bee_t)*MAX_BEES) return mode_static(); //allocation failed
+  typedef struct Bee {
+    uint8_t posX, posY, aimX, aimY, hue;
+    int8_t deltaX, deltaY, signX, signY, error;
+    void aimed(uint16_t width, uint16_t height) {
+      randomSeed(millis());
+      aimX = random8(0, width);
+      aimY = random8(0, height);
+      hue = random8();
+      deltaX = abs(aimX - posX);
+      deltaY = abs(aimY - posY);
+      signX = posX < aimX ? 1 : -1;
+      signY = posY < aimY ? 1 : -1;
+      error = deltaX - deltaY;
+    };
+  } bee_t;
+
+  if (!SEGENV.allocateData(dataSize + sizeof(bee_t)*MAX_BEES)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
   bee_t *bee = reinterpret_cast<bee_t*>(SEGENV.data + dataSize);
 
@@ -5661,7 +5659,7 @@ uint16_t WS2812FX::mode_2Dcrazybees(void) {
     for (byte i = 0; i < n; i++) {
       bee[i].posX = random8(0, width);
       bee[i].posY = random8(0, height);
-      aimed(bee[i], width, height);
+      bee[i].aimed(width, height);
     }
   }
 
@@ -5683,7 +5681,7 @@ uint16_t WS2812FX::mode_2Dcrazybees(void) {
         bee[i].posY += bee[i].signY;
       }
     } else {
-      aimed(bee[i], width, height);
+      bee[i].aimed(width, height);
     }
   }
   blur2d(leds, SEGMENT.intensity>>3);
