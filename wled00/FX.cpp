@@ -4355,6 +4355,9 @@ uint16_t WS2812FX::mode_aurora(void) {
 
   AuroraWave* waves;
 
+//TODO: I am not sure this is a correct way of handling memory allocation since if it fails on 1st run
+// it will display static effect but on second run it may crash ESP since data will be nullptr
+
   if(SEGENV.aux0 != SEGMENT.intensity || SEGENV.call == 0) {
     //Intensity slider changed or first call
     SEGENV.aux1 = map(SEGMENT.intensity, 0, 255, 2, W_MAX_COUNT);
@@ -4453,10 +4456,6 @@ uint16_t WS2812FX::mode_2DBlackHole(void) {            // By: Stepko https://edi
   // blur everything a bit
   blur2d(leds, 16);
 
-//  for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
-//    uint16_t o = x + y * w;
-//    setPixelColorXY(x, y, leds[o]);
-//  }
   setPixels(leds);
   return FRAMETIME;
 } // mode_2DBlackHole()
@@ -4791,6 +4790,7 @@ uint16_t WS2812FX::mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired
   uint16_t crc = crc16((const unsigned char*)leds, dataSize-1);
 
   // check if we had same CRC and reset if needed
+  // same CRC would mean image did not change or was repeating itself
   if (!(crc == SEGENV.aux0 || crc == SEGENV.aux1)) *resetMillis = now; //if no repetition avoid reset
   // remeber last two
   SEGENV.aux1 = SEGENV.aux0;
@@ -4810,24 +4810,14 @@ uint16_t WS2812FX::mode_2DHiphotic() {                        //  By: ldirko  ht
 
   uint16_t width  = SEGMENT.virtualWidth();
   uint16_t height = SEGMENT.virtualHeight();
-  //uint16_t dataSize = sizeof(CRGB) * width * height;
-
-  //if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-  //CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
-
-  //if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
-
   uint32_t a = now / 8;
 
   for (uint16_t x = 0; x < width; x++) {
     for (uint16_t y = 0; y < height; y++) {
-      //leds[XY(x,y)] = ColorFromPalette(currentPalette, sin8(cos8(x * SEGMENT.speed/16 + a / 3) + sin8(y * SEGMENT.intensity/16 + a / 4) + a), 255, LINEARBLEND);
-      //setPixelColorXY(x, y, ColorFromPalette(currentPalette, sin8(cos8(x * SEGMENT.speed/16 + a / 3) + sin8(y * SEGMENT.intensity/16 + a / 4) + a), 255, LINEARBLEND));
       setPixelColorXY(x, y, color_from_palette(sin8(cos8(x * SEGMENT.speed/16 + a / 3) + sin8(y * SEGMENT.intensity/16 + a / 4) + a), false, PALETTE_SOLID_WRAP, 0));
     }
   }
 
-  //setPixels(leds);       // Use this ONLY if we're going to display via leds[x] method.
   return FRAMETIME;
 } // mode_2DHiphotic()
 static const char *_data_FX_MODE_HIPNOTIC PROGMEM = "2D Hipnotic@X scale,Y scale;;!";
@@ -5060,12 +5050,6 @@ uint16_t WS2812FX::mode_2Dmetaballs(void) {   // Metaballs by Stefan Petrick. Ca
 
   uint16_t width  = SEGMENT.virtualWidth();
   uint16_t height = SEGMENT.virtualHeight();
-  //uint16_t dataSize = sizeof(CRGB) * width * height;
-
-  //if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-  //CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
-
-  //if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
 
   float speed = 0.25f * (1+(SEGMENT.speed>>6));
 
@@ -5101,18 +5085,11 @@ uint16_t WS2812FX::mode_2Dmetaballs(void) {   // Metaballs by Stefan Petrick. Ca
 
       // map color between thresholds
       if (color > 0 and color < 60) {
-        //leds[XY(x, y)] = ColorFromPalette(currentPalette, color * 9, 255);
-        //setPixelColorXY(x, y, ColorFromPalette(currentPalette, color * 9, 255));
         setPixelColorXY(x, y, color_from_palette(map(color * 9, 9, 531, 0, 255), false, PALETTE_SOLID_WRAP, 0));
       } else {
-        //leds[XY(x, y)] = ColorFromPalette(currentPalette, 0, 255);
-        //setPixelColorXY(x, y, ColorFromPalette(currentPalette, 0, 255));
         setPixelColorXY(x, y, color_from_palette(0, false, PALETTE_SOLID_WRAP, 0));
       }
       // show the 3 points, too
-      //leds[XY(x1,y1)] = CRGB(255, 255,255);
-      //leds[XY(x2,y2)] = CRGB(255, 255,255);
-      //leds[XY(x3,y3)] = CRGB(255, 255,255);
       setPixelColorXY(x1, y1, CRGB::White);
       setPixelColorXY(x2, y2, CRGB::White);
       setPixelColorXY(x3, y3, CRGB::White);
@@ -5648,6 +5625,24 @@ static const char *_data_FX_MODE_SPACESHIPS PROGMEM = "2D Spaceships@Fade rate,B
 /////////////////////////
 //// Crazy bees by stepko (c)12.02.21 [https://editor.soulmatelights.com/gallery/651-crazy-bees], adapted by Blaz Kristan
 #define MAX_BEES 5
+
+typedef struct Bee {
+  uint8_t posX, posY, aimX, aimY, hue;
+  int8_t deltaX, deltaY, signX, signY, error;
+} bee_t;
+
+static void aimed(bee_t &bee, uint16_t width, uint16_t height) {
+  randomSeed(millis());
+  bee.aimX = random8(0, width);
+  bee.aimY = random8(0, height);
+  bee.hue = random8();
+  bee.deltaX = abs(bee.aimX - bee.posX);
+  bee.deltaY = abs(bee.aimY - bee.posY);
+  bee.signX = bee.posX < bee.aimX ? 1 : -1;
+  bee.signY = bee.posY < bee.aimY ? 1 : -1;
+  bee.error = bee.deltaX - bee.deltaY;
+};
+
 uint16_t WS2812FX::mode_2Dcrazybees(void) {
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
@@ -5656,22 +5651,6 @@ uint16_t WS2812FX::mode_2Dcrazybees(void) {
   uint16_t dataSize = sizeof(CRGB) * width * height;
 
   byte n = MIN(MAX_BEES, (width * height) / 256 + 1);
-
-  typedef struct Bee {
-    uint8_t posX, posY, aimX, aimY, hue;
-    int8_t deltaX, deltaY, signX, signY, error;
-    void aimed(uint16_t width, uint16_t height) {
-      randomSeed(millis());
-      aimX = random8(0, width);
-      aimY = random8(0, height);
-      hue = random8();
-      deltaX = abs(aimX - posX);
-      deltaY = abs(aimY - posY);
-      signX = posX < aimX ? 1 : -1;
-      signY = posY < aimY ? 1 : -1;
-      error = deltaX - deltaY;
-    };
-  } bee_t;
 
   if (!SEGENV.allocateData(dataSize) + sizeof(bee_t)*MAX_BEES) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -5682,7 +5661,7 @@ uint16_t WS2812FX::mode_2Dcrazybees(void) {
     for (byte i = 0; i < n; i++) {
       bee[i].posX = random8(0, width);
       bee[i].posY = random8(0, height);
-      bee[i].aimed(width, height);
+      aimed(bee[i], width, height);
     }
   }
 
@@ -5704,7 +5683,7 @@ uint16_t WS2812FX::mode_2Dcrazybees(void) {
         bee[i].posY += bee[i].signY;
       }
     } else {
-      bee[i].aimed(width, height);
+      aimed(bee[i], width, height);
     }
   }
   blur2d(leds, SEGMENT.intensity>>3);
@@ -5827,9 +5806,6 @@ uint16_t WS2812FX::mode_2Dfloatingblobs(void) {
 
   if (SEGENV.call == 0) {
     fill_solid(leds, CRGB::Black);
-    DEBUG_PRINT(F("sizeof blob "));
-    DEBUG_PRINTLN(sizeof(blob_t));
-    DEBUG_PRINTLN(F("Init begin."));
     for (byte i = 0; i < MAX_BLOBS; i++) {
       blob->r[i] = random8(1, width/4);
       blob->sX[i] = (float) random8(5, 11) / (float)(257 - SEGMENT.speed) / 4.0; // speed x
@@ -5841,7 +5817,6 @@ uint16_t WS2812FX::mode_2Dfloatingblobs(void) {
       if (blob->sX[i] == 0) blob->sX[i] = 1;
       if (blob->sY[i] == 0) blob->sY[i] = 1;
     }
-    DEBUG_PRINTLN(F("Init done."));
   }
 
   fadeToBlackBy(leds, 20);
