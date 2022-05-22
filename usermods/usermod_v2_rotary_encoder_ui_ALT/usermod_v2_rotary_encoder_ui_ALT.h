@@ -56,7 +56,7 @@
 #define MODE_SORT_SKIP_COUNT 1
 
 // Which list is being sorted
-static char **listBeingSorted;
+static const char **listBeingSorted;
 
 /**
  * Modes and palettes are stored as strings that
@@ -65,8 +65,8 @@ static char **listBeingSorted;
  * JSON_mode_names or JSON_palette_names.
  */
 static int re_qstringCmp(const void *ap, const void *bp) {
-  char *a = listBeingSorted[*((byte *)ap)];
-  char *b = listBeingSorted[*((byte *)bp)];
+  const char *a = listBeingSorted[*((byte *)ap)];
+  const char *b = listBeingSorted[*((byte *)bp)];
   int i = 0;
   do {
     char aVal = pgm_read_byte_near(a + i);
@@ -139,13 +139,13 @@ private:
 #endif
 
   // Pointers the start of the mode names within JSON_mode_names
-  char **modes_qstrings = nullptr;
+  const char **modes_qstrings = nullptr;
 
   // Array of mode indexes in alphabetical order.
   byte *modes_alpha_indexes = nullptr;
 
   // Pointers the start of the palette names within JSON_palette_names
-  char **palettes_qstrings = nullptr;
+  const char **palettes_qstrings = nullptr;
 
   // Array of palette indexes in alphabetical order.
   byte *palettes_alpha_indexes = nullptr;
@@ -185,7 +185,8 @@ private:
    * modes_alpha_indexes and palettes_alpha_indexes.
    */
   void sortModesAndPalettes() {
-    modes_qstrings = re_findModeStrings(JSON_mode_names, strip.getModeCount());
+    //modes_qstrings = re_findModeStrings(JSON_mode_names, strip.getModeCount());
+    modes_qstrings = WS2812FX::_modeData;
     modes_alpha_indexes = re_initIndexArray(strip.getModeCount());
     re_sortModes(modes_qstrings, modes_alpha_indexes, strip.getModeCount(), MODE_SORT_SKIP_COUNT);
 
@@ -211,8 +212,8 @@ private:
    * Return an array of mode or palette names from the JSON string.
    * They don't end in '\0', they end in '"'. 
    */
-  char **re_findModeStrings(const char json[], int numModes) {
-    char **modeStrings = (char **)malloc(sizeof(char *) * numModes);
+  const char **re_findModeStrings(const char json[], int numModes) {
+    const char **modeStrings = (const char **)malloc(sizeof(const char *) * numModes);
     uint8_t modeIndex = 0;
     bool insideQuotes = false;
     // advance past the mark for markLineNum that may exist.
@@ -249,7 +250,7 @@ private:
   /**
    * Sort either the modes or the palettes using quicksort.
    */
-  void re_sortModes(char **modeNames, byte *indexes, int count, int numSkip) {
+  void re_sortModes(const char **modeNames, byte *indexes, int count, int numSkip) {
     listBeingSorted = modeNames;
     qsort(indexes + numSkip, count - numSkip, sizeof(byte), re_qstringCmp);
     listBeingSorted = nullptr;
