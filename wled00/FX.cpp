@@ -4227,3 +4227,59 @@ uint16_t WS2812FX::mode_aurora(void) {
   
   return FRAMETIME;
 }
+
+#define WHYSKY_SPACE 1
+#define WHISKY_WIDTH 5
+#define WHISKY_END 2
+#define WHISKY_NUMBER 10
+
+uint16_t WS2812FX::mode_custom()
+{  
+  uint16_t wLength = (WHISKY_NUMBER*(WHISKY_WIDTH+WHYSKY_SPACE)-WHYSKY_SPACE) + WHISKY_END;
+  if (wLength > SEGLEN) return mode_static(); //bail if segment too short
+
+  fill(SEGCOLOR(1)); //fill background
+
+  uint8_t state = SEGENV.aux1 >> 8;
+  uint16_t stateTime = SEGENV.call;
+  if (stateTime == 0) stateTime = 2000;
+
+  if (state == 0) { //spawn eyes
+    SEGENV.aux0 = random8(0, WHISKY_NUMBER-1); //start pos
+    SEGENV.aux1 = random8(); //color
+    state = 1;
+  }
+  
+  if (state < 2) { //fade eyes
+    uint16_t startPos    = SEGLEN - WHISKY_END - SEGENV.aux0*(WHYSKY_SPACE+WHISKY_WIDTH);
+    
+    uint32_t fadestage = (now - SEGENV.step)*255 / stateTime;
+    if (fadestage > 255) fadestage = 255;
+    uint32_t c = color_from_palette(SEGENV.aux1 & 0xFF, false, false, 0);
+    
+    for (uint16_t i = 0; i < WHISKY_WIDTH; i++)
+    {
+      setPixelColor(startPos    + i, c);
+    }
+  }
+
+  if (now - SEGENV.step > stateTime)
+  {
+    state++;
+    if (state > 2) state = 0;
+    
+    if (state < 2)
+    {
+      stateTime = 100 + (255 - SEGMENT.intensity)*10; //eye fade time
+    } else {
+      uint16_t eyeOffTimeBase = (255 - SEGMENT.speed)*10;
+      stateTime = eyeOffTimeBase + random16(eyeOffTimeBase);
+    }
+    SEGENV.step = now;
+    SEGENV.call = stateTime;
+  }
+
+  SEGENV.aux1 = (SEGENV.aux1 & 0xFF) + (state << 8); //save state
+  
+  return FRAMETIME;
+}
