@@ -1967,7 +1967,7 @@ uint16_t WS2812FX::mode_fire_2012()
       // Step 4.  Map from heat cells to LED colors
       for (uint16_t j = 0; j < height; j++) {
         CRGB color = ColorFromPalette(currentPalette, MIN(heat[j+height*f],240), 255, LINEARBLEND);
-        if (isMatrix) setPixelColorXY(f, j, color);
+        if (isMatrix) setPixelColorXY(f, height -j -1, color);
         else          setPixelColor(j, color);
       }
     }
@@ -3224,7 +3224,7 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
     // launch 
     if (flare->vel > 12 * gravity) {
       // flare
-      if (isMatrix) setPixelColorXY(int(flare->posX), int(flare->pos), flare->col, flare->col, flare->col);
+      if (isMatrix) setPixelColorXY(int(flare->posX), height-int(flare->pos)-1, flare->col, flare->col, flare->col);
       else          setPixelColor(int(flare->posX) ? height-int(flare->pos)-1 : int(flare->pos), flare->col, flare->col, flare->col);
       flare->pos  += flare->vel;
       flare->posX += flare->velX;
@@ -3242,8 +3242,8 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
      * Explosion happens where the flare ended.
      * Size is proportional to the height.
      */
-    int nSparks = flare->pos;
-    nSparks = constrain(nSparks, 0, numSparks);
+    int nSparks = flare->pos + random8(4);
+    nSparks = constrain(nSparks, 1, numSparks);
   
     // initialize sparks
     if (SEGENV.aux0 == 2) {
@@ -3251,7 +3251,8 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
         sparks[i].pos  = flare->pos;
         sparks[i].posX = flare->posX;
         sparks[i].vel  = (float(random16(0, 20000)) / 10000.0) - 0.9; // from -0.9 to 1.1
-        sparks[i].velX = isMatrix ? (float(random16(0, 20000)) / 10000.0) - 0.9 : 0; // from -0.9 to 1.1
+        sparks[i].vel *= height<32 ? 0.5 : 1; // reduce velocity for smaller strips
+        sparks[i].velX = isMatrix ? (float(random16(0, 16000)) / 10000.0) - 0.8 : 0; // from -0.8 to 0.8
         sparks[i].col  = 345;//abs(sparks[i].vel * 750.0); // set colors before scaling velocity to keep them bright 
         //sparks[i].col = constrain(sparks[i].col, 0, 345); 
         sparks[i].colIndex = random8();
@@ -3285,7 +3286,7 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
             c.g = qsub8(c.g, cooling);
             c.b = qsub8(c.b, cooling * 2);
           }
-          if (isMatrix) setPixelColorXY(int(sparks[i].posX), int(sparks[i].pos), c.red, c.green, c.blue);
+          if (isMatrix) setPixelColorXY(int(sparks[i].posX), height-int(sparks[i].pos)-1, c.red, c.green, c.blue);
           else          setPixelColor(int(sparks[i].posX) ? height-int(sparks[i].pos)-1 : int(sparks[i].pos), c.red, c.green, c.blue);
         }
       }
@@ -4527,7 +4528,7 @@ uint16_t WS2812FX::mode_2DColoredBursts() {              // By: ldirko   https:/
   setPixels(leds);       // Use this ONLY if we're going to display via leds[x] method.
   return FRAMETIME;
 } // mode_2DColoredBursts()
-static const char *_data_FX_MODE_COLORED_BURSTS PROGMEM = "2D Colored Bursts@Speed,Number of lines;;!";
+static const char *_data_FX_MODE_COLORED_BURSTS PROGMEM = "2D Colored Bursts@Speed,# of lines;;!";
 
 
 /////////////////////
@@ -5251,13 +5252,14 @@ uint16_t WS2812FX::mode_2DPulser(void) {                       // By: ldirko   h
 
   if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
 
-  byte r = 16;
+  fadeToBlackBy(leds, 8 - (SEGMENT.intensity>>5));
+
   uint16_t a = now / (18 - SEGMENT.speed / 16);
   uint16_t x = (a / 14);
-  uint16_t y = (sin8(a * 5) + sin8(a * 4) + sin8(a * 2)) / 3 * r / 255;
-  uint16_t index = XY(x, (height / 2 - r / 2 + y));
-  leds[index] = ColorFromPalette(currentPalette, y * 16 - 100, 255, LINEARBLEND);
-  blur2d(leds, SEGMENT.intensity / 16);
+  uint16_t y = map((sin8(a * 5) + sin8(a * 4) + sin8(a * 2)), 0, 765, height-1, 0);
+  uint16_t index = XY(x, y);
+  leds[index] = ColorFromPalette(currentPalette, map(y, 0, height-1, 0, 255), 255, LINEARBLEND);
+  blur2d(leds, 1 + (SEGMENT.intensity>>4));
 
   setPixels(leds);       // Use this ONLY if we're going to display via leds[x] method.
   return FRAMETIME;
@@ -5571,14 +5573,15 @@ uint16_t WS2812FX::mode_2Dspaceships(void) {    //// Space ships by stepko (c)05
 
   if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
 
-  uint32_t tb = now >> 12;  // every ~4s
+  uint32_t tb = now >> 11;  // every ~2s
   if (tb != SEGENV.step) {
     if (SEGENV.aux0 >= 7) SEGENV.aux0 = 0;
     else SEGENV.aux0++;
-    SEGENV.step = tb;
+    SEGENV.step = tb + random8(4);
   }
 
-  fadeToBlackBy(leds, SEGMENT.speed>>4);
+  fadeToBlackBy(leds, 32+(SEGMENT.speed>>4));
+
   switch (SEGENV.aux0) {
     case 0:
       moveX(leds, 1);
@@ -5672,33 +5675,38 @@ uint16_t WS2812FX::mode_2Dcrazybees(void) {
     }
   }
 
-  fadeToBlackBy(leds, SEGMENT.speed>>4);
-  for (byte i = 0; i < n; i++) {
-    leds[XY(bee[i].aimX + 1, bee[i].aimY)] += CHSV(bee[i].hue, 255, 255);
-    leds[XY(bee[i].aimX, bee[i].aimY + 1)] += CHSV(bee[i].hue, 255, 255);
-    leds[XY(bee[i].aimX - 1, bee[i].aimY)] += CHSV(bee[i].hue, 255, 255);
-    leds[XY(bee[i].aimX, bee[i].aimY - 1)] += CHSV(bee[i].hue, 255, 255);
-    if (bee[i].posX != bee[i].aimX || bee[i].posY != bee[i].aimY) {
-      leds[XY(bee[i].posX, bee[i].posY)] = CHSV(bee[i].hue, 60, 255);
-      int8_t error2 = bee[i].error * 2;
-      if (error2 > -bee[i].deltaY) {
-        bee[i].error -= bee[i].deltaY;
-        bee[i].posX += bee[i].signX;
-      }
-      if (error2 < bee[i].deltaX) {
-        bee[i].error += bee[i].deltaX;
-        bee[i].posY += bee[i].signY;
-      }
-    } else {
-      bee[i].aimed(width, height);
-    }
-  }
-  blur2d(leds, SEGMENT.intensity>>3);
+  if (now > SEGENV.step) {
+    SEGENV.step = now + (FRAMETIME * 8 / ((SEGMENT.speed>>5)+1));
 
-  setPixels(leds);
+    fadeToBlackBy(leds, 32);
+  
+    for (byte i = 0; i < n; i++) {
+      leds[XY(bee[i].aimX + 1, bee[i].aimY)] += CHSV(bee[i].hue, 255, 255);
+      leds[XY(bee[i].aimX, bee[i].aimY + 1)] += CHSV(bee[i].hue, 255, 255);
+      leds[XY(bee[i].aimX - 1, bee[i].aimY)] += CHSV(bee[i].hue, 255, 255);
+      leds[XY(bee[i].aimX, bee[i].aimY - 1)] += CHSV(bee[i].hue, 255, 255);
+      if (bee[i].posX != bee[i].aimX || bee[i].posY != bee[i].aimY) {
+        leds[XY(bee[i].posX, bee[i].posY)] = CHSV(bee[i].hue, 60, 255);
+        int8_t error2 = bee[i].error * 2;
+        if (error2 > -bee[i].deltaY) {
+          bee[i].error -= bee[i].deltaY;
+          bee[i].posX += bee[i].signX;
+        }
+        if (error2 < bee[i].deltaX) {
+          bee[i].error += bee[i].deltaX;
+          bee[i].posY += bee[i].signY;
+        }
+      } else {
+        bee[i].aimed(width, height);
+      }
+    }
+    blur2d(leds, SEGMENT.intensity>>4);
+
+    setPixels(leds);
+  }
   return FRAMETIME;
 }
-static const char *_data_FX_MODE_CRAZYBEES PROGMEM = "2D Crazy Bees@Fade rate,Blur;;";
+static const char *_data_FX_MODE_CRAZYBEES PROGMEM = "2D Crazy Bees@!,Blur;;";
 
 
 /////////////////////////
@@ -5744,40 +5752,44 @@ uint16_t WS2812FX::mode_2Dghostrider(void) {
     }
   }
 
-  fadeToBlackBy(leds, SEGMENT.speed>>2);
+  if (now > SEGENV.step) {
+    SEGENV.step = now + 1024 / (width+height);
 
-  CRGB color = CRGB::White;
-  wu_pixel(leds, lighter->gPosX * 256 / 10, lighter->gPosY * 256 / 10, color);
+    fadeToBlackBy(leds, SEGMENT.speed>>2);
 
-  lighter->gPosX += lighter->Vspeed * sin_t(radians(lighter->gAngle));
-  lighter->gPosY += lighter->Vspeed * cos_t(radians(lighter->gAngle));
-  lighter->gAngle += lighter->angleSpeed;
-  if (lighter->gPosX < 0)                 lighter->gPosX = (width - 1) * 10;
-  if (lighter->gPosX > (width - 1) * 10)  lighter->gPosX = 0;
-  if (lighter->gPosY < 0)                 lighter->gPosY = (height - 1) * 10;
-  if (lighter->gPosY > (height - 1) * 10) lighter->gPosY = 0;
-  for (byte i = 0; i < LIGHTERS_AM; i++) {
-    lighter->time[i] += random8(5, 20);
-    if (lighter->time[i] >= 255 ||
-       (lighter->lightersPosX[i] <= 0) ||
-        (lighter->lightersPosX[i] >= (width - 1) * 10) ||
-        (lighter->lightersPosY[i] <= 0) ||
-        (lighter->lightersPosY[i] >= (height - 1) * 10)) {
-      lighter->reg[i] = true;
+    CRGB color = CRGB::White;
+    wu_pixel(leds, lighter->gPosX * 256 / 10, lighter->gPosY * 256 / 10, color);
+
+    lighter->gPosX += lighter->Vspeed * sin_t(radians(lighter->gAngle));
+    lighter->gPosY += lighter->Vspeed * cos_t(radians(lighter->gAngle));
+    lighter->gAngle += lighter->angleSpeed;
+    if (lighter->gPosX < 0)                 lighter->gPosX = (width - 1) * 10;
+    if (lighter->gPosX > (width - 1) * 10)  lighter->gPosX = 0;
+    if (lighter->gPosY < 0)                 lighter->gPosY = (height - 1) * 10;
+    if (lighter->gPosY > (height - 1) * 10) lighter->gPosY = 0;
+    for (byte i = 0; i < LIGHTERS_AM; i++) {
+      lighter->time[i] += random8(5, 20);
+      if (lighter->time[i] >= 255 ||
+        (lighter->lightersPosX[i] <= 0) ||
+          (lighter->lightersPosX[i] >= (width - 1) * 10) ||
+          (lighter->lightersPosY[i] <= 0) ||
+          (lighter->lightersPosY[i] >= (height - 1) * 10)) {
+        lighter->reg[i] = true;
+      }
+      if (lighter->reg[i]) {
+        lighter->lightersPosY[i] = lighter->gPosY;
+        lighter->lightersPosX[i] = lighter->gPosX;
+        lighter->Angle[i] = lighter->gAngle + random(-10, 10);
+        lighter->time[i] = 0;
+        lighter->reg[i] = false;
+      } else {
+        lighter->lightersPosX[i] += -7 * sin_t(radians(lighter->Angle[i]));
+        lighter->lightersPosY[i] += -7 * cos_t(radians(lighter->Angle[i]));
+      }
+      wu_pixel(leds, lighter->lightersPosX[i] * 256 / 10, lighter->lightersPosY[i] * 256 / 10, ColorFromPalette(currentPalette, (256 - lighter->time[i])));
     }
-    if (lighter->reg[i]) {
-      lighter->lightersPosY[i] = lighter->gPosY;
-      lighter->lightersPosX[i] = lighter->gPosX;
-      lighter->Angle[i] = lighter->gAngle + random(-10, 10);
-      lighter->time[i] = 0;
-      lighter->reg[i] = false;
-    } else {
-      lighter->lightersPosX[i] += -7 * sin_t(radians(lighter->Angle[i]));
-      lighter->lightersPosY[i] += -7 * cos_t(radians(lighter->Angle[i]));
-    }
-    wu_pixel(leds, lighter->lightersPosX[i] * 256 / 10, lighter->lightersPosY[i] * 256 / 10, ColorFromPalette(currentPalette, (256 - lighter->time[i])));
+    blur2d(leds, SEGMENT.intensity>>3);
   }
-  blur2d(leds, SEGMENT.intensity>>3);
 
   setPixels(leds);
   return FRAMETIME;
@@ -5814,9 +5826,9 @@ uint16_t WS2812FX::mode_2Dfloatingblobs(void) {
   if (SEGENV.call == 0) {
     fill_solid(leds, CRGB::Black);
     for (byte i = 0; i < MAX_BLOBS; i++) {
-      blob->r[i] = random8(1, width/4);
-      blob->sX[i] = (float) random8(5, 11) / (float)(257 - SEGMENT.speed) / 4.0; // speed x
-      blob->sY[i] = (float) random8(5, 11) / (float)(257 - SEGMENT.speed) / 4.0; // speed y
+      blob->r[i] = width>15 ? random8(1, width/8) : 1;
+      blob->sX[i] = (float) random8(5, width) / (float)(256 - SEGMENT.speed); // speed x
+      blob->sY[i] = (float) random8(5, height) / (float)(256 - SEGMENT.speed); // speed y
       blob->x[i] = random8(0, width-1);
       blob->y[i] = random8(0, height-1);
       blob->color[i] = random8();
@@ -5830,11 +5842,12 @@ uint16_t WS2812FX::mode_2Dfloatingblobs(void) {
 
   // Bounce balls around
   for (byte i = 0; i < Amount; i++) {
+    if (SEGENV.step < now) blob->color[i] = add8(blob->color[i], 4); // slowly change color
     // change radius if needed
     if (blob->grow[i]) {
       // enlarge radius until it is >= 4
       blob->r[i] += (fabs(blob->sX[i]) > fabs(blob->sY[i]) ? fabs(blob->sX[i]) : fabs(blob->sY[i])) * 0.05;
-      if (blob->r[i] >= MIN(width/4,4.)) {
+      if (blob->r[i] >= MIN(width/8,2.)) {
         blob->grow[i] = false;
       }
     } else {
@@ -5842,53 +5855,77 @@ uint16_t WS2812FX::mode_2Dfloatingblobs(void) {
       blob->r[i] -= (fabs(blob->sX[i]) > fabs(blob->sY[i]) ? fabs(blob->sX[i]) : fabs(blob->sY[i])) * 0.05;
       if (blob->r[i] < 1.) {
         blob->grow[i] = true; 
-        blob->color[i] = random(0, 255);
       }
     }
-    if (blob->r[i] > 1.)
-      fill_circle(leds, blob->y[i], blob->x[i], blob->r[i], ColorFromPalette(currentPalette, blob->color[i]));
-    else
-      leds[XY(blob->y[i], blob->x[i])] += ColorFromPalette(currentPalette, blob->color[i]);
-    //----------------------
-    if (blob->x[i] + blob->r[i] >= width - 1)
-      blob->x[i] += (blob->sX[i] * ((width - 1 - blob->x[i]) / blob->r[i] + 0.005));
-    else if (blob->x[i] - blob->r[i] <= 0)
-      blob->x[i] += (blob->sX[i] * (blob->x[i] / blob->r[i] + 0.005));
-    else
-      blob->x[i] += blob->sX[i];
-    //-----------------------
-    if (blob->y[i] + blob->r[i] >= height - 1)
-      blob->y[i] += (blob->sY[i] * ((height - 1 - blob->y[i]) / blob->r[i] + 0.005));
-    else if (blob->y[i] - blob->r[i] <= 0)
-      blob->y[i] += (blob->sY[i] * (blob->y[i] / blob->r[i] + 0.005));
-    else
-      blob->y[i] += blob->sY[i];
-    //------------------------
+    CRGB c = ColorFromPalette(currentPalette, blob->color[i]);
+    //if (!SEGMENT.palette) c = SEGCOLOR(0);
+    if (blob->r[i] > 1.) fill_circle(leds, blob->y[i], blob->x[i], blob->r[i], c);
+    else                 leds[XY(blob->y[i], blob->x[i])] += c;
+    // move x
+    if (blob->x[i] + blob->r[i] >= width - 1)  blob->x[i] += (blob->sX[i] * ((width - 1 - blob->x[i]) / blob->r[i] + 0.005));
+    else if (blob->x[i] - blob->r[i] <= 0)     blob->x[i] += (blob->sX[i] * (blob->x[i] / blob->r[i] + 0.005));
+    else                                       blob->x[i] += blob->sX[i];
+    // move y
+    if (blob->y[i] + blob->r[i] >= height - 1) blob->y[i] += (blob->sY[i] * ((height - 1 - blob->y[i]) / blob->r[i] + 0.005));
+    else if (blob->y[i] - blob->r[i] <= 0)     blob->y[i] += (blob->sY[i] * (blob->y[i] / blob->r[i] + 0.005));
+    else                                       blob->y[i] += blob->sY[i];
+    // bounce x
     if (blob->x[i] < 0.01) {
-      blob->sX[i] = (float) random8(5, 11) / (257 - SEGMENT.speed) / 4.0;
+      blob->sX[i] = (float) random8(5, width) / (256 - SEGMENT.speed);
       blob->x[i] = 0.01;
     } else if (blob->x[i] > width - 1.01) {
-      blob->sX[i] = (float) random8(5, 11) / (257 - SEGMENT.speed) / 4.0;
+      blob->sX[i] = (float) random8(5, width) / (256 - SEGMENT.speed);
       blob->sX[i] = -blob->sX[i];
       blob->x[i] = width - 1.01;
     }
-    //----------------------
+    // bounce y
     if (blob->y[i] < 0.01) {
-      blob->sY[i] = (float) random8(5, 11) / (257 - SEGMENT.speed) / 4.0;
+      blob->sY[i] = (float) random8(5, height) / (256 - SEGMENT.speed);
       blob->y[i] = 0.01;
     } else if (blob->y[i] > height - 1.01) {
-      blob->sY[i] = (float) random8(5, 11) / (257 - SEGMENT.speed) / 4.0;
+      blob->sY[i] = (float) random8(5, height) / (256 - SEGMENT.speed);
       blob->sY[i] = -blob->sY[i];
       blob->y[i] = height - 1.01;
     }
   }
-  blur2d(leds, 16);
+  blur2d(leds, width+height);
+
+  if (SEGENV.step < now) SEGENV.step = now + 2000; // change colors every 2 seconds
 
   setPixels(leds);
   return FRAMETIME;
 }
 #undef MAX_BLOBS
 static const char *_data_FX_MODE_BLOBS PROGMEM = "2D Blobs@!,# blobs;!,!,!;!";
+
+
+// letters for scrolling text
+static unsigned char A[] = {B00000000,B00111100,B01100110,B01100110,B01111110,B01100110,B01100110,B01100110};
+static unsigned char B[] = {B01111000,B01001000,B01001000,B01110000,B01001000,B01000100,B01000100,B01111100};
+static unsigned char C[] = {B00000000,B00011110,B00100000,B01000000,B01000000,B01000000,B00100000,B00011110};
+static unsigned char D[] = {B00000000,B00111000,B00100100,B00100010,B00100010,B00100100,B00111000,B00000000};
+static unsigned char E[] = {B00000000,B00111100,B00100000,B00111000,B00100000,B00100000,B00111100,B00000000};
+static unsigned char F[] = {B00000000,B00111100,B00100000,B00111000,B00100000,B00100000,B00100000,B00000000};
+static unsigned char G[] = {B00000000,B00111110,B00100000,B00100000,B00101110,B00100010,B00111110,B00000000};
+static unsigned char H[] = {B00000000,B00100100,B00100100,B00111100,B00100100,B00100100,B00100100,B00000000};
+static unsigned char I[] = {B00000000,B00111000,B00010000,B00010000,B00010000,B00010000,B00111000,B00000000};
+static unsigned char J[] = {B00000000,B00011100,B00001000,B00001000,B00001000,B00101000,B00111000,B00000000};
+static unsigned char K[] = {B00000000,B00100100,B00101000,B00110000,B00101000,B00100100,B00100100,B00000000};
+static unsigned char L[] = {B00000000,B00100000,B00100000,B00100000,B00100000,B00100000,B00111100,B00000000};
+static unsigned char M[] = {B00000000,B00000000,B01000100,B10101010,B10010010,B10000010,B10000010,B00000000};
+static unsigned char N[] = {B00000000,B00100010,B00110010,B00101010,B00100110,B00100010,B00000000,B00000000};
+static unsigned char O[] = {B00000000,B00111100,B01000010,B01000010,B01000010,B01000010,B00111100,B00000000};
+static unsigned char P[] = {B00000000,B00111000,B00100100,B00100100,B00111000,B00100000,B00100000,B00000000};
+static unsigned char Q[] = {B00000000,B00111100,B01000010,B01000010,B01000010,B01000110,B00111110,B00000001};
+static unsigned char R[] = {B00000000,B00111000,B00100100,B00100100,B00111000,B00100100,B00100100,B00000000};
+static unsigned char S[] = {B00000000,B00111100,B00100000,B00111100,B00000100,B00000100,B00111100,B00000000};
+static unsigned char T[] = {B00000000,B01111100,B00010000,B00010000,B00010000,B00010000,B00010000,B00000000};
+static unsigned char U[] = {B00000000,B01000010,B01000010,B01000010,B01000010,B00100100,B00011000,B00000000};
+static unsigned char V[] = {B00000000,B00100010,B00100010,B00100010,B00010100,B00010100,B00001000,B00000000};
+static unsigned char W[] = {B00000000,B10000010,B10010010,B01010100,B01010100,B00101000,B00000000,B00000000};
+static unsigned char X[] = {B00000000,B01000010,B00100100,B00011000,B00011000,B00100100,B01000010,B00000000};
+static unsigned char Y[] = {B00000000,B01000100,B00101000,B00010000,B00010000,B00010000,B00010000,B00000000};
+static unsigned char Z[] = {B00000000,B00111100,B00000100,B00001000,B00010000,B00100000,B00111100,B00000000};
 
 
 //////////////////////////////////////////////////////////////////////////////////////////

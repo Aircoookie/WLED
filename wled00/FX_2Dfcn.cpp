@@ -328,7 +328,9 @@ void WS2812FX::fill_solid(CRGB* leds, CRGB color) {
 void WS2812FX::fill_circle(CRGB* leds, uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
   for (int16_t y = -radius; y <= radius; y++) {
     for (int16_t x = -radius; x <= radius; x++) {
-      if (x * x + y * y <= radius * radius)
+      if (x * x + y * y <= radius * radius &&
+          int16_t(cx)+x>=0 && int16_t(cy)+y>=0 &&
+          int16_t(cx)+x<SEGMENT.virtualWidth() && int16_t(cy)+y<SEGMENT.virtualHeight())
         leds[XY(cx + x, cy + y)] += col;
     }
   }
