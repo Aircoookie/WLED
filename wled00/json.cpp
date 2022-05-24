@@ -824,8 +824,6 @@ void serializeNodes(JsonObject root)
 void serializeModeData(JsonArray fxdata)
 {
   for (size_t i = 0; i < MODE_COUNT; i++) {
-    //char buffer[256];
-    //strcpy_P(buffer, (const char*)pgm_read_dword(&(WS2812FX::_modeData[i])));
     //String lineBuffer = (const char*)pgm_read_dword(&(WS2812FX::_modeData[i]));
     String lineBuffer = WS2812FX::_modeData[i];
     if (lineBuffer.length() > 0) {
@@ -834,46 +832,11 @@ void serializeModeData(JsonArray fxdata)
       else          fxdata.add("");
     }
   }
-/*
-  //JsonArray fxdata = root.createNestedArray("fxdata");
-  String lineBuffer;
-  bool insideQuotes = false;
-  char singleJsonSymbol;
-  size_t len = strlen_P(JSON_mode_names);
-
-  // Find the mode name in JSON
-  for (size_t i = 0; i < len; i++) {
-    singleJsonSymbol = pgm_read_byte_near(JSON_mode_names + i);
-    if (singleJsonSymbol == '\0') break;
-    switch (singleJsonSymbol) {
-      case '"':
-        insideQuotes = !insideQuotes;
-        break;
-      case '[':
-        if (insideQuotes) lineBuffer += singleJsonSymbol;
-        break;
-      case ']':
-        if (insideQuotes) {lineBuffer += singleJsonSymbol; break;}
-      case ',':
-        if (insideQuotes) {lineBuffer += singleJsonSymbol; break;}
-        if (lineBuffer.length() > 0) {
-          uint8_t endPos = lineBuffer.indexOf('@');
-          if (endPos>0) fxdata.add(lineBuffer.substring(endPos));
-          else          fxdata.add("");
-          lineBuffer.clear();
-        }
-        break;
-      default:
-        if (!insideQuotes) break;
-        lineBuffer += singleJsonSymbol;
-    }
-  }
-*/
 }
 
 // deserializes mode names string into JsonArray
 // also removes WLED-SR extensions (@...) from deserialised names
-void serializeModeNames(JsonArray arr, const char *qstring) {
+void serializeModeNames(JsonArray arr) {
   for (size_t i = 0; i < MODE_COUNT; i++) {
     //String lineBuffer = (const char*)pgm_read_dword(&(WS2812FX::_modeData[i]));
     String lineBuffer = WS2812FX::_modeData[i];
@@ -883,38 +846,6 @@ void serializeModeNames(JsonArray arr, const char *qstring) {
       else          arr.add(lineBuffer);
     }
   }
-/*
-  String lineBuffer;
-  bool insideQuotes = false;
-  char singleJsonSymbol;
-  size_t len = strlen_P(qstring);
-
-  // Find the mode name in JSON
-  for (size_t i = 0; i < len; i++) {
-    singleJsonSymbol = pgm_read_byte_near(qstring + i);
-    if (singleJsonSymbol == '\0') break;
-    switch (singleJsonSymbol) {
-      case '"':
-        insideQuotes = !insideQuotes;
-        break;
-      case '[':
-        break;
-      case ']':
-      case ',':
-        if (insideQuotes) break;
-        if (lineBuffer.length() > 0) {
-          uint8_t endPos = lineBuffer.indexOf('@');
-          if (endPos>0) arr.add(lineBuffer.substring(0,endPos));
-          else          arr.add(lineBuffer);
-          lineBuffer.clear();
-        }
-        break;
-      default:
-        if (!insideQuotes) break;
-        lineBuffer += singleJsonSymbol;
-    }
-  }
-*/
 }
 
 void serveJson(AsyncWebServerRequest* request)
@@ -938,7 +869,7 @@ void serveJson(AsyncWebServerRequest* request)
     if (requestJSONBufferLock(19)) {
       AsyncJsonResponse* response = new AsyncJsonResponse(&doc, true);  // array document
       JsonArray lDoc = response->getRoot();
-      serializeModeNames(lDoc, JSON_mode_names); // remove WLED-SR extensions from effect names
+      serializeModeNames(lDoc); // remove WLED-SR extensions from effect names
       response->setLength();
       request->send(response);
       releaseJSONBufferLock();
@@ -985,7 +916,7 @@ void serveJson(AsyncWebServerRequest* request)
       {
         //lDoc[F("effects")]  = serialized((const __FlashStringHelper*)JSON_mode_names);
         JsonArray effects = lDoc.createNestedArray(F("effects"));
-        serializeModeNames(effects, JSON_mode_names); // remove WLED-SR extensions from effect names
+        serializeModeNames(effects); // remove WLED-SR extensions from effect names
         lDoc[F("palettes")] = serialized((const __FlashStringHelper*)JSON_palette_names);
       }
   }

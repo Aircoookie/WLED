@@ -5192,20 +5192,21 @@ uint16_t WS2812FX::mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevs
   uint16_t height = SEGMENT.virtualHeight();
   uint16_t dataSize = sizeof(CRGB) * width * height;
 
-  if (!SEGENV.allocateData(dataSize + sizeof(unsigned long))) return mode_static(); //allocation failed
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
-  unsigned long *timer = reinterpret_cast<unsigned long*>(SEGENV.data + dataSize);
+
+  CRGBPalette16 auroraPalette  = {0x000000, 0x003300, 0x006600, 0x009900, 0x00cc00, 0x00ff00, 0x33ff00, 0x66ff00, 0x99ff00, 0xccff00, 0xffff00, 0xffcc00, 0xff9900, 0xff6600, 0xff3300, 0xff0000};
 
   if (SEGENV.call == 0) {
-    *timer = 0;
+    SEGENV.step = 0;
     fill_solid(leds, CRGB::Black);
   }
 
-  float adjustHeight = fmap(height, 8, 32, 28, 12);
+  float adjustHeight = (float)map(height, 8, 32, 28, 12);
   uint16_t adjScale = map(width, 8, 64, 310, 63);
-
+/*
   if (SEGENV.aux1 != SEGMENT.custom1/12) {   // Hacky palette rotation. We need that black.
-    SEGENV.aux1 = SEGMENT.custom1;
+    SEGENV.aux1 = SEGMENT.custom1/12;
     for (int i = 0; i < 16; i++) {
       long ilk;
       ilk = (long)currentPalette[i].r << 16;
@@ -5217,16 +5218,16 @@ uint16_t WS2812FX::mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevs
       currentPalette[i].b = ilk;
     }
   }
-
-  uint16_t _scale = map(SEGMENT.intensity, 1, 255, 30, adjScale);
-  byte _speed = map(SEGMENT.speed, 1, 255, 128, 16);
+*/
+  uint16_t _scale = map(SEGMENT.intensity, 0, 255, 30, adjScale);
+  byte _speed = map(SEGMENT.speed, 0, 255, 128, 16);
 
   for (uint16_t x = 0; x < width; x++) {
     for (uint16_t y = 0; y < height; y++) {
-      (*timer)++;
-      leds[XY(x, y)] = ColorFromPalette(currentPalette,
+      SEGENV.step++;
+      leds[XY(x, y)] = ColorFromPalette(auroraPalette,
                          qsub8(
-                           inoise8(SEGENV.aux0 % 2 + x * _scale, y * 16 + *timer % 16, *timer / _speed),
+                           inoise8((SEGENV.step%2) + x * _scale, y * 16 + SEGENV.step % 16, SEGENV.step / _speed),
                            fabs((float)height / 2 - (float)y) * adjustHeight));
     }
   }
@@ -5234,7 +5235,7 @@ uint16_t WS2812FX::mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevs
   setPixels(leds);
   return FRAMETIME;
 } // mode_2DPolarLights()
-static const char *_data_FX_MODE_POLAR_LIGHTS PROGMEM = "2D Polar Lights@Speed,X scale,Palette;!,!,!;!";
+static const char *_data_FX_MODE_POLAR_LIGHTS PROGMEM = "2D Polar Lights@Speed,Scale;;";
 
 
 /////////////////////////

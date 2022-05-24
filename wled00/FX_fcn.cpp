@@ -1313,7 +1313,7 @@ uint8_t Bus::_gAWM = 255;
 // Note: Effects can override default pattern behaviour
 //       - FadeToBlack can override the background setting
 //       - Defining SEGCOL(<i>) can override a specific palette using these values (e.g. Color Gradient)
-const char JSON_mode_names[] PROGMEM = R"=====(["Modenames have moved"])=====";
+const char JSON_mode_names[] PROGMEM = R"=====(["Mode names have moved"])=====";
 /*
 R"=====([
 "Solid",
