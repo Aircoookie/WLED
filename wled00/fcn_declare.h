@@ -278,6 +278,7 @@ bool isAsterisksOnly(const char* str, byte maxLen);
 bool requestJSONBufferLock(uint8_t module=255);
 void releaseJSONBufferLock();
 uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLen);
+uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxLen);
 uint16_t crc16(const unsigned char* data_p, size_t length);
 
 //wled_eeprom.cpp

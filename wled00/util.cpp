@@ -234,7 +234,7 @@ void releaseJSONBufferLock()
 // caller must provide large enough buffer for name (incluing SR extensions)!
 uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLen)
 {
-  if (src == JSON_mode_names) {
+  if (src == JSON_mode_names || src == nullptr) {
     if (mode < MODE_COUNT) {
       char lineBuffer[256];
       //strcpy_P(lineBuffer, (const char*)pgm_read_dword(&(WS2812FX::_modeData[mode])));
@@ -280,6 +280,59 @@ uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLe
   dest[printedChars] = '\0';
   return strlen(dest);
 }
+
+
+// extracts effect slider data (1st group after @)
+uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxLen)
+{
+  dest[0] = '\0'; // start by clearing buffer
+
+  if (mode < MODE_COUNT) {
+    String lineBuffer = WS2812FX::_modeData[mode];
+    if (lineBuffer.length() > 0) {
+      int16_t start = lineBuffer.indexOf('@');
+      int16_t stop  = lineBuffer.indexOf(';', start);
+      if (start>0 && stop>0) {
+        String names = lineBuffer.substring(start+1, stop);
+        int16_t nameBegin = 0, nameEnd;
+        for (size_t i=0; i<=slider; i++) {
+          const char *tmpstr;
+          dest[0] = '\0'; //clear dest buffer
+          if (i > 0 && nameBegin == 0) break; // there are no more names
+          nameEnd = names.indexOf(',', nameBegin);
+          if (names.charAt(nameBegin) == '!') {
+            switch (i) {
+              case  0: tmpstr = PSTR("FX Speed");     break;
+              case  1: tmpstr = PSTR("FX Intensity"); break;
+              case  2: tmpstr = PSTR("FX Custom 1");  break;
+              case  3: tmpstr = PSTR("FX Custom 2");  break;
+              case  4: tmpstr = PSTR("FX Custom 3");  break;
+              default: tmpstr = PSTR("FX Custom");    break;
+            }
+          } else {
+            if (nameEnd<0) tmpstr = names.substring(nameBegin).c_str(); // did not find ",", last name?
+            else           tmpstr = names.substring(nameBegin, nameEnd).c_str();
+          }
+          strncpy(dest, tmpstr, maxLen); // copy the name into buffer (replacing previous)
+          nameBegin = nameEnd+1; // next name (if "," is not found it will be 0)
+        } // next slider
+
+        // we have slider name (including default value) in the dest buffer
+        for (size_t i=0; i<strlen(dest); i++) if (dest[i]=='=') { dest[i]='\0'; break; } // truncate default value
+        
+      } else {
+        // defaults to just speed and intensity since there is no slider data
+        switch (slider) {
+          case 0:  strncpy_P(dest, PSTR("FX Speed"), maxLen); break;
+          case 1:  strncpy_P(dest, PSTR("FX Intensity"), maxLen); break;
+        }
+      }
+    }
+    return strlen(dest);
+  }
+  return 0;
+}
+
 
 uint16_t crc16(const unsigned char* data_p, size_t length) {
   uint8_t x;

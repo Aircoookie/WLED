@@ -281,6 +281,7 @@ void initServer()
     if (!correctPIN || otaLock) return;
     if(!index){
       DEBUG_PRINTLN(F("OTA Update Start"));
+      WLED::instance().disableWatchdog();
       lastEditTime = millis(); // make sure PIN does not lock during update
       #ifdef ESP8266
       Update.runAsync(true);
@@ -293,6 +294,7 @@ void initServer()
         DEBUG_PRINTLN(F("Update Success"));
       } else {
         DEBUG_PRINTLN(F("Update Failed"));
+        WLED::instance().enableWatchdog();
       }
     }
   });

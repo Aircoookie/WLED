@@ -707,5 +707,7 @@ public:
   void initConnection();
   void initInterfaces();
   void handleStatusLED();
+  void enableWatchdog();
+  void disableWatchdog();
 };
 #endif        // WLED_H

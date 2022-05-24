@@ -47,7 +47,7 @@
 
 // The last UI state, remove color and saturation option if diplay not active(too many options)
 #ifdef USERMOD_FOUR_LINE_DISPLAY
- #define LAST_UI_STATE 8
+ #define LAST_UI_STATE 11
 #else
  #define LAST_UI_STATE 4
 #endif
@@ -366,19 +366,43 @@ public:
       if (buttonWaitTime && currentTime-buttonWaitTime>350 && !buttonPressedBefore) { //same speed as in button.cpp
         buttonWaitTime = 0;
         char newState = select_state + 1;
-        bool changedState = true;
-        if (newState > LAST_UI_STATE || (newState == 8 && presetHigh==0 && presetLow == 0)) newState = 0;
+        bool changedState = false;
+        char lineBuffer[64];
+        do {
+          // finde new state
+          switch (newState) {
+            case  0: strcpy_P(lineBuffer, PSTR("Brightness")); changedState = true; break;
+            case  1: if (!extractModeSlider(effectCurrent, 0, lineBuffer, 63)) newState++; else changedState = true; break; // speed
+            case  2: if (!extractModeSlider(effectCurrent, 1, lineBuffer, 63)) newState++; else changedState = true; break; // intensity
+            case  3: strcpy_P(lineBuffer, PSTR("Color Palette")); changedState = true; break;
+            case  4: strcpy_P(lineBuffer, PSTR("Effect")); changedState = true; break;
+            case  5: strcpy_P(lineBuffer, PSTR("Main Color")); changedState = true; break;
+            case  6: strcpy_P(lineBuffer, PSTR("Saturation")); changedState = true; break;
+            case  7: 
+              if (!(strip.getSegment(applyToAll ? strip.getFirstSelectedSegId() : strip.getMainSegmentId()).getLightCapabilities() & 0x04)) newState++;
+              else { strcpy_P(lineBuffer, PSTR("CCT")); changedState = true; }
+              break;
+            case  8: if (presetHigh==0 || presetLow == 0) newState++; else { strcpy_P(lineBuffer, PSTR("Preset")); changedState = true; } break;
+            case  9:
+            case 10:
+            case 11: if (!extractModeSlider(effectCurrent, newState-7, lineBuffer, 63)) newState++; else changedState = true; break; // custom
+          }
+          if (newState > LAST_UI_STATE) newState = 0;
+        } while (!changedState);
         if (display != nullptr) {
           switch (newState) {
-            case 0: changedState = changeState(PSTR("Brightness"),      1,   0,  1); break; //1  = sun
-            case 1: changedState = changeState(PSTR("Speed"),           1,   4,  2); break; //2  = skip forward
-            case 2: changedState = changeState(PSTR("Intensity"),       1,   8,  3); break; //3  = fire
-            case 3: changedState = changeState(PSTR("Color Palette"),   2,   0,  4); break; //4  = custom palette
-            case 4: changedState = changeState(PSTR("Effect"),          3,   0,  5); break; //5  = puzzle piece
-            case 5: changedState = changeState(PSTR("Main Color"),    255, 255,  7); break; //7  = brush
-            case 6: changedState = changeState(PSTR("Saturation"),    255, 255,  8); break; //8  = contrast
-            case 7: changedState = changeState(PSTR("CCT"),           255, 255, 10); break; //10 = star
-            case 8: changedState = changeState(PSTR("Preset"),        255, 255, 11); break; //11 = heart
+            case  0: changedState = changeState(lineBuffer,   1,   0,  1); break; //1  = sun
+            case  1: changedState = changeState(lineBuffer,   1,   4,  2); break; //2  = skip forward
+            case  2: changedState = changeState(lineBuffer,   1,   8,  3); break; //3  = fire
+            case  3: changedState = changeState(lineBuffer,   2,   0,  4); break; //4  = custom palette
+            case  4: changedState = changeState(lineBuffer,   3,   0,  5); break; //5  = puzzle piece
+            case  5: changedState = changeState(lineBuffer, 255, 255,  7); break; //7  = brush
+            case  6: changedState = changeState(lineBuffer, 255, 255,  8); break; //8  = contrast
+            case  7: changedState = changeState(lineBuffer, 255, 255, 10); break; //10 = star
+            case  8: changedState = changeState(lineBuffer, 255, 255, 11); break; //11 = heart
+            case  9: changedState = changeState(lineBuffer, 255, 255, 10); break; //10 = star
+            case 10: changedState = changeState(lineBuffer, 255, 255, 10); break; //10 = star
+            case 11: changedState = changeState(lineBuffer, 255, 255, 10); break; //10 = star
           }
         }
         if (changedState) select_state = newState;
@@ -391,29 +415,35 @@ public:
         if (Enc_B == LOW)    //changes to LOW so that then encoder registers a change at the very end of a pulse
         { // B is high so clockwise
           switch(select_state) {
-            case 0: changeBrightness(true);      break;
-            case 1: changeEffectSpeed(true);     break;
-            case 2: changeEffectIntensity(true); break;
-            case 3: changePalette(true);         break;
-            case 4: changeEffect(true);          break;
-            case 5: changeHue(true);             break;
-            case 6: changeSat(true);             break;
-            case 7: changeCCT(true);             break;
-            case 8: changePreset(true);          break;
+            case  0: changeBrightness(true);      break;
+            case  1: changeEffectSpeed(true);     break;
+            case  2: changeEffectIntensity(true); break;
+            case  3: changePalette(true);         break;
+            case  4: changeEffect(true);          break;
+            case  5: changeHue(true);             break;
+            case  6: changeSat(true);             break;
+            case  7: changeCCT(true);             break;
+            case  8: changePreset(true);          break;
+            case  9: changeCustom(1,true);        break;
+            case 10: changeCustom(2,true);        break;
+            case 11: changeCustom(3,true);        break;
           }
         }
         else if (Enc_B == HIGH)
         { // B is low so counter-clockwise
           switch(select_state) {
-            case 0: changeBrightness(false);      break;
-            case 1: changeEffectSpeed(false);     break;
-            case 2: changeEffectIntensity(false); break;
-            case 3: changePalette(false);         break;
-            case 4: changeEffect(false);          break;
-            case 5: changeHue(false);             break;
-            case 6: changeSat(false);             break;
-            case 7: changeCCT(false);             break;
-            case 8: changePreset(false);          break;
+            case  0: changeBrightness(false);      break;
+            case  1: changeEffectSpeed(false);     break;
+            case  2: changeEffectIntensity(false); break;
+            case  3: changePalette(false);         break;
+            case  4: changeEffect(false);          break;
+            case  5: changeHue(false);             break;
+            case  6: changeSat(false);             break;
+            case  7: changeCCT(false);             break;
+            case  8: changePreset(false);          break;
+            case  9: changeCustom(1,false);        break;
+            case 10: changeCustom(2,false);        break;
+            case 11: changeCustom(3,false);        break;
           }
         }
       }
@@ -565,6 +595,50 @@ public:
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
     display->updateIntensity();
+  #endif
+  }
+
+
+  void changeCustom(uint8_t par, bool increase) {
+    uint8_t val = 0;
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    if (display && display->wakeDisplay()) {
+      display->redraw(true);
+      // Throw away wake up input
+      return;
+    }
+    display->updateRedrawTime();
+  #endif
+    stateChanged = true;
+    if (applyToAll) {
+      uint8_t id = strip.getFirstSelectedSegId();
+      switch (par) {
+        case 3:  val = strip.getSegment(id).custom3 = max(min((increase ? strip.getSegment(id).custom3+fadeAmount : strip.getSegment(id).custom3-fadeAmount), 255), 0); break;
+        case 2:  val = strip.getSegment(id).custom2 = max(min((increase ? strip.getSegment(id).custom2+fadeAmount : strip.getSegment(id).custom2-fadeAmount), 255), 0); break;
+        default: val = strip.getSegment(id).custom1 = max(min((increase ? strip.getSegment(id).custom1+fadeAmount : strip.getSegment(id).custom1-fadeAmount), 255), 0); break;
+      }
+      for (byte i=0; i<strip.getMaxSegments(); i++) {
+        WS2812FX::Segment& seg = strip.getSegment(i);
+        if (!seg.isActive() || i == id) continue;
+        switch (par) {
+          case 3:  strip.getSegment(i).custom3 = strip.getSegment(id).custom3; break;
+          case 2:  strip.getSegment(i).custom2 = strip.getSegment(id).custom2; break;
+          default: strip.getSegment(i).custom1 = strip.getSegment(id).custom1; break;
+        }
+      }
+    } else {
+      WS2812FX::Segment& seg = strip.getSegment(strip.getMainSegmentId());
+      switch (par) {
+        case 3:  val = seg.custom3 = max(min((increase ? seg.custom3+fadeAmount : seg.custom3-fadeAmount), 255), 0); break;
+        case 2:  val = seg.custom2 = max(min((increase ? seg.custom2+fadeAmount : seg.custom2-fadeAmount), 255), 0); break;
+        default: val = seg.custom1 = max(min((increase ? seg.custom1+fadeAmount : seg.custom1-fadeAmount), 255), 0); break;
+      }
+    }
+    lampUdated();
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    char lineBuffer[64];
+    sprintf(lineBuffer, "%d", val);
+    display->overlay(lineBuffer, 500, 10); // use star
   #endif
   }
 
