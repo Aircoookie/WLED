@@ -4228,9 +4228,9 @@ uint16_t WS2812FX::mode_aurora(void) {
   return FRAMETIME;
 }
 
-#define WHYSKY_SPACE 1
-#define WHISKY_WIDTH 5
-#define WHISKY_END 2
+#define WHYSKY_SPACE 3
+#define WHISKY_WIDTH 4
+#define WHISKY_END 1
 #define WHISKY_NUMBER 10
 
 uint16_t WS2812FX::mode_custom()
@@ -4241,42 +4241,89 @@ uint16_t WS2812FX::mode_custom()
   fill(SEGCOLOR(1)); //fill background
 
   uint8_t state = SEGENV.aux1 >> 8;
-  uint16_t stateTime = SEGENV.call;
-  if (stateTime == 0) stateTime = 2000;
+  bool stop = false;
+  uint16_t stateTime2 = SEGENV.call;
+  if (stateTime2 == 0) stateTime2 = 1;
+  uint16_t stateTime = 5*pow(1.01,SEGENV.call)-4;
+  if (stateTime > 800) stateTime = 800; //1500/574
+  if (stateTime2 > 510) stateTime2 = 510;
+  if (stateTime > 600) stop = true;
+  uint32_t c = color_from_palette(1 & 0xFF, false, false, 0);
+  uint32_t c2 = 0xFF00FF00;
+  bool notgreen = false;
 
   if (state == 0) { //spawn eyes
     SEGENV.aux0 = random8(0, WHISKY_NUMBER-1); //start pos
-    SEGENV.aux1 = random8(); //color
+    SEGENV.aux1 = random8(0,9); //color
     state = 1;
+    c = color_from_palette(1 & 0xFF, false, false, 0);
+    notgreen = true;
   }
   
-  if (state < 2) { //fade eyes
-    uint16_t startPos    = SEGLEN - WHISKY_END - SEGENV.aux0*(WHYSKY_SPACE+WHISKY_WIDTH);
-    
-    uint32_t fadestage = (now - SEGENV.step)*255 / stateTime;
-    if (fadestage > 255) fadestage = 255;
-    uint32_t c = color_from_palette(SEGENV.aux1 & 0xFF, false, false, 0);
-    
+  if (state == 1) { //spawn eyes
+    SEGENV.aux0 = (SEGENV.aux0 + WHISKY_NUMBER - 1) % WHISKY_NUMBER; //start pos
+    //SEGENV.aux1 = random8(); //color
+    state = 2;
+  }
+
+  uint16_t startPos    = SEGLEN - WHISKY_END - (SEGENV.aux0)*(WHYSKY_SPACE+WHISKY_WIDTH)-WHISKY_WIDTH;
+  //uint16_t startPos    = WHISKY_END + SEGENV.aux0*(WHYSKY_SPACE+WHISKY_WIDTH);
+  //uint32_t fadestage = (now - SEGENV.step)*255 / stateTime;
+  //if (fadestage > 255) fadestage = 255;
+
+  if (state == 2) { //fade eyes
     for (uint16_t i = 0; i < WHISKY_WIDTH; i++)
     {
-      setPixelColor(startPos    + i, c);
+      setPixelColor(startPos + i, c);
     }
   }
 
   if (now - SEGENV.step > stateTime)
   {
     state++;
-    if (state > 2) state = 0;
+    if (state == 3)
+    {
+      state = 1;
+      stateTime2 = stateTime2 + 1;
+      if ((SEGENV.aux1 & 0xFF) != 0x0 && stop) SEGENV.aux1 = (SEGENV.aux1 & 0xFF) - 1;
+      if (SEGENV.aux1 == 0x0) state = 4;
+    }
+
+    if(state > 3)
+    {
+/*       for (uint16_t i = 0; i < WHISKY_WIDTH; i++)
+      {
+        setPixelColor(startPos    + i, 0xFF00FF00);
+      } */
+      state = 4;
+    }
     
-    if (state < 2)
+    /* if (state < 3)
     {
       stateTime = 100 + (255 - SEGMENT.intensity)*10; //eye fade time
+      stateTime = 1;
     } else {
       uint16_t eyeOffTimeBase = (255 - SEGMENT.speed)*10;
       stateTime = eyeOffTimeBase + random16(eyeOffTimeBase);
-    }
+      stateTime = 1;
+    } */
     SEGENV.step = now;
-    SEGENV.call = stateTime;
+    SEGENV.call = stateTime2;
+  }
+
+  if (state == 4) { //fade eyes
+    if (notgreen)
+    {
+      uint32_t fadestage = (now - SEGENV.step)*255 / stateTime;
+      if (fadestage > 255) fadestage = 255;
+      c2 = color_blend(color_from_palette(1 & 0xFF, false, false, 0), 0xFF00FF00, fadestage);
+      //if ((c2 & 0x00FFFFFF) == 0x00FF00) notgreen = true;
+    }
+    
+    for (uint16_t i = 0; i < WHISKY_WIDTH; i++)
+    {
+      setPixelColor(startPos    + i, c2);
+    }
   }
 
   SEGENV.aux1 = (SEGENV.aux1 & 0xFF) + (state << 8); //save state
