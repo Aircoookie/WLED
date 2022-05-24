@@ -4250,14 +4250,12 @@ uint16_t WS2812FX::mode_custom()
   if (stateTime > 600) stop = true;
   uint32_t c = color_from_palette(1 & 0xFF, false, false, 0);
   uint32_t c2 = 0xFF00FF00;
-  bool notgreen = false;
 
   if (state == 0) { //spawn eyes
     SEGENV.aux0 = random8(0, WHISKY_NUMBER-1); //start pos
     SEGENV.aux1 = random8(0,9); //color
     state = 1;
     c = color_from_palette(1 & 0xFF, false, false, 0);
-    notgreen = true;
   }
   
   if (state == 1) { //spawn eyes
@@ -4280,23 +4278,23 @@ uint16_t WS2812FX::mode_custom()
 
   if (now - SEGENV.step > stateTime)
   {
-    state++;
-    if (state == 3)
+    //state++;
+    if (state == 2)
     {
       state = 1;
       stateTime2 = stateTime2 + 1;
       if ((SEGENV.aux1 & 0xFF) != 0x0 && stop) SEGENV.aux1 = (SEGENV.aux1 & 0xFF) - 1;
-      if (SEGENV.aux1 == 0x0) state = 4;
+      if (SEGENV.aux1 == 0x0) state = 3;
     }
 
-    if(state > 3)
+ /*   if(state > 3)
     {
-/*       for (uint16_t i = 0; i < WHISKY_WIDTH; i++)
+       for (uint16_t i = 0; i < WHISKY_WIDTH; i++)
       {
         setPixelColor(startPos    + i, 0xFF00FF00);
-      } */
+      } 
       state = 4;
-    }
+    }*/
     
     /* if (state < 3)
     {
@@ -4311,18 +4309,23 @@ uint16_t WS2812FX::mode_custom()
     SEGENV.call = stateTime2;
   }
 
-  if (state == 4) { //fade eyes
-    if (notgreen)
-    {
-      uint32_t fadestage = (now - SEGENV.step)*255 / stateTime;
-      if (fadestage > 255) fadestage = 255;
-      c2 = color_blend(color_from_palette(1 & 0xFF, false, false, 0), 0xFF00FF00, fadestage);
-      //if ((c2 & 0x00FFFFFF) == 0x00FF00) notgreen = true;
-    }
-    
+  if (state == 3) { //fade eyes
+    uint32_t fadestage = (now - SEGENV.step)*255 / stateTime;
+    if (fadestage > 230) fadestage = 255;
+    c2 = color_blend(color_from_palette(1 & 0xFF, false, false, 0), 0xFF00FF00, fadestage);
+    if ((c2 & 0x00FFFFFF) == 0x0000FF00) state = 4;
+        
     for (uint16_t i = 0; i < WHISKY_WIDTH; i++)
     {
       setPixelColor(startPos    + i, c2);
+    }
+  }
+
+  if (state == 4) { //fade eyes
+    for (uint16_t i = 0; i < WHISKY_WIDTH; i++)
+    {
+      setPixelColor(startPos    + i, c2);
+      //setPixelColor(1    + i, 0xFFFF0000);
     }
   }
 
