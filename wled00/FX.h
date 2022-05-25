@@ -265,8 +265,9 @@
 #define FX_MODE_CRAZYBEES              142
 #define FX_MODE_GHOST_RIDER            143
 #define FX_MODE_BLOBS                  144
+#define FX_MODE_SCROLL_TEXT            145
 
-#define MODE_COUNT                     145
+#define MODE_COUNT                     146
 
 
 class WS2812FX {
@@ -663,6 +664,7 @@ class WS2812FX {
       _mode[FX_MODE_CRAZYBEES]               = &WS2812FX::mode_2Dcrazybees;
       _mode[FX_MODE_GHOST_RIDER]             = &WS2812FX::mode_2Dghostrider;
       _mode[FX_MODE_BLOBS]                   = &WS2812FX::mode_2Dfloatingblobs;
+      _mode[FX_MODE_SCROLL_TEXT]             = &WS2812FX::mode_2Dscrollingtext;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -931,11 +933,13 @@ class WS2812FX {
       nscale8(CRGB* leds, uint8_t scale),
       setPixels(CRGB* leds),
       drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c, CRGB *leds = nullptr),
+      drawCharacter(unsigned char chr, int16_t x, int16_t y, CRGB color, CRGB *leds = nullptr),
       wu_pixel(CRGB *leds, uint32_t x, uint32_t y, CRGB c);
 
     inline void setPixelColorXY(uint16_t x, uint16_t y, uint32_t c) { setPixelColorXY(x, y, byte(c>>16), byte(c>>8), byte(c), byte(c>>24)); }
     inline void setPixelColorXY(uint16_t x, uint16_t y, CRGB c)     { setPixelColorXY(x, y, c.red, c.green, c.blue); }
     inline void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint32_t c) { drawLine(x0, y0, x1, y1, CRGB(byte(c>>16), byte(c>>8), byte(c))); }
+    inline void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint32_t c) { drawCharacter(chr, x, y, CRGB(byte(c>>16), byte(c>>8), byte(c))); }
 
     uint16_t
       XY(uint16_t, uint16_t),
@@ -972,7 +976,8 @@ class WS2812FX {
     mode_2Dspaceships(void),
     mode_2Dcrazybees(void),
     mode_2Dghostrider(void),
-    mode_2Dfloatingblobs(void);
+    mode_2Dfloatingblobs(void),
+    mode_2Dscrollingtext(void);
 
 // end 2D support
 

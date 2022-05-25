@@ -596,10 +596,12 @@ uint16_t WS2812FX::mode_sparkle(void) {
   if (it != SEGENV.step)
   {
     SEGENV.aux0 = random16(SEGLEN); // aux0 stores the random led index
+    SEGENV.aux1 = random16(0,SEGMENT.virtualHeight()-1);
     SEGENV.step = it;
   }
   
-  setPixelColor(SEGENV.aux0, SEGCOLOR(0));
+  if (isMatrix) setPixelColorXY(SEGENV.aux0, SEGENV.aux1, SEGCOLOR(0));
+  else          setPixelColor(SEGENV.aux0, SEGCOLOR(0));
   return FRAMETIME;
 }
 static const char *_data_FX_MODE_SPARKLE PROGMEM = "Sparkle@!,;!,!,;!";
@@ -616,7 +618,8 @@ uint16_t WS2812FX::mode_flash_sparkle(void) {
 
   if (now - SEGENV.aux0 > SEGENV.step) {
     if(random8((255-SEGMENT.intensity) >> 4) == 0) {
-      setPixelColor(random16(SEGLEN), SEGCOLOR(1)); //flash
+      if (isMatrix) setPixelColorXY(random16(SEGLEN), random16(0,SEGMENT.virtualHeight()-1), SEGCOLOR(1));
+      else          setPixelColor(random16(SEGLEN), SEGCOLOR(1)); //flash
     }
     SEGENV.step = now;
     SEGENV.aux0 = 255-SEGMENT.speed;
@@ -638,7 +641,8 @@ uint16_t WS2812FX::mode_hyper_sparkle(void) {
   if (now - SEGENV.aux0 > SEGENV.step) {
     if(random8((255-SEGMENT.intensity) >> 4) == 0) {
       for(uint16_t i = 0; i < MAX(1, SEGLEN/3); i++) {
-        setPixelColor(random16(SEGLEN), SEGCOLOR(1));
+        if (isMatrix) setPixelColorXY(random16(SEGLEN), random16(0,SEGMENT.virtualHeight()-1), SEGCOLOR(1));
+        else          setPixelColor(random16(SEGLEN), SEGCOLOR(1));
       }
     }
     SEGENV.step = now;
@@ -2869,10 +2873,14 @@ uint16_t WS2812FX::mode_glitter()
 {
   mode_palette();
 
-  if (SEGMENT.intensity > random8())
-  {
-    setPixelColor(random16(SEGLEN), ULTRAWHITE);
-  }
+  if (isMatrix) {
+    uint16_t height = SEGMENT.virtualHeight();
+    uint16_t width  = SEGMENT.virtualWidth();
+    for (uint16_t i = 0; i<height; i++) {
+      if (SEGMENT.intensity > random8()) setPixelColorXY(random16(width-1), i, ULTRAWHITE);
+    }
+  } else
+    if (SEGMENT.intensity > random8()) setPixelColor(random16(SEGLEN), ULTRAWHITE);
   
   return FRAMETIME;
 }
@@ -3691,10 +3699,15 @@ uint16_t WS2812FX::mode_solid_glitter()
 {
   fill(SEGCOLOR(0));
 
-  if (SEGMENT.intensity > random8())
-  {
-    setPixelColor(random16(SEGLEN), ULTRAWHITE);
-  }
+  if (isMatrix) {
+    uint16_t height = SEGMENT.virtualHeight();
+    uint16_t width = SEGMENT.virtualWidth();
+    for (uint16_t i = 0; i<height; i++) {
+      if (SEGMENT.intensity > random8()) setPixelColorXY(random16(width-1), i, ULTRAWHITE);
+    }
+  } else
+    if (SEGMENT.intensity > random8()) setPixelColor(random16(SEGLEN), ULTRAWHITE);
+
   return FRAMETIME;
 }
 static const char *_data_FX_MODE_SOLID_GLITTER PROGMEM = "Solid Glitter@,!;!,,;0";
@@ -5153,12 +5166,12 @@ uint16_t WS2812FX::mode_2DPlasmaball(void) {                   // By: Stepko htt
   double t = millis() / (33 - SEGMENT.speed/8);
   for (uint16_t i = 0; i < width; i++) {
     uint16_t thisVal = inoise8(i * 30, t, t);
-    uint16_t thisMax = map(thisVal, 0, 255, 0, width);
+    uint16_t thisMax = map(thisVal, 0, 255, 0, width-1);
     for (uint16_t j = 0; j < height; j++) {
       uint16_t thisVal_ = inoise8(t, j * 30, t);
-      uint16_t thisMax_ = map(thisVal_, 0, 255, 0, height);
-      uint16_t x = (i + thisMax_ - (width * 2 - width) / 2);
-      uint16_t y = (j + thisMax - (width * 2 - width) / 2);
+      uint16_t thisMax_ = map(thisVal_, 0, 255, 0, height-1);
+      uint16_t x = (i + thisMax_ - width / 2);
+      uint16_t y = (j + thisMax - width / 2);
       uint16_t cx = (i + thisMax_);
       uint16_t cy = (j + thisMax);
 
@@ -5167,7 +5180,7 @@ uint16_t WS2812FX::mode_2DPlasmaball(void) {                   // By: Stepko htt
                         (width - cx == 0) ||
                         (width - 1 - cx == 0) ||
                         ((height - cy == 0) ||
-                        (height - 1 - cy == 0)) ? ColorFromPalette(currentPalette, beat8(5), thisVal, LINEARBLEND) : CHSV(0, 0, 0);
+                        (height - 1 - cy == 0)) ? ColorFromPalette(currentPalette, beat8(5), thisVal, LINEARBLEND) : CRGB::Black;
     }
   }
   blur2d(leds, 4);
@@ -5181,10 +5194,9 @@ static const char *_data_FX_MODE_PLASMA_BALL PROGMEM = "2D Plasma Ball@Speed;!,!
 ////////////////////////////////
 //  2D Polar Lights           //
 ////////////////////////////////
-static float fmap(const float x, const float in_min, const float in_max, const float out_min, const float out_max) {
-  return (out_max - out_min) * (x - in_min) / (in_max - in_min) + out_min;
-}
-
+//static float fmap(const float x, const float in_min, const float in_max, const float out_min, const float out_max) {
+//  return (out_max - out_min) * (x - in_min) / (in_max - in_min) + out_min;
+//}
 uint16_t WS2812FX::mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevskyy  https://editor.soulmatelights.com/gallery/762-polar-lights , Modified by: Andrew Tuline
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
@@ -5739,6 +5751,8 @@ uint16_t WS2812FX::mode_2Dghostrider(void) {
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
   lighter_t *lighter = reinterpret_cast<lighter_t*>(SEGENV.data + dataSize);
 
+  const int maxLighters = min(width+height,LIGHTERS_AM);
+
   if (SEGENV.call == 0) {
     fill_solid(leds, CRGB::Black);
     randomSeed(now);
@@ -5746,7 +5760,7 @@ uint16_t WS2812FX::mode_2Dghostrider(void) {
     lighter->Vspeed = 5;
     lighter->gPosX = (width/2) * 10;
     lighter->gPosY = (height/2) * 10;
-    for (byte i = 0; i < LIGHTERS_AM; i++) {
+    for (byte i = 0; i < maxLighters; i++) {
       lighter->lightersPosX[i] = lighter->gPosX;
       lighter->lightersPosY[i] = lighter->gPosY + i;
       lighter->time[i] = i * 2;
@@ -5768,7 +5782,7 @@ uint16_t WS2812FX::mode_2Dghostrider(void) {
     if (lighter->gPosX > (width - 1) * 10)  lighter->gPosX = 0;
     if (lighter->gPosY < 0)                 lighter->gPosY = (height - 1) * 10;
     if (lighter->gPosY > (height - 1) * 10) lighter->gPosY = 0;
-    for (byte i = 0; i < LIGHTERS_AM; i++) {
+    for (byte i = 0; i < maxLighters; i++) {
       lighter->time[i] += random8(5, 20);
       if (lighter->time[i] >= 255 ||
         (lighter->lightersPosX[i] <= 0) ||
@@ -5900,33 +5914,38 @@ uint16_t WS2812FX::mode_2Dfloatingblobs(void) {
 static const char *_data_FX_MODE_BLOBS PROGMEM = "2D Blobs@!,# blobs;!,!,!;!";
 
 
-// letters for scrolling text
-static unsigned char A[] = {B00000000,B00111100,B01100110,B01100110,B01111110,B01100110,B01100110,B01100110};
-static unsigned char B[] = {B01111000,B01001000,B01001000,B01110000,B01001000,B01000100,B01000100,B01111100};
-static unsigned char C[] = {B00000000,B00011110,B00100000,B01000000,B01000000,B01000000,B00100000,B00011110};
-static unsigned char D[] = {B00000000,B00111000,B00100100,B00100010,B00100010,B00100100,B00111000,B00000000};
-static unsigned char E[] = {B00000000,B00111100,B00100000,B00111000,B00100000,B00100000,B00111100,B00000000};
-static unsigned char F[] = {B00000000,B00111100,B00100000,B00111000,B00100000,B00100000,B00100000,B00000000};
-static unsigned char G[] = {B00000000,B00111110,B00100000,B00100000,B00101110,B00100010,B00111110,B00000000};
-static unsigned char H[] = {B00000000,B00100100,B00100100,B00111100,B00100100,B00100100,B00100100,B00000000};
-static unsigned char I[] = {B00000000,B00111000,B00010000,B00010000,B00010000,B00010000,B00111000,B00000000};
-static unsigned char J[] = {B00000000,B00011100,B00001000,B00001000,B00001000,B00101000,B00111000,B00000000};
-static unsigned char K[] = {B00000000,B00100100,B00101000,B00110000,B00101000,B00100100,B00100100,B00000000};
-static unsigned char L[] = {B00000000,B00100000,B00100000,B00100000,B00100000,B00100000,B00111100,B00000000};
-static unsigned char M[] = {B00000000,B00000000,B01000100,B10101010,B10010010,B10000010,B10000010,B00000000};
-static unsigned char N[] = {B00000000,B00100010,B00110010,B00101010,B00100110,B00100010,B00000000,B00000000};
-static unsigned char O[] = {B00000000,B00111100,B01000010,B01000010,B01000010,B01000010,B00111100,B00000000};
-static unsigned char P[] = {B00000000,B00111000,B00100100,B00100100,B00111000,B00100000,B00100000,B00000000};
-static unsigned char Q[] = {B00000000,B00111100,B01000010,B01000010,B01000010,B01000110,B00111110,B00000001};
-static unsigned char R[] = {B00000000,B00111000,B00100100,B00100100,B00111000,B00100100,B00100100,B00000000};
-static unsigned char S[] = {B00000000,B00111100,B00100000,B00111100,B00000100,B00000100,B00111100,B00000000};
-static unsigned char T[] = {B00000000,B01111100,B00010000,B00010000,B00010000,B00010000,B00010000,B00000000};
-static unsigned char U[] = {B00000000,B01000010,B01000010,B01000010,B01000010,B00100100,B00011000,B00000000};
-static unsigned char V[] = {B00000000,B00100010,B00100010,B00100010,B00010100,B00010100,B00001000,B00000000};
-static unsigned char W[] = {B00000000,B10000010,B10010010,B01010100,B01010100,B00101000,B00000000,B00000000};
-static unsigned char X[] = {B00000000,B01000010,B00100100,B00011000,B00011000,B00100100,B01000010,B00000000};
-static unsigned char Y[] = {B00000000,B01000100,B00101000,B00010000,B00010000,B00010000,B00010000,B00000000};
-static unsigned char Z[] = {B00000000,B00111100,B00000100,B00001000,B00010000,B00100000,B00111100,B00000000};
+////////////////////////////
+//     2D Scrolling text  //
+////////////////////////////
+uint16_t WS2812FX::mode_2Dscrollingtext(void) {
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
+  uint16_t width  = SEGMENT.virtualWidth();
+  uint16_t height = SEGMENT.virtualHeight();
+
+  const int letterWidth = 6;
+  const int letterHeight = 8;
+  const int yoffset = map(SEGMENT.intensity, 0, 255, -height/2, height/2) + (height-letterHeight)/2;
+  const char *text = PSTR("Segment name"); // fallback if empty segment name
+  if (strlen(SEGMENT.name)) text = SEGMENT.name;
+  const int numberOfLetters = strlen(text);
+
+  if (SEGENV.step < now) {
+    ++SEGENV.aux0 %= (numberOfLetters * letterWidth) + width; // offset
+    ++SEGENV.aux1 &= 0xFF; // color shift
+    SEGENV.step = now + map(SEGMENT.speed, 0, 255, 10*FRAMETIME_FIXED, 2*FRAMETIME_FIXED);
+  }
+
+  fade_out(255 - (SEGMENT.custom1>>5)); // fade to background color
+
+  for (uint16_t i = 0; i < numberOfLetters; i++) {
+    if (int(width) - int(SEGENV.aux0) + letterWidth*(i+1) < 0) continue; // don't draw characters off-screen
+    drawCharacter(text[i], int(width) - int(SEGENV.aux0) + letterWidth*i, yoffset, color_from_palette(SEGENV.aux1, false, PALETTE_SOLID_WRAP, 0));
+  }
+
+  return FRAMETIME;
+}
+static const char *_data_FX_MODE_SCROLL_TEXT PROGMEM = "2D Scrolling Text@!,Y Offset,Trail;!,!;!";
 
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -6076,6 +6095,7 @@ const char *WS2812FX::_modeData[] = {
   _data_FX_MODE_SPACESHIPS,
   _data_FX_MODE_CRAZYBEES,
   _data_FX_MODE_GHOST_RIDER,
-  _data_FX_MODE_BLOBS
+  _data_FX_MODE_BLOBS,
+  _data_FX_MODE_SCROLL_TEXT
 };
 
