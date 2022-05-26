@@ -214,13 +214,18 @@ void WS2812FX::blurRow(uint16_t row, fract8 blur_amount, CRGB* leds) {
   uint8_t seep = blur_amount >> 1;
   CRGB carryover = CRGB::Black;
   for (uint16_t x = 0; x < width; x++) {
-    CRGB cur = leds[XY(x,row)];
+    CRGB cur = leds ? leds[XY(x,row)] : col_to_crgb(getPixelColorXY(x, row));
     CRGB part = cur;
     part.nscale8(seep);
     cur.nscale8(keep);
     cur += carryover;
-    if (x) leds[XY(x-1,row)] += part;
-    leds[XY(x,row)] = cur;
+    if (x) {
+      CRGB prev = (leds ? leds[XY(x-1,row)] : col_to_crgb(getPixelColorXY(x-1, row))) + part;
+      if (leds) leds[XY(x-1,row)] = prev;
+      else      setPixelColorXY(x-1, row, prev);
+    }
+    if (leds) leds[XY(x,row)] = cur;
+    else      setPixelColorXY(x, row, cur);
     carryover = part;
   }
 }
@@ -235,13 +240,18 @@ void WS2812FX::blurCol(uint16_t col, fract8 blur_amount, CRGB* leds) {
   uint8_t seep = blur_amount >> 1;
   CRGB carryover = CRGB::Black;
   for (uint16_t i = 0; i < height; i++) {
-    CRGB cur = leds[XY(col,i)];
+    CRGB cur = leds ? leds[XY(col,i)] : col_to_crgb(getPixelColorXY(col, i));
     CRGB part = cur;
     part.nscale8(seep);
     cur.nscale8(keep);
     cur += carryover;
-    if (i) leds[XY(col,i-1)] += part;
-    leds[XY(col,i)] = cur;
+    if (i) {
+      CRGB prev = (leds ? leds[XY(col,i-1)] : col_to_crgb(getPixelColorXY(col, i-1))) + part;
+      if (leds) leds[XY(col,i-1)] = prev;
+      else      setPixelColorXY(col, i-1, prev);
+    }
+    if (leds) leds[XY(col,i)] = cur;
+    else      setPixelColorXY(col, i, cur);
     carryover = part;
   }
 }

@@ -869,12 +869,26 @@ textarea {
 	white-space: nowrap;
 	cursor: pointer;
 	text-align: center;
-	overflow: hidden;
-	text-overflow: clip;
+	overflow: clip;
+	text-overflow: ellipsis;
 	line-height: 24px;
 	padding: 8px 0;
+	max-width: 160px;
+	margin: 0 auto;
+	position: relative;
+}
+.segname {
+	padding-left: 28px;
 }
 
+.segname .flr {
+	transform: rotate(0deg);
+}
+
+.expanded .segname {
+	max-width: 184px;
+	padding: 8px 24px;
+}
 /* segment power wrapper */
 .sbs {
 	padding: 4px 0 4px 8px;

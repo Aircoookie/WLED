@@ -266,8 +266,9 @@
 #define FX_MODE_GHOST_RIDER            143
 #define FX_MODE_BLOBS                  144
 #define FX_MODE_SCROLL_TEXT            145
+#define FX_MODE_DRFIT_ROSE             146
 
-#define MODE_COUNT                     146
+#define MODE_COUNT                     147
 
 
 class WS2812FX {
@@ -665,6 +666,7 @@ class WS2812FX {
       _mode[FX_MODE_GHOST_RIDER]             = &WS2812FX::mode_2Dghostrider;
       _mode[FX_MODE_BLOBS]                   = &WS2812FX::mode_2Dfloatingblobs;
       _mode[FX_MODE_SCROLL_TEXT]             = &WS2812FX::mode_2Dscrollingtext;
+      _mode[FX_MODE_DRFIT_ROSE]              = &WS2812FX::mode_2Ddriftrose;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -977,7 +979,8 @@ class WS2812FX {
     mode_2Dcrazybees(void),
     mode_2Dghostrider(void),
     mode_2Dfloatingblobs(void),
-    mode_2Dscrollingtext(void);
+    mode_2Dscrollingtext(void),
+    mode_2Ddriftrose(void);
 
 // end 2D support
 

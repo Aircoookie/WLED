@@ -686,7 +686,7 @@ function populateSegments(s)
 	<i class="icons e-icon frz" id="seg${i}frz" onclick="event.preventDefault();tglFreeze(${i});">&#x${inst.frz ? (li.live && li.liveseg==i?'e410':'e0e8') : 'e325'};</i>
 	<div class="segname" onclick="selSegEx(${i})">
 		${inst.n ? inst.n : "Segment "+i}
-		<i class="icons edit-icon" id="seg${i}nedit" onclick="tglSegn(${i})">&#xe2c6;</i>
+		<i class="icons edit-icon flr" id="seg${i}nedit" onclick="tglSegn(${i})">&#xe2c6;</i>
 	</div>
 	<i class="icons e-icon flr" id="sege${i}" onclick="expand(${i})">&#xe395;</i>
 	${cfg.comp.segpwr?segp:''}
