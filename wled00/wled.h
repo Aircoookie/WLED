@@ -23,9 +23,6 @@
 // You are required to disable over-the-air updates:
 //#define WLED_DISABLE_OTA         // saves 14kb
 
-
-#define USERMOD_SMACK_THAT
-
 // You can choose some of these features to disable:
 //#define WLED_DISABLE_ALEXA       // saves 11kb
 //#define WLED_DISABLE_BLYNK       // saves 6kb
