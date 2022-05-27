@@ -146,7 +146,7 @@ class UsermodTemperature : public Usermod {
       strcpy(buf, mqttDeviceTopic);
       strcat_P(buf, PSTR("/temperature"));
       json[F("state_topic")] = buf;
-      json[F("device_class")] = F("tempearature");
+      json[F("device_class")] = F("temperature");
       json[F("unique_id")] = escapedMac.c_str();
       json[F("unit_of_measurement")] = F("°C");
       payload_size = serializeJson(json, json_str);
