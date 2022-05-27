@@ -143,15 +143,15 @@ private:
       }
     } else {
       if (m_offPreset) {
-        applyPreset(m_offPreset, NotifyUpdateMode);
+        if (currentPreset==m_onPreset || currentPlaylist==m_onPreset) applyPreset(m_offPreset, NotifyUpdateMode);
         return;
       } else if (prevPlaylist) {
-        applyPreset(prevPlaylist, NotifyUpdateMode);
+        if (currentPreset==m_onPreset || currentPlaylist==m_onPreset) applyPreset(prevPlaylist, NotifyUpdateMode);
         prevPlaylist = 0;
         return;
       } else if (prevPreset) {
-        if (prevPreset<255) applyPreset(prevPreset, NotifyUpdateMode);
-        else                applyTemporaryPreset();
+        if (prevPreset<255) { if (currentPreset==m_onPreset || currentPlaylist==m_onPreset) applyPreset(prevPreset, NotifyUpdateMode); }
+        else                { if (currentPreset==m_onPreset || currentPlaylist==m_onPreset) applyTemporaryPreset(); }
         prevPreset = 0;
         return;
       }

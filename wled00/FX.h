@@ -924,6 +924,7 @@ class WS2812FX {
       setPixelColorXY(uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       blendPixelColorXY(uint16_t x, uint16_t y, uint32_t color, uint8_t blend),
       blur1d(CRGB* leds, fract8 blur_amount),
+      blur1d(uint16_t i, bool vertical, fract8 blur_amount, CRGB* leds=nullptr), // 1D box blur (with weight)
       blur2d(CRGB* leds, fract8 blur_amount),
       blurRow(uint16_t row, fract8 blur_amount, CRGB* leds=nullptr),
       blurCol(uint16_t col, fract8 blur_amount, CRGB* leds=nullptr),

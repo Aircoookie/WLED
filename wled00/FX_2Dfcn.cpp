@@ -206,8 +206,8 @@ void WS2812FX::blendPixelColorXY(uint16_t x, uint16_t y, uint32_t color, uint8_t
 
 // blurRow: perform a blur on a row of a rectangular matrix
 void WS2812FX::blurRow(uint16_t row, fract8 blur_amount, CRGB* leds) {
-  uint16_t width  = SEGMENT.virtualWidth();
-  uint16_t height = SEGMENT.virtualHeight();
+  const uint16_t width  = SEGMENT.virtualWidth();
+  const uint16_t height = SEGMENT.virtualHeight();
   if (row >= height) return;
   // blur one row
   uint8_t keep = 255 - blur_amount;
@@ -232,8 +232,8 @@ void WS2812FX::blurRow(uint16_t row, fract8 blur_amount, CRGB* leds) {
 
 // blurCol: perform a blur on a column of a rectangular matrix
 void WS2812FX::blurCol(uint16_t col, fract8 blur_amount, CRGB* leds) {
-  uint16_t width  = SEGMENT.virtualWidth();
-  uint16_t height = SEGMENT.virtualHeight();
+  const uint16_t width  = SEGMENT.virtualWidth();
+  const uint16_t height = SEGMENT.virtualHeight();
   if (col >= width) return;
   // blur one column
   uint8_t keep = 255 - blur_amount;
@@ -275,20 +275,55 @@ void WS2812FX::blur1d(CRGB* leds, fract8 blur_amount) {
   for (uint16_t y = 0; y < height; y++) blurRow(y, blur_amount, leds);
 }
 
+// 1D Box blur (with added weight - blur_amount: [0=no blur, 255=max blur])
+void WS2812FX::blur1d(uint16_t i, bool vertical, fract8 blur_amount, CRGB* leds) {
+  const uint16_t width  = SEGMENT.virtualWidth();
+  const uint16_t height = SEGMENT.virtualHeight();
+  const uint16_t dim1   = vertical ? height : width;
+  const uint16_t dim2   = vertical ? width : height;
+  if (i >= dim2) return;
+  const float seep = blur_amount/255.f;
+  const float keep = 3.f - 2.f*seep;
+  // 1D box blur
+  CRGB tmp[dim1];
+  for (uint16_t j = 0; j < dim1; j++) {
+    uint16_t x = vertical ? i : j;
+    uint16_t y = vertical ? j : i;
+    uint16_t xp = vertical ? x : x-1;
+    uint16_t yp = vertical ? y-1 : y;
+    uint16_t xn = vertical ? x : x+1;
+    uint16_t yn = vertical ? y+1 : y;
+    CRGB curr = leds ? leds[XY(x,y)] : col_to_crgb(getPixelColorXY(x,y));
+    CRGB prev = (xp<0 || yp<0) ? CRGB::Black : (leds ? leds[XY(xp,yp)] : col_to_crgb(getPixelColorXY(xp,yp)));
+    CRGB next = ((vertical && yn>=dim1) || (!vertical && xn>=dim1)) ? CRGB::Black : (leds ? leds[XY(xn,yn)] : col_to_crgb(getPixelColorXY(xn,yn)));
+    uint16_t r, g, b;
+    r = (curr.r*keep + (prev.r + next.r)*seep) / 3;
+    g = (curr.g*keep + (prev.g + next.g)*seep) / 3;
+    b = (curr.b*keep + (prev.b + next.b)*seep) / 3;
+    tmp[j] = CRGB(r,g,b);
+  }
+  for (uint16_t j = 0; j < dim1; j++) {
+    uint16_t x = vertical ? i : j;
+    uint16_t y = vertical ? j : i;
+    if (leds) leds[XY(x,y)] = tmp[j];
+    else      setPixelColorXY(x, y, tmp[j]);
+  }
+}
+
 void WS2812FX::blur2d(CRGB* leds, fract8 blur_amount) {
-  uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN
-  uint16_t height = SEGMENT.virtualHeight();
+  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN
+  const uint16_t height = SEGMENT.virtualHeight();
   for (uint16_t i = 0; i < height; i++) blurRow(i, blur_amount, leds); // blur all rows
   for (uint16_t k = 0; k < width; k++)  blurCol(k, blur_amount, leds); // blur all columns
 }
 
 void WS2812FX::moveX(CRGB *leds, int8_t delta) {
-  uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN
-  uint16_t height = SEGMENT.virtualHeight();
+  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN
+  const uint16_t height = SEGMENT.virtualHeight();
   if (delta) {
     if (delta > 0) {
       for (uint8_t y = 0; y < height; y++) {
-        for (uint8_t x = 0; x < width; x++) {
+        for (uint8_t x = 0; x < width-1; x++) {
           leds[XY(x, y)] = leds[XY(x + delta, y)];
         }
       }
@@ -303,18 +338,18 @@ void WS2812FX::moveX(CRGB *leds, int8_t delta) {
 }
 
 void WS2812FX::moveY(CRGB *leds, int8_t delta) {
-  uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN
-  uint16_t height = SEGMENT.virtualHeight();
+  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN
+  const uint16_t height = SEGMENT.virtualHeight();
   if (delta) {
     if (delta > 0) {
-      for (uint8_t x = 0; x < height; x++) {
-        for (uint8_t y = 0; y < width; y++) {
+      for (uint8_t x = 0; x < width; x++) {
+        for (uint8_t y = 0; y < height-1; y++) {
           leds[XY(x, y)] = leds[XY(x, y + delta)];
         }
       }
     } else {
-      for (uint8_t x = 0; x < height; x++) {
-        for (uint8_t y = width - 1; y > 0; y--) {
+      for (uint8_t x = 0; x < width; x++) {
+        for (uint8_t y = height - 1; y > 0; y--) {
           leds[XY(x, y)] = leds[XY(x, y + delta)];
         }
       }
@@ -323,11 +358,9 @@ void WS2812FX::moveY(CRGB *leds, int8_t delta) {
 }
 
 
-//ewowi20210628: new functions moved from colorutils: add segment awareness
-
 void WS2812FX::fill_solid(CRGB* leds, CRGB color) {
-  uint16_t w  = SEGMENT.virtualWidth();
-  uint16_t h = SEGMENT.virtualHeight();
+  const uint16_t w  = SEGMENT.virtualWidth();
+  const uint16_t h = SEGMENT.virtualHeight();
   for(uint16_t y = 0; y < h; y++) for (uint16_t x = 0; x < w; x++) {
     if (leds) leds[XY(x,y)] = color;
     else setPixelColorXY(x, y, color);
@@ -351,8 +384,8 @@ void WS2812FX::fadeToBlackBy(CRGB* leds, uint8_t fadeBy) {
 }
 
 void WS2812FX::nscale8(CRGB* leds, uint8_t scale) {
-  uint16_t w  = SEGMENT.virtualWidth();
-  uint16_t h = SEGMENT.virtualHeight();
+  const uint16_t w  = SEGMENT.virtualWidth();
+  const uint16_t h = SEGMENT.virtualHeight();
   for(uint16_t y = 0; y < h; y++) for (uint16_t x = 0; x < w; x++) {
     if (leds) leds[XY(x,y)].nscale8(scale);
     else setPixelColorXY(x, y, col_to_crgb(getPixelColorXY(x, y)).nscale8(scale));
@@ -360,15 +393,15 @@ void WS2812FX::nscale8(CRGB* leds, uint8_t scale) {
 }
 
 void WS2812FX::setPixels(CRGB* leds) {
-  uint16_t w = SEGMENT.virtualWidth();
-  uint16_t h = SEGMENT.virtualHeight();
+  const uint16_t w = SEGMENT.virtualWidth();
+  const uint16_t h = SEGMENT.virtualHeight();
   for (uint16_t y = 0; y < h; y++) for (uint16_t x = 0; x < w; x++) setPixelColorXY(x, y, leds[XY(x,y)]);
 }
 
 //line function
 void WS2812FX::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c, CRGB *leds) {
-  int16_t dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
-  int16_t dy = abs(y1-y0), sy = y0<y1 ? 1 : -1; 
+  const int16_t dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
+  const int16_t dy = abs(y1-y0), sy = y0<y1 ? 1 : -1; 
   int16_t err = (dx>dy ? dx : -dy)/2, e2;
   for (;;) {
     if (leds == nullptr) setPixelColorXY(x0,y0,c);
@@ -381,7 +414,7 @@ void WS2812FX::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB
 }
 
 // font curtesy of https://github.com/idispatch/raster-fonts
-static unsigned char console_font_6x8[] PROGMEM = {
+static const unsigned char console_font_6x8[] PROGMEM = {
 
     /*
      * code=0, hex=0x00, ascii="^@"
@@ -3457,8 +3490,8 @@ static unsigned char console_font_6x8[] PROGMEM = {
 };
 
 void WS2812FX::drawCharacter(unsigned char chr, int16_t x, int16_t y, CRGB color, CRGB *leds) {
-  uint16_t width  = SEGMENT.virtualWidth();
-  uint16_t height = SEGMENT.virtualHeight();
+  const uint16_t width  = SEGMENT.virtualWidth();
+  const uint16_t height = SEGMENT.virtualHeight();
 
   for (uint8_t i = 0; i<8; i++) { // character height
     int16_t y0 = y + i;

@@ -706,7 +706,7 @@ function populateSegments(s)
 		${isM ? '<tr><td>Start Y</td><td>'+(cfg.comp.seglen?'Height':'Stop Y')+'</td><td></td></tr>'+
 		'<tr>'+
 			'<td><input class="noslide segn" id="seg'+i+'sY" type="number" min="0" max="'+(mh-1)+'" value="'+inst.startY+'" oninput="updateLen('+i+')" onkeydown="segEnter('+i+')"></td>'+
-			'<td><input class="noslide segn" id="seg'+i+'eY" type="number" min="0" max="'+(mh-(cfg.comp.seglen?inst.startY:0))+'" value="'+(inst.stopY-(cfg.comp.seglen?inst.start:0))+'" oninput="updateLen('+i+')" onkeydown="segEnter('+i+')"></td>'+
+			'<td><input class="noslide segn" id="seg'+i+'eY" type="number" min="0" max="'+(mh-(cfg.comp.seglen?inst.startY:0))+'" value="'+(inst.stopY-(cfg.comp.seglen?inst.startY:0))+'" oninput="updateLen('+i+')" onkeydown="segEnter('+i+')"></td>'+
 			'<td style="text-align:revert;">'+miYck+'<br>'+rvYck+'</td>'+
 		'</tr>':''}
 		<tr>
