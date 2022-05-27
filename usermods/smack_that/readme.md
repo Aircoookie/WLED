@@ -1,6 +1,6 @@
-Clap Control
+Smack That Usermod!
 ---
-Control WLED with Clapping / Tapping / Knocking
+Control WLED with Smacks, Claps, Taps, Knocks, and more!
 
 
 Settings
@@ -38,4 +38,4 @@ Supported Sensors
 
 Demo
 ---
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/mRhMShXGT5s/0.jpg)](https://www.youtube.com/watch?v=mRhMShXGT5s)
+[![Smack That](https://img.youtube.com/vi/mRhMShXGT5s/0.jpg)](https://www.youtube.com/watch?v=mRhMShXGT5s)

@@ -128,8 +128,8 @@
 #include "../usermods/Si7021_MQTT_HA/usermod_si7021_mqtt_ha.h"
 #endif
 
-#ifdef USERMOD_CLAP_CONTROL
-#include "../usermods/clap_control/clapcontrol.h"
+#ifdef USERMOD_SMACK_THAT
+#include "../usermods/smack_that/smack_that.h"
 #endif
 
 void registerUsermods()
@@ -248,8 +248,8 @@ void registerUsermods()
   usermods.add(new Si7021_MQTT_HA());
   #endif
   
-  #ifdef USERMOD_CLAP_CONTROL
-  usermods.add(new clapControlUsermod());
+  #ifdef USERMOD_SMACK_THAT
+  usermods.add(new smackThatUsermod());
   #endif
 
 
