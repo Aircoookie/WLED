@@ -5729,8 +5729,8 @@ uint16_t WS2812FX::mode_2Dcrazybees(void) {
     }
   }
 
-  if (now > SEGENV.step) {
-    SEGENV.step = now + (FRAMETIME * 8 / ((SEGMENT.speed>>5)+1));
+  if (millis() > SEGENV.step) {
+    SEGENV.step = millis() + (FRAMETIME * 8 / ((SEGMENT.speed>>5)+1));
 
     fadeToBlackBy(leds, 32);
   
@@ -5808,8 +5808,8 @@ uint16_t WS2812FX::mode_2Dghostrider(void) {
     }
   }
 
-  if (now > SEGENV.step) {
-    SEGENV.step = now + 1024 / (width+height);
+  if (millis() > SEGENV.step) {
+    SEGENV.step = millis() + 1024 / (width+height);
 
     fadeToBlackBy(leds, SEGMENT.speed>>2);
 
@@ -5898,7 +5898,7 @@ uint16_t WS2812FX::mode_2Dfloatingblobs(void) {
 
   // Bounce balls around
   for (byte i = 0; i < Amount; i++) {
-    if (SEGENV.step < now) blob->color[i] = add8(blob->color[i], 4); // slowly change color
+    if (SEGENV.step < millis()) blob->color[i] = add8(blob->color[i], 4); // slowly change color
     // change radius if needed
     if (blob->grow[i]) {
       // enlarge radius until it is >= 4
@@ -5946,7 +5946,7 @@ uint16_t WS2812FX::mode_2Dfloatingblobs(void) {
   }
   blur2d(leds, width+height);
 
-  if (SEGENV.step < now) SEGENV.step = now + 2000; // change colors every 2 seconds
+  if (SEGENV.step < millis()) SEGENV.step = millis() + 2000; // change colors every 2 seconds
 
   setPixels(leds);
   return FRAMETIME;
@@ -5971,10 +5971,10 @@ uint16_t WS2812FX::mode_2Dscrollingtext(void) {
   if (SEGMENT.name && strlen(SEGMENT.name)) text = SEGMENT.name;
   const int numberOfLetters = strlen(text);
 
-  if (SEGENV.step < now) {
+  if (SEGENV.step < millis()) {
     ++SEGENV.aux0 %= (numberOfLetters * letterWidth) + width; // offset
     ++SEGENV.aux1 &= 0xFF; // color shift
-    SEGENV.step = now + map(SEGMENT.speed, 0, 255, 10*FRAMETIME_FIXED, 2*FRAMETIME_FIXED);
+    SEGENV.step = millis() + map(SEGMENT.speed, 0, 255, 10*FRAMETIME_FIXED, 2*FRAMETIME_FIXED);
   }
 
   fade_out(255 - (SEGMENT.custom1>>5)); // fade to background color

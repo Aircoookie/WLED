@@ -967,6 +967,7 @@ textarea {
 	top: -3px;
 	cursor: pointer;
 	padding: 8px;
+	z-index: 1;
 }
 
 .expanded .frz {
