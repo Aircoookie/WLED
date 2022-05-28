@@ -498,7 +498,10 @@ static const char *_data_FX_MODE_SAW PROGMEM = "Saw@!,Width;!,!,;!";
  */
 uint16_t WS2812FX::mode_twinkle(void) {
   const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN on 1D
-  const uint16_t height = SEGMENT.virtualHeight(); // they are actually transposed for the effect purpose to support 1D as well as 2D
+  const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
 
   fill(SEGCOLOR(1));
 
@@ -506,7 +509,7 @@ uint16_t WS2812FX::mode_twinkle(void) {
   uint32_t it = now / cycleTime;
   if (it != SEGENV.step)
   {
-    uint16_t maxOn = map(SEGMENT.intensity, 0, 255, 1, width*height-1); // make sure at least one LED is on
+    uint16_t maxOn = map(SEGMENT.intensity, 0, 255, 1, cols*rows-1); // make sure at least one LED is on
     if (SEGENV.aux0 >= maxOn)
     {
       SEGENV.aux0 = 0;
@@ -521,10 +524,10 @@ uint16_t WS2812FX::mode_twinkle(void) {
   for (uint16_t i = 0; i < SEGENV.aux0; i++)
   {
     PRNG16 = (uint16_t)(PRNG16 * 2053) + 13849; // next 'random' number
-    uint32_t p = ((uint32_t)width*height * (uint32_t)PRNG16) >> 16;
-    uint16_t j = p % width;
-    uint16_t k = p / width;
-    uint32_t col = color_from_palette(map(p, 0, width*height, 0, 255), false, PALETTE_SOLID_WRAP, 0);
+    uint32_t p = ((uint32_t)cols*rows * (uint32_t)PRNG16) >> 16;
+    uint16_t j = p % cols;
+    uint16_t k = p / cols;
+    uint32_t col = color_from_palette(map(p, 0, cols*rows, 0, 255), false, PALETTE_SOLID_WRAP, 0);
     if (isMatrix) setPixelColorXY(j, k, col);
     else          setPixelColor(j, col);
   }
@@ -1955,58 +1958,62 @@ static const char *_data_FX_MODE_PALETTE PROGMEM = "Palette@!,;1,2,3;!";
 // There are two main parameters you can play with to control the look and
 // feel of your fire: COOLING (used in step 1 above) (Speed = COOLING), and SPARKING (used
 // in step 3 above) (Effect Intensity = Sparking).
-
-
 uint16_t WS2812FX::mode_fire_2012()
 {
-  uint16_t height = SEGMENT.virtualWidth();  // same as SEGLEN on 1D
-  uint16_t width  = SEGMENT.virtualHeight(); // they are actually transposed for the effect purpose to support 1D as well as 2D
-  uint32_t it = now >> 5; //div 32
-  uint16_t q = width>>2; // a quarter of segment height
+  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN on 1D
+  const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width;
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;  // will be 1 for 1D
 
-  if (!SEGENV.allocateData(height*width)) return mode_static(); //allocation failed
+  uint32_t it = now >> 6; //div 32
+  uint16_t q  = cols>>2; // a quarter of flames
+
+  if (!SEGENV.allocateData(cols*rows)) return mode_static(); //allocation failed
   
   byte* heat = SEGENV.data;
 
   if (it != SEGENV.step) {
     SEGENV.step = it;
-    uint8_t ignition = max(3,height/10);  // ignition area: 10% of segment length or minimum 3 pixels
+    uint8_t ignition = max(3,rows/10);  // ignition area: 10% of segment length or minimum 3 pixels
 
-    for (uint16_t f = 0; f < width; f++) {
+    for (uint16_t f = 0; f < cols; f++) {
       // Step 1.  Cool down every cell a little
-      for (uint16_t i = 0; i < height; i++) {
-        uint8_t cool = (((20 + SEGMENT.speed /3) * 10) / height);
+      for (uint16_t i = 0; i < rows; i++) {
+        uint8_t cool = (((20 + SEGMENT.speed/3) * 16) / rows);
         // 2D enhancement: cool sides of the flame a bit more
-        if (width>5) {
-          if (f < q)   cool = qadd8(cool, (uint16_t)((cool *     (q-f))/width)); // cool segment sides a bit more
-          if (f > 3*q) cool = qadd8(cool, (uint16_t)((cool * (width-f))/width));  // cool segment sides a bit more
+        if (cols>5) {
+          if (f < q)   cool = qadd8(cool, 2*(uint16_t)((cool *    (q-f))/cols)); // cool segment sides a bit more
+          if (f > 3*q) cool = qadd8(cool, 2*(uint16_t)((cool * (cols-f))/cols)); // cool segment sides a bit more
         }
-        uint8_t temp = qsub8(heat[i+height*f], random8(0, cool + 2));
-        heat[i+height*f] = (temp==0 && i<ignition) ? 16 : temp; // prevent ignition area from becoming black
+        uint8_t temp = qsub8(heat[i+rows*f], random8(0, cool + 2));
+        heat[i+rows*f] = (temp==0 && i<ignition) ? random8(8,16) : temp; // prevent ignition area from becoming black
       }
 
       // Step 2.  Heat from each cell drifts 'up' and diffuses a little
-      for (uint16_t k= height -1; k > 1; k--) {
-        heat[k+height*f] = (heat[k+height*f - 1] + (heat[k+height*f - 2]<<1) ) / 3;  // heat[k-2] multiplied by 2
+      for (uint16_t k = rows -1; k > 1; k--) {
+        heat[k+rows*f] = (heat[k+rows*f - 1] + (heat[k+rows*f - 2]<<1) ) / 3;  // heat[k-2] multiplied by 2
       }
 
       // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
       if (random8() <= SEGMENT.intensity) {
         uint8_t y = random8(ignition);
-        if (y < height) heat[y+height*f] = qadd8(heat[y+height*f], random8(160,255));
+        heat[y+rows*f] = qadd8(heat[y+rows*f], random8(160,255));
       }
+    }
+  }
 
-      // Step 4.  Map from heat cells to LED colors
-      for (uint16_t j = 0; j < height; j++) {
-        CRGB color = ColorFromPalette(currentPalette, MIN(heat[j+height*f],240), 255, LINEARBLEND);
-        if (isMatrix) setPixelColorXY(f, height -j -1, color);
-        else          setPixelColor(j, color);
-      }
+  for (uint16_t f = 0; f < cols; f++) {
+    // Step 4.  Map from heat cells to LED colors
+    for (uint16_t j = 0; j < rows; j++) {
+      CRGB color = ColorFromPalette(currentPalette, /*MIN(*/heat[j+rows*f]/*,240)*/, 255, LINEARBLEND);
+      if (isMatrix) setPixelColorXY(f, rows -j -1, color);
+      else          setPixelColor(j, color);
     }
   }
   return FRAMETIME;
 }
-static const char *_data_FX_MODE_FIRE_2012 PROGMEM = "Fire 2012@Spark rate=120,Decay=64;1,2,3;!";
+static const char *_data_FX_MODE_FIRE_2012 PROGMEM = "Fire 2012@Cooling=120,Spark rate=64;1,2,3;!";
 
 
 // ColorWavesWithPalettes by Mark Kriegsman: https://gist.github.com/kriegsman/8281905786e8b2632aeb
@@ -2193,7 +2200,10 @@ static const char *_data_FX_MODE_NOISE16_4 PROGMEM = "Noise 4";
 uint16_t WS2812FX::mode_colortwinkle()
 {
   const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN on 1D
-  const uint16_t height = SEGMENT.virtualHeight(); // they are actually transposed for the effect purpose to support 1D as well as 2D
+  const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
 
   uint16_t dataSize = (width*height+7) >> 3; //1 bit per LED
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
@@ -2201,8 +2211,8 @@ uint16_t WS2812FX::mode_colortwinkle()
   CRGB fastled_col, prev;
   fract8 fadeUpAmount = _brightness>28 ? 8 + (SEGMENT.speed>>2) : 68-_brightness, fadeDownAmount = _brightness>28 ? 8 + (SEGMENT.speed>>3) : 68-_brightness;
 
-  for (uint16_t i = 0; i < width*height; i++) {
-    uint16_t j = i % width, k = i / width;
+  for (uint16_t i = 0; i < rows*cols; i++) {
+    uint16_t j = i % rows, k = i / rows;
     fastled_col = col_to_crgb(isMatrix ? getPixelColorXY(j, k) : getPixelColor(i));
     prev = fastled_col;
     uint16_t index = i >> 3;
@@ -2234,11 +2244,11 @@ uint16_t WS2812FX::mode_colortwinkle()
     }
   }
 
-  for (uint16_t j = 0; j <= width*height / 50; j++) {
+  for (uint16_t j = 0; j <= rows*cols / 50; j++) {
     if (random8() <= SEGMENT.intensity) {
       for (uint8_t times = 0; times < 5; times++) { //attempt to spawn a new pixel 5 times
-        uint16_t i = random16(width*height);
-        uint16_t j = i % width, k = i / width;
+        uint16_t i = random16(rows*cols);
+        uint16_t j = i % rows, k = i / rows;
         uint32_t col = isMatrix ? getPixelColorXY(j, k) : getPixelColor(i);
         if (col == 0) {
           fastled_col = ColorFromPalette(currentPalette, random8(), 64, NOBLEND);
@@ -2925,7 +2935,7 @@ uint16_t WS2812FX::mode_glitter()
   
   return FRAMETIME;
 }
-static const char *_data_FX_MODE_GLITTER PROGMEM = "Glitter";
+static const char *_data_FX_MODE_GLITTER PROGMEM = "Glitter@,!;!,!,!;!";
 
 
 //each needs 19 bytes
@@ -2942,8 +2952,11 @@ typedef struct Spark {
 *  modified from https://github.com/kitesurfer1404/WS2812FX/blob/master/src/custom/Popcorn.h
 */
 uint16_t WS2812FX::mode_popcorn(void) {
-  const uint16_t height = SEGMENT.virtualWidth();  // same as SEGLEN on 1D
-  const uint16_t width  = SEGMENT.virtualHeight(); // they are actually transposed for the effect purpose to support 1D as well as 2D
+  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN on 1D
+  const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows    = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;  // will be 1 for 1D
 
   //allocate segment data
   uint16_t maxNumPopcorn = 21; // max 21 on 16 segment ESP8266
@@ -2953,7 +2966,7 @@ uint16_t WS2812FX::mode_popcorn(void) {
   Spark* popcorn = reinterpret_cast<Spark*>(SEGENV.data);
 
   float gravity = -0.0001 - (SEGMENT.speed/200000.0); // m/s/s
-  gravity *= SEGLEN;
+  gravity *= rows; //SEGLEN
 
   bool hasCol2 = SEGCOLOR(2);
   fill(hasCol2 ? BLACK : SEGCOLOR(1));
@@ -2968,10 +2981,10 @@ uint16_t WS2812FX::mode_popcorn(void) {
     } else { // if kernel is inactive, randomly pop it
       if (random8() < 2) { // POP!!!
         popcorn[i].pos = 0.01f;
-        popcorn[i].posX = random16(width-1);
+        popcorn[i].posX = random16(cols);
         
         uint16_t peakHeight = 128 + random8(128); //0-255
-        peakHeight = (peakHeight * (SEGLEN -1)) >> 8;
+        peakHeight = (peakHeight * (rows -1)) >> 8;
         popcorn[i].vel = sqrt(-2.0 * gravity * peakHeight);
         popcorn[i].velX = 0;
         
@@ -2989,8 +3002,8 @@ uint16_t WS2812FX::mode_popcorn(void) {
       if (!SEGMENT.palette && popcorn[i].colIndex < NUM_COLORS) col = SEGCOLOR(popcorn[i].colIndex);
       
       uint16_t ledIndex = popcorn[i].pos;
-      if (ledIndex < SEGLEN) {
-        if (isMatrix) setPixelColorXY(popcorn[i].posX, height - 1 - ledIndex, col);
+      if (ledIndex < rows) {
+        if (isMatrix) setPixelColorXY(popcorn[i].posX, rows - 1 - ledIndex, col);
         else          setPixelColor(ledIndex, col);
       }
     }
@@ -3235,8 +3248,11 @@ static const char *_data_FX_MODE_STARBURST PROGMEM = "Fireworks Starburst";
  */
 uint16_t WS2812FX::mode_exploding_fireworks(void)
 {
-  const uint16_t height = SEGMENT.virtualWidth();  // same as SEGLEN on 1D
-  const uint16_t width  = SEGMENT.virtualHeight(); // they are actually transposed for the effect purpose to support 1D as well as 2D
+  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN on 1D
+  const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;  // will be 1 for 1D
 
   //allocate segment data
   uint16_t maxData = FAIR_DATA_PER_SEG; //ESP8266: 256 ESP32: 640
@@ -3245,7 +3261,7 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
   if (segs <= (MAX_NUM_SEGMENTS /4)) maxData *= 2; //ESP8266: 1024 if <= 4 segs ESP32: 2560 if <= 8 segs
   int maxSparks = maxData / sizeof(spark); //ESP8266: max. 21/42/85 sparks/seg, ESP32: max. 53/106/213 sparks/seg
 
-  uint16_t numSparks = min(2 + (height >> 1), maxSparks);
+  uint16_t numSparks = min(2 + (rows >> 1), maxSparks);
   uint16_t dataSize = sizeof(spark) * numSparks;
   if (!SEGENV.allocateData(dataSize + sizeof(float))) return mode_static(); //allocation failed
   float *dying_gravity = reinterpret_cast<float*>(SEGENV.data + dataSize);
@@ -3263,14 +3279,14 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
   Spark* flare = sparks; //first spark is flare data
 
   float gravity = -0.0004 - (SEGMENT.speed/800000.0); // m/s/s
-  gravity *= height;
+  gravity *= rows;
   
   if (SEGENV.aux0 < 2) { //FLARE
     if (SEGENV.aux0 == 0) { //init flare
       flare->pos = 0;
-      flare->posX = isMatrix ? random16(width) : (SEGMENT.intensity > random8()); // will enable random firing side on 1D
+      flare->posX = isMatrix ? random16(cols) : (SEGMENT.intensity > random8()); // will enable random firing side on 1D
       uint16_t peakHeight = 75 + random8(180); //0-255
-      peakHeight = (peakHeight * (height -1)) >> 8;
+      peakHeight = (peakHeight * (rows -1)) >> 8;
       flare->vel = sqrt(-2.0 * gravity * peakHeight);
       flare->velX = isMatrix ? (random8(6)-3)/23 : 0; // no X velocity on 1D
       flare->col = 255; //brightness
@@ -3280,12 +3296,12 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
     // launch 
     if (flare->vel > 12 * gravity) {
       // flare
-      if (isMatrix) setPixelColorXY(int(flare->posX), height-int(flare->pos)-1, flare->col, flare->col, flare->col);
-      else          setPixelColor(int(flare->posX) ? height-int(flare->pos)-1 : int(flare->pos), flare->col, flare->col, flare->col);
+      if (isMatrix) setPixelColorXY(flare->posX, rows - uint16_t(flare->pos) - 1, flare->col, flare->col, flare->col);
+      else          setPixelColor(int(flare->posX) ? rows - int(flare->pos) - 1 : int(flare->pos), flare->col, flare->col, flare->col);
       flare->pos  += flare->vel;
       flare->posX += flare->velX;
-      flare->pos  = constrain(flare->pos, 0, height-1);
-      flare->posX = constrain(flare->posX, 0, width-isMatrix);
+      flare->pos  = constrain(flare->pos, 0, rows-1);
+      flare->posX = constrain(flare->posX, 0, cols-isMatrix);
       flare->vel  += gravity;
       flare->col  -= 2;
     } else {
@@ -3307,13 +3323,13 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
         sparks[i].pos  = flare->pos;
         sparks[i].posX = flare->posX;
         sparks[i].vel  = (float(random16(0, 20000)) / 10000.0) - 0.9; // from -0.9 to 1.1
-        sparks[i].vel *= height<32 ? 0.5 : 1; // reduce velocity for smaller strips
+        sparks[i].vel *= rows<32 ? 0.5 : 1; // reduce velocity for smaller strips
         sparks[i].velX = isMatrix ? (float(random16(0, 16000)) / 10000.0) - 0.8 : 0; // from -0.8 to 0.8
         sparks[i].col  = 345;//abs(sparks[i].vel * 750.0); // set colors before scaling velocity to keep them bright 
         //sparks[i].col = constrain(sparks[i].col, 0, 345); 
         sparks[i].colIndex = random8();
-        sparks[i].vel  *= flare->pos/height; // proportional to height 
-        sparks[i].velX *= isMatrix ? flare->posX/width : 0; // proportional to width
+        sparks[i].vel  *= flare->pos/rows; // proportional to height 
+        sparks[i].velX *= isMatrix ? flare->posX/cols : 0; // proportional to width
         sparks[i].vel  *= -gravity *50;
       } 
       //sparks[1].col = 345; // this will be our known spark 
@@ -3329,8 +3345,8 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
         sparks[i].velX += isMatrix ? *dying_gravity : 0;
         if (sparks[i].col > 3) sparks[i].col -= 4; 
 
-        if (sparks[i].pos > 0 && sparks[i].pos < height) {
-          if (isMatrix && !(sparks[i].posX > 0 && sparks[i].posX < width)) continue;
+        if (sparks[i].pos > 0 && sparks[i].pos < rows) {
+          if (isMatrix && !(sparks[i].posX > 0 && sparks[i].posX < cols)) continue;
           uint16_t prog = sparks[i].col;
           uint32_t spColor = (SEGMENT.palette) ? color_wheel(sparks[i].colIndex) : SEGCOLOR(0);
           CRGB c = CRGB::Black; //HeatColor(sparks[i].col);
@@ -3342,8 +3358,8 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
             c.g = qsub8(c.g, cooling);
             c.b = qsub8(c.b, cooling * 2);
           }
-          if (isMatrix) setPixelColorXY(int(sparks[i].posX), height-int(sparks[i].pos)-1, c.red, c.green, c.blue);
-          else          setPixelColor(int(sparks[i].posX) ? height-int(sparks[i].pos)-1 : int(sparks[i].pos), c.red, c.green, c.blue);
+          if (isMatrix) setPixelColorXY(sparks[i].posX, rows - int(sparks[i].pos) - 1, c.red, c.green, c.blue);
+          else          setPixelColor(int(sparks[i].posX) ? rows - int(sparks[i].pos) - 1 : int(sparks[i].pos), c.red, c.green, c.blue);
         }
       }
       *dying_gravity *= .8; // as sparks burn out they fall slower
@@ -3369,13 +3385,16 @@ static const char *_data_FX_MODE_EXPLODING_FIREWORKS PROGMEM = "Fireworks 1D@Gra
  */
 uint16_t WS2812FX::mode_drip(void)
 {
-  const uint16_t height = SEGMENT.virtualWidth();  // same as SEGLEN on 1D
-  const uint16_t width  = SEGMENT.virtualHeight(); // they are actually transposed for the effect purpose to support 1D as well as 2D
+  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN on 1D
+  const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;  // will be 1 for 1D
 
   //allocate segment data
   uint8_t numDrops = 4; 
   uint16_t dataSize = sizeof(spark) * numDrops;
-  if (!SEGENV.allocateData(dataSize * width)) return mode_static(); //allocation failed
+  if (!SEGENV.allocateData(dataSize * cols)) return mode_static(); //allocation failed
 
   fill(SEGCOLOR(1));
   
@@ -3384,27 +3403,29 @@ uint16_t WS2812FX::mode_drip(void)
   numDrops = 1 + (SEGMENT.intensity >> 6); // 255>>6 = 3
 
   float gravity = -0.0005 - (SEGMENT.speed/50000.0);
-  gravity *= SEGLEN;
+  gravity *= rows;
   int sourcedrop = 12;
 
-  for (uint16_t k=0; k < width; k++) {
+  for (uint16_t k=0; k < cols; k++) {
     for (uint8_t j=0; j < numDrops; j++) {
       uint16_t idx = k*numDrops + j;
 
       if (drops[idx].colIndex == 0) { //init
-        drops[idx].pos = SEGLEN-1;    // start at end
+        drops[idx].pos = rows-1;       // start at end
         drops[idx].vel = 0;           // speed
         drops[idx].col = sourcedrop;  // brightness
         drops[idx].colIndex = 1;      // drop state (0 init, 1 forming, 2 falling, 5 bouncing) 
       }
       
-      if (isMatrix) setPixelColorXY(k, 0, color_blend(BLACK, SEGCOLOR(0), sourcedrop));
-      else          setPixelColor(SEGLEN-1, color_blend(BLACK, SEGCOLOR(0), sourcedrop));// water source
+      uint32_t col = color_blend(BLACK, SEGCOLOR(0), sourcedrop);
+      if (isMatrix) setPixelColorXY(k, 0, col);
+      else          setPixelColor(rows-1, col);// water source
 
       if (drops[idx].colIndex == 1) {
         if (drops[idx].col > 255) drops[idx].col = 255;
-        if (isMatrix) setPixelColorXY(k, height - 1 - uint16_t(drops[idx].pos), color_blend(BLACK,SEGCOLOR(0),drops[idx].col));
-        else          setPixelColor(uint16_t(drops[idx].pos), color_blend(BLACK,SEGCOLOR(0),drops[idx].col));
+        col = color_blend(BLACK,SEGCOLOR(0),drops[idx].col);
+        if (isMatrix) setPixelColorXY(k, rows - 1 - uint16_t(drops[idx].pos), col);
+        else          setPixelColor(uint16_t(drops[idx].pos), col);
         
         drops[idx].col += map(SEGMENT.speed, 0, 255, 1, 6); // swelling
         
@@ -3420,14 +3441,16 @@ uint16_t WS2812FX::mode_drip(void)
           drops[idx].vel += gravity;           // gravity is negative
 
           for (uint16_t i = 1; i < 7 - drops[idx].colIndex; i++) { // some minor math so we don't expand bouncing droplets
-            uint16_t pos = constrain(uint16_t(drops[idx].pos) +i, 0, SEGLEN-1); //this is BAD, returns a pos >= SEGLEN occasionally
-            if (isMatrix) setPixelColorXY(k, height - 1 - pos, color_blend(BLACK, SEGCOLOR(0), drops[idx].col/i)); //spread pixel with fade while falling
-            else          setPixelColor(pos, color_blend(BLACK, SEGCOLOR(0), drops[idx].col/i)); //spread pixel with fade while falling
+            uint16_t pos = constrain(uint16_t(drops[idx].pos) +i, 0, rows-1); //this is BAD, returns a pos >= SEGLEN occasionally
+            col = color_blend(BLACK, SEGCOLOR(0), drops[idx].col/i);
+            if (isMatrix) setPixelColorXY(k, rows - 1 - pos, col);
+            else          setPixelColor(pos, col); //spread pixel with fade while falling
           }
 
           if (drops[idx].colIndex > 2) {         // during bounce, some water is on the floor
-            if (isMatrix) setPixelColorXY(k, SEGLEN-1, color_blend(SEGCOLOR(0), BLACK, drops[idx].col));
-            else          setPixelColor(0, color_blend(SEGCOLOR(0), BLACK, drops[idx].col));
+            col = color_blend(SEGCOLOR(0), BLACK, drops[idx].col);
+            if (isMatrix) setPixelColorXY(k, rows - 1, col);
+            else          setPixelColor(0, col);
           }
         } else {                                 // we hit bottom
           if (drops[idx].colIndex > 2) {         // already hit once, so back to forming
@@ -3844,12 +3867,15 @@ static const char *_data_FX_MODE_PHASEDNOISE PROGMEM = "Phased Noise";
 
 uint16_t WS2812FX::mode_twinkleup(void) {                 // A very short twinkle routine with fade-in and dual controls. By Andrew Tuline.
   const uint16_t width  = SEGMENT.virtualWidth();         // same as SEGLEN on 1D
-  const uint16_t height = SEGMENT.virtualHeight();        // they are actually transposed for the effect purpose to support 1D as well as 2D
+  const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;  // will be 1 for 1D
 
   random16_set_seed(535);                                 // The randomizer needs to be re-set each time through the loop in order for the same 'random' numbers to be the same each time through.
 
-  for (int i = 0; i<width*height; i++) {
-    uint16_t j = i % width, k = i / width;
+  for (int i = 0; i<rows*cols; i++) {
+    uint16_t j = i % rows, k = i / rows;
     uint8_t ranstart = random8();                         // The starting value (aka brightness) for each pixel. Must be consistent each time through the loop for this to work.
     uint8_t pixBri = sin8(ranstart + 16 * now/(256-SEGMENT.speed));
     if (random8() > SEGMENT.intensity) pixBri = 0;
@@ -4484,9 +4510,12 @@ static const char *_data_FX_MODE_AURORA PROGMEM = "Aurora@!=24,!;1,2,3;!=50";
 uint16_t WS2812FX::mode_2DBlackHole(void) {            // By: Stepko https://editor.soulmatelights.com/gallery/1012 , Modified by: Andrew Tuline
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t w = SEGMENT.virtualWidth();
-  const uint16_t h = SEGMENT.virtualHeight();
-  const uint16_t dataSize = sizeof(CRGB) * w * h;
+  const uint16_t width  = SEGMENT.virtualWidth();
+  const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
+  const uint16_t dataSize = sizeof(CRGB) * width * height;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -4502,18 +4531,18 @@ uint16_t WS2812FX::mode_2DBlackHole(void) {            // By: Stepko https://edi
   float t = (float)(millis())/128;              // timebase
   // outer stars
   for (byte i = 0; i < 8; i++) {
-    x = beatsin8(SEGMENT.custom1>>3,       0, w - 1, 0, ((i % 2) ? 128 : 0) + t * i);
-    y = beatsin8(SEGMENT.intensity>>3, 0, h - 1, 0, ((i % 2) ? 192 : 64) + t * i);
+    x = beatsin8(SEGMENT.custom1>>3,   0, cols - 1, 0, ((i % 2) ? 128 : 0) + t * i);
+    y = beatsin8(SEGMENT.intensity>>3, 0, rows - 1, 0, ((i % 2) ? 192 : 64) + t * i);
     leds[XY(x,y)] += CHSV(i*32, 255, 255);
   }
   // inner stars
   for (byte i = 0; i < 4; i++) {
-    x = beatsin8(SEGMENT.custom2>>3, w/4, w - 1 - w/4, 0, ((i % 2) ? 128 : 0) + t * i);
-    y = beatsin8(SEGMENT.custom3>>3, h/4, h - 1 - h/4, 0, ((i % 2) ? 192 : 64) + t * i);
+    x = beatsin8(SEGMENT.custom2>>3, cols/4, cols - 1 - cols/4, 0, ((i % 2) ? 128 : 0) + t * i);
+    y = beatsin8(SEGMENT.custom3>>3, rows/4, rows - 1 - rows/4, 0, ((i % 2) ? 192 : 64) + t * i);
     leds[XY(x,y)] += CHSV(i*32, 255, 255);
   }
   // central white dot
-  leds[XY(w/2,h/2)] = CHSV(0,0,255);
+  leds[XY(cols/2,rows/2)] = CHSV(0,0,255);
   // blur everything a bit
   blur2d(leds, 16);
 
@@ -4529,9 +4558,12 @@ static const char *_data_FX_MODE_BLACK_HOLE PROGMEM = "2D Black Hole@Fade rate,O
 uint16_t WS2812FX::mode_2DColoredBursts() {              // By: ldirko   https://editor.soulmatelights.com/gallery/819-colored-bursts , modified by: Andrew Tuline
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t w = SEGMENT.virtualWidth();
-  const uint16_t h = SEGMENT.virtualHeight();
-  const uint16_t dataSize = sizeof(CRGB) * w * h;
+  const uint16_t width  = SEGMENT.virtualWidth();
+  const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
+  const uint16_t dataSize = sizeof(CRGB) * width * height;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -4551,10 +4583,10 @@ uint16_t WS2812FX::mode_2DColoredBursts() {              // By: ldirko   https:/
   fadeToBlackBy(leds, 40);
 
   for (byte i = 0; i < numLines; i++) {
-    byte x1 = beatsin8(2 + SEGMENT.speed/16, 0, (w - 1));
-    byte x2 = beatsin8(1 + SEGMENT.speed/16, 0, (w - 1));
-    byte y1 = beatsin8(5 + SEGMENT.speed/16, 0, (h - 1), 0, i * 24);
-    byte y2 = beatsin8(3 + SEGMENT.speed/16, 0, (h - 1), 0, i * 48 + 64);
+    byte x1 = beatsin8(2 + SEGMENT.speed/16, 0, (cols - 1));
+    byte x2 = beatsin8(1 + SEGMENT.speed/16, 0, (cols - 1));
+    byte y1 = beatsin8(5 + SEGMENT.speed/16, 0, (rows - 1), 0, i * 24);
+    byte y2 = beatsin8(3 + SEGMENT.speed/16, 0, (rows - 1), 0, i * 48 + 64);
     CRGB color = ColorFromPalette(currentPalette, i * 255 / numLines + (SEGENV.aux0&0xFF), 255, LINEARBLEND);
 
     byte xsteps = abs8(x1 - y1) + 1;
@@ -4588,8 +4620,11 @@ static const char *_data_FX_MODE_COLORED_BURSTS PROGMEM = "2D Colored Bursts@Spe
 uint16_t WS2812FX::mode_2Ddna(void) {         // dna originally by by ldirko at https://pastebin.com/pCkkkzcs. Updated by Preyy. WLED conversion by Andrew Tuline.
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();
+  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN on 1D
   const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
   const uint16_t dataSize = sizeof(CRGB) * width * height;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
@@ -4599,15 +4634,13 @@ uint16_t WS2812FX::mode_2Ddna(void) {         // dna originally by by ldirko at 
 
   fadeToBlackBy(leds, 64);
 
-  for(int i = 0; i < width; i++) {               // change to height if you want to re-orient, and swap the 4 lines below.
-    leds[XY(i, beatsin8(SEGMENT.speed/8, 0, height-1, 0, i*4))]     = ColorFromPalette(currentPalette, i*5+millis()/17, beatsin8(5, 55, 255, 0, i*10), LINEARBLEND);
-    leds[XY(i, beatsin8(SEGMENT.speed/8, 0, height-1, 0, i*4+128))] = ColorFromPalette(currentPalette,i*5+128+millis()/17, beatsin8(5, 55, 255, 0, i*10+128), LINEARBLEND); // 180 degrees (128) out of phase
+  for(int i = 0; i < cols; i++) {
+    leds[XY(i, beatsin8(SEGMENT.speed/8, 0, rows-1, 0, i*4))] = ColorFromPalette(currentPalette, i*5+millis()/17, beatsin8(5, 55, 255, 0, i*10), LINEARBLEND);
+    leds[XY(i, beatsin8(SEGMENT.speed/8, 0, rows-1, 0, i*4+128))] = ColorFromPalette(currentPalette,i*5+128+millis()/17, beatsin8(5, 55, 255, 0, i*10+128), LINEARBLEND); // 180 degrees (128) out of phase
   }
-
   blur2d(leds, SEGMENT.intensity/8);
 
   setPixels(leds);
-
   return FRAMETIME;
 } // mode_2Ddna()
 static const char *_data_FX_MODE_DNA PROGMEM = "2D DNA@Scroll speed,Blur;;!";
@@ -4619,8 +4652,11 @@ static const char *_data_FX_MODE_DNA PROGMEM = "2D DNA@Scroll speed,Blur;;!";
 uint16_t WS2812FX::mode_2DDNASpiral() {               // By: ldirko  https://editor.soulmatelights.com/gallery/810 , modified by: Andrew Tuline
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();
+  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN on 1D
   const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
   const uint16_t dataSize = sizeof(CRGB) * width * height;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
@@ -4637,10 +4673,10 @@ uint16_t WS2812FX::mode_2DDNASpiral() {               // By: ldirko  https://edi
   uint32_t ms = millis() / 20;
   nscale8(leds, 120);
 
-  for (uint16_t i = 0; i < height; i++) {
-    uint16_t x  = beatsin8(speeds, 0, width - 1, 0, i * freq) + beatsin8(speeds - 7, 0, width - 1, 0, i * freq + 128);
-    uint16_t x1 = beatsin8(speeds, 0, width - 1, 0, 128 + i * freq) + beatsin8(speeds - 7, 0, width - 1, 0, 128 + 64 + i * freq);
-    SEGENV.aux0 = i * 128 / width + ms; //ewowi20210629: not width - 1 to avoid crash if width = 1
+  for (uint16_t i = 0; i < rows; i++) {
+    uint16_t x  = beatsin8(speeds, 0, cols - 1, 0, i * freq) + beatsin8(speeds - 7, 0, cols - 1, 0, i * freq + 128);
+    uint16_t x1 = beatsin8(speeds, 0, cols - 1, 0, 128 + i * freq) + beatsin8(speeds - 7, 0, cols - 1, 0, 128 + 64 + i * freq);
+    SEGENV.aux0 = i * 128 / cols + ms; //ewowi20210629: not width - 1 to avoid crash if width = 1
     if ((i + ms / 8) & 3) {
       x = x / 2; x1 = x1 / 2;
       byte steps = abs8(x - x1) + 1;
@@ -4669,9 +4705,12 @@ uint16_t WS2812FX::mode_2DDrift() {              // By: Stepko   https://editor.
 
   const uint16_t width  = SEGMENT.virtualWidth();
   const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
   const uint16_t dataSize = sizeof(CRGB) * width * height;
 
-  if (width<8 || height<8) return mode_static();
+  if (cols<8 || rows<8) return mode_static();
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -4680,12 +4719,12 @@ uint16_t WS2812FX::mode_2DDrift() {              // By: Stepko   https://editor.
 
   fadeToBlackBy(leds, 128);
 
-  const uint16_t maxDim = MAX(width, height)/2;
+  const uint16_t maxDim = MAX(width, rows)/2;
   unsigned long t = millis() / (32 - (SEGMENT.speed>>3));
   for (float i = 1; i < maxDim; i += 0.25) {
     float angle = radians(t * (maxDim - i));
-    uint16_t myX = (width>>1)  + (uint16_t)(sin_t(angle) * i) + (width%2);
-    uint16_t myY = (height>>1) + (uint16_t)(cos_t(angle) * i) + (height%2);
+    uint16_t myX = (cols>>1) + (uint16_t)(sin_t(angle) * i) + (cols%2);
+    uint16_t myY = (rows>>1) + (uint16_t)(cos_t(angle) * i) + (rows%2);
     leds[XY(myX,myY)] = ColorFromPalette(currentPalette, (i * 20) + (t / 20), 255, LINEARBLEND);
   }
   blur2d(leds, SEGMENT.intensity>>3);
@@ -4704,6 +4743,9 @@ uint16_t WS2812FX::mode_2Dfirenoise(void) {               // firenoise2d. By And
 
   const uint16_t width  = SEGMENT.virtualWidth();
   const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
   const uint16_t dataSize = sizeof(CRGB) * width * height;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
@@ -4720,10 +4762,10 @@ uint16_t WS2812FX::mode_2Dfirenoise(void) {               // firenoise2d. By And
                                   CRGB::DarkOrange,CRGB::DarkOrange, CRGB::Orange, CRGB::Orange,
                                   CRGB::Yellow, CRGB::Orange, CRGB::Yellow, CRGB::Yellow);
 
-  for (uint16_t j=0; j < width; j++) {
-    for (uint16_t i=0; i < height; i++) {
-      indexx = inoise8(j*yscale*height/255, i*xscale+millis()/4);                                           // We're moving along our Perlin map.
-      leds[XY(j,i)] = ColorFromPalette(currentPalette, min(i*(indexx)>>4, 255), i*255/width, LINEARBLEND);  // With that value, look up the 8 bit colour palette value and assign it to the current LED.
+  for (uint16_t j=0; j < cols; j++) {
+    for (uint16_t i=0; i < rows; i++) {
+      indexx = inoise8(j*yscale*rows/255, i*xscale+millis()/4);                                           // We're moving along our Perlin map.
+      leds[XY(j,i)] = ColorFromPalette(currentPalette, min(i*(indexx)>>4, 255), i*255/cols, LINEARBLEND); // With that value, look up the 8 bit colour palette value and assign it to the current LED.
     } // for i
   } // for j
 
@@ -4741,6 +4783,10 @@ uint16_t WS2812FX::mode_2DFrizzles(void) {                 // By: Stepko https:/
 
   const uint16_t width  = SEGMENT.virtualWidth();
   const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
+
   const uint16_t dataSize = sizeof(CRGB) * width * height;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
@@ -4750,7 +4796,7 @@ uint16_t WS2812FX::mode_2DFrizzles(void) {                 // By: Stepko https:/
 
   fadeToBlackBy(leds, 16);
   for (byte i = 8; i > 0; i--) {
-    leds[XY(beatsin8(SEGMENT.speed/8 + i, 0, width - 1), beatsin8(SEGMENT.intensity/8 - i, 0, height - 1))] += ColorFromPalette(currentPalette, beatsin8(12, 0, 255), 255, LINEARBLEND);
+    leds[XY(beatsin8(SEGMENT.speed/8 + i, 0, cols - 1), beatsin8(SEGMENT.intensity/8 - i, 0, rows - 1))] += ColorFromPalette(currentPalette, beatsin8(12, 0, 255), 255, LINEARBLEND);
   }
   blur2d(leds, 16);
 
@@ -4773,6 +4819,9 @@ uint16_t WS2812FX::mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired
 
   const uint16_t width  = SEGMENT.virtualWidth();
   const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
   const uint16_t dataSize = sizeof(CRGB) * width * height;
 
   if (!SEGENV.allocateData(dataSize*2 + sizeof(unsigned long))) return mode_static(); //allocation failed
@@ -4788,7 +4837,7 @@ uint16_t WS2812FX::mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired
     random16_set_seed(now); //seed the random generator
 
     //give the leds random state and colors (based on intensity, colors from palette or all posible colors are chosen)
-    for (int x = 0; x < width; x++) for (int y = 0; y < height; y++) {
+    for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
       uint8_t state = random8()%2;
       if (state == 0)
         leds[XY(x,y)] = backgroundColor;
@@ -4803,10 +4852,10 @@ uint16_t WS2812FX::mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired
   }
 
   //copy previous leds (save previous generation)
-  for (int x = 0; x < width; x++) for (int y = 0; y < height; y++) prevLeds[XY(x,y)] = leds[XY(x,y)];
+  for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) prevLeds[XY(x,y)] = leds[XY(x,y)];
 
   //calculate new leds
-  for (int x = 0; x < width; x++) for (int y = 0; y < height; y++) {
+  for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
     colorCount colorsCount[9];//count the different colors in the 9*9 matrix
     for (int i=0; i<9; i++) colorsCount[i] = {backgroundColor, 0}; //init colorsCount
 
@@ -4815,8 +4864,8 @@ uint16_t WS2812FX::mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired
     for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) { //iterate through 9*9 matrix
       // wrap around segment
       int16_t xx = x+i, yy = y+j;
-      if (x+i < 0) xx = width-1;  else if (x+i >= width)  xx = 0;
-      if (y+j < 0) yy = height-1; else if (y+j >= height) yy = 0;
+      if (x+i < 0) xx = cols-1; else if (x+i >= cols)  xx = 0;
+      if (y+j < 0) yy = rows-1; else if (y+j >= rows) yy = 0;
       uint16_t xy = XY(xx, yy); // previous cell xy to check
 
       // count different neighbours and colors, except the centre cell
@@ -4858,7 +4907,7 @@ uint16_t WS2812FX::mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired
   SEGENV.aux0 = crc;
 
   setPixels(leds);
-  return FRAMETIME_FIXED * (128-(SEGMENT.speed>>1)); // update only when appropriate time passes (in 42 FPS slots)
+  return (SEGMENT.getOption(SEG_OPTION_TRANSITIONAL)) ? FRAMETIME : FRAMETIME_FIXED * (128-(SEGMENT.speed>>1)); // update only when appropriate time passes (in 42 FPS slots)
 } // mode_2Dgameoflife()
 static const char *_data_FX_MODE_GAMEOFLIFE PROGMEM = "2D Game Of Life@!,;!,!;!";
 
@@ -4871,10 +4920,13 @@ uint16_t WS2812FX::mode_2DHiphotic() {                        //  By: ldirko  ht
 
   const uint16_t width  = SEGMENT.virtualWidth();
   const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
   const uint32_t a = now / 8;
 
-  for (uint16_t x = 0; x < width; x++) {
-    for (uint16_t y = 0; y < height; y++) {
+  for (uint16_t x = 0; x < cols; x++) {
+    for (uint16_t y = 0; y < rows; y++) {
       setPixelColorXY(x, y, color_from_palette(sin8(cos8(x * SEGMENT.speed/16 + a / 3) + sin8(y * SEGMENT.intensity/16 + a / 4) + a), false, PALETTE_SOLID_WRAP, 0));
     }
   }
@@ -4903,6 +4955,9 @@ uint16_t WS2812FX::mode_2DJulia(void) {                           // An animated
 
   const uint16_t width  = SEGMENT.virtualWidth();
   const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
 
   if (!SEGENV.allocateData(sizeof(julia))) return mode_static();
   Julia* julias = reinterpret_cast<Julia*>(SEGENV.data);
@@ -4954,16 +5009,16 @@ uint16_t WS2812FX::mode_2DJulia(void) {                           // An animated
   reAl += sin((float)millis()/305.)/20.;
   imAg += sin((float)millis()/405.)/20.;
 
-  dx = (xmax - xmin) / (width);     // Scale the delta x and y values to our matrix size.
-  dy = (ymax - ymin) / (height);
+  dx = (xmax - xmin) / (cols);     // Scale the delta x and y values to our matrix size.
+  dy = (ymax - ymin) / (rows);
 
   // Start y
   float y = ymin;
-  for (int j = 0; j < height; j++) {
+  for (int j = 0; j < rows; j++) {
 
     // Start x
     float x = xmin;
-    for (int i = 0; i < width; i++) {
+    for (int i = 0; i < cols; i++) {
 
       // Now we test, as we iterate z = z^2 + c does z tend towards infinity?
       float a = x;
@@ -5009,6 +5064,9 @@ uint16_t WS2812FX::mode_2DLissajous(void) {            // By: Andrew Tuline
 
   const uint16_t width  = SEGMENT.virtualWidth();
   const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
   //uint16_t dataSize = sizeof(CRGB) * width * height;
 
   //if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
@@ -5023,8 +5081,8 @@ uint16_t WS2812FX::mode_2DLissajous(void) {            // By: Andrew Tuline
     uint8_t xlocn = sin8(now/2+i*SEGMENT.speed/64);
     uint8_t ylocn = cos8(now/2+i*128/64);
 
-    xlocn = map(xlocn,0,255,0,width-1);
-    ylocn = map(ylocn,0,255,0,height-1);
+    xlocn = map(xlocn,0,255,0,cols-1);
+    ylocn = map(ylocn,0,255,0,rows-1);
     //leds[XY(xlocn,ylocn)] = ColorFromPalette(currentPalette, now/100+i, 255, LINEARBLEND);
     //setPixelColorXY(xlocn, ylocn, crgb_to_col(ColorFromPalette(currentPalette, now/100+i, 255, LINEARBLEND)));
     setPixelColorXY(xlocn, ylocn, color_from_palette(now/100+i, false, PALETTE_SOLID_WRAP, 0));
@@ -5044,6 +5102,10 @@ uint16_t WS2812FX::mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy
 
   const uint16_t width  = SEGMENT.virtualWidth();
   const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
+
   const uint16_t dataSize = sizeof(CRGB) * width * height;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
@@ -5052,7 +5114,7 @@ uint16_t WS2812FX::mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy
   if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
 
   uint8_t fade = map(SEGMENT.custom1, 0, 255, 50, 250);    // equals trail size
-  uint8_t speed = (256-SEGMENT.speed) >> map(MIN(height, 150), 0, 150, 0, 3);    // slower speeds for small displays
+  uint8_t speed = (256-SEGMENT.speed) >> map(MIN(rows, 150), 0, 150, 0, 3);    // slower speeds for small displays
 
   CRGB spawnColor;
   CRGB trailColor;
@@ -5066,23 +5128,23 @@ uint16_t WS2812FX::mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy
 
   if (now - SEGENV.step >= speed) {
     SEGENV.step = now;
-    for (int16_t row=height-1; row>=0; row--) {
-      for (int16_t col=0; col<width; col++) {
+    for (int16_t row=rows-1; row>=0; row--) {
+      for (int16_t col=0; col<cols; col++) {
         if (leds[XY(col, row)] == spawnColor) {
           leds[XY(col, row)] = trailColor;         // create trail
-          if (row < height-1) leds[XY(col, row+1)] = spawnColor;
+          if (row < rows-1) leds[XY(col, row+1)] = spawnColor;
         }
       }
     }
 
     // fade all leds
-    for (int x=0; x<width; x++) for (int y=0; y<height; y++) {
+    for (int x=0; x<cols; x++) for (int y=0; y<rows; y++) {
       if (leds[XY(x,y)] != spawnColor) leds[XY(x,y)].nscale8(fade);         // only fade trail
     }
 
     // check for empty screen to ensure code spawn
     bool emptyScreen = true;
-    for (uint16_t x=0; x<width; x++) for (uint16_t y=0; y<height; y++) {
+    for (uint16_t x=0; x<cols; x++) for (uint16_t y=0; y<rows; y++) {
       if (leds[XY(x,y)]) {
         emptyScreen = false;
         break;
@@ -5091,7 +5153,7 @@ uint16_t WS2812FX::mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy
 
     // spawn new falling code
     if (random8() < SEGMENT.intensity || emptyScreen) {
-      uint8_t spawnX = random8(width);
+      uint8_t spawnX = random8(cols);
       leds[XY(spawnX, 0)] = spawnColor;
     }
 
@@ -5111,6 +5173,9 @@ uint16_t WS2812FX::mode_2Dmetaballs(void) {   // Metaballs by Stefan Petrick. Ca
 
   const uint16_t width  = SEGMENT.virtualWidth();
   const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
 
   float speed = 0.25f * (1+(SEGMENT.speed>>6));
 
@@ -5125,8 +5190,8 @@ uint16_t WS2812FX::mode_2Dmetaballs(void) {   // Metaballs by Stefan Petrick. Ca
   uint8_t x1 = beatsin8(23 * speed, 0, 15);
   uint8_t y1 = beatsin8(28 * speed, 0, 15);
 
-  for (uint16_t y = 0; y < height; y++) {
-    for (uint16_t x = 0; x < width; x++) {
+  for (uint16_t y = 0; y < rows; y++) {
+    for (uint16_t x = 0; x < cols; x++) {
       // calculate distances of the 3 points from actual pixel
       // and add them together with weightening
       uint16_t dx = abs(x - x1);
@@ -5171,10 +5236,13 @@ uint16_t WS2812FX::mode_2Dnoise(void) {                  // By Andrew Tuline
 
   const uint16_t width  = SEGMENT.virtualWidth();
   const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
   const uint16_t scale  = SEGMENT.intensity+2;
 
-  for (uint16_t y = 0; y < height; y++) {
-    for (uint16_t x = 0; x < width; x++) {
+  for (uint16_t y = 0; y < rows; y++) {
+    for (uint16_t x = 0; x < cols; x++) {
       uint8_t pixelHue8 = inoise8(x * scale, y * scale, millis() / (16 - SEGMENT.speed/16));
       setPixelColorXY(x, y, crgb_to_col(ColorFromPalette(currentPalette, pixelHue8)));
     }
@@ -5193,6 +5261,9 @@ uint16_t WS2812FX::mode_2DPlasmaball(void) {                   // By: Stepko htt
 
   const uint16_t width  = SEGMENT.virtualWidth();
   const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
   const uint16_t dataSize = sizeof(CRGB) * width * height;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
@@ -5202,23 +5273,23 @@ uint16_t WS2812FX::mode_2DPlasmaball(void) {                   // By: Stepko htt
 
   fadeToBlackBy(leds, 64);
   double t = millis() / (33 - SEGMENT.speed/8);
-  for (uint16_t i = 0; i < width; i++) {
+  for (uint16_t i = 0; i < cols; i++) {
     uint16_t thisVal = inoise8(i * 30, t, t);
-    uint16_t thisMax = map(thisVal, 0, 255, 0, width-1);
-    for (uint16_t j = 0; j < height; j++) {
+    uint16_t thisMax = map(thisVal, 0, 255, 0, cols-1);
+    for (uint16_t j = 0; j < rows; j++) {
       uint16_t thisVal_ = inoise8(t, j * 30, t);
-      uint16_t thisMax_ = map(thisVal_, 0, 255, 0, height-1);
-      uint16_t x = (i + thisMax_ - width / 2);
-      uint16_t y = (j + thisMax - width / 2);
+      uint16_t thisMax_ = map(thisVal_, 0, 255, 0, rows-1);
+      uint16_t x = (i + thisMax_ - cols / 2);
+      uint16_t y = (j + thisMax - cols / 2);
       uint16_t cx = (i + thisMax_);
       uint16_t cy = (j + thisMax);
 
       leds[XY(i, j)] += ((x - y > -2) && (x - y < 2)) ||
-                        ((width - 1 - x - y) > -2 && (width - 1 - x - y < 2)) ||
-                        (width - cx == 0) ||
-                        (width - 1 - cx == 0) ||
-                        ((height - cy == 0) ||
-                        (height - 1 - cy == 0)) ? ColorFromPalette(currentPalette, beat8(5), thisVal, LINEARBLEND) : CRGB::Black;
+                        ((cols - 1 - x - y) > -2 && (cols - 1 - x - y < 2)) ||
+                        (cols - cx == 0) ||
+                        (cols - 1 - cx == 0) ||
+                        ((rows - cy == 0) ||
+                        (rows - 1 - cy == 0)) ? ColorFromPalette(currentPalette, beat8(5), thisVal, LINEARBLEND) : CRGB::Black;
     }
   }
   blur2d(leds, 4);
@@ -5240,6 +5311,9 @@ uint16_t WS2812FX::mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevs
 
   const uint16_t width  = SEGMENT.virtualWidth();
   const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
   const uint16_t dataSize = sizeof(CRGB) * width * height;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
@@ -5252,8 +5326,8 @@ uint16_t WS2812FX::mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevs
     fill_solid(leds, CRGB::Black);
   }
 
-  float adjustHeight = (float)map(height, 8, 32, 28, 12);
-  uint16_t adjScale = map(width, 8, 64, 310, 63);
+  float adjustHeight = (float)map(rows, 8, 32, 28, 12);
+  uint16_t adjScale = map(cols, 8, 64, 310, 63);
 /*
   if (SEGENV.aux1 != SEGMENT.custom1/12) {   // Hacky palette rotation. We need that black.
     SEGENV.aux1 = SEGMENT.custom1/12;
@@ -5272,13 +5346,13 @@ uint16_t WS2812FX::mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevs
   uint16_t _scale = map(SEGMENT.intensity, 0, 255, 30, adjScale);
   byte _speed = map(SEGMENT.speed, 0, 255, 128, 16);
 
-  for (uint16_t x = 0; x < width; x++) {
-    for (uint16_t y = 0; y < height; y++) {
+  for (uint16_t x = 0; x < cols; x++) {
+    for (uint16_t y = 0; y < rows; y++) {
       SEGENV.step++;
       leds[XY(x, y)] = ColorFromPalette(auroraPalette,
                          qsub8(
                            inoise8((SEGENV.step%2) + x * _scale, y * 16 + SEGENV.step % 16, SEGENV.step / _speed),
-                           fabs((float)height / 2 - (float)y) * adjustHeight));
+                           fabs((float)rows / 2 - (float)y) * adjustHeight));
     }
   }
 
@@ -5296,6 +5370,9 @@ uint16_t WS2812FX::mode_2DPulser(void) {                       // By: ldirko   h
 
   const uint16_t width  = SEGMENT.virtualWidth();
   const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
   const uint16_t dataSize = sizeof(CRGB) * width * height;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
@@ -5307,9 +5384,9 @@ uint16_t WS2812FX::mode_2DPulser(void) {                       // By: ldirko   h
 
   uint16_t a = now / (18 - SEGMENT.speed / 16);
   uint16_t x = (a / 14);
-  uint16_t y = map((sin8(a * 5) + sin8(a * 4) + sin8(a * 2)), 0, 765, height-1, 0);
+  uint16_t y = map((sin8(a * 5) + sin8(a * 4) + sin8(a * 2)), 0, 765, rows-1, 0);
   uint16_t index = XY(x, y);
-  leds[index] = ColorFromPalette(currentPalette, map(y, 0, height-1, 0, 255), 255, LINEARBLEND);
+  leds[index] = ColorFromPalette(currentPalette, map(y, 0, rows-1, 0, 255), 255, LINEARBLEND);
   blur2d(leds, 1 + (SEGMENT.intensity>>4));
 
   setPixels(leds);       // Use this ONLY if we're going to display via leds[x] method.
@@ -5326,6 +5403,9 @@ uint16_t WS2812FX::mode_2DSindots(void) {                             // By: ldi
 
   const uint16_t width  = SEGMENT.virtualWidth();
   const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
   const uint16_t dataSize = sizeof(CRGB) * width * height;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
@@ -5337,8 +5417,8 @@ uint16_t WS2812FX::mode_2DSindots(void) {                             // By: ldi
   byte t1 = millis() / (257 - SEGMENT.speed); // 20;
   byte t2 = sin8(t1) / 4 * 2;
   for (uint16_t i = 0; i < 13; i++) {
-    byte x = sin8(t1 + i * SEGMENT.intensity/8)*(width-1)/255;  //   max index now 255x15/255=15!
-    byte y = sin8(t2 + i * SEGMENT.intensity/8)*(height-1)/255;  //  max index now 255x15/255=15!
+    byte x = sin8(t1 + i * SEGMENT.intensity/8)*(cols-1)/255;  //   max index now 255x15/255=15!
+    byte y = sin8(t2 + i * SEGMENT.intensity/8)*(rows-1)/255;  //  max index now 255x15/255=15!
     leds[XY(x, y)] = ColorFromPalette(currentPalette, i * 255 / 13, 255, LINEARBLEND);
   }
   blur2d(leds, 16);
@@ -5359,6 +5439,9 @@ uint16_t WS2812FX::mode_2Dsquaredswirl(void) {            // By: Mark Kriegsman.
 
   const uint16_t width  = SEGMENT.virtualWidth();
   const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
   const uint16_t dataSize = sizeof(CRGB) * width * height;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
@@ -5373,12 +5456,12 @@ uint16_t WS2812FX::mode_2Dsquaredswirl(void) {            // By: Mark Kriegsman.
   blur2d(leds, blurAmount);
 
   // Use two out-of-sync sine waves
-  uint8_t i = beatsin8(19, kBorderWidth, width-kBorderWidth);
-  uint8_t j = beatsin8(22, kBorderWidth, width-kBorderWidth);
-  uint8_t k = beatsin8(17, kBorderWidth, width-kBorderWidth);
-  uint8_t m = beatsin8(18, kBorderWidth, height-kBorderWidth);
-  uint8_t n = beatsin8(15, kBorderWidth, height-kBorderWidth);
-  uint8_t p = beatsin8(20, kBorderWidth, height-kBorderWidth);
+  uint8_t i = beatsin8(19, kBorderWidth, cols-kBorderWidth);
+  uint8_t j = beatsin8(22, kBorderWidth, cols-kBorderWidth);
+  uint8_t k = beatsin8(17, kBorderWidth, cols-kBorderWidth);
+  uint8_t m = beatsin8(18, kBorderWidth, rows-kBorderWidth);
+  uint8_t n = beatsin8(15, kBorderWidth, rows-kBorderWidth);
+  uint8_t p = beatsin8(20, kBorderWidth, rows-kBorderWidth);
 
   uint16_t ms = millis();
 
@@ -5400,6 +5483,9 @@ uint16_t WS2812FX::mode_2DSunradiation(void) {                   // By: ldirko h
 
   const uint16_t width  = SEGMENT.virtualWidth();
   const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
   const uint16_t dataSize = sizeof(CRGB) * width * height;
 
   if (!SEGENV.allocateData(dataSize + (sizeof(byte)*(width+2)*(height+2)))) return mode_static(); //allocation failed
@@ -5411,22 +5497,22 @@ uint16_t WS2812FX::mode_2DSunradiation(void) {                   // By: ldirko h
   unsigned long t = millis() / 4;
   int index = 0;
   uint8_t someVal = SEGMENT.speed/4;             // Was 25.
-  for (uint16_t j = 0; j < (height + 2); j++) {
-    for (uint16_t i = 0; i < (width + 2); i++) {
+  for (uint16_t j = 0; j < (rows + 2); j++) {
+    for (uint16_t i = 0; i < (cols + 2); i++) {
       byte col = (inoise8_raw(i * someVal, j * someVal, t)) / 2;
       bump[index++] = col;
     }
   }
 
-  int yindex = width + 3;
-  int16_t vly = -(height / 2 + 1);
-  for (uint16_t y = 0; y < height; y++) {
+  int yindex = cols + 3;
+  int16_t vly = -(rows / 2 + 1);
+  for (uint16_t y = 0; y < rows; y++) {
     ++vly;
-    int16_t vlx = -(width / 2 + 1);
-    for (uint16_t x = 0; x < width; x++) {
+    int16_t vlx = -(cols / 2 + 1);
+    for (uint16_t x = 0; x < cols; x++) {
       ++vlx;
       int8_t nx = bump[x + yindex + 1] - bump[x + yindex - 1];
-      int8_t ny = bump[x + yindex + (width + 2)] - bump[x + yindex - (width + 2)];
+      int8_t ny = bump[x + yindex + (cols + 2)] - bump[x + yindex - (cols + 2)];
       byte difx = abs8(vlx * 7 - nx);
       byte dify = abs8(vly * 7 - ny);
       int temp = difx * difx + dify * dify;
@@ -5434,7 +5520,7 @@ uint16_t WS2812FX::mode_2DSunradiation(void) {                   // By: ldirko h
       if (col < 0) col = 0;
       leds[XY(x, y)] = HeatColor(col / (3.0f-(float)(SEGMENT.intensity)/128.f));
     }
-    yindex += (width + 2);
+    yindex += (cols + 2);
   }
 
   setPixels(leds);
@@ -5451,6 +5537,10 @@ uint16_t WS2812FX::mode_2Dtartan(void) {          // By: Elliott Kember  https:/
 
   const uint16_t width  = SEGMENT.virtualWidth();
   const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
+
   const uint16_t dataSize = sizeof(CRGB) * width * height;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
@@ -5462,8 +5552,8 @@ uint16_t WS2812FX::mode_2Dtartan(void) {          // By: Elliott Kember  https:/
   int offsetX = beatsin16(3, -360, 360);
   int offsetY = beatsin16(2, -360, 360);
 
-  for (uint16_t x = 0; x < width; x++) {
-    for (uint16_t y = 0; y < height; y++) {
+  for (uint16_t x = 0; x < cols; x++) {
+    for (uint16_t y = 0; y < rows; y++) {
       uint16_t index = XY(x, y);
       hue = x * beatsin16(10, 1, 10) + offsetY;
       leds[index] = ColorFromPalette(currentPalette, hue, sin8(x * SEGMENT.speed + offsetX) * sin8(x * SEGMENT.speed + offsetX) / 255, LINEARBLEND);
@@ -5486,6 +5576,9 @@ uint16_t WS2812FX::mode_2DWaverly(void) {                                       
 
   const uint16_t width  = SEGMENT.virtualWidth();
   const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
   const uint16_t dataSize = sizeof(CRGB) * width * height;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
@@ -5496,15 +5589,15 @@ uint16_t WS2812FX::mode_2DWaverly(void) {                                       
   fadeToBlackBy(leds, SEGMENT.speed);
 
   long t = now / 2;
-  for (uint16_t i = 0; i < width; i++) {
+  for (uint16_t i = 0; i < cols; i++) {
     //uint8_t tmpSound = (soundAgc) ? sampleAgc : sampleAvg;
 
     uint16_t thisVal = /*tmpSound*/((SEGMENT.intensity>>2)+1) * inoise8(i * 45 , t , t)/64;
-    uint16_t thisMax = map(thisVal, 0, 512, 0, height);
+    uint16_t thisMax = map(thisVal, 0, 512, 0, rows);
 
     for (uint16_t j = 0; j < thisMax; j++) {
       leds[XY(i, j)] += ColorFromPalette(currentPalette, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND);
-      leds[XY((width - 1) - i, (height - 1) - j)] += ColorFromPalette(currentPalette, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND);
+      leds[XY((cols - 1) - i, (rows - 1) - j)] += ColorFromPalette(currentPalette, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND);
     }
   }
   blur2d(leds, 16);
@@ -5523,6 +5616,9 @@ uint16_t WS2812FX::mode_2DAkemi(void) {
 
   const uint16_t width  = SEGMENT.virtualWidth();
   const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
 
   uint16_t counter = (now * ((SEGMENT.speed >> 2) +2)) & 0xFFFF;
   counter = counter >> 8;
@@ -5563,7 +5659,7 @@ uint16_t WS2812FX::mode_2DAkemi(void) {
   };
 
   //draw and color Akemi
-  for (uint16_t y=0; y < height; y++) for (uint16_t x=0; x < width; x++) {
+  for (uint16_t y=0; y < rows; y++) for (uint16_t x=0; x < cols; x++) {
     CRGB color = BLACK;
     CRGB faceColor = color_wheel(counter);
     CRGB armsAndLegsColor = SEGCOLOR(1) > 0 ? SEGCOLOR(1) : 0xFFE0A0; //default warmish white 0xABA8FF; //0xFF52e5;//
@@ -5571,7 +5667,7 @@ uint16_t WS2812FX::mode_2DAkemi(void) {
     float lightFactor = 0.15;
     float normalFactor = 0.4;
     float base = 0.0; //fftResult[0]/255.0;
-    switch (akemi[(y * 32)/height][(x * 32)/width]) {
+    switch (akemi[(y * 32)/rows][(x * 32)/cols]) {
       case 0: color = BLACK; break;
       case 3: armsAndLegsColor.r *= lightFactor;  armsAndLegsColor.g *= lightFactor;  armsAndLegsColor.b *= lightFactor;  color = armsAndLegsColor; break; //light arms and legs 0x9B9B9B
       case 2: armsAndLegsColor.r *= normalFactor; armsAndLegsColor.g *= normalFactor; armsAndLegsColor.b *= normalFactor; color = armsAndLegsColor; break; //normal arms and legs 0x888888
@@ -5593,14 +5689,14 @@ uint16_t WS2812FX::mode_2DAkemi(void) {
 
   //add geq left and right
   /*
-  for (uint16_t x=0; x < width/8; x++) {
-    uint16_t band = x * width/8;
-    uint16_t barHeight = map(fftResult[band], 0, 255, 0, 17*height/32);
+  for (uint16_t x=0; x < cols/8; x++) {
+    uint16_t band = x * cols/8;
+    uint16_t barHeight = map(fftResult[band], 0, 255, 0, 17*rows/32);
     CRGB color = color_from_palette((band * 35), false, PALETTE_SOLID_WRAP, 0);
 
     for (uint16_t y=0; y < barHeight; y++) {
-      setPixelColorXY(x, height/2-y, color);
-      setPixelColorXY(width-1-x, height/2-y, color);
+      setPixelColorXY(x, rows/2-y, color);
+      setPixelColorXY(cols-1-x, rows/2-y, color);
     }
   }
   */
@@ -5617,6 +5713,9 @@ uint16_t WS2812FX::mode_2Dspaceships(void) {    //// Space ships by stepko (c)05
 
   const uint16_t width  = SEGMENT.virtualWidth();
   const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
   const uint16_t dataSize = sizeof(CRGB) * width * height;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
@@ -5667,11 +5766,11 @@ uint16_t WS2812FX::mode_2Dspaceships(void) {    //// Space ships by stepko (c)05
       break;
   }
   for (byte i = 0; i < 8; i++) {
-    byte x = beatsin8(12 + i, 2, width - 3);
-    byte y = beatsin8(15 + i, 2, height - 3);
+    byte x = beatsin8(12 + i, 2, cols - 3);
+    byte y = beatsin8(15 + i, 2, rows - 3);
     CRGB color = ColorFromPalette(currentPalette, beatsin8(12 + i, 0, 255), 255);
     leds[XY(x, y)] += color;
-    if (width > 24 || height > 24) {
+    if (cols > 24 || rows > 24) {
       leds[XY(x + 1, y)] += color;
       leds[XY(x - 1, y)] += color;
       leds[XY(x, y + 1)] += color;
@@ -5696,6 +5795,9 @@ uint16_t WS2812FX::mode_2Dcrazybees(void) {
 
   const uint16_t width  = SEGMENT.virtualWidth();
   const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
   const uint16_t dataSize = sizeof(CRGB) * width * height;
 
   byte n = MIN(MAX_BEES, (width * height) / 256 + 1);
@@ -5703,10 +5805,10 @@ uint16_t WS2812FX::mode_2Dcrazybees(void) {
   typedef struct Bee {
     uint8_t posX, posY, aimX, aimY, hue;
     int8_t deltaX, deltaY, signX, signY, error;
-    void aimed(uint16_t width, uint16_t height) {
+    void aimed(uint16_t w, uint16_t h) {
       randomSeed(millis());
-      aimX = random8(0, width);
-      aimY = random8(0, height);
+      aimX = random8(0, w);
+      aimY = random8(0, h);
       hue = random8();
       deltaX = abs(aimX - posX);
       deltaY = abs(aimY - posY);
@@ -5723,9 +5825,9 @@ uint16_t WS2812FX::mode_2Dcrazybees(void) {
   if (SEGENV.call == 0) {
     fill_solid(leds, CRGB::Black);
     for (byte i = 0; i < n; i++) {
-      bee[i].posX = random8(0, width);
-      bee[i].posY = random8(0, height);
-      bee[i].aimed(width, height);
+      bee[i].posX = random8(0, cols);
+      bee[i].posY = random8(0, rows);
+      bee[i].aimed(cols, rows);
     }
   }
 
@@ -5751,7 +5853,7 @@ uint16_t WS2812FX::mode_2Dcrazybees(void) {
           bee[i].posY += bee[i].signY;
         }
       } else {
-        bee[i].aimed(width, height);
+        bee[i].aimed(width, rows);
       }
     }
     blur2d(leds, SEGMENT.intensity>>4);
@@ -5773,6 +5875,10 @@ uint16_t WS2812FX::mode_2Dghostrider(void) {
 
   const uint16_t width  = SEGMENT.virtualWidth();
   const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
+
   const uint16_t dataSize = sizeof(CRGB) * width * height;
 
   typedef struct Lighter {
@@ -5799,8 +5905,8 @@ uint16_t WS2812FX::mode_2Dghostrider(void) {
     randomSeed(now);
     lighter->angleSpeed = random(-10, 10);
     lighter->Vspeed = 5;
-    lighter->gPosX = (width/2) * 10;
-    lighter->gPosY = (height/2) * 10;
+    lighter->gPosX = (cols/2) * 10;
+    lighter->gPosY = (rows/2) * 10;
     for (byte i = 0; i < maxLighters; i++) {
       lighter->lightersPosX[i] = lighter->gPosX;
       lighter->lightersPosY[i] = lighter->gPosY + i;
@@ -5809,7 +5915,7 @@ uint16_t WS2812FX::mode_2Dghostrider(void) {
   }
 
   if (millis() > SEGENV.step) {
-    SEGENV.step = millis() + 1024 / (width+height);
+    SEGENV.step = millis() + 1024 / (cols+rows);
 
     fadeToBlackBy(leds, SEGMENT.speed>>2);
 
@@ -5819,17 +5925,17 @@ uint16_t WS2812FX::mode_2Dghostrider(void) {
     lighter->gPosX += lighter->Vspeed * sin_t(radians(lighter->gAngle));
     lighter->gPosY += lighter->Vspeed * cos_t(radians(lighter->gAngle));
     lighter->gAngle += lighter->angleSpeed;
-    if (lighter->gPosX < 0)                 lighter->gPosX = (width - 1) * 10;
-    if (lighter->gPosX > (width - 1) * 10)  lighter->gPosX = 0;
-    if (lighter->gPosY < 0)                 lighter->gPosY = (height - 1) * 10;
-    if (lighter->gPosY > (height - 1) * 10) lighter->gPosY = 0;
+    if (lighter->gPosX < 0)               lighter->gPosX = (cols - 1) * 10;
+    if (lighter->gPosX > (cols - 1) * 10) lighter->gPosX = 0;
+    if (lighter->gPosY < 0)               lighter->gPosY = (rows - 1) * 10;
+    if (lighter->gPosY > (rows - 1) * 10) lighter->gPosY = 0;
     for (byte i = 0; i < maxLighters; i++) {
       lighter->time[i] += random8(5, 20);
       if (lighter->time[i] >= 255 ||
         (lighter->lightersPosX[i] <= 0) ||
-          (lighter->lightersPosX[i] >= (width - 1) * 10) ||
+          (lighter->lightersPosX[i] >= (cols - 1) * 10) ||
           (lighter->lightersPosY[i] <= 0) ||
-          (lighter->lightersPosY[i] >= (height - 1) * 10)) {
+          (lighter->lightersPosY[i] >= (rows - 1) * 10)) {
         lighter->reg[i] = true;
       }
       if (lighter->reg[i]) {
@@ -5863,6 +5969,10 @@ uint16_t WS2812FX::mode_2Dfloatingblobs(void) {
 
   const uint16_t width  = SEGMENT.virtualWidth();
   const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
+
   const uint16_t dataSize = sizeof(CRGB) * width * height;
 
   typedef struct Blob {
@@ -5882,11 +5992,11 @@ uint16_t WS2812FX::mode_2Dfloatingblobs(void) {
   if (SEGENV.call == 0) {
     fill_solid(leds, CRGB::Black);
     for (byte i = 0; i < MAX_BLOBS; i++) {
-      blob->r[i] = width>15 ? random8(1, width/8) : 1;
-      blob->sX[i] = (float) random8(5, width) / (float)(256 - SEGMENT.speed); // speed x
-      blob->sY[i] = (float) random8(5, height) / (float)(256 - SEGMENT.speed); // speed y
-      blob->x[i] = random8(0, width-1);
-      blob->y[i] = random8(0, height-1);
+      blob->r[i] = cols>15 ? random8(1, cols/8) : 1;
+      blob->sX[i] = (float) random8(5, cols) / (float)(256 - SEGMENT.speed); // speed x
+      blob->sY[i] = (float) random8(5, rows) / (float)(256 - SEGMENT.speed); // speed y
+      blob->x[i] = random8(0, cols-1);
+      blob->y[i] = random8(0, rows-1);
       blob->color[i] = random8();
       blob->grow[i] = (blob->r[i] < 1.);
       if (blob->sX[i] == 0) blob->sX[i] = 1;
@@ -5903,7 +6013,7 @@ uint16_t WS2812FX::mode_2Dfloatingblobs(void) {
     if (blob->grow[i]) {
       // enlarge radius until it is >= 4
       blob->r[i] += (fabs(blob->sX[i]) > fabs(blob->sY[i]) ? fabs(blob->sX[i]) : fabs(blob->sY[i])) * 0.05;
-      if (blob->r[i] >= MIN(width/8,2.)) {
+      if (blob->r[i] >= MIN(cols/8,2.)) {
         blob->grow[i] = false;
       }
     } else {
@@ -5918,33 +6028,33 @@ uint16_t WS2812FX::mode_2Dfloatingblobs(void) {
     if (blob->r[i] > 1.) fill_circle(leds, blob->y[i], blob->x[i], blob->r[i], c);
     else                 leds[XY(blob->y[i], blob->x[i])] += c;
     // move x
-    if (blob->x[i] + blob->r[i] >= width - 1)  blob->x[i] += (blob->sX[i] * ((width - 1 - blob->x[i]) / blob->r[i] + 0.005));
-    else if (blob->x[i] - blob->r[i] <= 0)     blob->x[i] += (blob->sX[i] * (blob->x[i] / blob->r[i] + 0.005));
-    else                                       blob->x[i] += blob->sX[i];
+    if (blob->x[i] + blob->r[i] >= cols - 1) blob->x[i] += (blob->sX[i] * ((cols - 1 - blob->x[i]) / blob->r[i] + 0.005));
+    else if (blob->x[i] - blob->r[i] <= 0)   blob->x[i] += (blob->sX[i] * (blob->x[i] / blob->r[i] + 0.005));
+    else                                     blob->x[i] += blob->sX[i];
     // move y
-    if (blob->y[i] + blob->r[i] >= height - 1) blob->y[i] += (blob->sY[i] * ((height - 1 - blob->y[i]) / blob->r[i] + 0.005));
-    else if (blob->y[i] - blob->r[i] <= 0)     blob->y[i] += (blob->sY[i] * (blob->y[i] / blob->r[i] + 0.005));
-    else                                       blob->y[i] += blob->sY[i];
+    if (blob->y[i] + blob->r[i] >= rows - 1) blob->y[i] += (blob->sY[i] * ((rows - 1 - blob->y[i]) / blob->r[i] + 0.005));
+    else if (blob->y[i] - blob->r[i] <= 0)   blob->y[i] += (blob->sY[i] * (blob->y[i] / blob->r[i] + 0.005));
+    else                                     blob->y[i] += blob->sY[i];
     // bounce x
     if (blob->x[i] < 0.01) {
-      blob->sX[i] = (float) random8(5, width) / (256 - SEGMENT.speed);
+      blob->sX[i] = (float) random8(5, cols) / (256 - SEGMENT.speed);
       blob->x[i] = 0.01;
-    } else if (blob->x[i] > width - 1.01) {
-      blob->sX[i] = (float) random8(5, width) / (256 - SEGMENT.speed);
+    } else if (blob->x[i] > cols - 1.01) {
+      blob->sX[i] = (float) random8(5, cols) / (256 - SEGMENT.speed);
       blob->sX[i] = -blob->sX[i];
-      blob->x[i] = width - 1.01;
+      blob->x[i] = cols - 1.01;
     }
     // bounce y
     if (blob->y[i] < 0.01) {
-      blob->sY[i] = (float) random8(5, height) / (256 - SEGMENT.speed);
+      blob->sY[i] = (float) random8(5, rows) / (256 - SEGMENT.speed);
       blob->y[i] = 0.01;
-    } else if (blob->y[i] > height - 1.01) {
-      blob->sY[i] = (float) random8(5, height) / (256 - SEGMENT.speed);
+    } else if (blob->y[i] > rows - 1.01) {
+      blob->sY[i] = (float) random8(5, rows) / (256 - SEGMENT.speed);
       blob->sY[i] = -blob->sY[i];
-      blob->y[i] = height - 1.01;
+      blob->y[i] = rows - 1.01;
     }
   }
-  blur2d(leds, width+height);
+  blur2d(leds, cols+rows);
 
   if (SEGENV.step < millis()) SEGENV.step = millis() + 2000; // change colors every 2 seconds
 
@@ -5963,16 +6073,19 @@ uint16_t WS2812FX::mode_2Dscrollingtext(void) {
 
   const uint16_t width  = SEGMENT.virtualWidth();
   const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
 
   const int letterWidth = 6;
   const int letterHeight = 8;
-  const int yoffset = map(SEGMENT.intensity, 0, 255, -height/2, height/2) + (height-letterHeight)/2;
+  const int yoffset = map(SEGMENT.intensity, 0, 255, -rows/2, rows/2) + (rows-letterHeight)/2;
   const char *text = PSTR("Use segment name"); // fallback if empty segment name
   if (SEGMENT.name && strlen(SEGMENT.name)) text = SEGMENT.name;
   const int numberOfLetters = strlen(text);
 
   if (SEGENV.step < millis()) {
-    ++SEGENV.aux0 %= (numberOfLetters * letterWidth) + width; // offset
+    ++SEGENV.aux0 %= (numberOfLetters * letterWidth) + cols; // offset
     ++SEGENV.aux1 &= 0xFF; // color shift
     SEGENV.step = millis() + map(SEGMENT.speed, 0, 255, 10*FRAMETIME_FIXED, 2*FRAMETIME_FIXED);
   }
@@ -5980,9 +6093,9 @@ uint16_t WS2812FX::mode_2Dscrollingtext(void) {
   fade_out(255 - (SEGMENT.custom1>>5)); // fade to background color
 
   for (uint16_t i = 0; i < numberOfLetters; i++) {
-    if (int(width) - int(SEGENV.aux0) + letterWidth*(i+1) < 0) continue; // don't draw characters off-screen
+    if (int(cols) - int(SEGENV.aux0) + letterWidth*(i+1) < 0) continue; // don't draw characters off-screen
     if (text[i]<32 || text[i]>126) continue; // skip non-ANSII characters (may add UTF translation at some point)
-    drawCharacter(text[i], int(width) - int(SEGENV.aux0) + letterWidth*i, yoffset, color_from_palette(SEGENV.aux1, false, PALETTE_SOLID_WRAP, 0));
+    drawCharacter(text[i], int(cols) - int(SEGENV.aux0) + letterWidth*i, yoffset, color_from_palette(SEGENV.aux1, false, PALETTE_SOLID_WRAP, 0));
   }
 
   return FRAMETIME;
@@ -5999,11 +6112,14 @@ uint16_t WS2812FX::mode_2Ddriftrose(void) {
 
   const uint16_t width  = SEGMENT.virtualWidth();
   const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
+  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
   const uint16_t dataSize = sizeof(CRGB) * width * height;
 
-  const float CX = width/2.f - .5f;
-  const float CY = height/2.f - .5f;
-  const float L = min(width, height) / 2.f;
+  const float CX = cols/2.f - .5f;
+  const float CY = rows/2.f - .5f;
+  const float L = min(cols, rows) / 2.f;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);

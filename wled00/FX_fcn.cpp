@@ -890,9 +890,12 @@ uint32_t IRAM_ATTR WS2812FX::color_blend(uint32_t color1, uint32_t color2, uint1
  * Fills segment with color
  */
 void WS2812FX::fill(uint32_t c) {
-  uint16_t w = SEGMENT.virtualWidth();  // same as SEGLEN
-  uint16_t h = SEGMENT.virtualHeight();
-  for(uint16_t y = 0; y < h; y++) for (uint16_t x = 0; x < w; x++) {
+  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN
+  const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isTransposed ? width : height; 
+  const uint16_t cols   = isTransposed ? height : width;
+  for(uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
     if (isMatrix) setPixelColorXY(x, y, c);
     else          setPixelColor(x, c);
   }
@@ -910,8 +913,12 @@ void WS2812FX::blendPixelColor(uint16_t n, uint32_t color, uint8_t blend)
  * fade out function, higher rate = quicker fade
  */
 void WS2812FX::fade_out(uint8_t rate) {
-  uint16_t w = SEGMENT.virtualWidth();  // same as SEGLEN
-  uint16_t h = SEGMENT.virtualHeight();
+  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN
+  const uint16_t height = SEGMENT.virtualHeight();
+  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
+  const uint16_t rows   = isTransposed ? width : height; 
+  const uint16_t cols   = isTransposed ? height : width;
+
   rate = (255-rate) >> 1;
   float mappedRate = float(rate) +1.1;
 
@@ -921,7 +928,7 @@ void WS2812FX::fade_out(uint8_t rate) {
   int g2 = G(color);
   int b2 = B(color);
 
-  for(uint16_t y = 0; y < h; y++) for (uint16_t x = 0; x < w; x++) {
+  for(uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
     color = isMatrix ? getPixelColorXY(x, y) : getPixelColor(x);
     int w1 = W(color);
     int r1 = R(color);

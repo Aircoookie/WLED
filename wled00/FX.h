@@ -306,8 +306,8 @@ class WS2812FX {
       inline bool     getOption(uint8_t n)   { return ((options >> n) & 0x01); }
       inline bool     isSelected()           { return getOption(0); }
       inline bool     isActive()             { return stop > start; }
-      inline uint16_t width()                { return getOption(SEG_OPTION_TRANSPOSED) ? stopY - startY : stop - start; }
-      inline uint16_t height()               { return getOption(SEG_OPTION_TRANSPOSED) ? stop - start : stopY - startY; }
+      inline uint16_t width()                { return /*getOption(SEG_OPTION_TRANSPOSED) ? stopY - startY :*/ stop - start; }
+      inline uint16_t height()               { return /*getOption(SEG_OPTION_TRANSPOSED) ? stop - start :*/ stopY - startY; }
       inline uint16_t length()               { return width(); }
       inline uint16_t groupLength()          { return grouping + spacing; }
       inline uint8_t  getLightCapabilities() { return _capabilities; }
