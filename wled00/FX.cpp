@@ -1966,7 +1966,7 @@ uint16_t WS2812FX::mode_fire_2012()
   const uint16_t rows   = isMatrix && !isTransposed ? height : width;
   const uint16_t cols   = isMatrix && !isTransposed ? width : height;  // will be 1 for 1D
 
-  uint32_t it = now >> 6; //div 32
+  uint32_t it = now >> 5; //div 32
   uint16_t q  = cols>>2; // a quarter of flames
 
   if (!SEGENV.allocateData(cols*rows)) return mode_static(); //allocation failed
