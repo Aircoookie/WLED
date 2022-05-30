@@ -497,11 +497,8 @@ static const char *_data_FX_MODE_SAW PROGMEM = "Saw@!,Width;!,!,;!";
  * Inspired by www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/
  */
 uint16_t WS2812FX::mode_twinkle(void) {
-  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN on 1D
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
+  const uint16_t cols = isMatrix ? SEGMENT.virtualWidth() : SEGMENT.virtualLength();
+  const uint16_t rows = SEGMENT.virtualHeight();
 
   fill(SEGCOLOR(1));
 
@@ -1169,7 +1166,7 @@ static const char *_data_FX_MODE_COMET PROGMEM = "Lighthouse";
  * Fireworks function.
  */
 uint16_t WS2812FX::mode_fireworks() {
-  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN on 1D
+  const uint16_t width  = isMatrix ? SEGMENT.virtualWidth() : SEGMENT.virtualLength();
   const uint16_t height = SEGMENT.virtualHeight();
 
   fade_out(0);
@@ -1183,8 +1180,7 @@ uint16_t WS2812FX::mode_fireworks() {
   uint32_t sv1 = 0, sv2 = 0;
   if (valid1) sv1 = isMatrix ? getPixelColorXY(SEGENV.aux0%width, SEGENV.aux0/width) : getPixelColor(SEGENV.aux0); // get spark color
   if (valid2) sv2 = isMatrix ? getPixelColorXY(SEGENV.aux1%width, SEGENV.aux1/width) : getPixelColor(SEGENV.aux1);
-  if (isMatrix) blur2d(nullptr, 64);
-  else          blur(127);
+  if (!SEGENV.step) blur(16);
   if (valid1) { if (isMatrix) setPixelColorXY(SEGENV.aux0%width, SEGENV.aux0/width, sv1); else setPixelColor(SEGENV.aux0, sv1); } // restore spark color after blur
   if (valid2) { if (isMatrix) setPixelColorXY(SEGENV.aux1%width, SEGENV.aux1/width, sv2); else setPixelColor(SEGENV.aux1, sv2); } // restore old spark color after blur
 
@@ -1207,35 +1203,29 @@ static const char *_data_FX_MODE_FIREWORKS PROGMEM = "Fireworks@,Frequency=192;!
 //Twinkling LEDs running. Inspired by https://github.com/kitesurfer1404/WS2812FX/blob/master/src/custom/Rain.h
 uint16_t WS2812FX::mode_rain()
 {
-  if (isMatrix) {
-    return mode_static();
-    /*
-    SEGMENT.custom2 = 255; // use colors
-    SEGMENT.custom1 = 128; // trail
-    uint32_t old = SEGCOLOR(1);
-    CRGB c = CRGB(old).nscale8(248);
-    SEGCOLOR(1) = RGBW32(c.r, c.g, c.b, W(old));
-    uint16_t time = mode_2Dmatrix();
-    SEGCOLOR(1) = old;
-    return time;
-    */
-  }
-
+  const uint16_t width  = SEGMENT.virtualWidth();
+  const uint16_t height = SEGMENT.virtualHeight();
   SEGENV.step += FRAMETIME;
   if (SEGENV.step > SPEED_FORMULA_L) {
-    SEGENV.step = 0;
-    //shift all leds left
-    uint32_t ctemp = getPixelColor(0);
-    for(uint16_t i = 0; i < SEGLEN - 1; i++) {
-      setPixelColor(i, getPixelColor(i+1));
+    SEGENV.step = 1;
+    if (isMatrix) {
+      move(6,1);  // move all pixels down
+      SEGENV.aux0 = (SEGENV.aux0 % width) + (SEGENV.aux0 / width + 1) * width;
+      SEGENV.aux1 = (SEGENV.aux1 % width) + (SEGENV.aux1 / width + 1) * width;
+    } else {
+      //shift all leds left
+      uint32_t ctemp = getPixelColor(0);
+      for(uint16_t i = 0; i < SEGLEN - 1; i++) {
+        setPixelColor(i, getPixelColor(i+1));
+      }
+      setPixelColor(SEGLEN -1, ctemp); // wrap around
+      SEGENV.aux0++;  // increase spark index
+      SEGENV.aux1++;
     }
-    setPixelColor(SEGLEN -1, ctemp); // wrap around
-    SEGENV.aux0++;  // increase spark index
-    SEGENV.aux1++;
     if (SEGENV.aux0 == 0) SEGENV.aux0 = UINT16_MAX; // reset previous spark positiom
     if (SEGENV.aux1 == 0) SEGENV.aux0 = UINT16_MAX; // reset previous spark positiom
-    if (SEGENV.aux0 == SEGLEN) SEGENV.aux0 = 0;     // ignore
-    if (SEGENV.aux1 == SEGLEN) SEGENV.aux1 = 0;
+    if (SEGENV.aux0 >= width*height) SEGENV.aux0 = 0;     // ignore
+    if (SEGENV.aux1 >= width*height) SEGENV.aux1 = 0;
   }
   return mode_fireworks();
 }
@@ -1960,11 +1950,8 @@ static const char *_data_FX_MODE_PALETTE PROGMEM = "Palette@!,;1,2,3;!";
 // in step 3 above) (Effect Intensity = Sparking).
 uint16_t WS2812FX::mode_fire_2012()
 {
-  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN on 1D
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width;
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;  // will be 1 for 1D
+  const uint16_t cols = isMatrix ? SEGMENT.virtualWidth() : SEGMENT.virtualLength();
+  const uint16_t rows = SEGMENT.virtualHeight();
 
   uint32_t it = now >> 5; //div 32
   uint16_t q  = cols>>2; // a quarter of flames
@@ -2199,13 +2186,10 @@ static const char *_data_FX_MODE_NOISE16_4 PROGMEM = "Noise 4";
 //based on https://gist.github.com/kriegsman/5408ecd397744ba0393e
 uint16_t WS2812FX::mode_colortwinkle()
 {
-  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN on 1D
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
+  const uint16_t cols = isMatrix ? SEGMENT.virtualWidth() : SEGMENT.virtualLength();
+  const uint16_t rows = SEGMENT.virtualHeight();
 
-  uint16_t dataSize = (width*height+7) >> 3; //1 bit per LED
+  uint16_t dataSize = (cols*rows+7) >> 3; //1 bit per LED
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   
   CRGB fastled_col, prev;
@@ -2952,11 +2936,8 @@ typedef struct Spark {
 *  modified from https://github.com/kitesurfer1404/WS2812FX/blob/master/src/custom/Popcorn.h
 */
 uint16_t WS2812FX::mode_popcorn(void) {
-  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN on 1D
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows    = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;  // will be 1 for 1D
+  const uint16_t cols = isMatrix ? SEGMENT.virtualWidth() : SEGMENT.virtualLength();
+  const uint16_t rows = SEGMENT.virtualHeight();
 
   //allocate segment data
   uint16_t maxNumPopcorn = 21; // max 21 on 16 segment ESP8266
@@ -3248,11 +3229,8 @@ static const char *_data_FX_MODE_STARBURST PROGMEM = "Fireworks Starburst";
  */
 uint16_t WS2812FX::mode_exploding_fireworks(void)
 {
-  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN on 1D
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;  // will be 1 for 1D
+  const uint16_t cols = isMatrix ? SEGMENT.virtualWidth() : SEGMENT.virtualLength();
+  const uint16_t rows = SEGMENT.virtualHeight();
 
   //allocate segment data
   uint16_t maxData = FAIR_DATA_PER_SEG; //ESP8266: 256 ESP32: 640
@@ -3261,7 +3239,7 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
   if (segs <= (MAX_NUM_SEGMENTS /4)) maxData *= 2; //ESP8266: 1024 if <= 4 segs ESP32: 2560 if <= 8 segs
   int maxSparks = maxData / sizeof(spark); //ESP8266: max. 21/42/85 sparks/seg, ESP32: max. 53/106/213 sparks/seg
 
-  uint16_t numSparks = min(2 + (rows >> 1), maxSparks);
+  uint16_t numSparks = min(2 + (cols >> 1), maxSparks);
   uint16_t dataSize = sizeof(spark) * numSparks;
   if (!SEGENV.allocateData(dataSize + sizeof(float))) return mode_static(); //allocation failed
   float *dying_gravity = reinterpret_cast<float*>(SEGENV.data + dataSize);
@@ -3279,16 +3257,16 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
   Spark* flare = sparks; //first spark is flare data
 
   float gravity = -0.0004 - (SEGMENT.speed/800000.0); // m/s/s
-  gravity *= rows;
+  gravity *= isMatrix ? rows : cols;
   
   if (SEGENV.aux0 < 2) { //FLARE
     if (SEGENV.aux0 == 0) { //init flare
       flare->pos = 0;
-      flare->posX = isMatrix ? random16(cols) : (SEGMENT.intensity > random8()); // will enable random firing side on 1D
+      flare->posX = isMatrix ? random16(2,cols-1) : (SEGMENT.intensity > random8()); // will enable random firing side on 1D
       uint16_t peakHeight = 75 + random8(180); //0-255
-      peakHeight = (peakHeight * (rows -1)) >> 8;
+      peakHeight = (peakHeight * ((isMatrix ? rows : cols) -1)) >> 8;
       flare->vel = sqrt(-2.0 * gravity * peakHeight);
-      flare->velX = isMatrix ? (random8(6)-3)/23 : 0; // no X velocity on 1D
+      flare->velX = isMatrix ? (random8(8)-4)/32.f : 0; // no X velocity on 1D
       flare->col = 255; //brightness
       SEGENV.aux0 = 1; 
     }
@@ -3300,7 +3278,7 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
       else          setPixelColor(int(flare->posX) ? rows - int(flare->pos) - 1 : int(flare->pos), flare->col, flare->col, flare->col);
       flare->pos  += flare->vel;
       flare->posX += flare->velX;
-      flare->pos  = constrain(flare->pos, 0, rows-1);
+      flare->pos  = constrain(flare->pos, 0, (isMatrix ? rows : cols)-1);
       flare->posX = constrain(flare->posX, 0, cols-isMatrix);
       flare->vel  += gravity;
       flare->col  -= 2;
@@ -3322,13 +3300,13 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
       for (int i = 1; i < nSparks; i++) { 
         sparks[i].pos  = flare->pos;
         sparks[i].posX = flare->posX;
-        sparks[i].vel  = (float(random16(0, 20000)) / 10000.0) - 0.9; // from -0.9 to 1.1
+        sparks[i].vel  = (float(random16(0, 20000)) / 10000.0f) - 0.9f; // from -0.9 to 1.1
         sparks[i].vel *= rows<32 ? 0.5 : 1; // reduce velocity for smaller strips
-        sparks[i].velX = isMatrix ? (float(random16(0, 16000)) / 10000.0) - 0.8 : 0; // from -0.8 to 0.8
+        sparks[i].velX = isMatrix ? (float(random16(0, 4000)) / 10000.0f) - 0.2f : 0; // from -0.2 to 0.2
         sparks[i].col  = 345;//abs(sparks[i].vel * 750.0); // set colors before scaling velocity to keep them bright 
         //sparks[i].col = constrain(sparks[i].col, 0, 345); 
         sparks[i].colIndex = random8();
-        sparks[i].vel  *= flare->pos/rows; // proportional to height 
+        sparks[i].vel  *= flare->pos/(isMatrix ? rows : cols); // proportional to height 
         sparks[i].velX *= isMatrix ? flare->posX/cols : 0; // proportional to width
         sparks[i].vel  *= -gravity *50;
       } 
@@ -3345,8 +3323,8 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
         sparks[i].velX += isMatrix ? *dying_gravity : 0;
         if (sparks[i].col > 3) sparks[i].col -= 4; 
 
-        if (sparks[i].pos > 0 && sparks[i].pos < rows) {
-          if (isMatrix && !(sparks[i].posX > 0 && sparks[i].posX < cols)) continue;
+        if (sparks[i].pos > 0 && sparks[i].pos < (isMatrix ? rows : cols)) {
+          if (isMatrix && !(sparks[i].posX >= 0 && sparks[i].posX < cols)) continue;
           uint16_t prog = sparks[i].col;
           uint32_t spColor = (SEGMENT.palette) ? color_wheel(sparks[i].colIndex) : SEGCOLOR(0);
           CRGB c = CRGB::Black; //HeatColor(sparks[i].col);
@@ -3362,6 +3340,7 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
           else          setPixelColor(int(sparks[i].posX) ? rows - int(sparks[i].pos) - 1 : int(sparks[i].pos), c.red, c.green, c.blue);
         }
       }
+      blur(16);
       *dying_gravity *= .8; // as sparks burn out they fall slower
     } else {
       SEGENV.aux0 = 6 + random8(10); //wait for this many frames
@@ -3385,11 +3364,8 @@ static const char *_data_FX_MODE_EXPLODING_FIREWORKS PROGMEM = "Fireworks 1D@Gra
  */
 uint16_t WS2812FX::mode_drip(void)
 {
-  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN on 1D
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;  // will be 1 for 1D
+  const uint16_t cols = isMatrix ? SEGMENT.virtualWidth() : SEGMENT.virtualLength();
+  const uint16_t rows = SEGMENT.virtualHeight();
 
   //allocate segment data
   uint8_t numDrops = 4; 
@@ -3866,11 +3842,8 @@ static const char *_data_FX_MODE_PHASEDNOISE PROGMEM = "Phased Noise";
 
 
 uint16_t WS2812FX::mode_twinkleup(void) {                 // A very short twinkle routine with fade-in and dual controls. By Andrew Tuline.
-  const uint16_t width  = SEGMENT.virtualWidth();         // same as SEGLEN on 1D
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;  // will be 1 for 1D
+  const uint16_t cols = isMatrix ? SEGMENT.virtualWidth() : SEGMENT.virtualLength();
+  const uint16_t rows = SEGMENT.virtualHeight();
 
   random16_set_seed(535);                                 // The randomizer needs to be re-set each time through the loop in order for the same 'random' numbers to be the same each time through.
 
@@ -4510,12 +4483,9 @@ static const char *_data_FX_MODE_AURORA PROGMEM = "Aurora@!=24,!;1,2,3;!=50";
 uint16_t WS2812FX::mode_2DBlackHole(void) {            // By: Stepko https://editor.soulmatelights.com/gallery/1012 , Modified by: Andrew Tuline
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
-  const uint16_t dataSize = sizeof(CRGB) * width * height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -4558,12 +4528,10 @@ static const char *_data_FX_MODE_BLACK_HOLE PROGMEM = "2D Black Hole@Fade rate,O
 uint16_t WS2812FX::mode_2DColoredBursts() {              // By: ldirko   https://editor.soulmatelights.com/gallery/819-colored-bursts , modified by: Andrew Tuline
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
-  const uint16_t dataSize = sizeof(CRGB) * width * height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+
+  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -4620,12 +4588,10 @@ static const char *_data_FX_MODE_COLORED_BURSTS PROGMEM = "2D Colored Bursts@Spe
 uint16_t WS2812FX::mode_2Ddna(void) {         // dna originally by by ldirko at https://pastebin.com/pCkkkzcs. Updated by Preyy. WLED conversion by Andrew Tuline.
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN on 1D
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
-  const uint16_t dataSize = sizeof(CRGB) * width * height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+
+  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -4652,12 +4618,10 @@ static const char *_data_FX_MODE_DNA PROGMEM = "2D DNA@Scroll speed,Blur;;!";
 uint16_t WS2812FX::mode_2DDNASpiral() {               // By: ldirko  https://editor.soulmatelights.com/gallery/810 , modified by: Andrew Tuline
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN on 1D
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
-  const uint16_t dataSize = sizeof(CRGB) * width * height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+
+  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -4703,12 +4667,10 @@ static const char *_data_FX_MODE_DNA_SPIRAL PROGMEM = "2D DNA Spiral@Scroll spee
 uint16_t WS2812FX::mode_2DDrift() {              // By: Stepko   https://editor.soulmatelights.com/gallery/884-drift , Modified by: Andrew Tuline
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
-  const uint16_t dataSize = sizeof(CRGB) * width * height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+
+  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
 
   if (cols<8 || rows<8) return mode_static();
 
@@ -4719,7 +4681,7 @@ uint16_t WS2812FX::mode_2DDrift() {              // By: Stepko   https://editor.
 
   fadeToBlackBy(leds, 128);
 
-  const uint16_t maxDim = MAX(width, rows)/2;
+  const uint16_t maxDim = MAX(cols, rows)/2;
   unsigned long t = millis() / (32 - (SEGMENT.speed>>3));
   for (float i = 1; i < maxDim; i += 0.25) {
     float angle = radians(t * (maxDim - i));
@@ -4741,12 +4703,10 @@ static const char *_data_FX_MODE_DRIFT PROGMEM = "2D Drift@Rotation speed,Blur a
 uint16_t WS2812FX::mode_2Dfirenoise(void) {               // firenoise2d. By Andrew Tuline. Yet another short routine.
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
-  const uint16_t dataSize = sizeof(CRGB) * width * height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+
+  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -4781,13 +4741,10 @@ static const char *_data_FX_MODE_FIRENOISE PROGMEM = "2D Firenoise@X scale,Y sca
 uint16_t WS2812FX::mode_2DFrizzles(void) {                 // By: Stepko https://editor.soulmatelights.com/gallery/640-color-frizzles , Modified by: Andrew Tuline
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
 
-  const uint16_t dataSize = sizeof(CRGB) * width * height;
+  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -4817,12 +4774,10 @@ typedef struct ColorCount {
 uint16_t WS2812FX::mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https://natureofcode.com/book/chapter-7-cellular-automata/ and https://github.com/DougHaber/nlife-color
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
-  const uint16_t dataSize = sizeof(CRGB) * width * height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+
+  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
 
   if (!SEGENV.allocateData(dataSize*2 + sizeof(unsigned long))) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -4918,11 +4873,8 @@ static const char *_data_FX_MODE_GAMEOFLIFE PROGMEM = "2D Game Of Life@!,;!,!;!"
 uint16_t WS2812FX::mode_2DHiphotic() {                        //  By: ldirko  https://editor.soulmatelights.com/gallery/810 , Modified by: Andrew Tuline
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
   const uint32_t a = now / 8;
 
   for (uint16_t x = 0; x < cols; x++) {
@@ -4953,11 +4905,8 @@ typedef struct Julia {
 uint16_t WS2812FX::mode_2DJulia(void) {                           // An animated Julia set by Andrew Tuline.
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
 
   if (!SEGENV.allocateData(sizeof(julia))) return mode_static();
   Julia* julias = reinterpret_cast<Julia*>(SEGENV.data);
@@ -5062,12 +5011,10 @@ static const char *_data_FX_MODE_JULIA PROGMEM = "2D Julia@,Max iterations per p
 uint16_t WS2812FX::mode_2DLissajous(void) {            // By: Andrew Tuline
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
-  //uint16_t dataSize = sizeof(CRGB) * width * height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+
+  //uint16_t dataSize = sizeof(CRGB) * rows * cols;
 
   //if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   //CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -5100,13 +5047,10 @@ static const char *_data_FX_MODE_LISSAJOUS PROGMEM = "2D Lissajous@X frequency,F
 uint16_t WS2812FX::mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy Williams. Adapted by Andrew Tuline & improved by merkisoft and ewowi.
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
 
-  const uint16_t dataSize = sizeof(CRGB) * width * height;
+  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -5171,11 +5115,8 @@ static const char *_data_FX_MODE_MATRIX PROGMEM = "2D Matrix@Falling speed,Spawn
 uint16_t WS2812FX::mode_2Dmetaballs(void) {   // Metaballs by Stefan Petrick. Cannot have one of the dimensions be 2 or less. Adapted by Andrew Tuline.
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
 
   float speed = 0.25f * (1+(SEGMENT.speed>>6));
 
@@ -5234,11 +5175,9 @@ static const char *_data_FX_MODE_MEATBALS PROGMEM = "2D Metaballs@Speed;!,!,!;!"
 uint16_t WS2812FX::mode_2Dnoise(void) {                  // By Andrew Tuline
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+
   const uint16_t scale  = SEGMENT.intensity+2;
 
   for (uint16_t y = 0; y < rows; y++) {
@@ -5259,12 +5198,10 @@ static const char *_data_FX_MODE_2DNOISE PROGMEM = "2D Noise@Speed,Scale;!,!,!;!
 uint16_t WS2812FX::mode_2DPlasmaball(void) {                   // By: Stepko https://editor.soulmatelights.com/gallery/659-plasm-ball , Modified by: Andrew Tuline
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
-  const uint16_t dataSize = sizeof(CRGB) * width * height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+
+  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -5309,12 +5246,10 @@ static const char *_data_FX_MODE_PLASMA_BALL PROGMEM = "2D Plasma Ball@Speed;!,!
 uint16_t WS2812FX::mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevskyy  https://editor.soulmatelights.com/gallery/762-polar-lights , Modified by: Andrew Tuline
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
-  const uint16_t dataSize = sizeof(CRGB) * width * height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+
+  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -5368,12 +5303,10 @@ static const char *_data_FX_MODE_POLAR_LIGHTS PROGMEM = "2D Polar Lights@Speed,S
 uint16_t WS2812FX::mode_2DPulser(void) {                       // By: ldirko   https://editor.soulmatelights.com/gallery/878-pulse-test , modifed by: Andrew Tuline
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
-  const uint16_t dataSize = sizeof(CRGB) * width * height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+
+  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -5401,12 +5334,10 @@ static const char *_data_FX_MODE_PULSER PROGMEM = "2D Pulser@Speed,Blur;;!";
 uint16_t WS2812FX::mode_2DSindots(void) {                             // By: ldirko   https://editor.soulmatelights.com/gallery/597-sin-dots , modified by: Andrew Tuline
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
-  const uint16_t dataSize = sizeof(CRGB) * width * height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+
+  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -5437,12 +5368,10 @@ uint16_t WS2812FX::mode_2Dsquaredswirl(void) {            // By: Mark Kriegsman.
                                                           // Modifed by: Andrew Tuline
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
-  const uint16_t dataSize = sizeof(CRGB) * width * height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+
+  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -5481,14 +5410,12 @@ static const char *_data_FX_MODE_SQUARED_SWIRL PROGMEM = "2D Squared Swirl@,,,,B
 uint16_t WS2812FX::mode_2DSunradiation(void) {                   // By: ldirko https://editor.soulmatelights.com/gallery/599-sun-radiation  , modified by: Andrew Tuline
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
-  const uint16_t dataSize = sizeof(CRGB) * width * height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
 
-  if (!SEGENV.allocateData(dataSize + (sizeof(byte)*(width+2)*(height+2)))) return mode_static(); //allocation failed
+  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
+
+  if (!SEGENV.allocateData(dataSize + (sizeof(byte)*(cols+2)*(rows+2)))) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
   byte *bump = reinterpret_cast<byte*>(SEGENV.data + dataSize);
 
@@ -5535,13 +5462,10 @@ static const char *_data_FX_MODE_SUN_RADIATION PROGMEM = "2D Sun Radiation@Varia
 uint16_t WS2812FX::mode_2Dtartan(void) {          // By: Elliott Kember  https://editor.soulmatelights.com/gallery/3-tartan , Modified by: Andrew Tuline
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
 
-  const uint16_t dataSize = sizeof(CRGB) * width * height;
+  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -5574,12 +5498,10 @@ static const char *_data_FX_MODE_TARTAN PROGMEM = "2D Tartan@X scale,Y scale;;!"
 uint16_t WS2812FX::mode_2DWaverly(void) {                                       // By: Stepko, https://editor.soulmatelights.com/gallery/652-wave , modified by Andrew Tuline
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
-  const uint16_t dataSize = sizeof(CRGB) * width * height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+
+  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -5614,11 +5536,8 @@ static const char *_data_FX_MODE_WAVERLY PROGMEM = "2D Waverly@Fade rate,Sensiti
 uint16_t WS2812FX::mode_2DAkemi(void) {
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
 
   uint16_t counter = (now * ((SEGMENT.speed >> 2) +2)) & 0xFFFF;
   counter = counter >> 8;
@@ -5711,12 +5630,10 @@ static const char *_data_FX_MODE_AKEMI PROGMEM = "2D Akemi@Color speed,Dance;Hea
 uint16_t WS2812FX::mode_2Dspaceships(void) {    //// Space ships by stepko (c)05.02.21 [https://editor.soulmatelights.com/gallery/639-space-ships], adapted by Blaz Kristan
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
-  const uint16_t dataSize = sizeof(CRGB) * width * height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+
+  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -5725,8 +5642,8 @@ uint16_t WS2812FX::mode_2Dspaceships(void) {    //// Space ships by stepko (c)05
 
   uint32_t tb = now >> 12;  // every ~4s
   if (tb > SEGENV.step) {
-    int16_t dir = SEGENV.aux0;
-    dir  += (int)random8(2)-1;
+    int8_t dir = ++SEGENV.aux0;
+    dir  += (int)random8(3)-1;
     if      (dir > 7) SEGENV.aux0 = 0;
     else if (dir < 0) SEGENV.aux0 = 7;
     else              SEGENV.aux0 = dir;
@@ -5734,37 +5651,7 @@ uint16_t WS2812FX::mode_2Dspaceships(void) {    //// Space ships by stepko (c)05
   }
 
   fadeToBlackBy(leds, map(SEGMENT.speed, 0, 255, 248, 16));
-
-  switch (SEGENV.aux0) {
-    case 0:
-      moveX(leds, 1);
-      break;
-    case 1:
-      moveX(leds, 1);
-      moveY(leds, -1);
-      break;
-    case 2:
-      moveY(leds, -1);
-      break;
-    case 3:
-      moveX(leds, -1);
-      moveY(leds, -1);
-      break;
-    case 4:
-      moveX(leds, -1);
-      break;
-    case 5:
-      moveX(leds, -1);
-      moveY(leds, 1);
-      break;
-    case 6:
-      moveY(leds, 1);
-      break;
-    case 7:
-      moveX(leds, 1);
-      moveY(leds, 1);
-      break;
-  }
+  move(SEGENV.aux0, 1, leds);
   for (byte i = 0; i < 8; i++) {
     byte x = beatsin8(12 + i, 2, cols - 3);
     byte y = beatsin8(15 + i, 2, rows - 3);
@@ -5793,14 +5680,12 @@ static const char *_data_FX_MODE_SPACESHIPS PROGMEM = "2D Spaceships@!,Blur;!,!,
 uint16_t WS2812FX::mode_2Dcrazybees(void) {
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
-  const uint16_t dataSize = sizeof(CRGB) * width * height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
 
-  byte n = MIN(MAX_BEES, (width * height) / 256 + 1);
+  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
+
+  byte n = MIN(MAX_BEES, (rows * cols) / 256 + 1);
 
   typedef struct Bee {
     uint8_t posX, posY, aimX, aimY, hue;
@@ -5853,7 +5738,7 @@ uint16_t WS2812FX::mode_2Dcrazybees(void) {
           bee[i].posY += bee[i].signY;
         }
       } else {
-        bee[i].aimed(width, rows);
+        bee[i].aimed(cols, rows);
       }
     }
     blur2d(leds, SEGMENT.intensity>>4);
@@ -5873,13 +5758,10 @@ static const char *_data_FX_MODE_CRAZYBEES PROGMEM = "2D Crazy Bees@!,Blur;;";
 uint16_t WS2812FX::mode_2Dghostrider(void) {
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
 
-  const uint16_t dataSize = sizeof(CRGB) * width * height;
+  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
 
   typedef struct Lighter {
     int      gPosX;
@@ -5898,7 +5780,7 @@ uint16_t WS2812FX::mode_2Dghostrider(void) {
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
   lighter_t *lighter = reinterpret_cast<lighter_t*>(SEGENV.data + dataSize);
 
-  const int maxLighters = min(width+height,LIGHTERS_AM);
+  const int maxLighters = min(cols + rows, LIGHTERS_AM);
 
   if (SEGENV.call == 0) {
     fill_solid(leds, CRGB::Black);
@@ -5967,13 +5849,10 @@ static const char *_data_FX_MODE_GHOST_RIDER PROGMEM = "2D Ghost Rider@Fade rate
 uint16_t WS2812FX::mode_2Dfloatingblobs(void) {
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
 
-  const uint16_t dataSize = sizeof(CRGB) * width * height;
+  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
 
   typedef struct Blob {
     float x[MAX_BLOBS], y[MAX_BLOBS];
@@ -6071,11 +5950,8 @@ static const char *_data_FX_MODE_BLOBS PROGMEM = "2D Blobs@!,# blobs;!,!,!;!";
 uint16_t WS2812FX::mode_2Dscrollingtext(void) {
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
 
   const int letterWidth = 6;
   const int letterHeight = 8;
@@ -6110,12 +5986,10 @@ static const char *_data_FX_MODE_SCROLL_TEXT PROGMEM = "2D Scrolling Text@!,Y Of
 uint16_t WS2812FX::mode_2Ddriftrose(void) {
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t width  = SEGMENT.virtualWidth();
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isMatrix && !isTransposed ? height : width; 
-  const uint16_t cols   = isMatrix && !isTransposed ? width : height;
-  const uint16_t dataSize = sizeof(CRGB) * width * height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+
+  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
 
   const float CX = cols/2.f - .5f;
   const float CY = rows/2.f - .5f;
@@ -6144,7 +6018,7 @@ static const char *_data_FX_MODE_DRIFT_ROSE PROGMEM = "2D Drift Rose@Fade,Blur;;
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // mode data
-const char *WS2812FX::_modeData[] = {
+const char *WS2812FX::_modeData[MODE_COUNT] = {
   _data_FX_MODE_STATIC,
   _data_FX_MODE_BLINK,
   _data_FX_MODE_BREATH,

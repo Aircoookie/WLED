@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2205251
+#define VERSION 2205301
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -49,6 +49,12 @@
 // filesystem specific debugging
 //#define WLED_DEBUG_FS
 
+#ifndef WLED_WATCHDOG_TIMEOUT
+  // 3 seconds should be enough to detect a lockup
+  // define WLED_WATCHDOG_TIMEOUT=0 to disable watchdog
+  #define WLED_WATCHDOG_TIMEOUT 3
+#endif
+
 //optionally disable brownout detector on ESP32.
 //This is generally a terrible idea, but improves boot success on boards with a 3.3v regulator + cap setup that can't provide 400mA peaks
 //#define WLED_DISABLE_BROWNOUT_DET
@@ -78,6 +84,7 @@
   #else
     #include <LittleFS.h>
   #endif
+  #include "esp_task_wdt.h"
 #endif
 
 #include "src/dependencies/network/Network.h"

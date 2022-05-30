@@ -106,11 +106,11 @@ void WS2812FX::setUpMatrix() {
   }
 }
 
-// XY(x,y) - gets pixel index within current segment
+// XY(x,y) - gets pixel index within current segment (often used to reference leds[] array element)
 uint16_t IRAM_ATTR WS2812FX::XY(uint16_t x, uint16_t y) {
   uint16_t width  = SEGMENT.virtualWidth();   // segment width in logical pixels
   uint16_t height = SEGMENT.virtualHeight();  // segment height in logical pixels
-
+/*
   if (SEGMENT.getOption(SEG_OPTION_TRANSPOSED)) {
     uint16_t t;
     // swap X & Y if segment transposed
@@ -118,6 +118,7 @@ uint16_t IRAM_ATTR WS2812FX::XY(uint16_t x, uint16_t y) {
     // swap width & height if segment transposed
     t = width; width = height; height = t;
   }
+*/
   return (x%width) + (y%height) * width;
 }
 
@@ -178,7 +179,7 @@ void IRAM_ATTR WS2812FX::setPixelColorXY(uint16_t x, uint16_t y, byte r, byte g,
   }
 }
 
-// not working correctly ATM
+// returns RGBW values of pixel
 uint32_t WS2812FX::getPixelColorXY(uint16_t x, uint16_t y) {
   if (SEGMENT.getOption(SEG_OPTION_TRANSPOSED)) { uint16_t t = x; x = y; y = t; } // swap X & Y if segment transposed
 
@@ -204,11 +205,9 @@ void WS2812FX::blendPixelColorXY(uint16_t x, uint16_t y, uint32_t color, uint8_t
 
 // blurRow: perform a blur on a row of a rectangular matrix
 void WS2812FX::blurRow(uint16_t row, fract8 blur_amount, CRGB* leds) {
-  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isTransposed ? width : height; 
-  const uint16_t cols   = isTransposed ? height : width;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+
   if (row >= rows) return;
   // blur one row
   uint8_t keep = 255 - blur_amount;
@@ -233,11 +232,9 @@ void WS2812FX::blurRow(uint16_t row, fract8 blur_amount, CRGB* leds) {
 
 // blurCol: perform a blur on a column of a rectangular matrix
 void WS2812FX::blurCol(uint16_t col, fract8 blur_amount, CRGB* leds) {
-  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isTransposed ? width : height; 
-  const uint16_t cols   = isTransposed ? height : width;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+
   if (col >= cols) return;
   // blur one column
   uint8_t keep = 255 - blur_amount;
@@ -275,21 +272,14 @@ void WS2812FX::blurCol(uint16_t col, fract8 blur_amount, CRGB* leds) {
 //         it can be used to (slowly) clear the LEDs to black.
 
 void WS2812FX::blur1d(CRGB* leds, fract8 blur_amount) {
-  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isTransposed ? width : height; 
-  //const uint16_t cols   = isTransposed ? height : width;
+  const uint16_t rows = SEGMENT.virtualHeight();
   for (uint16_t y = 0; y < rows; y++) blurRow(y, blur_amount, leds);
 }
 
 // 1D Box blur (with added weight - blur_amount: [0=no blur, 255=max blur])
 void WS2812FX::blur1d(uint16_t i, bool vertical, fract8 blur_amount, CRGB* leds) {
-  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isTransposed ? width : height; 
-  const uint16_t cols   = isTransposed ? height : width;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
   const uint16_t dim1   = vertical ? rows : cols;
   const uint16_t dim2   = vertical ? cols : rows;
   if (i >= dim2) return;
@@ -322,67 +312,76 @@ void WS2812FX::blur1d(uint16_t i, bool vertical, fract8 blur_amount, CRGB* leds)
 }
 
 void WS2812FX::blur2d(CRGB* leds, fract8 blur_amount) {
-  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = !isTransposed ? height : width; 
-  const uint16_t cols   = !isTransposed ? width : height;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
   for (uint16_t i = 0; i < rows; i++) blurRow(i, blur_amount, leds); // blur all rows
   for (uint16_t k = 0; k < cols; k++) blurCol(k, blur_amount, leds); // blur all columns
 }
 
 void WS2812FX::moveX(CRGB *leds, int8_t delta) {
-  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isTransposed ? width : height; 
-  const uint16_t cols   = isTransposed ? height : width;
-  if (delta) {
-    if (delta > 0) {
-      for (uint8_t y = 0; y < rows; y++) {
-        for (uint8_t x = 0; x < cols-1; x++) {
-          leds[XY(x, y)] = leds[XY(x + delta, y)];
-        }
-      }
-    } else {
-      for (uint8_t y = 0; y < rows; y++) {
-        for (uint8_t x = cols - 1; x > 0; x--) {
-          leds[XY(x, y)] = leds[XY(x + delta, y)];
-        }
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+  if (!delta) return;
+  if (delta > 0) {
+    for (uint8_t y = 0; y < rows; y++) for (uint8_t x = 0; x < cols-1; x++) {
+      if (leds) leds[XY(x, y)] = leds[XY((x + delta)%cols, y)];
+      else      setPixelColorXY(x, y, getPixelColorXY((x + delta)%cols, y));
+    }
+  } else {
+    for (uint8_t y = 0; y < rows; y++) for (int16_t x = cols-1; x >= 0; x--) {
+      if (x + delta < 0) {
+        if (leds) leds[XY(x, y)] = leds[XY(cols + delta, y)];
+        else      setPixelColorXY(x, y, getPixelColorXY(cols + delta, y));
+      } else {
+        if (leds) leds[XY(x, y)] = leds[XY(x + delta, y)];
+        else      setPixelColorXY(x, y, getPixelColorXY(x + delta, y));
       }
     }
   }
 }
 
 void WS2812FX::moveY(CRGB *leds, int8_t delta) {
-  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isTransposed ? width : height; 
-  const uint16_t cols   = isTransposed ? height : width;
-  if (delta) {
-    if (delta > 0) {
-      for (uint8_t x = 0; x < cols; x++) {
-        for (uint8_t y = 0; y < rows-1; y++) {
-          leds[XY(x, y)] = leds[XY(x, y + delta)];
-        }
-      }
-    } else {
-      for (uint8_t x = 0; x < cols; x++) {
-        for (uint8_t y = rows - 1; y > 0; y--) {
-          leds[XY(x, y)] = leds[XY(x, y + delta)];
-        }
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+  if (!delta) return;
+  if (delta > 0) {
+    for (uint8_t x = 0; x < cols; x++) for (uint8_t y = 0; y < rows-1; y++) {
+      if (leds) leds[XY(x, y)] = leds[XY(x, (y + delta)%rows)];
+      else      setPixelColorXY(x, y, getPixelColorXY(x, (y + delta)%rows));
+    }
+  } else {
+    for (uint8_t x = 0; x < cols; x++) for (int16_t y = rows-1; y >= 0; y--) {
+      if (y + delta < 0) {
+        if (leds) leds[XY(x, y)] = leds[XY(x, rows + delta)];
+        else      setPixelColorXY(x, y, getPixelColorXY(x, rows + delta));
+      } else {
+        if (leds) leds[XY(x, y)] = leds[XY(x, y + delta)];
+        else      setPixelColorXY(x, y, getPixelColorXY(x, y + delta));
       }
     }
   }
 }
 
+// move() - move all pixels in desired direction delta number of pixels
+// @param dir direction: 0=left, 1=left-up, 2=up, 3=right-up, 4=right, 5=right-down, 6=down, 7=left-down
+// @param delta number of pixels to move
+void WS2812FX::move(uint8_t dir, uint8_t delta, CRGB *leds) {
+  if (delta==0) return;
+  switch (dir) {
+    case 0: moveX(leds, delta);                     break;
+    case 1: moveX(leds, delta); moveY(leds, delta); break;
+    case 2:                     moveY(leds, delta); break;
+    case 3: moveX(leds,-delta); moveY(leds, delta); break;
+    case 4: moveX(leds,-delta);                     break;
+    case 5: moveX(leds,-delta); moveY(leds,-delta); break;
+    case 6:                     moveY(leds,-delta); break;
+    case 7: moveX(leds, delta); moveY(leds,-delta); break;
+  }
+}
+
 void WS2812FX::fill_solid(CRGB* leds, CRGB color) {
-  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isTransposed ? width : height; 
-  const uint16_t cols   = isTransposed ? height : width;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
   for(uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
     if (leds) leds[XY(x,y)] = color;
     else setPixelColorXY(x, y, color);
@@ -391,11 +390,8 @@ void WS2812FX::fill_solid(CRGB* leds, CRGB color) {
 
 // by stepko, taken from https://editor.soulmatelights.com/gallery/573-blobs
 void WS2812FX::fill_circle(CRGB* leds, uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
-  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isTransposed ? width : height; 
-  const uint16_t cols   = isTransposed ? height : width;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
   for (int16_t y = -radius; y <= radius; y++) {
     for (int16_t x = -radius; x <= radius; x++) {
       if (x * x + y * y <= radius * radius &&
@@ -411,11 +407,8 @@ void WS2812FX::fadeToBlackBy(CRGB* leds, uint8_t fadeBy) {
 }
 
 void WS2812FX::nscale8(CRGB* leds, uint8_t scale) {
-  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isTransposed ? width : height; 
-  const uint16_t cols   = isTransposed ? height : width;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
   for(uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
     if (leds) leds[XY(x,y)].nscale8(scale);
     else setPixelColorXY(x, y, col_to_crgb(getPixelColorXY(x, y)).nscale8(scale));
@@ -423,21 +416,15 @@ void WS2812FX::nscale8(CRGB* leds, uint8_t scale) {
 }
 
 void WS2812FX::setPixels(CRGB* leds) {
-  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isTransposed ? width : height; 
-  const uint16_t cols   = isTransposed ? height : width;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
   for (uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) setPixelColorXY(x, y, leds[XY(x,y)]);
 }
 
 //line function
 void WS2812FX::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c, CRGB *leds) {
-  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isTransposed ? width : height; 
-  const uint16_t cols   = isTransposed ? height : width;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
   if (x0 >= cols || x1 >= cols || y0 >= rows || y1 >= rows) return;
   const int16_t dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
   const int16_t dy = abs(y1-y0), sy = y0<y1 ? 1 : -1; 
@@ -3529,11 +3516,8 @@ static const unsigned char console_font_6x8[] PROGMEM = {
 };
 
 void WS2812FX::drawCharacter(unsigned char chr, int16_t x, int16_t y, CRGB color, CRGB *leds) {
-  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isTransposed ? width : height; 
-  const uint16_t cols   = isTransposed ? height : width;
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
 
   for (uint8_t i = 0; i<8; i++) { // character height
     int16_t y0 = y + i;

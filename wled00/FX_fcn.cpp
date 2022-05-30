@@ -890,11 +890,8 @@ uint32_t IRAM_ATTR WS2812FX::color_blend(uint32_t color1, uint32_t color2, uint1
  * Fills segment with color
  */
 void WS2812FX::fill(uint32_t c) {
-  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isTransposed ? width : height; 
-  const uint16_t cols   = isTransposed ? height : width;
+  const uint16_t cols = isMatrix ? SEGMENT.virtualWidth() : SEGMENT.virtualLength();
+  const uint16_t rows = SEGMENT.virtualHeight(); // will be 1 for 1D
   for(uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
     if (isMatrix) setPixelColorXY(x, y, c);
     else          setPixelColor(x, c);
@@ -913,11 +910,8 @@ void WS2812FX::blendPixelColor(uint16_t n, uint32_t color, uint8_t blend)
  * fade out function, higher rate = quicker fade
  */
 void WS2812FX::fade_out(uint8_t rate) {
-  const uint16_t width  = SEGMENT.virtualWidth();  // same as SEGLEN
-  const uint16_t height = SEGMENT.virtualHeight();
-  const bool     isTransposed = SEGMENT.getOption(SEG_OPTION_TRANSPOSED);
-  const uint16_t rows   = isTransposed ? width : height; 
-  const uint16_t cols   = isTransposed ? height : width;
+  const uint16_t cols = isMatrix ? SEGMENT.virtualWidth() : SEGMENT.virtualLength();
+  const uint16_t rows = SEGMENT.virtualHeight(); // will be 1 for 1D
 
   rate = (255-rate) >> 1;
   float mappedRate = float(rate) +1.1;
@@ -956,6 +950,14 @@ void WS2812FX::fade_out(uint8_t rate) {
  */
 void WS2812FX::blur(uint8_t blur_amount)
 {
+  if (isMatrix) {
+    // compatibility with 2D
+    const uint16_t cols = SEGMENT.virtualWidth();
+    const uint16_t rows = SEGMENT.virtualHeight();
+    for (uint16_t i = 0; i < rows; i++) blurRow(i, blur_amount); // blur all rows
+    for (uint16_t k = 0; k < cols; k++) blurCol(k, blur_amount); // blur all columns
+    return;
+  }
   uint8_t keep = 255 - blur_amount;
   uint8_t seep = blur_amount >> 1;
   CRGB carryover = CRGB::Black;

@@ -306,8 +306,8 @@ class WS2812FX {
       inline bool     getOption(uint8_t n)   { return ((options >> n) & 0x01); }
       inline bool     isSelected()           { return getOption(0); }
       inline bool     isActive()             { return stop > start; }
-      inline uint16_t width()                { return /*getOption(SEG_OPTION_TRANSPOSED) ? stopY - startY :*/ stop - start; }
-      inline uint16_t height()               { return /*getOption(SEG_OPTION_TRANSPOSED) ? stop - start :*/ stopY - startY; }
+      inline uint16_t width()                { return stop - start; }
+      inline uint16_t height()               { return stopY - startY; }
       inline uint16_t length()               { return width(); }
       inline uint16_t groupLength()          { return grouping + spacing; }
       inline uint8_t  getLightCapabilities() { return _capabilities; }
@@ -352,13 +352,13 @@ class WS2812FX {
       // 2D matrix
       uint16_t virtualWidth() {
         uint16_t groupLen = groupLength();
-        uint16_t vWidth = (width() + groupLen - 1) / groupLen;
+        uint16_t vWidth = ((getOption(SEG_OPTION_TRANSPOSED) ? height() : width()) + groupLen - 1) / groupLen;
         if (getOption(SEG_OPTION_MIRROR)) vWidth = (vWidth + 1) /2;  // divide by 2 if mirror, leave at least a single LED
         return vWidth;
       }
       uint16_t virtualHeight() {
         uint16_t groupLen = groupLength();
-        uint16_t vHeight = (height() + groupLen - 1) / groupLen;
+        uint16_t vHeight = ((getOption(SEG_OPTION_TRANSPOSED) ? width() : height()) + groupLen - 1) / groupLen;
         if (getOption(SEG_OPTION_MIRROR_Y)) vHeight = (vHeight + 1) /2;  // divide by 2 if mirror, leave at least a single LED
         return vHeight;
       }
@@ -930,6 +930,7 @@ class WS2812FX {
       blurCol(uint16_t col, fract8 blur_amount, CRGB* leds=nullptr),
       moveX(CRGB *leds, int8_t delta),
       moveY(CRGB *leds, int8_t delta),
+      move(uint8_t dir, uint8_t delta, CRGB *leds=nullptr),
       fill_solid(CRGB* leds, CRGB c),
       fill_circle(CRGB* leds, uint16_t cx, uint16_t cy, uint8_t radius, CRGB c),
       fadeToBlackBy(CRGB* leds, uint8_t fadeBy),
