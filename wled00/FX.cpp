@@ -647,7 +647,7 @@ uint16_t WS2812FX::mode_hyper_sparkle(void) {
   if (now - SEGENV.aux0 > SEGENV.step) {
     if(random8((255-SEGMENT.intensity) >> 4) == 0) {
       for(uint16_t i = 0; i < MAX(1, SEGLEN/3); i++) {
-        if (isMatrix) setPixelColorXY(random16(SEGLEN), random16(0,SEGMENT.virtualHeight()-1), SEGCOLOR(1));
+        if (isMatrix) setPixelColorXY(random16(SEGLEN), random16(0,SEGMENT.virtualHeight()), SEGCOLOR(1));
         else          setPixelColor(random16(SEGLEN), SEGCOLOR(1));
       }
     }
@@ -1950,8 +1950,8 @@ static const char *_data_FX_MODE_PALETTE PROGMEM = "Palette@!,;1,2,3;!";
 // in step 3 above) (Effect Intensity = Sparking).
 uint16_t WS2812FX::mode_fire_2012()
 {
-  const uint16_t cols = isMatrix ? SEGMENT.virtualWidth() : SEGMENT.virtualLength();
-  const uint16_t rows = SEGMENT.virtualHeight();
+  const uint16_t cols = isMatrix ? SEGMENT.virtualWidth() : 1;
+  const uint16_t rows = isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
   uint32_t it = now >> 5; //div 32
   uint16_t q  = cols>>2; // a quarter of flames
@@ -2186,8 +2186,8 @@ static const char *_data_FX_MODE_NOISE16_4 PROGMEM = "Noise 4";
 //based on https://gist.github.com/kriegsman/5408ecd397744ba0393e
 uint16_t WS2812FX::mode_colortwinkle()
 {
-  const uint16_t cols = isMatrix ? SEGMENT.virtualWidth() : SEGMENT.virtualLength();
-  const uint16_t rows = SEGMENT.virtualHeight();
+  const uint16_t cols = isMatrix ? SEGMENT.virtualWidth() : 1;
+  const uint16_t rows = isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
   uint16_t dataSize = (cols*rows+7) >> 3; //1 bit per LED
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
@@ -2936,8 +2936,8 @@ typedef struct Spark {
 *  modified from https://github.com/kitesurfer1404/WS2812FX/blob/master/src/custom/Popcorn.h
 */
 uint16_t WS2812FX::mode_popcorn(void) {
-  const uint16_t cols = isMatrix ? SEGMENT.virtualWidth() : SEGMENT.virtualLength();
-  const uint16_t rows = SEGMENT.virtualHeight();
+  const uint16_t cols = isMatrix ? SEGMENT.virtualWidth() : 1;
+  const uint16_t rows = isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
   //allocate segment data
   uint16_t maxNumPopcorn = 21; // max 21 on 16 segment ESP8266
@@ -3229,8 +3229,8 @@ static const char *_data_FX_MODE_STARBURST PROGMEM = "Fireworks Starburst";
  */
 uint16_t WS2812FX::mode_exploding_fireworks(void)
 {
-  const uint16_t cols = isMatrix ? SEGMENT.virtualWidth() : SEGMENT.virtualLength();
-  const uint16_t rows = SEGMENT.virtualHeight();
+  const uint16_t cols = isMatrix ? SEGMENT.virtualWidth() : 1;
+  const uint16_t rows = isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
   //allocate segment data
   uint16_t maxData = FAIR_DATA_PER_SEG; //ESP8266: 256 ESP32: 640
@@ -3239,7 +3239,7 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
   if (segs <= (MAX_NUM_SEGMENTS /4)) maxData *= 2; //ESP8266: 1024 if <= 4 segs ESP32: 2560 if <= 8 segs
   int maxSparks = maxData / sizeof(spark); //ESP8266: max. 21/42/85 sparks/seg, ESP32: max. 53/106/213 sparks/seg
 
-  uint16_t numSparks = min(2 + (cols >> 1), maxSparks);
+  uint16_t numSparks = min(2 + ((rows*cols) >> 1), maxSparks);
   uint16_t dataSize = sizeof(spark) * numSparks;
   if (!SEGENV.allocateData(dataSize + sizeof(float))) return mode_static(); //allocation failed
   float *dying_gravity = reinterpret_cast<float*>(SEGENV.data + dataSize);
@@ -3257,14 +3257,14 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
   Spark* flare = sparks; //first spark is flare data
 
   float gravity = -0.0004 - (SEGMENT.speed/800000.0); // m/s/s
-  gravity *= isMatrix ? rows : cols;
+  gravity *= rows;
   
   if (SEGENV.aux0 < 2) { //FLARE
     if (SEGENV.aux0 == 0) { //init flare
       flare->pos = 0;
       flare->posX = isMatrix ? random16(2,cols-1) : (SEGMENT.intensity > random8()); // will enable random firing side on 1D
       uint16_t peakHeight = 75 + random8(180); //0-255
-      peakHeight = (peakHeight * ((isMatrix ? rows : cols) -1)) >> 8;
+      peakHeight = (peakHeight * (rows -1)) >> 8;
       flare->vel = sqrt(-2.0 * gravity * peakHeight);
       flare->velX = isMatrix ? (random8(8)-4)/32.f : 0; // no X velocity on 1D
       flare->col = 255; //brightness
@@ -3278,7 +3278,7 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
       else          setPixelColor(int(flare->posX) ? rows - int(flare->pos) - 1 : int(flare->pos), flare->col, flare->col, flare->col);
       flare->pos  += flare->vel;
       flare->posX += flare->velX;
-      flare->pos  = constrain(flare->pos, 0, (isMatrix ? rows : cols)-1);
+      flare->pos  = constrain(flare->pos, 0, rows-1);
       flare->posX = constrain(flare->posX, 0, cols-isMatrix);
       flare->vel  += gravity;
       flare->col  -= 2;
@@ -3306,7 +3306,7 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
         sparks[i].col  = 345;//abs(sparks[i].vel * 750.0); // set colors before scaling velocity to keep them bright 
         //sparks[i].col = constrain(sparks[i].col, 0, 345); 
         sparks[i].colIndex = random8();
-        sparks[i].vel  *= flare->pos/(isMatrix ? rows : cols); // proportional to height 
+        sparks[i].vel  *= flare->pos/rows; // proportional to height 
         sparks[i].velX *= isMatrix ? flare->posX/cols : 0; // proportional to width
         sparks[i].vel  *= -gravity *50;
       } 
@@ -3323,7 +3323,7 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
         sparks[i].velX += isMatrix ? *dying_gravity : 0;
         if (sparks[i].col > 3) sparks[i].col -= 4; 
 
-        if (sparks[i].pos > 0 && sparks[i].pos < (isMatrix ? rows : cols)) {
+        if (sparks[i].pos > 0 && sparks[i].pos < rows) {
           if (isMatrix && !(sparks[i].posX >= 0 && sparks[i].posX < cols)) continue;
           uint16_t prog = sparks[i].col;
           uint32_t spColor = (SEGMENT.palette) ? color_wheel(sparks[i].colIndex) : SEGCOLOR(0);
@@ -3364,8 +3364,8 @@ static const char *_data_FX_MODE_EXPLODING_FIREWORKS PROGMEM = "Fireworks 1D@Gra
  */
 uint16_t WS2812FX::mode_drip(void)
 {
-  const uint16_t cols = isMatrix ? SEGMENT.virtualWidth() : SEGMENT.virtualLength();
-  const uint16_t rows = SEGMENT.virtualHeight();
+  const uint16_t cols = isMatrix ? SEGMENT.virtualWidth() : 1;
+  const uint16_t rows = isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
   //allocate segment data
   uint8_t numDrops = 4; 
@@ -3379,7 +3379,7 @@ uint16_t WS2812FX::mode_drip(void)
   numDrops = 1 + (SEGMENT.intensity >> 6); // 255>>6 = 3
 
   float gravity = -0.0005 - (SEGMENT.speed/50000.0);
-  gravity *= rows;
+  gravity *= rows-1;
   int sourcedrop = 12;
 
   for (uint16_t k=0; k < cols; k++) {
@@ -3842,8 +3842,8 @@ static const char *_data_FX_MODE_PHASEDNOISE PROGMEM = "Phased Noise";
 
 
 uint16_t WS2812FX::mode_twinkleup(void) {                 // A very short twinkle routine with fade-in and dual controls. By Andrew Tuline.
-  const uint16_t cols = isMatrix ? SEGMENT.virtualWidth() : SEGMENT.virtualLength();
-  const uint16_t rows = SEGMENT.virtualHeight();
+  const uint16_t cols = isMatrix ? SEGMENT.virtualWidth() : 1;
+  const uint16_t rows = isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
 
   random16_set_seed(535);                                 // The randomizer needs to be re-set each time through the loop in order for the same 'random' numbers to be the same each time through.
 

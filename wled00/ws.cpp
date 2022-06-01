@@ -15,8 +15,8 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
 {
   if(type == WS_EVT_CONNECT){
     //client connected
-    sendDataWs(client);
     DEBUG_PRINTLN(F("WS client connected."));
+    sendDataWs(client);
   } else if(type == WS_EVT_DISCONNECT){
     //client disconnected
     if (client->id() == wsLiveClientId) wsLiveClientId = 0;
@@ -105,21 +105,22 @@ void sendDataWs(AsyncWebSocketClient * client)
   JsonObject info  = doc.createNestedObject("info");
   serializeInfo(info);
 
-  DEBUG_PRINTF("JSON buffer size: %u for WS request.\n", doc.memoryUsage());
   size_t len = measureJson(doc);
+  DEBUG_PRINTF("JSON buffer size: %u for WS request (%u).\n", doc.memoryUsage(), len);
 
   size_t heap1 = ESP.getFreeHeap();
   buffer = ws.makeBuffer(len); // will not allocate correct memory sometimes
   size_t heap2 = ESP.getFreeHeap();
   if (!buffer || heap1-heap2<len) {
     releaseJSONBufferLock();
+    DEBUG_PRINTLN(F("WS buffer allocation failed."));
     ws.closeAll(1013); //code 1013 = temporary overload, try again later
     ws.cleanupClients(0); //disconnect all clients to release memory
     return; //out of memory
   }
 
-  serializeJson(doc, (char *)buffer->get(), len +1);
-  releaseJSONBufferLock();
+  buffer->lock();
+  serializeJson(doc, (char *)buffer->get(), len);
 
   DEBUG_PRINT(F("Sending WS data "));
   if (client) {
@@ -129,6 +130,10 @@ void sendDataWs(AsyncWebSocketClient * client)
     ws.textAll(buffer);
     DEBUG_PRINTLN(F("to multiple clients."));
   }
+  buffer->unlock();
+  ws._cleanBuffers();
+
+  releaseJSONBufferLock();
 }
 
 #define MAX_LIVE_LEDS_WS 256

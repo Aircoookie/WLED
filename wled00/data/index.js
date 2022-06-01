@@ -1530,7 +1530,8 @@ function makeSeg()
 		behavior: 'smooth',
 		block: 'start',
 	});
-	var ct = ledCount-(cfg.comp.seglen?ns:0);
+	var ct = (isM?mw:ledCount)-(cfg.comp.seglen?ns:0);
+	//TODO: add calculation for Y in case of 2D matrix
 	var cn = `<div class="seg lstI expanded">
 	<div class="segin">
 		<input type="text" class="noslide" id="seg${lu}t" autocomplete="off" maxlength=32 value="" placeholder="New segment ${lu}"/>
@@ -1540,7 +1541,7 @@ function makeSeg()
 				<td width="38%">${isM?(cfg.comp.seglen?"Width":"Stop X"):(cfg.comp.seglen?"LED count":"Stop LED")}</td>
 			</tr>
 			<tr>
-				<td><input class="noslide segn" id="seg${lu}s" type="number" min="0" max="${ledCount-1}" value="${ns}" oninput="updateLen(${lu})" onkeydown="segEnter(${lu})"></td>
+				<td><input class="noslide segn" id="seg${lu}s" type="number" min="0" max="${isM?mw-1:ledCount-1}" value="${ns}" oninput="updateLen(${lu})" onkeydown="segEnter(${lu})"></td>
 				<td><input class="noslide segn" id="seg${lu}e" type="number" min="0" max="${ct}" value="${ct}" oninput="updateLen(${lu})" onkeydown="segEnter(${lu})"></td>
 				<td><button class="btn btn-xs" onclick="setSeg(${lu});resetUtil();"><i class="icons bth-icon" id="segc${lu}">&#xe390;</i></button></td>
 			</tr>
@@ -2026,6 +2027,13 @@ function setLor(i)
 function setPreset(i)
 {
 	var obj = {"ps": i};
+	/*
+	if (pJson && pJson[i]) {
+		obj = Object.assign({}, pJson[i]);
+		delete obj.p; delete obj.n; delete obj.ql;
+		console.log(obj);
+	}
+	*/
 	if (isPlaylist(i)) obj.on = true; // force on
 	showToast("Loading preset " + pName(i) +" (" + i + ")");
 	requestJson(obj);

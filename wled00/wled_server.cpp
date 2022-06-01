@@ -173,11 +173,13 @@ void initServer()
     const String& url = request->url();
     isConfig = url.indexOf("cfg") > -1;
     if (!isConfig) {
+      /*
       #ifdef WLED_DEBUG
         DEBUG_PRINTLN(F("Serialized HTTP"));
         serializeJson(root,Serial);
         DEBUG_PRINTLN();
       #endif
+      */
       verboseResponse = deserializeState(root);
     } else {
       verboseResponse = deserializeConfig(root); //use verboseResponse to determine whether cfg change should be saved immediately

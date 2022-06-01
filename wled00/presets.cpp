@@ -13,6 +13,8 @@ static volatile byte callModeToApply = 0;
 
 bool applyPreset(byte index, byte callMode, bool fromJson)
 {
+  DEBUG_PRINT(F("Request to apply preset: "));
+  DEBUG_PRINTLN(index);
   presetToApply = index;
   callModeToApply = callMode;
   // the following is needed in case of HTTP JSON API call to return correct state to the caller
@@ -24,11 +26,13 @@ bool applyPreset(byte index, byte callMode, bool fromJson)
 void handlePresets(bool force)
 {
   bool changePreset = false;
+  uint8_t tmpPreset = presetToApply; // store temporary since deserializeState() may call applyPreset()
+  uint8_t tmpMode   = callModeToApply;
 
-  if (presetToApply == 0 || (fileDoc && !force)) return; // JSON buffer already allocated and not force apply or no preset waiting
+  if (tmpPreset == 0 || (fileDoc && !force)) return; // JSON buffer already allocated and not force apply or no preset waiting
 
   JsonObject fdo;
-  const char *filename = presetToApply < 255 ? "/presets.json" : "/tmp.json";
+  const char *filename = tmpPreset < 255 ? "/presets.json" : "/tmp.json";
 
   //crude way to determine if this was called by a network request
   uint8_t core = 1;
@@ -37,21 +41,38 @@ void handlePresets(bool force)
   #endif
   //only allow use of fileDoc from the core responsible for network requests (AKA HTTP JSON API)
   //do not use active network request doc from preset called by main loop (playlist, schedule, ...)
-  if (fileDoc && core && force && presetToApply < 255) {
+  if (fileDoc && core && force && tmpPreset < 255) {
+    DEBUG_PRINT(F("Force applying preset: "));
+    DEBUG_PRINTLN(presetToApply);
+
+    presetToApply     = 0; //clear request for preset
+    callModeToApply   = 0;
+
     // this will overwrite doc with preset content but applyPreset() is the last in such case and content of doc is no longer needed
-    errorFlag = readObjectFromFileUsingId(filename, presetToApply, fileDoc) ? ERR_NONE : ERR_FS_PLOAD;
+    errorFlag = readObjectFromFileUsingId(filename, tmpPreset, fileDoc) ? ERR_NONE : ERR_FS_PLOAD;
 
     JsonObject fdo = fileDoc->as<JsonObject>();
-    if (!fdo["seg"].isNull()) unloadPlaylist(); // if preset contains "seg" we must unload playlist
-    if (!fdo["seg"].isNull() || !fdo["on"].isNull() || !fdo["bri"].isNull() || !fdo["ps"].isNull() || !fdo[F("playlist")].isNull() || !fdo["win"].isNull()) changePreset = true;
-    fdo.remove("ps"); //remove load request for presets to prevent recursive crash
-    deserializeState(fdo, callModeToApply, presetToApply);
-    if (!errorFlag && changePreset) currentPreset = presetToApply;
 
-    colorUpdated(callModeToApply);
+    //HTTP API commands
+    const char* httpwin = fdo["win"];
+    if (httpwin) {
+      String apireq = "win"; // reduce flash string usage
+      apireq += F("&IN&"); // internal call
+      apireq += httpwin;
+      handleSet(nullptr, apireq, false); // may call applyPreset() via PL=
+      setValuesFromFirstSelectedSeg(); // fills legacy values
+      changePreset = true;
+    } else {
+      if (!fdo["seg"].isNull()) unloadPlaylist(); // if preset contains "seg" we must unload playlist
+      if (!fdo["seg"].isNull() || !fdo["on"].isNull() || !fdo["bri"].isNull() || !fdo["ps"].isNull() || !fdo[F("playlist")].isNull()) changePreset = true;
+      fdo.remove("ps"); //remove load request for presets to prevent recursive crash
 
-    presetToApply = 0; //clear request for preset
-    callModeToApply = 0;
+      deserializeState(fdo, tmpMode, tmpPreset);  // may call applyPreset() which will overwrite presetToApply
+    }
+
+    if (!errorFlag && changePreset) currentPreset = tmpPreset;
+
+    colorUpdated(tmpMode);
     return;
   }
 
@@ -60,14 +81,20 @@ void handlePresets(bool force)
   // allocate buffer
   if (!requestJSONBufferLock(9)) return;  // will also assign fileDoc
 
+  presetToApply = 0; //clear request for preset
+  callModeToApply = 0;
+
+  DEBUG_PRINTLN(F("Applying preset: "));
+  DEBUG_PRINTLN(tmpPreset);
+
   #ifdef ARDUINO_ARCH_ESP32
-  if (presetToApply==255 && tmpRAMbuffer!=nullptr) {
+  if (tmpPreset==255 && tmpRAMbuffer!=nullptr) {
     deserializeJson(*fileDoc,tmpRAMbuffer);
     errorFlag = ERR_NONE;
   } else
   #endif
   {
-  errorFlag = readObjectFromFileUsingId(filename, presetToApply, fileDoc) ? ERR_NONE : ERR_FS_PLOAD;
+  errorFlag = readObjectFromFileUsingId(filename, tmpPreset, fileDoc) ? ERR_NONE : ERR_FS_PLOAD;
   }
   fdo = fileDoc->as<JsonObject>();
 
@@ -77,30 +104,27 @@ void handlePresets(bool force)
     String apireq = "win"; // reduce flash string usage
     apireq += F("&IN&"); // internal call
     apireq += httpwin;
-    handleSet(nullptr, apireq, false);
+    handleSet(nullptr, apireq, false); // may call applyPreset() via PL=
     setValuesFromFirstSelectedSeg(); // fills legacy values
     changePreset = true;
   } else {
-    if (!fdo["seg"].isNull() || !fdo["on"].isNull() || !fdo["bri"].isNull() || !fdo["nl"].isNull() || !fdo["ps"].isNull() || !fdo[F("playlist")].isNull() || !fdo["win"].isNull()) changePreset = true;
+    if (!fdo["seg"].isNull() || !fdo["on"].isNull() || !fdo["bri"].isNull() || !fdo["nl"].isNull() || !fdo["ps"].isNull() || !fdo[F("playlist")].isNull()) changePreset = true;
     fdo.remove("ps"); //remove load request for presets to prevent recursive crash
-    deserializeState(fdo, CALL_MODE_NO_NOTIFY, presetToApply);
+    deserializeState(fdo, CALL_MODE_NO_NOTIFY, tmpPreset); // may change presetToApply by calling applyPreset()
   }
-  if (!errorFlag && presetToApply < 255 && changePreset) currentPreset = presetToApply;
+  if (!errorFlag && tmpPreset < 255 && changePreset) currentPreset = tmpPreset;
 
   #if defined(ARDUINO_ARCH_ESP32)
   //Aircoookie recommended not to delete buffer
-  if (presetToApply==255 && tmpRAMbuffer!=nullptr) {
+  if (tmpPreset==255 && tmpRAMbuffer!=nullptr) {
     free(tmpRAMbuffer);
     tmpRAMbuffer = nullptr;
   }
   #endif
 
   releaseJSONBufferLock(); // will also clear fileDoc
-  colorUpdated(callModeToApply);
-  updateInterfaces(callModeToApply);
-
-  presetToApply = 0; //clear request for preset
-  callModeToApply = 0;
+  colorUpdated(tmpMode);
+  updateInterfaces(tmpMode);
 }
 
 //called from handleSet(PS=) [network callback (fileDoc==nullptr), IR (irrational), deserializeState, UDP] and deserializeState() [network callback (filedoc!=nullptr)]
