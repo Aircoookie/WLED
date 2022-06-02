@@ -1,31 +1,31 @@
 Smack That Usermod!
 ---
-Control WLED with Smacks, Claps, Taps, Knocks, and more!
+Control WLED with Smacks, Claps, Taps, Knocks, Jostles, Nudges, and more!
 
 
 Settings
 ---
 * Enable
-  * Enable/Disable Clap Control.
-* Clap Timeout (ms)
-  * How much you can delay between claps before Clap Control will assume the clapping has ended and act accordingly.
+  * Enable/Disable Smack That.
+* Smack Timeout (ms)
+  * How much you can delay between smacks before Smack That will assume the smacking has ended and act accordingly.
 * Bounce Delay (ms)
   * Helps remove multiple activations in a very short time due to bounce.
-  * Acts as a cooldown after a clap is detected. If unsure, leave as is.
+  * Acts as a cooldown after a smack is detected. If unsure, leave as is.
 * Serial Output Level
-  * Sends Clap updates over serial connection as JSON.
+  * Sends Smack That updates over serial connection as JSON.
   * 0: Disabled
-  * 1: Send Clap update when preset is applied.
-    * Example: {"claps":3,"preset":1}
-  * 2: Send Clap update even when preset is not applied.
-    * Example: {"claps":2}
-    * Example: {"claps":3,"preset":1}
+  * 1: Send Smack That update when preset is applied.
+    * Example: {"smacks":3,"preset":1}
+  * 2: Send Smack That update even when preset is not applied.
+    * Example: {"smacks":2}
+    * Example: {"smacks":3,"preset":1}
 * Pin
   * Pin to read from for sensor
 * Invert
   * Default is detect on LOW, invert to detect on HIGH
-* N Clap(s)
-  * Specify a preset to load when N clap(s) are detected
+* N Smacks(s)
+  * Specify a preset to load when N smacks(s) are detected
 
 
 
