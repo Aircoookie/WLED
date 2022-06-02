@@ -695,6 +695,11 @@ public:
       seg.colors[0] = RGBW32(col[0], col[1], col[2], col[3]);
     }
     lampUdated();
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    char lineBuffer[64];
+    sprintf(lineBuffer, "%d", currentHue1);
+    display->overlay(lineBuffer, 500, 7); // use brush
+  #endif
   }
 
   void changeSat(bool increase){
@@ -719,6 +724,11 @@ public:
       seg.colors[0] = RGBW32(col[0], col[1], col[2], col[3]);
     }
     lampUdated();
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    char lineBuffer[64];
+    sprintf(lineBuffer, "%d", currentSat1);
+    display->overlay(lineBuffer, 500, 8); // use contrast
+  #endif
   }
 
   void changePreset(bool increase) {
@@ -739,6 +749,11 @@ public:
       apireq += presetHigh;
       handleSet(nullptr, apireq, false);
       lampUdated();
+    #ifdef USERMOD_FOUR_LINE_DISPLAY
+      char lineBuffer[64];
+      sprintf(lineBuffer, "%d", currentPreset);
+      display->overlay(lineBuffer, 500, 11); // use heart
+    #endif
     }
   }
 
@@ -763,6 +778,11 @@ public:
 //      seg.setCCT(currentCCT, strip.getMainSegmentId());
 //    }
     lampUdated();
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
+    char lineBuffer[64];
+    sprintf(lineBuffer, "%d", currentCCT);
+    display->overlay(lineBuffer, 500, 10); // use star
+  #endif
   }
 
   /*
