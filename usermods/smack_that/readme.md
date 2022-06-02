@@ -44,6 +44,14 @@ Supported Sensors
 * Any other sensor that pulls LOW when activated (or HIGH if Invert is enabled) 
 
 
-Demo
+Demos
 ---
-[![Smack That](https://img.youtube.com/vi/mRhMShXGT5s/0.jpg)](https://www.youtube.com/watch?v=mRhMShXGT5s)
+[![Smack That: Clapper Mode](https://img.youtube.com/vi/mRhMShXGT5s/0.jpg)](https://www.youtube.com/watch?v=mRhMShXGT5s)
+
+[Default (Clapper) Mode](https://www.youtube.com/watch?v=mRhMShXGT5s)
+
+---
+
+[![Smack That: Tripwire Mode configured for semi-sound reactive](https://img.youtube.com/vi/cBBUQdeMTcY/0.jpg)](https://www.youtube.com/watch?v=cBBUQdeMTcY)
+
+[Tripwire Mode (configured for semi-sound reactive)](https://www.youtube.com/watch?v=cBBUQdeMTcY)
