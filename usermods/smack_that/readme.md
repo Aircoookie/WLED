@@ -26,14 +26,22 @@ Settings
   * Default is detect on LOW, invert to detect on HIGH
 * N Smacks(s)
   * Specify a preset to load when N smacks(s) are detected
-
-
+* Use Tripwire Mode
+  * Overrides default behavoir with Tripwire Mode.
+  * On sensor activation, applies Tripped Preset.
+  * After timeout (resets on each sensor activation) applies Untripped Preset.
+* Tripwire Timeout (ms)
+  * The amount of time, in milliseconds, after last sensor trip that the Untripped Preset will be applied.
+* Tripped Preset
+  * Preset to apply when sensor is tripped.
+* Untripped Preset
+  * Preset to apply when sensor has not been tripped for the timeout period.
 
 Supported Sensors
 ---
-* FC-04 sound sensor Module
+* FC-04 Sound Sensor Module
 * SW-420 Vibration Sensor Module (inverted)
-* Any sensor that pulls LOW when activated (or HIGH if Invert is enabled) 
+* Any other sensor that pulls LOW when activated (or HIGH if Invert is enabled) 
 
 
 Demo
