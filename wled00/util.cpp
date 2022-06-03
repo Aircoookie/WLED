@@ -14,16 +14,14 @@ int getNumVal(const String* req, uint16_t pos)
 void parseNumber(const char* str, byte* val, byte minv, byte maxv)
 {
   if (str == nullptr || str[0] == '\0') return;
-  if (str[0] == 'r') {*val = random8(minv,maxv); return;}
+  if (str[0] == 'r') {*val = random8(minv,maxv?maxv:255); return;} // maxv for random cannot be 0
   bool wrap = false;
   if (str[0] == 'w' && strlen(str) > 1) {str++; wrap = true;}
   if (str[0] == '~') {
     int out = atoi(str +1);
-    if (out == 0)
-    {
+    if (out == 0) {
       if (str[1] == '0') return;
-      if (str[1] == '-')
-      {
+      if (str[1] == '-') {
         *val = (int)(*val -1) < (int)minv ? maxv : min((int)maxv,(*val -1)); //-1, wrap around
       } else {
         *val = (int)(*val +1) > (int)maxv ? minv : max((int)minv,(*val +1)); //+1, wrap around
@@ -38,19 +36,20 @@ void parseNumber(const char* str, byte* val, byte minv, byte maxv)
       }
       *val = out;
     }
-  } else
-  {
+    return;
+  } else if (minv == maxv && minv == 0) { // limits "unset" i.e. both 0
     byte p1 = atoi(str);
-    const char* str2 = strchr(str,'~'); //min/max range (for preset cycle, e.g. "1~5~")
+    const char* str2 = strchr(str,'~'); // min/max range (for preset cycle, e.g. "1~5~")
     if (str2) {
-      byte p2 = atoi(str2+1);
-      presetCycMin = p1; presetCycMax = p2;
-      while (isdigit((str2+1)[0])) str2++;
-      parseNumber(str2+1, val, p1, p2);
-    } else {
-      *val = p1;
+      byte p2 = atoi(++str2);           // skip ~
+      if (p2 > 0) {
+        while (isdigit(*(++str2)));     // skip digits
+        parseNumber(str2, val, p1, p2);
+        return;
+      }
     }
   }
+  *val = atoi(str);
 }
 
 

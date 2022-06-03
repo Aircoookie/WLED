@@ -2026,14 +2026,15 @@ function setLor(i)
 
 function setPreset(i)
 {
-	var obj = {"ps": i};
-	/*
-	if (pJson && pJson[i]) {
-		obj = Object.assign({}, pJson[i]);
-		delete obj.p; delete obj.n; delete obj.ql;
-		console.log(obj);
+	var obj = {};
+	if (pJson && pJson[i] && (!pJson[i].win || pJson[i].win.indexOf("Please") <= 0)) {
+		Object.assign(obj, pJson[i]);
+		delete obj.ql;	// no need for quick load
+		delete obj.n;	// no need for name
+		obj.pt = i;		// this will set preset ID but not force state update
+	} else {
+		obj.ps = i;
 	}
-	*/
 	if (isPlaylist(i)) obj.on = true; // force on
 	showToast("Loading preset " + pName(i) +" (" + i + ")");
 	requestJson(obj);

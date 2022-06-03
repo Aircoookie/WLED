@@ -162,12 +162,12 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   }
 
   //getVal also supports inc/decrementing and random
-  getVal(elem[F("sx")], &seg.speed, 0, 255);
-  getVal(elem[F("ix")], &seg.intensity, 0, 255);
+  getVal(elem[F("sx")], &seg.speed);
+  getVal(elem[F("ix")], &seg.intensity);
   getVal(elem["pal"], &seg.palette, 1, strip.getPaletteCount());
-  getVal(elem[F("c1")], &seg.custom1, 0, 255);
-  getVal(elem[F("c2")], &seg.custom2, 0, 255);
-  getVal(elem[F("c3")], &seg.custom3, 0, 255);
+  getVal(elem[F("c1")], &seg.custom1);
+  getVal(elem[F("c2")], &seg.custom2);
+  getVal(elem[F("c3")], &seg.custom3);
 
   JsonArray iarr = elem[F("i")]; //set individual LEDs
   if (!iarr.isNull()) {
@@ -360,11 +360,18 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       deletePreset(ps);
     }
 
-    ps = presetCycCurr;
-    if (getVal(root["ps"], &ps, presetCycMin, presetCycMax)) { //load preset (clears state request!)
-      if (ps >= presetCycMin && ps <= presetCycMax) presetCycCurr = ps;
-      applyPreset(ps, callMode, !presetId);  // may clear root object and replace it by preset content if presetId==0
-      return stateResponse;
+    // TODO: this may require some additiona checks
+    if (!root[F("pt")].isNull()) {
+      currentPreset = root[F("pt")] | currentPreset;
+      stateChanged = false; // cancel state change update (preset was set directly by applying values stored in UI JSON array)
+    }
+
+    if (!root["ps"].isNull()) {
+      ps = currentPreset;
+      if (getVal(root["ps"], &ps, 0, 0) && ps > 0 && ps < 251 && ps != currentPreset) { // get preset ID (use embedded cycling limits if they exist)
+        applyPreset(ps, callMode); // async load 
+        return stateResponse;
+      }
     }
 
     //HTTP API commands
