@@ -69,12 +69,12 @@ bool getVal(JsonVariant elem, byte* val, byte vmin, byte vmax) {
 }
 
 
-bool updateVal(const String* req, const char* key, byte* val, byte minv, byte maxv)
+bool updateVal(const char* req, const char* key, byte* val, byte minv, byte maxv)
 {
-  int pos = req->indexOf(key);
-  if (pos < 1) return false;
-  if (req->length() < (unsigned int)(pos + 4)) return false;
-  parseNumber(req->c_str() + pos +3, val, minv, maxv);
+  const char *v = strstr(req, key);
+  if (v) v += strlen(key);
+  else return false;
+  parseNumber(v, val, minv, maxv);
   return true;
 }
 

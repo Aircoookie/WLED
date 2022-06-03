@@ -354,33 +354,32 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   byte ps = root[F("psave")];
   if (ps > 0) {
     savePreset(ps, nullptr, root);
-  } else {
-    ps = root[F("pdel")]; //deletion
-    if (ps > 0) {
-      deletePreset(ps);
-    }
+  }
 
-    // TODO: this may require some additiona checks
-    if (!root[F("pt")].isNull()) {
-      currentPreset = root[F("pt")] | currentPreset;
-      stateChanged = false; // cancel state change update (preset was set directly by applying values stored in UI JSON array)
-    }
+  ps = root[F("pdel")]; //deletion
+  if (ps > 0) {
+    deletePreset(ps);
+  }
 
-    if (!root["ps"].isNull()) {
-      ps = currentPreset;
-      if (getVal(root["ps"], &ps, 0, 0) && ps > 0 && ps < 251 && ps != currentPreset) { // get preset ID (use embedded cycling limits if they exist)
-        applyPreset(ps, callMode); // async load 
-        return stateResponse;
-      }
+  if (!root["ps"].isNull()) {
+    ps = presetCycCurr;
+    if (getVal(root["ps"], &ps, 0, 0) && ps > 0 && ps < 251 && ps != currentPreset) { // get preset ID (use embedded cycling limits if they exist)
+      presetCycCurr = ps;
+      applyPreset(ps, callMode); // async load 
+      return stateResponse;
     }
+  } else if (!root[F("pt")].isNull()) {
+    currentPreset = root[F("pt")] | currentPreset;
+    if (root["win"].isNull()) presetCycCurr = currentPreset;
+    stateChanged = false; // cancel state change update (preset was set directly by applying values stored in UI JSON array)
+  }
 
-    //HTTP API commands
-    const char* httpwin = root["win"];
-    if (httpwin) {
-      String apireq = "win"; apireq += '&'; // reduce flash string usage
-      apireq += httpwin;
-      handleSet(nullptr, apireq, false);
-    }
+  //HTTP API commands
+  const char* httpwin = root["win"];
+  if (httpwin) {
+    String apireq = "win"; apireq += '&'; // reduce flash string usage
+    apireq += httpwin;
+    handleSet(nullptr, apireq, false);
   }
 
   JsonObject playlist = root[F("playlist")];

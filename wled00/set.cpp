@@ -625,6 +625,8 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   uint16_t startI = selseg.start;
   uint16_t stopI  = selseg.stop;
+  uint16_t startY = selseg.startY;
+  uint16_t stopY  = selseg.stopY;
   uint8_t  grpI   = selseg.grouping;
   uint16_t spcI   = selseg.spacing;
   pos = req.indexOf(F("&S=")); //segment start
@@ -644,7 +646,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (pos > 0) {
     spcI = getNumVal(&req, pos);
   }
-  strip.setSegment(selectedSeg, startI, stopI, grpI, spcI);
+  strip.setSegment(selectedSeg, startI, stopI, grpI, spcI, UINT16_MAX, startY, stopY);
 
   pos = req.indexOf(F("RV=")); //Segment reverse
   if (pos > 0) selseg.setOption(SEG_OPTION_REVERSED, req.charAt(pos+3) != '0');
@@ -680,25 +682,25 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (pos > 0) presetCycMax = getNumVal(&req, pos);
 
   //apply preset
-  if (updateVal(&req, "PL=", &presetCycCurr, presetCycMin, presetCycMax)) {
+  if (updateVal(req.c_str(), "PL=", &presetCycCurr, presetCycMin, presetCycMax)) {
 		unloadPlaylist();
     applyPreset(presetCycCurr);
   }
 
   //set brightness
-  updateVal(&req, "&A=", &bri);
+  updateVal(req.c_str(), "&A=", &bri);
 
   bool col0Changed = false, col1Changed = false;
   //set colors
-  col0Changed |= updateVal(&req, "&R=", &colIn[0]);
-  col0Changed |= updateVal(&req, "&G=", &colIn[1]);
-  col0Changed |= updateVal(&req, "&B=", &colIn[2]);
-  col0Changed |= updateVal(&req, "&W=", &colIn[3]);
+  col0Changed |= updateVal(req.c_str(), "&R=", &colIn[0]);
+  col0Changed |= updateVal(req.c_str(), "&G=", &colIn[1]);
+  col0Changed |= updateVal(req.c_str(), "&B=", &colIn[2]);
+  col0Changed |= updateVal(req.c_str(), "&W=", &colIn[3]);
 
-  col1Changed |= updateVal(&req, "R2=", &colInSec[0]);
-  col1Changed |= updateVal(&req, "G2=", &colInSec[1]);
-  col1Changed |= updateVal(&req, "B2=", &colInSec[2]);
-  col1Changed |= updateVal(&req, "W2=", &colInSec[3]);
+  col1Changed |= updateVal(req.c_str(), "R2=", &colInSec[0]);
+  col1Changed |= updateVal(req.c_str(), "G2=", &colInSec[1]);
+  col1Changed |= updateVal(req.c_str(), "B2=", &colInSec[2]);
+  col1Changed |= updateVal(req.c_str(), "W2=", &colInSec[3]);
 
   #ifdef WLED_ENABLE_LOXONE
   //lox parser
@@ -802,13 +804,13 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   bool fxModeChanged = false, speedChanged = false, intensityChanged = false, paletteChanged = false;
   // set effect parameters
-  if (updateVal(&req, "FX=", &effectIn, 0, strip.getModeCount()-1)) {
+  if (updateVal(req.c_str(), "FX=", &effectIn, 0, strip.getModeCount()-1)) {
     if (request != nullptr) unloadPlaylist(); // unload playlist if changing FX using web request
     fxModeChanged = true;
   }
-  speedChanged     = updateVal(&req, "SX=", &speedIn);
-  intensityChanged = updateVal(&req, "IX=", &intensityIn);
-  paletteChanged   = updateVal(&req, "FP=", &paletteIn, 0, strip.getPaletteCount()-1);
+  speedChanged     = updateVal(req.c_str(), "SX=", &speedIn);
+  intensityChanged = updateVal(req.c_str(), "IX=", &intensityIn);
+  paletteChanged   = updateVal(req.c_str(), "FP=", &paletteIn, 0, strip.getPaletteCount()-1);
   
   stateChanged |= (fxModeChanged || speedChanged || intensityChanged || paletteChanged);
 

@@ -70,7 +70,7 @@ void handlePresets(bool force)
       deserializeState(fdo, tmpMode, tmpPreset);  // may call applyPreset() which will overwrite presetToApply
     }
 
-    if (!errorFlag && changePreset) currentPreset = tmpPreset;
+    if (!errorFlag && changePreset) presetCycCurr = currentPreset = tmpPreset;
 
     colorUpdated(tmpMode);
     return;
@@ -112,7 +112,7 @@ void handlePresets(bool force)
     fdo.remove("ps"); //remove load request for presets to prevent recursive crash
     deserializeState(fdo, CALL_MODE_NO_NOTIFY, tmpPreset); // may change presetToApply by calling applyPreset()
   }
-  if (!errorFlag && tmpPreset < 255 && changePreset) currentPreset = tmpPreset;
+  if (!errorFlag && tmpPreset < 255 && changePreset) presetCycCurr = currentPreset = tmpPreset;
 
   #if defined(ARDUINO_ARCH_ESP32)
   //Aircoookie recommended not to delete buffer

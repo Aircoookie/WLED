@@ -741,6 +741,12 @@ public:
     display->updateRedrawTime();
   #endif
     if (presetHigh && presetLow && presetHigh > presetLow) {
+      StaticJsonDocument<64> root;
+      char str[64];
+      sprintf_P(str, PSTR("%d~%d~%s"), presetLow, presetHigh, increase?"":"-");
+      root[F("ps")] = str;
+      deserializeState(root.as<JsonObject>(), CALL_MODE_BUTTON_PRESET);
+/*
       String apireq = F("win&PL=~");
       if (!increase) apireq += '-';
       apireq += F("&P1=");
@@ -748,11 +754,11 @@ public:
       apireq += F("&P2=");
       apireq += presetHigh;
       handleSet(nullptr, apireq, false);
+*/
       lampUdated();
     #ifdef USERMOD_FOUR_LINE_DISPLAY
-      char lineBuffer[64];
-      sprintf(lineBuffer, "%d", currentPreset);
-      display->overlay(lineBuffer, 500, 11); // use heart
+      sprintf(str, "%d", currentPreset);
+      display->overlay(str, 500, 11); // use heart
     #endif
     }
   }
