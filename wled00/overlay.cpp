@@ -42,8 +42,8 @@ void _overlayAnalogClock()
     }
   }
   if (!analogClockSecondsTrail) strip.setPixelColor(secondPixel, 0xFF0000);
-  strip.setPixelColor(minutePixel, 0x00FF00);
-  strip.setPixelColor(hourPixel, 0x0000FF);
+  strip.setPixelColor(minutePixel, analogClockMixColors?(strip.getPixelColor(minutePixel)|0x00FF00):0x00FF00);
+  strip.setPixelColor(hourPixel, analogClockMixColors?(strip.getPixelColor(hourPixel)|0x0000FF):0x0000FF);
 }
 
 

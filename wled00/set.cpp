@@ -331,6 +331,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     analogClock12pixel = request->arg(F("OM")).toInt();
     analogClock5MinuteMarks = request->hasArg(F("O5"));
     analogClockSecondsTrail = request->hasArg(F("OS"));
+    analogClockMixColors = request->hasArg(F("OM"));
 
     countdownMode = request->hasArg(F("CE"));
     countdownYear = request->arg(F("CY")).toInt();

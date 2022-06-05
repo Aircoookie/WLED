@@ -392,15 +392,16 @@ onchange="Cs()"><br><div id="cac">First LED: <input name="O1" type="number"
 min="0" max="255" required> Last LED: <input name="O2" type="number" min="0" 
 max="255" required><br>12h LED: <input name="OM" type="number" min="0" 
 max="255" required><br>Show 5min marks: <input type="checkbox" name="O5"><br>
-Seconds (as trail): <input type="checkbox" name="OS"><br></div>Countdown Mode: 
-<input type="checkbox" name="CE"><br>Countdown Goal:<br>Date:&nbsp;<nowrap>20
-<input name="CY" class="xs" type="number" min="0" max="99" required>-<input 
-name="CI" class="xs" type="number" min="1" max="12" required>-<input name="CD" 
-class="xs" type="number" min="1" max="31" required></nowrap><br>Time:<nowrap>
-<input name="CH" class="xs" type="number" min="0" max="23" required>:<input 
-name="CM" class="xs" type="number" min="0" max="59" required>:<input name="CS" 
-class="xs" type="number" min="0" max="59" required></nowrap><br><h3>
-Macro presets</h3><b>Macros have moved!</b><br><i>
+Seconds (as trail): <input type="checkbox" name="OS"><br>Mix colors: <input 
+type="checkbox" name="OM"><br></div>Countdown Mode: <input type="checkbox" 
+name="CE"><br>Countdown Goal:<br>Date:&nbsp;<nowrap>20<input name="CY" 
+class="xs" type="number" min="0" max="99" required>-<input name="CI" class="xs" 
+type="number" min="1" max="12" required>-<input name="CD" class="xs" 
+type="number" min="1" max="31" required></nowrap><br>Time:<nowrap><input 
+name="CH" class="xs" type="number" min="0" max="23" required>:<input name="CM" 
+class="xs" type="number" min="0" max="59" required>:<input name="CS" class="xs" 
+type="number" min="0" max="59" required></nowrap><br><h3>Macro presets</h3><b>
+Macros have moved!</b><br><i>
 Presets now also can be used as macros to save both JSON and HTTP API commands.
 <br>Just enter the preset ID below!</i> <i>
 Use 0 for the default action instead of a preset</i><br>Alexa On/Off Preset: 
