@@ -4485,7 +4485,7 @@ uint16_t WS2812FX::mode_2DBlackHole(void) {            // By: Stepko https://edi
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
+  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -4530,8 +4530,7 @@ uint16_t WS2812FX::mode_2DColoredBursts() {              // By: ldirko   https:/
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-
-  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
+  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -4590,8 +4589,7 @@ uint16_t WS2812FX::mode_2Ddna(void) {         // dna originally by by ldirko at 
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-
-  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
+  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -4620,8 +4618,7 @@ uint16_t WS2812FX::mode_2DDNASpiral() {               // By: ldirko  https://edi
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-
-  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
+  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -4669,10 +4666,9 @@ uint16_t WS2812FX::mode_2DDrift() {              // By: Stepko   https://editor.
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
+  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
 
-  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
-
-  if (cols<8 || rows<8) return mode_static();
+  //if (cols<8 || rows<8) return mode_static(); // makes no sense to run on smaller than 8x8
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -4705,8 +4701,7 @@ uint16_t WS2812FX::mode_2Dfirenoise(void) {               // firenoise2d. By And
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-
-  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
+  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -4743,8 +4738,7 @@ uint16_t WS2812FX::mode_2DFrizzles(void) {                 // By: Stepko https:/
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-
-  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
+  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -4776,8 +4770,7 @@ uint16_t WS2812FX::mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-
-  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
+  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
 
   if (!SEGENV.allocateData(dataSize*2 + sizeof(unsigned long))) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -5049,8 +5042,7 @@ uint16_t WS2812FX::mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-
-  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
+  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -5200,8 +5192,7 @@ uint16_t WS2812FX::mode_2DPlasmaball(void) {                   // By: Stepko htt
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-
-  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
+  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -5248,8 +5239,7 @@ uint16_t WS2812FX::mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevs
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-
-  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
+  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -5303,10 +5293,9 @@ static const char *_data_FX_MODE_POLAR_LIGHTS PROGMEM = "2D Polar Lights@Speed,S
 uint16_t WS2812FX::mode_2DPulser(void) {                       // By: ldirko   https://editor.soulmatelights.com/gallery/878-pulse-test , modifed by: Andrew Tuline
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t cols = SEGMENT.virtualWidth();
+  //const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-
-  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
+  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -5318,7 +5307,7 @@ uint16_t WS2812FX::mode_2DPulser(void) {                       // By: ldirko   h
   uint16_t a = now / (18 - SEGMENT.speed / 16);
   uint16_t x = (a / 14);
   uint16_t y = map((sin8(a * 5) + sin8(a * 4) + sin8(a * 2)), 0, 765, rows-1, 0);
-  uint16_t index = XY(x, y);
+  uint16_t index = XY(x, y); // XY() will wrap x or y
   leds[index] = ColorFromPalette(currentPalette, map(y, 0, rows-1, 0, 255), 255, LINEARBLEND);
   blur2d(leds, 1 + (SEGMENT.intensity>>4));
 
@@ -5336,8 +5325,7 @@ uint16_t WS2812FX::mode_2DSindots(void) {                             // By: ldi
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-
-  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
+  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -5370,8 +5358,7 @@ uint16_t WS2812FX::mode_2Dsquaredswirl(void) {            // By: Mark Kriegsman.
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-
-  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
+  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -5412,8 +5399,7 @@ uint16_t WS2812FX::mode_2DSunradiation(void) {                   // By: ldirko h
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-
-  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
+  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
 
   if (!SEGENV.allocateData(dataSize + (sizeof(byte)*(cols+2)*(rows+2)))) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -5464,8 +5450,7 @@ uint16_t WS2812FX::mode_2Dtartan(void) {          // By: Elliott Kember  https:/
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-
-  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
+  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -5500,8 +5485,7 @@ uint16_t WS2812FX::mode_2DWaverly(void) {                                       
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-
-  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
+  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -5632,8 +5616,7 @@ uint16_t WS2812FX::mode_2Dspaceships(void) {    //// Space ships by stepko (c)05
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-
-  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
+  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
@@ -5682,8 +5665,7 @@ uint16_t WS2812FX::mode_2Dcrazybees(void) {
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-
-  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
+  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
 
   byte n = MIN(MAX_BEES, (rows * cols) / 256 + 1);
 
@@ -5760,12 +5742,11 @@ uint16_t WS2812FX::mode_2Dghostrider(void) {
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-
-  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
+  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
 
   typedef struct Lighter {
-    int      gPosX;
-    int      gPosY;
+    int16_t  gPosX;
+    int16_t  gPosY;
     uint16_t gAngle;
     int8_t   angleSpeed;
     uint16_t lightersPosX[LIGHTERS_AM];
@@ -5782,10 +5763,12 @@ uint16_t WS2812FX::mode_2Dghostrider(void) {
 
   const int maxLighters = min(cols + rows, LIGHTERS_AM);
 
-  if (SEGENV.call == 0) {
+  if (SEGENV.call == 0 || SEGENV.aux0 != cols || SEGENV.aux1 != rows) {
+    SEGENV.aux0 = cols;
+    SEGENV.aux1 = rows;
     fill_solid(leds, CRGB::Black);
     randomSeed(now);
-    lighter->angleSpeed = random(-10, 10);
+    lighter->angleSpeed = random8(0,20) - 10;
     lighter->Vspeed = 5;
     lighter->gPosX = (cols/2) * 10;
     lighter->gPosY = (rows/2) * 10;
@@ -5799,7 +5782,7 @@ uint16_t WS2812FX::mode_2Dghostrider(void) {
   if (millis() > SEGENV.step) {
     SEGENV.step = millis() + 1024 / (cols+rows);
 
-    fadeToBlackBy(leds, SEGMENT.speed>>2);
+    fadeToBlackBy(leds, (SEGMENT.speed>>2)+64);
 
     CRGB color = CRGB::White;
     wu_pixel(leds, lighter->gPosX * 256 / 10, lighter->gPosY * 256 / 10, color);
@@ -5851,8 +5834,7 @@ uint16_t WS2812FX::mode_2Dfloatingblobs(void) {
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-
-  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
+  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
 
   typedef struct Blob {
     float x[MAX_BLOBS], y[MAX_BLOBS];
@@ -5868,16 +5850,18 @@ uint16_t WS2812FX::mode_2Dfloatingblobs(void) {
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
   blob_t *blob = reinterpret_cast<blob_t*>(SEGENV.data + dataSize);
 
-  if (SEGENV.call == 0) {
+  if (SEGENV.call == 0 || SEGENV.aux0 != cols || SEGENV.aux1 != rows) {
+    SEGENV.aux0 = cols;
+    SEGENV.aux1 = rows;
     fill_solid(leds, CRGB::Black);
     for (byte i = 0; i < MAX_BLOBS; i++) {
-      blob->r[i] = cols>15 ? random8(1, cols/8) : 1;
-      blob->sX[i] = (float) random8(5, cols) / (float)(256 - SEGMENT.speed); // speed x
-      blob->sY[i] = (float) random8(5, rows) / (float)(256 - SEGMENT.speed); // speed y
-      blob->x[i] = random8(0, cols-1);
-      blob->y[i] = random8(0, rows-1);
+      blob->r[i]  = cols>15 ? random8(1, cols/8.f) : 1;
+      blob->sX[i] = (float) random8(3, cols) / (float)(256 - SEGMENT.speed); // speed x
+      blob->sY[i] = (float) random8(3, rows) / (float)(256 - SEGMENT.speed); // speed y
+      blob->x[i]  = random8(0, cols-1);
+      blob->y[i]  = random8(0, rows-1);
       blob->color[i] = random8();
-      blob->grow[i] = (blob->r[i] < 1.);
+      blob->grow[i]  = (blob->r[i] < 1.f);
       if (blob->sX[i] == 0) blob->sX[i] = 1;
       if (blob->sY[i] == 0) blob->sY[i] = 1;
     }
@@ -5891,46 +5875,46 @@ uint16_t WS2812FX::mode_2Dfloatingblobs(void) {
     // change radius if needed
     if (blob->grow[i]) {
       // enlarge radius until it is >= 4
-      blob->r[i] += (fabs(blob->sX[i]) > fabs(blob->sY[i]) ? fabs(blob->sX[i]) : fabs(blob->sY[i])) * 0.05;
-      if (blob->r[i] >= MIN(cols/8,2.)) {
+      blob->r[i] += (fabs(blob->sX[i]) > fabs(blob->sY[i]) ? fabs(blob->sX[i]) : fabs(blob->sY[i])) * 0.05f;
+      if (blob->r[i] >= MIN(cols/8.f,2.f)) {
         blob->grow[i] = false;
       }
     } else {
       // reduce radius until it is < 1
-      blob->r[i] -= (fabs(blob->sX[i]) > fabs(blob->sY[i]) ? fabs(blob->sX[i]) : fabs(blob->sY[i])) * 0.05;
-      if (blob->r[i] < 1.) {
+      blob->r[i] -= (fabs(blob->sX[i]) > fabs(blob->sY[i]) ? fabs(blob->sX[i]) : fabs(blob->sY[i])) * 0.05f;
+      if (blob->r[i] < 1.f) {
         blob->grow[i] = true; 
       }
     }
     CRGB c = ColorFromPalette(currentPalette, blob->color[i]);
     //if (!SEGMENT.palette) c = SEGCOLOR(0);
-    if (blob->r[i] > 1.) fill_circle(leds, blob->y[i], blob->x[i], blob->r[i], c);
-    else                 leds[XY(blob->y[i], blob->x[i])] += c;
+    if (blob->r[i] > 1.f) fill_circle(leds, blob->y[i], blob->x[i], blob->r[i], c);
+    else                  leds[XY(blob->y[i], blob->x[i])] += c;
     // move x
-    if (blob->x[i] + blob->r[i] >= cols - 1) blob->x[i] += (blob->sX[i] * ((cols - 1 - blob->x[i]) / blob->r[i] + 0.005));
-    else if (blob->x[i] - blob->r[i] <= 0)   blob->x[i] += (blob->sX[i] * (blob->x[i] / blob->r[i] + 0.005));
+    if (blob->x[i] + blob->r[i] >= cols - 1) blob->x[i] += (blob->sX[i] * ((cols - 1 - blob->x[i]) / blob->r[i] + 0.005f));
+    else if (blob->x[i] - blob->r[i] <= 0)   blob->x[i] += (blob->sX[i] * (blob->x[i] / blob->r[i] + 0.005f));
     else                                     blob->x[i] += blob->sX[i];
     // move y
-    if (blob->y[i] + blob->r[i] >= rows - 1) blob->y[i] += (blob->sY[i] * ((rows - 1 - blob->y[i]) / blob->r[i] + 0.005));
-    else if (blob->y[i] - blob->r[i] <= 0)   blob->y[i] += (blob->sY[i] * (blob->y[i] / blob->r[i] + 0.005));
+    if (blob->y[i] + blob->r[i] >= rows - 1) blob->y[i] += (blob->sY[i] * ((rows - 1 - blob->y[i]) / blob->r[i] + 0.005f));
+    else if (blob->y[i] - blob->r[i] <= 0)   blob->y[i] += (blob->sY[i] * (blob->y[i] / blob->r[i] + 0.005f));
     else                                     blob->y[i] += blob->sY[i];
     // bounce x
-    if (blob->x[i] < 0.01) {
-      blob->sX[i] = (float) random8(5, cols) / (256 - SEGMENT.speed);
-      blob->x[i] = 0.01;
-    } else if (blob->x[i] > cols - 1.01) {
-      blob->sX[i] = (float) random8(5, cols) / (256 - SEGMENT.speed);
+    if (blob->x[i] < 0.01f) {
+      blob->sX[i] = (float) random8(3, cols) / (256 - SEGMENT.speed);
+      blob->x[i]  = 0.01f;
+    } else if (blob->x[i] > cols - 1.01f) {
+      blob->sX[i] = (float) random8(3, cols) / (256 - SEGMENT.speed);
       blob->sX[i] = -blob->sX[i];
-      blob->x[i] = cols - 1.01;
+      blob->x[i]  = cols - 1.01f;
     }
     // bounce y
-    if (blob->y[i] < 0.01) {
-      blob->sY[i] = (float) random8(5, rows) / (256 - SEGMENT.speed);
-      blob->y[i] = 0.01;
-    } else if (blob->y[i] > rows - 1.01) {
-      blob->sY[i] = (float) random8(5, rows) / (256 - SEGMENT.speed);
+    if (blob->y[i] < 0.01f) {
+      blob->sY[i] = (float) random8(3, rows) / (256 - SEGMENT.speed);
+      blob->y[i]  = 0.01f;
+    } else if (blob->y[i] > rows - 1.01f) {
+      blob->sY[i] = (float) random8(3, rows) / (256 - SEGMENT.speed);
       blob->sY[i] = -blob->sY[i];
-      blob->y[i] = rows - 1.01;
+      blob->y[i]  = rows - 1.01f;
     }
   }
   blur2d(leds, cols+rows);
@@ -5988,8 +5972,7 @@ uint16_t WS2812FX::mode_2Ddriftrose(void) {
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-
-  const uint16_t dataSize = sizeof(CRGB) * rows * cols;
+  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
 
   const float CX = cols/2.f - .5f;
   const float CY = rows/2.f - .5f;

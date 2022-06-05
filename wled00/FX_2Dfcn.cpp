@@ -175,6 +175,11 @@ void IRAM_ATTR WS2812FX::setPixelColorXY(uint16_t x, uint16_t y, byte r, byte g,
         if (index < customMappingSize) index = customMappingTable[index];
         busses.setPixelColor(index, col);
       }
+      if (SEGMENT.getOption(SEG_OPTION_MIRROR_Y) && SEGMENT.getOption(SEG_OPTION_MIRROR)) { //set the corresponding vertically AND horizontally mirrored pixel
+        index = get2DPixelIndex(SEGMENT.width() - xX - 1, SEGMENT.height() - yY - 1);
+        if (index < customMappingSize) index = customMappingTable[index];
+        busses.setPixelColor(index, col);
+      }
     }
   }
 }

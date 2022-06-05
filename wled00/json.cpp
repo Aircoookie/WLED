@@ -352,34 +352,34 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   loadLedmap = root[F("ledmap")] | loadLedmap;
 
   byte ps = root[F("psave")];
-  if (ps > 0) {
-    savePreset(ps, nullptr, root);
-  }
+  if (ps > 0 && ps < 251) savePreset(ps, nullptr, root);
 
   ps = root[F("pdel")]; //deletion
-  if (ps > 0) {
-    deletePreset(ps);
-  }
+  if (ps > 0 && ps < 251) deletePreset(ps);
 
-  if (!root["ps"].isNull()) {
-    ps = presetCycCurr;
-    if (getVal(root["ps"], &ps, 0, 0) && ps > 0 && ps < 251 && ps != currentPreset) { // get preset ID (use embedded cycling limits if they exist)
-      presetCycCurr = ps;
-      applyPreset(ps, callMode); // async load 
-      return stateResponse;
-    }
-  } else if (!root[F("pt")].isNull()) {
-    currentPreset = root[F("pt")] | currentPreset;
-    if (root["win"].isNull()) presetCycCurr = currentPreset;
-    stateChanged = false; // cancel state change update (preset was set directly by applying values stored in UI JSON array)
-  }
-
-  //HTTP API commands
+  // HTTP API commands (must be handled before "ps")
   const char* httpwin = root["win"];
   if (httpwin) {
     String apireq = "win"; apireq += '&'; // reduce flash string usage
     apireq += httpwin;
-    handleSet(nullptr, apireq, false);
+    handleSet(nullptr, apireq, false);    // may set stateChanged
+  }
+
+  // applying preset (2 cases: a) API call includes all preset values, b) API only specifies preset ID)
+  if (!root["ps"].isNull()) {
+    ps = presetCycCurr;
+    if (stateChanged) {
+      // a) already applied preset content (requires "seg" or "win" but will ignore the rest)
+      currentPreset = root["ps"] | currentPreset;
+      // if preset contains HTTP API call do not change presetCycCurr
+      if (root["win"].isNull()) presetCycCurr = currentPreset;
+      stateChanged = false; // cancel state change update (preset was set directly by applying values stored in UI JSON array)
+    } else if (root["win"].isNull() && getVal(root["ps"], &ps, 0, 0) && ps > 0 && ps < 251 && ps != currentPreset) {
+      // b) preset ID only (use embedded cycling limits if they exist in getVal())
+      presetCycCurr = ps;
+      applyPreset(ps, callMode); // async load
+      return stateResponse;
+    }
   }
 
   JsonObject playlist = root[F("playlist")];
@@ -458,7 +458,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     root["on"] = (bri > 0);
     root["bri"] = briLast;
     root[F("transition")] = transitionDelay/100; //in 100ms
-    root[F("tdd")] = transitionDelayDefault/100; //in 100ms
+    //root[F("tdd")] = transitionDelayDefault/100; //in 100ms
   }
 
   if (!forPreset) {

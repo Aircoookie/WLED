@@ -1406,7 +1406,7 @@ function requestJson(command=null)
 			if (tn != tr) command.transition = tn;
 		}
 		req = JSON.stringify(command);
-		if (req.length > 1000) useWs = false; // do not send very long requests over websocket
+		if (req.length > 1430) useWs = false; // do not send very long requests over websocket
 	};
 
 	if (useWs) {
@@ -1441,7 +1441,7 @@ function requestJson(command=null)
 		readState(s);
 
 		//load presets and open websocket sequentially
-		setTimeout(()=>{
+		if (!pJson || isEmpty(pJson)) setTimeout(()=>{
 			loadPresets(()=>{
 				if (!(ws && ws.readyState === WebSocket.OPEN)) makeWS();
 			});
@@ -2026,14 +2026,14 @@ function setLor(i)
 
 function setPreset(i)
 {
-	var obj = {};
+	var obj = {"ps":i};
 	if (pJson && pJson[i] && (!pJson[i].win || pJson[i].win.indexOf("Please") <= 0)) {
 		Object.assign(obj, pJson[i]);
 		delete obj.ql;	// no need for quick load
 		delete obj.n;	// no need for name
-		obj.pt = i;		// this will set preset ID but not force state update
-	} else {
-		obj.ps = i;
+//		obj.pt = i;		// this will set preset ID but not force state update
+//	} else {
+//		obj.ps = i;
 	}
 	if (isPlaylist(i)) obj.on = true; // force on
 	showToast("Loading preset " + pName(i) +" (" + i + ")");
