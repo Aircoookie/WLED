@@ -645,8 +645,7 @@ class WS2812FX {
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       show(void),
 			setTargetFps(uint8_t fps),
-      deserializeMap(uint8_t n=0),
-      blendPixelColor(uint16_t n, uint32_t color, uint8_t blend);
+      deserializeMap(uint8_t n=0);
 
     inline void setPixelColor(uint16_t n, uint32_t c) {setPixelColor(n, byte(c>>16), byte(c>>8), byte(c), byte(c>>24));}
 
@@ -886,6 +885,7 @@ class WS2812FX {
     CRGB pacifica_one_layer(uint16_t i, CRGBPalette16& p, uint16_t cistart, uint16_t wavescale, uint8_t bri, uint16_t ioff);
 
     void
+      blendPixelColor(uint16_t n, uint32_t color, uint8_t blend),
       startTransition(uint8_t oldBri, uint32_t oldCol, uint16_t dur, uint8_t segn, uint8_t slot),
       estimateCurrentAndLimitBri(void),
       load_gradient_palette(uint8_t),
