@@ -392,11 +392,11 @@ onchange="Cs()"><br><div id="cac">First LED: <input name="O1" type="number"
 min="0" max="255" required> Last LED: <input name="O2" type="number" min="0" 
 max="255" required><br>12h LED: <input name="OM" type="number" min="0" 
 max="255" required><br>Show 5min marks: <input type="checkbox" name="O5"><br>
-Seconds (as trail): <input type="checkbox" name="OS"><br>Mix colors: <input 
-type="checkbox" name="OM"><br></div>Countdown Mode: <input type="checkbox" 
-name="CE"><br>Countdown Goal:<br>Date:&nbsp;<nowrap>20<input name="CY" 
-class="xs" type="number" min="0" max="99" required>-<input name="CI" class="xs" 
-type="number" min="1" max="12" required>-<input name="CD" class="xs" 
+Seconds (as trail): <input type="checkbox" name="OS"><br>Add pointer colors: 
+<input type="checkbox" name="OA"><br></div>Countdown Mode: <input 
+type="checkbox" name="CE"><br>Countdown Goal:<br>Date:&nbsp;<nowrap>20<input 
+name="CY" class="xs" type="number" min="0" max="99" required>-<input name="CI" 
+class="xs" type="number" min="1" max="12" required>-<input name="CD" class="xs" 
 type="number" min="1" max="31" required></nowrap><br>Time:<nowrap><input 
 name="CH" class="xs" type="number" min="0" max="23" required>:<input name="CM" 
 class="xs" type="number" min="0" max="59" required>:<input name="CS" class="xs" 

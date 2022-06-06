@@ -4,6 +4,19 @@
  * Used to draw clock overlays over the strip
  */
 
+static void setClockPixel (uint16_t n, uint32_t c)
+{
+  if (!analogClockAddColors)
+  {
+    strip.setPixelColor(n, c);
+  }
+  else
+  {
+    uint32_t oldC = strip.getPixelColor(n);
+    strip.setPixelColor(n, qadd8(R(oldC), R(c)), qadd8(G(oldC), G(c)), qadd8(B(oldC), B(c)), qadd8(W(oldC), W(c)));
+  }
+}
+
 void _overlayAnalogClock()
 {
   int overlaySize = overlayMax - overlayMin +1;
@@ -41,9 +54,9 @@ void _overlayAnalogClock()
       strip.setPixelColor(pix, 0x00FFAA);
     }
   }
-  if (!analogClockSecondsTrail) strip.setPixelColor(secondPixel, 0xFF0000);
-  strip.setPixelColor(minutePixel, analogClockMixColors?(strip.getPixelColor(minutePixel)|0x00FF00):0x00FF00);
-  strip.setPixelColor(hourPixel, analogClockMixColors?(strip.getPixelColor(hourPixel)|0x0000FF):0x0000FF);
+  if (!analogClockSecondsTrail) setClockPixel(secondPixel, 0xFF0000);
+  setClockPixel(minutePixel, 0x00FF00);
+  setClockPixel(hourPixel, 0x0000FF);
 }
 
 
