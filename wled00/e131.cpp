@@ -181,37 +181,53 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
       {
         realtimeLock(realtimeTimeoutMs, mde);
         bool is4Chan = (DMXMode == DMX_MODE_MULTIPLE_RGBW);
-        const uint16_t dmxChannelsPerLed = is4Chan ? 4 : 3;
-        const uint16_t ledsPerUniverse = is4Chan ? MAX_4_CH_LEDS_PER_UNIVERSE : MAX_3_CH_LEDS_PER_UNIVERSE;
+        // Leds can be grouped into segments of equal length
+        // wich allows the DMX source to address more leds with fewer channels while sacrificing resolution.
+        // By default a group has a length of one pixel.
+        const uint16_t dmxChannelsPerGroup = is4Chan ? 4 : 3;
+        const uint16_t groupsPerUniverse = is4Chan ? MAX_4_CH_LEDS_PER_UNIVERSE : MAX_3_CH_LEDS_PER_UNIVERSE;
         if (realtimeOverride) return;
-        uint16_t previousLeds, dmxOffset, ledsTotal;
+        uint16_t previousGroups; // First group that will be set by this packet
+        uint16_t dmxOffset;      // Channel offset at which we will start to read the dmx data
+        uint16_t groupsTotal;    // First group that will not be set anymore; this packet will manipulate all groups starting from previousGroups (including) up to groupsTotal (excluding)
         if (previousUniverses == 0) {
+          // This is the first universe that we care about.
           if (availDMXLen < 1) return;
           dmxOffset = dataOffset;
-          previousLeds = 0;
+          previousGroups = 0;
           // First DMX address is dimmer in DMX_MODE_MULTIPLE_DRGB mode.
           if (DMXMode == DMX_MODE_MULTIPLE_DRGB) {
             strip.setBrightness(e131_data[dmxOffset++], true);
-            ledsTotal = (availDMXLen - 1) / dmxChannelsPerLed;
+            groupsTotal = (availDMXLen - 1) / dmxChannelsPerGroup;
           } else {
-            ledsTotal = availDMXLen / dmxChannelsPerLed;
+            groupsTotal = availDMXLen / dmxChannelsPerGroup;
           }
         } else {
-          // All subsequent universes start at the first channel.
+          // This is a subsequent universe, we will always start at the first channel.
           dmxOffset = (protocol == P_ARTNET) ? 0 : 1;
           uint16_t dimmerOffset = (DMXMode == DMX_MODE_MULTIPLE_DRGB) ? 1 : 0;
-          uint16_t ledsInFirstUniverse = ((MAX_CHANNELS_PER_UNIVERSE - DMXAddress + 1) - dimmerOffset) / dmxChannelsPerLed;
-          previousLeds = ledsInFirstUniverse + (previousUniverses - 1) * ledsPerUniverse;
-          ledsTotal = previousLeds + (dmxChannels / dmxChannelsPerLed);
+          // Calculate how many groups were set in the first universe ...
+          uint16_t groupsInFirstUniverse = ((MAX_CHANNELS_PER_UNIVERSE - DMXAddress + 1) - dimmerOffset) / dmxChannelsPerGroup;
+          // ... to figure out how many groups there were in total until now and thus were we are now.
+          previousGroups = groupsInFirstUniverse + (previousUniverses - 1) * groupsPerUniverse;
+          groupsTotal = previousGroups + (dmxChannels / dmxChannelsPerGroup);
         }
         if (!is4Chan) {
-          for (uint16_t i = previousLeds; i < ledsTotal; i++) {
-            setRealtimePixel(i, e131_data[dmxOffset], e131_data[dmxOffset+1], e131_data[dmxOffset+2], 0);
+          // Iterate through all relevant groups ...
+          for (uint16_t i = previousGroups; i < groupsTotal; i++) {
+            for (uint16_t j = 0; j < DMXGroupSize; j++) {
+              // ... and set their LEDs.
+              setRealtimePixel(i*DMXGroupSize+j, e131_data[dmxOffset], e131_data[dmxOffset+1], e131_data[dmxOffset+2], 0);
+            }
             dmxOffset+=3;
           }
         } else {
-          for (uint16_t i = previousLeds; i < ledsTotal; i++) {
-            setRealtimePixel(i, e131_data[dmxOffset], e131_data[dmxOffset+1], e131_data[dmxOffset+2], e131_data[dmxOffset+3]);
+          // Iterate through all relevant groups ...
+          for (uint16_t i = previousGroups; i < groupsTotal; i++) {
+            for (uint16_t j = 0; j < DMXGroupSize; j++) {
+              // ... and set their LEDs.
+              setRealtimePixel(i*DMXGroupSize+j, e131_data[dmxOffset], e131_data[dmxOffset+1], e131_data[dmxOffset+2], e131_data[dmxOffset+3]);
+            }
             dmxOffset+=4;
           }
         }

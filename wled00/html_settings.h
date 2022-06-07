@@ -305,7 +305,8 @@ min="0" max="510" required><br>DMX mode: <select name="DM"><option value="0">
 Disabled</option><option value="1">Single RGB</option><option value="2">
 Single DRGB</option><option value="3">Effect</option><option value="4">Multi RGB
 </option><option value="5">Dimmer + Multi RGB</option><option value="6">
-Multi RGBW</option></select><br><a 
+Multi RGBW</option></select><br>DMX group size: <input name="DG" type="number" 
+min="1" max="1000" required><br><a 
 href="https://kno.wled.ge/interfaces/e1.31-dmx/" target="_blank">E1.31 info</a>
 <br>Timeout: <input name="ET" type="number" min="1" max="65000" required> ms<br>
 Force max brightness: <input type="checkbox" name="FB"><br>

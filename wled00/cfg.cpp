@@ -301,6 +301,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(e131SkipOutOfSequence, if_live_dmx[F("seqskip")]);
   CJSON(DMXAddress, if_live_dmx[F("addr")]);
   CJSON(DMXMode, if_live_dmx["mode"]);
+  CJSON(DMXGroupSize, if_live_dmx["grpsz"]);
 
   tdd = if_live[F("timeout")] | -1;
   if (tdd >= 0) realtimeTimeoutMs = tdd * 100;
@@ -714,6 +715,7 @@ void serializeConfig() {
   if_live_dmx[F("seqskip")] = e131SkipOutOfSequence;
   if_live_dmx[F("addr")] = DMXAddress;
   if_live_dmx["mode"] = DMXMode;
+  if_live_dmx["grpsz"] = DMXGroupSize;
 
   if_live[F("timeout")] = realtimeTimeoutMs / 100;
   if_live[F("maxbri")] = arlsForceMaxBri;
