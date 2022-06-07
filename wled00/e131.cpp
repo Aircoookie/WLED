@@ -182,7 +182,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
         realtimeLock(realtimeTimeoutMs, mde);
         bool is4Chan = (DMXMode == DMX_MODE_MULTIPLE_RGBW);
         // Leds can be grouped into segments of equal length
-        // wich allows the DMX source to address more leds with fewer channels while sacrificing resolution.
+        // which allows the DMX source to control more leds with fewer channels while sacrificing resolution.
         // By default a group has a length of one pixel.
         const uint16_t dmxChannelsPerGroup = is4Chan ? 4 : 3;
         const uint16_t groupsPerUniverse = is4Chan ? MAX_4_CH_LEDS_PER_UNIVERSE : MAX_3_CH_LEDS_PER_UNIVERSE;
