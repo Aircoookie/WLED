@@ -13,6 +13,13 @@ bool UsermodManager::handleButton(uint8_t b) {
   }
   return overrideIO;
 }
+bool UsermodManager::getUMData(um_data_t **data, uint8_t mod_id) { 
+  for (byte i = 0; i < numMods; i++) {
+    if (mod_id > 0 && ums[i]->getId() != mod_id) continue;  // only get data form requested usermod if provided
+    if (ums[i]->getUMData(data)) return true;               // if usermod does provide data return immediately (only one usermod can povide data at one time)
+  }
+  return false;
+}
 
 void UsermodManager::setup()     { for (byte i = 0; i < numMods; i++) ums[i]->setup(); }
 void UsermodManager::connected() { for (byte i = 0; i < numMods; i++) ums[i]->connected(); }
@@ -49,8 +56,7 @@ Usermod* UsermodManager::lookup(uint16_t mod_id) {
 bool UsermodManager::add(Usermod* um)
 {
   if (numMods >= WLED_MAX_USERMODS || um == nullptr) return false;
-  ums[numMods] = um;
-  numMods++;
+  ums[numMods++] = um;
   return true;
 }
 

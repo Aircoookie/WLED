@@ -26,6 +26,7 @@
 
 #include "FX.h"
 #include "wled.h"
+#include "fcn_declare.h"
 
 #define IBN 5100
 #define PALETTE_SOLID_WRAP (paletteBlend == 1 || paletteBlend == 3)
@@ -1053,7 +1054,7 @@ static const char *_data_FX_MODE_CANDY_CANE PROGMEM = "Candy Cane@!,Width;;";
 uint16_t WS2812FX::mode_halloween(void) {
   return running(PURPLE, ORANGE);
 }
-static const char *_data_FX_MODE_HALLOWEEN PROGMEM = "Halloween";
+static const char *_data_FX_MODE_HALLOWEEN PROGMEM = "Halloween@!,Width;;";
 
 
 /*
@@ -1140,7 +1141,7 @@ uint16_t WS2812FX::larson_scanner(bool dual) {
  */
 uint16_t WS2812FX::mode_comet(void) {
   uint16_t counter = now * ((SEGMENT.speed >>2) +1);
-  uint16_t index = counter * SEGLEN >> 16;
+  uint16_t index = (counter * SEGLEN) >> 16;
   if (SEGENV.call == 0) SEGENV.aux0 = index;
 
   fade_out(SEGMENT.intensity);
@@ -1159,7 +1160,7 @@ uint16_t WS2812FX::mode_comet(void) {
 
   return FRAMETIME;
 }
-static const char *_data_FX_MODE_COMET PROGMEM = "Lighthouse";
+static const char *_data_FX_MODE_COMET PROGMEM = "Lighthouse@!,Fade rate;!,!,!;!";
 
 
 /*
@@ -1594,7 +1595,7 @@ uint16_t WS2812FX::mode_tricolor_wipe(void)
 
   return FRAMETIME;
 }
-static const char *_data_FX_MODE_TRICOLOR_WIPE PROGMEM = "Tri Wipe@!,Width;1,2,3;0";
+static const char *_data_FX_MODE_TRICOLOR_WIPE PROGMEM = "Tri Wipe@!,;1,2,3;0";
 
 
 /*
@@ -5517,6 +5518,41 @@ static const char *_data_FX_MODE_WAVERLY PROGMEM = "2D Waverly@Fade rate,Sensiti
 /////////////////////////
 //     2D Akemi        //
 /////////////////////////
+static uint8_t akemi[] PROGMEM = {
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,2,2,3,3,3,3,3,3,2,2,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,2,3,3,0,0,0,0,0,0,3,3,2,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,2,3,0,0,0,6,5,5,4,0,0,0,3,2,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,2,3,0,0,6,6,5,5,5,5,4,4,0,0,3,2,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,2,3,0,6,5,5,5,5,5,5,5,5,4,0,3,2,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,2,3,0,6,5,5,5,5,5,5,5,5,5,5,4,0,3,2,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,3,2,0,6,5,5,5,5,5,5,5,5,5,5,4,0,2,3,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,3,2,3,6,5,5,7,7,5,5,5,5,7,7,5,5,4,3,2,3,0,0,0,0,0,0,
+  0,0,0,0,0,2,3,1,3,6,5,1,7,7,7,5,5,1,7,7,7,5,4,3,1,3,2,0,0,0,0,0,
+  0,0,0,0,0,8,3,1,3,6,5,1,7,7,7,5,5,1,7,7,7,5,4,3,1,3,8,9,0,0,0,0,
+  0,0,0,0,0,8,3,1,3,6,5,5,1,1,5,5,5,5,1,1,5,5,4,3,1,3,8,0,0,0,0,0,
+  0,0,0,0,0,2,3,1,3,6,5,5,5,5,5,5,5,5,5,5,5,5,4,3,1,3,2,0,0,0,0,0,
+  0,0,0,0,0,0,3,2,3,6,5,5,5,5,5,5,5,5,5,5,5,5,4,3,2,3,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,6,5,5,5,5,5,7,7,5,5,5,5,5,4,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,6,5,5,5,5,5,5,5,5,5,5,5,5,4,0,0,0,0,0,0,0,0,0,
+  1,0,0,0,0,0,0,0,0,6,5,5,5,5,5,5,5,5,5,5,5,5,4,0,0,0,0,0,0,0,0,2,
+  0,2,2,2,0,0,0,0,0,6,5,5,5,5,5,5,5,5,5,5,5,5,4,0,0,0,0,0,2,2,2,0,
+  0,0,0,3,2,0,0,0,6,5,4,4,4,4,4,4,4,4,4,4,4,4,4,4,0,0,0,2,2,0,0,0,
+  0,0,0,3,2,0,0,0,6,5,5,5,5,5,5,5,5,5,5,5,5,5,5,4,0,0,0,2,3,0,0,0,
+  0,0,0,0,3,2,0,0,0,0,3,3,0,3,3,0,0,3,3,0,3,3,0,0,0,0,2,2,0,0,0,0,
+  0,0,0,0,3,2,0,0,0,0,3,2,0,3,2,0,0,3,2,0,3,2,0,0,0,0,2,3,0,0,0,0,
+  0,0,0,0,0,3,2,0,0,3,2,0,0,3,2,0,0,3,2,0,0,3,2,0,0,2,3,0,0,0,0,0,
+  0,0,0,0,0,3,2,2,2,2,0,0,0,3,2,0,0,3,2,0,0,0,3,2,2,2,3,0,0,0,0,0,
+  0,0,0,0,0,0,3,3,3,0,0,0,0,3,2,0,0,3,2,0,0,0,0,3,3,3,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+};
+
 uint16_t WS2812FX::mode_2DAkemi(void) {
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
@@ -5526,51 +5562,25 @@ uint16_t WS2812FX::mode_2DAkemi(void) {
   uint16_t counter = (now * ((SEGMENT.speed >> 2) +2)) & 0xFFFF;
   counter = counter >> 8;
 
-  //Akemi
-  uint8_t akemi[32][32]={
-    {0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0,0,2,2,3,3,3,3,3,3,2,2,0,0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0,2,3,3,0,0,0,0,0,0,3,3,2,0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,2,3,0,0,0,6,5,5,4,0,0,0,3,2,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,2,3,0,0,6,6,5,5,5,5,4,4,0,0,3,2,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,2,3,0,6,5,5,5,5,5,5,5,5,4,0,3,2,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,2,3,0,6,5,5,5,5,5,5,5,5,5,5,4,0,3,2,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,3,2,0,6,5,5,5,5,5,5,5,5,5,5,4,0,2,3,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,3,2,3,6,5,5,7,7,5,5,5,5,7,7,5,5,4,3,2,3,0,0,0,0,0,0},
-    {0,0,0,0,0,2,3,1,3,6,5,1,7,7,7,5,5,1,7,7,7,5,4,3,1,3,2,0,0,0,0,0},
-    {0,0,0,0,0,8,3,1,3,6,5,1,7,7,7,5,5,1,7,7,7,5,4,3,1,3,8,9,0,0,0,0},
-    {0,0,0,0,0,8,3,1,3,6,5,5,1,1,5,5,5,5,1,1,5,5,4,3,1,3,8,0,0,0,0,0},
-    {0,0,0,0,0,2,3,1,3,6,5,5,5,5,5,5,5,5,5,5,5,5,4,3,1,3,2,0,0,0,0,0},
-    {0,0,0,0,0,0,3,2,3,6,5,5,5,5,5,5,5,5,5,5,5,5,4,3,2,3,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,6,5,5,5,5,5,7,7,5,5,5,5,5,4,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,6,5,5,5,5,5,5,5,5,5,5,5,5,4,0,0,0,0,0,0,0,0,0},
-    {1,0,0,0,0,0,0,0,0,6,5,5,5,5,5,5,5,5,5,5,5,5,4,0,0,0,0,0,0,0,0,2},
-    {0,2,2,2,0,0,0,0,0,6,5,5,5,5,5,5,5,5,5,5,5,5,4,0,0,0,0,0,2,2,2,0},
-    {0,0,0,3,2,0,0,0,6,5,4,4,4,4,4,4,4,4,4,4,4,4,4,4,0,0,0,2,2,0,0,0},
-    {0,0,0,3,2,0,0,0,6,5,5,5,5,5,5,5,5,5,5,5,5,5,5,4,0,0,0,2,3,0,0,0},
-    {0,0,0,0,3,2,0,0,0,0,3,3,0,3,3,0,0,3,3,0,3,3,0,0,0,0,2,2,0,0,0,0},
-    {0,0,0,0,3,2,0,0,0,0,3,2,0,3,2,0,0,3,2,0,3,2,0,0,0,0,2,3,0,0,0,0},
-    {0,0,0,0,0,3,2,0,0,3,2,0,0,3,2,0,0,3,2,0,0,3,2,0,0,2,3,0,0,0,0,0},
-    {0,0,0,0,0,3,2,2,2,2,0,0,0,3,2,0,0,3,2,0,0,0,3,2,2,2,3,0,0,0,0,0},
-    {0,0,0,0,0,0,3,3,3,0,0,0,0,3,2,0,0,3,2,0,0,0,0,3,3,3,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-  };
+  const float lightFactor  = 0.15f;
+  const float normalFactor = 0.4f;
+  float base = 0.0f;
+  uint8_t *fftResult = nullptr;
+
+  um_data_t *um_data;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    fftResult = um_data->ub8_data[1];
+    base = fftResult[0]/255.0f;
+  }
 
   //draw and color Akemi
   for (uint16_t y=0; y < rows; y++) for (uint16_t x=0; x < cols; x++) {
-    CRGB color = BLACK;
-    CRGB faceColor = color_wheel(counter);
-    CRGB armsAndLegsColor = SEGCOLOR(1) > 0 ? SEGCOLOR(1) : 0xFFE0A0; //default warmish white 0xABA8FF; //0xFF52e5;//
+    CRGB color;
     CRGB soundColor = ORANGE;
-    float lightFactor = 0.15;
-    float normalFactor = 0.4;
-    float base = 0.0; //fftResult[0]/255.0;
-    switch (akemi[(y * 32)/rows][(x * 32)/cols]) {
+    CRGB faceColor  = color_wheel(counter);
+    CRGB armsAndLegsColor = SEGCOLOR(1) > 0 ? SEGCOLOR(1) : 0xFFE0A0; //default warmish white 0xABA8FF; //0xFF52e5;//
+    uint8_t ak = pgm_read_byte_near(akemi + ((y * 32)/rows) * 32 + (x * 32)/cols); // akemi[(y * 32)/rows][(x * 32)/cols]
+    switch (ak) {
       case 0: color = BLACK; break;
       case 3: armsAndLegsColor.r *= lightFactor;  armsAndLegsColor.g *= lightFactor;  armsAndLegsColor.b *= lightFactor;  color = armsAndLegsColor; break; //light arms and legs 0x9B9B9B
       case 2: armsAndLegsColor.r *= normalFactor; armsAndLegsColor.g *= normalFactor; armsAndLegsColor.b *= normalFactor; color = armsAndLegsColor; break; //normal arms and legs 0x888888
@@ -5583,7 +5593,7 @@ uint16_t WS2812FX::mode_2DAkemi(void) {
       default: color = BLACK;
     }
 
-    if (SEGMENT.intensity > 128 /*&& fftResult[0] > 128*/) { //dance if base is high
+    if (SEGMENT.intensity > 128 && fftResult && fftResult[0] > 128) { //dance if base is high
       setPixelColorXY(x, 0, BLACK);
       setPixelColorXY(x, y+1, color);
     } else
@@ -5591,18 +5601,19 @@ uint16_t WS2812FX::mode_2DAkemi(void) {
   }
 
   //add geq left and right
-  /*
-  for (uint16_t x=0; x < cols/8; x++) {
-    uint16_t band = x * cols/8;
-    uint16_t barHeight = map(fftResult[band], 0, 255, 0, 17*rows/32);
-    CRGB color = color_from_palette((band * 35), false, PALETTE_SOLID_WRAP, 0);
+  if (um_data && fftResult) {
+    for (uint16_t x=0; x < cols/8; x++) {
+      uint16_t band = x * cols/8;
+      uint16_t barHeight = map(fftResult[band], 0, 255, 0, 17*rows/32);
+      CRGB color = color_from_palette((band * 35), false, PALETTE_SOLID_WRAP, 0);
 
-    for (uint16_t y=0; y < barHeight; y++) {
-      setPixelColorXY(x, rows/2-y, color);
-      setPixelColorXY(cols-1-x, rows/2-y, color);
+      for (uint16_t y=0; y < barHeight; y++) {
+        setPixelColorXY(x, rows/2-y, color);
+        setPixelColorXY(cols-1-x, rows/2-y, color);
+      }
     }
   }
-  */
+
   return FRAMETIME;
 } // mode_2DAkemi
 static const char *_data_FX_MODE_AKEMI PROGMEM = "2D Akemi@Color speed,Dance;Head palette,Arms & Legs,Eyes & Mouth;Face palette";
