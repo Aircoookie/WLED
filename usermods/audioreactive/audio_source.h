@@ -135,13 +135,13 @@ public:
 
         esp_err_t err = i2s_driver_install(I2S_NUM_0, &_config, 0, nullptr);
         if (err != ESP_OK) {
-            Serial.printf("Failed to install i2s driver: %d\n", err);
+            DEBUGSR_PRINTF("Failed to install i2s driver: %d\n", err);
             return;
         }
 
         err = i2s_set_pin(I2S_NUM_0, &_pinConfig);
         if (err != ESP_OK) {
-            Serial.printf("Failed to set i2s pin config: %d\n", err);
+            DEBUGSR_PRINTF("Failed to set i2s pin config: %d\n", err);
             return;
         }
 
@@ -152,7 +152,7 @@ public:
         _initialized = false;
         esp_err_t err = i2s_driver_uninstall(I2S_NUM_0);
         if (err != ESP_OK) {
-            Serial.printf("Failed to uninstall i2s driver: %d\n", err);
+            DEBUGSR_PRINTF("Failed to uninstall i2s driver: %d\n", err);
             return;
         }
         pinManager.deallocatePin(i2swsPin, PinOwner::DigitalMic);
@@ -174,13 +174,13 @@ public:
 
             err = i2s_read(I2S_NUM_0, (void *)newSamples, sizeof(newSamples), &bytes_read, portMAX_DELAY);
             if ((err != ESP_OK)){
-                Serial.printf("Failed to get samples: %d\n", err);
+                DEBUGSR_PRINTF("Failed to get samples: %d\n", err);
                 return;
             }
 
             // For correct operation, we need to read exactly sizeof(samples) bytes from i2s
             if(bytes_read != sizeof(newSamples)) {
-                Serial.printf("Failed to get enough samples: wanted: %d read: %d\n", sizeof(newSamples), bytes_read);
+                DEBUGSR_PRINTF("Failed to get enough samples: wanted: %d read: %d\n", sizeof(newSamples), bytes_read);
                 return;
             }
 
@@ -349,7 +349,7 @@ public:
         // Determine Analog channel. Only Channels on ADC1 are supported
         int8_t channel = digitalPinToAnalogChannel(audioPin);
         if (channel > 9) {
-            Serial.printf("Incompatible GPIO used for audio in: %d\n", audioPin);
+            DEBUGSR_PRINTF("Incompatible GPIO used for audio in: %d\n", audioPin);
             return;
         } else {
             adc_gpio_init(ADC_UNIT_1, adc_channel_t(channel));
@@ -358,14 +358,14 @@ public:
         // Install Driver
         esp_err_t err = i2s_driver_install(I2S_NUM_0, &_config, 0, nullptr);
         if (err != ESP_OK) {
-            Serial.printf("Failed to install i2s driver: %d\n", err);
+            DEBUGSR_PRINTF("Failed to install i2s driver: %d\n", err);
             return;
         }
 
         // Enable I2S mode of ADC
         err = i2s_set_adc_mode(ADC_UNIT_1, adc1_channel_t(channel));
         if (err != ESP_OK) {
-            Serial.printf("Failed to set i2s adc mode: %d\n", err);
+            DEBUGSR_PRINTF("Failed to set i2s adc mode: %d\n", err);
             return;
 
         }
@@ -374,7 +374,7 @@ public:
         // fingers crossed
         err = i2s_adc_enable(I2S_NUM_0);
         if (err != ESP_OK) {
-            Serial.printf("Failed to enable i2s adc: %d\n", err);
+            DEBUGSR_PRINTF("Failed to enable i2s adc: %d\n", err);
             //return;
         }
 #endif
@@ -393,7 +393,7 @@ public:
             esp_err_t err = i2s_adc_enable(I2S_NUM_0);
 			//esp_err_t err = i2s_start(I2S_NUM_0);
             if (err != ESP_OK) {
-                Serial.printf("Failed to enable i2s adc: %d\n", err);
+                DEBUGSR_PRINTF("Failed to enable i2s adc: %d\n", err);
                 return;
             }
 #endif
@@ -404,7 +404,7 @@ public:
             err = i2s_adc_disable(I2S_NUM_0);
 			//err = i2s_stop(I2S_NUM_0);
             if (err != ESP_OK) {
-                Serial.printf("Failed to disable i2s adc: %d\n", err);
+                DEBUGSR_PRINTF("Failed to disable i2s adc: %d\n", err);
                 return;
             }
 #endif
@@ -420,13 +420,13 @@ public:
         // fingers crossed
         err = i2s_adc_disable(I2S_NUM_0);
         if (err != ESP_OK) {
-            Serial.printf("Failed to disable i2s adc: %d\n", err);
+            DEBUGSR_PRINTF("Failed to disable i2s adc: %d\n", err);
             //return;
         }
 #endif
         err = i2s_driver_uninstall(I2S_NUM_0);
         if (err != ESP_OK) {
-            Serial.printf("Failed to uninstall i2s driver: %d\n", err);
+            DEBUGSR_PRINTF("Failed to uninstall i2s driver: %d\n", err);
             return;
         }
     }

@@ -2,7 +2,6 @@
 
 #include "wled.h"
 #include <driver/i2s.h>
-#include "audio_source.h"
 
 #ifndef ESP32
   #error This audio reactive usermod does not support the ESP8266.
@@ -28,6 +27,8 @@
   #define DEBUGSR_PRINTF(x...)
 #endif
 
+#include "audio_source.h"
+
 constexpr i2s_port_t I2S_PORT = I2S_NUM_0;
 constexpr int BLOCK_SIZE = 128;
 constexpr int SAMPLE_RATE = 10240;      // Base sample rate in Hz
@@ -37,6 +38,10 @@ constexpr int SAMPLE_RATE = 10240;      // Base sample rate in Hz
 // #define FFT_SAMPLING_LOG
 
 //#define MAJORPEAK_SUPPRESS_NOISE      // define to activate a dirty hack that ignores the lowest + hightest FFT bins
+
+byte audioSyncEnabled = 0;
+uint16_t audioSyncPort = 11988;
+uint8_t  inputLevel;                // UI slider value
 
 // 
 // AGC presets
@@ -92,41 +97,46 @@ const uint16_t samples = 512;                   // This value MUST ALWAYS be a p
 
 static AudioSource *audioSource;
 
-byte soundSquelch   = 10;          // default squelch value for volume reactive routines
-byte sampleGain     = 1;           // default sample gain
-uint16_t micData;                               // Analog input for FFT
-uint16_t micDataSm;                             // Smoothed mic data, as it's a bit twitchy
+static byte     soundSquelch = 10;              // default squelch value for volume reactive routines
+static byte     sampleGain = 1;                 // default sample gain
+static uint16_t micData;                        // Analog input for FFT
+static uint16_t micDataSm;                      // Smoothed mic data, as it's a bit twitchy
+static float    micDataReal = 0.0f;             // future support - this one has the full 24bit MicIn data - lowest 8bit after decimal point
+static byte     soundAgc = 0;                   // default Automagic gain control
+static float    multAgc = 1.0f;                 // sample * multAgc = sampleAgc. Our multiplier
+static uint16_t noiseFloor = 100;               // default squelch value for FFT reactive routines
 
-double FFT_MajorPeak = 0;
-double FFT_Magnitude = 0;
-//uint16_t mAvg = 0;
+static double FFT_MajorPeak = 0;
+static double FFT_Magnitude = 0;
+//static uint16_t mAvg = 0;
 
 // These are the input and output vectors.  Input vectors receive computed results from FFT.
 static double vReal[samplesFFT];
 static double vImag[samplesFFT];
-float fftBin[samplesFFT];
+static float  fftBin[samplesFFT];
 
 // Try and normalize fftBin values to a max of 4096, so that 4096/16 = 256.
 // Oh, and bins 0,1,2 are no good, so we'll zero them out.
-float fftCalc[16];
-uint8_t fftResult[16];                           // Our calculated result table, which we feed to the animations.
-//float fftResultMax[16];                        // A table used for testing to determine how our post-processing is working.
-float fftAvg[16];
+static float   fftCalc[16];
+static uint8_t fftResult[16];                           // Our calculated result table, which we feed to the animations.
+#ifdef SR_DEBUG
+static float   fftResultMax[16];                        // A table used for testing to determine how our post-processing is working.
+#endif
+static float   fftAvg[16];
 
 // Table of linearNoise results to be multiplied by soundSquelch in order to reduce squelch across fftResult bins.
-uint16_t linearNoise[16] = { 34, 28, 26, 25, 20, 12, 9, 6, 4, 4, 3, 2, 2, 2, 2, 2 };
+static uint16_t linearNoise[16] = { 34, 28, 26, 25, 20, 12, 9, 6, 4, 4, 3, 2, 2, 2, 2, 2 };
 
 // Table of multiplication factors so that we can even out the frequency response.
-float fftResultPink[16] = { 1.70f, 1.71f, 1.73f, 1.78f, 1.68f, 1.56f, 1.55f, 1.63f, 1.79f, 1.62f, 1.80f, 2.06f, 2.47f, 3.35f, 6.83f, 9.55f };
+static float fftResultPink[16] = { 1.70f, 1.71f, 1.73f, 1.78f, 1.68f, 1.56f, 1.55f, 1.63f, 1.79f, 1.62f, 1.80f, 2.06f, 2.47f, 3.35f, 6.83f, 9.55f };
 
 // Create FFT object
-arduinoFFT FFT = arduinoFFT(vReal, vImag, samples, SAMPLE_RATE);
+static arduinoFFT FFT = arduinoFFT(vReal, vImag, samples, SAMPLE_RATE);
 
 float fftAdd(int from, int to) {
-  int i = from;
-  float result = 0;
-  while (i <= to) {
-    result += fftBin[i++];
+  float result = 0.0f;
+  for (int i = from; i <= to; i++) {
+    result += fftBin[i];
   }
   return result;
 }
@@ -146,6 +156,7 @@ void FFTcode(void * parameter) {
     // Only run the FFT computing code if we're not in Receive mode
     if (audioSyncEnabled & (1 << 1))
       continue;
+
     audioSource->getSamples(vReal, samplesFFT);
 
     // old code - Last sample in vReal is our current mic sample
@@ -248,11 +259,9 @@ void FFTcode(void * parameter) {
     vReal[samplesFFT-1] = xtemp[23];
 #endif
 
-    for (int i = 0; i < samplesFFT; i++) {                     // Values for bins 0 and 1 are WAY too large. Might as well start at 3.
-      double t = 0.0;
-      t = fabs(vReal[i]);                                   // just to be sure - values in fft bins should be positive any way
-      t = t / 16.0;                                         // Reduce magnitude. Want end result to be linear and ~4096 max.
-      fftBin[i] = t;
+    for (int i = 0; i < samplesFFT; i++) {           // Values for bins 0 and 1 are WAY too large. Might as well start at 3.
+      float t = fabs(vReal[i]);                      // just to be sure - values in fft bins should be positive any way
+      fftBin[i] = t / 16.0;                          // Reduce magnitude. Want end result to be linear and ~4096 max.
     } // for()
 
 
@@ -286,12 +295,12 @@ void FFTcode(void * parameter) {
 
     // Noise supression of fftCalc bins using soundSquelch adjustment for different input types.
     for (int i=0; i < 16; i++) {
-        fftCalc[i] = fftCalc[i]-(float)soundSquelch*(float)linearNoise[i]/4.0 <= 0? 0 : fftCalc[i];
+        fftCalc[i] -= (float)soundSquelch*(float)linearNoise[i]/4.0 <= 0? 0 : fftCalc[i];
     }
 
     // Adjustment for frequency curves.
     for (int i=0; i < 16; i++) {
-      fftCalc[i] = fftCalc[i] * fftResultPink[i];
+      fftCalc[i] *= fftResultPink[i];
     }
 
     // Manual linear adjustment of gain using sampleGain adjustment for different input types.
@@ -325,88 +334,6 @@ void FFTcode(void * parameter) {
 } // FFTcode()
 
 
-void logAudio() {
-#ifdef MIC_LOGGER
-  //Serial.print("micData:");    Serial.print(micData);   Serial.print("\t");
-  //Serial.print("micDataSm:");  Serial.print(micDataSm); Serial.print("\t");
-  //Serial.print("micIn:");      Serial.print(micIn);     Serial.print("\t");
-  //Serial.print("micLev:");     Serial.print(micLev);      Serial.print("\t");
-  //Serial.print("sample:");     Serial.print(sample);      Serial.print("\t");
-  //Serial.print("sampleAvg:");  Serial.print(sampleAvg);   Serial.print("\t");
-  Serial.print("sampleReal:");     Serial.print(sampleReal);      Serial.print("\t");
-  //Serial.print("sampleMax:");     Serial.print(sampleMax);      Serial.print("\t");
-  Serial.print("multAgc:");    Serial.print(multAgc, 4);   Serial.print("\t");
-  Serial.print("sampleAgc:");  Serial.print(sampleAgc);   Serial.print("\t");
-  Serial.println(" ");
-#endif
-
-#ifdef MIC_SAMPLING_LOG
-  //------------ Oscilloscope output ---------------------------
-  Serial.print(targetAgc); Serial.print(" ");
-  Serial.print(multAgc); Serial.print(" ");
-  Serial.print(sampleAgc); Serial.print(" ");
-
-  Serial.print(sample); Serial.print(" ");
-  Serial.print(sampleAvg); Serial.print(" ");
-  Serial.print(micLev); Serial.print(" ");
-  Serial.print(samplePeak); Serial.print(" ");    //samplePeak = 0;
-  Serial.print(micIn); Serial.print(" ");
-  Serial.print(100); Serial.print(" ");
-  Serial.print(0); Serial.print(" ");
-  Serial.println(" ");
-#endif
-
-#ifdef FFT_SAMPLING_LOG
-  #if 0
-    for(int i=0; i<16; i++) {
-      Serial.print(fftResult[i]);
-      Serial.print("\t");
-    }
-    Serial.println("");
-  #endif
-
-  // OPTIONS are in the following format: Description \n Option
-  //
-  // Set true if wanting to see all the bands in their own vertical space on the Serial Plotter, false if wanting to see values in Serial Monitor
-  const bool mapValuesToPlotterSpace = false;
-  // Set true to apply an auto-gain like setting to to the data (this hasn't been tested recently)
-  const bool scaleValuesFromCurrentMaxVal = false;
-  // prints the max value seen in the current data
-  const bool printMaxVal = false;
-  // prints the min value seen in the current data
-  const bool printMinVal = false;
-  // if !scaleValuesFromCurrentMaxVal, we scale values from [0..defaultScalingFromHighValue] to [0..scalingToHighValue], lower this if you want to see smaller values easier
-  const int defaultScalingFromHighValue = 256;
-  // Print values to terminal in range of [0..scalingToHighValue] if !mapValuesToPlotterSpace, or [(i)*scalingToHighValue..(i+1)*scalingToHighValue] if mapValuesToPlotterSpace
-  const int scalingToHighValue = 256;
-  // set higher if using scaleValuesFromCurrentMaxVal and you want a small value that's also the current maxVal to look small on the plotter (can't be 0 to avoid divide by zero error)
-  const int minimumMaxVal = 1;
-
-  int maxVal = minimumMaxVal;
-  int minVal = 0;
-  for(int i = 0; i < 16; i++) {
-    if(fftResult[i] > maxVal) maxVal = fftResult[i];
-    if(fftResult[i] < minVal) minVal = fftResult[i];
-  }
-  for(int i = 0; i < 16; i++) {
-    Serial.print(i); Serial.print(":");
-    Serial.printf("%04d ", map(fftResult[i], 0, (scaleValuesFromCurrentMaxVal ? maxVal : defaultScalingFromHighValue), (mapValuesToPlotterSpace*i*scalingToHighValue)+0, (mapValuesToPlotterSpace*i*scalingToHighValue)+scalingToHighValue-1));
-  }
-  if(printMaxVal) {
-    Serial.printf("maxVal:%04d ", maxVal + (mapValuesToPlotterSpace ? 16*256 : 0));
-  }
-  if(printMinVal) {
-    Serial.printf("%04d:minVal ", minVal);  // printed with value first, then label, so negative values can be seen in Serial Monitor but don't throw off y axis in Serial Plotter
-  }
-  if(mapValuesToPlotterSpace)
-    Serial.printf("max:%04d ", (printMaxVal ? 17 : 16)*256); // print line above the maximum value we expect to see on the plotter to avoid autoscaling y axis
-  else
-    Serial.printf("max:%04d ", 256);
-  Serial.println();
-#endif // FFT_SAMPLING_LOG
-} // logAudio()
-
-
 //class name. Use something descriptive and leave the ": public Usermod" part :)
 class AudioReactive : public Usermod {
 
@@ -437,12 +364,7 @@ class AudioReactive : public Usermod {
     int8_t i2sckPin = I2S_CKPIN;
     #endif
 
-    //byte soundAgc       = 0;           // default Automagic gain control
-    //uint16_t noiseFloor = 100;         // default squelch value for FFT reactive routines
-
     WiFiUDP fftUdp;
-    byte audioSyncEnabled = 0;
-    uint16_t audioSyncPort = 11988;
     struct audioSyncPacket {
       char header[6] = UDP_SYNC_HEADER;
       uint8_t myVals[32];     //  32 Bytes
@@ -475,9 +397,7 @@ class AudioReactive : public Usermod {
     int rawSampleAgc = 0;                           // Our AGC sample - raw
     long timeOfPeak = 0;
     long lastTime = 0;
-    float micDataReal = 0.0;                        // future support - this one has the full 24bit MicIn data - lowest 8bit after decimal point
     float micLev = 0.f;                             // Used to convert returned value to have '0' as minimum. A leveller
-    float multAgc = 1.0f;                           // sample * multAgc = sampleAgc. Our multiplier
     float sampleAvg = 0.f;                          // Smoothed Average
     float beat = 0.f;                               // beat Detection
 
@@ -498,6 +418,87 @@ class AudioReactive : public Usermod {
         return false;
       }
     }
+
+    void logAudio() {
+    #ifdef MIC_LOGGER
+      //Serial.print("micData:");    Serial.print(micData);   Serial.print("\t");
+      //Serial.print("micDataSm:");  Serial.print(micDataSm); Serial.print("\t");
+      //Serial.print("micIn:");      Serial.print(micIn);     Serial.print("\t");
+      //Serial.print("micLev:");     Serial.print(micLev);      Serial.print("\t");
+      //Serial.print("sample:");     Serial.print(sample);      Serial.print("\t");
+      //Serial.print("sampleAvg:");  Serial.print(sampleAvg);   Serial.print("\t");
+      Serial.print("sampleReal:");     Serial.print(sampleReal);      Serial.print("\t");
+      //Serial.print("sampleMax:");     Serial.print(sampleMax);      Serial.print("\t");
+      Serial.print("multAgc:");    Serial.print(multAgc, 4);   Serial.print("\t");
+      Serial.print("sampleAgc:");  Serial.print(sampleAgc);   Serial.print("\t");
+      Serial.println(" ");
+    #endif
+
+    #ifdef MIC_SAMPLING_LOG
+      //------------ Oscilloscope output ---------------------------
+      Serial.print(targetAgc); Serial.print(" ");
+      Serial.print(multAgc); Serial.print(" ");
+      Serial.print(sampleAgc); Serial.print(" ");
+
+      Serial.print(sample); Serial.print(" ");
+      Serial.print(sampleAvg); Serial.print(" ");
+      Serial.print(micLev); Serial.print(" ");
+      Serial.print(samplePeak); Serial.print(" ");    //samplePeak = 0;
+      Serial.print(micIn); Serial.print(" ");
+      Serial.print(100); Serial.print(" ");
+      Serial.print(0); Serial.print(" ");
+      Serial.println(" ");
+    #endif
+
+    #ifdef FFT_SAMPLING_LOG
+      #if 0
+        for(int i=0; i<16; i++) {
+          Serial.print(fftResult[i]);
+          Serial.print("\t");
+        }
+        Serial.println("");
+      #endif
+
+      // OPTIONS are in the following format: Description \n Option
+      //
+      // Set true if wanting to see all the bands in their own vertical space on the Serial Plotter, false if wanting to see values in Serial Monitor
+      const bool mapValuesToPlotterSpace = false;
+      // Set true to apply an auto-gain like setting to to the data (this hasn't been tested recently)
+      const bool scaleValuesFromCurrentMaxVal = false;
+      // prints the max value seen in the current data
+      const bool printMaxVal = false;
+      // prints the min value seen in the current data
+      const bool printMinVal = false;
+      // if !scaleValuesFromCurrentMaxVal, we scale values from [0..defaultScalingFromHighValue] to [0..scalingToHighValue], lower this if you want to see smaller values easier
+      const int defaultScalingFromHighValue = 256;
+      // Print values to terminal in range of [0..scalingToHighValue] if !mapValuesToPlotterSpace, or [(i)*scalingToHighValue..(i+1)*scalingToHighValue] if mapValuesToPlotterSpace
+      const int scalingToHighValue = 256;
+      // set higher if using scaleValuesFromCurrentMaxVal and you want a small value that's also the current maxVal to look small on the plotter (can't be 0 to avoid divide by zero error)
+      const int minimumMaxVal = 1;
+
+      int maxVal = minimumMaxVal;
+      int minVal = 0;
+      for(int i = 0; i < 16; i++) {
+        if(fftResult[i] > maxVal) maxVal = fftResult[i];
+        if(fftResult[i] < minVal) minVal = fftResult[i];
+      }
+      for(int i = 0; i < 16; i++) {
+        Serial.print(i); Serial.print(":");
+        Serial.printf("%04d ", map(fftResult[i], 0, (scaleValuesFromCurrentMaxVal ? maxVal : defaultScalingFromHighValue), (mapValuesToPlotterSpace*i*scalingToHighValue)+0, (mapValuesToPlotterSpace*i*scalingToHighValue)+scalingToHighValue-1));
+      }
+      if(printMaxVal) {
+        Serial.printf("maxVal:%04d ", maxVal + (mapValuesToPlotterSpace ? 16*256 : 0));
+      }
+      if(printMinVal) {
+        Serial.printf("%04d:minVal ", minVal);  // printed with value first, then label, so negative values can be seen in Serial Monitor but don't throw off y axis in Serial Plotter
+      }
+      if(mapValuesToPlotterSpace)
+        Serial.printf("max:%04d ", (printMaxVal ? 17 : 16)*256); // print line above the maximum value we expect to see on the plotter to avoid autoscaling y axis
+      else
+        Serial.printf("max:%04d ", 256);
+      Serial.println();
+    #endif // FFT_SAMPLING_LOG
+    } // logAudio()
 
     /*
     * A "PI control" multiplier to automatically adjust sound sensitivity.
