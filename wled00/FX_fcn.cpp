@@ -1409,7 +1409,8 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Candy Cane@!,Width;;",
 "Blends@Shift speed,Blend speed;1,2,3,!",
 "TV Simulator",
-"Dynamic Smooth"
+"Dynamic Smooth",
+"Lighthouse2"
 ])=====";
 
 const char JSON_palette_names[] PROGMEM = R"=====([
