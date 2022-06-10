@@ -217,6 +217,7 @@ void WiFiEvent(WiFiEvent_t event);
 
 //um_manager.cpp
 typedef struct UM_Exchange_Data {
+  // should just use: size_t arr_size, void **arr_ptr, byte *ptr_type
   size_t     ub8_size;                  // size of ub8_data
   uint8_t  **ub8_data;                  // array of pointers to bytes (pointer can point to an array of bytes, depends on the usermod)
   size_t     uw16_size;                 // size of uw16_data

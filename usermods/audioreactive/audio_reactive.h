@@ -374,31 +374,30 @@ class AudioReactive : public Usermod {
 
     // set your config variables to their boot default value (this can also be done in readFromConfig() or a constructor if you prefer)
 
-    uint8_t maxVol = 10;                            // Reasonable value for constant volume for 'peak detector', as it won't always trigger
-    uint8_t binNum;                                 // Used to select the bin for FFT based beat detection.
-    uint8_t targetAgc = 60;                         // This is our setPoint at 20% of max for the adjusted output
-    uint8_t myVals[32];                             // Used to store a pile of samples because WLED frame rate and WLED sample rate are not synchronized. Frame rate is too low.
-    bool samplePeak = 0;                            // Boolean flag for peak. Responding routine must reset this flag
-    bool udpSamplePeak = 0;                         // Boolean flag for peak. Set at the same tiem as samplePeak, but reset by transmitAudioData
-    int delayMs = 10;                               // I don't want to sample too often and overload WLED
-    int micIn = 0;                                  // Current sample starts with negative values and large values, which is why it's 16 bit signed
-    int sample;                                     // Current sample. Must only be updated ONCE!!!
-    float sampleMax = 0.f;                          // Max sample over a few seconds. Needed for AGC controler.
-    float sampleReal = 0.f;					                // "sample" as float, to provide bits that are lost otherwise. Needed for AGC.
-    float tmpSample;                                // An interim sample variable used for calculatioins.
-    float sampleAdj;                                // Gain adjusted sample value
-    float sampleAgc = 0.f;                          // Our AGC sample
-    int rawSampleAgc = 0;                           // Our AGC sample - raw
-    long timeOfPeak = 0;
-    long lastTime = 0;
-    float micLev = 0.f;                             // Used to convert returned value to have '0' as minimum. A leveller
-    float sampleAvg = 0.f;                          // Smoothed Average
-    float beat = 0.f;                               // beat Detection
+    uint8_t  maxVol = 10;         // Reasonable value for constant volume for 'peak detector', as it won't always trigger
+    uint8_t  binNum;              // Used to select the bin for FFT based beat detection.
+    uint8_t  targetAgc = 60;      // This is our setPoint at 20% of max for the adjusted output
+    uint8_t  myVals[32];          // Used to store a pile of samples because WLED frame rate and WLED sample rate are not synchronized. Frame rate is too low.
+    bool     samplePeak = 0;      // Boolean flag for peak. Responding routine must reset this flag
+    bool     udpSamplePeak = 0;   // Boolean flag for peak. Set at the same tiem as samplePeak, but reset by transmitAudioData
+    uint16_t delayMs = 10;        // I don't want to sample too often and overload WLED
+    int16_t  micIn = 0;           // Current sample starts with negative values and large values, which is why it's 16 bit signed
+    int16_t  sample;              // Current sample. Must only be updated ONCE!!!
+    float    sampleMax = 0.0f;    // Max sample over a few seconds. Needed for AGC controler.
+    float    sampleReal = 0.0f;		// "sample" as float, to provide bits that are lost otherwise. Needed for AGC.
+    float    tmpSample;           // An interim sample variable used for calculatioins.
+    float    sampleAdj;           // Gain adjusted sample value
+    float    sampleAgc = 0.0f;    // Our AGC sample
+    int16_t  rawSampleAgc = 0;    // Our AGC sample - raw
+    long     timeOfPeak = 0;
+    long     lastTime = 0;
+    float    micLev = 0.0f;       // Used to convert returned value to have '0' as minimum. A leveller
+    float    sampleAvg = 0.0f;    // Smoothed Average
+    float    beat = 0.0f;         // beat Detection
+    float    expAdjF;             // Used for exponential filter.
+    float    weighting = 0.2f;    // Exponential filter weighting. Will be adjustable in a future release.
 
-    float expAdjF;                                  // Used for exponential filter.
-    float weighting = 0.2f;                         // Exponential filter weighting. Will be adjustable in a future release.
-
-    bool udpSyncConnected = false;
+    bool     udpSyncConnected = false;
 
     // strings to reduce flash memory usage (used more than twice)
     static const char _name[];
@@ -406,12 +405,9 @@ class AudioReactive : public Usermod {
     static const char _digitalmic[];
 
 
+    // private methods
     bool isValidUdpSyncVersion(char header[6]) {
-      if (strncmp(header, UDP_SYNC_HEADER, 6) == 0) {
-        return true;
-      } else {
-        return false;
-      }
+      return strncmp(header, UDP_SYNC_HEADER, 6) == 0;
     }
 
 
@@ -551,7 +547,7 @@ class AudioReactive : public Usermod {
         control_error = multAgcTemp - lastMultAgc;
         
         if (((multAgcTemp > 0.085f) && (multAgcTemp < 6.5f))        //integrator anti-windup by clamping
-            && (multAgc*sampleMax < agcZoneStop[AGC_preset]))     //integrator ceiling (>140% of max)
+            && (multAgc*sampleMax < agcZoneStop[AGC_preset]))       //integrator ceiling (>140% of max)
           control_integrated += control_error * 0.002f * 0.25f;     // 2ms = intgration time; 0.25 for damping
         else
           control_integrated *= 0.9f;                              // spin down that beasty integrator
@@ -773,10 +769,13 @@ class AudioReactive : public Usermod {
       um_data->uf8_data[0] = &FFT_MajorPeak;
       um_data->uf8_data[1] = &FFT_Magnitude;
       //...
+      // these are values used by effects in soundreactive fork
+      //uint8_t *fftResult   = um_data->;
       //float *fftAvg        = um_data->;
       //float *fftBin        = um_data->;
-      //float FFT_MajorPeak  = um_data->;
-      //float FFT_Magnitude  = um_data->;
+      //float *fftCalc       = um_data->;
+      //double FFT_MajorPeak = um_data->;
+      //double FFT_Magnitude = um_data->;
       //float sampleAgc      = um_data->;
       //float sampleReal     = um_data->;
       //float multAgc        = um_data->;
@@ -790,6 +789,7 @@ class AudioReactive : public Usermod {
       //uint8_t maxVol       = um_data->;
       //uint8_t binNum       = um_data->;
       //uint16_t *myVals     = um_data->;
+      //int16_t sample       = um_data->;
 
       // Reset I2S peripheral for good measure
       i2s_driver_uninstall(I2S_NUM_0);
