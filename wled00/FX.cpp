@@ -5569,7 +5569,7 @@ uint16_t WS2812FX::mode_2DAkemi(void) {
 
   um_data_t *um_data;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    fftResult = um_data->ub8_data[1];
+    fftResult = (uint8_t*)um_data->u_data[1];
     base = fftResult[0]/255.0f;
   }
 

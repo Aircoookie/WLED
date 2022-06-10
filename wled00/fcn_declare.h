@@ -216,54 +216,38 @@ int getSignalQuality(int rssi);
 void WiFiEvent(WiFiEvent_t event);
 
 //um_manager.cpp
+typedef enum UM_Data_Types {
+  UMT_BYTE = 0,
+  UMT_UINT16,
+  UMT_INT16,
+  UMT_UINT32,
+  UMT_INT32,
+  UMT_FLOAT,
+  UMT_DOUBLE,
+  UMT_BYTE_ARR,
+  UMT_UINT16_ARR,
+  UMT_INT16_ARR,
+  UMT_UINT32_ARR,
+  UMT_INT32_ARR,
+  UMT_FLOAT_ARR,
+  UMT_DOUBLE_ARR
+} um_types_t;
 typedef struct UM_Exchange_Data {
   // should just use: size_t arr_size, void **arr_ptr, byte *ptr_type
-  size_t     ub8_size;                  // size of ub8_data
-  uint8_t  **ub8_data;                  // array of pointers to bytes (pointer can point to an array of bytes, depends on the usermod)
-  size_t     uw16_size;                 // size of uw16_data
-  uint16_t **uw16_data;                 // array of pointers to unsigned words
-  size_t     uw32_size;                 // size of uw32_data
-  uint32_t **uw32_data;                 // array of pointers to unsigned long words
-  size_t     ui32_size;                 // size of uw32_data
-  int32_t  **ui32_data;                 // array of pointers to long words
-  size_t     uf4_size;                  // size of ubf4_data
-  float    **uf4_data;                  // array of pointers to floats
-  size_t     uf8_size;                  // size of ubf4_data
-  double   **uf8_data;                  // array of pointers to doubles
-/*
-  uint8_t  ub1, ub2, ub3, ub4;            // 4 byte values
-  uint16_t ui1, ui2, *aui1, *aui2, *aui3; // 2 word values and 3 pointers to word arrays/values
-  int16_t  ui3, ui4, *aui4, *aui5, *aui6; // 2 signed word values and 3 pointers to signed word arrays/values
-  uint32_t ul1, ul2;                      // 2 long word values
-  float    uf1, uf2, uf3, *auf1, *auf2;   // 3 float values and 2 pointers to float arrays/values
-*/
+  size_t       u_size;                 // size of u_data array
+  um_types_t  *u_type;                 // array of data types
+  void       **u_data;                 // array of pointers to data
   UM_Exchange_Data() {
-    ub8_size = 0;
-    uw16_size = 0;
-    uw32_size = 0;
-    ui32_size = 0;
-    uf4_size = 0;
-    uf8_size = 0;
-/*
-    ub1 = ub2 = ub3 = ub4 = 0;
-    ui1 = ui2 = ui3 = ui4 = 0;
-    ul1 = ul2 = 0;
-    uf1 = uf2 = uf3 = 0.0f;
-    aui1 = aui2 = aui3 = nullptr;
-    aui4 = aui5 = aui6 = nullptr;
-    auf1 = auf2 = nullptr;
-*/
+    u_size = 0;
+    u_type = nullptr;
+    u_data = nullptr;
   }
   ~UM_Exchange_Data() {
-    if (ub8_size  && ub8_data ) delete[] ub8_data;
-    if (uw16_size && uw16_data) delete[] uw16_data;
-    if (uw32_size && uw32_data) delete[] uw32_data;
-    if (ui32_size && ui32_data) delete[] ui32_data;
-    if (uf4_size  && uf4_data ) delete[] uf4_data;
-    if (uf8_size  && uf8_data ) delete[] uf8_data;
+    if (u_type) delete[] u_type;
+    if (u_data) delete[] u_data;
   }
 } um_data_t;
-const unsigned int um_data_size = sizeof(um_data_t);  // about 64 bytes
+const unsigned int um_data_size = sizeof(um_data_t);  // 12 bytes
 
 class Usermod {
   protected:
@@ -284,6 +268,7 @@ class Usermod {
     virtual bool readFromConfig(JsonObject& obj) { return true; } // Note as of 2021-06 readFromConfig() now needs to return a bool, see usermod_v2_example.h
     virtual void onMqttConnect(bool sessionPresent) {}
     virtual bool onMqttMessage(char* topic, char* payload) { return false; }
+    virtual void onUpdateBegin(bool) {}
     virtual uint16_t getId() {return USERMOD_ID_UNSPECIFIED;}
 };
 
@@ -306,6 +291,7 @@ class UsermodManager {
     bool readFromConfig(JsonObject& obj);
     void onMqttConnect(bool sessionPresent);
     bool onMqttMessage(char* topic, char* payload);
+    void onUpdateBegin(bool);
     bool add(Usermod* um);
     Usermod* lookup(uint16_t mod_id);
     byte getModCount();

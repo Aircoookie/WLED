@@ -106,7 +106,6 @@ static uint16_t micDataSm;                      // Smoothed mic data, as it's a 
 static float    micDataReal = 0.0f;             // future support - this one has the full 24bit MicIn data - lowest 8bit after decimal point
 static byte     soundAgc = 0;                   // default Automagic gain control
 static float    multAgc = 1.0f;                 // sample * multAgc = sampleAgc. Our multiplier
-static uint16_t noiseFloor = 100;               // default squelch value for FFT reactive routines
 
 static double FFT_MajorPeak = 0;
 static double FFT_Magnitude = 0;
@@ -127,13 +126,14 @@ static float   fftResultMax[16];                        // A table used for test
 static float   fftAvg[16];
 
 // Table of linearNoise results to be multiplied by soundSquelch in order to reduce squelch across fftResult bins.
-static uint16_t linearNoise[16] = { 34, 28, 26, 25, 20, 12, 9, 6, 4, 4, 3, 2, 2, 2, 2, 2 };
+static uint8_t linearNoise[16] = { 34, 28, 26, 25, 20, 12, 9, 6, 4, 4, 3, 2, 2, 2, 2, 2 };
 
 // Table of multiplication factors so that we can even out the frequency response.
 static float fftResultPink[16] = { 1.70f, 1.71f, 1.73f, 1.78f, 1.68f, 1.56f, 1.55f, 1.63f, 1.79f, 1.62f, 1.80f, 2.06f, 2.47f, 3.35f, 6.83f, 9.55f };
 
 // Create FFT object
 static arduinoFFT FFT = arduinoFFT(vReal, vImag, samples, SAMPLE_RATE);
+static TaskHandle_t FFT_Task;
 
 float fftAdd(int from, int to) {
   float result = 0.0f;
@@ -156,15 +156,13 @@ void FFTcode(void * parameter) {
                         // taskYIELD(), yield(), vTaskDelay() and esp_task_wdt_feed() didn't seem to work.
 
     // Only run the FFT computing code if we're not in Receive mode
-    if (audioSyncEnabled & 0x02)
-      continue;
+    if (audioSyncEnabled & 0x02) continue;
 
     audioSource->getSamples(vReal, samplesFFT);
 
     // old code - Last sample in vReal is our current mic sample
     //micDataSm = (uint16_t)vReal[samples - 1]; // will do a this a bit later
-
-    // micDataSm = ((micData * 3) + micData)/4;
+    //micDataSm = ((micData * 3) + micData)/4;
 
     const int halfSamplesFFT = samplesFFT / 2;   // samplesFFT divided by 2
     double maxSample1 = 0.0;                         // max sample from first half of FFT batch
@@ -356,6 +354,21 @@ class AudioReactive : public Usermod {
     #else
     int8_t i2sckPin = I2S_CKPIN;
     #endif
+    #ifndef ES7243_SDAPIN
+    int8_t sdaPin = 18;
+    #else
+    int8_t sdaPin = ES7243_SDAPIN;
+    #endif
+    #ifndef ES7243_SDAPIN
+    int8_t sclPin = 23;
+    #else
+    int8_t sclPin = ES7243_SCLPIN;
+    #endif
+    #ifndef MCLK_PIN
+    int8_t mclkPin = 0;
+    #else
+    int8_t mclkPin = MLCK_PIN;
+    #endif
 
     #define UDP_SYNC_HEADER "00001"
     struct audioSyncPacket {
@@ -389,8 +402,8 @@ class AudioReactive : public Usermod {
     float    sampleAdj;           // Gain adjusted sample value
     float    sampleAgc = 0.0f;    // Our AGC sample
     int16_t  rawSampleAgc = 0;    // Our AGC sample - raw
-    long     timeOfPeak = 0;
-    long     lastTime = 0;
+    uint32_t timeOfPeak = 0;
+    uint32_t lastTime = 0;
     float    micLev = 0.0f;       // Used to convert returned value to have '0' as minimum. A leveller
     float    sampleAvg = 0.0f;    // Smoothed Average
     float    beat = 0.0f;         // beat Detection
@@ -680,36 +693,6 @@ class AudioReactive : public Usermod {
     } // getSample()
 
 
-    /*
-    * A simple averaging multiplier to automatically adjust sound sensitivity.
-    */
-    /*
-    * A simple, but hairy, averaging multiplier to automatically adjust sound sensitivity.
-    *    not sure if not sure "sample" or "sampleAvg" is the correct input signal for AGC
-    */
-    void agcAvg() {
-
-      float lastMultAgc = multAgc;
-      float tmpAgc;
-      if(fabs(sampleAvg) < 2.0f) {
-        tmpAgc = sampleAvg;                           // signal below squelch -> deliver silence
-        multAgc = multAgc * 0.95f;                     // slightly decrease gain multiplier
-      } else {
-        multAgc = (sampleAvg < 1) ? targetAgc : targetAgc / sampleAvg;  // Make the multiplier so that sampleAvg * multiplier = setpoint
-      }
-
-      if (multAgc < 0.5f) multAgc = 0.5f;               // signal higher than 2*setpoint -> don't reduce it further
-      multAgc = (lastMultAgc*127.0f +multAgc) / 128.0f; //apply some filtering to gain multiplier -> smoother transitions
-      tmpAgc = (float)sample * multAgc;               // apply gain to signal
-      if (tmpAgc <= (soundSquelch*1.2f)) tmpAgc = sample;  // check against squelch threshold - increased by 20% to avoid artefacts (ripples)
-
-      if (tmpAgc > 255) tmpAgc = 255;
-      sampleAgc = tmpAgc;                             // ONLY update sampleAgc ONCE because it's used elsewhere asynchronously!!!!
-      userVar0 = sampleAvg * 4;
-      if (userVar0 > 255) userVar0 = 255;
-    } // agcAvg()
-
-
     void transmitAudioData() {
       if (!udpSyncConnected) return;
 
@@ -752,22 +735,25 @@ class AudioReactive : public Usermod {
       // usermod exchangeable data
       // we will assign all usermod exportable data here as pointers to original variables or arrays and allocate memory for pointers
       um_data = new um_data_t;
-      um_data->ub8_size = 2;
-      um_data->ub8_data = new (*uint8_t)[um_data->ub8_size];
-      um_data->ub8_data[0] = &maxVol;
-      um_data->ub8_data[1] = fftResult;
-      um_data->ui32_size = 1;
-      um_data->ui32_data = new (*int32_t)[um_data->ui32_size];
-      um_data->ui32_data[0] = &sample;
-      um_data->uf4_size = 3;
-      um_data->uf4_data = new (*float)[um_data->uf4_size];
-      um_data->uf4_data[0] = fftAvg;
-      um_data->uf4_data[1] = fftCalc;
-      um_data->uf4_data[2] = fftBin;
-      um_data->uf8_size = 2;
-      um_data->uf8_data = new (*double)[um_data->uf8_size];
-      um_data->uf8_data[0] = &FFT_MajorPeak;
-      um_data->uf8_data[1] = &FFT_Magnitude;
+      um_data->u_size = 8;
+      um_data->u_type = new um_types_t[um_data->u_size];
+      um_data->u_data = new void*[um_data->u_size];
+      um_data->u_data[0] = &maxVol;
+      um_data->u_type[0] = UMT_BYTE;
+      um_data->u_data[1] = fftResult;
+      um_data->u_type[1] = UMT_BYTE_ARR;
+      um_data->u_data[2] = &sample;
+      um_data->u_type[2] = UMT_INT16;
+      um_data->u_data[3] = fftAvg;
+      um_data->u_type[3] = UMT_FLOAT_ARR;
+      um_data->u_data[4] = fftCalc;
+      um_data->u_type[4] = UMT_FLOAT_ARR;
+      um_data->u_data[5] = fftBin;
+      um_data->u_type[5] = UMT_FLOAT_ARR;
+      um_data->u_data[6] = &FFT_MajorPeak;
+      um_data->u_type[6] = UMT_DOUBLE;
+      um_data->u_data[7] = &FFT_Magnitude;
+      um_data->u_type[7] = UMT_DOUBLE;
       //...
       // these are values used by effects in soundreactive fork
       //uint8_t *fftResult   = um_data->;
@@ -800,22 +786,32 @@ class AudioReactive : public Usermod {
         case 1:
           DEBUGSR_PRINTLN("AS: Generic I2S Microphone.");
           audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, 0, 0xFFFFFFFF);
+          delay(100);
+          audioSource->initialize(i2swsPin, i2ssdPin, i2sckPin);
           break;
         case 2:
           DEBUGSR_PRINTLN("AS: ES7243 Microphone.");
           audioSource = new ES7243(SAMPLE_RATE, BLOCK_SIZE, 0, 0xFFFFFFFF);
+          delay(100);
+          audioSource->initialize(sdaPin, sclPin, i2swsPin, i2ssdPin, i2sckPin);
           break;
         case 3:
           DEBUGSR_PRINTLN("AS: SPH0645 Microphone");
           audioSource = new SPH0654(SAMPLE_RATE, BLOCK_SIZE, 0, 0xFFFFFFFF);
+          delay(100);
+          audioSource->initialize(i2swsPin, i2ssdPin, i2sckPin);
           break;
         case 4:
           DEBUGSR_PRINTLN("AS: Generic I2S Microphone with Master Clock");
           audioSource = new I2SSourceWithMasterClock(SAMPLE_RATE, BLOCK_SIZE, 0, 0xFFFFFFFF);
+          delay(100);
+          audioSource->initialize(mclkPin, i2swsPin, i2ssdPin, i2sckPin);
           break;
         case 5:
           DEBUGSR_PRINTLN("AS: I2S PDM Microphone");
           audioSource = new I2SPdmSource(SAMPLE_RATE, BLOCK_SIZE, 0, 0xFFFFFFFF);
+          delay(100);
+          audioSource->initialize(i2swsPin, i2ssdPin);
           break;
         case 0:
         default:
@@ -823,18 +819,17 @@ class AudioReactive : public Usermod {
           // we don't do the down-shift by 16bit any more
           //audioSource = new I2SAdcSource(SAMPLE_RATE, BLOCK_SIZE, -4, 0x0FFF);  // request upscaling to 16bit - still produces too much noise
           audioSource = new I2SAdcSource(SAMPLE_RATE, BLOCK_SIZE, 0, 0x0FFF);     // keep at 12bit - less noise
+          delay(100);
+          audioSource->initialize(audioPin);
           break;
       }
 
-      delay(100);
-
-      audioSource->initialize();
       delay(250);
-
-      //pinMode(LED_BUILTIN, OUTPUT);
 
       //sampling_period_us = round(1000000*(1.0/SAMPLE_RATE));
 
+      onUpdateBegin(false); // create FFT task
+/*
       // Define the FFT Task and lock it to core 0
       xTaskCreatePinnedToCore(
         FFTcode,                          // Function to implement the task
@@ -844,6 +839,7 @@ class AudioReactive : public Usermod {
         1,                                // Priority of the task
         &FFT_Task,                        // Task handle
         0);                               // Core where the task should run
+*/
     }
 
 
@@ -1008,8 +1004,24 @@ class AudioReactive : public Usermod {
 
     bool getUMData(um_data_t **data) {
       if (!data) return false; // no pointer provided by caller -> exit
-      *data = &um_data;
+      *data = um_data;
       return true;
+    }
+
+
+    void onUpdateBegin(bool init) {
+      if (init) vTaskDelete(FFT_Task); // update is about to begin, remove task to prevent crash
+      else {  // update has failed or create task requested
+        // Define the FFT Task and lock it to core 0
+        xTaskCreatePinnedToCore(
+          FFTcode,                          // Function to implement the task
+          "FFT",                            // Name of the task
+          5000,                             // Stack size in words
+          NULL,                             // Task input parameter
+          1,                                // Priority of the task
+          &FFT_Task,                        // Task handle
+          0);                               // Core where the task should run
+      }
     }
 
 
@@ -1098,7 +1110,7 @@ class AudioReactive : public Usermod {
       JsonObject top = root.createNestedObject(FPSTR(_name));
 
       JsonObject amic = top.createNestedObject(FPSTR(_analogmic));
-      top["pin"] = audioPin;
+      amic["pin"] = audioPin;
 
       JsonObject dmic = top.createNestedObject(FPSTR(_digitalmic));
       dmic[F("type")] = dmType;

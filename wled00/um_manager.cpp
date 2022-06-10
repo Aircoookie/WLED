@@ -40,6 +40,7 @@ bool UsermodManager::onMqttMessage(char* topic, char* payload) {
   for (byte i = 0; i < numMods; i++) if (ums[i]->onMqttMessage(topic, payload)) return true;
   return false;
 }
+void UsermodManager::onUpdateBegin(bool init) { for (byte i = 0; i < numMods; i++) ums[i]->onUpdateBegin(init); } // notify usermods that update is to begin
 
 /*
  * Enables usermods to lookup another Usermod.

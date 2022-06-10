@@ -752,6 +752,8 @@ class WS2812FX {
       getLengthPhysical(void),
       getFps();
 
+    inline uint16_t getMinShowDelay() { return MIN_SHOW_DELAY; }
+
     uint32_t
       now,
       timebase,
