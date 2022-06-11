@@ -100,6 +100,46 @@
             urows += `<input type="${t==="int"?"number":t}" name="${k}:${f}${a?"[]":""}" ${c} oninput="check(this,'${k.substr(k.indexOf(":")+1)}')"><br>`;
         }
     }
+    // https://stackoverflow.com/questions/39729741/javascript-change-input-text-to-select-option
+    function addDropdown(um,fld) {
+        let sel = d.createElement('select');
+        let arr = d.getElementsByName(um+":"+fld);
+        let inp = arr[1]; // assume 1st field to be hidden (type)
+        if (inp && inp.tagName === "INPUT" && (inp.type === "text" || inp.type === "number")) {  // may also use nodeName
+            let v = inp.value;
+            let n = inp.name;
+            // copy the existing input element's attributes to the new select element
+            for (var i = 0; i < inp.attributes.length; ++ i) {
+                var att = inp.attributes[i];
+                // type and value don't apply, so skip them
+                // ** you might also want to skip style, or others -- modify as needed **
+                if (att.name != 'type' && att.name != 'value' && att.name != 'class' && att.name != 'style') {
+                    sel.setAttribute(att.name, att.value);
+                }
+            }
+            sel.setAttribute("data-val", v);
+            // finally, replace the old input element with the new select element
+            inp.parentElement.replaceChild(sel, inp);
+            return obj;
+        }
+        return null;
+    }
+    function addOption(sel,txt,val) {
+        if (sel===null) return;
+        let opt = d.createElement("option");
+        opt.value = val;
+        opt.text = txt;
+        sel.appendChild(opt);
+        for (let i=0; i<sel.childNodes.length; i++) {
+            let c = sel.childNodes[i];
+            if (c.value == sel.dataset.val) sel.selectedIndex = i;
+        }
+    }
+    // https://stackoverflow.com/questions/26440494/insert-text-after-this-input-element-with-javascript
+    function addInfo(name,el,txt) {
+        let obj = d.getElementsByName(name);
+        if (obj[el]) obj[el].insertAdjacentHTML('afterend', '&nbsp;'+txt);
+    }
     function ldS() {
         var url = (loc?`http://${locip}`:'') + '/cfg.json';
         fetch(url, {

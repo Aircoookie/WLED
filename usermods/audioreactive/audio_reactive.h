@@ -1185,6 +1185,28 @@ class AudioReactive : public Usermod {
     }
 
 
+    void appendConfigData() {
+      oappend(SET_F("dd=addDropdown('AudioReactive','digitalmic:type');"));
+      oappend(SET_F("addOption(dd,'Generic Analog',0);"));
+      oappend(SET_F("addOption(dd,'Generic I2S',1);"));
+      oappend(SET_F("addOption(dd,'ES7243',2);"));
+      oappend(SET_F("addOption(dd,'SPH0654',3);"));
+      oappend(SET_F("addOption(dd,'Generic I2S with Mclk',4);"));
+      oappend(SET_F("addOption(dd,'Generic I2S PDM',5);"));
+      oappend(SET_F("dd=addDropdown('AudioReactive','cfg:AGC');"));
+      oappend(SET_F("addOption(dd,'Off',0);"));
+      oappend(SET_F("addOption(dd,'Normal',1);"));
+      oappend(SET_F("addOption(dd,'Vivid',2);"));
+      oappend(SET_F("addOption(dd,'Lazy',3);"));
+      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',0,'I2S SD');"));
+      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',1,'I2S WS');"));
+      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',2,'I2S SCK');"));
+      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'I2S Master CLK');"));
+      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',4,'I2C SDA');"));
+      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',5,'I2C SCL');"));
+    }
+
+
     /*
      * handleOverlayDraw() is called just before every show() (LED strip update frame) after effects have set the colors.
      * Use this to blank out some LEDs or set them to a different color regardless of the set effect mode.

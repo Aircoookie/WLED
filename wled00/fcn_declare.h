@@ -255,12 +255,13 @@ class Usermod {
   public:
     Usermod() { um_data = nullptr; }
     virtual ~Usermod() { if (um_data) delete um_data; }
-    virtual void loop() {}
+    virtual void setup() = 0; // pure virtual, has to be overriden
+    virtual void loop() = 0;  // pure virtual, has to be overriden
     virtual void handleOverlayDraw() {}
     virtual bool handleButton(uint8_t b) { return false; }
     virtual bool getUMData(um_data_t **data) { if (data) *data = nullptr; return false; };
-    virtual void setup() {}
     virtual void connected() {}
+    virtual void appendConfigData() {}
     virtual void addToJsonState(JsonObject& obj) {}
     virtual void addToJsonInfo(JsonObject& obj) {}
     virtual void readFromJsonState(JsonObject& obj) {}
@@ -284,6 +285,7 @@ class UsermodManager {
     bool getUMData(um_data_t **um_data, uint8_t mod_id = USERMOD_ID_RESERVED); // USERMOD_ID_RESERVED will poll all usermods
     void setup();
     void connected();
+    void appendConfigData();
     void addToJsonState(JsonObject& obj);
     void addToJsonInfo(JsonObject& obj);
     void readFromJsonState(JsonObject& obj);
