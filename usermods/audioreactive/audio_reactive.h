@@ -7,6 +7,10 @@
   #error This audio reactive usermod does not support the ESP8266.
 #endif
 
+//The SCL and SDA pins are defined here. 
+#define HW_PIN_SCL 22
+#define HW_PIN_SDA 21
+
 /*
  * Usermods allow you to add own functionality to WLED more easily
  * See: https://github.com/Aircoookie/WLED/wiki/Add-own-functionality
@@ -334,8 +338,8 @@ class AudioReactive : public Usermod {
     #else
     int8_t audioPin = AUDIOPIN;
     #endif
-    #ifndef DMENABLED // aka DOUT
-    uint8_t dmType = 0;
+    #ifndef DMENABLED // I2S mic type
+    uint8_t dmType = 0; // none/disabled
     #else
     uint8_t dmType = DMENABLED;
     #endif
@@ -355,17 +359,17 @@ class AudioReactive : public Usermod {
     int8_t i2sckPin = I2S_CKPIN;
     #endif
     #ifndef ES7243_SDAPIN
-    int8_t sdaPin = 18;
+    int8_t sdaPin = -1;
     #else
     int8_t sdaPin = ES7243_SDAPIN;
     #endif
     #ifndef ES7243_SDAPIN
-    int8_t sclPin = 23;
+    int8_t sclPin = -1;
     #else
     int8_t sclPin = ES7243_SCLPIN;
     #endif
     #ifndef MCLK_PIN
-    int8_t mclkPin = 0;
+    int8_t mclkPin = -1;
     #else
     int8_t mclkPin = MLCK_PIN;
     #endif
@@ -1118,6 +1122,9 @@ class AudioReactive : public Usermod {
       pinArray.add(i2ssdPin);
       pinArray.add(i2swsPin);
       pinArray.add(i2sckPin);
+      pinArray.add(mclkPin);
+      pinArray.add(sdaPin);
+      pinArray.add(sclPin);
 
       JsonObject cfg = top.createNestedObject("cfg");
       cfg[F("squelch")] = soundSquelch;
@@ -1158,6 +1165,9 @@ class AudioReactive : public Usermod {
       configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["pin"][0], i2ssdPin);
       configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["pin"][1], i2swsPin);
       configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["pin"][2], i2sckPin);
+      configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["pin"][3], mclkPin);
+      configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["pin"][4], sdaPin);
+      configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["pin"][5], sclPin);
 
       configComplete &= getJsonValue(top["cfg"][F("squelch")], soundSquelch);
       configComplete &= getJsonValue(top["cfg"][F("gain")],    sampleGain);

@@ -38,7 +38,7 @@ class AudioSource {
        This function needs to take care of anything that needs to be done
        before samples can be obtained from the microphone.
     */
-    virtual void initialize(int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {};
+    virtual void initialize(int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) = 0;
 
     /* Deinitialize
        Release all resources and deactivate any functionality that is used
@@ -95,17 +95,17 @@ class I2SSource : public AudioSource {
       };
     }
 
-    void initialize(int8_t i2swsPin = I2S_PIN_NO_CHANGE, int8_t i2ssdPin = I2S_PIN_NO_CHANGE, int8_t i2sckPin = I2S_PIN_NO_CHANGE) {
+    virtual void initialize(int8_t i2swsPin = I2S_PIN_NO_CHANGE, int8_t i2ssdPin = I2S_PIN_NO_CHANGE, int8_t i2sckPin = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
       if (i2swsPin != I2S_PIN_NO_CHANGE && i2ssdPin != I2S_PIN_NO_CHANGE) {
-        if (!pinManager.allocatePin(i2swsPin, true, PinOwner::DigitalMic) ||
-            !pinManager.allocatePin(i2ssdPin, true, PinOwner::DigitalMic)) {
+        if (!pinManager.allocatePin(i2swsPin, true, PinOwner::UM_Audioreactive) ||
+            !pinManager.allocatePin(i2ssdPin, true, PinOwner::UM_Audioreactive)) {
           return;
         }
       }
 
       // i2ssckPin needs special treatment, since it might be unused on PDM mics
       if (i2sckPin != I2S_PIN_NO_CHANGE) {
-        if (!pinManager.allocatePin(i2sckPin, true, PinOwner::DigitalMic)) return;
+        if (!pinManager.allocatePin(i2sckPin, true, PinOwner::UM_Audioreactive)) return;
       }
 
       _pinConfig = {
@@ -130,16 +130,16 @@ class I2SSource : public AudioSource {
       _initialized = true;
     }
 
-    void deinitialize() {
+    virtual void deinitialize() {
       _initialized = false;
       esp_err_t err = i2s_driver_uninstall(I2S_NUM_0);
       if (err != ESP_OK) {
         DEBUGSR_PRINTF("Failed to uninstall i2s driver: %d\n", err);
         return;
       }
-      if (_pinConfig.ws_io_num   != I2S_PIN_NO_CHANGE) pinManager.deallocatePin(_pinConfig.ws_io_num,   PinOwner::DigitalMic);
-      if (_pinConfig.data_in_num != I2S_PIN_NO_CHANGE) pinManager.deallocatePin(_pinConfig.data_in_num, PinOwner::DigitalMic);
-      if (_pinConfig.bck_io_num  != I2S_PIN_NO_CHANGE) pinManager.deallocatePin(_pinConfig.bck_io_num,  PinOwner::DigitalMic);
+      if (_pinConfig.ws_io_num   != I2S_PIN_NO_CHANGE) pinManager.deallocatePin(_pinConfig.ws_io_num,   PinOwner::UM_Audioreactive);
+      if (_pinConfig.data_in_num != I2S_PIN_NO_CHANGE) pinManager.deallocatePin(_pinConfig.data_in_num, PinOwner::UM_Audioreactive);
+      if (_pinConfig.bck_io_num  != I2S_PIN_NO_CHANGE) pinManager.deallocatePin(_pinConfig.bck_io_num,  PinOwner::UM_Audioreactive);
     }
 
     void getSamples(double *buffer, uint16_t num_samples) {
@@ -207,9 +207,9 @@ class I2SSourceWithMasterClock : public I2SSource {
       I2SSource(sampleRate, blockSize, lshift, mask) {
     };
 
-    virtual void initialize(int8_t mclkPin, int8_t i2swsPin = I2S_PIN_NO_CHANGE, int8_t i2ssdPin = I2S_PIN_NO_CHANGE, int8_t i2sckPin = I2S_PIN_NO_CHANGE) {
+    virtual void initialize(int8_t mclkPin, int8_t i2swsPin = I2S_PIN_NO_CHANGE, int8_t i2ssdPin = I2S_PIN_NO_CHANGE, int8_t i2sckPin = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
       // Reserve the master clock pin
-      if(!pinManager.allocatePin(mclkPin, true, PinOwner::DigitalMic)) {
+      if(!pinManager.allocatePin(mclkPin, true, PinOwner::UM_Audioreactive)) {
         return;
       }
       _mclkPin = mclkPin;
@@ -219,7 +219,7 @@ class I2SSourceWithMasterClock : public I2SSource {
 
     virtual void deinitialize() {
       // Release the master clock pin
-      pinManager.deallocatePin(_mclkPin, PinOwner::DigitalMic);
+      pinManager.deallocatePin(_mclkPin, PinOwner::UM_Audioreactive);
       I2SSource::deinitialize();
     }
 
@@ -284,8 +284,8 @@ public:
 
     void initialize(int8_t sdaPin, int8_t sclPin, int8_t i2swsPin = I2S_PIN_NO_CHANGE, int8_t i2ssdPin = I2S_PIN_NO_CHANGE, int8_t i2sckPin = I2S_PIN_NO_CHANGE) {
       // Reserve SDA and SCL pins of the I2C interface
-      if (!pinManager.allocatePin(sdaPin, true, PinOwner::DigitalMic) ||
-          !pinManager.allocatePin(sclPin, true, PinOwner::DigitalMic)) {
+      if (!pinManager.allocatePin(sdaPin, true, PinOwner::HW_I2C) ||
+          !pinManager.allocatePin(sclPin, true, PinOwner::HW_I2C)) {
         return;
       }
 
@@ -294,13 +294,13 @@ public:
 
       // First route mclk, then configure ADC over I2C, then configure I2S
       _es7243InitAdc();
-      I2SSource::initialize();
+      I2SSource::initialize(i2swsPin, i2ssdPin, i2sckPin);
     }
 
     void deinitialize() {
       // Release SDA and SCL pins of the I2C interface
-      pinManager.deallocatePin(pin_ES7243_SDA, PinOwner::DigitalMic);
-      pinManager.deallocatePin(pin_ES7243_SCL, PinOwner::DigitalMic);
+      pinManager.deallocatePin(pin_ES7243_SDA, PinOwner::HW_I2C);
+      pinManager.deallocatePin(pin_ES7243_SCL, PinOwner::HW_I2C);
       I2SSource::deinitialize();
     }
 
@@ -330,8 +330,8 @@ class I2SAdcSource : public I2SSource {
       };
     }
 
-    void initialize(int8_t audioPin) {
-      if(!pinManager.allocatePin(audioPin, false, PinOwner::AnalogMic)) {
+    void initialize(int8_t audioPin, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
+      if(!pinManager.allocatePin(audioPin, false, PinOwner::UM_Audioreactive)) {
         return;
       }
       _audioPin = audioPin;
@@ -401,7 +401,7 @@ class I2SAdcSource : public I2SSource {
     }
 
     void deinitialize() {
-      pinManager.deallocatePin(_audioPin, PinOwner::AnalogMic);
+      pinManager.deallocatePin(_audioPin, PinOwner::UM_Audioreactive);
       _initialized = false;
       esp_err_t err;
 #if defined(ARDUINO_ARCH_ESP32)
@@ -433,7 +433,7 @@ class SPH0654 : public I2SSource {
     SPH0654(int sampleRate, int blockSize, int16_t lshift, uint32_t mask) :
       I2SSource(sampleRate, blockSize, lshift, mask){}
 
-    void initialize(uint8_t i2swsPin, uint8_t i2ssdPin, uint8_t i2sckPin) {
+    void initialize(uint8_t i2swsPin, uint8_t i2ssdPin, uint8_t i2sckPin, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
       I2SSource::initialize(i2swsPin, i2ssdPin, i2sckPin);
       REG_SET_BIT(I2S_TIMING_REG(I2S_NUM_0), BIT(9));
       REG_SET_BIT(I2S_CONF_REG(I2S_NUM_0), I2S_RX_MSB_SHIFT);
@@ -452,7 +452,7 @@ class I2SPdmSource : public I2SSource {
       _config.mode = i2s_mode_t(I2S_MODE_MASTER | I2S_MODE_RX | I2S_MODE_PDM); // Change mode to pdm
     }
 
-    void initialize(uint8_t i2swsPin, uint8_t i2ssdPin) {
+    void initialize(uint8_t i2swsPin, uint8_t i2ssdPin, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
       I2SSource::initialize(i2swsPin, i2ssdPin, I2S_PIN_NO_CHANGE);
     }
 };
