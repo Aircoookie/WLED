@@ -26,8 +26,7 @@
                 localStorage.setItem('locIp', locip);
             }
         }
-        GetV();
-        if (numM > 0 || locip) ldS();
+        if (numM > 0 || locip) { ldS(); GetV(); }
         else gId("um").innerHTML = "No Usermods installed.";
     }
     // https://stackoverflow.com/questions/3885817/how-do-i-check-that-a-number-is-float-or-integer
@@ -120,12 +119,12 @@
             sel.setAttribute("data-val", v);
             // finally, replace the old input element with the new select element
             inp.parentElement.replaceChild(sel, inp);
-            return obj;
+            return sel;
         }
         return null;
     }
     function addOption(sel,txt,val) {
-        if (sel===null) return;
+        if (sel===null) return; // select object missing
         let opt = d.createElement("option");
         opt.value = val;
         opt.text = txt;
@@ -140,6 +139,7 @@
         let obj = d.getElementsByName(name);
         if (obj[el]) obj[el].insertAdjacentHTML('afterend', '&nbsp;'+txt);
     }
+    // load settings and insert values into DOM
     function ldS() {
         var url = (loc?`http://${locip}`:'') + '/cfg.json';
         fetch(url, {
@@ -169,7 +169,6 @@
     }
     function svS(e) {
         e.preventDefault();
-        console.log(d.Sf);
         if (d.Sf.checkValidity()) d.Sf.submit(); //https://stackoverflow.com/q/37323914
     }
     function GetV() {}
