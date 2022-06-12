@@ -26,8 +26,8 @@
                 localStorage.setItem('locIp', locip);
             }
         }
-        if (numM > 0 || locip) { ldS(); GetV(); }
-        else gId("um").innerHTML = "No Usermods installed.";
+        ldS();
+        if (!numM) gId("um").innerHTML = "No Usermods installed.";
     }
     // https://stackoverflow.com/questions/3885817/how-do-i-check-that-a-number-is-float-or-integer
     function isF(n) { return n === +n && n !== (n|0); }
@@ -161,9 +161,10 @@
             }
             if (urows==="") urows = "Usermods configuration not found.<br>Press <i>Save</i> to initialize defaults.";
             gId("um").innerHTML = urows;
+            GetV();
         })
-        .catch(function (error) {
-            gId('lserr').style.display = "inline"
+        .catch((error)=>{
+            gId('lserr').style.display = "inline";
             console.log(error);
         });
     }
@@ -171,7 +172,7 @@
         e.preventDefault();
         if (d.Sf.checkValidity()) d.Sf.submit(); //https://stackoverflow.com/q/37323914
     }
-    function GetV() {}
+    function GetV() {} // replaced during 'npm run build'
     </script>
     <style>@import url("style.css");</style>
 </head>
