@@ -101,7 +101,7 @@ const uint16_t samples = 512;                   // This value MUST ALWAYS be a p
 //unsigned int sampling_period_us;
 //unsigned long microseconds;
 
-static AudioSource *audioSource;
+static AudioSource *audioSource = nullptr;
 
 static byte     soundSquelch = 10;              // default squelch value for volume reactive routines
 static byte     sampleGain = 1;                 // default sample gain
@@ -162,7 +162,7 @@ void FFTcode(void * parameter) {
     // Only run the FFT computing code if we're not in Receive mode
     if (audioSyncEnabled & 0x02) continue;
 
-    audioSource->getSamples(vReal, samplesFFT);
+    if (audioSource) audioSource->getSamples(vReal, samplesFFT);
 
     // old code - Last sample in vReal is our current mic sample
     //micDataSm = (uint16_t)vReal[samples - 1]; // will do a this a bit later
@@ -739,7 +739,7 @@ class AudioReactive : public Usermod {
       // usermod exchangeable data
       // we will assign all usermod exportable data here as pointers to original variables or arrays and allocate memory for pointers
       um_data = new um_data_t;
-      um_data->u_size = 8;
+      um_data->u_size = 11;
       um_data->u_type = new um_types_t[um_data->u_size];
       um_data->u_data = new void*[um_data->u_size];
       um_data->u_data[0] = &maxVol;
@@ -758,25 +758,20 @@ class AudioReactive : public Usermod {
       um_data->u_type[6] = UMT_DOUBLE;
       um_data->u_data[7] = &FFT_Magnitude;
       um_data->u_type[7] = UMT_DOUBLE;
+      um_data->u_data[8] = &sampleAvg;
+      um_data->u_type[8] = UMT_FLOAT;
+      um_data->u_data[9] = &soundAgc;
+      um_data->u_type[9] = UMT_BYTE;
+      um_data->u_data[10] = &sampleAgc;
+      um_data->u_type[10] = UMT_FLOAT;
       //...
       // these are values used by effects in soundreactive fork
-      //uint8_t *fftResult   = um_data->;
-      //float *fftAvg        = um_data->;
-      //float *fftBin        = um_data->;
-      //float *fftCalc       = um_data->;
-      //double FFT_MajorPeak = um_data->;
-      //double FFT_Magnitude = um_data->;
-      //float sampleAgc      = um_data->;
       //float sampleReal     = um_data->;
       //float multAgc        = um_data->;
-      //float sampleAvg      = um_data->;
-      //int16_t sample       = um_data->;
       //int16_t rawSampleAgc = um_data->;
       //bool samplePeak      = um_data->;
       //uint8_t squelch      = um_data->;
       //uint8_t soundSquelch = um_data->;
-      //uint8_t soundAgc     = um_data->;
-      //uint8_t maxVol       = um_data->;
       //uint8_t binNum       = um_data->;
       //uint16_t *myVals     = um_data->;
       //int16_t sample       = um_data->;
@@ -788,43 +783,43 @@ class AudioReactive : public Usermod {
       delay(100);         // Give that poor microphone some time to setup.
       switch (dmType) {
         case 1:
-          DEBUGSR_PRINTLN("AS: Generic I2S Microphone.");
+          DEBUGSR_PRINTLN(F("AS: Generic I2S Microphone."));
           audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, 0, 0xFFFFFFFF);
           delay(100);
-          audioSource->initialize(i2swsPin, i2ssdPin, i2sckPin);
+          if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin, i2sckPin);
           break;
         case 2:
-          DEBUGSR_PRINTLN("AS: ES7243 Microphone.");
+          DEBUGSR_PRINTLN(F("AS: ES7243 Microphone."));
           audioSource = new ES7243(SAMPLE_RATE, BLOCK_SIZE, 0, 0xFFFFFFFF);
           delay(100);
-          audioSource->initialize(sdaPin, sclPin, i2swsPin, i2ssdPin, i2sckPin);
+          if (audioSource) audioSource->initialize(sdaPin, sclPin, i2swsPin, i2ssdPin, i2sckPin);
           break;
         case 3:
-          DEBUGSR_PRINTLN("AS: SPH0645 Microphone");
+          DEBUGSR_PRINTLN(F("AS: SPH0645 Microphone"));
           audioSource = new SPH0654(SAMPLE_RATE, BLOCK_SIZE, 0, 0xFFFFFFFF);
           delay(100);
           audioSource->initialize(i2swsPin, i2ssdPin, i2sckPin);
           break;
         case 4:
-          DEBUGSR_PRINTLN("AS: Generic I2S Microphone with Master Clock");
+          DEBUGSR_PRINTLN(F("AS: Generic I2S Microphone with Master Clock"));
           audioSource = new I2SSourceWithMasterClock(SAMPLE_RATE, BLOCK_SIZE, 0, 0xFFFFFFFF);
           delay(100);
-          audioSource->initialize(mclkPin, i2swsPin, i2ssdPin, i2sckPin);
+          if (audioSource) audioSource->initialize(mclkPin, i2swsPin, i2ssdPin, i2sckPin);
           break;
         case 5:
-          DEBUGSR_PRINTLN("AS: I2S PDM Microphone");
+          DEBUGSR_PRINTLN(F("AS: I2S PDM Microphone"));
           audioSource = new I2SPdmSource(SAMPLE_RATE, BLOCK_SIZE, 0, 0xFFFFFFFF);
           delay(100);
-          audioSource->initialize(i2swsPin, i2ssdPin);
+          if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin);
           break;
         case 0:
         default:
-          DEBUGSR_PRINTLN("AS: Analog Microphone.");
+          DEBUGSR_PRINTLN(F("AS: Analog Microphone."));
           // we don't do the down-shift by 16bit any more
           //audioSource = new I2SAdcSource(SAMPLE_RATE, BLOCK_SIZE, -4, 0x0FFF);  // request upscaling to 16bit - still produces too much noise
           audioSource = new I2SAdcSource(SAMPLE_RATE, BLOCK_SIZE, 0, 0x0FFF);     // keep at 12bit - less noise
           delay(100);
-          audioSource->initialize(audioPin);
+          if (audioSource) audioSource->initialize(audioPin);
           break;
       }
 

@@ -5479,43 +5479,6 @@ static const char *_data_FX_MODE_TARTAN PROGMEM = "2D Tartan@X scale,Y scale;;!"
 
 
 /////////////////////////
-//    * 2D Waverly     //
-/////////////////////////
-uint16_t WS2812FX::mode_2DWaverly(void) {                                       // By: Stepko, https://editor.soulmatelights.com/gallery/652-wave , modified by Andrew Tuline
-  if (!isMatrix) return mode_static(); // not a 2D set-up
-
-  const uint16_t cols = SEGMENT.virtualWidth();
-  const uint16_t rows = SEGMENT.virtualHeight();
-  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
-
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
-
-  if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
-
-  fadeToBlackBy(leds, SEGMENT.speed);
-
-  long t = now / 2;
-  for (uint16_t i = 0; i < cols; i++) {
-    //uint8_t tmpSound = (soundAgc) ? sampleAgc : sampleAvg;
-
-    uint16_t thisVal = /*tmpSound*/((SEGMENT.intensity>>2)+1) * inoise8(i * 45 , t , t)/64;
-    uint16_t thisMax = map(thisVal, 0, 512, 0, rows);
-
-    for (uint16_t j = 0; j < thisMax; j++) {
-      leds[XY(i, j)] += ColorFromPalette(currentPalette, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND);
-      leds[XY((cols - 1) - i, (rows - 1) - j)] += ColorFromPalette(currentPalette, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND);
-    }
-  }
-  blur2d(leds, 16);
-
-  setPixels(leds);
-  return FRAMETIME;
-} // mode_2DWaverly()
-static const char *_data_FX_MODE_WAVERLY PROGMEM = "2D Waverly@Fade rate,Sensitivity;;!";
-
-
-/////////////////////////
 //     2D Akemi        //
 /////////////////////////
 static uint8_t akemi[] PROGMEM = {
@@ -6008,6 +5971,62 @@ uint16_t WS2812FX::mode_2Ddriftrose(void) {
   return FRAMETIME;
 }
 static const char *_data_FX_MODE_DRIFT_ROSE PROGMEM = "2D Drift Rose@Fade,Blur;;";
+
+
+///////////////////////////////////////////////////////////////////////////////
+//*************************  audio routines  **********************************
+
+
+/////////////////////////
+//    * 2D Waverly     //
+/////////////////////////
+// By: Stepko, https://editor.soulmatelights.com/gallery/652-wave , modified by Andrew Tuline
+uint16_t WS2812FX::mode_2DWaverly(void) {                                       
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
+
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+
+  if (SEGENV.call == 0) {
+    fill_solid(leds, CRGB::Black);
+  }
+
+  um_data_t *um_data;
+  uint8_t *soundAgc = nullptr;
+  float *sampleAgc, *sampleAvg;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    soundAgc  = (uint8_t*)um_data->u_data[9];
+    sampleAgc = (float*)um_data->u_data[10];
+    sampleAvg = (float*)um_data->u_data[8];
+  }
+
+  fadeToBlackBy(leds, SEGMENT.speed);
+
+  long t = millis() / 2;
+  for (uint16_t i = 0; i < cols; i++) {
+    uint16_t thisVal = (1 + SEGMENT.intensity/64) * inoise8(i * 45 , t , t)/2;
+    // use audio if available
+    if (um_data && soundAgc) {
+      thisVal /= 32; // reduce intensity of inoise8()
+      thisVal *= (*soundAgc) ? *sampleAgc : *sampleAvg;
+    }
+    uint16_t thisMax = map(thisVal, 0, 512, 0, rows);
+
+    for (uint16_t j = 0; j < thisMax; j++) {
+      leds[XY(i, j)] += ColorFromPalette(currentPalette, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND);
+      leds[XY((cols - 1) - i, (rows - 1) - j)] += ColorFromPalette(currentPalette, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND);
+    }
+  }
+  blur2d(leds, 16);
+
+  setPixels(leds);
+  return FRAMETIME;
+} // mode_2DWaverly()
+static const char *_data_FX_MODE_WAVERLY PROGMEM = " ♪ 2D Waverly@Amplification,Sensitivity=64;;!";
 
 
 //////////////////////////////////////////////////////////////////////////////////////////
