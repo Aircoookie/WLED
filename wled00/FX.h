@@ -922,6 +922,7 @@ class WS2812FX {
     void
       setUpMatrix(),
       setPixelColorXY(uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
+      setPixelColorXY(float x, float y, byte r, byte g, byte b, byte w = 0, bool aa = false),
       blendPixelColorXY(uint16_t x, uint16_t y, uint32_t color, uint8_t blend),
       blur1d(CRGB* leds, fract8 blur_amount),
       blur1d(uint16_t i, bool vertical, fract8 blur_amount, CRGB* leds=nullptr), // 1D box blur (with weight)
@@ -942,6 +943,8 @@ class WS2812FX {
 
     inline void setPixelColorXY(uint16_t x, uint16_t y, uint32_t c) { setPixelColorXY(x, y, byte(c>>16), byte(c>>8), byte(c), byte(c>>24)); }
     inline void setPixelColorXY(uint16_t x, uint16_t y, CRGB c)     { setPixelColorXY(x, y, c.red, c.green, c.blue); }
+    inline void setPixelColorXY(float x, float y, uint32_t c, bool aa) { setPixelColorXY(x, y, byte(c>>16), byte(c>>8), byte(c), byte(c>>24), aa); }
+    inline void setPixelColorXY(float x, float y, CRGB c, bool aa)     { setPixelColorXY(x, y, c.red, c.green, c.blue, 0, aa); }
     inline void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint32_t c) { drawLine(x0, y0, x1, y1, CRGB(byte(c>>16), byte(c>>8), byte(c))); }
     inline void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint32_t c) { drawCharacter(chr, x, y, CRGB(byte(c>>16), byte(c>>8), byte(c))); }
 

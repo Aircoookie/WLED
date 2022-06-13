@@ -184,6 +184,60 @@ void IRAM_ATTR WS2812FX::setPixelColorXY(uint16_t x, uint16_t y, byte r, byte g,
   }
 }
 
+// anti-aliased version of setPixelColorXY()
+void /*IRAM_ATTR*/ WS2812FX::setPixelColorXY(float x, float y, byte r, byte g, byte b, byte w, bool aa)
+{
+  if (x<0.0f || x>1.0f || y<0.0f || y>1.0f) return; // not normalized
+
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+
+  if (aa) {
+    uint16_t xL = floorf(x * (cols-1));
+    uint16_t xR = ceilf(x * (cols-1));
+    uint16_t yT = floorf(y * (rows-1));
+    uint16_t yB = ceilf(y * (rows-1));
+    uint32_t cXLYT = getPixelColorXY(xL, yT);
+    uint32_t cXRYT = getPixelColorXY(xR, yT);
+    uint32_t cXLYB = getPixelColorXY(xL, yB);
+    uint32_t cXRYB = getPixelColorXY(xR, yB);
+
+    if (xL!=xR && yT!=yB) {
+      // blend TL pixel
+      cXLYT = color_blend(RGBW32(r,g,b,w), cXLYT, sqrtf((x - floor(x))*(y - floorf(y)))*UINT16_MAX, true);
+      setPixelColorXY(xR, yT, R(cXLYT), G(cXLYT), B(cXLYT), W(cXLYT));
+      // blend TR pixel
+      cXRYT = color_blend(RGBW32(r,g,b,w), cXRYT, sqrtf((ceilf(x) - x)*(y - floorf(y)))*UINT16_MAX, true);
+      setPixelColorXY(xR, yT, R(cXRYT), G(cXRYT), B(cXRYT), W(cXRYT));
+      // blend BL pixel
+      cXLYB = color_blend(RGBW32(r,g,b,w), cXLYB, sqrtf((x - floor(x))*(ceil(y) - y))*UINT16_MAX, true);
+      setPixelColorXY(xL, yB, R(cXLYB), G(cXLYB), B(cXLYB), W(cXLYB));
+      // blend BR pixel
+      cXRYB = color_blend(RGBW32(r,g,b,w), cXRYB, sqrtf((ceilf(x) - x)*(ceil(y) - y))*UINT16_MAX, true);
+      setPixelColorXY(xR, yB, R(cXRYB), G(cXRYB), B(cXRYB), W(cXRYB));
+    } else if (xR!=xL && yT==yB) {
+      // blend L pixel
+      cXLYT = color_blend(RGBW32(r,g,b,w), cXLYT, (x - floor(x))*UINT16_MAX, true);
+      setPixelColorXY(xR, yT, R(cXLYT), G(cXLYT), B(cXLYT), W(cXLYT));
+      // blend R pixel
+      cXRYT = color_blend(RGBW32(r,g,b,w), cXRYT, (ceilf(x) - x)*UINT16_MAX, true);
+      setPixelColorXY(xR, yT, R(cXRYT), G(cXRYT), B(cXRYT), W(cXRYT));
+    } else if (xR==xL && yT!=yB) {
+      // blend T pixel
+      cXLYT = color_blend(RGBW32(r,g,b,w), cXLYT, (y - floorf(y))*UINT16_MAX, true);
+      setPixelColorXY(xR, yT, R(cXLYT), G(cXLYT), B(cXLYT), W(cXLYT));
+      // blend B pixel
+      cXLYB = color_blend(RGBW32(r,g,b,w), cXLYB, (ceil(y) - y)*UINT16_MAX, true);
+      setPixelColorXY(xL, yB, R(cXLYB), G(cXLYB), B(cXLYB), W(cXLYB));
+    } else {
+      // exact match (x & y land on a pixel)
+      setPixelColorXY(xL, yT, r, g, b, w);
+    }
+  } else {
+    setPixelColorXY((uint16_t)roundf(x * (cols-1)), (uint16_t)roundf(y * (rows-1)), r, g, b, w);
+  }
+}
+
 // returns RGBW values of pixel
 uint32_t WS2812FX::getPixelColorXY(uint16_t x, uint16_t y) {
   if (SEGMENT.getOption(SEG_OPTION_TRANSPOSED)) { uint16_t t = x; x = y; y = t; } // swap X & Y if segment transposed
