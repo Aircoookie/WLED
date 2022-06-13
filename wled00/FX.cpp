@@ -27,6 +27,7 @@
 #include "FX.h"
 #include "wled.h"
 
+
 #define IBN 5100
 #define PALETTE_SOLID_WRAP (paletteBlend == 1 || paletteBlend == 3)
 
@@ -390,84 +391,67 @@ uint16_t WS2812FX::mode_rainbow_cycle(void) {
 
 /*
 * moves a dot in primary color from left to right
-* dot width and speed is variable
+  speed is variable and line length
 * dot fade in/out smooth
 * act as multi line display with a width of 36 columns (maybe later variable!?)
+* alternative -> move several points all in a distance of x pixels
 *
-* SEGMENT.intensity = width of the dot
+* SEGMENT.intensity = distances of the dots (or line length for multline display)
 * SEGMENT.speed = motion speed
 * ........................xXXx..->....
 * ........................xXXx..->....
 * ........................xXXx..->....
+*
+* default setting would be
+* Color 0 = Foreground = e.g. White
+* Color 1 = Background = e.g. Black
 */
 
 uint16_t WS2812FX::mode_lighthouse2()
 {    
-  int rowLength = 36;
-
+  // next Version for WLED supports more parameters then this will be flexible:
+  int dotWidth = 3;
+  int rowLength = SEGMENT.intensity;
   uint16_t counter = (((now * SEGMENT.speed)>>6)  + 1) % (rowLength << 8);
-
   int fade = counter & 0xFF;
   counter = counter >> 8;
 
-  double f = fade * 3.14159 / 512;
-  double f1 = sin(f) * 256 / 1;
-  double f2 = cos(f) * 256 / 1;
-  int fade1 = 255 - (int) f1;
-  int fade2 = 255 - (int) f2;
-  if (fade1 < 0)
-    fade1 = 0;
-  if (fade2 < 0)
-    fade2=0;
+  // use sin/cos for smoother fade function  
+  float f = fade * PI / 512;
+  float f1 = sin(f) * 65535;
+  float f2 = cos(f) * 65535;
+  int fade1 = (int) f1;
+  int fade2 = (int) f2;
 
   int posIn = counter % rowLength;
-  int posOut = (posIn + (SEGMENT.intensity>>4) + 1) % rowLength;
-
-  uint32_t color = SEGCOLOR(0);     
-  int w1 = W(color);
-  int r1 = R(color);
-  int g1 = G(color);
-  int b1 = B(color);
-
-  int r1New, g1New, b1New;  
+  int posOut = (posIn + dotWidth + 1) % rowLength;
 
   for(uint16_t i = 0; i < SEGLEN; i++) {
     int column = i % rowLength;    
-    
+
     if (column == posIn)
     {
-      // fade in             
-      r1New = (r1 * (fade1)) >> 8;
-      g1New = (g1 * (fade1)) >> 8;
-      b1New = (b1 * (fade1)) >> 8;
+      // fade from color 1 to 0 (fade in)
+      setPixelColor(i, color_blend(SEGCOLOR(0), SEGCOLOR(1), fade1, true));
     } else if (column == posOut)
     {
-      // fade out            
-      r1New = (r1 * fade2) >> 8;
-      g1New = (g1 * fade2) >> 8;
-      b1New = (b1 * fade2) >> 8;
-    }  else if (
+      // fade from color 0 to 1 (fade out)
+      setPixelColor(i, color_blend(SEGCOLOR(0), SEGCOLOR(1), fade2, true));
+    } else if (
            (posIn < posOut && column>posIn && column < posOut) 
         || (posIn > posOut && ((column<posOut) || (column>posIn)))
       )
     {
-      // always on       
-      r1New = r1;
-      g1New = g1;
-      b1New = b1;
-    } else {
-      // black      
-      r1New = 0;
-      g1New = 0;
-      b1New = 0;
+      // between pos in and pos out, always color 0
+      setPixelColor(i,SEGCOLOR(0));
+    } else 
+    {
+      // always color 1
+      setPixelColor(i,SEGCOLOR(1));
     }
-    
-    setPixelColor(i, r1New, g1New, b1New, w1);    
   }
   return FRAMETIME;
 }
-
-
 
 /*
  * Theatre-style crawling lights.
