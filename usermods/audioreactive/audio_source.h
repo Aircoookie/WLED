@@ -38,7 +38,7 @@ class AudioSource {
        This function needs to take care of anything that needs to be done
        before samples can be obtained from the microphone.
     */
-    virtual void initialize(int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) = 0;
+    virtual void initialize(int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) = 0;
 
     /* Deinitialize
        Release all resources and deactivate any functionality that is used
@@ -95,7 +95,7 @@ class I2SSource : public AudioSource {
       };
     }
 
-    virtual void initialize(int8_t i2swsPin = I2S_PIN_NO_CHANGE, int8_t i2ssdPin = I2S_PIN_NO_CHANGE, int8_t i2sckPin = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
+    virtual void initialize(int8_t i2swsPin = I2S_PIN_NO_CHANGE, int8_t i2ssdPin = I2S_PIN_NO_CHANGE, int8_t i2sckPin = I2S_PIN_NO_CHANGE, int8_t mclkPin = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
       if (i2swsPin != I2S_PIN_NO_CHANGE && i2ssdPin != I2S_PIN_NO_CHANGE) {
         if (!pinManager.allocatePin(i2swsPin, true, PinOwner::UM_Audioreactive) ||
             !pinManager.allocatePin(i2ssdPin, true, PinOwner::UM_Audioreactive)) {
@@ -106,6 +106,18 @@ class I2SSource : public AudioSource {
       // i2ssckPin needs special treatment, since it might be unused on PDM mics
       if (i2sckPin != I2S_PIN_NO_CHANGE) {
         if (!pinManager.allocatePin(i2sckPin, true, PinOwner::UM_Audioreactive)) return;
+      } else {
+        // This is an I2S PDM microphone, these microphones only use a clock and
+        // data line, to make it simpler to debug, use the WS pin as CLK and SD
+        // pin as DATA
+        _config.mode = i2s_mode_t(I2S_MODE_MASTER | I2S_MODE_RX | I2S_MODE_PDM); // Change mode to pdm if clock pin not provided
+      }
+
+      // Reserve the master clock pin if provided
+      _mclkPin = mclkPin;
+      if (mclkPin != I2S_PIN_NO_CHANGE) {
+        if(!pinManager.allocatePin(mclkPin, true, PinOwner::UM_Audioreactive)) return;
+        _routeMclk(mclkPin);
       }
 
       _pinConfig = {
@@ -140,6 +152,8 @@ class I2SSource : public AudioSource {
       if (_pinConfig.ws_io_num   != I2S_PIN_NO_CHANGE) pinManager.deallocatePin(_pinConfig.ws_io_num,   PinOwner::UM_Audioreactive);
       if (_pinConfig.data_in_num != I2S_PIN_NO_CHANGE) pinManager.deallocatePin(_pinConfig.data_in_num, PinOwner::UM_Audioreactive);
       if (_pinConfig.bck_io_num  != I2S_PIN_NO_CHANGE) pinManager.deallocatePin(_pinConfig.bck_io_num,  PinOwner::UM_Audioreactive);
+      // Release the master clock pin
+      if (_mclkPin != I2S_PIN_NO_CHANGE) pinManager.deallocatePin(_mclkPin, PinOwner::UM_Audioreactive);
     }
 
     void getSamples(double *buffer, uint16_t num_samples) {
@@ -193,37 +207,6 @@ class I2SSource : public AudioSource {
     }
 
   protected:
-    i2s_config_t _config;
-    i2s_pin_config_t _pinConfig;
-};
-
-/* I2S microphone with master clock
-   Our version of the IDF does not support setting master clock
-   routing via the provided API, so we have to do it by hand
-*/
-class I2SSourceWithMasterClock : public I2SSource {
-  public:
-    I2SSourceWithMasterClock(int sampleRate, int blockSize, int16_t lshift, uint32_t mask) :
-      I2SSource(sampleRate, blockSize, lshift, mask) {
-    };
-
-    virtual void initialize(int8_t mclkPin, int8_t i2swsPin = I2S_PIN_NO_CHANGE, int8_t i2ssdPin = I2S_PIN_NO_CHANGE, int8_t i2sckPin = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
-      // Reserve the master clock pin
-      if(!pinManager.allocatePin(mclkPin, true, PinOwner::UM_Audioreactive)) {
-        return;
-      }
-      _mclkPin = mclkPin;
-      _routeMclk(mclkPin);
-      I2SSource::initialize(i2swsPin, i2ssdPin, i2sckPin);
-    }
-
-    virtual void deinitialize() {
-      // Release the master clock pin
-      pinManager.deallocatePin(_mclkPin, PinOwner::UM_Audioreactive);
-      I2SSource::deinitialize();
-    }
-
-  protected:
     void _routeMclk(int8_t mclkPin) {
       /* Enable the mclk routing depending on the selected mclk pin
           Only I2S_NUM_0 is supported
@@ -240,7 +223,8 @@ class I2SSourceWithMasterClock : public I2SSource {
       }
     }
 
-  private:
+    i2s_config_t _config;
+    i2s_pin_config_t _pinConfig;
     int8_t _mclkPin;
 };
 
@@ -282,7 +266,7 @@ public:
       _config.channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT;
     };
 
-    void initialize(int8_t sdaPin, int8_t sclPin, int8_t i2swsPin = I2S_PIN_NO_CHANGE, int8_t i2ssdPin = I2S_PIN_NO_CHANGE, int8_t i2sckPin = I2S_PIN_NO_CHANGE) {
+    void initialize(int8_t sdaPin, int8_t sclPin, int8_t i2swsPin, int8_t i2ssdPin, int8_t i2sckPin, int8_t mclkPin) {
       // Reserve SDA and SCL pins of the I2C interface
       if (!pinManager.allocatePin(sdaPin, true, PinOwner::HW_I2C) ||
           !pinManager.allocatePin(sclPin, true, PinOwner::HW_I2C)) {
@@ -294,7 +278,7 @@ public:
 
       // First route mclk, then configure ADC over I2C, then configure I2S
       _es7243InitAdc();
-      I2SSource::initialize(i2swsPin, i2ssdPin, i2sckPin);
+      I2SSource::initialize(i2swsPin, i2ssdPin, i2sckPin, mclkPin);
     }
 
     void deinitialize() {
@@ -330,7 +314,7 @@ class I2SAdcSource : public I2SSource {
       };
     }
 
-    void initialize(int8_t audioPin, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
+    void initialize(int8_t audioPin, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
       if(!pinManager.allocatePin(audioPin, false, PinOwner::UM_Audioreactive)) {
         return;
       }
@@ -431,28 +415,12 @@ class I2SAdcSource : public I2SSource {
 class SPH0654 : public I2SSource {
   public:
     SPH0654(int sampleRate, int blockSize, int16_t lshift, uint32_t mask) :
-      I2SSource(sampleRate, blockSize, lshift, mask){}
+      I2SSource(sampleRate, blockSize, lshift, mask)
+    {}
 
-    void initialize(uint8_t i2swsPin, uint8_t i2ssdPin, uint8_t i2sckPin, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
+    void initialize(uint8_t i2swsPin, uint8_t i2ssdPin, uint8_t i2sckPin, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
       I2SSource::initialize(i2swsPin, i2ssdPin, i2sckPin);
       REG_SET_BIT(I2S_TIMING_REG(I2S_NUM_0), BIT(9));
       REG_SET_BIT(I2S_CONF_REG(I2S_NUM_0), I2S_RX_MSB_SHIFT);
-    }
-};
-
-/* I2S PDM Microphone
-   This is an I2S PDM microphone, these microphones only use a clock and
-   data line, to make it simpler to debug, use the WS pin as CLK and SD
-   pin as DATA
-*/
-class I2SPdmSource : public I2SSource {
-  public:
-    I2SPdmSource(int sampleRate, int blockSize, int16_t lshift, uint32_t mask) :
-      I2SSource(sampleRate, blockSize, lshift, mask) {
-      _config.mode = i2s_mode_t(I2S_MODE_MASTER | I2S_MODE_RX | I2S_MODE_PDM); // Change mode to pdm
-    }
-
-    void initialize(uint8_t i2swsPin, uint8_t i2ssdPin, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
-      I2SSource::initialize(i2swsPin, i2ssdPin, I2S_PIN_NO_CHANGE);
     }
 };

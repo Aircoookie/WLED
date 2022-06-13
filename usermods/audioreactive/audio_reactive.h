@@ -792,7 +792,7 @@ class AudioReactive : public Usermod {
           DEBUGSR_PRINTLN(F("AS: ES7243 Microphone."));
           audioSource = new ES7243(SAMPLE_RATE, BLOCK_SIZE, 0, 0xFFFFFFFF);
           delay(100);
-          if (audioSource) audioSource->initialize(sdaPin, sclPin, i2swsPin, i2ssdPin, i2sckPin);
+          if (audioSource) audioSource->initialize(sdaPin, sclPin, i2swsPin, i2ssdPin, i2sckPin, mclkPin);
           break;
         case 3:
           DEBUGSR_PRINTLN(F("AS: SPH0645 Microphone"));
@@ -802,13 +802,13 @@ class AudioReactive : public Usermod {
           break;
         case 4:
           DEBUGSR_PRINTLN(F("AS: Generic I2S Microphone with Master Clock"));
-          audioSource = new I2SSourceWithMasterClock(SAMPLE_RATE, BLOCK_SIZE, 0, 0xFFFFFFFF);
+          audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, 0, 0xFFFFFFFF);
           delay(100);
-          if (audioSource) audioSource->initialize(mclkPin, i2swsPin, i2ssdPin, i2sckPin);
+          if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin, i2sckPin, mclkPin);
           break;
         case 5:
           DEBUGSR_PRINTLN(F("AS: I2S PDM Microphone"));
-          audioSource = new I2SPdmSource(SAMPLE_RATE, BLOCK_SIZE, 0, 0xFFFFFFFF);
+          audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, 0, 0xFFFFFFFF);
           delay(100);
           if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin);
           break;
