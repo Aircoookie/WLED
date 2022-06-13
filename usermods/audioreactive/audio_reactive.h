@@ -739,7 +739,7 @@ class AudioReactive : public Usermod {
       // usermod exchangeable data
       // we will assign all usermod exportable data here as pointers to original variables or arrays and allocate memory for pointers
       um_data = new um_data_t;
-      um_data->u_size = 11;
+      um_data->u_size = 14;
       um_data->u_type = new um_types_t[um_data->u_size];
       um_data->u_data = new void*[um_data->u_size];
       um_data->u_data[0] = &maxVol;
@@ -764,17 +764,20 @@ class AudioReactive : public Usermod {
       um_data->u_type[9] = UMT_BYTE;
       um_data->u_data[10] = &sampleAgc;
       um_data->u_type[10] = UMT_FLOAT;
+      um_data->u_data[11] = &multAgc;
+      um_data->u_type[11] = UMT_FLOAT;
+      um_data->u_data[12] = &sampleReal;
+      um_data->u_type[12] = UMT_FLOAT;
+      um_data->u_data[13] = &sampleGain;
+      um_data->u_type[13] = UMT_FLOAT;
       //...
       // these are values used by effects in soundreactive fork
-      //float sampleReal     = um_data->;
-      //float multAgc        = um_data->;
       //int16_t rawSampleAgc = um_data->;
       //bool samplePeak      = um_data->;
       //uint8_t squelch      = um_data->;
       //uint8_t soundSquelch = um_data->;
       //uint8_t binNum       = um_data->;
       //uint16_t *myVals     = um_data->;
-      //int16_t sample       = um_data->;
 
       // Reset I2S peripheral for good measure
       i2s_driver_uninstall(I2S_NUM_0);

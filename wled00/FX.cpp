@@ -5977,11 +5977,292 @@ static const char *_data_FX_MODE_DRIFT_ROSE PROGMEM = "2D Drift Rose@Fade,Blur;;
 //*************************  audio routines  **********************************
 
 
+// float version of map()
+static float mapf(float x, float in_min, float in_max, float out_min, float out_max){
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+// Gravity struct requited for GRAV* effects
+typedef struct Gravity {
+  int    topLED;
+  int    gravityCounter;
+} gravity;
+
+
+///////////////////////
+//   * GRAVCENTER    //
+///////////////////////
+uint16_t WS2812FX::mode_gravcenter(void) {                // Gravcenter. By Andrew Tuline.
+
+  const uint16_t dataSize = sizeof(gravity);
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  Gravity* gravcen = reinterpret_cast<Gravity*>(SEGENV.data);
+
+  um_data_t *um_data;
+  float tmpSound = (float)inoise8(23333); // I have no idea what that does
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    //soundAgc  = *(uint8_t*)um_data->u_data[9];
+    //sampleAgc = *(float*)um_data->u_data[10];
+    //sampleAvg = *(float*)um_data->u_data[8];
+    tmpSound = *(uint8_t*)um_data->u_data[9] ? *(float*)um_data->u_data[10] : *(float*)um_data->u_data[8];
+  }
+
+  fade_out(240);
+
+  float segmentSampleAvg = tmpSound * (float)SEGMENT.intensity / 255.0f;
+  segmentSampleAvg *= 0.125; // divide by 8, to compensate for later "sensitivty" upscaling
+
+  float mySampleAvg = mapf(segmentSampleAvg*2.0, 0, 32, 0, (float)SEGLEN/2.0); // map to pixels available in current segment 
+  uint16_t tempsamp = constrain(mySampleAvg, 0, SEGLEN/2);     // Keep the sample from overflowing.
+  uint8_t gravity = 8 - SEGMENT.speed/32;
+
+  for (int i=0; i<tempsamp; i++) {
+    uint8_t index = inoise8(i*segmentSampleAvg+millis(), 5000+i*segmentSampleAvg);
+    setPixelColor(i+SEGLEN/2, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), segmentSampleAvg*8));
+    setPixelColor(SEGLEN/2-i-1, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), segmentSampleAvg*8));
+  }
+
+  if (tempsamp >= gravcen->topLED)
+    gravcen->topLED = tempsamp-1;
+  else if (gravcen->gravityCounter % gravity == 0)
+    gravcen->topLED--;
+
+  if (gravcen->topLED >= 0) {
+    setPixelColor(gravcen->topLED+SEGLEN/2, color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0));
+    setPixelColor(SEGLEN/2-1-gravcen->topLED, color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0));
+  }
+  gravcen->gravityCounter = (gravcen->gravityCounter + 1) % gravity;
+
+  return FRAMETIME;
+} // mode_gravcenter()
+static const char *_data_FX_MODE_GRAVCENTER PROGMEM = " ♪ Gravcenter@Rate of fall,Sensitivity=128;,!;!";
+
+
+///////////////////////
+//   * GRAVCENTRIC   //
+///////////////////////
+uint16_t WS2812FX::mode_gravcentric(void) {                     // Gravcentric. By Andrew Tuline.
+
+  uint16_t dataSize = sizeof(gravity);
+  if (!SEGENV.allocateData(dataSize)) return mode_static();     //allocation failed
+  Gravity* gravcen = reinterpret_cast<Gravity*>(SEGENV.data);
+
+  um_data_t *um_data;
+  float tmpSound = (float)inoise8(23333); // I have no idea what that does
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    //soundAgc  = *(uint8_t*)um_data->u_data[9];
+    //sampleAgc = *(float*)um_data->u_data[10];
+    //sampleAvg = *(float*)um_data->u_data[8];
+    tmpSound = *(uint8_t*)um_data->u_data[9] ? *(float*)um_data->u_data[10] : *(float*)um_data->u_data[8];
+  }
+
+  fade_out(240);
+  fade_out(240); // twice? really?
+
+  float segmentSampleAvg = tmpSound * (float)SEGMENT.intensity / 255.0;
+  segmentSampleAvg *= 0.125f; // divide by 8, to compensate for later "sensitivty" upscaling
+
+  float mySampleAvg = mapf(segmentSampleAvg*2.0, 0.0f, 32.0f, 0.0f, (float)SEGLEN/2.0); // map to pixels availeable in current segment 
+  int tempsamp = constrain(mySampleAvg, 0, SEGLEN/2);     // Keep the sample from overflowing.
+  uint8_t gravity = 8 - SEGMENT.speed/32;
+
+  for (int i=0; i<tempsamp; i++) {
+    uint8_t index = segmentSampleAvg*24+millis()/200;
+    setPixelColor(i+SEGLEN/2, color_from_palette(index, false, PALETTE_SOLID_WRAP, 0));
+    setPixelColor(SEGLEN/2-1-i, color_from_palette(index, false, PALETTE_SOLID_WRAP, 0));
+  }
+
+  if (tempsamp >= gravcen->topLED)
+    gravcen->topLED = tempsamp-1;
+  else if (gravcen->gravityCounter % gravity == 0)
+    gravcen->topLED--;
+
+  if (gravcen->topLED >= 0) {
+    setPixelColor(gravcen->topLED+SEGLEN/2, CRGB::Gray);
+    setPixelColor(SEGLEN/2-1-gravcen->topLED, CRGB::Gray);
+  }
+  gravcen->gravityCounter = (gravcen->gravityCounter + 1) % gravity;
+
+  return FRAMETIME;
+} // mode_gravcentric()
+static const char *_data_FX_MODE_GRAVCENTRIC PROGMEM = " ♪ Gravcentric@Rate of fall,Sensitivity=128;!;!";
+
+
+///////////////////////
+//   * GRAVIMETER    //
+///////////////////////
+#ifndef SR_DEBUG_AGC
+uint16_t WS2812FX::mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
+
+  uint16_t dataSize = sizeof(gravity);
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  Gravity* gravcen = reinterpret_cast<Gravity*>(SEGENV.data);
+
+  um_data_t *um_data;
+  float tmpSound = (float)inoise8(23333); // I have no idea what that does
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    //soundAgc  = *(uint8_t*)um_data->u_data[9];
+    //sampleAgc = *(float*)um_data->u_data[10];
+    //sampleAvg = *(float*)um_data->u_data[8];
+    tmpSound = *(uint8_t*)um_data->u_data[9] ? *(float*)um_data->u_data[10] : *(float*)um_data->u_data[8];
+  }
+
+  fade_out(240);
+
+  float segmentSampleAvg = tmpSound * (float)SEGMENT.intensity / 255.0;
+  segmentSampleAvg *= 0.25; // divide by 4, to compensate for later "sensitivty" upscaling
+
+  float mySampleAvg = mapf(segmentSampleAvg*2.0, 0, 64, 0, (SEGLEN-1)); // map to pixels availeable in current segment 
+  int tempsamp = constrain(mySampleAvg,0,SEGLEN-1);       // Keep the sample from overflowing.
+  uint8_t gravity = 8 - SEGMENT.speed/32;
+
+  for (int i=0; i<tempsamp; i++) {
+    uint8_t index = inoise8(i*segmentSampleAvg+millis(), 5000+i*segmentSampleAvg);
+    setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), segmentSampleAvg*8));
+  }
+
+  if (tempsamp >= gravcen->topLED)
+    gravcen->topLED = tempsamp;
+  else if (gravcen->gravityCounter % gravity == 0)
+    gravcen->topLED--;
+
+  if (gravcen->topLED > 0) {
+    setPixelColor(gravcen->topLED, color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0));
+  }
+  gravcen->gravityCounter = (gravcen->gravityCounter + 1) % gravity;
+
+  return FRAMETIME;
+} // mode_gravimeter()
+#else
+// This an abuse of the gravimeter effect for AGC debugging
+// instead of sound volume, it uses the AGC gain multiplier as input
+uint16_t WS2812FX::mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
+
+  uint16_t dataSize = sizeof(gravity);
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  Gravity* gravcen = reinterpret_cast<Gravity*>(SEGENV.data);
+
+  um_data_t *um_data;
+  uint16_t sample = 0;
+  uint8_t soundAgc = 0;
+  float sampleAgc = 0.0f, sampleAgv = 0.0f, multAgc = 0.0f, sampleReal = 0.0f;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    sample     = *(uint16_t*)um_data->u_data[2];
+    soundAgc   = *(uint8_t*)um_data->u_data[9];
+    sampleAgc  = *(float*)um_data->u_data[10];
+    sampleAvg  = *(float*)um_data->u_data[8];
+    multAgc    = *(float*)um_data->u_data[11];
+    sampleReal = *(float*)um_data->u_data[12];
+    sampleGain = *(float*)um_data->u_data[13];
+  }
+
+  fade_out(240);
+
+  float tmpSound = multAgc;                                                         // AGC gain
+  if (soundAgc == 0) {
+    if ((sampleAvg> 1.0f) && (sampleReal > 0.05f))
+      tmpSound = (float)sample / sampleReal;                                        // current non-AGC gain
+    else 
+      tmpSound = ((float)sampleGain/40.0f * (float)inputLevel/128.0f) + 1.0f/16.0f;     // non-AGC gain from presets
+  }
+
+  if (tmpSound > 2) tmpSound = ((tmpSound -2.0f) / 2) +2;  //compress ranges > 2
+  if (tmpSound > 1) tmpSound = ((tmpSound -1.0f) / 2) +1;  //compress ranges > 1
+
+  float segmentSampleAvg = 64.0f * tmpSound * (float)SEGMENT.intensity / 128.0f;
+  float mySampleAvg = mapf(segmentSampleAvg, 0.0f, 128.0f, 0, (SEGLEN-1)); // map to pixels availeable in current segment 
+  int tempsamp = constrain(mySampleAvg, 0, SEGLEN-1);                  // Keep the sample from overflowing.
+
+  //tempsamp = SEGLEN - tempsamp;                                      // uncomment to invert direction
+  segmentSampleAvg = fmax(64.0f - fmin(segmentSampleAvg, 63),8);         // inverted brightness
+
+  uint8_t gravity = 8 - SEGMENT.speed/32;
+
+  if (sampleAvg > 1)                                                 // disable bar "body" if below squelch
+  {
+    for (int i=0; i<tempsamp; i++) {
+      uint8_t index = inoise8(i*segmentSampleAvg+millis(), 5000+i*segmentSampleAvg);
+      setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), segmentSampleAvg*4.0));
+    }
+  }
+  if (tempsamp >= gravcen->topLED)
+    gravcen->topLED = tempsamp;
+  else if (gravcen->gravityCounter % gravity == 0)
+    gravcen->topLED--;
+
+  if (gravcen->topLED > 0) {
+    setPixelColor(gravcen->topLED, color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0));
+  }
+  gravcen->gravityCounter = (gravcen->gravityCounter + 1) % gravity;
+
+  return FRAMETIME;
+} // mode_gravimeter()
+#endif
+static const char *_data_FX_MODE_GRAVIMETER PROGMEM = " ♪ Gravimeter@Rate of fall,Sensitivity=128;,!;!";
+
+
+///////////////////////
+//    ** Gravfreq    //
+///////////////////////
+uint16_t WS2812FX::mode_gravfreq(void) {                  // Gravfreq. By Andrew Tuline.
+
+  uint16_t dataSize = sizeof(gravity);
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  Gravity* gravcen = reinterpret_cast<Gravity*>(SEGENV.data);
+
+  um_data_t *um_data;
+  uint8_t soundAgc = 0;
+  float sampleAgc = 0.0f, sampleAvg = 0.0f;
+  double FFT_MajorPeak = 0.0;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    FFT_MajorPeak = *(double*)um_data->u_data[6];
+    soundAgc      = *(uint8_t*)um_data->u_data[9];
+    sampleAgc     = *(float*)um_data->u_data[10];
+    sampleAvg     = *(float*)um_data->u_data[8];
+  } else {
+    // add support for no audio data
+    sampleAvg = inoise8(12345); // I have no idea what that does
+  }
+
+  fade_out(240);
+
+  float tmpSound = (soundAgc) ? sampleAgc : sampleAvg;
+  float segmentSampleAvg = tmpSound * (float)SEGMENT.intensity / 255.0;
+  segmentSampleAvg *= 0.125; // divide by 8,  to compensate for later "sensitivty" upscaling
+
+  float mySampleAvg = mapf(segmentSampleAvg*2.0, 0,32, 0, (float)SEGLEN/2.0); // map to pixels availeable in current segment 
+  int tempsamp = constrain(mySampleAvg,0,SEGLEN/2);     // Keep the sample from overflowing.
+  uint8_t gravity = 8 - SEGMENT.speed/32;
+
+  for (int i=0; i<tempsamp; i++) {
+
+    uint8_t index = (log10((int)FFT_MajorPeak) - (3.71-1.78)) * 255; //int? shouldn't it be floor() or similar
+
+    setPixelColor(i+SEGLEN/2, color_from_palette(index, false, PALETTE_SOLID_WRAP, 0));
+    setPixelColor(SEGLEN/2-i-1, color_from_palette(index, false, PALETTE_SOLID_WRAP, 0));
+  }
+
+  if (tempsamp >= gravcen->topLED)
+    gravcen->topLED = tempsamp-1;
+  else if (gravcen->gravityCounter % gravity == 0)
+    gravcen->topLED--;
+
+  if (gravcen->topLED >= 0) {
+    setPixelColor(gravcen->topLED+SEGLEN/2, CRGB::Gray);
+    setPixelColor(SEGLEN/2-1-gravcen->topLED, CRGB::Gray);
+  }
+  gravcen->gravityCounter = (gravcen->gravityCounter + 1) % gravity;
+
+  return FRAMETIME;
+} // mode_gravfreq()
+static const char *_data_FX_MODE_GRAVFREQ PROGMEM = " ♫ Gravfreq@Rate of fall,Sensivity=128;,!;!";
+
+
 /////////////////////////
 //    * 2D Waverly     //
 /////////////////////////
 // By: Stepko, https://editor.soulmatelights.com/gallery/652-wave , modified by Andrew Tuline
-uint16_t WS2812FX::mode_2DWaverly(void) {                                       
+uint16_t WS2812FX::mode_2DWaverly(void) {
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
   const uint16_t cols = SEGMENT.virtualWidth();
@@ -5996,12 +6277,12 @@ uint16_t WS2812FX::mode_2DWaverly(void) {
   }
 
   um_data_t *um_data;
-  uint8_t *soundAgc = nullptr;
-  float *sampleAgc, *sampleAvg;
+  uint8_t soundAgc = 0;
+  float sampleAgc = 0.0f, sampleAvg = 0.0f;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    soundAgc  = (uint8_t*)um_data->u_data[9];
-    sampleAgc = (float*)um_data->u_data[10];
-    sampleAvg = (float*)um_data->u_data[8];
+    soundAgc  = *(uint8_t*)um_data->u_data[9];
+    sampleAgc = *(float*)um_data->u_data[10];
+    sampleAvg = *(float*)um_data->u_data[8];
   }
 
   fadeToBlackBy(leds, SEGMENT.speed);
@@ -6010,9 +6291,9 @@ uint16_t WS2812FX::mode_2DWaverly(void) {
   for (uint16_t i = 0; i < cols; i++) {
     uint16_t thisVal = (1 + SEGMENT.intensity/64) * inoise8(i * 45 , t , t)/2;
     // use audio if available
-    if (um_data && soundAgc) {
+    if (um_data) {
       thisVal /= 32; // reduce intensity of inoise8()
-      thisVal *= (*soundAgc) ? *sampleAgc : *sampleAvg;
+      thisVal *= (soundAgc) ? sampleAgc : sampleAvg;
     }
     uint16_t thisMax = map(thisVal, 0, 512, 0, rows);
 
@@ -6178,6 +6459,10 @@ const char *WS2812FX::_modeData[MODE_COUNT] = {
   _data_FX_MODE_GHOST_RIDER,
   _data_FX_MODE_BLOBS,
   _data_FX_MODE_SCROLL_TEXT,
-  _data_FX_MODE_DRIFT_ROSE
+  _data_FX_MODE_DRIFT_ROSE,
+  _data_FX_MODE_GRAVCENTER,
+  _data_FX_MODE_GRAVCENTRIC,
+  _data_FX_MODE_GRAVIMETER,
+  _data_FX_MODE_GRAVFREQ
 };
 
