@@ -26,9 +26,8 @@
                 localStorage.setItem('locIp', locip);
             }
         }
-        GetV();
-        if (numM > 0 || locip) ldS();
-        else gId("um").innerHTML = "No Usermods installed.";
+        ldS();
+        if (!numM) gId("um").innerHTML = "No Usermods installed.";
     }
     // https://stackoverflow.com/questions/3885817/how-do-i-check-that-a-number-is-float-or-integer
     function isF(n) { return n === +n && n !== (n|0); }
@@ -100,6 +99,47 @@
             urows += `<input type="${t==="int"?"number":t}" name="${k}:${f}${a?"[]":""}" ${c} oninput="check(this,'${k.substr(k.indexOf(":")+1)}')"><br>`;
         }
     }
+    // https://stackoverflow.com/questions/39729741/javascript-change-input-text-to-select-option
+    function addDropdown(um,fld) {
+        let sel = d.createElement('select');
+        let arr = d.getElementsByName(um+":"+fld);
+        let inp = arr[1]; // assume 1st field to be hidden (type)
+        if (inp && inp.tagName === "INPUT" && (inp.type === "text" || inp.type === "number")) {  // may also use nodeName
+            let v = inp.value;
+            let n = inp.name;
+            // copy the existing input element's attributes to the new select element
+            for (var i = 0; i < inp.attributes.length; ++ i) {
+                var att = inp.attributes[i];
+                // type and value don't apply, so skip them
+                // ** you might also want to skip style, or others -- modify as needed **
+                if (att.name != 'type' && att.name != 'value' && att.name != 'class' && att.name != 'style') {
+                    sel.setAttribute(att.name, att.value);
+                }
+            }
+            sel.setAttribute("data-val", v);
+            // finally, replace the old input element with the new select element
+            inp.parentElement.replaceChild(sel, inp);
+            return sel;
+        }
+        return null;
+    }
+    function addOption(sel,txt,val) {
+        if (sel===null) return; // select object missing
+        let opt = d.createElement("option");
+        opt.value = val;
+        opt.text = txt;
+        sel.appendChild(opt);
+        for (let i=0; i<sel.childNodes.length; i++) {
+            let c = sel.childNodes[i];
+            if (c.value == sel.dataset.val) sel.selectedIndex = i;
+        }
+    }
+    // https://stackoverflow.com/questions/26440494/insert-text-after-this-input-element-with-javascript
+    function addInfo(name,el,txt) {
+        let obj = d.getElementsByName(name);
+        if (obj[el]) obj[el].insertAdjacentHTML('afterend', '&nbsp;'+txt);
+    }
+    // load settings and insert values into DOM
     function ldS() {
         var url = (loc?`http://${locip}`:'') + '/cfg.json';
         fetch(url, {
@@ -121,18 +161,18 @@
             }
             if (urows==="") urows = "Usermods configuration not found.<br>Press <i>Save</i> to initialize defaults.";
             gId("um").innerHTML = urows;
+            GetV();
         })
-        .catch(function (error) {
-            gId('lserr').style.display = "inline"
+        .catch((error)=>{
+            gId('lserr').style.display = "inline";
             console.log(error);
         });
     }
     function svS(e) {
         e.preventDefault();
-        console.log(d.Sf);
         if (d.Sf.checkValidity()) d.Sf.submit(); //https://stackoverflow.com/q/37323914
     }
-    function GetV() {}
+    function GetV() {} // replaced during 'npm run build'
     </script>
     <style>@import url("style.css");</style>
 </head>

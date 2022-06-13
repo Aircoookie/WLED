@@ -173,11 +173,13 @@ void initServer()
     const String& url = request->url();
     isConfig = url.indexOf("cfg") > -1;
     if (!isConfig) {
+      /*
       #ifdef WLED_DEBUG
         DEBUG_PRINTLN(F("Serialized HTTP"));
         serializeJson(root,Serial);
         DEBUG_PRINTLN();
       #endif
+      */
       verboseResponse = deserializeState(root);
     } else {
       verboseResponse = deserializeConfig(root); //use verboseResponse to determine whether cfg change should be saved immediately
@@ -281,6 +283,7 @@ void initServer()
     if (!correctPIN || otaLock) return;
     if(!index){
       DEBUG_PRINTLN(F("OTA Update Start"));
+      usermods.onUpdateBegin(true); // notify usermods that update is about to begin (some may require task de-init)
       lastEditTime = millis(); // make sure PIN does not lock during update
       #ifdef ESP8266
       Update.runAsync(true);
@@ -293,6 +296,7 @@ void initServer()
         DEBUG_PRINTLN(F("Update Success"));
       } else {
         DEBUG_PRINTLN(F("Update Failed"));
+        usermods.onUpdateBegin(false); // notify usermods that update has failed (some may require task init)
       }
     }
   });

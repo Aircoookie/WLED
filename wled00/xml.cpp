@@ -615,6 +615,7 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(SET_F("numM="));
     oappendi(usermods.getModCount());
     oappend(";");
+    usermods.appendConfigData();
   }
 
   if (subPage == 9) // update

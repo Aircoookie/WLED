@@ -216,13 +216,52 @@ int getSignalQuality(int rssi);
 void WiFiEvent(WiFiEvent_t event);
 
 //um_manager.cpp
+typedef enum UM_Data_Types {
+  UMT_BYTE = 0,
+  UMT_UINT16,
+  UMT_INT16,
+  UMT_UINT32,
+  UMT_INT32,
+  UMT_FLOAT,
+  UMT_DOUBLE,
+  UMT_BYTE_ARR,
+  UMT_UINT16_ARR,
+  UMT_INT16_ARR,
+  UMT_UINT32_ARR,
+  UMT_INT32_ARR,
+  UMT_FLOAT_ARR,
+  UMT_DOUBLE_ARR
+} um_types_t;
+typedef struct UM_Exchange_Data {
+  // should just use: size_t arr_size, void **arr_ptr, byte *ptr_type
+  size_t       u_size;                 // size of u_data array
+  um_types_t  *u_type;                 // array of data types
+  void       **u_data;                 // array of pointers to data
+  UM_Exchange_Data() {
+    u_size = 0;
+    u_type = nullptr;
+    u_data = nullptr;
+  }
+  ~UM_Exchange_Data() {
+    if (u_type) delete[] u_type;
+    if (u_data) delete[] u_data;
+  }
+} um_data_t;
+const unsigned int um_data_size = sizeof(um_data_t);  // 12 bytes
+
 class Usermod {
+  protected:
+    um_data_t *um_data; // um_data should be allocated using new in (derived) Usermod's setup() or constructor
   public:
-    virtual void loop() {}
+    Usermod() { um_data = nullptr; }
+    virtual ~Usermod() { if (um_data) delete um_data; }
+    virtual void setup() = 0; // pure virtual, has to be overriden
+    virtual void loop() = 0;  // pure virtual, has to be overriden
     virtual void handleOverlayDraw() {}
     virtual bool handleButton(uint8_t b) { return false; }
-    virtual void setup() {}
+    virtual bool getUMData(um_data_t **data) { if (data) *data = nullptr; return false; };
     virtual void connected() {}
+    virtual void appendConfigData() {}
     virtual void addToJsonState(JsonObject& obj) {}
     virtual void addToJsonInfo(JsonObject& obj) {}
     virtual void readFromJsonState(JsonObject& obj) {}
@@ -230,6 +269,7 @@ class Usermod {
     virtual bool readFromConfig(JsonObject& obj) { return true; } // Note as of 2021-06 readFromConfig() now needs to return a bool, see usermod_v2_example.h
     virtual void onMqttConnect(bool sessionPresent) {}
     virtual bool onMqttMessage(char* topic, char* payload) { return false; }
+    virtual void onUpdateBegin(bool) {}
     virtual uint16_t getId() {return USERMOD_ID_UNSPECIFIED;}
 };
 
@@ -242,8 +282,10 @@ class UsermodManager {
     void loop();
     void handleOverlayDraw();
     bool handleButton(uint8_t b);
+    bool getUMData(um_data_t **um_data, uint8_t mod_id = USERMOD_ID_RESERVED); // USERMOD_ID_RESERVED will poll all usermods
     void setup();
     void connected();
+    void appendConfigData();
     void addToJsonState(JsonObject& obj);
     void addToJsonInfo(JsonObject& obj);
     void readFromJsonState(JsonObject& obj);
@@ -251,6 +293,7 @@ class UsermodManager {
     bool readFromConfig(JsonObject& obj);
     void onMqttConnect(bool sessionPresent);
     bool onMqttMessage(char* topic, char* payload);
+    void onUpdateBegin(bool);
     bool add(Usermod* um);
     Usermod* lookup(uint16_t mod_id);
     byte getModCount();
