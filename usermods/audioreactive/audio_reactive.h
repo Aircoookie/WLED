@@ -392,7 +392,7 @@ class AudioReactive : public Usermod {
     // set your config variables to their boot default value (this can also be done in readFromConfig() or a constructor if you prefer)
 
     uint8_t  maxVol = 10;         // Reasonable value for constant volume for 'peak detector', as it won't always trigger
-    uint8_t  binNum;              // Used to select the bin for FFT based beat detection.
+    uint8_t  binNum = 0;          // Used to select the bin for FFT based beat detection.
     uint8_t  targetAgc = 60;      // This is our setPoint at 20% of max for the adjusted output
     uint8_t  myVals[32];          // Used to store a pile of samples because WLED frame rate and WLED sample rate are not synchronized. Frame rate is too low.
     bool     samplePeak = 0;      // Boolean flag for peak. Responding routine must reset this flag
@@ -739,45 +739,41 @@ class AudioReactive : public Usermod {
       // usermod exchangeable data
       // we will assign all usermod exportable data here as pointers to original variables or arrays and allocate memory for pointers
       um_data = new um_data_t;
-      um_data->u_size = 14;
+      um_data->u_size = 16;
       um_data->u_type = new um_types_t[um_data->u_size];
       um_data->u_data = new void*[um_data->u_size];
-      um_data->u_data[0] = &maxVol;
+      um_data->u_data[0] = &maxVol;           // assigned in effect function!!!
       um_data->u_type[0] = UMT_BYTE;
-      um_data->u_data[1] = fftResult;
+      um_data->u_data[1] = fftResult;         //*used
       um_data->u_type[1] = UMT_BYTE_ARR;
-      um_data->u_data[2] = &sample;
+      um_data->u_data[2] = &sample;           //*used (for debugging)
       um_data->u_type[2] = UMT_INT16;
-      um_data->u_data[3] = fftAvg;
-      um_data->u_type[3] = UMT_FLOAT_ARR;
-      um_data->u_data[4] = fftCalc;
-      um_data->u_type[4] = UMT_FLOAT_ARR;
-      um_data->u_data[5] = fftBin;
-      um_data->u_type[5] = UMT_FLOAT_ARR;
-      um_data->u_data[6] = &FFT_MajorPeak;
+      um_data->u_data[3] = &rawSampleAgc;
+      um_data->u_type[3] = UMT_INT16;
+      um_data->u_data[4] = &samplePeak;
+      um_data->u_type[4] = UMT_BYTE;
+      um_data->u_data[5] = &binNum;           // assigned in effect function!!!
+      um_data->u_type[5] = UMT_BYTE;
+      um_data->u_data[6] = &FFT_MajorPeak;    //*used
       um_data->u_type[6] = UMT_DOUBLE;
       um_data->u_data[7] = &FFT_Magnitude;
       um_data->u_type[7] = UMT_DOUBLE;
-      um_data->u_data[8] = &sampleAvg;
+      um_data->u_data[8] = &sampleAvg;        //*used
       um_data->u_type[8] = UMT_FLOAT;
-      um_data->u_data[9] = &soundAgc;
+      um_data->u_data[9] = &soundAgc;         //*used
       um_data->u_type[9] = UMT_BYTE;
-      um_data->u_data[10] = &sampleAgc;
+      um_data->u_data[10] = &sampleAgc;       //*used (can be calculated as: sampleReal * multAgc)
       um_data->u_type[10] = UMT_FLOAT;
-      um_data->u_data[11] = &multAgc;
+      um_data->u_data[11] = &multAgc;         //*used (for debugging)
       um_data->u_type[11] = UMT_FLOAT;
-      um_data->u_data[12] = &sampleReal;
+      um_data->u_data[12] = &sampleReal;      //*used (for debugging)
       um_data->u_type[12] = UMT_FLOAT;
-      um_data->u_data[13] = &sampleGain;
+      um_data->u_data[13] = &sampleGain;      //*used (for debugging & Binmap)
       um_data->u_type[13] = UMT_FLOAT;
-      //...
-      // these are values used by effects in soundreactive fork
-      //int16_t rawSampleAgc = um_data->;
-      //bool samplePeak      = um_data->;
-      //uint8_t squelch      = um_data->;
-      //uint8_t soundSquelch = um_data->;
-      //uint8_t binNum       = um_data->;
-      //uint16_t *myVals     = um_data->;
+      um_data->u_data[14] = myVals;
+      um_data->u_type[14] = UMT_UINT16_ARR;
+      um_data->u_data[15] = &soundSquelch;
+      um_data->u_type[15] = UMT_BYTE;
 
       // Reset I2S peripheral for good measure
       i2s_driver_uninstall(I2S_NUM_0);
