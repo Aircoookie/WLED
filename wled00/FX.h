@@ -271,8 +271,11 @@
 #define FX_MODE_GRAVCENTRIC            148
 #define FX_MODE_GRAVIMETER             149
 #define FX_MODE_GRAVFREQ               150
+#define FX_MODE_PERLINMOVE             151
+#define FX_MODE_WAVESINS               152
+#define FX_MODE_FLOWSTRIPE             153
 
-#define MODE_COUNT                     151
+#define MODE_COUNT                     154
 
 
 class WS2812FX {
@@ -675,6 +678,9 @@ class WS2812FX {
       _mode[FX_MODE_GRAVCENTRIC]             = &WS2812FX::mode_gravcentric;
       _mode[FX_MODE_GRAVIMETER]              = &WS2812FX::mode_gravimeter;
       _mode[FX_MODE_GRAVFREQ]                = &WS2812FX::mode_gravfreq;
+      _mode[FX_MODE_PERLINMOVE]              = &WS2812FX::mode_perlinmove;
+      _mode[FX_MODE_WAVESINS]                = &WS2812FX::mode_wavesins;
+      _mode[FX_MODE_FLOWSTRIPE]              = &WS2812FX::mode_FlowStripe;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -709,15 +715,15 @@ class WS2812FX {
       makeAutoSegments(bool forceReset = false),
       fixInvalidSegments(),
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
-      setPixelColor(float i, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0, bool aa = false),
+      setPixelColor(float i, uint8_t r, uint8_t g, uint8_t b, uint8_t w, bool aa),
       show(void),
 			setTargetFps(uint8_t fps),
       deserializeMap(uint8_t n=0);
 
-    inline void setPixelColor(uint16_t n, uint32_t c)               {setPixelColor(n, byte(c>>16), byte(c>>8), byte(c), byte(c>>24));}
-    inline void setPixelColor(uint16_t n, CRGB c)                   {setPixelColor(n, c.red, c.green, c.blue);}
-    inline void setPixelColor(float i, uint32_t c, bool aa = false) {setPixelColor(i, byte(c>>16), byte(c>>8), byte(c), byte(c>>24), aa);}
-    inline void setPixelColor(float i, CRGB c, bool aa = false)     {setPixelColor(i, c.red, c.green, c.blue, 0, aa);}
+    inline void setPixelColor(uint16_t n, uint32_t c)       {setPixelColor(n, byte(c>>16), byte(c>>8), byte(c), byte(c>>24));}
+    inline void setPixelColor(uint16_t n, CRGB c)           {setPixelColor(n, c.red, c.green, c.blue);}
+    inline void setPixelColor(float i, uint32_t c, bool aa) {setPixelColor(i, byte(c>>16), byte(c>>8), byte(c), byte(c>>24), aa);}
+    inline void setPixelColor(float i, CRGB c, bool aa)     {setPixelColor(i, c.red, c.green, c.blue, 0, aa);}
 
     bool
       gammaCorrectBri = false,
@@ -905,7 +911,10 @@ class WS2812FX {
       mode_candy_cane(void),
       mode_blends(void),
       mode_tv_simulator(void),
-      mode_dynamic_smooth(void);
+      mode_dynamic_smooth(void),
+      mode_perlinmove(void),
+      mode_wavesins(void),
+      mode_FlowStripe(void);
 
 // 2D support (panels)
     bool

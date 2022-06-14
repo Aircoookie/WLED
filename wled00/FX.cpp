@@ -723,15 +723,15 @@ uint16_t WS2812FX::mode_android(void) {
 
   if (a + SEGENV.aux1 < SEGLEN)
   {
-    for(int i = a; i < a+SEGENV.aux1; i++) {
+    for(uint16_t i = a; i < a+SEGENV.aux1; i++) {
       setPixelColor(i, SEGCOLOR(0));
     }
   } else
   {
-    for(int i = a; i < SEGLEN; i++) {
+    for(uint16_t i = a; i < SEGLEN; i++) {
       setPixelColor(i, SEGCOLOR(0));
     }
-    for(int i = 0; i < SEGENV.aux1 - (SEGLEN -a); i++) {
+    for(uint16_t i = 0; i < SEGENV.aux1 - (SEGLEN -a); i++) {
       setPixelColor(i, SEGCOLOR(0));
     }
   }
@@ -4475,6 +4475,65 @@ uint16_t WS2812FX::mode_aurora(void) {
 }
 static const char *_data_FX_MODE_AURORA PROGMEM = "Aurora@!=24,!;1,2,3;!=50";
 
+// WLED-SR effects
+
+/////////////////////////
+//     Perlin Move     //
+/////////////////////////
+// 16 bit perlinmove. Use Perlin Noise instead of sinewaves for movement. By Andrew Tuline.
+// Controls are speed, # of pixels, faderate.
+uint16_t WS2812FX::mode_perlinmove(void) {
+
+  fade_out(255-SEGMENT.custom1);
+  for (uint16_t i = 0; i < SEGMENT.intensity/16 + 1; i++) {
+    uint16_t locn = inoise16(millis()*128/(260-SEGMENT.speed)+i*15000, millis()*128/(260-SEGMENT.speed)); // Get a new pixel location from moving noise.
+    uint16_t pixloc = map(locn, 50*256, 192*256, 0, SEGLEN-1);                                            // Map that to the length of the strand, and ensure we don't go over.
+    setPixelColor(pixloc, color_from_palette(pixloc%255, false, PALETTE_SOLID_WRAP, 0));
+  }
+
+  return FRAMETIME;
+} // mode_perlinmove()
+static const char *_data_FX_MODE_PERLINMOVE PROGMEM = "Perlin Move@!,# of pixels,fade rate;,!;!";
+
+
+/////////////////////////
+//     Waveins         //
+/////////////////////////
+// Uses beatsin8() + phase shifting. By: Andrew Tuline
+uint16_t WS2812FX::mode_wavesins(void) {
+
+  for (uint16_t i = 0; i < SEGLEN; i++) {
+    uint8_t bri = sin8(millis()/4 + i * SEGMENT.intensity);
+    setPixelColor(i, ColorFromPalette(currentPalette, beatsin8(SEGMENT.speed, SEGMENT.custom1, SEGMENT.custom1+SEGMENT.custom2, 0, i * SEGMENT.custom3), bri, LINEARBLEND));
+  }
+
+  return FRAMETIME;
+} // mode_waveins()
+static const char *_data_FX_MODE_WAVESINS PROGMEM = "Wavesins@Speed,Brightness variation,Starting Color,Range of Colors,Color variation;;!";
+
+
+//////////////////////////////
+//     Flow Stripe          //
+//////////////////////////////
+// By: ldirko  https://editor.soulmatelights.com/gallery/392-flow-led-stripe , modifed by: Andrew Tuline
+uint16_t WS2812FX::mode_FlowStripe(void) {
+
+  const uint16_t hl = SEGLEN * 10 / 13;
+  uint8_t hue = millis() / (SEGMENT.speed+1);
+  uint32_t t = millis() / (SEGMENT.intensity/8+1);
+
+  for (uint16_t i = 0; i < SEGLEN; i++) {
+    int c = (abs(i - hl) / hl) * 127;
+    c = sin8(c);
+    c = sin8(c / 2 + t);
+    byte b = sin8(c + t/8);
+    setPixelColor(i, CHSV(b + hue, 255, 255));
+  }
+
+  return FRAMETIME;
+} // mode_FlowStripe()
+static const char *_data_FX_MODE_FLOWSTRIPE PROGMEM = "Flow Stripe@Hue speed,Effect speed;;";
+
 
 ///////////////////////////////////////////////////////////////////////////////
 //***************************  2D routines  ***********************************
@@ -6463,6 +6522,9 @@ const char *WS2812FX::_modeData[MODE_COUNT] = {
   _data_FX_MODE_GRAVCENTER,
   _data_FX_MODE_GRAVCENTRIC,
   _data_FX_MODE_GRAVIMETER,
-  _data_FX_MODE_GRAVFREQ
+  _data_FX_MODE_GRAVFREQ,
+  _data_FX_MODE_PERLINMOVE,
+  _data_FX_MODE_WAVESINS,
+  _data_FX_MODE_FLOWSTRIPE
 };
 
