@@ -182,6 +182,35 @@ void WS2812FX::service() {
   _triggered = false;
 }
 
+// anti-aliased normalized version of setPixelColor()
+void /*IRAM_ATTR*/ WS2812FX::setPixelColor(float i, byte r, byte g, byte b, byte w, bool aa)
+{
+  if (i<0.0f || i>1.0f) return; // not normalized
+
+  if (aa) {
+    float fC = i * (SEGLEN-1);
+    float fL = floorf(i * (SEGLEN-1));
+    float fR = ceilf(i * (SEGLEN-1));
+    uint16_t iL = fL;
+    uint16_t iR = fR;
+    uint32_t cIL = getPixelColor(iL);
+    uint32_t cIR = getPixelColor(iR);
+    if (iR!=iL) {
+      // blend L pixel
+      cIL = color_blend(RGBW32(r,g,b,w), cIL, (fR - fC)*UINT16_MAX, true);
+      setPixelColor(iL, R(cIL), G(cIL), B(cIL), W(cIL));
+      // blend R pixel
+      cIR = color_blend(RGBW32(r,g,b,w), cIR, (fC - fL)*UINT16_MAX, true);
+      setPixelColor(iR, R(cIR), G(cIR), B(cIR), W(cIR));
+    } else {
+      // exact match (x & y land on a pixel)
+      setPixelColor(iL, r, g, b, w);
+    }
+  } else {
+    setPixelColor((uint16_t)roundf(i * (SEGLEN-1)), r, g, b, w);
+  }
+}
+
 void IRAM_ATTR WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
   uint8_t segIdx = SEGLEN ? _segment_index : _mainSegment;
@@ -885,6 +914,24 @@ uint32_t IRAM_ATTR WS2812FX::color_blend(uint32_t color1, uint32_t color2, uint1
   uint32_t b3 = ((b2 * blend) + (b1 * (blendmax - blend))) >> shift;
 
   return RGBW32(r3, g3, b3, w3);
+}
+
+/*
+ * color add function that preserves ratio
+ * idea: https://github.com/Aircoookie/WLED/pull/2465 by https://github.com/Proto-molecule
+ */
+uint32_t WS2812FX::color_add(uint32_t c1, uint32_t c2)
+{
+  uint32_t r = R(c1) + R(c2);
+  uint32_t g = G(c1) + G(c2);
+  uint32_t b = B(c1) + B(c2);
+  uint32_t w = W(c1) + W(c2);
+  uint16_t max = r;
+  if (g > max) max = g;
+  if (b > max) max = b;
+  if (w > max) max = w;
+  if (max < 256) return RGBW32(r, g, b, w);
+  else           return RGBW32(r * 255 / max, g * 255 / max, b * 255 / max, w * 255 / max);
 }
 
 /*

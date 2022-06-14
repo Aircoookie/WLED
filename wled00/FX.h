@@ -709,12 +709,15 @@ class WS2812FX {
       makeAutoSegments(bool forceReset = false),
       fixInvalidSegments(),
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
+      setPixelColor(float i, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0, bool aa = false),
       show(void),
 			setTargetFps(uint8_t fps),
       deserializeMap(uint8_t n=0);
 
-    inline void setPixelColor(uint16_t n, uint32_t c) {setPixelColor(n, byte(c>>16), byte(c>>8), byte(c), byte(c>>24));}
-    inline void setPixelColor(uint16_t n, CRGB &c)    {setPixelColor(n, c.red, c.green, c.blue);}
+    inline void setPixelColor(uint16_t n, uint32_t c)               {setPixelColor(n, byte(c>>16), byte(c>>8), byte(c), byte(c>>24));}
+    inline void setPixelColor(uint16_t n, CRGB c)                   {setPixelColor(n, c.red, c.green, c.blue);}
+    inline void setPixelColor(float i, uint32_t c, bool aa = false) {setPixelColor(i, byte(c>>16), byte(c>>8), byte(c), byte(c>>24), aa);}
+    inline void setPixelColor(float i, CRGB c, bool aa = false)     {setPixelColor(i, c.red, c.green, c.blue, 0, aa);}
 
     bool
       gammaCorrectBri = false,
@@ -768,6 +771,7 @@ class WS2812FX {
       color_wheel(uint8_t),
       color_from_palette(uint16_t, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri = 255),
       color_blend(uint32_t,uint32_t,uint16_t,bool b16=false),
+      color_add(uint32_t,uint32_t),
       currentColor(uint32_t colorNew, uint8_t tNr),
       gamma32(uint32_t),
       getLastShow(void),
