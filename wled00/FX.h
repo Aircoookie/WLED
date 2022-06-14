@@ -274,8 +274,20 @@
 #define FX_MODE_PERLINMOVE             151
 #define FX_MODE_WAVESINS               152
 #define FX_MODE_FLOWSTRIPE             153
+#define FX_MODE_2DSWIRL                154
+#define FX_MODE_RIPPLEPEAK             155
+#define FX_MODE_PUDDLES                156
+#define FX_MODE_PUDDLEPEAK             157
+#define FX_MODE_PLASMOID               158
+#define FX_MODE_PIXELS                 159
+#define FX_MODE_PIXELWAVE              160
+#define FX_MODE_NOISEMETER             161
+#define FX_MODE_NOISEFIRE              162
+#define FX_MODE_MIDNOISE               163
+#define FX_MODE_MATRIPIX               164
+#define FX_MODE_JUGGLES                165
 
-#define MODE_COUNT                     154
+#define MODE_COUNT                     166
 
 
 class WS2812FX {
@@ -681,6 +693,18 @@ class WS2812FX {
       _mode[FX_MODE_PERLINMOVE]              = &WS2812FX::mode_perlinmove;
       _mode[FX_MODE_WAVESINS]                = &WS2812FX::mode_wavesins;
       _mode[FX_MODE_FLOWSTRIPE]              = &WS2812FX::mode_FlowStripe;
+      _mode[FX_MODE_2DSWIRL]                 = &WS2812FX::mode_2DSwirl;
+      _mode[FX_MODE_RIPPLEPEAK]              = &WS2812FX::mode_ripplepeak;
+      _mode[FX_MODE_PUDDLES]                 = &WS2812FX::mode_puddles;
+      _mode[FX_MODE_PUDDLEPEAK]              = &WS2812FX::mode_puddlepeak;
+      _mode[FX_MODE_PLASMOID]                = &WS2812FX::mode_plasmoid;
+      _mode[FX_MODE_PIXELS]                  = &WS2812FX::mode_pixels;
+      _mode[FX_MODE_PIXELWAVE]               = &WS2812FX::mode_pixelwave;
+      _mode[FX_MODE_NOISEMETER]              = &WS2812FX::mode_noisemeter;
+      _mode[FX_MODE_NOISEFIRE]               = &WS2812FX::mode_noisefire;
+      _mode[FX_MODE_MIDNOISE]                = &WS2812FX::mode_midnoise;
+      _mode[FX_MODE_MATRIPIX]                = &WS2812FX::mode_matripix;
+      _mode[FX_MODE_JUGGLES]                 = &WS2812FX::mode_juggles;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -1017,7 +1041,19 @@ class WS2812FX {
       mode_gravcenter(void),
       mode_gravcentric(void),
       mode_gravimeter(void),
-      mode_gravfreq(void);
+      mode_gravfreq(void),
+      mode_2DSwirl(void),
+      mode_ripplepeak(void),
+      mode_puddles(void),
+      mode_puddlepeak(void),
+      mode_plasmoid(void),
+      mode_pixels(void),
+      mode_pixelwave(void),
+      mode_noisemeter(void),
+      mode_noisefire(void),
+      mode_midnoise(void),
+      mode_matripix(void),
+      mode_juggles(void);
 
 
   private:
