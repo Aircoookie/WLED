@@ -98,7 +98,7 @@ class I2SSource : public AudioSource {
     virtual void initialize(int8_t i2swsPin = I2S_PIN_NO_CHANGE, int8_t i2ssdPin = I2S_PIN_NO_CHANGE, int8_t i2sckPin = I2S_PIN_NO_CHANGE, int8_t mclkPin = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
       if (i2swsPin != I2S_PIN_NO_CHANGE && i2ssdPin != I2S_PIN_NO_CHANGE) {
         if (!pinManager.allocatePin(i2swsPin, true, PinOwner::UM_Audioreactive) ||
-            !pinManager.allocatePin(i2ssdPin, true, PinOwner::UM_Audioreactive)) {
+            !pinManager.allocatePin(i2ssdPin, false, PinOwner::UM_Audioreactive)) { // #206
           return;
         }
       }
