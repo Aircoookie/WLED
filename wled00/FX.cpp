@@ -413,15 +413,12 @@ uint16_t WS2812FX::mode_lighthouse2()
   int dotWidth = 3;
   int rowLength = SEGMENT.intensity;
   uint16_t counter = (((now * SEGMENT.speed)>>6)  + 1) % (rowLength << 8);
-  int fade = counter & 0xFF;
+  uint16_t fade = counter & 0xFF;
   counter = counter >> 8;
 
-  // use sin/cos for smoother fade function  
-  float f = fade * PI / 512;
-  float f1 = sin(f) * 65535;
-  float f2 = cos(f) * 65535;
-  int fade1 = (int) f1;
-  int fade2 = (int) f2;
+  uint16_t f = fade << 6;
+  uint16_t fade1 = sin16(f) << 1;
+  uint16_t fade2 = cos16(f) << 1;
 
   int posIn = counter % rowLength;
   int posOut = (posIn + dotWidth + 1) % rowLength;
