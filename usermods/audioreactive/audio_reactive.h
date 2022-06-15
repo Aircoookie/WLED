@@ -169,8 +169,8 @@ void FFTcode(void * parameter) {
     //micDataSm = ((micData * 3) + micData)/4;
 
     const int halfSamplesFFT = samplesFFT / 2;   // samplesFFT divided by 2
-    double maxSample1 = 0.0;                         // max sample from first half of FFT batch
-    double maxSample2 = 0.0;                         // max sample from second half of FFT batch
+    float maxSample1 = 0.0;                         // max sample from first half of FFT batch
+    float maxSample2 = 0.0;                         // max sample from second half of FFT batch
     for (int i=0; i < samplesFFT; i++)
     {
 	    // set imaginary parts to 0
@@ -179,9 +179,9 @@ void FFTcode(void * parameter) {
 	    if ((vReal[i] <= (INT16_MAX - 1024)) && (vReal[i] >= (INT16_MIN + 1024)))  //skip extreme values - normally these are artefacts
 	    {
         if (i <= halfSamplesFFT) {
-          if (fabs(vReal[i]) > maxSample1) maxSample1 = fabs(vReal[i]);
+          if (fabsf((float)vReal[i]) > maxSample1) maxSample1 = fabsf((float)vReal[i]);
         } else {
-          if (fabs(vReal[i]) > maxSample2) maxSample2 = fabs(vReal[i]);
+          if (fabsf((float)vReal[i]) > maxSample2) maxSample2 = fabsf((float)vReal[i]);
         }
 	    }
     }
@@ -234,8 +234,8 @@ void FFTcode(void * parameter) {
     FFT.MajorPeak(&FFT_MajorPeak, &FFT_Magnitude);          // let the effects know which freq was most dominant
 
 #ifdef MAJORPEAK_SUPPRESS_NOISE
-	// dirty hack: limit suppressed channel intensities to FFT_Magnitude
-	for (int k=0; k < 24; k++) if(xtemp[k] > FFT_Magnitude) xtemp[k] = FFT_Magnitude;
+    // dirty hack: limit suppressed channel intensities to FFT_Magnitude
+    for (int k=0; k < 24; k++) if(xtemp[k] > FFT_Magnitude) xtemp[k] = FFT_Magnitude;
     // restore bins
     vReal[0] = xtemp[0];
     vReal[1] = xtemp[1];
@@ -391,13 +391,13 @@ class AudioReactive : public Usermod {
 
     // set your config variables to their boot default value (this can also be done in readFromConfig() or a constructor if you prefer)
 
+    const uint16_t delayMs = 10;        // I don't want to sample too often and overload WLED
     uint8_t  maxVol = 10;         // Reasonable value for constant volume for 'peak detector', as it won't always trigger
     uint8_t  binNum = 0;          // Used to select the bin for FFT based beat detection.
     uint8_t  targetAgc = 60;      // This is our setPoint at 20% of max for the adjusted output
     uint8_t  myVals[32];          // Used to store a pile of samples because WLED frame rate and WLED sample rate are not synchronized. Frame rate is too low.
     bool     samplePeak = 0;      // Boolean flag for peak. Responding routine must reset this flag
     bool     udpSamplePeak = 0;   // Boolean flag for peak. Set at the same tiem as samplePeak, but reset by transmitAudioData
-    uint16_t delayMs = 10;        // I don't want to sample too often and overload WLED
     int16_t  micIn = 0;           // Current sample starts with negative values and large values, which is why it's 16 bit signed
     int16_t  sample;              // Current sample. Must only be updated ONCE!!!
     float    sampleMax = 0.0f;    // Max sample over a few seconds. Needed for AGC controler.
@@ -415,6 +415,9 @@ class AudioReactive : public Usermod {
     float    weighting = 0.2f;    // Exponential filter weighting. Will be adjustable in a future release.
 
     bool     udpSyncConnected = false;
+
+    uint8_t  lastMode = 0;        // last known effect mode
+    bool     agcEffect = false;
 
     // strings to reduce flash memory usage (used more than twice)
     static const char _name[];
@@ -871,18 +874,12 @@ class AudioReactive : public Usermod {
      *    Instead, use a timer check as shown here.
      */
     void loop() {
-      if (millis() - lastTime > 20) {
-        lastTime = millis();
-      }
-
       if (!(audioSyncEnabled & 0x02)) { // Only run the sampling code IF we're not in Receive mode
         if (soundAgc > AGC_NUM_PRESETS) soundAgc = 0; // make sure that AGC preset is valid (to avoid array bounds violation)
         getSample();                        // Sample the microphone
         agcAvg();                           // Calculated the PI adjusted value as sampleAvg
         myVals[millis()%32] = sampleAgc;
 
-        static uint8_t lastMode = 0;
-        static bool agcEffect = false;
         uint8_t knownMode = strip.getMainSegment().mode;
 
         if (lastMode != knownMode) { // only execute if mode changes
@@ -944,24 +941,37 @@ class AudioReactive : public Usermod {
       #endif
       }
 
-      if (audioSyncEnabled & 0x01) {    // Only run the transmit code IF we're in Transmit mode
-        DEBUGSR_PRINTLN("Transmitting UDP Mic Packet");
-        EVERY_N_MILLIS(20) {
+      if (millis() - lastTime > 20) {
+        lastTime = millis();
+
+        if (audioSyncEnabled & 0x01) {    // Only run the transmit code IF we're in Transmit mode
+          DEBUGSR_PRINTLN("Transmitting UDP Mic Packet");
           transmitAudioData();
         }
       }
 
       // Begin UDP Microphone Sync
-      if (audioSyncEnabled & 0x02) {    // Only run the audio listener code if we're in Receive mode
+      if ((audioSyncEnabled & 0x02) && udpSyncConnected) {    // Only run the audio listener code if we're in Receive mode
         if (millis()-lastTime > delayMs) {
-          if (udpSyncConnected) {
-            //Serial.println("Checking for UDP Microphone Packet");
-            int packetSize = fftUdp.parsePacket();
-            if (packetSize) {
-              // Serial.println("Received UDP Sync Packet");
-              uint8_t fftBuff[packetSize];
-              fftUdp.read(fftBuff, packetSize);
-              audioSyncPacket receivedPacket;
+          //Serial.println("Checking for UDP Microphone Packet");
+          int packetSize = fftUdp.parsePacket();
+          if (packetSize) {
+            // Serial.println("Received UDP Sync Packet");
+            uint8_t fftBuff[packetSize];
+            fftUdp.read(fftBuff, packetSize);
+            audioSyncPacket receivedPacket;
+            memcpy(&receivedPacket, fftBuff, packetSize);
+            for (int i = 0; i < 32; i++ ){
+              myVals[i] = receivedPacket.myVals[i];
+            }
+            sampleAgc = receivedPacket.sampleAgc;
+            rawSampleAgc = receivedPacket.sampleAgc;
+            sample = receivedPacket.sample;
+            sampleAvg = receivedPacket.sampleAvg;
+            // VERIFY THAT THIS IS A COMPATIBLE PACKET
+            char packetHeader[6];
+            memcpy(&receivedPacket, packetHeader, 6);
+            if (!(isValidUdpSyncVersion(packetHeader))) {
               memcpy(&receivedPacket, fftBuff, packetSize);
               for (int i = 0; i < 32; i++ ){
                 myVals[i] = receivedPacket.myVals[i];
@@ -970,33 +980,20 @@ class AudioReactive : public Usermod {
               rawSampleAgc = receivedPacket.sampleAgc;
               sample = receivedPacket.sample;
               sampleAvg = receivedPacket.sampleAvg;
-              // VERIFY THAT THIS IS A COMPATIBLE PACKET
-              char packetHeader[6];
-              memcpy(&receivedPacket, packetHeader, 6);
-              if (!(isValidUdpSyncVersion(packetHeader))) {
-                memcpy(&receivedPacket, fftBuff, packetSize);
-                for (int i = 0; i < 32; i++ ){
-                  myVals[i] = receivedPacket.myVals[i];
-                }
-                sampleAgc = receivedPacket.sampleAgc;
-                rawSampleAgc = receivedPacket.sampleAgc;
-                sample = receivedPacket.sample;
-                sampleAvg = receivedPacket.sampleAvg;
 
-                // Only change samplePeak IF it's currently false.
-                // If it's true already, then the animation still needs to respond.
-                if (!samplePeak) {
-                  samplePeak = receivedPacket.samplePeak;
-                }
-                //These values are only available on the ESP32
-                for (int i = 0; i < 16; i++) {
-                  fftResult[i] = receivedPacket.fftResult[i];
-                }
-
-                FFT_Magnitude = receivedPacket.FFT_Magnitude;
-                FFT_MajorPeak = receivedPacket.FFT_MajorPeak;
-                //Serial.println("Finished parsing UDP Sync Packet");
+              // Only change samplePeak IF it's currently false.
+              // If it's true already, then the animation still needs to respond.
+              if (!samplePeak) {
+                samplePeak = receivedPacket.samplePeak;
               }
+              //These values are only available on the ESP32
+              for (int i = 0; i < 16; i++) {
+                fftResult[i] = receivedPacket.fftResult[i];
+              }
+
+              FFT_Magnitude = receivedPacket.FFT_Magnitude;
+              FFT_MajorPeak = receivedPacket.FFT_MajorPeak;
+              //Serial.println("Finished parsing UDP Sync Packet");
             }
           }
         }

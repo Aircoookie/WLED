@@ -6910,15 +6910,14 @@ uint16_t WS2812FX::mode_blurz(void) {                    // Blurz. By Andrew Tul
   fade_out(SEGMENT.speed);
 
   uint16_t segLoc = random16(SEGLEN);
-  setPixelColor(segLoc, color_blend(SEGCOLOR(1), color_from_palette(2*fftResult[SEGENV.aux0 % 16]*240/(SEGLEN-1), false, PALETTE_SOLID_WRAP, 0), 2*fftResult[SEGENV.aux0 % 16]));
-  SEGENV.aux0++;
-  SEGENV.aux0 = SEGENV.aux0 % 16;
+  setPixelColor(segLoc, color_blend(SEGCOLOR(1), color_from_palette(fftResult[SEGENV.aux0], false, PALETTE_SOLID_WRAP, 0), 2*fftResult[SEGENV.aux0]));
+  ++(SEGENV.aux0) %= 16; // make sure it doesn't cross 16
 
   blur(SEGMENT.intensity);
 
   return FRAMETIME;
 } // mode_blurz()
-static const char *_data_FX_MODE_BLURZ PROGMEM = " ♫ Blurz@Fade rate,Blur amount;,Color mix;!";
+static const char *_data_FX_MODE_BLURZ PROGMEM = " ♫ Blurz@Fade rate,Blur amount;!,Color mix;!";
 
 
 /////////////////////////
@@ -6988,7 +6987,7 @@ uint16_t WS2812FX::mode_freqmap(void) {                   // Map FFT_MajorPeak t
 
   fade_out(SEGMENT.speed);
 
-  uint16_t locn = (log10f(FFT_MajorPeak) - 1.78f) * (float)SEGLEN/(3.71f-1.78f);  // log10 frequency range is from 1.78 to 3.71. Let's scale to SEGLEN.
+  uint16_t locn = (log10f((float)FFT_MajorPeak) - 1.78f) * (float)SEGLEN/(3.71f-1.78f);  // log10 frequency range is from 1.78 to 3.71. Let's scale to SEGLEN.
 
   if (locn >=SEGLEN) locn = SEGLEN-1;
   uint16_t pixCol = (log10f(FFT_MajorPeak) - 1.78f) * 255.0f/(3.71f-1.78f);   // Scale log10 of frequency values to the 255 colour index.

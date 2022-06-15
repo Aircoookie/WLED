@@ -581,6 +581,10 @@ class FourLineDisplayUsermod : public Usermod {
           // remove "* " from dynamic palettes
           for (byte i=2; i<=printedChars; i++) lineBuffer[i-2] = lineBuffer[i]; //include '\0'
           printedChars -= 2;
+        } else if ((lineBuffer[0]==' ' && lineBuffer[1]>127)) {
+          // remove note symbol from effect names
+          for (byte i=5; i<=printedChars; i++) lineBuffer[i-5] = lineBuffer[i]; //include '\0'
+          printedChars -= 5;
         }
         if (lineHeight == 2) {                                 // use this code for 8 line display
           char smallBuffer1[MAX_MODE_LINE_SPACE];

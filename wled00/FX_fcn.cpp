@@ -993,6 +993,13 @@ void WS2812FX::fade_out(uint8_t rate) {
   }
 }
 
+// fades all pixels to black using nscale8()
+void WS2812FX::fadeToBlackBy(uint8_t fadeBy) {
+  for (uint16_t i = 0; i < SEGLEN; i++) {
+    setPixelColor(i, col_to_crgb(getPixelColor(i)).nscale8(255-fadeBy));
+  }
+}
+
 /*
  * blurs segment content, source: FastLED colorutils.cpp
  */
