@@ -47,7 +47,7 @@ constexpr int SAMPLE_RATE = 10240;      // Base sample rate in Hz
 static byte audioSyncEnabled = 0;
 static uint16_t audioSyncPort = 11988;
 
-uint8_t  inputLevel;                // UI slider value
+uint8_t  inputLevel = 128;              // UI slider value
 
 // 
 // AGC presets
@@ -739,7 +739,7 @@ class AudioReactive : public Usermod {
       // usermod exchangeable data
       // we will assign all usermod exportable data here as pointers to original variables or arrays and allocate memory for pointers
       um_data = new um_data_t;
-      um_data->u_size = 16;
+      um_data->u_size = 18;
       um_data->u_type = new um_types_t[um_data->u_size];
       um_data->u_data = new void*[um_data->u_size];
       um_data->u_data[0] = &maxVol;           // assigned in effect function!!!
@@ -748,15 +748,15 @@ class AudioReactive : public Usermod {
       um_data->u_type[1] = UMT_BYTE_ARR;
       um_data->u_data[2] = &sample;           //*used (for debugging)
       um_data->u_type[2] = UMT_INT16;
-      um_data->u_data[3] = &rawSampleAgc;
+      um_data->u_data[3] = &rawSampleAgc;     //*used
       um_data->u_type[3] = UMT_INT16;
-      um_data->u_data[4] = &samplePeak;
+      um_data->u_data[4] = &samplePeak;       //*used
       um_data->u_type[4] = UMT_BYTE;
       um_data->u_data[5] = &binNum;           // assigned in effect function!!!
       um_data->u_type[5] = UMT_BYTE;
       um_data->u_data[6] = &FFT_MajorPeak;    //*used
       um_data->u_type[6] = UMT_DOUBLE;
-      um_data->u_data[7] = &FFT_Magnitude;
+      um_data->u_data[7] = &FFT_Magnitude;    //*used
       um_data->u_type[7] = UMT_DOUBLE;
       um_data->u_data[8] = &sampleAvg;        //*used
       um_data->u_type[8] = UMT_FLOAT;
@@ -770,10 +770,14 @@ class AudioReactive : public Usermod {
       um_data->u_type[12] = UMT_FLOAT;
       um_data->u_data[13] = &sampleGain;      //*used (for debugging & Binmap)
       um_data->u_type[13] = UMT_FLOAT;
-      um_data->u_data[14] = myVals;
+      um_data->u_data[14] = myVals;           //*used (only once, Pixels)
       um_data->u_type[14] = UMT_UINT16_ARR;
-      um_data->u_data[15] = &soundSquelch;
+      um_data->u_data[15] = &soundSquelch;    //*used (only once, Binmap)
       um_data->u_type[15] = UMT_BYTE;
+      um_data->u_data[16] = fftBin;           //*used (only once, Binmap)
+      um_data->u_type[16] = UMT_FLOAT_ARR;
+      um_data->u_data[17] = &inputLevel;       // assigned in effect function!!!
+      um_data->u_type[17] = UMT_BYTE;
 
       // Reset I2S peripheral for good measure
       i2s_driver_uninstall(I2S_NUM_0);
