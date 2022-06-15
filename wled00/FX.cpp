@@ -27,6 +27,7 @@
 #include "FX.h"
 #include "wled.h"
 
+
 #define IBN 5100
 #define PALETTE_SOLID_WRAP (paletteBlend == 1 || paletteBlend == 3)
 
@@ -388,6 +389,66 @@ uint16_t WS2812FX::mode_rainbow_cycle(void) {
   return FRAMETIME;
 }
 
+/*
+* moves a dot in primary color from left to right
+  speed is variable and line length
+* dot fade in/out smooth
+* act as multi line display with a width of 36 columns (maybe later variable!?)
+* alternative -> move several points all in a distance of x pixels
+*
+* SEGMENT.intensity = distances of the dots (or line length for multline display)
+* SEGMENT.speed = motion speed
+* ........................xXXx..->....
+* ........................xXXx..->....
+* ........................xXXx..->....
+*
+* default setting would be
+* Color 0 = Foreground = e.g. White
+* Color 1 = Background = e.g. Black
+*/
+
+uint16_t WS2812FX::mode_lighthouse2()
+{    
+  // next Version for WLED supports more parameters then this will be flexible:
+  int dotWidth = 3;
+  int rowLength = SEGMENT.intensity;
+  uint16_t counter = (((now * SEGMENT.speed)>>6)  + 1) % (rowLength << 8);
+  uint16_t fade = counter & 0xFF;
+  counter = counter >> 8;
+
+  uint16_t f = fade << 6;
+  uint16_t fade1 = sin16(f) << 1;
+  uint16_t fade2 = cos16(f) << 1;
+
+  int posIn = counter % rowLength;
+  int posOut = (posIn + dotWidth + 1) % rowLength;
+
+  for(uint16_t i = 0; i < SEGLEN; i++) {
+    int column = i % rowLength;    
+
+    if (column == posIn)
+    {
+      // fade from color 1 to 0 (fade in)
+      setPixelColor(i, color_blend(SEGCOLOR(0), SEGCOLOR(1), fade1, true));
+    } else if (column == posOut)
+    {
+      // fade from color 0 to 1 (fade out)
+      setPixelColor(i, color_blend(SEGCOLOR(0), SEGCOLOR(1), fade2, true));
+    } else if (
+           (posIn < posOut && column>posIn && column < posOut) 
+        || (posIn > posOut && ((column<posOut) || (column>posIn)))
+      )
+    {
+      // between pos in and pos out, always color 0
+      setPixelColor(i,SEGCOLOR(0));
+    } else 
+    {
+      // always color 1
+      setPixelColor(i,SEGCOLOR(1));
+    }
+  }
+  return FRAMETIME;
+}
 
 /*
  * Theatre-style crawling lights.
