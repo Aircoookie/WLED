@@ -136,7 +136,7 @@ static uint8_t linearNoise[16] = { 34, 28, 26, 25, 20, 12, 9, 6, 4, 4, 3, 2, 2, 
 static float fftResultPink[16] = { 1.70f, 1.71f, 1.73f, 1.78f, 1.68f, 1.56f, 1.55f, 1.63f, 1.79f, 1.62f, 1.80f, 2.06f, 2.47f, 3.35f, 6.83f, 9.55f };
 
 // Create FFT object
-static arduinoFFT FFT = arduinoFFT(vReal, vImag, samples, SAMPLE_RATE);
+static arduinoFFT FFT = arduinoFFT(vReal, vImag, samplesFFT, SAMPLE_RATE);
 static TaskHandle_t FFT_Task;
 
 float fftAdd(int from, int to) {
@@ -299,7 +299,7 @@ void FFTcode(void * parameter) {
 
     for (int i=0; i < 16; i++) {
       // Noise supression of fftCalc bins using soundSquelch adjustment for different input types.
-      fftCalc[i] -= (float)soundSquelch * (float)linearNoise[i] / 4.0f <= 0.0f ? 0 : fftCalc[i];
+      fftCalc[i] = (fftCalc[i] - (float)soundSquelch * (float)linearNoise[i] / 4.0f <= 0.0f) ? 0 : fftCalc[i];
   
       // Adjustment for frequency curves.
       fftCalc[i] *= fftResultPink[i];
@@ -393,7 +393,7 @@ class AudioReactive : public Usermod {
 
     const uint16_t delayMs = 10;        // I don't want to sample too often and overload WLED
     uint8_t  maxVol = 10;         // Reasonable value for constant volume for 'peak detector', as it won't always trigger
-    uint8_t  binNum = 0;          // Used to select the bin for FFT based beat detection.
+    uint8_t  binNum = 8;          // Used to select the bin for FFT based beat detection.
     uint8_t  targetAgc = 60;      // This is our setPoint at 20% of max for the adjusted output
     uint8_t  myVals[32];          // Used to store a pile of samples because WLED frame rate and WLED sample rate are not synchronized. Frame rate is too low.
     bool     samplePeak = 0;      // Boolean flag for peak. Responding routine must reset this flag
