@@ -5872,17 +5872,17 @@ uint16_t WS2812FX::mode_2Dscrollingtext(void) {
   const char *text = PSTR("Use segment name"); // fallback if empty segment name
   if (SEGMENT.name && strlen(SEGMENT.name)) text = SEGMENT.name;
 
-  char lineBuffer[17];
-  if (!strstr_P(text, PSTR("#DATETIME"))) {
+  char lineBuffer[17], sec[3];
+  if (strstr_P(text, PSTR("#DATETIME"))) {
     byte AmPmHour = hour(localTime);
     boolean isitAM = true;
     if (useAMPM) {
       if (AmPmHour > 11) { AmPmHour -= 12; isitAM = false; }
       if (AmPmHour == 0) { AmPmHour  = 12; }
     }
-    sprintf_P(lineBuffer, PSTR("%s %2d "), monthShortStr(month(localTime)), day(localTime)); 
-    if (useAMPM) sprintf_P(lineBuffer,PSTR("%2d:%02d %s"), AmPmHour, minute(localTime), (isitAM ? "AM" : "PM"));
-    else         sprintf_P(lineBuffer,PSTR("%2d:%02d:%02d"), AmPmHour, minute(localTime), second(localTime));
+    if (useAMPM) sprintf_P(sec, PSTR(" %2s"), (isitAM ? "AM" : "PM"));
+    else         sprintf_P(sec, PSTR(":%02d"), second(localTime));
+    sprintf_P(lineBuffer,PSTR("%s %2d %2d:%02d%s"), monthShortStr(month(localTime)), day(localTime), AmPmHour, minute(localTime), sec);
     text = lineBuffer;
   }
   const int numberOfLetters = strlen(text);

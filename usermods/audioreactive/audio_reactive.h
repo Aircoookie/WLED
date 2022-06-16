@@ -144,7 +144,8 @@ float fftAdd(int from, int to) {
 }
 
 // FFT main code
-void FFTcode(void * parameter) {
+void FFTcode(void * parameter)
+{
   DEBUGSR_PRINT("FFT running on core: "); DEBUGSR_PRINTLN(xPortGetCoreID());
 #ifdef MAJORPEAK_SUPPRESS_NOISE
   static double xtemp[24] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
@@ -367,17 +368,16 @@ class AudioReactive : public Usermod {
     int8_t mclkPin = MLCK_PIN;
     #endif
 
-    #define UDP_SYNC_HEADER "00001"
     struct audioSyncPacket {
-      char header[6];
+      char    header[6];
       uint8_t myVals[32];     //  32 Bytes
-      int sampleAgc;          //  04 Bytes
-      int sample;             //  04 Bytes
-      float sampleAvg;        //  04 Bytes
-      bool samplePeak;        //  01 Bytes
+      int     sampleAgc;      //  04 Bytes
+      int     sample;         //  04 Bytes
+      float   sampleAvg;      //  04 Bytes
+      bool    samplePeak;     //  01 Bytes
       uint8_t fftResult[16];  //  16 Bytes
-      double FFT_Magnitude;   //  08 Bytes
-      double FFT_MajorPeak;   //  08 Bytes
+      double  FFT_Magnitude;  //  08 Bytes
+      double  FFT_MajorPeak;  //  08 Bytes
     };
 
     WiFiUDP fftUdp;
@@ -416,20 +416,21 @@ class AudioReactive : public Usermod {
     bool     agcEffect = false;
     int      last_soundAgc = -1;
     float    control_integrated = 0.0f;     // "integrator control" = accumulated error
+    unsigned long last_update_time = 0;
+    unsigned long last_kick_time = 0;
+    uint8_t  last_user_inputLevel = 0;
 
     // strings to reduce flash memory usage (used more than twice)
     static const char _name[];
+    static const char _enabled[];
     static const char _analogmic[];
     static const char _digitalmic[];
+    static const char UDP_SYNC_HEADER[];
 
 
     // private methods
-    bool isValidUdpSyncVersion(const char *header) {
-      return strncmp(header, UDP_SYNC_HEADER, 6) == 0;
-    }
-
-
-    void logAudio() {
+    void logAudio()
+    {
     #ifdef MIC_LOGGER
       //Serial.print("micData:");    Serial.print(micData);   Serial.print("\t");
       //Serial.print("micDataSm:");  Serial.print(micDataSm); Serial.print("\t");
@@ -522,7 +523,8 @@ class AudioReactive : public Usermod {
     *    a) normal zone - very slow adjustment
     *    b) emergency zome (<10% or >90%) - very fast adjustment
     */
-    void agcAvg() {
+    void agcAvg()
+    {
       const int AGC_preset = (soundAgc > 0)? (soundAgc-1): 0; // make sure the _compiler_ knows this value will not change while we are inside the function
 
       float lastMultAgc = multAgc;      // last muliplier used
@@ -605,9 +607,8 @@ class AudioReactive : public Usermod {
     } // agcAvg()
 
 
-    void getSample() {
-      static long peakTime;
-
+    void getSample()
+    {
       const int AGC_preset = (soundAgc > 0)? (soundAgc-1): 0; // make sure the _compiler_ knows this value will not change while we are inside the function
 
       #ifdef WLED_DISABLE_SOUND
@@ -677,24 +678,24 @@ class AudioReactive : public Usermod {
       if (userVar1 == 0) samplePeak = 0;
       // Poor man's beat detection by seeing if sample > Average + some value.
       //  Serial.print(binNum); Serial.print("\t"); Serial.print(fftBin[binNum]); Serial.print("\t"); Serial.print(fftAvg[binNum/16]); Serial.print("\t"); Serial.print(maxVol); Serial.print("\t"); Serial.println(samplePeak);
-      if ((fftBin[binNum] > maxVol) && (millis() > (peakTime + 100))) {                     // This goe through ALL of the 255 bins
-      //  if (sample > (sampleAvg + maxVol) && millis() > (peakTime + 200)) {
+      if ((fftBin[binNum] > maxVol) && (millis() > (timeOfPeak + 100))) {                     // This goe through ALL of the 255 bins
+      //  if (sample > (sampleAvg + maxVol) && millis() > (timeOfPeak + 200)) {
       // Then we got a peak, else we don't. The peak has to time out on its own in order to support UDP sound sync.
-        samplePeak = 1;
-        timeOfPeak = millis();
+        samplePeak    = 1;
+        timeOfPeak    = millis();
         udpSamplePeak = 1;
-        userVar1 = samplePeak;
-        peakTime=millis();
+        userVar1      = samplePeak;
       }
     } // getSample()
 
 
-    void transmitAudioData() {
+    void transmitAudioData()
+    {
       if (!udpSyncConnected) return;
       //DEBUGSR_PRINTLN("Transmitting UDP Mic Packet");
 
       audioSyncPacket transmitData;
-      strncpy(transmitData.header, UDP_SYNC_HEADER, 6);
+      strncpy_P(transmitData.header, PSTR(UDP_SYNC_HEADER), 6);
 
       for (int i = 0; i < 32; i++) {
         transmitData.myVals[i] = myVals[i];
@@ -720,7 +721,13 @@ class AudioReactive : public Usermod {
     } // transmitAudioData()
 
 
-    void receiveAudioData() {
+    bool isValidUdpSyncVersion(const char *header) {
+      return strncmp_P(header, PSTR(UDP_SYNC_HEADER), 6) == 0;
+    }
+
+
+    void receiveAudioData()
+    {
       if (!udpSyncConnected) return;
       //DEBUGSR_PRINTLN("Checking for UDP Microphone Packet");
 
@@ -764,8 +771,8 @@ class AudioReactive : public Usermod {
      * You can use it to initialize variables, sensors or similar.
      * It is called *AFTER* readFromConfig()
      */
-    void setup() {
-
+    void setup()
+    {
       if (!initDone) {
         // usermod exchangeable data
         // we will assign all usermod exportable data here as pointers to original variables or arrays and allocate memory for pointers
@@ -859,6 +866,7 @@ class AudioReactive : public Usermod {
       }
       delay(250); // give mictophone enough time to initialise
 
+      if (!audioSource) enabled = false;  // audio failed to initialise
       if (enabled) onUpdateBegin(false);  // create FFT task
 
       initDone = true;
@@ -869,7 +877,8 @@ class AudioReactive : public Usermod {
      * connected() is called every time the WiFi is (re)connected
      * Use it to initialize network interfaces
      */
-    void connected() {
+    void connected()
+    {
       if (audioSyncPort > 0 || (audioSyncEnabled & 0x03)) {
       #ifndef ESP8266
         udpSyncConnected = fftUdp.beginMulticast(IPAddress(239, 0, 0, 1), audioSyncPort);
@@ -890,7 +899,10 @@ class AudioReactive : public Usermod {
      * 2. Try to avoid using the delay() function. NEVER use delays longer than 10 milliseconds.
      *    Instead, use a timer check as shown here.
      */
-    void loop() {
+    void loop()
+    {
+      if (!enabled || strip.isUpdating()) return;
+
       if (!(audioSyncEnabled & 0x02)) { // Only run the sampling code IF we're not in Receive mode
         if (soundAgc > AGC_NUM_PRESETS) soundAgc = 0; // make sure that AGC preset is valid (to avoid array bounds violation)
         getSample();                        // Sample the microphone
@@ -918,9 +930,6 @@ class AudioReactive : public Usermod {
 
         // update inputLevel Slider based on current AGC gain
         if ((soundAgc>0) && agcEffect) {
-          static unsigned long last_update_time = 0;
-          static unsigned long last_kick_time = 0;
-          static int last_user_inputLevel = 0;
           unsigned long now_time = millis();    
 
           // "user kick" feature - if user has moved the slider by at least 32 units, we "kick" AGC gain by 30% (up or down)
@@ -938,9 +947,9 @@ class AudioReactive : public Usermod {
           new_user_inputLevel = MIN(MAX(new_user_inputLevel, 0),255);
 
           // update user interfaces - restrict frequency to avoid flooding UI's with small changes
-          if ( ( ((now_time - last_update_time > 3500) && (abs(new_user_inputLevel - inputLevel) > 2))     // small change - every 3.5 sec (max) 
-              ||((now_time - last_update_time > 2200) && (abs(new_user_inputLevel - inputLevel) > 15))    // medium change
-              ||((now_time - last_update_time > 1200) && (abs(new_user_inputLevel - inputLevel) > 31)) )) // BIG change - every second
+          if ( (((now_time - last_update_time > 3500) && (abs(new_user_inputLevel - inputLevel) >  2))    // small change - every 3.5 sec (max) 
+            ||  ((now_time - last_update_time > 2200) && (abs(new_user_inputLevel - inputLevel) > 15))    // medium change
+            ||  ((now_time - last_update_time > 1200) && (abs(new_user_inputLevel - inputLevel) > 31))) ) // BIG change - every second
           {
             inputLevel = new_user_inputLevel;           // change of least 3 units -> update user variable
             updateInterfaces(CALL_MODE_WS_SEND);        // is this the correct way to notify UIs ? Yes says blazoncek
@@ -970,14 +979,16 @@ class AudioReactive : public Usermod {
     }
 
 
-    bool getUMData(um_data_t **data) {
+    bool getUMData(um_data_t **data)
+    {
       if (!data || !enabled) return false; // no pointer provided by caller or not enabled -> exit
       *data = um_data;
       return true;
     }
 
 
-    void onUpdateBegin(bool init) {
+    void onUpdateBegin(bool init)
+    {
       if (init) vTaskDelete(FFT_Task); // update is about to begin, remove task to prevent crash
       else {  // update has failed or create task requested
         // Define the FFT Task and lock it to core 0
@@ -998,19 +1009,30 @@ class AudioReactive : public Usermod {
      * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
      * Below it is shown how this could be used for e.g. a light sensor
      */
-    /*
     void addToJsonInfo(JsonObject& root)
     {
-      int reading = 20;
-      //this code adds "u":{"Light":[20," lux"]} to the info object
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
 
-      JsonArray lightArr = user.createNestedArray("Light"); //name
-      lightArr.add(reading); //value
-      lightArr.add(" lux"); //unit
+      String uiDomString = F("<button class=\"btn\" onclick=\"requestJson({");
+      uiDomString += FPSTR(_name);
+      uiDomString += F(":{");
+      uiDomString += FPSTR(_enabled);
+      if (enabled) {
+        uiDomString += F(":false}});\">");
+      } else {
+        uiDomString += F(":true}});\">");
+      }
+      uiDomString += F("Audio <i class=\"icons\">&#xe08f;</i>");
+      uiDomString += F("</button>");
+
+      JsonArray infoArr = user.createNestedArray(uiDomString);
+      if (enabled) {
+        infoArr.add(FPSTR(_enabled));
+      } else {
+        infoArr.add(F("disabled"));
+      }
     }
-    */
 
 
     /*
@@ -1029,13 +1051,18 @@ class AudioReactive : public Usermod {
      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    /*
     void readFromJsonState(JsonObject& root)
     {
-      userVar0 = root["user0"] | userVar0; //if "user0" key exists in JSON, update, else keep old value
-      //if (root["bri"] == 255) Serial.println(F("Don't burn down your garage!"));
+      if (!initDone) return;  // prevent crash on boot applyPreset()
+      bool prevEnabled = enabled;
+      JsonObject usermod = root[FPSTR(_name)];
+      if (!usermod.isNull()) {
+        if (usermod[FPSTR(_enabled)].is<bool>()) {
+          enabled = usermod[FPSTR(_enabled)].as<bool>();
+          if (prevEnabled != enabled) onUpdateBegin(!enabled);
+        }
+      }
     }
-    */
 
 
     /*
@@ -1076,7 +1103,7 @@ class AudioReactive : public Usermod {
     void addToConfig(JsonObject& root)
     {
       JsonObject top = root.createNestedObject(FPSTR(_name));
-      top[F("enabled")] = enabled;
+      top[FPSTR(_enabled)] = enabled;
 
       JsonObject amic = top.createNestedObject(FPSTR(_analogmic));
       amic["pin"] = audioPin;
@@ -1125,7 +1152,7 @@ class AudioReactive : public Usermod {
       bool configComplete = !top.isNull();
 
       bool prevEnabled = enabled;
-      configComplete &= getJsonValue(top[F("enabled")], enabled);
+      configComplete &= getJsonValue(top[FPSTR(_enabled)], enabled);
       if (initDone && prevEnabled != enabled) {
         onUpdateBegin(!enabled); // create or remove FFT task
       }
@@ -1156,7 +1183,8 @@ class AudioReactive : public Usermod {
     }
 
 
-    void appendConfigData() {
+    void appendConfigData()
+    {
       oappend(SET_F("dd=addDropdown('AudioReactive','digitalmic:type');"));
       oappend(SET_F("addOption(dd,'Generic Analog',0);"));
       oappend(SET_F("addOption(dd,'Generic I2S',1);"));
@@ -1201,5 +1229,7 @@ class AudioReactive : public Usermod {
 
 // strings to reduce flash memory usage (used more than twice)
 const char AudioReactive::_name[]       PROGMEM = "AudioReactive";
+const char AudioReactive::_enabled[]    PROGMEM = "enabled";
 const char AudioReactive::_analogmic[]  PROGMEM = "analogmic";
 const char AudioReactive::_digitalmic[] PROGMEM = "digitalmic";
+const char AudioReactive::UDP_SYNC_HEADER[] PROGMEM = "00001";
