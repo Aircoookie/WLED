@@ -156,7 +156,7 @@ class I2SSource : public AudioSource {
       if (_mclkPin != I2S_PIN_NO_CHANGE) pinManager.deallocatePin(_mclkPin, PinOwner::UM_Audioreactive);
     }
 
-    void getSamples(double *buffer, uint16_t num_samples) {
+    virtual void getSamples(double *buffer, uint16_t num_samples) {
       if (_initialized) {
         esp_err_t err;
         size_t bytes_read = 0;        /* Counter variable to check if we actually got enough data */
