@@ -149,7 +149,6 @@ float fftAdd(int from, int to) {
 
 // FFT main code
 void FFTcode(void * parameter) {
-
   DEBUGSR_PRINT("FFT running on core: "); DEBUGSR_PRINTLN(xPortGetCoreID());
 #ifdef MAJORPEAK_SUPPRESS_NOISE
   static double xtemp[24] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
@@ -169,16 +168,15 @@ void FFTcode(void * parameter) {
     //micDataSm = ((micData * 3) + micData)/4;
 
     const int halfSamplesFFT = samplesFFT / 2;   // samplesFFT divided by 2
-    float maxSample1 = 0.0;                         // max sample from first half of FFT batch
-    float maxSample2 = 0.0;                         // max sample from second half of FFT batch
-    for (int i=0; i < samplesFFT; i++)
-    {
+    float maxSample1 = 0.0f;                         // max sample from first half of FFT batch
+    float maxSample2 = 0.0f;                         // max sample from second half of FFT batch
+    for (int i=0; i < samplesFFT; i++) {
 	    // set imaginary parts to 0
       vImag[i] = 0;
 	    // pick our  our current mic sample - we take the max value from all samples that go into FFT
 	    if ((vReal[i] <= (INT16_MAX - 1024)) && (vReal[i] >= (INT16_MIN + 1024)))  //skip extreme values - normally these are artefacts
 	    {
-        if (i <= halfSamplesFFT) {
+        if (i < halfSamplesFFT) {
           if (fabsf((float)vReal[i]) > maxSample1) maxSample1 = fabsf((float)vReal[i]);
         } else {
           if (fabsf((float)vReal[i]) > maxSample2) maxSample2 = fabsf((float)vReal[i]);
@@ -299,18 +297,15 @@ void FFTcode(void * parameter) {
 
     for (int i=0; i < 16; i++) {
       // Noise supression of fftCalc bins using soundSquelch adjustment for different input types.
-      fftCalc[i] = (fftCalc[i] - (float)soundSquelch * (float)linearNoise[i] / 4.0f <= 0.0f) ? 0 : fftCalc[i];
-  
+      fftCalc[i]  = (fftCalc[i] < ((float)soundSquelch * (float)linearNoise[i] / 4.0f)) ? 0 : fftCalc[i];
       // Adjustment for frequency curves.
       fftCalc[i] *= fftResultPink[i];
-
       // Manual linear adjustment of gain using sampleGain adjustment for different input types.
-      fftCalc[i] *= soundAgc ? multAgc : (float)sampleGain/40.0f * inputLevel/128 + (float)fftCalc[i]/16.0f; //with inputLevel adjustment
+      fftCalc[i] *= soundAgc ? multAgc : ((float)sampleGain/40.0f * (float)inputLevel/128.0f + 1.0f/16.0f); //with inputLevel adjustment
   
       // Now, let's dump it all into fftResult. Need to do this, otherwise other routines might grab fftResult values prematurely.
-      // fftResult[i] = (int)fftCalc[i];
-      fftResult[i] = constrain((int)fftCalc[i], 0, 254);         // question: why do we constrain values to 8bit here ???
-      fftAvg[i] = (float)fftResult[i]*0.05f + (1.0f - 0.05f)*fftAvg[i]; // why no just 0.95f*fftAvg[i]?
+      fftResult[i] = constrain((int)fftCalc[i], 0, 254);
+      fftAvg[i]    = (float)fftResult[i]*0.05f + 0.95f*fftAvg[i];
     }
 
     // release second sample to volume reactive effects. 
@@ -318,13 +313,14 @@ void FFTcode(void * parameter) {
     micDataSm = (uint16_t)maxSample2;
     micDataReal = maxSample2;
 
+#ifdef SR_DEBUG
     // Looking for fftResultMax for each bin using Pink Noise
-//      for (int i=0; i<16; i++) {
-//          fftResultMax[i] = ((fftResultMax[i] * 63.0) + fftResult[i]) / 64.0;
-//         Serial.print(fftResultMax[i]*fftResultPink[i]); Serial.print("\t");
-//        }
-//      Serial.println(" ");
-
+//    for (int i=0; i<16; i++) {
+//      fftResultMax[i] = ((fftResultMax[i] * 63.0) + fftResult[i]) / 64.0;
+//      Serial.print(fftResultMax[i]*fftResultPink[i]); Serial.print("\t");
+//    }
+//    Serial.println();
+#endif
   } // for(;;)
 } // FFTcode()
 
@@ -390,6 +386,8 @@ class AudioReactive : public Usermod {
     WiFiUDP fftUdp;
 
     // set your config variables to their boot default value (this can also be done in readFromConfig() or a constructor if you prefer)
+    bool     enabled = true;
+    bool     initDone = false;
 
     const uint16_t delayMs = 10;        // I don't want to sample too often and overload WLED
     uint8_t  maxVol = 10;         // Reasonable value for constant volume for 'peak detector', as it won't always trigger
@@ -739,48 +737,50 @@ class AudioReactive : public Usermod {
      */
     void setup() {
 
-      // usermod exchangeable data
-      // we will assign all usermod exportable data here as pointers to original variables or arrays and allocate memory for pointers
-      um_data = new um_data_t;
-      um_data->u_size = 18;
-      um_data->u_type = new um_types_t[um_data->u_size];
-      um_data->u_data = new void*[um_data->u_size];
-      um_data->u_data[0] = &maxVol;           // assigned in effect function!!!
-      um_data->u_type[0] = UMT_BYTE;
-      um_data->u_data[1] = fftResult;         //*used
-      um_data->u_type[1] = UMT_BYTE_ARR;
-      um_data->u_data[2] = &sample;           //*used (for debugging)
-      um_data->u_type[2] = UMT_INT16;
-      um_data->u_data[3] = &rawSampleAgc;     //*used
-      um_data->u_type[3] = UMT_INT16;
-      um_data->u_data[4] = &samplePeak;       //*used
-      um_data->u_type[4] = UMT_BYTE;
-      um_data->u_data[5] = &binNum;           // assigned in effect function!!!
-      um_data->u_type[5] = UMT_BYTE;
-      um_data->u_data[6] = &FFT_MajorPeak;    //*used
-      um_data->u_type[6] = UMT_DOUBLE;
-      um_data->u_data[7] = &FFT_Magnitude;    //*used
-      um_data->u_type[7] = UMT_DOUBLE;
-      um_data->u_data[8] = &sampleAvg;        //*used
-      um_data->u_type[8] = UMT_FLOAT;
-      um_data->u_data[9] = &soundAgc;         //*used
-      um_data->u_type[9] = UMT_BYTE;
-      um_data->u_data[10] = &sampleAgc;       //*used (can be calculated as: sampleReal * multAgc)
-      um_data->u_type[10] = UMT_FLOAT;
-      um_data->u_data[11] = &multAgc;         //*used (for debugging)
-      um_data->u_type[11] = UMT_FLOAT;
-      um_data->u_data[12] = &sampleReal;      //*used (for debugging)
-      um_data->u_type[12] = UMT_FLOAT;
-      um_data->u_data[13] = &sampleGain;      //*used (for debugging & Binmap)
-      um_data->u_type[13] = UMT_FLOAT;
-      um_data->u_data[14] = myVals;           //*used (only once, Pixels)
-      um_data->u_type[14] = UMT_UINT16_ARR;
-      um_data->u_data[15] = &soundSquelch;    //*used (only once, Binmap)
-      um_data->u_type[15] = UMT_BYTE;
-      um_data->u_data[16] = fftBin;           //*used (only once, Binmap)
-      um_data->u_type[16] = UMT_FLOAT_ARR;
-      um_data->u_data[17] = &inputLevel;       // assigned in effect function!!!
-      um_data->u_type[17] = UMT_BYTE;
+      if (!initDone) {
+        // usermod exchangeable data
+        // we will assign all usermod exportable data here as pointers to original variables or arrays and allocate memory for pointers
+        um_data = new um_data_t;
+        um_data->u_size = 18;
+        um_data->u_type = new um_types_t[um_data->u_size];
+        um_data->u_data = new void*[um_data->u_size];
+        um_data->u_data[0] = &maxVol;           // assigned in effect function!!!
+        um_data->u_type[0] = UMT_BYTE;
+        um_data->u_data[1] = fftResult;         //*used
+        um_data->u_type[1] = UMT_BYTE_ARR;
+        um_data->u_data[2] = &sample;           //*used (for debugging)
+        um_data->u_type[2] = UMT_INT16;
+        um_data->u_data[3] = &rawSampleAgc;     //*used
+        um_data->u_type[3] = UMT_INT16;
+        um_data->u_data[4] = &samplePeak;       //*used
+        um_data->u_type[4] = UMT_BYTE;
+        um_data->u_data[5] = &binNum;           // assigned in effect function!!!
+        um_data->u_type[5] = UMT_BYTE;
+        um_data->u_data[6] = &FFT_MajorPeak;    //*used
+        um_data->u_type[6] = UMT_DOUBLE;
+        um_data->u_data[7] = &FFT_Magnitude;    //*used
+        um_data->u_type[7] = UMT_DOUBLE;
+        um_data->u_data[8] = &sampleAvg;        //*used
+        um_data->u_type[8] = UMT_FLOAT;
+        um_data->u_data[9] = &soundAgc;         //*used
+        um_data->u_type[9] = UMT_BYTE;
+        um_data->u_data[10] = &sampleAgc;       //*used (can be calculated as: sampleReal * multAgc)
+        um_data->u_type[10] = UMT_FLOAT;
+        um_data->u_data[11] = &multAgc;         //*used (for debugging)
+        um_data->u_type[11] = UMT_FLOAT;
+        um_data->u_data[12] = &sampleReal;      //*used (for debugging)
+        um_data->u_type[12] = UMT_FLOAT;
+        um_data->u_data[13] = &sampleGain;      //*used (for debugging & Binmap)
+        um_data->u_type[13] = UMT_FLOAT;
+        um_data->u_data[14] = myVals;           //*used (only once, Pixels)
+        um_data->u_type[14] = UMT_UINT16_ARR;
+        um_data->u_data[15] = &soundSquelch;    //*used (only once, Binmap)
+        um_data->u_type[15] = UMT_BYTE;
+        um_data->u_data[16] = fftBin;           //*used (only once, Binmap)
+        um_data->u_type[16] = UMT_FLOAT_ARR;
+        um_data->u_data[17] = &inputLevel;       // assigned in effect function!!!
+        um_data->u_type[17] = UMT_BYTE;
+      }
 
       // Reset I2S peripheral for good measure
       i2s_driver_uninstall(I2S_NUM_0);
@@ -833,7 +833,7 @@ class AudioReactive : public Usermod {
 
       //sampling_period_us = round(1000000*(1.0/SAMPLE_RATE));
 
-      onUpdateBegin(false); // create FFT task
+      if (enabled) onUpdateBegin(false);  // create FFT task
 /*
       // Define the FFT Task and lock it to core 0
       xTaskCreatePinnedToCore(
@@ -845,6 +845,7 @@ class AudioReactive : public Usermod {
         &FFT_Task,                        // Task handle
         0);                               // Core where the task should run
 */
+      initDone = true;
     }
 
 
@@ -1002,7 +1003,7 @@ class AudioReactive : public Usermod {
 
 
     bool getUMData(um_data_t **data) {
-      if (!data) return false; // no pointer provided by caller -> exit
+      if (!data || !enabled) return false; // no pointer provided by caller or not enabled -> exit
       *data = um_data;
       return true;
     }
@@ -1107,6 +1108,7 @@ class AudioReactive : public Usermod {
     void addToConfig(JsonObject& root)
     {
       JsonObject top = root.createNestedObject(FPSTR(_name));
+      top[F("enabled")] = enabled;
 
       JsonObject amic = top.createNestedObject(FPSTR(_analogmic));
       amic["pin"] = audioPin;
@@ -1153,6 +1155,12 @@ class AudioReactive : public Usermod {
       JsonObject top = root[FPSTR(_name)];
 
       bool configComplete = !top.isNull();
+
+      bool prevEnabled = enabled;
+      configComplete &= getJsonValue(top[F("enabled")], enabled);
+      if (initDone && prevEnabled != enabled) {
+        onUpdateBegin(!enabled); // create or remove FFT task
+      }
 
       configComplete &= getJsonValue(top[FPSTR(_analogmic)]["pin"], audioPin);
 

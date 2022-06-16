@@ -265,7 +265,7 @@
 #define FX_MODE_PUDDLEPEAK             144
 #define FX_MODE_NOISEMOVE              145
 #define FX_MODE_2DNOISE                146 // non audio
-#define FX_MODE_PERLINMOVE             147 // should be moved to 124
+#define FX_MODE_PERLINMOVE             147 // should be moved to 53
 #define FX_MODE_RIPPLEPEAK             148
 #define FX_MODE_2DFIRENOISE            149 // non audio
 #define FX_MODE_2DSQUAREDSWIRL         150 // non audio
@@ -297,12 +297,12 @@
 #define FX_MODE_2DLISSAJOUS            176 // non audio
 #define FX_MODE_2DFRIZZLES             177 // non audio
 #define FX_MODE_2DPLASMABALL           178 // non audio
-#define FX_MODE_FLOWSTRIPE             179 // should be moved to 125
+#define FX_MODE_FLOWSTRIPE             179 // should be moved to 114
 #define FX_MODE_2DHIPHOTIC             180 // non audio
 #define FX_MODE_2DSINDOTS              181 // non audio
 #define FX_MODE_2DDNASPIRAL            182 // non audio
 #define FX_MODE_2DBLACKHOLE            183 // non audio
-#define FX_MODE_WAVESINS               184 // should be moved to 126
+#define FX_MODE_WAVESINS               184 // should be moved to 48
 #define FX_MODE_ROCKTAVES              185
 #define FX_MODE_2DAKEMI                186
 //#define FX_MODE_CUSTOMEFFECT           187 //WLEDSR Custom Effects

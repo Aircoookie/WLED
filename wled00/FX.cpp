@@ -5538,110 +5538,6 @@ static const char *_data_FX_MODE_2DTARTAN PROGMEM = "2D Tartan@X scale,Y scale;;
 
 
 /////////////////////////
-//     2D Akemi        //
-/////////////////////////
-static uint8_t akemi[] PROGMEM = {
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,2,2,3,3,3,3,3,3,2,2,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,2,3,3,0,0,0,0,0,0,3,3,2,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,2,3,0,0,0,6,5,5,4,0,0,0,3,2,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,2,3,0,0,6,6,5,5,5,5,4,4,0,0,3,2,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,2,3,0,6,5,5,5,5,5,5,5,5,4,0,3,2,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,2,3,0,6,5,5,5,5,5,5,5,5,5,5,4,0,3,2,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,3,2,0,6,5,5,5,5,5,5,5,5,5,5,4,0,2,3,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,3,2,3,6,5,5,7,7,5,5,5,5,7,7,5,5,4,3,2,3,0,0,0,0,0,0,
-  0,0,0,0,0,2,3,1,3,6,5,1,7,7,7,5,5,1,7,7,7,5,4,3,1,3,2,0,0,0,0,0,
-  0,0,0,0,0,8,3,1,3,6,5,1,7,7,7,5,5,1,7,7,7,5,4,3,1,3,8,9,0,0,0,0,
-  0,0,0,0,0,8,3,1,3,6,5,5,1,1,5,5,5,5,1,1,5,5,4,3,1,3,8,0,0,0,0,0,
-  0,0,0,0,0,2,3,1,3,6,5,5,5,5,5,5,5,5,5,5,5,5,4,3,1,3,2,0,0,0,0,0,
-  0,0,0,0,0,0,3,2,3,6,5,5,5,5,5,5,5,5,5,5,5,5,4,3,2,3,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,6,5,5,5,5,5,7,7,5,5,5,5,5,4,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,6,5,5,5,5,5,5,5,5,5,5,5,5,4,0,0,0,0,0,0,0,0,0,
-  1,0,0,0,0,0,0,0,0,6,5,5,5,5,5,5,5,5,5,5,5,5,4,0,0,0,0,0,0,0,0,2,
-  0,2,2,2,0,0,0,0,0,6,5,5,5,5,5,5,5,5,5,5,5,5,4,0,0,0,0,0,2,2,2,0,
-  0,0,0,3,2,0,0,0,6,5,4,4,4,4,4,4,4,4,4,4,4,4,4,4,0,0,0,2,2,0,0,0,
-  0,0,0,3,2,0,0,0,6,5,5,5,5,5,5,5,5,5,5,5,5,5,5,4,0,0,0,2,3,0,0,0,
-  0,0,0,0,3,2,0,0,0,0,3,3,0,3,3,0,0,3,3,0,3,3,0,0,0,0,2,2,0,0,0,0,
-  0,0,0,0,3,2,0,0,0,0,3,2,0,3,2,0,0,3,2,0,3,2,0,0,0,0,2,3,0,0,0,0,
-  0,0,0,0,0,3,2,0,0,3,2,0,0,3,2,0,0,3,2,0,0,3,2,0,0,2,3,0,0,0,0,0,
-  0,0,0,0,0,3,2,2,2,2,0,0,0,3,2,0,0,3,2,0,0,0,3,2,2,2,3,0,0,0,0,0,
-  0,0,0,0,0,0,3,3,3,0,0,0,0,3,2,0,0,3,2,0,0,0,0,3,3,3,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-};
-
-uint16_t WS2812FX::mode_2DAkemi(void) {
-  if (!isMatrix) return mode_static(); // not a 2D set-up
-
-  const uint16_t cols = SEGMENT.virtualWidth();
-  const uint16_t rows = SEGMENT.virtualHeight();
-
-  uint16_t counter = (now * ((SEGMENT.speed >> 2) +2)) & 0xFFFF;
-  counter = counter >> 8;
-
-  const float lightFactor  = 0.15f;
-  const float normalFactor = 0.4f;
-  float base = 0.0f;
-  uint8_t *fftResult = nullptr;
-
-  um_data_t *um_data;
-  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    fftResult = (uint8_t*)um_data->u_data[1];
-    base = fftResult[0]/255.0f;
-  }
-
-  //draw and color Akemi
-  for (uint16_t y=0; y < rows; y++) for (uint16_t x=0; x < cols; x++) {
-    CRGB color;
-    CRGB soundColor = ORANGE;
-    CRGB faceColor  = color_wheel(counter);
-    CRGB armsAndLegsColor = SEGCOLOR(1) > 0 ? SEGCOLOR(1) : 0xFFE0A0; //default warmish white 0xABA8FF; //0xFF52e5;//
-    uint8_t ak = pgm_read_byte_near(akemi + ((y * 32)/rows) * 32 + (x * 32)/cols); // akemi[(y * 32)/rows][(x * 32)/cols]
-    switch (ak) {
-      case 0: color = BLACK; break;
-      case 3: armsAndLegsColor.r *= lightFactor;  armsAndLegsColor.g *= lightFactor;  armsAndLegsColor.b *= lightFactor;  color = armsAndLegsColor; break; //light arms and legs 0x9B9B9B
-      case 2: armsAndLegsColor.r *= normalFactor; armsAndLegsColor.g *= normalFactor; armsAndLegsColor.b *= normalFactor; color = armsAndLegsColor; break; //normal arms and legs 0x888888
-      case 1: color = armsAndLegsColor; break; //dark arms and legs 0x686868
-      case 6: faceColor.r *= lightFactor;  faceColor.g *= lightFactor;  faceColor.b *= lightFactor;  color=faceColor; break; //light face 0x31AAFF
-      case 5: faceColor.r *= normalFactor; faceColor.g *= normalFactor; faceColor.b *= normalFactor; color=faceColor; break; //normal face 0x0094FF
-      case 4: color = faceColor; break; //dark face 0x007DC6
-      case 7: color = SEGCOLOR(2) > 0 ? SEGCOLOR(2) : 0xFFFFFF; break; //eyes and mouth default white
-      case 8: if (base > 0.4) {soundColor.r *= base; soundColor.g *= base; soundColor.b *= base; color=soundColor;} else color = armsAndLegsColor; break;
-      default: color = BLACK;
-    }
-
-    if (SEGMENT.intensity > 128 && fftResult && fftResult[0] > 128) { //dance if base is high
-      setPixelColorXY(x, 0, BLACK);
-      setPixelColorXY(x, y+1, color);
-    } else
-      setPixelColorXY(x, y, color);
-  }
-
-  //add geq left and right
-  if (um_data && fftResult) {
-    for (uint16_t x=0; x < cols/8; x++) {
-      uint16_t band = x * cols/8;
-      uint16_t barHeight = map(fftResult[band], 0, 255, 0, 17*rows/32);
-      CRGB color = color_from_palette((band * 35), false, PALETTE_SOLID_WRAP, 0);
-
-      for (uint16_t y=0; y < barHeight; y++) {
-        setPixelColorXY(x, rows/2-y, color);
-        setPixelColorXY(cols-1-x, rows/2-y, color);
-      }
-    }
-  }
-
-  return FRAMETIME;
-} // mode_2DAkemi
-static const char *_data_FX_MODE_2DAKEMI PROGMEM = "2D Akemi@Color speed,Dance;Head palette,Arms & Legs,Eyes & Mouth;Face palette";
-
-
-/////////////////////////
 //     2D spaceships   //
 /////////////////////////
 uint16_t WS2812FX::mode_2Dspaceships(void) {    //// Space ships by stepko (c)05.02.21 [https://editor.soulmatelights.com/gallery/639-space-ships], adapted by Blaz Kristan
@@ -6048,7 +5944,193 @@ static const char *_data_FX_MODE_DRIFT_ROSE PROGMEM = "2D Drift Rose@Fade,Blur;;
 
 
 ///////////////////////////////////////////////////////////////////////////////
-//*************************  audio routines  **********************************
+/********************     audio enhanced routines     ************************/
+///////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////
+//     * Ripple Peak           //
+/////////////////////////////////
+uint16_t WS2812FX::mode_ripplepeak(void) {                // * Ripple peak. By Andrew Tuline.
+                                                          // This currently has no controls.
+  #define maxsteps 16                                     // Case statement wouldn't allow a variable.
+
+  uint16_t maxRipples = 16;
+  uint16_t dataSize = sizeof(Ripple) * maxRipples;
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  Ripple* ripples = reinterpret_cast<Ripple*>(SEGENV.data);
+
+  uint8_t *binNum = (uint8_t*)&SEGENV.aux1, *maxVol = (uint8_t*)(&SEGENV.aux1+1); // just in case assignment
+  uint8_t samplePeak = 0; // actually a bool
+  double FFT_MajorPeak = 0.0;
+  um_data_t *um_data;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    FFT_MajorPeak = *(double*)um_data->u_data[8];
+    binNum        =  (uint8_t*)um_data->u_data[5];
+    maxVol        =  (uint8_t*)um_data->u_data[0];
+    samplePeak    = *(uint8_t*)um_data->u_data[4];
+  } else {
+    // add support for no audio data
+    uint32_t ms = millis();
+    samplePeak = random8() > 250;
+    FFT_MajorPeak = inoise8(beatsin8(90, 0, 200)*15 + (ms>>10), ms>>3);
+  }
+
+  if (SEGENV.call == 0) SEGENV.aux0 = 255;
+
+  *binNum = SEGMENT.custom2;                               // Select a bin.
+  *maxVol = SEGMENT.custom3/2;                             // Our volume comparator.
+
+  fade_out(240);                                          // Lower frame rate means less effective fading than FastLED
+  fade_out(240);
+
+  for (uint16_t i = 0; i < SEGMENT.intensity/16; i++) {   // Limit the number of ripples.
+    if (samplePeak) ripples[i].state = 255;
+
+    switch (ripples[i].state) {
+      case 254:     // Inactive mode
+        break;
+
+      case 255:                                           // Initialize ripple variables.
+        ripples[i].pos = random16(SEGLEN);
+        #ifdef ESP32
+          ripples[i].color = (int)(log10f(FFT_MajorPeak)*128);
+        #else
+          ripples[i].color = random8();
+        #endif
+        ripples[i].state = 0;
+        break;
+
+      case 0:
+        setPixelColor(ripples[i].pos, color_blend(SEGCOLOR(1), color_from_palette(ripples[i].color, false, PALETTE_SOLID_WRAP, 0), SEGENV.aux0));
+        ripples[i].state++;
+        break;
+
+      case maxsteps:                                      // At the end of the ripples. 254 is an inactive mode.
+        ripples[i].state = 254;
+        break;
+
+      default:                                            // Middle of the ripples.
+        setPixelColor((ripples[i].pos + ripples[i].state + SEGLEN) % SEGLEN, color_blend(SEGCOLOR(1), color_from_palette(ripples[i].color, false, PALETTE_SOLID_WRAP, 0), SEGENV.aux0/ripples[i].state*2));
+        setPixelColor((ripples[i].pos - ripples[i].state + SEGLEN) % SEGLEN, color_blend(SEGCOLOR(1), color_from_palette(ripples[i].color, false, PALETTE_SOLID_WRAP, 0), SEGENV.aux0/ripples[i].state*2));
+        ripples[i].state++;                               // Next step.
+        break;
+    } // switch step
+  } // for i
+
+  return FRAMETIME;
+} // mode_ripplepeak()
+static const char *_data_FX_MODE_RIPPLEPEAK PROGMEM = " ♪ Ripple Peak@Fade rate,Max # of ripples,,Select bin,Volume (minimum);!,!;!";
+
+
+/////////////////////////
+//    * 2D Swirl       //
+/////////////////////////
+// By: Mark Kriegsman https://gist.github.com/kriegsman/5adca44e14ad025e6d3b , modified by Andrew Tuline
+uint16_t WS2812FX::mode_2DSwirl(void) {
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
+
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+
+  if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
+
+  const uint8_t borderWidth = 2;
+
+  blur2d(leds, SEGMENT.custom1);
+
+  uint8_t  i = beatsin8( 27*SEGMENT.speed/255, borderWidth, cols - borderWidth);
+  uint8_t  j = beatsin8( 41*SEGMENT.speed/255, borderWidth, rows - borderWidth);
+  uint8_t ni = (cols - 1) - i;
+  uint8_t nj = (cols - 1) - j;
+  uint16_t ms = millis();
+
+  uint8_t soundAgc = 0;
+  int16_t rawSampleAgc = 0, sample;
+  float sampleAvg = 0.0f;
+  um_data_t *um_data;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    soundAgc  = *(uint8_t*)um_data->u_data[9];
+    rawSampleAgc = *(int16_t*)um_data->u_data[3];
+    sample       = *(int16_t*)um_data->u_data[2];
+    sampleAvg    = *(float*)um_data->u_data[8];
+  } else {
+    // add support for no audio data
+    sample = inoise8(beatsin8(120, 10, 30)*10 + (ms>>14), ms>>3);
+    sample = map(sample, 50, 190, 0, 224);
+    sampleAvg = inoise8(beatsin8(90, 0, 200)*15 + (ms>>10), ms>>3);
+    //sampleAvg = mapf(sampleAvg, 0, 255, 0, 255); // help me out here
+  }
+
+  int tmpSound = (soundAgc) ? rawSampleAgc : sample;
+
+  leds[XY( i, j)]  += ColorFromPalette(currentPalette, (ms / 11 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 11, 200, 255);
+  leds[XY( j, i)]  += ColorFromPalette(currentPalette, (ms / 13 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 13, 200, 255);
+  leds[XY(ni, nj)] += ColorFromPalette(currentPalette, (ms / 17 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 17, 200, 255);
+  leds[XY(nj, ni)] += ColorFromPalette(currentPalette, (ms / 29 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 29, 200, 255);
+  leds[XY( i, nj)] += ColorFromPalette(currentPalette, (ms / 37 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 37, 200, 255);
+  leds[XY(ni, j)]  += ColorFromPalette(currentPalette, (ms / 41 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 41, 200, 255);
+
+  setPixels(leds);
+  return FRAMETIME;
+} // mode_2DSwirl()
+static const char *_data_FX_MODE_2DSWIRL PROGMEM = " ♪ 2D Swirl@!,Sensitivity=64,Blur;,Bg Swirl;!";
+
+
+/////////////////////////
+//    * 2D Waverly     //
+/////////////////////////
+// By: Stepko, https://editor.soulmatelights.com/gallery/652-wave , modified by Andrew Tuline
+uint16_t WS2812FX::mode_2DWaverly(void) {
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
+
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+
+  if (SEGENV.call == 0) {
+    fill_solid(leds, CRGB::Black);
+  }
+
+  um_data_t *um_data;
+  uint8_t soundAgc = 0;
+  float sampleAgc = 0.0f, sampleAvg = 0.0f;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    soundAgc  = *(uint8_t*)um_data->u_data[9];
+    sampleAgc = *(float*)um_data->u_data[10];
+    sampleAvg = *(float*)um_data->u_data[8];
+  }
+
+  fadeToBlackBy(leds, SEGMENT.speed);
+
+  long t = millis() / 2;
+  for (uint16_t i = 0; i < cols; i++) {
+    uint16_t thisVal = (1 + SEGMENT.intensity/64) * inoise8(i * 45 , t , t)/2;
+    // use audio if available
+    if (um_data) {
+      thisVal /= 32; // reduce intensity of inoise8()
+      thisVal *= (soundAgc) ? sampleAgc : sampleAvg;
+    }
+    uint16_t thisMax = map(thisVal, 0, 512, 0, rows);
+
+    for (uint16_t j = 0; j < thisMax; j++) {
+      leds[XY(i, j)] += ColorFromPalette(currentPalette, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND);
+      leds[XY((cols - 1) - i, (rows - 1) - j)] += ColorFromPalette(currentPalette, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND);
+    }
+  }
+  blur2d(leds, 16);
+
+  setPixels(leds);
+  return FRAMETIME;
+} // mode_2DWaverly()
+static const char *_data_FX_MODE_2DWAVERLY PROGMEM = " ♪ 2D Waverly@Amplification,Sensitivity=64;;!";
 
 
 // float version of map()
@@ -6061,7 +6143,6 @@ typedef struct Gravity {
   int    topLED;
   int    gravityCounter;
 } gravity;
-
 
 ///////////////////////
 //   * GRAVCENTER    //
@@ -6079,6 +6160,11 @@ uint16_t WS2812FX::mode_gravcenter(void) {                // Gravcenter. By Andr
     //sampleAgc = *(float*)um_data->u_data[10];
     //sampleAvg = *(float*)um_data->u_data[8];
     tmpSound = *(uint8_t*)um_data->u_data[9] ? *(float*)um_data->u_data[10] : *(float*)um_data->u_data[8];
+  } else {
+    // add support for no audio data
+    uint32_t ms = millis();
+    tmpSound = inoise8(beatsin8(120, 10, 30)*10 + (ms>>14), ms>>3);
+    //tmpSound = map(sample, 50, 190, 0, 255);
   }
 
   fade_out(240);
@@ -6128,6 +6214,11 @@ uint16_t WS2812FX::mode_gravcentric(void) {                     // Gravcentric. 
     //sampleAgc = *(float*)um_data->u_data[10];
     //sampleAvg = *(float*)um_data->u_data[8];
     tmpSound = *(uint8_t*)um_data->u_data[9] ? *(float*)um_data->u_data[10] : *(float*)um_data->u_data[8];
+  } else {
+    // add support for no audio data
+    uint32_t ms = millis();
+    tmpSound = inoise8(beatsin8(120, 10, 30)*10 + (ms>>14), ms>>3);
+    //tmpSound = map(sample, 50, 190, 0, 255);
   }
 
   fade_out(240);
@@ -6179,6 +6270,11 @@ uint16_t WS2812FX::mode_gravimeter(void) {                // Gravmeter. By Andre
     //sampleAgc = *(float*)um_data->u_data[10];
     //sampleAvg = *(float*)um_data->u_data[8];
     tmpSound = *(uint8_t*)um_data->u_data[9] ? *(float*)um_data->u_data[10] : *(float*)um_data->u_data[8];
+  } else {
+    // add support for no audio data
+    uint32_t ms = millis();
+    tmpSound = inoise8(beatsin8(120, 10, 30)*10 + (ms>>14), ms>>3);
+    //tmpSound = map(sample, 50, 190, 0, 255);
   }
 
   fade_out(240);
@@ -6289,6 +6385,11 @@ uint16_t WS2812FX::mode_juggles(void) {                   // Juggles. By Andrew 
   float sampleAgc = 0.0f;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     sampleAgc = *(float*)um_data->u_data[10];
+  } else {
+    // add support for no audio data
+    uint32_t ms = millis();
+    sampleAgc = inoise8(beatsin8(120, 10, 30)*10 + (ms>>14), ms>>3);
+    //sampleAgc = map(sample, 50, 190, 0, 255);
   }
 
   fade_out(224);
@@ -6309,11 +6410,16 @@ static const char *_data_FX_MODE_JUGGLES PROGMEM = " ♪ Juggles@!,# of balls;,!
 uint16_t WS2812FX::mode_matripix(void) {                  // Matripix. By Andrew Tuline.
   um_data_t *um_data;
   uint8_t soundAgc = 0;
-  int16_t rawSampleAgc = 0, sample = inoise8(23455,4234); // I have no idea what that does
+  int16_t rawSampleAgc = 0, sample;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     soundAgc     = *(uint8_t*)um_data->u_data[9];
     rawSampleAgc = *(int16_t*)um_data->u_data[3];
     sample       = *(int16_t*)um_data->u_data[2];
+  } else {
+    // add support for no audio data
+    uint32_t ms = millis();
+    sample = inoise8(beatsin8(120, 10, 30)*10 + (ms>>14), ms>>3);
+    sample = map(sample, 50, 190, 0, 255);
   }
 
   if (SEGENV.call == 0) fill(BLACK);
@@ -6346,6 +6452,11 @@ uint16_t WS2812FX::mode_midnoise(void) {                  // Midnoise. By Andrew
     soundAgc  = *(uint8_t*)um_data->u_data[9];
     sampleAgc = *(float*)um_data->u_data[10];
     sampleAvg = *(float*)um_data->u_data[8];
+  } else {
+    // add support for no audio data
+    uint32_t ms = millis();
+    sampleAvg = inoise8(beatsin8(90, 0, 200)*15 + (ms>>10), ms>>3);
+    //sampleAvg = mapf(sampleAvg, 0, 255, 0, 255); // help me out here
   }
 
   fade_out(SEGMENT.speed);
@@ -6390,6 +6501,9 @@ uint16_t WS2812FX::mode_noisefire(void) {                 // Noisefire. By Andre
     sampleAvg = *(float*)um_data->u_data[8];
   } else {
     // add support for no audio data
+    uint32_t ms = millis();
+    sampleAvg = inoise8(beatsin8(90, 0, 200)*15 + (ms>>10), ms>>3);
+    //sampleAvg = mapf(sampleAvg, 0, 255, 0, 255); // help me out here
   }
 
   for (uint16_t i = 0; i < SEGLEN; i++) {
@@ -6414,8 +6528,8 @@ uint16_t WS2812FX::mode_noisemeter(void) {                // Noisemeter. By Andr
 
   um_data_t *um_data;
   uint8_t soundAgc = 0;
-  int16_t rawSampleAgc = 0, sample = inoise8(23455,4234); // I have no idea what that does
-  float sampleAgc = 0.0f, sampleAvg = 0.0f;
+  int16_t rawSampleAgc = 0, sample;
+  float sampleAgc = 0.0f, sampleAvg;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     soundAgc     = *(uint8_t*)um_data->u_data[9];
     sampleAgc    = *(float*)um_data->u_data[10];
@@ -6424,6 +6538,11 @@ uint16_t WS2812FX::mode_noisemeter(void) {                // Noisemeter. By Andr
     sample       = *(int16_t*)um_data->u_data[2];
   } else {
     // add support for no audio data
+    uint32_t ms = millis();
+    sample = inoise8(beatsin8(120, 10, 30)*10 + (ms>>14), ms>>3);
+    sample = map(sample, 50, 190, 0, 255);
+    sampleAvg = inoise8(beatsin8(90, 0, 200)*15 + (ms>>10), ms>>3);
+    //sampleAvg = mapf(sampleAvg, 0, 255, 0, 255); // help me out here
   }
 
   uint8_t fadeRate = map(SEGMENT.speed,0,255,224,255);
@@ -6482,13 +6601,16 @@ uint16_t WS2812FX::mode_pixelwave(void) {                 // Pixelwave. By Andre
 
   um_data_t *um_data;
   uint8_t soundAgc = 0;
-  int16_t rawSampleAgc = 0, sample = inoise8(23455,4234); // I have no idea what that does
+  int16_t rawSampleAgc = 0, sample;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     soundAgc     = *(uint8_t*)um_data->u_data[9];
     rawSampleAgc = *(int16_t*)um_data->u_data[3];
     sample       = *(int16_t*)um_data->u_data[2];
   } else {
     // add support for no audio data
+    uint32_t ms = millis();
+    sample = inoise8(beatsin8(120, 10, 30)*10 + (ms>>14), ms>>3);
+    sample = map(sample, 50, 190, 0, 255);
   }
 
   uint8_t secondHand = micros()/(256-SEGMENT.speed)/500+1 % 16;
@@ -6524,13 +6646,16 @@ uint16_t WS2812FX::mode_plasmoid(void) {                  // Plasmoid. By Andrew
 
   um_data_t *um_data;
   uint8_t soundAgc = 0;
-  float sampleAgc = 0.0f, sampleAvg = 0.0f;
+  float sampleAgc = 0.0f, sampleAvg;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     soundAgc  = *(uint8_t*)um_data->u_data[9];
     sampleAgc = *(float*)um_data->u_data[10];
     sampleAvg = *(float*)um_data->u_data[8];
   } else {
     // add support for no audio data
+    uint32_t ms = millis();
+    sampleAvg = inoise8(beatsin8(90, 0, 200)*15 + (ms>>10), ms>>3);
+    //sampleAvg = mapf(sampleAvg, 0, 255, 0, 255); // help me out here
   }
 
   fade_out(64);
@@ -6565,7 +6690,7 @@ uint16_t WS2812FX::mode_puddlepeak(void) {                // Puddlepeak. By Andr
   uint8_t fadeVal = map(SEGMENT.speed,0,255, 224, 255);
   uint16_t pos = random(SEGLEN);                          // Set a random starting position.
 
-  uint8_t *binNum = (uint8_t*)&SEGENV.aux1, *maxVol = (uint8_t*)(&SEGENV.aux1+1); // just in case assignment
+  uint8_t *binNum = (uint8_t*)&SEGENV.aux1, *maxVol = (uint8_t*)(&SEGENV.aux0); // just in case assignment
   uint8_t samplePeak = 0;
   float sampleAgc = 0.0f;
   um_data_t *um_data;
@@ -6576,6 +6701,10 @@ uint16_t WS2812FX::mode_puddlepeak(void) {                // Puddlepeak. By Andr
     samplePeak = *(uint8_t*)um_data->u_data[4];
   } else {
     // add support for no audio data
+    uint32_t ms = millis();
+    samplePeak = random8() > 250;
+    sampleAgc = inoise8(beatsin8(90, 0, 200)*15 + (ms>>10), ms>>3);
+    //sampleAgc = mapf(sampleAvg, 0, 255, 0, 255); // help me out here
   }
 
   *binNum = SEGMENT.custom2;                               // Select a bin.
@@ -6608,7 +6737,7 @@ uint16_t WS2812FX::mode_puddles(void) {                   // Puddles. By Andrew 
   fade_out(fadeVal);
 
   uint8_t soundAgc = 0;
-  int16_t rawSampleAgc = 0, sample = inoise8(23455,4234); // I have no idea what that does
+  int16_t rawSampleAgc = 0, sample;
   um_data_t *um_data;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     soundAgc     = *(uint8_t*)um_data->u_data[9];
@@ -6616,6 +6745,9 @@ uint16_t WS2812FX::mode_puddles(void) {                   // Puddles. By Andrew 
     sample       = *(int16_t*)um_data->u_data[2];
   } else {
     // add support for no audio data
+    uint32_t ms = millis();
+    sample = inoise8(beatsin8(120, 10, 30)*10 + (ms>>14), ms>>3);
+    sample = map(sample, 50, 190, 0, 255);
   }
 
   uint16_t tmpSound = (soundAgc) ? rawSampleAgc : sample;
@@ -6634,182 +6766,9 @@ uint16_t WS2812FX::mode_puddles(void) {                   // Puddles. By Andrew 
 static const char *_data_FX_MODE_PUDDLES PROGMEM = " ♪ Puddles@Fade rate,Puddle size;!,!;!";
 
 
-/////////////////////////////////
-//     * Ripple Peak           //
-/////////////////////////////////
-uint16_t WS2812FX::mode_ripplepeak(void) {                // * Ripple peak. By Andrew Tuline.
-                                                          // This currently has no controls.
-  #define maxsteps 16                                     // Case statement wouldn't allow a variable.
-
-  uint16_t maxRipples = 16;
-  uint16_t dataSize = sizeof(Ripple) * maxRipples;
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-  Ripple* ripples = reinterpret_cast<Ripple*>(SEGENV.data);
-
-  uint8_t *binNum = (uint8_t*)&SEGENV.aux1, *maxVol = (uint8_t*)(&SEGENV.aux1+1); // just in case assignment
-  uint8_t samplePeak = 0;
-  double FFT_MajorPeak = 0.0;
-  um_data_t *um_data;
-  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    FFT_MajorPeak = *(double*)um_data->u_data[8];
-    binNum        = (uint8_t*)um_data->u_data[5];
-    maxVol        = (uint8_t*)um_data->u_data[0];
-    samplePeak    = *(uint8_t*)um_data->u_data[4];
-  } else {
-    // add support for no audio data
-  }
-
-  if (SEGENV.call == 0) SEGENV.aux0 = 255;
-
-  *binNum = SEGMENT.custom2;                               // Select a bin.
-  *maxVol = SEGMENT.custom3/2;                             // Our volume comparator.
-
-  fade_out(240);                                          // Lower frame rate means less effective fading than FastLED
-  fade_out(240);
-
-  for (uint16_t i = 0; i < SEGMENT.intensity/16; i++) {   // Limit the number of ripples.
-    if (samplePeak) ripples[i].state = 255;
-
-    switch (ripples[i].state) {
-      case 254:     // Inactive mode
-        break;
-
-      case 255:                                           // Initialize ripple variables.
-        ripples[i].pos = random16(SEGLEN);
-        #ifdef ESP32
-          ripples[i].color = (int)(log10f(FFT_MajorPeak)*128);
-        #else
-          ripples[i].color = random8();
-        #endif
-        ripples[i].state = 0;
-        break;
-
-      case 0:
-        setPixelColor(ripples[i].pos, color_blend(SEGCOLOR(1), color_from_palette(ripples[i].color, false, PALETTE_SOLID_WRAP, 0), SEGENV.aux0));
-        ripples[i].state++;
-        break;
-
-      case maxsteps:                                      // At the end of the ripples. 254 is an inactive mode.
-        ripples[i].state = 254;
-        break;
-
-      default:                                            // Middle of the ripples.
-        setPixelColor((ripples[i].pos + ripples[i].state + SEGLEN) % SEGLEN, color_blend(SEGCOLOR(1), color_from_palette(ripples[i].color, false, PALETTE_SOLID_WRAP, 0), SEGENV.aux0/ripples[i].state*2));
-        setPixelColor((ripples[i].pos - ripples[i].state + SEGLEN) % SEGLEN, color_blend(SEGCOLOR(1), color_from_palette(ripples[i].color, false, PALETTE_SOLID_WRAP, 0), SEGENV.aux0/ripples[i].state*2));
-        ripples[i].state++;                               // Next step.
-        break;
-    } // switch step
-  } // for i
-
-  return FRAMETIME;
-} // mode_ripplepeak()
-static const char *_data_FX_MODE_RIPPLEPEAK PROGMEM = " ♪ Ripple Peak@Fade rate,Max # of ripples,,Select bin,Volume (minimum);!,!;!";
-
-
-/////////////////////////
-//    * 2D Swirl       //
-/////////////////////////
-// By: Mark Kriegsman https://gist.github.com/kriegsman/5adca44e14ad025e6d3b , modified by Andrew Tuline
-uint16_t WS2812FX::mode_2DSwirl(void) {
-  if (!isMatrix) return mode_static(); // not a 2D set-up
-
-  const uint16_t cols = SEGMENT.virtualWidth();
-  const uint16_t rows = SEGMENT.virtualHeight();
-  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
-
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
-
-  if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
-
-  const uint8_t borderWidth = 2;
-
-  blur2d( leds, SEGMENT.custom1);
-
-  uint8_t  i = beatsin8( 27*SEGMENT.speed/255, borderWidth, cols - borderWidth);
-  uint8_t  j = beatsin8( 41*SEGMENT.speed/255, borderWidth, rows - borderWidth);
-  uint8_t ni = (cols - 1) - i;
-  uint8_t nj = (cols - 1) - j;
-  uint16_t ms = millis();
-
-  uint8_t soundAgc = 0;
-  int16_t rawSampleAgc = 0, sample = inoise8(23455,4234); // I have no idea what that does
-  float sampleAvg = 0.0f;
-  um_data_t *um_data;
-  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    soundAgc  = *(uint8_t*)um_data->u_data[9];
-    rawSampleAgc = *(int16_t*)um_data->u_data[3];
-    sample       = *(int16_t*)um_data->u_data[2];
-    sampleAvg    = *(float*)um_data->u_data[8];
-  } else {
-    // add support for no audio data
-  }
-
-  int tmpSound = (soundAgc) ? rawSampleAgc : sample;
-
-  leds[XY( i, j)]  += ColorFromPalette(currentPalette, (ms / 11 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 11, 200, 255);
-  leds[XY( j, i)]  += ColorFromPalette(currentPalette, (ms / 13 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 13, 200, 255);
-  leds[XY(ni, nj)] += ColorFromPalette(currentPalette, (ms / 17 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 17, 200, 255);
-  leds[XY(nj, ni)] += ColorFromPalette(currentPalette, (ms / 29 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 29, 200, 255);
-  leds[XY( i, nj)] += ColorFromPalette(currentPalette, (ms / 37 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 37, 200, 255);
-  leds[XY(ni, j)]  += ColorFromPalette(currentPalette, (ms / 41 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 41, 200, 255);
-
-  setPixels(leds);
-  return FRAMETIME;
-} // mode_2DSwirl()
-static const char *_data_FX_MODE_2DSWIRL PROGMEM = " ♪ 2D Swirl@!,Sensitivity=64,Blur;,Bg Swirl;!";
-
-
-/////////////////////////
-//    * 2D Waverly     //
-/////////////////////////
-// By: Stepko, https://editor.soulmatelights.com/gallery/652-wave , modified by Andrew Tuline
-uint16_t WS2812FX::mode_2DWaverly(void) {
-  if (!isMatrix) return mode_static(); // not a 2D set-up
-
-  const uint16_t cols = SEGMENT.virtualWidth();
-  const uint16_t rows = SEGMENT.virtualHeight();
-  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
-
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
-
-  if (SEGENV.call == 0) {
-    fill_solid(leds, CRGB::Black);
-  }
-
-  um_data_t *um_data;
-  uint8_t soundAgc = 0;
-  float sampleAgc = 0.0f, sampleAvg = 0.0f;
-  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    soundAgc  = *(uint8_t*)um_data->u_data[9];
-    sampleAgc = *(float*)um_data->u_data[10];
-    sampleAvg = *(float*)um_data->u_data[8];
-  }
-
-  fadeToBlackBy(leds, SEGMENT.speed);
-
-  long t = millis() / 2;
-  for (uint16_t i = 0; i < cols; i++) {
-    uint16_t thisVal = (1 + SEGMENT.intensity/64) * inoise8(i * 45 , t , t)/2;
-    // use audio if available
-    if (um_data) {
-      thisVal /= 32; // reduce intensity of inoise8()
-      thisVal *= (soundAgc) ? sampleAgc : sampleAvg;
-    }
-    uint16_t thisMax = map(thisVal, 0, 512, 0, rows);
-
-    for (uint16_t j = 0; j < thisMax; j++) {
-      leds[XY(i, j)] += ColorFromPalette(currentPalette, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND);
-      leds[XY((cols - 1) - i, (rows - 1) - j)] += ColorFromPalette(currentPalette, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND);
-    }
-  }
-  blur2d(leds, 16);
-
-  setPixels(leds);
-  return FRAMETIME;
-} // mode_2DWaverly()
-static const char *_data_FX_MODE_2DWAVERLY PROGMEM = " ♪ 2D Waverly@Amplification,Sensitivity=64;;!";
+///////////////////////////////////////////////////////////////////////////////
+/********************       audio only routines       ************************/
+///////////////////////////////////////////////////////////////////////////////
 
 
 ///////////////////////////////
@@ -7515,6 +7474,110 @@ uint16_t WS2812FX::mode_2DFunkyPlank(void) {              // Written by ??? Adap
   return FRAMETIME;
 } // mode_2DFunkyPlank
 static const char *_data_FX_MODE_2DFUNKYPLANK PROGMEM = " ♫ 2D Funky Plank@Scroll speed,,# of bands;;";
+
+
+/////////////////////////
+//     2D Akemi        //
+/////////////////////////
+static uint8_t akemi[] PROGMEM = {
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,2,2,3,3,3,3,3,3,2,2,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,2,3,3,0,0,0,0,0,0,3,3,2,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,2,3,0,0,0,6,5,5,4,0,0,0,3,2,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,2,3,0,0,6,6,5,5,5,5,4,4,0,0,3,2,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,2,3,0,6,5,5,5,5,5,5,5,5,4,0,3,2,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,2,3,0,6,5,5,5,5,5,5,5,5,5,5,4,0,3,2,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,3,2,0,6,5,5,5,5,5,5,5,5,5,5,4,0,2,3,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,3,2,3,6,5,5,7,7,5,5,5,5,7,7,5,5,4,3,2,3,0,0,0,0,0,0,
+  0,0,0,0,0,2,3,1,3,6,5,1,7,7,7,5,5,1,7,7,7,5,4,3,1,3,2,0,0,0,0,0,
+  0,0,0,0,0,8,3,1,3,6,5,1,7,7,7,5,5,1,7,7,7,5,4,3,1,3,8,9,0,0,0,0,
+  0,0,0,0,0,8,3,1,3,6,5,5,1,1,5,5,5,5,1,1,5,5,4,3,1,3,8,0,0,0,0,0,
+  0,0,0,0,0,2,3,1,3,6,5,5,5,5,5,5,5,5,5,5,5,5,4,3,1,3,2,0,0,0,0,0,
+  0,0,0,0,0,0,3,2,3,6,5,5,5,5,5,5,5,5,5,5,5,5,4,3,2,3,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,6,5,5,5,5,5,7,7,5,5,5,5,5,4,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,6,5,5,5,5,5,5,5,5,5,5,5,5,4,0,0,0,0,0,0,0,0,0,
+  1,0,0,0,0,0,0,0,0,6,5,5,5,5,5,5,5,5,5,5,5,5,4,0,0,0,0,0,0,0,0,2,
+  0,2,2,2,0,0,0,0,0,6,5,5,5,5,5,5,5,5,5,5,5,5,4,0,0,0,0,0,2,2,2,0,
+  0,0,0,3,2,0,0,0,6,5,4,4,4,4,4,4,4,4,4,4,4,4,4,4,0,0,0,2,2,0,0,0,
+  0,0,0,3,2,0,0,0,6,5,5,5,5,5,5,5,5,5,5,5,5,5,5,4,0,0,0,2,3,0,0,0,
+  0,0,0,0,3,2,0,0,0,0,3,3,0,3,3,0,0,3,3,0,3,3,0,0,0,0,2,2,0,0,0,0,
+  0,0,0,0,3,2,0,0,0,0,3,2,0,3,2,0,0,3,2,0,3,2,0,0,0,0,2,3,0,0,0,0,
+  0,0,0,0,0,3,2,0,0,3,2,0,0,3,2,0,0,3,2,0,0,3,2,0,0,2,3,0,0,0,0,0,
+  0,0,0,0,0,3,2,2,2,2,0,0,0,3,2,0,0,3,2,0,0,0,3,2,2,2,3,0,0,0,0,0,
+  0,0,0,0,0,0,3,3,3,0,0,0,0,3,2,0,0,3,2,0,0,0,0,3,3,3,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+};
+
+uint16_t WS2812FX::mode_2DAkemi(void) {
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+
+  uint16_t counter = (now * ((SEGMENT.speed >> 2) +2)) & 0xFFFF;
+  counter = counter >> 8;
+
+  const float lightFactor  = 0.15f;
+  const float normalFactor = 0.4f;
+  float base = 0.0f;
+  uint8_t *fftResult = nullptr;
+
+  um_data_t *um_data;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    fftResult = (uint8_t*)um_data->u_data[1];
+    base = fftResult[0]/255.0f;
+  }
+
+  //draw and color Akemi
+  for (uint16_t y=0; y < rows; y++) for (uint16_t x=0; x < cols; x++) {
+    CRGB color;
+    CRGB soundColor = ORANGE;
+    CRGB faceColor  = color_wheel(counter);
+    CRGB armsAndLegsColor = SEGCOLOR(1) > 0 ? SEGCOLOR(1) : 0xFFE0A0; //default warmish white 0xABA8FF; //0xFF52e5;//
+    uint8_t ak = pgm_read_byte_near(akemi + ((y * 32)/rows) * 32 + (x * 32)/cols); // akemi[(y * 32)/rows][(x * 32)/cols]
+    switch (ak) {
+      case 0: color = BLACK; break;
+      case 3: armsAndLegsColor.r *= lightFactor;  armsAndLegsColor.g *= lightFactor;  armsAndLegsColor.b *= lightFactor;  color = armsAndLegsColor; break; //light arms and legs 0x9B9B9B
+      case 2: armsAndLegsColor.r *= normalFactor; armsAndLegsColor.g *= normalFactor; armsAndLegsColor.b *= normalFactor; color = armsAndLegsColor; break; //normal arms and legs 0x888888
+      case 1: color = armsAndLegsColor; break; //dark arms and legs 0x686868
+      case 6: faceColor.r *= lightFactor;  faceColor.g *= lightFactor;  faceColor.b *= lightFactor;  color=faceColor; break; //light face 0x31AAFF
+      case 5: faceColor.r *= normalFactor; faceColor.g *= normalFactor; faceColor.b *= normalFactor; color=faceColor; break; //normal face 0x0094FF
+      case 4: color = faceColor; break; //dark face 0x007DC6
+      case 7: color = SEGCOLOR(2) > 0 ? SEGCOLOR(2) : 0xFFFFFF; break; //eyes and mouth default white
+      case 8: if (base > 0.4) {soundColor.r *= base; soundColor.g *= base; soundColor.b *= base; color=soundColor;} else color = armsAndLegsColor; break;
+      default: color = BLACK;
+    }
+
+    if (SEGMENT.intensity > 128 && fftResult && fftResult[0] > 128) { //dance if base is high
+      setPixelColorXY(x, 0, BLACK);
+      setPixelColorXY(x, y+1, color);
+    } else
+      setPixelColorXY(x, y, color);
+  }
+
+  //add geq left and right
+  if (um_data && fftResult) {
+    for (uint16_t x=0; x < cols/8; x++) {
+      uint16_t band = x * cols/8;
+      uint16_t barHeight = map(fftResult[band], 0, 255, 0, 17*rows/32);
+      CRGB color = color_from_palette((band * 35), false, PALETTE_SOLID_WRAP, 0);
+
+      for (uint16_t y=0; y < barHeight; y++) {
+        setPixelColorXY(x, rows/2-y, color);
+        setPixelColorXY(cols-1-x, rows/2-y, color);
+      }
+    }
+  }
+
+  return FRAMETIME;
+} // mode_2DAkemi
+static const char *_data_FX_MODE_2DAKEMI PROGMEM = "2D Akemi@Color speed,Dance;Head palette,Arms & Legs,Eyes & Mouth;Face palette";
 
 
 //////////////////////////////////////////////////////////////////////////////////////////
