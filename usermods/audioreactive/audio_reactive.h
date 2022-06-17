@@ -536,7 +536,7 @@ class AudioReactive : public Usermod {
       if (last_soundAgc != soundAgc)
         control_integrated = 0.0f;              // new preset - reset integrator
 
-      // For PI control, we need to have a contant "frequency"
+      // For PI controller, we need to have a constant "frequency"
       // so let's make sure that the control loop is not running at insane speed
       static unsigned long last_time = 0;
       unsigned long time_now = millis();
@@ -548,8 +548,8 @@ class AudioReactive : public Usermod {
           //multAgcTemp = multAgc;          // keep old control value (no change)
           tmpAgc = 0;
           // we need to "spin down" the intgrated error buffer
-          if (fabs(control_integrated) < 0.01f) control_integrated = 0.0f;
-          else control_integrated = control_integrated * 0.91f;
+          if (fabs(control_integrated) < 0.01f) control_integrated  = 0.0f;
+          else                                  control_integrated *= 0.91f;
         } else {
           // compute new setpoint
           if (tmpAgc <= agcTarget0Up[AGC_preset])
@@ -558,7 +558,8 @@ class AudioReactive : public Usermod {
             multAgcTemp = agcTarget1[AGC_preset] / sampleMax;  // Make the multiplier so that sampleMax * multiplier = second setpoint
         }
         // limit amplification
-        if (multAgcTemp > 32.0f) multAgcTemp = 32.0f;
+        //multAgcTemp = constrain(multAgcTemp, 0.015625f, 32.0f); // 1/64 < multAgcTemp < 32
+        if (multAgcTemp > 32.0f)      multAgcTemp = 32.0f;
         if (multAgcTemp < 1.0f/64.0f) multAgcTemp = 1.0f/64.0f;
 
         // compute error terms
@@ -581,27 +582,29 @@ class AudioReactive : public Usermod {
         }
 
         // limit amplification again - PI controler sometimes "overshoots"
-        if (multAgcTemp > 32.0f) multAgcTemp = 32.0f;
+        //multAgcTemp = constrain(multAgcTemp, 0.015625f, 32.0f); // 1/64 < multAgcTemp < 32
+        if (multAgcTemp > 32.0f)      multAgcTemp = 32.0f;
         if (multAgcTemp < 1.0f/64.0f) multAgcTemp = 1.0f/64.0f;
       }
 
       // NOW finally amplify the signal
       tmpAgc = sampleReal * multAgcTemp;                  // apply gain to signal
       if(fabs(sampleReal) < 2.0f) tmpAgc = 0;             // apply squelch threshold
+      //tmpAgc = constrain(tmpAgc, 0, 255);
       if (tmpAgc > 255) tmpAgc = 255;                     // limit to 8bit
-      if (tmpAgc < 1) tmpAgc = 0;                         // just to be sure
+      if (tmpAgc < 1)   tmpAgc = 0;                       // just to be sure
 
       // update global vars ONCE - multAgc, sampleAGC, rawSampleAgc
       multAgc = multAgcTemp;
       rawSampleAgc = 0.8f * tmpAgc + 0.2f * (float)rawSampleAgc;
       // update smoothed AGC sample
-      if(fabs(tmpAgc) < 1.0f) 
+      if (fabs(tmpAgc) < 1.0f) 
         sampleAgc =  0.5f * tmpAgc + 0.5f * sampleAgc;      // fast path to zero
       else
         sampleAgc = sampleAgc + agcSampleSmooth[AGC_preset] * (tmpAgc - sampleAgc); // smooth path
 
-      userVar0 = sampleAvg * 4;
-      if (userVar0 > 255) userVar0 = 255;
+      //userVar0 = sampleAvg * 4;
+      //if (userVar0 > 255) userVar0 = 255;
 
       last_soundAgc = soundAgc;
     } // agcAvg()
@@ -656,9 +659,9 @@ class AudioReactive : public Usermod {
         sampleMax = sampleMax + 0.5f * (sampleReal - sampleMax);          // new peak - with some filtering
       } else {
         if ((multAgc*sampleMax > agcZoneStop[AGC_preset]) && (soundAgc > 0))
-          sampleMax = sampleMax + 0.5f * (sampleReal - sampleMax);        // over AGC Zone - get back quickly
+          sampleMax += 0.5f * (sampleReal - sampleMax);        // over AGC Zone - get back quickly
         else
-          sampleMax = sampleMax * agcSampleDecay[AGC_preset];            // signal to zero --> 5-8sec
+          sampleMax *= agcSampleDecay[AGC_preset];             // signal to zero --> 5-8sec
       }
       if (sampleMax < 0.5f) sampleMax = 0.0f;
 
@@ -677,14 +680,21 @@ class AudioReactive : public Usermod {
 
       if (userVar1 == 0) samplePeak = 0;
       // Poor man's beat detection by seeing if sample > Average + some value.
-      //  Serial.print(binNum); Serial.print("\t"); Serial.print(fftBin[binNum]); Serial.print("\t"); Serial.print(fftAvg[binNum/16]); Serial.print("\t"); Serial.print(maxVol); Serial.print("\t"); Serial.println(samplePeak);
-      if ((fftBin[binNum] > maxVol) && (millis() > (timeOfPeak + 100))) {                     // This goe through ALL of the 255 bins
+      // Serial.print(binNum); Serial.print("\t");
+      // Serial.print(fftBin[binNum]);
+      // Serial.print("\t");
+      // Serial.print(fftAvg[binNum/16]);
+      // Serial.print("\t");
+      // Serial.print(maxVol);
+      // Serial.print("\t");
+      // Serial.println(samplePeak);
+      if ((fftBin[binNum] > maxVol) && (millis() > (timeOfPeak + 100))) {    // This goes through ALL of the 255 bins
       //  if (sample > (sampleAvg + maxVol) && millis() > (timeOfPeak + 200)) {
       // Then we got a peak, else we don't. The peak has to time out on its own in order to support UDP sound sync.
         samplePeak    = 1;
         timeOfPeak    = millis();
         udpSamplePeak = 1;
-        userVar1      = samplePeak;
+        //userVar1      = samplePeak;
       }
     } // getSample()
 

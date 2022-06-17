@@ -5946,6 +5946,48 @@ static const char *_data_FX_MODE_DRIFT_ROSE PROGMEM = "2D Drift Rose@Fade,Blur;;
 ///////////////////////////////////////////////////////////////////////////////
 /********************     audio enhanced routines     ************************/
 ///////////////////////////////////////////////////////////////////////////////
+/* use the following code to pass AudioReactive usermod variables to effect
+
+  uint8_t *binNum = (uint8_t*)&SEGENV.aux1, *maxVol = (uint8_t*)(&SEGENV.aux1+1); // just in case assignment
+  uint16_t sample = 0;
+  uint8_t soundAgc = 0, soundSquelch = 10;
+  uint8_t samplePeak = 0;
+  float sampleAgc = 0.0f, sampleAgv = 0.0f, multAgc = 0.0f, sampleReal = 0.0f;
+  float *fftBin = nullptr;
+  double FFT_MajorPeak = 0.0, FFT_Magnitude = 0.0;
+  uint8_t *fftResult = nullptr;
+  uint16_t *myVals = nullptr;
+  um_data_t *um_data;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    maxVol        =  (uint8_t*)um_data->u_data[0];  // requires UI element (SEGMENT.customX?)
+    fftResult     =  (uint8_t*)um_data->u_data[1];
+    sample        = *(uint16_t*)um_data->u_data[2];
+    rawSampleAgc  = *(uint16_t*)um_data->u_data[3];
+    samplePeak    = *(uint8_t*)um_data->u_data[4];
+    binNum        =  (uint8_t*)um_data->u_data[5];  // requires UI element (SEGMENT.customX?)
+    FFT_MajorPeak = *(double*)um_data->u_data[6];
+    FFT_Magnitude = *(double*)um_data->u_data[7];
+    sampleAvg     = *(float*)um_data->u_data[8];
+    soundAgc      = *(uint8_t*)um_data->u_data[9];
+    sampleAgc     = *(float*)um_data->u_data[10];
+    multAgc       = *(float*)um_data->u_data[11];
+    sampleReal    = *(float*)um_data->u_data[12];
+    sampleGain    = *(float*)um_data->u_data[13];
+    myVals        =  (uint16_t*)um_data->u_data[14];
+    soundSquelch  = *(uint8_t*)um_data->u_data[15];
+    fftBin        =  (float*)um_data->u_data[16];
+    inputLevel    =  (uint8_t*)um_data->u_data[17]; // requires UI element (SEGMENT.customX?)
+  } else {
+    // add support for no audio data
+    uint32_t ms = millis();
+    sample = inoise8(beatsin8(120, 10, 30)*10 + (ms>>14), ms>>3);
+    sample = map(sample, 50, 190, 0, 224);
+    sampleAvg = inoise8(beatsin8(90, 0, 200)*15 + (ms>>10), ms>>3);
+    samplePeak = random8() > 250; // or use: sample==224
+    FFT_MajorPeak = inoise8(beatsin8(90, 0, 200)*15 + (ms>>10), ms>>3);
+  }
+  if (!myVals || !fftBin || ...) return mode_static();
+*/
 
 
 /////////////////////////////////
@@ -5965,7 +6007,7 @@ uint16_t WS2812FX::mode_ripplepeak(void) {                // * Ripple peak. By A
   double FFT_MajorPeak = 0.0;
   um_data_t *um_data;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    FFT_MajorPeak = *(double*)um_data->u_data[8];
+    FFT_MajorPeak = *(double*)um_data->u_data[6];
     binNum        =  (uint8_t*)um_data->u_data[5];
     maxVol        =  (uint8_t*)um_data->u_data[0];
     samplePeak    = *(uint8_t*)um_data->u_data[4];
@@ -5978,8 +6020,8 @@ uint16_t WS2812FX::mode_ripplepeak(void) {                // * Ripple peak. By A
 
   if (SEGENV.call == 0) SEGENV.aux0 = 255;
 
-  *binNum = SEGMENT.custom2;                               // Select a bin.
-  *maxVol = SEGMENT.custom3/2;                             // Our volume comparator.
+  *binNum = SEGMENT.custom2;                              // Select a bin.
+  *maxVol = SEGMENT.custom3/2;                            // Our volume comparator.
 
   fade_out(240);                                          // Lower frame rate means less effective fading than FastLED
   fade_out(240);
@@ -6054,7 +6096,7 @@ uint16_t WS2812FX::mode_2DSwirl(void) {
   float sampleAvg = 0.0f;
   um_data_t *um_data;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    soundAgc  = *(uint8_t*)um_data->u_data[9];
+    soundAgc     = *(uint8_t*)um_data->u_data[9];
     rawSampleAgc = *(int16_t*)um_data->u_data[3];
     sample       = *(int16_t*)um_data->u_data[2];
     sampleAvg    = *(float*)um_data->u_data[8];
@@ -7277,6 +7319,7 @@ uint16_t WS2812FX::mode_waterfall(void) {                   // Waterfall. By: An
   um_data_t *um_data;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     maxVol        =  (uint8_t*)um_data->u_data[0];
+    samplePeak    = *(uint8_t*)um_data->u_data[4];
     binNum        =  (uint8_t*)um_data->u_data[5];
     FFT_MajorPeak = *(double*)um_data->u_data[6];
     FFT_Magnitude = *(double*)um_data->u_data[7];
