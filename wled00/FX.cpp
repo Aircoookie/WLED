@@ -3976,7 +3976,7 @@ uint16_t WS2812FX::mode_chunchun(void)
   {
     counter -= span;
     uint16_t megumin = sin16(counter) + 0x8000;
-    uint32_t bird = (megumin * SEGLEN) >> 16;
+    uint16_t bird = uint32_t(megumin * SEGLEN) >> 16;
     uint32_t c = color_from_palette((i * 255)/ numBirds, false, false, 0);  // no palette wrapping
     setPixelColor(bird, c);
   }

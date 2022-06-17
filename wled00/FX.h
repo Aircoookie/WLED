@@ -683,6 +683,7 @@ class WS2812FX {
       blur(uint8_t),
       fill(uint32_t),
       fade_out(uint8_t r),
+      fadeToBlackBy(uint8_t fadeBy),
       setMode(uint8_t segid, uint8_t m),
       setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       setColor(uint8_t slot, uint32_t c),
@@ -701,12 +702,18 @@ class WS2812FX {
       makeAutoSegments(bool forceReset = false),
       fixInvalidSegments(),
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
+      setPixelColor(float i, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0, bool aa = false),
       show(void),
 			setTargetFps(uint8_t fps),
       deserializeMap(uint8_t n=0);
 
-    inline void setPixelColor(uint16_t n, uint32_t c) {setPixelColor(n, byte(c>>16), byte(c>>8), byte(c), byte(c>>24));}
-    inline void setPixelColor(uint16_t n, CRGB &c)    {setPixelColor(n, c.red, c.green, c.blue);}
+    // satisfy compiler by providing multiple casts
+    inline void setPixelColor(int n, uint32_t c)                         {setPixelColor(n, byte(c>>16), byte(c>>8), byte(c), byte(c>>24));}
+    inline void setPixelColor(int n, byte r, byte g, byte b, byte w = 0) {setPixelColor(n, r, g, b, w);}
+    inline void setPixelColor(uint16_t n, uint32_t c)                    {setPixelColor(n, byte(c>>16), byte(c>>8), byte(c), byte(c>>24));}
+    inline void setPixelColor(uint16_t n, CRGB c)                        {setPixelColor(n, c.red, c.green, c.blue);}
+    inline void setPixelColor(float i, uint32_t c, bool aa = false)      {setPixelColor(i, byte(c>>16), byte(c>>8), byte(c), byte(c>>24), aa);}
+    inline void setPixelColor(float i, CRGB c, bool aa = false)          {setPixelColor(i, c.red, c.green, c.blue, 0, aa);}
 
     bool
       gammaCorrectBri = false,
@@ -752,12 +759,15 @@ class WS2812FX {
       getLengthPhysical(void),
       getFps();
 
+    inline uint16_t getMinShowDelay() { return MIN_SHOW_DELAY; }
+
     uint32_t
       now,
       timebase,
       color_wheel(uint8_t),
       color_from_palette(uint16_t, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri = 255),
       color_blend(uint32_t,uint32_t,uint16_t,bool b16=false),
+      color_add(uint32_t,uint32_t),
       currentColor(uint32_t colorNew, uint8_t tNr),
       gamma32(uint32_t),
       getLastShow(void),
@@ -956,36 +966,36 @@ class WS2812FX {
       getPixelColorXY(uint16_t, uint16_t);
 
   // 2D modes
-  uint16_t
-    mode_2DBlackHole(void),
-    mode_2DColoredBursts(void),
-    mode_2Ddna(void),
-    mode_2DDNASpiral(void),
-    mode_2DDrift(void),
-    mode_2Dfirenoise(void),
-    mode_2DFrizzles(void),
-    mode_2Dgameoflife(void),
-    mode_2DHiphotic(void),
-    mode_2DJulia(void),
-    mode_2DLissajous(void),
-    mode_2Dmatrix(void),
-    mode_2Dmetaballs(void),
-    mode_2Dnoise(void),
-    mode_2DPlasmaball(void),
-    mode_2DPolarLights(void),
-    mode_2DPulser(void),
-    mode_2DSindots(void),
-    mode_2Dsquaredswirl(void),
-    mode_2DSunradiation(void),
-    mode_2Dtartan(void),
-    mode_2DWaverly(void),
-    mode_2DAkemi(void),
-    mode_2Dspaceships(void),
-    mode_2Dcrazybees(void),
-    mode_2Dghostrider(void),
-    mode_2Dfloatingblobs(void),
-    mode_2Dscrollingtext(void),
-    mode_2Ddriftrose(void);
+    uint16_t
+      mode_2DBlackHole(void),
+      mode_2DColoredBursts(void),
+      mode_2Ddna(void),
+      mode_2DDNASpiral(void),
+      mode_2DDrift(void),
+      mode_2Dfirenoise(void),
+      mode_2DFrizzles(void),
+      mode_2Dgameoflife(void),
+      mode_2DHiphotic(void),
+      mode_2DJulia(void),
+      mode_2DLissajous(void),
+      mode_2Dmatrix(void),
+      mode_2Dmetaballs(void),
+      mode_2Dnoise(void),
+      mode_2DPlasmaball(void),
+      mode_2DPolarLights(void),
+      mode_2DPulser(void),
+      mode_2DSindots(void),
+      mode_2Dsquaredswirl(void),
+      mode_2DSunradiation(void),
+      mode_2Dtartan(void),
+      mode_2DWaverly(void),
+      mode_2DAkemi(void),
+      mode_2Dspaceships(void),
+      mode_2Dcrazybees(void),
+      mode_2Dghostrider(void),
+      mode_2Dfloatingblobs(void),
+      mode_2Dscrollingtext(void),
+      mode_2Ddriftrose(void);
 
 // end 2D support
 

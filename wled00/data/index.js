@@ -1328,6 +1328,7 @@ function setSliderAndColorControl(idx, applyDef=false)
 	var cslLabel = '';
 	var sep = '';
 	var hide = true;
+	var cslCnt = 0;
 	for (let i=0; i<gId("csl").children.length; i++) {
 		var btn = gId("csl" + i);
 		// if no controlDefined or coOnOff has a value
@@ -1345,10 +1346,12 @@ function setSliderAndColorControl(idx, applyDef=false)
 			else if (i==1) btn.innerHTML = "Bg";
 			else btn.innerHTML = "Cs";
 			hide = false;
+			cslCnt++;
 		} else if (!controlDefined /*|| paOnOff.length>0*/) { // if no controls then all buttons should be shown for color 1..3
 			btn.style.display = "inline";
 			btn.innerHTML = `${i+1}`;
 			hide = false;
+			cslCnt++;
 		} else {
 			btn.style.display = "none";
 			if (i>0 && csel==i) selectSlot(0);
@@ -1381,6 +1384,10 @@ function setSliderAndColorControl(idx, applyDef=false)
 		palw.style.display = "none";
 		// if numeric set as selected palette
 		if (paOnOff.length>0 && paOnOff[0]!="" && !isNaN(paOnOff[0]) && parseInt(paOnOff[0])!=selectedPal) obj.seg.pal = parseInt(paOnOff[0]);
+	}
+	// not all color selectors shown, hide palettes created from color selectors
+	for (let e of (gId('pallist').querySelectorAll('.lstI')||[])) {
+		if (cslCnt < 3 && e.querySelector('.lstIname').innerText.indexOf("* ")>=0) e.classList.add('hide'); else e.classList.remove('hide');
 	}
 	if (!isEmpty(obj.seg) && applyDef) requestJson(obj); // update default values (may need throttling on ESP8266)
 }
