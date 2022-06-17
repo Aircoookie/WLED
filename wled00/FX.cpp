@@ -5942,10 +5942,25 @@ uint16_t WS2812FX::mode_2Dscrollingtext(void) {
   const int yoffset = map(SEGMENT.intensity, 0, 255, -rows/2, rows/2) + (rows-letterHeight)/2;
   const char *text = PSTR("Use segment name"); // fallback if empty segment name
   if (SEGMENT.name && strlen(SEGMENT.name)) text = SEGMENT.name;
+
+  char lineBuffer[17], sec[3];
+  if (strstr_P(text, PSTR("#DATETIME"))) {
+    byte AmPmHour = hour(localTime);
+    boolean isitAM = true;
+    if (useAMPM) {
+      if (AmPmHour > 11) { AmPmHour -= 12; isitAM = false; }
+      if (AmPmHour == 0) { AmPmHour  = 12; }
+    }
+    if (useAMPM) sprintf_P(sec, PSTR(" %2s"), (isitAM ? "AM" : "PM"));
+    else         sprintf_P(sec, PSTR(":%02d"), second(localTime));
+    sprintf_P(lineBuffer,PSTR("%s %2d %2d:%02d%s"), monthShortStr(month(localTime)), day(localTime), AmPmHour, minute(localTime), sec);
+    text = lineBuffer;
+  }
   const int numberOfLetters = strlen(text);
 
   if (SEGENV.step < millis()) {
-    ++SEGENV.aux0 %= (numberOfLetters * letterWidth) + cols; // offset
+    if ((numberOfLetters * letterWidth) > cols) ++SEGENV.aux0 %= (numberOfLetters * letterWidth) + cols;      // offset
+    else                                          SEGENV.aux0  = (cols - (numberOfLetters * letterWidth))/2;
     ++SEGENV.aux1 &= 0xFF; // color shift
     SEGENV.step = millis() + map(SEGMENT.speed, 0, 255, 10*FRAMETIME_FIXED, 2*FRAMETIME_FIXED);
   }
