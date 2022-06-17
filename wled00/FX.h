@@ -1023,7 +1023,7 @@ class WS2812FX {
       nscale8(CRGB* leds, uint8_t scale),
       setPixels(CRGB* leds),
       drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c, CRGB *leds = nullptr),
-      drawCharacter(unsigned char chr, int16_t x, int16_t y, CRGB color, CRGB *leds = nullptr),
+      drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB color, CRGB *leds = nullptr),
       wu_pixel(CRGB *leds, uint32_t x, uint32_t y, CRGB c);
 
     inline void setPixelColorXY(uint16_t x, uint16_t y, uint32_t c) { setPixelColorXY(x, y, byte(c>>16), byte(c>>8), byte(c), byte(c>>24)); }
@@ -1031,7 +1031,7 @@ class WS2812FX {
     inline void setPixelColorXY(float x, float y, uint32_t c, bool aa) { setPixelColorXY(x, y, byte(c>>16), byte(c>>8), byte(c), byte(c>>24), aa); }
     inline void setPixelColorXY(float x, float y, CRGB c, bool aa)     { setPixelColorXY(x, y, c.red, c.green, c.blue, 0, aa); }
     inline void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint32_t c) { drawLine(x0, y0, x1, y1, CRGB(byte(c>>16), byte(c>>8), byte(c))); }
-    inline void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint32_t c) { drawCharacter(chr, x, y, CRGB(byte(c>>16), byte(c>>8), byte(c))); }
+    inline void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t c) { drawCharacter(chr, x, y, w, h, CRGB(byte(c>>16), byte(c>>8), byte(c))); }
 
     uint16_t
       XY(uint16_t, uint16_t),
