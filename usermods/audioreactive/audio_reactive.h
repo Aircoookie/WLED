@@ -389,7 +389,9 @@ class AudioReactive : public Usermod {
     const uint16_t delayMs = 10;        // I don't want to sample too often and overload WLED
     uint8_t  maxVol = 10;         // Reasonable value for constant volume for 'peak detector', as it won't always trigger
     uint8_t  binNum = 8;          // Used to select the bin for FFT based beat detection.
-    uint8_t  targetAgc = 60;      // This is our setPoint at 20% of max for the adjusted output
+    #ifdef MIC_SAMPLING_LOG
+    uint8_t  targetAgc = 60;      // This is our setPoint at 20% of max for the adjusted output (used only in logAudio())
+    #endif
     uint8_t  myVals[32];          // Used to store a pile of samples because WLED frame rate and WLED sample rate are not synchronized. Frame rate is too low.
     bool     samplePeak = 0;      // Boolean flag for peak. Responding routine must reset this flag
     bool     udpSamplePeak = 0;   // Boolean flag for peak. Set at the same tiem as samplePeak, but reset by transmitAudioData
@@ -397,17 +399,12 @@ class AudioReactive : public Usermod {
     int16_t  sample;              // Current sample. Must only be updated ONCE!!!
     float    sampleMax = 0.0f;    // Max sample over a few seconds. Needed for AGC controler.
     float    sampleReal = 0.0f;		// "sample" as float, to provide bits that are lost otherwise. Needed for AGC.
-    float    tmpSample;           // An interim sample variable used for calculatioins.
-    float    sampleAdj;           // Gain adjusted sample value
+    float    sampleAvg = 0.0f;    // Smoothed Average
     float    sampleAgc = 0.0f;    // Our AGC sample
     int16_t  rawSampleAgc = 0;    // Our AGC sample - raw
     uint32_t timeOfPeak = 0;
     uint32_t lastTime = 0;
     float    micLev = 0.0f;       // Used to convert returned value to have '0' as minimum. A leveller
-    float    sampleAvg = 0.0f;    // Smoothed Average
-    float    beat = 0.0f;         // beat Detection
-    float    expAdjF;             // Used for exponential filter.
-    float    weighting = 0.2f;    // Exponential filter weighting. Will be adjustable in a future release.
 
     bool     udpSyncConnected = false;
 
@@ -442,7 +439,7 @@ class AudioReactive : public Usermod {
       //Serial.print("sampleMax:");     Serial.print(sampleMax);      Serial.print("\t");
       Serial.print("multAgc:");    Serial.print(multAgc, 4);   Serial.print("\t");
       Serial.print("sampleAgc:");  Serial.print(sampleAgc);   Serial.print("\t");
-      Serial.println(" ");
+      Serial.println();
     #endif
 
     #ifdef MIC_SAMPLING_LOG
@@ -458,7 +455,7 @@ class AudioReactive : public Usermod {
       Serial.print(micIn); Serial.print(" ");
       Serial.print(100); Serial.print(" ");
       Serial.print(0); Serial.print(" ");
-      Serial.println(" ");
+      Serial.println();
     #endif
 
     #ifdef FFT_SAMPLING_LOG
@@ -467,7 +464,7 @@ class AudioReactive : public Usermod {
           Serial.print(fftResult[i]);
           Serial.print("\t");
         }
-        Serial.println("");
+        Serial.println();
       #endif
 
       // OPTIONS are in the following format: Description \n Option
@@ -612,7 +609,11 @@ class AudioReactive : public Usermod {
 
     void getSample()
     {
-      const int AGC_preset = (soundAgc > 0)? (soundAgc-1): 0; // make sure the _compiler_ knows this value will not change while we are inside the function
+      float    sampleAdj;           // Gain adjusted sample value
+      float    expAdjF;             // Used for exponential filter.
+      float    tmpSample;           // An interim sample variable used for calculatioins.
+      const float weighting = 0.2f; // Exponential filter weighting. Will be adjustable in a future release.
+      const int   AGC_preset = (soundAgc > 0)? (soundAgc-1): 0; // make sure the _compiler_ knows this value will not change while we are inside the function
 
       #ifdef WLED_DISABLE_SOUND
         micIn = inoise8(millis(), millis());          // Simulated analog read
@@ -917,7 +918,7 @@ class AudioReactive : public Usermod {
         if (soundAgc > AGC_NUM_PRESETS) soundAgc = 0; // make sure that AGC preset is valid (to avoid array bounds violation)
         getSample();                        // Sample the microphone
         agcAvg();                           // Calculated the PI adjusted value as sampleAvg
-        myVals[millis()%32] = sampleAgc;
+        myVals[millis()%32] = sampleAgc;    // filling values semi randomly
 
         uint8_t knownMode = strip.getMainSegment().mode;
 
