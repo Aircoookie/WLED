@@ -5869,11 +5869,11 @@ uint16_t WS2812FX::mode_2Dscrollingtext(void) {
   const int letterWidth = SEGMENT.custom2 > 128 ? 6 : 5;
   const int letterHeight = 8;
   const int yoffset = map(SEGMENT.intensity, 0, 255, -rows/2, rows/2) + (rows-letterHeight)/2;
-  const char *text = PSTR("Use segment name"); // fallback if empty segment name
+  const char *text = nullptr;
   if (SEGMENT.name && strlen(SEGMENT.name)) text = SEGMENT.name;
 
   char lineBuffer[17], sec[3];
-  if (strstr_P(text, PSTR("#DATETIME"))) {
+  if (!text) { // fallback if empty segment name: display date and time
     byte AmPmHour = hour(localTime);
     boolean isitAM = true;
     if (useAMPM) {
@@ -5948,35 +5948,35 @@ static const char *_data_FX_MODE_DRIFT_ROSE PROGMEM = "2D Drift Rose@Fade,Blur;;
 ///////////////////////////////////////////////////////////////////////////////
 /* use the following code to pass AudioReactive usermod variables to effect
 
-  uint8_t *binNum = (uint8_t*)&SEGENV.aux1, *maxVol = (uint8_t*)(&SEGENV.aux1+1); // just in case assignment
-  uint16_t sample = 0;
-  uint8_t soundAgc = 0, soundSquelch = 10;
-  uint8_t samplePeak = 0;
-  float sampleAgc = 0.0f, sampleAgv = 0.0f, multAgc = 0.0f, sampleReal = 0.0f;
-  float *fftBin = nullptr;
-  double FFT_MajorPeak = 0.0, FFT_Magnitude = 0.0;
-  uint8_t *fftResult = nullptr;
+  uint8_t  *binNum = (uint8_t*)&SEGENV.aux1, *maxVol = (uint8_t*)(&SEGENV.aux1+1); // just in case assignment
+  uint16_t  sample = 0;
+  uint8_t   soundAgc = 0, soundSquelch = 10;
+  bool      samplePeak = false;
+  float     sampleAgc = 0.0f, sampleAgv = 0.0f, multAgc = 0.0f, sampleReal = 0.0f;
+  double    FFT_MajorPeak = 0.0, FFT_Magnitude = 0.0;
+  uint8_t  *fftResult = nullptr;
   uint16_t *myVals = nullptr;
+  float    *fftBin = nullptr;
   um_data_t *um_data;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    maxVol        =  (uint8_t*)um_data->u_data[0];  // requires UI element (SEGMENT.customX?)
-    fftResult     =  (uint8_t*)um_data->u_data[1];
-    sample        = *(uint16_t*)um_data->u_data[2];
-    rawSampleAgc  = *(uint16_t*)um_data->u_data[3];
-    samplePeak    = *(uint8_t*)um_data->u_data[4];
-    binNum        =  (uint8_t*)um_data->u_data[5];  // requires UI element (SEGMENT.customX?)
-    FFT_MajorPeak = *(double*)um_data->u_data[6];
-    FFT_Magnitude = *(double*)um_data->u_data[7];
-    sampleAvg     = *(float*)um_data->u_data[8];
-    soundAgc      = *(uint8_t*)um_data->u_data[9];
-    sampleAgc     = *(float*)um_data->u_data[10];
-    multAgc       = *(float*)um_data->u_data[11];
-    sampleReal    = *(float*)um_data->u_data[12];
-    sampleGain    = *(float*)um_data->u_data[13];
+    sampleAvg     = *(float*)   um_data->u_data[ 0];
+    soundAgc      = *(uint8_t*) um_data->u_data[ 1];
+    sampleAgc     = *(float*)   um_data->u_data[ 2];
+    sample        = *(uint16_t*)um_data->u_data[ 3];
+    rawSampleAgc  = *(uint16_t*)um_data->u_data[ 4];
+    samplePeak    = *(uint8_t*) um_data->u_data[ 5];
+    FFT_MajorPeak = *(double*)  um_data->u_data[ 6];
+    FFT_Magnitude = *(double*)  um_data->u_data[ 7];
+    fftResult     =  (uint8_t*) um_data->u_data[ 8];
+    maxVol        =  (uint8_t*) um_data->u_data[ 9];  // requires UI element (SEGMENT.customX?), changes source element
+    binNum        =  (uint8_t*) um_data->u_data[10];  // requires UI element (SEGMENT.customX?), changes source element
+    multAgc       = *(float*)   um_data->u_data[11];
+    sampleReal    = *(float*)   um_data->u_data[12];
+    sampleGain    = *(float*)   um_data->u_data[13];
     myVals        =  (uint16_t*)um_data->u_data[14];
-    soundSquelch  = *(uint8_t*)um_data->u_data[15];
-    fftBin        =  (float*)um_data->u_data[16];
-    inputLevel    =  (uint8_t*)um_data->u_data[17]; // requires UI element (SEGMENT.customX?)
+    soundSquelch  = *(uint8_t*) um_data->u_data[15];
+    fftBin        =  (float*)   um_data->u_data[16];
+    inputLevel    =  (uint8_t*) um_data->u_data[17]; // requires UI element (SEGMENT.customX?), changes source element
   } else {
     // add support for no audio data
     uint32_t ms = millis();
@@ -6002,23 +6002,29 @@ uint16_t WS2812FX::mode_ripplepeak(void) {                // * Ripple peak. By A
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   Ripple* ripples = reinterpret_cast<Ripple*>(SEGENV.data);
 
-  uint8_t *binNum = (uint8_t*)&SEGENV.aux1, *maxVol = (uint8_t*)(&SEGENV.aux1+1); // just in case assignment
+  uint8_t *binNum, *maxVol; // just in case assignment
   uint8_t samplePeak = 0; // actually a bool
   double FFT_MajorPeak = 0.0;
   um_data_t *um_data;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    FFT_MajorPeak = *(double*)um_data->u_data[6];
-    binNum        =  (uint8_t*)um_data->u_data[5];
-    maxVol        =  (uint8_t*)um_data->u_data[0];
-    samplePeak    = *(uint8_t*)um_data->u_data[4];
+    FFT_MajorPeak = *(double*) um_data->u_data[6];
+    binNum        =  (uint8_t*)um_data->u_data[10];
+    maxVol        =  (uint8_t*)um_data->u_data[9];
+    samplePeak    = *(uint8_t*)um_data->u_data[5];
   } else {
     // add support for no audio data
     uint32_t ms = millis();
     samplePeak = random8() > 250;
     FFT_MajorPeak = inoise8(beatsin8(90, 0, 200)*15 + (ms>>10), ms>>3);
+    binNum = (uint8_t*) &SEGENV.aux1;
+    maxVol = (uint8_t*)(&SEGENV.aux1+1); // just in case assignment
   }
 
-  if (SEGENV.call == 0) SEGENV.aux0 = 255;
+  if (SEGENV.call == 0) {
+    SEGENV.aux0 = 255;
+    SEGMENT.custom2 = *binNum;
+    SEGMENT.custom3 = *maxVol * 2;
+  }
 
   *binNum = SEGMENT.custom2;                              // Select a bin.
   *maxVol = SEGMENT.custom3/2;                            // Our volume comparator.
@@ -6096,10 +6102,10 @@ uint16_t WS2812FX::mode_2DSwirl(void) {
   float sampleAvg = 0.0f;
   um_data_t *um_data;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    soundAgc     = *(uint8_t*)um_data->u_data[9];
-    rawSampleAgc = *(int16_t*)um_data->u_data[3];
-    sample       = *(int16_t*)um_data->u_data[2];
-    sampleAvg    = *(float*)um_data->u_data[8];
+    sampleAvg    = *(float*)  um_data->u_data[0];
+    soundAgc     = *(uint8_t*)um_data->u_data[1];
+    rawSampleAgc = *(int16_t*)um_data->u_data[4];
+    sample       = *(int16_t*)um_data->u_data[3];
   } else {
     // add support for no audio data
     sample = inoise8(beatsin8(120, 10, 30)*10 + (ms>>14), ms>>3);
@@ -6145,9 +6151,9 @@ uint16_t WS2812FX::mode_2DWaverly(void) {
   uint8_t soundAgc = 0;
   float sampleAgc = 0.0f, sampleAvg = 0.0f;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    soundAgc  = *(uint8_t*)um_data->u_data[9];
-    sampleAgc = *(float*)um_data->u_data[10];
-    sampleAvg = *(float*)um_data->u_data[8];
+    sampleAvg = *(float*)  um_data->u_data[0];
+    soundAgc  = *(uint8_t*)um_data->u_data[1];
+    sampleAgc = *(float*)  um_data->u_data[2];
   }
 
   fadeToBlackBy(leds, SEGMENT.speed);
@@ -6198,10 +6204,10 @@ uint16_t WS2812FX::mode_gravcenter(void) {                // Gravcenter. By Andr
   um_data_t *um_data;
   float tmpSound = (float)inoise8(23333); // I have no idea what that does
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    //soundAgc  = *(uint8_t*)um_data->u_data[9];
-    //sampleAgc = *(float*)um_data->u_data[10];
-    //sampleAvg = *(float*)um_data->u_data[8];
-    tmpSound = *(uint8_t*)um_data->u_data[9] ? *(float*)um_data->u_data[10] : *(float*)um_data->u_data[8];
+    //soundAgc  = *(uint8_t*)um_data->u_data[1];
+    //sampleAgc = *(float*)um_data->u_data[2];
+    //sampleAvg = *(float*)um_data->u_data[0];
+    tmpSound = *(uint8_t*)um_data->u_data[1] ? *(float*)um_data->u_data[2] : *(float*)um_data->u_data[0];
   } else {
     // add support for no audio data
     uint32_t ms = millis();
@@ -6252,10 +6258,10 @@ uint16_t WS2812FX::mode_gravcentric(void) {                     // Gravcentric. 
   um_data_t *um_data;
   float tmpSound = (float)inoise8(23333); // I have no idea what that does
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    //soundAgc  = *(uint8_t*)um_data->u_data[9];
-    //sampleAgc = *(float*)um_data->u_data[10];
-    //sampleAvg = *(float*)um_data->u_data[8];
-    tmpSound = *(uint8_t*)um_data->u_data[9] ? *(float*)um_data->u_data[10] : *(float*)um_data->u_data[8];
+    //soundAgc  = *(uint8_t*)um_data->u_data[1];
+    //sampleAgc = *(float*)um_data->u_data[2];
+    //sampleAvg = *(float*)um_data->u_data[0];
+    tmpSound = *(uint8_t*)um_data->u_data[1] ? *(float*)um_data->u_data[2] : *(float*)um_data->u_data[0];
   } else {
     // add support for no audio data
     uint32_t ms = millis();
@@ -6308,10 +6314,10 @@ uint16_t WS2812FX::mode_gravimeter(void) {                // Gravmeter. By Andre
   um_data_t *um_data;
   float tmpSound = (float)inoise8(23333); // I have no idea what that does
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    //soundAgc  = *(uint8_t*)um_data->u_data[9];
-    //sampleAgc = *(float*)um_data->u_data[10];
-    //sampleAvg = *(float*)um_data->u_data[8];
-    tmpSound = *(uint8_t*)um_data->u_data[9] ? *(float*)um_data->u_data[10] : *(float*)um_data->u_data[8];
+    //soundAgc  = *(uint8_t*)um_data->u_data[1];
+    //sampleAgc = *(float*)um_data->u_data[2];
+    //sampleAvg = *(float*)um_data->u_data[0];
+    tmpSound = *(uint8_t*)um_data->u_data[1] ? *(float*)um_data->u_data[2] : *(float*)um_data->u_data[0];
   } else {
     // add support for no audio data
     uint32_t ms = millis();
@@ -6361,10 +6367,10 @@ uint16_t WS2812FX::mode_gravimeter(void) {                // Gravmeter. By Andre
   uint8_t soundAgc = 0;
   float sampleAgc = 0.0f, sampleAgv = 0.0f, multAgc = 0.0f, sampleReal = 0.0f;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    sample     = *(uint16_t*)um_data->u_data[2];
-    soundAgc   = *(uint8_t*)um_data->u_data[9];
-    sampleAgc  = *(float*)um_data->u_data[10];
-    sampleAvg  = *(float*)um_data->u_data[8];
+    sample     = *(uint16_t*)um_data->u_data[3];
+    soundAgc   = *(uint8_t*)um_data->u_data[1];
+    sampleAgc  = *(float*)um_data->u_data[2];
+    sampleAvg  = *(float*)um_data->u_data[0];
     multAgc    = *(float*)um_data->u_data[11];
     sampleReal = *(float*)um_data->u_data[12];
     sampleGain = *(float*)um_data->u_data[13];
@@ -6426,7 +6432,7 @@ uint16_t WS2812FX::mode_juggles(void) {                   // Juggles. By Andrew 
   um_data_t *um_data;
   float sampleAgc = 0.0f;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    sampleAgc = *(float*)um_data->u_data[10];
+    sampleAgc = *(float*)um_data->u_data[2];
   } else {
     // add support for no audio data
     uint32_t ms = millis();
@@ -6454,9 +6460,9 @@ uint16_t WS2812FX::mode_matripix(void) {                  // Matripix. By Andrew
   uint8_t soundAgc = 0;
   int16_t rawSampleAgc = 0, sample;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    soundAgc     = *(uint8_t*)um_data->u_data[9];
-    rawSampleAgc = *(int16_t*)um_data->u_data[3];
-    sample       = *(int16_t*)um_data->u_data[2];
+    soundAgc     = *(uint8_t*)um_data->u_data[1];
+    rawSampleAgc = *(int16_t*)um_data->u_data[4];
+    sample       = *(int16_t*)um_data->u_data[3];
   } else {
     // add support for no audio data
     uint32_t ms = millis();
@@ -6491,9 +6497,9 @@ uint16_t WS2812FX::mode_midnoise(void) {                  // Midnoise. By Andrew
   uint8_t soundAgc = 0;
   float sampleAgc = 0.0f, sampleAvg = 0.0f;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    soundAgc  = *(uint8_t*)um_data->u_data[9];
-    sampleAgc = *(float*)um_data->u_data[10];
-    sampleAvg = *(float*)um_data->u_data[8];
+    soundAgc  = *(uint8_t*)um_data->u_data[1];
+    sampleAgc = *(float*)um_data->u_data[2];
+    sampleAvg = *(float*)um_data->u_data[0];
   } else {
     // add support for no audio data
     uint32_t ms = millis();
@@ -6538,9 +6544,9 @@ uint16_t WS2812FX::mode_noisefire(void) {                 // Noisefire. By Andre
   uint8_t soundAgc = 0;
   float sampleAgc = 0.0f, sampleAvg = 0.0f;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    soundAgc  = *(uint8_t*)um_data->u_data[9];
-    sampleAgc = *(float*)um_data->u_data[10];
-    sampleAvg = *(float*)um_data->u_data[8];
+    soundAgc  = *(uint8_t*)um_data->u_data[1];
+    sampleAgc = *(float*)um_data->u_data[2];
+    sampleAvg = *(float*)um_data->u_data[0];
   } else {
     // add support for no audio data
     uint32_t ms = millis();
@@ -6573,11 +6579,11 @@ uint16_t WS2812FX::mode_noisemeter(void) {                // Noisemeter. By Andr
   int16_t rawSampleAgc = 0, sample;
   float sampleAgc = 0.0f, sampleAvg;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    soundAgc     = *(uint8_t*)um_data->u_data[9];
-    sampleAgc    = *(float*)um_data->u_data[10];
-    sampleAvg    = *(float*)um_data->u_data[8];
-    rawSampleAgc = *(int16_t*)um_data->u_data[3];
-    sample       = *(int16_t*)um_data->u_data[2];
+    soundAgc     = *(uint8_t*)um_data->u_data[1];
+    sampleAgc    = *(float*)um_data->u_data[2];
+    sampleAvg    = *(float*)um_data->u_data[0];
+    rawSampleAgc = *(int16_t*)um_data->u_data[4];
+    sample       = *(int16_t*)um_data->u_data[3];
   } else {
     // add support for no audio data
     uint32_t ms = millis();
@@ -6618,7 +6624,7 @@ uint16_t WS2812FX::mode_pixels(void) {                    // Pixels. By Andrew T
   uint16_t *myVals = nullptr;
   float sampleAgc = 0.0f;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    sampleAgc = *(float*)um_data->u_data[10];
+    sampleAgc = *(float*)um_data->u_data[2];
     myVals    = (uint16_t*)um_data->u_data[14];
   }
   if (!myVals) return mode_static();
@@ -6645,9 +6651,9 @@ uint16_t WS2812FX::mode_pixelwave(void) {                 // Pixelwave. By Andre
   uint8_t soundAgc = 0;
   int16_t rawSampleAgc = 0, sample;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    soundAgc     = *(uint8_t*)um_data->u_data[9];
-    rawSampleAgc = *(int16_t*)um_data->u_data[3];
-    sample       = *(int16_t*)um_data->u_data[2];
+    soundAgc     = *(uint8_t*)um_data->u_data[1];
+    rawSampleAgc = *(int16_t*)um_data->u_data[4];
+    sample       = *(int16_t*)um_data->u_data[3];
   } else {
     // add support for no audio data
     uint32_t ms = millis();
@@ -6690,9 +6696,9 @@ uint16_t WS2812FX::mode_plasmoid(void) {                  // Plasmoid. By Andrew
   uint8_t soundAgc = 0;
   float sampleAgc = 0.0f, sampleAvg;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    soundAgc  = *(uint8_t*)um_data->u_data[9];
-    sampleAgc = *(float*)um_data->u_data[10];
-    sampleAvg = *(float*)um_data->u_data[8];
+    soundAgc  = *(uint8_t*)um_data->u_data[1];
+    sampleAgc = *(float*)um_data->u_data[2];
+    sampleAvg = *(float*)um_data->u_data[0];
   } else {
     // add support for no audio data
     uint32_t ms = millis();
@@ -6732,21 +6738,28 @@ uint16_t WS2812FX::mode_puddlepeak(void) {                // Puddlepeak. By Andr
   uint8_t fadeVal = map(SEGMENT.speed,0,255, 224, 255);
   uint16_t pos = random(SEGLEN);                          // Set a random starting position.
 
-  uint8_t *binNum = (uint8_t*)&SEGENV.aux1, *maxVol = (uint8_t*)(&SEGENV.aux0); // just in case assignment
+  uint8_t *binNum, *maxVol;
   uint8_t samplePeak = 0;
-  float sampleAgc = 0.0f;
+  float   sampleAgc = 0.0f;
   um_data_t *um_data;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    sampleAgc  = *(float*)um_data->u_data[10];
-    binNum     = (uint8_t*)um_data->u_data[5];
-    maxVol     = (uint8_t*)um_data->u_data[0];
-    samplePeak = *(uint8_t*)um_data->u_data[4];
+    sampleAgc  = *(float*)um_data->u_data[2];
+    binNum     =  (uint8_t*)um_data->u_data[10];
+    maxVol     =  (uint8_t*)um_data->u_data[9];
+    samplePeak = *(uint8_t*)um_data->u_data[5];
   } else {
     // add support for no audio data
     uint32_t ms = millis();
     samplePeak = random8() > 250;
     sampleAgc = inoise8(beatsin8(90, 0, 200)*15 + (ms>>10), ms>>3);
     //sampleAgc = mapf(sampleAvg, 0, 255, 0, 255); // help me out here
+    maxVol = (uint8_t*)&SEGENV.aux0;
+    binNum = (uint8_t*)&SEGENV.aux1;
+  }
+
+  if (SEGENV.call == 0) {
+    SEGMENT.custom2 = *binNum;
+    SEGMENT.custom3 = *maxVol * 2;
   }
 
   *binNum = SEGMENT.custom2;                               // Select a bin.
@@ -6782,9 +6795,9 @@ uint16_t WS2812FX::mode_puddles(void) {                   // Puddles. By Andrew 
   int16_t rawSampleAgc = 0, sample;
   um_data_t *um_data;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    soundAgc     = *(uint8_t*)um_data->u_data[9];
-    rawSampleAgc = *(int16_t*)um_data->u_data[3];
-    sample       = *(int16_t*)um_data->u_data[2];
+    soundAgc     = *(uint8_t*)um_data->u_data[1];
+    rawSampleAgc = *(int16_t*)um_data->u_data[4];
+    sample       = *(int16_t*)um_data->u_data[3];
   } else {
     // add support for no audio data
     uint32_t ms = millis();
@@ -6827,7 +6840,9 @@ uint16_t WS2812FX::mode_binmap(void) {
 
   float maxVal = 512;                           // Kind of a guess as to the maximum output value per combined logarithmic bins.
 
-  uint8_t *maxVol = (uint8_t*)&SEGENV.aux1; // just in case assignment
+#ifdef SR_DEBUG
+  uint8_t *maxVol;
+#endif
   uint8_t soundAgc = 0;
   float sampleAvg = 0.0f;
   float *fftBin = nullptr;
@@ -6836,16 +6851,26 @@ uint16_t WS2812FX::mode_binmap(void) {
   uint8_t *inputLevel = (uint8_t*)(&SEGENV.aux1+1);
   um_data_t *um_data;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    maxVol        =  (uint8_t*)um_data->u_data[0];
-    sampleAvg     = *(float*)um_data->u_data[8];
-    soundAgc      = *(uint8_t*)um_data->u_data[9];
-    multAgc       = *(float*)um_data->u_data[11];
-    sampleGain    = *(float*)um_data->u_data[13];
+#ifdef SR_DEBUG
+    maxVol        =  (uint8_t*)um_data->u_data[9];
+#endif
+    sampleAvg     = *(float*)  um_data->u_data[0];
+    soundAgc      = *(uint8_t*)um_data->u_data[1];
+    multAgc       = *(float*)  um_data->u_data[11];
+    sampleGain    = *(float*)  um_data->u_data[13];
     soundSquelch  = *(uint8_t*)um_data->u_data[15];
-    fftBin        =  (float*)um_data->u_data[16];
+    fftBin        =  (float*)  um_data->u_data[16];
     inputLevel    =  (uint8_t*)um_data->u_data[17];
   }
   if (!fftBin) return mode_static();
+
+  if (SEGENV.call == 0) {
+    SEGMENT.custom1 = *inputLevel;
+#ifdef SR_DEBUG
+    SEGMENT.custom3 = *maxVol;
+#endif
+  }
+
 
   //TODO: implement inputLevel as a global or slider
   *inputLevel = SEGMENT.custom1;
@@ -6887,8 +6912,11 @@ uint16_t WS2812FX::mode_binmap(void) {
 
   return FRAMETIME;
 } // mode_binmap()
+#ifdef SR_DEBUG
+static const char *_data_FX_MODE_BINMAP PROGMEM = " ♫ Binmap@,,Input level=128,,Max vol;!,!;!";
+#else
 static const char *_data_FX_MODE_BINMAP PROGMEM = " ♫ Binmap@,,Input level=128;!,!;!";
-
+#endif
 
 //////////////////////
 //    ** Blurz      //
@@ -6897,7 +6925,7 @@ uint16_t WS2812FX::mode_blurz(void) {                    // Blurz. By Andrew Tul
   uint8_t *fftResult = nullptr;
   um_data_t *um_data;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    fftResult     =  (uint8_t*)um_data->u_data[1];
+    fftResult     =  (uint8_t*)um_data->u_data[8];
   } else {
     // add support for no audio data
   }
@@ -6935,7 +6963,7 @@ uint16_t WS2812FX::mode_DJLight(void) {                   // Written by ??? Adap
   uint8_t *fftResult = nullptr;
   um_data_t *um_data;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    fftResult     =  (uint8_t*)um_data->u_data[1];
+    fftResult     =  (uint8_t*)um_data->u_data[8];
   } else {
     // add support for no audio data
   }
@@ -6975,8 +7003,8 @@ uint16_t WS2812FX::mode_freqmap(void) {                   // Map FFT_MajorPeak t
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     FFT_MajorPeak = *(double*)um_data->u_data[6];
     FFT_Magnitude = *(double*)um_data->u_data[7];
-    sampleAvg     = *(float*)um_data->u_data[8];
-    soundAgc      = *(uint8_t*)um_data->u_data[9];
+    sampleAvg     = *(float*)um_data->u_data[0];
+    soundAgc      = *(uint8_t*)um_data->u_data[1];
     multAgc       = *(float*)um_data->u_data[11];
   } else {
     // add support for no audio data
@@ -7010,7 +7038,7 @@ uint16_t WS2812FX::mode_freqmatrix(void) {                // Freqmatrix. By Andr
   um_data_t *um_data;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     FFT_MajorPeak = *(double*)um_data->u_data[6];
-    sampleAgc     = *(float*)um_data->u_data[10];
+    sampleAgc     = *(float*)um_data->u_data[2];
   } else {
     // add support for no audio data
   }
@@ -7070,8 +7098,8 @@ uint16_t WS2812FX::mode_freqpixels(void) {                // Freqpixel. By Andre
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     FFT_MajorPeak = *(double*)um_data->u_data[6];
     FFT_Magnitude = *(double*)um_data->u_data[7];
-    sampleAvg     = *(float*)um_data->u_data[8];
-    soundAgc      = *(uint8_t*)um_data->u_data[9];
+    sampleAvg     = *(float*)um_data->u_data[0];
+    soundAgc      = *(uint8_t*)um_data->u_data[1];
     multAgc       = *(float*)um_data->u_data[11];
   } else {
     // add support for no audio data
@@ -7117,9 +7145,9 @@ uint16_t WS2812FX::mode_freqwave(void) {                  // Freqwave. By Andrea
   um_data_t *um_data;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     FFT_MajorPeak = *(double*)um_data->u_data[6];
-    sampleAvg     = *(float*)um_data->u_data[8];
-    soundAgc      = *(uint8_t*)um_data->u_data[9];
-    sampleAgc     = *(float*)um_data->u_data[10];
+    sampleAvg     = *(float*)um_data->u_data[0];
+    soundAgc      = *(uint8_t*)um_data->u_data[1];
+    sampleAgc     = *(float*)um_data->u_data[2];
   } else {
     // add support for no audio data
   }
@@ -7184,9 +7212,9 @@ uint16_t WS2812FX::mode_gravfreq(void) {                  // Gravfreq. By Andrew
   double FFT_MajorPeak = 0.0;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     FFT_MajorPeak = *(double*)um_data->u_data[6];
-    soundAgc      = *(uint8_t*)um_data->u_data[9];
-    sampleAgc     = *(float*)um_data->u_data[10];
-    sampleAvg     = *(float*)um_data->u_data[8];
+    soundAgc      = *(uint8_t*)um_data->u_data[1];
+    sampleAgc     = *(float*)um_data->u_data[2];
+    sampleAvg     = *(float*)um_data->u_data[0];
   } else {
     // add support for no audio data
     sampleAvg = inoise8(12345); // I have no idea what that does
@@ -7233,7 +7261,7 @@ uint16_t WS2812FX::mode_noisemove(void) {                 // Noisemove.    By: A
   uint8_t *fftResult = nullptr;
   um_data_t *um_data;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    fftResult     =  (uint8_t*)um_data->u_data[1];
+    fftResult     =  (uint8_t*)um_data->u_data[8];
   } else {
     // add support for no audio data
   }
@@ -7266,8 +7294,8 @@ uint16_t WS2812FX::mode_rocktaves(void) {                 // Rocktaves. Same not
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     FFT_MajorPeak = *(double*)um_data->u_data[6];
     FFT_Magnitude = *(double*)um_data->u_data[7];
-    sampleAvg     = *(float*)um_data->u_data[8];
-    soundAgc      = *(uint8_t*)um_data->u_data[9];
+    sampleAvg     = *(float*)um_data->u_data[0];
+    soundAgc      = *(uint8_t*)um_data->u_data[1];
     multAgc       = *(float*)um_data->u_data[11];
   } else {
     // add support for no audio data
@@ -7309,7 +7337,7 @@ static const char *_data_FX_MODE_ROCKTAVES PROGMEM = " ♫ Rocktaves@;,!;!";
 uint16_t WS2812FX::mode_waterfall(void) {                   // Waterfall. By: Andrew Tuline
   if (SEGENV.call == 0) fill(BLACK);
 
-  uint8_t *binNum = (uint8_t*)&SEGENV.aux1, *maxVol = (uint8_t*)(&SEGENV.aux1+1); // just in case assignment
+  uint8_t *binNum, *maxVol;
   uint8_t samplePeak = 0;
   double FFT_MajorPeak = 0.0;
   double FFT_Magnitude = 0.0;
@@ -7318,16 +7346,27 @@ uint16_t WS2812FX::mode_waterfall(void) {                   // Waterfall. By: An
   float multAgc = 0.0f;
   um_data_t *um_data;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    maxVol        =  (uint8_t*)um_data->u_data[0];
-    samplePeak    = *(uint8_t*)um_data->u_data[4];
-    binNum        =  (uint8_t*)um_data->u_data[5];
+    maxVol        =  (uint8_t*)um_data->u_data[9];
+    samplePeak    = *(uint8_t*)um_data->u_data[5];
+    binNum        =  (uint8_t*)um_data->u_data[10];
     FFT_MajorPeak = *(double*)um_data->u_data[6];
     FFT_Magnitude = *(double*)um_data->u_data[7];
-    sampleAvg     = *(float*)um_data->u_data[8];
-    soundAgc      = *(uint8_t*)um_data->u_data[9];
+    sampleAvg     = *(float*)um_data->u_data[0];
+    soundAgc      = *(uint8_t*)um_data->u_data[1];
     multAgc       = *(float*)um_data->u_data[11];
   } else {
     // add support for no audio data
+    uint32_t ms = millis();
+    binNum = (uint8_t*) &SEGENV.aux1;
+    maxVol = (uint8_t*)(&SEGENV.aux1+1);
+    samplePeak = random8() > 250;
+    sampleAvg = inoise8(beatsin8(90, 0, 200)*15 + (ms>>10), ms>>3);
+  }
+
+  if (SEGENV.call == 0) {
+    SEGENV.aux0 = 255;
+    SEGMENT.custom2 = *binNum;
+    SEGMENT.custom3 = *maxVol * 2;
   }
 
   *binNum = SEGMENT.custom2;                               // Select a bin.
@@ -7377,7 +7416,7 @@ uint16_t WS2812FX::GEQ_base(bool centered_horizontal, bool centered_vertical, bo
   uint8_t *fftResult = nullptr;
   um_data_t *um_data;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    fftResult     =  (uint8_t*)um_data->u_data[1];
+    fftResult     =  (uint8_t*)um_data->u_data[8];
   } else {
     // add support for no audio data
   }
@@ -7482,7 +7521,7 @@ uint16_t WS2812FX::mode_2DFunkyPlank(void) {              // Written by ??? Adap
   uint8_t *fftResult = nullptr;
   um_data_t *um_data;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    fftResult     =  (uint8_t*)um_data->u_data[1];
+    fftResult     =  (uint8_t*)um_data->u_data[8];
   } else {
     // add support for no audio data
   }
@@ -7573,7 +7612,7 @@ uint16_t WS2812FX::mode_2DAkemi(void) {
 
   um_data_t *um_data;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    fftResult = (uint8_t*)um_data->u_data[1];
+    fftResult = (uint8_t*)um_data->u_data[8];
     base = fftResult[0]/255.0f;
   }
 

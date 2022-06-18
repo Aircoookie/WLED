@@ -513,7 +513,7 @@ class AudioReactive : public Usermod {
 
 
     /*
-    * A "PI control" multiplier to automatically adjust sound sensitivity.
+    * A "PI controller" multiplier to automatically adjust sound sensitivity.
     * 
     * A few tricks are implemented so that sampleAgc does't only utilize 0% and 100%:
     * 0. don't amplify anything below squelch (but keep previous gain)
@@ -790,33 +790,33 @@ class AudioReactive : public Usermod {
         um_data->u_size = 18;
         um_data->u_type = new um_types_t[um_data->u_size];
         um_data->u_data = new void*[um_data->u_size];
-        um_data->u_data[0] = &maxVol;           // assigned in effect function!!!
-        um_data->u_type[0] = UMT_BYTE;
-        um_data->u_data[1] = fftResult;         //*used
-        um_data->u_type[1] = UMT_BYTE_ARR;
-        um_data->u_data[2] = &sample;           //*used (for debugging)
-        um_data->u_type[2] = UMT_INT16;
-        um_data->u_data[3] = &rawSampleAgc;     //*used
-        um_data->u_type[3] = UMT_INT16;
-        um_data->u_data[4] = &samplePeak;       //*used
-        um_data->u_type[4] = UMT_BYTE;
-        um_data->u_data[5] = &binNum;           // assigned in effect function!!!
-        um_data->u_type[5] = UMT_BYTE;
-        um_data->u_data[6] = &FFT_MajorPeak;    //*used
-        um_data->u_type[6] = UMT_DOUBLE;
-        um_data->u_data[7] = &FFT_Magnitude;    //*used
-        um_data->u_type[7] = UMT_DOUBLE;
-        um_data->u_data[8] = &sampleAvg;        //*used
-        um_data->u_type[8] = UMT_FLOAT;
-        um_data->u_data[9] = &soundAgc;         //*used
-        um_data->u_type[9] = UMT_BYTE;
-        um_data->u_data[10] = &sampleAgc;       //*used (can be calculated as: sampleReal * multAgc)
-        um_data->u_type[10] = UMT_FLOAT;
-        um_data->u_data[11] = &multAgc;         //*used (for debugging)
+        um_data->u_data[ 0] = &sampleAvg;       //*used (2D Swirl, 2D Waverly, Gravcenter, Gravcentric, Gravimeter, Midnoise, Noisefire, Noisemeter, Plasmoid, Binmap, Freqmap, Freqpixels, Freqwave, Gravfreq, Rocktaves, Waterfall)
+        um_data->u_type[ 0] = UMT_FLOAT;
+        um_data->u_data[ 1] = &soundAgc;        //*used (2D Swirl, 2D Waverly, Gravcenter, Gravcentric, Gravimeter, Matripix, Midnoise, Noisefire, Noisemeter, Pixelwave, Plasmoid, Puddles, Binmap, Freqmap, Freqpixels, Freqwave, Gravfreq, Rocktaves, Waterfall)
+        um_data->u_type[ 1] = UMT_BYTE;
+        um_data->u_data[ 2] = &sampleAgc;       //*used (can be calculated as: sampleReal * multAgc) (..., Juggles, ..., Pixels, Puddlepeak, Freqmatrix)
+        um_data->u_type[ 2] = UMT_FLOAT;
+        um_data->u_data[ 3] = &sample;          //*used (Matripix, Noisemeter, Pixelwave, Puddles, 2D Swirl, for debugging Gravimeter)
+        um_data->u_type[ 3] = UMT_INT16;
+        um_data->u_data[ 4] = &rawSampleAgc;    //*used (Matripix, Noisemeter, Pixelwave, Puddles, 2D Swirl)
+        um_data->u_type[ 4] = UMT_INT16;
+        um_data->u_data[ 5] = &samplePeak;      //*used (Puddlepeak, Ripplepeak, Waterfall)
+        um_data->u_type[ 5] = UMT_BYTE;
+        um_data->u_data[ 6] = &FFT_MajorPeak;   //*used (Ripplepeak, Freqmap, Freqmatrix, Freqpixels, Freqwave, Gravfreq, Rocktaves, Waterfall)
+        um_data->u_type[ 6] = UMT_DOUBLE;
+        um_data->u_data[ 7] = &FFT_Magnitude;   //*used (Binmap, Freqmap, Freqpixels, Rocktaves, Waterfall)
+        um_data->u_type[ 7] = UMT_DOUBLE;
+        um_data->u_data[ 8] = fftResult;        //*used (Blurz, DJ Light, Noisemove, GEQ_base, 2D Funky Plank, Akemi)
+        um_data->u_type[ 8] = UMT_BYTE_ARR;
+        um_data->u_data[ 9] = &maxVol;          // assigned in effect function from UI element!!! (Puddlepeak, Ripplepeak, Waterfall)
+        um_data->u_type[ 9] = UMT_BYTE;
+        um_data->u_data[10] = &binNum;          // assigned in effect function from UI element!!! (Puddlepeak, Ripplepeak, Waterfall)
+        um_data->u_type[10] = UMT_BYTE;
+        um_data->u_data[11] = &multAgc;         //*used (for debugging) (Gravimeter, Binmap, Freqmap, Freqpixels, Rocktaves, Waterfall,)
         um_data->u_type[11] = UMT_FLOAT;
-        um_data->u_data[12] = &sampleReal;      //*used (for debugging)
+        um_data->u_data[12] = &sampleReal;      //*used (for debugging) (Gravimeter)
         um_data->u_type[12] = UMT_FLOAT;
-        um_data->u_data[13] = &sampleGain;      //*used (for debugging & Binmap)
+        um_data->u_data[13] = &sampleGain;      //*used (for debugging) (Gravimeter, Binmap)
         um_data->u_type[13] = UMT_FLOAT;
         um_data->u_data[14] = myVals;           //*used (only once, Pixels)
         um_data->u_type[14] = UMT_UINT16_ARR;
@@ -824,7 +824,7 @@ class AudioReactive : public Usermod {
         um_data->u_type[15] = UMT_BYTE;
         um_data->u_data[16] = fftBin;           //*used (only once, Binmap)
         um_data->u_type[16] = UMT_FLOAT_ARR;
-        um_data->u_data[17] = &inputLevel;       // assigned in effect function!!!
+        um_data->u_data[17] = &inputLevel;      // global UI element!!! (Gravimeter, Binmap)
         um_data->u_type[17] = UMT_BYTE;
       }
 
@@ -1158,14 +1158,9 @@ class AudioReactive : public Usermod {
     bool readFromConfig(JsonObject& root)
     {
       JsonObject top = root[FPSTR(_name)];
-
       bool configComplete = !top.isNull();
 
-      bool prevEnabled = enabled;
       configComplete &= getJsonValue(top[FPSTR(_enabled)], enabled);
-      if (initDone && prevEnabled != enabled) {
-        onUpdateBegin(!enabled); // create or remove FFT task
-      }
 
       configComplete &= getJsonValue(top[FPSTR(_analogmic)]["pin"], audioPin);
 
@@ -1183,10 +1178,10 @@ class AudioReactive : public Usermod {
 
       configComplete &= getJsonValue(top["sync"][F("port")],    audioSyncPort);
 
-      bool send = audioSyncEnabled & 0x01;
-      bool receive = audioSyncEnabled & 0x02;
-      configComplete &= getJsonValue(top["sync"][F("send")],    send);
-      configComplete &= getJsonValue(top["sync"][F("receive")], receive);
+      bool send        = audioSyncEnabled & 0x01;
+      bool receive     = audioSyncEnabled & 0x02;
+      configComplete  &= getJsonValue(top["sync"][F("send")],    send);
+      configComplete  &= getJsonValue(top["sync"][F("receive")], receive);
       audioSyncEnabled = send | (receive << 1);
 
       return configComplete;
