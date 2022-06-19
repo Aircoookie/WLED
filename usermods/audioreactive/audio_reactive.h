@@ -40,51 +40,37 @@ constexpr int SAMPLE_RATE = 10240;      // Base sample rate in Hz
 //#define MAJORPEAK_SUPPRESS_NOISE      // define to activate a dirty hack that ignores the lowest + hightest FFT bins
 
 // globals
-static byte audioSyncEnabled = 0;
-static uint16_t audioSyncPort = 11988;
-
-uint8_t  inputLevel = 128;              // UI slider value
+static uint8_t inputLevel = 128;              // UI slider value
+static uint8_t soundSquelch = 10;             // squelch value for volume reactive routines (config value)
+static uint8_t sampleGain = 1;                // sample gain (config value)
+static uint8_t soundAgc = 0;                  // Automagic gain control: 0 - none, 1 - normal, 2 - vivid, 3 - lazy (config value)
+static uint8_t audioSyncEnabled = 0;          // bit field: bit 0 - send, bit 1 - receive
 
 // 
 // AGC presets
 //  Note: in C++, "const" implies "static" - no need to explicitly declare everything as "static const"
 // 
-#define AGC_NUM_PRESETS   3       // AGC currently has 3 presets: normal, vivid, lazy
-
-              // Normal, Vivid,    Lazy
-const double agcSampleDecay[AGC_NUM_PRESETS] =    // decay factor for sampleMax, in case the current sample is below sampleMax
-              {0.9994,  0.9985,  0.9997};
-
-const float agcZoneLow[AGC_NUM_PRESETS] =         // low volume emergency zone
-              {    32,      28,      36};
-const float agcZoneHigh[AGC_NUM_PRESETS] =        // high volume emergency zone
-              {   240,     240,     248};
-const float agcZoneStop[AGC_NUM_PRESETS] =        // disable AGC integrator if we get above this level
-              {   336,     448,     304};
-
-const float agcTarget0[AGC_NUM_PRESETS] =         // first AGC setPoint -> between 40% and 65%
-              {   112,     144,     164};
-const float agcTarget0Up[AGC_NUM_PRESETS] =       // setpoint switching value (a poor man's bang-bang)
-              {    88,      64,     116};
-const float agcTarget1[AGC_NUM_PRESETS] =         // second AGC setPoint -> around 85%
-              {   220,     224,     216};
-
-const double agcFollowFast[AGC_NUM_PRESETS] =     // quickly follow setpoint - ~0.15 sec
-              { 1.0/192.0,  1.0/128.0,  1.0/256.0};
-const double agcFollowSlow[AGC_NUM_PRESETS] =     // slowly follow setpoint  - ~2-15 secs
-              {1.0/6144.0, 1.0/4096.0, 1.0/8192.0};
-
-const double agcControlKp[AGC_NUM_PRESETS] =      // AGC - PI control, proportional gain parameter
-              {   0.6,     1.5,    0.65};
-const double agcControlKi[AGC_NUM_PRESETS] =      // AGC - PI control, integral gain parameter
-              {   1.7,     1.85,     1.2};
-
-const float agcSampleSmooth[AGC_NUM_PRESETS] =   // smoothing factor for sampleAgc (use rawSampleAgc if you want the non-smoothed value)
-              {  1.0/12.0,    1.0/6.0,   1.0/16.0};
-// 
+#define AGC_NUM_PRESETS 3 // AGC presets:          normal,   vivid,    lazy
+const double agcSampleDecay[AGC_NUM_PRESETS]  = { 0.9994f, 0.9985f, 0.9997f}; // decay factor for sampleMax, in case the current sample is below sampleMax
+const float  agcZoneLow[AGC_NUM_PRESETS]      = {      32,      28,      36}; // low volume emergency zone
+const float  agcZoneHigh[AGC_NUM_PRESETS]     = {     240,     240,     248}; // high volume emergency zone
+const float  agcZoneStop[AGC_NUM_PRESETS]     = {     336,     448,     304}; // disable AGC integrator if we get above this level
+const float  agcTarget0[AGC_NUM_PRESETS]      = {     112,     144,     164}; // first AGC setPoint -> between 40% and 65%
+const float  agcTarget0Up[AGC_NUM_PRESETS]    = {      88,      64,     116}; // setpoint switching value (a poor man's bang-bang)
+const float  agcTarget1[AGC_NUM_PRESETS]      = {     220,     224,     216}; // second AGC setPoint -> around 85%
+const double agcFollowFast[AGC_NUM_PRESETS]   = { 1/192.f, 1/128.f, 1/256.f}; // quickly follow setpoint - ~0.15 sec
+const double agcFollowSlow[AGC_NUM_PRESETS]   = {1/6144.f,1/4096.f,1/8192.f}; // slowly follow setpoint  - ~2-15 secs
+const double agcControlKp[AGC_NUM_PRESETS]    = {    0.6f,    1.5f,   0.65f}; // AGC - PI control, proportional gain parameter
+const double agcControlKi[AGC_NUM_PRESETS]    = {    1.7f,   1.85f,    1.2f}; // AGC - PI control, integral gain parameter
+const float  agcSampleSmooth[AGC_NUM_PRESETS] = {  1/12.f,   1/6.f,  1/16.f}; // smoothing factor for sampleAgc (use rawSampleAgc if you want the non-smoothed value)
 // AGC presets end
-// 
 
+static AudioSource *audioSource = nullptr;
+
+//static uint16_t micData;                        // Analog input for FFT
+static uint16_t micDataSm;                      // Smoothed mic data, as it's a bit twitchy
+static float    micDataReal = 0.0f;             // future support - this one has the full 24bit MicIn data - lowest 8bit after decimal point
+static float    multAgc = 1.0f;                 // sample * multAgc = sampleAgc. Our AGC multiplier
 
 ////////////////////
 // Begin FFT Code //
@@ -93,23 +79,9 @@ const float agcSampleSmooth[AGC_NUM_PRESETS] =   // smoothing factor for sampleA
 
 // FFT Variables
 constexpr uint16_t samplesFFT = 512;            // Samples in an FFT batch - This value MUST ALWAYS be a power of 2
-const uint16_t samples = 512;                   // This value MUST ALWAYS be a power of 2
-//unsigned int sampling_period_us;
-//unsigned long microseconds;
-
-static AudioSource *audioSource = nullptr;
-
-static byte     soundSquelch = 10;              // default squelch value for volume reactive routines
-static byte     sampleGain = 1;                 // default sample gain
-static uint16_t micData;                        // Analog input for FFT
-static uint16_t micDataSm;                      // Smoothed mic data, as it's a bit twitchy
-static float    micDataReal = 0.0f;             // future support - this one has the full 24bit MicIn data - lowest 8bit after decimal point
-static byte     soundAgc = 0;                   // default Automagic gain control
-static float    multAgc = 1.0f;                 // sample * multAgc = sampleAgc. Our multiplier
 
 static double FFT_MajorPeak = 0;
 static double FFT_Magnitude = 0;
-//static uint16_t mAvg = 0;
 
 // These are the input and output vectors.  Input vectors receive computed results from FFT.
 static double vReal[samplesFFT];
@@ -161,7 +133,7 @@ void FFTcode(void * parameter)
     if (audioSource) audioSource->getSamples(vReal, samplesFFT);
 
     // old code - Last sample in vReal is our current mic sample
-    //micDataSm = (uint16_t)vReal[samples - 1]; // will do a this a bit later
+    //micDataSm = (uint16_t)vReal[samplesFFT - 1]; // will do a this a bit later
     //micDataSm = ((micData * 3) + micData)/4;
 
     const int halfSamplesFFT = samplesFFT / 2;   // samplesFFT divided by 2
@@ -387,32 +359,37 @@ class AudioReactive : public Usermod {
     bool     initDone = false;
 
     const uint16_t delayMs = 10;        // I don't want to sample too often and overload WLED
+    // variables used in effects
     uint8_t  maxVol = 10;         // Reasonable value for constant volume for 'peak detector', as it won't always trigger
     uint8_t  binNum = 8;          // Used to select the bin for FFT based beat detection.
+    uint8_t  myVals[32];          // Used to store a pile of samples because WLED frame rate and WLED sample rate are not synchronized. Frame rate is too low.
+    bool     samplePeak = 0;      // Boolean flag for peak. Responding routine must reset this flag
+    int16_t  sample;              // either sampleRaw or rawSampleAgc depending on soundAgc
+    float    sampleSmth;          // either sampleAvg or sampleAgc depending on soundAgc; smoothed sample
+
     #ifdef MIC_SAMPLING_LOG
     uint8_t  targetAgc = 60;      // This is our setPoint at 20% of max for the adjusted output (used only in logAudio())
     #endif
-    uint8_t  myVals[32];          // Used to store a pile of samples because WLED frame rate and WLED sample rate are not synchronized. Frame rate is too low.
-    bool     samplePeak = 0;      // Boolean flag for peak. Responding routine must reset this flag
     bool     udpSamplePeak = 0;   // Boolean flag for peak. Set at the same tiem as samplePeak, but reset by transmitAudioData
     int16_t  micIn = 0;           // Current sample starts with negative values and large values, which is why it's 16 bit signed
-    int16_t  sample;              // Current sample. Must only be updated ONCE!!!
+    int16_t  sampleRaw;           // Current sample. Must only be updated ONCE!!! (amplified mic value by sampleGain and inputLevel; smoothed over 16 samples)
     float    sampleMax = 0.0f;    // Max sample over a few seconds. Needed for AGC controler.
-    float    sampleReal = 0.0f;		// "sample" as float, to provide bits that are lost otherwise. Needed for AGC.
-    float    sampleAvg = 0.0f;    // Smoothed Average
+    float    sampleReal = 0.0f;		// "sampleRaw" as float, to provide bits that are lost otherwise (before amplification by sampleGain or inputLevel). Needed for AGC.
+    float    sampleAvg = 0.0f;    // Smoothed Average sampleRaw
     float    sampleAgc = 0.0f;    // Our AGC sample
     int16_t  rawSampleAgc = 0;    // Our AGC sample - raw
     uint32_t timeOfPeak = 0;
     uint32_t lastTime = 0;
     float    micLev = 0.0f;       // Used to convert returned value to have '0' as minimum. A leveller
+    float    expAdjF = 0.0f;      // Used for exponential filter.
 
     bool     udpSyncConnected = false;
+    uint16_t audioSyncPort = 11988;
 
     // used for AGC
     uint8_t  lastMode = 0;        // last known effect mode
-    bool     agcEffect = false;
     int      last_soundAgc = -1;
-    float    control_integrated = 0.0f;     // "integrator control" = accumulated error
+    float    control_integrated = 0.0f;   // persistent across calls to agcAvg(); "integrator control" = accumulated error
     unsigned long last_update_time = 0;
     unsigned long last_kick_time = 0;
     uint8_t  last_user_inputLevel = 0;
@@ -531,7 +508,7 @@ class AudioReactive : public Usermod {
       float control_error;                        // "control error" input for PI control
 
       if (last_soundAgc != soundAgc)
-        control_integrated = 0.0f;              // new preset - reset integrator
+        control_integrated = 0.0f;                // new preset - reset integrator
 
       // For PI controller, we need to have a constant "frequency"
       // so let's make sure that the control loop is not running at insane speed
@@ -586,7 +563,7 @@ class AudioReactive : public Usermod {
 
       // NOW finally amplify the signal
       tmpAgc = sampleReal * multAgcTemp;                  // apply gain to signal
-      if(fabs(sampleReal) < 2.0f) tmpAgc = 0;             // apply squelch threshold
+      if (fabs(sampleReal) < 2.0f) tmpAgc = 0;            // apply squelch threshold
       //tmpAgc = constrain(tmpAgc, 0, 255);
       if (tmpAgc > 255) tmpAgc = 255;                     // limit to 8bit
       if (tmpAgc < 1)   tmpAgc = 0;                       // just to be sure
@@ -596,9 +573,9 @@ class AudioReactive : public Usermod {
       rawSampleAgc = 0.8f * tmpAgc + 0.2f * (float)rawSampleAgc;
       // update smoothed AGC sample
       if (fabs(tmpAgc) < 1.0f) 
-        sampleAgc =  0.5f * tmpAgc + 0.5f * sampleAgc;      // fast path to zero
+        sampleAgc =  0.5f * tmpAgc + 0.5f * sampleAgc;    // fast path to zero
       else
-        sampleAgc = sampleAgc + agcSampleSmooth[AGC_preset] * (tmpAgc - sampleAgc); // smooth path
+        sampleAgc += agcSampleSmooth[AGC_preset] * (tmpAgc - sampleAgc); // smooth path
 
       //userVar0 = sampleAvg * 4;
       //if (userVar0 > 255) userVar0 = 255;
@@ -610,7 +587,6 @@ class AudioReactive : public Usermod {
     void getSample()
     {
       float    sampleAdj;           // Gain adjusted sample value
-      float    expAdjF;             // Used for exponential filter.
       float    tmpSample;           // An interim sample variable used for calculatioins.
       const float weighting = 0.2f; // Exponential filter weighting. Will be adjustable in a future release.
       const int   AGC_preset = (soundAgc > 0)? (soundAgc-1): 0; // make sure the _compiler_ knows this value will not change while we are inside the function
@@ -620,12 +596,8 @@ class AudioReactive : public Usermod {
         micDataReal = micIn;
       #else
         micIn = micDataSm;      // micDataSm = ((micData * 3) + micData)/4;
-        DEBUGSR_PRINT("micIn:\tmicData:\tmicIn>>2:\tmic_In_abs:\tsample:\tsampleAdj:\tsampleAvg:\n");
-        DEBUGSR_PRINT(micIn); DEBUGSR_PRINT("\t"); DEBUGSR_PRINT(micData);
-
-        // We're still using 10 bit, but changing the analog read resolution in usermod.cpp
-        //if (digitalMic == false) micIn = micIn >> 2;  // ESP32 has 2 more bits of A/D than ESP8266, so we need to normalize to 10 bit.
-        //DEBUGSR_PRINT("\t\t"); DEBUGSR_PRINT(micIn);
+        //DEBUGSR_PRINT("micIn:\tmicData:\tmicIn>>2:\tmic_In_abs:\tsample:\tsampleAdj:\tsampleAvg:\n");
+        //DEBUGSR_PRINT(micIn); DEBUGSR_PRINT("\t"); DEBUGSR_PRINT(micData);
       #endif
 
       // Note to self: the next line kills 80% of sample - "miclev" filter runs at "full arduino loop" speed, following the signal almost instantly!
@@ -653,7 +625,7 @@ class AudioReactive : public Usermod {
       sampleReal = tmpSample;
 
       sampleAdj = fmax(fmin(sampleAdj, 255), 0);           // Question: why are we limiting the value to 8 bits ???
-      sample = (int16_t)sampleAdj;                         // ONLY update sample ONCE!!!!
+      sampleRaw = (int16_t)sampleAdj;                         // ONLY update sample ONCE!!!!
 
       // keep "peak" sample, but decay value if current sample is below peak
       if ((sampleMax < sampleReal) && (sampleReal > 0.5f)) {
@@ -668,7 +640,7 @@ class AudioReactive : public Usermod {
 
       sampleAvg = ((sampleAvg * 15.0f) + sampleAdj) / 16.0f;   // Smooth it out over the last 16 samples.
 
-      DEBUGSR_PRINT("\t"); DEBUGSR_PRINT(sample);
+      DEBUGSR_PRINT("\t"); DEBUGSR_PRINT(sampleRaw);
       DEBUGSR_PRINT("\t\t"); DEBUGSR_PRINT(sampleAvg); DEBUGSR_PRINT("\n\n");
 
       // Fixes private class variable compiler error. Unsure if this is the correct way of fixing the root problem. -THATDONFC
@@ -679,7 +651,7 @@ class AudioReactive : public Usermod {
         udpSamplePeak = 0;
       }
 
-      if (userVar1 == 0) samplePeak = 0;
+      //if (userVar1 == 0) samplePeak = 0;
       // Poor man's beat detection by seeing if sample > Average + some value.
       // Serial.print(binNum); Serial.print("\t");
       // Serial.print(fftBin[binNum]);
@@ -713,7 +685,7 @@ class AudioReactive : public Usermod {
       }
 
       transmitData.sampleAgc  = sampleAgc;
-      transmitData.sample     = sample;
+      transmitData.sample     = sampleRaw;
       transmitData.sampleAvg  = sampleAvg;
       transmitData.samplePeak = udpSamplePeak;
       udpSamplePeak           = 0;              // Reset udpSamplePeak after we've transmitted it
@@ -756,7 +728,7 @@ class AudioReactive : public Usermod {
           
           sampleAgc    = receivedPacket->sampleAgc;
           rawSampleAgc = receivedPacket->sampleAgc;
-          sample       = receivedPacket->sample;
+          sampleRaw    = receivedPacket->sample;
           sampleAvg    = receivedPacket->sampleAvg;
 
           // Only change samplePeak IF it's currently false.
@@ -775,7 +747,7 @@ class AudioReactive : public Usermod {
 
 
   public:
-    //Functions called by WLED
+    //Functions called by WLED or other usermods
 
     /*
      * setup() is called once at boot. WiFi is not yet connected at this point.
@@ -797,7 +769,7 @@ class AudioReactive : public Usermod {
         um_data->u_type[ 1] = UMT_BYTE;
         um_data->u_data[ 2] = &sampleAgc;       //*used (can be calculated as: sampleReal * multAgc) (..., Juggles, ..., Pixels, Puddlepeak, Freqmatrix)
         um_data->u_type[ 2] = UMT_FLOAT;
-        um_data->u_data[ 3] = &sample;          //*used (Matripix, Noisemeter, Pixelwave, Puddles, 2D Swirl, for debugging Gravimeter)
+        um_data->u_data[ 3] = &sampleRaw;       //*used (Matripix, Noisemeter, Pixelwave, Puddles, 2D Swirl, for debugging Gravimeter)
         um_data->u_type[ 3] = UMT_INT16;
         um_data->u_data[ 4] = &rawSampleAgc;    //*used (Matripix, Noisemeter, Pixelwave, Puddles, 2D Swirl)
         um_data->u_type[ 4] = UMT_INT16;
@@ -821,9 +793,9 @@ class AudioReactive : public Usermod {
         um_data->u_type[13] = UMT_FLOAT;
         um_data->u_data[14] = myVals;           //*used (only once, Pixels)
         um_data->u_type[14] = UMT_UINT16_ARR;
-        um_data->u_data[15] = &soundSquelch;    //*used (only once, Binmap)
+        um_data->u_data[15] = &soundSquelch;    //*used (for debugging) (only once, Binmap)
         um_data->u_type[15] = UMT_BYTE;
-        um_data->u_data[16] = fftBin;           //*used (only once, Binmap)
+        um_data->u_data[16] = fftBin;           //*used (for debugging) (only once, Binmap)
         um_data->u_type[16] = UMT_FLOAT_ARR;
         um_data->u_data[17] = &inputLevel;      // global UI element!!! (Gravimeter, Binmap)
         um_data->u_type[17] = UMT_BYTE;
@@ -915,28 +887,23 @@ class AudioReactive : public Usermod {
       if (!enabled || strip.isUpdating()) return;
 
       if (!(audioSyncEnabled & 0x02)) { // Only run the sampling code IF we're not in Receive mode
+        bool agcEffect = false;
+
         if (soundAgc > AGC_NUM_PRESETS) soundAgc = 0; // make sure that AGC preset is valid (to avoid array bounds violation)
+
         getSample();                        // Sample the microphone
         agcAvg();                           // Calculated the PI adjusted value as sampleAvg
-        myVals[millis()%32] = sampleAgc;    // filling values semi randomly
 
-        uint8_t knownMode = strip.getMainSegment().mode;
+        myVals[millis()%32] = sampleAgc;    // filling values semi randomly (why?)
+
+        uint8_t knownMode = strip.getFirstSelectedSeg().mode; // 1st selected segment is more appropriate than main segment
 
         if (lastMode != knownMode) { // only execute if mode changes
-          char lineBuffer[3];
-          /* uint8_t printedChars = */ extractModeName(knownMode, JSON_mode_names, lineBuffer, 3); // use of JSON_mode_names is deprecated, use nullptr
-          //used the following code to reverse engineer this
-          // Serial.println(lineBuffer);
-          // for (uint8_t i = 0; i<printedChars; i++) {
-          //   Serial.print(i);
-          //   Serial.print( ": ");
-          //   Serial.println(uint8_t(lineBuffer[i]));
-          // }
+          char lineBuffer[4];
+          extractModeName(knownMode, JSON_mode_names, lineBuffer, 3); // use of JSON_mode_names is deprecated, use nullptr
           agcEffect = (lineBuffer[1] == 226 && lineBuffer[2] == 153); // && (lineBuffer[3] == 170 || lineBuffer[3] == 171 ) encoding of ♪ or ♫
           // agcEffect = (lineBuffer[4] == 240 && lineBuffer[5] == 159 && lineBuffer[6] == 142 && lineBuffer[7] == 154 ); //encoding of 🎚 No clue why as not found here https://www.iemoji.com/view/emoji/918/objects/level-slider
-
-          // if (agcEffect)
-          //   Serial.println("found ♪ or ♫");
+          lastMode = knownMode;
         }
 
         // update inputLevel Slider based on current AGC gain
@@ -968,7 +935,6 @@ class AudioReactive : public Usermod {
             last_user_inputLevel = new_user_inputLevel;
           }
         }
-        lastMode = knownMode;
 
       #if defined(MIC_LOGGER) || defined(MIC_SAMPLING_LOG) || defined(FFT_SAMPLING_LOG)
         EVERY_N_MILLIS(20) {
