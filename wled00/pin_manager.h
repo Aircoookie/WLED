@@ -25,7 +25,7 @@ enum struct PinOwner : uint8_t {
   // High bit is set for all built-in pin owners
   Ethernet      = 0x81,
   BusDigital    = 0x82,
-  BusDigital2   = 0x83,
+  BusOnOff      = 0x83,
   BusPwm        = 0x84,   // 'BusP' == PWM output using BusPwm
   Button        = 0x85,   // 'Butn' == button from configuration
   IR            = 0x86,   // 'IR'   == IR receiver pin from configuration

@@ -44,7 +44,7 @@ static uint8_t inputLevel = 128;              // UI slider value
 static uint8_t soundSquelch = 10;             // squelch value for volume reactive routines (config value)
 static uint8_t sampleGain = 1;                // sample gain (config value)
 static uint8_t soundAgc = 0;                  // Automagic gain control: 0 - none, 1 - normal, 2 - vivid, 3 - lazy (config value)
-static uint8_t audioSyncEnabled = 0;          // bit field: bit 0 - send, bit 1 - receive
+static uint8_t audioSyncEnabled = 0;          // bit field: bit 0 - send, bit 1 - receive (config value)
 
 // 
 // AGC presets
@@ -991,24 +991,18 @@ class AudioReactive : public Usermod {
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
 
-      String uiDomString = F("<button class=\"btn\" onclick=\"requestJson({");
+      JsonArray infoArr = user.createNestedArray(FPSTR(_name));
+
+      String uiDomString = F("<button class=\"btn btn-xs\" onclick=\"requestJson({");
       uiDomString += FPSTR(_name);
       uiDomString += F(":{");
       uiDomString += FPSTR(_enabled);
-      if (enabled) {
-        uiDomString += F(":false}});\">");
-      } else {
-        uiDomString += F(":true}});\">");
-      }
-      uiDomString += F("Audio <i class=\"icons\">&#xe08f;</i>");
+      uiDomString += enabled ? F(":false}});\">") : F(":true}});\">");
+      uiDomString += F("<i class=\"icons");
+      uiDomString += enabled ? F(" on") : F(" off");
+      uiDomString += F("\">&#xe08f;</i>");
       uiDomString += F("</button>");
-
-      JsonArray infoArr = user.createNestedArray(uiDomString);
-      if (enabled) {
-        infoArr.add(FPSTR(_enabled));
-      } else {
-        infoArr.add(F("disabled"));
-      }
+      infoArr.add(uiDomString);
     }
 
 

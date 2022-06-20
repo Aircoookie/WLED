@@ -279,7 +279,7 @@
 #define FX_MODE_GRAVFREQ               158
 #define FX_MODE_DJLIGHT                159
 #define FX_MODE_2DFUNKYPLANK           160
-#define FX_MODE_2DCENTERBARS           161
+#define FX_MODE_2DCENTERBARS           161 // obsolete by X & Y mirroring
 #define FX_MODE_2DPULSER               162 // non audio
 #define FX_MODE_BLURZ                  163
 #define FX_MODE_2DDRIFT                164 // non audio

@@ -461,7 +461,7 @@ class BusPwm : public Bus {
     return numPins;
   }
 
-  inline void cleanup() {
+  void cleanup() {
     deallocatePins();
   }
 
@@ -490,6 +490,71 @@ class BusPwm : public Bus {
     #ifdef ARDUINO_ARCH_ESP32
     pinManager.deallocateLedc(_ledcStart, numPins);
     #endif
+  }
+};
+
+
+class BusOnOff : public Bus {
+  public:
+  BusOnOff(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
+    _valid = false;
+    if (bc.type != TYPE_ONOFF) return;
+
+    uint8_t currentPin = bc.pins[0];
+    if (!pinManager.allocatePin(currentPin, true, PinOwner::BusOnOff)) {
+      deallocatePins(); return;
+    }
+    _pin = currentPin; //store only after allocatePin() succeeds
+    pinMode(_pin, OUTPUT);
+    reversed = bc.reversed;
+    _valid = true;
+  };
+
+  void setPixelColor(uint16_t pix, uint32_t c) {
+    if (pix != 0 || !_valid) return; //only react to first pixel
+		c = autoWhiteCalc(c);
+    uint8_t r = R(c);
+    uint8_t g = G(c);
+    uint8_t b = B(c);
+    uint8_t w = W(c);
+
+    _data = bool((r+g+b+w)*_bri) ? 0xFF : 0;
+  }
+
+  uint32_t getPixelColor(uint16_t pix) {
+    if (!_valid) return 0;
+    return RGBW32(_data, _data, _data, _data);
+  }
+
+  void show() {
+    if (!_valid) return;
+    digitalWrite(_pin, reversed ? !(bool)_data : (bool)_data);
+  }
+
+  inline void setBrightness(uint8_t b) {
+    _bri = b;
+  }
+
+  uint8_t getPins(uint8_t* pinArray) {
+    if (!_valid) return 0;
+    pinArray[0] = _pin;
+    return 1;
+  }
+
+  void cleanup() {
+    deallocatePins();
+  }
+
+  ~BusOnOff() {
+    cleanup();
+  }
+
+  private: 
+  uint8_t _pin = 255;
+  uint8_t _data = 0;
+
+  void deallocatePins() {
+    pinManager.deallocatePin(_pin, PinOwner::BusOnOff);
   }
 };
 

@@ -126,8 +126,8 @@ function cTheme(light) {
 	sCol('--c-c','#333');
 	sCol('--c-e','#111');
 	sCol('--c-d','#222');
-	sCol('--c-r','#c21');
-	sCol('--c-g','#2c1');
+	sCol('--c-r','#a21');
+	sCol('--c-g','#2a1');
 	sCol('--c-l','#26c');
 	sCol('--c-o','rgba(204, 204, 204, 0.9)');
 	sCol('--c-sb','#0003'); sCol('--c-sbh','#0006');
@@ -604,7 +604,8 @@ function parseInfo(i) {
 	mw = i.leds.matrix ? i.leds.matrix.w : 0;
 	mh = i.leds.matrix ? i.leds.matrix.h : 0;
 	isM = mw>0 && mh>0;
-	if (!isM) hide2DModes();
+	if (!isM) hideModes("2D ");
+	if (!i.u || !i.u.AudioReactive) { hideModes("♪ "); hideModes("♫ "); }	// hide audio reactive effects
 }
 
 function populateInfo(i)
@@ -2395,12 +2396,10 @@ function getPalettesData(page, callback)
 	});
 }
 
-function hide2DModes()
+function hideModes(txt)
 {
-	var el = gId('fxlist').querySelectorAll('.lstI');
-	for (let it of el) {
-		var itT = it.querySelector('.lstIname').innerText;
-		if (itT.indexOf("2D ") >= 0) it.style.display = 'none';
+	for (let e of (gId('fxlist').querySelectorAll('.lstI')||[])) {
+		if (e.querySelector('.lstIname').innerText.indexOf(txt) >= 0) e.classList.add("hide"); //else e.classList.remove("hide");
 	}
 }
 

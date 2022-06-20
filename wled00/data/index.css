@@ -123,9 +123,17 @@ button {
 .icons {
 	font-family: 'WIcons';
 	font-style: normal;
-	font-size: 24px;
-	line-height: 1;
+	font-size: 24px !important;
+	line-height: 1 !important;
 	display: inline-block;
+}
+
+.icons.on {
+	color: var(--c-g);
+}
+
+.icons.off {
+	color: var(--c-6);
 }
 
 .top .icons, .bot .icons {
@@ -921,19 +929,24 @@ textarea {
 }
 
 .xxs {
-	border: 2px solid var(--c-e) !important;
 	width: 44px;
 	height: 44px;
 	margin: 5px;
-	/*box-shadow: 0 0 0 2px #fff;*/
 }
 
 .xxs-w {
-	border-width: 5px !important;
 	margin: 2px;
 	width: 50px;
 	height: 50px;
-	/*box-shadow: 0 0 0 5px #fff;*/
+}
+
+#csl .xxs {
+	border: 2px solid var(--c-d) !important;
+	/*box-shadow: 0 0 0 2px var(--c-d);*/
+}
+#csl .xxs-w {
+	border-width: 5px !important;
+	/*box-shadow: 0 0 0 5px var(--c-d);*/
 }
 
 .qcs, #namelabel {

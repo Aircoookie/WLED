@@ -7402,6 +7402,7 @@ static const char *_data_FX_MODE_WATERFALL PROGMEM = " ♫ Waterfall@!,Adjust co
 /////////////////////////
 //     ** 2D GEQ       //
 /////////////////////////
+//NOTE: centering is obsolete by using mirroring on the segment level
 uint16_t WS2812FX::GEQ_base(bool centered_horizontal, bool centered_vertical, bool color_vertical) {                     // By Will Tatam. Refactor by Ewoud Wijma.
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
@@ -7409,7 +7410,7 @@ uint16_t WS2812FX::GEQ_base(bool centered_horizontal, bool centered_vertical, bo
   const uint16_t rows = SEGMENT.virtualHeight();
   const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();    // using width*height prevents reallocation if mirroring is enabled
 
-  if (!SEGENV.allocateData(dataSize + 64*sizeof(uint16_t))) return mode_static(); //allocation failed
+  if (!SEGENV.allocateData(dataSize + cols*sizeof(uint16_t))) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
   uint16_t *previousBarHeight = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize);
 
@@ -7422,41 +7423,40 @@ uint16_t WS2812FX::GEQ_base(bool centered_horizontal, bool centered_vertical, bo
   }
   if (!fftResult) return mode_static();
 
-  fadeToBlackBy(leds, SEGMENT.speed);
+  //static int previousBarHeight[64]; //array of previous bar heights per frequency band
+  if (SEGENV.call == 0) for (uint16_t i=0; i<cols; i++) previousBarHeight[i] = 0;
 
-  bool rippleTime;
-  if (millis() - SEGENV.step >= 255 - SEGMENT.intensity) {
+  fadeToBlackBy(leds, 96+(SEGMENT.speed>>2));
+
+  bool rippleTime = false;
+  if (millis() - SEGENV.step >= (256 - SEGMENT.intensity)) {
     SEGENV.step = millis();
     rippleTime = true;
-  } else
-    rippleTime = false;
+  }
 
-  //static int previousBarHeight[64]; //array of previous bar heights per frequency band
-  if (SEGENV.call == 0) for (uint16_t i=0; i<64; i++) previousBarHeight[i] = 0;
-
-  int xCount = cols;
+  uint16_t xCount = cols;
   if (centered_vertical) xCount /= 2;
 
-  for (int x=0; x < xCount; x++) {
-    int band = map(x, 0, xCount-1, 0, 15);
-    int barHeight = map(fftResult[band], 0, 255, 0, rows);
-    if ((barHeight % 2 == 1) && centered_horizontal) barHeight++;                 //get an even barHeight if centered_horizontal
-    int yStartBar = centered_horizontal ? (rows - barHeight) / 2 : 0;             //lift up the bar if centered_horizontal
-    int yStartPeak = centered_horizontal ? (rows - previousBarHeight[x]) / 2 : 0; //lift up the peaks if centered_horizontal
+  for (uint16_t x=0; x < xCount; x++) {
+    uint8_t  band = map(x, 0, xCount-1, 0, 15);
+    uint16_t barHeight = map(fftResult[band], 0, 255, 0, rows-1);
+    if (barHeight > previousBarHeight[x]) previousBarHeight[x] = barHeight; //drive the peak up
 
-    for (int y=0; y < rows; y++)
-    {
-      CRGB heightColor = CRGB::Black;
+    if (centered_horizontal) barHeight += barHeight%2;                                     //get an even barHeight if centered_horizontal
+    uint16_t yStartBar = centered_horizontal ? (rows - barHeight - 1) / 2 : 0;             //lift up the bar if centered_horizontal
+    uint16_t yStartPeak = centered_horizontal ? (rows - previousBarHeight[x] - 1) / 2 : 0; //lift up the peaks if centered_horizontal
+
+    for (uint16_t y=0; y < rows; y++) {
       uint16_t colorIndex;
       if (color_vertical) {
         if (centered_horizontal)
-          colorIndex = map(abs(y - (rows - 1)/2.0), 0, rows/2 - 1, 0, 255);
+          colorIndex = map(abs(y - (rows - 1)/2), 0, (rows-1)/2, 0, 255);
         else
           colorIndex = map(y, 0, rows - 1, 0, 255);
       } else
         colorIndex = band * 17;
-      heightColor = color_from_palette(colorIndex, false, PALETTE_SOLID_WRAP, 0);
 
+      CRGB heightColor = color_from_palette(colorIndex, false, PALETTE_SOLID_WRAP, 0);
       CRGB ledColor = CRGB::Black; //if not part of bars or peak, make black (not fade to black)
 
       //bar
@@ -7464,18 +7464,19 @@ uint16_t WS2812FX::GEQ_base(bool centered_horizontal, bool centered_vertical, bo
         ledColor = heightColor;
 
       //low and high peak (must exist && on peak position && only below if centered_horizontal effect)
-      if ((previousBarHeight[x] > 0) && (SEGMENT.intensity < 255) && (y==yStartPeak || y==yStartPeak + previousBarHeight[x]-1) && (centered_horizontal || y!=yStartPeak))
+      //bool isYPeak = (centered_horizontal && y==yStartPeak) || y==(yStartPeak + previousBarHeight[x]);
+      bool isYPeak = (y==yStartPeak || y==yStartPeak + previousBarHeight[x]-1) && (centered_horizontal || y!=yStartPeak);
+      if ((previousBarHeight[x] > 0) && isYPeak)
         ledColor = SEGCOLOR(2)==CRGB::Black ? heightColor : CRGB(SEGCOLOR(2)); //low peak
 
       if (centered_vertical) {
-        leds[XY(cols / 2 + x, rows - 1 - y)] = ledColor;
-        leds[XY(cols / 2 - 1 - x, rows - 1 - y)] = ledColor;
+        leds[XY(cols / 2 + x,     rows - 1 - y)] += ledColor;
+        leds[XY(cols / 2 - 1 - x, rows - 1 - y)] += ledColor;
       } else
-        leds[XY(x, rows - 1 - y)] = ledColor;
+        leds[XY(x, rows - 1 - y)] += ledColor;
     }
 
-    if (rippleTime) previousBarHeight[x] -= centered_horizontal ? 2 : 1; //delay/ripple effect
-    if (barHeight > previousBarHeight[x]) previousBarHeight[x] = barHeight; //drive the peak up
+    if (rippleTime && previousBarHeight[x]>centered_horizontal) previousBarHeight[x] -= centered_horizontal + 1;    //delay/ripple effect
   }
 
   setPixels(leds);
@@ -7483,18 +7484,19 @@ uint16_t WS2812FX::GEQ_base(bool centered_horizontal, bool centered_vertical, bo
 } //GEQ_base
 
 uint16_t WS2812FX::mode_2DGEQ(void) {                     // By Will Tatam. Code reduction by Ewoud Wijma.
-  return GEQ_base(false, false, false);
+  return GEQ_base(false, false, SEGMENT.custom3 > 128);
 } // mode_2DGEQ()
-static const char *_data_FX_MODE_2DGEQ PROGMEM = " ♫ 2D GEQ@Bar speed,Ripple decay;,,Peak Color;!";
+static const char *_data_FX_MODE_2DGEQ PROGMEM = " ♫ 2D GEQ@Bar speed,Ripple decay,,Color bars=0;!,,Peak Color;!=11";
 
 
 /////////////////////////
 //   ** 2D CenterBars  //
 /////////////////////////
+// NOTE: obsolete!
 uint16_t WS2812FX::mode_2DCenterBars(void) {              // Written by Scott Marley Adapted by  Spiro-C..
   return GEQ_base(SEGMENT.custom1 > 128, SEGMENT.custom2 > 128, SEGMENT.custom3 > 128);
 } // mode_2DCenterBars()
-static const char *_data_FX_MODE_2DCENTERBARS PROGMEM = " ♫ 2D CenterBars@Bar speed=250,Ripple decay=250,Center ↔ ☑=192,Center ↕ ☑=192, Color ↕ ☑=192;,,Peak Color;!=11";
+static const char *_data_FX_MODE_2DCENTERBARS PROGMEM = " ♫ 2D CenterBars@Bar speed=250,Ripple decay=250,Center ↔ ☑=192,Center ↕ ☑=192, Color ↕ ☑=192;!,,Peak Color;!=11";
 
 
 /////////////////////////
