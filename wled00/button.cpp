@@ -139,7 +139,7 @@ void handleSwitch(uint8_t b)
 void handleAnalog(uint8_t b)
 {
   static uint8_t oldRead[WLED_MAX_BUTTONS]  = {0};
-  static float filteredReading[WLED_MAX_BUTTONS] = {0.0};
+  static float filteredReading[WLED_MAX_BUTTONS] = {0.0f};
   uint16_t rawReading;    // raw value from analogRead, scaled to 12bit
 
   #ifdef ESP8266
