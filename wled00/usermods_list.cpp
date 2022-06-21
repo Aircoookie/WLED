@@ -11,6 +11,9 @@
  */
 //#include "../usermods/EXAMPLE_v2/usermod_v2_example.h"
 
+//BRIAN ADDED THIS LINE
+#include "../usermods/welican_prism/welican_prism.h"
+
 #ifdef USERMOD_BATTERY_STATUS_BASIC
 #include "../usermods/battery_status_basic/usermod_v2_battery_status_basic.h"
 #endif
@@ -243,4 +246,6 @@ void registerUsermods()
   #ifdef USERMOD_SI7021_MQTT_HA
   usermods.add(new Si7021_MQTT_HA());
   #endif
+  //AND THIS
+  usermods.add(new WelicanPrism());
 }
