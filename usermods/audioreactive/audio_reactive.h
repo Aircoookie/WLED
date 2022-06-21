@@ -304,10 +304,10 @@ class AudioReactive : public Usermod {
     #else
     int8_t audioPin = AUDIOPIN;
     #endif
-    #ifndef DMENABLED // I2S mic type
-    uint8_t dmType = 0; // none/disabled
+    #ifndef DMTYPE // I2S mic type
+    uint8_t dmType = 0; // none/disabled/analog
     #else
-    uint8_t dmType = DMENABLED;
+    uint8_t dmType = DMTYPE;
     #endif
     #ifndef I2S_SDPIN // aka DOUT
     int8_t i2ssdPin = 32;
@@ -1163,6 +1163,7 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addOption(dd,'Normal',1);"));
       oappend(SET_F("addOption(dd,'Vivid',2);"));
       oappend(SET_F("addOption(dd,'Lazy',3);"));
+      oappend(SET_F("addInfo('AudioReactive:digitalmic:type',1,'<i>requires reboot!</i>');"));  // 0 is field type, 1 is actual field
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',0,'I2S SD');"));
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',1,'I2S WS');"));
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',2,'I2S SCK');"));

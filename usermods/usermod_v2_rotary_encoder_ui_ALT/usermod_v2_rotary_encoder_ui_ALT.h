@@ -186,7 +186,7 @@ private:
    */
   void sortModesAndPalettes() {
     //modes_qstrings = re_findModeStrings(JSON_mode_names, strip.getModeCount());
-    modes_qstrings = WS2812FX::_modeData;
+    modes_qstrings = strip.getModeDataSrc();
     modes_alpha_indexes = re_initIndexArray(strip.getModeCount());
     re_sortModes(modes_qstrings, modes_alpha_indexes, strip.getModeCount(), MODE_SORT_SKIP_COUNT);
 

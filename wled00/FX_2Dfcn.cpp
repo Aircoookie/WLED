@@ -147,6 +147,8 @@ void IRAM_ATTR WS2812FX::setPixelColorXY(uint16_t x, uint16_t y, byte r, byte g,
   }
   uint32_t col = RGBW32(r, g, b, w);
 
+  if (SEGMENT.getOption(SEG_OPTION_REVERSED)  ) x = SEGMENT.virtualWidth()  - x - 1;
+  if (SEGMENT.getOption(SEG_OPTION_REVERSED_Y)) y = SEGMENT.virtualHeight() - y - 1;
   if (SEGMENT.getOption(SEG_OPTION_TRANSPOSED)) { uint16_t t = x; x = y; y = t; } // swap X & Y if segment transposed
 
   x *= SEGMENT.groupLength(); // expand to physical pixels
@@ -158,20 +160,22 @@ void IRAM_ATTR WS2812FX::setPixelColorXY(uint16_t x, uint16_t y, byte r, byte g,
       uint16_t index, xX = (x+g), yY = (y+j);
       if (xX >= SEGMENT.width() || yY >= SEGMENT.height()) continue; // we have reached one dimension's end
 
-      if (SEGMENT.getOption(SEG_OPTION_REVERSED)  ) xX = SEGMENT.width()  - xX - 1;
-      if (SEGMENT.getOption(SEG_OPTION_REVERSED_Y)) yY = SEGMENT.height() - yY - 1;
+      //if (SEGMENT.getOption(SEG_OPTION_REVERSED)  ) xX = SEGMENT.width()  - xX - 1;
+      //if (SEGMENT.getOption(SEG_OPTION_REVERSED_Y)) yY = SEGMENT.height() - yY - 1;
 
       index = get2DPixelIndex(xX, yY);
       if (index < customMappingSize) index = customMappingTable[index];
       busses.setPixelColor(index, col);
 
       if (SEGMENT.getOption(SEG_OPTION_MIRROR)) { //set the corresponding horizontally mirrored pixel
-        index = get2DPixelIndex(SEGMENT.width() - xX - 1, yY);
+        //index = get2DPixelIndex(SEGMENT.width() - xX - 1, yY);
+        index = SEGMENT.getOption(SEG_OPTION_TRANSPOSED) ? get2DPixelIndex(xX, SEGMENT.height() - yY - 1) : get2DPixelIndex(SEGMENT.width() - xX - 1, yY);
         if (index < customMappingSize) index = customMappingTable[index];
         busses.setPixelColor(index, col);
       }
       if (SEGMENT.getOption(SEG_OPTION_MIRROR_Y)) { //set the corresponding vertically mirrored pixel
-        index = get2DPixelIndex(xX, SEGMENT.height() - yY - 1);
+        //index = get2DPixelIndex(xX, SEGMENT.height() - yY - 1);
+        index = SEGMENT.getOption(SEG_OPTION_TRANSPOSED) ? get2DPixelIndex(SEGMENT.width() - xX - 1, yY)  : get2DPixelIndex(xX, SEGMENT.height() - yY - 1);
         if (index < customMappingSize) index = customMappingTable[index];
         busses.setPixelColor(index, col);
       }
