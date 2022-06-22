@@ -2197,7 +2197,7 @@ uint16_t WS2812FX::mode_colortwinkle()
   fract8 fadeUpAmount = _brightness>28 ? 8 + (SEGMENT.speed>>2) : 68-_brightness, fadeDownAmount = _brightness>28 ? 8 + (SEGMENT.speed>>3) : 68-_brightness;
 
   for (uint16_t i = 0; i < rows*cols; i++) {
-    uint16_t j = i % rows, k = i / rows;
+    uint16_t j = i % cols, k = i / cols;
     fastled_col = col_to_crgb(isMatrix ? getPixelColorXY(j, k) : getPixelColor(i));
     prev = fastled_col;
     uint16_t index = i >> 3;
@@ -2233,7 +2233,7 @@ uint16_t WS2812FX::mode_colortwinkle()
     if (random8() <= SEGMENT.intensity) {
       for (uint8_t times = 0; times < 5; times++) { //attempt to spawn a new pixel 5 times
         uint16_t i = random16(rows*cols);
-        uint16_t j = i % rows, k = i / rows;
+        uint16_t j = i % cols, k = i / cols;
         uint32_t col = isMatrix ? getPixelColorXY(j, k) : getPixelColor(i);
         if (col == 0) {
           fastled_col = ColorFromPalette(currentPalette, random8(), 64, NOBLEND);
