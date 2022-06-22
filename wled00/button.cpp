@@ -138,7 +138,7 @@ void handleSwitch(uint8_t b)
 
 void handleAnalog(uint8_t b)
 {
-  static uint8_t oldRead[WLED_MAX_BUTTONS]  = {0};
+  static uint8_t oldRead[WLED_MAX_BUTTONS] = {0};
   static float filteredReading[WLED_MAX_BUTTONS] = {0.0f};
   uint16_t rawReading;    // raw value from analogRead, scaled to 12bit
 
@@ -149,7 +149,7 @@ void handleAnalog(uint8_t b)
   #endif
   yield();                            // keep WiFi task running - analog read may take several millis on ESP8266
 
-  filteredReading[b] += POT_SMOOTHING * ((float(rawReading) / 16.0) - filteredReading[b]);  // filter raw input, and scale to [0..255]
+  filteredReading[b] += POT_SMOOTHING * ((float(rawReading) / 16.0f) - filteredReading[b]); // filter raw input, and scale to [0..255]
   uint16_t aRead = max(min(int(filteredReading[b]), 255), 0);                               // squash into 8bit
   if(aRead <= POT_SENSITIVITY) aRead = 0;                                                   // make sure that 0 and 255 are used
   if(aRead >= 255-POT_SENSITIVITY) aRead = 255;
@@ -159,7 +159,7 @@ void handleAnalog(uint8_t b)
   // remove noise & reduce frequency of UI updates
   if (abs(int(aRead) - int(oldRead[b])) <= POT_SENSITIVITY) return;  // no significant change in reading
 
-  // wait until strip finishes updating
+  // wait until strip finishes updating (why: strip was not updating at the start of handleButton() but may have started during analogRead()?)
   unsigned long wait_started = millis();
   while(strip.isUpdating() && (millis() - wait_started < STRIP_WAIT_TIME)) {
     delay(1);
