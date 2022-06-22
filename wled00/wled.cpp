@@ -367,7 +367,9 @@ void WLED::setup()
     sprintf(mqttClientID + 5, "%*s", 6, escapedMac.c_str() + 6);
   }
 
+#ifdef WLED_ENABLE_ADALIGHT
   if (Serial.available() > 0 && Serial.peek() == 'I') handleImprovPacket();
+#endif
 
   strip.service();
 
@@ -392,7 +394,10 @@ void WLED::setup()
   initDMX();
 #endif
 
+#ifdef WLED_ENABLE_ADALIGHT
   if (Serial.available() > 0 && Serial.peek() == 'I') handleImprovPacket();
+#endif
+
   // HTTP server page init
   initServer();
 

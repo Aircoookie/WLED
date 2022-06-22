@@ -8,7 +8,7 @@ aiofiles==0.6.0
     # via platformio
 ajsonrpc==1.1.0
     # via platformio
-bottle==0.12.19
+bottle==0.12.20
     # via platformio
 certifi==2020.12.5
     # via requests
