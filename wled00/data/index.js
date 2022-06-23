@@ -568,7 +568,7 @@ function populatePresets(fromls)
 		cn += `<div class="pres lstI" id="p${i}o">`;
 		if (cfg.comp.pid) cn += `<div class="pid">${i}</div>`;
 		cn += `<div class="pname lstIname" onclick="setPreset(${i})">${isPlaylist(i)?"<i class='icons btn-icon'>&#xe139;</i>":""}${pName(i)}
-	<i class="icons edit-icon" id="p${i}nedit" onclick="tglSegn(${i+100})">&#xe2c6;</i></div>
+	<i class="icons edit-icon flr" id="p${i}nedit" onclick="tglSegn(${i+100})">&#xe2c6;</i></div>
 	<i class="icons e-icon flr" id="sege${i+100}" onclick="expand(${i+100})">&#xe395;</i>
 	<div class="presin lstIcontent" id="seg${i+100}"></div>
 </div>`;
@@ -605,7 +605,7 @@ function parseInfo(i) {
 	mh = i.leds.matrix ? i.leds.matrix.h : 0;
 	isM = mw>0 && mh>0;
 	if (!isM) hideModes("2D ");
-	if (!i.u || !i.u.AudioReactive) { hideModes("♪ "); hideModes("♫ "); }	// hide audio reactive effects
+	if (!i.u || !i.u.AudioReactive) { /*hideModes("♪ ");*/ hideModes("♫ "); }	// hide /*audio*/ frequency reactive effects
 }
 
 function populateInfo(i)
@@ -753,7 +753,7 @@ function populateSegments(s)
 	}
 	if (segCount < 2) gId(`segd${lSeg}`).style.display = "none";
 	if (!isM && !noNewSegs && (cfg.comp.seglen?parseInt(gId(`seg${lSeg}s`).value):0)+parseInt(gId(`seg${lSeg}e`).value)<ledCount) gId(`segr${lSeg}`).style.display = "inline";
-	gId('rsbtn').style.display = (segCount > 1) ? "inline":"none";
+	gId('segutil2').style.display = (segCount > 1) ? "block":"none"; // rsbtn parent
 }
 
 function populateEffects()
@@ -1388,7 +1388,7 @@ function setSliderAndColorControl(idx, applyDef=false)
 	}
 	// not all color selectors shown, hide palettes created from color selectors
 	for (let e of (gId('pallist').querySelectorAll('.lstI')||[])) {
-		if (cslCnt < 3 && e.querySelector('.lstIname').innerText.indexOf("* ")>=0) e.classList.add('hide'); else e.classList.remove('hide');
+		if (cslCnt < 3 && e.querySelector('.lstIname').innerText.indexOf("* C")>=0) e.classList.add('hide'); else e.classList.remove('hide');
 	}
 	if (!isEmpty(obj.seg) && applyDef) requestJson(obj); // update default values (may need throttling on ESP8266)
 }

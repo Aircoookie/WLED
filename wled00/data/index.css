@@ -716,6 +716,9 @@ input[type=range]::-moz-range-thumb {
 #putil .btn-xs {
 	margin: 0;
 }
+#info .btn-xs {
+	border: 1px solid var(--c-4);
+}
 
 #putil .btn-s {
 	width: 135px;
@@ -880,23 +883,17 @@ textarea {
 	overflow: clip;
 	text-overflow: ellipsis;
 	line-height: 24px;
-	padding: 8px 0;
-	max-width: 160px;
+	padding: 8px 24px;
+	max-width: 170px;
 	margin: 0 auto;
 	position: relative;
 }
-.segname {
-	padding-left: 28px;
-}
 
-.segname .flr {
+.segname .flr, .pname .flr {
 	transform: rotate(0deg);
+	right: -6px;
 }
 
-.expanded .segname {
-	max-width: 184px;
-	padding: 8px 24px;
-}
 /* segment power wrapper */
 .sbs {
 	padding: 4px 0 4px 8px;
@@ -975,7 +972,7 @@ textarea {
 }
 
 .frz {
-	left: 36px;
+	left: 32px;
 	position: absolute;
 	top: -3px;
 	cursor: pointer;
