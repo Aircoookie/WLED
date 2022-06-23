@@ -862,10 +862,11 @@ class WS2812FX {
     void addEffect(uint8_t id, mode_ptr mode_fn, const char *mode_name) { if (id < MODE_COUNT) { _mode[id] = mode_fn; _modeData[id] = mode_name;} }
     void setupEffectData(void); // defined in FX.cpp
 
-    inline void setPixelColor(uint16_t n, uint32_t c)       {setPixelColor(n, byte(c>>16), byte(c>>8), byte(c), byte(c>>24));}
-    inline void setPixelColor(uint16_t n, CRGB c)           {setPixelColor(n, c.red, c.green, c.blue);}
-    inline void setPixelColor(float i, uint32_t c, bool aa) {setPixelColor(i, byte(c>>16), byte(c>>8), byte(c), byte(c>>24), aa);}
-    inline void setPixelColor(float i, CRGB c, bool aa)     {setPixelColor(i, c.red, c.green, c.blue, 0, aa);}
+    // outsmart the compiler :) by correctly overloading
+    inline void setPixelColor(int n, uint32_t c)       {setPixelColor(n, byte(c>>16), byte(c>>8), byte(c), byte(c>>24));}
+    inline void setPixelColor(int n, CRGB c)           {setPixelColor(n, c.red, c.green, c.blue);}
+    inline void setPixelColor(float i, uint32_t c, bool aa=true) {setPixelColor(i, byte(c>>16), byte(c>>8), byte(c), byte(c>>24), aa);}
+    inline void setPixelColor(float i, CRGB c, bool aa=true)     {setPixelColor(i, c.red, c.green, c.blue, 0, aa);}
 
     bool
       gammaCorrectBri = false,
@@ -1113,10 +1114,11 @@ class WS2812FX {
       drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB color, CRGB *leds = nullptr),
       wu_pixel(CRGB *leds, uint32_t x, uint32_t y, CRGB c);
 
-    inline void setPixelColorXY(uint16_t x, uint16_t y, uint32_t c) { setPixelColorXY(x, y, byte(c>>16), byte(c>>8), byte(c), byte(c>>24)); }
-    inline void setPixelColorXY(uint16_t x, uint16_t y, CRGB c)     { setPixelColorXY(x, y, c.red, c.green, c.blue); }
-    inline void setPixelColorXY(float x, float y, uint32_t c, bool aa) { setPixelColorXY(x, y, byte(c>>16), byte(c>>8), byte(c), byte(c>>24), aa); }
-    inline void setPixelColorXY(float x, float y, CRGB c, bool aa)     { setPixelColorXY(x, y, c.red, c.green, c.blue, 0, aa); }
+    // outsmart the compiler :) by correctly overloading
+    inline void setPixelColorXY(int x, int y, uint32_t c) { setPixelColorXY(uint16_t(x), uint16_t(y), byte(c>>16), byte(c>>8), byte(c), byte(c>>24)); }
+    inline void setPixelColorXY(int x, int y, CRGB c)     { setPixelColorXY(uint16_t(x), uint16_t(y), c.red, c.green, c.blue, 0); }
+    inline void setPixelColorXY(float x, float y, uint32_t c, bool aa=true) { setPixelColorXY(x, y, byte(c>>16), byte(c>>8), byte(c), byte(c>>24), aa); }
+    inline void setPixelColorXY(float x, float y, CRGB c, bool aa=true)     { setPixelColorXY(x, y, c.red, c.green, c.blue, 0, aa); }
     inline void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint32_t c) { drawLine(x0, y0, x1, y1, CRGB(byte(c>>16), byte(c>>8), byte(c))); }
     inline void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t c) { drawCharacter(chr, x, y, w, h, CRGB(byte(c>>16), byte(c>>8), byte(c))); }
 

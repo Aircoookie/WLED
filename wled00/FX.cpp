@@ -2985,7 +2985,7 @@ uint16_t WS2812FX::mode_popcorn(void) {
       
       uint16_t ledIndex = popcorn[i].pos;
       if (ledIndex < rows) {
-        if (isMatrix) setPixelColorXY(popcorn[i].posX, rows - 1 - ledIndex, col);
+        if (isMatrix) setPixelColorXY(uint16_t(popcorn[i].posX), rows - 1 - ledIndex, col);
         else          setPixelColor(ledIndex, col);
       }
     }
@@ -3977,7 +3977,7 @@ uint16_t WS2812FX::mode_chunchun(void)
   {
     counter -= span;
     uint16_t megumin = sin16(counter) + 0x8000;
-    uint32_t bird = (megumin * SEGLEN) >> 16;
+    uint16_t bird = uint32_t(megumin * SEGLEN) >> 16;
     uint32_t c = color_from_palette((i * 255)/ numBirds, false, false, 0);  // no palette wrapping
     setPixelColor(bird, c);
   }
@@ -5067,31 +5067,23 @@ uint16_t WS2812FX::mode_2DLissajous(void) {            // By: Andrew Tuline
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  //uint16_t dataSize = sizeof(CRGB) * rows * cols;
+  fadeToBlackBy(nullptr, SEGMENT.intensity);
+  //fade_out(SEGMENT.intensity);
 
-  //if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-  //CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
-
-  //if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
-
-  //fadeToBlackBy(leds, SEGMENT.intensity);
-  fade_out(SEGMENT.intensity);
-
+  //for (int i=0; i < 4*(cols+rows); i ++) {
   for (int i=0; i < 256; i ++) {
-    uint8_t xlocn = sin8(now/2+i*SEGMENT.speed/64);
-    uint8_t ylocn = cos8(now/2+i*128/64);
-
+    //float xlocn = float(sin8(now/4+i*(SEGMENT.speed>>5))) / 255.0f;
+    //float ylocn = float(cos8(now/4+i*2)) / 255.0f;
+    uint8_t xlocn = sin8(now/2+i*(SEGMENT.speed>>5));
+    uint8_t ylocn = cos8(now/2+i*2);
     xlocn = map(xlocn,0,255,0,cols-1);
     ylocn = map(ylocn,0,255,0,rows-1);
-    //leds[XY(xlocn,ylocn)] = ColorFromPalette(currentPalette, now/100+i, 255, LINEARBLEND);
-    //setPixelColorXY(xlocn, ylocn, crgb_to_col(ColorFromPalette(currentPalette, now/100+i, 255, LINEARBLEND)));
     setPixelColorXY(xlocn, ylocn, color_from_palette(now/100+i, false, PALETTE_SOLID_WRAP, 0));
   }
 
-  //setPixels(leds);
   return FRAMETIME;
 } // mode_2DLissajous()
-static const char *_data_FX_MODE_2DLISSAJOUS PROGMEM = "2D Lissajous@X frequency,Fadetime;!,!,!;!";
+static const char *_data_FX_MODE_2DLISSAJOUS PROGMEM = "2D Lissajous@X frequency,Fade rate;!,!,!;!";
 
 
 ///////////////////////

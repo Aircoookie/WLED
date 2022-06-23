@@ -481,15 +481,6 @@ button {
 	z-index: -2;
 }
 
-#imgw {
-	display: inline-block;
-	margin: 8px;
-}
-
-#kv, #kn {
-	display: inline-block;
-}
-
 #info table, #nodes table {
 	table-layout: fixed;
 	width: 100%;
@@ -510,6 +501,15 @@ button {
 	margin: 0 auto;
 }
 
+#imgw {
+	/*display: inline-block;*/
+	margin: 8px auto;
+}
+/*
+#kv, #kn {
+	display: inline-block;
+}
+*/
 #lv {
 	max-width: 600px;
 	display: inline-block;

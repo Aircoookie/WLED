@@ -196,17 +196,17 @@ void /*IRAM_ATTR*/ WS2812FX::setPixelColorXY(float x, float y, byte r, byte g, b
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
+  float fX = x * (cols-1);
+  float fY = y * (rows-1);
   if (aa) {
-    float fX = x * (cols-1);
-    float fL = floorf(x * (cols-1));
-    float fR = ceilf(x * (cols-1));
-    float fY = y * (rows-1);
-    float fT = floorf(y * (rows-1));
-    float fB = ceilf(y * (rows-1));
-    uint16_t xL = fL;
-    uint16_t xR = fR;
-    uint16_t yT = fT;
-    uint16_t yB = fB;
+    uint16_t xL = roundf(fX-0.49f);
+    uint16_t xR = roundf(fX+0.49f);
+    uint16_t yT = roundf(fY-0.49f);
+    uint16_t yB = roundf(fY+0.49f);
+    float    dL = fX - xL;
+    float    dR = xR - fX;
+    float    dT = fY - yT;
+    float    dB = yB - fY;
     uint32_t cXLYT = getPixelColorXY(xL, yT);
     uint32_t cXRYT = getPixelColorXY(xR, yT);
     uint32_t cXLYB = getPixelColorXY(xL, yB);
@@ -214,37 +214,37 @@ void /*IRAM_ATTR*/ WS2812FX::setPixelColorXY(float x, float y, byte r, byte g, b
 
     if (xL!=xR && yT!=yB) {
       // blend TL pixel
-      cXLYT = color_blend(RGBW32(r,g,b,w), cXLYT, sqrtf((fR - fX)*(fB - fY))*UINT16_MAX, true);
-      setPixelColorXY(xR, yT, R(cXLYT), G(cXLYT), B(cXLYT), W(cXLYT));
+      cXLYT = color_blend(RGBW32(r,g,b,w), cXLYT, uint8_t(sqrtf(dL*dT)*255.0f));
+      setPixelColorXY(xL, yT, R(cXLYT), G(cXLYT), B(cXLYT), W(cXLYT));
       // blend TR pixel
-      cXRYT = color_blend(RGBW32(r,g,b,w), cXRYT, sqrtf((fX - fL)*(fB - fY))*UINT16_MAX, true);
+      cXRYT = color_blend(RGBW32(r,g,b,w), cXRYT, uint8_t(sqrtf(dR*dT)*255.0f));
       setPixelColorXY(xR, yT, R(cXRYT), G(cXRYT), B(cXRYT), W(cXRYT));
       // blend BL pixel
-      cXLYB = color_blend(RGBW32(r,g,b,w), cXLYB, sqrtf((fR - fX)*(fY - fT))*UINT16_MAX, true);
+      cXLYB = color_blend(RGBW32(r,g,b,w), cXLYB, uint8_t(sqrtf(dL*dB)*255.0f));
       setPixelColorXY(xL, yB, R(cXLYB), G(cXLYB), B(cXLYB), W(cXLYB));
       // blend BR pixel
-      cXRYB = color_blend(RGBW32(r,g,b,w), cXRYB, sqrtf((fX - fL)*(fY - fT))*UINT16_MAX, true);
+      cXRYB = color_blend(RGBW32(r,g,b,w), cXRYB, uint8_t(sqrtf(dR*dB)*255.0f));
       setPixelColorXY(xR, yB, R(cXRYB), G(cXRYB), B(cXRYB), W(cXRYB));
     } else if (xR!=xL && yT==yB) {
       // blend L pixel
-      cXLYT = color_blend(RGBW32(r,g,b,w), cXLYT, (fR - fX)*UINT16_MAX, true);
+      cXLYT = color_blend(RGBW32(r,g,b,w), cXLYT, uint8_t(dL*255.0f));
       setPixelColorXY(xR, yT, R(cXLYT), G(cXLYT), B(cXLYT), W(cXLYT));
       // blend R pixel
-      cXRYT = color_blend(RGBW32(r,g,b,w), cXRYT, (fX - fL)*UINT16_MAX, true);
+      cXRYT = color_blend(RGBW32(r,g,b,w), cXRYT, uint8_t(dR*255.0f));
       setPixelColorXY(xR, yT, R(cXRYT), G(cXRYT), B(cXRYT), W(cXRYT));
     } else if (xR==xL && yT!=yB) {
       // blend T pixel
-      cXLYT = color_blend(RGBW32(r,g,b,w), cXLYT, (fB - fY)*UINT16_MAX, true);
+      cXLYT = color_blend(RGBW32(r,g,b,w), cXLYT, uint8_t(dT*255.0f));
       setPixelColorXY(xR, yT, R(cXLYT), G(cXLYT), B(cXLYT), W(cXLYT));
       // blend B pixel
-      cXLYB = color_blend(RGBW32(r,g,b,w), cXLYB, (fY - fT)*UINT16_MAX, true);
+      cXLYB = color_blend(RGBW32(r,g,b,w), cXLYB, uint8_t(dB*255.0f));
       setPixelColorXY(xL, yB, R(cXLYB), G(cXLYB), B(cXLYB), W(cXLYB));
     } else {
       // exact match (x & y land on a pixel)
       setPixelColorXY(xL, yT, r, g, b, w);
     }
   } else {
-    setPixelColorXY((uint16_t)roundf(x * (cols-1)), (uint16_t)roundf(y * (rows-1)), r, g, b, w);
+    setPixelColorXY(uint16_t(roundf(fX)), uint16_t(roundf(fY)), r, g, b, w);
   }
 }
 

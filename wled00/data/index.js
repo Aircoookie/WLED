@@ -398,7 +398,7 @@ function presetError(empty)
 		if (bckstr.length > 10) hasBackup = true;
 	} catch (e) {}
 
-	var cn = `<div class="pres c" ${empty?'style="padding:8px;"':'onclick="loadPresets()" style="cursor:pointer;padding:8px;"'}>`;
+	var cn = `<div class="pres c" ${empty?'style="padding:8px 0;margin-top: 15px;"':'onclick="loadPresets()" style="cursor:pointer;padding:8px 0;"'}>`;
 	if (empty)
 		cn += `You have no presets yet!`;
 	else

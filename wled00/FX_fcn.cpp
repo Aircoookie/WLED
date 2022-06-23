@@ -187,27 +187,27 @@ void /*IRAM_ATTR*/ WS2812FX::setPixelColor(float i, byte r, byte g, byte b, byte
 {
   if (i<0.0f || i>1.0f) return; // not normalized
 
+  float fC = i * (SEGLEN-1);
   if (aa) {
-    float fC = i * (SEGLEN-1);
-    float fL = floorf(i * (SEGLEN-1));
-    float fR = ceilf(i * (SEGLEN-1));
-    uint16_t iL = fL;
-    uint16_t iR = fR;
+    uint16_t iL = roundf(fC-0.49f);
+    uint16_t iR = roundf(fC+0.49f);
+    float    dL = fC - iL;
+    float    dR = iR - fC;
     uint32_t cIL = getPixelColor(iL);
     uint32_t cIR = getPixelColor(iR);
     if (iR!=iL) {
       // blend L pixel
-      cIL = color_blend(RGBW32(r,g,b,w), cIL, (fR - fC)*UINT16_MAX, true);
+      cIL = color_blend(RGBW32(r,g,b,w), cIL, uint8_t(dL*255.0f));
       setPixelColor(iL, R(cIL), G(cIL), B(cIL), W(cIL));
       // blend R pixel
-      cIR = color_blend(RGBW32(r,g,b,w), cIR, (fC - fL)*UINT16_MAX, true);
+      cIR = color_blend(RGBW32(r,g,b,w), cIR, uint8_t(dR*255.0f));
       setPixelColor(iR, R(cIR), G(cIR), B(cIR), W(cIR));
     } else {
       // exact match (x & y land on a pixel)
       setPixelColor(iL, r, g, b, w);
     }
   } else {
-    setPixelColor((uint16_t)roundf(i * (SEGLEN-1)), r, g, b, w);
+    setPixelColor(uint16_t(roundf(fC)), r, g, b, w);
   }
 }
 

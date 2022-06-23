@@ -7,9 +7,43 @@
 	<title>2D Set-up</title>
 	<script>
 	var d=document;
+    var loc = false, locip;
 	function H(){window.open("https://kno.wled.ge/features/2D");}
 	function B(){window.open("/settings","_self");}
 	function gId(n){return d.getElementById(n);}
+	// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
+	function loadJS(FILE_URL, async = true) {
+		let scE = d.createElement("script");
+		scE.setAttribute("src", FILE_URL);
+		scE.setAttribute("type", "text/javascript");
+		scE.setAttribute("async", async);
+		d.body.appendChild(scE);
+		// success event 
+		scE.addEventListener("load", () => {
+			//console.log("File loaded");
+			GetV();
+			UI();
+		});
+		// error event
+		scE.addEventListener("error", (ev) => {
+			console.log("Error on loading file", ev);
+			alert("Loading of configuration script failed.\nIncomplete page data!");
+		});
+	}
+	function S() {
+        if (window.location.protocol == "file:") {
+            loc = true;
+            locip = localStorage.getItem('locIp');
+            if (!locip) {
+                locip = prompt("File Mode. Please enter WLED IP!");
+                localStorage.setItem('locIp', locip);
+            }
+        }
+        var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=10';
+		loadJS(url, false);	// If we set async false, file is loaded and executed, then next statement is processed
+		//if (loc) loadJS(url, false);	// If we set async false, file is loaded and executed, then next statement is processed
+		//else { GetV(); UI(); }
+	}
 
 	var maxPanels=64;
 	function UI(change=false)
@@ -71,9 +105,8 @@ Serpentine: <input type="checkbox" name="P${i}S"></div>`;
 		gId("pnl_rem").style.display = (i>1) ? "inline":"none";
 	}
 
-	function S() {GetV();UI()}
 	//values injected by server while sending HTML
-	function GetV() {}
+	//fun-ction GetV() {}
 	</script>
 	<style>@import url("style.css");</style>
 </head>
