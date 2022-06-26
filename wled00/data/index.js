@@ -1279,7 +1279,6 @@ function readState(s,command=false)
 function setSliderAndColorControl(idx, applyDef=false)
 {
 	if (!(Array.isArray(fxdata) && fxdata.length>idx)) return;
-	var topPosition = 0;
   	var controlDefined = (fxdata[idx].substr(0,1) == "@");
 	var extra = fxdata[idx].substr(1);
 	var extras = (extra == '')?[]:extra.split(";");
@@ -1289,7 +1288,8 @@ function setSliderAndColorControl(idx, applyDef=false)
 	var obj = {"seg":{}};
   
 	// set html slider items on/off
-	var nSliders = Math.min(5,Math.floor(gId("sliders").children.length / 2)); // p (label) & div for each slider
+	var nSliders = Math.min(5,Math.floor(gId("sliders").children.length)); // div for each slider
+	var sldCnt = 0;
 	for (let i=0; i<nSliders; i++) {
 		var slider = gId("slider" + i);
 		var label = gId("sliderLabel" + i);
@@ -1308,21 +1308,17 @@ function setSliderAndColorControl(idx, applyDef=false)
 			else if (i==0)                           label.innerHTML = "Effect speed";
 			else if (i==1)                           label.innerHTML = "Effect intensity";
 			else                                     label.innerHTML = "Custom" + (i-1);
-			label.classList.remove("hide");
+			if (sldCnt++===0) slider.classList.add("top");
 			slider.classList.remove("hide");
-			if (getComputedStyle(label).display === "block") topPosition += 58; // increase top position for the next control
-			else topPosition += 35;
-			slider.setAttribute('title',label.innerHTML);
+			//slider.setAttribute('title',label.innerHTML);
 		} else {
-			// disable label and slider
 			slider.classList.add("hide");
-			label.classList.add("hide");
+			slider.classList.remove("top");
 		}
 	}
-	if (topPosition>0) { topPosition += 5; gId("sliders").style.paddingTop = "5px"; }
-	else gId("sliders").style.padding = 0;
 
 	// set size of fx list
+	let topPosition = 5 + parseInt(getComputedStyle(gId("sliders")).height);
 	gId("fx").style.height = `calc(100% - ${topPosition}px)`;
 
 	// set html color items on/off

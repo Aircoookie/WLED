@@ -376,18 +376,76 @@ button {
 #sliders {
 	width: 310px;
 	margin: 0 auto;
+	position: absolute;
+	bottom: 0;
+	left: 50%;
+	transform: translateX(-50%);
 }
 
 #sliders .labels {
 	padding-top: 3px;
+	font-size: small;
 }
 
-#slider0, #slider1, #slider2, #slider3, #slider4 {
+.slider {
 	background: var(--c-2);
 	max-width: 310px;
 	min-width: 280px;
 	margin: 0 auto 5px;
 	border-radius: 15px;
+	position: relative;
+}
+
+/* Tooltip text */
+.slider .tooltiptext {
+	visibility: hidden;
+	background-color: var(--c-5);
+	color: var(--c-f);
+	text-align: center;
+	padding: 5px 10px;
+	border-radius: 6px;
+
+	/* Position the tooltip text */
+	width: 160px;
+	position: absolute;
+	z-index: 1;
+	bottom: 100%;
+	left: 50%;
+	margin-left: -92px;
+
+	/* Fade in tooltip */
+	opacity: 0;
+	transition: opacity 0.3s;
+}
+
+.slider.top .tooltiptext {
+	top: 100%;
+	bottom: unset;
+}
+
+/* Tooltip arrow */
+.slider .tooltiptext::after {
+	content: "";
+	position: absolute;
+	top: 100%;
+	left: 50%;
+	margin-left: -5px;
+	border-width: 5px;
+	border-style: solid;
+	border-color: var(--c-5) transparent transparent transparent;
+}
+
+.slider.top  .tooltiptext::after {
+	bottom: 100%;
+	left: 50%;
+	top: unset;
+	border-color: transparent transparent var(--c-5) transparent;
+}
+
+/* Show the tooltip text when you mouse over the tooltip container */
+.slider:hover .tooltiptext {
+	visibility: visible;
+	opacity: 1;
 }
 
 #pql, .edit-icon {
