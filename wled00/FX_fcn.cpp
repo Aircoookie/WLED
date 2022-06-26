@@ -411,18 +411,13 @@ void WS2812FX::trigger() {
 void WS2812FX::setMode(uint8_t segid, uint8_t m) {
   if (segid >= MAX_NUM_SEGMENTS) return;
    
-  if (m >= MODE_COUNT) m = MODE_COUNT - 1;
+  if (m >= getModeCount()) m = getModeCount() - 1;
 
   if (_segments[segid].mode != m) 
   {
     _segment_runtimes[segid].markForReset();
     _segments[segid].mode = m;
   }
-}
-
-uint8_t WS2812FX::getModeCount()
-{
-  return MODE_COUNT;
 }
 
 uint8_t WS2812FX::getPaletteCount()
@@ -937,13 +932,16 @@ uint32_t WS2812FX::color_add(uint32_t c1, uint32_t c2)
 /*
  * Fills segment with color
  */
-void WS2812FX::fill(uint32_t c) {
+void WS2812FX::fill(uint32_t c, uint8_t seg) {
+  uint8_t oldSeg;
+  if (seg != 255) oldSeg = setPixelSegment(seg);
   const uint16_t cols = isMatrix ? SEGMENT.virtualWidth() : SEGMENT.virtualLength();
   const uint16_t rows = SEGMENT.virtualHeight(); // will be 1 for 1D
   for(uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
     if (isMatrix) setPixelColorXY(x, y, c);
     else          setPixelColor(x, c);
   }
+  if (seg != 255) setPixelSegment(oldSeg);
 }
 
 /*

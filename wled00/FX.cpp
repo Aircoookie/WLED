@@ -7392,31 +7392,26 @@ static const char *_data_FX_MODE_WATERFALL PROGMEM = " ♫ Waterfall@!,Adjust co
 /////////////////////////
 //     ** 2D GEQ       //
 /////////////////////////
-//NOTE: centering is obsolete by using mirroring on the segment level
-uint16_t WS2812FX::GEQ_base(bool centered_horizontal, bool centered_vertical, bool color_vertical) {                     // By Will Tatam. Refactor by Ewoud Wijma.
+uint16_t WS2812FX::mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
   if (!isMatrix) return mode_static(); // not a 2D set-up
 
+  const int NUM_BANDS = map(SEGMENT.custom1, 0, 255, 1, 16);
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();    // using width*height prevents reallocation if mirroring is enabled
 
-  if (!SEGENV.allocateData(dataSize + cols*sizeof(uint16_t))) return mode_static(); //allocation failed
-  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
-  uint16_t *previousBarHeight = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize);
+  if (!SEGENV.allocateData(cols*sizeof(uint16_t))) return mode_static(); //allocation failed
+  uint16_t *previousBarHeight = reinterpret_cast<uint16_t*>(SEGENV.data); //array of previous bar heights per frequency band
 
-  uint8_t *fftResult = nullptr;
+  uint8_t   *fftResult = nullptr;
   um_data_t *um_data;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    fftResult     =  (uint8_t*)um_data->u_data[8];
+    fftResult = (uint8_t*)um_data->u_data[8];
   } else {
     // add support for no audio data
   }
   if (!fftResult) return mode_static();
 
-  //static int previousBarHeight[64]; //array of previous bar heights per frequency band
-  if (SEGENV.call == 0) for (uint16_t i=0; i<cols; i++) previousBarHeight[i] = 0;
-
-  fadeToBlackBy(leds, 96+(SEGMENT.speed>>2));
+  if (SEGENV.call == 0) for (int i=0; i<cols; i++) previousBarHeight[i] = 0;
 
   bool rippleTime = false;
   if (millis() - SEGENV.step >= (256 - SEGMENT.intensity)) {
@@ -7424,59 +7419,31 @@ uint16_t WS2812FX::GEQ_base(bool centered_horizontal, bool centered_vertical, bo
     rippleTime = true;
   }
 
-  uint16_t xCount = cols;
-  if (centered_vertical) xCount /= 2;
+  fadeToBlackBy(nullptr, 128+(SEGMENT.speed>>2));
 
-  for (uint16_t x=0; x < xCount; x++) {
-    uint8_t  band = map(x, 0, xCount-1, 0, 15);
-    uint16_t barHeight = map(fftResult[band], 0, 255, 0, rows-1);
+  for (int x=0; x < cols; x++) {
+    uint8_t  band       = map(x, 0, cols-1, 0, NUM_BANDS - 1);
+    uint16_t colorIndex = band * 17;
+    uint16_t barHeight  = map(fftResult[band], 0, 255, 0, rows); // do not subtract -1 from rows here
     if (barHeight > previousBarHeight[x]) previousBarHeight[x] = barHeight; //drive the peak up
 
-    if (centered_horizontal) barHeight += barHeight%2;                                     //get an even barHeight if centered_horizontal
-    uint16_t yStartBar = centered_horizontal ? (rows - barHeight - 1) / 2 : 0;             //lift up the bar if centered_horizontal
-    uint16_t yStartPeak = centered_horizontal ? (rows - previousBarHeight[x] - 1) / 2 : 0; //lift up the peaks if centered_horizontal
+    uint32_t ledColor = BLACK;
+    for (int y=0; y < barHeight; y++) {
+      if (SEGMENT.custom2 > 128) //color_vertical / color bars toggle 
+        colorIndex = map(y, 0, rows-1, 0, 255);
 
-    for (uint16_t y=0; y < rows; y++) {
-      uint16_t colorIndex;
-      if (color_vertical) {
-        if (centered_horizontal)
-          colorIndex = map(abs(y - (rows - 1)/2), 0, (rows-1)/2, 0, 255);
-        else
-          colorIndex = map(y, 0, rows - 1, 0, 255);
-      } else
-        colorIndex = band * 17;
-
-      CRGB heightColor = color_from_palette(colorIndex, false, PALETTE_SOLID_WRAP, 0);
-      CRGB ledColor = CRGB::Black; //if not part of bars or peak, make black (not fade to black)
-
-      //bar
-      if (y >= yStartBar && y < yStartBar + barHeight)
-        ledColor = heightColor;
-
-      //low and high peak (must exist && on peak position && only below if centered_horizontal effect)
-      //bool isYPeak = (centered_horizontal && y==yStartPeak) || y==(yStartPeak + previousBarHeight[x]);
-      bool isYPeak = (y==yStartPeak || y==yStartPeak + previousBarHeight[x]-1) && (centered_horizontal || y!=yStartPeak);
-      if ((previousBarHeight[x] > 0) && isYPeak)
-        ledColor = SEGCOLOR(2)==CRGB::Black ? heightColor : CRGB(SEGCOLOR(2)); //low peak
-
-      if (centered_vertical) {
-        leds[XY(cols / 2 + x,     rows - 1 - y)] += ledColor;
-        leds[XY(cols / 2 - 1 - x, rows - 1 - y)] += ledColor;
-      } else
-        leds[XY(x, rows - 1 - y)] += ledColor;
+      ledColor = color_from_palette(colorIndex, false, PALETTE_SOLID_WRAP, 0);
+      setPixelColorXY(x, rows-1 - y, ledColor);
     }
+    if (previousBarHeight[x] > 0)
+      setPixelColorXY(x, rows - previousBarHeight[x], (SEGCOLOR(2) != BLACK) ? SEGCOLOR(2) : ledColor);
 
-    if (rippleTime && previousBarHeight[x]>centered_horizontal) previousBarHeight[x] -= centered_horizontal + 1;    //delay/ripple effect
+    if (rippleTime && previousBarHeight[x]>0) previousBarHeight[x]--;    //delay/ripple effect
   }
 
-  setPixels(leds);
   return FRAMETIME;
-} //GEQ_base
-
-uint16_t WS2812FX::mode_2DGEQ(void) {                     // By Will Tatam. Code reduction by Ewoud Wijma.
-  return GEQ_base(false, false, SEGMENT.custom3 > 128);
 } // mode_2DGEQ()
-static const char *_data_FX_MODE_2DGEQ PROGMEM = " ♫ 2D GEQ@Bar speed,Ripple decay,,Color bars=0;!,,Peak Color;!=11";
+static const char *_data_FX_MODE_2DGEQ PROGMEM = " ♫ 2D GEQ@Fade speed,Ripple decay,# of bands=255,Color bars=64;!,,Peak Color;!=11";
 
 
 /////////////////////////
@@ -7484,9 +7451,9 @@ static const char *_data_FX_MODE_2DGEQ PROGMEM = " ♫ 2D GEQ@Bar speed,Ripple d
 /////////////////////////
 // NOTE: obsolete!
 uint16_t WS2812FX::mode_2DCenterBars(void) {              // Written by Scott Marley Adapted by  Spiro-C..
-  return GEQ_base(SEGMENT.custom1 > 128, SEGMENT.custom2 > 128, SEGMENT.custom3 > 128);
+  return mode_2DGEQ();
 } // mode_2DCenterBars()
-static const char *_data_FX_MODE_2DCENTERBARS PROGMEM = " ♫ 2D CenterBars@Bar speed=250,Ripple decay=250,Center ↔ ☑=192,Center ↕ ☑=192, Color ↕ ☑=192;!,,Peak Color;!=11";
+static const char *_data_FX_MODE_2DCENTERBARS PROGMEM = " ♫ 2D CenterBars@Bar speed,Ripple decay,# of bands=255,Color bars=64;!,,Peak Color;!=11";
 
 
 /////////////////////////
@@ -7663,7 +7630,7 @@ static const char *_data_FX_MODE_2DAKEMI PROGMEM = "2D Akemi@Color speed,Dance;H
 static const char *_data_RESERVED PROGMEM = "Reserved";
 void WS2812FX::setupEffectData() {
   // fill reserved word in case there will be any gaps in the array
-  for (byte i=0; i<MODE_COUNT; i++) _modeData[i] = _data_RESERVED;
+  for (byte i=0; i<getModeCount(); i++) _modeData[i] = _data_RESERVED;
   //addEffect(FX_MODE_..., &WS2812FX::mode_fcn, _data_FX_MODE_...);
   addEffect(FX_MODE_STATIC, &WS2812FX::mode_static, _data_FX_MODE_STATIC);
   addEffect(FX_MODE_BLINK, &WS2812FX::mode_blink, _data_FX_MODE_BLINK);
@@ -7891,199 +7858,3 @@ void WS2812FX::setupEffectData() {
   //addEffect(FX_MODE_CUSTOMEFFECT, &WS2812FX::mode_customEffect, _data_FX_MODE_CUSTOMEFFECT); //WLEDSR Custom Effects
 #endif
 }
-
-//const char *WS2812FX::_modeData[MODE_COUNT];
-/*
- = {
-  _data_FX_MODE_STATIC,
-  _data_FX_MODE_BLINK,
-  _data_FX_MODE_BREATH,
-  _data_FX_MODE_COLOR_WIPE,
-  _data_FX_MODE_COLOR_WIPE_RANDOM,
-  _data_FX_MODE_RANDOM_COLOR,
-  _data_FX_MODE_COLOR_SWEEP,
-  _data_FX_MODE_DYNAMIC,
-  _data_FX_MODE_RAINBOW,
-  _data_FX_MODE_RAINBOW_CYCLE,
-  _data_FX_MODE_SCAN,
-  _data_FX_MODE_DUAL_SCAN,
-  _data_FX_MODE_FADE,
-  _data_FX_MODE_THEATER_CHASE,
-  _data_FX_MODE_THEATER_CHASE_RAINBOW,
-  _data_FX_MODE_RUNNING_LIGHTS,
-  _data_FX_MODE_SAW,
-  _data_FX_MODE_TWINKLE,
-  _data_FX_MODE_DISSOLVE,
-  _data_FX_MODE_DISSOLVE_RANDOM,
-  _data_FX_MODE_SPARKLE,
-  _data_FX_MODE_FLASH_SPARKLE,
-  _data_FX_MODE_HYPER_SPARKLE,
-  _data_FX_MODE_STROBE,
-  _data_FX_MODE_STROBE_RAINBOW,
-  _data_FX_MODE_MULTI_STROBE,
-  _data_FX_MODE_BLINK_RAINBOW,
-  _data_FX_MODE_ANDROID,
-  _data_FX_MODE_CHASE_COLOR,
-  _data_FX_MODE_CHASE_RANDOM,
-  _data_FX_MODE_CHASE_RAINBOW,
-  _data_FX_MODE_CHASE_FLASH,
-  _data_FX_MODE_CHASE_FLASH_RANDOM,
-  _data_FX_MODE_CHASE_RAINBOW_WHITE,
-  _data_FX_MODE_COLORFUL,
-  _data_FX_MODE_TRAFFIC_LIGHT,
-  _data_FX_MODE_COLOR_SWEEP_RANDOM,
-  _data_FX_MODE_RUNNING_COLOR,
-  _data_FX_MODE_AURORA,
-  _data_FX_MODE_RUNNING_RANDOM,
-  _data_FX_MODE_LARSON_SCANNER,
-  _data_FX_MODE_COMET,
-  _data_FX_MODE_FIREWORKS,
-  _data_FX_MODE_RAIN,
-  _data_FX_MODE_TETRIX,
-  _data_FX_MODE_FIRE_FLICKER,
-  _data_FX_MODE_GRADIENT,
-  _data_FX_MODE_LOADING,
-  _data_FX_MODE_POLICE,
-  _data_FX_MODE_FAIRY,
-  _data_FX_MODE_TWO_DOTS,
-  _data_FX_MODE_FAIRYTWINKLE,
-  _data_FX_MODE_RUNNING_DUAL,
-  _data_FX_MODE_HALLOWEEN,
-  _data_FX_MODE_TRICOLOR_CHASE,
-  _data_FX_MODE_TRICOLOR_WIPE,
-  _data_FX_MODE_TRICOLOR_FADE,
-  _data_FX_MODE_LIGHTNING,
-  _data_FX_MODE_ICU,
-  _data_FX_MODE_MULTI_COMET,
-  _data_FX_MODE_DUAL_LARSON_SCANNER,
-  _data_FX_MODE_RANDOM_CHASE,
-  _data_FX_MODE_OSCILLATE,
-  _data_FX_MODE_PRIDE_2015,
-  _data_FX_MODE_JUGGLE,
-  _data_FX_MODE_PALETTE,
-  _data_FX_MODE_FIRE_2012,
-  _data_FX_MODE_COLORWAVES,
-  _data_FX_MODE_BPM,
-  _data_FX_MODE_FILLNOISE8,
-  _data_FX_MODE_NOISE16_1,
-  _data_FX_MODE_NOISE16_2,
-  _data_FX_MODE_NOISE16_3,
-  _data_FX_MODE_NOISE16_4,
-  _data_FX_MODE_COLORTWINKLE,
-  _data_FX_MODE_LAKE,
-  _data_FX_MODE_METEOR,
-  _data_FX_MODE_METEOR_SMOOTH,
-  _data_FX_MODE_RAILWAY,
-  _data_FX_MODE_RIPPLE,
-  _data_FX_MODE_TWINKLEFOX,
-  _data_FX_MODE_TWINKLECAT,
-  _data_FX_MODE_HALLOWEEN_EYES,
-  _data_FX_MODE_STATIC_PATTERN,
-  _data_FX_MODE_TRI_STATIC_PATTERN,
-  _data_FX_MODE_SPOTS,
-  _data_FX_MODE_SPOTS_FADE,
-  _data_FX_MODE_GLITTER,
-  _data_FX_MODE_CANDLE,
-  _data_FX_MODE_STARBURST,
-  _data_FX_MODE_EXPLODING_FIREWORKS,
-  _data_FX_MODE_BOUNCINGBALLS,
-  _data_FX_MODE_SINELON,
-  _data_FX_MODE_SINELON_DUAL,
-  _data_FX_MODE_SINELON_RAINBOW,
-  _data_FX_MODE_POPCORN,
-  _data_FX_MODE_DRIP,
-  _data_FX_MODE_PLASMA,
-  _data_FX_MODE_PERCENT,
-  _data_FX_MODE_RIPPLE_RAINBOW,
-  _data_FX_MODE_HEARTBEAT,
-  _data_FX_MODE_PACIFICA,
-  _data_FX_MODE_CANDLE_MULTI,
-  _data_FX_MODE_SOLID_GLITTER,
-  _data_FX_MODE_SUNRISE,
-  _data_FX_MODE_PHASED,
-  _data_FX_MODE_TWINKLEUP,
-  _data_FX_MODE_NOISEPAL,
-  _data_FX_MODE_SINEWAVE,
-  _data_FX_MODE_PHASEDNOISE,
-  _data_FX_MODE_FLOW,
-  _data_FX_MODE_CHUNCHUN,
-  _data_FX_MODE_DANCING_SHADOWS,
-  _data_FX_MODE_WASHING_MACHINE,
-  _data_FX_MODE_CANDY_CANE,
-  _data_FX_MODE_BLENDS,
-  _data_FX_MODE_TV_SIMULATOR,
-  _data_FX_MODE_DYNAMIC_SMOOTH,
-  // new effects
-  _data_FX_MODE_SPACESHIPS,
-  _data_FX_MODE_CRAZYBEES,
-  _data_FX_MODE_GHOST_RIDER,
-  _data_FX_MODE_BLOBS,
-  _data_FX_MODE_SCROLL_TEXT,
-  _data_FX_MODE_DRIFT_ROSE,
-  _data_RESERVED,
-  _data_RESERVED,
-  _data_RESERVED,
-  _data_RESERVED,
-  // WLED-SR effects
-  _data_FX_MODE_PIXELS,
-  _data_FX_MODE_PIXELWAVE,
-  _data_FX_MODE_JUGGLES,
-  _data_FX_MODE_MATRIPIX,
-  _data_FX_MODE_GRAVIMETER,
-  _data_FX_MODE_PLASMOID,
-  _data_FX_MODE_PUDDLES,
-  _data_FX_MODE_MIDNOISE,
-  _data_FX_MODE_NOISEMETER,
-  _data_FX_MODE_FREQWAVE,
-  _data_FX_MODE_FREQMATRIX,
-  _data_FX_MODE_2DGEQ,
-  _data_FX_MODE_WATERFALL,
-  _data_FX_MODE_FREQPIXELS,
-  _data_FX_MODE_BINMAP,
-  _data_FX_MODE_NOISEFIRE,
-  _data_FX_MODE_PUDDLEPEAK,
-  _data_FX_MODE_NOISEMOVE,
-  _data_FX_MODE_2DNOISE,
-  _data_FX_MODE_PERLINMOVE,
-  _data_FX_MODE_RIPPLEPEAK,
-  _data_FX_MODE_2DFIRENOISE,
-  _data_FX_MODE_2DSQUAREDSWIRL,
-  _data_RESERVED,               // was 2D Fire2012
-  _data_FX_MODE_2DDNA,
-  _data_FX_MODE_2DMATRIX,
-  _data_FX_MODE_2DMETABALLS,
-  _data_FX_MODE_FREQMAP,
-  _data_FX_MODE_GRAVCENTER,
-  _data_FX_MODE_GRAVCENTRIC,
-  _data_FX_MODE_GRAVFREQ,
-  _data_FX_MODE_DJLIGHT,
-  _data_FX_MODE_2DFUNKYPLANK,
-  _data_FX_MODE_2DCENTERBARS,
-  _data_FX_MODE_2DPULSER,
-  _data_FX_MODE_BLURZ,
-  _data_FX_MODE_2DDRIFT,
-  _data_FX_MODE_2DWAVERLY,
-  _data_FX_MODE_2DSUNRADIATION,
-  _data_FX_MODE_2DCOLOREDBURSTS,
-  _data_FX_MODE_2DJULIA,
-  _data_RESERVED,               //reserved FX_MODE_2DPOOLNOISE
-  _data_RESERVED,               //reserved FX_MODE_2DTWISTER
-  _data_RESERVED,               //reserved FX_MODE_2DCAELEMENTATY
-  _data_FX_MODE_2DGAMEOFLIFE,
-  _data_FX_MODE_2DTARTAN,
-  _data_FX_MODE_2DPOLARLIGHTS,
-  _data_FX_MODE_2DSWIRL,
-  _data_FX_MODE_2DLISSAJOUS,
-  _data_FX_MODE_2DFRIZZLES,
-  _data_FX_MODE_2DPLASMABALL,
-  _data_FX_MODE_FLOWSTRIPE,
-  _data_FX_MODE_2DHIPHOTIC,
-  _data_FX_MODE_2DSINDOTS,
-  _data_FX_MODE_2DDNASPIRAL,
-  _data_FX_MODE_2DBLACKHOLE,
-  _data_FX_MODE_WAVESINS,
-  _data_FX_MODE_ROCKTAVES,
-  _data_FX_MODE_2DAKEMI
-  //_data_FX_MODE_CUSTOMEFFECT    //WLEDSR Custom Effects
-};
-*/

@@ -833,7 +833,7 @@ class WS2812FX {
       finalizeInit(),
       service(void),
       blur(uint8_t),
-      fill(uint32_t),
+      fill(uint32_t c, uint8_t seg=255),
       fade_out(uint8_t r),
       fadeToBlackBy(uint8_t fadeBy),
       setMode(uint8_t segid, uint8_t m),
@@ -859,7 +859,7 @@ class WS2812FX {
 			setTargetFps(uint8_t fps),
       deserializeMap(uint8_t n=0);
 
-    void addEffect(uint8_t id, mode_ptr mode_fn, const char *mode_name) { if (id < MODE_COUNT) { _mode[id] = mode_fn; _modeData[id] = mode_name;} }
+    void addEffect(uint8_t id, mode_ptr mode_fn, const char *mode_name) { if (id < _modeCount) { _mode[id] = mode_fn; _modeData[id] = mode_name;} }
     void setupEffectData(void); // defined in FX.cpp
 
     // outsmart the compiler :) by correctly overloading
@@ -883,7 +883,6 @@ class WS2812FX {
       milliampsPerLed = 55,
       cctBlending = 0,
       getBrightness(void),
-      getModeCount(void),
       getPaletteCount(void),
       getMaxSegments(void),
       getActiveSegmentsNum(void),
@@ -896,6 +895,7 @@ class WS2812FX {
       gamma8_cal(uint8_t, float),
       get_random_wheel_index(uint8_t);
 
+    inline uint8_t getModeCount() { return _modeCount; }
     inline uint8_t sin_gap(uint16_t in) {
       if (in & 0x100) return 0;
       return sin8(in + 192); // correct phase shift of sine so that it starts and stops at 0
@@ -927,7 +927,7 @@ class WS2812FX {
       getPixelColor(uint16_t);
 
     const char *
-      getModeData(uint8_t id = 0) { return id<MODE_COUNT ? _modeData[id] : nullptr; }
+      getModeData(uint8_t id = 0) { return id<_modeCount ? _modeData[id] : nullptr; }
 
     const char **
       getModeDataSrc(void) { return _modeData; }
@@ -1260,6 +1260,7 @@ class WS2812FX {
       _hasWhiteChannel = false,
       _triggered;
 
+    uint8_t _modeCount = MODE_COUNT;
     mode_ptr _mode[MODE_COUNT]; // SRAM footprint: 4 bytes per element
     const char *_modeData[MODE_COUNT];// mode (effect) name and its slider control data array
 
