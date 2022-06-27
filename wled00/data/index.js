@@ -773,14 +773,14 @@ function populateEffects()
 	for (let i = 0; i < effects.length; i++) {
 		// WLEDSR: add slider and color control to setX (used by requestjson)
 		if (effects[i].name.indexOf("Reserved") < 0) {
-			var extra = !(Array.isArray(fxdata) && fxdata.length>i) ? '' : fxdata[i].substr(1);
+			let id = effects[i].id;
 			html += generateListItemHtml(
 				'fx',
-				effects[i].id,
+				id,
 				effects[i].name,
 				'setX',
 				'',
-				extra
+				!(Array.isArray(fxdata) && fxdata.length>id) ? '' : fxdata[id].substr(1)
 			);
 		}
 	}
@@ -1318,8 +1318,11 @@ function setSliderAndColorControl(idx, applyDef=false)
 	}
 
 	// set size of fx list
-	let topPosition = 5 + parseInt(getComputedStyle(gId("sliders")).height);
-	gId("fx").style.height = `calc(100% - ${topPosition}px)`;
+	let topPosition = parseInt(getComputedStyle(gId("sliders")).height);
+	//gId("fx").style.height = `calc(100% - ${topPosition}px)`;
+	//d.styleSheets[0].cssRules[195].style.bottom = topPosition + "px";
+	let selElement = d.querySelector('#fxlist .selected');
+	selElement.style.bottom = topPosition + "px";
 
 	// set html color items on/off
 	var cslLabel = '';
@@ -1969,7 +1972,10 @@ function setX(ind = null)
 		d.querySelector(`#fxlist input[name="fx"][value="${ind}"]`).checked = true;
 	}
 	var selElement = d.querySelector('#fxlist .selected');
-	if (selElement) selElement.classList.remove('selected');
+	if (selElement) {
+		selElement.classList.remove('selected');
+		selElement.style.bottom = null; // remove element style added in slider handling
+	}
 
 	d.querySelector(`#fxlist .lstI[data-id="${ind}"]`).classList.add('selected');
 
