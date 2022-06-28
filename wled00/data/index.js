@@ -1308,21 +1308,21 @@ function setSliderAndColorControl(idx, applyDef=false)
 			else if (i==0)                           label.innerHTML = "Effect speed";
 			else if (i==1)                           label.innerHTML = "Effect intensity";
 			else                                     label.innerHTML = "Custom" + (i-1);
-			if (sldCnt++===0) slider.classList.add("top");
+			sldCnt++;
+			//if (sldCnt++===0) slider.classList.add("top");
 			slider.classList.remove("hide");
 			//slider.setAttribute('title',label.innerHTML);
 		} else {
 			slider.classList.add("hide");
-			slider.classList.remove("top");
+			//slider.classList.remove("top");
 		}
 	}
 
-	// set size of fx list
-	let topPosition = parseInt(getComputedStyle(gId("sliders")).height);
-	//gId("fx").style.height = `calc(100% - ${topPosition}px)`;
-	//d.styleSheets[0].cssRules[195].style.bottom = topPosition + "px";
-	let selElement = d.querySelector('#fxlist .selected');
-	selElement.style.bottom = topPosition + "px";
+	// set the bottom position of selected effect (sticky) as the top of sliders div
+	let top = parseInt(getComputedStyle(gId("sliders")).height);
+	/*if (sldCnt===1)*/ top += 28; // size of tooltip
+	let sel = d.querySelector('#fxlist .selected');
+	if (sel) sel.style.bottom = top + "px"; // we will need to remove this when unselected (in setX())
 
 	// set html color items on/off
 	var cslLabel = '';
@@ -2038,12 +2038,12 @@ function setPreset(i)
 {
 	var obj = {"ps":i};
 	if (pJson && pJson[i] && (!pJson[i].win || pJson[i].win.indexOf("Please") <= 0)) {
+		// we will send complete preset content as to avoid delay introduced by
+		// async nature of applyPreset(). json.cpp has to decide wether to call applyPreset()
+		// or not (by looking at the JSON content, if "ps" only)
 		Object.assign(obj, pJson[i]);
 		delete obj.ql;	// no need for quick load
 		delete obj.n;	// no need for name
-//		obj.pt = i;		// this will set preset ID but not force state update
-//	} else {
-//		obj.ps = i;
 	}
 	if (isPlaylist(i)) obj.on = true; // force on
 	showToast("Loading preset " + pName(i) +" (" + i + ")");
