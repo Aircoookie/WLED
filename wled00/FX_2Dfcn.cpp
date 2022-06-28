@@ -250,14 +250,16 @@ void /*IRAM_ATTR*/ WS2812FX::setPixelColorXY(float x, float y, byte r, byte g, b
 
 // returns RGBW values of pixel
 uint32_t WS2812FX::getPixelColorXY(uint16_t x, uint16_t y) {
+  if (SEGMENT.getOption(SEG_OPTION_REVERSED)  ) x = SEGMENT.virtualWidth()  - x - 1;
+  if (SEGMENT.getOption(SEG_OPTION_REVERSED_Y)) y = SEGMENT.virtualHeight() - y - 1;
   if (SEGMENT.getOption(SEG_OPTION_TRANSPOSED)) { uint16_t t = x; x = y; y = t; } // swap X & Y if segment transposed
 
   x *= SEGMENT.groupLength(); // expand to physical pixels
   y *= SEGMENT.groupLength(); // expand to physical pixels
   if (x >= SEGMENT.width() || y >= SEGMENT.height()) return 0;
 
-  if (SEGMENT.getOption(SEG_OPTION_REVERSED)  ) x = SEGMENT.width()  - x - 1;
-  if (SEGMENT.getOption(SEG_OPTION_REVERSED_Y)) y = SEGMENT.height() - y - 1;
+  //if (SEGMENT.getOption(SEG_OPTION_REVERSED)  ) x = SEGMENT.width()  - x - 1;
+  //if (SEGMENT.getOption(SEG_OPTION_REVERSED_Y)) y = SEGMENT.height() - y - 1;
 
   uint16_t index = get2DPixelIndex(x, y);
   if (index < customMappingSize) index = customMappingTable[index];
