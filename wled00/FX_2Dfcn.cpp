@@ -274,6 +274,13 @@ void WS2812FX::blendPixelColorXY(uint16_t x, uint16_t y, uint32_t color, uint8_t
   setPixelColorXY(x, y, color_blend(getPixelColorXY(x,y), color, blend));
 }
 
+/*
+ * Adds the specified color with the existing pixel color perserving color balance.
+ */
+void WS2812FX::addPixelColorXY(uint16_t x, uint16_t y, uint32_t color) {
+  setPixelColorXY(x, y, color_add(getPixelColorXY(x,y), color));
+}
+
 // blurRow: perform a blur on a row of a rectangular matrix
 void WS2812FX::blurRow(uint16_t row, fract8 blur_amount, CRGB* leds) {
   const uint16_t cols = SEGMENT.virtualWidth();

@@ -968,7 +968,7 @@ void WS2812FX::fade_out(uint8_t rate) {
   int g2 = G(color);
   int b2 = B(color);
 
-  for(uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
+  for (uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
     color = isMatrix ? getPixelColorXY(x, y) : getPixelColor(x);
     int w1 = W(color);
     int r1 = R(color);
@@ -993,8 +993,12 @@ void WS2812FX::fade_out(uint8_t rate) {
 
 // fades all pixels to black using nscale8()
 void WS2812FX::fadeToBlackBy(uint8_t fadeBy) {
-  for (uint16_t i = 0; i < SEGLEN; i++) {
-    setPixelColor(i, col_to_crgb(getPixelColor(i)).nscale8(255-fadeBy));
+  const uint16_t cols = isMatrix ? SEGMENT.virtualWidth() : SEGMENT.virtualLength();
+  const uint16_t rows = SEGMENT.virtualHeight(); // will be 1 for 1D
+
+  for (uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
+    if (isMatrix) setPixelColorXY(x, y, col_to_crgb(getPixelColorXY(x,y)).nscale8(255-fadeBy));
+    else          setPixelColor(x, col_to_crgb(getPixelColor(x)).nscale8(255-fadeBy));
   }
 }
 

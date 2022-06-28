@@ -5067,7 +5067,7 @@ uint16_t WS2812FX::mode_2DLissajous(void) {            // By: Andrew Tuline
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  fadeToBlackBy(nullptr, SEGMENT.intensity);
+  fadeToBlackBy(SEGMENT.intensity);
   //fade_out(SEGMENT.intensity);
 
   //for (int i=0; i < 4*(cols+rows); i ++) {
