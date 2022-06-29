@@ -981,6 +981,24 @@ class AudioReactive : public Usermod {
     }
 
 
+    /**
+     * handleButton() can be used to override default button behaviour. Returning true
+     * will prevent button working in a default way.
+     */
+    bool handleButton(uint8_t b) {
+      yield();
+      // crude way of determining if audio input is analog
+      // better would be for AudioSource to implement getType()
+      if (enabled
+          && dmType == 0 && audioPin>=0
+          && (buttonType[b] == BTN_TYPE_ANALOG || buttonType[b] == BTN_TYPE_ANALOG_INVERTED)
+         ) {
+        return true;
+      }
+      return false;
+    }
+
+
     /*
      * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
      * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
