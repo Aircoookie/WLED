@@ -275,20 +275,9 @@ public:
     JsonObject user = root["u"];
     if (user.isNull()) user = root.createNestedObject("u");
 
-    String uiDomString = F("<button class=\"btn\" onclick=\"requestJson({");
-    uiDomString += FPSTR(_name);
-    uiDomString += F(":{");
-    uiDomString += FPSTR(_enabled);
-    if (enabled) {
-      uiDomString += F(":false}});\">");
-      uiDomString += F("PIR <i class=\"icons\">&#xe325;</i>");
-    } else {
-      uiDomString += F(":true}});\">");
-      uiDomString += F("PIR <i class=\"icons\">&#xe08f;</i>");
-    }
-    uiDomString += F("</button>");
-    JsonArray infoArr = user.createNestedArray(uiDomString); // timer value
+    JsonArray infoArr = user.createNestedArray(FPSTR(_name));
 
+    String uiDomString;
     if (enabled) {
       if (offTimerStart > 0)
       {
@@ -321,6 +310,20 @@ public:
     } else {
       infoArr.add(F("disabled"));
     }
+
+    uiDomString  = F(" <button class=\"btn btn-xs\" onclick=\"requestJson({");
+    uiDomString += FPSTR(_name);
+    uiDomString += F(":{");
+    uiDomString += FPSTR(_enabled);
+    if (enabled) {
+      uiDomString += F(":false}});\">");
+      uiDomString += F("<i class=\"icons on\">&#xe325;</i>");
+    } else {
+      uiDomString += F(":true}});\">");
+      uiDomString += F("<i class=\"icons off\">&#xe08f;</i>");
+    }
+    uiDomString += F("</button>");
+    infoArr.add(uiDomString);
 
     JsonObject sensor = root[F("sensor")];
     if (sensor.isNull()) sensor = root.createNestedObject(F("sensor"));

@@ -26,6 +26,7 @@
 
 #include "FX.h"
 #include "wled.h"
+#include "fcn_declare.h"
 
 #define IBN 5100
 #define PALETTE_SOLID_WRAP (paletteBlend == 1 || paletteBlend == 3)
@@ -722,15 +723,15 @@ uint16_t WS2812FX::mode_android(void) {
 
   if (a + SEGENV.aux1 < SEGLEN)
   {
-    for(int i = a; i < a+SEGENV.aux1; i++) {
+    for(uint16_t i = a; i < a+SEGENV.aux1; i++) {
       setPixelColor(i, SEGCOLOR(0));
     }
   } else
   {
-    for(int i = a; i < SEGLEN; i++) {
+    for(uint16_t i = a; i < SEGLEN; i++) {
       setPixelColor(i, SEGCOLOR(0));
     }
-    for(int i = 0; i < SEGENV.aux1 - (SEGLEN -a); i++) {
+    for(uint16_t i = 0; i < SEGENV.aux1 - (SEGLEN -a); i++) {
       setPixelColor(i, SEGCOLOR(0));
     }
   }
@@ -1053,7 +1054,7 @@ static const char *_data_FX_MODE_CANDY_CANE PROGMEM = "Candy Cane@!,Width;;";
 uint16_t WS2812FX::mode_halloween(void) {
   return running(PURPLE, ORANGE);
 }
-static const char *_data_FX_MODE_HALLOWEEN PROGMEM = "Halloween";
+static const char *_data_FX_MODE_HALLOWEEN PROGMEM = "Halloween@!,Width;;";
 
 
 /*
@@ -1140,7 +1141,7 @@ uint16_t WS2812FX::larson_scanner(bool dual) {
  */
 uint16_t WS2812FX::mode_comet(void) {
   uint16_t counter = now * ((SEGMENT.speed >>2) +1);
-  uint16_t index = counter * SEGLEN >> 16;
+  uint16_t index = (counter * SEGLEN) >> 16;
   if (SEGENV.call == 0) SEGENV.aux0 = index;
 
   fade_out(SEGMENT.intensity);
@@ -1159,7 +1160,7 @@ uint16_t WS2812FX::mode_comet(void) {
 
   return FRAMETIME;
 }
-static const char *_data_FX_MODE_COMET PROGMEM = "Lighthouse";
+static const char *_data_FX_MODE_COMET PROGMEM = "Lighthouse@!,Fade rate;!,!,!;!";
 
 
 /*
@@ -1594,7 +1595,7 @@ uint16_t WS2812FX::mode_tricolor_wipe(void)
 
   return FRAMETIME;
 }
-static const char *_data_FX_MODE_TRICOLOR_WIPE PROGMEM = "Tri Wipe@!,Width;1,2,3;0";
+static const char *_data_FX_MODE_TRICOLOR_WIPE PROGMEM = "Tri Wipe@!,;1,2,3;0";
 
 
 /*
@@ -2196,7 +2197,7 @@ uint16_t WS2812FX::mode_colortwinkle()
   fract8 fadeUpAmount = _brightness>28 ? 8 + (SEGMENT.speed>>2) : 68-_brightness, fadeDownAmount = _brightness>28 ? 8 + (SEGMENT.speed>>3) : 68-_brightness;
 
   for (uint16_t i = 0; i < rows*cols; i++) {
-    uint16_t j = i % rows, k = i / rows;
+    uint16_t j = i % cols, k = i / cols;
     fastled_col = col_to_crgb(isMatrix ? getPixelColorXY(j, k) : getPixelColor(i));
     prev = fastled_col;
     uint16_t index = i >> 3;
@@ -2232,7 +2233,7 @@ uint16_t WS2812FX::mode_colortwinkle()
     if (random8() <= SEGMENT.intensity) {
       for (uint8_t times = 0; times < 5; times++) { //attempt to spawn a new pixel 5 times
         uint16_t i = random16(rows*cols);
-        uint16_t j = i % rows, k = i / rows;
+        uint16_t j = i % cols, k = i / cols;
         uint32_t col = isMatrix ? getPixelColorXY(j, k) : getPixelColor(i);
         if (col == 0) {
           fastled_col = ColorFromPalette(currentPalette, random8(), 64, NOBLEND);
@@ -2984,7 +2985,7 @@ uint16_t WS2812FX::mode_popcorn(void) {
       
       uint16_t ledIndex = popcorn[i].pos;
       if (ledIndex < rows) {
-        if (isMatrix) setPixelColorXY(popcorn[i].posX, rows - 1 - ledIndex, col);
+        if (isMatrix) setPixelColorXY(uint16_t(popcorn[i].posX), rows - 1 - ledIndex, col);
         else          setPixelColor(ledIndex, col);
       }
     }
@@ -3256,7 +3257,7 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
   Spark* sparks = reinterpret_cast<Spark*>(SEGENV.data);
   Spark* flare = sparks; //first spark is flare data
 
-  float gravity = -0.0004 - (SEGMENT.speed/800000.0); // m/s/s
+  float gravity = -0.0004f - (SEGMENT.speed/800000.0f); // m/s/s
   gravity *= rows;
   
   if (SEGENV.aux0 < 2) { //FLARE
@@ -3265,7 +3266,7 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
       flare->posX = isMatrix ? random16(2,cols-1) : (SEGMENT.intensity > random8()); // will enable random firing side on 1D
       uint16_t peakHeight = 75 + random8(180); //0-255
       peakHeight = (peakHeight * (rows -1)) >> 8;
-      flare->vel = sqrt(-2.0 * gravity * peakHeight);
+      flare->vel = sqrt(-2.0f * gravity * peakHeight);
       flare->velX = isMatrix ? (random8(8)-4)/32.f : 0; // no X velocity on 1D
       flare->col = 255; //brightness
       SEGENV.aux0 = 1; 
@@ -3274,7 +3275,7 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
     // launch 
     if (flare->vel > 12 * gravity) {
       // flare
-      if (isMatrix) setPixelColorXY(flare->posX, rows - uint16_t(flare->pos) - 1, flare->col, flare->col, flare->col);
+      if (isMatrix) setPixelColorXY(int(flare->posX), rows - uint16_t(flare->pos) - 1, flare->col, flare->col, flare->col);
       else          setPixelColor(int(flare->posX) ? rows - int(flare->pos) - 1 : int(flare->pos), flare->col, flare->col, flare->col);
       flare->pos  += flare->vel;
       flare->posX += flare->velX;
@@ -3301,7 +3302,7 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
         sparks[i].pos  = flare->pos;
         sparks[i].posX = flare->posX;
         sparks[i].vel  = (float(random16(0, 20000)) / 10000.0f) - 0.9f; // from -0.9 to 1.1
-        sparks[i].vel *= rows<32 ? 0.5 : 1; // reduce velocity for smaller strips
+        sparks[i].vel *= rows<32 ? 0.5f : 1; // reduce velocity for smaller strips
         sparks[i].velX = isMatrix ? (float(random16(0, 4000)) / 10000.0f) - 0.2f : 0; // from -0.2 to 0.2
         sparks[i].col  = 345;//abs(sparks[i].vel * 750.0); // set colors before scaling velocity to keep them bright 
         //sparks[i].col = constrain(sparks[i].col, 0, 345); 
@@ -3336,12 +3337,12 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
             c.g = qsub8(c.g, cooling);
             c.b = qsub8(c.b, cooling * 2);
           }
-          if (isMatrix) setPixelColorXY(sparks[i].posX, rows - int(sparks[i].pos) - 1, c.red, c.green, c.blue);
+          if (isMatrix) setPixelColorXY(int(sparks[i].posX), rows - int(sparks[i].pos) - 1, c.red, c.green, c.blue);
           else          setPixelColor(int(sparks[i].posX) ? rows - int(sparks[i].pos) - 1 : int(sparks[i].pos), c.red, c.green, c.blue);
         }
       }
       blur(16);
-      *dying_gravity *= .8; // as sparks burn out they fall slower
+      *dying_gravity *= .8f; // as sparks burn out they fall slower
     } else {
       SEGENV.aux0 = 6 + random8(10); //wait for this many frames
     }
@@ -4474,6 +4475,65 @@ uint16_t WS2812FX::mode_aurora(void) {
 }
 static const char *_data_FX_MODE_AURORA PROGMEM = "Aurora@!=24,!;1,2,3;!=50";
 
+// WLED-SR effects
+
+/////////////////////////
+//     Perlin Move     //
+/////////////////////////
+// 16 bit perlinmove. Use Perlin Noise instead of sinewaves for movement. By Andrew Tuline.
+// Controls are speed, # of pixels, faderate.
+uint16_t WS2812FX::mode_perlinmove(void) {
+
+  fade_out(255-SEGMENT.custom1);
+  for (uint16_t i = 0; i < SEGMENT.intensity/16 + 1; i++) {
+    uint16_t locn = inoise16(millis()*128/(260-SEGMENT.speed)+i*15000, millis()*128/(260-SEGMENT.speed)); // Get a new pixel location from moving noise.
+    uint16_t pixloc = map(locn, 50*256, 192*256, 0, SEGLEN-1);                                            // Map that to the length of the strand, and ensure we don't go over.
+    setPixelColor(pixloc, color_from_palette(pixloc%255, false, PALETTE_SOLID_WRAP, 0));
+  }
+
+  return FRAMETIME;
+} // mode_perlinmove()
+static const char *_data_FX_MODE_PERLINMOVE PROGMEM = "Perlin Move@!,# of pixels,fade rate;,!;!";
+
+
+/////////////////////////
+//     Waveins         //
+/////////////////////////
+// Uses beatsin8() + phase shifting. By: Andrew Tuline
+uint16_t WS2812FX::mode_wavesins(void) {
+
+  for (uint16_t i = 0; i < SEGLEN; i++) {
+    uint8_t bri = sin8(millis()/4 + i * SEGMENT.intensity);
+    setPixelColor(i, ColorFromPalette(currentPalette, beatsin8(SEGMENT.speed, SEGMENT.custom1, SEGMENT.custom1+SEGMENT.custom2, 0, i * SEGMENT.custom3), bri, LINEARBLEND));
+  }
+
+  return FRAMETIME;
+} // mode_waveins()
+static const char *_data_FX_MODE_WAVESINS PROGMEM = "Wavesins@Speed,Brightness variation,Starting Color,Range of Colors,Color variation;;!";
+
+
+//////////////////////////////
+//     Flow Stripe          //
+//////////////////////////////
+// By: ldirko  https://editor.soulmatelights.com/gallery/392-flow-led-stripe , modifed by: Andrew Tuline
+uint16_t WS2812FX::mode_FlowStripe(void) {
+
+  const uint16_t hl = SEGLEN * 10 / 13;
+  uint8_t hue = millis() / (SEGMENT.speed+1);
+  uint32_t t = millis() / (SEGMENT.intensity/8+1);
+
+  for (uint16_t i = 0; i < SEGLEN; i++) {
+    int c = (abs(i - hl) / hl) * 127;
+    c = sin8(c);
+    c = sin8(c / 2 + t);
+    byte b = sin8(c + t/8);
+    setPixelColor(i, CHSV(b + hue, 255, 255));
+  }
+
+  return FRAMETIME;
+} // mode_FlowStripe()
+static const char *_data_FX_MODE_FLOWSTRIPE PROGMEM = "Flow Stripe@Hue speed,Effect speed;;";
+
 
 ///////////////////////////////////////////////////////////////////////////////
 //***************************  2D routines  ***********************************
@@ -4519,7 +4579,7 @@ uint16_t WS2812FX::mode_2DBlackHole(void) {            // By: Stepko https://edi
   setPixels(leds);
   return FRAMETIME;
 } // mode_2DBlackHole()
-static const char *_data_FX_MODE_BLACK_HOLE PROGMEM = "2D Black Hole@Fade rate,Outer Y freq.,Outer X freq.,Inner X freq.,Inner Y freq.;;";
+static const char *_data_FX_MODE_2DBLACKHOLE PROGMEM = "2D Black Hole@Fade rate,Outer Y freq.,Outer X freq.,Inner X freq.,Inner Y freq.;;";
 
 
 ////////////////////////////
@@ -4578,7 +4638,7 @@ uint16_t WS2812FX::mode_2DColoredBursts() {              // By: ldirko   https:/
   setPixels(leds);       // Use this ONLY if we're going to display via leds[x] method.
   return FRAMETIME;
 } // mode_2DColoredBursts()
-static const char *_data_FX_MODE_COLORED_BURSTS PROGMEM = "2D Colored Bursts@Speed,# of lines;;!";
+static const char *_data_FX_MODE_2DCOLOREDBURSTS PROGMEM = "2D Colored Bursts@Speed,# of lines;;!";
 
 
 /////////////////////
@@ -4607,7 +4667,7 @@ uint16_t WS2812FX::mode_2Ddna(void) {         // dna originally by by ldirko at 
   setPixels(leds);
   return FRAMETIME;
 } // mode_2Ddna()
-static const char *_data_FX_MODE_DNA PROGMEM = "2D DNA@Scroll speed,Blur;;!";
+static const char *_data_FX_MODE_2DDNA PROGMEM = "2D DNA@Scroll speed,Blur;;!";
 
 
 /////////////////////////
@@ -4655,7 +4715,7 @@ uint16_t WS2812FX::mode_2DDNASpiral() {               // By: ldirko  https://edi
   setPixels(leds);       // Use this ONLY if we're going to display via leds[x] method.
   return FRAMETIME;
 } // mode_2DDNASpiral()
-static const char *_data_FX_MODE_DNA_SPIRAL PROGMEM = "2D DNA Spiral@Scroll speed,Blur;;!";
+static const char *_data_FX_MODE_2DDNASPIRAL PROGMEM = "2D DNA Spiral@Scroll speed,Blur;;!";
 
 
 /////////////////////////
@@ -4690,7 +4750,7 @@ uint16_t WS2812FX::mode_2DDrift() {              // By: Stepko   https://editor.
   setPixels(leds);
   return FRAMETIME;
 } // mode_2DDrift()
-static const char *_data_FX_MODE_DRIFT PROGMEM = "2D Drift@Rotation speed,Blur amount;;!";
+static const char *_data_FX_MODE_2DDRIFT PROGMEM = "2D Drift@Rotation speed,Blur amount;;!";
 
 
 //////////////////////////
@@ -4727,7 +4787,7 @@ uint16_t WS2812FX::mode_2Dfirenoise(void) {               // firenoise2d. By And
   setPixels(leds);
   return FRAMETIME;
 } // mode_2Dfirenoise()
-static const char *_data_FX_MODE_FIRENOISE PROGMEM = "2D Firenoise@X scale,Y scale;;";
+static const char *_data_FX_MODE_2DFIRENOISE PROGMEM = "2D Firenoise@X scale,Y scale;;";
 
 
 //////////////////////////////
@@ -4754,7 +4814,7 @@ uint16_t WS2812FX::mode_2DFrizzles(void) {                 // By: Stepko https:/
   setPixels(leds);
   return FRAMETIME;
 } // mode_2DFrizzles()
-static const char *_data_FX_MODE_FRIZZLES PROGMEM = "2D Frizzles@X frequency,Y frequency;;!";
+static const char *_data_FX_MODE_2DFRIZZLES PROGMEM = "2D Frizzles@X frequency,Y frequency;;!";
 
 
 ///////////////////////////////////////////
@@ -4857,7 +4917,7 @@ uint16_t WS2812FX::mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired
   setPixels(leds);
   return (SEGMENT.getOption(SEG_OPTION_TRANSITIONAL)) ? FRAMETIME : FRAMETIME_FIXED * (128-(SEGMENT.speed>>1)); // update only when appropriate time passes (in 42 FPS slots)
 } // mode_2Dgameoflife()
-static const char *_data_FX_MODE_GAMEOFLIFE PROGMEM = "2D Game Of Life@!,;!,!;!";
+static const char *_data_FX_MODE_2DGAMEOFLIFE PROGMEM = "2D Game Of Life@!,;!,!;!";
 
 
 /////////////////////////
@@ -4878,7 +4938,7 @@ uint16_t WS2812FX::mode_2DHiphotic() {                        //  By: ldirko  ht
 
   return FRAMETIME;
 } // mode_2DHiphotic()
-static const char *_data_FX_MODE_HIPNOTIC PROGMEM = "2D Hipnotic@X scale,Y scale;;!";
+static const char *_data_FX_MODE_2DHIPHOTIC PROGMEM = "2D Hiphotic@X scale,Y scale;;!";
 
 
 /////////////////////////
@@ -4995,7 +5055,7 @@ uint16_t WS2812FX::mode_2DJulia(void) {                           // An animated
 
   return FRAMETIME;
 } // mode_2DJulia()
-static const char *_data_FX_MODE_JULIA PROGMEM = "2D Julia@,Max iterations per pixel,X center,Y center,Area size;;!";
+static const char *_data_FX_MODE_2DJULIA PROGMEM = "2D Julia@,Max iterations per pixel,X center,Y center,Area size;;!";
 
 
 //////////////////////////////
@@ -5007,31 +5067,23 @@ uint16_t WS2812FX::mode_2DLissajous(void) {            // By: Andrew Tuline
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  //uint16_t dataSize = sizeof(CRGB) * rows * cols;
+  fadeToBlackBy(SEGMENT.intensity);
+  //fade_out(SEGMENT.intensity);
 
-  //if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-  //CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
-
-  //if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
-
-  //fadeToBlackBy(leds, SEGMENT.intensity);
-  fade_out(SEGMENT.intensity);
-
+  //for (int i=0; i < 4*(cols+rows); i ++) {
   for (int i=0; i < 256; i ++) {
-    uint8_t xlocn = sin8(now/2+i*SEGMENT.speed/64);
-    uint8_t ylocn = cos8(now/2+i*128/64);
-
+    //float xlocn = float(sin8(now/4+i*(SEGMENT.speed>>5))) / 255.0f;
+    //float ylocn = float(cos8(now/4+i*2)) / 255.0f;
+    uint8_t xlocn = sin8(now/2+i*(SEGMENT.speed>>5));
+    uint8_t ylocn = cos8(now/2+i*2);
     xlocn = map(xlocn,0,255,0,cols-1);
     ylocn = map(ylocn,0,255,0,rows-1);
-    //leds[XY(xlocn,ylocn)] = ColorFromPalette(currentPalette, now/100+i, 255, LINEARBLEND);
-    //setPixelColorXY(xlocn, ylocn, crgb_to_col(ColorFromPalette(currentPalette, now/100+i, 255, LINEARBLEND)));
     setPixelColorXY(xlocn, ylocn, color_from_palette(now/100+i, false, PALETTE_SOLID_WRAP, 0));
   }
 
-  //setPixels(leds);
   return FRAMETIME;
 } // mode_2DLissajous()
-static const char *_data_FX_MODE_LISSAJOUS PROGMEM = "2D Lissajous@X frequency,Fadetime;!,!,!;!";
+static const char *_data_FX_MODE_2DLISSAJOUS PROGMEM = "2D Lissajous@X frequency,Fade rate;!,!,!;!";
 
 
 ///////////////////////
@@ -5098,7 +5150,7 @@ uint16_t WS2812FX::mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy
 
   return FRAMETIME;
 } // mode_2Dmatrix()
-static const char *_data_FX_MODE_MATRIX PROGMEM = "2D Matrix@Falling speed,Spawning rate,Trail,Custom color;Spawn,Trail;";
+static const char *_data_FX_MODE_2DMATRIX PROGMEM = "2D Matrix@Falling speed,Spawning rate,Trail,Custom color;Spawn,Trail;";
 
 
 /////////////////////////
@@ -5158,7 +5210,7 @@ uint16_t WS2812FX::mode_2Dmetaballs(void) {   // Metaballs by Stefan Petrick. Ca
   //setPixels(leds);
   return FRAMETIME;
 } // mode_2Dmetaballs()
-static const char *_data_FX_MODE_MEATBALS PROGMEM = "2D Metaballs@Speed;!,!,!;!";
+static const char *_data_FX_MODE_2DMETABALLS PROGMEM = "2D Metaballs@Speed;!,!,!;!";
 
 
 //////////////////////
@@ -5200,7 +5252,7 @@ uint16_t WS2812FX::mode_2DPlasmaball(void) {                   // By: Stepko htt
   if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
 
   fadeToBlackBy(leds, 64);
-  double t = millis() / (33 - SEGMENT.speed/8);
+  float t = millis() / (33 - SEGMENT.speed/8);
   for (uint16_t i = 0; i < cols; i++) {
     uint16_t thisVal = inoise8(i * 30, t, t);
     uint16_t thisMax = map(thisVal, 0, 255, 0, cols-1);
@@ -5225,7 +5277,7 @@ uint16_t WS2812FX::mode_2DPlasmaball(void) {                   // By: Stepko htt
   setPixels(leds);
   return FRAMETIME;
 } // mode_2DPlasmaball()
-static const char *_data_FX_MODE_PLASMA_BALL PROGMEM = "2D Plasma Ball@Speed;!,!,!;!";
+static const char *_data_FX_MODE_2DPLASMABALL PROGMEM = "2D Plasma Ball@Speed;!,!,!;!";
 
 
 ////////////////////////////////
@@ -5284,7 +5336,7 @@ uint16_t WS2812FX::mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevs
   setPixels(leds);
   return FRAMETIME;
 } // mode_2DPolarLights()
-static const char *_data_FX_MODE_POLAR_LIGHTS PROGMEM = "2D Polar Lights@Speed,Scale;;";
+static const char *_data_FX_MODE_2DPOLARLIGHTS PROGMEM = "2D Polar Lights@Speed,Scale;;";
 
 
 /////////////////////////
@@ -5314,7 +5366,7 @@ uint16_t WS2812FX::mode_2DPulser(void) {                       // By: ldirko   h
   setPixels(leds);       // Use this ONLY if we're going to display via leds[x] method.
   return FRAMETIME;
 } // mode_2DPulser()
-static const char *_data_FX_MODE_PULSER PROGMEM = "2D Pulser@Speed,Blur;;!";
+static const char *_data_FX_MODE_2DPULSER PROGMEM = "2D Pulser@Speed,Blur;;!";
 
 
 /////////////////////////
@@ -5345,7 +5397,7 @@ uint16_t WS2812FX::mode_2DSindots(void) {                             // By: ldi
   setPixels(leds);       // Use this ONLY if we're going to display via leds[x] method.
   return FRAMETIME;
 } // mode_2DSindots()
-static const char *_data_FX_MODE_SINDOTS PROGMEM = "2D Sindots@Speed,Dot distance;;!";
+static const char *_data_FX_MODE_2DSINDOTS PROGMEM = "2D Sindots@Speed,Dot distance;;!";
 
 
 //////////////////////////////
@@ -5388,7 +5440,7 @@ uint16_t WS2812FX::mode_2Dsquaredswirl(void) {            // By: Mark Kriegsman.
   setPixels(leds);
   return FRAMETIME;
 } // mode_2Dsquaredswirl()
-static const char *_data_FX_MODE_SQUARED_SWIRL PROGMEM = "2D Squared Swirl@,,,,Blur;,,;!";
+static const char *_data_FX_MODE_2DSQUAREDSWIRL PROGMEM = "2D Squared Swirl@,,,,Blur;,,;!";
 
 
 //////////////////////////////
@@ -5439,7 +5491,7 @@ uint16_t WS2812FX::mode_2DSunradiation(void) {                   // By: ldirko h
   setPixels(leds);
   return FRAMETIME;
 } // mode_2DSunradiation()
-static const char *_data_FX_MODE_SUN_RADIATION PROGMEM = "2D Sun Radiation@Variance,Brightness;;";
+static const char *_data_FX_MODE_2DSUNRADIATION PROGMEM = "2D Sun Radiation@Variance,Brightness;;";
 
 
 /////////////////////////
@@ -5474,138 +5526,7 @@ uint16_t WS2812FX::mode_2Dtartan(void) {          // By: Elliott Kember  https:/
   setPixels(leds);       // Use this ONLY if we're going to display via leds[x] method.
   return FRAMETIME;
 } // mode_2DTartan()
-static const char *_data_FX_MODE_TARTAN PROGMEM = "2D Tartan@X scale,Y scale;;!";
-
-
-/////////////////////////
-//    * 2D Waverly     //
-/////////////////////////
-uint16_t WS2812FX::mode_2DWaverly(void) {                                       // By: Stepko, https://editor.soulmatelights.com/gallery/652-wave , modified by Andrew Tuline
-  if (!isMatrix) return mode_static(); // not a 2D set-up
-
-  const uint16_t cols = SEGMENT.virtualWidth();
-  const uint16_t rows = SEGMENT.virtualHeight();
-  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
-
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
-
-  if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
-
-  fadeToBlackBy(leds, SEGMENT.speed);
-
-  long t = now / 2;
-  for (uint16_t i = 0; i < cols; i++) {
-    //uint8_t tmpSound = (soundAgc) ? sampleAgc : sampleAvg;
-
-    uint16_t thisVal = /*tmpSound*/((SEGMENT.intensity>>2)+1) * inoise8(i * 45 , t , t)/64;
-    uint16_t thisMax = map(thisVal, 0, 512, 0, rows);
-
-    for (uint16_t j = 0; j < thisMax; j++) {
-      leds[XY(i, j)] += ColorFromPalette(currentPalette, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND);
-      leds[XY((cols - 1) - i, (rows - 1) - j)] += ColorFromPalette(currentPalette, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND);
-    }
-  }
-  blur2d(leds, 16);
-
-  setPixels(leds);
-  return FRAMETIME;
-} // mode_2DWaverly()
-static const char *_data_FX_MODE_WAVERLY PROGMEM = "2D Waverly@Fade rate,Sensitivity;;!";
-
-
-/////////////////////////
-//     2D Akemi        //
-/////////////////////////
-uint16_t WS2812FX::mode_2DAkemi(void) {
-  if (!isMatrix) return mode_static(); // not a 2D set-up
-
-  const uint16_t cols = SEGMENT.virtualWidth();
-  const uint16_t rows = SEGMENT.virtualHeight();
-
-  uint16_t counter = (now * ((SEGMENT.speed >> 2) +2)) & 0xFFFF;
-  counter = counter >> 8;
-
-  //Akemi
-  uint8_t akemi[32][32]={
-    {0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0,0,2,2,3,3,3,3,3,3,2,2,0,0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0,2,3,3,0,0,0,0,0,0,3,3,2,0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,2,3,0,0,0,6,5,5,4,0,0,0,3,2,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,2,3,0,0,6,6,5,5,5,5,4,4,0,0,3,2,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,2,3,0,6,5,5,5,5,5,5,5,5,4,0,3,2,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,2,3,0,6,5,5,5,5,5,5,5,5,5,5,4,0,3,2,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,3,2,0,6,5,5,5,5,5,5,5,5,5,5,4,0,2,3,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,3,2,3,6,5,5,7,7,5,5,5,5,7,7,5,5,4,3,2,3,0,0,0,0,0,0},
-    {0,0,0,0,0,2,3,1,3,6,5,1,7,7,7,5,5,1,7,7,7,5,4,3,1,3,2,0,0,0,0,0},
-    {0,0,0,0,0,8,3,1,3,6,5,1,7,7,7,5,5,1,7,7,7,5,4,3,1,3,8,9,0,0,0,0},
-    {0,0,0,0,0,8,3,1,3,6,5,5,1,1,5,5,5,5,1,1,5,5,4,3,1,3,8,0,0,0,0,0},
-    {0,0,0,0,0,2,3,1,3,6,5,5,5,5,5,5,5,5,5,5,5,5,4,3,1,3,2,0,0,0,0,0},
-    {0,0,0,0,0,0,3,2,3,6,5,5,5,5,5,5,5,5,5,5,5,5,4,3,2,3,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,6,5,5,5,5,5,7,7,5,5,5,5,5,4,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,6,5,5,5,5,5,5,5,5,5,5,5,5,4,0,0,0,0,0,0,0,0,0},
-    {1,0,0,0,0,0,0,0,0,6,5,5,5,5,5,5,5,5,5,5,5,5,4,0,0,0,0,0,0,0,0,2},
-    {0,2,2,2,0,0,0,0,0,6,5,5,5,5,5,5,5,5,5,5,5,5,4,0,0,0,0,0,2,2,2,0},
-    {0,0,0,3,2,0,0,0,6,5,4,4,4,4,4,4,4,4,4,4,4,4,4,4,0,0,0,2,2,0,0,0},
-    {0,0,0,3,2,0,0,0,6,5,5,5,5,5,5,5,5,5,5,5,5,5,5,4,0,0,0,2,3,0,0,0},
-    {0,0,0,0,3,2,0,0,0,0,3,3,0,3,3,0,0,3,3,0,3,3,0,0,0,0,2,2,0,0,0,0},
-    {0,0,0,0,3,2,0,0,0,0,3,2,0,3,2,0,0,3,2,0,3,2,0,0,0,0,2,3,0,0,0,0},
-    {0,0,0,0,0,3,2,0,0,3,2,0,0,3,2,0,0,3,2,0,0,3,2,0,0,2,3,0,0,0,0,0},
-    {0,0,0,0,0,3,2,2,2,2,0,0,0,3,2,0,0,3,2,0,0,0,3,2,2,2,3,0,0,0,0,0},
-    {0,0,0,0,0,0,3,3,3,0,0,0,0,3,2,0,0,3,2,0,0,0,0,3,3,3,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-  };
-
-  //draw and color Akemi
-  for (uint16_t y=0; y < rows; y++) for (uint16_t x=0; x < cols; x++) {
-    CRGB color = BLACK;
-    CRGB faceColor = color_wheel(counter);
-    CRGB armsAndLegsColor = SEGCOLOR(1) > 0 ? SEGCOLOR(1) : 0xFFE0A0; //default warmish white 0xABA8FF; //0xFF52e5;//
-    CRGB soundColor = ORANGE;
-    float lightFactor = 0.15;
-    float normalFactor = 0.4;
-    float base = 0.0; //fftResult[0]/255.0;
-    switch (akemi[(y * 32)/rows][(x * 32)/cols]) {
-      case 0: color = BLACK; break;
-      case 3: armsAndLegsColor.r *= lightFactor;  armsAndLegsColor.g *= lightFactor;  armsAndLegsColor.b *= lightFactor;  color = armsAndLegsColor; break; //light arms and legs 0x9B9B9B
-      case 2: armsAndLegsColor.r *= normalFactor; armsAndLegsColor.g *= normalFactor; armsAndLegsColor.b *= normalFactor; color = armsAndLegsColor; break; //normal arms and legs 0x888888
-      case 1: color = armsAndLegsColor; break; //dark arms and legs 0x686868
-      case 6: faceColor.r *= lightFactor;  faceColor.g *= lightFactor;  faceColor.b *= lightFactor;  color=faceColor; break; //light face 0x31AAFF
-      case 5: faceColor.r *= normalFactor; faceColor.g *= normalFactor; faceColor.b *= normalFactor; color=faceColor; break; //normal face 0x0094FF
-      case 4: color = faceColor; break; //dark face 0x007DC6
-      case 7: color = SEGCOLOR(2) > 0 ? SEGCOLOR(2) : 0xFFFFFF; break; //eyes and mouth default white
-      case 8: if (base > 0.4) {soundColor.r *= base; soundColor.g *= base; soundColor.b *= base; color=soundColor;} else color = armsAndLegsColor; break;
-      default: color = BLACK;
-    }
-
-    if (SEGMENT.intensity > 128 /*&& fftResult[0] > 128*/) { //dance if base is high
-      setPixelColorXY(x, 0, BLACK);
-      setPixelColorXY(x, y+1, color);
-    } else
-      setPixelColorXY(x, y, color);
-  }
-
-  //add geq left and right
-  /*
-  for (uint16_t x=0; x < cols/8; x++) {
-    uint16_t band = x * cols/8;
-    uint16_t barHeight = map(fftResult[band], 0, 255, 0, 17*rows/32);
-    CRGB color = color_from_palette((band * 35), false, PALETTE_SOLID_WRAP, 0);
-
-    for (uint16_t y=0; y < barHeight; y++) {
-      setPixelColorXY(x, rows/2-y, color);
-      setPixelColorXY(cols-1-x, rows/2-y, color);
-    }
-  }
-  */
-  return FRAMETIME;
-} // mode_2DAkemi
-static const char *_data_FX_MODE_AKEMI PROGMEM = "2D Akemi@Color speed,Dance;Head palette,Arms & Legs,Eyes & Mouth;Face palette";
+static const char *_data_FX_MODE_2DTARTAN PROGMEM = "2D Tartan@X scale,Y scale;;!";
 
 
 /////////////////////////
@@ -5937,14 +5858,14 @@ uint16_t WS2812FX::mode_2Dscrollingtext(void) {
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  const int letterWidth = 6;
+  const int letterWidth = SEGMENT.custom2 > 128 ? 6 : 5;
   const int letterHeight = 8;
   const int yoffset = map(SEGMENT.intensity, 0, 255, -rows/2, rows/2) + (rows-letterHeight)/2;
-  const char *text = PSTR("Use segment name"); // fallback if empty segment name
+  const char *text = nullptr;
   if (SEGMENT.name && strlen(SEGMENT.name)) text = SEGMENT.name;
 
   char lineBuffer[17], sec[3];
-  if (strstr_P(text, PSTR("#DATETIME"))) {
+  if (!text) { // fallback if empty segment name: display date and time
     byte AmPmHour = hour(localTime);
     boolean isitAM = true;
     if (useAMPM) {
@@ -5960,7 +5881,7 @@ uint16_t WS2812FX::mode_2Dscrollingtext(void) {
 
   if (SEGENV.step < millis()) {
     if ((numberOfLetters * letterWidth) > cols) ++SEGENV.aux0 %= (numberOfLetters * letterWidth) + cols;      // offset
-    else                                          SEGENV.aux0  = (cols - (numberOfLetters * letterWidth))/2;
+    else                                          SEGENV.aux0  = (cols + (numberOfLetters * letterWidth))/2;
     ++SEGENV.aux1 &= 0xFF; // color shift
     SEGENV.step = millis() + map(SEGMENT.speed, 0, 255, 10*FRAMETIME_FIXED, 2*FRAMETIME_FIXED);
   }
@@ -5970,12 +5891,12 @@ uint16_t WS2812FX::mode_2Dscrollingtext(void) {
   for (uint16_t i = 0; i < numberOfLetters; i++) {
     if (int(cols) - int(SEGENV.aux0) + letterWidth*(i+1) < 0) continue; // don't draw characters off-screen
     if (text[i]<32 || text[i]>126) continue; // skip non-ANSII characters (may add UTF translation at some point)
-    drawCharacter(text[i], int(cols) - int(SEGENV.aux0) + letterWidth*i, yoffset, color_from_palette(SEGENV.aux1, false, PALETTE_SOLID_WRAP, 0));
+    drawCharacter(text[i], int(cols) - int(SEGENV.aux0) + letterWidth*i, yoffset, letterWidth, letterHeight, color_from_palette(SEGENV.aux1, false, PALETTE_SOLID_WRAP, 0));
   }
 
   return FRAMETIME;
 }
-static const char *_data_FX_MODE_SCROLL_TEXT PROGMEM = "2D Scrolling Text@!,Y Offset,Trail;!,!;!";
+static const char *_data_FX_MODE_SCROLL_TEXT PROGMEM = "2D Scrolling Text@!,Y Offset,Trail=0,Font size;!,!;!";
 
 
 ////////////////////////////
@@ -6014,155 +5935,1926 @@ uint16_t WS2812FX::mode_2Ddriftrose(void) {
 static const char *_data_FX_MODE_DRIFT_ROSE PROGMEM = "2D Drift Rose@Fade,Blur;;";
 
 
-//////////////////////////////////////////////////////////////////////////////////////////
-// mode data
-const char *WS2812FX::_modeData[MODE_COUNT] = {
-  _data_FX_MODE_STATIC,
-  _data_FX_MODE_BLINK,
-  _data_FX_MODE_BREATH,
-  _data_FX_MODE_COLOR_WIPE,
-  _data_FX_MODE_COLOR_WIPE_RANDOM,
-  _data_FX_MODE_RANDOM_COLOR,
-  _data_FX_MODE_COLOR_SWEEP,
-  _data_FX_MODE_DYNAMIC,
-  _data_FX_MODE_RAINBOW,
-  _data_FX_MODE_RAINBOW_CYCLE,
-  _data_FX_MODE_SCAN,
-  _data_FX_MODE_DUAL_SCAN,
-  _data_FX_MODE_FADE,
-  _data_FX_MODE_THEATER_CHASE,
-  _data_FX_MODE_THEATER_CHASE_RAINBOW,
-  _data_FX_MODE_RUNNING_LIGHTS,
-  _data_FX_MODE_SAW,
-  _data_FX_MODE_TWINKLE,
-  _data_FX_MODE_DISSOLVE,
-  _data_FX_MODE_DISSOLVE_RANDOM,
-  _data_FX_MODE_SPARKLE,
-  _data_FX_MODE_FLASH_SPARKLE,
-  _data_FX_MODE_HYPER_SPARKLE,
-  _data_FX_MODE_STROBE,
-  _data_FX_MODE_STROBE_RAINBOW,
-  _data_FX_MODE_MULTI_STROBE,
-  _data_FX_MODE_BLINK_RAINBOW,
-  _data_FX_MODE_ANDROID,
-  _data_FX_MODE_CHASE_COLOR,
-  _data_FX_MODE_CHASE_RANDOM,
-  _data_FX_MODE_CHASE_RAINBOW,
-  _data_FX_MODE_CHASE_FLASH,
-  _data_FX_MODE_CHASE_FLASH_RANDOM,
-  _data_FX_MODE_CHASE_RAINBOW_WHITE,
-  _data_FX_MODE_COLORFUL,
-  _data_FX_MODE_TRAFFIC_LIGHT,
-  _data_FX_MODE_COLOR_SWEEP_RANDOM,
-  _data_FX_MODE_RUNNING_COLOR,
-  _data_FX_MODE_AURORA,
-  _data_FX_MODE_RUNNING_RANDOM,
-  _data_FX_MODE_LARSON_SCANNER,
-  _data_FX_MODE_COMET,
-  _data_FX_MODE_FIREWORKS,
-  _data_FX_MODE_RAIN,
-  _data_FX_MODE_TETRIX,
-  _data_FX_MODE_FIRE_FLICKER,
-  _data_FX_MODE_GRADIENT,
-  _data_FX_MODE_LOADING,
-  _data_FX_MODE_POLICE,
-  _data_FX_MODE_FAIRY,
-  _data_FX_MODE_TWO_DOTS,
-  _data_FX_MODE_FAIRYTWINKLE,
-  _data_FX_MODE_RUNNING_DUAL,
-  _data_FX_MODE_HALLOWEEN,
-  _data_FX_MODE_TRICOLOR_CHASE,
-  _data_FX_MODE_TRICOLOR_WIPE,
-  _data_FX_MODE_TRICOLOR_FADE,
-  _data_FX_MODE_LIGHTNING,
-  _data_FX_MODE_ICU,
-  _data_FX_MODE_MULTI_COMET,
-  _data_FX_MODE_DUAL_LARSON_SCANNER,
-  _data_FX_MODE_RANDOM_CHASE,
-  _data_FX_MODE_OSCILLATE,
-  _data_FX_MODE_PRIDE_2015,
-  _data_FX_MODE_JUGGLE,
-  _data_FX_MODE_PALETTE,
-  _data_FX_MODE_FIRE_2012,
-  _data_FX_MODE_COLORWAVES,
-  _data_FX_MODE_BPM,
-  _data_FX_MODE_FILLNOISE8,
-  _data_FX_MODE_NOISE16_1,
-  _data_FX_MODE_NOISE16_2,
-  _data_FX_MODE_NOISE16_3,
-  _data_FX_MODE_NOISE16_4,
-  _data_FX_MODE_COLORTWINKLE,
-  _data_FX_MODE_LAKE,
-  _data_FX_MODE_METEOR,
-  _data_FX_MODE_METEOR_SMOOTH,
-  _data_FX_MODE_RAILWAY,
-  _data_FX_MODE_RIPPLE,
-  _data_FX_MODE_TWINKLEFOX,
-  _data_FX_MODE_TWINKLECAT,
-  _data_FX_MODE_HALLOWEEN_EYES,
-  _data_FX_MODE_STATIC_PATTERN,
-  _data_FX_MODE_TRI_STATIC_PATTERN,
-  _data_FX_MODE_SPOTS,
-  _data_FX_MODE_SPOTS_FADE,
-  _data_FX_MODE_GLITTER,
-  _data_FX_MODE_CANDLE,
-  _data_FX_MODE_STARBURST,
-  _data_FX_MODE_EXPLODING_FIREWORKS,
-  _data_FX_MODE_BOUNCINGBALLS,
-  _data_FX_MODE_SINELON,
-  _data_FX_MODE_SINELON_DUAL,
-  _data_FX_MODE_SINELON_RAINBOW,
-  _data_FX_MODE_POPCORN,
-  _data_FX_MODE_DRIP,
-  _data_FX_MODE_PLASMA,
-  _data_FX_MODE_PERCENT,
-  _data_FX_MODE_RIPPLE_RAINBOW,
-  _data_FX_MODE_HEARTBEAT,
-  _data_FX_MODE_PACIFICA,
-  _data_FX_MODE_CANDLE_MULTI,
-  _data_FX_MODE_SOLID_GLITTER,
-  _data_FX_MODE_SUNRISE,
-  _data_FX_MODE_PHASED,
-  _data_FX_MODE_TWINKLEUP,
-  _data_FX_MODE_NOISEPAL,
-  _data_FX_MODE_SINEWAVE,
-  _data_FX_MODE_PHASEDNOISE,
-  _data_FX_MODE_FLOW,
-  _data_FX_MODE_CHUNCHUN,
-  _data_FX_MODE_DANCING_SHADOWS,
-  _data_FX_MODE_WASHING_MACHINE,
-  _data_FX_MODE_CANDY_CANE,
-  _data_FX_MODE_BLENDS,
-  _data_FX_MODE_TV_SIMULATOR,
-  _data_FX_MODE_DYNAMIC_SMOOTH,
-  _data_FX_MODE_BLACK_HOLE,
-  _data_FX_MODE_DNA,
-  _data_FX_MODE_DNA_SPIRAL,
-  _data_FX_MODE_DRIFT,
-  _data_FX_MODE_FIRENOISE,
-  _data_FX_MODE_FRIZZLES,
-  _data_FX_MODE_HIPNOTIC,
-  _data_FX_MODE_LISSAJOUS,
-  _data_FX_MODE_MATRIX,
-  _data_FX_MODE_AKEMI,
-  _data_FX_MODE_COLORED_BURSTS,
-  _data_FX_MODE_GAMEOFLIFE,
-  _data_FX_MODE_JULIA,
-  _data_FX_MODE_MEATBALS,
-  _data_FX_MODE_2DNOISE,
-  _data_FX_MODE_PLASMA_BALL,
-  _data_FX_MODE_POLAR_LIGHTS,
-  _data_FX_MODE_PULSER,
-  _data_FX_MODE_SINDOTS,
-  _data_FX_MODE_SQUARED_SWIRL,
-  _data_FX_MODE_SUN_RADIATION,
-  _data_FX_MODE_TARTAN,
-  _data_FX_MODE_WAVERLY,
-  _data_FX_MODE_SPACESHIPS,
-  _data_FX_MODE_CRAZYBEES,
-  _data_FX_MODE_GHOST_RIDER,
-  _data_FX_MODE_BLOBS,
-  _data_FX_MODE_SCROLL_TEXT,
-  _data_FX_MODE_DRIFT_ROSE
+///////////////////////////////////////////////////////////////////////////////
+/********************     audio enhanced routines     ************************/
+///////////////////////////////////////////////////////////////////////////////
+
+
+/* use the following code to pass AudioReactive usermod variables to effect
+
+  uint8_t  *binNum = (uint8_t*)&SEGENV.aux1, *maxVol = (uint8_t*)(&SEGENV.aux1+1); // just in case assignment
+  uint16_t  sample = 0;
+  uint8_t   soundAgc = 0, soundSquelch = 10;
+  bool      samplePeak = false;
+  float     sampleAgc = 0.0f, sampleAgv = 0.0f, multAgc = 0.0f, sampleReal = 0.0f;
+  double    FFT_MajorPeak = 0.0, FFT_Magnitude = 0.0;
+  uint8_t  *fftResult = nullptr;
+  uint16_t *myVals = nullptr;
+  float    *fftBin = nullptr;
+  um_data_t *um_data;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    sampleAvg     = *(float*)   um_data->u_data[ 0];
+    soundAgc      = *(uint8_t*) um_data->u_data[ 1];
+    sampleAgc     = *(float*)   um_data->u_data[ 2];
+    sample        = *(uint16_t*)um_data->u_data[ 3];
+    rawSampleAgc  = *(uint16_t*)um_data->u_data[ 4];
+    samplePeak    = *(uint8_t*) um_data->u_data[ 5];
+    FFT_MajorPeak = *(double*)  um_data->u_data[ 6];
+    FFT_Magnitude = *(double*)  um_data->u_data[ 7];
+    fftResult     =  (uint8_t*) um_data->u_data[ 8];
+    maxVol        =  (uint8_t*) um_data->u_data[ 9];  // requires UI element (SEGMENT.customX?), changes source element
+    binNum        =  (uint8_t*) um_data->u_data[10];  // requires UI element (SEGMENT.customX?), changes source element
+    multAgc       = *(float*)   um_data->u_data[11];
+    sampleReal    = *(float*)   um_data->u_data[12];
+    sampleGain    = *(float*)   um_data->u_data[13];
+    myVals        =  (uint16_t*)um_data->u_data[14];
+    soundSquelch  = *(uint8_t*) um_data->u_data[15];
+    fftBin        =  (float*)   um_data->u_data[16];
+    inputLevel    =  (uint8_t*) um_data->u_data[17]; // requires UI element (SEGMENT.customX?), changes source element
+  } else {
+    // add support for no audio data
+    uint32_t ms = millis();
+    sample = inoise8(beatsin8(120, 10, 30)*10 + (ms>>14), ms>>3);
+    sample = map(sample, 50, 190, 0, 224);
+    sampleAvg = inoise8(beatsin8(90, 0, 200)*15 + (ms>>10), ms>>3);
+    samplePeak = random8() > 250; // or use: sample==224
+    FFT_MajorPeak = inoise8(beatsin8(90, 0, 200)*15 + (ms>>10), ms>>3);
+  }
+  if (!myVals || !fftBin || ...) return mode_static();
+*/
+
+
+/////////////////////////////////
+//     * Ripple Peak           //
+/////////////////////////////////
+uint16_t WS2812FX::mode_ripplepeak(void) {                // * Ripple peak. By Andrew Tuline.
+                                                          // This currently has no controls.
+  #define maxsteps 16                                     // Case statement wouldn't allow a variable.
+
+  uint16_t maxRipples = 16;
+  uint16_t dataSize = sizeof(Ripple) * maxRipples;
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  Ripple* ripples = reinterpret_cast<Ripple*>(SEGENV.data);
+
+  uint8_t *binNum, *maxVol; // just in case assignment
+  uint8_t samplePeak = 0; // actually a bool
+  double FFT_MajorPeak = 0.0;
+  um_data_t *um_data;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    FFT_MajorPeak = *(double*) um_data->u_data[6];
+    binNum        =  (uint8_t*)um_data->u_data[10];
+    maxVol        =  (uint8_t*)um_data->u_data[9];
+    samplePeak    = *(uint8_t*)um_data->u_data[5];
+  } else {
+    // add support for no audio data
+    uint32_t ms = millis();
+    samplePeak = random8() > 250;
+    FFT_MajorPeak = inoise8(beatsin8(90, 0, 200)*15 + (ms>>10), ms>>3);
+    binNum = (uint8_t*) &SEGENV.aux1;
+    maxVol = (uint8_t*)(&SEGENV.aux1+1); // just in case assignment
+  }
+
+  if (SEGENV.call == 0) {
+    SEGENV.aux0 = 255;
+    SEGMENT.custom2 = *binNum;
+    SEGMENT.custom3 = *maxVol * 2;
+  }
+
+  *binNum = SEGMENT.custom2;                              // Select a bin.
+  *maxVol = SEGMENT.custom3/2;                            // Our volume comparator.
+
+  fade_out(240);                                          // Lower frame rate means less effective fading than FastLED
+  fade_out(240);
+
+  for (uint16_t i = 0; i < SEGMENT.intensity/16; i++) {   // Limit the number of ripples.
+    if (samplePeak) ripples[i].state = 255;
+
+    switch (ripples[i].state) {
+      case 254:     // Inactive mode
+        break;
+
+      case 255:                                           // Initialize ripple variables.
+        ripples[i].pos = random16(SEGLEN);
+        #ifdef ESP32
+          ripples[i].color = (int)(log10f(FFT_MajorPeak)*128);
+        #else
+          ripples[i].color = random8();
+        #endif
+        ripples[i].state = 0;
+        break;
+
+      case 0:
+        setPixelColor(ripples[i].pos, color_blend(SEGCOLOR(1), color_from_palette(ripples[i].color, false, PALETTE_SOLID_WRAP, 0), SEGENV.aux0));
+        ripples[i].state++;
+        break;
+
+      case maxsteps:                                      // At the end of the ripples. 254 is an inactive mode.
+        ripples[i].state = 254;
+        break;
+
+      default:                                            // Middle of the ripples.
+        setPixelColor((ripples[i].pos + ripples[i].state + SEGLEN) % SEGLEN, color_blend(SEGCOLOR(1), color_from_palette(ripples[i].color, false, PALETTE_SOLID_WRAP, 0), SEGENV.aux0/ripples[i].state*2));
+        setPixelColor((ripples[i].pos - ripples[i].state + SEGLEN) % SEGLEN, color_blend(SEGCOLOR(1), color_from_palette(ripples[i].color, false, PALETTE_SOLID_WRAP, 0), SEGENV.aux0/ripples[i].state*2));
+        ripples[i].state++;                               // Next step.
+        break;
+    } // switch step
+  } // for i
+
+  return FRAMETIME;
+} // mode_ripplepeak()
+static const char *_data_FX_MODE_RIPPLEPEAK PROGMEM = " ♪ Ripple Peak@Fade rate,Max # of ripples,,Select bin,Volume (minimum);!,!;!";
+
+
+/////////////////////////
+//    * 2D Swirl       //
+/////////////////////////
+// By: Mark Kriegsman https://gist.github.com/kriegsman/5adca44e14ad025e6d3b , modified by Andrew Tuline
+uint16_t WS2812FX::mode_2DSwirl(void) {
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
+
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+
+  if (SEGENV.call == 0) fill_solid(leds, CRGB::Black);
+
+  const uint8_t borderWidth = 2;
+
+  blur2d(leds, SEGMENT.custom1);
+
+  uint8_t  i = beatsin8( 27*SEGMENT.speed/255, borderWidth, cols - borderWidth);
+  uint8_t  j = beatsin8( 41*SEGMENT.speed/255, borderWidth, rows - borderWidth);
+  uint8_t ni = (cols - 1) - i;
+  uint8_t nj = (cols - 1) - j;
+  uint16_t ms = millis();
+
+  uint8_t soundAgc = 0;
+  int16_t rawSampleAgc = 0, sample;
+  float sampleAvg = 0.0f;
+  um_data_t *um_data;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    sampleAvg    = *(float*)  um_data->u_data[0];
+    soundAgc     = *(uint8_t*)um_data->u_data[1];
+    rawSampleAgc = *(int16_t*)um_data->u_data[4];
+    sample       = *(int16_t*)um_data->u_data[3];
+  } else {
+    // add support for no audio data
+    sample = inoise8(beatsin8(120, 10, 30)*10 + (ms>>14), ms>>3);
+    sample = map(sample, 50, 190, 0, 224);
+    sampleAvg = inoise8(beatsin8(90, 0, 200)*15 + (ms>>10), ms>>3);
+    //sampleAvg = mapf(sampleAvg, 0, 255, 0, 255); // help me out here
+  }
+
+  int tmpSound = (soundAgc) ? rawSampleAgc : sample;
+
+  leds[XY( i, j)]  += ColorFromPalette(currentPalette, (ms / 11 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 11, 200, 255);
+  leds[XY( j, i)]  += ColorFromPalette(currentPalette, (ms / 13 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 13, 200, 255);
+  leds[XY(ni, nj)] += ColorFromPalette(currentPalette, (ms / 17 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 17, 200, 255);
+  leds[XY(nj, ni)] += ColorFromPalette(currentPalette, (ms / 29 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 29, 200, 255);
+  leds[XY( i, nj)] += ColorFromPalette(currentPalette, (ms / 37 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 37, 200, 255);
+  leds[XY(ni, j)]  += ColorFromPalette(currentPalette, (ms / 41 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 41, 200, 255);
+
+  setPixels(leds);
+  return FRAMETIME;
+} // mode_2DSwirl()
+static const char *_data_FX_MODE_2DSWIRL PROGMEM = " ♪ 2D Swirl@!,Sensitivity=64,Blur;,Bg Swirl;!";
+
+
+/////////////////////////
+//    * 2D Waverly     //
+/////////////////////////
+// By: Stepko, https://editor.soulmatelights.com/gallery/652-wave , modified by Andrew Tuline
+uint16_t WS2812FX::mode_2DWaverly(void) {
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
+
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+
+  if (SEGENV.call == 0) {
+    fill_solid(leds, CRGB::Black);
+  }
+
+  um_data_t *um_data;
+  uint8_t soundAgc = 0;
+  float sampleAgc = 0.0f, sampleAvg = 0.0f;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    sampleAvg = *(float*)  um_data->u_data[0];
+    soundAgc  = *(uint8_t*)um_data->u_data[1];
+    sampleAgc = *(float*)  um_data->u_data[2];
+  }
+
+  fadeToBlackBy(leds, SEGMENT.speed);
+
+  long t = millis() / 2;
+  for (uint16_t i = 0; i < cols; i++) {
+    uint16_t thisVal = (1 + SEGMENT.intensity/64) * inoise8(i * 45 , t , t)/2;
+    // use audio if available
+    if (um_data) {
+      thisVal /= 32; // reduce intensity of inoise8()
+      thisVal *= (soundAgc) ? sampleAgc : sampleAvg;
+    }
+    uint16_t thisMax = map(thisVal, 0, 512, 0, rows);
+
+    for (uint16_t j = 0; j < thisMax; j++) {
+      leds[XY(i, j)] += ColorFromPalette(currentPalette, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND);
+      leds[XY((cols - 1) - i, (rows - 1) - j)] += ColorFromPalette(currentPalette, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND);
+    }
+  }
+  blur2d(leds, 16);
+
+  setPixels(leds);
+  return FRAMETIME;
+} // mode_2DWaverly()
+static const char *_data_FX_MODE_2DWAVERLY PROGMEM = " ♪ 2D Waverly@Amplification,Sensitivity=64;;!";
+
+
+// float version of map()
+static float mapf(float x, float in_min, float in_max, float out_min, float out_max){
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+// Gravity struct requited for GRAV* effects
+typedef struct Gravity {
+  int    topLED;
+  int    gravityCounter;
+} gravity;
+
+///////////////////////
+//   * GRAVCENTER    //
+///////////////////////
+uint16_t WS2812FX::mode_gravcenter(void) {                // Gravcenter. By Andrew Tuline.
+
+  const uint16_t dataSize = sizeof(gravity);
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  Gravity* gravcen = reinterpret_cast<Gravity*>(SEGENV.data);
+
+  um_data_t *um_data;
+  float tmpSound = (float)inoise8(23333); // I have no idea what that does
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    //soundAgc  = *(uint8_t*)um_data->u_data[1];
+    //sampleAgc = *(float*)um_data->u_data[2];
+    //sampleAvg = *(float*)um_data->u_data[0];
+    tmpSound = *(uint8_t*)um_data->u_data[1] ? *(float*)um_data->u_data[2] : *(float*)um_data->u_data[0];
+  } else {
+    // add support for no audio data
+    uint32_t ms = millis();
+    tmpSound = inoise8(beatsin8(120, 10, 30)*10 + (ms>>14), ms>>3);
+    //tmpSound = map(sample, 50, 190, 0, 255);
+  }
+
+  fade_out(240);
+
+  float segmentSampleAvg = tmpSound * (float)SEGMENT.intensity / 255.0f;
+  segmentSampleAvg *= 0.125; // divide by 8, to compensate for later "sensitivty" upscaling
+
+  float mySampleAvg = mapf(segmentSampleAvg*2.0, 0, 32, 0, (float)SEGLEN/2.0); // map to pixels available in current segment 
+  uint16_t tempsamp = constrain(mySampleAvg, 0, SEGLEN/2);     // Keep the sample from overflowing.
+  uint8_t gravity = 8 - SEGMENT.speed/32;
+
+  for (int i=0; i<tempsamp; i++) {
+    uint8_t index = inoise8(i*segmentSampleAvg+millis(), 5000+i*segmentSampleAvg);
+    setPixelColor(i+SEGLEN/2, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), segmentSampleAvg*8));
+    setPixelColor(SEGLEN/2-i-1, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), segmentSampleAvg*8));
+  }
+
+  if (tempsamp >= gravcen->topLED)
+    gravcen->topLED = tempsamp-1;
+  else if (gravcen->gravityCounter % gravity == 0)
+    gravcen->topLED--;
+
+  if (gravcen->topLED >= 0) {
+    setPixelColor(gravcen->topLED+SEGLEN/2, color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0));
+    setPixelColor(SEGLEN/2-1-gravcen->topLED, color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0));
+  }
+  gravcen->gravityCounter = (gravcen->gravityCounter + 1) % gravity;
+
+  return FRAMETIME;
+} // mode_gravcenter()
+static const char *_data_FX_MODE_GRAVCENTER PROGMEM = " ♪ Gravcenter@Rate of fall,Sensitivity=128;,!;!";
+
+
+///////////////////////
+//   * GRAVCENTRIC   //
+///////////////////////
+uint16_t WS2812FX::mode_gravcentric(void) {                     // Gravcentric. By Andrew Tuline.
+
+  uint16_t dataSize = sizeof(gravity);
+  if (!SEGENV.allocateData(dataSize)) return mode_static();     //allocation failed
+  Gravity* gravcen = reinterpret_cast<Gravity*>(SEGENV.data);
+
+  um_data_t *um_data;
+  float tmpSound = (float)inoise8(23333); // I have no idea what that does
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    //soundAgc  = *(uint8_t*)um_data->u_data[1];
+    //sampleAgc = *(float*)um_data->u_data[2];
+    //sampleAvg = *(float*)um_data->u_data[0];
+    tmpSound = *(uint8_t*)um_data->u_data[1] ? *(float*)um_data->u_data[2] : *(float*)um_data->u_data[0];
+  } else {
+    // add support for no audio data
+    uint32_t ms = millis();
+    tmpSound = inoise8(beatsin8(120, 10, 30)*10 + (ms>>14), ms>>3);
+    //tmpSound = map(sample, 50, 190, 0, 255);
+  }
+
+  fade_out(240);
+  fade_out(240); // twice? really?
+
+  float segmentSampleAvg = tmpSound * (float)SEGMENT.intensity / 255.0;
+  segmentSampleAvg *= 0.125f; // divide by 8, to compensate for later "sensitivty" upscaling
+
+  float mySampleAvg = mapf(segmentSampleAvg*2.0, 0.0f, 32.0f, 0.0f, (float)SEGLEN/2.0); // map to pixels availeable in current segment 
+  int tempsamp = constrain(mySampleAvg, 0, SEGLEN/2);     // Keep the sample from overflowing.
+  uint8_t gravity = 8 - SEGMENT.speed/32;
+
+  for (int i=0; i<tempsamp; i++) {
+    uint8_t index = segmentSampleAvg*24+millis()/200;
+    setPixelColor(i+SEGLEN/2, color_from_palette(index, false, PALETTE_SOLID_WRAP, 0));
+    setPixelColor(SEGLEN/2-1-i, color_from_palette(index, false, PALETTE_SOLID_WRAP, 0));
+  }
+
+  if (tempsamp >= gravcen->topLED)
+    gravcen->topLED = tempsamp-1;
+  else if (gravcen->gravityCounter % gravity == 0)
+    gravcen->topLED--;
+
+  if (gravcen->topLED >= 0) {
+    setPixelColor(gravcen->topLED+SEGLEN/2, CRGB::Gray);
+    setPixelColor(SEGLEN/2-1-gravcen->topLED, CRGB::Gray);
+  }
+  gravcen->gravityCounter = (gravcen->gravityCounter + 1) % gravity;
+
+  return FRAMETIME;
+} // mode_gravcentric()
+static const char *_data_FX_MODE_GRAVCENTRIC PROGMEM = " ♪ Gravcentric@Rate of fall,Sensitivity=128;!;!";
+
+
+///////////////////////
+//   * GRAVIMETER    //
+///////////////////////
+#ifndef SR_DEBUG_AGC
+uint16_t WS2812FX::mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
+
+  uint16_t dataSize = sizeof(gravity);
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  Gravity* gravcen = reinterpret_cast<Gravity*>(SEGENV.data);
+
+  um_data_t *um_data;
+  float tmpSound = (float)inoise8(23333); // I have no idea what that does
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    //soundAgc  = *(uint8_t*)um_data->u_data[1];
+    //sampleAgc = *(float*)um_data->u_data[2];
+    //sampleAvg = *(float*)um_data->u_data[0];
+    tmpSound = *(uint8_t*)um_data->u_data[1] ? *(float*)um_data->u_data[2] : *(float*)um_data->u_data[0];
+  } else {
+    // add support for no audio data
+    uint32_t ms = millis();
+    tmpSound = inoise8(beatsin8(120, 10, 30)*10 + (ms>>14), ms>>3);
+    //tmpSound = map(sample, 50, 190, 0, 255);
+  }
+
+  fade_out(240);
+
+  float segmentSampleAvg = tmpSound * (float)SEGMENT.intensity / 255.0;
+  segmentSampleAvg *= 0.25; // divide by 4, to compensate for later "sensitivty" upscaling
+
+  float mySampleAvg = mapf(segmentSampleAvg*2.0, 0, 64, 0, (SEGLEN-1)); // map to pixels availeable in current segment 
+  int tempsamp = constrain(mySampleAvg,0,SEGLEN-1);       // Keep the sample from overflowing.
+  uint8_t gravity = 8 - SEGMENT.speed/32;
+
+  for (int i=0; i<tempsamp; i++) {
+    uint8_t index = inoise8(i*segmentSampleAvg+millis(), 5000+i*segmentSampleAvg);
+    setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), segmentSampleAvg*8));
+  }
+
+  if (tempsamp >= gravcen->topLED)
+    gravcen->topLED = tempsamp;
+  else if (gravcen->gravityCounter % gravity == 0)
+    gravcen->topLED--;
+
+  if (gravcen->topLED > 0) {
+    setPixelColor(gravcen->topLED, color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0));
+  }
+  gravcen->gravityCounter = (gravcen->gravityCounter + 1) % gravity;
+
+  return FRAMETIME;
+} // mode_gravimeter()
+static const char *_data_FX_MODE_GRAVIMETER PROGMEM = " ♪ Gravimeter@Rate of fall,Sensitivity=128;,!;!";
+#else
+// This an abuse of the gravimeter effect for AGC debugging
+// instead of sound volume, it uses the AGC gain multiplier as input
+uint16_t WS2812FX::mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
+
+  uint16_t dataSize = sizeof(gravity);
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  Gravity* gravcen = reinterpret_cast<Gravity*>(SEGENV.data);
+
+  uint8_t *inputLevel = (uint8_t*)(&SEGENV.aux1+1);
+  um_data_t *um_data;
+  uint16_t sample = 0;
+  uint8_t soundAgc = 0;
+  float sampleAgc = 0.0f, sampleAgv = 0.0f, multAgc = 0.0f, sampleReal = 0.0f;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    sample     = *(uint16_t*)um_data->u_data[3];
+    soundAgc   = *(uint8_t*)um_data->u_data[1];
+    sampleAgc  = *(float*)um_data->u_data[2];
+    sampleAvg  = *(float*)um_data->u_data[0];
+    multAgc    = *(float*)um_data->u_data[11];
+    sampleReal = *(float*)um_data->u_data[12];
+    sampleGain = *(float*)um_data->u_data[13];
+    inputLevel =  (uint8_t*)um_data->u_data[17];
+  }
+
+  fade_out(240);
+
+  //TODO: implement inputLevel as a global or slider
+  *inputLevel = SEGMENT.custom1;
+
+  float tmpSound = multAgc;                                                         // AGC gain
+  if (soundAgc == 0) {
+    if ((sampleAvg> 1.0f) && (sampleReal > 0.05f))
+      tmpSound = (float)sample / sampleReal;                                        // current non-AGC gain
+    else 
+      tmpSound = ((float)sampleGain/40.0f * (float)*inputLevel/128.0f) + 1.0f/16.0f;     // non-AGC gain from presets
+  }
+
+  if (tmpSound > 2) tmpSound = ((tmpSound -2.0f) / 2) +2;  //compress ranges > 2
+  if (tmpSound > 1) tmpSound = ((tmpSound -1.0f) / 2) +1;  //compress ranges > 1
+
+  float segmentSampleAvg = 64.0f * tmpSound * (float)SEGMENT.intensity / 128.0f;
+  float mySampleAvg = mapf(segmentSampleAvg, 0.0f, 128.0f, 0, (SEGLEN-1)); // map to pixels availeable in current segment 
+  int tempsamp = constrain(mySampleAvg, 0, SEGLEN-1);                  // Keep the sample from overflowing.
+
+  //tempsamp = SEGLEN - tempsamp;                                      // uncomment to invert direction
+  segmentSampleAvg = fmax(64.0f - fmin(segmentSampleAvg, 63),8);         // inverted brightness
+
+  uint8_t gravity = 8 - SEGMENT.speed/32;
+
+  if (sampleAvg > 1)                                                 // disable bar "body" if below squelch
+  {
+    for (int i=0; i<tempsamp; i++) {
+      uint8_t index = inoise8(i*segmentSampleAvg+millis(), 5000+i*segmentSampleAvg);
+      setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), segmentSampleAvg*4.0));
+    }
+  }
+  if (tempsamp >= gravcen->topLED)
+    gravcen->topLED = tempsamp;
+  else if (gravcen->gravityCounter % gravity == 0)
+    gravcen->topLED--;
+
+  if (gravcen->topLED > 0) {
+    setPixelColor(gravcen->topLED, color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0));
+  }
+  gravcen->gravityCounter = (gravcen->gravityCounter + 1) % gravity;
+
+  return FRAMETIME;
+} // mode_gravimeter()
+static const char *_data_FX_MODE_GRAVIMETER PROGMEM = " ♪ Gravimeter@Rate of fall,Sensitivity=128,Input level=128;,!;!";
+#endif
+
+
+//////////////////////
+//   * JUGGLES      //
+//////////////////////
+uint16_t WS2812FX::mode_juggles(void) {                   // Juggles. By Andrew Tuline.
+  um_data_t *um_data;
+  float sampleAgc = 0.0f;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    sampleAgc = *(float*)um_data->u_data[2];
+  } else {
+    // add support for no audio data
+    uint32_t ms = millis();
+    sampleAgc = inoise8(beatsin8(120, 10, 30)*10 + (ms>>14), ms>>3);
+    //sampleAgc = map(sample, 50, 190, 0, 255);
+  }
+
+  fade_out(224);
+  uint16_t my_sampleAgc = fmax(fmin(sampleAgc, 255.0), 0);
+
+  for (uint8_t i=0; i<SEGMENT.intensity/32+1; i++) {
+    setPixelColor(beatsin16(SEGMENT.speed/4+i*2,0,SEGLEN-1), color_blend(SEGCOLOR(1), color_from_palette(millis()/4+i*2, false, PALETTE_SOLID_WRAP, 0), my_sampleAgc));
+  }
+
+  return FRAMETIME;
+} // mode_juggles()
+static const char *_data_FX_MODE_JUGGLES PROGMEM = " ♪ Juggles@!,# of balls;,!;!";
+
+
+//////////////////////
+//   * MATRIPIX     //
+//////////////////////
+uint16_t WS2812FX::mode_matripix(void) {                  // Matripix. By Andrew Tuline.
+  um_data_t *um_data;
+  uint8_t soundAgc = 0;
+  int16_t rawSampleAgc = 0, sample;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    soundAgc     = *(uint8_t*)um_data->u_data[1];
+    rawSampleAgc = *(int16_t*)um_data->u_data[4];
+    sample       = *(int16_t*)um_data->u_data[3];
+  } else {
+    // add support for no audio data
+    uint32_t ms = millis();
+    sample = inoise8(beatsin8(120, 10, 30)*10 + (ms>>14), ms>>3);
+    sample = map(sample, 50, 190, 0, 255);
+  }
+
+  if (SEGENV.call == 0) fill(BLACK);
+
+  uint8_t secondHand = micros()/(256-SEGMENT.speed)/500 % 16;
+  if(SEGENV.aux0 != secondHand) {
+    SEGENV.aux0 = secondHand;
+
+    uint8_t tmpSound = (soundAgc) ? rawSampleAgc : sample;
+    int pixBri = tmpSound * SEGMENT.intensity / 64;
+    for (uint16_t i=0; i<SEGLEN-1; i++) setPixelColor(i, getPixelColor(i+1)); // shift left
+    setPixelColor(SEGLEN-1, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), pixBri));
+  }
+
+  return FRAMETIME;
+} // mode_matripix()
+static const char *_data_FX_MODE_MATRIPIX PROGMEM = " ♪ Matripix@!,Brightness=64;,!;!";
+
+
+//////////////////////
+//   * MIDNOISE     //
+//////////////////////
+uint16_t WS2812FX::mode_midnoise(void) {                  // Midnoise. By Andrew Tuline.
+// Changing xdist to SEGENV.aux0 and ydist to SEGENV.aux1.
+
+  um_data_t *um_data;
+  uint8_t soundAgc = 0;
+  float sampleAgc = 0.0f, sampleAvg = 0.0f;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    soundAgc  = *(uint8_t*)um_data->u_data[1];
+    sampleAgc = *(float*)um_data->u_data[2];
+    sampleAvg = *(float*)um_data->u_data[0];
+  } else {
+    // add support for no audio data
+    uint32_t ms = millis();
+    sampleAvg = inoise8(beatsin8(90, 0, 200)*15 + (ms>>10), ms>>3);
+    //sampleAvg = mapf(sampleAvg, 0, 255, 0, 255); // help me out here
+  }
+
+  fade_out(SEGMENT.speed);
+  fade_out(SEGMENT.speed);
+
+  float tmpSound = (soundAgc) ? sampleAgc : sampleAvg;
+  float tmpSound2 = tmpSound * (float)SEGMENT.intensity / 256.0;  // Too sensitive.
+  tmpSound2 *= (float)SEGMENT.intensity / 128.0;              // Reduce sensitity/length.
+
+  int maxLen = mapf(tmpSound2, 0, 127, 0, SEGLEN/2);
+  if (maxLen >SEGLEN/2) maxLen = SEGLEN/2;
+
+  for (int i=(SEGLEN/2-maxLen); i<(SEGLEN/2+maxLen); i++) {
+    uint8_t index = inoise8(i*tmpSound+SEGENV.aux0, SEGENV.aux1+i*tmpSound);  // Get a value from the noise function. I'm using both x and y axis.
+    setPixelColor(i, color_from_palette(index, false, PALETTE_SOLID_WRAP, 0));
+  }
+
+  SEGENV.aux0=SEGENV.aux0+beatsin8(5,0,10);
+  SEGENV.aux1=SEGENV.aux1+beatsin8(4,0,10);
+
+  return FRAMETIME;
+} // mode_midnoise()
+static const char *_data_FX_MODE_MIDNOISE PROGMEM = " ♪ Midnoise@Fade rate,Maximum length=128;,!;!";
+
+
+//////////////////////
+//   * NOISEFIRE    //
+//////////////////////
+// I am the god of hellfire. . . Volume (only) reactive fire routine. Oh, look how short this is.
+uint16_t WS2812FX::mode_noisefire(void) {                 // Noisefire. By Andrew Tuline.
+  currentPalette = CRGBPalette16(CHSV(0,255,2), CHSV(0,255,4), CHSV(0,255,8), CHSV(0, 255, 8),  // Fire palette definition. Lower value = darker.
+                                 CHSV(0, 255, 16), CRGB::Red, CRGB::Red, CRGB::Red,
+                                 CRGB::DarkOrange,CRGB::DarkOrange, CRGB::Orange, CRGB::Orange,
+                                 CRGB::Yellow, CRGB::Orange, CRGB::Yellow, CRGB::Yellow);
+
+  um_data_t *um_data;
+  uint8_t soundAgc = 0;
+  float sampleAgc = 0.0f, sampleAvg = 0.0f;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    soundAgc  = *(uint8_t*)um_data->u_data[1];
+    sampleAgc = *(float*)um_data->u_data[2];
+    sampleAvg = *(float*)um_data->u_data[0];
+  } else {
+    // add support for no audio data
+    uint32_t ms = millis();
+    sampleAvg = inoise8(beatsin8(90, 0, 200)*15 + (ms>>10), ms>>3);
+    //sampleAvg = mapf(sampleAvg, 0, 255, 0, 255); // help me out here
+  }
+
+  for (uint16_t i = 0; i < SEGLEN; i++) {
+    uint16_t index = inoise8(i*SEGMENT.speed/64,millis()*SEGMENT.speed/64*SEGLEN/255);  // X location is constant, but we move along the Y at the rate of millis(). By Andrew Tuline.
+    index = (255 - i*256/SEGLEN) * index/(256-SEGMENT.intensity);                       // Now we need to scale index so that it gets blacker as we get close to one of the ends.
+                                                                                        // This is a simple y=mx+b equation that's been scaled. index/128 is another scaling.
+    uint8_t tmpSound = (soundAgc) ? sampleAgc : sampleAvg;
+
+    CRGB color = ColorFromPalette(currentPalette, index, tmpSound*2, LINEARBLEND);     // Use the my own palette.
+    setPixelColor(i, color);
+  }
+
+  return FRAMETIME;
+} // mode_noisefire()
+static const char *_data_FX_MODE_NOISEFIRE PROGMEM = " ♪ Noisefire@!,!;;";
+
+
+///////////////////////
+//   * Noisemeter    //
+///////////////////////
+uint16_t WS2812FX::mode_noisemeter(void) {                // Noisemeter. By Andrew Tuline.
+
+  um_data_t *um_data;
+  uint8_t soundAgc = 0;
+  int16_t rawSampleAgc = 0, sample;
+  float sampleAgc = 0.0f, sampleAvg;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    soundAgc     = *(uint8_t*)um_data->u_data[1];
+    sampleAgc    = *(float*)um_data->u_data[2];
+    sampleAvg    = *(float*)um_data->u_data[0];
+    rawSampleAgc = *(int16_t*)um_data->u_data[4];
+    sample       = *(int16_t*)um_data->u_data[3];
+  } else {
+    // add support for no audio data
+    uint32_t ms = millis();
+    sample = inoise8(beatsin8(120, 10, 30)*10 + (ms>>14), ms>>3);
+    sample = map(sample, 50, 190, 0, 255);
+    sampleAvg = inoise8(beatsin8(90, 0, 200)*15 + (ms>>10), ms>>3);
+    //sampleAvg = mapf(sampleAvg, 0, 255, 0, 255); // help me out here
+  }
+
+  uint8_t fadeRate = map(SEGMENT.speed,0,255,224,255);
+  fade_out(fadeRate);
+
+  float tmpSound = (soundAgc) ? rawSampleAgc : sample;
+  float tmpSound2 = tmpSound * 2.0 * (float)SEGMENT.intensity / 255.0;
+  int maxLen = mapf(tmpSound2, 0, 255, 0, SEGLEN); // map to pixels availeable in current segment              // Still a bit too sensitive.
+  if (maxLen >SEGLEN) maxLen = SEGLEN;
+
+  tmpSound = soundAgc ? sampleAgc : sampleAvg;                      // now use smoothed value (sampleAvg or sampleAgc)
+  for (int i=0; i<maxLen; i++) {                                    // The louder the sound, the wider the soundbar. By Andrew Tuline.
+    uint8_t index = inoise8(i*tmpSound+SEGENV.aux0, SEGENV.aux1+i*tmpSound);  // Get a value from the noise function. I'm using both x and y axis.
+    setPixelColor(i, color_from_palette(index, false, PALETTE_SOLID_WRAP, 0));
+  }
+
+  SEGENV.aux0+=beatsin8(5,0,10);
+  SEGENV.aux1+=beatsin8(4,0,10);
+
+  return FRAMETIME;
+} // mode_noisemeter()
+static const char *_data_FX_MODE_NOISEMETER PROGMEM = " ♪ Noisemeter@Fade rate,Width=128;!,!;!";
+
+
+//////////////////////
+//   * PIXELWAVE    //
+//////////////////////
+uint16_t WS2812FX::mode_pixelwave(void) {                 // Pixelwave. By Andrew Tuline.
+  if (SEGENV.call == 0) fill(BLACK);
+
+  um_data_t *um_data;
+  uint8_t soundAgc = 0;
+  int16_t rawSampleAgc = 0, sample;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    soundAgc     = *(uint8_t*)um_data->u_data[1];
+    rawSampleAgc = *(int16_t*)um_data->u_data[4];
+    sample       = *(int16_t*)um_data->u_data[3];
+  } else {
+    // add support for no audio data
+    uint32_t ms = millis();
+    sample = inoise8(beatsin8(120, 10, 30)*10 + (ms>>14), ms>>3);
+    sample = map(sample, 50, 190, 0, 255);
+  }
+
+  uint8_t secondHand = micros()/(256-SEGMENT.speed)/500+1 % 16;
+  if(SEGENV.aux0 != secondHand) {
+    SEGENV.aux0 = secondHand;
+
+    uint8_t tmpSound = (soundAgc) ? rawSampleAgc : sample;
+    int pixBri = tmpSound * SEGMENT.intensity / 64;
+
+    setPixelColor(SEGLEN/2, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), pixBri));
+
+    for (uint16_t i=SEGLEN-1; i>SEGLEN/2; i--) setPixelColor(i, getPixelColor(i-1)); // Move to the right.
+    for (uint16_t i=0; i<SEGLEN/2; i++)        setPixelColor(i, getPixelColor(i+1)); // Move to the left.
+  }
+
+  return FRAMETIME;
+} // mode_pixelwave()
+static const char *_data_FX_MODE_PIXELWAVE PROGMEM = " ♪ Pixelwave@!,Sensitivity=64;!,!;!";
+
+
+//////////////////////
+//   * PLASMOID     //
+//////////////////////
+typedef struct Plasphase {
+  int16_t    thisphase;
+  int16_t    thatphase;
+} plasphase;
+
+uint16_t WS2812FX::mode_plasmoid(void) {                  // Plasmoid. By Andrew Tuline.
+  uint16_t dataSize = sizeof(plasphase);
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  Plasphase* plasmoip = reinterpret_cast<Plasphase*>(SEGENV.data);
+
+  um_data_t *um_data;
+  uint8_t soundAgc = 0;
+  float sampleAgc = 0.0f, sampleAvg;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    soundAgc  = *(uint8_t*)um_data->u_data[1];
+    sampleAgc = *(float*)um_data->u_data[2];
+    sampleAvg = *(float*)um_data->u_data[0];
+  } else {
+    // add support for no audio data
+    uint32_t ms = millis();
+    sampleAvg = inoise8(beatsin8(90, 0, 200)*15 + (ms>>10), ms>>3);
+    //sampleAvg = mapf(sampleAvg, 0, 255, 0, 255); // help me out here
+  }
+
+  fade_out(64);
+
+  plasmoip->thisphase += beatsin8(6,-4,4);                          // You can change direction and speed individually.
+  plasmoip->thatphase += beatsin8(7,-4,4);                          // Two phase values to make a complex pattern. By Andrew Tuline.
+
+  for (uint16_t i=0; i<SEGLEN; i++) {                          // For each of the LED's in the strand, set a brightness based on a wave as follows.
+    // updated, similar to "plasma" effect - softhack007
+    uint8_t thisbright = cubicwave8(((i*(1 + (3*SEGMENT.speed/32)))+plasmoip->thisphase) & 0xFF)/2;
+    thisbright += cos8(((i*(97 +(5*SEGMENT.speed/32)))+plasmoip->thatphase) & 0xFF)/2; // Let's munge the brightness a bit and animate it all with the phases.
+    
+    uint8_t colorIndex=thisbright;
+    int tmpSound = (soundAgc) ? sampleAgc : sampleAvg;
+    if (tmpSound * SEGMENT.intensity / 64 < thisbright) {thisbright = 0;}
+
+    setPixelColor(i, color_add(getPixelColor(i), color_blend(SEGCOLOR(1), color_from_palette(colorIndex, false, PALETTE_SOLID_WRAP, 0), thisbright)));
+  }
+
+  return FRAMETIME;
+} // mode_plasmoid()
+static const char *_data_FX_MODE_PLASMOID PROGMEM = " ♪ Plasmoid@Phase=128,# of pixels=128;,!;!";
+
+
+///////////////////////
+//   * PUDDLEPEAK    //
+///////////////////////
+// Andrew's crappy peak detector. If I were 40+ years younger, I'd learn signal processing.
+uint16_t WS2812FX::mode_puddlepeak(void) {                // Puddlepeak. By Andrew Tuline.
+
+  uint16_t size = 0;
+  uint8_t fadeVal = map(SEGMENT.speed,0,255, 224, 255);
+  uint16_t pos = random(SEGLEN);                          // Set a random starting position.
+
+  uint8_t *binNum, *maxVol;
+  uint8_t samplePeak = 0;
+  float   sampleAgc = 0.0f;
+  um_data_t *um_data;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    sampleAgc  = *(float*)um_data->u_data[2];
+    binNum     =  (uint8_t*)um_data->u_data[10];
+    maxVol     =  (uint8_t*)um_data->u_data[9];
+    samplePeak = *(uint8_t*)um_data->u_data[5];
+  } else {
+    // add support for no audio data
+    uint32_t ms = millis();
+    samplePeak = random8() > 250;
+    sampleAgc = inoise8(beatsin8(90, 0, 200)*15 + (ms>>10), ms>>3);
+    //sampleAgc = mapf(sampleAvg, 0, 255, 0, 255); // help me out here
+    maxVol = (uint8_t*)&SEGENV.aux0;
+    binNum = (uint8_t*)&SEGENV.aux1;
+  }
+
+  if (SEGENV.call == 0) {
+    SEGMENT.custom2 = *binNum;
+    SEGMENT.custom3 = *maxVol * 2;
+  }
+
+  *binNum = SEGMENT.custom2;                               // Select a bin.
+  *maxVol = SEGMENT.custom3/4;                             // Our volume comparator.
+
+  fade_out(fadeVal);
+
+  if (samplePeak == 1) {
+    size = sampleAgc * SEGMENT.intensity /256 /4 + 1;     // Determine size of the flash based on the volume.
+    if (pos+size>= SEGLEN) size = SEGLEN - pos;
+  }
+
+  for (uint16_t i=0; i<size; i++) {                        // Flash the LED's.
+    setPixelColor(pos+i, color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0));
+  }
+
+  return FRAMETIME;
+} // mode_puddlepeak()
+static const char *_data_FX_MODE_PUDDLEPEAK PROGMEM = " ♪ Puddlepeak@Fade rate,Puddle size,,Select bin,Volume (minimum);!,!;!";
+
+
+//////////////////////
+//   * PUDDLES      //
+//////////////////////
+uint16_t WS2812FX::mode_puddles(void) {                   // Puddles. By Andrew Tuline.
+  uint16_t size = 0;
+  uint8_t fadeVal = map(SEGMENT.speed, 0, 255, 224, 255);
+  uint16_t pos = random16(SEGLEN);                        // Set a random starting position.
+
+  fade_out(fadeVal);
+
+  uint8_t soundAgc = 0;
+  int16_t rawSampleAgc = 0, sample;
+  um_data_t *um_data;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    soundAgc     = *(uint8_t*)um_data->u_data[1];
+    rawSampleAgc = *(int16_t*)um_data->u_data[4];
+    sample       = *(int16_t*)um_data->u_data[3];
+  } else {
+    // add support for no audio data
+    uint32_t ms = millis();
+    sample = inoise8(beatsin8(120, 10, 30)*10 + (ms>>14), ms>>3);
+    sample = map(sample, 50, 190, 0, 255);
+  }
+
+  uint16_t tmpSound = (soundAgc) ? rawSampleAgc : sample;
+  
+  if (tmpSound > 1) {
+    size = tmpSound * SEGMENT.intensity /256 /8 + 1;        // Determine size of the flash based on the volume.
+    if (pos+size >= SEGLEN) size = SEGLEN - pos;
+  }
+
+  for(uint16_t i=0; i<size; i++) {                          // Flash the LED's.
+    setPixelColor(pos+i, color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0));
+  }
+
+  return FRAMETIME;
+} // mode_puddles()
+static const char *_data_FX_MODE_PUDDLES PROGMEM = " ♪ Puddles@Fade rate,Puddle size;!,!;!";
+
+
+///////////////////////////////////////////////////////////////////////////////
+/********************       audio only routines       ************************/
+///////////////////////////////////////////////////////////////////////////////
+#ifdef USERMOD_AUDIOREACTIVE
+
+//////////////////////
+//     * PIXELS     //
+//////////////////////
+uint16_t WS2812FX::mode_pixels(void) {                    // Pixels. By Andrew Tuline.
+
+  um_data_t *um_data;
+  uint16_t *myVals = nullptr;
+  float sampleAgc = 0.0f;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    sampleAgc = *(float*)um_data->u_data[2];
+    myVals    = (uint16_t*)um_data->u_data[14];
+  }
+  if (!myVals) return mode_static();
+
+  fade_out(64+(SEGMENT.speed>>1));
+
+  for (uint16_t i=0; i <SEGMENT.intensity/8; i++) {
+    uint16_t segLoc = random16(SEGLEN);                    // 16 bit for larger strands of LED's.
+    setPixelColor(segLoc, color_blend(SEGCOLOR(1), color_from_palette(myVals[i%32]+i*4, false, PALETTE_SOLID_WRAP, 0), sampleAgc));
+  }
+
+  return FRAMETIME;
+} // mode_pixels()
+static const char *_data_FX_MODE_PIXELS PROGMEM = " ♪ Pixels@Fade rate,# of pixels;,!;!";
+
+
+///////////////////////////////
+//     BEGIN FFT ROUTINES    //
+///////////////////////////////
+
+////////////////////
+//    ** Binmap   //
+////////////////////
+// Binmap. Scale raw fftBin[] values to SEGLEN. Shows just how noisy those bins are.
+uint16_t WS2812FX::mode_binmap(void) {
+  #define FIRSTBIN 3                            // The first 3 bins are garbage.
+  #define LASTBIN 255                           // Don't use the highest bins, as they're (almost) a mirror of the first 256.
+
+  float maxVal = 512;                           // Kind of a guess as to the maximum output value per combined logarithmic bins.
+
+#ifdef SR_DEBUG
+  uint8_t *maxVol;
+#endif
+  uint8_t soundAgc = 0;
+  float sampleAvg = 0.0f;
+  float *fftBin = nullptr;
+  float multAgc, sampleGain;
+  uint8_t soundSquelch;
+  uint8_t *inputLevel = (uint8_t*)(&SEGENV.aux1+1);
+  um_data_t *um_data;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+#ifdef SR_DEBUG
+    maxVol        =  (uint8_t*)um_data->u_data[9];
+#endif
+    sampleAvg     = *(float*)  um_data->u_data[0];
+    soundAgc      = *(uint8_t*)um_data->u_data[1];
+    multAgc       = *(float*)  um_data->u_data[11];
+    sampleGain    = *(float*)  um_data->u_data[13];
+    soundSquelch  = *(uint8_t*)um_data->u_data[15];
+    fftBin        =  (float*)  um_data->u_data[16];
+    inputLevel    =  (uint8_t*)um_data->u_data[17];
+  }
+  if (!fftBin) return mode_static();
+
+  if (SEGENV.call == 0) {
+    SEGMENT.custom1 = *inputLevel;
+#ifdef SR_DEBUG
+    SEGMENT.custom3 = *maxVol;
+#endif
+  }
+
+
+  //TODO: implement inputLevel as a global or slider
+  *inputLevel = SEGMENT.custom1;
+  float binScale = (((float)sampleGain / 40.0f) + 1.0f/16.f) * ((float)*inputLevel/128.0f);  // non-AGC gain multiplier
+  if (soundAgc) binScale = multAgc;                                                    // AGC gain
+  if (sampleAvg < 1) binScale = 0.001f;                                                 // silentium!
+
+#ifdef SR_DEBUG
+  //The next lines are good for debugging, however too much flickering for non-developers ;-)
+  float my_magnitude = FFT_Magnitude / 16.0f;   // scale magnitude to be aligned with scaling of FFT bins
+  my_magnitude *= binScale;                     // apply gain
+  *maxVol = fmax(64, my_magnitude);             // set maxVal = max FFT result
+#endif
+
+  for (int i=0; i<SEGLEN; i++) {
+
+    uint16_t startBin = FIRSTBIN+i*(LASTBIN-FIRSTBIN)/SEGLEN;        // This is the START bin for this particular pixel.
+    uint16_t   endBin = FIRSTBIN+(i+1)*(LASTBIN-FIRSTBIN)/SEGLEN;    // This is the END bin for this particular pixel.
+    if (endBin > startBin) endBin --;                     // avoid overlapping
+
+    double sumBin = 0;
+
+    for (int j=startBin; j<=endBin; j++) {
+      sumBin += (fftBin[j] < soundSquelch*1.75f) ? 0 : fftBin[j];  // We need some sound temporary squelch for fftBin, because we didn't do it for the raw bins in audio_reactive.h
+    }
+
+    sumBin = sumBin/(endBin-startBin+1);                  // Normalize it.
+    sumBin = sumBin * (i+5) / (endBin-startBin+5);        // Disgusting frequency adjustment calculation. Lows were too bright. Am open to quick 'n dirty alternatives.
+
+    sumBin = sumBin * 8;                                  // Need to use the 'log' version for this. Why " * 8" ??
+    sumBin *= binScale;                                   // apply gain
+
+    if (sumBin > maxVal) sumBin = maxVal;                 // Make sure our bin isn't higher than the max . . which we capped earlier.
+
+    uint8_t bright = constrain(mapf(sumBin, 0, maxVal, 0, 255),0,255);  // Map the brightness in relation to maxVal and crunch to 8 bits.
+
+    setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(i*8+millis()/50, false, PALETTE_SOLID_WRAP, 0), bright));  // 'i' is just an index in the palette. The FFT value, bright, is the intensity.
+  } // for i
+
+  return FRAMETIME;
+} // mode_binmap()
+#ifdef SR_DEBUG
+static const char *_data_FX_MODE_BINMAP PROGMEM = " ♫ Binmap@,,Input level=128,,Max vol;!,!;!";
+#else
+static const char *_data_FX_MODE_BINMAP PROGMEM = " ♫ Binmap@,,Input level=128;!,!;!";
+#endif
+
+//////////////////////
+//    ** Blurz      //
+//////////////////////
+uint16_t WS2812FX::mode_blurz(void) {                    // Blurz. By Andrew Tuline.
+  uint8_t *fftResult = nullptr;
+  um_data_t *um_data;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    fftResult     =  (uint8_t*)um_data->u_data[8];
+  } else {
+    // add support for no audio data
+  }
+  if (!fftResult) return mode_static();
+
+  if (SEGENV.call == 0) {
+    fill(BLACK);
+    SEGENV.aux0 = 0;
+  }
+
+  fade_out(SEGMENT.speed);
+
+  uint16_t segLoc = random16(SEGLEN);
+  setPixelColor(segLoc, color_blend(SEGCOLOR(1), color_from_palette(fftResult[SEGENV.aux0], false, PALETTE_SOLID_WRAP, 0), 2*fftResult[SEGENV.aux0]));
+  ++(SEGENV.aux0) %= 16; // make sure it doesn't cross 16
+
+  blur(SEGMENT.intensity);
+
+  return FRAMETIME;
+} // mode_blurz()
+static const char *_data_FX_MODE_BLURZ PROGMEM = " ♫ Blurz@Fade rate,Blur amount;!,Color mix;!";
+
+
+/////////////////////////
+//   ** DJLight        //
+/////////////////////////
+uint16_t WS2812FX::mode_DJLight(void) {                   // Written by ??? Adapted by Will Tatam.
+  const int NUM_LEDS = SEGLEN;                            // aka SEGLEN
+  const int mid = NUM_LEDS / 2;
+
+  const uint16_t dataSize = SEGLEN*sizeof(CRGB);
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+
+  uint8_t *fftResult = nullptr;
+  um_data_t *um_data;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    fftResult     =  (uint8_t*)um_data->u_data[8];
+  } else {
+    // add support for no audio data
+  }
+  if (!fftResult) return mode_static();
+
+  uint8_t secondHand = micros()/(256-SEGMENT.speed)/500+1 % 64;
+  if (SEGENV.aux0 != secondHand) {                        // Triggered millis timing.
+    SEGENV.aux0 = secondHand;
+
+    leds[mid] = CRGB(fftResult[15]/2, fftResult[5]/2, fftResult[0]/2); // 16-> 15 as 16 is out of bounds
+    leds[mid].fadeToBlackBy(map(fftResult[1*4], 0, 255, 255, 10));     // TODO - Update
+
+    for (int i = NUM_LEDS - 1; i > mid; i--) leds[i] = leds[i - 1];    //move to the left
+    for (int i = 0; i < mid; i++)            leds[i] = leds[i + 1];    // move to the right
+
+    for (uint16_t i=0; i<SEGLEN; i++) setPixelColor(i, leds[i]);
+  }
+
+  return FRAMETIME;
+} // mode_DJLight()
+static const char *_data_FX_MODE_DJLIGHT PROGMEM = " ♫ DJ Light@Speed;;";
+
+
+////////////////////
+//   ** Freqmap   //
+////////////////////
+uint16_t WS2812FX::mode_freqmap(void) {                   // Map FFT_MajorPeak to SEGLEN. Would be better if a higher framerate.
+  // Start frequency = 60 Hz and log10(60) = 1.78
+  // End frequency = 5120 Hz and lo10(5120) = 3.71
+
+  double FFT_MajorPeak = 0.0;
+  double FFT_Magnitude = 0.0;
+  uint8_t soundAgc = 0;
+  float sampleAvg = 0.0f;
+  float multAgc = 0.0f;
+  um_data_t *um_data;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    FFT_MajorPeak = *(double*)um_data->u_data[6];
+    FFT_Magnitude = *(double*)um_data->u_data[7];
+    sampleAvg     = *(float*)um_data->u_data[0];
+    soundAgc      = *(uint8_t*)um_data->u_data[1];
+    multAgc       = *(float*)um_data->u_data[11];
+  } else {
+    // add support for no audio data
+  }
+
+  float my_magnitude = FFT_Magnitude / 4.0;
+  if (soundAgc) my_magnitude *= multAgc;
+  if (sampleAvg < 1 ) my_magnitude = 0.001;              // noise gate closed - mute
+
+  fade_out(SEGMENT.speed);
+
+  uint16_t locn = (log10f((float)FFT_MajorPeak) - 1.78f) * (float)SEGLEN/(3.71f-1.78f);  // log10 frequency range is from 1.78 to 3.71. Let's scale to SEGLEN.
+
+  if (locn >=SEGLEN) locn = SEGLEN-1;
+  uint16_t pixCol = (log10f(FFT_MajorPeak) - 1.78f) * 255.0f/(3.71f-1.78f);   // Scale log10 of frequency values to the 255 colour index.
+  uint16_t bright = (int)my_magnitude;
+
+  setPixelColor(locn, color_blend(SEGCOLOR(1), color_from_palette(SEGMENT.intensity+pixCol, false, PALETTE_SOLID_WRAP, 0), bright));
+
+  return FRAMETIME;
+} // mode_freqmap()
+static const char *_data_FX_MODE_FREQMAP PROGMEM = " ♫ Freqmap@Fade rate,Starting color;,!;!";
+
+
+///////////////////////
+//   ** Freqmatrix   //
+///////////////////////
+uint16_t WS2812FX::mode_freqmatrix(void) {                // Freqmatrix. By Andreas Pleschung.
+  double FFT_MajorPeak = 0.0;
+  float sampleAgc = 0.0f;
+  um_data_t *um_data;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    FFT_MajorPeak = *(double*)um_data->u_data[6];
+    sampleAgc     = *(float*)um_data->u_data[2];
+  } else {
+    // add support for no audio data
+  }
+
+  uint8_t secondHand = micros()/(256-SEGMENT.speed)/500 % 16;
+  if(SEGENV.aux0 != secondHand) {
+    SEGENV.aux0 = secondHand;
+
+    uint8_t sensitivity = map(SEGMENT.custom3, 0, 255, 1, 10);
+    int pixVal = (sampleAgc * SEGMENT.intensity * sensitivity) / 256.0f;
+    if (pixVal > 255) pixVal = 255;
+
+    float intensity = map(pixVal, 0, 255, 0, 100) / 100.0f;  // make a brightness from the last avg
+
+    CRGB color = 0;
+
+    if (FFT_MajorPeak > 5120) FFT_MajorPeak = 0;
+    // MajorPeak holds the freq. value which is most abundant in the last sample.
+    // With our sampling rate of 10240Hz we have a usable freq range from roughtly 80Hz to 10240/2 Hz
+    // we will treat everything with less than 65Hz as 0
+
+    if (FFT_MajorPeak < 80) {
+      color = CRGB::Black;
+    } else {
+      int upperLimit = 20 * SEGMENT.custom2;
+      int lowerLimit = 2 * SEGMENT.custom1;
+      int i =  lowerLimit!=upperLimit ? map(FFT_MajorPeak, lowerLimit, upperLimit, 0, 255) : FFT_MajorPeak;
+      uint16_t b = 255 * intensity;
+      if (b > 255) b = 255;
+      color = CHSV(i, 240, (uint8_t)b); // implicit conversion to RGB supplied by FastLED
+    }
+
+    // shift the pixels one pixel up
+    for (uint16_t i = SEGLEN-1; i > 0; i--) setPixelColor(i, getPixelColor(i-1));
+    setPixelColor(0, color);
+  }
+
+  return FRAMETIME;
+} // mode_freqmatrix()
+static const char *_data_FX_MODE_FREQMATRIX PROGMEM = " ♫ Freqmatrix@Time delay,Sound effect,Low bin,High bin,Sensivity;;";
+
+
+//////////////////////
+//   ** Freqpixels  //
+//////////////////////
+// Start frequency = 60 Hz and log10(60) = 1.78
+// End frequency = 5120 Hz and lo10(5120) = 3.71
+//  SEGMENT.speed select faderate
+//  SEGMENT.intensity select colour index
+uint16_t WS2812FX::mode_freqpixels(void) {                // Freqpixel. By Andrew Tuline.
+  double FFT_MajorPeak = 0.0;
+  double FFT_Magnitude = 0.0;
+  uint8_t soundAgc = 0;
+  float sampleAvg = 0.0f;
+  float multAgc = 0.0f;
+  um_data_t *um_data;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    FFT_MajorPeak = *(double*)um_data->u_data[6];
+    FFT_Magnitude = *(double*)um_data->u_data[7];
+    sampleAvg     = *(float*)um_data->u_data[0];
+    soundAgc      = *(uint8_t*)um_data->u_data[1];
+    multAgc       = *(float*)um_data->u_data[11];
+  } else {
+    // add support for no audio data
+  }
+
+  float my_magnitude = FFT_Magnitude / 16.0;
+  if (soundAgc) my_magnitude *= multAgc;
+  if (sampleAvg < 1 ) my_magnitude = 0.001;              // noise gate closed - mute
+
+  uint16_t fadeRate = 2*SEGMENT.speed - SEGMENT.speed*SEGMENT.speed/255;    // Get to 255 as quick as you can.
+  fade_out(fadeRate);
+
+  for (int i=0; i < SEGMENT.intensity/32+1; i++) {
+    uint16_t locn = random16(0,SEGLEN);
+    uint8_t pixCol = (log10f(FFT_MajorPeak) - 1.78) * 255.0/(3.71-1.78);  // Scale log10 of frequency values to the 255 colour index.
+    setPixelColor(locn, color_blend(SEGCOLOR(1), color_from_palette(SEGMENT.intensity+pixCol, false, PALETTE_SOLID_WRAP, 0), (int)my_magnitude));
+  }
+
+  return FRAMETIME;
+} // mode_freqpixels()
+static const char *_data_FX_MODE_FREQPIXELS PROGMEM = " ♫ Freqpixels@Fade rate,Starting colour and # of pixels;;";
+
+
+//////////////////////
+//   ** Freqwave    //
+//////////////////////
+// Assign a color to the central (starting pixels) based on the predominant frequencies and the volume. The color is being determined by mapping the MajorPeak from the FFT
+// and then mapping this to the HSV color circle. Currently we are sampling at 10240 Hz, so the highest frequency we can look at is 5120Hz.
+//
+// SEGMENT.custom1: the lower cut off point for the FFT. (many, most time the lowest values have very little information since they are FFT conversion artifacts. Suggested value is close to but above 0
+// SEGMENT.custom2: The high cut off point. This depends on your sound profile. Most music looks good when this slider is between 50% and 100%.
+// SEGMENT.custom3: "preamp" for the audio signal for audio10.
+//
+// I suggest that for this effect you turn the brightness to 95%-100% but again it depends on your soundprofile you find yourself in.
+// Instead of using colorpalettes, This effect works on the HSV color circle with red being the lowest frequency
+//
+// As a compromise between speed and accuracy we are currently sampling with 10240Hz, from which we can then determine with a 512bin FFT our max frequency is 5120Hz.
+// Depending on the music stream you have you might find it useful to change the frequency mapping.
+uint16_t WS2812FX::mode_freqwave(void) {                  // Freqwave. By Andreas Pleschung.
+  double FFT_MajorPeak = 0.0;
+  uint8_t soundAgc = 0;
+  float sampleAgc = 0.0f, sampleAvg = 0.0f;
+  um_data_t *um_data;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    FFT_MajorPeak = *(double*)um_data->u_data[6];
+    sampleAvg     = *(float*)um_data->u_data[0];
+    soundAgc      = *(uint8_t*)um_data->u_data[1];
+    sampleAgc     = *(float*)um_data->u_data[2];
+  } else {
+    // add support for no audio data
+  }
+
+  uint8_t secondHand = micros()/(256-SEGMENT.speed)/500 % 16;
+  if(SEGENV.aux0 != secondHand) {
+    SEGENV.aux0 = secondHand;
+
+    //uint8_t fade = SEGMENT.custom3;
+    //uint8_t fadeval;
+
+    float tmpSound = (soundAgc) ? sampleAgc : sampleAvg;
+
+    float sensitivity = mapf(SEGMENT.custom3, 1, 255, 1, 10);
+    float pixVal = tmpSound * (float)SEGMENT.intensity / 256.0f * sensitivity;
+    if (pixVal > 255) pixVal = 255;
+
+    float intensity = mapf(pixVal, 0, 255, 0, 100) / 100.0f;  // make a brightness from the last avg
+
+    CRGB color = 0;
+
+    if (FFT_MajorPeak > 5120) FFT_MajorPeak = 0.0f;
+    // MajorPeak holds the freq. value which is most abundant in the last sample.
+    // With our sampling rate of 10240Hz we have a usable freq range from roughtly 80Hz to 10240/2 Hz
+    // we will treat everything with less than 65Hz as 0
+
+    if (FFT_MajorPeak < 80) {
+      color = CRGB::Black;
+    } else {
+      int upperLimit = 20 * SEGMENT.custom2;
+      int lowerLimit = 2 * SEGMENT.custom1;
+      int i =  lowerLimit!=upperLimit ? map(FFT_MajorPeak, lowerLimit, upperLimit, 0, 255) : FFT_MajorPeak;
+      uint16_t b = 255.0 * intensity;
+      if (b > 255) b=255;
+      color = CHSV(i, 240, (uint8_t)b); // implicit conversion to RGB supplied by FastLED
+    }
+
+    setPixelColor(SEGLEN/2, color);
+
+    // shift the pixels one pixel outwards
+    for (uint16_t i = SEGLEN-1; i > SEGLEN/2; i--) setPixelColor(i, getPixelColor(i-1));  // Move to the right.
+    for (uint16_t i = 0; i < SEGLEN/2; i++)        setPixelColor(i, getPixelColor(i+1));  // Move to the left.
+  }
+
+  return FRAMETIME;
+} // mode_freqwave()
+static const char *_data_FX_MODE_FREQWAVE PROGMEM = " ♫ Freqwave@Time delay,Sound effect,Low bin,High bin,Pre-amp;;";
+
+
+///////////////////////
+//    ** Gravfreq    //
+///////////////////////
+uint16_t WS2812FX::mode_gravfreq(void) {                  // Gravfreq. By Andrew Tuline.
+
+  uint16_t dataSize = sizeof(gravity);
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  Gravity* gravcen = reinterpret_cast<Gravity*>(SEGENV.data);
+
+  um_data_t *um_data;
+  uint8_t soundAgc = 0;
+  float sampleAgc = 0.0f, sampleAvg = 0.0f;
+  double FFT_MajorPeak = 0.0;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    FFT_MajorPeak = *(double*)um_data->u_data[6];
+    soundAgc      = *(uint8_t*)um_data->u_data[1];
+    sampleAgc     = *(float*)um_data->u_data[2];
+    sampleAvg     = *(float*)um_data->u_data[0];
+  } else {
+    // add support for no audio data
+    sampleAvg = inoise8(12345); // I have no idea what that does
+  }
+
+  fade_out(240);
+
+  float tmpSound = (soundAgc) ? sampleAgc : sampleAvg;
+  float segmentSampleAvg = tmpSound * (float)SEGMENT.intensity / 255.0;
+  segmentSampleAvg *= 0.125; // divide by 8,  to compensate for later "sensitivty" upscaling
+
+  float mySampleAvg = mapf(segmentSampleAvg*2.0, 0,32, 0, (float)SEGLEN/2.0); // map to pixels availeable in current segment 
+  int tempsamp = constrain(mySampleAvg,0,SEGLEN/2);     // Keep the sample from overflowing.
+  uint8_t gravity = 8 - SEGMENT.speed/32;
+
+  for (int i=0; i<tempsamp; i++) {
+
+    uint8_t index = (log10((int)FFT_MajorPeak) - (3.71-1.78)) * 255; //int? shouldn't it be floor() or similar
+
+    setPixelColor(i+SEGLEN/2, color_from_palette(index, false, PALETTE_SOLID_WRAP, 0));
+    setPixelColor(SEGLEN/2-i-1, color_from_palette(index, false, PALETTE_SOLID_WRAP, 0));
+  }
+
+  if (tempsamp >= gravcen->topLED)
+    gravcen->topLED = tempsamp-1;
+  else if (gravcen->gravityCounter % gravity == 0)
+    gravcen->topLED--;
+
+  if (gravcen->topLED >= 0) {
+    setPixelColor(gravcen->topLED+SEGLEN/2, CRGB::Gray);
+    setPixelColor(SEGLEN/2-1-gravcen->topLED, CRGB::Gray);
+  }
+  gravcen->gravityCounter = (gravcen->gravityCounter + 1) % gravity;
+
+  return FRAMETIME;
+} // mode_gravfreq()
+static const char *_data_FX_MODE_GRAVFREQ PROGMEM = " ♫ Gravfreq@Rate of fall,Sensivity=128;,!;!";
+
+
+//////////////////////
+//   ** Noisemove   //
+//////////////////////
+uint16_t WS2812FX::mode_noisemove(void) {                 // Noisemove.    By: Andrew Tuline
+  uint8_t *fftResult = nullptr;
+  um_data_t *um_data;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    fftResult     =  (uint8_t*)um_data->u_data[8];
+  } else {
+    // add support for no audio data
+  }
+  if (!fftResult) return mode_static();
+
+  fade_out(224);                                          // Just in case something doesn't get faded.
+
+  uint8_t numBins = map(SEGMENT.intensity,0,255,0,16);    // Map slider to fftResult bins.
+  for (int i=0; i<numBins; i++) {                         // How many active bins are we using.
+    uint16_t locn = inoise16(millis()*SEGMENT.speed+i*50000, millis()*SEGMENT.speed);   // Get a new pixel location from moving noise.
+    locn = map(locn, 7500, 58000, 0, SEGLEN-1);           // Map that to the length of the strand, and ensure we don't go over.
+    setPixelColor(locn, color_blend(SEGCOLOR(1), color_from_palette(i*64, false, PALETTE_SOLID_WRAP, 0), fftResult[i % 16]*4));
+  }
+
+  return FRAMETIME;
+} // mode_noisemove()
+static const char *_data_FX_MODE_NOISEMOVE PROGMEM = " ♫ Noisemove@Speed of perlin movement,Fade rate;,!;!";
+
+
+//////////////////////
+//   ** Rocktaves   //
+//////////////////////
+uint16_t WS2812FX::mode_rocktaves(void) {                 // Rocktaves. Same note from each octave is same colour.    By: Andrew Tuline
+  double FFT_MajorPeak = 0.0;
+  double FFT_Magnitude = 0.0;
+  uint8_t soundAgc = 0;
+  float sampleAvg = 0.0f;
+  float multAgc = 0.0f;
+  um_data_t *um_data;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    FFT_MajorPeak = *(double*)um_data->u_data[6];
+    FFT_Magnitude = *(double*)um_data->u_data[7];
+    sampleAvg     = *(float*)um_data->u_data[0];
+    soundAgc      = *(uint8_t*)um_data->u_data[1];
+    multAgc       = *(float*)um_data->u_data[11];
+  } else {
+    // add support for no audio data
+  }
+
+  fade_out(128);                          // Just in case something doesn't get faded.
+
+  float frTemp = FFT_MajorPeak;
+  uint8_t octCount = 0;                                   // Octave counter.
+  uint8_t volTemp = 0;
+
+  float my_magnitude = FFT_Magnitude / 16.0;             // scale magnitude to be aligned with scaling of FFT bins
+  if (soundAgc) my_magnitude *= multAgc;                 // apply gain
+  if (sampleAvg < 1 ) my_magnitude = 0.001;              // mute
+
+  if (my_magnitude > 32) volTemp = 255;                 // We need to squelch out the background noise.
+
+  while ( frTemp > 249 ) {
+    octCount++;                                           // This should go up to 5.
+    frTemp = frTemp/2;
+  }
+
+  frTemp -=132;                                           // This should give us a base musical note of C3
+  frTemp = fabs(frTemp * 2.1);                            // Fudge factors to compress octave range starting at 0 and going to 255;
+
+//  leds[beatsin8(8+octCount*4,0,SEGLEN-1,0,octCount*8)] += CHSV((uint8_t)frTemp,255,volTemp);                 // Back and forth with different frequencies and phase shift depending on current octave.
+  uint16_t i = map(beatsin8(8+octCount*4, 0, 255, 0, octCount*8), 0, 255, 0, SEGLEN-1);
+  setPixelColor(i, color_add(getPixelColor(i),color_blend(SEGCOLOR(1), color_from_palette((uint8_t)frTemp, false, PALETTE_SOLID_WRAP, 0), volTemp)));
+
+  return FRAMETIME;
+} // mode_rocktaves()
+static const char *_data_FX_MODE_ROCKTAVES PROGMEM = " ♫ Rocktaves@;,!;!";
+
+
+///////////////////////
+//   ** Waterfall    //
+///////////////////////
+// Combines peak detection with FFT_MajorPeak and FFT_Magnitude.
+uint16_t WS2812FX::mode_waterfall(void) {                   // Waterfall. By: Andrew Tuline
+  if (SEGENV.call == 0) fill(BLACK);
+
+  uint8_t *binNum, *maxVol;
+  uint8_t samplePeak = 0;
+  double FFT_MajorPeak = 0.0;
+  double FFT_Magnitude = 0.0;
+  uint8_t soundAgc = 0;
+  float sampleAvg = 0.0f;
+  float multAgc = 0.0f;
+  um_data_t *um_data;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    maxVol        =  (uint8_t*)um_data->u_data[9];
+    samplePeak    = *(uint8_t*)um_data->u_data[5];
+    binNum        =  (uint8_t*)um_data->u_data[10];
+    FFT_MajorPeak = *(double*)um_data->u_data[6];
+    FFT_Magnitude = *(double*)um_data->u_data[7];
+    sampleAvg     = *(float*)um_data->u_data[0];
+    soundAgc      = *(uint8_t*)um_data->u_data[1];
+    multAgc       = *(float*)um_data->u_data[11];
+  } else {
+    // add support for no audio data
+    uint32_t ms = millis();
+    binNum = (uint8_t*) &SEGENV.aux1;
+    maxVol = (uint8_t*)(&SEGENV.aux1+1);
+    samplePeak = random8() > 250;
+    sampleAvg = inoise8(beatsin8(90, 0, 200)*15 + (ms>>10), ms>>3);
+  }
+
+  if (SEGENV.call == 0) {
+    SEGENV.aux0 = 255;
+    SEGMENT.custom2 = *binNum;
+    SEGMENT.custom3 = *maxVol * 2;
+  }
+
+  *binNum = SEGMENT.custom2;                               // Select a bin.
+  *maxVol = SEGMENT.custom3/2;                             // Our volume comparator.
+
+  uint8_t secondHand = micros() / (256-SEGMENT.speed)/500 + 1 % 16;
+  if (SEGENV.aux0 != secondHand) {                        // Triggered millis timing.
+    SEGENV.aux0 = secondHand;
+
+    float my_magnitude = FFT_Magnitude / 8.0f;
+    if (soundAgc) my_magnitude *= multAgc;
+    if (sampleAvg < 1 ) my_magnitude = 0.001f;             // noise gate closed - mute
+
+    uint8_t pixCol = (log10f((float)FFT_MajorPeak) - 2.26f) * 177;  // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
+
+    if (samplePeak) {
+      setPixelColor(SEGLEN-1, CHSV(92,92,92));
+    } else {
+      setPixelColor(SEGLEN-1, color_blend(SEGCOLOR(1), color_from_palette(pixCol+SEGMENT.intensity, false, PALETTE_SOLID_WRAP, 0), (int)my_magnitude));
+    }
+    for (uint16_t i=0; i<SEGLEN-1; i++) setPixelColor(i, getPixelColor(i+1)); // shift left
+  }
+
+  return FRAMETIME;
+} // mode_waterfall()
+static const char *_data_FX_MODE_WATERFALL PROGMEM = " ♫ Waterfall@!,Adjust color,,Select bin, Volume (minimum);!,!;!";
+
+
+/////////////////////////
+//     ** 2D GEQ       //
+/////////////////////////
+uint16_t WS2812FX::mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
+  const int NUM_BANDS = map(SEGMENT.custom1, 0, 255, 1, 16);
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+
+  if (!SEGENV.allocateData(cols*sizeof(uint16_t))) return mode_static(); //allocation failed
+  uint16_t *previousBarHeight = reinterpret_cast<uint16_t*>(SEGENV.data); //array of previous bar heights per frequency band
+
+  uint8_t   *fftResult = nullptr;
+  um_data_t *um_data;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    fftResult = (uint8_t*)um_data->u_data[8];
+  } else {
+    // add support for no audio data
+  }
+  if (!fftResult) return mode_static();
+
+  if (SEGENV.call == 0) for (int i=0; i<cols; i++) previousBarHeight[i] = 0;
+
+  bool rippleTime = false;
+  if (millis() - SEGENV.step >= (256 - SEGMENT.intensity)) {
+    SEGENV.step = millis();
+    rippleTime = true;
+  }
+
+  fadeToBlackBy(nullptr, 128+(SEGMENT.speed>>2));
+
+  for (int x=0; x < cols; x++) {
+    uint8_t  band       = map(x, 0, cols-1, 0, NUM_BANDS - 1);
+    uint16_t colorIndex = band * 17;
+    uint16_t barHeight  = map(fftResult[band], 0, 255, 0, rows); // do not subtract -1 from rows here
+    if (barHeight > previousBarHeight[x]) previousBarHeight[x] = barHeight; //drive the peak up
+
+    uint32_t ledColor = BLACK;
+    for (int y=0; y < barHeight; y++) {
+      if (SEGMENT.custom2 > 128) //color_vertical / color bars toggle 
+        colorIndex = map(y, 0, rows-1, 0, 255);
+
+      ledColor = color_from_palette(colorIndex, false, PALETTE_SOLID_WRAP, 0);
+      setPixelColorXY(x, rows-1 - y, ledColor);
+    }
+    if (previousBarHeight[x] > 0)
+      setPixelColorXY(x, rows - previousBarHeight[x], (SEGCOLOR(2) != BLACK) ? SEGCOLOR(2) : ledColor);
+
+    if (rippleTime && previousBarHeight[x]>0) previousBarHeight[x]--;    //delay/ripple effect
+  }
+
+  return FRAMETIME;
+} // mode_2DGEQ()
+static const char *_data_FX_MODE_2DGEQ PROGMEM = " ♫ 2D GEQ@Fade speed,Ripple decay,# of bands=255,Color bars=64;!,,Peak Color;!=11";
+
+
+/////////////////////////
+//   ** 2D CenterBars  //
+/////////////////////////
+// NOTE: obsolete!
+uint16_t WS2812FX::mode_2DCenterBars(void) {              // Written by Scott Marley Adapted by  Spiro-C..
+  return mode_2DGEQ();
+} // mode_2DCenterBars()
+static const char *_data_FX_MODE_2DCENTERBARS PROGMEM = " ♫ 2D CenterBars@Bar speed,Ripple decay,# of bands=255,Color bars=64;!,,Peak Color;!=11";
+
+
+/////////////////////////
+//  ** 2D Funky plank  //
+/////////////////////////
+uint16_t WS2812FX::mode_2DFunkyPlank(void) {              // Written by ??? Adapted by Will Tatam.
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+
+  int NUMB_BANDS = map(SEGMENT.custom1, 0, 255, 1, 16);
+  int barWidth = (cols / NUMB_BANDS);
+  int bandInc = 1;
+  if (barWidth == 0) {
+    // Matrix narrower than fft bands
+    barWidth = 1;
+    bandInc = (NUMB_BANDS / cols);
+  }
+
+  uint8_t *fftResult = nullptr;
+  um_data_t *um_data;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    fftResult     =  (uint8_t*)um_data->u_data[8];
+  } else {
+    // add support for no audio data
+  }
+  if (!fftResult) return mode_static();
+
+  uint8_t secondHand = micros()/(256-SEGMENT.speed)/500+1 % 64;
+  if (SEGENV.aux0 != secondHand) {                        // Triggered millis timing.
+    SEGENV.aux0 = secondHand;
+
+    // display values of
+    int b = 0;
+    for (int band = 0; band < NUMB_BANDS; band += bandInc, b++) {
+      int hue = fftResult[band];
+      int v = map(fftResult[band], 0, 255, 10, 255);
+      for (int w = 0; w < barWidth; w++) {
+         int xpos = (barWidth * b) + w;
+         leds[XY(xpos, 0)] = CHSV(hue, 255, v);
+      }
+    }
+
+    // Update the display:
+    for (int i = (rows - 1); i > 0; i--) {
+      for (int j = (cols - 1); j >= 0; j--) {
+        int src = XY(j, (i - 1));
+        int dst = XY(j, i);
+        leds[dst] = leds[src];
+      }
+    }
+  }
+
+  setPixels(leds);
+  return FRAMETIME;
+} // mode_2DFunkyPlank
+static const char *_data_FX_MODE_2DFUNKYPLANK PROGMEM = " ♫ 2D Funky Plank@Scroll speed,,# of bands;;";
+
+
+//end audio only routines
+#endif
+
+
+/////////////////////////
+//     2D Akemi        //
+/////////////////////////
+static uint8_t akemi[] PROGMEM = {
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,2,2,3,3,3,3,3,3,2,2,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,2,3,3,0,0,0,0,0,0,3,3,2,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,2,3,0,0,0,6,5,5,4,0,0,0,3,2,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,2,3,0,0,6,6,5,5,5,5,4,4,0,0,3,2,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,2,3,0,6,5,5,5,5,5,5,5,5,4,0,3,2,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,2,3,0,6,5,5,5,5,5,5,5,5,5,5,4,0,3,2,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,3,2,0,6,5,5,5,5,5,5,5,5,5,5,4,0,2,3,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,3,2,3,6,5,5,7,7,5,5,5,5,7,7,5,5,4,3,2,3,0,0,0,0,0,0,
+  0,0,0,0,0,2,3,1,3,6,5,1,7,7,7,5,5,1,7,7,7,5,4,3,1,3,2,0,0,0,0,0,
+  0,0,0,0,0,8,3,1,3,6,5,1,7,7,7,5,5,1,7,7,7,5,4,3,1,3,8,9,0,0,0,0,
+  0,0,0,0,0,8,3,1,3,6,5,5,1,1,5,5,5,5,1,1,5,5,4,3,1,3,8,0,0,0,0,0,
+  0,0,0,0,0,2,3,1,3,6,5,5,5,5,5,5,5,5,5,5,5,5,4,3,1,3,2,0,0,0,0,0,
+  0,0,0,0,0,0,3,2,3,6,5,5,5,5,5,5,5,5,5,5,5,5,4,3,2,3,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,6,5,5,5,5,5,7,7,5,5,5,5,5,4,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,6,5,5,5,5,5,5,5,5,5,5,5,5,4,0,0,0,0,0,0,0,0,0,
+  1,0,0,0,0,0,0,0,0,6,5,5,5,5,5,5,5,5,5,5,5,5,4,0,0,0,0,0,0,0,0,2,
+  0,2,2,2,0,0,0,0,0,6,5,5,5,5,5,5,5,5,5,5,5,5,4,0,0,0,0,0,2,2,2,0,
+  0,0,0,3,2,0,0,0,6,5,4,4,4,4,4,4,4,4,4,4,4,4,4,4,0,0,0,2,2,0,0,0,
+  0,0,0,3,2,0,0,0,6,5,5,5,5,5,5,5,5,5,5,5,5,5,5,4,0,0,0,2,3,0,0,0,
+  0,0,0,0,3,2,0,0,0,0,3,3,0,3,3,0,0,3,3,0,3,3,0,0,0,0,2,2,0,0,0,0,
+  0,0,0,0,3,2,0,0,0,0,3,2,0,3,2,0,0,3,2,0,3,2,0,0,0,0,2,3,0,0,0,0,
+  0,0,0,0,0,3,2,0,0,3,2,0,0,3,2,0,0,3,2,0,0,3,2,0,0,2,3,0,0,0,0,0,
+  0,0,0,0,0,3,2,2,2,2,0,0,0,3,2,0,0,3,2,0,0,0,3,2,2,2,3,0,0,0,0,0,
+  0,0,0,0,0,0,3,3,3,0,0,0,0,3,2,0,0,3,2,0,0,0,0,3,3,3,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 };
 
+uint16_t WS2812FX::mode_2DAkemi(void) {
+  if (!isMatrix) return mode_static(); // not a 2D set-up
+
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+
+  uint16_t counter = (now * ((SEGMENT.speed >> 2) +2)) & 0xFFFF;
+  counter = counter >> 8;
+
+  const float lightFactor  = 0.15f;
+  const float normalFactor = 0.4f;
+  float base = 0.0f;
+  uint8_t *fftResult = nullptr;
+
+  um_data_t *um_data;
+  if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    fftResult = (uint8_t*)um_data->u_data[8];
+    base = fftResult[0]/255.0f;
+  }
+
+  //draw and color Akemi
+  for (uint16_t y=0; y < rows; y++) for (uint16_t x=0; x < cols; x++) {
+    CRGB color;
+    CRGB soundColor = ORANGE;
+    CRGB faceColor  = color_wheel(counter);
+    CRGB armsAndLegsColor = SEGCOLOR(1) > 0 ? SEGCOLOR(1) : 0xFFE0A0; //default warmish white 0xABA8FF; //0xFF52e5;//
+    uint8_t ak = pgm_read_byte_near(akemi + ((y * 32)/rows) * 32 + (x * 32)/cols); // akemi[(y * 32)/rows][(x * 32)/cols]
+    switch (ak) {
+      case 0: color = BLACK; break;
+      case 3: armsAndLegsColor.r *= lightFactor;  armsAndLegsColor.g *= lightFactor;  armsAndLegsColor.b *= lightFactor;  color = armsAndLegsColor; break; //light arms and legs 0x9B9B9B
+      case 2: armsAndLegsColor.r *= normalFactor; armsAndLegsColor.g *= normalFactor; armsAndLegsColor.b *= normalFactor; color = armsAndLegsColor; break; //normal arms and legs 0x888888
+      case 1: color = armsAndLegsColor; break; //dark arms and legs 0x686868
+      case 6: faceColor.r *= lightFactor;  faceColor.g *= lightFactor;  faceColor.b *= lightFactor;  color=faceColor; break; //light face 0x31AAFF
+      case 5: faceColor.r *= normalFactor; faceColor.g *= normalFactor; faceColor.b *= normalFactor; color=faceColor; break; //normal face 0x0094FF
+      case 4: color = faceColor; break; //dark face 0x007DC6
+      case 7: color = SEGCOLOR(2) > 0 ? SEGCOLOR(2) : 0xFFFFFF; break; //eyes and mouth default white
+      case 8: if (base > 0.4) {soundColor.r *= base; soundColor.g *= base; soundColor.b *= base; color=soundColor;} else color = armsAndLegsColor; break;
+      default: color = BLACK;
+    }
+
+    if (SEGMENT.intensity > 128 && fftResult && fftResult[0] > 128) { //dance if base is high
+      setPixelColorXY(x, 0, BLACK);
+      setPixelColorXY(x, y+1, color);
+    } else
+      setPixelColorXY(x, y, color);
+  }
+
+  //add geq left and right
+  if (um_data && fftResult) {
+    for (uint16_t x=0; x < cols/8; x++) {
+      uint16_t band = x * cols/8;
+      uint16_t barHeight = map(fftResult[band], 0, 255, 0, 17*rows/32);
+      CRGB color = color_from_palette((band * 35), false, PALETTE_SOLID_WRAP, 0);
+
+      for (uint16_t y=0; y < barHeight; y++) {
+        setPixelColorXY(x, rows/2-y, color);
+        setPixelColorXY(cols-1-x, rows/2-y, color);
+      }
+    }
+  }
+
+  return FRAMETIME;
+} // mode_2DAkemi
+static const char *_data_FX_MODE_2DAKEMI PROGMEM = "2D Akemi@Color speed,Dance;Head palette,Arms & Legs,Eyes & Mouth;Face palette";
+
+
+//////////////////////////////////////////////////////////////////////////////////////////
+// mode data
+static const char *_data_RESERVED PROGMEM = "Reserved";
+void WS2812FX::setupEffectData() {
+  // fill reserved word in case there will be any gaps in the array
+  for (byte i=0; i<getModeCount(); i++) _modeData[i] = _data_RESERVED;
+  //addEffect(FX_MODE_..., &WS2812FX::mode_fcn, _data_FX_MODE_...);
+  addEffect(FX_MODE_STATIC, &WS2812FX::mode_static, _data_FX_MODE_STATIC);
+  addEffect(FX_MODE_BLINK, &WS2812FX::mode_blink, _data_FX_MODE_BLINK);
+  addEffect(FX_MODE_COLOR_WIPE, &WS2812FX::mode_color_wipe, _data_FX_MODE_COLOR_WIPE);
+  addEffect(FX_MODE_COLOR_WIPE_RANDOM, &WS2812FX::mode_color_wipe_random, _data_FX_MODE_COLOR_WIPE_RANDOM);
+  addEffect(FX_MODE_RANDOM_COLOR, &WS2812FX::mode_random_color, _data_FX_MODE_RANDOM_COLOR);
+  addEffect(FX_MODE_COLOR_SWEEP, &WS2812FX::mode_color_sweep, _data_FX_MODE_COLOR_SWEEP);
+  addEffect(FX_MODE_DYNAMIC, &WS2812FX::mode_dynamic, _data_FX_MODE_DYNAMIC);
+  addEffect(FX_MODE_RAINBOW, &WS2812FX::mode_rainbow, _data_FX_MODE_RAINBOW);
+  addEffect(FX_MODE_RAINBOW_CYCLE, &WS2812FX::mode_rainbow_cycle, _data_FX_MODE_RAINBOW_CYCLE);
+  addEffect(FX_MODE_SCAN, &WS2812FX::mode_scan, _data_FX_MODE_SCAN);
+  addEffect(FX_MODE_DUAL_SCAN, &WS2812FX::mode_dual_scan, _data_FX_MODE_DUAL_SCAN);
+  addEffect(FX_MODE_FADE, &WS2812FX::mode_fade, _data_FX_MODE_FADE);
+  addEffect(FX_MODE_THEATER_CHASE, &WS2812FX::mode_theater_chase, _data_FX_MODE_THEATER_CHASE);
+  addEffect(FX_MODE_THEATER_CHASE_RAINBOW, &WS2812FX::mode_theater_chase_rainbow, _data_FX_MODE_THEATER_CHASE_RAINBOW);
+  addEffect(FX_MODE_SAW, &WS2812FX::mode_saw, _data_FX_MODE_SAW);
+  addEffect(FX_MODE_TWINKLE, &WS2812FX::mode_twinkle, _data_FX_MODE_TWINKLE);
+  addEffect(FX_MODE_DISSOLVE, &WS2812FX::mode_dissolve, _data_FX_MODE_DISSOLVE);
+  addEffect(FX_MODE_DISSOLVE_RANDOM, &WS2812FX::mode_dissolve_random, _data_FX_MODE_DISSOLVE_RANDOM);
+  addEffect(FX_MODE_SPARKLE, &WS2812FX::mode_sparkle, _data_FX_MODE_SPARKLE);
+  addEffect(FX_MODE_FLASH_SPARKLE, &WS2812FX::mode_flash_sparkle, _data_FX_MODE_FLASH_SPARKLE);
+  addEffect(FX_MODE_HYPER_SPARKLE, &WS2812FX::mode_hyper_sparkle, _data_FX_MODE_HYPER_SPARKLE);
+  addEffect(FX_MODE_STROBE, &WS2812FX::mode_strobe, _data_FX_MODE_STROBE);
+  addEffect(FX_MODE_STROBE_RAINBOW, &WS2812FX::mode_strobe_rainbow, _data_FX_MODE_STROBE_RAINBOW);
+  addEffect(FX_MODE_MULTI_STROBE, &WS2812FX::mode_multi_strobe, _data_FX_MODE_MULTI_STROBE);
+  addEffect(FX_MODE_BLINK_RAINBOW, &WS2812FX::mode_blink_rainbow, _data_FX_MODE_BLINK_RAINBOW);
+  addEffect(FX_MODE_ANDROID, &WS2812FX::mode_android, _data_FX_MODE_ANDROID);
+  addEffect(FX_MODE_CHASE_COLOR, &WS2812FX::mode_chase_color, _data_FX_MODE_CHASE_COLOR);
+  addEffect(FX_MODE_CHASE_RANDOM, &WS2812FX::mode_chase_random, _data_FX_MODE_CHASE_RANDOM);
+  addEffect(FX_MODE_CHASE_RAINBOW, &WS2812FX::mode_chase_rainbow, _data_FX_MODE_CHASE_RAINBOW);
+  addEffect(FX_MODE_CHASE_FLASH, &WS2812FX::mode_chase_flash, _data_FX_MODE_CHASE_FLASH);
+  addEffect(FX_MODE_CHASE_FLASH_RANDOM, &WS2812FX::mode_chase_flash_random, _data_FX_MODE_CHASE_FLASH_RANDOM);
+  addEffect(FX_MODE_CHASE_RAINBOW_WHITE, &WS2812FX::mode_chase_rainbow_white, _data_FX_MODE_CHASE_RAINBOW_WHITE);
+  addEffect(FX_MODE_COLORFUL, &WS2812FX::mode_colorful, _data_FX_MODE_COLORFUL);
+  addEffect(FX_MODE_TRAFFIC_LIGHT, &WS2812FX::mode_traffic_light, _data_FX_MODE_TRAFFIC_LIGHT);
+  addEffect(FX_MODE_COLOR_SWEEP_RANDOM, &WS2812FX::mode_color_sweep_random, _data_FX_MODE_COLOR_SWEEP_RANDOM);
+  addEffect(FX_MODE_RUNNING_COLOR, &WS2812FX::mode_running_color, _data_FX_MODE_RUNNING_COLOR);
+  addEffect(FX_MODE_AURORA, &WS2812FX::mode_aurora, _data_FX_MODE_AURORA);
+  addEffect(FX_MODE_RUNNING_RANDOM, &WS2812FX::mode_running_random, _data_FX_MODE_RUNNING_RANDOM);
+  addEffect(FX_MODE_LARSON_SCANNER, &WS2812FX::mode_larson_scanner, _data_FX_MODE_LARSON_SCANNER);
+  addEffect(FX_MODE_COMET, &WS2812FX::mode_comet, _data_FX_MODE_COMET);
+  addEffect(FX_MODE_FIREWORKS, &WS2812FX::mode_fireworks, _data_FX_MODE_FIREWORKS);
+  addEffect(FX_MODE_RAIN, &WS2812FX::mode_rain, _data_FX_MODE_RAIN);
+  addEffect(FX_MODE_TETRIX, &WS2812FX::mode_tetrix, _data_FX_MODE_TETRIX);
+  addEffect(FX_MODE_FIRE_FLICKER, &WS2812FX::mode_fire_flicker, _data_FX_MODE_FIRE_FLICKER);
+  addEffect(FX_MODE_GRADIENT, &WS2812FX::mode_gradient, _data_FX_MODE_GRADIENT);
+  addEffect(FX_MODE_LOADING, &WS2812FX::mode_loading, _data_FX_MODE_LOADING);
+  addEffect(FX_MODE_POLICE, &WS2812FX::mode_police, _data_FX_MODE_POLICE);
+  addEffect(FX_MODE_FAIRY, &WS2812FX::mode_fairy, _data_FX_MODE_FAIRY);
+  addEffect(FX_MODE_TWO_DOTS, &WS2812FX::mode_two_dots, _data_FX_MODE_TWO_DOTS);
+  addEffect(FX_MODE_FAIRYTWINKLE, &WS2812FX::mode_fairytwinkle, _data_FX_MODE_FAIRYTWINKLE);
+  addEffect(FX_MODE_RUNNING_DUAL, &WS2812FX::mode_running_dual, _data_FX_MODE_RUNNING_DUAL);
+  addEffect(FX_MODE_HALLOWEEN, &WS2812FX::mode_halloween, _data_FX_MODE_HALLOWEEN);
+  addEffect(FX_MODE_TRICOLOR_CHASE, &WS2812FX::mode_tricolor_chase, _data_FX_MODE_TRICOLOR_CHASE);
+  addEffect(FX_MODE_TRICOLOR_WIPE, &WS2812FX::mode_tricolor_wipe, _data_FX_MODE_TRICOLOR_WIPE);
+  addEffect(FX_MODE_TRICOLOR_FADE, &WS2812FX::mode_tricolor_fade, _data_FX_MODE_TRICOLOR_FADE);
+  addEffect(FX_MODE_BREATH, &WS2812FX::mode_breath, _data_FX_MODE_BREATH);
+  addEffect(FX_MODE_RUNNING_LIGHTS, &WS2812FX::mode_running_lights, _data_FX_MODE_RUNNING_LIGHTS);
+  addEffect(FX_MODE_LIGHTNING, &WS2812FX::mode_lightning, _data_FX_MODE_LIGHTNING);
+  addEffect(FX_MODE_ICU, &WS2812FX::mode_icu, _data_FX_MODE_ICU);
+  addEffect(FX_MODE_MULTI_COMET, &WS2812FX::mode_multi_comet, _data_FX_MODE_MULTI_COMET);
+  addEffect(FX_MODE_DUAL_LARSON_SCANNER, &WS2812FX::mode_dual_larson_scanner, _data_FX_MODE_DUAL_LARSON_SCANNER);
+  addEffect(FX_MODE_RANDOM_CHASE, &WS2812FX::mode_random_chase, _data_FX_MODE_RANDOM_CHASE);
+  addEffect(FX_MODE_OSCILLATE, &WS2812FX::mode_oscillate, _data_FX_MODE_OSCILLATE);
+  addEffect(FX_MODE_FIRE_2012, &WS2812FX::mode_fire_2012, _data_FX_MODE_FIRE_2012);
+  addEffect(FX_MODE_PRIDE_2015, &WS2812FX::mode_pride_2015, _data_FX_MODE_PRIDE_2015);
+  addEffect(FX_MODE_BPM, &WS2812FX::mode_bpm, _data_FX_MODE_BPM);
+  addEffect(FX_MODE_JUGGLE, &WS2812FX::mode_juggle, _data_FX_MODE_JUGGLE);
+  addEffect(FX_MODE_PALETTE, &WS2812FX::mode_palette, _data_FX_MODE_PALETTE);
+  addEffect(FX_MODE_COLORWAVES, &WS2812FX::mode_colorwaves, _data_FX_MODE_COLORWAVES);
+  addEffect(FX_MODE_FILLNOISE8, &WS2812FX::mode_fillnoise8, _data_FX_MODE_FILLNOISE8);
+  addEffect(FX_MODE_NOISE16_1, &WS2812FX::mode_noise16_1, _data_FX_MODE_NOISE16_1);
+  addEffect(FX_MODE_NOISE16_2, &WS2812FX::mode_noise16_2, _data_FX_MODE_NOISE16_2);
+  addEffect(FX_MODE_NOISE16_3, &WS2812FX::mode_noise16_3, _data_FX_MODE_NOISE16_3);
+  addEffect(FX_MODE_NOISE16_4, &WS2812FX::mode_noise16_4, _data_FX_MODE_NOISE16_4);
+  addEffect(FX_MODE_COLORTWINKLE, &WS2812FX::mode_colortwinkle, _data_FX_MODE_COLORTWINKLE);
+  addEffect(FX_MODE_LAKE, &WS2812FX::mode_lake, _data_FX_MODE_LAKE);
+  addEffect(FX_MODE_METEOR, &WS2812FX::mode_meteor, _data_FX_MODE_METEOR);
+  addEffect(FX_MODE_METEOR_SMOOTH, &WS2812FX::mode_meteor_smooth, _data_FX_MODE_METEOR_SMOOTH);
+  addEffect(FX_MODE_RAILWAY, &WS2812FX::mode_railway, _data_FX_MODE_RAILWAY);
+  addEffect(FX_MODE_RIPPLE, &WS2812FX::mode_ripple, _data_FX_MODE_RIPPLE);
+  addEffect(FX_MODE_TWINKLEFOX, &WS2812FX::mode_twinklefox, _data_FX_MODE_TWINKLEFOX);
+  addEffect(FX_MODE_TWINKLECAT, &WS2812FX::mode_twinklecat, _data_FX_MODE_TWINKLECAT);
+  addEffect(FX_MODE_HALLOWEEN_EYES, &WS2812FX::mode_halloween_eyes, _data_FX_MODE_HALLOWEEN_EYES);
+  addEffect(FX_MODE_STATIC_PATTERN, &WS2812FX::mode_static_pattern, _data_FX_MODE_STATIC_PATTERN);
+  addEffect(FX_MODE_TRI_STATIC_PATTERN, &WS2812FX::mode_tri_static_pattern, _data_FX_MODE_TRI_STATIC_PATTERN);
+  addEffect(FX_MODE_SPOTS, &WS2812FX::mode_spots, _data_FX_MODE_SPOTS);
+  addEffect(FX_MODE_SPOTS_FADE, &WS2812FX::mode_spots_fade, _data_FX_MODE_SPOTS_FADE);
+  addEffect(FX_MODE_GLITTER, &WS2812FX::mode_glitter, _data_FX_MODE_GLITTER);
+  addEffect(FX_MODE_CANDLE, &WS2812FX::mode_candle, _data_FX_MODE_CANDLE);
+  addEffect(FX_MODE_STARBURST, &WS2812FX::mode_starburst, _data_FX_MODE_STARBURST);
+  addEffect(FX_MODE_EXPLODING_FIREWORKS, &WS2812FX::mode_exploding_fireworks, _data_FX_MODE_EXPLODING_FIREWORKS);
+  addEffect(FX_MODE_BOUNCINGBALLS, &WS2812FX::mode_bouncing_balls, _data_FX_MODE_BOUNCINGBALLS);
+  addEffect(FX_MODE_SINELON, &WS2812FX::mode_sinelon, _data_FX_MODE_SINELON);
+  addEffect(FX_MODE_SINELON_DUAL, &WS2812FX::mode_sinelon_dual, _data_FX_MODE_SINELON_DUAL);
+  addEffect(FX_MODE_SINELON_RAINBOW, &WS2812FX::mode_sinelon_rainbow, _data_FX_MODE_SINELON_RAINBOW);
+  addEffect(FX_MODE_POPCORN, &WS2812FX::mode_popcorn, _data_FX_MODE_POPCORN);
+  addEffect(FX_MODE_DRIP, &WS2812FX::mode_drip, _data_FX_MODE_DRIP);
+  addEffect(FX_MODE_PLASMA, &WS2812FX::mode_plasma, _data_FX_MODE_PLASMA);
+  addEffect(FX_MODE_PERCENT, &WS2812FX::mode_percent, _data_FX_MODE_PERCENT);
+  addEffect(FX_MODE_RIPPLE_RAINBOW, &WS2812FX::mode_ripple_rainbow, _data_FX_MODE_RIPPLE_RAINBOW);
+  addEffect(FX_MODE_HEARTBEAT, &WS2812FX::mode_heartbeat, _data_FX_MODE_HEARTBEAT);
+  addEffect(FX_MODE_PACIFICA, &WS2812FX::mode_pacifica, _data_FX_MODE_PACIFICA);
+  addEffect(FX_MODE_CANDLE_MULTI, &WS2812FX::mode_candle_multi, _data_FX_MODE_CANDLE_MULTI);
+  addEffect(FX_MODE_SOLID_GLITTER, &WS2812FX::mode_solid_glitter, _data_FX_MODE_SOLID_GLITTER);
+  addEffect(FX_MODE_SUNRISE, &WS2812FX::mode_sunrise, _data_FX_MODE_SUNRISE);
+  addEffect(FX_MODE_PHASED, &WS2812FX::mode_phased, _data_FX_MODE_PHASED);
+  addEffect(FX_MODE_TWINKLEUP, &WS2812FX::mode_twinkleup, _data_FX_MODE_TWINKLEUP);
+  addEffect(FX_MODE_NOISEPAL, &WS2812FX::mode_noisepal, _data_FX_MODE_NOISEPAL);
+  addEffect(FX_MODE_SINEWAVE, &WS2812FX::mode_sinewave, _data_FX_MODE_SINEWAVE);
+  addEffect(FX_MODE_PHASEDNOISE, &WS2812FX::mode_phased_noise, _data_FX_MODE_PHASEDNOISE);
+  addEffect(FX_MODE_FLOW, &WS2812FX::mode_flow, _data_FX_MODE_FLOW);
+  addEffect(FX_MODE_CHUNCHUN, &WS2812FX::mode_chunchun, _data_FX_MODE_CHUNCHUN);
+  addEffect(FX_MODE_DANCING_SHADOWS, &WS2812FX::mode_dancing_shadows, _data_FX_MODE_DANCING_SHADOWS);
+  addEffect(FX_MODE_WASHING_MACHINE, &WS2812FX::mode_washing_machine, _data_FX_MODE_WASHING_MACHINE);
+  addEffect(FX_MODE_CANDY_CANE, &WS2812FX::mode_candy_cane, _data_FX_MODE_CANDY_CANE);
+  addEffect(FX_MODE_BLENDS, &WS2812FX::mode_blends, _data_FX_MODE_BLENDS);
+  addEffect(FX_MODE_TV_SIMULATOR, &WS2812FX::mode_tv_simulator, _data_FX_MODE_TV_SIMULATOR);
+  addEffect(FX_MODE_DYNAMIC_SMOOTH, &WS2812FX::mode_dynamic_smooth, _data_FX_MODE_DYNAMIC_SMOOTH);
+  addEffect(FX_MODE_SPACESHIPS, &WS2812FX::mode_2Dspaceships, _data_FX_MODE_SPACESHIPS);
+  addEffect(FX_MODE_CRAZYBEES, &WS2812FX::mode_2Dcrazybees, _data_FX_MODE_CRAZYBEES);
+  addEffect(FX_MODE_GHOST_RIDER, &WS2812FX::mode_2Dghostrider, _data_FX_MODE_GHOST_RIDER);
+  addEffect(FX_MODE_BLOBS, &WS2812FX::mode_2Dfloatingblobs, _data_FX_MODE_BLOBS);
+  addEffect(FX_MODE_SCROLL_TEXT, &WS2812FX::mode_2Dscrollingtext, _data_FX_MODE_SCROLL_TEXT);
+  addEffect(FX_MODE_DRIFT_ROSE, &WS2812FX::mode_2Ddriftrose, _data_FX_MODE_DRIFT_ROSE);
+#ifndef USERMOD_AUDIOREACTIVE
+  addEffect(FX_MODE_PERLINMOVE, &WS2812FX::mode_perlinmove, _data_FX_MODE_PERLINMOVE);
+  addEffect(FX_MODE_FLOWSTRIPE, &WS2812FX::mode_FlowStripe, _data_FX_MODE_FLOWSTRIPE);
+  addEffect(FX_MODE_WAVESINS, &WS2812FX::mode_wavesins, _data_FX_MODE_WAVESINS);
+  addEffect(FX_MODE_2DJULIA, &WS2812FX::mode_2DJulia, _data_FX_MODE_2DJULIA);
+  addEffect(FX_MODE_2DGAMEOFLIFE, &WS2812FX::mode_2Dgameoflife, _data_FX_MODE_2DGAMEOFLIFE);
+  addEffect(FX_MODE_2DNOISE, &WS2812FX::mode_2Dnoise, _data_FX_MODE_2DNOISE);
+  addEffect(FX_MODE_2DFIRENOISE, &WS2812FX::mode_2Dfirenoise, _data_FX_MODE_2DFIRENOISE);
+  addEffect(FX_MODE_2DSQUAREDSWIRL, &WS2812FX::mode_2Dsquaredswirl, _data_FX_MODE_2DSQUAREDSWIRL);
+  addEffect(FX_MODE_2DDNA, &WS2812FX::mode_2Ddna, _data_FX_MODE_2DDNA);
+  addEffect(FX_MODE_2DMATRIX, &WS2812FX::mode_2Dmatrix, _data_FX_MODE_2DMATRIX);
+  addEffect(FX_MODE_2DMETABALLS, &WS2812FX::mode_2Dmetaballs, _data_FX_MODE_2DMETABALLS);
+  addEffect(FX_MODE_2DPULSER, &WS2812FX::mode_2DPulser, _data_FX_MODE_2DPULSER);
+  addEffect(FX_MODE_2DSUNRADIATION, &WS2812FX::mode_2DSunradiation, _data_FX_MODE_2DSUNRADIATION);
+  addEffect(FX_MODE_2DWAVERLY, &WS2812FX::mode_2DWaverly, _data_FX_MODE_2DWAVERLY);
+  addEffect(FX_MODE_2DDRIFT, &WS2812FX::mode_2DDrift, _data_FX_MODE_2DDRIFT);
+  addEffect(FX_MODE_2DCOLOREDBURSTS, &WS2812FX::mode_2DColoredBursts, _data_FX_MODE_2DCOLOREDBURSTS);
+  addEffect(FX_MODE_2DTARTAN, &WS2812FX::mode_2Dtartan, _data_FX_MODE_2DTARTAN);
+  addEffect(FX_MODE_2DPOLARLIGHTS, &WS2812FX::mode_2DPolarLights, _data_FX_MODE_2DPOLARLIGHTS);
+  addEffect(FX_MODE_2DSWIRL, &WS2812FX::mode_2DSwirl, _data_FX_MODE_2DSWIRL);
+  addEffect(FX_MODE_2DLISSAJOUS, &WS2812FX::mode_2DLissajous, _data_FX_MODE_2DLISSAJOUS);
+  addEffect(FX_MODE_2DFRIZZLES, &WS2812FX::mode_2DFrizzles, _data_FX_MODE_2DFRIZZLES);
+  addEffect(FX_MODE_2DPLASMABALL, &WS2812FX::mode_2DPlasmaball, _data_FX_MODE_2DPLASMABALL);
+  addEffect(FX_MODE_2DHIPHOTIC, &WS2812FX::mode_2DHiphotic, _data_FX_MODE_2DHIPHOTIC);
+  addEffect(FX_MODE_2DSINDOTS, &WS2812FX::mode_2DSindots, _data_FX_MODE_2DSINDOTS);
+  addEffect(FX_MODE_2DDNASPIRAL, &WS2812FX::mode_2DDNASpiral, _data_FX_MODE_2DDNASPIRAL);
+  addEffect(FX_MODE_2DBLACKHOLE, &WS2812FX::mode_2DBlackHole, _data_FX_MODE_2DBLACKHOLE);
+  addEffect(FX_MODE_2DAKEMI, &WS2812FX::mode_2DAkemi, _data_FX_MODE_2DAKEMI);
+  addEffect(FX_MODE_PIXELWAVE, &WS2812FX::mode_pixelwave, _data_FX_MODE_PIXELWAVE);
+  addEffect(FX_MODE_JUGGLES, &WS2812FX::mode_juggles, _data_FX_MODE_JUGGLES);
+  addEffect(FX_MODE_MATRIPIX, &WS2812FX::mode_matripix, _data_FX_MODE_MATRIPIX);
+  addEffect(FX_MODE_GRAVCENTER, &WS2812FX::mode_gravcenter, _data_FX_MODE_GRAVCENTER);
+  addEffect(FX_MODE_GRAVCENTRIC, &WS2812FX::mode_gravcentric, _data_FX_MODE_GRAVCENTRIC);
+  addEffect(FX_MODE_GRAVIMETER, &WS2812FX::mode_gravimeter, _data_FX_MODE_GRAVIMETER);
+  addEffect(FX_MODE_PLASMOID, &WS2812FX::mode_plasmoid, _data_FX_MODE_PLASMOID);
+  addEffect(FX_MODE_PUDDLES, &WS2812FX::mode_puddles, _data_FX_MODE_PUDDLES);
+  addEffect(FX_MODE_PUDDLEPEAK, &WS2812FX::mode_puddlepeak, _data_FX_MODE_PUDDLEPEAK);
+  addEffect(FX_MODE_RIPPLEPEAK, &WS2812FX::mode_ripplepeak, _data_FX_MODE_RIPPLEPEAK);
+  addEffect(FX_MODE_MIDNOISE, &WS2812FX::mode_midnoise, _data_FX_MODE_MIDNOISE);
+  addEffect(FX_MODE_NOISEMETER, &WS2812FX::mode_noisemeter, _data_FX_MODE_NOISEMETER);
+  addEffect(FX_MODE_NOISEFIRE, &WS2812FX::mode_noisefire, _data_FX_MODE_NOISEFIRE);
+#else
+  // WLED-SR
+  addEffect(FX_MODE_2DJULIA, &WS2812FX::mode_2DJulia, _data_FX_MODE_2DJULIA);
+  addEffect(FX_MODE_2DGAMEOFLIFE, &WS2812FX::mode_2Dgameoflife, _data_FX_MODE_2DGAMEOFLIFE);
+  addEffect(FX_MODE_PIXELS, &WS2812FX::mode_pixels, _data_FX_MODE_PIXELS);
+  addEffect(FX_MODE_PIXELWAVE, &WS2812FX::mode_pixelwave, _data_FX_MODE_PIXELWAVE);
+  addEffect(FX_MODE_JUGGLES, &WS2812FX::mode_juggles, _data_FX_MODE_JUGGLES);
+  addEffect(FX_MODE_MATRIPIX, &WS2812FX::mode_matripix, _data_FX_MODE_MATRIPIX);
+  addEffect(FX_MODE_GRAVIMETER, &WS2812FX::mode_gravimeter, _data_FX_MODE_GRAVIMETER);
+  addEffect(FX_MODE_PLASMOID, &WS2812FX::mode_plasmoid, _data_FX_MODE_PLASMOID);
+  addEffect(FX_MODE_PUDDLES, &WS2812FX::mode_puddles, _data_FX_MODE_PUDDLES);
+  addEffect(FX_MODE_MIDNOISE, &WS2812FX::mode_midnoise, _data_FX_MODE_MIDNOISE);
+  addEffect(FX_MODE_NOISEMETER, &WS2812FX::mode_noisemeter, _data_FX_MODE_NOISEMETER);
+  addEffect(FX_MODE_FREQWAVE, &WS2812FX::mode_freqwave, _data_FX_MODE_FREQWAVE);
+  addEffect(FX_MODE_FREQMATRIX, &WS2812FX::mode_freqmatrix, _data_FX_MODE_FREQMATRIX);
+  addEffect(FX_MODE_2DGEQ, &WS2812FX::mode_2DGEQ, _data_FX_MODE_2DGEQ);
+  addEffect(FX_MODE_WATERFALL, &WS2812FX::mode_waterfall, _data_FX_MODE_WATERFALL);
+  addEffect(FX_MODE_FREQPIXELS, &WS2812FX::mode_freqpixels, _data_FX_MODE_FREQPIXELS);
+  addEffect(FX_MODE_BINMAP, &WS2812FX::mode_binmap, _data_FX_MODE_BINMAP);
+  addEffect(FX_MODE_NOISEFIRE, &WS2812FX::mode_noisefire, _data_FX_MODE_NOISEFIRE);
+  addEffect(FX_MODE_PUDDLEPEAK, &WS2812FX::mode_puddlepeak, _data_FX_MODE_PUDDLEPEAK);
+  addEffect(FX_MODE_NOISEMOVE, &WS2812FX::mode_noisemove, _data_FX_MODE_NOISEMOVE);
+  addEffect(FX_MODE_2DNOISE, &WS2812FX::mode_2Dnoise, _data_FX_MODE_2DNOISE);
+  addEffect(FX_MODE_PERLINMOVE, &WS2812FX::mode_perlinmove, _data_FX_MODE_PERLINMOVE);
+  addEffect(FX_MODE_RIPPLEPEAK, &WS2812FX::mode_ripplepeak, _data_FX_MODE_RIPPLEPEAK);
+  addEffect(FX_MODE_2DFIRENOISE, &WS2812FX::mode_2Dfirenoise, _data_FX_MODE_2DFIRENOISE);
+  addEffect(FX_MODE_2DSQUAREDSWIRL, &WS2812FX::mode_2Dsquaredswirl, _data_FX_MODE_2DSQUAREDSWIRL);
+  //addEffect(FX_MODE_2DFIRE2012, &WS2812FX::mode_2Dfire2012, _data_RESERVED);
+  addEffect(FX_MODE_2DDNA, &WS2812FX::mode_2Ddna, _data_FX_MODE_2DDNA);
+  addEffect(FX_MODE_2DMATRIX, &WS2812FX::mode_2Dmatrix, _data_FX_MODE_2DMATRIX);
+  addEffect(FX_MODE_2DMETABALLS, &WS2812FX::mode_2Dmetaballs, _data_FX_MODE_2DMETABALLS);
+  addEffect(FX_MODE_FREQMAP, &WS2812FX::mode_freqmap, _data_FX_MODE_FREQMAP);
+  addEffect(FX_MODE_GRAVCENTER, &WS2812FX::mode_gravcenter, _data_FX_MODE_GRAVCENTER);
+  addEffect(FX_MODE_GRAVCENTRIC, &WS2812FX::mode_gravcentric, _data_FX_MODE_GRAVCENTRIC);
+  addEffect(FX_MODE_GRAVFREQ, &WS2812FX::mode_gravfreq, _data_FX_MODE_GRAVFREQ);
+  addEffect(FX_MODE_DJLIGHT, &WS2812FX::mode_DJLight, _data_FX_MODE_DJLIGHT);
+  addEffect(FX_MODE_2DFUNKYPLANK, &WS2812FX::mode_2DFunkyPlank, _data_FX_MODE_2DFUNKYPLANK);
+  addEffect(FX_MODE_2DCENTERBARS, &WS2812FX::mode_2DCenterBars, _data_FX_MODE_2DCENTERBARS);
+  addEffect(FX_MODE_2DPULSER, &WS2812FX::mode_2DPulser, _data_FX_MODE_2DPULSER);
+  addEffect(FX_MODE_BLURZ, &WS2812FX::mode_blurz, _data_FX_MODE_BLURZ);
+  addEffect(FX_MODE_2DSUNRADIATION, &WS2812FX::mode_2DSunradiation, _data_FX_MODE_2DSUNRADIATION);
+  addEffect(FX_MODE_2DWAVERLY, &WS2812FX::mode_2DWaverly, _data_FX_MODE_2DWAVERLY);
+  addEffect(FX_MODE_2DDRIFT, &WS2812FX::mode_2DDrift, _data_FX_MODE_2DDRIFT);
+  addEffect(FX_MODE_2DCOLOREDBURSTS, &WS2812FX::mode_2DColoredBursts, _data_FX_MODE_2DCOLOREDBURSTS);
+  addEffect(FX_MODE_2DTARTAN, &WS2812FX::mode_2Dtartan, _data_FX_MODE_2DTARTAN);
+  addEffect(FX_MODE_2DPOLARLIGHTS, &WS2812FX::mode_2DPolarLights, _data_FX_MODE_2DPOLARLIGHTS);
+  addEffect(FX_MODE_2DSWIRL, &WS2812FX::mode_2DSwirl, _data_FX_MODE_2DSWIRL);
+  addEffect(FX_MODE_2DLISSAJOUS, &WS2812FX::mode_2DLissajous, _data_FX_MODE_2DLISSAJOUS);
+  addEffect(FX_MODE_2DFRIZZLES, &WS2812FX::mode_2DFrizzles, _data_FX_MODE_2DFRIZZLES);
+  addEffect(FX_MODE_2DPLASMABALL, &WS2812FX::mode_2DPlasmaball, _data_FX_MODE_2DPLASMABALL);
+  addEffect(FX_MODE_FLOWSTRIPE, &WS2812FX::mode_FlowStripe, _data_FX_MODE_FLOWSTRIPE);
+  addEffect(FX_MODE_2DHIPHOTIC, &WS2812FX::mode_2DHiphotic, _data_FX_MODE_2DHIPHOTIC);
+  addEffect(FX_MODE_2DSINDOTS, &WS2812FX::mode_2DSindots, _data_FX_MODE_2DSINDOTS);
+  addEffect(FX_MODE_2DDNASPIRAL, &WS2812FX::mode_2DDNASpiral, _data_FX_MODE_2DDNASPIRAL);
+  addEffect(FX_MODE_2DBLACKHOLE, &WS2812FX::mode_2DBlackHole, _data_FX_MODE_2DBLACKHOLE);
+  addEffect(FX_MODE_WAVESINS, &WS2812FX::mode_wavesins, _data_FX_MODE_WAVESINS);
+  addEffect(FX_MODE_ROCKTAVES, &WS2812FX::mode_rocktaves, _data_FX_MODE_ROCKTAVES);
+  addEffect(FX_MODE_2DAKEMI, &WS2812FX::mode_2DAkemi, _data_FX_MODE_2DAKEMI);
+  //addEffect(FX_MODE_CUSTOMEFFECT, &WS2812FX::mode_customEffect, _data_FX_MODE_CUSTOMEFFECT); //WLEDSR Custom Effects
+#endif
+}

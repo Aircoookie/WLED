@@ -126,8 +126,8 @@ function cTheme(light) {
 	sCol('--c-c','#333');
 	sCol('--c-e','#111');
 	sCol('--c-d','#222');
-	sCol('--c-r','#c21');
-	sCol('--c-g','#2c1');
+	sCol('--c-r','#a21');
+	sCol('--c-g','#2a1');
 	sCol('--c-l','#26c');
 	sCol('--c-o','rgba(204, 204, 204, 0.9)');
 	sCol('--c-sb','#0003'); sCol('--c-sbh','#0006');
@@ -398,7 +398,7 @@ function presetError(empty)
 		if (bckstr.length > 10) hasBackup = true;
 	} catch (e) {}
 
-	var cn = `<div class="pres c" ${empty?'style="padding:8px;"':'onclick="loadPresets()" style="cursor:pointer;padding:8px;"'}>`;
+	var cn = `<div class="pres c" ${empty?'style="padding:8px 0;margin-top: 15px;"':'onclick="loadPresets()" style="cursor:pointer;padding:8px 0;"'}>`;
 	if (empty)
 		cn += `You have no presets yet!`;
 	else
@@ -568,7 +568,7 @@ function populatePresets(fromls)
 		cn += `<div class="pres lstI" id="p${i}o">`;
 		if (cfg.comp.pid) cn += `<div class="pid">${i}</div>`;
 		cn += `<div class="pname lstIname" onclick="setPreset(${i})">${isPlaylist(i)?"<i class='icons btn-icon'>&#xe139;</i>":""}${pName(i)}
-	<i class="icons edit-icon" id="p${i}nedit" onclick="tglSegn(${i+100})">&#xe2c6;</i></div>
+	<i class="icons edit-icon flr" id="p${i}nedit" onclick="tglSegn(${i+100})">&#xe2c6;</i></div>
 	<i class="icons e-icon flr" id="sege${i+100}" onclick="expand(${i+100})">&#xe395;</i>
 	<div class="presin lstIcontent" id="seg${i+100}"></div>
 </div>`;
@@ -604,7 +604,8 @@ function parseInfo(i) {
 	mw = i.leds.matrix ? i.leds.matrix.w : 0;
 	mh = i.leds.matrix ? i.leds.matrix.h : 0;
 	isM = mw>0 && mh>0;
-	if (!isM) hide2DModes();
+	if (!isM) hideModes("2D ");
+	if (!i.u || !i.u.AudioReactive) { /*hideModes("♪ ");*/ hideModes("♫ "); }	// hide /*audio*/ frequency reactive effects
 }
 
 function populateInfo(i)
@@ -752,7 +753,7 @@ function populateSegments(s)
 	}
 	if (segCount < 2) gId(`segd${lSeg}`).style.display = "none";
 	if (!isM && !noNewSegs && (cfg.comp.seglen?parseInt(gId(`seg${lSeg}s`).value):0)+parseInt(gId(`seg${lSeg}e`).value)<ledCount) gId(`segr${lSeg}`).style.display = "inline";
-	gId('rsbtn').style.display = (segCount > 1) ? "inline":"none";
+	gId('segutil2').style.display = (segCount > 1) ? "block":"none"; // rsbtn parent
 }
 
 function populateEffects()
@@ -772,14 +773,14 @@ function populateEffects()
 	for (let i = 0; i < effects.length; i++) {
 		// WLEDSR: add slider and color control to setX (used by requestjson)
 		if (effects[i].name.indexOf("Reserved") < 0) {
-			var extra = !(Array.isArray(fxdata) && fxdata.length>i) ? '' : fxdata[i].substr(1);
+			let id = effects[i].id;
 			html += generateListItemHtml(
 				'fx',
-				effects[i].id,
+				id,
 				effects[i].name,
 				'setX',
 				'',
-				extra
+				!(Array.isArray(fxdata) && fxdata.length>id) ? '' : fxdata[id].substr(1)
 			);
 		}
 	}
@@ -1278,7 +1279,6 @@ function readState(s,command=false)
 function setSliderAndColorControl(idx, applyDef=false)
 {
 	if (!(Array.isArray(fxdata) && fxdata.length>idx)) return;
-	var topPosition = 0;
   	var controlDefined = (fxdata[idx].substr(0,1) == "@");
 	var extra = fxdata[idx].substr(1);
 	var extras = (extra == '')?[]:extra.split(";");
@@ -1288,7 +1288,8 @@ function setSliderAndColorControl(idx, applyDef=false)
 	var obj = {"seg":{}};
   
 	// set html slider items on/off
-	var nSliders = Math.min(5,Math.floor(gId("sliders").children.length / 2)); // p (label) & div for each slider
+	var nSliders = Math.min(5,Math.floor(gId("sliders").children.length)); // div for each slider
+	var sldCnt = 0;
 	for (let i=0; i<nSliders; i++) {
 		var slider = gId("slider" + i);
 		var label = gId("sliderLabel" + i);
@@ -1307,22 +1308,21 @@ function setSliderAndColorControl(idx, applyDef=false)
 			else if (i==0)                           label.innerHTML = "Effect speed";
 			else if (i==1)                           label.innerHTML = "Effect intensity";
 			else                                     label.innerHTML = "Custom" + (i-1);
-			label.classList.remove("hide");
+			sldCnt++;
+			//if (sldCnt++===0) slider.classList.add("top");
 			slider.classList.remove("hide");
-			if (getComputedStyle(label).display === "block") topPosition += 58; // increase top position for the next control
-			else topPosition += 35;
-			slider.setAttribute('title',label.innerHTML);
+			//slider.setAttribute('title',label.innerHTML);
 		} else {
-			// disable label and slider
 			slider.classList.add("hide");
-			label.classList.add("hide");
+			//slider.classList.remove("top");
 		}
 	}
-	if (topPosition>0) { topPosition += 5; gId("sliders").style.paddingTop = "5px"; }
-	else gId("sliders").style.padding = 0;
 
-	// set size of fx list
-	gId("fx").style.height = `calc(100% - ${topPosition}px)`;
+	// set the bottom position of selected effect (sticky) as the top of sliders div
+	let top = parseInt(getComputedStyle(gId("sliders")).height);
+	/*if (sldCnt===1)*/ top += 28; // size of tooltip
+	let sel = d.querySelector('#fxlist .selected');
+	if (sel) sel.style.bottom = top + "px"; // we will need to remove this when unselected (in setX())
 
 	// set html color items on/off
 	var cslLabel = '';
@@ -1387,7 +1387,7 @@ function setSliderAndColorControl(idx, applyDef=false)
 	}
 	// not all color selectors shown, hide palettes created from color selectors
 	for (let e of (gId('pallist').querySelectorAll('.lstI')||[])) {
-		if (cslCnt < 3 && e.querySelector('.lstIname').innerText.indexOf("* ")>=0) e.classList.add('hide'); else e.classList.remove('hide');
+		if (cslCnt < 3 && e.querySelector('.lstIname').innerText.indexOf("* C")>=0) e.classList.add('hide'); else e.classList.remove('hide');
 	}
 	if (!isEmpty(obj.seg) && applyDef) requestJson(obj); // update default values (may need throttling on ESP8266)
 }
@@ -1972,7 +1972,10 @@ function setX(ind = null)
 		d.querySelector(`#fxlist input[name="fx"][value="${ind}"]`).checked = true;
 	}
 	var selElement = d.querySelector('#fxlist .selected');
-	if (selElement) selElement.classList.remove('selected');
+	if (selElement) {
+		selElement.classList.remove('selected');
+		selElement.style.bottom = null; // remove element style added in slider handling
+	}
 
 	d.querySelector(`#fxlist .lstI[data-id="${ind}"]`).classList.add('selected');
 
@@ -2035,12 +2038,12 @@ function setPreset(i)
 {
 	var obj = {"ps":i};
 	if (pJson && pJson[i] && (!pJson[i].win || pJson[i].win.indexOf("Please") <= 0)) {
+		// we will send complete preset content as to avoid delay introduced by
+		// async nature of applyPreset(). json.cpp has to decide wether to call applyPreset()
+		// or not (by looking at the JSON content, if "ps" only)
 		Object.assign(obj, pJson[i]);
 		delete obj.ql;	// no need for quick load
 		delete obj.n;	// no need for name
-//		obj.pt = i;		// this will set preset ID but not force state update
-//	} else {
-//		obj.ps = i;
 	}
 	if (isPlaylist(i)) obj.on = true; // force on
 	showToast("Loading preset " + pName(i) +" (" + i + ")");
@@ -2395,12 +2398,10 @@ function getPalettesData(page, callback)
 	});
 }
 
-function hide2DModes()
+function hideModes(txt)
 {
-	var el = gId('fxlist').querySelectorAll('.lstI');
-	for (let it of el) {
-		var itT = it.querySelector('.lstIname').innerText;
-		if (itT.indexOf("2D ") >= 0) it.style.display = 'none';
+	for (let e of (gId('fxlist').querySelectorAll('.lstI')||[])) {
+		if (e.querySelector('.lstIname').innerText.indexOf(txt) >= 0) e.classList.add("hide"); //else e.classList.remove("hide");
 	}
 }
 

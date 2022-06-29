@@ -468,13 +468,17 @@ class MultiRelay : public Usermod {
         if (user.isNull())
           user = root.createNestedObject("u");
 
-        JsonArray infoArr = user.createNestedArray(F("Number of relays")); //name
+        JsonArray infoArr = user.createNestedArray(FPSTR(_name)); //name
         infoArr.add(String(getActiveRelayCount()));
+        infoArr.add(F(" relays"));
 
         String uiDomString;
         for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
           if (_relay[i].pin<0 || !_relay[i].external) continue;
-          uiDomString = F("<button class=\"btn\" onclick=\"requestJson({");
+          uiDomString = F("Relay "); uiDomString += i;
+          JsonArray infoArr = user.createNestedArray(uiDomString); // timer value
+
+          uiDomString = F("<button class=\"btn btn-xs\" onclick=\"requestJson({");
           uiDomString += FPSTR(_name);
           uiDomString += F(":{");
           uiDomString += FPSTR(_relay_str);
@@ -483,12 +487,10 @@ class MultiRelay : public Usermod {
           uiDomString += F(",on:");
           uiDomString += _relay[i].state ? "false" : "true";
           uiDomString += F("}});\">");
-          uiDomString += F("Relay ");
-          uiDomString += i;
-          uiDomString += F(" <i class=\"icons\">&#xe08f;</i></button>");
-          JsonArray infoArr = user.createNestedArray(uiDomString); // timer value
-
-          infoArr.add(_relay[i].state ? "on" : "off");
+          uiDomString += F("<i class=\"icons");
+          uiDomString += _relay[i].state ? F(" on") : F(" off");
+          uiDomString += F("\">&#xe08f;</i></button>");
+          infoArr.add(uiDomString);
         }
       }
     }

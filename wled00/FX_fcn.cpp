@@ -187,31 +187,31 @@ void /*IRAM_ATTR*/ WS2812FX::setPixelColor(float i, byte r, byte g, byte b, byte
 {
   if (i<0.0f || i>1.0f) return; // not normalized
 
+  float fC = i * (SEGLEN-1);
   if (aa) {
-    float fC = i * (SEGLEN-1);
-    float fL = floorf(i * (SEGLEN-1));
-    float fR = ceilf(i * (SEGLEN-1));
-    uint16_t iL = fL;
-    uint16_t iR = fR;
+    uint16_t iL = roundf(fC-0.49f);
+    uint16_t iR = roundf(fC+0.49f);
+    float    dL = fC - iL;
+    float    dR = iR - fC;
     uint32_t cIL = getPixelColor(iL);
     uint32_t cIR = getPixelColor(iR);
     if (iR!=iL) {
       // blend L pixel
-      cIL = color_blend(RGBW32(r,g,b,w), cIL, (fR - fC)*UINT16_MAX, true);
+      cIL = color_blend(RGBW32(r,g,b,w), cIL, uint8_t(dL*255.0f));
       setPixelColor(iL, R(cIL), G(cIL), B(cIL), W(cIL));
       // blend R pixel
-      cIR = color_blend(RGBW32(r,g,b,w), cIR, (fC - fL)*UINT16_MAX, true);
+      cIR = color_blend(RGBW32(r,g,b,w), cIR, uint8_t(dR*255.0f));
       setPixelColor(iR, R(cIR), G(cIR), B(cIR), W(cIR));
     } else {
       // exact match (x & y land on a pixel)
       setPixelColor(iL, r, g, b, w);
     }
   } else {
-    setPixelColor((uint16_t)roundf(i * (SEGLEN-1)), r, g, b, w);
+    setPixelColor(uint16_t(roundf(fC)), r, g, b, w);
   }
 }
 
-void IRAM_ATTR WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
+void IRAM_ATTR WS2812FX::setPixelColor(int i, byte r, byte g, byte b, byte w)
 {
   uint8_t segIdx = SEGLEN ? _segment_index : _mainSegment;
   if (isMatrix && SEGLEN) {
@@ -411,18 +411,13 @@ void WS2812FX::trigger() {
 void WS2812FX::setMode(uint8_t segid, uint8_t m) {
   if (segid >= MAX_NUM_SEGMENTS) return;
    
-  if (m >= MODE_COUNT) m = MODE_COUNT - 1;
+  if (m >= getModeCount()) m = getModeCount() - 1;
 
   if (_segments[segid].mode != m) 
   {
     _segment_runtimes[segid].markForReset();
     _segments[segid].mode = m;
   }
-}
-
-uint8_t WS2812FX::getModeCount()
-{
-  return MODE_COUNT;
 }
 
 uint8_t WS2812FX::getPaletteCount()
@@ -937,13 +932,16 @@ uint32_t WS2812FX::color_add(uint32_t c1, uint32_t c2)
 /*
  * Fills segment with color
  */
-void WS2812FX::fill(uint32_t c) {
+void WS2812FX::fill(uint32_t c, uint8_t seg) {
+  uint8_t oldSeg;
+  if (seg != 255) oldSeg = setPixelSegment(seg);
   const uint16_t cols = isMatrix ? SEGMENT.virtualWidth() : SEGMENT.virtualLength();
   const uint16_t rows = SEGMENT.virtualHeight(); // will be 1 for 1D
   for(uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
     if (isMatrix) setPixelColorXY(x, y, c);
     else          setPixelColor(x, c);
   }
+  if (seg != 255) setPixelSegment(oldSeg);
 }
 
 /*
@@ -970,7 +968,7 @@ void WS2812FX::fade_out(uint8_t rate) {
   int g2 = G(color);
   int b2 = B(color);
 
-  for(uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
+  for (uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
     color = isMatrix ? getPixelColorXY(x, y) : getPixelColor(x);
     int w1 = W(color);
     int r1 = R(color);
@@ -995,8 +993,12 @@ void WS2812FX::fade_out(uint8_t rate) {
 
 // fades all pixels to black using nscale8()
 void WS2812FX::fadeToBlackBy(uint8_t fadeBy) {
-  for (uint16_t i = 0; i < SEGLEN; i++) {
-    setPixelColor(i, col_to_crgb(getPixelColor(i)).nscale8(255-fadeBy));
+  const uint16_t cols = isMatrix ? SEGMENT.virtualWidth() : SEGMENT.virtualLength();
+  const uint16_t rows = SEGMENT.virtualHeight(); // will be 1 for 1D
+
+  for (uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
+    if (isMatrix) setPixelColorXY(x, y, col_to_crgb(getPixelColorXY(x,y)).nscale8(255-fadeBy));
+    else          setPixelColor(x, col_to_crgb(getPixelColor(x)).nscale8(255-fadeBy));
   }
 }
 

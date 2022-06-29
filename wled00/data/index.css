@@ -123,9 +123,17 @@ button {
 .icons {
 	font-family: 'WIcons';
 	font-style: normal;
-	font-size: 24px;
-	line-height: 1;
+	font-size: 24px !important;
+	line-height: 1 !important;
 	display: inline-block;
+}
+
+.icons.on {
+	color: var(--c-g);
+}
+
+.icons.off {
+	color: var(--c-6);
 }
 
 .top .icons, .bot .icons {
@@ -359,27 +367,77 @@ button {
 	bottom: 5px;
 }
 
-#fx {
-	height: calc(100% - 121px);
-	overflow-y: scroll;
-	padding-left: 6px; /* compensate scroll bar */
-}
-
 #sliders {
 	width: 310px;
 	margin: 0 auto;
+	position: sticky;
+	bottom: 0;
 }
 
 #sliders .labels {
 	padding-top: 3px;
+	font-size: small;
 }
 
-#slider0, #slider1, #slider2, #slider3, #slider4 {
+.slider {
 	background: var(--c-2);
 	max-width: 310px;
 	min-width: 280px;
-	margin: 0 auto 5px;
+	margin: 0 auto; /* add 5px; if you want some vertical space but looks ugly */
 	border-radius: 15px;
+	position: relative;
+}
+
+/* Tooltip text */
+.slider .tooltiptext {
+	visibility: hidden;
+	background-color: var(--c-5);
+	color: var(--c-f);
+	text-align: center;
+	padding: 5px 10px;
+	border-radius: 6px;
+
+	/* Position the tooltip text */
+	width: 160px;
+	position: absolute;
+	z-index: 1;
+	bottom: 100%;
+	left: 50%;
+	margin-left: -92px;
+
+	/* Fade in tooltip */
+	opacity: 0;
+	transition: opacity 0.75s;
+}
+/*
+.slider.top .tooltiptext {
+	top: 100%;
+	bottom: unset;
+}
+*/
+/* Tooltip arrow */
+.slider .tooltiptext::after {
+	content: "";
+	position: absolute;
+	top: 100%;
+	left: 50%;
+	margin-left: -5px;
+	border-width: 5px;
+	border-style: solid;
+	border-color: var(--c-5) transparent transparent transparent;
+}
+/*
+.slider.top  .tooltiptext::after {
+	bottom: 100%;
+	left: 50%;
+	top: unset;
+	border-color: transparent transparent var(--c-5) transparent;
+}
+*/
+/* Show the tooltip text when you mouse over the tooltip container */
+.slider:hover .tooltiptext {
+	visibility: visible;
+	opacity: 1;
 }
 
 #pql, .edit-icon {
@@ -473,15 +531,6 @@ button {
 	z-index: -2;
 }
 
-#imgw {
-	display: inline-block;
-	margin: 8px;
-}
-
-#kv, #kn {
-	display: inline-block;
-}
-
 #info table, #nodes table {
 	table-layout: fixed;
 	width: 100%;
@@ -502,6 +551,15 @@ button {
 	margin: 0 auto;
 }
 
+#imgw {
+	/*display: inline-block;*/
+	margin: 8px auto;
+}
+/*
+#kv, #kn {
+	display: inline-block;
+}
+*/
 #lv {
 	max-width: 600px;
 	display: inline-block;
@@ -708,6 +766,9 @@ input[type=range]::-moz-range-thumb {
 #putil .btn-xs {
 	margin: 0;
 }
+#info .btn-xs {
+	border: 1px solid var(--c-4);
+}
 
 #putil .btn-s {
 	width: 135px;
@@ -872,23 +933,17 @@ textarea {
 	overflow: clip;
 	text-overflow: ellipsis;
 	line-height: 24px;
-	padding: 8px 0;
-	max-width: 160px;
+	padding: 8px 24px;
+	max-width: 170px;
 	margin: 0 auto;
 	position: relative;
 }
-.segname {
-	padding-left: 28px;
-}
 
-.segname .flr {
+.segname .flr, .pname .flr {
 	transform: rotate(0deg);
+	right: -6px;
 }
 
-.expanded .segname {
-	max-width: 184px;
-	padding: 8px 24px;
-}
 /* segment power wrapper */
 .sbs {
 	padding: 4px 0 4px 8px;
@@ -921,19 +976,24 @@ textarea {
 }
 
 .xxs {
-	border: 2px solid var(--c-e) !important;
 	width: 44px;
 	height: 44px;
 	margin: 5px;
-	/*box-shadow: 0 0 0 2px #fff;*/
 }
 
 .xxs-w {
-	border-width: 5px !important;
 	margin: 2px;
 	width: 50px;
 	height: 50px;
-	/*box-shadow: 0 0 0 5px #fff;*/
+}
+
+#csl .xxs {
+	border: 2px solid var(--c-d) !important;
+	/*box-shadow: 0 0 0 2px var(--c-d);*/
+}
+#csl .xxs-w {
+	border-width: 5px !important;
+	/*box-shadow: 0 0 0 5px var(--c-d);*/
 }
 
 .qcs, #namelabel {
@@ -962,7 +1022,7 @@ textarea {
 }
 
 .frz {
-	left: 36px;
+	left: 32px;
 	position: absolute;
 	top: -3px;
 	cursor: pointer;

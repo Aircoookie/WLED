@@ -581,6 +581,10 @@ class FourLineDisplayUsermod : public Usermod {
           // remove "* " from dynamic palettes
           for (byte i=2; i<=printedChars; i++) lineBuffer[i-2] = lineBuffer[i]; //include '\0'
           printedChars -= 2;
+        } else if ((lineBuffer[0]==' ' && lineBuffer[1]>127)) {
+          // remove note symbol from effect names
+          for (byte i=5; i<=printedChars; i++) lineBuffer[i-5] = lineBuffer[i]; //include '\0'
+          printedChars -= 5;
         }
         if (lineHeight == 2) {                                 // use this code for 8 line display
           char smallBuffer1[MAX_MODE_LINE_SPACE];
@@ -941,6 +945,23 @@ class FourLineDisplayUsermod : public Usermod {
     //  if (!initDone) return;  // prevent crash on boot applyPreset()
     //}
 
+    void appendConfigData() {
+      oappend(SET_F("dd=addDropdown('4LineDisplay','type');"));
+      oappend(SET_F("addOption(dd,'None',0);"));
+      oappend(SET_F("addOption(dd,'SSD1306',1);"));
+      oappend(SET_F("addOption(dd,'SH1106',2);"));
+      oappend(SET_F("addOption(dd,'SSD1306 128x64',3);"));
+      oappend(SET_F("addOption(dd,'SSD1305',4);"));
+      oappend(SET_F("addOption(dd,'SSD1305 128x64',5);"));
+      oappend(SET_F("addOption(dd,'SSD1306 SPI',6);"));
+      oappend(SET_F("addOption(dd,'SSD1306 SPI 128x64',7);"));
+      oappend(SET_F("addInfo('4LineDisplay:pin[]',0,'I2C/SPI CLK');"));
+      oappend(SET_F("addInfo('4LineDisplay:pin[]',1,'I2C/SPI DTA');"));
+      oappend(SET_F("addInfo('4LineDisplay:pin[]',2,'SPI CS');"));
+      oappend(SET_F("addInfo('4LineDisplay:pin[]',3,'SPI DC');"));
+      oappend(SET_F("addInfo('4LineDisplay:pin[]',4,'SPI RST');"));
+    }
+
     /*
      * addToConfig() can be used to add custom persistent settings to the cfg.json file in the "um" (usermod) object.
      * It will be called by WLED when settings are actually saved (for example, LED settings are saved)
@@ -960,9 +981,7 @@ class FourLineDisplayUsermod : public Usermod {
       top[FPSTR(_enabled)]       = enabled;
       JsonArray io_pin = top.createNestedArray("pin");
       for (byte i=0; i<5; i++) io_pin.add(ioPin[i]);
-      top["help4Pins"]           = F("Clk,Data,CS,DC,RST"); // help for Settings page
       top["type"]                = type;
-      top["help4Type"]           = F("1=SSD1306,2=SH1106,3=SSD1306_128x64,4=SSD1305,5=SSD1305_128x64,6=SSD1306_SPI,7=SSD1306_SPI_128x64"); // help for Settings page
       top[FPSTR(_flip)]          = (bool) flip;
       top[FPSTR(_contrast)]      = contrast;
       top[FPSTR(_contrastFix)]   = (bool) contrastFix;

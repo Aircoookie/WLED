@@ -25,7 +25,7 @@ enum struct PinOwner : uint8_t {
   // High bit is set for all built-in pin owners
   Ethernet      = 0x81,
   BusDigital    = 0x82,
-  BusDigital2   = 0x83,
+  BusOnOff      = 0x83,
   BusPwm        = 0x84,   // 'BusP' == PWM output using BusPwm
   Button        = 0x85,   // 'Butn' == button from configuration
   IR            = 0x86,   // 'IR'   == IR receiver pin from configuration
@@ -34,6 +34,8 @@ enum struct PinOwner : uint8_t {
   DebugOut      = 0x89,   // 'Dbg'  == debug output always IO1
   DMX           = 0x8A,   // 'DMX'  == hard-coded to IO2
   HW_I2C        = 0x8B,   // 'I2C'  == hardware I2C pins (4&5 on ESP8266, 21&22 on ESP32)
+  AnalogMic     = 0x8C,   // WLEDSR
+  DigitalMic    = 0x8D,   // WLEDSR
   // Use UserMod IDs from const.h here
   UM_Unspecified       = USERMOD_ID_UNSPECIFIED,        // 0x01
   UM_Example           = USERMOD_ID_EXAMPLE,            // 0x02 // Usermod "usermod_v2_example.h"
@@ -53,7 +55,8 @@ enum struct PinOwner : uint8_t {
   // #define USERMOD_ID_ELEKSTUBE_IPS                   // 0x10 // Usermod "usermod_elekstube_ips.h" -- Uses quite a few pins ... see Hardware.h and User_Setup.h
   // #define USERMOD_ID_SN_PHOTORESISTOR                // 0x11 // Usermod "usermod_sn_photoresistor.h" -- Uses hard-coded pin (PHOTORESISTOR_PIN == A0), but could be easily updated to use pinManager
   UM_RGBRotaryEncoder  = USERMOD_RGB_ROTARY_ENCODER,    // 0x16 // Usermod "rgb-rotary-encoder.h"
-  UM_QuinLEDAnPenta    = USERMOD_ID_QUINLED_AN_PENTA    // 0x17 // Usermod "quinled-an-penta.h"
+  UM_QuinLEDAnPenta    = USERMOD_ID_QUINLED_AN_PENTA,   // 0x17 // Usermod "quinled-an-penta.h"
+  UM_Audioreactive     = USERMOD_ID_AUDIOREACTIVE       // 0x1E // Usermod: "audio_reactive.h"
 };
 static_assert(0u == static_cast<uint8_t>(PinOwner::None), "PinOwner::None must be zero, so default array initialization works as expected");
 

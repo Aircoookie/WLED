@@ -234,10 +234,10 @@ void releaseJSONBufferLock()
 uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLen)
 {
   if (src == JSON_mode_names || src == nullptr) {
-    if (mode < MODE_COUNT) {
+    if (mode < strip.getModeCount()) {
       char lineBuffer[256];
       //strcpy_P(lineBuffer, (const char*)pgm_read_dword(&(WS2812FX::_modeData[mode])));
-      strcpy_P(lineBuffer, WS2812FX::_modeData[mode]);
+      strcpy_P(lineBuffer, strip.getModeData(mode));
       if (strlen(lineBuffer) > 0) {
         size_t j = 0;
         for (; j < maxLen; j++) {
@@ -286,8 +286,8 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxL
 {
   dest[0] = '\0'; // start by clearing buffer
 
-  if (mode < MODE_COUNT) {
-    String lineBuffer = WS2812FX::_modeData[mode];
+  if (mode < strip.getModeCount()) {
+    String lineBuffer = strip.getModeData(mode);
     if (lineBuffer.length() > 0) {
       int16_t start = lineBuffer.indexOf('@');
       int16_t stop  = lineBuffer.indexOf(';', start);

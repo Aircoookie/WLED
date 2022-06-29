@@ -238,37 +238,125 @@
 #define FX_MODE_BLENDS                 115
 #define FX_MODE_TV_SIMULATOR           116
 #define FX_MODE_DYNAMIC_SMOOTH         117
-#define FX_MODE_BLACK_HOLE             118
-#define FX_MODE_DNA                    119
-#define FX_MODE_DNA_SPIRAL             120
-#define FX_MODE_DRIFT                  121
-#define FX_MODE_FIRENOISE              122
-#define FX_MODE_FRIZZLES               123
-#define FX_MODE_HIPNOTIC               124
-#define FX_MODE_LISSAJOUS              125
-#define FX_MODE_MATRIX                 126
-#define FX_MODE_AKEMI                  127
-#define FX_MODE_COLORED_BURSTS         128
-#define FX_MODE_GAMEOFLIFE             129
-#define FX_MODE_JULIA                  130
-#define FX_MODE_MEATBALS               131
-#define FX_MODE_2DNOISE                132
-#define FX_MODE_PLASMA_BALL            133
-#define FX_MODE_POLAR_LIGHTS           134
-#define FX_MODE_PULSER                 135
-#define FX_MODE_SINDOTS                136
-#define FX_MODE_SQUARED_SWIRL          137
-#define FX_MODE_SUN_RADIATION          138
-#define FX_MODE_TARTAN                 139
-#define FX_MODE_WAVERLY                140
-#define FX_MODE_SPACESHIPS             141
-#define FX_MODE_CRAZYBEES              142
-#define FX_MODE_GHOST_RIDER            143
-#define FX_MODE_BLOBS                  144
-#define FX_MODE_SCROLL_TEXT            145
-#define FX_MODE_DRFIT_ROSE             146
+// new 2D effects
+#define FX_MODE_SPACESHIPS             118
+#define FX_MODE_CRAZYBEES              119
+#define FX_MODE_GHOST_RIDER            120
+#define FX_MODE_BLOBS                  121
+#define FX_MODE_SCROLL_TEXT            122
+#define FX_MODE_DRIFT_ROSE             123
 
-#define MODE_COUNT                     147
+// WLED-SR effects
+#ifndef USERMOD_AUDIOREACTIVE
+
+  #define FX_MODE_PERLINMOVE              53 // should be moved to 53
+  #define FX_MODE_FLOWSTRIPE             114 // should be moved to 114
+  #define FX_MODE_WAVESINS                48 // should be moved to 48
+  #define FX_MODE_2DBLACKHOLE            124 // non audio
+  #define FX_MODE_2DDNASPIRAL            125 // non audio
+  #define FX_MODE_2DHIPHOTIC             126 // non audio
+  #define FX_MODE_2DPLASMABALL           127 // non audio
+  #define FX_MODE_2DSINDOTS              128 // non audio
+  #define FX_MODE_PIXELWAVE              129 // audio enhanced
+  #define FX_MODE_JUGGLES                130 // audio enhanced
+  #define FX_MODE_MATRIPIX               131 // audio enhanced
+  #define FX_MODE_GRAVIMETER             132 // audio enhanced
+  #define FX_MODE_PLASMOID               133 // audio enhanced
+  #define FX_MODE_PUDDLES                134 // audio enhanced
+  #define FX_MODE_MIDNOISE               135 // audio enhanced
+  #define FX_MODE_NOISEMETER             136 // audio enhanced
+  #define FX_MODE_2DFRIZZLES             137 // non audio
+  #define FX_MODE_2DLISSAJOUS            138 // non audio
+  #define FX_MODE_2DPOLARLIGHTS          139 // non audio
+  #define FX_MODE_2DTARTAN               140 // non audio
+  #define FX_MODE_2DGAMEOFLIFE           141 // non audio
+  #define FX_MODE_2DJULIA                142 // non audio
+  #define FX_MODE_NOISEFIRE              143 // audio enhanced
+  #define FX_MODE_PUDDLEPEAK             144 // audio enhanced
+  #define FX_MODE_2DCOLOREDBURSTS        145 // non audio
+  #define FX_MODE_2DSUNRADIATION         146 // non audio
+  #define FX_MODE_2DNOISE                147 // non audio
+  #define FX_MODE_RIPPLEPEAK             148 // audio enhanced
+  #define FX_MODE_2DFIRENOISE            149 // non audio
+  #define FX_MODE_2DSQUAREDSWIRL         150 // non audio
+  #define FX_MODE_2DDNA                  151 // non audio
+  #define FX_MODE_2DMATRIX               152 // non audio
+  #define FX_MODE_2DMETABALLS            153 // non audio
+  #define FX_MODE_2DPULSER               154 // non audio
+  #define FX_MODE_2DDRIFT                155 // non audio
+  #define FX_MODE_2DWAVERLY              156 // audio enhanced
+  #define FX_MODE_GRAVCENTER             157 // audio enhanced
+  #define FX_MODE_GRAVCENTRIC            158 // audio enhanced
+  #define FX_MODE_2DSWIRL                159 // audio enhanced
+  #define FX_MODE_2DAKEMI                160 // audio enhanced
+
+  #define MODE_COUNT                     161
+
+#else
+
+  #define FX_MODE_PIXELS                 128
+  #define FX_MODE_PIXELWAVE              129 // audio enhanced
+  #define FX_MODE_JUGGLES                130 // audio enhanced
+  #define FX_MODE_MATRIPIX               131 // audio enhanced
+  #define FX_MODE_GRAVIMETER             132 // audio enhanced
+  #define FX_MODE_PLASMOID               133 // audio enhanced
+  #define FX_MODE_PUDDLES                134 // audio enhanced
+  #define FX_MODE_MIDNOISE               135 // audio enhanced
+  #define FX_MODE_NOISEMETER             136 // audio enhanced
+  #define FX_MODE_FREQWAVE               137
+  #define FX_MODE_FREQMATRIX             138
+  #define FX_MODE_2DGEQ                  139
+  #define FX_MODE_WATERFALL              140
+  #define FX_MODE_FREQPIXELS             141
+  #define FX_MODE_BINMAP                 142
+  #define FX_MODE_NOISEFIRE              143 // audio enhanced
+  #define FX_MODE_PUDDLEPEAK             144 // audio enhanced
+  #define FX_MODE_NOISEMOVE              145
+  #define FX_MODE_2DNOISE                146 // non audio
+  #define FX_MODE_PERLINMOVE             147 // should be moved to 53
+  #define FX_MODE_RIPPLEPEAK             148 // audio enhanced
+  #define FX_MODE_2DFIRENOISE            149 // non audio
+  #define FX_MODE_2DSQUAREDSWIRL         150 // non audio
+  //#define FX_MODE_2DFIRE2012             151 // implemented in native Fire2012
+  #define FX_MODE_2DDNA                  152 // non audio
+  #define FX_MODE_2DMATRIX               153 // non audio
+  #define FX_MODE_2DMETABALLS            154 // non audio
+  #define FX_MODE_FREQMAP                155
+  #define FX_MODE_GRAVCENTER             156 // audio enhanced
+  #define FX_MODE_GRAVCENTRIC            157 // audio enhanced
+  #define FX_MODE_GRAVFREQ               158
+  #define FX_MODE_DJLIGHT                159
+  #define FX_MODE_2DFUNKYPLANK           160
+  #define FX_MODE_2DCENTERBARS           161 // obsolete by X & Y mirroring
+  #define FX_MODE_2DPULSER               162 // non audio
+  #define FX_MODE_BLURZ                  163
+  #define FX_MODE_2DDRIFT                164 // non audio
+  #define FX_MODE_2DWAVERLY              165 // audio enhanced
+  #define FX_MODE_2DSUNRADIATION         166 // non audio
+  #define FX_MODE_2DCOLOREDBURSTS        167 // non audio
+  #define FX_MODE_2DJULIA                168 // non audio
+  #define FX_MODE_2DPOOLNOISE            169 // reserved in JSON_mode_names
+  #define FX_MODE_2DTWISTER              170 // reserved in JSON_mode_names
+  #define FX_MODE_2DCAELEMENTATY         171 // reserved in JSON_mode_names
+  #define FX_MODE_2DGAMEOFLIFE           172 // non audio
+  #define FX_MODE_2DTARTAN               173 // non audio
+  #define FX_MODE_2DPOLARLIGHTS          174 // non audio
+  #define FX_MODE_2DSWIRL                175 // audio enhanced
+  #define FX_MODE_2DLISSAJOUS            176 // non audio
+  #define FX_MODE_2DFRIZZLES             177 // non audio
+  #define FX_MODE_2DPLASMABALL           178 // non audio
+  #define FX_MODE_FLOWSTRIPE             179 // should be moved to 114
+  #define FX_MODE_2DHIPHOTIC             180 // non audio
+  #define FX_MODE_2DSINDOTS              181 // non audio
+  #define FX_MODE_2DDNASPIRAL            182 // non audio
+  #define FX_MODE_2DBLACKHOLE            183 // non audio
+  #define FX_MODE_WAVESINS               184 // should be moved to 48
+  #define FX_MODE_ROCKTAVES              185
+  #define FX_MODE_2DAKEMI                186 // audio enhanced
+  //#define FX_MODE_CUSTOMEFFECT           187 //WLEDSR Custom Effects
+
+  #define MODE_COUNT                     187
+#endif
 
 
 class WS2812FX {
@@ -280,9 +368,6 @@ class WS2812FX {
   static WS2812FX* instance;
   
   public:
-
-  // mode (effect) name and its slider control data array
-  static const char *_modeData[];
 
   // segment parameters
     typedef struct Segment { // 35 (36 in memory) bytes
@@ -519,155 +604,7 @@ class WS2812FX {
 
     WS2812FX() {
       WS2812FX::instance = this;
-      //assign each member of the _mode[] array to its respective function reference 
-      _mode[FX_MODE_STATIC]                  = &WS2812FX::mode_static;
-      _mode[FX_MODE_BLINK]                   = &WS2812FX::mode_blink;
-      _mode[FX_MODE_COLOR_WIPE]              = &WS2812FX::mode_color_wipe;
-      _mode[FX_MODE_COLOR_WIPE_RANDOM]       = &WS2812FX::mode_color_wipe_random;
-      _mode[FX_MODE_RANDOM_COLOR]            = &WS2812FX::mode_random_color;
-      _mode[FX_MODE_COLOR_SWEEP]             = &WS2812FX::mode_color_sweep;
-      _mode[FX_MODE_DYNAMIC]                 = &WS2812FX::mode_dynamic;
-      _mode[FX_MODE_RAINBOW]                 = &WS2812FX::mode_rainbow;
-      _mode[FX_MODE_RAINBOW_CYCLE]           = &WS2812FX::mode_rainbow_cycle;
-      _mode[FX_MODE_SCAN]                    = &WS2812FX::mode_scan;
-      _mode[FX_MODE_DUAL_SCAN]               = &WS2812FX::mode_dual_scan;
-      _mode[FX_MODE_FADE]                    = &WS2812FX::mode_fade;
-      _mode[FX_MODE_THEATER_CHASE]           = &WS2812FX::mode_theater_chase;
-      _mode[FX_MODE_THEATER_CHASE_RAINBOW]   = &WS2812FX::mode_theater_chase_rainbow;
-      _mode[FX_MODE_SAW]                     = &WS2812FX::mode_saw;
-      _mode[FX_MODE_TWINKLE]                 = &WS2812FX::mode_twinkle;
-      _mode[FX_MODE_DISSOLVE]                = &WS2812FX::mode_dissolve;
-      _mode[FX_MODE_DISSOLVE_RANDOM]         = &WS2812FX::mode_dissolve_random;
-      _mode[FX_MODE_SPARKLE]                 = &WS2812FX::mode_sparkle;
-      _mode[FX_MODE_FLASH_SPARKLE]           = &WS2812FX::mode_flash_sparkle;
-      _mode[FX_MODE_HYPER_SPARKLE]           = &WS2812FX::mode_hyper_sparkle;
-      _mode[FX_MODE_STROBE]                  = &WS2812FX::mode_strobe;
-      _mode[FX_MODE_STROBE_RAINBOW]          = &WS2812FX::mode_strobe_rainbow;
-      _mode[FX_MODE_MULTI_STROBE]            = &WS2812FX::mode_multi_strobe;
-      _mode[FX_MODE_BLINK_RAINBOW]           = &WS2812FX::mode_blink_rainbow;
-      _mode[FX_MODE_ANDROID]                 = &WS2812FX::mode_android;
-      _mode[FX_MODE_CHASE_COLOR]             = &WS2812FX::mode_chase_color;
-      _mode[FX_MODE_CHASE_RANDOM]            = &WS2812FX::mode_chase_random;
-      _mode[FX_MODE_CHASE_RAINBOW]           = &WS2812FX::mode_chase_rainbow;
-      _mode[FX_MODE_CHASE_FLASH]             = &WS2812FX::mode_chase_flash;
-      _mode[FX_MODE_CHASE_FLASH_RANDOM]      = &WS2812FX::mode_chase_flash_random;
-      _mode[FX_MODE_CHASE_RAINBOW_WHITE]     = &WS2812FX::mode_chase_rainbow_white;
-      _mode[FX_MODE_COLORFUL]                = &WS2812FX::mode_colorful;
-      _mode[FX_MODE_TRAFFIC_LIGHT]           = &WS2812FX::mode_traffic_light;
-      _mode[FX_MODE_COLOR_SWEEP_RANDOM]      = &WS2812FX::mode_color_sweep_random;
-      _mode[FX_MODE_RUNNING_COLOR]           = &WS2812FX::mode_running_color;
-      _mode[FX_MODE_AURORA]                  = &WS2812FX::mode_aurora;
-      _mode[FX_MODE_RUNNING_RANDOM]          = &WS2812FX::mode_running_random;
-      _mode[FX_MODE_LARSON_SCANNER]          = &WS2812FX::mode_larson_scanner;
-      _mode[FX_MODE_COMET]                   = &WS2812FX::mode_comet;
-      _mode[FX_MODE_FIREWORKS]               = &WS2812FX::mode_fireworks;
-      _mode[FX_MODE_RAIN]                    = &WS2812FX::mode_rain;
-      _mode[FX_MODE_TETRIX]                  = &WS2812FX::mode_tetrix;
-      _mode[FX_MODE_FIRE_FLICKER]            = &WS2812FX::mode_fire_flicker;
-      _mode[FX_MODE_GRADIENT]                = &WS2812FX::mode_gradient;
-      _mode[FX_MODE_LOADING]                 = &WS2812FX::mode_loading;
-      _mode[FX_MODE_POLICE]                  = &WS2812FX::mode_police;
-      _mode[FX_MODE_FAIRY]                   = &WS2812FX::mode_fairy;
-      _mode[FX_MODE_TWO_DOTS]                = &WS2812FX::mode_two_dots;
-      _mode[FX_MODE_FAIRYTWINKLE]            = &WS2812FX::mode_fairytwinkle;
-      _mode[FX_MODE_RUNNING_DUAL]            = &WS2812FX::mode_running_dual;
-      _mode[FX_MODE_HALLOWEEN]               = &WS2812FX::mode_halloween;
-      _mode[FX_MODE_TRICOLOR_CHASE]          = &WS2812FX::mode_tricolor_chase;
-      _mode[FX_MODE_TRICOLOR_WIPE]           = &WS2812FX::mode_tricolor_wipe;
-      _mode[FX_MODE_TRICOLOR_FADE]           = &WS2812FX::mode_tricolor_fade;
-      _mode[FX_MODE_BREATH]                  = &WS2812FX::mode_breath;
-      _mode[FX_MODE_RUNNING_LIGHTS]          = &WS2812FX::mode_running_lights;
-      _mode[FX_MODE_LIGHTNING]               = &WS2812FX::mode_lightning;
-      _mode[FX_MODE_ICU]                     = &WS2812FX::mode_icu;
-      _mode[FX_MODE_MULTI_COMET]             = &WS2812FX::mode_multi_comet;
-      _mode[FX_MODE_DUAL_LARSON_SCANNER]     = &WS2812FX::mode_dual_larson_scanner;
-      _mode[FX_MODE_RANDOM_CHASE]            = &WS2812FX::mode_random_chase;
-      _mode[FX_MODE_OSCILLATE]               = &WS2812FX::mode_oscillate;
-      _mode[FX_MODE_FIRE_2012]               = &WS2812FX::mode_fire_2012;
-      _mode[FX_MODE_PRIDE_2015]              = &WS2812FX::mode_pride_2015;
-      _mode[FX_MODE_BPM]                     = &WS2812FX::mode_bpm;
-      _mode[FX_MODE_JUGGLE]                  = &WS2812FX::mode_juggle;
-      _mode[FX_MODE_PALETTE]                 = &WS2812FX::mode_palette;
-      _mode[FX_MODE_COLORWAVES]              = &WS2812FX::mode_colorwaves;
-      _mode[FX_MODE_FILLNOISE8]              = &WS2812FX::mode_fillnoise8;
-      _mode[FX_MODE_NOISE16_1]               = &WS2812FX::mode_noise16_1;
-      _mode[FX_MODE_NOISE16_2]               = &WS2812FX::mode_noise16_2;
-      _mode[FX_MODE_NOISE16_3]               = &WS2812FX::mode_noise16_3;
-      _mode[FX_MODE_NOISE16_4]               = &WS2812FX::mode_noise16_4;
-      _mode[FX_MODE_COLORTWINKLE]            = &WS2812FX::mode_colortwinkle;
-      _mode[FX_MODE_LAKE]                    = &WS2812FX::mode_lake;
-      _mode[FX_MODE_METEOR]                  = &WS2812FX::mode_meteor;
-      _mode[FX_MODE_METEOR_SMOOTH]           = &WS2812FX::mode_meteor_smooth;
-      _mode[FX_MODE_RAILWAY]                 = &WS2812FX::mode_railway;
-      _mode[FX_MODE_RIPPLE]                  = &WS2812FX::mode_ripple;
-      _mode[FX_MODE_TWINKLEFOX]              = &WS2812FX::mode_twinklefox;
-      _mode[FX_MODE_TWINKLECAT]              = &WS2812FX::mode_twinklecat;
-      _mode[FX_MODE_HALLOWEEN_EYES]          = &WS2812FX::mode_halloween_eyes;
-      _mode[FX_MODE_STATIC_PATTERN]          = &WS2812FX::mode_static_pattern;
-      _mode[FX_MODE_TRI_STATIC_PATTERN]      = &WS2812FX::mode_tri_static_pattern;
-      _mode[FX_MODE_SPOTS]                   = &WS2812FX::mode_spots;
-      _mode[FX_MODE_SPOTS_FADE]              = &WS2812FX::mode_spots_fade;
-      _mode[FX_MODE_GLITTER]                 = &WS2812FX::mode_glitter;
-      _mode[FX_MODE_CANDLE]                  = &WS2812FX::mode_candle;
-      _mode[FX_MODE_STARBURST]               = &WS2812FX::mode_starburst;
-      _mode[FX_MODE_EXPLODING_FIREWORKS]     = &WS2812FX::mode_exploding_fireworks;
-      _mode[FX_MODE_BOUNCINGBALLS]           = &WS2812FX::mode_bouncing_balls;
-      _mode[FX_MODE_SINELON]                 = &WS2812FX::mode_sinelon;
-      _mode[FX_MODE_SINELON_DUAL]            = &WS2812FX::mode_sinelon_dual;
-      _mode[FX_MODE_SINELON_RAINBOW]         = &WS2812FX::mode_sinelon_rainbow;
-      _mode[FX_MODE_POPCORN]                 = &WS2812FX::mode_popcorn;
-      _mode[FX_MODE_DRIP]                    = &WS2812FX::mode_drip;
-      _mode[FX_MODE_PLASMA]                  = &WS2812FX::mode_plasma;
-      _mode[FX_MODE_PERCENT]                 = &WS2812FX::mode_percent;
-      _mode[FX_MODE_RIPPLE_RAINBOW]          = &WS2812FX::mode_ripple_rainbow;
-      _mode[FX_MODE_HEARTBEAT]               = &WS2812FX::mode_heartbeat;
-      _mode[FX_MODE_PACIFICA]                = &WS2812FX::mode_pacifica;
-      _mode[FX_MODE_CANDLE_MULTI]            = &WS2812FX::mode_candle_multi;
-      _mode[FX_MODE_SOLID_GLITTER]           = &WS2812FX::mode_solid_glitter;
-      _mode[FX_MODE_SUNRISE]                 = &WS2812FX::mode_sunrise;
-      _mode[FX_MODE_PHASED]                  = &WS2812FX::mode_phased;
-      _mode[FX_MODE_TWINKLEUP]               = &WS2812FX::mode_twinkleup;
-      _mode[FX_MODE_NOISEPAL]                = &WS2812FX::mode_noisepal;
-      _mode[FX_MODE_SINEWAVE]                = &WS2812FX::mode_sinewave;
-      _mode[FX_MODE_PHASEDNOISE]             = &WS2812FX::mode_phased_noise;
-      _mode[FX_MODE_FLOW]                    = &WS2812FX::mode_flow;
-      _mode[FX_MODE_CHUNCHUN]                = &WS2812FX::mode_chunchun;
-      _mode[FX_MODE_DANCING_SHADOWS]         = &WS2812FX::mode_dancing_shadows;
-      _mode[FX_MODE_WASHING_MACHINE]         = &WS2812FX::mode_washing_machine;
-      _mode[FX_MODE_CANDY_CANE]              = &WS2812FX::mode_candy_cane;
-      _mode[FX_MODE_BLENDS]                  = &WS2812FX::mode_blends;
-      _mode[FX_MODE_TV_SIMULATOR]            = &WS2812FX::mode_tv_simulator;
-      _mode[FX_MODE_DYNAMIC_SMOOTH]          = &WS2812FX::mode_dynamic_smooth;
-      _mode[FX_MODE_BLACK_HOLE]              = &WS2812FX::mode_2DBlackHole;
-      _mode[FX_MODE_COLORED_BURSTS]          = &WS2812FX::mode_2DColoredBursts;
-      _mode[FX_MODE_DNA]                     = &WS2812FX::mode_2Ddna;
-      _mode[FX_MODE_DNA_SPIRAL]              = &WS2812FX::mode_2DDNASpiral;
-      _mode[FX_MODE_DRIFT]                   = &WS2812FX::mode_2DDrift;
-      _mode[FX_MODE_FIRENOISE]               = &WS2812FX::mode_2Dfirenoise;
-      _mode[FX_MODE_FRIZZLES]                = &WS2812FX::mode_2DFrizzles;
-      _mode[FX_MODE_HIPNOTIC]                = &WS2812FX::mode_2DHiphotic;
-      _mode[FX_MODE_JULIA]                   = &WS2812FX::mode_2DJulia;
-      _mode[FX_MODE_GAMEOFLIFE]              = &WS2812FX::mode_2Dgameoflife;
-      _mode[FX_MODE_LISSAJOUS]               = &WS2812FX::mode_2DLissajous;
-      _mode[FX_MODE_MATRIX]                  = &WS2812FX::mode_2Dmatrix;
-      _mode[FX_MODE_MEATBALS]                = &WS2812FX::mode_2Dmetaballs;
-      _mode[FX_MODE_2DNOISE]                 = &WS2812FX::mode_2Dnoise;
-      _mode[FX_MODE_PLASMA_BALL]             = &WS2812FX::mode_2DPlasmaball;
-      _mode[FX_MODE_POLAR_LIGHTS]            = &WS2812FX::mode_2DPolarLights;
-      _mode[FX_MODE_PULSER]                  = &WS2812FX::mode_2DPulser;
-      _mode[FX_MODE_SINDOTS]                 = &WS2812FX::mode_2DSindots;
-      _mode[FX_MODE_SQUARED_SWIRL]           = &WS2812FX::mode_2Dsquaredswirl;
-      _mode[FX_MODE_SUN_RADIATION]           = &WS2812FX::mode_2DSunradiation;
-      _mode[FX_MODE_TARTAN]                  = &WS2812FX::mode_2Dtartan;
-      _mode[FX_MODE_WAVERLY]                 = &WS2812FX::mode_2DWaverly;
-      _mode[FX_MODE_AKEMI]                   = &WS2812FX::mode_2DAkemi;
-      _mode[FX_MODE_SPACESHIPS]              = &WS2812FX::mode_2Dspaceships;
-      _mode[FX_MODE_CRAZYBEES]               = &WS2812FX::mode_2Dcrazybees;
-      _mode[FX_MODE_GHOST_RIDER]             = &WS2812FX::mode_2Dghostrider;
-      _mode[FX_MODE_BLOBS]                   = &WS2812FX::mode_2Dfloatingblobs;
-      _mode[FX_MODE_SCROLL_TEXT]             = &WS2812FX::mode_2Dscrollingtext;
-      _mode[FX_MODE_DRFIT_ROSE]              = &WS2812FX::mode_2Ddriftrose;
-
+      setupEffectData();
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
       targetPalette = CloudColors_p;
@@ -681,7 +618,7 @@ class WS2812FX {
       finalizeInit(),
       service(void),
       blur(uint8_t),
-      fill(uint32_t),
+      fill(uint32_t c, uint8_t seg=255),
       fade_out(uint8_t r),
       fadeToBlackBy(uint8_t fadeBy),
       setMode(uint8_t segid, uint8_t m),
@@ -701,19 +638,20 @@ class WS2812FX {
       resetSegments(),
       makeAutoSegments(bool forceReset = false),
       fixInvalidSegments(),
-      setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
+      setPixelColor(int n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       setPixelColor(float i, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0, bool aa = false),
       show(void),
 			setTargetFps(uint8_t fps),
       deserializeMap(uint8_t n=0);
 
-    // satisfy compiler by providing multiple casts
-    inline void setPixelColor(int n, uint32_t c)                         {setPixelColor(n, byte(c>>16), byte(c>>8), byte(c), byte(c>>24));}
-    inline void setPixelColor(int n, byte r, byte g, byte b, byte w = 0) {setPixelColor(n, r, g, b, w);}
-    inline void setPixelColor(uint16_t n, uint32_t c)                    {setPixelColor(n, byte(c>>16), byte(c>>8), byte(c), byte(c>>24));}
-    inline void setPixelColor(uint16_t n, CRGB c)                        {setPixelColor(n, c.red, c.green, c.blue);}
-    inline void setPixelColor(float i, uint32_t c, bool aa = false)      {setPixelColor(i, byte(c>>16), byte(c>>8), byte(c), byte(c>>24), aa);}
-    inline void setPixelColor(float i, CRGB c, bool aa = false)          {setPixelColor(i, c.red, c.green, c.blue, 0, aa);}
+    void addEffect(uint8_t id, mode_ptr mode_fn, const char *mode_name) { if (id < _modeCount) { _mode[id] = mode_fn; _modeData[id] = mode_name;} }
+    void setupEffectData(void); // defined in FX.cpp
+
+    // outsmart the compiler :) by correctly overloading
+    inline void setPixelColor(int n, uint32_t c)                 {setPixelColor(n, byte(c>>16), byte(c>>8), byte(c), byte(c>>24));}
+    inline void setPixelColor(int n, CRGB c)                     {setPixelColor(n, c.red, c.green, c.blue);}
+    inline void setPixelColor(float i, uint32_t c, bool aa=true) {setPixelColor(i, byte(c>>16), byte(c>>8), byte(c), byte(c>>24), aa);}
+    inline void setPixelColor(float i, CRGB c, bool aa=true)     {setPixelColor(i, c.red, c.green, c.blue, 0, aa);}
 
     bool
       gammaCorrectBri = false,
@@ -730,7 +668,6 @@ class WS2812FX {
       milliampsPerLed = 55,
       cctBlending = 0,
       getBrightness(void),
-      getModeCount(void),
       getPaletteCount(void),
       getMaxSegments(void),
       getActiveSegmentsNum(void),
@@ -743,6 +680,7 @@ class WS2812FX {
       gamma8_cal(uint8_t, float),
       get_random_wheel_index(uint8_t);
 
+    inline uint8_t getModeCount() { return _modeCount; }
     inline uint8_t sin_gap(uint16_t in) {
       if (in & 0x100) return 0;
       return sin8(in + 192); // correct phase shift of sine so that it starts and stops at 0
@@ -772,6 +710,12 @@ class WS2812FX {
       gamma32(uint32_t),
       getLastShow(void),
       getPixelColor(uint16_t);
+
+    const char *
+      getModeData(uint8_t id = 0) { return id<_modeCount ? _modeData[id] : nullptr; }
+
+    const char **
+      getModeDataSrc(void) { return _modeData; }
 
     WS2812FX::Segment
       &getSegment(uint8_t n),
@@ -901,7 +845,11 @@ class WS2812FX {
       mode_candy_cane(void),
       mode_blends(void),
       mode_tv_simulator(void),
-      mode_dynamic_smooth(void);
+      mode_dynamic_smooth(void),
+      // non-audio transfered from WLED-SR
+      mode_perlinmove(void),
+      mode_wavesins(void),
+      mode_FlowStripe(void);
 
 // 2D support (panels)
     bool
@@ -931,9 +879,10 @@ class WS2812FX {
 
     void
       setUpMatrix(),
-      setPixelColorXY(uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
+      setPixelColorXY(int x, int y, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       setPixelColorXY(float x, float y, byte r, byte g, byte b, byte w = 0, bool aa = false),
       blendPixelColorXY(uint16_t x, uint16_t y, uint32_t color, uint8_t blend),
+      addPixelColorXY(uint16_t x, uint16_t y, uint32_t color),
       blur1d(CRGB* leds, fract8 blur_amount),
       blur1d(uint16_t i, bool vertical, fract8 blur_amount, CRGB* leds=nullptr), // 1D box blur (with weight)
       blur2d(CRGB* leds, fract8 blur_amount),
@@ -948,15 +897,16 @@ class WS2812FX {
       nscale8(CRGB* leds, uint8_t scale),
       setPixels(CRGB* leds),
       drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c, CRGB *leds = nullptr),
-      drawCharacter(unsigned char chr, int16_t x, int16_t y, CRGB color, CRGB *leds = nullptr),
+      drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB color, CRGB *leds = nullptr),
       wu_pixel(CRGB *leds, uint32_t x, uint32_t y, CRGB c);
 
-    inline void setPixelColorXY(uint16_t x, uint16_t y, uint32_t c) { setPixelColorXY(x, y, byte(c>>16), byte(c>>8), byte(c), byte(c>>24)); }
-    inline void setPixelColorXY(uint16_t x, uint16_t y, CRGB c)     { setPixelColorXY(x, y, c.red, c.green, c.blue); }
-    inline void setPixelColorXY(float x, float y, uint32_t c, bool aa) { setPixelColorXY(x, y, byte(c>>16), byte(c>>8), byte(c), byte(c>>24), aa); }
-    inline void setPixelColorXY(float x, float y, CRGB c, bool aa)     { setPixelColorXY(x, y, c.red, c.green, c.blue, 0, aa); }
+    // outsmart the compiler :) by correctly overloading
+    inline void setPixelColorXY(int x, int y, uint32_t c) { setPixelColorXY(x, y, byte(c>>16), byte(c>>8), byte(c), byte(c>>24)); }
+    inline void setPixelColorXY(int x, int y, CRGB c)     { setPixelColorXY(x, y, c.red, c.green, c.blue, 0); }
+    inline void setPixelColorXY(float x, float y, uint32_t c, bool aa=true) { setPixelColorXY(x, y, byte(c>>16), byte(c>>8), byte(c), byte(c>>24), aa); }
+    inline void setPixelColorXY(float x, float y, CRGB c, bool aa=true)     { setPixelColorXY(x, y, c.red, c.green, c.blue, 0, aa); }
     inline void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint32_t c) { drawLine(x0, y0, x1, y1, CRGB(byte(c>>16), byte(c>>8), byte(c))); }
-    inline void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint32_t c) { drawCharacter(chr, x, y, CRGB(byte(c>>16), byte(c>>8), byte(c))); }
+    inline void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t c) { drawCharacter(chr, x, y, w, h, CRGB(byte(c>>16), byte(c>>8), byte(c))); }
 
     uint16_t
       XY(uint16_t, uint16_t),
@@ -965,31 +915,10 @@ class WS2812FX {
     uint32_t
       getPixelColorXY(uint16_t, uint16_t);
 
-  // 2D modes
+// end 2D support
+
+    // 2D modes
     uint16_t
-      mode_2DBlackHole(void),
-      mode_2DColoredBursts(void),
-      mode_2Ddna(void),
-      mode_2DDNASpiral(void),
-      mode_2DDrift(void),
-      mode_2Dfirenoise(void),
-      mode_2DFrizzles(void),
-      mode_2Dgameoflife(void),
-      mode_2DHiphotic(void),
-      mode_2DJulia(void),
-      mode_2DLissajous(void),
-      mode_2Dmatrix(void),
-      mode_2Dmetaballs(void),
-      mode_2Dnoise(void),
-      mode_2DPlasmaball(void),
-      mode_2DPolarLights(void),
-      mode_2DPulser(void),
-      mode_2DSindots(void),
-      mode_2Dsquaredswirl(void),
-      mode_2DSunradiation(void),
-      mode_2Dtartan(void),
-      mode_2DWaverly(void),
-      mode_2DAkemi(void),
       mode_2Dspaceships(void),
       mode_2Dcrazybees(void),
       mode_2Dghostrider(void),
@@ -997,7 +926,104 @@ class WS2812FX {
       mode_2Dscrollingtext(void),
       mode_2Ddriftrose(void);
 
-// end 2D support
+    // WLED-SR modes
+#ifndef USERMOD_AUDIOREACTIVE
+    uint16_t
+      mode_2Dnoise(void),
+      mode_2Dfirenoise(void),
+      mode_2Dsquaredswirl(void),
+      mode_2Ddna(void),
+      mode_2Dmatrix(void),
+      mode_2Dmetaballs(void),
+      mode_2DPulser(void),
+      mode_2Dgameoflife(void),
+      mode_2Dtartan(void),
+      mode_2DPolarLights(void),
+      mode_2DSwirl(void),
+      mode_2DLissajous(void),
+      mode_2DFrizzles(void),
+      mode_2DPlasmaball(void),
+      mode_2DHiphotic(void),
+      mode_2DSindots(void),
+      mode_2DDNASpiral(void),
+      mode_2DBlackHole(void),
+      mode_2DSunradiation(void),
+      mode_2DWaverly(void),
+      mode_2DDrift(void),
+      mode_2DColoredBursts(void),
+      mode_2DJulia(void),
+      mode_gravimeter(void),
+      mode_gravcenter(void),
+      mode_gravcentric(void),
+      mode_juggles(void),
+      mode_matripix(void),
+      mode_midnoise(void),
+      mode_noisemeter(void),
+      mode_noisefire(void),
+      mode_pixelwave(void),
+      mode_plasmoid(void),
+      mode_puddles(void),
+      mode_puddlepeak(void),
+      mode_ripplepeak(void),
+      mode_2DAkemi(void);
+#else
+    uint16_t
+      GEQ_base(bool centered_horizontal, bool centered_vertical, bool color_vertical),
+      mode_pixels(void),
+      mode_pixelwave(void),
+      mode_juggles(void),
+      mode_matripix(void),
+      mode_gravimeter(void),
+      mode_plasmoid(void),
+      mode_puddles(void),
+      mode_midnoise(void),
+      mode_noisemeter(void),
+      mode_freqwave(void),
+      mode_freqmatrix(void),
+      mode_2DGEQ(void),
+      mode_waterfall(void),
+      mode_freqpixels(void),
+      mode_binmap(void),
+      mode_noisefire(void),
+      mode_puddlepeak(void),
+      mode_noisemove(void),
+      mode_2Dnoise(void),
+      mode_ripplepeak(void),
+      mode_2Dfirenoise(void),
+      mode_2Dsquaredswirl(void),
+      //mode_2Dfire2012(void),
+      mode_2Ddna(void),
+      mode_2Dmatrix(void),
+      mode_2Dmetaballs(void),
+      mode_freqmap(void),
+      mode_gravcenter(void),
+      mode_gravcentric(void),
+      mode_gravfreq(void),
+      mode_DJLight(void),
+      mode_2DFunkyPlank(void),
+      mode_2DCenterBars(void),
+      mode_2DPulser(void),
+      mode_blurz(void),
+      mode_2Dgameoflife(void),
+      mode_2Dtartan(void),
+      mode_2DPolarLights(void),
+      mode_2DSwirl(void),
+      mode_2DLissajous(void),
+      mode_2DFrizzles(void),
+      mode_2DPlasmaball(void),
+      mode_2DHiphotic(void),
+      mode_2DSindots(void),
+      mode_2DDNASpiral(void),
+      mode_2DBlackHole(void),
+      mode_rocktaves(void),
+      mode_2DAkemi(void),
+      mode_2DSunradiation(void),
+      mode_2DWaverly(void),
+      mode_2DDrift(void),
+      mode_2DColoredBursts(void),
+      mode_2DJulia(void),
+      mode_customEffect(void);     //WLEDSR Custom Effects
+#endif
 
   private:
     uint32_t crgb_to_col(CRGB fastled);
@@ -1020,7 +1046,9 @@ class WS2812FX {
       _hasWhiteChannel = false,
       _triggered;
 
+    uint8_t _modeCount = MODE_COUNT;
     mode_ptr _mode[MODE_COUNT]; // SRAM footprint: 4 bytes per element
+    const char *_modeData[MODE_COUNT];// mode (effect) name and its slider control data array
 
     show_callback _callback = nullptr;
 
