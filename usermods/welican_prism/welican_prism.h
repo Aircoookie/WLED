@@ -310,7 +310,7 @@ class WelicanPrism : public Usermod {
      */
     void addToConfig(JsonObject& root)
     {
-      JsonObject top = root.createNestedObject("exampleUsermod");
+      JsonObject top = root.createNestedObject("Welican Prism");
       top["great"] = userVar0; //save these vars persistently whenever settings are saved
       top["testBool"] = testBool;
       top["testInt"] = testInt;
@@ -344,7 +344,7 @@ class WelicanPrism : public Usermod {
       // default settings values could be set here (or below using the 3-argument getJsonValue()) instead of in the class definition or constructor
       // setting them inside readFromConfig() is slightly more robust, handling the rare but plausible use case of single value being missing after boot (e.g. if the cfg.json was manually edited and a value was removed)
 
-      JsonObject top = root["exampleUsermod"];
+      JsonObject top = root["Welican Prism"];
 
       bool configComplete = !top.isNull();
 
