@@ -47,12 +47,15 @@ private:
     bool     blendColors      = true;
     int16_t  secondsTrail     = 0;
 
+    // runtime
+    bool     initDone         = false;
+
     void validateAndUpdate() {
         mainSegment.validateAndUpdate();
         secondsSegment.validateAndUpdate();
     }
 
-    uint16_t adjustToSegment(double progress, Segment const& segment) {
+    int16_t adjustToSegment(double progress, Segment const& segment) {
         int16_t led = segment.centerLed + progress * segment.size;
         return led > segment.lastLed
                 ? segment.firstLed + led - segment.lastLed - 1
@@ -64,7 +67,7 @@ private:
             strip.setPixelColor(n, c);
         } else {
             uint32_t oldC = strip.getPixelColor(n);
-            strip.setPixelColor(n, qadd8(R(oldC), R(c)), qadd8(G(oldC), G(c)), qadd8(B(oldC), B(c)), qadd8(W(oldC), W(c)));
+            strip.setPixelColor(n, qadd32(oldC, c));
         }
     }
 
@@ -87,8 +90,58 @@ private:
         }
     }
 
+    static inline uint32_t qadd32(uint32_t c1, uint32_t c2) {
+        return RGBW32(
+            qadd8(R(c1), R(c2)), 
+            qadd8(G(c1), G(c2)), 
+            qadd8(B(c1), B(c2)), 
+            qadd8(W(c1), W(c2))
+        );
+    }
+
+    static inline uint32_t scale32(uint32_t c, fract8 scale) {
+        return RGBW32(
+            scale8(R(c), scale),
+            scale8(G(c), scale),
+            scale8(B(c), scale),
+            scale8(W(c), scale)
+        );
+    }
+
+    static inline uint32_t gamma32(uint32_t c) {
+        return RGBW32(
+            strip.gamma8(R(c)),
+            strip.gamma8(G(c)),
+            strip.gamma8(B(c)),
+            strip.gamma8(W(c))
+        );
+    }
+
+    static inline int16_t dec(int16_t n, int16_t i, Segment const& seg) {
+        return n - seg.firstLed >= i
+                ? n - i
+                : seg.lastLed - seg.firstLed - i + n + 1;
+    }
+
+    static inline int16_t inc(int16_t n, int16_t i, Segment const& seg) {
+        int16_t r = n + i;
+        if (r > seg.lastLed) {
+            return seg.firstLed + (n - seg.lastLed + 1);
+        }
+        return r;
+    }
+
 public:
     AnalogClockUsermod() {
+    }
+
+    void setup() override {
+        initDone = true;
+        validateAndUpdate();
+    }
+
+    void loop() override {
+        strip.trigger();
     }
 
     void handleOverlayDraw() override {
@@ -96,19 +149,42 @@ public:
             return;
         }
 
-        double secondP = second(localTime) / 60.0;
-        double minuteP = minute(localTime) / 60.0;
-        double hourP = (hour(localTime) % 12) / 12.0 + minuteP / 12.0;
+        auto time = toki.getTime();
+        double secondP = second(time.sec) / 60.0;
+        double minuteP = minute(time.sec) / 60.0;
+        double hourP = (hour(time.sec) % 12) / 12.0 + minuteP / 12.0;
 
         if (secondsEnabled) {
-            uint16_t secondLed = adjustToSegment(secondP, secondsSegment);
-            setPixelColor(secondLed, secondColor);
+            int16_t secondLed = adjustToSegment(secondP, secondsSegment);
+            // setPixelColor(secondLed, secondColor);
 
-            for (uint16_t i = 1; i < secondsTrail + 1; ++i) {
-                uint16_t trailLed = i <= secondLed ? secondLed - i : secondsSegment.lastLed - i + 1;
-                uint8_t trailBright = 255 / (secondsTrail + 1) * (secondsTrail - i + 1);
-                setPixelColor(trailLed, trailBright << 16);
+            // for (uint16_t i = 1; i < secondsTrail + 1; ++i) {
+            //     uint16_t trailLed = dec(secondLed, i, secondsSegment);
+            //     uint8_t trailBright = 255 / (secondsTrail + 1) * (secondsTrail - i + 1);
+            //     setPixelColor(trailLed, gamma32(scale32(secondColor, trailBright)));
+            // }
+
+            uint32_t ms = time.ms % 1000;
+            {
+                uint8_t b = (cos8(ms * 64 / 1000) - 128) * 2;
+                setPixelColor(secondLed, gamma32(scale32(secondColor, b)));
             }
+            {
+                uint8_t b = (sin8(ms * 64 / 1000) - 128) * 2;
+                setPixelColor(inc(secondLed, 1, secondsSegment), gamma32(scale32(secondColor, b)));
+            }
+            // {
+            //     uint8_t x = ((ms + 250) % 1000) / 2;
+            //     uint8_t b = cos8(x * 256 / 1000);
+            //     uint16_t l = dec(secondLed, 1, secondsSegment);
+            //     setPixelColor(l, gamma32(scale32(secondColor, b)));
+            // }
+            // {
+            //     uint32_t x = ((ms + 500) % 1000) / 2;
+            //     uint8_t b = cos8(x * 256 / 1000);
+            //     uint16_t l = dec(secondLed, 2, secondsSegment);
+            //     setPixelColor(l, gamma32(scale32(secondColor, b)));
+            // }
         }
 
         setPixelColor(adjustToSegment(minuteP, mainSegment), minuteColor);
@@ -154,7 +230,9 @@ public:
         configComplete &= getJsonValue(top["Seconds Trail (0-99)"], secondsTrail, 0);
         configComplete &= getJsonValue(top["Blend Colors"], blendColors, true);
 
-        validateAndUpdate();
+        if (initDone) {
+            validateAndUpdate();
+        }
 
         return configComplete;
     }
