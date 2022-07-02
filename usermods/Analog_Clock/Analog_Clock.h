@@ -4,6 +4,8 @@
 /*
  * Usermod for analog clock
  */
+extern Timezone* tz;
+
 class AnalogClockUsermod : public Usermod {
 private:
     struct Segment {
@@ -150,9 +152,10 @@ public:
         }
 
         auto time = toki.getTime();
-        double secondP = second(time.sec) / 60.0;
-        double minuteP = minute(time.sec) / 60.0;
-        double hourP = (hour(time.sec) % 12) / 12.0 + minuteP / 12.0;
+        auto localSec = tz ? tz->toLocal(time.sec) : time.sec;
+        double secondP = second(localSec) / 60.0;
+        double minuteP = minute(localSec) / 60.0;
+        double hourP = (hour(localSec) % 12) / 12.0 + minuteP / 12.0;
 
         if (secondsEnabled) {
             int16_t secondLed = adjustToSegment(secondP, secondsSegment);
