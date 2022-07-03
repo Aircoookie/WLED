@@ -166,7 +166,7 @@ void WS2812FX::service() {
         }
         handle_palette();
 
-        delay = (this->*_mode[SEGMENT.mode])(); //effect function
+        delay = (this->*_mode[SEGMENT.mode])(); // effect function (NOTE: may add SEGMENT and SEGENV to parameters)
         if (SEGMENT.mode != FX_MODE_HALLOWEEN_EYES) SEGENV.call++;
       }
 

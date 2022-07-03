@@ -531,6 +531,16 @@ button {
 	z-index: -2;
 }
 
+#info .slider {
+	max-width: 200px;
+	min-width: 145px;
+	float: right;
+	margin: 0;
+}
+#info .sliderwrap {
+	width: 200px;
+}
+
 #info table, #nodes table {
 	table-layout: fixed;
 	width: 100%;
@@ -1377,7 +1387,7 @@ TD .checkmark, TD .radiomark {
 		width: 145px;
 	}
 	#info div, #nodes div {
-		width: 320px;
+		max-width: 320px;
 	}
 }
 

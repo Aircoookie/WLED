@@ -9,8 +9,10 @@ The usermod **does not** provide effects or draws anything to LED strip/matrix.
 
 ## Installation 
 
-Add `-D USERMOD_AUDIOREACTIVE` to your PlatformIO environment as well as `arduinoFFT @ 1.5.6` to your `lib_deps`.
+Add `-D USERMOD_AUDIOREACTIVE` to your PlatformIO environment as well as `arduinoFFT` to your `lib_deps`.
 If you are not using PlatformIO (which you should) try adding `#define USERMOD_AUDIOREACTIVE` to *my_config.h* and make sure you have _arduinoFFT_ library downloaded and installed.
+
+Customised _arduinoFFT_ library for use with this usermod can be found at https://github.com/blazoncek/arduinoFFT.git
 
 ## Configuration
 

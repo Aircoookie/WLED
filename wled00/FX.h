@@ -327,7 +327,7 @@
   #define FX_MODE_GRAVFREQ               158
   #define FX_MODE_DJLIGHT                159
   #define FX_MODE_2DFUNKYPLANK           160
-  #define FX_MODE_2DCENTERBARS           161 // obsolete by X & Y mirroring
+  //#define FX_MODE_2DCENTERBARS           161 // obsolete by X & Y mirroring
   #define FX_MODE_2DPULSER               162 // non audio
   #define FX_MODE_BLURZ                  163
   #define FX_MODE_2DDRIFT                164 // non audio
@@ -968,7 +968,6 @@ class WS2812FX {
       mode_2DAkemi(void);
 #else
     uint16_t
-      GEQ_base(bool centered_horizontal, bool centered_vertical, bool color_vertical),
       mode_pixels(void),
       mode_pixelwave(void),
       mode_juggles(void),
@@ -991,7 +990,6 @@ class WS2812FX {
       mode_ripplepeak(void),
       mode_2Dfirenoise(void),
       mode_2Dsquaredswirl(void),
-      //mode_2Dfire2012(void),
       mode_2Ddna(void),
       mode_2Dmatrix(void),
       mode_2Dmetaballs(void),
@@ -1001,7 +999,6 @@ class WS2812FX {
       mode_gravfreq(void),
       mode_DJLight(void),
       mode_2DFunkyPlank(void),
-      mode_2DCenterBars(void),
       mode_2DPulser(void),
       mode_blurz(void),
       mode_2Dgameoflife(void),
@@ -1047,8 +1044,9 @@ class WS2812FX {
       _triggered;
 
     uint8_t _modeCount = MODE_COUNT;
+    // TODO: allocate memory using new or malloc()
     mode_ptr _mode[MODE_COUNT]; // SRAM footprint: 4 bytes per element
-    const char *_modeData[MODE_COUNT];// mode (effect) name and its slider control data array
+    const char *_modeData[MODE_COUNT]; // mode (effect) name and its slider control data array
 
     show_callback _callback = nullptr;
 
