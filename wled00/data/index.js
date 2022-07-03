@@ -605,8 +605,22 @@ function parseInfo(i) {
 	mh = i.leds.matrix ? i.leds.matrix.h : 0;
 	isM = mw>0 && mh>0;
 	if (!isM) hideModes("2D ");
+	else      gId('buttonSr').classList.add("hide"); // peek does not work in 2D
 	if (!i.u || !i.u.AudioReactive) { /*hideModes("♪ ");*/ hideModes("♫ "); }	// hide /*audio*/ frequency reactive effects
 }
+
+//https://stackoverflow.com/questions/2592092/executing-script-elements-inserted-with-innerhtml
+//var setInnerHTML = function(elm, html) {
+//	elm.innerHTML = html;
+//	Array.from(elm.querySelectorAll("script")).forEach( oldScript => {
+//	  const newScript = document.createElement("script");
+//	  Array.from(oldScript.attributes)
+//		.forEach( attr => newScript.setAttribute(attr.name, attr.value) );
+//	  newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+//	  oldScript.parentNode.replaceChild(newScript, oldScript);
+//	});
+//}
+//setInnerHTML(obj, html);
 
 function populateInfo(i)
 {
@@ -645,6 +659,11 @@ ${inforow("Filesystem",i.fs.u + "/" + i.fs.t + " kB (" +Math.round(i.fs.u*100/i.
 ${inforow("Environment",i.arch + " " + i.core + " (" + i.lwip + ")")}
 </table>`;
 	gId('kv').innerHTML = cn;
+	//  update all sliders in Info
+	for (let sd of (gId('kv').getElementsByClassName('sliderdisplay')||[])) {
+		let s = sd.previousElementSibling;
+		if (s) updateTrail(s);
+	}
 }
 
 function populateSegments(s)
@@ -1346,15 +1365,16 @@ function setSliderAndColorControl(idx, applyDef=false)
 			else if (i==1) btn.innerHTML = "Bg";
 			else btn.innerHTML = "Cs";
 			hide = false;
+			if (!cslCnt) selectSlot(i); // select 1st displayed slot
 			cslCnt++;
 		} else if (!controlDefined /*|| paOnOff.length>0*/) { // if no controls then all buttons should be shown for color 1..3
 			btn.style.display = "inline";
 			btn.innerHTML = `${i+1}`;
 			hide = false;
+			if (!cslCnt) selectSlot(i); // select 1st displayed slot
 			cslCnt++;
 		} else {
 			btn.style.display = "none";
-			if (i>0 && csel==i) selectSlot(0);
 		}
 	}
 	gId("cslLabel").innerHTML = cslLabel;

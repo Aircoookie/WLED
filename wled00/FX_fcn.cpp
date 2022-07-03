@@ -166,7 +166,7 @@ void WS2812FX::service() {
         }
         handle_palette();
 
-        delay = (this->*_mode[SEGMENT.mode])(); //effect function
+        delay = (this->*_mode[SEGMENT.mode])(); // effect function (NOTE: may add SEGMENT and SEGENV to parameters)
         if (SEGMENT.mode != FX_MODE_HALLOWEEN_EYES) SEGENV.call++;
       }
 
@@ -211,7 +211,7 @@ void /*IRAM_ATTR*/ WS2812FX::setPixelColor(float i, byte r, byte g, byte b, byte
   }
 }
 
-void IRAM_ATTR WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
+void IRAM_ATTR WS2812FX::setPixelColor(int i, byte r, byte g, byte b, byte w)
 {
   uint8_t segIdx = SEGLEN ? _segment_index : _mainSegment;
   if (isMatrix && SEGLEN) {
