@@ -521,14 +521,15 @@ uint8_t WS2812FX::getActiveSegmentsNum(void) {
 
 uint32_t WS2812FX::getPixelColor(uint16_t i)
 {
-  if (isMatrix) return getPixelColorXY(i, 0);
+  if (isMatrix) return getPixelColorXY(i%matrixWidth, i/matrixWidth); // compatibility w/ non-effect fn
 
   // get physical pixel
-  i = i * SEGMENT.groupLength();;
-  if (SEGMENT.getOption(SEG_OPTION_REVERSED)) {
-    if (SEGMENT.getOption(SEG_OPTION_MIRROR)) i = (SEGMENT.length() - 1) / 2 - i;  //only need to index half the pixels
-    else                                      i = (SEGMENT.length() - 1) - i;
-  }
+  if (SEGMENT.getOption(SEG_OPTION_REVERSED)) i = SEGMENT.virtualLength() - i - 1;
+  i *= SEGMENT.groupLength();
+  //if (SEGMENT.getOption(SEG_OPTION_REVERSED)) {
+  //  if (SEGMENT.getOption(SEG_OPTION_MIRROR)) i = (SEGMENT.length() - 1) / 2 - i;  //only need to index half the pixels
+  //  else                                      i = (SEGMENT.length() - 1) - i;
+  //}
   i += SEGMENT.start;
 
   if (SEGLEN) {

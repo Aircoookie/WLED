@@ -135,7 +135,7 @@ uint16_t IRAM_ATTR WS2812FX::get2DPixelIndex(uint16_t x, uint16_t y, uint8_t seg
   return ((_segments[seg].startY + y) * matrixWidth) + _segments[seg].start + x;
 }
 
-void IRAM_ATTR WS2812FX::setPixelColorXY(uint16_t x, uint16_t y, byte r, byte g, byte b, byte w)
+void IRAM_ATTR WS2812FX::setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w)
 {
   if (!isMatrix) return; // not a matrix set-up
 
