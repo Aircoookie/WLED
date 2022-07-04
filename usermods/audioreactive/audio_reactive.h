@@ -80,6 +80,12 @@ static float    multAgc = 1.0f;                 // sample * multAgc = sampleAgc.
 ////////////////////
 // Begin FFT Code //
 ////////////////////
+#ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
+// lib_deps += https://github.com/kosme/arduinoFFT#develop @ 1.9.2
+#define FFT_SPEED_OVER_PRECISION     // enables use of reciprocals (1/x etc), and an a few other speedups
+#define FFT_SQRT_APPROXIMATION       // enables "quake3" style inverse sqrt
+//#define sqrt(x) sqrtf(x)             // little hack that reduces FFT time by 50% on ESP32 (as alternative to FFT_SQRT_APPROXIMATION)
+#endif
 #include "arduinoFFT.h"
 
 // FFT Variables
@@ -92,6 +98,10 @@ static float FFT_Magnitude = 0.0f;
 static float vReal[samplesFFT];
 static float vImag[samplesFFT];
 static float fftBin[samplesFFT];
+
+#ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
+static float windowWeighingFactors[samplesFFT];
+#endif
 
 // Try and normalize fftBin values to a max of 4096, so that 4096/16 = 256.
 // Oh, and bins 0,1,2 are no good, so we'll zero them out.
@@ -114,7 +124,12 @@ static uint8_t linearNoise[16] = { 34, 28, 26, 25, 20, 12, 9, 6, 4, 4, 3, 2, 2, 
 static float fftResultPink[16] = { 1.70f, 1.71f, 1.73f, 1.78f, 1.68f, 1.56f, 1.55f, 1.63f, 1.79f, 1.62f, 1.80f, 2.06f, 2.47f, 3.35f, 6.83f, 9.55f };
 
 // Create FFT object
+#ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
+static ArduinoFFT<float> FFT = ArduinoFFT<float>( vReal, vImag, samplesFFT, SAMPLE_RATE, windowWeighingFactors);
+#else
 static arduinoFFT FFT = arduinoFFT(vReal, vImag, samplesFFT, SAMPLE_RATE);
+#endif
+
 static TaskHandle_t FFT_Task;
 
 float fftAddAvg(int from, int to) {
@@ -180,6 +195,12 @@ void FFTcode(void * parameter)
     micDataSm = (uint16_t)maxSample1;
     micDataReal = maxSample1;
 
+#ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
+    FFT.dcRemoval();                                            // remove DC offset
+    FFT.windowing( FFTWindow::Flat_top, FFTDirection::Forward); // Weigh data
+    FFT.compute( FFTDirection::Forward );                       // Compute FFT
+    FFT.complexToMagnitude();                                   // Compute magnitudes
+#else
     FFT.DCRemoval(); // let FFT lib remove DC component, so we don't need to care about this in getSamples()
 
     //FFT.Windowing( FFT_WIN_TYP_HAMMING, FFT_FORWARD );        // Weigh data - standard Hamming window
@@ -188,7 +209,7 @@ void FFTcode(void * parameter)
     FFT.Windowing( FFT_WIN_TYP_FLT_TOP, FFT_FORWARD );          // Flat Top Window - better amplitude accuracy
     FFT.Compute( FFT_FORWARD );                             // Compute FFT
     FFT.ComplexToMagnitude();                               // Compute magnitudes
-
+#endif
     //
     // vReal[3 .. 255] contain useful data, each a 20Hz interval (60Hz - 5120Hz).
     // There could be interesting data at bins 0 to 2, but there are too many artifacts.
@@ -222,7 +243,11 @@ void FFTcode(void * parameter)
     xtemp[23] = vReal[samplesFFT-1]; vReal[samplesFFT-1] = 0.0f;
 #endif
 
+#ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
+    FFT.majorPeak(FFT_MajorPeak, FFT_Magnitude);      // let the effects know which freq was most dominant
+#else
     FFT.MajorPeak(&FFT_MajorPeak, &FFT_Magnitude);          // let the effects know which freq was most dominant
+#endif
 
 #ifdef MAJORPEAK_SUPPRESS_NOISE
     // dirty hack: limit suppressed channel intensities to FFT_Magnitude
