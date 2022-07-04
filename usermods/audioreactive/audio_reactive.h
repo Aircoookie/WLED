@@ -51,17 +51,17 @@ static uint8_t audioSyncEnabled = 0;          // bit field: bit 0 - send, bit 1 
 //  Note: in C++, "const" implies "static" - no need to explicitly declare everything as "static const"
 // 
 #define AGC_NUM_PRESETS 3 // AGC presets:          normal,   vivid,    lazy
-const float agcSampleDecay[AGC_NUM_PRESETS]  = { 0.9994f, 0.9985f, 0.9997f}; // decay factor for sampleMax, in case the current sample is below sampleMax
+const double agcSampleDecay[AGC_NUM_PRESETS]  = { 0.9994f, 0.9985f, 0.9997f}; // decay factor for sampleMax, in case the current sample is below sampleMax
 const float agcZoneLow[AGC_NUM_PRESETS]      = {      32,      28,      36}; // low volume emergency zone
 const float agcZoneHigh[AGC_NUM_PRESETS]     = {     240,     240,     248}; // high volume emergency zone
 const float agcZoneStop[AGC_NUM_PRESETS]     = {     336,     448,     304}; // disable AGC integrator if we get above this level
 const float agcTarget0[AGC_NUM_PRESETS]      = {     112,     144,     164}; // first AGC setPoint -> between 40% and 65%
 const float agcTarget0Up[AGC_NUM_PRESETS]    = {      88,      64,     116}; // setpoint switching value (a poor man's bang-bang)
 const float agcTarget1[AGC_NUM_PRESETS]      = {     220,     224,     216}; // second AGC setPoint -> around 85%
-const float agcFollowFast[AGC_NUM_PRESETS]   = { 1/192.f, 1/128.f, 1/256.f}; // quickly follow setpoint - ~0.15 sec
-const float agcFollowSlow[AGC_NUM_PRESETS]   = {1/6144.f,1/4096.f,1/8192.f}; // slowly follow setpoint  - ~2-15 secs
-const float agcControlKp[AGC_NUM_PRESETS]    = {    0.6f,    1.5f,   0.65f}; // AGC - PI control, proportional gain parameter
-const float agcControlKi[AGC_NUM_PRESETS]    = {    1.7f,   1.85f,    1.2f}; // AGC - PI control, integral gain parameter
+const double agcFollowFast[AGC_NUM_PRESETS]   = { 1/192.f, 1/128.f, 1/256.f}; // quickly follow setpoint - ~0.15 sec
+const double agcFollowSlow[AGC_NUM_PRESETS]   = {1/6144.f,1/4096.f,1/8192.f}; // slowly follow setpoint  - ~2-15 secs
+const double agcControlKp[AGC_NUM_PRESETS]    = {    0.6f,    1.5f,   0.65f}; // AGC - PI control, proportional gain parameter
+const double agcControlKi[AGC_NUM_PRESETS]    = {    1.7f,   1.85f,    1.2f}; // AGC - PI control, integral gain parameter
 const float agcSampleSmooth[AGC_NUM_PRESETS] = {  1/12.f,   1/6.f,  1/16.f}; // smoothing factor for sampleAgc (use rawSampleAgc if you want the non-smoothed value)
 // AGC presets end
 
@@ -390,7 +390,7 @@ class AudioReactive : public Usermod {
     bool     udpSamplePeak = 0;   // Boolean flag for peak. Set at the same tiem as samplePeak, but reset by transmitAudioData
     int16_t  micIn = 0;           // Current sample starts with negative values and large values, which is why it's 16 bit signed
     int16_t  sampleRaw;           // Current sample. Must only be updated ONCE!!! (amplified mic value by sampleGain and inputLevel; smoothed over 16 samples)
-    float    sampleMax = 0.0f;    // Max sample over a few seconds. Needed for AGC controler.
+    double   sampleMax = 0.0;     // Max sample over a few seconds. Needed for AGC controler.
     float    sampleReal = 0.0f;		// "sampleRaw" as float, to provide bits that are lost otherwise (before amplification by sampleGain or inputLevel). Needed for AGC.
     float    sampleAvg = 0.0f;    // Smoothed Average sampleRaw
     float    sampleAgc = 0.0f;    // Our AGC sample
@@ -406,7 +406,7 @@ class AudioReactive : public Usermod {
     // used for AGC
     uint8_t  lastMode = 0;        // last known effect mode
     int      last_soundAgc = -1;
-    float    control_integrated = 0.0f;   // persistent across calls to agcAvg(); "integrator control" = accumulated error
+    double   control_integrated = 0.0;   // persistent across calls to agcAvg(); "integrator control" = accumulated error
     unsigned long last_update_time = 0;
     unsigned long last_kick_time = 0;
     uint8_t  last_user_inputLevel = 0;
@@ -526,7 +526,7 @@ class AudioReactive : public Usermod {
       float control_error;                        // "control error" input for PI control
 
       if (last_soundAgc != soundAgc)
-        control_integrated = 0.0f;                // new preset - reset integrator
+        control_integrated = 0.0;                // new preset - reset integrator
 
       // For PI controller, we need to have a constant "frequency"
       // so let's make sure that the control loop is not running at insane speed
@@ -540,8 +540,8 @@ class AudioReactive : public Usermod {
           //multAgcTemp = multAgc;          // keep old control value (no change)
           tmpAgc = 0;
           // we need to "spin down" the intgrated error buffer
-          if (fabs(control_integrated) < 0.01f) control_integrated  = 0.0f;
-          else                                  control_integrated *= 0.91f;
+          if (fabs(control_integrated) < 0.01)  control_integrated  = 0.0;
+          else                                  control_integrated *= 0.91;
         } else {
           // compute new setpoint
           if (tmpAgc <= agcTarget0Up[AGC_preset])
@@ -559,9 +559,9 @@ class AudioReactive : public Usermod {
         
         if (((multAgcTemp > 0.085f) && (multAgcTemp < 6.5f))        //integrator anti-windup by clamping
             && (multAgc*sampleMax < agcZoneStop[AGC_preset]))       //integrator ceiling (>140% of max)
-          control_integrated += control_error * 0.002f * 0.25f;     // 2ms = intgration time; 0.25 for damping
+          control_integrated += control_error * 0.002 * 0.25;     // 2ms = intgration time; 0.25 for damping
         else
-          control_integrated *= 0.9f;                              // spin down that beasty integrator
+          control_integrated *= 0.9;                              // spin down that beasty integrator
 
         // apply PI Control 
         tmpAgc = sampleReal * lastMultAgc;              // check "zone" of the signal using previous gain
