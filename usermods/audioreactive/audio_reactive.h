@@ -7,6 +7,10 @@
   #error This audio reactive usermod does not support the ESP8266.
 #endif
 
+#ifdef WLED_DEBUG
+#include <esp_timer.h>
+#endif
+
 /*
  * Usermods allow you to add own functionality to WLED more easily
  * See: https://github.com/Aircoookie/WLED/wiki/Add-own-functionality
@@ -31,7 +35,8 @@
 
 constexpr i2s_port_t I2S_PORT = I2S_NUM_0;
 constexpr int BLOCK_SIZE = 128;
-constexpr int SAMPLE_RATE = 20480;      // Base sample rate in Hz
+constexpr int SAMPLE_RATE = 20480;      // Base sample rate in Hz - 20Khz is experimental
+//constexpr int SAMPLE_RATE = 10240;      // Base sample rate in Hz - standard
 
 // #define MIC_LOGGER
 // #define MIC_SAMPLING_LOG
@@ -136,13 +141,18 @@ void FFTcode(void * parameter)
     if (audioSyncEnabled & 0x02) continue;
 
 #ifdef WLED_DEBUG
-    unsigned long start = millis();
+//    unsigned long start = millis();
+    uint64_t start = esp_timer_get_time();
 #endif
 
     if (audioSource) audioSource->getSamples(vReal, samplesFFT);
 
 #ifdef WLED_DEBUG
-    sampleTime = ((millis() - start)*3 + sampleTime*7)/10; // smooth
+    //sampleTime = ((millis() - start)*3 + sampleTime*7)/10; // smooth
+    if (start < esp_timer_get_time()) { // filter out overflows
+      unsigned long sampleTimeInMillis = (esp_timer_get_time() - start +500ULL) / 1000ULL; // "+500" to ensure proper rounding
+      sampleTime = (sampleTimeInMillis*3 + sampleTime*7)/10; // smooth
+    }
 #endif
 
     // old code - Last sample in vReal is our current mic sample
@@ -297,7 +307,11 @@ void FFTcode(void * parameter)
     micDataReal = maxSample2;
 
 #ifdef WLED_DEBUG
-    fftTime = ((millis() - start)*3 + fftTime*7)/10;
+    //fftTime = ((millis() - start)*3 + fftTime*7)/10;
+    if (start < esp_timer_get_time()) { // filter out overflows
+      unsigned long fftTimeInMillis = ((esp_timer_get_time() - start) +500ULL) / 1000ULL; // "+500" to ensure proper rounding
+      fftTime  = (fftTimeInMillis*3 + fftTime*7)/10; // smooth
+    }
 #endif
 
 #ifdef SR_DEBUG
