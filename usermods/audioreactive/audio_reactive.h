@@ -1026,17 +1026,22 @@ class AudioReactive : public Usermod {
 #ifdef WLED_DEBUG
       fftTime = sampleTime = 0;
 #endif
-      if (init) vTaskDelete(FFT_Task); // update is about to begin, remove task to prevent crash
-      else {  // update has failed or create task requested
-        // Define the FFT Task and lock it to core 0
-        xTaskCreatePinnedToCore(
-          FFTcode,                          // Function to implement the task
-          "FFT",                            // Name of the task
-          5000,                             // Stack size in words
-          NULL,                             // Task input parameter
-          1,                                // Priority of the task
-          &FFT_Task,                        // Task handle
-          0);                               // Core where the task should run
+      if (init && FFT_Task) {
+        vTaskSuspend(FFT_Task);   // update is about to begin, disable task to prevent crash
+      } else {
+        // update has failed or create task requested
+        if (FFT_Task)
+          vTaskResume(FFT_Task);
+        else
+          xTaskCreatePinnedToCore(
+            FFTcode,                          // Function to implement the task
+            "FFT",                            // Name of the task
+            5000,                             // Stack size in words
+            NULL,                             // Task input parameter
+            1,                                // Priority of the task
+            &FFT_Task,                        // Task handle
+            0                                 // Core where the task should run
+          );
       }
     }
 
