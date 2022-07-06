@@ -29,20 +29,20 @@
 
 #ifdef SEGMENT
   #undef SEGMENT
-  #define SEGMENT          _segments[_segment_index]
 #endif
 #ifdef SEGCOLOR
   #undef SEGCOLOR
-  #define SEGCOLOR(x)      _colors_t[x]
 #endif
 #ifdef SEGENV
   #undef SEGENV
-  #define SEGENV           _segment_runtimes[_segment_index]
 #endif
 #ifdef SEGLEN
   #undef SEGLEN
-  #define SEGLEN           _virtualSegmentLength
 #endif
+#define SEGMENT          _segments[_segment_index]
+#define SEGCOLOR(x)      _colors_t[x]
+#define SEGENV           _segment_runtimes[_segment_index]
+#define SEGLEN           _virtualSegmentLength
 
 /*
   Custom per-LED mapping has moved!
