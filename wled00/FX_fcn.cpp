@@ -27,6 +27,23 @@
 #include "FX.h"
 #include "palettes.h"
 
+#ifdef SEGMENT
+  #undef SEGMENT
+  #define SEGMENT          _segments[_segment_index]
+#endif
+#ifdef SEGCOLOR
+  #undef SEGCOLOR
+  #define SEGCOLOR(x)      _colors_t[x]
+#endif
+#ifdef SEGENV
+  #undef SEGENV
+  #define SEGENV           _segment_runtimes[_segment_index]
+#endif
+#ifdef SEGLEN
+  #undef SEGLEN
+  #define SEGLEN           _virtualSegmentLength
+#endif
+
 /*
   Custom per-LED mapping has moved!
 

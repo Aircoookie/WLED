@@ -26,6 +26,23 @@
 #include "FX.h"
 #include "palettes.h"
 
+#ifdef SEGMENT
+  #undef SEGMENT
+  #define SEGMENT          _segments[_segment_index]
+#endif
+#ifdef SEGCOLOR
+  #undef SEGCOLOR
+  #define SEGCOLOR(x)      _colors_t[x]
+#endif
+#ifdef SEGENV
+  #undef SEGENV
+  #define SEGENV           _segment_runtimes[_segment_index]
+#endif
+#ifdef SEGLEN
+  #undef SEGLEN
+  #define SEGLEN           _virtualSegmentLength
+#endif
+
 // setUpMatrix() - constructs ledmap array from matrix of panels with WxH pixels
 // this converts physical (possibly irregular) LED arrangement into well defined
 // array of logical pixels: fist entry corresponds to left-topmost logical pixel
@@ -151,21 +168,16 @@ void IRAM_ATTR WS2812FX::setPixelColorXY(int x, int y, byte r, byte g, byte b, b
       uint16_t index, xX = (x+g), yY = (y+j);
       if (xX >= SEGMENT.width() || yY >= SEGMENT.height()) continue; // we have reached one dimension's end
 
-      //if (SEGMENT.getOption(SEG_OPTION_REVERSED)  ) xX = SEGMENT.width()  - xX - 1;
-      //if (SEGMENT.getOption(SEG_OPTION_REVERSED_Y)) yY = SEGMENT.height() - yY - 1;
-
       index = get2DPixelIndex(xX, yY);
       if (index < customMappingSize) index = customMappingTable[index];
       busses.setPixelColor(index, col);
 
       if (SEGMENT.getOption(SEG_OPTION_MIRROR)) { //set the corresponding horizontally mirrored pixel
-        //index = get2DPixelIndex(SEGMENT.width() - xX - 1, yY);
         index = SEGMENT.getOption(SEG_OPTION_TRANSPOSED) ? get2DPixelIndex(xX, SEGMENT.height() - yY - 1) : get2DPixelIndex(SEGMENT.width() - xX - 1, yY);
         if (index < customMappingSize) index = customMappingTable[index];
         busses.setPixelColor(index, col);
       }
       if (SEGMENT.getOption(SEG_OPTION_MIRROR_Y)) { //set the corresponding vertically mirrored pixel
-        //index = get2DPixelIndex(xX, SEGMENT.height() - yY - 1);
         index = SEGMENT.getOption(SEG_OPTION_TRANSPOSED) ? get2DPixelIndex(SEGMENT.width() - xX - 1, yY)  : get2DPixelIndex(xX, SEGMENT.height() - yY - 1);
         if (index < customMappingSize) index = customMappingTable[index];
         busses.setPixelColor(index, col);

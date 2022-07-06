@@ -110,7 +110,7 @@ static float fftResultPink[16] = { 1.70f, 1.71f, 1.73f, 1.78f, 1.68f, 1.56f, 1.5
 
 // Create FFT object
 static arduinoFFT FFT = arduinoFFT(vReal, vImag, samplesFFT, SAMPLE_RATE);
-static TaskHandle_t FFT_Task;
+static TaskHandle_t FFT_Task = nullptr;
 
 float fftAddAvg(int from, int to) {
   float result = 0.0f;
@@ -987,17 +987,22 @@ class AudioReactive : public Usermod {
 #ifdef WLED_DEBUG
       fftTime = sampleTime = 0;
 #endif
-      if (init) vTaskDelete(FFT_Task); // update is about to begin, remove task to prevent crash
-      else {  // update has failed or create task requested
-        // Define the FFT Task and lock it to core 0
-        xTaskCreatePinnedToCore(
-          FFTcode,                          // Function to implement the task
-          "FFT",                            // Name of the task
-          5000,                             // Stack size in words
-          NULL,                             // Task input parameter
-          1,                                // Priority of the task
-          &FFT_Task,                        // Task handle
-          0);                               // Core where the task should run
+      if (init && FFT_Task) {
+        vTaskSuspend(FFT_Task);   // update is about to begin, disable task to prevent crash
+      } else {
+        // update has failed or create task requested
+        if (FFT_Task)
+          vTaskResume(FFT_Task);
+        else
+          xTaskCreatePinnedToCore(
+            FFTcode,                          // Function to implement the task
+            "FFT",                            // Name of the task
+            5000,                             // Stack size in words
+            NULL,                             // Task input parameter
+            1,                                // Priority of the task
+            &FFT_Task,                        // Task handle
+            0                                 // Core where the task should run
+          );
       }
     }
 
