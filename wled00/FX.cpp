@@ -1040,24 +1040,6 @@ static const char *_data_FX_MODE_RUNNING_COLOR PROGMEM = "Chase 2@!,Width;!,!,;!
 
 
 /*
- * Alternating red/white pixels running.
- */
-uint16_t mode_candy_cane(void) {
-  return running(RED, WHITE);
-}
-static const char *_data_FX_MODE_CANDY_CANE PROGMEM = "Candy Cane@!,Width;;";
-
-
-/*
- * Alternating orange/purple pixels running.
- */
-uint16_t mode_halloween(void) {
-  return running(PURPLE, ORANGE);
-}
-static const char *_data_FX_MODE_HALLOWEEN PROGMEM = "Halloween@!,Width;;";
-
-
-/*
  * Random colored pixels running. ("Stream")
  */
 uint16_t mode_running_random(void) {
@@ -1329,12 +1311,12 @@ uint16_t police_base(uint32_t color1, uint32_t color2)
 
 
 //Police Lights Red and Blue 
-uint16_t mode_police()
-{
-  strip.fill(SEGCOLOR(1));
-  return police_base(RED, BLUE);
-}
-static const char *_data_FX_MODE_POLICE PROGMEM = "Police@!,Width;,Bg,;0";
+//uint16_t mode_police()
+//{
+//  strip.fill(SEGCOLOR(1));
+//  return police_base(RED, BLUE);
+//}
+//static const char *_data_FX_MODE_POLICE PROGMEM = "Police@!,Width;,Bg,;0";
 
 
 //Police Lights with custom colors 
@@ -7619,7 +7601,7 @@ static const char *_data_FX_MODE_2DAKEMI PROGMEM = "2D Akemi@Color speed,Dance;H
 static const char *_data_RESERVED PROGMEM = "Reserved";
 void WS2812FX::setupEffectData() {
   // fill reserved word in case there will be any gaps in the array
-  for (byte i=0; i<getModeCount(); i++) _modeData[i] = _data_RESERVED;
+  for (int i=0; i<getModeCount(); i++) addEffect(i, &mode_static, _data_RESERVED);
   //addEffect(FX_MODE_..., &mode_fcn, _data_FX_MODE_...);
   addEffect(FX_MODE_STATIC, &mode_static, _data_FX_MODE_STATIC);
   addEffect(FX_MODE_BLINK, &mode_blink, _data_FX_MODE_BLINK);
@@ -7667,12 +7649,12 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_FIRE_FLICKER, &mode_fire_flicker, _data_FX_MODE_FIRE_FLICKER);
   addEffect(FX_MODE_GRADIENT, &mode_gradient, _data_FX_MODE_GRADIENT);
   addEffect(FX_MODE_LOADING, &mode_loading, _data_FX_MODE_LOADING);
-  addEffect(FX_MODE_POLICE, &mode_police, _data_FX_MODE_POLICE);
+  addEffect(FX_MODE_WAVESINS, &mode_wavesins, _data_FX_MODE_WAVESINS);
   addEffect(FX_MODE_FAIRY, &mode_fairy, _data_FX_MODE_FAIRY);
   addEffect(FX_MODE_TWO_DOTS, &mode_two_dots, _data_FX_MODE_TWO_DOTS);
   addEffect(FX_MODE_FAIRYTWINKLE, &mode_fairytwinkle, _data_FX_MODE_FAIRYTWINKLE);
   addEffect(FX_MODE_RUNNING_DUAL, &mode_running_dual, _data_FX_MODE_RUNNING_DUAL);
-  addEffect(FX_MODE_HALLOWEEN, &mode_halloween, _data_FX_MODE_HALLOWEEN);
+  addEffect(FX_MODE_PERLINMOVE, &mode_perlinmove, _data_FX_MODE_PERLINMOVE);
   addEffect(FX_MODE_TRICOLOR_CHASE, &mode_tricolor_chase, _data_FX_MODE_TRICOLOR_CHASE);
   addEffect(FX_MODE_TRICOLOR_WIPE, &mode_tricolor_wipe, _data_FX_MODE_TRICOLOR_WIPE);
   addEffect(FX_MODE_TRICOLOR_FADE, &mode_tricolor_fade, _data_FX_MODE_TRICOLOR_FADE);
@@ -7735,7 +7717,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_CHUNCHUN, &mode_chunchun, _data_FX_MODE_CHUNCHUN);
   addEffect(FX_MODE_DANCING_SHADOWS, &mode_dancing_shadows, _data_FX_MODE_DANCING_SHADOWS);
   addEffect(FX_MODE_WASHING_MACHINE, &mode_washing_machine, _data_FX_MODE_WASHING_MACHINE);
-  addEffect(FX_MODE_CANDY_CANE, &mode_candy_cane, _data_FX_MODE_CANDY_CANE);
+  addEffect(FX_MODE_FLOWSTRIPE, &mode_FlowStripe, _data_FX_MODE_FLOWSTRIPE);
   addEffect(FX_MODE_BLENDS, &mode_blends, _data_FX_MODE_BLENDS);
   addEffect(FX_MODE_TV_SIMULATOR, &mode_tv_simulator, _data_FX_MODE_TV_SIMULATOR);
   addEffect(FX_MODE_DYNAMIC_SMOOTH, &mode_dynamic_smooth, _data_FX_MODE_DYNAMIC_SMOOTH);
@@ -7746,9 +7728,6 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_SCROLL_TEXT, &mode_2Dscrollingtext, _data_FX_MODE_SCROLL_TEXT);
   addEffect(FX_MODE_DRIFT_ROSE, &mode_2Ddriftrose, _data_FX_MODE_DRIFT_ROSE);
 #ifndef USERMOD_AUDIOREACTIVE
-  addEffect(FX_MODE_PERLINMOVE, &mode_perlinmove, _data_FX_MODE_PERLINMOVE);
-  addEffect(FX_MODE_FLOWSTRIPE, &mode_FlowStripe, _data_FX_MODE_FLOWSTRIPE);
-  addEffect(FX_MODE_WAVESINS, &mode_wavesins, _data_FX_MODE_WAVESINS);
   addEffect(FX_MODE_2DJULIA, &mode_2DJulia, _data_FX_MODE_2DJULIA);
   addEffect(FX_MODE_2DGAMEOFLIFE, &mode_2Dgameoflife, _data_FX_MODE_2DGAMEOFLIFE);
   addEffect(FX_MODE_2DNOISE, &mode_2Dnoise, _data_FX_MODE_2DNOISE);
@@ -7809,7 +7788,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_PUDDLEPEAK, &mode_puddlepeak, _data_FX_MODE_PUDDLEPEAK);
   addEffect(FX_MODE_NOISEMOVE, &mode_noisemove, _data_FX_MODE_NOISEMOVE);
   addEffect(FX_MODE_2DNOISE, &mode_2Dnoise, _data_FX_MODE_2DNOISE);
-  addEffect(FX_MODE_PERLINMOVE, &mode_perlinmove, _data_FX_MODE_PERLINMOVE);
+  //addEffect(FX_MODE_PERLINMOVE, &mode_perlinmove, _data_FX_MODE_PERLINMOVE);
   addEffect(FX_MODE_RIPPLEPEAK, &mode_ripplepeak, _data_FX_MODE_RIPPLEPEAK);
   addEffect(FX_MODE_2DFIRENOISE, &mode_2Dfirenoise, _data_FX_MODE_2DFIRENOISE);
   addEffect(FX_MODE_2DSQUAREDSWIRL, &mode_2Dsquaredswirl, _data_FX_MODE_2DSQUAREDSWIRL);
@@ -7836,12 +7815,12 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_2DLISSAJOUS, &mode_2DLissajous, _data_FX_MODE_2DLISSAJOUS);
   addEffect(FX_MODE_2DFRIZZLES, &mode_2DFrizzles, _data_FX_MODE_2DFRIZZLES);
   addEffect(FX_MODE_2DPLASMABALL, &mode_2DPlasmaball, _data_FX_MODE_2DPLASMABALL);
-  addEffect(FX_MODE_FLOWSTRIPE, &mode_FlowStripe, _data_FX_MODE_FLOWSTRIPE);
+  //addEffect(FX_MODE_FLOWSTRIPE, &mode_FlowStripe, _data_FX_MODE_FLOWSTRIPE);
   addEffect(FX_MODE_2DHIPHOTIC, &mode_2DHiphotic, _data_FX_MODE_2DHIPHOTIC);
   addEffect(FX_MODE_2DSINDOTS, &mode_2DSindots, _data_FX_MODE_2DSINDOTS);
   addEffect(FX_MODE_2DDNASPIRAL, &mode_2DDNASpiral, _data_FX_MODE_2DDNASPIRAL);
   addEffect(FX_MODE_2DBLACKHOLE, &mode_2DBlackHole, _data_FX_MODE_2DBLACKHOLE);
-  addEffect(FX_MODE_WAVESINS, &mode_wavesins, _data_FX_MODE_WAVESINS);
+  //addEffect(FX_MODE_WAVESINS, &mode_wavesins, _data_FX_MODE_WAVESINS);
   addEffect(FX_MODE_ROCKTAVES, &mode_rocktaves, _data_FX_MODE_ROCKTAVES);
   addEffect(FX_MODE_2DAKEMI, &mode_2DAkemi, _data_FX_MODE_2DAKEMI);
   //addEffect(FX_MODE_CUSTOMEFFECT, &mode_customEffect, _data_FX_MODE_CUSTOMEFFECT); //WLEDSR Custom Effects

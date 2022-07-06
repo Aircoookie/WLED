@@ -87,15 +87,11 @@ uint32_t color_add(uint32_t,uint32_t);
 #define MIN_SHOW_DELAY   (_frametime < 16 ? 8 : 15)
 
 #define NUM_COLORS       3 /* number of colors per segment */
-//#define SEGMENT          _segments[_segment_index]
-//#define SEGCOLOR(x)      _colors_t[x]
-//#define SEGENV           _segment_runtimes[_segment_index]
-//#define SEGLEN           _virtualSegmentLength
 #define SEGMENT          strip.getSegment(strip.getCurrSegmentId())
 #define SEGENV           strip.getSegmentRuntime(strip.getCurrSegmentId())
 #define SEGCOLOR(x)      strip.segColor(x)
 #define SEGLEN           strip.segLen()
-#define SPEED_FORMULA_L  5U + (50U*(255U - SEGMENT.speed))/SEGLEN
+#define SPEED_FORMULA_L  (5U + (50U*(255U - SEGMENT.speed))/SEGLEN)
 
 // some common colors
 #define RED        (uint32_t)0xFF0000
@@ -176,12 +172,14 @@ uint32_t color_add(uint32_t,uint32_t);
 #define FX_MODE_FIRE_FLICKER            45
 #define FX_MODE_GRADIENT                46
 #define FX_MODE_LOADING                 47
-#define FX_MODE_POLICE                  48  // candidate for removal (after below three)
+//#define FX_MODE_POLICE                  48  // candidate for removal (after below three)
+#define FX_MODE_WAVESINS                48  // was Police prior to 0.14 (use Two Dots with Red/Blue)
 #define FX_MODE_FAIRY                   49  //was Police All prior to 0.13.0-b6 (use "Two Dots" with Red/Blue and full intensity)
 #define FX_MODE_TWO_DOTS                50
 #define FX_MODE_FAIRYTWINKLE            51  //was Two Areas prior to 0.13.0-b6 (use "Two Dots" with full intensity)
 #define FX_MODE_RUNNING_DUAL            52
-#define FX_MODE_HALLOWEEN               53  // candidate for removal
+//#define FX_MODE_HALLOWEEN               53  // candidate for removal
+#define FX_MODE_PERLINMOVE              53 // was Halloween prior to 0.14 (use Cahse 2 with Purple/Orange)
 #define FX_MODE_TRICOLOR_CHASE          54
 #define FX_MODE_TRICOLOR_WIPE           55
 #define FX_MODE_TRICOLOR_FADE           56
@@ -242,7 +240,8 @@ uint32_t color_add(uint32_t,uint32_t);
 #define FX_MODE_CHUNCHUN               111
 #define FX_MODE_DANCING_SHADOWS        112
 #define FX_MODE_WASHING_MACHINE        113
-#define FX_MODE_CANDY_CANE             114  // candidate for removal
+//#define FX_MODE_CANDY_CANE             114  // candidate for removal
+#define FX_MODE_FLOWSTRIPE             114  // was Cany Cane prior to 0.14 (use Cahse 2 with Red/White)
 #define FX_MODE_BLENDS                 115
 #define FX_MODE_TV_SIMULATOR           116
 #define FX_MODE_DYNAMIC_SMOOTH         117
@@ -257,9 +256,6 @@ uint32_t color_add(uint32_t,uint32_t);
 // WLED-SR effects
 #ifndef USERMOD_AUDIOREACTIVE
 
-  #define FX_MODE_PERLINMOVE              53 // should be moved to 53
-  #define FX_MODE_FLOWSTRIPE             114 // should be moved to 114
-  #define FX_MODE_WAVESINS                48 // should be moved to 48
   #define FX_MODE_2DBLACKHOLE            124 // non audio
   #define FX_MODE_2DDNASPIRAL            125 // non audio
   #define FX_MODE_2DHIPHOTIC             126 // non audio
@@ -321,7 +317,7 @@ uint32_t color_add(uint32_t,uint32_t);
   #define FX_MODE_PUDDLEPEAK             144 // audio enhanced
   #define FX_MODE_NOISEMOVE              145
   #define FX_MODE_2DNOISE                146 // non audio
-  #define FX_MODE_PERLINMOVE             147 // should be moved to 53
+  //#define FX_MODE_PERLINMOVE             147 // moved to 53
   #define FX_MODE_RIPPLEPEAK             148 // audio enhanced
   #define FX_MODE_2DFIRENOISE            149 // non audio
   #define FX_MODE_2DSQUAREDSWIRL         150 // non audio
@@ -353,12 +349,12 @@ uint32_t color_add(uint32_t,uint32_t);
   #define FX_MODE_2DLISSAJOUS            176 // non audio
   #define FX_MODE_2DFRIZZLES             177 // non audio
   #define FX_MODE_2DPLASMABALL           178 // non audio
-  #define FX_MODE_FLOWSTRIPE             179 // should be moved to 114
+  //#define FX_MODE_FLOWSTRIPE             179 // moved to 114
   #define FX_MODE_2DHIPHOTIC             180 // non audio
   #define FX_MODE_2DSINDOTS              181 // non audio
   #define FX_MODE_2DDNASPIRAL            182 // non audio
   #define FX_MODE_2DBLACKHOLE            183 // non audio
-  #define FX_MODE_WAVESINS               184 // should be moved to 48
+  //#define FX_MODE_WAVESINS               184 // moved to 48
   #define FX_MODE_ROCKTAVES              185
   #define FX_MODE_2DAKEMI                186 // audio enhanced
   //#define FX_MODE_CUSTOMEFFECT           187 //WLEDSR Custom Effects
