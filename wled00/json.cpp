@@ -11,8 +11,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   byte id = elem["id"] | it;
   if (id >= strip.getMaxSegments()) return;
 
-  WS2812FX::Segment& seg = strip.getSegment(id);
-  WS2812FX::Segment prev = seg; //make a backup so we can tell if something changed
+  Segment& seg = strip.getSegment(id);
+  Segment prev = seg; //make a backup so we can tell if something changed
 
   uint16_t start = elem["start"] | seg.start;
   int stop = elem["stop"] | -1;
@@ -327,7 +327,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       //apply all selected segments
       //bool didSet = false;
       for (byte s = 0; s < strip.getMaxSegments(); s++) {
-        WS2812FX::Segment &sg = strip.getSegment(s);
+        Segment &sg = strip.getSegment(s);
         if (sg.isActive()) {
           if (sg.isSelected()) {
             deserializeSegment(segVar, s, presetId);
@@ -396,7 +396,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   return stateResponse;
 }
 
-void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset, bool segmentBounds)
+void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset, bool segmentBounds)
 {
   root["id"] = id;
   if (segmentBounds) {
@@ -494,7 +494,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
   bool selectedSegmentsOnly = root[F("sc")] | false;
   JsonArray seg = root.createNestedArray("seg");
   for (byte s = 0; s < strip.getMaxSegments(); s++) {
-    WS2812FX::Segment &sg = strip.getSegment(s);
+    Segment &sg = strip.getSegment(s);
     if (selectedSegmentsOnly && !sg.isSelected()) continue;
     if (sg.isActive()) {
       JsonObject seg0 = seg.createNestedObject();

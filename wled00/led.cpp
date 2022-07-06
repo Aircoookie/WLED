@@ -8,7 +8,7 @@ void setValuesFromMainSeg()          { setValuesFromSegment(strip.getMainSegment
 void setValuesFromFirstSelectedSeg() { setValuesFromSegment(strip.getFirstSelectedSegId()); }
 void setValuesFromSegment(uint8_t s)
 {
-  WS2812FX::Segment& seg = strip.getSegment(s);
+  Segment& seg = strip.getSegment(s);
   col[0] = R(seg.colors[0]);
   col[1] = G(seg.colors[0]);
   col[2] = B(seg.colors[0]);
@@ -30,9 +30,9 @@ void applyValuesToSelectedSegs()
 {
   // copy of first selected segment to tell if value was updated
   uint8_t firstSel = strip.getFirstSelectedSegId();
-  WS2812FX::Segment selsegPrev = strip.getSegment(firstSel);
+  Segment selsegPrev = strip.getSegment(firstSel);
   for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
-    WS2812FX::Segment& seg = strip.getSegment(i);
+    Segment& seg = strip.getSegment(i);
     if (i != firstSel && (!seg.isActive() || !seg.isSelected())) continue;
 
     if (effectSpeed     != selsegPrev.speed)     {seg.speed     = effectSpeed;     stateChanged = true;}

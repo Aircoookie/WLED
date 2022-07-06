@@ -195,7 +195,7 @@ void handleAnalog(uint8_t b)
       colorHStoRGB(aRead*256,255,col);
     } else {
       // otherwise use "double press" for segment selection
-      WS2812FX::Segment& seg = strip.getSegment(macroDoublePress[b]);
+      Segment& seg = strip.getSegment(macroDoublePress[b]);
       if (aRead == 0) {
         seg.setOption(SEG_OPTION_ON, 0); // off
       } else {

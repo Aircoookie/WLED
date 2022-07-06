@@ -28,7 +28,7 @@ void notify(byte callMode, bool followUp)
     default: return;
   }
   byte udpOut[WLEDPACKETSIZE];
-  WS2812FX::Segment& mainseg = strip.getMainSegment();
+  Segment& mainseg = strip.getMainSegment();
   udpOut[0] = 0; //0: wled notifier protocol 1: WARLS protocol
   udpOut[1] = callMode;
   udpOut[2] = bri;
@@ -92,7 +92,7 @@ void notify(byte callMode, bool followUp)
   udpOut[39] = strip.getMaxSegments();
   udpOut[40] = UDP_SEG_SIZE; //size of each loop iteration (one segment)
   for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
-    WS2812FX::Segment &selseg = strip.getSegment(i);
+    Segment &selseg = strip.getSegment(i);
     uint16_t ofs = 41 + i*UDP_SEG_SIZE; //start of segment offset byte
     udpOut[0 +ofs] = i;
     udpOut[1 +ofs] = selseg.start >> 8;
@@ -143,7 +143,7 @@ void realtimeLock(uint32_t timeoutMs, byte md)
   if (!realtimeMode && !realtimeOverride) {
     uint16_t stop, start;
     if (useMainSegmentOnly) {
-      WS2812FX::Segment& mainseg = strip.getMainSegment();
+      Segment& mainseg = strip.getMainSegment();
       start = mainseg.start;
       stop  = mainseg.stop;
       mainseg.setOption(SEG_OPTION_FREEZE, true, strip.getMainSegmentId());
@@ -343,7 +343,7 @@ void handleNotifications()
           uint16_t ofs = 41 + i*udpIn[40]; //start of segment offset byte
           uint8_t id = udpIn[0 +ofs];
           if (id > strip.getMaxSegments()) break;
-          WS2812FX::Segment& selseg = strip.getSegment(id);
+          Segment& selseg = strip.getSegment(id);
           uint16_t start  = (udpIn[1+ofs] << 8 | udpIn[2+ofs]);
           uint16_t stop   = (udpIn[3+ofs] << 8 | udpIn[4+ofs]);
           uint16_t offset = (udpIn[7+ofs] << 8 | udpIn[8+ofs]);
@@ -378,7 +378,7 @@ void handleNotifications()
       // simple effect sync, applies to all selected segments
       if (applyEffects && (version < 11 || !receiveSegmentOptions)) {
         for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
-          WS2812FX::Segment& seg = strip.getSegment(i);
+          Segment& seg = strip.getSegment(i);
           if (!seg.isActive() || !seg.isSelected()) continue;
           if (udpIn[8] < strip.getModeCount()) strip.setMode(i, udpIn[8]);
           seg.speed = udpIn[9];

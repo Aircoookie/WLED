@@ -5,6 +5,8 @@
  * Readability defines and their associated numerical values + compile-time constants
  */
 
+#define GRADIENT_PALETTE_COUNT 58
+
 //Defaults
 #define DEFAULT_CLIENT_SSID "Your_Network"
 #define DEFAULT_AP_PASS     "wled1234"

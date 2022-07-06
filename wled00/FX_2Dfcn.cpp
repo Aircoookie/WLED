@@ -110,15 +110,6 @@ void WS2812FX::setUpMatrix() {
 uint16_t IRAM_ATTR WS2812FX::XY(uint16_t x, uint16_t y) {
   uint16_t width  = SEGMENT.virtualWidth();   // segment width in logical pixels
   uint16_t height = SEGMENT.virtualHeight();  // segment height in logical pixels
-/*
-  if (SEGMENT.getOption(SEG_OPTION_TRANSPOSED)) {
-    uint16_t t;
-    // swap X & Y if segment transposed
-    t = x; x = y; y = t;
-    // swap width & height if segment transposed
-    t = width; width = height; height = t;
-  }
-*/
   return (x%width) + (y%height) * width;
 }
 
@@ -294,13 +285,13 @@ void WS2812FX::blurRow(uint16_t row, fract8 blur_amount, CRGB* leds) {
   uint8_t seep = blur_amount >> 1;
   CRGB carryover = CRGB::Black;
   for (uint16_t x = 0; x < cols; x++) {
-    CRGB cur = leds ? leds[XY(x,row)] : col_to_crgb(getPixelColorXY(x, row));
+    CRGB cur = leds ? leds[XY(x,row)] : CRGB(getPixelColorXY(x, row));
     CRGB part = cur;
     part.nscale8(seep);
     cur.nscale8(keep);
     cur += carryover;
     if (x) {
-      CRGB prev = (leds ? leds[XY(x-1,row)] : col_to_crgb(getPixelColorXY(x-1, row))) + part;
+      CRGB prev = (leds ? leds[XY(x-1,row)] : CRGB(getPixelColorXY(x-1, row))) + part;
       if (leds) leds[XY(x-1,row)] = prev;
       else      setPixelColorXY(x-1, row, prev);
     }
@@ -321,13 +312,13 @@ void WS2812FX::blurCol(uint16_t col, fract8 blur_amount, CRGB* leds) {
   uint8_t seep = blur_amount >> 1;
   CRGB carryover = CRGB::Black;
   for (uint16_t i = 0; i < rows; i++) {
-    CRGB cur = leds ? leds[XY(col,i)] : col_to_crgb(getPixelColorXY(col, i));
+    CRGB cur = leds ? leds[XY(col,i)] : CRGB(getPixelColorXY(col, i));
     CRGB part = cur;
     part.nscale8(seep);
     cur.nscale8(keep);
     cur += carryover;
     if (i) {
-      CRGB prev = (leds ? leds[XY(col,i-1)] : col_to_crgb(getPixelColorXY(col, i-1))) + part;
+      CRGB prev = (leds ? leds[XY(col,i-1)] : CRGB(getPixelColorXY(col, i-1))) + part;
       if (leds) leds[XY(col,i-1)] = prev;
       else      setPixelColorXY(col, i-1, prev);
     }
@@ -374,9 +365,9 @@ void WS2812FX::blur1d(uint16_t i, bool vertical, fract8 blur_amount, CRGB* leds)
     uint16_t yp = vertical ? y-1 : y;
     uint16_t xn = vertical ? x : x+1;
     uint16_t yn = vertical ? y+1 : y;
-    CRGB curr = leds ? leds[XY(x,y)] : col_to_crgb(getPixelColorXY(x,y));
-    CRGB prev = (xp<0 || yp<0) ? CRGB::Black : (leds ? leds[XY(xp,yp)] : col_to_crgb(getPixelColorXY(xp,yp)));
-    CRGB next = ((vertical && yn>=dim1) || (!vertical && xn>=dim1)) ? CRGB::Black : (leds ? leds[XY(xn,yn)] : col_to_crgb(getPixelColorXY(xn,yn)));
+    CRGB curr = leds ? leds[XY(x,y)] : CRGB(getPixelColorXY(x,y));
+    CRGB prev = (xp<0 || yp<0) ? CRGB::Black : (leds ? leds[XY(xp,yp)] : CRGB(getPixelColorXY(xp,yp)));
+    CRGB next = ((vertical && yn>=dim1) || (!vertical && xn>=dim1)) ? CRGB::Black : (leds ? leds[XY(xn,yn)] : CRGB(getPixelColorXY(xn,yn)));
     uint16_t r, g, b;
     r = (curr.r*keep + (prev.r + next.r)*seep) / 3;
     g = (curr.g*keep + (prev.g + next.g)*seep) / 3;
@@ -491,7 +482,7 @@ void WS2812FX::nscale8(CRGB* leds, uint8_t scale) {
   const uint16_t rows = SEGMENT.virtualHeight();
   for(uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
     if (leds) leds[XY(x,y)].nscale8(scale);
-    else setPixelColorXY(x, y, col_to_crgb(getPixelColorXY(x, y)).nscale8(scale));
+    else setPixelColorXY(x, y, CRGB(getPixelColorXY(x, y)).nscale8(scale));
   }
 }
 

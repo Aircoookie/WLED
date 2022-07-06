@@ -1,8 +1,53 @@
 #include "wled.h"
 
 /*
- * Color conversion methods
+ * Color conversion & utility methods
  */
+
+/*
+ * color blend function
+ */
+uint32_t IRAM_ATTR color_blend(uint32_t color1, uint32_t color2, uint16_t blend, bool b16) {
+  if(blend == 0)   return color1;
+  uint16_t blendmax = b16 ? 0xFFFF : 0xFF;
+  if(blend == blendmax) return color2;
+  uint8_t shift = b16 ? 16 : 8;
+
+  uint32_t w1 = W(color1);
+  uint32_t r1 = R(color1);
+  uint32_t g1 = G(color1);
+  uint32_t b1 = B(color1);
+
+  uint32_t w2 = W(color2);
+  uint32_t r2 = R(color2);
+  uint32_t g2 = G(color2);
+  uint32_t b2 = B(color2);
+
+  uint32_t w3 = ((w2 * blend) + (w1 * (blendmax - blend))) >> shift;
+  uint32_t r3 = ((r2 * blend) + (r1 * (blendmax - blend))) >> shift;
+  uint32_t g3 = ((g2 * blend) + (g1 * (blendmax - blend))) >> shift;
+  uint32_t b3 = ((b2 * blend) + (b1 * (blendmax - blend))) >> shift;
+
+  return RGBW32(r3, g3, b3, w3);
+}
+
+/*
+ * color add function that preserves ratio
+ * idea: https://github.com/Aircoookie/WLED/pull/2465 by https://github.com/Proto-molecule
+ */
+uint32_t color_add(uint32_t c1, uint32_t c2)
+{
+  uint32_t r = R(c1) + R(c2);
+  uint32_t g = G(c1) + G(c2);
+  uint32_t b = B(c1) + B(c2);
+  uint32_t w = W(c1) + W(c2);
+  uint16_t max = r;
+  if (g > max) max = g;
+  if (b > max) max = b;
+  if (w > max) max = w;
+  if (max < 256) return RGBW32(r, g, b, w);
+  else           return RGBW32(r * 255 / max, g * 255 / max, b * 255 / max, w * 255 / max);
+}
 
 void setRandomColor(byte* rgb)
 {

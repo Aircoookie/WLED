@@ -528,12 +528,12 @@ public:
     stateChanged = true;
     if (applyToAll) {
       for (byte i=0; i<strip.getMaxSegments(); i++) {
-        WS2812FX::Segment& seg = strip.getSegment(i);
+        Segment& seg = strip.getSegment(i);
         if (!seg.isActive()) continue;
         strip.setMode(i, effectCurrent);
       }
     } else {
-      //WS2812FX::Segment& seg = strip.getSegment(strip.getMainSegmentId());
+      //Segment& seg = strip.getSegment(strip.getMainSegmentId());
       strip.setMode(strip.getMainSegmentId(), effectCurrent);
     }
     lampUdated();
@@ -556,12 +556,12 @@ public:
     stateChanged = true;
     if (applyToAll) {
       for (byte i=0; i<strip.getMaxSegments(); i++) {
-        WS2812FX::Segment& seg = strip.getSegment(i);
+        Segment& seg = strip.getSegment(i);
         if (!seg.isActive()) continue;
         seg.speed = effectSpeed;
       }
     } else {
-      WS2812FX::Segment& seg = strip.getSegment(strip.getMainSegmentId());
+      Segment& seg = strip.getSegment(strip.getMainSegmentId());
       seg.speed = effectSpeed;
     }
     lampUdated();
@@ -584,12 +584,12 @@ public:
     stateChanged = true;
     if (applyToAll) {
       for (byte i=0; i<strip.getMaxSegments(); i++) {
-        WS2812FX::Segment& seg = strip.getSegment(i);
+        Segment& seg = strip.getSegment(i);
         if (!seg.isActive()) continue;
         seg.intensity = effectIntensity;
       }
     } else {
-      WS2812FX::Segment& seg = strip.getSegment(strip.getMainSegmentId());
+      Segment& seg = strip.getSegment(strip.getMainSegmentId());
       seg.intensity = effectIntensity;
     }
     lampUdated();
@@ -618,7 +618,7 @@ public:
         default: val = strip.getSegment(id).custom1 = max(min((increase ? strip.getSegment(id).custom1+fadeAmount : strip.getSegment(id).custom1-fadeAmount), 255), 0); break;
       }
       for (byte i=0; i<strip.getMaxSegments(); i++) {
-        WS2812FX::Segment& seg = strip.getSegment(i);
+        Segment& seg = strip.getSegment(i);
         if (!seg.isActive() || i == id) continue;
         switch (par) {
           case 3:  strip.getSegment(i).custom3 = strip.getSegment(id).custom3; break;
@@ -627,7 +627,7 @@ public:
         }
       }
     } else {
-      WS2812FX::Segment& seg = strip.getSegment(strip.getMainSegmentId());
+      Segment& seg = strip.getSegment(strip.getMainSegmentId());
       switch (par) {
         case 3:  val = seg.custom3 = max(min((increase ? seg.custom3+fadeAmount : seg.custom3-fadeAmount), 255), 0); break;
         case 2:  val = seg.custom2 = max(min((increase ? seg.custom2+fadeAmount : seg.custom2-fadeAmount), 255), 0); break;
@@ -657,12 +657,12 @@ public:
     stateChanged = true;
     if (applyToAll) {
       for (byte i=0; i<strip.getMaxSegments(); i++) {
-        WS2812FX::Segment& seg = strip.getSegment(i);
+        Segment& seg = strip.getSegment(i);
         if (!seg.isActive()) continue;
         seg.palette = effectPalette;
       }
     } else {
-      WS2812FX::Segment& seg = strip.getSegment(strip.getMainSegmentId());
+      Segment& seg = strip.getSegment(strip.getMainSegmentId());
       seg.palette = effectPalette;
     }
     lampUdated();
@@ -686,12 +686,12 @@ public:
     stateChanged = true; 
     if (applyToAll) {
       for (byte i=0; i<strip.getMaxSegments(); i++) {
-        WS2812FX::Segment& seg = strip.getSegment(i);
+        Segment& seg = strip.getSegment(i);
         if (!seg.isActive()) continue;
         seg.colors[0] = RGBW32(col[0], col[1], col[2], col[3]);
       }
     } else {
-      WS2812FX::Segment& seg = strip.getSegment(strip.getMainSegmentId());
+      Segment& seg = strip.getSegment(strip.getMainSegmentId());
       seg.colors[0] = RGBW32(col[0], col[1], col[2], col[3]);
     }
     lampUdated();
@@ -715,12 +715,12 @@ public:
     colorHStoRGB(currentHue1*256, currentSat1, col);
     if (applyToAll) {
       for (byte i=0; i<strip.getMaxSegments(); i++) {
-        WS2812FX::Segment& seg = strip.getSegment(i);
+        Segment& seg = strip.getSegment(i);
         if (!seg.isActive()) continue;
         seg.colors[0] = RGBW32(col[0], col[1], col[2], col[3]);
       }
     } else {
-      WS2812FX::Segment& seg = strip.getSegment(strip.getMainSegmentId());
+      Segment& seg = strip.getSegment(strip.getMainSegmentId());
       seg.colors[0] = RGBW32(col[0], col[1], col[2], col[3]);
     }
     lampUdated();
@@ -775,12 +775,12 @@ public:
     currentCCT = max(min((increase ? currentCCT+fadeAmount : currentCCT-fadeAmount), 255), 0);
 //    if (applyToAll) {
       for (byte i=0; i<strip.getMaxSegments(); i++) {
-        WS2812FX::Segment& seg = strip.getSegment(i);
+        Segment& seg = strip.getSegment(i);
         if (!seg.isActive()) continue;
         seg.setCCT(currentCCT, i);
       }
 //    } else {
-//      WS2812FX::Segment& seg = strip.getSegment(strip.getMainSegmentId());
+//      Segment& seg = strip.getSegment(strip.getMainSegmentId());
 //      seg.setCCT(currentCCT, strip.getMainSegmentId());
 //    }
     lampUdated();

@@ -103,7 +103,7 @@ class Animated_Staircase : public Usermod {
 
     void updateSegments() {
       mainSegmentId = strip.getMainSegmentId();
-      WS2812FX::Segment* segments = strip.getSegments();
+      Segment* segments = strip.getSegments();
       for (int i = 0; i < MAX_NUM_SEGMENTS; i++, segments++) {
         if (!segments->isActive()) {
           maxSegmentId = i - 1;
@@ -290,7 +290,7 @@ class Animated_Staircase : public Usermod {
         }
       } else {
         // Restore segment options
-        WS2812FX::Segment* segments = strip.getSegments();
+        Segment* segments = strip.getSegments();
         for (int i = 0; i < MAX_NUM_SEGMENTS; i++, segments++) {
           if (!segments->isActive()) {
             maxSegmentId = i - 1;

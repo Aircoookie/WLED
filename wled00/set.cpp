@@ -612,7 +612,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     }
   }
 
-  WS2812FX::Segment& selseg = strip.getSegment(selectedSeg);
+  Segment& selseg = strip.getSegment(selectedSeg);
   pos = req.indexOf(F("SV=")); //segment selected
   if (pos > 0) {
     byte t = getNumVal(&req, pos);
@@ -823,7 +823,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   // apply to main and all selected segments to prevent #1618.
   for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
-    WS2812FX::Segment& seg = strip.getSegment(i);
+    Segment& seg = strip.getSegment(i);
     if (i != selectedSeg && (singleSegment || !seg.isActive() || !seg.isSelected())) continue; // skip non main segments if not applying to all
     if (fxModeChanged)    strip.setMode(i, effectIn);
     if (speedChanged)     seg.speed     = speedIn;
