@@ -8,6 +8,9 @@ extern Timezone* tz;
 
 class AnalogClockUsermod : public Usermod {
 private:
+    static constexpr uint32_t refreshRate = 50; // per second
+    static constexpr uint32_t refreshDelay = 1000 / refreshRate;
+
     struct Segment {
         // config
         int16_t firstLed  = 0;
@@ -51,6 +54,7 @@ private:
 
     // runtime
     bool     initDone         = false;
+    uint32_t lastOverlayDraw  = 0; 
 
     void validateAndUpdate() {
         mainSegment.validateAndUpdate();
@@ -128,7 +132,7 @@ private:
     static inline int16_t inc(int16_t n, int16_t i, Segment const& seg) {
         int16_t r = n + i;
         if (r > seg.lastLed) {
-            return seg.firstLed + (n - seg.lastLed + 1);
+            return seg.firstLed + n - seg.lastLed;
         }
         return r;
     }
@@ -143,7 +147,9 @@ public:
     }
 
     void loop() override {
-        strip.trigger();
+        if (millis() - lastOverlayDraw > refreshDelay) {
+            strip.trigger();
+        }
     }
 
     void handleOverlayDraw() override {
@@ -151,11 +157,20 @@ public:
             return;
         }
 
+        lastOverlayDraw = millis();
+
         auto time = toki.getTime();
         auto localSec = tz ? tz->toLocal(time.sec) : time.sec;
         double secondP = second(localSec) / 60.0;
         double minuteP = minute(localSec) / 60.0;
         double hourP = (hour(localSec) % 12) / 12.0 + minuteP / 12.0;
+
+        if (WLED_MQTT_CONNECTED) {
+            String topic = String(mqttDeviceTopic) + "/time";
+            char buf[13];
+            sprintf(buf, "%02d:%02d:%02d.%03d", hour(localSec), minute(localSec), second(localSec), time.ms);
+            mqtt->publish(topic.c_str(), 0, false, buf);
+        }
 
         if (secondsEnabled) {
             int16_t secondLed = adjustToSegment(secondP, secondsSegment);
@@ -168,6 +183,14 @@ public:
             // }
 
             uint32_t ms = time.ms % 1000;
+
+            if (WLED_MQTT_CONNECTED) {
+                String topic = String(mqttDeviceTopic) + "/leds";
+                char buf[13];
+                sprintf(buf, "%02d %02d %03d", secondLed, inc(secondLed, 1, secondsSegment), ms);
+                mqtt->publish(topic.c_str(), 0, false, buf);
+            }
+
             {
                 uint8_t b = (cos8(ms * 64 / 1000) - 128) * 2;
                 setPixelColor(secondLed, gamma32(scale32(secondColor, b)));
