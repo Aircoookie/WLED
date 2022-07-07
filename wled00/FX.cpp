@@ -3943,17 +3943,17 @@ uint16_t WS2812FX::mode_blends(void) {
   return FRAMETIME;
 }
 
-#define _2SX_VMIN .05
-#define _2SX_VMAX .5
-#define _2SX_RMIN .5
-#define _2SX_RMAX 3
+#define _LC_2SX_VMIN .05
+#define _LC_2SX_VMAX .5
+#define _LC_2SX_RMIN .5
+#define _LC_2SX_RMAX 3
 
-float _2sofix_random_float(float min, float max) {
-  return min + (esp_random() / (float) UINT32_MAX) * (max - min);
+float _lc2sofix_random_float(float min, float max) {
+  return min + (random16(UINT16_MAX) / (float) UINT16_MAX) * (max - min);
 }
 
-float _2sofix_velocity(uint8_t speed) {
-  return _2SX_VMIN + (speed / (float) 255) * (_2SX_VMAX - _2SX_VMIN);
+float _lc2sofix_velocity(uint8_t speed) {
+  return _LC_2SX_VMIN + (speed / (float) 255) * (_LC_2SX_VMAX - _LC_2SX_VMIN);
 }
 
 typedef struct {
@@ -3965,11 +3965,11 @@ typedef struct {
   float y;
   float vx;
   float vy;
-} _2sofixData;
+} _lc2sofixData;
 
-uint16_t WS2812FX::mode_2sofix() {
-  if (!SEGENV.allocateData(sizeof(_2sofixData))) return mode_static(); //allocation failed
-  _2sofixData* d = reinterpret_cast<_2sofixData*>(SEGENV.data);
+uint16_t WS2812FX::mode_lc2sofix() {
+  if (!SEGENV.allocateData(sizeof(_lc2sofixData))) return mode_static(); //allocation failed
+  _lc2sofixData* d = reinterpret_cast<_lc2sofixData*>(SEGENV.data);
 
   if (!d->inited) {
     d->inited = true;
@@ -3977,39 +3977,39 @@ uint16_t WS2812FX::mode_2sofix() {
     d->width = ledClockDisplay()->columnCount();
     d->height = ledClockDisplay()->rowCount();
 
-    d->x = _2sofix_random_float(0, d->width);
-    d->y = _2sofix_random_float(0, d->height);
+    d->x = _lc2sofix_random_float(0, d->width);
+    d->y = _lc2sofix_random_float(0, d->height);
 
-    d->vx = _2sofix_velocity(SEGMENT.speed);
-    d->vy = _2sofix_velocity(SEGMENT.speed);
+    d->vx = _lc2sofix_velocity(SEGMENT.speed);
+    d->vy = _lc2sofix_velocity(SEGMENT.speed);
   }
 
   d->x = constrain(d->x + d->vx, 0, d->width);
   d->y = constrain(d->y + d->vy, 0, d->height);
 
   if (d->x <= 0 || d->x >= d->width) {
-      d->vx = d->vx < 0 ? _2sofix_velocity(SEGMENT.speed) : -_2sofix_velocity(SEGMENT.speed);
+      d->vx = d->vx < 0 ? _lc2sofix_velocity(SEGMENT.speed) : -_lc2sofix_velocity(SEGMENT.speed);
   }
 
   if (d->y <= 0 || d->y >= d->height) {
-      d->vy = d->vy < 0 ? _2sofix_velocity(SEGMENT.speed) : -_2sofix_velocity(SEGMENT.speed);
+      d->vy = d->vy < 0 ? _lc2sofix_velocity(SEGMENT.speed) : -_lc2sofix_velocity(SEGMENT.speed);
   }
 
   d->hue += 1;
 
   for (uint8_t x = 0; x < d->width; ++x) {
       for (uint8_t y = 0; y < d->height; ++y) {
-          float dist = sqrtf(powf(x - d->x, 2) + powf(y - d->y, 2));
-
-          float radius = sqrtf(powf(d->width, 2) + powf(d->height, 2))
-            * (_2SX_RMIN + ((255 - SEGMENT.intensity) / (float) 255) * (_2SX_RMAX - _2SX_RMIN));
-
-          float dNorm = dist / radius;
-          uint8_t hueOffset = fmod(dNorm, 1) * 255;
-          uint8_t hue = (d->hue + hueOffset) % 256;
-
           uint8_t i = ledClockDisplay()->indexOfCoords(y, x);
           if (i != _7SEG_INDEX_UNDEF) {
+            float dist = sqrtf(powf(x - d->x, 2) + powf(y - d->y, 2));
+
+            float radius = sqrtf(powf(d->width, 2) + powf(d->height, 2))
+              * (_LC_2SX_RMIN + ((255 - SEGMENT.intensity) / (float) 255) * (_LC_2SX_RMAX - _LC_2SX_RMIN));
+
+            float dNorm = dist / radius;
+            uint8_t hueOffset = fmod(dNorm, 1) * 255;
+            uint8_t hue = (d->hue + hueOffset) % 256;
+
             setPixelColor(i, crgb_to_col(CHSV(hue, 255, 255)));
           }
       }

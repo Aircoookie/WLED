@@ -240,7 +240,7 @@
 #define FX_MODE_BLENDS                 115
 #define FX_MODE_TV_SIMULATOR           116
 #define FX_MODE_DYNAMIC_SMOOTH         117
-#define FX_MODE_2SOFIX                 118
+#define FX_MODE_LC_2SOFIX              118
 
 
 class WS2812FX {
@@ -611,7 +611,7 @@ class WS2812FX {
       _mode[FX_MODE_BLENDS]                  = &WS2812FX::mode_blends;
       _mode[FX_MODE_TV_SIMULATOR]            = &WS2812FX::mode_tv_simulator;
       _mode[FX_MODE_DYNAMIC_SMOOTH]          = &WS2812FX::mode_dynamic_smooth;
-      _mode[FX_MODE_2SOFIX]                  = &WS2812FX::mode_2sofix;
+      _mode[FX_MODE_LC_2SOFIX]               = &WS2812FX::mode_lc2sofix;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -836,7 +836,7 @@ class WS2812FX {
       mode_blends(void),
       mode_tv_simulator(void),
       mode_dynamic_smooth(void),
-      mode_2sofix(void);
+      mode_lc2sofix(void);
 
   private:
     uint32_t crgb_to_col(CRGB fastled);
