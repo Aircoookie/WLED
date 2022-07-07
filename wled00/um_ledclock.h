@@ -341,8 +341,8 @@ public:
         dHoursO.mapSegment(_7SEG_SEG_G, 25, 24);
 
         sep.map(2,
-            2, 0, 28,
-            4, 0, 29);
+            2, 0, 29,
+            4, 0, 28);
 
         // digit 3
         dMinutesT.mapSegment(_7SEG_SEG_A, 36, 37);
