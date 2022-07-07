@@ -3943,6 +3943,86 @@ uint16_t WS2812FX::mode_blends(void) {
   return FRAMETIME;
 }
 
+/*
+  Vortex
+*/
+
+#define _LC_VTX_INC_MIN 0.5
+#define _LC_VTX_INC_MAX 20
+#define _LC_VTX_INT_MIN 0
+#define _LC_VTX_INT_MAX 180
+
+typedef struct {
+  bool inited = false;
+  uint8_t width;
+  uint8_t height;
+  float radius;
+  float rotation;
+} _lcVortexData;
+
+uint16_t WS2812FX::mode_lcVortex() {
+  if (!SEGENV.allocateData(sizeof(_lcVortexData))) return mode_static(); //allocation failed
+  _lcVortexData* d = reinterpret_cast<_lcVortexData*>(SEGENV.data);
+
+  if (!d->inited) {
+    d->inited = true;
+
+    d->width = ledClockDisplay()->columnCount();
+    d->height = ledClockDisplay()->rowCount();
+
+    d->radius = sqrtf(powf(d->width / (float) 2, 2) + powf(d->height / (float) 2, 2)) / 2;
+
+    d->rotation = 0;
+  }
+
+  d->rotation += _LC_VTX_INC_MIN + (SEGMENT.speed / (float) 255) * (_LC_VTX_INC_MAX - _LC_VTX_INC_MIN);
+  d->rotation = fmodf(d->rotation, 360);
+
+  for (uint8_t x = 0; x < d->width; ++x) {
+      for (uint8_t y = 0; y < d->height; ++y) {
+          uint8_t i = ledClockDisplay()->indexOfCoords(y, x);
+          if (i != _7SEG_INDEX_UNDEF) {
+
+            float _x = x - d->width / (float) 2;
+            float _y = -(y - d->height / (float) 2);
+
+            float absX = abs(_x);
+            float absY = abs(_y);
+
+            float deg = _x == 0 || _y == 0 ? 0 : atan(absX / absY) * (180 / PI);
+
+            if (_x > 0 && _y <= 0) {
+              deg = 90 + (deg == 0 ? 0 : 90 - deg);
+            } else if (_y < 0 && _x <= 0) {
+              deg += 180;
+            } else if (_x < 0 && _y >= 0) {
+              deg = 270 + (deg == 0 ? 0 : 90 - deg);
+            }
+
+            deg += d->rotation;
+
+            float hyp = (absX == 0 || absY == 0)
+              ? (absX == 0 ? absY : absX)
+              : sqrtf(powf(absX, 2) + powf(absY, 2));
+
+            deg += (hyp / d->radius) * (_LC_VTX_INT_MIN + (SEGMENT.intensity / (float) 255) * (_LC_VTX_INT_MAX - _LC_VTX_INT_MIN));
+            deg = fmodf(deg, 360);
+
+            uint16_t palIdx = (deg / 360) * 255;
+            uint32_t color = color_from_palette(palIdx, false, true, 3, 255);
+
+            setPixelColor(i, color);
+          }
+      }
+  }
+
+  return FRAMETIME;
+}
+
+/*
+  2sofix original effect
+*/
+
 #define _LC_2SX_VMIN .05
 #define _LC_2SX_VMAX .5
 #define _LC_2SX_RMIN .5
