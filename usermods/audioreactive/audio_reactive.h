@@ -1162,8 +1162,7 @@ class AudioReactive : public Usermod {
 
       JsonObject sync = top.createNestedObject("sync");
       sync[F("port")] = audioSyncPort;
-      sync[F("send")] = (bool) (audioSyncEnabled & 0x01);
-      sync[F("receive")] = (bool) (audioSyncEnabled & 0x02);
+      sync[F("mode")] = audioSyncEnabled;
     }
 
 
@@ -1203,13 +1202,8 @@ class AudioReactive : public Usermod {
       configComplete &= getJsonValue(top["cfg"][F("gain")],    sampleGain);
       configComplete &= getJsonValue(top["cfg"][F("AGC")],     soundAgc);
 
-      configComplete &= getJsonValue(top["sync"][F("port")],    audioSyncPort);
-
-      bool send        = audioSyncEnabled & 0x01;
-      bool receive     = audioSyncEnabled & 0x02;
-      configComplete  &= getJsonValue(top["sync"][F("send")],    send);
-      configComplete  &= getJsonValue(top["sync"][F("receive")], receive);
-      audioSyncEnabled = send | (receive << 1);
+      configComplete &= getJsonValue(top["sync"][F("port")], audioSyncPort);
+      configComplete &= getJsonValue(top["sync"][F("mode")], audioSyncEnabled);
 
       return configComplete;
     }
@@ -1229,6 +1223,10 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addOption(dd,'Normal',1);"));
       oappend(SET_F("addOption(dd,'Vivid',2);"));
       oappend(SET_F("addOption(dd,'Lazy',3);"));
+      oappend(SET_F("dd=addDropdown('AudioReactive','sync:mode');"));
+      oappend(SET_F("addOption(dd,'Off',0);"));
+      oappend(SET_F("addOption(dd,'Send',1);"));
+      oappend(SET_F("addOption(dd,'Receive',2);"));
       oappend(SET_F("addInfo('AudioReactive:digitalmic:type',1,'<i>requires reboot!</i>');"));  // 0 is field type, 1 is actual field
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',0,'I2S SD');"));
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',1,'I2S WS');"));

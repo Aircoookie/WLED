@@ -7419,7 +7419,7 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
     rippleTime = true;
   }
 
-  strip.fadeToBlackBy(128+(SEGMENT.speed>>2));
+  strip.fadeToBlackBy(SEGMENT.speed);
 
   for (int x=0; x < cols; x++) {
     uint8_t  band       = map(x, 0, cols-1, 0, NUM_BANDS - 1);

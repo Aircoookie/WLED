@@ -25,7 +25,7 @@ var ws, cpick, ranges;
 var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false},
-          labels:true, pcmbot:false, pid:true, seglen:false, segpwr:false, css:true, hdays:false}
+          labels:true, pcmbot:false, pid:true, seglen:false, segpwr:false, segexp:false, css:true, hdays:false}
 };
 var hol = [
 	[0,11,24,4,"https://aircoookie.github.io/xmas.png"], // christmas
@@ -681,7 +681,7 @@ function populateSegments(s)
 		if (i > lSeg) lSeg = i;
 
 		let sg = gId(`seg${i}`);
-		let exp = sg ? sg.classList.contains("expanded") : false;
+		let exp = sg ? (sg.classList.contains("expanded") || (i===0 && cfg.comp.segexp)) : false;
 
 		let segp = `<div id="segp${i}" class="sbs">
 		<i class="icons e-icon pwr ${inst.on ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})">&#xe08f;</i>
@@ -1319,7 +1319,7 @@ function setSliderAndColorControl(idx, applyDef=false)
 				var v = Math.max(0,Math.min(255,parseInt(slOnOff[i].substr(dPos+1))));
 				if      (i==0) { if (applyDef) gId("sliderSpeed").value     = v; obj.seg.sx = v; }
 				else if (i==1) { if (applyDef) gId("sliderIntensity").value = v; obj.seg.ix = v; }
-				else           { if (applyDef) gId("sliderC"+(i-1)).value   = v; obj.seg["c"+(i-1)+"x"] = v}
+				else           { if (applyDef) gId("sliderC"+(i-1)).value   = v; obj.seg["c"+(i-1)] = v}
 				slOnOff[i] = slOnOff[i].substring(0,dPos);
 			}
 			if (slOnOff.length>i && slOnOff[i]!="!") label.innerHTML = slOnOff[i];
@@ -1346,7 +1346,7 @@ function setSliderAndColorControl(idx, applyDef=false)
 	var cslLabel = '';
 	var sep = '';
 	var hide = true;
-	var cslCnt = 0;
+	var cslCnt = 0, oCsel = csel;
 	for (let i=0; i<gId("csl").children.length; i++) {
 		var btn = gId("csl" + i);
 		// if no controlDefined or coOnOff has a value
@@ -1364,13 +1364,13 @@ function setSliderAndColorControl(idx, applyDef=false)
 			else if (i==1) btn.innerHTML = "Bg";
 			else btn.innerHTML = "Cs";
 			hide = false;
-			if (!cslCnt) selectSlot(i); // select 1st displayed slot
+			if (!cslCnt || oCsel==i) selectSlot(i); // select 1st displayed slot or old one
 			cslCnt++;
 		} else if (!controlDefined /*|| paOnOff.length>0*/) { // if no controls then all buttons should be shown for color 1..3
 			btn.style.display = "inline";
 			btn.innerHTML = `${i+1}`;
 			hide = false;
-			if (!cslCnt) selectSlot(i); // select 1st displayed slot
+			if (!cslCnt || oCsel==i) selectSlot(i); // select 1st displayed slot or old one
 			cslCnt++;
 		} else {
 			btn.style.display = "none";

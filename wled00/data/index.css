@@ -368,7 +368,7 @@ button {
 }
 
 #sliders {
-	width: 310px;
+	width: 300px;
 	margin: 0 auto;
 	position: sticky;
 	bottom: 0;
@@ -381,7 +381,7 @@ button {
 
 .slider {
 	background: var(--c-2);
-	max-width: 310px;
+	max-width: 300px;
 	min-width: 280px;
 	margin: 0 auto; /* add 5px; if you want some vertical space but looks ugly */
 	border-radius: 15px;

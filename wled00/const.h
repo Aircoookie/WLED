@@ -360,4 +360,46 @@
 
 #define INTERFACE_UPDATE_COOLDOWN 2000 //time in ms to wait between websockets, alexa, and MQTT updates
 
+#if defined(ESP8266) && defined(HW_PIN_SCL)
+  #undef HW_PIN_SCL
+#endif
+#if defined(ESP8266) && defined(HW_PIN_SDA)
+  #undef HW_PIN_SDA
+#endif
+#ifndef HW_PIN_SCL
+  #ifdef ESP8266
+    #define HW_PIN_SCL 5
+  #else
+    #define HW_PIN_SCL 22
+  #endif
+#endif
+#ifndef HW_PIN_SDA
+  #ifdef ESP8266
+    #define HW_PIN_SDA 4
+  #else
+    #define HW_PIN_SDA 21
+  #endif
+#endif
+
+#if defined(ESP8266) && defined(HW_PIN_CLOCKSPI)
+  #undef HW_PIN_CLOCKSPI
+#endif
+#if defined(ESP8266) && defined(HW_PIN_DATASPI)
+  #undef HW_PIN_DATASPI
+#endif
+#ifndef HW_PIN_CLOCKSPI
+  #ifdef ESP8266
+    #define HW_PIN_CLOCKSPI 14
+  #else
+    #define HW_PIN_CLOCKSPI 18
+  #endif
+#endif
+#ifndef HW_PIN_DATASPI
+  #ifdef ESP8266
+    #define HW_PIN_DATASPI 13
+  #else
+    #define HW_PIN_DATASPI 23
+  #endif
+#endif
+
 #endif
