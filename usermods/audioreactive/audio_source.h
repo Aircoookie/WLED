@@ -3,7 +3,7 @@
 #include <Wire.h>
 #include "wled.h"
 #include <driver/i2s.h>
-include <driver/adc.h>
+#include <driver/adc.h>
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0)
 #include <driver/adc_deprecated.h>
 #include <driver/adc_types_deprecated.h>
@@ -99,7 +99,7 @@ class I2SSource : public AudioSource {
         .bits_per_sample = I2S_SAMPLE_RESOLUTION,
         .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
-            .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_STAND_I2S),
+        .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_STAND_I2S),
 #else
         .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB),
 #endif
@@ -322,7 +322,7 @@ class I2SAdcSource : public I2SSource {
         .bits_per_sample = I2S_SAMPLE_RESOLUTION,
         .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
-            .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_STAND_I2S),
+        .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_STAND_I2S),
 #else
         .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB),
 #endif
