@@ -3944,6 +3944,18 @@ uint16_t WS2812FX::mode_blends(void) {
 }
 
 /*
+  LED Clock helpers
+*/
+
+float _lc_map8f(uint8_t factor, float min, float max) {
+  return min + (factor / (float) 255) * (max - min);
+}
+
+float _lc_random_float(float min, float max) {
+  return min + (random16(UINT16_MAX) / (float) UINT16_MAX) * (max - min);
+}
+
+/*
   Vortex
 */
 
@@ -3975,7 +3987,7 @@ uint16_t WS2812FX::mode_lcVortex() {
     d->rotation = 0;
   }
 
-  d->rotation += _LC_VTX_INC_MIN + (SEGMENT.speed / (float) 255) * (_LC_VTX_INC_MAX - _LC_VTX_INC_MIN);
+  d->rotation += _lc_map8f(SEGMENT.speed, _LC_VTX_INC_MIN, _LC_VTX_INC_MAX);
   d->rotation = fmodf(d->rotation, 360);
 
   for (uint8_t x = 0; x < d->width; ++x) {
@@ -4005,7 +4017,7 @@ uint16_t WS2812FX::mode_lcVortex() {
               ? (absX == 0 ? absY : absX)
               : sqrtf(powf(absX, 2) + powf(absY, 2));
 
-            deg += (radius / d->maxRadius) * (_LC_VTX_INT_MIN + (SEGMENT.intensity / (float) 255) * (_LC_VTX_INT_MAX - _LC_VTX_INT_MIN));
+            deg += (radius / d->maxRadius) * _lc_map8f(SEGMENT.intensity, _LC_VTX_INT_MIN, _LC_VTX_INT_MAX);
             deg = fmodf(deg, 360);
 
             uint16_t palIdx = (deg / 360) * 255; // map [0-360]f to [0-255]i
@@ -4028,14 +4040,6 @@ uint16_t WS2812FX::mode_lcVortex() {
 #define _LC_2SX_RMIN .5
 #define _LC_2SX_RMAX 3
 
-float _lc2sofix_random_float(float min, float max) {
-  return min + (random16(UINT16_MAX) / (float) UINT16_MAX) * (max - min);
-}
-
-float _lc2sofix_velocity(uint8_t speed) {
-  return _LC_2SX_VMIN + (speed / (float) 255) * (_LC_2SX_VMAX - _LC_2SX_VMIN);
-}
-
 typedef struct {
   bool inited = false;
   uint8_t hue;
@@ -4057,22 +4061,22 @@ uint16_t WS2812FX::mode_lc2sofix() {
     d->width = ledClockDisplay()->columnCount();
     d->height = ledClockDisplay()->rowCount();
 
-    d->x = _lc2sofix_random_float(0, d->width);
-    d->y = _lc2sofix_random_float(0, d->height);
+    d->x = _lc_random_float(0, d->width);
+    d->y = _lc_random_float(0, d->height);
 
-    d->vx = _lc2sofix_velocity(SEGMENT.speed);
-    d->vy = _lc2sofix_velocity(SEGMENT.speed);
+    d->vx = _lc_map8f(SEGMENT.speed, _LC_2SX_VMIN, _LC_2SX_VMAX);
+    d->vy = _lc_map8f(SEGMENT.speed, _LC_2SX_VMIN, _LC_2SX_VMAX);
   }
 
   d->x = constrain(d->x + d->vx, 0, d->width);
   d->y = constrain(d->y + d->vy, 0, d->height);
 
   if (d->x <= 0 || d->x >= d->width) {
-      d->vx = d->vx < 0 ? _lc2sofix_velocity(SEGMENT.speed) : -_lc2sofix_velocity(SEGMENT.speed);
+      d->vx = d->vx < 0 ? _lc_map8f(SEGMENT.speed, _LC_2SX_VMIN, _LC_2SX_VMAX) : -_lc_map8f(SEGMENT.speed, _LC_2SX_VMIN, _LC_2SX_VMAX);
   }
 
   if (d->y <= 0 || d->y >= d->height) {
-      d->vy = d->vy < 0 ? _lc2sofix_velocity(SEGMENT.speed) : -_lc2sofix_velocity(SEGMENT.speed);
+      d->vy = d->vy < 0 ? _lc_map8f(SEGMENT.speed, _LC_2SX_VMIN, _LC_2SX_VMAX) : -_lc_map8f(SEGMENT.speed, _LC_2SX_VMIN, _LC_2SX_VMAX);
   }
 
   d->hue += 1;
@@ -4084,7 +4088,7 @@ uint16_t WS2812FX::mode_lc2sofix() {
             float dist = sqrtf(powf(x - d->x, 2) + powf(y - d->y, 2));
 
             float radius = sqrtf(powf(d->width, 2) + powf(d->height, 2))
-              * (_LC_2SX_RMIN + ((255 - SEGMENT.intensity) / (float) 255) * (_LC_2SX_RMAX - _LC_2SX_RMIN));
+              * _lc_map8f(255 - SEGMENT.intensity, _LC_2SX_RMIN, _LC_2SX_RMAX);
 
             float dNorm = dist / radius;
             uint8_t hueOffset = fmod(dNorm, 1) * 255;
