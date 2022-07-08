@@ -3950,13 +3950,13 @@ uint16_t WS2812FX::mode_blends(void) {
 #define _LC_VTX_INC_MIN 0.5
 #define _LC_VTX_INC_MAX 20
 #define _LC_VTX_INT_MIN 0
-#define _LC_VTX_INT_MAX 180
+#define _LC_VTX_INT_MAX 360
 
 typedef struct {
   bool inited = false;
   uint8_t width;
   uint8_t height;
-  float radius;
+  float maxRadius;
   float rotation;
 } _lcVortexData;
 
@@ -3970,7 +3970,7 @@ uint16_t WS2812FX::mode_lcVortex() {
     d->width = ledClockDisplay()->columnCount();
     d->height = ledClockDisplay()->rowCount();
 
-    d->radius = sqrtf(powf(d->width / (float) 2, 2) + powf(d->height / (float) 2, 2)) / 2;
+    d->maxRadius = sqrtf(powf(d->width / (float) 2, 2) + powf(d->height / (float) 2, 2));
 
     d->rotation = 0;
   }
@@ -4001,14 +4001,14 @@ uint16_t WS2812FX::mode_lcVortex() {
 
             deg += d->rotation;
 
-            float hyp = (absX == 0 || absY == 0)
+            float radius = (absX == 0 || absY == 0)
               ? (absX == 0 ? absY : absX)
               : sqrtf(powf(absX, 2) + powf(absY, 2));
 
-            deg += (hyp / d->radius) * (_LC_VTX_INT_MIN + (SEGMENT.intensity / (float) 255) * (_LC_VTX_INT_MAX - _LC_VTX_INT_MIN));
+            deg += (radius / d->maxRadius) * (_LC_VTX_INT_MIN + (SEGMENT.intensity / (float) 255) * (_LC_VTX_INT_MAX - _LC_VTX_INT_MIN));
             deg = fmodf(deg, 360);
 
-            uint16_t palIdx = (deg / 360) * 255;
+            uint16_t palIdx = (deg / 360) * 255; // map [0-360]f to [0-255]i
             uint32_t color = color_from_palette(palIdx, false, true, 3, 255);
 
             setPixelColor(i, color);
