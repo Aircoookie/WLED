@@ -165,13 +165,6 @@ public:
         double minuteP = minute(localSec) / 60.0;
         double hourP = (hour(localSec) % 12) / 12.0 + minuteP / 12.0;
 
-        if (WLED_MQTT_CONNECTED) {
-            String topic = String(mqttDeviceTopic) + "/time";
-            char buf[13];
-            sprintf(buf, "%02d:%02d:%02d.%03d", hour(localSec), minute(localSec), second(localSec), time.ms);
-            mqtt->publish(topic.c_str(), 0, false, buf);
-        }
-
         if (secondsEnabled) {
             int16_t secondLed = adjustToSegment(secondP, secondsSegment);
             // setPixelColor(secondLed, secondColor);
@@ -183,13 +176,6 @@ public:
             // }
 
             uint32_t ms = time.ms % 1000;
-
-            if (WLED_MQTT_CONNECTED) {
-                String topic = String(mqttDeviceTopic) + "/leds";
-                char buf[13];
-                sprintf(buf, "%02d %02d %03d", secondLed, inc(secondLed, 1, secondsSegment), ms);
-                mqtt->publish(topic.c_str(), 0, false, buf);
-            }
 
             {
                 uint8_t b = (cos8(ms * 64 / 1000) - 128) * 2;
