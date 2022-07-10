@@ -199,7 +199,7 @@ void handleAnalog(uint8_t b)
       if (aRead == 0) {
         seg.setOption(SEG_OPTION_ON, 0); // off
       } else {
-        seg.setOpacity(aRead, macroDoublePress[b]);
+        seg.setOpacity(aRead);
         seg.setOption(SEG_OPTION_ON, 1);
       }
       // this will notify clients of update (websockets,mqtt,etc)

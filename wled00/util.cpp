@@ -238,14 +238,13 @@ uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLe
       char lineBuffer[256];
       //strcpy_P(lineBuffer, (const char*)pgm_read_dword(&(WS2812FX::_modeData[mode])));
       strcpy_P(lineBuffer, strip.getModeData(mode));
-      if (strlen(lineBuffer) > 0) {
-        size_t j = 0;
-        for (; j < maxLen; j++) {
-          if (lineBuffer[j] == '\0' || lineBuffer[j] == '@') break;
-          dest[j] = lineBuffer[j];
-        }
-        dest[j] = 0; // terminate string
+      size_t len = strlen(lineBuffer);
+      size_t j = 0;
+      for (; j < maxLen && j < len; j++) {
+        if (lineBuffer[j] == '\0' || lineBuffer[j] == '@') break;
+        dest[j] = lineBuffer[j];
       }
+      dest[j] = 0; // terminate string
       return strlen(dest);
     } else return 0;
   }

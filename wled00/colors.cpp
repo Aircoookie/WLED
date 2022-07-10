@@ -51,7 +51,7 @@ uint32_t color_add(uint32_t c1, uint32_t c2)
 
 void setRandomColor(byte* rgb)
 {
-  lastRandomIndex = strip.get_random_wheel_index(lastRandomIndex);
+  lastRandomIndex = strip.getMainSegment().get_random_wheel_index(lastRandomIndex);
   colorHStoRGB(lastRandomIndex*256,255,rgb);
 }
 

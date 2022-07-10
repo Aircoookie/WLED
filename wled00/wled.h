@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2207041
+#define VERSION 2207081
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -152,19 +152,19 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
 #define PSRAMDynamicJsonDocument DynamicJsonDocument
 #endif
 
+#include "const.h"
 #include "fcn_declare.h"
 #include "html_ui.h"
 #ifdef WLED_ENABLE_SIMPLE_UI
-#include "html_simple.h"
+  #include "html_simple.h"
 #endif
 #include "html_settings.h"
 #include "html_other.h"
-#include "FX.h"
 #include "ir_codes.h"
-#include "const.h"
 #include "NodeStruct.h"
 #include "pin_manager.h"
 #include "bus_manager.h"
+#include "FX.h"
 
 #ifndef CLIENT_SSID
   #define CLIENT_SSID DEFAULT_CLIENT_SSID

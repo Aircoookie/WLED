@@ -226,9 +226,9 @@ void changeColor(uint32_t c, int16_t cct=-1)
       if (isRGB) mask |= 0x00FFFFFF; // RGB
       if (hasW)  mask |= 0xFF000000; // white
       if (hasW && !wSlider && (c & 0xFF000000)) { // segment has white channel & white channel is auto calculated & white specified
-        seg.setColor(0, c | 0xFFFFFF, i); // for accurate/brighter mode we fake white (since button may not set white color to 0xFFFFFF)
-      } else if (c & mask) seg.setColor(0, c & mask, i); // only apply if not black
-      if (isCCT && cct >= 0) seg.setCCT(cct, i);
+        seg.setColor(0, c | 0xFFFFFF); // for accurate/brighter mode we fake white (since button may not set white color to 0xFFFFFF)
+      } else if (c & mask) seg.setColor(0, c & mask); // only apply if not black
+      if (isCCT && cct >= 0) seg.setCCT(cct);
     }
     setValuesFromFirstSelectedSeg();
   } else {
@@ -243,9 +243,9 @@ void changeColor(uint32_t c, int16_t cct=-1)
     if (isRGB) mask |= 0x00FFFFFF; // RGB
     if (hasW)  mask |= 0xFF000000; // white
     if (hasW && !wSlider && (c & 0xFF000000)) { // segment has white channel & white channel is auto calculated & white specified
-      seg.setColor(0, c | 0xFFFFFF, i); // for accurate/brighter mode we fake white (since button may not set white color to 0xFFFFFF)
-    } else if (c & mask) seg.setColor(0, c & mask, i); // only apply if not black
-    if (isCCT && cct >= 0) seg.setCCT(cct, i);
+      seg.setColor(0, c | 0xFFFFFF); // for accurate/brighter mode we fake white (since button may not set white color to 0xFFFFFF)
+    } else if (c & mask) seg.setColor(0, c & mask); // only apply if not black
+    if (isCCT && cct >= 0) seg.setCCT(cct);
     setValuesFromMainSeg();
   }
   stateChanged = true;

@@ -554,6 +554,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     releaseJSONBufferLock();
   }
 
+  #ifndef WLED_DISABLE_2D
   //2D panels
   if (subPage == 10)
   {
@@ -577,6 +578,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
     strip.setUpMatrix(); // will check limits
   }
+  #endif
 
   lastEditTime = millis();
   if (subPage != 2 && !doReboot) serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)
@@ -664,9 +666,9 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   pos = req.indexOf(F("SB=")); //Segment brightness/opacity
   if (pos > 0) {
     byte segbri = getNumVal(&req, pos);
-    selseg.setOption(SEG_OPTION_ON, segbri, selectedSeg);
+    selseg.setOption(SEG_OPTION_ON, segbri);
     if (segbri) {
-      selseg.setOpacity(segbri, selectedSeg);
+      selseg.setOpacity(segbri);
     }
   }
 
@@ -769,7 +771,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (pos > 0) {
     colorFromDecOrHexString(tmpCol, (char*)req.substring(pos + 3).c_str());
     uint32_t col2 = RGBW32(tmpCol[0], tmpCol[1], tmpCol[2], tmpCol[3]);
-    selseg.setColor(2, col2, selectedSeg); // defined above (SS= or main)
+    selseg.setColor(2, col2); // defined above (SS= or main)
     stateChanged = true;
     if (!singleSegment) strip.setColor(2, col2); // will set color to all active & selected segments
   }
@@ -798,14 +800,14 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (col0Changed) {
     stateChanged = true;
     uint32_t colIn0 = RGBW32(colIn[0], colIn[1], colIn[2], colIn[3]);
-    selseg.setColor(0, colIn0, selectedSeg);
+    selseg.setColor(0, colIn0);
     if (!singleSegment) strip.setColor(0, colIn0); // will set color to all active & selected segments
   }
 
   if (col1Changed) {
     stateChanged = true;
     uint32_t colIn1 = RGBW32(colInSec[0], colInSec[1], colInSec[2], colInSec[3]);
-    selseg.setColor(1, colIn1, selectedSeg);
+    selseg.setColor(1, colIn1);
     if (!singleSegment) strip.setColor(1, colIn1); // will set color to all active & selected segments
   }
 
@@ -925,7 +927,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     realtimeOverride = getNumVal(&req, pos);
     if (realtimeOverride > 2) realtimeOverride = REALTIME_OVERRIDE_ALWAYS;
     if (realtimeMode && useMainSegmentOnly) {
-      strip.getMainSegment().setOption(SEG_OPTION_FREEZE, !realtimeOverride, strip.getMainSegmentId());
+      strip.getMainSegment().setOption(SEG_OPTION_FREEZE, !realtimeOverride);
     }
   }
 

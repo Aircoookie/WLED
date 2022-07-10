@@ -636,6 +636,7 @@ void getSettingsJS(byte subPage, char* dest)
   if (subPage == 10) // 2D matrices
   {
     sappend('v',SET_F("SOMP"),strip.isMatrix);
+    #ifndef WLED_DISABLE_2D
     oappend(SET_F("resetPanels();"));
     if (strip.isMatrix) {
       sappend('v',SET_F("PH"),strip.panelH);
@@ -660,5 +661,8 @@ void getSettingsJS(byte subPage, char* dest)
         pO[l] = 'S'; sappend('c',pO,strip.panel[i].serpentine);
       }
     }
+    #else
+    oappend(SET_F("gId(\"somp\").remove(1);")); // remove 2D option from dropdown
+    #endif
   }
 }

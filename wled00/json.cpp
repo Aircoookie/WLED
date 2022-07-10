@@ -72,7 +72,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   uint16_t spc = elem[F("spc")] | seg.spacing;
   uint16_t of = seg.offset;
 
-  if (spc>0 && spc!=seg.spacing) strip.fill(BLACK, id); // clear spacing gaps
+  if (spc>0 && spc!=seg.spacing) seg.fill(BLACK); // clear spacing gaps
 
   uint16_t len = 1;
   if (stop > start) len = stop - start;
@@ -88,18 +88,18 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   byte segbri = seg.opacity;
   if (getVal(elem["bri"], &segbri)) {
-    if (segbri > 0) seg.setOpacity(segbri, id);
-    seg.setOption(SEG_OPTION_ON, segbri, id);
+    if (segbri > 0) seg.setOpacity(segbri);
+    seg.setOption(SEG_OPTION_ON, segbri);
   }
 
   bool on = elem["on"] | seg.getOption(SEG_OPTION_ON);
   if (elem["on"].is<const char*>() && elem["on"].as<const char*>()[0] == 't') on = !on;
-  seg.setOption(SEG_OPTION_ON, on, id);
+  seg.setOption(SEG_OPTION_ON, on);
   bool frz = elem["frz"] | seg.getOption(SEG_OPTION_FREEZE);
   if (elem["frz"].is<const char*>() && elem["frz"].as<const char*>()[0] == 't') frz = !seg.getOption(SEG_OPTION_FREEZE);
-  seg.setOption(SEG_OPTION_FREEZE, frz, id);
+  seg.setOption(SEG_OPTION_FREEZE, frz);
 
-  seg.setCCT(elem["cct"] | seg.cct, id);
+  seg.setCCT(elem["cct"] | seg.cct);
 
   JsonArray colarr = elem["col"];
   if (!colarr.isNull())
@@ -115,7 +115,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         if (hexCol == nullptr) { //Kelvin color temperature (or invalid), e.g 2400
           int kelvin = colarr[i] | -1;
           if (kelvin <  0) continue;
-          if (kelvin == 0) seg.setColor(i, 0, id);
+          if (kelvin == 0) seg.setColor(i, 0);
           if (kelvin >  0) colorKtoRGB(kelvin, brgbw);
           colValid = true;
         } else { //HEX string, e.g. "FFAA00"
@@ -132,7 +132,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 
       if (!colValid) continue;
 
-      seg.setColor(i, RGBW32(rgbw[0],rgbw[1],rgbw[2],rgbw[3]), id);
+      seg.setColor(i, RGBW32(rgbw[0],rgbw[1],rgbw[2],rgbw[3]));
       if (seg.mode == FX_MODE_STATIC) strip.trigger(); //instant refresh
     }
   }
@@ -152,10 +152,12 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   seg.setOption(SEG_OPTION_SELECTED, elem[F("sel")] | seg.getOption(SEG_OPTION_SELECTED));
   seg.setOption(SEG_OPTION_REVERSED, elem["rev"]    | seg.getOption(SEG_OPTION_REVERSED));
   seg.setOption(SEG_OPTION_MIRROR  , elem[F("mi")]  | seg.getOption(SEG_OPTION_MIRROR  ));
+  #ifndef WLED_DISABLE_2D
   // 2D options
   seg.setOption(SEG_OPTION_REVERSED_Y, elem[F("rY")] | seg.getOption(SEG_OPTION_REVERSED_Y));
   seg.setOption(SEG_OPTION_MIRROR_Y  , elem[F("mY")] | seg.getOption(SEG_OPTION_MIRROR_Y  ));
   seg.setOption(SEG_OPTION_TRANSPOSED, elem[F("tp")] | seg.getOption(SEG_OPTION_TRANSPOSED));
+  #endif
 
   byte fx = seg.mode;
   if (getVal(elem["fx"], &fx, 1, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 1-255 exact value)
@@ -173,7 +175,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   JsonArray iarr = elem[F("i")]; //set individual LEDs
   if (!iarr.isNull()) {
-    uint8_t oldSegId = strip.setPixelSegment(id);
+    //uint8_t oldSegId = strip.setPixelSegment(id);
 
     // set brightness immediately and disable transition
     transitionDelayTemp = 0;
@@ -183,7 +185,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     // freeze and init to black
     if (!seg.getOption(SEG_OPTION_FREEZE)) {
       seg.setOption(SEG_OPTION_FREEZE, true);
-      strip.fill(0);
+      seg.fill(0);
     }
 
     uint16_t start = 0, stop = 0;
@@ -215,16 +217,16 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         if (set < 2) stop = start + 1;
         for (uint16_t i = start; i < stop; i++) {
           if (strip.gammaCorrectCol) {
-            strip.setPixelColor(i, strip.gamma8(rgbw[0]), strip.gamma8(rgbw[1]), strip.gamma8(rgbw[2]), strip.gamma8(rgbw[3]));
+            seg.setPixelColor(i, strip.gamma8(rgbw[0]), strip.gamma8(rgbw[1]), strip.gamma8(rgbw[2]), strip.gamma8(rgbw[3]));
           } else {
-            strip.setPixelColor(i, rgbw[0], rgbw[1], rgbw[2], rgbw[3]);
+            seg.setPixelColor(i, rgbw[0], rgbw[1], rgbw[2], rgbw[3]);
           }
         }
         if (!set) start++;
         set = 0;
       }
     }
-    strip.setPixelSegment(oldSegId);
+    //strip.setPixelSegment(oldSegId);
     strip.trigger();
   }
   // send UDP if not in preset and something changed that is not just selection
@@ -249,10 +251,10 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   if (bri && !onBefore) { // unfreeze all segments when turning on
     for (uint8_t s=0; s < strip.getMaxSegments(); s++) {
-      strip.getSegment(s).setOption(SEG_OPTION_FREEZE, false, s);
+      strip.getSegment(s).setOption(SEG_OPTION_FREEZE, false);
     }
     if (realtimeMode && !realtimeOverride && useMainSegmentOnly) { // keep live segment frozen if live
-      strip.getMainSegment().setOption(SEG_OPTION_FREEZE, true, strip.getMainSegmentId());
+      strip.getMainSegment().setOption(SEG_OPTION_FREEZE, true);
     }
   }
 
@@ -304,7 +306,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   realtimeOverride = root[F("lor")] | realtimeOverride;
   if (realtimeOverride > 2) realtimeOverride = REALTIME_OVERRIDE_ALWAYS;
   if (realtimeMode && useMainSegmentOnly) {
-    strip.getMainSegment().setOption(SEG_OPTION_FREEZE, !realtimeOverride, strip.getMainSegmentId());
+    strip.getMainSegment().setOption(SEG_OPTION_FREEZE, !realtimeOverride);
   }
 
   if (root.containsKey("live")) {
@@ -520,11 +522,13 @@ void serializeInfo(JsonObject root)
   leds[F("maxseg")] = strip.getMaxSegments();
   //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config
 
+  #ifndef WLED_DISABLE_2D
   if (strip.isMatrix) {
     JsonObject matrix = leds.createNestedObject("matrix");
     matrix["w"] = strip.matrixWidth;
     matrix["h"] = strip.matrixHeight;
   }
+  #endif
 
   uint8_t totalLC = 0;
   JsonArray lcarr = leds.createNestedArray(F("seglc"));

@@ -91,6 +91,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   Bus::setCCTBlend(strip.cctBlending);
   strip.setTargetFps(hw_led["fps"]); //NOP if 0, default 42 FPS
 
+  #ifndef WLED_DISABLE_2D
   // 2D Matrix Settings
   JsonObject matrix = hw_led[F("matrix")];
   if (!matrix.isNull()) {
@@ -125,6 +126,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
     strip.setUpMatrix();
   }
+  #endif
 
   JsonArray ins = hw_led["ins"];
   
@@ -620,6 +622,7 @@ void serializeConfig() {
   hw_led["fps"] = strip.getTargetFps();
   hw_led[F("rgbwm")] = Bus::getAutoWhiteMode();    // global override
 
+  #ifndef WLED_DISABLE_2D
   // 2D Matrix Settings
   if (strip.isMatrix) {
     JsonObject matrix = hw_led.createNestedObject(F("matrix"));
@@ -641,6 +644,7 @@ void serializeConfig() {
       pnl["s"] = strip.panel[i].serpentine;
     }
   }
+  #endif
 
   JsonArray hw_led_ins = hw_led.createNestedArray("ins");
 

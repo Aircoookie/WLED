@@ -146,7 +146,7 @@ void realtimeLock(uint32_t timeoutMs, byte md)
       Segment& mainseg = strip.getMainSegment();
       start = mainseg.start;
       stop  = mainseg.stop;
-      mainseg.setOption(SEG_OPTION_FREEZE, true, strip.getMainSegmentId());
+      mainseg.setOption(SEG_OPTION_FREEZE, true);
     } else {
       start = 0;
       stop  = strip.getLengthTotal();
@@ -156,7 +156,7 @@ void realtimeLock(uint32_t timeoutMs, byte md)
     // if WLED was off and using main segment only, freeze non-main segments so they stay off
     if (useMainSegmentOnly && bri == 0) {
       for (uint8_t s=0; s < strip.getMaxSegments(); s++) {
-        strip.getSegment(s).setOption(SEG_OPTION_FREEZE, true, s);
+        strip.getSegment(s).setOption(SEG_OPTION_FREEZE, true);
       }
     }
   }
@@ -183,7 +183,7 @@ void exitRealtime() {
   realtimeMode = REALTIME_MODE_INACTIVE; // inform UI immediately
   realtimeIP[0] = 0;
   if (useMainSegmentOnly) { // unfreeze live segment again
-    strip.getMainSegment().setOption(SEG_OPTION_FREEZE, false, strip.getMainSegmentId());
+    strip.getMainSegment().setOption(SEG_OPTION_FREEZE, false);
   }
   updateInterfaces(CALL_MODE_WS_SEND);
 }
@@ -351,8 +351,8 @@ void handleNotifications()
             strip.setSegment(id, start, stop, selseg.grouping, selseg.spacing, offset);
             continue;
           }
-          for (uint8_t j = 0; j<4; j++) selseg.setOption(j, (udpIn[9 +ofs] >> j) & 0x01, id); //only take into account mirrored, selected, on, reversed
-          selseg.setOpacity(udpIn[10+ofs], id);
+          for (uint8_t j = 0; j<4; j++) selseg.setOption(j, (udpIn[9 +ofs] >> j) & 0x01); //only take into account mirrored, selected, on, reversed
+          selseg.setOpacity(udpIn[10+ofs]);
           if (applyEffects) {
             strip.setMode(id,  udpIn[11+ofs]);
             selseg.speed     = udpIn[12+ofs];
@@ -360,10 +360,10 @@ void handleNotifications()
             selseg.palette   = udpIn[14+ofs];
           }
           if (receiveNotificationColor || !someSel) {
-            selseg.setColor(0, RGBW32(udpIn[15+ofs],udpIn[16+ofs],udpIn[17+ofs],udpIn[18+ofs]), id);
-            selseg.setColor(1, RGBW32(udpIn[19+ofs],udpIn[20+ofs],udpIn[21+ofs],udpIn[22+ofs]), id);
-            selseg.setColor(2, RGBW32(udpIn[23+ofs],udpIn[24+ofs],udpIn[25+ofs],udpIn[26+ofs]), id);
-            selseg.setCCT(udpIn[27+ofs], id);
+            selseg.setColor(0, RGBW32(udpIn[15+ofs],udpIn[16+ofs],udpIn[17+ofs],udpIn[18+ofs]));
+            selseg.setColor(1, RGBW32(udpIn[19+ofs],udpIn[20+ofs],udpIn[21+ofs],udpIn[22+ofs]));
+            selseg.setColor(2, RGBW32(udpIn[23+ofs],udpIn[24+ofs],udpIn[25+ofs],udpIn[26+ofs]));
+            selseg.setCCT(udpIn[27+ofs]);
           }
           //setSegment() also properly resets segments
           if (receiveSegmentBounds) {

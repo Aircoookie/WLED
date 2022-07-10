@@ -251,6 +251,7 @@ private:
    * Sort either the modes or the palettes using quicksort.
    */
   void re_sortModes(const char **modeNames, byte *indexes, int count, int numSkip) {
+    if (!modeNames) return;
     listBeingSorted = modeNames;
     qsort(indexes + numSkip, count - numSkip, sizeof(byte), re_qstringCmp);
     listBeingSorted = nullptr;
@@ -777,7 +778,7 @@ public:
       for (byte i=0; i<strip.getMaxSegments(); i++) {
         Segment& seg = strip.getSegment(i);
         if (!seg.isActive()) continue;
-        seg.setCCT(currentCCT, i);
+        seg.setCCT(currentCCT);
       }
 //    } else {
 //      Segment& seg = strip.getSegment(strip.getMainSegmentId());
