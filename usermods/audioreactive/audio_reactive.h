@@ -2,6 +2,7 @@
 
 #include "wled.h"
 #include <driver/i2s.h>
+#include <driver/adc.h>
 
 #ifndef ESP32
   #error This audio reactive usermod does not support the ESP8266.
@@ -67,10 +68,11 @@ const double agcFollowFast[AGC_NUM_PRESETS]   = { 1/192.f, 1/128.f, 1/256.f}; //
 const double agcFollowSlow[AGC_NUM_PRESETS]   = {1/6144.f,1/4096.f,1/8192.f}; // slowly follow setpoint  - ~2-15 secs
 const double agcControlKp[AGC_NUM_PRESETS]    = {    0.6f,    1.5f,   0.65f}; // AGC - PI control, proportional gain parameter
 const double agcControlKi[AGC_NUM_PRESETS]    = {    1.7f,   1.85f,    1.2f}; // AGC - PI control, integral gain parameter
-const float agcSampleSmooth[AGC_NUM_PRESETS] = {  1/12.f,   1/6.f,  1/16.f}; // smoothing factor for sampleAgc (use rawSampleAgc if you want the non-smoothed value)
+const float agcSampleSmooth[AGC_NUM_PRESETS]  = {  1/12.f,   1/6.f,  1/16.f}; // smoothing factor for sampleAgc (use rawSampleAgc if you want the non-smoothed value)
 // AGC presets end
 
 static AudioSource *audioSource = nullptr;
+static volatile bool disableSoundProcessing = false;      // if true, sound processing (FFT, filters, AGC) will be suspended. "volatile" as its shared between tasks.
 
 //static uint16_t micData;                        // Analog input for FFT
 static uint16_t micDataSm;                      // Smoothed mic data, as it's a bit twitchy
@@ -152,8 +154,11 @@ void FFTcode(void * parameter)
     delay(1);           // DO NOT DELETE THIS LINE! It is needed to give the IDLE(0) task enough time and to keep the watchdog happy.
                         // taskYIELD(), yield(), vTaskDelay() and esp_task_wdt_feed() didn't seem to work.
 
-    // Only run the FFT computing code if we're not in Receive mode
-    if (audioSyncEnabled & 0x02) continue;
+    // Only run the FFT computing code if we're not in Receive mode and not in realtime mode
+    if (disableSoundProcessing || (audioSyncEnabled & 0x02)) {
+      //delay(7);   // release CPU - delay is implemeted using vTaskDelay(). cannot use yield() because we are out of arduino loop context
+      continue;
+    }
 
 #ifdef WLED_DEBUG
 //    unsigned long start = millis();
@@ -435,7 +440,7 @@ class AudioReactive : public Usermod {
     float    sampleAgc = 0.0f;    // Our AGC sample
     int16_t  rawSampleAgc = 0;    // Our AGC sample - raw
     uint32_t timeOfPeak = 0;
-    uint32_t lastTime = 0;
+    unsigned long lastTime = 0;   // last time of running UDP Microphone Sync
     float    micLev = 0.0f;       // Used to convert returned value to have '0' as minimum. A leveller
     float    expAdjF = 0.0f;      // Used for exponential filter.
 
@@ -813,6 +818,7 @@ class AudioReactive : public Usermod {
      */
     void setup()
     {
+      disableSoundProcessing = true; // just to be sure
       if (!initDone) {
         // usermod exchangeable data
         // we will assign all usermod exportable data here as pointers to original variables or arrays and allocate memory for pointers
@@ -908,6 +914,7 @@ class AudioReactive : public Usermod {
 
       if (!audioSource) enabled = false;  // audio failed to initialise
       if (enabled) onUpdateBegin(false);  // create FFT task
+      if (enabled) disableSoundProcessing = false;
 
       initDone = true;
     }
@@ -941,12 +948,65 @@ class AudioReactive : public Usermod {
      */
     void loop()
     {
-      if (!enabled || strip.isUpdating()) return;
+      static unsigned long lastUMRun = millis();
 
-      if (!(audioSyncEnabled & 0x02)) { // Only run the sampling code IF we're not in Receive mode
+      if (!enabled) {
+        disableSoundProcessing = true;   // keep processing suspended (FFT task)
+        lastUMRun = millis();            // update time keeping
+        return;
+      }
+      // We cannot wait indefinitely before processing audio data
+      //if (!enabled || strip.isUpdating()) return;
+      if (strip.isUpdating() && (millis() - lastUMRun < 12)) return;   // be nice, but not too nice
+
+      // suspend local sound processing when "real time mode" is active (E131, UDP, ADALIGHT, ARTNET)
+      if (  (realtimeOverride == REALTIME_OVERRIDE_NONE)  // please odd other orrides here if needed
+          &&( (realtimeMode == REALTIME_MODE_GENERIC)
+            ||(realtimeMode == REALTIME_MODE_E131)
+            ||(realtimeMode == REALTIME_MODE_UDP)
+            ||(realtimeMode == REALTIME_MODE_ADALIGHT)
+            ||(realtimeMode == REALTIME_MODE_ARTNET) ) )  // please add other modes here if needed
+      {
+        #ifdef WLED_DEBUG
+        if ((disableSoundProcessing == false) && (audioSyncEnabled == 0)) {  // we just switched to "disabled"
+          DEBUG_PRINTLN("[AR userLoop]  realtime mode active - audio processing suspended.");
+          DEBUG_PRINTF( "               RealtimeMode = %d; RealtimeOverride = %d\n", int(realtimeMode), int(realtimeOverride));
+        }
+        #endif
+        disableSoundProcessing = true;
+      } else {
+        #ifdef WLED_DEBUG
+        if ((disableSoundProcessing == true) && (audioSyncEnabled == 0)) {    // we just switched to "disabled"
+          DEBUG_PRINTLN("[AR userLoop]  realtime mode ended - audio processing resumed.");
+          DEBUG_PRINTF( "               RealtimeMode = %d; RealtimeOverride = %d\n", int(realtimeMode), int(realtimeOverride));
+        }
+        #endif
+        if ((disableSoundProcessing == true) && (audioSyncEnabled == 0)) lastUMRun = millis();  // just left "realtime mode" - update timekeeping
+        disableSoundProcessing = false;
+      }
+
+      if (audioSyncEnabled & 0x02) disableSoundProcessing = true;   // make sure everything is disabled IF in audio Receive mode
+      if (audioSyncEnabled & 0x01) disableSoundProcessing = false;  // keep running audio IF we're in audio Transmit mode
+
+      if (!(audioSyncEnabled & 0x02) && !disableSoundProcessing) { // Only run the sampling code IF we're not in Receive mode or realtime mode
         bool agcEffect = false;
 
         if (soundAgc > AGC_NUM_PRESETS) soundAgc = 0; // make sure that AGC preset is valid (to avoid array bounds violation)
+
+        int userloopDelay = int(millis() - lastUMRun);   // how long since last run? we might need to cat up to compensate lost times
+        int samplesSkipped = 0;
+        if (userloopDelay > 12) samplesSkipped = (userloopDelay + 12) / 25;  // every 25ms we get a new batch of samples
+        if (samplesSkipped > 100) samplesSkipped = 100;  // don't be silly
+#ifdef WLED_DEBUG
+        // complain when audio userloop has been delayed for long time. Currently we need userloop running between 500 and 1500 times per second. 
+        if ((userloopDelay > 23) && !disableSoundProcessing && (audioSyncEnabled == 0)) {
+          // Expect lagging in soundreactive effects if you see the next messages !!!
+          DEBUG_PRINTF("[AR userLoop] hickup detected -> was inactive for last %d millis!\n", userloopDelay);
+         if (samplesSkipped > 0) DEBUG_PRINTF("[AR userLoop] lost %d sample(s).\n", samplesSkipped);
+        }
+#endif
+
+        lastUMRun = millis();                // update time keeping
 
         getSample();                        // Sample the microphone
         agcAvg();                           // Calculated the PI adjusted value as sampleAvg
@@ -982,9 +1042,10 @@ class AudioReactive : public Usermod {
           new_user_inputLevel = MIN(MAX(new_user_inputLevel, 0),255);
 
           // update user interfaces - restrict frequency to avoid flooding UI's with small changes
-          if ( (((now_time - last_update_time > 3500) && (abs(new_user_inputLevel - inputLevel) >  2))    // small change - every 3.5 sec (max) 
-            ||  ((now_time - last_update_time > 2200) && (abs(new_user_inputLevel - inputLevel) > 15))    // medium change
-            ||  ((now_time - last_update_time > 1200) && (abs(new_user_inputLevel - inputLevel) > 31))) ) // BIG change - every second
+          if (( ((now_time - last_update_time > 3500) && (abs(new_user_inputLevel - inputLevel) >  2))    // small change - every 3.5 sec (max) 
+                ||((now_time - last_update_time > 2200) && (abs(new_user_inputLevel - inputLevel) > 15))    // medium change
+                ||((now_time - last_update_time > 1200) && (abs(new_user_inputLevel - inputLevel) > 31)))   // BIG change - every second
+            && !strip.isUpdating())                                                                       // don't interfere while strip is updating
           {
             inputLevel = new_user_inputLevel;           // change of least 3 units -> update user variable
             updateInterfaces(CALL_MODE_WS_SEND);        // is this the correct way to notify UIs ? Yes says blazoncek
@@ -1026,6 +1087,7 @@ class AudioReactive : public Usermod {
 #ifdef WLED_DEBUG
       fftTime = sampleTime = 0;
 #endif
+      disableSoundProcessing = true;
       if (init && FFT_Task) {
         vTaskSuspend(FFT_Task);   // update is about to begin, disable task to prevent crash
       } else {
@@ -1043,6 +1105,7 @@ class AudioReactive : public Usermod {
             0                                 // Core where the task should run
           );
       }
+      if (enabled) disableSoundProcessing = false;
     }
 
 
