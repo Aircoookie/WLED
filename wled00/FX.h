@@ -90,7 +90,7 @@ uint32_t color_add(uint32_t,uint32_t);
 #define SEGMENT          strip.getSegment(strip.getCurrSegmentId())
 #define SEGENV           strip.getSegmentRuntime(strip.getCurrSegmentId())
 #define SEGCOLOR(x)      strip.segColor(x)
-#define SEGLEN           strip.segLen()
+#define SEGLEN           strip.getMappingLength()
 #define SPEED_FORMULA_L  (5U + (50U*(255U - SEGMENT.speed))/SEGLEN)
 
 // some common colors
@@ -381,6 +381,8 @@ typedef struct Segment { // 35 (36 in memory) bytes
   uint8_t  custom1, custom2, custom3; // custom FX parameters
   uint16_t startY;  // start Y coodrinate 2D (top)
   uint16_t stopY;   // stop Y coordinate 2D (bottom)
+  uint8_t  soundSim;
+  uint8_t  mapping12;
   char *name;
   inline bool     getOption(uint8_t n)   { return ((options >> n) & 0x01); }
   inline bool     isSelected()           { return getOption(0); }
@@ -445,6 +447,12 @@ typedef struct ColorTransition { // 12 bytes
   }
 } color_transition;
 
+typedef enum mapping1D2D {
+  M12_Pixels = 0,
+  M12_VerticalBar = 1,
+  M12_CenterCircle = 2,
+  M12_CenterBlock = 3
+} mapping1D2D_t;
 
 // main "strip" class
 class WS2812FX {
@@ -559,7 +567,6 @@ class WS2812FX {
     inline uint16_t getFrameTime(void) { return _frametime; }
     inline uint16_t getMinShowDelay(void) { return MIN_SHOW_DELAY; }
     inline uint16_t getLengthTotal(void) { return _length; }
-    inline uint16_t segLen(void) { return _virtualSegmentLength; }
 
     uint32_t
       now,
@@ -644,7 +651,8 @@ class WS2812FX {
 
     uint16_t
       XY(uint16_t, uint16_t),
-      get2DPixelIndex(uint16_t x, uint16_t y, uint8_t seg=255);
+      get2DPixelIndex(uint16_t x, uint16_t y, uint8_t seg=255),
+      getMappingLength();
 
     uint32_t
       getPixelColorXY(uint16_t, uint16_t);

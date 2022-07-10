@@ -36,13 +36,9 @@
 #ifdef SEGENV
   #undef SEGENV
 #endif
-#ifdef SEGLEN
-  #undef SEGLEN
-#endif
 #define SEGMENT          _segments[_segment_index]
 #define SEGCOLOR(x)      _colors_t[x]
 #define SEGENV           _segment_runtimes[_segment_index]
-#define SEGLEN           _virtualSegmentLength
 
 /*
   Custom per-LED mapping has moved!
@@ -482,14 +478,44 @@ void IRAM_ATTR WS2812FX::setPixelColor(int i, byte r, byte g, byte b, byte w)
 {
   uint8_t segIdx = _virtualSegmentLength ? _segment_index : _mainSegment;
   if (isMatrix && _virtualSegmentLength) {
-    // map linear pixel into 2D segment area (even for 1D segments, expanding vertically)
+
     uint16_t h = _segments[segIdx].virtualHeight();  // segment height in logical pixels
-    for (uint16_t y = 0; y < h; y++) { // expand 1D effect vertically
-      setPixelColorXY(i, y * _segments[segIdx].groupLength(), r, g, b, w);
+    switch (SEGMENT.mapping12) {
+      case M12_Pixels:
+        setPixelColorXY(i%SEGMENT.virtualWidth(), i/SEGMENT.virtualWidth(), r, g, b, w);
+        break;
+      case M12_VerticalBar:
+        // map linear pixel into 2D segment area (even for 1D segments, expanding vertically)
+        for (uint16_t y = 0; y < h; y++) { // expand 1D effect vertically
+          setPixelColorXY(i, y * _segments[segIdx].groupLength(), r, g, b, w);
+        }
+        // strip.setPixelColor(i%SEGMENT.virtualWidth(), r, g, b, w);
+        break;
+      case M12_CenterCircle:
+        for (int degrees = 0; degrees <= 360; degrees += 180 / (i+1)) {
+          // int x = sinf(degrees*DEG_TO_RAD * i);
+          // int y = cosf(degrees*DEG_TO_RAD * i);
+          // strip.setPixelColorXY(x + SEGMENT.virtualWidth() / 2 - 1, y + SEGMENT.virtualHeight() / 2 - 1, r, g, b, w);
+          int x = roundf(roundf((sinf(degrees*DEG_TO_RAD) * i + SEGMENT.virtualWidth() / 2) * 10)/10);
+          int y = roundf(roundf((cosf(degrees*DEG_TO_RAD) * i + SEGMENT.virtualHeight() / 2) * 10)/10);
+          setPixelColorXY(x, y, r, g, b, w);
+        }
+        break;
+      case M12_CenterBlock:
+        for (int x = SEGMENT.virtualWidth() / 2 - i - 1; x <= SEGMENT.virtualWidth() / 2 + i; x++) {
+          setPixelColorXY(x, SEGMENT.virtualHeight() / 2 - i - 1, r, g, b, w);
+          setPixelColorXY(x, SEGMENT.virtualHeight() / 2 + i    , r, g, b, w);
+        }
+        for (int y = SEGMENT.virtualHeight() / 2 - i - 1 + 1; y <= SEGMENT.virtualHeight() / 2 + i - 1; y++) {
+          setPixelColorXY(SEGMENT.virtualWidth() / 2 - i - 1, y, r, g, b, w);
+          setPixelColorXY(SEGMENT.virtualWidth() / 2 + i    , y, r, g, b, w);
+        }
+        break;
     }
+
     return;
   }
-
+  
   if (_virtualSegmentLength || (realtimeMode && useMainSegmentOnly)) {
     //color_blend(getpixel, col, _bri_t); (pseudocode for future blending of segments)
     if (_virtualSegmentLength && _bri_t < 255) {  // _virtualSegmentLength!=0 -> from segment/FX

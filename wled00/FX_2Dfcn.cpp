@@ -35,13 +35,9 @@
 #ifdef SEGENV
   #undef SEGENV
 #endif
-#ifdef SEGLEN
-  #undef SEGLEN
-#endif
 #define SEGMENT          _segments[_segment_index]
 #define SEGCOLOR(x)      _colors_t[x]
 #define SEGENV           _segment_runtimes[_segment_index]
-#define SEGLEN           _virtualSegmentLength
 
 // setUpMatrix() - constructs ledmap array from matrix of panels with WxH pixels
 // this converts physical (possibly irregular) LED arrangement into well defined
@@ -251,10 +247,28 @@ void /*IRAM_ATTR*/ WS2812FX::setPixelColorXY(float x, float y, byte r, byte g, b
   }
 }
 
+uint16_t IRAM_ATTR WS2812FX::getMappingLength() {
+  switch (SEGMENT.mapping12) {
+    case M12_Pixels:
+      return SEGMENT.virtualWidth() * SEGMENT.virtualHeight();
+      break;
+    case M12_VerticalBar:
+      return SEGMENT.virtualWidth();
+      break;
+    case M12_CenterCircle:
+      return (SEGMENT.virtualWidth() + SEGMENT.virtualHeight()) / 4; // take half of the average width
+      break;
+    case M12_CenterBlock:
+      return (SEGMENT.virtualWidth() + SEGMENT.virtualHeight()) / 4; // take half of the average width
+      break;
+  }
+  return SEGMENT.virtualWidth() * SEGMENT.virtualHeight();
+}
+
 // returns RGBW values of pixel
 uint32_t WS2812FX::getPixelColorXY(uint16_t x, uint16_t y) {
   uint16_t index;
-  if (SEGLEN) {
+  if (_virtualSegmentLength) {
     if (SEGMENT.getOption(SEG_OPTION_REVERSED)  ) x = SEGMENT.virtualWidth()  - x - 1;
     if (SEGMENT.getOption(SEG_OPTION_REVERSED_Y)) y = SEGMENT.virtualHeight() - y - 1;
     if (SEGMENT.getOption(SEG_OPTION_TRANSPOSED)) { uint16_t t = x; x = y; y = t; } // swap X & Y if segment transposed
