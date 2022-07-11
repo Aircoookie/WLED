@@ -48,7 +48,7 @@ constexpr int SAMPLE_RATE = 20480;      // Base sample rate in Hz - 20Khz is exp
 // globals
 static uint8_t inputLevel = 128;              // UI slider value
 static uint8_t soundSquelch = 10;             // squelch value for volume reactive routines (config value)
-static uint8_t sampleGain = 1;                // sample gain (config value)
+static uint8_t sampleGain = 60;               // sample gain (config value)
 static uint8_t soundAgc = 0;                  // Automagic gain control: 0 - none, 1 - normal, 2 - vivid, 3 - lazy (config value)
 static uint8_t audioSyncEnabled = 0;          // bit field: bit 0 - send, bit 1 - receive (config value)
 
@@ -156,7 +156,7 @@ void FFTcode(void * parameter)
 
     // Only run the FFT computing code if we're not in Receive mode and not in realtime mode
     if (disableSoundProcessing || (audioSyncEnabled & 0x02)) {
-      //delay(7);   // release CPU - delay is implemeted using vTaskDelay(). cannot use yield() because we are out of arduino loop context
+      delay(7);   // release CPU - delay is implemeted using vTaskDelay(). cannot use yield() because we are out of arduino loop context
       continue;
     }
 
@@ -366,7 +366,7 @@ class AudioReactive : public Usermod {
     int8_t audioPin = AUDIOPIN;
     #endif
     #ifndef DMTYPE // I2S mic type
-    uint8_t dmType = 0; // none/disabled/analog
+    uint8_t dmType = 1; // 0=none/disabled/analog; 1=generic I2S
     #else
     uint8_t dmType = DMTYPE;
     #endif
