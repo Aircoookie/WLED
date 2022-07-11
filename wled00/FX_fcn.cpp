@@ -171,12 +171,38 @@ uint16_t Segment::virtualLength() {
 void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
 {
   if (strip.isMatrix) {
-    // map linear pixel into 2D segment area (even for 1D segments, expanding vertically)
     uint16_t h = virtualHeight();  // segment height in logical pixels
-    for (int y = 0; y < h; y++) { // expand 1D effect vertically
-      setPixelColorXY(i, y * groupLength(), col);
+    switch (SEGMENT.mapping12) {
+      case M12_Pixels:
+        setPixelColorXY(i%SEGMENT.virtualWidth(), i/SEGMENT.virtualWidth(), col);
+        break;
+      case M12_VerticalBar:
+        // map linear pixel into 2D segment area (even for 1D segments, expanding vertically)
+        for (int y = 0; y < h; y++) { // expand 1D effect vertically
+          setPixelColorXY(i, y * groupLength(), col);
+        }
+        break;
+      case M12_CenterCircle:
+        for (int degrees = 0; degrees <= 360; degrees += 180 / (i+1)) {
+          // int x = sinf(degrees*DEG_TO_RAD * i);
+          // int y = cosf(degrees*DEG_TO_RAD * i);
+          // strip.setPixelColorXY(x + SEGMENT.virtualWidth() / 2 - 1, y + SEGMENT.virtualHeight() / 2 - 1, r, g, b, w);
+          int x = roundf(roundf((sinf(degrees*DEG_TO_RAD) * i + SEGMENT.virtualWidth() / 2) * 10)/10);
+          int y = roundf(roundf((cosf(degrees*DEG_TO_RAD) * i + SEGMENT.virtualHeight() / 2) * 10)/10);
+          setPixelColorXY(x, y, col);
+        }
+        break;
+      case M12_CenterBlock:
+        for (int x = SEGMENT.virtualWidth() / 2 - i - 1; x <= SEGMENT.virtualWidth() / 2 + i; x++) {
+          setPixelColorXY(x, SEGMENT.virtualHeight() / 2 - i - 1, col);
+          setPixelColorXY(x, SEGMENT.virtualHeight() / 2 + i    , col);
+        }
+        for (int y = SEGMENT.virtualHeight() / 2 - i - 1 + 1; y <= SEGMENT.virtualHeight() / 2 + i - 1; y++) {
+          setPixelColorXY(SEGMENT.virtualWidth() / 2 - i - 1, y, col);
+          setPixelColorXY(SEGMENT.virtualWidth() / 2 + i    , y, col);
+        }
+        break;
     }
-    return;
   }
 
   uint16_t len = length();
