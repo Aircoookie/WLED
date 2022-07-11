@@ -90,7 +90,7 @@ uint32_t color_add(uint32_t,uint32_t);
 #define SEGMENT          strip._segments[strip.getCurrSegmentId()]
 #define SEGENV           strip._segment_runtimes[strip.getCurrSegmentId()]
 #define SEGCOLOR(x)      strip.segColor(x)
-#define SEGLEN           strip._virtualSegmentLength
+#define SEGLEN           strip.getMappingLength()
 #define SPEED_FORMULA_L  (5U + (50U*(255U - SEGMENT.speed))/SEGLEN)
 
 // some common colors
@@ -399,6 +399,8 @@ typedef struct Segment { // 40 (44 in memory) bytes
   uint8_t  custom1, custom2, custom3; // custom FX parameters
   uint16_t startY;  // start Y coodrinate 2D (top)
   uint16_t stopY;   // stop Y coordinate 2D (bottom)
+  uint8_t  soundSim;
+  uint8_t  mapping12;
   char *name;
   color_transition transition;
 
@@ -498,6 +500,13 @@ typedef struct Segment_runtime { // 23 (24 in memory) bytes
 } segment_runtime;
 
 
+
+typedef enum mapping1D2D {
+  M12_Pixels = 0,
+  M12_VerticalBar = 1,
+  M12_CenterCircle = 2,
+  M12_CenterBlock = 3
+} mapping1D2D_t;
 
 // main "strip" class
 class WS2812FX {  // 96 bytes
@@ -663,6 +672,9 @@ class WS2812FX {  // 96 bytes
     // outsmart the compiler :) by correctly overloading
     inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { setPixelColorXY(x, y, RGBW32(r,g,b,w)); } // automatically inline
     inline void setPixelColorXY(int x, int y, CRGB c) { setPixelColorXY(x, y, c.red, c.green, c.blue); }
+
+    uint16_t
+      getMappingLength();
 
     uint32_t
       getPixelColorXY(uint16_t, uint16_t);

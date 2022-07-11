@@ -238,6 +238,24 @@ void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
 #endif
 }
 
+uint16_t IRAM_ATTR WS2812FX::getMappingLength() {
+  switch (SEGMENT.mapping12) {
+    case M12_Pixels:
+      return SEGMENT.virtualWidth() * SEGMENT.virtualHeight();
+      break;
+    case M12_VerticalBar:
+      return SEGMENT.virtualWidth();
+      break;
+    case M12_CenterCircle:
+      return (SEGMENT.virtualWidth() + SEGMENT.virtualHeight()) / 4; // take half of the average width
+      break;
+    case M12_CenterBlock:
+      return (SEGMENT.virtualWidth() + SEGMENT.virtualHeight()) / 4; // take half of the average width
+      break;
+  }
+  return SEGMENT.virtualWidth() * SEGMENT.virtualHeight();
+}
+
 // returns RGBW values of pixel
 uint32_t Segment::getPixelColorXY(uint16_t x, uint16_t y) {
 #ifndef WLED_DISABLE_2D

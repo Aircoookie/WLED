@@ -172,6 +172,9 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   getVal(elem[F("c1")], &seg.custom1);
   getVal(elem[F("c2")], &seg.custom2);
   getVal(elem[F("c3")], &seg.custom3);
+  
+  getVal(elem[F("ssim")], &seg.soundSim);
+  getVal(elem[F("mp12")], &seg.mapping12);
 
   JsonArray iarr = elem[F("i")]; //set individual LEDs
   if (!iarr.isNull()) {
@@ -454,6 +457,8 @@ void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset, b
     root[F("mY")] = seg.getOption(SEG_OPTION_MIRROR_Y);
     root[F("tp")] = seg.getOption(SEG_OPTION_TRANSPOSED);
   }
+  root[F("ssim")]  = seg.soundSim;
+  root[F("mp12")]  = seg.mapping12;
 }
 
 void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segmentBounds)

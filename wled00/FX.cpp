@@ -6012,8 +6012,9 @@ static const char *_data_FX_MODE_2DDRIFTROSE PROGMEM = "2D Drift Rose@Fade,Blur;
 //Currently 3 types defined, to be finetuned and new types added
 typedef enum UM_SoundSimulations {
   UMS_BeatSin = 0,
-  UMS_10_3,
-  UMS_14_3
+  UMS_WeWillRockYou = 1,
+  UMS_10_3 = 2,
+  UMS_14_3 = 3
 } um_soundSimulations_t;
 
 static um_data_t* um_data = nullptr;
@@ -6090,6 +6091,38 @@ um_data_t* simulateSound(uint8_t simulationId)
         // fftResult[i] = (beatsin8(120, 0, 255) + (256/16 * i)) % 256;
         sampleAvg = fftResult[8];
       break;
+   case UMS_WeWillRockYou:
+      if (ms%2000 < 200) {
+        sampleAvg = random8(255);
+        for (int i = 0; i<5; i++)
+          fftResult[i] = random8(255);
+      }
+      else if (ms%2000 < 400) {
+        sampleAvg = 0;
+        for (int i = 0; i<16; i++)
+          fftResult[i] = 0;
+      }
+      else if (ms%2000 < 600) {
+        sampleAvg = random8(255);
+        for (int i = 5; i<11; i++)
+          fftResult[i] = random8(255);
+      }
+      else if (ms%2000 < 800) {
+        sampleAvg = 0;
+        for (int i = 0; i<16; i++)
+          fftResult[i] = 0;
+      }
+      else if (ms%2000 < 1000) {
+        sampleAvg = random8(255);
+        for (int i = 11; i<16; i++)
+          fftResult[i] = random8(255);
+      }
+      else  {
+        sampleAvg = 0;
+        for (int i = 0; i<16; i++)
+          fftResult[i] = 0;
+      }
+      break;
     case UMS_10_3:
       for (int i = 0; i<16; i++)
         fftResult[i] = inoise8(beatsin8(90 / (i+1), 0, 200)*15 + (ms>>10), ms>>3);
@@ -6164,7 +6197,7 @@ uint16_t mode_ripplepeak(void) {                // * Ripple peak. By Andrew Tuli
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t samplePeak    = *(uint8_t*)um_data->u_data[5];
   float FFT_MajorPeak   = *(float*) um_data->u_data[6];
@@ -6254,7 +6287,7 @@ uint16_t mode_2DSwirl(void) {
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg      = *(float*)  um_data->u_data[0];
   uint8_t soundAgc     = *(uint8_t*)um_data->u_data[1];
@@ -6299,7 +6332,7 @@ uint16_t mode_2DWaverly(void) {
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg   = *(float*)  um_data->u_data[0];
   uint8_t soundAgc  = *(uint8_t*)um_data->u_data[1];
@@ -6354,7 +6387,7 @@ uint16_t mode_gravcenter(void) {                // Gravcenter. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg = *(float*)um_data->u_data[0];
   uint8_t soundAgc  = *(uint8_t*)um_data->u_data[1];
@@ -6405,7 +6438,7 @@ uint16_t mode_gravcentric(void) {                     // Gravcentric. By Andrew 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg = *(float*)um_data->u_data[0];
   uint8_t soundAgc  = *(uint8_t*)um_data->u_data[1];
@@ -6460,7 +6493,7 @@ uint16_t mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg = *(float*)um_data->u_data[0];
   uint8_t soundAgc  = *(uint8_t*)um_data->u_data[1];
@@ -6505,7 +6538,7 @@ uint16_t mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
   Gravity* gravcen = reinterpret_cast<Gravity*>(SEGENV.data);
 
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg  = *(float*)um_data->u_data[0];
   uint8_t soundAgc   = *(uint8_t*)um_data->u_data[1];
@@ -6571,7 +6604,7 @@ uint16_t mode_juggles(void) {                   // Juggles. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAgc = *(float*)um_data->u_data[2];
 
@@ -6594,7 +6627,7 @@ uint16_t mode_matripix(void) {                  // Matripix. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t  soundAgc     = *(uint8_t*)um_data->u_data[1];
   int16_t  sampleRaw       = *(int16_t*)um_data->u_data[3];
@@ -6626,7 +6659,7 @@ uint16_t mode_midnoise(void) {                  // Midnoise. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg = *(float*)um_data->u_data[0];
   uint8_t soundAgc  = *(uint8_t*)um_data->u_data[1];
@@ -6668,7 +6701,7 @@ uint16_t mode_noisefire(void) {                 // Noisefire. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg = *(float*)um_data->u_data[0];
   uint8_t soundAgc  = *(uint8_t*)um_data->u_data[1];
@@ -6697,7 +6730,7 @@ uint16_t mode_noisemeter(void) {                // Noisemeter. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg      = *(float*)um_data->u_data[0];
   uint8_t soundAgc     = *(uint8_t*)um_data->u_data[1];
@@ -6736,7 +6769,7 @@ uint16_t mode_pixelwave(void) {                 // Pixelwave. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t soundAgc     = *(uint8_t*)um_data->u_data[1];
   int16_t sampleRaw    = *(int16_t*)um_data->u_data[3];
@@ -6776,7 +6809,7 @@ uint16_t mode_plasmoid(void) {                  // Plasmoid. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg  = *(float*)um_data->u_data[0];
   uint8_t soundAgc = *(uint8_t*)um_data->u_data[1];
@@ -6817,7 +6850,7 @@ uint16_t mode_puddlepeak(void) {                // Puddlepeak. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAgc    = *(float*)um_data->u_data[2];
   uint8_t samplePeak = *(uint8_t*)um_data->u_data[5];
@@ -6861,7 +6894,7 @@ uint16_t mode_puddles(void) {                   // Puddles. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t soundAgc     = *(uint8_t*)um_data->u_data[1];
   int16_t sampleRaw    = *(int16_t*)um_data->u_data[3];
@@ -6895,7 +6928,7 @@ uint16_t mode_pixels(void) {                    // Pixels. By Andrew Tuline.
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAgc  = *(float*)um_data->u_data[2];
   uint16_t *myVals = (uint16_t*)um_data->u_data[14];
@@ -6929,7 +6962,7 @@ uint16_t mode_binmap(void) {
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
 #ifdef SR_DEBUG
     uint8_t *maxVol =  (uint8_t*)um_data->u_data[9];
@@ -7004,7 +7037,7 @@ uint16_t mode_blurz(void) {                    // Blurz. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[8];
   if (!fftResult) return mode_static();
@@ -7041,7 +7074,7 @@ uint16_t mode_DJLight(void) {                   // Written by ??? Adapted by Wil
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[8];
   if (!fftResult) return mode_static();
@@ -7074,7 +7107,7 @@ uint16_t mode_freqmap(void) {                   // Map FFT_MajorPeak to SEGLEN. 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg     = *(float*)um_data->u_data[0];
   uint8_t soundAgc    = *(uint8_t*)um_data->u_data[1];
@@ -7108,7 +7141,7 @@ uint16_t mode_freqmatrix(void) {                // Freqmatrix. By Andreas Plesch
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAgc     = *(float*)um_data->u_data[2];
   float FFT_MajorPeak = *(float*)um_data->u_data[6];
@@ -7161,7 +7194,7 @@ static const char *_data_FX_MODE_FREQMATRIX PROGMEM = " ♫ Freqmatrix@Time dela
 uint16_t mode_freqpixels(void) {                // Freqpixel. By Andrew Tuline.
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg     = *(float*)um_data->u_data[0];
   uint8_t soundAgc    = *(uint8_t*)um_data->u_data[1];
@@ -7206,7 +7239,7 @@ uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschun
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg     = *(float*)um_data->u_data[0];
   uint8_t soundAgc    = *(uint8_t*)um_data->u_data[1];
@@ -7270,7 +7303,7 @@ uint16_t mode_gravfreq(void) {                  // Gravfreq. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg     = *(float*)um_data->u_data[0];
   uint8_t soundAgc    = *(uint8_t*)um_data->u_data[1];
@@ -7318,7 +7351,7 @@ uint16_t mode_noisemove(void) {                 // Noisemove.    By: Andrew Tuli
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[8];
   if (!fftResult) return mode_static();
@@ -7344,7 +7377,7 @@ uint16_t mode_rocktaves(void) {                 // Rocktaves. Same note from eac
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg     = *(float*)um_data->u_data[0];
   uint8_t soundAgc    = *(uint8_t*)um_data->u_data[1];
@@ -7391,7 +7424,7 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg     = *(float*)um_data->u_data[0];
   uint8_t soundAgc    = *(uint8_t*)um_data->u_data[1];
@@ -7451,7 +7484,7 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[8];
   if (!fftResult) return mode_static();
@@ -7515,7 +7548,7 @@ uint16_t mode_2DFunkyPlank(void) {              // Written by ??? Adapted by Wil
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[8];
   if (!fftResult) return mode_static();
@@ -7610,7 +7643,7 @@ uint16_t mode_2DAkemi(void) {
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[8];
   float base = fftResult[0]/255.0f;

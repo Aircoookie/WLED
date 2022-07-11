@@ -746,6 +746,24 @@ function populateSegments(s)
 			<input type="checkbox" id="seg${i}${isM?'tp':'mi'}" onchange="${(isM?'setTp(':'setMi(')+i})" ${isM?(inst.tp?"checked":""):(inst.mi?"checked":"")}>
 			<span class="checkmark schk"></span>
 		</label>
+		<label class="check revchkl">
+			1D2D Mapping
+			<select id="seg${i}mp12" onchange="setMp12(${i})">
+				<option value="0" ${inst.mp12==0?' selected':''}>Pixel</option>
+				<option value="1" ${inst.mp12==1?' selected':''}>Vertical Bar</option>
+				<option value="2" ${inst.mp12==2?' selected':''}>Centre Circle</option>
+				<option value="3" ${inst.mp12==3?' selected':''}>Center block</option>
+			</select><br>
+		</label>
+		<label class="check revchkl">
+			Sound simulation
+			<select id="seg${i}ssim" onchange="setSSim(${i})">
+				<option value="0" ${inst.ssim==0?' selected':''}>BeatSin</option>
+				<option value="1" ${inst.ssim==1?' selected':''}>WeWillRockYou</option>
+				<option value="2" ${inst.ssim==2?' selected':''}>U10_3</option>
+				<option value="3" ${inst.ssim==3?' selected':''}>U14_3</option>
+			</select><br>
+		</label>
 		<div class="del">
 			<button class="btn btn-xs" id="segr${i}" title="Repeat until end" onclick="rptSeg(${i})"><i class="icons btn-icon">&#xe22d;</i></button>
 			<button class="btn btn-xs" id="segd${i}" title="Delete" onclick="delSeg(${i})"><i class="icons btn-icon">&#xe037;</i></button>
@@ -1949,6 +1967,20 @@ function setMiY(s)
 {
 	var mi = gId(`seg${s}mY`).checked;
 	var obj = {"seg": {"id": s, "mY": mi}};
+	requestJson(obj);
+}
+
+function setMp12(s)
+{
+	var value = gId(`seg${s}mp12`).selectedIndex;
+	var obj = {"seg": {"id": s, "mp12": value}};
+	requestJson(obj);
+}
+
+function setSSim(s)
+{
+	var value = gId(`seg${s}ssim`).selectedIndex;
+	var obj = {"seg": {"id": s, "ssim": value}};
 	requestJson(obj);
 }
 
