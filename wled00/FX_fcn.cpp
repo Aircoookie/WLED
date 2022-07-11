@@ -87,7 +87,7 @@ uint16_t ColorTransition::progress() { //transition progression between 0-65535
   uint32_t timeNow = millis();
   if (timeNow - transitionStart > transitionDur) return 0xFFFFU;
   uint32_t elapsed = timeNow - transitionStart;
-  return min(0xFFFFU, elapsed * 0xFFFFU / transitionDur);
+  return min(0xFFFFU, (unsigned int)(elapsed * 0xFFFFU / transitionDur));
 }
 
 uint8_t ColorTransition::currentBri(uint8_t briNew, bool useCct) {
