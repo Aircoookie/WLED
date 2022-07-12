@@ -74,10 +74,12 @@
 // ColorTransition class implementation
 ///////////////////////////////////////////////////////////////////////////////
 
-void ColorTransition::startTransition(Segment *seg, uint16_t dur, uint8_t oldBri, uint8_t oldCct, uint32_t *oldCol) {
-  currentBri(oldBri);
-  currentBri(oldCct, true);
-  for (size_t i=0; i<NUM_COLORS; i++) colorOld[i] = currentColor(i, oldCol[i]);
+void ColorTransition::startTransition(Segment *seg, uint16_t dur) {
+  // starting a transition has to occur before change
+  if (!seg->isActive()) return;
+  briOld = currentBri(seg->getOption(SEG_OPTION_ON) ? seg->opacity : 0);
+  cctOld = currentBri(seg->cct, true);
+  for (size_t i=0; i<NUM_COLORS; i++) colorOld[i] = currentColor(i, seg->colors[i]);
   transitionDur = dur;
   transitionStart = millis();
   seg->setOption(SEG_OPTION_TRANSITIONAL, true);
@@ -92,16 +94,23 @@ uint16_t ColorTransition::progress() { //transition progression between 0-65535
 
 uint8_t ColorTransition::currentBri(uint8_t briNew, bool useCct) {
   uint32_t prog = progress() + 1;
-  if (useCct) return cctOld = ((briNew * prog) + cctOld * (0x10000 - prog)) >> 16;
-  else        return briOld = ((briNew * prog) + briOld * (0x10000 - prog)) >> 16;
+  if (useCct) return ((briNew * prog) + cctOld * (0x10000 - prog)) >> 16;
+  else        return ((briNew * prog) + briOld * (0x10000 - prog)) >> 16;
 }
 
 void ColorTransition::handleTransition(Segment *seg, uint8_t &newBri, uint8_t &newCct, uint32_t *newCol) {
-  if (!seg->getOption(SEG_OPTION_TRANSITIONAL)) return; // if segment is not transitioning
-  newBri = currentBri(seg->opacity);
-  newCct = currentBri(seg->cct, true);
-  for (size_t i=0; i<NUM_COLORS; i++) newCol[i] = currentColor(i, seg->colors[i]);
-  if (progress() == 0xFFFFU) seg->setOption(SEG_OPTION_TRANSITIONAL, false);
+  newBri = currentBri(newBri);
+  newCct = currentBri(newCct, true);
+  for (size_t i=0; i<NUM_COLORS; i++) newCol[i] = currentColor(i, newCol[i]);
+  unsigned long maxWait = millis() + 22;
+  if (seg->mode == FX_MODE_STATIC && seg->runtime.next_time > maxWait) seg->runtime.next_time = maxWait;
+  if (progress() == 0xFFFFU && seg->getOption(SEG_OPTION_TRANSITIONAL)) {
+    // finish transition
+    briOld = newBri;
+    cctOld = newCct;
+    for (size_t i=0; i<NUM_COLORS; i++) colorOld[i] = newCol[i];
+    seg->setOption(SEG_OPTION_TRANSITIONAL, false);
+  }
 }
 
 
@@ -111,7 +120,7 @@ void ColorTransition::handleTransition(Segment *seg, uint8_t &newBri, uint8_t &n
 
 bool Segment::setColor(uint8_t slot, uint32_t c) { //returns true if changed
   if (slot >= NUM_COLORS || c == colors[slot]) return false;
-  transition.startTransition(this, strip.getTransition(), opacity, cct, colors);
+  transition.startTransition(this, strip.getTransition()); // start transition prior to change
   colors[slot] = c;
   return true;
 }
@@ -123,26 +132,21 @@ void Segment::setCCT(uint16_t k) {
     k = (k - 1900) >> 5;
   }
   if (cct == k) return;
-  transition.startTransition(this, strip.getTransition(), opacity, cct, colors);
+  transition.startTransition(this, strip.getTransition()); // start transition prior to change
   cct = k;
 }
 
 void Segment::setOpacity(uint8_t o) {
   if (opacity == o) return;
-  transition.startTransition(this, strip.getTransition(), opacity, cct, colors);
+  transition.startTransition(this, strip.getTransition()); // start transition prior to change
   opacity = o;
 }
 
 void Segment::setOption(uint8_t n, bool val) {
   bool prevOn = getOption(SEG_OPTION_ON);
-  if (n == SEG_OPTION_ON && !val && prevOn) { // fade out (off)
-    transition.startTransition(this, strip.getTransition(), opacity, cct, colors);
-  }
+  if (n == SEG_OPTION_ON && val != prevOn) transition.startTransition(this, strip.getTransition()); // start transition prior to change
   if (val) options |=   0x01 << n;
   else     options &= ~(0x01 << n);
-  if (n == SEG_OPTION_ON && val && !prevOn) { // fade in (on)
-    transition.startTransition(this, strip.getTransition(), opacity, cct, colors);
-  }
 }
 
 // 2D matrix
@@ -180,7 +184,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
   }
 
   uint16_t len = length();
-  uint8_t _bri_t = getOption(SEG_OPTION_TRANSITIONAL) ? transition.briOld : opacity;
+  uint8_t _bri_t = strip._bri_t;
   if (_bri_t < 255) {
     byte r = scale8(R(col), _bri_t);
     byte g = scale8(G(col), _bri_t);
@@ -484,14 +488,13 @@ uint32_t IRAM_ATTR Segment::color_from_palette(uint16_t i, bool mapping, bool wr
 
 
 ///////////////////////////////////////////////////////////////////////////////
-// Segment_runtime class implementation
+// Segmentruntime class implementation
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Segment_runtime::allocateData(uint16_t len){
+bool Segmentruntime::allocateData(uint16_t len){
   if (data && _dataLen == len) return true; //already allocated
-  WS2812FX *instance = WS2812FX::getInstance();
   deallocateData();
-  if (instance->_usedSegmentData + len > MAX_SEGMENT_DATA) return false; //not enough memory
+  if (strip.getUsedSegmentData() + len > MAX_SEGMENT_DATA) return false; //not enough memory
   // if possible use SPI RAM on ESP32
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
   if (psramFound())
@@ -500,16 +503,16 @@ bool Segment_runtime::allocateData(uint16_t len){
   #endif
     data = (byte*) malloc(len);
   if (!data) return false; //allocation failed
-  instance->_usedSegmentData += len;
+  strip.addUsedSegmentData(len);
   _dataLen = len;
   memset(data, 0, len);
   return true;
 }
 
-void Segment_runtime::deallocateData() {
+void Segmentruntime::deallocateData() {
   free(data);
   data = nullptr;
-  WS2812FX::getInstance()->_usedSegmentData -= _dataLen;
+  strip.addUsedSegmentData(-(int16_t)_dataLen);
   _dataLen = 0;
 }
 
@@ -520,7 +523,7 @@ void Segment_runtime::deallocateData() {
   * because it could access the data buffer and this method 
   * may free that data buffer.
   */
-void Segment_runtime::resetIfRequired() {
+void Segmentruntime::resetIfRequired() {
   if (_requiresReset) {
     next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0; 
     deallocateData();
@@ -538,8 +541,8 @@ void WS2812FX::finalizeInit(void)
 {
   //reset segment runtimes
   for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) {
-    _segment_runtimes[i].markForReset();
-    _segment_runtimes[i].resetIfRequired();
+    _segments[i].runtime.markForReset();
+    _segments[i].runtime.resetIfRequired();
   }
 
   _hasWhiteChannel = _isOffRefreshRequired = false;
@@ -598,29 +601,29 @@ void WS2812FX::service() {
     //if (realtimeMode && useMainSegmentOnly && i == getMainSegmentId()) continue;
 
     _segment_index = i;
+    Segment &seg = _segments[_segment_index];
 
     // reset the segment runtime data if needed, called before isActive to ensure deleted
     // segment's buffers are cleared
-    _segment_runtimes[_segment_index].resetIfRequired();
+    seg.runtime.resetIfRequired();
 
-    if (!_segments[_segment_index].isActive()) continue;
+    if (!seg.isActive()) continue;
 
     // last condition ensures all solid segments are updated at the same time
-    if(nowUp > _segment_runtimes[_segment_index].next_time || _triggered || (doShow && _segments[_segment_index].mode == 0))
+    if(nowUp > seg.runtime.next_time || _triggered || (doShow && seg.mode == FX_MODE_STATIC))
     {
-      if (_segments[_segment_index].grouping == 0) _segments[_segment_index].grouping = 1; //sanity check
+      if (seg.grouping == 0) seg.grouping = 1; //sanity check
       doShow = true;
       uint16_t delay = FRAMETIME;
 
-      if (!_segments[_segment_index].getOption(SEG_OPTION_FREEZE)) { //only run effect function if not frozen
-        Segment &seg = _segments[_segment_index];
+      if (!seg.getOption(SEG_OPTION_FREEZE)) { //only run effect function if not frozen
         _virtualSegmentLength = seg.virtualLength();
-        uint8_t _bri_t = seg.getOption(SEG_OPTION_ON) ? seg.opacity : 0;
+        _bri_t = seg.getOption(SEG_OPTION_ON) ? seg.opacity : 0;
         uint8_t _cct_t = seg.cct;
         _colors_t[0] = seg.colors[0];
         _colors_t[1] = seg.colors[1];
         _colors_t[2] = seg.colors[2];
-        if (seg.getOption(SEG_OPTION_TRANSITIONAL)) seg.transition.handleTransition(&seg, _bri_t, _cct_t, _colors_t);
+        seg.transition.handleTransition(&seg, _bri_t, _cct_t, _colors_t);
 
         if (!cctFromRgb || correctWB) busses.setSegmentCCT(_cct_t, correctWB);
         for (uint8_t c = 0; c < NUM_COLORS; c++) {
@@ -629,10 +632,10 @@ void WS2812FX::service() {
         handle_palette();
 
         delay = (*_mode[seg.mode])();
-        if (seg.mode != FX_MODE_HALLOWEEN_EYES) _segment_runtimes[_segment_index].call++;
+        if (seg.mode != FX_MODE_HALLOWEEN_EYES) seg.runtime.call++;
       }
 
-      _segment_runtimes[_segment_index].next_time = nowUp + delay;
+      seg.runtime.next_time = nowUp + delay;
     }
   }
   _virtualSegmentLength = 0;
@@ -650,34 +653,43 @@ void WS2812FX::setPixelColor(int i, uint32_t col)
 
   // if realtime mode is active and applying to main segment
   if (realtimeMode && useMainSegmentOnly) {
-    uint16_t len = _segments[_mainSegment].length();  // length of segment in number of pixels
+    Segment &seg = _segments[_mainSegment];
+    uint16_t len = seg.length();  // length of segment in number of pixels
+
+    if (seg.opacity < 255) {
+      byte r = scale8(R(col), seg.opacity);
+      byte g = scale8(G(col), seg.opacity);
+      byte b = scale8(B(col), seg.opacity);
+      byte w = scale8(W(col), seg.opacity);
+      col = RGBW32(r, g, b, w);
+    }
 
     // get physical pixel address (taking into account start, grouping, spacing [and offset])
-    i = i * _segments[_mainSegment].groupLength();
-    if (_segments[_mainSegment].getOption(SEG_OPTION_REVERSED)) { // is segment reversed?
-      if (_segments[_mainSegment].getOption(SEG_OPTION_MIRROR)) { // is segment mirrored?
+    i = i * seg.groupLength();
+    if (seg.getOption(SEG_OPTION_REVERSED)) { // is segment reversed?
+      if (seg.getOption(SEG_OPTION_MIRROR)) { // is segment mirrored?
         i = (len - 1) / 2 - i;  //only need to index half the pixels
       } else {
         i = (len - 1) - i;
       }
     }
-    i += _segments[_mainSegment].start; // starting pixel in a group
+    i += seg.start; // starting pixel in a group
 
     // set all the pixels in the group
-    for (uint16_t j = 0; j < _segments[_mainSegment].grouping; j++) {
-      uint16_t indexSet = i + ((_segments[_mainSegment].getOption(SEG_OPTION_REVERSED)) ? -j : j);
-      if (indexSet >= _segments[_mainSegment].start && indexSet < _segments[_mainSegment].stop) {
+    for (uint16_t j = 0; j < seg.grouping; j++) {
+      uint16_t indexSet = i + ((seg.getOption(SEG_OPTION_REVERSED)) ? -j : j);
+      if (indexSet >= seg.start && indexSet < seg.stop) {
 
-        if (_segments[_mainSegment].getOption(SEG_OPTION_MIRROR)) { //set the corresponding mirrored pixel
-          uint16_t indexMir = _segments[_mainSegment].stop - indexSet + _segments[_mainSegment].start - 1;          
-          indexMir += _segments[_mainSegment].offset; // offset/phase
-          if (indexMir >= _segments[_mainSegment].stop) indexMir -= len; // wrap
+        if (seg.getOption(SEG_OPTION_MIRROR)) { //set the corresponding mirrored pixel
+          uint16_t indexMir = seg.stop - indexSet + seg.start - 1;          
+          indexMir += seg.offset; // offset/phase
+          if (indexMir >= seg.stop) indexMir -= len; // wrap
           if (indexMir < customMappingSize) indexMir = customMappingTable[indexMir];
 
           busses.setPixelColor(indexMir, col);
         }
-        indexSet += _segments[_mainSegment].offset; // offset/phase
-        if (indexSet >= _segments[_mainSegment].stop) indexSet -= len; // wrap
+        indexSet += seg.offset; // offset/phase
+        if (indexSet >= seg.stop) indexSet -= len; // wrap
         if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
 
         busses.setPixelColor(indexSet, col);
@@ -832,7 +844,7 @@ void WS2812FX::setMode(uint8_t segid, uint8_t m) {
 
   if (_segments[segid].mode != m) 
   {
-    _segment_runtimes[segid].markForReset();
+    _segments[segid].runtime.markForReset();
     _segments[segid].mode = m;
   }
 }
@@ -873,7 +885,7 @@ void WS2812FX::setBrightness(uint8_t b, bool direct) {
     busses.setBrightness(b);
   } else {
 	  unsigned long t = millis();
-    if (_segment_runtimes[0].next_time > t + 22 && t - _lastShow > MIN_SHOW_DELAY) show(); //apply brightness change immediately if no refresh soon
+    if (_segments[0].runtime.next_time > t + 22 && t - _lastShow > MIN_SHOW_DELAY) show(); //apply brightness change immediately if no refresh soon
   }
 }
 
@@ -1003,13 +1015,13 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
     seg.spacing = spacing;
   }
 	if (offset < UINT16_MAX) seg.offset = offset;
-  _segment_runtimes[n].markForReset();
+  _segments[n].runtime.markForReset();
   if (!boundsUnchanged) seg.refreshLightCapabilities();
 }
 
 void WS2812FX::restartRuntime() {
   for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) {
-    _segment_runtimes[i].markForReset();
+    _segments[i].runtime.markForReset();
   }
 }
 
@@ -1017,7 +1029,7 @@ void WS2812FX::resetSegments() {
   for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) if (_segments[i].name) delete[] _segments[i].name;
   _mainSegment = 0;
   memset(_segments, 0, sizeof(_segments));
-  //memset(_segment_runtimes, 0, sizeof(_segment_runtimes));
+  //memset(_segmentruntimes, 0, sizeof(_segmentruntimes));
   _segment_index = 0;
   _segments[0].mode = DEFAULT_MODE;
   _segments[0].colors[0] = DEFAULT_COLOR;
@@ -1046,9 +1058,9 @@ void WS2812FX::resetSegments() {
     _segments[i].custom1 = DEFAULT_C1;
     _segments[i].custom2 = DEFAULT_C2;
     _segments[i].custom3 = DEFAULT_C3;
-    _segment_runtimes[i].markForReset();
+    _segments[i].runtime.markForReset();
   }
-  _segment_runtimes[0].markForReset();
+  _segments[0].runtime.markForReset();
 }
 
 void WS2812FX::makeAutoSegments(bool forceReset) {
@@ -1143,7 +1155,7 @@ uint8_t WS2812FX::setPixelSegment(uint8_t n)
   uint8_t prevSegId = _segment_index;
   if (n < MAX_NUM_SEGMENTS) {
     _segment_index = n;
-    //_virtualSegmentLength = _segments[_segment_index].virtualLength();
+    _virtualSegmentLength = _segments[_segment_index].virtualLength();
   }
   return prevSegId;
 }
@@ -1161,13 +1173,19 @@ void WS2812FX::setRange(uint16_t i, uint16_t i2, uint32_t col)
 
 void WS2812FX::setTransitionMode(bool t)
 {
-	unsigned long waitMax = millis() + 20; //refresh after 20 ms if transition enabled
+	unsigned long waitMax = millis() + 22; //refresh after 20 ms if transition enabled
   for (uint16_t i = 0; i < MAX_NUM_SEGMENTS; i++)
   {
-    _segments[i].setOption(SEG_OPTION_TRANSITIONAL, t);
-
-    if (t && _segments[i].mode == FX_MODE_STATIC && _segment_runtimes[i].next_time > waitMax)
-			_segment_runtimes[i].next_time = waitMax;
+    if (_segments[i].isActive() && !_segments[i].getOption(SEG_OPTION_TRANSITIONAL)) {
+      if (t) {
+        _segments[i].transition.transitionStart = millis();
+        _segments[i].transition.transitionDur = strip.getTransition();
+      }
+      _segments[i].setOption(SEG_OPTION_TRANSITIONAL, t);
+      if (t && _segments[i].mode == FX_MODE_STATIC && _segments[i].runtime.next_time > waitMax) {
+        _segments[i].runtime.next_time = waitMax;
+      }
+    }
   }
 }
 
@@ -1295,7 +1313,7 @@ void WS2812FX::handle_palette(void)
       load_gradient_palette(paletteIndex -13);
   }
   
-  if (singleSegmentMode && paletteFade && _segment_runtimes[_segment_index].call > 0) //only blend if just one segment uses FastLED mode
+  if (singleSegmentMode && paletteFade && _segments[_segment_index].runtime.call > 0) //only blend if just one segment uses FastLED mode
   {
     nblendPaletteTowardPalette(currentPalette, targetPalette, 48);
   } else

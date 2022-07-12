@@ -712,7 +712,7 @@ void initIR()
 
 void handleIR()
 {
-  if (irEnabled > 0 && millis() - irCheckedTime > 120)
+  if (irEnabled > 0 && millis() - irCheckedTime > 120 && !strip.isUpdating())
   {
     irCheckedTime = millis();
     if (irEnabled > 0)

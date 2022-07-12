@@ -152,7 +152,7 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
 #ifndef WLED_DISABLE_2D
   if (!strip.isMatrix) return; // not a matrix set-up
 
-  uint8_t _bri_t = getOption(SEG_OPTION_TRANSITIONAL) ? transition.briOld : opacity;
+  uint8_t _bri_t = strip._bri_t;
   if (_bri_t < 255) {
     byte r = scale8(R(col), _bri_t);
     byte g = scale8(G(col), _bri_t);
