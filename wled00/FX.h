@@ -88,7 +88,7 @@ uint32_t color_add(uint32_t,uint32_t);
 
 #define NUM_COLORS       3 /* number of colors per segment */
 #define SEGMENT          strip._segments[strip.getCurrSegmentId()]
-#define SEGENV           strip._segment_runtimes[strip.getCurrSegmentId()]
+#define SEGENV           strip._segments[strip.getCurrSegmentId()].runtime
 #define SEGCOLOR(x)      strip.segColor(x)
 #define SEGLEN           strip.getMappingLength()
 #define SPEED_FORMULA_L  (5U + (50U*(255U - SEGMENT.speed))/SEGLEN)
@@ -371,7 +371,7 @@ typedef struct ColorTransition { // 20 bytes
   uint32_t transitionStart;
   uint16_t transitionDur;
 
-  void startTransition(Segment *seg, uint16_t dur, uint8_t oldBri, uint8_t oldCct, uint32_t *oldCol);
+  void startTransition(Segment *seg, uint16_t dur); // transition has to start before actual segment values change
   void handleTransition(Segment *seg, uint8_t &newBri, uint8_t &newCct, uint32_t *newCol);
   uint16_t progress(); //transition progression between 0-65535
   uint8_t currentBri(uint8_t briNew, bool useCct = false);
@@ -379,6 +379,31 @@ typedef struct ColorTransition { // 20 bytes
     return color_blend(colorOld[slot], colorNew, progress(), true);
   }
 } color_transition;
+
+
+// segment runtime parameters
+typedef struct Segmentruntime { // 23 (24 in memory) bytes
+  unsigned long next_time;  // millis() of next update
+  uint32_t step;  // custom "step" var
+  uint32_t call;  // call counter
+  uint16_t aux0;  // custom var
+  uint16_t aux1;  // custom var
+  byte* data = nullptr;
+
+  bool allocateData(uint16_t len);
+  void deallocateData();
+  void resetIfRequired();
+  /** 
+    * Flags that before the next effect is calculated,
+    * the internal segment state should be reset. 
+    * Call resetIfRequired before calling the next effect function.
+    * Safe to call from interrupts and network requests.
+    */
+  inline void markForReset() { _requiresReset = true; }
+  private:
+    uint16_t _dataLen = 0;
+    bool _requiresReset = false;
+} segmentruntime;
 
 
 // segment parameters
@@ -402,6 +427,7 @@ typedef struct Segment { // 40 (44 in memory) bytes
   uint8_t  soundSim;
   uint8_t  mapping12;
   char *name;
+  segmentruntime  runtime;
   color_transition transition;
 
   inline bool     getOption(uint8_t n)   { return ((options >> n) & 0x01); }
@@ -475,32 +501,6 @@ typedef struct Segment { // 40 (44 in memory) bytes
 } segment;
 
 
-// segment runtime parameters
-typedef struct Segment_runtime { // 23 (24 in memory) bytes
-  unsigned long next_time;  // millis() of next update
-  uint32_t step;  // custom "step" var
-  uint32_t call;  // call counter
-  uint16_t aux0;  // custom var
-  uint16_t aux1;  // custom var
-  byte* data = nullptr;
-
-  bool allocateData(uint16_t len);
-  void deallocateData();
-  void resetIfRequired();
-  /** 
-    * Flags that before the next effect is calculated,
-    * the internal segment state should be reset. 
-    * Call resetIfRequired before calling the next effect function.
-    * Safe to call from interrupts and network requests.
-    */
-  inline void markForReset() { _requiresReset = true; }
-  private:
-    uint16_t _dataLen = 0;
-    bool _requiresReset = false;
-} segment_runtime;
-
-
-
 typedef enum mapping1D2D {
   M12_Pixels = 0,
   M12_VerticalBar = 1,
@@ -571,6 +571,7 @@ class WS2812FX {  // 96 bytes
     inline void trigger(void) { _triggered = true; } // Forces the next frame to be computed on all active segments.
     inline void setShowCallback(show_callback cb) { _callback = cb; }
     inline void setTransition(uint16_t t) { _transitionDur = t; }
+    inline void addUsedSegmentData(int16_t size) { _usedSegmentData += size; }
 
     bool
       gammaCorrectBri = false,
@@ -614,6 +615,7 @@ class WS2812FX {  // 96 bytes
     inline uint16_t getMinShowDelay(void) { return MIN_SHOW_DELAY; }
     inline uint16_t getLengthTotal(void) { return _length; }
     inline uint16_t getTransition(void) { return _transitionDur; }
+    inline uint16_t getUsedSegmentData(void) { return _usedSegmentData; }
 
     uint32_t
       now,
@@ -635,7 +637,6 @@ class WS2812FX {  // 96 bytes
     inline Segment& getFirstSelectedSeg(void) { return _segments[getFirstSelectedSegId()]; }
     inline Segment& getMainSegment(void) { return _segments[getMainSegmentId()]; }
     inline Segment* getSegments(void) { return _segments; }
-    inline Segment_runtime& getSegmentRuntime(uint8_t id) { return _segment_runtimes[id >= MAX_NUM_SEGMENTS ? getMainSegmentId() : id]; }
 
   // 2D support (panels)
     bool
@@ -684,17 +685,19 @@ class WS2812FX {  // 96 bytes
     CRGBPalette16 currentPalette;
     CRGBPalette16 targetPalette;
 
-    uint32_t _colors_t[3];
+    uint8_t _bri_t; // used for opacity transitions
+    uint32_t _colors_t[3]; // used for color transitions
     uint16_t _virtualSegmentLength;
 
+    // using public array to reduce code size increase due to inline function getSegment() (with bounds checking)
     segment _segments[MAX_NUM_SEGMENTS] = { // SRAM footprint: 27 bytes per element
       // start, stop, offset, speed, intensity, palette, mode, options, grouping, spacing, opacity (unused), color[], capabilities, custom 1, custom 2, custom 3
       {0, 7, 0, DEFAULT_SPEED, DEFAULT_INTENSITY, 0, DEFAULT_MODE, NO_OPTIONS, 1, 0, 255, {DEFAULT_COLOR}, 0, DEFAULT_C1, DEFAULT_C2, DEFAULT_C3, 0, 1}
     };
     friend class Segment;
 
-    segment_runtime _segment_runtimes[MAX_NUM_SEGMENTS]; // SRAM footprint: 28 bytes per element
-    friend class Segment_runtime;
+    //segmentruntime _segmentruntimes[MAX_NUM_SEGMENTS]; // SRAM footprint: 28 bytes per element
+    //friend class Segmentruntime;
 
   private:
     uint16_t _length;
