@@ -2166,6 +2166,7 @@ function saveP(i,pl)
 	}
 	populatePresets();
 	resetPUtil();
+	setTimeout(()=>{pmtLast=0; loadPresets();}, 500); // force reloading of presets
 }
 
 function testPl(i,bt) {
