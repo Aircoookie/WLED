@@ -276,7 +276,30 @@ void Segment::setPixelColor(float i, uint32_t col, bool aa)
 
 uint32_t Segment::getPixelColor(uint16_t i)
 {
-  if (getOption(SEG_OPTION_REVERSED)) i = virtualLength() - i - 1;
+  if (strip.isMatrix) {
+    switch (SEGMENT.mapping12) {
+      case M12_Pixels:
+        return getPixelColorXY(i%SEGMENT.virtualWidth(), i/SEGMENT.virtualWidth());
+        break;
+      case M12_VerticalBar:
+        // map linear pixel into 2D segment area (even for 1D segments, expanding vertically)
+        return getPixelColorXY(i, 0);
+        break;
+      case M12_Circle:
+        {
+          int x = roundf(roundf((SEGMENT.virtualWidth() / 2) * 10)/10);
+          int y = roundf(roundf((i + SEGMENT.virtualHeight() / 2) * 10)/10);
+          return getPixelColorXY(x,y);
+        }
+        break;
+      case M12_Block:
+        return getPixelColorXY(SEGMENT.virtualWidth() / 2, SEGMENT.virtualHeight() / 2 - i - 1);
+        break;
+    }
+    return 0;
+  }
+
+  if (getOption(SEG_OPTION_REVERSED)) i = strip.getMappingLength() - i - 1;
   i *= groupLength();
   i += start;
   /* offset/phase */

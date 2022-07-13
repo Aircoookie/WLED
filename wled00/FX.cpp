@@ -6647,7 +6647,7 @@ uint16_t mode_matripix(void) {                  // Matripix. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_matripix()
-static const char *_data_FX_MODE_MATRIPIX PROGMEM = " ♪ Matripix@!,Brightness=64;,!;!;mp12=0;ssim=0;rev=1"; // Pixel, Beatsin, reverseX
+static const char *_data_FX_MODE_MATRIPIX PROGMEM = " ♪ Matripix@!,Brightness=64;,!;!;mp12=2;ssim=1;rev=1"; // Circle, Beatsin, reverseX
 
 
 //////////////////////
@@ -6790,7 +6790,7 @@ uint16_t mode_pixelwave(void) {                 // Pixelwave. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_pixelwave()
-static const char *_data_FX_MODE_PIXELWAVE PROGMEM = " ♪ Pixelwave@!,Sensitivity=64;!,!;!;mp12=0;ssim=0"; // Pixels, Beatsin
+static const char *_data_FX_MODE_PIXELWAVE PROGMEM = " ♪ Pixelwave@!,Sensitivity=64;!,!;!;mp12=2;ssim=0"; // Circle, Beatsin
 
 
 //////////////////////
@@ -7131,7 +7131,7 @@ uint16_t mode_freqmap(void) {                   // Map FFT_MajorPeak to SEGLEN. 
 
   return FRAMETIME;
 } // mode_freqmap()
-static const char *_data_FX_MODE_FREQMAP PROGMEM = " ♫ Freqmap@Fade rate,Starting color;,!;!;mp12=0;ssim=0"; // Pixels, Beatsin
+static const char *_data_FX_MODE_FREQMAP PROGMEM = " ♫ Freqmap@Fade rate,Starting color;,!;!;mp12=2;ssim=0"; // Circle, Beatsin
 
 
 ///////////////////////
@@ -7288,7 +7288,7 @@ uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschun
 
   return FRAMETIME;
 } // mode_freqwave()
-static const char *_data_FX_MODE_FREQWAVE PROGMEM = " ♫ Freqwave@Time delay,Sound effect,Low bin,High bin,Pre-amp;;;mp12=0;ssim=0"; // Pixels, Beatsin
+static const char *_data_FX_MODE_FREQWAVE PROGMEM = " ♫ Freqwave@Time delay,Sound effect,Low bin,High bin,Pre-amp;;;mp12=2;ssim=0"; // Circle, Beatsin
 
 
 ///////////////////////
@@ -7464,7 +7464,7 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
 
   return FRAMETIME;
 } // mode_waterfall()
-static const char *_data_FX_MODE_WATERFALL PROGMEM = " ♫ Waterfall@!,Adjust color,,Select bin, Volume (minimum)=0;!,!;!;mp12=0;ssim=0"; // Pixels, Beatsin
+static const char *_data_FX_MODE_WATERFALL PROGMEM = " ♫ Waterfall@!,Adjust color,,Select bin, Volume (minimum)=0;!,!;!;mp12=2;ssim=0"; // Circles, Beatsin
 
 
 #ifndef WLED_DISABLE_2D
