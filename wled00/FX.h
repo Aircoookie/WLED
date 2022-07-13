@@ -504,8 +504,8 @@ typedef struct Segment { // 40 (44 in memory) bytes
 typedef enum mapping1D2D {
   M12_Pixels = 0,
   M12_VerticalBar = 1,
-  M12_CenterCircle = 2,
-  M12_CenterBlock = 3
+  M12_Circle = 2,
+  M12_Block = 3
 } mapping1D2D_t;
 
 // main "strip" class

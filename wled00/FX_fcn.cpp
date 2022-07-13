@@ -186,17 +186,14 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
           setPixelColorXY(i, y * groupLength(), col);
         }
         break;
-      case M12_CenterCircle:
+      case M12_Circle:
         for (int degrees = 0; degrees <= 360; degrees += 180 / (i+1)) {
-          // int x = sinf(degrees*DEG_TO_RAD * i);
-          // int y = cosf(degrees*DEG_TO_RAD * i);
-          // strip.setPixelColorXY(x + SEGMENT.virtualWidth() / 2 - 1, y + SEGMENT.virtualHeight() / 2 - 1, r, g, b, w);
           int x = roundf(roundf((sinf(degrees*DEG_TO_RAD) * i + SEGMENT.virtualWidth() / 2) * 10)/10);
           int y = roundf(roundf((cosf(degrees*DEG_TO_RAD) * i + SEGMENT.virtualHeight() / 2) * 10)/10);
           setPixelColorXY(x, y, col);
         }
         break;
-      case M12_CenterBlock:
+      case M12_Block:
         for (int x = SEGMENT.virtualWidth() / 2 - i - 1; x <= SEGMENT.virtualWidth() / 2 + i; x++) {
           setPixelColorXY(x, SEGMENT.virtualHeight() / 2 - i - 1, col);
           setPixelColorXY(x, SEGMENT.virtualHeight() / 2 + i    , col);
@@ -207,6 +204,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         }
         break;
     }
+    return;
   }
 
   uint16_t len = length();
@@ -1459,7 +1457,7 @@ uint8_t Bus::_gAWM = 255;
 // Technical notes
 // ===============
 // If an effect name is followed by an @, slider and color control is effective.
-// See setSliderAndColorControl in index.js for implementation
+// See setEffectParameters in index.js for implementation
 // If not effective then:
 //      - For AC effects (id<128) 2 sliders and 3 colors and the palette will be shown
 //      - For SR effects (id>128) 5 sliders and 3 colors and the palette will be shown

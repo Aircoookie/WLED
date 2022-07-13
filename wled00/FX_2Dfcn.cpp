@@ -246,10 +246,10 @@ uint16_t IRAM_ATTR WS2812FX::getMappingLength() {
     case M12_VerticalBar:
       return SEGMENT.virtualWidth();
       break;
-    case M12_CenterCircle:
+    case M12_Circle:
       return (SEGMENT.virtualWidth() + SEGMENT.virtualHeight()) / 4; // take half of the average width
       break;
-    case M12_CenterBlock:
+    case M12_Block:
       return (SEGMENT.virtualWidth() + SEGMENT.virtualHeight()) / 4; // take half of the average width
       break;
   }

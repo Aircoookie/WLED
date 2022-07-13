@@ -751,8 +751,8 @@ function populateSegments(s)
 			<select id="seg${i}mp12" onchange="setMp12(${i})">
 				<option value="0" ${inst.mp12==0?' selected':''}>Pixel</option>
 				<option value="1" ${inst.mp12==1?' selected':''}>Vertical Bar</option>
-				<option value="2" ${inst.mp12==2?' selected':''}>Centre Circle</option>
-				<option value="3" ${inst.mp12==3?' selected':''}>Center block</option>
+				<option value="2" ${inst.mp12==2?' selected':''}>Circle</option>
+				<option value="3" ${inst.mp12==3?' selected':''}>Block</option>
 			</select><br>
 		</label>
 		<label class="check revchkl">
@@ -913,9 +913,9 @@ function genPalPrevCss(id)
 	return `background: linear-gradient(to right,${gradient.join()});`;
 }
 
-function generateListItemHtml(listName, id, name, clickAction, extraHtml = '', extraPar = '')
+function generateListItemHtml(listName, id, name, clickAction, extraHtml = '', effectPar = '')
 {
-    return `<div class="lstI${id==0?' sticky':''}" data-id="${id}" data-opt="${extraPar}" onClick="${clickAction}(${id})">
+    return `<div class="lstI${id==0?' sticky':''}" data-id="${id}" data-opt="${effectPar}" onClick="${clickAction}(${id})">
 	<label class="radio schkl" onclick="event.preventDefault()">
 		<input type="radio" value="${id}" name="${listName}">
 		<span class="radiomark schk"></span>
@@ -1135,7 +1135,7 @@ function updateSelectedFx()
 		var fx = (selectedFx != prevFx) && currentPreset==-1; // effect changed & preset==none
 		var ps = (prevPS != currentPreset) && currentPreset==-1; // preset changed & preset==none
 		// WLEDSR: extract the Slider and color control string from the HTML element and set it.
-		setSliderAndColorControl(selectedFx, (fx || ps));
+		setEffectParameters(selectedFx, (fx || ps));
 	}
 }
 
@@ -1312,16 +1312,23 @@ function readState(s,command=false)
 // Note: Effects can override default pattern behaviour
 //       - FadeToBlack can override the background setting
 //       - Defining SEGCOL(<i>) can override a specific palette using these values (e.g. Color Gradient)
-function setSliderAndColorControl(idx, applyDef=false)
+function setEffectParameters(idx, applyDef=false)
 {
 	if (!(Array.isArray(fxdata) && fxdata.length>idx)) return;
   	var controlDefined = (fxdata[idx].substr(0,1) == "@");
-	var extra = fxdata[idx].substr(1);
-	var extras = (extra == '')?[]:extra.split(";");
-	var slOnOff = (extras.length==0 || extras[0]=='')?[]:extras[0].split(",");
-	var coOnOff = (extras.length<2  || extras[1]=='')?[]:extras[1].split(",");
-	var paOnOff = (extras.length<3  || extras[2]=='')?[]:extras[2].split(",");
-	var obj = {"seg":{}};
+	var effectPar = fxdata[idx].substr(1);
+	var effectPars = (effectPar == '')?[]:effectPar.split(";");
+	var slOnOff = (effectPars.length==0 || effectPars[0]=='')?[]:effectPars[0].split(",");
+	var coOnOff = (effectPars.length<2  || effectPars[1]=='')?[]:effectPars[1].split(",");
+	var paOnOff = (effectPars.length<3  || effectPars[2]=='')?[]:effectPars[2].split(",");
+	// var obj = {"seg":{}};
+	var obj = {"seg": {"rev": false, "rY": false}};
+
+	//assign extra parameters to segment
+	for (let i=3;i<effectPars.length;i++) {
+		let keyval = effectPars[i].split("=");
+		obj.seg[keyval[0]] = keyval[1]=="true"?true:keyval[1]=="false"?false:keyval[1];
+	}
   
 	// set html slider items on/off
 	var nSliders = Math.min(5,Math.floor(gId("sliders").children.length)); // div for each slider
