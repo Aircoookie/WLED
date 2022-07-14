@@ -208,8 +208,8 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         // expand in circular fashion from center
         for (int degrees = 0; degrees <= 360; degrees += 180 / (i+1)) { // this may prove too many iterations on larger matrices
           // may want to try float version as well (with or without antialiasing)
-          unsigned int x = roundf(roundf((sin_t(degrees*DEG_TO_RAD) * i + vW / 2.0f) * 10)/10); // sin_t is Aircoookie's implementation that uses less RAM
-          unsigned int y = roundf(roundf((cos_t(degrees*DEG_TO_RAD) * i + vH / 2.0f) * 10)/10); // cos_t is Aircoookie's implementation that uses less RAM
+          int x = (int)roundf(roundf((sin_t(degrees*DEG_TO_RAD) * i + vW / 2.0f) * 10)/10); // sin_t is Aircoookie's implementation that uses less RAM
+          int y = (int)roundf(roundf((cos_t(degrees*DEG_TO_RAD) * i + vH / 2.0f) * 10)/10); // cos_t is Aircoookie's implementation that uses less RAM
           setPixelColorXY(x, y, col);
         }
         break;
@@ -325,7 +325,7 @@ uint32_t Segment::getPixelColor(uint16_t i)
   }
 #endif
 
-  if (getOption(SEG_OPTION_REVERSED)) i = strip.virtualLength() - i - 1;
+  if (getOption(SEG_OPTION_REVERSED)) i = virtualLength() - i - 1;
   i *= groupLength();
   i += start;
   /* offset/phase */
