@@ -361,6 +361,13 @@ uint32_t color_add(uint32_t,uint32_t);
   #define MODE_COUNT                     185
 #endif
 
+typedef enum mapping1D2D {
+  M12_Pixels = 0,
+  M12_VerticalBar = 1,
+  M12_Circle = 2,
+  M12_Block = 3
+} mapping1D2D_t;
+
 struct Segment;
 
 // color transitions
@@ -500,13 +507,6 @@ typedef struct Segment { // 40 (44 in memory) bytes
   inline void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t c) { drawCharacter(chr, x, y, w, h, CRGB(byte(c>>16), byte(c>>8), byte(c))); }
 } segment;
 
-
-typedef enum mapping1D2D {
-  M12_Pixels = 0,
-  M12_VerticalBar = 1,
-  M12_Circle = 2,
-  M12_Block = 3
-} mapping1D2D_t;
 
 // main "strip" class
 class WS2812FX {  // 96 bytes
@@ -673,9 +673,6 @@ class WS2812FX {  // 96 bytes
     // outsmart the compiler :) by correctly overloading
     inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { setPixelColorXY(x, y, RGBW32(r,g,b,w)); } // automatically inline
     inline void setPixelColorXY(int x, int y, CRGB c) { setPixelColorXY(x, y, c.red, c.green, c.blue); }
-
-    uint16_t
-      getMappingLength();
 
     uint32_t
       getPixelColorXY(uint16_t, uint16_t);

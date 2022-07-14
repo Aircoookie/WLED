@@ -166,6 +166,21 @@ uint16_t Segment::virtualHeight() {
 
 // 1D strip
 uint16_t Segment::virtualLength() {
+#ifndef WLED_DISABLE_2D
+  if (height() > 1) {
+    uint16_t vW = virtualWidth();
+    uint16_t vH = virtualHeight();
+    uint32_t vLen = vW * vH; // use all pixels from segment
+    switch (mapping12) {
+      case M12_VerticalBar: vLen = vW;
+        break;
+      case M12_Circle:
+      case M12_Block:       vLen = (vW + vH) / 4; // take half of the average width
+        break;
+    }
+    return vLen;
+  }
+#endif
   uint16_t groupLen = groupLength();
   uint16_t vLength = (length() + groupLen - 1) / groupLen;
   if (getOption(SEG_OPTION_MIRROR)) vLength = (vLength + 1) /2;  // divide by 2 if mirror, leave at least a single LED
@@ -174,38 +189,45 @@ uint16_t Segment::virtualLength() {
 
 void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
 {
-  if (strip.isMatrix) {
-    uint16_t h = virtualHeight();  // segment height in logical pixels
-    switch (SEGMENT.mapping12) {
+#ifndef WLED_DISABLE_2D
+  if (height() > 1) { // if this does not work use strip.isMatrix
+    uint16_t vH = virtualHeight();  // segment height in logical pixels
+    uint16_t vW = virtualWidth();
+    switch (mapping12) {
       case M12_Pixels:
-        setPixelColorXY(i%SEGMENT.virtualWidth(), i/SEGMENT.virtualWidth(), col);
+        // use all available pixels as a long strip
+        setPixelColorXY(i % vW, i / vW, col);
         break;
       case M12_VerticalBar:
-        // map linear pixel into 2D segment area (even for 1D segments, expanding vertically)
-        for (int y = 0; y < h; y++) { // expand 1D effect vertically
+        // expand 1D effect vertically
+        for (int y = 0; y < vH; y++) {
           setPixelColorXY(i, y * groupLength(), col);
         }
         break;
       case M12_Circle:
-        for (int degrees = 0; degrees <= 360; degrees += 180 / (i+1)) {
-          int x = roundf(roundf((sinf(degrees*DEG_TO_RAD) * i + SEGMENT.virtualWidth() / 2) * 10)/10);
-          int y = roundf(roundf((cosf(degrees*DEG_TO_RAD) * i + SEGMENT.virtualHeight() / 2) * 10)/10);
+        // expand in circular fashion from center
+        for (int degrees = 0; degrees <= 360; degrees += 180 / (i+1)) { // this may prove too many iterations on larger matrices
+          // may want to try float version as well (with or without antialiasing)
+          unsigned int x = roundf(roundf((sin_t(degrees*DEG_TO_RAD) * i + vW / 2.0f) * 10)/10); // sin_t is Aircoookie's implementation that uses less RAM
+          unsigned int y = roundf(roundf((cos_t(degrees*DEG_TO_RAD) * i + vH / 2.0f) * 10)/10); // cos_t is Aircoookie's implementation that uses less RAM
           setPixelColorXY(x, y, col);
         }
         break;
       case M12_Block:
-        for (int x = SEGMENT.virtualWidth() / 2 - i - 1; x <= SEGMENT.virtualWidth() / 2 + i; x++) {
-          setPixelColorXY(x, SEGMENT.virtualHeight() / 2 - i - 1, col);
-          setPixelColorXY(x, SEGMENT.virtualHeight() / 2 + i    , col);
+        // expand in rectangular fashion from center
+        for (int x = vW / 2 - i - 1; x <= vW / 2 + i; x++) {
+          setPixelColorXY(x, vH / 2 - i - 1, col);
+          setPixelColorXY(x, vH / 2 + i    , col);
         }
-        for (int y = SEGMENT.virtualHeight() / 2 - i - 1 + 1; y <= SEGMENT.virtualHeight() / 2 + i - 1; y++) {
-          setPixelColorXY(SEGMENT.virtualWidth() / 2 - i - 1, y, col);
-          setPixelColorXY(SEGMENT.virtualWidth() / 2 + i    , y, col);
+        for (int y = vH / 2 - i - 1 + 1; y <= vH / 2 + i - 1; y++) {
+          setPixelColorXY(vW / 2 - i - 1, y, col);
+          setPixelColorXY(vW / 2 + i    , y, col);
         }
         break;
     }
     return;
   }
+#endif
 
   uint16_t len = length();
   uint8_t _bri_t = strip._bri_t;
@@ -276,10 +298,13 @@ void Segment::setPixelColor(float i, uint32_t col, bool aa)
 
 uint32_t Segment::getPixelColor(uint16_t i)
 {
-  if (strip.isMatrix) {
-    switch (SEGMENT.mapping12) {
+#ifndef WLED_DISABLE_2D
+  if (height() > 1) { // if this does not work use strip.isMatrix
+    uint16_t vH = virtualHeight();  // segment height in logical pixels
+    uint16_t vW = virtualWidth();
+    switch (mapping12) {
       case M12_Pixels:
-        return getPixelColorXY(i%SEGMENT.virtualWidth(), i/SEGMENT.virtualWidth());
+        return getPixelColorXY(i % vW, i / vW);
         break;
       case M12_VerticalBar:
         // map linear pixel into 2D segment area (even for 1D segments, expanding vertically)
@@ -287,19 +312,20 @@ uint32_t Segment::getPixelColor(uint16_t i)
         break;
       case M12_Circle:
         {
-          int x = roundf(roundf((SEGMENT.virtualWidth() / 2) * 10)/10);
-          int y = roundf(roundf((i + SEGMENT.virtualHeight() / 2) * 10)/10);
+          int x = roundf(roundf((vW / 2) * 10)/10);
+          int y = roundf(roundf((i + vH / 2) * 10)/10);
           return getPixelColorXY(x,y);
         }
         break;
       case M12_Block:
-        return getPixelColorXY(SEGMENT.virtualWidth() / 2, SEGMENT.virtualHeight() / 2 - i - 1);
+        return getPixelColorXY(vW / 2, vH / 2 - i - 1);
         break;
     }
     return 0;
   }
+#endif
 
-  if (getOption(SEG_OPTION_REVERSED)) i = strip.getMappingLength() - i - 1;
+  if (getOption(SEG_OPTION_REVERSED)) i = strip.virtualLength() - i - 1;
   i *= groupLength();
   i += start;
   /* offset/phase */
