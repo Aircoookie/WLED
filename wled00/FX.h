@@ -90,7 +90,7 @@ uint32_t color_add(uint32_t,uint32_t);
 #define SEGMENT          strip._segments[strip.getCurrSegmentId()]
 #define SEGENV           strip._segments[strip.getCurrSegmentId()].runtime
 #define SEGCOLOR(x)      strip.segColor(x)
-#define SEGLEN           strip.getMappingLength()
+#define SEGLEN           strip._virtualSegmentLength
 #define SPEED_FORMULA_L  (5U + (50U*(255U - SEGMENT.speed))/SEGLEN)
 
 // some common colors
