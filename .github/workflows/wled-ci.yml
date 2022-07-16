@@ -66,7 +66,7 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/')
       with:
         name: firmware-release
-        path: build_output/release/*.bin
+        path: build_output/firmware/*.bin
   release:
     name: Create Release
     runs-on: ubuntu-latest
