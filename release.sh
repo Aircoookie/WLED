@@ -12,7 +12,7 @@ if [[ -n "$(git tag | grep "${VERSION}" || true)" ]]; then
     exit 1
 fi
 
-sed -i "s/\"version\":.*/\"version\": \"${VERSION}\"/" package.json
+sed -i "s/\"version\":.*/\"version\": \"${VERSION}\",/" package.json
 git commit package.json -m "Updated version in package.json to ${VERSION}"
 git tag -a "${VERSION}" -m "Created tag ${VERSION}"
 
