@@ -748,7 +748,7 @@ function populateSegments(s)
 		</label>
 		<label class="check revchkl">
 			1D2D Mapping
-			<select id="seg${i}mp12" onchange="setMp12(${i})">
+			<select class="sel sel-ple" id="seg${i}mp12" onchange="setMp12(${i})">
 				<option value="0" ${inst.mp12==0?' selected':''}>Pixel</option>
 				<option value="1" ${inst.mp12==1?' selected':''}>Vertical Bar</option>
 				<option value="2" ${inst.mp12==2?' selected':''}>Circle</option>
@@ -757,11 +757,12 @@ function populateSegments(s)
 		</label>
 		<label class="check revchkl">
 			Sound simulation
-			<select id="seg${i}ssim" onchange="setSSim(${i})">
-				<option value="0" ${inst.ssim==0?' selected':''}>BeatSin</option>
-				<option value="1" ${inst.ssim==1?' selected':''}>WeWillRockYou</option>
-				<option value="2" ${inst.ssim==2?' selected':''}>U10_3</option>
-				<option value="3" ${inst.ssim==3?' selected':''}>U14_3</option>
+			<select class="sel sel-ple" id="seg${i}ssim" onchange="setSSim(${i})">
+				<option value="0" ${inst.ssim==0?' selected':''}>Off</option>
+				<option value="1" ${inst.ssim==1?' selected':''}>BeatSin</option>
+				<option value="2" ${inst.ssim==2?' selected':''}>WeWillRockYou</option>
+				<option value="3" ${inst.ssim==3?' selected':''}>U10_3</option>
+				<option value="4" ${inst.ssim==4?' selected':''}>U14_3</option>
 			</select><br>
 		</label>
 		<div class="del">
@@ -1321,8 +1322,8 @@ function setEffectParameters(idx, applyDef=false)
 	var slOnOff = (effectPars.length==0 || effectPars[0]=='')?[]:effectPars[0].split(",");
 	var coOnOff = (effectPars.length<2  || effectPars[1]=='')?[]:effectPars[1].split(",");
 	var paOnOff = (effectPars.length<3  || effectPars[2]=='')?[]:effectPars[2].split(",");
-	// var obj = {"seg":{}};
-	var obj = {"seg": {"rev": false, "rY": false}};
+	var obj = {"seg":{}};
+	// var obj = {"seg": {"rev": false, "rY": false}};
 
 	//assign extra parameters to segment
 	for (let i=3;i<effectPars.length;i++) {
