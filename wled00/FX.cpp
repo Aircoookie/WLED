@@ -3134,8 +3134,8 @@ typedef struct particle {
 uint16_t mode_starburst(void) {
   uint16_t maxData = FAIR_DATA_PER_SEG; //ESP8266: 256 ESP32: 640
   uint8_t segs = strip.getActiveSegmentsNum();
-  if (segs <= (MAX_NUM_SEGMENTS /2)) maxData *= 2; //ESP8266: 512 if <= 8 segs ESP32: 1280 if <= 16 segs
-  if (segs <= (MAX_NUM_SEGMENTS /4)) maxData *= 2; //ESP8266: 1024 if <= 4 segs ESP32: 2560 if <= 8 segs
+  if (segs <= (strip.getMaxSegments() /2)) maxData *= 2; //ESP8266: 512 if <= 8 segs ESP32: 1280 if <= 16 segs
+  if (segs <= (strip.getMaxSegments() /4)) maxData *= 2; //ESP8266: 1024 if <= 4 segs ESP32: 2560 if <= 8 segs
   uint16_t maxStars = maxData / sizeof(star); //ESP8266: max. 4/9/19 stars/seg, ESP32: max. 10/21/42 stars/seg
 
   uint8_t numStars = 1 + (SEGLEN >> 3);
@@ -3257,8 +3257,8 @@ uint16_t mode_exploding_fireworks(void)
   //allocate segment data
   uint16_t maxData = FAIR_DATA_PER_SEG; //ESP8266: 256 ESP32: 640
   uint8_t segs = strip.getActiveSegmentsNum();
-  if (segs <= (MAX_NUM_SEGMENTS /2)) maxData *= 2; //ESP8266: 512 if <= 8 segs ESP32: 1280 if <= 16 segs
-  if (segs <= (MAX_NUM_SEGMENTS /4)) maxData *= 2; //ESP8266: 1024 if <= 4 segs ESP32: 2560 if <= 8 segs
+  if (segs <= (strip.getMaxSegments() /2)) maxData *= 2; //ESP8266: 512 if <= 8 segs ESP32: 1280 if <= 16 segs
+  if (segs <= (strip.getMaxSegments() /4)) maxData *= 2; //ESP8266: 1024 if <= 4 segs ESP32: 2560 if <= 8 segs
   int maxSparks = maxData / sizeof(spark); //ESP8266: max. 21/42/85 sparks/seg, ESP32: max. 53/106/213 sparks/seg
 
   uint16_t numSparks = min(2 + ((rows*cols) >> 1), maxSparks);
@@ -7667,11 +7667,20 @@ static const char *_data_FX_MODE_2DAKEMI PROGMEM = "2D Akemi@Color speed,Dance;H
 static const char *_data_RESERVED PROGMEM = "Reserved";
 
 void WS2812FX::addEffect(uint8_t id, mode_ptr mode_fn, const char *mode_name) {
+  /*
   if (id == 255) { for (int i=1; i<_modeCount; i++) if (_mode[i] == &mode_static) { id = i; break; } } // find empty slot
   if (id < _modeCount) {
     if (_mode[id] != &mode_static) return; // do not overwrite alerady added effect
     _mode[id] = mode_fn;
     _modeData[id] = mode_name;
+  }
+  */
+  if (id >= _mode.size()) {
+    _mode.push_back(mode_fn);
+    _modeData.push_back(mode_name);
+  } else {
+    _mode.insert(_mode.begin()+id, mode_fn);
+    _modeData.insert(_modeData.begin()+id, mode_name);
   }
 }
 

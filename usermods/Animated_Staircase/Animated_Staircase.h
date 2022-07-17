@@ -103,25 +103,24 @@ class Animated_Staircase : public Usermod {
 
     void updateSegments() {
       mainSegmentId = strip.getMainSegmentId();
-      Segment* segments = strip.getSegments();
-      for (int i = 0; i < MAX_NUM_SEGMENTS; i++, segments++) {
-        if (!segments->isActive()) {
+      for (int i = 0; i < strip.getActiveSegmentsNum(); i++) {
+        Segment &seg = strip.getSegment(i);
+        if (!seg.isActive()) {
           maxSegmentId = i - 1;
           break;
         }
-
         if (i >= onIndex && i < offIndex) {
-          segments->setOption(SEG_OPTION_ON, 1, i);
+          seg.setOption(SEG_OPTION_ON, true);
 
           // We may need to copy mode and colors from segment 0 to make sure
           // changes are propagated even when the config is changed during a wipe
           // segments->mode = mainsegment.mode;
           // segments->colors[0] = mainsegment.colors[0];
         } else {
-          segments->setOption(SEG_OPTION_ON, 0, i);
+          seg.setOption(SEG_OPTION_ON, false);
         }
         // Always mark segments as "transitional", we are animating the staircase
-        segments->setOption(SEG_OPTION_TRANSITIONAL, 1, i);
+        seg.setOption(SEG_OPTION_TRANSITIONAL, true);
       }
       colorUpdated(CALL_MODE_DIRECT_CHANGE);
     }
@@ -290,13 +289,13 @@ class Animated_Staircase : public Usermod {
         }
       } else {
         // Restore segment options
-        Segment* segments = strip.getSegments();
-        for (int i = 0; i < MAX_NUM_SEGMENTS; i++, segments++) {
-          if (!segments->isActive()) {
+        for (int i = 0; i < strip.getActiveSegmentsNum(); i++) {
+          Segment &seg = strip.getSegment(i);
+          if (!seg.isActive()) {
             maxSegmentId = i - 1;
             break;
           }
-          segments->setOption(SEG_OPTION_ON, 1, i);
+          seg.setOption(SEG_OPTION_ON, true);
         }
         colorUpdated(CALL_MODE_DIRECT_CHANGE);
         DEBUG_PRINTLN(F("Animated Staircase disabled."));

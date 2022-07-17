@@ -608,7 +608,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   pos = req.indexOf(F("SS="));
   if (pos > 0) {
     byte t = getNumVal(&req, pos);
-    if (t < strip.getMaxSegments()) {
+    if (t < strip.getActiveSegmentsNum()) {
       selectedSeg = t;
       singleSegment = true;
     }
@@ -618,7 +618,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   pos = req.indexOf(F("SV=")); //segment selected
   if (pos > 0) {
     byte t = getNumVal(&req, pos);
-    if (t == 2) for (uint8_t i = 0; i < strip.getMaxSegments(); i++) strip.getSegment(i).setOption(SEG_OPTION_SELECTED, 0); // unselect other segments
+    if (t == 2) for (uint8_t i = 0; i < strip.getActiveSegmentsNum(); i++) strip.getSegment(i).setOption(SEG_OPTION_SELECTED, 0); // unselect other segments
     selseg.setOption(SEG_OPTION_SELECTED, t);
   }
 
@@ -824,7 +824,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   stateChanged |= (fxModeChanged || speedChanged || intensityChanged || paletteChanged);
 
   // apply to main and all selected segments to prevent #1618.
-  for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
+  for (uint8_t i = 0; i < strip.getActiveSegmentsNum(); i++) {
     Segment& seg = strip.getSegment(i);
     if (i != selectedSeg && (singleSegment || !seg.isActive() || !seg.isSelected())) continue; // skip non main segments if not applying to all
     if (fxModeChanged)    strip.setMode(i, effectIn);

@@ -153,6 +153,7 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
   if (!strip.isMatrix) return; // not a matrix set-up
 
   uint8_t _bri_t = strip._bri_t;
+  //uint8_t _bri_t = currentBri(getOption(SEG_OPTION_ON) ? opacity : 0);
   if (_bri_t < 255) {
     byte r = scale8(R(col), _bri_t);
     byte g = scale8(G(col), _bri_t);

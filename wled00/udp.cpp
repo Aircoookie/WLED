@@ -89,9 +89,9 @@ void notify(byte callMode, bool followUp)
   udpOut[37] = strip.hasCCTBus() ? 0 : 255; //check this is 0 for the next value to be significant
   udpOut[38] = mainseg.cct;
 
-  udpOut[39] = strip.getMaxSegments();
+  udpOut[39] = strip.getActiveSegmentsNum();
   udpOut[40] = UDP_SEG_SIZE; //size of each loop iteration (one segment)
-  for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
+  for (uint8_t i = 0; i < strip.getActiveSegmentsNum(); i++) {
     Segment &selseg = strip.getSegment(i);
     uint16_t ofs = 41 + i*UDP_SEG_SIZE; //start of segment offset byte
     udpOut[0 +ofs] = i;
@@ -155,7 +155,7 @@ void realtimeLock(uint32_t timeoutMs, byte md)
     for (uint16_t i = start; i < stop; i++) strip.setPixelColor(i,0,0,0,0);
     // if WLED was off and using main segment only, freeze non-main segments so they stay off
     if (useMainSegmentOnly && bri == 0) {
-      for (uint8_t s=0; s < strip.getMaxSegments(); s++) {
+      for (uint8_t s=0; s < strip.getActiveSegmentsNum(); s++) {
         strip.getSegment(s).setOption(SEG_OPTION_FREEZE, true);
       }
     }
@@ -342,7 +342,7 @@ void handleNotifications()
         for (uint8_t i = 0; i < numSrcSegs; i++) {
           uint16_t ofs = 41 + i*udpIn[40]; //start of segment offset byte
           uint8_t id = udpIn[0 +ofs];
-          if (id > strip.getMaxSegments()) break;
+          if (id > strip.getActiveSegmentsNum()) break;
           Segment& selseg = strip.getSegment(id);
           uint16_t start  = (udpIn[1+ofs] << 8 | udpIn[2+ofs]);
           uint16_t stop   = (udpIn[3+ofs] << 8 | udpIn[4+ofs]);
@@ -377,7 +377,7 @@ void handleNotifications()
       
       // simple effect sync, applies to all selected segments
       if (applyEffects && (version < 11 || !receiveSegmentOptions)) {
-        for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
+        for (uint8_t i = 0; i < strip.getActiveSegmentsNum(); i++) {
           Segment& seg = strip.getSegment(i);
           if (!seg.isActive() || !seg.isSelected()) continue;
           if (udpIn[8] < strip.getModeCount()) strip.setMode(i, udpIn[8]);

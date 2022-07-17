@@ -118,6 +118,8 @@ void WLED::loop()
     if (stripMillis > maxStripMillis) maxStripMillis = stripMillis;
     #endif
   }
+  if (offMode) strip.purgeSegments(); // remove inactive segments from memory (no effects running)
+
   yield();
 #ifdef ESP8266
   MDNS.update();

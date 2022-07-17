@@ -154,15 +154,12 @@ void initServer()
   });
 
   server.on("/json", HTTP_GET, [](AsyncWebServerRequest *request){
-    while (strip.isUpdating()) delay(1);
     serveJson(request);
   });
 
   AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/json", [](AsyncWebServerRequest *request) {
     bool verboseResponse = false;
     bool isConfig = false;
-
-    while (strip.isUpdating()) delay(1);
 
     if (!requestJSONBufferLock(14)) return;
 

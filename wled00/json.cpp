@@ -11,11 +11,20 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   byte id = elem["id"] | it;
   if (id >= strip.getMaxSegments()) return;
 
+  int stop = elem["stop"] | -1;
+
+  // if using vectors use this code to append segment
+  if (id >= strip.getActiveSegmentsNum()) {
+    if (stop <= 0) return; // ignore empty/inactive segments
+    DEBUG_PRINT(F("Adding segment: ")); DEBUG_PRINTLN(id);
+    strip.appendSegment(Segment(0, strip.getLengthTotal()));
+    id = strip.getActiveSegmentsNum()-1; // segments are added at the end of list
+  }
+
   Segment& seg = strip.getSegment(id);
   Segment prev = seg; //make a backup so we can tell if something changed
 
   uint16_t start = elem["start"] | seg.start;
-  int stop = elem["stop"] | -1;
   if (stop < 0) {
     uint16_t len = elem["len"];
     stop = (len > 0) ? start + len : seg.stop;
@@ -232,7 +241,6 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   // send UDP if not in preset and something changed that is not just selection
   // send UDP if something changed that is not just selection or segment power/opacity
   if ((seg.differs(prev) & 0x7E) && seg.getOption(SEG_OPTION_ON)==prev.getOption(SEG_OPTION_ON)) stateChanged = true;
-  return;
 }
 
 // deserializes WLED state (fileDoc points to doc object if called from web server)
@@ -250,7 +258,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   if (root["on"].is<const char*>() && root["on"].as<const char*>()[0] == 't') toggleOnOff();
 
   if (bri && !onBefore) { // unfreeze all segments when turning on
-    for (uint8_t s=0; s < strip.getMaxSegments(); s++) {
+    for (uint8_t s=0; s < strip.getActiveSegmentsNum(); s++) {
       strip.getSegment(s).setOption(SEG_OPTION_FREEZE, false);
     }
     if (realtimeMode && !realtimeOverride && useMainSegmentOnly) { // keep live segment frozen if live
@@ -328,13 +336,11 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     if (id < 0) {
       //apply all selected segments
       //bool didSet = false;
-      for (byte s = 0; s < strip.getMaxSegments(); s++) {
+      for (byte s = 0; s < strip.getActiveSegmentsNum(); s++) {
         Segment &sg = strip.getSegment(s);
-        if (sg.isActive()) {
-          if (sg.isSelected()) {
-            deserializeSegment(segVar, s, presetId);
-            //didSet = true;
-          }
+        if (sg.isSelected()) {
+          deserializeSegment(segVar, s, presetId);
+          //didSet = true;
         }
       }
       //TODO: not sure if it is good idea to change first active but unselected segment
@@ -346,9 +352,12 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     JsonArray segs = segVar.as<JsonArray>();
     for (JsonObject elem : segs)
     {
+      DEBUG_PRINT(F(" Deserializing segment: ")); DEBUG_PRINTLN(it);
       deserializeSegment(elem, it, presetId);
       it++;
     }
+//    DEBUG_PRINTLN(F(" Purging segments."));
+//    strip.purgeSegments();  // prune inactive segments (resets ESP if effect running)
   }
 
   usermods.readFromJsonState(root);
@@ -496,8 +505,16 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
   bool selectedSegmentsOnly = root[F("sc")] | false;
   JsonArray seg = root.createNestedArray("seg");
   for (byte s = 0; s < strip.getMaxSegments(); s++) {
+    if (s >= strip.getActiveSegmentsNum()) {
+      if (forPreset && segmentBounds) { //disable segments not part of preset
+        JsonObject seg0 = seg.createNestedObject();
+        seg0["stop"] = 0;
+        continue;
+      } else
+        break;
+    }
     Segment &sg = strip.getSegment(s);
-    if (selectedSegmentsOnly && !sg.isSelected()) continue;
+    if (!forPreset && selectedSegmentsOnly && !sg.isSelected()) continue;
     if (sg.isActive()) {
       JsonObject seg0 = seg.createNestedObject();
       serializeSegment(seg0, sg, s, forPreset, segmentBounds);
@@ -520,6 +537,7 @@ void serializeInfo(JsonObject root)
   leds["fps"] = strip.getFps();
   leds[F("maxpwr")] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;
   leds[F("maxseg")] = strip.getMaxSegments();
+  leds[F("actseg")] = strip.getActiveSegmentsNum();
   //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config
 
   #ifndef WLED_DISABLE_2D

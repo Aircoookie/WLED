@@ -84,7 +84,7 @@ void handlePresets(bool force)
   presetToApply = 0; //clear request for preset
   callModeToApply = 0;
 
-  DEBUG_PRINTLN(F("Applying preset: "));
+  DEBUG_PRINT(F("Applying preset: "));
   DEBUG_PRINTLN(tmpPreset);
 
   #ifdef ARDUINO_ARCH_ESP32

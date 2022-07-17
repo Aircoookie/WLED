@@ -71,56 +71,156 @@
 
 
 ///////////////////////////////////////////////////////////////////////////////
-// ColorTransition class implementation
-///////////////////////////////////////////////////////////////////////////////
-
-void ColorTransition::startTransition(Segment *seg, uint16_t dur) {
-  // starting a transition has to occur before change
-  if (!seg->isActive()) return;
-  briOld = currentBri(seg->getOption(SEG_OPTION_ON) ? seg->opacity : 0);
-  cctOld = currentBri(seg->cct, true);
-  for (size_t i=0; i<NUM_COLORS; i++) colorOld[i] = currentColor(i, seg->colors[i]);
-  transitionDur = dur;
-  transitionStart = millis();
-  seg->setOption(SEG_OPTION_TRANSITIONAL, true);
-}
-
-uint16_t ColorTransition::progress() { //transition progression between 0-65535
-  uint32_t timeNow = millis();
-  if (timeNow - transitionStart > transitionDur) return 0xFFFFU;
-  uint32_t elapsed = timeNow - transitionStart;
-  return min(0xFFFFU, elapsed * 0xFFFFU / transitionDur);
-}
-
-uint8_t ColorTransition::currentBri(uint8_t briNew, bool useCct) {
-  uint32_t prog = progress() + 1;
-  if (useCct) return ((briNew * prog) + cctOld * (0x10000 - prog)) >> 16;
-  else        return ((briNew * prog) + briOld * (0x10000 - prog)) >> 16;
-}
-
-void ColorTransition::handleTransition(Segment *seg, uint8_t &newBri, uint8_t &newCct, uint32_t *newCol) {
-  newBri = currentBri(newBri);
-  newCct = currentBri(newCct, true);
-  for (size_t i=0; i<NUM_COLORS; i++) newCol[i] = currentColor(i, newCol[i]);
-  unsigned long maxWait = millis() + 22;
-  if (seg->mode == FX_MODE_STATIC && seg->runtime.next_time > maxWait) seg->runtime.next_time = maxWait;
-  if (progress() == 0xFFFFU && seg->getOption(SEG_OPTION_TRANSITIONAL)) {
-    // finish transition
-    briOld = newBri;
-    cctOld = newCct;
-    for (size_t i=0; i<NUM_COLORS; i++) colorOld[i] = newCol[i];
-    seg->setOption(SEG_OPTION_TRANSITIONAL, false);
-  }
-}
-
-
-///////////////////////////////////////////////////////////////////////////////
 // Segment class implementation
 ///////////////////////////////////////////////////////////////////////////////
 
+Segment::Segment(const Segment &orig) {
+  DEBUG_PRINTLN(F("-- Segment duplicated --"));
+  memcpy(this, &orig, sizeof(Segment));
+  name = nullptr;
+  data = nullptr;
+  _dataLen = 0;
+  //_t = nullptr;
+  if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
+  if (orig.data) { allocateData(orig._dataLen); memcpy(data, orig.data, orig._dataLen); }
+  //if (orig._t) { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
+  DEBUG_PRINTF("  Original data: %p (%d)\n", orig.data, (int)orig._dataLen);
+  DEBUG_PRINTF("  Constructed data: %p (%d)\n", data, (int)_dataLen);
+}
+
+Segment::Segment(Segment &&orig) noexcept {
+  DEBUG_PRINTLN(F("-- Move constructor --"));
+  memcpy(this, &orig, sizeof(Segment));
+  orig.name = nullptr;
+  orig.data = nullptr;
+  //orig._t   = nullptr;
+}
+
+Segment& Segment::operator= (const Segment &orig) {
+  DEBUG_PRINTLN(F("-- Segment copied --"));
+  if (this != &orig) {
+    if (name) delete[] name;
+    //if (_t) delete _t;
+    deallocateData();
+    memcpy(this, &orig, sizeof(Segment));
+    name = nullptr;
+    data = nullptr;
+    _dataLen = 0;
+    //_t = nullptr;
+    if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
+    if (orig.data) { allocateData(orig._dataLen); memcpy(data, orig.data, orig._dataLen); }
+    //if (orig._t) { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
+    DEBUG_PRINTF("  Copied data: %p (%d)\n", orig.data, (int)orig._dataLen);
+    DEBUG_PRINTF("  New data: %p (%d)\n", data, (int)_dataLen);
+  }
+  return *this;
+}
+
+Segment& Segment::operator= (Segment &&orig) noexcept {
+  DEBUG_PRINTLN(F("-- Moving segment --"));
+  if (this != &orig) {
+    if (name) delete[] name; // free old name
+    //if (_t) delete _t;
+    deallocateData(); // free old runtime data
+    memcpy(this, &orig, sizeof(Segment));
+    orig.name = nullptr;
+    orig.data = nullptr;
+    //orig._t   = nullptr;
+  }
+  return *this;
+}
+
+bool Segment::allocateData(uint16_t len) {
+  if (data && _dataLen == len) return true; //already allocated
+  DEBUG_PRINTF("-- Allocating data (size:%d) --\n", len);
+  deallocateData();
+  if (strip.getUsedSegmentData() + len > MAX_SEGMENT_DATA) return false; //not enough memory
+  // if possible use SPI RAM on ESP32
+  #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
+  if (psramFound())
+    data = (byte*) ps_malloc(len);
+  else
+  #endif
+    data = (byte*) malloc(len);
+  if (!data) return false; //allocation failed
+  strip.addUsedSegmentData(len);
+  _dataLen = len;
+  memset(data, 0, len);
+  return true;
+}
+
+void Segment::deallocateData() {
+  if (!data) return;
+  DEBUG_PRINTF("-- Deallocating data: %p (%d) --\n", data, (int)_dataLen);
+  free(data);
+  data = nullptr;
+  strip.addUsedSegmentData(-(int16_t)_dataLen);
+  _dataLen = 0;
+}
+
+/** 
+  * If reset of this segment was requested, clears runtime
+  * settings of this segment.
+  * Must not be called while an effect mode function is running
+  * because it could access the data buffer and this method 
+  * may free that data buffer.
+  */
+void Segment::resetIfRequired() {
+  if (reset) { // (getOption(SEG_OPTION_RESET))
+    next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0; 
+    deallocateData();
+    reset = false; // setOption(SEG_OPTION_RESET, false);
+  }
+}
+
+void Segment::startTransition(uint16_t dur) {
+  // starting a transition has to occur before change so we get current values 1st
+  /*uint8_t*/ _briT = currentBri(getOption(SEG_OPTION_ON) ? opacity : 0); // comment out uint8_t if not using Transition struct
+  /*uint8_t*/ _cctT = currentBri(cct, true); // comment out uint8_t if not using Transition struct
+  //uint32_t _colorT[NUM_COLORS]; // comment out if not using Transition struct
+  for (size_t i=0; i<NUM_COLORS; i++) _colorT[i] = currentColor(i, colors[i]);
+
+  // comment out if not using Transition struct
+  //if (!_t) _t = new Transition(dur); // no previous transition running
+  //if (!_t) return; // failed to allocat data
+  //_t->_briT = _briT;
+  //_t->_cctT = _cctT;
+  //for (size_t i=0; i<NUM_COLORS; i++) _t->_colorT[i] = _colorT[i];
+
+  setOption(SEG_OPTION_TRANSITIONAL, true);
+}
+
+uint16_t Segment::progress() { //transition progression between 0-65535
+  //if (!_t) return 0xFFFFU;
+  uint32_t timeNow = millis();
+  if (timeNow - /*_t->*/_start > /*_t->*/_dur) return 0xFFFFU;
+  return (timeNow - /*_t->*/_start) * 0xFFFFU / /*_t->*/_dur;
+}
+
+uint8_t Segment::currentBri(uint8_t briNew, bool useCct) {
+  //if (!_t) return (useCct) ? cct : opacity;
+  if (getOption(SEG_OPTION_TRANSITIONAL)) {
+    uint32_t prog = progress() + 1;
+    if (useCct) return ((briNew * prog) + /*_t->*/_cctT * (0x10000 - prog)) >> 16;
+    else        return ((briNew * prog) + /*_t->*/_briT * (0x10000 - prog)) >> 16;
+  } else {
+    return (useCct) ? cct : (getOption(SEG_OPTION_ON) ? opacity : 0);
+  }
+}
+
+void Segment::handleTransition() {
+  if (!getOption(SEG_OPTION_TRANSITIONAL)) return;
+  unsigned long maxWait = millis() + 20;
+  if (mode == FX_MODE_STATIC && next_time > maxWait) next_time = maxWait;
+  if (progress() == 0xFFFFU) {
+    //if (_t) { delete _t; _t = nullptr; }
+    setOption(SEG_OPTION_TRANSITIONAL, false); // finish transitioning segment
+  }
+}
+
 bool Segment::setColor(uint8_t slot, uint32_t c) { //returns true if changed
   if (slot >= NUM_COLORS || c == colors[slot]) return false;
-  transition.startTransition(this, strip.getTransition()); // start transition prior to change
+  startTransition(strip.getTransition()); // start transition prior to change
   colors[slot] = c;
   return true;
 }
@@ -132,19 +232,19 @@ void Segment::setCCT(uint16_t k) {
     k = (k - 1900) >> 5;
   }
   if (cct == k) return;
-  transition.startTransition(this, strip.getTransition()); // start transition prior to change
+  startTransition(strip.getTransition()); // start transition prior to change
   cct = k;
 }
 
 void Segment::setOpacity(uint8_t o) {
   if (opacity == o) return;
-  transition.startTransition(this, strip.getTransition()); // start transition prior to change
+  startTransition(strip.getTransition()); // start transition prior to change
   opacity = o;
 }
 
 void Segment::setOption(uint8_t n, bool val) {
   bool prevOn = getOption(SEG_OPTION_ON);
-  if (n == SEG_OPTION_ON && val != prevOn) transition.startTransition(this, strip.getTransition()); // start transition prior to change
+  if (n == SEG_OPTION_ON && val != prevOn) startTransition(strip.getTransition()); // start transition prior to change
   if (val) options |=   0x01 << n;
   else     options &= ~(0x01 << n);
 }
@@ -185,6 +285,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
 
   uint16_t len = length();
   uint8_t _bri_t = strip._bri_t;
+  //uint8_t _bri_t = currentBri(getOption(SEG_OPTION_ON) ? opacity : 0);
   if (_bri_t < 255) {
     byte r = scale8(R(col), _bri_t);
     byte g = scale8(G(col), _bri_t);
@@ -289,9 +390,6 @@ uint8_t Segment::differs(Segment& b) {
 }
 
 void Segment::refreshLightCapabilities() {
-  if (!isActive()) {
-    _capabilities = 0; return;
-  }
   uint8_t capabilities = 0;
 
   for (uint8_t b = 0; b < busses.getNumBusses(); b++) {
@@ -488,51 +586,6 @@ uint32_t IRAM_ATTR Segment::color_from_palette(uint16_t i, bool mapping, bool wr
 
 
 ///////////////////////////////////////////////////////////////////////////////
-// Segmentruntime class implementation
-///////////////////////////////////////////////////////////////////////////////
-
-bool Segmentruntime::allocateData(uint16_t len){
-  if (data && _dataLen == len) return true; //already allocated
-  deallocateData();
-  if (strip.getUsedSegmentData() + len > MAX_SEGMENT_DATA) return false; //not enough memory
-  // if possible use SPI RAM on ESP32
-  #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
-  if (psramFound())
-    data = (byte*) ps_malloc(len);
-  else
-  #endif
-    data = (byte*) malloc(len);
-  if (!data) return false; //allocation failed
-  strip.addUsedSegmentData(len);
-  _dataLen = len;
-  memset(data, 0, len);
-  return true;
-}
-
-void Segmentruntime::deallocateData() {
-  free(data);
-  data = nullptr;
-  strip.addUsedSegmentData(-(int16_t)_dataLen);
-  _dataLen = 0;
-}
-
-/** 
-  * If reset of this segment was request, clears runtime
-  * settings of this segment.
-  * Must not be called while an effect mode function is running
-  * because it could access the data buffer and this method 
-  * may free that data buffer.
-  */
-void Segmentruntime::resetIfRequired() {
-  if (_requiresReset) {
-    next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0; 
-    deallocateData();
-    _requiresReset = false;
-  }
-}
-
-
-///////////////////////////////////////////////////////////////////////////////
 // WS2812FX class implementation
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -540,10 +593,14 @@ void Segmentruntime::resetIfRequired() {
 void WS2812FX::finalizeInit(void)
 {
   //reset segment runtimes
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) {
-    _segments[i].runtime.markForReset();
-    _segments[i].runtime.resetIfRequired();
+  for (segment &seg : _segments) {
+    seg.markForReset();
+    seg.resetIfRequired();
   }
+//  for (uint8_t i = 0; i < getMaxSegments(); i++) {
+//    _segments[i].markForReset();
+//    _segments[i].resetIfRequired();
+//  }
 
   _hasWhiteChannel = _isOffRefreshRequired = false;
 
@@ -596,21 +653,18 @@ void WS2812FX::service() {
   if (nowUp - _lastShow < MIN_SHOW_DELAY) return;
   bool doShow = false;
 
-  for(uint8_t i=0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    //if (realtimeMode && useMainSegmentOnly && i == getMainSegmentId()) continue;
-
-    _segment_index = i;
-    Segment &seg = _segments[_segment_index];
-
+  _segment_index = 0;
+  for (segment &seg : _segments) {
+//  for (int i = 0; i < getMaxSegments(); i++) {
+//    Segment &seg = getSegment(i);
     // reset the segment runtime data if needed, called before isActive to ensure deleted
     // segment's buffers are cleared
-    seg.runtime.resetIfRequired();
+    seg.resetIfRequired();
 
     if (!seg.isActive()) continue;
 
     // last condition ensures all solid segments are updated at the same time
-    if(nowUp > seg.runtime.next_time || _triggered || (doShow && seg.mode == FX_MODE_STATIC))
+    if(nowUp > seg.next_time || _triggered || (doShow && seg.mode == FX_MODE_STATIC))
     {
       if (seg.grouping == 0) seg.grouping = 1; //sanity check
       doShow = true;
@@ -618,12 +672,12 @@ void WS2812FX::service() {
 
       if (!seg.getOption(SEG_OPTION_FREEZE)) { //only run effect function if not frozen
         _virtualSegmentLength = seg.virtualLength();
-        _bri_t = seg.getOption(SEG_OPTION_ON) ? seg.opacity : 0;
-        uint8_t _cct_t = seg.cct;
-        _colors_t[0] = seg.colors[0];
-        _colors_t[1] = seg.colors[1];
-        _colors_t[2] = seg.colors[2];
-        seg.transition.handleTransition(&seg, _bri_t, _cct_t, _colors_t);
+        _bri_t = seg.currentBri(seg.getOption(SEG_OPTION_ON) ? seg.opacity : 0);
+        uint8_t _cct_t = seg.currentBri(seg.cct, true);
+        _colors_t[0] = seg.currentColor(0, seg.colors[0]);
+        _colors_t[1] = seg.currentColor(1, seg.colors[1]);
+        _colors_t[2] = seg.currentColor(2, seg.colors[2]);
+        seg.handleTransition();
 
         if (!cctFromRgb || correctWB) busses.setSegmentCCT(_cct_t, correctWB);
         for (uint8_t c = 0; c < NUM_COLORS; c++) {
@@ -632,11 +686,12 @@ void WS2812FX::service() {
         handle_palette();
 
         delay = (*_mode[seg.mode])();
-        if (seg.mode != FX_MODE_HALLOWEEN_EYES) seg.runtime.call++;
+        if (seg.mode != FX_MODE_HALLOWEEN_EYES) seg.call++;
       }
 
-      seg.runtime.next_time = nowUp + delay;
+      seg.next_time = nowUp + delay;
     }
+    _segment_index++;
   }
   _virtualSegmentLength = 0;
   busses.setSegmentCCT(-1);
@@ -838,13 +893,14 @@ void WS2812FX::setTargetFps(uint8_t fps) {
 }
 
 void WS2812FX::setMode(uint8_t segid, uint8_t m) {
-  if (segid >= MAX_NUM_SEGMENTS) return;
+  if (segid >= _segments.size()) return;
+//  if (segid >= getMaxSegments()) return;
    
   if (m >= getModeCount()) m = getModeCount() - 1;
 
-  if (_segments[segid].mode != m) 
-  {
-    _segments[segid].runtime.markForReset();
+  if (_segments[segid].mode != m) {
+    //_segments[segid].startTransition(strip.getTransition()); // set effect transitions
+    _segments[segid].markForReset();
     _segments[segid].mode = m;
   }
 }
@@ -853,19 +909,21 @@ void WS2812FX::setMode(uint8_t segid, uint8_t m) {
 void WS2812FX::setColor(uint8_t slot, uint32_t c) {
   if (slot >= NUM_COLORS) return;
 
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    if (_segments[i].isActive() && _segments[i].isSelected()) {
-      _segments[i].setColor(slot, c);
+  for (segment &seg : _segments) {
+//  for (int i = 0; i < getMaxSegments(); i++) {
+//    Segment &seg = getSegment(i);
+    if (seg.isSelected()) {
+      seg.setColor(slot, c);
     }
   }
 }
 
 void WS2812FX::setCCT(uint16_t k) {
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    if (_segments[i].isActive() && _segments[i].isSelected()) {
-      _segments[i].setCCT(k);
+  for (segment &seg : _segments) {
+//  for (int i = 0; i < getMaxSegments(); i++) {
+//    Segment &seg = getSegment(i);
+    if (seg.isActive() && seg.isSelected()) {
+      seg.setCCT(k);
     }
   }
 }
@@ -875,9 +933,10 @@ void WS2812FX::setBrightness(uint8_t b, bool direct) {
   if (_brightness == b) return;
   _brightness = b;
   if (_brightness == 0) { //unfreeze all segments on power off
-    for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-    {
-      _segments[i].setOption(SEG_OPTION_FREEZE, false);
+    for (segment &seg : _segments) {
+//    for (int i = 0; i < getMaxSegments(); i++) {
+//      Segment &seg = getSegment(i);
+      seg.setOption(SEG_OPTION_FREEZE, false);
     }
   }
   if (direct) {
@@ -885,51 +944,56 @@ void WS2812FX::setBrightness(uint8_t b, bool direct) {
     busses.setBrightness(b);
   } else {
 	  unsigned long t = millis();
-    if (_segments[0].runtime.next_time > t + 22 && t - _lastShow > MIN_SHOW_DELAY) show(); //apply brightness change immediately if no refresh soon
+    if (_segments[0].next_time > t + 22 && t - _lastShow > MIN_SHOW_DELAY) show(); //apply brightness change immediately if no refresh soon
   }
 }
 
 uint8_t WS2812FX::getFirstSelectedSegId(void)
 {
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    if (_segments[i].isActive() && _segments[i].isSelected()) return i;
+  size_t i = 0;
+  for (segment &seg : _segments) {
+//  for (int i = 0; i < getMaxSegments(); i++) {
+//    Segment &seg = getSegment(i);
+    if (seg.isSelected()) return i;
+    i++;
   }
   // if none selected, use the main segment
   return getMainSegmentId();
 }
 
 void WS2812FX::setMainSegmentId(uint8_t n) {
-  if (n >= MAX_NUM_SEGMENTS) return;
-  //use supplied n if active, or first active
-  if (_segments[n].isActive()) {
-    _mainSegment = n; return;
-  }
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    if (_segments[i].isActive()) {
-      _mainSegment = i; return;
-    }
-  }
+//  if (n >= getMaxSegments()) return;
+//  //use supplied n if active, or first active
+//  if (_segments[n].isActive()) {
+//    _mainSegment = n; return;
+//  }
+//  for (uint8_t i = 0; i < getMaxSegments(); i++) {
+//    if (_segments[i].isActive()) {
+//      _mainSegment = i; return;
+//    }
+//  }
   _mainSegment = 0;
+  if (n < _segments.size()) {
+    _mainSegment = n;
+  }
   return;
 }
 
 uint8_t WS2812FX::getLastActiveSegmentId(void) {
-  for (uint8_t i = MAX_NUM_SEGMENTS -1; i > 0; i--) {
-    if (_segments[i].isActive()) return i;
-  }
-  return 0;
+//  for (uint8_t i = getMaxSegments() -1; i > 0; i--) {
+//    if (_segments[i].isActive()) return i;
+//  }
+//  return 0;
+  return _segments.size()-1;
 }
 
-uint8_t WS2812FX::getActiveSegmentsNum(void) {
-  uint8_t c = 0;
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    if (_segments[i].isActive()) c++;
-  }
-  return c;
-}
+//uint8_t WS2812FX::getActiveSegmentsNum(void) {
+//  uint8_t c = 0;
+//  for (uint8_t i = 0; i < getMaxSegments(); i++) {
+//    if (_segments[i].isActive()) c++;
+//  }
+//  return c;
+//}
 
 uint16_t WS2812FX::getLengthPhysical(void) {
   uint16_t len = 0;
@@ -972,8 +1036,21 @@ bool WS2812FX::hasCCTBus(void) {
 	return false;
 }
 
+void WS2812FX::purgeSegments(void) {
+  // remove inactive segments at the back
+  //while (_segments.back().stop == 0 && _segments.size() > 1) _segments.pop_back();
+  // remove all inactive segments (from the back)
+  int deleted = 0;
+  for (int i = _segments.size()-1; i > 0; i--) if (_segments[i].stop == 0) { DEBUG_PRINT(F(" Removing segment: ")); DEBUG_PRINTLN(i); deleted++; _segments.erase(_segments.begin() + i); }
+  if (deleted) {
+    _segments.shrink_to_fit();
+    if (_mainSegment >= _segments.size()) setMainSegmentId(0);
+  }
+}
+
 void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping, uint8_t spacing, uint16_t offset, uint16_t startY, uint16_t stopY) {
-  if (n >= MAX_NUM_SEGMENTS) return;
+  if (n >= _segments.size()) return;
+//  if (n >= getMaxSegments()) return;
   Segment& seg = _segments[n];
 
   //return if neither bounds nor grouping have changed
@@ -985,9 +1062,12 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
 			&& (!grouping || (seg.grouping == grouping && seg.spacing == spacing))
 			&& (offset == UINT16_MAX || offset == seg.offset)) return;
 
-  if (seg.stop) setRange(seg.start, seg.stop -1, 0); //turn old segment range off
+  //if (seg.stop) setRange(seg.start, seg.stop -1, BLACK); //turn old segment range off
+  if (seg.stop) seg.fill(BLACK); //turn old segment range off
   if (i2 <= i1) //disable segment
   {
+    // disabled segments should get removed using purgeSegments()
+    DEBUG_PRINTLN(F("  Segment marked inactive."));
     seg.stop = 0;
     if (seg.name) {
       delete[] seg.name;
@@ -995,6 +1075,7 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
     }
     // if main segment is deleted, set first active as main segment
     if (n == _mainSegment) setMainSegmentId(0);
+    seg.markForReset();
     return;
   }
   if (isMatrix) {
@@ -1015,18 +1096,25 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
     seg.spacing = spacing;
   }
 	if (offset < UINT16_MAX) seg.offset = offset;
-  _segments[n].runtime.markForReset();
+  seg.markForReset();
   if (!boundsUnchanged) seg.refreshLightCapabilities();
 }
 
 void WS2812FX::restartRuntime() {
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) {
-    _segments[i].runtime.markForReset();
-  }
+  for (segment &seg : _segments) seg.markForReset();
+//  for (uint8_t i = 0; i < getMaxSegments(); i++) {
+//    Segment &seg = getSegment(i);
+//    seg.markForReset();
+//  }
 }
 
 void WS2812FX::resetSegments() {
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) if (_segments[i].name) delete[] _segments[i].name;
+  _segments.clear(); // destructs all Segment as part of clearing
+  segment seg = isMatrix ? Segment(0, matrixWidth, 0, matrixHeight) : Segment(0, _length);
+  _segments.push_back(seg);
+  _mainSegment = 0;
+/*
+  for (uint8_t i = 0; i < getMaxSegments(); i++) if (_segments[i].name) delete[] _segments[i].name;
   _mainSegment = 0;
   memset(_segments, 0, sizeof(_segments));
   //memset(_segmentruntimes, 0, sizeof(_segmentruntimes));
@@ -1034,9 +1122,11 @@ void WS2812FX::resetSegments() {
   _segments[0].mode = DEFAULT_MODE;
   _segments[0].colors[0] = DEFAULT_COLOR;
   _segments[0].start = 0;
+  _segments[0].startY = 0;
   _segments[0].speed = DEFAULT_SPEED;
   _segments[0].intensity = DEFAULT_INTENSITY;
-  _segments[0].stop = _length;
+  _segments[0].stop = isMatrix ? matrixWidth : _length;
+  _segments[0].stopY = isMatrix ? matrixHeight : 1;
   _segments[0].grouping = 1;
   _segments[0].setOption(SEG_OPTION_SELECTED, 1);
   _segments[0].setOption(SEG_OPTION_ON, 1);
@@ -1046,7 +1136,7 @@ void WS2812FX::resetSegments() {
   _segments[0].custom2 = DEFAULT_C2;
   _segments[0].custom3 = DEFAULT_C3;
 
-  for (uint16_t i = 1; i < MAX_NUM_SEGMENTS; i++)
+  for (uint16_t i = 1; i < getMaxSegments(); i++)
   {
     _segments[i].colors[0] = _segments[i].color_wheel(i*51);
     _segments[i].grouping = 1;
@@ -1058,23 +1148,25 @@ void WS2812FX::resetSegments() {
     _segments[i].custom1 = DEFAULT_C1;
     _segments[i].custom2 = DEFAULT_C2;
     _segments[i].custom3 = DEFAULT_C3;
-    _segments[i].runtime.markForReset();
+    _segments[i].markForReset();
   }
-  _segments[0].runtime.markForReset();
+  _segments[0].markForReset();
+*/
 }
 
 void WS2812FX::makeAutoSegments(bool forceReset) {
   if (isMatrix) {
     #ifndef WLED_DISABLE_2D
     // only create 1 2D segment
-    uint8_t mainSeg = getMainSegmentId();
-    if (forceReset) {
-      for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) {
-        setSegment(i, 0, 0);
-      }
-    }
-    if (getActiveSegmentsNum() < 2) {
-      setSegment(mainSeg, 0, matrixWidth, 1, 0, 0, 0, matrixHeight);
+    if (forceReset || getActiveSegmentsNum() == 0) resetSegments(); // initialises 1 segment
+    else if (getActiveSegmentsNum() == 1) {
+      _segments[0].start  = 0;
+      _segments[0].stop   = matrixWidth;
+      _segments[0].startY = 0;
+      _segments[0].stopY  = matrixHeight;
+      _segments[0].grouping = 1;
+      _segments[0].spacing  = 0;
+      _mainSegment = 0;
     }
     #endif
   } else if (autoSegments) { //make one segment per bus
@@ -1085,7 +1177,7 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
       Bus* b = busses.getBus(i);
 
       segStarts[s] = b->getStart();
-      segStops[s] = segStarts[s] + b->getLength();
+      segStops[s]  = segStarts[s] + b->getLength();
 
       //check for overlap with previous segments
       for (uint8_t j = 0; j < s; j++) {
@@ -1098,22 +1190,24 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
       }
       s++;
     }
-    for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) {
-      _segments[i].setOption(SEG_OPTION_SELECTED, true);
-      setSegment(i, segStarts[i], segStops[i]);
+    _segments.clear();
+    for (uint8_t i = 0; i < s; i++) {
+      Segment seg = Segment(segStarts[i], segStops[i]);
+      seg.setOption(SEG_OPTION_SELECTED, true);
+      _segments.push_back(seg);
     }
+//    for (uint8_t i = 0; i < getMaxSegments(); i++) {
+//      _segments[i].setOption(SEG_OPTION_SELECTED, true);
+//      setSegment(i, segStarts[i], segStops[i]);
+//    }
+    _mainSegment = 0;
   } else {
+    if (forceReset || getActiveSegmentsNum() == 0) resetSegments();
     //expand the main seg to the entire length, but only if there are no other segments, or reset is forced
-    uint8_t mainSeg = getMainSegmentId();
-
-    if (forceReset) {
-      for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) {
-        setSegment(i, 0, 0);
-      }
-    }
-
-    if (getActiveSegmentsNum() < 2) {
-      setSegment(mainSeg, 0, _length);
+    else if (getActiveSegmentsNum() == 1) {
+      _segments[0].start = 0;
+      _segments[0].stop  = _length;
+      _mainSegment = 0;
     }
   }
 
@@ -1122,26 +1216,32 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
 
 void WS2812FX::fixInvalidSegments() {
   //make sure no segment is longer than total (sanity check)
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    if (_segments[i].start >= _length) setSegment(i, 0, 0); 
-    if (_segments[i].stop  >  _length) setSegment(i, _segments[i].start, _length);
+  size_t i = 0;
+  for (std::vector<Segment>::iterator it = _segments.begin(); it != _segments.end(); i++, it++) {
+    if (_segments[i].start >= _length) { _segments.erase(it); i--; it--; continue; }
+    if (_segments[i].stop  >  _length) _segments[i].stop = _length;
     // this is always called as the last step after finalizeInit(), update covered bus types
-    getSegment(i).refreshLightCapabilities();
+    _segments[i].refreshLightCapabilities();
   }
+//  for (uint8_t i = 0; i < getMaxSegments(); i++) {
+//    if (_segments[i].start >= _length) { _segments[i].start = _segments[i].stop = 0; _segments[i].markForReset(); }
+//    if (_segments[i].stop  >  _length) { _segments[i].stop = _length; _segments[i].markForReset(); }
+//    // this is always called as the last step after finalizeInit(), update covered bus types
+//    if (_segments[i].isActive()) _segments[i].refreshLightCapabilities();
+//  }
 }
 
 //true if all segments align with a bus, or if a segment covers the total length
 bool WS2812FX::checkSegmentAlignment() {
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    if (_segments[i].start >= _segments[i].stop) continue; //inactive segment
-    bool aligned = false;
+  bool aligned = false;
+  for (segment &seg : _segments) {
+//  for (uint8_t i = 0; i < getMaxSegments(); i++) {
+//    Segment &seg = getSegment(i);
     for (uint8_t b = 0; b<busses.getNumBusses(); b++) {
       Bus *bus = busses.getBus(b);
-      if (_segments[i].start == bus->getStart() && _segments[i].stop == bus->getStart() + bus->getLength()) aligned = true;
+      if (seg.start == bus->getStart() && seg.stop == bus->getStart() + bus->getLength()) aligned = true;
     }
-    if (_segments[i].start == 0 && _segments[i].stop == _length) aligned = true;
+    if (seg.start == 0 && seg.stop == _length) aligned = true;
     if (!aligned) return false;
   }
   return true;
@@ -1153,7 +1253,8 @@ bool WS2812FX::checkSegmentAlignment() {
 uint8_t WS2812FX::setPixelSegment(uint8_t n)
 {
   uint8_t prevSegId = _segment_index;
-  if (n < MAX_NUM_SEGMENTS) {
+  if (n < _segments.size()) {
+//  if (n < getMaxSegments()) {
     _segment_index = n;
     _virtualSegmentLength = _segments[_segment_index].virtualLength();
   }
@@ -1173,20 +1274,11 @@ void WS2812FX::setRange(uint16_t i, uint16_t i2, uint32_t col)
 
 void WS2812FX::setTransitionMode(bool t)
 {
-	unsigned long waitMax = millis() + 22; //refresh after 20 ms if transition enabled
-  for (uint16_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    if (_segments[i].isActive() && !_segments[i].getOption(SEG_OPTION_TRANSITIONAL)) {
-      if (t) {
-        _segments[i].transition.transitionStart = millis();
-        _segments[i].transition.transitionDur = strip.getTransition();
-      }
-      _segments[i].setOption(SEG_OPTION_TRANSITIONAL, t);
-      if (t && _segments[i].mode == FX_MODE_STATIC && _segments[i].runtime.next_time > waitMax) {
-        _segments[i].runtime.next_time = waitMax;
-      }
-    }
-  }
+  for (segment &seg : _segments) seg.startTransition(t ? getTransition() : 0);
+//  for (uint8_t i = 0; i < getMaxSegments(); i++) {
+//    Segment &seg = getSegment(i);
+//    seg.startTransition(t ? getTransition() : 0);
+//  }
 }
 
 void WS2812FX::load_gradient_palette(uint8_t index)
@@ -1313,7 +1405,7 @@ void WS2812FX::handle_palette(void)
       load_gradient_palette(paletteIndex -13);
   }
   
-  if (singleSegmentMode && paletteFade && _segments[_segment_index].runtime.call > 0) //only blend if just one segment uses FastLED mode
+  if (singleSegmentMode && paletteFade && _segments[_segment_index].call > 0) //only blend if just one segment uses FastLED mode
   {
     nblendPaletteTowardPalette(currentPalette, targetPalette, 48);
   } else
@@ -1428,180 +1520,7 @@ int16_t Bus::_cct = -1;
 uint8_t Bus::_cctBlend = 0;
 uint8_t Bus::_gAWM = 255;
 
-
-// WLEDSR: extensions
-// Technical notes
-// ===============
-// If an effect name is followed by an @, slider and color control is effective.
-// See setSliderAndColorControl in index.js for implementation
-// If not effective then:
-//      - For AC effects (id<128) 2 sliders and 3 colors and the palette will be shown
-//      - For SR effects (id>128) 5 sliders and 3 colors and the palette will be shown
-// If effective (@)
-//      - a ; seperates slider controls (left) from color controls (middle) and palette control (right)
-//      - if left, middle or right is empty no controls are shown
-//      - a , seperates slider controls (max 5) or color controls (max 3). Palette has only one value
-//      - a ! means that the default is used.
-//             - For sliders: Effect speeds, Effect intensity, Custom 1, Custom 2, Custom 3
-//             - For colors: Fx color, Background color, Custom
-//             - For palette: prompt for color palette OR palette ID if numeric (will hide palette selection)
-//
-// Note: If palette is on and no colors are specified 1,2 and 3 is shown in each color circle.
-//       If a color is specified, the 1,2 or 3 is replaced by that specification.
-// Note: Effects can override default pattern behaviour
-//       - FadeToBlack can override the background setting
-//       - Defining SEGCOL(<i>) can override a specific palette using these values (e.g. Color Gradient)
 const char JSON_mode_names[] PROGMEM = R"=====(["Mode names have moved"])=====";
-/*
-R"=====([
-"Solid",
-"Blink@!,;!,!,;!",
-"Breathe@!,;!,!;!",
-"Wipe@!,!;!,!,;!",
-"Wipe Random@!,;1,2,3;!",
-"Random Colors@!,Fade time;1,2,3;!",
-"Sweep@!,!;!,!,;!",
-"Dynamic@!,!;1,2,3;!",
-"Colorloop@!,Saturation;1,2,3;!",
-"Rainbow@!,Size;1,2,3;!",
-"Scan@!,# of dots;!,!,;!",
-"Scan Dual@!,# of dots;!,!,;!",
-"Fade@!,;!,!,;!",
-"Theater@!,Gap size;!,!,;!",
-"Theater Rainbow@!,Gap size;1,2,3;!",
-"Running@!,Wave width;!,!,;!",
-"Saw@!,Width;!,!,;!",
-"Twinkle@!,;!,!,;!",
-"Dissolve@Repeat speed,Dissolve speed;!,!,;!",
-"Dissolve Rnd@Repeat speed,Dissolve speed;,!,;!",
-"Sparkle@!,;!,!,;!",
-"Sparkle Dark@!,!;Bg,Fx,;!",
-"Sparkle+@!,!;Bg,Fx,;!",
-"Strobe@!,;!,!,;!",
-"Strobe Rainbow@!,;,!,;!",
-"Strobe Mega@!,!;!,!,;!",
-"Blink Rainbow@Frequency,Blink duration;!,!,;!",
-"Android@!,Width;!,!,;!",
-"Chase@!,Width;!,!,!;!",
-"Chase Random@!,Width;!,,!;!",
-"Chase Rainbow@!,Width;!,!,;0",
-"Chase Flash@!,;Bg,Fx,!;!",
-"Chase Flash Rnd@!,;,Fx,;!",
-"Rainbow Runner@!,Size;Bg,,;!",
-"Colorful@!,Saturation;1,2,3;!",
-"Traffic Light@!,;,!,;!",
-"Sweep Random",
-"Chase 2@!,Width;!,!,;!",
-"Aurora@!=24,!;1,2,3;!=50",
-"Stream",
-"Scanner",
-"Lighthouse",
-"Fireworks@Sharpness=96,Frequency=192;!,2,;!=11",
-"Rain@Fade rate=128,Frequency=128;!,2,;!",
-"Tetrix@!=224,Width=0;!,!,;!=11",
-"Fire Flicker@!,!;!,,;!",
-"Gradient@!,Spread=16;!,!,;!",
-"Loading@!,Fade=16;!,!,;!",
-"Police@!,Width;,Bg,;0",
-"Fairy",
-"Two Dots@!,Dot size;1,2,Bg;!",
-"Fairy Twinkle",
-"Running Dual",
-"Halloween",
-"Chase 3@!,Size;1,2,3;0",
-"Tri Wipe@!,Width;1,2,3;0",
-"Tri Fade",
-"Lightning",
-"ICU",
-"Multi Comet",
-"Scanner Dual",
-"Stream 2",
-"Oscillate",
-"Pride 2015@!,;;",
-"Juggle@!=16,Trail=240;!,!,;!",
-"Palette@!,;1,2,3;!",
-"Fire 2012@Spark rate=120,Decay=64;1,2,3;!",
-"Colorwaves",
-"Bpm@!=64,;1,2,3;!",
-"Fill Noise",
-"Noise 1",
-"Noise 2",
-"Noise 3",
-"Noise 4",
-"Colortwinkles@Fade speed,Spawn speed;1,2,3;!",
-"Lake@!,;1,2,3;!",
-"Meteor@!,Trail length;!,!,;!",
-"Meteor Smooth@!,Trail length;!,!,;!",
-"Railway",
-"Ripple",
-"Twinklefox",
-"Twinklecat",
-"Halloween Eyes@Duration,Eye fade time;Fx,Bg,;!",
-"Solid Pattern@Fg size,Bg size;Fg,Bg,;!=0",
-"Solid Pattern Tri@,Size;1,2,3;!=0",
-"Spots@Spread,Width;!,!,;!",
-"Spots Fade@Spread,Width;!,!,;!",
-"Glitter",
-"Candle@Flicker rate=96,Flicker intensity=224;!,!,;0",
-"Fireworks Starburst",
-"Fireworks 1D@Gravity,Firing side;!,!,;!",
-"Bouncing Balls@Gravity,# of balls;!,!,;!",
-"Sinelon",
-"Sinelon Dual",
-"Sinelon Rainbow",
-"Popcorn",
-"Drip@Gravity,# of drips;!,!;!",
-"Plasma@Phase,;1,2,3;!",
-"Percent@,% of fill;!,!,;!",
-"Ripple Rainbow",
-"Heartbeat@!,!;!,!,;!",
-"Pacifica",
-"Candle Multi@Flicker rate=96,Flicker intensity=224;!,!,;0",
-"Solid Glitter@,!;!,,;0",
-"Sunrise@Time [min]=60,;;0",
-"Phased",
-"Twinkleup@!,Intensity;!,!,;!",
-"Noise Pal",
-"Sine",
-"Phased Noise",
-"Flow",
-"Chunchun@!,Gap size;!,!,;!",
-"Dancing Shadows@!,# of shadows;!,,;!",
-"Washing Machine",
-"Candy Cane@!,Width;;",
-"Blends@Shift speed,Blend speed;1,2,3,!",
-"TV Simulator",
-"Dynamic Smooth",
-"2D Black Hole@Fade rate,Outer Y freq.,Outer X freq.,Inner X freq.,Inner Y freq.;;",
-"2D DNA@Scroll speed,Blur;;!",
-"2D DNA Spiral@Scroll speed,Blur;;!",
-"2D Drift@Rotation speed,Blur amount;;!",
-"2D Firenoise@X scale,Y scale;;",
-"2D Frizzles@X frequency,Y frequency;;!",
-"2D Hipnotic@X scale,Y scale;;!",
-"2D Lissajous@X frequency,Fadetime;!,!,!;!",
-"2D Matrix@Falling speed,Spawning rate,Trail,Custom color;Spawn,Trail;",
-"2D Akemi@Color speed,Dance;Head palette,Arms & Legs,Eyes & Mouth;Face palette",
-"2D Colored Bursts@Speed,Number of lines;;!",
-"2D Game Of Life@!,;!,!;!",
-"2D Julia@,Max iterations per pixel,X center,Y center,Area size;;!",
-"2D Metaballs@Speed;!,!,!;!",
-"2D Noise@Speed,Scale;!,!,!;!",
-"2D Plasma Ball@Speed;!,!,!;!",
-"2D Polar Lights@Speed,X scale,Palette;!,!,!;!",
-"2D Pulser@Speed,Blur;;!",
-"2D Sindots@Speed,Dot distance;;!",
-"2D Squared Swirl@,,,,Blur;,,;!",
-"2D Sun Radiation@Variance,Brightness;;",
-"2D Tartan@X scale,Y scale;;!",
-"2D Waverly@Fade rate,Sensitivity;;!",
-"2D Spaceships@Fade rate,Blur;!,!,!;!",
-"2D Crazy Bees@Fade rate,Blur;;",
-"2D Ghost Rider@Fade rate,Blur;!,!,!;!",
-"2D Blobs@!,# blobs;!,!,!;!"
-])=====";
-*/
-
 const char JSON_palette_names[] PROGMEM = R"=====([
 "Default","* Random Cycle","* Color 1","* Colors 1&2","* Color Gradient","* Colors Only","Party","Cloud","Lava","Ocean",
 "Forest","Rainbow","Rainbow Bands","Sunset","Rivendell","Breeze","Red & Blue","Yellowout","Analogous","Splash",

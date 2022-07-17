@@ -96,8 +96,6 @@ void sendDataWs(AsyncWebSocketClient * client)
   if (!ws.count()) return;
   AsyncWebSocketMessageBuffer * buffer;
 
-  while (strip.isUpdating()) delay(1);
-  
   if (!requestJSONBufferLock(12)) return;
 
   JsonObject state = doc.createNestedObject("state");
