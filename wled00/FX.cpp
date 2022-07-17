@@ -1503,7 +1503,7 @@ uint16_t mode_fairytwinkle() {
 	}
   return FRAMETIME;
 }
-static const char *_data_FX_MODE_FAIRYTWINKLE PROGMEM = "Fairy Twinkle;;;mp12=0"; //pixels
+static const char *_data_FX_MODE_FAIRYTWINKLE PROGMEM = "Fairy Twinkle@;;;mp12=0"; //pixels
 
 
 /*
@@ -6722,7 +6722,7 @@ uint16_t mode_noisefire(void) {                 // Noisefire. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_noisefire()
-static const char *_data_FX_MODE_NOISEFIRE PROGMEM = " ♪ Noisefire@!,!;;mp12=2;ssim=1"; // Circle, Beatsin
+static const char *_data_FX_MODE_NOISEFIRE PROGMEM = " ♪ Noisefire@!,!;;;mp12=2;ssim=1"; // Circle, Beatsin
 
 
 ///////////////////////
@@ -7584,7 +7584,7 @@ uint16_t mode_2DFunkyPlank(void) {              // Written by ??? Adapted by Wil
   SEGMENT.setPixels(leds);
   return FRAMETIME;
 } // mode_2DFunkyPlank
-static const char *_data_FX_MODE_2DFUNKYPLANK PROGMEM = " ♫ 2D Funky Plank@Scroll speed,,# of bands;;ssim=1"; // Beatsin
+static const char *_data_FX_MODE_2DFUNKYPLANK PROGMEM = " ♫ 2D Funky Plank@Scroll speed,,# of bands;;;ssim=1"; // Beatsin
 
 #endif // WLED_DISABLE_2D
 
