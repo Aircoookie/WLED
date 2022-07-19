@@ -1,3 +1,6 @@
+// force the compiler to show a warning to confirm that this file is included
+#warning **** Included USERMOD_BH1750 ****
+
 #pragma once
 
 #include "wled.h"
@@ -47,6 +50,12 @@ private:
   static const char _maxReadInterval[];
   static const char _minReadInterval[];
   static const char _offset[];
+  static const char _HomeAssistantDiscovery[];
+
+  // Home Assistant and MQTT  
+  String mqttLuminanceTopic = "";
+  bool mqttInitialized = false;
+  bool HomeAssistantDiscovery = true; // Publish Home Assistant Discovery messages
 
   BH1750 lightMeter;
   float lastLux = -1000;
@@ -54,6 +63,46 @@ private:
   bool checkBoundSensor(float newValue, float prevValue, float maxDiff)
   {
     return isnan(prevValue) || newValue <= prevValue - maxDiff || newValue >= prevValue + maxDiff || (newValue == 0.0 && prevValue > 0.0);
+  }
+  
+  // set up Home Assistant discovery entries
+  void _mqttInitialize()
+  {
+    mqttLuminanceTopic = String(mqttDeviceTopic) + "/brightness";
+
+    String t = String("homeassistant/sensor/") + mqttClientID + "/brightness/config";
+    _createMqttSensor("Brightness", mqttLuminanceTopic, "illuminance", " lx");
+  }
+
+  // Create an MQTT Sensor for Home Assistant Discovery purposes, this includes a pointer to the topic that is published to in the Loop.
+  void _createMqttSensor(const String &name, const String &topic, const String &deviceClass, const String &unitOfMeasurement)
+  {
+    String t = String("homeassistant/sensor/") + mqttClientID + "/" + name + "/config";
+    
+    StaticJsonDocument<600> doc;
+    
+    doc["name"] = String(serverDescription) + " " + name;
+    doc["state_topic"] = topic;
+    doc["unique_id"] = String(mqttClientID) + name;
+    if (unitOfMeasurement != "")
+      doc["unit_of_measurement"] = unitOfMeasurement;
+    if (deviceClass != "")
+      doc["device_class"] = deviceClass;
+    doc["expire_after"] = 1800;
+
+    JsonObject device = doc.createNestedObject("device"); // attach the sensor to the same device
+    device["name"] = serverDescription;
+    device["identifiers"] = "wled-sensor-" + String(mqttClientID);
+    device["manufacturer"] = "WLED";
+    device["model"] = "FOSS";
+    device["sw_version"] = versionString;
+
+    String temp;
+    serializeJson(doc, temp);
+    Serial.println(t);
+    Serial.println(temp);
+
+    mqtt->publish(t.c_str(), 0, true, temp.c_str());
   }
 
 public:
@@ -90,10 +139,12 @@ public:
       lastSend = millis();
       if (WLED_MQTT_CONNECTED)
       {
-        char subuf[45];
-        strcpy(subuf, mqttDeviceTopic);
-        strcat_P(subuf, PSTR("/luminance"));
-        mqtt->publish(subuf, 0, true, String(lux).c_str());
+        if (!mqttInitialized && HomeAssistantDiscovery)
+          {
+            _mqttInitialize();
+            mqttInitialized = true;
+          }
+        mqtt->publish(mqttLuminanceTopic.c_str(), 0, true, String(lux).c_str());
       }
       else
       {
@@ -138,6 +189,7 @@ public:
     top[FPSTR(_enabled)] = !disabled;
     top[FPSTR(_maxReadInterval)] = maxReadingInterval;
     top[FPSTR(_minReadInterval)] = minReadingInterval;
+    top[FPSTR(_HomeAssistantDiscovery)] = HomeAssistantDiscovery;
     top[FPSTR(_offset)] = offset;
 
     DEBUG_PRINTLN(F("Photoresistor config saved."));
@@ -160,6 +212,7 @@ public:
     disabled = !(top[FPSTR(_enabled)] | !disabled);
     maxReadingInterval = (top[FPSTR(_maxReadInterval)] | maxReadingInterval); // ms
     minReadingInterval = (top[FPSTR(_minReadInterval)] | minReadingInterval); // ms
+    HomeAssistantDiscovery = (top[FPSTR(_HomeAssistantDiscovery)] | HomeAssistantDiscovery);
     offset = top[FPSTR(_offset)] | offset;
     DEBUG_PRINT(FPSTR(_name));
     DEBUG_PRINTLN(F(" config (re)loaded."));
@@ -174,4 +227,5 @@ const char Usermod_BH1750::_name[] PROGMEM = "BH1750";
 const char Usermod_BH1750::_enabled[] PROGMEM = "enabled";
 const char Usermod_BH1750::_maxReadInterval[] PROGMEM = "max-read-interval-ms";
 const char Usermod_BH1750::_minReadInterval[] PROGMEM = "min-read-interval-ms";
+const char Usermod_BH1750::_HomeAssistantDiscovery[] PROGMEM = "HomeAssistantDiscoveryLux";
 const char Usermod_BH1750::_offset[] PROGMEM = "offset-lx";
