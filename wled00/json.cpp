@@ -14,11 +14,10 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   int stop = elem["stop"] | -1;
 
   // if using vectors use this code to append segment
-  if (id >= strip.getActiveSegmentsNum()) {
+  if (id >= strip.getSegmentsNum()) {
     if (stop <= 0) return; // ignore empty/inactive segments
-    DEBUG_PRINT(F("Adding segment: ")); DEBUG_PRINTLN(id);
     strip.appendSegment(Segment(0, strip.getLengthTotal()));
-    id = strip.getActiveSegmentsNum()-1; // segments are added at the end of list
+    id = strip.getSegmentsNum()-1; // segments are added at the end of list
   }
 
   Segment& seg = strip.getSegment(id);
@@ -258,7 +257,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   if (root["on"].is<const char*>() && root["on"].as<const char*>()[0] == 't') toggleOnOff();
 
   if (bri && !onBefore) { // unfreeze all segments when turning on
-    for (uint8_t s=0; s < strip.getActiveSegmentsNum(); s++) {
+    for (uint8_t s=0; s < strip.getSegmentsNum(); s++) {
       strip.getSegment(s).setOption(SEG_OPTION_FREEZE, false);
     }
     if (realtimeMode && !realtimeOverride && useMainSegmentOnly) { // keep live segment frozen if live
@@ -336,7 +335,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     if (id < 0) {
       //apply all selected segments
       //bool didSet = false;
-      for (byte s = 0; s < strip.getActiveSegmentsNum(); s++) {
+      for (byte s = 0; s < strip.getSegmentsNum(); s++) {
         Segment &sg = strip.getSegment(s);
         if (sg.isSelected()) {
           deserializeSegment(segVar, s, presetId);
@@ -350,14 +349,10 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     }
   } else {
     JsonArray segs = segVar.as<JsonArray>();
-    for (JsonObject elem : segs)
-    {
-      DEBUG_PRINT(F(" Deserializing segment: ")); DEBUG_PRINTLN(it);
+    for (JsonObject elem : segs) {
       deserializeSegment(elem, it, presetId);
       it++;
     }
-//    DEBUG_PRINTLN(F(" Purging segments."));
-//    strip.purgeSegments();  // prune inactive segments (resets ESP if effect running)
   }
 
   usermods.readFromJsonState(root);
@@ -505,7 +500,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
   bool selectedSegmentsOnly = root[F("sc")] | false;
   JsonArray seg = root.createNestedArray("seg");
   for (byte s = 0; s < strip.getMaxSegments(); s++) {
-    if (s >= strip.getActiveSegmentsNum()) {
+    if (s >= strip.getSegmentsNum()) {
       if (forPreset && segmentBounds) { //disable segments not part of preset
         JsonObject seg0 = seg.createNestedObject();
         seg0["stop"] = 0;
@@ -537,7 +532,7 @@ void serializeInfo(JsonObject root)
   leds["fps"] = strip.getFps();
   leds[F("maxpwr")] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;
   leds[F("maxseg")] = strip.getMaxSegments();
-  leds[F("actseg")] = strip.getActiveSegmentsNum();
+  //leds[F("actseg")] = strip.getActiveSegmentsNum();
   //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config
 
   #ifndef WLED_DISABLE_2D

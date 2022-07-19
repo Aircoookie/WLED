@@ -1179,7 +1179,8 @@ function makeWS() {
 
 function readState(s,command=false)
 {
-	if (!s) return false;
+	if (!s || s.error) return false;
+	if (s.success) return true; // no data to process
 
 	isOn = s.on;
 	gId('sliderBri').value = s.bri;
@@ -1224,7 +1225,7 @@ function readState(s,command=false)
 	if (!i) {
 		showToast('No Segments!', true);
 		updateUI();
-		return;
+		return true;
 	}
   
 	var cd = gId('csl').children;
@@ -1271,6 +1272,7 @@ function readState(s,command=false)
 	selectedFx = i.fx;
 	redrawPalPrev(); // if any color changed (random palette did at least)
 	updateUI();
+	return true;
 }
 
 // WLEDSR: control HTML elements for Slider and Color Control

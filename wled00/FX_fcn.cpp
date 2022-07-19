@@ -93,13 +93,17 @@ Segment::Segment(Segment &&orig) noexcept {
   memcpy(this, &orig, sizeof(Segment));
   orig.name = nullptr;
   orig.data = nullptr;
+  orig._dataLen = 0;
   //orig._t   = nullptr;
 }
 
 Segment& Segment::operator= (const Segment &orig) {
   DEBUG_PRINTLN(F("-- Segment copied --"));
   if (this != &orig) {
-    if (name) delete[] name;
+    if (name) {
+      DEBUG_PRINTF("  Copy Deleting %s (%p)\n", name, name);
+      delete[] name;
+    }
     //if (_t) delete _t;
     deallocateData();
     memcpy(this, &orig, sizeof(Segment));
@@ -110,8 +114,8 @@ Segment& Segment::operator= (const Segment &orig) {
     if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
     if (orig.data) { allocateData(orig._dataLen); memcpy(data, orig.data, orig._dataLen); }
     //if (orig._t) { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
-    DEBUG_PRINTF("  Copied data: %p (%d)\n", orig.data, (int)orig._dataLen);
-    DEBUG_PRINTF("  New data: %p (%d)\n", data, (int)_dataLen);
+    DEBUG_PRINTF("  Original data: %p (%d)\n", orig.data, (int)orig._dataLen);
+    DEBUG_PRINTF("  Copied data: %p (%d)\n", data, (int)_dataLen);
   }
   return *this;
 }
@@ -119,12 +123,16 @@ Segment& Segment::operator= (const Segment &orig) {
 Segment& Segment::operator= (Segment &&orig) noexcept {
   DEBUG_PRINTLN(F("-- Moving segment --"));
   if (this != &orig) {
-    if (name) delete[] name; // free old name
+    if (name) {
+      DEBUG_PRINTF("  Move Deleting %s (%p)\n", name, name);
+      delete[] name; // free old name
+    }
     //if (_t) delete _t;
     deallocateData(); // free old runtime data
     memcpy(this, &orig, sizeof(Segment));
     orig.name = nullptr;
     orig.data = nullptr;
+    orig._dataLen = 0;
     //orig._t   = nullptr;
   }
   return *this;
@@ -132,8 +140,8 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
 
 bool Segment::allocateData(uint16_t len) {
   if (data && _dataLen == len) return true; //already allocated
-  DEBUG_PRINTF("-- Allocating data (size:%d) --\n", len);
   deallocateData();
+  // TODO: move out to WS2812FX class: for (seg : _segments) sum += seg.dataSize();
   if (strip.getUsedSegmentData() + len > MAX_SEGMENT_DATA) return false; //not enough memory
   // if possible use SPI RAM on ESP32
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
@@ -143,19 +151,23 @@ bool Segment::allocateData(uint16_t len) {
   #endif
     data = (byte*) malloc(len);
   if (!data) return false; //allocation failed
-  strip.addUsedSegmentData(len);
+  strip.addUsedSegmentData(len); // TODO: move out to WS2812FX class: for (seg : _segments) sum += seg.dataSize();
   _dataLen = len;
   memset(data, 0, len);
+  DEBUG_PRINTF("-- Allocated data %p (%d)\n", data, (int)len);
   return true;
 }
 
 void Segment::deallocateData() {
+  // NOTE: deallocating data sometimes produces corrupt heap.
   if (!data) return;
-  DEBUG_PRINTF("-- Deallocating data: %p (%d) --\n", data, (int)_dataLen);
+  DEBUG_PRINTF("-- Deallocating data: %p (%d)\n", data, (int)_dataLen);
   free(data);
+  DEBUG_PRINTLN(F("-- Data freed."));
   data = nullptr;
-  strip.addUsedSegmentData(-(int16_t)_dataLen);
+  strip.addUsedSegmentData(-(int16_t)_dataLen); // TODO: move out to WS2812FX class: for (seg : _segments) sum -= seg.dataSize();
   _dataLen = 0;
+  DEBUG_PRINTLN(F("-- Dealocated data."));
 }
 
 /** 
@@ -168,7 +180,6 @@ void Segment::deallocateData() {
 void Segment::resetIfRequired() {
   if (reset) { // (getOption(SEG_OPTION_RESET))
     next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0; 
-    deallocateData();
     reset = false; // setOption(SEG_OPTION_RESET, false);
   }
 }
@@ -653,12 +664,12 @@ void WS2812FX::service() {
   if (nowUp - _lastShow < MIN_SHOW_DELAY) return;
   bool doShow = false;
 
+  _isServicing = true;
   _segment_index = 0;
   for (segment &seg : _segments) {
 //  for (int i = 0; i < getMaxSegments(); i++) {
 //    Segment &seg = getSegment(i);
-    // reset the segment runtime data if needed, called before isActive to ensure deleted
-    // segment's buffers are cleared
+    // reset the segment runtime data if needed
     seg.resetIfRequired();
 
     if (!seg.isActive()) continue;
@@ -700,6 +711,7 @@ void WS2812FX::service() {
     show();
   }
   _triggered = false;
+  _isServicing = false;
 }
 
 void WS2812FX::setPixelColor(int i, uint32_t col)
@@ -987,13 +999,14 @@ uint8_t WS2812FX::getLastActiveSegmentId(void) {
   return _segments.size()-1;
 }
 
-//uint8_t WS2812FX::getActiveSegmentsNum(void) {
-//  uint8_t c = 0;
+uint8_t WS2812FX::getActiveSegmentsNum(void) {
+  uint8_t c = 0;
 //  for (uint8_t i = 0; i < getMaxSegments(); i++) {
-//    if (_segments[i].isActive()) c++;
-//  }
-//  return c;
-//}
+  for (int i = 0; i < _segments.size(); i++) {
+    if (_segments[i].isActive()) c++;
+  }
+  return c;
+}
 
 uint16_t WS2812FX::getLengthPhysical(void) {
   uint16_t len = 0;
@@ -1037,15 +1050,24 @@ bool WS2812FX::hasCCTBus(void) {
 }
 
 void WS2812FX::purgeSegments(void) {
-  // remove inactive segments at the back
-  //while (_segments.back().stop == 0 && _segments.size() > 1) _segments.pop_back();
   // remove all inactive segments (from the back)
   int deleted = 0;
-  for (int i = _segments.size()-1; i > 0; i--) if (_segments[i].stop == 0) { DEBUG_PRINT(F(" Removing segment: ")); DEBUG_PRINTLN(i); deleted++; _segments.erase(_segments.begin() + i); }
+  if (_segments.size() <= 1 || _isServicing) return;
+  for (int i = _segments.size()-1; i > 0; i--)
+    if (_segments[i].stop == 0) {
+      DEBUG_PRINT(F("-- Removing segment: ")); DEBUG_PRINTLN(i);
+      deleted++;
+      _segments.erase(_segments.begin() + i);
+    }
   if (deleted) {
     _segments.shrink_to_fit();
     if (_mainSegment >= _segments.size()) setMainSegmentId(0);
   }
+}
+
+Segment& WS2812FX::getSegment(uint8_t id) {
+//  return _segments[id >= getMaxSegments() ? getMainSegmentId() : id];
+  return _segments[id >= _segments.size() ? getMainSegmentId() : id]; // vectors
 }
 
 void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping, uint8_t spacing, uint16_t offset, uint16_t startY, uint16_t stopY) {
@@ -1067,12 +1089,12 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
   if (i2 <= i1) //disable segment
   {
     // disabled segments should get removed using purgeSegments()
-    DEBUG_PRINTLN(F("  Segment marked inactive."));
+    DEBUG_PRINT(F("-- Segment ")); DEBUG_PRINT(n); DEBUG_PRINTLN(F(" marked inactive."));
     seg.stop = 0;
-    if (seg.name) {
-      delete[] seg.name;
-      seg.name = nullptr;
-    }
+    //if (seg.name) {
+    //  delete[] seg.name;
+    //  seg.name = nullptr;
+    //}
     // if main segment is deleted, set first active as main segment
     if (n == _mainSegment) setMainSegmentId(0);
     seg.markForReset();
@@ -1216,9 +1238,8 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
 
 void WS2812FX::fixInvalidSegments() {
   //make sure no segment is longer than total (sanity check)
-  size_t i = 0;
-  for (std::vector<Segment>::iterator it = _segments.begin(); it != _segments.end(); i++, it++) {
-    if (_segments[i].start >= _length) { _segments.erase(it); i--; it--; continue; }
+  for (int i = _segments.size()-1; i > 0; i--) {
+    if (_segments[i].start >= _length) { _segments.erase(_segments.begin()+i); continue; }
     if (_segments[i].stop  >  _length) _segments[i].stop = _length;
     // this is always called as the last step after finalizeInit(), update covered bus types
     _segments[i].refreshLightCapabilities();

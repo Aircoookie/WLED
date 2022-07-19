@@ -426,39 +426,38 @@ typedef struct Segment {
 
   public:
 
-    Segment(uint16_t sStart=0, uint16_t sStop=30) : start(sStart), stop(sStop) {
-      mode      = DEFAULT_MODE;
-      colors[0] = DEFAULT_COLOR;
-      colors[1] = BLACK;
-      colors[2] = BLACK;
-      startY    = 0;
-      stopY     = 1;
-      speed     = DEFAULT_SPEED;
-      intensity = DEFAULT_INTENSITY;
-      custom1   = DEFAULT_C1;
-      custom2   = DEFAULT_C2;
-      custom3   = DEFAULT_C3;
-      grouping  = 1;
-      spacing   = 0;
-      offset    = 0;
-      opacity   = 255;
-      cct       = 127;
-      name      = nullptr;
-      options   = NO_OPTIONS;
-      setOption(SEG_OPTION_SELECTED, 1);
-      setOption(SEG_OPTION_ON, 1);
-      call      = 0;
-      step      = 0;
-      next_time = 0;
-      aux0      = 0;
-      aux1      = 0;
-      data      = nullptr;
-      _dataLen  = 0;
-      //_t        = nullptr;
-    }
+    Segment(uint16_t sStart=0, uint16_t sStop=30) :
+      start(sStart),
+      stop(sStop),
+      offset(0),
+      speed(DEFAULT_SPEED),
+      intensity(DEFAULT_INTENSITY),
+      palette(0),
+      mode(DEFAULT_MODE),
+      options(SELECTED | SEGMENT_ON),
+      grouping(1),
+      spacing(0),
+      opacity(255),
+      colors{DEFAULT_COLOR,BLACK,BLACK},
+      cct(127),
+      custom1(DEFAULT_C1),
+      custom2(DEFAULT_C2),
+      custom3(DEFAULT_C3),
+      startY(0),
+      stopY(1),
+      name(nullptr),
+      next_time(0),
+      step(0),
+      call(0),
+      aux0(0),
+      aux1(0),
+      data(nullptr),
+      _capabilities(0),
+      _dataLen(0)
+      //_t(nullptr)
+    {}
 
-    Segment(uint16_t sStartX, uint16_t sStopX, uint16_t sStartY, uint16_t sStopY) {
-      Segment(sStartX, sStopX);
+    Segment(uint16_t sStartX, uint16_t sStopX, uint16_t sStartY, uint16_t sStopY) : Segment(sStartX, sStopX) {
       startY = sStartY;
       stopY  = sStopY;
     }
@@ -467,8 +466,12 @@ typedef struct Segment {
     Segment(Segment &&orig) noexcept; // move constructor
 
     ~Segment() {
-      Serial.print(F("Destroying segment: "));
-      if (name) Serial.println(name); else Serial.println();
+      #ifdef WLED_DEBUG
+      Serial.print(F("Destroying segment."));
+      if (name) Serial.printf(" %s (%p)", name, name);
+      if (data) Serial.printf(" %p", data);
+      Serial.println();
+      #endif
       if (name) delete[] name;
       //if (_t) delete _t;
       deallocateData();
@@ -495,8 +498,9 @@ typedef struct Segment {
 
     // runtime data functions
     bool allocateData(uint16_t len);
-    void deallocateData();
-    void resetIfRequired();
+    void deallocateData(void);
+    inline uint16_t dataSize(void) { return _dataLen; }
+    void resetIfRequired(void);
     /** 
       * Flags that before the next effect is calculated,
       * the internal segment state should be reset. 
@@ -581,7 +585,56 @@ class WS2812FX {  // 96 bytes
   
   public:
 
-    WS2812FX() {
+    WS2812FX() :
+      gammaCorrectBri(false),
+      gammaCorrectCol(true),
+      paletteFade(0),
+      paletteBlend(0),
+      milliampsPerLed(55),
+      cctBlending(0),
+      ablMilliampsMax(ABL_MILLIAMPS_DEFAULT),
+      currentMilliamps(0),
+      now(millis()),
+      timebase(0),
+      isMatrix(false),
+#ifndef WLED_DISABLE_2D
+      hPanels(1),
+      vPanels(1),
+      panelH(8),
+      panelW(8),
+      matrixWidth(DEFAULT_LED_COUNT),
+      matrixHeight(1),
+      matrix{0,0,0,0},
+      panel{{0,0,0,0}},
+#endif
+      currentPalette(CRGBPalette16(CRGB::Black)),
+      targetPalette(CloudColors_p),
+      _bri_t(0),
+      _colors_t{0,0,0},
+      _virtualSegmentLength(0),
+      _length(DEFAULT_LED_COUNT),
+      _rand16seed(0),
+      _brightness(DEFAULT_BRIGHTNESS),
+      _usedSegmentData(0),
+      _transitionDur(750),
+		  _targetFps(WLED_FPS),
+		  _frametime(FRAMETIME_FIXED),
+      _cumulativeFps(2),
+      _isServicing(false),
+      _isOffRefreshRequired(false),
+      _hasWhiteChannel(false),
+      _triggered(false),
+      _no_rgb(false),
+      _modeCount(MODE_COUNT),
+      _callback(nullptr),
+      customMappingTable(nullptr),
+      customMappingSize(0),
+      _lastPaletteChange(0),
+      _lastShow(0),
+      _segment_index(0),
+      _segment_index_palette_last(99),
+      _mainSegment(0)
+    {
       WS2812FX::instance = this;
       _mode.reserve(_modeCount);
       _modeData.reserve(_modeCount);
@@ -593,21 +646,15 @@ class WS2812FX {  // 96 bytes
       if (_mode && _modeData) setupEffectData();
       else _modeCount = 1; // only Solid will work
       */
-      _brightness = DEFAULT_BRIGHTNESS;
-      currentPalette = CRGBPalette16(CRGB::Black);
-      targetPalette = CloudColors_p;
-      ablMilliampsMax = ABL_MILLIAMPS_DEFAULT;
-      currentMilliamps = 0;
-      timebase = 0;
-      _usedSegmentData = 0;
-      //resetSegments(); // no need here
     }
 
     ~WS2812FX() {
+      if (customMappingTable) delete[] customMappingTable;
       //delete[] _mode;
       //delete[] _modeData;
       _mode.clear();
       _modeData.clear();
+      _segments.clear();
     }
 
     static WS2812FX* getInstance(void) { return instance; }
@@ -649,23 +696,24 @@ class WS2812FX {  // 96 bytes
     inline void addUsedSegmentData(int16_t size) { _usedSegmentData += size; }
 
     bool
-      gammaCorrectBri = false,
-      gammaCorrectCol = true,
+      gammaCorrectBri,
+      gammaCorrectCol,
       checkSegmentAlignment(void),
       hasRGBWBus(void),
       hasCCTBus(void),
       // return true if the strip is being sent pixel updates
       isUpdating(void);
 
+    inline bool isServicing(void) { return _isServicing; }
     inline bool hasWhiteChannel(void) {return _hasWhiteChannel;}
     inline bool isOffRefreshRequired(void) {return _isOffRefreshRequired;}
 
     uint8_t
-      paletteFade = 0,
-      paletteBlend = 0,
-      milliampsPerLed = 55,
-      cctBlending = 0,
-      //getActiveSegmentsNum(void),
+      paletteFade,
+      paletteBlend,
+      milliampsPerLed,
+      cctBlending,
+      getActiveSegmentsNum(void),
       getFirstSelectedSegId(void),
       getLastActiveSegmentId(void),
       setPixelSegment(uint8_t n),
@@ -674,7 +722,7 @@ class WS2812FX {  // 96 bytes
 
     inline uint8_t getBrightness(void) { return _brightness; }
     inline uint8_t getMaxSegments(void) { return MAX_NUM_SEGMENTS; }  // returns maximum number of supported segments (fixed value)
-    inline uint8_t getActiveSegmentsNum(void) { return _segments.size(); } // returns currently active (present) segments
+    inline uint8_t getSegmentsNum(void) { return _segments.size(); }  // returns currently present segments
     inline uint8_t getCurrSegmentId(void) { return _segment_index; }
     inline uint8_t getMainSegmentId(void) { return _mainSegment; }
     inline uint8_t getPaletteCount() { return 13 + GRADIENT_PALETTE_COUNT; }
@@ -709,27 +757,26 @@ class WS2812FX {  // 96 bytes
     const char **
       getModeDataSrc(void) { return &(_modeData[0]); } // vectors use arrays for underlying data
 
-    //inline Segment& getSegment(uint8_t id) { return _segments[id >= getMaxSegments() ? getMainSegmentId() : id]; }
-    inline Segment& getSegment(uint8_t id) { return _segments[id >= _segments.size() ? getMainSegmentId() : id]; } // vectors
+    Segment& getSegment(uint8_t id);
     inline Segment& getFirstSelectedSeg(void) { return _segments[getFirstSelectedSegId()]; }
     inline Segment& getMainSegment(void) { return _segments[getMainSegmentId()]; }
     inline Segment* getSegments(void) { return &(_segments[0]); }
 
   // 2D support (panels)
     bool
-      isMatrix = false;
+      isMatrix;
 
 #ifndef WLED_DISABLE_2D
     #define WLED_MAX_PANELS 64
     uint8_t
-      hPanels = 1,
-      vPanels = 1;
+      hPanels,
+      vPanels;
 
     uint16_t
-      panelH = 8,
-      panelW = 8,
-      matrixWidth = DEFAULT_LED_COUNT,
-      matrixHeight = 1;
+      panelH,
+      panelW,
+      matrixWidth,
+      matrixHeight;
 
     typedef struct panel_bitfield_t {
       unsigned char
@@ -739,8 +786,8 @@ class WS2812FX {  // 96 bytes
         serpentine  : 1; // is serpentine?
     } Panel;
     Panel
-      matrix = {0,0,0,0},
-      panel[WLED_MAX_PANELS] = {{0,0,0,0}};
+      matrix,
+      panel[WLED_MAX_PANELS];
 #endif
 
     void
@@ -776,37 +823,43 @@ class WS2812FX {  // 96 bytes
     uint16_t _rand16seed;
     uint8_t _brightness;
     uint16_t _usedSegmentData;
-    uint16_t _transitionDur = 750;
+    uint16_t _transitionDur;
 
-		uint8_t _targetFps = 42;
-		uint16_t _frametime = (1000/42);
-    uint16_t _cumulativeFps = 2;
+		uint8_t _targetFps;
+		uint16_t _frametime;
+    uint16_t _cumulativeFps;
 
+    // will require only 1 byte
+//    struct {
+//      byte _isServicing          : 1;
+//      byte _isOffRefreshRequired : 1;
+//      byte _hasWhiteChannel      : 1;
+//      byte _triggered            : 1;
+//      byte _no_rgb               : 1;
+//    };
     bool
-      _isOffRefreshRequired = false, //periodic refresh is required for the strip to remain off.
-      _hasWhiteChannel = false,
-      _triggered;
+      _isServicing,
+      _isOffRefreshRequired, //periodic refresh is required for the strip to remain off.
+      _hasWhiteChannel,
+      _triggered,
+      _no_rgb;
 
-    uint8_t _modeCount = MODE_COUNT;
+    uint8_t _modeCount;
     //mode_ptr *_mode; // SRAM footprint: 4 bytes per element
     //const char **_modeData; // mode (effect) name and its slider control data array
     std::vector<mode_ptr>    _mode;     // SRAM footprint: 4 bytes per element
     std::vector<const char*> _modeData; // mode (effect) name and its slider control data array
 
-    //std::vector<ModeData> _modes; // this will require substantial rewrite of code
+    show_callback _callback;
 
-    show_callback _callback = nullptr;
-
-    uint16_t* customMappingTable = nullptr;
-    uint16_t  customMappingSize  = 0;
+    uint16_t* customMappingTable;
+    uint16_t  customMappingSize;
     
-    uint32_t _lastPaletteChange = 0;
-    uint32_t _lastShow = 0;
-
-    bool _no_rgb = false;
+    uint32_t _lastPaletteChange;
+    uint32_t _lastShow;
     
-    uint8_t _segment_index = 0;
-    uint8_t _segment_index_palette_last = 99;
+    uint8_t _segment_index;
+    uint8_t _segment_index_palette_last;
     uint8_t _mainSegment;
 
     void

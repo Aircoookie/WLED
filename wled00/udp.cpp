@@ -91,10 +91,12 @@ void notify(byte callMode, bool followUp)
 
   udpOut[39] = strip.getActiveSegmentsNum();
   udpOut[40] = UDP_SEG_SIZE; //size of each loop iteration (one segment)
-  for (uint8_t i = 0; i < strip.getActiveSegmentsNum(); i++) {
+  int s = 0;
+  for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
     Segment &selseg = strip.getSegment(i);
-    uint16_t ofs = 41 + i*UDP_SEG_SIZE; //start of segment offset byte
-    udpOut[0 +ofs] = i;
+    if (!selseg.isActive()) continue;
+    uint16_t ofs = 41 + s*UDP_SEG_SIZE; //start of segment offset byte
+    udpOut[0 +ofs] = s;
     udpOut[1 +ofs] = selseg.start >> 8;
     udpOut[2 +ofs] = selseg.start & 0xFF;
     udpOut[3 +ofs] = selseg.stop >> 8;
@@ -122,6 +124,7 @@ void notify(byte callMode, bool followUp)
     udpOut[25+ofs] = B(selseg.colors[2]);
     udpOut[26+ofs] = W(selseg.colors[2]);
     udpOut[27+ofs] = selseg.cct;
+    ++s;
   }
 
   //uint16_t offs = SEG_OFFSET;
@@ -155,7 +158,7 @@ void realtimeLock(uint32_t timeoutMs, byte md)
     for (uint16_t i = start; i < stop; i++) strip.setPixelColor(i,0,0,0,0);
     // if WLED was off and using main segment only, freeze non-main segments so they stay off
     if (useMainSegmentOnly && bri == 0) {
-      for (uint8_t s=0; s < strip.getActiveSegmentsNum(); s++) {
+      for (uint8_t s=0; s < strip.getSegmentsNum(); s++) {
         strip.getSegment(s).setOption(SEG_OPTION_FREEZE, true);
       }
     }
@@ -342,7 +345,7 @@ void handleNotifications()
         for (uint8_t i = 0; i < numSrcSegs; i++) {
           uint16_t ofs = 41 + i*udpIn[40]; //start of segment offset byte
           uint8_t id = udpIn[0 +ofs];
-          if (id > strip.getActiveSegmentsNum()) break;
+          if (id > strip.getSegmentsNum()) break;
           Segment& selseg = strip.getSegment(id);
           uint16_t start  = (udpIn[1+ofs] << 8 | udpIn[2+ofs]);
           uint16_t stop   = (udpIn[3+ofs] << 8 | udpIn[4+ofs]);
@@ -377,7 +380,7 @@ void handleNotifications()
       
       // simple effect sync, applies to all selected segments
       if (applyEffects && (version < 11 || !receiveSegmentOptions)) {
-        for (uint8_t i = 0; i < strip.getActiveSegmentsNum(); i++) {
+        for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
           Segment& seg = strip.getSegment(i);
           if (!seg.isActive() || !seg.isSelected()) continue;
           if (udpIn[8] < strip.getModeCount()) strip.setMode(i, udpIn[8]);

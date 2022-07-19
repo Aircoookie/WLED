@@ -31,7 +31,7 @@ void applyValuesToSelectedSegs()
   // copy of first selected segment to tell if value was updated
   uint8_t firstSel = strip.getFirstSelectedSegId();
   Segment selsegPrev = strip.getSegment(firstSel);
-  for (uint8_t i = 0; i < strip.getActiveSegmentsNum(); i++) {
+  for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
     Segment& seg = strip.getSegment(i);
     if (i != firstSel && (!seg.isActive() || !seg.isSelected())) continue;
 

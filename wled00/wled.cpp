@@ -118,7 +118,6 @@ void WLED::loop()
     if (stripMillis > maxStripMillis) maxStripMillis = stripMillis;
     #endif
   }
-  if (offMode) strip.purgeSegments(); // remove inactive segments from memory (no effects running)
 
   yield();
 #ifdef ESP8266
@@ -694,6 +693,7 @@ void WLED::handleConnection()
       DEBUG_PRINT(F("Heap too low! "));
       DEBUG_PRINTLN(heap);
       forceReconnect = true;
+      strip.purgeSegments(); // remove inactive segments from memory
     }
     lastHeap = heap;
     heapTime = now;

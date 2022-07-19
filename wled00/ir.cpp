@@ -89,7 +89,7 @@ byte relativeChange(byte property, int8_t amount, byte lowerBoundary, byte highe
 void changeEffect(uint8_t fx)
 {
   if (irApplyToAllSelected) {
-    for (uint8_t i = 0; i < strip.getActiveSegmentsNum(); i++) {
+    for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
       Segment& seg = strip.getSegment(i);
       if (!seg.isActive() || !seg.isSelected()) continue;
       strip.setMode(i, fx);
@@ -105,7 +105,7 @@ void changeEffect(uint8_t fx)
 void changePalette(uint8_t pal)
 {
   if (irApplyToAllSelected) {
-    for (uint8_t i = 0; i < strip.getActiveSegmentsNum(); i++) {
+    for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
       Segment& seg = strip.getSegment(i);
       if (!seg.isActive() || !seg.isSelected()) continue;
       seg.palette = pal;
@@ -124,7 +124,7 @@ void changeEffectSpeed(int8_t amount)
     int16_t new_val = (int16_t) effectSpeed + amount;
     effectSpeed = (byte)constrain(new_val,0,255);
     if (irApplyToAllSelected) {
-      for (uint8_t i = 0; i < strip.getActiveSegmentsNum(); i++) {
+      for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
         Segment& seg = strip.getSegment(i);
         if (!seg.isActive() || !seg.isSelected()) continue;
         seg.speed = effectSpeed;
@@ -147,7 +147,7 @@ void changeEffectSpeed(int8_t amount)
     prim_hsv.h = (byte)new_val;
     hsv2rgb_rainbow(prim_hsv, fastled_col);
     if (irApplyToAllSelected) {
-      for (uint8_t i = 0; i < strip.getActiveSegmentsNum(); i++) {
+      for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
         Segment& seg = strip.getSegment(i);
         if (!seg.isActive() || !seg.isSelected()) continue;
         seg.colors[0] = RGBW32(fastled_col.red, fastled_col.green, fastled_col.blue, W(sseg.colors[0]));
@@ -171,7 +171,7 @@ void changeEffectIntensity(int8_t amount)
     int16_t new_val = (int16_t) effectIntensity + amount;
     effectIntensity = (byte)constrain(new_val,0,255);
     if (irApplyToAllSelected) {
-      for (uint8_t i = 0; i < strip.getActiveSegmentsNum(); i++) {
+      for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
         Segment& seg = strip.getSegment(i);
         if (!seg.isActive() || !seg.isSelected()) continue;
         seg.intensity = effectIntensity;
@@ -192,7 +192,7 @@ void changeEffectIntensity(int8_t amount)
     prim_hsv.s = (byte)constrain(new_val,0,255);  // constrain to 0-255
     hsv2rgb_rainbow(prim_hsv, fastled_col);
     if (irApplyToAllSelected) {
-      for (uint8_t i = 0; i < strip.getActiveSegmentsNum(); i++) {
+      for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
         Segment& seg = strip.getSegment(i);
         if (!seg.isActive() || !seg.isSelected()) continue;
         seg.colors[0] = RGBW32(fastled_col.red, fastled_col.green, fastled_col.blue, W(sseg.colors[0]));
@@ -214,7 +214,7 @@ void changeColor(uint32_t c, int16_t cct=-1)
 {
   if (irApplyToAllSelected) {
     // main segment may not be selected!
-    for (uint8_t i = 0; i < strip.getActiveSegmentsNum(); i++) {
+    for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
       Segment& seg = strip.getSegment(i);
       if (!seg.isActive() || !seg.isSelected()) continue;
       byte capabilities = seg.getLightCapabilities();

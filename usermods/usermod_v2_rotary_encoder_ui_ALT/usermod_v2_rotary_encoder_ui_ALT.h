@@ -528,7 +528,7 @@ public:
     effectCurrent = modes_alpha_indexes[effectCurrentIndex];
     stateChanged = true;
     if (applyToAll) {
-      for (byte i=0; i<strip.getActiveSegmentsNum(); i++) {
+      for (byte i=0; i<strip.getSegmentsNum(); i++) {
         Segment& seg = strip.getSegment(i);
         if (!seg.isActive()) continue;
         strip.setMode(i, effectCurrent);
@@ -556,7 +556,7 @@ public:
     effectSpeed = max(min((increase ? effectSpeed+fadeAmount : effectSpeed-fadeAmount), 255), 0);
     stateChanged = true;
     if (applyToAll) {
-      for (byte i=0; i<strip.getActiveSegmentsNum(); i++) {
+      for (byte i=0; i<strip.getSegmentsNum(); i++) {
         Segment& seg = strip.getSegment(i);
         if (!seg.isActive()) continue;
         seg.speed = effectSpeed;
@@ -584,7 +584,7 @@ public:
     effectIntensity = max(min((increase ? effectIntensity+fadeAmount : effectIntensity-fadeAmount), 255), 0);
     stateChanged = true;
     if (applyToAll) {
-      for (byte i=0; i<strip.getActiveSegmentsNum(); i++) {
+      for (byte i=0; i<strip.getSegmentsNum(); i++) {
         Segment& seg = strip.getSegment(i);
         if (!seg.isActive()) continue;
         seg.intensity = effectIntensity;
@@ -619,7 +619,7 @@ public:
         case 2:  val = sid.custom2 = max(min((increase ? sid.custom2+fadeAmount : sid.custom2-fadeAmount), 255), 0); break;
         default: val = sid.custom1 = max(min((increase ? sid.custom1+fadeAmount : sid.custom1-fadeAmount), 255), 0); break;
       }
-      for (byte i=0; i<strip.getActiveSegmentsNum(); i++) {
+      for (byte i=0; i<strip.getSegmentsNum(); i++) {
         Segment& seg = strip.getSegment(i);
         if (!seg.isActive() || i == id) continue;
         switch (par) {
@@ -658,7 +658,7 @@ public:
     effectPalette = palettes_alpha_indexes[effectPaletteIndex];
     stateChanged = true;
     if (applyToAll) {
-      for (byte i=0; i<strip.getActiveSegmentsNum(); i++) {
+      for (byte i=0; i<strip.getSegmentsNum(); i++) {
         Segment& seg = strip.getSegment(i);
         if (!seg.isActive()) continue;
         seg.palette = effectPalette;
@@ -687,7 +687,7 @@ public:
     colorHStoRGB(currentHue1*256, currentSat1, col);
     stateChanged = true; 
     if (applyToAll) {
-      for (byte i=0; i<strip.getActiveSegmentsNum(); i++) {
+      for (byte i=0; i<strip.getSegmentsNum(); i++) {
         Segment& seg = strip.getSegment(i);
         if (!seg.isActive()) continue;
         seg.colors[0] = RGBW32(col[0], col[1], col[2], col[3]);
@@ -716,7 +716,7 @@ public:
     currentSat1 = max(min((increase ? currentSat1+fadeAmount : currentSat1-fadeAmount), 255), 0);
     colorHStoRGB(currentHue1*256, currentSat1, col);
     if (applyToAll) {
-      for (byte i=0; i<strip.getActiveSegmentsNum(); i++) {
+      for (byte i=0; i<strip.getSegmentsNum(); i++) {
         Segment& seg = strip.getSegment(i);
         if (!seg.isActive()) continue;
         seg.colors[0] = RGBW32(col[0], col[1], col[2], col[3]);
@@ -776,7 +776,7 @@ public:
   #endif
     currentCCT = max(min((increase ? currentCCT+fadeAmount : currentCCT-fadeAmount), 255), 0);
 //    if (applyToAll) {
-      for (byte i=0; i<strip.getActiveSegmentsNum(); i++) {
+      for (byte i=0; i<strip.getSegmentsNum(); i++) {
         Segment& seg = strip.getSegment(i);
         if (!seg.isActive()) continue;
         seg.setCCT(currentCCT);
