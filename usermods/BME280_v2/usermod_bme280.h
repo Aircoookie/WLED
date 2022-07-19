@@ -278,30 +278,30 @@ public:
      */
     inline float getTemperatureC() {
       #ifdef Celsius
-        return (float)sensorTemperature;
+        return (float)roundf(sensorTemperature * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals);
       #else
-        return (float)sensorTemperature * 1.8f + 32;
+        return (float)roundf(sensorTemperature * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals) * 1.8f + 32;
       #endif
       
     }
     inline float getTemperatureF() {
       #ifdef Celsius
-        return ((float)sensorTemperature -32) * 0.56f;
+        return ((float)roundf(sensorTemperature * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals) -32) * 0.56f;
       #else
-        return (float)sensorTemperature;
+        return (float)roundf(sensorTemperature * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals);
       #endif
     }
     inline float getHumidity() {
-      return (float)sensorHumidity;
+      return (float)roundf(sensorHumidity * pow(10, HumidityDecimals));
     }
     inline float getPressure() {
-      return (float)sensorPressure;
+      return (float)roundf(sensorPressure * pow(10, PressureDecimals));
     }
     inline float getDewPoint() {
-      return (float)sensorDewPoint;
+      return (float)roundf(sensorDewPoint * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals);
     }
     inline float getHeatIndex() {
-      return (float)sensorHeatIndex;
+      return (float)roundf(sensorHeatIndex * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals);
     }
 
   // Publish Sensor Information to Info Page
@@ -321,10 +321,10 @@ public:
       
       JsonArray temperature_json = user.createNestedArray("Temperature");
       JsonArray pressure_json = user.createNestedArray("Pressure");
-      temperature_json.add(sensorTemperature);
+      temperature_json.add(roundf(sensorTemperature * pow(10, TemperatureDecimals)));
       temperature_json.add(F("°C"));
-      pressure_json.add(sensorPressure);
-      pressure_json.add(F("°C"));
+      pressure_json.add(roundf(sensorPressure * pow(10, PressureDecimals)));
+      pressure_json.add(F("hPa"));
     }
     else if (sensorType==1) //BME280
     {
@@ -333,29 +333,28 @@ public:
       JsonArray pressure_json = user.createNestedArray("Pressure");
       JsonArray heatindex_json = user.createNestedArray("Heat Index");
       JsonArray dewpoint_json = user.createNestedArray("Dew Point");
-      temperature_json.add(sensorTemperature);
+      temperature_json.add(roundf(sensorTemperature * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals));
       #ifdef  Celsius
         temperature_json.add(F("°C"));
       #else
         temperature_json.add(F("°F"));
       #endif
-      humidity_json.add(sensorHumidity);
+      humidity_json.add(roundf(sensorHumidity * pow(10, HumidityDecimals)));
       humidity_json.add(F("%"));
-      pressure_json.add(sensorPressure);
+      pressure_json.add(roundf(sensorPressure * pow(10, PressureDecimals)));
       pressure_json.add(F("hPa"));
-      heatindex_json.add(sensorHeatIndex);
+      heatindex_json.add(roundf(sensorHeatIndex * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals));
       #ifdef  Celsius
         heatindex_json.add(F("°C"));
       #else
         heatindex_json.add(F("°F"));
       #endif
-      dewpoint_json.add(sensorDewPoint);
+      dewpoint_json.add(roundf(sensorDewPoint * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals));
       #ifdef  Celsius
         dewpoint_json.add(F("°C"));
       #else
         dewpoint_json.add(F("°F"));
       #endif
-      dewpoint_json.add(F("°C"));
     }
       return;
   }
