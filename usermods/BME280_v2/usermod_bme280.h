@@ -113,11 +113,23 @@ bool HomeAssistantDiscovery = false;     // Publish Home Assistant Device Inform
 
     String t = String("homeassistant/sensor/") + mqttClientID + "/temperature/config";
 
-    _createMqttSensor("Temperature", mqttTemperatureTopic, "temperature", "°C");
+    #ifdef Celsius
+      _createMqttSensor("Temperature", mqttTemperatureTopic, "temperature", "°C");
+    #else
+      _createMqttSensor("Temperature", mqttTemperatureTopic, "temperature", "°F");  
+    #endif
     _createMqttSensor("Pressure", mqttPressureTopic, "pressure", "hPa");
     _createMqttSensor("Humidity", mqttHumidityTopic, "humidity", "%");
-    _createMqttSensor("HeatIndex", mqttHeatIndexTopic, "temperature", "°C");
-    _createMqttSensor("DewPoint", mqttDewPointTopic, "temperature", "°C");
+    #ifdef Celsius
+      _createMqttSensor("HeatIndex", mqttHeatIndexTopic, "temperature", "°C");
+    #else
+      _createMqttSensor("HeatIndex", mqttHeatIndexTopic, "temperature", "°F");
+    #endif
+    #ifdef Celsius
+      _createMqttSensor("DewPoint", mqttDewPointTopic, "temperature", "°C");
+    #else
+      _createMqttSensor("DewPoint", mqttDewPointTopic, "temperature", "°F");
+    #endif
   }
 
   // Create an MQTT Sensor for Home Assistant Discovery purposes, this includes a pointer to the topic that is published to in the Loop.
@@ -260,13 +272,43 @@ public:
       }
     }
   }
+    
+    /*
+     * API calls te enable data exchange between WLED modules
+     */
+    inline float getTemperatureC() {
+      #ifdef Celsius
+        return (float)sensorTemperature;
+      #else
+        return (float)sensorTemperature * 1.8f + 32;
+      #endif
+      
+    }
+    inline float getTemperatureF() {
+      #ifdef Celsius
+        return ((float)sensorTemperature -32) * 0.56f;
+      #else
+        return (float)sensorTemperature;
+      #endif
+    }
+    inline float getHumidity() {
+      return (float)sensorHumidity;
+    }
+    inline float getPressure() {
+      return (float)sensorPressure;
+    }
+    inline float getDewPoint() {
+      return (float)sensorDewPoint;
+    }
+    inline float getHeatIndex() {
+      return (float)sensorHeatIndex;
+    }
 
   // Publish Sensor Information to Info Page
   void addToJsonInfo(JsonObject &root)
   {
     JsonObject user = root[F("u")];
-    if (user.isNull())
-      user = root.createNestedObject(F("u"));
+    if (user.isNull()) user = root.createNestedObject(F("u"));
     
     if (sensorType==0) //No Sensor
     {
@@ -292,14 +334,27 @@ public:
       JsonArray heatindex_json = user.createNestedArray("Heat Index");
       JsonArray dewpoint_json = user.createNestedArray("Dew Point");
       temperature_json.add(sensorTemperature);
-      temperature_json.add(F("°C"));
+      #ifdef  Celsius
+        temperature_json.add(F("°C"));
+      #else
+        temperature_json.add(F("°F"));
+      #endif
       humidity_json.add(sensorHumidity);
       humidity_json.add(F("%"));
       pressure_json.add(sensorPressure);
-      pressure_json.add(F("°C"));
+      pressure_json.add(F("hPa"));
       heatindex_json.add(sensorHeatIndex);
-      heatindex_json.add(F("°C"));
+      #ifdef  Celsius
+        heatindex_json.add(F("°C"));
+      #else
+        heatindex_json.add(F("°F"));
+      #endif
       dewpoint_json.add(sensorDewPoint);
+      #ifdef  Celsius
+        dewpoint_json.add(F("°C"));
+      #else
+        dewpoint_json.add(F("°F"));
+      #endif
       dewpoint_json.add(F("°C"));
     }
       return;
