@@ -39,7 +39,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     elem.remove("rpt"); // remove for recursive call
     elem.remove("n");   // remove for recursive call
     uint16_t len = stop - start;
-    for (byte i=id+1; i<strip.getMaxSegments(); i++) {
+    for (size_t i=id+1; i<strip.getMaxSegments(); i++) {
       start = start + len;
       if (start >= strip.getLengthTotal()) break;
       //TODO: add support for 2D
@@ -112,7 +112,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   JsonArray colarr = elem["col"];
   if (!colarr.isNull())
   {
-    for (uint8_t i = 0; i < 3; i++)
+    for (size_t i = 0; i < 3; i++)
     {
       int rgbw[] = {0,0,0,0};
       bool colValid = false;
@@ -129,7 +129,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         } else { //HEX string, e.g. "FFAA00"
           colValid = colorFromHexString(brgbw, hexCol);
         }
-        for (uint8_t c = 0; c < 4; c++) rgbw[c] = brgbw[c];
+        for (size_t c = 0; c < 4; c++) rgbw[c] = brgbw[c];
       } else { //Array of ints (RGB or RGBW color), e.g. [255,160,0]
         byte sz = colX.size();
         if (sz == 0) continue; //do nothing on empty array
@@ -199,7 +199,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     uint16_t start = 0, stop = 0;
     byte set = 0; //0 nothing set, 1 start set, 2 range set
 
-    for (uint16_t i = 0; i < iarr.size(); i++) {
+    for (size_t i = 0; i < iarr.size(); i++) {
       if(iarr[i].is<JsonInteger>()) {
         if (!set) {
           start = iarr[i];
@@ -218,12 +218,12 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
           byte brgbw[] = {0,0,0,0};
           const char* hexCol = iarr[i];
           if (colorFromHexString(brgbw, hexCol)) {
-            for (uint8_t c = 0; c < 4; c++) rgbw[c] = brgbw[c];
+            for (size_t c = 0; c < 4; c++) rgbw[c] = brgbw[c];
           }
         }
 
         if (set < 2) stop = start + 1;
-        for (uint16_t i = start; i < stop; i++) {
+        for (int i = start; i < stop; i++) {
           if (strip.gammaCorrectCol) {
             seg.setPixelColor(i, strip.gamma8(rgbw[0]), strip.gamma8(rgbw[1]), strip.gamma8(rgbw[2]), strip.gamma8(rgbw[3]));
           } else {
@@ -257,7 +257,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   if (root["on"].is<const char*>() && root["on"].as<const char*>()[0] == 't') toggleOnOff();
 
   if (bri && !onBefore) { // unfreeze all segments when turning on
-    for (uint8_t s=0; s < strip.getSegmentsNum(); s++) {
+    for (size_t s=0; s < strip.getSegmentsNum(); s++) {
       strip.getSegment(s).setOption(SEG_OPTION_FREEZE, false);
     }
     if (realtimeMode && !realtimeOverride && useMainSegmentOnly) { // keep live segment frozen if live
@@ -335,7 +335,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     if (id < 0) {
       //apply all selected segments
       //bool didSet = false;
-      for (byte s = 0; s < strip.getSegmentsNum(); s++) {
+      for (size_t s = 0; s < strip.getSegmentsNum(); s++) {
         Segment &sg = strip.getSegment(s);
         if (sg.isSelected()) {
           deserializeSegment(segVar, s, presetId);
@@ -429,7 +429,7 @@ void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset, b
   // this will reduce RAM footprint from ~300 bytes to 84 bytes per segment
   char colstr[70]; colstr[0] = '['; colstr[1] = '\0';  //max len 68 (5 chan, all 255)
   const char *format = strip.hasWhiteChannel() ? PSTR("[%u,%u,%u,%u]") : PSTR("[%u,%u,%u]");
-  for (uint8_t i = 0; i < 3; i++)
+  for (size_t i = 0; i < 3; i++)
   {
     byte segcol[4]; byte* c = segcol;
     segcol[0] = R(seg.colors[i]);
@@ -499,7 +499,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
 
   bool selectedSegmentsOnly = root[F("sc")] | false;
   JsonArray seg = root.createNestedArray("seg");
-  for (byte s = 0; s < strip.getMaxSegments(); s++) {
+  for (size_t s = 0; s < strip.getMaxSegments(); s++) {
     if (s >= strip.getSegmentsNum()) {
       if (forPreset && segmentBounds) { //disable segments not part of preset
         JsonObject seg0 = seg.createNestedObject();
@@ -545,8 +545,9 @@ void serializeInfo(JsonObject root)
 
   uint8_t totalLC = 0;
   JsonArray lcarr = leds.createNestedArray(F("seglc"));
-  uint8_t nSegs = strip.getLastActiveSegmentId();
-  for (byte s = 0; s <= nSegs; s++) {
+  size_t nSegs = strip.getSegmentsNum();
+  for (size_t s = 0; s < nSegs; s++) {
+    if (!strip.getSegment(s).isActive()) continue;
     uint8_t lc = strip.getSegment(s).getLightCapabilities();
     totalLC |= lc;
     lcarr.add(lc);
@@ -594,7 +595,7 @@ void serializeInfo(JsonObject root)
   root[F("palcount")] = strip.getPaletteCount();
 
   JsonArray ledmaps = root.createNestedArray(F("maps"));
-  for (uint8_t i=0; i<10; i++) {
+  for (size_t i=0; i<10; i++) {
     char fileName[16];
     strcpy_P(fileName, PSTR("/ledmap"));
     if (i) sprintf(fileName +7, "%d", i);
@@ -973,7 +974,7 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
   obuf = buffer;
   olen = 9;
 
-  for (uint16_t i= 0; i < used; i += n)
+  for (size_t i= 0; i < used; i += n)
   {
     uint32_t c = strip.getPixelColor(i);
     uint8_t r = qadd8(W(c), R(c)); //add white channel to RGB channels as a simple RGBW -> RGB map

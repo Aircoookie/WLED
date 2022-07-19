@@ -455,7 +455,9 @@ typedef struct Segment {
       _capabilities(0),
       _dataLen(0)
       //_t(nullptr)
-    {}
+    {
+      refreshLightCapabilities();
+    }
 
     Segment(uint16_t sStartX, uint16_t sStopX, uint16_t sStartY, uint16_t sStopY) : Segment(sStartX, sStopX) {
       startY = sStartY;

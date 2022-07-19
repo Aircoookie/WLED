@@ -401,7 +401,7 @@ uint8_t Segment::differs(Segment& b) {
 }
 
 void Segment::refreshLightCapabilities() {
-  uint8_t capabilities = 0;
+  uint8_t capabilities = 0x01;
 
   for (uint8_t b = 0; b < busses.getNumBusses(); b++) {
     Bus *bus = busses.getBus(b);
@@ -411,7 +411,7 @@ void Segment::refreshLightCapabilities() {
     if (bus->getStart() + bus->getLength() <= start) continue;
 
     uint8_t type = bus->getType();
-    if (type != TYPE_ANALOG_1CH && (cctFromRgb || type != TYPE_ANALOG_2CH)) capabilities |= 0x01; // segment supports RGB (full color)
+    if (type == TYPE_ANALOG_1CH || (!cctFromRgb && type == TYPE_ANALOG_2CH)) capabilities &= 0xFE; // does not support RGB
     if (bus->isRgbw()) capabilities |= 0x02; // segment supports white channel
     if (!cctFromRgb) {
       switch (type) {
@@ -1002,7 +1002,7 @@ uint8_t WS2812FX::getLastActiveSegmentId(void) {
 uint8_t WS2812FX::getActiveSegmentsNum(void) {
   uint8_t c = 0;
 //  for (uint8_t i = 0; i < getMaxSegments(); i++) {
-  for (int i = 0; i < _segments.size(); i++) {
+  for (size_t i = 0; i < _segments.size(); i++) {
     if (_segments[i].isActive()) c++;
   }
   return c;
@@ -1180,15 +1180,16 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
   if (isMatrix) {
     #ifndef WLED_DISABLE_2D
     // only create 1 2D segment
-    if (forceReset || getActiveSegmentsNum() == 0) resetSegments(); // initialises 1 segment
+    if (forceReset || getSegmentsNum() == 0) resetSegments(); // initialises 1 segment
     else if (getActiveSegmentsNum() == 1) {
-      _segments[0].start  = 0;
-      _segments[0].stop   = matrixWidth;
-      _segments[0].startY = 0;
-      _segments[0].stopY  = matrixHeight;
-      _segments[0].grouping = 1;
-      _segments[0].spacing  = 0;
-      _mainSegment = 0;
+      size_t i = getLastActiveSegmentId();
+      _segments[i].start  = 0;
+      _segments[i].stop   = matrixWidth;
+      _segments[i].startY = 0;
+      _segments[i].stopY  = matrixHeight;
+      _segments[i].grouping = 1;
+      _segments[i].spacing  = 0;
+      _mainSegment = i;
     }
     #endif
   } else if (autoSegments) { //make one segment per bus
@@ -1224,11 +1225,12 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
 //    }
     _mainSegment = 0;
   } else {
-    if (forceReset || getActiveSegmentsNum() == 0) resetSegments();
+    if (forceReset || getSegmentsNum() == 0) resetSegments();
     //expand the main seg to the entire length, but only if there are no other segments, or reset is forced
     else if (getActiveSegmentsNum() == 1) {
-      _segments[0].start = 0;
-      _segments[0].stop  = _length;
+      size_t i = getLastActiveSegmentId();
+      _segments[i].start = 0;
+      _segments[i].stop  = _length;
       _mainSegment = 0;
     }
   }
@@ -1238,7 +1240,7 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
 
 void WS2812FX::fixInvalidSegments() {
   //make sure no segment is longer than total (sanity check)
-  for (int i = _segments.size()-1; i > 0; i--) {
+  for (int i = getSegmentsNum()-1; i > 0; i--) {
     if (_segments[i].start >= _length) { _segments.erase(_segments.begin()+i); continue; }
     if (_segments[i].stop  >  _length) _segments[i].stop = _length;
     // this is always called as the last step after finalizeInit(), update covered bus types
@@ -1321,7 +1323,7 @@ void WS2812FX::load_gradient_palette(uint8_t index)
         if (!pal.isNull() && pal.size()>7) { // not an empty palette (at least 2 entries)
           size_t palSize = MIN(pal.size(), 72);
           palSize -= palSize % 4; // make sure size is multiple of 4
-          for (int i=0; i<palSize && pal[i].as<int>()<256; i+=4) {
+          for (size_t i=0; i<palSize && pal[i].as<int>()<256; i+=4) {
             tcp[ i ] = (uint8_t) pal[ i ].as<int>(); // index
             tcp[i+1] = (uint8_t) pal[i+1].as<int>(); // R
             tcp[i+2] = (uint8_t) pal[i+2].as<int>(); // G
