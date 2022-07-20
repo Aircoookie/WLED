@@ -1,6 +1,3 @@
-// force the compiler to show a warning to confirm that this file is included
-#warning **** Included USERMOD_PIR_SENSOR_SWITCH ****
-
 #pragma once
 
 #include "wled.h"
@@ -25,20 +22,36 @@
  * 
  * v2 usermods are class inheritance based and can (but don't have to) implement more functions, each of them is shown in this example.
  * Multiple v2 usermods can be added to one compilation easily.
+ * 
+ * Creating a usermod:
+ * This file serves as an example. If you want to create a usermod, it is recommended to use usermod_v2_empty.h from the usermods folder as a template.
+ * Please remember to rename the class and file to a descriptive name.
+ * You may also use multiple .h and .cpp files.
+ * 
+ * Using a usermod:
+ * 1. Copy the usermod into the sketch folder (same folder as wled00.ino)
+ * 2. Register the usermod by adding #include "usermod_filename.h" in the top and registerUsermod(new MyUsermodClass()) in the bottom of usermods_list.cpp
  */
 
 class PIRsensorSwitch : public Usermod
 {
 public:
-  // constructor
+  /**
+   * constructor
+   */
   PIRsensorSwitch() {}
-  // destructor
+  /**
+   * desctructor
+   */
   ~PIRsensorSwitch() {}
 
-  //Enable/Disable the PIR sensor
+  /**
+   * Enable/Disable the PIR sensor
+   */
   void EnablePIRsensor(bool en) { enabled = en; }
-  
-  // Get PIR sensor enabled/disabled state
+  /**
+   * Get PIR sensor enabled/disabled state
+   */
   bool PIRsensorEnabled() { return enabled; }
 
 private:
@@ -48,7 +61,6 @@ private:
   bool savedState   = false;
 
   uint32_t offTimerStart = 0;                   // off timer start time
-  uint32_t m_occupancyTimerStart = 0; // occupancy timer start time
   byte NotifyUpdateMode  = CALL_MODE_NO_NOTIFY; // notification mode for stateUpdated(): CALL_MODE_NO_NOTIFY or CALL_MODE_DIRECT_CHANGE
   byte sensorPinState    = LOW;                 // current PIR sensor pin state
   bool initDone          = false;               // status of initialization
@@ -59,37 +71,23 @@ private:
   bool enabled              = true;           // PIR sensor enabled
   int8_t PIRsensorPin       = PIR_SENSOR_PIN; // PIR sensor pin
   uint32_t m_switchOffDelay = 600000;         // delay before switch off after the sensor state goes LOW (10min)
-  uint32_t m_occupancyOffDelay = 1800000; // delay before setting occupancy off (30min)
   uint8_t m_onPreset        = 0;              // on preset
   uint8_t m_offPreset       = 0;              // off preset
   bool m_nightTimeOnly      = false;          // flag to indicate that PIR sensor should activate WLED during nighttime only
-  bool m_mqttOnly           = true;          // flag to send MQTT message only (assuming it is enabled)
+  bool m_mqttOnly           = false;          // flag to send MQTT message only (assuming it is enabled)
   // flag to enable triggering only if WLED is initially off (LEDs are not on, preventing running effect being overwritten by PIR)
   bool m_offOnly            = false;
 
   // strings to reduce flash memory usage (used more than twice)
   static const char _name[];
   static const char _switchOffDelay[];
-  static const char _occupancyOffDelay[];
   static const char _enabled[];
   static const char _onPreset[];
   static const char _offPreset[];
   static const char _nightTime[];
   static const char _mqttOnly[];
   static const char _offOnly[];
-  static const char _homeAssistantDiscoveryPIR[];
   static const char _notify[];
-
-  // MQTT and Home Assistant
-  bool mqttInitialized = false;
-  String mqttMotionTopic = "";
-  String mqttOccupancyTopic = "";
-  bool HomeAssistantDiscovery = true; // is HA discovery turned on
-  long timer = 0;
-  long mqttKeepAliveInterval = 600; // 10 minutes
-  long lastmqttKeepAlive = 0;
-  const char* mqttPIRstate = "off";
-  const char* mqttOccupancystate = "off";
 
   /**
    * check if it is daytime
@@ -166,70 +164,15 @@ private:
     }
   }
 
-  void publishMqtt(const char* sensor, const char* state)
+  void publishMqtt(const char* state)
   {
     //Check if MQTT Connected, otherwise it will crash the 8266
     if (WLED_MQTT_CONNECTED){
-      if (!mqttInitialized)
-      {
-        _mqttInitialize();
-        mqttInitialized = true;
-      }
-      if (sensor == "motion")
-      {
-        mqtt->publish(mqttMotionTopic.c_str(), 0, false, state);
-      }
-      else if (sensor == "occupancy")
-      {
-        mqtt->publish(mqttOccupancyTopic.c_str(), 0, false, state);
-      }
-
+      char subuf[64];
+      strcpy(subuf, mqttDeviceTopic);
+      strcat_P(subuf, PSTR("/motion"));
+      mqtt->publish(subuf, 0, false, state);
     }
-  }
-
-    //Set MQTT topics and create home assistant discovery topics
-  void _mqttInitialize()
-  {
-    mqttMotionTopic = String(mqttDeviceTopic) + "/motion";
-    mqttOccupancyTopic = String(mqttDeviceTopic) + "/occupancy";
-
-    //String t = String("homeassistant/binary_sensor/") + mqttClientID + "/motion/config";
-    if (HomeAssistantDiscovery)
-    {
-      _createMqttBinarySensor("Motion", mqttMotionTopic, "motion");
-      _createMqttBinarySensor("Occupancy", mqttOccupancyTopic, "occupancy");
-    }
-  }
-  
-  // Create an MQTT Binary Sensor for Home Assistant Discovery purposes, this includes a pointer to the topic that is published to in the Loop.
-  void _createMqttBinarySensor(const String &name, const String &topic, const String &deviceClass)
-  {
-    String t = String("homeassistant/binary_sensor/") + mqttClientID + "/" + name + "/config";
-    
-    StaticJsonDocument<600> doc;
-    
-    doc["name"] = String(serverDescription) + " " + name;
-    doc["state_topic"] = topic;
-    doc["payload_on"] = "on";
-    doc["payload_off"] = "off";
-    doc["unique_id"] = String(mqttClientID) + name;
-    if (deviceClass != "")
-      doc["device_class"] = deviceClass;
-    doc["expire_after"] = 1800;
-
-    JsonObject device = doc.createNestedObject("device"); // attach the sensor to the same device
-    device["name"] = serverDescription;
-    device["identifiers"] = "wled-sensor-" + String(mqttClientID);
-    device["manufacturer"] = "WLED";
-    device["model"] = "FOSS";
-    device["sw_version"] = versionString;
-    
-    String temp;
-    serializeJson(doc, temp);
-    Serial.println(t);
-    Serial.println(temp);
-
-    mqtt->publish(t.c_str(), 0, true, temp.c_str());
   }
 
   /**
@@ -244,16 +187,11 @@ private:
 
       if (sensorPinState == HIGH) {
         offTimerStart = 0;
-        m_occupancyTimerStart = 0;
         if (!m_mqttOnly && (!m_nightTimeOnly || (m_nightTimeOnly && !isDayTime()))) switchStrip(true);
-        mqttPIRstate = "on";
-        mqttOccupancystate = "on";
-        publishMqtt("motion", mqttPIRstate);
-        publishMqtt("occupancy", mqttOccupancystate);
+        publishMqtt("on");
       } else /*if (bri != 0)*/ {
         // start switch off timer
         offTimerStart = millis();
-        m_occupancyTimerStart = millis();
       }
       return true;
     }
@@ -270,29 +208,9 @@ private:
       if (enabled == true)
       {
         if (!m_mqttOnly && (!m_nightTimeOnly || (m_nightTimeOnly && !isDayTime()))) switchStrip(false);
-        mqttPIRstate = "off";
-        publishMqtt("motion", mqttPIRstate);
+        publishMqtt("off");
       }
       offTimerStart = 0;
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * switch off the strip if the delay has elapsed 
-   */
-  bool handleOccupancyOffTimer()
-  {
-    if (m_occupancyTimerStart > 0 && millis() - m_occupancyTimerStart > m_occupancyOffDelay)
-    {
-      if (enabled == true)
-      {
-        if (!m_mqttOnly && (!m_nightTimeOnly || (m_nightTimeOnly && !isDayTime()))) switchStrip(false);
-        mqttOccupancystate = "off";
-        publishMqtt("occupancy", mqttOccupancystate);
-      }
-      m_occupancyTimerStart = 0;
       return true;
     }
     return false;
@@ -337,23 +255,12 @@ public:
    */
   void loop()
   {
-    // if using Home Assistant Discovery, republish the state periodically 
-    // in order to stop sensor being marked as unavailable instead of off
-    timer = millis();  
-    if (HomeAssistantDiscovery && timer - lastmqttKeepAlive >= mqttKeepAliveInterval * 1000)
-    {
-      lastmqttKeepAlive = timer;
-      publishMqtt("motion", mqttPIRstate);
-      publishMqtt("occupancy", mqttOccupancystate);
-    }
-
     // only check sensors 4x/s
     if (!enabled || millis() - lastLoop < 250 || strip.isUpdating()) return;
     lastLoop = millis();
 
     if (!updatePIRsensorState()) {
       handleOffTimer();
-      handleOccupancyOffTimer();
     }
   }
 
@@ -366,7 +273,7 @@ public:
   {
     JsonObject user = root["u"];
     if (user.isNull()) user = root.createNestedObject("u");
-  
+
     String uiDomString = F("<button class=\"btn\" onclick=\"requestJson({");
     uiDomString += FPSTR(_name);
     uiDomString += F(":{");
@@ -450,14 +357,12 @@ public:
     JsonObject top = root.createNestedObject(FPSTR(_name));
     top[FPSTR(_enabled)]        = enabled;
     top[FPSTR(_switchOffDelay)] = m_switchOffDelay / 1000;
-    top[FPSTR(_occupancyOffDelay)] = m_occupancyOffDelay / 1000;
     top["pin"]                  = PIRsensorPin;
     top[FPSTR(_onPreset)]       = m_onPreset;
     top[FPSTR(_offPreset)]      = m_offPreset;
     top[FPSTR(_nightTime)]      = m_nightTimeOnly;
     top[FPSTR(_mqttOnly)]       = m_mqttOnly;
     top[FPSTR(_offOnly)]        = m_offOnly;
-    top[FPSTR(_homeAssistantDiscoveryPIR)] = HomeAssistantDiscovery;
     top[FPSTR(_notify)]         = (NotifyUpdateMode != CALL_MODE_NO_NOTIFY);
     DEBUG_PRINTLN(F("PIR config saved."));
   }
@@ -485,7 +390,6 @@ public:
     enabled = top[FPSTR(_enabled)] | enabled;
 
     m_switchOffDelay = (top[FPSTR(_switchOffDelay)] | m_switchOffDelay/1000) * 1000;
-    m_occupancyOffDelay = (top[FPSTR(_occupancyOffDelay)] | m_occupancyOffDelay/1000) * 1000;
 
     m_onPreset = top[FPSTR(_onPreset)] | m_onPreset;
     m_onPreset = max(0,min(250,(int)m_onPreset));
@@ -495,7 +399,6 @@ public:
     m_nightTimeOnly = top[FPSTR(_nightTime)] | m_nightTimeOnly;
     m_mqttOnly      = top[FPSTR(_mqttOnly)] | m_mqttOnly;
     m_offOnly       = top[FPSTR(_offOnly)] | m_offOnly;
-    HomeAssistantDiscovery = top[FPSTR(_homeAssistantDiscoveryPIR)] | HomeAssistantDiscovery;
 
     NotifyUpdateMode = top[FPSTR(_notify)] ? CALL_MODE_DIRECT_CHANGE : CALL_MODE_NO_NOTIFY;
 
@@ -524,7 +427,7 @@ public:
       DEBUG_PRINTLN(F(" config (re)loaded."));
     }
     // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
-    return !top[FPSTR(_homeAssistantDiscoveryPIR)].isNull();
+    return !top[FPSTR(_notify)].isNull();
   }
 
   /**
@@ -541,11 +444,9 @@ public:
 const char PIRsensorSwitch::_name[]           PROGMEM = "PIRsensorSwitch";
 const char PIRsensorSwitch::_enabled[]        PROGMEM = "PIRenabled";
 const char PIRsensorSwitch::_switchOffDelay[] PROGMEM = "PIRoffSec";
-const char PIRsensorSwitch::_occupancyOffDelay[] PROGMEM = "OccupancyOffSec";
 const char PIRsensorSwitch::_onPreset[]       PROGMEM = "on-preset";
 const char PIRsensorSwitch::_offPreset[]      PROGMEM = "off-preset";
 const char PIRsensorSwitch::_nightTime[]      PROGMEM = "nighttime-only";
 const char PIRsensorSwitch::_mqttOnly[]       PROGMEM = "mqtt-only";
 const char PIRsensorSwitch::_offOnly[]        PROGMEM = "off-only";
-const char PIRsensorSwitch::_homeAssistantDiscoveryPIR[] PROGMEM = "HomeAssistantDiscoveryPIR";
 const char PIRsensorSwitch::_notify[]         PROGMEM = "notifications";
