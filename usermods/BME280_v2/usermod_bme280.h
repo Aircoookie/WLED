@@ -12,24 +12,28 @@
 class UsermodBME280 : public Usermod
 {
 private:
-// User-defined configuration
-#define Celsius               // Show temperature mesaurement in Celcius. Comment out for Fahrenheit
-unsigned long TemperatureDecimals = 0;  // Number of decimal places in published temperaure values
-unsigned long  HumidityDecimals = 0;    // Number of decimal places in published humidity values
-unsigned long  PressureDecimals = 0;    // Number of decimal places in published pressure values
-unsigned long  TemperatureInterval = 5; // Interval to measure temperature (and humidity, dew point if available) in seconds
-unsigned long  PressureInterval = 300;  // Interval to measure pressure in seconds
-bool PublishAlways = false;              // Publish values even when they have not changed
-bool HomeAssistantDiscovery = false;     // Publish Home Assistant Device Information
+  
+  // NOTE: Do not implement any compile-time variables, anything the user needs to configure
+  // should be configurable from the Usermod menu using the methods below
+  // key settings set via usermod menu
+  unsigned long TemperatureDecimals = 0;  // Number of decimal places in published temperaure values
+  unsigned long  HumidityDecimals = 0;    // Number of decimal places in published humidity values
+  unsigned long  PressureDecimals = 0;    // Number of decimal places in published pressure values
+  unsigned long  TemperatureInterval = 5; // Interval to measure temperature (and humidity, dew point if available) in seconds
+  unsigned long  PressureInterval = 300;  // Interval to measure pressure in seconds
+  bool PublishAlways = false;             // Publish values even when they have not changed
+  bool UseCelsius = true;                 // Use Celsius for Reporting
+  bool HomeAssistantDiscovery = false;    // Publish Home Assistant Device Information
 
-#ifdef ARDUINO_ARCH_ESP32 // ESP32 boards
-  uint8_t SCL_PIN = 22;
-  uint8_t SDA_PIN = 21;
-#else // ESP8266 boards
-  uint8_t SCL_PIN = 5;
-  uint8_t SDA_PIN = 4;
-  //uint8_t RST_PIN = 16; // Uncoment for Heltec WiFi-Kit-8
-#endif
+  // set the default pins based on the architecture, these get overridden by Usermod menu settings
+  #ifdef ARDUINO_ARCH_ESP32 // ESP32 boards
+    uint8_t SCL_PIN = 22;
+    uint8_t SDA_PIN = 21;
+  #else // ESP8266 boards
+    uint8_t SCL_PIN = 5;
+    uint8_t SDA_PIN = 4;
+    //uint8_t RST_PIN = 16; // Uncoment for Heltec WiFi-Kit-8
+  #endif
 
   // BME280 sensor settings
   BME280I2C::Settings settings{
@@ -59,6 +63,7 @@ bool HomeAssistantDiscovery = false;     // Publish Home Assistant Device Inform
   float sensorHeatIndex;
   float sensorDewPoint;
   float sensorPressure;
+  String tempScale;
   // Track previous sensor values
   float lastTemperature;
   float lastHumidity;
@@ -78,31 +83,47 @@ bool HomeAssistantDiscovery = false;     // Publish Home Assistant Device Inform
   uint16_t mqttTemperaturePub = 0;
   uint16_t mqttPressurePub = 0;
 
+  // Read the BME280/BMP280 Sensor (which one runs depends on whether Celsius or Farenheit being set in Usermod Menu)
   void UpdateBME280Data(int SensorType)
   {
     float _temperature, _humidity, _pressure;
-    #ifdef Celsius
+
+    if (UseCelsius) {
       BME280::TempUnit tempUnit(BME280::TempUnit_Celsius);
       EnvironmentCalculations::TempUnit envTempUnit(EnvironmentCalculations::TempUnit_Celsius);
-    #else
+      BME280::PresUnit presUnit(BME280::PresUnit_hPa);
+
+      bme.read(_pressure, _temperature, _humidity, tempUnit, presUnit);
+
+      sensorTemperature = _temperature;
+      sensorHumidity = _humidity;
+      sensorPressure = _pressure;
+      tempScale = "°C";
+      if (sensorType == 1)
+      {
+        sensorHeatIndex = EnvironmentCalculations::HeatIndex(_temperature, _humidity, envTempUnit);
+        sensorDewPoint = EnvironmentCalculations::DewPoint(_temperature, _humidity, envTempUnit);
+      }
+    } else {
       BME280::TempUnit tempUnit(BME280::TempUnit_Fahrenheit);
       EnvironmentCalculations::TempUnit envTempUnit(EnvironmentCalculations::TempUnit_Fahrenheit);
-    #endif
-    BME280::PresUnit presUnit(BME280::PresUnit_hPa);
+      BME280::PresUnit presUnit(BME280::PresUnit_hPa);
 
-    bme.read(_pressure, _temperature, _humidity, tempUnit, presUnit);
+      bme.read(_pressure, _temperature, _humidity, tempUnit, presUnit);
 
-    sensorTemperature = _temperature;
-    sensorHumidity = _humidity;
-    sensorPressure = _pressure;
-    if (sensorType == 1)
-    {
-      sensorHeatIndex = EnvironmentCalculations::HeatIndex(_temperature, _humidity, envTempUnit);
-      sensorDewPoint = EnvironmentCalculations::DewPoint(_temperature, _humidity, envTempUnit);
+      sensorTemperature = _temperature;
+      sensorHumidity = _humidity;
+      sensorPressure = _pressure;
+      tempScale = "°F";
+      if (sensorType == 1)
+      {
+        sensorHeatIndex = EnvironmentCalculations::HeatIndex(_temperature, _humidity, envTempUnit);
+        sensorDewPoint = EnvironmentCalculations::DewPoint(_temperature, _humidity, envTempUnit);
+      }
     }
   }
 
-  // Procedure to define all MQTT Topics 
+  // Procedure to define all MQTT discovery Topics 
   void _mqttInitialize()
   {
     mqttTemperatureTopic = String(mqttDeviceTopic) + "/temperature";
@@ -111,25 +132,15 @@ bool HomeAssistantDiscovery = false;     // Publish Home Assistant Device Inform
     mqttHeatIndexTopic = String(mqttDeviceTopic) + "/heat_index";
     mqttDewPointTopic = String(mqttDeviceTopic) + "/dew_point";
 
-    String t = String("homeassistant/sensor/") + mqttClientID + "/temperature/config";
+    if (HomeAssistantDiscovery) {
+      String t = String("homeassistant/sensor/") + mqttClientID + "/temperature/config";
 
-    #ifdef Celsius
-      _createMqttSensor("Temperature", mqttTemperatureTopic, "temperature", "°C");
-    #else
-      _createMqttSensor("Temperature", mqttTemperatureTopic, "temperature", "°F");  
-    #endif
-    _createMqttSensor("Pressure", mqttPressureTopic, "pressure", "hPa");
-    _createMqttSensor("Humidity", mqttHumidityTopic, "humidity", "%");
-    #ifdef Celsius
-      _createMqttSensor("HeatIndex", mqttHeatIndexTopic, "temperature", "°C");
-    #else
-      _createMqttSensor("HeatIndex", mqttHeatIndexTopic, "temperature", "°F");
-    #endif
-    #ifdef Celsius
-      _createMqttSensor("DewPoint", mqttDewPointTopic, "temperature", "°C");
-    #else
-      _createMqttSensor("DewPoint", mqttDewPointTopic, "temperature", "°F");
-    #endif
+      _createMqttSensor("Temperature", mqttTemperatureTopic, "temperature", tempScale);
+      _createMqttSensor("Pressure", mqttPressureTopic, "pressure", "hPa");
+      _createMqttSensor("Humidity", mqttHumidityTopic, "humidity", "%");
+      _createMqttSensor("HeatIndex", mqttHeatIndexTopic, "temperature", tempScale);
+      _createMqttSensor("DewPoint", mqttDewPointTopic, "temperature", tempScale);
+    }
   }
 
   // Create an MQTT Sensor for Home Assistant Discovery purposes, this includes a pointer to the topic that is published to in the Loop.
@@ -210,7 +221,7 @@ public:
         float temperature = roundf(sensorTemperature * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals);
         float humidity, heatIndex, dewPoint;
 
-        if (WLED_MQTT_CONNECTED && !mqttInitialized && HomeAssistantDiscovery)
+        if (WLED_MQTT_CONNECTED && !mqttInitialized)
         {
           _mqttInitialize();
           mqttInitialized = true;
@@ -277,19 +288,19 @@ public:
      * API calls te enable data exchange between WLED modules
      */
     inline float getTemperatureC() {
-      #ifdef Celsius
+      if (UseCelsius) {
         return (float)roundf(sensorTemperature * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals);
-      #else
+      } else {
         return (float)roundf(sensorTemperature * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals) * 1.8f + 32;
-      #endif
+      }
       
     }
     inline float getTemperatureF() {
-      #ifdef Celsius
+      if (UseCelsius) {
         return ((float)roundf(sensorTemperature * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals) -32) * 0.56f;
-      #else
+      } else {
         return (float)roundf(sensorTemperature * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals);
-      #endif
+      }
     }
     inline float getHumidity() {
       return (float)roundf(sensorHumidity * pow(10, HumidityDecimals));
@@ -297,11 +308,32 @@ public:
     inline float getPressure() {
       return (float)roundf(sensorPressure * pow(10, PressureDecimals));
     }
-    inline float getDewPoint() {
-      return (float)roundf(sensorDewPoint * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals);
+    inline float getDewPointC() {
+      if (UseCelsius) {
+        return (float)roundf(sensorDewPoint * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals);
+      } else {
+        return (float)roundf(sensorDewPoint * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals) * 1.8f + 32;
+      }
     }
-    inline float getHeatIndex() {
-      return (float)roundf(sensorHeatIndex * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals);
+    inline float getDewPointF() {
+      if (UseCelsius) {
+        return ((float)roundf(sensorDewPoint * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals) -32) * 0.56f;
+      } else {
+        return (float)roundf(sensorDewPoint * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals);
+      }
+    }
+    inline float getHeatIndexC() {
+      if (UseCelsius) {
+        return (float)roundf(sensorHeatIndex * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals);
+      } else {
+        return (float)roundf(sensorHeatIndex * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals) * 1.8f + 32;
+      }
+    }inline float getHeatIndexF() {
+      if (UseCelsius) {
+        return ((float)roundf(sensorHeatIndex * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals) -32) * 0.56f;
+      } else {
+        return (float)roundf(sensorHeatIndex * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals);
+      }
     }
 
   // Publish Sensor Information to Info Page
@@ -322,7 +354,7 @@ public:
       JsonArray temperature_json = user.createNestedArray("Temperature");
       JsonArray pressure_json = user.createNestedArray("Pressure");
       temperature_json.add(roundf(sensorTemperature * pow(10, TemperatureDecimals)));
-      temperature_json.add(F("°C"));
+      temperature_json.add(tempScale);
       pressure_json.add(roundf(sensorPressure * pow(10, PressureDecimals)));
       pressure_json.add(F("hPa"));
     }
@@ -334,27 +366,15 @@ public:
       JsonArray heatindex_json = user.createNestedArray("Heat Index");
       JsonArray dewpoint_json = user.createNestedArray("Dew Point");
       temperature_json.add(roundf(sensorTemperature * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals));
-      #ifdef  Celsius
-        temperature_json.add(F("°C"));
-      #else
-        temperature_json.add(F("°F"));
-      #endif
+      temperature_json.add(tempScale);
       humidity_json.add(roundf(sensorHumidity * pow(10, HumidityDecimals)));
       humidity_json.add(F("%"));
       pressure_json.add(roundf(sensorPressure * pow(10, PressureDecimals)));
       pressure_json.add(F("hPa"));
       heatindex_json.add(roundf(sensorHeatIndex * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals));
-      #ifdef  Celsius
-        heatindex_json.add(F("°C"));
-      #else
-        heatindex_json.add(F("°F"));
-      #endif
+      heatindex_json.add(tempScale);
       dewpoint_json.add(roundf(sensorDewPoint * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals));
-      #ifdef  Celsius
-        dewpoint_json.add(F("°C"));
-      #else
-        dewpoint_json.add(F("°F"));
-      #endif
+      dewpoint_json.add(tempScale);
     }
       return;
   }
@@ -367,7 +387,9 @@ public:
     top["HumidityDecimals"] = HumidityDecimals;
     top["PressureDecimals"] = PressureDecimals;
     top["TemperatureInterval"] = TemperatureInterval;
+    top["PressureInterval"] = PressureInterval;
     top["PublishAlways"] = PublishAlways;
+    top["UseCelsius"] = UseCelsius;
     top["HomeAssistantDiscovery"] = HomeAssistantDiscovery;
     JsonArray pinArray = top.createNestedArray("pin-sda-scl");
     pinArray.add(SDA_PIN);
@@ -389,7 +411,9 @@ public:
     configComplete &= getJsonValue(top["HumidityDecimals"], HumidityDecimals, 0);
     configComplete &= getJsonValue(top["PressureDecimals"], PressureDecimals, 0);
     configComplete &= getJsonValue(top["TemperatureInterval"], TemperatureInterval, 30);
+    configComplete &= getJsonValue(top["PressureInterval"], PressureInterval, 30);
     configComplete &= getJsonValue(top["PublishAlways"], PublishAlways, false);
+    configComplete &= getJsonValue(top["UseCelsius"], UseCelsius, true);
     configComplete &= getJsonValue(top["HomeAssistantDiscovery"], HomeAssistantDiscovery, false);
     configComplete &= getJsonValue(top["pin-sda-scl"][0], SDA_PIN, 21); //SDA
     configComplete &= getJsonValue(top["pin-sda-scl"][1], SCL_PIN, 22); //SCL
