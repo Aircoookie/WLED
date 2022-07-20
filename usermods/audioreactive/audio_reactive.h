@@ -1048,24 +1048,26 @@ class AudioReactive : public Usermod {
       uiDomString += F("</button>");
       infoArr.add(uiDomString);
 
-      infoArr = user.createNestedArray(F("Input level"));
-      uiDomString = F("<div class=\"slider\"><div class=\"sliderwrap il\"><input class=\"noslide\" onchange=\"requestJson({");
-      uiDomString += FPSTR(_name);
-      uiDomString += F(":{");
-      uiDomString += FPSTR(_inputLvl);
-      uiDomString += F(":parseInt(this.value)}});\" oninput=\"updateTrail(this);\" max=255 min=0 type=\"range\" value=");
-      uiDomString += inputLevel;
-      uiDomString += F(" /><div class=\"sliderdisplay\"></div></div></div>"); //<output class=\"sliderbubble\"></output>
-      infoArr.add(uiDomString);
+      if (enabled) {
+        infoArr = user.createNestedArray(F("Input level"));
+        uiDomString = F("<div class=\"slider\"><div class=\"sliderwrap il\"><input class=\"noslide\" onchange=\"requestJson({");
+        uiDomString += FPSTR(_name);
+        uiDomString += F(":{");
+        uiDomString += FPSTR(_inputLvl);
+        uiDomString += F(":parseInt(this.value)}});\" oninput=\"updateTrail(this);\" max=255 min=0 type=\"range\" value=");
+        uiDomString += inputLevel;
+        uiDomString += F(" /><div class=\"sliderdisplay\"></div></div></div>"); //<output class=\"sliderbubble\"></output>
+        infoArr.add(uiDomString);
 
-#ifdef WLED_DEBUG
-      infoArr = user.createNestedArray(F("Sampling time"));
-      infoArr.add(sampleTime);
-      infoArr.add("ms");
-      infoArr = user.createNestedArray(F("FFT time"));
-      infoArr.add(fftTime-sampleTime);
-      infoArr.add("ms");
-#endif
+        #ifdef WLED_DEBUG
+        infoArr = user.createNestedArray(F("Sampling time"));
+        infoArr.add(sampleTime);
+        infoArr.add("ms");
+        infoArr = user.createNestedArray(F("FFT time"));
+        infoArr.add(fftTime-sampleTime);
+        infoArr.add("ms");
+        #endif
+      }
     }
 
 
@@ -1073,12 +1075,15 @@ class AudioReactive : public Usermod {
      * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    /*
     void addToJsonState(JsonObject& root)
     {
-      //root["user0"] = userVar0;
+      if (!initDone) return;  // prevent crash on boot applyPreset()
+      JsonObject usermod = root[FPSTR(_name)];
+      if (usermod.isNull()) {
+        usermod = root.createNestedObject(FPSTR(_name));
+      }
+      usermod["on"] = enabled;
     }
-    */
 
 
     /*

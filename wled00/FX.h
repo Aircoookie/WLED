@@ -362,6 +362,13 @@ uint32_t color_add(uint32_t,uint32_t);
   #define MODE_COUNT                     185
 #endif
 
+typedef enum mapping1D2D {
+  M12_Pixels = 0,
+  M12_VerticalBar = 1,
+  M12_Circle = 2,
+  M12_Block = 3
+} mapping1D2D_t;
+
 // segment, 68 (92 in memory) bytes
 typedef struct Segment {
   public:
@@ -386,8 +393,8 @@ typedef struct Segment {
         uint16_t reverse_y:1;    //  8 : reversed Y (2D)
         uint16_t mirror_y:1;     //  9 : mirrored Y (2D)
         uint16_t transpose:1;    // 10 : transposed (2D, swapped X & Y)
-        uint16_t map1D2D:3;      // 11-13 : mapping for 1D effect on 2D (0-strip, 1-expand vertically, 2-circular, 3-rectangular, 4-7 reserved)
-        uint16_t reserved:2;     // 14-15 : reserved
+        uint16_t map1D2D:2;      // 11-12 : mapping for 1D effect on 2D (0-strip, 1-expand vertically, 2-circular, 3-rectangular)
+        uint16_t soundSim:3;     // 13-15 : 0-7 sound simulation types
       };
     };
     uint8_t  grouping, spacing;

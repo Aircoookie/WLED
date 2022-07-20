@@ -600,7 +600,7 @@ uint16_t mode_twinkle(void) {
 
   return FRAMETIME;
 }
-static const char *_data_FX_MODE_TWINKLE PROGMEM = "Twinkle@!,;!,!,;!";
+static const char *_data_FX_MODE_TWINKLE PROGMEM = "Twinkle@!,;!,!,;!;mp12=0"; //pixels
 
 
 /*
@@ -807,7 +807,7 @@ uint16_t mode_android(void) {
 
   return 3 + ((8 * (uint32_t)(255 - SEGMENT.speed)) / SEGLEN);
 }
-static const char *_data_FX_MODE_ANDROID PROGMEM = "Android@!,Width;!,!,;!";
+static const char *_data_FX_MODE_ANDROID PROGMEM = "Android@!,Width;!,!,;!;mp12=1"; //vertical
 
 
 /*
@@ -952,7 +952,7 @@ uint16_t mode_colorful(void) {
     cols[2] = 0x0077FF77;
     cols[3] = 0x0077F0F0;
   }
-  for (size_t i = numColors; i < numColors*2 -1; i++) cols[i] = cols[i-numColors];
+  for (size_t i = numColors; i < numColors*2 -1U; i++) cols[i] = cols[i-numColors];
   
   uint32_t cycleTime = 50 + (8 * (uint32_t)(255 - SEGMENT.speed));
   uint32_t it = strip.now / cycleTime;
@@ -1503,7 +1503,7 @@ uint16_t mode_fairytwinkle() {
 	}
   return FRAMETIME;
 }
-static const char *_data_FX_MODE_FAIRYTWINKLE PROGMEM = "Fairy Twinkle";
+static const char *_data_FX_MODE_FAIRYTWINKLE PROGMEM = "Fairy Twinkle@;;;mp12=0"; //pixels
 
 
 /*
@@ -2271,7 +2271,7 @@ uint16_t mode_colortwinkle()
   }
   return FRAMETIME_FIXED;
 }
-static const char *_data_FX_MODE_COLORTWINKLE PROGMEM = "Colortwinkles@Fade speed,Spawn speed;1,2,3;!";
+static const char *_data_FX_MODE_COLORTWINKLE PROGMEM = "Colortwinkles@Fade speed,Spawn speed;1,2,3;!;mp12=0"; //pixels
 
 
 //Calm effect, like a lake at night
@@ -2867,7 +2867,7 @@ uint16_t mode_bouncing_balls(void) {
 
   return FRAMETIME;
 }
-static const char *_data_FX_MODE_BOUNCINGBALLS PROGMEM = "Bouncing Balls@Gravity,# of balls;!,!,;!";
+static const char *_data_FX_MODE_BOUNCINGBALLS PROGMEM = "Bouncing Balls@Gravity,# of balls;!,!,;!;mp12=2"; //circle
 
 
 /*
@@ -2941,7 +2941,7 @@ uint16_t mode_glitter()
   
   return FRAMETIME;
 }
-static const char *_data_FX_MODE_GLITTER PROGMEM = "Glitter@,!;!,!,!;!=11";
+static const char *_data_FX_MODE_GLITTER PROGMEM = "Glitter@,!;!,!,!;!=11;mp12=0"; //pixels
 
 
 //each needs 19 bytes
@@ -3241,7 +3241,7 @@ uint16_t mode_starburst(void) {
   return FRAMETIME;
 }
 #undef STARBURST_MAX_FRAG
-static const char *_data_FX_MODE_STARBURST PROGMEM = "Fireworks Starburst";
+static const char *_data_FX_MODE_STARBURST PROGMEM = "Fireworks Starburst;;;mp12=0"; //pixels
 
 
 /*
@@ -3525,7 +3525,7 @@ uint16_t mode_tetrix(void) {
   }
   return FRAMETIME;  
 }
-static const char *_data_FX_MODE_TETRIX PROGMEM = "Tetrix@!=224,Width=0;!,!,;!=11";
+static const char *_data_FX_MODE_TETRIX PROGMEM = "Tetrix@!=224,Width=0;!,!,;!=11;mp12=1"; //vertical
 
 
 /*
@@ -3979,7 +3979,7 @@ uint16_t mode_flow(void)
 
   return FRAMETIME;
 }
-static const char *_data_FX_MODE_FLOW PROGMEM = "Flow@!,!;!,!,!;!=6";
+static const char *_data_FX_MODE_FLOW PROGMEM = "Flow@!,!;!,!,!;!=6;mp12=1"; //vertical
 
 
 /*
@@ -5703,7 +5703,7 @@ uint16_t mode_2Dghostrider(void) {
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
   lighter_t *lighter = reinterpret_cast<lighter_t*>(SEGENV.data + dataSize);
 
-  const int maxLighters = min(cols + rows, LIGHTERS_AM);
+  const size_t maxLighters = min(cols + rows, LIGHTERS_AM);
 
   if (SEGENV.call == 0 || SEGENV.aux0 != cols || SEGENV.aux1 != rows) {
     SEGENV.aux0 = cols;
@@ -6011,9 +6011,11 @@ static const char *_data_FX_MODE_2DDRIFTROSE PROGMEM = "2D Drift Rose@Fade,Blur;
 
 //Currently 3 types defined, to be finetuned and new types added
 typedef enum UM_SoundSimulations {
-  UMS_BeatSin = 0,
-  UMS_10_3,
-  UMS_14_3
+  UMS_Off = 0,
+  UMS_BeatSin = 1,
+  UMS_WeWillRockYou = 2,
+  UMS_10_3 = 3,
+  UMS_14_3 = 4
 } um_soundSimulations_t;
 
 static um_data_t* um_data = nullptr;
@@ -6084,11 +6086,45 @@ um_data_t* simulateSound(uint8_t simulationId)
   uint32_t ms = millis();
 
   switch (simulationId) {
+    case UMS_Off:
+      return um_data;
     case UMS_BeatSin:
       for (int i = 0; i<16; i++)
         fftResult[i] = beatsin8(120 / (i+1), 0, 255);
         // fftResult[i] = (beatsin8(120, 0, 255) + (256/16 * i)) % 256;
         sampleAvg = fftResult[8];
+      break;
+   case UMS_WeWillRockYou:
+      if (ms%2000 < 200) {
+        sampleAvg = random8(255);
+        for (int i = 0; i<5; i++)
+          fftResult[i] = random8(255);
+      }
+      else if (ms%2000 < 400) {
+        sampleAvg = 0;
+        for (int i = 0; i<16; i++)
+          fftResult[i] = 0;
+      }
+      else if (ms%2000 < 600) {
+        sampleAvg = random8(255);
+        for (int i = 5; i<11; i++)
+          fftResult[i] = random8(255);
+      }
+      else if (ms%2000 < 800) {
+        sampleAvg = 0;
+        for (int i = 0; i<16; i++)
+          fftResult[i] = 0;
+      }
+      else if (ms%2000 < 1000) {
+        sampleAvg = random8(255);
+        for (int i = 11; i<16; i++)
+          fftResult[i] = random8(255);
+      }
+      else  {
+        sampleAvg = 0;
+        for (int i = 0; i<16; i++)
+          fftResult[i] = 0;
+      }
       break;
     case UMS_10_3:
       for (int i = 0; i<16; i++)
@@ -6164,7 +6200,7 @@ uint16_t mode_ripplepeak(void) {                // * Ripple peak. By Andrew Tuli
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t samplePeak    = *(uint8_t*)um_data->u_data[5];
   float FFT_MajorPeak   = *(float*) um_data->u_data[6];
@@ -6221,7 +6257,7 @@ uint16_t mode_ripplepeak(void) {                // * Ripple peak. By Andrew Tuli
 
   return FRAMETIME;
 } // mode_ripplepeak()
-static const char *_data_FX_MODE_RIPPLEPEAK PROGMEM = " ♪ Ripple Peak@Fade rate,Max # of ripples,,Select bin,Volume (minimum);!,!;!";
+static const char *_data_FX_MODE_RIPPLEPEAK PROGMEM = " ♪ Ripple Peak@Fade rate,Max # of ripples,,Select bin,Volume (minimum)=0;!,!;!;mp12=0;ssim=1"; // Pixel, Beatsin
 
 
 #ifndef WLED_DISABLE_2D
@@ -6254,7 +6290,7 @@ uint16_t mode_2DSwirl(void) {
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg      = *(float*)  um_data->u_data[0];
   uint8_t soundAgc     = *(uint8_t*)um_data->u_data[1];
@@ -6275,7 +6311,7 @@ uint16_t mode_2DSwirl(void) {
   SEGMENT.setPixels(leds);
   return FRAMETIME;
 } // mode_2DSwirl()
-static const char *_data_FX_MODE_2DSWIRL PROGMEM = " ♪ 2D Swirl@!,Sensitivity=64,Blur;,Bg Swirl;!";
+static const char *_data_FX_MODE_2DSWIRL PROGMEM = " ♪ 2D Swirl@!,Sensitivity=64,Blur;,Bg Swirl;!;ssim=1"; // Beatsin
 
 
 /////////////////////////
@@ -6299,7 +6335,7 @@ uint16_t mode_2DWaverly(void) {
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg   = *(float*)  um_data->u_data[0];
   uint8_t soundAgc  = *(uint8_t*)um_data->u_data[1];
@@ -6327,7 +6363,7 @@ uint16_t mode_2DWaverly(void) {
   SEGMENT.setPixels(leds);
   return FRAMETIME;
 } // mode_2DWaverly()
-static const char *_data_FX_MODE_2DWAVERLY PROGMEM = " ♪ 2D Waverly@Amplification,Sensitivity=64;;!";
+static const char *_data_FX_MODE_2DWAVERLY PROGMEM = " ♪ 2D Waverly@Amplification,Sensitivity=64;;!;ssim=1"; // Beatsin
 
 #endif // WLED_DISABLE_2D
 
@@ -6354,7 +6390,7 @@ uint16_t mode_gravcenter(void) {                // Gravcenter. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg = *(float*)um_data->u_data[0];
   uint8_t soundAgc  = *(uint8_t*)um_data->u_data[1];
@@ -6390,7 +6426,7 @@ uint16_t mode_gravcenter(void) {                // Gravcenter. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_gravcenter()
-static const char *_data_FX_MODE_GRAVCENTER PROGMEM = " ♪ Gravcenter@Rate of fall,Sensitivity=128;,!;!";
+static const char *_data_FX_MODE_GRAVCENTER PROGMEM = " ♪ Gravcenter@Rate of fall,Sensitivity=128;,!;!;mp12=2;ssim=1"; // Circle, Beatsin
 
 
 ///////////////////////
@@ -6405,7 +6441,7 @@ uint16_t mode_gravcentric(void) {                     // Gravcentric. By Andrew 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg = *(float*)um_data->u_data[0];
   uint8_t soundAgc  = *(uint8_t*)um_data->u_data[1];
@@ -6444,7 +6480,7 @@ uint16_t mode_gravcentric(void) {                     // Gravcentric. By Andrew 
 
   return FRAMETIME;
 } // mode_gravcentric()
-static const char *_data_FX_MODE_GRAVCENTRIC PROGMEM = " ♪ Gravcentric@Rate of fall,Sensitivity=128;!;!";
+static const char *_data_FX_MODE_GRAVCENTRIC PROGMEM = " ♪ Gravcentric@Rate of fall,Sensitivity=128;!;!;mp12=2;ssim=1"; // Circle, Beatsin
 
 
 ///////////////////////
@@ -6460,7 +6496,7 @@ uint16_t mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg = *(float*)um_data->u_data[0];
   uint8_t soundAgc  = *(uint8_t*)um_data->u_data[1];
@@ -6494,7 +6530,7 @@ uint16_t mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_gravimeter()
-static const char *_data_FX_MODE_GRAVIMETER PROGMEM = " ♪ Gravimeter@Rate of fall,Sensitivity=128;,!;!";
+static const char *_data_FX_MODE_GRAVIMETER PROGMEM = " ♪ Gravimeter@Rate of fall,Sensitivity=128;,!;!;mp12=2;ssim=1"; // Circle, Beatsin
 #else
 // This an abuse of the gravimeter effect for AGC debugging
 // instead of sound volume, it uses the AGC gain multiplier as input
@@ -6505,7 +6541,7 @@ uint16_t mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
   Gravity* gravcen = reinterpret_cast<Gravity*>(SEGENV.data);
 
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg  = *(float*)um_data->u_data[0];
   uint8_t soundAgc   = *(uint8_t*)um_data->u_data[1];
@@ -6560,7 +6596,7 @@ uint16_t mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_gravimeter()
-static const char *_data_FX_MODE_GRAVIMETER PROGMEM = " ♪ Gravimeter@Rate of fall,Sensitivity=128,Input level=128;,!;!";
+static const char *_data_FX_MODE_GRAVIMETER PROGMEM = " ♪ Gravimeter@Rate of fall,Sensitivity=128,Input level=128;,!;!;mp12=2;ssim=1"; // Circle, Beatsin
 #endif
 
 
@@ -6571,20 +6607,20 @@ uint16_t mode_juggles(void) {                   // Juggles. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAgc = *(float*)um_data->u_data[2];
 
   SEGMENT.fade_out(224);
   uint16_t my_sampleAgc = fmax(fmin(sampleAgc, 255.0), 0);
 
-  for (size_t i=0; i<SEGMENT.intensity/32+1; i++) {
+  for (size_t i=0; i<SEGMENT.intensity/32+1U; i++) {
     SEGMENT.setPixelColor(beatsin16(SEGMENT.speed/4+i*2,0,SEGLEN-1), color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(millis()/4+i*2, false, PALETTE_SOLID_WRAP, 0), my_sampleAgc));
   }
 
   return FRAMETIME;
 } // mode_juggles()
-static const char *_data_FX_MODE_JUGGLES PROGMEM = " ♪ Juggles@!,# of balls;,!;!";
+static const char *_data_FX_MODE_JUGGLES PROGMEM = " ♪ Juggles@!,# of balls;,!;!;mp12=0;ssim=1"; // Pixels, Beatsin
 
 
 //////////////////////
@@ -6594,10 +6630,10 @@ uint16_t mode_matripix(void) {                  // Matripix. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t  soundAgc     = *(uint8_t*)um_data->u_data[1];
-  int16_t  sampleRaw       = *(int16_t*)um_data->u_data[3];
+  int16_t  sampleRaw    = *(int16_t*)um_data->u_data[3];
   int16_t  rawSampleAgc = *(int16_t*)um_data->u_data[4];
 
   if (SEGENV.call == 0) SEGMENT.fill(BLACK);
@@ -6614,7 +6650,7 @@ uint16_t mode_matripix(void) {                  // Matripix. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_matripix()
-static const char *_data_FX_MODE_MATRIPIX PROGMEM = " ♪ Matripix@!,Brightness=64;,!;!";
+static const char *_data_FX_MODE_MATRIPIX PROGMEM = " ♪ Matripix@!,Brightness=64;,!;!;mp12=2;ssim=2;rev=1"; // Circle, WeWillRockYou, reverseX
 
 
 //////////////////////
@@ -6626,7 +6662,7 @@ uint16_t mode_midnoise(void) {                  // Midnoise. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg = *(float*)um_data->u_data[0];
   uint8_t soundAgc  = *(uint8_t*)um_data->u_data[1];
@@ -6652,7 +6688,7 @@ uint16_t mode_midnoise(void) {                  // Midnoise. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_midnoise()
-static const char *_data_FX_MODE_MIDNOISE PROGMEM = " ♪ Midnoise@Fade rate,Maximum length=128;,!;!";
+static const char *_data_FX_MODE_MIDNOISE PROGMEM = " ♪ Midnoise@Fade rate,Maximum length=128;,!;!;mp12=2;ssim=1"; // Circle, Beatsin
 
 
 //////////////////////
@@ -6668,7 +6704,7 @@ uint16_t mode_noisefire(void) {                 // Noisefire. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg = *(float*)um_data->u_data[0];
   uint8_t soundAgc  = *(uint8_t*)um_data->u_data[1];
@@ -6686,7 +6722,7 @@ uint16_t mode_noisefire(void) {                 // Noisefire. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_noisefire()
-static const char *_data_FX_MODE_NOISEFIRE PROGMEM = " ♪ Noisefire@!,!;;";
+static const char *_data_FX_MODE_NOISEFIRE PROGMEM = " ♪ Noisefire@!,!;;;mp12=2;ssim=1"; // Circle, Beatsin
 
 
 ///////////////////////
@@ -6697,7 +6733,7 @@ uint16_t mode_noisemeter(void) {                // Noisemeter. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg      = *(float*)um_data->u_data[0];
   uint8_t soundAgc     = *(uint8_t*)um_data->u_data[1];
@@ -6724,7 +6760,7 @@ uint16_t mode_noisemeter(void) {                // Noisemeter. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_noisemeter()
-static const char *_data_FX_MODE_NOISEMETER PROGMEM = " ♪ Noisemeter@Fade rate,Width=128;!,!;!";
+static const char *_data_FX_MODE_NOISEMETER PROGMEM = " ♪ Noisemeter@Fade rate,Width=128;!,!;!;mp12=2;ssim=1"; // Circle, Beatsin
 
 
 //////////////////////
@@ -6736,7 +6772,7 @@ uint16_t mode_pixelwave(void) {                 // Pixelwave. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t soundAgc     = *(uint8_t*)um_data->u_data[1];
   int16_t sampleRaw    = *(int16_t*)um_data->u_data[3];
@@ -6757,7 +6793,7 @@ uint16_t mode_pixelwave(void) {                 // Pixelwave. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_pixelwave()
-static const char *_data_FX_MODE_PIXELWAVE PROGMEM = " ♪ Pixelwave@!,Sensitivity=64;!,!;!";
+static const char *_data_FX_MODE_PIXELWAVE PROGMEM = " ♪ Pixelwave@!,Sensitivity=64;!,!;!;mp12=2;ssim=1"; // Circle, Beatsin
 
 
 //////////////////////
@@ -6776,7 +6812,7 @@ uint16_t mode_plasmoid(void) {                  // Plasmoid. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg  = *(float*)um_data->u_data[0];
   uint8_t soundAgc = *(uint8_t*)um_data->u_data[1];
@@ -6801,7 +6837,7 @@ uint16_t mode_plasmoid(void) {                  // Plasmoid. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_plasmoid()
-static const char *_data_FX_MODE_PLASMOID PROGMEM = " ♪ Plasmoid@Phase=128,# of pixels=128;,!;!";
+static const char *_data_FX_MODE_PLASMOID PROGMEM = " ♪ Plasmoid@Phase=128,# of pixels=128;,!;!;mp12=0;ssim=1"; // Pixels, Beatsin
 
 
 ///////////////////////
@@ -6817,7 +6853,7 @@ uint16_t mode_puddlepeak(void) {                // Puddlepeak. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAgc    = *(float*)um_data->u_data[2];
   uint8_t samplePeak = *(uint8_t*)um_data->u_data[5];
@@ -6845,7 +6881,7 @@ uint16_t mode_puddlepeak(void) {                // Puddlepeak. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_puddlepeak()
-static const char *_data_FX_MODE_PUDDLEPEAK PROGMEM = " ♪ Puddlepeak@Fade rate,Puddle size,,Select bin,Volume (minimum);!,!;!";
+static const char *_data_FX_MODE_PUDDLEPEAK PROGMEM = " ♪ Puddlepeak@Fade rate,Puddle size,,Select bin,Volume (minimum)=0;!,!;!;mp12=0;ssim=1"; // Pixels, Beatsin
 
 
 //////////////////////
@@ -6861,7 +6897,7 @@ uint16_t mode_puddles(void) {                   // Puddles. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t soundAgc     = *(uint8_t*)um_data->u_data[1];
   int16_t sampleRaw    = *(int16_t*)um_data->u_data[3];
@@ -6880,7 +6916,7 @@ uint16_t mode_puddles(void) {                   // Puddles. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_puddles()
-static const char *_data_FX_MODE_PUDDLES PROGMEM = " ♪ Puddles@Fade rate,Puddle size;!,!;!";
+static const char *_data_FX_MODE_PUDDLES PROGMEM = " ♪ Puddles@Fade rate,Puddle size;!,!;!;mp12=0;ssim=1"; // Pixels, Beatsin
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -6895,7 +6931,7 @@ uint16_t mode_pixels(void) {                    // Pixels. By Andrew Tuline.
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAgc  = *(float*)um_data->u_data[2];
   uint16_t *myVals = (uint16_t*)um_data->u_data[14];
@@ -6910,7 +6946,7 @@ uint16_t mode_pixels(void) {                    // Pixels. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_pixels()
-static const char *_data_FX_MODE_PIXELS PROGMEM = " ♪ Pixels@Fade rate,# of pixels;,!;!";
+static const char *_data_FX_MODE_PIXELS PROGMEM = " ♪ Pixels@Fade rate,# of pixels;,!;!;mp12=0;ssim=1"; // Pixels, Beatsin
 
 
 ///////////////////////////////
@@ -6929,7 +6965,7 @@ uint16_t mode_binmap(void) {
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
 #ifdef SR_DEBUG
     uint8_t *maxVol =  (uint8_t*)um_data->u_data[9];
@@ -6992,9 +7028,9 @@ uint16_t mode_binmap(void) {
   return FRAMETIME;
 } // mode_binmap()
 #ifdef SR_DEBUG
-static const char *_data_FX_MODE_BINMAP PROGMEM = " ♫ Binmap@,,Input level=128,,Max vol;!,!;!";
+static const char *_data_FX_MODE_BINMAP PROGMEM = " ♫ Binmap@,,Input level=128,,Max vol;!,!;!;mp12=0;ssim=1;rY=true"; // Pixels, Beatsin, ReverseY
 #else
-static const char *_data_FX_MODE_BINMAP PROGMEM = " ♫ Binmap@,,Input level=128;!,!;!";
+static const char *_data_FX_MODE_BINMAP PROGMEM = " ♫ Binmap@,,Input level=128;!,!;!;mp12=0;ssim=1;rY=true"; // Pixels, Beatsin, ReverseY
 #endif
 
 //////////////////////
@@ -7004,7 +7040,7 @@ uint16_t mode_blurz(void) {                    // Blurz. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[8];
   if (!fftResult) return mode_static();
@@ -7024,7 +7060,7 @@ uint16_t mode_blurz(void) {                    // Blurz. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_blurz()
-static const char *_data_FX_MODE_BLURZ PROGMEM = " ♫ Blurz@Fade rate,Blur amount;!,Color mix;!";
+static const char *_data_FX_MODE_BLURZ PROGMEM = " ♫ Blurz@Fade rate,Blur amount;!,Color mix;!;mp12=0;ssim=1"; // Pixels, Beatsin
 
 
 /////////////////////////
@@ -7041,7 +7077,7 @@ uint16_t mode_DJLight(void) {                   // Written by ??? Adapted by Wil
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[8];
   if (!fftResult) return mode_static();
@@ -7061,7 +7097,7 @@ uint16_t mode_DJLight(void) {                   // Written by ??? Adapted by Wil
 
   return FRAMETIME;
 } // mode_DJLight()
-static const char *_data_FX_MODE_DJLIGHT PROGMEM = " ♫ DJ Light@Speed;;";
+static const char *_data_FX_MODE_DJLIGHT PROGMEM = " ♫ DJ Light@Speed;;;mp12=2;ssim=1"; // Circle, Beatsin
 
 
 ////////////////////
@@ -7074,7 +7110,7 @@ uint16_t mode_freqmap(void) {                   // Map FFT_MajorPeak to SEGLEN. 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg     = *(float*)um_data->u_data[0];
   uint8_t soundAgc    = *(uint8_t*)um_data->u_data[1];
@@ -7098,7 +7134,7 @@ uint16_t mode_freqmap(void) {                   // Map FFT_MajorPeak to SEGLEN. 
 
   return FRAMETIME;
 } // mode_freqmap()
-static const char *_data_FX_MODE_FREQMAP PROGMEM = " ♫ Freqmap@Fade rate,Starting color;,!;!";
+static const char *_data_FX_MODE_FREQMAP PROGMEM = " ♫ Freqmap@Fade rate,Starting color;,!;!;mp12=2;ssim=1"; // Circle, Beatsin
 
 
 ///////////////////////
@@ -7108,7 +7144,7 @@ uint16_t mode_freqmatrix(void) {                // Freqmatrix. By Andreas Plesch
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAgc     = *(float*)um_data->u_data[2];
   float FFT_MajorPeak = *(float*)um_data->u_data[6];
@@ -7148,7 +7184,7 @@ uint16_t mode_freqmatrix(void) {                // Freqmatrix. By Andreas Plesch
 
   return FRAMETIME;
 } // mode_freqmatrix()
-static const char *_data_FX_MODE_FREQMATRIX PROGMEM = " ♫ Freqmatrix@Time delay,Sound effect,Low bin,High bin,Sensivity;;";
+static const char *_data_FX_MODE_FREQMATRIX PROGMEM = " ♫ Freqmatrix@Time delay,Sound effect,Low bin,High bin,Sensivity;;;mp12=0;ssim=1"; // Pixels, Beatsin
 
 
 //////////////////////
@@ -7161,7 +7197,7 @@ static const char *_data_FX_MODE_FREQMATRIX PROGMEM = " ♫ Freqmatrix@Time dela
 uint16_t mode_freqpixels(void) {                // Freqpixel. By Andrew Tuline.
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg     = *(float*)um_data->u_data[0];
   uint8_t soundAgc    = *(uint8_t*)um_data->u_data[1];
@@ -7184,7 +7220,7 @@ uint16_t mode_freqpixels(void) {                // Freqpixel. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_freqpixels()
-static const char *_data_FX_MODE_FREQPIXELS PROGMEM = " ♫ Freqpixels@Fade rate,Starting colour and # of pixels;;";
+static const char *_data_FX_MODE_FREQPIXELS PROGMEM = " ♫ Freqpixels@Fade rate,Starting colour and # of pixels;;;mp12=0;ssim=1"; // Pixels, Beatsin
 
 
 //////////////////////
@@ -7206,7 +7242,7 @@ uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschun
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg     = *(float*)um_data->u_data[0];
   uint8_t soundAgc    = *(uint8_t*)um_data->u_data[1];
@@ -7255,7 +7291,7 @@ uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschun
 
   return FRAMETIME;
 } // mode_freqwave()
-static const char *_data_FX_MODE_FREQWAVE PROGMEM = " ♫ Freqwave@Time delay,Sound effect,Low bin,High bin,Pre-amp;;";
+static const char *_data_FX_MODE_FREQWAVE PROGMEM = " ♫ Freqwave@Time delay,Sound effect,Low bin,High bin,Pre-amp;;;mp12=2;ssim=1"; // Circle, Beatsin
 
 
 ///////////////////////
@@ -7270,7 +7306,7 @@ uint16_t mode_gravfreq(void) {                  // Gravfreq. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg     = *(float*)um_data->u_data[0];
   uint8_t soundAgc    = *(uint8_t*)um_data->u_data[1];
@@ -7308,7 +7344,7 @@ uint16_t mode_gravfreq(void) {                  // Gravfreq. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_gravfreq()
-static const char *_data_FX_MODE_GRAVFREQ PROGMEM = " ♫ Gravfreq@Rate of fall,Sensivity=128;,!;!";
+static const char *_data_FX_MODE_GRAVFREQ PROGMEM = " ♫ Gravfreq@Rate of fall,Sensivity=128;,!;!;mp12=2;ssim=1"; // Circle, Beatsin
 
 
 //////////////////////
@@ -7318,7 +7354,7 @@ uint16_t mode_noisemove(void) {                 // Noisemove.    By: Andrew Tuli
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[8];
   if (!fftResult) return mode_static();
@@ -7334,7 +7370,7 @@ uint16_t mode_noisemove(void) {                 // Noisemove.    By: Andrew Tuli
 
   return FRAMETIME;
 } // mode_noisemove()
-static const char *_data_FX_MODE_NOISEMOVE PROGMEM = " ♫ Noisemove@Speed of perlin movement,Fade rate;,!;!";
+static const char *_data_FX_MODE_NOISEMOVE PROGMEM = " ♫ Noisemove@Speed of perlin movement,Fade rate;,!;!;mp12=0;ssim=1"; // Pixels, Beatsin
 
 
 //////////////////////
@@ -7344,7 +7380,7 @@ uint16_t mode_rocktaves(void) {                 // Rocktaves. Same note from eac
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg     = *(float*)um_data->u_data[0];
   uint8_t soundAgc    = *(uint8_t*)um_data->u_data[1];
@@ -7378,7 +7414,7 @@ uint16_t mode_rocktaves(void) {                 // Rocktaves. Same note from eac
 
   return FRAMETIME;
 } // mode_rocktaves()
-static const char *_data_FX_MODE_ROCKTAVES PROGMEM = " ♫ Rocktaves@;,!;!";
+static const char *_data_FX_MODE_ROCKTAVES PROGMEM = " ♫ Rocktaves@;,!;!;mp12=0;ssim=1"; // Pixels, Beatsin
 
 
 ///////////////////////
@@ -7391,7 +7427,7 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   float sampleAvg     = *(float*)um_data->u_data[0];
   uint8_t soundAgc    = *(uint8_t*)um_data->u_data[1];
@@ -7431,7 +7467,7 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
 
   return FRAMETIME;
 } // mode_waterfall()
-static const char *_data_FX_MODE_WATERFALL PROGMEM = " ♫ Waterfall@!,Adjust color,,Select bin, Volume (minimum);!,!;!";
+static const char *_data_FX_MODE_WATERFALL PROGMEM = " ♫ Waterfall@!,Adjust color,,Select bin, Volume (minimum)=0;!,!;!;mp12=2;ssim=1"; // Circles, Beatsin
 
 
 #ifndef WLED_DISABLE_2D
@@ -7451,7 +7487,7 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[8];
   if (!fftResult) return mode_static();
@@ -7488,7 +7524,7 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
 
   return FRAMETIME;
 } // mode_2DGEQ()
-static const char *_data_FX_MODE_2DGEQ PROGMEM = " ♫ 2D GEQ@Fade speed,Ripple decay,# of bands=255,Color bars=64;!,,Peak Color;!=11";
+static const char *_data_FX_MODE_2DGEQ PROGMEM = " ♫ 2D GEQ@Fade speed,Ripple decay,# of bands=255,Color bars=64;!,,Peak Color;!=11;ssim=1"; // Beatsin
 
 
 /////////////////////////
@@ -7515,7 +7551,7 @@ uint16_t mode_2DFunkyPlank(void) {              // Written by ??? Adapted by Wil
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[8];
   if (!fftResult) return mode_static();
@@ -7548,7 +7584,7 @@ uint16_t mode_2DFunkyPlank(void) {              // Written by ??? Adapted by Wil
   SEGMENT.setPixels(leds);
   return FRAMETIME;
 } // mode_2DFunkyPlank
-static const char *_data_FX_MODE_2DFUNKYPLANK PROGMEM = " ♫ 2D Funky Plank@Scroll speed,,# of bands;;";
+static const char *_data_FX_MODE_2DFUNKYPLANK PROGMEM = " ♫ 2D Funky Plank@Scroll speed,,# of bands;;;ssim=1"; // Beatsin
 
 #endif // WLED_DISABLE_2D
 
@@ -7610,7 +7646,7 @@ uint16_t mode_2DAkemi(void) {
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    um_data = simulateSound(UMS_BeatSin);
+    um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[8];
   float base = fftResult[0]/255.0f;
@@ -7658,7 +7694,7 @@ uint16_t mode_2DAkemi(void) {
 
   return FRAMETIME;
 } // mode_2DAkemi
-static const char *_data_FX_MODE_2DAKEMI PROGMEM = "2D Akemi@Color speed,Dance;Head palette,Arms & Legs,Eyes & Mouth;Face palette";
+static const char *_data_FX_MODE_2DAKEMI PROGMEM = "2D Akemi@Color speed,Dance;Head palette,Arms & Legs,Eyes & Mouth;Face palette;ssim=1"; //beatsin
 #endif // WLED_DISABLE_2D
 
 

@@ -697,6 +697,23 @@ function populateSegments(s)
 			rvYck = `<label class="check revchkl">Reverse<input type="checkbox" id="seg${i}rY" onchange="setRevY(${i})" ${inst.rY?"checked":""}><span class="checkmark schk"></span></label>`;
 			miYck = `<label class="check revchkl">Mirror<input type="checkbox" id="seg${i}mY" onchange="setMiY(${i})" ${inst.mY?"checked":""}><span class="checkmark schk"></span></label>`;
 		}
+		let map2D = `<div id="seg${i}map2D" data-map="map2D" class="lbl-s hide">Expand 1D FX:<br>
+			<select class="sel-p" id="seg${i}mp12" onchange="setMp12(${i})">
+				<option value="0" ${inst.mp12==0?' selected':''}>None</option>
+				<option value="1" ${inst.mp12==1?' selected':''}>Vertical</option>
+				<option value="2" ${inst.mp12==2?' selected':''}>Circle</option>
+				<option value="3" ${inst.mp12==3?' selected':''}>Block</option>
+			</select>
+		</div>`;
+		let sndSim = `<div data-snd="ssim" class="lbl-s hide">Sound sim:<br>
+			<select class="sel-p" id="seg${i}ssim" onchange="setSSim(${i})">
+				<option value="0" ${inst.ssim==0?' selected':''}>Off</option>
+				<option value="1" ${inst.ssim==1?' selected':''}>BeatSin</option>
+				<option value="2" ${inst.ssim==2?' selected':''}>WeWillRockYou</option>
+				<option value="3" ${inst.ssim==3?' selected':''}>U10_3</option>
+				<option value="4" ${inst.ssim==4?' selected':''}>U14_3</option>
+			</select>
+		</div>`;
 		cn += `<div class="seg lstI ${i==s.mainseg ? 'selected' : ''} ${exp ? "expanded":""}" id="seg${i}">
 	<label class="check schkl">
 		<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>
@@ -741,6 +758,8 @@ function populateSegments(s)
 		</table>
 		<div class="h bp" id="seg${i}len"></div>
 		${!isM?rvXck:''}
+		${map2D}
+		${s.AudioReactive && s.AudioReactive.on ? "" : sndSim}
 		<label class="check revchkl">
 			${isM?'Transpose':'Mirror effect'}
 			<input type="checkbox" id="seg${i}${isM?'tp':'mi'}" onchange="${(isM?'setTp(':'setMi(')+i})" ${isM?(inst.tp?"checked":""):(inst.mi?"checked":"")}>
@@ -895,9 +914,9 @@ function genPalPrevCss(id)
 	return `background: linear-gradient(to right,${gradient.join()});`;
 }
 
-function generateListItemHtml(listName, id, name, clickAction, extraHtml = '', extraPar = '')
+function generateListItemHtml(listName, id, name, clickAction, extraHtml = '', effectPar = '')
 {
-    return `<div class="lstI${id==0?' sticky':''}" data-id="${id}" data-opt="${extraPar}" onClick="${clickAction}(${id})">
+    return `<div class="lstI${id==0?' sticky':''}" data-id="${id}" data-opt="${effectPar}" onClick="${clickAction}(${id})">
 	<label class="radio schkl" onclick="event.preventDefault()">
 		<input type="radio" value="${id}" name="${listName}">
 		<span class="radiomark schk"></span>
@@ -1004,6 +1023,7 @@ function updateLen(s)
 		start = parseInt(gId(`seg${s}sY`).value);
 		stop = parseInt(gId(`seg${s}eY`).value);
 		len *= (stop-(cfg.comp.seglen?0:start));
+		if (stop-start>1) gId(`seg${s}map2D`).classList.remove("hide"); else gId(`seg${s}map2D`).classList.add("hide");
 	}
 	var out = "(delete)";
 	if (len > 1) {
@@ -1117,7 +1137,13 @@ function updateSelectedFx()
 		var fx = (selectedFx != prevFx) && currentPreset==-1; // effect changed & preset==none
 		var ps = (prevPS != currentPreset) && currentPreset==-1; // preset changed & preset==none
 		// WLEDSR: extract the Slider and color control string from the HTML element and set it.
-		setSliderAndColorControl(selectedFx, (fx || ps));
+		setEffectParameters(selectedFx, (fx || ps));
+
+		var selectedName = selectedEffect.querySelector(".lstIname").innerText;
+		var segs = gId("segcont").querySelectorAll(`div[data-map="map2D"]`);
+		for (const seg of segs) if (selectedName.indexOf("2D ")<0) seg.classList.remove("hide"); else seg.classList.add("hide");
+		var segs = gId("segcont").querySelectorAll(`div[data-snd="ssim"]`);
+		for (const seg of segs) if (selectedName.indexOf("♪ ")<0 && selectedName.indexOf("♫ ")<0) seg.classList.add("hide"); else seg.classList.remove("hide"); // also "♫ "?
 	}
 }
 
@@ -1179,7 +1205,7 @@ function makeWS() {
 
 function readState(s,command=false)
 {
-	if (!s || s.error) return false;
+	if (!s) return false;
 	if (s.success) return true; // no data to process
 
 	isOn = s.on;
@@ -1296,16 +1322,23 @@ function readState(s,command=false)
 // Note: Effects can override default pattern behaviour
 //       - FadeToBlack can override the background setting
 //       - Defining SEGCOL(<i>) can override a specific palette using these values (e.g. Color Gradient)
-function setSliderAndColorControl(idx, applyDef=false)
+function setEffectParameters(idx, applyDef=false)
 {
 	if (!(Array.isArray(fxdata) && fxdata.length>idx)) return;
   	var controlDefined = (fxdata[idx].substr(0,1) == "@");
-	var extra = fxdata[idx].substr(1);
-	var extras = (extra == '')?[]:extra.split(";");
-	var slOnOff = (extras.length==0 || extras[0]=='')?[]:extras[0].split(",");
-	var coOnOff = (extras.length<2  || extras[1]=='')?[]:extras[1].split(",");
-	var paOnOff = (extras.length<3  || extras[2]=='')?[]:extras[2].split(",");
+	var effectPar = fxdata[idx].substr(1);
+	var effectPars = (effectPar == '')?[]:effectPar.split(";");
+	var slOnOff = (effectPars.length==0 || effectPars[0]=='')?[]:effectPars[0].split(",");
+	var coOnOff = (effectPars.length<2  || effectPars[1]=='')?[]:effectPars[1].split(",");
+	var paOnOff = (effectPars.length<3  || effectPars[2]=='')?[]:effectPars[2].split(",");
 	var obj = {"seg":{}};
+	// var obj = {"seg": {"rev": false, "rY": false}};
+
+	//assign extra parameters to segment
+	for (let i=3;i<effectPars.length;i++) {
+		let keyval = effectPars[i].split("=");
+		obj.seg[keyval[0]] = keyval[1]=="true"?true:keyval[1]=="false"?false:keyval[1];
+	}
   
 	// set html slider items on/off
 	var nSliders = Math.min(5,Math.floor(gId("sliders").children.length)); // div for each slider
@@ -1696,7 +1729,7 @@ function makeP(i,pl) {
 <div id="pl${i}o1" style="display:${rep>0?"block":"none"}">
 <div class="c">Repeat <input class="noslide" type="number" id="pl${i}rp" oninput="plR(${i})" max=127 min=0 value=${rep>0?rep:1}> times</div>
 <div class="sel">End preset:<br>
-<select class="sel sel-ple" id="pl${i}selEnd" onchange="plR(${i})" data-val=${plJson[i].end?plJson[i].end:0}>
+<select class="sel-ple" id="pl${i}selEnd" onchange="plR(${i})" data-val=${plJson[i].end?plJson[i].end:0}>
 <option value="0">None</option>
 <option value="255">Restore preset</option>
 ${makePlSel(true)}
@@ -1727,7 +1760,7 @@ ${makePlSel(true)}
 	<span class="checkmark schk"></span>
 </label>`;
 		if (Array.isArray(lastinfo.maps) && lastinfo.maps.length>0) {
-			content += `<div class="sel">Ledmap:&nbsp;<select class="sel sel-p" id="p${i}lmp"><option value="">None</option>`;
+			content += `<div class="sel">Ledmap:&nbsp;<select class="sel-p" id="p${i}lmp"><option value="">None</option>`;
 			for (const k of (lastinfo.maps||[])) content += `<option value="${k}"${(i>0 && pJson[i].ledmap==k)?" selected":""}>${k}</option>`;
 			content += "</select></div>";
 		}
@@ -1780,7 +1813,7 @@ function makePlEntry(p,i) {
 	<table>
 	<tr>
 		<td width="80%" colspan=2>
-			<select class="sel sel-pl" onchange="plePs(${p},${i},this)" data-val="${plJson[p].ps[i]}" data-index="${i}">
+			<select class="sel-pl" onchange="plePs(${p},${i},this)" data-val="${plJson[p].ps[i]}" data-index="${i}">
 			${makePlSel()}
 			</select>
 		</td>
@@ -1951,6 +1984,20 @@ function setMiY(s)
 {
 	var mi = gId(`seg${s}mY`).checked;
 	var obj = {"seg": {"id": s, "mY": mi}};
+	requestJson(obj);
+}
+
+function setMp12(s)
+{
+	var value = gId(`seg${s}mp12`).selectedIndex;
+	var obj = {"seg": {"id": s, "mp12": value}};
+	requestJson(obj);
+}
+
+function setSSim(s)
+{
+	var value = gId(`seg${s}ssim`).selectedIndex;
+	var obj = {"seg": {"id": s, "ssim": value}};
 	requestJson(obj);
 }
 

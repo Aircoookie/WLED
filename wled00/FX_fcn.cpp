@@ -277,6 +277,23 @@ uint16_t Segment::virtualHeight() {
 
 // 1D strip
 uint16_t Segment::virtualLength() {
+#ifndef WLED_DISABLE_2D
+  if (height() > 1) {
+    uint16_t vW = virtualWidth();
+    uint16_t vH = virtualHeight();
+    uint32_t vLen = vW * vH; // use all pixels from segment
+    switch (map1D2D) {
+      case M12_VerticalBar:
+        vLen = vW;
+        break;
+      case M12_Circle:
+      case M12_Block:
+        vLen = (vW + vH) / 2; // take half of the average width
+        break;
+    }
+    return vLen;
+  }
+#endif
   uint16_t groupLen = groupLength();
   uint16_t vLength = (length() + groupLen - 1) / groupLen;
   if (getOption(SEG_OPTION_MIRROR)) vLength = (vLength + 1) /2;  // divide by 2 if mirror, leave at least a single LED
@@ -285,14 +302,36 @@ uint16_t Segment::virtualLength() {
 
 void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
 {
-  if (strip.isMatrix) {
-    // map linear pixel into 2D segment area (even for 1D segments, expanding vertically)
-    uint16_t h = virtualHeight();  // segment height in logical pixels
-    for (int y = 0; y < h; y++) { // expand 1D effect vertically
-      setPixelColorXY(i, y * groupLength(), col);
+#ifndef WLED_DISABLE_2D
+  if (height() > 1) { // if this does not work use strip.isMatrix
+    uint16_t vH = virtualHeight();  // segment height in logical pixels
+    uint16_t vW = virtualWidth();
+    switch (map1D2D) {
+      case M12_Pixels:
+        // use all available pixels as a long strip
+        setPixelColorXY(i % vW, i / vW, col);
+        break;
+      case M12_VerticalBar:
+        // expand 1D effect vertically
+        for (int y = 0; y < vH; y++) setPixelColorXY(i, y, col);
+        break;
+      case M12_Circle:
+        // expand in circular fashion from center
+        for (float degrees = 0; degrees <= 90; degrees += 90.0f / (4*i+1)) { // this may prove too many iterations on larger matrices
+          // may want to try float version as well (with or without antialiasing)
+          int x = roundf(sin_t(degrees*DEG_TO_RAD) * i);
+          int y = roundf(cos_t(degrees*DEG_TO_RAD) * i);
+          setPixelColorXY(x, y, col);
+        }
+        break;
+      case M12_Block:
+        for (int x = 0; x <= i; x++) setPixelColorXY(x, i, col);
+        for (int y = 0; y <  i; y++) setPixelColorXY(i, y, col);
+        break;
     }
     return;
   }
+#endif
 
   uint16_t len = length();
   uint8_t _bri_t = strip._bri_t;
@@ -364,6 +403,33 @@ void Segment::setPixelColor(float i, uint32_t col, bool aa)
 
 uint32_t Segment::getPixelColor(uint16_t i)
 {
+#ifndef WLED_DISABLE_2D
+  if (height() > 1) { // if this does not work use strip.isMatrix
+    uint16_t vH = virtualHeight();  // segment height in logical pixels
+    uint16_t vW = virtualWidth();
+    switch (map1D2D) {
+      case M12_Pixels:
+        return getPixelColorXY(i % vW, i / vW);
+        break;
+      case M12_VerticalBar:
+        // map linear pixel into 2D segment area (even for 1D segments, expanding vertically)
+        return getPixelColorXY(i, 0);
+        break;
+      case M12_Circle:
+        {
+          int x = roundf(roundf((vW / 2) * 10)/10);
+          int y = roundf(roundf((i + vH / 2) * 10)/10);
+          return getPixelColorXY(x,y);
+        }
+        break;
+      case M12_Block:
+        return getPixelColorXY(vW / 2, vH / 2 - i - 1);
+        break;
+    }
+    return 0;
+  }
+#endif
+
   if (getOption(SEG_OPTION_REVERSED)) i = virtualLength() - i - 1;
   i *= groupLength();
   i += start;
@@ -392,8 +458,8 @@ uint8_t Segment::differs(Segment& b) {
   if (stopY != b.stopY)         d |= SEG_DIFFERS_BOUNDS;
 
   //bit pattern: msb first: [transposed mirrorY reverseY] transitional (tbd) paused needspixelstate mirrored on reverse selected
-  if ((options & 0b11100101110) != (b.options & 0b11100101110)) d |= SEG_DIFFERS_OPT;
-  if ((options & 0x01) != (b.options & 0x01))                   d |= SEG_DIFFERS_SEL;
+  if ((options & 0b1111111100101110) != (b.options & 0b1111111100101110)) d |= SEG_DIFFERS_OPT;
+  if ((options & 0x01) != (b.options & 0x01))                             d |= SEG_DIFFERS_SEL;
   
   for (uint8_t i = 0; i < NUM_COLORS; i++) if (colors[i] != b.colors[i]) d |= SEG_DIFFERS_COL;
 

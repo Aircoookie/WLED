@@ -1173,6 +1173,12 @@ TD .checkmark, TD .radiomark {
 	left: 9px;
 }
 
+.lbl-s {
+	display: inline-block;
+	margin: 10px 4px 0 0;
+	font-size: 13px;
+}
+
 /* list wrapper */
 .list {
 	position: relative;

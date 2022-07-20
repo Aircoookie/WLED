@@ -80,7 +80,10 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   uint16_t spc = elem[F("spc")] | seg.spacing;
   uint16_t of = seg.offset;
 
-  if (spc>0 && spc!=seg.spacing) seg.fill(BLACK); // clear spacing gaps
+  seg.soundSim = elem[F("ssim")] | seg.soundSim;
+  seg.map1D2D  = elem[F("mp12")] | seg.map1D2D;
+
+  if ((spc>0 && spc!=seg.spacing) || seg.map1D2D!=prev.map1D2D) seg.fill(BLACK); // clear spacing gaps
 
   uint16_t len = 1;
   if (stop > start) len = stop - start;
@@ -180,7 +183,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   getVal(elem[F("c1")], &seg.custom1);
   getVal(elem[F("c2")], &seg.custom2);
   getVal(elem[F("c3")], &seg.custom3);
-
+  
   JsonArray iarr = elem[F("i")]; //set individual LEDs
   if (!iarr.isNull()) {
     //uint8_t oldSegId = strip.setPixelSegment(id);
@@ -193,7 +196,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     // freeze and init to black
     if (!seg.getOption(SEG_OPTION_FREEZE)) {
       seg.setOption(SEG_OPTION_FREEZE, true);
-      seg.fill(0);
+      seg.fill(BLACK);
     }
 
     uint16_t start = 0, stop = 0;
@@ -458,6 +461,8 @@ void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset, b
     root[F("mY")] = seg.getOption(SEG_OPTION_MIRROR_Y);
     root[F("tp")] = seg.getOption(SEG_OPTION_TRANSPOSED);
   }
+  root[F("ssim")]  = seg.soundSim;
+  root[F("mp12")]  = seg.map1D2D;
 }
 
 void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segmentBounds)
