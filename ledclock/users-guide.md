@@ -193,6 +193,8 @@ If you need to upgrade, follow the procedure below:
 - tap on **Update!**
 - the update could take around 30-60 seconds, the device will reboot automatically
 
+If for any reason the over-the-air upgrade fails, try the [USB installation method](https://imeszaros.github.io/ledclock/).
+
 ## 10. Help
 
 Can't find a solution for your problem on this page? Feel free to [contact me](https://github.com/imeszaros).
