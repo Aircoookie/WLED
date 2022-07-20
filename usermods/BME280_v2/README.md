@@ -64,3 +64,24 @@ Heat index | `<deviceTopic>/heat_index`
 Dew point | `<deviceTopic>/dew_point`
 
 If you are using Home Assistant, and `Home Assistant Discovery` is turned on, Home Assistant should automatically detect a new device, provided you have the MQTT integration installed.  The  device is seperate from the main WLED device and will contain sensors for Pressure, Humidity, Temperature, Dew Point and Heat Index.
+
+# Revision History
+Jul 2022
+- Added Home Assistant Discovery
+- Added API interface to output data
+- Removed compile-time variables
+- Added usermod menu interface
+- Added value outputs to info screen
+- Updated `readme.md`
+
+Apr 2021
+- Added `Publish Always` option
+
+Dec 2020
+- Ported to V2 Usermod format
+- Customisable `measure intervals`
+- Customisable number of `decimal places` in published sensor values
+- Pressure measured in units of hPa instead of Pa
+- Calculation of heat index (apparent temperature) and dew point
+- `16x oversampling` of sensor during measurement
+- Values only published if they are different from the previous value
