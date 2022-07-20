@@ -6,7 +6,7 @@
     {
       "chipFamily": "ESP32",
       "parts": [
-        { "path": "https://github.com/imeszaros/ledclock/releases/download/ledclock-1.0.1/firmware.bin", "offset": 65536 }
+        { "path": "firmware.bin-1.0.1", "offset": 65536 }
       ]
     }
   ]
