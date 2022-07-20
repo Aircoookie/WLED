@@ -20,15 +20,21 @@ The above weights were measured using my recommendation for an opaque material: 
 
 ## Approximate translucent material demand:
 
-| Part                     | Weight* | Pieces |   Total   | Supports | Notes |
-|--------------------------|--------:|-------:|----------:|:--------:|-------|
-| [Segments](segments.3mf) |    ~6g  |     28 |   ~168g   |  Manual  | File contains the 7 segments for a single digit, print it four times. |
-| [Dots](dots.3mf)         |    ~1g  |      2 |     ~2g   |  Manual  | File contains both dots, print once. |
-|                          |         |        | **~170g** |          | |
+| Part                       | Weight* | Pieces |   Total   | Supports |
+|----------------------------|--------:|-------:|----------:|:--------:|
+| [Segment A](segment-a.3mf) |    ~6g  |      4 |    ~24g   |    No    |
+| [Segment B](segment-b.3mf) |    ~6g  |      4 |    ~24g   |    No    |
+| [Segment C](segment-c.3mf) |    ~6g  |      4 |    ~24g   |    No    |
+| [Segment D](segment-d.3mf) |    ~6g  |      4 |    ~24g   |    No    |
+| [Segment E](segment-e.3mf) |    ~6g  |      4 |    ~24g   |    No    |
+| [Segment F](segment-f.3mf) |    ~6g  |      4 |    ~24g   |    No    |
+| [Segment G](segment-g.3mf) |    ~6g  |      4 |    ~24g   |    No    |
+| [Dot](dot.3mf)             |    ~1g  |      2 |     ~2g   |    No    |
+|                            |         |        | **~170g** |          |
 
 *\* Excluding skirt/brim, and supports.*
 
-The above weights were measured using my recommendation for an opaque material: [PLA Crystal Clear by Fillamentum](https://fillamentum.com/collections/pla-crystal-clear-filament/).
+The above weights were measured using my recommendation for an translucent material: [PLA Extrafill Natural by Fillamentum](https://fillamentum.com/collections/pla-extrafill-filament/).
 
 ## Custom supports
 
@@ -37,5 +43,14 @@ If you can't use the embedded support information, here are some pictures as a r
 ![Support for Bottom](supports-bottom.png)
 ![Support for Colon](supports-colon.png)
 ![Support for Digit](supports-digit.png)
-![Support for Dots](supports-dots.png)
-![Support for Segments](supports-segments.png)
+
+## Sequential prints
+
+If you have a large printer you may leverage the benefits of sequential printing even for one clock or to print parts for multiple clocks.
+
+| File                                                | Notes |
+|-----------------------------------------------------|-------|
+| [Base with Bottom](base-with-bottom-sequential.3mf) | Contains the base and bottom parts two times. Just delete one pair before slicing if you don't need it. |
+| [Colon](colon-sequential.3mf)                       | Contains 8 pieces for "mass production". |
+| [Digit](digit-sequential.3mf)                       | Contains a set of 4 digits. |
+| [Segments](segments-sequential.3mf)                 | Contains 2 sets of the 7 segments and a single dot. Print this twice to get all necessary translucent parts for a single clock. |
