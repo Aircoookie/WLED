@@ -1,0 +1,13 @@
+{
+  "name": "LED Clock",
+  "version": "1.0.0",
+  "home_assistant_domain": "wled",
+  "builds": [
+    {
+      "chipFamily": "ESP32",
+      "parts": [
+        { "path": "/imeszaros/ledclock/releases/download/ledclock-1.0.0/firmware.bin", "offset": 65536 }
+      ]
+    }
+  ]
+}
