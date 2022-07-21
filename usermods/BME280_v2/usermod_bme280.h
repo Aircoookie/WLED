@@ -128,11 +128,11 @@ private:
   // Procedure to define all MQTT discovery Topics 
   void _mqttInitialize()
   {
-    mqttTemperatureTopic = String(mqttDeviceTopic) + "/temperature";
-    mqttPressureTopic = String(mqttDeviceTopic) + "/pressure";
-    mqttHumidityTopic = String(mqttDeviceTopic) + "/humidity";
-    mqttHeatIndexTopic = String(mqttDeviceTopic) + "/heat_index";
-    mqttDewPointTopic = String(mqttDeviceTopic) + "/dew_point";
+    mqttTemperatureTopic = String(mqttDeviceTopic) + F("/temperature");
+    mqttPressureTopic = String(mqttDeviceTopic) + F("/pressure");
+    mqttHumidityTopic = String(mqttDeviceTopic) + F("/humidity");
+    mqttHeatIndexTopic = String(mqttDeviceTopic) + F("/heat_index");
+    mqttDewPointTopic = String(mqttDeviceTopic) + F("/dew_point");
 
     if (HomeAssistantDiscovery) {
       _createMqttSensor(F("Temperature"), mqttTemperatureTopic, F("temperature"), tempScale);
@@ -146,7 +146,7 @@ private:
   // Create an MQTT Sensor for Home Assistant Discovery purposes, this includes a pointer to the topic that is published to in the Loop.
   void _createMqttSensor(const String &name, const String &topic, const String &deviceClass, const String &unitOfMeasurement)
   {
-    String t = String("homeassistant/sensor/") + mqttClientID + "/" + name + "/config";
+    String t = String(F("homeassistant/sensor/")) + mqttClientID + F("/") + name + F("/config");
     
     StaticJsonDocument<600> doc;
     
@@ -168,8 +168,8 @@ private:
 
     String temp;
     serializeJson(doc, temp);
-    Serial.println(t);
-    Serial.println(temp);
+    DEBUG_PRINTLN(t);
+    DEBUG_PRINTLN(temp);
 
     mqtt->publish(t.c_str(), 0, true, temp.c_str());
   }
@@ -188,7 +188,7 @@ public:
     if (!bme.begin())
     {
       sensorType = 0;
-      Serial.println(F("Could not find BME280I2C sensor!"));
+      DEBUG_PRINTLN(F("Could not find BME280I2C sensor!"));
     }
     else
     {
@@ -196,15 +196,15 @@ public:
       {
       case BME280::ChipModel_BME280:
         sensorType = 1;
-        Serial.println(F("Found BME280 sensor! Success."));
+        DEBUG_PRINTLN(F("Found BME280 sensor! Success."));
         break;
       case BME280::ChipModel_BMP280:
         sensorType = 2;
-        Serial.println(F("Found BMP280 sensor! No Humidity available."));
+        DEBUG_PRINTLN(F("Found BMP280 sensor! No Humidity available."));
         break;
       default:
         sensorType = 0;
-        Serial.println(F("Found UNKNOWN sensor! Error!"));
+        DEBUG_PRINTLN(F("Found UNKNOWN sensor! Error!"));
       }
     }
     initDone=true;
@@ -225,7 +225,7 @@ public:
 
         UpdateBME280Data(sensorType);
 
-        float temperature = roundf(sensorTemperature * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals);
+        float temperature = roundf(sensorTemperature * powf(10, TemperatureDecimals)) / powf(10, TemperatureDecimals);
         float humidity, heatIndex, dewPoint;
 
         if (WLED_MQTT_CONNECTED && !mqttInitialized)
@@ -246,25 +246,25 @@ public:
 
         if (sensorType == 1) // Only if sensor is a BME280
         {
-          humidity = roundf(sensorHumidity * pow(10, HumidityDecimals)) / pow(10, HumidityDecimals);
-          heatIndex = roundf(sensorHeatIndex * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals);
-          dewPoint = roundf(sensorDewPoint * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals);
+          humidity = roundf(sensorHumidity * powf(10, HumidityDecimals)) / powf(10, HumidityDecimals);
+          heatIndex = roundf(sensorHeatIndex * powf(10, TemperatureDecimals)) / powf(10, TemperatureDecimals);
+          dewPoint = roundf(sensorDewPoint * powf(10, TemperatureDecimals)) / powf(10, TemperatureDecimals);
 
           if (humidity != lastHumidity || PublishAlways)
           {
-            String topic = String(mqttDeviceTopic) + "/humidity";
+            String topic = String(mqttDeviceTopic) + F("/humidity");
             mqtt->publish(topic.c_str(), 0, false, String(humidity, HumidityDecimals).c_str());
           }
 
           if (heatIndex != lastHeatIndex || PublishAlways)
           {
-            String topic = String(mqttDeviceTopic) + "/heat_index";
+            String topic = String(mqttDeviceTopic) + F("/heat_index");
             mqtt->publish(topic.c_str(), 0, false, String(heatIndex, TemperatureDecimals).c_str());
           }
 
           if (dewPoint != lastDewPoint || PublishAlways)
           {
-            String topic = String(mqttDeviceTopic) + "/dew_point";
+            String topic = String(mqttDeviceTopic) + F("/dew_point");
             mqtt->publish(topic.c_str(), 0, false, String(dewPoint, TemperatureDecimals).c_str());
           }
 
@@ -278,11 +278,11 @@ public:
       {
         lastPressureMeasure = timer;
 
-        float pressure = roundf(sensorPressure * pow(10, PressureDecimals)) / pow(10, PressureDecimals);
+        float pressure = roundf(sensorPressure * powf(10, PressureDecimals)) / powf(10, PressureDecimals);
 
         if (pressure != lastPressure || PublishAlways)
         {
-          String topic = String(mqttDeviceTopic) + "/pressure";
+          String topic = String(mqttDeviceTopic) + F("/pressure");
           mqttPressurePub = mqtt->publish(topic.c_str(), 0, true, String(pressure, PressureDecimals).c_str());
         }
 
@@ -296,50 +296,50 @@ public:
      */
     inline float getTemperatureC() {
       if (UseCelsius) {
-        return (float)roundf(sensorTemperature * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals);
+        return (float)roundf(sensorTemperature * powf(10, TemperatureDecimals)) / powf(10, TemperatureDecimals);
       } else {
-        return (float)roundf(sensorTemperature * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals) * 1.8f + 32;
+        return (float)roundf(sensorTemperature * powf(10, TemperatureDecimals)) / powf(10, TemperatureDecimals) * 1.8f + 32;
       }
       
     }
     inline float getTemperatureF() {
       if (UseCelsius) {
-        return ((float)roundf(sensorTemperature * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals) -32) * 0.56f;
+        return ((float)roundf(sensorTemperature * powf(10, TemperatureDecimals)) / powf(10, TemperatureDecimals) -32) * 0.56f;
       } else {
-        return (float)roundf(sensorTemperature * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals);
+        return (float)roundf(sensorTemperature * powf(10, TemperatureDecimals)) / powf(10, TemperatureDecimals);
       }
     }
     inline float getHumidity() {
-      return (float)roundf(sensorHumidity * pow(10, HumidityDecimals));
+      return (float)roundf(sensorHumidity * powf(10, HumidityDecimals));
     }
     inline float getPressure() {
-      return (float)roundf(sensorPressure * pow(10, PressureDecimals));
+      return (float)roundf(sensorPressure * powf(10, PressureDecimals));
     }
     inline float getDewPointC() {
       if (UseCelsius) {
-        return (float)roundf(sensorDewPoint * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals);
+        return (float)roundf(sensorDewPoint * powf(10, TemperatureDecimals)) / powf(10, TemperatureDecimals);
       } else {
-        return (float)roundf(sensorDewPoint * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals) * 1.8f + 32;
+        return (float)roundf(sensorDewPoint * powf(10, TemperatureDecimals)) / powf(10, TemperatureDecimals) * 1.8f + 32;
       }
     }
     inline float getDewPointF() {
       if (UseCelsius) {
-        return ((float)roundf(sensorDewPoint * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals) -32) * 0.56f;
+        return ((float)roundf(sensorDewPoint * powf(10, TemperatureDecimals)) / powf(10, TemperatureDecimals) -32) * 0.56f;
       } else {
-        return (float)roundf(sensorDewPoint * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals);
+        return (float)roundf(sensorDewPoint * powf(10, TemperatureDecimals)) / powf(10, TemperatureDecimals);
       }
     }
     inline float getHeatIndexC() {
       if (UseCelsius) {
-        return (float)roundf(sensorHeatIndex * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals);
+        return (float)roundf(sensorHeatIndex * powf(10, TemperatureDecimals)) / powf(10, TemperatureDecimals);
       } else {
-        return (float)roundf(sensorHeatIndex * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals) * 1.8f + 32;
+        return (float)roundf(sensorHeatIndex * powf(10, TemperatureDecimals)) / powf(10, TemperatureDecimals) * 1.8f + 32;
       }
     }inline float getHeatIndexF() {
       if (UseCelsius) {
-        return ((float)roundf(sensorHeatIndex * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals) -32) * 0.56f;
+        return ((float)roundf(sensorHeatIndex * powf(10, TemperatureDecimals)) / powf(10, TemperatureDecimals) -32) * 0.56f;
       } else {
-        return (float)roundf(sensorHeatIndex * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals);
+        return (float)roundf(sensorHeatIndex * powf(10, TemperatureDecimals)) / powf(10, TemperatureDecimals);
       }
     }
 
@@ -358,29 +358,29 @@ public:
     else if (sensorType==2) //BMP280
     {
       
-      JsonArray temperature_json = user.createNestedArray("Temperature");
-      JsonArray pressure_json = user.createNestedArray("Pressure");
-      temperature_json.add(roundf(sensorTemperature * pow(10, TemperatureDecimals)));
+      JsonArray temperature_json = user.createNestedArray(F("Temperature"));
+      JsonArray pressure_json = user.createNestedArray(F("Pressure"));
+      temperature_json.add(roundf(sensorTemperature * powf(10, TemperatureDecimals)));
       temperature_json.add(tempScale);
-      pressure_json.add(roundf(sensorPressure * pow(10, PressureDecimals)));
+      pressure_json.add(roundf(sensorPressure * powf(10, PressureDecimals)));
       pressure_json.add(F("hPa"));
     }
     else if (sensorType==1) //BME280
     {
-      JsonArray temperature_json = user.createNestedArray("Temperature");
-      JsonArray humidity_json = user.createNestedArray("Humidity");
-      JsonArray pressure_json = user.createNestedArray("Pressure");
-      JsonArray heatindex_json = user.createNestedArray("Heat Index");
-      JsonArray dewpoint_json = user.createNestedArray("Dew Point");
-      temperature_json.add(roundf(sensorTemperature * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals));
+      JsonArray temperature_json = user.createNestedArray(F("Temperature"));
+      JsonArray humidity_json = user.createNestedArray(F("Humidity"));
+      JsonArray pressure_json = user.createNestedArray(F("Pressure"));
+      JsonArray heatindex_json = user.createNestedArray(F("Heat Index"));
+      JsonArray dewpoint_json = user.createNestedArray(F("Dew Point"));
+      temperature_json.add(roundf(sensorTemperature * powf(10, TemperatureDecimals)) / powf(10, TemperatureDecimals));
       temperature_json.add(tempScale);
-      humidity_json.add(roundf(sensorHumidity * pow(10, HumidityDecimals)));
+      humidity_json.add(roundf(sensorHumidity * powf(10, HumidityDecimals)));
       humidity_json.add(F("%"));
-      pressure_json.add(roundf(sensorPressure * pow(10, PressureDecimals)));
+      pressure_json.add(roundf(sensorPressure * powf(10, PressureDecimals)));
       pressure_json.add(F("hPa"));
-      heatindex_json.add(roundf(sensorHeatIndex * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals));
+      heatindex_json.add(roundf(sensorHeatIndex * powf(10, TemperatureDecimals)) / powf(10, TemperatureDecimals));
       heatindex_json.add(tempScale);
-      dewpoint_json.add(roundf(sensorDewPoint * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals));
+      dewpoint_json.add(roundf(sensorDewPoint * powf(10, TemperatureDecimals)) / powf(10, TemperatureDecimals));
       dewpoint_json.add(tempScale);
     }
       return;
