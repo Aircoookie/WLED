@@ -1129,7 +1129,10 @@ function updateSelectedFx()
 	if (selEffectInput) selEffectInput.checked = true;
 
 	var selElement = parent.querySelector('.selected');
-	if (selElement) selElement.classList.remove('selected');
+	if (selElement) {
+		selElement.classList.remove('selected');
+		selElement.style.bottom = null; // remove element style added in slider handling
+	}
 
 	var selectedEffect = parent.querySelector(`.lstI[data-id="${selectedFx}"]`);
 	if (selectedEffect) {
@@ -2039,6 +2042,8 @@ function setX(ind = null)
 	} else {
 		d.querySelector(`#fxlist input[name="fx"][value="${ind}"]`).checked = true;
 	}
+/*
+	// this code also in updateSelectedFx
 	var selElement = d.querySelector('#fxlist .selected');
 	if (selElement) {
 		selElement.classList.remove('selected');
@@ -2046,7 +2051,7 @@ function setX(ind = null)
 	}
 
 	d.querySelector(`#fxlist .lstI[data-id="${ind}"]`).classList.add('selected');
-
+*/
 	var obj = {"seg": {"fx": parseInt(ind)}};
 	requestJson(obj);
 }
