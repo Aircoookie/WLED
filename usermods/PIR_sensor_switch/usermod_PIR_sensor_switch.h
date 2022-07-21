@@ -177,7 +177,7 @@ private:
   {
     if (HomeAssistantDiscovery)
     {
-      _createMqttBinarySensor("Motion", mqttDeviceTopic + String("/motion"), "motion");
+      _createMqttBinarySensor(String(F("Motion")), mqttDeviceTopic + String(F("/motion")), F("motion"));
     }
   }
   
@@ -186,28 +186,28 @@ private:
   {
     StaticJsonDocument<600> doc;
     
-    doc["name"] = String(serverDescription) + " " + name;
-    doc["state_topic"] = topic;
-    doc["payload_on"] = "on";
-    doc["payload_off"] = "off";
-    doc["unique_id"] = String(mqttClientID) + name;
+    doc[F("name")] = String(serverDescription) + " " + name;
+    doc[F("state_topic")] = topic;
+    doc[F("payload_on")] = "on";
+    doc[F("payload_off")] = "off";
+    doc[F("unique_id")] = String(mqttClientID) + name;
     if (deviceClass != "")
-      doc["device_class"] = deviceClass;
-    doc["expire_after"] = 1800;
+      doc[F("device_class")] = deviceClass;
+    doc[F("expire_after")] = 1800;
 
-    JsonObject device = doc.createNestedObject("device"); // attach the sensor to the same device
-    device["name"] = serverDescription;
-    device["identifiers"] = "wled-sensor-" + String(mqttClientID);
-    device["manufacturer"] = "WLED";
-    device["model"] = "FOSS";
-    device["sw_version"] = versionString;
+    JsonObject device = doc.createNestedObject(F("device")); // attach the sensor to the same device
+    device[F("name")] = serverDescription;
+    device[F("identifiers")] = String(F("wled-sensor-")) + mqttClientID;
+    device[F("manufacturer")] = "WLED";
+    device[F("model")] = F("FOSS");
+    device[F("sw_version")] = versionString;
     
     String temp;
     serializeJson(doc, temp);
-    Serial.println(t);
-    Serial.println(temp);
+    DEBUG_PRINTLN(topic);
+    DEBUG_PRINTLN(temp);
 
-    mqtt->publish(t.c_str(), 0, true, temp.c_str());
+    mqtt->publish(topic.c_str(), 0, true, temp.c_str()); // do we really need to retain?
   }
 
   /**
