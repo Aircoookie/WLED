@@ -412,18 +412,10 @@ uint32_t Segment::getPixelColor(uint16_t i)
         return getPixelColorXY(i % vW, i / vW);
         break;
       case M12_VerticalBar:
-        // map linear pixel into 2D segment area (even for 1D segments, expanding vertically)
-        return getPixelColorXY(i, 0);
-        break;
       case M12_Circle:
-        {
-          int x = roundf(roundf((vW / 2) * 10)/10);
-          int y = roundf(roundf((i + vH / 2) * 10)/10);
-          return getPixelColorXY(x,y);
-        }
-        break;
       case M12_Block:
-        return getPixelColorXY(vW / 2, vH / 2 - i - 1);
+        // only use 1st row
+        return getPixelColorXY(i, 0);
         break;
     }
     return 0;

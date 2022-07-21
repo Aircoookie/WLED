@@ -78,12 +78,14 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   uint16_t grp = elem["grp"] | seg.grouping;
   uint16_t spc = elem[F("spc")] | seg.spacing;
-  uint16_t of = seg.offset;
+  uint16_t of  = seg.offset;
+  uint8_t  soundSim = elem[F("ssim")] | seg.soundSim;
+  uint8_t  map1D2D  = elem[F("mp12")] | seg.map1D2D;
 
-  seg.soundSim = elem[F("ssim")] | seg.soundSim;
-  seg.map1D2D  = elem[F("mp12")] | seg.map1D2D;
+  if ((spc>0 && spc!=seg.spacing) || seg.map1D2D!=map1D2D) seg.fill(BLACK); // clear spacing gaps
 
-  if ((spc>0 && spc!=seg.spacing) || seg.map1D2D!=prev.map1D2D) seg.fill(BLACK); // clear spacing gaps
+  seg.map1D2D  = map1D2D & 0x03;
+  seg.soundSim = soundSim & 0x07;
 
   uint16_t len = 1;
   if (stop > start) len = stop - start;
