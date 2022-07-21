@@ -6,7 +6,7 @@ This Usermod is designed to read a `BME280` or `BMP280` sensor and output the fo
 - Heat Index (`BME280` only)
 - Dew Point (`BME280` only)
 
-Configuration is all completed via the Usermod menu.  There are no settings to set in code!  The following settings can be configured in the Usermod Menu (remember to reboot for any changes made here to take effect):
+Configuration is all completed via the Usermod menu.  There are no settings to set in code!  The following settings can be configured in the Usermod Menu:
 - Temperature Decimals (number of decimal places to output)
 - Humidity Decimals
 - Pressure Decimals
@@ -15,7 +15,7 @@ Configuration is all completed via the Usermod menu.  There are no settings to s
 - Publish Always (turn off to only publish changes, on to publish whether or not value changed)
 - Use Celsius (turn off to use Farenheit)
 - Home Assistant Discovery (turn on to sent MQTT Discovery entries for Home Assistant)
-- SDA/SCL GPIO Pins
+- SCL/SDA GPIO Pins
 
 Dependencies
 - Libraries
@@ -73,6 +73,9 @@ Jul 2022
 - Added usermod menu interface
 - Added value outputs to info screen
 - Updated `readme.md`
+- Registered usermod
+- Implemented PinManager for usermod
+- Implemented reallocation of pins without reboot
 
 Apr 2021
 - Added `Publish Always` option
