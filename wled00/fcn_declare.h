@@ -299,7 +299,7 @@ class UsermodManager {
     void onUpdateBegin(bool);
     bool add(Usermod* um);
     Usermod* lookup(uint16_t mod_id);
-    byte getModCount();
+    byte getModCount() {return numMods;};
 };
 
 //usermods_list.cpp
