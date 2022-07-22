@@ -3241,7 +3241,7 @@ uint16_t mode_starburst(void) {
   return FRAMETIME;
 }
 #undef STARBURST_MAX_FRAG
-static const char *_data_FX_MODE_STARBURST PROGMEM = "Fireworks Starburst;;;mp12=0"; //pixels
+static const char *_data_FX_MODE_STARBURST PROGMEM = "Fireworks Starburst@Chance,Fragments;,!,;!=11;mp12=0";
 
 
 /*
