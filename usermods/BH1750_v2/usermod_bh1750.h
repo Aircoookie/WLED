@@ -52,8 +52,20 @@ private:
   static const char _offset[];
   static const char _HomeAssistantDiscovery[];
 
+  // set the default pins based on the architecture, these get overridden by Usermod menu settings
+  #ifdef ARDUINO_ARCH_ESP32 // ESP32 boards
+    #define HW_PIN_SCL 22
+    #define HW_PIN_SDA 21
+  #else // ESP8266 boards
+    #define HW_PIN_SCL 5
+    #define HW_PIN_SDA 4
+  #endif
+  int8_t ioPin[2] = {HW_PIN_SCL, HW_PIN_SDA};        // I2C pins: SCL, SDA...defaults to Arch hardware pins but overridden at setup()
+  bool initDone = false;
+  bool sensorFound = false;
+
   // Home Assistant and MQTT  
-  String mqttLuminanceTopic = "";
+  String mqttLuminanceTopic = F("");
   bool mqttInitialized = false;
   bool HomeAssistantDiscovery = true; // Publish Home Assistant Discovery messages
 
@@ -68,39 +80,38 @@ private:
   // set up Home Assistant discovery entries
   void _mqttInitialize()
   {
-    mqttLuminanceTopic = String(mqttDeviceTopic) + "/brightness";
+    mqttLuminanceTopic = String(mqttDeviceTopic) + F("/brightness");
 
-    String t = String("homeassistant/sensor/") + mqttClientID + "/brightness/config";
-    _createMqttSensor("Brightness", mqttLuminanceTopic, "illuminance", " lx");
+    if (HomeAssistantDiscovery) _createMqttSensor(F("Brightness"), mqttLuminanceTopic, F("Illuminance"), F(" lx"));
   }
 
   // Create an MQTT Sensor for Home Assistant Discovery purposes, this includes a pointer to the topic that is published to in the Loop.
   void _createMqttSensor(const String &name, const String &topic, const String &deviceClass, const String &unitOfMeasurement)
   {
-    String t = String("homeassistant/sensor/") + mqttClientID + "/" + name + "/config";
+    String t = String(F("homeassistant/sensor/")) + mqttClientID + F("/") + name + F("/config");
     
     StaticJsonDocument<600> doc;
     
-    doc["name"] = String(serverDescription) + " " + name;
-    doc["state_topic"] = topic;
-    doc["unique_id"] = String(mqttClientID) + name;
+    doc[F("name")] = String(serverDescription) + F(" ") + name;
+    doc[F("state_topic")] = topic;
+    doc[F("unique_id")] = String(mqttClientID) + name;
     if (unitOfMeasurement != "")
-      doc["unit_of_measurement"] = unitOfMeasurement;
+      doc[F("unit_of_measurement")] = unitOfMeasurement;
     if (deviceClass != "")
-      doc["device_class"] = deviceClass;
-    doc["expire_after"] = 1800;
+      doc[F("device_class")] = deviceClass;
+    doc[F("expire_after")] = 1800;
 
-    JsonObject device = doc.createNestedObject("device"); // attach the sensor to the same device
-    device["name"] = serverDescription;
-    device["identifiers"] = "wled-sensor-" + String(mqttClientID);
-    device["manufacturer"] = "WLED";
-    device["model"] = "FOSS";
-    device["sw_version"] = versionString;
+    JsonObject device = doc.createNestedObject(F("device")); // attach the sensor to the same device
+    device[F("name")] = serverDescription;
+    device[F("identifiers")] = "wled-sensor-" + String(mqttClientID);
+    device[F("manufacturer")] = F("WLED");
+    device[F("model")] = F("FOSS");
+    device[F("sw_version")] = versionString;
 
     String temp;
     serializeJson(doc, temp);
-    Serial.println(t);
-    Serial.println(temp);
+    DEBUG_PRINTLN(t);
+    DEBUG_PRINTLN(temp);
 
     mqtt->publish(t.c_str(), 0, true, temp.c_str());
   }
@@ -108,8 +119,16 @@ private:
 public:
   void setup()
   {
-    Wire.begin();
-    lightMeter.begin();
+    bool HW_Pins_Used = (ioPin[0]==HW_PIN_SCL && ioPin[1]==HW_PIN_SDA); // note whether architecture-based hardware SCL/SDA pins used
+    PinOwner po = PinOwner::UM_BH1750; // defaults to being pinowner for SCL/SDA pins
+    PinManagerPinType pins[2] = { { ioPin[0], true }, { ioPin[1], true } };  // allocate pins
+    if (HW_Pins_Used) po = PinOwner::HW_I2C; // allow multiple allocations of HW I2C bus pins
+    if (!pinManager.allocateMultiplePins(pins, 2, po)) return;
+    
+    Wire.begin(ioPin[1], ioPin[0]);
+
+    sensorFound = lightMeter.begin();
+    initDone = true;
   }
 
   void loop()
@@ -139,18 +158,23 @@ public:
       lastSend = millis();
       if (WLED_MQTT_CONNECTED)
       {
-        if (!mqttInitialized && HomeAssistantDiscovery)
+        if (!mqttInitialized)
           {
             _mqttInitialize();
             mqttInitialized = true;
           }
         mqtt->publish(mqttLuminanceTopic.c_str(), 0, true, String(lux).c_str());
+        DEBUG_PRINTLN(F("Brightness: ") + String(lux) + F("lx"));
       }
       else
       {
-        DEBUG_PRINTLN("Missing MQTT connection. Not publishing data");
+        DEBUG_PRINTLN(F("Missing MQTT connection. Not publishing data"));
       }
     }
+  }
+
+  inline float getIlluminance() {
+    return (float)lastLux;
   }
 
   void addToJsonInfo(JsonObject &root)
@@ -160,28 +184,23 @@ public:
       user = root.createNestedObject(F("u"));
 
     JsonArray lux_json = user.createNestedArray(F("Luminance"));
-
-    if (!getLuminanceComplete)
-    {
+    if (!sensorFound) {
+        // if no sensor 
+        lux_json.add(F("BH1750 "));
+        lux_json.add(F("Not Found"));
+    } else if (!getLuminanceComplete) {
       // if we haven't read the sensor yet, let the user know
-      // that we are still waiting for the first measurement
-      lux_json.add((USERMOD_BH1750_FIRST_MEASUREMENT_AT - millis()) / 1000);
-      lux_json.add(F(" sec until read"));
-      return;
+        // that we are still waiting for the first measurement
+        lux_json.add((USERMOD_BH1750_FIRST_MEASUREMENT_AT - millis()) / 1000);
+        lux_json.add(F(" sec until read"));
+        return;
+    } else {
+      lux_json.add(lastLux);
+      lux_json.add(F(" lx"));
     }
-
-    lux_json.add(lastLux);
-    lux_json.add(F(" lx"));
   }
 
-  uint16_t getId()
-  {
-    return USERMOD_ID_BH1750;
-  }
-
-  /**
-     * addToConfig() (called from set.cpp) stores persistent properties to cfg.json
-     */
+  // (called from set.cpp) stores persistent properties to cfg.json
   void addToConfig(JsonObject &root)
   {
     // we add JSON object.
@@ -191,35 +210,66 @@ public:
     top[FPSTR(_minReadInterval)] = minReadingInterval;
     top[FPSTR(_HomeAssistantDiscovery)] = HomeAssistantDiscovery;
     top[FPSTR(_offset)] = offset;
+    JsonArray io_pin = top.createNestedArray(F("pin"));
+    for (byte i=0; i<2; i++) io_pin.add(ioPin[i]);
+    top[F("help4Pins")] = F("SCL,SDA"); // help for Settings page
 
-    DEBUG_PRINTLN(F("Photoresistor config saved."));
+    DEBUG_PRINTLN(F("BH1750 config saved."));
   }
 
-  /**
-  * readFromConfig() is called before setup() to populate properties from values stored in cfg.json
-  */
+  // called before setup() to populate properties from values stored in cfg.json
   bool readFromConfig(JsonObject &root)
   {
+    int8_t newPin[2]; for (byte i=0; i<2; i++) newPin[i] = ioPin[i]; // prepare to note changed pins
+
     // we look for JSON object.
     JsonObject top = root[FPSTR(_name)];
     if (top.isNull())
     {
       DEBUG_PRINT(FPSTR(_name));
+      DEBUG_PRINT(F("BH1750"));
       DEBUG_PRINTLN(F(": No config found. (Using defaults.)"));
       return false;
     }
+    bool configComplete = !top.isNull();
 
-    disabled = !(top[FPSTR(_enabled)] | !disabled);
-    maxReadingInterval = (top[FPSTR(_maxReadInterval)] | maxReadingInterval); // ms
-    minReadingInterval = (top[FPSTR(_minReadInterval)] | minReadingInterval); // ms
-    HomeAssistantDiscovery = (top[FPSTR(_HomeAssistantDiscovery)] | HomeAssistantDiscovery);
-    offset = top[FPSTR(_offset)] | offset;
+    configComplete &= getJsonValue(top[FPSTR(_enabled)], disabled, false);
+    configComplete &= getJsonValue(top[FPSTR(_maxReadInterval)], maxReadingInterval, 10000); //ms
+    configComplete &= getJsonValue(top[FPSTR(_minReadInterval)], minReadingInterval, 500); //ms
+    configComplete &= getJsonValue(top[FPSTR(_HomeAssistantDiscovery)], HomeAssistantDiscovery, false);
+    configComplete &= getJsonValue(top[FPSTR(_offset)], offset, 1);
+    for (byte i=0; i<2; i++) configComplete &= getJsonValue(top[F("pin")][i], newPin[i], ioPin[i]);
+
     DEBUG_PRINT(FPSTR(_name));
-    DEBUG_PRINTLN(F(" config (re)loaded."));
+    if (!initDone) {
+      // first run: reading from cfg.json
+      for (byte i=0; i<2; i++) ioPin[i] = newPin[i];
+      DEBUG_PRINTLN(F(" config loaded."));
+    } else {
+      DEBUG_PRINTLN(F(" config (re)loaded."));
+      // changing parameters from settings page
+      bool pinsChanged = false;
+      for (byte i=0; i<2; i++) if (ioPin[i] != newPin[i]) { pinsChanged = true; break; } // check if any pins changed
+      if (pinsChanged) { //if pins changed, deallocate old pins and allocate new ones
+        PinOwner po = PinOwner::UM_BH1750;
+        if (ioPin[0]==HW_PIN_SCL && ioPin[1]==HW_PIN_SDA) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
+        pinManager.deallocateMultiplePins((const uint8_t *)ioPin, 2, po);  // deallocate pins
+        for (byte i=0; i<2; i++) ioPin[i] = newPin[i];
+        setup();
+      }
+      // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
+      return !top[F("pin")].isNull();
+    }
 
-    // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
-    return true;
+    return configComplete;
+    
   }
+
+  uint16_t getId()
+  {
+    return USERMOD_ID_BH1750;
+  }
+
 };
 
 // strings to reduce flash memory usage (used more than twice)
