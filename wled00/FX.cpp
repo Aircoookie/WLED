@@ -5917,7 +5917,7 @@ uint16_t mode_2Dscrollingtext(void) {
 
   return FRAMETIME;
 }
-static const char *_data_FX_MODE_2DSCROLLTEXT PROGMEM = "2D Scrolling Text@!,Y Offset,Trail=0,Font size;!,!;!";
+static const char *_data_FX_MODE_2DSCROLLTEXT PROGMEM = "2D Scrolling Text@!,Y Offset=128,Trail=0,Font size;!,!;!;rev=0,mi=0,rY=0,mY=0";
 
 
 ////////////////////////////
@@ -6650,7 +6650,7 @@ uint16_t mode_matripix(void) {                  // Matripix. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_matripix()
-static const char *_data_FX_MODE_MATRIPIX PROGMEM = " ♪ Matripix@!,Brightness=64;,!;!;mp12=2,ssim=2,rev=1,mi=1,rY=1,mY=1"; // Circle, WeWillRockYou, reverseX
+static const char *_data_FX_MODE_MATRIPIX PROGMEM = " ♪ Matripix@!,Brightness=64;!,!;!;mp12=2,ssim=2,rev=1,mi=1,rY=1,mY=1"; // Circle, WeWillRockYou, reverseX
 
 
 //////////////////////
