@@ -162,11 +162,10 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   }
   #endif
 
-  seg.setOption(SEG_OPTION_SELECTED, elem[F("sel")] | seg.getOption(SEG_OPTION_SELECTED));
-  seg.setOption(SEG_OPTION_REVERSED, elem["rev"]    | seg.getOption(SEG_OPTION_REVERSED));
-  seg.setOption(SEG_OPTION_MIRROR  , elem[F("mi")]  | seg.getOption(SEG_OPTION_MIRROR  ));
+  seg.setOption(SEG_OPTION_SELECTED, elem["sel"]     | seg.getOption(SEG_OPTION_SELECTED));
+  seg.setOption(SEG_OPTION_REVERSED, elem["rev"]     | seg.getOption(SEG_OPTION_REVERSED));
+  seg.setOption(SEG_OPTION_MIRROR  , elem[F("mi")]   | seg.getOption(SEG_OPTION_MIRROR  ));
   #ifndef WLED_DISABLE_2D
-  // 2D options
   seg.setOption(SEG_OPTION_REVERSED_Y, elem[F("rY")] | seg.getOption(SEG_OPTION_REVERSED_Y));
   seg.setOption(SEG_OPTION_MIRROR_Y  , elem[F("mY")] | seg.getOption(SEG_OPTION_MIRROR_Y  ));
   seg.setOption(SEG_OPTION_TRANSPOSED, elem[F("tp")] | seg.getOption(SEG_OPTION_TRANSPOSED));
@@ -178,10 +177,35 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     strip.setMode(id, fx);
   }
 
+  // load default values from effect string if effect is selected without
+  // any other effect parameter (i.e. effect clicked in UI)
+  if (elem[F("sx")].isNull() && elem[F("ix")].isNull() && elem["pal"].isNull() && elem[F("c1")].isNull() && elem[F("c2")].isNull() && elem[F("c3")].isNull()) {
+    char buf[5]; // dummy buffer
+    for (int i=0; i<5; i++) {
+      uint8_t *var;
+      switch (i) {
+        case 0: var = &seg.speed;     break;
+        case 1: var = &seg.intensity; break;
+        case 2: var = &seg.custom1;   break;
+        case 3: var = &seg.custom2;   break;
+        case 4: var = &seg.custom3;   break;
+      }
+      extractModeSlider(fx, i, buf, 4, var);
+    }
+    extractModeSlider(fx, 255, buf, 4, &seg.palette);
+    int16_t sOpt;
+    sOpt = extractModeDefaults(fx, SET_F("mp12")); if (sOpt >= 0) seg.map1D2D  = sOpt & 0x03;
+    sOpt = extractModeDefaults(fx, SET_F("ssim")); if (sOpt >= 0) seg.soundSim = sOpt & 0x07;
+    sOpt = extractModeDefaults(fx, "rev");         if (sOpt >= 0) seg.setOption(SEG_OPTION_REVERSED,   (bool)sOpt);
+    sOpt = extractModeDefaults(fx, SET_F("mi"));   if (sOpt >= 0) seg.setOption(SEG_OPTION_MIRROR,     (bool)sOpt);
+    sOpt = extractModeDefaults(fx, SET_F("rY"));   if (sOpt >= 0) seg.setOption(SEG_OPTION_REVERSED_Y, (bool)sOpt);
+    sOpt = extractModeDefaults(fx, SET_F("mY"));   if (sOpt >= 0) seg.setOption(SEG_OPTION_MIRROR_Y,   (bool)sOpt);
+  }
+
   //getVal also supports inc/decrementing and random
   getVal(elem[F("sx")], &seg.speed);
   getVal(elem[F("ix")], &seg.intensity);
-  getVal(elem["pal"], &seg.palette, 1, strip.getPaletteCount());
+  getVal(elem["pal"],   &seg.palette, 1, strip.getPaletteCount());
   getVal(elem[F("c1")], &seg.custom1);
   getVal(elem[F("c2")], &seg.custom2);
   getVal(elem[F("c3")], &seg.custom3);

@@ -369,7 +369,7 @@ button {
 
 #sliders {
 	width: 300px;
-	margin: 0 auto;
+	margin: 32px auto 0;
 	position: sticky;
 	bottom: 0;
 }

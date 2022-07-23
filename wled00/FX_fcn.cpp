@@ -405,7 +405,7 @@ uint32_t Segment::getPixelColor(uint16_t i)
 {
 #ifndef WLED_DISABLE_2D
   if (height() > 1) { // if this does not work use strip.isMatrix
-    uint16_t vH = virtualHeight();  // segment height in logical pixels
+    //uint16_t vH = virtualHeight();  // segment height in logical pixels
     uint16_t vW = virtualWidth();
     switch (map1D2D) {
       case M12_Pixels:

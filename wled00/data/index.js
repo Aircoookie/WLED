@@ -5,10 +5,10 @@ var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, sy
 var hasWhite = false, hasRGB = false, hasCCT = false;
 var nlDur = 60, nlTar = 0;
 var nlMode = false;
-var selectedFx = 0, prevFx = -1;
+var selectedFx = 0;
 var selectedPal = 0;
 var csel = 0; // selected color slot (0-2)
-var currentPreset = -1, prevPS = -1;
+var currentPreset = -1;
 var lastUpdate = 0;
 var segCount = 0, ledCount = 0, lowestUnused = 0, maxSeg = 0, lSeg = 0;
 var pcMode = false, pcModeA = false, lastw = 0, wW;
@@ -1137,10 +1137,7 @@ function updateSelectedFx()
 	var selectedEffect = parent.querySelector(`.lstI[data-id="${selectedFx}"]`);
 	if (selectedEffect) {
 		selectedEffect.classList.add('selected');
-		var fx = (selectedFx != prevFx) && currentPreset==-1; // effect changed & preset==none
-		var ps = (prevPS != currentPreset) && currentPreset==-1; // preset changed & preset==none
-		// WLEDSR: extract the Slider and color control string from the HTML element and set it.
-		setEffectParameters(selectedFx, (fx || ps));
+		setEffectParameters(selectedFx);
 
 		var selectedName = selectedEffect.querySelector(".lstIname").innerText;
 		var segs = gId("segcont").querySelectorAll(`div[data-map="map2D"]`);
@@ -1218,7 +1215,6 @@ function readState(s,command=false)
 	nlTar = s.nl.tbri;
 	nlFade = s.nl.fade;
 	syncSend = s.udpn.send;
-	prevPS = currentPreset;
 	if (s.pl<0)	currentPreset = s.ps;
 	else currentPreset = s.pl;
 
@@ -1296,7 +1292,6 @@ function readState(s,command=false)
 	  showToast('Error ' + s.error + ": " + errstr, true);
 	}
 
-	prevFx = selectedFx;
 	selectedPal = i.pal;
 	selectedFx = i.fx;
 	redrawPalPrev(); // if any color changed (random palette did at least)
@@ -1325,7 +1320,7 @@ function readState(s,command=false)
 // Note: Effects can override default pattern behaviour
 //       - FadeToBlack can override the background setting
 //       - Defining SEGCOL(<i>) can override a specific palette using these values (e.g. Color Gradient)
-function setEffectParameters(idx, applyDef=false)
+function setEffectParameters(idx)
 {
 	if (!(Array.isArray(fxdata) && fxdata.length>idx)) return;
   	var controlDefined = (fxdata[idx].substr(0,1) == "@");
@@ -1334,14 +1329,6 @@ function setEffectParameters(idx, applyDef=false)
 	var slOnOff = (effectPars.length==0 || effectPars[0]=='')?[]:effectPars[0].split(",");
 	var coOnOff = (effectPars.length<2  || effectPars[1]=='')?[]:effectPars[1].split(",");
 	var paOnOff = (effectPars.length<3  || effectPars[2]=='')?[]:effectPars[2].split(",");
-	var obj = {"seg":{}};
-	// var obj = {"seg": {"rev": false, "rY": false}};
-
-	//assign extra parameters to segment
-	for (let i=3;i<effectPars.length;i++) {
-		let keyval = effectPars[i].split("=");
-		obj.seg[keyval[0]] = keyval[1]=="true"?true:keyval[1]=="false"?false:keyval[1];
-	}
   
 	// set html slider items on/off
 	var nSliders = Math.min(5,Math.floor(gId("sliders").children.length)); // div for each slider
@@ -1354,10 +1341,6 @@ function setEffectParameters(idx, applyDef=false)
 			if (slOnOff.length>i && slOnOff[i].indexOf("=")>0) {
 				// embeded default values
 				var dPos = slOnOff[i].indexOf("=");
-				var v = Math.max(0,Math.min(255,parseInt(slOnOff[i].substr(dPos+1))));
-				if      (i==0) { if (applyDef) gId("sliderSpeed").value     = v; obj.seg.sx = v; }
-				else if (i==1) { if (applyDef) gId("sliderIntensity").value = v; obj.seg.ix = v; }
-				else           { if (applyDef) gId("sliderC"+(i-1)).value   = v; obj.seg["c"+(i-1)] = v}
 				slOnOff[i] = slOnOff[i].substring(0,dPos);
 			}
 			if (slOnOff.length>i && slOnOff[i]!="!") label.innerHTML = slOnOff[i];
@@ -1365,18 +1348,15 @@ function setEffectParameters(idx, applyDef=false)
 			else if (i==1)                           label.innerHTML = "Effect intensity";
 			else                                     label.innerHTML = "Custom" + (i-1);
 			sldCnt++;
-			//if (sldCnt++===0) slider.classList.add("top");
 			slider.classList.remove("hide");
-			//slider.setAttribute('title',label.innerHTML);
 		} else {
 			slider.classList.add("hide");
-			//slider.classList.remove("top");
 		}
 	}
 
 	// set the bottom position of selected effect (sticky) as the top of sliders div
 	let top = parseInt(getComputedStyle(gId("sliders")).height);
-	/*if (sldCnt===1)*/ top += 28; // size of tooltip
+	top += 28; // size of tooltip
 	let sel = d.querySelector('#fxlist .selected');
 	if (sel) sel.style.bottom = top + "px"; // we will need to remove this when unselected (in setX())
 
@@ -1426,11 +1406,6 @@ function setEffectParameters(idx, applyDef=false)
 			// embeded default values
 			var dPos = paOnOff[0].indexOf("=");
 			var v = Math.max(0,Math.min(255,parseInt(paOnOff[0].substr(dPos+1))));
-			var p = d.querySelector(`#pallist input[name="palette"][value="${v}"]`);
-			if (applyDef && p) {
-				p.checked = true;
-				obj.seg.pal = v;
-			}
 			paOnOff[0] = paOnOff[0].substring(0,dPos);
 		}
 		if (paOnOff.length>0 && paOnOff[0] != "!") pall.innerHTML = paOnOff[0];
@@ -1439,14 +1414,11 @@ function setEffectParameters(idx, applyDef=false)
 		// disable palett list
 		pall.innerHTML = '<i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i> Color palette not used';
 		palw.style.display = "none";
-		// if numeric set as selected palette
-		if (paOnOff.length>0 && paOnOff[0]!="" && !isNaN(paOnOff[0]) && parseInt(paOnOff[0])!=selectedPal) obj.seg.pal = parseInt(paOnOff[0]);
 	}
 	// not all color selectors shown, hide palettes created from color selectors
 	for (let e of (gId('pallist').querySelectorAll('.lstI')||[])) {
 		if (cslCnt < 3 && e.querySelector('.lstIname').innerText.indexOf("* C")>=0) e.classList.add('hide'); else e.classList.remove('hide');
 	}
-	if (!isEmpty(obj.seg) && applyDef) requestJson(obj); // update default values (may need throttling on ESP8266)
 }
 
 var jsonTimeout;
@@ -2063,11 +2035,13 @@ function setPalette(paletteId = null)
 	} else {
 		d.querySelector(`#pallist input[name="palette"][value="${paletteId}"]`).checked = true;
 	}
+/*
 	var selElement = d.querySelector('#pallist .selected');
 	if (selElement) {
 		selElement.classList.remove('selected')
 	}
 	d.querySelector(`#pallist .lstI[data-id="${paletteId}"]`).classList.add('selected');
+*/
 	var obj = {"seg": {"pal": paletteId}};
 	requestJson(obj);
 }
