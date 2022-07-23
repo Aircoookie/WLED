@@ -327,7 +327,9 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxL
           names = lineBuffer.substring(stop+1); // stop has index of color slot names
           nameBegin = names.indexOf(';'); // look for palette
           if (nameBegin >= 0) {
+            nameEnd = names.indexOf(';', nameBegin+1);
             if (!isdigit(names[nameBegin+1])) nameBegin = names.indexOf('=', nameBegin+1); // look for default value
+            if (nameEnd >= 0 && nameBegin > nameEnd) nameBegin = -1;
             if (nameBegin >= 0 && var) {
               *var = (uint8_t)atoi(names.substring(nameBegin+1).c_str());
             }
