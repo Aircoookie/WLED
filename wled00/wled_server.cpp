@@ -305,8 +305,8 @@ void initServer()
         DEBUG_PRINTLN(F("Update Success"));
       } else {
         DEBUG_PRINTLN(F("Update Failed"));
-        WLED::instance().enableWatchdog();
         usermods.onUpdateBegin(false); // notify usermods that update has failed (some may require task init)
+        WLED::instance().enableWatchdog();
       }
     }
   });

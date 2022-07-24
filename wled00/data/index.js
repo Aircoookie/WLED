@@ -5,10 +5,10 @@ var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, sy
 var hasWhite = false, hasRGB = false, hasCCT = false;
 var nlDur = 60, nlTar = 0;
 var nlMode = false;
-var selectedFx = 0, prevFx = -1;
+var selectedFx = 0;
 var selectedPal = 0;
 var csel = 0; // selected color slot (0-2)
-var currentPreset = -1, prevPS = -1;
+var currentPreset = -1;
 var lastUpdate = 0;
 var segCount = 0, ledCount = 0, lowestUnused = 0, maxSeg = 0, lSeg = 0;
 var pcMode = false, pcModeA = false, lastw = 0, wW;
@@ -697,22 +697,22 @@ function populateSegments(s)
 			rvYck = `<label class="check revchkl">Reverse<input type="checkbox" id="seg${i}rY" onchange="setRevY(${i})" ${inst.rY?"checked":""}><span class="checkmark schk"></span></label>`;
 			miYck = `<label class="check revchkl">Mirror<input type="checkbox" id="seg${i}mY" onchange="setMiY(${i})" ${inst.mY?"checked":""}><span class="checkmark schk"></span></label>`;
 		}
-		let map2D = `<div id="seg${i}map2D" data-map="map2D" class="lbl-s hide">Expand 1D FX:<br>
-			<select class="sel-p" id="seg${i}mp12" onchange="setMp12(${i})">
+		let map2D = `<div id="seg${i}map2D" data-map="map2D" class="lbl-s hide">Expand 1D FX<br>
+			<div class="sel-p"><select class="sel-p" id="seg${i}mp12" onchange="setMp12(${i})">
 				<option value="0" ${inst.mp12==0?' selected':''}>None</option>
-				<option value="1" ${inst.mp12==1?' selected':''}>Vertical</option>
-				<option value="2" ${inst.mp12==2?' selected':''}>Circle</option>
-				<option value="3" ${inst.mp12==3?' selected':''}>Block</option>
-			</select>
+				<option value="1" ${inst.mp12==1?' selected':''}>Bar</option>
+				<option value="2" ${inst.mp12==2?' selected':''}>Arc</option>
+				<option value="3" ${inst.mp12==3?' selected':''}>Corner</option>
+			</select></div>
 		</div>`;
-		let sndSim = `<div data-snd="ssim" class="lbl-s hide">Sound sim:<br>
-			<select class="sel-p" id="seg${i}ssim" onchange="setSSim(${i})">
+		let sndSim = `<div data-snd="ssim" class="lbl-s hide">Sound sim<br>
+			<div class="sel-p"><select class="sel-p" id="seg${i}ssim" onchange="setSSim(${i})">
 				<option value="0" ${inst.ssim==0?' selected':''}>Off</option>
 				<option value="1" ${inst.ssim==1?' selected':''}>BeatSin</option>
 				<option value="2" ${inst.ssim==2?' selected':''}>WeWillRockYou</option>
 				<option value="3" ${inst.ssim==3?' selected':''}>U10_3</option>
 				<option value="4" ${inst.ssim==4?' selected':''}>U14_3</option>
-			</select>
+			</select></div>
 		</div>`;
 		cn += `<div class="seg lstI ${i==s.mainseg ? 'selected' : ''} ${exp ? "expanded":""}" id="seg${i}">
 	<label class="check schkl">
@@ -1129,15 +1129,15 @@ function updateSelectedFx()
 	if (selEffectInput) selEffectInput.checked = true;
 
 	var selElement = parent.querySelector('.selected');
-	if (selElement) selElement.classList.remove('selected');
+	if (selElement) {
+		selElement.classList.remove('selected');
+		selElement.style.bottom = null; // remove element style added in slider handling
+	}
 
 	var selectedEffect = parent.querySelector(`.lstI[data-id="${selectedFx}"]`);
 	if (selectedEffect) {
 		selectedEffect.classList.add('selected');
-		var fx = (selectedFx != prevFx) && currentPreset==-1; // effect changed & preset==none
-		var ps = (prevPS != currentPreset) && currentPreset==-1; // preset changed & preset==none
-		// WLEDSR: extract the Slider and color control string from the HTML element and set it.
-		setEffectParameters(selectedFx, (fx || ps));
+		setEffectParameters(selectedFx);
 
 		var selectedName = selectedEffect.querySelector(".lstIname").innerText;
 		var segs = gId("segcont").querySelectorAll(`div[data-map="map2D"]`);
@@ -1215,7 +1215,6 @@ function readState(s,command=false)
 	nlTar = s.nl.tbri;
 	nlFade = s.nl.fade;
 	syncSend = s.udpn.send;
-	prevPS = currentPreset;
 	if (s.pl<0)	currentPreset = s.ps;
 	else currentPreset = s.pl;
 
@@ -1293,7 +1292,6 @@ function readState(s,command=false)
 	  showToast('Error ' + s.error + ": " + errstr, true);
 	}
 
-	prevFx = selectedFx;
 	selectedPal = i.pal;
 	selectedFx = i.fx;
 	redrawPalPrev(); // if any color changed (random palette did at least)
@@ -1322,7 +1320,7 @@ function readState(s,command=false)
 // Note: Effects can override default pattern behaviour
 //       - FadeToBlack can override the background setting
 //       - Defining SEGCOL(<i>) can override a specific palette using these values (e.g. Color Gradient)
-function setEffectParameters(idx, applyDef=false)
+function setEffectParameters(idx)
 {
 	if (!(Array.isArray(fxdata) && fxdata.length>idx)) return;
   	var controlDefined = (fxdata[idx].substr(0,1) == "@");
@@ -1331,14 +1329,6 @@ function setEffectParameters(idx, applyDef=false)
 	var slOnOff = (effectPars.length==0 || effectPars[0]=='')?[]:effectPars[0].split(",");
 	var coOnOff = (effectPars.length<2  || effectPars[1]=='')?[]:effectPars[1].split(",");
 	var paOnOff = (effectPars.length<3  || effectPars[2]=='')?[]:effectPars[2].split(",");
-	var obj = {"seg":{}};
-	// var obj = {"seg": {"rev": false, "rY": false}};
-
-	//assign extra parameters to segment
-	for (let i=3;i<effectPars.length;i++) {
-		let keyval = effectPars[i].split("=");
-		obj.seg[keyval[0]] = keyval[1]=="true"?true:keyval[1]=="false"?false:keyval[1];
-	}
   
 	// set html slider items on/off
 	var nSliders = Math.min(5,Math.floor(gId("sliders").children.length)); // div for each slider
@@ -1351,10 +1341,6 @@ function setEffectParameters(idx, applyDef=false)
 			if (slOnOff.length>i && slOnOff[i].indexOf("=")>0) {
 				// embeded default values
 				var dPos = slOnOff[i].indexOf("=");
-				var v = Math.max(0,Math.min(255,parseInt(slOnOff[i].substr(dPos+1))));
-				if      (i==0) { if (applyDef) gId("sliderSpeed").value     = v; obj.seg.sx = v; }
-				else if (i==1) { if (applyDef) gId("sliderIntensity").value = v; obj.seg.ix = v; }
-				else           { if (applyDef) gId("sliderC"+(i-1)).value   = v; obj.seg["c"+(i-1)] = v}
 				slOnOff[i] = slOnOff[i].substring(0,dPos);
 			}
 			if (slOnOff.length>i && slOnOff[i]!="!") label.innerHTML = slOnOff[i];
@@ -1362,18 +1348,15 @@ function setEffectParameters(idx, applyDef=false)
 			else if (i==1)                           label.innerHTML = "Effect intensity";
 			else                                     label.innerHTML = "Custom" + (i-1);
 			sldCnt++;
-			//if (sldCnt++===0) slider.classList.add("top");
 			slider.classList.remove("hide");
-			//slider.setAttribute('title',label.innerHTML);
 		} else {
 			slider.classList.add("hide");
-			//slider.classList.remove("top");
 		}
 	}
 
 	// set the bottom position of selected effect (sticky) as the top of sliders div
 	let top = parseInt(getComputedStyle(gId("sliders")).height);
-	/*if (sldCnt===1)*/ top += 28; // size of tooltip
+	top += 28; // size of tooltip
 	let sel = d.querySelector('#fxlist .selected');
 	if (sel) sel.style.bottom = top + "px"; // we will need to remove this when unselected (in setX())
 
@@ -1423,11 +1406,6 @@ function setEffectParameters(idx, applyDef=false)
 			// embeded default values
 			var dPos = paOnOff[0].indexOf("=");
 			var v = Math.max(0,Math.min(255,parseInt(paOnOff[0].substr(dPos+1))));
-			var p = d.querySelector(`#pallist input[name="palette"][value="${v}"]`);
-			if (applyDef && p) {
-				p.checked = true;
-				obj.seg.pal = v;
-			}
 			paOnOff[0] = paOnOff[0].substring(0,dPos);
 		}
 		if (paOnOff.length>0 && paOnOff[0] != "!") pall.innerHTML = paOnOff[0];
@@ -1436,14 +1414,11 @@ function setEffectParameters(idx, applyDef=false)
 		// disable palett list
 		pall.innerHTML = '<i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i> Color palette not used';
 		palw.style.display = "none";
-		// if numeric set as selected palette
-		if (paOnOff.length>0 && paOnOff[0]!="" && !isNaN(paOnOff[0]) && parseInt(paOnOff[0])!=selectedPal) obj.seg.pal = parseInt(paOnOff[0]);
 	}
 	// not all color selectors shown, hide palettes created from color selectors
 	for (let e of (gId('pallist').querySelectorAll('.lstI')||[])) {
 		if (cslCnt < 3 && e.querySelector('.lstIname').innerText.indexOf("* C")>=0) e.classList.add('hide'); else e.classList.remove('hide');
 	}
-	if (!isEmpty(obj.seg) && applyDef) requestJson(obj); // update default values (may need throttling on ESP8266)
 }
 
 var jsonTimeout;
@@ -1658,14 +1633,14 @@ var plJson = {"0":{
 	"end": 0
 }};
 
-function makePlSel(incPl=false) {
+function makePlSel(el, incPl=false) {
 	var plSelContent = "";
 	delete pJson["0"];	// remove filler preset
 	var arr = Object.entries(pJson);
 	for (var i = 0; i < arr.length; i++) {
 		var n = arr[i][1].n ? arr[i][1].n : "Preset " + arr[i][0];
 		if (!incPl && arr[i][1].playlist && arr[i][1].playlist.ps) continue; // remove playlists, sub-playlists not yet supported
-		plSelContent += `<option value="${arr[i][0]}">${n}</option>`
+		plSelContent += `<option value="${arr[i][0]}" ${arr[i][0]==el?"selected":""}>${n}</option>`
 	}
 	return plSelContent;
 }
@@ -1751,11 +1726,11 @@ function makeP(i,pl) {
 <div id="pl${i}o1" style="display:${rep>0?"block":"none"}">
 <div class="c">Repeat <input class="noslide" type="number" id="pl${i}rp" oninput="plR(${i})" max=127 min=0 value=${rep>0?rep:1}> times</div>
 <div class="sel">End preset:<br>
-<select class="sel-ple" id="pl${i}selEnd" onchange="plR(${i})" data-val=${plJson[i].end?plJson[i].end:0}>
+<div class="sel-p"><select class="sel-ple" id="pl${i}selEnd" onchange="plR(${i})" data-val=${plJson[i].end?plJson[i].end:0}>
 <option value="0">None</option>
 <option value="255">Restore preset</option>
-${makePlSel(true)}
-</select></div>
+${makePlSel(plJson[i].end?plJson[i].end:0, true)}
+</select></div></div>
 </div>
 <div class="c"><button class="btn btn-p" onclick="testPl(${i}, this)"><i class='icons btn-icon'>&#xe139;</i>Test</button></div>`;
 	} else {
@@ -1835,9 +1810,9 @@ function makePlEntry(p,i) {
 	<table>
 	<tr>
 		<td width="80%" colspan=2>
-			<select class="sel-pl" onchange="plePs(${p},${i},this)" data-val="${plJson[p].ps[i]}" data-index="${i}">
-			${makePlSel()}
-			</select>
+			<div class="sel-p"><select class="sel-pl" onchange="plePs(${p},${i},this)" data-val="${plJson[p].ps[i]}" data-index="${i}">
+			${makePlSel(plJson[p].ps[i])}
+			</select></div>
 		</td>
 		<td class="c"><button class="btn btn-pl-add" onclick="addPl(${p},${i})"><i class="icons btn-icon">&#xe18a;</i></button></td>
 	</tr>
@@ -2061,6 +2036,8 @@ function setX(ind = null)
 	} else {
 		d.querySelector(`#fxlist input[name="fx"][value="${ind}"]`).checked = true;
 	}
+/*
+	// this code also in updateSelectedFx
 	var selElement = d.querySelector('#fxlist .selected');
 	if (selElement) {
 		selElement.classList.remove('selected');
@@ -2068,7 +2045,7 @@ function setX(ind = null)
 	}
 
 	d.querySelector(`#fxlist .lstI[data-id="${ind}"]`).classList.add('selected');
-
+*/
 	var obj = {"seg": {"fx": parseInt(ind)}};
 	requestJson(obj);
 }
@@ -2080,11 +2057,13 @@ function setPalette(paletteId = null)
 	} else {
 		d.querySelector(`#pallist input[name="palette"][value="${paletteId}"]`).checked = true;
 	}
+/*
 	var selElement = d.querySelector('#pallist .selected');
 	if (selElement) {
 		selElement.classList.remove('selected')
 	}
 	d.querySelector(`#pallist .lstI[data-id="${paletteId}"]`).classList.add('selected');
+*/
 	var obj = {"seg": {"pal": paletteId}};
 	requestJson(obj);
 }

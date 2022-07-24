@@ -299,7 +299,7 @@ class UsermodManager {
     void onUpdateBegin(bool);
     bool add(Usermod* um);
     Usermod* lookup(uint16_t mod_id);
-    byte getModCount();
+    byte getModCount() {return numMods;};
 };
 
 //usermods_list.cpp
@@ -324,7 +324,8 @@ bool isAsterisksOnly(const char* str, byte maxLen);
 bool requestJSONBufferLock(uint8_t module=255);
 void releaseJSONBufferLock();
 uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLen);
-uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxLen);
+uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxLen, uint8_t *var = nullptr);
+int16_t extractModeDefaults(uint8_t mode, const char *segVar);
 uint16_t crc16(const unsigned char* data_p, size_t length);
 
 //wled_eeprom.cpp
