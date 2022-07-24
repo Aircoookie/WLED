@@ -827,17 +827,19 @@ input[type=range]::-moz-range-thumb {
 }
 
 select {
-	padding: 4px;
+	padding: 4px 0 4px 8px;
 	margin: 0;
 	font-size: 19px;
 	background-color: var(--c-3);
 	color: var(--c-d);
 	cursor: pointer;
 	border: 1px solid var(--c-2);
-	border-radius: 5px;
+	border-radius: 20px;
 	transition-duration: 0.5s;
 	-webkit-backface-visibility: hidden;
 	-webkit-transform:translate3d(0,0,0);
+    -webkit-appearance: none; 
+    -moz-appearance: none; 
 	backface-visibility: hidden;
 	transform:translate3d(0,0,0);
 }
@@ -847,16 +849,26 @@ select {
 .cl {
 	background-color: #000;
 }
-.sel-p {
-	margin: 5px 0 10px;
-	width: 5em;
-}
-.sel-pl {
+select.sel-p, select.sel-pl, select.sel-ple {
+	margin: 5px 0;
 	width: 100%;
-	background-position: 141px 16px;
+	height: 40px;
 }
-.sel-ple {
-	width: 100%;
+div.sel-p {
+	position: relative;
+}
+div.sel-p:after {
+    content: "";
+    position: absolute;
+    right: 10px;
+    top: 22px;
+    width: 0; 
+    height: 0; 
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid var(--c-f);
+}
+select.sel-ple {
 	text-align: center;
 }
 option {
@@ -1175,8 +1187,10 @@ TD .checkmark, TD .radiomark {
 
 .lbl-s {
 	display: inline-block;
-	margin: 10px 4px 0 0;
+	/* margin: 10px 4px 0 0; */
 	font-size: 13px;
+	width: 48%;
+	text-align: center;
 }
 
 /* list wrapper */

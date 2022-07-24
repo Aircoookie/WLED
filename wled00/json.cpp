@@ -194,8 +194,14 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     }
     extractModeSlider(fx, 255, buf, 4, &seg.palette);
     int16_t sOpt;
-    sOpt = extractModeDefaults(fx, SET_F("mp12")); if (sOpt >= 0) seg.map1D2D  = sOpt & 0x03;
-    sOpt = extractModeDefaults(fx, SET_F("ssim")); if (sOpt >= 0) seg.soundSim = sOpt & 0x07;
+    sOpt = extractModeDefaults(fx, SET_F("sx"));   if (sOpt >= 0) seg.speed     = sOpt;
+    sOpt = extractModeDefaults(fx, SET_F("ix"));   if (sOpt >= 0) seg.intensity = sOpt;
+    sOpt = extractModeDefaults(fx, SET_F("c1"));   if (sOpt >= 0) seg.custom1   = sOpt;
+    sOpt = extractModeDefaults(fx, SET_F("c2"));   if (sOpt >= 0) seg.custom2   = sOpt;
+    sOpt = extractModeDefaults(fx, SET_F("c3"));   if (sOpt >= 0) seg.custom3   = sOpt;
+    sOpt = extractModeDefaults(fx, "pal");         if (sOpt >= 0) seg.palette   = sOpt;
+    sOpt = extractModeDefaults(fx, SET_F("mp12")); if (sOpt >= 0) seg.map1D2D   = sOpt & 0x03;
+    sOpt = extractModeDefaults(fx, SET_F("ssim")); if (sOpt >= 0) seg.soundSim  = sOpt & 0x07;
     sOpt = extractModeDefaults(fx, "rev");         if (sOpt >= 0) seg.setOption(SEG_OPTION_REVERSED,   (bool)sOpt);
     sOpt = extractModeDefaults(fx, SET_F("mi"));   if (sOpt >= 0) seg.setOption(SEG_OPTION_MIRROR,     (bool)sOpt);
     sOpt = extractModeDefaults(fx, SET_F("rY"));   if (sOpt >= 0) seg.setOption(SEG_OPTION_REVERSED_Y, (bool)sOpt);

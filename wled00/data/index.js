@@ -697,22 +697,22 @@ function populateSegments(s)
 			rvYck = `<label class="check revchkl">Reverse<input type="checkbox" id="seg${i}rY" onchange="setRevY(${i})" ${inst.rY?"checked":""}><span class="checkmark schk"></span></label>`;
 			miYck = `<label class="check revchkl">Mirror<input type="checkbox" id="seg${i}mY" onchange="setMiY(${i})" ${inst.mY?"checked":""}><span class="checkmark schk"></span></label>`;
 		}
-		let map2D = `<div id="seg${i}map2D" data-map="map2D" class="lbl-s hide">Expand 1D FX:<br>
-			<select class="sel-p" id="seg${i}mp12" onchange="setMp12(${i})">
+		let map2D = `<div id="seg${i}map2D" data-map="map2D" class="lbl-s hide">Expand 1D FX<br>
+			<div class="sel-p"><select class="sel-p" id="seg${i}mp12" onchange="setMp12(${i})">
 				<option value="0" ${inst.mp12==0?' selected':''}>None</option>
-				<option value="1" ${inst.mp12==1?' selected':''}>Vertical</option>
-				<option value="2" ${inst.mp12==2?' selected':''}>Circle</option>
-				<option value="3" ${inst.mp12==3?' selected':''}>Block</option>
-			</select>
+				<option value="1" ${inst.mp12==1?' selected':''}>Bar</option>
+				<option value="2" ${inst.mp12==2?' selected':''}>Arc</option>
+				<option value="3" ${inst.mp12==3?' selected':''}>Corner</option>
+			</select></div>
 		</div>`;
-		let sndSim = `<div data-snd="ssim" class="lbl-s hide">Sound sim:<br>
-			<select class="sel-p" id="seg${i}ssim" onchange="setSSim(${i})">
+		let sndSim = `<div data-snd="ssim" class="lbl-s hide">Sound sim<br>
+			<div class="sel-p"><select class="sel-p" id="seg${i}ssim" onchange="setSSim(${i})">
 				<option value="0" ${inst.ssim==0?' selected':''}>Off</option>
 				<option value="1" ${inst.ssim==1?' selected':''}>BeatSin</option>
 				<option value="2" ${inst.ssim==2?' selected':''}>WeWillRockYou</option>
 				<option value="3" ${inst.ssim==3?' selected':''}>U10_3</option>
 				<option value="4" ${inst.ssim==4?' selected':''}>U14_3</option>
-			</select>
+			</select></div>
 		</div>`;
 		cn += `<div class="seg lstI ${i==s.mainseg ? 'selected' : ''} ${exp ? "expanded":""}" id="seg${i}">
 	<label class="check schkl">
@@ -1611,14 +1611,14 @@ var plJson = {"0":{
 	"end": 0
 }};
 
-function makePlSel(incPl=false) {
+function makePlSel(el, incPl=false) {
 	var plSelContent = "";
 	delete pJson["0"];	// remove filler preset
 	var arr = Object.entries(pJson);
 	for (var i = 0; i < arr.length; i++) {
 		var n = arr[i][1].n ? arr[i][1].n : "Preset " + arr[i][0];
 		if (!incPl && arr[i][1].playlist && arr[i][1].playlist.ps) continue; // remove playlists, sub-playlists not yet supported
-		plSelContent += `<option value="${arr[i][0]}">${n}</option>`
+		plSelContent += `<option value="${arr[i][0]}" ${arr[i][0]==el?"selected":""}>${n}</option>`
 	}
 	return plSelContent;
 }
@@ -1704,11 +1704,11 @@ function makeP(i,pl) {
 <div id="pl${i}o1" style="display:${rep>0?"block":"none"}">
 <div class="c">Repeat <input class="noslide" type="number" id="pl${i}rp" oninput="plR(${i})" max=127 min=0 value=${rep>0?rep:1}> times</div>
 <div class="sel">End preset:<br>
-<select class="sel-ple" id="pl${i}selEnd" onchange="plR(${i})" data-val=${plJson[i].end?plJson[i].end:0}>
+<div class="sel-p"><select class="sel-ple" id="pl${i}selEnd" onchange="plR(${i})" data-val=${plJson[i].end?plJson[i].end:0}>
 <option value="0">None</option>
 <option value="255">Restore preset</option>
-${makePlSel(true)}
-</select></div>
+${makePlSel(plJson[i].end?plJson[i].end:0, true)}
+</select></div></div>
 </div>
 <div class="c"><button class="btn btn-p" onclick="testPl(${i}, this)"><i class='icons btn-icon'>&#xe139;</i>Test</button></div>`;
 	} else {
@@ -1788,9 +1788,9 @@ function makePlEntry(p,i) {
 	<table>
 	<tr>
 		<td width="80%" colspan=2>
-			<select class="sel-pl" onchange="plePs(${p},${i},this)" data-val="${plJson[p].ps[i]}" data-index="${i}">
-			${makePlSel()}
-			</select>
+			<div class="sel-p"><select class="sel-pl" onchange="plePs(${p},${i},this)" data-val="${plJson[p].ps[i]}" data-index="${i}">
+			${makePlSel(plJson[p].ps[i])}
+			</select></div>
 		</td>
 		<td class="c"><button class="btn btn-pl-add" onclick="addPl(${p},${i})"><i class="icons btn-icon">&#xe18a;</i></button></td>
 	</tr>
