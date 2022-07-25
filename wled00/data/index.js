@@ -605,7 +605,7 @@ function parseInfo(i) {
 	mh = i.leds.matrix ? i.leds.matrix.h : 0;
 	isM = mw>0 && mh>0;
 	if (!isM) hideModes("2D ");
-	if (!i.u || !i.u.AudioReactive) { /*hideModes("♪ ");*/ hideModes("♫ "); }	// hide /*audio*/ frequency reactive effects
+	//if (!i.u || !i.u.AudioReactive) { /*hideModes(" ♪");*/ hideModes(" ♫"); }	// hide /*audio*/ frequency reactive effects
 }
 
 //https://stackoverflow.com/questions/2592092/executing-script-elements-inserted-with-innerhtml
@@ -707,11 +707,10 @@ function populateSegments(s)
 		</div>`;
 		let sndSim = `<div data-snd="ssim" class="lbl-s hide">Sound sim<br>
 			<div class="sel-p"><select class="sel-p" id="seg${i}ssim" onchange="setSSim(${i})">
-				<option value="0" ${inst.ssim==0?' selected':''}>Off</option>
-				<option value="1" ${inst.ssim==1?' selected':''}>BeatSin</option>
-				<option value="2" ${inst.ssim==2?' selected':''}>WeWillRockYou</option>
-				<option value="3" ${inst.ssim==3?' selected':''}>U10_3</option>
-				<option value="4" ${inst.ssim==4?' selected':''}>U14_3</option>
+				<option value="0" ${inst.ssim==0?' selected':''}>BeatSin</option>
+				<option value="1" ${inst.ssim==1?' selected':''}>WeWillRockYou</option>
+				<option value="2" ${inst.ssim==2?' selected':''}>U10_3</option>
+				<option value="3" ${inst.ssim==3?' selected':''}>U14_3</option>
 			</select></div>
 		</div>`;
 		cn += `<div class="seg lstI ${i==s.mainseg ? 'selected' : ''} ${exp ? "expanded":""}" id="seg${i}">
@@ -1143,7 +1142,7 @@ function updateSelectedFx()
 		var segs = gId("segcont").querySelectorAll(`div[data-map="map2D"]`);
 		for (const seg of segs) if (selectedName.indexOf("2D ")<0) seg.classList.remove("hide"); else seg.classList.add("hide");
 		var segs = gId("segcont").querySelectorAll(`div[data-snd="ssim"]`);
-		for (const seg of segs) if (selectedName.indexOf("♪ ")<0 && selectedName.indexOf("♫ ")<0) seg.classList.add("hide"); else seg.classList.remove("hide"); // also "♫ "?
+		for (const seg of segs) if (selectedName.indexOf(" ♪")<0 && selectedName.indexOf(" ♫")<0) seg.classList.add("hide"); else seg.classList.remove("hide"); // also "♫ "?
 	}
 }
 
