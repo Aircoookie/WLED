@@ -6,13 +6,13 @@ These tables below show which material to use for which part and how much of it 
 
 ## Approximate opaque material demand:
 
-| Part                 | Weight* | Pieces |  Total   | Supports |
-|----------------------|--------:|-------:|---------:|:--------:|
-| [Base](base.3mf)     |     86g |      1 |    86g   |    No    |
-| [Bottom](bottom.3mf) |     32g |      1 |    32g   |  Manual  |
-| [Colon](colon.3mf)   |      9g |      1 |     9g   |  Manual  |
-| [Digit](digit.3mf)   |     40g |      4 |   160g   |  Manual  |
-|                      |         |        | **287g** |          |
+| Part                 | Weight* | Pieces |   Total   | Supports |
+|----------------------|--------:|-------:|----------:|:--------:|
+| [Base](base.3mf)     |    ~96g |      1 |    ~96g   |    No    |
+| [Bottom](bottom.3mf) |    ~37g |      1 |    ~37g   |  Manual  |
+| [Colon](colon.3mf)   |     ~9g |      1 |     ~9g   |  Manual  |
+| [Digit](digit.3mf)   |    ~44g |      4 |   ~176g   |  Manual  |
+|                      |         |        | **~318g** |          |
 
 *\* Excluding skirt/brim, and supports.*
 
