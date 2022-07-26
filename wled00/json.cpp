@@ -172,51 +172,40 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   #endif
 
   byte fx = seg.mode;
-  if (getVal(elem["fx"], &fx, 0, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 0-255 exact value)
+  if (getVal(elem["fx"], &fx, 1, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 1-255 exact value)
     if (!presetId && currentPlaylist>=0) unloadPlaylist();
-    if (fx != seg.mode) {
-      //seg.startTransition(strip.getTransition()); // set effect transitions
-      seg.markForReset();
-      seg.mode = fx;
-      // load default values from effect string if effect is selected without
-      // any other effect parameter (i.e. effect clicked in UI)
-      if ( elem[F("sx")].isNull()
-        && elem[F("ix")].isNull()
-        && elem["pal"].isNull()
-        && elem[F("c1")].isNull()
-        && elem[F("c2")].isNull()
-        && elem[F("c3")].isNull() )
-      {
-        // compatibility mode begin
-        char buf[5]; // dummy buffer
-        for (int i=0; i<5; i++) {
-          uint8_t *var;
-          switch (i) {
-            case 0: var = &seg.speed;     break;
-            case 1: var = &seg.intensity; break;
-            case 2: var = &seg.custom1;   break;
-            case 3: var = &seg.custom2;   break;
-            case 4: var = &seg.custom3;   break;
-          }
-          extractModeSlider(fx, i, buf, 4, var);
-        }
-        extractModeSlider(fx, 255, buf, 4, &seg.palette);
-        //end compatibility mode
-        int16_t sOpt;
-        sOpt = extractModeDefaults(fx, SET_F("sx"));   if (sOpt >= 0) seg.speed     = sOpt;
-        sOpt = extractModeDefaults(fx, SET_F("ix"));   if (sOpt >= 0) seg.intensity = sOpt;
-        sOpt = extractModeDefaults(fx, SET_F("c1"));   if (sOpt >= 0) seg.custom1   = sOpt;
-        sOpt = extractModeDefaults(fx, SET_F("c2"));   if (sOpt >= 0) seg.custom2   = sOpt;
-        sOpt = extractModeDefaults(fx, SET_F("c3"));   if (sOpt >= 0) seg.custom3   = sOpt;
-        sOpt = extractModeDefaults(fx, "pal");         if (sOpt >= 0 && sOpt < strip.getPaletteCount()) seg.palette   = sOpt;
-        sOpt = extractModeDefaults(fx, SET_F("mp12")); if (sOpt >= 0) seg.map1D2D   = sOpt & 0x03;
-        sOpt = extractModeDefaults(fx, SET_F("ssim")); if (sOpt >= 0) seg.soundSim  = sOpt & 0x07;
-        sOpt = extractModeDefaults(fx, "rev");         if (sOpt >= 0) seg.reverse   = (bool)sOpt; // setOption(SEG_OPTION_REVERSED,   (bool)sOpt); // NOTE: setting this option is a risky business
-        sOpt = extractModeDefaults(fx, SET_F("mi"));   if (sOpt >= 0) seg.mirror    = (bool)sOpt; // setOption(SEG_OPTION_MIRROR,     (bool)sOpt); // NOTE: setting this option is a risky business
-        sOpt = extractModeDefaults(fx, SET_F("rY"));   if (sOpt >= 0) seg.reverse_y = (bool)sOpt; // setOption(SEG_OPTION_REVERSED_Y, (bool)sOpt); // NOTE: setting this option is a risky business
-        sOpt = extractModeDefaults(fx, SET_F("mY"));   if (sOpt >= 0) seg.mirror_y  = (bool)sOpt; // setOption(SEG_OPTION_MIRROR_Y,   (bool)sOpt); // NOTE: setting this option is a risky business
+    strip.setMode(id, fx);
+  }
+
+  // load default values from effect string if effect is selected without
+  // any other effect parameter (i.e. effect clicked in UI)
+  if (elem[F("sx")].isNull() && elem[F("ix")].isNull() && elem["pal"].isNull() && elem[F("c1")].isNull() && elem[F("c2")].isNull() && elem[F("c3")].isNull()) {
+    char buf[5]; // dummy buffer
+    for (int i=0; i<5; i++) {
+      uint8_t *var;
+      switch (i) {
+        case 0: var = &seg.speed;     break;
+        case 1: var = &seg.intensity; break;
+        case 2: var = &seg.custom1;   break;
+        case 3: var = &seg.custom2;   break;
+        case 4: var = &seg.custom3;   break;
       }
+      extractModeSlider(fx, i, buf, 4, var);
     }
+    extractModeSlider(fx, 255, buf, 4, &seg.palette);
+    int16_t sOpt;
+    sOpt = extractModeDefaults(fx, SET_F("sx"));   if (sOpt >= 0) seg.speed     = sOpt;
+    sOpt = extractModeDefaults(fx, SET_F("ix"));   if (sOpt >= 0) seg.intensity = sOpt;
+    sOpt = extractModeDefaults(fx, SET_F("c1"));   if (sOpt >= 0) seg.custom1   = sOpt;
+    sOpt = extractModeDefaults(fx, SET_F("c2"));   if (sOpt >= 0) seg.custom2   = sOpt;
+    sOpt = extractModeDefaults(fx, SET_F("c3"));   if (sOpt >= 0) seg.custom3   = sOpt;
+    sOpt = extractModeDefaults(fx, "pal");         if (sOpt >= 0) seg.palette   = sOpt;
+    sOpt = extractModeDefaults(fx, SET_F("mp12")); if (sOpt >= 0) seg.map1D2D   = sOpt & 0x03;
+    sOpt = extractModeDefaults(fx, SET_F("ssim")); if (sOpt >= 0) seg.soundSim  = sOpt & 0x07;
+    sOpt = extractModeDefaults(fx, "rev");         if (sOpt >= 0) seg.setOption(SEG_OPTION_REVERSED,   (bool)sOpt);
+    sOpt = extractModeDefaults(fx, SET_F("mi"));   if (sOpt >= 0) seg.setOption(SEG_OPTION_MIRROR,     (bool)sOpt);
+    sOpt = extractModeDefaults(fx, SET_F("rY"));   if (sOpt >= 0) seg.setOption(SEG_OPTION_REVERSED_Y, (bool)sOpt);
+    sOpt = extractModeDefaults(fx, SET_F("mY"));   if (sOpt >= 0) seg.setOption(SEG_OPTION_MIRROR_Y,   (bool)sOpt);
   }
 
   //getVal also supports inc/decrementing and random

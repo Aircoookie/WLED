@@ -233,6 +233,14 @@ button {
 	border: 0px;
 }
 
+#liveview2D {
+	height: 320px;
+	display: none;
+	width: 100%;
+	border: 0px;
+	margin: auto;
+}
+
 .tab {
 	background-color: transparent;
 	color: var(--c-d);
@@ -827,13 +835,13 @@ input[type=range]::-moz-range-thumb {
 }
 
 select {
-	padding: 4px 8px;
+	padding: 4px 0 4px 8px;
 	margin: 0;
 	font-size: 19px;
 	background-color: var(--c-3);
 	color: var(--c-d);
 	cursor: pointer;
-	border: 0 solid var(--c-2);
+	border: 1px solid var(--c-2);
 	border-radius: 20px;
 	transition-duration: 0.5s;
 	-webkit-backface-visibility: hidden;
@@ -842,7 +850,6 @@ select {
     -moz-appearance: none; 
 	backface-visibility: hidden;
 	transform:translate3d(0,0,0);
-	text-overflow: ellipsis;
 }
 #tt {
 	text-align: center;

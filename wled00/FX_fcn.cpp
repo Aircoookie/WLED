@@ -284,11 +284,11 @@ uint16_t Segment::virtualLength() {
     uint32_t vLen = vW * vH; // use all pixels from segment
     switch (map1D2D) {
       case M12_VerticalBar:
-        vLen = vW; // segment width since it is used in getPixelColor()
+        vLen = vW;
         break;
-      case M12_Block:
       case M12_Circle:
-        vLen = max(vW,vH); // get the longest dimension
+      case M12_Block:
+        vLen = (vW + vH) / 2; // take half of the average width
         break;
     }
     return vLen;
@@ -317,7 +317,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         break;
       case M12_Circle:
         // expand in circular fashion from center
-        for (float degrees = 0.0f; degrees <= 90.0f; degrees += 89.99f / (sqrtf((float)max(vH,vW))*i+1)) { // this may prove too many iterations on larger matrices
+        for (float degrees = 0; degrees <= 90; degrees += 90.0f / (4*i+1)) { // this may prove too many iterations on larger matrices
           // may want to try float version as well (with or without antialiasing)
           int x = roundf(sin_t(degrees*DEG_TO_RAD) * i);
           int y = roundf(cos_t(degrees*DEG_TO_RAD) * i);
@@ -405,19 +405,17 @@ uint32_t Segment::getPixelColor(uint16_t i)
 {
 #ifndef WLED_DISABLE_2D
   if (height() > 1) { // if this does not work use strip.isMatrix
-    uint16_t vH = virtualHeight();  // segment height in logical pixels
+    //uint16_t vH = virtualHeight();  // segment height in logical pixels
     uint16_t vW = virtualWidth();
     switch (map1D2D) {
       case M12_Pixels:
         return getPixelColorXY(i % vW, i / vW);
         break;
       case M12_VerticalBar:
-        return getPixelColorXY(i, 0);
-        break;
       case M12_Circle:
       case M12_Block:
-        // use longest dimension
-        return vW>vH ? getPixelColorXY(i, 0) : getPixelColorXY(0, i);
+        // only use 1st row
+        return getPixelColorXY(i, 0);
         break;
     }
     return 0;

@@ -3377,7 +3377,7 @@ uint16_t mode_exploding_fireworks(void)
   return FRAMETIME;  
 }
 #undef MAX_SPARKS
-static const char *_data_FX_MODE_EXPLODING_FIREWORKS PROGMEM = "Fireworks 1D/2D@Gravity,Firing side=128;!,!,;!=11";
+static const char *_data_FX_MODE_EXPLODING_FIREWORKS PROGMEM = "Fireworks 1D@Gravity,Firing side=128;!,!,;!=11";
 
 
 /*
@@ -4674,7 +4674,7 @@ uint16_t mode_2Ddna(void) {         // dna originally by by ldirko at https://pa
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(leds, CRGB::Black);
+  if (SEGENV.call == 0) SEGMENT.fill_solid(leds, 0);
 
   SEGMENT.fadeToBlackBy(leds, 64);
 
@@ -4687,7 +4687,7 @@ uint16_t mode_2Ddna(void) {         // dna originally by by ldirko at https://pa
   SEGMENT.setPixels(leds);
   return FRAMETIME;
 } // mode_2Ddna()
-static const char *_data_FX_MODE_2DDNA PROGMEM = "2D DNA@Scroll speed,Blur;1,2,3;!";
+static const char *_data_FX_MODE_2DDNA PROGMEM = "2D DNA@Scroll speed,Blur;;!";
 
 
 /////////////////////////
@@ -5996,11 +5996,194 @@ static const char *_data_FX_MODE_2DDRIFTROSE PROGMEM = "2D Drift Rose@Fade,Blur;
     inputLevel    =  (uint8_t*) um_data->u_data[17]; // requires UI element (SEGMENT.customX?), changes source element
   } else {
     // add support for no audio data
-    um_data = simulateSound(SEGMENT.soundSim);
+    uint32_t ms = millis();
+    sample = inoise8(beatsin8(120, 10, 30)*10 + (ms>>14), ms>>3);
+    sample = map(sample, 50, 190, 0, 224);
+    sampleAvg = inoise8(beatsin8(90, 0, 200)*15 + (ms>>10), ms>>3);
+    samplePeak = random8() > 250; // or use: sample==224
+    FFT_MajorPeak = inoise8(beatsin8(90, 0, 200)*15 + (ms>>10), ms>>3);
   }
   if (!myVals || !fftBin || ...) return mode_static();
 */
 
+
+//Begin simulateSound 
+
+//Currently 3 types defined, to be finetuned and new types added
+typedef enum UM_SoundSimulations {
+  UMS_Off = 0,
+  UMS_BeatSin = 1,
+  UMS_WeWillRockYou = 2,
+  UMS_10_3 = 3,
+  UMS_14_3 = 4
+} um_soundSimulations_t;
+
+static um_data_t* um_data = nullptr;
+
+//this is dirty coding, when sound effects are moved to audio_reactive.h, we can use the variables there
+
+static float sampleAvg;
+static uint8_t soundAgc;
+static float sampleAgc;
+static int16_t sampleRaw;
+static int16_t rawSampleAgc;
+static uint8_t samplePeak;
+static  float FFT_MajorPeak;
+static float FFT_Magnitude;
+
+static uint8_t maxVol;
+static uint8_t binNum;
+static float multAgc;
+
+float sampleGain;
+uint8_t soundSquelch;
+
+uint8_t inputLevel;
+
+um_data_t* simulateSound(uint8_t simulationId) 
+{
+  //arrays
+  uint8_t *fftResult;
+  uint8_t *myVals;
+  float *fftBin;
+
+  if (!um_data) {
+    //claim storage for arrays
+    fftResult = (uint8_t *)malloc(sizeof(uint8_t) * 16);
+    myVals = (uint8_t *)malloc(sizeof(uint8_t) * 32);
+    fftBin = (float *)malloc(sizeof(float) * 256);
+
+    //initialize um_data pointer structure
+    um_data = new um_data_t;
+    um_data->u_size = 18;
+    um_data->u_type = new um_types_t[um_data->u_size];
+    um_data->u_data = new void*[um_data->u_size];
+    um_data->u_data[0] = &sampleAvg;
+    um_data->u_data[1] = &soundAgc;
+    um_data->u_data[2] = &sampleAgc;
+    um_data->u_data[3] = &sampleRaw;
+    um_data->u_data[4] = &rawSampleAgc;
+    um_data->u_data[5] = &samplePeak;
+    um_data->u_data[6] = &FFT_MajorPeak;
+    um_data->u_data[7] = &FFT_Magnitude;
+    um_data->u_data[ 8] = fftResult; 
+    um_data->u_data[9] = &maxVol;
+    um_data->u_data[10] = &binNum;
+    um_data->u_data[11] = &multAgc;
+    um_data->u_data[14] = myVals;           //*used (only once, Pixels)
+    um_data->u_data[13] = &sampleGain;
+    um_data->u_data[15] = &soundSquelch;
+    um_data->u_data[16] = fftBin;     //only used in binmap
+    um_data->u_data[17] = &inputLevel;
+  }
+  else {
+    //get arrays from um_data
+    fftResult     =  (uint8_t*)um_data->u_data[8];
+    myVals     =  (uint8_t*)um_data->u_data[14];
+    fftBin     =  (float*)um_data->u_data[16];
+  }
+
+  uint32_t ms = millis();
+
+  switch (simulationId) {
+    case UMS_Off:
+      return um_data;
+    case UMS_BeatSin:
+      for (int i = 0; i<16; i++)
+        fftResult[i] = beatsin8(120 / (i+1), 0, 255);
+        // fftResult[i] = (beatsin8(120, 0, 255) + (256/16 * i)) % 256;
+        sampleAvg = fftResult[8];
+      break;
+   case UMS_WeWillRockYou:
+      if (ms%2000 < 200) {
+        sampleAvg = random8(255);
+        for (int i = 0; i<5; i++)
+          fftResult[i] = random8(255);
+      }
+      else if (ms%2000 < 400) {
+        sampleAvg = 0;
+        for (int i = 0; i<16; i++)
+          fftResult[i] = 0;
+      }
+      else if (ms%2000 < 600) {
+        sampleAvg = random8(255);
+        for (int i = 5; i<11; i++)
+          fftResult[i] = random8(255);
+      }
+      else if (ms%2000 < 800) {
+        sampleAvg = 0;
+        for (int i = 0; i<16; i++)
+          fftResult[i] = 0;
+      }
+      else if (ms%2000 < 1000) {
+        sampleAvg = random8(255);
+        for (int i = 11; i<16; i++)
+          fftResult[i] = random8(255);
+      }
+      else  {
+        sampleAvg = 0;
+        for (int i = 0; i<16; i++)
+          fftResult[i] = 0;
+      }
+      break;
+    case UMS_10_3:
+      for (int i = 0; i<16; i++)
+        fftResult[i] = inoise8(beatsin8(90 / (i+1), 0, 200)*15 + (ms>>10), ms>>3);
+        sampleAvg = fftResult[8];
+      break;
+    case UMS_14_3:
+      for (int i = 0; i<16; i++)
+        fftResult[i] = inoise8(beatsin8(120 / (i+1), 10, 30)*10 + (ms>>14), ms>>3);
+      sampleAvg = fftResult[8];
+      break;
+  }
+
+  //derive other vars from sampleAvg
+
+  //sampleAvg = mapf(sampleAvg, 0, 255, 0, 255); // help me out here
+  soundAgc = 0; //only avg in simulations
+  sampleAgc = sampleAvg;
+  sampleRaw = sampleAvg;
+  sampleRaw = map(sampleRaw, 50, 190, 0, 224);
+  rawSampleAgc = sampleAvg;
+  samplePeak = random8() > 250;
+  FFT_MajorPeak = sampleAvg;
+  FFT_Magnitude = sampleAvg;
+  maxVol = 10;
+  binNum = 8;
+  multAgc = sampleAvg;
+  myVals[millis()%32] = sampleAvg;    // filling values semi randomly (why?)
+  sampleGain = 40;
+  soundSquelch = 10;
+  for (int i = 0; i<256; i++) fftBin[i] = 256; // do we really need this???
+  inputLevel = 128;
+
+  return um_data;
+}
+
+void printUmData() //for testing
+{
+  Serial.print(" 0: ");
+  Serial.print(sampleAvg);
+  Serial.print(" 1: ");
+  Serial.print(soundAgc);
+  Serial.print(" 2: ");
+  Serial.print(sampleAgc);
+  Serial.print(" 3: ");
+  Serial.print(sampleRaw);
+  Serial.print(" 4: ");
+  Serial.print(rawSampleAgc);
+
+  Serial.print(" 5: ");
+  Serial.print(samplePeak);
+  Serial.print(" 6: ");
+  Serial.print(FFT_MajorPeak);
+  Serial.print(" 9: ");
+  Serial.print(maxVol);
+  Serial.print(" 10: ");
+  Serial.print(binNum);
+  Serial.println();
+}
 
 /////////////////////////////////
 //     * Ripple Peak           //
@@ -6035,7 +6218,7 @@ uint16_t mode_ripplepeak(void) {                // * Ripple peak. By Andrew Tuli
   *binNum = SEGMENT.custom2;                              // Select a bin.
   *maxVol = SEGMENT.custom3/2;                            // Our volume comparator.
 
-  SEGMENT.fade_out(240);                                  // Lower frame rate means less effective fading than FastLED
+  SEGMENT.fade_out(240);                                          // Lower frame rate means less effective fading than FastLED
   SEGMENT.fade_out(240);
 
   for (uint16_t i = 0; i < SEGMENT.intensity/16; i++) {   // Limit the number of ripples.
@@ -6074,7 +6257,7 @@ uint16_t mode_ripplepeak(void) {                // * Ripple peak. By Andrew Tuli
 
   return FRAMETIME;
 } // mode_ripplepeak()
-static const char *_data_FX_MODE_RIPPLEPEAK PROGMEM = "Ripple Peak ♪@Fade rate,Max # of ripples,,Select bin,Volume (minimum)=0;!,!;!;mp12=0,ssim=1"; // Pixel, Beatsin
+static const char *_data_FX_MODE_RIPPLEPEAK PROGMEM = " ♪ Ripple Peak@Fade rate,Max # of ripples,,Select bin,Volume (minimum)=0;!,!;!;mp12=0,ssim=1"; // Pixel, Beatsin
 
 
 #ifndef WLED_DISABLE_2D
@@ -6128,7 +6311,7 @@ uint16_t mode_2DSwirl(void) {
   SEGMENT.setPixels(leds);
   return FRAMETIME;
 } // mode_2DSwirl()
-static const char *_data_FX_MODE_2DSWIRL PROGMEM = "2D Swirl ♪@!,Sensitivity=64,Blur;,Bg Swirl;!;ssim=1"; // Beatsin
+static const char *_data_FX_MODE_2DSWIRL PROGMEM = " ♪ 2D Swirl@!,Sensitivity=64,Blur;,Bg Swirl;!;ssim=1"; // Beatsin
 
 
 /////////////////////////
@@ -6180,7 +6363,7 @@ uint16_t mode_2DWaverly(void) {
   SEGMENT.setPixels(leds);
   return FRAMETIME;
 } // mode_2DWaverly()
-static const char *_data_FX_MODE_2DWAVERLY PROGMEM = "2D Waverly ♪@Amplification,Sensitivity=64;;!;ssim=1"; // Beatsin
+static const char *_data_FX_MODE_2DWAVERLY PROGMEM = " ♪ 2D Waverly@Amplification,Sensitivity=64;;!;ssim=1"; // Beatsin
 
 #endif // WLED_DISABLE_2D
 
@@ -6209,9 +6392,9 @@ uint16_t mode_gravcenter(void) {                // Gravcenter. By Andrew Tuline.
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   sampleAvg = *(float*)  um_data->u_data[0];
+  float sampleAvg = *(float*)um_data->u_data[0];
   uint8_t soundAgc  = *(uint8_t*)um_data->u_data[1];
-  float   sampleAgc = *(float*)  um_data->u_data[2];
+  float sampleAgc = *(float*)um_data->u_data[2];
 
   float tmpSound = (soundAgc) ? sampleAgc : sampleAvg;
 
@@ -6243,7 +6426,7 @@ uint16_t mode_gravcenter(void) {                // Gravcenter. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_gravcenter()
-static const char *_data_FX_MODE_GRAVCENTER PROGMEM = "Gravcenter ♪@Rate of fall,Sensitivity=128;,!;!;mp12=2,ssim=1"; // Circle, Beatsin
+static const char *_data_FX_MODE_GRAVCENTER PROGMEM = " ♪ Gravcenter@Rate of fall,Sensitivity=128;,!;!;mp12=2,ssim=1"; // Circle, Beatsin
 
 
 ///////////////////////
@@ -6260,9 +6443,9 @@ uint16_t mode_gravcentric(void) {                     // Gravcentric. By Andrew 
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   sampleAvg = *(float*)  um_data->u_data[0];
+  float sampleAvg = *(float*)um_data->u_data[0];
   uint8_t soundAgc  = *(uint8_t*)um_data->u_data[1];
-  float   sampleAgc = *(float*)  um_data->u_data[2];
+  float sampleAgc = *(float*)um_data->u_data[2];
 
   // printUmData();
 
@@ -6297,12 +6480,13 @@ uint16_t mode_gravcentric(void) {                     // Gravcentric. By Andrew 
 
   return FRAMETIME;
 } // mode_gravcentric()
-static const char *_data_FX_MODE_GRAVCENTRIC PROGMEM = "Gravcentric ♪@Rate of fall,Sensitivity=128;!;!;mp12=2,ssim=1"; // Circle, Beatsin
+static const char *_data_FX_MODE_GRAVCENTRIC PROGMEM = " ♪ Gravcentric@Rate of fall,Sensitivity=128;!;!;mp12=2,ssim=1"; // Circle, Beatsin
 
 
 ///////////////////////
 //   * GRAVIMETER    //
 ///////////////////////
+#ifndef SR_DEBUG_AGC
 uint16_t mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
 
   uint16_t dataSize = sizeof(gravity);
@@ -6314,9 +6498,9 @@ uint16_t mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   sampleAvg = *(float*)  um_data->u_data[0];
+  float sampleAvg = *(float*)um_data->u_data[0];
   uint8_t soundAgc  = *(uint8_t*)um_data->u_data[1];
-  float   sampleAgc = *(float*)  um_data->u_data[2];
+  float sampleAgc = *(float*)um_data->u_data[2];
 
   float tmpSound = (soundAgc) ? sampleAgc : sampleAvg;
 
@@ -6346,7 +6530,74 @@ uint16_t mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_gravimeter()
-static const char *_data_FX_MODE_GRAVIMETER PROGMEM = "Gravimeter ♪@Rate of fall,Sensitivity=128;,!;!;mp12=2,ssim=1"; // Circle, Beatsin
+static const char *_data_FX_MODE_GRAVIMETER PROGMEM = " ♪ Gravimeter@Rate of fall,Sensitivity=128;,!;!;mp12=2,ssim=1"; // Circle, Beatsin
+#else
+// This an abuse of the gravimeter effect for AGC debugging
+// instead of sound volume, it uses the AGC gain multiplier as input
+uint16_t mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
+
+  uint16_t dataSize = sizeof(gravity);
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  Gravity* gravcen = reinterpret_cast<Gravity*>(SEGENV.data);
+
+  if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    um_data = simulateSound(SEGMENT.soundSim);
+  }
+  float sampleAvg  = *(float*)um_data->u_data[0];
+  uint8_t soundAgc   = *(uint8_t*)um_data->u_data[1];
+  // float sampleAgc  = *(float*)um_data->u_data[2];
+  uint16_t sampleRaw     = *(uint16_t*)um_data->u_data[3];
+  float multAgc    = *(float*)um_data->u_data[11];
+  float sampleReal = *(float*)um_data->u_data[12];
+  float sampleGain = *(float*)um_data->u_data[13];
+  uint8_t inputLevel =  *(uint8_t*)um_data->u_data[17];
+
+  SEGMENT.fade_out(240);
+
+  //TODO: implement inputLevel as a global or slider
+  inputLevel = SEGMENT.custom1;
+
+  float tmpSound = multAgc;                                                         // AGC gain
+  if (soundAgc == 0) {
+    if ((sampleAvg> 1.0f) && (sampleReal > 0.05f))
+      tmpSound = (float)sampleRaw / sampleReal;                                        // current non-AGC gain
+    else 
+      tmpSound = ((float)sampleGain/40.0f * (float)inputLevel/128.0f) + 1.0f/16.0f;     // non-AGC gain from presets
+  }
+
+  if (tmpSound > 2) tmpSound = ((tmpSound -2.0f) / 2) +2;  //compress ranges > 2
+  if (tmpSound > 1) tmpSound = ((tmpSound -1.0f) / 2) +1;  //compress ranges > 1
+
+  float segmentSampleAvg = 64.0f * tmpSound * (float)SEGMENT.intensity / 128.0f;
+  float mySampleAvg = mapf(segmentSampleAvg, 0.0f, 128.0f, 0, (SEGLEN-1)); // map to pixels availeable in current segment 
+  int tempsamp = constrain(mySampleAvg, 0, SEGLEN-1);                  // Keep the sample from overflowing.
+
+  //tempsamp = SEGLEN - tempsamp;                                      // uncomment to invert direction
+  segmentSampleAvg = fmax(64.0f - fmin(segmentSampleAvg, 63),8);         // inverted brightness
+
+  uint8_t gravity = 8 - SEGMENT.speed/32;
+
+  if (sampleAvg > 1)                                                 // disable bar "body" if below squelch
+  {
+    for (int i=0; i<tempsamp; i++) {
+      uint8_t index = inoise8(i*segmentSampleAvg+millis(), 5000+i*segmentSampleAvg);
+      SEGMENT.setPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), segmentSampleAvg*4.0));
+    }
+  }
+  if (tempsamp >= gravcen->topLED)
+    gravcen->topLED = tempsamp;
+  else if (gravcen->gravityCounter % gravity == 0)
+    gravcen->topLED--;
+
+  if (gravcen->topLED > 0) {
+    SEGMENT.setPixelColor(gravcen->topLED, SEGMENT.color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0));
+  }
+  gravcen->gravityCounter = (gravcen->gravityCounter + 1) % gravity;
+
+  return FRAMETIME;
+} // mode_gravimeter()
+static const char *_data_FX_MODE_GRAVIMETER PROGMEM = " ♪ Gravimeter@Rate of fall,Sensitivity=128,Input level=128;,!;!;mp12=2,ssim=1"; // Circle, Beatsin
+#endif
 
 
 //////////////////////
@@ -6369,7 +6620,7 @@ uint16_t mode_juggles(void) {                   // Juggles. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_juggles()
-static const char *_data_FX_MODE_JUGGLES PROGMEM = "Juggles ♪@!,# of balls;,!;!;mp12=0,ssim=1"; // Pixels, Beatsin
+static const char *_data_FX_MODE_JUGGLES PROGMEM = " ♪ Juggles@!,# of balls;,!;!;mp12=0,ssim=1"; // Pixels, Beatsin
 
 
 //////////////////////
@@ -6381,9 +6632,9 @@ uint16_t mode_matripix(void) {                  // Matripix. By Andrew Tuline.
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  uint8_t soundAgc     = *(uint8_t*)um_data->u_data[1];
-  int16_t sampleRaw    = *(int16_t*)um_data->u_data[3];
-  int16_t rawSampleAgc = *(int16_t*)um_data->u_data[4];
+  uint8_t  soundAgc     = *(uint8_t*)um_data->u_data[1];
+  int16_t  sampleRaw    = *(int16_t*)um_data->u_data[3];
+  int16_t  rawSampleAgc = *(int16_t*)um_data->u_data[4];
 
   if (SEGENV.call == 0) SEGMENT.fill(BLACK);
 
@@ -6399,7 +6650,7 @@ uint16_t mode_matripix(void) {                  // Matripix. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_matripix()
-static const char *_data_FX_MODE_MATRIPIX PROGMEM = "Matripix ♪@!,Brightness=64;!,!;!;mp12=2,ssim=2,rev=1,mi=1,rY=1,mY=1"; // Circle, WeWillRockYou, reverseX
+static const char *_data_FX_MODE_MATRIPIX PROGMEM = " ♪ Matripix@!,Brightness=64;!,!;!;mp12=2,ssim=2,rev=1,mi=1,rY=1,mY=1"; // Circle, WeWillRockYou, reverseX
 
 
 //////////////////////
@@ -6413,9 +6664,9 @@ uint16_t mode_midnoise(void) {                  // Midnoise. By Andrew Tuline.
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   sampleAvg = *(float*)  um_data->u_data[0];
+  float sampleAvg = *(float*)um_data->u_data[0];
   uint8_t soundAgc  = *(uint8_t*)um_data->u_data[1];
-  float   sampleAgc = *(float*)  um_data->u_data[2];
+  float sampleAgc = *(float*)um_data->u_data[2];
 
   SEGMENT.fade_out(SEGMENT.speed);
   SEGMENT.fade_out(SEGMENT.speed);
@@ -6437,7 +6688,7 @@ uint16_t mode_midnoise(void) {                  // Midnoise. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_midnoise()
-static const char *_data_FX_MODE_MIDNOISE PROGMEM = "Midnoise ♪@Fade rate,Maximum length=128;,!;!;mp12=2,ssim=1"; // Circle, Beatsin
+static const char *_data_FX_MODE_MIDNOISE PROGMEM = " ♪ Midnoise@Fade rate,Maximum length=128;,!;!;mp12=2,ssim=1"; // Circle, Beatsin
 
 
 //////////////////////
@@ -6455,9 +6706,9 @@ uint16_t mode_noisefire(void) {                 // Noisefire. By Andrew Tuline.
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   sampleAvg = *(float*)  um_data->u_data[0];
+  float sampleAvg = *(float*)um_data->u_data[0];
   uint8_t soundAgc  = *(uint8_t*)um_data->u_data[1];
-  float   sampleAgc = *(float*)  um_data->u_data[2];
+  float sampleAgc = *(float*)um_data->u_data[2];
 
   for (uint16_t i = 0; i < SEGLEN; i++) {
     uint16_t index = inoise8(i*SEGMENT.speed/64,millis()*SEGMENT.speed/64*SEGLEN/255);  // X location is constant, but we move along the Y at the rate of millis(). By Andrew Tuline.
@@ -6471,7 +6722,7 @@ uint16_t mode_noisefire(void) {                 // Noisefire. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_noisefire()
-static const char *_data_FX_MODE_NOISEFIRE PROGMEM = "Noisefire ♪@!,!;;;mp12=2,ssim=1"; // Circle, Beatsin
+static const char *_data_FX_MODE_NOISEFIRE PROGMEM = " ♪ Noisefire@!,!;;;mp12=2,ssim=1"; // Circle, Beatsin
 
 
 ///////////////////////
@@ -6484,9 +6735,9 @@ uint16_t mode_noisemeter(void) {                // Noisemeter. By Andrew Tuline.
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   sampleAvg    = *(float*)  um_data->u_data[0];
+  float sampleAvg      = *(float*)um_data->u_data[0];
   uint8_t soundAgc     = *(uint8_t*)um_data->u_data[1];
-  float   sampleAgc    = *(float*)  um_data->u_data[2];
+  float sampleAgc      = *(float*)um_data->u_data[2];
   int16_t sampleRaw    = *(int16_t*)um_data->u_data[3];
   int16_t rawSampleAgc = *(int16_t*)um_data->u_data[4];
 
@@ -6509,7 +6760,7 @@ uint16_t mode_noisemeter(void) {                // Noisemeter. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_noisemeter()
-static const char *_data_FX_MODE_NOISEMETER PROGMEM = "Noisemeter ♪@Fade rate,Width=128;!,!;!;mp12=2,ssim=1"; // Circle, Beatsin
+static const char *_data_FX_MODE_NOISEMETER PROGMEM = " ♪ Noisemeter@Fade rate,Width=128;!,!;!;mp12=2,ssim=1"; // Circle, Beatsin
 
 
 //////////////////////
@@ -6542,7 +6793,7 @@ uint16_t mode_pixelwave(void) {                 // Pixelwave. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_pixelwave()
-static const char *_data_FX_MODE_PIXELWAVE PROGMEM = "Pixelwave ♪@!,Sensitivity=64;!,!;!;mp12=2,ssim=1"; // Circle, Beatsin
+static const char *_data_FX_MODE_PIXELWAVE PROGMEM = " ♪ Pixelwave@!,Sensitivity=64;!,!;!;mp12=2,ssim=1"; // Circle, Beatsin
 
 
 //////////////////////
@@ -6563,9 +6814,9 @@ uint16_t mode_plasmoid(void) {                  // Plasmoid. By Andrew Tuline.
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   sampleAvg = *(float*)  um_data->u_data[0];
-  uint8_t soundAgc  = *(uint8_t*)um_data->u_data[1];
-  float   sampleAgc = *(float*)  um_data->u_data[2];
+  float sampleAvg  = *(float*)um_data->u_data[0];
+  uint8_t soundAgc = *(uint8_t*)um_data->u_data[1];
+  float sampleAgc  = *(float*)um_data->u_data[2];
 
   SEGMENT.fade_out(64);
 
@@ -6586,7 +6837,7 @@ uint16_t mode_plasmoid(void) {                  // Plasmoid. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_plasmoid()
-static const char *_data_FX_MODE_PLASMOID PROGMEM = "Plasmoid ♪@Phase=128,# of pixels=128;,!;!;mp12=0,ssim=1"; // Pixels, Beatsin
+static const char *_data_FX_MODE_PLASMOID PROGMEM = " ♪ Plasmoid@Phase=128,# of pixels=128;,!;!;mp12=0,ssim=1"; // Pixels, Beatsin
 
 
 ///////////////////////
@@ -6604,18 +6855,18 @@ uint16_t mode_puddlepeak(void) {                // Puddlepeak. By Andrew Tuline.
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   sampleAgc  = *(float*)  um_data->u_data[2];
+  float sampleAgc    = *(float*)um_data->u_data[2];
   uint8_t samplePeak = *(uint8_t*)um_data->u_data[5];
-  uint8_t *maxVol    =  (uint8_t*)um_data->u_data[9];
-  uint8_t *binNum    =  (uint8_t*)um_data->u_data[10];
+  uint8_t maxVol     =  *(uint8_t*)um_data->u_data[9];
+  uint8_t binNum     =  *(uint8_t*)um_data->u_data[10];
 
   if (SEGENV.call == 0) {
-    SEGMENT.custom2 = *binNum;
-    SEGMENT.custom3 = *maxVol * 2;
+    SEGMENT.custom2 = binNum;
+    SEGMENT.custom3 = maxVol * 2;
   }
 
-  *binNum = SEGMENT.custom2;                               // Select a bin.
-  *maxVol = SEGMENT.custom3/4;                             // Our volume comparator.
+  binNum = SEGMENT.custom2;                               // Select a bin.
+  maxVol = SEGMENT.custom3/4;                             // Our volume comparator.
 
   SEGMENT.fade_out(fadeVal);
 
@@ -6630,7 +6881,7 @@ uint16_t mode_puddlepeak(void) {                // Puddlepeak. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_puddlepeak()
-static const char *_data_FX_MODE_PUDDLEPEAK PROGMEM = "Puddlepeak ♪@Fade rate,Puddle size,,Select bin,Volume (minimum)=0;!,!;!;mp12=0,ssim=1"; // Pixels, Beatsin
+static const char *_data_FX_MODE_PUDDLEPEAK PROGMEM = " ♪ Puddlepeak@Fade rate,Puddle size,,Select bin,Volume (minimum)=0;!,!;!;mp12=0,ssim=1"; // Pixels, Beatsin
 
 
 //////////////////////
@@ -6665,7 +6916,7 @@ uint16_t mode_puddles(void) {                   // Puddles. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_puddles()
-static const char *_data_FX_MODE_PUDDLES PROGMEM = "Puddles ♪@Fade rate,Puddle size;!,!;!;mp12=0,ssim=1"; // Pixels, Beatsin
+static const char *_data_FX_MODE_PUDDLES PROGMEM = " ♪ Puddles@Fade rate,Puddle size;!,!;!;mp12=0,ssim=1"; // Pixels, Beatsin
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -6682,8 +6933,8 @@ uint16_t mode_pixels(void) {                    // Pixels. By Andrew Tuline.
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float    sampleAgc = *(float*)   um_data->u_data[2];
-  uint16_t *myVals   =  (uint16_t*)um_data->u_data[14];
+  float sampleAgc  = *(float*)um_data->u_data[2];
+  uint16_t *myVals = (uint16_t*)um_data->u_data[14];
   if (!myVals) return mode_static();
 
   SEGMENT.fade_out(64+(SEGMENT.speed>>1));
@@ -6695,13 +6946,92 @@ uint16_t mode_pixels(void) {                    // Pixels. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_pixels()
-static const char *_data_FX_MODE_PIXELS PROGMEM = "Pixels ♪@Fade rate,# of pixels;,!;!;mp12=0,ssim=1"; // Pixels, Beatsin
+static const char *_data_FX_MODE_PIXELS PROGMEM = " ♪ Pixels@Fade rate,# of pixels;,!;!;mp12=0,ssim=1"; // Pixels, Beatsin
 
 
 ///////////////////////////////
 //     BEGIN FFT ROUTINES    //
 ///////////////////////////////
 
+////////////////////
+//    ** Binmap   //
+////////////////////
+// Binmap. Scale raw fftBin[] values to SEGLEN. Shows just how noisy those bins are.
+uint16_t mode_binmap(void) {
+  #define FIRSTBIN 3                            // The first 3 bins are garbage.
+  #define LASTBIN 255                           // Don't use the highest bins, as they're (almost) a mirror of the first 256.
+
+  float maxVal = 512;                           // Kind of a guess as to the maximum output value per combined logarithmic bins.
+
+  um_data_t *um_data;
+  if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    um_data = simulateSound(SEGMENT.soundSim);
+  }
+#ifdef SR_DEBUG
+    uint8_t *maxVol =  (uint8_t*)um_data->u_data[9];
+#endif
+  float  sampleAvg      = *(float*)  um_data->u_data[0];
+  uint8_t  soundAgc     = *(uint8_t*)um_data->u_data[1];
+  float  multAgc        = *(float*)  um_data->u_data[11];
+  float  sampleGain     = *(float*)  um_data->u_data[13];
+  uint8_t  soundSquelch = *(uint8_t*)um_data->u_data[15];
+  float  *fftBin        =  (float*)  um_data->u_data[16];
+  uint8_t  inputLevel   =  *(uint8_t*)um_data->u_data[17];
+  if (!fftBin) return mode_static();
+
+  if (SEGENV.call == 0) {
+    SEGMENT.custom1 = inputLevel;
+#ifdef SR_DEBUG
+    SEGMENT.custom3 = *maxVol;
+#endif
+  }
+
+
+  //TODO: implement inputLevel as a global or slider
+  inputLevel = SEGMENT.custom1;
+  float binScale = (((float)sampleGain / 40.0f) + 1.0f/16.f) * ((float)inputLevel/128.0f);  // non-AGC gain multiplier
+  if (soundAgc) binScale = multAgc;                                                    // AGC gain
+  if (sampleAvg < 1) binScale = 0.001f;                                                 // silentium!
+
+#ifdef SR_DEBUG
+  //The next lines are good for debugging, however too much flickering for non-developers ;-)
+  float my_magnitude = FFT_Magnitude / 16.0f;   // scale magnitude to be aligned with scaling of FFT bins
+  my_magnitude *= binScale;                     // apply gain
+  *maxVol = fmax(64, my_magnitude);             // set maxVal = max FFT result
+#endif
+
+  for (int i=0; i<SEGLEN; i++) {
+
+    uint16_t startBin = FIRSTBIN+i*(LASTBIN-FIRSTBIN)/SEGLEN;        // This is the START bin for this particular pixel.
+    uint16_t   endBin = FIRSTBIN+(i+1)*(LASTBIN-FIRSTBIN)/SEGLEN;    // This is the END bin for this particular pixel.
+    if (endBin > startBin) endBin --;                     // avoid overlapping
+
+    float sumBin = 0;
+
+    for (int j=startBin; j<=endBin; j++) {
+      sumBin += (fftBin[j] < soundSquelch*1.75f) ? 0 : fftBin[j];  // We need some sound temporary squelch for fftBin, because we didn't do it for the raw bins in audio_reactive.h
+    }
+
+    sumBin = sumBin/(endBin-startBin+1);                  // Normalize it.
+    sumBin = sumBin * (i+5) / (endBin-startBin+5);        // Disgusting frequency adjustment calculation. Lows were too bright. Am open to quick 'n dirty alternatives.
+
+    sumBin = sumBin * 8;                                  // Need to use the 'log' version for this. Why " * 8" ??
+    sumBin *= binScale;                                   // apply gain
+
+    if (sumBin > maxVal) sumBin = maxVal;                 // Make sure our bin isn't higher than the max . . which we capped earlier.
+
+    uint8_t bright = constrain(mapf(sumBin, 0, maxVal, 0, 255),0,255);  // Map the brightness in relation to maxVal and crunch to 8 bits.
+
+    SEGMENT.setPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(i*8+millis()/50, false, PALETTE_SOLID_WRAP, 0), bright));  // 'i' is just an index in the palette. The FFT value, bright, is the intensity.
+  } // for i
+
+  return FRAMETIME;
+} // mode_binmap()
+#ifdef SR_DEBUG
+static const char *_data_FX_MODE_BINMAP PROGMEM = " ♫ Binmap@,,Input level=128,,Max vol;!,!;!;mp12=0,ssim=1,rY=1"; // Pixels, Beatsin, ReverseY
+#else
+static const char *_data_FX_MODE_BINMAP PROGMEM = " ♫ Binmap@,,Input level=128;!,!;!;mp12=0,ssim=1,rY=1"; // Pixels, Beatsin, ReverseY
+#endif
 
 //////////////////////
 //    ** Blurz      //
@@ -6730,7 +7060,7 @@ uint16_t mode_blurz(void) {                    // Blurz. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_blurz()
-static const char *_data_FX_MODE_BLURZ PROGMEM = "Blurz ♫@Fade rate,Blur amount;!,Color mix;!;mp12=0,ssim=1"; // Pixels, Beatsin
+static const char *_data_FX_MODE_BLURZ PROGMEM = " ♫ Blurz@Fade rate,Blur amount;!,Color mix;!;mp12=0,ssim=1"; // Pixels, Beatsin
 
 
 /////////////////////////
@@ -6767,7 +7097,7 @@ uint16_t mode_DJLight(void) {                   // Written by ??? Adapted by Wil
 
   return FRAMETIME;
 } // mode_DJLight()
-static const char *_data_FX_MODE_DJLIGHT PROGMEM = "DJ Light ♫@Speed;;;mp12=2,ssim=1"; // Circle, Beatsin
+static const char *_data_FX_MODE_DJLIGHT PROGMEM = " ♫ DJ Light@Speed;;;mp12=2,ssim=1"; // Circle, Beatsin
 
 
 ////////////////////
@@ -6782,11 +7112,11 @@ uint16_t mode_freqmap(void) {                   // Map FFT_MajorPeak to SEGLEN. 
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   sampleAvg     = *(float*)  um_data->u_data[0];
-  uint8_t soundAgc      = *(uint8_t*)um_data->u_data[1];
-  float   FFT_MajorPeak = *(float*)  um_data->u_data[6];
-  float   FFT_Magnitude = *(float*)  um_data->u_data[7];
-  float   multAgc       = *(float*)  um_data->u_data[11];
+  float sampleAvg     = *(float*)um_data->u_data[0];
+  uint8_t soundAgc    = *(uint8_t*)um_data->u_data[1];
+  float FFT_MajorPeak = *(float*)um_data->u_data[6];
+  float FFT_Magnitude = *(float*)um_data->u_data[7];
+  float multAgc       = *(float*)um_data->u_data[11];
 
   float my_magnitude = FFT_Magnitude / 4.0;
   if (soundAgc) my_magnitude *= multAgc;
@@ -6804,7 +7134,7 @@ uint16_t mode_freqmap(void) {                   // Map FFT_MajorPeak to SEGLEN. 
 
   return FRAMETIME;
 } // mode_freqmap()
-static const char *_data_FX_MODE_FREQMAP PROGMEM = "Freqmap ♫@Fade rate,Starting color;,!;!;mp12=2,ssim=1"; // Circle, Beatsin
+static const char *_data_FX_MODE_FREQMAP PROGMEM = " ♫ Freqmap@Fade rate,Starting color;,!;!;mp12=2,ssim=1"; // Circle, Beatsin
 
 
 ///////////////////////
@@ -6854,7 +7184,7 @@ uint16_t mode_freqmatrix(void) {                // Freqmatrix. By Andreas Plesch
 
   return FRAMETIME;
 } // mode_freqmatrix()
-static const char *_data_FX_MODE_FREQMATRIX PROGMEM = "Freqmatrix ♫@Time delay,Sound effect,Low bin,High bin,Sensivity;;;mp12=0,ssim=1"; // Pixels, Beatsin
+static const char *_data_FX_MODE_FREQMATRIX PROGMEM = " ♫ Freqmatrix@Time delay,Sound effect,Low bin,High bin,Sensivity;;;mp12=0,ssim=1"; // Pixels, Beatsin
 
 
 //////////////////////
@@ -6865,16 +7195,15 @@ static const char *_data_FX_MODE_FREQMATRIX PROGMEM = "Freqmatrix ♫@Time delay
 //  SEGMENT.speed select faderate
 //  SEGMENT.intensity select colour index
 uint16_t mode_freqpixels(void) {                // Freqpixel. By Andrew Tuline.
-  um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   sampleAvg     = *(float*)  um_data->u_data[0];
-  uint8_t soundAgc      = *(uint8_t*)um_data->u_data[1];
-  float   FFT_MajorPeak = *(float*)  um_data->u_data[6];
-  float   FFT_Magnitude = *(float*)  um_data->u_data[7];
-  float   multAgc       = *(float*)  um_data->u_data[11];
+  float sampleAvg     = *(float*)um_data->u_data[0];
+  uint8_t soundAgc    = *(uint8_t*)um_data->u_data[1];
+  float FFT_MajorPeak = *(float*)um_data->u_data[6];
+  float FFT_Magnitude = *(float*)um_data->u_data[7];
+  float multAgc       = *(float*)um_data->u_data[11];
 
   float my_magnitude = FFT_Magnitude / 16.0;
   if (soundAgc) my_magnitude *= multAgc;
@@ -6891,7 +7220,7 @@ uint16_t mode_freqpixels(void) {                // Freqpixel. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_freqpixels()
-static const char *_data_FX_MODE_FREQPIXELS PROGMEM = "Freqpixels ♫@Fade rate,Starting colour and # of pixels;;;mp12=0,ssim=1"; // Pixels, Beatsin
+static const char *_data_FX_MODE_FREQPIXELS PROGMEM = " ♫ Freqpixels@Fade rate,Starting colour and # of pixels;;;mp12=0,ssim=1"; // Pixels, Beatsin
 
 
 //////////////////////
@@ -6915,10 +7244,10 @@ uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschun
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   sampleAvg     = *(float*)  um_data->u_data[0];
-  uint8_t soundAgc      = *(uint8_t*)um_data->u_data[1];
-  float   sampleAgc     = *(float*)  um_data->u_data[2];
-  float   FFT_MajorPeak = *(float*)  um_data->u_data[6];
+  float sampleAvg     = *(float*)um_data->u_data[0];
+  uint8_t soundAgc    = *(uint8_t*)um_data->u_data[1];
+  float sampleAgc     = *(float*)um_data->u_data[2];
+  float FFT_MajorPeak = *(float*)um_data->u_data[6];
 
   uint8_t secondHand = micros()/(256-SEGMENT.speed)/500 % 16;
   if(SEGENV.aux0 != secondHand) {
@@ -6962,7 +7291,7 @@ uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschun
 
   return FRAMETIME;
 } // mode_freqwave()
-static const char *_data_FX_MODE_FREQWAVE PROGMEM = "Freqwave ♫@Time delay,Sound effect,Low bin,High bin,Pre-amp;;;mp12=2,ssim=1"; // Circle, Beatsin
+static const char *_data_FX_MODE_FREQWAVE PROGMEM = " ♫ Freqwave@Time delay,Sound effect,Low bin,High bin,Pre-amp;;;mp12=2,ssim=1"; // Circle, Beatsin
 
 
 ///////////////////////
@@ -6979,10 +7308,10 @@ uint16_t mode_gravfreq(void) {                  // Gravfreq. By Andrew Tuline.
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   sampleAvg     = *(float*)  um_data->u_data[0];
-  uint8_t soundAgc      = *(uint8_t*)um_data->u_data[1];
-  float   sampleAgc     = *(float*)  um_data->u_data[2];
-  float   FFT_MajorPeak = *(float*)  um_data->u_data[6];
+  float sampleAvg     = *(float*)um_data->u_data[0];
+  uint8_t soundAgc    = *(uint8_t*)um_data->u_data[1];
+  float sampleAgc     = *(float*)um_data->u_data[2];
+  float FFT_MajorPeak = *(float*)um_data->u_data[6];
 
   SEGMENT.fade_out(240);
 
@@ -7015,7 +7344,7 @@ uint16_t mode_gravfreq(void) {                  // Gravfreq. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_gravfreq()
-static const char *_data_FX_MODE_GRAVFREQ PROGMEM = "Gravfreq ♫@Rate of fall,Sensivity=128;,!;!;mp12=2,ssim=1"; // Circle, Beatsin
+static const char *_data_FX_MODE_GRAVFREQ PROGMEM = " ♫ Gravfreq@Rate of fall,Sensivity=128;,!;!;mp12=2,ssim=1"; // Circle, Beatsin
 
 
 //////////////////////
@@ -7041,7 +7370,7 @@ uint16_t mode_noisemove(void) {                 // Noisemove.    By: Andrew Tuli
 
   return FRAMETIME;
 } // mode_noisemove()
-static const char *_data_FX_MODE_NOISEMOVE PROGMEM = "Noisemove ♫@Speed of perlin movement,Fade rate;,!;!;mp12=0,ssim=1"; // Pixels, Beatsin
+static const char *_data_FX_MODE_NOISEMOVE PROGMEM = " ♫ Noisemove@Speed of perlin movement,Fade rate;,!;!;mp12=0,ssim=1"; // Pixels, Beatsin
 
 
 //////////////////////
@@ -7053,11 +7382,11 @@ uint16_t mode_rocktaves(void) {                 // Rocktaves. Same note from eac
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   sampleAvg     = *(float*)  um_data->u_data[0];
-  uint8_t soundAgc      = *(uint8_t*)um_data->u_data[1];
-  float   FFT_MajorPeak = *(float*)  um_data->u_data[6];
-  float   FFT_Magnitude = *(float*)  um_data->u_data[7];
-  float   multAgc       = *(float*)  um_data->u_data[11];
+  float sampleAvg     = *(float*)um_data->u_data[0];
+  uint8_t soundAgc    = *(uint8_t*)um_data->u_data[1];
+  float FFT_MajorPeak = *(float*)um_data->u_data[6];
+  float FFT_Magnitude = *(float*)um_data->u_data[7];
+  float multAgc       = *(float*)um_data->u_data[11];
 
   SEGMENT.fade_out(128);                          // Just in case something doesn't get faded.
 
@@ -7085,7 +7414,7 @@ uint16_t mode_rocktaves(void) {                 // Rocktaves. Same note from eac
 
   return FRAMETIME;
 } // mode_rocktaves()
-static const char *_data_FX_MODE_ROCKTAVES PROGMEM = "Rocktaves ♫@;,!;!;mp12=0,ssim=1"; // Pixels, Beatsin
+static const char *_data_FX_MODE_ROCKTAVES PROGMEM = " ♫ Rocktaves@;,!;!;mp12=0,ssim=1"; // Pixels, Beatsin
 
 
 ///////////////////////
@@ -7100,23 +7429,23 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   sampleAvg     = *(float*)  um_data->u_data[0];
-  uint8_t soundAgc      = *(uint8_t*)um_data->u_data[1];
-  uint8_t samplePeak    = *(uint8_t*)um_data->u_data[5];
-  float   FFT_MajorPeak = *(float*)  um_data->u_data[6];
-  float   FFT_Magnitude = *(float*)  um_data->u_data[7];
-  uint8_t *maxVol       =  (uint8_t*)um_data->u_data[9];
-  uint8_t *binNum       =  (uint8_t*)um_data->u_data[10];
-  float   multAgc       = *(float*)  um_data->u_data[11];
+  float sampleAvg     = *(float*)um_data->u_data[0];
+  uint8_t soundAgc    = *(uint8_t*)um_data->u_data[1];
+  uint8_t samplePeak  = *(uint8_t*)um_data->u_data[5];
+  float FFT_MajorPeak = *(float*)um_data->u_data[6];
+  float FFT_Magnitude = *(float*)um_data->u_data[7];
+  uint8_t maxVol      =  *(uint8_t*)um_data->u_data[9];
+  uint8_t binNum      =  *(uint8_t*)um_data->u_data[10];
+  float multAgc       = *(float*)um_data->u_data[11];
 
   if (SEGENV.call == 0) {
     SEGENV.aux0 = 255;
-    SEGMENT.custom2 = *binNum;
-    SEGMENT.custom3 = *maxVol * 2;
+    SEGMENT.custom2 = binNum;
+    SEGMENT.custom3 = maxVol * 2;
   }
 
-  *binNum = SEGMENT.custom2;                              // Select a bin.
-  *maxVol = SEGMENT.custom3/2;                            // Our volume comparator.
+  binNum = SEGMENT.custom2;                               // Select a bin.
+  maxVol = SEGMENT.custom3/2;                             // Our volume comparator.
 
   uint8_t secondHand = micros() / (256-SEGMENT.speed)/500 + 1 % 16;
   if (SEGENV.aux0 != secondHand) {                        // Triggered millis timing.
@@ -7138,7 +7467,7 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
 
   return FRAMETIME;
 } // mode_waterfall()
-static const char *_data_FX_MODE_WATERFALL PROGMEM = "Waterfall ♫@!,Adjust color,,Select bin, Volume (minimum)=0;!,!;!;mp12=2,ssim=1"; // Circles, Beatsin
+static const char *_data_FX_MODE_WATERFALL PROGMEM = " ♫ Waterfall@!,Adjust color,,Select bin, Volume (minimum)=0;!,!;!;mp12=2,ssim=1"; // Circles, Beatsin
 
 
 #ifndef WLED_DISABLE_2D
@@ -7195,7 +7524,7 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
 
   return FRAMETIME;
 } // mode_2DGEQ()
-static const char *_data_FX_MODE_2DGEQ PROGMEM = "2D GEQ ♫@Fade speed,Ripple decay,# of bands=255,Color bars=64;!,,Peak Color;!=11;ssim=1"; // Beatsin
+static const char *_data_FX_MODE_2DGEQ PROGMEM = " ♫ 2D GEQ@Fade speed,Ripple decay,# of bands=255,Color bars=64;!,,Peak Color;!=11;ssim=1"; // Beatsin
 
 
 /////////////////////////
@@ -7255,7 +7584,7 @@ uint16_t mode_2DFunkyPlank(void) {              // Written by ??? Adapted by Wil
   SEGMENT.setPixels(leds);
   return FRAMETIME;
 } // mode_2DFunkyPlank
-static const char *_data_FX_MODE_2DFUNKYPLANK PROGMEM = "2D Funky Plank ♫@Scroll speed,,# of bands;;;ssim=1"; // Beatsin
+static const char *_data_FX_MODE_2DFUNKYPLANK PROGMEM = " ♫ 2D Funky Plank@Scroll speed,,# of bands;;;ssim=1"; // Beatsin
 
 #endif // WLED_DISABLE_2D
 
@@ -7582,6 +7911,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_2DGEQ, &mode_2DGEQ, _data_FX_MODE_2DGEQ);
   addEffect(FX_MODE_WATERFALL, &mode_waterfall, _data_FX_MODE_WATERFALL);
   addEffect(FX_MODE_FREQPIXELS, &mode_freqpixels, _data_FX_MODE_FREQPIXELS);
+  addEffect(FX_MODE_BINMAP, &mode_binmap, _data_FX_MODE_BINMAP);
   addEffect(FX_MODE_NOISEFIRE, &mode_noisefire, _data_FX_MODE_NOISEFIRE);
   addEffect(FX_MODE_PUDDLEPEAK, &mode_puddlepeak, _data_FX_MODE_PUDDLEPEAK);
   addEffect(FX_MODE_NOISEMOVE, &mode_noisemove, _data_FX_MODE_NOISEMOVE);
