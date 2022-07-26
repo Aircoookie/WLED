@@ -911,7 +911,7 @@ uint16_t mode_chase_rainbow(void) {
 
   return chase(color, SEGCOLOR(0), SEGCOLOR(1), false);
 }
-static const char *_data_FX_MODE_CHASE_RAINBOW PROGMEM = "Chase Rainbow@!,Width;!,!,;0";
+static const char *_data_FX_MODE_CHASE_RAINBOW PROGMEM = "Chase Rainbow@!,Width;!,!,;";
 
 
 /*
@@ -925,7 +925,7 @@ uint16_t mode_chase_rainbow_white(void) {
 
   return chase(SEGCOLOR(0), color2, color3, false);
 }
-static const char *_data_FX_MODE_CHASE_RAINBOW_WHITE PROGMEM = "Rainbow Runner@!,Size;Bg,,;!";
+static const char *_data_FX_MODE_CHASE_RAINBOW_WHITE PROGMEM = "Rainbow Runner@!,Size;Bg,,;";
 
 
 /*
@@ -1066,7 +1066,7 @@ uint16_t mode_chase_flash_random(void) {
   }
   return delay;
 }
-static const char *_data_FX_MODE_CHASE_FLASH_RANDOM PROGMEM = "Chase Flash Rnd@!,;,Fx,;!";
+static const char *_data_FX_MODE_CHASE_FLASH_RANDOM PROGMEM = "Chase Flash Rnd@!,;,Fx,;0";
 
 
 /*
@@ -2022,7 +2022,7 @@ uint16_t mode_fire_2012()
   }
   return FRAMETIME;
 }
-static const char *_data_FX_MODE_FIRE_2012 PROGMEM = "Fire 2012@Cooling=120,Spark rate=64;1,2,3;!=35";
+static const char *_data_FX_MODE_FIRE_2012 PROGMEM = "Fire 2012 1D/2D@Cooling=120,Spark rate=64;1,2,3;!=35";
 
 
 // ColorWavesWithPalettes by Mark Kriegsman: https://gist.github.com/kriegsman/8281905786e8b2632aeb
@@ -4199,7 +4199,7 @@ uint16_t mode_blends(void) {
 
   return FRAMETIME;
 }
-static const char *_data_FX_MODE_BLENDS PROGMEM = "Blends@Shift speed,Blend speed;1,2,3,!";
+static const char *_data_FX_MODE_BLENDS PROGMEM = "Blends@Shift speed,Blend speed;1,2,3;!";
 
 
 /*

@@ -690,12 +690,12 @@ function populateSegments(s)
 			<div class="sliderdisplay"></div>
 		</div>
 	</div>`;
-		let rvXck = `<label class="check revchkl">Reverse ${isM?'':'direction'}<input type="checkbox" id="seg${i}rev" onchange="setRev(${i})" ${inst.rev?"checked":""}><span class="checkmark schk"></span></label>`;
-		let miXck = `<label class="check revchkl">Mirror<input type="checkbox" id="seg${i}mi" onchange="setMi(${i})" ${inst.mi?"checked":""}><span class="checkmark schk"></span></label>`;
+		let rvXck = `<label class="check revchkl">Reverse ${isM?'':'direction'}<input type="checkbox" id="seg${i}rev" onchange="setRev(${i})" ${inst.rev?"checked":""}><span class="checkmark"></span></label>`;
+		let miXck = `<label class="check revchkl">Mirror<input type="checkbox" id="seg${i}mi" onchange="setMi(${i})" ${inst.mi?"checked":""}><span class="checkmark"></span></label>`;
 		let rvYck = "", miYck ="";
 		if (isM) {
-			rvYck = `<label class="check revchkl">Reverse<input type="checkbox" id="seg${i}rY" onchange="setRevY(${i})" ${inst.rY?"checked":""}><span class="checkmark schk"></span></label>`;
-			miYck = `<label class="check revchkl">Mirror<input type="checkbox" id="seg${i}mY" onchange="setMiY(${i})" ${inst.mY?"checked":""}><span class="checkmark schk"></span></label>`;
+			rvYck = `<label class="check revchkl">Reverse<input type="checkbox" id="seg${i}rY" onchange="setRevY(${i})" ${inst.rY?"checked":""}><span class="checkmark"></span></label>`;
+			miYck = `<label class="check revchkl">Mirror<input type="checkbox" id="seg${i}mY" onchange="setMiY(${i})" ${inst.mY?"checked":""}><span class="checkmark"></span></label>`;
 		}
 		let map2D = `<div id="seg${i}map2D" data-map="map2D" class="lbl-s hide">Expand 1D FX<br>
 			<div class="sel-p"><select class="sel-p" id="seg${i}mp12" onchange="setMp12(${i})">
@@ -716,7 +716,7 @@ function populateSegments(s)
 		cn += `<div class="seg lstI ${i==s.mainseg ? 'selected' : ''} ${exp ? "expanded":""}" id="seg${i}">
 	<label class="check schkl">
 		<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>
-		<span class="checkmark schk"></span>
+		<span class="checkmark"></span>
 	</label>
 	<i class="icons e-icon frz" id="seg${i}frz" onclick="event.preventDefault();tglFreeze(${i});">&#x${inst.frz ? (li.live && li.liveseg==i?'e410':'e0e8') : 'e325'};</i>
 	<div class="segname" onclick="selSegEx(${i})">
@@ -762,7 +762,7 @@ function populateSegments(s)
 		<label class="check revchkl">
 			${isM?'Transpose':'Mirror effect'}
 			<input type="checkbox" id="seg${i}${isM?'tp':'mi'}" onchange="${(isM?'setTp(':'setMi(')+i})" ${isM?(inst.tp?"checked":""):(inst.mi?"checked":"")}>
-			<span class="checkmark schk"></span>
+			<span class="checkmark"></span>
 		</label>
 		<div class="del">
 			<button class="btn btn-xs" id="segr${i}" title="Repeat until end" onclick="rptSeg(${i})"><i class="icons btn-icon">&#xe22d;</i></button>
@@ -808,16 +808,17 @@ function populateEffects()
 
 	for (let i = 0; i < effects.length; i++) {
 		// WLEDSR: add slider and color control to setX (used by requestjson)
+		let id = effects[i].id;
+		let nm = effects[i].name;
+		let fd = "";
+		if (Array.isArray(fxdata) && fxdata.length>id) {
+			fd = fxdata[id].substr(1);
+			var eP = (fd == '')?[]:fd.split(";");
+			var p = (eP.length<3 || eP[2]==='')?[]:eP[2].split(",");
+			if (p.length>0 && p[0].substr(0,1) === "!") nm += " 🎨";
+		}
 		if (effects[i].name.indexOf("Reserved") < 0) {
-			let id = effects[i].id;
-			html += generateListItemHtml(
-				'fx',
-				id,
-				effects[i].name,
-				'setX',
-				'',
-				!(Array.isArray(fxdata) && fxdata.length>id) ? '' : fxdata[id].substr(1)
-			);
+			html += generateListItemHtml('fx',id,nm,'setX','',fd);
 		}
 	}
 
@@ -918,7 +919,7 @@ function generateListItemHtml(listName, id, name, clickAction, extraHtml = '', e
     return `<div class="lstI${id==0?' sticky':''}" data-id="${id}" data-opt="${effectPar}" onClick="${clickAction}(${id})">
 	<label class="radio schkl" onclick="event.preventDefault()">
 		<input type="radio" value="${id}" name="${listName}">
-		<span class="radiomark schk"></span>
+		<span class="radiomark"></span>
 		<div class="lstIcontent">
 			<span class="lstIname">
 				${name}
@@ -997,7 +998,7 @@ function updateTrail(e)
 		var max = e.hasAttribute('max') ? e.attributes.max.value : 255;
 		var perc = Math.round(e.value * 100 / max);
 		if (perc < 50) perc += 2;
-		var val = `linear-gradient(90deg, var(--bg) ${perc}%, var(--c-4) ${perc}%)`;
+		var val = `linear-gradient(90deg, var(--bg) ${perc}%, var(--c-6) ${perc}%)`;
 		sd.style.backgroundImage = val;
 	}
 	var b = e.parentNode.parentNode.getElementsByTagName('output')[0];
@@ -1355,7 +1356,7 @@ function setEffectParameters(idx)
 
 	// set the bottom position of selected effect (sticky) as the top of sliders div
 	let top = parseInt(getComputedStyle(gId("sliders")).height);
-	top += 28; // size of tooltip
+	//top += 5; // size of tooltip
 	let sel = d.querySelector('#fxlist .selected');
 	if (sel) sel.style.bottom = top + "px"; // we will need to remove this when unselected (in setX())
 
@@ -1597,7 +1598,7 @@ function resetUtil()
 {
 //	gId('segutil').innerHTML = '<button class="btn btn-s" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>segment</button>';
 	gId('segutil').innerHTML = '<div class="seg btn btn-s" style="border-radius:24px;padding:0;">'
-	+ '<label class="check schkl"><input type="checkbox" id="selall" onchange="selSegAll(this)"><span class="checkmark schk"></span></label>'
+	+ '<label class="check schkl"><input type="checkbox" id="selall" onchange="selSegAll(this)"><span class="checkmark"></span></label>'
 	+ '<div class="segname" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>segment</div></div>';
 }
 
@@ -1694,11 +1695,11 @@ function makeP(i,pl) {
 		content = 
 `<div id="ple${i}" style="margin-top:10px;"></div><label class="check revchkl">Shuffle
 	<input type="checkbox" id="pl${i}rtgl" onchange="plR(${i})" ${plJson[i].r||rep<0?"checked":""}>
-	<span class="checkmark schk"></span>
+	<span class="checkmark"></span>
 </label>
 <label class="check revchkl">Repeat indefinitely
 	<input type="checkbox" id="pl${i}rptgl" onchange="plR(${i})" ${rep>0?"":"checked"}>
-	<span class="checkmark schk"></span>
+	<span class="checkmark"></span>
 </label>
 <div id="pl${i}o1" style="display:${rep>0?"block":"none"}">
 <div class="c">Repeat <input class="noslide" type="number" id="pl${i}rp" oninput="plR(${i})" max=127 min=0 value=${rep>0?rep:1}> times</div>
@@ -1717,21 +1718,21 @@ ${makePlSel(plJson[i].end?plJson[i].end:0, true)}
 	Include brightness
 	</span>
 	<input type="checkbox" id="p${i}ibtgl" checked>
-	<span class="checkmark schk"></span>
+	<span class="checkmark"></span>
 </label>
 <label class="check revchkl">
 	<span class="lstIname">
 	Save segment bounds
 	</span>
 	<input type="checkbox" id="p${i}sbtgl" checked>
-	<span class="checkmark schk"></span>
+	<span class="checkmark"></span>
 </label>
 <label class="check revchkl">
 	<span class="lstIname">
 	Checked segments only
 	</span>
 	<input type="checkbox" id="p${i}sbchk">
-	<span class="checkmark schk"></span>
+	<span class="checkmark"></span>
 </label>`;
 		if (Array.isArray(lastinfo.maps) && lastinfo.maps.length>0) {
 			content += `<div class="sel">Ledmap:&nbsp;<select class="sel-p" id="p${i}lmp"><option value="">None</option>`;
@@ -1749,7 +1750,7 @@ ${makePlSel(plJson[i].end?plJson[i].end:0, true)}
 	${pl?"Show playlist editor":(i>0)?"Overwrite with state":"Use current state"}
 	</span>
     <input type="checkbox" id="p${i}cstgl" onchange="tglCs(${i})" ${(i==0||pl)?"checked":""}>
-    <span class="checkmark schk"></span>
+    <span class="checkmark"></span>
   </label>
 </div>
 <div class="po2" id="p${i}o2">
@@ -2477,6 +2478,19 @@ function clean(c)
 	i.value='';
 	i.focus();
 	i.dispatchEvent(new Event('input'));
+	if (i.parentElement.id=='fxFind') {
+		gId("filters").querySelectorAll("input[type=checkbox]").forEach((e)=>{e.checked=false;});
+	}
+}
+
+function filterFx(o)
+{
+	if (!o) return;
+	let i = gId('fxFind').children[0];
+	i.value=!o.checked?'':o.dataset.flt;
+	i.focus();
+	i.dispatchEvent(new Event('input'));
+	gId("filters").querySelectorAll("input[type=checkbox]").forEach((e)=>{if(e!==o)e.checked=false;});
 }
 
 // make sure "dur" and "transition" are arrays with at least the length of "ps"

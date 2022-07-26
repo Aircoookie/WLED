@@ -193,7 +193,7 @@ button {
 	position: absolute;
 	top: 8px;
 	left: 12px;
-	pointer-events: none;
+	/*pointer-events: none;*/
 	width: 24px;
 	height: 24px;
 }
@@ -369,7 +369,7 @@ button {
 
 #sliders {
 	width: 300px;
-	margin: 32px auto 0;
+	margin: 0 auto;
 	position: sticky;
 	bottom: 0;
 }
@@ -380,12 +380,24 @@ button {
 }
 
 .slider {
-	background: var(--c-2);
+	background-color: var(--c-2);
 	max-width: 300px;
 	min-width: 280px;
 	margin: 0 auto; /* add 5px; if you want some vertical space but looks ugly */
-	border-radius: 15px;
+	border-radius: 24px;
 	position: relative;
+}
+
+.filter {
+	background-color: var(--c-4);
+	border-radius: 26px;
+	height: 26px;
+	margin: 0 auto; /* 8px if you want space */
+	padding: 8px;
+	position: relative;
+	width: 260px;
+	/*transition: opacity 1s;*/
+	/*opacity: 1;*/
 }
 
 /* Tooltip text */
@@ -446,6 +458,10 @@ button {
 
 .hide {
 	display: none !important;
+}
+.fade {
+	visibility: hidden;
+	opacity: 0;
 }
 
 .first {
@@ -1186,6 +1202,17 @@ TD .checkmark, TD .radiomark {
 	left: 9px;
 }
 
+.filter .fchkl {
+	display: inline-block;
+	min-width: 1em;
+	padding: 4px 4px 4px 32px;
+	text-align: left;
+	line-height: 24px;
+	vertical-align: middle;
+	-webkit-filter: grayscale(100%); /* Safari 6.0 - 9.0 */
+	filter: grayscale(100%);  
+}
+
 .lbl-s {
 	display: inline-block;
 	/* margin: 10px 4px 0 0; */
@@ -1279,6 +1306,9 @@ TD .checkmark, TD .radiomark {
 /* list item name (for sorting) */
 .lstIname {
 	white-space: nowrap;
+	text-overflow: ellipsis;
+	-webkit-filter: grayscale(100%); /* Safari 6.0 - 9.0 */
+	filter: grayscale(100%);  
 }
 
 /* list item palette preview */
@@ -1308,6 +1338,8 @@ TD .checkmark, TD .radiomark {
 	border-radius: 21px;
 	background: var(--c-2);
 	border: 1px solid var(--c-3);
+	-webkit-filter: grayscale(100%); /* Safari 6.0 - 9.0 */
+	filter: grayscale(100%);  
 }
 
 .fnd input[type="text"]:focus {
