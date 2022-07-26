@@ -101,19 +101,19 @@ void stateUpdated(byte callMode) {
 
   if (bri != briOld || stateChanged) {
     if (stateChanged) currentPreset = 0; //something changed, so we are no longer in the preset
-        
+
     if (callMode != CALL_MODE_NOTIFICATION && callMode != CALL_MODE_NO_NOTIFY) notify(callMode);
-    
+
     //set flag to update blynk, ws and mqtt
     interfaceUpdateCallMode = callMode;
     stateChanged = false;
   } else {
     if (nightlightActive && !nightlightActiveOld && callMode != CALL_MODE_NOTIFICATION && callMode != CALL_MODE_NO_NOTIFY) {
-      notify(CALL_MODE_NIGHTLIGHT); 
+      notify(CALL_MODE_NIGHTLIGHT);
       interfaceUpdateCallMode = CALL_MODE_NIGHTLIGHT;
     }
   }
-  
+
   if (callMode != CALL_MODE_NO_NOTIFY && nightlightActive && (nightlightMode == NL_MODE_FADE || nightlightMode == NL_MODE_COLORFADE)) {
     briNlT = bri;
     nightlightDelayMs -= (millis() - nightlightStartTime);
@@ -127,7 +127,7 @@ void stateUpdated(byte callMode) {
 
   //deactivate nightlight if target brightness is reached
   if (bri == nightlightTargetBri && callMode != CALL_MODE_NO_NOTIFY && nightlightMode != NL_MODE_SUN) nightlightActive = false;
-  
+
   if (fadeTransition) {
     //set correct delay if not using notification delay
     if (callMode != CALL_MODE_NOTIFICATION && !jsonTransitionOnce) transitionDelayTemp = transitionDelay;
@@ -159,7 +159,7 @@ void updateInterfaces(uint8_t callMode)
   sendDataWs();
   lastInterfaceUpdate = millis();
   if (callMode == CALL_MODE_WS_SEND) return;
-  
+
   #ifndef WLED_DISABLE_ALEXA
   if (espalexaDevice != nullptr && callMode != CALL_MODE_ALEXA) {
     espalexaDevice->setValue(bri);
@@ -167,10 +167,12 @@ void updateInterfaces(uint8_t callMode)
   }
   #endif
   #ifndef WLED_DISABLE_BLYNK
-  if (callMode != CALL_MODE_BLYNK && 
+  if (callMode != CALL_MODE_BLYNK &&
       callMode != CALL_MODE_NO_NOTIFY) updateBlynk();
   #endif
-  doPublishMqtt = true;
+  if (callMode != CALL_MODE_INIT) {
+    doPublishMqtt = true;
+  }
 }
 
 
@@ -183,7 +185,7 @@ void handleTransitions()
     interfaceUpdateCallMode = 0; //disable
   }
   if (doPublishMqtt) publishMqtt();
-  
+
   if (transitionActive && transitionDelayTemp > 0)
   {
     float tper = (millis() - transitionStartTime)/(float)transitionDelayTemp;
@@ -198,7 +200,7 @@ void handleTransitions()
     if (tper - tperLast < 0.004) return;
     tperLast = tper;
     briT    = briOld   +((bri    - briOld   )*tper);
-    
+
     applyBri();
   }
 }
