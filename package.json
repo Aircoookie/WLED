@@ -1,6 +1,6 @@
 {
   "name": "wled",
-  "version": "v0.13.2-hummelrummelv9",
+  "version": "v0.13.2-hummelrummelv10",
   "description": "Tools for WLED project",
   "main": "tools/cdata.js",
   "directories": {
