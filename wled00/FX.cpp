@@ -107,7 +107,7 @@ uint16_t WS2812FX::mode_strobe_rainbow(void) {
  * Flow Strobe effect. Cycling through the rainbow.
  */
 uint16_t WS2812FX::mode_flow_strobe_rainbow(void) {
-  return blink(color_wheel(SEGENV.call & 0xFF), color_wheel((SEGENV.call + SEGMENT.speed) & 0xFF), true, false);
+  return blink(color_wheel(SEGENV.call & 0xFF), color_wheel((SEGENV.call + 125) & 0xFF), true, false);
 }
 
 /*
