@@ -119,7 +119,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
-#define MODE_COUNT  118
+#define MODE_COUNT  119
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -239,6 +239,7 @@
 #define FX_MODE_BLENDS                 115
 #define FX_MODE_TV_SIMULATOR           116
 #define FX_MODE_DYNAMIC_SMOOTH         117
+#define FX_MODE_FLOW_STROBE_RAINBOW    118
 
 
 class WS2812FX {
@@ -248,7 +249,7 @@ class WS2812FX {
   typedef void (*show_callback) (void);
 
   static WS2812FX* instance;
-  
+
   // segment parameters
   public:
     typedef struct Segment { // 31 (32 in memory) bytes
@@ -376,24 +377,24 @@ class WS2812FX {
         _dataLen = 0;
       }
 
-      /** 
+      /**
        * If reset of this segment was request, clears runtime
        * settings of this segment.
        * Must not be called while an effect mode function is running
-       * because it could access the data buffer and this method 
+       * because it could access the data buffer and this method
        * may free that data buffer.
        */
       void resetIfRequired() {
         if (_requiresReset) {
-          next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0; 
+          next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0;
           deallocateData();
           _requiresReset = false;
         }
       }
 
-      /** 
+      /**
        * Flags that before the next effect is calculated,
-       * the internal segment state should be reset. 
+       * the internal segment state should be reset.
        * Call resetIfRequired before calling the next effect function.
        * Safe to call from interrupts and network requests.
        */
@@ -490,7 +491,7 @@ class WS2812FX {
 
     WS2812FX() {
       WS2812FX::instance = this;
-      //assign each member of the _mode[] array to its respective function reference 
+      //assign each member of the _mode[] array to its respective function reference
       _mode[FX_MODE_STATIC]                  = &WS2812FX::mode_static;
       _mode[FX_MODE_BLINK]                   = &WS2812FX::mode_blink;
       _mode[FX_MODE_COLOR_WIPE]              = &WS2812FX::mode_color_wipe;
@@ -609,6 +610,7 @@ class WS2812FX {
       _mode[FX_MODE_BLENDS]                  = &WS2812FX::mode_blends;
       _mode[FX_MODE_TV_SIMULATOR]            = &WS2812FX::mode_tv_simulator;
       _mode[FX_MODE_DYNAMIC_SMOOTH]          = &WS2812FX::mode_dynamic_smooth;
+      _mode[FX_MODE_FLOW_STROBE_RAINBOW]     = &WS2812FX::mode_flow_strobe_rainbow;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -833,7 +835,8 @@ class WS2812FX {
       mode_candy_cane(void),
       mode_blends(void),
       mode_tv_simulator(void),
-      mode_dynamic_smooth(void);
+      mode_dynamic_smooth(void),
+      mode_flow_strobe_rainbow(void);
 
   private:
     uint32_t crgb_to_col(CRGB fastled);
@@ -893,14 +896,14 @@ class WS2812FX {
 
     uint16_t* customMappingTable = nullptr;
     uint16_t  customMappingSize  = 0;
-    
+
     uint32_t _lastPaletteChange = 0;
     uint32_t _lastShow = 0;
 
     uint32_t _colors_t[3];
     uint8_t _bri_t;
     bool _no_rgb = false;
-    
+
     uint8_t _segment_index = 0;
     uint8_t _segment_index_palette_last = 99;
     uint8_t _mainSegment;
@@ -917,7 +920,7 @@ class WS2812FX {
 
     uint16_t
       transitionProgress(uint8_t tNr);
-  
+
   public:
     inline bool hasWhiteChannel(void) {return _hasWhiteChannel;}
     inline bool isOffRefreshRequired(void) {return _isOffRefreshRequired;}
@@ -936,7 +939,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
 "Heartbeat","Pacifica","Candle Multi", "Solid Glitter","Sunrise","Phased","Twinkleup","Noise Pal", "Sine","Phased Noise",
-"Flow","Chunchun","Dancing Shadows","Washing Machine","Candy Cane","Blends","TV Simulator","Dynamic Smooth"
+"Flow","Chunchun","Dancing Shadows","Washing Machine","Candy Cane","Blends","TV Simulator","Dynamic Smooth","HummelRummel Flow Strobe Rainbow"
 ])=====";
 
 
