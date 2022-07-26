@@ -605,7 +605,7 @@ function parseInfo(i) {
 	mh = i.leds.matrix ? i.leds.matrix.h : 0;
 	isM = mw>0 && mh>0;
 	if (!isM) hideModes("2D ");
-	if (!i.u || !i.u.AudioReactive) { /*hideModes("♪ ");*/ hideModes("♫ "); }	// hide /*audio*/ frequency reactive effects
+	//if (!i.u || !i.u.AudioReactive) { /*hideModes(" ♪");*/ hideModes(" ♫"); }	// hide /*audio*/ frequency reactive effects
 }
 
 //https://stackoverflow.com/questions/2592092/executing-script-elements-inserted-with-innerhtml
@@ -707,11 +707,10 @@ function populateSegments(s)
 		</div>`;
 		let sndSim = `<div data-snd="ssim" class="lbl-s hide">Sound sim<br>
 			<div class="sel-p"><select class="sel-p" id="seg${i}ssim" onchange="setSSim(${i})">
-				<option value="0" ${inst.ssim==0?' selected':''}>Off</option>
-				<option value="1" ${inst.ssim==1?' selected':''}>BeatSin</option>
-				<option value="2" ${inst.ssim==2?' selected':''}>WeWillRockYou</option>
-				<option value="3" ${inst.ssim==3?' selected':''}>U10_3</option>
-				<option value="4" ${inst.ssim==4?' selected':''}>U14_3</option>
+				<option value="0" ${inst.ssim==0?' selected':''}>BeatSin</option>
+				<option value="1" ${inst.ssim==1?' selected':''}>WeWillRockYou</option>
+				<option value="2" ${inst.ssim==2?' selected':''}>U10_3</option>
+				<option value="3" ${inst.ssim==3?' selected':''}>U14_3</option>
 			</select></div>
 		</div>`;
 		cn += `<div class="seg lstI ${i==s.mainseg ? 'selected' : ''} ${exp ? "expanded":""}" id="seg${i}">
@@ -1143,7 +1142,7 @@ function updateSelectedFx()
 		var segs = gId("segcont").querySelectorAll(`div[data-map="map2D"]`);
 		for (const seg of segs) if (selectedName.indexOf("2D ")<0) seg.classList.remove("hide"); else seg.classList.add("hide");
 		var segs = gId("segcont").querySelectorAll(`div[data-snd="ssim"]`);
-		for (const seg of segs) if (selectedName.indexOf("♪ ")<0 && selectedName.indexOf("♫ ")<0) seg.classList.add("hide"); else seg.classList.remove("hide"); // also "♫ "?
+		for (const seg of segs) if (selectedName.indexOf(" ♪")<0 && selectedName.indexOf(" ♫")<0) seg.classList.add("hide"); else seg.classList.remove("hide"); // also "♫ "?
 	}
 }
 
@@ -1526,30 +1525,10 @@ function toggleSync()
 
 function toggleLiveview()
 {
-	if (isInfo) toggleInfo();
-	if (isNodes) toggleNodes();
-
 	isLv = !isLv;
-
-	var lvID = "liveview";
-	if (isM) {
-		lvID = "liveview2D"
-		if (isLv) {
-			var cn = '<iframe id="liveview2D" src="about:blank"></iframe>';
-			d.getElementById('kliveview2D').innerHTML = cn;
-		}
-
-		gId('mliveview2D').style.transform = (isLv) ? "translateY(0px)":"translateY(100%)";
-		gId('buttonSr').lastChild.innerHTML = "Peek2D"; //lastchild is <p>Peek</p>
-	}
-	else
-	{
-		gId('buttonSr').lastChild.innerHTML = "Peek"; //lastchild is <p>Peek</p>
-	}
-
-	gId(lvID).style.display = (isLv) ? "block":"none";
-	var url = (loc?`http://${locip}`:'') + "/" + lvID;
-	gId(lvID).src = (isLv) ? url:"about:blank";
+	gId('liveview').style.display = (isLv) ? "block":"none";
+	var url = (loc?`http://${locip}`:'') + "/liveview";
+	gId('liveview').src = (isLv) ? url:"about:blank";
 	gId('buttonSr').className = (isLv) ? "active":"";
 	if (!isLv && ws && ws.readyState === WebSocket.OPEN) ws.send('{"lv":false}');
 	size();
@@ -1558,7 +1537,6 @@ function toggleLiveview()
 function toggleInfo()
 {
 	if (isNodes) toggleNodes();
-	if (isLv) toggleLiveview();
 	isInfo = !isInfo;
 	if (isInfo) requestJson();
 	gId('info').style.transform = (isInfo) ? "translateY(0px)":"translateY(100%)";
@@ -1568,7 +1546,6 @@ function toggleInfo()
 function toggleNodes()
 {
 	if (isInfo) toggleInfo();
-	if (isLv) toggleLiveview();
 	isNodes = !isNodes;
 	if (isNodes) loadNodes();
 	gId('nodes').style.transform = (isNodes) ? "translateY(0px)":"translateY(100%)";

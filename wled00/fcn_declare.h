@@ -327,6 +327,7 @@ uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLe
 uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxLen, uint8_t *var = nullptr);
 int16_t extractModeDefaults(uint8_t mode, const char *segVar);
 uint16_t crc16(const unsigned char* data_p, size_t length);
+um_data_t* simulateSound(uint8_t simulationId);
 
 //wled_eeprom.cpp
 void applyMacro(byte index);
