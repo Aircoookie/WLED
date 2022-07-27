@@ -1154,7 +1154,17 @@ uint16_t larson_scanner(bool dual) {
 uint16_t mode_larson_scanner(void){
   return larson_scanner(false);
 }
-static const char *_data_FX_MODE_LARSON_SCANNER PROGMEM = "Scanner";
+static const char *_data_FX_MODE_LARSON_SCANNER PROGMEM = "Scanner@!,Fade rate;!,!,;!;mp12=0";
+
+
+/*
+ * Creates two Larson scanners moving in opposite directions
+ * Custom mode by Keith Lord: https://github.com/kitesurfer1404/WS2812FX/blob/master/src/custom/DualLarson.h
+ */
+uint16_t mode_dual_larson_scanner(void){
+  return larson_scanner(true);
+}
+static const char *_data_FX_MODE_DUAL_LARSON_SCANNER PROGMEM = "Scanner Dual@!,Fade rate;!,!,;!;mp12=0";
 
 
 /*
@@ -1701,16 +1711,6 @@ uint16_t mode_multi_comet(void)
   return FRAMETIME;
 }
 static const char *_data_FX_MODE_MULTI_COMET PROGMEM = "Multi Comet";
-
-
-/*
- * Creates two Larson scanners moving in opposite directions
- * Custom mode by Keith Lord: https://github.com/kitesurfer1404/WS2812FX/blob/master/src/custom/DualLarson.h
- */
-uint16_t mode_dual_larson_scanner(void){
-  return larson_scanner(true);
-}
-static const char *_data_FX_MODE_DUAL_LARSON_SCANNER PROGMEM = "Scanner Dual";
 
 
 /*
