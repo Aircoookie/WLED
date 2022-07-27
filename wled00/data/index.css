@@ -390,20 +390,24 @@ button {
 
 .filter {
 	background-color: var(--c-4);
+	box-shadow: 0px 0px 6px 6px var(--c-1);
 	border-radius: 26px;
 	height: 26px;
-	margin: 0 auto; /* 8px if you want space */
+	margin: 0 auto 4px; /* 8px if you want space */
 	padding: 8px 2px;
 	position: relative;
 	/*width: 260px;*/
 	/*transition: opacity 1s;*/
 	/*opacity: 1;*/
+	z-index: 1;
 }
 
 /* Tooltip text */
 .slider .tooltiptext {
 	visibility: hidden;
 	background-color: var(--c-5);
+	/*border: 2px solid var(--c-2);*/
+	box-shadow: 4px 4px 10px 4px var(--c-1);
 	color: var(--c-f);
 	text-align: center;
 	padding: 5px 10px;
@@ -1274,6 +1278,7 @@ TD .checkmark, TD .radiomark {
 .lstI.sticky,
 .lstI.selected {
 	z-index: 1;
+	box-shadow: 0px 0px 10px 4px var(--c-1);
 }
 
 #pcont .selected:not([class*="expanded"]) {

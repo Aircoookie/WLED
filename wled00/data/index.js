@@ -819,7 +819,7 @@ function populateEffects()
 				var eP = (fd == '')?[]:fd.split(";");
 				var p = (eP.length<3 || eP[2]==='')?[]:eP[2].split(",");
 				var m = (eP.length<4 || eP[3]==='')?[]:eP[3].split(",");
-				if (m.length>0) for (let r of m) { if (r.substring(0,4)=="mp12") nm += " *"; }
+				if (isM && m.length>0) for (let r of m) { if (r.substring(0,4)=="mp12") nm += " *"; } // 1D effects with defined mapping
 				if (p.length>0 && p[0].substring(0,1) === "!") nm += " 🎨";
 			}
 			html += generateListItemHtml('fx',id,nm,'setX','',fd);
@@ -2457,6 +2457,10 @@ function hideModes(txt)
 {
 	for (let e of (gId('fxlist').querySelectorAll('.lstI')||[])) {
 		if (e.querySelector('.lstIname').innerText.indexOf(txt) >= 0) e.classList.add("hide"); //else e.classList.remove("hide");
+	}
+	if (txt==="2D ") {
+		gId("filter1D").classList.add("hide");
+		gId("filter2D").classList.add("hide");
 	}
 }
 
