@@ -1366,11 +1366,17 @@ void WS2812FX::setTransitionMode(bool t)
 
 void WS2812FX::load_gradient_palette(uint8_t index)
 {
+  // NOTE: due to constant execution (in every effect update) of this code
+  // if loading from FS is requested it will produce excessive flickering
+  // loading of palette into RAM from FS should be optimised in such case
+  // (it is mandatory to load palettes in each service() as each segment can
+  // have its own palette)
+
   byte tcp[72]; //support gradient palettes with up to 18 entries
-  if (index>127) {
+  if (index>114) {
     char fileName[32];
     strcpy_P(fileName, PSTR("/palette"));
-    if (index>128) sprintf(fileName +7, "%d", index-127);
+    sprintf(fileName +8, "%d", index-115); // palette ID == 128
     strcat(fileName, ".json");
 
     if (WLED_FS.exists(fileName)) {
@@ -1392,7 +1398,6 @@ void WS2812FX::load_gradient_palette(uint8_t index)
           targetPalette.loadDynamicGradientPalette(tcp);
         }
       }
-      releaseJSONBufferLock();
     }
   } else {
     byte i = constrain(index, 0, GRADIENT_PALETTE_COUNT -1);

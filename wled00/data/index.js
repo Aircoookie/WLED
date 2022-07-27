@@ -167,12 +167,12 @@ function loadBg(iUrl)
 	img.src = iUrl;
 	if (iUrl == "" || iUrl==="https://picsum.photos/1920/1080") {
 		var today = new Date();
-		for (var i=0; i<hol.length; i++) {
-			var yr = hol[i][0]==0 ? today.getFullYear() : hol[i][0];
-			var hs = new Date(yr,hol[i][1],hol[i][2]);
+		for (var h of (hol||[])) {
+			var yr = h[0]==0 ? today.getFullYear() : h[0];
+			var hs = new Date(yr,h[1],h[2]);
 			var he = new Date(hs);
-			he.setDate(he.getDate() + hol[i][3]);
-			if (today>=hs && today<=he)	img.src = hol[i][4];
+			he.setDate(he.getDate() + h[3]);
+			if (today>=hs && today<=he)	img.src = h[4];
 		}
 	}
 	img.addEventListener('load', (e) => {
@@ -671,11 +671,9 @@ function populateSegments(s)
 	let li = lastinfo;
 	segCount = 0; lowestUnused = 0; lSeg = 0;
 
-	for (var y = 0; y < (s.seg||[]).length; y++)
-	{
+	for (var inst of (s.seg||[])) {
 		segCount++;
 
-		var inst = s.seg[y];
 		let i = parseInt(inst.id);
 		if (i == lowestUnused) lowestUnused = i+1;
 		if (i > lSeg) lSeg = i;
@@ -797,27 +795,33 @@ function populateEffects()
 	var effects = eJson;
 	var html = "";
 
-	effects.shift(); // remove solid
-	for (let i = 0; i < effects.length; i++) effects[i] = {id: effects[i][0], name:effects[i][1]};
+	effects.shift(); // temporary remove solid
+	for (let i = 0; i < effects.length; i++) {
+		effects[i] = {
+			id: effects[i][0],
+			name:effects[i][1]
+		};
+	}
 	effects.sort((a,b) => (a.name).localeCompare(b.name));
-
 	effects.unshift({
 		"id": 0,
 		"name": "Solid"
 	});
 
-	for (let i = 0; i < effects.length; i++) {
+	for (let ef of effects) {
 		// WLEDSR: add slider and color control to setX (used by requestjson)
-		let id = effects[i].id;
-		let nm = effects[i].name;
+		let id = ef.id;
+		let nm = ef.name;
 		let fd = "";
-		if (Array.isArray(fxdata) && fxdata.length>id) {
-			fd = fxdata[id].substr(1);
-			var eP = (fd == '')?[]:fd.split(";");
-			var p = (eP.length<3 || eP[2]==='')?[]:eP[2].split(",");
-			if (p.length>0 && p[0].substr(0,1) === "!") nm += " 🎨";
-		}
-		if (effects[i].name.indexOf("Reserved") < 0) {
+		if (ef.name.indexOf("Reserved") < 0) {
+			if (Array.isArray(fxdata) && fxdata.length>id) {
+				fd = fxdata[id].substr(1);
+				var eP = (fd == '')?[]:fd.split(";");
+				var p = (eP.length<3 || eP[2]==='')?[]:eP[2].split(",");
+				var m = (eP.length<4 || eP[3]==='')?[]:eP[3].split(",");
+				if (m.length>0) for (let r of m) { if (r.substring(0,4)=="mp12") nm += " *"; }
+				if (p.length>0 && p[0].substring(0,1) === "!") nm += " 🎨";
+			}
 			html += generateListItemHtml('fx',id,nm,'setX','',fd);
 		}
 	}
@@ -828,7 +832,7 @@ function populateEffects()
 function populatePalettes()
 {
     var palettes = lJson;
-	palettes.shift(); // remove default
+	palettes.shift(); // temporary remove default
 	for (let i = 0; i < palettes.length; i++) {
 		palettes[i] = {
 			"id": palettes[i][0],
@@ -836,20 +840,19 @@ function populatePalettes()
 		};
 	}
 	palettes.sort((a,b) => (a.name).localeCompare(b.name));
-
 	palettes.unshift({
 		"id": 0,
 		"name": "Default"
 	});
 
 	var html = "";
-	for (let i = 0; i < palettes.length; i++) {
+	for (let pa of palettes) {
 		html += generateListItemHtml(
 			'palette',
-		    palettes[i].id,
-            palettes[i].name,
+		    pa.id,
+            pa.name,
             'setPalette',
-			`<div class="lstIprev" style="${genPalPrevCss(palettes[i].id)}"></div>`
+			`<div class="lstIprev" style="${genPalPrevCss(pa.id)}"></div>`
         );
 	}
 
@@ -952,8 +955,7 @@ function populateNodes(i,n)
 	var nnodes = 0;
 	if (n.nodes) {
 		n.nodes.sort((a,b) => (a.name).localeCompare(b.name));
-		for (var x=0;x<n.nodes.length;x++) {
-			var o = n.nodes[x];
+		for (var o of n.nodes) {
 			if (o.name) {
 				var url = `<button class="btn" title="${o.ip}" onclick="location.assign('http://${o.ip}');">${bname(o)}</button>`;
 				urows += inforow(url,`${btype(o.type)}<br><i>${o.vid==0?"N/A":o.vid}</i>`);
@@ -1615,10 +1617,10 @@ function makePlSel(el, incPl=false) {
 	var plSelContent = "";
 	delete pJson["0"];	// remove filler preset
 	var arr = Object.entries(pJson);
-	for (var i = 0; i < arr.length; i++) {
-		var n = arr[i][1].n ? arr[i][1].n : "Preset " + arr[i][0];
-		if (!incPl && arr[i][1].playlist && arr[i][1].playlist.ps) continue; // remove playlists, sub-playlists not yet supported
-		plSelContent += `<option value="${arr[i][0]}" ${arr[i][0]==el?"selected":""}>${n}</option>`
+	for (var a of arr) {
+		var n = a[1].n ? a[1].n : "Preset " + a[0];
+		if (!incPl && a[1].playlist && a[1].playlist.ps) continue; // remove playlists, sub-playlists not yet supported
+		plSelContent += `<option value="${a[0]}" ${a[0]==el?"selected":""}>${n}</option>`
 	}
 	return plSelContent;
 }

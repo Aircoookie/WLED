@@ -393,9 +393,9 @@ button {
 	border-radius: 26px;
 	height: 26px;
 	margin: 0 auto; /* 8px if you want space */
-	padding: 8px;
+	padding: 8px 2px;
 	position: relative;
-	width: 260px;
+	/*width: 260px;*/
 	/*transition: opacity 1s;*/
 	/*opacity: 1;*/
 }
@@ -1204,7 +1204,7 @@ TD .checkmark, TD .radiomark {
 
 .filter .fchkl {
 	display: inline-block;
-	min-width: 1em;
+	min-width: 0.7em;
 	padding: 4px 4px 4px 32px;
 	text-align: left;
 	line-height: 24px;
