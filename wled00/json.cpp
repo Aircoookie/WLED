@@ -11,11 +11,19 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   byte id = elem["id"] | it;
   if (id >= strip.getMaxSegments()) return;
 
-  WS2812FX::Segment& seg = strip.getSegment(id);
-  WS2812FX::Segment prev = seg; //make a backup so we can tell if something changed
+  int stop = elem["stop"] | -1;
+
+  // if using vectors use this code to append segment
+  if (id >= strip.getSegmentsNum()) {
+    if (stop <= 0) return; // ignore empty/inactive segments
+    strip.appendSegment(Segment(0, strip.getLengthTotal()));
+    id = strip.getSegmentsNum()-1; // segments are added at the end of list
+  }
+
+  Segment& seg = strip.getSegment(id);
+  Segment prev = seg; //make a backup so we can tell if something changed
 
   uint16_t start = elem["start"] | seg.start;
-  int stop = elem["stop"] | -1;
   if (stop < 0) {
     uint16_t len = elem["len"];
     stop = (len > 0) ? start + len : seg.stop;
@@ -31,7 +39,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     elem.remove("rpt"); // remove for recursive call
     elem.remove("n");   // remove for recursive call
     uint16_t len = stop - start;
-    for (byte i=id+1; i<strip.getMaxSegments(); i++) {
+    for (size_t i=id+1; i<strip.getMaxSegments(); i++) {
       start = start + len;
       if (start >= strip.getLengthTotal()) break;
       //TODO: add support for 2D
@@ -70,9 +78,14 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   uint16_t grp = elem["grp"] | seg.grouping;
   uint16_t spc = elem[F("spc")] | seg.spacing;
-  uint16_t of = seg.offset;
+  uint16_t of  = seg.offset;
+  uint8_t  soundSim = elem[F("ssim")] | seg.soundSim;
+  uint8_t  map1D2D  = elem[F("mp12")] | seg.map1D2D;
 
-  if (spc>0 && spc!=seg.spacing) strip.fill(BLACK, id); // clear spacing gaps
+  if ((spc>0 && spc!=seg.spacing) || seg.map1D2D!=map1D2D) seg.fill(BLACK); // clear spacing gaps
+
+  seg.map1D2D  = map1D2D & 0x03;
+  seg.soundSim = soundSim & 0x07;
 
   uint16_t len = 1;
   if (stop > start) len = stop - start;
@@ -88,23 +101,23 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   byte segbri = seg.opacity;
   if (getVal(elem["bri"], &segbri)) {
-    if (segbri > 0) seg.setOpacity(segbri, id);
-    seg.setOption(SEG_OPTION_ON, segbri, id);
+    if (segbri > 0) seg.setOpacity(segbri);
+    seg.setOption(SEG_OPTION_ON, segbri);
   }
 
   bool on = elem["on"] | seg.getOption(SEG_OPTION_ON);
   if (elem["on"].is<const char*>() && elem["on"].as<const char*>()[0] == 't') on = !on;
-  seg.setOption(SEG_OPTION_ON, on, id);
+  seg.setOption(SEG_OPTION_ON, on);
   bool frz = elem["frz"] | seg.getOption(SEG_OPTION_FREEZE);
   if (elem["frz"].is<const char*>() && elem["frz"].as<const char*>()[0] == 't') frz = !seg.getOption(SEG_OPTION_FREEZE);
-  seg.setOption(SEG_OPTION_FREEZE, frz, id);
+  seg.setOption(SEG_OPTION_FREEZE, frz);
 
-  seg.setCCT(elem["cct"] | seg.cct, id);
+  seg.setCCT(elem["cct"] | seg.cct);
 
   JsonArray colarr = elem["col"];
   if (!colarr.isNull())
   {
-    for (uint8_t i = 0; i < 3; i++)
+    for (size_t i = 0; i < 3; i++)
     {
       int rgbw[] = {0,0,0,0};
       bool colValid = false;
@@ -115,13 +128,13 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         if (hexCol == nullptr) { //Kelvin color temperature (or invalid), e.g 2400
           int kelvin = colarr[i] | -1;
           if (kelvin <  0) continue;
-          if (kelvin == 0) seg.setColor(i, 0, id);
+          if (kelvin == 0) seg.setColor(i, 0);
           if (kelvin >  0) colorKtoRGB(kelvin, brgbw);
           colValid = true;
         } else { //HEX string, e.g. "FFAA00"
           colValid = colorFromHexString(brgbw, hexCol);
         }
-        for (uint8_t c = 0; c < 4; c++) rgbw[c] = brgbw[c];
+        for (size_t c = 0; c < 4; c++) rgbw[c] = brgbw[c];
       } else { //Array of ints (RGB or RGBW color), e.g. [255,160,0]
         byte sz = colX.size();
         if (sz == 0) continue; //do nothing on empty array
@@ -132,7 +145,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 
       if (!colValid) continue;
 
-      seg.setColor(i, RGBW32(rgbw[0],rgbw[1],rgbw[2],rgbw[3]), id);
+      seg.setColor(i, RGBW32(rgbw[0],rgbw[1],rgbw[2],rgbw[3]));
       if (seg.mode == FX_MODE_STATIC) strip.trigger(); //instant refresh
     }
   }
@@ -149,31 +162,74 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   }
   #endif
 
-  seg.setOption(SEG_OPTION_SELECTED, elem[F("sel")] | seg.getOption(SEG_OPTION_SELECTED));
-  seg.setOption(SEG_OPTION_REVERSED, elem["rev"]    | seg.getOption(SEG_OPTION_REVERSED));
-  seg.setOption(SEG_OPTION_MIRROR  , elem[F("mi")]  | seg.getOption(SEG_OPTION_MIRROR  ));
-  // 2D options
+  seg.setOption(SEG_OPTION_SELECTED, elem["sel"]     | seg.getOption(SEG_OPTION_SELECTED));
+  seg.setOption(SEG_OPTION_REVERSED, elem["rev"]     | seg.getOption(SEG_OPTION_REVERSED));
+  seg.setOption(SEG_OPTION_MIRROR  , elem[F("mi")]   | seg.getOption(SEG_OPTION_MIRROR  ));
+  #ifndef WLED_DISABLE_2D
   seg.setOption(SEG_OPTION_REVERSED_Y, elem[F("rY")] | seg.getOption(SEG_OPTION_REVERSED_Y));
   seg.setOption(SEG_OPTION_MIRROR_Y  , elem[F("mY")] | seg.getOption(SEG_OPTION_MIRROR_Y  ));
   seg.setOption(SEG_OPTION_TRANSPOSED, elem[F("tp")] | seg.getOption(SEG_OPTION_TRANSPOSED));
+  #endif
 
   byte fx = seg.mode;
-  if (getVal(elem["fx"], &fx, 1, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 1-255 exact value)
+  if (getVal(elem["fx"], &fx, 0, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 0-255 exact value)
     if (!presetId && currentPlaylist>=0) unloadPlaylist();
-    strip.setMode(id, fx);
+    if (fx != seg.mode) {
+      //seg.startTransition(strip.getTransition()); // set effect transitions
+      seg.markForReset();
+      seg.mode = fx;
+      // load default values from effect string if effect is selected without
+      // any other effect parameter (i.e. effect clicked in UI)
+      if ( elem[F("sx")].isNull()
+        && elem[F("ix")].isNull()
+        && elem["pal"].isNull()
+        && elem[F("c1")].isNull()
+        && elem[F("c2")].isNull()
+        && elem[F("c3")].isNull() )
+      {
+        // compatibility mode begin
+        char buf[5]; // dummy buffer
+        for (int i=0; i<5; i++) {
+          uint8_t *var;
+          switch (i) {
+            case 0: var = &seg.speed;     break;
+            case 1: var = &seg.intensity; break;
+            case 2: var = &seg.custom1;   break;
+            case 3: var = &seg.custom2;   break;
+            case 4: var = &seg.custom3;   break;
+          }
+          extractModeSlider(fx, i, buf, 4, var);
+        }
+        extractModeSlider(fx, 255, buf, 4, &seg.palette);
+        //end compatibility mode
+        int16_t sOpt;
+        sOpt = extractModeDefaults(fx, SET_F("sx"));   if (sOpt >= 0) seg.speed     = sOpt;
+        sOpt = extractModeDefaults(fx, SET_F("ix"));   if (sOpt >= 0) seg.intensity = sOpt;
+        sOpt = extractModeDefaults(fx, SET_F("c1"));   if (sOpt >= 0) seg.custom1   = sOpt;
+        sOpt = extractModeDefaults(fx, SET_F("c2"));   if (sOpt >= 0) seg.custom2   = sOpt;
+        sOpt = extractModeDefaults(fx, SET_F("c3"));   if (sOpt >= 0) seg.custom3   = sOpt;
+        sOpt = extractModeDefaults(fx, "pal");         if (sOpt >= 0 && sOpt < strip.getPaletteCount()) seg.palette   = sOpt;
+        sOpt = extractModeDefaults(fx, SET_F("mp12")); if (sOpt >= 0) seg.map1D2D   = sOpt & 0x03;
+        sOpt = extractModeDefaults(fx, SET_F("ssim")); if (sOpt >= 0) seg.soundSim  = sOpt & 0x07;
+        sOpt = extractModeDefaults(fx, "rev");         if (sOpt >= 0) seg.reverse   = (bool)sOpt; // setOption(SEG_OPTION_REVERSED,   (bool)sOpt); // NOTE: setting this option is a risky business
+        sOpt = extractModeDefaults(fx, SET_F("mi"));   if (sOpt >= 0) seg.mirror    = (bool)sOpt; // setOption(SEG_OPTION_MIRROR,     (bool)sOpt); // NOTE: setting this option is a risky business
+        sOpt = extractModeDefaults(fx, SET_F("rY"));   if (sOpt >= 0) seg.reverse_y = (bool)sOpt; // setOption(SEG_OPTION_REVERSED_Y, (bool)sOpt); // NOTE: setting this option is a risky business
+        sOpt = extractModeDefaults(fx, SET_F("mY"));   if (sOpt >= 0) seg.mirror_y  = (bool)sOpt; // setOption(SEG_OPTION_MIRROR_Y,   (bool)sOpt); // NOTE: setting this option is a risky business
+      }
+    }
   }
 
   //getVal also supports inc/decrementing and random
   getVal(elem[F("sx")], &seg.speed);
   getVal(elem[F("ix")], &seg.intensity);
-  getVal(elem["pal"], &seg.palette, 1, strip.getPaletteCount());
+  getVal(elem["pal"],   &seg.palette, 1, strip.getPaletteCount());
   getVal(elem[F("c1")], &seg.custom1);
   getVal(elem[F("c2")], &seg.custom2);
   getVal(elem[F("c3")], &seg.custom3);
-
+  
   JsonArray iarr = elem[F("i")]; //set individual LEDs
   if (!iarr.isNull()) {
-    uint8_t oldSegId = strip.setPixelSegment(id);
+    //uint8_t oldSegId = strip.setPixelSegment(id);
 
     // set brightness immediately and disable transition
     transitionDelayTemp = 0;
@@ -183,13 +239,13 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     // freeze and init to black
     if (!seg.getOption(SEG_OPTION_FREEZE)) {
       seg.setOption(SEG_OPTION_FREEZE, true);
-      strip.fill(0);
+      seg.fill(BLACK);
     }
 
     uint16_t start = 0, stop = 0;
     byte set = 0; //0 nothing set, 1 start set, 2 range set
 
-    for (uint16_t i = 0; i < iarr.size(); i++) {
+    for (size_t i = 0; i < iarr.size(); i++) {
       if(iarr[i].is<JsonInteger>()) {
         if (!set) {
           start = iarr[i];
@@ -208,29 +264,28 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
           byte brgbw[] = {0,0,0,0};
           const char* hexCol = iarr[i];
           if (colorFromHexString(brgbw, hexCol)) {
-            for (uint8_t c = 0; c < 4; c++) rgbw[c] = brgbw[c];
+            for (size_t c = 0; c < 4; c++) rgbw[c] = brgbw[c];
           }
         }
 
         if (set < 2) stop = start + 1;
-        for (uint16_t i = start; i < stop; i++) {
+        for (int i = start; i < stop; i++) {
           if (strip.gammaCorrectCol) {
-            strip.setPixelColor(i, strip.gamma8(rgbw[0]), strip.gamma8(rgbw[1]), strip.gamma8(rgbw[2]), strip.gamma8(rgbw[3]));
+            seg.setPixelColor(i, strip.gamma8(rgbw[0]), strip.gamma8(rgbw[1]), strip.gamma8(rgbw[2]), strip.gamma8(rgbw[3]));
           } else {
-            strip.setPixelColor(i, rgbw[0], rgbw[1], rgbw[2], rgbw[3]);
+            seg.setPixelColor(i, rgbw[0], rgbw[1], rgbw[2], rgbw[3]);
           }
         }
         if (!set) start++;
         set = 0;
       }
     }
-    strip.setPixelSegment(oldSegId);
+    //strip.setPixelSegment(oldSegId);
     strip.trigger();
   }
   // send UDP if not in preset and something changed that is not just selection
   // send UDP if something changed that is not just selection or segment power/opacity
   if ((seg.differs(prev) & 0x7E) && seg.getOption(SEG_OPTION_ON)==prev.getOption(SEG_OPTION_ON)) stateChanged = true;
-  return;
 }
 
 // deserializes WLED state (fileDoc points to doc object if called from web server)
@@ -248,11 +303,11 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   if (root["on"].is<const char*>() && root["on"].as<const char*>()[0] == 't') toggleOnOff();
 
   if (bri && !onBefore) { // unfreeze all segments when turning on
-    for (uint8_t s=0; s < strip.getMaxSegments(); s++) {
-      strip.getSegment(s).setOption(SEG_OPTION_FREEZE, false, s);
+    for (size_t s=0; s < strip.getSegmentsNum(); s++) {
+      strip.getSegment(s).setOption(SEG_OPTION_FREEZE, false);
     }
     if (realtimeMode && !realtimeOverride && useMainSegmentOnly) { // keep live segment frozen if live
-      strip.getMainSegment().setOption(SEG_OPTION_FREEZE, true, strip.getMainSegmentId());
+      strip.getMainSegment().setOption(SEG_OPTION_FREEZE, true);
     }
   }
 
@@ -304,7 +359,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   realtimeOverride = root[F("lor")] | realtimeOverride;
   if (realtimeOverride > 2) realtimeOverride = REALTIME_OVERRIDE_ALWAYS;
   if (realtimeMode && useMainSegmentOnly) {
-    strip.getMainSegment().setOption(SEG_OPTION_FREEZE, !realtimeOverride, strip.getMainSegmentId());
+    strip.getMainSegment().setOption(SEG_OPTION_FREEZE, !realtimeOverride);
   }
 
   if (root.containsKey("live")) {
@@ -326,13 +381,11 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     if (id < 0) {
       //apply all selected segments
       //bool didSet = false;
-      for (byte s = 0; s < strip.getMaxSegments(); s++) {
-        WS2812FX::Segment &sg = strip.getSegment(s);
-        if (sg.isActive()) {
-          if (sg.isSelected()) {
-            deserializeSegment(segVar, s, presetId);
-            //didSet = true;
-          }
+      for (size_t s = 0; s < strip.getSegmentsNum(); s++) {
+        Segment &sg = strip.getSegment(s);
+        if (sg.isSelected()) {
+          deserializeSegment(segVar, s, presetId);
+          //didSet = true;
         }
       }
       //TODO: not sure if it is good idea to change first active but unselected segment
@@ -342,8 +395,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     }
   } else {
     JsonArray segs = segVar.as<JsonArray>();
-    for (JsonObject elem : segs)
-    {
+    for (JsonObject elem : segs) {
       deserializeSegment(elem, it, presetId);
       it++;
     }
@@ -396,7 +448,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   return stateResponse;
 }
 
-void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset, bool segmentBounds)
+void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset, bool segmentBounds)
 {
   root["id"] = id;
   if (segmentBounds) {
@@ -423,7 +475,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
   // this will reduce RAM footprint from ~300 bytes to 84 bytes per segment
   char colstr[70]; colstr[0] = '['; colstr[1] = '\0';  //max len 68 (5 chan, all 255)
   const char *format = strip.hasWhiteChannel() ? PSTR("[%u,%u,%u,%u]") : PSTR("[%u,%u,%u]");
-  for (uint8_t i = 0; i < 3; i++)
+  for (size_t i = 0; i < 3; i++)
   {
     byte segcol[4]; byte* c = segcol;
     segcol[0] = R(seg.colors[i]);
@@ -452,6 +504,8 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
     root[F("mY")] = seg.getOption(SEG_OPTION_MIRROR_Y);
     root[F("tp")] = seg.getOption(SEG_OPTION_TRANSPOSED);
   }
+  root[F("ssim")]  = seg.soundSim;
+  root[F("mp12")]  = seg.map1D2D;
 }
 
 void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segmentBounds)
@@ -493,9 +547,17 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
 
   bool selectedSegmentsOnly = root[F("sc")] | false;
   JsonArray seg = root.createNestedArray("seg");
-  for (byte s = 0; s < strip.getMaxSegments(); s++) {
-    WS2812FX::Segment &sg = strip.getSegment(s);
-    if (selectedSegmentsOnly && !sg.isSelected()) continue;
+  for (size_t s = 0; s < strip.getMaxSegments(); s++) {
+    if (s >= strip.getSegmentsNum()) {
+      if (forPreset && segmentBounds) { //disable segments not part of preset
+        JsonObject seg0 = seg.createNestedObject();
+        seg0["stop"] = 0;
+        continue;
+      } else
+        break;
+    }
+    Segment &sg = strip.getSegment(s);
+    if (!forPreset && selectedSegmentsOnly && !sg.isSelected()) continue;
     if (sg.isActive()) {
       JsonObject seg0 = seg.createNestedObject();
       serializeSegment(seg0, sg, s, forPreset, segmentBounds);
@@ -518,18 +580,22 @@ void serializeInfo(JsonObject root)
   leds["fps"] = strip.getFps();
   leds[F("maxpwr")] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;
   leds[F("maxseg")] = strip.getMaxSegments();
+  //leds[F("actseg")] = strip.getActiveSegmentsNum();
   //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config
 
+  #ifndef WLED_DISABLE_2D
   if (strip.isMatrix) {
     JsonObject matrix = leds.createNestedObject("matrix");
     matrix["w"] = strip.matrixWidth;
     matrix["h"] = strip.matrixHeight;
   }
+  #endif
 
   uint8_t totalLC = 0;
   JsonArray lcarr = leds.createNestedArray(F("seglc"));
-  uint8_t nSegs = strip.getLastActiveSegmentId();
-  for (byte s = 0; s <= nSegs; s++) {
+  size_t nSegs = strip.getSegmentsNum();
+  for (size_t s = 0; s < nSegs; s++) {
+    if (!strip.getSegment(s).isActive()) continue;
     uint8_t lc = strip.getSegment(s).getLightCapabilities();
     totalLC |= lc;
     lcarr.add(lc);
@@ -577,7 +643,7 @@ void serializeInfo(JsonObject root)
   root[F("palcount")] = strip.getPaletteCount();
 
   JsonArray ledmaps = root.createNestedArray(F("maps"));
-  for (uint8_t i=0; i<10; i++) {
+  for (size_t i=0; i<10; i++) {
     char fileName[16];
     strcpy_P(fileName, PSTR("/ledmap"));
     if (i) sprintf(fileName +7, "%d", i);
@@ -956,7 +1022,7 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
   obuf = buffer;
   olen = 9;
 
-  for (uint16_t i= 0; i < used; i += n)
+  for (size_t i= 0; i < used; i += n)
   {
     uint32_t c = strip.getPixelColor(i);
     uint8_t r = qadd8(W(c), R(c)); //add white channel to RGB channels as a simple RGBW -> RGB map

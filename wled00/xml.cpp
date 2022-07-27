@@ -308,9 +308,15 @@ void getSettingsJS(byte subPage, char* dest)
 
     // set limits
     oappend(SET_F("bLimits("));
+    #ifdef ESP32
+    // requested by @softhack007 https://github.com/blazoncek/WLED/issues/33
+    if (usermods.lookup(USERMOD_ID_AUDIOREACTIVE))
+      oappend(itoa(WLED_MAX_BUSSES-2,nS,10)); // prevent use of I2S buses if audio installed
+    else
+    #endif
     oappend(itoa(WLED_MAX_BUSSES,nS,10));  oappend(",");
     oappend(itoa(MAX_LEDS_PER_BUS,nS,10)); oappend(",");
-    oappend(itoa(MAX_LED_MEMORY,nS,10)); oappend(",");
+    oappend(itoa(MAX_LED_MEMORY,nS,10));   oappend(",");
     oappend(itoa(MAX_LEDS,nS,10));
     oappend(SET_F(");"));
 
@@ -636,6 +642,7 @@ void getSettingsJS(byte subPage, char* dest)
   if (subPage == 10) // 2D matrices
   {
     sappend('v',SET_F("SOMP"),strip.isMatrix);
+    #ifndef WLED_DISABLE_2D
     oappend(SET_F("resetPanels();"));
     if (strip.isMatrix) {
       sappend('v',SET_F("PH"),strip.panelH);
@@ -660,5 +667,8 @@ void getSettingsJS(byte subPage, char* dest)
         pO[l] = 'S'; sappend('c',pO,strip.panel[i].serpentine);
       }
     }
+    #else
+    oappend(SET_F("gId(\"somp\").remove(1);")); // remove 2D option from dropdown
+    #endif
   }
 }

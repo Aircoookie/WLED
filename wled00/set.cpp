@@ -86,6 +86,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     Bus::setAutoWhiteMode(request->arg(F("AW")).toInt());
     strip.setTargetFps(request->arg(F("FR")).toInt());
 
+    bool busesChanged = false;
     for (uint8_t s = 0; s < WLED_MAX_BUSSES; s++) {
       char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
       char lc[4] = "LC"; lc[2] = 48+s; lc[3] = 0; //strip length
@@ -98,7 +99,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char aw[4] = "AW"; aw[2] = 48+s; aw[3] = 0; //auto white mode
       char wo[4] = "WO"; wo[2] = 48+s; wo[3] = 0; //channel swap
       if (!request->hasArg(lp)) {
-        DEBUG_PRINTLN(F("No data.")); break;
+        DEBUG_PRINT(F("No data for "));
+        DEBUG_PRINTLN(s);
+        break;
       }
       for (uint8_t i = 0; i < 5; i++) {
         lp[1] = 48+i;
@@ -118,10 +121,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       awmode = request->arg(aw).toInt();
       channelSwap = (type == TYPE_SK6812_RGBW || type == TYPE_TM1814) ? request->arg(wo).toInt() : 0;
       // actual finalization is done in WLED::loop() (removing old busses and adding new)
+      // this may happen even before this loop is finished so we do "doInitBusses" after the loop
       if (busConfigs[s] != nullptr) delete busConfigs[s];
       busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder | (channelSwap<<4), request->hasArg(cv), skip, awmode);
-      doInitBusses = true;
+      busesChanged = true;
     }
+    //doInitBusses = busesChanged; // we will do that below to ensure all input data is processed
 
     ColorOrderMap com = {};
     for (uint8_t s = 0; s < WLED_MAX_COLOR_ORDER_MAPPINGS; s++) {
@@ -197,6 +202,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t >= 0 && t < 4) strip.paletteBlend = t;
     t = request->arg(F("BF")).toInt();
     if (t > 0) briMultiplier = t;
+
+    doInitBusses = busesChanged;
   }
 
   //UI
@@ -547,6 +554,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     releaseJSONBufferLock();
   }
 
+  #ifndef WLED_DISABLE_2D
   //2D panels
   if (subPage == 10)
   {
@@ -570,6 +578,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
     strip.setUpMatrix(); // will check limits
   }
+  #endif
 
   lastEditTime = millis();
   if (subPage != 2 && !doReboot) serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)
@@ -599,17 +608,17 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   pos = req.indexOf(F("SS="));
   if (pos > 0) {
     byte t = getNumVal(&req, pos);
-    if (t < strip.getMaxSegments()) {
+    if (t < strip.getSegmentsNum()) {
       selectedSeg = t;
       singleSegment = true;
     }
   }
 
-  WS2812FX::Segment& selseg = strip.getSegment(selectedSeg);
+  Segment& selseg = strip.getSegment(selectedSeg);
   pos = req.indexOf(F("SV=")); //segment selected
   if (pos > 0) {
     byte t = getNumVal(&req, pos);
-    if (t == 2) for (uint8_t i = 0; i < strip.getMaxSegments(); i++) strip.getSegment(i).setOption(SEG_OPTION_SELECTED, 0); // unselect other segments
+    if (t == 2) for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) strip.getSegment(i).setOption(SEG_OPTION_SELECTED, 0); // unselect other segments
     selseg.setOption(SEG_OPTION_SELECTED, t);
   }
 
@@ -657,9 +666,9 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   pos = req.indexOf(F("SB=")); //Segment brightness/opacity
   if (pos > 0) {
     byte segbri = getNumVal(&req, pos);
-    selseg.setOption(SEG_OPTION_ON, segbri, selectedSeg);
+    selseg.setOption(SEG_OPTION_ON, segbri);
     if (segbri) {
-      selseg.setOpacity(segbri, selectedSeg);
+      selseg.setOpacity(segbri);
     }
   }
 
@@ -762,7 +771,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (pos > 0) {
     colorFromDecOrHexString(tmpCol, (char*)req.substring(pos + 3).c_str());
     uint32_t col2 = RGBW32(tmpCol[0], tmpCol[1], tmpCol[2], tmpCol[3]);
-    selseg.setColor(2, col2, selectedSeg); // defined above (SS= or main)
+    selseg.setColor(2, col2); // defined above (SS= or main)
     stateChanged = true;
     if (!singleSegment) strip.setColor(2, col2); // will set color to all active & selected segments
   }
@@ -791,14 +800,14 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (col0Changed) {
     stateChanged = true;
     uint32_t colIn0 = RGBW32(colIn[0], colIn[1], colIn[2], colIn[3]);
-    selseg.setColor(0, colIn0, selectedSeg);
+    selseg.setColor(0, colIn0);
     if (!singleSegment) strip.setColor(0, colIn0); // will set color to all active & selected segments
   }
 
   if (col1Changed) {
     stateChanged = true;
     uint32_t colIn1 = RGBW32(colInSec[0], colInSec[1], colInSec[2], colInSec[3]);
-    selseg.setColor(1, colIn1, selectedSeg);
+    selseg.setColor(1, colIn1);
     if (!singleSegment) strip.setColor(1, colIn1); // will set color to all active & selected segments
   }
 
@@ -815,8 +824,8 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   stateChanged |= (fxModeChanged || speedChanged || intensityChanged || paletteChanged);
 
   // apply to main and all selected segments to prevent #1618.
-  for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
-    WS2812FX::Segment& seg = strip.getSegment(i);
+  for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
+    Segment& seg = strip.getSegment(i);
     if (i != selectedSeg && (singleSegment || !seg.isActive() || !seg.isSelected())) continue; // skip non main segments if not applying to all
     if (fxModeChanged)    strip.setMode(i, effectIn);
     if (speedChanged)     seg.speed     = speedIn;
@@ -918,7 +927,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     realtimeOverride = getNumVal(&req, pos);
     if (realtimeOverride > 2) realtimeOverride = REALTIME_OVERRIDE_ALWAYS;
     if (realtimeMode && useMainSegmentOnly) {
-      strip.getMainSegment().setOption(SEG_OPTION_FREEZE, !realtimeOverride, strip.getMainSegmentId());
+      strip.getMainSegment().setOption(SEG_OPTION_FREEZE, !realtimeOverride);
     }
   }
 

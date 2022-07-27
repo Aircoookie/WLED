@@ -132,7 +132,7 @@ static ArduinoFFT<float> FFT = ArduinoFFT<float>( vReal, vImag, samplesFFT, SAMP
 static arduinoFFT FFT = arduinoFFT(vReal, vImag, samplesFFT, SAMPLE_RATE);
 #endif
 
-static TaskHandle_t FFT_Task;
+static TaskHandle_t FFT_Task = nullptr;
 
 float fftAddAvg(int from, int to) {
   float result = 0.0f;
@@ -1150,24 +1150,26 @@ class AudioReactive : public Usermod {
       uiDomString += F("</button>");
       infoArr.add(uiDomString);
 
-      infoArr = user.createNestedArray(F("Input level"));
-      uiDomString = F("<div class=\"slider\"><div class=\"sliderwrap il\"><input class=\"noslide\" onchange=\"requestJson({");
-      uiDomString += FPSTR(_name);
-      uiDomString += F(":{");
-      uiDomString += FPSTR(_inputLvl);
-      uiDomString += F(":parseInt(this.value)}});\" oninput=\"updateTrail(this);\" max=255 min=0 type=\"range\" value=");
-      uiDomString += inputLevel;
-      uiDomString += F(" /><div class=\"sliderdisplay\"></div></div></div>"); //<output class=\"sliderbubble\"></output>
-      infoArr.add(uiDomString);
+      if (enabled) {
+        infoArr = user.createNestedArray(F("Input level"));
+        uiDomString = F("<div class=\"slider\"><div class=\"sliderwrap il\"><input class=\"noslide\" onchange=\"requestJson({");
+        uiDomString += FPSTR(_name);
+        uiDomString += F(":{");
+        uiDomString += FPSTR(_inputLvl);
+        uiDomString += F(":parseInt(this.value)}});\" oninput=\"updateTrail(this);\" max=255 min=0 type=\"range\" value=");
+        uiDomString += inputLevel;
+        uiDomString += F(" /><div class=\"sliderdisplay\"></div></div></div>"); //<output class=\"sliderbubble\"></output>
+        infoArr.add(uiDomString);
 
-#ifdef WLED_DEBUG
-      infoArr = user.createNestedArray(F("Sampling time"));
-      infoArr.add(sampleTime);
-      infoArr.add("ms");
-      infoArr = user.createNestedArray(F("FFT time"));
-      infoArr.add(fftTime-sampleTime);
-      infoArr.add("ms");
-#endif
+        #ifdef WLED_DEBUG
+        infoArr = user.createNestedArray(F("Sampling time"));
+        infoArr.add(sampleTime);
+        infoArr.add("ms");
+        infoArr = user.createNestedArray(F("FFT time"));
+        infoArr.add(fftTime-sampleTime);
+        infoArr.add("ms");
+        #endif
+      }
     }
 
 
@@ -1175,12 +1177,15 @@ class AudioReactive : public Usermod {
      * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    /*
     void addToJsonState(JsonObject& root)
     {
-      //root["user0"] = userVar0;
+      if (!initDone) return;  // prevent crash on boot applyPreset()
+      JsonObject usermod = root[FPSTR(_name)];
+      if (usermod.isNull()) {
+        usermod = root.createNestedObject(FPSTR(_name));
+      }
+      usermod["on"] = enabled;
     }
-    */
 
 
     /*
@@ -1264,8 +1269,7 @@ class AudioReactive : public Usermod {
 
       JsonObject sync = top.createNestedObject("sync");
       sync[F("port")] = audioSyncPort;
-      sync[F("send")] = (bool) (audioSyncEnabled & 0x01);
-      sync[F("receive")] = (bool) (audioSyncEnabled & 0x02);
+      sync[F("mode")] = audioSyncEnabled;
     }
 
 
@@ -1305,13 +1309,8 @@ class AudioReactive : public Usermod {
       configComplete &= getJsonValue(top["cfg"][F("gain")],    sampleGain);
       configComplete &= getJsonValue(top["cfg"][F("AGC")],     soundAgc);
 
-      configComplete &= getJsonValue(top["sync"][F("port")],    audioSyncPort);
-
-      bool send        = audioSyncEnabled & 0x01;
-      bool receive     = audioSyncEnabled & 0x02;
-      configComplete  &= getJsonValue(top["sync"][F("send")],    send);
-      configComplete  &= getJsonValue(top["sync"][F("receive")], receive);
-      audioSyncEnabled = send | (receive << 1);
+      configComplete &= getJsonValue(top["sync"][F("port")], audioSyncPort);
+      configComplete &= getJsonValue(top["sync"][F("mode")], audioSyncEnabled);
 
       return configComplete;
     }
@@ -1331,6 +1330,10 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addOption(dd,'Normal',1);"));
       oappend(SET_F("addOption(dd,'Vivid',2);"));
       oappend(SET_F("addOption(dd,'Lazy',3);"));
+      oappend(SET_F("dd=addDropdown('AudioReactive','sync:mode');"));
+      oappend(SET_F("addOption(dd,'Off',0);"));
+      oappend(SET_F("addOption(dd,'Send',1);"));
+      oappend(SET_F("addOption(dd,'Receive',2);"));
       oappend(SET_F("addInfo('AudioReactive:digitalmic:type',1,'<i>requires reboot!</i>');"));  // 0 is field type, 1 is actual field
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',0,'I2S SD');"));
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',1,'I2S WS');"));

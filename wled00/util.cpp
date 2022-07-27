@@ -238,14 +238,13 @@ uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLe
       char lineBuffer[256];
       //strcpy_P(lineBuffer, (const char*)pgm_read_dword(&(WS2812FX::_modeData[mode])));
       strcpy_P(lineBuffer, strip.getModeData(mode));
-      if (strlen(lineBuffer) > 0) {
-        size_t j = 0;
-        for (; j < maxLen; j++) {
-          if (lineBuffer[j] == '\0' || lineBuffer[j] == '@') break;
-          dest[j] = lineBuffer[j];
-        }
-        dest[j] = 0; // terminate string
+      size_t len = strlen(lineBuffer);
+      size_t j = 0;
+      for (; j < maxLen && j < len; j++) {
+        if (lineBuffer[j] == '\0' || lineBuffer[j] == '@') break;
+        dest[j] = lineBuffer[j];
       }
+      dest[j] = 0; // terminate string
       return strlen(dest);
     } else return 0;
   }
@@ -282,7 +281,7 @@ uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLe
 
 
 // extracts effect slider data (1st group after @)
-uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxLen)
+uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxLen, uint8_t *var)
 {
   dest[0] = '\0'; // start by clearing buffer
 
@@ -292,30 +291,50 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxL
       int16_t start = lineBuffer.indexOf('@');
       int16_t stop  = lineBuffer.indexOf(';', start);
       if (start>0 && stop>0) {
-        String names = lineBuffer.substring(start+1, stop);
-        int16_t nameBegin = 0, nameEnd;
-        for (size_t i=0; i<=slider; i++) {
-          const char *tmpstr;
-          dest[0] = '\0'; //clear dest buffer
-          if (i > 0 && nameBegin == 0) break; // there are no more names
-          nameEnd = names.indexOf(',', nameBegin);
-          if (names.charAt(nameBegin) == '!') {
-            switch (i) {
-              case  0: tmpstr = PSTR("FX Speed");     break;
-              case  1: tmpstr = PSTR("FX Intensity"); break;
-              case  2: tmpstr = PSTR("FX Custom 1");  break;
-              case  3: tmpstr = PSTR("FX Custom 2");  break;
-              case  4: tmpstr = PSTR("FX Custom 3");  break;
-              default: tmpstr = PSTR("FX Custom");    break;
+        String names = lineBuffer.substring(start, stop); // include @
+        int16_t nameBegin = 1, nameEnd, nameDefault;
+        if (slider < 10) {
+          for (size_t i=0; i<=slider; i++) {
+            const char *tmpstr;
+            dest[0] = '\0'; //clear dest buffer
+            if (nameBegin == 0) break; // there are no more names
+            nameEnd = names.indexOf(',', nameBegin);
+            if (i == slider) {
+              nameDefault = names.indexOf('=', nameBegin); // find default value
+              if (nameDefault > 0 && var && ((nameEnd>0 && nameDefault<nameEnd) || nameEnd<0)) {
+                *var = (uint8_t)atoi(names.substring(nameDefault+1).c_str());
+              }
+              if (names.charAt(nameBegin) == '!') {
+                switch (slider) {
+                  case  0: tmpstr = PSTR("FX Speed");     break;
+                  case  1: tmpstr = PSTR("FX Intensity"); break;
+                  case  2: tmpstr = PSTR("FX Custom 1");  break;
+                  case  3: tmpstr = PSTR("FX Custom 2");  break;
+                  case  4: tmpstr = PSTR("FX Custom 3");  break;
+                  default: tmpstr = PSTR("FX Custom");    break;
+                }
+              } else {
+                if (nameEnd<0) tmpstr = names.substring(nameBegin).c_str(); // did not find ",", last name?
+                else           tmpstr = names.substring(nameBegin, nameEnd).c_str();
+              }
+              strlcpy(dest, tmpstr, maxLen); // copy the name into buffer (replacing previous)
             }
-          } else {
-            if (nameEnd<0) tmpstr = names.substring(nameBegin).c_str(); // did not find ",", last name?
-            else           tmpstr = names.substring(nameBegin, nameEnd).c_str();
+            nameBegin = nameEnd+1; // next name (if "," is not found it will be 0)
+          } // next slider
+        } else if (slider == 255) {
+          // palette
+          strlcpy(dest, "pal", maxLen);
+          names = lineBuffer.substring(stop+1); // stop has index of color slot names
+          nameBegin = names.indexOf(';'); // look for palette
+          if (nameBegin >= 0) {
+            nameEnd = names.indexOf(';', nameBegin+1);
+            if (!isdigit(names[nameBegin+1])) nameBegin = names.indexOf('=', nameBegin+1); // look for default value
+            if (nameEnd >= 0 && nameBegin > nameEnd) nameBegin = -1;
+            if (nameBegin >= 0 && var) {
+              *var = (uint8_t)atoi(names.substring(nameBegin+1).c_str());
+            }
           }
-          strncpy(dest, tmpstr, maxLen); // copy the name into buffer (replacing previous)
-          nameBegin = nameEnd+1; // next name (if "," is not found it will be 0)
-        } // next slider
-
+        }
         // we have slider name (including default value) in the dest buffer
         for (size_t i=0; i<strlen(dest); i++) if (dest[i]=='=') { dest[i]='\0'; break; } // truncate default value
         
@@ -325,11 +344,29 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxL
           case 0:  strncpy_P(dest, PSTR("FX Speed"), maxLen); break;
           case 1:  strncpy_P(dest, PSTR("FX Intensity"), maxLen); break;
         }
+        dest[maxLen] = '\0'; // strncpy does not necessarily null terminate string
       }
     }
     return strlen(dest);
   }
   return 0;
+}
+
+
+int16_t extractModeDefaults(uint8_t mode, const char *segVar)
+{
+  if (mode < strip.getModeCount()) {
+    String lineBuffer = strip.getModeData(mode);
+    if (lineBuffer.length() > 0) {
+      int16_t start = lineBuffer.lastIndexOf(';');
+      if (start<0) return -1;
+
+      int16_t stop = lineBuffer.indexOf(segVar, start+1);
+      if (stop<0) return -1;
+      return atoi(lineBuffer.substring(stop+strlen(segVar)+1).c_str());
+    }
+  }
+  return -1;
 }
 
 
@@ -343,4 +380,155 @@ uint16_t crc16(const unsigned char* data_p, size_t length) {
     crc = (crc << 8) ^ ((uint16_t)(x << 12)) ^ ((uint16_t)(x <<5)) ^ ((uint16_t)x);
   }
   return crc;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Begin simulateSound (to enable audio enhanced effects to display something)
+///////////////////////////////////////////////////////////////////////////////
+// Currently 4 types defined, to be fine tuned and new types added
+typedef enum UM_SoundSimulations {
+  UMS_BeatSin = 0,
+  UMS_WeWillRockYou,
+  UMS_10_3,
+  UMS_14_3
+} um_soundSimulations_t;
+
+// this is still work in progress
+um_data_t* simulateSound(uint8_t simulationId) 
+{
+  static float   sampleAvg;
+  static uint8_t soundAgc;
+  static float   sampleAgc;
+  static int16_t sampleRaw;
+  static int16_t rawSampleAgc;
+  static uint8_t samplePeak;
+  static float   FFT_MajorPeak;
+  static float   FFT_Magnitude;
+  static uint8_t maxVol;
+  static uint8_t binNum;
+  static float   multAgc;
+
+  float   sampleGain;
+  uint8_t soundSquelch;
+  uint8_t inputLevel;
+
+  //arrays
+  uint8_t *fftResult;
+  uint8_t *myVals;
+  float   *fftBin;
+
+  static um_data_t* um_data = nullptr;
+
+  if (!um_data) {
+    //claim storage for arrays
+    fftResult = (uint8_t *)malloc(sizeof(uint8_t) * 16);
+    myVals = (uint8_t *)malloc(sizeof(uint8_t) * 32);
+    fftBin = (float *)malloc(sizeof(float) * 256); // not used (for debugging purposes)
+
+    // initialize um_data pointer structure
+    // NOTE!!!
+    // This may change as AudioReactive usermod may change
+    um_data = new um_data_t;
+    um_data->u_size = 18;
+    um_data->u_type = new um_types_t[um_data->u_size];
+    um_data->u_data = new void*[um_data->u_size];
+    um_data->u_data[ 0] = &sampleAvg;
+    um_data->u_data[ 1] = &soundAgc;
+    um_data->u_data[ 2] = &sampleAgc;
+    um_data->u_data[ 3] = &sampleRaw;
+    um_data->u_data[ 4] = &rawSampleAgc;
+    um_data->u_data[ 5] = &samplePeak;
+    um_data->u_data[ 6] = &FFT_MajorPeak;
+    um_data->u_data[ 7] = &FFT_Magnitude;
+    um_data->u_data[ 8] = fftResult; 
+    um_data->u_data[ 9] = &maxVol;
+    um_data->u_data[10] = &binNum;
+    um_data->u_data[11] = &multAgc;
+    um_data->u_data[14] = myVals;           //*used (only once, Pixels)
+    um_data->u_data[13] = &sampleGain;
+    um_data->u_data[15] = &soundSquelch;
+    um_data->u_data[16] = fftBin;     //only used in binmap
+    um_data->u_data[17] = &inputLevel;
+  } else {
+    // get arrays from um_data
+    fftResult =  (uint8_t*)um_data->u_data[8];
+    myVals    =  (uint8_t*)um_data->u_data[14];
+    fftBin    =  (float*)um_data->u_data[16];
+  }
+
+  uint32_t ms = millis();
+
+  switch (simulationId) {
+    default:
+    case UMS_BeatSin:
+      for (int i = 0; i<16; i++)
+        fftResult[i] = beatsin8(120 / (i+1), 0, 255);
+        // fftResult[i] = (beatsin8(120, 0, 255) + (256/16 * i)) % 256;
+        sampleAvg = fftResult[8];
+      break;
+    case UMS_WeWillRockYou:
+      if (ms%2000 < 200) {
+        sampleAvg = random8(255);
+        for (int i = 0; i<5; i++)
+          fftResult[i] = random8(255);
+      }
+      else if (ms%2000 < 400) {
+        sampleAvg = 0;
+        for (int i = 0; i<16; i++)
+          fftResult[i] = 0;
+      }
+      else if (ms%2000 < 600) {
+        sampleAvg = random8(255);
+        for (int i = 5; i<11; i++)
+          fftResult[i] = random8(255);
+      }
+      else if (ms%2000 < 800) {
+        sampleAvg = 0;
+        for (int i = 0; i<16; i++)
+          fftResult[i] = 0;
+      }
+      else if (ms%2000 < 1000) {
+        sampleAvg = random8(255);
+        for (int i = 11; i<16; i++)
+          fftResult[i] = random8(255);
+      }
+      else {
+        sampleAvg = 0;
+        for (int i = 0; i<16; i++)
+          fftResult[i] = 0;
+      }
+      break;
+    case UMS_10_3:
+      for (int i = 0; i<16; i++)
+        fftResult[i] = inoise8(beatsin8(90 / (i+1), 0, 200)*15 + (ms>>10), ms>>3);
+        sampleAvg = fftResult[8];
+      break;
+    case UMS_14_3:
+      for (int i = 0; i<16; i++)
+        fftResult[i] = inoise8(beatsin8(120 / (i+1), 10, 30)*10 + (ms>>14), ms>>3);
+      sampleAvg = fftResult[8];
+      break;
+  }
+
+  //derive other vars from sampleAvg
+
+  //sampleAvg = mapf(sampleAvg, 0, 255, 0, 255); // help me out here
+  soundAgc      = 0; //only avg in simulations
+  sampleAgc     = sampleAvg;
+  sampleRaw     = sampleAvg;
+  sampleRaw     = map(sampleRaw, 50, 190, 0, 224);
+  rawSampleAgc  = sampleAvg;
+  samplePeak    = random8() > 250;
+  FFT_MajorPeak = sampleAvg;
+  FFT_Magnitude = sampleAvg;
+  multAgc       = sampleAvg;
+  myVals[millis()%32] = sampleAvg;    // filling values semi randomly (why?)
+  sampleGain    = 40;
+  soundSquelch  = 10;
+  maxVol        = 10;  // this gets feedback fro UI
+  binNum        = 8;   // this gets feedback fro UI
+  inputLevel    = 128; // this gets feedback fro UI
+
+  return um_data;
 }

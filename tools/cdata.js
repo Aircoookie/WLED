@@ -263,120 +263,60 @@ writeChunks(
       name: "PAGE_settings",
       method: "gzip",
       filter: "html-minify",
-      mangle: (str) =>
-        str
-          .replace(
-            /function GetV().*\<\/script\>/gms,
-            "</script><script src=\"/settings/s.js?p=0\"></script>"
-          )
     },
     {
       file: "settings_wifi.htm",
       name: "PAGE_settings_wifi",
       method: "gzip",
       filter: "html-minify",
-      mangle: (str) =>
-        str
-          .replace(
-            /function GetV().*\<\/script\>/gms,
-            "</script><script src=\"/settings/s.js?p=1\"></script>"
-          )
     },
     {
       file: "settings_leds.htm",
       name: "PAGE_settings_leds",
       method: "gzip",
       filter: "html-minify",
-      mangle: (str) =>
-        str
-          .replace(
-            /function GetV().*\<\/script\>/gms,
-            "</script><script src=\"/settings/s.js?p=2\"></script>"
-          )
     },
     {
       file: "settings_dmx.htm",
       name: "PAGE_settings_dmx",
       method: "gzip",
       filter: "html-minify",
-      mangle: (str) =>
-        str
-          .replace(
-            /function GetV().*\<\/script\>/gms,
-            "</script><script src=\"/settings/s.js?p=7\"></script>"
-          )
     },
     {
       file: "settings_ui.htm",
       name: "PAGE_settings_ui",
       method: "gzip",
       filter: "html-minify",
-      mangle: (str) =>
-        str
-          .replace(
-            /function GetV().*\<\/script\>/gms,
-            "</script><script src=\"/settings/s.js?p=3\"></script>"
-          )
     },
     {
       file: "settings_sync.htm",
       name: "PAGE_settings_sync",
       method: "gzip",
       filter: "html-minify",
-      mangle: (str) =>
-        str
-          .replace(
-            /function GetV().*\<\/script\>/gms,
-            "</script><script src=\"/settings/s.js?p=4\"></script>"
-          )
     },
     {
       file: "settings_time.htm",
       name: "PAGE_settings_time",
       method: "gzip",
       filter: "html-minify",
-      mangle: (str) =>
-        str
-          .replace(
-            /function GetV().*\<\/script\>/gms,
-            "</script><script src=\"/settings/s.js?p=5\"></script>"
-          )
     },
     {
       file: "settings_sec.htm",
       name: "PAGE_settings_sec",
       method: "gzip",
       filter: "html-minify",
-      mangle: (str) =>
-        str
-          .replace(
-            /function GetV().*\<\/script\>/gms,
-            "</script><script src=\"/settings/s.js?p=6\"></script>"
-          )
     },
     {
       file: "settings_um.htm",
       name: "PAGE_settings_um",
       method: "gzip",
       filter: "html-minify",
-      mangle: (str) =>
-        str
-          .replace(
-            /function GetV().*\<\/script\>/gms,
-            "</script><script src=\"/settings/s.js?p=8\"></script>"
-          )
     },
     {
       file: "settings_2D.htm",
       name: "PAGE_settings_2D",
       method: "gzip",
       filter: "html-minify",
-      mangle: (str) =>
-        str
-          .replace(
-            /function GetV().*\<\/script\>/gms,
-            "</script><script src=\"/settings/s.js?p=10\"></script>"
-          )
     },
     {
       file: "settings_pin.htm",

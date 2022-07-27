@@ -35,6 +35,7 @@
 // but ledmap takes care of that. ledmap is constructed upon initialization
 // so matrix should disable regular ledmap processing
 void WS2812FX::setUpMatrix() {
+#ifndef WLED_DISABLE_2D
   // erase old ledmap, just in case.
   if (customMappingTable != nullptr) delete[] customMappingTable;
   customMappingTable = nullptr;
@@ -46,7 +47,7 @@ void WS2812FX::setUpMatrix() {
 
     // safety check
     if (matrixWidth * matrixHeight > MAX_LEDS) {
-      matrixWidth = getLengthTotal();
+      matrixWidth = _length;
       matrixHeight = 1;
       isMatrix = false;
       return;
@@ -94,107 +95,113 @@ void WS2812FX::setUpMatrix() {
       #endif
     } else {
       // memory allocation error
-      matrixWidth = getLengthTotal();
+      matrixWidth = _length;
       matrixHeight = 1;
       isMatrix = false;
       return;
     }
   } else { 
     // not a matrix set up
-    matrixWidth = getLengthTotal();
+    matrixWidth = _length;
     matrixHeight = 1;
   }
+#endif
 }
+
+// absolute matrix version of setPixelColor()
+void IRAM_ATTR WS2812FX::setPixelColorXY(int x, int y, uint32_t col)
+{
+#ifndef WLED_DISABLE_2D
+  if (!isMatrix) return; // not a matrix set-up
+  uint16_t index = y * matrixWidth + x;
+  if (index >= _length) return;
+  if (index < customMappingSize) index = customMappingTable[index];
+  busses.setPixelColor(index, col);
+#endif
+}
+
+// returns RGBW values of pixel
+uint32_t WS2812FX::getPixelColorXY(uint16_t x, uint16_t y) {
+#ifndef WLED_DISABLE_2D
+  uint16_t index = (y * matrixWidth + x);
+  if (index >= _length) return 0;
+  if (index < customMappingSize) index = customMappingTable[index];
+  return busses.getPixelColor(index);
+#else
+  return 0;
+#endif
+}
+
+///////////////////////////////////////////////////////////
+// Segment:: routines
+///////////////////////////////////////////////////////////
 
 // XY(x,y) - gets pixel index within current segment (often used to reference leds[] array element)
-uint16_t IRAM_ATTR WS2812FX::XY(uint16_t x, uint16_t y) {
-  uint16_t width  = SEGMENT.virtualWidth();   // segment width in logical pixels
-  uint16_t height = SEGMENT.virtualHeight();  // segment height in logical pixels
-/*
-  if (SEGMENT.getOption(SEG_OPTION_TRANSPOSED)) {
-    uint16_t t;
-    // swap X & Y if segment transposed
-    t = x; x = y; y = t;
-    // swap width & height if segment transposed
-    t = width; width = height; height = t;
-  }
-*/
+uint16_t IRAM_ATTR Segment::XY(uint16_t x, uint16_t y) {
+#ifndef WLED_DISABLE_2D
+  uint16_t width  = virtualWidth();   // segment width in logical pixels
+  uint16_t height = virtualHeight();  // segment height in logical pixels
   return (x%width) + (y%height) * width;
+#else
+  return 0;
+#endif
 }
 
-// get2DPixelIndex(x,y,seg) - returns an index of segment pixel in a matrix layout
-// index still needs to undergo ledmap processing to represent actual physical pixel
-// matrix is always organized by matrixHeight number of matrixWidth pixels from top to bottom, left to right
-// so: pixel at get2DPixelIndex(5,6) in a 2D segment with [start=10, stop=19, startY=20, stopY=29 : 10x10 pixels]
-// corresponds to pixel with logical index of 847 (0 based) if a 2D segment belongs to a 32x32 matrix.
-// math: (matrixWidth * (startY + y)) + start + x => (32 * (20+6)) + 10 + 5 = 847
-uint16_t IRAM_ATTR WS2812FX::get2DPixelIndex(uint16_t x, uint16_t y, uint8_t seg) {
-  if (seg == 255) seg = _segment_index;
-  x %= _segments[seg].width();  // just in case constrain x (wrap around)
-  y %= _segments[seg].height(); // just in case constrain y (wrap around)
-  return ((_segments[seg].startY + y) * matrixWidth) + _segments[seg].start + x;
-}
-
-void IRAM_ATTR WS2812FX::setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w)
+void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
 {
-  if (!isMatrix) return; // not a matrix set-up
+#ifndef WLED_DISABLE_2D
+  if (!strip.isMatrix) return; // not a matrix set-up
 
-  if (_bri_t < 255) {  
-    r = scale8(r, _bri_t);
-    g = scale8(g, _bri_t);
-    b = scale8(b, _bri_t);
-    w = scale8(w, _bri_t);
+  uint8_t _bri_t = strip._bri_t;
+  //uint8_t _bri_t = currentBri(getOption(SEG_OPTION_ON) ? opacity : 0);
+  if (_bri_t < 255) {
+    byte r = scale8(R(col), _bri_t);
+    byte g = scale8(G(col), _bri_t);
+    byte b = scale8(B(col), _bri_t);
+    byte w = scale8(W(col), _bri_t);
+    col = RGBW32(r, g, b, w);
   }
-  uint32_t col = RGBW32(r, g, b, w);
 
-  if (SEGMENT.getOption(SEG_OPTION_REVERSED)  ) x = SEGMENT.virtualWidth()  - x - 1;
-  if (SEGMENT.getOption(SEG_OPTION_REVERSED_Y)) y = SEGMENT.virtualHeight() - y - 1;
-  if (SEGMENT.getOption(SEG_OPTION_TRANSPOSED)) { uint16_t t = x; x = y; y = t; } // swap X & Y if segment transposed
+  if (getOption(SEG_OPTION_REVERSED)  ) x = virtualWidth()  - x - 1;
+  if (getOption(SEG_OPTION_REVERSED_Y)) y = virtualHeight() - y - 1;
+  if (getOption(SEG_OPTION_TRANSPOSED)) { uint16_t t = x; x = y; y = t; } // swap X & Y if segment transposed
 
-  x *= SEGMENT.groupLength(); // expand to physical pixels
-  y *= SEGMENT.groupLength(); // expand to physical pixels
-  if (x >= SEGMENT.width() || y >= SEGMENT.height()) return;  // if pixel would fall out of segment just exit
+  x *= groupLength(); // expand to physical pixels
+  y *= groupLength(); // expand to physical pixels
+  if (x >= width() || y >= height()) return;  // if pixel would fall out of segment just exit
 
-  for (uint8_t j = 0; j < SEGMENT.grouping; j++) {   // groupping vertically
-    for (uint8_t g = 0; g < SEGMENT.grouping; g++) { // groupping horizontally
-      uint16_t index, xX = (x+g), yY = (y+j);
-      if (xX >= SEGMENT.width() || yY >= SEGMENT.height()) continue; // we have reached one dimension's end
+  for (int j = 0; j < grouping; j++) {   // groupping vertically
+    for (int g = 0; g < grouping; g++) { // groupping horizontally
+      uint16_t xX = (x+g), yY = (y+j);
+      if (xX >= width() || yY >= height()) continue; // we have reached one dimension's end
 
-      //if (SEGMENT.getOption(SEG_OPTION_REVERSED)  ) xX = SEGMENT.width()  - xX - 1;
-      //if (SEGMENT.getOption(SEG_OPTION_REVERSED_Y)) yY = SEGMENT.height() - yY - 1;
+      strip.setPixelColorXY(start + xX, startY + yY, col);
 
-      index = get2DPixelIndex(xX, yY);
-      if (index < customMappingSize) index = customMappingTable[index];
-      busses.setPixelColor(index, col);
-
-      if (SEGMENT.getOption(SEG_OPTION_MIRROR)) { //set the corresponding horizontally mirrored pixel
-        //index = get2DPixelIndex(SEGMENT.width() - xX - 1, yY);
-        index = SEGMENT.getOption(SEG_OPTION_TRANSPOSED) ? get2DPixelIndex(xX, SEGMENT.height() - yY - 1) : get2DPixelIndex(SEGMENT.width() - xX - 1, yY);
-        if (index < customMappingSize) index = customMappingTable[index];
-        busses.setPixelColor(index, col);
+      if (getOption(SEG_OPTION_MIRROR)) { //set the corresponding horizontally mirrored pixel
+        if (getOption(SEG_OPTION_TRANSPOSED)) strip.setPixelColorXY(start + xX, startY + height() - yY - 1, col);
+        else                                  strip.setPixelColorXY(start + width() - xX - 1, startY + yY, col);
       }
-      if (SEGMENT.getOption(SEG_OPTION_MIRROR_Y)) { //set the corresponding vertically mirrored pixel
-        //index = get2DPixelIndex(xX, SEGMENT.height() - yY - 1);
-        index = SEGMENT.getOption(SEG_OPTION_TRANSPOSED) ? get2DPixelIndex(SEGMENT.width() - xX - 1, yY)  : get2DPixelIndex(xX, SEGMENT.height() - yY - 1);
-        if (index < customMappingSize) index = customMappingTable[index];
-        busses.setPixelColor(index, col);
+      if (getOption(SEG_OPTION_MIRROR_Y)) { //set the corresponding vertically mirrored pixel
+        if (getOption(SEG_OPTION_TRANSPOSED)) strip.setPixelColorXY(start + width() - xX - 1, startY + yY, col);
+        else                                  strip.setPixelColorXY(start + xX, startY + height() - yY - 1, col);
       }
-      if (SEGMENT.getOption(SEG_OPTION_MIRROR_Y) && SEGMENT.getOption(SEG_OPTION_MIRROR)) { //set the corresponding vertically AND horizontally mirrored pixel
-        index = get2DPixelIndex(SEGMENT.width() - xX - 1, SEGMENT.height() - yY - 1);
-        if (index < customMappingSize) index = customMappingTable[index];
-        busses.setPixelColor(index, col);
+      if (getOption(SEG_OPTION_MIRROR_Y) && getOption(SEG_OPTION_MIRROR)) { //set the corresponding vertically AND horizontally mirrored pixel
+        strip.setPixelColorXY(width() - xX - 1, height() - yY - 1, col);
       }
     }
   }
+#endif
 }
 
 // anti-aliased version of setPixelColorXY()
-void /*IRAM_ATTR*/ WS2812FX::setPixelColorXY(float x, float y, byte r, byte g, byte b, byte w, bool aa)
+void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
 {
+#ifndef WLED_DISABLE_2D
+  if (!strip.isMatrix) return; // not a matrix set-up
   if (x<0.0f || x>1.0f || y<0.0f || y>1.0f) return; // not normalized
 
-  const uint16_t cols = SEGMENT.virtualWidth();
-  const uint16_t rows = SEGMENT.virtualHeight();
+  const uint16_t cols = virtualWidth();
+  const uint16_t rows = virtualHeight();
 
   float fX = x * (cols-1);
   float fY = y * (rows-1);
@@ -213,80 +220,59 @@ void /*IRAM_ATTR*/ WS2812FX::setPixelColorXY(float x, float y, byte r, byte g, b
     uint32_t cXRYB = getPixelColorXY(xR, yB);
 
     if (xL!=xR && yT!=yB) {
-      // blend TL pixel
-      cXLYT = color_blend(RGBW32(r,g,b,w), cXLYT, uint8_t(sqrtf(dL*dT)*255.0f));
-      setPixelColorXY(xL, yT, R(cXLYT), G(cXLYT), B(cXLYT), W(cXLYT));
-      // blend TR pixel
-      cXRYT = color_blend(RGBW32(r,g,b,w), cXRYT, uint8_t(sqrtf(dR*dT)*255.0f));
-      setPixelColorXY(xR, yT, R(cXRYT), G(cXRYT), B(cXRYT), W(cXRYT));
-      // blend BL pixel
-      cXLYB = color_blend(RGBW32(r,g,b,w), cXLYB, uint8_t(sqrtf(dL*dB)*255.0f));
-      setPixelColorXY(xL, yB, R(cXLYB), G(cXLYB), B(cXLYB), W(cXLYB));
-      // blend BR pixel
-      cXRYB = color_blend(RGBW32(r,g,b,w), cXRYB, uint8_t(sqrtf(dR*dB)*255.0f));
-      setPixelColorXY(xR, yB, R(cXRYB), G(cXRYB), B(cXRYB), W(cXRYB));
+      setPixelColorXY(xL, yT, color_blend(col, cXLYT, uint8_t(sqrtf(dL*dT)*255.0f))); // blend TL pixel
+      setPixelColorXY(xR, yT, color_blend(col, cXRYT, uint8_t(sqrtf(dR*dT)*255.0f))); // blend TR pixel
+      setPixelColorXY(xL, yB, color_blend(col, cXLYB, uint8_t(sqrtf(dL*dB)*255.0f))); // blend BL pixel
+      setPixelColorXY(xR, yB, color_blend(col, cXRYB, uint8_t(sqrtf(dR*dB)*255.0f))); // blend BR pixel
     } else if (xR!=xL && yT==yB) {
-      // blend L pixel
-      cXLYT = color_blend(RGBW32(r,g,b,w), cXLYT, uint8_t(dL*255.0f));
-      setPixelColorXY(xR, yT, R(cXLYT), G(cXLYT), B(cXLYT), W(cXLYT));
-      // blend R pixel
-      cXRYT = color_blend(RGBW32(r,g,b,w), cXRYT, uint8_t(dR*255.0f));
-      setPixelColorXY(xR, yT, R(cXRYT), G(cXRYT), B(cXRYT), W(cXRYT));
+      setPixelColorXY(xR, yT, color_blend(col, cXLYT, uint8_t(dL*255.0f))); // blend L pixel
+      setPixelColorXY(xR, yT, color_blend(col, cXRYT, uint8_t(dR*255.0f))); // blend R pixel
     } else if (xR==xL && yT!=yB) {
-      // blend T pixel
-      cXLYT = color_blend(RGBW32(r,g,b,w), cXLYT, uint8_t(dT*255.0f));
-      setPixelColorXY(xR, yT, R(cXLYT), G(cXLYT), B(cXLYT), W(cXLYT));
-      // blend B pixel
-      cXLYB = color_blend(RGBW32(r,g,b,w), cXLYB, uint8_t(dB*255.0f));
-      setPixelColorXY(xL, yB, R(cXLYB), G(cXLYB), B(cXLYB), W(cXLYB));
+      setPixelColorXY(xR, yT, color_blend(col, cXLYT, uint8_t(dT*255.0f))); // blend T pixel
+      setPixelColorXY(xL, yB, color_blend(col, cXLYB, uint8_t(dB*255.0f))); // blend B pixel
     } else {
-      // exact match (x & y land on a pixel)
-      setPixelColorXY(xL, yT, r, g, b, w);
+      setPixelColorXY(xL, yT, col); // exact match (x & y land on a pixel)
     }
   } else {
-    setPixelColorXY(uint16_t(roundf(fX)), uint16_t(roundf(fY)), r, g, b, w);
+    setPixelColorXY(uint16_t(roundf(fX)), uint16_t(roundf(fY)), col);
   }
+#endif
 }
 
 // returns RGBW values of pixel
-uint32_t WS2812FX::getPixelColorXY(uint16_t x, uint16_t y) {
-  uint16_t index;
-  if (SEGLEN) {
-    if (SEGMENT.getOption(SEG_OPTION_REVERSED)  ) x = SEGMENT.virtualWidth()  - x - 1;
-    if (SEGMENT.getOption(SEG_OPTION_REVERSED_Y)) y = SEGMENT.virtualHeight() - y - 1;
-    if (SEGMENT.getOption(SEG_OPTION_TRANSPOSED)) { uint16_t t = x; x = y; y = t; } // swap X & Y if segment transposed
-
-    x *= SEGMENT.groupLength(); // expand to physical pixels
-    y *= SEGMENT.groupLength(); // expand to physical pixels
-    if (x >= SEGMENT.width() || y >= SEGMENT.height()) return 0;
-
-    index = get2DPixelIndex(x, y);
-  } else {
-    index = y * matrixWidth + x;
-  }
-  if (index < customMappingSize) index = customMappingTable[index];
-
-  return busses.getPixelColor(index);
+uint32_t Segment::getPixelColorXY(uint16_t x, uint16_t y) {
+#ifndef WLED_DISABLE_2D
+  if (getOption(SEG_OPTION_REVERSED)  ) x = virtualWidth()  - x - 1;
+  if (getOption(SEG_OPTION_REVERSED_Y)) y = virtualHeight() - y - 1;
+  if (getOption(SEG_OPTION_TRANSPOSED)) { uint16_t t = x; x = y; y = t; } // swap X & Y if segment transposed
+  x *= groupLength(); // expand to physical pixels
+  y *= groupLength(); // expand to physical pixels
+  if (x >= width() || y >= height()) return 0;
+  return strip.getPixelColorXY(start + x, startY + y);
+#else
+  return 0;
+#endif
 }
 
-/*
- * Blends the specified color with the existing pixel color.
- */
-void WS2812FX::blendPixelColorXY(uint16_t x, uint16_t y, uint32_t color, uint8_t blend) {
+// Blends the specified color with the existing pixel color.
+void Segment::blendPixelColorXY(uint16_t x, uint16_t y, uint32_t color, uint8_t blend) {
+#ifndef WLED_DISABLE_2D
   setPixelColorXY(x, y, color_blend(getPixelColorXY(x,y), color, blend));
+#endif
 }
 
-/*
- * Adds the specified color with the existing pixel color perserving color balance.
- */
-void WS2812FX::addPixelColorXY(uint16_t x, uint16_t y, uint32_t color) {
+// Adds the specified color with the existing pixel color perserving color balance.
+void Segment::addPixelColorXY(uint16_t x, uint16_t y, uint32_t color) {
+#ifndef WLED_DISABLE_2D
   setPixelColorXY(x, y, color_add(getPixelColorXY(x,y), color));
+#endif
 }
 
 // blurRow: perform a blur on a row of a rectangular matrix
-void WS2812FX::blurRow(uint16_t row, fract8 blur_amount, CRGB* leds) {
-  const uint16_t cols = SEGMENT.virtualWidth();
-  const uint16_t rows = SEGMENT.virtualHeight();
+void Segment::blurRow(uint16_t row, fract8 blur_amount, CRGB* leds) {
+#ifndef WLED_DISABLE_2D
+  const uint16_t cols = virtualWidth();
+  const uint16_t rows = virtualHeight();
 
   if (row >= rows) return;
   // blur one row
@@ -294,13 +280,13 @@ void WS2812FX::blurRow(uint16_t row, fract8 blur_amount, CRGB* leds) {
   uint8_t seep = blur_amount >> 1;
   CRGB carryover = CRGB::Black;
   for (uint16_t x = 0; x < cols; x++) {
-    CRGB cur = leds ? leds[XY(x,row)] : col_to_crgb(getPixelColorXY(x, row));
+    CRGB cur = leds ? leds[XY(x,row)] : CRGB(getPixelColorXY(x, row));
     CRGB part = cur;
     part.nscale8(seep);
     cur.nscale8(keep);
     cur += carryover;
     if (x) {
-      CRGB prev = (leds ? leds[XY(x-1,row)] : col_to_crgb(getPixelColorXY(x-1, row))) + part;
+      CRGB prev = (leds ? leds[XY(x-1,row)] : CRGB(getPixelColorXY(x-1, row))) + part;
       if (leds) leds[XY(x-1,row)] = prev;
       else      setPixelColorXY(x-1, row, prev);
     }
@@ -308,12 +294,14 @@ void WS2812FX::blurRow(uint16_t row, fract8 blur_amount, CRGB* leds) {
     else      setPixelColorXY(x, row, cur);
     carryover = part;
   }
+#endif
 }
 
 // blurCol: perform a blur on a column of a rectangular matrix
-void WS2812FX::blurCol(uint16_t col, fract8 blur_amount, CRGB* leds) {
-  const uint16_t cols = SEGMENT.virtualWidth();
-  const uint16_t rows = SEGMENT.virtualHeight();
+void Segment::blurCol(uint16_t col, fract8 blur_amount, CRGB* leds) {
+#ifndef WLED_DISABLE_2D
+  const uint16_t cols = virtualWidth();
+  const uint16_t rows = virtualHeight();
 
   if (col >= cols) return;
   // blur one column
@@ -321,13 +309,13 @@ void WS2812FX::blurCol(uint16_t col, fract8 blur_amount, CRGB* leds) {
   uint8_t seep = blur_amount >> 1;
   CRGB carryover = CRGB::Black;
   for (uint16_t i = 0; i < rows; i++) {
-    CRGB cur = leds ? leds[XY(col,i)] : col_to_crgb(getPixelColorXY(col, i));
+    CRGB cur = leds ? leds[XY(col,i)] : CRGB(getPixelColorXY(col, i));
     CRGB part = cur;
     part.nscale8(seep);
     cur.nscale8(keep);
     cur += carryover;
     if (i) {
-      CRGB prev = (leds ? leds[XY(col,i-1)] : col_to_crgb(getPixelColorXY(col, i-1))) + part;
+      CRGB prev = (leds ? leds[XY(col,i-1)] : CRGB(getPixelColorXY(col, i-1))) + part;
       if (leds) leds[XY(col,i-1)] = prev;
       else      setPixelColorXY(col, i-1, prev);
     }
@@ -335,6 +323,7 @@ void WS2812FX::blurCol(uint16_t col, fract8 blur_amount, CRGB* leds) {
     else      setPixelColorXY(col, i, cur);
     carryover = part;
   }
+#endif
 }
 
 // blur1d: one-dimensional blur filter. Spreads light to 2 line neighbors.
@@ -351,17 +340,20 @@ void WS2812FX::blurCol(uint16_t col, fract8 blur_amount, CRGB* leds) {
 //         eventually all the way to black; this is by design so that
 //         it can be used to (slowly) clear the LEDs to black.
 
-void WS2812FX::blur1d(CRGB* leds, fract8 blur_amount) {
-  const uint16_t rows = SEGMENT.virtualHeight();
+void Segment::blur1d(CRGB* leds, fract8 blur_amount) {
+#ifndef WLED_DISABLE_2D
+  const uint16_t rows = virtualHeight();
   for (uint16_t y = 0; y < rows; y++) blurRow(y, blur_amount, leds);
+#endif
 }
 
 // 1D Box blur (with added weight - blur_amount: [0=no blur, 255=max blur])
-void WS2812FX::blur1d(uint16_t i, bool vertical, fract8 blur_amount, CRGB* leds) {
-  const uint16_t cols = SEGMENT.virtualWidth();
-  const uint16_t rows = SEGMENT.virtualHeight();
-  const uint16_t dim1   = vertical ? rows : cols;
-  const uint16_t dim2   = vertical ? cols : rows;
+void Segment::blur1d(uint16_t i, bool vertical, fract8 blur_amount, CRGB* leds) {
+#ifndef WLED_DISABLE_2D
+  const uint16_t cols = virtualWidth();
+  const uint16_t rows = virtualHeight();
+  const uint16_t dim1 = vertical ? rows : cols;
+  const uint16_t dim2 = vertical ? cols : rows;
   if (i >= dim2) return;
   const float seep = blur_amount/255.f;
   const float keep = 3.f - 2.f*seep;
@@ -374,9 +366,9 @@ void WS2812FX::blur1d(uint16_t i, bool vertical, fract8 blur_amount, CRGB* leds)
     uint16_t yp = vertical ? y-1 : y;
     uint16_t xn = vertical ? x : x+1;
     uint16_t yn = vertical ? y+1 : y;
-    CRGB curr = leds ? leds[XY(x,y)] : col_to_crgb(getPixelColorXY(x,y));
-    CRGB prev = (xp<0 || yp<0) ? CRGB::Black : (leds ? leds[XY(xp,yp)] : col_to_crgb(getPixelColorXY(xp,yp)));
-    CRGB next = ((vertical && yn>=dim1) || (!vertical && xn>=dim1)) ? CRGB::Black : (leds ? leds[XY(xn,yn)] : col_to_crgb(getPixelColorXY(xn,yn)));
+    CRGB curr = leds ? leds[XY(x,y)] : CRGB(getPixelColorXY(x,y));
+    CRGB prev = (xp<0 || yp<0) ? CRGB::Black : (leds ? leds[XY(xp,yp)] : CRGB(getPixelColorXY(xp,yp)));
+    CRGB next = ((vertical && yn>=dim1) || (!vertical && xn>=dim1)) ? CRGB::Black : (leds ? leds[XY(xn,yn)] : CRGB(getPixelColorXY(xn,yn)));
     uint16_t r, g, b;
     r = (curr.r*keep + (prev.r + next.r)*seep) / 3;
     g = (curr.g*keep + (prev.g + next.g)*seep) / 3;
@@ -389,63 +381,65 @@ void WS2812FX::blur1d(uint16_t i, bool vertical, fract8 blur_amount, CRGB* leds)
     if (leds) leds[XY(x,y)] = tmp[j];
     else      setPixelColorXY(x, y, tmp[j]);
   }
+#endif
 }
 
-void WS2812FX::blur2d(CRGB* leds, fract8 blur_amount) {
-  const uint16_t cols = SEGMENT.virtualWidth();
-  const uint16_t rows = SEGMENT.virtualHeight();
+void Segment::blur2d(CRGB* leds, fract8 blur_amount) {
+#ifndef WLED_DISABLE_2D
+  const uint16_t cols = virtualWidth();
+  const uint16_t rows = virtualHeight();
   for (uint16_t i = 0; i < rows; i++) blurRow(i, blur_amount, leds); // blur all rows
   for (uint16_t k = 0; k < cols; k++) blurCol(k, blur_amount, leds); // blur all columns
+#endif
 }
 
-void WS2812FX::moveX(CRGB *leds, int8_t delta) {
-  const uint16_t cols = SEGMENT.virtualWidth();
-  const uint16_t rows = SEGMENT.virtualHeight();
+void Segment::moveX(CRGB *leds, int8_t delta) {
+#ifndef WLED_DISABLE_2D
+  const uint16_t cols = virtualWidth();
+  const uint16_t rows = virtualHeight();
   if (!delta) return;
   if (delta > 0) {
     for (uint8_t y = 0; y < rows; y++) for (uint8_t x = 0; x < cols-1; x++) {
+      if (x + delta >= cols) break;
       if (leds) leds[XY(x, y)] = leds[XY((x + delta)%cols, y)];
       else      setPixelColorXY(x, y, getPixelColorXY((x + delta)%cols, y));
     }
   } else {
     for (uint8_t y = 0; y < rows; y++) for (int16_t x = cols-1; x >= 0; x--) {
-      if (x + delta < 0) {
-        if (leds) leds[XY(x, y)] = leds[XY(cols + delta, y)];
-        else      setPixelColorXY(x, y, getPixelColorXY(cols + delta, y));
-      } else {
-        if (leds) leds[XY(x, y)] = leds[XY(x + delta, y)];
-        else      setPixelColorXY(x, y, getPixelColorXY(x + delta, y));
-      }
+      if (x + delta < 0) break;
+      if (leds) leds[XY(x, y)] = leds[XY(x + delta, y)];
+      else      setPixelColorXY(x, y, getPixelColorXY(x + delta, y));
     }
   }
+#endif
 }
 
-void WS2812FX::moveY(CRGB *leds, int8_t delta) {
-  const uint16_t cols = SEGMENT.virtualWidth();
-  const uint16_t rows = SEGMENT.virtualHeight();
+void Segment::moveY(CRGB *leds, int8_t delta) {
+#ifndef WLED_DISABLE_2D
+  const uint16_t cols = virtualWidth();
+  const uint16_t rows = virtualHeight();
   if (!delta) return;
   if (delta > 0) {
     for (uint8_t x = 0; x < cols; x++) for (uint8_t y = 0; y < rows-1; y++) {
-      if (leds) leds[XY(x, y)] = leds[XY(x, (y + delta)%rows)];
-      else      setPixelColorXY(x, y, getPixelColorXY(x, (y + delta)%rows));
+      if (y + delta >= rows) break;
+      if (leds) leds[XY(x, y)] = leds[XY(x, (y + delta))];
+      else      setPixelColorXY(x, y, getPixelColorXY(x, (y + delta)));
     }
   } else {
     for (uint8_t x = 0; x < cols; x++) for (int16_t y = rows-1; y >= 0; y--) {
-      if (y + delta < 0) {
-        if (leds) leds[XY(x, y)] = leds[XY(x, rows + delta)];
-        else      setPixelColorXY(x, y, getPixelColorXY(x, rows + delta));
-      } else {
-        if (leds) leds[XY(x, y)] = leds[XY(x, y + delta)];
-        else      setPixelColorXY(x, y, getPixelColorXY(x, y + delta));
-      }
+      if (y + delta < 0) break;
+      if (leds) leds[XY(x, y)] = leds[XY(x, y + delta)];
+      else      setPixelColorXY(x, y, getPixelColorXY(x, y + delta));
     }
   }
+#endif
 }
 
 // move() - move all pixels in desired direction delta number of pixels
 // @param dir direction: 0=left, 1=left-up, 2=up, 3=right-up, 4=right, 5=right-down, 6=down, 7=left-down
 // @param delta number of pixels to move
-void WS2812FX::move(uint8_t dir, uint8_t delta, CRGB *leds) {
+void Segment::move(uint8_t dir, uint8_t delta, CRGB *leds) {
+#ifndef WLED_DISABLE_2D
   if (delta==0) return;
   switch (dir) {
     case 0: moveX(leds, delta);                     break;
@@ -457,21 +451,25 @@ void WS2812FX::move(uint8_t dir, uint8_t delta, CRGB *leds) {
     case 6:                     moveY(leds,-delta); break;
     case 7: moveX(leds, delta); moveY(leds,-delta); break;
   }
+#endif
 }
 
-void WS2812FX::fill_solid(CRGB* leds, CRGB color) {
-  const uint16_t cols = SEGMENT.virtualWidth();
-  const uint16_t rows = SEGMENT.virtualHeight();
+void Segment::fill_solid(CRGB* leds, CRGB color) {
+#ifndef WLED_DISABLE_2D
+  const uint16_t cols = virtualWidth();
+  const uint16_t rows = virtualHeight();
   for(uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
     if (leds) leds[XY(x,y)] = color;
     else setPixelColorXY(x, y, color);
   }
+#endif
 }
 
 // by stepko, taken from https://editor.soulmatelights.com/gallery/573-blobs
-void WS2812FX::fill_circle(CRGB* leds, uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
-  const uint16_t cols = SEGMENT.virtualWidth();
-  const uint16_t rows = SEGMENT.virtualHeight();
+void Segment::fill_circle(CRGB* leds, uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
+#ifndef WLED_DISABLE_2D
+  const uint16_t cols = virtualWidth();
+  const uint16_t rows = virtualHeight();
   for (int16_t y = -radius; y <= radius; y++) {
     for (int16_t x = -radius; x <= radius; x++) {
       if (x * x + y * y <= radius * radius &&
@@ -480,31 +478,39 @@ void WS2812FX::fill_circle(CRGB* leds, uint16_t cx, uint16_t cy, uint8_t radius,
         leds[XY(cx + x, cy + y)] += col;
     }
   }
+#endif
 }
 
-void WS2812FX::fadeToBlackBy(CRGB* leds, uint8_t fadeBy) {
+void Segment::fadeToBlackBy(CRGB* leds, uint8_t fadeBy) {
+#ifndef WLED_DISABLE_2D
   nscale8(leds, 255 - fadeBy);
+#endif
 }
 
-void WS2812FX::nscale8(CRGB* leds, uint8_t scale) {
-  const uint16_t cols = SEGMENT.virtualWidth();
-  const uint16_t rows = SEGMENT.virtualHeight();
+void Segment::nscale8(CRGB* leds, uint8_t scale) {
+#ifndef WLED_DISABLE_2D
+  const uint16_t cols = virtualWidth();
+  const uint16_t rows = virtualHeight();
   for(uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
     if (leds) leds[XY(x,y)].nscale8(scale);
-    else setPixelColorXY(x, y, col_to_crgb(getPixelColorXY(x, y)).nscale8(scale));
+    else setPixelColorXY(x, y, CRGB(getPixelColorXY(x, y)).nscale8(scale));
   }
+#endif
 }
 
-void WS2812FX::setPixels(CRGB* leds) {
-  const uint16_t cols = SEGMENT.virtualWidth();
-  const uint16_t rows = SEGMENT.virtualHeight();
+void Segment::setPixels(CRGB* leds) {
+#ifndef WLED_DISABLE_2D
+  const uint16_t cols = virtualWidth();
+  const uint16_t rows = virtualHeight();
   for (uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) setPixelColorXY(x, y, leds[XY(x,y)]);
+#endif
 }
 
 //line function
-void WS2812FX::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c, CRGB *leds) {
-  const uint16_t cols = SEGMENT.virtualWidth();
-  const uint16_t rows = SEGMENT.virtualHeight();
+void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c, CRGB *leds) {
+#ifndef WLED_DISABLE_2D
+  const uint16_t cols = virtualWidth();
+  const uint16_t rows = virtualHeight();
   if (x0 >= cols || x1 >= cols || y0 >= rows || y1 >= rows) return;
   const int16_t dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
   const int16_t dy = abs(y1-y0), sy = y0<y1 ? 1 : -1; 
@@ -517,8 +523,10 @@ void WS2812FX::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB
     if (e2 >-dx) { err -= dy; x0 += sx; }
     if (e2 < dy) { err += dx; y0 += sy; }
   }
+#endif
 }
 
+#ifndef WLED_DISABLE_2D
 // font curtesy of https://github.com/idispatch/raster-fonts
 static const unsigned char console_font_6x8[] PROGMEM = {
 
@@ -4527,8 +4535,8 @@ static const unsigned char console_font_5x8[] PROGMEM = {
     0x00,  /* 00000 */
     0x00,  /* 00000 */
     0x90,  /* 10010 */
-    0x90,  /* 10010 */
     0xF0,  /* 11110 */
+    0x90,  /* 10010 */
     0x90,  /* 10010 */
     0x90,  /* 10010 */
     0x00,  /* 00000 */
@@ -6669,19 +6677,21 @@ static const unsigned char console_font_5x8[] PROGMEM = {
     0x00,  /* 00000 */
     0x00,  /* 00000 */
 };
+#endif
 
 // draws a raster font character on canvas
 // only supports 5x8 and 6x8 fonts ATM
-void WS2812FX::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB color, CRGB *leds) {
-  const uint16_t cols = SEGMENT.virtualWidth();
-  const uint16_t rows = SEGMENT.virtualHeight();
+void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB color, CRGB *leds) {
+#ifndef WLED_DISABLE_2D
+  const uint16_t cols = virtualWidth();
+  const uint16_t rows = virtualHeight();
 
   if (w<5 || w>6 || h!=8) return;
   for (uint8_t i = 0; i<h; i++) { // character height
     int16_t y0 = y + i;
     if (y0 < 0) continue; // drawing off-screen
     if (y0 >= rows) break; // drawing off-screen
-    uint8_t bits;
+    uint8_t bits = 0;
     switch (w) {
       case 5: bits = pgm_read_byte_near(&console_font_5x8[(chr * 8) + i]); break;
       case 6: bits = pgm_read_byte_near(&console_font_6x8[(chr * 8) + i]); break;
@@ -6694,10 +6704,12 @@ void WS2812FX::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w,
       }
     }
   }
+#endif
 }
 
 #define WU_WEIGHT(a,b) ((uint8_t) (((a)*(b)+(a)+(b))>>8))
-void WS2812FX::wu_pixel(CRGB *leds, uint32_t x, uint32_t y, CRGB c) {      //awesome wu_pixel procedure by reddit u/sutaburosu
+void Segment::wu_pixel(CRGB *leds, uint32_t x, uint32_t y, CRGB c) {      //awesome wu_pixel procedure by reddit u/sutaburosu
+#ifndef WLED_DISABLE_2D
   // extract the fractional parts and derive their inverses
   uint8_t xx = x & 0xff, yy = y & 0xff, ix = 255 - xx, iy = 255 - yy;
   // calculate the intensities for each affected pixel
@@ -6710,5 +6722,6 @@ void WS2812FX::wu_pixel(CRGB *leds, uint32_t x, uint32_t y, CRGB c) {      //awe
     leds[xy].g = qadd8(leds[xy].g, c.g * wu[i] >> 8);
     leds[xy].b = qadd8(leds[xy].b, c.b * wu[i] >> 8);
   }
+#endif
 }
 #undef WU_WEIGHT

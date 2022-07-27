@@ -8,7 +8,7 @@ void setValuesFromMainSeg()          { setValuesFromSegment(strip.getMainSegment
 void setValuesFromFirstSelectedSeg() { setValuesFromSegment(strip.getFirstSelectedSegId()); }
 void setValuesFromSegment(uint8_t s)
 {
-  WS2812FX::Segment& seg = strip.getSegment(s);
+  Segment& seg = strip.getSegment(s);
   col[0] = R(seg.colors[0]);
   col[1] = G(seg.colors[0]);
   col[2] = B(seg.colors[0]);
@@ -30,9 +30,9 @@ void applyValuesToSelectedSegs()
 {
   // copy of first selected segment to tell if value was updated
   uint8_t firstSel = strip.getFirstSelectedSegId();
-  WS2812FX::Segment selsegPrev = strip.getSegment(firstSel);
-  for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
-    WS2812FX::Segment& seg = strip.getSegment(i);
+  Segment selsegPrev = strip.getSegment(firstSel);
+  for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
+    Segment& seg = strip.getSegment(i);
     if (i != firstSel && (!seg.isActive() || !seg.isSelected())) continue;
 
     if (effectSpeed     != selsegPrev.speed)     {seg.speed     = effectSpeed;     stateChanged = true;}
@@ -41,8 +41,8 @@ void applyValuesToSelectedSegs()
     if (effectCurrent   != selsegPrev.mode)      {strip.setMode(i, effectCurrent); stateChanged = true;}
     uint32_t col0 = RGBW32(   col[0],    col[1],    col[2],    col[3]);
     uint32_t col1 = RGBW32(colSec[0], colSec[1], colSec[2], colSec[3]);
-    if (col0 != selsegPrev.colors[0])            {seg.setColor(0, col0, i);        stateChanged = true;}
-    if (col1 != selsegPrev.colors[1])            {seg.setColor(1, col1, i);        stateChanged = true;}
+    if (col0 != selsegPrev.colors[0])            {seg.setColor(0, col0);           stateChanged = true;}
+    if (col1 != selsegPrev.colors[1])            {seg.setColor(1, col1);           stateChanged = true;}
   }
 }
 

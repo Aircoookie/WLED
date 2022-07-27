@@ -58,6 +58,10 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
         if (verboseResponse) {
           sendDataWs(client);
           lastInterfaceUpdate = millis() - (INTERFACE_UPDATE_COOLDOWN -500);
+        } else {
+          // we have to send something back otherwise WS connection closes
+          client->text(F("{\"success\":true}"));
+          lastInterfaceUpdate = millis() - (INTERFACE_UPDATE_COOLDOWN -500);
         }
       }
     } else {
@@ -96,8 +100,6 @@ void sendDataWs(AsyncWebSocketClient * client)
   if (!ws.count()) return;
   AsyncWebSocketMessageBuffer * buffer;
 
-  while (strip.isUpdating()) yield();
-  
   if (!requestJSONBufferLock(12)) return;
 
   JsonObject state = doc.createNestedObject("state");

@@ -202,7 +202,7 @@
 			<div class="staytop fnd" id="fxFind">
 				<input type="text" placeholder="Search" oninput="search(this,'fxlist')" onfocus="search(this,'fxlist')" />
 				<i class="icons clear-icon" onclick="clean(this);">&#xe38f;</i>
-				<i class="icons search-icon">&#xe0a1;</i>
+				<i class="icons search-icon" onclick="gId('filters').classList.toggle('hide');" style="cursor:pointer;">&#xe0a1;</i>
 			</div>
 			<div id="fxlist" class="list">
 				<div class="lstI">
@@ -217,6 +217,28 @@
 			</div>
 		</div>
 		<div id="sliders">
+			<div id="filters" class="filter">
+				<label id="filterPal" class="check fchkl">&#127912;
+					<input type="checkbox" data-flt="&#127912;" onchange="filterFx(this)">
+					<span class="checkmark"></span>
+				</label>
+				<label id="filter1D" class="check fchkl">1D
+					<input type="checkbox" data-flt="*" onchange="filterFx(this)">
+					<span class="checkmark"></span>
+				</label>
+				<label id="filter2D" class="check fchkl">2D<!-- &#8862; -->
+					<input type="checkbox" data-flt="2D" onchange="filterFx(this)">
+					<span class="checkmark"></span>
+				</label>
+				<label id="filterVol" class="check fchkl">&#9834;
+					<input type="checkbox" data-flt="&#9834;" onchange="filterFx(this)">
+					<span class="checkmark"></span>
+				</label>
+				<label id="filterFreq" class="check fchkl">&#9835;
+					<input type="checkbox" data-flt="&#9835;" onchange="filterFx(this)">
+					<span class="checkmark"></span>
+				</label>
+			</div>
 			<div id="slider0" class="slider">
 				<i class="icons slider-icon" style="cursor: pointer;" onclick="tglFreeze()">&#xe325;</i>
 				<div class="sliderwrap il">

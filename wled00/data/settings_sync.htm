@@ -5,42 +5,71 @@
   <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
   <meta charset="utf-8">
   <title>Sync Settings</title>
-<script>var d=document;
-function gId(s)
-{
-  return d.getElementById(s);
-}
-function H(){window.open("https://kno.wled.ge/interfaces/udp-notifier/");}
-function B(){window.open("/settings","_self");}
-function adj(){if (d.Sf.DI.value == 6454) {if (d.Sf.DA.value == 1) d.Sf.DA.value = 0; if (d.Sf.EU.value == 1) d.Sf.EU.value = 0;}
-               else if (d.Sf.DI.value == 5568) {if (d.Sf.DA.value == 0) d.Sf.DA.value = 1; if (d.Sf.EU.value == 0) d.Sf.EU.value = 1;} }
-function FC()
-{
-  for(j=0;j<8;j++)
+  <script>var d=document;
+  var loc = false, locip;
+  function gId(s)
   {
-    gId("G"+(j+1)).checked=gId("GS").value>>j&1;
-    gId("R"+(j+1)).checked=gId("GR").value>>j&1;
+    return d.getElementById(s);
   }
-}
-function GC()
-{
-  var a=0, b=0;
+  function H(){window.open("https://kno.wled.ge/interfaces/udp-notifier/");}
+  function B(){window.open("/settings","_self");}
+  function adj(){if (d.Sf.DI.value == 6454) {if (d.Sf.DA.value == 1) d.Sf.DA.value = 0; if (d.Sf.EU.value == 1) d.Sf.EU.value = 0;}
+                else if (d.Sf.DI.value == 5568) {if (d.Sf.DA.value == 0) d.Sf.DA.value = 1; if (d.Sf.EU.value == 0) d.Sf.EU.value = 1;} }
+  // https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
+  function loadJS(FILE_URL, async = true) {
+    let scE = d.createElement("script");
+    scE.setAttribute("src", FILE_URL);
+    scE.setAttribute("type", "text/javascript");
+    scE.setAttribute("async", async);
+    d.body.appendChild(scE);
+    // success event 
+    scE.addEventListener("load", () => {
+      //console.log("File loaded");
+      GetV();SetVal();
+    });
+    // error event
+    scE.addEventListener("error", (ev) => {
+      console.log("Error on loading file", ev);
+      alert("Loading of configuration script failed.\nIncomplete page data!");
+    });
+  }
+  function FC()
+  {
+    for(j=0;j<8;j++)
+    {
+      gId("G"+(j+1)).checked=gId("GS").value>>j&1;
+      gId("R"+(j+1)).checked=gId("GR").value>>j&1;
+    }
+  }
+  function GC()
+  {
+    var a=0, b=0;
 
-  var m=1;
-  for(j=0;j<8;j++)
-  {
-    a+=gId("G"+(j+1)).checked*m;
-    b+=gId("R"+(j+1)).checked*m;
-    m*=2;
+    var m=1;
+    for(j=0;j<8;j++)
+    {
+      a+=gId("G"+(j+1)).checked*m;
+      b+=gId("R"+(j+1)).checked*m;
+      m*=2;
+    }
+    gId("GS").value=a;
+    gId("GR").value=b;
   }
-  gId("GS").value=a;
-  gId("GR").value=b;
-}
-function SP(){var p = d.Sf.DI.value; gId("xp").style.display = (p > 0)?"none":"block"; if (p > 0) d.Sf.EP.value = p;}
-function SetVal(){switch(parseInt(d.Sf.EP.value)){case 5568: d.Sf.DI.value = 5568; break; case 6454: d.Sf.DI.value = 6454; break; case 4048: d.Sf.DI.value = 4048; break; }; SP();FC();}
-function S(){GetV();SetVal();}
-function GetV(){var d=document;}
-</script>
+  function SP(){var p = d.Sf.DI.value; gId("xp").style.display = (p > 0)?"none":"block"; if (p > 0) d.Sf.EP.value = p;}
+  function SetVal(){switch(parseInt(d.Sf.EP.value)){case 5568: d.Sf.DI.value = 5568; break; case 6454: d.Sf.DI.value = 6454; break; case 4048: d.Sf.DI.value = 4048; break; }; SP();FC();}
+  function S(){
+    if (window.location.protocol == "file:") {
+				loc = true;
+				locip = localStorage.getItem('locIp');
+				if (!locip) {
+					locip = prompt("File Mode. Please enter WLED IP!");
+					localStorage.setItem('locIp', locip);
+				}
+			}
+			var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=4';
+			loadJS(url, false);	// If we set async false, file is loaded and executed, then next statement is processed
+  }
+  </script>
 <style>@import url("style.css");</style>
 </head>
 <body onload="S()">

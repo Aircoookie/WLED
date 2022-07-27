@@ -58,6 +58,9 @@ bool getJsonValue(const JsonVariant& element, DestType& destination, const Defau
 
 
 //colors.cpp
+uint32_t color_blend(uint32_t,uint32_t,uint16_t,bool b16=false);
+uint32_t color_add(uint32_t,uint32_t);
+
 inline uint32_t colorFromRgbw(byte* rgbw) { return uint32_t((byte(rgbw[3]) << 24) | (byte(rgbw[0]) << 16) | (byte(rgbw[1]) << 8) | (byte(rgbw[2]))); }
 void colorHStoRGB(uint16_t hue, byte sat, byte* rgb); //hue, sat to rgb
 void colorKtoRGB(uint16_t kelvin, byte* rgb);
@@ -129,7 +132,7 @@ void handleIR();
 
 void deserializeSegment(JsonObject elem, byte it, byte presetId = 0);
 bool deserializeState(JsonObject root, byte callMode = CALL_MODE_DIRECT_CHANGE, byte presetId = 0);
-void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset = false, bool segmentBounds = true);
+void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset = false, bool segmentBounds = true);
 void serializeState(JsonObject root, bool forPreset = false, bool includeBri = true, bool segmentBounds = true);
 void serializeInfo(JsonObject root);
 void serializeModeNames(JsonArray arr, const char *qstring);
@@ -296,7 +299,7 @@ class UsermodManager {
     void onUpdateBegin(bool);
     bool add(Usermod* um);
     Usermod* lookup(uint16_t mod_id);
-    byte getModCount();
+    byte getModCount() {return numMods;};
 };
 
 //usermods_list.cpp
@@ -321,8 +324,10 @@ bool isAsterisksOnly(const char* str, byte maxLen);
 bool requestJSONBufferLock(uint8_t module=255);
 void releaseJSONBufferLock();
 uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLen);
-uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxLen);
+uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxLen, uint8_t *var = nullptr);
+int16_t extractModeDefaults(uint8_t mode, const char *segVar);
 uint16_t crc16(const unsigned char* data_p, size_t length);
+um_data_t* simulateSound(uint8_t simulationId);
 
 //wled_eeprom.cpp
 void applyMacro(byte index);

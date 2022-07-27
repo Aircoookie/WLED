@@ -69,14 +69,609 @@
   #error "Max segments must be at least max number of busses!"
 #endif
 
+
+///////////////////////////////////////////////////////////////////////////////
+// Segment class implementation
+///////////////////////////////////////////////////////////////////////////////
+
+Segment::Segment(const Segment &orig) {
+  DEBUG_PRINTLN(F("-- Segment duplicated --"));
+  memcpy(this, &orig, sizeof(Segment));
+  name = nullptr;
+  data = nullptr;
+  _dataLen = 0;
+  //_t = nullptr;
+  if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
+  if (orig.data) { allocateData(orig._dataLen); memcpy(data, orig.data, orig._dataLen); }
+  //if (orig._t) { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
+  DEBUG_PRINTF("  Original data: %p (%d)\n", orig.data, (int)orig._dataLen);
+  DEBUG_PRINTF("  Constructed data: %p (%d)\n", data, (int)_dataLen);
+}
+
+Segment::Segment(Segment &&orig) noexcept {
+  DEBUG_PRINTLN(F("-- Move constructor --"));
+  memcpy(this, &orig, sizeof(Segment));
+  orig.name = nullptr;
+  orig.data = nullptr;
+  orig._dataLen = 0;
+  //orig._t   = nullptr;
+}
+
+Segment& Segment::operator= (const Segment &orig) {
+  DEBUG_PRINTLN(F("-- Segment copied --"));
+  if (this != &orig) {
+    if (name) {
+      DEBUG_PRINTF("  Copy Deleting %s (%p)\n", name, name);
+      delete[] name;
+    }
+    //if (_t) delete _t;
+    deallocateData();
+    memcpy(this, &orig, sizeof(Segment));
+    name = nullptr;
+    data = nullptr;
+    _dataLen = 0;
+    //_t = nullptr;
+    if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
+    if (orig.data) { allocateData(orig._dataLen); memcpy(data, orig.data, orig._dataLen); }
+    //if (orig._t) { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
+    DEBUG_PRINTF("  Original data: %p (%d)\n", orig.data, (int)orig._dataLen);
+    DEBUG_PRINTF("  Copied data: %p (%d)\n", data, (int)_dataLen);
+  }
+  return *this;
+}
+
+Segment& Segment::operator= (Segment &&orig) noexcept {
+  DEBUG_PRINTLN(F("-- Moving segment --"));
+  if (this != &orig) {
+    if (name) {
+      DEBUG_PRINTF("  Move Deleting %s (%p)\n", name, name);
+      delete[] name; // free old name
+    }
+    //if (_t) delete _t;
+    deallocateData(); // free old runtime data
+    memcpy(this, &orig, sizeof(Segment));
+    orig.name = nullptr;
+    orig.data = nullptr;
+    orig._dataLen = 0;
+    //orig._t   = nullptr;
+  }
+  return *this;
+}
+
+bool Segment::allocateData(uint16_t len) {
+  if (data && _dataLen == len) return true; //already allocated
+  deallocateData();
+  // TODO: move out to WS2812FX class: for (seg : _segments) sum += seg.dataSize();
+  if (strip.getUsedSegmentData() + len > MAX_SEGMENT_DATA) return false; //not enough memory
+  // if possible use SPI RAM on ESP32
+  #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
+  if (psramFound())
+    data = (byte*) ps_malloc(len);
+  else
+  #endif
+    data = (byte*) malloc(len);
+  if (!data) return false; //allocation failed
+  strip.addUsedSegmentData(len); // TODO: move out to WS2812FX class: for (seg : _segments) sum += seg.dataSize();
+  _dataLen = len;
+  memset(data, 0, len);
+  DEBUG_PRINTF("-- Allocated data %p (%d)\n", data, (int)len);
+  return true;
+}
+
+void Segment::deallocateData() {
+  // NOTE: deallocating data sometimes produces corrupt heap.
+  if (!data) return;
+  DEBUG_PRINTF("-- Deallocating data: %p (%d)\n", data, (int)_dataLen);
+  free(data);
+  DEBUG_PRINTLN(F("-- Data freed."));
+  data = nullptr;
+  strip.addUsedSegmentData(-(int16_t)_dataLen); // TODO: move out to WS2812FX class: for (seg : _segments) sum -= seg.dataSize();
+  _dataLen = 0;
+  DEBUG_PRINTLN(F("-- Dealocated data."));
+}
+
+/** 
+  * If reset of this segment was requested, clears runtime
+  * settings of this segment.
+  * Must not be called while an effect mode function is running
+  * because it could access the data buffer and this method 
+  * may free that data buffer.
+  */
+void Segment::resetIfRequired() {
+  if (reset) { // (getOption(SEG_OPTION_RESET))
+    next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0; 
+    reset = false; // setOption(SEG_OPTION_RESET, false);
+  }
+}
+
+void Segment::startTransition(uint16_t dur) {
+  // starting a transition has to occur before change so we get current values 1st
+  /*uint8_t*/ _briT = currentBri(getOption(SEG_OPTION_ON) ? opacity : 0); // comment out uint8_t if not using Transition struct
+  /*uint8_t*/ _cctT = currentBri(cct, true); // comment out uint8_t if not using Transition struct
+  //uint32_t _colorT[NUM_COLORS]; // comment out if not using Transition struct
+  for (size_t i=0; i<NUM_COLORS; i++) _colorT[i] = currentColor(i, colors[i]);
+
+  // comment out if not using Transition struct
+  //if (!_t) _t = new Transition(dur); // no previous transition running
+  //if (!_t) return; // failed to allocat data
+  //_t->_briT = _briT;
+  //_t->_cctT = _cctT;
+  //for (size_t i=0; i<NUM_COLORS; i++) _t->_colorT[i] = _colorT[i];
+
+  setOption(SEG_OPTION_TRANSITIONAL, true);
+}
+
+uint16_t Segment::progress() { //transition progression between 0-65535
+  //if (!_t) return 0xFFFFU;
+  uint32_t timeNow = millis();
+  if (timeNow - /*_t->*/_start > /*_t->*/_dur) return 0xFFFFU;
+  return (timeNow - /*_t->*/_start) * 0xFFFFU / /*_t->*/_dur;
+}
+
+uint8_t Segment::currentBri(uint8_t briNew, bool useCct) {
+  //if (!_t) return (useCct) ? cct : opacity;
+  if (getOption(SEG_OPTION_TRANSITIONAL)) {
+    uint32_t prog = progress() + 1;
+    if (useCct) return ((briNew * prog) + /*_t->*/_cctT * (0x10000 - prog)) >> 16;
+    else        return ((briNew * prog) + /*_t->*/_briT * (0x10000 - prog)) >> 16;
+  } else {
+    return (useCct) ? cct : (getOption(SEG_OPTION_ON) ? opacity : 0);
+  }
+}
+
+void Segment::handleTransition() {
+  if (!getOption(SEG_OPTION_TRANSITIONAL)) return;
+  unsigned long maxWait = millis() + 20;
+  if (mode == FX_MODE_STATIC && next_time > maxWait) next_time = maxWait;
+  if (progress() == 0xFFFFU) {
+    //if (_t) { delete _t; _t = nullptr; }
+    setOption(SEG_OPTION_TRANSITIONAL, false); // finish transitioning segment
+  }
+}
+
+bool Segment::setColor(uint8_t slot, uint32_t c) { //returns true if changed
+  if (slot >= NUM_COLORS || c == colors[slot]) return false;
+  startTransition(strip.getTransition()); // start transition prior to change
+  colors[slot] = c;
+  return true;
+}
+
+void Segment::setCCT(uint16_t k) {
+  if (k > 255) { //kelvin value, convert to 0-255
+    if (k < 1900)  k = 1900;
+    if (k > 10091) k = 10091;
+    k = (k - 1900) >> 5;
+  }
+  if (cct == k) return;
+  startTransition(strip.getTransition()); // start transition prior to change
+  cct = k;
+}
+
+void Segment::setOpacity(uint8_t o) {
+  if (opacity == o) return;
+  startTransition(strip.getTransition()); // start transition prior to change
+  opacity = o;
+}
+
+void Segment::setOption(uint8_t n, bool val) {
+  bool prevOn = getOption(SEG_OPTION_ON);
+  if (n == SEG_OPTION_ON && val != prevOn) startTransition(strip.getTransition()); // start transition prior to change
+  if (val) options |=   0x01 << n;
+  else     options &= ~(0x01 << n);
+}
+
+// 2D matrix
+uint16_t Segment::virtualWidth() {
+  uint16_t groupLen = groupLength();
+  uint16_t vWidth = ((getOption(SEG_OPTION_TRANSPOSED) ? height() : width()) + groupLen - 1) / groupLen;
+  if (getOption(SEG_OPTION_MIRROR)) vWidth = (vWidth + 1) /2;  // divide by 2 if mirror, leave at least a single LED
+  return vWidth;
+}
+
+uint16_t Segment::virtualHeight() {
+  uint16_t groupLen = groupLength();
+  uint16_t vHeight = ((getOption(SEG_OPTION_TRANSPOSED) ? width() : height()) + groupLen - 1) / groupLen;
+  if (getOption(SEG_OPTION_MIRROR_Y)) vHeight = (vHeight + 1) /2;  // divide by 2 if mirror, leave at least a single LED
+  return vHeight;
+}
+
+// 1D strip
+uint16_t Segment::virtualLength() {
+#ifndef WLED_DISABLE_2D
+  if (height() > 1) {
+    uint16_t vW = virtualWidth();
+    uint16_t vH = virtualHeight();
+    uint32_t vLen = vW * vH; // use all pixels from segment
+    switch (map1D2D) {
+      case M12_VerticalBar:
+        vLen = vW; // segment width since it is used in getPixelColor()
+        break;
+      case M12_Block:
+      case M12_Circle:
+        vLen = max(vW,vH); // get the longest dimension
+        break;
+    }
+    return vLen;
+  }
+#endif
+  uint16_t groupLen = groupLength();
+  uint16_t vLength = (length() + groupLen - 1) / groupLen;
+  if (getOption(SEG_OPTION_MIRROR)) vLength = (vLength + 1) /2;  // divide by 2 if mirror, leave at least a single LED
+  return vLength;
+}
+
+void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
+{
+#ifndef WLED_DISABLE_2D
+  if (height() > 1) { // if this does not work use strip.isMatrix
+    uint16_t vH = virtualHeight();  // segment height in logical pixels
+    uint16_t vW = virtualWidth();
+    switch (map1D2D) {
+      case M12_Pixels:
+        // use all available pixels as a long strip
+        setPixelColorXY(i % vW, i / vW, col);
+        break;
+      case M12_VerticalBar:
+        // expand 1D effect vertically
+        for (int y = 0; y < vH; y++) setPixelColorXY(i, y, col);
+        break;
+      case M12_Circle:
+        // expand in circular fashion from center
+        for (float degrees = 0.0f; degrees <= 90.0f; degrees += 89.99f / (sqrtf((float)max(vH,vW))*i+1)) { // this may prove too many iterations on larger matrices
+          // may want to try float version as well (with or without antialiasing)
+          int x = roundf(sin_t(degrees*DEG_TO_RAD) * i);
+          int y = roundf(cos_t(degrees*DEG_TO_RAD) * i);
+          setPixelColorXY(x, y, col);
+        }
+        break;
+      case M12_Block:
+        for (int x = 0; x <= i; x++) setPixelColorXY(x, i, col);
+        for (int y = 0; y <  i; y++) setPixelColorXY(i, y, col);
+        break;
+    }
+    return;
+  }
+#endif
+
+  uint16_t len = length();
+  uint8_t _bri_t = strip._bri_t;
+  //uint8_t _bri_t = currentBri(getOption(SEG_OPTION_ON) ? opacity : 0);
+  if (_bri_t < 255) {
+    byte r = scale8(R(col), _bri_t);
+    byte g = scale8(G(col), _bri_t);
+    byte b = scale8(B(col), _bri_t);
+    byte w = scale8(W(col), _bri_t);
+    col = RGBW32(r, g, b, w);
+  }
+
+  // expand pixel (taking into account start, grouping, spacing [and offset])
+  i = i * groupLength();
+  if (getOption(SEG_OPTION_REVERSED)) { // is segment reversed?
+    if (getOption(SEG_OPTION_MIRROR)) { // is segment mirrored?
+      i = (len - 1) / 2 - i;  //only need to index half the pixels
+    } else {
+      i = (len - 1) - i;
+    }
+  }
+  i += start; // starting pixel in a group
+
+  // set all the pixels in the group
+  for (int j = 0; j < grouping; j++) {
+    uint16_t indexSet = i + ((getOption(SEG_OPTION_REVERSED)) ? -j : j);
+    if (indexSet >= start && indexSet < stop) {
+      if (getOption(SEG_OPTION_MIRROR)) { //set the corresponding mirrored pixel
+        uint16_t indexMir = stop - indexSet + start - 1;          
+        indexMir += offset; // offset/phase
+        if (indexMir >= stop) indexMir -= len; // wrap
+        strip.setPixelColor(indexMir, col);
+      }
+      indexSet += offset; // offset/phase
+      if (indexSet >= stop) indexSet -= len; // wrap
+      strip.setPixelColor(indexSet, col);
+    }
+  }
+}
+
+// anti-aliased normalized version of setPixelColor()
+void Segment::setPixelColor(float i, uint32_t col, bool aa)
+{
+  if (i<0.0f || i>1.0f) return; // not normalized
+
+  float fC = i * (virtualLength()-1);
+  if (aa) {
+    uint16_t iL = roundf(fC-0.49f);
+    uint16_t iR = roundf(fC+0.49f);
+    float    dL = fC - iL;
+    float    dR = iR - fC;
+    uint32_t cIL = getPixelColor(iL);
+    uint32_t cIR = getPixelColor(iR);
+    if (iR!=iL) {
+      // blend L pixel
+      cIL = color_blend(col, cIL, uint8_t(dL*255.0f));
+      setPixelColor(iL, cIL);
+      // blend R pixel
+      cIR = color_blend(col, cIR, uint8_t(dR*255.0f));
+      setPixelColor(iR, cIR);
+    } else {
+      // exact match (x & y land on a pixel)
+      setPixelColor(iL, col);
+    }
+  } else {
+    setPixelColor(uint16_t(roundf(fC)), col);
+  }
+}
+
+uint32_t Segment::getPixelColor(uint16_t i)
+{
+#ifndef WLED_DISABLE_2D
+  if (height() > 1) { // if this does not work use strip.isMatrix
+    uint16_t vH = virtualHeight();  // segment height in logical pixels
+    uint16_t vW = virtualWidth();
+    switch (map1D2D) {
+      case M12_Pixels:
+        return getPixelColorXY(i % vW, i / vW);
+        break;
+      case M12_VerticalBar:
+        return getPixelColorXY(i, 0);
+        break;
+      case M12_Circle:
+      case M12_Block:
+        // use longest dimension
+        return vW>vH ? getPixelColorXY(i, 0) : getPixelColorXY(0, i);
+        break;
+    }
+    return 0;
+  }
+#endif
+
+  if (getOption(SEG_OPTION_REVERSED)) i = virtualLength() - i - 1;
+  i *= groupLength();
+  i += start;
+  /* offset/phase */
+  i += offset;
+  if (i >= stop) i -= length();
+  return strip.getPixelColor(i);
+}
+
+uint8_t Segment::differs(Segment& b) {
+  uint8_t d = 0;
+  if (start != b.start)         d |= SEG_DIFFERS_BOUNDS;
+  if (stop != b.stop)           d |= SEG_DIFFERS_BOUNDS;
+  if (offset != b.offset)       d |= SEG_DIFFERS_GSO;
+  if (grouping != b.grouping)   d |= SEG_DIFFERS_GSO;
+  if (spacing != b.spacing)     d |= SEG_DIFFERS_GSO;
+  if (opacity != b.opacity)     d |= SEG_DIFFERS_BRI;
+  if (mode != b.mode)           d |= SEG_DIFFERS_FX;
+  if (speed != b.speed)         d |= SEG_DIFFERS_FX;
+  if (intensity != b.intensity) d |= SEG_DIFFERS_FX;
+  if (palette != b.palette)     d |= SEG_DIFFERS_FX;
+  if (custom1 != b.custom1)     d |= SEG_DIFFERS_FX;
+  if (custom2 != b.custom2)     d |= SEG_DIFFERS_FX;
+  if (custom3 != b.custom3)     d |= SEG_DIFFERS_FX;
+  if (startY != b.startY)       d |= SEG_DIFFERS_BOUNDS;
+  if (stopY != b.stopY)         d |= SEG_DIFFERS_BOUNDS;
+
+  //bit pattern: msb first: [transposed mirrorY reverseY] transitional (tbd) paused needspixelstate mirrored on reverse selected
+  if ((options & 0b1111111100101110) != (b.options & 0b1111111100101110)) d |= SEG_DIFFERS_OPT;
+  if ((options & 0x01) != (b.options & 0x01))                             d |= SEG_DIFFERS_SEL;
+  
+  for (uint8_t i = 0; i < NUM_COLORS; i++) if (colors[i] != b.colors[i]) d |= SEG_DIFFERS_COL;
+
+  return d;
+}
+
+void Segment::refreshLightCapabilities() {
+  uint8_t capabilities = 0x01;
+
+  for (uint8_t b = 0; b < busses.getNumBusses(); b++) {
+    Bus *bus = busses.getBus(b);
+    if (bus == nullptr || bus->getLength()==0) break;
+    if (!bus->isOk()) continue;
+    if (bus->getStart() >= stop) continue;
+    if (bus->getStart() + bus->getLength() <= start) continue;
+
+    uint8_t type = bus->getType();
+    if (type == TYPE_ANALOG_1CH || (!cctFromRgb && type == TYPE_ANALOG_2CH)) capabilities &= 0xFE; // does not support RGB
+    if (bus->isRgbw()) capabilities |= 0x02; // segment supports white channel
+    if (!cctFromRgb) {
+      switch (type) {
+        case TYPE_ANALOG_5CH:
+        case TYPE_ANALOG_2CH:
+          capabilities |= 0x04; //segment supports white CCT 
+      }
+    }
+    if (correctWB && type != TYPE_ANALOG_1CH) capabilities |= 0x04; //white balance correction (uses CCT slider)
+    uint8_t aWM = Bus::getAutoWhiteMode()<255 ? Bus::getAutoWhiteMode() : bus->getAWMode();
+    bool whiteSlider = (aWM == RGBW_MODE_DUAL || aWM == RGBW_MODE_MANUAL_ONLY); // white slider allowed
+    if (bus->isRgbw() && (whiteSlider || !(capabilities & 0x01))) capabilities |= 0x08; // allow white channel adjustments (AWM allows or is not RGB)
+  }
+  _capabilities = capabilities;
+}
+
+/*
+ * Fills segment with color
+ */
+void Segment::fill(uint32_t c) {
+  const uint16_t cols = strip.isMatrix ? virtualWidth() : virtualLength();
+  const uint16_t rows = virtualHeight(); // will be 1 for 1D
+  for(uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
+    if (strip.isMatrix) setPixelColorXY(x, y, c);
+    else                setPixelColor(x, c);
+  }
+}
+
+// Blends the specified color with the existing pixel color.
+void Segment::blendPixelColor(uint16_t n, uint32_t color, uint8_t blend) {
+  setPixelColor(n, color_blend(getPixelColor(n), color, blend));
+}
+
+// Adds the specified color with the existing pixel color perserving color balance.
+void Segment::addPixelColor(uint16_t n, uint32_t color) {
+  setPixelColor(n, color_add(getPixelColor(n), color));
+}
+
+/*
+ * fade out function, higher rate = quicker fade
+ */
+void Segment::fade_out(uint8_t rate) {
+  const uint16_t cols = strip.isMatrix ? virtualWidth() : virtualLength();
+  const uint16_t rows = virtualHeight(); // will be 1 for 1D
+
+  rate = (255-rate) >> 1;
+  float mappedRate = float(rate) +1.1;
+
+  uint32_t color = colors[1]; // SEGCOLOR(1); // target color
+  int w2 = W(color);
+  int r2 = R(color);
+  int g2 = G(color);
+  int b2 = B(color);
+
+  for (uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
+    color = strip.isMatrix ? getPixelColorXY(x, y) : getPixelColor(x);
+    int w1 = W(color);
+    int r1 = R(color);
+    int g1 = G(color);
+    int b1 = B(color);
+
+    int wdelta = (w2 - w1) / mappedRate;
+    int rdelta = (r2 - r1) / mappedRate;
+    int gdelta = (g2 - g1) / mappedRate;
+    int bdelta = (b2 - b1) / mappedRate;
+
+    // if fade isn't complete, make sure delta is at least 1 (fixes rounding issues)
+    wdelta += (w2 == w1) ? 0 : (w2 > w1) ? 1 : -1;
+    rdelta += (r2 == r1) ? 0 : (r2 > r1) ? 1 : -1;
+    gdelta += (g2 == g1) ? 0 : (g2 > g1) ? 1 : -1;
+    bdelta += (b2 == b1) ? 0 : (b2 > b1) ? 1 : -1;
+
+    if (strip.isMatrix) setPixelColorXY(x, y, r1 + rdelta, g1 + gdelta, b1 + bdelta, w1 + wdelta);
+    else                setPixelColor(x, r1 + rdelta, g1 + gdelta, b1 + bdelta, w1 + wdelta);
+  }
+}
+
+// fades all pixels to black using nscale8()
+void Segment::fadeToBlackBy(uint8_t fadeBy) {
+  const uint16_t cols = strip.isMatrix ? virtualWidth() : virtualLength();
+  const uint16_t rows = virtualHeight(); // will be 1 for 1D
+
+  for (uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
+    if (strip.isMatrix) setPixelColorXY(x, y, CRGB(getPixelColorXY(x,y)).nscale8(255-fadeBy));
+    else                setPixelColor(x, CRGB(getPixelColor(x)).nscale8(255-fadeBy));
+  }
+}
+
+/*
+ * blurs segment content, source: FastLED colorutils.cpp
+ */
+void Segment::blur(uint8_t blur_amount)
+{
+  if (strip.isMatrix) {
+    // compatibility with 2D
+    const uint16_t cols = virtualWidth();
+    const uint16_t rows = virtualHeight();
+    for (uint16_t i = 0; i < rows; i++) blurRow(i, blur_amount); // blur all rows
+    for (uint16_t k = 0; k < cols; k++) blurCol(k, blur_amount); // blur all columns
+    return;
+  }
+  uint8_t keep = 255 - blur_amount;
+  uint8_t seep = blur_amount >> 1;
+  CRGB carryover = CRGB::Black;
+  for(uint16_t i = 0; i < virtualLength(); i++)
+  {
+    CRGB cur = CRGB(getPixelColor(i));
+    CRGB part = cur;
+    part.nscale8(seep);
+    cur.nscale8(keep);
+    cur += carryover;
+    if(i > 0) {
+      uint32_t c = getPixelColor(i-1);
+      uint8_t r = R(c);
+      uint8_t g = G(c);
+      uint8_t b = B(c);
+      setPixelColor(i-1, qadd8(r, part.red), qadd8(g, part.green), qadd8(b, part.blue));
+    }
+    setPixelColor(i,cur.red, cur.green, cur.blue);
+    carryover = part;
+  }
+}
+
+/*
+ * Put a value 0 to 255 in to get a color value.
+ * The colours are a transition r -> g -> b -> back to r
+ * Inspired by the Adafruit examples.
+ */
+uint32_t Segment::color_wheel(uint8_t pos) { // TODO
+  if (palette) return color_from_palette(pos, false, true, 0);
+  pos = 255 - pos;
+  if(pos < 85) {
+    return ((uint32_t)(255 - pos * 3) << 16) | ((uint32_t)(0) << 8) | (pos * 3);
+  } else if(pos < 170) {
+    pos -= 85;
+    return ((uint32_t)(0) << 16) | ((uint32_t)(pos * 3) << 8) | (255 - pos * 3);
+  } else {
+    pos -= 170;
+    return ((uint32_t)(pos * 3) << 16) | ((uint32_t)(255 - pos * 3) << 8) | (0);
+  }
+}
+
+/*
+ * Returns a new, random wheel index with a minimum distance of 42 from pos.
+ */
+uint8_t Segment::get_random_wheel_index(uint8_t pos) {
+  uint8_t r = 0, x = 0, y = 0, d = 0;
+
+  while(d < 42) {
+    r = random8();
+    x = abs(pos - r);
+    y = 255 - x;
+    d = MIN(x, y);
+  }
+  return r;
+}
+
+/*
+ * Gets a single color from the currently selected palette.
+ * @param i Palette Index (if mapping is true, the full palette will be _virtualSegmentLength long, if false, 255). Will wrap around automatically.
+ * @param mapping if true, LED position in segment is considered for color
+ * @param wrap FastLED palettes will usally wrap back to the start smoothly. Set false to get a hard edge
+ * @param mcol If the default palette 0 is selected, return the standard color 0, 1 or 2 instead. If >2, Party palette is used instead
+ * @param pbri Value to scale the brightness of the returned color by. Default is 255. (no scaling)
+ * @returns Single color from palette
+ */
+uint32_t IRAM_ATTR Segment::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri)
+{
+  if ((palette == 0 && mcol < 3) || strip._no_rgb) {
+    uint32_t color = colors[mcol]; // SEGCOLOR(mcol);
+    if (pbri == 255) return color;
+    return RGBW32(scale8_video(R(color),pbri), scale8_video(G(color),pbri), scale8_video(B(color),pbri), scale8_video(W(color),pbri));
+  }
+
+  uint8_t paletteIndex = i;
+  if (mapping && virtualLength() > 1) paletteIndex = (i*255)/(virtualLength() -1);
+  if (!wrap) paletteIndex = scale8(paletteIndex, 240); //cut off blend at palette "end"
+  CRGB fastled_col;
+  fastled_col = ColorFromPalette(strip.currentPalette, paletteIndex, pbri, (strip.paletteBlend == 3)? NOBLEND:LINEARBLEND);
+
+  return RGBW32(fastled_col.r, fastled_col.g, fastled_col.b, 0);
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+// WS2812FX class implementation
+///////////////////////////////////////////////////////////////////////////////
+
 //do not call this method from system context (network callback)
 void WS2812FX::finalizeInit(void)
 {
   //reset segment runtimes
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) {
-    _segment_runtimes[i].markForReset();
-    _segment_runtimes[i].resetIfRequired();
+  for (segment &seg : _segments) {
+    seg.markForReset();
+    seg.resetIfRequired();
   }
+//  for (uint8_t i = 0; i < getMaxSegments(); i++) {
+//    _segments[i].markForReset();
+//    _segments[i].resetIfRequired();
+//  }
 
   _hasWhiteChannel = _isOffRefreshRequired = false;
 
@@ -129,137 +724,99 @@ void WS2812FX::service() {
   if (nowUp - _lastShow < MIN_SHOW_DELAY) return;
   bool doShow = false;
 
-  for(uint8_t i=0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    //if (realtimeMode && useMainSegmentOnly && i == getMainSegmentId()) continue;
+  _isServicing = true;
+  _segment_index = 0;
+  for (segment &seg : _segments) {
+//  for (int i = 0; i < getMaxSegments(); i++) {
+//    Segment &seg = getSegment(i);
+    // reset the segment runtime data if needed
+    seg.resetIfRequired();
 
-    _segment_index = i;
-
-    // reset the segment runtime data if needed, called before isActive to ensure deleted
-    // segment's buffers are cleared
-    SEGENV.resetIfRequired();
-
-    if (!SEGMENT.isActive()) continue;
+    if (!seg.isActive()) continue;
 
     // last condition ensures all solid segments are updated at the same time
-    if(nowUp > SEGENV.next_time || _triggered || (doShow && SEGMENT.mode == 0))
+    if(nowUp > seg.next_time || _triggered || (doShow && seg.mode == FX_MODE_STATIC))
     {
-      if (SEGMENT.grouping == 0) SEGMENT.grouping = 1; //sanity check
+      if (seg.grouping == 0) seg.grouping = 1; //sanity check
       doShow = true;
       uint16_t delay = FRAMETIME;
 
-      if (!SEGMENT.getOption(SEG_OPTION_FREEZE)) { //only run effect function if not frozen
-        SEGLEN = SEGMENT.virtualLength();
-        _bri_t = SEGMENT.opacity; _colors_t[0] = SEGMENT.colors[0]; _colors_t[1] = SEGMENT.colors[1]; _colors_t[2] = SEGMENT.colors[2];
-        uint8_t _cct_t = SEGMENT.cct;
-        if (!SEGMENT.getOption(SEG_OPTION_ON)) _bri_t = 0;
-        for (uint8_t t = 0; t < MAX_NUM_TRANSITIONS; t++) {
-          if ((transitions[t].segment & 0x3F) != i) continue;
-          uint8_t slot = transitions[t].segment >> 6;
-          if (slot == 0) _bri_t = transitions[t].currentBri();
-          if (slot == 1) _cct_t = transitions[t].currentBri(false, 1);
-          _colors_t[slot] = transitions[t].currentColor(SEGMENT.colors[slot]);
-        }
+      if (!seg.getOption(SEG_OPTION_FREEZE)) { //only run effect function if not frozen
+        _virtualSegmentLength = seg.virtualLength();
+        _bri_t = seg.currentBri(seg.getOption(SEG_OPTION_ON) ? seg.opacity : 0);
+        uint8_t _cct_t = seg.currentBri(seg.cct, true);
+        _colors_t[0] = seg.currentColor(0, seg.colors[0]);
+        _colors_t[1] = seg.currentColor(1, seg.colors[1]);
+        _colors_t[2] = seg.currentColor(2, seg.colors[2]);
+        seg.handleTransition();
+
         if (!cctFromRgb || correctWB) busses.setSegmentCCT(_cct_t, correctWB);
         for (uint8_t c = 0; c < NUM_COLORS; c++) {
           _colors_t[c] = gamma32(_colors_t[c]);
         }
         handle_palette();
 
-        delay = (this->*_mode[SEGMENT.mode])(); // effect function (NOTE: may add SEGMENT and SEGENV to parameters)
-        if (SEGMENT.mode != FX_MODE_HALLOWEEN_EYES) SEGENV.call++;
+        delay = (*_mode[seg.mode])();
+        if (seg.mode != FX_MODE_HALLOWEEN_EYES) seg.call++;
       }
 
-      SEGENV.next_time = nowUp + delay;
+      seg.next_time = nowUp + delay;
     }
+    _segment_index++;
   }
-  SEGLEN = 0;
+  _virtualSegmentLength = 0;
   busses.setSegmentCCT(-1);
   if(doShow) {
     yield();
     show();
   }
   _triggered = false;
+  _isServicing = false;
 }
 
-// anti-aliased normalized version of setPixelColor()
-void /*IRAM_ATTR*/ WS2812FX::setPixelColor(float i, byte r, byte g, byte b, byte w, bool aa)
+void WS2812FX::setPixelColor(int i, uint32_t col)
 {
-  if (i<0.0f || i>1.0f) return; // not normalized
+  if (i >= _length) return;
 
-  float fC = i * (SEGLEN-1);
-  if (aa) {
-    uint16_t iL = roundf(fC-0.49f);
-    uint16_t iR = roundf(fC+0.49f);
-    float    dL = fC - iL;
-    float    dR = iR - fC;
-    uint32_t cIL = getPixelColor(iL);
-    uint32_t cIR = getPixelColor(iR);
-    if (iR!=iL) {
-      // blend L pixel
-      cIL = color_blend(RGBW32(r,g,b,w), cIL, uint8_t(dL*255.0f));
-      setPixelColor(iL, R(cIL), G(cIL), B(cIL), W(cIL));
-      // blend R pixel
-      cIR = color_blend(RGBW32(r,g,b,w), cIR, uint8_t(dR*255.0f));
-      setPixelColor(iR, R(cIR), G(cIR), B(cIR), W(cIR));
-    } else {
-      // exact match (x & y land on a pixel)
-      setPixelColor(iL, r, g, b, w);
-    }
-  } else {
-    setPixelColor(uint16_t(roundf(fC)), r, g, b, w);
-  }
-}
+  // if realtime mode is active and applying to main segment
+  if (realtimeMode && useMainSegmentOnly) {
+    Segment &seg = _segments[_mainSegment];
+    uint16_t len = seg.length();  // length of segment in number of pixels
 
-void IRAM_ATTR WS2812FX::setPixelColor(int i, byte r, byte g, byte b, byte w)
-{
-  uint8_t segIdx = SEGLEN ? _segment_index : _mainSegment;
-  if (isMatrix && SEGLEN) {
-    // map linear pixel into 2D segment area (even for 1D segments, expanding vertically)
-    uint16_t h = _segments[segIdx].virtualHeight();  // segment height in logical pixels
-    for (uint16_t y = 0; y < h; y++) { // expand 1D effect vertically
-      setPixelColorXY(i, y * _segments[segIdx].groupLength(), r, g, b, w);
+    if (seg.opacity < 255) {
+      byte r = scale8(R(col), seg.opacity);
+      byte g = scale8(G(col), seg.opacity);
+      byte b = scale8(B(col), seg.opacity);
+      byte w = scale8(W(col), seg.opacity);
+      col = RGBW32(r, g, b, w);
     }
-    return;
-  }
-
-  if (SEGLEN || (realtimeMode && useMainSegmentOnly)) {
-    //color_blend(getpixel, col, _bri_t); (pseudocode for future blending of segments)
-    if (SEGLEN && _bri_t < 255) {  // SEGLEN!=0 -> from segment/FX
-      r = scale8(r, _bri_t);
-      g = scale8(g, _bri_t);
-      b = scale8(b, _bri_t);
-      w = scale8(w, _bri_t);
-    }
-    uint32_t col = RGBW32(r, g, b, w);
-    uint16_t len = _segments[segIdx].length();  // length of segment in number of pixels
 
     // get physical pixel address (taking into account start, grouping, spacing [and offset])
-    i = i * _segments[segIdx].groupLength();
-    if (_segments[segIdx].getOption(SEG_OPTION_REVERSED)) { // is segment reversed?
-      if (_segments[segIdx].getOption(SEG_OPTION_MIRROR)) { // is segment mirrored?
+    i = i * seg.groupLength();
+    if (seg.getOption(SEG_OPTION_REVERSED)) { // is segment reversed?
+      if (seg.getOption(SEG_OPTION_MIRROR)) { // is segment mirrored?
         i = (len - 1) / 2 - i;  //only need to index half the pixels
       } else {
         i = (len - 1) - i;
       }
     }
-    i += _segments[segIdx].start; // starting pixel in a group
+    i += seg.start; // starting pixel in a group
 
     // set all the pixels in the group
-    for (uint16_t j = 0; j < _segments[segIdx].grouping; j++) {
-      uint16_t indexSet = i + ((_segments[segIdx].getOption(SEG_OPTION_REVERSED)) ? -j : j);
-      if (indexSet >= _segments[segIdx].start && indexSet < _segments[segIdx].stop) {
+    for (uint16_t j = 0; j < seg.grouping; j++) {
+      uint16_t indexSet = i + ((seg.getOption(SEG_OPTION_REVERSED)) ? -j : j);
+      if (indexSet >= seg.start && indexSet < seg.stop) {
 
-        if (_segments[segIdx].getOption(SEG_OPTION_MIRROR)) { //set the corresponding mirrored pixel
-          uint16_t indexMir = _segments[segIdx].stop - indexSet + _segments[segIdx].start - 1;          
-          indexMir += _segments[segIdx].offset; // offset/phase
-          if (indexMir >= _segments[segIdx].stop) indexMir -= len; // wrap
+        if (seg.getOption(SEG_OPTION_MIRROR)) { //set the corresponding mirrored pixel
+          uint16_t indexMir = seg.stop - indexSet + seg.start - 1;          
+          indexMir += seg.offset; // offset/phase
+          if (indexMir >= seg.stop) indexMir -= len; // wrap
           if (indexMir < customMappingSize) indexMir = customMappingTable[indexMir];
 
           busses.setPixelColor(indexMir, col);
         }
-        indexSet += _segments[segIdx].offset; // offset/phase
-        if (indexSet >= _segments[segIdx].stop) indexSet -= len; // wrap
+        indexSet += seg.offset; // offset/phase
+        if (indexSet >= seg.stop) indexSet -= len; // wrap
         if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
 
         busses.setPixelColor(indexSet, col);
@@ -267,8 +824,18 @@ void IRAM_ATTR WS2812FX::setPixelColor(int i, byte r, byte g, byte b, byte w)
     }
   } else {
     if (i < customMappingSize) i = customMappingTable[i];
-    busses.setPixelColor(i, RGBW32(r, g, b, w));
+    busses.setPixelColor(i, col);
   }
+}
+
+uint32_t WS2812FX::getPixelColor(uint16_t i)
+{
+  if (i >= _length) return 0;
+  //#ifndef WLED_DISABLE_2D
+  //if (isMatrix) return getPixelColorXY(i%matrixWidth, i/matrixWidth); // compatibility w/ non-effect fn
+  //#endif
+  if (i < customMappingSize) i = customMappingTable[i];
+  return busses.getPixelColor(i);
 }
 
 
@@ -392,56 +959,43 @@ uint16_t WS2812FX::getFps() {
   return _cumulativeFps +1;
 }
 
-uint8_t WS2812FX::getTargetFps() {
-	return _targetFps;
-}
-
 void WS2812FX::setTargetFps(uint8_t fps) {
 	if (fps > 0 && fps <= 120) _targetFps = fps;
 	_frametime = 1000 / _targetFps;
 }
 
-/**
- * Forces the next frame to be computed on all active segments.
- */
-void WS2812FX::trigger() {
-  _triggered = true;
-}
-
 void WS2812FX::setMode(uint8_t segid, uint8_t m) {
-  if (segid >= MAX_NUM_SEGMENTS) return;
+  if (segid >= _segments.size()) return;
+//  if (segid >= getMaxSegments()) return;
    
   if (m >= getModeCount()) m = getModeCount() - 1;
 
-  if (_segments[segid].mode != m) 
-  {
-    _segment_runtimes[segid].markForReset();
+  if (_segments[segid].mode != m) {
+    //_segments[segid].startTransition(strip.getTransition()); // set effect transitions
+    _segments[segid].markForReset();
     _segments[segid].mode = m;
   }
-}
-
-uint8_t WS2812FX::getPaletteCount()
-{
-  return 13 + GRADIENT_PALETTE_COUNT;
 }
 
 //applies to all active and selected segments
 void WS2812FX::setColor(uint8_t slot, uint32_t c) {
   if (slot >= NUM_COLORS) return;
 
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    if (_segments[i].isActive() && _segments[i].isSelected()) {
-      _segments[i].setColor(slot, c, i);
+  for (segment &seg : _segments) {
+//  for (int i = 0; i < getMaxSegments(); i++) {
+//    Segment &seg = getSegment(i);
+    if (seg.isSelected()) {
+      seg.setColor(slot, c);
     }
   }
 }
 
 void WS2812FX::setCCT(uint16_t k) {
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    if (_segments[i].isActive() && _segments[i].isSelected()) {
-      _segments[i].setCCT(k, i);
+  for (segment &seg : _segments) {
+//  for (int i = 0; i < getMaxSegments(); i++) {
+//    Segment &seg = getSegment(i);
+    if (seg.isActive() && seg.isSelected()) {
+      seg.setCCT(k);
     }
   }
 }
@@ -451,9 +1005,10 @@ void WS2812FX::setBrightness(uint8_t b, bool direct) {
   if (_brightness == b) return;
   _brightness = b;
   if (_brightness == 0) { //unfreeze all segments on power off
-    for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-    {
-      _segments[i].setOption(SEG_OPTION_FREEZE, false);
+    for (segment &seg : _segments) {
+//    for (int i = 0; i < getMaxSegments(); i++) {
+//      Segment &seg = getSegment(i);
+      seg.setOption(SEG_OPTION_FREEZE, false);
     }
   }
   if (direct) {
@@ -461,112 +1016,56 @@ void WS2812FX::setBrightness(uint8_t b, bool direct) {
     busses.setBrightness(b);
   } else {
 	  unsigned long t = millis();
-    if (_segment_runtimes[0].next_time > t + 22 && t - _lastShow > MIN_SHOW_DELAY) show(); //apply brightness change immediately if no refresh soon
+    if (_segments[0].next_time > t + 22 && t - _lastShow > MIN_SHOW_DELAY) show(); //apply brightness change immediately if no refresh soon
   }
-}
-
-uint8_t WS2812FX::getBrightness(void) {
-  return _brightness;
-}
-
-uint8_t WS2812FX::getMaxSegments(void) {
-  return MAX_NUM_SEGMENTS;
 }
 
 uint8_t WS2812FX::getFirstSelectedSegId(void)
 {
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    if (_segments[i].isActive() && _segments[i].isSelected()) return i;
+  size_t i = 0;
+  for (segment &seg : _segments) {
+//  for (int i = 0; i < getMaxSegments(); i++) {
+//    Segment &seg = getSegment(i);
+    if (seg.isSelected()) return i;
+    i++;
   }
   // if none selected, use the main segment
   return getMainSegmentId();
 }
 
 void WS2812FX::setMainSegmentId(uint8_t n) {
-  if (n >= MAX_NUM_SEGMENTS) return;
-  //use supplied n if active, or first active
-  if (_segments[n].isActive()) {
-    _mainSegment = n; return;
-  }
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    if (_segments[i].isActive()) {
-      _mainSegment = i; return;
-    }
-  }
+//  if (n >= getMaxSegments()) return;
+//  //use supplied n if active, or first active
+//  if (_segments[n].isActive()) {
+//    _mainSegment = n; return;
+//  }
+//  for (uint8_t i = 0; i < getMaxSegments(); i++) {
+//    if (_segments[i].isActive()) {
+//      _mainSegment = i; return;
+//    }
+//  }
   _mainSegment = 0;
+  if (n < _segments.size()) {
+    _mainSegment = n;
+  }
   return;
 }
 
-uint8_t WS2812FX::getMainSegmentId(void) {
-  return _mainSegment;
-}
-
 uint8_t WS2812FX::getLastActiveSegmentId(void) {
-  for (uint8_t i = MAX_NUM_SEGMENTS -1; i > 0; i--) {
-    if (_segments[i].isActive()) return i;
-  }
-  return 0;
+//  for (uint8_t i = getMaxSegments() -1; i > 0; i--) {
+//    if (_segments[i].isActive()) return i;
+//  }
+//  return 0;
+  return _segments.size()-1;
 }
 
 uint8_t WS2812FX::getActiveSegmentsNum(void) {
   uint8_t c = 0;
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-  {
+//  for (uint8_t i = 0; i < getMaxSegments(); i++) {
+  for (size_t i = 0; i < _segments.size(); i++) {
     if (_segments[i].isActive()) c++;
   }
   return c;
-}
-
-uint32_t WS2812FX::getPixelColor(uint16_t i)
-{
-  if (isMatrix) return getPixelColorXY(i%matrixWidth, i/matrixWidth); // compatibility w/ non-effect fn
-
-  // get physical pixel
-  if (SEGMENT.getOption(SEG_OPTION_REVERSED)) i = SEGMENT.virtualLength() - i - 1;
-  i *= SEGMENT.groupLength();
-  //if (SEGMENT.getOption(SEG_OPTION_REVERSED)) {
-  //  if (SEGMENT.getOption(SEG_OPTION_MIRROR)) i = (SEGMENT.length() - 1) / 2 - i;  //only need to index half the pixels
-  //  else                                      i = (SEGMENT.length() - 1) - i;
-  //}
-  i += SEGMENT.start;
-
-  if (SEGLEN) {
-    /* offset/phase */
-    i += SEGMENT.offset;
-    if (i >= SEGMENT.stop) i -= SEGMENT.length();
-  }
-  
-  if (i < customMappingSize) i = customMappingTable[i];
-  if (i >= _length) return 0;
-  
-  return busses.getPixelColor(i);
-}
-
-WS2812FX::Segment& WS2812FX::getSegment(uint8_t id) {
-  if (id >= MAX_NUM_SEGMENTS) return _segments[getMainSegmentId()];
-  return _segments[id];
-}
-
-WS2812FX::Segment& WS2812FX::getFirstSelectedSeg(void) {
-  return _segments[getFirstSelectedSegId()];
-}
-
-WS2812FX::Segment& WS2812FX::getMainSegment(void) {
-  return _segments[getMainSegmentId()];
-}
-
-WS2812FX::Segment* WS2812FX::getSegments(void) {
-  return _segments;
-}
-
-uint32_t WS2812FX::getLastShow(void) {
-  return _lastShow;
-}
-
-uint16_t WS2812FX::getLengthTotal(void) {
-  return _length;
 }
 
 uint16_t WS2812FX::getLengthPhysical(void) {
@@ -577,64 +1076,6 @@ uint16_t WS2812FX::getLengthPhysical(void) {
     len += bus->getLength();
   }
   return len;
-}
-
-uint8_t WS2812FX::Segment::differs(Segment& b) {
-  uint8_t d = 0;
-  if (start != b.start)         d |= SEG_DIFFERS_BOUNDS;
-  if (stop != b.stop)           d |= SEG_DIFFERS_BOUNDS;
-  if (offset != b.offset)       d |= SEG_DIFFERS_GSO;
-  if (grouping != b.grouping)   d |= SEG_DIFFERS_GSO;
-  if (spacing != b.spacing)     d |= SEG_DIFFERS_GSO;
-  if (opacity != b.opacity)     d |= SEG_DIFFERS_BRI;
-  if (mode != b.mode)           d |= SEG_DIFFERS_FX;
-  if (speed != b.speed)         d |= SEG_DIFFERS_FX;
-  if (intensity != b.intensity) d |= SEG_DIFFERS_FX;
-  if (palette != b.palette)     d |= SEG_DIFFERS_FX;
-  if (custom1 != b.custom1)     d |= SEG_DIFFERS_FX;
-  if (custom2 != b.custom2)     d |= SEG_DIFFERS_FX;
-  if (custom3 != b.custom3)     d |= SEG_DIFFERS_FX;
-  if (startY != b.startY)       d |= SEG_DIFFERS_BOUNDS;
-  if (stopY != b.stopY)         d |= SEG_DIFFERS_BOUNDS;
-
-  //bit pattern: msb first: [transposed mirrorY reverseY] transitional (tbd) paused needspixelstate mirrored on reverse selected
-  if ((options & 0b11100101110) != (b.options & 0b11100101110)) d |= SEG_DIFFERS_OPT;
-  if ((options & 0x01) != (b.options & 0x01))                   d |= SEG_DIFFERS_SEL;
-  
-  for (uint8_t i = 0; i < NUM_COLORS; i++) if (colors[i] != b.colors[i]) d |= SEG_DIFFERS_COL;
-
-  return d;
-}
-
-void WS2812FX::Segment::refreshLightCapabilities() {
-  if (!isActive()) {
-    _capabilities = 0; return;
-  }
-  uint8_t capabilities = 0;
-
-  for (uint8_t b = 0; b < busses.getNumBusses(); b++) {
-    Bus *bus = busses.getBus(b);
-    if (bus == nullptr || bus->getLength()==0) break;
-    if (!bus->isOk()) continue;
-    if (bus->getStart() >= stop) continue;
-    if (bus->getStart() + bus->getLength() <= start) continue;
-
-    uint8_t type = bus->getType();
-    if (type != TYPE_ANALOG_1CH && (cctFromRgb || type != TYPE_ANALOG_2CH)) capabilities |= 0x01; // segment supports RGB (full color)
-    if (bus->isRgbw()) capabilities |= 0x02; // segment supports white channel
-    if (!cctFromRgb) {
-      switch (type) {
-        case TYPE_ANALOG_5CH:
-        case TYPE_ANALOG_2CH:
-          capabilities |= 0x04; //segment supports white CCT 
-      }
-    }
-    if (correctWB && type != TYPE_ANALOG_1CH) capabilities |= 0x04; //white balance correction (uses CCT slider)
-    uint8_t aWM = Bus::getAutoWhiteMode()<255 ? Bus::getAutoWhiteMode() : bus->getAWMode();
-    bool whiteSlider = (aWM == RGBW_MODE_DUAL || aWM == RGBW_MODE_MANUAL_ONLY); // white slider allowed
-    if (bus->isRgbw() && (whiteSlider || !(capabilities & 0x01))) capabilities |= 0x08; // allow white channel adjustments (AWM allows or is not RGB)
-  }
-  _capabilities = capabilities;
 }
 
 //used for JSON API info.leds.rgbw. Little practical use, deprecate with info.leds.rgbw.
@@ -668,8 +1109,30 @@ bool WS2812FX::hasCCTBus(void) {
 	return false;
 }
 
+void WS2812FX::purgeSegments(void) {
+  // remove all inactive segments (from the back)
+  int deleted = 0;
+  if (_segments.size() <= 1 || _isServicing) return;
+  for (int i = _segments.size()-1; i > 0; i--)
+    if (_segments[i].stop == 0) {
+      DEBUG_PRINT(F("-- Removing segment: ")); DEBUG_PRINTLN(i);
+      deleted++;
+      _segments.erase(_segments.begin() + i);
+    }
+  if (deleted) {
+    _segments.shrink_to_fit();
+    if (_mainSegment >= _segments.size()) setMainSegmentId(0);
+  }
+}
+
+Segment& WS2812FX::getSegment(uint8_t id) {
+//  return _segments[id >= getMaxSegments() ? getMainSegmentId() : id];
+  return _segments[id >= _segments.size() ? getMainSegmentId() : id]; // vectors
+}
+
 void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping, uint8_t spacing, uint16_t offset, uint16_t startY, uint16_t stopY) {
-  if (n >= MAX_NUM_SEGMENTS) return;
+  if (n >= _segments.size()) return;
+//  if (n >= getMaxSegments()) return;
   Segment& seg = _segments[n];
 
   //return if neither bounds nor grouping have changed
@@ -681,23 +1144,29 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
 			&& (!grouping || (seg.grouping == grouping && seg.spacing == spacing))
 			&& (offset == UINT16_MAX || offset == seg.offset)) return;
 
-  if (seg.stop) setRange(seg.start, seg.stop -1, 0); //turn old segment range off
+  //if (seg.stop) setRange(seg.start, seg.stop -1, BLACK); //turn old segment range off
+  if (seg.stop) seg.fill(BLACK); //turn old segment range off
   if (i2 <= i1) //disable segment
   {
+    // disabled segments should get removed using purgeSegments()
+    DEBUG_PRINT(F("-- Segment ")); DEBUG_PRINT(n); DEBUG_PRINTLN(F(" marked inactive."));
     seg.stop = 0;
-    if (seg.name) {
-      delete[] seg.name;
-      seg.name = nullptr;
-    }
+    //if (seg.name) {
+    //  delete[] seg.name;
+    //  seg.name = nullptr;
+    //}
     // if main segment is deleted, set first active as main segment
     if (n == _mainSegment) setMainSegmentId(0);
+    seg.markForReset();
     return;
   }
   if (isMatrix) {
+    #ifndef WLED_DISABLE_2D
     if (i1 < matrixWidth) seg.start = i1;
     seg.stop = i2 > matrixWidth ? matrixWidth : i2;
     if (startY < matrixHeight) seg.startY = startY;
     seg.stopY = stopY > matrixHeight ? matrixHeight : MAX(1,stopY);
+    #endif
   } else {
     if (i1 < _length) seg.start = i1;
     seg.stop = i2 > _length ? _length : i2;
@@ -709,28 +1178,37 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
     seg.spacing = spacing;
   }
 	if (offset < UINT16_MAX) seg.offset = offset;
-  _segment_runtimes[n].markForReset();
+  seg.markForReset();
   if (!boundsUnchanged) seg.refreshLightCapabilities();
 }
 
 void WS2812FX::restartRuntime() {
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) {
-    _segment_runtimes[i].markForReset();
-  }
+  for (segment &seg : _segments) seg.markForReset();
+//  for (uint8_t i = 0; i < getMaxSegments(); i++) {
+//    Segment &seg = getSegment(i);
+//    seg.markForReset();
+//  }
 }
 
 void WS2812FX::resetSegments() {
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) if (_segments[i].name) delete[] _segments[i].name;
+  _segments.clear(); // destructs all Segment as part of clearing
+  segment seg = isMatrix ? Segment(0, matrixWidth, 0, matrixHeight) : Segment(0, _length);
+  _segments.push_back(seg);
+  _mainSegment = 0;
+/*
+  for (uint8_t i = 0; i < getMaxSegments(); i++) if (_segments[i].name) delete[] _segments[i].name;
   _mainSegment = 0;
   memset(_segments, 0, sizeof(_segments));
-  //memset(_segment_runtimes, 0, sizeof(_segment_runtimes));
+  //memset(_segmentruntimes, 0, sizeof(_segmentruntimes));
   _segment_index = 0;
   _segments[0].mode = DEFAULT_MODE;
   _segments[0].colors[0] = DEFAULT_COLOR;
   _segments[0].start = 0;
+  _segments[0].startY = 0;
   _segments[0].speed = DEFAULT_SPEED;
   _segments[0].intensity = DEFAULT_INTENSITY;
-  _segments[0].stop = _length;
+  _segments[0].stop = isMatrix ? matrixWidth : _length;
+  _segments[0].stopY = isMatrix ? matrixHeight : 1;
   _segments[0].grouping = 1;
   _segments[0].setOption(SEG_OPTION_SELECTED, 1);
   _segments[0].setOption(SEG_OPTION_ON, 1);
@@ -740,9 +1218,9 @@ void WS2812FX::resetSegments() {
   _segments[0].custom2 = DEFAULT_C2;
   _segments[0].custom3 = DEFAULT_C3;
 
-  for (uint16_t i = 1; i < MAX_NUM_SEGMENTS; i++)
+  for (uint16_t i = 1; i < getMaxSegments(); i++)
   {
-    _segments[i].colors[0] = color_wheel(i*51);
+    _segments[i].colors[0] = _segments[i].color_wheel(i*51);
     _segments[i].grouping = 1;
     _segments[i].setOption(SEG_OPTION_ON, 1);
     _segments[i].opacity = 255;
@@ -752,23 +1230,28 @@ void WS2812FX::resetSegments() {
     _segments[i].custom1 = DEFAULT_C1;
     _segments[i].custom2 = DEFAULT_C2;
     _segments[i].custom3 = DEFAULT_C3;
-    _segment_runtimes[i].markForReset();
+    _segments[i].markForReset();
   }
-  _segment_runtimes[0].markForReset();
+  _segments[0].markForReset();
+*/
 }
 
 void WS2812FX::makeAutoSegments(bool forceReset) {
   if (isMatrix) {
+    #ifndef WLED_DISABLE_2D
     // only create 1 2D segment
-    uint8_t mainSeg = getMainSegmentId();
-    if (forceReset) {
-      for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) {
-        setSegment(i, 0, 0);
-      }
+    if (forceReset || getSegmentsNum() == 0) resetSegments(); // initialises 1 segment
+    else if (getActiveSegmentsNum() == 1) {
+      size_t i = getLastActiveSegmentId();
+      _segments[i].start  = 0;
+      _segments[i].stop   = matrixWidth;
+      _segments[i].startY = 0;
+      _segments[i].stopY  = matrixHeight;
+      _segments[i].grouping = 1;
+      _segments[i].spacing  = 0;
+      _mainSegment = i;
     }
-    if (getActiveSegmentsNum() < 2) {
-      setSegment(mainSeg, 0, matrixWidth, 1, 0, 0, 0, matrixHeight);
-    }
+    #endif
   } else if (autoSegments) { //make one segment per bus
     uint16_t segStarts[MAX_NUM_SEGMENTS] = {0};
     uint16_t segStops [MAX_NUM_SEGMENTS] = {0};
@@ -777,7 +1260,7 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
       Bus* b = busses.getBus(i);
 
       segStarts[s] = b->getStart();
-      segStops[s] = segStarts[s] + b->getLength();
+      segStops[s]  = segStarts[s] + b->getLength();
 
       //check for overlap with previous segments
       for (uint8_t j = 0; j < s; j++) {
@@ -790,22 +1273,25 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
       }
       s++;
     }
-    for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) {
-      _segments[i].setOption(SEG_OPTION_SELECTED, true, i);
-      setSegment(i, segStarts[i], segStops[i]);
+    _segments.clear();
+    for (uint8_t i = 0; i < s; i++) {
+      Segment seg = Segment(segStarts[i], segStops[i]);
+      seg.setOption(SEG_OPTION_SELECTED, true);
+      _segments.push_back(seg);
     }
+//    for (uint8_t i = 0; i < getMaxSegments(); i++) {
+//      _segments[i].setOption(SEG_OPTION_SELECTED, true);
+//      setSegment(i, segStarts[i], segStops[i]);
+//    }
+    _mainSegment = 0;
   } else {
+    if (forceReset || getSegmentsNum() == 0) resetSegments();
     //expand the main seg to the entire length, but only if there are no other segments, or reset is forced
-    uint8_t mainSeg = getMainSegmentId();
-
-    if (forceReset) {
-      for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) {
-        setSegment(i, 0, 0);
-      }
-    }
-
-    if (getActiveSegmentsNum() < 2) {
-      setSegment(mainSeg, 0, _length);
+    else if (getActiveSegmentsNum() == 1) {
+      size_t i = getLastActiveSegmentId();
+      _segments[i].start = 0;
+      _segments[i].stop  = _length;
+      _mainSegment = 0;
     }
   }
 
@@ -814,26 +1300,31 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
 
 void WS2812FX::fixInvalidSegments() {
   //make sure no segment is longer than total (sanity check)
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    if (_segments[i].start >= _length) setSegment(i, 0, 0); 
-    if (_segments[i].stop  >  _length) setSegment(i, _segments[i].start, _length);
+  for (int i = getSegmentsNum()-1; i > 0; i--) {
+    if (_segments[i].start >= _length) { _segments.erase(_segments.begin()+i); continue; }
+    if (_segments[i].stop  >  _length) _segments[i].stop = _length;
     // this is always called as the last step after finalizeInit(), update covered bus types
-    getSegment(i).refreshLightCapabilities();
+    _segments[i].refreshLightCapabilities();
   }
+//  for (uint8_t i = 0; i < getMaxSegments(); i++) {
+//    if (_segments[i].start >= _length) { _segments[i].start = _segments[i].stop = 0; _segments[i].markForReset(); }
+//    if (_segments[i].stop  >  _length) { _segments[i].stop = _length; _segments[i].markForReset(); }
+//    // this is always called as the last step after finalizeInit(), update covered bus types
+//    if (_segments[i].isActive()) _segments[i].refreshLightCapabilities();
+//  }
 }
 
 //true if all segments align with a bus, or if a segment covers the total length
 bool WS2812FX::checkSegmentAlignment() {
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    if (_segments[i].start >= _segments[i].stop) continue; //inactive segment
-    bool aligned = false;
+  bool aligned = false;
+  for (segment &seg : _segments) {
+//  for (uint8_t i = 0; i < getMaxSegments(); i++) {
+//    Segment &seg = getSegment(i);
     for (uint8_t b = 0; b<busses.getNumBusses(); b++) {
       Bus *bus = busses.getBus(b);
-      if (_segments[i].start == bus->getStart() && _segments[i].stop == bus->getStart() + bus->getLength()) aligned = true;
+      if (seg.start == bus->getStart() && seg.stop == bus->getStart() + bus->getLength()) aligned = true;
     }
-    if (_segments[i].start == 0 && _segments[i].stop == _length) aligned = true;
+    if (seg.start == 0 && seg.stop == _length) aligned = true;
     if (!aligned) return false;
   }
   return true;
@@ -845,9 +1336,10 @@ bool WS2812FX::checkSegmentAlignment() {
 uint8_t WS2812FX::setPixelSegment(uint8_t n)
 {
   uint8_t prevSegId = _segment_index;
-  if (n < MAX_NUM_SEGMENTS) {
+  if (n < _segments.size()) {
+//  if (n < getMaxSegments()) {
     _segment_index = n;
-    SEGLEN = SEGMENT.virtualLength();
+    _virtualSegmentLength = _segments[_segment_index].virtualLength();
   }
   return prevSegId;
 }
@@ -863,270 +1355,55 @@ void WS2812FX::setRange(uint16_t i, uint16_t i2, uint32_t col)
   }
 }
 
-void WS2812FX::setShowCallback(show_callback cb)
-{
-  _callback = cb;
-}
-
-void WS2812FX::setTransition(uint16_t t)
-{
-  _transitionDur = t;
-}
-
 void WS2812FX::setTransitionMode(bool t)
 {
-	unsigned long waitMax = millis() + 20; //refresh after 20 ms if transition enabled
-  for (uint16_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    _segments[i].setOption(SEG_OPTION_TRANSITIONAL, t);
-
-    if (t && _segments[i].mode == FX_MODE_STATIC && _segment_runtimes[i].next_time > waitMax)
-			_segment_runtimes[i].next_time = waitMax;
-  }
+  for (segment &seg : _segments) seg.startTransition(t ? getTransition() : 0);
+//  for (uint8_t i = 0; i < getMaxSegments(); i++) {
+//    Segment &seg = getSegment(i);
+//    seg.startTransition(t ? getTransition() : 0);
+//  }
 }
-
-/*
- * color blend function
- */
-uint32_t IRAM_ATTR WS2812FX::color_blend(uint32_t color1, uint32_t color2, uint16_t blend, bool b16) {
-  if(blend == 0)   return color1;
-  uint16_t blendmax = b16 ? 0xFFFF : 0xFF;
-  if(blend == blendmax) return color2;
-  uint8_t shift = b16 ? 16 : 8;
-
-  uint32_t w1 = W(color1);
-  uint32_t r1 = R(color1);
-  uint32_t g1 = G(color1);
-  uint32_t b1 = B(color1);
-
-  uint32_t w2 = W(color2);
-  uint32_t r2 = R(color2);
-  uint32_t g2 = G(color2);
-  uint32_t b2 = B(color2);
-
-  uint32_t w3 = ((w2 * blend) + (w1 * (blendmax - blend))) >> shift;
-  uint32_t r3 = ((r2 * blend) + (r1 * (blendmax - blend))) >> shift;
-  uint32_t g3 = ((g2 * blend) + (g1 * (blendmax - blend))) >> shift;
-  uint32_t b3 = ((b2 * blend) + (b1 * (blendmax - blend))) >> shift;
-
-  return RGBW32(r3, g3, b3, w3);
-}
-
-/*
- * color add function that preserves ratio
- * idea: https://github.com/Aircoookie/WLED/pull/2465 by https://github.com/Proto-molecule
- */
-uint32_t WS2812FX::color_add(uint32_t c1, uint32_t c2)
-{
-  uint32_t r = R(c1) + R(c2);
-  uint32_t g = G(c1) + G(c2);
-  uint32_t b = B(c1) + B(c2);
-  uint32_t w = W(c1) + W(c2);
-  uint16_t max = r;
-  if (g > max) max = g;
-  if (b > max) max = b;
-  if (w > max) max = w;
-  if (max < 256) return RGBW32(r, g, b, w);
-  else           return RGBW32(r * 255 / max, g * 255 / max, b * 255 / max, w * 255 / max);
-}
-
-/*
- * Fills segment with color
- */
-void WS2812FX::fill(uint32_t c, uint8_t seg) {
-  uint8_t oldSeg;
-  if (seg != 255) oldSeg = setPixelSegment(seg);
-  const uint16_t cols = isMatrix ? SEGMENT.virtualWidth() : SEGMENT.virtualLength();
-  const uint16_t rows = SEGMENT.virtualHeight(); // will be 1 for 1D
-  for(uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
-    if (isMatrix) setPixelColorXY(x, y, c);
-    else          setPixelColor(x, c);
-  }
-  if (seg != 255) setPixelSegment(oldSeg);
-}
-
-/*
- * Blends the specified color with the existing pixel color.
- */
-void WS2812FX::blendPixelColor(uint16_t n, uint32_t color, uint8_t blend)
-{
-  setPixelColor(n, color_blend(getPixelColor(n), color, blend));
-}
-
-/*
- * fade out function, higher rate = quicker fade
- */
-void WS2812FX::fade_out(uint8_t rate) {
-  const uint16_t cols = isMatrix ? SEGMENT.virtualWidth() : SEGMENT.virtualLength();
-  const uint16_t rows = SEGMENT.virtualHeight(); // will be 1 for 1D
-
-  rate = (255-rate) >> 1;
-  float mappedRate = float(rate) +1.1;
-
-  uint32_t color = SEGCOLOR(1); // target color
-  int w2 = W(color);
-  int r2 = R(color);
-  int g2 = G(color);
-  int b2 = B(color);
-
-  for (uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
-    color = isMatrix ? getPixelColorXY(x, y) : getPixelColor(x);
-    int w1 = W(color);
-    int r1 = R(color);
-    int g1 = G(color);
-    int b1 = B(color);
-
-    int wdelta = (w2 - w1) / mappedRate;
-    int rdelta = (r2 - r1) / mappedRate;
-    int gdelta = (g2 - g1) / mappedRate;
-    int bdelta = (b2 - b1) / mappedRate;
-
-    // if fade isn't complete, make sure delta is at least 1 (fixes rounding issues)
-    wdelta += (w2 == w1) ? 0 : (w2 > w1) ? 1 : -1;
-    rdelta += (r2 == r1) ? 0 : (r2 > r1) ? 1 : -1;
-    gdelta += (g2 == g1) ? 0 : (g2 > g1) ? 1 : -1;
-    bdelta += (b2 == b1) ? 0 : (b2 > b1) ? 1 : -1;
-
-    if (isMatrix) setPixelColorXY(x, y, r1 + rdelta, g1 + gdelta, b1 + bdelta, w1 + wdelta);
-    else          setPixelColor(x, r1 + rdelta, g1 + gdelta, b1 + bdelta, w1 + wdelta);
-  }
-}
-
-// fades all pixels to black using nscale8()
-void WS2812FX::fadeToBlackBy(uint8_t fadeBy) {
-  const uint16_t cols = isMatrix ? SEGMENT.virtualWidth() : SEGMENT.virtualLength();
-  const uint16_t rows = SEGMENT.virtualHeight(); // will be 1 for 1D
-
-  for (uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
-    if (isMatrix) setPixelColorXY(x, y, col_to_crgb(getPixelColorXY(x,y)).nscale8(255-fadeBy));
-    else          setPixelColor(x, col_to_crgb(getPixelColor(x)).nscale8(255-fadeBy));
-  }
-}
-
-/*
- * blurs segment content, source: FastLED colorutils.cpp
- */
-void WS2812FX::blur(uint8_t blur_amount)
-{
-  if (isMatrix) {
-    // compatibility with 2D
-    const uint16_t cols = SEGMENT.virtualWidth();
-    const uint16_t rows = SEGMENT.virtualHeight();
-    for (uint16_t i = 0; i < rows; i++) blurRow(i, blur_amount); // blur all rows
-    for (uint16_t k = 0; k < cols; k++) blurCol(k, blur_amount); // blur all columns
-    return;
-  }
-  uint8_t keep = 255 - blur_amount;
-  uint8_t seep = blur_amount >> 1;
-  CRGB carryover = CRGB::Black;
-  for(uint16_t i = 0; i < SEGLEN; i++)
-  {
-    CRGB cur = col_to_crgb(getPixelColor(i));
-    CRGB part = cur;
-    part.nscale8(seep);
-    cur.nscale8(keep);
-    cur += carryover;
-    if(i > 0) {
-      uint32_t c = getPixelColor(i-1);
-      uint8_t r = R(c);
-      uint8_t g = G(c);
-      uint8_t b = B(c);
-      setPixelColor(i-1, qadd8(r, part.red), qadd8(g, part.green), qadd8(b, part.blue));
-    }
-    setPixelColor(i,cur.red, cur.green, cur.blue);
-    carryover = part;
-  }
-}
-
-uint16_t IRAM_ATTR WS2812FX::triwave16(uint16_t in)
-{
-  if (in < 0x8000) return in *2;
-  return 0xFFFF - (in - 0x8000)*2;
-}
-
-/*
- * Generates a tristate square wave w/ attac & decay 
- * @param x input value 0-255
- * @param pulsewidth 0-127 
- * @param attdec attac & decay, max. pulsewidth / 2
- * @returns signed waveform value
- */
-int8_t WS2812FX::tristate_square8(uint8_t x, uint8_t pulsewidth, uint8_t attdec) {
-  int8_t a = 127;
-  if (x > 127) {
-    a = -127;
-    x -= 127;
-  }
-
-  if (x < attdec) { //inc to max
-    return (int16_t) x * a / attdec;
-  }
-  else if (x < pulsewidth - attdec) { //max
-    return a;
-  }  
-  else if (x < pulsewidth) { //dec to 0
-    return (int16_t) (pulsewidth - x) * a / attdec;
-  }
-  return 0;
-}
-
-/*
- * Put a value 0 to 255 in to get a color value.
- * The colours are a transition r -> g -> b -> back to r
- * Inspired by the Adafruit examples.
- */
-uint32_t WS2812FX::color_wheel(uint8_t pos) {
-  if (SEGMENT.palette) return color_from_palette(pos, false, true, 0);
-  pos = 255 - pos;
-  if(pos < 85) {
-    return ((uint32_t)(255 - pos * 3) << 16) | ((uint32_t)(0) << 8) | (pos * 3);
-  } else if(pos < 170) {
-    pos -= 85;
-    return ((uint32_t)(0) << 16) | ((uint32_t)(pos * 3) << 8) | (255 - pos * 3);
-  } else {
-    pos -= 170;
-    return ((uint32_t)(pos * 3) << 16) | ((uint32_t)(255 - pos * 3) << 8) | (0);
-  }
-}
-
-/*
- * Returns a new, random wheel index with a minimum distance of 42 from pos.
- */
-uint8_t WS2812FX::get_random_wheel_index(uint8_t pos) {
-  uint8_t r = 0, x = 0, y = 0, d = 0;
-
-  while(d < 42) {
-    r = random8();
-    x = abs(pos - r);
-    y = 255 - x;
-    d = MIN(x, y);
-  }
-  return r;
-}
-
-
-uint32_t IRAM_ATTR WS2812FX::crgb_to_col(CRGB fastled)
-{
-  return RGBW32(fastled.red, fastled.green, fastled.blue, 0);
-}
-
-
-CRGB IRAM_ATTR WS2812FX::col_to_crgb(uint32_t color)
-{
-  CRGB fastled_col;
-  fastled_col.red =   R(color);
-  fastled_col.green = G(color);
-  fastled_col.blue =  B(color);
-  return fastled_col;
-}
-
 
 void WS2812FX::load_gradient_palette(uint8_t index)
 {
-  byte i = constrain(index, 0, GRADIENT_PALETTE_COUNT -1);
+  // NOTE: due to constant execution (in every effect update) of this code
+  // if loading from FS is requested it will produce excessive flickering
+  // loading of palette into RAM from FS should be optimised in such case
+  // (it is mandatory to load palettes in each service() as each segment can
+  // have its own palette)
+
   byte tcp[72]; //support gradient palettes with up to 18 entries
-  memcpy_P(tcp, (byte*)pgm_read_dword(&(gGradientPalettes[i])), 72);
-  targetPalette.loadDynamicGradientPalette(tcp);
+  if (index>114) {
+    char fileName[32];
+    strcpy_P(fileName, PSTR("/palette"));
+    sprintf(fileName +8, "%d", index-115); // palette ID == 128
+    strcat(fileName, ".json");
+
+    if (WLED_FS.exists(fileName)) {
+      StaticJsonDocument<1536> pDoc; // barely enough to fit 72 numbers
+      DEBUG_PRINT(F("Reading palette from "));
+      DEBUG_PRINTLN(fileName);
+
+      if (readObjectFromFile(fileName, nullptr, &pDoc)) {
+        JsonArray pal = pDoc[F("palette")];
+        if (!pal.isNull() && pal.size()>7) { // not an empty palette (at least 2 entries)
+          size_t palSize = MIN(pal.size(), 72);
+          palSize -= palSize % 4; // make sure size is multiple of 4
+          for (size_t i=0; i<palSize && pal[i].as<int>()<256; i+=4) {
+            tcp[ i ] = (uint8_t) pal[ i ].as<int>(); // index
+            tcp[i+1] = (uint8_t) pal[i+1].as<int>(); // R
+            tcp[i+2] = (uint8_t) pal[i+2].as<int>(); // G
+            tcp[i+3] = (uint8_t) pal[i+3].as<int>(); // B
+          }
+          targetPalette.loadDynamicGradientPalette(tcp);
+        }
+      }
+    }
+  } else {
+    byte i = constrain(index, 0, GRADIENT_PALETTE_COUNT -1);
+    memcpy_P(tcp, (byte*)pgm_read_dword(&(gGradientPalettes[i])), 72);
+    targetPalette.loadDynamicGradientPalette(tcp);
+  }
 }
 
 
@@ -1138,10 +1415,11 @@ void WS2812FX::handle_palette(void)
   bool singleSegmentMode = (_segment_index == _segment_index_palette_last);
   _segment_index_palette_last = _segment_index;
 
-  byte paletteIndex = SEGMENT.palette;
+  byte paletteIndex = _segments[_segment_index].palette;
   if (paletteIndex == 0) //default palette. Differs depending on effect
   {
-    switch (SEGMENT.mode)
+    // TODO: get default palette ID from _modeData[]
+    switch (_segments[_segment_index].mode)
     {
       case FX_MODE_FIRE_2012  : paletteIndex = 35; break; //heat palette
       case FX_MODE_COLORWAVES : paletteIndex = 26; break; //landscape 33
@@ -1155,7 +1433,7 @@ void WS2812FX::handle_palette(void)
       case FX_MODE_FLOW       : paletteIndex =  6; break; //party
     }
   }
-  if (SEGMENT.mode >= FX_MODE_METEOR && paletteIndex == 0) paletteIndex = 4;
+  if (_segments[_segment_index].mode >= FX_MODE_METEOR && paletteIndex == 0) paletteIndex = 4;
   
   switch (paletteIndex)
   {
@@ -1166,7 +1444,7 @@ void WS2812FX::handle_palette(void)
       {
         targetPalette = PartyColors_p; break; //fallback
       }
-      if (millis() - _lastPaletteChange > 1000 + ((uint32_t)(255-SEGMENT.intensity))*100)
+      if (millis() - _lastPaletteChange > 1000 + ((uint32_t)(255-_segments[_segment_index].intensity))*100)
       {
         targetPalette = CRGBPalette16(
                         CHSV(random8(), 255, random8(128, 255)),
@@ -1176,22 +1454,22 @@ void WS2812FX::handle_palette(void)
         _lastPaletteChange = millis();
       } break;}
     case 2: {//primary color only
-      CRGB prim = col_to_crgb(SEGCOLOR(0));
+      CRGB prim = CRGB(SEGCOLOR(0));
       targetPalette = CRGBPalette16(prim); break;}
     case 3: {//primary + secondary
-      CRGB prim = col_to_crgb(SEGCOLOR(0));
-      CRGB sec  = col_to_crgb(SEGCOLOR(1));
+      CRGB prim = CRGB(SEGCOLOR(0));
+      CRGB sec  = CRGB(SEGCOLOR(1));
       targetPalette = CRGBPalette16(prim,prim,sec,sec); break;}
     case 4: {//primary + secondary + tertiary
-      CRGB prim = col_to_crgb(SEGCOLOR(0));
-      CRGB sec  = col_to_crgb(SEGCOLOR(1));
-      CRGB ter  = col_to_crgb(SEGCOLOR(2));
+      CRGB prim = CRGB(SEGCOLOR(0));
+      CRGB sec  = CRGB(SEGCOLOR(1));
+      CRGB ter  = CRGB(SEGCOLOR(2));
       targetPalette = CRGBPalette16(ter,sec,prim); break;}
     case 5: {//primary + secondary (+tert if not off), more distinct
-      CRGB prim = col_to_crgb(SEGCOLOR(0));
-      CRGB sec  = col_to_crgb(SEGCOLOR(1));
+      CRGB prim = CRGB(SEGCOLOR(0));
+      CRGB sec  = CRGB(SEGCOLOR(1));
       if (SEGCOLOR(2)) {
-        CRGB ter = col_to_crgb(SEGCOLOR(2));
+        CRGB ter = CRGB(SEGCOLOR(2));
         targetPalette = CRGBPalette16(prim,prim,prim,prim,prim,sec,sec,sec,sec,sec,ter,ter,ter,ter,ter,prim);
       } else {
         targetPalette = CRGBPalette16(prim,prim,prim,prim,prim,prim,prim,prim,sec,sec,sec,sec,sec,sec,sec,sec);
@@ -1215,40 +1493,13 @@ void WS2812FX::handle_palette(void)
       load_gradient_palette(paletteIndex -13);
   }
   
-  if (singleSegmentMode && paletteFade && SEGENV.call > 0) //only blend if just one segment uses FastLED mode
+  if (singleSegmentMode && paletteFade && _segments[_segment_index].call > 0) //only blend if just one segment uses FastLED mode
   {
     nblendPaletteTowardPalette(currentPalette, targetPalette, 48);
   } else
   {
     currentPalette = targetPalette;
   }
-}
-
-
-/*
- * Gets a single color from the currently selected palette.
- * @param i Palette Index (if mapping is true, the full palette will be SEGLEN long, if false, 255). Will wrap around automatically.
- * @param mapping if true, LED position in segment is considered for color
- * @param wrap FastLED palettes will usally wrap back to the start smoothly. Set false to get a hard edge
- * @param mcol If the default palette 0 is selected, return the standard color 0, 1 or 2 instead. If >2, Party palette is used instead
- * @param pbri Value to scale the brightness of the returned color by. Default is 255. (no scaling)
- * @returns Single color from palette
- */
-uint32_t IRAM_ATTR WS2812FX::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri)
-{
-  if ((SEGMENT.palette == 0 && mcol < 3) || _no_rgb) {
-    uint32_t color = SEGCOLOR(mcol);
-    if (pbri == 255) return color;
-    return RGBW32(scale8_video(R(color),pbri), scale8_video(G(color),pbri), scale8_video(B(color),pbri), scale8_video(W(color),pbri));
-  }
-
-  uint8_t paletteIndex = i;
-  if (mapping && SEGLEN > 1) paletteIndex = (i*255)/(SEGLEN -1);
-  if (!wrap) paletteIndex = scale8(paletteIndex, 240); //cut off blend at palette "end"
-  CRGB fastled_col;
-  fastled_col = ColorFromPalette(currentPalette, paletteIndex, pbri, (paletteBlend == 3)? NOBLEND:LINEARBLEND);
-
-  return crgb_to_col(fastled_col);
 }
 
 
@@ -1302,7 +1553,7 @@ void WS2812FX::deserializeMap(uint8_t n) {
 }
 
 //gamma 2.8 lookup table used for color correction
-byte gammaT[] = {
+static byte gammaT[] = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,
     1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,
@@ -1321,7 +1572,7 @@ byte gammaT[] = {
   215,218,220,223,225,228,231,233,236,239,241,244,247,249,252,255 };
 
 uint8_t WS2812FX::gamma8_cal(uint8_t b, float gamma) {
-  return (int)(pow((float)b / 255.0, gamma) * 255 + 0.5);
+  return (int)(powf((float)b / 255.0f, gamma) * 255.0f + 0.5f);
 }
 
 void WS2812FX::calcGammaTable(float gamma)
@@ -1357,180 +1608,7 @@ int16_t Bus::_cct = -1;
 uint8_t Bus::_cctBlend = 0;
 uint8_t Bus::_gAWM = 255;
 
-
-// WLEDSR: extensions
-// Technical notes
-// ===============
-// If an effect name is followed by an @, slider and color control is effective.
-// See setSliderAndColorControl in index.js for implementation
-// If not effective then:
-//      - For AC effects (id<128) 2 sliders and 3 colors and the palette will be shown
-//      - For SR effects (id>128) 5 sliders and 3 colors and the palette will be shown
-// If effective (@)
-//      - a ; seperates slider controls (left) from color controls (middle) and palette control (right)
-//      - if left, middle or right is empty no controls are shown
-//      - a , seperates slider controls (max 5) or color controls (max 3). Palette has only one value
-//      - a ! means that the default is used.
-//             - For sliders: Effect speeds, Effect intensity, Custom 1, Custom 2, Custom 3
-//             - For colors: Fx color, Background color, Custom
-//             - For palette: prompt for color palette OR palette ID if numeric (will hide palette selection)
-//
-// Note: If palette is on and no colors are specified 1,2 and 3 is shown in each color circle.
-//       If a color is specified, the 1,2 or 3 is replaced by that specification.
-// Note: Effects can override default pattern behaviour
-//       - FadeToBlack can override the background setting
-//       - Defining SEGCOL(<i>) can override a specific palette using these values (e.g. Color Gradient)
 const char JSON_mode_names[] PROGMEM = R"=====(["Mode names have moved"])=====";
-/*
-R"=====([
-"Solid",
-"Blink@!,;!,!,;!",
-"Breathe@!,;!,!;!",
-"Wipe@!,!;!,!,;!",
-"Wipe Random@!,;1,2,3;!",
-"Random Colors@!,Fade time;1,2,3;!",
-"Sweep@!,!;!,!,;!",
-"Dynamic@!,!;1,2,3;!",
-"Colorloop@!,Saturation;1,2,3;!",
-"Rainbow@!,Size;1,2,3;!",
-"Scan@!,# of dots;!,!,;!",
-"Scan Dual@!,# of dots;!,!,;!",
-"Fade@!,;!,!,;!",
-"Theater@!,Gap size;!,!,;!",
-"Theater Rainbow@!,Gap size;1,2,3;!",
-"Running@!,Wave width;!,!,;!",
-"Saw@!,Width;!,!,;!",
-"Twinkle@!,;!,!,;!",
-"Dissolve@Repeat speed,Dissolve speed;!,!,;!",
-"Dissolve Rnd@Repeat speed,Dissolve speed;,!,;!",
-"Sparkle@!,;!,!,;!",
-"Sparkle Dark@!,!;Bg,Fx,;!",
-"Sparkle+@!,!;Bg,Fx,;!",
-"Strobe@!,;!,!,;!",
-"Strobe Rainbow@!,;,!,;!",
-"Strobe Mega@!,!;!,!,;!",
-"Blink Rainbow@Frequency,Blink duration;!,!,;!",
-"Android@!,Width;!,!,;!",
-"Chase@!,Width;!,!,!;!",
-"Chase Random@!,Width;!,,!;!",
-"Chase Rainbow@!,Width;!,!,;0",
-"Chase Flash@!,;Bg,Fx,!;!",
-"Chase Flash Rnd@!,;,Fx,;!",
-"Rainbow Runner@!,Size;Bg,,;!",
-"Colorful@!,Saturation;1,2,3;!",
-"Traffic Light@!,;,!,;!",
-"Sweep Random",
-"Chase 2@!,Width;!,!,;!",
-"Aurora@!=24,!;1,2,3;!=50",
-"Stream",
-"Scanner",
-"Lighthouse",
-"Fireworks@Sharpness=96,Frequency=192;!,2,;!=11",
-"Rain@Fade rate=128,Frequency=128;!,2,;!",
-"Tetrix@!=224,Width=0;!,!,;!=11",
-"Fire Flicker@!,!;!,,;!",
-"Gradient@!,Spread=16;!,!,;!",
-"Loading@!,Fade=16;!,!,;!",
-"Police@!,Width;,Bg,;0",
-"Fairy",
-"Two Dots@!,Dot size;1,2,Bg;!",
-"Fairy Twinkle",
-"Running Dual",
-"Halloween",
-"Chase 3@!,Size;1,2,3;0",
-"Tri Wipe@!,Width;1,2,3;0",
-"Tri Fade",
-"Lightning",
-"ICU",
-"Multi Comet",
-"Scanner Dual",
-"Stream 2",
-"Oscillate",
-"Pride 2015@!,;;",
-"Juggle@!=16,Trail=240;!,!,;!",
-"Palette@!,;1,2,3;!",
-"Fire 2012@Spark rate=120,Decay=64;1,2,3;!",
-"Colorwaves",
-"Bpm@!=64,;1,2,3;!",
-"Fill Noise",
-"Noise 1",
-"Noise 2",
-"Noise 3",
-"Noise 4",
-"Colortwinkles@Fade speed,Spawn speed;1,2,3;!",
-"Lake@!,;1,2,3;!",
-"Meteor@!,Trail length;!,!,;!",
-"Meteor Smooth@!,Trail length;!,!,;!",
-"Railway",
-"Ripple",
-"Twinklefox",
-"Twinklecat",
-"Halloween Eyes@Duration,Eye fade time;Fx,Bg,;!",
-"Solid Pattern@Fg size,Bg size;Fg,Bg,;!=0",
-"Solid Pattern Tri@,Size;1,2,3;!=0",
-"Spots@Spread,Width;!,!,;!",
-"Spots Fade@Spread,Width;!,!,;!",
-"Glitter",
-"Candle@Flicker rate=96,Flicker intensity=224;!,!,;0",
-"Fireworks Starburst",
-"Fireworks 1D@Gravity,Firing side;!,!,;!",
-"Bouncing Balls@Gravity,# of balls;!,!,;!",
-"Sinelon",
-"Sinelon Dual",
-"Sinelon Rainbow",
-"Popcorn",
-"Drip@Gravity,# of drips;!,!;!",
-"Plasma@Phase,;1,2,3;!",
-"Percent@,% of fill;!,!,;!",
-"Ripple Rainbow",
-"Heartbeat@!,!;!,!,;!",
-"Pacifica",
-"Candle Multi@Flicker rate=96,Flicker intensity=224;!,!,;0",
-"Solid Glitter@,!;!,,;0",
-"Sunrise@Time [min]=60,;;0",
-"Phased",
-"Twinkleup@!,Intensity;!,!,;!",
-"Noise Pal",
-"Sine",
-"Phased Noise",
-"Flow",
-"Chunchun@!,Gap size;!,!,;!",
-"Dancing Shadows@!,# of shadows;!,,;!",
-"Washing Machine",
-"Candy Cane@!,Width;;",
-"Blends@Shift speed,Blend speed;1,2,3,!",
-"TV Simulator",
-"Dynamic Smooth",
-"2D Black Hole@Fade rate,Outer Y freq.,Outer X freq.,Inner X freq.,Inner Y freq.;;",
-"2D DNA@Scroll speed,Blur;;!",
-"2D DNA Spiral@Scroll speed,Blur;;!",
-"2D Drift@Rotation speed,Blur amount;;!",
-"2D Firenoise@X scale,Y scale;;",
-"2D Frizzles@X frequency,Y frequency;;!",
-"2D Hipnotic@X scale,Y scale;;!",
-"2D Lissajous@X frequency,Fadetime;!,!,!;!",
-"2D Matrix@Falling speed,Spawning rate,Trail,Custom color;Spawn,Trail;",
-"2D Akemi@Color speed,Dance;Head palette,Arms & Legs,Eyes & Mouth;Face palette",
-"2D Colored Bursts@Speed,Number of lines;;!",
-"2D Game Of Life@!,;!,!;!",
-"2D Julia@,Max iterations per pixel,X center,Y center,Area size;;!",
-"2D Metaballs@Speed;!,!,!;!",
-"2D Noise@Speed,Scale;!,!,!;!",
-"2D Plasma Ball@Speed;!,!,!;!",
-"2D Polar Lights@Speed,X scale,Palette;!,!,!;!",
-"2D Pulser@Speed,Blur;;!",
-"2D Sindots@Speed,Dot distance;;!",
-"2D Squared Swirl@,,,,Blur;,,;!",
-"2D Sun Radiation@Variance,Brightness;;",
-"2D Tartan@X scale,Y scale;;!",
-"2D Waverly@Fade rate,Sensitivity;;!",
-"2D Spaceships@Fade rate,Blur;!,!,!;!",
-"2D Crazy Bees@Fade rate,Blur;;",
-"2D Ghost Rider@Fade rate,Blur;!,!,!;!",
-"2D Blobs@!,# blobs;!,!,!;!"
-])=====";
-*/
-
 const char JSON_palette_names[] PROGMEM = R"=====([
 "Default","* Random Cycle","* Color 1","* Colors 1&2","* Color Gradient","* Colors Only","Party","Cloud","Lava","Ocean",
 "Forest","Rainbow","Rainbow Bands","Sunset","Rivendell","Breeze","Red & Blue","Yellowout","Analogous","Splash",

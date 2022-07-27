@@ -193,7 +193,7 @@ button {
 	position: absolute;
 	top: 8px;
 	left: 12px;
-	pointer-events: none;
+	/*pointer-events: none;*/
 	width: 24px;
 	height: 24px;
 }
@@ -368,7 +368,7 @@ button {
 }
 
 #sliders {
-	width: 310px;
+	width: 300px;
 	margin: 0 auto;
 	position: sticky;
 	bottom: 0;
@@ -380,18 +380,34 @@ button {
 }
 
 .slider {
-	background: var(--c-2);
-	max-width: 310px;
+	background-color: var(--c-2);
+	max-width: 300px;
 	min-width: 280px;
 	margin: 0 auto; /* add 5px; if you want some vertical space but looks ugly */
-	border-radius: 15px;
+	border-radius: 24px;
 	position: relative;
+}
+
+.filter {
+	background-color: var(--c-4);
+	box-shadow: 0px 0px 6px 6px var(--c-1);
+	border-radius: 26px;
+	height: 26px;
+	margin: 0 auto 4px; /* 8px if you want space */
+	padding: 8px 2px;
+	position: relative;
+	/*width: 260px;*/
+	/*transition: opacity 1s;*/
+	/*opacity: 1;*/
+	z-index: 1;
 }
 
 /* Tooltip text */
 .slider .tooltiptext {
 	visibility: hidden;
 	background-color: var(--c-5);
+	/*border: 2px solid var(--c-2);*/
+	box-shadow: 4px 4px 10px 4px var(--c-1);
 	color: var(--c-f);
 	text-align: center;
 	padding: 5px 10px;
@@ -446,6 +462,10 @@ button {
 
 .hide {
 	display: none !important;
+}
+.fade {
+	visibility: hidden;
+	opacity: 0;
 }
 
 .first {
@@ -827,19 +847,22 @@ input[type=range]::-moz-range-thumb {
 }
 
 select {
-	padding: 4px;
+	padding: 4px 8px;
 	margin: 0;
 	font-size: 19px;
 	background-color: var(--c-3);
 	color: var(--c-d);
 	cursor: pointer;
-	border: 1px solid var(--c-2);
-	border-radius: 5px;
+	border: 0 solid var(--c-2);
+	border-radius: 20px;
 	transition-duration: 0.5s;
 	-webkit-backface-visibility: hidden;
 	-webkit-transform:translate3d(0,0,0);
+    -webkit-appearance: none; 
+    -moz-appearance: none; 
 	backface-visibility: hidden;
 	transform:translate3d(0,0,0);
+	text-overflow: ellipsis;
 }
 #tt {
 	text-align: center;
@@ -847,16 +870,26 @@ select {
 .cl {
 	background-color: #000;
 }
-.sel-p {
-	margin: 5px 0 10px;
-	width: 5em;
-}
-.sel-pl {
+select.sel-p, select.sel-pl, select.sel-ple {
+	margin: 5px 0;
 	width: 100%;
-	background-position: 141px 16px;
+	height: 40px;
 }
-.sel-ple {
-	width: 100%;
+div.sel-p {
+	position: relative;
+}
+div.sel-p:after {
+    content: "";
+    position: absolute;
+    right: 10px;
+    top: 22px;
+    width: 0; 
+    height: 0; 
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid var(--c-f);
+}
+select.sel-ple {
 	text-align: center;
 }
 option {
@@ -1173,6 +1206,25 @@ TD .checkmark, TD .radiomark {
 	left: 9px;
 }
 
+.filter .fchkl {
+	display: inline-block;
+	min-width: 0.7em;
+	padding: 4px 4px 4px 32px;
+	text-align: left;
+	line-height: 24px;
+	vertical-align: middle;
+	-webkit-filter: grayscale(100%); /* Safari 6.0 - 9.0 */
+	filter: grayscale(100%);  
+}
+
+.lbl-s {
+	display: inline-block;
+	/* margin: 10px 4px 0 0; */
+	font-size: 13px;
+	width: 48%;
+	text-align: center;
+}
+
 /* list wrapper */
 .list {
 	position: relative;
@@ -1226,6 +1278,7 @@ TD .checkmark, TD .radiomark {
 .lstI.sticky,
 .lstI.selected {
 	z-index: 1;
+	box-shadow: 0px 0px 10px 4px var(--c-1);
 }
 
 #pcont .selected:not([class*="expanded"]) {
@@ -1258,6 +1311,9 @@ TD .checkmark, TD .radiomark {
 /* list item name (for sorting) */
 .lstIname {
 	white-space: nowrap;
+	text-overflow: ellipsis;
+	-webkit-filter: grayscale(100%); /* Safari 6.0 - 9.0 */
+	filter: grayscale(100%);  
 }
 
 /* list item palette preview */
@@ -1287,6 +1343,8 @@ TD .checkmark, TD .radiomark {
 	border-radius: 21px;
 	background: var(--c-2);
 	border: 1px solid var(--c-3);
+	-webkit-filter: grayscale(100%); /* Safari 6.0 - 9.0 */
+	filter: grayscale(100%);  
 }
 
 .fnd input[type="text"]:focus {

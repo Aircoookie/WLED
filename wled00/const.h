@@ -5,6 +5,8 @@
  * Readability defines and their associated numerical values + compile-time constants
  */
 
+#define GRADIENT_PALETTE_COUNT 58
+
 //Defaults
 #define DEFAULT_CLIENT_SSID "Your_Network"
 #define DEFAULT_AP_PASS     "wled1234"
@@ -76,7 +78,8 @@
 #define USERMOD_ID_WORDCLOCK             27     //Usermod "usermod_v2_word_clock.h"
 #define USERMOD_ID_MY9291                28     //Usermod "usermod_MY9291.h"
 #define USERMOD_ID_SI7021_MQTT_HA        29     //Usermod "usermod_si7021_mqtt_ha.h"
-#define USERMOD_ID_AUDIOREACTIVE         30     //Usermod "audioreactive.h"
+#define USERMOD_ID_BME280                30     //Usermod "usermod_bme280.h
+#define USERMOD_ID_AUDIOREACTIVE         31     //Usermod "audioreactive.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
@@ -223,6 +226,7 @@
 #define SEG_OPTION_MIRROR         3            //Indicates that the effect will be mirrored within the segment
 #define SEG_OPTION_NONUNITY       4            //Indicates that the effect does not use FRAMETIME or needs getPixelColor
 #define SEG_OPTION_FREEZE         5            //Segment contents will not be refreshed
+#define SEG_OPTION_RESET          6            //Segment runtime requires reset
 #define SEG_OPTION_TRANSITIONAL   7
 #define SEG_OPTION_REVERSED_Y     8
 #define SEG_OPTION_MIRROR_Y       9
@@ -357,5 +361,47 @@
 #endif
 
 #define INTERFACE_UPDATE_COOLDOWN 2000 //time in ms to wait between websockets, alexa, and MQTT updates
+
+#if defined(ESP8266) && defined(HW_PIN_SCL)
+  #undef HW_PIN_SCL
+#endif
+#if defined(ESP8266) && defined(HW_PIN_SDA)
+  #undef HW_PIN_SDA
+#endif
+#ifndef HW_PIN_SCL
+  #ifdef ESP8266
+    #define HW_PIN_SCL 5
+  #else
+    #define HW_PIN_SCL 22
+  #endif
+#endif
+#ifndef HW_PIN_SDA
+  #ifdef ESP8266
+    #define HW_PIN_SDA 4
+  #else
+    #define HW_PIN_SDA 21
+  #endif
+#endif
+
+#if defined(ESP8266) && defined(HW_PIN_CLOCKSPI)
+  #undef HW_PIN_CLOCKSPI
+#endif
+#if defined(ESP8266) && defined(HW_PIN_DATASPI)
+  #undef HW_PIN_DATASPI
+#endif
+#ifndef HW_PIN_CLOCKSPI
+  #ifdef ESP8266
+    #define HW_PIN_CLOCKSPI 14
+  #else
+    #define HW_PIN_CLOCKSPI 18
+  #endif
+#endif
+#ifndef HW_PIN_DATASPI
+  #ifdef ESP8266
+    #define HW_PIN_DATASPI 13
+  #else
+    #define HW_PIN_DATASPI 23
+  #endif
+#endif
 
 #endif

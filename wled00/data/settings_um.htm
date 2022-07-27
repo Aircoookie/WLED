@@ -81,6 +81,7 @@
     }
     function addField(k,f,o,a=false) {  //key, field, (sub)object, isArray
         if (isO(o)) {
+            urows += '<hr style="width:260px">';
             for (const [s,v] of Object.entries(o)) {
                 // possibility to nest objects (only 1 level)
                 if (f!=='unknown' && !k.includes(":")) addField(k+":"+f,s,v);
@@ -191,7 +192,6 @@
         e.preventDefault();
         if (d.Sf.checkValidity()) d.Sf.submit(); //https://stackoverflow.com/q/37323914
     }
-    //fun-ction GetV() {} // replaced during 'npm run build'
     </script>
     <style>@import url("style.css");</style>
 </head>

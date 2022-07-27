@@ -59,5 +59,3 @@ bool UsermodManager::add(Usermod* um)
   ums[numMods++] = um;
   return true;
 }
-
-byte UsermodManager::getModCount() {return numMods;}
