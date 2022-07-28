@@ -5,6 +5,9 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_ADXL345_U.h>
 
+#define HW_PIN_SCL 5
+#define HW_PIN_SDA 4
+
 /*
  * This usermod adds support for the ADXL345 sensor.
  */
@@ -13,6 +16,9 @@ const int MODE_DISABLED         = 0;
 const int MODE_BRIGHTNESS       = 1;
 const int MODE_EFFECT_SPEED     = 2;
 const int MODE_EFFECT_INTENSITY = 3;
+const int MODE_EFFECT_FLOW_MODE = 4;
+
+const int DEFAULT_SENSOR_STEPS = 8;
 
 class ADXL345SensorUsermod : public Usermod {
   private:
@@ -26,9 +32,11 @@ class ADXL345SensorUsermod : public Usermod {
     bool sensorEnabled = false;
     unsigned int updateInterval = 100;
     bool sendMQTTEvent = false;
+    bool sendRawMQTTEvent = false;
     int modeX = 0;
     int modeY = 0;
     int modeZ = 0;
+    int sensorSteps = DEFAULT_SENSOR_STEPS;
 
     bool sensorMissing = false;
     float minX = -10;
@@ -46,9 +54,18 @@ class ADXL345SensorUsermod : public Usermod {
      * You can use it to initialize variables, sensors or similar.
      */
     void setup() {
+      PinOwner po = PinOwner::UM_ADXL345; // defaults to being pinowner for SCL/SDA pins
+      PinManagerPinType pins[2] = { { HW_PIN_SCL, true }, { HW_PIN_SDA, true } };  // allocate pins
+      if (!pinManager.allocateMultiplePins(pins, 2, po)) {
+        Serial.println("Could not allocate pins for ADXL345, disabling it...");
+        sensorMissing = true;
+        sensorEnabled = false;
+        return;
+      }
+
       if(!accel.begin())
       {
-         Serial.println("No ADXL345 sensor detected., disabling it");
+         Serial.println("No ADXL345 sensor detected, disabling it");
          sensorMissing = true;
          sensorEnabled = false;
       // } else {
@@ -114,28 +131,63 @@ class ADXL345SensorUsermod : public Usermod {
             } else if (event.acceleration.z < minZ) {
               event.acceleration.z = minZ;
             }
-            float scaledX = (1.0 / (maxX - minX)) * (event.acceleration.x - minX);
-            float scaledY = (1.0 / (maxY - minY)) * (event.acceleration.y - minY);
-            float scaledZ = (1.0 / (maxZ - minZ)) * (event.acceleration.z - minZ);
-            applyMode(modeX, scaledX);
-            applyMode(modeY, scaledY);
-            applyMode(modeZ, scaledZ);
+            float scaledX = (1.0 / (maxX - minX)) * ((event.acceleration.x > maxX ? maxX : (event.acceleration.x < minX ? minX : event.acceleration.x)) - minX);
+            int uint8ScaledX =  scaledX*255;
+            if (uint8ScaledX != 255) {
+              uint8ScaledX = (uint8ScaledX / sensorSteps) * sensorSteps;
+            }
+            float scaledY = (1.0 / (maxY - minY)) * ((event.acceleration.y > maxY ? maxY : (event.acceleration.y < minY ? minY : event.acceleration.y)) - minY);
+            int uint8ScaledY =  uint8(scaledY*255);
+            if (uint8ScaledY != 255) {
+              uint8ScaledY = (uint8ScaledY / sensorSteps) * sensorSteps;
+            }
+            float scaledZ = (1.0 / (maxZ - minZ)) * ((event.acceleration.z > maxZ ? maxZ : (event.acceleration.z < minZ ? minZ : event.acceleration.z)) - minZ);
+            int uint8ScaledZ =  uint8(scaledZ*255);
+            if (uint8ScaledZ != 255) {
+              uint8ScaledZ = (uint8ScaledZ / sensorSteps) * sensorSteps;
+            }
+
+            applyMode(modeX, uint8ScaledX, event.acceleration.x, minX, maxX);
+            applyMode(modeY, uint8ScaledY, event.acceleration.y, minY, maxY);
+            applyMode(modeZ, uint8ScaledZ, event.acceleration.z, minZ, maxZ);
             lastStateUpdated = millis();
 
 
             if (millis() - lastTimeMQTTUpdated > 1000) {
+              if (sendRawMQTTEvent == true) {
+                 if ((WLED_CONNECTED) && (WLED_MQTT_CONNECTED)) {
+                   char topic[38];
+                   strcpy(topic, mqttDeviceTopic);
+                   strcat(topic, "/accel/raw");
+                   char data[40];
+                   strcpy(data,"X:");
+                   strcat(data,String(event.acceleration.x).c_str());
+                   strcat(data,",Y:");
+                   strcat(data,String(event.acceleration.y).c_str());
+                   strcat(data,",Z:");
+                   strcat(data,String(event.acceleration.z).c_str());
+                   mqtt->publish(topic,0,false,data);
+                 }
+              }
+
               if (sendMQTTEvent == true) {
                  if ((WLED_CONNECTED) && (WLED_MQTT_CONNECTED)) {
                    char topic[38];
                    strcpy(topic, mqttDeviceTopic);
                    strcat(topic, "/accel");
-                   char data[40];
+                   char data[80];
                    strcpy(data,"X:");
                    strcat(data,String(scaledX).c_str());
+                   strcat(data,"/");
+                   strcat(data,String(uint8ScaledX).c_str());
                    strcat(data,",Y:");
                    strcat(data,String(scaledY).c_str());
+                   strcat(data,"/");
+                   strcat(data,String(uint8ScaledY).c_str());
                    strcat(data,",Z:");
                    strcat(data,String(scaledZ).c_str());
+                   strcat(data,"/");
+                   strcat(data,String(uint8ScaledZ).c_str());
                    mqtt->publish(topic,0,false,data);
                  }
               }
@@ -147,17 +199,34 @@ class ADXL345SensorUsermod : public Usermod {
       }
     }
 
-    void applyMode(int mode, float value){
+    void applyMode(int mode, uint8 scaledValue, float rawValue, float min, float max){
         bool updated = false;
         if (mode == MODE_BRIGHTNESS) {
-          bri =  uint8(value*255);
-          updated = true;
+          if (bri != scaledValue) {
+            bri = scaledValue;
+            updated = true;
+          }
         } else if (mode == MODE_EFFECT_SPEED) {
-          effectSpeed = uint8(value*255);
-          updated = true;
+          if (effectSpeed != scaledValue) {
+            effectSpeed = scaledValue;
+            updated = true;
+          }
         } else if (mode == MODE_EFFECT_INTENSITY) {
-          effectIntensity = uint8(value*255);
-          updated = true;
+          if (effectIntensity != scaledValue) {
+            effectIntensity = scaledValue;
+            updated = true;
+          }
+        } else if (mode == MODE_EFFECT_FLOW_MODE) {
+          if (rawValue > max || rawValue < min) {
+            if (effectSpeed != 255) {
+              effectSpeed = 255;
+              updated = true;
+            }
+          } else {
+            if (effectSpeed != 0) {
+              effectSpeed = 0;
+              updated = true;
+            }          }
         }
         if(updated == true) {
           colorUpdated(CALL_MODE_INIT);
@@ -245,7 +314,9 @@ class ADXL345SensorUsermod : public Usermod {
       top["mode_x"] = modeX; //save these vars persistently whenever settings are saved
       top["mode_y"] = modeY; //save these vars persistently whenever settings are saved
       top["mode_z"] = modeZ; //save these vars persistently whenever settings are saved
+      top["sensor_steps"] = sensorSteps; //save these vars persistently whenever settings are saved
       top["send_mqtt_event"] = sendMQTTEvent; //save these vars persistently whenever settings are saved
+      top["send_raw_mqtt_event"] = sendRawMQTTEvent; //save these vars persistently whenever settings are saved
       top["min_x"] = minX; //save these vars persistently whenever settings are saved
       top["max_x"] = maxX; //save these vars persistently whenever settings are saved
       top["min_y"] = minY; //save these vars persistently whenever settings are saved
@@ -284,7 +355,9 @@ class ADXL345SensorUsermod : public Usermod {
       configComplete &= getJsonValue(top["mode_x"], modeX, 0);
       configComplete &= getJsonValue(top["mode_y"], modeY, 0);
       configComplete &= getJsonValue(top["mode_z"], modeZ, 0);
+      configComplete &= getJsonValue(top["sensor_steps"], sensorSteps, DEFAULT_SENSOR_STEPS);
       configComplete &= getJsonValue(top["send_mqtt_event"], sendMQTTEvent, false);
+      configComplete &= getJsonValue(top["send_raw_mqtt_event"], sendRawMQTTEvent, false);
       configComplete &= getJsonValue(top["min_x"], minX, minX);
       configComplete &= getJsonValue(top["max_x"], maxX, maxX);
       configComplete &= getJsonValue(top["min_y"], minY, minY);
