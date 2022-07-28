@@ -103,13 +103,57 @@ uint16_t WS2812FX::mode_strobe_rainbow(void) {
   return blink(color_wheel(SEGENV.call & 0xFF), SEGCOLOR(1), true, false);
 }
 
-/*
- * Flow Strobe effect. Cycling through the rainbow.
- */
-uint16_t WS2812FX::mode_flow_strobe_rainbow(void) {
-  uint32_t color1 = color_wheel(SEGENV.call & 0xFF);
-  uint32_t color2 = color_wheel((SEGENV.call + SEGMENT.intensity) & 0xFF);
+// /*
+//  * HummelRummel Flow Strobe effect. Cycling through the rainbow.
+//  */
+// uint16_t WS2812FX::mode_flow_strobe_rainbow(void) {
+//   uint32_t color1 = color_wheel(SEGENV.call & 0xFF);
+//   uint32_t color2 = color_wheel((SEGENV.call + SEGMENT.intensity) & 0xFF);
+//
+//   uint32_t cycleTime = (255 - SEGMENT.speed)*20;
+//   uint32_t onTime = FRAMETIME;
+//   cycleTime += FRAMETIME*SEGLEN*2;
+//   uint32_t it = now / cycleTime;
+//   uint32_t rem = now % cycleTime;
+//
+//   bool on = false;
+//   if (it != SEGENV.step //new iteration, force on state for one frame, even if set time is too brief
+//       || rem <= onTime) {
+//     on = true;
+//   }
+//
+//   SEGENV.step = it; //save previous iteration
+//
+//   uint32_t coloron = on ? color1 : color2;
+//   uint32_t coloroff = on ? color2 : color1;
+//   //fill(color);
+// uint32_t coloron = on ? color1 : color2;
+// uint32_t coloroff = on ? color2 : color1;
+// for(uint16_t i = 0; i < SEGLEN; i++) {
+//   if ((it%SEGLEN/2) == (i/2)) {
+//     setPixelColor(i, coloron);
+//   } else {
+//     setPixelColor(i, coloroff);
+//   }
+//
+//   return FRAMETIME;
+// }
 
+/*
+ * Flow Rainbow Fan Strobe effect. Cycling through the rainbow in a fan strobe.
+ */
+uint16_t WS2812FX::mode_flow_strobe_rainbow_fan(void) {
+  return strobe_fan(color_wheel(SEGENV.call & 0xFF), color_wheel((SEGENV.call + SEGMENT.intensity) & 0xFF));
+}
+
+/*
+ * Flow Color Fan Strobe effect. Uses color1 and color2 for the fan strobe.
+ */
+uint16_t WS2812FX::mode_flow_strobe_color_fan(void) {
+  return strobe_fan(SEGCOLOR(0), SEGCOLOR(1));
+}
+
+uint16_t WS2812FX::strobe_fan(uint32_t color1, uint32_t color2) {
   uint32_t cycleTime = (255 - SEGMENT.speed)*20;
   uint32_t onTime = FRAMETIME;
   cycleTime += FRAMETIME*2;
@@ -130,6 +174,86 @@ uint16_t WS2812FX::mode_flow_strobe_rainbow(void) {
   return FRAMETIME;
 }
 
+/*
+ * Flow Rainbow Fan Strobe effect. Cycling through the rainbow in a fan strobe.
+ */
+uint16_t WS2812FX::mode_flow_strobe_rainbow_fade(void) {
+  return strobe_fade(color_wheel(SEGENV.call & 0xFF), color_wheel((SEGENV.call + SEGMENT.intensity) & 0xFF));
+}
+
+/*
+ * Flow Color Fan Strobe effect. Uses color1 and color2 for the fan strobe.
+ */
+uint16_t WS2812FX::mode_flow_strobe_color_fade(void) {
+  return strobe_fade(SEGCOLOR(0), SEGCOLOR(1));
+}
+
+uint16_t WS2812FX::strobe_fade(uint32_t color1, uint32_t color2) {
+  uint32_t blinkCycle = (255 - SEGMENT.speed)*20;
+  uint32_t onTime = FRAMETIME;
+  // one cycle consists of
+  blinkCycle += FRAMETIME*2;
+  uint32_t episodeLength = FRAMETIME * 2 * SEGLEN;
+  uint32_t effectLength = episodeLength * 4;
+  uint32_t it = now / blinkCycle;
+  uint32_t rem = now % blinkCycle;
+  uint32_t currentLedIndex = (now % episodeLength) / (FRAMETIME * 2);
+  uint32_t currentEpisode = (now % effectLength) / episodeLength;
+
+  bool on = false;
+  if (it != SEGENV.step //new iteration, force on state for one frame, even if set time is too brief
+      || rem <= onTime) {
+    on = true;
+  }
+
+  SEGENV.step = it; //save previous iteration
+
+  uint32_t colorNew = (currentEpisode < 2) ? color1 : color2;
+  uint32_t colorOld = (currentEpisode < 2) ? color2 : color1;
+  if (on == true) {
+    if (currentEpisode % 2 == 0) {
+      fill(colorOld);
+    } else {
+      fill(colorNew);
+    }
+  } else {
+    if (currentEpisode < 2) {
+      for(uint16_t i = 0; i < SEGLEN; i++) {
+        if (i <= currentLedIndex) {
+          if (currentEpisode % 2 == 0) {
+            setPixelColor(i, colorNew);
+          } else {
+            setPixelColor(i, colorOld);
+          }
+        } else {
+          if (currentEpisode % 2 == 0) {
+            setPixelColor(i, colorOld);
+          } else {
+            setPixelColor(i, colorNew);
+          }
+        }
+      }
+    } else {
+      for(uint16_t i = 0; i < SEGLEN; i++) {
+        if (i <= currentLedIndex) {
+          if (currentEpisode % 2 == 0) {
+            setPixelColor(SEGLEN - 1 - i, colorNew);
+          } else {
+            setPixelColor(SEGLEN - 1 - i, colorOld);
+          }
+        } else {
+          if (currentEpisode % 2 == 0) {
+            setPixelColor(SEGLEN - 1 - i, colorOld);
+          } else {
+            setPixelColor(SEGLEN - 1 - i, colorNew);
+          }
+        }
+      }
+    }
+  }
+
+  return FRAMETIME;
+}
 /*
  * Color wipe function
  * LEDs are turned on (color1) in sequence, then turned off (color2) in sequence.
