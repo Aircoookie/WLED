@@ -30,7 +30,7 @@ ifaddr==0.1.7
     # via zeroconf
 marshmallow==3.11.1
     # via platformio
-platformio==5.1.1
+platformio==6.1.3
     # via -r requirements.in
 pyelftools==0.27
     # via platformio
