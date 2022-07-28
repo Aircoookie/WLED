@@ -234,11 +234,11 @@ button {
 }
 
 #liveview2D {
-	height: 320px;
+	height: 90%;
 	display: none;
-	width: 100%;
+	width: 90%;
 	border: 0px;
-	margin: auto;
+	margin: 0 auto;
 }
 
 .tab {
