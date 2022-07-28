@@ -16,7 +16,7 @@ jobs:
         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v3
     - name: Install PlatformIO
       run: pip install -r requirements.txt
     - name: Get default environments
@@ -49,7 +49,7 @@ jobs:
         path: ~/.platformio
         key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
     - name: Install PlatformIO
       run: pip install -r requirements.txt
     - name: Build firmware
