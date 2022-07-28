@@ -831,28 +831,18 @@ function populateEffects()
 
 function populatePalettes()
 {
-    var palettes = lJson;
-	palettes.shift(); // temporary remove default
-	for (let i = 0; i < palettes.length; i++) {
-		palettes[i] = {
-			"id": palettes[i][0],
-			"name": palettes[i][1]
-		};
-	}
-	palettes.sort((a,b) => (a.name).localeCompare(b.name));
-	palettes.unshift({
-		"id": 0,
-		"name": "Default"
-	});
+	lJson.shift(); // temporary remove default
+	lJson.sort((a,b) => (a[1]).localeCompare(b[1]));
+	lJson.unshift([0,"Default"]);
 
 	var html = "";
-	for (let pa of palettes) {
+	for (let pa of lJson) {
 		html += generateListItemHtml(
 			'palette',
-		    pa.id,
-            pa.name,
+		    pa[0],
+            pa[1],
             'setPalette',
-			`<div class="lstIprev" style="${genPalPrevCss(pa.id)}"></div>`
+			`<div class="lstIprev" style="${genPalPrevCss(pa[0])}"></div>`
         );
 	}
 
@@ -892,7 +882,7 @@ function genPalPrevCss(id)
 		let r, g, b;
 		let index = false;
 		if (Array.isArray(e)) {
-			index = e[0]/255*100;
+			index = Math.round(e[0]/255*100);
 			r = e[1];
 			g = e[2];
 			b = e[3];
@@ -908,7 +898,7 @@ function genPalPrevCss(id)
 			b = parseInt(cd[i].dataset.b);
 		}
 		if (index === false) {
-			index = j / paletteData.length * 100;
+			index = Math.round(j / paletteData.length * 100);
 		}
 
 		gradient.push(`rgb(${r},${g},${b}) ${index}%`);
@@ -919,7 +909,7 @@ function genPalPrevCss(id)
 
 function generateListItemHtml(listName, id, name, clickAction, extraHtml = '', effectPar = '')
 {
-    return `<div class="lstI${id==0?' sticky':''}" data-id="${id}" data-opt="${effectPar}" onClick="${clickAction}(${id})">
+    return `<div class="lstI${id==0?' sticky':''}" data-id="${id}" ${effectPar===''?'':'data-opt="'+effectPar+'"'}onClick="${clickAction}(${id})">
 	<label class="radio schkl" onclick="event.preventDefault()">
 		<input type="radio" value="${id}" name="${listName}">
 		<span class="radiomark"></span>
@@ -1472,8 +1462,23 @@ function requestJson(command=null)
 		if (!json) { showToast('Empty response', true); return; }
 		if (json.success) return;
 		if (json.info) {
-			parseInfo(json.info);
-			if (isInfo) populateInfo(lastinfo);
+			let i = json.info;
+			// append custom palettes (when loading for the 1st time)
+			if (!command && isEmpty(lastinfo) && i.leds && i.leds.cpal) {
+				for (let j = 0; j<i.leds.cpal; j++) {
+					let div = d.createElement("div");
+					gId('pallist').appendChild(div);
+					div.outerHTML = generateListItemHtml(
+						'palette',
+						255-j,
+						'~ Custom '+j+1+' ~',
+						'setPalette',
+						`<div class="lstIprev" style="${genPalPrevCss(255-j)}"></div>`
+					);
+				}
+			}
+			parseInfo(i);
+			if (isInfo) populateInfo(i);
 		}
 		var s = json.state ? json.state : json;
 		readState(s);

@@ -1910,7 +1910,7 @@ uint16_t mode_juggle(void){
   for ( byte i = 0; i < 8; i++) {
     uint16_t index = 0 + beatsin88((128 + SEGMENT.speed)*(i + 7), 0, SEGLEN -1);
     fastled_col = CRGB(SEGMENT.getPixelColor(index));
-    fastled_col |= (SEGMENT.palette==0)?CHSV(dothue, 220, 255):ColorFromPalette(strip.currentPalette, dothue, 255);
+    fastled_col |= (SEGMENT.palette==0)?CHSV(dothue, 220, 255):ColorFromPalette(SEGPALETTE, dothue, 255);
     SEGMENT.setPixelColor(index, fastled_col.red, fastled_col.green, fastled_col.blue);
     dothue += 32;
   }
@@ -2015,14 +2015,14 @@ uint16_t mode_fire_2012()
   for (uint16_t f = 0; f < cols; f++) {
     // Step 4.  Map from heat cells to LED colors
     for (uint16_t j = 0; j < rows; j++) {
-      CRGB color = ColorFromPalette(strip.currentPalette, /*MIN(*/heat[j+rows*f]/*,240)*/, 255, LINEARBLEND);
+      CRGB color = ColorFromPalette(SEGPALETTE, /*MIN(*/heat[j+rows*f]/*,240)*/, 255, LINEARBLEND);
       if (strip.isMatrix) SEGMENT.setPixelColorXY(f, rows -j -1, color);
       else          SEGMENT.setPixelColor(j, color);
     }
   }
   return FRAMETIME;
 }
-static const char *_data_FX_MODE_FIRE_2012 PROGMEM = "Fire 2012 1D/2D@Cooling=120,Spark rate=64;1,2,3;!=35";
+static const char *_data_FX_MODE_FIRE_2012 PROGMEM = "Fire 2012 1D/2D@Cooling=120,Spark rate=64;1,2,3;!";
 
 
 // ColorWavesWithPalettes by Mark Kriegsman: https://gist.github.com/kriegsman/8281905786e8b2632aeb
@@ -2064,7 +2064,7 @@ uint16_t mode_colorwaves()
     uint8_t bri8 = (uint32_t)(((uint32_t)bri16) * brightdepth) / 65536;
     bri8 += (255 - brightdepth);
 
-    CRGB newcolor = ColorFromPalette(strip.currentPalette, hue8, bri8);
+    CRGB newcolor = ColorFromPalette(SEGPALETTE, hue8, bri8);
     fastled_col = CRGB(SEGMENT.getPixelColor(i));
 
     nblend(fastled_col, newcolor, 128);
@@ -2074,7 +2074,7 @@ uint16_t mode_colorwaves()
   SEGENV.aux0 = sHue16;
   return FRAMETIME;
 }
-static const char *_data_FX_MODE_COLORWAVES PROGMEM = "Colorwaves@!,!;!,!,!;!=26";
+static const char *_data_FX_MODE_COLORWAVES PROGMEM = "Colorwaves@!,!;!,!,!;!";
 
 
 // colored stripes pulsing at a defined Beats-Per-Minute (BPM)
@@ -2084,7 +2084,7 @@ uint16_t mode_bpm()
   uint32_t stp = (strip.now / 20) & 0xFF;
   uint8_t beat = beatsin8(SEGMENT.speed, 64, 255);
   for (uint16_t i = 0; i < SEGLEN; i++) {
-    fastled_col = ColorFromPalette(strip.currentPalette, stp + (i * 2), beat - stp + (i * 10));
+    fastled_col = ColorFromPalette(SEGPALETTE, stp + (i * 2), beat - stp + (i * 10));
     SEGMENT.setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
   return FRAMETIME;
@@ -2098,14 +2098,14 @@ uint16_t mode_fillnoise8()
   CRGB fastled_col;
   for (uint16_t i = 0; i < SEGLEN; i++) {
     uint8_t index = inoise8(i * SEGLEN, SEGENV.step + i * SEGLEN);
-    fastled_col = ColorFromPalette(strip.currentPalette, index, 255, LINEARBLEND);
+    fastled_col = ColorFromPalette(SEGPALETTE, index, 255, LINEARBLEND);
     SEGMENT.setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
   SEGENV.step += beatsin8(SEGMENT.speed, 1, 6); //10,1,4
 
   return FRAMETIME;
 }
-static const char *_data_FX_MODE_FILLNOISE8 PROGMEM = "Fill Noise@!,!;!,!,!;!=9";
+static const char *_data_FX_MODE_FILLNOISE8 PROGMEM = "Fill Noise@!,!;!,!,!;!";
 
 
 uint16_t mode_noise16_1()
@@ -2128,13 +2128,13 @@ uint16_t mode_noise16_1()
 
     uint8_t index = sin8(noise * 3);                         // map LED color based on noise data
 
-    fastled_col = ColorFromPalette(strip.currentPalette, index, 255, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
+    fastled_col = ColorFromPalette(SEGPALETTE, index, 255, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
     SEGMENT.setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
 
   return FRAMETIME;
 }
-static const char *_data_FX_MODE_NOISE16_1 PROGMEM = "Noise 1@!,!;!,!,!;!=20";
+static const char *_data_FX_MODE_NOISE16_1 PROGMEM = "Noise 1@!,!;!,!,!;!";
 
 
 uint16_t mode_noise16_2()
@@ -2153,13 +2153,13 @@ uint16_t mode_noise16_2()
 
     uint8_t index = sin8(noise * 3);                          // map led color based on noise data
 
-    fastled_col = ColorFromPalette(strip.currentPalette, index, noise, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
+    fastled_col = ColorFromPalette(SEGPALETTE, index, noise, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
     SEGMENT.setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
 
   return FRAMETIME;
 }
-static const char *_data_FX_MODE_NOISE16_2 PROGMEM = "Noise 2@!,!;!,!,!;!=43";
+static const char *_data_FX_MODE_NOISE16_2 PROGMEM = "Noise 2@!,!;!,!,!;!";
 
 
 uint16_t mode_noise16_3()
@@ -2181,13 +2181,13 @@ uint16_t mode_noise16_3()
 
     uint8_t index = sin8(noise * 3);                          // map led color based on noise data
 
-    fastled_col = ColorFromPalette(strip.currentPalette, index, noise, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
+    fastled_col = ColorFromPalette(SEGPALETTE, index, noise, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
     SEGMENT.setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
 
   return FRAMETIME;
 }
-static const char *_data_FX_MODE_NOISE16_3 PROGMEM = "Noise 3@!,!;!,!,!;!=35";
+static const char *_data_FX_MODE_NOISE16_3 PROGMEM = "Noise 3@!,!;!,!,!;!";
 
 
 //https://github.com/aykevl/ledstrip-spark/blob/master/ledstrip.ino
@@ -2197,12 +2197,12 @@ uint16_t mode_noise16_4()
   uint32_t stp = (strip.now * SEGMENT.speed) >> 7;
   for (uint16_t i = 0; i < SEGLEN; i++) {
     int16_t index = inoise16(uint32_t(i) << 12, stp);
-    fastled_col = ColorFromPalette(strip.currentPalette, index);
+    fastled_col = ColorFromPalette(SEGPALETTE, index);
     SEGMENT.setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
   return FRAMETIME;
 }
-static const char *_data_FX_MODE_NOISE16_4 PROGMEM = "Noise 4@!,!;!,!,!;!=26";
+static const char *_data_FX_MODE_NOISE16_4 PROGMEM = "Noise 4@!,!;!,!,!;!";
 
 
 //based on https://gist.github.com/kriegsman/5408ecd397744ba0393e
@@ -2258,7 +2258,7 @@ uint16_t mode_colortwinkle()
         uint16_t j = i % cols, k = i / cols;
         uint32_t col = strip.isMatrix ? SEGMENT.getPixelColorXY(j, k) : SEGMENT.getPixelColor(i);
         if (col == 0) {
-          fastled_col = ColorFromPalette(strip.currentPalette, random8(), 64, NOBLEND);
+          fastled_col = ColorFromPalette(SEGPALETTE, random8(), 64, NOBLEND);
           uint16_t index = i >> 3;
           uint8_t  bitNum = i & 0x07;
           bitWrite(SEGENV.data[index], bitNum, true);
@@ -2286,7 +2286,7 @@ uint16_t mode_lake() {
   {
     int index = cos8((i*15)+ wave1)/2 + cubicwave8((i*23)+ wave2)/2;           
     uint8_t lum = (index > wave3) ? index - wave3 : 0;
-    fastled_col = ColorFromPalette(strip.currentPalette, map(index,0,255,0,240), lum, LINEARBLEND);
+    fastled_col = ColorFromPalette(SEGPALETTE, map(index,0,255,0,240), lum, LINEARBLEND);
     SEGMENT.setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
   return FRAMETIME;
@@ -2551,7 +2551,7 @@ CRGB twinklefox_one_twinkle(uint32_t ms, uint8_t salt, bool cat)
   uint8_t hue = slowcycle8 - salt;
   CRGB c;
   if (bright > 0) {
-    c = ColorFromPalette(strip.currentPalette, hue, bright, NOBLEND);
+    c = ColorFromPalette(SEGPALETTE, hue, bright, NOBLEND);
     if(COOL_LIKE_INCANDESCENT == 1) {
       // This code takes a pixel, and if its in the 'fading down'
       // part of the cycle, it adjusts the color a little bit like the
@@ -2941,7 +2941,7 @@ uint16_t mode_glitter()
   
   return FRAMETIME;
 }
-static const char *_data_FX_MODE_GLITTER PROGMEM = "Glitter@,!;!,!,!;!=11;mp12=0"; //pixels
+static const char *_data_FX_MODE_GLITTER PROGMEM = "Glitter@,!;!,!,!;!;mp12=0"; //pixels
 
 
 //each needs 19 bytes
@@ -3544,7 +3544,7 @@ uint16_t mode_plasma(void) {
     uint8_t colorIndex = cubicwave8((i*(2+ 3*(SEGMENT.speed >> 5))+thisPhase) & 0xFF)/2   // factor=23 // Create a wave and add a phase change and add another wave with its own phase change.
                              + cos8((i*(1+ 2*(SEGMENT.speed >> 5))+thatPhase) & 0xFF)/2;  // factor=15 // Hey, you can even change the frequencies if you wish.
     uint8_t thisBright = qsub8(colorIndex, beatsin8(7,0, (128 - (SEGMENT.intensity>>1))));
-    CRGB color = ColorFromPalette(strip.currentPalette, colorIndex, thisBright, LINEARBLEND);
+    CRGB color = ColorFromPalette(SEGPALETTE, colorIndex, thisBright, LINEARBLEND);
     SEGMENT.setPixelColor(i, color.red, color.green, color.blue);
   }
 
@@ -3687,9 +3687,9 @@ uint16_t mode_pacifica()
       0x000E39, 0x001040, 0x001450, 0x001860, 0x001C70, 0x002080, 0x1040BF, 0x2060FF };
 
   if (SEGMENT.palette) {
-    pacifica_palette_1 = strip.currentPalette;
-    pacifica_palette_2 = strip.currentPalette;
-    pacifica_palette_3 = strip.currentPalette;
+    pacifica_palette_1 = SEGPALETTE;
+    pacifica_palette_2 = SEGPALETTE;
+    pacifica_palette_3 = SEGPALETTE;
   }
 
   // Increment the four "color index start" counters, one for each wave layer.
@@ -3818,7 +3818,7 @@ uint16_t mode_sunrise() {
 
   return FRAMETIME;
 }
-static const char *_data_FX_MODE_SUNRISE PROGMEM = "Sunrise@Time [min]=60,;;!=35";
+static const char *_data_FX_MODE_SUNRISE PROGMEM = "Sunrise@Time [min]=60,;;!";
 
 
 /*
@@ -3907,7 +3907,7 @@ uint16_t mode_noisepal(void) {                                    // Slow noise 
   //EVERY_N_MILLIS(10) { //(don't have to time this, effect function is only called every 24ms)
   nblendPaletteTowardPalette(palettes[0], palettes[1], 48);               // Blend towards the target palette over 48 iterations.
 
-  if (SEGMENT.palette > 0) palettes[0] = strip.currentPalette;
+  if (SEGMENT.palette > 0) palettes[0] = SEGPALETTE;
 
   for(int i = 0; i < SEGLEN; i++) {
     uint8_t index = inoise8(i*scale, SEGENV.aux0+i*scale);                // Get a value from the noise function. I'm using both x and y axis.
@@ -3979,7 +3979,7 @@ uint16_t mode_flow(void)
 
   return FRAMETIME;
 }
-static const char *_data_FX_MODE_FLOW PROGMEM = "Flow@!,!;!,!,!;!=6;mp12=1"; //vertical
+static const char *_data_FX_MODE_FLOW PROGMEM = "Flow@!,!;!,!,!;!;mp12=1"; //vertical
 
 
 /*
@@ -4522,7 +4522,7 @@ uint16_t mode_wavesins(void) {
 
   for (uint16_t i = 0; i < SEGLEN; i++) {
     uint8_t bri = sin8(millis()/4 + i * SEGMENT.intensity);
-    SEGMENT.setPixelColor(i, ColorFromPalette(strip.currentPalette, beatsin8(SEGMENT.speed, SEGMENT.custom1, SEGMENT.custom1+SEGMENT.custom2, 0, i * SEGMENT.custom3), bri, LINEARBLEND));
+    SEGMENT.setPixelColor(i, ColorFromPalette(SEGPALETTE, beatsin8(SEGMENT.speed, SEGMENT.custom1, SEGMENT.custom1+SEGMENT.custom2, 0, i * SEGMENT.custom3), bri, LINEARBLEND));
   }
 
   return FRAMETIME;
@@ -4634,7 +4634,7 @@ uint16_t mode_2DColoredBursts() {              // By: ldirko   https://editor.so
     byte x2 = beatsin8(1 + SEGMENT.speed/16, 0, (cols - 1));
     byte y1 = beatsin8(5 + SEGMENT.speed/16, 0, (rows - 1), 0, i * 24);
     byte y2 = beatsin8(3 + SEGMENT.speed/16, 0, (rows - 1), 0, i * 48 + 64);
-    CRGB color = ColorFromPalette(strip.currentPalette, i * 255 / numLines + (SEGENV.aux0&0xFF), 255, LINEARBLEND);
+    CRGB color = ColorFromPalette(SEGPALETTE, i * 255 / numLines + (SEGENV.aux0&0xFF), 255, LINEARBLEND);
 
     byte xsteps = abs8(x1 - y1) + 1;
     byte ysteps = abs8(x2 - y2) + 1;
@@ -4679,8 +4679,8 @@ uint16_t mode_2Ddna(void) {         // dna originally by by ldirko at https://pa
   SEGMENT.fadeToBlackBy(leds, 64);
 
   for(int i = 0; i < cols; i++) {
-    leds[XY(i, beatsin8(SEGMENT.speed/8, 0, rows-1, 0, i*4))] = ColorFromPalette(strip.currentPalette, i*5+millis()/17, beatsin8(5, 55, 255, 0, i*10), LINEARBLEND);
-    leds[XY(i, beatsin8(SEGMENT.speed/8, 0, rows-1, 0, i*4+128))] = ColorFromPalette(strip.currentPalette,i*5+128+millis()/17, beatsin8(5, 55, 255, 0, i*10+128), LINEARBLEND); // 180 degrees (128) out of phase
+    leds[XY(i, beatsin8(SEGMENT.speed/8, 0, rows-1, 0, i*4))] = ColorFromPalette(SEGPALETTE, i*5+millis()/17, beatsin8(5, 55, 255, 0, i*10), LINEARBLEND);
+    leds[XY(i, beatsin8(SEGMENT.speed/8, 0, rows-1, 0, i*4+128))] = ColorFromPalette(SEGPALETTE,i*5+128+millis()/17, beatsin8(5, 55, 255, 0, i*10+128), LINEARBLEND); // 180 degrees (128) out of phase
   }
   SEGMENT.blur2d(leds, SEGMENT.intensity/8);
 
@@ -4724,7 +4724,7 @@ uint16_t mode_2DDNASpiral() {               // By: ldirko  https://editor.soulma
       for (size_t k = 1; k <= steps; k++) {
         byte dx = lerp8by8(x, x1, k * 255 / steps);
         uint16_t index = XY(dx, i);
-        leds[index] += ColorFromPalette(strip.currentPalette, SEGENV.aux0, 255, LINEARBLEND);
+        leds[index] += ColorFromPalette(SEGPALETTE, SEGENV.aux0, 255, LINEARBLEND);
         leds[index] %= (k * 255 / steps); //for draw gradient line
       }
       leds[XY(x, i)]  += CRGB::DarkSlateGray;
@@ -4763,7 +4763,7 @@ uint16_t mode_2DDrift() {              // By: Stepko   https://editor.soulmateli
     float angle = radians(t * (maxDim - i));
     uint16_t myX = (cols>>1) + (uint16_t)(sin_t(angle) * i) + (cols%2);
     uint16_t myY = (rows>>1) + (uint16_t)(cos_t(angle) * i) + (rows%2);
-    leds[XY(myX,myY)] = ColorFromPalette(strip.currentPalette, (i * 20) + (t / 20), 255, LINEARBLEND);
+    leds[XY(myX,myY)] = ColorFromPalette(SEGPALETTE, (i * 20) + (t / 20), 255, LINEARBLEND);
   }
   SEGMENT.blur2d(leds, SEGMENT.intensity>>3);
 
@@ -4792,7 +4792,7 @@ uint16_t mode_2Dfirenoise(void) {               // firenoise2d. By Andrew Tuline
   uint32_t yscale = SEGMENT.speed*8;
   uint8_t indexx = 0;
 
-  strip.currentPalette = CRGBPalette16( CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0),
+  SEGPALETTE = CRGBPalette16( CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0),
                                   CRGB::Red, CRGB::Red, CRGB::Red, CRGB::DarkOrange,
                                   CRGB::DarkOrange,CRGB::DarkOrange, CRGB::Orange, CRGB::Orange,
                                   CRGB::Yellow, CRGB::Orange, CRGB::Yellow, CRGB::Yellow);
@@ -4800,7 +4800,7 @@ uint16_t mode_2Dfirenoise(void) {               // firenoise2d. By Andrew Tuline
   for (uint16_t j=0; j < cols; j++) {
     for (uint16_t i=0; i < rows; i++) {
       indexx = inoise8(j*yscale*rows/255, i*xscale+millis()/4);                                           // We're moving along our Perlin map.
-      leds[XY(j,i)] = ColorFromPalette(strip.currentPalette, min(i*(indexx)>>4, 255), i*255/cols, LINEARBLEND); // With that value, look up the 8 bit colour palette value and assign it to the current LED.
+      leds[XY(j,i)] = ColorFromPalette(SEGPALETTE, min(i*(indexx)>>4, 255), i*255/cols, LINEARBLEND); // With that value, look up the 8 bit colour palette value and assign it to the current LED.
     } // for i
   } // for j
 
@@ -4827,7 +4827,7 @@ uint16_t mode_2DFrizzles(void) {                 // By: Stepko https://editor.so
 
   SEGMENT.fadeToBlackBy(leds, 16);
   for (size_t i = 8; i > 0; i--) {
-    leds[XY(beatsin8(SEGMENT.speed/8 + i, 0, cols - 1), beatsin8(SEGMENT.intensity/8 - i, 0, rows - 1))] += ColorFromPalette(strip.currentPalette, beatsin8(12, 0, 255), 255, LINEARBLEND);
+    leds[XY(beatsin8(SEGMENT.speed/8 + i, 0, cols - 1), beatsin8(SEGMENT.intensity/8 - i, 0, rows - 1))] += ColorFromPalette(SEGPALETTE, beatsin8(12, 0, 255), 255, LINEARBLEND);
   }
   SEGMENT.blur2d(leds, 16);
 
@@ -5247,7 +5247,7 @@ uint16_t mode_2Dnoise(void) {                  // By Andrew Tuline
   for (uint16_t y = 0; y < rows; y++) {
     for (uint16_t x = 0; x < cols; x++) {
       uint8_t pixelHue8 = inoise8(x * scale, y * scale, millis() / (16 - SEGMENT.speed/16));
-      SEGMENT.setPixelColorXY(x, y, ColorFromPalette(strip.currentPalette, pixelHue8));
+      SEGMENT.setPixelColorXY(x, y, ColorFromPalette(SEGPALETTE, pixelHue8));
     }
   }
 
@@ -5289,7 +5289,7 @@ uint16_t mode_2DPlasmaball(void) {                   // By: Stepko https://edito
                         (cols - cx == 0) ||
                         (cols - 1 - cx == 0) ||
                         ((rows - cy == 0) ||
-                        (rows - 1 - cy == 0)) ? ColorFromPalette(strip.currentPalette, beat8(5), thisVal, LINEARBLEND) : CRGB::Black;
+                        (rows - 1 - cy == 0)) ? ColorFromPalette(SEGPALETTE, beat8(5), thisVal, LINEARBLEND) : CRGB::Black;
     }
   }
   SEGMENT.blur2d(leds, 4);
@@ -5380,7 +5380,7 @@ uint16_t mode_2DPulser(void) {                       // By: ldirko   https://edi
   uint16_t x = (a / 14);
   uint16_t y = map((sin8(a * 5) + sin8(a * 4) + sin8(a * 2)), 0, 765, rows-1, 0);
   uint16_t index = XY(x, y); // XY() will wrap x or y
-  leds[index] = ColorFromPalette(strip.currentPalette, map(y, 0, rows-1, 0, 255), 255, LINEARBLEND);
+  leds[index] = ColorFromPalette(SEGPALETTE, map(y, 0, rows-1, 0, 255), 255, LINEARBLEND);
 
   SEGMENT.blur2d(leds, 1 + (SEGMENT.intensity>>4));
 
@@ -5411,7 +5411,7 @@ uint16_t mode_2DSindots(void) {                             // By: ldirko   http
   for (uint16_t i = 0; i < 13; i++) {
     byte x = sin8(t1 + i * SEGMENT.intensity/8)*(cols-1)/255;  //   max index now 255x15/255=15!
     byte y = sin8(t2 + i * SEGMENT.intensity/8)*(rows-1)/255;  //  max index now 255x15/255=15!
-    leds[XY(x, y)] = ColorFromPalette(strip.currentPalette, i * 255 / 13, 255, LINEARBLEND);
+    leds[XY(x, y)] = ColorFromPalette(SEGPALETTE, i * 255 / 13, 255, LINEARBLEND);
   }
   SEGMENT.blur2d(leds, 16);
 
@@ -5454,9 +5454,9 @@ uint16_t mode_2Dsquaredswirl(void) {            // By: Mark Kriegsman. https://g
 
   uint16_t ms = millis();
 
-  leds[XY(i, m)] += ColorFromPalette(strip.currentPalette, ms/29, 255, LINEARBLEND);
-  leds[XY(j, n)] += ColorFromPalette(strip.currentPalette, ms/41, 255, LINEARBLEND);
-  leds[XY(k, p)] += ColorFromPalette(strip.currentPalette, ms/73, 255, LINEARBLEND);
+  leds[XY(i, m)] += ColorFromPalette(SEGPALETTE, ms/29, 255, LINEARBLEND);
+  leds[XY(j, n)] += ColorFromPalette(SEGPALETTE, ms/41, 255, LINEARBLEND);
+  leds[XY(k, p)] += ColorFromPalette(SEGPALETTE, ms/73, 255, LINEARBLEND);
 
   SEGMENT.setPixels(leds);
   return FRAMETIME;
@@ -5538,9 +5538,9 @@ uint16_t mode_2Dtartan(void) {          // By: Elliott Kember  https://editor.so
     for (uint16_t y = 0; y < rows; y++) {
       uint16_t index = XY(x, y);
       hue = x * beatsin16(10, 1, 10) + offsetY;
-      leds[index] = ColorFromPalette(strip.currentPalette, hue, sin8(x * SEGMENT.speed + offsetX) * sin8(x * SEGMENT.speed + offsetX) / 255, LINEARBLEND);
+      leds[index] = ColorFromPalette(SEGPALETTE, hue, sin8(x * SEGMENT.speed + offsetX) * sin8(x * SEGMENT.speed + offsetX) / 255, LINEARBLEND);
       hue = y * 3 + offsetX;
-      leds[index] += ColorFromPalette(strip.currentPalette, hue, sin8(y * SEGMENT.intensity + offsetY) * sin8(y * SEGMENT.intensity + offsetY) / 255, LINEARBLEND);
+      leds[index] += ColorFromPalette(SEGPALETTE, hue, sin8(y * SEGMENT.intensity + offsetY) * sin8(y * SEGMENT.intensity + offsetY) / 255, LINEARBLEND);
     }
   }
 
@@ -5580,7 +5580,7 @@ uint16_t mode_2Dspaceships(void) {    //// Space ships by stepko (c)05.02.21 [ht
   for (size_t i = 0; i < 8; i++) {
     byte x = beatsin8(12 + i, 2, cols - 3);
     byte y = beatsin8(15 + i, 2, rows - 3);
-    CRGB color = ColorFromPalette(strip.currentPalette, beatsin8(12 + i, 0, 255), 255);
+    CRGB color = ColorFromPalette(SEGPALETTE, beatsin8(12 + i, 0, 255), 255);
     leds[XY(x, y)] += color;
     if (cols > 24 || rows > 24) {
       leds[XY(x + 1, y)] += color;
@@ -5755,7 +5755,7 @@ uint16_t mode_2Dghostrider(void) {
         lighter->lightersPosX[i] += -7 * sin_t(radians(lighter->Angle[i]));
         lighter->lightersPosY[i] += -7 * cos_t(radians(lighter->Angle[i]));
       }
-      SEGMENT.wu_pixel(leds, lighter->lightersPosX[i] * 256 / 10, lighter->lightersPosY[i] * 256 / 10, ColorFromPalette(strip.currentPalette, (256 - lighter->time[i])));
+      SEGMENT.wu_pixel(leds, lighter->lightersPosX[i] * 256 / 10, lighter->lightersPosY[i] * 256 / 10, ColorFromPalette(SEGPALETTE, (256 - lighter->time[i])));
     }
     SEGMENT.blur2d(leds, SEGMENT.intensity>>3);
   }
@@ -5828,7 +5828,7 @@ uint16_t mode_2Dfloatingblobs(void) {
         blob->grow[i] = true; 
       }
     }
-    CRGB c = ColorFromPalette(strip.currentPalette, blob->color[i]);
+    CRGB c = ColorFromPalette(SEGPALETTE, blob->color[i]);
     //if (!SEGMENT.palette) c = SEGCOLOR(0);
     if (blob->r[i] > 1.f) SEGMENT.fill_circle(leds, blob->y[i], blob->x[i], blob->r[i], c);
     else                  leds[XY(blob->y[i], blob->x[i])] += c;
@@ -6118,12 +6118,12 @@ uint16_t mode_2DSwirl(void) {
 
   float tmpSound = (soundAgc) ? rawSampleAgc : sampleRaw;
 
-  leds[XY( i, j)]  += ColorFromPalette(strip.currentPalette, (ms / 11 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 11, 200, 255);
-  leds[XY( j, i)]  += ColorFromPalette(strip.currentPalette, (ms / 13 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 13, 200, 255);
-  leds[XY(ni, nj)] += ColorFromPalette(strip.currentPalette, (ms / 17 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 17, 200, 255);
-  leds[XY(nj, ni)] += ColorFromPalette(strip.currentPalette, (ms / 29 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 29, 200, 255);
-  leds[XY( i, nj)] += ColorFromPalette(strip.currentPalette, (ms / 37 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 37, 200, 255);
-  leds[XY(ni, j)]  += ColorFromPalette(strip.currentPalette, (ms / 41 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 41, 200, 255);
+  leds[XY( i, j)]  += ColorFromPalette(SEGPALETTE, (ms / 11 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 11, 200, 255);
+  leds[XY( j, i)]  += ColorFromPalette(SEGPALETTE, (ms / 13 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 13, 200, 255);
+  leds[XY(ni, nj)] += ColorFromPalette(SEGPALETTE, (ms / 17 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 17, 200, 255);
+  leds[XY(nj, ni)] += ColorFromPalette(SEGPALETTE, (ms / 29 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 29, 200, 255);
+  leds[XY( i, nj)] += ColorFromPalette(SEGPALETTE, (ms / 37 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 37, 200, 255);
+  leds[XY(ni, j)]  += ColorFromPalette(SEGPALETTE, (ms / 41 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 41, 200, 255);
 
   SEGMENT.setPixels(leds);
   return FRAMETIME;
@@ -6171,8 +6171,8 @@ uint16_t mode_2DWaverly(void) {
     uint16_t thisMax = map(thisVal, 0, 512, 0, rows);
 
     for (uint16_t j = 0; j < thisMax; j++) {
-      leds[XY(i, j)] += ColorFromPalette(strip.currentPalette, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND);
-      leds[XY((cols - 1) - i, (rows - 1) - j)] += ColorFromPalette(strip.currentPalette, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND);
+      leds[XY(i, j)] += ColorFromPalette(SEGPALETTE, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND);
+      leds[XY((cols - 1) - i, (rows - 1) - j)] += ColorFromPalette(SEGPALETTE, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND);
     }
   }
   SEGMENT.blur2d(leds, 16);
@@ -6445,7 +6445,7 @@ static const char *_data_FX_MODE_MIDNOISE PROGMEM = "Midnoise ♪@Fade rate,Maxi
 //////////////////////
 // I am the god of hellfire. . . Volume (only) reactive fire routine. Oh, look how short this is.
 uint16_t mode_noisefire(void) {                 // Noisefire. By Andrew Tuline.
-  strip.currentPalette = CRGBPalette16(CHSV(0,255,2), CHSV(0,255,4), CHSV(0,255,8), CHSV(0, 255, 8),  // Fire palette definition. Lower value = darker.
+  SEGPALETTE = CRGBPalette16(CHSV(0,255,2), CHSV(0,255,4), CHSV(0,255,8), CHSV(0, 255, 8),  // Fire palette definition. Lower value = darker.
                                  CHSV(0, 255, 16), CRGB::Red, CRGB::Red, CRGB::Red,
                                  CRGB::DarkOrange,CRGB::DarkOrange, CRGB::Orange, CRGB::Orange,
                                  CRGB::Yellow, CRGB::Orange, CRGB::Yellow, CRGB::Yellow);
@@ -6465,7 +6465,7 @@ uint16_t mode_noisefire(void) {                 // Noisefire. By Andrew Tuline.
                                                                                         // This is a simple y=mx+b equation that's been scaled. index/128 is another scaling.
     uint8_t tmpSound = (soundAgc) ? sampleAgc : sampleAvg;
 
-    CRGB color = ColorFromPalette(strip.currentPalette, index, tmpSound*2, LINEARBLEND);     // Use the my own palette.
+    CRGB color = ColorFromPalette(SEGPALETTE, index, tmpSound*2, LINEARBLEND);     // Use the my own palette.
     SEGMENT.setPixelColor(i, color);
   }
 

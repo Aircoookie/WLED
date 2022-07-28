@@ -91,6 +91,7 @@ uint32_t color_add(uint32_t,uint32_t);
 //#define SEGCOLOR(x)      strip._segments[s//trip.getCurrSegmentId()].currentColor(x, strip._segments[strip.getCurrSegmentId()].colors[x])
 //#define SEGLEN           strip._segments[strip.getCurrSegmentId()].virtualLength()
 #define SEGCOLOR(x)      strip.segColor(x) /* saves us a few kbytes of code */
+#define SEGPALETTE       strip._currentPalette
 #define SEGLEN           strip._virtualSegmentLength /* saves us a few kbytes of code */
 #define SPEED_FORMULA_L  (5U + (50U*(255U - SEGMENT.speed))/SEGLEN)
 
@@ -382,19 +383,19 @@ typedef struct Segment {
     union {
       uint16_t options; //bit pattern: msb first: [transposed mirrorY reverseY] transitional (tbd) paused needspixelstate mirrored on reverse selected
       struct {
-        uint16_t selected:1;     //  0 : selected
-        uint16_t reverse:1;      //  1 : reversed
-        uint16_t on:1;           //  2 : is On
-        uint16_t mirror:1;       //  3 : mirrored
-        uint16_t pxs:1;          //  4 : indicates that the effect does not use FRAMETIME or needs getPixelColor (?)
-        uint16_t freeze:1;       //  5 : paused/frozen
-        uint16_t reset:1;        //  6 : indicates that Segment runtime requires reset
-        uint16_t transitional:1; //  7 : transitional (there is transition occuring)
-        uint16_t reverse_y:1;    //  8 : reversed Y (2D)
-        uint16_t mirror_y:1;     //  9 : mirrored Y (2D)
-        uint16_t transpose:1;    // 10 : transposed (2D, swapped X & Y)
-        uint16_t map1D2D:2;      // 11-12 : mapping for 1D effect on 2D (0-strip, 1-expand vertically, 2-circular, 3-rectangular)
-        uint16_t soundSim:3;     // 13-15 : 0-7 sound simulation types
+        bool    selected    : 1; //  0 : selected
+        bool    reverse     : 1; //  1 : reversed
+        bool    on          : 1; //  2 : is On
+        bool    mirror      : 1; //  3 : mirrored
+        bool    pxs         : 1; //  4 : indicates that the effect does not use FRAMETIME or needs getPixelColor (?)
+        bool    freeze      : 1; //  5 : paused/frozen
+        bool    reset       : 1; //  6 : indicates that Segment runtime requires reset
+        bool    transitional: 1; //  7 : transitional (there is transition occuring)
+        bool    reverse_y   : 1; //  8 : reversed Y (2D)
+        bool    mirror_y    : 1; //  9 : mirrored Y (2D)
+        bool    transpose   : 1; // 10 : transposed (2D, swapped X & Y)
+        uint8_t map1D2D     : 2; // 11-12 : mapping for 1D effect on 2D (0-strip, 1-expand vertically, 2-circular, 3-rectangular)
+        uint8_t soundSim    : 3; // 13-15 : 0-7 sound simulation types
       };
     };
     uint8_t  grouping, spacing;
@@ -415,18 +416,29 @@ typedef struct Segment {
     byte* data;
 
   private:
-    uint8_t  _capabilities;
+    union {
+      uint8_t  _capabilities;
+      struct {
+        bool    _isRGB    : 1;
+        bool    _hasW     : 1;
+        bool    _isCCT    : 1;
+        bool    _manualW  : 1;
+        uint8_t _reserved : 4;
+      };
+    };
     uint16_t _dataLen;
 
-    // transition data, valid only if getOption(SEG_OPTION_TRANSITIONAL)==true
+    // transition data, valid only if getOption(SEG_OPTION_TRANSITIONAL)==true, holds values during transition
     //struct Transition {
-      uint32_t _colorT[NUM_COLORS];
-      uint8_t  _briT;
-      uint8_t  _cctT;
-      uint32_t _start;
-      uint16_t _dur;
-    //  Transition(uint16_t dur=10) : _briT(255), _cctT(127), _start(millis()), _dur(dur) {}
-    //  Transition(uint16_t d, uint8_t b, uint8_t c, const uint32_t *o) : _briT(b), _cctT(c), _start(millis()), _dur(d) {
+      uint32_t      _colorT[NUM_COLORS];
+      uint8_t       _briT;  // temporary brightness
+      uint8_t       _cctT;  // temporary CCT
+      CRGBPalette16 _palT;  // temporary palette
+      uint8_t       _modeP; // previous mode/effect
+      uint32_t      _start;
+      uint16_t      _dur;
+    //  Transition(uint16_t dur=10) : _briT(255), _cctT(127), _palT(CRGBPalette16(CRGB::Black)), _modeP(FX_MODE_STATIC), _start(millis()), _dur(dur) {}
+    //  Transition(uint16_t d, uint8_t b, uint8_t c, const uint32_t *o) : _briT(b), _cctT(c), _palT(CRGBPalette16(CRGB::Black)), _modeP(FX_MODE_STATIC), _start(millis()), _dur(d) {
     //    for (size_t i=0; i<NUM_COLORS; i++) _colorT[i] = o[i];
     //  }
     //} *_t; // this struct will bootloop ESP
@@ -524,6 +536,8 @@ typedef struct Segment {
     uint16_t progress(); //transition progression between 0-65535
     uint8_t  currentBri(uint8_t briNew, bool useCct = false);
     uint32_t currentColor(uint8_t slot, uint32_t colorNew) { return getOption(SEG_OPTION_TRANSITIONAL) /*&& !_t*/ ? color_blend(/*_t->*/_colorT[slot], colorNew, progress(), true) : colorNew; }
+    CRGBPalette16 loadPalette(uint8_t pal);
+    CRGBPalette16 currentPalette(uint8_t pal);
 
     // 1D strip
     uint16_t virtualLength();
@@ -616,8 +630,7 @@ class WS2812FX {  // 96 bytes
       matrix{0,0,0,0},
       panel{{0,0,0,0}},
 #endif
-      currentPalette(CRGBPalette16(CRGB::Black)),
-      targetPalette(CloudColors_p),
+      _currentPalette(CRGBPalette16(CRGB::Black)),
       _bri_t(0),
       _colors_t{0,0,0},
       _virtualSegmentLength(0),
@@ -633,12 +646,10 @@ class WS2812FX {  // 96 bytes
       _isOffRefreshRequired(false),
       _hasWhiteChannel(false),
       _triggered(false),
-      _no_rgb(false),
       _modeCount(MODE_COUNT),
       _callback(nullptr),
       customMappingTable(nullptr),
       customMappingSize(0),
-      _lastPaletteChange(0),
       _lastShow(0),
       _segment_index(0),
       _segment_index_palette_last(99),
@@ -812,13 +823,14 @@ class WS2812FX {  // 96 bytes
 
   // end 2D support
 
-    CRGBPalette16 currentPalette;
-    CRGBPalette16 targetPalette;
+    void loadCustomPalettes(); // loads custom palettes from JSON
+    CRGBPalette16 _currentPalette; // palette used for current effect (includes transition)
+    std::vector<CRGBPalette16> customPalettes;
 
     // using public variables to reduce code size increase due to inline function getSegment() (with bounds checking)
     // and color transitions
-    uint8_t _bri_t; // used for opacity transitions
-    uint32_t _colors_t[3]; // used for color transitions
+    uint8_t  _bri_t;       // opacity used for effect (includes transition)
+    uint32_t _colors_t[3]; // color used for effect (includes transition)
     uint16_t _virtualSegmentLength;
 
     //segment _segments[MAX_NUM_SEGMENTS]; // SRAM footprint: 88 bytes per element
@@ -839,19 +851,17 @@ class WS2812FX {  // 96 bytes
     uint16_t _cumulativeFps;
 
     // will require only 1 byte
-//    struct {
-//      byte _isServicing          : 1;
-//      byte _isOffRefreshRequired : 1;
-//      byte _hasWhiteChannel      : 1;
-//      byte _triggered            : 1;
-//      byte _no_rgb               : 1;
-//    };
-    bool
-      _isServicing,
-      _isOffRefreshRequired, //periodic refresh is required for the strip to remain off.
-      _hasWhiteChannel,
-      _triggered,
-      _no_rgb;
+    struct {
+      bool _isServicing          : 1;
+      bool _isOffRefreshRequired : 1; //periodic refresh is required for the strip to remain off.
+      bool _hasWhiteChannel      : 1;
+      bool _triggered            : 1;
+    };
+//    bool
+//      _isServicing,
+//      _isOffRefreshRequired, //periodic refresh is required for the strip to remain off.
+//      _hasWhiteChannel,
+//      _triggered;
 
     uint8_t _modeCount;
     //mode_ptr *_mode; // SRAM footprint: 4 bytes per element
@@ -864,7 +874,6 @@ class WS2812FX {  // 96 bytes
     uint16_t* customMappingTable;
     uint16_t  customMappingSize;
     
-    uint32_t _lastPaletteChange;
     uint32_t _lastShow;
     
     uint8_t _segment_index;
@@ -872,9 +881,7 @@ class WS2812FX {  // 96 bytes
     uint8_t _mainSegment;
 
     void
-      estimateCurrentAndLimitBri(void),
-      load_gradient_palette(uint8_t),
-      handle_palette(void);
+      estimateCurrentAndLimitBri(void);
 };
 
 extern const char JSON_mode_names[];
