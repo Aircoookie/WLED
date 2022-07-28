@@ -199,6 +199,8 @@ uint16_t WS2812FX::strobe_fade(uint32_t color1, uint32_t color2) {
   uint32_t rem = now % blinkCycle;
   uint32_t currentLedIndex = (now % episodeLength) / (FRAMETIME * 2);
   uint32_t currentEpisode = (now % effectLength) / episodeLength;
+  bool oddEpisode = currentEpisode % 2 == 0;
+  bool firstPart = currentEpisode < 2;
 
   bool on = false;
   if (it != SEGENV.step //new iteration, force on state for one frame, even if set time is too brief
@@ -208,45 +210,29 @@ uint16_t WS2812FX::strobe_fade(uint32_t color1, uint32_t color2) {
 
   SEGENV.step = it; //save previous iteration
 
-  uint32_t colorNew = (currentEpisode < 2) ? color1 : color2;
-  uint32_t colorOld = (currentEpisode < 2) ? color2 : color1;
+  uint32_t colorNew = firstPart ? color1 : color2;
+  uint32_t colorOld = firstPart ? color2 : color1;
   if (on == true) {
-    if (currentEpisode % 2 == 0) {
+    if (oddEpisode) {
       fill(colorOld);
     } else {
       fill(colorNew);
     }
   } else {
-    if (currentEpisode < 2) {
+    if (firstPart) {
       for(uint16_t i = 0; i < SEGLEN; i++) {
         if (i <= currentLedIndex) {
-          if (currentEpisode % 2 == 0) {
-            setPixelColor(i, colorNew);
-          } else {
-            setPixelColor(i, colorOld);
-          }
+          setPixelColor(i, colorNew);
         } else {
-          if (currentEpisode % 2 == 0) {
-            setPixelColor(i, colorOld);
-          } else {
-            setPixelColor(i, colorNew);
-          }
+          setPixelColor(i, colorOld);
         }
       }
     } else {
       for(uint16_t i = 0; i < SEGLEN; i++) {
         if (i <= currentLedIndex) {
-          if (currentEpisode % 2 == 0) {
-            setPixelColor(SEGLEN - 1 - i, colorNew);
-          } else {
-            setPixelColor(SEGLEN - 1 - i, colorOld);
-          }
+          setPixelColor(SEGLEN - 1 - i, colorNew);
         } else {
-          if (currentEpisode % 2 == 0) {
-            setPixelColor(SEGLEN - 1 - i, colorOld);
-          } else {
-            setPixelColor(SEGLEN - 1 - i, colorNew);
-          }
+          setPixelColor(SEGLEN - 1 - i, colorOld);
         }
       }
     }
