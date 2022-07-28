@@ -1,7 +1,7 @@
 //page js
 var loc = false, locip;
 var noNewSegs = false;
-var isOn = false, nlA = false, isLv = false, isLv2D = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true;
+var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true;
 var hasWhite = false, hasRGB = false, hasCCT = false;
 var nlDur = 60, nlTar = 0;
 var nlMode = false;
@@ -1526,44 +1526,34 @@ function toggleSync()
 
 function toggleLiveview()
 {
-	if (isLv2D) {toggleLiveview2D(); return;}
+  //WLEDSR adding liveview2D support
+  if (isInfo && isM) toggleInfo();
+  if (isNodes && isM) toggleNodes();
+  isLv = !isLv;
 
-	isLv = !isLv;
-	gId('liveview').style.display = (isLv) ? "block":"none";
-	var url = (loc?`http://${locip}`:'') + "/liveview";
-	gId('liveview').src = (isLv) ? url:"about:blank";
-	gId('buttonSr').className = (isLv) ? "active":"";
-	if (!isLv && ws && ws.readyState === WebSocket.OPEN) ws.send('{"lv":false}');
-	size();
-}
-
-function toggleLiveview2D()
-{
-	if (isInfo) toggleInfo();
-	if (isNodes) toggleNodes();
-	if (isLv) toggleLiveview();
-
-	isLv2D = !isLv2D;
-
-	if (isLv2D) {
-		var cn = '<iframe id="liveview2D" src="about:blank"></iframe>';
-		d.getElementById('kliveview2D').innerHTML = cn;
+  var lvID = "liveview";
+  if (isM) {   
+	lvID = "liveview2D"
+	if (isLv) {
+	  var cn = '<iframe id="liveview2D" src="about:blank"></iframe>';
+	  d.getElementById('kliveview2D').innerHTML = cn;
 	}
 
-	gId('mliveview2D').style.transform = (isLv2D) ? "translateY(0px)":"translateY(100%)";
+	gId('mliveview2D').style.transform = (isLv) ? "translateY(0px)":"translateY(100%)";
+  }
 
-	gId("liveview2D").style.display = (isLv2D) ? "block":"none";
-	var url = (loc?`http://${locip}`:'') + "/liveview2D";
-	gId("liveview2D").src = (isLv2D) ? url:"about:blank";
-	gId('buttonSr').className = (isLv2D) ? "active":"";
-	if (!isLv2D && ws && ws.readyState === WebSocket.OPEN) ws.send('{"lv":false}');
-	size();
+  gId(lvID).style.display = (isLv) ? "block":"none";
+  var url = (loc?`http://${locip}`:'') + "/" + lvID;
+  gId(lvID).src = (isLv) ? url:"about:blank";
+  gId('buttonSr').className = (isLv) ? "active":"";
+  if (!isLv && ws && ws.readyState === WebSocket.OPEN) ws.send('{"lv":false}');
+  size();
 }
 
 function toggleInfo()
 {
 	if (isNodes) toggleNodes();
-	if (isLv2D) toggleLiveview2D();
+	if (isLv && isM) toggleLiveview();
 	isInfo = !isInfo;
 	if (isInfo) requestJson();
 	gId('info').style.transform = (isInfo) ? "translateY(0px)":"translateY(100%)";
@@ -1573,7 +1563,7 @@ function toggleInfo()
 function toggleNodes()
 {
 	if (isInfo) toggleInfo();
-	if (isLv2D) toggleLiveview2D();
+	if (isLv && isM) toggleLiveview();
 	isNodes = !isNodes;
 	if (isNodes) loadNodes();
 	gId('nodes').style.transform = (isNodes) ? "translateY(0px)":"translateY(100%)";
