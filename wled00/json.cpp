@@ -322,6 +322,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     }
   }
 
+  // temporary transition (applies only once)
   tr = root[F("tt")] | -1;
   if (tr >= 0)
   {
@@ -514,7 +515,6 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     root["on"] = (bri > 0);
     root["bri"] = briLast;
     root[F("transition")] = transitionDelay/100; //in 100ms
-    //root[F("tdd")] = transitionDelayDefault/100; //in 100ms
   }
 
   if (!forPreset) {

@@ -5615,7 +5615,7 @@ uint16_t mode_2Dcrazybees(void) {
     uint8_t posX, posY, aimX, aimY, hue;
     int8_t deltaX, deltaY, signX, signY, error;
     void aimed(uint16_t w, uint16_t h) {
-      randomSeed(millis());
+      random16_set_seed(millis());
       aimX = random8(0, w);
       aimY = random8(0, h);
       hue = random8();
@@ -5709,7 +5709,7 @@ uint16_t mode_2Dghostrider(void) {
     SEGENV.aux0 = cols;
     SEGENV.aux1 = rows;
     SEGMENT.fill_solid(leds, CRGB::Black);
-    randomSeed(strip.now);
+    random16_set_seed(strip.now);
     lighter->angleSpeed = random8(0,20) - 10;
     lighter->Vspeed = 5;
     lighter->gPosX = (cols/2) * 10;

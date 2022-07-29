@@ -188,12 +188,12 @@ void Segment::startTransition(uint16_t dur) {
   // starting a transition has to occur before change so we get current values 1st
   /*uint8_t*/ _briT = currentBri(getOption(SEG_OPTION_ON) ? opacity : 0); // comment out uint8_t if not using Transition struct
   /*uint8_t*/ _cctT = currentBri(cct, true); // comment out uint8_t if not using Transition struct
-  /*CRGBPalette16*/ _palT = loadPalette(palette);
-  /*uint8_t*/ _modeP = mode; // comment out uint8_t if not using Transition struct
+  /*CRGBPalette16 _palT;*/ loadPalette(_palT, palette);
+  ///*uint8_t*/ _modeP = mode; // comment out uint8_t if not using Transition struct
   //uint32_t _colorT[NUM_COLORS]; // comment out if not using Transition struct
   for (size_t i=0; i<NUM_COLORS; i++) _colorT[i] = currentColor(i, colors[i]);
 
-  // comment out if not using Transition struct
+  // using transition struct
   //if (!_t) _t = new Transition(dur); // no previous transition running
   //if (!_t) return; // failed to allocat data
   //_t->_briT = _briT;
@@ -201,6 +201,9 @@ void Segment::startTransition(uint16_t dur) {
   //_t->_palT  = _palT;
   //_t->_modeT = _modeP;
   //for (size_t i=0; i<NUM_COLORS; i++) _t->_colorT[i] = _colorT[i];
+  // comment out if using transition struct as it is done in constructor
+  _dur = dur;
+  _start = millis();
 
   setOption(SEG_OPTION_TRANSITIONAL, true);
 }
@@ -223,11 +226,11 @@ uint8_t Segment::currentBri(uint8_t briNew, bool useCct) {
   }
 }
 
-CRGBPalette16 Segment::loadPalette(uint8_t pal) {
+CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
   static unsigned long _lastPaletteChange = 0; // perhaps it should be per segment
   byte tcp[72];
-  CRGBPalette16 targetPalette;
-  if (pal>245 && (strip.customPalettes.size() == 0 || 255-pal > strip.customPalettes.size()-1)) pal = 0;
+  if (pal < 245 && pal > GRADIENT_PALETTE_COUNT+13) pal = 0;
+  if (pal > 245 && (strip.customPalettes.size() == 0 || 255-pal > strip.customPalettes.size()-1)) pal = 0;
   //default palette. Differs depending on effect
   if (pal == 0) switch (mode) {
     case FX_MODE_FIRE_2012  : pal = 35; break; // heat palette
@@ -301,17 +304,16 @@ CRGBPalette16 Segment::loadPalette(uint8_t pal) {
   return targetPalette;
 }
 
-CRGBPalette16 Segment::currentPalette(uint8_t pal) {
-  pal = (!getOption(SEG_OPTION_TRANSITIONAL) || progress() == 0xFFFFU) ? palette : constrain(pal, 0, GRADIENT_PALETTE_COUNT-1);
-  CRGBPalette16 targetPalette = loadPalette(pal);
+CRGBPalette16 &Segment::currentPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
+  loadPalette(targetPalette, pal);
   //if (_t && progress() < 0xFFFFU) {
-  if (getOption(SEG_OPTION_TRANSITIONAL) && progress() < 0xFFFFU) {
+  if (paletteFade && getOption(SEG_OPTION_TRANSITIONAL) && progress() < 0xFFFFU) {
     // blend palettes
-    nblendPaletteTowardPalette(/*_t->*/_palT, targetPalette, 48);
-    return /*_t->*/_palT;
-  } else {
-    return targetPalette;
+    uint8_t blends = map(_dur, 0, 0xFFFF, 48, 1); // do not blend palettes too quickly (0-65.5s)
+    nblendPaletteTowardPalette(/*_t->*/_palT, targetPalette, blends);
+    targetPalette = /*_t->*/_palT; // copy transitioning/temporary palette
   }
+  return targetPalette;
 }
 
 void Segment::handleTransition() {
@@ -326,7 +328,7 @@ void Segment::handleTransition() {
 
 bool Segment::setColor(uint8_t slot, uint32_t c) { //returns true if changed
   if (slot >= NUM_COLORS || c == colors[slot]) return false;
-  startTransition(strip.getTransition()); // start transition prior to change
+  if (fadeTransition) startTransition(strip.getTransition()); // start transition prior to change
   colors[slot] = c;
   return true;
 }
@@ -338,19 +340,19 @@ void Segment::setCCT(uint16_t k) {
     k = (k - 1900) >> 5;
   }
   if (cct == k) return;
-  startTransition(strip.getTransition()); // start transition prior to change
+  if (fadeTransition) startTransition(strip.getTransition()); // start transition prior to change
   cct = k;
 }
 
 void Segment::setOpacity(uint8_t o) {
   if (opacity == o) return;
-  startTransition(strip.getTransition()); // start transition prior to change
+  if (fadeTransition) startTransition(strip.getTransition()); // start transition prior to change
   opacity = o;
 }
 
 void Segment::setOption(uint8_t n, bool val) {
   bool prevOn = getOption(SEG_OPTION_ON);
-  if (n == SEG_OPTION_ON && val != prevOn) startTransition(strip.getTransition()); // start transition prior to change
+  if (fadeTransition && n == SEG_OPTION_ON && val != prevOn) startTransition(strip.getTransition()); // start transition prior to change
   if (val) options |=   0x01 << n;
   else     options &= ~(0x01 << n);
 }
@@ -845,7 +847,7 @@ void WS2812FX::service() {
         _colors_t[0]    = seg.currentColor(0, seg.colors[0]);
         _colors_t[1]    = seg.currentColor(1, seg.colors[1]);
         _colors_t[2]    = seg.currentColor(2, seg.colors[2]);
-        _currentPalette = seg.currentPalette(seg.palette);
+        seg.currentPalette(_currentPalette, seg.palette);
 
         seg.handleTransition();
 
@@ -854,7 +856,8 @@ void WS2812FX::service() {
           _colors_t[c] = gamma32(_colors_t[c]);
         }
 
-        //effect blending (execute previous effect)
+        // effect blending (execute previous effect)
+        // actual code may be a bit more involved as effects have runtime data including allocated memory
         //if (getOption(SEG_OPTION_TRANSITIONAL) && seg._modeP) (*_mode[seg._modeP])(progress());
         delay = (*_mode[seg.mode])();
         if (seg.mode != FX_MODE_HALLOWEEN_EYES) seg.call++;
@@ -1071,7 +1074,7 @@ void WS2812FX::setMode(uint8_t segid, uint8_t m) {
   if (m >= getModeCount()) m = getModeCount() - 1;
 
   if (_segments[segid].mode != m) {
-    //_segments[segid].startTransition(strip.getTransition()); // set effect transitions
+    //_segments[segid].startTransition(_transitionDur); // set effect transitions
     _segments[segid].markForReset();
     _segments[segid].mode = m;
   }
@@ -1457,10 +1460,10 @@ void WS2812FX::setRange(uint16_t i, uint16_t i2, uint32_t col)
 
 void WS2812FX::setTransitionMode(bool t)
 {
-  for (segment &seg : _segments) seg.startTransition(t ? getTransition() : 0);
+  for (segment &seg : _segments) seg.startTransition(t ? _transitionDur : 0);
 //  for (uint8_t i = 0; i < getMaxSegments(); i++) {
 //    Segment &seg = getSegment(i);
-//    seg.startTransition(t ? getTransition() : 0);
+//    seg.startTransition(t ? _transitionDur : 0);
 //  }
 }
 
