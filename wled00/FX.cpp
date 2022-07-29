@@ -5966,32 +5966,21 @@ static const char *_data_FX_MODE_2DDRIFTROSE PROGMEM = "2D Drift Rose@Fade,Blur;
 /* use the following code to pass AudioReactive usermod variables to effect
 
   uint8_t  *binNum = (uint8_t*)&SEGENV.aux1, *maxVol = (uint8_t*)(&SEGENV.aux1+1); // just in case assignment
-  uint16_t  sample = 0;
-  uint8_t   soundAgc = 0, soundSquelch = 10;
   bool      samplePeak = false;
-  float     sampleAgc = 0.0f, sampleAgv = 0.0f, multAgc = 0.0f, sampleReal = 0.0f;
-  float     FFT_MajorPeak = 0.0, FFT_Magnitude = 0.0;
+  float     FFT_MajorPeak = 0.0;
   uint8_t  *fftResult = nullptr;
   float    *fftBin = nullptr;
   um_data_t *um_data;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    sampleAvg     = *(float*)   um_data->u_data[ 0];
-    soundAgc      = *(uint8_t*) um_data->u_data[ 1];
-    sampleAgc     = *(float*)   um_data->u_data[ 2];
-    sample        = *(uint16_t*)um_data->u_data[ 3];
-    rawSampleAgc  = *(uint16_t*)um_data->u_data[ 4];
-    samplePeak    = *(uint8_t*) um_data->u_data[ 5];
-    FFT_MajorPeak = *(float*)   um_data->u_data[ 6];
-    FFT_Magnitude = *(float*)   um_data->u_data[ 7];
-    fftResult     =  (uint8_t*) um_data->u_data[ 8];
-    maxVol        =  (uint8_t*) um_data->u_data[ 9];  // requires UI element (SEGMENT.customX?), changes source element
-    binNum        =  (uint8_t*) um_data->u_data[10];  // requires UI element (SEGMENT.customX?), changes source element
-    multAgc       = *(float*)   um_data->u_data[11];
-    sampleReal    = *(float*)   um_data->u_data[12];
-    sampleGain    = *(float*)   um_data->u_data[13];
-    soundSquelch  = *(uint8_t*) um_data->u_data[15];
-    fftBin        =  (float*)   um_data->u_data[16];
-    inputLevel    =  (uint8_t*) um_data->u_data[17]; // requires UI element (SEGMENT.customX?), changes source element
+    samplePeak    = *(uint8_t*) um_data->u_data[3];
+    FFT_MajorPeak = *(float*)   um_data->u_data[4];
+    fftResult     =  (uint8_t*) um_data->u_data[2];
+    maxVol        =  (uint8_t*) um_data->u_data[6];  // requires UI element (SEGMENT.customX?), changes source element
+    binNum        =  (uint8_t*) um_data->u_data[7];  // requires UI element (SEGMENT.customX?), changes source element
+    volumeSmth    = *(float*)   um_data->u_data[0];
+    fftBin        =  (float*)   um_data->u_data[8];
+    inputLevel    =  (uint8_t*) um_data->u_data[9]; // requires UI element (SEGMENT.customX?), changes source element
+    volumeRaw     = *(float*)   um_data->u_data[1];
   } else {
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
@@ -6016,10 +6005,10 @@ uint16_t mode_ripplepeak(void) {                // * Ripple peak. By Andrew Tuli
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  uint8_t samplePeak    = *(uint8_t*)um_data->u_data[5];
-  float FFT_MajorPeak   = *(float*) um_data->u_data[6];
-  uint8_t *maxVol       =  (uint8_t*)um_data->u_data[9];
-  uint8_t *binNum       =  (uint8_t*)um_data->u_data[10];
+  uint8_t samplePeak    = *(uint8_t*)um_data->u_data[3];
+  float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
+  uint8_t *maxVol       =  (uint8_t*)um_data->u_data[6];
+  uint8_t *binNum       =  (uint8_t*)um_data->u_data[7];
 
   // printUmData();
 
@@ -6106,21 +6095,17 @@ uint16_t mode_2DSwirl(void) {
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float sampleAvg      = *(float*)  um_data->u_data[0];
-  uint8_t soundAgc     = *(uint8_t*)um_data->u_data[1];
-  int16_t sampleRaw    = *(int16_t*)um_data->u_data[3];
-  int16_t rawSampleAgc = *(int16_t*)um_data->u_data[4];
+  float   volumeSmth  = *(float*)   um_data->u_data[0]; //ewowi: use instead of sampleAvg???
+  int16_t volumeRaw   = *(int16_t*) um_data->u_data[1];
 
   // printUmData();
 
-  float tmpSound = (soundAgc) ? rawSampleAgc : sampleRaw;
-
-  leds[XY( i, j)]  += ColorFromPalette(strip.currentPalette, (ms / 11 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 11, 200, 255);
-  leds[XY( j, i)]  += ColorFromPalette(strip.currentPalette, (ms / 13 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 13, 200, 255);
-  leds[XY(ni, nj)] += ColorFromPalette(strip.currentPalette, (ms / 17 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 17, 200, 255);
-  leds[XY(nj, ni)] += ColorFromPalette(strip.currentPalette, (ms / 29 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 29, 200, 255);
-  leds[XY( i, nj)] += ColorFromPalette(strip.currentPalette, (ms / 37 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 37, 200, 255);
-  leds[XY(ni, j)]  += ColorFromPalette(strip.currentPalette, (ms / 41 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 41, 200, 255);
+  leds[XY( i, j)]  += ColorFromPalette(strip.currentPalette, (ms / 11 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 11, 200, 255);
+  leds[XY( j, i)]  += ColorFromPalette(strip.currentPalette, (ms / 13 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 13, 200, 255);
+  leds[XY(ni, nj)] += ColorFromPalette(strip.currentPalette, (ms / 17 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 17, 200, 255);
+  leds[XY(nj, ni)] += ColorFromPalette(strip.currentPalette, (ms / 29 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 29, 200, 255);
+  leds[XY( i, nj)] += ColorFromPalette(strip.currentPalette, (ms / 37 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 37, 200, 255);
+  leds[XY(ni, j)]  += ColorFromPalette(strip.currentPalette, (ms / 41 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 41, 200, 255);
 
   SEGMENT.setPixels(leds);
   return FRAMETIME;
@@ -6151,9 +6136,7 @@ uint16_t mode_2DWaverly(void) {
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float sampleAvg   = *(float*)  um_data->u_data[0];
-  uint8_t soundAgc  = *(uint8_t*)um_data->u_data[1];
-  float sampleAgc   = *(float*)  um_data->u_data[2];
+  float   volumeSmth  = *(float*)   um_data->u_data[0];
 
   SEGMENT.fadeToBlackBy(leds, SEGMENT.speed);
 
@@ -6163,7 +6146,7 @@ uint16_t mode_2DWaverly(void) {
     // use audio if available
     if (um_data) {
       thisVal /= 32; // reduce intensity of inoise8()
-      thisVal *= (soundAgc) ? sampleAgc : sampleAvg;
+      thisVal *= volumeSmth;
     }
     uint16_t thisMax = map(thisVal, 0, 512, 0, rows);
 
@@ -6206,15 +6189,11 @@ uint16_t mode_gravcenter(void) {                // Gravcenter. By Andrew Tuline.
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   sampleAvg = *(float*)  um_data->u_data[0];
-  uint8_t soundAgc  = *(uint8_t*)um_data->u_data[1];
-  float   sampleAgc = *(float*)  um_data->u_data[2];
-
-  float tmpSound = (soundAgc) ? sampleAgc : sampleAvg;
+  float   volumeSmth  = *(float*)  um_data->u_data[0];
 
   SEGMENT.fade_out(240);
 
-  float segmentSampleAvg = tmpSound * (float)SEGMENT.intensity / 255.0f;
+  float segmentSampleAvg = volumeSmth * (float)SEGMENT.intensity / 255.0f;
   segmentSampleAvg *= 0.125; // divide by 8, to compensate for later "sensitivty" upscaling
 
   float mySampleAvg = mapf(segmentSampleAvg*2.0, 0, 32, 0, (float)SEGLEN/2.0); // map to pixels available in current segment 
@@ -6257,18 +6236,14 @@ uint16_t mode_gravcentric(void) {                     // Gravcentric. By Andrew 
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   sampleAvg = *(float*)  um_data->u_data[0];
-  uint8_t soundAgc  = *(uint8_t*)um_data->u_data[1];
-  float   sampleAgc = *(float*)  um_data->u_data[2];
+  float   volumeSmth  = *(float*)  um_data->u_data[0];
 
   // printUmData();
-
-  float tmpSound = (soundAgc) ? sampleAgc : sampleAvg;
 
   SEGMENT.fade_out(240);
   SEGMENT.fade_out(240); // twice? really?
 
-  float segmentSampleAvg = tmpSound * (float)SEGMENT.intensity / 255.0;
+  float segmentSampleAvg = volumeSmth * (float)SEGMENT.intensity / 255.0;
   segmentSampleAvg *= 0.125f; // divide by 8, to compensate for later "sensitivty" upscaling
 
   float mySampleAvg = mapf(segmentSampleAvg*2.0, 0.0f, 32.0f, 0.0f, (float)SEGLEN/2.0); // map to pixels availeable in current segment 
@@ -6311,15 +6286,11 @@ uint16_t mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   sampleAvg = *(float*)  um_data->u_data[0];
-  uint8_t soundAgc  = *(uint8_t*)um_data->u_data[1];
-  float   sampleAgc = *(float*)  um_data->u_data[2];
-
-  float tmpSound = (soundAgc) ? sampleAgc : sampleAvg;
+  float   volumeSmth  = *(float*)  um_data->u_data[0];
 
   SEGMENT.fade_out(240);
 
-  float segmentSampleAvg = tmpSound * (float)SEGMENT.intensity / 255.0;
+  float segmentSampleAvg = volumeSmth * (float)SEGMENT.intensity / 255.0;
   segmentSampleAvg *= 0.25; // divide by 4, to compensate for later "sensitivty" upscaling
 
   float mySampleAvg = mapf(segmentSampleAvg*2.0, 0, 64, 0, (SEGLEN-1)); // map to pixels availeable in current segment 
@@ -6355,10 +6326,10 @@ uint16_t mode_juggles(void) {                   // Juggles. By Andrew Tuline.
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float sampleAgc = *(float*)um_data->u_data[2];
+  float   volumeSmth   = *(float*)  um_data->u_data[0];
 
   SEGMENT.fade_out(224);
-  uint16_t my_sampleAgc = fmax(fmin(sampleAgc, 255.0), 0);
+  uint16_t my_sampleAgc = fmax(fmin(volumeSmth, 255.0), 0);
 
   for (size_t i=0; i<SEGMENT.intensity/32+1U; i++) {
     SEGMENT.setPixelColor(beatsin16(SEGMENT.speed/4+i*2,0,SEGLEN-1), color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(millis()/4+i*2, false, PALETTE_SOLID_WRAP, 0), my_sampleAgc));
@@ -6378,9 +6349,7 @@ uint16_t mode_matripix(void) {                  // Matripix. By Andrew Tuline.
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  uint8_t soundAgc     = *(uint8_t*)um_data->u_data[1];
-  int16_t sampleRaw    = *(int16_t*)um_data->u_data[3];
-  int16_t rawSampleAgc = *(int16_t*)um_data->u_data[4];
+  int16_t volumeRaw    = *(int16_t*)um_data->u_data[1];
 
   if (SEGENV.call == 0) SEGMENT.fill(BLACK);
 
@@ -6388,8 +6357,7 @@ uint16_t mode_matripix(void) {                  // Matripix. By Andrew Tuline.
   if(SEGENV.aux0 != secondHand) {
     SEGENV.aux0 = secondHand;
 
-    uint8_t tmpSound = (soundAgc) ? rawSampleAgc : sampleRaw;
-    int pixBri = tmpSound * SEGMENT.intensity / 64;
+    int pixBri = volumeRaw * SEGMENT.intensity / 64;
     for (uint16_t i=0; i<SEGLEN-1; i++) SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i+1)); // shift left
     SEGMENT.setPixelColor(SEGLEN-1, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), pixBri));
   }
@@ -6410,22 +6378,19 @@ uint16_t mode_midnoise(void) {                  // Midnoise. By Andrew Tuline.
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   sampleAvg = *(float*)  um_data->u_data[0];
-  uint8_t soundAgc  = *(uint8_t*)um_data->u_data[1];
-  float   sampleAgc = *(float*)  um_data->u_data[2];
+  float   volumeSmth   = *(float*)  um_data->u_data[0];
 
   SEGMENT.fade_out(SEGMENT.speed);
   SEGMENT.fade_out(SEGMENT.speed);
 
-  float tmpSound = (soundAgc) ? sampleAgc : sampleAvg;
-  float tmpSound2 = tmpSound * (float)SEGMENT.intensity / 256.0;  // Too sensitive.
+  float tmpSound2 = volumeSmth * (float)SEGMENT.intensity / 256.0;  // Too sensitive.
   tmpSound2 *= (float)SEGMENT.intensity / 128.0;              // Reduce sensitity/length.
 
   int maxLen = mapf(tmpSound2, 0, 127, 0, SEGLEN/2);
   if (maxLen >SEGLEN/2) maxLen = SEGLEN/2;
 
   for (int i=(SEGLEN/2-maxLen); i<(SEGLEN/2+maxLen); i++) {
-    uint8_t index = inoise8(i*tmpSound+SEGENV.aux0, SEGENV.aux1+i*tmpSound);  // Get a value from the noise function. I'm using both x and y axis.
+    uint8_t index = inoise8(i*volumeSmth+SEGENV.aux0, SEGENV.aux1+i*volumeSmth);  // Get a value from the noise function. I'm using both x and y axis.
     SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0));
   }
 
@@ -6452,17 +6417,13 @@ uint16_t mode_noisefire(void) {                 // Noisefire. By Andrew Tuline.
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   sampleAvg = *(float*)  um_data->u_data[0];
-  uint8_t soundAgc  = *(uint8_t*)um_data->u_data[1];
-  float   sampleAgc = *(float*)  um_data->u_data[2];
+  float   volumeSmth   = *(float*)  um_data->u_data[0];
 
   for (uint16_t i = 0; i < SEGLEN; i++) {
     uint16_t index = inoise8(i*SEGMENT.speed/64,millis()*SEGMENT.speed/64*SEGLEN/255);  // X location is constant, but we move along the Y at the rate of millis(). By Andrew Tuline.
     index = (255 - i*256/SEGLEN) * index/(256-SEGMENT.intensity);                       // Now we need to scale index so that it gets blacker as we get close to one of the ends.
                                                                                         // This is a simple y=mx+b equation that's been scaled. index/128 is another scaling.
-    uint8_t tmpSound = (soundAgc) ? sampleAgc : sampleAvg;
-
-    CRGB color = ColorFromPalette(strip.currentPalette, index, tmpSound*2, LINEARBLEND);     // Use the my own palette.
+    CRGB color = ColorFromPalette(strip.currentPalette, index, volumeSmth*2, LINEARBLEND);     // Use the my own palette.
     SEGMENT.setPixelColor(i, color);
   }
 
@@ -6481,23 +6442,18 @@ uint16_t mode_noisemeter(void) {                // Noisemeter. By Andrew Tuline.
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   sampleAvg    = *(float*)  um_data->u_data[0];
-  uint8_t soundAgc     = *(uint8_t*)um_data->u_data[1];
-  float   sampleAgc    = *(float*)  um_data->u_data[2];
-  int16_t sampleRaw    = *(int16_t*)um_data->u_data[3];
-  int16_t rawSampleAgc = *(int16_t*)um_data->u_data[4];
+  float   volumeSmth   = *(float*)  um_data->u_data[0];
+  int16_t volumeRaw    = *(int16_t*)um_data->u_data[1];
 
   uint8_t fadeRate = map(SEGMENT.speed,0,255,224,255);
   SEGMENT.fade_out(fadeRate);
 
-  float tmpSound = (soundAgc) ? rawSampleAgc : sampleRaw;
-  float tmpSound2 = tmpSound * 2.0 * (float)SEGMENT.intensity / 255.0;
+  float tmpSound2 = volumeRaw * 2.0 * (float)SEGMENT.intensity / 255.0;
   int maxLen = mapf(tmpSound2, 0, 255, 0, SEGLEN); // map to pixels availeable in current segment              // Still a bit too sensitive.
   if (maxLen >SEGLEN) maxLen = SEGLEN;
 
-  tmpSound = soundAgc ? sampleAgc : sampleAvg;                      // now use smoothed value (sampleAvg or sampleAgc)
   for (int i=0; i<maxLen; i++) {                                    // The louder the sound, the wider the soundbar. By Andrew Tuline.
-    uint8_t index = inoise8(i*tmpSound+SEGENV.aux0, SEGENV.aux1+i*tmpSound);  // Get a value from the noise function. I'm using both x and y axis.
+    uint8_t index = inoise8(i*volumeSmth+SEGENV.aux0, SEGENV.aux1+i*volumeSmth);  // Get a value from the noise function. I'm using both x and y axis.
     SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0));
   }
 
@@ -6520,16 +6476,13 @@ uint16_t mode_pixelwave(void) {                 // Pixelwave. By Andrew Tuline.
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  uint8_t soundAgc     = *(uint8_t*)um_data->u_data[1];
-  int16_t sampleRaw    = *(int16_t*)um_data->u_data[3];
-  int16_t rawSampleAgc = *(int16_t*)um_data->u_data[4];
+  int16_t volumeRaw    = *(int16_t*)um_data->u_data[1];
 
   uint8_t secondHand = micros()/(256-SEGMENT.speed)/500+1 % 16;
   if(SEGENV.aux0 != secondHand) {
     SEGENV.aux0 = secondHand;
 
-    uint8_t tmpSound = (soundAgc) ? rawSampleAgc : sampleRaw;
-    int pixBri = tmpSound * SEGMENT.intensity / 64;
+    int pixBri = volumeRaw * SEGMENT.intensity / 64;
 
     SEGMENT.setPixelColor(SEGLEN/2, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), pixBri));
 
@@ -6560,9 +6513,7 @@ uint16_t mode_plasmoid(void) {                  // Plasmoid. By Andrew Tuline.
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   sampleAvg = *(float*)  um_data->u_data[0];
-  uint8_t soundAgc  = *(uint8_t*)um_data->u_data[1];
-  float   sampleAgc = *(float*)  um_data->u_data[2];
+  float   volumeSmth   = *(float*)  um_data->u_data[0];
 
   SEGMENT.fade_out(64);
 
@@ -6575,8 +6526,7 @@ uint16_t mode_plasmoid(void) {                  // Plasmoid. By Andrew Tuline.
     thisbright += cos8(((i*(97 +(5*SEGMENT.speed/32)))+plasmoip->thatphase) & 0xFF)/2; // Let's munge the brightness a bit and animate it all with the phases.
     
     uint8_t colorIndex=thisbright;
-    int tmpSound = (soundAgc) ? sampleAgc : sampleAvg;
-    if (tmpSound * SEGMENT.intensity / 64 < thisbright) {thisbright = 0;}
+    if (volumeSmth * SEGMENT.intensity / 64 < thisbright) {thisbright = 0;}
 
     SEGMENT.setPixelColor(i, color_add(SEGMENT.getPixelColor(i), color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(colorIndex, false, PALETTE_SOLID_WRAP, 0), thisbright)));
   }
@@ -6601,10 +6551,10 @@ uint16_t mode_puddlepeak(void) {                // Puddlepeak. By Andrew Tuline.
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   sampleAgc  = *(float*)  um_data->u_data[2];
-  uint8_t samplePeak = *(uint8_t*)um_data->u_data[5];
-  uint8_t *maxVol    =  (uint8_t*)um_data->u_data[9];
-  uint8_t *binNum    =  (uint8_t*)um_data->u_data[10];
+  uint8_t samplePeak = *(uint8_t*)um_data->u_data[3];
+  uint8_t *maxVol    =  (uint8_t*)um_data->u_data[6];
+  uint8_t *binNum    =  (uint8_t*)um_data->u_data[7];
+  float   volumeSmth   = *(float*)  um_data->u_data[0];
 
   if (SEGENV.call == 0) {
     SEGMENT.custom2 = *binNum;
@@ -6617,7 +6567,7 @@ uint16_t mode_puddlepeak(void) {                // Puddlepeak. By Andrew Tuline.
   SEGMENT.fade_out(fadeVal);
 
   if (samplePeak == 1) {
-    size = sampleAgc * SEGMENT.intensity /256 /4 + 1;     // Determine size of the flash based on the volume.
+    size = volumeSmth * SEGMENT.intensity /256 /4 + 1;     // Determine size of the flash based on the volume.
     if (pos+size>= SEGLEN) size = SEGLEN - pos;
   }
 
@@ -6645,14 +6595,10 @@ uint16_t mode_puddles(void) {                   // Puddles. By Andrew Tuline.
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  uint8_t soundAgc     = *(uint8_t*)um_data->u_data[1];
-  int16_t sampleRaw    = *(int16_t*)um_data->u_data[3];
-  int16_t rawSampleAgc = *(int16_t*)um_data->u_data[4];
+  int16_t volumeRaw    = *(int16_t*)um_data->u_data[1];
 
-  uint16_t tmpSound = (soundAgc) ? rawSampleAgc : sampleRaw;
-  
-  if (tmpSound > 1) {
-    size = tmpSound * SEGMENT.intensity /256 /8 + 1;        // Determine size of the flash based on the volume.
+  if (volumeRaw > 1) {
+    size = volumeRaw * SEGMENT.intensity /256 /8 + 1;        // Determine size of the flash based on the volume.
     if (pos+size >= SEGLEN) size = SEGLEN - pos;
   }
 
@@ -6682,14 +6628,15 @@ uint16_t mode_pixels(void) {                    // Pixels. By Andrew Tuline.
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float    sampleAgc = *(float*)   um_data->u_data[2];
-  myVals[millis()%32] = sampleAgc;    // filling values semi randomly
+  float   volumeSmth   = *(float*)  um_data->u_data[0];
+
+  myVals[millis()%32] = volumeSmth;    // filling values semi randomly
 
   SEGMENT.fade_out(64+(SEGMENT.speed>>1));
 
   for (uint16_t i=0; i <SEGMENT.intensity/8; i++) {
     uint16_t segLoc = random16(SEGLEN);                    // 16 bit for larger strands of LED's.
-    SEGMENT.setPixelColor(segLoc, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(myVals[i%32]+i*4, false, PALETTE_SOLID_WRAP, 0), sampleAgc));
+    SEGMENT.setPixelColor(segLoc, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(myVals[i%32]+i*4, false, PALETTE_SOLID_WRAP, 0), volumeSmth));
   }
 
   return FRAMETIME;
@@ -6714,24 +6661,15 @@ uint16_t WS2812FX::mode_binmap(void) {
 #ifdef SR_DEBUG
   uint8_t *maxVol;
 #endif
-  uint8_t soundAgc = 0;
-  float sampleAvg = 0.0f;
   float *fftBin = nullptr;
-  float multAgc, sampleGain;
-  uint8_t soundSquelch;
   uint8_t *inputLevel = (uint8_t*)(&SEGENV.aux1+1);
   um_data_t *um_data;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
 #ifdef SR_DEBUG
-    maxVol        =  (uint8_t*)um_data->u_data[9];
+    maxVol        =  (uint8_t*)um_data->u_data[6];
 #endif
-    sampleAvg     = *(float*)  um_data->u_data[0];
-    soundAgc      = *(uint8_t*)um_data->u_data[1];
-    multAgc       = *(float*)  um_data->u_data[11];
-    sampleGain    = *(float*)  um_data->u_data[13];
-    soundSquelch  = *(uint8_t*)um_data->u_data[15];
-    fftBin        =  (float*)  um_data->u_data[16];
-    inputLevel    =  (uint8_t*)um_data->u_data[17];
+    fftBin        =  (float*)  um_data->u_data[8];
+    inputLevel    =  (uint8_t*)um_data->u_data[9];
   }
   if (!fftBin) return mode_static();
 
@@ -6798,7 +6736,7 @@ uint16_t mode_blurz(void) {                    // Blurz. By Andrew Tuline.
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  uint8_t *fftResult = (uint8_t*)um_data->u_data[8];
+  uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
   if (!fftResult) return mode_static();
 
   if (SEGENV.call == 0) {
@@ -6835,7 +6773,7 @@ uint16_t mode_DJLight(void) {                   // Written by ??? Adapted by Wil
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  uint8_t *fftResult = (uint8_t*)um_data->u_data[8];
+  uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
   if (!fftResult) return mode_static();
 
   uint8_t secondHand = micros()/(256-SEGMENT.speed)/500+1 % 64;
@@ -6868,15 +6806,8 @@ uint16_t mode_freqmap(void) {                   // Map FFT_MajorPeak to SEGLEN. 
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   sampleAvg     = *(float*)  um_data->u_data[0];
-  uint8_t soundAgc      = *(uint8_t*)um_data->u_data[1];
-  float   FFT_MajorPeak = *(float*)  um_data->u_data[6];
-  float   FFT_Magnitude = *(float*)  um_data->u_data[7];
-  float   multAgc       = *(float*)  um_data->u_data[11];
-
-  float my_magnitude = FFT_Magnitude / 4.0;
-  if (soundAgc) my_magnitude *= multAgc;
-  if (sampleAvg < 1 ) my_magnitude = 0.001;              // noise gate closed - mute
+  float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
+  float   my_magnitude  = *(float*)   um_data->u_data[5] / 4.0f; 
 
   SEGMENT.fade_out(SEGMENT.speed);
 
@@ -6902,15 +6833,15 @@ uint16_t mode_freqmatrix(void) {                // Freqmatrix. By Andreas Plesch
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float sampleAgc     = *(float*)um_data->u_data[2];
-  float FFT_MajorPeak = *(float*)um_data->u_data[6];
+  float FFT_MajorPeak = *(float*)um_data->u_data[4];
+  float volumeSmth    = *(float*)  um_data->u_data[0];
 
   uint8_t secondHand = micros()/(256-SEGMENT.speed)/500 % 16;
   if(SEGENV.aux0 != secondHand) {
     SEGENV.aux0 = secondHand;
 
     uint8_t sensitivity = map(SEGMENT.custom3, 0, 255, 1, 10);
-    int pixVal = (sampleAgc * SEGMENT.intensity * sensitivity) / 256.0f;
+    int pixVal = (volumeSmth * SEGMENT.intensity * sensitivity) / 256.0f;
     if (pixVal > 255) pixVal = 255;
 
     float intensity = map(pixVal, 0, 255, 0, 100) / 100.0f;  // make a brightness from the last avg
@@ -6956,15 +6887,8 @@ uint16_t mode_freqpixels(void) {                // Freqpixel. By Andrew Tuline.
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   sampleAvg     = *(float*)  um_data->u_data[0];
-  uint8_t soundAgc      = *(uint8_t*)um_data->u_data[1];
-  float   FFT_MajorPeak = *(float*)  um_data->u_data[6];
-  float   FFT_Magnitude = *(float*)  um_data->u_data[7];
-  float   multAgc       = *(float*)  um_data->u_data[11];
-
-  float my_magnitude = FFT_Magnitude / 16.0;
-  if (soundAgc) my_magnitude *= multAgc;
-  if (sampleAvg < 1 ) my_magnitude = 0.001;              // noise gate closed - mute
+  float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
+  float   my_magnitude  = *(float*)  um_data->u_data[5] / 16.0f; 
 
   uint16_t fadeRate = 2*SEGMENT.speed - SEGMENT.speed*SEGMENT.speed/255;    // Get to 255 as quick as you can.
   SEGMENT.fade_out(fadeRate);
@@ -7001,10 +6925,8 @@ uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschun
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   sampleAvg     = *(float*)  um_data->u_data[0];
-  uint8_t soundAgc      = *(uint8_t*)um_data->u_data[1];
-  float   sampleAgc     = *(float*)  um_data->u_data[2];
-  float   FFT_MajorPeak = *(float*)  um_data->u_data[6];
+  float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
+  float   volumeSmth   = *(float*)  um_data->u_data[0];
 
   uint8_t secondHand = micros()/(256-SEGMENT.speed)/500 % 16;
   if(SEGENV.aux0 != secondHand) {
@@ -7013,10 +6935,8 @@ uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschun
     //uint8_t fade = SEGMENT.custom3;
     //uint8_t fadeval;
 
-    float tmpSound = (soundAgc) ? sampleAgc : sampleAvg;
-
     float sensitivity = mapf(SEGMENT.custom3, 1, 255, 1, 10);
-    float pixVal = tmpSound * (float)SEGMENT.intensity / 256.0f * sensitivity;
+    float pixVal = volumeSmth * (float)SEGMENT.intensity / 256.0f * sensitivity;
     if (pixVal > 255) pixVal = 255;
 
     float intensity = mapf(pixVal, 0, 255, 0, 100) / 100.0f;  // make a brightness from the last avg
@@ -7065,15 +6985,12 @@ uint16_t mode_gravfreq(void) {                  // Gravfreq. By Andrew Tuline.
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   sampleAvg     = *(float*)  um_data->u_data[0];
-  uint8_t soundAgc      = *(uint8_t*)um_data->u_data[1];
-  float   sampleAgc     = *(float*)  um_data->u_data[2];
-  float   FFT_MajorPeak = *(float*)  um_data->u_data[6];
+  float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
+  float   volumeSmth   = *(float*)   um_data->u_data[0];
 
   SEGMENT.fade_out(240);
 
-  float tmpSound = (soundAgc) ? sampleAgc : sampleAvg;
-  float segmentSampleAvg = tmpSound * (float)SEGMENT.intensity / 255.0;
+  float segmentSampleAvg = volumeSmth * (float)SEGMENT.intensity / 255.0;
   segmentSampleAvg *= 0.125; // divide by 8,  to compensate for later "sensitivty" upscaling
 
   float mySampleAvg = mapf(segmentSampleAvg*2.0, 0,32, 0, (float)SEGLEN/2.0); // map to pixels availeable in current segment 
@@ -7113,7 +7030,7 @@ uint16_t mode_noisemove(void) {                 // Noisemove.    By: Andrew Tuli
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  uint8_t *fftResult = (uint8_t*)um_data->u_data[8];
+  uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
   if (!fftResult) return mode_static();
 
   SEGMENT.fade_out(224);                                          // Just in case something doesn't get faded.
@@ -7139,21 +7056,14 @@ uint16_t mode_rocktaves(void) {                 // Rocktaves. Same note from eac
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   sampleAvg     = *(float*)  um_data->u_data[0];
-  uint8_t soundAgc      = *(uint8_t*)um_data->u_data[1];
-  float   FFT_MajorPeak = *(float*)  um_data->u_data[6];
-  float   FFT_Magnitude = *(float*)  um_data->u_data[7];
-  float   multAgc       = *(float*)  um_data->u_data[11];
+  float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
+  float   my_magnitude  = *(float*)   um_data->u_data[5] / 16.0f; 
 
   SEGMENT.fade_out(128);                          // Just in case something doesn't get faded.
 
   float frTemp = FFT_MajorPeak;
   uint8_t octCount = 0;                                   // Octave counter.
   uint8_t volTemp = 0;
-
-  float my_magnitude = FFT_Magnitude / 16.0;             // scale magnitude to be aligned with scaling of FFT bins
-  if (soundAgc) my_magnitude *= multAgc;                 // apply gain
-  if (sampleAvg < 1 ) my_magnitude = 0.001;              // mute
 
   if (my_magnitude > 32) volTemp = 255;                 // We need to squelch out the background noise.
 
@@ -7186,14 +7096,11 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   sampleAvg     = *(float*)  um_data->u_data[0];
-  uint8_t soundAgc      = *(uint8_t*)um_data->u_data[1];
-  uint8_t samplePeak    = *(uint8_t*)um_data->u_data[5];
-  float   FFT_MajorPeak = *(float*)  um_data->u_data[6];
-  float   FFT_Magnitude = *(float*)  um_data->u_data[7];
-  uint8_t *maxVol       =  (uint8_t*)um_data->u_data[9];
-  uint8_t *binNum       =  (uint8_t*)um_data->u_data[10];
-  float   multAgc       = *(float*)  um_data->u_data[11];
+  uint8_t samplePeak    = *(uint8_t*)um_data->u_data[3];
+  float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
+  uint8_t *maxVol       =  (uint8_t*)um_data->u_data[6];
+  uint8_t *binNum       =  (uint8_t*)um_data->u_data[7];
+  float   my_magnitude  = *(float*)   um_data->u_data[5] / 8.0f; 
 
   if (SEGENV.call == 0) {
     SEGENV.aux0 = 255;
@@ -7207,10 +7114,6 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
   uint8_t secondHand = micros() / (256-SEGMENT.speed)/500 + 1 % 16;
   if (SEGENV.aux0 != secondHand) {                        // Triggered millis timing.
     SEGENV.aux0 = secondHand;
-
-    float my_magnitude = FFT_Magnitude / 8.0f;
-    if (soundAgc) my_magnitude *= multAgc;
-    if (sampleAvg < 1 ) my_magnitude = 0.001f;             // noise gate closed - mute
 
     uint8_t pixCol = (log10f((float)FFT_MajorPeak) - 2.26f) * 177;  // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
 
@@ -7246,7 +7149,7 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  uint8_t *fftResult = (uint8_t*)um_data->u_data[8];
+  uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
   if (!fftResult) return mode_static();
 
   if (SEGENV.call == 0) for (int i=0; i<cols; i++) previousBarHeight[i] = 0;
@@ -7310,7 +7213,7 @@ uint16_t mode_2DFunkyPlank(void) {              // Written by ??? Adapted by Wil
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  uint8_t *fftResult = (uint8_t*)um_data->u_data[8];
+  uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
   if (!fftResult) return mode_static();
 
   uint8_t secondHand = micros()/(256-SEGMENT.speed)/500+1 % 64;
@@ -7405,7 +7308,7 @@ uint16_t mode_2DAkemi(void) {
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  uint8_t *fftResult = (uint8_t*)um_data->u_data[8];
+  uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
   float base = fftResult[0]/255.0f;
 
   //draw and color Akemi

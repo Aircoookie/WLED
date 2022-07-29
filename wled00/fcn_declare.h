@@ -238,7 +238,7 @@ typedef enum UM_Data_Types {
 typedef struct UM_Exchange_Data {
   // should just use: size_t arr_size, void **arr_ptr, byte *ptr_type
   size_t       u_size;                 // size of u_data array
-  um_types_t  *u_type;                 // array of data types
+  um_types_t  *u_type;                 // array of data types ewowi: not used???
   void       **u_data;                 // array of pointers to data
   UM_Exchange_Data() {
     u_size = 0;

@@ -404,7 +404,7 @@ class AudioReactive : public Usermod {
     struct audioSyncPacket {
       char    header[6];
       int     sampleAgc;      //  04 Bytes
-      int     sample;         //  04 Bytes
+      int     sampleRaw;      //  04 Bytes
       float   sampleAvg;      //  04 Bytes
       bool    samplePeak;     //  01 Bytes
       uint8_t fftResult[16];  //  16 Bytes
@@ -423,8 +423,8 @@ class AudioReactive : public Usermod {
     uint8_t  maxVol = 10;         // Reasonable value for constant volume for 'peak detector', as it won't always trigger
     uint8_t  binNum = 8;          // Used to select the bin for FFT based beat detection.
     bool     samplePeak = 0;      // Boolean flag for peak. Responding routine must reset this flag
-    int16_t  sample;              // either sampleRaw or rawSampleAgc depending on soundAgc
-    float    sampleSmth;          // either sampleAvg or sampleAgc depending on soundAgc; smoothed sample
+    float    volumeSmth;          // either sampleAvg or sampleAgc depending on soundAgc; smoothed sample
+    int16_t  volumeRaw;           // either sampleRaw or rawSampleAgc depending on soundAgc
 
     #ifdef MIC_SAMPLING_LOG
     uint8_t  targetAgc = 60;      // This is our setPoint at 20% of max for the adjusted output (used only in logAudio())
@@ -461,6 +461,7 @@ class AudioReactive : public Usermod {
     static const char _digitalmic[];
     static const char UDP_SYNC_HEADER[];
 
+    float my_magnitude;
 
     // private methods
     void logAudio()
@@ -641,6 +642,14 @@ class AudioReactive : public Usermod {
       //if (userVar0 > 255) userVar0 = 255;
 
       last_soundAgc = soundAgc;
+
+      volumeSmth = (soundAgc) ? sampleAgc:sampleAvg;
+      volumeRaw = (soundAgc) ? rawSampleAgc : sampleRaw;
+
+      my_magnitude = FFT_Magnitude; // / 16.0f, 8.0f, 4.0f done in effects
+      if (soundAgc) my_magnitude *= multAgc;
+      if (volumeSmth < 1 ) my_magnitude = 0.001f;             // noise gate closed - mute
+
     } // agcAvg()
 
 
@@ -741,7 +750,7 @@ class AudioReactive : public Usermod {
       strncpy_P(transmitData.header, PSTR(UDP_SYNC_HEADER), 6);
 
       transmitData.sampleAgc  = sampleAgc;
-      transmitData.sample     = sampleRaw;
+      transmitData.sampleRaw  = sampleRaw;
       transmitData.sampleAvg  = sampleAvg;
       transmitData.samplePeak = udpSamplePeak;
       udpSamplePeak           = 0;              // Reset udpSamplePeak after we've transmitted it
@@ -782,7 +791,7 @@ class AudioReactive : public Usermod {
 
           sampleAgc    = receivedPacket->sampleAgc;
           rawSampleAgc = receivedPacket->sampleAgc;
-          sampleRaw    = receivedPacket->sample;
+          sampleRaw    = receivedPacket->sampleRaw;
           sampleAvg    = receivedPacket->sampleAvg;
 
           // Only change samplePeak IF it's currently false.
@@ -815,45 +824,29 @@ class AudioReactive : public Usermod {
         // usermod exchangeable data
         // we will assign all usermod exportable data here as pointers to original variables or arrays and allocate memory for pointers
         um_data = new um_data_t;
-        um_data->u_size = 18;
+        um_data->u_size = 10;
         um_data->u_type = new um_types_t[um_data->u_size];
         um_data->u_data = new void*[um_data->u_size];
-        um_data->u_data[ 0] = &sampleAvg;       //*used (2D Swirl, 2D Waverly, Gravcenter, Gravcentric, Gravimeter, Midnoise, Noisefire, Noisemeter, Plasmoid, Binmap, Freqmap, Freqpixels, Freqwave, Gravfreq, Rocktaves, Waterfall)
-        um_data->u_type[ 0] = UMT_FLOAT;
-        um_data->u_data[ 1] = &soundAgc;        //*used (2D Swirl, 2D Waverly, Gravcenter, Gravcentric, Gravimeter, Matripix, Midnoise, Noisefire, Noisemeter, Pixelwave, Plasmoid, Puddles, Binmap, Freqmap, Freqpixels, Freqwave, Gravfreq, Rocktaves, Waterfall)
-        um_data->u_type[ 1] = UMT_BYTE;
-        um_data->u_data[ 2] = &sampleAgc;       //*used (can be calculated as: sampleReal * multAgc) (..., Juggles, ..., Pixels, Puddlepeak, Freqmatrix)
-        um_data->u_type[ 2] = UMT_FLOAT;
-        um_data->u_data[ 3] = &sampleRaw;       //*used (Matripix, Noisemeter, Pixelwave, Puddles, 2D Swirl, for debugging Gravimeter)
-        um_data->u_type[ 3] = UMT_INT16;
-        um_data->u_data[ 4] = &rawSampleAgc;    //*used (Matripix, Noisemeter, Pixelwave, Puddles, 2D Swirl)
-        um_data->u_type[ 4] = UMT_INT16;
-        um_data->u_data[ 5] = &samplePeak;      //*used (Puddlepeak, Ripplepeak, Waterfall)
-        um_data->u_type[ 5] = UMT_BYTE;
-        um_data->u_data[ 6] = &FFT_MajorPeak;   //*used (Ripplepeak, Freqmap, Freqmatrix, Freqpixels, Freqwave, Gravfreq, Rocktaves, Waterfall)
-        um_data->u_type[ 6] = UMT_FLOAT;
-        um_data->u_data[ 7] = &FFT_Magnitude;   //*used (Binmap, Freqmap, Freqpixels, Rocktaves, Waterfall)
-        um_data->u_type[ 7] = UMT_FLOAT;
-        um_data->u_data[ 8] = fftResult;        //*used (Blurz, DJ Light, Noisemove, GEQ_base, 2D Funky Plank, Akemi)
-        um_data->u_type[ 8] = UMT_BYTE_ARR;
-        um_data->u_data[ 9] = &maxVol;          // assigned in effect function from UI element!!! (Puddlepeak, Ripplepeak, Waterfall)
-        um_data->u_type[ 9] = UMT_BYTE;
-        um_data->u_data[10] = &binNum;          // assigned in effect function from UI element!!! (Puddlepeak, Ripplepeak, Waterfall)
-        um_data->u_type[10] = UMT_BYTE;
-        um_data->u_data[11] = &multAgc;         //*used (for debugging) (Gravimeter, Binmap, Freqmap, Freqpixels, Rocktaves, Waterfall,)
-        um_data->u_type[11] = UMT_FLOAT;
-        um_data->u_data[12] = &sampleReal;      //*used (for debugging) (Gravimeter)
-        um_data->u_type[12] = UMT_FLOAT;
-        um_data->u_data[13] = &sampleGain;      //*used (for debugging) (Gravimeter, Binmap)
-        um_data->u_type[13] = UMT_FLOAT;
-        um_data->u_data[14] = 0;                //*free (used for myVals / Pixels before)
-        um_data->u_type[14] = UMT_BYTE;
-        um_data->u_data[15] = &soundSquelch;    //*used (for debugging) (only once, Binmap)
-        um_data->u_type[15] = UMT_BYTE;
-        um_data->u_data[16] = fftBin;           //*used (for debugging) (only once, Binmap)
-        um_data->u_type[16] = UMT_FLOAT_ARR;
-        um_data->u_data[17] = &inputLevel;      // global UI element!!! (Gravimeter, Binmap)
-        um_data->u_type[17] = UMT_BYTE;
+        um_data->u_data[0] = &volumeSmth;      //*used (New)
+        um_data->u_type[0] = UMT_FLOAT;
+        um_data->u_data[1] = &volumeRaw;      // used (New)
+        um_data->u_type[1] = UMT_UINT16;
+        um_data->u_data[2] = fftResult;        //*used (Blurz, DJ Light, Noisemove, GEQ_base, 2D Funky Plank, Akemi)
+        um_data->u_type[2] = UMT_BYTE_ARR;
+        um_data->u_data[3] = &samplePeak;      //*used (Puddlepeak, Ripplepeak, Waterfall)
+        um_data->u_type[3] = UMT_BYTE;
+        um_data->u_data[4] = &FFT_MajorPeak;   //*used (Ripplepeak, Freqmap, Freqmatrix, Freqpixels, Freqwave, Gravfreq, Rocktaves, Waterfall)
+        um_data->u_type[4] = UMT_FLOAT;
+        um_data->u_data[5] = &my_magnitude;   // used (New)
+        um_data->u_type[5] = UMT_FLOAT;
+        um_data->u_data[6] = &maxVol;          // assigned in effect function from UI element!!! (Puddlepeak, Ripplepeak, Waterfall)
+        um_data->u_type[6] = UMT_BYTE;
+        um_data->u_data[7] = &binNum;          // assigned in effect function from UI element!!! (Puddlepeak, Ripplepeak, Waterfall)
+        um_data->u_type[7] = UMT_BYTE;
+        um_data->u_data[8] = fftBin;           //*used (for debugging) (only once, Binmap)
+        um_data->u_type[8] = UMT_FLOAT_ARR;
+        um_data->u_data[9] = &inputLevel;      // global UI element!!! (Gravimeter, Binmap)
+        um_data->u_type[9] = UMT_BYTE;
       }
 
       // Reset I2S peripheral for good measure
