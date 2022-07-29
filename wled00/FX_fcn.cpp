@@ -230,7 +230,7 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
   static unsigned long _lastPaletteChange = 0; // perhaps it should be per segment
   byte tcp[72];
   if (pal < 245 && pal > GRADIENT_PALETTE_COUNT+13) pal = 0;
-  if (pal > 245 && (strip.customPalettes.size() == 0 || 255-pal > strip.customPalettes.size()-1)) pal = 0;
+  if (pal > 245 && (strip.customPalettes.size() == 0 || 255U-pal > strip.customPalettes.size()-1)) pal = 0;
   //default palette. Differs depending on effect
   if (pal == 0) switch (mode) {
     case FX_MODE_FIRE_2012  : pal = 35; break; // heat palette
@@ -307,9 +307,9 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
 CRGBPalette16 &Segment::currentPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
   loadPalette(targetPalette, pal);
   //if (_t && progress() < 0xFFFFU) {
-  if (paletteFade && getOption(SEG_OPTION_TRANSITIONAL) && progress() < 0xFFFFU) {
+  if (strip.paletteFade && getOption(SEG_OPTION_TRANSITIONAL) && progress() < 0xFFFFU) { // TODO: get rid of 
     // blend palettes
-    uint8_t blends = map(_dur, 0, 0xFFFF, 48, 1); // do not blend palettes too quickly (0-65.5s)
+    uint8_t blends = map(_dur, 0, 0xFFFF, 48, 6); // do not blend palettes too quickly (0-65.5s)
     nblendPaletteTowardPalette(/*_t->*/_palT, targetPalette, blends);
     targetPalette = /*_t->*/_palT; // copy transitioning/temporary palette
   }
@@ -748,7 +748,9 @@ uint32_t IRAM_ATTR Segment::color_from_palette(uint16_t i, bool mapping, bool wr
   if (mapping && virtualLength() > 1) paletteIndex = (i*255)/(virtualLength() -1);
   if (!wrap) paletteIndex = scale8(paletteIndex, 240); //cut off blend at palette "end"
   CRGB fastled_col;
-  CRGBPalette16 curPal = loadPalette(palette);
+  CRGBPalette16 curPal;
+  if (transitional) curPal = /*_t->*/_palT;
+  else              loadPalette(curPal, palette);
   fastled_col = ColorFromPalette(curPal, paletteIndex, pbri, (strip.paletteBlend == 3)? NOBLEND:LINEARBLEND); // NOTE: paletteBlend should be global
 
   return RGBW32(fastled_col.r, fastled_col.g, fastled_col.b, 0);
@@ -1460,10 +1462,10 @@ void WS2812FX::setRange(uint16_t i, uint16_t i2, uint32_t col)
 
 void WS2812FX::setTransitionMode(bool t)
 {
-  for (segment &seg : _segments) seg.startTransition(t ? _transitionDur : 0);
+  for (segment &seg : _segments) if (!seg.transitional) seg.startTransition(t ? _transitionDur : 0);
 //  for (uint8_t i = 0; i < getMaxSegments(); i++) {
 //    Segment &seg = getSegment(i);
-//    seg.startTransition(t ? _transitionDur : 0);
+//    if (!seg.transitional)seg.startTransition(t ? _transitionDur : 0);
 //  }
 }
 

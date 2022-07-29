@@ -222,7 +222,13 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   //getVal also supports inc/decrementing and random
   getVal(elem[F("sx")], &seg.speed);
   getVal(elem[F("ix")], &seg.intensity);
-  getVal(elem["pal"],   &seg.palette, 1, strip.getPaletteCount());
+  uint8_t pal = seg.palette;
+  if (getVal(elem["pal"], &pal, 1, strip.getPaletteCount())) {
+    if (pal != seg.palette) {
+      if (strip.paletteBlend) seg.startTransition(strip.getTransition());
+      seg.palette = pal;
+    }
+  }
   getVal(elem[F("c1")], &seg.custom1);
   getVal(elem[F("c2")], &seg.custom2);
   getVal(elem[F("c3")], &seg.custom3);
