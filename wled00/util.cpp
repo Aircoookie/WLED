@@ -402,8 +402,6 @@ um_data_t* simulateSound(uint8_t simulationId)
   static uint8_t maxVol;
   static uint8_t binNum;
 
-  uint8_t inputLevel;
-
   static float    volumeSmth;
   static uint16_t volumeRaw;
   static float    my_magnitude;
@@ -423,7 +421,7 @@ um_data_t* simulateSound(uint8_t simulationId)
     // NOTE!!!
     // This may change as AudioReactive usermod may change
     um_data = new um_data_t;
-    um_data->u_size = 10;
+    um_data->u_size = 9;
     um_data->u_type = new um_types_t[um_data->u_size];
     um_data->u_data = new void*[um_data->u_size];
     um_data->u_data[0] = &volumeSmth;
@@ -435,7 +433,6 @@ um_data_t* simulateSound(uint8_t simulationId)
     um_data->u_data[6] = &maxVol;
     um_data->u_data[7] = &binNum;
     um_data->u_data[8] = fftBin;     //only used in binmap
-    um_data->u_data[9] = &inputLevel;
   } else {
     // get arrays from um_data
     fftResult =  (uint8_t*)um_data->u_data[2];
@@ -500,7 +497,6 @@ um_data_t* simulateSound(uint8_t simulationId)
   FFT_MajorPeak = volumeSmth;
   maxVol        = 10;  // this gets feedback fro UI
   binNum        = 8;   // this gets feedback fro UI
-  inputLevel    = 128; // this gets feedback fro UI
   volumeRaw = volumeSmth;
   my_magnitude = 10000.0 / 8.0f; //no idea if 10000 is a good value for FFT_Magnitude ???
   if (volumeSmth < 1 ) my_magnitude = 0.001f;             // noise gate closed - mute

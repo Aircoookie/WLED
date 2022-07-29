@@ -5972,15 +5972,15 @@ static const char *_data_FX_MODE_2DDRIFTROSE PROGMEM = "2D Drift Rose@Fade,Blur;
   float    *fftBin = nullptr;
   um_data_t *um_data;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    volumeSmth    = *(float*)   um_data->u_data[0];
+    volumeRaw     = *(float*)   um_data->u_data[1];
+    fftResult     =  (uint8_t*) um_data->u_data[2];
     samplePeak    = *(uint8_t*) um_data->u_data[3];
     FFT_MajorPeak = *(float*)   um_data->u_data[4];
-    fftResult     =  (uint8_t*) um_data->u_data[2];
+    my_magnitude  = *(float*)   um_data->u_data[5];
     maxVol        =  (uint8_t*) um_data->u_data[6];  // requires UI element (SEGMENT.customX?), changes source element
     binNum        =  (uint8_t*) um_data->u_data[7];  // requires UI element (SEGMENT.customX?), changes source element
-    volumeSmth    = *(float*)   um_data->u_data[0];
     fftBin        =  (float*)   um_data->u_data[8];
-    inputLevel    =  (uint8_t*) um_data->u_data[9]; // requires UI element (SEGMENT.customX?), changes source element
-    volumeRaw     = *(float*)   um_data->u_data[1];
   } else {
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
@@ -6669,7 +6669,7 @@ uint16_t WS2812FX::mode_binmap(void) {
     maxVol        =  (uint8_t*)um_data->u_data[6];
 #endif
     fftBin        =  (float*)  um_data->u_data[8];
-    inputLevel    =  (uint8_t*)um_data->u_data[9];
+    inputLevel    =  (uint8_t*)um_data->u_data[10];
   }
   if (!fftBin) return mode_static();
 

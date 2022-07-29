@@ -824,7 +824,7 @@ class AudioReactive : public Usermod {
         // usermod exchangeable data
         // we will assign all usermod exportable data here as pointers to original variables or arrays and allocate memory for pointers
         um_data = new um_data_t;
-        um_data->u_size = 10;
+        um_data->u_size = 9;
         um_data->u_type = new um_types_t[um_data->u_size];
         um_data->u_data = new void*[um_data->u_size];
         um_data->u_data[0] = &volumeSmth;      //*used (New)
@@ -845,8 +845,6 @@ class AudioReactive : public Usermod {
         um_data->u_type[7] = UMT_BYTE;
         um_data->u_data[8] = fftBin;           //*used (for debugging) (only once, Binmap)
         um_data->u_type[8] = UMT_FLOAT_ARR;
-        um_data->u_data[9] = &inputLevel;      // global UI element!!! (Gravimeter, Binmap)
-        um_data->u_type[9] = UMT_BYTE;
       }
 
       // Reset I2S peripheral for good measure
