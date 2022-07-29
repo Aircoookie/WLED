@@ -5972,7 +5972,6 @@ static const char *_data_FX_MODE_2DDRIFTROSE PROGMEM = "2D Drift Rose@Fade,Blur;
   float     sampleAgc = 0.0f, sampleAgv = 0.0f, multAgc = 0.0f, sampleReal = 0.0f;
   float     FFT_MajorPeak = 0.0, FFT_Magnitude = 0.0;
   uint8_t  *fftResult = nullptr;
-  uint16_t *myVals = nullptr;
   float    *fftBin = nullptr;
   um_data_t *um_data;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
@@ -5990,7 +5989,6 @@ static const char *_data_FX_MODE_2DDRIFTROSE PROGMEM = "2D Drift Rose@Fade,Blur;
     multAgc       = *(float*)   um_data->u_data[11];
     sampleReal    = *(float*)   um_data->u_data[12];
     sampleGain    = *(float*)   um_data->u_data[13];
-    myVals        =  (uint16_t*)um_data->u_data[14];
     soundSquelch  = *(uint8_t*) um_data->u_data[15];
     fftBin        =  (float*)   um_data->u_data[16];
     inputLevel    =  (uint8_t*) um_data->u_data[17]; // requires UI element (SEGMENT.customX?), changes source element
@@ -5998,7 +5996,6 @@ static const char *_data_FX_MODE_2DDRIFTROSE PROGMEM = "2D Drift Rose@Fade,Blur;
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  if (!myVals || !fftBin || ...) return mode_static();
 */
 
 
@@ -6678,13 +6675,15 @@ static const char *_data_FX_MODE_PUDDLES PROGMEM = "Puddles ♪@Fade rate,Puddle
 //////////////////////
 uint16_t mode_pixels(void) {                    // Pixels. By Andrew Tuline.
 
+  if (!SEGENV.allocateData(32*sizeof(uint8_t))) return mode_static(); //allocation failed
+  uint8_t *myVals = reinterpret_cast<uint8_t*>(SEGENV.data); // Used to store a pile of samples because WLED frame rate and WLED sample rate are not synchronized. Frame rate is too low.
+
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float    sampleAgc = *(float*)   um_data->u_data[2];
-  uint16_t *myVals   =  (uint16_t*)um_data->u_data[14];
-  if (!myVals) return mode_static();
+  myVals[millis()%32] = sampleAgc;    // filling values semi randomly
 
   SEGMENT.fade_out(64+(SEGMENT.speed>>1));
 

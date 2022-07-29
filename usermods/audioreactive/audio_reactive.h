@@ -403,7 +403,6 @@ class AudioReactive : public Usermod {
 
     struct audioSyncPacket {
       char    header[6];
-      uint8_t myVals[32];     //  32 Bytes
       int     sampleAgc;      //  04 Bytes
       int     sample;         //  04 Bytes
       float   sampleAvg;      //  04 Bytes
@@ -423,7 +422,6 @@ class AudioReactive : public Usermod {
     // variables used in effects
     uint8_t  maxVol = 10;         // Reasonable value for constant volume for 'peak detector', as it won't always trigger
     uint8_t  binNum = 8;          // Used to select the bin for FFT based beat detection.
-    uint8_t  myVals[32];          // Used to store a pile of samples because WLED frame rate and WLED sample rate are not synchronized. Frame rate is too low.
     bool     samplePeak = 0;      // Boolean flag for peak. Responding routine must reset this flag
     int16_t  sample;              // either sampleRaw or rawSampleAgc depending on soundAgc
     float    sampleSmth;          // either sampleAvg or sampleAgc depending on soundAgc; smoothed sample
@@ -742,10 +740,6 @@ class AudioReactive : public Usermod {
       audioSyncPacket transmitData;
       strncpy_P(transmitData.header, PSTR(UDP_SYNC_HEADER), 6);
 
-      for (int i = 0; i < 32; i++) {
-        transmitData.myVals[i] = myVals[i];
-      }
-
       transmitData.sampleAgc  = sampleAgc;
       transmitData.sample     = sampleRaw;
       transmitData.sampleAvg  = sampleAvg;
@@ -786,8 +780,6 @@ class AudioReactive : public Usermod {
         if (packetSize == sizeof(audioSyncPacket) && !(isValidUdpSyncVersion((const char *)fftBuff))) {
           audioSyncPacket *receivedPacket = reinterpret_cast<audioSyncPacket*>(fftBuff);
 
-          for (int i = 0; i < 32; i++) myVals[i] = receivedPacket->myVals[i];
-          
           sampleAgc    = receivedPacket->sampleAgc;
           rawSampleAgc = receivedPacket->sampleAgc;
           sampleRaw    = receivedPacket->sample;
@@ -854,8 +846,8 @@ class AudioReactive : public Usermod {
         um_data->u_type[12] = UMT_FLOAT;
         um_data->u_data[13] = &sampleGain;      //*used (for debugging) (Gravimeter, Binmap)
         um_data->u_type[13] = UMT_FLOAT;
-        um_data->u_data[14] = myVals;           //*used (only once, Pixels)
-        um_data->u_type[14] = UMT_UINT16_ARR;
+        um_data->u_data[14] = 0;                //*free (used for myVals / Pixels before)
+        um_data->u_type[14] = UMT_BYTE;
         um_data->u_data[15] = &soundSquelch;    //*used (for debugging) (only once, Binmap)
         um_data->u_type[15] = UMT_BYTE;
         um_data->u_data[16] = fftBin;           //*used (for debugging) (only once, Binmap)
@@ -1010,8 +1002,6 @@ class AudioReactive : public Usermod {
 
         getSample();                        // Sample the microphone
         agcAvg();                           // Calculated the PI adjusted value as sampleAvg
-
-        myVals[millis()%32] = sampleAgc;    // filling values semi randomly (why?)
 
         uint8_t knownMode = strip.getFirstSelectedSeg().mode; // 1st selected segment is more appropriate than main segment
 

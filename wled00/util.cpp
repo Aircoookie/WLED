@@ -415,7 +415,6 @@ um_data_t* simulateSound(uint8_t simulationId)
 
   //arrays
   uint8_t *fftResult;
-  uint8_t *myVals;
   float   *fftBin;
 
   static um_data_t* um_data = nullptr;
@@ -423,7 +422,6 @@ um_data_t* simulateSound(uint8_t simulationId)
   if (!um_data) {
     //claim storage for arrays
     fftResult = (uint8_t *)malloc(sizeof(uint8_t) * 16);
-    myVals = (uint8_t *)malloc(sizeof(uint8_t) * 32);
     fftBin = (float *)malloc(sizeof(float) * 256); // not used (for debugging purposes)
 
     // initialize um_data pointer structure
@@ -445,7 +443,7 @@ um_data_t* simulateSound(uint8_t simulationId)
     um_data->u_data[ 9] = &maxVol;
     um_data->u_data[10] = &binNum;
     um_data->u_data[11] = &multAgc;
-    um_data->u_data[14] = myVals;           //*used (only once, Pixels)
+    um_data->u_data[14] = 0;           //free
     um_data->u_data[13] = &sampleGain;
     um_data->u_data[15] = &soundSquelch;
     um_data->u_data[16] = fftBin;     //only used in binmap
@@ -453,7 +451,6 @@ um_data_t* simulateSound(uint8_t simulationId)
   } else {
     // get arrays from um_data
     fftResult =  (uint8_t*)um_data->u_data[8];
-    myVals    =  (uint8_t*)um_data->u_data[14];
     fftBin    =  (float*)um_data->u_data[16];
   }
 
@@ -523,7 +520,6 @@ um_data_t* simulateSound(uint8_t simulationId)
   FFT_MajorPeak = sampleAvg;
   FFT_Magnitude = sampleAvg;
   multAgc       = sampleAvg;
-  myVals[millis()%32] = sampleAvg;    // filling values semi randomly (why?)
   sampleGain    = 40;
   soundSquelch  = 10;
   maxVol        = 10;  // this gets feedback fro UI
