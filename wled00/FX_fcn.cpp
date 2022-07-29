@@ -82,7 +82,7 @@ Segment::Segment(const Segment &orig) {
   _dataLen = 0;
   //_t = nullptr;
   if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
-  if (orig.data) { allocateData(orig._dataLen); memcpy(data, orig.data, orig._dataLen); }
+  if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
   //if (orig._t) { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
   DEBUG_PRINTF("  Original data: %p (%d)\n", orig.data, (int)orig._dataLen);
   DEBUG_PRINTF("  Constructed data: %p (%d)\n", data, (int)_dataLen);
@@ -112,7 +112,7 @@ Segment& Segment::operator= (const Segment &orig) {
     _dataLen = 0;
     //_t = nullptr;
     if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
-    if (orig.data) { allocateData(orig._dataLen); memcpy(data, orig.data, orig._dataLen); }
+    if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
     //if (orig._t) { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
     DEBUG_PRINTF("  Original data: %p (%d)\n", orig.data, (int)orig._dataLen);
     DEBUG_PRINTF("  Copied data: %p (%d)\n", data, (int)_dataLen);
@@ -188,15 +188,22 @@ void Segment::startTransition(uint16_t dur) {
   // starting a transition has to occur before change so we get current values 1st
   /*uint8_t*/ _briT = currentBri(getOption(SEG_OPTION_ON) ? opacity : 0); // comment out uint8_t if not using Transition struct
   /*uint8_t*/ _cctT = currentBri(cct, true); // comment out uint8_t if not using Transition struct
+  /*CRGBPalette16 _palT;*/ loadPalette(_palT, palette);
+  ///*uint8_t*/ _modeP = mode; // comment out uint8_t if not using Transition struct
   //uint32_t _colorT[NUM_COLORS]; // comment out if not using Transition struct
   for (size_t i=0; i<NUM_COLORS; i++) _colorT[i] = currentColor(i, colors[i]);
 
-  // comment out if not using Transition struct
+  // using transition struct
   //if (!_t) _t = new Transition(dur); // no previous transition running
   //if (!_t) return; // failed to allocat data
   //_t->_briT = _briT;
   //_t->_cctT = _cctT;
+  //_t->_palT  = _palT;
+  //_t->_modeT = _modeP;
   //for (size_t i=0; i<NUM_COLORS; i++) _t->_colorT[i] = _colorT[i];
+  // comment out if using transition struct as it is done in constructor
+  _dur = dur;
+  _start = millis();
 
   setOption(SEG_OPTION_TRANSITIONAL, true);
 }
@@ -219,6 +226,96 @@ uint8_t Segment::currentBri(uint8_t briNew, bool useCct) {
   }
 }
 
+CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
+  static unsigned long _lastPaletteChange = 0; // perhaps it should be per segment
+  byte tcp[72];
+  if (pal < 245 && pal > GRADIENT_PALETTE_COUNT+13) pal = 0;
+  if (pal > 245 && (strip.customPalettes.size() == 0 || 255U-pal > strip.customPalettes.size()-1)) pal = 0;
+  //default palette. Differs depending on effect
+  if (pal == 0) switch (mode) {
+    case FX_MODE_FIRE_2012  : pal = 35; break; // heat palette
+    case FX_MODE_COLORWAVES : pal = 26; break; // landscape 33
+    case FX_MODE_FILLNOISE8 : pal =  9; break; // ocean colors
+    case FX_MODE_NOISE16_1  : pal = 20; break; // Drywet
+    case FX_MODE_NOISE16_2  : pal = 43; break; // Blue cyan yellow
+    case FX_MODE_NOISE16_3  : pal = 35; break; // heat palette
+    case FX_MODE_NOISE16_4  : pal = 26; break; // landscape 33
+    case FX_MODE_GLITTER    : pal = 11; break; // rainbow colors
+    case FX_MODE_SUNRISE    : pal = 35; break; // heat palette
+    case FX_MODE_FLOW       : pal =  6; break; // party
+  }
+  switch (pal) {
+    case 0: //default palette. Exceptions for specific effects above
+      targetPalette = PartyColors_p; break;
+    case 1: {//periodically replace palette with a random one. Doesn't work with multiple FastLED segments
+      if (millis() - _lastPaletteChange > 1000 + ((uint32_t)(255-intensity))*100) {
+        targetPalette = CRGBPalette16(
+                        CHSV(random8(), 255, random8(128, 255)),
+                        CHSV(random8(), 255, random8(128, 255)),
+                        CHSV(random8(), 192, random8(128, 255)),
+                        CHSV(random8(), 255, random8(128, 255)));
+        _lastPaletteChange = millis();
+      } break;}
+    case 2: {//primary color only
+      CRGB prim = CRGB(colors[0]);
+      targetPalette = CRGBPalette16(prim); break;}
+    case 3: {//primary + secondary
+      CRGB prim = CRGB(colors[0]);
+      CRGB sec  = CRGB(colors[1]);
+      targetPalette = CRGBPalette16(prim,prim,sec,sec); break;}
+    case 4: {//primary + secondary + tertiary
+      CRGB prim = CRGB(colors[0]);
+      CRGB sec  = CRGB(colors[1]);
+      CRGB ter  = CRGB(colors[2]);
+      targetPalette = CRGBPalette16(ter,sec,prim); break;}
+    case 5: {//primary + secondary (+tert if not off), more distinct
+      CRGB prim = CRGB(colors[0]);
+      CRGB sec  = CRGB(colors[1]);
+      if (colors[2]) {
+        CRGB ter = CRGB(colors[2]);
+        targetPalette = CRGBPalette16(prim,prim,prim,prim,prim,sec,sec,sec,sec,sec,ter,ter,ter,ter,ter,prim);
+      } else {
+        targetPalette = CRGBPalette16(prim,prim,prim,prim,prim,prim,prim,prim,sec,sec,sec,sec,sec,sec,sec,sec);
+      }
+      break;}
+    case 6: //Party colors
+      targetPalette = PartyColors_p; break;
+    case 7: //Cloud colors
+      targetPalette = CloudColors_p; break;
+    case 8: //Lava colors
+      targetPalette = LavaColors_p; break;
+    case 9: //Ocean colors
+      targetPalette = OceanColors_p; break;
+    case 10: //Forest colors
+      targetPalette = ForestColors_p; break;
+    case 11: //Rainbow colors
+      targetPalette = RainbowColors_p; break;
+    case 12: //Rainbow stripe colors
+      targetPalette = RainbowStripeColors_p; break;
+    default: //progmem palettes
+      if (pal>245) {
+        targetPalette = strip.customPalettes[255-pal]; // we checked bounds above
+      } else {
+        memcpy_P(tcp, (byte*)pgm_read_dword(&(gGradientPalettes[pal-13])), 72);
+        targetPalette.loadDynamicGradientPalette(tcp);
+      }
+      break;
+  }
+  return targetPalette;
+}
+
+CRGBPalette16 &Segment::currentPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
+  loadPalette(targetPalette, pal);
+  //if (_t && progress() < 0xFFFFU) {
+  if (strip.paletteFade && getOption(SEG_OPTION_TRANSITIONAL) && progress() < 0xFFFFU) { // TODO: get rid of 
+    // blend palettes
+    uint8_t blends = map(_dur, 0, 0xFFFF, 48, 6); // do not blend palettes too quickly (0-65.5s)
+    nblendPaletteTowardPalette(/*_t->*/_palT, targetPalette, blends);
+    targetPalette = /*_t->*/_palT; // copy transitioning/temporary palette
+  }
+  return targetPalette;
+}
+
 void Segment::handleTransition() {
   if (!getOption(SEG_OPTION_TRANSITIONAL)) return;
   unsigned long maxWait = millis() + 20;
@@ -231,7 +328,7 @@ void Segment::handleTransition() {
 
 bool Segment::setColor(uint8_t slot, uint32_t c) { //returns true if changed
   if (slot >= NUM_COLORS || c == colors[slot]) return false;
-  startTransition(strip.getTransition()); // start transition prior to change
+  if (fadeTransition) startTransition(strip.getTransition()); // start transition prior to change
   colors[slot] = c;
   return true;
 }
@@ -243,19 +340,19 @@ void Segment::setCCT(uint16_t k) {
     k = (k - 1900) >> 5;
   }
   if (cct == k) return;
-  startTransition(strip.getTransition()); // start transition prior to change
+  if (fadeTransition) startTransition(strip.getTransition()); // start transition prior to change
   cct = k;
 }
 
 void Segment::setOpacity(uint8_t o) {
   if (opacity == o) return;
-  startTransition(strip.getTransition()); // start transition prior to change
+  if (fadeTransition) startTransition(strip.getTransition()); // start transition prior to change
   opacity = o;
 }
 
 void Segment::setOption(uint8_t n, bool val) {
   bool prevOn = getOption(SEG_OPTION_ON);
-  if (n == SEG_OPTION_ON && val != prevOn) startTransition(strip.getTransition()); // start transition prior to change
+  if (fadeTransition && n == SEG_OPTION_ON && val != prevOn) startTransition(strip.getTransition()); // start transition prior to change
   if (val) options |=   0x01 << n;
   else     options &= ~(0x01 << n);
 }
@@ -640,8 +737,9 @@ uint8_t Segment::get_random_wheel_index(uint8_t pos) {
  */
 uint32_t IRAM_ATTR Segment::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri)
 {
-  if ((palette == 0 && mcol < 3) || strip._no_rgb) {
-    uint32_t color = colors[mcol]; // SEGCOLOR(mcol);
+  // default palette or no RGB support on segment
+  if (palette == 0 || !(_capabilities & 0x01)) {
+    uint32_t color = colors[constrain(mcol,0,NUM_COLORS-1)]; // SEGCOLOR(mcol);
     if (pbri == 255) return color;
     return RGBW32(scale8_video(R(color),pbri), scale8_video(G(color),pbri), scale8_video(B(color),pbri), scale8_video(W(color),pbri));
   }
@@ -650,7 +748,10 @@ uint32_t IRAM_ATTR Segment::color_from_palette(uint16_t i, bool mapping, bool wr
   if (mapping && virtualLength() > 1) paletteIndex = (i*255)/(virtualLength() -1);
   if (!wrap) paletteIndex = scale8(paletteIndex, 240); //cut off blend at palette "end"
   CRGB fastled_col;
-  fastled_col = ColorFromPalette(strip.currentPalette, paletteIndex, pbri, (strip.paletteBlend == 3)? NOBLEND:LINEARBLEND);
+  CRGBPalette16 curPal;
+  if (transitional) curPal = /*_t->*/_palT;
+  else              loadPalette(curPal, palette);
+  fastled_col = ColorFromPalette(curPal, paletteIndex, pbri, (strip.paletteBlend == 3)? NOBLEND:LINEARBLEND); // NOTE: paletteBlend should be global
 
   return RGBW32(fastled_col.r, fastled_col.g, fastled_col.b, 0);
 }
@@ -743,19 +844,23 @@ void WS2812FX::service() {
 
       if (!seg.getOption(SEG_OPTION_FREEZE)) { //only run effect function if not frozen
         _virtualSegmentLength = seg.virtualLength();
-        _bri_t = seg.currentBri(seg.getOption(SEG_OPTION_ON) ? seg.opacity : 0);
-        uint8_t _cct_t = seg.currentBri(seg.cct, true);
-        _colors_t[0] = seg.currentColor(0, seg.colors[0]);
-        _colors_t[1] = seg.currentColor(1, seg.colors[1]);
-        _colors_t[2] = seg.currentColor(2, seg.colors[2]);
+        _bri_t          = seg.currentBri(seg.getOption(SEG_OPTION_ON) ? seg.opacity : 0);
+        uint8_t _cct_t  = seg.currentBri(seg.cct, true);
+        _colors_t[0]    = seg.currentColor(0, seg.colors[0]);
+        _colors_t[1]    = seg.currentColor(1, seg.colors[1]);
+        _colors_t[2]    = seg.currentColor(2, seg.colors[2]);
+        seg.currentPalette(_currentPalette, seg.palette);
+
         seg.handleTransition();
 
         if (!cctFromRgb || correctWB) busses.setSegmentCCT(_cct_t, correctWB);
         for (uint8_t c = 0; c < NUM_COLORS; c++) {
           _colors_t[c] = gamma32(_colors_t[c]);
         }
-        handle_palette();
 
+        // effect blending (execute previous effect)
+        // actual code may be a bit more involved as effects have runtime data including allocated memory
+        //if (getOption(SEG_OPTION_TRANSITIONAL) && seg._modeP) (*_mode[seg._modeP])(progress());
         delay = (*_mode[seg.mode])();
         if (seg.mode != FX_MODE_HALLOWEEN_EYES) seg.call++;
       }
@@ -971,7 +1076,7 @@ void WS2812FX::setMode(uint8_t segid, uint8_t m) {
   if (m >= getModeCount()) m = getModeCount() - 1;
 
   if (_segments[segid].mode != m) {
-    //_segments[segid].startTransition(strip.getTransition()); // set effect transitions
+    //_segments[segid].startTransition(_transitionDur); // set effect transitions
     _segments[segid].markForReset();
     _segments[segid].mode = m;
   }
@@ -1357,30 +1462,25 @@ void WS2812FX::setRange(uint16_t i, uint16_t i2, uint32_t col)
 
 void WS2812FX::setTransitionMode(bool t)
 {
-  for (segment &seg : _segments) seg.startTransition(t ? getTransition() : 0);
+  for (segment &seg : _segments) if (!seg.transitional) seg.startTransition(t ? _transitionDur : 0);
 //  for (uint8_t i = 0; i < getMaxSegments(); i++) {
 //    Segment &seg = getSegment(i);
-//    seg.startTransition(t ? getTransition() : 0);
+//    if (!seg.transitional)seg.startTransition(t ? _transitionDur : 0);
 //  }
 }
 
-void WS2812FX::load_gradient_palette(uint8_t index)
+void WS2812FX::loadCustomPalettes()
 {
-  // NOTE: due to constant execution (in every effect update) of this code
-  // if loading from FS is requested it will produce excessive flickering
-  // loading of palette into RAM from FS should be optimised in such case
-  // (it is mandatory to load palettes in each service() as each segment can
-  // have its own palette)
-
   byte tcp[72]; //support gradient palettes with up to 18 entries
-  if (index>114) {
+  CRGBPalette16 targetPalette;
+  for (int index = 0; index<10; index++) {
     char fileName[32];
     strcpy_P(fileName, PSTR("/palette"));
-    sprintf(fileName +8, "%d", index-115); // palette ID == 128
+    sprintf(fileName +8, "%d", index);
     strcat(fileName, ".json");
 
+    StaticJsonDocument<1536> pDoc; // barely enough to fit 72 numbers
     if (WLED_FS.exists(fileName)) {
-      StaticJsonDocument<1536> pDoc; // barely enough to fit 72 numbers
       DEBUG_PRINT(F("Reading palette from "));
       DEBUG_PRINTLN(fileName);
 
@@ -1394,114 +1494,16 @@ void WS2812FX::load_gradient_palette(uint8_t index)
             tcp[i+1] = (uint8_t) pal[i+1].as<int>(); // R
             tcp[i+2] = (uint8_t) pal[i+2].as<int>(); // G
             tcp[i+3] = (uint8_t) pal[i+3].as<int>(); // B
+            DEBUG_PRINTF("%d(%d) : %d %d %d\n", i, int(tcp[i]), int(tcp[i+1]), int(tcp[i+2]), int(tcp[i+3]));
           }
-          targetPalette.loadDynamicGradientPalette(tcp);
+          customPalettes.push_back(targetPalette.loadDynamicGradientPalette(tcp));
         }
       }
-    }
-  } else {
-    byte i = constrain(index, 0, GRADIENT_PALETTE_COUNT -1);
-    memcpy_P(tcp, (byte*)pgm_read_dword(&(gGradientPalettes[i])), 72);
-    targetPalette.loadDynamicGradientPalette(tcp);
-  }
-}
-
-
-/*
- * FastLED palette modes helper function. Limitation: Due to memory reasons, multiple active segments with FastLED will disable the Palette transitions
- */
-void WS2812FX::handle_palette(void)
-{
-  bool singleSegmentMode = (_segment_index == _segment_index_palette_last);
-  _segment_index_palette_last = _segment_index;
-
-  byte paletteIndex = _segments[_segment_index].palette;
-  if (paletteIndex == 0) //default palette. Differs depending on effect
-  {
-    // TODO: get default palette ID from _modeData[]
-    switch (_segments[_segment_index].mode)
-    {
-      case FX_MODE_FIRE_2012  : paletteIndex = 35; break; //heat palette
-      case FX_MODE_COLORWAVES : paletteIndex = 26; break; //landscape 33
-      case FX_MODE_FILLNOISE8 : paletteIndex =  9; break; //ocean colors
-      case FX_MODE_NOISE16_1  : paletteIndex = 20; break; //Drywet
-      case FX_MODE_NOISE16_2  : paletteIndex = 43; break; //Blue cyan yellow
-      case FX_MODE_NOISE16_3  : paletteIndex = 35; break; //heat palette
-      case FX_MODE_NOISE16_4  : paletteIndex = 26; break; //landscape 33
-      case FX_MODE_GLITTER    : paletteIndex = 11; break; //rainbow colors
-      case FX_MODE_SUNRISE    : paletteIndex = 35; break; //heat palette
-      case FX_MODE_FLOW       : paletteIndex =  6; break; //party
+    } else {
+      break;
     }
   }
-  if (_segments[_segment_index].mode >= FX_MODE_METEOR && paletteIndex == 0) paletteIndex = 4;
-  
-  switch (paletteIndex)
-  {
-    case 0: //default palette. Exceptions for specific effects above
-      targetPalette = PartyColors_p; break;
-    case 1: {//periodically replace palette with a random one. Doesn't work with multiple FastLED segments
-      if (!singleSegmentMode)
-      {
-        targetPalette = PartyColors_p; break; //fallback
-      }
-      if (millis() - _lastPaletteChange > 1000 + ((uint32_t)(255-_segments[_segment_index].intensity))*100)
-      {
-        targetPalette = CRGBPalette16(
-                        CHSV(random8(), 255, random8(128, 255)),
-                        CHSV(random8(), 255, random8(128, 255)),
-                        CHSV(random8(), 192, random8(128, 255)),
-                        CHSV(random8(), 255, random8(128, 255)));
-        _lastPaletteChange = millis();
-      } break;}
-    case 2: {//primary color only
-      CRGB prim = CRGB(SEGCOLOR(0));
-      targetPalette = CRGBPalette16(prim); break;}
-    case 3: {//primary + secondary
-      CRGB prim = CRGB(SEGCOLOR(0));
-      CRGB sec  = CRGB(SEGCOLOR(1));
-      targetPalette = CRGBPalette16(prim,prim,sec,sec); break;}
-    case 4: {//primary + secondary + tertiary
-      CRGB prim = CRGB(SEGCOLOR(0));
-      CRGB sec  = CRGB(SEGCOLOR(1));
-      CRGB ter  = CRGB(SEGCOLOR(2));
-      targetPalette = CRGBPalette16(ter,sec,prim); break;}
-    case 5: {//primary + secondary (+tert if not off), more distinct
-      CRGB prim = CRGB(SEGCOLOR(0));
-      CRGB sec  = CRGB(SEGCOLOR(1));
-      if (SEGCOLOR(2)) {
-        CRGB ter = CRGB(SEGCOLOR(2));
-        targetPalette = CRGBPalette16(prim,prim,prim,prim,prim,sec,sec,sec,sec,sec,ter,ter,ter,ter,ter,prim);
-      } else {
-        targetPalette = CRGBPalette16(prim,prim,prim,prim,prim,prim,prim,prim,sec,sec,sec,sec,sec,sec,sec,sec);
-      }
-      break;}
-    case 6: //Party colors
-      targetPalette = PartyColors_p; break;
-    case 7: //Cloud colors
-      targetPalette = CloudColors_p; break;
-    case 8: //Lava colors
-      targetPalette = LavaColors_p; break;
-    case 9: //Ocean colors
-      targetPalette = OceanColors_p; break;
-    case 10: //Forest colors
-      targetPalette = ForestColors_p; break;
-    case 11: //Rainbow colors
-      targetPalette = RainbowColors_p; break;
-    case 12: //Rainbow stripe colors
-      targetPalette = RainbowStripeColors_p; break;
-    default: //progmem palettes
-      load_gradient_palette(paletteIndex -13);
-  }
-  
-  if (singleSegmentMode && paletteFade && _segments[_segment_index].call > 0) //only blend if just one segment uses FastLED mode
-  {
-    nblendPaletteTowardPalette(currentPalette, targetPalette, 48);
-  } else
-  {
-    currentPalette = targetPalette;
-  }
 }
-
 
 //load custom mapping table from JSON file (called from finalizeInit() or deserializeState())
 void WS2812FX::deserializeMap(uint8_t n) {

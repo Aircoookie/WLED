@@ -130,7 +130,7 @@ void stateUpdated(byte callMode) {
   
   if (fadeTransition) {
     //set correct delay if not using notification delay
-    if (callMode != CALL_MODE_NOTIFICATION && !jsonTransitionOnce) transitionDelayTemp = transitionDelay;
+    if (callMode != CALL_MODE_NOTIFICATION && !jsonTransitionOnce) transitionDelayTemp = transitionDelay; // load actual transition duration
     jsonTransitionOnce = false;
     strip.setTransition(transitionDelayTemp);
     if (transitionDelayTemp == 0) {
@@ -143,7 +143,7 @@ void stateUpdated(byte callMode) {
       briOld = briT;
       tperLast = 0;
     }
-    strip.setTransitionMode(true);
+    strip.setTransitionMode(true); // force all segments to transition mode
     transitionActive = true;
     transitionStartTime = millis();
   } else {

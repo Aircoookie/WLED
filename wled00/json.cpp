@@ -222,7 +222,13 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   //getVal also supports inc/decrementing and random
   getVal(elem[F("sx")], &seg.speed);
   getVal(elem[F("ix")], &seg.intensity);
-  getVal(elem["pal"],   &seg.palette, 1, strip.getPaletteCount());
+  uint8_t pal = seg.palette;
+  if (getVal(elem["pal"], &pal, 1, strip.getPaletteCount())) {
+    if (pal != seg.palette) {
+      if (strip.paletteBlend) seg.startTransition(strip.getTransition());
+      seg.palette = pal;
+    }
+  }
   getVal(elem[F("c1")], &seg.custom1);
   getVal(elem[F("c2")], &seg.custom2);
   getVal(elem[F("c3")], &seg.custom3);
@@ -322,6 +328,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     }
   }
 
+  // temporary transition (applies only once)
   tr = root[F("tt")] | -1;
   if (tr >= 0)
   {
@@ -514,7 +521,6 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     root["on"] = (bri > 0);
     root["bri"] = briLast;
     root[F("transition")] = transitionDelay/100; //in 100ms
-    //root[F("tdd")] = transitionDelayDefault/100; //in 100ms
   }
 
   if (!forPreset) {
@@ -582,6 +588,7 @@ void serializeInfo(JsonObject root)
   leds[F("maxseg")] = strip.getMaxSegments();
   //leds[F("actseg")] = strip.getActiveSegmentsNum();
   //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config
+  leds[F("cpal")] = strip.customPalettes.size();
 
   #ifndef WLED_DISABLE_2D
   if (strip.isMatrix) {
@@ -778,6 +785,7 @@ void setPaletteColors(JsonArray json, byte* tcp)
 
 void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
 {
+  byte tcp[72];
   #ifdef ESP8266
   int itemPerPage = 5;
   #else
@@ -790,19 +798,20 @@ void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
   }
 
   int palettesCount = strip.getPaletteCount();
+  int customPalettes = strip.customPalettes.size();
 
-  int maxPage = (palettesCount -1) / itemPerPage;
+  int maxPage = (palettesCount + customPalettes -1) / itemPerPage;
   if (page > maxPage) page = maxPage;
 
   int start = itemPerPage * page;
   int end = start + itemPerPage;
-  if (end >= palettesCount) end = palettesCount;
+  if (end > palettesCount + customPalettes) end = palettesCount + customPalettes;
 
-  root[F("m")] = maxPage;
+  root[F("m")] = maxPage; // inform caller how many pages there are
   JsonObject palettes  = root.createNestedObject("p");
 
   for (int i = start; i < end; i++) {
-    JsonArray curPalette = palettes.createNestedArray(String(i));
+    JsonArray curPalette = palettes.createNestedArray(String(i>=palettesCount ? 255 - i + palettesCount : i));
     switch (i) {
       case 0: //default palette
         setPaletteColors(curPalette, PartyColors_p); 
@@ -868,9 +877,12 @@ void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
         break;
       default:
         {
-        byte tcp[72];
-        memcpy_P(tcp, (byte*)pgm_read_dword(&(gGradientPalettes[i - 13])), 72);
-        setPaletteColors(curPalette, tcp);
+        if (i>=palettesCount) {
+          setPaletteColors(curPalette, strip.customPalettes[i - palettesCount]);
+        } else {
+          memcpy_P(tcp, (byte*)pgm_read_dword(&(gGradientPalettes[i - 13])), 72);
+          setPaletteColors(curPalette, tcp);
+        }
         }
         break;
     }

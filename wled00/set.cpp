@@ -188,8 +188,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     fadeTransition = request->hasArg(F("TF"));
     t = request->arg(F("TD")).toInt();
-    if (t >= 0) transitionDelay = t;
-    transitionDelayDefault = t;
+    if (t >= 0) transitionDelayDefault = t;
     strip.paletteFade = request->hasArg(F("PF"));
 
     nightlightTargetBri = request->arg(F("TB")).toInt();
@@ -827,10 +826,13 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
     Segment& seg = strip.getSegment(i);
     if (i != selectedSeg && (singleSegment || !seg.isActive() || !seg.isSelected())) continue; // skip non main segments if not applying to all
-    if (fxModeChanged)    strip.setMode(i, effectIn);
+    if (fxModeChanged)  { seg.mode      = effectIn; seg.markForReset(); }
     if (speedChanged)     seg.speed     = speedIn;
     if (intensityChanged) seg.intensity = intensityIn;
-    if (paletteChanged)   seg.palette   = paletteIn;
+    if (paletteChanged) {
+      if (strip.paletteBlend) seg.startTransition(strip.getTransition());
+      seg.palette = paletteIn;
+    }
   }
 
   //set advanced overlay
