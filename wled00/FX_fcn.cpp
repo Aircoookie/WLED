@@ -82,7 +82,7 @@ Segment::Segment(const Segment &orig) {
   _dataLen = 0;
   //_t = nullptr;
   if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
-  if (orig.data) { allocateData(orig._dataLen); memcpy(data, orig.data, orig._dataLen); }
+  if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
   //if (orig._t) { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
   DEBUG_PRINTF("  Original data: %p (%d)\n", orig.data, (int)orig._dataLen);
   DEBUG_PRINTF("  Constructed data: %p (%d)\n", data, (int)_dataLen);
@@ -112,7 +112,7 @@ Segment& Segment::operator= (const Segment &orig) {
     _dataLen = 0;
     //_t = nullptr;
     if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
-    if (orig.data) { allocateData(orig._dataLen); memcpy(data, orig.data, orig._dataLen); }
+    if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
     //if (orig._t) { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
     DEBUG_PRINTF("  Original data: %p (%d)\n", orig.data, (int)orig._dataLen);
     DEBUG_PRINTF("  Copied data: %p (%d)\n", data, (int)_dataLen);

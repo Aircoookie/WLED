@@ -76,7 +76,7 @@ uint32_t color_add(uint32_t,uint32_t);
   #ifndef MAX_NUM_SEGMENTS
     #define MAX_NUM_SEGMENTS  32
   #endif
-  #define MAX_SEGMENT_DATA  20480
+  #define MAX_SEGMENT_DATA  32768
 #endif
 
 /* How much data bytes each segment should max allocate to leave enough space for other segments,
