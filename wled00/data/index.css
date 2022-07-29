@@ -233,6 +233,14 @@ button {
 	border: 0px;
 }
 
+#liveview2D {
+	height: 90%;
+	display: none;
+	width: 90%;
+	border: 0px;
+	margin: 0 auto;
+}
+
 .tab {
 	background-color: transparent;
 	color: var(--c-d);
