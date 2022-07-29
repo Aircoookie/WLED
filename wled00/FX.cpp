@@ -6100,14 +6100,12 @@ uint16_t mode_2DSwirl(void) {
 
   // printUmData();
 
-  float tmpSound = (soundAgc) ? rawSampleAgc : sampleRaw;
-
-  leds[XY( i, j)]  += ColorFromPalette(SEGPALETTE, (ms / 11 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 11, 200, 255);
-  leds[XY( j, i)]  += ColorFromPalette(SEGPALETTE, (ms / 13 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 13, 200, 255);
-  leds[XY(ni, nj)] += ColorFromPalette(SEGPALETTE, (ms / 17 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 17, 200, 255);
-  leds[XY(nj, ni)] += ColorFromPalette(SEGPALETTE, (ms / 29 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 29, 200, 255);
-  leds[XY( i, nj)] += ColorFromPalette(SEGPALETTE, (ms / 37 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 37, 200, 255);
-  leds[XY(ni, j)]  += ColorFromPalette(SEGPALETTE, (ms / 41 + sampleAvg*4), tmpSound * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 41, 200, 255);
+  leds[XY( i, j)]  += ColorFromPalette(SEGPALETTE, (ms / 11 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 11, 200, 255);
+  leds[XY( j, i)]  += ColorFromPalette(SEGPALETTE, (ms / 13 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 13, 200, 255);
+  leds[XY(ni, nj)] += ColorFromPalette(SEGPALETTE, (ms / 17 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 17, 200, 255);
+  leds[XY(nj, ni)] += ColorFromPalette(SEGPALETTE, (ms / 29 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 29, 200, 255);
+  leds[XY( i, nj)] += ColorFromPalette(SEGPALETTE, (ms / 37 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 37, 200, 255);
+  leds[XY(ni, j)]  += ColorFromPalette(SEGPALETTE, (ms / 41 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 41, 200, 255);
 
   SEGMENT.setPixels(leds);
   return FRAMETIME;
@@ -6425,9 +6423,8 @@ uint16_t mode_noisefire(void) {                 // Noisefire. By Andrew Tuline.
     uint16_t index = inoise8(i*SEGMENT.speed/64,millis()*SEGMENT.speed/64*SEGLEN/255);  // X location is constant, but we move along the Y at the rate of millis(). By Andrew Tuline.
     index = (255 - i*256/SEGLEN) * index/(256-SEGMENT.intensity);                       // Now we need to scale index so that it gets blacker as we get close to one of the ends.
                                                                                         // This is a simple y=mx+b equation that's been scaled. index/128 is another scaling.
-    uint8_t tmpSound = (soundAgc) ? sampleAgc : sampleAvg;
 
-    CRGB color = ColorFromPalette(SEGPALETTE, index, tmpSound*2, LINEARBLEND);     // Use the my own palette.
+    CRGB color = ColorFromPalette(SEGPALETTE, index, volumeSmth*2, LINEARBLEND);     // Use the my own palette.
     SEGMENT.setPixelColor(i, color);
   }
 
