@@ -408,20 +408,18 @@ um_data_t* simulateSound(uint8_t simulationId)
 
   //arrays
   uint8_t *fftResult;
-  float   *fftBin;
 
   static um_data_t* um_data = nullptr;
 
   if (!um_data) {
     //claim storage for arrays
     fftResult = (uint8_t *)malloc(sizeof(uint8_t) * 16);
-    fftBin = (float *)malloc(sizeof(float) * 256); // not used (for debugging purposes)
 
     // initialize um_data pointer structure
     // NOTE!!!
     // This may change as AudioReactive usermod may change
     um_data = new um_data_t;
-    um_data->u_size = 9;
+    um_data->u_size = 8;
     um_data->u_type = new um_types_t[um_data->u_size];
     um_data->u_data = new void*[um_data->u_size];
     um_data->u_data[0] = &volumeSmth;
@@ -432,11 +430,9 @@ um_data_t* simulateSound(uint8_t simulationId)
     um_data->u_data[5] = &my_magnitude;
     um_data->u_data[6] = &maxVol;
     um_data->u_data[7] = &binNum;
-    um_data->u_data[8] = fftBin;     //only used in binmap
   } else {
     // get arrays from um_data
     fftResult =  (uint8_t*)um_data->u_data[2];
-    fftBin    =  (float*)um_data->u_data[8];
   }
 
   uint32_t ms = millis();
