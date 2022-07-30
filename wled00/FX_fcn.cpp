@@ -1297,7 +1297,11 @@ void WS2812FX::restartRuntime() {
 
 void WS2812FX::resetSegments() {
   _segments.clear(); // destructs all Segment as part of clearing
+  #ifndef WLED_DISABLE_2D
   segment seg = isMatrix ? Segment(0, matrixWidth, 0, matrixHeight) : Segment(0, _length);
+  #else
+  segment seg = Segment(0, _length);
+  #endif
   _segments.push_back(seg);
   _mainSegment = 0;
 /*
