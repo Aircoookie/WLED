@@ -50,7 +50,7 @@ private:
     Segment  secondsSegment;
     uint32_t secondColor      = 0xFF0000;
     bool     blendColors      = true;
-    int16_t  secondsTrail     = 0;
+    uint16_t secondsEffect    = 0;
 
     // runtime
     bool     initDone         = false;
@@ -59,6 +59,9 @@ private:
     void validateAndUpdate() {
         mainSegment.validateAndUpdate();
         secondsSegment.validateAndUpdate();
+        if (secondsEffect < 0 || secondsEffect > 1) {
+            secondsEffect = 0;
+        }
     }
 
     int16_t adjustToSegment(double progress, Segment const& segment) {
@@ -94,6 +97,14 @@ private:
             c = def;
             return false;
         }
+    }
+
+    void secondsEffectSineFade(int16_t secondLed, Toki::Time const& time) {
+        uint32_t ms = time.ms % 1000;
+        uint8_t b0 = (cos8(ms * 64 / 1000) - 128) * 2;
+        setPixelColor(secondLed, gamma32(scale32(secondColor, b0)));
+        uint8_t b1 = (sin8(ms * 64 / 1000) - 128) * 2;
+        setPixelColor(inc(secondLed, 1, secondsSegment), gamma32(scale32(secondColor, b1)));
     }
 
     static inline uint32_t qadd32(uint32_t c1, uint32_t c2) {
@@ -167,35 +178,22 @@ public:
 
         if (secondsEnabled) {
             int16_t secondLed = adjustToSegment(secondP, secondsSegment);
-            // setPixelColor(secondLed, secondColor);
 
+            switch (secondsEffect) {
+                case 0: // no effect
+                    setPixelColor(secondLed, secondColor);
+                    break;
+
+                case 1: // fading seconds
+                    secondsEffectSineFade(secondLed, time);
+                    break;
+            }
+
+            // TODO: move to secondsTrailEffect
             // for (uint16_t i = 1; i < secondsTrail + 1; ++i) {
             //     uint16_t trailLed = dec(secondLed, i, secondsSegment);
             //     uint8_t trailBright = 255 / (secondsTrail + 1) * (secondsTrail - i + 1);
             //     setPixelColor(trailLed, gamma32(scale32(secondColor, trailBright)));
-            // }
-
-            uint32_t ms = time.ms % 1000;
-
-            {
-                uint8_t b = (cos8(ms * 64 / 1000) - 128) * 2;
-                setPixelColor(secondLed, gamma32(scale32(secondColor, b)));
-            }
-            {
-                uint8_t b = (sin8(ms * 64 / 1000) - 128) * 2;
-                setPixelColor(inc(secondLed, 1, secondsSegment), gamma32(scale32(secondColor, b)));
-            }
-            // {
-            //     uint8_t x = ((ms + 250) % 1000) / 2;
-            //     uint8_t b = cos8(x * 256 / 1000);
-            //     uint16_t l = dec(secondLed, 1, secondsSegment);
-            //     setPixelColor(l, gamma32(scale32(secondColor, b)));
-            // }
-            // {
-            //     uint32_t x = ((ms + 500) % 1000) / 2;
-            //     uint8_t b = cos8(x * 256 / 1000);
-            //     uint16_t l = dec(secondLed, 2, secondsSegment);
-            //     setPixelColor(l, gamma32(scale32(secondColor, b)));
             // }
         }
 
@@ -218,7 +216,7 @@ public:
         top["Last LED (Seconds Ring)"]       = secondsSegment.lastLed;
         top["Center/12h LED (Seconds Ring)"] = secondsSegment.centerLed;
         top["Second Color (RRGGBB)"]         = colorToHexString(secondColor);
-        top["Seconds Trail (0-99)"]          = secondsTrail;
+        top["Seconds Effect (0-1)"]          = secondsEffect;
         top["Blend Colors"]                  = blendColors;
     }
 
@@ -239,7 +237,7 @@ public:
         configComplete &= getJsonValue(top["Last LED (Seconds Ring)"], secondsSegment.lastLed, 59);
         configComplete &= getJsonValue(top["Center/12h LED (Seconds Ring)"], secondsSegment.centerLed, 0);
         configComplete &= getJsonValue(top["Second Color (RRGGBB)"], color, "FF0000") && hexStringToColor(color, secondColor, 0xFF0000);
-        configComplete &= getJsonValue(top["Seconds Trail (0-99)"], secondsTrail, 0);
+        configComplete &= getJsonValue(top["Seconds Effect (0-1)"], secondsEffect, 0);
         configComplete &= getJsonValue(top["Blend Colors"], blendColors, true);
 
         if (initDone) {
