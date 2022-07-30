@@ -314,7 +314,10 @@ void WLED::setup()
   if (!fsinit) {
     DEBUGFS_PRINTLN(F("FS failed!"));
     errorFlag = ERR_FS_BEGIN;
-  } else deEEP();
+  } 
+#ifdef WLED_ADD_EEPROM_SUPPORT
+  else deEEP();
+#endif
   updateFSInfo();
 
   DEBUG_PRINTLN(F("Reading config"));

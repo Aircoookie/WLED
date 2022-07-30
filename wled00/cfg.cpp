@@ -507,7 +507,9 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 void deserializeConfigFromFS() {
   bool success = deserializeConfigSec();
   if (!success) { //if file does not exist, try reading from EEPROM
+    #ifdef WLED_ADD_EEPROM_SUPPORT
     deEEPSettings();
+    #endif
     return;
   }
 
@@ -517,7 +519,9 @@ void deserializeConfigFromFS() {
 
   success = readObjectFromFile("/cfg.json", nullptr, &doc);
   if (!success) { //if file does not exist, try reading from EEPROM
+    #ifdef WLED_ADD_EEPROM_SUPPORT
     deEEPSettings();
+    #endif
     releaseJSONBufferLock();
     return;
   }

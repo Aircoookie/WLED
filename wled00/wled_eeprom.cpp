@@ -1,3 +1,4 @@
+#ifdef WLED_ADD_EEPROM_SUPPORT
 #include <EEPROM.h>
 #include "wled.h"
 
@@ -473,3 +474,4 @@ void deEEPSettings() {
 
   serializeConfig();
 }
+#endif

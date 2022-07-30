@@ -75,7 +75,7 @@ int8_t tristate_square8(uint8_t x, uint8_t pulsewidth, uint8_t attdec) {
  */
 uint16_t mode_static(void) {
   SEGMENT.fill(SEGCOLOR(0));
-  return (SEGMENT.getOption(SEG_OPTION_TRANSITIONAL)) ? FRAMETIME : 350; //update faster if in transition
+  return /*(SEGMENT.getOption(SEG_OPTION_TRANSITIONAL)) ? FRAMETIME :*/ 350; //update faster if in transition
 }
 static const char *_data_FX_MODE_STATIC PROGMEM = "Solid";
 
