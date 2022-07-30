@@ -73,6 +73,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Segment class implementation
 ///////////////////////////////////////////////////////////////////////////////
+uint16_t Segment::_usedSegmentData = 0U; // amount of RAM all segments use for their data[]
 
 Segment::Segment(const Segment &orig) {
   DEBUG_PRINTLN(F("-- Segment duplicated --"));
@@ -138,11 +139,10 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
   return *this;
 }
 
-bool Segment::allocateData(uint16_t len) {
+bool Segment::allocateData(size_t len) {
   if (data && _dataLen == len) return true; //already allocated
   deallocateData();
-  // TODO: move out to WS2812FX class: for (seg : _segments) sum += seg.dataSize();
-  if (strip.getUsedSegmentData() + len > MAX_SEGMENT_DATA) return false; //not enough memory
+  if (Segment::getUsedSegmentData() + len > MAX_SEGMENT_DATA) return false; //not enough memory
   // if possible use SPI RAM on ESP32
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
   if (psramFound())
@@ -151,7 +151,7 @@ bool Segment::allocateData(uint16_t len) {
   #endif
     data = (byte*) malloc(len);
   if (!data) return false; //allocation failed
-  strip.addUsedSegmentData(len); // TODO: move out to WS2812FX class: for (seg : _segments) sum += seg.dataSize();
+  Segment::addUsedSegmentData(len);
   _dataLen = len;
   memset(data, 0, len);
   DEBUG_PRINTF("-- Allocated data %p (%d)\n", data, (int)len);
@@ -159,13 +159,12 @@ bool Segment::allocateData(uint16_t len) {
 }
 
 void Segment::deallocateData() {
-  // NOTE: deallocating data sometimes produces corrupt heap.
   if (!data) return;
   DEBUG_PRINTF("-- Deallocating data: %p (%d)\n", data, (int)_dataLen);
   free(data);
   DEBUG_PRINTLN(F("-- Data freed."));
   data = nullptr;
-  strip.addUsedSegmentData(-(int16_t)_dataLen); // TODO: move out to WS2812FX class: for (seg : _segments) sum -= seg.dataSize();
+  Segment::addUsedSegmentData(-_dataLen);
   _dataLen = 0;
   DEBUG_PRINTLN(F("-- Dealocated data."));
 }
@@ -216,14 +215,18 @@ uint16_t Segment::progress() { //transition progression between 0-65535
 }
 
 uint8_t Segment::currentBri(uint8_t briNew, bool useCct) {
-  //if (!_t) return (useCct) ? cct : opacity;
+  //if (_t) {
   if (getOption(SEG_OPTION_TRANSITIONAL)) {
     uint32_t prog = progress() + 1;
     if (useCct) return ((briNew * prog) + /*_t->*/_cctT * (0x10000 - prog)) >> 16;
     else        return ((briNew * prog) + /*_t->*/_briT * (0x10000 - prog)) >> 16;
   } else {
-    return (useCct) ? cct : (getOption(SEG_OPTION_ON) ? opacity : 0);
+    return briNew;
   }
+}
+
+uint32_t Segment::currentColor(uint8_t slot, uint32_t colorNew) {
+  return getOption(SEG_OPTION_TRANSITIONAL) /*&& _t*/ ? color_blend(/*_t->*/_colorT[slot], colorNew, progress(), true) : colorNew;
 }
 
 CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
@@ -375,7 +378,7 @@ uint16_t Segment::virtualHeight() {
 // 1D strip
 uint16_t Segment::virtualLength() {
 #ifndef WLED_DISABLE_2D
-  if (height() > 1) {
+  if (is2D()) {
     uint16_t vW = virtualWidth();
     uint16_t vH = virtualHeight();
     uint32_t vLen = vW * vH; // use all pixels from segment
@@ -400,7 +403,7 @@ uint16_t Segment::virtualLength() {
 void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
 {
 #ifndef WLED_DISABLE_2D
-  if (height() > 1) { // if this does not work use strip.isMatrix
+  if (is2D()) { // if this does not work use strip.isMatrix
     uint16_t vH = virtualHeight();  // segment height in logical pixels
     uint16_t vW = virtualWidth();
     switch (map1D2D) {
@@ -431,8 +434,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
 #endif
 
   uint16_t len = length();
-  uint8_t _bri_t = strip._bri_t;
-  //uint8_t _bri_t = currentBri(getOption(SEG_OPTION_ON) ? opacity : 0);
+  uint8_t _bri_t = currentBri(getOption(SEG_OPTION_ON) ? opacity : 0);
   if (_bri_t < 255) {
     byte r = scale8(R(col), _bri_t);
     byte g = scale8(G(col), _bri_t);
@@ -501,7 +503,7 @@ void Segment::setPixelColor(float i, uint32_t col, bool aa)
 uint32_t Segment::getPixelColor(uint16_t i)
 {
 #ifndef WLED_DISABLE_2D
-  if (height() > 1) { // if this does not work use strip.isMatrix
+  if (is2D()) { // if this does not work use strip.isMatrix
     uint16_t vH = virtualHeight();  // segment height in logical pixels
     uint16_t vW = virtualWidth();
     switch (map1D2D) {
@@ -589,11 +591,11 @@ void Segment::refreshLightCapabilities() {
  * Fills segment with color
  */
 void Segment::fill(uint32_t c) {
-  const uint16_t cols = strip.isMatrix ? virtualWidth() : virtualLength();
+  const uint16_t cols = is2D() ? virtualWidth() : virtualLength();
   const uint16_t rows = virtualHeight(); // will be 1 for 1D
   for(uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
-    if (strip.isMatrix) setPixelColorXY(x, y, c);
-    else                setPixelColor(x, c);
+    if (is2D()) setPixelColorXY(x, y, c);
+    else        setPixelColor(x, c);
   }
 }
 
@@ -611,7 +613,7 @@ void Segment::addPixelColor(uint16_t n, uint32_t color) {
  * fade out function, higher rate = quicker fade
  */
 void Segment::fade_out(uint8_t rate) {
-  const uint16_t cols = strip.isMatrix ? virtualWidth() : virtualLength();
+  const uint16_t cols = is2D() ? virtualWidth() : virtualLength();
   const uint16_t rows = virtualHeight(); // will be 1 for 1D
 
   rate = (255-rate) >> 1;
@@ -624,7 +626,7 @@ void Segment::fade_out(uint8_t rate) {
   int b2 = B(color);
 
   for (uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
-    color = strip.isMatrix ? getPixelColorXY(x, y) : getPixelColor(x);
+    color = is2D() ? getPixelColorXY(x, y) : getPixelColor(x);
     int w1 = W(color);
     int r1 = R(color);
     int g1 = G(color);
@@ -641,19 +643,19 @@ void Segment::fade_out(uint8_t rate) {
     gdelta += (g2 == g1) ? 0 : (g2 > g1) ? 1 : -1;
     bdelta += (b2 == b1) ? 0 : (b2 > b1) ? 1 : -1;
 
-    if (strip.isMatrix) setPixelColorXY(x, y, r1 + rdelta, g1 + gdelta, b1 + bdelta, w1 + wdelta);
-    else                setPixelColor(x, r1 + rdelta, g1 + gdelta, b1 + bdelta, w1 + wdelta);
+    if (is2D()) setPixelColorXY(x, y, r1 + rdelta, g1 + gdelta, b1 + bdelta, w1 + wdelta);
+    else        setPixelColor(x, r1 + rdelta, g1 + gdelta, b1 + bdelta, w1 + wdelta);
   }
 }
 
 // fades all pixels to black using nscale8()
 void Segment::fadeToBlackBy(uint8_t fadeBy) {
-  const uint16_t cols = strip.isMatrix ? virtualWidth() : virtualLength();
+  const uint16_t cols = is2D() ? virtualWidth() : virtualLength();
   const uint16_t rows = virtualHeight(); // will be 1 for 1D
 
   for (uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
-    if (strip.isMatrix) setPixelColorXY(x, y, CRGB(getPixelColorXY(x,y)).nscale8(255-fadeBy));
-    else                setPixelColor(x, CRGB(getPixelColor(x)).nscale8(255-fadeBy));
+    if (is2D()) setPixelColorXY(x, y, CRGB(getPixelColorXY(x,y)).nscale8(255-fadeBy));
+    else        setPixelColor(x, CRGB(getPixelColor(x)).nscale8(255-fadeBy));
   }
 }
 
@@ -662,7 +664,8 @@ void Segment::fadeToBlackBy(uint8_t fadeBy) {
  */
 void Segment::blur(uint8_t blur_amount)
 {
-  if (strip.isMatrix) {
+#ifndef WLED_DISABLE_2D
+  if (is2D()) {
     // compatibility with 2D
     const uint16_t cols = virtualWidth();
     const uint16_t rows = virtualHeight();
@@ -670,6 +673,7 @@ void Segment::blur(uint8_t blur_amount)
     for (uint16_t k = 0; k < cols; k++) blurCol(k, blur_amount); // blur all columns
     return;
   }
+#endif
   uint8_t keep = 255 - blur_amount;
   uint8_t seep = blur_amount >> 1;
   CRGB carryover = CRGB::Black;
@@ -844,25 +848,24 @@ void WS2812FX::service() {
 
       if (!seg.getOption(SEG_OPTION_FREEZE)) { //only run effect function if not frozen
         _virtualSegmentLength = seg.virtualLength();
-        _bri_t          = seg.currentBri(seg.getOption(SEG_OPTION_ON) ? seg.opacity : 0);
-        uint8_t _cct_t  = seg.currentBri(seg.cct, true);
-        _colors_t[0]    = seg.currentColor(0, seg.colors[0]);
-        _colors_t[1]    = seg.currentColor(1, seg.colors[1]);
-        _colors_t[2]    = seg.currentColor(2, seg.colors[2]);
+        _colors_t[0] = seg.currentColor(0, seg.colors[0]);
+        _colors_t[1] = seg.currentColor(1, seg.colors[1]);
+        _colors_t[2] = seg.currentColor(2, seg.colors[2]);
         seg.currentPalette(_currentPalette, seg.palette);
 
-        seg.handleTransition();
-
-        if (!cctFromRgb || correctWB) busses.setSegmentCCT(_cct_t, correctWB);
+        if (!cctFromRgb || correctWB) busses.setSegmentCCT(seg.currentBri(seg.cct, true), correctWB);
         for (uint8_t c = 0; c < NUM_COLORS; c++) {
           _colors_t[c] = gamma32(_colors_t[c]);
         }
+
+        seg.handleTransition();
 
         // effect blending (execute previous effect)
         // actual code may be a bit more involved as effects have runtime data including allocated memory
         //if (getOption(SEG_OPTION_TRANSITIONAL) && seg._modeP) (*_mode[seg._modeP])(progress());
         delay = (*_mode[seg.mode])();
         if (seg.mode != FX_MODE_HALLOWEEN_EYES) seg.call++;
+        if (seg.transitional && delay > FRAMETIME) delay = FRAMETIME; // foce faster updates during transition
       }
 
       seg.next_time = nowUp + delay;

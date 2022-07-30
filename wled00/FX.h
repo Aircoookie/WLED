@@ -56,10 +56,6 @@
 #define RGBW32(r,g,b,w) (uint32_t((byte(w) << 24) | (byte(r) << 16) | (byte(g) << 8) | (byte(b))))
 #endif
 
-//colors.cpp (.h does not like including other .h)
-uint32_t color_blend(uint32_t,uint32_t,uint16_t,bool b16);
-uint32_t color_add(uint32_t,uint32_t);
-
 /* Not used in all effects yet */
 #define WLED_FPS         42
 #define FRAMETIME_FIXED  (1000/WLED_FPS)
@@ -71,12 +67,12 @@ uint32_t color_add(uint32_t,uint32_t);
 #ifdef ESP8266
   #define MAX_NUM_SEGMENTS    16
   /* How much data bytes all segments combined may allocate */
-  #define MAX_SEGMENT_DATA  4096
+  #define MAX_SEGMENT_DATA  5120
 #else
   #ifndef MAX_NUM_SEGMENTS
     #define MAX_NUM_SEGMENTS  32
   #endif
-  #define MAX_SEGMENT_DATA  32768
+  #define MAX_SEGMENT_DATA  32767
 #endif
 
 /* How much data bytes each segment should max allocate to leave enough space for other segments,
@@ -88,7 +84,7 @@ uint32_t color_add(uint32_t,uint32_t);
 #define NUM_COLORS       3 /* number of colors per segment */
 #define SEGMENT          strip._segments[strip.getCurrSegmentId()]
 #define SEGENV           strip._segments[strip.getCurrSegmentId()]
-//#define SEGCOLOR(x)      strip._segments[s//trip.getCurrSegmentId()].currentColor(x, strip._segments[strip.getCurrSegmentId()].colors[x])
+//#define SEGCOLOR(x)      strip._segments[strip.getCurrSegmentId()].currentColor(x, strip._segments[strip.getCurrSegmentId()].colors[x])
 //#define SEGLEN           strip._segments[strip.getCurrSegmentId()].virtualLength()
 #define SEGCOLOR(x)      strip.segColor(x) /* saves us a few kbytes of code */
 #define SEGPALETTE       strip._currentPalette
@@ -427,6 +423,7 @@ typedef struct Segment {
       };
     };
     uint16_t _dataLen;
+    static uint16_t _usedSegmentData;
 
     // transition data, valid only if getOption(SEG_OPTION_TRANSITIONAL)==true, holds values during transition
     //struct Transition {
@@ -504,23 +501,27 @@ typedef struct Segment {
     inline bool     getOption(uint8_t n)       { return ((options >> n) & 0x01); }
     inline bool     isSelected(void)           { return getOption(0); }
     inline bool     isActive(void)             { return stop > start; }
+    inline bool     is2D(void)                 { return !(startY == 0 && stopY == 1); }
     inline uint16_t width(void)                { return stop - start; }
     inline uint16_t height(void)               { return stopY - startY; }
     inline uint16_t length(void)               { return width(); }
     inline uint16_t groupLength(void)          { return grouping + spacing; }
     inline uint8_t  getLightCapabilities(void) { return _capabilities; }
 
-    bool setColor(uint8_t slot, uint32_t c); //returns true if changed
-    void setCCT(uint16_t k);
-    void setOpacity(uint8_t o);
-    void setOption(uint8_t n, bool val);
+    static uint16_t getUsedSegmentData(void)    { return _usedSegmentData; }
+    static void     addUsedSegmentData(int len) { _usedSegmentData += len; }
+
+    bool    setColor(uint8_t slot, uint32_t c); //returns true if changed
+    void    setCCT(uint16_t k);
+    void    setOpacity(uint8_t o);
+    void    setOption(uint8_t n, bool val);
     uint8_t differs(Segment& b);
-    void refreshLightCapabilities(void);
+    void    refreshLightCapabilities(void);
 
     // runtime data functions
-    bool allocateData(uint16_t len);
-    void deallocateData(void);
     inline uint16_t dataSize(void) { return _dataLen; }
+    bool allocateData(size_t len);
+    void deallocateData(void);
     void resetIfRequired(void);
     /** 
       * Flags that before the next effect is calculated,
@@ -531,11 +532,11 @@ typedef struct Segment {
     inline void markForReset(void) { reset = true; }  // setOption(SEG_OPTION_RESET, true)
 
     // transition functions
-    void startTransition(uint16_t dur); // transition has to start before actual segment values change
-    void handleTransition(void);
+    void     startTransition(uint16_t dur); // transition has to start before actual segment values change
+    void     handleTransition(void);
     uint16_t progress(void); //transition progression between 0-65535
     uint8_t  currentBri(uint8_t briNew, bool useCct = false);
-    uint32_t currentColor(uint8_t slot, uint32_t colorNew) { return getOption(SEG_OPTION_TRANSITIONAL) /*&& !_t*/ ? color_blend(/*_t->*/_colorT[slot], colorNew, progress(), true) : colorNew; }
+    uint32_t currentColor(uint8_t slot, uint32_t colorNew);
     CRGBPalette16 &loadPalette(CRGBPalette16 &tgt, uint8_t pal);
     CRGBPalette16 &currentPalette(CRGBPalette16 &tgt, uint8_t paletteID);
 
@@ -633,13 +634,11 @@ class WS2812FX {  // 96 bytes
 #endif
       // semi-private (just obscured) used in effect functions through macros
       _currentPalette(CRGBPalette16(CRGB::Black)),
-      _bri_t(0),
       _colors_t{0,0,0},
       _virtualSegmentLength(0),
       // true private variables
       _length(DEFAULT_LED_COUNT),
       _brightness(DEFAULT_BRIGHTNESS),
-      _usedSegmentData(0),
       _transitionDur(750),
 		  _targetFps(WLED_FPS),
 		  _frametime(FRAMETIME_FIXED),
@@ -707,7 +706,6 @@ class WS2812FX {  // 96 bytes
     inline void setShowCallback(show_callback cb) { _callback = cb; }
     inline void setTransition(uint16_t t) { _transitionDur = t; }
     inline void appendSegment(const Segment &seg = Segment()) { _segments.push_back(seg); }
-    inline void addUsedSegmentData(int16_t size) { _usedSegmentData += size; }
 
     bool
       gammaCorrectBri,
@@ -753,7 +751,6 @@ class WS2812FX {  // 96 bytes
     inline uint16_t getMinShowDelay(void) { return MIN_SHOW_DELAY; }
     inline uint16_t getLengthTotal(void) { return _length; }
     inline uint16_t getTransition(void) { return _transitionDur; }
-    inline uint16_t getUsedSegmentData(void) { return _usedSegmentData; }
 
     uint32_t
       now,
@@ -823,7 +820,6 @@ class WS2812FX {  // 96 bytes
 
     // using public variables to reduce code size increase due to inline function getSegment() (with bounds checking)
     // and color transitions
-    uint8_t  _bri_t;       // opacity used for effect (includes transition)
     uint32_t _colors_t[3]; // color used for effect (includes transition)
     uint16_t _virtualSegmentLength;
 
@@ -833,7 +829,6 @@ class WS2812FX {  // 96 bytes
   private:
     uint16_t _length;
     uint8_t  _brightness;
-    uint16_t _usedSegmentData;
     uint16_t _transitionDur;
 
 		uint8_t  _targetFps;
