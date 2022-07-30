@@ -329,11 +329,13 @@ int16_t extractModeDefaults(uint8_t mode, const char *segVar);
 uint16_t crc16(const unsigned char* data_p, size_t length);
 um_data_t* simulateSound(uint8_t simulationId);
 
+#ifdef WLED_ADD_EEPROM_SUPPORT
 //wled_eeprom.cpp
 void applyMacro(byte index);
 void deEEP();
 void deEEPSettings();
 void clearEEPROM();
+#endif
 
 //wled_math.cpp
 #ifndef WLED_USE_REAL_MATH
