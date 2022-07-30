@@ -205,7 +205,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         extractModeSlider(fx, 255, buf, 4, &tmp);
         if (tmp < strip.getPaletteCount() + strip.customPalettes.size()) {
           if (tmp != seg.palette) {
-            if (strip.paletteBlend && !seg.transitional) seg.startTransition(strip.getTransition());
+            if (strip.paletteFade && !seg.transitional) seg.startTransition(strip.getTransition());
             seg.palette = tmp;
           }
         }
@@ -224,7 +224,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         sOpt = extractModeDefaults(fx, "pal");
         if (sOpt >= 0 && sOpt < strip.getPaletteCount() + strip.customPalettes.size()) {
           if (sOpt != seg.palette) {
-            if (strip.paletteBlend && !seg.transitional) seg.startTransition(strip.getTransition());
+            if (strip.paletteFade && !seg.transitional) seg.startTransition(strip.getTransition());
             seg.palette = sOpt;
           }
         }
@@ -238,7 +238,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   uint8_t pal = seg.palette;
   if (getVal(elem["pal"], &pal, 1, strip.getPaletteCount())) {
     if (pal != seg.palette) {
-      if (strip.paletteBlend && !seg.transitional) seg.startTransition(strip.getTransition());
+      if (strip.paletteFade && !seg.transitional) seg.startTransition(strip.getTransition());
       seg.palette = pal;
     }
   }
@@ -290,7 +290,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         if (set < 2) stop = start + 1;
         for (int i = start; i < stop; i++) {
           if (strip.gammaCorrectCol) {
-            seg.setPixelColor(i, strip.gamma8(rgbw[0]), strip.gamma8(rgbw[1]), strip.gamma8(rgbw[2]), strip.gamma8(rgbw[3]));
+            seg.setPixelColor(i, gamma8(rgbw[0]), gamma8(rgbw[1]), gamma8(rgbw[2]), gamma8(rgbw[3]));
           } else {
             seg.setPixelColor(i, rgbw[0], rgbw[1], rgbw[2], rgbw[3]);
           }

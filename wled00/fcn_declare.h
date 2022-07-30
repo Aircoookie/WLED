@@ -60,22 +60,21 @@ bool getJsonValue(const JsonVariant& element, DestType& destination, const Defau
 //colors.cpp
 uint32_t color_blend(uint32_t,uint32_t,uint16_t,bool b16=false);
 uint32_t color_add(uint32_t,uint32_t);
-
 inline uint32_t colorFromRgbw(byte* rgbw) { return uint32_t((byte(rgbw[3]) << 24) | (byte(rgbw[0]) << 16) | (byte(rgbw[1]) << 8) | (byte(rgbw[2]))); }
 void colorHStoRGB(uint16_t hue, byte sat, byte* rgb); //hue, sat to rgb
 void colorKtoRGB(uint16_t kelvin, byte* rgb);
 void colorCTtoRGB(uint16_t mired, byte* rgb); //white spectrum to rgb
-
 void colorXYtoRGB(float x, float y, byte* rgb); // only defined if huesync disabled TODO
 void colorRGBtoXY(byte* rgb, float* xy); // only defined if huesync disabled TODO
-
 void colorFromDecOrHexString(byte* rgb, char* in);
 bool colorFromHexString(byte* rgb, const char* in);
-
 uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb);
 uint16_t approximateKelvinFromRGB(uint32_t rgb);
-
 void setRandomColor(byte* rgb);
+uint8_t gamma8_cal(uint8_t b, float gamma);
+void calcGammaTable(float gamma);
+uint8_t gamma8(uint8_t b);
+uint32_t gamma32(uint32_t);
 
 //dmx.cpp
 void initDMX();

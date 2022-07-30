@@ -682,7 +682,6 @@ class WS2812FX {  // 96 bytes
       setBrightness(uint8_t b, bool direct = false),
       setRange(uint16_t i, uint16_t i2, uint32_t col),
       setTransitionMode(bool t),
-      calcGammaTable(float),
       purgeSegments(void),
       setSegment(uint8_t n, uint16_t start, uint16_t stop, uint8_t grouping = 1, uint8_t spacing = 0, uint16_t offset = UINT16_MAX, uint16_t startY=0, uint16_t stopY=1),
       setMainSegmentId(uint8_t n),
@@ -728,9 +727,7 @@ class WS2812FX {  // 96 bytes
       getActiveSegmentsNum(void),
       getFirstSelectedSegId(void),
       getLastActiveSegmentId(void),
-      setPixelSegment(uint8_t n),
-      gamma8(uint8_t),
-      gamma8_cal(uint8_t, float);
+      setPixelSegment(uint8_t n);
 
     inline uint8_t getBrightness(void) { return _brightness; }
     inline uint8_t getMaxSegments(void) { return MAX_NUM_SEGMENTS; }  // returns maximum number of supported segments (fixed value)
@@ -756,7 +753,6 @@ class WS2812FX {  // 96 bytes
       now,
       timebase,
       currentColor(uint32_t colorNew, uint8_t tNr),
-      gamma32(uint32_t),
       getPixelColor(uint16_t);
 
     inline uint32_t getLastShow(void) { return _lastShow; }

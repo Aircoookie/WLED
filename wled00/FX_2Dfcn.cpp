@@ -189,6 +189,8 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
       }
     }
   }
+#else
+  setPixelColor(x, col);
 #endif
 }
 
@@ -454,14 +456,12 @@ void Segment::move(uint8_t dir, uint8_t delta, CRGB *leds) {
 }
 
 void Segment::fill_solid(CRGB* leds, CRGB color) {
-#ifndef WLED_DISABLE_2D
-  const uint16_t cols = virtualWidth();
+  const uint16_t cols = is2D() ? virtualWidth() : virtualLength();
   const uint16_t rows = virtualHeight();
   for(uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
     if (leds) leds[XY(x,y)] = color;
     else setPixelColorXY(x, y, color);
   }
-#endif
 }
 
 // by stepko, taken from https://editor.soulmatelights.com/gallery/573-blobs
