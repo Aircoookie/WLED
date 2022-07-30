@@ -755,7 +755,7 @@ function populateSegments(s)
 		</table>
 		<div class="h bp" id="seg${i}len"></div>
 		${!isM?rvXck:''}
-		${map2D}
+		${isM?map2D:''}
 		${s.AudioReactive && s.AudioReactive.on ? "" : sndSim}
 		<label class="check revchkl">
 			${isM?'Transpose':'Mirror effect'}
