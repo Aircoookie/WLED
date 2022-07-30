@@ -75,29 +75,32 @@
 ///////////////////////////////////////////////////////////////////////////////
 uint16_t Segment::_usedSegmentData = 0U; // amount of RAM all segments use for their data[]
 
+// copy constructor
 Segment::Segment(const Segment &orig) {
   DEBUG_PRINTLN(F("-- Segment duplicated --"));
   memcpy(this, &orig, sizeof(Segment));
   name = nullptr;
   data = nullptr;
   _dataLen = 0;
-  //_t = nullptr;
+  _t = nullptr;
   if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
   if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
-  //if (orig._t) { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
+  if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
   DEBUG_PRINTF("  Original data: %p (%d)\n", orig.data, (int)orig._dataLen);
   DEBUG_PRINTF("  Constructed data: %p (%d)\n", data, (int)_dataLen);
 }
 
+// move constructor
 Segment::Segment(Segment &&orig) noexcept {
   DEBUG_PRINTLN(F("-- Move constructor --"));
   memcpy(this, &orig, sizeof(Segment));
   orig.name = nullptr;
   orig.data = nullptr;
   orig._dataLen = 0;
-  //orig._t   = nullptr;
+  orig._t   = nullptr;
 }
 
+// copy assignment
 Segment& Segment::operator= (const Segment &orig) {
   DEBUG_PRINTLN(F("-- Segment copied --"));
   if (this != &orig) {
@@ -105,22 +108,23 @@ Segment& Segment::operator= (const Segment &orig) {
       DEBUG_PRINTF("  Copy Deleting %s (%p)\n", name, name);
       delete[] name;
     }
-    //if (_t) delete _t;
+    if (_t) delete _t;
     deallocateData();
     memcpy(this, &orig, sizeof(Segment));
     name = nullptr;
     data = nullptr;
     _dataLen = 0;
-    //_t = nullptr;
+    _t = nullptr;
     if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
     if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
-    //if (orig._t) { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
+    if (orig._t) { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
     DEBUG_PRINTF("  Original data: %p (%d)\n", orig.data, (int)orig._dataLen);
     DEBUG_PRINTF("  Copied data: %p (%d)\n", data, (int)_dataLen);
   }
   return *this;
 }
 
+// move assignment
 Segment& Segment::operator= (Segment &&orig) noexcept {
   DEBUG_PRINTLN(F("-- Moving segment --"));
   if (this != &orig) {
@@ -128,13 +132,13 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
       DEBUG_PRINTF("  Move Deleting %s (%p)\n", name, name);
       delete[] name; // free old name
     }
-    //if (_t) delete _t;
     deallocateData(); // free old runtime data
+    if (_t) delete _t;
     memcpy(this, &orig, sizeof(Segment));
     orig.name = nullptr;
     orig.data = nullptr;
     orig._dataLen = 0;
-    //orig._t   = nullptr;
+    orig._t   = nullptr;
   }
   return *this;
 }
@@ -184,49 +188,51 @@ void Segment::resetIfRequired() {
 }
 
 void Segment::startTransition(uint16_t dur) {
+  if (transitional || _t) return; // already in transition
+
   // starting a transition has to occur before change so we get current values 1st
-  /*uint8_t*/ _briT = currentBri(getOption(SEG_OPTION_ON) ? opacity : 0); // comment out uint8_t if not using Transition struct
-  /*uint8_t*/ _cctT = currentBri(cct, true); // comment out uint8_t if not using Transition struct
-  /*CRGBPalette16 _palT;*/ loadPalette(_palT, palette);
+  uint8_t _briT = currentBri(getOption(SEG_OPTION_ON) ? opacity : 0); // comment out uint8_t if not using Transition struct
+  uint8_t _cctT = currentBri(cct, true); // comment out uint8_t if not using Transition struct
+  CRGBPalette16 _palT; loadPalette(_palT, palette);
   ///*uint8_t*/ _modeP = mode; // comment out uint8_t if not using Transition struct
-  //uint32_t _colorT[NUM_COLORS]; // comment out if not using Transition struct
+  uint32_t _colorT[NUM_COLORS]; // comment out if not using Transition struct
   for (size_t i=0; i<NUM_COLORS; i++) _colorT[i] = currentColor(i, colors[i]);
 
   // using transition struct
-  //if (!_t) _t = new Transition(dur); // no previous transition running
-  //if (!_t) return; // failed to allocat data
-  //_t->_briT = _briT;
-  //_t->_cctT = _cctT;
-  //_t->_palT  = _palT;
+  if (!_t) _t = new Transition(dur); // no previous transition running
+  if (!_t) return; // failed to allocat data
+  _t->_briT = _briT;
+  _t->_cctT = _cctT;
+  _t->_palT  = _palT;
   //_t->_modeT = _modeP;
-  //for (size_t i=0; i<NUM_COLORS; i++) _t->_colorT[i] = _colorT[i];
+  for (size_t i=0; i<NUM_COLORS; i++) _t->_colorT[i] = _colorT[i];
   // comment out if using transition struct as it is done in constructor
-  _dur = dur;
-  _start = millis();
+  //_dur = dur;
+  //_start = millis();
 
   setOption(SEG_OPTION_TRANSITIONAL, true);
 }
 
 uint16_t Segment::progress() { //transition progression between 0-65535
-  //if (!_t) return 0xFFFFU;
+  if (!transitional || !_t) return 0xFFFFU;
   uint32_t timeNow = millis();
-  if (timeNow - /*_t->*/_start > /*_t->*/_dur) return 0xFFFFU;
-  return (timeNow - /*_t->*/_start) * 0xFFFFU / /*_t->*/_dur;
+  if (timeNow - _t->_start > _t->_dur) return 0xFFFFU;
+  return (timeNow - _t->_start) * 0xFFFFU / _t->_dur;
 }
 
 uint8_t Segment::currentBri(uint8_t briNew, bool useCct) {
-  //if (_t) {
-  if (getOption(SEG_OPTION_TRANSITIONAL)) {
+  if (transitional && _t) {
+  //if (getOption(SEG_OPTION_TRANSITIONAL)) {
     uint32_t prog = progress() + 1;
-    if (useCct) return ((briNew * prog) + /*_t->*/_cctT * (0x10000 - prog)) >> 16;
-    else        return ((briNew * prog) + /*_t->*/_briT * (0x10000 - prog)) >> 16;
+    if (useCct) return ((briNew * prog) + _t->_cctT * (0x10000 - prog)) >> 16;
+    else        return ((briNew * prog) + _t->_briT * (0x10000 - prog)) >> 16;
   } else {
     return briNew;
   }
 }
 
 uint32_t Segment::currentColor(uint8_t slot, uint32_t colorNew) {
-  return getOption(SEG_OPTION_TRANSITIONAL) /*&& _t*/ ? color_blend(/*_t->*/_colorT[slot], colorNew, progress(), true) : colorNew;
+  return transitional && _t ? color_blend(_t->_colorT[slot], colorNew, progress(), true) : colorNew;
 }
 
 CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
@@ -309,23 +315,26 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
 
 CRGBPalette16 &Segment::currentPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
   loadPalette(targetPalette, pal);
-  //if (_t && progress() < 0xFFFFU) {
-  if (strip.paletteFade && getOption(SEG_OPTION_TRANSITIONAL) && progress() < 0xFFFFU) { // TODO: get rid of 
+  if (transitional && _t && progress() < 0xFFFFU) {
+  //if (strip.paletteFade && getOption(SEG_OPTION_TRANSITIONAL) && progress() < 0xFFFFU) {
     // blend palettes
-    uint8_t blends = map(_dur, 0, 0xFFFF, 48, 6); // do not blend palettes too quickly (0-65.5s)
-    nblendPaletteTowardPalette(/*_t->*/_palT, targetPalette, blends);
-    targetPalette = /*_t->*/_palT; // copy transitioning/temporary palette
+    uint8_t blends = map(_t->_dur, 0, 0xFFFF, 48, 6); // do not blend palettes too quickly (0-65.5s)
+    nblendPaletteTowardPalette(_t->_palT, targetPalette, blends);
+    targetPalette = _t->_palT; // copy transitioning/temporary palette
   }
   return targetPalette;
 }
 
 void Segment::handleTransition() {
-  if (!getOption(SEG_OPTION_TRANSITIONAL)) return;
+  if (!transitional) return;
   unsigned long maxWait = millis() + 20;
   if (mode == FX_MODE_STATIC && next_time > maxWait) next_time = maxWait;
   if (progress() == 0xFFFFU) {
-    //if (_t) { delete _t; _t = nullptr; }
-    setOption(SEG_OPTION_TRANSITIONAL, false); // finish transitioning segment
+    if (_t) {
+      delete _t;
+      _t = nullptr;
+    }
+    transitional = false; // finish transitioning segment
   }
 }
 
@@ -753,8 +762,8 @@ uint32_t IRAM_ATTR Segment::color_from_palette(uint16_t i, bool mapping, bool wr
   if (!wrap) paletteIndex = scale8(paletteIndex, 240); //cut off blend at palette "end"
   CRGB fastled_col;
   CRGBPalette16 curPal;
-  if (transitional) curPal = /*_t->*/_palT;
-  else              loadPalette(curPal, palette);
+  if (transitional && _t) curPal = _t->_palT;
+  else                    loadPalette(curPal, palette);
   fastled_col = ColorFromPalette(curPal, paletteIndex, pbri, (strip.paletteBlend == 3)? NOBLEND:LINEARBLEND); // NOTE: paletteBlend should be global
 
   return RGBW32(fastled_col.r, fastled_col.g, fastled_col.b, 0);

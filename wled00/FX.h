@@ -426,7 +426,7 @@ typedef struct Segment {
     static uint16_t _usedSegmentData;
 
     // transition data, valid only if getOption(SEG_OPTION_TRANSITIONAL)==true, holds values during transition
-    //struct Transition {
+    struct Transition {
       uint32_t      _colorT[NUM_COLORS];
       uint8_t       _briT;  // temporary brightness
       uint8_t       _cctT;  // temporary CCT
@@ -434,11 +434,11 @@ typedef struct Segment {
       //uint8_t       _modeP; // previous mode/effect (transitioning effects is way more complex than this)
       uint32_t      _start;
       uint16_t      _dur;
-    //  Transition(uint16_t dur=750) : _briT(255), _cctT(127), _palT(CRGBPalette16(CRGB::Black)), _modeP(FX_MODE_STATIC), _start(millis()), _dur(dur) {}
-    //  Transition(uint16_t d, uint8_t b, uint8_t c, const uint32_t *o) : _briT(b), _cctT(c), _palT(CRGBPalette16(CRGB::Black)), _modeP(FX_MODE_STATIC), _start(millis()), _dur(d) {
-    //    for (size_t i=0; i<NUM_COLORS; i++) _colorT[i] = o[i];
-    //  }
-    //} *_t; // this struct will bootloop ESP
+      Transition(uint16_t dur=750) : _briT(255), _cctT(127), _palT(CRGBPalette16(CRGB::Black)), /*_modeP(FX_MODE_STATIC),*/ _start(millis()), _dur(dur) {}
+      Transition(uint16_t d, uint8_t b, uint8_t c, const uint32_t *o) : _briT(b), _cctT(c), _palT(CRGBPalette16(CRGB::Black)), /*_modeP(FX_MODE_STATIC),*/ _start(millis()), _dur(d) {
+        for (size_t i=0; i<NUM_COLORS; i++) _colorT[i] = o[i];
+      }
+    } *_t; // this struct will bootloop ESP
 
   public:
 
@@ -469,8 +469,8 @@ typedef struct Segment {
       aux1(0),
       data(nullptr),
       _capabilities(0),
-      _dataLen(0)
-      //_t(nullptr)
+      _dataLen(0),
+      _t(nullptr)
     {
       refreshLightCapabilities();
     }
@@ -491,7 +491,7 @@ typedef struct Segment {
       Serial.println();
       #endif
       if (name) delete[] name;
-      //if (_t) delete _t;
+      if (_t) delete _t;
       deallocateData();
     }
 
