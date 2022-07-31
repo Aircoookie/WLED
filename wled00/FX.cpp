@@ -4565,38 +4565,41 @@ uint16_t mode_2DBlackHole(void) {            // By: Stepko https://editor.soulma
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
+  // const uint16_t dataSize = sizeof(CRGB) * SEGMENT.width() * SEGMENT.height();  // using width*height prevents reallocation if mirroring is enabled
 
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+  // if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  // CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
 
   uint16_t x, y;
 
   // initialize on first call
   if (SEGENV.call == 0) {
-    SEGMENT.fill_solid(leds, CRGB::Black);
+    SEGMENT.fill_solid(strip.leds, CRGB::Black);
   }
 
-  SEGMENT.fadeToBlackBy(leds, 16 + (SEGMENT.speed>>3)); // create fading trails
+  SEGMENT.fadeToBlackBy(strip.leds, 16 + (SEGMENT.speed>>3)); // create fading trails
   float t = (float)(millis())/128;              // timebase
   // outer stars
   for (size_t i = 0; i < 8; i++) {
     x = beatsin8(SEGMENT.custom1>>3,   0, cols - 1, 0, ((i % 2) ? 128 : 0) + t * i);
     y = beatsin8(SEGMENT.intensity>>3, 0, rows - 1, 0, ((i % 2) ? 192 : 64) + t * i);
-    leds[XY(x,y)] += CHSV(i*32, 255, 255);
+    strip.leds[XY(x,y)] += CHSV(i*32, 255, 255);
+    // SEGMENT.setPixelColorXY(x, y, SEGMENT.getPixelColorXY(x, y) + CHSV(i*32, 255, 255));
   }
   // inner stars
   for (size_t i = 0; i < 4; i++) {
     x = beatsin8(SEGMENT.custom2>>3, cols/4, cols - 1 - cols/4, 0, ((i % 2) ? 128 : 0) + t * i);
     y = beatsin8(SEGMENT.custom3>>3, rows/4, rows - 1 - rows/4, 0, ((i % 2) ? 192 : 64) + t * i);
-    leds[XY(x,y)] += CHSV(i*32, 255, 255);
+    strip.leds[XY(x,y)] += CHSV(i*32, 255, 255);
+    // SEGMENT.setPixelColorXY(x, y, SEGMENT.getPixelColorXY(x, y) + CHSV(i*32, 255, 255));
   }
   // central white dot
-  leds[XY(cols/2,rows/2)] = CHSV(0,0,255);
+  strip.leds[XY(cols/2,rows/2)] = CHSV(0,0,255);
+  // SEGMENT.setPixelColorXY(cols/2,rows/2, CHSV(0,0,255));
   // blur everything a bit
-  SEGMENT.blur2d(leds, 16);
+  SEGMENT.blur2d(strip.leds, 16);
 
-  SEGMENT.setPixels(leds);
+  SEGMENT.setPixels(strip.leds);
   return FRAMETIME;
 } // mode_2DBlackHole()
 static const char *_data_FX_MODE_2DBLACKHOLE PROGMEM = "2D Black Hole@Fade rate,Outer Y freq.,Outer X freq.,Inner X freq.,Inner Y freq.;;";
@@ -6006,7 +6009,9 @@ uint16_t mode_ripplepeak(void) {                // * Ripple peak. By Andrew Tuli
     um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t samplePeak    = *(uint8_t*)um_data->u_data[3];
+  #ifdef ESP32
   float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
+  #endif
   uint8_t *maxVol       =  (uint8_t*)um_data->u_data[6];
   uint8_t *binNum       =  (uint8_t*)um_data->u_data[7];
 

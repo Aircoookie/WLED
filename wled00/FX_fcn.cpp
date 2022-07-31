@@ -464,6 +464,8 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
       }
       indexSet += offset; // offset/phase
       if (indexSet >= stop) indexSet -= len; // wrap
+      if (strip.useLedsArray)
+        strip.leds[indexSet] = col;
       strip.setPixelColor(indexSet, col);
     }
   }
@@ -527,7 +529,12 @@ uint32_t Segment::getPixelColor(uint16_t i)
   /* offset/phase */
   i += offset;
   if (i >= stop) i -= length();
-  return strip.getPixelColor(i);
+  if (strip.useLedsArray) {
+    CRGB led = strip.leds[i];
+    return led.r * 65536 + led.g * 256 + led.b;
+  }
+  else
+    return strip.getPixelColor(i);
 }
 
 uint8_t Segment::differs(Segment& b) {
@@ -832,7 +839,7 @@ void WS2812FX::service() {
     //   leds = nullptr;
     // }
     if  (leds == nullptr) {
-      leds = (uint32_t*) malloc(sizeof(uint32_t) * _length);
+      leds = (CRGB*) malloc(sizeof(CRGB) * _length);
     }
   }
 
@@ -929,23 +936,17 @@ void WS2812FX::setPixelColor(int i, uint32_t col)
           if (indexMir >= seg.stop) indexMir -= len; // wrap
           if (indexMir < customMappingSize) indexMir = customMappingTable[indexMir];
 
-          if (useLedsArray)
-            leds[indexMir] = col;
           busses.setPixelColor(indexMir, col);
         }
         indexSet += seg.offset; // offset/phase
         if (indexSet >= seg.stop) indexSet -= len; // wrap
         if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
 
-        if (useLedsArray)
-          leds[indexSet] = col;
         busses.setPixelColor(indexSet, col);
       }
     }
   } else {
     if (i < customMappingSize) i = customMappingTable[i];
-    if (useLedsArray)
-      leds[i] = col;
     busses.setPixelColor(i, col);
   }
 }
@@ -957,9 +958,6 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
   //if (isMatrix) return getPixelColorXY(i%matrixWidth, i/matrixWidth); // compatibility w/ non-effect fn
   //#endif
   if (i < customMappingSize) i = customMappingTable[i];
-  if (useLedsArray)
-    return leds[i];
-  else
     return busses.getPixelColor(i);
 }
 

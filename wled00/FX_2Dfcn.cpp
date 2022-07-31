@@ -116,8 +116,6 @@ void IRAM_ATTR WS2812FX::setPixelColorXY(int x, int y, uint32_t col)
   uint16_t index = y * matrixWidth + x;
   if (index >= _length) return;
   if (index < customMappingSize) index = customMappingTable[index];
-  if (useLedsArray)
-    leds[index] = col;
   busses.setPixelColor(index, col);
 #endif
 }
@@ -128,9 +126,6 @@ uint32_t WS2812FX::getPixelColorXY(uint16_t x, uint16_t y) {
   uint16_t index = (y * matrixWidth + x);
   if (index >= _length) return 0;
   if (index < customMappingSize) index = customMappingTable[index];
-  if (useLedsArray)
-    return leds[index];
-  else
     return busses.getPixelColor(index);
 #else
   return 0;
@@ -180,6 +175,8 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
       uint16_t xX = (x+g), yY = (y+j);
       if (xX >= width() || yY >= height()) continue; // we have reached one dimension's end
 
+      if (strip.useLedsArray)
+        strip.leds[start + xX + (startY + yY) * strip.matrixWidth] = col;
       strip.setPixelColorXY(start + xX, startY + yY, col);
 
       if (getOption(SEG_OPTION_MIRROR)) { //set the corresponding horizontally mirrored pixel
@@ -253,7 +250,11 @@ uint32_t Segment::getPixelColorXY(uint16_t x, uint16_t y) {
   x *= groupLength(); // expand to physical pixels
   y *= groupLength(); // expand to physical pixels
   if (x >= width() || y >= height()) return 0;
-  return strip.getPixelColorXY(start + x, startY + y);
+  if (strip.useLedsArray) {
+    CRGB led = strip.leds[start + x + (startY + y) * strip.matrixWidth];
+    return led.r * 65536 + led.g * 256 + led.b;
+  }
+    return strip.getPixelColorXY(start + x, startY + y);
 #else
   return 0;
 #endif
