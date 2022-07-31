@@ -609,6 +609,10 @@ class WS2812FX {  // 96 bytes
   
   public:
 
+      // FastLED array, so we can refer to leds[i] instead of getPixel() and setPixel()
+    uint32_t *leds = nullptr ; //See FX_fcn.cpp for init (wip). 
+                              //Type is uint32_t as with CRGB assigning CRGB to uint32_t in gPC not implemented (yet) in pixeltypes.h,
+
     WS2812FX() :
       gammaCorrectBri(false),
       gammaCorrectCol(true),
@@ -716,7 +720,8 @@ class WS2812FX {  // 96 bytes
       hasRGBWBus(void),
       hasCCTBus(void),
       // return true if the strip is being sent pixel updates
-      isUpdating(void);
+      isUpdating(void),
+      useLedsArray = true;
 
     inline bool isServicing(void) { return _isServicing; }
     inline bool hasWhiteChannel(void) {return _hasWhiteChannel;}

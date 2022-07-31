@@ -825,6 +825,17 @@ void WS2812FX::service() {
   if (nowUp - _lastShow < MIN_SHOW_DELAY) return;
   bool doShow = false;
 
+  //initialize leds array. Move to better place then service??? TBD: realloc if nr of leds change
+  if (useLedsArray) {
+    // if (leds != nullptr && sizeof(leds) / sizeof(uint32_t) != _length) {
+    //   free(leds);
+    //   leds = nullptr;
+    // }
+    if  (leds == nullptr) {
+      leds = (uint32_t*) malloc(sizeof(uint32_t) * _length);
+    }
+  }
+
   _isServicing = true;
   _segment_index = 0;
   for (segment &seg : _segments) {
@@ -918,17 +929,23 @@ void WS2812FX::setPixelColor(int i, uint32_t col)
           if (indexMir >= seg.stop) indexMir -= len; // wrap
           if (indexMir < customMappingSize) indexMir = customMappingTable[indexMir];
 
+          if (useLedsArray)
+            leds[indexMir] = col;
           busses.setPixelColor(indexMir, col);
         }
         indexSet += seg.offset; // offset/phase
         if (indexSet >= seg.stop) indexSet -= len; // wrap
         if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
 
+        if (useLedsArray)
+          leds[indexSet] = col;
         busses.setPixelColor(indexSet, col);
       }
     }
   } else {
     if (i < customMappingSize) i = customMappingTable[i];
+    if (useLedsArray)
+      leds[i] = col;
     busses.setPixelColor(i, col);
   }
 }
@@ -940,7 +957,10 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
   //if (isMatrix) return getPixelColorXY(i%matrixWidth, i/matrixWidth); // compatibility w/ non-effect fn
   //#endif
   if (i < customMappingSize) i = customMappingTable[i];
-  return busses.getPixelColor(i);
+  if (useLedsArray)
+    return leds[i];
+  else
+    return busses.getPixelColor(i);
 }
 
 
