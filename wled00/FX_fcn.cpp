@@ -753,6 +753,7 @@ uint32_t IRAM_ATTR Segment::color_from_palette(uint16_t i, bool mapping, bool wr
   // default palette or no RGB support on segment
   if ((palette == 0 && mcol < NUM_COLORS) || !(_capabilities & 0x01)) {
     uint32_t color = (transitional && _t) ? _t->_colorT[mcol] : colors[mcol];
+    color = strip.gammaCorrectCol ? gamma32(color) : color;
     if (pbri == 255) return color;
     return RGBW32(scale8_video(R(color),pbri), scale8_video(G(color),pbri), scale8_video(B(color),pbri), scale8_video(W(color),pbri));
   }
@@ -897,6 +898,39 @@ void WS2812FX::setPixelColor(int i, uint32_t col)
   if (realtimeMode && useMainSegmentOnly) {
     Segment &seg = _segments[_mainSegment];
     uint16_t len = seg.length();  // length of segment in number of pixels
+    if (i >= seg.virtualLength()) return;
+
+#ifndef WLED_DISABLE_2D
+    // adjust pixel index if within 2D segment
+    if (isMatrix) {
+      uint16_t vH = seg.virtualHeight();  // segment height in logical pixels
+      uint16_t vW = seg.virtualWidth();
+      switch (seg.map1D2D) {
+        case M12_Pixels:
+          // use all available pixels as a long strip
+          setPixelColorXY(seg.start + i % vW, seg.startY + i / vW, col);
+          break;
+        case M12_VerticalBar:
+          // expand 1D effect vertically
+          for (int y = 0; y < vH; y++) setPixelColorXY(seg.start + i, seg.startY + y, col);
+          break;
+        case M12_Circle:
+          // expand in circular fashion from center
+          for (float degrees = 0.0f; degrees <= 90.0f; degrees += 89.99f / (sqrtf((float)max(vH,vW))*i+1)) { // this may prove too many iterations on larger matrices
+            // may want to try float version as well (with or without antialiasing)
+            int x = roundf(sin_t(degrees*DEG_TO_RAD) * i);
+            int y = roundf(cos_t(degrees*DEG_TO_RAD) * i);
+            setPixelColorXY(seg.start + x, seg.startY + y, col);
+          }
+          break;
+        case M12_Block:
+          for (int x = 0; x <= i; x++) setPixelColorXY(seg.start + x, seg.startY + i, col);
+          for (int y = 0; y <  i; y++) setPixelColorXY(seg.start + i, seg.startY + y, col);
+          break;
+      }
+      return;
+    }
+#endif
 
     if (seg.opacity < 255) {
       byte r = scale8(R(col), seg.opacity);

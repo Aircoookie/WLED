@@ -502,9 +502,9 @@ typedef struct Segment {
     inline bool     isSelected(void)           { return getOption(0); }
     inline bool     isActive(void)             { return stop > start; }
     inline bool     is2D(void)                 { return !(startY == 0 && stopY == 1); }
-    inline uint16_t width(void)                { return stop - start; }
-    inline uint16_t height(void)               { return stopY - startY; }
-    inline uint16_t length(void)               { return width(); }
+    inline uint16_t width(void)                { return stop - start; }       // segment width in physical pixels (length if 1D)
+    inline uint16_t height(void)               { return stopY - startY; }     // segment height (if 2D) in physical pixels
+    inline uint16_t length(void)               { return width() * height(); } // segment length (count) in physical pixels
     inline uint16_t groupLength(void)          { return grouping + spacing; }
     inline uint8_t  getLightCapabilities(void) { return _capabilities; }
 

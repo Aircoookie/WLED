@@ -114,22 +114,24 @@ void IRAM_ATTR WS2812FX::setPixelColorXY(int x, int y, uint32_t col)
 #ifndef WLED_DISABLE_2D
   if (!isMatrix) return; // not a matrix set-up
   uint16_t index = y * matrixWidth + x;
+#else
+  uint16_t index = x;
+#endif
   if (index >= _length) return;
   if (index < customMappingSize) index = customMappingTable[index];
   busses.setPixelColor(index, col);
-#endif
 }
 
 // returns RGBW values of pixel
 uint32_t WS2812FX::getPixelColorXY(uint16_t x, uint16_t y) {
 #ifndef WLED_DISABLE_2D
   uint16_t index = (y * matrixWidth + x);
+#else
+  uint16_t index = x;
+#endif
   if (index >= _length) return 0;
   if (index < customMappingSize) index = customMappingTable[index];
   return busses.getPixelColor(index);
-#else
-  return 0;
-#endif
 }
 
 ///////////////////////////////////////////////////////////
@@ -143,7 +145,7 @@ uint16_t IRAM_ATTR Segment::XY(uint16_t x, uint16_t y) {
   uint16_t height = virtualHeight();  // segment height in logical pixels
   return (x%width) + (y%height) * width;
 #else
-  return 0;
+  return x;
 #endif
 }
 
