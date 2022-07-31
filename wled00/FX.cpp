@@ -6450,10 +6450,10 @@ static const char *_data_FX_MODE_MIDNOISE PROGMEM = "Midnoise ♪@Fade rate,Maxi
 //////////////////////
 // I am the god of hellfire. . . Volume (only) reactive fire routine. Oh, look how short this is.
 uint16_t mode_noisefire(void) {                 // Noisefire. By Andrew Tuline.
-  SEGPALETTE = CRGBPalette16(CHSV(0,255,2), CHSV(0,255,4), CHSV(0,255,8), CHSV(0, 255, 8),  // Fire palette definition. Lower value = darker.
-                                 CHSV(0, 255, 16), CRGB::Red, CRGB::Red, CRGB::Red,
-                                 CRGB::DarkOrange,CRGB::DarkOrange, CRGB::Orange, CRGB::Orange,
-                                 CRGB::Yellow, CRGB::Orange, CRGB::Yellow, CRGB::Yellow);
+  CRGBPalette16 myPal = CRGBPalette16(CHSV(0,255,2),    CHSV(0,255,4),    CHSV(0,255,8), CHSV(0, 255, 8),  // Fire palette definition. Lower value = darker.
+                                      CHSV(0, 255, 16), CRGB::Red,        CRGB::Red,     CRGB::Red,
+                                      CRGB::DarkOrange, CRGB::DarkOrange, CRGB::Orange,  CRGB::Orange,
+                                      CRGB::Yellow,     CRGB::Orange,     CRGB::Yellow,  CRGB::Yellow);
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
@@ -6464,13 +6464,15 @@ uint16_t mode_noisefire(void) {                 // Noisefire. By Andrew Tuline.
   uint8_t soundAgc  = *(uint8_t*)um_data->u_data[1];
   float   sampleAgc = *(float*)  um_data->u_data[2];
 
+  if (SEGENV.call == 0) SEGMENT.fill(BLACK);
+
   for (int i = 0; i < SEGLEN; i++) {
     uint16_t index = inoise8(i*SEGMENT.speed/64,millis()*SEGMENT.speed/64*SEGLEN/255);  // X location is constant, but we move along the Y at the rate of millis(). By Andrew Tuline.
     index = (255 - i*256/SEGLEN) * index/(256-SEGMENT.intensity);                       // Now we need to scale index so that it gets blacker as we get close to one of the ends.
                                                                                         // This is a simple y=mx+b equation that's been scaled. index/128 is another scaling.
     uint8_t tmpSound = (soundAgc) ? sampleAgc : sampleAvg;
 
-    CRGB color = ColorFromPalette(SEGPALETTE, index, tmpSound*2, LINEARBLEND);     // Use the my own palette.
+    CRGB color = ColorFromPalette(myPal, index, tmpSound*2, LINEARBLEND);     // Use the my own palette.
     SEGMENT.setPixelColor(i, color);
   }
 
@@ -6582,7 +6584,7 @@ uint16_t mode_plasmoid(void) {                  // Plasmoid. By Andrew Tuline.
   uint8_t soundAgc  = *(uint8_t*)um_data->u_data[1];
   float   sampleAgc = *(float*)  um_data->u_data[2];
 
-  SEGMENT.fadeToBlackBy(64);
+  SEGMENT.fadeToBlackBy(leds, 64);
 
   plasmoip->thisphase += beatsin8(6,-4,4);                          // You can change direction and speed individually.
   plasmoip->thatphase += beatsin8(7,-4,4);                          // Two phase values to make a complex pattern. By Andrew Tuline.
@@ -6602,7 +6604,7 @@ uint16_t mode_plasmoid(void) {                  // Plasmoid. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_plasmoid()
-static const char *_data_FX_MODE_PLASMOID PROGMEM = "Plasmoid ♪@Phase=128,# of pixels=128;,!;!;mp12=0,ssim=0"; // Pixels, Beatsin
+static const char *_data_FX_MODE_PLASMOID PROGMEM = "Plasmoid ♪@Phase=128,# of pixels=128;!,!;!;mp12=0,ssim=0"; // Pixels, Beatsin
 
 
 ///////////////////////
@@ -6723,6 +6725,11 @@ static const char *_data_FX_MODE_PIXELS PROGMEM = "Pixels ♪@Fade rate,# of pix
 //    ** Blurz      //
 //////////////////////
 uint16_t mode_blurz(void) {                    // Blurz. By Andrew Tuline.
+  // even with 1D effect we have to take logic for 2D segments for allocation as fill_solid() fills whole segment
+  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.length();  // using width*height prevents reallocation if mirroring is enabled
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio data
@@ -6732,17 +6739,24 @@ uint16_t mode_blurz(void) {                    // Blurz. By Andrew Tuline.
   if (!fftResult) return mode_static();
 
   if (SEGENV.call == 0) {
-    SEGMENT.fill(BLACK);
+    SEGMENT.fill_solid(leds, CRGB::Black);
+    SEGMENT.fill(BLACK); // clear canvas
     SEGENV.aux0 = 0;
   }
 
-  SEGMENT.fade_out(SEGMENT.speed);
+  SEGMENT.fade_out(SEGMENT.speed); // do not fade leds[] but only canvas
 
-  uint16_t segLoc = random16(SEGLEN);
-  SEGMENT.setPixelColor(segLoc, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(fftResult[SEGENV.aux0], false, PALETTE_SOLID_WRAP, 0), 2*fftResult[SEGENV.aux0]));
-  ++(SEGENV.aux0) %= 16; // make sure it doesn't cross 16
+  SEGENV.step += FRAMETIME;
+  if (SEGENV.step > SPEED_FORMULA_L) {
+    uint16_t segLoc = random16(SEGLEN);
+    leds[segLoc] = color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(2*fftResult[SEGENV.aux0%16]*240/(SEGLEN-1), false, PALETTE_SOLID_WRAP, 0), 2*fftResult[SEGENV.aux0%16]);
+    ++(SEGENV.aux0) %= 16; // make sure it doesn't cross 16
 
-  SEGMENT.blur(SEGMENT.intensity);
+    SEGENV.step = 1;
+    if (SEGMENT.is2D()) SEGMENT.blur2d(leds, SEGMENT.intensity);
+    else                SEGMENT.blur1d(leds, SEGMENT.intensity);
+    for (int i=0; i<SEGLEN; i++) SEGMENT.setPixelColor(i, leds[i]);
+  }
 
   return FRAMETIME;
 } // mode_blurz()
@@ -6947,6 +6961,8 @@ uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschun
   float   sampleAgc     = *(float*)  um_data->u_data[2];
   float   FFT_MajorPeak = *(float*)  um_data->u_data[6];
 
+  if (SEGENV.call == 0) SEGMENT.fill(BLACK);
+
   uint8_t secondHand = micros()/(256-SEGMENT.speed)/500 % 16;
   if(SEGENV.aux0 != secondHand) {
     SEGENV.aux0 = secondHand;
@@ -7092,7 +7108,7 @@ uint16_t mode_rocktaves(void) {                 // Rocktaves. Same note from eac
   float   FFT_Magnitude = *(float*)  um_data->u_data[7];
   float   multAgc       = *(float*)  um_data->u_data[11];
 
-  SEGMENT.fadeToBlackBy(64);                              // Just in case something doesn't get faded.
+  SEGMENT.fadeToBlackBy(leds, 64);                        // Just in case something doesn't get faded.
 
   float frTemp = FFT_MajorPeak;
   uint8_t octCount = 0;                                   // Octave counter.

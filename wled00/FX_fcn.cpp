@@ -266,22 +266,22 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
         _lastPaletteChange = millis();
       } break;}
     case 2: {//primary color only
-      CRGB prim = CRGB(strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0]);
+      CRGB prim = strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0];
       targetPalette = CRGBPalette16(prim); break;}
     case 3: {//primary + secondary
-      CRGB prim = CRGB(strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0]);
-      CRGB sec  = CRGB(strip.gammaCorrectCol ? gamma32(colors[1]) : colors[1]);
+      CRGB prim = strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0];
+      CRGB sec  = strip.gammaCorrectCol ? gamma32(colors[1]) : colors[1];
       targetPalette = CRGBPalette16(prim,prim,sec,sec); break;}
     case 4: {//primary + secondary + tertiary
-      CRGB prim = CRGB(strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0]);
-      CRGB sec  = CRGB(strip.gammaCorrectCol ? gamma32(colors[1]) : colors[1]);
-      CRGB ter  = CRGB(strip.gammaCorrectCol ? gamma32(colors[2]) : colors[2]);
+      CRGB prim = strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0];
+      CRGB sec  = strip.gammaCorrectCol ? gamma32(colors[1]) : colors[1];
+      CRGB ter  = strip.gammaCorrectCol ? gamma32(colors[2]) : colors[2];
       targetPalette = CRGBPalette16(ter,sec,prim); break;}
     case 5: {//primary + secondary (+tert if not off), more distinct
-      CRGB prim = CRGB(strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0]);
-      CRGB sec  = CRGB(strip.gammaCorrectCol ? gamma32(colors[1]) : colors[1]);
+      CRGB prim = strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0];
+      CRGB sec  = strip.gammaCorrectCol ? gamma32(colors[1]) : colors[1];
       if (colors[2]) {
-        CRGB ter = CRGB(strip.gammaCorrectCol ? gamma32(colors[2]) : colors[2]);
+        CRGB ter = strip.gammaCorrectCol ? gamma32(colors[2]) : colors[2];
         targetPalette = CRGBPalette16(prim,prim,prim,prim,prim,sec,sec,sec,sec,sec,ter,ter,ter,ter,ter,prim);
       } else {
         targetPalette = CRGBPalette16(prim,prim,prim,prim,prim,prim,prim,prim,sec,sec,sec,sec,sec,sec,sec,sec);
