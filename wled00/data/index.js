@@ -607,8 +607,12 @@ function parseInfo(i) {
 	isM = mw>0 && mh>0;
 	if (!isM) {
 		gId("filter1D").classList.add("hide");
-		gId("filter2D").classList.add("hide");
+		//gId("filter2D").classList.add("hide");
 		hideModes("2D");
+	}
+	if (i.noaudio) {
+		gId("filterVol").classList.add("hide");
+		gId("filterFreq").classList.add("hide");
 	}
 //	if (!i.u || !i.u.AudioReactive) {
 		//gId("filterVol").classList.add("hide"); hideModes(" ♪"); // hide volume reactive effects
@@ -2475,7 +2479,11 @@ function getPalettesData(page, callback)
 function hideModes(txt)
 {
 	for (let e of (gId('fxlist').querySelectorAll('.lstI')||[])) {
-		if (e.querySelector('.lstIname').innerText.indexOf(txt) >= 0) e.classList.add("hide"); //else e.classList.remove("hide");
+		let iT = e.querySelector('.lstIname').innerText;
+		let f = false;
+		if (txt==="2D") f = iT.indexOf("\u25A6") >= 0 && iT.indexOf("\u22EE") < 0; // 2D && !1D
+		else f = iT.indexOf(txt) >= 0;
+		if (f) e.classList.add("hide"); //else e.classList.remove("hide");
 	}
 }
 
@@ -2488,7 +2496,7 @@ function search(f,l=null)
 	for (i = (l==='pcont'?0:1); i < el.length; i++) {
 		var it = el[i];
 		var itT = it.querySelector('.lstIname').innerText.toUpperCase();
-		it.style.display = (itT.indexOf(f.value.toUpperCase())<0 || (!isM && l==='fxlist' && itT.indexOf("2D")>=0)) ? 'none' : '';
+		it.style.display = (itT.indexOf(f.value.toUpperCase())<0) ? 'none' : '';
 	}
 }
 

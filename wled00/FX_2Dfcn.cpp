@@ -154,6 +154,8 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
 #ifndef WLED_DISABLE_2D
   if (!strip.isMatrix) return; // not a matrix set-up
 
+  if (leds) leds[XY(x,y)] = col;
+
   uint8_t _bri_t = currentBri(getOption(SEG_OPTION_ON) ? opacity : 0);
   if (_bri_t < 255) {
     byte r = scale8(R(col), _bri_t);
@@ -245,6 +247,7 @@ void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
 // returns RGBW values of pixel
 uint32_t Segment::getPixelColorXY(uint16_t x, uint16_t y) {
 #ifndef WLED_DISABLE_2D
+  if (leds) return RGBW32(leds[XY(x,y)].r, leds[XY(x,y)].g, leds[XY(x,y)].b, 0);
   if (getOption(SEG_OPTION_REVERSED)  ) x = virtualWidth()  - x - 1;
   if (getOption(SEG_OPTION_REVERSED_Y)) y = virtualHeight() - y - 1;
   if (getOption(SEG_OPTION_TRANSPOSED)) { uint16_t t = x; x = y; y = t; } // swap X & Y if segment transposed

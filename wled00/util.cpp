@@ -383,6 +383,7 @@ uint16_t crc16(const unsigned char* data_p, size_t length) {
 }
 
 
+#ifndef WLED_NO_AUDIO
 ///////////////////////////////////////////////////////////////////////////////
 // Begin simulateSound (to enable audio enhanced effects to display something)
 ///////////////////////////////////////////////////////////////////////////////
@@ -532,3 +533,4 @@ um_data_t* simulateSound(uint8_t simulationId)
 
   return um_data;
 }
+#endif

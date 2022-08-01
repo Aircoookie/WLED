@@ -86,6 +86,7 @@ Segment::Segment(const Segment &orig) {
   if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
   if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
   if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
+  if (orig.leds) { leds = (CRGB*)malloc(sizeof(CRGB)*length()); }
   DEBUG_PRINTF("  Original data: %p (%d)\n", orig.data, (int)orig._dataLen);
   DEBUG_PRINTF("  Constructed data: %p (%d)\n", data, (int)_dataLen);
 }
@@ -98,6 +99,7 @@ Segment::Segment(Segment &&orig) noexcept {
   orig.data = nullptr;
   orig._dataLen = 0;
   orig._t   = nullptr;
+  orig.leds = nullptr;
 }
 
 // copy assignment
@@ -109,15 +111,18 @@ Segment& Segment::operator= (const Segment &orig) {
       delete[] name;
     }
     if (_t) delete _t;
+    if (leds) free(leds);
     deallocateData();
     memcpy(this, &orig, sizeof(Segment));
     name = nullptr;
     data = nullptr;
     _dataLen = 0;
     _t = nullptr;
+    leds = nullptr;
     if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
     if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
     if (orig._t) { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
+    if (orig.leds) { leds = (CRGB*)malloc(sizeof(CRGB)*length()); if (leds) memcpy(leds, orig.leds, sizeof(CRGB)*length()); }
     DEBUG_PRINTF("  Original data: %p (%d)\n", orig.data, (int)orig._dataLen);
     DEBUG_PRINTF("  Copied data: %p (%d)\n", data, (int)_dataLen);
   }
@@ -134,11 +139,13 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
     }
     deallocateData(); // free old runtime data
     if (_t) delete _t;
+    if (leds) free(leds);
     memcpy(this, &orig, sizeof(Segment));
     orig.name = nullptr;
     orig.data = nullptr;
     orig._dataLen = 0;
     orig._t   = nullptr;
+    orig.leds = nullptr;
   }
   return *this;
 }
@@ -182,6 +189,7 @@ void Segment::deallocateData() {
   */
 void Segment::resetIfRequired() {
   if (reset) { // (getOption(SEG_OPTION_RESET))
+    if (leds) { free(leds); leds = nullptr; DEBUG_PRINTLN(F("Freeing leds.")); }
     next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0; 
     reset = false; // setOption(SEG_OPTION_RESET, false);
   }
@@ -442,6 +450,8 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
   }
 #endif
 
+  if (leds) leds[i] = col;
+
   uint16_t len = length();
   uint8_t _bri_t = currentBri(getOption(SEG_OPTION_ON) ? opacity : 0);
   if (_bri_t < 255) {
@@ -531,6 +541,8 @@ uint32_t Segment::getPixelColor(uint16_t i)
     return 0;
   }
 #endif
+
+  if (leds) return RGBW32(leds[i].r, leds[i].g, leds[i].b, 0);
 
   if (getOption(SEG_OPTION_REVERSED)) i = virtualLength() - i - 1;
   i *= groupLength();

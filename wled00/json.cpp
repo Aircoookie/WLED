@@ -627,6 +627,10 @@ void serializeInfo(JsonObject root)
   leds[F("wv")]   = totalLC & 0x02;     // deprecated, true if white slider should be displayed for any segment
   leds["cct"]     = totalLC & 0x04;     // deprecated, use info.leds.lc
 
+  #ifdef WLED_NO_AUDIO
+  root[F("noaudio")] = true;
+  #endif
+
   root[F("str")] = syncToggleReceive;
 
   root[F("name")] = serverDescription;

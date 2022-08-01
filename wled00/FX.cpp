@@ -403,7 +403,7 @@ uint16_t scan(bool dual)
 uint16_t mode_scan(void) {
   return scan(false);
 }
-static const char *_data_FX_MODE_SCAN PROGMEM = "Scan@!,# of dots;!,!,;!;1d";
+static const char *_data_FX_MODE_SCAN PROGMEM = "Scan@!,# of dots;!,!,!;!;1d";
 
 
 /*
@@ -412,7 +412,7 @@ static const char *_data_FX_MODE_SCAN PROGMEM = "Scan@!,# of dots;!,!,;!;1d";
 uint16_t mode_dual_scan(void) {
   return scan(true);
 }
-static const char *_data_FX_MODE_DUAL_SCAN PROGMEM = "Scan Dual@!,# of dots;!,!,;!;1d";
+static const char *_data_FX_MODE_DUAL_SCAN PROGMEM = "Scan Dual@!,# of dots;!,!,!;!;1d";
 
 
 /*
@@ -4565,41 +4565,48 @@ uint16_t mode_2DBlackHole(void) {            // By: Stepko https://editor.soulma
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.length();  // using width*height prevents reallocation if mirroring is enabled
+  //const uint16_t dataSize = sizeof(CRGB) * SEGMENT.length();  // using width*height prevents reallocation if mirroring is enabled
 
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+  //if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  //CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
 
   uint16_t x, y;
 
   // initialize on first call
   if (SEGENV.call == 0) {
-    SEGMENT.fill_solid(leds, CRGB::Black);
+    SEGMENT.setUpLeds();
+    SEGMENT.fill(BLACK);
+    //SEGMENT.fill_solid(leds, CRGB::Black);
   }
 
-  SEGMENT.fadeToBlackBy(leds, 16 + (SEGMENT.speed>>3)); // create fading trails
+  SEGMENT.fadeToBlackBy(16 + (SEGMENT.speed>>3)); // create fading trails
+  //SEGMENT.fadeToBlackBy(leds, 16 + (SEGMENT.speed>>3)); // create fading trails
   float t = (float)(millis())/128;              // timebase
   // outer stars
   for (size_t i = 0; i < 8; i++) {
     x = beatsin8(SEGMENT.custom1>>3,   0, cols - 1, 0, ((i % 2) ? 128 : 0) + t * i);
     y = beatsin8(SEGMENT.intensity>>3, 0, rows - 1, 0, ((i % 2) ? 192 : 64) + t * i);
-    leds[XY(x,y)] += CHSV(i*32, 255, 255);
+    SEGMENT.setPixelColorXY(x, y, CHSV(i*32, 255, 255));
+    //leds[XY(x,y)] += CHSV(i*32, 255, 255);
   }
   // inner stars
   for (size_t i = 0; i < 4; i++) {
     x = beatsin8(SEGMENT.custom2>>3, cols/4, cols - 1 - cols/4, 0, ((i % 2) ? 128 : 0) + t * i);
     y = beatsin8(SEGMENT.custom3>>3, rows/4, rows - 1 - rows/4, 0, ((i % 2) ? 192 : 64) + t * i);
-    leds[XY(x,y)] += CHSV(i*32, 255, 255);
+    SEGMENT.setPixelColorXY(x, y, CHSV(i*32, 255, 255));
+    //leds[XY(x,y)] += CHSV(i*32, 255, 255);
   }
   // central white dot
-  leds[XY(cols/2,rows/2)] = CHSV(0,0,255);
+  SEGMENT.setPixelColorXY(cols/2, rows/2, CHSV(0, 0, 255));
+  //leds[XY()] = CHSV(0,0,255);
   // blur everything a bit
-  SEGMENT.blur2d(leds, 16);
+  SEGMENT.blur(16);
+  //SEGMENT.blur2d(leds, 16);
 
-  SEGMENT.setPixels(leds);
+  //SEGMENT.setPixels(leds);
   return FRAMETIME;
 } // mode_2DBlackHole()
-static const char *_data_FX_MODE_2DBLACKHOLE PROGMEM = "Black Hole@Fade rate,Outer Y freq.,Outer X freq.,Inner X freq.,Inner Y freq.;;2d";
+static const char *_data_FX_MODE_2DBLACKHOLE PROGMEM = "Black Hole@Fade rate,Outer Y freq.,Outer X freq.,Inner X freq.,Inner Y freq.;;;2d";
 
 
 ////////////////////////////
@@ -5957,6 +5964,7 @@ static const char *_data_FX_MODE_2DDRIFTROSE PROGMEM = "Drift Rose@Fade,Blur;;;2
 #endif // WLED_DISABLE_2D
 
 
+#ifndef WLED_NO_AUDIO
 ///////////////////////////////////////////////////////////////////////////////
 /********************     audio enhanced routines     ************************/
 ///////////////////////////////////////////////////////////////////////////////
@@ -6019,7 +6027,9 @@ uint16_t mode_ripplepeak(void) {                // * Ripple peak. By Andrew Tuli
     um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t samplePeak    = *(uint8_t*)um_data->u_data[5];
+  #ifdef ESP32
   float FFT_MajorPeak   = *(float*) um_data->u_data[6];
+  #endif
   uint8_t *maxVol       =  (uint8_t*)um_data->u_data[9];
   uint8_t *binNum       =  (uint8_t*)um_data->u_data[10];
 
@@ -7418,6 +7428,7 @@ uint16_t mode_2DAkemi(void) {
 static const char *_data_FX_MODE_2DAKEMI PROGMEM = "Akemi@Color speed,Dance;Head palette,Arms & Legs,Eyes & Mouth;Face palette;ssim=0,2d,fr"; //beatsin
 #endif // WLED_DISABLE_2D
 
+#endif // WLED_NO_AUDIO
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // mode data
@@ -7583,12 +7594,16 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_2DMETABALLS, &mode_2Dmetaballs, _data_FX_MODE_2DMETABALLS);
   addEffect(FX_MODE_2DPULSER, &mode_2DPulser, _data_FX_MODE_2DPULSER);
   addEffect(FX_MODE_2DSUNRADIATION, &mode_2DSunradiation, _data_FX_MODE_2DSUNRADIATION);
+  #ifndef WLED_NO_AUDIO
   addEffect(FX_MODE_2DWAVERLY, &mode_2DWaverly, _data_FX_MODE_2DWAVERLY);
+  #endif
   addEffect(FX_MODE_2DDRIFT, &mode_2DDrift, _data_FX_MODE_2DDRIFT);
   addEffect(FX_MODE_2DCOLOREDBURSTS, &mode_2DColoredBursts, _data_FX_MODE_2DCOLOREDBURSTS);
   addEffect(FX_MODE_2DTARTAN, &mode_2Dtartan, _data_FX_MODE_2DTARTAN);
   addEffect(FX_MODE_2DPOLARLIGHTS, &mode_2DPolarLights, _data_FX_MODE_2DPOLARLIGHTS);
+  #ifndef WLED_NO_AUDIO
   addEffect(FX_MODE_2DSWIRL, &mode_2DSwirl, _data_FX_MODE_2DSWIRL);
+  #endif
   addEffect(FX_MODE_2DLISSAJOUS, &mode_2DLissajous, _data_FX_MODE_2DLISSAJOUS);
   addEffect(FX_MODE_2DFRIZZLES, &mode_2DFrizzles, _data_FX_MODE_2DFRIZZLES);
   addEffect(FX_MODE_2DPLASMABALL, &mode_2DPlasmaball, _data_FX_MODE_2DPLASMABALL);
@@ -7596,8 +7611,11 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_2DSINDOTS, &mode_2DSindots, _data_FX_MODE_2DSINDOTS);
   addEffect(FX_MODE_2DDNASPIRAL, &mode_2DDNASpiral, _data_FX_MODE_2DDNASPIRAL);
   addEffect(FX_MODE_2DBLACKHOLE, &mode_2DBlackHole, _data_FX_MODE_2DBLACKHOLE);
+  #ifndef WLED_NO_AUDIO
   addEffect(FX_MODE_2DAKEMI, &mode_2DAkemi, _data_FX_MODE_2DAKEMI);
   #endif
+  #endif
+  #ifndef WLED_NO_AUDIO
   addEffect(FX_MODE_PIXELWAVE, &mode_pixelwave, _data_FX_MODE_PIXELWAVE);
   addEffect(FX_MODE_JUGGLES, &mode_juggles, _data_FX_MODE_JUGGLES);
   addEffect(FX_MODE_MATRIPIX, &mode_matripix, _data_FX_MODE_MATRIPIX);
@@ -7611,10 +7629,14 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_MIDNOISE, &mode_midnoise, _data_FX_MODE_MIDNOISE);
   addEffect(FX_MODE_NOISEMETER, &mode_noisemeter, _data_FX_MODE_NOISEMETER);
   addEffect(FX_MODE_NOISEFIRE, &mode_noisefire, _data_FX_MODE_NOISEFIRE);
+  #endif
 #else
   // WLED-SR
+  #ifdef WLED_NO_AUDIO
+    #error Incompatible options: WLED_NO_AUDIO and USERMOD_AUDIOREACTIVE
+  #endif
   #ifdef WLED_DISABLE_2D
-  #error AUDIOREACTIVE requires 2D support.
+    #error AUDIOREACTIVE requires 2D support.
   #endif
   addEffect(FX_MODE_2DJULIA, &mode_2DJulia, _data_FX_MODE_2DJULIA);
   addEffect(FX_MODE_2DGAMEOFLIFE, &mode_2Dgameoflife, _data_FX_MODE_2DGAMEOFLIFE);
@@ -7672,5 +7694,5 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_ROCKTAVES, &mode_rocktaves, _data_FX_MODE_ROCKTAVES);
   addEffect(FX_MODE_2DAKEMI, &mode_2DAkemi, _data_FX_MODE_2DAKEMI);
   //addEffect(FX_MODE_CUSTOMEFFECT, &mode_customEffect, _data_FX_MODE_CUSTOMEFFECT); //WLEDSR Custom Effects
-#endif
+#endif // USERMOD_AUDIOREACTIVE
 }

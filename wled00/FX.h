@@ -410,6 +410,7 @@ typedef struct Segment {
     uint16_t aux0;  // custom var
     uint16_t aux1;  // custom var
     byte* data;
+    CRGB* leds;
 
   private:
     union {
@@ -468,6 +469,7 @@ typedef struct Segment {
       aux0(0),
       aux1(0),
       data(nullptr),
+      leds(nullptr),
       _capabilities(0),
       _dataLen(0),
       _t(nullptr)
@@ -484,6 +486,7 @@ typedef struct Segment {
     Segment(Segment &&orig) noexcept; // move constructor
 
     ~Segment() {
+      if (leds) { free(leds); Serial.println(F("Freeing leds.")); }
       #ifdef WLED_DEBUG
       Serial.print(F("Destroying segment."));
       if (name) Serial.printf(" %s (%p)", name, name);
@@ -530,6 +533,7 @@ typedef struct Segment {
       * Safe to call from interrupts and network requests.
       */
     inline void markForReset(void) { reset = true; }  // setOption(SEG_OPTION_RESET, true)
+    inline void setUpLeds() { if (!leds) leds = (CRGB*)malloc(sizeof(CRGB)*length()); }
 
     // transition functions
     void     startTransition(uint16_t dur); // transition has to start before actual segment values change
