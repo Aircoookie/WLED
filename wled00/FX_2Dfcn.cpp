@@ -143,9 +143,9 @@ uint16_t IRAM_ATTR Segment::XY(uint16_t x, uint16_t y) {
 #ifndef WLED_DISABLE_2D
   uint16_t width  = virtualWidth();   // segment width in logical pixels
   uint16_t height = virtualHeight();  // segment height in logical pixels
-  return (x%width) + (y%height) * width;
+  return (start + x%width) + (startY + y%height) * strip.matrixWidth;
 #else
-  return x;
+  return start + x;
 #endif
 }
 
@@ -176,6 +176,8 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
       uint16_t xX = (x+g), yY = (y+j);
       if (xX >= width() || yY >= height()) continue; // we have reached one dimension's end
 
+      if (strip.useLedsArray)
+        strip.leds[XY(xX, yY)] = col;
       strip.setPixelColorXY(start + xX, startY + yY, col);
 
       if (getOption(SEG_OPTION_MIRROR)) { //set the corresponding horizontally mirrored pixel
@@ -251,7 +253,11 @@ uint32_t Segment::getPixelColorXY(uint16_t x, uint16_t y) {
   x *= groupLength(); // expand to physical pixels
   y *= groupLength(); // expand to physical pixels
   if (x >= width() || y >= height()) return 0;
-  return strip.getPixelColorXY(start + x, startY + y);
+  if (strip.useLedsArray) {
+    CRGB led = strip.leds[XY(x, y)];
+    return RGBW32(led.r, led.g, led.b, 0);
+  }
+    return strip.getPixelColorXY(start + x, startY + y);
 #else
   return 0;
 #endif
