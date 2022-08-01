@@ -465,7 +465,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
       indexSet += offset; // offset/phase
       if (indexSet >= stop) indexSet -= len; // wrap
       if (strip.useLedsArray)
-        strip.leds[indexSet] = col;
+        strip.leds[XY(indexSet%virtualWidth(), indexSet/virtualWidth())] = col;
       strip.setPixelColor(indexSet, col);
     }
   }
@@ -530,8 +530,8 @@ uint32_t Segment::getPixelColor(uint16_t i)
   i += offset;
   if (i >= stop) i -= length();
   if (strip.useLedsArray) {
-    CRGB led = strip.leds[i];
-    return led.r * 65536 + led.g * 256 + led.b;
+    CRGB led = strip.leds[XY(i%virtualWidth(), i/virtualWidth())];
+    return RGBW32(led.r, led.g, led.b, 0);
   }
   else
     return strip.getPixelColor(i);
@@ -833,15 +833,20 @@ void WS2812FX::service() {
   bool doShow = false;
 
   //initialize leds array. Move to better place then service??? TBD: realloc if nr of leds change
-  if (useLedsArray) {
+  // if (useLedsArray) {
     // if (leds != nullptr && sizeof(leds) / sizeof(uint32_t) != _length) {
     //   free(leds);
     //   leds = nullptr;
     // }
     if  (leds == nullptr) {
-      leds = (CRGB*) malloc(sizeof(CRGB) * _length);
+      #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
+      if (psramFound())
+        leds = (CRGB*) ps_malloc(sizeof(CRGB) * _length);
+      else
+      #endif
+        leds = (CRGB*) malloc(sizeof(CRGB) * _length);
     }
-  }
+  // }
 
   _isServicing = true;
   _segment_index = 0;
