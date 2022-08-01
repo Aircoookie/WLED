@@ -266,22 +266,22 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
         _lastPaletteChange = millis();
       } break;}
     case 2: {//primary color only
-      CRGB prim = CRGB(colors[0]);
+      CRGB prim = strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0];
       targetPalette = CRGBPalette16(prim); break;}
     case 3: {//primary + secondary
-      CRGB prim = CRGB(colors[0]);
-      CRGB sec  = CRGB(colors[1]);
+      CRGB prim = strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0];
+      CRGB sec  = strip.gammaCorrectCol ? gamma32(colors[1]) : colors[1];
       targetPalette = CRGBPalette16(prim,prim,sec,sec); break;}
     case 4: {//primary + secondary + tertiary
-      CRGB prim = CRGB(colors[0]);
-      CRGB sec  = CRGB(colors[1]);
-      CRGB ter  = CRGB(colors[2]);
+      CRGB prim = strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0];
+      CRGB sec  = strip.gammaCorrectCol ? gamma32(colors[1]) : colors[1];
+      CRGB ter  = strip.gammaCorrectCol ? gamma32(colors[2]) : colors[2];
       targetPalette = CRGBPalette16(ter,sec,prim); break;}
     case 5: {//primary + secondary (+tert if not off), more distinct
-      CRGB prim = CRGB(colors[0]);
-      CRGB sec  = CRGB(colors[1]);
+      CRGB prim = strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0];
+      CRGB sec  = strip.gammaCorrectCol ? gamma32(colors[1]) : colors[1];
       if (colors[2]) {
-        CRGB ter = CRGB(colors[2]);
+        CRGB ter = strip.gammaCorrectCol ? gamma32(colors[2]) : colors[2];
         targetPalette = CRGBPalette16(prim,prim,prim,prim,prim,sec,sec,sec,sec,sec,ter,ter,ter,ter,ter,prim);
       } else {
         targetPalette = CRGBPalette16(prim,prim,prim,prim,prim,prim,prim,prim,sec,sec,sec,sec,sec,sec,sec,sec);
@@ -751,8 +751,9 @@ uint8_t Segment::get_random_wheel_index(uint8_t pos) {
 uint32_t IRAM_ATTR Segment::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri)
 {
   // default palette or no RGB support on segment
-  if (palette == 0 || !(_capabilities & 0x01)) {
-    uint32_t color = colors[constrain(mcol,0,NUM_COLORS-1)]; // SEGCOLOR(mcol);
+  if ((palette == 0 && mcol < NUM_COLORS) || !(_capabilities & 0x01)) {
+    uint32_t color = (transitional && _t) ? _t->_colorT[mcol] : colors[mcol];
+    color = strip.gammaCorrectCol ? gamma32(color) : color;
     if (pbri == 255) return color;
     return RGBW32(scale8_video(R(color),pbri), scale8_video(G(color),pbri), scale8_video(B(color),pbri), scale8_video(W(color),pbri));
   }
@@ -863,9 +864,7 @@ void WS2812FX::service() {
         seg.currentPalette(_currentPalette, seg.palette);
 
         if (!cctFromRgb || correctWB) busses.setSegmentCCT(seg.currentBri(seg.cct, true), correctWB);
-        for (uint8_t c = 0; c < NUM_COLORS; c++) {
-          _colors_t[c] = gamma32(_colors_t[c]);
-        }
+        for (uint8_t c = 0; c < NUM_COLORS; c++) _colors_t[c] = gamma32(_colors_t[c]);
 
         seg.handleTransition();
 
@@ -899,6 +898,39 @@ void WS2812FX::setPixelColor(int i, uint32_t col)
   if (realtimeMode && useMainSegmentOnly) {
     Segment &seg = _segments[_mainSegment];
     uint16_t len = seg.length();  // length of segment in number of pixels
+    if (i >= seg.virtualLength()) return;
+
+#ifndef WLED_DISABLE_2D
+    // adjust pixel index if within 2D segment
+    if (isMatrix) {
+      uint16_t vH = seg.virtualHeight();  // segment height in logical pixels
+      uint16_t vW = seg.virtualWidth();
+      switch (seg.map1D2D) {
+        case M12_Pixels:
+          // use all available pixels as a long strip
+          setPixelColorXY(seg.start + i % vW, seg.startY + i / vW, col);
+          break;
+        case M12_VerticalBar:
+          // expand 1D effect vertically
+          for (int y = 0; y < vH; y++) setPixelColorXY(seg.start + i, seg.startY + y, col);
+          break;
+        case M12_Circle:
+          // expand in circular fashion from center
+          for (float degrees = 0.0f; degrees <= 90.0f; degrees += 89.99f / (sqrtf((float)max(vH,vW))*i+1)) { // this may prove too many iterations on larger matrices
+            // may want to try float version as well (with or without antialiasing)
+            int x = roundf(sin_t(degrees*DEG_TO_RAD) * i);
+            int y = roundf(cos_t(degrees*DEG_TO_RAD) * i);
+            setPixelColorXY(seg.start + x, seg.startY + y, col);
+          }
+          break;
+        case M12_Block:
+          for (int x = 0; x <= i; x++) setPixelColorXY(seg.start + x, seg.startY + i, col);
+          for (int y = 0; y <  i; y++) setPixelColorXY(seg.start + i, seg.startY + y, col);
+          break;
+      }
+      return;
+    }
+#endif
 
     if (seg.opacity < 255) {
       byte r = scale8(R(col), seg.opacity);
@@ -1570,54 +1602,6 @@ void WS2812FX::deserializeMap(uint8_t n) {
   releaseJSONBufferLock();
 }
 
-//gamma 2.8 lookup table used for color correction
-static byte gammaT[] = {
-    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,
-    1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,
-    2,  3,  3,  3,  3,  3,  3,  3,  4,  4,  4,  4,  4,  5,  5,  5,
-    5,  6,  6,  6,  6,  7,  7,  7,  7,  8,  8,  8,  9,  9,  9, 10,
-   10, 10, 11, 11, 11, 12, 12, 13, 13, 13, 14, 14, 15, 15, 16, 16,
-   17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 24, 24, 25,
-   25, 26, 27, 27, 28, 29, 29, 30, 31, 32, 32, 33, 34, 35, 35, 36,
-   37, 38, 39, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 50,
-   51, 52, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 66, 67, 68,
-   69, 70, 72, 73, 74, 75, 77, 78, 79, 81, 82, 83, 85, 86, 87, 89,
-   90, 92, 93, 95, 96, 98, 99,101,102,104,105,107,109,110,112,114,
-  115,117,119,120,122,124,126,127,129,131,133,135,137,138,140,142,
-  144,146,148,150,152,154,156,158,160,162,164,167,169,171,173,175,
-  177,180,182,184,186,189,191,193,196,198,200,203,205,208,210,213,
-  215,218,220,223,225,228,231,233,236,239,241,244,247,249,252,255 };
-
-uint8_t WS2812FX::gamma8_cal(uint8_t b, float gamma) {
-  return (int)(powf((float)b / 255.0f, gamma) * 255.0f + 0.5f);
-}
-
-void WS2812FX::calcGammaTable(float gamma)
-{
-  for (uint16_t i = 0; i < 256; i++) {
-    gammaT[i] = gamma8_cal(i, gamma);
-  }
-}
-
-uint8_t WS2812FX::gamma8(uint8_t b)
-{
-  return gammaT[b];
-}
-
-uint32_t WS2812FX::gamma32(uint32_t color)
-{
-  if (!gammaCorrectCol) return color;
-  uint8_t w = W(color);
-  uint8_t r = R(color);
-  uint8_t g = G(color);
-  uint8_t b = B(color);
-  w = gammaT[w];
-  r = gammaT[r];
-  g = gammaT[g];
-  b = gammaT[b];
-  return RGBW32(r, g, b, w);
-}
 
 WS2812FX* WS2812FX::instance = nullptr;
 
