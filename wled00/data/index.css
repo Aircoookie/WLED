@@ -1209,7 +1209,7 @@ TD .checkmark, TD .radiomark {
 .filter .fchkl {
 	display: inline-block;
 	min-width: 0.7em;
-	padding: 4px 4px 4px 32px;
+	padding: 1px 4px 4px 32px;
 	text-align: left;
 	line-height: 24px;
 	vertical-align: middle;
