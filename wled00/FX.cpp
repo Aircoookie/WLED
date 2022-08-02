@@ -4570,10 +4570,10 @@ uint16_t mode_2DBlackHole(void) {            // By: Stepko https://editor.soulma
 
   // initialize on first call
   if (SEGENV.call == 0) {
-    SEGMENT.fill_solid(nullptr, CRGB::Black);
+    SEGMENT.fill_solid(CRGB::Black);
   }
 
-  SEGMENT.fadeToBlackBy(nullptr, 16 + (SEGMENT.speed>>3)); // create fading trails
+  SEGMENT.fadeToBlackBy(16 + (SEGMENT.speed>>3)); // create fading trails
   float t = (float)(millis())/128;              // timebase
   // outer stars
   for (size_t i = 0; i < 8; i++) {
@@ -4590,7 +4590,7 @@ uint16_t mode_2DBlackHole(void) {            // By: Stepko https://editor.soulma
   // central white dot
   SEGMENT.setPixelColorXY(cols/2,rows/2, CHSV(0,0,255));
   // blur everything a bit
-  SEGMENT.blur2d(nullptr, 16);
+  SEGMENT.blur2d(16);
 
   return FRAMETIME;
 } // mode_2DBlackHole()
@@ -4607,7 +4607,7 @@ uint16_t mode_2DColoredBursts() {              // By: ldirko   https://editor.so
   const uint16_t rows = SEGMENT.virtualHeight();
 
   if (SEGENV.call == 0) {
-    SEGMENT.fill_solid(nullptr, CRGB::Black);
+    SEGMENT.fill_solid(CRGB::Black);
     SEGENV.aux0 = 0; // start with red hue
   }
 
@@ -4617,7 +4617,7 @@ uint16_t mode_2DColoredBursts() {              // By: ldirko   https://editor.so
   byte numLines = SEGMENT.intensity/16 + 1;
 
   SEGENV.aux0++;  // hue
-  SEGMENT.fadeToBlackBy(nullptr, 40);
+  SEGMENT.fadeToBlackBy(40);
 
   for (size_t i = 0; i < numLines; i++) {
     byte x1 = beatsin8(2 + SEGMENT.speed/16, 0, (cols - 1));
@@ -4644,7 +4644,7 @@ uint16_t mode_2DColoredBursts() {              // By: ldirko   https://editor.so
       SEGMENT.addPixelColorXY(y1, y2, CRGB::White);
     }
   }
-  SEGMENT.blur2d(nullptr, 4);
+  SEGMENT.blur2d(4);
 
   return FRAMETIME;
 } // mode_2DColoredBursts()
@@ -4660,15 +4660,15 @@ uint16_t mode_2Ddna(void) {         // dna originally by by ldirko at https://pa
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(nullptr, CRGB::Black);
+  if (SEGENV.call == 0) SEGMENT.fill_solid(CRGB::Black);
 
-  SEGMENT.fadeToBlackBy(nullptr, 64);
+  SEGMENT.fadeToBlackBy(64);
 
   for(int i = 0; i < cols; i++) {
     SEGMENT.setPixelColorXY(i, beatsin8(SEGMENT.speed/8, 0, rows-1, 0, i*4), ColorFromPalette(SEGPALETTE, i*5+millis()/17, beatsin8(5, 55, 255, 0, i*10), LINEARBLEND));
     SEGMENT.setPixelColorXY(i, beatsin8(SEGMENT.speed/8, 0, rows-1, 0, i*4+128), ColorFromPalette(SEGPALETTE,i*5+128+millis()/17, beatsin8(5, 55, 255, 0, i*10+128), LINEARBLEND)); // 180 degrees (128) out of phase
   }
-  SEGMENT.blur2d(nullptr, SEGMENT.intensity/8);
+  SEGMENT.blur2d(SEGMENT.intensity/8);
 
   return FRAMETIME;
 } // mode_2Ddna()
@@ -4685,7 +4685,7 @@ uint16_t mode_2DDNASpiral() {               // By: ldirko  https://editor.soulma
   const uint16_t rows = SEGMENT.virtualHeight();
 
   if (SEGENV.call == 0) {
-    SEGMENT.fill_solid(nullptr, CRGB::Black);
+    SEGMENT.fill_solid(CRGB::Black);
     SEGENV.aux0 = 0; // hue
   }
 
@@ -4693,7 +4693,7 @@ uint16_t mode_2DDNASpiral() {               // By: ldirko  https://editor.soulma
   uint8_t freq = SEGMENT.intensity/8;
 
   uint32_t ms = millis() / 20;
-  SEGMENT.nscale8(nullptr, 120);
+  SEGMENT.nscale8(120);
 
   for (uint16_t i = 0; i < rows; i++) {
     uint16_t x  = beatsin8(speeds, 0, cols - 1, 0, i * freq) + beatsin8(speeds - 7, 0, cols - 1, 0, i * freq + 128);
@@ -4728,9 +4728,9 @@ uint16_t mode_2DDrift() {              // By: Stepko   https://editor.soulmateli
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(nullptr, CRGB::Black);
+  if (SEGENV.call == 0) SEGMENT.fill_solid(CRGB::Black);
 
-  SEGMENT.fadeToBlackBy(nullptr, 128);
+  SEGMENT.fadeToBlackBy(128);
 
   const uint16_t maxDim = MAX(cols, rows)/2;
   unsigned long t = millis() / (32 - (SEGMENT.speed>>3));
@@ -4740,7 +4740,7 @@ uint16_t mode_2DDrift() {              // By: Stepko   https://editor.soulmateli
     uint16_t myY = (rows>>1) + (uint16_t)(cos_t(angle) * i) + (rows%2);
     SEGMENT.setPixelColorXY(myX,myY, ColorFromPalette(SEGPALETTE, (i * 20) + (t / 20), 255, LINEARBLEND));
   }
-  SEGMENT.blur2d(nullptr, SEGMENT.intensity>>3);
+  SEGMENT.blur2d(SEGMENT.intensity>>3);
 
   return FRAMETIME;
 } // mode_2DDrift()
@@ -4756,7 +4756,7 @@ uint16_t mode_2Dfirenoise(void) {               // firenoise2d. By Andrew Tuline
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(nullptr, CRGB::Black);
+  if (SEGENV.call == 0) SEGMENT.fill_solid(CRGB::Black);
 
   uint16_t xscale = SEGMENT.intensity*4;
   uint32_t yscale = SEGMENT.speed*8;
@@ -4788,13 +4788,13 @@ uint16_t mode_2DFrizzles(void) {                 // By: Stepko https://editor.so
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(nullptr, CRGB::Black);
+  if (SEGENV.call == 0) SEGMENT.fill_solid(CRGB::Black);
 
-  SEGMENT.fadeToBlackBy(nullptr, 16);
+  SEGMENT.fadeToBlackBy(16);
   for (size_t i = 8; i > 0; i--) {
     SEGMENT.setPixelColorXY(beatsin8(SEGMENT.speed/8 + i, 0, cols - 1), beatsin8(SEGMENT.intensity/8 - i, 0, rows - 1), ColorFromPalette(SEGPALETTE, beatsin8(12, 0, 255), 255, LINEARBLEND));
   }
-  SEGMENT.blur2d(nullptr, 16);
+  SEGMENT.blur2d(16);
 
   return FRAMETIME;
 } // mode_2DFrizzles()
@@ -4837,7 +4837,8 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
         SEGMENT.setPixelColorXY(x,y, SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0));
     }
 
-    SEGMENT.fill_solid(prevLeds, CRGB::Black);
+    for(uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) prevLeds[XY(x,y)] = CRGB::Black;
+
 
     SEGENV.aux1 = 0;
     SEGENV.aux0 = 0xFFFF;
@@ -5034,7 +5035,7 @@ uint16_t mode_2DJulia(void) {                           // An animated Julia set
     }
     y += dy;
   }
-//  blur2d( leds, 64);
+//  blur2d(64);
 
   return FRAMETIME;
 } // mode_2DJulia()
@@ -5078,7 +5079,7 @@ uint16_t mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy Williams.
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(nullptr, CRGB::Black);
+  if (SEGENV.call == 0) SEGMENT.fill_solid(CRGB::Black);
 
   uint8_t fade = map(SEGMENT.custom1, 0, 255, 50, 250);    // equals trail size
   uint8_t speed = (256-SEGMENT.speed) >> map(MIN(rows, 150), 0, 150, 0, 3);    // slower speeds for small displays
@@ -5225,9 +5226,9 @@ uint16_t mode_2DPlasmaball(void) {                   // By: Stepko https://edito
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(nullptr, CRGB::Black);
+  if (SEGENV.call == 0) SEGMENT.fill_solid(CRGB::Black);
 
-  SEGMENT.fadeToBlackBy(nullptr, 64);
+  SEGMENT.fadeToBlackBy(64);
   float t = millis() / (33 - SEGMENT.speed/8);
   for (uint16_t i = 0; i < cols; i++) {
     uint16_t thisVal = inoise8(i * 30, t, t);
@@ -5248,7 +5249,7 @@ uint16_t mode_2DPlasmaball(void) {                   // By: Stepko https://edito
                         (rows - 1 - cy == 0)) ? ColorFromPalette(SEGPALETTE, beat8(5), thisVal, LINEARBLEND) : CRGB::Black);
     }
   }
-  SEGMENT.blur2d(nullptr, 4);
+  SEGMENT.blur2d(4);
 
   return FRAMETIME;
 } // mode_2DPlasmaball()
@@ -5271,7 +5272,7 @@ uint16_t mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevskyy  https
 
   if (SEGENV.call == 0) {
     SEGENV.step = 0;
-    SEGMENT.fill_solid(nullptr, CRGB::Black);
+    SEGMENT.fill_solid(CRGB::Black);
   }
 
   float adjustHeight = (float)map(rows, 8, 32, 28, 12);
@@ -5318,16 +5319,16 @@ uint16_t mode_2DPulser(void) {                       // By: ldirko   https://edi
   //const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(nullptr, CRGB::Black);
+  if (SEGENV.call == 0) SEGMENT.fill_solid(CRGB::Black);
 
-  SEGMENT.fadeToBlackBy(nullptr, 8 - (SEGMENT.intensity>>5));
+  SEGMENT.fadeToBlackBy(8 - (SEGMENT.intensity>>5));
 
   uint16_t a = strip.now / (18 - SEGMENT.speed / 16);
   uint16_t x = (a / 14);
   uint16_t y = map((sin8(a * 5) + sin8(a * 4) + sin8(a * 2)), 0, 765, rows-1, 0);
   SEGMENT.setPixelColorXY(x, y, ColorFromPalette(SEGPALETTE, map(y, 0, rows-1, 0, 255), 255, LINEARBLEND));
 
-  SEGMENT.blur2d(nullptr, 1 + (SEGMENT.intensity>>4));
+  SEGMENT.blur2d(1 + (SEGMENT.intensity>>4));
 
   return FRAMETIME;
 } // mode_2DPulser()
@@ -5343,9 +5344,9 @@ uint16_t mode_2DSindots(void) {                             // By: ldirko   http
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(nullptr, CRGB::Black);
+  if (SEGENV.call == 0) SEGMENT.fill_solid(CRGB::Black);
 
-  SEGMENT.fadeToBlackBy(nullptr, 15);
+  SEGMENT.fadeToBlackBy(15);
   byte t1 = millis() / (257 - SEGMENT.speed); // 20;
   byte t2 = sin8(t1) / 4 * 2;
   for (uint16_t i = 0; i < 13; i++) {
@@ -5353,7 +5354,7 @@ uint16_t mode_2DSindots(void) {                             // By: ldirko   http
     byte y = sin8(t2 + i * SEGMENT.intensity/8)*(rows-1)/255;  //  max index now 255x15/255=15!
     SEGMENT.setPixelColorXY(x, y, ColorFromPalette(SEGPALETTE, i * 255 / 13, 255, LINEARBLEND));
   }
-  SEGMENT.blur2d(nullptr, 16);
+  SEGMENT.blur2d(16);
 
   return FRAMETIME;
 } // mode_2DSindots()
@@ -5371,13 +5372,13 @@ uint16_t mode_2Dsquaredswirl(void) {            // By: Mark Kriegsman. https://g
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(nullptr, CRGB::Black);
+  if (SEGENV.call == 0) SEGMENT.fill_solid(CRGB::Black);
 
   const uint8_t kBorderWidth = 2;
 
-  SEGMENT.fadeToBlackBy(nullptr, 24);
+  SEGMENT.fadeToBlackBy(24);
   uint8_t blurAmount = SEGMENT.custom3>>4;
-  SEGMENT.blur2d(nullptr, blurAmount);
+  SEGMENT.blur2d(blurAmount);
 
   // Use two out-of-sync sine waves
   uint8_t i = beatsin8(19, kBorderWidth, cols-kBorderWidth);
@@ -5410,7 +5411,7 @@ uint16_t mode_2DSunradiation(void) {                   // By: ldirko https://edi
   if (!SEGENV.allocateData(sizeof(byte)*(cols+2)*(rows+2))) return mode_static(); //allocation failed
   byte *bump = reinterpret_cast<byte*>(SEGENV.data);
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(nullptr, CRGB::Black);
+  if (SEGENV.call == 0) SEGMENT.fill_solid(CRGB::Black);
 
   unsigned long t = millis() / 4;
   int index = 0;
@@ -5455,7 +5456,7 @@ uint16_t mode_2Dtartan(void) {          // By: Elliott Kember  https://editor.so
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(nullptr, CRGB::Black);
+  if (SEGENV.call == 0) SEGMENT.fill_solid(CRGB::Black);
 
   uint8_t hue;
   int offsetX = beatsin16(3, -360, 360);
@@ -5484,7 +5485,7 @@ uint16_t mode_2Dspaceships(void) {    //// Space ships by stepko (c)05.02.21 [ht
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(nullptr, CRGB::Black);
+  if (SEGENV.call == 0) SEGMENT.fill_solid(CRGB::Black);
 
   uint32_t tb = strip.now >> 12;  // every ~4s
   if (tb > SEGENV.step) {
@@ -5496,8 +5497,8 @@ uint16_t mode_2Dspaceships(void) {    //// Space ships by stepko (c)05.02.21 [ht
     SEGENV.step = tb + random8(4);
   }
 
-  SEGMENT.fadeToBlackBy(nullptr, map(SEGMENT.speed, 0, 255, 248, 16));
-  SEGMENT.move(SEGENV.aux0, 1, nullptr);
+  SEGMENT.fadeToBlackBy(map(SEGMENT.speed, 0, 255, 248, 16));
+  SEGMENT.move(SEGENV.aux0, 1);
   for (size_t i = 0; i < 8; i++) {
     byte x = beatsin8(12 + i, 2, cols - 3);
     byte y = beatsin8(15 + i, 2, rows - 3);
@@ -5510,7 +5511,7 @@ uint16_t mode_2Dspaceships(void) {    //// Space ships by stepko (c)05.02.21 [ht
       SEGMENT.addPixelColorXY(x, y - 1, color);
     }
   }
-  SEGMENT.blur2d(nullptr, SEGMENT.intensity>>3);
+  SEGMENT.blur2d(SEGMENT.intensity>>3);
 
   return FRAMETIME;
 }
@@ -5550,7 +5551,7 @@ uint16_t mode_2Dcrazybees(void) {
   bee_t *bee = reinterpret_cast<bee_t*>(SEGENV.data);
 
   if (SEGENV.call == 0) {
-    SEGMENT.fill_solid(nullptr, CRGB::Black);
+    SEGMENT.fill_solid(CRGB::Black);
     for (size_t i = 0; i < n; i++) {
       bee[i].posX = random8(0, cols);
       bee[i].posY = random8(0, rows);
@@ -5561,7 +5562,7 @@ uint16_t mode_2Dcrazybees(void) {
   if (millis() > SEGENV.step) {
     SEGENV.step = millis() + (FRAMETIME * 8 / ((SEGMENT.speed>>5)+1));
 
-    SEGMENT.fadeToBlackBy(nullptr, 32);
+    SEGMENT.fadeToBlackBy(32);
   
     for (size_t i = 0; i < n; i++) {
       SEGMENT.addPixelColorXY(bee[i].aimX + 1, bee[i].aimY, CHSV(bee[i].hue, 255, 255));
@@ -5583,7 +5584,7 @@ uint16_t mode_2Dcrazybees(void) {
         bee[i].aimed(cols, rows);
       }
     }
-    SEGMENT.blur2d(nullptr, SEGMENT.intensity>>4);
+    SEGMENT.blur2d(SEGMENT.intensity>>4);
 
   }
   return FRAMETIME;
@@ -5623,7 +5624,7 @@ uint16_t mode_2Dghostrider(void) {
   if (SEGENV.call == 0 || SEGENV.aux0 != cols || SEGENV.aux1 != rows) {
     SEGENV.aux0 = cols;
     SEGENV.aux1 = rows;
-    SEGMENT.fill_solid(nullptr, CRGB::Black);
+    SEGMENT.fill_solid(CRGB::Black);
     random16_set_seed(strip.now);
     lighter->angleSpeed = random8(0,20) - 10;
     lighter->Vspeed = 5;
@@ -5639,10 +5640,10 @@ uint16_t mode_2Dghostrider(void) {
   if (millis() > SEGENV.step) {
     SEGENV.step = millis() + 1024 / (cols+rows);
 
-    SEGMENT.fadeToBlackBy(nullptr, (SEGMENT.speed>>2)+64);
+    SEGMENT.fadeToBlackBy((SEGMENT.speed>>2)+64);
 
     CRGB color = CRGB::White;
-    SEGMENT.wu_pixel(nullptr, lighter->gPosX * 256 / 10, lighter->gPosY * 256 / 10, color);
+    SEGMENT.wu_pixel(lighter->gPosX * 256 / 10, lighter->gPosY * 256 / 10, color);
 
     lighter->gPosX += lighter->Vspeed * sin_t(radians(lighter->gAngle));
     lighter->gPosY += lighter->Vspeed * cos_t(radians(lighter->gAngle));
@@ -5670,9 +5671,9 @@ uint16_t mode_2Dghostrider(void) {
         lighter->lightersPosX[i] += -7 * sin_t(radians(lighter->Angle[i]));
         lighter->lightersPosY[i] += -7 * cos_t(radians(lighter->Angle[i]));
       }
-      SEGMENT.wu_pixel(nullptr, lighter->lightersPosX[i] * 256 / 10, lighter->lightersPosY[i] * 256 / 10, ColorFromPalette(SEGPALETTE, (256 - lighter->time[i])));
+      SEGMENT.wu_pixel(lighter->lightersPosX[i] * 256 / 10, lighter->lightersPosY[i] * 256 / 10, ColorFromPalette(SEGPALETTE, (256 - lighter->time[i])));
     }
-    SEGMENT.blur2d(nullptr, SEGMENT.intensity>>3);
+    SEGMENT.blur2d(SEGMENT.intensity>>3);
   }
 
   return FRAMETIME;
@@ -5707,7 +5708,7 @@ uint16_t mode_2Dfloatingblobs(void) {
   if (SEGENV.call == 0 || SEGENV.aux0 != cols || SEGENV.aux1 != rows) {
     SEGENV.aux0 = cols;
     SEGENV.aux1 = rows;
-    SEGMENT.fill_solid(nullptr, CRGB::Black);
+    SEGMENT.fill_solid(CRGB::Black);
     for (size_t i = 0; i < MAX_BLOBS; i++) {
       blob->r[i]  = cols>15 ? random8(1, cols/8.f) : 1;
       blob->sX[i] = (float) random8(3, cols) / (float)(256 - SEGMENT.speed); // speed x
@@ -5721,7 +5722,7 @@ uint16_t mode_2Dfloatingblobs(void) {
     }
   }
 
-  SEGMENT.fadeToBlackBy(nullptr, 20);
+  SEGMENT.fadeToBlackBy(20);
 
   // Bounce balls around
   for (size_t i = 0; i < Amount; i++) {
@@ -5742,7 +5743,7 @@ uint16_t mode_2Dfloatingblobs(void) {
     }
     CRGB c = ColorFromPalette(SEGPALETTE, blob->color[i]);
     //if (!SEGMENT.palette) c = SEGCOLOR(0);
-    if (blob->r[i] > 1.f) SEGMENT.fill_circle(nullptr, blob->y[i], blob->x[i], blob->r[i], c);
+    if (blob->r[i] > 1.f) SEGMENT.fill_circle(blob->y[i], blob->x[i], blob->r[i], c);
     else                  SEGMENT.addPixelColorXY(blob->y[i], blob->x[i], c);
     // move x
     if (blob->x[i] + blob->r[i] >= cols - 1) blob->x[i] += (blob->sX[i] * ((cols - 1 - blob->x[i]) / blob->r[i] + 0.005f));
@@ -5771,7 +5772,7 @@ uint16_t mode_2Dfloatingblobs(void) {
       blob->y[i]  = rows - 1.01f;
     }
   }
-  SEGMENT.blur2d(nullptr, cols+rows);
+  SEGMENT.blur2d(cols+rows);
 
   if (SEGENV.step < millis()) SEGENV.step = millis() + 2000; // change colors every 2 seconds
 
@@ -5846,16 +5847,16 @@ uint16_t mode_2Ddriftrose(void) {
   const float L = min(cols, rows) / 2.f;
 
   if (SEGENV.call == 0) {
-    SEGMENT.fill_solid(nullptr, CRGB::Black);
+    SEGMENT.fill_solid(CRGB::Black);
   }
 
-  SEGMENT.fadeToBlackBy(nullptr, 32+(SEGMENT.speed>>3));
+  SEGMENT.fadeToBlackBy(32+(SEGMENT.speed>>3));
   for (size_t i = 1; i < 37; i++) {
     uint32_t x = (CX + (sin_t(radians(i * 10)) * (beatsin8(i, 0, L*2)-L))) * 255.f;
     uint32_t y = (CY + (cos_t(radians(i * 10)) * (beatsin8(i, 0, L*2)-L))) * 255.f;
-    SEGMENT.wu_pixel(nullptr, x, y, CHSV(i * 10, 255, 255));
+    SEGMENT.wu_pixel(x, y, CHSV(i * 10, 255, 255));
   }
-  SEGMENT.blur2d(nullptr, (SEGMENT.intensity>>4)+1);
+  SEGMENT.blur2d((SEGMENT.intensity>>4)+1);
 
   return FRAMETIME;
 }
@@ -5888,7 +5889,6 @@ static const char *_data_FX_MODE_2DDRIFTROSE PROGMEM = "2D Drift Rose@Fade,Blur;
     binNum        =  (uint8_t*) um_data->u_data[7];  // requires UI element (SEGMENT.customX?), changes source element
     fftBin        =  (float*)   um_data->u_data[8];
   } else {
-    // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
 */
@@ -5908,7 +5908,6 @@ uint16_t mode_ripplepeak(void) {                // * Ripple peak. By Andrew Tuli
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t samplePeak    = *(uint8_t*)um_data->u_data[3];
@@ -5982,11 +5981,11 @@ uint16_t mode_2DSwirl(void) {
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(nullptr, CRGB::Black);
+  if (SEGENV.call == 0) SEGMENT.fill_solid(CRGB::Black);
 
   const uint8_t borderWidth = 2;
 
-  SEGMENT.blur2d(nullptr, SEGMENT.custom1);
+  SEGMENT.blur2d(SEGMENT.custom1);
 
   uint8_t  i = beatsin8( 27*SEGMENT.speed/255, borderWidth, cols - borderWidth);
   uint8_t  j = beatsin8( 41*SEGMENT.speed/255, borderWidth, rows - borderWidth);
@@ -5996,7 +5995,6 @@ uint16_t mode_2DSwirl(void) {
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth  = *(float*)   um_data->u_data[0]; //ewowi: use instead of sampleAvg???
@@ -6027,17 +6025,16 @@ uint16_t mode_2DWaverly(void) {
   const uint16_t rows = SEGMENT.virtualHeight();
 
   if (SEGENV.call == 0) {
-    SEGMENT.fill_solid(nullptr, CRGB::Black);
+    SEGMENT.fill_solid(CRGB::Black);
   }
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth  = *(float*)   um_data->u_data[0];
 
-  SEGMENT.fadeToBlackBy(nullptr, SEGMENT.speed);
+  SEGMENT.fadeToBlackBy(SEGMENT.speed);
 
   long t = millis() / 2;
   for (uint16_t i = 0; i < cols; i++) {
@@ -6054,7 +6051,7 @@ uint16_t mode_2DWaverly(void) {
       SEGMENT.addPixelColorXY((cols - 1) - i, (rows - 1) - j, ColorFromPalette(SEGPALETTE, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND));
     }
   }
-  SEGMENT.blur2d(nullptr, 16);
+  SEGMENT.blur2d(16);
 
   return FRAMETIME;
 } // mode_2DWaverly()
@@ -6084,7 +6081,6 @@ uint16_t mode_gravcenter(void) {                // Gravcenter. By Andrew Tuline.
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth  = *(float*)  um_data->u_data[0];
@@ -6131,7 +6127,6 @@ uint16_t mode_gravcentric(void) {                     // Gravcentric. By Andrew 
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth  = *(float*)  um_data->u_data[0];
@@ -6181,7 +6176,6 @@ uint16_t mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth  = *(float*)  um_data->u_data[0];
@@ -6221,7 +6215,6 @@ static const char *_data_FX_MODE_GRAVIMETER PROGMEM = "Gravimeter ♪@Rate of fa
 uint16_t mode_juggles(void) {                   // Juggles. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth   = *(float*)  um_data->u_data[0];
@@ -6244,7 +6237,6 @@ static const char *_data_FX_MODE_JUGGLES PROGMEM = "Juggles ♪@!,# of balls;,!;
 uint16_t mode_matripix(void) {                  // Matripix. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
   int16_t volumeRaw    = *(int16_t*)um_data->u_data[1];
@@ -6273,7 +6265,6 @@ uint16_t mode_midnoise(void) {                  // Midnoise. By Andrew Tuline.
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth   = *(float*)  um_data->u_data[0];
@@ -6312,7 +6303,6 @@ uint16_t mode_noisefire(void) {                 // Noisefire. By Andrew Tuline.
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth   = *(float*)  um_data->u_data[0];
@@ -6338,7 +6328,6 @@ uint16_t mode_noisemeter(void) {                // Noisemeter. By Andrew Tuline.
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth   = *(float*)  um_data->u_data[0];
@@ -6372,7 +6361,6 @@ uint16_t mode_pixelwave(void) {                 // Pixelwave. By Andrew Tuline.
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
   int16_t volumeRaw    = *(int16_t*)um_data->u_data[1];
@@ -6409,7 +6397,6 @@ uint16_t mode_plasmoid(void) {                  // Plasmoid. By Andrew Tuline.
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth   = *(float*)  um_data->u_data[0];
@@ -6447,7 +6434,6 @@ uint16_t mode_puddlepeak(void) {                // Puddlepeak. By Andrew Tuline.
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t samplePeak = *(uint8_t*)um_data->u_data[3];
@@ -6491,7 +6477,6 @@ uint16_t mode_puddles(void) {                   // Puddles. By Andrew Tuline.
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
   int16_t volumeRaw    = *(int16_t*)um_data->u_data[1];
@@ -6632,11 +6617,9 @@ static const char *_data_FX_MODE_BINMAP PROGMEM = " ♫ Binmap@,,Input level=128
 uint16_t mode_blurz(void) {                    // Blurz. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
-  if (!fftResult) return mode_static();
 
   if (SEGENV.call == 0) {
     SEGMENT.fill(BLACK);
@@ -6664,11 +6647,9 @@ uint16_t mode_DJLight(void) {                   // Written by ??? Adapted by Wil
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
-  if (!fftResult) return mode_static();
 
   uint8_t secondHand = micros()/(256-SEGMENT.speed)/500+1 % 64;
   if (SEGENV.aux0 != secondHand) {                        // Triggered millis timing.
@@ -6696,7 +6677,6 @@ uint16_t mode_freqmap(void) {                   // Map FFT_MajorPeak to SEGLEN. 
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
@@ -6723,7 +6703,6 @@ static const char *_data_FX_MODE_FREQMAP PROGMEM = "Freqmap ♫@Fade rate,Starti
 uint16_t mode_freqmatrix(void) {                // Freqmatrix. By Andreas Pleschung.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float FFT_MajorPeak = *(float*)um_data->u_data[4];
@@ -6777,7 +6756,6 @@ static const char *_data_FX_MODE_FREQMATRIX PROGMEM = "Freqmatrix ♫@Time delay
 uint16_t mode_freqpixels(void) {                // Freqpixel. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
@@ -6815,7 +6793,6 @@ static const char *_data_FX_MODE_FREQPIXELS PROGMEM = "Freqpixels ♫@Fade rate,
 uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschung.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
@@ -6875,7 +6852,6 @@ uint16_t mode_gravfreq(void) {                  // Gravfreq. By Andrew Tuline.
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
@@ -6920,11 +6896,9 @@ static const char *_data_FX_MODE_GRAVFREQ PROGMEM = "Gravfreq ♫@Rate of fall,S
 uint16_t mode_noisemove(void) {                 // Noisemove.    By: Andrew Tuline
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
-  if (!fftResult) return mode_static();
 
   SEGMENT.fade_out(224);                                          // Just in case something doesn't get faded.
 
@@ -6946,7 +6920,6 @@ static const char *_data_FX_MODE_NOISEMOVE PROGMEM = "Noisemove ♫@Speed of per
 uint16_t mode_rocktaves(void) {                 // Rocktaves. Same note from each octave is same colour.    By: Andrew Tuline
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
@@ -6986,7 +6959,6 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t samplePeak    = *(uint8_t*)um_data->u_data[3];
@@ -7039,11 +7011,9 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
-  if (!fftResult) return mode_static();
 
   if (SEGENV.call == 0) for (int i=0; i<cols; i++) previousBarHeight[i] = 0;
 
@@ -7100,11 +7070,9 @@ uint16_t mode_2DFunkyPlank(void) {              // Written by ??? Adapted by Wil
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
-  if (!fftResult) return mode_static();
 
   uint8_t secondHand = micros()/(256-SEGMENT.speed)/500+1 % 64;
   if (SEGENV.aux0 != secondHand) {                        // Triggered millis timing.
@@ -7124,7 +7092,7 @@ uint16_t mode_2DFunkyPlank(void) {              // Written by ??? Adapted by Wil
     // Update the display:
     for (int i = (rows - 1); i > 0; i--) {
       for (int j = (cols - 1); j >= 0; j--) {
-        SEGMENT.setPixelColorXY(j, i-1, SEGMENT.getPixelColorXY(j, i));
+        SEGMENT.setPixelColorXY(j, i, SEGMENT.getPixelColorXY(j, i-1));
       }
     }
   }

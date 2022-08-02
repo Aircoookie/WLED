@@ -575,22 +575,22 @@ typedef struct Segment {
     void addPixelColorXY(uint16_t x, uint16_t y, uint32_t color);
     void addPixelColorXY(uint16_t x, uint16_t y, byte r, byte g, byte b, byte w = 0) { addPixelColorXY(x, y, RGBW32(r,g,b,w)); } // automatically inline
     void addPixelColorXY(uint16_t x, uint16_t y, CRGB c)                             { addPixelColorXY(x, y, c.red, c.green, c.blue); } // automatically inline
-    void blur1d(CRGB* leds, fract8 blur_amount);
-    void blur1d(uint16_t i, bool vertical, fract8 blur_amount, CRGB* leds=nullptr); // 1D box blur (with weight)
-    void blur2d(CRGB* leds, fract8 blur_amount);
-    void blurRow(uint16_t row, fract8 blur_amount, CRGB* leds=nullptr);
-    void blurCol(uint16_t col, fract8 blur_amount, CRGB* leds=nullptr);
-    void moveX(CRGB *leds, int8_t delta);
-    void moveY(CRGB *leds, int8_t delta);
-    void move(uint8_t dir, uint8_t delta, CRGB *leds=nullptr);
-    void fill_solid(CRGB* leds, CRGB c);
-    void fill_circle(CRGB* leds, uint16_t cx, uint16_t cy, uint8_t radius, CRGB c);
-    void fadeToBlackBy(CRGB* leds, uint8_t fadeBy);
-    void nscale8(CRGB* leds, uint8_t scale);
-    void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c, CRGB *leds = nullptr);
-    void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB color, CRGB *leds = nullptr);
-    void wu_pixel(CRGB *leds, uint32_t x, uint32_t y, CRGB c);
-    inline void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint32_t c) { drawLine(x0, y0, x1, y1, CRGB(byte(c>>16), byte(c>>8), byte(c))); }
+    void blur1d(fract8 blur_amount);
+    void blur1d(uint16_t i, bool vertical, fract8 blur_amount); // 1D box blur (with weight)
+    void blur2d(fract8 blur_amount);
+    void blurRow(uint16_t row, fract8 blur_amount);
+    void blurCol(uint16_t col, fract8 blur_amount);
+    void moveX(int8_t delta);
+    void moveY(int8_t delta);
+    void move(uint8_t dir, uint8_t delta);
+    void fill_solid(CRGB c);
+    void fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB c);
+    void fadeToBlackByOld(uint8_t fadeBy);
+    void nscale8(uint8_t scale);
+    // void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c, CRGB *leds = nullptr);
+    void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB color);
+    void wu_pixel(uint32_t x, uint32_t y, CRGB c);
+    // inline void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint32_t c) { drawLine(x0, y0, x1, y1, CRGB(byte(c>>16), byte(c>>8), byte(c))); }
     inline void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t c) { drawCharacter(chr, x, y, w, h, CRGB(byte(c>>16), byte(c>>8), byte(c))); }
 } segment;
 //static int i = sizeof(Segment);
