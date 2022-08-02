@@ -4570,32 +4570,28 @@ uint16_t mode_2DBlackHole(void) {            // By: Stepko https://editor.soulma
 
   // initialize on first call
   if (SEGENV.call == 0) {
-    SEGMENT.fill_solid(strip.leds, CRGB::Black);
+    SEGMENT.fill_solid(nullptr, CRGB::Black);
   }
 
-  SEGMENT.fadeToBlackBy(strip.leds, 16 + (SEGMENT.speed>>3)); // create fading trails
+  SEGMENT.fadeToBlackBy(nullptr, 16 + (SEGMENT.speed>>3)); // create fading trails
   float t = (float)(millis())/128;              // timebase
   // outer stars
   for (size_t i = 0; i < 8; i++) {
     x = beatsin8(SEGMENT.custom1>>3,   0, cols - 1, 0, ((i % 2) ? 128 : 0) + t * i);
     y = beatsin8(SEGMENT.intensity>>3, 0, rows - 1, 0, ((i % 2) ? 192 : 64) + t * i);
-    strip.leds[XY(x,y)] += CHSV(i*32, 255, 255);
-    // SEGMENT.setPixelColorXY(x, y, SEGMENT.getPixelColorXY(x, y) + CHSV(i*32, 255, 255));
+    SEGMENT.addPixelColorXY(x, y, CHSV(i*32, 255, 255));
   }
   // inner stars
   for (size_t i = 0; i < 4; i++) {
     x = beatsin8(SEGMENT.custom2>>3, cols/4, cols - 1 - cols/4, 0, ((i % 2) ? 128 : 0) + t * i);
     y = beatsin8(SEGMENT.custom3>>3, rows/4, rows - 1 - rows/4, 0, ((i % 2) ? 192 : 64) + t * i);
-    strip.leds[XY(x,y)] += CHSV(i*32, 255, 255);
-    // SEGMENT.setPixelColorXY(x, y, SEGMENT.getPixelColorXY(x, y) + CHSV(i*32, 255, 255));
+    SEGMENT.addPixelColorXY(x, y, CHSV(i*32, 255, 255));
   }
   // central white dot
-  strip.leds[XY(cols/2,rows/2)] = CHSV(0,0,255);
-  // SEGMENT.setPixelColorXY(cols/2,rows/2, CHSV(0,0,255));
+  SEGMENT.setPixelColorXY(cols/2,rows/2, CHSV(0,0,255));
   // blur everything a bit
-  SEGMENT.blur2d(strip.leds, 16);
+  SEGMENT.blur2d(nullptr, 16);
 
-  SEGMENT.setPixels(strip.leds);
   return FRAMETIME;
 } // mode_2DBlackHole()
 static const char *_data_FX_MODE_2DBLACKHOLE PROGMEM = "2D Black Hole@Fade rate,Outer Y freq.,Outer X freq.,Inner X freq.,Inner Y freq.;;";
@@ -4611,8 +4607,7 @@ uint16_t mode_2DColoredBursts() {              // By: ldirko   https://editor.so
   const uint16_t rows = SEGMENT.virtualHeight();
 
   if (SEGENV.call == 0) {
-    SEGMENT.fill_solid(strip.leds, CRGB::Black);
-    //for (uint16_t i = 0; i < w*h; i++) leds[i] = CRGB::Black;
+    SEGMENT.fill_solid(nullptr, CRGB::Black);
     SEGENV.aux0 = 0; // start with red hue
   }
 
@@ -4622,7 +4617,7 @@ uint16_t mode_2DColoredBursts() {              // By: ldirko   https://editor.so
   byte numLines = SEGMENT.intensity/16 + 1;
 
   SEGENV.aux0++;  // hue
-  SEGMENT.fadeToBlackBy(strip.leds, 40);
+  SEGMENT.fadeToBlackBy(nullptr, 40);
 
   for (size_t i = 0; i < numLines; i++) {
     byte x1 = beatsin8(2 + SEGMENT.speed/16, 0, (cols - 1));
@@ -4638,19 +4633,19 @@ uint16_t mode_2DColoredBursts() {              // By: ldirko   https://editor.so
     for (size_t i = 1; i <= steps; i++) {
       byte dx = lerp8by8(x1, y1, i * 255 / steps);
       byte dy = lerp8by8(x2, y2, i * 255 / steps);
-      int index = XY(dx, dy);
-      strip.leds[index] += color;           // change to += for brightness look
-      if (grad) strip.leds[index] %= (i * 255 / steps); //Draw gradient line
+      SEGMENT.addPixelColorXY(dx, dy, color); // change to += for brightness look
+      CRGB color = SEGMENT.getPixelColorXY(dx,dy);
+      color %= (i * 255 / steps);
+      if (grad) SEGMENT.setPixelColorXY(dx, dy, color); //Draw gradient line
     }
 
     if (dot) { //add white point at the ends of line
-      strip.leds[XY(x1, x2)] += CRGB::White;
-      strip.leds[XY(y1, y2)] += CRGB::White;
+      SEGMENT.addPixelColorXY(x1, x2, CRGB::White);
+      SEGMENT.addPixelColorXY(y1, y2, CRGB::White);
     }
   }
-  SEGMENT.blur2d(strip.leds, 4);
+  SEGMENT.blur2d(nullptr, 4);
 
-  SEGMENT.setPixels(strip.leds);       // Use this ONLY if we're going to display via leds[x] method.
   return FRAMETIME;
 } // mode_2DColoredBursts()
 static const char *_data_FX_MODE_2DCOLOREDBURSTS PROGMEM = "2D Colored Bursts@Speed,# of lines;;!";
@@ -4665,17 +4660,16 @@ uint16_t mode_2Ddna(void) {         // dna originally by by ldirko at https://pa
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(strip.leds, CRGB::Black);
+  if (SEGENV.call == 0) SEGMENT.fill_solid(nullptr, CRGB::Black);
 
-  SEGMENT.fadeToBlackBy(strip.leds, 64);
+  SEGMENT.fadeToBlackBy(nullptr, 64);
 
   for(int i = 0; i < cols; i++) {
-    strip.leds[XY(i, beatsin8(SEGMENT.speed/8, 0, rows-1, 0, i*4))] = ColorFromPalette(SEGPALETTE, i*5+millis()/17, beatsin8(5, 55, 255, 0, i*10), LINEARBLEND);
-    strip.leds[XY(i, beatsin8(SEGMENT.speed/8, 0, rows-1, 0, i*4+128))] = ColorFromPalette(SEGPALETTE,i*5+128+millis()/17, beatsin8(5, 55, 255, 0, i*10+128), LINEARBLEND); // 180 degrees (128) out of phase
+    SEGMENT.setPixelColorXY(i, beatsin8(SEGMENT.speed/8, 0, rows-1, 0, i*4), ColorFromPalette(SEGPALETTE, i*5+millis()/17, beatsin8(5, 55, 255, 0, i*10), LINEARBLEND));
+    SEGMENT.setPixelColorXY(i, beatsin8(SEGMENT.speed/8, 0, rows-1, 0, i*4+128), ColorFromPalette(SEGPALETTE,i*5+128+millis()/17, beatsin8(5, 55, 255, 0, i*10+128), LINEARBLEND)); // 180 degrees (128) out of phase
   }
-  SEGMENT.blur2d(strip.leds, SEGMENT.intensity/8);
+  SEGMENT.blur2d(nullptr, SEGMENT.intensity/8);
 
-  SEGMENT.setPixels(strip.leds);
   return FRAMETIME;
 } // mode_2Ddna()
 static const char *_data_FX_MODE_2DDNA PROGMEM = "2D DNA@Scroll speed,Blur;1,2,3;!";
@@ -4691,7 +4685,7 @@ uint16_t mode_2DDNASpiral() {               // By: ldirko  https://editor.soulma
   const uint16_t rows = SEGMENT.virtualHeight();
 
   if (SEGENV.call == 0) {
-    SEGMENT.fill_solid(strip.leds, CRGB::Black);
+    SEGMENT.fill_solid(nullptr, CRGB::Black);
     SEGENV.aux0 = 0; // hue
   }
 
@@ -4699,7 +4693,7 @@ uint16_t mode_2DDNASpiral() {               // By: ldirko  https://editor.soulma
   uint8_t freq = SEGMENT.intensity/8;
 
   uint32_t ms = millis() / 20;
-  SEGMENT.nscale8(strip.leds, 120);
+  SEGMENT.nscale8(nullptr, 120);
 
   for (uint16_t i = 0; i < rows; i++) {
     uint16_t x  = beatsin8(speeds, 0, cols - 1, 0, i * freq) + beatsin8(speeds - 7, 0, cols - 1, 0, i * freq + 128);
@@ -4710,16 +4704,16 @@ uint16_t mode_2DDNASpiral() {               // By: ldirko  https://editor.soulma
       byte steps = abs8(x - x1) + 1;
       for (size_t k = 1; k <= steps; k++) {
         byte dx = lerp8by8(x, x1, k * 255 / steps);
-        uint16_t index = XY(dx, i);
-        strip.leds[index] += ColorFromPalette(SEGPALETTE, SEGENV.aux0, 255, LINEARBLEND);
-        strip.leds[index] %= (k * 255 / steps); //for draw gradient line
+        SEGMENT.addPixelColorXY(dx, i, ColorFromPalette(SEGPALETTE, SEGENV.aux0, 255, LINEARBLEND));
+        CRGB color = SEGMENT.getPixelColorXY(dx,i);
+        color %= (k * 255 / steps);
+        SEGMENT.setPixelColorXY(dx, i, color);
       }
-      strip.leds[XY(x, i)]  += CRGB::DarkSlateGray;
-      strip.leds[XY(x1, i)] += CRGB::White;
+      SEGMENT.addPixelColorXY(x, i, CRGB::DarkSlateGray);
+      SEGMENT.addPixelColorXY(x1, i, CRGB::White);
     }
   }
 
-  SEGMENT.setPixels(strip.leds);       // Use this ONLY if we're going to display via leds[x] method.
   return FRAMETIME;
 } // mode_2DDNASpiral()
 static const char *_data_FX_MODE_2DDNASPIRAL PROGMEM = "2D DNA Spiral@Scroll speed,Blur;;!";
@@ -4734,11 +4728,9 @@ uint16_t mode_2DDrift() {              // By: Stepko   https://editor.soulmateli
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  //if (cols<8 || rows<8) return mode_static(); // makes no sense to run on smaller than 8x8
+  if (SEGENV.call == 0) SEGMENT.fill_solid(nullptr, CRGB::Black);
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(strip.leds, CRGB::Black);
-
-  SEGMENT.fadeToBlackBy(strip.leds, 128);
+  SEGMENT.fadeToBlackBy(nullptr, 128);
 
   const uint16_t maxDim = MAX(cols, rows)/2;
   unsigned long t = millis() / (32 - (SEGMENT.speed>>3));
@@ -4746,11 +4738,10 @@ uint16_t mode_2DDrift() {              // By: Stepko   https://editor.soulmateli
     float angle = radians(t * (maxDim - i));
     uint16_t myX = (cols>>1) + (uint16_t)(sin_t(angle) * i) + (cols%2);
     uint16_t myY = (rows>>1) + (uint16_t)(cos_t(angle) * i) + (rows%2);
-    strip.leds[XY(myX,myY)] = ColorFromPalette(SEGPALETTE, (i * 20) + (t / 20), 255, LINEARBLEND);
+    SEGMENT.setPixelColorXY(myX,myY, ColorFromPalette(SEGPALETTE, (i * 20) + (t / 20), 255, LINEARBLEND));
   }
-  SEGMENT.blur2d(strip.leds, SEGMENT.intensity>>3);
+  SEGMENT.blur2d(nullptr, SEGMENT.intensity>>3);
 
-  SEGMENT.setPixels(strip.leds);
   return FRAMETIME;
 } // mode_2DDrift()
 static const char *_data_FX_MODE_2DDRIFT PROGMEM = "2D Drift@Rotation speed,Blur amount;;!";
@@ -4765,7 +4756,7 @@ uint16_t mode_2Dfirenoise(void) {               // firenoise2d. By Andrew Tuline
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(strip.leds, CRGB::Black);
+  if (SEGENV.call == 0) SEGMENT.fill_solid(nullptr, CRGB::Black);
 
   uint16_t xscale = SEGMENT.intensity*4;
   uint32_t yscale = SEGMENT.speed*8;
@@ -4779,11 +4770,10 @@ uint16_t mode_2Dfirenoise(void) {               // firenoise2d. By Andrew Tuline
   for (uint16_t j=0; j < cols; j++) {
     for (uint16_t i=0; i < rows; i++) {
       indexx = inoise8(j*yscale*rows/255, i*xscale+millis()/4);                                           // We're moving along our Perlin map.
-      strip.leds[XY(j,i)] = ColorFromPalette(SEGPALETTE, min(i*(indexx)>>4, 255), i*255/cols, LINEARBLEND); // With that value, look up the 8 bit colour palette value and assign it to the current LED.
+      SEGMENT.setPixelColorXY(j,i, ColorFromPalette(SEGPALETTE, min(i*(indexx)>>4, 255), i*255/cols, LINEARBLEND)); // With that value, look up the 8 bit colour palette value and assign it to the current LED.
     } // for i
   } // for j
 
-  SEGMENT.setPixels(strip.leds);
   return FRAMETIME;
 } // mode_2Dfirenoise()
 static const char *_data_FX_MODE_2DFIRENOISE PROGMEM = "2D Firenoise@X scale,Y scale;;";
@@ -4798,15 +4788,14 @@ uint16_t mode_2DFrizzles(void) {                 // By: Stepko https://editor.so
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(strip.leds, CRGB::Black);
+  if (SEGENV.call == 0) SEGMENT.fill_solid(nullptr, CRGB::Black);
 
-  SEGMENT.fadeToBlackBy(strip.leds, 16);
+  SEGMENT.fadeToBlackBy(nullptr, 16);
   for (size_t i = 8; i > 0; i--) {
-    strip.leds[XY(beatsin8(SEGMENT.speed/8 + i, 0, cols - 1), beatsin8(SEGMENT.intensity/8 - i, 0, rows - 1))] += ColorFromPalette(SEGPALETTE, beatsin8(12, 0, 255), 255, LINEARBLEND);
+    SEGMENT.setPixelColorXY(beatsin8(SEGMENT.speed/8 + i, 0, cols - 1), beatsin8(SEGMENT.intensity/8 - i, 0, rows - 1), ColorFromPalette(SEGPALETTE, beatsin8(12, 0, 255), 255, LINEARBLEND));
   }
-  SEGMENT.blur2d(strip.leds, 16);
+  SEGMENT.blur2d(nullptr, 16);
 
-  SEGMENT.setPixels(strip.leds);
   return FRAMETIME;
 } // mode_2DFrizzles()
 static const char *_data_FX_MODE_2DFRIZZLES PROGMEM = "2D Frizzles@X frequency,Y frequency;;!";
@@ -4843,9 +4832,9 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
     for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
       uint8_t state = random8()%2;
       if (state == 0)
-        strip.leds[XY(x,y)] = backgroundColor;
+        SEGMENT.setPixelColorXY(x,y, backgroundColor);
       else
-        strip.leds[XY(x,y)] = (CRGB)SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0);
+        SEGMENT.setPixelColorXY(x,y, SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0));
     }
 
     SEGMENT.fill_solid(prevLeds, CRGB::Black);
@@ -4855,7 +4844,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   }
 
   //copy previous leds (save previous generation)
-  for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) prevLeds[XY(x,y)] = strip.leds[XY(x,y)];
+  for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) prevLeds[XY(x,y)] = SEGMENT.getPixelColorXY(x,y);
 
   //calculate new leds
   for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
@@ -4887,20 +4876,20 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
     } // i,j
 
     // Rules of Life
-    if      ((strip.leds[XY(x,y)] != backgroundColor) && (neighbors <  2)) strip.leds[XY(x,y)] = backgroundColor; // Loneliness
-    else if ((strip.leds[XY(x,y)] != backgroundColor) && (neighbors >  3)) strip.leds[XY(x,y)] = backgroundColor; // Overpopulation
-    else if ((strip.leds[XY(x,y)] == backgroundColor) && (neighbors == 3)) {                                // Reproduction
+    if      ((SEGMENT.getPixelColorXY(x,y) != RGBW32(backgroundColor.r, backgroundColor.g, backgroundColor.b, 0)) && (neighbors <  2)) SEGMENT.setPixelColorXY(x,y, backgroundColor); // Loneliness
+    else if ((SEGMENT.getPixelColorXY(x,y) != RGBW32(backgroundColor.r, backgroundColor.g, backgroundColor.b, 0)) && (neighbors >  3)) SEGMENT.setPixelColorXY(x,y, backgroundColor); // Overpopulation
+    else if ((SEGMENT.getPixelColorXY(x,y) == RGBW32(backgroundColor.r, backgroundColor.g, backgroundColor.b, 0)) && (neighbors == 3)) {                                // Reproduction
       //find dominantcolor and assign to cell
       colorCount dominantColorCount = {backgroundColor, 0};
       for (int i=0; i<9 && colorsCount[i].count != 0; i++)
         if (colorsCount[i].count > dominantColorCount.count) dominantColorCount = colorsCount[i];
-      if (dominantColorCount.count > 0) strip.leds[XY(x,y)] = dominantColorCount.color; //assign the dominant color
+      if (dominantColorCount.count > 0) SEGMENT.setPixelColorXY(x,y, dominantColorCount.color); //assign the dominant color
     }
     // else do nothing!
   } //x,y
 
   // calculate CRC16 of leds[]
-  uint16_t crc = crc16((const unsigned char*)strip.leds, dataSize-1);
+  uint16_t crc = crc16((const unsigned char*)prevLeds, dataSize-1); //ewowi: prevLeds instead of leds work as well, tbd: compare more patterns, see SR!
 
   // check if we had same CRC and reset if needed
   // same CRC would mean image did not change or was repeating itself
@@ -4909,7 +4898,6 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   SEGENV.aux1 = SEGENV.aux0;
   SEGENV.aux0 = crc;
 
-  SEGMENT.setPixels(strip.leds);
   return (SEGMENT.getOption(SEG_OPTION_TRANSITIONAL)) ? FRAMETIME : FRAMETIME_FIXED * (128-(SEGMENT.speed>>1)); // update only when appropriate time passes (in 42 FPS slots)
 } // mode_2Dgameoflife()
 static const char *_data_FX_MODE_2DGAMEOFLIFE PROGMEM = "2D Game Of Life@!,;!,!;!";
@@ -5090,7 +5078,7 @@ uint16_t mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy Williams.
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(strip.leds, CRGB::Black);
+  if (SEGENV.call == 0) SEGMENT.fill_solid(nullptr, CRGB::Black);
 
   uint8_t fade = map(SEGMENT.custom1, 0, 255, 50, 250);    // equals trail size
   uint8_t speed = (256-SEGMENT.speed) >> map(MIN(rows, 150), 0, 150, 0, 3);    // slower speeds for small displays
@@ -5109,22 +5097,25 @@ uint16_t mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy Williams.
     SEGENV.step = strip.now;
     for (int16_t row=rows-1; row>=0; row--) {
       for (int16_t col=0; col<cols; col++) {
-        if (strip.leds[XY(col, row)] == spawnColor) {
-          strip.leds[XY(col, row)] = trailColor;         // create trail
-          if (row < rows-1) strip.leds[XY(col, row+1)] = spawnColor;
+        if (SEGMENT.getPixelColorXY(col, row) == RGBW32(spawnColor.r, spawnColor.g, spawnColor.b, 0)) {
+          SEGMENT.setPixelColorXY(col, row, trailColor);         // create trail
+          if (row < rows-1) SEGMENT.setPixelColorXY(col, row+1, spawnColor);
         }
       }
     }
 
     // fade all leds
     for (int x=0; x<cols; x++) for (int y=0; y<rows; y++) {
-      if (strip.leds[XY(x,y)] != spawnColor) strip.leds[XY(x,y)].nscale8(fade);         // only fade trail
+      if (SEGMENT.getPixelColorXY(x,y) != RGBW32(spawnColor.r, spawnColor.g, spawnColor.b, 0)) {
+        CRGB color = SEGMENT.getPixelColorXY(x,y);
+        SEGMENT.setPixelColorXY(x,y, color.nscale8(fade));         // only fade trail
+      }
     }
 
     // check for empty screen to ensure code spawn
     bool emptyScreen = true;
     for (uint16_t x=0; x<cols; x++) for (uint16_t y=0; y<rows; y++) {
-      if (strip.leds[XY(x,y)]) {
+      if (SEGMENT.getPixelColorXY(x,y) != CRGB::Black) {
         emptyScreen = false;
         break;
       }
@@ -5133,10 +5124,9 @@ uint16_t mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy Williams.
     // spawn new falling code
     if (random8() < SEGMENT.intensity || emptyScreen) {
       uint8_t spawnX = random8(cols);
-      strip.leds[XY(spawnX, 0)] = spawnColor;
+      SEGMENT.setPixelColorXY(spawnX, 0,  spawnColor);
     }
 
-    SEGMENT.setPixels(strip.leds);
   } // if millis
 
   return FRAMETIME;
@@ -5198,7 +5188,6 @@ uint16_t mode_2Dmetaballs(void) {   // Metaballs by Stefan Petrick. Cannot have 
     }
   }
 
-  //setPixels(leds);
   return FRAMETIME;
 } // mode_2Dmetaballs()
 static const char *_data_FX_MODE_2DMETABALLS PROGMEM = "2D Metaballs@Speed;!,!,!;!";
@@ -5236,9 +5225,9 @@ uint16_t mode_2DPlasmaball(void) {                   // By: Stepko https://edito
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(strip.leds, CRGB::Black);
+  if (SEGENV.call == 0) SEGMENT.fill_solid(nullptr, CRGB::Black);
 
-  SEGMENT.fadeToBlackBy(strip.leds, 64);
+  SEGMENT.fadeToBlackBy(nullptr, 64);
   float t = millis() / (33 - SEGMENT.speed/8);
   for (uint16_t i = 0; i < cols; i++) {
     uint16_t thisVal = inoise8(i * 30, t, t);
@@ -5251,17 +5240,16 @@ uint16_t mode_2DPlasmaball(void) {                   // By: Stepko https://edito
       uint16_t cx = (i + thisMax_);
       uint16_t cy = (j + thisMax);
 
-      strip.leds[XY(i, j)] += ((x - y > -2) && (x - y < 2)) ||
+      SEGMENT.addPixelColorXY(i, j, ((x - y > -2) && (x - y < 2)) ||
                         ((cols - 1 - x - y) > -2 && (cols - 1 - x - y < 2)) ||
                         (cols - cx == 0) ||
                         (cols - 1 - cx == 0) ||
                         ((rows - cy == 0) ||
-                        (rows - 1 - cy == 0)) ? ColorFromPalette(SEGPALETTE, beat8(5), thisVal, LINEARBLEND) : CRGB::Black;
+                        (rows - 1 - cy == 0)) ? ColorFromPalette(SEGPALETTE, beat8(5), thisVal, LINEARBLEND) : CRGB::Black);
     }
   }
-  SEGMENT.blur2d(strip.leds, 4);
+  SEGMENT.blur2d(nullptr, 4);
 
-  SEGMENT.setPixels(strip.leds);
   return FRAMETIME;
 } // mode_2DPlasmaball()
 static const char *_data_FX_MODE_2DPLASMABALL PROGMEM = "2D Plasma Ball@Speed;!,!,!;!";
@@ -5283,7 +5271,7 @@ uint16_t mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevskyy  https
 
   if (SEGENV.call == 0) {
     SEGENV.step = 0;
-    SEGMENT.fill_solid(strip.leds, CRGB::Black);
+    SEGMENT.fill_solid(nullptr, CRGB::Black);
   }
 
   float adjustHeight = (float)map(rows, 8, 32, 28, 12);
@@ -5309,14 +5297,13 @@ uint16_t mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevskyy  https
   for (uint16_t x = 0; x < cols; x++) {
     for (uint16_t y = 0; y < rows; y++) {
       SEGENV.step++;
-      strip.leds[XY(x, y)] = ColorFromPalette(auroraPalette,
+      SEGMENT.setPixelColorXY(x, y, ColorFromPalette(auroraPalette,
                          qsub8(
                            inoise8((SEGENV.step%2) + x * _scale, y * 16 + SEGENV.step % 16, SEGENV.step / _speed),
-                           fabs((float)rows / 2 - (float)y) * adjustHeight));
+                           fabs((float)rows / 2 - (float)y) * adjustHeight)));
     }
   }
 
-  SEGMENT.setPixels(strip.leds);
   return FRAMETIME;
 } // mode_2DPolarLights()
 static const char *_data_FX_MODE_2DPOLARLIGHTS PROGMEM = "2D Polar Lights@Speed,Scale;;";
@@ -5331,19 +5318,17 @@ uint16_t mode_2DPulser(void) {                       // By: ldirko   https://edi
   //const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(strip.leds, CRGB::Black);
+  if (SEGENV.call == 0) SEGMENT.fill_solid(nullptr, CRGB::Black);
 
-  SEGMENT.fadeToBlackBy(strip.leds, 8 - (SEGMENT.intensity>>5));
+  SEGMENT.fadeToBlackBy(nullptr, 8 - (SEGMENT.intensity>>5));
 
   uint16_t a = strip.now / (18 - SEGMENT.speed / 16);
   uint16_t x = (a / 14);
   uint16_t y = map((sin8(a * 5) + sin8(a * 4) + sin8(a * 2)), 0, 765, rows-1, 0);
-  uint16_t index = XY(x, y); // XY() will wrap x or y
-  strip.leds[index] = ColorFromPalette(SEGPALETTE, map(y, 0, rows-1, 0, 255), 255, LINEARBLEND);
+  SEGMENT.setPixelColorXY(x, y, ColorFromPalette(SEGPALETTE, map(y, 0, rows-1, 0, 255), 255, LINEARBLEND));
 
-  SEGMENT.blur2d(strip.leds, 1 + (SEGMENT.intensity>>4));
+  SEGMENT.blur2d(nullptr, 1 + (SEGMENT.intensity>>4));
 
-  SEGMENT.setPixels(strip.leds);       // Use this ONLY if we're going to display via leds[x] method.
   return FRAMETIME;
 } // mode_2DPulser()
 static const char *_data_FX_MODE_2DPULSER PROGMEM = "2D Pulser@Speed,Blur;;!";
@@ -5358,19 +5343,18 @@ uint16_t mode_2DSindots(void) {                             // By: ldirko   http
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(strip.leds, CRGB::Black);
+  if (SEGENV.call == 0) SEGMENT.fill_solid(nullptr, CRGB::Black);
 
-  SEGMENT.fadeToBlackBy(strip.leds, 15);
+  SEGMENT.fadeToBlackBy(nullptr, 15);
   byte t1 = millis() / (257 - SEGMENT.speed); // 20;
   byte t2 = sin8(t1) / 4 * 2;
   for (uint16_t i = 0; i < 13; i++) {
     byte x = sin8(t1 + i * SEGMENT.intensity/8)*(cols-1)/255;  //   max index now 255x15/255=15!
     byte y = sin8(t2 + i * SEGMENT.intensity/8)*(rows-1)/255;  //  max index now 255x15/255=15!
-    strip.leds[XY(x, y)] = ColorFromPalette(SEGPALETTE, i * 255 / 13, 255, LINEARBLEND);
+    SEGMENT.setPixelColorXY(x, y, ColorFromPalette(SEGPALETTE, i * 255 / 13, 255, LINEARBLEND));
   }
-  SEGMENT.blur2d(strip.leds, 16);
+  SEGMENT.blur2d(nullptr, 16);
 
-  SEGMENT.setPixels(strip.leds);       // Use this ONLY if we're going to display via leds[x] method.
   return FRAMETIME;
 } // mode_2DSindots()
 static const char *_data_FX_MODE_2DSINDOTS PROGMEM = "2D Sindots@Speed,Dot distance;;!";
@@ -5387,13 +5371,13 @@ uint16_t mode_2Dsquaredswirl(void) {            // By: Mark Kriegsman. https://g
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(strip.leds, CRGB::Black);
+  if (SEGENV.call == 0) SEGMENT.fill_solid(nullptr, CRGB::Black);
 
   const uint8_t kBorderWidth = 2;
 
-  SEGMENT.fadeToBlackBy(strip.leds, 24);
+  SEGMENT.fadeToBlackBy(nullptr, 24);
   uint8_t blurAmount = SEGMENT.custom3>>4;
-  SEGMENT.blur2d(strip.leds, blurAmount);
+  SEGMENT.blur2d(nullptr, blurAmount);
 
   // Use two out-of-sync sine waves
   uint8_t i = beatsin8(19, kBorderWidth, cols-kBorderWidth);
@@ -5405,11 +5389,10 @@ uint16_t mode_2Dsquaredswirl(void) {            // By: Mark Kriegsman. https://g
 
   uint16_t ms = millis();
 
-  strip.leds[XY(i, m)] += ColorFromPalette(SEGPALETTE, ms/29, 255, LINEARBLEND);
-  strip.leds[XY(j, n)] += ColorFromPalette(SEGPALETTE, ms/41, 255, LINEARBLEND);
-  strip.leds[XY(k, p)] += ColorFromPalette(SEGPALETTE, ms/73, 255, LINEARBLEND);
+  SEGMENT.addPixelColorXY(i, m, ColorFromPalette(SEGPALETTE, ms/29, 255, LINEARBLEND));
+  SEGMENT.addPixelColorXY(j, n, ColorFromPalette(SEGPALETTE, ms/41, 255, LINEARBLEND));
+  SEGMENT.addPixelColorXY(k, p, ColorFromPalette(SEGPALETTE, ms/73, 255, LINEARBLEND));
 
-  SEGMENT.setPixels(strip.leds);
   return FRAMETIME;
 } // mode_2Dsquaredswirl()
 static const char *_data_FX_MODE_2DSQUAREDSWIRL PROGMEM = "2D Squared Swirl@,,,,Blur;,,;!";
@@ -5427,7 +5410,7 @@ uint16_t mode_2DSunradiation(void) {                   // By: ldirko https://edi
   if (!SEGENV.allocateData(sizeof(byte)*(cols+2)*(rows+2))) return mode_static(); //allocation failed
   byte *bump = reinterpret_cast<byte*>(SEGENV.data);
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(strip.leds, CRGB::Black);
+  if (SEGENV.call == 0) SEGMENT.fill_solid(nullptr, CRGB::Black);
 
   unsigned long t = millis() / 4;
   int index = 0;
@@ -5453,12 +5436,11 @@ uint16_t mode_2DSunradiation(void) {                   // By: ldirko https://edi
       int temp = difx * difx + dify * dify;
       int col = 255 - temp / 8; //8 its a size of effect
       if (col < 0) col = 0;
-      strip.leds[XY(x, y)] = HeatColor(col / (3.0f-(float)(SEGMENT.intensity)/128.f));
+      SEGMENT.setPixelColorXY(x, y, HeatColor(col / (3.0f-(float)(SEGMENT.intensity)/128.f)));
     }
     yindex += (cols + 2);
   }
 
-  SEGMENT.setPixels(strip.leds);
   return FRAMETIME;
 } // mode_2DSunradiation()
 static const char *_data_FX_MODE_2DSUNRADIATION PROGMEM = "2D Sun Radiation@Variance,Brightness;;";
@@ -5473,7 +5455,7 @@ uint16_t mode_2Dtartan(void) {          // By: Elliott Kember  https://editor.so
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(strip.leds, CRGB::Black);
+  if (SEGENV.call == 0) SEGMENT.fill_solid(nullptr, CRGB::Black);
 
   uint8_t hue;
   int offsetX = beatsin16(3, -360, 360);
@@ -5481,15 +5463,13 @@ uint16_t mode_2Dtartan(void) {          // By: Elliott Kember  https://editor.so
 
   for (uint16_t x = 0; x < cols; x++) {
     for (uint16_t y = 0; y < rows; y++) {
-      uint16_t index = XY(x, y);
       hue = x * beatsin16(10, 1, 10) + offsetY;
-      strip.leds[index] = ColorFromPalette(SEGPALETTE, hue, sin8(x * SEGMENT.speed + offsetX) * sin8(x * SEGMENT.speed + offsetX) / 255, LINEARBLEND);
+      SEGMENT.setPixelColorXY(x, y, ColorFromPalette(SEGPALETTE, hue, sin8(x * SEGMENT.speed + offsetX) * sin8(x * SEGMENT.speed + offsetX) / 255, LINEARBLEND));
       hue = y * 3 + offsetX;
-      strip.leds[index] += ColorFromPalette(SEGPALETTE, hue, sin8(y * SEGMENT.intensity + offsetY) * sin8(y * SEGMENT.intensity + offsetY) / 255, LINEARBLEND);
+      SEGMENT.addPixelColorXY(x, y, ColorFromPalette(SEGPALETTE, hue, sin8(y * SEGMENT.intensity + offsetY) * sin8(y * SEGMENT.intensity + offsetY) / 255, LINEARBLEND));
     }
   }
 
-  SEGMENT.setPixels(strip.leds);       // Use this ONLY if we're going to display via leds[x] method.
   return FRAMETIME;
 } // mode_2DTartan()
 static const char *_data_FX_MODE_2DTARTAN PROGMEM = "2D Tartan@X scale,Y scale;;!";
@@ -5504,7 +5484,7 @@ uint16_t mode_2Dspaceships(void) {    //// Space ships by stepko (c)05.02.21 [ht
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(strip.leds, CRGB::Black);
+  if (SEGENV.call == 0) SEGMENT.fill_solid(nullptr, CRGB::Black);
 
   uint32_t tb = strip.now >> 12;  // every ~4s
   if (tb > SEGENV.step) {
@@ -5516,23 +5496,22 @@ uint16_t mode_2Dspaceships(void) {    //// Space ships by stepko (c)05.02.21 [ht
     SEGENV.step = tb + random8(4);
   }
 
-  SEGMENT.fadeToBlackBy(strip.leds, map(SEGMENT.speed, 0, 255, 248, 16));
-  SEGMENT.move(SEGENV.aux0, 1, strip.leds);
+  SEGMENT.fadeToBlackBy(nullptr, map(SEGMENT.speed, 0, 255, 248, 16));
+  SEGMENT.move(SEGENV.aux0, 1, nullptr);
   for (size_t i = 0; i < 8; i++) {
     byte x = beatsin8(12 + i, 2, cols - 3);
     byte y = beatsin8(15 + i, 2, rows - 3);
     CRGB color = ColorFromPalette(SEGPALETTE, beatsin8(12 + i, 0, 255), 255);
-    strip.leds[XY(x, y)] += color;
+    SEGMENT.addPixelColorXY(x, y, color);
     if (cols > 24 || rows > 24) {
-      strip.leds[XY(x + 1, y)] += color;
-      strip.leds[XY(x - 1, y)] += color;
-      strip.leds[XY(x, y + 1)] += color;
-      strip.leds[XY(x, y - 1)] += color;
+      SEGMENT.addPixelColorXY(x + 1, y, color);
+      SEGMENT.addPixelColorXY(x - 1, y, color);
+      SEGMENT.addPixelColorXY(x, y + 1, color);
+      SEGMENT.addPixelColorXY(x, y - 1, color);
     }
   }
-  SEGMENT.blur2d(strip.leds, SEGMENT.intensity>>3);
+  SEGMENT.blur2d(nullptr, SEGMENT.intensity>>3);
 
-  SEGMENT.setPixels(strip.leds);
   return FRAMETIME;
 }
 static const char *_data_FX_MODE_2DSPACESHIPS PROGMEM = "2D Spaceships@!,Blur;!,!,!;!";
@@ -5571,7 +5550,7 @@ uint16_t mode_2Dcrazybees(void) {
   bee_t *bee = reinterpret_cast<bee_t*>(SEGENV.data);
 
   if (SEGENV.call == 0) {
-    SEGMENT.fill_solid(strip.leds, CRGB::Black);
+    SEGMENT.fill_solid(nullptr, CRGB::Black);
     for (size_t i = 0; i < n; i++) {
       bee[i].posX = random8(0, cols);
       bee[i].posY = random8(0, rows);
@@ -5582,15 +5561,15 @@ uint16_t mode_2Dcrazybees(void) {
   if (millis() > SEGENV.step) {
     SEGENV.step = millis() + (FRAMETIME * 8 / ((SEGMENT.speed>>5)+1));
 
-    SEGMENT.fadeToBlackBy(strip.leds, 32);
+    SEGMENT.fadeToBlackBy(nullptr, 32);
   
     for (size_t i = 0; i < n; i++) {
-      strip.leds[XY(bee[i].aimX + 1, bee[i].aimY)] += CHSV(bee[i].hue, 255, 255);
-      strip.leds[XY(bee[i].aimX, bee[i].aimY + 1)] += CHSV(bee[i].hue, 255, 255);
-      strip.leds[XY(bee[i].aimX - 1, bee[i].aimY)] += CHSV(bee[i].hue, 255, 255);
-      strip.leds[XY(bee[i].aimX, bee[i].aimY - 1)] += CHSV(bee[i].hue, 255, 255);
+      SEGMENT.addPixelColorXY(bee[i].aimX + 1, bee[i].aimY, CHSV(bee[i].hue, 255, 255));
+      SEGMENT.addPixelColorXY(bee[i].aimX, bee[i].aimY + 1, CHSV(bee[i].hue, 255, 255));
+      SEGMENT.addPixelColorXY(bee[i].aimX - 1, bee[i].aimY, CHSV(bee[i].hue, 255, 255));
+      SEGMENT.addPixelColorXY(bee[i].aimX, bee[i].aimY - 1, CHSV(bee[i].hue, 255, 255));
       if (bee[i].posX != bee[i].aimX || bee[i].posY != bee[i].aimY) {
-        strip.leds[XY(bee[i].posX, bee[i].posY)] = CHSV(bee[i].hue, 60, 255);
+        SEGMENT.setPixelColorXY(bee[i].posX, bee[i].posY, CHSV(bee[i].hue, 60, 255));
         int8_t error2 = bee[i].error * 2;
         if (error2 > -bee[i].deltaY) {
           bee[i].error -= bee[i].deltaY;
@@ -5604,9 +5583,8 @@ uint16_t mode_2Dcrazybees(void) {
         bee[i].aimed(cols, rows);
       }
     }
-    SEGMENT.blur2d(strip.leds, SEGMENT.intensity>>4);
+    SEGMENT.blur2d(nullptr, SEGMENT.intensity>>4);
 
-    SEGMENT.setPixels(strip.leds);
   }
   return FRAMETIME;
 }
@@ -5645,7 +5623,7 @@ uint16_t mode_2Dghostrider(void) {
   if (SEGENV.call == 0 || SEGENV.aux0 != cols || SEGENV.aux1 != rows) {
     SEGENV.aux0 = cols;
     SEGENV.aux1 = rows;
-    SEGMENT.fill_solid(strip.leds, CRGB::Black);
+    SEGMENT.fill_solid(nullptr, CRGB::Black);
     random16_set_seed(strip.now);
     lighter->angleSpeed = random8(0,20) - 10;
     lighter->Vspeed = 5;
@@ -5661,10 +5639,10 @@ uint16_t mode_2Dghostrider(void) {
   if (millis() > SEGENV.step) {
     SEGENV.step = millis() + 1024 / (cols+rows);
 
-    SEGMENT.fadeToBlackBy(strip.leds, (SEGMENT.speed>>2)+64);
+    SEGMENT.fadeToBlackBy(nullptr, (SEGMENT.speed>>2)+64);
 
     CRGB color = CRGB::White;
-    SEGMENT.wu_pixel(strip.leds, lighter->gPosX * 256 / 10, lighter->gPosY * 256 / 10, color);
+    SEGMENT.wu_pixel(nullptr, lighter->gPosX * 256 / 10, lighter->gPosY * 256 / 10, color);
 
     lighter->gPosX += lighter->Vspeed * sin_t(radians(lighter->gAngle));
     lighter->gPosY += lighter->Vspeed * cos_t(radians(lighter->gAngle));
@@ -5692,12 +5670,11 @@ uint16_t mode_2Dghostrider(void) {
         lighter->lightersPosX[i] += -7 * sin_t(radians(lighter->Angle[i]));
         lighter->lightersPosY[i] += -7 * cos_t(radians(lighter->Angle[i]));
       }
-      SEGMENT.wu_pixel(strip.leds, lighter->lightersPosX[i] * 256 / 10, lighter->lightersPosY[i] * 256 / 10, ColorFromPalette(SEGPALETTE, (256 - lighter->time[i])));
+      SEGMENT.wu_pixel(nullptr, lighter->lightersPosX[i] * 256 / 10, lighter->lightersPosY[i] * 256 / 10, ColorFromPalette(SEGPALETTE, (256 - lighter->time[i])));
     }
-    SEGMENT.blur2d(strip.leds, SEGMENT.intensity>>3);
+    SEGMENT.blur2d(nullptr, SEGMENT.intensity>>3);
   }
 
-  SEGMENT.setPixels(strip.leds);
   return FRAMETIME;
 }
 static const char *_data_FX_MODE_2DGHOSTRIDER PROGMEM = "2D Ghost Rider@Fade rate,Blur;!,!,!;!";
@@ -5730,7 +5707,7 @@ uint16_t mode_2Dfloatingblobs(void) {
   if (SEGENV.call == 0 || SEGENV.aux0 != cols || SEGENV.aux1 != rows) {
     SEGENV.aux0 = cols;
     SEGENV.aux1 = rows;
-    SEGMENT.fill_solid(strip.leds, CRGB::Black);
+    SEGMENT.fill_solid(nullptr, CRGB::Black);
     for (size_t i = 0; i < MAX_BLOBS; i++) {
       blob->r[i]  = cols>15 ? random8(1, cols/8.f) : 1;
       blob->sX[i] = (float) random8(3, cols) / (float)(256 - SEGMENT.speed); // speed x
@@ -5744,7 +5721,7 @@ uint16_t mode_2Dfloatingblobs(void) {
     }
   }
 
-  SEGMENT.fadeToBlackBy(strip.leds, 20);
+  SEGMENT.fadeToBlackBy(nullptr, 20);
 
   // Bounce balls around
   for (size_t i = 0; i < Amount; i++) {
@@ -5765,8 +5742,8 @@ uint16_t mode_2Dfloatingblobs(void) {
     }
     CRGB c = ColorFromPalette(SEGPALETTE, blob->color[i]);
     //if (!SEGMENT.palette) c = SEGCOLOR(0);
-    if (blob->r[i] > 1.f) SEGMENT.fill_circle(strip.leds, blob->y[i], blob->x[i], blob->r[i], c);
-    else                  strip.leds[XY(blob->y[i], blob->x[i])] += c;
+    if (blob->r[i] > 1.f) SEGMENT.fill_circle(nullptr, blob->y[i], blob->x[i], blob->r[i], c);
+    else                  SEGMENT.addPixelColorXY(blob->y[i], blob->x[i], c);
     // move x
     if (blob->x[i] + blob->r[i] >= cols - 1) blob->x[i] += (blob->sX[i] * ((cols - 1 - blob->x[i]) / blob->r[i] + 0.005f));
     else if (blob->x[i] - blob->r[i] <= 0)   blob->x[i] += (blob->sX[i] * (blob->x[i] / blob->r[i] + 0.005f));
@@ -5794,11 +5771,10 @@ uint16_t mode_2Dfloatingblobs(void) {
       blob->y[i]  = rows - 1.01f;
     }
   }
-  SEGMENT.blur2d(strip.leds, cols+rows);
+  SEGMENT.blur2d(nullptr, cols+rows);
 
   if (SEGENV.step < millis()) SEGENV.step = millis() + 2000; // change colors every 2 seconds
 
-  SEGMENT.setPixels(strip.leds);
   return FRAMETIME;
 }
 #undef MAX_BLOBS
@@ -5870,18 +5846,17 @@ uint16_t mode_2Ddriftrose(void) {
   const float L = min(cols, rows) / 2.f;
 
   if (SEGENV.call == 0) {
-    SEGMENT.fill_solid(strip.leds, CRGB::Black);
+    SEGMENT.fill_solid(nullptr, CRGB::Black);
   }
 
-  SEGMENT.fadeToBlackBy(strip.leds, 32+(SEGMENT.speed>>3));
+  SEGMENT.fadeToBlackBy(nullptr, 32+(SEGMENT.speed>>3));
   for (size_t i = 1; i < 37; i++) {
     uint32_t x = (CX + (sin_t(radians(i * 10)) * (beatsin8(i, 0, L*2)-L))) * 255.f;
     uint32_t y = (CY + (cos_t(radians(i * 10)) * (beatsin8(i, 0, L*2)-L))) * 255.f;
-    SEGMENT.wu_pixel(strip.leds, x, y, CHSV(i * 10, 255, 255));
+    SEGMENT.wu_pixel(nullptr, x, y, CHSV(i * 10, 255, 255));
   }
-  SEGMENT.blur2d(strip.leds, (SEGMENT.intensity>>4)+1);
+  SEGMENT.blur2d(nullptr, (SEGMENT.intensity>>4)+1);
 
-  SEGMENT.setPixels(strip.leds);
   return FRAMETIME;
 }
 static const char *_data_FX_MODE_2DDRIFTROSE PROGMEM = "2D Drift Rose@Fade,Blur;;";
@@ -6007,11 +5982,11 @@ uint16_t mode_2DSwirl(void) {
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(strip.leds, CRGB::Black);
+  if (SEGENV.call == 0) SEGMENT.fill_solid(nullptr, CRGB::Black);
 
   const uint8_t borderWidth = 2;
 
-  SEGMENT.blur2d(strip.leds, SEGMENT.custom1);
+  SEGMENT.blur2d(nullptr, SEGMENT.custom1);
 
   uint8_t  i = beatsin8( 27*SEGMENT.speed/255, borderWidth, cols - borderWidth);
   uint8_t  j = beatsin8( 41*SEGMENT.speed/255, borderWidth, rows - borderWidth);
@@ -6029,14 +6004,13 @@ uint16_t mode_2DSwirl(void) {
 
   // printUmData();
 
-  strip.leds[XY( i, j)]  += ColorFromPalette(SEGPALETTE, (ms / 11 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 11, 200, 255);
-  strip.leds[XY( j, i)]  += ColorFromPalette(SEGPALETTE, (ms / 13 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 13, 200, 255);
-  strip.leds[XY(ni, nj)] += ColorFromPalette(SEGPALETTE, (ms / 17 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 17, 200, 255);
-  strip.leds[XY(nj, ni)] += ColorFromPalette(SEGPALETTE, (ms / 29 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 29, 200, 255);
-  strip.leds[XY( i, nj)] += ColorFromPalette(SEGPALETTE, (ms / 37 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 37, 200, 255);
-  strip.leds[XY(ni, j)]  += ColorFromPalette(SEGPALETTE, (ms / 41 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 41, 200, 255);
+  SEGMENT.addPixelColorXY( i, j, ColorFromPalette(SEGPALETTE, (ms / 11 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND)); //CHSV( ms / 11, 200, 255);
+  SEGMENT.addPixelColorXY( j, i, ColorFromPalette(SEGPALETTE, (ms / 13 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND)); //CHSV( ms / 13, 200, 255);
+  SEGMENT.addPixelColorXY(ni, nj, ColorFromPalette(SEGPALETTE, (ms / 17 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND)); //CHSV( ms / 17, 200, 255);
+  SEGMENT.addPixelColorXY(nj, ni, ColorFromPalette(SEGPALETTE, (ms / 29 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND)); //CHSV( ms / 29, 200, 255);
+  SEGMENT.addPixelColorXY( i, nj, ColorFromPalette(SEGPALETTE, (ms / 37 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND)); //CHSV( ms / 37, 200, 255);
+  SEGMENT.addPixelColorXY(ni, j, ColorFromPalette(SEGPALETTE, (ms / 41 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND)); //CHSV( ms / 41, 200, 255);
 
-  SEGMENT.setPixels(strip.leds);
   return FRAMETIME;
 } // mode_2DSwirl()
 static const char *_data_FX_MODE_2DSWIRL PROGMEM = "2D Swirl ♪@!,Sensitivity=64,Blur;,Bg Swirl;!;ssim=0"; // Beatsin
@@ -6053,7 +6027,7 @@ uint16_t mode_2DWaverly(void) {
   const uint16_t rows = SEGMENT.virtualHeight();
 
   if (SEGENV.call == 0) {
-    SEGMENT.fill_solid(strip.leds, CRGB::Black);
+    SEGMENT.fill_solid(nullptr, CRGB::Black);
   }
 
   um_data_t *um_data;
@@ -6063,7 +6037,7 @@ uint16_t mode_2DWaverly(void) {
   }
   float   volumeSmth  = *(float*)   um_data->u_data[0];
 
-  SEGMENT.fadeToBlackBy(strip.leds, SEGMENT.speed);
+  SEGMENT.fadeToBlackBy(nullptr, SEGMENT.speed);
 
   long t = millis() / 2;
   for (uint16_t i = 0; i < cols; i++) {
@@ -6076,13 +6050,12 @@ uint16_t mode_2DWaverly(void) {
     uint16_t thisMax = map(thisVal, 0, 512, 0, rows);
 
     for (uint16_t j = 0; j < thisMax; j++) {
-      strip.leds[XY(i, j)] += ColorFromPalette(SEGPALETTE, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND);
-      strip.leds[XY((cols - 1) - i, (rows - 1) - j)] += ColorFromPalette(SEGPALETTE, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND);
+      SEGMENT.addPixelColorXY(i, j, ColorFromPalette(SEGPALETTE, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND));
+      SEGMENT.addPixelColorXY((cols - 1) - i, (rows - 1) - j, ColorFromPalette(SEGPALETTE, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND));
     }
   }
-  SEGMENT.blur2d(strip.leds, 16);
+  SEGMENT.blur2d(nullptr, 16);
 
-  SEGMENT.setPixels(strip.leds);
   return FRAMETIME;
 } // mode_2DWaverly()
 static const char *_data_FX_MODE_2DWAVERLY PROGMEM = "2D Waverly ♪@Amplification,Sensitivity=64;;!;ssim=0"; // Beatsin
@@ -6701,13 +6674,12 @@ uint16_t mode_DJLight(void) {                   // Written by ??? Adapted by Wil
   if (SEGENV.aux0 != secondHand) {                        // Triggered millis timing.
     SEGENV.aux0 = secondHand;
 
-    strip.leds[XY(mid%SEGMENT.virtualWidth(), mid/SEGMENT.virtualWidth())] = CRGB(fftResult[15]/2, fftResult[5]/2, fftResult[0]/2); // 16-> 15 as 16 is out of bounds
-    strip.leds[XY(mid%SEGMENT.virtualWidth(), mid/SEGMENT.virtualWidth())].fadeToBlackBy(map(fftResult[1*4], 0, 255, 255, 10));     // TODO - Update
+    SEGMENT.setPixelColor(mid, CRGB(fftResult[15]/2, fftResult[5]/2, fftResult[0]/2)); // 16-> 15 as 16 is out of bounds
+    CRGB color = SEGMENT.getPixelColor(mid);
+    SEGMENT.setPixelColor(mid, color.fadeToBlackBy(map(fftResult[1*4], 0, 255, 255, 10)));     // TODO - Update
 
-    for (int i = SEGLEN - 1; i > mid; i--) strip.leds[XY(i%SEGMENT.virtualWidth(), i/SEGMENT.virtualWidth())] = strip.leds[XY((i-1)%SEGMENT.virtualWidth(), (i-1)/SEGMENT.virtualWidth())];    //move to the left
-    for (int i = 0; i < mid; i++)            strip.leds[XY(i%SEGMENT.virtualWidth(), i/SEGMENT.virtualWidth())] = strip.leds[XY((i+1)%SEGMENT.virtualWidth(), (i+1)/SEGMENT.virtualWidth())];    // move to the right
-
-    for (uint16_t i=0; i<SEGLEN; i++) SEGMENT.setPixelColor(i, strip.leds[XY(i%SEGMENT.virtualWidth(), i/SEGMENT.virtualWidth())]);
+    for (int i = SEGLEN - 1; i > mid; i--)   SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i-1)); //move to the left
+    for (int i = 0; i < mid; i++)            SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i+1)); // move to the right
   }
 
   return FRAMETIME;
@@ -7145,21 +7117,18 @@ uint16_t mode_2DFunkyPlank(void) {              // Written by ??? Adapted by Wil
       int v = map(fftResult[band], 0, 255, 10, 255);
       for (int w = 0; w < barWidth; w++) {
          int xpos = (barWidth * b) + w;
-         strip.leds[XY(xpos, 0)] = CHSV(hue, 255, v);
+         SEGMENT.setPixelColorXY(xpos, 0, CHSV(hue, 255, v));
       }
     }
 
     // Update the display:
     for (int i = (rows - 1); i > 0; i--) {
       for (int j = (cols - 1); j >= 0; j--) {
-        int src = XY(j, (i - 1));
-        int dst = XY(j, i);
-        strip.leds[dst] = strip.leds[src];
+        SEGMENT.setPixelColorXY(j, i-1, SEGMENT.getPixelColorXY(j, i));
       }
     }
   }
 
-  SEGMENT.setPixels(strip.leds);
   return FRAMETIME;
 } // mode_2DFunkyPlank
 static const char *_data_FX_MODE_2DFUNKYPLANK PROGMEM = "2D Funky Plank ♫@Scroll speed,,# of bands;;;ssim=0"; // Beatsin

@@ -152,6 +152,9 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
 #ifndef WLED_DISABLE_2D
   if (!strip.isMatrix) return; // not a matrix set-up
 
+  if (strip.useLedsArray)
+    strip.leds[XY(x, y)] = col;
+
   uint8_t _bri_t = strip._bri_t;
   //uint8_t _bri_t = currentBri(getOption(SEG_OPTION_ON) ? opacity : 0);
   if (_bri_t < 255) {
@@ -175,8 +178,6 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
       uint16_t xX = (x+g), yY = (y+j);
       if (xX >= width() || yY >= height()) continue; // we have reached one dimension's end
 
-      if (strip.useLedsArray)
-        strip.leds[XY(xX, yY)] = col;
       strip.setPixelColorXY(start + xX, startY + yY, col);
 
       if (getOption(SEG_OPTION_MIRROR)) { //set the corresponding horizontally mirrored pixel
@@ -244,17 +245,17 @@ void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
 // returns RGBW values of pixel
 uint32_t Segment::getPixelColorXY(uint16_t x, uint16_t y) {
 #ifndef WLED_DISABLE_2D
+  if (strip.useLedsArray) {
+    CRGB led = strip.leds[XY(x, y)];
+    return RGBW32(led.r, led.g, led.b, 0);
+  }
   if (getOption(SEG_OPTION_REVERSED)  ) x = virtualWidth()  - x - 1;
   if (getOption(SEG_OPTION_REVERSED_Y)) y = virtualHeight() - y - 1;
   if (getOption(SEG_OPTION_TRANSPOSED)) { uint16_t t = x; x = y; y = t; } // swap X & Y if segment transposed
   x *= groupLength(); // expand to physical pixels
   y *= groupLength(); // expand to physical pixels
   if (x >= width() || y >= height()) return 0;
-  if (strip.useLedsArray) {
-    CRGB led = strip.leds[XY(x, y)];
-    return RGBW32(led.r, led.g, led.b, 0);
-  }
-    return strip.getPixelColorXY(start + x, startY + y);
+  return strip.getPixelColorXY(start + x, startY + y);
 #else
   return 0;
 #endif
@@ -480,8 +481,10 @@ void Segment::fill_circle(CRGB* leds, uint16_t cx, uint16_t cy, uint8_t radius, 
     for (int16_t x = -radius; x <= radius; x++) {
       if (x * x + y * y <= radius * radius &&
           int16_t(cx)+x>=0 && int16_t(cy)+y>=0 &&
-          int16_t(cx)+x<cols && int16_t(cy)+y<rows)
-        leds[XY(cx + x, cy + y)] += col;
+          int16_t(cx)+x<cols && int16_t(cy)+y<rows) {
+        if (leds) leds[XY(cx + x, cy + y)] += col;
+        else addPixelColorXY(cx + x, cy + y, col);
+      }
     }
   }
 #endif
@@ -501,14 +504,6 @@ void Segment::nscale8(CRGB* leds, uint8_t scale) {
     if (leds) leds[XY(x,y)].nscale8(scale);
     else setPixelColorXY(x, y, CRGB(getPixelColorXY(x, y)).nscale8(scale));
   }
-#endif
-}
-
-void Segment::setPixels(CRGB* leds) {
-#ifndef WLED_DISABLE_2D
-  const uint16_t cols = virtualWidth();
-  const uint16_t rows = virtualHeight();
-  for (uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) setPixelColorXY(x, y, leds[XY(x,y)]);
 #endif
 }
 
@@ -6723,10 +6718,23 @@ void Segment::wu_pixel(CRGB *leds, uint32_t x, uint32_t y, CRGB c) {      //awes
                    WU_WEIGHT(ix, yy), WU_WEIGHT(xx, yy)};
   // multiply the intensities by the colour, and saturating-add them to the pixels
   for (uint8_t i = 0; i < 4; i++) {
-    uint16_t xy = XY((x >> 8) + (i & 1), (y >> 8) + ((i >> 1) & 1));
-    leds[xy].r = qadd8(leds[xy].r, c.r * wu[i] >> 8);
-    leds[xy].g = qadd8(leds[xy].g, c.g * wu[i] >> 8);
-    leds[xy].b = qadd8(leds[xy].b, c.b * wu[i] >> 8);
+    uint16_t xx = (x >> 8) + (i & 1);
+    uint16_t yy = (y >> 8) + ((i >> 1) & 1);
+    uint16_t xy = XY(xx, yy);
+    CRGB color;
+    if (leds) { 
+      color.r = qadd8(leds[xy].r, c.r * wu[i] >> 8);
+      color.g = qadd8(leds[xy].g, c.g * wu[i] >> 8);
+      color.b = qadd8(leds[xy].b, c.b * wu[i] >> 8);
+      leds[xy] = color;
+    }
+    else {
+      CRGB oColor = getPixelColorXY(xx, yy);
+      color.r = qadd8(oColor.r, c.r * wu[i] >> 8);
+      color.g = qadd8(oColor.g, c.g * wu[i] >> 8);
+      color.b = qadd8(oColor.b, c.b * wu[i] >> 8);
+      setPixelColorXY(xx, yy, color);
+    } 
   }
 #endif
 }

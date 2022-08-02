@@ -573,6 +573,8 @@ typedef struct Segment {
     // 2D support functions
     void blendPixelColorXY(uint16_t x, uint16_t y, uint32_t color, uint8_t blend);
     void addPixelColorXY(uint16_t x, uint16_t y, uint32_t color);
+    void addPixelColorXY(uint16_t x, uint16_t y, byte r, byte g, byte b, byte w = 0) { addPixelColorXY(x, y, RGBW32(r,g,b,w)); } // automatically inline
+    void addPixelColorXY(uint16_t x, uint16_t y, CRGB c)                             { addPixelColorXY(x, y, c.red, c.green, c.blue); } // automatically inline
     void blur1d(CRGB* leds, fract8 blur_amount);
     void blur1d(uint16_t i, bool vertical, fract8 blur_amount, CRGB* leds=nullptr); // 1D box blur (with weight)
     void blur2d(CRGB* leds, fract8 blur_amount);
@@ -585,7 +587,6 @@ typedef struct Segment {
     void fill_circle(CRGB* leds, uint16_t cx, uint16_t cy, uint8_t radius, CRGB c);
     void fadeToBlackBy(CRGB* leds, uint8_t fadeBy);
     void nscale8(CRGB* leds, uint8_t scale);
-    void setPixels(CRGB* leds);
     void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c, CRGB *leds = nullptr);
     void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB color, CRGB *leds = nullptr);
     void wu_pixel(CRGB *leds, uint32_t x, uint32_t y, CRGB c);
@@ -813,8 +814,8 @@ class WS2812FX {  // 96 bytes
       setPixelColorXY(int x, int y, uint32_t c);
 
     // outsmart the compiler :) by correctly overloading
-    inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { setPixelColorXY(x, y, RGBW32(r,g,b,w)); } // automatically inline
-    inline void setPixelColorXY(int x, int y, CRGB c) { setPixelColorXY(x, y, c.red, c.green, c.blue); }
+    // inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { setPixelColorXY(x, y, RGBW32(r,g,b,w)); } // automatically inline
+    // inline void setPixelColorXY(int x, int y, CRGB c) { setPixelColorXY(x, y, c.red, c.green, c.blue); }
 
     uint32_t
       getPixelColorXY(uint16_t, uint16_t);
