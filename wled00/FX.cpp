@@ -6243,7 +6243,7 @@ uint16_t mode_matripix(void) {                  // Matripix. By Andrew Tuline.
   }
   int16_t volumeRaw    = *(int16_t*)um_data->u_data[1];
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(nullptr, CRGB::Black);
+  if (SEGENV.call == 0) SEGMENT.fill_solid(CRGB::Black);
 
   uint8_t secondHand = micros()/(256-SEGMENT.speed)/500 % 16;
   if(SEGENV.aux0 != secondHand) {
@@ -6364,7 +6364,7 @@ uint16_t mode_pixelwave(void) {                 // Pixelwave. By Andrew Tuline.
   // even with 1D effect we have to take logic for 2D segments for allocation as fill_solid() fills whole segment
 
   if (SEGENV.call == 0) {
-    SEGMENT.fill_solid(nullptr, CRGB::Black); // clear buffer
+    SEGMENT.fill_solid(CRGB::Black); // clear buffer
     SEGMENT.fill(BLACK); // clear output
   }
 
@@ -6409,7 +6409,7 @@ uint16_t mode_plasmoid(void) {                  // Plasmoid. By Andrew Tuline.
   }
   float   volumeSmth   = *(float*)  um_data->u_data[0];
 
-  SEGMENT.fadeToBlackBy(nullptr, 64);
+  SEGMENT.fadeToBlackBy(64);
 
   plasmoip->thisphase += beatsin8(6,-4,4);                          // You can change direction and speed individually.
   plasmoip->thatphase += beatsin8(7,-4,4);                          // Two phase values to make a complex pattern. By Andrew Tuline.
@@ -6632,7 +6632,7 @@ uint16_t mode_blurz(void) {                    // Blurz. By Andrew Tuline.
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
 
   if (SEGENV.call == 0) {
-    SEGMENT.fill_solid(nullptr, CRGB::Black);
+    SEGMENT.fill_solid(CRGB::Black);
     SEGMENT.fill(BLACK); // clear canvas
     SEGENV.aux0 = 0;
   }
@@ -6646,8 +6646,8 @@ uint16_t mode_blurz(void) {                    // Blurz. By Andrew Tuline.
     ++(SEGENV.aux0) %= 16; // make sure it doesn't cross 16
 
     SEGENV.step = 1;
-    if (SEGMENT.is2D()) SEGMENT.blur2d(nullptr, SEGMENT.intensity);
-    else                SEGMENT.blur1d(nullptr, SEGMENT.intensity);
+    if (SEGMENT.is2D()) SEGMENT.blur2d(SEGMENT.intensity);
+    else                SEGMENT.blur1d(SEGMENT.intensity);
   }
 
   return FRAMETIME;
@@ -6949,7 +6949,7 @@ uint16_t mode_rocktaves(void) {                 // Rocktaves. Same note from eac
   float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
   float   my_magnitude  = *(float*)   um_data->u_data[5] / 16.0f; 
 
-  SEGMENT.fadeToBlackBy(nullptr, 64);                        // Just in case something doesn't get faded.
+  SEGMENT.fadeToBlackBy(64);                        // Just in case something doesn't get faded.
 
   float frTemp = FFT_MajorPeak;
   uint8_t octCount = 0;                                   // Octave counter.

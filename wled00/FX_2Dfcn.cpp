@@ -462,6 +462,7 @@ void Segment::fill_solid(CRGB color) {
   for(uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
     setPixelColorXY(x, y, color);
   }
+#endif
 }
 
 // by stepko, taken from https://editor.soulmatelights.com/gallery/573-blobs
