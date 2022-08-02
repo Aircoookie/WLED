@@ -238,7 +238,10 @@ button {
 	display: none;
 	width: 90%;
 	border: 0px;
-	margin: 0 auto;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%,-50%);
 }
 
 .tab {
