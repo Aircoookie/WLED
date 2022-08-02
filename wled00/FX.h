@@ -612,7 +612,7 @@ class WS2812FX {  // 96 bytes
   public:
 
       // FastLED array, so we can refer to leds[i] instead of getPixel() and setPixel()
-    CRGB *leds = nullptr ; //See FX_fcn.cpp for init (wip). 
+    uint32_t *leds = nullptr ; //See FX_fcn.cpp for init (wip). 
 
     WS2812FX() :
       gammaCorrectBri(false),

@@ -443,7 +443,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
 #endif
 
   if (strip.useLedsArray)
-    strip.leds[start + i] = col; //ewowi: is this right?
+    strip.leds[start + i] = col;
 
   uint16_t len = length();
   uint8_t _bri_t = currentBri(getOption(SEG_OPTION_ON) ? opacity : 0);
@@ -536,8 +536,7 @@ uint32_t Segment::getPixelColor(uint16_t i)
 #endif
 
   if (strip.useLedsArray) {
-    CRGB led = strip.leds[start + i];
-    return RGBW32(led.r, led.g, led.b, 0);
+    return strip.leds[start + i];
   }
 
   if (getOption(SEG_OPTION_REVERSED)) i = virtualLength() - i - 1;
@@ -859,7 +858,7 @@ void WS2812FX::service() {
         leds = (CRGB*) ps_malloc(sizeof(CRGB) * _length);
       else
       #endif
-        leds = (CRGB*) malloc(sizeof(CRGB) * _length);
+        leds = (uint32_t*) malloc(sizeof(uint32_t) * _length);
     }
   // }
 
