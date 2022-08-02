@@ -3836,7 +3836,7 @@ uint16_t phased_base(uint8_t moder) {                  // We're making sine wave
 
   for (int i = 0; i < SEGLEN; i++) {
     if (moder == 1) modVal = (inoise8(i*10 + i*10) /16);         // Let's randomize our mod length with some Perlin noise.
-    uint16_t val = (i+1) * allfreq;                              // This sets the frequency of the waves. The +1 makes sure that leds[0] is used.
+    uint16_t val = (i+1) * allfreq;                              // This sets the frequency of the waves. The +1 makes sure that led 0 is used.
     if (modVal == 0) modVal = 1;
     val += *phase * (i % modVal +1) /2;                          // This sets the varying phase change of the waves. By Andrew Tuline.
     uint8_t b = cubicwave8(val);                                 // Now we make an 8 bit sinewave.
@@ -4888,7 +4888,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
     // else do nothing!
   } //x,y
 
-  // calculate CRC16 of leds[]
+  // calculate CRC16 of leds
   uint16_t crc = crc16((const unsigned char*)prevLeds, dataSize-1); //ewowi: prevLeds instead of leds work as well, tbd: compare more patterns, see SR!
 
   // check if we had same CRC and reset if needed
@@ -6243,9 +6243,6 @@ static const char *_data_FX_MODE_JUGGLES PROGMEM = "Juggles ♪@!,# of balls;,!;
 //////////////////////
 uint16_t mode_matripix(void) {                  // Matripix. By Andrew Tuline.
   // even with 1D effect we have to take logic for 2D segments for allocation as fill_solid() fills whole segment
-  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.length();  // using width*height prevents reallocation if mirroring is enabled
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
@@ -6254,7 +6251,7 @@ uint16_t mode_matripix(void) {                  // Matripix. By Andrew Tuline.
   }
   int16_t volumeRaw    = *(int16_t*)um_data->u_data[1];
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(leds, CRGB::Black);
+  if (SEGENV.call == 0) SEGMENT.fill_solid(nullptr, CRGB::Black);
 
   uint8_t secondHand = micros()/(256-SEGMENT.speed)/500 % 16;
   if(SEGENV.aux0 != secondHand) {
@@ -6264,7 +6261,6 @@ uint16_t mode_matripix(void) {                  // Matripix. By Andrew Tuline.
     for (uint16_t i=0; i<SEGLEN-1; i++) SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i+1)); // shift left
     SEGMENT.setPixelColor(SEGLEN-1, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), pixBri));
   }
-  for (int i=0; i<SEGLEN; i++) SEGMENT.setPixelColor(i, leds[i]);
 
   return FRAMETIME;
 } // mode_matripix()
@@ -6330,7 +6326,7 @@ uint16_t mode_noisefire(void) {                 // Noisefire. By Andrew Tuline.
     index = (255 - i*256/SEGLEN) * index/(256-SEGMENT.intensity);                       // Now we need to scale index so that it gets blacker as we get close to one of the ends.
                                                                                         // This is a simple y=mx+b equation that's been scaled. index/128 is another scaling.
 
-    CRGB color = ColorFromPalette(SEGPALETTE, index, volumeSmth*2, LINEARBLEND);     // Use the my own palette.
+    CRGB color = ColorFromPalette(myPal, index, volumeSmth*2, LINEARBLEND);     // Use the my own palette. ewowi: re-enabled using myPal as in SR!
     SEGMENT.setPixelColor(i, color);
   }
 
@@ -6377,12 +6373,9 @@ static const char *_data_FX_MODE_NOISEMETER PROGMEM = "Noisemeter ♪@Fade rate,
 //////////////////////
 uint16_t mode_pixelwave(void) {                 // Pixelwave. By Andrew Tuline.
   // even with 1D effect we have to take logic for 2D segments for allocation as fill_solid() fills whole segment
-  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.length();  // using width*height prevents reallocation if mirroring is enabled
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
 
   if (SEGENV.call == 0) {
-    SEGMENT.fill_solid(leds, CRGB::Black); // clear buffer
+    SEGMENT.fill_solid(nullptr, CRGB::Black); // clear buffer
     SEGMENT.fill(BLACK); // clear output
   }
 
@@ -6399,11 +6392,10 @@ uint16_t mode_pixelwave(void) {                 // Pixelwave. By Andrew Tuline.
 
     int pixBri = volumeRaw * SEGMENT.intensity / 64;
 
-    leds[SEGLEN/2] = color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), pixBri);
-    for (int i=SEGLEN-1; i>SEGLEN/2; i--) leds[i] = leds[i-1]; // Move to the right.
-    for (int i=0; i<SEGLEN/2; i++)        leds[i] = leds[i+1]; // Move to the left.
+    SEGMENT.setPixelColor(SEGLEN/2, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), pixBri));
+    for (int i = SEGLEN - 1; i > SEGLEN/2; i--)   SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i-1)); //move to the left
+    for (int i = 0; i < SEGLEN/2; i++)            SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i+1)); // move to the right
   }
-  for (int x = 0; x < SEGLEN; x++) SEGMENT.setPixelColor(x, leds[x]);
 
   return FRAMETIME;
 } // mode_pixelwave()
@@ -6420,10 +6412,8 @@ typedef struct Plasphase {
 
 uint16_t mode_plasmoid(void) {                  // Plasmoid. By Andrew Tuline.
   // even with 1D effect we have to take logic for 2D segments for allocation as fill_solid() fills whole segment
-  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.length();  // using width*height prevents reallocation if mirroring is enabled
-  if (!SEGENV.allocateData(dataSize + sizeof(plasphase))) return mode_static(); //allocation failed
-  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
-  Plasphase* plasmoip = reinterpret_cast<Plasphase*>(SEGENV.data + dataSize);
+  if (!SEGENV.allocateData(sizeof(plasphase))) return mode_static(); //allocation failed
+  Plasphase* plasmoip = reinterpret_cast<Plasphase*>(SEGENV.data);
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
@@ -6432,7 +6422,7 @@ uint16_t mode_plasmoid(void) {                  // Plasmoid. By Andrew Tuline.
   }
   float   volumeSmth   = *(float*)  um_data->u_data[0];
 
-  SEGMENT.fadeToBlackBy(leds, 64);
+  SEGMENT.fadeToBlackBy(nullptr, 64);
 
   plasmoip->thisphase += beatsin8(6,-4,4);                          // You can change direction and speed individually.
   plasmoip->thatphase += beatsin8(7,-4,4);                          // Two phase values to make a complex pattern. By Andrew Tuline.
@@ -6445,9 +6435,8 @@ uint16_t mode_plasmoid(void) {                  // Plasmoid. By Andrew Tuline.
     uint8_t colorIndex=thisbright;
     if (volumeSmth * SEGMENT.intensity / 64 < thisbright) {thisbright = 0;}
 
-    leds[i] += color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(colorIndex, false, PALETTE_SOLID_WRAP, 0), thisbright);
+    SEGMENT.addPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(colorIndex, false, PALETTE_SOLID_WRAP, 0), thisbright));
   }
-  for (int x = 0; x < SEGLEN; x++) SEGMENT.setPixelColor(x, leds[x]);
 
   return FRAMETIME;
 } // mode_plasmoid()
@@ -6650,9 +6639,6 @@ static const char *_data_FX_MODE_BINMAP PROGMEM = " ♫ Binmap@,,Input level=128
 //////////////////////
 uint16_t mode_blurz(void) {                    // Blurz. By Andrew Tuline.
   // even with 1D effect we have to take logic for 2D segments for allocation as fill_solid() fills whole segment
-  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.length();  // using width*height prevents reallocation if mirroring is enabled
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
@@ -6663,23 +6649,22 @@ uint16_t mode_blurz(void) {                    // Blurz. By Andrew Tuline.
   if (!fftResult) return mode_static();
 
   if (SEGENV.call == 0) {
-    SEGMENT.fill_solid(leds, CRGB::Black);
+    SEGMENT.fill_solid(nullptr, CRGB::Black);
     SEGMENT.fill(BLACK); // clear canvas
     SEGENV.aux0 = 0;
   }
 
-  SEGMENT.fade_out(SEGMENT.speed); // do not fade leds[] but only canvas
+  SEGMENT.fade_out(SEGMENT.speed);
 
   SEGENV.step += FRAMETIME;
   if (SEGENV.step > SPEED_FORMULA_L) {
     uint16_t segLoc = random16(SEGLEN);
-    leds[segLoc] = color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(2*fftResult[SEGENV.aux0%16]*240/(SEGLEN-1), false, PALETTE_SOLID_WRAP, 0), 2*fftResult[SEGENV.aux0%16]);
+    SEGMENT.setPixelColor(segLoc, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(2*fftResult[SEGENV.aux0%16]*240/(SEGLEN-1), false, PALETTE_SOLID_WRAP, 0), 2*fftResult[SEGENV.aux0%16]));
     ++(SEGENV.aux0) %= 16; // make sure it doesn't cross 16
 
     SEGENV.step = 1;
-    if (SEGMENT.is2D()) SEGMENT.blur2d(leds, SEGMENT.intensity);
-    else                SEGMENT.blur1d(leds, SEGMENT.intensity);
-    for (int i=0; i<SEGLEN; i++) SEGMENT.setPixelColor(i, leds[i]);
+    if (SEGMENT.is2D()) SEGMENT.blur2d(nullptr, SEGMENT.intensity);
+    else                SEGMENT.blur1d(nullptr, SEGMENT.intensity);
   }
 
   return FRAMETIME;
@@ -6712,7 +6697,6 @@ uint16_t mode_DJLight(void) {                   // Written by ??? Adapted by Wil
     for (int i = SEGLEN - 1; i > mid; i--)   SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i-1)); //move to the left
     for (int i = 0; i < mid; i++)            SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i+1)); // move to the right
   }
-  for (int i=0; i<SEGLEN; i++) SEGMENT.setPixelColor(i, leds[i]);
 
   return FRAMETIME;
 } // mode_DJLight()
@@ -6754,9 +6738,6 @@ static const char *_data_FX_MODE_FREQMAP PROGMEM = "Freqmap ♫@Fade rate,Starti
 ///////////////////////
 uint16_t mode_freqmatrix(void) {                // Freqmatrix. By Andreas Pleschung.
   // even with 1D effect we have to take logic for 2D segments for allocation as fill_solid() fills whole segment
-  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.length();  // using width*height prevents reallocation if mirroring is enabled
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
@@ -6795,14 +6776,13 @@ uint16_t mode_freqmatrix(void) {                // Freqmatrix. By Andreas Plesch
     }
 
     // shift the pixels one pixel up
-    leds[0] = color;
-    for (int i = SEGLEN-1; i > 0; i--) leds[i] = leds[i-1];
+    SEGMENT.setPixelColor(0, color);
+    for (int i = SEGLEN - 1; i > 0; i--)   SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i-1)); //move to the left
   }
-  for (int x = 0; x < SEGLEN; x++) SEGMENT.setPixelColor(x, leds[x]);
 
   return FRAMETIME;
 } // mode_freqmatrix()
-static const char *_data_FX_MODE_FREQMATRIX PROGMEM = "Freqmatrix ♫@Time delay,Sound effect,Low bin,High bin,Sensivity;;;mp12=0,ssim=0"; // Pixels, Beatsin
+static const char *_data_FX_MODE_FREQMATRIX PROGMEM = "Freqmatrix ♫@Time delay,Sound effect,Low bin,High bin,Sensivity;;;mp12=2,ssim=0"; // Circle, Beatsin
 
 
 //////////////////////
@@ -6852,9 +6832,6 @@ static const char *_data_FX_MODE_FREQPIXELS PROGMEM = "Freqpixels ♫@Fade rate,
 // Depending on the music stream you have you might find it useful to change the frequency mapping.
 uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschung.
   // even with 1D effect we have to take logic for 2D segments for allocation as fill_solid() fills whole segment
-  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.length();  // using width*height prevents reallocation if mirroring is enabled
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
@@ -6897,13 +6874,12 @@ uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschun
       color = CHSV(i, 240, (uint8_t)b); // implicit conversion to RGB supplied by FastLED
     }
 
-    leds[SEGLEN/2] = color;
+    SEGMENT.setPixelColor(SEGLEN/2, color);
 
     // shift the pixels one pixel outwards
-    for (int i=SEGLEN-1; i>SEGLEN/2; i--) leds[i] = leds[i-1]; // Move to the right.
-    for (int i=0; i<SEGLEN/2; i++)        leds[i] = leds[i+1]; // Move to the left.
+    for (int i = SEGLEN - 1; i > SEGLEN/2; i--)   SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i-1)); //move to the left
+    for (int i = 0; i < SEGLEN/2; i++)            SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i+1)); // move to the right
   }
-  for (int x = 0; x < SEGLEN; x++) SEGMENT.setPixelColor(x, leds[x]);
 
   return FRAMETIME;
 } // mode_freqwave()
@@ -6991,9 +6967,6 @@ static const char *_data_FX_MODE_NOISEMOVE PROGMEM = "Noisemove ♫@Speed of per
 //////////////////////
 uint16_t mode_rocktaves(void) {                 // Rocktaves. Same note from each octave is same colour.    By: Andrew Tuline
   // even with 1D effect we have to take logic for 2D segments for allocation as fill_solid() fills whole segment
-  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.length();  // using width*height prevents reallocation if mirroring is enabled
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
@@ -7003,7 +6976,7 @@ uint16_t mode_rocktaves(void) {                 // Rocktaves. Same note from eac
   float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
   float   my_magnitude  = *(float*)   um_data->u_data[5] / 16.0f; 
 
-  SEGMENT.fadeToBlackBy(leds, 64);                        // Just in case something doesn't get faded.
+  SEGMENT.fadeToBlackBy(nullptr, 64);                        // Just in case something doesn't get faded.
 
   float frTemp = FFT_MajorPeak;
   uint8_t octCount = 0;                                   // Octave counter.
@@ -7019,10 +6992,9 @@ uint16_t mode_rocktaves(void) {                 // Rocktaves. Same note from eac
   frTemp -=132;                                           // This should give us a base musical note of C3
   frTemp = fabs(frTemp * 2.1);                            // Fudge factors to compress octave range starting at 0 and going to 255;
 
-//  leds[beatsin8(8+octCount*4,0,SEGLEN-1,0,octCount*8)] += CHSV((uint8_t)frTemp,255,volTemp);                 // Back and forth with different frequencies and phase shift depending on current octave.
+//  SEGMENT.addPixelColor(beatsin8(8+octCount*4,0,SEGLEN-1,0,octCount*8), CHSV((uint8_t)frTemp,255,volTemp));                 // Back and forth with different frequencies and phase shift depending on current octave.
   uint16_t i = map(beatsin8(8+octCount*4, 0, 255, 0, octCount*8), 0, 255, 0, SEGLEN-1);
-  leds[i] += color_blend(SEGCOLOR(1), SEGMENT.color_from_palette((uint8_t)frTemp, false, PALETTE_SOLID_WRAP, 0), volTemp);
-  for (int x = 0; x < SEGLEN; x++) SEGMENT.setPixelColor(x, leds[x]);
+  SEGMENT.addPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette((uint8_t)frTemp, false, PALETTE_SOLID_WRAP, 0), volTemp));
 
   return FRAMETIME;
 } // mode_rocktaves()
