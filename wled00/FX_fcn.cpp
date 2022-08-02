@@ -190,6 +190,7 @@ void Segment::deallocateData() {
 void Segment::resetIfRequired() {
   if (reset) { // (getOption(SEG_OPTION_RESET))
     if (leds) { free(leds); leds = nullptr; DEBUG_PRINTLN(F("Freeing leds.")); }
+    if (_t) _t->_dur = 0;
     next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0; 
     reset = false; // setOption(SEG_OPTION_RESET, false);
   }
@@ -621,13 +622,18 @@ void Segment::fill(uint32_t c) {
 }
 
 // Blends the specified color with the existing pixel color.
-void Segment::blendPixelColor(uint16_t n, uint32_t color, uint8_t blend) {
+void Segment::blendPixelColor(int n, uint32_t color, uint8_t blend) {
   setPixelColor(n, color_blend(getPixelColor(n), color, blend));
 }
 
 // Adds the specified color with the existing pixel color perserving color balance.
-void Segment::addPixelColor(uint16_t n, uint32_t color) {
+void Segment::addPixelColor(int n, uint32_t color) {
   setPixelColor(n, color_add(getPixelColor(n), color));
+}
+
+void Segment::fadePixelColor(uint16_t n, uint8_t fade) {
+  CRGB pix = CRGB(getPixelColor(n)).nscale8_video(fade);
+  setPixelColor(n, pix);
 }
 
 /*

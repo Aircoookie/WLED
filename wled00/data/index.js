@@ -1151,9 +1151,9 @@ function updateSelectedFx()
 
 		var selectedName = selectedEffect.querySelector(".lstIname").innerText;
 		var segs = gId("segcont").querySelectorAll(`div[data-map="map2D"]`);
-		for (const seg of segs) if (selectedName.indexOf("2D ")<0) seg.classList.remove("hide"); else seg.classList.add("hide");
+		for (const seg of segs) if (selectedName.indexOf("\u25A6")<0) seg.classList.remove("hide"); else seg.classList.add("hide");
 		var segs = gId("segcont").querySelectorAll(`div[data-snd="ssim"]`);
-		for (const seg of segs) if (selectedName.indexOf(" ♪")<0 && selectedName.indexOf(" ♫")<0) seg.classList.add("hide"); else seg.classList.remove("hide"); // also "♫ "?
+		for (const seg of segs) if (selectedName.indexOf("\u266A")<0 && selectedName.indexOf("\266B")<0) seg.classList.add("hide"); else seg.classList.remove("hide"); // also "♫ "?
 	}
 }
 

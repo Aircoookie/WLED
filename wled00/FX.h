@@ -104,6 +104,8 @@
 #define ORANGE     (uint32_t)0xFF3000
 #define PINK       (uint32_t)0xFF1493
 #define ULTRAWHITE (uint32_t)0xFFFFFFFF
+#define DARKSLATEGRAY (uint32_t)0x2F4F4F
+#define DARKSLATEGREY (uint32_t)0x2F4F4F
 
 // options
 // bit    7: segment is in transition mode
@@ -551,15 +553,19 @@ typedef struct Segment {
     void setPixelColor(int n, CRGB c)                             { setPixelColor(n, c.red, c.green, c.blue); } // automatically inline
     void setPixelColor(float i, uint32_t c, bool aa = true);
     void setPixelColor(float i, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0, bool aa = true) { setPixelColor(i, RGBW32(r,g,b,w), aa); }
-    void setPixelColor(float i, CRGB c, bool aa = true) { setPixelColor(i, c.red, c.green, c.blue, 0, aa); }
+    void setPixelColor(float i, CRGB c, bool aa = true)                                         { setPixelColor(i, c.red, c.green, c.blue, 0, aa); }
     uint32_t getPixelColor(uint16_t i);
     // 1D support functions (some implement 2D as well)
     void blur(uint8_t);
     void fill(uint32_t c);
     void fade_out(uint8_t r);
     void fadeToBlackBy(uint8_t fadeBy);
-    void blendPixelColor(uint16_t n, uint32_t color, uint8_t blend);
-    void addPixelColor(uint16_t n, uint32_t color);
+    void blendPixelColor(int n, uint32_t color, uint8_t blend);
+    void blendPixelColor(int n, CRGB c, uint8_t blend)            { blendPixelColor(n, RGBW32(c.red, c.green, c.blue, 0), blend); }
+    void addPixelColor(int n, uint32_t color);
+    void addPixelColor(int n, byte r, byte g, byte b, byte w = 0) { addPixelColor(n, RGBW32(r,g,b,w)); } // automatically inline
+    void addPixelColor(int n, CRGB c)                             { addPixelColor(n, RGBW32(c.red, c.green, c.blue, 0)); } // automatically inline
+    void fadePixelColor(uint16_t n, uint8_t fade);
     uint8_t get_random_wheel_index(uint8_t pos);
     uint32_t color_from_palette(uint16_t, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri = 255);
     uint32_t color_wheel(uint8_t pos);
@@ -570,30 +576,34 @@ typedef struct Segment {
     uint16_t XY(uint16_t x, uint16_t y); // support function to get relative index within segment (for leds[])
     void setPixelColorXY(int x, int y, uint32_t c); // set relative pixel within segment with color
     void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { setPixelColorXY(x, y, RGBW32(r,g,b,w)); } // automatically inline
-    void setPixelColorXY(int x, int y, CRGB c)                             { setPixelColorXY(x, y, c.red, c.green, c.blue); } // automatically inline
+    void setPixelColorXY(int x, int y, CRGB c)                             { setPixelColorXY(x, y, RGBW32(c.red, c.green, c.blue, 0)); } // automatically inline
     void setPixelColorXY(float x, float y, uint32_t c, bool aa = true);
     void setPixelColorXY(float x, float y, byte r, byte g, byte b, byte w = 0, bool aa = true) { setPixelColorXY(x, y, RGBW32(r,g,b,w), aa); }
     void setPixelColorXY(float x, float y, CRGB c, bool aa = true) { setPixelColorXY(x, y, c.red, c.green, c.blue, 0, aa); }
     uint32_t getPixelColorXY(uint16_t x, uint16_t y);
     // 2D support functions
     void blendPixelColorXY(uint16_t x, uint16_t y, uint32_t color, uint8_t blend);
-    void addPixelColorXY(uint16_t x, uint16_t y, uint32_t color);
+    void blendPixelColorXY(uint16_t x, uint16_t y, CRGB c, uint8_t blend)  { blendPixelColorXY(x, y, RGBW32(c.red, c.green, c.blue,0), blend); }
+    void addPixelColorXY(int x, int y, uint32_t color);
+    void addPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { addPixelColorXY(x, y, RGBW32(r,g,b,w)); } // automatically inline
+    void addPixelColorXY(int x, int y, CRGB c)                             { addPixelColorXY(x, y, RGBW32(c.red, c.green, c.blue,0)); }
+    void fadePixelColorXY(uint16_t x, uint16_t y, uint8_t fade);
+    void box_blur(uint16_t i, bool vertical, fract8 blur_amount); // 1D box blur (with weight)
     void blur1d(CRGB* leds, fract8 blur_amount);
-    void blur1d(uint16_t i, bool vertical, fract8 blur_amount, CRGB* leds=nullptr); // 1D box blur (with weight)
     void blur2d(CRGB* leds, fract8 blur_amount);
     void blurRow(uint16_t row, fract8 blur_amount, CRGB* leds=nullptr);
     void blurCol(uint16_t col, fract8 blur_amount, CRGB* leds=nullptr);
-    void moveX(CRGB *leds, int8_t delta);
-    void moveY(CRGB *leds, int8_t delta);
-    void move(uint8_t dir, uint8_t delta, CRGB *leds=nullptr);
+    void moveX(int8_t delta);
+    void moveY(int8_t delta);
+    void move(uint8_t dir, uint8_t delta);
     void fill_solid(CRGB* leds, CRGB c);
-    void fill_circle(CRGB* leds, uint16_t cx, uint16_t cy, uint8_t radius, CRGB c);
+    void fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB c);
     void fadeToBlackBy(CRGB* leds, uint8_t fadeBy);
     void nscale8(CRGB* leds, uint8_t scale);
     void setPixels(CRGB* leds);
-    void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c, CRGB *leds = nullptr);
+    void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c);
     void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB color, CRGB *leds = nullptr);
-    void wu_pixel(CRGB *leds, uint32_t x, uint32_t y, CRGB c);
+    void wu_pixel(uint32_t x, uint32_t y, CRGB c);
     inline void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint32_t c) { drawLine(x0, y0, x1, y1, CRGB(byte(c>>16), byte(c>>8), byte(c))); }
     inline void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t c) { drawCharacter(chr, x, y, w, h, CRGB(byte(c>>16), byte(c>>8), byte(c))); }
 } segment;
