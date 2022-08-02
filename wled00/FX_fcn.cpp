@@ -442,6 +442,9 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
   }
 #endif
 
+  if (strip.useLedsArray)
+    strip.leds[start + i] = col; //ewowi: is this right?
+
   uint16_t len = length();
   uint8_t _bri_t = currentBri(getOption(SEG_OPTION_ON) ? opacity : 0);
   if (_bri_t < 255) {
@@ -475,8 +478,6 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
       }
       indexSet += offset; // offset/phase
       if (indexSet >= stop) indexSet -= len; // wrap
-      if (strip.useLedsArray)
-        strip.leds[XY(indexSet%virtualWidth(), indexSet/virtualWidth())] = col;
       strip.setPixelColor(indexSet, col);
     }
   }
@@ -534,18 +535,18 @@ uint32_t Segment::getPixelColor(uint16_t i)
   }
 #endif
 
+  if (strip.useLedsArray) {
+    CRGB led = strip.leds[start + i];
+    return RGBW32(led.r, led.g, led.b, 0);
+  }
+
   if (getOption(SEG_OPTION_REVERSED)) i = virtualLength() - i - 1;
   i *= groupLength();
   i += start;
   /* offset/phase */
   i += offset;
   if (i >= stop) i -= length();
-  if (strip.useLedsArray) {
-    CRGB led = strip.leds[XY(i%virtualWidth(), i/virtualWidth())];
-    return RGBW32(led.r, led.g, led.b, 0);
-  }
-  else
-    return strip.getPixelColor(i);
+  return strip.getPixelColor(i);
 }
 
 uint8_t Segment::differs(Segment& b) {
