@@ -203,17 +203,17 @@ void Segment::startTransition(uint16_t dur) {
   uint8_t _briT = currentBri(getOption(SEG_OPTION_ON) ? opacity : 0); // comment out uint8_t if not using Transition struct
   uint8_t _cctT = currentBri(cct, true); // comment out uint8_t if not using Transition struct
   CRGBPalette16 _palT; loadPalette(_palT, palette);
-  ///*uint8_t*/ _modeP = mode; // comment out uint8_t if not using Transition struct
+  uint8_t _modeP = mode; // comment out uint8_t if not using Transition struct
   uint32_t _colorT[NUM_COLORS]; // comment out if not using Transition struct
   for (size_t i=0; i<NUM_COLORS; i++) _colorT[i] = currentColor(i, colors[i]);
 
   // using transition struct
   if (!_t) _t = new Transition(dur); // no previous transition running
-  if (!_t) return; // failed to allocat data
+  if (!_t) return; // failed to allocate data
   _t->_briT = _briT;
   _t->_cctT = _cctT;
   _t->_palT  = _palT;
-  //_t->_modeT = _modeP;
+  _t->_modeP = _modeP;
   for (size_t i=0; i<NUM_COLORS; i++) _t->_colorT[i] = _colorT[i];
   // comment out if using transition struct as it is done in constructor
   //_dur = dur;
@@ -237,6 +237,14 @@ uint8_t Segment::currentBri(uint8_t briNew, bool useCct) {
     else        return ((briNew * prog) + _t->_briT * (0x10000 - prog)) >> 16;
   } else {
     return briNew;
+  }
+}
+
+uint8_t Segment::currentMode(uint8_t newMode) {
+  if (transitional && _t) {
+    return _t->_modeP;
+  } else {
+    return newMode;
   }
 }
 
@@ -340,6 +348,7 @@ void Segment::handleTransition() {
   if (mode == FX_MODE_STATIC && next_time > maxWait) next_time = maxWait;
   if (progress() == 0xFFFFU) {
     if (_t) {
+      if (_t->_modeP != mode) markForReset();
       delete _t;
       _t = nullptr;
     }
@@ -884,14 +893,14 @@ void WS2812FX::service() {
         if (!cctFromRgb || correctWB) busses.setSegmentCCT(seg.currentBri(seg.cct, true), correctWB);
         for (uint8_t c = 0; c < NUM_COLORS; c++) _colors_t[c] = gamma32(_colors_t[c]);
 
-        seg.handleTransition();
-
         // effect blending (execute previous effect)
         // actual code may be a bit more involved as effects have runtime data including allocated memory
         //if (getOption(SEG_OPTION_TRANSITIONAL) && seg._modeP) (*_mode[seg._modeP])(progress());
-        delay = (*_mode[seg.mode])();
+        delay = (*_mode[seg.currentMode(seg.mode)])();
         if (seg.mode != FX_MODE_HALLOWEEN_EYES) seg.call++;
         if (seg.transitional && delay > FRAMETIME) delay = FRAMETIME; // foce faster updates during transition
+
+        seg.handleTransition();
       }
 
       seg.next_time = nowUp + delay;
@@ -1457,7 +1466,7 @@ void WS2812FX::printSize()
 {
   size_t size = 0;
   for (Segment seg : _segments) size += seg.getSize();
-  DEBUG_PRINTF("Segments: %d -> %uB\n", sizeof(Segment), _segments.size(), size);
+  DEBUG_PRINTF("Segments: %d -> %uB\n", _segments.size(), size);
   DEBUG_PRINTF("Modes: %d*%d=%uB\n", sizeof(mode_ptr), _mode.size(), (_mode.capacity()*sizeof(mode_ptr)));
   DEBUG_PRINTF("Data: %d*%d=%uB\n", sizeof(const char *), _modeData.size(), (_modeData.capacity()*sizeof(const char *)));
   DEBUG_PRINTF("Map: %d*%d=%uB\n", sizeof(uint16_t), (int)customMappingSize, customMappingSize*sizeof(uint16_t));

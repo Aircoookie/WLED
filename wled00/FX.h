@@ -454,11 +454,11 @@ typedef struct Segment {
       uint8_t       _briT;  // temporary brightness
       uint8_t       _cctT;  // temporary CCT
       CRGBPalette16 _palT;  // temporary palette
-      //uint8_t       _modeP; // previous mode/effect (transitioning effects is way more complex than this)
+      uint8_t       _modeP; // previous mode/effect
       uint32_t      _start;
       uint16_t      _dur;
-      Transition(uint16_t dur=750) : _briT(255), _cctT(127), _palT(CRGBPalette16(CRGB::Black)), /*_modeP(FX_MODE_STATIC),*/ _start(millis()), _dur(dur) {}
-      Transition(uint16_t d, uint8_t b, uint8_t c, const uint32_t *o) : _briT(b), _cctT(c), _palT(CRGBPalette16(CRGB::Black)), /*_modeP(FX_MODE_STATIC),*/ _start(millis()), _dur(d) {
+      Transition(uint16_t dur=750) : _briT(255), _cctT(127), _palT(CRGBPalette16(CRGB::Black)), _modeP(FX_MODE_STATIC), _start(millis()), _dur(dur) {}
+      Transition(uint16_t d, uint8_t b, uint8_t c, const uint32_t *o) : _briT(b), _cctT(c), _palT(CRGBPalette16(CRGB::Black)), _modeP(FX_MODE_STATIC), _start(millis()), _dur(d) {
         for (size_t i=0; i<NUM_COLORS; i++) _colorT[i] = o[i];
       }
     } *_t; // this struct will bootloop ESP
@@ -567,6 +567,7 @@ typedef struct Segment {
     void     handleTransition(void);
     uint16_t progress(void); //transition progression between 0-65535
     uint8_t  currentBri(uint8_t briNew, bool useCct = false);
+    uint8_t  currentMode(uint8_t modeNew);
     uint32_t currentColor(uint8_t slot, uint32_t colorNew);
     CRGBPalette16 &loadPalette(CRGBPalette16 &tgt, uint8_t pal);
     CRGBPalette16 &currentPalette(CRGBPalette16 &tgt, uint8_t paletteID);

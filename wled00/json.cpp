@@ -175,8 +175,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   if (getVal(elem["fx"], &fx, 0, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 0-255 exact value)
     if (!presetId && currentPlaylist>=0) unloadPlaylist();
     if (fx != seg.mode) {
-      //seg.startTransition(strip.getTransition()); // set effect transitions
-      seg.markForReset();
+      seg.startTransition(strip.getTransition()); // set effect transitions
+      //seg.markForReset();
       seg.mode = fx;
       // load default values from effect string if effect is selected without
       // any other effect parameter (i.e. effect clicked in UI)
