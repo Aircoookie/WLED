@@ -313,11 +313,13 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxL
                   case  4: tmpstr = PSTR("FX Custom 3");  break;
                   default: tmpstr = PSTR("FX Custom");    break;
                 }
+                strncpy_P(dest, tmpstr, maxLen); // copy the name into buffer (replacing previous)
+                dest[maxLen-1] = '\0';
               } else {
                 if (nameEnd<0) tmpstr = names.substring(nameBegin).c_str(); // did not find ",", last name?
                 else           tmpstr = names.substring(nameBegin, nameEnd).c_str();
+                strlcpy(dest, tmpstr, maxLen); // copy the name into buffer (replacing previous)
               }
-              strlcpy(dest, tmpstr, maxLen); // copy the name into buffer (replacing previous)
             }
             nameBegin = nameEnd+1; // next name (if "," is not found it will be 0)
           } // next slider
