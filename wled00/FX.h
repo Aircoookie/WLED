@@ -245,58 +245,78 @@
 #define FX_MODE_BLENDS                 115
 #define FX_MODE_TV_SIMULATOR           116
 #define FX_MODE_DYNAMIC_SMOOTH         117
-// new 2D effects
-#define FX_MODE_2DSPACESHIPS           118
-#define FX_MODE_2DCRAZYBEES            119
-#define FX_MODE_2DGHOSTRIDER           120
-#define FX_MODE_2DBLOBS                121
-#define FX_MODE_2DSCROLLTEXT           122
-#define FX_MODE_2DDRIFTROSE            123
-// WLED-SR effects (non SR compatible IDs)
-#define FX_MODE_2DBLACKHOLE            124 // non audio
-#define FX_MODE_2DDNASPIRAL            125 // non audio
-#define FX_MODE_2DHIPHOTIC             126 // non audio
-#define FX_MODE_2DPLASMABALL           127 // non audio
-#define FX_MODE_2DSINDOTS              128 // non audio
-#define FX_MODE_2DFRIZZLES             129 // non audio
-#define FX_MODE_2DLISSAJOUS            130 // non audio
-#define FX_MODE_2DPOLARLIGHTS          131 // non audio
-#define FX_MODE_2DTARTAN               132 // non audio
-#define FX_MODE_2DGAMEOFLIFE           133 // non audio
-#define FX_MODE_2DJULIA                134 // non audio
-#define FX_MODE_2DCOLOREDBURSTS        135 // non audio
-#define FX_MODE_2DSUNRADIATION         136 // non audio
-#define FX_MODE_2DNOISE                137 // non audio
-#define FX_MODE_2DFIRENOISE            138 // non audio
-#define FX_MODE_2DSQUAREDSWIRL         139 // non audio
-#define FX_MODE_2DDNA                  140 // non audio
-#define FX_MODE_2DMATRIX               141 // non audio
-#define FX_MODE_2DMETABALLS            142 // non audio
-#define FX_MODE_2DPULSER               143 // non audio
-#define FX_MODE_2DDRIFT                144 // non audio
-#define FX_MODE_2DWAVERLY              145 // audio enhanced
-#define FX_MODE_2DSWIRL                146 // audio enhanced
-#define FX_MODE_2DAKEMI                147 // audio enhanced
-#define FX_MODE_PIXELWAVE              160 // audio enhanced
-#define FX_MODE_JUGGLES                161 // audio enhanced
-#define FX_MODE_MATRIPIX               162 // audio enhanced
-#define FX_MODE_GRAVIMETER             163 // audio enhanced
-#define FX_MODE_PLASMOID               164 // audio enhanced
-#define FX_MODE_PUDDLES                165 // audio enhanced
-#define FX_MODE_MIDNOISE               166 // audio enhanced
-#define FX_MODE_NOISEMETER             167 // audio enhanced
-#define FX_MODE_NOISEFIRE              168 // audio enhanced
-#define FX_MODE_PUDDLEPEAK             169 // audio enhanced
-#define FX_MODE_RIPPLEPEAK             170 // audio enhanced
-#define FX_MODE_GRAVCENTER             171 // audio enhanced
-#define FX_MODE_GRAVCENTRIC            172 // audio enhanced
+#ifndef WLED_DISABLE_2D
+  // new 2D effects
+  #define FX_MODE_2DSPACESHIPS           118
+  #define FX_MODE_2DCRAZYBEES            119
+  #define FX_MODE_2DGHOSTRIDER           120
+  #define FX_MODE_2DBLOBS                121
+  #define FX_MODE_2DSCROLLTEXT           122
+  #define FX_MODE_2DDRIFTROSE            123
+  // WLED-SR effects (non SR compatible IDs)
+  #define FX_MODE_2DBLACKHOLE            124 // non audio
+  #define FX_MODE_2DDNASPIRAL            125 // non audio
+  #define FX_MODE_2DHIPHOTIC             126 // non audio
+  #define FX_MODE_2DPLASMABALL           127 // non audio
+  #define FX_MODE_2DSINDOTS              128 // non audio
+  #define FX_MODE_2DFRIZZLES             129 // non audio
+  #define FX_MODE_2DLISSAJOUS            130 // non audio
+  #define FX_MODE_2DPOLARLIGHTS          131 // non audio
+  #define FX_MODE_2DTARTAN               132 // non audio
+  #define FX_MODE_2DGAMEOFLIFE           133 // non audio
+  #define FX_MODE_2DJULIA                134 // non audio
+  #define FX_MODE_2DCOLOREDBURSTS        135 // non audio
+  #define FX_MODE_2DSUNRADIATION         136 // non audio
+  #define FX_MODE_2DNOISE                137 // non audio
+  #define FX_MODE_2DFIRENOISE            138 // non audio
+  #define FX_MODE_2DSQUAREDSWIRL         139 // non audio
+  #define FX_MODE_2DDNA                  140 // non audio
+  #define FX_MODE_2DMATRIX               141 // non audio
+  #define FX_MODE_2DMETABALLS            142 // non audio
+  #define FX_MODE_2DPULSER               143 // non audio
+  #define FX_MODE_2DDRIFT                144 // non audio
+#endif
+#ifndef WLED_NO_AUDIO
+  #ifndef WLED_DISABLE_2D
+    #define FX_MODE_2DWAVERLY              145 // audio enhanced
+    #define FX_MODE_2DSWIRL                146 // audio enhanced
+    #define FX_MODE_2DAKEMI                147 // audio enhanced
+  #endif
+  #define FX_MODE_PIXELWAVE              160 // audio enhanced
+  #define FX_MODE_JUGGLES                161 // audio enhanced
+  #define FX_MODE_MATRIPIX               162 // audio enhanced
+  #define FX_MODE_GRAVIMETER             163 // audio enhanced
+  #define FX_MODE_PLASMOID               164 // audio enhanced
+  #define FX_MODE_PUDDLES                165 // audio enhanced
+  #define FX_MODE_MIDNOISE               166 // audio enhanced
+  #define FX_MODE_NOISEMETER             167 // audio enhanced
+  #define FX_MODE_NOISEFIRE              168 // audio enhanced
+  #define FX_MODE_PUDDLEPEAK             169 // audio enhanced
+  #define FX_MODE_RIPPLEPEAK             170 // audio enhanced
+  #define FX_MODE_GRAVCENTER             171 // audio enhanced
+  #define FX_MODE_GRAVCENTRIC            172 // audio enhanced
+#endif
 
 #ifndef USERMOD_AUDIOREACTIVE
 
-  #define MODE_COUNT                     173
+  #ifndef WLED_NO_AUDIO
+  #define MODE_COUNT                   173
+  #else
+    #ifndef WLED_DISABLE_2D
+  #define MODE_COUNT                   145
+    #else
+  #define MODE_COUNT                   118
+    #endif
+  #endif
 
 #else
 
+  #ifdef WLED_DISABLE_2D
+  #error Audioreactive usermod requires 2D support.
+  #endif
+  #ifdef WLED_NO_AUDIO
+  #error Audioreactive usermod requires audio support.
+  #endif
   #define FX_MODE_PIXELS                 173
 //  #define FX_MODE_PIXELWAVE              129 // audio enhanced
 //  #define FX_MODE_JUGGLES                130 // audio enhanced
@@ -488,13 +508,14 @@ typedef struct Segment {
     Segment(Segment &&orig) noexcept; // move constructor
 
     ~Segment() {
-      if (leds) { free(leds); Serial.println(F("Freeing leds.")); }
       #ifdef WLED_DEBUG
-      Serial.print(F("Destroying segment."));
+      Serial.print(F("Destroying segment:"));
       if (name) Serial.printf(" %s (%p)", name, name);
-      if (data) Serial.printf(" %p", data);
+      if (data) Serial.printf(" %d (%p)", (int)_dataLen, data);
+      if (leds) Serial.printf(" [%u]", length()*sizeof(CRGB));
       Serial.println();
       #endif
+      if (leds) free(leds);
       if (name) delete[] name;
       if (_t) delete _t;
       deallocateData();
@@ -502,6 +523,10 @@ typedef struct Segment {
 
     Segment& operator= (const Segment &orig); // copy assignment
     Segment& operator= (Segment &&orig) noexcept; // move assignment
+
+#ifdef WLED_DEBUG
+    size_t getSize() { return sizeof(Segment) + (data?_dataLen:0) + (name?strlen(name):0) + (_t?sizeof(Transition):0) + (leds?sizeof(CRGB)*length():0); }
+#endif
 
     inline bool     getOption(uint8_t n)       { return ((options >> n) & 0x01); }
     inline bool     isSelected(void)           { return getOption(0); }
@@ -717,6 +742,9 @@ class WS2812FX {  // 96 bytes
     static WS2812FX* getInstance(void) { return instance; }
 
     void
+#ifdef WLED_DEBUG
+      printSize(),
+#endif
       finalizeInit(),
       service(void),
       setMode(uint8_t segid, uint8_t m),
@@ -726,7 +754,7 @@ class WS2812FX {  // 96 bytes
       setBrightness(uint8_t b, bool direct = false),
       setRange(uint16_t i, uint16_t i2, uint32_t col),
       setTransitionMode(bool t),
-      purgeSegments(void),
+      purgeSegments(bool force = false),
       setSegment(uint8_t n, uint16_t start, uint16_t stop, uint8_t grouping = 1, uint8_t spacing = 0, uint16_t offset = UINT16_MAX, uint16_t startY=0, uint16_t stopY=1),
       setMainSegmentId(uint8_t n),
       restartRuntime(),

@@ -927,8 +927,7 @@ void serializeNodes(JsonObject root)
 void serializeModeData(JsonArray fxdata)
 {
   for (size_t i = 0; i < strip.getModeCount(); i++) {
-    //String lineBuffer = (const char*)pgm_read_dword(&(WS2812FX::_modeData[i]));
-    String lineBuffer = strip.getModeData(i);
+    String lineBuffer = FPSTR(strip.getModeData(i));
     if (lineBuffer.length() > 0) {
       uint8_t endPos = lineBuffer.indexOf('@');
       if (endPos>0) fxdata.add(lineBuffer.substring(endPos));
@@ -941,8 +940,7 @@ void serializeModeData(JsonArray fxdata)
 // also removes WLED-SR extensions (@...) from deserialised names
 void serializeModeNames(JsonArray arr) {
   for (size_t i = 0; i < strip.getModeCount(); i++) {
-    //String lineBuffer = (const char*)pgm_read_dword(&(WS2812FX::_modeData[i]));
-    String lineBuffer = strip.getModeData(i);
+    String lineBuffer = FPSTR(strip.getModeData(i));
     if (lineBuffer.length() > 0) {
       uint8_t endPos = lineBuffer.indexOf('@');
       if (endPos>0) arr.add(lineBuffer.substring(0, endPos));

@@ -286,7 +286,7 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxL
   dest[0] = '\0'; // start by clearing buffer
 
   if (mode < strip.getModeCount()) {
-    String lineBuffer = strip.getModeData(mode);
+    String lineBuffer = FPSTR(strip.getModeData(mode));
     if (lineBuffer.length() > 0) {
       int16_t start = lineBuffer.indexOf('@');
       int16_t stop  = lineBuffer.indexOf(';', start);
@@ -356,7 +356,7 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxL
 int16_t extractModeDefaults(uint8_t mode, const char *segVar)
 {
   if (mode < strip.getModeCount()) {
-    String lineBuffer = strip.getModeData(mode);
+    String lineBuffer = FPSTR(strip.getModeData(mode));
     if (lineBuffer.length() > 0) {
       int16_t start = lineBuffer.lastIndexOf(';');
       if (start<0) return -1;

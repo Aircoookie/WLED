@@ -766,7 +766,7 @@ uint8_t Segment::get_random_wheel_index(uint8_t pos) {
  * @param pbri Value to scale the brightness of the returned color by. Default is 255. (no scaling)
  * @returns Single color from palette
  */
-uint32_t IRAM_ATTR Segment::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri)
+uint32_t Segment::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri)
 {
   // default palette or no RGB support on segment
   if ((palette == 0 && mcol < NUM_COLORS) || !(_capabilities & 0x01)) {
@@ -908,99 +908,16 @@ void WS2812FX::service() {
   _isServicing = false;
 }
 
-void WS2812FX::setPixelColor(int i, uint32_t col)
+void IRAM_ATTR WS2812FX::setPixelColor(int i, uint32_t col)
 {
   if (i >= _length) return;
-
-  // if realtime mode is active and applying to main segment
-  if (realtimeMode && useMainSegmentOnly) {
-    Segment &seg = _segments[_mainSegment];
-    uint16_t len = seg.length();  // length of segment in number of pixels
-    if (i >= seg.virtualLength()) return;
-
-#ifndef WLED_DISABLE_2D
-    // adjust pixel index if within 2D segment
-    if (isMatrix) {
-      uint16_t vH = seg.virtualHeight();  // segment height in logical pixels
-      uint16_t vW = seg.virtualWidth();
-      switch (seg.map1D2D) {
-        case M12_Pixels:
-          // use all available pixels as a long strip
-          setPixelColorXY(seg.start + i % vW, seg.startY + i / vW, col);
-          break;
-        case M12_VerticalBar:
-          // expand 1D effect vertically
-          for (int y = 0; y < vH; y++) setPixelColorXY(seg.start + i, seg.startY + y, col);
-          break;
-        case M12_Circle:
-          // expand in circular fashion from center
-          for (float degrees = 0.0f; degrees <= 90.0f; degrees += 89.99f / (sqrtf((float)max(vH,vW))*i+1)) { // this may prove too many iterations on larger matrices
-            // may want to try float version as well (with or without antialiasing)
-            int x = roundf(sin_t(degrees*DEG_TO_RAD) * i);
-            int y = roundf(cos_t(degrees*DEG_TO_RAD) * i);
-            setPixelColorXY(seg.start + x, seg.startY + y, col);
-          }
-          break;
-        case M12_Block:
-          for (int x = 0; x <= i; x++) setPixelColorXY(seg.start + x, seg.startY + i, col);
-          for (int y = 0; y <  i; y++) setPixelColorXY(seg.start + i, seg.startY + y, col);
-          break;
-      }
-      return;
-    }
-#endif
-
-    if (seg.opacity < 255) {
-      byte r = scale8(R(col), seg.opacity);
-      byte g = scale8(G(col), seg.opacity);
-      byte b = scale8(B(col), seg.opacity);
-      byte w = scale8(W(col), seg.opacity);
-      col = RGBW32(r, g, b, w);
-    }
-
-    // get physical pixel address (taking into account start, grouping, spacing [and offset])
-    i = i * seg.groupLength();
-    if (seg.getOption(SEG_OPTION_REVERSED)) { // is segment reversed?
-      if (seg.getOption(SEG_OPTION_MIRROR)) { // is segment mirrored?
-        i = (len - 1) / 2 - i;  //only need to index half the pixels
-      } else {
-        i = (len - 1) - i;
-      }
-    }
-    i += seg.start; // starting pixel in a group
-
-    // set all the pixels in the group
-    for (uint16_t j = 0; j < seg.grouping; j++) {
-      uint16_t indexSet = i + ((seg.getOption(SEG_OPTION_REVERSED)) ? -j : j);
-      if (indexSet >= seg.start && indexSet < seg.stop) {
-
-        if (seg.getOption(SEG_OPTION_MIRROR)) { //set the corresponding mirrored pixel
-          uint16_t indexMir = seg.stop - indexSet + seg.start - 1;          
-          indexMir += seg.offset; // offset/phase
-          if (indexMir >= seg.stop) indexMir -= len; // wrap
-          if (indexMir < customMappingSize) indexMir = customMappingTable[indexMir];
-
-          busses.setPixelColor(indexMir, col);
-        }
-        indexSet += seg.offset; // offset/phase
-        if (indexSet >= seg.stop) indexSet -= len; // wrap
-        if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
-
-        busses.setPixelColor(indexSet, col);
-      }
-    }
-  } else {
-    if (i < customMappingSize) i = customMappingTable[i];
-    busses.setPixelColor(i, col);
-  }
+  if (i < customMappingSize) i = customMappingTable[i];
+  busses.setPixelColor(i, col);
 }
 
 uint32_t WS2812FX::getPixelColor(uint16_t i)
 {
   if (i >= _length) return 0;
-  //#ifndef WLED_DISABLE_2D
-  //if (isMatrix) return getPixelColorXY(i%matrixWidth, i/matrixWidth); // compatibility w/ non-effect fn
-  //#endif
   if (i < customMappingSize) i = customMappingTable[i];
   return busses.getPixelColor(i);
 }
@@ -1276,13 +1193,13 @@ bool WS2812FX::hasCCTBus(void) {
 	return false;
 }
 
-void WS2812FX::purgeSegments(void) {
+void WS2812FX::purgeSegments(bool force) {
   // remove all inactive segments (from the back)
   int deleted = 0;
-  if (_segments.size() <= 1 || _isServicing) return;
+  if (_segments.size() <= 1) return;
   for (int i = _segments.size()-1; i > 0; i--)
-    if (_segments[i].stop == 0) {
-      DEBUG_PRINT(F("-- Removing segment: ")); DEBUG_PRINTLN(i);
+    if (_segments[i].stop == 0 || force) {
+      DEBUG_PRINT(F("Purging segment segment: ")); DEBUG_PRINTLN(i);
       deleted++;
       _segments.erase(_segments.begin() + i);
     }
@@ -1534,6 +1451,18 @@ void WS2812FX::setTransitionMode(bool t)
 //    if (!seg.transitional)seg.startTransition(t ? _transitionDur : 0);
 //  }
 }
+
+#ifdef WLED_DEBUG
+void WS2812FX::printSize()
+{
+  size_t size = 0;
+  for (Segment seg : _segments) size += seg.getSize();
+  DEBUG_PRINTF("Segments: %d -> %uB\n", sizeof(Segment), _segments.size(), size);
+  DEBUG_PRINTF("Modes: %d*%d=%uB\n", sizeof(mode_ptr), _mode.size(), (_mode.capacity()*sizeof(mode_ptr)));
+  DEBUG_PRINTF("Data: %d*%d=%uB\n", sizeof(const char *), _modeData.size(), (_modeData.capacity()*sizeof(const char *)));
+  DEBUG_PRINTF("Map: %d*%d=%uB\n", sizeof(uint16_t), (int)customMappingSize, customMappingSize*sizeof(uint16_t));
+}
+#endif
 
 void WS2812FX::loadCustomPalettes()
 {

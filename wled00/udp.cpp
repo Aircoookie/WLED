@@ -155,7 +155,7 @@ void realtimeLock(uint32_t timeoutMs, byte md)
       stop  = strip.getLengthTotal();
     }
     // clear strip/segment
-    for (size_t i = start; i < stop; i++) strip.setPixelColor(i,0,0,0,0);
+    for (size_t i = start; i < stop; i++) strip.setPixelColor(i,BLACK);
     // if WLED was off and using main segment only, freeze non-main segments so they stay off
     if (useMainSegmentOnly && bri == 0) {
       for (size_t s=0; s < strip.getSegmentsNum(); s++) {
@@ -563,11 +563,16 @@ void handleNotifications()
 void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w)
 {
   uint16_t pix = i + arlsOffset;
-  if (pix < strip.getLengthTotal())
-  {
-    if (!arlsDisableGammaCorrection && strip.gammaCorrectCol)
-    {
-      strip.setPixelColor(pix, gamma8(r), gamma8(g), gamma8(b), gamma8(w));
+  if (pix < strip.getLengthTotal()) {
+    if (!arlsDisableGammaCorrection && strip.gammaCorrectCol) {
+      r = gamma8(r);
+      g = gamma8(g);
+      b = gamma8(b);
+      w = gamma8(w);
+    }
+    if (useMainSegmentOnly) {
+      Segment &seg = strip.getMainSegment();
+      if (pix<seg.length()) seg.setPixelColor(pix, r, g, b, w);
     } else {
       strip.setPixelColor(pix, r, g, b, w);
     }

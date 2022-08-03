@@ -7,7 +7,7 @@
 /*
  * color blend function
  */
-uint32_t IRAM_ATTR color_blend(uint32_t color1, uint32_t color2, uint16_t blend, bool b16) {
+uint32_t color_blend(uint32_t color1, uint32_t color2, uint16_t blend, bool b16) {
   if(blend == 0)   return color1;
   uint16_t blendmax = b16 ? 0xFFFF : 0xFF;
   if(blend == blendmax) return color2;
