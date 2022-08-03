@@ -138,7 +138,11 @@ void sendDataWs(AsyncWebSocketClient * client)
   releaseJSONBufferLock();
 }
 
-#define MAX_LIVE_LEDS_WS 1024
+#ifndef WLED_DISABLE_2D
+  #define MAX_LIVE_LEDS_WS 1024
+#else
+  #define MAX_LIVE_LEDS_WS 256
+#endif
 
 bool sendLiveLedsWs(uint32_t wsClient)
 {
@@ -153,10 +157,14 @@ bool sendLiveLedsWs(uint32_t wsClient)
   uint8_t* buffer = wsBuf->get();
   buffer[0] = 'L';
   buffer[1] = 1; //version
+#ifndef WLED_DISABLE_2D
   buffer[2] = strip.matrixWidth;
   buffer[3] = strip.matrixHeight;
-
   uint16_t pos = 4;
+#else
+  uint16_t pos = 2;
+#endif
+
   for (uint16_t i= 0; pos < bufSize -2; i += n)
   {
     uint32_t c = strip.getPixelColor(i);

@@ -138,20 +138,17 @@ uint32_t WS2812FX::getPixelColorXY(uint16_t x, uint16_t y) {
 // Segment:: routines
 ///////////////////////////////////////////////////////////
 
+#ifndef WLED_DISABLE_2D
+
 // XY(x,y) - gets pixel index within current segment (often used to reference leds[] array element)
 uint16_t IRAM_ATTR Segment::XY(uint16_t x, uint16_t y) {
-#ifndef WLED_DISABLE_2D
   uint16_t width  = virtualWidth();   // segment width in logical pixels
   uint16_t height = virtualHeight();  // segment height in logical pixels
   return (x%width) + (y%height) * width;
-#else
-  return x;
-#endif
 }
 
 void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
 {
-#ifndef WLED_DISABLE_2D
   if (!strip.isMatrix) return; // not a matrix set-up
 
   if (leds) leds[XY(x,y)] = col;
@@ -193,15 +190,11 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
       }
     }
   }
-#else
-  setPixelColor(x, col);
-#endif
 }
 
 // anti-aliased version of setPixelColorXY()
 void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
 {
-#ifndef WLED_DISABLE_2D
   if (!strip.isMatrix) return; // not a matrix set-up
   if (x<0.0f || x>1.0f || y<0.0f || y>1.0f) return; // not normalized
 
@@ -241,12 +234,10 @@ void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
   } else {
     setPixelColorXY(uint16_t(roundf(fX)), uint16_t(roundf(fY)), col);
   }
-#endif
 }
 
 // returns RGBW values of pixel
 uint32_t Segment::getPixelColorXY(uint16_t x, uint16_t y) {
-#ifndef WLED_DISABLE_2D
   if (leds) return RGBW32(leds[XY(x,y)].r, leds[XY(x,y)].g, leds[XY(x,y)].b, 0);
   if (getOption(SEG_OPTION_REVERSED)  ) x = virtualWidth()  - x - 1;
   if (getOption(SEG_OPTION_REVERSED_Y)) y = virtualHeight() - y - 1;
@@ -255,41 +246,25 @@ uint32_t Segment::getPixelColorXY(uint16_t x, uint16_t y) {
   y *= groupLength(); // expand to physical pixels
   if (x >= width() || y >= height()) return 0;
   return strip.getPixelColorXY(start + x, startY + y);
-#else
-  return getPixelColor(x);
-#endif
 }
 
 // Blends the specified color with the existing pixel color.
 void Segment::blendPixelColorXY(uint16_t x, uint16_t y, uint32_t color, uint8_t blend) {
-#ifndef WLED_DISABLE_2D
   setPixelColorXY(x, y, color_blend(getPixelColorXY(x,y), color, blend));
-#else
-  setPixelColor(x, color_blend(getPixelColor(x), color, blend));
-#endif
 }
 
 // Adds the specified color with the existing pixel color perserving color balance.
 void Segment::addPixelColorXY(int x, int y, uint32_t color) {
-#ifndef WLED_DISABLE_2D
   setPixelColorXY(x, y, color_add(getPixelColorXY(x,y), color));
-#else
-  setPixelColor(x, color_add(getPixelColor(x), color));
-#endif
 }
 
 void Segment::fadePixelColorXY(uint16_t x, uint16_t y, uint8_t fade) {
-#ifndef WLED_DISABLE_2D
   CRGB pix = CRGB(getPixelColorXY(x,y)).nscale8_video(fade);
   setPixelColor(x, y, pix);
-#else
-  setPixelColor(x, CRGB(getPixelColor(x)).nscale8_video(fade));
-#endif
 }
 
 // blurRow: perform a blur on a row of a rectangular matrix
 void Segment::blurRow(uint16_t row, fract8 blur_amount, CRGB* leds) {
-#ifndef WLED_DISABLE_2D
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
 
@@ -313,12 +288,10 @@ void Segment::blurRow(uint16_t row, fract8 blur_amount, CRGB* leds) {
     else      setPixelColorXY(x, row, cur);
     carryover = part;
   }
-#endif
 }
 
 // blurCol: perform a blur on a column of a rectangular matrix
 void Segment::blurCol(uint16_t col, fract8 blur_amount, CRGB* leds) {
-#ifndef WLED_DISABLE_2D
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
 
@@ -342,33 +315,10 @@ void Segment::blurCol(uint16_t col, fract8 blur_amount, CRGB* leds) {
     else      setPixelColorXY(col, i, cur);
     carryover = part;
   }
-#endif
-}
-
-// blur1d: one-dimensional blur filter. Spreads light to 2 line neighbors.
-// blur2d: two-dimensional blur filter. Spreads light to 8 XY neighbors.
-//
-//           0 = no spread at all
-//          64 = moderate spreading
-//         172 = maximum smooth, even spreading
-//
-//         173..255 = wider spreading, but increasing flicker
-//
-//         Total light is NOT entirely conserved, so many repeated
-//         calls to 'blur' will also result in the light fading,
-//         eventually all the way to black; this is by design so that
-//         it can be used to (slowly) clear the LEDs to black.
-
-void Segment::blur1d(CRGB* leds, fract8 blur_amount) {
-#ifndef WLED_DISABLE_2D
-  const uint16_t rows = virtualHeight();
-  for (uint16_t y = 0; y < rows; y++) blurRow(y, blur_amount, leds);
-#endif
 }
 
 // 1D Box blur (with added weight - blur_amount: [0=no blur, 255=max blur])
 void Segment::box_blur(uint16_t i, bool vertical, fract8 blur_amount) {
-#ifndef WLED_DISABLE_2D
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
   const uint16_t dim1 = vertical ? rows : cols;
@@ -399,20 +349,35 @@ void Segment::box_blur(uint16_t i, bool vertical, fract8 blur_amount) {
     uint16_t y = vertical ? j : i;
     setPixelColorXY(x, y, tmp[j]);
   }
-#endif
+}
+
+// blur1d: one-dimensional blur filter. Spreads light to 2 line neighbors.
+// blur2d: two-dimensional blur filter. Spreads light to 8 XY neighbors.
+//
+//           0 = no spread at all
+//          64 = moderate spreading
+//         172 = maximum smooth, even spreading
+//
+//         173..255 = wider spreading, but increasing flicker
+//
+//         Total light is NOT entirely conserved, so many repeated
+//         calls to 'blur' will also result in the light fading,
+//         eventually all the way to black; this is by design so that
+//         it can be used to (slowly) clear the LEDs to black.
+
+void Segment::blur1d(CRGB* leds, fract8 blur_amount) {
+  const uint16_t rows = virtualHeight();
+  for (uint16_t y = 0; y < rows; y++) blurRow(y, blur_amount, leds);
 }
 
 void Segment::blur2d(CRGB* leds, fract8 blur_amount) {
-#ifndef WLED_DISABLE_2D
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
   for (uint16_t i = 0; i < rows; i++) blurRow(i, blur_amount, leds); // blur all rows
   for (uint16_t k = 0; k < cols; k++) blurCol(k, blur_amount, leds); // blur all columns
-#endif
 }
 
 void Segment::moveX(int8_t delta) {
-#ifndef WLED_DISABLE_2D
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
   if (!delta) return;
@@ -427,11 +392,9 @@ void Segment::moveX(int8_t delta) {
       setPixelColorXY(x, y, getPixelColorXY(x + delta, y));
     }
   }
-#endif
 }
 
 void Segment::moveY(int8_t delta) {
-#ifndef WLED_DISABLE_2D
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
   if (!delta) return;
@@ -446,14 +409,12 @@ void Segment::moveY(int8_t delta) {
       setPixelColorXY(x, y, getPixelColorXY(x, y + delta));
     }
   }
-#endif
 }
 
 // move() - move all pixels in desired direction delta number of pixels
 // @param dir direction: 0=left, 1=left-up, 2=up, 3=right-up, 4=right, 5=right-down, 6=down, 7=left-down
 // @param delta number of pixels to move
 void Segment::move(uint8_t dir, uint8_t delta) {
-#ifndef WLED_DISABLE_2D
   if (delta==0) return;
   switch (dir) {
     case 0: moveX( delta);                break;
@@ -465,7 +426,20 @@ void Segment::move(uint8_t dir, uint8_t delta) {
     case 6:                moveY(-delta); break;
     case 7: moveX( delta); moveY(-delta); break;
   }
-#endif
+}
+
+// by stepko, taken from https://editor.soulmatelights.com/gallery/573-blobs
+void Segment::fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
+  const uint16_t cols = virtualWidth();
+  const uint16_t rows = virtualHeight();
+  for (int16_t y = -radius; y <= radius; y++) {
+    for (int16_t x = -radius; x <= radius; x++) {
+      if (x * x + y * y <= radius * radius &&
+          int16_t(cx)+x>=0 && int16_t(cy)+y>=0 &&
+          int16_t(cx)+x<cols && int16_t(cy)+y<rows)
+        setPixelColorXY(cx + x, cy + y, col);
+    }
+  }
 }
 
 void Segment::fill_solid(CRGB* leds, CRGB color) {
@@ -477,50 +451,27 @@ void Segment::fill_solid(CRGB* leds, CRGB color) {
   }
 }
 
-// by stepko, taken from https://editor.soulmatelights.com/gallery/573-blobs
-void Segment::fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
-#ifndef WLED_DISABLE_2D
-  const uint16_t cols = virtualWidth();
-  const uint16_t rows = virtualHeight();
-  for (int16_t y = -radius; y <= radius; y++) {
-    for (int16_t x = -radius; x <= radius; x++) {
-      if (x * x + y * y <= radius * radius &&
-          int16_t(cx)+x>=0 && int16_t(cy)+y>=0 &&
-          int16_t(cx)+x<cols && int16_t(cy)+y<rows)
-        setPixelColorXY(cx + x, cy + y, col);
-    }
-  }
-#endif
-}
-
 void Segment::fadeToBlackBy(CRGB* leds, uint8_t fadeBy) {
-#ifndef WLED_DISABLE_2D
   nscale8(leds, 255 - fadeBy);
-#endif
 }
 
 void Segment::nscale8(CRGB* leds, uint8_t scale) {
-#ifndef WLED_DISABLE_2D
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
   for(uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
     if (leds) leds[XY(x,y)].nscale8(scale);
     else setPixelColorXY(x, y, CRGB(getPixelColorXY(x, y)).nscale8(scale));
   }
-#endif
 }
 
 void Segment::setPixels(CRGB* leds) {
-#ifndef WLED_DISABLE_2D
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
   for (uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) setPixelColorXY(x, y, leds[XY(x,y)]);
-#endif
 }
 
 //line function
-void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c) {
-#ifndef WLED_DISABLE_2D
+void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint32_t c) {
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
   if (x0 >= cols || x1 >= cols || y0 >= rows || y1 >= rows) return;
@@ -534,10 +485,8 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB 
     if (e2 >-dx) { err -= dy; x0 += sx; }
     if (e2 < dy) { err += dx; y0 += sy; }
   }
-#endif
 }
 
-#ifndef WLED_DISABLE_2D
 // font curtesy of https://github.com/idispatch/raster-fonts
 static const unsigned char console_font_6x8[] PROGMEM = {
 
@@ -6688,12 +6637,10 @@ static const unsigned char console_font_5x8[] PROGMEM = {
     0x00,  /* 00000 */
     0x00,  /* 00000 */
 };
-#endif
 
 // draws a raster font character on canvas
 // only supports 5x8 and 6x8 fonts ATM
-void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB color, CRGB *leds) {
-#ifndef WLED_DISABLE_2D
+void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color) {
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
 
@@ -6710,17 +6657,14 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
     for (uint8_t j = 0; j<w; j++) { // character width
       int16_t x0 = x + (w-1) - j;
       if ((x0 >= 0 || x0 < cols) && ((bits>>(j+(8-w))) & 0x01)) { // bit set & drawing on-screen
-        if (leds) leds[XY(x0,y0)] = color;
-        else      setPixelColorXY(x0, y0, color);
+        setPixelColorXY(x0, y0, color);
       }
     }
   }
-#endif
 }
 
 #define WU_WEIGHT(a,b) ((uint8_t) (((a)*(b)+(a)+(b))>>8))
 void Segment::wu_pixel(uint32_t x, uint32_t y, CRGB c) {      //awesome wu_pixel procedure by reddit u/sutaburosu
-#ifndef WLED_DISABLE_2D
   // extract the fractional parts and derive their inverses
   uint8_t xx = x & 0xff, yy = y & 0xff, ix = 255 - xx, iy = 255 - yy;
   // calculate the intensities for each affected pixel
@@ -6734,6 +6678,7 @@ void Segment::wu_pixel(uint32_t x, uint32_t y, CRGB c) {      //awesome wu_pixel
     led.b = qadd8(led.b, c.b * wu[i] >> 8);
     setPixelColorXY(int((x >> 8) + (i & 1)), int((y >> 8) + ((i >> 1) & 1)), led);
   }
-#endif
 }
 #undef WU_WEIGHT
+
+#endif // WLED_DISABLE_2D

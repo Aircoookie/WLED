@@ -1,110 +1,81 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
-  <meta charset="utf-8">
-  <meta name="theme-color" content="#222222">
-  <title>WLED Live Preview</title>
-  <style>
-  body {
-    margin: 0;
-  }
-  </style>
+	<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+	<meta charset="utf-8">
+	<meta name="theme-color" content="#222222">
+	<title>WLED Live Preview</title>
+	<style>
+	body {
+		margin: 0;
+	}
+	</style>
 </head>
 <body>
-  <canvas id="liveviewCanvas">LiveView</canvas>
-  <script>
-    var c = document.getElementById('liveviewCanvas');
-    c.width  = window.innerWidth * 0.98; //remove scroll bars
-    c.height = window.innerHeight * 0.98; //remove scroll bars
-    var leds = "";
-    var mW = 0;
-    var mH = 0;
-    var pPL = 0;
-    var lOf = 0;
-    // Check for canvas support
-    if (c.getContext) {
-      // Access the rendering context
-      var ctx = c.getContext('2d');
-
-      //In case of pixels
-
-      // // ImageData object
-      // var imageData = ctx.getImageData(0, 0, c.width, c.height);
-      // // One-dimensional array containing the data in the RGBA order
-      // var data = imageData.data;
-
-      // function drawLedPixels(x, y, r, g, b, a) { //old
-      //   // console.log(x, y, r, g, b, a);
-      //   for (right = 0; right < pPL; right++) {
-      //     for (down = 0; down < pPL; down++) {
-      //       ff = (x * pPL + right + (y * pPL + down) * mW * pPL) * 4;
-      //       // if (x==15 && y==15)
-      //       //   console.log("ff=" + x + " * " + pPL + " +" + right + " + (" + y + " * " + pPL + " +" + down + ") * " + mW + ") * 4 = " + ff, data.length); //(5*10+1 + (12*10+1) * 16) * 4 = (51 + 121*16) * 4
-      //       data[ff + 0] = r;
-      //       data[ff + 1] = g;
-      //       data[ff + 2] = b;
-      //       data[ff + 3] = a;
-      //     }
-      //   }
-      // }
-
-      function drawLedCircles(x, y, r, g, b, a) {
-        ctx.fillStyle = `rgb(${r},${g},${b})`;
-        ctx.beginPath();
-        ctx.arc(x*pPL+pPL*0.5+lOf, y*pPL+pPL*0.5, pPL*0.4, 0, 2 * Math.PI);
-        ctx.fill();
-      }
-
-      function paintLeds() {
-        // data represents the Uint8ClampedArray containing the data
-        // in the RGBA order [r0, g0, b0, a0, r1, g1, b1, a1, ..., rn, gn, bn, an]
-
-        for (i = 4; i < leds.length; i+=3) {
-          let ff = (i-4)/3;
-          drawLedCircles(ff%mW, Math.floor(ff/mW), leds[i], leds[i+1], leds[i+2], 255)
-        }
-
-        // ctx.putImageData(imageData, 0, 0); //in case of drawLedPixels
-      }
-    }
-
-    function updatePreview(ledsp) {
-      leds = ledsp;
-      mW = leds[2];
-      mH = leds[3];
-      pPL = Math.min(c.width / mW, c.height / mH);
-      lOf = Math.floor((c.width - pPL*mW)/2); 
-      paintLeds();
-    }
-
-    function getLiveJson(e) {
-      try {
-        if (toString.call(e.data) === '[object ArrayBuffer]') {
-          let leds = new Uint8Array(event.data);
-          if (leds[0] != 76) return; //'L', set in ws.cpp
-          updatePreview(leds);
-        }
-      }
-      catch (err) {
-        console.error("Peek WS error:",err);
-      } 
-    }
-
-    var ws;
-    try {
-      ws = top.window.ws;
-    } catch (e) {}
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send("{'lv':true}");
-    } else {
-      ws = new WebSocket((window.location.protocol == "https:"?"wss":"ws")+"://"+document.location.host+"/ws");
-      ws.onopen = function () {
-        ws.send("{'lv':true}");
-      }
-    }
-    ws.binaryType = "arraybuffer";
-    ws.addEventListener('message',getLiveJson);
-  </script>
+	<canvas id="liveviewCanvas">LiveView</canvas>
+	<script>
+		var c = document.getElementById('liveviewCanvas');
+		var leds = "";
+		var mW = 0, mH = 0, pPL = 0, lOf = 0;
+		var throttled = false;
+		function setCanvas() {
+			c.width  = window.innerWidth * 0.98; //remove scroll bars
+			c.height = window.innerHeight * 0.98; //remove scroll bars
+		}
+		setCanvas();
+		// Check for canvas support
+		if (c.getContext) {
+			// Access the rendering context
+			var ctx = c.getContext('2d');
+			function drawCircle(x, y, r, g, b, a) {
+				ctx.fillStyle = `rgb(${r},${g},${b})`;
+				ctx.beginPath();
+				ctx.arc(x*pPL+pPL*0.5+lOf, y*pPL+pPL*0.5, pPL*0.4, 0, 2 * Math.PI);
+				ctx.fill();
+			}
+			// use parent WS or open new
+			var ws;
+			try {
+				ws = top.window.ws;
+			} catch (e) {}
+			if (ws && ws.readyState === WebSocket.OPEN) {
+				ws.send("{'lv':true}");
+			} else {
+				ws = new WebSocket((window.location.protocol == "https:"?"wss":"ws")+"://"+document.location.host+"/ws");
+				ws.onopen = ()=>{
+					ws.send("{'lv':true}");
+				}
+			}
+			ws.binaryType = "arraybuffer";
+			ws.addEventListener('message',(e)=>{
+				try {
+					if (toString.call(e.data) === '[object ArrayBuffer]') {
+						let leds = new Uint8Array(event.data);
+						if (leds[0] != 76) return; //'L', set in ws.cpp
+						mW = leds[2]; // matrix width
+						mH = leds[3]; // matrix height
+						pPL = Math.min(c.width / mW, c.height / mH); // pixels per LED (width of circle)
+						lOf = Math.floor((c.width - pPL*mW)/2); //left offeset (to center matrix)
+						for (i = 4; i < leds.length; i+=3) {
+							let ff = (i-4)/3; // pixel index
+							drawCircle(ff%mW, Math.floor(ff/mW), leds[i], leds[i+1], leds[i+2], 255);
+						}
+					}
+				} catch (err) {
+					console.error("Peek WS error:",err);
+				} 
+			});
+		}
+		// window.resize event listener
+		window.addEventListener('resize', (e)=>{
+			if (!throttled) {     // only run if we're not throttled
+				setCanvas();      // actual callback action
+				throttled = true; // we're throttled!
+				setTimeout(()=>{  // set a timeout to un-throttle
+					throttled = false;
+				}, 250);
+			}
+		});
+	</script>
 </body>
 </html>
