@@ -189,6 +189,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
       {
         int16_t sOpt;
         uint8_t tmp = 255;
+/*
         // compatibility mode begin
         char buf[5]; // dummy buffer
         for (int i=0; i<5; i++) {
@@ -210,6 +211,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
           }
         }
         //end compatibility mode
+*/
         sOpt = extractModeDefaults(fx, SET_F("sx"));   if (sOpt >= 0) seg.speed     = sOpt;
         sOpt = extractModeDefaults(fx, SET_F("ix"));   if (sOpt >= 0) seg.intensity = sOpt;
         sOpt = extractModeDefaults(fx, SET_F("c1"));   if (sOpt >= 0) seg.custom1   = sOpt;

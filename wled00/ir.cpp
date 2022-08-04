@@ -1,5 +1,7 @@
 #include "wled.h"
 
+#include "ir_codes.h"
+
 /*
  * Infrared sensor support for generic 24/40/44 key RGB remotes
  */

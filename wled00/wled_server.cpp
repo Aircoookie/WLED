@@ -1,5 +1,12 @@
 #include "wled.h"
 
+#include "html_ui.h"
+#ifdef WLED_ENABLE_SIMPLE_UI
+  #include "html_simple.h"
+#endif
+#include "html_settings.h"
+#include "html_other.h"
+
 /*
  * Integrated HTTP web server page declarations
  */

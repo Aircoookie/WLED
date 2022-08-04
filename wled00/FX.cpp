@@ -1328,7 +1328,7 @@ uint16_t gradient_base(bool loading) {
 uint16_t mode_gradient(void) {
   return gradient_base(false);
 }
-static const char _data_FX_MODE_GRADIENT[] PROGMEM = "Gradient@!,Spread=16;!,!,;!;1d";
+static const char _data_FX_MODE_GRADIENT[] PROGMEM = "Gradient@!,Spread;!,!,;!;ix=16,1d";
 
 
 /*
@@ -1337,7 +1337,7 @@ static const char _data_FX_MODE_GRADIENT[] PROGMEM = "Gradient@!,Spread=16;!,!,;
 uint16_t mode_loading(void) {
   return gradient_base(true);
 }
-static const char _data_FX_MODE_LOADING[] PROGMEM = "Loading@!,Fade=16;!,!,;!;1d";
+static const char _data_FX_MODE_LOADING[] PROGMEM = "Loading@!,Fade;!,!,;!;ix=16,1d";
 
 
 //American Police Light with all LEDs Red and Blue 
@@ -6250,7 +6250,7 @@ uint16_t mode_gravcentric(void) {                     // Gravcentric. By Andrew 
 
   return FRAMETIME;
 } // mode_gravcentric()
-static const char _data_FX_MODE_GRAVCENTRIC[] PROGMEM = "Gravcentric@Rate of fall,Sensitivity=128;!;!;ix=128,mp12=2,ssim=0,1d,vo"; // Circle, Beatsin
+static const char _data_FX_MODE_GRAVCENTRIC[] PROGMEM = "Gravcentric@Rate of fall,Sensitivity;!;!;ix=128,mp12=2,ssim=0,1d,vo"; // Circle, Beatsin
 
 
 ///////////////////////
@@ -6396,7 +6396,7 @@ uint16_t mode_midnoise(void) {                  // Midnoise. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_midnoise()
-static const char _data_FX_MODE_MIDNOISE[] PROGMEM = "Midnoise@Fade rate,Maximum length=128;,!;!;ix=128,mp12=2,ssim=0,1d,vo"; // Circle, Beatsin
+static const char _data_FX_MODE_MIDNOISE[] PROGMEM = "Midnoise@Fade rate,Maximum length;,!;!;ix=128,mp12=2,ssim=0,1d,vo"; // Circle, Beatsin
 
 
 //////////////////////
@@ -7013,7 +7013,7 @@ uint16_t mode_gravfreq(void) {                  // Gravfreq. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_gravfreq()
-static const char _data_FX_MODE_GRAVFREQ[] PROGMEM = "Gravfreq@Rate of fall,Sensivity=128;,!;!;mp12=2,ssim=0,1d,fr"; // Circle, Beatsin
+static const char _data_FX_MODE_GRAVFREQ[] PROGMEM = "Gravfreq@Rate of fall,Sensivity;,!;!;ix=128,mp12=2,ssim=0,1d,fr"; // Circle, Beatsin
 
 
 //////////////////////
