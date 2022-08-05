@@ -3,6 +3,16 @@
 #include <Wire.h>
 #include "wled.h"
 #include <driver/i2s.h>
+#include <driver/adc.h>
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0)
+#include <driver/adc_deprecated.h>
+#include <driver/adc_types_deprecated.h>
+#endif
+
+//#include <driver/i2s_std.h>
+//#include <driver/i2s_pdm.h>
+//#include <driver/gpio.h>
+
 
 /* ToDo: remove. ES7243 is controlled via compiler defines
    Until this configuration is moved to the webinterface
@@ -88,7 +98,11 @@ class I2SSource : public AudioSource {
         .sample_rate = _sampleRate,
         .bits_per_sample = I2S_SAMPLE_RESOLUTION,
         .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
+        .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_STAND_I2S),
+#else
         .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB),
+#endif
         .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
         .dma_buf_count = 8,
         .dma_buf_len = _blockSize
@@ -307,7 +321,11 @@ class I2SAdcSource : public I2SSource {
         .sample_rate = _sampleRate,
         .bits_per_sample = I2S_SAMPLE_RESOLUTION,
         .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
+        .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_STAND_I2S),
+#else
         .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB),
+#endif
         .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2,
         .dma_buf_count = 8,
         .dma_buf_len = _blockSize
