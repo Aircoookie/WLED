@@ -188,8 +188,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         && elem[F("c3")].isNull() )
       {
         int16_t sOpt;
-        uint8_t tmp = 255;
 /*
+        uint8_t tmp = 255;
         // compatibility mode begin
         char buf[5]; // dummy buffer
         for (int i=0; i<5; i++) {
@@ -629,7 +629,7 @@ void serializeInfo(JsonObject root)
   leds[F("wv")]   = totalLC & 0x02;     // deprecated, true if white slider should be displayed for any segment
   leds["cct"]     = totalLC & 0x04;     // deprecated, use info.leds.lc
 
-  #ifdef WLED_NO_AUDIO
+  #ifdef WLED_DISABLE_AUDIO
   root[F("noaudio")] = true;
   #endif
 

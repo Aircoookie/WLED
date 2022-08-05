@@ -276,7 +276,7 @@
   #define FX_MODE_2DPULSER               143 // non audio
   #define FX_MODE_2DDRIFT                144 // non audio
 #endif
-#ifndef WLED_NO_AUDIO
+#ifndef WLED_DISABLE_AUDIO
   #ifndef WLED_DISABLE_2D
     #define FX_MODE_2DWAVERLY              145 // audio enhanced
     #define FX_MODE_2DSWIRL                146 // audio enhanced
@@ -299,7 +299,7 @@
 
 #ifndef USERMOD_AUDIOREACTIVE
 
-  #ifndef WLED_NO_AUDIO
+  #ifndef WLED_DISABLE_AUDIO
   #define MODE_COUNT                   173
   #else
     #ifndef WLED_DISABLE_2D
@@ -314,7 +314,7 @@
   #ifdef WLED_DISABLE_2D
   #error Audioreactive usermod requires 2D support.
   #endif
-  #ifdef WLED_NO_AUDIO
+  #ifdef WLED_DISABLE_AUDIO
   #error Audioreactive usermod requires audio support.
   #endif
   #define FX_MODE_PIXELS                 173
