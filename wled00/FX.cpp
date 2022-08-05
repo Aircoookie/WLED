@@ -1958,7 +1958,7 @@ static const char _data_FX_MODE_PALETTE[] PROGMEM = "Palette@Cycle speed,;1,2,3;
 //
 // Temperature is in arbitrary units from 0 (cold black) to 255 (white hot).
 //
-// This simulation scales it self a bit depending on NUM_LEDS; it should look
+// This simulation scales it self a bit depending on SEGLEN; it should look
 // "OK" on anywhere from 20 to 100 LEDs without too much tweaking. 
 //
 // I recommend running this simulation at anywhere from 30-100 frames per second,
@@ -3840,7 +3840,7 @@ uint16_t phased_base(uint8_t moder) {                  // We're making sine wave
 
   for (int i = 0; i < SEGLEN; i++) {
     if (moder == 1) modVal = (inoise8(i*10 + i*10) /16);         // Let's randomize our mod length with some Perlin noise.
-    uint16_t val = (i+1) * allfreq;                              // This sets the frequency of the waves. The +1 makes sure that leds[0] is used.
+    uint16_t val = (i+1) * allfreq;                              // This sets the frequency of the waves. The +1 makes sure that led 0 is used.
     if (modVal == 0) modVal = 1;
     val += *phase * (i % modVal +1) /2;                          // This sets the varying phase change of the waves. By Andrew Tuline.
     uint8_t b = cubicwave8(val);                                 // Now we make an 8 bit sinewave.
@@ -4831,10 +4831,9 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   const uint16_t rows = SEGMENT.virtualHeight();
   const uint16_t dataSize = sizeof(CRGB) * SEGMENT.length();  // using width*height prevents reallocation if mirroring is enabled
 
-  if (!SEGENV.allocateData(dataSize*2 + sizeof(unsigned long))) return mode_static(); //allocation failed
-  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
-  CRGB *prevLeds = reinterpret_cast<CRGB*>(SEGENV.data + dataSize);
-  unsigned long *resetMillis = reinterpret_cast<unsigned long*>(SEGENV.data + 2*dataSize); // triggers reset
+  if (!SEGENV.allocateData(dataSize + sizeof(unsigned long))) return mode_static(); //allocation failed
+  CRGB *prevLeds = reinterpret_cast<CRGB*>(SEGENV.data);
+  unsigned long *resetMillis = reinterpret_cast<unsigned long*>(SEGENV.data + dataSize); // triggers reset
 
   CRGB backgroundColor = SEGCOLOR(1);
 
@@ -4847,19 +4846,20 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
     for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
       uint8_t state = random8()%2;
       if (state == 0)
-        leds[XY(x,y)] = backgroundColor;
+        SEGMENT.setPixelColorXY(x,y, backgroundColor);
       else
-        leds[XY(x,y)] = (CRGB)SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0);
+        SEGMENT.setPixelColorXY(x,y, SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0));
     }
 
-    SEGMENT.fill_solid(prevLeds, CRGB::Black);
+    for(uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) prevLeds[XY(x,y)] = CRGB::Black;
+
 
     SEGENV.aux1 = 0;
     SEGENV.aux0 = 0xFFFF;
   }
 
   //copy previous leds (save previous generation)
-  for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) prevLeds[XY(x,y)] = leds[XY(x,y)];
+  for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) prevLeds[XY(x,y)] = SEGMENT.getPixelColorXY(x,y);
 
   //calculate new leds
   for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
@@ -4891,29 +4891,30 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
     } // i,j
 
     // Rules of Life
-    if      ((leds[XY(x,y)] != backgroundColor) && (neighbors <  2)) leds[XY(x,y)] = backgroundColor; // Loneliness
-    else if ((leds[XY(x,y)] != backgroundColor) && (neighbors >  3)) leds[XY(x,y)] = backgroundColor; // Overpopulation
-    else if ((leds[XY(x,y)] == backgroundColor) && (neighbors == 3)) {                                // Reproduction
+    uint32_t col = SEGMENT.getPixelColorXY(x,y);
+    uint32_t bgc = RGBW32(backgroundColor.r, backgroundColor.g, backgroundColor.b, 0);
+    if      ((col != bgc) && (neighbors <  2)) SEGMENT.setPixelColorXY(x,y, bgc); // Loneliness
+    else if ((col != bgc) && (neighbors >  3)) SEGMENT.setPixelColorXY(x,y, bgc); // Overpopulation
+    else if ((col == bgc) && (neighbors == 3)) {                                              // Reproduction
       //find dominantcolor and assign to cell
       colorCount dominantColorCount = {backgroundColor, 0};
       for (int i=0; i<9 && colorsCount[i].count != 0; i++)
         if (colorsCount[i].count > dominantColorCount.count) dominantColorCount = colorsCount[i];
-      if (dominantColorCount.count > 0) leds[XY(x,y)] = dominantColorCount.color; //assign the dominant color
+      if (dominantColorCount.count > 0) SEGMENT.setPixelColorXY(x,y, dominantColorCount.color); //assign the dominant color
     }
     // else do nothing!
   } //x,y
 
-  // calculate CRC16 of leds[]
-  uint16_t crc = crc16((const unsigned char*)leds, dataSize-1);
+  // calculate CRC16 of leds
+  uint16_t crc = crc16((const unsigned char*)prevLeds, dataSize-1); //ewowi: prevLeds instead of leds work as well, tbd: compare more patterns, see SR!
 
   // check if we had same CRC and reset if needed
   // same CRC would mean image did not change or was repeating itself
   if (!(crc == SEGENV.aux0 || crc == SEGENV.aux1)) *resetMillis = strip.now; //if no repetition avoid reset
-  // remeber last two
+  // remember last two
   SEGENV.aux1 = SEGENV.aux0;
   SEGENV.aux0 = crc;
 
-  SEGMENT.setPixels(leds);
   return (SEGMENT.getOption(SEG_OPTION_TRANSITIONAL)) ? FRAMETIME : FRAMETIME_FIXED * (128-(SEGMENT.speed>>1)); // update only when appropriate time passes (in 42 FPS slots)
 } // mode_2Dgameoflife()
 static const char _data_FX_MODE_2DGAMEOFLIFE[] PROGMEM = "Game Of Life@!,;!,!;!;2d";
@@ -5050,7 +5051,7 @@ uint16_t mode_2DJulia(void) {                           // An animated Julia set
     }
     y += dy;
   }
-//  blur2d( leds, 64);
+//  SEGMENT.blur(64);
 
   return FRAMETIME;
 } // mode_2DJulia()
@@ -5201,7 +5202,6 @@ uint16_t mode_2Dmetaballs(void) {   // Metaballs by Stefan Petrick. Cannot have 
     }
   }
 
-  //setPixels(leds);
   return FRAMETIME;
 } // mode_2Dmetaballs()
 static const char _data_FX_MODE_2DMETABALLS[] PROGMEM = "Metaballs@Speed;!,!,!;!;2d";
@@ -5605,10 +5605,10 @@ uint16_t mode_2Dcrazybees(void) {
     SEGMENT.fadeToBlackBy(32);
   
     for (size_t i = 0; i < n; i++) {
-      SEGMENT.addPixelColorXY(bee[i].aimX + 1, bee[i].aimY, CRGB(CHSV(bee[i].hue, 255, 255)));
-      SEGMENT.addPixelColorXY(bee[i].aimX, bee[i].aimY + 1, CRGB(CHSV(bee[i].hue, 255, 255)));
-      SEGMENT.addPixelColorXY(bee[i].aimX - 1, bee[i].aimY, CRGB(CHSV(bee[i].hue, 255, 255)));
-      SEGMENT.addPixelColorXY(bee[i].aimX, bee[i].aimY - 1, CRGB(CHSV(bee[i].hue, 255, 255)));
+      SEGMENT.addPixelColorXY(bee[i].aimX + 1, bee[i].aimY, CHSV(bee[i].hue, 255, 255));
+      SEGMENT.addPixelColorXY(bee[i].aimX, bee[i].aimY + 1, CHSV(bee[i].hue, 255, 255));
+      SEGMENT.addPixelColorXY(bee[i].aimX - 1, bee[i].aimY, CHSV(bee[i].hue, 255, 255));
+      SEGMENT.addPixelColorXY(bee[i].aimX, bee[i].aimY - 1, CHSV(bee[i].hue, 255, 255));
       if (bee[i].posX != bee[i].aimX || bee[i].posY != bee[i].aimY) {
         SEGMENT.setPixelColorXY(bee[i].posX, bee[i].posY, CRGB(CHSV(bee[i].hue, 60, 255)));
         int8_t error2 = bee[i].error * 2;
@@ -5953,11 +5953,13 @@ uint16_t mode_ripplepeak(void) {                // * Ripple peak. By Andrew Tuli
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
+    // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t samplePeak    = *(uint8_t*)um_data->u_data[3];
+  #ifdef ESP32
   float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
+  #endif
   uint8_t *maxVol       =  (uint8_t*)um_data->u_data[6];
   uint8_t *binNum       =  (uint8_t*)um_data->u_data[7];
 
@@ -6024,16 +6026,15 @@ uint16_t mode_2DSwirl(void) {
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.length();  // using width*height prevents reallocation if mirroring is enabled
 
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
-
-  if (SEGENV.call == 0) SEGMENT.fill_solid(leds, CRGB::Black);
+  if (SEGENV.call == 0) {
+    SEGMENT.setUpLeds();
+    SEGMENT.fill(BLACK);
+  }
 
   const uint8_t borderWidth = 2;
 
-  SEGMENT.blur2d(leds, SEGMENT.custom1);
+  SEGMENT.blur(SEGMENT.custom1);
 
   uint8_t  i = beatsin8( 27*SEGMENT.speed/255, borderWidth, cols - borderWidth);
   uint8_t  j = beatsin8( 41*SEGMENT.speed/255, borderWidth, rows - borderWidth);
@@ -6043,7 +6044,7 @@ uint16_t mode_2DSwirl(void) {
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
+    // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth  = *(float*)   um_data->u_data[0]; //ewowi: use instead of sampleAvg???
@@ -6051,14 +6052,13 @@ uint16_t mode_2DSwirl(void) {
 
   // printUmData();
 
-  leds[XY( i, j)]  += ColorFromPalette(SEGPALETTE, (ms / 11 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 11, 200, 255);
-  leds[XY( j, i)]  += ColorFromPalette(SEGPALETTE, (ms / 13 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 13, 200, 255);
-  leds[XY(ni, nj)] += ColorFromPalette(SEGPALETTE, (ms / 17 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 17, 200, 255);
-  leds[XY(nj, ni)] += ColorFromPalette(SEGPALETTE, (ms / 29 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 29, 200, 255);
-  leds[XY( i, nj)] += ColorFromPalette(SEGPALETTE, (ms / 37 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 37, 200, 255);
-  leds[XY(ni, j)]  += ColorFromPalette(SEGPALETTE, (ms / 41 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND); //CHSV( ms / 41, 200, 255);
+  SEGMENT.addPixelColorXY( i, j, ColorFromPalette(SEGPALETTE, (ms / 11 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND)); //CHSV( ms / 11, 200, 255);
+  SEGMENT.addPixelColorXY( j, i, ColorFromPalette(SEGPALETTE, (ms / 13 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND)); //CHSV( ms / 13, 200, 255);
+  SEGMENT.addPixelColorXY(ni,nj, ColorFromPalette(SEGPALETTE, (ms / 17 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND)); //CHSV( ms / 17, 200, 255);
+  SEGMENT.addPixelColorXY(nj,ni, ColorFromPalette(SEGPALETTE, (ms / 29 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND)); //CHSV( ms / 29, 200, 255);
+  SEGMENT.addPixelColorXY( i,nj, ColorFromPalette(SEGPALETTE, (ms / 37 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND)); //CHSV( ms / 37, 200, 255);
+  SEGMENT.addPixelColorXY(ni, j, ColorFromPalette(SEGPALETTE, (ms / 41 + volumeSmth*4), volumeRaw * SEGMENT.intensity / 64, LINEARBLEND)); //CHSV( ms / 41, 200, 255);
 
-  SEGMENT.setPixels(leds);
   return FRAMETIME;
 } // mode_2DSwirl()
 static const char _data_FX_MODE_2DSWIRL[] PROGMEM = "Swirl@!,Sensitivity,Blur;,Bg Swirl;!;ix=64ssim=0,2d,vo"; // Beatsin
@@ -6073,23 +6073,20 @@ uint16_t mode_2DWaverly(void) {
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.length();  // using width*height prevents reallocation if mirroring is enabled
-
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
 
   if (SEGENV.call == 0) {
-    SEGMENT.fill_solid(leds, CRGB::Black);
+    SEGMENT.setUpLeds();
+    SEGMENT.fill(BLACK);
   }
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
+    // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth  = *(float*)   um_data->u_data[0];
 
-  SEGMENT.fadeToBlackBy(leds, SEGMENT.speed);
+  SEGMENT.fadeToBlackBy(SEGMENT.speed);
 
   long t = millis() / 2;
   for (int i = 0; i < cols; i++) {
@@ -6101,14 +6098,13 @@ uint16_t mode_2DWaverly(void) {
     }
     uint16_t thisMax = map(thisVal, 0, 512, 0, rows);
 
-    for (int j = 0; j < thisMax; j++) {
-      leds[XY(i, j)] += ColorFromPalette(SEGPALETTE, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND);
-      leds[XY((cols - 1) - i, (rows - 1) - j)] += ColorFromPalette(SEGPALETTE, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND);
+    for (uint16_t j = 0; j < thisMax; j++) {
+      SEGMENT.addPixelColorXY(i, j, ColorFromPalette(SEGPALETTE, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND));
+      SEGMENT.addPixelColorXY((cols - 1) - i, (rows - 1) - j, ColorFromPalette(SEGPALETTE, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND));
     }
   }
-  SEGMENT.blur2d(leds, 16);
+  SEGMENT.blur(16);
 
-  SEGMENT.setPixels(leds);
   return FRAMETIME;
 } // mode_2DWaverly()
 static const char _data_FX_MODE_2DWAVERLY[] PROGMEM = "Waverly@Amplification,Sensitivity;;!;ix=64,ssim=0,2d,vo"; // Beatsin
@@ -6137,7 +6133,7 @@ uint16_t mode_gravcenter(void) {                // Gravcenter. By Andrew Tuline.
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
+    // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth  = *(float*)  um_data->u_data[0];
@@ -6184,7 +6180,7 @@ uint16_t mode_gravcentric(void) {                     // Gravcentric. By Andrew 
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
+    // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth  = *(float*)  um_data->u_data[0];
@@ -6234,7 +6230,7 @@ uint16_t mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
+    // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth  = *(float*)  um_data->u_data[0];
@@ -6274,7 +6270,7 @@ static const char _data_FX_MODE_GRAVIMETER[] PROGMEM = "Gravimeter@Rate of fall,
 uint16_t mode_juggles(void) {                   // Juggles. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
+    // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth   = *(float*)  um_data->u_data[0];
@@ -6296,18 +6292,18 @@ static const char _data_FX_MODE_JUGGLES[] PROGMEM = "Juggles@!,# of balls;,!;!;m
 //////////////////////
 uint16_t mode_matripix(void) {                  // Matripix. By Andrew Tuline.
   // even with 1D effect we have to take logic for 2D segments for allocation as fill_solid() fills whole segment
-  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.length();  // using width*height prevents reallocation if mirroring is enabled
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
+    // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
   int16_t volumeRaw    = *(int16_t*)um_data->u_data[1];
 
-  if (SEGENV.call == 0) SEGMENT.fill_solid(leds, CRGB::Black);
+  if (SEGENV.call == 0) {
+    SEGMENT.setUpLeds();
+    SEGMENT.fill(BLACK);
+  }
 
   uint8_t secondHand = micros()/(256-SEGMENT.speed)/500 % 16;
   if(SEGENV.aux0 != secondHand) {
@@ -6317,7 +6313,6 @@ uint16_t mode_matripix(void) {                  // Matripix. By Andrew Tuline.
     for (uint16_t i=0; i<SEGLEN-1; i++) SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i+1)); // shift left
     SEGMENT.setPixelColor(SEGLEN-1, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), pixBri));
   }
-  for (int i=0; i<SEGLEN; i++) SEGMENT.setPixelColor(i, leds[i]);
 
   return FRAMETIME;
 } // mode_matripix()
@@ -6332,7 +6327,7 @@ uint16_t mode_midnoise(void) {                  // Midnoise. By Andrew Tuline.
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
+    // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth   = *(float*)  um_data->u_data[0];
@@ -6371,7 +6366,7 @@ uint16_t mode_noisefire(void) {                 // Noisefire. By Andrew Tuline.
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
+    // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth   = *(float*)  um_data->u_data[0];
@@ -6399,7 +6394,7 @@ uint16_t mode_noisemeter(void) {                // Noisemeter. By Andrew Tuline.
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
+    // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth   = *(float*)  um_data->u_data[0];
@@ -6430,18 +6425,15 @@ static const char _data_FX_MODE_NOISEMETER[] PROGMEM = "Noisemeter@Fade rate,Wid
 //////////////////////
 uint16_t mode_pixelwave(void) {                 // Pixelwave. By Andrew Tuline.
   // even with 1D effect we have to take logic for 2D segments for allocation as fill_solid() fills whole segment
-  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.length();  // using width*height prevents reallocation if mirroring is enabled
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
 
   if (SEGENV.call == 0) {
-    SEGMENT.fill_solid(leds, CRGB::Black); // clear buffer
-    SEGMENT.fill(BLACK); // clear output
+    SEGMENT.setUpLeds();
+    SEGMENT.fill(BLACK);
   }
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
+    // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
   int16_t volumeRaw    = *(int16_t*)um_data->u_data[1];
@@ -6452,11 +6444,10 @@ uint16_t mode_pixelwave(void) {                 // Pixelwave. By Andrew Tuline.
 
     int pixBri = volumeRaw * SEGMENT.intensity / 64;
 
-    leds[SEGLEN/2] = color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), pixBri);
-    for (int i=SEGLEN-1; i>SEGLEN/2; i--) leds[i] = leds[i-1]; // Move to the right.
-    for (int i=0; i<SEGLEN/2; i++)        leds[i] = leds[i+1]; // Move to the left.
+    SEGMENT.setPixelColor(SEGLEN/2, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), pixBri));
+    for (int i = SEGLEN - 1; i > SEGLEN/2; i--)   SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i-1)); //move to the left
+    for (int i = 0; i < SEGLEN/2; i++)            SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i+1)); // move to the right
   }
-  for (int x = 0; x < SEGLEN; x++) SEGMENT.setPixelColor(x, leds[x]);
 
   return FRAMETIME;
 } // mode_pixelwave()
@@ -6473,19 +6464,17 @@ typedef struct Plasphase {
 
 uint16_t mode_plasmoid(void) {                  // Plasmoid. By Andrew Tuline.
   // even with 1D effect we have to take logic for 2D segments for allocation as fill_solid() fills whole segment
-  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.length();  // using width*height prevents reallocation if mirroring is enabled
-  if (!SEGENV.allocateData(dataSize + sizeof(plasphase))) return mode_static(); //allocation failed
-  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
-  Plasphase* plasmoip = reinterpret_cast<Plasphase*>(SEGENV.data + dataSize);
+  if (!SEGENV.allocateData(sizeof(plasphase))) return mode_static(); //allocation failed
+  Plasphase* plasmoip = reinterpret_cast<Plasphase*>(SEGENV.data);
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
+    // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth   = *(float*)  um_data->u_data[0];
 
-  SEGMENT.fadeToBlackBy(leds, 64);
+  SEGMENT.fadeToBlackBy(64);
 
   plasmoip->thisphase += beatsin8(6,-4,4);                          // You can change direction and speed individually.
   plasmoip->thatphase += beatsin8(7,-4,4);                          // Two phase values to make a complex pattern. By Andrew Tuline.
@@ -6498,9 +6487,8 @@ uint16_t mode_plasmoid(void) {                  // Plasmoid. By Andrew Tuline.
     uint8_t colorIndex=thisbright;
     if (volumeSmth * SEGMENT.intensity / 64 < thisbright) {thisbright = 0;}
 
-    leds[i] += color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(colorIndex, false, PALETTE_SOLID_WRAP, 0), thisbright);
+    SEGMENT.addPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(colorIndex, false, PALETTE_SOLID_WRAP, 0), thisbright));
   }
-  for (int x = 0; x < SEGLEN; x++) SEGMENT.setPixelColor(x, leds[x]);
 
   return FRAMETIME;
 } // mode_plasmoid()
@@ -6519,7 +6507,7 @@ uint16_t mode_puddlepeak(void) {                // Puddlepeak. By Andrew Tuline.
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
+    // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t samplePeak = *(uint8_t*)um_data->u_data[3];
@@ -6563,7 +6551,7 @@ uint16_t mode_puddles(void) {                   // Puddles. By Andrew Tuline.
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
+    // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
   int16_t volumeRaw    = *(int16_t*)um_data->u_data[1];
@@ -6625,36 +6613,29 @@ static const char _data_FX_MODE_PIXELS[] PROGMEM = "Pixels@Fade rate,# of pixels
 //////////////////////
 uint16_t mode_blurz(void) {                    // Blurz. By Andrew Tuline.
   // even with 1D effect we have to take logic for 2D segments for allocation as fill_solid() fills whole segment
-  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.length();  // using width*height prevents reallocation if mirroring is enabled
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
+    // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
-  if (!fftResult) return mode_static();
 
   if (SEGENV.call == 0) {
-    SEGMENT.fill_solid(leds, CRGB::Black);
-    SEGMENT.fill(BLACK); // clear canvas
+    SEGMENT.fill(BLACK);
     SEGENV.aux0 = 0;
   }
 
-  SEGMENT.fade_out(SEGMENT.speed); // do not fade leds[] but only canvas
+  SEGMENT.fade_out(SEGMENT.speed);
 
   SEGENV.step += FRAMETIME;
   if (SEGENV.step > SPEED_FORMULA_L) {
     uint16_t segLoc = random16(SEGLEN);
-    leds[segLoc] = color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(2*fftResult[SEGENV.aux0%16]*240/(SEGLEN-1), false, PALETTE_SOLID_WRAP, 0), 2*fftResult[SEGENV.aux0%16]);
+    SEGMENT.setPixelColor(segLoc, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(2*fftResult[SEGENV.aux0%16]*240/(SEGLEN-1), false, PALETTE_SOLID_WRAP, 0), 2*fftResult[SEGENV.aux0%16]));
     ++(SEGENV.aux0) %= 16; // make sure it doesn't cross 16
 
     SEGENV.step = 1;
-    if (SEGMENT.is2D()) SEGMENT.blur2d(leds, SEGMENT.intensity);
-    else                SEGMENT.blur1d(leds, SEGMENT.intensity);
-    for (int i=0; i<SEGLEN; i++) SEGMENT.setPixelColor(i, leds[i]);
+    SEGMENT.blur(SEGMENT.intensity);
   }
 
   return FRAMETIME;
@@ -6666,33 +6647,31 @@ static const char _data_FX_MODE_BLURZ[] PROGMEM = "Blurz@Fade rate,Blur amount;!
 //   ** DJLight        //
 /////////////////////////
 uint16_t mode_DJLight(void) {                   // Written by ??? Adapted by Will Tatam.
-  const int NUM_LEDS = SEGLEN;                            // aka SEGLEN
-  const int mid = NUM_LEDS / 2;
-
-  // even with 1D effect we have to take logic for 2D segments for allocation as fill_solid() fills whole segment
-  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.length();  // using width*height prevents reallocation if mirroring is enabled
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
+  const int mid = SEGLEN / 2;
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
+    // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
-  if (!fftResult) return mode_static();
+
+  if (SEGENV.call == 0) {
+    SEGMENT.setUpLeds();
+    SEGMENT.fill(BLACK);
+  }
 
   uint8_t secondHand = micros()/(256-SEGMENT.speed)/500+1 % 64;
   if (SEGENV.aux0 != secondHand) {                        // Triggered millis timing.
     SEGENV.aux0 = secondHand;
 
-    leds[mid] = CRGB(fftResult[15]/2, fftResult[5]/2, fftResult[0]/2); // 16-> 15 as 16 is out of bounds
-    leds[mid].fadeToBlackBy(map(fftResult[1*4], 0, 255, 255, 10));     // TODO - Update
+    SEGMENT.setPixelColor(mid, CRGB(fftResult[15]/2, fftResult[5]/2, fftResult[0]/2)); // 16-> 15 as 16 is out of bounds
+    CRGB color = SEGMENT.getPixelColor(mid);
+    SEGMENT.setPixelColor(mid, color.fadeToBlackBy(map(fftResult[1*4], 0, 255, 255, 10)));     // TODO - Update
 
-    for (int i = NUM_LEDS - 1; i > mid; i--) leds[i] = leds[i - 1];    //move to the left
-    for (int i = 0; i < mid; i++)            leds[i] = leds[i + 1];    // move to the right
+    for (int i = SEGLEN - 1; i > mid; i--)   SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i-1)); //move to the left
+    for (int i = 0; i < mid; i++)            SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i+1)); // move to the right
   }
-  for (int i=0; i<SEGLEN; i++) SEGMENT.setPixelColor(i, leds[i]);
 
   return FRAMETIME;
 } // mode_DJLight()
@@ -6708,7 +6687,7 @@ uint16_t mode_freqmap(void) {                   // Map FFT_MajorPeak to SEGLEN. 
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
+    // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
@@ -6733,18 +6712,18 @@ static const char _data_FX_MODE_FREQMAP[] PROGMEM = "Freqmap@Fade rate,Starting 
 //   ** Freqmatrix   //
 ///////////////////////
 uint16_t mode_freqmatrix(void) {                // Freqmatrix. By Andreas Pleschung.
-  // even with 1D effect we have to take logic for 2D segments for allocation as fill_solid() fills whole segment
-  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.length();  // using width*height prevents reallocation if mirroring is enabled
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
-
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
+    // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float FFT_MajorPeak = *(float*)um_data->u_data[4];
   float volumeSmth    = *(float*)  um_data->u_data[0];
+
+  if (SEGENV.call == 0) {
+    SEGMENT.setUpLeds();
+    SEGMENT.fill(BLACK);
+  }
 
   uint8_t secondHand = micros()/(256-SEGMENT.speed)/500 % 16;
   if(SEGENV.aux0 != secondHand) {
@@ -6775,10 +6754,9 @@ uint16_t mode_freqmatrix(void) {                // Freqmatrix. By Andreas Plesch
     }
 
     // shift the pixels one pixel up
-    leds[0] = color;
-    for (int i = SEGLEN-1; i > 0; i--) leds[i] = leds[i-1];
+    SEGMENT.setPixelColor(0, color);
+    for (int i = SEGLEN - 1; i > 0; i--)   SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i-1)); //move to the left
   }
-  for (int x = 0; x < SEGLEN; x++) SEGMENT.setPixelColor(x, leds[x]);
 
   return FRAMETIME;
 } // mode_freqmatrix()
@@ -6795,7 +6773,7 @@ static const char _data_FX_MODE_FREQMATRIX[] PROGMEM = "Freqmatrix@Time delay,So
 uint16_t mode_freqpixels(void) {                // Freqpixel. By Andrew Tuline.
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
+    // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
@@ -6831,18 +6809,18 @@ static const char _data_FX_MODE_FREQPIXELS[] PROGMEM = "Freqpixels@Fade rate,Sta
 // As a compromise between speed and accuracy we are currently sampling with 10240Hz, from which we can then determine with a 512bin FFT our max frequency is 5120Hz.
 // Depending on the music stream you have you might find it useful to change the frequency mapping.
 uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschung.
-  // even with 1D effect we have to take logic for 2D segments for allocation as fill_solid() fills whole segment
-  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.length();  // using width*height prevents reallocation if mirroring is enabled
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
-
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
+    // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
   float   volumeSmth   = *(float*)  um_data->u_data[0];
+
+  if (SEGENV.call == 0) {
+    SEGMENT.setUpLeds();
+    SEGMENT.fill(BLACK);
+  }
 
   uint8_t secondHand = micros()/(256-SEGMENT.speed)/500 % 16;
   if(SEGENV.aux0 != secondHand) {
@@ -6875,13 +6853,12 @@ uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschun
       color = CHSV(i, 240, (uint8_t)b); // implicit conversion to RGB supplied by FastLED
     }
 
-    leds[SEGLEN/2] = color;
+    SEGMENT.setPixelColor(SEGLEN/2, color);
 
     // shift the pixels one pixel outwards
-    for (int i=SEGLEN-1; i>SEGLEN/2; i--) leds[i] = leds[i-1]; // Move to the right.
-    for (int i=0; i<SEGLEN/2; i++)        leds[i] = leds[i+1]; // Move to the left.
+    for (int i = SEGLEN - 1; i > SEGLEN/2; i--)   SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i-1)); //move to the left
+    for (int i = 0; i < SEGLEN/2; i++)            SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i+1)); // move to the right
   }
-  for (int x = 0; x < SEGLEN; x++) SEGMENT.setPixelColor(x, leds[x]);
 
   return FRAMETIME;
 } // mode_freqwave()
@@ -6899,7 +6876,7 @@ uint16_t mode_gravfreq(void) {                  // Gravfreq. By Andrew Tuline.
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
+    // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
@@ -6944,11 +6921,10 @@ static const char _data_FX_MODE_GRAVFREQ[] PROGMEM = "Gravfreq@Rate of fall,Sens
 uint16_t mode_noisemove(void) {                 // Noisemove.    By: Andrew Tuline
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
+    // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
-  if (!fftResult) return mode_static();
 
   SEGMENT.fade_out(224);                                          // Just in case something doesn't get faded.
 
@@ -6968,20 +6944,15 @@ static const char _data_FX_MODE_NOISEMOVE[] PROGMEM = "Noisemove@Speed of perlin
 //   ** Rocktaves   //
 //////////////////////
 uint16_t mode_rocktaves(void) {                 // Rocktaves. Same note from each octave is same colour.    By: Andrew Tuline
-  // even with 1D effect we have to take logic for 2D segments for allocation as fill_solid() fills whole segment
-  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.length();  // using width*height prevents reallocation if mirroring is enabled
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
-
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
+    // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
   float   my_magnitude  = *(float*)   um_data->u_data[5] / 16.0f; 
 
-  SEGMENT.fadeToBlackBy(leds, 64);                        // Just in case something doesn't get faded.
+  SEGMENT.fadeToBlackBy(64);                        // Just in case something doesn't get faded.
 
   float frTemp = FFT_MajorPeak;
   uint8_t octCount = 0;                                   // Octave counter.
@@ -6997,10 +6968,8 @@ uint16_t mode_rocktaves(void) {                 // Rocktaves. Same note from eac
   frTemp -=132;                                           // This should give us a base musical note of C3
   frTemp = fabs(frTemp * 2.1);                            // Fudge factors to compress octave range starting at 0 and going to 255;
 
-//  leds[beatsin8(8+octCount*4,0,SEGLEN-1,0,octCount*8)] += CHSV((uint8_t)frTemp,255,volTemp);                 // Back and forth with different frequencies and phase shift depending on current octave.
   uint16_t i = map(beatsin8(8+octCount*4, 0, 255, 0, octCount*8), 0, 255, 0, SEGLEN-1);
-  leds[i] += color_blend(SEGCOLOR(1), SEGMENT.color_from_palette((uint8_t)frTemp, false, PALETTE_SOLID_WRAP, 0), volTemp);
-  for (int x = 0; x < SEGLEN; x++) SEGMENT.setPixelColor(x, leds[x]);
+  SEGMENT.addPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette((uint8_t)frTemp, false, PALETTE_SOLID_WRAP, 0), volTemp));
 
   return FRAMETIME;
 } // mode_rocktaves()
@@ -7016,7 +6985,7 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
+    // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t samplePeak    = *(uint8_t*)um_data->u_data[3];
@@ -7026,6 +6995,8 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
   float   my_magnitude  = *(float*)   um_data->u_data[5] / 8.0f; 
 
   if (SEGENV.call == 0) {
+    SEGMENT.setUpLeds();
+    SEGMENT.fill(BLACK);
     SEGENV.aux0 = 255;
     SEGMENT.custom2 = *binNum;
     SEGMENT.custom3 = *maxVol * 2;
@@ -7069,11 +7040,10 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
+    // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
-  if (!fftResult) return mode_static();
 
   if (SEGENV.call == 0) for (int i=0; i<cols; i++) previousBarHeight[i] = 0;
 
@@ -7118,9 +7088,6 @@ uint16_t mode_2DFunkyPlank(void) {              // Written by ??? Adapted by Wil
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-  const uint16_t dataSize = sizeof(CRGB) * SEGMENT.length();  // using width*height prevents reallocation if mirroring is enabled
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-  CRGB *leds = reinterpret_cast<CRGB*>(SEGENV.data);
 
   int NUMB_BANDS = map(SEGMENT.custom1, 0, 255, 1, 16);
   int barWidth = (cols / NUMB_BANDS);
@@ -7133,11 +7100,15 @@ uint16_t mode_2DFunkyPlank(void) {              // Written by ??? Adapted by Wil
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
-    // add support for no audio data
+    // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
-  if (!fftResult) return mode_static();
+
+  if (SEGENV.call == 0) {
+    SEGMENT.setUpLeds();
+    SEGMENT.fill(BLACK);
+  }
 
   uint8_t secondHand = micros()/(256-SEGMENT.speed)/500+1 % 64;
   if (SEGENV.aux0 != secondHand) {                        // Triggered millis timing.
@@ -7150,21 +7121,18 @@ uint16_t mode_2DFunkyPlank(void) {              // Written by ??? Adapted by Wil
       int v = map(fftResult[band], 0, 255, 10, 255);
       for (int w = 0; w < barWidth; w++) {
          int xpos = (barWidth * b) + w;
-         leds[XY(xpos, 0)] = CHSV(hue, 255, v);
+         SEGMENT.setPixelColorXY(xpos, 0, CHSV(hue, 255, v));
       }
     }
 
     // Update the display:
     for (int i = (rows - 1); i > 0; i--) {
       for (int j = (cols - 1); j >= 0; j--) {
-        int src = XY(j, (i - 1));
-        int dst = XY(j, i);
-        leds[dst] = leds[src];
+        SEGMENT.setPixelColorXY(j, i, SEGMENT.getPixelColorXY(j, i-1));
       }
     }
   }
 
-  SEGMENT.setPixels(leds);
   return FRAMETIME;
 } // mode_2DFunkyPlank
 static const char _data_FX_MODE_2DFUNKYPLANK[] PROGMEM = "Funky Plank@Scroll speed,,# of bands;;;ssim=0,2d,fr"; // Beatsin

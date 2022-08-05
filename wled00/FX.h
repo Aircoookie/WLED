@@ -433,6 +433,7 @@ typedef struct Segment {
     uint16_t aux1;  // custom var
     byte* data;
     CRGB* leds;
+    static CRGB *_globalLeds;
 
   private:
     union {
@@ -515,7 +516,7 @@ typedef struct Segment {
       if (leds) Serial.printf(" [%u]", length()*sizeof(CRGB));
       Serial.println();
       #endif
-      if (leds) free(leds);
+      if (!Segment::_globalLeds && leds) free(leds);
       if (name) delete[] name;
       if (_t) delete _t;
       deallocateData();
@@ -560,7 +561,8 @@ typedef struct Segment {
       * Safe to call from interrupts and network requests.
       */
     inline void markForReset(void) { reset = true; }  // setOption(SEG_OPTION_RESET, true)
-    inline void setUpLeds() { if (!leds) leds = (CRGB*)malloc(sizeof(CRGB)*length()); }
+    //inline void setUpLeds() { if (!leds) leds = (CRGB*)malloc(sizeof(CRGB)*length()); }
+    void setUpLeds(void);
 
     // transition functions
     void     startTransition(uint16_t dur); // transition has to start before actual segment values change
@@ -616,8 +618,8 @@ typedef struct Segment {
     void addPixelColorXY(int x, int y, CRGB c)                             { addPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0)); }
     void fadePixelColorXY(uint16_t x, uint16_t y, uint8_t fade);
     void box_blur(uint16_t i, bool vertical, fract8 blur_amount); // 1D box blur (with weight)
-    void blurRow(uint16_t row, fract8 blur_amount, CRGB* leds=nullptr);
-    void blurCol(uint16_t col, fract8 blur_amount, CRGB* leds=nullptr);
+    void blurRow(uint16_t row, fract8 blur_amount);
+    void blurCol(uint16_t col, fract8 blur_amount);
     void moveX(int8_t delta);
     void moveY(int8_t delta);
     void move(uint8_t dir, uint8_t delta);
@@ -627,13 +629,10 @@ typedef struct Segment {
     void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color);
     void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB c) { drawCharacter(chr, x, y, w, h, RGBW32(c.r,c.g,c.b,0)); } // automatic inline
     void wu_pixel(uint32_t x, uint32_t y, CRGB c);
-    // obsolete
-    void blur1d(CRGB* leds, fract8 blur_amount);
-    void blur2d(CRGB* leds, fract8 blur_amount);
-    void fill_solid(CRGB* leds, CRGB c);
-    void fadeToBlackBy(CRGB* leds, uint8_t fadeBy);
-    void nscale8(CRGB* leds, uint8_t scale);
-    void setPixels(CRGB* leds);
+    void blur1d(fract8 blur_amount); // blur all rows in 1 dimension
+    void blur2d(fract8 blur_amount) { blur(blur_amount); }
+    void fill_solid(CRGB c) { fill(RGBW32(c.r,c.g,c.b,0)); }
+    void nscale8(uint8_t scale);
   #else
     uint16_t XY(uint16_t x, uint16_t y)                                    { return x; }
     void setPixelColorXY(int x, int y, uint32_t c)                         { setPixelColor(x, c); }
@@ -650,8 +649,8 @@ typedef struct Segment {
     void addPixelColorXY(int x, int y, CRGB c)                             { addPixelColor(x, RGBW32(c.r,c.g,c.b,0)); }
     void fadePixelColorXY(uint16_t x, uint16_t y, uint8_t fade)            { fadePixelColor(x, fade); }
     void box_blur(uint16_t i, bool vertical, fract8 blur_amount) {}
-    void blurRow(uint16_t row, fract8 blur_amount, CRGB* leds=nullptr) {}
-    void blurCol(uint16_t col, fract8 blur_amount, CRGB* leds=nullptr) {}
+    void blurRow(uint16_t row, fract8 blur_amount) {}
+    void blurCol(uint16_t col, fract8 blur_amount) {}
     void moveX(int8_t delta) {}
     void moveY(int8_t delta) {}
     void move(uint8_t dir, uint8_t delta) {}
@@ -786,7 +785,8 @@ class WS2812FX {  // 96 bytes
       hasRGBWBus(void),
       hasCCTBus(void),
       // return true if the strip is being sent pixel updates
-      isUpdating(void);
+      isUpdating(void),
+      useLedsArray = false;
 
     inline bool isServicing(void) { return _isServicing; }
     inline bool hasWhiteChannel(void) {return _hasWhiteChannel;}

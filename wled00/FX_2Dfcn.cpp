@@ -238,7 +238,8 @@ void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
 
 // returns RGBW values of pixel
 uint32_t Segment::getPixelColorXY(uint16_t x, uint16_t y) {
-  if (leds) return RGBW32(leds[XY(x,y)].r, leds[XY(x,y)].g, leds[XY(x,y)].b, 0);
+  int i = XY(x,y);
+  if (leds) return RGBW32(leds[i].r, leds[i].g, leds[i].b, 0);
   if (getOption(SEG_OPTION_REVERSED)  ) x = virtualWidth()  - x - 1;
   if (getOption(SEG_OPTION_REVERSED_Y)) y = virtualHeight() - y - 1;
   if (getOption(SEG_OPTION_TRANSPOSED)) { uint16_t t = x; x = y; y = t; } // swap X & Y if segment transposed
@@ -264,7 +265,7 @@ void Segment::fadePixelColorXY(uint16_t x, uint16_t y, uint8_t fade) {
 }
 
 // blurRow: perform a blur on a row of a rectangular matrix
-void Segment::blurRow(uint16_t row, fract8 blur_amount, CRGB* leds) {
+void Segment::blurRow(uint16_t row, fract8 blur_amount) {
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
 
@@ -274,24 +275,22 @@ void Segment::blurRow(uint16_t row, fract8 blur_amount, CRGB* leds) {
   uint8_t seep = blur_amount >> 1;
   CRGB carryover = CRGB::Black;
   for (uint16_t x = 0; x < cols; x++) {
-    CRGB cur = leds ? leds[XY(x,row)] : CRGB(getPixelColorXY(x, row));
+    CRGB cur = getPixelColorXY(x, row);
     CRGB part = cur;
     part.nscale8(seep);
     cur.nscale8(keep);
     cur += carryover;
     if (x) {
-      CRGB prev = (leds ? leds[XY(x-1,row)] : CRGB(getPixelColorXY(x-1, row))) + part;
-      if (leds) leds[XY(x-1,row)] = prev;
-      else      setPixelColorXY(x-1, row, prev);
+      CRGB prev = CRGB(getPixelColorXY(x-1, row)) + part;
+      setPixelColorXY(x-1, row, prev);
     }
-    if (leds) leds[XY(x,row)] = cur;
-    else      setPixelColorXY(x, row, cur);
+    setPixelColorXY(x, row, cur);
     carryover = part;
   }
 }
 
 // blurCol: perform a blur on a column of a rectangular matrix
-void Segment::blurCol(uint16_t col, fract8 blur_amount, CRGB* leds) {
+void Segment::blurCol(uint16_t col, fract8 blur_amount) {
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
 
@@ -301,18 +300,16 @@ void Segment::blurCol(uint16_t col, fract8 blur_amount, CRGB* leds) {
   uint8_t seep = blur_amount >> 1;
   CRGB carryover = CRGB::Black;
   for (uint16_t i = 0; i < rows; i++) {
-    CRGB cur = leds ? leds[XY(col,i)] : CRGB(getPixelColorXY(col, i));
+    CRGB cur = getPixelColorXY(col, i);
     CRGB part = cur;
     part.nscale8(seep);
     cur.nscale8(keep);
     cur += carryover;
     if (i) {
-      CRGB prev = (leds ? leds[XY(col,i-1)] : CRGB(getPixelColorXY(col, i-1))) + part;
-      if (leds) leds[XY(col,i-1)] = prev;
-      else      setPixelColorXY(col, i-1, prev);
+      CRGB prev = CRGB(getPixelColorXY(col, i-1)) + part;
+      setPixelColorXY(col, i-1, prev);
     }
-    if (leds) leds[XY(col,i)] = cur;
-    else      setPixelColorXY(col, i, cur);
+    setPixelColorXY(col, i, cur);
     carryover = part;
   }
 }
@@ -365,16 +362,9 @@ void Segment::box_blur(uint16_t i, bool vertical, fract8 blur_amount) {
 //         eventually all the way to black; this is by design so that
 //         it can be used to (slowly) clear the LEDs to black.
 
-void Segment::blur1d(CRGB* leds, fract8 blur_amount) {
+void Segment::blur1d(fract8 blur_amount) {
   const uint16_t rows = virtualHeight();
-  for (uint16_t y = 0; y < rows; y++) blurRow(y, blur_amount, leds);
-}
-
-void Segment::blur2d(CRGB* leds, fract8 blur_amount) {
-  const uint16_t cols = virtualWidth();
-  const uint16_t rows = virtualHeight();
-  for (uint16_t i = 0; i < rows; i++) blurRow(i, blur_amount, leds); // blur all rows
-  for (uint16_t k = 0; k < cols; k++) blurCol(k, blur_amount, leds); // blur all columns
+  for (uint16_t y = 0; y < rows; y++) blurRow(y, blur_amount);
 }
 
 void Segment::moveX(int8_t delta) {
@@ -437,37 +427,18 @@ void Segment::fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
       if (x * x + y * y <= radius * radius &&
           int16_t(cx)+x>=0 && int16_t(cy)+y>=0 &&
           int16_t(cx)+x<cols && int16_t(cy)+y<rows)
-        setPixelColorXY(cx + x, cy + y, col);
+        addPixelColorXY(cx + x, cy + y, col);
     }
   }
 }
 
-void Segment::fill_solid(CRGB* leds, CRGB color) {
-  const uint16_t cols = is2D() ? virtualWidth() : virtualLength();
-  const uint16_t rows = virtualHeight();
-  for(uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
-    if (leds) leds[XY(x,y)] = color;
-    else setPixelColorXY(x, y, color);
-  }
-}
-
-void Segment::fadeToBlackBy(CRGB* leds, uint8_t fadeBy) {
-  nscale8(leds, 255 - fadeBy);
-}
-
-void Segment::nscale8(CRGB* leds, uint8_t scale) {
+void Segment::nscale8(uint8_t scale) {
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
   for(uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
     if (leds) leds[XY(x,y)].nscale8(scale);
     else setPixelColorXY(x, y, CRGB(getPixelColorXY(x, y)).nscale8(scale));
   }
-}
-
-void Segment::setPixels(CRGB* leds) {
-  const uint16_t cols = virtualWidth();
-  const uint16_t rows = virtualHeight();
-  for (uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) setPixelColorXY(x, y, leds[XY(x,y)]);
 }
 
 //line function
