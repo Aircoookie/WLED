@@ -24,6 +24,8 @@
 			scE.addEventListener("load", () => {
 				//console.log("File loaded");
 				GetV();
+				setBckFilename(gId("bckcfg"));
+				setBckFilename(gId("bckpresets"));
 			});
 			// error event
 			scE.addEventListener("error", (ev) => {
@@ -58,6 +60,9 @@
 			if(event.key.match(/[0-9]/) || specialkeys.includes(event.key)) return true;
 			event.preventDefault();
 			return false;
+		}
+		function setBckFilename(x) {
+			x.setAttribute("download","wled_" + x.getAttribute("download") + (sd=="WLED"?"":("_" +sd)));
 		}
 		function S() {
 			if (window.location.protocol == "file:") {
@@ -101,9 +106,9 @@
 		Enable ArduinoOTA: <input type="checkbox" name="AO">
 		<hr>
 		<h3>Backup & Restore</h3>
-		<a class="btn lnk" href="/presets.json?download" target="download-frame">Backup presets</a><br>
+		<a class="btn lnk" id="bckcfg" href="/presets.json" download="presets">Backup presets</a><br>
 		<div>Restore presets<br><input type="file" name="data" accept=".json"> <button type="button" onclick="uploadFile(d.Sf.data,'/presets.json');">Upload</button><br></div><br>
-		<a class="btn lnk" href="/cfg.json?download" target="download-frame">Backup configuration</a><br>
+		<a class="btn lnk" id="bckpresets" href="/cfg.json" download="cfg">Backup configuration</a><br>
 		<div>Restore configuration<br><input type="file" name="data2" accept=".json"> <button type="button" onclick="uploadFile(d.Sf.data2,'/cfg.json');">Upload</button><br></div>
 		<div style="color: #fa0;">&#9888; Restoring presets/configuration will OVERWRITE your current presets/configuration.<br>
 		Incorrect configuration may require a factory reset or re-flashing of your ESP.</div>
@@ -119,6 +124,5 @@
 		<div id="toast"></div>
 		<button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 	</form>
-	<iframe name=download-frame style='display:none;'></iframe>
 </body>
 </html>

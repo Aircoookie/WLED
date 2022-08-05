@@ -586,6 +586,9 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(SET_F(" (build "));
     oappendi(VERSION);
     oappend(SET_F(")\";"));
+    oappend(SET_F("sd=\""));
+    oappend(serverDescription);
+    oappend(SET_F("\";"));
   }
   
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
