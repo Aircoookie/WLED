@@ -24,15 +24,8 @@
 		}
 		setCanvas();
 		// Check for canvas support
-		if (c.getContext) {
-			// Access the rendering context
-			var ctx = c.getContext('2d');
-			function drawCircle(x, y, r, g, b, a) {
-				ctx.fillStyle = `rgb(${r},${g},${b})`;
-				ctx.beginPath();
-				ctx.arc(x*pPL+pPL*0.5+lOf, y*pPL+pPL*0.5, pPL*0.4, 0, 2 * Math.PI);
-				ctx.fill();
-			}
+    var ctx = c.getContext('2d');
+		if (ctx) { // Access the rendering context
 			// use parent WS or open new
 			var ws;
 			try {
@@ -51,15 +44,21 @@
 				try {
 					if (toString.call(e.data) === '[object ArrayBuffer]') {
 						let leds = new Uint8Array(event.data);
-						if (leds[0] != 76) return; //'L', set in ws.cpp
-						mW = leds[2]; // matrix width
-						mH = leds[3]; // matrix height
-						pPL = Math.min(c.width / mW, c.height / mH); // pixels per LED (width of circle)
-						lOf = Math.floor((c.width - pPL*mW)/2); //left offeset (to center matrix)
-						for (i = 4; i < leds.length; i+=3) {
-							let ff = (i-4)/3; // pixel index
-							drawCircle(ff%mW, Math.floor(ff/mW), leds[i], leds[i+1], leds[i+2], 255);
-						}
+						if (leds[0] != 76 || !ctx) return; //'L', set in ws.cpp
+            if (!mW) { //only once as it doesn't change
+              mW = leds[2]; // matrix width
+  						mH = leds[3]; // matrix height
+	  					pPL = Math.min(c.width / mW, c.height / mH); // pixels per LED (width of circle)
+		  				lOf = Math.floor((c.width - pPL*mW)/2); //left offeset (to center matrix)
+            }
+            var i = 4;
+            for (y=0.5;y<mH;y++) for (x=0.5; x<mW; x++) {
+              ctx.fillStyle = `rgb(${leds[i]},${leds[i+1]},${leds[i+2]})`;
+              ctx.beginPath();
+              ctx.arc(x*pPL+lOf, y*pPL, pPL*0.4, 0, 2 * Math.PI);
+              ctx.fill();
+              i+=3;
+            }
 					}
 				} catch (err) {
 					console.error("Peek WS error:",err);
