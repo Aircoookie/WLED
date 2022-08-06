@@ -21,7 +21,13 @@
  */
 
 // Comment/Uncomment to toggle usb serial debugging
-// #define SR_DEBUG
+// #define MIC_LOGGER                   // MIC sampling & sound input debugging (serial plotter)
+// #define FFT_SAMPLING_LOG             // FFT result debugging
+// #define SR_DEBUG                     // generic SR DEBUG messages
+
+// hackers corner
+// nothing atm
+
 #ifdef SR_DEBUG
   #define DEBUGSR_PRINT(x) Serial.print(x)
   #define DEBUGSR_PRINTLN(x) Serial.println(x)
@@ -31,6 +37,11 @@
   #define DEBUGSR_PRINTLN(x)
   #define DEBUGSR_PRINTF(x...)
 #endif
+// legacy support
+#if defined(SR_DEBUG) && !defined(MIC_LOGGER) && !defined(NO_MIC_LOGGER)
+#define MIC_LOGGER
+#endif
+
 
 #include "audio_source.h"
 
@@ -38,12 +49,6 @@ constexpr i2s_port_t I2S_PORT = I2S_NUM_0;
 constexpr int BLOCK_SIZE = 128;
 constexpr int SAMPLE_RATE = 20480;      // Base sample rate in Hz - 20Khz is experimental
 //constexpr int SAMPLE_RATE = 10240;      // Base sample rate in Hz - standard
-
-// #define MIC_LOGGER
-// #define MIC_SAMPLING_LOG
-// #define FFT_SAMPLING_LOG
-
-//#define MAJORPEAK_SUPPRESS_NOISE      // define to activate a dirty hack that ignores the lowest + hightest FFT bins
 
 // globals
 static uint8_t inputLevel = 128;              // UI slider value
@@ -146,9 +151,6 @@ float fftAddAvg(int from, int to) {
 void FFTcode(void * parameter)
 {
   DEBUGSR_PRINT("FFT running on core: "); DEBUGSR_PRINTLN(xPortGetCoreID());
-#ifdef MAJORPEAK_SUPPRESS_NOISE
-  static float xtemp[24] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-#endif
 
   for(;;) {
     delay(1);           // DO NOT DELETE THIS LINE! It is needed to give the IDLE(0) task enough time and to keep the watchdog happy.
@@ -161,23 +163,17 @@ void FFTcode(void * parameter)
     }
 
 #ifdef WLED_DEBUG
-//    unsigned long start = millis();
     uint64_t start = esp_timer_get_time();
 #endif
 
     if (audioSource) audioSource->getSamples(vReal, samplesFFT);
 
 #ifdef WLED_DEBUG
-    //sampleTime = ((millis() - start)*3 + sampleTime*7)/10; // smooth
     if (start < esp_timer_get_time()) { // filter out overflows
       unsigned long sampleTimeInMillis = (esp_timer_get_time() - start +500ULL) / 1000ULL; // "+500" to ensure proper rounding
       sampleTime = (sampleTimeInMillis*3 + sampleTime*7)/10; // smooth
     }
 #endif
-
-    // old code - Last sample in vReal is our current mic sample
-    //micDataSm = (uint16_t)vReal[samplesFFT - 1]; // will do a this a bit later
-    //micDataSm = ((micData * 3) + micData)/4;
 
     const int halfSamplesFFT = samplesFFT / 2;   // samplesFFT divided by 2
     float maxSample1 = 0.0f;                         // max sample from first half of FFT batch
@@ -219,69 +215,11 @@ void FFTcode(void * parameter)
     // vReal[3 .. 255] contain useful data, each a 20Hz interval (60Hz - 5120Hz).
     // There could be interesting data at bins 0 to 2, but there are too many artifacts.
     //
-#ifdef MAJORPEAK_SUPPRESS_NOISE
-    // teporarily reduce signal strength in the highest + lowest bins
-    xtemp[0] = vReal[0]; vReal[0] *= 0.005f;
-    xtemp[1] = vReal[1]; vReal[1] *= 0.005f;
-    xtemp[2] = vReal[2]; vReal[2] *= 0.005f;
-    xtemp[3] = vReal[3]; vReal[3] *= 0.02f;
-    xtemp[4] = vReal[4]; vReal[4] *= 0.02f;
-    xtemp[5] = vReal[5]; vReal[5] *= 0.02f;
-    xtemp[6] = vReal[6]; vReal[6] *= 0.05f;
-    xtemp[7] = vReal[7]; vReal[7] *= 0.08f;
-    xtemp[8] = vReal[8]; vReal[8] *= 0.1f;
-    xtemp[9] = vReal[9]; vReal[9] *= 0.2f;
-    xtemp[10] = vReal[10]; vReal[10] *= 0.2f;
-    xtemp[11] = vReal[11]; vReal[11] *= 0.25f;
-    xtemp[12] = vReal[12]; vReal[12] *= 0.3f;
-    xtemp[13] = vReal[13]; vReal[13] *= 0.3f;
-    xtemp[14] = vReal[14]; vReal[14] *= 0.4f;
-    xtemp[15] = vReal[15]; vReal[15] *= 0.4f;
-    xtemp[16] = vReal[16]; vReal[16] *= 0.4f;
-    xtemp[17] = vReal[17]; vReal[17] *= 0.5f;
-    xtemp[18] = vReal[18]; vReal[18] *= 0.5f;
-    xtemp[19] = vReal[19]; vReal[19] *= 0.6f;
-    xtemp[20] = vReal[20]; vReal[20] *= 0.7f;
-    xtemp[21] = vReal[21]; vReal[21] *= 0.8f;
-
-    xtemp[22] = vReal[samplesFFT-2]; vReal[samplesFFT-2] = 0.0f;
-    xtemp[23] = vReal[samplesFFT-1]; vReal[samplesFFT-1] = 0.0f;
-#endif
 
 #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
     FFT.majorPeak(FFT_MajorPeak, FFT_Magnitude);      // let the effects know which freq was most dominant
 #else
     FFT.MajorPeak(&FFT_MajorPeak, &FFT_Magnitude);          // let the effects know which freq was most dominant
-#endif
-
-#ifdef MAJORPEAK_SUPPRESS_NOISE
-    // dirty hack: limit suppressed channel intensities to FFT_Magnitude
-    for (int k=0; k < 24; k++) if(xtemp[k] > FFT_Magnitude) xtemp[k] = FFT_Magnitude;
-    // restore bins
-    vReal[0] = xtemp[0];
-    vReal[1] = xtemp[1];
-    vReal[2] = xtemp[2];
-    vReal[3] = xtemp[3];
-    vReal[4] = xtemp[4];
-    vReal[5] = xtemp[5];
-    vReal[6] = xtemp[6];
-    vReal[7] = xtemp[7];
-    vReal[8] = xtemp[8];
-    vReal[9] = xtemp[9];
-    vReal[10] = xtemp[10];
-    vReal[11] = xtemp[11];
-    vReal[12] = xtemp[12];
-    vReal[13] = xtemp[13];
-    vReal[14] = xtemp[14];
-    vReal[15] = xtemp[15];
-    vReal[16] = xtemp[16];
-    vReal[17] = xtemp[17];
-    vReal[18] = xtemp[18];
-    vReal[19] = xtemp[19];
-    vReal[20] = xtemp[20];
-    vReal[21] = xtemp[21];
-    vReal[samplesFFT-2] = xtemp[22];
-    vReal[samplesFFT-1] = xtemp[23];
 #endif
 
     for (int i = 0; i < samplesFFT; i++) {           // Values for bins 0 and 1 are WAY too large. Might as well start at 3.
@@ -344,14 +282,6 @@ void FFTcode(void * parameter)
     }
 #endif
 
-#ifdef SR_DEBUG
-    // Looking for fftResultMax for each bin using Pink Noise
-    for (int i=0; i<16; i++) {
-      fftResultMax[i] = ((fftResultMax[i] * 63.0f) + fftResult[i]) / 64.0f;
-      DEBUGSR_PRINT(fftResultMax[i]*fftResultPink[i]); DEBUGSR_PRINT("\t");
-    }
-    DEBUGSR_PRINTLN();
-#endif
   } // for(;;)
 } // FFTcode()
 
@@ -482,32 +412,22 @@ class AudioReactive : public Usermod {
     void logAudio()
     {
     #ifdef MIC_LOGGER
-      //Serial.print("micData:");    Serial.print(micData);   Serial.print("\t");
-      //Serial.print("micDataSm:");  Serial.print(micDataSm); Serial.print("\t");
-      //Serial.print("micIn:");      Serial.print(micIn);     Serial.print("\t");
-      //Serial.print("micLev:");     Serial.print(micLev);      Serial.print("\t");
-      //Serial.print("sample:");     Serial.print(sample);      Serial.print("\t");
-      //Serial.print("sampleAvg:");  Serial.print(sampleAvg);   Serial.print("\t");
-      Serial.print("sampleReal:");     Serial.print(sampleReal);      Serial.print("\t");
-      //Serial.print("sampleMax:");     Serial.print(sampleMax);      Serial.print("\t");
-      Serial.print("multAgc:");    Serial.print(multAgc, 4);   Serial.print("\t");
-      Serial.print("sampleAgc:");  Serial.print(sampleAgc);   Serial.print("\t");
-      Serial.println();
-    #endif
+      // Debugging functions for audio input and sound processing. Comment out the values you want to see
+      Serial.print("micReal:");     Serial.print(micDataReal); Serial.print("\t");
+      //Serial.print("micData:");     Serial.print(micData);     Serial.print("\t");
+      //Serial.print("micDataSm:");   Serial.print(micDataSm);   Serial.print("\t");
+      //Serial.print("micIn:");       Serial.print(micIn);       Serial.print("\t");
+      //Serial.print("micLev:");      Serial.print(micLev);      Serial.print("\t");
+      //Serial.print("sampleReal:");  Serial.print(sampleReal);  Serial.print("\t");
+      //Serial.print("sample:");      Serial.print(sample);      Serial.print("\t");
+      //Serial.print("sampleAvg:");   Serial.print(sampleAvg);   Serial.print("\t");
+      //Serial.print("sampleMax:");   Serial.print(sampleMax);   Serial.print("\t");
+      //Serial.print("samplePeak:");  Serial.print((samplePeak!=0) ? 128:0);   Serial.print("\t");
+      //Serial.print("multAgc:");     Serial.print(multAgc, 4);  Serial.print("\t");
+      Serial.print("sampleAgc:");   Serial.print(sampleAgc);   Serial.print("\t");
+      //Serial.print("volumeRaw:");   Serial.print(volumeRaw);   Serial.print("\t");
+      //Serial.print("volumeSmth:");  Serial.print(volumeSmth);  Serial.print("\t");
 
-    #ifdef MIC_SAMPLING_LOG
-      //------------ Oscilloscope output ---------------------------
-      Serial.print(targetAgc); Serial.print(" ");
-      Serial.print(multAgc); Serial.print(" ");
-      Serial.print(sampleAgc); Serial.print(" ");
-
-      Serial.print(sample); Serial.print(" ");
-      Serial.print(sampleAvg); Serial.print(" ");
-      Serial.print(micLev); Serial.print(" ");
-      Serial.print(samplePeak); Serial.print(" ");    //samplePeak = 0;
-      Serial.print(micIn); Serial.print(" ");
-      Serial.print(100); Serial.print(" ");
-      Serial.print(0); Serial.print(" ");
       Serial.println();
     #endif
 
@@ -672,18 +592,12 @@ class AudioReactive : public Usermod {
         micDataReal = micIn;
       #else
         micIn = micDataSm;      // micDataSm = ((micData * 3) + micData)/4;
-        //DEBUGSR_PRINT("micIn:\tmicData:\tmicIn>>2:\tmic_In_abs:\tsample:\tsampleAdj:\tsampleAvg:\n");
-        //DEBUGSR_PRINT(micIn); DEBUGSR_PRINT("\t"); DEBUGSR_PRINT(micData);
       #endif
 
-      // Note to self: the next line kills 80% of sample - "miclev" filter runs at "full arduino loop" speed, following the signal almost instantly!
-      //micLev = ((micLev * 31) + micIn) / 32;                // Smooth it out over the last 32 samples for automatic centering
       micLev = ((micLev * 8191.0f) + micDataReal) / 8192.0f;                // takes a few seconds to "catch up" with the Mic Input
       if(micIn < micLev) micLev = ((micLev * 31.0f) + micDataReal) / 32.0f; // align MicLev to lowest input signal
 
       micIn -= micLev;                                // Let's center it to 0 now
-      DEBUGSR_PRINT("\t\t"); DEBUGSR_PRINT(micIn);
-
       // Using an exponential filter to smooth out the signal. We'll add controls for this in a future release.
       float micInNoDC = fabs(micDataReal - micLev);
       expAdjF = (weighting * micInNoDC + (1.0-weighting) * expAdjF);
@@ -691,13 +605,9 @@ class AudioReactive : public Usermod {
 
       expAdjF = fabsf(expAdjF);                         // Now (!) take the absolute value
       tmpSample = expAdjF;
-
-      DEBUGSR_PRINT("\t\t"); DEBUGSR_PRINT(tmpSample);
-
       micIn = abs(micIn);                               // And get the absolute value of each sample
 
       sampleAdj = tmpSample * sampleGain / 40.0f * inputLevel/128.0f + tmpSample / 16.0f; // Adjust the gain. with inputLevel adjustment
-      //sampleReal = sampleAdj;
       sampleReal = tmpSample;
 
       sampleAdj = fmax(fmin(sampleAdj, 255), 0);           // Question: why are we limiting the value to 8 bits ???
@@ -716,9 +626,6 @@ class AudioReactive : public Usermod {
 
       sampleAvg = ((sampleAvg * 15.0f) + sampleAdj) / 16.0f;   // Smooth it out over the last 16 samples.
 
-      DEBUGSR_PRINT("\t"); DEBUGSR_PRINT(sampleRaw);
-      DEBUGSR_PRINT("\t\t"); DEBUGSR_PRINT(sampleAvg); DEBUGSR_PRINT("\n\n");
-
       // Fixes private class variable compiler error. Unsure if this is the correct way of fixing the root problem. -THATDONFC
       uint16_t MinShowDelay = strip.getMinShowDelay();
 
@@ -729,14 +636,6 @@ class AudioReactive : public Usermod {
 
       //if (userVar1 == 0) samplePeak = 0;
       // Poor man's beat detection by seeing if sample > Average + some value.
-      // Serial.print(binNum); Serial.print("\t");
-      // Serial.print(fftBin[binNum]);
-      // Serial.print("\t");
-      // Serial.print(fftAvg[binNum/16]);
-      // Serial.print("\t");
-      // Serial.print(maxVol);
-      // Serial.print("\t");
-      // Serial.println(samplePeak);
       if ((fftBin[binNum] > maxVol) && (millis() > (timeOfPeak + 100))) {    // This goes through ALL of the 255 bins
       //  if (sample > (sampleAvg + maxVol) && millis() > (timeOfPeak + 200)) {
       // Then we got a peak, else we don't. The peak has to time out on its own in order to support UDP sound sync.
@@ -960,7 +859,6 @@ class AudioReactive : public Usermod {
         return;
       }
       // We cannot wait indefinitely before processing audio data
-      //if (!enabled || strip.isUpdating()) return;
       if (strip.isUpdating() && (millis() - lastUMRun < 2)) return;   // be nice, but not too nice
 
       // suspend local sound processing when "real time mode" is active (E131, UDP, ADALIGHT, ARTNET)
