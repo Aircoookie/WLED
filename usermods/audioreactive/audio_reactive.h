@@ -493,7 +493,7 @@ class AudioReactive : public Usermod {
     *    a) normal zone - very slow adjustment
     *    b) emergency zome (<10% or >90%) - very fast adjustment
     */
-    void agcAvg()
+    void agcAvg(unsigned long the_time)
     {
       const int AGC_preset = (soundAgc > 0)? (soundAgc-1): 0; // make sure the _compiler_ knows this value will not change while we are inside the function
 
@@ -510,6 +510,8 @@ class AudioReactive : public Usermod {
       // so let's make sure that the control loop is not running at insane speed
       static unsigned long last_time = 0;
       unsigned long time_now = millis();
+      if ((the_time > 0) && (the_time < time_now)) time_now = the_time;  // allow caller to override my clock
+
       if (time_now - last_time > 2)  {
         last_time = time_now;
 
@@ -923,29 +925,31 @@ class AudioReactive : public Usermod {
       if (audioSyncEnabled & 0x02) disableSoundProcessing = true;   // make sure everything is disabled IF in audio Receive mode
       if (audioSyncEnabled & 0x01) disableSoundProcessing = false;  // keep running audio IF we're in audio Transmit mode
 
-      if (!(audioSyncEnabled & 0x02) && !disableSoundProcessing) { // Only run the sampling code IF we're not in Receive mode or realtime mode
+      // Only run the sampling code IF we're not in Receive mode or realtime mode
+      if (!(audioSyncEnabled & 0x02) && !disableSoundProcessing) {
         bool agcEffect = false;
-
         if (soundAgc > AGC_NUM_PRESETS) soundAgc = 0; // make sure that AGC preset is valid (to avoid array bounds violation)
 
-        int userloopDelay = int(millis() - lastUMRun);   // how long since last run? we might need to cat up to compensate lost times
-        int samplesSkipped = 0;
-        if (userloopDelay > 12) samplesSkipped = (userloopDelay + 12) / 25;  // every 25ms we get a new batch of samples
-        if (samplesSkipped > 100) samplesSkipped = 100;  // don't be silly
-#ifdef WLED_DEBUG
-        // complain when audio userloop has been delayed for long time. Currently we need userloop running between 500 and 1500 times per second. 
-        if ((userloopDelay > 23) && !disableSoundProcessing && (audioSyncEnabled == 0)) {
-          // Expect lagging in soundreactive effects if you see the next messages !!!
-          DEBUG_PRINTF("[AR userLoop] hickup detected -> was inactive for last %d millis!\n", userloopDelay);
-         if (samplesSkipped > 0) DEBUG_PRINTF("[AR userLoop] lost %d sample(s).\n", samplesSkipped);
-        }
-#endif
+        unsigned long t_now = millis();      // remember current time
+        int userloopDelay = int(t_now - lastUMRun);
+        if (lastUMRun == 0) userloopDelay=0; // startup - don't have valid data from last run.
 
-        lastUMRun = millis();                // update time keeping
+        #ifdef WLED_DEBUG
+          // complain when audio userloop has been delayed for long time. Currently we need userloop running between 500 and 1500 times per second. 
+          if ((userloopDelay > 23) && !disableSoundProcessing && (audioSyncEnabled == 0)) {
+            DEBUG_PRINTF("[AR userLoop] hickup detected -> was inactive for last %d millis!\n", userloopDelay);
+          }
+        #endif
 
-        getSample();                        // Sample the microphone
-        agcAvg();                           // Calculated the PI adjusted value as sampleAvg
-
+        // run filters, and repeat in case of loop delays (hick-up compensation)
+        if (userloopDelay <2) userloopDelay = 0;      // minor glitch, no problem
+        if (userloopDelay >200) userloopDelay = 200;  // limit number of filter re-runs  
+        do {
+          getSample();                        // run microphone sampling filters
+          agcAvg(t_now - userloopDelay);      // Calculated the PI adjusted value as sampleAvg
+          userloopDelay -= 2;                 // advance "simulated time" by 2ms
+        } while (userloopDelay > 0);
+        lastUMRun = t_now;                   // update time keeping
 
         // update samples for effects (raw, smooth) 
         volumeSmth = (soundAgc) ? sampleAgc   : sampleAvg;
