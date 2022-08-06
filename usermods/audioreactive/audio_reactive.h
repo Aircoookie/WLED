@@ -26,7 +26,7 @@
 // #define SR_DEBUG                     // generic SR DEBUG messages
 
 // hackers corner
-// nothing atm
+//#define SOUND_DYNAMICS_LIMITER        // experimental: define to enable a dynamics limiter that avoids "sudden flashes" at onsets. Makes some effects look more "smooth and fluent"
 
 #ifdef SR_DEBUG
   #define DEBUGSR_PRINT(x) Serial.print(x)
@@ -647,6 +647,39 @@ class AudioReactive : public Usermod {
     } // getSample()
 
 
+    /* Limits the dynamics of volumeSmth (= sampleAvg or sampleAgc). 
+     * It does not affect FFTResult[] or volumeRaw ( = sample or rawSampleAgc) 
+    */
+    // effects: Gravimeter, Gravcenter, Gravcentric, Noisefire, Plasmoid, Freqpixels, Freqwave, Gravfreq, (2D Swirl, 2D Waverly)
+    // experimental, as it still has side-effects on AGC - AGC detects "silence" to late (due to long decay time) and ditches up the gain multiplier. 
+    // values below will be made user-configurable later
+    const float attackTime = 200;          // attack time -> 0.2sec
+    const float decayTime = 2800;          // decay time  -> 2.8sec
+
+    void limitSampleDynamics(void) {
+    #ifdef SOUND_DYNAMICS_LIMITER
+      const float bigChange = 196;           // just a representative number - a large, expected sample value
+      static unsigned long last_time = 0;
+      static float last_volumeSmth = 0.0f;
+
+      if ((attackTime > 0) && (decayTime > 0)) { // only change volume if user has defined attack>0 and decay>0
+        long delta_time = millis() - last_time;
+        delta_time = constrain(delta_time , 1, 1000); // below 1ms -> 1ms; above 1sec -> sily lil hick-up
+        float maxAttack =   bigChange * float(delta_time) / attackTime;
+        float maxDecay  = - bigChange * float(delta_time) / decayTime;
+
+        float deltaSample = volumeSmth - last_volumeSmth;
+        if (deltaSample > maxAttack) deltaSample = maxAttack;
+        if (deltaSample < maxDecay) deltaSample = maxDecay;
+        volumeSmth = last_volumeSmth + deltaSample; 
+      }
+
+      last_volumeSmth = volumeSmth;
+      last_time = millis();
+    #endif
+    }
+
+
     void transmitAudioData()
     {
       if (!udpSyncConnected) return;
@@ -922,6 +955,7 @@ class AudioReactive : public Usermod {
         if (soundAgc) my_magnitude *= multAgc;
         if (volumeSmth < 1 ) my_magnitude = 0.001f;             // noise gate closed - mute
 
+        limitSampleDynamics();  // optional - makes volumeSmth very smooth and fluent
 
         // update UI
         uint8_t knownMode = strip.getFirstSelectedSeg().mode; // 1st selected segment is more appropriate than main segment
@@ -982,6 +1016,8 @@ class AudioReactive : public Usermod {
         transmitAudioData();
         lastTime = millis();
       }
+
+      //limitSampleDynamics();   // If done as the last step, it will also affect audio received by UDP sound sync. Problem: effects might see inconsistent intermediate values and start flickering :-(
     }
 
 
