@@ -78,23 +78,22 @@ CRGB    *Segment::_globalLeds = nullptr;
 
 // copy constructor
 Segment::Segment(const Segment &orig) {
-  DEBUG_PRINTLN(F("-- Segment duplicated --"));
+  DEBUG_PRINTLN(F("-- Copy segment constructor --"));
   memcpy(this, &orig, sizeof(Segment));
   name = nullptr;
   data = nullptr;
   _dataLen = 0;
   _t = nullptr;
+  if (leds && !Segment::_globalLeds) leds = nullptr;
   if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
   if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
   if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
-  if (orig.leds) { leds = (CRGB*)malloc(sizeof(CRGB)*length()); }
-  DEBUG_PRINTF("  Original data: %p (%d)\n", orig.data, (int)orig._dataLen);
-  DEBUG_PRINTF("  Constructed data: %p (%d)\n", data, (int)_dataLen);
+  if (orig.leds && !Segment::_globalLeds) { leds = (CRGB*)malloc(sizeof(CRGB)*length()); if (leds) memcpy(leds, orig.leds, sizeof(CRGB)*length()); }
 }
 
 // move constructor
 Segment::Segment(Segment &&orig) noexcept {
-  DEBUG_PRINTLN(F("-- Move constructor --"));
+  DEBUG_PRINTLN(F("-- Move segment constructor --"));
   memcpy(this, &orig, sizeof(Segment));
   orig.name = nullptr;
   orig.data = nullptr;
@@ -105,27 +104,26 @@ Segment::Segment(Segment &&orig) noexcept {
 
 // copy assignment
 Segment& Segment::operator= (const Segment &orig) {
-  DEBUG_PRINTLN(F("-- Segment copied --"));
+  DEBUG_PRINTLN(F("-- Copying segment --"));
   if (this != &orig) {
-    if (name) {
-      DEBUG_PRINTF("  Copy Deleting %s (%p)\n", name, name);
-      delete[] name;
-    }
-    if (_t) delete _t;
-    if (leds) free(leds);
+    // clean destination
+    if (name) delete[] name;
+    if (_t)   delete _t;
+    if (leds && !Segment::_globalLeds) free(leds);
     deallocateData();
+    // copy source
     memcpy(this, &orig, sizeof(Segment));
+    // erase pointers to allocated data
     name = nullptr;
     data = nullptr;
     _dataLen = 0;
     _t = nullptr;
-    leds = nullptr;
+    if (!Segment::_globalLeds) leds = nullptr;
+    // copy source data
     if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
     if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
-    if (orig._t) { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
-    if (orig.leds) { leds = (CRGB*)malloc(sizeof(CRGB)*length()); if (leds) memcpy(leds, orig.leds, sizeof(CRGB)*length()); }
-    DEBUG_PRINTF("  Original data: %p (%d)\n", orig.data, (int)orig._dataLen);
-    DEBUG_PRINTF("  Copied data: %p (%d)\n", data, (int)_dataLen);
+    if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
+    if (orig.leds && !Segment::_globalLeds) { leds = (CRGB*)malloc(sizeof(CRGB)*length()); if (leds) memcpy(leds, orig.leds, sizeof(CRGB)*length()); }
   }
   return *this;
 }
@@ -134,13 +132,10 @@ Segment& Segment::operator= (const Segment &orig) {
 Segment& Segment::operator= (Segment &&orig) noexcept {
   DEBUG_PRINTLN(F("-- Moving segment --"));
   if (this != &orig) {
-    if (name) {
-      DEBUG_PRINTF("  Move Deleting %s (%p)\n", name, name);
-      delete[] name; // free old name
-    }
+    if (name) delete[] name; // free old name
     deallocateData(); // free old runtime data
     if (_t) delete _t;
-    if (leds) free(leds);
+    if (leds && !Segment::_globalLeds) free(leds);
     memcpy(this, &orig, sizeof(Segment));
     orig.name = nullptr;
     orig.data = nullptr;
@@ -166,19 +161,15 @@ bool Segment::allocateData(size_t len) {
   Segment::addUsedSegmentData(len);
   _dataLen = len;
   memset(data, 0, len);
-  DEBUG_PRINTF("-- Allocated data %p (%d)\n", data, (int)len);
   return true;
 }
 
 void Segment::deallocateData() {
   if (!data) return;
-  DEBUG_PRINTF("-- Deallocating data: %p (%d)\n", data, (int)_dataLen);
   free(data);
-  DEBUG_PRINTLN(F("-- Data freed."));
   data = nullptr;
   Segment::addUsedSegmentData(-_dataLen);
   _dataLen = 0;
-  DEBUG_PRINTLN(F("-- Dealocated data."));
 }
 
 /** 
@@ -189,8 +180,8 @@ void Segment::deallocateData() {
   * may free that data buffer.
   */
 void Segment::resetIfRequired() {
-  if (reset) { // (getOption(SEG_OPTION_RESET))
-    if (leds) { free(leds); leds = nullptr; DEBUG_PRINTLN(F("Freeing leds.")); }
+  if (reset) {
+    if (leds && !Segment::_globalLeds) { free(leds); leds = nullptr; }
     if (_t) _t->_dur = 0;
     next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0; 
     reset = false; // setOption(SEG_OPTION_RESET, false);
@@ -198,6 +189,7 @@ void Segment::resetIfRequired() {
 }
 
 void Segment::setUpLeds() {
+  // deallocation happens in resetIfRequired() as it is called when segment changes or in destructor
   if (Segment::_globalLeds)
     #ifndef WLED_DISABLE_2D
     leds = &Segment::_globalLeds[start + startY*strip.matrixWidth]; // TODO: remove this hack
@@ -209,17 +201,16 @@ void Segment::setUpLeds() {
 }
 
 void Segment::startTransition(uint16_t dur) {
-  if (transitional || _t) return; // already in transition
+  if (transitional || _t) return; // already in transition no need to store anything
 
   // starting a transition has to occur before change so we get current values 1st
-  uint8_t _briT = currentBri(getOption(SEG_OPTION_ON) ? opacity : 0); // comment out uint8_t if not using Transition struct
-  uint8_t _cctT = currentBri(cct, true); // comment out uint8_t if not using Transition struct
+  uint8_t _briT = currentBri(on ? opacity : 0);
+  uint8_t _cctT = currentBri(cct, true);
   CRGBPalette16 _palT; loadPalette(_palT, palette);
-  uint8_t _modeP = mode; // comment out uint8_t if not using Transition struct
-  uint32_t _colorT[NUM_COLORS]; // comment out if not using Transition struct
+  uint8_t _modeP = mode;
+  uint32_t _colorT[NUM_COLORS];
   for (size_t i=0; i<NUM_COLORS; i++) _colorT[i] = currentColor(i, colors[i]);
 
-  // using transition struct
   if (!_t) _t = new Transition(dur); // no previous transition running
   if (!_t) return; // failed to allocate data
   _t->_briT = _briT;
@@ -227,14 +218,11 @@ void Segment::startTransition(uint16_t dur) {
   _t->_palT  = _palT;
   _t->_modeP = _modeP;
   for (size_t i=0; i<NUM_COLORS; i++) _t->_colorT[i] = _colorT[i];
-  // comment out if using transition struct as it is done in constructor
-  //_dur = dur;
-  //_start = millis();
-
-  setOption(SEG_OPTION_TRANSITIONAL, true);
+  transitional = true; // setOption(SEG_OPTION_TRANSITIONAL, true);
 }
 
-uint16_t Segment::progress() { //transition progression between 0-65535
+// transition progression between 0-65535
+uint16_t Segment::progress() {
   if (!transitional || !_t) return 0xFFFFU;
   uint32_t timeNow = millis();
   if (timeNow - _t->_start > _t->_dur) return 0xFFFFU;
@@ -391,7 +379,7 @@ void Segment::setOpacity(uint8_t o) {
 }
 
 void Segment::setOption(uint8_t n, bool val) {
-  bool prevOn = getOption(SEG_OPTION_ON);
+  bool prevOn = on;
   if (fadeTransition && n == SEG_OPTION_ON && val != prevOn) startTransition(strip.getTransition()); // start transition prior to change
   if (val) options |=   0x01 << n;
   else     options &= ~(0x01 << n);
@@ -400,15 +388,15 @@ void Segment::setOption(uint8_t n, bool val) {
 // 2D matrix
 uint16_t Segment::virtualWidth() {
   uint16_t groupLen = groupLength();
-  uint16_t vWidth = ((getOption(SEG_OPTION_TRANSPOSED) ? height() : width()) + groupLen - 1) / groupLen;
-  if (getOption(SEG_OPTION_MIRROR)) vWidth = (vWidth + 1) /2;  // divide by 2 if mirror, leave at least a single LED
+  uint16_t vWidth = ((transpose ? height() : width()) + groupLen - 1) / groupLen;
+  if (mirror) vWidth = (vWidth + 1) /2;  // divide by 2 if mirror, leave at least a single LED
   return vWidth;
 }
 
 uint16_t Segment::virtualHeight() {
   uint16_t groupLen = groupLength();
-  uint16_t vHeight = ((getOption(SEG_OPTION_TRANSPOSED) ? width() : height()) + groupLen - 1) / groupLen;
-  if (getOption(SEG_OPTION_MIRROR_Y)) vHeight = (vHeight + 1) /2;  // divide by 2 if mirror, leave at least a single LED
+  uint16_t vHeight = ((transpose ? width() : height()) + groupLen - 1) / groupLen;
+  if (mirror_y) vHeight = (vHeight + 1) /2;  // divide by 2 if mirror, leave at least a single LED
   return vHeight;
 }
 
@@ -433,7 +421,7 @@ uint16_t Segment::virtualLength() {
 #endif
   uint16_t groupLen = groupLength();
   uint16_t vLength = (length() + groupLen - 1) / groupLen;
-  if (getOption(SEG_OPTION_MIRROR)) vLength = (vLength + 1) /2;  // divide by 2 if mirror, leave at least a single LED
+  if (mirror) vLength = (vLength + 1) /2;  // divide by 2 if mirror, leave at least a single LED
   return vLength;
 }
 
@@ -473,7 +461,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
   if (leds) leds[i] = col;
 
   uint16_t len = length();
-  uint8_t _bri_t = currentBri(getOption(SEG_OPTION_ON) ? opacity : 0);
+  uint8_t _bri_t = currentBri(on ? opacity : 0);
   if (_bri_t < 255) {
     byte r = scale8(R(col), _bri_t);
     byte g = scale8(G(col), _bri_t);
@@ -484,8 +472,8 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
 
   // expand pixel (taking into account start, grouping, spacing [and offset])
   i = i * groupLength();
-  if (getOption(SEG_OPTION_REVERSED)) { // is segment reversed?
-    if (getOption(SEG_OPTION_MIRROR)) { // is segment mirrored?
+  if (reverse) { // is segment reversed?
+    if (mirror) { // is segment mirrored?
       i = (len - 1) / 2 - i;  //only need to index half the pixels
     } else {
       i = (len - 1) - i;
@@ -495,9 +483,9 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
 
   // set all the pixels in the group
   for (int j = 0; j < grouping; j++) {
-    uint16_t indexSet = i + ((getOption(SEG_OPTION_REVERSED)) ? -j : j);
+    uint16_t indexSet = i + ((reverse) ? -j : j);
     if (indexSet >= start && indexSet < stop) {
-      if (getOption(SEG_OPTION_MIRROR)) { //set the corresponding mirrored pixel
+      if (mirror) { //set the corresponding mirrored pixel
         uint16_t indexMir = stop - indexSet + start - 1;          
         indexMir += offset; // offset/phase
         if (indexMir >= stop) indexMir -= len; // wrap
@@ -564,7 +552,7 @@ uint32_t Segment::getPixelColor(uint16_t i)
 
   if (leds) return RGBW32(leds[i].r, leds[i].g, leds[i].b, 0);
 
-  if (getOption(SEG_OPTION_REVERSED)) i = virtualLength() - i - 1;
+  if (reverse) i = virtualLength() - i - 1;
   i *= groupLength();
   i += start;
   /* offset/phase */
@@ -862,12 +850,12 @@ void WS2812FX::finalizeInit(void)
   }
 
   //initialize leds array. TBD: realloc if nr of leds change
+  if (Segment::_globalLeds) {
+    purgeSegments(true);
+    free(Segment::_globalLeds);
+    Segment::_globalLeds = nullptr;
+  }
   if (useLedsArray) {
-    if (Segment::_globalLeds) {
-      for (Segment seg : _segments) if (seg.leds) { free(seg.leds); seg.leds = nullptr; }
-      free(Segment::_globalLeds);
-      Segment::_globalLeds = nullptr;
-    }
     #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
     if (psramFound())
       Segment::_globalLeds = (CRGB*) ps_malloc(sizeof(CRGB) * _length);
@@ -902,7 +890,7 @@ void WS2812FX::service() {
       doShow = true;
       uint16_t delay = FRAMETIME;
 
-      if (!seg.getOption(SEG_OPTION_FREEZE)) { //only run effect function if not frozen
+      if (!seg.freeze) { //only run effect function if not frozen
         _virtualSegmentLength = seg.virtualLength();
         _colors_t[0] = seg.currentColor(0, seg.colors[0]);
         _colors_t[1] = seg.currentColor(1, seg.colors[1]);
@@ -914,7 +902,7 @@ void WS2812FX::service() {
 
         // effect blending (execute previous effect)
         // actual code may be a bit more involved as effects have runtime data including allocated memory
-        //if (getOption(SEG_OPTION_TRANSITIONAL) && seg._modeP) (*_mode[seg._modeP])(progress());
+        //if (seg.transitional && seg._modeP) (*_mode[seg._modeP])(progress());
         delay = (*_mode[seg.currentMode(seg.mode)])();
         if (seg.mode != FX_MODE_HALLOWEEN_EYES) seg.call++;
         if (seg.transitional && delay > FRAMETIME) delay = FRAMETIME; // foce faster updates during transition
@@ -1406,6 +1394,7 @@ void WS2812FX::printSize()
   DEBUG_PRINTF("Modes: %d*%d=%uB\n", sizeof(mode_ptr), _mode.size(), (_mode.capacity()*sizeof(mode_ptr)));
   DEBUG_PRINTF("Data: %d*%d=%uB\n", sizeof(const char *), _modeData.size(), (_modeData.capacity()*sizeof(const char *)));
   DEBUG_PRINTF("Map: %d*%d=%uB\n", sizeof(uint16_t), (int)customMappingSize, customMappingSize*sizeof(uint16_t));
+  if (useLedsArray) DEBUG_PRINTF("Buffer: %d*%d=%uB\n", sizeof(CRGB), (int)_length, _length*sizeof(CRGB));
 }
 #endif
 

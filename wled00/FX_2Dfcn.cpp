@@ -153,7 +153,7 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
 
   if (leds) leds[XY(x,y)] = col;
 
-  uint8_t _bri_t = currentBri(getOption(SEG_OPTION_ON) ? opacity : 0);
+  uint8_t _bri_t = currentBri(on ? opacity : 0);
   if (_bri_t < 255) {
     byte r = scale8(R(col), _bri_t);
     byte g = scale8(G(col), _bri_t);
@@ -162,9 +162,9 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
     col = RGBW32(r, g, b, w);
   }
 
-  if (getOption(SEG_OPTION_REVERSED)  ) x = virtualWidth()  - x - 1;
-  if (getOption(SEG_OPTION_REVERSED_Y)) y = virtualHeight() - y - 1;
-  if (getOption(SEG_OPTION_TRANSPOSED)) { uint16_t t = x; x = y; y = t; } // swap X & Y if segment transposed
+  if (reverse  ) x = virtualWidth()  - x - 1;
+  if (reverse_y) y = virtualHeight() - y - 1;
+  if (transpose) { uint16_t t = x; x = y; y = t; } // swap X & Y if segment transposed
 
   x *= groupLength(); // expand to physical pixels
   y *= groupLength(); // expand to physical pixels
@@ -177,15 +177,15 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
 
       strip.setPixelColorXY(start + xX, startY + yY, col);
 
-      if (getOption(SEG_OPTION_MIRROR)) { //set the corresponding horizontally mirrored pixel
-        if (getOption(SEG_OPTION_TRANSPOSED)) strip.setPixelColorXY(start + xX, startY + height() - yY - 1, col);
-        else                                  strip.setPixelColorXY(start + width() - xX - 1, startY + yY, col);
+      if (mirror) { //set the corresponding horizontally mirrored pixel
+        if (transpose) strip.setPixelColorXY(start + xX, startY + height() - yY - 1, col);
+        else           strip.setPixelColorXY(start + width() - xX - 1, startY + yY, col);
       }
-      if (getOption(SEG_OPTION_MIRROR_Y)) { //set the corresponding vertically mirrored pixel
-        if (getOption(SEG_OPTION_TRANSPOSED)) strip.setPixelColorXY(start + width() - xX - 1, startY + yY, col);
-        else                                  strip.setPixelColorXY(start + xX, startY + height() - yY - 1, col);
+      if (mirror_y) { //set the corresponding vertically mirrored pixel
+        if (transpose) strip.setPixelColorXY(start + width() - xX - 1, startY + yY, col);
+        else           strip.setPixelColorXY(start + xX, startY + height() - yY - 1, col);
       }
-      if (getOption(SEG_OPTION_MIRROR_Y) && getOption(SEG_OPTION_MIRROR)) { //set the corresponding vertically AND horizontally mirrored pixel
+      if (mirror_y && mirror) { //set the corresponding vertically AND horizontally mirrored pixel
         strip.setPixelColorXY(width() - xX - 1, height() - yY - 1, col);
       }
     }
@@ -240,9 +240,9 @@ void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
 uint32_t Segment::getPixelColorXY(uint16_t x, uint16_t y) {
   int i = XY(x,y);
   if (leds) return RGBW32(leds[i].r, leds[i].g, leds[i].b, 0);
-  if (getOption(SEG_OPTION_REVERSED)  ) x = virtualWidth()  - x - 1;
-  if (getOption(SEG_OPTION_REVERSED_Y)) y = virtualHeight() - y - 1;
-  if (getOption(SEG_OPTION_TRANSPOSED)) { uint16_t t = x; x = y; y = t; } // swap X & Y if segment transposed
+  if (reverse  ) x = virtualWidth()  - x - 1;
+  if (reverse_y) y = virtualHeight() - y - 1;
+  if (transpose) { uint16_t t = x; x = y; y = t; } // swap X & Y if segment transposed
   x *= groupLength(); // expand to physical pixels
   y *= groupLength(); // expand to physical pixels
   if (x >= width() || y >= height()) return 0;

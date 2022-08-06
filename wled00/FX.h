@@ -449,7 +449,7 @@ typedef struct Segment {
     uint16_t _dataLen;
     static uint16_t _usedSegmentData;
 
-    // transition data, valid only if getOption(SEG_OPTION_TRANSITIONAL)==true, holds values during transition
+    // transition data, valid only if transitional==true, holds values during transition
     struct Transition {
       uint32_t      _colorT[NUM_COLORS];
       uint8_t       _briT;  // temporary brightness
@@ -526,11 +526,11 @@ typedef struct Segment {
     Segment& operator= (Segment &&orig) noexcept; // move assignment
 
 #ifdef WLED_DEBUG
-    size_t getSize() { return sizeof(Segment) + (data?_dataLen:0) + (name?strlen(name):0) + (_t?sizeof(Transition):0) + (leds?sizeof(CRGB)*length():0); }
+    size_t getSize() { return sizeof(Segment) + (data?_dataLen:0) + (name?strlen(name):0) + (_t?sizeof(Transition):0) + (!Segment::_globalLeds && leds?sizeof(CRGB)*length():0); }
 #endif
 
     inline bool     getOption(uint8_t n)       { return ((options >> n) & 0x01); }
-    inline bool     isSelected(void)           { return getOption(0); }
+    inline bool     isSelected(void)           { return selected; }
     inline bool     isActive(void)             { return stop > start; }
     inline bool     is2D(void)                 { return !(startY == 0 && stopY == 1); }
     inline uint16_t width(void)                { return stop - start; }       // segment width in physical pixels (length if 1D)
@@ -737,6 +737,7 @@ class WS2812FX {  // 96 bytes
       _modeData.clear();
       _segments.clear();
       customPalettes.clear();
+      if (useLedsArray && Segment::_globalLeds) free(Segment::_globalLeds);
     }
 
     static WS2812FX* getInstance(void) { return instance; }
