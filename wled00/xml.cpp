@@ -261,6 +261,16 @@ void getSettingsJS(byte subPage, char* dest)
     // add reserved and usermod pins as d.um_p array
     oappend(SET_F("d.um_p=[6,7,8,9,10,11"));
 
+    if (i2c_sda > -1 && i2c_scl > -1) {
+      oappend(","); oappend(itoa(i2c_sda,nS,10));
+      oappend(","); oappend(itoa(i2c_scl,nS,10));
+    }
+    if (spi_mosi > -1 && spi_sclk > -1 && spi_cs > -1) {
+      oappend(","); oappend(itoa(spi_mosi,nS,10));
+      oappend(","); oappend(itoa(spi_sclk,nS,10));
+      oappend(","); oappend(itoa(spi_cs,nS,10));
+    }
+
     if (requestJSONBufferLock(6)) {
       // if we can't allocate JSON buffer ignore usermod pins
       JsonObject mods = doc.createNestedObject(F("um"));
@@ -625,6 +635,11 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(SET_F("numM="));
     oappendi(usermods.getModCount());
     oappend(";");
+    sappend('v',SET_F("SDA"),i2c_sda);
+    sappend('v',SET_F("SCL"),i2c_scl);
+    sappend('v',SET_F("MOSI"),spi_mosi);
+    sappend('v',SET_F("SCLK"),spi_sclk);
+    sappend('v',SET_F("CS"),spi_cs);
     usermods.appendConfigData();
   }
 

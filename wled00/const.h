@@ -389,6 +389,9 @@
 #if defined(ESP8266) && defined(HW_PIN_DATASPI)
   #undef HW_PIN_DATASPI
 #endif
+#if defined(ESP8266) && defined(HW_PIN_CSSPI)
+  #undef HW_PIN_CSSPI
+#endif
 #ifndef HW_PIN_CLOCKSPI
   #ifdef ESP8266
     #define HW_PIN_CLOCKSPI 14
@@ -401,6 +404,13 @@
     #define HW_PIN_DATASPI 13
   #else
     #define HW_PIN_DATASPI 23
+  #endif
+#endif
+#ifndef HW_PIN_CSSPI
+  #ifdef ESP8266
+    #define HW_PIN_CSSPI 15
+  #else
+    #define HW_PIN_CSSPI 5
   #endif
 #endif
 

@@ -86,6 +86,8 @@
   #endif
   #include "esp_task_wdt.h"
 #endif
+#include <Wire.h>
+#include <SPI.h>
 
 #include "src/dependencies/network/Network.h"
 
@@ -640,6 +642,12 @@ WLED_GLOBAL int8_t loadLedmap _INIT(-1);
 
 // Usermod manager
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
+
+WLED_GLOBAL int8_t i2c_sda  _INIT(HW_PIN_SDA);      // global I2C SDA pin (used for usermods)
+WLED_GLOBAL int8_t i2c_scl  _INIT(HW_PIN_SCL);      // global I2C SDA pin (used for usermods)
+WLED_GLOBAL int8_t spi_mosi _INIT(HW_PIN_DATASPI);  // global I2C SDA pin (used for usermods)
+WLED_GLOBAL int8_t spi_sclk _INIT(HW_PIN_CLOCKSPI); // global I2C SDA pin (used for usermods)
+WLED_GLOBAL int8_t spi_cs   _INIT(HW_PIN_CSSPI);    // global I2C SDA pin (used for usermods)
 
 // global ArduinoJson buffer
 WLED_GLOBAL StaticJsonDocument<JSON_BUFFER_SIZE> doc;

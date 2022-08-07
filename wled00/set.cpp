@@ -477,6 +477,53 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   {
     if (!requestJSONBufferLock(5)) return;
 
+    // global I2C & SPI pins
+    uint8_t oldpins[3];
+    int8_t hw_sda_pin  = max(-1,min(33,(int)request->arg(F("SDA")).toInt()));
+    int8_t hw_scl_pin  = max(-1,min(33,(int)request->arg(F("SCL")).toInt()));
+    oldpins[0] = i2c_sda;
+    oldpins[1] = i2c_scl;
+    pinManager.deallocateMultiplePins(oldpins, 2, PinOwner::HW_I2C);
+    #ifdef ESP8266
+    // cannot change pins on ESP8266
+    if (hw_sda_pin != HW_PIN_SDA) hw_sda_pin = -1;
+    if (hw_scl_pin != HW_PIN_SCL) hw_scl_pin = -1;
+    #endif
+    PinManagerPinType i2c[2] = { { hw_sda_pin, true }, { hw_scl_pin, true } };
+    if (pinManager.allocateMultiplePins(i2c, 2, PinOwner::HW_I2C)) {
+      i2c_sda = hw_sda_pin;
+      i2c_scl = hw_scl_pin;
+      #ifdef ESP32
+      Wire.setPins(i2c_sda, i2c_scl); // this will fail if Wire is initilised (Wire.begin() called)
+      #endif
+    } else {
+      i2c_sda = -1;
+      i2c_scl = -1;
+    }
+    int8_t hw_mosi_pin = max(-1,min(33,(int)request->arg(F("MOSI")).toInt()));
+    int8_t hw_sclk_pin = max(-1,min(33,(int)request->arg(F("SCLK")).toInt()));
+    int8_t hw_cs_pin   = max(-1,min(33,(int)request->arg(F("CS")).toInt()));
+    oldpins[0] = spi_mosi;
+    oldpins[1] = spi_sclk;
+    oldpins[2] = spi_cs;
+    pinManager.deallocateMultiplePins(oldpins, 3, PinOwner::HW_SPI);
+    #ifdef ESP8266
+    // cannot change pins on ESP8266
+    if (hw_mosi_pin != HW_PIN_DATASPI)  hw_mosi_pin = -1;
+    if (hw_sclk_pin != HW_PIN_CLOCKSPI) hw_sclk_pin = -1;
+    if (hw_cs_pin   != HW_PIN_CSSPI)    hw_cs_pin   = -1;
+    #endif
+    PinManagerPinType spi[3] = { { hw_mosi_pin, true }, { hw_sclk_pin, true }, { hw_cs_pin, true } };
+    if (pinManager.allocateMultiplePins(spi, 3, PinOwner::HW_SPI)) {
+      spi_mosi = hw_mosi_pin;
+      spi_sclk = hw_sclk_pin;
+      spi_cs   = hw_cs_pin;
+    } else {
+      spi_mosi = -1;
+      spi_sclk = -1;
+      spi_cs   = -1;
+    }
+
     JsonObject um = doc.createNestedObject("um");
 
     size_t args = request->args();
