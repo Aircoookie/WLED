@@ -51,6 +51,8 @@ constexpr int BLOCK_SIZE = 128;
 constexpr int SAMPLE_RATE = 20480;            // Base sample rate in Hz - 20Khz is experimental.    Physical sample time -> 25ms
 //constexpr int SAMPLE_RATE = 10240;            // Base sample rate in Hz - standard.                 Physical sample time -> 50ms
 
+#define FFT_MIN_CYCLE 22                      // minimum time before FFT task is repeated. Must be less than time needed to read 512 samples at SAMPLE_RATE -> not the same as I2S time!!
+
 // globals
 static uint8_t inputLevel = 128;              // UI slider value
 static uint8_t soundSquelch = 10;             // squelch value for volume reactive routines (config value)
@@ -151,7 +153,11 @@ float fftAddAvg(int from, int to) {
 // FFT main code
 void FFTcode(void * parameter)
 {
-  DEBUGSR_PRINT("FFT running on core: "); DEBUGSR_PRINTLN(xPortGetCoreID());
+  DEBUGSR_PRINT("FFT started on core: "); DEBUGSR_PRINTLN(xPortGetCoreID());
+
+  // see https://www.freertos.org/vtaskdelayuntil.html
+  const TickType_t xFrequency = FFT_MIN_CYCLE * portTICK_PERIOD_MS;  
+  TickType_t xLastWakeTime = xTaskGetTickCount();
 
   for(;;) {
     delay(1);           // DO NOT DELETE THIS LINE! It is needed to give the IDLE(0) task enough time and to keep the watchdog happy.
@@ -159,7 +165,8 @@ void FFTcode(void * parameter)
 
     // Only run the FFT computing code if we're not in Receive mode and not in realtime mode
     if (disableSoundProcessing || (audioSyncEnabled & 0x02)) {
-      delay(7);   // release CPU - delay is implemeted using vTaskDelay(). cannot use yield() because we are out of arduino loop context
+      //delay(7);   // release CPU - delay is implemeted using vTaskDelay(). cannot use yield() because we are out of arduino loop context
+      vTaskDelayUntil( &xLastWakeTime, xFrequency);        // release CPU, by doing nothing for FFT_MIN_CYCLE millis
       continue;
     }
 
@@ -270,11 +277,6 @@ void FFTcode(void * parameter)
       fftAvg[i]    = (float)fftResult[i]*0.05f + 0.95f*fftAvg[i];
     }
 
-    // release second sample to volume reactive effects. 
-	  // The FFT process currently takes ~20ms, so releasing a second sample now effectively doubles the "sample rate" 
-    micDataSm = (uint16_t)maxSample2;
-    micDataReal = maxSample2;
-
 #ifdef WLED_DEBUG
     //fftTime = ((millis() - start)*3 + fftTime*7)/10;
     if (start < esp_timer_get_time()) { // filter out overflows
@@ -282,6 +284,12 @@ void FFTcode(void * parameter)
       fftTime  = (fftTimeInMillis*3 + fftTime*7)/10; // smooth
     }
 #endif
+
+    vTaskDelayUntil( &xLastWakeTime, xFrequency);        // release CPU, by waiting until FFT_MIN_CYCLE is over
+    // release second sample to volume reactive effects. 
+	  // Releasing a second sample now effectively doubles the "sample rate" 
+    micDataSm = (uint16_t)maxSample2;
+    micDataReal = maxSample2;
 
   } // for(;;)
 } // FFTcode()
@@ -1059,14 +1067,15 @@ class AudioReactive : public Usermod {
         if (FFT_Task)
           vTaskResume(FFT_Task);
         else
-          xTaskCreatePinnedToCore(
+//          xTaskCreatePinnedToCore(
+          xTaskCreate(                        // no need to "pin" this task to core #0
             FFTcode,                          // Function to implement the task
             "FFT",                            // Name of the task
             5000,                             // Stack size in words
             NULL,                             // Task input parameter
             1,                                // Priority of the task
-            &FFT_Task,                        // Task handle
-            0                                 // Core where the task should run
+            &FFT_Task                        // Task handle
+//            , 0                                 // Core where the task should run
           );
       }
       if (enabled) disableSoundProcessing = false;
