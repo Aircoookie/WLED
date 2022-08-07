@@ -47,8 +47,9 @@
 
 constexpr i2s_port_t I2S_PORT = I2S_NUM_0;
 constexpr int BLOCK_SIZE = 128;
-constexpr int SAMPLE_RATE = 20480;      // Base sample rate in Hz - 20Khz is experimental
-//constexpr int SAMPLE_RATE = 10240;      // Base sample rate in Hz - standard
+//constexpr int SAMPLE_RATE = 22050;            // Base sample rate in Hz - 22Khz is a standard rate. Physical sample time -> 23ms
+constexpr int SAMPLE_RATE = 20480;            // Base sample rate in Hz - 20Khz is experimental.    Physical sample time -> 25ms
+//constexpr int SAMPLE_RATE = 10240;            // Base sample rate in Hz - standard.                 Physical sample time -> 50ms
 
 // globals
 static uint8_t inputLevel = 128;              // UI slider value
@@ -593,7 +594,19 @@ class AudioReactive : public Usermod {
         micIn = inoise8(millis(), millis());          // Simulated analog read
         micDataReal = micIn;
       #else
+        #ifdef ESP32
         micIn = micDataSm;      // micDataSm = ((micData * 3) + micData)/4;
+        #else
+        // this is the minimal code for reading analog mic input on 8266.
+        // warning!! Absolutely experimental code. Audio on 8266 is still not working. Expects a million follow-on problems. 
+        static unsigned long lastAnalogTime = 0;
+        if (millis() - lastAnalogTime > 20) {
+            micDataReal = analogRead(A0); // read one sample with 10bit resolution. This is a dirty hack, supporting volumereactive effects only.
+            lastAnalogTime = millis();
+        }
+        micDataSm = micDataReal;
+        micIn = micDataSm;
+        #endif
       #endif
 
       micLev = ((micLev * 8191.0f) + micDataReal) / 8192.0f;                // takes a few seconds to "catch up" with the Mic Input
