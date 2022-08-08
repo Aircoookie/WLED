@@ -92,7 +92,7 @@ static float    multAgc = 1.0f;                 // sample * multAgc = sampleAgc.
 // lib_deps += https://github.com/kosme/arduinoFFT#develop @ 1.9.2
 #define FFT_SPEED_OVER_PRECISION     // enables use of reciprocals (1/x etc), and an a few other speedups
 #define FFT_SQRT_APPROXIMATION       // enables "quake3" style inverse sqrt
-//#define sqrt(x) sqrtf(x)             // little hack that reduces FFT time by 50% on ESP32 (as alternative to FFT_SQRT_APPROXIMATION)
+#define sqrt(x) sqrtf(x)             // little hack that reduces FFT time by 50% on ESP32 (as alternative to FFT_SQRT_APPROXIMATION)
 #endif
 #include "arduinoFFT.h"
 
@@ -155,9 +155,10 @@ void FFTcode(void * parameter)
 
   // see https://www.freertos.org/vtaskdelayuntil.html
   const TickType_t xFrequency = FFT_MIN_CYCLE * portTICK_PERIOD_MS;  
-  TickType_t xLastWakeTime = xTaskGetTickCount();
+  //const TickType_t xFrequency_2 = (FFT_MIN_CYCLE * portTICK_PERIOD_MS) / 2;
 
   for(;;) {
+    TickType_t xLastWakeTime = xTaskGetTickCount();
     delay(1);           // DO NOT DELETE THIS LINE! It is needed to give the IDLE(0) task enough time and to keep the watchdog happy.
                         // taskYIELD(), yield(), vTaskDelay() and esp_task_wdt_feed() didn't seem to work.
 
@@ -167,6 +168,9 @@ void FFTcode(void * parameter)
       vTaskDelayUntil( &xLastWakeTime, xFrequency);        // release CPU, by doing nothing for FFT_MIN_CYCLE millis
       continue;
     }
+
+    vTaskDelayUntil( &xLastWakeTime, xFrequency);        // release CPU, and let I2S fill its buffers
+    //vTaskDelayUntil( &xLastWakeTime, xFrequency_2);        // release CPU, and let I2S fill its buffers
 
 #ifdef WLED_DEBUG
     uint64_t start = esp_timer_get_time();
@@ -275,14 +279,13 @@ void FFTcode(void * parameter)
     }
 
 #ifdef WLED_DEBUG
-    //fftTime = ((millis() - start)*3 + fftTime*7)/10;
     if (start < esp_timer_get_time()) { // filter out overflows
       unsigned long fftTimeInMillis = ((esp_timer_get_time() - start) +500ULL) / 1000ULL; // "+500" to ensure proper rounding
       fftTime  = (fftTimeInMillis*3 + fftTime*7)/10; // smooth
     }
 #endif
 
-    vTaskDelayUntil( &xLastWakeTime, xFrequency);        // release CPU, by waiting until FFT_MIN_CYCLE is over
+    //vTaskDelayUntil( &xLastWakeTime, xFrequency_2);        // release CPU, by waiting until FFT_MIN_CYCLE is over
     // release second sample to volume reactive effects. 
 	  // Releasing a second sample now effectively doubles the "sample rate" 
     micDataReal = maxSample2;
@@ -645,8 +648,8 @@ class AudioReactive : public Usermod {
         samplePeak = false;
         udpSamplePeak = false;
       }
-
       //if (userVar1 == 0) samplePeak = 0;
+
       // Poor man's beat detection by seeing if sample > Average + some value.
       //  if (sample > (sampleAvg + maxVol) && millis() > (timeOfPeak + 200)) {
       if ((fftBin[binNum] > maxVol) && (millis() > (timeOfPeak + 100))) {    // This goes through ALL of the 255 bins
