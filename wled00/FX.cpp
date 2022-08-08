@@ -7259,7 +7259,7 @@ static const char _data_RESERVED[] PROGMEM = "Reserved";
 // if vector size() is smaller than id (single) data is appended at the end (regardless of id)
 void WS2812FX::addEffect(uint8_t id, mode_ptr mode_fn, const char *mode_name) {
   if (id == 255) { // find empty slot
-    for (int i=1; i<_mode.size(); i++) if (_modeData[i] == _data_RESERVED) { id = i; break; }
+    for (size_t i=1; i<_mode.size(); i++) if (_modeData[i] == _data_RESERVED) { id = i; break; }
   }
   if (id < _mode.size()) {
     if (_modeData[id] != _data_RESERVED) return; // do not overwrite alerady added effect
@@ -7277,7 +7277,7 @@ void WS2812FX::setupEffectData() {
   _mode.push_back(&mode_static);
   _modeData.push_back(_data_FX_MODE_STATIC);
   // fill reserved word in case there will be any gaps in the array
-  for (int i=1; i<_modeCount; i++) {
+  for (size_t i=1; i<_modeCount; i++) {
     _mode.push_back(&mode_static);
     _modeData.push_back(_data_RESERVED);
   }
