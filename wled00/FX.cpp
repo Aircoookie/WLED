@@ -5846,11 +5846,11 @@ uint16_t mode_2Dscrollingtext(void) {
   const int letterWidth = SEGMENT.custom2 > 128 ? 6 : 5;
   const int letterHeight = 8;
   const int yoffset = map(SEGMENT.intensity, 0, 255, -rows/2, rows/2) + (rows-letterHeight)/2;
-  const char *text = nullptr;
-  if (SEGMENT.name && strlen(SEGMENT.name)) text = SEGMENT.name;
+  char text[33] = {'\0'};
+  if (SEGMENT.name && strlen(SEGMENT.name)) for (int i=0,j=0; i<strlen(SEGMENT.name); i++) if (SEGMENT.name[i]>63 && SEGMENT.name[i]<128) text[j++] = SEGMENT.name[i];
 
-  char lineBuffer[17], sec[3];
-  if (!text) { // fallback if empty segment name: display date and time
+  if (!strlen(text) || !strncmp_P(text,PSTR("#DATE"),5) || !strncmp_P(text,PSTR("#TIME"),5)) { // fallback if empty segment name: display date and time
+    char sec[5];
     byte AmPmHour = hour(localTime);
     boolean isitAM = true;
     if (useAMPM) {
@@ -5859,8 +5859,9 @@ uint16_t mode_2Dscrollingtext(void) {
     }
     if (useAMPM) sprintf_P(sec, PSTR(" %2s"), (isitAM ? "AM" : "PM"));
     else         sprintf_P(sec, PSTR(":%02d"), second(localTime));
-    sprintf_P(lineBuffer,PSTR("%s %2d %2d:%02d%s"), monthShortStr(month(localTime)), day(localTime), AmPmHour, minute(localTime), sec);
-    text = lineBuffer;
+    if      (!strncmp_P(text,PSTR("#DATE"),5)) sprintf_P(text, PSTR("%d.%d.%d"), day(localTime), month(localTime), year(localTime));
+    else if (!strncmp_P(text,PSTR("#TIME"),5)) sprintf_P(text, PSTR("%2d:%02d%s"), AmPmHour, minute(localTime), sec);
+    else sprintf_P(text, PSTR("%s %d, %d %2d:%02d%s"), monthShortStr(month(localTime)), day(localTime), year(localTime), AmPmHour, minute(localTime), sec);
   }
   const int numberOfLetters = strlen(text);
 
