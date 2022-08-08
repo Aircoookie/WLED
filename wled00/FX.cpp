@@ -3495,14 +3495,14 @@ uint16_t mode_tetrix(void) {
   Tetris* drop = reinterpret_cast<Tetris*>(SEGENV.data);
 
   // initialize dropping on first call or segment full
-  if (SEGENV.call == 0 || SEGENV.aux1 >= SEGLEN) {
-    SEGENV.aux1 = 0;                            // reset brick stack size
+  if (SEGENV.call == 0 /*|| SEGENV.aux1 >= SEGLEN*/) {
+    SEGENV.aux1 = 0;                  // reset brick stack size
     SEGENV.step = 0;
     SEGMENT.fill(SEGCOLOR(1));
-    return 250;  // short wait
+    //return 250;  // short wait
   }
   
-  if (SEGENV.step == 0) {             //init
+  if (SEGENV.step == 0) {             // init brick
     drop->speed = 0.0238 * (SEGMENT.speed ? (SEGMENT.speed>>2)+1 : random8(6,64)); // set speed
     drop->pos   = SEGLEN;             // start at end of segment (no need to subtract 1)
     drop->col   = SEGMENT.color_from_palette(random8(0,15)<<4,false,false,0);     // limit color choices so there is enough HUE gap
@@ -3516,17 +3516,28 @@ uint16_t mode_tetrix(void) {
     }
   }
 
-  if (SEGENV.step > 1) {              // falling
+  if (SEGENV.step == 2) {             // falling
     if (drop->pos > SEGENV.aux1) {    // fall until top of stack
       drop->pos -= drop->speed;       // may add gravity as: speed += gravity
-      if (int(drop->pos) < SEGENV.aux1) drop->pos = SEGENV.aux1;
+      if (uint16_t(drop->pos) < SEGENV.aux1) drop->pos = SEGENV.aux1;
       for(int i=int(drop->pos); i<SEGLEN; i++) SEGMENT.setPixelColor(i,i<int(drop->pos)+SEGENV.aux0 ? drop->col : SEGCOLOR(1));
     } else {                          // we hit bottom
-      SEGENV.step = 0;                // go back to init
+      SEGENV.step = 0;                // proceed with next brick, go back to init
       SEGENV.aux1 += SEGENV.aux0;     // increase the stack size
-      if (SEGENV.aux1 >= SEGLEN) return 1000;   // wait for a second
+      if (SEGENV.aux1 >= SEGLEN) SEGENV.step = millis() + 2500; // fade out stack
     }
   }
+
+  if (SEGENV.step > 2) {
+    SEGENV.aux0 = 0;                  // reset brick size (no more growing)
+    if (SEGENV.step > millis()) {
+      SEGMENT.fade_out(24);           // fade out stack
+    } else {
+      SEGENV.aux1 = 0;                // reset brick stack size
+      SEGENV.step = 0;                // proceed with next brick
+    }
+  }
+
   return FRAMETIME;  
 }
 static const char _data_FX_MODE_TETRIX[] PROGMEM = "Tetrix@!,Width;!,!,;!;sx=224,ix=0,pal=11,mp12=1,1d"; //vertical
@@ -5835,11 +5846,11 @@ uint16_t mode_2Dscrollingtext(void) {
   const int letterWidth = SEGMENT.custom2 > 128 ? 6 : 5;
   const int letterHeight = 8;
   const int yoffset = map(SEGMENT.intensity, 0, 255, -rows/2, rows/2) + (rows-letterHeight)/2;
-  const char *text = nullptr;
-  if (SEGMENT.name && strlen(SEGMENT.name)) text = SEGMENT.name;
+  char text[33] = {'\0'};
+  if (SEGMENT.name && strlen(SEGMENT.name)) for (int i=0,j=0; i<strlen(SEGMENT.name); i++) if (SEGMENT.name[i]>63 && SEGMENT.name[i]<128) text[j++] = SEGMENT.name[i];
 
-  char lineBuffer[17], sec[3];
-  if (!text) { // fallback if empty segment name: display date and time
+  if (!strlen(text) || !strncmp_P(text,PSTR("#DATE"),5) || !strncmp_P(text,PSTR("#TIME"),5)) { // fallback if empty segment name: display date and time
+    char sec[5];
     byte AmPmHour = hour(localTime);
     boolean isitAM = true;
     if (useAMPM) {
@@ -5848,8 +5859,9 @@ uint16_t mode_2Dscrollingtext(void) {
     }
     if (useAMPM) sprintf_P(sec, PSTR(" %2s"), (isitAM ? "AM" : "PM"));
     else         sprintf_P(sec, PSTR(":%02d"), second(localTime));
-    sprintf_P(lineBuffer,PSTR("%s %2d %2d:%02d%s"), monthShortStr(month(localTime)), day(localTime), AmPmHour, minute(localTime), sec);
-    text = lineBuffer;
+    if      (!strncmp_P(text,PSTR("#DATE"),5)) sprintf_P(text, PSTR("%d.%d.%d"), day(localTime), month(localTime), year(localTime));
+    else if (!strncmp_P(text,PSTR("#TIME"),5)) sprintf_P(text, PSTR("%2d:%02d%s"), AmPmHour, minute(localTime), sec);
+    else sprintf_P(text, PSTR("%s %d, %d %2d:%02d%s"), monthShortStr(month(localTime)), day(localTime), year(localTime), AmPmHour, minute(localTime), sec);
   }
   const int numberOfLetters = strlen(text);
 
@@ -7254,29 +7266,34 @@ static const char _data_FX_MODE_2DAKEMI[] PROGMEM = "Akemi@Color speed,Dance;Hea
 // mode data
 static const char _data_RESERVED[] PROGMEM = "Reserved";
 
+// add (or replace reserved) effect mode and data into vector
+// use id==255 to find unallocatd gaps (with "Reserved" data string)
+// if vector size() is smaller than id (single) data is appended at the end (regardless of id)
 void WS2812FX::addEffect(uint8_t id, mode_ptr mode_fn, const char *mode_name) {
-  /*
-  if (id == 255) { for (int i=1; i<_modeCount; i++) if (_mode[i] == &mode_static) { id = i; break; } } // find empty slot
-  if (id < _modeCount) {
-    if (_mode[id] != &mode_static) return; // do not overwrite alerady added effect
-    _mode[id] = mode_fn;
-    _modeData[id] = mode_name;
+  if (id == 255) { // find empty slot
+    for (size_t i=1; i<_mode.size(); i++) if (_modeData[i] == _data_RESERVED) { id = i; break; }
   }
-  */
-  if (id >= _mode.size()) {
+  if (id < _mode.size()) {
+    if (_modeData[id] != _data_RESERVED) return; // do not overwrite alerady added effect
+    _mode[id]     = mode_fn;
+    _modeData[id] = mode_name;
+  } else {
     _mode.push_back(mode_fn);
     _modeData.push_back(mode_name);
-  } else {
-    _mode.insert(_mode.begin()+id, mode_fn);
-    _modeData.insert(_modeData.begin()+id, mode_name);
+    if (_modeCount < _mode.size()) _modeCount++;
   }
 }
 
 void WS2812FX::setupEffectData() {
+  // Solid must be first! (assuming vector is empty upon call to setup)
+  _mode.push_back(&mode_static);
+  _modeData.push_back(_data_FX_MODE_STATIC);
   // fill reserved word in case there will be any gaps in the array
-  for (int i=0; i<_modeCount; i++) { _mode[i] = &mode_static; _modeData[i] = _data_RESERVED; }
-  //addEffect(FX_MODE_..., &mode_fcn, _data_FX_MODE_...);
-  addEffect(FX_MODE_STATIC, &mode_static, _data_FX_MODE_STATIC);
+  for (size_t i=1; i<_modeCount; i++) {
+    _mode.push_back(&mode_static);
+    _modeData.push_back(_data_RESERVED);
+  }
+  // now replace all pre-allocated effects
   addEffect(FX_MODE_BLINK, &mode_blink, _data_FX_MODE_BLINK);
   addEffect(FX_MODE_COLOR_WIPE, &mode_color_wipe, _data_FX_MODE_COLOR_WIPE);
   addEffect(FX_MODE_COLOR_WIPE_RANDOM, &mode_color_wipe_random, _data_FX_MODE_COLOR_WIPE_RANDOM);
