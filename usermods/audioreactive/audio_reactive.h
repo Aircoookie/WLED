@@ -82,9 +82,7 @@ const float agcSampleSmooth[AGC_NUM_PRESETS]  = {  1/12.f,   1/6.f,  1/16.f}; //
 static AudioSource *audioSource = nullptr;
 static volatile bool disableSoundProcessing = false;      // if true, sound processing (FFT, filters, AGC) will be suspended. "volatile" as its shared between tasks.
 
-//static uint16_t micData;                        // Analog input for FFT
-static uint16_t micDataSm;                      // Smoothed mic data, as it's a bit twitchy
-static float    micDataReal = 0.0f;             // future support - this one has the full 24bit MicIn data - lowest 8bit after decimal point
+static float    micDataReal = 0.0f;             // MicIn data with full 24bit resolution - lowest 8bit after decimal point
 static float    multAgc = 1.0f;                 // sample * multAgc = sampleAgc. Our AGC multiplier
 
 ////////////////////
@@ -201,7 +199,6 @@ void FFTcode(void * parameter)
         if (fabsf((float)vReal[i]) > maxSample2) maxSample2 = fabsf((float)vReal[i]);
     }
     // release first sample to volume reactive effects
-    micDataSm = (uint16_t)maxSample1;
     micDataReal = maxSample1;
 
 #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
@@ -288,7 +285,6 @@ void FFTcode(void * parameter)
     vTaskDelayUntil( &xLastWakeTime, xFrequency);        // release CPU, by waiting until FFT_MIN_CYCLE is over
     // release second sample to volume reactive effects. 
 	  // Releasing a second sample now effectively doubles the "sample rate" 
-    micDataSm = (uint16_t)maxSample2;
     micDataReal = maxSample2;
 
   } // for(;;)
@@ -373,15 +369,13 @@ class AudioReactive : public Usermod {
 
     const uint16_t delayMs = 10;        // I don't want to sample too often and overload WLED
     // variables used in effects
-    uint8_t  maxVol = 10;         // Reasonable value for constant volume for 'peak detector', as it won't always trigger
-    uint8_t  binNum = 8;          // Used to select the bin for FFT based beat detection.
+    uint8_t  maxVol = 10;         // Reasonable value for constant volume for 'peak detector', as it won't always trigger (deprecated)
+    uint8_t  binNum = 8;          // Used to select the bin for FFT based beat detection  (deprecated)
     bool     samplePeak = 0;      // Boolean flag for peak. Responding routine must reset this flag
     float    volumeSmth;          // either sampleAvg or sampleAgc depending on soundAgc; smoothed sample
     int16_t  volumeRaw;           // either sampleRaw or rawSampleAgc depending on soundAgc
+    float my_magnitude;           // FFT_Magnitude, scaled by multAgc
 
-    #ifdef MIC_SAMPLING_LOG
-    uint8_t  targetAgc = 60;      // This is our setPoint at 20% of max for the adjusted output (used only in logAudio())
-    #endif
     bool     udpSamplePeak = 0;   // Boolean flag for peak. Set at the same tiem as samplePeak, but reset by transmitAudioData
     int16_t  micIn = 0;           // Current sample starts with negative values and large values, which is why it's 16 bit signed
     int16_t  sampleRaw;           // Current sample. Must only be updated ONCE!!! (amplified mic value by sampleGain and inputLevel; smoothed over 16 samples)
@@ -415,16 +409,12 @@ class AudioReactive : public Usermod {
     static const char UDP_SYNC_HEADER[];
     static const char UDP_SYNC_HEADER_v1[];
 
-    float my_magnitude;
-
     // private methods
     void logAudio()
     {
     #ifdef MIC_LOGGER
       // Debugging functions for audio input and sound processing. Comment out the values you want to see
       Serial.print("micReal:");     Serial.print(micDataReal); Serial.print("\t");
-      //Serial.print("micData:");     Serial.print(micData);     Serial.print("\t");
-      //Serial.print("micDataSm:");   Serial.print(micDataSm);   Serial.print("\t");
       //Serial.print("micIn:");       Serial.print(micIn);       Serial.print("\t");
       //Serial.print("micLev:");      Serial.print(micLev);      Serial.print("\t");
       //Serial.print("sampleReal:");  Serial.print(sampleReal);  Serial.print("\t");
@@ -474,7 +464,7 @@ class AudioReactive : public Usermod {
       }
       for(int i = 0; i < 16; i++) {
         Serial.print(i); Serial.print(":");
-        Serial.printf("%04d ", map(fftResult[i], 0, (scaleValuesFromCurrentMaxVal ? maxVal : defaultScalingFromHighValue), (mapValuesToPlotterSpace*i*scalingToHighValue)+0, (mapValuesToPlotterSpace*i*scalingToHighValue)+scalingToHighValue-1));
+        Serial.printf("%04ld ", map(fftResult[i], 0, (scaleValuesFromCurrentMaxVal ? maxVal : defaultScalingFromHighValue), (mapValuesToPlotterSpace*i*scalingToHighValue)+0, (mapValuesToPlotterSpace*i*scalingToHighValue)+scalingToHighValue-1));
       }
       if(printMaxVal) {
         Serial.printf("maxVal:%04d ", maxVal + (mapValuesToPlotterSpace ? 16*256 : 0));
@@ -603,7 +593,7 @@ class AudioReactive : public Usermod {
         micDataReal = micIn;
       #else
         #ifdef ESP32
-        micIn = micDataSm;      // micDataSm = ((micData * 3) + micData)/4;
+        micIn = int(micDataReal);      // micDataSm = ((micData * 3) + micData)/4;
         #else
         // this is the minimal code for reading analog mic input on 8266.
         // warning!! Absolutely experimental code. Audio on 8266 is still not working. Expects a million follow-on problems. 
@@ -612,8 +602,7 @@ class AudioReactive : public Usermod {
             micDataReal = analogRead(A0); // read one sample with 10bit resolution. This is a dirty hack, supporting volumereactive effects only.
             lastAnalogTime = millis();
         }
-        micDataSm = micDataReal;
-        micIn = micDataSm;
+        micIn = int(micDataReal);
         #endif
       #endif
 
@@ -659,8 +648,8 @@ class AudioReactive : public Usermod {
 
       //if (userVar1 == 0) samplePeak = 0;
       // Poor man's beat detection by seeing if sample > Average + some value.
-      if ((fftBin[binNum] > maxVol) && (millis() > (timeOfPeak + 100))) {    // This goes through ALL of the 255 bins
       //  if (sample > (sampleAvg + maxVol) && millis() > (timeOfPeak + 200)) {
+      if ((fftBin[binNum] > maxVol) && (millis() > (timeOfPeak + 100))) {    // This goes through ALL of the 255 bins
       // Then we got a peak, else we don't. The peak has to time out on its own in order to support UDP sound sync.
         samplePeak    = true;
         timeOfPeak    = millis();
