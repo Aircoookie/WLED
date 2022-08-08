@@ -318,10 +318,12 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   bool onBefore = bri;
   getVal(root["bri"], &bri);
 
-  bool on = root["on"] | (bri > 0);
-  if (!on != !bri) toggleOnOff();
-
-  if (root["on"].is<const char*>() && root["on"].as<const char*>()[0] == 't') toggleOnOff();
+  if (root["on"].isNull()) {
+    if ((onBefore && bri==0) || (!onBefore && bri>0)) toggleOnOff();
+  } else {
+    bool on = root["on"] | onBefore;
+    if (on != onBefore || (root["on"].is<const char*>() && root["on"].as<const char*>()[0] == 't')) toggleOnOff();
+  }
 
   if (bri && !onBefore) { // unfreeze all segments when turning on
     for (size_t s=0; s < strip.getSegmentsNum(); s++) {
