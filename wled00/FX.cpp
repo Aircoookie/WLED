@@ -3495,14 +3495,14 @@ uint16_t mode_tetrix(void) {
   Tetris* drop = reinterpret_cast<Tetris*>(SEGENV.data);
 
   // initialize dropping on first call or segment full
-  if (SEGENV.call == 0 || SEGENV.aux1 >= SEGLEN) {
-    SEGENV.aux1 = 0;                            // reset brick stack size
+  if (SEGENV.call == 0 /*|| SEGENV.aux1 >= SEGLEN*/) {
+    SEGENV.aux1 = 0;                  // reset brick stack size
     SEGENV.step = 0;
     SEGMENT.fill(SEGCOLOR(1));
-    return 250;  // short wait
+    //return 250;  // short wait
   }
   
-  if (SEGENV.step == 0) {             //init
+  if (SEGENV.step == 0) {             // init brick
     drop->speed = 0.0238 * (SEGMENT.speed ? (SEGMENT.speed>>2)+1 : random8(6,64)); // set speed
     drop->pos   = SEGLEN;             // start at end of segment (no need to subtract 1)
     drop->col   = SEGMENT.color_from_palette(random8(0,15)<<4,false,false,0);     // limit color choices so there is enough HUE gap
@@ -3516,17 +3516,28 @@ uint16_t mode_tetrix(void) {
     }
   }
 
-  if (SEGENV.step > 1) {              // falling
+  if (SEGENV.step == 2) {             // falling
     if (drop->pos > SEGENV.aux1) {    // fall until top of stack
       drop->pos -= drop->speed;       // may add gravity as: speed += gravity
-      if (int(drop->pos) < SEGENV.aux1) drop->pos = SEGENV.aux1;
+      if (uint16_t(drop->pos) < SEGENV.aux1) drop->pos = SEGENV.aux1;
       for(int i=int(drop->pos); i<SEGLEN; i++) SEGMENT.setPixelColor(i,i<int(drop->pos)+SEGENV.aux0 ? drop->col : SEGCOLOR(1));
     } else {                          // we hit bottom
-      SEGENV.step = 0;                // go back to init
+      SEGENV.step = 0;                // proceed with next brick, go back to init
       SEGENV.aux1 += SEGENV.aux0;     // increase the stack size
-      if (SEGENV.aux1 >= SEGLEN) return 1000;   // wait for a second
+      if (SEGENV.aux1 >= SEGLEN) SEGENV.step = millis() + 2500; // fade out stack
     }
   }
+
+  if (SEGENV.step > 2) {
+    SEGENV.aux0 = 0;                  // reset brick size (no more growing)
+    if (SEGENV.step > millis()) {
+      SEGMENT.fade_out(24);           // fade out stack
+    } else {
+      SEGENV.aux1 = 0;                // reset brick stack size
+      SEGENV.step = 0;                // proceed with next brick
+    }
+  }
+
   return FRAMETIME;  
 }
 static const char _data_FX_MODE_TETRIX[] PROGMEM = "Tetrix@!,Width;!,!,;!;sx=224,ix=0,pal=11,mp12=1,1d"; //vertical
