@@ -7254,29 +7254,34 @@ static const char _data_FX_MODE_2DAKEMI[] PROGMEM = "Akemi@Color speed,Dance;Hea
 // mode data
 static const char _data_RESERVED[] PROGMEM = "Reserved";
 
+// add (or replace reserved) effect mode and data into vector
+// use id==255 to find unallocatd gaps (with "Reserved" data string)
+// if vector size() is smaller than id (single) data is appended at the end (regardless of id)
 void WS2812FX::addEffect(uint8_t id, mode_ptr mode_fn, const char *mode_name) {
-  /*
-  if (id == 255) { for (int i=1; i<_modeCount; i++) if (_mode[i] == &mode_static) { id = i; break; } } // find empty slot
-  if (id < _modeCount) {
-    if (_mode[id] != &mode_static) return; // do not overwrite alerady added effect
-    _mode[id] = mode_fn;
-    _modeData[id] = mode_name;
+  if (id == 255) { // find empty slot
+    for (int i=1; i<_mode.size(); i++) if (_modeData[i] == _data_RESERVED) { id = i; break; }
   }
-  */
-  if (id >= _mode.size()) {
+  if (id < _mode.size()) {
+    if (_modeData[id] != _data_RESERVED) return; // do not overwrite alerady added effect
+    _mode[id]     = mode_fn;
+    _modeData[id] = mode_name;
+  } else {
     _mode.push_back(mode_fn);
     _modeData.push_back(mode_name);
-  } else {
-    _mode.insert(_mode.begin()+id, mode_fn);
-    _modeData.insert(_modeData.begin()+id, mode_name);
+    if (_modeCount < _mode.size()) _modeCount++;
   }
 }
 
 void WS2812FX::setupEffectData() {
+  // Solid must be first! (assuming vector is empty upon call to setup)
+  _mode.push_back(&mode_static);
+  _modeData.push_back(_data_FX_MODE_STATIC);
   // fill reserved word in case there will be any gaps in the array
-  for (int i=0; i<_modeCount; i++) { _mode[i] = &mode_static; _modeData[i] = _data_RESERVED; }
-  //addEffect(FX_MODE_..., &mode_fcn, _data_FX_MODE_...);
-  addEffect(FX_MODE_STATIC, &mode_static, _data_FX_MODE_STATIC);
+  for (int i=1; i<_modeCount; i++) {
+    _mode.push_back(&mode_static);
+    _modeData.push_back(_data_RESERVED);
+  }
+  // now replace all pre-allocated effects
   addEffect(FX_MODE_BLINK, &mode_blink, _data_FX_MODE_BLINK);
   addEffect(FX_MODE_COLOR_WIPE, &mode_color_wipe, _data_FX_MODE_COLOR_WIPE);
   addEffect(FX_MODE_COLOR_WIPE_RANDOM, &mode_color_wipe_random, _data_FX_MODE_COLOR_WIPE_RANDOM);

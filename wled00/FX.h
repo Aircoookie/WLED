@@ -725,9 +725,9 @@ class WS2812FX {  // 96 bytes
       _mainSegment(0)
     {
       WS2812FX::instance = this;
-      _mode.reserve(_modeCount);     // allocate memory to prevent initial fragmentation
-      _modeData.reserve(_modeCount); // allocate memory to prevent initial fragmentation
-      if (_mode.capacity() <= 1 || _modeData.capacity() <= 1) _modeCount = 1;
+      _mode.reserve(_modeCount);     // allocate memory to prevent initial fragmentation (does not increase size())
+      _modeData.reserve(_modeCount); // allocate memory to prevent initial fragmentation (does not increase size())
+      if (_mode.capacity() <= 1 || _modeData.capacity() <= 1) _modeCount = 1; // memory allocation failed only show Solid
       else setupEffectData();
     }
 
