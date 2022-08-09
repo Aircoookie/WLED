@@ -5847,7 +5847,7 @@ uint16_t mode_2Dscrollingtext(void) {
   const int letterHeight = 8;
   const int yoffset = map(SEGMENT.intensity, 0, 255, -rows/2, rows/2) + (rows-letterHeight)/2;
   char text[33] = {'\0'};
-  if (SEGMENT.name && strlen(SEGMENT.name)) for (int i=0,j=0; i<strlen(SEGMENT.name); i++) if (SEGMENT.name[i]>63 && SEGMENT.name[i]<128) text[j++] = SEGMENT.name[i];
+  if (SEGMENT.name && strlen(SEGMENT.name)) for (int i=0,j=0; i<strlen(SEGMENT.name); i++) if (SEGMENT.name[i]>31 && SEGMENT.name[i]<128) text[j++] = SEGMENT.name[i];
 
   if (!strlen(text) || !strncmp_P(text,PSTR("#DATE"),5) || !strncmp_P(text,PSTR("#TIME"),5)) { // fallback if empty segment name: display date and time
     char sec[5];
@@ -7264,7 +7264,7 @@ static const char _data_FX_MODE_2DAKEMI[] PROGMEM = "Akemi@Color speed,Dance;Hea
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // mode data
-static const char _data_RESERVED[] PROGMEM = "Reserved";
+static const char _data_RESERVED[] PROGMEM = "RSVD";
 
 // add (or replace reserved) effect mode and data into vector
 // use id==255 to find unallocatd gaps (with "Reserved" data string)

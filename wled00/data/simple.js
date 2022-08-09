@@ -644,7 +644,7 @@ function populateEffects()
 
 	for (let i = 0; i < effects.length; i++) {
 		// WLEDSR: add slider and color control to setEffect (used by requestjson)
-		if (effects[i].name.indexOf("Reserved") < 0) {
+		if (effects[i].name.indexOf("RSVD") < 0) {
 			var posAt = effects[i].name.indexOf("@");
 			var extra = '';
 			if (posAt > 0)
