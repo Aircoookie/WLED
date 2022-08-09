@@ -139,6 +139,10 @@
 #include "../usermods/audioreactive/audio_reactive.h"
 #endif
 
+#ifdef USERMOD_WEATHER
+#include "../usermods/usermod_v2_weather/usermod_v2_weather.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -264,5 +268,9 @@ void registerUsermods()
       #error Incompatible options: WLED_DISABLE_AUDIO and USERMOD_AUDIOREACTIVE
     #endif
   usermods.add(new AudioReactive());
+  #endif
+
+  #ifdef USERMOD_WEATHER
+  usermods.add(new WeatherUsermod());
   #endif
 }
