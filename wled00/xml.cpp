@@ -308,13 +308,12 @@ void getSettingsJS(byte subPage, char* dest)
 
     // set limits
     oappend(SET_F("bLimits("));
-    #ifdef ESP32
+    #if defined(ESP32) && defined(USERMOD_AUDIOREACTIVE)
     // requested by @softhack007 https://github.com/blazoncek/WLED/issues/33
-    if (usermods.lookup(USERMOD_ID_AUDIOREACTIVE))
-      oappend(itoa(WLED_MAX_BUSSES-2,nS,10)); // prevent use of I2S buses if audio installed
-    else
-    #endif
+    oappend(itoa(WLED_MAX_BUSSES-2,nS,10)); // prevent use of I2S buses if audio installed
+    #else
     oappend(itoa(WLED_MAX_BUSSES,nS,10));  oappend(",");
+    #endif
     oappend(itoa(MAX_LEDS_PER_BUS,nS,10)); oappend(",");
     oappend(itoa(MAX_LED_MEMORY,nS,10));   oappend(",");
     oappend(itoa(MAX_LEDS,nS,10));

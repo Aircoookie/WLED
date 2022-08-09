@@ -979,7 +979,7 @@ void serveJson(AsyncWebServerRequest* request)
   }
   #endif
   else if (url.indexOf(F("eff")) > 0) {
-    // this is going to serve raw effect names which will include WLED-SR extensions in names
+    // this serves just effect names without FX data extensions in names
     if (requestJSONBufferLock(19)) {
       AsyncJsonResponse* response = new AsyncJsonResponse(&doc, true);  // array document
       JsonArray lDoc = response->getRoot();
@@ -988,7 +988,8 @@ void serveJson(AsyncWebServerRequest* request)
       request->send(response);
       releaseJSONBufferLock();
     } else {
-      request->send_P(200, "application/json", JSON_mode_names);
+      //request->send_P(200, "application/json", JSON_mode_names);
+      request->send(503, "application/json", F("{\"error\":3}"));
     }
     return;
   }
@@ -1000,11 +1001,14 @@ void serveJson(AsyncWebServerRequest* request)
     return;
   }
   else if (url.length() > 6) { //not just /json
-    request->send(  501, "application/json", F("{\"error\":\"Not implemented\"}"));
+    request->send(501, "application/json", F("{\"error\":\"Not implemented\"}"));
     return;
   }
 
-  if (!requestJSONBufferLock(17)) return;
+  if (!requestJSONBufferLock(17)) {
+    request->send(503, "application/json", F("{\"error\":3}"));
+    return;
+  }
   AsyncJsonResponse *response = new AsyncJsonResponse(&doc, subJson==6);
 
   JsonVariant lDoc = response->getRoot();
