@@ -26,14 +26,18 @@ class PingPongClockUsermod : public Usermod
 private:
   // Private class members. You can declare variables and functions only accessible to your usermod here
   unsigned long lastTime = 0;
+  bool colonOn = true;
 
+  // ---- Variables modified by settings below -----
   // set your config variables to their boot default value (this can also be done in readFromConfig() or a constructor if you prefer)
+  bool pingPongClockEnabled = true;
   int baseH = 8;
   int baseHH = 36;
   int baseM = 78;
   int baseMM = 106;
-  int colon[2] = { 64, 65 };
-  bool colonOn = true;
+  int colon1 = 64;
+  int colon2 = 65;
+  uint32_t color = 0xFFFFFFFF;
 
 
   // Matrix for the illumination of the numbers
@@ -97,19 +101,16 @@ public:
    * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
    * Below it is shown how this could be used for e.g. a light sensor
    */
-  /*
   void addToJsonInfo(JsonObject& root)
   {
-    int reading = 20;
     //this code adds "u":{"Light":[20," lux"]} to the info object
     JsonObject user = root["u"];
     if (user.isNull()) user = root.createNestedObject("u");
 
-    JsonArray lightArr = user.createNestedArray("Light"); //name
-    lightArr.add(reading); //value
-    lightArr.add(" lux"); //unit
+    JsonArray lightArr = user.createNestedArray("Uhrzeit-Anzeige"); //name
+    lightArr.add(pingPongClockEnabled ? "aktiv" : "inaktiv"); //value
+    lightArr.add(""); //unit
   }
-  */
 
   /*
    * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
@@ -166,7 +167,15 @@ public:
    */
   void addToConfig(JsonObject &root)
   {
-
+    JsonObject top = root.createNestedObject("ping_pong_clock_usermod");
+    top["enabled"] = pingPongClockEnabled;
+    top["baseH"]   = baseH;
+    top["baseHH"]  = baseHH;
+    top["baseM"]   = baseM;
+    top["baseMM"]  = baseMM;
+    top["colon1"]  = colon1;
+    top["colon2"]  = colon2;
+    top["color"]   = color;
   }
 
   /*
@@ -186,6 +195,20 @@ public:
    */
   bool readFromConfig(JsonObject &root)
   {
+    JsonObject top = root["ping_pong_clock_usermod"];
+
+      bool configComplete = !top.isNull();
+
+      configComplete &= getJsonValue(top["enabled"], pingPongClockEnabled);
+      configComplete &= getJsonValue(top["baseH"], baseH);
+      configComplete &= getJsonValue(top["baseHH"], baseHH);
+      configComplete &= getJsonValue(top["baseM"], baseM);
+      configComplete &= getJsonValue(top["baseMM"], baseMM);
+      configComplete &= getJsonValue(top["colon1"], colon1);
+      configComplete &= getJsonValue(top["colon2"], colon2);
+      configComplete &= getJsonValue(top["color"], color);
+
+      return configComplete;
     // default settings values could be set here (or below using the 3-argument getJsonValue()) instead of in the class definition or constructor
     // setting them inside readFromConfig() is slightly more robust, handling the rare but plausible use case of single value being missing after boot (e.g. if the cfg.json was manually edited and a value was removed)
   }
@@ -195,7 +218,7 @@ public:
     for(int i = 0; i < 10; i++)
     {
       if(numbers[number][i] > -1)
-        strip.setPixelColor(numbers[number][i], 0xFFFFFFFF);
+        strip.setPixelColor(numbers[number][i], color);
     }
   }
 
@@ -206,21 +229,17 @@ public:
    */
   void handleOverlayDraw()
   {
-    uint32_t color;
-    if(colonOn)
-    {
-      color = 0x0;
+    if(pingPongClockEnabled){
+      if(colonOn)
+      {
+        strip.setPixelColor(colon1, color);
+        strip.setPixelColor(colon2, color);
+      }
+      drawNumber(baseHH, (hour(localTime) / 10) % 10);
+      drawNumber(baseH, hour(localTime) % 10);
+      drawNumber(baseMM, (minute(localTime) / 10) % 10);
+      drawNumber(baseM, minute(localTime) % 10);
     }
-    else
-    {
-      color = 0xFFFFFFFF;      
-    }
-    strip.setPixelColor(colon[0], color);
-    strip.setPixelColor(colon[1], color);
-    drawNumber(baseHH, (hour(localTime) / 10) % 10);
-    drawNumber(baseH, hour(localTime) % 10);
-    drawNumber(baseMM, (minute(localTime) / 10) % 10);
-    drawNumber(baseM, minute(localTime) % 10);
   }
 
   /*
