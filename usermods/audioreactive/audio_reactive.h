@@ -98,6 +98,7 @@ static float    multAgc = 1.0f;                 // sample * multAgc = sampleAgc.
 
 // FFT Variables
 constexpr uint16_t samplesFFT = 512;            // Samples in an FFT batch - This value MUST ALWAYS be a power of 2
+constexpr uint16_t samplesFFT_2 = 256;          // meaningfull part of FFT results - nly the "lower half" contains usefull information.
 
 static float FFT_MajorPeak = 0.0f;
 static float FFT_Magnitude = 0.0f;
@@ -105,7 +106,7 @@ static float FFT_Magnitude = 0.0f;
 // These are the input and output vectors.  Input vectors receive computed results from FFT.
 static float vReal[samplesFFT];
 static float vImag[samplesFFT];
-static float fftBin[samplesFFT];
+static float fftBin[samplesFFT_2];
 
 #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
 static float windowWeighingFactors[samplesFFT];
@@ -231,7 +232,7 @@ void FFTcode(void * parameter)
     FFT.MajorPeak(&FFT_MajorPeak, &FFT_Magnitude);          // let the effects know which freq was most dominant
 #endif
 
-    for (int i = 0; i < samplesFFT; i++) {           // Values for bins 0 and 1 are WAY too large. Might as well start at 3.
+    for (int i = 0; i < samplesFFT_2; i++) {           // Values for bins 0 and 1 are WAY too large. Might as well start at 3.
       float t = fabs(vReal[i]);                      // just to be sure - values in fft bins should be positive any way
       fftBin[i] = t / 16.0f;                         // Reduce magnitude. Want end result to be linear and ~4096 max.
     } // for()
@@ -652,7 +653,7 @@ class AudioReactive : public Usermod {
 
       // Poor man's beat detection by seeing if sample > Average + some value.
       //  if (sample > (sampleAvg + maxVol) && millis() > (timeOfPeak + 200)) {
-      if ((fftBin[binNum] > maxVol) && (millis() > (timeOfPeak + 100))) {    // This goes through ALL of the 255 bins
+      if ((maxVol > 0) && (binNum > 1) && (fftBin[binNum] > maxVol) && (millis() > (timeOfPeak + 100))) {    // This goes through ALL of the 255 bins - but ignores stupid settings
       // Then we got a peak, else we don't. The peak has to time out on its own in order to support UDP sound sync.
         samplePeak    = true;
         timeOfPeak    = millis();
