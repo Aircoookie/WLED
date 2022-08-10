@@ -378,7 +378,7 @@
 //  #define FX_MODE_2DAKEMI                186 // audio enhanced
   //#define FX_MODE_CUSTOMEFFECT           187 //WLEDSR Custom Effects
 
-  #define MODE_COUNT                     186
+  #define MODE_COUNT                     185
 #endif
 
 typedef enum mapping1D2D {
