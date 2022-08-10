@@ -18,18 +18,35 @@
    Until this configuration is moved to the webinterface
 */
 
+// if you have problems to get your microphone work on the left channel, uncomment the following line
+//#define I2S_USE_RIGHT_CHANNEL    // (experimental) define this to use right channel (digital mics only)
+#ifdef I2S_USE_RIGHT_CHANNEL
+#define I2S_MIC_CHANNEL I2S_CHANNEL_FMT_ONLY_RIGHT
+#define I2S_MIC_CHANNEL_TEXT "right channel only."
+#else
+#define I2S_MIC_CHANNEL I2S_CHANNEL_FMT_ONLY_LEFT
+#define I2S_MIC_CHANNEL_TEXT "left channel only."
+#endif
+
+// Uncomment the line below to utilize ADC1 _exclusively_ for I2S sound input.
+// benefit: analog mic inputs will be sampled contiously -> better response times and less "glitches"
+// WARNING: this option WILL lock-up your device in case that any other analogRead() operation is performed; 
+//          for example if you want to read "analog buttons"
+//#define I2S_GRAB_ADC1_COMPLETELY // (experimental) continously sample analog ADC microphone. WARNING will cause analogRead() lock-up
+
 // data type requested from the I2S driver - currently we always use 32bit
 //#define I2S_USE_16BIT_SAMPLES   // (experimental) define this to request 16bit - more efficient but possibly less compatible
 #ifdef I2S_USE_16BIT_SAMPLES
 #define I2S_SAMPLE_RESOLUTION I2S_BITS_PER_SAMPLE_16BIT
 #define I2S_datatype int16_t
+#define I2S_unsigned_datatype uint16_t
 #undef  I2S_SAMPLE_DOWNSCALE_TO_16BIT
 #else
 #define I2S_SAMPLE_RESOLUTION I2S_BITS_PER_SAMPLE_32BIT
 #define I2S_datatype int32_t
+#define I2S_unsigned_datatype uint32_t
 #define I2S_SAMPLE_DOWNSCALE_TO_16BIT
 #endif
-
 
 /* Interface class
    AudioSource serves as base class for all microphone types
@@ -65,15 +82,23 @@ class AudioSource {
     /* Get an up-to-date sample without DC offset */
     virtual int getSampleWithoutDCOffset() { return _sampleNoDCOffset; };
 
+    /* check if the audio source driver was initialized successfully */
+    virtual bool isInitialized(void) {return(_initialized);}
+
+    /* identify Audiosource type - I2S-ADC or I2S-digital */
+    typedef enum{Type_unknown=0, Type_I2SAdc=1, Type_I2SDigital=2} AudioSourceType;
+    virtual AudioSourceType getType(void) {return(Type_I2SDigital);}               // default is "I2S digital source" - ADC type overrides this method
+ 
   protected:
+    /* Post-process audio sample - currently on needed for I2SAdcSource*/
+    virtual I2S_datatype postProcessSample(I2S_datatype sample_in) {return(sample_in);}   // default method can be overriden by instances (ADC) that need sample postprocessing
+
     // Private constructor, to make sure it is not callable except from derived classes
-    AudioSource(int sampleRate, int blockSize, int16_t lshift, uint32_t mask) :
+    AudioSource(int sampleRate, int blockSize) :
       _sampleRate(sampleRate),
       _blockSize(blockSize),
       _sampleNoDCOffset(0),
       _dcOffset(0.0f),
-      _shift(lshift),
-      _mask(mask),
       _initialized(false)
     {};
 
@@ -81,8 +106,6 @@ class AudioSource {
     int _blockSize;                 // I2S block size
     volatile int _sampleNoDCOffset; // Up-to-date sample without DCOffset
     float _dcOffset;                // Rolling average DC offset
-    int16_t _shift;                 // Shift obtained samples to the right (positive) or left(negative) by this amount
-    uint32_t _mask;                 // Bitmask for sample data after shifting. Bitmask 0X0FFF means that we need to convert 12bit ADC samples from unsigned to signed
     bool _initialized;              // Gets set to true if initialization is successful
 };
 
@@ -91,13 +114,13 @@ class AudioSource {
 */
 class I2SSource : public AudioSource {
   public:
-    I2SSource(int sampleRate, int blockSize, int16_t lshift, uint32_t mask) :
-      AudioSource(sampleRate, blockSize, lshift, mask) {
+    I2SSource(int sampleRate, int blockSize) :
+      AudioSource(sampleRate, blockSize) {
       _config = {
         .mode = i2s_mode_t(I2S_MODE_MASTER | I2S_MODE_RX),
         .sample_rate = _sampleRate,
         .bits_per_sample = I2S_SAMPLE_RESOLUTION,
-        .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
+        .channel_format = I2S_MIC_CHANNEL,
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
         .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_STAND_I2S),
 #else
@@ -193,26 +216,16 @@ class I2SSource : public AudioSource {
 
         // Store samples in sample buffer and update DC offset
         for (int i = 0; i < num_samples; i++) {
-          // pre-shift samples down to 16bit
-#ifdef I2S_SAMPLE_DOWNSCALE_TO_16BIT
-          if (_shift != 0)
-              newSamples[i] >>= 16;
-#endif
+          newSamples[i] = postProcessSample(newSamples[i]);  // perform postprocessing (needed for ADC samples)
+
           float currSample = 0.0f;
-          if(_shift > 0)
-            currSample = (float) (newSamples[i] >> _shift);
-          else {
-            if(_shift < 0)
-              currSample = (float) (newSamples[i] << (- _shift)); // need to "pump up" 12bit ADC to full 16bit as delivered by other digital mics
-            else
 #ifdef I2S_SAMPLE_DOWNSCALE_TO_16BIT
-              currSample = (float) newSamples[i] / 65536.0f;      // _shift == 0 -> use the chance to keep lower 16bits
+              currSample = (float) newSamples[i] / 65536.0f;      // 32bit input -> 16bit; keeping lower 16bits as decimal places
 #else
-              currSample = (float) newSamples[i];
+              currSample = (float) newSamples[i];                 // 16bit input -> use as-is
 #endif
-          }
           buffer[i] = currSample;
-          _dcOffset = ((_dcOffset * 31) + currSample) / 32;
+          _dcOffset = ((_dcOffset * 31.0f) + currSample) / 32.0f;
         }
 
         // Update no-DC sample
@@ -275,8 +288,8 @@ class ES7243 : public I2SSource {
     }
 
 public:
-    ES7243(int sampleRate, int blockSize, int16_t lshift, uint32_t mask) :
-      I2SSource(sampleRate, blockSize, lshift, mask) {
+    ES7243(int sampleRate, int blockSize) :
+      I2SSource(sampleRate, blockSize) {
       _config.channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT;
     };
 
@@ -314,8 +327,8 @@ public:
 */
 class I2SAdcSource : public I2SSource {
   public:
-    I2SAdcSource(int sampleRate, int blockSize, int16_t lshift, uint32_t mask) :
-      I2SSource(sampleRate, blockSize, lshift, mask) {
+    I2SAdcSource(int sampleRate, int blockSize) :
+      I2SSource(sampleRate, blockSize) {
       _config = {
         .mode = i2s_mode_t(I2S_MODE_MASTER | I2S_MODE_RX | I2S_MODE_ADC_BUILT_IN),
         .sample_rate = _sampleRate,
@@ -331,6 +344,9 @@ class I2SAdcSource : public I2SSource {
         .dma_buf_len = _blockSize
       };
     }
+
+    /* identify Audiosource type - I2S-ADC*/
+    AudioSourceType getType(void) {return(Type_I2SAdc);}
 
     void initialize(int8_t audioPin, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
       if(!pinManager.allocatePin(audioPin, false, PinOwner::UM_Audioreactive)) {
@@ -432,8 +448,8 @@ class I2SAdcSource : public I2SSource {
 */
 class SPH0654 : public I2SSource {
   public:
-    SPH0654(int sampleRate, int blockSize, int16_t lshift, uint32_t mask) :
-      I2SSource(sampleRate, blockSize, lshift, mask)
+    SPH0654(int sampleRate, int blockSize) :
+      I2SSource(sampleRate, blockSize)
     {}
 
     void initialize(uint8_t i2swsPin, uint8_t i2ssdPin, uint8_t i2sckPin, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {

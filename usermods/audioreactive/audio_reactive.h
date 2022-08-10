@@ -728,11 +728,11 @@ class AudioReactive : public Usermod {
     }
 
 
-    void receiveAudioData()
+    bool receiveAudioData()   // check & process new data. return TRUE in case that new audio data was received. 
     {
-      if (!udpSyncConnected) return;
+      if (!udpSyncConnected) return false;
       //DEBUGSR_PRINTLN("Checking for UDP Microphone Packet");
-
+      bool haveFreshData = false;
       size_t packetSize = fftUdp.parsePacket();
       if (packetSize > 5) {
         //DEBUGSR_PRINTLN("Received UDP Sync Packet");
@@ -774,8 +774,10 @@ class AudioReactive : public Usermod {
           FFT_Magnitude = my_magnitude;
           FFT_MajorPeak = receivedPacket->FFT_MajorPeak;
           //DEBUGSR_PRINTLN("Finished parsing UDP Sync Packet");
+          haveFreshData = true;
         }
       }
+      return haveFreshData;
     }
 
 
@@ -822,50 +824,54 @@ class AudioReactive : public Usermod {
       delay(100);         // Give that poor microphone some time to setup.
       switch (dmType) {
         case 1:
-          DEBUGSR_PRINTLN(F("AS: Generic I2S Microphone."));
-          audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, 0, 0xFFFFFFFF);
+          DEBUGSR_PRINT(F("AR: Generic I2S Microphone - ")); DEBUGSR_PRINTLN(F(I2S_MIC_CHANNEL_TEXT));
+          audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE);
           delay(100);
           if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin, i2sckPin);
           break;
         case 2:
-          DEBUGSR_PRINTLN(F("AS: ES7243 Microphone."));
-          audioSource = new ES7243(SAMPLE_RATE, BLOCK_SIZE, 0, 0xFFFFFFFF);
+          DEBUGSR_PRINTLN(F("AR: ES7243 Microphone (right channel only)."));
+          audioSource = new ES7243(SAMPLE_RATE, BLOCK_SIZE);
           delay(100);
           if (audioSource) audioSource->initialize(sdaPin, sclPin, i2swsPin, i2ssdPin, i2sckPin, mclkPin);
           break;
         case 3:
-          DEBUGSR_PRINTLN(F("AS: SPH0645 Microphone"));
-          audioSource = new SPH0654(SAMPLE_RATE, BLOCK_SIZE, 0, 0xFFFFFFFF);
+          DEBUGSR_PRINT(F("AR: SPH0645 Microphone - ")); DEBUGSR_PRINTLN(F(I2S_MIC_CHANNEL_TEXT));
+          audioSource = new SPH0654(SAMPLE_RATE, BLOCK_SIZE);
           delay(100);
           audioSource->initialize(i2swsPin, i2ssdPin, i2sckPin);
           break;
         case 4:
-          DEBUGSR_PRINTLN(F("AS: Generic I2S Microphone with Master Clock"));
-          audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, 0, 0xFFFFFFFF);
+          DEBUGSR_PRINT(F("AR: Generic I2S Microphone with Master Clock - ")); DEBUGSR_PRINTLN(F(I2S_MIC_CHANNEL_TEXT));
+          audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE);
           delay(100);
           if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin, i2sckPin, mclkPin);
           break;
         case 5:
-          DEBUGSR_PRINTLN(F("AS: I2S PDM Microphone"));
-          audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, 0, 0xFFFFFFFF);
+          DEBUGSR_PRINT(F("AR: I2S PDM Microphone - ")); DEBUGSR_PRINTLN(F(I2S_MIC_CHANNEL_TEXT));
+          audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE);
           delay(100);
           if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin);
           break;
         case 0:
         default:
-          DEBUGSR_PRINTLN(F("AS: Analog Microphone."));
-          // we don't do the down-shift by 16bit any more
-          //audioSource = new I2SAdcSource(SAMPLE_RATE, BLOCK_SIZE, -4, 0x0FFF);  // request upscaling to 16bit - still produces too much noise
-          audioSource = new I2SAdcSource(SAMPLE_RATE, BLOCK_SIZE, 0, 0x0FFF);     // keep at 12bit - less noise
+          DEBUGSR_PRINTLN(F("AR: Analog Microphone (left channel only)."));
+          audioSource = new I2SAdcSource(SAMPLE_RATE, BLOCK_SIZE);
           delay(100);
           if (audioSource) audioSource->initialize(audioPin);
           break;
       }
-      delay(250); // give mictophone enough time to initialise
+      delay(250); // give microphone enough time to initialise
 
-      if (!audioSource) enabled = false;  // audio failed to initialise
-      if (enabled) onUpdateBegin(false);  // create FFT task
-      if (enabled) disableSoundProcessing = false;
+      if (!audioSource) enabled = false;                 // audio failed to initialise
+      if (enabled) onUpdateBegin(false);                 // create FFT task
+      if (FFT_Task == nullptr) enabled = false;          // FFT task creation failed
+      if (enabled) disableSoundProcessing = false;       // all good - enable audio processing
+
+      if((!audioSource) || (!audioSource->isInitialized())) {  // audio source failed to initialize. Still stay "enabled", as there might be input arriving via UDP Sound Sync 
+        DEBUGSR_PRINTLN(F("AR: Failed to initialize sound input driver. Please check input PIN settings."));
+        disableSoundProcessing = true;
+      }
 
       initDone = true;
     }
@@ -1019,7 +1025,7 @@ class AudioReactive : public Usermod {
 
       // Begin UDP Microphone Sync
       if ((audioSyncEnabled & 0x02) && millis() - lastTime > delayMs) { // Only run the audio listener code if we're in Receive mode
-        receiveAudioData();
+        (void) receiveAudioData();   // ToDo: use return value for something meaningfull
         lastTime = millis();
       }
 
