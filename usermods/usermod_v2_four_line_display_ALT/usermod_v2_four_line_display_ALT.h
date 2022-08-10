@@ -105,6 +105,7 @@ class FourLineDisplayUsermod : public Usermod {
 
     static FourLineDisplayUsermod *instance;
     bool initDone = false;
+    volatile bool drawing = false;
 
     // HW interface & configuration
     U8X8 *u8x8 = nullptr;           // pointer to U8X8 display object
@@ -397,6 +398,8 @@ class FourLineDisplayUsermod : public Usermod {
         }
       }
 
+      while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
+
       if (apActive && WLED_WIFI_CONFIGURED && now<15000) {
         knownSsid = apSSID;
         networkOverlay(PSTR("NETWORK INFO"),30000);
@@ -632,10 +635,14 @@ class FourLineDisplayUsermod : public Usermod {
     bool wakeDisplay() {
       if (type == NONE || !enabled) return false;
       if (displayTurnedOff) {
+        unsigned long now = millis();
+        while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
+        drawing = true;
         clear();
         // Turn the display back on
         sleepOrClock(false);
         //lastRedraw = millis();
+        drawing = false;
         return true;
       }
       return false;
@@ -647,6 +654,9 @@ class FourLineDisplayUsermod : public Usermod {
      * Used in Rotary Encoder usermod.
      */
     void overlay(const char* line1, long showHowLong, byte glyphType) {
+      unsigned long now = millis();
+      while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
+      drawing = true;
       // Turn the display back on
       if (!wakeDisplay()) clear();
       // Print the overlay
@@ -660,6 +670,7 @@ class FourLineDisplayUsermod : public Usermod {
         drawString(0, (glyphType<255?3:0)*lineHeight, buf.c_str());
       }
       overlayUntil = millis() + showHowLong;
+      drawing = false;
     }
 
     /**
@@ -667,6 +678,9 @@ class FourLineDisplayUsermod : public Usermod {
      * Clears the screen and prints.
      */
     void overlayLogo(long showHowLong) {
+      unsigned long now = millis();
+      while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
+      drawing = true;
       // Turn the display back on
       if (!wakeDisplay()) clear();
       // Print the overlay
@@ -716,6 +730,7 @@ class FourLineDisplayUsermod : public Usermod {
         }
       }
       overlayUntil = millis() + showHowLong;
+      drawing = false;
     }
 
     /**
@@ -724,6 +739,9 @@ class FourLineDisplayUsermod : public Usermod {
      * Used in Auto Save usermod
      */
     void overlay(const char* line1, const char* line2, long showHowLong) {
+      unsigned long now = millis();
+      while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
+      drawing = true;
       // Turn the display back on
       if (!wakeDisplay()) clear();
       // Print the overlay
@@ -738,9 +756,14 @@ class FourLineDisplayUsermod : public Usermod {
         drawString(0, 2*lineHeight, buf.c_str());
       }
       overlayUntil = millis() + showHowLong;
+      drawing = false;
     }
 
     void networkOverlay(const char* line1, long showHowLong) {
+      unsigned long now = millis();
+      while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
+      drawing = true;
+
       String line;
       // Turn the display back on
       if (!wakeDisplay()) clear();
@@ -771,6 +794,7 @@ class FourLineDisplayUsermod : public Usermod {
       center(line, getCols());
       drawString(0, lineHeight*3, line.c_str());
       overlayUntil = millis() + showHowLong;
+      drawing = false;
     }
 
 
@@ -799,6 +823,10 @@ class FourLineDisplayUsermod : public Usermod {
     void showTime() {
       if (type == NONE || !enabled || !displayTurnedOff) return;
 
+      unsigned long now = millis();
+      while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
+      drawing = true;
+
       char lineBuffer[LINE_BUFFER_SIZE];
       static byte lastSecond;
       byte secondCurrent = second(localTime);
@@ -826,15 +854,14 @@ class FourLineDisplayUsermod : public Usermod {
 
         knownMinute = minuteCurrent;
         knownHour   = hourCurrent;
-      } else {
-        if (secondCurrent == lastSecond) return;
       }
-      if (showSeconds) {
+      if (showSeconds && secondCurrent != lastSecond) {
         lastSecond = secondCurrent;
         draw2x2String(6, lineHeight*2, secondCurrent%2 ? " " : ":");
         sprintf_P(lineBuffer, PSTR("%02d"), secondCurrent);
         drawString(12, lineHeight*2+1, lineBuffer, true); // even with double sized rows print seconds in 1 line
       }
+      drawing = false;
     }
 
     /**
@@ -910,7 +937,12 @@ class FourLineDisplayUsermod : public Usermod {
       }
       return handled;
     }
-  
+
+    #if CONFIG_FREERTOS_UNICORE
+    #define ARDUINO_RUNNING_CORE 0
+    #else
+    #define ARDUINO_RUNNING_CORE 1
+    #endif
     void onUpdateBegin(bool init) {
     #ifdef ARDUINO_ARCH_ESP32
       if (init && Display_Task) {
@@ -920,23 +952,24 @@ class FourLineDisplayUsermod : public Usermod {
         if (Display_Task)
           vTaskResume(Display_Task);
         else
-          xTaskCreate(
+          xTaskCreatePinnedToCore(
             [](void * par) {                  // Function to implement the task
               // see https://www.freertos.org/vtaskdelayuntil.html
-              const TickType_t xFrequency = REFRESH_RATE_MS * portTICK_PERIOD_MS;  
+              const TickType_t xFrequency = REFRESH_RATE_MS * portTICK_PERIOD_MS / 2;  
+              TickType_t xLastWakeTime = xTaskGetTickCount();
               for(;;) {
-                TickType_t xLastWakeTime = xTaskGetTickCount();
-                delay(1);           // DO NOT DELETE THIS LINE! It is needed to give the IDLE(0) task enough time and to keep the watchdog happy.
-                                    // taskYIELD(), yield(), vTaskDelay() and esp_task_wdt_feed() didn't seem to work.
-                vTaskDelayUntil(&xLastWakeTime, xFrequency);        // release CPU, by doing nothing for REFRESH_RATE_MS millis
+                delay(1); // DO NOT DELETE THIS LINE! It is needed to give the IDLE(0) task enough time and to keep the watchdog happy.
+                          // taskYIELD(), yield(), vTaskDelay() and esp_task_wdt_feed() didn't seem to work.
+                vTaskDelayUntil(&xLastWakeTime, xFrequency); // release CPU, by doing nothing for REFRESH_RATE_MS millis
                 FourLineDisplayUsermod::getInstance()->redraw(false);
               }
             },
-            "4LD",                            // Name of the task
-            2048,                             // Stack size in words
-            NULL,                             // Task input parameter
-            0,                                // Priority of the task (idle)
-            &Display_Task                     // Task handle
+            "4LD",                // Name of the task
+            3072,                 // Stack size in words
+            NULL,                 // Task input parameter
+            1,                    // Priority of the task (not idle)
+            &Display_Task,        // Task handle
+            ARDUINO_RUNNING_CORE
           );
       }
     #endif
