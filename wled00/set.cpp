@@ -495,6 +495,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       i2c_scl = hw_scl_pin;
       #ifdef ESP32
       Wire.setPins(i2c_sda, i2c_scl); // this will fail if Wire is initilised (Wire.begin() called)
+      uint8_t i2c[2] = {i2c_sda, i2c_scl};
+      pinManager.deallocateMultiplePins(i2c, 2, PinOwner::HW_I2C);
       #endif
     } else {
       i2c_sda = -1;
@@ -518,6 +520,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       spi_mosi = hw_mosi_pin;
       spi_sclk = hw_sclk_pin;
       spi_cs   = hw_cs_pin;
+      uint8_t spi[3] = { hw_mosi_pin, hw_sclk_pin, hw_cs_pin };
+      pinManager.deallocateMultiplePins(spi, 3, PinOwner::HW_SPI);
     } else {
       spi_mosi = -1;
       spi_sclk = -1;
