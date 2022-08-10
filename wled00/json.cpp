@@ -654,12 +654,7 @@ void serializeInfo(JsonObject root)
 
   JsonArray ledmaps = root.createNestedArray(F("maps"));
   for (size_t i=0; i<10; i++) {
-    char fileName[16];
-    strcpy_P(fileName, PSTR("/ledmap"));
-    if (i) sprintf(fileName +7, "%d", i);
-    strcat_P(fileName, PSTR(".json"));
-    bool isFile = WLED_FS.exists(fileName);
-    if (isFile || i==0) ledmaps.add(i);
+    if ((ledMaps>>i) & 0x0001) ledmaps.add(i);
   }
 
   JsonObject wifi_info = root.createNestedObject("wifi");

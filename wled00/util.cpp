@@ -503,3 +503,14 @@ um_data_t* simulateSound(uint8_t simulationId)
   return um_data;
 }
 #endif
+
+
+void enumerateLedmaps() {
+  ledMaps = 1;
+  for (size_t i=1; i<10; i++) {
+    char fileName[16];
+    sprintf_P(fileName, PSTR("/ledmap%d.json"), i);
+    bool isFile = WLED_FS.exists(fileName);
+    if (isFile) ledMaps |= 1 << i;
+  }
+}

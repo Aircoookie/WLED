@@ -809,6 +809,11 @@ void WS2812FX::finalizeInit(void)
     seg.resetIfRequired();
   }
 
+  // for the lack of better place enumerate ledmaps here
+  // if we do it in json.cpp (serializeInfo()) we are getting flashes on LEDs
+  // unfortunately this means we do not get updates after uploads
+  enumerateLedmaps();
+
   _hasWhiteChannel = _isOffRefreshRequired = false;
 
   //if busses failed to load, add default (fresh install, FS issue, ...)
