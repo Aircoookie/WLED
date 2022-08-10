@@ -31,29 +31,31 @@ private:
   // ---- Variables modified by settings below -----
   // set your config variables to their boot default value (this can also be done in readFromConfig() or a constructor if you prefer)
   bool pingPongClockEnabled = true;
-  int baseH = 8;
-  int baseHH = 36;
-  int baseM = 78;
-  int baseMM = 106;
-  int colon1 = 64;
-  int colon2 = 65;
-  uint32_t color = 0xFFFFFFFF;
+  int baseH = 43;
+  int baseHH = 7;
+  int baseM = 133;
+  int baseMM = 97;
+  int colon1 = 79;
+  int colon2 = 80;
+  int colorR = 0xFF;
+  int colorG = 0xFF;
+  int colorB = 0xFF;
 
 
   // Matrix for the illumination of the numbers
   // Note: These only define the increments of the base adress. e.g. to define the second Minute you have to add the baseMM to every led position
   const int numbers[10][10] = 
     {
-      {  8,  9, 11, 13, 18, 20, 22, 23, -1, -1 }, // 0: null
-      { 18, 19, 20, 22, 23, -1, -1, -1, -1, -1 }, // 1: eins
-      {  8, 11, 12, 13, 18, 19, 20, 23, -1, -1 }, // 2: zwei
-      { 11, 12, 13, 18, 19, 20, 22, 23, -1, -1 }, // 3: drei
-      {  9, 11, 12, 19, 20, 22, 23, -1, -1, -1 }, // 4: vier
-      {  9, 11, 12, 13, 18, 19, 20, 22, -1, -1 }, // 5: fünf
-      {  8, 12, 13, 16, 18, 19, 20, 22, -1, -1 }, // 6: sechs
-      { 11, 13, 15, 18, 19, 23, -1, -1, -1, -1 }, // 7: sieben
-      {  8,  9, 11, 12, 13, 18, 19, 20, 22, 23 }, // 8: acht
-      {  9, 11, 12, 13, 15, 18, 19, 23, -1, -1 }  // 9: neun
+      {  0,  1,  4,  6, 13, 15, 18, 19, -1, -1 }, // 0: null
+      { 13, 14, 15, 18, 19, -1, -1, -1, -1, -1 }, // 1: eins
+      {  0,  4,  5,  6, 13, 14, 15, 19, -1, -1 }, // 2: zwei
+      {  4,  5,  6, 13, 14, 15, 18, 19, -1, -1 }, // 3: drei
+      {  1,  4,  5, 14, 15, 18, 19, -1, -1, -1 }, // 4: vier
+      {  1,  4,  5,  6, 13, 14, 15, 18, -1, -1 }, // 5: fünf
+      {  0,  5,  6, 10, 13, 14, 15, 18, -1, -1 }, // 6: sechs
+      {  4,  6,  9, 13, 14, 19, -1, -1, -1, -1 }, // 7: sieben
+      {  0,  1,  4,  5,  6, 13, 14, 15, 18, 19 }, // 8: acht
+      {  1,  4,  5,  6,  9, 13, 14, 19, -1, -1 }  // 9: neun
     };
 
 public:
@@ -167,7 +169,7 @@ public:
    */
   void addToConfig(JsonObject &root)
   {
-    JsonObject top = root.createNestedObject("ping_pong_clock_usermod");
+    JsonObject top = root.createNestedObject("Ping Pong Clock");
     top["enabled"] = pingPongClockEnabled;
     top["baseH"]   = baseH;
     top["baseHH"]  = baseHH;
@@ -175,7 +177,9 @@ public:
     top["baseMM"]  = baseMM;
     top["colon1"]  = colon1;
     top["colon2"]  = colon2;
-    top["color"]   = color;
+    top["colorR"]   = colorR;
+    top["colorG"]   = colorG;
+    top["colorB"]   = colorB;
   }
 
   /*
@@ -195,7 +199,7 @@ public:
    */
   bool readFromConfig(JsonObject &root)
   {
-    JsonObject top = root["ping_pong_clock_usermod"];
+    JsonObject top = root["Ping Pong Clock"];
 
       bool configComplete = !top.isNull();
 
@@ -206,7 +210,9 @@ public:
       configComplete &= getJsonValue(top["baseMM"], baseMM);
       configComplete &= getJsonValue(top["colon1"], colon1);
       configComplete &= getJsonValue(top["colon2"], colon2);
-      configComplete &= getJsonValue(top["color"], color);
+      configComplete &= getJsonValue(top["colorR"], colorR);
+      configComplete &= getJsonValue(top["colorG"], colorG);
+      configComplete &= getJsonValue(top["colorB"], colorB);
 
       return configComplete;
     // default settings values could be set here (or below using the 3-argument getJsonValue()) instead of in the class definition or constructor
@@ -218,7 +224,7 @@ public:
     for(int i = 0; i < 10; i++)
     {
       if(numbers[number][i] > -1)
-        strip.setPixelColor(numbers[number][i], color);
+        strip.setPixelColor(numbers[number][i] + base, RGBW32(colorR, colorG, colorB, 0));
     }
   }
 
@@ -232,13 +238,13 @@ public:
     if(pingPongClockEnabled){
       if(colonOn)
       {
-        strip.setPixelColor(colon1, color);
-        strip.setPixelColor(colon2, color);
+        strip.setPixelColor(colon1, RGBW32(colorR, colorG, colorB, 0));
+        strip.setPixelColor(colon2, RGBW32(colorR, colorG, colorB, 0));
       }
       drawNumber(baseHH, (hour(localTime) / 10) % 10);
-      drawNumber(baseH, hour(localTime) % 10);
-      drawNumber(baseMM, (minute(localTime) / 10) % 10);
-      drawNumber(baseM, minute(localTime) % 10);
+      drawNumber(baseH, hour(localTime) % 10); 
+      drawNumber(baseM, (minute(localTime) / 10) % 10);
+      drawNumber(baseMM, minute(localTime) % 10);
     }
   }
 
