@@ -825,7 +825,7 @@ function populateEffects()
 		let id = ef.id;
 		let nm = ef.name+" ";
 		let fd = "";
-		if (ef.name.indexOf("Reserved") < 0) {
+		if (ef.name.indexOf("RSVD") < 0) {
 			if (Array.isArray(fxdata) && fxdata.length>id) {
 				if (fxdata[id].length==0) fd = ";;!;1d"
 				else fd = fxdata[id].substr(1);

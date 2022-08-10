@@ -138,34 +138,30 @@ void sendDataWs(AsyncWebSocketClient * client)
   releaseJSONBufferLock();
 }
 
-#ifndef WLED_DISABLE_2D
-  #define MAX_LIVE_LEDS_WS 1024
-#else
-  #define MAX_LIVE_LEDS_WS 256
-#endif
-
 bool sendLiveLedsWs(uint32_t wsClient)
 {
   AsyncWebSocketClient * wsc = ws.client(wsClient);
   if (!wsc || wsc->queueLength() > 0) return false; //only send if queue free
 
   uint16_t used = strip.getLengthTotal();
+  const uint16_t MAX_LIVE_LEDS_WS = strip.isMatrix ? 1024 : 256;
   uint16_t n = ((used -1)/MAX_LIVE_LEDS_WS) +1; //only serve every n'th LED if count over MAX_LIVE_LEDS_WS
-  uint16_t bufSize = 2 + (used/n)*3;
+  uint16_t pos = (strip.isMatrix ? 4 : 2);
+  uint16_t bufSize = pos + (used/n)*3;
   AsyncWebSocketMessageBuffer * wsBuf = ws.makeBuffer(bufSize);
   if (!wsBuf) return false; //out of memory
   uint8_t* buffer = wsBuf->get();
   buffer[0] = 'L';
   buffer[1] = 1; //version
 #ifndef WLED_DISABLE_2D
-  buffer[2] = strip.matrixWidth;
-  buffer[3] = strip.matrixHeight;
-  uint16_t pos = 4;
-#else
-  uint16_t pos = 2;
+  if (strip.isMatrix) {
+    buffer[1] = 2; //version
+    buffer[2] = strip.matrixWidth;
+    buffer[3] = strip.matrixHeight;
+  }
 #endif
 
-  for (uint16_t i= 0; pos < bufSize -2; i += n)
+  for (uint16_t i = 0; pos < bufSize -2; i += n)
   {
     uint32_t c = strip.getPixelColor(i);
     buffer[pos++] = qadd8(W(c), R(c)); //R, add white channel to RGB channels as a simple RGBW -> RGB map

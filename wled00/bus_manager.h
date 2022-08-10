@@ -518,7 +518,7 @@ class BusOnOff : public Bus {
     uint8_t b = B(c);
     uint8_t w = W(c);
 
-    _data = bool((r+g+b+w)*_bri) ? 0xFF : 0;
+    _data = bool((r+g+b+w) && _bri) ? 0xFF : 0;
   }
 
   uint32_t getPixelColor(uint16_t pix) {

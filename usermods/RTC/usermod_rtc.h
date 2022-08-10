@@ -22,6 +22,7 @@ class RTCUsermod : public Usermod {
     void setup() {
       PinManagerPinType pins[2] = { { HW_PIN_SCL, true }, { HW_PIN_SDA, true } };
       if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) { disabled = true; return; }
+      RTC.begin();
       time_t rtcTime = RTC.get();
       if (rtcTime) {
         toki.setTime(rtcTime,TOKI_NO_MS_ACCURACY,TOKI_TS_RTC);

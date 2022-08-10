@@ -118,7 +118,7 @@ Serpentine: <input type="checkbox" name="P${i}S"></div>`;
 		<option value="1">2D Matrix</option>
 	</select><br>
 	<div id="mpdiv" style="display:none;">
-		<h3>2D Matrix</h3>
+		<h3>Panel set-up</h3>
 		Panel dimensions (WxH): <input name="PW" type="number" min="1" max="128" value="8"> x <input name="PH" type="number" min="1" max="128" value="8"><br>
 		Horizontal panels: <input name="MPH" type="number" min="1" max="8" value="1" oninput="UI()">
 		Vertical panels: <input name="MPV" type="number" min="1" max="8" value="1" oninput="UI()"><br>
@@ -135,17 +135,13 @@ Serpentine: <input type="checkbox" name="P${i}S"></div>`;
 		</select><br>
 		Serpentine: <input type="checkbox" name="PS">
 		<hr style="width:260px">
-		<i>A matrix is made of 1 or more physical led panels of the same dimensions.<br>
+		<i>A matrix is made of 1 or more physical LED panels of the same dimensions.<br>
 		Panels should be arranged from top-left to bottom-right order, starting with lower panel number on the left (or top if transposed).<br>
-		Each panel can have different orientation and/or starting point and/or layout.</i><br>
+		Each panel can have different LED orientation and/or starting point and/or layout.</i><br>
 		<hr style="width:260px">
-		<h3>2D Panel layout</h3>
+		<h3>LED panel layout</h3>
 		<div id="panels">
 		</div>
-		<!--
-		<button type="button" class="xs" id="pnl_add" onclick="addPanel()">+</button>
-		<button type="button" class="xs" id="pnl_rem" onclick="remPanel()">-</button>
-		-->
 	</div>
 	<hr>
 	<button type="button" onclick="B()">Back</button><button type="submit">Save</button>

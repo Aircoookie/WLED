@@ -33,11 +33,6 @@
 
 #define DS1307_CTRL_ID 0x68 
 
-DS1307RTC::DS1307RTC()
-{
-  Wire.begin();
-}
-  
 // PUBLIC FUNCTIONS
 time_t DS1307RTC::get()   // Aquire data from buffer and convert to time_t
 {
