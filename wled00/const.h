@@ -370,18 +370,10 @@
   #undef HW_PIN_SDA
 #endif
 #ifndef HW_PIN_SCL
-  #ifdef ESP8266
-    #define HW_PIN_SCL 5
-  #else
-    #define HW_PIN_SCL 22
-  #endif
+  #define HW_PIN_SCL SCL
 #endif
 #ifndef HW_PIN_SDA
-  #ifdef ESP8266
-    #define HW_PIN_SDA 4
-  #else
-    #define HW_PIN_SDA 21
-  #endif
+  #define HW_PIN_SDA SDA
 #endif
 
 #if defined(ESP8266) && defined(HW_PIN_CLOCKSPI)
@@ -394,25 +386,13 @@
   #undef HW_PIN_CSSPI
 #endif
 #ifndef HW_PIN_CLOCKSPI
-  #ifdef ESP8266
-    #define HW_PIN_CLOCKSPI 14
-  #else
-    #define HW_PIN_CLOCKSPI 18
-  #endif
+  #define HW_PIN_CLOCKSPI SCK
 #endif
 #ifndef HW_PIN_DATASPI
-  #ifdef ESP8266
-    #define HW_PIN_DATASPI 13
-  #else
-    #define HW_PIN_DATASPI 23
-  #endif
+  #define HW_PIN_DATASPI MOSI
 #endif
 #ifndef HW_PIN_CSSPI
-  #ifdef ESP8266
-    #define HW_PIN_CSSPI 15
-  #else
-    #define HW_PIN_CSSPI 5
-  #endif
+  #define HW_PIN_CSSPI SS
 #endif
 
 #endif

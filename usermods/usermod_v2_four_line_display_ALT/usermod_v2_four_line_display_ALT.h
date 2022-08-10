@@ -25,54 +25,32 @@
 //
 
 //The SCL and SDA pins are defined here. 
+#ifndef FLD_PIN_SCL
+  #define FLD_PIN_SCL HW_PIN_SCL
+#endif
+#ifndef FLD_PIN_SDA
+  #define FLD_PIN_SDA HW_PIN_SDA
+#endif
+#ifndef FLD_PIN_CLOCKSPI
+  #define FLD_PIN_CLOCKSPI HW_PIN_CLOCKSPI
+#endif
+  #ifndef FLD_PIN_DATASPI
+  #define FLD_PIN_DATASPI HW_PIN_DATASPI
+#endif   
+#ifndef FLD_PIN_CS
+  #define FLD_PIN_CS HW_PIN_CSSPI
+#endif
+
 #ifdef ARDUINO_ARCH_ESP32
-  #define HW_PIN_SCL 22
-  #define HW_PIN_SDA 21
-  #define HW_PIN_CLOCKSPI 18
-  #define HW_PIN_DATASPI 23
-  #ifndef FLD_PIN_SCL
-    #define FLD_PIN_SCL 22
-  #endif
-  #ifndef FLD_PIN_SDA
-    #define FLD_PIN_SDA 21
-  #endif
-  #ifndef FLD_PIN_CLOCKSPI
-    #define FLD_PIN_CLOCKSPI 18
-  #endif
-   #ifndef FLD_PIN_DATASPI
-    #define FLD_PIN_DATASPI 23
-  #endif   
   #ifndef FLD_PIN_DC
     #define FLD_PIN_DC 19
-  #endif
-  #ifndef FLD_PIN_CS
-    #define FLD_PIN_CS 5
   #endif
   #ifndef FLD_PIN_RESET
     #define FLD_PIN_RESET 26
   #endif
 #else
-  #define HW_PIN_SCL 5
-  #define HW_PIN_SDA 4
-  #define HW_PIN_CLOCKSPI 14
-  #define HW_PIN_DATASPI 13
-  #ifndef FLD_PIN_SCL
-    #define FLD_PIN_SCL 5
-  #endif
-  #ifndef FLD_PIN_SDA
-    #define FLD_PIN_SDA 4
-  #endif
-  #ifndef FLD_PIN_CLOCKSPI
-    #define FLD_PIN_CLOCKSPI 14
-  #endif
-   #ifndef FLD_PIN_DATASPI
-    #define FLD_PIN_DATASPI 13
-  #endif   
   #ifndef FLD_PIN_DC
     #define FLD_PIN_DC 12
-  #endif
-    #ifndef FLD_PIN_CS
-    #define FLD_PIN_CS 15
   #endif
   #ifndef FLD_PIN_RESET
     #define FLD_PIN_RESET 16
@@ -92,12 +70,19 @@
 #define SCREEN_TIMEOUT_MS  60*1000    // 1 min
 
 // Minimum time between redrawing screen in ms
-#define USER_LOOP_REFRESH_RATE_MS 1000
+#define REFRESH_RATE_MS 1000
 
 // Extra char (+1) for null
 #define LINE_BUFFER_SIZE            16+1
 #define MAX_JSON_CHARS              19+1
 #define MAX_MODE_LINE_SPACE         13+1
+
+
+#ifdef ARDUINO_ARCH_ESP32
+static TaskHandle_t Display_Task = nullptr;
+void DisplayTaskCode(void * parameter);
+#endif
+
 
 typedef enum {
   NONE = 0,
@@ -112,9 +97,13 @@ typedef enum {
 
 
 class FourLineDisplayUsermod : public Usermod {
+  public:
+    FourLineDisplayUsermod() { if (!instance) instance = this; }
+    static FourLineDisplayUsermod* getInstance(void) { return instance; }
 
   private:
 
+    static FourLineDisplayUsermod *instance;
     bool initDone = false;
 
     // HW interface & configuration
@@ -132,8 +121,8 @@ class FourLineDisplayUsermod : public Usermod {
     bool flip = false;              // flip display 180°
     uint8_t contrast = 10;          // screen contrast
     uint8_t lineHeight = 1;         // 1 row or 2 rows
-    uint16_t refreshRate = USER_LOOP_REFRESH_RATE_MS; // in ms
-    uint32_t screenTimeout = SCREEN_TIMEOUT_MS;       // in ms
+    uint16_t refreshRate = REFRESH_RATE_MS;     // in ms
+    uint32_t screenTimeout = SCREEN_TIMEOUT_MS; // in ms
     bool sleepMode = true;          // allow screen sleep?
     bool clockMode = false;         // display clock
     bool showSeconds = true;        // display clock with seconds
@@ -207,6 +196,7 @@ class FourLineDisplayUsermod : public Usermod {
       if (isSPI) {
         isHW = (ioPin[0]==HW_PIN_CLOCKSPI && ioPin[1]==HW_PIN_DATASPI);
         PinManagerPinType pins[5] = { { ioPin[0], true }, { ioPin[1], true }, { ioPin[2], true }, { ioPin[3], true }, { ioPin[4], true }};
+        if (ioPin[0]==HW_PIN_CLOCKSPI && ioPin[1]==HW_PIN_DATASPI && ioPin[2]==HW_PIN_CSSPI) po = PinOwner::HW_SPI;  // allow multiple allocations of HW SPI bus pins
         if (!pinManager.allocateMultiplePins(pins, 5, po)) { type=NONE; return; }
       } else {
         isHW = (ioPin[0]==HW_PIN_SCL && ioPin[1]==HW_PIN_SDA);
@@ -304,6 +294,7 @@ class FourLineDisplayUsermod : public Usermod {
       setPowerSave(0);
       //drawString(0, 0, "Loading...");
       overlayLogo(3500);
+      onUpdateBegin(false);  // create Display task
       initDone = true;
     }
 
@@ -319,11 +310,13 @@ class FourLineDisplayUsermod : public Usermod {
      * Da loop.
      */
     void loop() {
+    #ifndef ARDUINO_ARCH_ESP32
       if (!enabled || strip.isUpdating()) return;
       unsigned long now = millis();
       if (now < nextUpdate) return;
       nextUpdate = now + ((displayTurnedOff && clockMode && showSeconds) ? 1000 : refreshRate);
       redraw(false);
+    #endif
     }
 
     /**
@@ -918,6 +911,37 @@ class FourLineDisplayUsermod : public Usermod {
       return handled;
     }
   
+    void onUpdateBegin(bool init) {
+    #ifdef ARDUINO_ARCH_ESP32
+      if (init && Display_Task) {
+        vTaskSuspend(Display_Task);   // update is about to begin, disable task to prevent crash
+      } else {
+        // update has failed or create task requested
+        if (Display_Task)
+          vTaskResume(Display_Task);
+        else
+          xTaskCreate(
+            [](void * par) {                  // Function to implement the task
+              // see https://www.freertos.org/vtaskdelayuntil.html
+              const TickType_t xFrequency = REFRESH_RATE_MS * portTICK_PERIOD_MS;  
+              for(;;) {
+                TickType_t xLastWakeTime = xTaskGetTickCount();
+                delay(1);           // DO NOT DELETE THIS LINE! It is needed to give the IDLE(0) task enough time and to keep the watchdog happy.
+                                    // taskYIELD(), yield(), vTaskDelay() and esp_task_wdt_feed() didn't seem to work.
+                vTaskDelayUntil(&xLastWakeTime, xFrequency);        // release CPU, by doing nothing for REFRESH_RATE_MS millis
+                FourLineDisplayUsermod::getInstance()->redraw(false);
+              }
+            },
+            "4LD",                            // Name of the task
+            2048,                             // Stack size in words
+            NULL,                             // Task input parameter
+            0,                                // Priority of the task (idle)
+            &Display_Task                     // Task handle
+          );
+      }
+    #endif
+    }
+
     /*
      * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
      * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
@@ -985,7 +1009,9 @@ class FourLineDisplayUsermod : public Usermod {
       top[FPSTR(_flip)]          = (bool) flip;
       top[FPSTR(_contrast)]      = contrast;
       top[FPSTR(_contrastFix)]   = (bool) contrastFix;
+      #ifndef ARDUINO_ARCH_ESP32
       top[FPSTR(_refreshRate)]   = refreshRate;
+      #endif
       top[FPSTR(_screenTimeOut)] = screenTimeout/1000;
       top[FPSTR(_sleepMode)]     = (bool) sleepMode;
       top[FPSTR(_clockMode)]     = (bool) clockMode;
@@ -1019,8 +1045,10 @@ class FourLineDisplayUsermod : public Usermod {
       for (byte i=0; i<5; i++) newPin[i] = top["pin"][i] | ioPin[i];
       flip          = top[FPSTR(_flip)] | flip;
       contrast      = top[FPSTR(_contrast)] | contrast;
+      #ifndef ARDUINO_ARCH_ESP32
       refreshRate   = top[FPSTR(_refreshRate)] | refreshRate;
       refreshRate   = min(5000, max(250, (int)refreshRate));
+      #endif
       screenTimeout = (top[FPSTR(_screenTimeOut)] | screenTimeout/1000) * 1000;
       sleepMode     = top[FPSTR(_sleepMode)] | sleepMode;
       clockMode     = top[FPSTR(_clockMode)] | clockMode;
@@ -1045,8 +1073,10 @@ class FourLineDisplayUsermod : public Usermod {
         if (pinsChanged || type!=newType) {
           if (type != NONE) delete u8x8;
           PinOwner po = PinOwner::UM_FourLineDisplay;
-          if (ioPin[0]==HW_PIN_SCL && ioPin[1]==HW_PIN_SDA) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
-          pinManager.deallocateMultiplePins((const uint8_t *)ioPin, (type == SSD1306_SPI || type == SSD1306_SPI64) ? 5 : 2, po);
+          bool isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64);
+          if (!isSPI && ioPin[0]==HW_PIN_SCL && ioPin[1]==HW_PIN_SDA) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
+          if (isSPI  && ioPin[0]==HW_PIN_CLOCKSPI && ioPin[1]==HW_PIN_DATASPI && ioPin[2]==HW_PIN_CSSPI) po = PinOwner::HW_SPI;  // allow multiple allocations of HW SPI bus pins
+          pinManager.deallocateMultiplePins((const uint8_t *)ioPin, isSPI ? 5 : 2, po);
           for (byte i=0; i<5; i++) ioPin[i] = newPin[i];
           if (ioPin[0]<0 || ioPin[1]<0) { // data & clock must be > -1
             type = NONE;
@@ -1089,3 +1119,5 @@ const char FourLineDisplayUsermod::_clockMode[]       PROGMEM = "clockMode";
 const char FourLineDisplayUsermod::_showSeconds[]     PROGMEM = "showSeconds";
 const char FourLineDisplayUsermod::_busClkFrequency[] PROGMEM = "i2c-freq-kHz";
 const char FourLineDisplayUsermod::_contrastFix[]     PROGMEM = "contrastFix";
+
+FourLineDisplayUsermod *FourLineDisplayUsermod::instance = nullptr;
