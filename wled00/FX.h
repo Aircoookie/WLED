@@ -281,26 +281,27 @@
     #define FX_MODE_2DWAVERLY              145 // audio enhanced
     #define FX_MODE_2DSWIRL                146 // audio enhanced
     #define FX_MODE_2DAKEMI                147 // audio enhanced
+    // 148 & 149 reserved
   #endif
-  #define FX_MODE_PIXELWAVE              160 // audio enhanced
-  #define FX_MODE_JUGGLES                161 // audio enhanced
-  #define FX_MODE_MATRIPIX               162 // audio enhanced
-  #define FX_MODE_GRAVIMETER             163 // audio enhanced
-  #define FX_MODE_PLASMOID               164 // audio enhanced
-  #define FX_MODE_PUDDLES                165 // audio enhanced
-  #define FX_MODE_MIDNOISE               166 // audio enhanced
-  #define FX_MODE_NOISEMETER             167 // audio enhanced
-  #define FX_MODE_NOISEFIRE              168 // audio enhanced
-  #define FX_MODE_PUDDLEPEAK             169 // audio enhanced
-  #define FX_MODE_RIPPLEPEAK             170 // audio enhanced
-  #define FX_MODE_GRAVCENTER             171 // audio enhanced
-  #define FX_MODE_GRAVCENTRIC            172 // audio enhanced
+  #define FX_MODE_PIXELWAVE              150 // audio enhanced
+  #define FX_MODE_JUGGLES                151 // audio enhanced
+  #define FX_MODE_MATRIPIX               152 // audio enhanced
+  #define FX_MODE_GRAVIMETER             153 // audio enhanced
+  #define FX_MODE_PLASMOID               154 // audio enhanced
+  #define FX_MODE_PUDDLES                155 // audio enhanced
+  #define FX_MODE_MIDNOISE               156 // audio enhanced
+  #define FX_MODE_NOISEMETER             157 // audio enhanced
+  #define FX_MODE_NOISEFIRE              158 // audio enhanced
+  #define FX_MODE_PUDDLEPEAK             159 // audio enhanced
+  #define FX_MODE_RIPPLEPEAK             160 // audio enhanced
+  #define FX_MODE_GRAVCENTER             161 // audio enhanced
+  #define FX_MODE_GRAVCENTRIC            162 // audio enhanced
 #endif
 
 #ifndef USERMOD_AUDIOREACTIVE
 
   #ifndef WLED_DISABLE_AUDIO
-  #define MODE_COUNT                   173
+  #define MODE_COUNT                   163
   #else
     #ifndef WLED_DISABLE_2D
   #define MODE_COUNT                   145
@@ -311,74 +312,29 @@
 
 #else
 
-  #ifdef WLED_DISABLE_2D
-  #error Audioreactive usermod requires 2D support.
-  #endif
   #ifdef WLED_DISABLE_AUDIO
-  #error Audioreactive usermod requires audio support.
+    #error Incompatible options: WLED_DISABLE_AUDIO and USERMOD_AUDIOREACTIVE
   #endif
-  #define FX_MODE_PIXELS                 173
-//  #define FX_MODE_PIXELWAVE              129 // audio enhanced
-//  #define FX_MODE_JUGGLES                130 // audio enhanced
-//  #define FX_MODE_MATRIPIX               131 // audio enhanced
-//  #define FX_MODE_GRAVIMETER             132 // audio enhanced
-//  #define FX_MODE_PLASMOID               133 // audio enhanced
-//  #define FX_MODE_PUDDLES                134 // audio enhanced
-//  #define FX_MODE_MIDNOISE               135 // audio enhanced
-//  #define FX_MODE_NOISEMETER             136 // audio enhanced
-  #define FX_MODE_FREQWAVE               174
-  #define FX_MODE_FREQMATRIX             175
+  #ifdef WLED_DISABLE_2D
+    #error AUDIOREACTIVE usermod requires 2D support.
+  #endif
   #define FX_MODE_2DGEQ                  148
-  #define FX_MODE_WATERFALL              176
-  #define FX_MODE_FREQPIXELS             177
-  #define FX_MODE_BINMAP                 178
-//  #define FX_MODE_NOISEFIRE              143 // audio enhanced
-//  #define FX_MODE_PUDDLEPEAK             144 // audio enhanced
-  #define FX_MODE_NOISEMOVE              179
-//  #define FX_MODE_2DNOISE                146 // non audio
-  //#define FX_MODE_PERLINMOVE             147 // moved to 53
-//  #define FX_MODE_RIPPLEPEAK             148 // audio enhanced
-//  #define FX_MODE_2DFIRENOISE            149 // non audio
-//  #define FX_MODE_2DSQUAREDSWIRL         150 // non audio
-  //#define FX_MODE_2DFIRE2012             151 // implemented in native Fire2012
-//  #define FX_MODE_2DDNA                  152 // non audio
-//  #define FX_MODE_2DMATRIX               153 // non audio
-//  #define FX_MODE_2DMETABALLS            154 // non audio
-  #define FX_MODE_FREQMAP                180
-//  #define FX_MODE_GRAVCENTER             156 // audio enhanced
-//  #define FX_MODE_GRAVCENTRIC            157 // audio enhanced
-  #define FX_MODE_GRAVFREQ               181
-  #define FX_MODE_DJLIGHT                182
   #define FX_MODE_2DFUNKYPLANK           149
-  //#define FX_MODE_2DCENTERBARS           161 // obsolete by X & Y mirroring
-//  #define FX_MODE_2DPULSER               162 // non audio
-  #define FX_MODE_BLURZ                  183
-//  #define FX_MODE_2DDRIFT                164 // non audio
-//  #define FX_MODE_2DWAVERLY              165 // audio enhanced
-//  #define FX_MODE_2DSUNRADIATION         166 // non audio
-//  #define FX_MODE_2DCOLOREDBURSTS        167 // non audio
-//  #define FX_MODE_2DJULIA                168 // non audio
-  #define FX_MODE_2DPOOLNOISE            150 // reserved in JSON_mode_names
-  #define FX_MODE_2DTWISTER              151 // reserved in JSON_mode_names
-  #define FX_MODE_2DCAELEMENTATY         152 // reserved in JSON_mode_names
-//  #define FX_MODE_2DGAMEOFLIFE           172 // non audio
-//  #define FX_MODE_2DTARTAN               173 // non audio
-//  #define FX_MODE_2DPOLARLIGHTS          174 // non audio
-//  #define FX_MODE_2DSWIRL                175 // audio enhanced
-//  #define FX_MODE_2DLISSAJOUS            176 // non audio
-//  #define FX_MODE_2DFRIZZLES             177 // non audio
-//  #define FX_MODE_2DPLASMABALL           178 // non audio
-  //#define FX_MODE_FLOWSTRIPE             179 // moved to 114
-//  #define FX_MODE_2DHIPHOTIC             180 // non audio
-//  #define FX_MODE_2DSINDOTS              181 // non audio
-//  #define FX_MODE_2DDNASPIRAL            182 // non audio
-//  #define FX_MODE_2DBLACKHOLE            183 // non audio
-  //#define FX_MODE_WAVESINS               184 // moved to 48
-  #define FX_MODE_ROCKTAVES              184
-//  #define FX_MODE_2DAKEMI                186 // audio enhanced
-  //#define FX_MODE_CUSTOMEFFECT           187 //WLEDSR Custom Effects
+  #define FX_MODE_PIXELS                 163
+  #define FX_MODE_FREQWAVE               164
+  #define FX_MODE_FREQMATRIX             165
+  #define FX_MODE_WATERFALL              166
+  #define FX_MODE_FREQPIXELS             167
+  #define FX_MODE_BINMAP                 168
+  #define FX_MODE_NOISEMOVE              169
+  #define FX_MODE_FREQMAP                170
+  #define FX_MODE_GRAVFREQ               171
+  #define FX_MODE_DJLIGHT                172
+  #define FX_MODE_BLURZ                  173
+  #define FX_MODE_ROCKTAVES              174
+  //#define FX_MODE_CUSTOMEFFECT           175 //WLEDSR Custom Effects
 
-  #define MODE_COUNT                     185
+  #define MODE_COUNT                     175
 #endif
 
 typedef enum mapping1D2D {

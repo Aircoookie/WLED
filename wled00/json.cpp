@@ -188,30 +188,6 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         && elem[F("c3")].isNull() )
       {
         int16_t sOpt;
-/*
-        uint8_t tmp = 255;
-        // compatibility mode begin
-        char buf[5]; // dummy buffer
-        for (int i=0; i<5; i++) {
-          uint8_t *var;
-          switch (i) {
-            case 0: var = &seg.speed;     break;
-            case 1: var = &seg.intensity; break;
-            case 2: var = &seg.custom1;   break;
-            case 3: var = &seg.custom2;   break;
-            case 4: var = &seg.custom3;   break;
-          }
-          extractModeSlider(fx, i, buf, 4, var);
-        }
-        extractModeSlider(fx, 255, buf, 4, &tmp);
-        if (tmp < strip.getPaletteCount() + strip.customPalettes.size()) {
-          if (tmp != seg.palette) {
-            if (strip.paletteFade && !seg.transitional) seg.startTransition(strip.getTransition());
-            seg.palette = tmp;
-          }
-        }
-        //end compatibility mode
-*/
         sOpt = extractModeDefaults(fx, SET_F("sx"));   if (sOpt >= 0) seg.speed     = sOpt;
         sOpt = extractModeDefaults(fx, SET_F("ix"));   if (sOpt >= 0) seg.intensity = sOpt;
         sOpt = extractModeDefaults(fx, SET_F("c1"));   if (sOpt >= 0) seg.custom1   = sOpt;
@@ -219,10 +195,10 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         sOpt = extractModeDefaults(fx, SET_F("c3"));   if (sOpt >= 0) seg.custom3   = sOpt;
         sOpt = extractModeDefaults(fx, SET_F("mp12")); if (sOpt >= 0) seg.map1D2D   = sOpt & 0x03;
         sOpt = extractModeDefaults(fx, SET_F("ssim")); if (sOpt >= 0) seg.soundSim  = sOpt & 0x07;
-        sOpt = extractModeDefaults(fx, "rev");         if (sOpt >= 0) seg.reverse   = (bool)sOpt; // setOption(SEG_OPTION_REVERSED,   (bool)sOpt); // NOTE: setting this option is a risky business
-        sOpt = extractModeDefaults(fx, SET_F("mi"));   if (sOpt >= 0) seg.mirror    = (bool)sOpt; // setOption(SEG_OPTION_MIRROR,     (bool)sOpt); // NOTE: setting this option is a risky business
-        sOpt = extractModeDefaults(fx, SET_F("rY"));   if (sOpt >= 0) seg.reverse_y = (bool)sOpt; // setOption(SEG_OPTION_REVERSED_Y, (bool)sOpt); // NOTE: setting this option is a risky business
-        sOpt = extractModeDefaults(fx, SET_F("mY"));   if (sOpt >= 0) seg.mirror_y  = (bool)sOpt; // setOption(SEG_OPTION_MIRROR_Y,   (bool)sOpt); // NOTE: setting this option is a risky business
+        sOpt = extractModeDefaults(fx, "rev");         if (sOpt >= 0) seg.reverse   = (bool)sOpt;
+        sOpt = extractModeDefaults(fx, SET_F("mi"));   if (sOpt >= 0) seg.mirror    = (bool)sOpt; // NOTE: setting this option is a risky business
+        sOpt = extractModeDefaults(fx, SET_F("rY"));   if (sOpt >= 0) seg.reverse_y = (bool)sOpt;
+        sOpt = extractModeDefaults(fx, SET_F("mY"));   if (sOpt >= 0) seg.mirror_y  = (bool)sOpt; // NOTE: setting this option is a risky business
         sOpt = extractModeDefaults(fx, "pal");
         if (sOpt >= 0 && sOpt < strip.getPaletteCount() + strip.customPalettes.size()) {
           if (sOpt != seg.palette) {
@@ -250,8 +226,6 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   
   JsonArray iarr = elem[F("i")]; //set individual LEDs
   if (!iarr.isNull()) {
-    //uint8_t oldSegId = strip.setPixelSegment(id);
-
     // set brightness immediately and disable transition
     transitionDelayTemp = 0;
     jsonTransitionOnce = true;
@@ -301,7 +275,6 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         set = 0;
       }
     }
-    //strip.setPixelSegment(oldSegId);
     strip.trigger();
   }
   // send UDP if not in preset and something changed that is not just selection
@@ -614,7 +587,7 @@ void serializeInfo(JsonObject root)
   leds[F("maxseg")] = strip.getMaxSegments();
   //leds[F("actseg")] = strip.getActiveSegmentsNum();
   //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config
-  leds[F("cpal")] = strip.customPalettes.size();
+  leds[F("cpal")] = strip.customPalettes.size(); //number of custom palettes
 
   #ifndef WLED_DISABLE_2D
   if (strip.isMatrix) {
@@ -979,7 +952,7 @@ void serveJson(AsyncWebServerRequest* request)
   }
   #endif
   else if (url.indexOf(F("eff")) > 0) {
-    // this is going to serve raw effect names which will include WLED-SR extensions in names
+    // this serves just effect names without FX data extensions in names
     if (requestJSONBufferLock(19)) {
       AsyncJsonResponse* response = new AsyncJsonResponse(&doc, true);  // array document
       JsonArray lDoc = response->getRoot();
@@ -988,7 +961,8 @@ void serveJson(AsyncWebServerRequest* request)
       request->send(response);
       releaseJSONBufferLock();
     } else {
-      request->send_P(200, "application/json", JSON_mode_names);
+      //request->send_P(200, "application/json", JSON_mode_names);
+      request->send(503, "application/json", F("{\"error\":3}"));
     }
     return;
   }
@@ -1000,11 +974,14 @@ void serveJson(AsyncWebServerRequest* request)
     return;
   }
   else if (url.length() > 6) { //not just /json
-    request->send(  501, "application/json", F("{\"error\":\"Not implemented\"}"));
+    request->send(501, "application/json", F("{\"error\":\"Not implemented\"}"));
     return;
   }
 
-  if (!requestJSONBufferLock(17)) return;
+  if (!requestJSONBufferLock(17)) {
+    request->send(503, "application/json", F("{\"error\":3}"));
+    return;
+  }
   AsyncJsonResponse *response = new AsyncJsonResponse(&doc, subJson==6);
 
   JsonVariant lDoc = response->getRoot();
