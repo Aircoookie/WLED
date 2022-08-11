@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2207293
+#define VERSION 2208111
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -86,6 +86,8 @@
   #endif
   #include "esp_task_wdt.h"
 #endif
+#include <Wire.h>
+#include <SPI.h>
 
 #include "src/dependencies/network/Network.h"
 
@@ -94,7 +96,9 @@
 #endif
 
 #include <ESPAsyncWebServer.h>
-#include <EEPROM.h>
+#ifdef WLED_ADD_EEPROM_SUPPORT
+  #include <EEPROM.h>
+#endif
 #include <WiFiUdp.h>
 #include <DNSServer.h>
 #ifndef WLED_DISABLE_OTA
@@ -154,13 +158,6 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
 
 #include "const.h"
 #include "fcn_declare.h"
-#include "html_ui.h"
-#ifdef WLED_ENABLE_SIMPLE_UI
-  #include "html_simple.h"
-#endif
-#include "html_settings.h"
-#include "html_other.h"
-#include "ir_codes.h"
 #include "NodeStruct.h"
 #include "pin_manager.h"
 #include "bus_manager.h"
@@ -642,9 +639,16 @@ WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
 WLED_GLOBAL BusConfig* busConfigs[WLED_MAX_BUSSES] _INIT({nullptr}); //temporary, to remember values from network callback until after
 WLED_GLOBAL bool doInitBusses _INIT(false);
 WLED_GLOBAL int8_t loadLedmap _INIT(-1);
+WLED_GLOBAL uint16_t ledMaps _INIT(0); // bitfield representation of available ledmaps
 
 // Usermod manager
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
+
+WLED_GLOBAL int8_t i2c_sda  _INIT(HW_PIN_SDA);      // global I2C SDA pin (used for usermods)
+WLED_GLOBAL int8_t i2c_scl  _INIT(HW_PIN_SCL);      // global I2C SDA pin (used for usermods)
+WLED_GLOBAL int8_t spi_mosi _INIT(HW_PIN_DATASPI);  // global I2C SDA pin (used for usermods)
+WLED_GLOBAL int8_t spi_sclk _INIT(HW_PIN_CLOCKSPI); // global I2C SDA pin (used for usermods)
+WLED_GLOBAL int8_t spi_cs   _INIT(HW_PIN_CSSPI);    // global I2C SDA pin (used for usermods)
 
 // global ArduinoJson buffer
 WLED_GLOBAL StaticJsonDocument<JSON_BUFFER_SIZE> doc;

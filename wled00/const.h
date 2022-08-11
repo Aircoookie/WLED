@@ -247,6 +247,7 @@
 // WLED Error modes
 #define ERR_NONE         0  // All good :)
 #define ERR_EEP_COMMIT   2  // Could not commit to EEPROM (wrong flash layout?)
+#define ERR_NOBUF        3  // JSON buffer was not released in time, request cannot be handled at this time
 #define ERR_JSON         9  // JSON parsing failed (input too large?)
 #define ERR_FS_BEGIN    10  // Could not init filesystem (no partition?)
 #define ERR_FS_QUOTA    11  // The FS is full or the maximum file size is reached
@@ -369,18 +370,10 @@
   #undef HW_PIN_SDA
 #endif
 #ifndef HW_PIN_SCL
-  #ifdef ESP8266
-    #define HW_PIN_SCL 5
-  #else
-    #define HW_PIN_SCL 22
-  #endif
+  #define HW_PIN_SCL SCL
 #endif
 #ifndef HW_PIN_SDA
-  #ifdef ESP8266
-    #define HW_PIN_SDA 4
-  #else
-    #define HW_PIN_SDA 21
-  #endif
+  #define HW_PIN_SDA SDA
 #endif
 
 #if defined(ESP8266) && defined(HW_PIN_CLOCKSPI)
@@ -389,19 +382,17 @@
 #if defined(ESP8266) && defined(HW_PIN_DATASPI)
   #undef HW_PIN_DATASPI
 #endif
+#if defined(ESP8266) && defined(HW_PIN_CSSPI)
+  #undef HW_PIN_CSSPI
+#endif
 #ifndef HW_PIN_CLOCKSPI
-  #ifdef ESP8266
-    #define HW_PIN_CLOCKSPI 14
-  #else
-    #define HW_PIN_CLOCKSPI 18
-  #endif
+  #define HW_PIN_CLOCKSPI SCK
 #endif
 #ifndef HW_PIN_DATASPI
-  #ifdef ESP8266
-    #define HW_PIN_DATASPI 13
-  #else
-    #define HW_PIN_DATASPI 23
-  #endif
+  #define HW_PIN_DATASPI MOSI
+#endif
+#ifndef HW_PIN_CSSPI
+  #define HW_PIN_CSSPI SS
 #endif
 
 #endif

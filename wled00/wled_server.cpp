@@ -1,5 +1,12 @@
 #include "wled.h"
 
+#include "html_ui.h"
+#ifdef WLED_ENABLE_SIMPLE_UI
+  #include "html_simple.h"
+#endif
+#include "html_settings.h"
+#include "html_other.h"
+
 /*
  * Integrated HTTP web server page declarations
  */
@@ -103,6 +110,7 @@ void initServer()
     request->send(response);
     //request->send_P(200, "text/html", PAGE_liveviewws);
   });
+  #ifndef WLED_DISABLE_2D
   server.on("/liveview2D", HTTP_GET, [](AsyncWebServerRequest *request){
     if (handleIfNoneMatchCacheHeader(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_liveviewws2D, PAGE_liveviewws2D_length);
@@ -111,6 +119,7 @@ void initServer()
     request->send(response);
     //request->send_P(200, "text/html", PAGE_liveviewws);
   });
+  #endif
 #else
   server.on("/liveview", HTTP_GET, [](AsyncWebServerRequest *request){
     if (handleIfNoneMatchCacheHeader(request)) return;

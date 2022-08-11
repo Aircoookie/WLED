@@ -286,7 +286,7 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxL
   dest[0] = '\0'; // start by clearing buffer
 
   if (mode < strip.getModeCount()) {
-    String lineBuffer = strip.getModeData(mode);
+    String lineBuffer = FPSTR(strip.getModeData(mode));
     if (lineBuffer.length() > 0) {
       int16_t start = lineBuffer.indexOf('@');
       int16_t stop  = lineBuffer.indexOf(';', start);
@@ -313,11 +313,13 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxL
                   case  4: tmpstr = PSTR("FX Custom 3");  break;
                   default: tmpstr = PSTR("FX Custom");    break;
                 }
+                strncpy_P(dest, tmpstr, maxLen); // copy the name into buffer (replacing previous)
+                dest[maxLen-1] = '\0';
               } else {
                 if (nameEnd<0) tmpstr = names.substring(nameBegin).c_str(); // did not find ",", last name?
                 else           tmpstr = names.substring(nameBegin, nameEnd).c_str();
+                strlcpy(dest, tmpstr, maxLen); // copy the name into buffer (replacing previous)
               }
-              strlcpy(dest, tmpstr, maxLen); // copy the name into buffer (replacing previous)
             }
             nameBegin = nameEnd+1; // next name (if "," is not found it will be 0)
           } // next slider
@@ -356,7 +358,7 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxL
 int16_t extractModeDefaults(uint8_t mode, const char *segVar)
 {
   if (mode < strip.getModeCount()) {
-    String lineBuffer = strip.getModeData(mode);
+    String lineBuffer = FPSTR(strip.getModeData(mode));
     if (lineBuffer.length() > 0) {
       int16_t start = lineBuffer.lastIndexOf(';');
       if (start<0) return -1;
@@ -383,6 +385,7 @@ uint16_t crc16(const unsigned char* data_p, size_t length) {
 }
 
 
+#ifndef WLED_DISABLE_AUDIO
 ///////////////////////////////////////////////////////////////////////////////
 // Begin simulateSound (to enable audio enhanced effects to display something)
 ///////////////////////////////////////////////////////////////////////////////
@@ -498,4 +501,16 @@ um_data_t* simulateSound(uint8_t simulationId)
   if (volumeSmth < 1 ) my_magnitude = 0.001f;             // noise gate closed - mute
 
   return um_data;
+}
+#endif
+
+
+void enumerateLedmaps() {
+  ledMaps = 1;
+  for (size_t i=1; i<10; i++) {
+    char fileName[16];
+    sprintf_P(fileName, PSTR("/ledmap%d.json"), i);
+    bool isFile = WLED_FS.exists(fileName);
+    if (isFile) ledMaps |= 1 << i;
+  }
 }

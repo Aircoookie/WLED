@@ -261,6 +261,16 @@ void getSettingsJS(byte subPage, char* dest)
     // add reserved and usermod pins as d.um_p array
     oappend(SET_F("d.um_p=[6,7,8,9,10,11"));
 
+    if (i2c_sda > -1 && i2c_scl > -1) {
+      oappend(","); oappend(itoa(i2c_sda,nS,10));
+      oappend(","); oappend(itoa(i2c_scl,nS,10));
+    }
+    if (spi_mosi > -1 && spi_sclk > -1 && spi_cs > -1) {
+      oappend(","); oappend(itoa(spi_mosi,nS,10));
+      oappend(","); oappend(itoa(spi_sclk,nS,10));
+      oappend(","); oappend(itoa(spi_cs,nS,10));
+    }
+
     if (requestJSONBufferLock(6)) {
       // if we can't allocate JSON buffer ignore usermod pins
       JsonObject mods = doc.createNestedObject(F("um"));
@@ -308,13 +318,12 @@ void getSettingsJS(byte subPage, char* dest)
 
     // set limits
     oappend(SET_F("bLimits("));
-    #ifdef ESP32
+    #if defined(ESP32) && defined(USERMOD_AUDIOREACTIVE)
     // requested by @softhack007 https://github.com/blazoncek/WLED/issues/33
-    if (usermods.lookup(USERMOD_ID_AUDIOREACTIVE))
-      oappend(itoa(WLED_MAX_BUSSES-2,nS,10)); // prevent use of I2S buses if audio installed
-    else
-    #endif
+    oappend(itoa(WLED_MAX_BUSSES-2,nS,10)); oappend(","); // prevent use of I2S buses if audio installed
+    #else
     oappend(itoa(WLED_MAX_BUSSES,nS,10));  oappend(",");
+    #endif
     oappend(itoa(MAX_LEDS_PER_BUS,nS,10)); oappend(",");
     oappend(itoa(MAX_LED_MEMORY,nS,10));   oappend(",");
     oappend(itoa(MAX_LEDS,nS,10));
@@ -326,6 +335,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("CB"),strip.cctBlending);
     sappend('v',SET_F("FR"),strip.getTargetFps());
     sappend('v',SET_F("AW"),Bus::getAutoWhiteMode());
+    sappend('v',SET_F("LD"),strip.useLedsArray);
 
     for (uint8_t s=0; s < busses.getNumBusses(); s++) {
       Bus* bus = busses.getBus(s);
@@ -586,6 +596,9 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(SET_F(" (build "));
     oappendi(VERSION);
     oappend(SET_F(")\";"));
+    oappend(SET_F("sd=\""));
+    oappend(serverDescription);
+    oappend(SET_F("\";"));
   }
   
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
@@ -621,6 +634,11 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(SET_F("numM="));
     oappendi(usermods.getModCount());
     oappend(";");
+    sappend('v',SET_F("SDA"),i2c_sda);
+    sappend('v',SET_F("SCL"),i2c_scl);
+    sappend('v',SET_F("MOSI"),spi_mosi);
+    sappend('v',SET_F("SCLK"),spi_sclk);
+    sappend('v',SET_F("CS"),spi_cs);
     usermods.appendConfigData();
   }
 

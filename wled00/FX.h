@@ -56,10 +56,6 @@
 #define RGBW32(r,g,b,w) (uint32_t((byte(w) << 24) | (byte(r) << 16) | (byte(g) << 8) | (byte(b))))
 #endif
 
-//colors.cpp (.h does not like including other .h)
-uint32_t color_blend(uint32_t,uint32_t,uint16_t,bool b16);
-uint32_t color_add(uint32_t,uint32_t);
-
 /* Not used in all effects yet */
 #define WLED_FPS         42
 #define FRAMETIME_FIXED  (1000/WLED_FPS)
@@ -71,12 +67,12 @@ uint32_t color_add(uint32_t,uint32_t);
 #ifdef ESP8266
   #define MAX_NUM_SEGMENTS    16
   /* How much data bytes all segments combined may allocate */
-  #define MAX_SEGMENT_DATA  4096
+  #define MAX_SEGMENT_DATA  5120
 #else
   #ifndef MAX_NUM_SEGMENTS
     #define MAX_NUM_SEGMENTS  32
   #endif
-  #define MAX_SEGMENT_DATA  32768
+  #define MAX_SEGMENT_DATA  32767
 #endif
 
 /* How much data bytes each segment should max allocate to leave enough space for other segments,
@@ -88,7 +84,7 @@ uint32_t color_add(uint32_t,uint32_t);
 #define NUM_COLORS       3 /* number of colors per segment */
 #define SEGMENT          strip._segments[strip.getCurrSegmentId()]
 #define SEGENV           strip._segments[strip.getCurrSegmentId()]
-//#define SEGCOLOR(x)      strip._segments[s//trip.getCurrSegmentId()].currentColor(x, strip._segments[strip.getCurrSegmentId()].colors[x])
+//#define SEGCOLOR(x)      strip._segments[strip.getCurrSegmentId()].currentColor(x, strip._segments[strip.getCurrSegmentId()].colors[x])
 //#define SEGLEN           strip._segments[strip.getCurrSegmentId()].virtualLength()
 #define SEGCOLOR(x)      strip.segColor(x) /* saves us a few kbytes of code */
 #define SEGPALETTE       strip._currentPalette
@@ -108,6 +104,8 @@ uint32_t color_add(uint32_t,uint32_t);
 #define ORANGE     (uint32_t)0xFF3000
 #define PINK       (uint32_t)0xFF1493
 #define ULTRAWHITE (uint32_t)0xFFFFFFFF
+#define DARKSLATEGRAY (uint32_t)0x2F4F4F
+#define DARKSLATEGREY (uint32_t)0x2F4F4F
 
 // options
 // bit    7: segment is in transition mode
@@ -247,120 +245,96 @@ uint32_t color_add(uint32_t,uint32_t);
 #define FX_MODE_BLENDS                 115
 #define FX_MODE_TV_SIMULATOR           116
 #define FX_MODE_DYNAMIC_SMOOTH         117
-// new 2D effects
-#define FX_MODE_2DSPACESHIPS           118
-#define FX_MODE_2DCRAZYBEES            119
-#define FX_MODE_2DGHOSTRIDER           120
-#define FX_MODE_2DBLOBS                121
-#define FX_MODE_2DSCROLLTEXT           122
-#define FX_MODE_2DDRIFTROSE            123
-// WLED-SR effects (non SR compatible IDs)
-#define FX_MODE_2DBLACKHOLE            124 // non audio
-#define FX_MODE_2DDNASPIRAL            125 // non audio
-#define FX_MODE_2DHIPHOTIC             126 // non audio
-#define FX_MODE_2DPLASMABALL           127 // non audio
-#define FX_MODE_2DSINDOTS              128 // non audio
-#define FX_MODE_2DFRIZZLES             129 // non audio
-#define FX_MODE_2DLISSAJOUS            130 // non audio
-#define FX_MODE_2DPOLARLIGHTS          131 // non audio
-#define FX_MODE_2DTARTAN               132 // non audio
-#define FX_MODE_2DGAMEOFLIFE           133 // non audio
-#define FX_MODE_2DJULIA                134 // non audio
-#define FX_MODE_2DCOLOREDBURSTS        135 // non audio
-#define FX_MODE_2DSUNRADIATION         136 // non audio
-#define FX_MODE_2DNOISE                137 // non audio
-#define FX_MODE_2DFIRENOISE            138 // non audio
-#define FX_MODE_2DSQUAREDSWIRL         139 // non audio
-#define FX_MODE_2DDNA                  140 // non audio
-#define FX_MODE_2DMATRIX               141 // non audio
-#define FX_MODE_2DMETABALLS            142 // non audio
-#define FX_MODE_2DPULSER               143 // non audio
-#define FX_MODE_2DDRIFT                144 // non audio
-#define FX_MODE_2DWAVERLY              145 // audio enhanced
-#define FX_MODE_2DSWIRL                146 // audio enhanced
-#define FX_MODE_2DAKEMI                147 // audio enhanced
-#define FX_MODE_PIXELWAVE              160 // audio enhanced
-#define FX_MODE_JUGGLES                161 // audio enhanced
-#define FX_MODE_MATRIPIX               162 // audio enhanced
-#define FX_MODE_GRAVIMETER             163 // audio enhanced
-#define FX_MODE_PLASMOID               164 // audio enhanced
-#define FX_MODE_PUDDLES                165 // audio enhanced
-#define FX_MODE_MIDNOISE               166 // audio enhanced
-#define FX_MODE_NOISEMETER             167 // audio enhanced
-#define FX_MODE_NOISEFIRE              168 // audio enhanced
-#define FX_MODE_PUDDLEPEAK             169 // audio enhanced
-#define FX_MODE_RIPPLEPEAK             170 // audio enhanced
-#define FX_MODE_GRAVCENTER             171 // audio enhanced
-#define FX_MODE_GRAVCENTRIC            172 // audio enhanced
+#ifndef WLED_DISABLE_2D
+  // new 2D effects
+  #define FX_MODE_2DSPACESHIPS           118
+  #define FX_MODE_2DCRAZYBEES            119
+  #define FX_MODE_2DGHOSTRIDER           120
+  #define FX_MODE_2DBLOBS                121
+  #define FX_MODE_2DSCROLLTEXT           122
+  #define FX_MODE_2DDRIFTROSE            123
+  // WLED-SR effects (non SR compatible IDs)
+  #define FX_MODE_2DBLACKHOLE            124 // non audio
+  #define FX_MODE_2DDNASPIRAL            125 // non audio
+  #define FX_MODE_2DHIPHOTIC             126 // non audio
+  #define FX_MODE_2DPLASMABALL           127 // non audio
+  #define FX_MODE_2DSINDOTS              128 // non audio
+  #define FX_MODE_2DFRIZZLES             129 // non audio
+  #define FX_MODE_2DLISSAJOUS            130 // non audio
+  #define FX_MODE_2DPOLARLIGHTS          131 // non audio
+  #define FX_MODE_2DTARTAN               132 // non audio
+  #define FX_MODE_2DGAMEOFLIFE           133 // non audio
+  #define FX_MODE_2DJULIA                134 // non audio
+  #define FX_MODE_2DCOLOREDBURSTS        135 // non audio
+  #define FX_MODE_2DSUNRADIATION         136 // non audio
+  #define FX_MODE_2DNOISE                137 // non audio
+  #define FX_MODE_2DFIRENOISE            138 // non audio
+  #define FX_MODE_2DSQUAREDSWIRL         139 // non audio
+  #define FX_MODE_2DDNA                  140 // non audio
+  #define FX_MODE_2DMATRIX               141 // non audio
+  #define FX_MODE_2DMETABALLS            142 // non audio
+  #define FX_MODE_2DPULSER               143 // non audio
+  #define FX_MODE_2DDRIFT                144 // non audio
+#endif
+#ifndef WLED_DISABLE_AUDIO
+  #ifndef WLED_DISABLE_2D
+    #define FX_MODE_2DWAVERLY              145 // audio enhanced
+    #define FX_MODE_2DSWIRL                146 // audio enhanced
+    #define FX_MODE_2DAKEMI                147 // audio enhanced
+    // 148 & 149 reserved
+  #endif
+  #define FX_MODE_PIXELWAVE              150 // audio enhanced
+  #define FX_MODE_JUGGLES                151 // audio enhanced
+  #define FX_MODE_MATRIPIX               152 // audio enhanced
+  #define FX_MODE_GRAVIMETER             153 // audio enhanced
+  #define FX_MODE_PLASMOID               154 // audio enhanced
+  #define FX_MODE_PUDDLES                155 // audio enhanced
+  #define FX_MODE_MIDNOISE               156 // audio enhanced
+  #define FX_MODE_NOISEMETER             157 // audio enhanced
+  #define FX_MODE_NOISEFIRE              158 // audio enhanced
+  #define FX_MODE_PUDDLEPEAK             159 // audio enhanced
+  #define FX_MODE_RIPPLEPEAK             160 // audio enhanced
+  #define FX_MODE_GRAVCENTER             161 // audio enhanced
+  #define FX_MODE_GRAVCENTRIC            162 // audio enhanced
+#endif
 
 #ifndef USERMOD_AUDIOREACTIVE
 
-  #define MODE_COUNT                     173
+  #ifndef WLED_DISABLE_AUDIO
+  #define MODE_COUNT                   163
+  #else
+    #ifndef WLED_DISABLE_2D
+  #define MODE_COUNT                   145
+    #else
+  #define MODE_COUNT                   118
+    #endif
+  #endif
 
 #else
 
-  #define FX_MODE_PIXELS                 173
-//  #define FX_MODE_PIXELWAVE              129 // audio enhanced
-//  #define FX_MODE_JUGGLES                130 // audio enhanced
-//  #define FX_MODE_MATRIPIX               131 // audio enhanced
-//  #define FX_MODE_GRAVIMETER             132 // audio enhanced
-//  #define FX_MODE_PLASMOID               133 // audio enhanced
-//  #define FX_MODE_PUDDLES                134 // audio enhanced
-//  #define FX_MODE_MIDNOISE               135 // audio enhanced
-//  #define FX_MODE_NOISEMETER             136 // audio enhanced
-  #define FX_MODE_FREQWAVE               174
-  #define FX_MODE_FREQMATRIX             175
+  #ifdef WLED_DISABLE_AUDIO
+    #error Incompatible options: WLED_DISABLE_AUDIO and USERMOD_AUDIOREACTIVE
+  #endif
+  #ifdef WLED_DISABLE_2D
+    #error AUDIOREACTIVE usermod requires 2D support.
+  #endif
   #define FX_MODE_2DGEQ                  148
-  #define FX_MODE_WATERFALL              176
-  #define FX_MODE_FREQPIXELS             177
-  #define FX_MODE_BINMAP                 178
-//  #define FX_MODE_NOISEFIRE              143 // audio enhanced
-//  #define FX_MODE_PUDDLEPEAK             144 // audio enhanced
-  #define FX_MODE_NOISEMOVE              179
-//  #define FX_MODE_2DNOISE                146 // non audio
-  //#define FX_MODE_PERLINMOVE             147 // moved to 53
-//  #define FX_MODE_RIPPLEPEAK             148 // audio enhanced
-//  #define FX_MODE_2DFIRENOISE            149 // non audio
-//  #define FX_MODE_2DSQUAREDSWIRL         150 // non audio
-  //#define FX_MODE_2DFIRE2012             151 // implemented in native Fire2012
-//  #define FX_MODE_2DDNA                  152 // non audio
-//  #define FX_MODE_2DMATRIX               153 // non audio
-//  #define FX_MODE_2DMETABALLS            154 // non audio
-  #define FX_MODE_FREQMAP                180
-//  #define FX_MODE_GRAVCENTER             156 // audio enhanced
-//  #define FX_MODE_GRAVCENTRIC            157 // audio enhanced
-  #define FX_MODE_GRAVFREQ               181
-  #define FX_MODE_DJLIGHT                182
   #define FX_MODE_2DFUNKYPLANK           149
-  //#define FX_MODE_2DCENTERBARS           161 // obsolete by X & Y mirroring
-//  #define FX_MODE_2DPULSER               162 // non audio
-  #define FX_MODE_BLURZ                  183
-//  #define FX_MODE_2DDRIFT                164 // non audio
-//  #define FX_MODE_2DWAVERLY              165 // audio enhanced
-//  #define FX_MODE_2DSUNRADIATION         166 // non audio
-//  #define FX_MODE_2DCOLOREDBURSTS        167 // non audio
-//  #define FX_MODE_2DJULIA                168 // non audio
-  #define FX_MODE_2DPOOLNOISE            150 // reserved in JSON_mode_names
-  #define FX_MODE_2DTWISTER              151 // reserved in JSON_mode_names
-  #define FX_MODE_2DCAELEMENTATY         152 // reserved in JSON_mode_names
-//  #define FX_MODE_2DGAMEOFLIFE           172 // non audio
-//  #define FX_MODE_2DTARTAN               173 // non audio
-//  #define FX_MODE_2DPOLARLIGHTS          174 // non audio
-//  #define FX_MODE_2DSWIRL                175 // audio enhanced
-//  #define FX_MODE_2DLISSAJOUS            176 // non audio
-//  #define FX_MODE_2DFRIZZLES             177 // non audio
-//  #define FX_MODE_2DPLASMABALL           178 // non audio
-  //#define FX_MODE_FLOWSTRIPE             179 // moved to 114
-//  #define FX_MODE_2DHIPHOTIC             180 // non audio
-//  #define FX_MODE_2DSINDOTS              181 // non audio
-//  #define FX_MODE_2DDNASPIRAL            182 // non audio
-//  #define FX_MODE_2DBLACKHOLE            183 // non audio
-  //#define FX_MODE_WAVESINS               184 // moved to 48
-  #define FX_MODE_ROCKTAVES              184
-//  #define FX_MODE_2DAKEMI                186 // audio enhanced
-  //#define FX_MODE_CUSTOMEFFECT           187 //WLEDSR Custom Effects
+  #define FX_MODE_PIXELS                 163
+  #define FX_MODE_FREQWAVE               164
+  #define FX_MODE_FREQMATRIX             165
+  #define FX_MODE_WATERFALL              166
+  #define FX_MODE_FREQPIXELS             167
+  #define FX_MODE_BINMAP                 168
+  #define FX_MODE_NOISEMOVE              169
+  #define FX_MODE_FREQMAP                170
+  #define FX_MODE_GRAVFREQ               171
+  #define FX_MODE_DJLIGHT                172
+  #define FX_MODE_BLURZ                  173
+  #define FX_MODE_ROCKTAVES              174
+  //#define FX_MODE_CUSTOMEFFECT           175 //WLEDSR Custom Effects
 
-  #define MODE_COUNT                     185
+  #define MODE_COUNT                     175
 #endif
 
 typedef enum mapping1D2D {
@@ -414,6 +388,8 @@ typedef struct Segment {
     uint16_t aux0;  // custom var
     uint16_t aux1;  // custom var
     byte* data;
+    CRGB* leds;
+    static CRGB *_globalLeds;
 
   private:
     union {
@@ -427,21 +403,22 @@ typedef struct Segment {
       };
     };
     uint16_t _dataLen;
+    static uint16_t _usedSegmentData;
 
-    // transition data, valid only if getOption(SEG_OPTION_TRANSITIONAL)==true, holds values during transition
-    //struct Transition {
+    // transition data, valid only if transitional==true, holds values during transition
+    struct Transition {
       uint32_t      _colorT[NUM_COLORS];
       uint8_t       _briT;  // temporary brightness
       uint8_t       _cctT;  // temporary CCT
       CRGBPalette16 _palT;  // temporary palette
-      //uint8_t       _modeP; // previous mode/effect (transitioning effects is way more complex than this)
+      uint8_t       _modeP; // previous mode/effect
       uint32_t      _start;
       uint16_t      _dur;
-    //  Transition(uint16_t dur=750) : _briT(255), _cctT(127), _palT(CRGBPalette16(CRGB::Black)), _modeP(FX_MODE_STATIC), _start(millis()), _dur(dur) {}
-    //  Transition(uint16_t d, uint8_t b, uint8_t c, const uint32_t *o) : _briT(b), _cctT(c), _palT(CRGBPalette16(CRGB::Black)), _modeP(FX_MODE_STATIC), _start(millis()), _dur(d) {
-    //    for (size_t i=0; i<NUM_COLORS; i++) _colorT[i] = o[i];
-    //  }
-    //} *_t; // this struct will bootloop ESP
+      Transition(uint16_t dur=750) : _briT(255), _cctT(127), _palT(CRGBPalette16(CRGB::Black)), _modeP(FX_MODE_STATIC), _start(millis()), _dur(dur) {}
+      Transition(uint16_t d, uint8_t b, uint8_t c, const uint32_t *o) : _briT(b), _cctT(c), _palT(CRGBPalette16(CRGB::Black)), _modeP(FX_MODE_STATIC), _start(millis()), _dur(d) {
+        for (size_t i=0; i<NUM_COLORS; i++) _colorT[i] = o[i];
+      }
+    } *_t; // this struct will bootloop ESP
 
   public:
 
@@ -471,9 +448,10 @@ typedef struct Segment {
       aux0(0),
       aux1(0),
       data(nullptr),
+      leds(nullptr),
       _capabilities(0),
-      _dataLen(0)
-      //_t(nullptr)
+      _dataLen(0),
+      _t(nullptr)
     {
       refreshLightCapabilities();
     }
@@ -488,39 +466,49 @@ typedef struct Segment {
 
     ~Segment() {
       #ifdef WLED_DEBUG
-      Serial.print(F("Destroying segment."));
+      Serial.print(F("Destroying segment:"));
       if (name) Serial.printf(" %s (%p)", name, name);
-      if (data) Serial.printf(" %p", data);
+      if (data) Serial.printf(" %d (%p)", (int)_dataLen, data);
+      if (leds) Serial.printf(" [%u]", length()*sizeof(CRGB));
       Serial.println();
       #endif
+      if (!Segment::_globalLeds && leds) free(leds);
       if (name) delete[] name;
-      //if (_t) delete _t;
+      if (_t) delete _t;
       deallocateData();
     }
 
     Segment& operator= (const Segment &orig); // copy assignment
     Segment& operator= (Segment &&orig) noexcept; // move assignment
 
+#ifdef WLED_DEBUG
+    size_t getSize() { return sizeof(Segment) + (data?_dataLen:0) + (name?strlen(name):0) + (_t?sizeof(Transition):0) + (!Segment::_globalLeds && leds?sizeof(CRGB)*length():0); }
+#endif
+
     inline bool     getOption(uint8_t n)       { return ((options >> n) & 0x01); }
-    inline bool     isSelected(void)           { return getOption(0); }
+    inline bool     isSelected(void)           { return selected; }
     inline bool     isActive(void)             { return stop > start; }
-    inline uint16_t width(void)                { return stop - start; }
-    inline uint16_t height(void)               { return stopY - startY; }
-    inline uint16_t length(void)               { return width(); }
+    inline bool     is2D(void)                 { return !(startY == 0 && stopY == 1); }
+    inline uint16_t width(void)                { return stop - start; }       // segment width in physical pixels (length if 1D)
+    inline uint16_t height(void)               { return stopY - startY; }     // segment height (if 2D) in physical pixels
+    inline uint16_t length(void)               { return width() * height(); } // segment length (count) in physical pixels
     inline uint16_t groupLength(void)          { return grouping + spacing; }
     inline uint8_t  getLightCapabilities(void) { return _capabilities; }
 
-    bool setColor(uint8_t slot, uint32_t c); //returns true if changed
-    void setCCT(uint16_t k);
-    void setOpacity(uint8_t o);
-    void setOption(uint8_t n, bool val);
+    static uint16_t getUsedSegmentData(void)    { return _usedSegmentData; }
+    static void     addUsedSegmentData(int len) { _usedSegmentData += len; }
+
+    bool    setColor(uint8_t slot, uint32_t c); //returns true if changed
+    void    setCCT(uint16_t k);
+    void    setOpacity(uint8_t o);
+    void    setOption(uint8_t n, bool val);
     uint8_t differs(Segment& b);
-    void refreshLightCapabilities(void);
+    void    refreshLightCapabilities(void);
 
     // runtime data functions
-    bool allocateData(uint16_t len);
-    void deallocateData(void);
     inline uint16_t dataSize(void) { return _dataLen; }
+    bool allocateData(size_t len);
+    void deallocateData(void);
     void resetIfRequired(void);
     /** 
       * Flags that before the next effect is calculated,
@@ -529,13 +517,16 @@ typedef struct Segment {
       * Safe to call from interrupts and network requests.
       */
     inline void markForReset(void) { reset = true; }  // setOption(SEG_OPTION_RESET, true)
+    //inline void setUpLeds() { if (!leds) leds = (CRGB*)malloc(sizeof(CRGB)*length()); }
+    void setUpLeds(void);
 
     // transition functions
-    void startTransition(uint16_t dur); // transition has to start before actual segment values change
-    void handleTransition(void);
+    void     startTransition(uint16_t dur); // transition has to start before actual segment values change
+    void     handleTransition(void);
     uint16_t progress(void); //transition progression between 0-65535
     uint8_t  currentBri(uint8_t briNew, bool useCct = false);
-    uint32_t currentColor(uint8_t slot, uint32_t colorNew) { return getOption(SEG_OPTION_TRANSITIONAL) /*&& !_t*/ ? color_blend(/*_t->*/_colorT[slot], colorNew, progress(), true) : colorNew; }
+    uint8_t  currentMode(uint8_t modeNew);
+    uint32_t currentColor(uint8_t slot, uint32_t colorNew);
     CRGBPalette16 &loadPalette(CRGBPalette16 &tgt, uint8_t pal);
     CRGBPalette16 &currentPalette(CRGBPalette16 &tgt, uint8_t paletteID);
 
@@ -543,18 +534,22 @@ typedef struct Segment {
     uint16_t virtualLength(void);
     void setPixelColor(int n, uint32_t c); // set relative pixel within segment with color
     void setPixelColor(int n, byte r, byte g, byte b, byte w = 0) { setPixelColor(n, RGBW32(r,g,b,w)); } // automatically inline
-    void setPixelColor(int n, CRGB c)                             { setPixelColor(n, c.red, c.green, c.blue); } // automatically inline
+    void setPixelColor(int n, CRGB c)                             { setPixelColor(n, RGBW32(c.r,c.g,c.b,0)); } // automatically inline
     void setPixelColor(float i, uint32_t c, bool aa = true);
     void setPixelColor(float i, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0, bool aa = true) { setPixelColor(i, RGBW32(r,g,b,w), aa); }
-    void setPixelColor(float i, CRGB c, bool aa = true) { setPixelColor(i, c.red, c.green, c.blue, 0, aa); }
+    void setPixelColor(float i, CRGB c, bool aa = true)                                         { setPixelColor(i, RGBW32(c.r,c.g,c.b,0), aa); }
     uint32_t getPixelColor(uint16_t i);
     // 1D support functions (some implement 2D as well)
     void blur(uint8_t);
     void fill(uint32_t c);
     void fade_out(uint8_t r);
     void fadeToBlackBy(uint8_t fadeBy);
-    void blendPixelColor(uint16_t n, uint32_t color, uint8_t blend);
-    void addPixelColor(uint16_t n, uint32_t color);
+    void blendPixelColor(int n, uint32_t color, uint8_t blend);
+    void blendPixelColor(int n, CRGB c, uint8_t blend)            { blendPixelColor(n, RGBW32(c.r,c.g,c.b,0), blend); }
+    void addPixelColor(int n, uint32_t color);
+    void addPixelColor(int n, byte r, byte g, byte b, byte w = 0) { addPixelColor(n, RGBW32(r,g,b,w)); } // automatically inline
+    void addPixelColor(int n, CRGB c)                             { addPixelColor(n, RGBW32(c.r,c.g,c.b,0)); } // automatically inline
+    void fadePixelColor(uint16_t n, uint8_t fade);
     uint8_t get_random_wheel_index(uint8_t pos);
     uint32_t color_from_palette(uint16_t, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri = 255);
     uint32_t color_wheel(uint8_t pos);
@@ -562,35 +557,66 @@ typedef struct Segment {
     // 2D matrix
     uint16_t virtualWidth(void);
     uint16_t virtualHeight(void);
+  #ifndef WLED_DISABLE_2D
     uint16_t XY(uint16_t x, uint16_t y); // support function to get relative index within segment (for leds[])
     void setPixelColorXY(int x, int y, uint32_t c); // set relative pixel within segment with color
     void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { setPixelColorXY(x, y, RGBW32(r,g,b,w)); } // automatically inline
-    void setPixelColorXY(int x, int y, CRGB c)                             { setPixelColorXY(x, y, c.red, c.green, c.blue); } // automatically inline
+    void setPixelColorXY(int x, int y, CRGB c)                             { setPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0)); } // automatically inline
     void setPixelColorXY(float x, float y, uint32_t c, bool aa = true);
     void setPixelColorXY(float x, float y, byte r, byte g, byte b, byte w = 0, bool aa = true) { setPixelColorXY(x, y, RGBW32(r,g,b,w), aa); }
-    void setPixelColorXY(float x, float y, CRGB c, bool aa = true) { setPixelColorXY(x, y, c.red, c.green, c.blue, 0, aa); }
+    void setPixelColorXY(float x, float y, CRGB c, bool aa = true)                             { setPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0), aa); }
     uint32_t getPixelColorXY(uint16_t x, uint16_t y);
     // 2D support functions
     void blendPixelColorXY(uint16_t x, uint16_t y, uint32_t color, uint8_t blend);
-    void addPixelColorXY(uint16_t x, uint16_t y, uint32_t color);
-    void blur1d(CRGB* leds, fract8 blur_amount);
-    void blur1d(uint16_t i, bool vertical, fract8 blur_amount, CRGB* leds=nullptr); // 1D box blur (with weight)
-    void blur2d(CRGB* leds, fract8 blur_amount);
-    void blurRow(uint16_t row, fract8 blur_amount, CRGB* leds=nullptr);
-    void blurCol(uint16_t col, fract8 blur_amount, CRGB* leds=nullptr);
-    void moveX(CRGB *leds, int8_t delta);
-    void moveY(CRGB *leds, int8_t delta);
-    void move(uint8_t dir, uint8_t delta, CRGB *leds=nullptr);
-    void fill_solid(CRGB* leds, CRGB c);
-    void fill_circle(CRGB* leds, uint16_t cx, uint16_t cy, uint8_t radius, CRGB c);
-    void fadeToBlackBy(CRGB* leds, uint8_t fadeBy);
-    void nscale8(CRGB* leds, uint8_t scale);
-    void setPixels(CRGB* leds);
-    void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c, CRGB *leds = nullptr);
-    void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB color, CRGB *leds = nullptr);
-    void wu_pixel(CRGB *leds, uint32_t x, uint32_t y, CRGB c);
-    inline void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint32_t c) { drawLine(x0, y0, x1, y1, CRGB(byte(c>>16), byte(c>>8), byte(c))); }
-    inline void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t c) { drawCharacter(chr, x, y, w, h, CRGB(byte(c>>16), byte(c>>8), byte(c))); }
+    void blendPixelColorXY(uint16_t x, uint16_t y, CRGB c, uint8_t blend)  { blendPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0), blend); }
+    void addPixelColorXY(int x, int y, uint32_t color);
+    void addPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { addPixelColorXY(x, y, RGBW32(r,g,b,w)); } // automatically inline
+    void addPixelColorXY(int x, int y, CRGB c)                             { addPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0)); }
+    void fadePixelColorXY(uint16_t x, uint16_t y, uint8_t fade);
+    void box_blur(uint16_t i, bool vertical, fract8 blur_amount); // 1D box blur (with weight)
+    void blurRow(uint16_t row, fract8 blur_amount);
+    void blurCol(uint16_t col, fract8 blur_amount);
+    void moveX(int8_t delta);
+    void moveY(int8_t delta);
+    void move(uint8_t dir, uint8_t delta);
+    void fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB c);
+    void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint32_t c);
+    void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c) { drawLine(x0, y0, x1, y1, RGBW32(c.r,c.g,c.b,0)); } // automatic inline
+    void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color);
+    void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB c) { drawCharacter(chr, x, y, w, h, RGBW32(c.r,c.g,c.b,0)); } // automatic inline
+    void wu_pixel(uint32_t x, uint32_t y, CRGB c);
+    void blur1d(fract8 blur_amount); // blur all rows in 1 dimension
+    void blur2d(fract8 blur_amount) { blur(blur_amount); }
+    void fill_solid(CRGB c) { fill(RGBW32(c.r,c.g,c.b,0)); }
+    void nscale8(uint8_t scale);
+  #else
+    uint16_t XY(uint16_t x, uint16_t y)                                    { return x; }
+    void setPixelColorXY(int x, int y, uint32_t c)                         { setPixelColor(x, c); }
+    void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { setPixelColor(x, RGBW32(r,g,b,w)); }
+    void setPixelColorXY(int x, int y, CRGB c)                             { setPixelColor(x, RGBW32(c.r,c.g,c.b,0)); }
+    void setPixelColorXY(float x, float y, uint32_t c, bool aa = true)     { setPixelColor(x, c, aa); }
+    void setPixelColorXY(float x, float y, byte r, byte g, byte b, byte w = 0, bool aa = true) { setPixelColor(x, RGBW32(r,g,b,w), aa); }
+    void setPixelColorXY(float x, float y, CRGB c, bool aa = true)         { setPixelColor(x, RGBW32(c.r,c.g,c.b,0), aa); }
+    uint32_t getPixelColorXY(uint16_t x, uint16_t y)                       { return getPixelColor(x); }
+    void blendPixelColorXY(uint16_t x, uint16_t y, uint32_t c, uint8_t blend) { blendPixelColor(x, c, blend); }
+    void blendPixelColorXY(uint16_t x, uint16_t y, CRGB c, uint8_t blend)  { blendPixelColor(x, RGBW32(c.r,c.g,c.b,0), blend); }
+    void addPixelColorXY(int x, int y, uint32_t color)                     { addPixelColor(x, color); }
+    void addPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { addPixelColor(x, RGBW32(r,g,b,w)); }
+    void addPixelColorXY(int x, int y, CRGB c)                             { addPixelColor(x, RGBW32(c.r,c.g,c.b,0)); }
+    void fadePixelColorXY(uint16_t x, uint16_t y, uint8_t fade)            { fadePixelColor(x, fade); }
+    void box_blur(uint16_t i, bool vertical, fract8 blur_amount) {}
+    void blurRow(uint16_t row, fract8 blur_amount) {}
+    void blurCol(uint16_t col, fract8 blur_amount) {}
+    void moveX(int8_t delta) {}
+    void moveY(int8_t delta) {}
+    void move(uint8_t dir, uint8_t delta) {}
+    void fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB c) {}
+    void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint32_t c) {}
+    void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c) {}
+    void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color) {}
+    void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB color) {}
+    void wu_pixel(uint32_t x, uint32_t y, CRGB c) {}
+  #endif
 } segment;
 //static int i = sizeof(Segment);
 
@@ -633,13 +659,11 @@ class WS2812FX {  // 96 bytes
 #endif
       // semi-private (just obscured) used in effect functions through macros
       _currentPalette(CRGBPalette16(CRGB::Black)),
-      _bri_t(0),
       _colors_t{0,0,0},
       _virtualSegmentLength(0),
       // true private variables
       _length(DEFAULT_LED_COUNT),
       _brightness(DEFAULT_BRIGHTNESS),
-      _usedSegmentData(0),
       _transitionDur(750),
 		  _targetFps(WLED_FPS),
 		  _frametime(FRAMETIME_FIXED),
@@ -657,9 +681,9 @@ class WS2812FX {  // 96 bytes
       _mainSegment(0)
     {
       WS2812FX::instance = this;
-      _mode.reserve(_modeCount);     // allocate memory to prevent initial fragmentation
-      _modeData.reserve(_modeCount); // allocate memory to prevent initial fragmentation
-      if (_mode.capacity() <= 1 || _modeData.capacity() <= 1) _modeCount = 1;
+      _mode.reserve(_modeCount);     // allocate memory to prevent initial fragmentation (does not increase size())
+      _modeData.reserve(_modeCount); // allocate memory to prevent initial fragmentation (does not increase size())
+      if (_mode.capacity() <= 1 || _modeData.capacity() <= 1) _modeCount = 1; // memory allocation failed only show Solid
       else setupEffectData();
     }
 
@@ -669,11 +693,15 @@ class WS2812FX {  // 96 bytes
       _modeData.clear();
       _segments.clear();
       customPalettes.clear();
+      if (useLedsArray && Segment::_globalLeds) free(Segment::_globalLeds);
     }
 
     static WS2812FX* getInstance(void) { return instance; }
 
     void
+#ifdef WLED_DEBUG
+      printSize(),
+#endif
       finalizeInit(),
       service(void),
       setMode(uint8_t segid, uint8_t m),
@@ -683,8 +711,7 @@ class WS2812FX {  // 96 bytes
       setBrightness(uint8_t b, bool direct = false),
       setRange(uint16_t i, uint16_t i2, uint32_t col),
       setTransitionMode(bool t),
-      calcGammaTable(float),
-      purgeSegments(void),
+      purgeSegments(bool force = false),
       setSegment(uint8_t n, uint16_t start, uint16_t stop, uint8_t grouping = 1, uint8_t spacing = 0, uint16_t offset = UINT16_MAX, uint16_t startY=0, uint16_t stopY=1),
       setMainSegmentId(uint8_t n),
       restartRuntime(),
@@ -707,7 +734,6 @@ class WS2812FX {  // 96 bytes
     inline void setShowCallback(show_callback cb) { _callback = cb; }
     inline void setTransition(uint16_t t) { _transitionDur = t; }
     inline void appendSegment(const Segment &seg = Segment()) { _segments.push_back(seg); }
-    inline void addUsedSegmentData(int16_t size) { _usedSegmentData += size; }
 
     bool
       gammaCorrectBri,
@@ -716,7 +742,8 @@ class WS2812FX {  // 96 bytes
       hasRGBWBus(void),
       hasCCTBus(void),
       // return true if the strip is being sent pixel updates
-      isUpdating(void);
+      isUpdating(void),
+      useLedsArray = false;
 
     inline bool isServicing(void) { return _isServicing; }
     inline bool hasWhiteChannel(void) {return _hasWhiteChannel;}
@@ -730,9 +757,7 @@ class WS2812FX {  // 96 bytes
       getActiveSegmentsNum(void),
       getFirstSelectedSegId(void),
       getLastActiveSegmentId(void),
-      setPixelSegment(uint8_t n),
-      gamma8(uint8_t),
-      gamma8_cal(uint8_t, float);
+      setPixelSegment(uint8_t n);
 
     inline uint8_t getBrightness(void) { return _brightness; }
     inline uint8_t getMaxSegments(void) { return MAX_NUM_SEGMENTS; }  // returns maximum number of supported segments (fixed value)
@@ -753,13 +778,11 @@ class WS2812FX {  // 96 bytes
     inline uint16_t getMinShowDelay(void) { return MIN_SHOW_DELAY; }
     inline uint16_t getLengthTotal(void) { return _length; }
     inline uint16_t getTransition(void) { return _transitionDur; }
-    inline uint16_t getUsedSegmentData(void) { return _usedSegmentData; }
 
     uint32_t
       now,
       timebase,
       currentColor(uint32_t colorNew, uint8_t tNr),
-      gamma32(uint32_t),
       getPixelColor(uint16_t);
 
     inline uint32_t getLastShow(void) { return _lastShow; }
@@ -771,10 +794,10 @@ class WS2812FX {  // 96 bytes
     const char **
       getModeDataSrc(void) { return &(_modeData[0]); } // vectors use arrays for underlying data
 
-    Segment& getSegment(uint8_t id);
+    Segment&        getSegment(uint8_t id);
     inline Segment& getFirstSelectedSeg(void) { return _segments[getFirstSelectedSegId()]; }
-    inline Segment& getMainSegment(void) { return _segments[getMainSegmentId()]; }
-    inline Segment* getSegments(void) { return &(_segments[0]); }
+    inline Segment& getMainSegment(void)      { return _segments[getMainSegmentId()]; }
+    inline Segment* getSegments(void)         { return &(_segments[0]); }
 
   // 2D support (panels)
     bool
@@ -793,11 +816,10 @@ class WS2812FX {  // 96 bytes
       matrixHeight;
 
     typedef struct panel_bitfield_t {
-      unsigned char
-        bottomStart : 1, // starts at bottom?
-        rightStart  : 1, // starts on right?
-        vertical    : 1, // is vertical?
-        serpentine  : 1; // is serpentine?
+      bool bottomStart : 1; // starts at bottom?
+      bool rightStart  : 1; // starts on right?
+      bool vertical    : 1; // is vertical?
+      bool serpentine  : 1; // is serpentine?
     } Panel;
     Panel
       matrix,
@@ -810,7 +832,7 @@ class WS2812FX {  // 96 bytes
 
     // outsmart the compiler :) by correctly overloading
     inline void setPixelColorXY(int x, int y, byte r, byte g, byte b, byte w = 0) { setPixelColorXY(x, y, RGBW32(r,g,b,w)); } // automatically inline
-    inline void setPixelColorXY(int x, int y, CRGB c) { setPixelColorXY(x, y, c.red, c.green, c.blue); }
+    inline void setPixelColorXY(int x, int y, CRGB c)                             { setPixelColorXY(x, y, RGBW32(c.r,c.g,c.b,0)); }
 
     uint32_t
       getPixelColorXY(uint16_t, uint16_t);
@@ -823,7 +845,6 @@ class WS2812FX {  // 96 bytes
 
     // using public variables to reduce code size increase due to inline function getSegment() (with bounds checking)
     // and color transitions
-    uint8_t  _bri_t;       // opacity used for effect (includes transition)
     uint32_t _colors_t[3]; // color used for effect (includes transition)
     uint16_t _virtualSegmentLength;
 
@@ -833,7 +854,6 @@ class WS2812FX {  // 96 bytes
   private:
     uint16_t _length;
     uint8_t  _brightness;
-    uint16_t _usedSegmentData;
     uint16_t _transitionDur;
 
 		uint8_t  _targetFps;

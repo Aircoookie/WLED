@@ -90,6 +90,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(strip.cctBlending, hw_led[F("cb")]);
   Bus::setCCTBlend(strip.cctBlending);
   strip.setTargetFps(hw_led["fps"]); //NOP if 0, default 42 FPS
+  CJSON(strip.useLedsArray, hw_led[F("ld")]);
 
   #ifndef WLED_DISABLE_2D
   // 2D Matrix Settings
@@ -265,6 +266,40 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(serialBaud, hw[F("baud")]);
   if (serialBaud < 96 || serialBaud > 15000) serialBaud = 1152;
   updateBaudRate(serialBaud *100);
+
+  JsonArray hw_if_i2c = hw[F("if")][F("i2c-pin")];
+  CJSON(i2c_sda, hw_if_i2c[0]);
+  CJSON(i2c_scl, hw_if_i2c[1]);
+  PinManagerPinType i2c[2] = { { i2c_sda, true }, { i2c_scl, true } };
+  if (pinManager.allocateMultiplePins(i2c, 2, PinOwner::HW_I2C)) {
+    #ifdef ESP32
+    Wire.setPins(i2c_sda, i2c_scl); // this will fail if Wire is initilised (Wire.begin() called prior)
+    #endif
+    Wire.begin();
+    uint8_t i2c[2] = {i2c_sda, i2c_scl};
+    pinManager.deallocateMultiplePins(i2c, 2, PinOwner::HW_I2C);
+  } else {
+    i2c_sda = -1;
+    i2c_scl = -1;
+  }
+  JsonArray hw_if_spi = hw[F("if")][F("spi-pin")];
+  CJSON(spi_mosi, hw_if_spi[0]);
+  CJSON(spi_sclk, hw_if_spi[1]);
+  CJSON(spi_cs, hw_if_spi[2]);
+  PinManagerPinType spi[3] = { { spi_mosi, true }, { spi_sclk, true }, { spi_cs, true } };
+  if (pinManager.allocateMultiplePins(spi, 3, PinOwner::HW_SPI)) {
+    #ifdef ESP8266
+    SPI.begin();
+    #else
+    SPI.begin(spi_sclk, (int8_t)-1, spi_mosi, spi_cs);
+    #endif
+    uint8_t spi[3] = { spi_mosi, spi_sclk, spi_cs };
+    pinManager.deallocateMultiplePins(spi, 3, PinOwner::HW_SPI);
+  } else {
+    spi_mosi = -1;
+    spi_sclk = -1;
+    spi_cs   = -1;
+  }
 
   //int hw_status_pin = hw[F("status")]["pin"]; // -1
 
@@ -507,7 +542,9 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 void deserializeConfigFromFS() {
   bool success = deserializeConfigSec();
   if (!success) { //if file does not exist, try reading from EEPROM
+    #ifdef WLED_ADD_EEPROM_SUPPORT
     deEEPSettings();
+    #endif
     return;
   }
 
@@ -517,7 +554,9 @@ void deserializeConfigFromFS() {
 
   success = readObjectFromFile("/cfg.json", nullptr, &doc);
   if (!success) { //if file does not exist, try reading from EEPROM
+    #ifdef WLED_ADD_EEPROM_SUPPORT
     deEEPSettings();
+    #endif
     releaseJSONBufferLock();
     return;
   }
@@ -621,6 +660,7 @@ void serializeConfig() {
   hw_led[F("cb")] = strip.cctBlending;
   hw_led["fps"] = strip.getTargetFps();
   hw_led[F("rgbwm")] = Bus::getAutoWhiteMode();    // global override
+  hw_led[F("ld")] = strip.useLedsArray;
 
   #ifndef WLED_DISABLE_2D
   // 2D Matrix Settings
@@ -708,6 +748,15 @@ void serializeConfig() {
   hw_relay["rev"] = !rlyMde;
 
   hw[F("baud")] = serialBaud;
+
+  JsonObject hw_if = hw.createNestedObject(F("if"));
+  JsonArray hw_if_i2c = hw_if.createNestedArray("i2c-pin");
+  hw_if_i2c.add(i2c_sda);
+  hw_if_i2c.add(i2c_scl);
+  JsonArray hw_if_spi = hw_if.createNestedArray("spi-pin");
+  hw_if_spi.add(spi_mosi);
+  hw_if_spi.add(spi_sclk);
+  hw_if_spi.add(spi_cs);
 
   //JsonObject hw_status = hw.createNestedObject("status");
   //hw_status["pin"] = -1;

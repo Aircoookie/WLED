@@ -175,8 +175,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   if (getVal(elem["fx"], &fx, 0, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 0-255 exact value)
     if (!presetId && currentPlaylist>=0) unloadPlaylist();
     if (fx != seg.mode) {
-      //seg.startTransition(strip.getTransition()); // set effect transitions
-      seg.markForReset();
+      seg.startTransition(strip.getTransition()); // set effect transitions
+      //seg.markForReset();
       seg.mode = fx;
       // load default values from effect string if effect is selected without
       // any other effect parameter (i.e. effect clicked in UI)
@@ -187,34 +187,25 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         && elem[F("c2")].isNull()
         && elem[F("c3")].isNull() )
       {
-        // compatibility mode begin
-        char buf[5]; // dummy buffer
-        for (int i=0; i<5; i++) {
-          uint8_t *var;
-          switch (i) {
-            case 0: var = &seg.speed;     break;
-            case 1: var = &seg.intensity; break;
-            case 2: var = &seg.custom1;   break;
-            case 3: var = &seg.custom2;   break;
-            case 4: var = &seg.custom3;   break;
-          }
-          extractModeSlider(fx, i, buf, 4, var);
-        }
-        extractModeSlider(fx, 255, buf, 4, &seg.palette);
-        //end compatibility mode
         int16_t sOpt;
         sOpt = extractModeDefaults(fx, SET_F("sx"));   if (sOpt >= 0) seg.speed     = sOpt;
         sOpt = extractModeDefaults(fx, SET_F("ix"));   if (sOpt >= 0) seg.intensity = sOpt;
         sOpt = extractModeDefaults(fx, SET_F("c1"));   if (sOpt >= 0) seg.custom1   = sOpt;
         sOpt = extractModeDefaults(fx, SET_F("c2"));   if (sOpt >= 0) seg.custom2   = sOpt;
         sOpt = extractModeDefaults(fx, SET_F("c3"));   if (sOpt >= 0) seg.custom3   = sOpt;
-        sOpt = extractModeDefaults(fx, "pal");         if (sOpt >= 0 && sOpt < strip.getPaletteCount()) seg.palette   = sOpt;
         sOpt = extractModeDefaults(fx, SET_F("mp12")); if (sOpt >= 0) seg.map1D2D   = sOpt & 0x03;
         sOpt = extractModeDefaults(fx, SET_F("ssim")); if (sOpt >= 0) seg.soundSim  = sOpt & 0x07;
-        sOpt = extractModeDefaults(fx, "rev");         if (sOpt >= 0) seg.reverse   = (bool)sOpt; // setOption(SEG_OPTION_REVERSED,   (bool)sOpt); // NOTE: setting this option is a risky business
-        sOpt = extractModeDefaults(fx, SET_F("mi"));   if (sOpt >= 0) seg.mirror    = (bool)sOpt; // setOption(SEG_OPTION_MIRROR,     (bool)sOpt); // NOTE: setting this option is a risky business
-        sOpt = extractModeDefaults(fx, SET_F("rY"));   if (sOpt >= 0) seg.reverse_y = (bool)sOpt; // setOption(SEG_OPTION_REVERSED_Y, (bool)sOpt); // NOTE: setting this option is a risky business
-        sOpt = extractModeDefaults(fx, SET_F("mY"));   if (sOpt >= 0) seg.mirror_y  = (bool)sOpt; // setOption(SEG_OPTION_MIRROR_Y,   (bool)sOpt); // NOTE: setting this option is a risky business
+        sOpt = extractModeDefaults(fx, "rev");         if (sOpt >= 0) seg.reverse   = (bool)sOpt;
+        sOpt = extractModeDefaults(fx, SET_F("mi"));   if (sOpt >= 0) seg.mirror    = (bool)sOpt; // NOTE: setting this option is a risky business
+        sOpt = extractModeDefaults(fx, SET_F("rY"));   if (sOpt >= 0) seg.reverse_y = (bool)sOpt;
+        sOpt = extractModeDefaults(fx, SET_F("mY"));   if (sOpt >= 0) seg.mirror_y  = (bool)sOpt; // NOTE: setting this option is a risky business
+        sOpt = extractModeDefaults(fx, "pal");
+        if (sOpt >= 0 && sOpt < strip.getPaletteCount() + strip.customPalettes.size()) {
+          if (sOpt != seg.palette) {
+            if (strip.paletteFade && !seg.transitional) seg.startTransition(strip.getTransition());
+            seg.palette = sOpt;
+          }
+        }
       }
     }
   }
@@ -225,7 +216,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   uint8_t pal = seg.palette;
   if (getVal(elem["pal"], &pal, 1, strip.getPaletteCount())) {
     if (pal != seg.palette) {
-      if (strip.paletteBlend) seg.startTransition(strip.getTransition());
+      if (strip.paletteFade && !seg.transitional) seg.startTransition(strip.getTransition());
       seg.palette = pal;
     }
   }
@@ -235,8 +226,6 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   
   JsonArray iarr = elem[F("i")]; //set individual LEDs
   if (!iarr.isNull()) {
-    //uint8_t oldSegId = strip.setPixelSegment(id);
-
     // set brightness immediately and disable transition
     transitionDelayTemp = 0;
     jsonTransitionOnce = true;
@@ -277,7 +266,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         if (set < 2) stop = start + 1;
         for (int i = start; i < stop; i++) {
           if (strip.gammaCorrectCol) {
-            seg.setPixelColor(i, strip.gamma8(rgbw[0]), strip.gamma8(rgbw[1]), strip.gamma8(rgbw[2]), strip.gamma8(rgbw[3]));
+            seg.setPixelColor(i, gamma8(rgbw[0]), gamma8(rgbw[1]), gamma8(rgbw[2]), gamma8(rgbw[3]));
           } else {
             seg.setPixelColor(i, rgbw[0], rgbw[1], rgbw[2], rgbw[3]);
           }
@@ -286,7 +275,6 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         set = 0;
       }
     }
-    //strip.setPixelSegment(oldSegId);
     strip.trigger();
   }
   // send UDP if not in preset and something changed that is not just selection
@@ -301,12 +289,23 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   bool stateResponse = root[F("v")] | false;
 
   bool onBefore = bri;
-  getVal(root["bri"], &bri);
+  uint8_t tmpBri = bri;
+  getVal(root["bri"], &tmpBri);
 
-  bool on = root["on"] | (bri > 0);
-  if (!on != !bri) toggleOnOff();
-
-  if (root["on"].is<const char*>() && root["on"].as<const char*>()[0] == 't') toggleOnOff();
+  if (root["on"].isNull()) {
+    if ((onBefore && tmpBri==0) || (!onBefore && tmpBri>0)) toggleOnOff();
+    bri = tmpBri;
+  } else {
+    bool on = root["on"] | onBefore;
+    if (on != onBefore || (root["on"].is<const char*>() && root["on"].as<const char*>()[0] == 't')) {
+      toggleOnOff();
+      // a hack is needed after toggleOnOf()
+      if (!root["bri"].isNull()) {
+        if (bri==0) briLast = tmpBri;
+        else        bri     = tmpBri;
+      }
+    }
+  }
 
   if (bri && !onBefore) { // unfreeze all segments when turning on
     for (size_t s=0; s < strip.getSegmentsNum(); s++) {
@@ -588,7 +587,7 @@ void serializeInfo(JsonObject root)
   leds[F("maxseg")] = strip.getMaxSegments();
   //leds[F("actseg")] = strip.getActiveSegmentsNum();
   //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config
-  leds[F("cpal")] = strip.customPalettes.size();
+  leds[F("cpal")] = strip.customPalettes.size(); //number of custom palettes
 
   #ifndef WLED_DISABLE_2D
   if (strip.isMatrix) {
@@ -613,6 +612,10 @@ void serializeInfo(JsonObject root)
   leds[F("rgbw")] = strip.hasRGBWBus(); // deprecated, use info.leds.lc
   leds[F("wv")]   = totalLC & 0x02;     // deprecated, true if white slider should be displayed for any segment
   leds["cct"]     = totalLC & 0x04;     // deprecated, use info.leds.lc
+
+  #ifdef WLED_DISABLE_AUDIO
+  root[F("noaudio")] = true;
+  #endif
 
   root[F("str")] = syncToggleReceive;
 
@@ -651,12 +654,7 @@ void serializeInfo(JsonObject root)
 
   JsonArray ledmaps = root.createNestedArray(F("maps"));
   for (size_t i=0; i<10; i++) {
-    char fileName[16];
-    strcpy_P(fileName, PSTR("/ledmap"));
-    if (i) sprintf(fileName +7, "%d", i);
-    strcat_P(fileName, PSTR(".json"));
-    bool isFile = WLED_FS.exists(fileName);
-    if (isFile || i==0) ledmaps.add(i);
+    if ((ledMaps>>i) & 0x0001) ledmaps.add(i);
   }
 
   JsonObject wifi_info = root.createNestedObject("wifi");
@@ -910,8 +908,7 @@ void serializeNodes(JsonObject root)
 void serializeModeData(JsonArray fxdata)
 {
   for (size_t i = 0; i < strip.getModeCount(); i++) {
-    //String lineBuffer = (const char*)pgm_read_dword(&(WS2812FX::_modeData[i]));
-    String lineBuffer = strip.getModeData(i);
+    String lineBuffer = FPSTR(strip.getModeData(i));
     if (lineBuffer.length() > 0) {
       uint8_t endPos = lineBuffer.indexOf('@');
       if (endPos>0) fxdata.add(lineBuffer.substring(endPos));
@@ -924,8 +921,7 @@ void serializeModeData(JsonArray fxdata)
 // also removes WLED-SR extensions (@...) from deserialised names
 void serializeModeNames(JsonArray arr) {
   for (size_t i = 0; i < strip.getModeCount(); i++) {
-    //String lineBuffer = (const char*)pgm_read_dword(&(WS2812FX::_modeData[i]));
-    String lineBuffer = strip.getModeData(i);
+    String lineBuffer = FPSTR(strip.getModeData(i));
     if (lineBuffer.length() > 0) {
       uint8_t endPos = lineBuffer.indexOf('@');
       if (endPos>0) arr.add(lineBuffer.substring(0, endPos));
@@ -951,7 +947,7 @@ void serveJson(AsyncWebServerRequest* request)
   }
   #endif
   else if (url.indexOf(F("eff")) > 0) {
-    // this is going to serve raw effect names which will include WLED-SR extensions in names
+    // this serves just effect names without FX data extensions in names
     if (requestJSONBufferLock(19)) {
       AsyncJsonResponse* response = new AsyncJsonResponse(&doc, true);  // array document
       JsonArray lDoc = response->getRoot();
@@ -960,7 +956,8 @@ void serveJson(AsyncWebServerRequest* request)
       request->send(response);
       releaseJSONBufferLock();
     } else {
-      request->send_P(200, "application/json", JSON_mode_names);
+      //request->send_P(200, "application/json", JSON_mode_names);
+      request->send(503, "application/json", F("{\"error\":3}"));
     }
     return;
   }
@@ -972,11 +969,14 @@ void serveJson(AsyncWebServerRequest* request)
     return;
   }
   else if (url.length() > 6) { //not just /json
-    request->send(  501, "application/json", F("{\"error\":\"Not implemented\"}"));
+    request->send(501, "application/json", F("{\"error\":\"Not implemented\"}"));
     return;
   }
 
-  if (!requestJSONBufferLock(17)) return;
+  if (!requestJSONBufferLock(17)) {
+    request->send(503, "application/json", F("{\"error\":3}"));
+    return;
+  }
   AsyncJsonResponse *response = new AsyncJsonResponse(&doc, subJson==6);
 
   JsonVariant lDoc = response->getRoot();

@@ -368,7 +368,7 @@ class AudioReactive : public Usermod {
     WiFiUDP fftUdp;
 
     // set your config variables to their boot default value (this can also be done in readFromConfig() or a constructor if you prefer)
-    bool     enabled = true;
+    bool     enabled = false;
     bool     initDone = false;
 
     const uint16_t delayMs = 10;        // I don't want to sample too often and overload WLED

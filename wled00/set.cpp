@@ -85,6 +85,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     Bus::setCCTBlend(strip.cctBlending);
     Bus::setAutoWhiteMode(request->arg(F("AW")).toInt());
     strip.setTargetFps(request->arg(F("FR")).toInt());
+    strip.useLedsArray = request->hasArg(F("LD"));
 
     bool busesChanged = false;
     for (uint8_t s = 0; s < WLED_MAX_BUSSES; s++) {
@@ -398,7 +399,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (request->hasArg(F("RS"))) //complete factory reset
     {
       WLED_FS.format();
+      #ifdef WLED_ADD_EEPROM_SUPPORT
       clearEEPROM();
+      #endif
       serveMessage(request, 200, F("All Settings erased."), F("Connect to WLED-AP to setup again"),255);
       doReboot = true;
     }
@@ -473,6 +476,57 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   if (subPage == 8)
   {
     if (!requestJSONBufferLock(5)) return;
+
+    // global I2C & SPI pins
+    uint8_t oldpins[3];
+    int8_t hw_sda_pin  = max(-1,min(33,(int)request->arg(F("SDA")).toInt()));
+    int8_t hw_scl_pin  = max(-1,min(33,(int)request->arg(F("SCL")).toInt()));
+    oldpins[0] = i2c_sda;
+    oldpins[1] = i2c_scl;
+    pinManager.deallocateMultiplePins(oldpins, 2, PinOwner::HW_I2C);
+    #ifdef ESP8266
+    // cannot change pins on ESP8266
+    if (hw_sda_pin != HW_PIN_SDA) hw_sda_pin = -1;
+    if (hw_scl_pin != HW_PIN_SCL) hw_scl_pin = -1;
+    #endif
+    PinManagerPinType i2c[2] = { { hw_sda_pin, true }, { hw_scl_pin, true } };
+    if (pinManager.allocateMultiplePins(i2c, 2, PinOwner::HW_I2C)) {
+      i2c_sda = hw_sda_pin;
+      i2c_scl = hw_scl_pin;
+      #ifdef ESP32
+      Wire.setPins(i2c_sda, i2c_scl); // this will fail if Wire is initilised (Wire.begin() called)
+      uint8_t i2c[2] = {i2c_sda, i2c_scl};
+      pinManager.deallocateMultiplePins(i2c, 2, PinOwner::HW_I2C);
+      #endif
+    } else {
+      i2c_sda = -1;
+      i2c_scl = -1;
+    }
+    int8_t hw_mosi_pin = max(-1,min(33,(int)request->arg(F("MOSI")).toInt()));
+    int8_t hw_sclk_pin = max(-1,min(33,(int)request->arg(F("SCLK")).toInt()));
+    int8_t hw_cs_pin   = max(-1,min(33,(int)request->arg(F("CS")).toInt()));
+    oldpins[0] = spi_mosi;
+    oldpins[1] = spi_sclk;
+    oldpins[2] = spi_cs;
+    pinManager.deallocateMultiplePins(oldpins, 3, PinOwner::HW_SPI);
+    #ifdef ESP8266
+    // cannot change pins on ESP8266
+    if (hw_mosi_pin != HW_PIN_DATASPI)  hw_mosi_pin = -1;
+    if (hw_sclk_pin != HW_PIN_CLOCKSPI) hw_sclk_pin = -1;
+    if (hw_cs_pin   != HW_PIN_CSSPI)    hw_cs_pin   = -1;
+    #endif
+    PinManagerPinType spi[3] = { { hw_mosi_pin, true }, { hw_sclk_pin, true }, { hw_cs_pin, true } };
+    if (pinManager.allocateMultiplePins(spi, 3, PinOwner::HW_SPI)) {
+      spi_mosi = hw_mosi_pin;
+      spi_sclk = hw_sclk_pin;
+      spi_cs   = hw_cs_pin;
+      uint8_t spi[3] = { hw_mosi_pin, hw_sclk_pin, hw_cs_pin };
+      pinManager.deallocateMultiplePins(spi, 3, PinOwner::HW_SPI);
+    } else {
+      spi_mosi = -1;
+      spi_sclk = -1;
+      spi_cs   = -1;
+    }
 
     JsonObject um = doc.createNestedObject("um");
 
@@ -826,7 +880,11 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
     Segment& seg = strip.getSegment(i);
     if (i != selectedSeg && (singleSegment || !seg.isActive() || !seg.isSelected())) continue; // skip non main segments if not applying to all
-    if (fxModeChanged)  { seg.mode      = effectIn; seg.markForReset(); }
+    if (fxModeChanged)  {
+      seg.startTransition(strip.getTransition());
+      seg.mode = effectIn;
+      // TODO: we should load defaults here as well
+    }
     if (speedChanged)     seg.speed     = speedIn;
     if (intensityChanged) seg.intensity = intensityIn;
     if (paletteChanged) {

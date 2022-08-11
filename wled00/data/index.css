@@ -238,7 +238,10 @@ button {
 	display: none;
 	width: 90%;
 	border: 0px;
-	margin: 0 auto;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%,-50%);
 }
 
 .tab {
@@ -398,10 +401,10 @@ button {
 
 .filter {
 	background-color: var(--c-4);
-	box-shadow: 0px 0px 6px 6px var(--c-1);
+	/*box-shadow: 0px 0px 6px 6px var(--c-1);*/
 	border-radius: 26px;
 	height: 26px;
-	margin: 0 auto 4px; /* 8px if you want space */
+	margin: 0 auto; /* add 4-8px if you want space at the bottom */
 	padding: 8px 2px;
 	position: relative;
 	/*width: 260px;*/
@@ -1217,7 +1220,7 @@ TD .checkmark, TD .radiomark {
 .filter .fchkl {
 	display: inline-block;
 	min-width: 0.7em;
-	padding: 4px 4px 4px 32px;
+	padding: 1px 4px 4px 32px;
 	text-align: left;
 	line-height: 24px;
 	vertical-align: middle;
@@ -1228,6 +1231,7 @@ TD .checkmark, TD .radiomark {
 .lbl-s {
 	display: inline-block;
 	/* margin: 10px 4px 0 0; */
+	margin-top: 6px;
 	font-size: 13px;
 	width: 48%;
 	text-align: center;

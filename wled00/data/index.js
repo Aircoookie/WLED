@@ -43,6 +43,7 @@ function gId(c) {return d.getElementById(c);}
 function gEBCN(c) {return d.getElementsByClassName(c);}
 function isEmpty(o) {return Object.keys(o).length === 0;}
 function isObj(i) {return (i && typeof i === 'object' && !Array.isArray(i));}
+function isNumeric(n) {return !isNaN(parseFloat(n)) && isFinite(n);}
 
 // returns true if dataset R, G & B values are 0
 function isRgbBlack(a) {return (parseInt(a.r) == 0 && parseInt(a.g) == 0 && parseInt(a.b) == 0);}
@@ -604,8 +605,19 @@ function parseInfo(i) {
 	mw = i.leds.matrix ? i.leds.matrix.w : 0;
 	mh = i.leds.matrix ? i.leds.matrix.h : 0;
 	isM = mw>0 && mh>0;
-	if (!isM) hideModes("2D ");
-	//if (!i.u || !i.u.AudioReactive) { /*hideModes(" ♪");*/ hideModes(" ♫"); }	// hide /*audio*/ frequency reactive effects
+	if (!isM) {
+		gId("filter1D").classList.add("hide");
+		//gId("filter2D").classList.add("hide");
+		hideModes("2D");
+	}
+	if (i.noaudio) {
+		gId("filterVol").classList.add("hide");
+		gId("filterFreq").classList.add("hide");
+	}
+//	if (!i.u || !i.u.AudioReactive) {
+		//gId("filterVol").classList.add("hide"); hideModes(" ♪"); // hide volume reactive effects
+		//gId("filterFreq").classList.add("hide"); hideModes(" ♫"); // hide frequency reactive effects
+//	}
 }
 
 //https://stackoverflow.com/questions/2592092/executing-script-elements-inserted-with-innerhtml
@@ -755,7 +767,7 @@ function populateSegments(s)
 		</table>
 		<div class="h bp" id="seg${i}len"></div>
 		${!isM?rvXck:''}
-		${map2D}
+		${isM?map2D:''}
 		${s.AudioReactive && s.AudioReactive.on ? "" : sndSim}
 		<label class="check revchkl">
 			${isM?'Transpose':'Mirror effect'}
@@ -811,16 +823,22 @@ function populateEffects()
 	for (let ef of effects) {
 		// WLEDSR: add slider and color control to setX (used by requestjson)
 		let id = ef.id;
-		let nm = ef.name;
+		let nm = ef.name+" ";
 		let fd = "";
-		if (ef.name.indexOf("Reserved") < 0) {
+		if (ef.name.indexOf("RSVD") < 0) {
 			if (Array.isArray(fxdata) && fxdata.length>id) {
-				fd = fxdata[id].substr(1);
-				var eP = (fd == '')?[]:fd.split(";");
-				var p = (eP.length<3 || eP[2]==='')?[]:eP[2].split(",");
-				var m = (eP.length<4 || eP[3]==='')?[]:eP[3].split(",");
-				if (isM && m.length>0) for (let r of m) { if (r.substring(0,4)=="mp12") nm += " *"; } // 1D effects with defined mapping
-				if (p.length>0 && p[0].substring(0,1) === "!") nm += " 🎨";
+				if (fxdata[id].length==0) fd = ";;!;1d"
+				else fd = fxdata[id].substr(1);
+				let eP = (fd == '')?[]:fd.split(";"); // effect parameters
+				let p = (eP.length<3 || eP[2]==='')?[]:eP[2].split(","); // palette data
+				if (p.length>0 && (p[0] !== "" && !isNumeric(p[0]))) nm += "&#x1F3A8;";	// effects using palette
+				let m = (eP.length<4 || eP[3]==='')?[]:eP[3].split(","); // metadata
+				if (m.length>0) for (let r of m) {
+					if (r.substring(0,2)=="1d") nm += "&#8942;"; // 1D effects
+					if (r.substring(0,2)=="2d") nm += "&#9638;"; // 2D effects
+					if (r.substring(0,2)=="vo") nm += "&#9834;"; // volume effects
+					if (r.substring(0,2)=="fr") nm += "&#9835;"; // frequency effects
+				}
 			}
 			html += generateListItemHtml('fx',id,nm,'setX','',fd);
 		}
@@ -1133,9 +1151,9 @@ function updateSelectedFx()
 
 		var selectedName = selectedEffect.querySelector(".lstIname").innerText;
 		var segs = gId("segcont").querySelectorAll(`div[data-map="map2D"]`);
-		for (const seg of segs) if (selectedName.indexOf("2D ")<0) seg.classList.remove("hide"); else seg.classList.add("hide");
+		for (const seg of segs) if (selectedName.indexOf("\u25A6")<0) seg.classList.remove("hide"); else seg.classList.add("hide");
 		var segs = gId("segcont").querySelectorAll(`div[data-snd="ssim"]`);
-		for (const seg of segs) if (selectedName.indexOf(" ♪")<0 && selectedName.indexOf(" ♫")<0) seg.classList.add("hide"); else seg.classList.remove("hide"); // also "♫ "?
+		for (const seg of segs) if (selectedName.indexOf("\u266A")<0 && selectedName.indexOf("\266B")<0) seg.classList.add("hide"); else seg.classList.remove("hide"); // also "♫ "?
 	}
 }
 
@@ -2478,11 +2496,11 @@ function getPalettesData(page, callback)
 function hideModes(txt)
 {
 	for (let e of (gId('fxlist').querySelectorAll('.lstI')||[])) {
-		if (e.querySelector('.lstIname').innerText.indexOf(txt) >= 0) e.classList.add("hide"); //else e.classList.remove("hide");
-	}
-	if (txt==="2D ") {
-		gId("filter1D").classList.add("hide");
-		gId("filter2D").classList.add("hide");
+		let iT = e.querySelector('.lstIname').innerText;
+		let f = false;
+		if (txt==="2D") f = iT.indexOf("\u25A6") >= 0 && iT.indexOf("\u22EE") < 0; // 2D && !1D
+		else f = iT.indexOf(txt) >= 0;
+		if (f) e.classList.add("hide"); //else e.classList.remove("hide");
 	}
 }
 
@@ -2495,7 +2513,7 @@ function search(f,l=null)
 	for (i = (l==='pcont'?0:1); i < el.length; i++) {
 		var it = el[i];
 		var itT = it.querySelector('.lstIname').innerText.toUpperCase();
-		it.style.display = (itT.indexOf(f.value.toUpperCase())<0 || (!isM && l==='fxlist' && itT.indexOf("2D")>=0)) ? 'none' : '';
+		it.style.display = (itT.indexOf(f.value.toUpperCase())<0) ? 'none' : '';
 	}
 }
 
