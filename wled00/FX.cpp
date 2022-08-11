@@ -5840,8 +5840,15 @@ uint16_t mode_2Dscrollingtext(void) {
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  const int letterWidth = SEGMENT.custom2 > 127 ? 6 : 5;
-  const int letterHeight = 8;
+  int letterWidth;
+  int letterHeight;
+  switch (map(SEGMENT.custom2, 0, 255, 1, 4)) {
+    default:
+    case 1: letterWidth = 5; letterHeight =  8; break;
+    case 2: letterWidth = 6; letterHeight =  8; break;
+    case 3: letterWidth = 7; letterHeight =  9; break;
+    case 4: letterWidth = 5; letterHeight = 12; break;
+  }
   const int yoffset = map(SEGMENT.intensity, 0, 255, -rows/2, rows/2) + (rows-letterHeight)/2;
   char text[33] = {'\0'};
   if (SEGMENT.name) for (size_t i=0,j=0; i<strlen(SEGMENT.name); i++) if (SEGMENT.name[i]>31 && SEGMENT.name[i]<128) text[j++] = SEGMENT.name[i];
