@@ -31,16 +31,18 @@ private:
   // ---- Variables modified by settings below -----
   // set your config variables to their boot default value (this can also be done in readFromConfig() or a constructor if you prefer)
   bool pingPongClockEnabled = true;
+  int colorR = 0xFF;
+  int colorG = 0xFF;
+  int colorB = 0xFF;
+
+  // ---- Variables for correct LED numbering below, edit only if your clock is built different ----
+
   int baseH = 43;
   int baseHH = 7;
   int baseM = 133;
   int baseMM = 97;
   int colon1 = 79;
   int colon2 = 80;
-  int colorR = 0xFF;
-  int colorG = 0xFF;
-  int colorB = 0xFF;
-
 
   // Matrix for the illumination of the numbers
   // Note: These only define the increments of the base adress. e.g. to define the second Minute you have to add the baseMM to every led position
@@ -66,18 +68,14 @@ public:
    * You can use it to initialize variables, sensors or similar.
    */
   void setup()
-  {
-    // Serial.println("Hello from my usermod!");
-  }
+  { }
 
   /*
    * connected() is called every time the WiFi is (re)connected
    * Use it to initialize network interfaces
    */
   void connected()
-  {
-    // Serial.println("Connected to WiFi!");
-  }
+  { }
 
   /*
    * loop() is called continuously. Here you can check for events, read sensors, etc.
@@ -105,7 +103,6 @@ public:
    */
   void addToJsonInfo(JsonObject& root)
   {
-    //this code adds "u":{"Light":[20," lux"]} to the info object
     JsonObject user = root["u"];
     if (user.isNull()) user = root.createNestedObject("u");
 
@@ -119,18 +116,14 @@ public:
    * Values in the state object may be modified by connected clients
    */
   void addToJsonState(JsonObject &root)
-  {
-    // root["user0"] = userVar0;
-  }
+  { }
 
   /*
    * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
    * Values in the state object may be modified by connected clients
    */
   void readFromJsonState(JsonObject &root)
-  {
-    // if (root["bri"] == 255) Serial.println(F("Don't burn down your garage!"));
-  }
+  { }
 
   /*
    * addToConfig() can be used to add custom persistent settings to the cfg.json file in the "um" (usermod) object.
@@ -171,12 +164,6 @@ public:
   {
     JsonObject top = root.createNestedObject("Ping Pong Clock");
     top["enabled"] = pingPongClockEnabled;
-    top["baseH"]   = baseH;
-    top["baseHH"]  = baseHH;
-    top["baseM"]   = baseM;
-    top["baseMM"]  = baseMM;
-    top["colon1"]  = colon1;
-    top["colon2"]  = colon2;
     top["colorR"]   = colorR;
     top["colorG"]   = colorG;
     top["colorB"]   = colorB;
@@ -204,19 +191,11 @@ public:
       bool configComplete = !top.isNull();
 
       configComplete &= getJsonValue(top["enabled"], pingPongClockEnabled);
-      configComplete &= getJsonValue(top["baseH"], baseH);
-      configComplete &= getJsonValue(top["baseHH"], baseHH);
-      configComplete &= getJsonValue(top["baseM"], baseM);
-      configComplete &= getJsonValue(top["baseMM"], baseMM);
-      configComplete &= getJsonValue(top["colon1"], colon1);
-      configComplete &= getJsonValue(top["colon2"], colon2);
       configComplete &= getJsonValue(top["colorR"], colorR);
       configComplete &= getJsonValue(top["colorG"], colorG);
       configComplete &= getJsonValue(top["colorB"], colorB);
 
       return configComplete;
-    // default settings values could be set here (or below using the 3-argument getJsonValue()) instead of in the class definition or constructor
-    // setting them inside readFromConfig() is slightly more robust, handling the rare but plausible use case of single value being missing after boot (e.g. if the cfg.json was manually edited and a value was removed)
   }
 
   void drawNumber(int base, int number)
@@ -257,6 +236,4 @@ public:
     return USERMOD_ID_PING_PONG_CLOCK;
   }
 
-  // More methods can be added in the future, this example will then be extended.
-  // Your usermod will remain compatible as it does not need to implement all methods from the Usermod base class!
 };
