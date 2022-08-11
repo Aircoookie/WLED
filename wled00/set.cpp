@@ -880,7 +880,11 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
     Segment& seg = strip.getSegment(i);
     if (i != selectedSeg && (singleSegment || !seg.isActive() || !seg.isSelected())) continue; // skip non main segments if not applying to all
-    if (fxModeChanged)  { seg.mode      = effectIn; seg.markForReset(); }
+    if (fxModeChanged)  {
+      seg.startTransition(strip.getTransition());
+      seg.mode = effectIn;
+      // TODO: we should load defaults here as well
+    }
     if (speedChanged)     seg.speed     = speedIn;
     if (intensityChanged) seg.intensity = intensityIn;
     if (paletteChanged) {

@@ -182,7 +182,7 @@ void Segment::deallocateData() {
 void Segment::resetIfRequired() {
   if (reset) {
     if (leds && !Segment::_globalLeds) { free(leds); leds = nullptr; }
-    if (_t) _t->_dur = 0;
+    //if (_t) { delete _t; _t = nullptr; transitional = false; }
     next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0; 
     reset = false; // setOption(SEG_OPTION_RESET, false);
   }
@@ -225,7 +225,7 @@ void Segment::startTransition(uint16_t dur) {
 uint16_t Segment::progress() {
   if (!transitional || !_t) return 0xFFFFU;
   uint32_t timeNow = millis();
-  if (timeNow - _t->_start > _t->_dur) return 0xFFFFU;
+  if (timeNow - _t->_start > _t->_dur || _t->_dur == 0) return 0xFFFFU;
   return (timeNow - _t->_start) * 0xFFFFU / _t->_dur;
 }
 
