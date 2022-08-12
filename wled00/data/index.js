@@ -1033,7 +1033,12 @@ function updateLen(s)
 		start = parseInt(gId(`seg${s}sY`).value);
 		stop = parseInt(gId(`seg${s}eY`).value);
 		len *= (stop-(cfg.comp.seglen?0:start));
-		if (stop-start>1) gId(`seg${s}map2D`).classList.remove("hide"); else gId(`seg${s}map2D`).classList.add("hide");
+		let sE = gId('fxlist').querySelector(`.lstI[data-id="${selectedFx}"]`);
+		if (sE) {
+			let sN = sE.querySelector(".lstIname").innerText;
+			let seg = gId(`seg${s}map2D`);
+			if (stop-start>1 && sN.indexOf("\u25A6")<0) seg.classList.remove("hide"); else seg.classList.add("hide");
+		}
 	}
 	var out = "(delete)";
 	if (len > 1) {

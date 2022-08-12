@@ -1241,7 +1241,10 @@ uint16_t mode_rain()
   if (SEGENV.step > SPEED_FORMULA_L) {
     SEGENV.step = 1;
     if (strip.isMatrix) {
+      uint32_t ctemp[width];
+      for (int i = 0; i<width; i++) ctemp[i] = SEGMENT.getPixelColorXY(i, height-1);
       SEGMENT.move(6,1);  // move all pixels down
+      for (int i = 0; i<width; i++) SEGMENT.setPixelColorXY(i, 0, ctemp[i]); // wrap around
       SEGENV.aux0 = (SEGENV.aux0 % width) + (SEGENV.aux0 / width + 1) * width;
       SEGENV.aux1 = (SEGENV.aux1 % width) + (SEGENV.aux1 / width + 1) * width;
     } else {
@@ -5670,7 +5673,7 @@ uint16_t mode_2Dghostrider(void) {
   const size_t maxLighters = min(cols + rows, LIGHTERS_AM);
 
   if (SEGENV.call == 0) SEGMENT.setUpLeds();
-  if (SEGENV.call == 0 || SEGENV.aux0 != cols || SEGENV.aux1 != rows) {
+  if (SEGENV.aux0 != cols || SEGENV.aux1 != rows) {
     SEGENV.aux0 = cols;
     SEGENV.aux1 = rows;
     SEGMENT.fill(BLACK);
@@ -5755,8 +5758,8 @@ uint16_t mode_2Dfloatingblobs(void) {
   blob_t *blob = reinterpret_cast<blob_t*>(SEGENV.data);
 
   if (SEGENV.call == 0) SEGMENT.setUpLeds();
-  if (SEGENV.call == 0 || SEGENV.aux0 != cols || SEGENV.aux1 != rows) {
-    SEGENV.aux0 = cols;
+  if (SEGENV.aux0 != cols || SEGENV.aux1 != rows) {
+    SEGENV.aux0 = cols; // re-initialise if virtual size changes
     SEGENV.aux1 = rows;
     SEGMENT.fill(BLACK);
     for (size_t i = 0; i < MAX_BLOBS; i++) {
@@ -5792,7 +5795,7 @@ uint16_t mode_2Dfloatingblobs(void) {
       }
     }
     uint32_t c = SEGMENT.color_from_palette(blob->color[i], false, false, 0);
-    if (blob->r[i] > 1.f) SEGMENT.fill_circle(blob->y[i], blob->x[i], blob->r[i], c);
+    if (blob->r[i] > 1.f) SEGMENT.fill_circle(blob->y[i], blob->x[i], roundf(blob->r[i]), c);
     else                  SEGMENT.setPixelColorXY(blob->y[i], blob->x[i], c);
     // move x
     if (blob->x[i] + blob->r[i] >= cols - 1) blob->x[i] += (blob->sX[i] * ((cols - 1 - blob->x[i]) / blob->r[i] + 0.005f));
@@ -5804,21 +5807,21 @@ uint16_t mode_2Dfloatingblobs(void) {
     else                                     blob->y[i] += blob->sY[i];
     // bounce x
     if (blob->x[i] < 0.01f) {
-      blob->sX[i] = (float) random8(3, cols) / (256 - SEGMENT.speed);
+      blob->sX[i] = (float)random8(3, cols) / (256 - SEGMENT.speed);
       blob->x[i]  = 0.01f;
-    } else if (blob->x[i] > cols - 1.01f) {
-      blob->sX[i] = (float) random8(3, cols) / (256 - SEGMENT.speed);
+    } else if (blob->x[i] > (float)cols - 1.01f) {
+      blob->sX[i] = (float)random8(3, cols) / (256 - SEGMENT.speed);
       blob->sX[i] = -blob->sX[i];
-      blob->x[i]  = cols - 1.01f;
+      blob->x[i]  = (float)cols - 1.01f;
     }
     // bounce y
     if (blob->y[i] < 0.01f) {
-      blob->sY[i] = (float) random8(3, rows) / (256 - SEGMENT.speed);
+      blob->sY[i] = (float)random8(3, rows) / (256 - SEGMENT.speed);
       blob->y[i]  = 0.01f;
-    } else if (blob->y[i] > rows - 1.01f) {
-      blob->sY[i] = (float) random8(3, rows) / (256 - SEGMENT.speed);
+    } else if (blob->y[i] > (float)rows - 1.01f) {
+      blob->sY[i] = (float)random8(3, rows) / (256 - SEGMENT.speed);
       blob->sY[i] = -blob->sY[i];
-      blob->y[i]  = rows - 1.01f;
+      blob->y[i]  = (float)rows - 1.01f;
     }
   }
   SEGMENT.blur(SEGMENT.custom1>>2);
@@ -5828,7 +5831,7 @@ uint16_t mode_2Dfloatingblobs(void) {
   return FRAMETIME;
 }
 #undef MAX_BLOBS
-static const char _data_FX_MODE_2DBLOBS[] PROGMEM = "Blobs@!,# blobs,Blur;!,!,!;!;c1=8,2d";
+static const char _data_FX_MODE_2DBLOBS[] PROGMEM = "Blobs@!,# blobs,Blur;!,!,;!;c1=8,2d";
 
 
 ////////////////////////////
@@ -5887,7 +5890,7 @@ uint16_t mode_2Dscrollingtext(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_2DSCROLLTEXT[] PROGMEM = "Scrolling Text@!,Y Offset,Trail,Font size;!,!;!;ix=128,c1=0,rev=0,mi=0,rY=0,mY=0,2d";
+static const char _data_FX_MODE_2DSCROLLTEXT[] PROGMEM = "Scrolling Text@!,Y Offset,Trail,Font size;!,!;!;ix=96,c1=0,rev=0,mi=0,rY=0,mY=0,2d";
 
 
 ////////////////////////////
@@ -5900,8 +5903,8 @@ uint16_t mode_2Ddriftrose(void) {
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  const float CX = cols/2.f - .5f;
-  const float CY = rows/2.f - .5f;
+  const float CX = (cols-cols%2)/2.f - .5f;
+  const float CY = (rows-rows%2)/2.f - .5f;
   const float L = min(cols, rows) / 2.f;
 
   if (SEGENV.call == 0) {
