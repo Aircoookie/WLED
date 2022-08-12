@@ -4,9 +4,93 @@
 
 // #define WEATHER_DEBUG
 
-//forward declarations as usermod class needs them
-uint16_t mode_2DWeather(void);
-//would like _data_FX_MODE_2DWEATHER after effect declaration but due to class static vars not possible...
+//declare weathermod global variables (always precede with weather_ (psuedo class static variables)
+static uint32_t usermods_pushLoop = 0; //effect pushes loop to execute. might be interesting for audioreactive too
+static uint8_t  weather_units = 1; //config var metric (celsius) is default. (Standard=Kelvin, Imperial is Fahrenheit)
+static float    weather_minTemp = 0; //config var
+static float    weather_maxTemp = 40; //config var
+static float    weather_temps[100]; //array of temperatures
+static time_t   weather_times[100]; //array of corresponding times
+
+//effect function
+uint16_t mode_2DWeather(void) { 
+
+  usermods_pushLoop = millis(); //will be reset to 0 in usermod loop
+
+  SEGMENT.fadeToBlackBy(10);
+
+  float currentTemp = 0;
+  // time_t currentTime = 0;
+
+  for (int x=0; x<SEGMENT.virtualWidth(); x++) {
+    CRGB color;
+    currentTemp = weather_temps[0];
+    // currentTime = weather_times[0];
+    if (weather_times[x%100] < localTime && weather_times[(x+1)%100] >= localTime) {
+      color = RED;
+      currentTemp = map(localTime, weather_times[x%100], weather_times[(x+1)%100], weather_temps[x%100] * 1000, weather_temps[(x+1)%100] * 1000) / 1000.0;
+      // currentTime = localTime;
+    }
+    else
+      color = ColorFromPalette(SEGPALETTE, map((uint8_t)weather_temps[x%100], 0, 40, 0, 255), 255, LINEARBLEND);
+
+    for (int y=0; y<SEGMENT.virtualHeight() * (weather_temps[x%100]-weather_minTemp)/(weather_maxTemp - weather_minTemp); y++) {
+      SEGMENT.setPixelColorXY(x, SEGMENT.virtualHeight() - y, color);
+    }
+    // Serial.print(" ");
+    // Serial.print(weather_temps[x%16]);
+  }
+  if (localTime < weather_times[0])
+    currentTemp = map(localTime, weather_times[0], weather_times[1], weather_temps[0] * 1000, weather_temps[1] * 1000) / 1000.0;
+
+  // Serial.print(" time ");
+
+  // char timeString[64];
+  // epochToString(currentTime, timeString);
+  // Serial.print(timeString);
+
+  // Serial.print(" temp ");
+
+  char tempString[5] = "";
+  sprintf(tempString, "%5.2f", currentTemp);
+  // Serial.println();
+
+  CRGB color = ColorFromPalette(SEGPALETTE, map((uint8_t)currentTemp, 0, 40, 0, 255), 255, LINEARBLEND);
+  //really don't understand why this is not working if width < 16 (only works when Serial.println is uncommented ???)
+  // uint16_t x = 0;
+  // const uint16_t xSpace = (SEGMENT.virtualWidth()<16)?4:5;
+  // SEGMENT.drawCharacter(tempString[0], x, -2, 5, 8, color);
+  // // Serial.printf("%d %d", x, xSpace);
+  // x += xSpace;
+  // SEGMENT.drawCharacter(tempString[1], x, -2, 5, 8, color);
+  // // Serial.printf("  %d %d", x, xSpace);
+  // x += xSpace;
+  // SEGMENT.setPixelColorXY(x, 4, color);
+  // // Serial.printf("  %d %d", x, xSpace);
+  // x += (SEGMENT.virtualWidth()<16)?1:2;
+  // SEGMENT.drawCharacter(tempString[3], x, -2, 5, 8, color);
+  // // Serial.printf("  %d %d", x, xSpace);
+  // x += xSpace;
+  // SEGMENT.drawCharacter(tempString[4], x, -2, 5, 8, color);
+  // // Serial.printf("  %d %d\n", x, xSpace);
+
+ if (SEGMENT.virtualWidth() < 16) {
+    SEGMENT.drawCharacter(tempString[0], 0, -2, 5, 8, color);
+    SEGMENT.drawCharacter(tempString[1], 4, -2, 5, 8, color);
+    SEGMENT.setPixelColorXY(8, 4, color);
+    SEGMENT.drawCharacter(tempString[3], 9, -2, 5, 8, color);
+  }
+  else {
+    SEGMENT.drawCharacter(tempString[0], 0, -2, 5, 8, color);
+    SEGMENT.drawCharacter(tempString[1], 5, -2, 5, 8, color);
+    SEGMENT.setPixelColorXY(10, 4, color);
+    SEGMENT.drawCharacter(tempString[3], 12, -2, 5, 8, color);
+    SEGMENT.drawCharacter(tempString[4], 17, -2, 5, 8, color);
+  }
+
+  return FRAMETIME;
+}
+
 static const char _data_FX_MODE_2DWEATHER[] PROGMEM = "Weather@;!;!;pal=54,2d"; //temperature palette
 
 //utility function, move somewhere else???
@@ -56,19 +140,12 @@ class WeatherUsermod : public Usermod {
   private:
     // strings to reduce flash memory usage (used more than twice)
     static const char _name[]; //usermod name
-    static String apiKey; //config var
+    String apiKey = ""; //config var
 
     unsigned long lastTime = 0; //will be used to download new forecast every hour
     char errorMessage[100] = "";
 
   public:
-    //declare class static variables used in weather effect
-    static uint8_t  units; //config var metric (celsius) is default. (Standard=Kelvin, Imperial is Fahrenheit)
-    static float    minTemp; //config var
-    static float    maxTemp; //config var
-    static uint32_t pushLoop; //effect pushes loop to execute. might be interesting for audioreactive too
-    static float    temps[100]; //array of temperatures
-    static time_t   times[100]; //array of corresponding times
 
     void setup() {
       strip.addEffect(255, &mode_2DWeather, _data_FX_MODE_2DWEATHER);
@@ -79,13 +156,13 @@ class WeatherUsermod : public Usermod {
 
     void loop() {
       //execute only if effect pushes it or every hour
-      if (pushLoop > millis() - 1000 && (lastTime == 0 || millis() - lastTime > 3600 * 1000)) {
+      if (usermods_pushLoop > millis() - 1000 && (lastTime == 0 || millis() - lastTime > 3600 * 1000)) {
         lastTime = millis();
 
         WiFiClient client;
 
         char url[180];
-        sprintf(url, "GET /data/2.5/forecast?lat=%f&lon=%f&appid=%s&units=%s HTTP/1.0", latitude, longitude, apiKey.c_str(), units==0?"standard":units==1?"metric":"imperial");
+        sprintf(url, "GET /data/2.5/forecast?lat=%f&lon=%f&appid=%s&units=%s HTTP/1.0", latitude, longitude, apiKey.c_str(), weather_units==0?"standard":weather_units==1?"metric":"imperial");
         #ifdef WEATHER_DEBUG
           Serial.println(url);
         #endif
@@ -93,7 +170,6 @@ class WeatherUsermod : public Usermod {
         httpGet(client, url, errorMessage);
 
         if (strcmp(errorMessage, "") == 0) {
-          Serial.println("after httpget");
           // Allocate the JSON document
           // Use arduinojson.org/v6/assistant to compute the capacity.
           // const size_t capacity = JSON_OBJECT_SIZE(3) + JSON_ARRAY_SIZE(2) + 60;
@@ -117,10 +193,10 @@ class WeatherUsermod : public Usermod {
 
             uint8_t i = 0;
             for (JsonObject listElement: list) {
-              times[i%100] = listElement["dt"]; 
+              weather_times[i%100] = listElement["dt"]; 
 
               JsonObject main = listElement["main"];
-              temps[i%100] = main["temp"]; 
+              weather_temps[i%100] = main["temp"]; 
 
               #ifdef WEATHER_DEBUG
                 char timeString[64];
@@ -128,7 +204,7 @@ class WeatherUsermod : public Usermod {
                 Serial.print(timeString);
 
                 Serial.print(" temp ");
-                Serial.print(temps[i%100]);
+                Serial.print(weather_temps[i%100]);
 
                 Serial.print(" city ");
                 Serial.print(errorMessage);
@@ -155,7 +231,7 @@ class WeatherUsermod : public Usermod {
         client.stop();
 
       }
-      pushLoop = 0;
+      usermods_pushLoop = 0;
     }
 
     /*
@@ -199,9 +275,9 @@ class WeatherUsermod : public Usermod {
     {
       JsonObject top = root.createNestedObject(FPSTR(_name));
       top[F("apiKey")] = apiKey;
-      top[F("units")]   = units;
-      top[F("minTemp")] = minTemp;
-      top[F("maxTemp")] = maxTemp;
+      top[F("units")]   = weather_units;
+      top[F("minTemp")] = weather_minTemp;
+      top[F("maxTemp")] = weather_maxTemp;
     }
 
 
@@ -212,9 +288,9 @@ class WeatherUsermod : public Usermod {
       bool configComplete = !top.isNull();
 
       configComplete &= getJsonValue(top[F("apiKey")], apiKey);
-      configComplete &= getJsonValue(top[F("units")], units);
-      configComplete &= getJsonValue(top[F("minTemp")], minTemp);
-      configComplete &= getJsonValue(top[F("maxTemp")], maxTemp);
+      configComplete &= getJsonValue(top[F("units")], weather_units);
+      configComplete &= getJsonValue(top[F("minTemp")], weather_minTemp);
+      configComplete &= getJsonValue(top[F("maxTemp")], weather_maxTemp);
 
       //  * Return true in case the config values returned from Usermod Settings were complete, or false if you'd like WLED to save your defaults to disk (so any missing values are editable in Usermod Settings)
       return configComplete;
@@ -254,74 +330,3 @@ class WeatherUsermod : public Usermod {
 
 // strings to reduce flash memory usage (used more than twice)
 const char WeatherUsermod::_name[]       PROGMEM = "WeatherUserMod";
-
-//define class static variables used in weather effect
-String   WeatherUsermod::apiKey = ""; //config var
-float    WeatherUsermod::minTemp = 0; //config var
-float    WeatherUsermod::maxTemp = 40; //config var
-uint8_t  WeatherUsermod::units = 1; //config var: metric (celsius) is default. (Standard=Kelvin, Imperial is Fahrenheit)
-uint32_t WeatherUsermod::pushLoop = 0;
-float    WeatherUsermod::temps[100]; //array of temperatures
-time_t   WeatherUsermod::times[100]; //array of corresponding times
-
-//effect function
-uint16_t mode_2DWeather(void) { 
-
-  WeatherUsermod::pushLoop = millis(); //will be reset to 0 in usermod loop
-
-  SEGMENT.fadeToBlackBy(10);
-
-  float currentTemp = 0;
-  // time_t currentTime = 0;
-
-  for (int x=0; x<SEGMENT.virtualWidth(); x++) {
-    CRGB color;
-    currentTemp = WeatherUsermod::temps[0];
-    // currentTime = times[0];
-    if (WeatherUsermod::times[x%100] < localTime && WeatherUsermod::times[(x+1)%100] >= localTime) {
-      color = RED;
-      currentTemp = map(localTime, WeatherUsermod::times[x%100], WeatherUsermod::times[(x+1)%100], WeatherUsermod::temps[x%100] * 1000, WeatherUsermod::temps[(x+1)%100] * 1000) / 1000.0;
-      // currentTime = localTime;
-    }
-    else
-      color = ColorFromPalette(SEGPALETTE, map((uint8_t)WeatherUsermod::temps[x%100], 0, 40, 0, 255), 255, LINEARBLEND);
-
-    for (int y=0; y<SEGMENT.virtualHeight() * (WeatherUsermod::temps[x%100]-WeatherUsermod::minTemp)/(WeatherUsermod::maxTemp - WeatherUsermod::minTemp); y++) {
-      SEGMENT.setPixelColorXY(x, SEGMENT.virtualHeight() - y, color);
-    }
-    // Serial.print(" ");
-    // Serial.print(temps[x%16]);
-  }
-  if (localTime < WeatherUsermod::times[0])
-    currentTemp = map(localTime, WeatherUsermod::times[0], WeatherUsermod::times[1], WeatherUsermod::temps[0] * 1000, WeatherUsermod::temps[1] * 1000) / 1000.0;
-
-  // Serial.print(" time ");
-
-  // char timeString[64];
-  // epochToString(currentTime, timeString);
-  // Serial.print(timeString);
-
-  // Serial.print(" temp ");
-
-  char tempString[5] = "";
-  sprintf(tempString, "%5.2f", currentTemp);
-  // Serial.println();
-
-  CRGB color = ColorFromPalette(SEGPALETTE, map((uint8_t)currentTemp, 0, 40, 0, 255), 255, LINEARBLEND);
-
-  if (SEGMENT.virtualWidth() < 16) {
-    SEGMENT.drawCharacter(tempString[0], 0, -2, 5, 8, color);
-    SEGMENT.drawCharacter(tempString[1], 4, -2, 5, 8, color);
-    SEGMENT.setPixelColorXY(8, 4, color);
-    SEGMENT.drawCharacter(tempString[3], 9, -2, 5, 8, color);
-  }
-  else {
-    SEGMENT.drawCharacter(tempString[0], 0, -2, 5, 8, color);
-    SEGMENT.drawCharacter(tempString[1], 5, -2, 5, 8, color);
-    SEGMENT.setPixelColorXY(10, 4, color);
-    SEGMENT.drawCharacter(tempString[3], 12, -2, 5, 8, color);
-    SEGMENT.drawCharacter(tempString[4], 17, -2, 5, 8, color);
-  }
-
-  return FRAMETIME;
-}
