@@ -4533,14 +4533,14 @@ uint16_t mode_wavesins(void) {
 
   for (int i = 0; i < SEGLEN; i++) {
     uint8_t bri = sin8(millis()/4 + i * SEGMENT.intensity);
-    uint8_t index = beatsin8(SEGMENT.speed, SEGMENT.custom1, SEGMENT.custom1+SEGMENT.custom2, 0, i * SEGMENT.custom3);
+    uint8_t index = beatsin8(SEGMENT.speed, SEGMENT.custom1, SEGMENT.custom1+SEGMENT.custom2, 0, i * (SEGMENT.custom3<<3)); // custom3 is reduced resolution slider
     //SEGMENT.setPixelColor(i, ColorFromPalette(SEGPALETTE, index, bri, LINEARBLEND));
     SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0, bri));
   }
 
   return FRAMETIME;
 } // mode_waveins()
-static const char _data_FX_MODE_WAVESINS[] PROGMEM = "Wavesins@Speed,Brightness variation,Starting Color,Range of Colors,Color variation;!;!;1d";
+static const char _data_FX_MODE_WAVESINS[] PROGMEM = "Wavesins@!,Brightness variation,Starting color,Range of colors,Color variation;!;!;1d";
 
 
 //////////////////////////////
@@ -4597,7 +4597,7 @@ uint16_t mode_2DBlackHole(void) {            // By: Stepko https://editor.soulma
   // inner stars
   for (size_t i = 0; i < 4; i++) {
     x = beatsin8(SEGMENT.custom2>>3, cols/4, cols - 1 - cols/4, 0, ((i % 2) ? 128 : 0) + t * i);
-    y = beatsin8(SEGMENT.custom3>>3, rows/4, rows - 1 - rows/4, 0, ((i % 2) ? 192 : 64) + t * i);
+    y = beatsin8(SEGMENT.custom3   , rows/4, rows - 1 - rows/4, 0, ((i % 2) ? 192 : 64) + t * i);
     SEGMENT.addPixelColorXY(x, y, CHSV(i*32, 255, 255));
   }
   // central white dot
@@ -4983,15 +4983,15 @@ uint16_t mode_2DJulia(void) {                           // An animated Julia set
 
     SEGMENT.custom1 = 128;              // Make sure the location widgets are centered to start.
     SEGMENT.custom2 = 128;
-    SEGMENT.custom3 = 128;
+    SEGMENT.custom3 = 16;
     SEGMENT.intensity = 24;
   }
 
-  julias->xcen = julias->xcen + (float)(SEGMENT.custom1 - 128)/100000.;
-  julias->ycen = julias->ycen + (float)(SEGMENT.custom2 - 128)/100000.;
-  julias->xymag = julias->xymag + (float)(SEGMENT.custom3-128)/100000.;
-  if (julias->xymag < 0.01) julias->xymag = 0.01;
-  if (julias->xymag > 1.0) julias->xymag = 1.0;
+  julias->xcen  = julias->xcen  + (float)(SEGMENT.custom1 - 128)/100000.f;
+  julias->ycen  = julias->ycen  + (float)(SEGMENT.custom2 - 128)/100000.f;
+  julias->xymag = julias->xymag + (float)((SEGMENT.custom3 - 16)<<3)/100000.f; // reduced resolution slider
+  if (julias->xymag < 0.01f) julias->xymag = 0.01f;
+  if (julias->xymag > 1.0f) julias->xymag = 1.0f;
 
   float xmin = julias->xcen - julias->xymag;
   float xmax = julias->xcen + julias->xymag;
@@ -4999,10 +4999,10 @@ uint16_t mode_2DJulia(void) {                           // An animated Julia set
   float ymax = julias->ycen + julias->xymag;
 
   // Whole set should be within -1.2,1.2 to -.8 to 1.
-  xmin = constrain(xmin,-1.2,1.2);
-  xmax = constrain(xmax,-1.2,1.2);
-  ymin = constrain(ymin,-.8,1.0);
-  ymax = constrain(ymax,-.8,1.0);
+  xmin = constrain(xmin, -1.2f, 1.2f);
+  xmax = constrain(xmax, -1.2f, 1.2f);
+  ymin = constrain(ymin, -0.8f, 1.0f);
+  ymax = constrain(ymax, -0.8f, 1.0f);
 
   float dx;                       // Delta x is mapped to the matrix size.
   float dy;                       // Delta y is mapped to the matrix size.
@@ -5014,11 +5014,11 @@ uint16_t mode_2DJulia(void) {                           // An animated Julia set
 
 
   // Resize section on the fly for some animaton.
-  reAl = -0.94299;                // PixelBlaze example
-  imAg = 0.3162;
+  reAl = -0.94299f;               // PixelBlaze example
+  imAg = 0.3162f;
 
-  reAl += sin((float)millis()/305.)/20.;
-  imAg += sin((float)millis()/405.)/20.;
+  reAl += sin_t((float)millis()/305.f)/20.f;
+  imAg += sin_t((float)millis()/405.f)/20.f;
 
   dx = (xmax - xmin) / (cols);     // Scale the delta x and y values to our matrix size.
   dy = (ymax - ymin) / (rows);
@@ -5064,7 +5064,7 @@ uint16_t mode_2DJulia(void) {                           // An animated Julia set
 
   return FRAMETIME;
 } // mode_2DJulia()
-static const char _data_FX_MODE_2DJULIA[] PROGMEM = "Julia@,Max iterations per pixel,X center,Y center,Area size;;!;2d";
+static const char _data_FX_MODE_2DJULIA[] PROGMEM = "Julia@,Max iterations per pixel,X center,Y center,Area size;;!;ix=24,c1=128,c2=128,c3=16,2d";
 
 
 //////////////////////////////
@@ -5113,7 +5113,7 @@ uint16_t mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy Williams.
 
   CRGB spawnColor;
   CRGB trailColor;
-  if (SEGMENT.custom2 > 128) {
+  if (SEGMENT.check1) {
     spawnColor = SEGCOLOR(0);
     trailColor = SEGCOLOR(1);
   } else {
@@ -5154,7 +5154,7 @@ uint16_t mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy Williams.
 
   return FRAMETIME;
 } // mode_2Dmatrix()
-static const char _data_FX_MODE_2DMATRIX[] PROGMEM = "Matrix@Falling speed,Spawning rate,Trail,Custom color;Spawn,Trail;;pal=0,2d";
+static const char _data_FX_MODE_2DMATRIX[] PROGMEM = "Matrix@Falling speed,Spawning rate,Trail,,,Custom color,,;Spawn,Trail;;pal=0,2d";
 
 
 /////////////////////////
@@ -5415,7 +5415,7 @@ uint16_t mode_2Dsquaredswirl(void) {            // By: Mark Kriegsman. https://g
 
   SEGMENT.fadeToBlackBy(24);
 
-  uint8_t blurAmount = SEGMENT.custom3>>4;
+  uint8_t blurAmount = SEGMENT.custom3>>1; // reduced resolution slider
   SEGMENT.blur(blurAmount);
 
   // Use two out-of-sync sine waves
@@ -5983,12 +5983,12 @@ uint16_t mode_ripplepeak(void) {                // * Ripple peak. By Andrew Tuli
 
   if (SEGENV.call == 0) {
     SEGENV.aux0 = 255;
-    SEGMENT.custom2 = *binNum;
-    SEGMENT.custom3 = *maxVol * 2;
+    SEGMENT.custom1 = *binNum;
+    SEGMENT.custom2 = *maxVol * 2;
   }
 
-  *binNum = SEGMENT.custom2;                              // Select a bin.
-  *maxVol = SEGMENT.custom3/2;                            // Our volume comparator.
+  *binNum = SEGMENT.custom1;                              // Select a bin.
+  *maxVol = SEGMENT.custom2 / 2;                          // Our volume comparator.
 
   SEGMENT.fade_out(240);                                  // Lower frame rate means less effective fading than FastLED
   SEGMENT.fade_out(240);
@@ -6029,7 +6029,7 @@ uint16_t mode_ripplepeak(void) {                // * Ripple peak. By Andrew Tuli
 
   return FRAMETIME;
 } // mode_ripplepeak()
-static const char _data_FX_MODE_RIPPLEPEAK[] PROGMEM = "Ripple Peak@Fade rate,Max # of ripples,,Select bin,Volume (minimum);!,!;!;c3=0,mp12=0,ssim=0,1d,vo"; // Pixel, Beatsin
+static const char _data_FX_MODE_RIPPLEPEAK[] PROGMEM = "Ripple Peak@Fade rate,Max # of ripples,Select bin,Volume (minimum);!,!;!;c2=0,mp12=0,ssim=0,1d,vo"; // Pixel, Beatsin
 
 
 #ifndef WLED_DISABLE_2D
@@ -6532,17 +6532,17 @@ uint16_t mode_puddlepeak(void) {                // Puddlepeak. By Andrew Tuline.
   float   volumeSmth   = *(float*)  um_data->u_data[0];
 
   if (SEGENV.call == 0) {
-    SEGMENT.custom2 = *binNum;
-    SEGMENT.custom3 = *maxVol * 2;
+    SEGMENT.custom1 = *binNum;
+    SEGMENT.custom2 = *maxVol * 2;
   }
 
-  *binNum = SEGMENT.custom2;                               // Select a bin.
-  *maxVol = SEGMENT.custom3/4;                             // Our volume comparator.
+  *binNum = SEGMENT.custom1;                              // Select a bin.
+  *maxVol = SEGMENT.custom2 / 2;                          // Our volume comparator.
 
   SEGMENT.fade_out(fadeVal);
 
   if (samplePeak == 1) {
-    size = volumeSmth * SEGMENT.intensity /256 /4 + 1;     // Determine size of the flash based on the volume.
+    size = volumeSmth * SEGMENT.intensity /256 /4 + 1;    // Determine size of the flash based on the volume.
     if (pos+size>= SEGLEN) size = SEGLEN - pos;
   }
 
@@ -6552,7 +6552,7 @@ uint16_t mode_puddlepeak(void) {                // Puddlepeak. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_puddlepeak()
-static const char _data_FX_MODE_PUDDLEPEAK[] PROGMEM = "Puddlepeak@Fade rate,Puddle size,,Select bin,Volume (minimum);!,!;!;c3=0,mp12=0,ssim=0,1d,vo"; // Pixels, Beatsin
+static const char _data_FX_MODE_PUDDLEPEAK[] PROGMEM = "Puddlepeak@Fade rate,Puddle size,Select bin,Volume (minimum);!,!;!;c2=0,mp12=0,ssim=0,1d,vo"; // Pixels, Beatsin
 
 
 //////////////////////
@@ -6745,7 +6745,7 @@ uint16_t mode_freqmatrix(void) {                // Freqmatrix. By Andreas Plesch
   if(SEGENV.aux0 != secondHand) {
     SEGENV.aux0 = secondHand;
 
-    uint8_t sensitivity = map(SEGMENT.custom3, 0, 255, 1, 10);
+    uint8_t sensitivity = map(SEGMENT.custom3, 0, 31, 1, 10); // reduced resolution slider
     int pixVal = (volumeSmth * SEGMENT.intensity * sensitivity) / 256.0f;
     if (pixVal > 255) pixVal = 255;
 
@@ -6842,10 +6842,7 @@ uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschun
   if(SEGENV.aux0 != secondHand) {
     SEGENV.aux0 = secondHand;
 
-    //uint8_t fade = SEGMENT.custom3;
-    //uint8_t fadeval;
-
-    float sensitivity = mapf(SEGMENT.custom3, 1, 255, 1, 10);
+    float sensitivity = mapf(SEGMENT.custom3, 1, 31, 1, 10); // reduced resolution slider
     float pixVal = volumeSmth * (float)SEGMENT.intensity / 256.0f * sensitivity;
     if (pixVal > 255) pixVal = 255;
 
@@ -7014,12 +7011,12 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
     SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
     SEGENV.aux0 = 255;
-    SEGMENT.custom2 = *binNum;
-    SEGMENT.custom3 = *maxVol * 2;
+    SEGMENT.custom1 = *binNum;
+    SEGMENT.custom2 = *maxVol * 2;
   }
 
-  *binNum = SEGMENT.custom2;                              // Select a bin.
-  *maxVol = SEGMENT.custom3/2;                            // Our volume comparator.
+  *binNum = SEGMENT.custom1;                              // Select a bin.
+  *maxVol = SEGMENT.custom2 / 2;                          // Our volume comparator.
 
   uint8_t secondHand = micros() / (256-SEGMENT.speed)/500 + 1 % 16;
   if (SEGENV.aux0 != secondHand) {                        // Triggered millis timing.
@@ -7037,7 +7034,7 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
 
   return FRAMETIME;
 } // mode_waterfall()
-static const char _data_FX_MODE_WATERFALL[] PROGMEM = "Waterfall@!,Adjust color,,Select bin, Volume (minimum);!,!;!;c3=0,mp12=2,ssim=0,1d,fr"; // Circles, Beatsin
+static const char _data_FX_MODE_WATERFALL[] PROGMEM = "Waterfall@!,Adjust color,Select bin,Volume (minimum);!,!;!;c2=0,mp12=2,ssim=0,1d,fr"; // Circles, Beatsin
 
 
 #ifndef WLED_DISABLE_2D
@@ -7079,7 +7076,7 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
 
     uint32_t ledColor = BLACK;
     for (int y=0; y < barHeight; y++) {
-      if (SEGMENT.custom2 > 128) //color_vertical / color bars toggle 
+      if (SEGMENT.check1) //color_vertical / color bars toggle 
         colorIndex = map(y, 0, rows-1, 0, 255);
 
       ledColor = SEGMENT.color_from_palette(colorIndex, false, PALETTE_SOLID_WRAP, 0);
@@ -7093,7 +7090,7 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
 
   return FRAMETIME;
 } // mode_2DGEQ()
-static const char _data_FX_MODE_2DGEQ[] PROGMEM = "GEQ@Fade speed,Ripple decay,# of bands,Color bars;!,,Peak Color;!;c1=255,c2=64,pal=11,ssim=0,2d,fr"; // Beatsin
+static const char _data_FX_MODE_2DGEQ[] PROGMEM = "GEQ@Fade speed,Ripple decay,# of bands,,,Color bars,,;!,,Peak Color;!;c1=255,c2=64,pal=11,ssim=0,2d,fr"; // Beatsin
 
 
 /////////////////////////

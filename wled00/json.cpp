@@ -222,7 +222,13 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   }
   getVal(elem[F("c1")], &seg.custom1);
   getVal(elem[F("c2")], &seg.custom2);
-  getVal(elem[F("c3")], &seg.custom3);
+  uint8_t cust3 = seg.custom3;
+  getVal(elem[F("c3")], &cust3); // we can't pass reference to bifield
+  seg.custom3 = cust3;
+
+  seg.check1 = elem[F("o1")] | seg.check1;
+  seg.check2 = elem[F("o2")] | seg.check2;
+  seg.check3 = elem[F("o3")] | seg.check3;
   
   JsonArray iarr = elem[F("i")]; //set individual LEDs
   if (!iarr.isNull()) {
@@ -510,6 +516,9 @@ void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset, b
     root[F("mY")] = seg.getOption(SEG_OPTION_MIRROR_Y);
     root[F("tp")] = seg.getOption(SEG_OPTION_TRANSPOSED);
   }
+  root[F("o1")]  = seg.check1;
+  root[F("o2")]  = seg.check2;
+  root[F("o3")]  = seg.check3;
   root[F("ssim")]  = seg.soundSim;
   root[F("mp12")]  = seg.map1D2D;
 }

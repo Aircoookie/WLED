@@ -200,7 +200,7 @@
 		<div id="fx">
 			<p class="labels hd" id="modeLabel">Effect mode</p>
 			<div class="staytop fnd" id="fxFind">
-				<input type="text" placeholder="Search" oninput="search(this,'fxlist')" onfocus="search(this,'fxlist')" />
+				<input type="text" placeholder="Search" oninput="search(this,'fxlist')" onfocus="search(this,'fxlist');gId('filters').classList.add('fade');" onblur="gId('filters').classList.remove('fade')"/>
 				<i class="icons clear-icon" onclick="clean(this);">&#xe38f;</i>
 				<i class="icons search-icon" onclick="gId('filters').classList.toggle('hide');" style="cursor:pointer;">&#xe0a1;</i>
 			</div>
@@ -260,7 +260,7 @@
 			<div id="slider2" class="slider hide">
 				<i class="icons slider-icon">&#xe410;</i>
 				<div class="sliderwrap il">
-					<input id="sliderC1" class="noslide" onchange="setCustom(1)" oninput="updateTrail(this)" max="255" min="0" type="range" value="6" />
+					<input id="sliderC1" class="noslide" onchange="setCustom(1)" oninput="updateTrail(this)" max="255" min="0" type="range" value="0" />
 					<div class="sliderdisplay"></div>
 				</div>
 				<output class="sliderbubble"></output>
@@ -269,7 +269,7 @@
 			<div id="slider3" class="slider hide">
 				<i class="icons slider-icon">&#xe0a2;</i>
 				<div class="sliderwrap il">
-					<input id="sliderC2" class="noslide" onchange="setCustom(2)" oninput="updateTrail(this)" max="255" min="0" type="range" value="6" />
+					<input id="sliderC2" class="noslide" onchange="setCustom(2)" oninput="updateTrail(this)" max="255" min="0" type="range" value="0" />
 					<div class="sliderdisplay"></div>
 				</div>
 				<output class="sliderbubble"></output>
@@ -278,11 +278,25 @@
 			<div id="slider4" class="slider hide">
 				<i class="icons slider-icon">&#xe0e8;</i>
 				<div class="sliderwrap il">
-					<input id="sliderC3" class="noslide" onchange="setCustom(3)" oninput="updateTrail(this)" max="255" min="0" type="range" value="6" />
+					<input id="sliderC3" class="noslide" onchange="setCustom(3)" oninput="updateTrail(this)" max="31" min="0" type="range" value="0" />
 					<div class="sliderdisplay"></div>
 				</div>
 				<output class="sliderbubble"></output>
 				<span class="tooltiptext" id="sliderLabel4">Custom 3</span>
+			</div>
+			<div id="fxopt" class="option fade">
+				<label id="opt0" class="check ochkl hide"><i class="icons">&#xe2b3;</i><span class="tooltiptext" id="optLabel0">Check 1</span>
+					<input type="checkbox" onchange="setOption(1, this.checked)">
+					<span class="checkmark"></span>
+				</label>
+				<label id="opt1" class="check ochkl hide"><i class="icons">&#xe34b;</i><span class="tooltiptext" id="optLabel1">Check 2</span>
+					<input type="checkbox" onchange="setOption(2, this.checked)">
+					<span class="checkmark"></span>
+				</label>
+				<label id="opt2" class="check ochkl hide"><i class="icons">&#xe04c;</i><span class="tooltiptext" id="optLabel2">Check 3</span>
+					<input type="checkbox" onchange="setOption(3, this.checked)">
+					<span class="checkmark"></span>
+				</label>
 			</div>
 		</div>
 	</div>
