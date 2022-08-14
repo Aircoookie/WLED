@@ -23,10 +23,13 @@
 // Comment/Uncomment to toggle usb serial debugging
 // #define MIC_LOGGER                   // MIC sampling & sound input debugging (serial plotter)
 // #define FFT_SAMPLING_LOG             // FFT result debugging
-// #define SR_DEBUG                     // generic SR DEBUG messages
+// #define SR_DEBUG                     // generic SR DEBUG messages (including MIC_LOGGER)
+// #define NO_MIC_LOGGER                // exclude MIC_LOGGER from SR_DEBUG
 
 // hackers corner
-//#define SOUND_DYNAMICS_LIMITER        // experimental: define to enable a dynamics limiter that avoids "sudden flashes" at onsets. Makes some effects look more "smooth and fluent"
+#if !defined(SOUND_DYNAMICS_LIMITER) && !defined(NO_SOUND_DYNAMICS_LIMITER)
+#define SOUND_DYNAMICS_LIMITER        // experimental: define to enable a dynamics limiter that avoids "sudden flashes" at onsets. Makes some effects look more "smooth and fluent"
+#endif
 
 #ifdef SR_DEBUG
   #define DEBUGSR_PRINT(x) Serial.print(x)
@@ -59,6 +62,10 @@ static uint8_t soundSquelch = 10;             // squelch value for volume reacti
 static uint8_t sampleGain = 60;               // sample gain (config value)
 static uint8_t soundAgc = 0;                  // Automagic gain control: 0 - none, 1 - normal, 2 - vivid, 3 - lazy (config value)
 static uint8_t audioSyncEnabled = 0;          // bit field: bit 0 - send, bit 1 - receive (config value)
+
+// user settable parameters for limitSoundDynamics()
+static int attackTime =  80;          // int: attack time in milliseconds. Default 0.1sec
+static int decayTime = 1400;          // int: decay time in milliseconds.  Default 1.4sec
 
 // 
 // AGC presets
@@ -98,7 +105,7 @@ static float    multAgc = 1.0f;                 // sample * multAgc = sampleAgc.
 
 // FFT Variables
 constexpr uint16_t samplesFFT = 512;            // Samples in an FFT batch - This value MUST ALWAYS be a power of 2
-constexpr uint16_t samplesFFT_2 = 256;          // meaningfull part of FFT results - nly the "lower half" contains usefull information.
+constexpr uint16_t samplesFFT_2 = 256;          // meaningfull part of FFT results - only the "lower half" contains useful information.
 
 static float FFT_MajorPeak = 0.0f;
 static float FFT_Magnitude = 0.0f;
@@ -274,9 +281,12 @@ void FFTcode(void * parameter)
       // Manual linear adjustment of gain using sampleGain adjustment for different input types.
       fftCalc[i] *= soundAgc ? multAgc : ((float)sampleGain/40.0f * (float)inputLevel/128.0f + 1.0f/16.0f); //with inputLevel adjustment
   
+      // smooth results
+      //fftAvg[i]    = fftCalc[i]*0.05f + 0.95f*fftAvg[i];  // will need approx 10 cycles (250ms) for converging against fftCalc[i]
+      fftAvg[i]    = fftCalc[i] *0.1f + 0.9f*fftAvg[i];  // will need approx 5 cycles (125ms) for converging against fftCalc[i]
       // Now, let's dump it all into fftResult. Need to do this, otherwise other routines might grab fftResult values prematurely.
-      fftResult[i] = constrain((int)fftCalc[i], 0, 254);
-      fftAvg[i]    = (float)fftResult[i]*0.05f + 0.95f*fftAvg[i];
+      //fftResult[i] = constrain((int)fftCalc[i], 0, 254);
+      fftResult[i] = constrain((int)fftAvg[i], 0, 254);
     }
 
 #ifdef WLED_DEBUG
@@ -602,10 +612,13 @@ class AudioReactive : public Usermod {
         // this is the minimal code for reading analog mic input on 8266.
         // warning!! Absolutely experimental code. Audio on 8266 is still not working. Expects a million follow-on problems. 
         static unsigned long lastAnalogTime = 0;
+        static float lastAnalogValue = 0.0f;
         if (millis() - lastAnalogTime > 20) {
             micDataReal = analogRead(A0); // read one sample with 10bit resolution. This is a dirty hack, supporting volumereactive effects only.
             lastAnalogTime = millis();
-        }
+            lastAnalogValue = micDataReal;
+            yield();
+        } else micDataReal = lastAnalogValue;
         micIn = int(micDataReal);
         #endif
       #endif
@@ -618,6 +631,7 @@ class AudioReactive : public Usermod {
       float micInNoDC = fabs(micDataReal - micLev);
       expAdjF = (weighting * micInNoDC + (1.0-weighting) * expAdjF);
       expAdjF = (expAdjF <= soundSquelch) ? 0: expAdjF; // simple noise gate
+      if ((soundSquelch == 0) && (expAdjF < 0.25f)) expAdjF = 0; // do something meaningfull when "squelch = 0"
 
       expAdjF = fabsf(expAdjF);                         // Now (!) take the absolute value
       tmpSample = expAdjF;
@@ -664,14 +678,9 @@ class AudioReactive : public Usermod {
 
 
     /* Limits the dynamics of volumeSmth (= sampleAvg or sampleAgc). 
-     * It does not affect FFTResult[] or volumeRaw ( = sample or rawSampleAgc) 
+     * does not affect FFTResult[] or volumeRaw ( = sample or rawSampleAgc) 
     */
     // effects: Gravimeter, Gravcenter, Gravcentric, Noisefire, Plasmoid, Freqpixels, Freqwave, Gravfreq, (2D Swirl, 2D Waverly)
-    // experimental, as it still has side-effects on AGC - AGC detects "silence" to late (due to long decay time) and ditches up the gain multiplier. 
-    // values below will be made user-configurable later
-    const float attackTime = 200;          // attack time -> 0.2sec
-    const float decayTime = 2800;          // decay time  -> 2.8sec
-
     void limitSampleDynamics(void) {
     #ifdef SOUND_DYNAMICS_LIMITER
       const float bigChange = 196;           // just a representative number - a large, expected sample value
@@ -681,8 +690,8 @@ class AudioReactive : public Usermod {
       if ((attackTime > 0) && (decayTime > 0)) { // only change volume if user has defined attack>0 and decay>0
         long delta_time = millis() - last_time;
         delta_time = constrain(delta_time , 1, 1000); // below 1ms -> 1ms; above 1sec -> sily lil hick-up
-        float maxAttack =   bigChange * float(delta_time) / attackTime;
-        float maxDecay  = - bigChange * float(delta_time) / decayTime;
+        float maxAttack =   bigChange * float(delta_time) / float(attackTime);
+        float maxDecay  = - bigChange * float(delta_time) / float(decayTime);
 
         float deltaSample = volumeSmth - last_volumeSmth;
         if (deltaSample > maxAttack) deltaSample = maxAttack;
@@ -704,8 +713,11 @@ class AudioReactive : public Usermod {
       audioSyncPacket transmitData;
       strncpy_P(transmitData.header, PSTR(UDP_SYNC_HEADER), 6);
 
-      transmitData.sampleRaw   = volumeRaw;
-      transmitData.sampleSmth  = volumeSmth;
+      //transmitData.sampleRaw   = volumeRaw;
+      //transmitData.sampleSmth  = volumeSmth;
+      // transmit samples that were not modified by limitSampleDynamics()
+      transmitData.sampleRaw   = (soundAgc) ? rawSampleAgc: sampleRaw;
+      transmitData.sampleSmth  = (soundAgc) ? sampleAgc   : sampleAvg;
       transmitData.samplePeak  = udpSamplePeak ? 1:0;
       udpSamplePeak            = false;           // Reset udpSamplePeak after we've transmitted it
       transmitData.reserved1   = 0;
@@ -744,9 +756,11 @@ class AudioReactive : public Usermod {
         if (packetSize == sizeof(audioSyncPacket) && !(isValidUdpSyncVersion((const char *)fftBuff))) {
           audioSyncPacket *receivedPacket = reinterpret_cast<audioSyncPacket*>(fftBuff);
 
+          // update samples for effects
           volumeSmth   = receivedPacket->sampleSmth;
           volumeRaw    = receivedPacket->sampleRaw;
 
+          // update internal samples
           sampleRaw    = volumeRaw;
           sampleAvg    = volumeSmth;
           rawSampleAgc = volumeRaw;
@@ -945,6 +959,7 @@ class AudioReactive : public Usermod {
       if (audioSyncEnabled & 0x02) disableSoundProcessing = true;   // make sure everything is disabled IF in audio Receive mode
       if (audioSyncEnabled & 0x01) disableSoundProcessing = false;  // keep running audio IF we're in audio Transmit mode
 
+
       // Only run the sampling code IF we're not in Receive mode or realtime mode
       if (!(audioSyncEnabled & 0x02) && !disableSoundProcessing) {
         bool agcEffect = false;
@@ -981,9 +996,8 @@ class AudioReactive : public Usermod {
 
         limitSampleDynamics();  // optional - makes volumeSmth very smooth and fluent
 
-        // update UI
+        // update WebServer UI
         uint8_t knownMode = strip.getFirstSelectedSeg().mode; // 1st selected segment is more appropriate than main segment
-
         if (lastMode != knownMode) { // only execute if mode changes
           char lineBuffer[4];
           extractModeName(knownMode, JSON_mode_names, lineBuffer, 3); // use of JSON_mode_names is deprecated, use nullptr
@@ -1024,10 +1038,19 @@ class AudioReactive : public Usermod {
         }
       }
 
-      // Begin UDP Microphone Sync
-      if ((audioSyncEnabled & 0x02) && millis() - lastTime > delayMs) { // Only run the audio listener code if we're in Receive mode
-        (void) receiveAudioData();   // ToDo: use return value for something meaningfull
-        lastTime = millis();
+
+      // UDP Microphone Sync  - receive mode
+      if ((audioSyncEnabled & 0x02) && udpSyncConnected) {
+          // Only run the audio listener code if we're in Receive mode
+          static float syncVolumeSmth = 0;
+          bool have_new_sample = false;
+          if (millis() - lastTime > delayMs) {
+            have_new_sample = receiveAudioData();
+            lastTime = millis();
+          }
+          if (have_new_sample) syncVolumeSmth = volumeSmth;   // remember received sample
+          else volumeSmth = syncVolumeSmth;                   // restore originally received sample for next run of dynamics limiter
+          limitSampleDynamics();                              // run dynamics limiter on received volumeSmth, to hide jumps and hickups
       }
 
       #if defined(MIC_LOGGER) || defined(MIC_SAMPLING_LOG) || defined(FFT_SAMPLING_LOG)
@@ -1036,12 +1059,13 @@ class AudioReactive : public Usermod {
        }
       #endif
 
-      if ((audioSyncEnabled & 0x01) && millis() - lastTime > 20) {    // Only run the transmit code IF we're in Transmit mode
+      //UDP Microphone Sync  - transmit mode
+      if ((audioSyncEnabled & 0x01) && millis() - lastTime > 20) {
+        // Only run the transmit code IF we're in Transmit mode
         transmitAudioData();
         lastTime = millis();
       }
 
-      //limitSampleDynamics();   // If done as the last step, it will also affect audio received by UDP sound sync. Problem: effects might see inconsistent intermediate values and start flickering :-(
     }
 
 

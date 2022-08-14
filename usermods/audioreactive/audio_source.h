@@ -339,9 +339,12 @@ class I2SAdcSource : public I2SSource {
 #else
         .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB),
 #endif
-        .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2,
+        .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
         .dma_buf_count = 8,
-        .dma_buf_len = _blockSize
+        .dma_buf_len = _blockSize,
+        .use_apll = false,
+        .tx_desc_auto_clear = false,
+        .fixed_mclk = 0        
       };
     }
 
@@ -350,6 +353,7 @@ class I2SAdcSource : public I2SSource {
 
     void initialize(int8_t audioPin, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
       if(!pinManager.allocatePin(audioPin, false, PinOwner::UM_Audioreactive)) {
+         DEBUGSR_PRINTF("failed to allocate GPIO for audio analog input: %d\n", audioPin);
         return;
       }
       _audioPin = audioPin;
@@ -376,7 +380,7 @@ class I2SAdcSource : public I2SSource {
         DEBUGSR_PRINTF("Failed to set i2s adc mode: %d\n", err);
         return;
       }
-
+      // adc1_config_channel_atten(adc1_channel_t(channel), ADC_ATTEN_DB_11)); //see https://github.com/espressif/arduino-esp32/blob/master/libraries/ESP32/examples/I2S/HiFreq_ADC/HiFreq_ADC.ino
 #if defined(ARDUINO_ARCH_ESP32)
       // according to docs from espressif, the ADC needs to be started explicitly
       // fingers crossed
@@ -408,7 +412,7 @@ class I2SAdcSource : public I2SSource {
 
 #if !defined(ARDUINO_ARCH_ESP32)
         // old code - works for me without enable/disable, at least on ESP32.
-        err = i2s_adc_disable(I2S_NUM_0);
+        err = i2s_adc_disable(I2S_NUM_0);  //i2s_adc_disable() may cause crash with IDF 4.4 (https://github.com/espressif/arduino-esp32/issues/6832)
         //err = i2s_stop(I2S_NUM_0);
         if (err != ESP_OK) {
           DEBUGSR_PRINTF("Failed to disable i2s adc: %d\n", err);
