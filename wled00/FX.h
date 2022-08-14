@@ -42,7 +42,7 @@
 #define DEFAULT_COLOR      (uint32_t)0xFFAA00
 #define DEFAULT_C1         (uint8_t)128
 #define DEFAULT_C2         (uint8_t)128
-#define DEFAULT_C3         (uint8_t)128
+#define DEFAULT_C3         (uint8_t)16
 
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
@@ -376,7 +376,13 @@ typedef struct Segment {
     uint8_t  opacity;
     uint32_t colors[NUM_COLORS];
     uint8_t  cct; //0==1900K, 255==10091K
-    uint8_t  custom1, custom2, custom3; // custom FX parameters
+    uint8_t  custom1, custom2;  // custom FX parameters/sliders
+    struct {
+      uint8_t custom3 : 5;      // reduced range slider (0-31)
+      bool    check1  : 1;      // checkmark 1
+      bool    check2  : 1;      // checkmark 2
+      bool    check3  : 1;      // checkmark 3
+    };
     uint16_t startY;  // start Y coodrinate 2D (top)
     uint16_t stopY;   // stop Y coordinate 2D (bottom)
     char *name;
@@ -439,6 +445,9 @@ typedef struct Segment {
       custom1(DEFAULT_C1),
       custom2(DEFAULT_C2),
       custom3(DEFAULT_C3),
+      check1(false),
+      check2(false),
+      check3(false),
       startY(0),
       stopY(1),
       name(nullptr),

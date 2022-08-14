@@ -399,22 +399,25 @@ button {
 	position: relative;
 }
 
-.filter {
+.filter, .option {
 	background-color: var(--c-4);
-	/*box-shadow: 0px 0px 6px 6px var(--c-1);*/
 	border-radius: 26px;
 	height: 26px;
 	margin: 0 auto; /* add 4-8px if you want space at the bottom */
-	padding: 8px 2px;
+	padding: 4px 2px;
 	position: relative;
-	/*width: 260px;*/
-	/*transition: opacity 1s;*/
-	/*opacity: 1;*/
 	z-index: 1;
+	opacity: 1;
+	transition: opacity 0.5s linear, height 0.5s, transform 0.5s;
+	transform: scaleY(1);
+}
+
+.option {
+	z-index: unset;
 }
 
 /* Tooltip text */
-.slider .tooltiptext {
+.slider .tooltiptext, .option .tooltiptext {
 	visibility: hidden;
 	background-color: var(--c-5);
 	/*border: 2px solid var(--c-2);*/
@@ -436,14 +439,11 @@ button {
 	opacity: 0;
 	transition: opacity 0.75s;
 }
-/*
-.slider.top .tooltiptext {
-	top: 100%;
-	bottom: unset;
+.option .tooltiptext {
+	bottom: 120%;
 }
-*/
 /* Tooltip arrow */
-.slider .tooltiptext::after {
+.slider .tooltiptext::after, .option .tooltiptext::after {
 	content: "";
 	position: absolute;
 	top: 100%;
@@ -453,16 +453,8 @@ button {
 	border-style: solid;
 	border-color: var(--c-5) transparent transparent transparent;
 }
-/*
-.slider.top  .tooltiptext::after {
-	bottom: 100%;
-	left: 50%;
-	top: unset;
-	border-color: transparent transparent var(--c-5) transparent;
-}
-*/
 /* Show the tooltip text when you mouse over the tooltip container */
-.slider:hover .tooltiptext {
+.slider:hover .tooltiptext, .option .check:hover .tooltiptext {
 	visibility: visible;
 	opacity: 1;
 }
@@ -475,8 +467,11 @@ button {
 	display: none !important;
 }
 .fade {
-	visibility: hidden;
-	opacity: 0;
+	visibility: hidden; /* hide it */
+	opacity: 0; /* make it transparent */
+	transform: scaleY(0); /* shrink content */
+	height: 0px; /* force other elements to move */
+	padding: 0; /* remove empty space */
 }
 
 .first {
@@ -1206,18 +1201,14 @@ TD .checkmark, TD .radiomark {
 	top: auto !important;	/* prevent sticky */
 	bottom: auto !important;
 }
-/*
-.seg:last-child {
-	margin: 0;
-}
-*/
+/* checkmark labels */
 .seg .schkl {
 	position: absolute;
 	top: 7px;
 	left: 9px;
 }
-
-.filter .fchkl {
+/* checkmark labels */
+.filter .fchkl, .option .ochkl {
 	display: inline-block;
 	min-width: 0.7em;
 	padding: 1px 4px 4px 32px;

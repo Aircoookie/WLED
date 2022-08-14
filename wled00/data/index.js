@@ -1033,7 +1033,12 @@ function updateLen(s)
 		start = parseInt(gId(`seg${s}sY`).value);
 		stop = parseInt(gId(`seg${s}eY`).value);
 		len *= (stop-(cfg.comp.seglen?0:start));
-		if (stop-start>1) gId(`seg${s}map2D`).classList.remove("hide"); else gId(`seg${s}map2D`).classList.add("hide");
+		let sE = gId('fxlist').querySelector(`.lstI[data-id="${selectedFx}"]`);
+		if (sE) {
+			let sN = sE.querySelector(".lstIname").innerText;
+			let seg = gId(`seg${s}map2D`);
+			if (stop-start>1 && sN.indexOf("\u25A6")<0) seg.classList.remove("hide"); else seg.classList.add("hide");
+		}
 	}
 	var out = "(delete)";
 	if (len > 1) {
@@ -1341,18 +1346,19 @@ function setEffectParameters(idx)
 	var paOnOff = (effectPars.length<3  || effectPars[2]=='')?[]:effectPars[2].split(",");
   
 	// set html slider items on/off
-	var nSliders = Math.min(5,Math.floor(gId("sliders").children.length)); // div for each slider
+	//var nSliders = Math.min(7,Math.floor(gId("sliders").children.length)); // div for each slider + filter + options
+	let nSliders = 5;
 	var sldCnt = 0;
 	for (let i=0; i<nSliders; i++) {
 		var slider = gId("slider" + i);
 		var label = gId("sliderLabel" + i);
 		// if (not controlDefined and for AC speed or intensity and for SR alle sliders) or slider has a value
 		if ((!controlDefined && i < ((idx<128)?2:nSliders)) || (slOnOff.length>i && slOnOff[i] != "")) {
-			if (slOnOff.length>i && slOnOff[i].indexOf("=")>0) {
-				// embeded default values
-				var dPos = slOnOff[i].indexOf("=");
-				slOnOff[i] = slOnOff[i].substring(0,dPos);
-			}
+			//if (slOnOff.length>i && slOnOff[i].indexOf("=")>0) {
+			//	// embeded default values
+			//	var dPos = slOnOff[i].indexOf("=");
+			//	slOnOff[i] = slOnOff[i].substring(0,dPos);
+			//}
 			if (slOnOff.length>i && slOnOff[i]!="!") label.innerHTML = slOnOff[i];
 			else if (i==0)                           label.innerHTML = "Effect speed";
 			else if (i==1)                           label.innerHTML = "Effect intensity";
@@ -1363,13 +1369,26 @@ function setEffectParameters(idx)
 			slider.classList.add("hide");
 		}
 	}
+	if (slOnOff.length>5) {
+		gId('fxopt').classList.remove('fade');
+		for (let i = 0; i<3; i++) {
+			if (slOnOff[5+i]!=='') {
+				gId('opt'+i).classList.remove('hide');
+				gId('optLabel'+i).innerHTML = slOnOff[5+i]=="!" ? 'Option' : slOnOff[5+i].substr(0,16);
+			} else
+				gId('opt'+i).classList.add('hide');
+		}
+	} else {
+		gId('fxopt').classList.add('fade');
+	}
 
 	// set the bottom position of selected effect (sticky) as the top of sliders div
-	let top = parseInt(getComputedStyle(gId("sliders")).height);
-	//top += 5; // size of tooltip
-	let sel = d.querySelector('#fxlist .selected');
-	if (sel) sel.style.bottom = top + "px"; // we will need to remove this when unselected (in setX())
-
+	setInterval(()=>{
+		let top = parseInt(getComputedStyle(gId("sliders")).height);
+		top += 5;
+		let sel = d.querySelector('#fxlist .selected');
+		if (sel) sel.style.bottom = top + "px"; // we will need to remove this when unselected (in setX())
+	},750);
 	// set html color items on/off
 	var cslLabel = '';
 	var sep = '';
@@ -2114,6 +2133,16 @@ function setCustom(i=1)
 	if      (i===3) obj.seg.c3 = val;
 	else if (i===2) obj.seg.c2 = val;
 	else            obj.seg.c1 = val;
+	requestJson(obj);
+}
+
+function setOption(i=1, v=false)
+{
+	if (i<1 || i>3) return;
+	var obj = {"seg": {}};
+	if      (i===3) obj.seg.o3 = !(!v); //make sure it is bool
+	else if (i===2) obj.seg.o2 = !(!v); //make sure it is bool
+	else            obj.seg.o1 = !(!v); //make sure it is bool
 	requestJson(obj);
 }
 
