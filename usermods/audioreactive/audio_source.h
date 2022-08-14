@@ -79,9 +79,6 @@ class AudioSource {
     */
     virtual void getSamples(float *buffer, uint16_t num_samples) = 0;
 
-    /* Get an up-to-date sample without DC offset */
-    virtual int getSampleWithoutDCOffset() { return _sampleNoDCOffset; };
-
     /* check if the audio source driver was initialized successfully */
     virtual bool isInitialized(void) {return(_initialized);}
 
@@ -97,15 +94,11 @@ class AudioSource {
     AudioSource(int sampleRate, int blockSize) :
       _sampleRate(sampleRate),
       _blockSize(blockSize),
-      _sampleNoDCOffset(0),
-      _dcOffset(0.0f),
       _initialized(false)
     {};
 
     int _sampleRate;                // Microphone sampling rate
     int _blockSize;                 // I2S block size
-    volatile int _sampleNoDCOffset; // Up-to-date sample without DCOffset
-    float _dcOffset;                // Rolling average DC offset
     bool _initialized;              // Gets set to true if initialization is successful
 };
 
@@ -199,9 +192,6 @@ class I2SSource : public AudioSource {
         size_t bytes_read = 0;        /* Counter variable to check if we actually got enough data */
         I2S_datatype newSamples[num_samples]; /* Intermediary sample storage */
 
-        // Reset dc offset
-        _dcOffset = 0.0f;
-
         err = i2s_read(I2S_NUM_0, (void *)newSamples, sizeof(newSamples), &bytes_read, portMAX_DELAY);
         if (err != ESP_OK) {
           DEBUGSR_PRINTF("Failed to get samples: %d\n", err);
@@ -216,8 +206,9 @@ class I2SSource : public AudioSource {
 
         // Store samples in sample buffer and update DC offset
         for (int i = 0; i < num_samples; i++) {
-          newSamples[i] = postProcessSample(newSamples[i]);  // perform postprocessing (needed for ADC samples)
 
+          newSamples[i] = postProcessSample(newSamples[i]);  // perform postprocessing (needed for ADC samples)
+          
           float currSample = 0.0f;
 #ifdef I2S_SAMPLE_DOWNSCALE_TO_16BIT
               currSample = (float) newSamples[i] / 65536.0f;      // 32bit input -> 16bit; keeping lower 16bits as decimal places
@@ -225,11 +216,7 @@ class I2SSource : public AudioSource {
               currSample = (float) newSamples[i];                 // 16bit input -> use as-is
 #endif
           buffer[i] = currSample;
-          _dcOffset = ((_dcOffset * 31.0f) + currSample) / 32.0f;
         }
-
-        // Update no-DC sample
-        _sampleNoDCOffset = buffer[num_samples - 1] - _dcOffset;
       }
     }
 
