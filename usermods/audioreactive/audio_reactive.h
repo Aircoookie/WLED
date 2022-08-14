@@ -683,21 +683,24 @@ class AudioReactive : public Usermod {
     // effects: Gravimeter, Gravcenter, Gravcentric, Noisefire, Plasmoid, Freqpixels, Freqwave, Gravfreq, (2D Swirl, 2D Waverly)
     void limitSampleDynamics(void) {
     #ifdef SOUND_DYNAMICS_LIMITER
-      const float bigChange = 196;           // just a representative number - a large, expected sample value
+      const float bigChange = 196;                  // just a representative number - a large, expected sample value
       static unsigned long last_time = 0;
       static float last_volumeSmth = 0.0f;
 
-      if ((attackTime > 0) && (decayTime > 0)) { // only change volume if user has defined attack>0 and decay>0
-        long delta_time = millis() - last_time;
-        delta_time = constrain(delta_time , 1, 1000); // below 1ms -> 1ms; above 1sec -> sily lil hick-up
-        float maxAttack =   bigChange * float(delta_time) / float(attackTime);
-        float maxDecay  = - bigChange * float(delta_time) / float(decayTime);
+      long delta_time = millis() - last_time;
+      delta_time = constrain(delta_time , 1, 1000); // below 1ms -> 1ms; above 1sec -> sily lil hick-up
+      float deltaSample = volumeSmth - last_volumeSmth;
 
-        float deltaSample = volumeSmth - last_volumeSmth;
+      if (attackTime > 0) {                         // user has defined attack time > 0
+        float maxAttack =   bigChange * float(delta_time) / float(attackTime);
         if (deltaSample > maxAttack) deltaSample = maxAttack;
-        if (deltaSample < maxDecay) deltaSample = maxDecay;
-        volumeSmth = last_volumeSmth + deltaSample; 
       }
+      if (decayTime > 0) {                          // user has defined decay time > 0
+        float maxDecay  = - bigChange * float(delta_time) / float(decayTime);
+        if (deltaSample < maxDecay) deltaSample = maxDecay;
+      }
+
+      volumeSmth = last_volumeSmth + deltaSample; 
 
       last_volumeSmth = volumeSmth;
       last_time = millis();
