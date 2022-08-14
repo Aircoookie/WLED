@@ -440,7 +440,8 @@ function loadPresets(callback = null)
 		method: 'get'
 	})
 	.then(res => {
-		if (!res.ok) showErrorToast();
+		if (res.status=="404") return {"0":{}};
+		//if (!res.ok) showErrorToast();
 		return res.json();
 	})
 	.then(json => {
@@ -449,7 +450,7 @@ function loadPresets(callback = null)
 		populatePresets();
 	})
 	.catch((e)=>{
-		showToast(e, true);
+		//showToast(e, true);
 		presetError(false);
 	})
 	.finally(()=>{
