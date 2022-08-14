@@ -339,6 +339,7 @@ class I2SAdcSource : public I2SSource {
     AudioSourceType getType(void) {return(Type_I2SAdc);}
 
     void initialize(int8_t audioPin, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
+      _myADCchannel = 0x0F;
       if(!pinManager.allocatePin(audioPin, false, PinOwner::UM_Audioreactive)) {
          DEBUGSR_PRINTF("failed to allocate GPIO for audio analog input: %d\n", audioPin);
         return;
@@ -352,6 +353,7 @@ class I2SAdcSource : public I2SSource {
         return;
       } else {
         adc_gpio_init(ADC_UNIT_1, adc_channel_t(channel));
+        _myADCchannel = channel;
       }
 
       // Install Driver
@@ -368,60 +370,114 @@ class I2SAdcSource : public I2SSource {
         return;
       }
       // adc1_config_channel_atten(adc1_channel_t(channel), ADC_ATTEN_DB_11)); //see https://github.com/espressif/arduino-esp32/blob/master/libraries/ESP32/examples/I2S/HiFreq_ADC/HiFreq_ADC.ino
-#if defined(ARDUINO_ARCH_ESP32)
+
+      #if defined(I2S_GRAB_ADC1_COMPLETELY)
       // according to docs from espressif, the ADC needs to be started explicitly
       // fingers crossed
-      err = i2s_adc_enable(I2S_NUM_0);
-      if (err != ESP_OK) {
-        DEBUGSR_PRINTF("Failed to enable i2s adc: %d\n", err);
-        //return;
-      }
-#endif
+        err = i2s_adc_enable(I2S_NUM_0);
+        if (err != ESP_OK) {
+            DEBUGSR_PRINTF("Failed to enable i2s adc: %d\n", err);
+            //return;
+        }
+      #else
+        err = i2s_adc_disable(I2S_NUM_0);
+		    //err = i2s_stop(I2S_NUM_0);
+        if (err != ESP_OK) {
+            DEBUGSR_PRINTF("Failed to initially disable i2s adc: %d\n", err);
+        }
+      #endif
 
       _initialized = true;
     }
+
+
+    I2S_datatype postProcessSample(I2S_datatype sample_in) {
+      static I2S_datatype lastADCsample = 0;          // last good sample
+      static unsigned int broken_samples_counter = 0; // number of consecutive broken (and fixed) ADC samples
+      I2S_datatype sample_out = 0;
+
+      // bring sample down down to 16bit unsigned
+      I2S_unsigned_datatype rawData = * reinterpret_cast<I2S_unsigned_datatype *> (&sample_in); // C++ acrobatics to get sample as "unsigned"
+      #ifndef I2S_USE_16BIT_SAMPLES
+        rawData = (rawData >> 16) & 0xFFFF;                       // scale input down from 32bit -> 16bit
+        I2S_datatype lastGoodSample = lastADCsample / 16384 ;     // prepare "last good sample" accordingly (26bit-> 12bit with correct sign handling)
+      #else
+        rawData = rawData & 0xFFFF;                               // input is already in 16bit, just mask off possible junk
+        I2S_datatype lastGoodSample = lastADCsample * 4;          // prepare "last good sample" accordingly (10bit-> 12bit)
+      #endif
+
+      // decode ADC sample data fields
+      uint16_t the_channel = (rawData >> 12) & 0x000F;           // upper 4 bit = ADC channel
+      uint16_t the_sample  =  rawData & 0x0FFF;                  // lower 12bit -> ADC sample (unsigned)
+      I2S_datatype finalSample = (int(the_sample) - 2048);       // convert unsigned sample to signed (centered at 0);
+
+      if ((the_channel != _myADCchannel) && (_myADCchannel != 0x0F)) { // 0x0F means "don't know what my channel is" 
+        // fix bad sample
+        finalSample = lastGoodSample;                             // replace with last good ADC sample
+        broken_samples_counter ++;
+        if (broken_samples_counter > 256) _myADCchannel = 0x0F;   // too  many bad samples in a row -> disable sample corrections
+        //Serial.print("\n!ADC rogue sample 0x"); Serial.print(rawData, HEX); Serial.print("\tchannel:");Serial.println(the_channel);
+      } else broken_samples_counter = 0;                          // good sample - reset counter
+
+      // back to original resolution
+      #ifndef I2S_USE_16BIT_SAMPLES
+        finalSample = finalSample << 16;                          // scale up from 16bit -> 32bit;
+      #endif
+
+      finalSample = finalSample / 4;                              // mimic old analog driver behaviour (12bit -> 10bit)
+      sample_out = (3 * finalSample + lastADCsample) / 4;         // apply low-pass filter (2-tap FIR)
+      //sample_out = (finalSample + lastADCsample) / 2;             // apply stronger low-pass filter (2-tap FIR)
+
+      lastADCsample = sample_out;                                 // update ADC last sample
+      return(sample_out);
+    }
+
 
     void getSamples(float *buffer, uint16_t num_samples) {
       /* Enable ADC. This has to be enabled and disabled directly before and
        * after sampling, otherwise Wifi dies
        */
       if (_initialized) {
-#if !defined(ARDUINO_ARCH_ESP32)
-        // old code - works for me without enable/disable, at least on ESP32.
-        esp_err_t err = i2s_adc_enable(I2S_NUM_0);
-        //esp_err_t err = i2s_start(I2S_NUM_0);
-        if (err != ESP_OK) {
-          DEBUGSR_PRINTF("Failed to enable i2s adc: %d\n", err);
-          return;
-        }
-#endif
+        #if !defined(I2S_GRAB_ADC1_COMPLETELY)
+          // old code - works for me without enable/disable, at least on ESP32.
+          //esp_err_t err = i2s_start(I2S_NUM_0);
+          esp_err_t err = i2s_adc_enable(I2S_NUM_0);
+          if (err != ESP_OK) {
+            DEBUGSR_PRINTF("Failed to enable i2s adc: %d\n", err);
+            return;
+          }
+        #endif
+
         I2SSource::getSamples(buffer, num_samples);
 
-#if !defined(ARDUINO_ARCH_ESP32)
-        // old code - works for me without enable/disable, at least on ESP32.
-        err = i2s_adc_disable(I2S_NUM_0);  //i2s_adc_disable() may cause crash with IDF 4.4 (https://github.com/espressif/arduino-esp32/issues/6832)
-        //err = i2s_stop(I2S_NUM_0);
-        if (err != ESP_OK) {
-          DEBUGSR_PRINTF("Failed to disable i2s adc: %d\n", err);
-          return;
-        }
-#endif
+        #if !defined(I2S_GRAB_ADC1_COMPLETELY)
+          // old code - works for me without enable/disable, at least on ESP32.
+          err = i2s_adc_disable(I2S_NUM_0);  //i2s_adc_disable() may cause crash with IDF 4.4 (https://github.com/espressif/arduino-esp32/issues/6832)
+          //err = i2s_stop(I2S_NUM_0);
+          if (err != ESP_OK) {
+            DEBUGSR_PRINTF("Failed to disable i2s adc: %d\n", err);
+            return;
+          }
+        #endif
       }
     }
 
     void deinitialize() {
       pinManager.deallocatePin(_audioPin, PinOwner::UM_Audioreactive);
       _initialized = false;
+      _myADCchannel = 0x0F;
+      
       esp_err_t err;
-#if defined(ARDUINO_ARCH_ESP32)
-      // according to docs from espressif, the ADC needs to be stopped explicitly
-      // fingers crossed
-      err = i2s_adc_disable(I2S_NUM_0);
-      if (err != ESP_OK) {
-        DEBUGSR_PRINTF("Failed to disable i2s adc: %d\n", err);
-        //return;
-      }
-#endif
+      #if defined(I2S_GRAB_ADC1_COMPLETELY)
+        // according to docs from espressif, the ADC needs to be stopped explicitly
+        // fingers crossed
+        err = i2s_adc_disable(I2S_NUM_0);
+        if (err != ESP_OK) {
+          DEBUGSR_PRINTF("Failed to disable i2s adc: %d\n", err);
+        }
+      #endif
+
+      i2s_stop(I2S_NUM_0);
       err = i2s_driver_uninstall(I2S_NUM_0);
       if (err != ESP_OK) {
         DEBUGSR_PRINTF("Failed to uninstall i2s driver: %d\n", err);
@@ -431,6 +487,7 @@ class I2SAdcSource : public I2SSource {
 
   private:
     int8_t _audioPin;
+    int8_t _myADCchannel = 0x0F;       // current ADC channel for analog input. 0x0F means "undefined"
 };
 
 /* SPH0645 Microphone
