@@ -276,7 +276,6 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     Wire.setPins(i2c_sda, i2c_scl); // this will fail if Wire is initilised (Wire.begin() called prior)
     #endif
     Wire.begin();
-    uint8_t i2c[2] = {i2c_sda, i2c_scl};
     pinManager.deallocateMultiplePins(i2c, 2, PinOwner::HW_I2C);
   } else {
     i2c_sda = -1;
@@ -293,7 +292,6 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     #else
     SPI.begin(spi_sclk, (int8_t)-1, spi_mosi, spi_cs);
     #endif
-    uint8_t spi[3] = { spi_mosi, spi_sclk, spi_cs };
     pinManager.deallocateMultiplePins(spi, 3, PinOwner::HW_SPI);
   } else {
     spi_mosi = -1;

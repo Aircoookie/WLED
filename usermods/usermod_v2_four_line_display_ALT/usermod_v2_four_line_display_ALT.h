@@ -26,19 +26,19 @@
 
 //The SCL and SDA pins are defined here. 
 #ifndef FLD_PIN_SCL
-  #define FLD_PIN_SCL HW_PIN_SCL
+  #define FLD_PIN_SCL i2c_scl
 #endif
 #ifndef FLD_PIN_SDA
-  #define FLD_PIN_SDA HW_PIN_SDA
+  #define FLD_PIN_SDA i2c_sda
 #endif
 #ifndef FLD_PIN_CLOCKSPI
-  #define FLD_PIN_CLOCKSPI HW_PIN_CLOCKSPI
+  #define FLD_PIN_CLOCKSPI spi_sclk
 #endif
   #ifndef FLD_PIN_DATASPI
-  #define FLD_PIN_DATASPI HW_PIN_DATASPI
+  #define FLD_PIN_DATASPI spi_mosi
 #endif   
 #ifndef FLD_PIN_CS
-  #define FLD_PIN_CS HW_PIN_CSSPI
+  #define FLD_PIN_CS spi_cs
 #endif
 
 #ifdef ARDUINO_ARCH_ESP32
@@ -195,14 +195,14 @@ class FourLineDisplayUsermod : public Usermod {
       bool isHW, isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64);
       PinOwner po = PinOwner::UM_FourLineDisplay;
       if (isSPI) {
-        isHW = (ioPin[0]==HW_PIN_CLOCKSPI && ioPin[1]==HW_PIN_DATASPI);
+        isHW = (ioPin[0]==spi_sclk && ioPin[1]==spi_mosi && ioPin[2]==spi_cs);
+        if (isHW) po = PinOwner::HW_SPI;  // allow multiple allocations of HW I2C bus pins
         PinManagerPinType pins[5] = { { ioPin[0], true }, { ioPin[1], true }, { ioPin[2], true }, { ioPin[3], true }, { ioPin[4], true }};
-        if (ioPin[0]==HW_PIN_CLOCKSPI && ioPin[1]==HW_PIN_DATASPI && ioPin[2]==HW_PIN_CSSPI) po = PinOwner::HW_SPI;  // allow multiple allocations of HW SPI bus pins
         if (!pinManager.allocateMultiplePins(pins, 5, po)) { type=NONE; return; }
       } else {
-        isHW = (ioPin[0]==HW_PIN_SCL && ioPin[1]==HW_PIN_SDA);
+        isHW = (ioPin[0]==i2c_scl && ioPin[1]==i2c_sda);
+        if (isHW) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
         PinManagerPinType pins[2] = { { ioPin[0], true }, { ioPin[1], true } };
-        if (ioPin[0]==HW_PIN_SCL && ioPin[1]==HW_PIN_SDA) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
         if (!pinManager.allocateMultiplePins(pins, 2, po)) { type=NONE; return; }
       }
 
@@ -1107,8 +1107,8 @@ class FourLineDisplayUsermod : public Usermod {
           if (type != NONE) delete u8x8;
           PinOwner po = PinOwner::UM_FourLineDisplay;
           bool isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64);
-          if (!isSPI && ioPin[0]==HW_PIN_SCL && ioPin[1]==HW_PIN_SDA) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
-          if (isSPI  && ioPin[0]==HW_PIN_CLOCKSPI && ioPin[1]==HW_PIN_DATASPI && ioPin[2]==HW_PIN_CSSPI) po = PinOwner::HW_SPI;  // allow multiple allocations of HW SPI bus pins
+          if (!isSPI && ioPin[0]==i2c_scl && ioPin[1]==i2c_sda) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
+          if (isSPI && ioPin[0]==spi_sclk && ioPin[1]==spi_mosi && ioPin[2]==spi_cs) po = PinOwner::HW_SPI;  // allow multiple allocations of HW SPI bus pins
           pinManager.deallocateMultiplePins((const uint8_t *)ioPin, isSPI ? 5 : 2, po);
           for (byte i=0; i<5; i++) ioPin[i] = newPin[i];
           if (ioPin[0]<0 || ioPin[1]<0) { // data & clock must be > -1

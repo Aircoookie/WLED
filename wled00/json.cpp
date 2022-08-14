@@ -626,6 +626,16 @@ void serializeInfo(JsonObject root)
   root[F("noaudio")] = true;
   #endif
 
+  #ifdef WLED_DEBUG
+  JsonArray i2c = root.createNestedArray(F("i2c"));
+  i2c.add(i2c_sda);
+  i2c.add(i2c_scl);
+  JsonArray spi = root.createNestedArray(F("spi"));
+  spi.add(spi_mosi);
+  spi.add(spi_sclk);
+  spi.add(spi_cs);
+  #endif
+
   root[F("str")] = syncToggleReceive;
 
   root[F("name")] = serverDescription;
