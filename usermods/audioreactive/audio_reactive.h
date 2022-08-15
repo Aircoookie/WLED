@@ -41,9 +41,9 @@
   #define DEBUGSR_PRINTF(x...)
 #endif
 // legacy support
-#if defined(SR_DEBUG) && !defined(MIC_LOGGER) && !defined(NO_MIC_LOGGER)
-#define MIC_LOGGER
-#endif
+// #if defined(SR_DEBUG) && !defined(MIC_LOGGER) && !defined(NO_MIC_LOGGER)
+// #define MIC_LOGGER
+// #endif
 
 
 #include "audio_source.h"
@@ -281,12 +281,19 @@ void FFTcode(void * parameter)
       // Manual linear adjustment of gain using sampleGain adjustment for different input types.
       fftCalc[i] *= soundAgc ? multAgc : ((float)sampleGain/40.0f * (float)inputLevel/128.0f + 1.0f/16.0f); //with inputLevel adjustment
   
-      // smooth results
-      //fftAvg[i]    = fftCalc[i]*0.05f + 0.95f*fftAvg[i];  // will need approx 10 cycles (250ms) for converging against fftCalc[i]
-      fftAvg[i]    = fftCalc[i] *0.1f + 0.9f*fftAvg[i];  // will need approx 5 cycles (125ms) for converging against fftCalc[i]
+      // smooth results - rise fast, fall slower
+      if(fftCalc[i] > fftAvg[i])   // rise fast 
+        fftAvg[i]    = fftCalc[i] *0.75f + 0.25f*fftAvg[i];  // will need approx 2 cycles (50ms) for converging against fftCalc[i]
+      else                         // fall slow
+        fftAvg[i]    = fftCalc[i]*0.1f + 0.9f*fftAvg[i];  // will need approx 5 cycles (150ms) for converging against fftCalc[i]
+        //fftAvg[i]    = fftCalc[i]*0.05f + 0.95f*fftAvg[i];  // will need approx 10 cycles (250ms) for converging against fftCalc[i]
+
       // Now, let's dump it all into fftResult. Need to do this, otherwise other routines might grab fftResult values prematurely.
-      //fftResult[i] = constrain((int)fftCalc[i], 0, 254);
+#if !defined(SOUND_DYNAMICS_LIMITER)
+      fftResult[i] = constrain((int)fftCalc[i], 0, 254);
+#else
       fftResult[i] = constrain((int)fftAvg[i], 0, 254);
+#endif
     }
 
 #ifdef WLED_DEBUG
