@@ -478,49 +478,53 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (!requestJSONBufferLock(5)) return;
 
     // global I2C & SPI pins
-    uint8_t oldpins[3];
-    int8_t hw_sda_pin  = max(-1,min(33,(int)request->arg(F("SDA")).toInt()));
-    int8_t hw_scl_pin  = max(-1,min(33,(int)request->arg(F("SCL")).toInt()));
-    oldpins[0] = i2c_sda;
-    oldpins[1] = i2c_scl;
-    pinManager.deallocateMultiplePins(oldpins, 2, PinOwner::HW_I2C);
+    int8_t hw_sda_pin  = !request->arg(F("SDA")).length() ? -1 : max(-1,min(33,(int)request->arg(F("SDA")).toInt()));
+    int8_t hw_scl_pin  = !request->arg(F("SCL")).length() ? -1 : max(-1,min(33,(int)request->arg(F("SCL")).toInt()));
     #ifdef ESP8266
     // cannot change pins on ESP8266
-    if (hw_sda_pin != HW_PIN_SDA) hw_sda_pin = HW_PIN_SDA;
-    if (hw_scl_pin != HW_PIN_SCL) hw_scl_pin = HW_PIN_SCL;
+    if (hw_sda_pin >= 0 && hw_sda_pin != HW_PIN_SDA) hw_sda_pin = HW_PIN_SDA;
+    if (hw_scl_pin >= 0 && hw_scl_pin != HW_PIN_SCL) hw_scl_pin = HW_PIN_SCL;
     #endif
     PinManagerPinType i2c[2] = { { hw_sda_pin, true }, { hw_scl_pin, true } };
-    if (pinManager.allocateMultiplePins(i2c, 2, PinOwner::HW_I2C)) {
+    if (hw_sda_pin >= 0 && hw_scl_pin >= 0 && pinManager.allocateMultiplePins(i2c, 2, PinOwner::HW_I2C)) {
       i2c_sda = hw_sda_pin;
       i2c_scl = hw_scl_pin;
       #ifdef ESP32
       Wire.setPins(i2c_sda, i2c_scl); // this will fail if Wire is initilised (Wire.begin() called)
-      pinManager.deallocateMultiplePins(i2c, 2, PinOwner::HW_I2C);
       #endif
+      Wire.begin();
     } else {
+      // there is no Wire.end()
+      DEBUG_PRINTLN(F("Could not allocate I2C pins."));
+      uint8_t i2c[2] = { i2c_scl, i2c_sda };
+      pinManager.deallocateMultiplePins(i2c, 2, PinOwner::HW_I2C); // just in case deallocation of old pins
       i2c_sda = -1;
       i2c_scl = -1;
     }
-    int8_t hw_mosi_pin = max(-1,min(33,(int)request->arg(F("MOSI")).toInt()));
-    int8_t hw_sclk_pin = max(-1,min(33,(int)request->arg(F("SCLK")).toInt()));
-    int8_t hw_cs_pin   = max(-1,min(33,(int)request->arg(F("CS")).toInt()));
-    oldpins[0] = spi_mosi;
-    oldpins[1] = spi_sclk;
-    oldpins[2] = spi_cs;
-    pinManager.deallocateMultiplePins(oldpins, 3, PinOwner::HW_SPI);
+    int8_t hw_mosi_pin = !request->arg(F("MOSI")).length() ? -1 : max(-1,min(33,(int)request->arg(F("MOSI")).toInt()));
+    int8_t hw_sclk_pin = !request->arg(F("SCLK")).length() ? -1 : max(-1,min(33,(int)request->arg(F("SCLK")).toInt()));
+    int8_t hw_cs_pin   = !request->arg(F("CS")).length()   ? -1 : max(-1,min(33,(int)request->arg(F("CS")).toInt()));
     #ifdef ESP8266
     // cannot change pins on ESP8266
-    if (hw_mosi_pin != HW_PIN_DATASPI)  hw_mosi_pin = HW_PIN_DATASPI;
-    if (hw_sclk_pin != HW_PIN_CLOCKSPI) hw_sclk_pin = HW_PIN_CLOCKSPI;
-    if (hw_cs_pin   != HW_PIN_CSSPI)    hw_cs_pin   = HW_PIN_CSSPI;
+    if (hw_mosi_pin >= 0 && hw_mosi_pin != HW_PIN_DATASPI)  hw_mosi_pin = HW_PIN_DATASPI;
+    if (hw_sclk_pin >= 0 && hw_sclk_pin != HW_PIN_CLOCKSPI) hw_sclk_pin = HW_PIN_CLOCKSPI;
+    if (hw_cs_pin   >= 0 && hw_cs_pin   != HW_PIN_CSSPI)    hw_cs_pin   = HW_PIN_CSSPI;
     #endif
     PinManagerPinType spi[3] = { { hw_mosi_pin, true }, { hw_sclk_pin, true }, { hw_cs_pin, true } };
-    if (pinManager.allocateMultiplePins(spi, 3, PinOwner::HW_SPI)) {
+    if (hw_mosi_pin >= 0 && hw_sclk_pin >= 0 && hw_cs_pin >= 0 && pinManager.allocateMultiplePins(spi, 3, PinOwner::HW_SPI)) {
       spi_mosi = hw_mosi_pin;
       spi_sclk = hw_sclk_pin;
       spi_cs   = hw_cs_pin;
-      pinManager.deallocateMultiplePins(spi, 3, PinOwner::HW_SPI);
+      #ifdef ESP8266
+      SPI.begin();
+      #else
+      SPI.begin(spi_sclk, (int8_t)-1, spi_mosi, spi_cs);
+      #endif
     } else {
+      //SPI.end();
+      DEBUG_PRINTLN(F("Could not allocate SPI pins."));
+      uint8_t spi[3] = { spi_mosi, spi_sclk, spi_cs };
+      pinManager.deallocateMultiplePins(spi, 3, PinOwner::HW_SPI); // just in case deallocation of old pins
       spi_mosi = -1;
       spi_sclk = -1;
       spi_cs   = -1;
@@ -536,7 +540,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
       // POST request parameters are combined as <usermodname>_<usermodparameter>
       int umNameEnd = name.indexOf(":");
-      if (umNameEnd<1) break;  // parameter does not contain ":" or on 1st place -> wrong
+      if (umNameEnd<1) continue;  // parameter does not contain ":" or on 1st place -> wrong
 
       JsonObject mod = um[name.substring(0,umNameEnd)]; // get a usermod JSON object
       if (mod.isNull()) {
