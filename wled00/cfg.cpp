@@ -271,12 +271,11 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(i2c_sda, hw_if_i2c[0]);
   CJSON(i2c_scl, hw_if_i2c[1]);
   PinManagerPinType i2c[2] = { { i2c_sda, true }, { i2c_scl, true } };
-  if (pinManager.allocateMultiplePins(i2c, 2, PinOwner::HW_I2C)) {
+  if (i2c_scl >= 0 && i2c_sda >= 0 && pinManager.allocateMultiplePins(i2c, 2, PinOwner::HW_I2C)) {
     #ifdef ESP32
     Wire.setPins(i2c_sda, i2c_scl); // this will fail if Wire is initilised (Wire.begin() called prior)
     #endif
     Wire.begin();
-    pinManager.deallocateMultiplePins(i2c, 2, PinOwner::HW_I2C);
   } else {
     i2c_sda = -1;
     i2c_scl = -1;
@@ -286,13 +285,12 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(spi_sclk, hw_if_spi[1]);
   CJSON(spi_cs, hw_if_spi[2]);
   PinManagerPinType spi[3] = { { spi_mosi, true }, { spi_sclk, true }, { spi_cs, true } };
-  if (pinManager.allocateMultiplePins(spi, 3, PinOwner::HW_SPI)) {
+  if (spi_mosi >= 0 && spi_sclk >= 0 && spi_cs >= 0 && pinManager.allocateMultiplePins(spi, 3, PinOwner::HW_SPI)) {
     #ifdef ESP8266
     SPI.begin();
     #else
     SPI.begin(spi_sclk, (int8_t)-1, spi_mosi, spi_cs);
     #endif
-    pinManager.deallocateMultiplePins(spi, 3, PinOwner::HW_SPI);
   } else {
     spi_mosi = -1;
     spi_sclk = -1;

@@ -185,6 +185,123 @@ class FourLineDisplayUsermod : public Usermod {
       u8x8_cad_EndTransfer(u8x8_struct);
     }
 
+    /**
+     * Wrappers for screen drawing
+     */
+    void setFlipMode(uint8_t mode) {
+      if (type == NONE || !enabled) return;
+      u8x8->setFlipMode(mode);
+    }
+    void setContrast(uint8_t contrast) {
+      if (type == NONE || !enabled) return;
+      u8x8->setContrast(contrast);
+    }
+    void drawString(uint8_t col, uint8_t row, const char *string, bool ignoreLH=false) {
+      if (type == NONE || !enabled) return;
+      u8x8->setFont(u8x8_font_chroma48medium8_r);
+      if (!ignoreLH && lineHeight==2) u8x8->draw1x2String(col, row, string);
+      else                            u8x8->drawString(col, row, string);
+    }
+    void draw2x2String(uint8_t col, uint8_t row, const char *string) {
+      if (type == NONE || !enabled) return;
+      u8x8->setFont(u8x8_font_chroma48medium8_r);
+      u8x8->draw2x2String(col, row, string);
+    }
+    void drawGlyph(uint8_t col, uint8_t row, char glyph, const uint8_t *font, bool ignoreLH=false) {
+      if (type == NONE || !enabled) return;
+      u8x8->setFont(font);
+      if (!ignoreLH && lineHeight==2) u8x8->draw1x2Glyph(col, row, glyph);
+      else                            u8x8->drawGlyph(col, row, glyph);
+    }
+    void draw2x2Glyph(uint8_t col, uint8_t row, char glyph, const uint8_t *font) {
+      if (type == NONE || !enabled) return;
+      u8x8->setFont(font);
+      u8x8->draw2x2Glyph(col, row, glyph);
+    }
+    uint8_t getCols() {
+      if (type==NONE || !enabled) return 0;
+      return u8x8->getCols();
+    }
+    void clear() {
+      if (type == NONE || !enabled) return;
+      u8x8->clear();
+    }
+    void setPowerSave(uint8_t save) {
+      if (type == NONE || !enabled) return;
+      u8x8->setPowerSave(save);
+    }
+
+    void center(String &line, uint8_t width) {
+      int len = line.length();
+      if (len<width) for (byte i=(width-len)/2; i>0; i--) line = ' ' + line;
+      for (byte i=line.length(); i<width; i++) line += ' ';
+    }
+
+    void draw2x2GlyphIcons() {
+      if (lineHeight == 2) {
+        drawGlyph( 1,            0, 1, u8x8_4LineDisplay_WLED_icons_2x2, true); //brightness icon
+        drawGlyph( 5,            0, 2, u8x8_4LineDisplay_WLED_icons_2x2, true); //speed icon
+        drawGlyph( 9,            0, 3, u8x8_4LineDisplay_WLED_icons_2x2, true); //intensity icon
+        drawGlyph(14, 2*lineHeight, 4, u8x8_4LineDisplay_WLED_icons_2x2, true); //palette icon
+        drawGlyph(14, 3*lineHeight, 5, u8x8_4LineDisplay_WLED_icons_2x2, true); //effect icon
+      } else {
+        drawGlyph( 1, 0, 1, u8x8_4LineDisplay_WLED_icons_2x1); //brightness icon
+        drawGlyph( 5, 0, 2, u8x8_4LineDisplay_WLED_icons_2x1); //speed icon
+        drawGlyph( 9, 0, 3, u8x8_4LineDisplay_WLED_icons_2x1); //intensity icon
+        drawGlyph(15, 2, 4, u8x8_4LineDisplay_WLED_icons_1x1); //palette icon
+        drawGlyph(15, 3, 5, u8x8_4LineDisplay_WLED_icons_1x1); //effect icon
+      }
+    }
+
+    /**
+     * Display the current date and time in large characters
+     * on the middle rows. Based 24 or 12 hour depending on
+     * the useAMPM configuration.
+     */
+    void showTime() {
+      if (type == NONE || !enabled || !displayTurnedOff) return;
+
+      unsigned long now = millis();
+      while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
+      drawing = true;
+
+      char lineBuffer[LINE_BUFFER_SIZE];
+      static byte lastSecond;
+      byte secondCurrent = second(localTime);
+      byte minuteCurrent = minute(localTime);
+      byte hourCurrent   = hour(localTime);
+
+      if (knownMinute != minuteCurrent) {  //only redraw clock if it has changed
+        //updateLocalTime();
+        byte AmPmHour = hourCurrent;
+        boolean isitAM = true;
+        if (useAMPM) {
+          if (AmPmHour > 11) { AmPmHour -= 12; isitAM = false; }
+          if (AmPmHour == 0) { AmPmHour  = 12; }
+        }
+        if (knownHour != hourCurrent) {
+          // only update date when hour changes
+          sprintf_P(lineBuffer, PSTR("%s %2d "), monthShortStr(month(localTime)), day(localTime)); 
+          draw2x2String(2, lineHeight==1 ? 0 : lineHeight, lineBuffer); // adjust for 8 line displays, draw month and day
+        }
+        sprintf_P(lineBuffer,PSTR("%2d:%02d"), (useAMPM ? AmPmHour : hourCurrent), minuteCurrent);
+        draw2x2String(2, lineHeight*2, lineBuffer); //draw hour, min. blink ":" depending on odd/even seconds
+        if (useAMPM) drawString(12, lineHeight*2, (isitAM ? "AM" : "PM"), true); //draw am/pm if using 12 time
+
+        drawStatusIcons(); //icons power, wifi, timer, etc
+
+        knownMinute = minuteCurrent;
+        knownHour   = hourCurrent;
+      }
+      if (showSeconds && secondCurrent != lastSecond) {
+        lastSecond = secondCurrent;
+        draw2x2String(6, lineHeight*2, secondCurrent%2 ? " " : ":");
+        sprintf_P(lineBuffer, PSTR("%02d"), secondCurrent);
+        drawString(12, lineHeight*2+1, lineBuffer, true); // even with double sized rows print seconds in 1 line
+      }
+      drawing = false;
+    }
+
   public:
 
     // gets called once at boot. Do all initialization that doesn't depend on
@@ -195,14 +312,21 @@ class FourLineDisplayUsermod : public Usermod {
       bool isHW, isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64);
       PinOwner po = PinOwner::UM_FourLineDisplay;
       if (isSPI) {
+        PinManagerPinType cspins[2] = { { ioPin[3], true }, { ioPin[4], true } };
+        if (!pinManager.allocateMultiplePins(cspins, 2, PinOwner::UM_FourLineDisplay)) { type=NONE; return; }
         isHW = (ioPin[0]==spi_sclk && ioPin[1]==spi_mosi && ioPin[2]==spi_cs);
         if (isHW) po = PinOwner::HW_SPI;  // allow multiple allocations of HW I2C bus pins
-        PinManagerPinType pins[5] = { { ioPin[0], true }, { ioPin[1], true }, { ioPin[2], true }, { ioPin[3], true }, { ioPin[4], true }};
-        if (!pinManager.allocateMultiplePins(pins, 5, po)) { type=NONE; return; }
+        PinManagerPinType pins[3] = { { ioPin[0], true }, { ioPin[1], true }, { ioPin[2], true } };
+        if (!pinManager.allocateMultiplePins(pins, 5, po)) {
+          pinManager.deallocatePin(ioPin[3], PinOwner::UM_FourLineDisplay);
+          pinManager.deallocatePin(ioPin[4], PinOwner::UM_FourLineDisplay);
+          type = NONE;
+          return;
+        }
       } else {
         isHW = (ioPin[0]==i2c_scl && ioPin[1]==i2c_sda);
         if (isHW) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
-        PinManagerPinType pins[2] = { { ioPin[0], true }, { ioPin[1], true } };
+        PinManagerPinType pins[2] = { {ioPin[0], true }, { ioPin[1], true } };
         if (!pinManager.allocateMultiplePins(pins, 2, po)) { type=NONE; return; }
       }
 
@@ -318,58 +442,6 @@ class FourLineDisplayUsermod : public Usermod {
       nextUpdate = now + ((displayTurnedOff && clockMode && showSeconds) ? 1000 : refreshRate);
       redraw(false);
     #endif
-    }
-
-    /**
-     * Wrappers for screen drawing
-     */
-    void setFlipMode(uint8_t mode) {
-      if (type == NONE || !enabled) return;
-      u8x8->setFlipMode(mode);
-    }
-    void setContrast(uint8_t contrast) {
-      if (type == NONE || !enabled) return;
-      u8x8->setContrast(contrast);
-    }
-    void drawString(uint8_t col, uint8_t row, const char *string, bool ignoreLH=false) {
-      if (type == NONE || !enabled) return;
-      u8x8->setFont(u8x8_font_chroma48medium8_r);
-      if (!ignoreLH && lineHeight==2) u8x8->draw1x2String(col, row, string);
-      else                            u8x8->drawString(col, row, string);
-    }
-    void draw2x2String(uint8_t col, uint8_t row, const char *string) {
-      if (type == NONE || !enabled) return;
-      u8x8->setFont(u8x8_font_chroma48medium8_r);
-      u8x8->draw2x2String(col, row, string);
-    }
-    void drawGlyph(uint8_t col, uint8_t row, char glyph, const uint8_t *font, bool ignoreLH=false) {
-      if (type == NONE || !enabled) return;
-      u8x8->setFont(font);
-      if (!ignoreLH && lineHeight==2) u8x8->draw1x2Glyph(col, row, glyph);
-      else                            u8x8->drawGlyph(col, row, glyph);
-    }
-    void draw2x2Glyph(uint8_t col, uint8_t row, char glyph, const uint8_t *font) {
-      if (type == NONE || !enabled) return;
-      u8x8->setFont(font);
-      u8x8->draw2x2Glyph(col, row, glyph);
-    }
-    uint8_t getCols() {
-      if (type==NONE || !enabled) return 0;
-      return u8x8->getCols();
-    }
-    void clear() {
-      if (type == NONE || !enabled) return;
-      u8x8->clear();
-    }
-    void setPowerSave(uint8_t save) {
-      if (type == NONE || !enabled) return;
-      u8x8->setPowerSave(save);
-    }
-
-    void center(String &line, uint8_t width) {
-      int len = line.length();
-      if (len<width) for (byte i=(width-len)/2; i>0; i--) line = ' ' + line;
-      for (byte i=line.length(); i<width; i++) line += ' ';
     }
 
     //function to update lastredraw
@@ -525,22 +597,6 @@ class FourLineDisplayUsermod : public Usermod {
       }
     }
 
-    void draw2x2GlyphIcons() {
-      if (lineHeight == 2) {
-        drawGlyph( 1,            0, 1, u8x8_4LineDisplay_WLED_icons_2x2, true); //brightness icon
-        drawGlyph( 5,            0, 2, u8x8_4LineDisplay_WLED_icons_2x2, true); //speed icon
-        drawGlyph( 9,            0, 3, u8x8_4LineDisplay_WLED_icons_2x2, true); //intensity icon
-        drawGlyph(14, 2*lineHeight, 4, u8x8_4LineDisplay_WLED_icons_2x2, true); //palette icon
-        drawGlyph(14, 3*lineHeight, 5, u8x8_4LineDisplay_WLED_icons_2x2, true); //effect icon
-      } else {
-        drawGlyph( 1, 0, 1, u8x8_4LineDisplay_WLED_icons_2x1); //brightness icon
-        drawGlyph( 5, 0, 2, u8x8_4LineDisplay_WLED_icons_2x1); //speed icon
-        drawGlyph( 9, 0, 3, u8x8_4LineDisplay_WLED_icons_2x1); //intensity icon
-        drawGlyph(15, 2, 4, u8x8_4LineDisplay_WLED_icons_1x1); //palette icon
-        drawGlyph(15, 3, 5, u8x8_4LineDisplay_WLED_icons_1x1); //effect icon
-      }
-    }
-
     void drawStatusIcons() {
       uint8_t col = 15;
       uint8_t row = 0;
@@ -566,8 +622,8 @@ class FourLineDisplayUsermod : public Usermod {
       if (markColNum != 255 && markLineNum !=255) drawGlyph(markColNum, markLineNum*lineHeight, 21, u8x8_4LineDisplay_WLED_icons_1x1);
     }
 
-     //Display the current effect or palette (desiredEntry) 
-     // on the appropriate line (row). 
+    //Display the current effect or palette (desiredEntry) 
+    // on the appropriate line (row). 
     void showCurrentEffectOrPalette(int inputEffPal, const char *qstring, uint8_t row) {
       char lineBuffer[MAX_JSON_CHARS];
       if (overlayUntil == 0) {
@@ -813,55 +869,6 @@ class FourLineDisplayUsermod : public Usermod {
         displayTurnedOff = false;
         setPowerSave(0);
       }
-    }
-
-    /**
-     * Display the current date and time in large characters
-     * on the middle rows. Based 24 or 12 hour depending on
-     * the useAMPM configuration.
-     */
-    void showTime() {
-      if (type == NONE || !enabled || !displayTurnedOff) return;
-
-      unsigned long now = millis();
-      while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
-      drawing = true;
-
-      char lineBuffer[LINE_BUFFER_SIZE];
-      static byte lastSecond;
-      byte secondCurrent = second(localTime);
-      byte minuteCurrent = minute(localTime);
-      byte hourCurrent   = hour(localTime);
-
-      if (knownMinute != minuteCurrent) {  //only redraw clock if it has changed
-        //updateLocalTime();
-        byte AmPmHour = hourCurrent;
-        boolean isitAM = true;
-        if (useAMPM) {
-          if (AmPmHour > 11) { AmPmHour -= 12; isitAM = false; }
-          if (AmPmHour == 0) { AmPmHour  = 12; }
-        }
-        if (knownHour != hourCurrent) {
-          // only update date when hour changes
-          sprintf_P(lineBuffer, PSTR("%s %2d "), monthShortStr(month(localTime)), day(localTime)); 
-          draw2x2String(2, lineHeight==1 ? 0 : lineHeight, lineBuffer); // adjust for 8 line displays, draw month and day
-        }
-        sprintf_P(lineBuffer,PSTR("%2d:%02d"), (useAMPM ? AmPmHour : hourCurrent), minuteCurrent);
-        draw2x2String(2, lineHeight*2, lineBuffer); //draw hour, min. blink ":" depending on odd/even seconds
-        if (useAMPM) drawString(12, lineHeight*2, (isitAM ? "AM" : "PM"), true); //draw am/pm if using 12 time
-
-        drawStatusIcons(); //icons power, wifi, timer, etc
-
-        knownMinute = minuteCurrent;
-        knownHour   = hourCurrent;
-      }
-      if (showSeconds && secondCurrent != lastSecond) {
-        lastSecond = secondCurrent;
-        draw2x2String(6, lineHeight*2, secondCurrent%2 ? " " : ":");
-        sprintf_P(lineBuffer, PSTR("%02d"), secondCurrent);
-        drawString(12, lineHeight*2+1, lineBuffer, true); // even with double sized rows print seconds in 1 line
-      }
-      drawing = false;
     }
 
     /**

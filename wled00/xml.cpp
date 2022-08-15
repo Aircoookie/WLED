@@ -639,6 +639,11 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("MOSI"),spi_mosi);
     sappend('v',SET_F("SCLK"),spi_sclk);
     sappend('v',SET_F("CS"),spi_cs);
+    oappend(SET_F("addInfo('SDA','"));  oappendi(HW_PIN_SDA);      oappend(SET_F("');"));
+    oappend(SET_F("addInfo('SCL','"));  oappendi(HW_PIN_SCL);      oappend(SET_F("');"));
+    oappend(SET_F("addInfo('MOSI','")); oappendi(HW_PIN_DATASPI);  oappend(SET_F("');"));
+    oappend(SET_F("addInfo('SCLK','")); oappendi(HW_PIN_CLOCKSPI); oappend(SET_F("');"));
+    oappend(SET_F("addInfo('CS','"));   oappendi(HW_PIN_CSSPI);    oappend(SET_F("');"));
     usermods.appendConfigData();
   }
 

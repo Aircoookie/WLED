@@ -58,6 +58,20 @@
                 if (o.value==pins[i] && pinO[i]==="if") { o.style.color="lime"; break; }
                 if (o.value==pins[i] || o.value<-1 || o.value>39) { o.style.color="red"; break; } else o.style.color=o.value>33?"orange":"#fff";
             }
+        } else {
+            switch (o.name) {
+                case "SDA": break;
+                case "SCL": break;
+                case "MOSI": break;
+                case "SCLK": break;
+                case "CS": break;
+                default: return;
+            }
+            for (var i=0; i<pins.length; i++) {
+                if (k==pinO[i]) continue;
+                if (o.value==pins[i] && pinO[i]==="if") { o.style.color="lime"; break; }
+                if (o.value==pins[i] || o.value<-1 || o.value>39) { o.style.color="red"; break; } else o.style.color=o.value>33?"orange":"#fff";
+            }
         }
     }
     function getPins(o) {
@@ -80,7 +94,6 @@
             }
         }
     }
-    function updPins() {}
     function addField(k,f,o,a=false) {  //key, field, (sub)object, isArray
         if (isO(o)) {
             urows += '<hr style="width:260px">';
@@ -158,7 +171,9 @@
     // https://stackoverflow.com/questions/26440494/insert-text-after-this-input-element-with-javascript
     function addInfo(name,el,txt) {
         let obj = d.getElementsByName(name);
-        if (obj[el]) obj[el].insertAdjacentHTML('afterend', '&nbsp;'+txt);
+        if (!obj.length) return;
+        if (typeof el === "string" && obj[0]) obj[0].placeholder = el;
+        else if (obj[el]) obj[el].insertAdjacentHTML('afterend', '&nbsp;'+txt);
     }
     // load settings and insert values into DOM
     function ldS() {
@@ -209,14 +224,14 @@
 		<h2>Usermod Setup</h2>
         Global I<sup>2</sup>C GPIOs (HW)<br>
         <i style="color: orange;">(only changable on ESP32, change requires reboot!)</i><br>
-        SDA:<input type="number" min="-1" max="33" name="SDA" onchange="updPins()" class="s" placeholder="SDA">
-        SCL:<input type="number" min="-1" max="33" name="SCL" onchange="updPins()" class="s" placeholder="SCL">
+        SDA:<input type="number" min="-1" max="33" name="SDA" onchange="check(this,'if')" class="s" placeholder="SDA">
+        SCL:<input type="number" min="-1" max="33" name="SCL" onchange="check(this,'if')" class="s" placeholder="SCL">
         <hr style="width:260px">
         Global SPI GPIOs (HW)<br>
         <i style="color: orange;">(only changable on ESP32, change requires reboot!)</i><br>
-        MOSI:<input type="number" min="-1" max="33" name="MOSI" onchange="updPins()" class="s" placeholder="MOSI">
-        SCLK:<input type="number" min="-1" max="33" name="SCLK" onchange="updPins()" class="s" placeholder="SCLK">
-        CS:<input type="number" min="-1" max="33" name="CS" onchange="updPins()" class="s" placeholder="CS">
+        MOSI:<input type="number" min="-1" max="33" name="MOSI" onchange="check(this,'if')" class="s" placeholder="MOSI">
+        SCLK:<input type="number" min="-1" max="33" name="SCLK" onchange="check(this,'if')" class="s" placeholder="SCLK">
+        CS:<input type="number" min="-1" max="33" name="CS" onchange="check(this,'if')" class="s" placeholder="CS">
         <div id="um">Loading settings...</div>
 		<hr><button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 	</form>
