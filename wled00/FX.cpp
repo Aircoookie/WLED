@@ -2157,7 +2157,7 @@ uint16_t mode_noise16_2()
 
     //fastled_col = ColorFromPalette(SEGPALETTE, index, noise, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
     //SEGMENT.setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
-    SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0));
+    SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0, noise));
   }
 
   return FRAMETIME;
@@ -2182,7 +2182,7 @@ uint16_t mode_noise16_3()
 
     //fastled_col = ColorFromPalette(SEGPALETTE, index, noise, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
     //SEGMENT.setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
-    SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0));
+    SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0, noise));
   }
 
   return FRAMETIME;
