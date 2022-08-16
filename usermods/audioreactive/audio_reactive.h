@@ -421,6 +421,12 @@ class AudioReactive : public Usermod {
     unsigned long last_kick_time = 0;
     uint8_t  last_user_inputLevel = 0;
 
+    // used to feed "Info" Page
+    unsigned long last_UDPTime = 0;    // time of last valid UDP sound sync datapacket
+    float maxSample5sec = 0.0f;        // max sample (after AGC) in last 5 seconds 
+    unsigned long sampleMaxTimer = 0;  // last time maxSample5sec was reset
+    #define CYCLE_SAMPLEMAX 3500       // time window for merasuring
+
     // strings to reduce flash memory usage (used more than twice)
     static const char _name[];
     static const char _enabled[];
@@ -968,6 +974,7 @@ class AudioReactive : public Usermod {
 
       if (audioSyncEnabled & 0x02) disableSoundProcessing = true;   // make sure everything is disabled IF in audio Receive mode
       if (audioSyncEnabled & 0x01) disableSoundProcessing = false;  // keep running audio IF we're in audio Transmit mode
+      if(!audioSource->isInitialized()) disableSoundProcessing = true;  // no audio source
 
 
       // Only run the sampling code IF we're not in Receive mode or realtime mode
@@ -1056,6 +1063,7 @@ class AudioReactive : public Usermod {
           bool have_new_sample = false;
           if (millis() - lastTime > delayMs) {
             have_new_sample = receiveAudioData();
+            if (have_new_sample) last_UDPTime = millis();
             lastTime = millis();
           }
           if (have_new_sample) syncVolumeSmth = volumeSmth;   // remember received sample
@@ -1069,6 +1077,14 @@ class AudioReactive : public Usermod {
        }
       #endif
 
+      // peak sample from last 5 seconds
+      if ((millis() -  sampleMaxTimer) > CYCLE_SAMPLEMAX) {
+        sampleMaxTimer = millis();
+        maxSample5sec = (0.25 * maxSample5sec) + 0.75 *((soundAgc) ? sampleAgc : sampleAvg); // reset, with some smoothing
+        if (sampleAvg < 1) maxSample5sec = 0; // noise gate 
+      } else {
+         maxSample5sec = fmaxf(maxSample5sec, (soundAgc) ? sampleAgc : sampleAvg); // follow maximum
+      }
       //UDP Microphone Sync  - transmit mode
       if ((audioSyncEnabled & 0x01) && (millis() - lastTime > 20)) {
         // Only run the transmit code IF we're in Transmit mode
@@ -1092,7 +1108,17 @@ class AudioReactive : public Usermod {
 #ifdef WLED_DEBUG
       fftTime = sampleTime = 0;
 #endif
+      // gracefully suspend FFT task (if running)
       disableSoundProcessing = true;
+
+      // reset sound data
+      micDataReal = 0.0f;
+      volumeRaw = 0; volumeSmth = 0;
+      sampleAgc = 0; sampleAvg = 0;
+      sampleRaw = 0; rawSampleAgc = 0;
+      my_magnitude = 0; FFT_Magnitude = 0; FFT_MajorPeak = 0;
+      multAgc = 1;
+
       if (init && FFT_Task) {
         vTaskSuspend(FFT_Task);   // update is about to begin, disable task to prevent crash
       } else {
@@ -1111,6 +1137,7 @@ class AudioReactive : public Usermod {
 //            , 0                                 // Core where the task should run
           );
       }
+      micDataReal = 0.0f;                      // just to ber sure
       if (enabled) disableSoundProcessing = false;
     }
 
@@ -1140,6 +1167,7 @@ class AudioReactive : public Usermod {
      */
     void addToJsonInfo(JsonObject& root)
     {
+      char myStringBuffer[16]; // buffer for snprintf()
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
 
@@ -1166,6 +1194,75 @@ class AudioReactive : public Usermod {
         uiDomString += inputLevel;
         uiDomString += F(" /><div class=\"sliderdisplay\"></div></div></div>"); //<output class=\"sliderbubble\"></output>
         infoArr.add(uiDomString);
+
+        // current Audio input
+        infoArr = user.createNestedArray(F("Audio Source"));
+        if (audioSyncEnabled & 0x02) {
+            // UDP sound sync - receive mode
+            infoArr.add("UDP sound sync");
+            if (udpSyncConnected) {
+              if (millis() - last_UDPTime < 2500)
+                infoArr.add(" - receiving");
+              else
+                infoArr.add(" - idle");
+            } else {
+              infoArr.add(" - no network");
+            }
+        } else {
+          // Analog or I2S digital input
+          if (audioSource && (audioSource->isInitialized())) {
+              // audio source sucessfully configured
+              if(audioSource->getType() == AudioSource::Type_I2SAdc) {
+                infoArr.add("ADC analog");
+              } else {
+                infoArr.add("I2S digital");
+              }
+              // input level or "silence"
+              if (maxSample5sec > 1.0) {
+                float my_usage = 100.0f * (maxSample5sec / 255.0f);
+                snprintf(myStringBuffer, 15, " - peak %3d%%", int(my_usage));
+                infoArr.add(myStringBuffer);
+              } else {
+                infoArr.add(" -    quiet");
+              }
+          } else {
+              // error during audio source setup
+              infoArr.add("not initialized");
+              infoArr.add(" - check GPIO config");
+          }
+        }
+
+        // Sound processing (FFT and input filters)
+        infoArr = user.createNestedArray(F("Sound Processing"));
+        if (audioSource && (disableSoundProcessing == false)) {
+              infoArr.add("running");
+        } else {
+            infoArr.add("suspended");
+        }
+
+        // AGC or manual Gain
+        if((soundAgc==0) && (disableSoundProcessing == false) && !(audioSyncEnabled & 0x02)) {
+          infoArr = user.createNestedArray(F("Manual Gain"));
+          float myGain = ((float)sampleGain/40.0f * (float)inputLevel/128.0f) + 1.0f/16.0f;     // non-AGC gain from presets
+          infoArr.add(roundf(myGain*100.0f) / 100.0f);
+          infoArr.add("x");
+        }
+        if(soundAgc && (disableSoundProcessing == false) && !(audioSyncEnabled & 0x02)) {
+          infoArr = user.createNestedArray(F("AGC Gain"));
+          infoArr.add(roundf(multAgc*100.0f) / 100.0f);
+          infoArr.add("x");
+        }
+
+        // UDP Sound Sync status
+        infoArr = user.createNestedArray(F("UDP Sound Sync"));
+        if (audioSyncEnabled) {
+            if (audioSyncEnabled & 0x01) {
+              infoArr.add("send mode");
+            } else if (audioSyncEnabled & 0x02) {
+                infoArr.add("receive mode");
+            }
+        } else
+            infoArr.add("off");
 
         #ifdef WLED_DEBUG
         infoArr = user.createNestedArray(F("Sampling time"));
