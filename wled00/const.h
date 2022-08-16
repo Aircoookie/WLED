@@ -76,7 +76,8 @@
 #define USERMOD_ID_WORDCLOCK             27     //Usermod "usermod_v2_word_clock.h"
 #define USERMOD_ID_MY9291                28     //Usermod "usermod_MY9291.h"
 #define USERMOD_ID_SI7021_MQTT_HA        29     //Usermod "usermod_si7021_mqtt_ha.h"
-#define USERMOD_ID_BME280                30     //Usermod "usermod_bme280.h
+#define USERMOD_ID_BME280                30     //Usermod "usermod_bme280.h"
+#define USERMOD_ID_ADS1115               31     //Usermod "usermod_ads1115.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot

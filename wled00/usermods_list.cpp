@@ -128,6 +128,10 @@
 #include "../usermods/Si7021_MQTT_HA/usermod_si7021_mqtt_ha.h"
 #endif
 
+#ifdef USERMOD_ADS1115
+#include "../usermods/ADS1115_v2/usermod_ads1115.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -242,5 +246,9 @@ void registerUsermods()
   
   #ifdef USERMOD_SI7021_MQTT_HA
   usermods.add(new Si7021_MQTT_HA());
+  #endif
+
+  #ifdef USERMOD_ADS1115
+  usermods.add(new ADS1115Usermod());
   #endif
 }
