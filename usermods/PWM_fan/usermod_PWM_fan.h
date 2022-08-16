@@ -51,6 +51,7 @@ class PWMFanUsermod : public Usermod {
     float   targetTemperature = 25.0;
     uint8_t minPWMValuePct    = 50;
     uint8_t numberOfInterrupsInOneSingleRotation = 2;     // Number of interrupts ESP32 sees on tacho signal on a single fan rotation. All the fans I've seen trigger two interrups.
+    uint8_t pwmValuePct       = 0;
 
     // strings to reduce flash memory usage (used more than twice)
     static const char _name[];
@@ -83,6 +84,8 @@ class PWMFanUsermod : public Usermod {
     }
 
     void updateTacho(void) {
+      // store milliseconds when tacho was measured the last time
+      msLastTachoMeasurement = millis();
       if (tachoPin < 0) return;
 
       // start of tacho measurement
@@ -93,8 +96,6 @@ class PWMFanUsermod : public Usermod {
       last_rpm /= tachoUpdateSec;
       // reset counter
       counter_rpm = 0; 
-      // store milliseconds when tacho was measured the last time
-      msLastTachoMeasurement = millis();
       // attach interrupt again
       attachInterrupt(digitalPinToInterrupt(tachoPin), rpm_fan, FALLING);
     }
@@ -217,12 +218,30 @@ class PWMFanUsermod : public Usermod {
      * Below it is shown how this could be used for e.g. a light sensor
      */
     void addToJsonInfo(JsonObject& root) {
-      if (tachoPin < 0) return;
-      JsonObject user = root["u"];
-      if (user.isNull()) user = root.createNestedObject("u");
-      JsonArray data = user.createNestedArray(FPSTR(_name));
-      data.add(last_rpm);
-      data.add(F("rpm"));
+      if (enabled) {
+        JsonObject user = root["u"];
+        if (user.isNull()) user = root.createNestedObject("u");
+//        if (!tempUM) {
+        JsonArray infoArr = user.createNestedArray(F("Fan speed [%]"));
+        String uiDomString = F("<div class=\"slider\"><div class=\"sliderwrap il\"><input class=\"noslide\" onchange=\"requestJson({'");
+        uiDomString += FPSTR(_name);
+        uiDomString += F("':{'");
+        uiDomString += FPSTR(_speed);
+        uiDomString += F("':parseInt(this.value)}});\" oninput=\"updateTrail(this);\" max=100 min=0 type=\"range\" value=");
+        uiDomString += pwmValuePct;
+        uiDomString += F(" /><div class=\"sliderdisplay\"></div></div></div>"); //<output class=\"sliderbubble\"></output>
+        infoArr.add(uiDomString);
+//        }
+        if (tachoPin >= 0) {
+          JsonArray data = user.createNestedArray(FPSTR(_name));
+          data.add(last_rpm);
+          data.add(F("rpm"));
+        } else {
+          JsonArray data = user.createNestedArray(FPSTR(_name));
+          if (lockFan) data.add(F("locked"));
+          else         data.add(F("auto"));
+        }
+      }
     }
 
     /*
