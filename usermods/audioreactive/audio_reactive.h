@@ -27,9 +27,6 @@
 // #define NO_MIC_LOGGER                // exclude MIC_LOGGER from SR_DEBUG
 
 // hackers corner
-#if !defined(SOUND_DYNAMICS_LIMITER) && !defined(NO_SOUND_DYNAMICS_LIMITER)
-#define SOUND_DYNAMICS_LIMITER        // experimental: define to enable a dynamics limiter that avoids "sudden flashes" at onsets. Makes some effects look more "smooth and fluent"
-#endif
 
 #ifdef SR_DEBUG
   #define DEBUGSR_PRINT(x) Serial.print(x)
@@ -64,8 +61,9 @@ static uint8_t soundAgc = 0;                  // Automagic gain control: 0 - non
 static uint8_t audioSyncEnabled = 0;          // bit field: bit 0 - send, bit 1 - receive (config value)
 
 // user settable parameters for limitSoundDynamics()
-static int attackTime =  80;          // int: attack time in milliseconds. Default 0.1sec
-static int decayTime = 1400;          // int: decay time in milliseconds.  Default 1.4sec
+static bool limiterOn = true;                 // bool: enable / disable dynamics limiter
+static uint16_t attackTime =  80;             // int: attack time in milliseconds. Default 0.08sec
+static uint16_t decayTime = 1400;             // int: decay time in milliseconds.  Default 1.40sec
 
 // 
 // AGC presets
@@ -289,11 +287,10 @@ void FFTcode(void * parameter)
         //fftAvg[i]    = fftCalc[i]*0.05f + 0.95f*fftAvg[i];  // will need approx 10 cycles (250ms) for converging against fftCalc[i]
 
       // Now, let's dump it all into fftResult. Need to do this, otherwise other routines might grab fftResult values prematurely.
-#if !defined(SOUND_DYNAMICS_LIMITER)
-      fftResult[i] = constrain((int)fftCalc[i], 0, 254);
-#else
-      fftResult[i] = constrain((int)fftAvg[i], 0, 254);
-#endif
+      if(limiterOn == true)
+        fftResult[i] = constrain((int)fftAvg[i], 0, 254);
+      else
+        fftResult[i] = constrain((int)fftCalc[i], 0, 254);
     }
 
 #ifdef WLED_DEBUG
@@ -695,10 +692,11 @@ class AudioReactive : public Usermod {
     */
     // effects: Gravimeter, Gravcenter, Gravcentric, Noisefire, Plasmoid, Freqpixels, Freqwave, Gravfreq, (2D Swirl, 2D Waverly)
     void limitSampleDynamics(void) {
-    #ifdef SOUND_DYNAMICS_LIMITER
       const float bigChange = 196;                  // just a representative number - a large, expected sample value
       static unsigned long last_time = 0;
       static float last_volumeSmth = 0.0f;
+
+      if(limiterOn == false) return;
 
       long delta_time = millis() - last_time;
       delta_time = constrain(delta_time , 1, 1000); // below 1ms -> 1ms; above 1sec -> sily lil hick-up
@@ -717,7 +715,6 @@ class AudioReactive : public Usermod {
 
       last_volumeSmth = volumeSmth;
       last_time = millis();
-    #endif
     }
 
 
@@ -1080,10 +1077,10 @@ class AudioReactive : public Usermod {
       // peak sample from last 5 seconds
       if ((millis() -  sampleMaxTimer) > CYCLE_SAMPLEMAX) {
         sampleMaxTimer = millis();
-        maxSample5sec = (0.25 * maxSample5sec) + 0.75 *((soundAgc) ? sampleAgc : sampleAvg); // reset, with some smoothing
+        maxSample5sec = (0.15 * maxSample5sec) + 0.85 *((soundAgc) ? sampleAgc : sampleAvg); // reset, and start with some smoothing
         if (sampleAvg < 1) maxSample5sec = 0; // noise gate 
       } else {
-         maxSample5sec = fmaxf(maxSample5sec, (soundAgc) ? sampleAgc : sampleAvg); // follow maximum
+         if ((sampleAvg >= 1)) maxSample5sec = fmaxf(maxSample5sec, (soundAgc) ? rawSampleAgc : sampleRaw); // follow maximum volume
       }
       //UDP Microphone Sync  - transmit mode
       if ((audioSyncEnabled & 0x01) && (millis() - lastTime > 20)) {
@@ -1370,6 +1367,11 @@ class AudioReactive : public Usermod {
       cfg[F("gain")] = sampleGain;
       cfg[F("AGC")] = soundAgc;
 
+      JsonObject dynLim = top.createNestedObject("dynamics");
+      dynLim[F("Limiter")] = limiterOn;
+      dynLim[F("Rise")] = attackTime;
+      dynLim[F("Fall")] = decayTime;
+
       JsonObject sync = top.createNestedObject("sync");
       sync[F("port")] = audioSyncPort;
       sync[F("mode")] = audioSyncEnabled;
@@ -1412,6 +1414,10 @@ class AudioReactive : public Usermod {
       configComplete &= getJsonValue(top["cfg"][F("gain")],    sampleGain);
       configComplete &= getJsonValue(top["cfg"][F("AGC")],     soundAgc);
 
+      configComplete &= getJsonValue(top["dynamics"][F("Limiter")], limiterOn);
+      configComplete &= getJsonValue(top["dynamics"][F("Rise")],  attackTime);
+      configComplete &= getJsonValue(top["dynamics"][F("Fall")],  decayTime);
+
       configComplete &= getJsonValue(top["sync"][F("port")], audioSyncPort);
       configComplete &= getJsonValue(top["sync"][F("mode")], audioSyncEnabled);
 
@@ -1433,6 +1439,16 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addOption(dd,'Normal',1);"));
       oappend(SET_F("addOption(dd,'Vivid',2);"));
       oappend(SET_F("addOption(dd,'Lazy',3);"));
+
+      oappend(SET_F("dd=addDropdown('AudioReactive','dynamics:Limiter');"));
+      oappend(SET_F("addOption(dd,'Off',0);"));
+      oappend(SET_F("addOption(dd,'On',1);"));
+      oappend(SET_F("addInfo('AudioReactive:dynamics:Limiter',0,' Limiter On ');"));  // 0 is field type, 1 is actual field
+      //oappend(SET_F("addInfo('AudioReactive:dynamics:Rise',0,'min. ');"));
+      oappend(SET_F("addInfo('AudioReactive:dynamics:Rise',1,' ms <br /><i>(volume reactive FX only)</i>');"));
+      //oappend(SET_F("addInfo('AudioReactive:dynamics:Fall',0,'min. ');"));
+      oappend(SET_F("addInfo('AudioReactive:dynamics:Fall',1,' ms <br /><i>(volume reactive FX only)</i>');"));
+
       oappend(SET_F("dd=addDropdown('AudioReactive','sync:mode');"));
       oappend(SET_F("addOption(dd,'Off',0);"));
       oappend(SET_F("addOption(dd,'Send',1);"));
