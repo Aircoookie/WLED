@@ -6157,7 +6157,8 @@ uint16_t mode_gravcenter(void) {                // Gravcenter. By Andrew Tuline.
   }
   float   volumeSmth  = *(float*)  um_data->u_data[0];
 
-  SEGMENT.fade_out(240);
+  //SEGMENT.fade_out(240);
+  SEGMENT.fade_out(251);  // 30%
 
   float segmentSampleAvg = volumeSmth * (float)SEGMENT.intensity / 255.0f;
   segmentSampleAvg *= 0.125; // divide by 8, to compensate for later "sensitivty" upscaling
@@ -6206,8 +6207,9 @@ uint16_t mode_gravcentric(void) {                     // Gravcentric. By Andrew 
 
   // printUmData();
 
-  SEGMENT.fade_out(240);
-  SEGMENT.fade_out(240); // twice? really?
+  //SEGMENT.fade_out(240);
+  //SEGMENT.fade_out(240); // twice? really?
+  SEGMENT.fade_out(253);  // 50%
 
   float segmentSampleAvg = volumeSmth * (float)SEGMENT.intensity / 255.0;
   segmentSampleAvg *= 0.125f; // divide by 8, to compensate for later "sensitivty" upscaling
@@ -6254,7 +6256,8 @@ uint16_t mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
   }
   float   volumeSmth  = *(float*)  um_data->u_data[0];
 
-  SEGMENT.fade_out(240);
+  //SEGMENT.fade_out(240);
+  SEGMENT.fade_out(249);  // 25%
 
   float segmentSampleAvg = volumeSmth * (float)SEGMENT.intensity / 255.0;
   segmentSampleAvg *= 0.25; // divide by 4, to compensate for later "sensitivty" upscaling
@@ -6294,7 +6297,7 @@ uint16_t mode_juggles(void) {                   // Juggles. By Andrew Tuline.
   }
   float   volumeSmth   = *(float*)  um_data->u_data[0];
 
-  SEGMENT.fade_out(224);
+  SEGMENT.fade_out(224); // 6.25%
   uint16_t my_sampleAgc = fmax(fmin(volumeSmth, 255.0), 0);
 
   for (size_t i=0; i<SEGMENT.intensity/32+1U; i++) {
@@ -6419,11 +6422,13 @@ uint16_t mode_noisemeter(void) {                // Noisemeter. By Andrew Tuline.
   float   volumeSmth   = *(float*)  um_data->u_data[0];
   int16_t volumeRaw    = *(int16_t*)um_data->u_data[1];
 
-  uint8_t fadeRate = map(SEGMENT.speed,0,255,224,255);
+  //uint8_t fadeRate = map(SEGMENT.speed,0,255,224,255);
+  uint8_t fadeRate = map(SEGMENT.speed,0,255,200,254);
   SEGMENT.fade_out(fadeRate);
 
   float tmpSound2 = volumeRaw * 2.0 * (float)SEGMENT.intensity / 255.0;
   int maxLen = mapf(tmpSound2, 0, 255, 0, SEGLEN); // map to pixels availeable in current segment              // Still a bit too sensitive.
+  if (maxLen <0) maxLen = 0;
   if (maxLen >SEGLEN) maxLen = SEGLEN;
 
   for (int i=0; i<maxLen; i++) {                                    // The louder the sound, the wider the soundbar. By Andrew Tuline.
@@ -6521,7 +6526,7 @@ static const char _data_FX_MODE_PLASMOID[] PROGMEM = "Plasmoid@Phase,# of pixels
 uint16_t mode_puddlepeak(void) {                // Puddlepeak. By Andrew Tuline.
 
   uint16_t size = 0;
-  uint8_t fadeVal = map(SEGMENT.speed,0,255, 224, 255);
+  uint8_t fadeVal = map(SEGMENT.speed,0,255, 224, 254);
   uint16_t pos = random(SEGLEN);                          // Set a random starting position.
 
   um_data_t *um_data;
@@ -6563,7 +6568,7 @@ static const char _data_FX_MODE_PUDDLEPEAK[] PROGMEM = "Puddlepeak@Fade rate,Pud
 //////////////////////
 uint16_t mode_puddles(void) {                   // Puddles. By Andrew Tuline.
   uint16_t size = 0;
-  uint8_t fadeVal = map(SEGMENT.speed, 0, 255, 224, 255);
+  uint8_t fadeVal = map(SEGMENT.speed, 0, 255, 224, 254);
   uint16_t pos = random16(SEGLEN);                        // Set a random starting position.
 
   SEGMENT.fade_out(fadeVal);
@@ -6714,11 +6719,13 @@ uint16_t mode_freqmap(void) {                   // Map FFT_MajorPeak to SEGLEN. 
 
   SEGMENT.fade_out(SEGMENT.speed);
 
-  int locn = (log10f((float)FFT_MajorPeak) - 1.78f) * (float)SEGLEN/(3.71f-1.78f);  // log10 frequency range is from 1.78 to 3.71. Let's scale to SEGLEN.
+//  int locn = (log10f((float)FFT_MajorPeak) - 1.78f) * (float)SEGLEN/(3.71f-1.78f);  // log10 frequency range is from 1.78 to 3.71. Let's scale to SEGLEN.
+  int locn = (log10f((float)FFT_MajorPeak) - 1.78f) * (float)SEGLEN/(4.0102f-1.78f);  // log10 frequency range is from 1.78 to 3.71. Let's scale to SEGLEN.
   if (locn < 1) locn = 0; // avoid underflow
 
   if (locn >=SEGLEN) locn = SEGLEN-1;
-  uint16_t pixCol = (log10f(FFT_MajorPeak) - 1.78f) * 255.0f/(3.71f-1.78f);   // Scale log10 of frequency values to the 255 colour index.
+  //uint16_t pixCol = (log10f(FFT_MajorPeak) - 1.78f) * 255.0f/(3.71f-1.78f);   // Scale log10 of frequency values to the 255 colour index.
+  uint16_t pixCol = (log10f(FFT_MajorPeak) - 1.78f) * 255.0f/(4.0102f-1.78f);   // Scale log10 of frequency values to the 255 colour index.
   uint16_t bright = (int)my_magnitude;
 
   SEGMENT.setPixelColor(locn, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(SEGMENT.intensity+pixCol, false, PALETTE_SOLID_WRAP, 0), bright));
@@ -6757,7 +6764,8 @@ uint16_t mode_freqmatrix(void) {                // Freqmatrix. By Andreas Plesch
 
     CRGB color = CRGB::Black;
 
-    if (FFT_MajorPeak > 5120) FFT_MajorPeak = 0;
+    //if (FFT_MajorPeak > 5120) FFT_MajorPeak = 0;
+    if (FFT_MajorPeak > 10240) FFT_MajorPeak = 0;
     // MajorPeak holds the freq. value which is most abundant in the last sample.
     // With our sampling rate of 10240Hz we have a usable freq range from roughtly 80Hz to 10240/2 Hz
     // we will treat everything with less than 65Hz as 0
@@ -6804,7 +6812,8 @@ uint16_t mode_freqpixels(void) {                // Freqpixel. By Andrew Tuline.
 
   for (int i=0; i < SEGMENT.intensity/32+1; i++) {
     uint16_t locn = random16(0,SEGLEN);
-    uint8_t pixCol = (log10f(FFT_MajorPeak) - 1.78) * 255.0/(3.71-1.78);  // Scale log10 of frequency values to the 255 colour index.
+    //uint8_t pixCol = (log10f(FFT_MajorPeak) - 1.78) * 255.0/(3.71-1.78);  // Scale log10 of frequency values to the 255 colour index.
+    uint8_t pixCol = (log10f(FFT_MajorPeak) - 1.78f) * 255.0f/(4.0102f-1.78f);  // Scale log10 of frequency values to the 255 colour index.
     SEGMENT.setPixelColor(locn, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(SEGMENT.intensity+pixCol, false, PALETTE_SOLID_WRAP, 0), (int)my_magnitude));
   }
 
@@ -6854,7 +6863,8 @@ uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschun
 
     CRGB color = 0;
 
-    if (FFT_MajorPeak > 5120) FFT_MajorPeak = 0.0f;
+    //if (FFT_MajorPeak > 5120) FFT_MajorPeak = 0.0f;
+    if (FFT_MajorPeak > 10240) FFT_MajorPeak = 0.0f;
     // MajorPeak holds the freq. value which is most abundant in the last sample.
     // With our sampling rate of 10240Hz we have a usable freq range from roughtly 80Hz to 10240/2 Hz
     // we will treat everything with less than 65Hz as 0
@@ -6910,7 +6920,8 @@ uint16_t mode_gravfreq(void) {                  // Gravfreq. By Andrew Tuline.
 
   for (int i=0; i<tempsamp; i++) {
 
-    uint8_t index = (log10((int)FFT_MajorPeak) - (3.71-1.78)) * 255; //int? shouldn't it be floor() or similar
+    //uint8_t index = (log10((int)FFT_MajorPeak) - (3.71-1.78)) * 255; //int? shouldn't it be floor() or similar
+    uint8_t index = (log10f(FFT_MajorPeak) - (4.0102f-1.78f)) * 255; //int? shouldn't it be floor() or similar
 
     SEGMENT.setPixelColor(i+SEGLEN/2, SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0));
     SEGMENT.setPixelColor(SEGLEN/2-i-1, SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0));
