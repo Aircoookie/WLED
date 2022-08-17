@@ -386,14 +386,14 @@ void Segment::setOption(uint8_t n, bool val) {
 }
 
 // 2D matrix
-uint16_t Segment::virtualWidth() {
+uint16_t Segment::virtualWidth() const {
   uint16_t groupLen = groupLength();
   uint16_t vWidth = ((transpose ? height() : width()) + groupLen - 1) / groupLen;
   if (mirror) vWidth = (vWidth + 1) /2;  // divide by 2 if mirror, leave at least a single LED
   return vWidth;
 }
 
-uint16_t Segment::virtualHeight() {
+uint16_t Segment::virtualHeight() const {
   uint16_t groupLen = groupLength();
   uint16_t vHeight = ((transpose ? width() : height()) + groupLen - 1) / groupLen;
   if (mirror_y) vHeight = (vHeight + 1) /2;  // divide by 2 if mirror, leave at least a single LED
@@ -401,7 +401,7 @@ uint16_t Segment::virtualHeight() {
 }
 
 // 1D strip
-uint16_t Segment::virtualLength() {
+uint16_t Segment::virtualLength() const {
 #ifndef WLED_DISABLE_2D
   if (is2D()) {
     uint16_t vW = virtualWidth();
@@ -561,7 +561,7 @@ uint32_t Segment::getPixelColor(uint16_t i)
   return strip.getPixelColor(i);
 }
 
-uint8_t Segment::differs(Segment& b) {
+uint8_t Segment::differs(Segment& b) const {
   uint8_t d = 0;
   if (start != b.start)         d |= SEG_DIFFERS_BOUNDS;
   if (stop != b.stop)           d |= SEG_DIFFERS_BOUNDS;
@@ -583,7 +583,7 @@ uint8_t Segment::differs(Segment& b) {
   if ((options & 0b1111111100101110) != (b.options & 0b1111111100101110)) d |= SEG_DIFFERS_OPT;
   if ((options & 0x01) != (b.options & 0x01))                             d |= SEG_DIFFERS_SEL;
   
-  for (uint8_t i = 0; i < NUM_COLORS; i++) if (colors[i] != b.colors[i]) d |= SEG_DIFFERS_COL;
+  for (uint8_t i = 0; i < NUM_COLORS; i++) if (colors[i] != b.colors[i])  d |= SEG_DIFFERS_COL;
 
   return d;
 }
@@ -1394,7 +1394,7 @@ void WS2812FX::setTransitionMode(bool t)
 void WS2812FX::printSize()
 {
   size_t size = 0;
-  for (Segment seg : _segments) size += seg.getSize();
+  for (const Segment seg : _segments) size += seg.getSize();
   DEBUG_PRINTF("Segments: %d -> %uB\n", _segments.size(), size);
   DEBUG_PRINTF("Modes: %d*%d=%uB\n", sizeof(mode_ptr), _mode.size(), (_mode.capacity()*sizeof(mode_ptr)));
   DEBUG_PRINTF("Data: %d*%d=%uB\n", sizeof(const char *), _modeData.size(), (_modeData.capacity()*sizeof(const char *)));
