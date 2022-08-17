@@ -503,31 +503,23 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
     int8_t hw_mosi_pin = !request->arg(F("MOSI")).length() ? -1 : max(-1,min(33,(int)request->arg(F("MOSI")).toInt()));
     int8_t hw_sclk_pin = !request->arg(F("SCLK")).length() ? -1 : max(-1,min(33,(int)request->arg(F("SCLK")).toInt()));
-    int8_t hw_cs_pin   = !request->arg(F("CS")).length()   ? -1 : max(-1,min(33,(int)request->arg(F("CS")).toInt()));
     #ifdef ESP8266
     // cannot change pins on ESP8266
     if (hw_mosi_pin >= 0 && hw_mosi_pin != HW_PIN_DATASPI)  hw_mosi_pin = HW_PIN_DATASPI;
     if (hw_sclk_pin >= 0 && hw_sclk_pin != HW_PIN_CLOCKSPI) hw_sclk_pin = HW_PIN_CLOCKSPI;
-    if (hw_cs_pin   >= 0 && hw_cs_pin   != HW_PIN_CSSPI)    hw_cs_pin   = HW_PIN_CSSPI;
     #endif
-    PinManagerPinType spi[3] = { { hw_mosi_pin, true }, { hw_sclk_pin, true }, { hw_cs_pin, true } };
-    if (hw_mosi_pin >= 0 && hw_sclk_pin >= 0 && hw_cs_pin >= 0 && pinManager.allocateMultiplePins(spi, 3, PinOwner::HW_SPI)) {
+    PinManagerPinType spi[2] = { { hw_mosi_pin, true }, { hw_sclk_pin, true } };
+    if (hw_mosi_pin >= 0 && hw_sclk_pin >= 0 && pinManager.allocateMultiplePins(spi, 2, PinOwner::HW_SPI)) {
       spi_mosi = hw_mosi_pin;
       spi_sclk = hw_sclk_pin;
-      spi_cs   = hw_cs_pin;
-      #ifdef ESP8266
-      SPI.begin();
-      #else
-      SPI.begin(spi_sclk, (int8_t)-1, spi_mosi, spi_cs);
-      #endif
+      // no bus initialisation
     } else {
       //SPI.end();
       DEBUG_PRINTLN(F("Could not allocate SPI pins."));
-      uint8_t spi[3] = { spi_mosi, spi_sclk, spi_cs };
-      pinManager.deallocateMultiplePins(spi, 3, PinOwner::HW_SPI); // just in case deallocation of old pins
+      uint8_t spi[2] = { spi_mosi, spi_sclk };
+      pinManager.deallocateMultiplePins(spi, 2, PinOwner::HW_SPI); // just in case deallocation of old pins
       spi_mosi = -1;
       spi_sclk = -1;
-      spi_cs   = -1;
     }
 
     JsonObject um = doc.createNestedObject("um");

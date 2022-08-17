@@ -265,10 +265,9 @@ void getSettingsJS(byte subPage, char* dest)
       oappend(","); oappend(itoa(i2c_sda,nS,10));
       oappend(","); oappend(itoa(i2c_scl,nS,10));
     }
-    if (spi_mosi > -1 && spi_sclk > -1 && spi_cs > -1) {
+    if (spi_mosi > -1 && spi_sclk > -1) {
       oappend(","); oappend(itoa(spi_mosi,nS,10));
       oappend(","); oappend(itoa(spi_sclk,nS,10));
-      oappend(","); oappend(itoa(spi_cs,nS,10));
     }
 
     if (requestJSONBufferLock(6)) {
@@ -638,12 +637,10 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("SCL"),i2c_scl);
     sappend('v',SET_F("MOSI"),spi_mosi);
     sappend('v',SET_F("SCLK"),spi_sclk);
-    sappend('v',SET_F("CS"),spi_cs);
     oappend(SET_F("addInfo('SDA','"));  oappendi(HW_PIN_SDA);      oappend(SET_F("');"));
     oappend(SET_F("addInfo('SCL','"));  oappendi(HW_PIN_SCL);      oappend(SET_F("');"));
     oappend(SET_F("addInfo('MOSI','")); oappendi(HW_PIN_DATASPI);  oappend(SET_F("');"));
     oappend(SET_F("addInfo('SCLK','")); oappendi(HW_PIN_CLOCKSPI); oappend(SET_F("');"));
-    oappend(SET_F("addInfo('CS','"));   oappendi(HW_PIN_CSSPI);    oappend(SET_F("');"));
     usermods.appendConfigData();
   }
 

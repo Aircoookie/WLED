@@ -387,6 +387,7 @@
 #if defined(ESP8266) && defined(HW_PIN_CSSPI)
   #undef HW_PIN_CSSPI
 #endif
+// defaults for VSPI
 #ifndef HW_PIN_CLOCKSPI
   #define HW_PIN_CLOCKSPI SCK
 #endif

@@ -283,18 +283,12 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonArray hw_if_spi = hw[F("if")][F("spi-pin")];
   CJSON(spi_mosi, hw_if_spi[0]);
   CJSON(spi_sclk, hw_if_spi[1]);
-  CJSON(spi_cs, hw_if_spi[2]);
-  PinManagerPinType spi[3] = { { spi_mosi, true }, { spi_sclk, true }, { spi_cs, true } };
-  if (spi_mosi >= 0 && spi_sclk >= 0 && spi_cs >= 0 && pinManager.allocateMultiplePins(spi, 3, PinOwner::HW_SPI)) {
-    #ifdef ESP8266
-    SPI.begin();
-    #else
-    SPI.begin(spi_sclk, (int8_t)-1, spi_mosi, spi_cs);
-    #endif
+  PinManagerPinType spi[3] = { { spi_mosi, true }, { spi_sclk, true } };
+  if (spi_mosi >= 0 && spi_sclk >= 0 && pinManager.allocateMultiplePins(spi, 2, PinOwner::HW_SPI)) {
+    // do not initialise bus here
   } else {
     spi_mosi = -1;
     spi_sclk = -1;
-    spi_cs   = -1;
   }
 
   //int hw_status_pin = hw[F("status")]["pin"]; // -1
@@ -752,7 +746,6 @@ void serializeConfig() {
   JsonArray hw_if_spi = hw_if.createNestedArray("spi-pin");
   hw_if_spi.add(spi_mosi);
   hw_if_spi.add(spi_sclk);
-  hw_if_spi.add(spi_cs);
 
   //JsonObject hw_status = hw.createNestedObject("status");
   //hw_status["pin"] = -1;
