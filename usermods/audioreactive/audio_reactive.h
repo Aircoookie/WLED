@@ -21,7 +21,13 @@
  */
 
 // Comment/Uncomment to toggle usb serial debugging
-// #define SR_DEBUG
+// #define MIC_LOGGER                   // MIC sampling & sound input debugging (serial plotter)
+// #define FFT_SAMPLING_LOG             // FFT result debugging
+// #define SR_DEBUG                     // generic SR DEBUG messages (including MIC_LOGGER)
+// #define NO_MIC_LOGGER                // exclude MIC_LOGGER from SR_DEBUG
+
+// hackers corner
+
 #ifdef SR_DEBUG
   #define DEBUGSR_PRINT(x) Serial.print(x)
   #define DEBUGSR_PRINTLN(x) Serial.println(x)
@@ -31,19 +37,21 @@
   #define DEBUGSR_PRINTLN(x)
   #define DEBUGSR_PRINTF(x...)
 #endif
+// legacy support
+// #if defined(SR_DEBUG) && !defined(MIC_LOGGER) && !defined(NO_MIC_LOGGER)
+// #define MIC_LOGGER
+// #endif
+
 
 #include "audio_source.h"
 
 constexpr i2s_port_t I2S_PORT = I2S_NUM_0;
 constexpr int BLOCK_SIZE = 128;
-constexpr int SAMPLE_RATE = 20480;      // Base sample rate in Hz - 20Khz is experimental
-//constexpr int SAMPLE_RATE = 10240;      // Base sample rate in Hz - standard
+//constexpr int SAMPLE_RATE = 22050;            // Base sample rate in Hz - 22Khz is a standard rate. Physical sample time -> 23ms
+constexpr int SAMPLE_RATE = 20480;            // Base sample rate in Hz - 20Khz is experimental.    Physical sample time -> 25ms
+//constexpr int SAMPLE_RATE = 10240;            // Base sample rate in Hz - standard.                 Physical sample time -> 50ms
 
-// #define MIC_LOGGER
-// #define MIC_SAMPLING_LOG
-// #define FFT_SAMPLING_LOG
-
-//#define MAJORPEAK_SUPPRESS_NOISE      // define to activate a dirty hack that ignores the lowest + hightest FFT bins
+#define FFT_MIN_CYCLE 22                      // minimum time before FFT task is repeated. Must be less than time needed to read 512 samples at SAMPLE_RATE -> not the same as I2S time!!
 
 // globals
 static uint8_t inputLevel = 128;              // UI slider value
@@ -52,18 +60,23 @@ static uint8_t sampleGain = 60;               // sample gain (config value)
 static uint8_t soundAgc = 0;                  // Automagic gain control: 0 - none, 1 - normal, 2 - vivid, 3 - lazy (config value)
 static uint8_t audioSyncEnabled = 0;          // bit field: bit 0 - send, bit 1 - receive (config value)
 
+// user settable parameters for limitSoundDynamics()
+static bool limiterOn = true;                 // bool: enable / disable dynamics limiter
+static uint16_t attackTime =  80;             // int: attack time in milliseconds. Default 0.08sec
+static uint16_t decayTime = 1400;             // int: decay time in milliseconds.  Default 1.40sec
+
 // 
 // AGC presets
 //  Note: in C++, "const" implies "static" - no need to explicitly declare everything as "static const"
 // 
 #define AGC_NUM_PRESETS 3 // AGC presets:          normal,   vivid,    lazy
 const double agcSampleDecay[AGC_NUM_PRESETS]  = { 0.9994f, 0.9985f, 0.9997f}; // decay factor for sampleMax, in case the current sample is below sampleMax
-const float agcZoneLow[AGC_NUM_PRESETS]      = {      32,      28,      36}; // low volume emergency zone
-const float agcZoneHigh[AGC_NUM_PRESETS]     = {     240,     240,     248}; // high volume emergency zone
-const float agcZoneStop[AGC_NUM_PRESETS]     = {     336,     448,     304}; // disable AGC integrator if we get above this level
-const float agcTarget0[AGC_NUM_PRESETS]      = {     112,     144,     164}; // first AGC setPoint -> between 40% and 65%
-const float agcTarget0Up[AGC_NUM_PRESETS]    = {      88,      64,     116}; // setpoint switching value (a poor man's bang-bang)
-const float agcTarget1[AGC_NUM_PRESETS]      = {     220,     224,     216}; // second AGC setPoint -> around 85%
+const float agcZoneLow[AGC_NUM_PRESETS]       = {      32,      28,      36}; // low volume emergency zone
+const float agcZoneHigh[AGC_NUM_PRESETS]      = {     240,     240,     248}; // high volume emergency zone
+const float agcZoneStop[AGC_NUM_PRESETS]      = {     336,     448,     304}; // disable AGC integrator if we get above this level
+const float agcTarget0[AGC_NUM_PRESETS]       = {     112,     144,     164}; // first AGC setPoint -> between 40% and 65%
+const float agcTarget0Up[AGC_NUM_PRESETS]     = {      88,      64,     116}; // setpoint switching value (a poor man's bang-bang)
+const float agcTarget1[AGC_NUM_PRESETS]       = {     220,     224,     216}; // second AGC setPoint -> around 85%
 const double agcFollowFast[AGC_NUM_PRESETS]   = { 1/192.f, 1/128.f, 1/256.f}; // quickly follow setpoint - ~0.15 sec
 const double agcFollowSlow[AGC_NUM_PRESETS]   = {1/6144.f,1/4096.f,1/8192.f}; // slowly follow setpoint  - ~2-15 secs
 const double agcControlKp[AGC_NUM_PRESETS]    = {    0.6f,    1.5f,   0.65f}; // AGC - PI control, proportional gain parameter
@@ -74,9 +87,7 @@ const float agcSampleSmooth[AGC_NUM_PRESETS]  = {  1/12.f,   1/6.f,  1/16.f}; //
 static AudioSource *audioSource = nullptr;
 static volatile bool disableSoundProcessing = false;      // if true, sound processing (FFT, filters, AGC) will be suspended. "volatile" as its shared between tasks.
 
-//static uint16_t micData;                        // Analog input for FFT
-static uint16_t micDataSm;                      // Smoothed mic data, as it's a bit twitchy
-static float    micDataReal = 0.0f;             // future support - this one has the full 24bit MicIn data - lowest 8bit after decimal point
+static float    micDataReal = 0.0f;             // MicIn data with full 24bit resolution - lowest 8bit after decimal point
 static float    multAgc = 1.0f;                 // sample * multAgc = sampleAgc. Our AGC multiplier
 
 ////////////////////
@@ -86,33 +97,34 @@ static float    multAgc = 1.0f;                 // sample * multAgc = sampleAgc.
 // lib_deps += https://github.com/kosme/arduinoFFT#develop @ 1.9.2
 #define FFT_SPEED_OVER_PRECISION     // enables use of reciprocals (1/x etc), and an a few other speedups
 #define FFT_SQRT_APPROXIMATION       // enables "quake3" style inverse sqrt
-//#define sqrt(x) sqrtf(x)             // little hack that reduces FFT time by 50% on ESP32 (as alternative to FFT_SQRT_APPROXIMATION)
+#define sqrt(x) sqrtf(x)             // little hack that reduces FFT time by 50% on ESP32 (as alternative to FFT_SQRT_APPROXIMATION)
 #endif
 #include "arduinoFFT.h"
 
 // FFT Variables
 constexpr uint16_t samplesFFT = 512;            // Samples in an FFT batch - This value MUST ALWAYS be a power of 2
+constexpr uint16_t samplesFFT_2 = 256;          // meaningfull part of FFT results - only the "lower half" contains useful information.
 
 static float FFT_MajorPeak = 0.0f;
 static float FFT_Magnitude = 0.0f;
 
 // These are the input and output vectors.  Input vectors receive computed results from FFT.
-static float vReal[samplesFFT];
-static float vImag[samplesFFT];
-static float fftBin[samplesFFT];
+static float vReal[samplesFFT] = {0.0f};
+static float vImag[samplesFFT] = {0.0f};
+static float fftBin[samplesFFT_2] = {0.0f};
 
 #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
-static float windowWeighingFactors[samplesFFT];
+static float windowWeighingFactors[samplesFFT] = {0.0f};
 #endif
 
 // Try and normalize fftBin values to a max of 4096, so that 4096/16 = 256.
 // Oh, and bins 0,1,2 are no good, so we'll zero them out.
-static float   fftCalc[16];
-static uint8_t fftResult[16];                           // Our calculated result table, which we feed to the animations.
+static float   fftCalc[16] = {0.0f};
+static uint8_t fftResult[16] = {0};                     // Our calculated result table, which we feed to the animations.
 #ifdef SR_DEBUG
-static float   fftResultMax[16];                        // A table used for testing to determine how our post-processing is working.
+static float   fftResultMax[16] = {0.0f};               // A table used for testing to determine how our post-processing is working.
 #endif
-static float   fftAvg[16];
+static float   fftAvg[16] = {0.0f};
 
 #ifdef WLED_DEBUG
 static unsigned long fftTime = 0;
@@ -134,7 +146,7 @@ static arduinoFFT FFT = arduinoFFT(vReal, vImag, samplesFFT, SAMPLE_RATE);
 
 static TaskHandle_t FFT_Task = nullptr;
 
-float fftAddAvg(int from, int to) {
+static float fftAddAvg(int from, int to) {
   float result = 0.0f;
   for (int i = from; i <= to; i++) {
     result += fftBin[i];
@@ -145,39 +157,39 @@ float fftAddAvg(int from, int to) {
 // FFT main code
 void FFTcode(void * parameter)
 {
-  DEBUGSR_PRINT("FFT running on core: "); DEBUGSR_PRINTLN(xPortGetCoreID());
-#ifdef MAJORPEAK_SUPPRESS_NOISE
-  static float xtemp[24] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-#endif
+  DEBUGSR_PRINT("FFT started on core: "); DEBUGSR_PRINTLN(xPortGetCoreID());
+
+  // see https://www.freertos.org/vtaskdelayuntil.html
+  const TickType_t xFrequency = FFT_MIN_CYCLE * portTICK_PERIOD_MS;  
+  //const TickType_t xFrequency_2 = (FFT_MIN_CYCLE * portTICK_PERIOD_MS) / 2;
 
   for(;;) {
+    TickType_t xLastWakeTime = xTaskGetTickCount();
     delay(1);           // DO NOT DELETE THIS LINE! It is needed to give the IDLE(0) task enough time and to keep the watchdog happy.
                         // taskYIELD(), yield(), vTaskDelay() and esp_task_wdt_feed() didn't seem to work.
 
     // Only run the FFT computing code if we're not in Receive mode and not in realtime mode
     if (disableSoundProcessing || (audioSyncEnabled & 0x02)) {
-      delay(7);   // release CPU - delay is implemeted using vTaskDelay(). cannot use yield() because we are out of arduino loop context
+      //delay(7);   // release CPU - delay is implemeted using vTaskDelay(). cannot use yield() because we are out of arduino loop context
+      vTaskDelayUntil( &xLastWakeTime, xFrequency);        // release CPU, by doing nothing for FFT_MIN_CYCLE millis
       continue;
     }
 
+    vTaskDelayUntil( &xLastWakeTime, xFrequency);        // release CPU, and let I2S fill its buffers
+    //vTaskDelayUntil( &xLastWakeTime, xFrequency_2);        // release CPU, and let I2S fill its buffers
+
 #ifdef WLED_DEBUG
-//    unsigned long start = millis();
     uint64_t start = esp_timer_get_time();
 #endif
 
     if (audioSource) audioSource->getSamples(vReal, samplesFFT);
 
 #ifdef WLED_DEBUG
-    //sampleTime = ((millis() - start)*3 + sampleTime*7)/10; // smooth
     if (start < esp_timer_get_time()) { // filter out overflows
       unsigned long sampleTimeInMillis = (esp_timer_get_time() - start +500ULL) / 1000ULL; // "+500" to ensure proper rounding
       sampleTime = (sampleTimeInMillis*3 + sampleTime*7)/10; // smooth
     }
 #endif
-
-    // old code - Last sample in vReal is our current mic sample
-    //micDataSm = (uint16_t)vReal[samplesFFT - 1]; // will do a this a bit later
-    //micDataSm = ((micData * 3) + micData)/4;
 
     const int halfSamplesFFT = samplesFFT / 2;   // samplesFFT divided by 2
     float maxSample1 = 0.0f;                         // max sample from first half of FFT batch
@@ -197,7 +209,6 @@ void FFTcode(void * parameter)
         if (fabsf((float)vReal[i]) > maxSample2) maxSample2 = fabsf((float)vReal[i]);
     }
     // release first sample to volume reactive effects
-    micDataSm = (uint16_t)maxSample1;
     micDataReal = maxSample1;
 
 #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
@@ -219,34 +230,6 @@ void FFTcode(void * parameter)
     // vReal[3 .. 255] contain useful data, each a 20Hz interval (60Hz - 5120Hz).
     // There could be interesting data at bins 0 to 2, but there are too many artifacts.
     //
-#ifdef MAJORPEAK_SUPPRESS_NOISE
-    // teporarily reduce signal strength in the highest + lowest bins
-    xtemp[0] = vReal[0]; vReal[0] *= 0.005f;
-    xtemp[1] = vReal[1]; vReal[1] *= 0.005f;
-    xtemp[2] = vReal[2]; vReal[2] *= 0.005f;
-    xtemp[3] = vReal[3]; vReal[3] *= 0.02f;
-    xtemp[4] = vReal[4]; vReal[4] *= 0.02f;
-    xtemp[5] = vReal[5]; vReal[5] *= 0.02f;
-    xtemp[6] = vReal[6]; vReal[6] *= 0.05f;
-    xtemp[7] = vReal[7]; vReal[7] *= 0.08f;
-    xtemp[8] = vReal[8]; vReal[8] *= 0.1f;
-    xtemp[9] = vReal[9]; vReal[9] *= 0.2f;
-    xtemp[10] = vReal[10]; vReal[10] *= 0.2f;
-    xtemp[11] = vReal[11]; vReal[11] *= 0.25f;
-    xtemp[12] = vReal[12]; vReal[12] *= 0.3f;
-    xtemp[13] = vReal[13]; vReal[13] *= 0.3f;
-    xtemp[14] = vReal[14]; vReal[14] *= 0.4f;
-    xtemp[15] = vReal[15]; vReal[15] *= 0.4f;
-    xtemp[16] = vReal[16]; vReal[16] *= 0.4f;
-    xtemp[17] = vReal[17]; vReal[17] *= 0.5f;
-    xtemp[18] = vReal[18]; vReal[18] *= 0.5f;
-    xtemp[19] = vReal[19]; vReal[19] *= 0.6f;
-    xtemp[20] = vReal[20]; vReal[20] *= 0.7f;
-    xtemp[21] = vReal[21]; vReal[21] *= 0.8f;
-
-    xtemp[22] = vReal[samplesFFT-2]; vReal[samplesFFT-2] = 0.0f;
-    xtemp[23] = vReal[samplesFFT-1]; vReal[samplesFFT-1] = 0.0f;
-#endif
 
 #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
     FFT.majorPeak(FFT_MajorPeak, FFT_Magnitude);      // let the effects know which freq was most dominant
@@ -254,37 +237,7 @@ void FFTcode(void * parameter)
     FFT.MajorPeak(&FFT_MajorPeak, &FFT_Magnitude);          // let the effects know which freq was most dominant
 #endif
 
-#ifdef MAJORPEAK_SUPPRESS_NOISE
-    // dirty hack: limit suppressed channel intensities to FFT_Magnitude
-    for (int k=0; k < 24; k++) if(xtemp[k] > FFT_Magnitude) xtemp[k] = FFT_Magnitude;
-    // restore bins
-    vReal[0] = xtemp[0];
-    vReal[1] = xtemp[1];
-    vReal[2] = xtemp[2];
-    vReal[3] = xtemp[3];
-    vReal[4] = xtemp[4];
-    vReal[5] = xtemp[5];
-    vReal[6] = xtemp[6];
-    vReal[7] = xtemp[7];
-    vReal[8] = xtemp[8];
-    vReal[9] = xtemp[9];
-    vReal[10] = xtemp[10];
-    vReal[11] = xtemp[11];
-    vReal[12] = xtemp[12];
-    vReal[13] = xtemp[13];
-    vReal[14] = xtemp[14];
-    vReal[15] = xtemp[15];
-    vReal[16] = xtemp[16];
-    vReal[17] = xtemp[17];
-    vReal[18] = xtemp[18];
-    vReal[19] = xtemp[19];
-    vReal[20] = xtemp[20];
-    vReal[21] = xtemp[21];
-    vReal[samplesFFT-2] = xtemp[22];
-    vReal[samplesFFT-1] = xtemp[23];
-#endif
-
-    for (int i = 0; i < samplesFFT; i++) {           // Values for bins 0 and 1 are WAY too large. Might as well start at 3.
+    for (int i = 0; i < samplesFFT_2; i++) {           // Values for bins 0 and 1 are WAY too large. Might as well start at 3.
       float t = fabs(vReal[i]);                      // just to be sure - values in fft bins should be positive any way
       fftBin[i] = t / 16.0f;                         // Reduce magnitude. Want end result to be linear and ~4096 max.
     } // for()
@@ -308,7 +261,7 @@ void FFTcode(void * parameter)
     fftCalc[ 4] = fftAddAvg(9,12);      // 180 - 260
     fftCalc[ 5] = fftAddAvg(12,16);     // 240 - 340
     fftCalc[ 6] = fftAddAvg(16,21);     // 320 - 440
-    fftCalc[ 7] = fftAddAvg(21,28);     // 420 - 600
+    fftCalc[ 7] = fftAddAvg(21,29);     // 420 - 600
     fftCalc[ 8] = fftAddAvg(29,37);     // 580 - 760
     fftCalc[ 9] = fftAddAvg(37,48);     // 740 - 980
     fftCalc[10] = fftAddAvg(48,64);     // 960 - 1300
@@ -326,32 +279,32 @@ void FFTcode(void * parameter)
       // Manual linear adjustment of gain using sampleGain adjustment for different input types.
       fftCalc[i] *= soundAgc ? multAgc : ((float)sampleGain/40.0f * (float)inputLevel/128.0f + 1.0f/16.0f); //with inputLevel adjustment
   
+      // smooth results - rise fast, fall slower
+      if(fftCalc[i] > fftAvg[i])   // rise fast 
+        fftAvg[i]    = fftCalc[i] *0.75f + 0.25f*fftAvg[i];  // will need approx 2 cycles (50ms) for converging against fftCalc[i]
+      else                         // fall slow
+        fftAvg[i]    = fftCalc[i]*0.1f + 0.9f*fftAvg[i];  // will need approx 5 cycles (150ms) for converging against fftCalc[i]
+        //fftAvg[i]    = fftCalc[i]*0.05f + 0.95f*fftAvg[i];  // will need approx 10 cycles (250ms) for converging against fftCalc[i]
+
       // Now, let's dump it all into fftResult. Need to do this, otherwise other routines might grab fftResult values prematurely.
-      fftResult[i] = constrain((int)fftCalc[i], 0, 254);
-      fftAvg[i]    = (float)fftResult[i]*0.05f + 0.95f*fftAvg[i];
+      if(limiterOn == true)
+        fftResult[i] = constrain((int)fftAvg[i], 0, 254);
+      else
+        fftResult[i] = constrain((int)fftCalc[i], 0, 254);
     }
 
-    // release second sample to volume reactive effects. 
-	  // The FFT process currently takes ~20ms, so releasing a second sample now effectively doubles the "sample rate" 
-    micDataSm = (uint16_t)maxSample2;
-    micDataReal = maxSample2;
-
 #ifdef WLED_DEBUG
-    //fftTime = ((millis() - start)*3 + fftTime*7)/10;
     if (start < esp_timer_get_time()) { // filter out overflows
       unsigned long fftTimeInMillis = ((esp_timer_get_time() - start) +500ULL) / 1000ULL; // "+500" to ensure proper rounding
       fftTime  = (fftTimeInMillis*3 + fftTime*7)/10; // smooth
     }
 #endif
 
-#ifdef SR_DEBUG
-    // Looking for fftResultMax for each bin using Pink Noise
-    for (int i=0; i<16; i++) {
-      fftResultMax[i] = ((fftResultMax[i] * 63.0f) + fftResult[i]) / 64.0f;
-      DEBUGSR_PRINT(fftResultMax[i]*fftResultPink[i]); DEBUGSR_PRINT("\t");
-    }
-    DEBUGSR_PRINTLN();
-#endif
+    //vTaskDelayUntil( &xLastWakeTime, xFrequency_2);        // release CPU, by waiting until FFT_MIN_CYCLE is over
+    // release second sample to volume reactive effects. 
+	  // Releasing a second sample now effectively doubles the "sample rate" 
+    micDataReal = maxSample2;
+
   } // for(;;)
 } // FFTcode()
 
@@ -401,15 +354,29 @@ class AudioReactive : public Usermod {
     int8_t mclkPin = MLCK_PIN;
     #endif
 
+    // new "V2" audiosync struct - 40 Bytes
     struct audioSyncPacket {
-      char    header[6];
-      int     sampleAgc;      //  04 Bytes
-      int     sampleRaw;      //  04 Bytes
-      float   sampleAvg;      //  04 Bytes
-      bool    samplePeak;     //  01 Bytes
+      char    header[6];      //  06 Bytes
+      float   sampleRaw;      //  04 Bytes  - either "sampleRaw" or "rawSampleAgc" depending on soundAgc setting
+      float   sampleSmth;     //  04 Bytes  - either "sampleAvg" or "sampleAgc" depending on soundAgc setting
+      uint8_t samplePeak;     //  01 Bytes  - 0 no peak; >=1 peak detected. In future, this will also provide peak Magnitude
+      uint8_t reserved1;      //  01 Bytes  - for future extensions - not used yet
       uint8_t fftResult[16];  //  16 Bytes
-      double  FFT_Magnitude;  //  08 Bytes
-      double  FFT_MajorPeak;  //  08 Bytes
+      float  FFT_Magnitude;   //  04 Bytes
+      float  FFT_MajorPeak;   //  04 Bytes
+    };
+
+    // old "V1" audiosync struct - 83 Bytes - for backwards compatibility
+    struct audioSyncPacket_v1 {
+      char header[6];         //  06 Bytes
+      uint8_t myVals[32];     //  32 Bytes
+      int sampleAgc;          //  04 Bytes
+      int sampleRaw;          //  04 Bytes
+      float sampleAvg;        //  04 Bytes
+      bool samplePeak;        //  01 Bytes
+      uint8_t fftResult[16];  //  16 Bytes
+      double FFT_Magnitude;   //  08 Bytes
+      double FFT_MajorPeak;   //  08 Bytes
     };
 
     WiFiUDP fftUdp;
@@ -420,18 +387,16 @@ class AudioReactive : public Usermod {
 
     const uint16_t delayMs = 10;        // I don't want to sample too often and overload WLED
     // variables used in effects
-    uint8_t  maxVol = 10;         // Reasonable value for constant volume for 'peak detector', as it won't always trigger
-    uint8_t  binNum = 8;          // Used to select the bin for FFT based beat detection.
+    uint8_t  maxVol = 10;         // Reasonable value for constant volume for 'peak detector', as it won't always trigger (deprecated)
+    uint8_t  binNum = 8;          // Used to select the bin for FFT based beat detection  (deprecated)
     bool     samplePeak = 0;      // Boolean flag for peak. Responding routine must reset this flag
-    float    volumeSmth;          // either sampleAvg or sampleAgc depending on soundAgc; smoothed sample
-    int16_t  volumeRaw;           // either sampleRaw or rawSampleAgc depending on soundAgc
+    float    volumeSmth = 0.0f;   // either sampleAvg or sampleAgc depending on soundAgc; smoothed sample
+    int16_t  volumeRaw = 0;       // either sampleRaw or rawSampleAgc depending on soundAgc
+    float my_magnitude =0.0f;     // FFT_Magnitude, scaled by multAgc
 
-    #ifdef MIC_SAMPLING_LOG
-    uint8_t  targetAgc = 60;      // This is our setPoint at 20% of max for the adjusted output (used only in logAudio())
-    #endif
     bool     udpSamplePeak = 0;   // Boolean flag for peak. Set at the same tiem as samplePeak, but reset by transmitAudioData
     int16_t  micIn = 0;           // Current sample starts with negative values and large values, which is why it's 16 bit signed
-    int16_t  sampleRaw;           // Current sample. Must only be updated ONCE!!! (amplified mic value by sampleGain and inputLevel; smoothed over 16 samples)
+    int16_t  sampleRaw = 0;       // Current sample. Must only be updated ONCE!!! (amplified mic value by sampleGain and inputLevel; smoothed over 16 samples)
     double   sampleMax = 0.0;     // Max sample over a few seconds. Needed for AGC controler.
     float    sampleReal = 0.0f;		// "sampleRaw" as float, to provide bits that are lost otherwise (before amplification by sampleGain or inputLevel). Needed for AGC.
     float    sampleAvg = 0.0f;    // Smoothed Average sampleRaw
@@ -453,6 +418,12 @@ class AudioReactive : public Usermod {
     unsigned long last_kick_time = 0;
     uint8_t  last_user_inputLevel = 0;
 
+    // used to feed "Info" Page
+    unsigned long last_UDPTime = 0;    // time of last valid UDP sound sync datapacket
+    float maxSample5sec = 0.0f;        // max sample (after AGC) in last 5 seconds 
+    unsigned long sampleMaxTimer = 0;  // last time maxSample5sec was reset
+    #define CYCLE_SAMPLEMAX 3500       // time window for merasuring
+
     // strings to reduce flash memory usage (used more than twice)
     static const char _name[];
     static const char _enabled[];
@@ -460,39 +431,26 @@ class AudioReactive : public Usermod {
     static const char _analogmic[];
     static const char _digitalmic[];
     static const char UDP_SYNC_HEADER[];
-
-    float my_magnitude;
+    static const char UDP_SYNC_HEADER_v1[];
 
     // private methods
     void logAudio()
     {
     #ifdef MIC_LOGGER
-      //Serial.print("micData:");    Serial.print(micData);   Serial.print("\t");
-      //Serial.print("micDataSm:");  Serial.print(micDataSm); Serial.print("\t");
-      //Serial.print("micIn:");      Serial.print(micIn);     Serial.print("\t");
-      //Serial.print("micLev:");     Serial.print(micLev);      Serial.print("\t");
-      //Serial.print("sample:");     Serial.print(sample);      Serial.print("\t");
-      //Serial.print("sampleAvg:");  Serial.print(sampleAvg);   Serial.print("\t");
-      Serial.print("sampleReal:");     Serial.print(sampleReal);      Serial.print("\t");
-      //Serial.print("sampleMax:");     Serial.print(sampleMax);      Serial.print("\t");
-      Serial.print("multAgc:");    Serial.print(multAgc, 4);   Serial.print("\t");
-      Serial.print("sampleAgc:");  Serial.print(sampleAgc);   Serial.print("\t");
-      Serial.println();
-    #endif
+      // Debugging functions for audio input and sound processing. Comment out the values you want to see
+      Serial.print("micReal:");     Serial.print(micDataReal); Serial.print("\t");
+      //Serial.print("micIn:");       Serial.print(micIn);       Serial.print("\t");
+      //Serial.print("micLev:");      Serial.print(micLev);      Serial.print("\t");
+      //Serial.print("sampleReal:");  Serial.print(sampleReal);  Serial.print("\t");
+      //Serial.print("sample:");      Serial.print(sample);      Serial.print("\t");
+      //Serial.print("sampleAvg:");   Serial.print(sampleAvg);   Serial.print("\t");
+      //Serial.print("sampleMax:");   Serial.print(sampleMax);   Serial.print("\t");
+      //Serial.print("samplePeak:");  Serial.print((samplePeak!=0) ? 128:0);   Serial.print("\t");
+      //Serial.print("multAgc:");     Serial.print(multAgc, 4);  Serial.print("\t");
+      Serial.print("sampleAgc:");   Serial.print(sampleAgc);   Serial.print("\t");
+      //Serial.print("volumeRaw:");   Serial.print(volumeRaw);   Serial.print("\t");
+      //Serial.print("volumeSmth:");  Serial.print(volumeSmth);  Serial.print("\t");
 
-    #ifdef MIC_SAMPLING_LOG
-      //------------ Oscilloscope output ---------------------------
-      Serial.print(targetAgc); Serial.print(" ");
-      Serial.print(multAgc); Serial.print(" ");
-      Serial.print(sampleAgc); Serial.print(" ");
-
-      Serial.print(sample); Serial.print(" ");
-      Serial.print(sampleAvg); Serial.print(" ");
-      Serial.print(micLev); Serial.print(" ");
-      Serial.print(samplePeak); Serial.print(" ");    //samplePeak = 0;
-      Serial.print(micIn); Serial.print(" ");
-      Serial.print(100); Serial.print(" ");
-      Serial.print(0); Serial.print(" ");
       Serial.println();
     #endif
 
@@ -530,7 +488,7 @@ class AudioReactive : public Usermod {
       }
       for(int i = 0; i < 16; i++) {
         Serial.print(i); Serial.print(":");
-        Serial.printf("%04d ", map(fftResult[i], 0, (scaleValuesFromCurrentMaxVal ? maxVal : defaultScalingFromHighValue), (mapValuesToPlotterSpace*i*scalingToHighValue)+0, (mapValuesToPlotterSpace*i*scalingToHighValue)+scalingToHighValue-1));
+        Serial.printf("%04ld ", map(fftResult[i], 0, (scaleValuesFromCurrentMaxVal ? maxVal : defaultScalingFromHighValue), (mapValuesToPlotterSpace*i*scalingToHighValue)+0, (mapValuesToPlotterSpace*i*scalingToHighValue)+scalingToHighValue-1));
       }
       if(printMaxVal) {
         Serial.printf("maxVal:%04d ", maxVal + (mapValuesToPlotterSpace ? 16*256 : 0));
@@ -558,7 +516,7 @@ class AudioReactive : public Usermod {
     *    a) normal zone - very slow adjustment
     *    b) emergency zome (<10% or >90%) - very fast adjustment
     */
-    void agcAvg()
+    void agcAvg(unsigned long the_time)
     {
       const int AGC_preset = (soundAgc > 0)? (soundAgc-1): 0; // make sure the _compiler_ knows this value will not change while we are inside the function
 
@@ -575,6 +533,8 @@ class AudioReactive : public Usermod {
       // so let's make sure that the control loop is not running at insane speed
       static unsigned long last_time = 0;
       unsigned long time_now = millis();
+      if ((the_time > 0) && (the_time < time_now)) time_now = the_time;  // allow caller to override my clock
+
       if (time_now - last_time > 2)  {
         last_time = time_now;
 
@@ -642,14 +602,6 @@ class AudioReactive : public Usermod {
       //if (userVar0 > 255) userVar0 = 255;
 
       last_soundAgc = soundAgc;
-
-      volumeSmth = (soundAgc) ? sampleAgc:sampleAvg;
-      volumeRaw = (soundAgc) ? rawSampleAgc : sampleRaw;
-
-      my_magnitude = FFT_Magnitude; // / 16.0f, 8.0f, 4.0f done in effects
-      if (soundAgc) my_magnitude *= multAgc;
-      if (volumeSmth < 1 ) my_magnitude = 0.001f;             // noise gate closed - mute
-
     } // agcAvg()
 
 
@@ -664,33 +616,38 @@ class AudioReactive : public Usermod {
         micIn = inoise8(millis(), millis());          // Simulated analog read
         micDataReal = micIn;
       #else
-        micIn = micDataSm;      // micDataSm = ((micData * 3) + micData)/4;
-        //DEBUGSR_PRINT("micIn:\tmicData:\tmicIn>>2:\tmic_In_abs:\tsample:\tsampleAdj:\tsampleAvg:\n");
-        //DEBUGSR_PRINT(micIn); DEBUGSR_PRINT("\t"); DEBUGSR_PRINT(micData);
+        #ifdef ESP32
+        micIn = int(micDataReal);      // micDataSm = ((micData * 3) + micData)/4;
+        #else
+        // this is the minimal code for reading analog mic input on 8266.
+        // warning!! Absolutely experimental code. Audio on 8266 is still not working. Expects a million follow-on problems. 
+        static unsigned long lastAnalogTime = 0;
+        static float lastAnalogValue = 0.0f;
+        if (millis() - lastAnalogTime > 20) {
+            micDataReal = analogRead(A0); // read one sample with 10bit resolution. This is a dirty hack, supporting volumereactive effects only.
+            lastAnalogTime = millis();
+            lastAnalogValue = micDataReal;
+            yield();
+        } else micDataReal = lastAnalogValue;
+        micIn = int(micDataReal);
+        #endif
       #endif
 
-      // Note to self: the next line kills 80% of sample - "miclev" filter runs at "full arduino loop" speed, following the signal almost instantly!
-      //micLev = ((micLev * 31) + micIn) / 32;                // Smooth it out over the last 32 samples for automatic centering
       micLev = ((micLev * 8191.0f) + micDataReal) / 8192.0f;                // takes a few seconds to "catch up" with the Mic Input
       if(micIn < micLev) micLev = ((micLev * 31.0f) + micDataReal) / 32.0f; // align MicLev to lowest input signal
 
       micIn -= micLev;                                // Let's center it to 0 now
-      DEBUGSR_PRINT("\t\t"); DEBUGSR_PRINT(micIn);
-
       // Using an exponential filter to smooth out the signal. We'll add controls for this in a future release.
       float micInNoDC = fabs(micDataReal - micLev);
       expAdjF = (weighting * micInNoDC + (1.0-weighting) * expAdjF);
       expAdjF = (expAdjF <= soundSquelch) ? 0: expAdjF; // simple noise gate
+      if ((soundSquelch == 0) && (expAdjF < 0.25f)) expAdjF = 0; // do something meaningfull when "squelch = 0"
 
       expAdjF = fabsf(expAdjF);                         // Now (!) take the absolute value
       tmpSample = expAdjF;
-
-      DEBUGSR_PRINT("\t\t"); DEBUGSR_PRINT(tmpSample);
-
       micIn = abs(micIn);                               // And get the absolute value of each sample
 
       sampleAdj = tmpSample * sampleGain / 40.0f * inputLevel/128.0f + tmpSample / 16.0f; // Adjust the gain. with inputLevel adjustment
-      //sampleReal = sampleAdj;
       sampleReal = tmpSample;
 
       sampleAdj = fmax(fmin(sampleAdj, 255), 0);           // Question: why are we limiting the value to 8 bits ???
@@ -709,9 +666,6 @@ class AudioReactive : public Usermod {
 
       sampleAvg = ((sampleAvg * 15.0f) + sampleAdj) / 16.0f;   // Smooth it out over the last 16 samples.
 
-      DEBUGSR_PRINT("\t"); DEBUGSR_PRINT(sampleRaw);
-      DEBUGSR_PRINT("\t\t"); DEBUGSR_PRINT(sampleAvg); DEBUGSR_PRINT("\n\n");
-
       // Fixes private class variable compiler error. Unsure if this is the correct way of fixing the root problem. -THATDONFC
       uint16_t MinShowDelay = strip.getMinShowDelay();
 
@@ -719,19 +673,11 @@ class AudioReactive : public Usermod {
         samplePeak = false;
         udpSamplePeak = false;
       }
-
       //if (userVar1 == 0) samplePeak = 0;
+
       // Poor man's beat detection by seeing if sample > Average + some value.
-      // Serial.print(binNum); Serial.print("\t");
-      // Serial.print(fftBin[binNum]);
-      // Serial.print("\t");
-      // Serial.print(fftAvg[binNum/16]);
-      // Serial.print("\t");
-      // Serial.print(maxVol);
-      // Serial.print("\t");
-      // Serial.println(samplePeak);
-      if ((fftBin[binNum] > maxVol) && (millis() > (timeOfPeak + 100))) {    // This goes through ALL of the 255 bins
       //  if (sample > (sampleAvg + maxVol) && millis() > (timeOfPeak + 200)) {
+      if ((maxVol > 0) && (binNum > 1) && (fftBin[binNum] > maxVol) && (millis() > (timeOfPeak + 100))) {    // This goes through ALL of the 255 bins - but ignores stupid settings
       // Then we got a peak, else we don't. The peak has to time out on its own in order to support UDP sound sync.
         samplePeak    = true;
         timeOfPeak    = millis();
@@ -739,6 +685,37 @@ class AudioReactive : public Usermod {
         //userVar1      = samplePeak;
       }
     } // getSample()
+
+
+    /* Limits the dynamics of volumeSmth (= sampleAvg or sampleAgc). 
+     * does not affect FFTResult[] or volumeRaw ( = sample or rawSampleAgc) 
+    */
+    // effects: Gravimeter, Gravcenter, Gravcentric, Noisefire, Plasmoid, Freqpixels, Freqwave, Gravfreq, (2D Swirl, 2D Waverly)
+    void limitSampleDynamics(void) {
+      const float bigChange = 196;                  // just a representative number - a large, expected sample value
+      static unsigned long last_time = 0;
+      static float last_volumeSmth = 0.0f;
+
+      if(limiterOn == false) return;
+
+      long delta_time = millis() - last_time;
+      delta_time = constrain(delta_time , 1, 1000); // below 1ms -> 1ms; above 1sec -> sily lil hick-up
+      float deltaSample = volumeSmth - last_volumeSmth;
+
+      if (attackTime > 0) {                         // user has defined attack time > 0
+        float maxAttack =   bigChange * float(delta_time) / float(attackTime);
+        if (deltaSample > maxAttack) deltaSample = maxAttack;
+      }
+      if (decayTime > 0) {                          // user has defined decay time > 0
+        float maxDecay  = - bigChange * float(delta_time) / float(decayTime);
+        if (deltaSample < maxDecay) deltaSample = maxDecay;
+      }
+
+      volumeSmth = last_volumeSmth + deltaSample; 
+
+      last_volumeSmth = volumeSmth;
+      last_time = millis();
+    }
 
 
     void transmitAudioData()
@@ -749,17 +726,20 @@ class AudioReactive : public Usermod {
       audioSyncPacket transmitData;
       strncpy_P(transmitData.header, PSTR(UDP_SYNC_HEADER), 6);
 
-      transmitData.sampleAgc  = sampleAgc;
-      transmitData.sampleRaw  = sampleRaw;
-      transmitData.sampleAvg  = sampleAvg;
-      transmitData.samplePeak = udpSamplePeak;
-      udpSamplePeak           = 0;              // Reset udpSamplePeak after we've transmitted it
+      //transmitData.sampleRaw   = volumeRaw;
+      //transmitData.sampleSmth  = volumeSmth;
+      // transmit samples that were not modified by limitSampleDynamics()
+      transmitData.sampleRaw   = (soundAgc) ? rawSampleAgc: sampleRaw;
+      transmitData.sampleSmth  = (soundAgc) ? sampleAgc   : sampleAvg;
+      transmitData.samplePeak  = udpSamplePeak ? 1:0;
+      udpSamplePeak            = false;           // Reset udpSamplePeak after we've transmitted it
+      transmitData.reserved1   = 0;
 
       for (int i = 0; i < 16; i++) {
         transmitData.fftResult[i] = (uint8_t)constrain(fftResult[i], 0, 254);
       }
 
-      transmitData.FFT_Magnitude = FFT_Magnitude;
+      transmitData.FFT_Magnitude = my_magnitude;
       transmitData.FFT_MajorPeak = FFT_MajorPeak;
 
       fftUdp.beginMulticastPacket();
@@ -769,43 +749,63 @@ class AudioReactive : public Usermod {
     } // transmitAudioData()
 
 
-    bool isValidUdpSyncVersion(const char *header) {
+    static bool isValidUdpSyncVersion(const char *header) {
       return strncmp_P(header, PSTR(UDP_SYNC_HEADER), 6) == 0;
     }
 
 
-    void receiveAudioData()
+    bool receiveAudioData()   // check & process new data. return TRUE in case that new audio data was received. 
     {
-      if (!udpSyncConnected) return;
+      if (!udpSyncConnected) return false;
       //DEBUGSR_PRINTLN("Checking for UDP Microphone Packet");
-
+      bool haveFreshData = false;
       size_t packetSize = fftUdp.parsePacket();
-      if (packetSize) {
+      if (packetSize > 5) {
         //DEBUGSR_PRINTLN("Received UDP Sync Packet");
         uint8_t fftBuff[packetSize];
         fftUdp.read(fftBuff, packetSize);
 
         // VERIFY THAT THIS IS A COMPATIBLE PACKET
-        if (packetSize == sizeof(audioSyncPacket) && !(isValidUdpSyncVersion((const char *)fftBuff))) {
+        if (packetSize == sizeof(audioSyncPacket) && (isValidUdpSyncVersion((const char *)fftBuff))) {
           audioSyncPacket *receivedPacket = reinterpret_cast<audioSyncPacket*>(fftBuff);
 
-          sampleAgc    = receivedPacket->sampleAgc;
-          rawSampleAgc = receivedPacket->sampleAgc;
-          sampleRaw    = receivedPacket->sampleRaw;
-          sampleAvg    = receivedPacket->sampleAvg;
+          // update samples for effects
+          volumeSmth   = fmaxf(receivedPacket->sampleSmth, 0.0f);
+          volumeRaw    = fmaxf(receivedPacket->sampleRaw, 0.0f);
 
+          // update internal samples
+          sampleRaw    = volumeRaw;
+          sampleAvg    = volumeSmth;
+          rawSampleAgc = volumeRaw;
+          sampleAgc    = volumeSmth;
+          multAgc      = 1.0f;
+
+          // auto-reset sample peak. Need to do it here, because getSample() is not running
+          uint16_t MinShowDelay = strip.getMinShowDelay();
+          if (millis() - timeOfPeak > MinShowDelay) {   // Auto-reset of samplePeak after a complete frame has passed.
+            samplePeak = false;
+            udpSamplePeak = false;
+          }
+          //if (userVar1 == 0) samplePeak = 0;
           // Only change samplePeak IF it's currently false.
           // If it's true already, then the animation still needs to respond.
-          if (!samplePeak) samplePeak = receivedPacket->samplePeak;
+          if (!samplePeak) {
+            samplePeak = receivedPacket->samplePeak >0 ? true:false;
+            if (samplePeak) timeOfPeak = millis();
+            //userVar1 = samplePeak;
+          }
 
           //These values are only available on the ESP32
           for (int i = 0; i < 16; i++) fftResult[i] = receivedPacket->fftResult[i];
 
-          FFT_Magnitude = receivedPacket->FFT_Magnitude;
-          FFT_MajorPeak = receivedPacket->FFT_MajorPeak;
+          my_magnitude  = fmaxf(receivedPacket->FFT_Magnitude, 0.0f);
+          FFT_Magnitude = my_magnitude;
+          FFT_MajorPeak = fmaxf(receivedPacket->FFT_MajorPeak, 0.0f);
           //DEBUGSR_PRINTLN("Finished parsing UDP Sync Packet");
+          haveFreshData = true;
         }
       }
+      return haveFreshData;
     }
 
 
@@ -852,50 +852,54 @@ class AudioReactive : public Usermod {
       delay(100);         // Give that poor microphone some time to setup.
       switch (dmType) {
         case 1:
-          DEBUGSR_PRINTLN(F("AS: Generic I2S Microphone."));
-          audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, 0, 0xFFFFFFFF);
+          DEBUGSR_PRINT(F("AR: Generic I2S Microphone - ")); DEBUGSR_PRINTLN(F(I2S_MIC_CHANNEL_TEXT));
+          audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE);
           delay(100);
           if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin, i2sckPin);
           break;
         case 2:
-          DEBUGSR_PRINTLN(F("AS: ES7243 Microphone."));
-          audioSource = new ES7243(SAMPLE_RATE, BLOCK_SIZE, 0, 0xFFFFFFFF);
+          DEBUGSR_PRINTLN(F("AR: ES7243 Microphone (right channel only)."));
+          audioSource = new ES7243(SAMPLE_RATE, BLOCK_SIZE);
           delay(100);
           if (audioSource) audioSource->initialize(sdaPin, sclPin, i2swsPin, i2ssdPin, i2sckPin, mclkPin);
           break;
         case 3:
-          DEBUGSR_PRINTLN(F("AS: SPH0645 Microphone"));
-          audioSource = new SPH0654(SAMPLE_RATE, BLOCK_SIZE, 0, 0xFFFFFFFF);
+          DEBUGSR_PRINT(F("AR: SPH0645 Microphone - ")); DEBUGSR_PRINTLN(F(I2S_MIC_CHANNEL_TEXT));
+          audioSource = new SPH0654(SAMPLE_RATE, BLOCK_SIZE);
           delay(100);
           audioSource->initialize(i2swsPin, i2ssdPin, i2sckPin);
           break;
         case 4:
-          DEBUGSR_PRINTLN(F("AS: Generic I2S Microphone with Master Clock"));
-          audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, 0, 0xFFFFFFFF);
+          DEBUGSR_PRINT(F("AR: Generic I2S Microphone with Master Clock - ")); DEBUGSR_PRINTLN(F(I2S_MIC_CHANNEL_TEXT));
+          audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE);
           delay(100);
           if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin, i2sckPin, mclkPin);
           break;
         case 5:
-          DEBUGSR_PRINTLN(F("AS: I2S PDM Microphone"));
-          audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, 0, 0xFFFFFFFF);
+          DEBUGSR_PRINT(F("AR: I2S PDM Microphone - ")); DEBUGSR_PRINTLN(F(I2S_MIC_CHANNEL_TEXT));
+          audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE);
           delay(100);
           if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin);
           break;
         case 0:
         default:
-          DEBUGSR_PRINTLN(F("AS: Analog Microphone."));
-          // we don't do the down-shift by 16bit any more
-          //audioSource = new I2SAdcSource(SAMPLE_RATE, BLOCK_SIZE, -4, 0x0FFF);  // request upscaling to 16bit - still produces too much noise
-          audioSource = new I2SAdcSource(SAMPLE_RATE, BLOCK_SIZE, 0, 0x0FFF);     // keep at 12bit - less noise
+          DEBUGSR_PRINTLN(F("AR: Analog Microphone (left channel only)."));
+          audioSource = new I2SAdcSource(SAMPLE_RATE, BLOCK_SIZE);
           delay(100);
           if (audioSource) audioSource->initialize(audioPin);
           break;
       }
-      delay(250); // give mictophone enough time to initialise
+      delay(250); // give microphone enough time to initialise
 
-      if (!audioSource) enabled = false;  // audio failed to initialise
-      if (enabled) onUpdateBegin(false);  // create FFT task
-      if (enabled) disableSoundProcessing = false;
+      if (!audioSource) enabled = false;                 // audio failed to initialise
+      if (enabled) onUpdateBegin(false);                 // create FFT task
+      if (FFT_Task == nullptr) enabled = false;          // FFT task creation failed
+      if (enabled) disableSoundProcessing = false;       // all good - enable audio processing
+
+      if((!audioSource) || (!audioSource->isInitialized())) {  // audio source failed to initialize. Still stay "enabled", as there might be input arriving via UDP Sound Sync 
+        DEBUGSR_PRINTLN(F("AR: Failed to initialize sound input driver. Please check input PIN settings."));
+        disableSoundProcessing = true;
+      }
 
       initDone = true;
     }
@@ -937,8 +941,7 @@ class AudioReactive : public Usermod {
         return;
       }
       // We cannot wait indefinitely before processing audio data
-      //if (!enabled || strip.isUpdating()) return;
-      if (strip.isUpdating() && (millis() - lastUMRun < 12)) return;   // be nice, but not too nice
+      if (strip.isUpdating() && (millis() - lastUMRun < 2)) return;   // be nice, but not too nice
 
       // suspend local sound processing when "real time mode" is active (E131, UDP, ADALIGHT, ARTNET)
       if (  (realtimeOverride == REALTIME_OVERRIDE_NONE)  // please odd other orrides here if needed
@@ -968,32 +971,47 @@ class AudioReactive : public Usermod {
 
       if (audioSyncEnabled & 0x02) disableSoundProcessing = true;   // make sure everything is disabled IF in audio Receive mode
       if (audioSyncEnabled & 0x01) disableSoundProcessing = false;  // keep running audio IF we're in audio Transmit mode
+      if(!audioSource->isInitialized()) disableSoundProcessing = true;  // no audio source
 
-      if (!(audioSyncEnabled & 0x02) && !disableSoundProcessing) { // Only run the sampling code IF we're not in Receive mode or realtime mode
+
+      // Only run the sampling code IF we're not in Receive mode or realtime mode
+      if (!(audioSyncEnabled & 0x02) && !disableSoundProcessing) {
         bool agcEffect = false;
-
         if (soundAgc > AGC_NUM_PRESETS) soundAgc = 0; // make sure that AGC preset is valid (to avoid array bounds violation)
 
-        int userloopDelay = int(millis() - lastUMRun);   // how long since last run? we might need to cat up to compensate lost times
-        int samplesSkipped = 0;
-        if (userloopDelay > 12) samplesSkipped = (userloopDelay + 12) / 25;  // every 25ms we get a new batch of samples
-        if (samplesSkipped > 100) samplesSkipped = 100;  // don't be silly
-#ifdef WLED_DEBUG
-        // complain when audio userloop has been delayed for long time. Currently we need userloop running between 500 and 1500 times per second. 
-        if ((userloopDelay > 23) && !disableSoundProcessing && (audioSyncEnabled == 0)) {
-          // Expect lagging in soundreactive effects if you see the next messages !!!
-          DEBUG_PRINTF("[AR userLoop] hickup detected -> was inactive for last %d millis!\n", userloopDelay);
-         if (samplesSkipped > 0) DEBUG_PRINTF("[AR userLoop] lost %d sample(s).\n", samplesSkipped);
-        }
-#endif
+        unsigned long t_now = millis();      // remember current time
+        int userloopDelay = int(t_now - lastUMRun);
+        if (lastUMRun == 0) userloopDelay=0; // startup - don't have valid data from last run.
 
-        lastUMRun = millis();                // update time keeping
+        #ifdef WLED_DEBUG
+          // complain when audio userloop has been delayed for long time. Currently we need userloop running between 500 and 1500 times per second. 
+          if ((userloopDelay > 23) && !disableSoundProcessing && (audioSyncEnabled == 0)) {
+            DEBUG_PRINTF("[AR userLoop] hickup detected -> was inactive for last %d millis!\n", userloopDelay);
+          }
+        #endif
 
-        getSample();                        // Sample the microphone
-        agcAvg();                           // Calculated the PI adjusted value as sampleAvg
+        // run filters, and repeat in case of loop delays (hick-up compensation)
+        if (userloopDelay <2) userloopDelay = 0;      // minor glitch, no problem
+        if (userloopDelay >200) userloopDelay = 200;  // limit number of filter re-runs  
+        do {
+          getSample();                        // run microphone sampling filters
+          agcAvg(t_now - userloopDelay);      // Calculated the PI adjusted value as sampleAvg
+          userloopDelay -= 2;                 // advance "simulated time" by 2ms
+        } while (userloopDelay > 0);
+        lastUMRun = t_now;                   // update time keeping
 
+        // update samples for effects (raw, smooth) 
+        volumeSmth = (soundAgc) ? sampleAgc   : sampleAvg;
+        volumeRaw  = (soundAgc) ? rawSampleAgc: sampleRaw;
+        // update FFTMagnitude, taking into account AGC amplification
+        my_magnitude = FFT_Magnitude; // / 16.0f, 8.0f, 4.0f done in effects
+        if (soundAgc) my_magnitude *= multAgc;
+        if (volumeSmth < 1 ) my_magnitude = 0.001f;             // noise gate closed - mute
+
+        limitSampleDynamics();  // optional - makes volumeSmth very smooth and fluent
+
+        // update WebServer UI
         uint8_t knownMode = strip.getFirstSelectedSeg().mode; // 1st selected segment is more appropriate than main segment
-
         if (lastMode != knownMode) { // only execute if mode changes
           char lineBuffer[4];
           extractModeName(knownMode, JSON_mode_names, lineBuffer, 3); // use of JSON_mode_names is deprecated, use nullptr
@@ -1032,24 +1050,45 @@ class AudioReactive : public Usermod {
             last_user_inputLevel = new_user_inputLevel;
           }
         }
+      }
+
+
+      // UDP Microphone Sync  - receive mode
+      if ((audioSyncEnabled & 0x02) && udpSyncConnected) {
+          // Only run the audio listener code if we're in Receive mode
+          static float syncVolumeSmth = 0;
+          bool have_new_sample = false;
+          if (millis() - lastTime > delayMs) {
+            have_new_sample = receiveAudioData();
+            if (have_new_sample) last_UDPTime = millis();
+            lastTime = millis();
+          }
+          if (have_new_sample) syncVolumeSmth = volumeSmth;   // remember received sample
+          else volumeSmth = syncVolumeSmth;                   // restore originally received sample for next run of dynamics limiter
+          limitSampleDynamics();                              // run dynamics limiter on received volumeSmth, to hide jumps and hickups
+      }
 
       #if defined(MIC_LOGGER) || defined(MIC_SAMPLING_LOG) || defined(FFT_SAMPLING_LOG)
-        EVERY_N_MILLIS(20) {
+      EVERY_N_MILLIS(20) {
           logAudio();
-        }
+       }
       #endif
+
+      // peak sample from last 5 seconds
+      if ((millis() -  sampleMaxTimer) > CYCLE_SAMPLEMAX) {
+        sampleMaxTimer = millis();
+        maxSample5sec = (0.15 * maxSample5sec) + 0.85 *((soundAgc) ? sampleAgc : sampleAvg); // reset, and start with some smoothing
+        if (sampleAvg < 1) maxSample5sec = 0; // noise gate 
+      } else {
+         if ((sampleAvg >= 1)) maxSample5sec = fmaxf(maxSample5sec, (soundAgc) ? rawSampleAgc : sampleRaw); // follow maximum volume
       }
-
-      // Begin UDP Microphone Sync
-      if ((audioSyncEnabled & 0x02) && millis() - lastTime > delayMs) // Only run the audio listener code if we're in Receive mode
-        receiveAudioData();
-
-      if (millis() - lastTime > 20) {
-        if (audioSyncEnabled & 0x01) {    // Only run the transmit code IF we're in Transmit mode
-          transmitAudioData();
-        }
+      //UDP Microphone Sync  - transmit mode
+      if ((audioSyncEnabled & 0x01) && (millis() - lastTime > 20)) {
+        // Only run the transmit code IF we're in Transmit mode
+        transmitAudioData();
         lastTime = millis();
       }
+
     }
 
 
@@ -1066,7 +1105,17 @@ class AudioReactive : public Usermod {
 #ifdef WLED_DEBUG
       fftTime = sampleTime = 0;
 #endif
+      // gracefully suspend FFT task (if running)
       disableSoundProcessing = true;
+
+      // reset sound data
+      micDataReal = 0.0f;
+      volumeRaw = 0; volumeSmth = 0;
+      sampleAgc = 0; sampleAvg = 0;
+      sampleRaw = 0; rawSampleAgc = 0;
+      my_magnitude = 0; FFT_Magnitude = 0; FFT_MajorPeak = 0;
+      multAgc = 1;
+
       if (init && FFT_Task) {
         vTaskSuspend(FFT_Task);   // update is about to begin, disable task to prevent crash
       } else {
@@ -1074,16 +1123,18 @@ class AudioReactive : public Usermod {
         if (FFT_Task)
           vTaskResume(FFT_Task);
         else
-          xTaskCreatePinnedToCore(
+//          xTaskCreatePinnedToCore(
+          xTaskCreate(                        // no need to "pin" this task to core #0
             FFTcode,                          // Function to implement the task
             "FFT",                            // Name of the task
             5000,                             // Stack size in words
             NULL,                             // Task input parameter
             1,                                // Priority of the task
-            &FFT_Task,                        // Task handle
-            0                                 // Core where the task should run
+            &FFT_Task                        // Task handle
+//            , 0                                 // Core where the task should run
           );
       }
+      micDataReal = 0.0f;                      // just to ber sure
       if (enabled) disableSoundProcessing = false;
     }
 
@@ -1113,6 +1164,7 @@ class AudioReactive : public Usermod {
      */
     void addToJsonInfo(JsonObject& root)
     {
+      char myStringBuffer[16]; // buffer for snprintf()
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
 
@@ -1139,6 +1191,75 @@ class AudioReactive : public Usermod {
         uiDomString += inputLevel;
         uiDomString += F(" /><div class=\"sliderdisplay\"></div></div></div>"); //<output class=\"sliderbubble\"></output>
         infoArr.add(uiDomString);
+
+        // current Audio input
+        infoArr = user.createNestedArray(F("Audio Source"));
+        if (audioSyncEnabled & 0x02) {
+            // UDP sound sync - receive mode
+            infoArr.add("UDP sound sync");
+            if (udpSyncConnected) {
+              if (millis() - last_UDPTime < 2500)
+                infoArr.add(" - receiving");
+              else
+                infoArr.add(" - idle");
+            } else {
+              infoArr.add(" - no network");
+            }
+        } else {
+          // Analog or I2S digital input
+          if (audioSource && (audioSource->isInitialized())) {
+              // audio source sucessfully configured
+              if(audioSource->getType() == AudioSource::Type_I2SAdc) {
+                infoArr.add("ADC analog");
+              } else {
+                infoArr.add("I2S digital");
+              }
+              // input level or "silence"
+              if (maxSample5sec > 1.0) {
+                float my_usage = 100.0f * (maxSample5sec / 255.0f);
+                snprintf(myStringBuffer, 15, " - peak %3d%%", int(my_usage));
+                infoArr.add(myStringBuffer);
+              } else {
+                infoArr.add(" -    quiet");
+              }
+          } else {
+              // error during audio source setup
+              infoArr.add("not initialized");
+              infoArr.add(" - check GPIO config");
+          }
+        }
+
+        // Sound processing (FFT and input filters)
+        infoArr = user.createNestedArray(F("Sound Processing"));
+        if (audioSource && (disableSoundProcessing == false)) {
+              infoArr.add("running");
+        } else {
+            infoArr.add("suspended");
+        }
+
+        // AGC or manual Gain
+        if((soundAgc==0) && (disableSoundProcessing == false) && !(audioSyncEnabled & 0x02)) {
+          infoArr = user.createNestedArray(F("Manual Gain"));
+          float myGain = ((float)sampleGain/40.0f * (float)inputLevel/128.0f) + 1.0f/16.0f;     // non-AGC gain from presets
+          infoArr.add(roundf(myGain*100.0f) / 100.0f);
+          infoArr.add("x");
+        }
+        if(soundAgc && (disableSoundProcessing == false) && !(audioSyncEnabled & 0x02)) {
+          infoArr = user.createNestedArray(F("AGC Gain"));
+          infoArr.add(roundf(multAgc*100.0f) / 100.0f);
+          infoArr.add("x");
+        }
+
+        // UDP Sound Sync status
+        infoArr = user.createNestedArray(F("UDP Sound Sync"));
+        if (audioSyncEnabled) {
+            if (audioSyncEnabled & 0x01) {
+              infoArr.add("send mode");
+            } else if (audioSyncEnabled & 0x02) {
+                infoArr.add("receive mode");
+            }
+        } else
+            infoArr.add("off");
 
         #ifdef WLED_DEBUG
         infoArr = user.createNestedArray(F("Sampling time"));
@@ -1246,6 +1367,11 @@ class AudioReactive : public Usermod {
       cfg[F("gain")] = sampleGain;
       cfg[F("AGC")] = soundAgc;
 
+      JsonObject dynLim = top.createNestedObject("dynamics");
+      dynLim[F("Limiter")] = limiterOn;
+      dynLim[F("Rise")] = attackTime;
+      dynLim[F("Fall")] = decayTime;
+
       JsonObject sync = top.createNestedObject("sync");
       sync[F("port")] = audioSyncPort;
       sync[F("mode")] = audioSyncEnabled;
@@ -1288,6 +1414,10 @@ class AudioReactive : public Usermod {
       configComplete &= getJsonValue(top["cfg"][F("gain")],    sampleGain);
       configComplete &= getJsonValue(top["cfg"][F("AGC")],     soundAgc);
 
+      configComplete &= getJsonValue(top["dynamics"][F("Limiter")], limiterOn);
+      configComplete &= getJsonValue(top["dynamics"][F("Rise")],  attackTime);
+      configComplete &= getJsonValue(top["dynamics"][F("Fall")],  decayTime);
+
       configComplete &= getJsonValue(top["sync"][F("port")], audioSyncPort);
       configComplete &= getJsonValue(top["sync"][F("mode")], audioSyncEnabled);
 
@@ -1309,6 +1439,16 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addOption(dd,'Normal',1);"));
       oappend(SET_F("addOption(dd,'Vivid',2);"));
       oappend(SET_F("addOption(dd,'Lazy',3);"));
+
+      oappend(SET_F("dd=addDropdown('AudioReactive','dynamics:Limiter');"));
+      oappend(SET_F("addOption(dd,'Off',0);"));
+      oappend(SET_F("addOption(dd,'On',1);"));
+      oappend(SET_F("addInfo('AudioReactive:dynamics:Limiter',0,' Limiter On ');"));  // 0 is field type, 1 is actual field
+      //oappend(SET_F("addInfo('AudioReactive:dynamics:Rise',0,'min. ');"));
+      oappend(SET_F("addInfo('AudioReactive:dynamics:Rise',1,' ms <br /><i>(volume reactive FX only)</i>');"));
+      //oappend(SET_F("addInfo('AudioReactive:dynamics:Fall',0,'min. ');"));
+      oappend(SET_F("addInfo('AudioReactive:dynamics:Fall',1,' ms <br /><i>(volume reactive FX only)</i>');"));
+
       oappend(SET_F("dd=addDropdown('AudioReactive','sync:mode');"));
       oappend(SET_F("addOption(dd,'Off',0);"));
       oappend(SET_F("addOption(dd,'Send',1);"));
@@ -1350,4 +1490,5 @@ const char AudioReactive::_enabled[]    PROGMEM = "enabled";
 const char AudioReactive::_inputLvl[]   PROGMEM = "inputLevel";
 const char AudioReactive::_analogmic[]  PROGMEM = "analogmic";
 const char AudioReactive::_digitalmic[] PROGMEM = "digitalmic";
-const char AudioReactive::UDP_SYNC_HEADER[] PROGMEM = "00001";
+const char AudioReactive::UDP_SYNC_HEADER[]    PROGMEM = "00002"; // new sync header version, as format no longer compatible with previous structure
+const char AudioReactive::UDP_SYNC_HEADER_v1[] PROGMEM = "00001"; // old sync header version - need to add backwards-compatibility feature
