@@ -1172,11 +1172,16 @@ class AudioReactive : public Usermod {
 
       if (init && FFT_Task) {
         vTaskSuspend(FFT_Task);   // update is about to begin, disable task to prevent crash
+        if (udpSyncConnected) {   // close UDP sync connection (if open)
+          udpSyncConnected = false;
+          fftUdp.stop();
+        }
       } else {
         // update has failed or create task requested
-        if (FFT_Task)
+        if (FFT_Task) {
           vTaskResume(FFT_Task);
-        else
+          connected(); // resume UDP
+        } else
 //          xTaskCreatePinnedToCore(
           xTaskCreate(                        // no need to "pin" this task to core #0
             FFTcode,                          // Function to implement the task
@@ -1184,11 +1189,11 @@ class AudioReactive : public Usermod {
             5000,                             // Stack size in words
             NULL,                             // Task input parameter
             1,                                // Priority of the task
-            &FFT_Task                        // Task handle
+            &FFT_Task                         // Task handle
 //            , 0                                 // Core where the task should run
           );
       }
-      micDataReal = 0.0f;                      // just to ber sure
+      micDataReal = 0.0f;                     // just to be sure
       if (enabled) disableSoundProcessing = false;
     }
 
