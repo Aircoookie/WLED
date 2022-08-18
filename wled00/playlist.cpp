@@ -108,6 +108,9 @@ int16_t loadPlaylist(JsonObject playlistObj, byte presetId) {
   playlistRepeat = rep;
   if (playlistRepeat > 0) playlistRepeat++; //add one extra repetition immediately since it will be deducted on first start
   playlistEndPreset = playlistObj["end"] | 0;
+  // if end preset is 255 restore original preset (if any running) upon playlist end
+  if (playlistEndPreset == 255 && currentPreset > 0) playlistEndPreset = currentPreset;
+  if (playlistEndPreset > 250) playlistEndPreset = 0;
   shuffle = shuffle || playlistObj["r"];
   if (shuffle) playlistOptions += PL_OPTION_SHUFFLE;
 

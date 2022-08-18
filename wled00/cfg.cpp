@@ -31,6 +31,9 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   getStringFromJson(cmDNS, id[F("mdns")], 33);
   getStringFromJson(serverDescription, id[F("name")], 33);
   getStringFromJson(alexaInvocationName, id[F("inv")], 33);
+#ifdef WLED_ENABLE_SIMPLE_UI
+  CJSON(simplifiedUI, id[F("sui")]);
+#endif
 
   JsonObject nw_ins_0 = doc["nw"]["ins"][0];
   getStringFromJson(clientSSID, nw_ins_0[F("ssid")], 33);
@@ -78,16 +81,53 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   // initialize LED pins and lengths prior to other HW (except for ethernet)
   JsonObject hw_led = hw["led"];
 
+  uint8_t autoWhiteMode = RGBW_MODE_MANUAL_ONLY;
   CJSON(strip.ablMilliampsMax, hw_led[F("maxpwr")]);
   CJSON(strip.milliampsPerLed, hw_led[F("ledma")]);
-  CJSON(strip.autoWhiteMode,   hw_led[F("rgbwm")]);
-  Bus::setAutoWhiteMode(strip.autoWhiteMode);
-  strip.fixInvalidSegments(); // refreshes segment light capabilities (in case auto white mode changed)
+  Bus::setAutoWhiteMode(hw_led[F("rgbwm")] | 255);
   CJSON(correctWB, hw_led["cct"]);
   CJSON(cctFromRgb, hw_led[F("cr")]);
   CJSON(strip.cctBlending, hw_led[F("cb")]);
   Bus::setCCTBlend(strip.cctBlending);
   strip.setTargetFps(hw_led["fps"]); //NOP if 0, default 42 FPS
+  CJSON(strip.useLedsArray, hw_led[F("ld")]);
+
+  #ifndef WLED_DISABLE_2D
+  // 2D Matrix Settings
+  JsonObject matrix = hw_led[F("matrix")];
+  if (!matrix.isNull()) {
+    strip.isMatrix = true;
+    CJSON(strip.panelH,  matrix[F("ph")]);
+    CJSON(strip.panelW,  matrix[F("pw")]);
+    CJSON(strip.hPanels, matrix[F("mph")]);
+    CJSON(strip.vPanels, matrix[F("mpv")]);
+    CJSON(strip.matrix.bottomStart, matrix[F("pb")]);
+    CJSON(strip.matrix.rightStart,  matrix[F("pr")]);
+    CJSON(strip.matrix.vertical,    matrix[F("pv")]);
+    CJSON(strip.matrix.serpentine,  matrix[F("ps")]);
+
+    JsonArray panels = matrix[F("panels")];
+    uint8_t s = 0;
+    if (!panels.isNull()) {
+      for (JsonObject pnl : panels) {
+        CJSON(strip.panel[s].bottomStart, pnl["b"]);
+        CJSON(strip.panel[s].rightStart, pnl["r"]);
+        CJSON(strip.panel[s].vertical, pnl["v"]);
+        CJSON(strip.panel[s].serpentine, pnl["s"]);
+        if (++s >= WLED_MAX_PANELS) break; // max panels reached
+      }
+    }
+    // clear remaining panels
+    for (; s<WLED_MAX_PANELS; s++) {
+      strip.panel[s].bottomStart = 0;
+      strip.panel[s].rightStart = 0;
+      strip.panel[s].vertical = 0;
+      strip.panel[s].serpentine = 0;
+    }
+
+    strip.setUpMatrix();
+  }
+  #endif
 
   JsonArray ins = hw_led["ins"];
   
@@ -117,13 +157,14 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       bool reversed = elm["rev"];
       bool refresh = elm["ref"] | false;
       ledType |= refresh << 7; // hack bit 7 to indicate strip requires off refresh
+      uint8_t AWmode = elm[F("rgbwm")] | autoWhiteMode;
       if (fromFS) {
-        BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst);
+        BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode);
         mem += BusManager::memUsage(bc);
         if (mem <= MAX_LED_MEMORY && busses.getNumBusses() <= WLED_MAX_BUSSES) busses.add(bc);  // finalization will be done in WLED::beginStrip()
       } else {
         if (busConfigs[s] != nullptr) delete busConfigs[s];
-        busConfigs[s] = new BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst);
+        busConfigs[s] = new BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode);
         busesChanged = true;
       }
       s++;
@@ -225,6 +266,30 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(serialBaud, hw[F("baud")]);
   if (serialBaud < 96 || serialBaud > 15000) serialBaud = 1152;
   updateBaudRate(serialBaud *100);
+
+  JsonArray hw_if_i2c = hw[F("if")][F("i2c-pin")];
+  CJSON(i2c_sda, hw_if_i2c[0]);
+  CJSON(i2c_scl, hw_if_i2c[1]);
+  PinManagerPinType i2c[2] = { { i2c_sda, true }, { i2c_scl, true } };
+  if (i2c_scl >= 0 && i2c_sda >= 0 && pinManager.allocateMultiplePins(i2c, 2, PinOwner::HW_I2C)) {
+    #ifdef ESP32
+    Wire.setPins(i2c_sda, i2c_scl); // this will fail if Wire is initilised (Wire.begin() called prior)
+    #endif
+    Wire.begin();
+  } else {
+    i2c_sda = -1;
+    i2c_scl = -1;
+  }
+  JsonArray hw_if_spi = hw[F("if")][F("spi-pin")];
+  CJSON(spi_mosi, hw_if_spi[0]);
+  CJSON(spi_sclk, hw_if_spi[1]);
+  PinManagerPinType spi[3] = { { spi_mosi, true }, { spi_sclk, true } };
+  if (spi_mosi >= 0 && spi_sclk >= 0 && pinManager.allocateMultiplePins(spi, 2, PinOwner::HW_SPI)) {
+    // do not initialise bus here
+  } else {
+    spi_mosi = -1;
+    spi_sclk = -1;
+  }
 
   //int hw_status_pin = hw[F("status")]["pin"]; // -1
 
@@ -467,21 +532,21 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 void deserializeConfigFromFS() {
   bool success = deserializeConfigSec();
   if (!success) { //if file does not exist, try reading from EEPROM
+    #ifdef WLED_ADD_EEPROM_SUPPORT
     deEEPSettings();
+    #endif
     return;
   }
 
-  #ifdef WLED_USE_DYNAMIC_JSON
-  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-  #else
   if (!requestJSONBufferLock(1)) return;
-  #endif
 
   DEBUG_PRINTLN(F("Reading settings from /cfg.json..."));
 
   success = readObjectFromFile("/cfg.json", nullptr, &doc);
   if (!success) { //if file does not exist, try reading from EEPROM
+    #ifdef WLED_ADD_EEPROM_SUPPORT
     deEEPSettings();
+    #endif
     releaseJSONBufferLock();
     return;
   }
@@ -499,11 +564,7 @@ void serializeConfig() {
 
   DEBUG_PRINTLN(F("Writing settings to /cfg.json..."));
 
-  #ifdef WLED_USE_DYNAMIC_JSON
-  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-  #else
   if (!requestJSONBufferLock(2)) return;
-  #endif
 
   JsonArray rev = doc.createNestedArray("rev");
   rev.add(1); //major settings revision
@@ -515,6 +576,9 @@ void serializeConfig() {
   id[F("mdns")] = cmDNS;
   id[F("name")] = serverDescription;
   id[F("inv")] = alexaInvocationName;
+#ifdef WLED_ENABLE_SIMPLE_UI
+  id[F("sui")] = simplifiedUI;
+#endif
 
   JsonObject nw = doc.createNestedObject("nw");
 
@@ -585,7 +649,32 @@ void serializeConfig() {
   hw_led[F("cr")] = cctFromRgb;
   hw_led[F("cb")] = strip.cctBlending;
   hw_led["fps"] = strip.getTargetFps();
-  hw_led[F("rgbwm")] = strip.autoWhiteMode;
+  hw_led[F("rgbwm")] = Bus::getAutoWhiteMode();    // global override
+  hw_led[F("ld")] = strip.useLedsArray;
+
+  #ifndef WLED_DISABLE_2D
+  // 2D Matrix Settings
+  if (strip.isMatrix) {
+    JsonObject matrix = hw_led.createNestedObject(F("matrix"));
+    matrix[F("ph")] = strip.panelH;
+    matrix[F("pw")] = strip.panelW;
+    matrix[F("mph")] = strip.hPanels;
+    matrix[F("mpv")] = strip.vPanels;
+    matrix[F("pb")] = strip.matrix.bottomStart;
+    matrix[F("pr")] = strip.matrix.rightStart;
+    matrix[F("pv")] = strip.matrix.vertical;
+    matrix[F("ps")] = strip.matrix.serpentine;
+
+    JsonArray panels = matrix.createNestedArray(F("panels"));
+    for (uint8_t i=0; i<strip.hPanels*strip.vPanels; i++) {
+      JsonObject pnl = panels.createNestedObject();
+      pnl["b"] = strip.panel[i].bottomStart;
+      pnl["r"] = strip.panel[i].rightStart;
+      pnl["v"] = strip.panel[i].vertical;
+      pnl["s"] = strip.panel[i].serpentine;
+    }
+  }
+  #endif
 
   JsonArray hw_led_ins = hw_led.createNestedArray("ins");
 
@@ -604,7 +693,7 @@ void serializeConfig() {
     ins[F("skip")] = bus->skippedLeds();
     ins["type"] = bus->getType() & 0x7F;
     ins["ref"] = bus->isOffRefreshRequired();
-    //ins[F("rgbw")] = bus->isRgbw();
+    ins[F("rgbwm")] = bus->getAWMode();
   }
 
   JsonArray hw_com = hw.createNestedArray(F("com"));
@@ -649,6 +738,14 @@ void serializeConfig() {
   hw_relay["rev"] = !rlyMde;
 
   hw[F("baud")] = serialBaud;
+
+  JsonObject hw_if = hw.createNestedObject(F("if"));
+  JsonArray hw_if_i2c = hw_if.createNestedArray("i2c-pin");
+  hw_if_i2c.add(i2c_sda);
+  hw_if_i2c.add(i2c_scl);
+  JsonArray hw_if_spi = hw_if.createNestedArray("spi-pin");
+  hw_if_spi.add(spi_mosi);
+  hw_if_spi.add(spi_sclk);
 
   //JsonObject hw_status = hw.createNestedObject("status");
   //hw_status["pin"] = -1;
@@ -848,11 +945,7 @@ void serializeConfig() {
 bool deserializeConfigSec() {
   DEBUG_PRINTLN(F("Reading settings from /wsec.json..."));
 
-  #ifdef WLED_USE_DYNAMIC_JSON
-  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-  #else
   if (!requestJSONBufferLock(3)) return false;
-  #endif
 
   bool success = readObjectFromFile("/wsec.json", nullptr, &doc);
   if (!success) {
@@ -884,6 +977,9 @@ bool deserializeConfigSec() {
   getStringFromJson(hueApiKey, interfaces["hue"][F("key")], 47);
 #endif
 
+  getStringFromJson(settingsPIN, doc["pin"], 5);
+  correctPIN = !strlen(settingsPIN);
+
   JsonObject ota = doc["ota"];
   getStringFromJson(otaPass, ota[F("pwd")], 33);
   CJSON(otaLock, ota[F("lock")]);
@@ -897,11 +993,7 @@ bool deserializeConfigSec() {
 void serializeConfigSec() {
   DEBUG_PRINTLN(F("Writing settings to /wsec.json..."));
 
-  #ifdef WLED_USE_DYNAMIC_JSON
-  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-  #else
   if (!requestJSONBufferLock(4)) return;
-  #endif
 
   JsonObject nw = doc.createNestedObject("nw");
 
@@ -926,6 +1018,8 @@ void serializeConfigSec() {
   JsonObject if_hue = interfaces.createNestedObject("hue");
   if_hue[F("key")] = hueApiKey;
 #endif
+
+  doc["pin"] = settingsPIN;
 
   JsonObject ota = doc.createNestedObject("ota");
   ota[F("pwd")] = otaPass;

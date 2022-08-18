@@ -1,3 +1,4 @@
+#ifdef WLED_ADD_EEPROM_SUPPORT
 #include <EEPROM.h>
 #include "wled.h"
 
@@ -374,11 +375,7 @@ void deEEP() {
   
   DEBUG_PRINTLN(F("Preset file not found, attempting to load from EEPROM"));
   DEBUGFS_PRINTLN(F("Allocating saving buffer for dEEP"));
-  #ifdef WLED_USE_DYNAMIC_JSON
-  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-  #else
   if (!requestJSONBufferLock(8)) return;
-  #endif
 
   JsonObject sObj = doc.to<JsonObject>();
   sObj.createNestedObject("0");
@@ -422,7 +419,7 @@ void deEEP() {
         segObj[F("ix")]  = EEPROM.read(i+16);
         segObj["pal"] = EEPROM.read(i+17);
       } else {
-        WS2812FX::Segment* seg = strip.getSegments();
+        Segment* seg = strip.getSegments();
         memcpy(seg, EEPROM.getDataPtr() +i+2, 240);
         if (ver == 2) { //versions before 2004230 did not have opacity
           for (byte j = 0; j < strip.getMaxSegments(); j++)
@@ -477,3 +474,4 @@ void deEEPSettings() {
 
   serializeConfig();
 }
+#endif

@@ -38,6 +38,7 @@ class PWMFanUsermod : public Usermod {
     #ifdef ARDUINO_ARCH_ESP32
     uint8_t pwmChannel = 255;
     #endif
+    bool lockFan = false;
 
     #ifdef USERMOD_DALLASTEMPERATURE
     UsermodTemperature* tempUM;
@@ -50,6 +51,7 @@ class PWMFanUsermod : public Usermod {
     float   targetTemperature = 25.0;
     uint8_t minPWMValuePct    = 50;
     uint8_t numberOfInterrupsInOneSingleRotation = 2;     // Number of interrupts ESP32 sees on tacho signal on a single fan rotation. All the fans I've seen trigger two interrups.
+    uint8_t pwmValuePct       = 0;
 
     // strings to reduce flash memory usage (used more than twice)
     static const char _name[];
@@ -60,6 +62,8 @@ class PWMFanUsermod : public Usermod {
     static const char _tachoUpdateSec[];
     static const char _minPWMValuePct[];
     static const char _IRQperRotation[];
+    static const char _speed[];
+    static const char _lock[];
 
     void initTacho(void) {
       if (tachoPin < 0 || !pinManager.allocatePin(tachoPin, false, PinOwner::UM_Unspecified)){
@@ -80,6 +84,8 @@ class PWMFanUsermod : public Usermod {
     }
 
     void updateTacho(void) {
+      // store milliseconds when tacho was measured the last time
+      msLastTachoMeasurement = millis();
       if (tachoPin < 0) return;
 
       // start of tacho measurement
@@ -90,8 +96,6 @@ class PWMFanUsermod : public Usermod {
       last_rpm /= tachoUpdateSec;
       // reset counter
       counter_rpm = 0; 
-      // store milliseconds when tacho was measured the last time
-      msLastTachoMeasurement = millis();
       // attach interrupt again
       attachInterrupt(digitalPinToInterrupt(tachoPin), rpm_fan, FALLING);
     }
@@ -155,7 +159,7 @@ class PWMFanUsermod : public Usermod {
       int pwmStep = ((100 - minPWMValuePct) * newPWMvalue) / (7*100);
       int pwmMinimumValue = (minPWMValuePct * newPWMvalue) / 100;
 
-      if ((temp == NAN) || (temp <= 0.0)) {
+      if ((temp == NAN) || (temp <= -100.0)) {
         DEBUG_PRINTLN(F("WARNING: no temperature value available. Cannot do temperature control. Will set PWM fan to 255."));
       } else if (difftemp <= 0.0) {
         // Temperature is below target temperature. Run fan at minimum speed.
@@ -205,7 +209,7 @@ class PWMFanUsermod : public Usermod {
       if ((now - msLastTachoMeasurement) < (tachoUpdateSec * 1000)) return;
 
       updateTacho();
-      setFanPWMbasedOnTemperature();
+      if (!lockFan) setFanPWMbasedOnTemperature();
     }
 
     /*
@@ -214,12 +218,30 @@ class PWMFanUsermod : public Usermod {
      * Below it is shown how this could be used for e.g. a light sensor
      */
     void addToJsonInfo(JsonObject& root) {
-      if (tachoPin < 0) return;
-      JsonObject user = root["u"];
-      if (user.isNull()) user = root.createNestedObject("u");
-      JsonArray data = user.createNestedArray(FPSTR(_name));
-      data.add(last_rpm);
-      data.add(F("rpm"));
+      if (enabled) {
+        JsonObject user = root["u"];
+        if (user.isNull()) user = root.createNestedObject("u");
+//        if (!tempUM) {
+        JsonArray infoArr = user.createNestedArray(F("Fan speed [%]"));
+        String uiDomString = F("<div class=\"slider\"><div class=\"sliderwrap il\"><input class=\"noslide\" onchange=\"requestJson({'");
+        uiDomString += FPSTR(_name);
+        uiDomString += F("':{'");
+        uiDomString += FPSTR(_speed);
+        uiDomString += F("':parseInt(this.value)}});\" oninput=\"updateTrail(this);\" max=100 min=0 type=\"range\" value=");
+        uiDomString += pwmValuePct;
+        uiDomString += F(" /><div class=\"sliderdisplay\"></div></div></div>"); //<output class=\"sliderbubble\"></output>
+        infoArr.add(uiDomString);
+//        }
+        if (tachoPin >= 0) {
+          JsonArray data = user.createNestedArray(FPSTR(_name));
+          data.add(last_rpm);
+          data.add(F("rpm"));
+        } else {
+          JsonArray data = user.createNestedArray(FPSTR(_name));
+          if (lockFan) data.add(F("locked"));
+          else         data.add(F("auto"));
+        }
+      }
     }
 
     /*
@@ -233,9 +255,19 @@ class PWMFanUsermod : public Usermod {
      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    //void readFromJsonState(JsonObject& root) {
-    //  if (!initDone) return;  // prevent crash on boot applyPreset()
-    //}
+    void readFromJsonState(JsonObject& root) {
+      if (!initDone || !enabled) return;  // prevent crash on boot applyPreset()
+      JsonObject usermod = root[FPSTR(_name)];
+      if (!usermod.isNull()) {
+        if (!usermod[FPSTR(_speed)].isNull() && usermod[FPSTR(_speed)].is<int>()) {
+          int pwmValuePct = usermod[FPSTR(_speed)].as<int>();
+          updateFanSpeed((MAX(0,MIN(100,pwmValuePct)) * 255) / 100);
+        }
+        if (!usermod[FPSTR(_lock)].isNull() && usermod[FPSTR(_lock)].is<bool>()) {
+          lockFan = usermod[FPSTR(_lock)].as<bool>();
+        }
+      }
+    }
 
     /*
      * addToConfig() can be used to add custom persistent settings to the cfg.json file in the "um" (usermod) object.
@@ -337,3 +369,5 @@ const char PWMFanUsermod::_temperature[]    PROGMEM = "target-temp-C";
 const char PWMFanUsermod::_tachoUpdateSec[] PROGMEM = "tacho-update-s";
 const char PWMFanUsermod::_minPWMValuePct[] PROGMEM = "min-PWM-percent";
 const char PWMFanUsermod::_IRQperRotation[] PROGMEM = "IRQs-per-rotation";
+const char PWMFanUsermod::_speed[]          PROGMEM = "speed";
+const char PWMFanUsermod::_lock[]           PROGMEM = "lock";

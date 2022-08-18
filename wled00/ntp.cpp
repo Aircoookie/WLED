@@ -1,6 +1,6 @@
 #include "src/dependencies/timezone/Timezone.h"
 #include "wled.h"
-#include "wled_math.h"
+#include "fcn_declare.h"
 
 /*
  * Acquires time from NTP server
