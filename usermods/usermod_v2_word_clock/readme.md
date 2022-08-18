@@ -7,6 +7,7 @@ There are 2 parameters to chnage the behaviour:
 active: enable/disable usermod
 diplayItIs: enable/disable display of "Es ist" on the clock.
 
+### Update for alternatative wiring pattern
 Based on this fantastic work I added an alternative wiring pattern.
 For original you have to use a long wire to connect DO - DI from first line to the next line.
 
