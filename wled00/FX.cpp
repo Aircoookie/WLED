@@ -2842,12 +2842,13 @@ uint16_t mode_bouncing_balls(void) {
   
   for (size_t i = 0; i < numBalls; i++) {
     float timeSinceLastBounce = (time - balls[i].lastBounceTime)/((255-SEGMENT.speed)*8/256 +1);
-    balls[i].height = 0.5 * gravity * pow(timeSinceLastBounce/1000 , 2.0) + balls[i].impactVelocity * timeSinceLastBounce/1000;
+    float timeSec = timeSinceLastBounce/1000.0f;
+    balls[i].height = 0.5 * gravity * (timeSec * timeSec) + balls[i].impactVelocity * timeSec; // avoid use pow(x, 2) - its extremely slow !
 
     if (balls[i].height < 0) { //start bounce
       balls[i].height = 0;
       //damping for better effect using multiple balls
-      float dampening = 0.90 - float(i)/pow(numBalls,2);
+      float dampening = 0.90 - float(i)/(float(numBalls) * float(numBalls));                   // avoid use pow(x, 2) - its extremely slow !
       balls[i].impactVelocity = dampening * balls[i].impactVelocity;
       balls[i].lastBounceTime = time;
 
@@ -2863,7 +2864,7 @@ uint16_t mode_bouncing_balls(void) {
       color = SEGCOLOR(i % NUM_COLORS);
     }
 
-    uint16_t pos = round(balls[i].height * (SEGLEN - 1));
+    uint16_t pos = roundf(balls[i].height * (SEGLEN - 1));
     SEGMENT.setPixelColor(pos, color);
   }
 
@@ -6006,7 +6007,9 @@ uint16_t mode_ripplepeak(void) {                // * Ripple peak. By Andrew Tuli
       case 255:                                           // Initialize ripple variables.
         ripples[i].pos = random16(SEGLEN);
         #ifdef ESP32
+          if (FFT_MajorPeak > 1)                          // log10(0) is "forbidden" (throws exception)
           ripples[i].color = (int)(log10f(FFT_MajorPeak)*128);
+          else ripples[i].color = 0;
         #else
           ripples[i].color = random8();
         #endif
@@ -6716,6 +6719,7 @@ uint16_t mode_freqmap(void) {                   // Map FFT_MajorPeak to SEGLEN. 
   }
   float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
   float   my_magnitude  = *(float*)   um_data->u_data[5] / 4.0f; 
+  if (FFT_MajorPeak < 1) FFT_MajorPeak = 1;                                         // log10(0) is "forbidden" (throws exception)
 
   SEGMENT.fade_out(SEGMENT.speed);
 
@@ -6806,6 +6810,7 @@ uint16_t mode_freqpixels(void) {                // Freqpixel. By Andrew Tuline.
   }
   float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
   float   my_magnitude  = *(float*)  um_data->u_data[5] / 16.0f; 
+  if (FFT_MajorPeak < 1) FFT_MajorPeak = 1;                                         // log10(0) is "forbidden" (throws exception)
 
   uint16_t fadeRate = 2*SEGMENT.speed - SEGMENT.speed*SEGMENT.speed/255;    // Get to 255 as quick as you can.
   SEGMENT.fade_out(fadeRate);
@@ -6908,6 +6913,7 @@ uint16_t mode_gravfreq(void) {                  // Gravfreq. By Andrew Tuline.
   }
   float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
   float   volumeSmth   = *(float*)   um_data->u_data[0];
+  if (FFT_MajorPeak < 1) FFT_MajorPeak = 1;                                         // log10(0) is "forbidden" (throws exception)
 
   SEGMENT.fade_out(240);
 
@@ -7021,6 +7027,8 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
   uint8_t *maxVol       =  (uint8_t*)um_data->u_data[6];
   uint8_t *binNum       =  (uint8_t*)um_data->u_data[7];
   float   my_magnitude  = *(float*)   um_data->u_data[5] / 8.0f; 
+
+  if (FFT_MajorPeak < 1) FFT_MajorPeak = 1;                                         // log10(0) is "forbidden" (throws exception)
 
   if (SEGENV.call == 0) {
     SEGMENT.setUpLeds();
