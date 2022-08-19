@@ -911,7 +911,7 @@ class AudioReactive : public Usermod {
      */
     void connected()
     {
-      if (audioSyncPort > 0 || (audioSyncEnabled & 0x03)) {
+      if (audioSyncPort > 0 && (audioSyncEnabled & 0x03)) {
       #ifndef ESP8266
         udpSyncConnected = fftUdp.beginMulticast(IPAddress(239, 0, 0, 1), audioSyncPort);
       #else
