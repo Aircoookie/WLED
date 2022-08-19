@@ -1106,7 +1106,7 @@ void WS2812FX::setBrightness(uint8_t b, bool direct) {
   _brightness = b;
   if (_brightness == 0) { //unfreeze all segments on power off
     for (segment &seg : _segments) {
-      seg.setOption(SEG_OPTION_FREEZE, false);
+      seg.freeze = false;
     }
   }
   if (direct) {
@@ -1319,7 +1319,7 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
     _segments.clear();
     for (size_t i = 0; i < s; i++) {
       Segment seg = Segment(segStarts[i], segStops[i]);
-      seg.setOption(SEG_OPTION_SELECTED, true);
+      seg.selected = true;
       _segments.push_back(seg);
     }
     _mainSegment = 0;

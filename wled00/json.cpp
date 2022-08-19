@@ -84,8 +84,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   if ((spc>0 && spc!=seg.spacing) || seg.map1D2D!=map1D2D) seg.fill(BLACK); // clear spacing gaps
 
-  seg.map1D2D  = map1D2D & 0x03;
-  seg.soundSim = soundSim & 0x07;
+  seg.map1D2D  = map1D2D & 0x07;
+  seg.soundSim = soundSim & 0x03;
 
   uint16_t len = 1;
   if (stop > start) len = stop - start;
@@ -102,15 +102,15 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   byte segbri = seg.opacity;
   if (getVal(elem["bri"], &segbri)) {
     if (segbri > 0) seg.setOpacity(segbri);
-    seg.setOption(SEG_OPTION_ON, segbri);
+    seg.on = segbri;
   }
 
-  bool on = elem["on"] | seg.getOption(SEG_OPTION_ON);
+  bool on = elem["on"] | seg.on;
   if (elem["on"].is<const char*>() && elem["on"].as<const char*>()[0] == 't') on = !on;
-  seg.setOption(SEG_OPTION_ON, on);
-  bool frz = elem["frz"] | seg.getOption(SEG_OPTION_FREEZE);
-  if (elem["frz"].is<const char*>() && elem["frz"].as<const char*>()[0] == 't') frz = !seg.getOption(SEG_OPTION_FREEZE);
-  seg.setOption(SEG_OPTION_FREEZE, frz);
+  seg.on = on;
+  bool frz = elem["frz"] | seg.freeze;
+  if (elem["frz"].is<const char*>() && elem["frz"].as<const char*>()[0] == 't') frz = !seg.freeze;
+  seg.freeze = frz;
 
   seg.setCCT(elem["cct"] | seg.cct);
 
@@ -162,13 +162,13 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   }
   #endif
 
-  seg.setOption(SEG_OPTION_SELECTED, elem["sel"]     | seg.getOption(SEG_OPTION_SELECTED));
-  seg.setOption(SEG_OPTION_REVERSED, elem["rev"]     | seg.getOption(SEG_OPTION_REVERSED));
-  seg.setOption(SEG_OPTION_MIRROR  , elem[F("mi")]   | seg.getOption(SEG_OPTION_MIRROR  ));
+  seg.selected  = elem["sel"]   | seg.selected;
+  seg.reverse   = elem["rev"]   | seg.reverse;
+  seg.mirror    = elem[F("mi")] | seg.mirror;
   #ifndef WLED_DISABLE_2D
-  seg.setOption(SEG_OPTION_REVERSED_Y, elem[F("rY")] | seg.getOption(SEG_OPTION_REVERSED_Y));
-  seg.setOption(SEG_OPTION_MIRROR_Y  , elem[F("mY")] | seg.getOption(SEG_OPTION_MIRROR_Y  ));
-  seg.setOption(SEG_OPTION_TRANSPOSED, elem[F("tp")] | seg.getOption(SEG_OPTION_TRANSPOSED));
+  seg.reverse_y = elem[F("rY")] | seg.reverse_y;
+  seg.mirror_y  = elem[F("mY")] | seg.mirror_y;
+  seg.transpose = elem[F("tp")] | seg.transpose;
   #endif
 
   byte fx = seg.mode;
@@ -193,8 +193,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         sOpt = extractModeDefaults(fx, SET_F("c1"));   if (sOpt >= 0) seg.custom1   = sOpt;
         sOpt = extractModeDefaults(fx, SET_F("c2"));   if (sOpt >= 0) seg.custom2   = sOpt;
         sOpt = extractModeDefaults(fx, SET_F("c3"));   if (sOpt >= 0) seg.custom3   = sOpt;
-        sOpt = extractModeDefaults(fx, SET_F("mp12")); if (sOpt >= 0) seg.map1D2D   = sOpt & 0x03;
-        sOpt = extractModeDefaults(fx, SET_F("ssim")); if (sOpt >= 0) seg.soundSim  = sOpt & 0x07;
+        sOpt = extractModeDefaults(fx, SET_F("mp12")); if (sOpt >= 0) seg.map1D2D   = sOpt & 0x07;
+        sOpt = extractModeDefaults(fx, SET_F("ssim")); if (sOpt >= 0) seg.soundSim  = sOpt & 0x03;
         sOpt = extractModeDefaults(fx, "rev");         if (sOpt >= 0) seg.reverse   = (bool)sOpt;
         sOpt = extractModeDefaults(fx, SET_F("mi"));   if (sOpt >= 0) seg.mirror    = (bool)sOpt; // NOTE: setting this option is a risky business
         sOpt = extractModeDefaults(fx, SET_F("rY"));   if (sOpt >= 0) seg.reverse_y = (bool)sOpt;
@@ -238,8 +238,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     strip.setBrightness(scaledBri(bri), true);
 
     // freeze and init to black
-    if (!seg.getOption(SEG_OPTION_FREEZE)) {
-      seg.setOption(SEG_OPTION_FREEZE, true);
+    if (!seg.freeze) {
+      seg.freeze = true;
       seg.fill(BLACK);
     }
 
@@ -285,7 +285,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   }
   // send UDP if not in preset and something changed that is not just selection
   // send UDP if something changed that is not just selection or segment power/opacity
-  if ((seg.differs(prev) & 0x7E) && seg.getOption(SEG_OPTION_ON)==prev.getOption(SEG_OPTION_ON)) stateChanged = true;
+  if ((seg.differs(prev) & 0x7E) && seg.on == prev.on) stateChanged = true;
 }
 
 // deserializes WLED state (fileDoc points to doc object if called from web server)
@@ -315,10 +315,10 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   if (bri && !onBefore) { // unfreeze all segments when turning on
     for (size_t s=0; s < strip.getSegmentsNum(); s++) {
-      strip.getSegment(s).setOption(SEG_OPTION_FREEZE, false);
+      strip.getSegment(s).freeze = false;
     }
     if (realtimeMode && !realtimeOverride && useMainSegmentOnly) { // keep live segment frozen if live
-      strip.getMainSegment().setOption(SEG_OPTION_FREEZE, true);
+      strip.getMainSegment().freeze = true;
     }
   }
 
@@ -371,7 +371,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   realtimeOverride = root[F("lor")] | realtimeOverride;
   if (realtimeOverride > 2) realtimeOverride = REALTIME_OVERRIDE_ALWAYS;
   if (realtimeMode && useMainSegmentOnly) {
-    strip.getMainSegment().setOption(SEG_OPTION_FREEZE, !realtimeOverride);
+    strip.getMainSegment().freeze = !realtimeOverride;
   }
 
   if (root.containsKey("live")) {
@@ -472,14 +472,14 @@ void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset, b
     }
   }
   if (!forPreset) root["len"] = seg.stop - seg.start;
-  root["grp"] = seg.grouping;
+  root["grp"]    = seg.grouping;
   root[F("spc")] = seg.spacing;
-  root[F("of")] = seg.offset;
-  root["on"] = seg.getOption(SEG_OPTION_ON);
-  root["frz"] = seg.getOption(SEG_OPTION_FREEZE);
-  byte segbri = seg.opacity;
-  root["bri"] = (segbri) ? segbri : 255;
-  root["cct"] = seg.cct;
+  root[F("of")]  = seg.offset;
+  root["on"]     = seg.on;
+  root["frz"]    = seg.freeze;
+  byte segbri    = seg.opacity;
+  root["bri"]    = (segbri) ? segbri : 255;
+  root["cct"]    = seg.cct;
 
   if (segmentBounds && seg.name != nullptr) root["n"] = reinterpret_cast<const char *>(seg.name); //not good practice, but decreases required JSON buffer
 
@@ -509,12 +509,12 @@ void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset, b
   root[F("c2")]  = seg.custom2;
   root[F("c3")]  = seg.custom3;
   root[F("sel")] = seg.isSelected();
-  root["rev"]    = seg.getOption(SEG_OPTION_REVERSED);
-  root[F("mi")]  = seg.getOption(SEG_OPTION_MIRROR);
+  root["rev"]    = seg.reverse;
+  root[F("mi")]  = seg.mirror;
   if (strip.isMatrix) {
-    root[F("rY")] = seg.getOption(SEG_OPTION_REVERSED_Y);
-    root[F("mY")] = seg.getOption(SEG_OPTION_MIRROR_Y);
-    root[F("tp")] = seg.getOption(SEG_OPTION_TRANSPOSED);
+    root[F("rY")] = seg.reverse_y;
+    root[F("mY")] = seg.mirror_y;
+    root[F("tp")] = seg.transpose;
   }
   root[F("o1")]  = seg.check1;
   root[F("o2")]  = seg.check2;

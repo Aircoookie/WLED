@@ -414,10 +414,10 @@ void deEEP() {
           for (byte j = 0; j < numChannels; j++) colX.add(EEPROM.read(memloc + j));
         }
         
-        segObj["fx"]  = EEPROM.read(i+10);
-        segObj[F("sx")]  = EEPROM.read(i+11);
-        segObj[F("ix")]  = EEPROM.read(i+16);
-        segObj["pal"] = EEPROM.read(i+17);
+        segObj["fx"]    = EEPROM.read(i+10);
+        segObj[F("sx")] = EEPROM.read(i+11);
+        segObj[F("ix")] = EEPROM.read(i+16);
+        segObj["pal"]   = EEPROM.read(i+17);
       } else {
         Segment* seg = strip.getSegments();
         memcpy(seg, EEPROM.getDataPtr() +i+2, 240);
@@ -425,7 +425,7 @@ void deEEP() {
           for (byte j = 0; j < strip.getMaxSegments(); j++)
           {
             strip.getSegment(j).opacity = 255;
-            strip.getSegment(j).setOption(SEG_OPTION_ON, 1);
+            strip.getSegment(j).on = true;
           }
         }
         serializeState(pObj, true, false, true);
