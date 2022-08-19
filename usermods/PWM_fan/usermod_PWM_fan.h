@@ -103,6 +103,7 @@ class PWMFanUsermod : public Usermod {
     // https://randomnerdtutorials.com/esp32-pwm-arduino-ide/
     void initPWMfan(void) {
       if (pwmPin < 0 || !pinManager.allocatePin(pwmPin, true, PinOwner::UM_Unspecified)) {
+        enabled = false;
         pwmPin = -1;
         return;
       }
@@ -134,7 +135,7 @@ class PWMFanUsermod : public Usermod {
     }
 
     void updateFanSpeed(uint8_t pwmValue){
-      if (pwmPin < 0) return;
+      if (!enabled || pwmPin < 0) return;
 
       #ifdef ESP8266
       analogWrite(pwmPin, pwmValue);
@@ -218,11 +219,23 @@ class PWMFanUsermod : public Usermod {
      * Below it is shown how this could be used for e.g. a light sensor
      */
     void addToJsonInfo(JsonObject& root) {
+      JsonObject user = root["u"];
+      if (user.isNull()) user = root.createNestedObject("u");
+
+      JsonArray infoArr = user.createNestedArray(FPSTR(_name));
+      String uiDomString = F("<button class=\"btn btn-xs\" onclick=\"requestJson({'");
+      uiDomString += FPSTR(_name);
+      uiDomString += F("':{'");
+      uiDomString += FPSTR(_enabled);
+      uiDomString += F("':");
+      uiDomString += enabled ? "false" : "true";
+      uiDomString += F("}});\"><i class=\"icons ");
+      uiDomString += enabled ? "on" : "off";
+      uiDomString += F("\">&#xe08f;</i></button>");
+      infoArr.add(uiDomString);
+
       if (enabled) {
-        JsonObject user = root["u"];
-        if (user.isNull()) user = root.createNestedObject("u");
-//        if (!tempUM) {
-        JsonArray infoArr = user.createNestedArray(F("Fan speed [%]"));
+        JsonArray infoArr = user.createNestedArray(F("Manual"));
         String uiDomString = F("<div class=\"slider\"><div class=\"sliderwrap il\"><input class=\"noslide\" onchange=\"requestJson({'");
         uiDomString += FPSTR(_name);
         uiDomString += F("':{'");
@@ -231,13 +244,12 @@ class PWMFanUsermod : public Usermod {
         uiDomString += pwmValuePct;
         uiDomString += F(" /><div class=\"sliderdisplay\"></div></div></div>"); //<output class=\"sliderbubble\"></output>
         infoArr.add(uiDomString);
-//        }
+
+        JsonArray data = user.createNestedArray(F("Speed"));
         if (tachoPin >= 0) {
-          JsonArray data = user.createNestedArray(FPSTR(_name));
           data.add(last_rpm);
           data.add(F("rpm"));
         } else {
-          JsonArray data = user.createNestedArray(FPSTR(_name));
           if (lockFan) data.add(F("locked"));
           else         data.add(F("auto"));
         }
@@ -256,12 +268,17 @@ class PWMFanUsermod : public Usermod {
      * Values in the state object may be modified by connected clients
      */
     void readFromJsonState(JsonObject& root) {
-      if (!initDone || !enabled) return;  // prevent crash on boot applyPreset()
+      if (!initDone) return;  // prevent crash on boot applyPreset()
       JsonObject usermod = root[FPSTR(_name)];
       if (!usermod.isNull()) {
+        if (usermod[FPSTR(_enabled)].is<bool>()) {
+          enabled = usermod[FPSTR(_enabled)].as<bool>();
+          if (!enabled) updateFanSpeed(0);
+        }
         if (!usermod[FPSTR(_speed)].isNull() && usermod[FPSTR(_speed)].is<int>()) {
-          int pwmValuePct = usermod[FPSTR(_speed)].as<int>();
+          pwmValuePct = usermod[FPSTR(_speed)].as<int>();
           updateFanSpeed((MAX(0,MIN(100,pwmValuePct)) * 255) / 100);
+          if (pwmValuePct) lockFan = true;
         }
         if (!usermod[FPSTR(_lock)].isNull() && usermod[FPSTR(_lock)].is<bool>()) {
           lockFan = usermod[FPSTR(_lock)].as<bool>();
