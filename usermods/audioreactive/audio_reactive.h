@@ -113,7 +113,7 @@ static float    sampleAgc = 0.0f;               // Smoothed AGC sample
 constexpr uint16_t samplesFFT = 512;            // Samples in an FFT batch - This value MUST ALWAYS be a power of 2
 constexpr uint16_t samplesFFT_2 = 256;          // meaningfull part of FFT results - only the "lower half" contains useful information.
 
-static float FFT_MajorPeak = 0.0f;
+static float FFT_MajorPeak = 1.0f;
 static float FFT_Magnitude = 0.0f;
 
 // These are the input and output vectors.  Input vectors receive computed results from FFT.
@@ -250,9 +250,10 @@ void FFTcode(void * parameter)
 #else
     FFT.MajorPeak(&FFT_MajorPeak, &FFT_Magnitude);          // let the effects know which freq was most dominant
 #endif
+    FFT_MajorPeak = constrain(FFT_MajorPeak, 1.0f, 10240.0f);   
 
     for (int i = 0; i < samplesFFT_2; i++) {           // Values for bins 0 and 1 are WAY too large. Might as well start at 3.
-      float t = fabs(vReal[i]);                      // just to be sure - values in fft bins should be positive any way
+      float t = fabsf(vReal[i]);                      // just to be sure - values in fft bins should be positive any way
       fftBin[i] = t / 16.0f;                         // Reduce magnitude. Want end result to be linear and ~4096 max.
     } // for()
 
@@ -288,7 +289,8 @@ void FFTcode(void * parameter)
 
     } else {  // noise gate closed
       for (int i=0; i < 16; i++) {
-        fftCalc[i] *= 0.82f;  // decay to zero
+        //fftCalc[i] *= 0.82f;  // decay to zero
+        fftCalc[i] *= 0.85f;  // decay to zero
         if (fftCalc[i] < 4.0f) fftCalc[i] = 0.0f;
       }
     }
@@ -307,9 +309,12 @@ void FFTcode(void * parameter)
       // smooth results - rise fast, fall slower
       if(fftCalc[i] > fftAvg[i])   // rise fast 
         fftAvg[i]    = fftCalc[i] *0.75f + 0.25f*fftAvg[i];  // will need approx 2 cycles (50ms) for converging against fftCalc[i]
-      else                         // fall slow
-        fftAvg[i]    = fftCalc[i]*0.17f + 0.83f*fftAvg[i];  // will need approx 5 cycles (150ms) for converging against fftCalc[i]
-
+      else {                       // fall slow
+        if (decayTime < 1000) fftAvg[i] = fftCalc[i]*0.22f + 0.78f*fftAvg[i];       // approx  5 cycles (225ms) for falling to zero
+        else if (decayTime < 2000) fftAvg[i] = fftCalc[i]*0.17f + 0.83f*fftAvg[i];  // default - approx  9 cycles (225ms) for falling to zero
+        else if (decayTime < 3000) fftAvg[i] = fftCalc[i]*0.14f + 0.86f*fftAvg[i];  // approx 14 cycles (350ms) for falling to zero
+        else fftAvg[i] = fftCalc[i]*0.1f  + 0.9f*fftAvg[i];                         // approx 20 cycles (500ms) for falling to zero
+      }
       // constrain internal vars - just to be sure
       fftCalc[i] = constrain(fftCalc[i], 0.0f, 1023.0f);
       fftAvg[i] = constrain(fftAvg[i], 0.0f, 1023.0f);
@@ -344,6 +349,11 @@ void FFTcode(void * parameter)
       }
 
       // Now, let's dump it all into fftResult. Need to do this, otherwise other routines might grab fftResult values prematurely.
+      if (soundAgc > 0) {  // apply extra "GEQ Gain" if set by user
+        float post_gain = (float)inputLevel/128.0f;
+        if (post_gain < 1.0f) post_gain = ((post_gain -1.0f) * 0.8f) +1.0f;
+        currentResult *= post_gain;
+      }
       fftResult[i] = constrain((int)currentResult, 0, 255);
     }
 
@@ -849,7 +859,7 @@ class AudioReactive : public Usermod {
 
           my_magnitude  = fmaxf(receivedPacket->FFT_Magnitude, 0.0f);
           FFT_Magnitude = my_magnitude;
-          FFT_MajorPeak = fmaxf(receivedPacket->FFT_MajorPeak, 0.0f);
+          FFT_MajorPeak = fmaxf(receivedPacket->FFT_MajorPeak, 1.0f);
           //DEBUGSR_PRINTLN("Finished parsing UDP Sync Packet");
           haveFreshData = true;
         }
@@ -990,7 +1000,7 @@ class AudioReactive : public Usermod {
         return;
       }
       // We cannot wait indefinitely before processing audio data
-      if (strip.isUpdating() && (millis() - lastUMRun < 1)) return;   // be nice, but not too nice
+      if (strip.isUpdating() && (millis() - lastUMRun < 2)) return;   // be nice, but not too nice
 
       // suspend local sound processing when "real time mode" is active (E131, UDP, ADALIGHT, ARTNET)
       if (  (realtimeOverride == REALTIME_OVERRIDE_NONE)  // please odd other orrides here if needed
@@ -1059,6 +1069,9 @@ class AudioReactive : public Usermod {
 
         limitSampleDynamics();  // optional - makes volumeSmth very smooth and fluent
 
+#if 0
+        /* currently this is _not_ working. Code relies on "musical note" symbol as second char of the effect name */
+        #error I told you its not working right now
         // update WebServer UI
         uint8_t knownMode = strip.getFirstSelectedSeg().mode; // 1st selected segment is more appropriate than main segment
         if (lastMode != knownMode) { // only execute if mode changes
@@ -1099,6 +1112,7 @@ class AudioReactive : public Usermod {
             last_user_inputLevel = new_user_inputLevel;
           }
         }
+#endif
       }
 
 
@@ -1162,13 +1176,14 @@ class AudioReactive : public Usermod {
       volumeRaw = 0; volumeSmth = 0;
       sampleAgc = 0; sampleAvg = 0;
       sampleRaw = 0; rawSampleAgc = 0;
-      my_magnitude = 0; FFT_Magnitude = 0; FFT_MajorPeak = 0;
+      my_magnitude = 0; FFT_Magnitude = 0; FFT_MajorPeak = 1;
       multAgc = 1;
       // reset FFT data
       memset(fftCalc, 0, sizeof(fftCalc)); 
       memset(fftAvg, 0, sizeof(fftAvg)); 
       memset(fftResult, 0, sizeof(fftResult)); 
       for(int i=(init?0:1); i<16; i+=2) fftResult[i] = 16; // make a tiny pattern
+      inputLevel = 128;                                    // resset level slider to default
 
       if (init && FFT_Task) {
         vTaskSuspend(FFT_Task);   // update is about to begin, disable task to prevent crash
@@ -1241,15 +1256,22 @@ class AudioReactive : public Usermod {
       infoArr.add(uiDomString);
 
       if (enabled) {
-        infoArr = user.createNestedArray(F("Input level"));
-        uiDomString = F("<div class=\"slider\"><div class=\"sliderwrap il\"><input class=\"noslide\" onchange=\"requestJson({");
-        uiDomString += FPSTR(_name);
-        uiDomString += F(":{");
-        uiDomString += FPSTR(_inputLvl);
-        uiDomString += F(":parseInt(this.value)}});\" oninput=\"updateTrail(this);\" max=255 min=0 type=\"range\" value=");
-        uiDomString += inputLevel;
-        uiDomString += F(" /><div class=\"sliderdisplay\"></div></div></div>"); //<output class=\"sliderbubble\"></output>
-        infoArr.add(uiDomString);
+        // Input Level Slider
+        if (disableSoundProcessing == false) {                                 // only show slider when audio processing is running
+          if (soundAgc > 0)
+            infoArr = user.createNestedArray(F("GEQ Input Level"));           // if AGC is on, this slider only affects fftResult[] frequencies
+          else
+            infoArr = user.createNestedArray(F("Audio Input Level"));
+          uiDomString = F("<div class=\"slider\"><div class=\"sliderwrap il\"><input class=\"noslide\" onchange=\"requestJson({");
+          uiDomString += FPSTR(_name);
+          uiDomString += F(":{");
+          uiDomString += FPSTR(_inputLvl);
+          uiDomString += F(":parseInt(this.value)}});\" oninput=\"updateTrail(this);\" max=255 min=0 type=\"range\" value=");
+          uiDomString += inputLevel;
+          uiDomString += F(" /><div class=\"sliderdisplay\"></div></div></div>"); //<output class=\"sliderbubble\"></output>
+          infoArr.add(uiDomString);
+        } 
+        //else infoArr.add("<br/> <div>&nbsp;</div>");   // no processing - add empty line
 
         // current Audio input
         infoArr = user.createNestedArray(F("Audio Source"));
@@ -1262,7 +1284,7 @@ class AudioReactive : public Usermod {
               else
                 infoArr.add(" - idle");
             } else {
-              infoArr.add(" - no network");
+              infoArr.add(" - no connection");
             }
         } else {
           // Analog or I2S digital input
@@ -1319,6 +1341,8 @@ class AudioReactive : public Usermod {
             }
         } else
             infoArr.add("off");
+        if (audioSyncEnabled && !udpSyncConnected) infoArr.add(" <i>(unconnected)</i>");
+        //if (!udpSyncConnected) infoArr.add(" <i>(unconnected)</i>");
 
         #ifdef WLED_DEBUG
         infoArr = user.createNestedArray(F("Sampling time"));

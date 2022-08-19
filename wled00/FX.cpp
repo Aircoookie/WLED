@@ -7093,6 +7093,7 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
 
   for (int x=0; x < cols; x++) {
     uint8_t  band       = map(x, 0, cols-1, 0, NUM_BANDS - 1);
+    band = constrain(band, 0, 15);
     uint16_t colorIndex = band * 17;
     uint16_t barHeight  = map(fftResult[band], 0, 255, 0, rows); // do not subtract -1 from rows here
     if (barHeight > previousBarHeight[x]) previousBarHeight[x] = barHeight; //drive the peak up
@@ -7153,8 +7154,8 @@ uint16_t mode_2DFunkyPlank(void) {              // Written by ??? Adapted by Wil
     // display values of
     int b = 0;
     for (int band = 0; band < NUMB_BANDS; band += bandInc, b++) {
-      int hue = fftResult[band];
-      int v = map(fftResult[band], 0, 255, 10, 255);
+      int hue = fftResult[band % 16];
+      int v = map(fftResult[band % 16], 0, 255, 10, 255);
       for (int w = 0; w < barWidth; w++) {
          int xpos = (barWidth * b) + w;
          SEGMENT.setPixelColorXY(xpos, 0, CHSV(hue, 255, v));
@@ -7269,6 +7270,7 @@ uint16_t mode_2DAkemi(void) {
   if (um_data && fftResult) {
     for (int x=0; x < cols/8; x++) {
       uint16_t band = x * cols/8;
+      band = constrain(band, 0, 15);
       uint16_t barHeight = map(fftResult[band], 0, 255, 0, 17*rows/32);
       CRGB color = SEGMENT.color_from_palette((band * 35), false, PALETTE_SOLID_WRAP, 0);
 
