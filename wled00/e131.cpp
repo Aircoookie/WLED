@@ -154,7 +154,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
         DMXOldDimmer = e131_data[dataOffset+0];
         bri = e131_data[dataOffset+0];
       }
-      if (e131_data[dataOffset+1] < MODE_COUNT)
+      if (e131_data[dataOffset+1] < strip.getModeCount())
         effectCurrent = e131_data[dataOffset+ 1];
       effectSpeed     = e131_data[dataOffset+ 2];  // flickers
       effectIntensity = e131_data[dataOffset+ 3];

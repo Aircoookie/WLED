@@ -7,6 +7,7 @@
 	<title>UI Settings</title>
 	<script>
 		var d = document;
+		var loc = false, locip;
 		var initial_ds, initial_st, initial_su;
 		var sett = null;
 		var l = {
@@ -23,6 +24,7 @@
 				"pid": "Show preset IDs",
 				"seglen": "Set segment length instead of stop LED",
 				"segpwr": "Hide segment power &amp; brightness",
+				"segexp" : "Always expand first segment",
 				"css": "Enable custom CSS",
 				"hdays": "Enable custom Holidays list"
 			},
@@ -40,10 +42,7 @@
 				}
 			}
 		};
-		function gId(s)
-		{
-			return d.getElementById(s);
-		}
+		function gId(s) { return d.getElementById(s); }
 		function isObject(item) {
 			return (item && typeof item === 'object' && !Array.isArray(item));
 		}
@@ -163,22 +162,43 @@
 			if (d.Sf.DS.value != initial_ds || d.Sf.ST.checked != initial_st || d.Sf.SU.checked != initial_su) d.Sf.submit();
 		}
 		
+		// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
+		function loadJS(FILE_URL, async = true) {
+			let scE = d.createElement("script");
+			scE.setAttribute("src", FILE_URL);
+			scE.setAttribute("type", "text/javascript");
+			scE.setAttribute("async", async);
+			d.body.appendChild(scE);
+			// success event 
+			scE.addEventListener("load", () => {
+				//console.log("File loaded");
+				GetV(); 
+				initial_ds = d.Sf.DS.value;
+				initial_st = d.Sf.ST.checked;
+				initial_su = d.Sf.SU.checked;
+				GetLS();
+			});
+			// error event
+			scE.addEventListener("error", (ev) => {
+				console.log("Error on loading file", ev);
+				alert("Loading of configuration script failed.\nIncomplete page data!");
+			});
+		}
 		function S()
 		{
-			GetV(); 
-			initial_ds = d.Sf.DS.value;
-			initial_st = d.Sf.ST.checked;
-			initial_su = d.Sf.SU.checked;
-			GetLS();
+			if (window.location.protocol == "file:") {
+				loc = true;
+				locip = localStorage.getItem('locIp');
+				if (!locip) {
+					locip = prompt("File Mode. Please enter WLED IP!");
+					localStorage.setItem('locIp', locip);
+				}
+			}
+			var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=3';
+			loadJS(url, false);	// If we set async false, file is loaded and executed, then next statement is processed
 		}
-		function H()
-		{
-			window.open("https://kno.wled.ge/features/settings/#user-interface-settings");
-		}
-		function B()
-		{
-			window.open("/settings","_self");
-		}
+		function H() { window.open("https://kno.wled.ge/features/settings/#user-interface-settings"); }
+		function B() { window.open("/settings","_self"); }
 		function UI()
 		{
 			gId('idonthateyou').style.display = (gId('dm').checked) ? 'inline':'none';
@@ -213,7 +233,6 @@
 			fO.value = '';
 			return false;
 		}
-		function GetV(){var d=document;}
 	</script>
 	<style>@import url("style.css");</style>
 </head>
@@ -241,6 +260,7 @@
 		<span class="l"></span>: <input type="checkbox" id="comp_pid" class="agi cb"><br>
 		<span class="l"></span>: <input type="checkbox" id="comp_seglen" class="agi cb"><br>
 		<span class="l"></span>: <input type="checkbox" id="comp_segpwr" class="agi cb"><br>
+		<span class="l"></span>: <input type="checkbox" id="comp_segexp" class="agi cb"><br>
 		I hate dark mode: <input type="checkbox" id="dm" onchange="UI()"><br>
 		<span id="idonthateyou" style="display:none"><i>Why would you? </i>&#x1F97A;<br></span>
 		<span class="l"></span>: <input type="number" min=0.0 max=1.0 step=0.01 id="theme_alpha_tab" class="agi"><br>

@@ -7,26 +7,42 @@
 	<title>Time Settings</title>
 	<script>
     var d=document;
+    var loc = false, locip;
 	var el=false;
 	var ms=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-	function H()
-	{
-		window.open("https://kno.wled.ge/features/settings/#time-settings");
+	function H() { window.open("https://kno.wled.ge/features/settings/#time-settings"); }
+	function B() { window.open("/settings","_self"); }
+	function gId(s) { return d.getElementById(s); }
+	function gN(s) { return d.getElementsByName(s)[0]; }
+	// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
+	function loadJS(FILE_URL, async = true) {
+		let scE = d.createElement("script");
+		scE.setAttribute("src", FILE_URL);
+		scE.setAttribute("type", "text/javascript");
+		scE.setAttribute("async", async);
+		d.body.appendChild(scE);
+		// success event 
+		scE.addEventListener("load", () => {
+			//console.log("File loaded");
+			BTa();GetV();updLoc();Cs();FC();
+		});
+		// error event
+		scE.addEventListener("error", (ev) => {
+			console.log("Error on loading file", ev);
+			alert("Loading of configuration script failed.\nIncomplete page data!");
+		});
 	}
-	function B()
-	{
-		window.open("/settings","_self");
-	}
-	function S()
-	{
-		BTa();GetV();updLoc();Cs();FC();
-	}
-	function gId(s)
-	{
-		return d.getElementById(s);
-	}
-	function gN(s) {
-		return d.getElementsByName(s)[0];
+	function S() {
+		if (window.location.protocol == "file:") {
+			loc = true;
+			locip = localStorage.getItem('locIp');
+			if (!locip) {
+				locip = prompt("File Mode. Please enter WLED IP!");
+				localStorage.setItem('locIp', locip);
+			}
+		}
+		var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=5';
+		loadJS(url, false);	// If we set async false, file is loaded and executed, then next statement is processed
 	}
 	function expand(o,i)
 	{
@@ -34,10 +50,7 @@
 		t.style.display = t.style.display!=="none" ? "none" : "";
 		o.innerHTML = t.style.display==="none" ? "&#128197;" : "&#x2715;";
 	}
-	function Cs()
-	{
-		gId("cac").style.display=(gN("OL").checked)?"block":"none";
-	}
+	function Cs() { gId("cac").style.display=(gN("OL").checked)?"block":"none"; }
 	function BTa()
 	{
 		var ih="<thead><tr><th>En.</th><th>Hour</th><th>Minute</th><th>Preset</th><th></th></tr></thead>";
@@ -131,10 +144,6 @@
 	function updLoc(i) {
 		if (parseFloat(d.Sf.LT.value)<0) { d.Sf.LTR.value = "S"; d.Sf.LT.value = -1*parseFloat(d.Sf.LT.value); } else d.Sf.LTR.value = "N";
 		if (parseFloat(d.Sf.LN.value)<0) { d.Sf.LNR.value = "W"; d.Sf.LN.value = -1*parseFloat(d.Sf.LN.value); } else d.Sf.LNR.value = "E";
-	}
-	function GetV()
-	{
-		//values injected by server while sending HTML
 	}
 	</script>
 	<style>@import url("style.css");</style>

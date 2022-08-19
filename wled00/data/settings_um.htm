@@ -17,6 +17,24 @@
     function isO(i) { return (i && typeof i === 'object' && !Array.isArray(i)); }
     function H() { window.open("https://github.com/Aircoookie/WLED/wiki/Settings#usermod-settings"); }
     function B() { window.open("/settings","_self"); }
+	// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
+	function loadJS(FILE_URL, async = true) {
+		let scE = d.createElement("script");
+		scE.setAttribute("src", FILE_URL);
+		scE.setAttribute("type", "text/javascript");
+		scE.setAttribute("async", async);
+		d.body.appendChild(scE);
+		// success event 
+		scE.addEventListener("load", () => {
+			//console.log("File loaded");
+			GetV();
+		});
+		// error event
+		scE.addEventListener("error", (ev) => {
+			console.log("Error on loading file", ev);
+			alert("Loading of configuration script failed.\nIncomplete page data!");
+		});
+	}
     function S() {
         if (window.location.protocol == "file:") {
             loc = true;
@@ -37,6 +55,21 @@
         if (o.type=="number" && n.substr(0,3)=="pin") {
             for (var i=0; i<pins.length; i++) {
                 if (k==pinO[i]) continue;
+                if (o.value==pins[i] && pinO[i]==="if") { o.style.color="lime"; break; }
+                if (o.value==pins[i] || o.value<-1 || o.value>39) { o.style.color="red"; break; } else o.style.color=o.value>33?"orange":"#fff";
+            }
+        } else {
+            switch (o.name) {
+                case "SDA": break;
+                case "SCL": break;
+                case "MOSI": break;
+                case "SCLK": break;
+                case "CS": break;
+                default: return;
+            }
+            for (var i=0; i<pins.length; i++) {
+                if (k==pinO[i]) continue;
+                if (o.value==pins[i] && pinO[i]==="if") { o.style.color="lime"; break; }
                 if (o.value==pins[i] || o.value<-1 || o.value>39) { o.style.color="red"; break; } else o.style.color=o.value>33?"orange":"#fff";
             }
         }
@@ -63,6 +96,7 @@
     }
     function addField(k,f,o,a=false) {  //key, field, (sub)object, isArray
         if (isO(o)) {
+            urows += '<hr style="width:260px">';
             for (const [s,v] of Object.entries(o)) {
                 // possibility to nest objects (only 1 level)
                 if (f!=='unknown' && !k.includes(":")) addField(k+":"+f,s,v);
@@ -137,7 +171,9 @@
     // https://stackoverflow.com/questions/26440494/insert-text-after-this-input-element-with-javascript
     function addInfo(name,el,txt) {
         let obj = d.getElementsByName(name);
-        if (obj[el]) obj[el].insertAdjacentHTML('afterend', '&nbsp;'+txt);
+        if (!obj.length) return;
+        if (typeof el === "string" && obj[0]) obj[0].placeholder = el;
+        else if (obj[el]) obj[el].insertAdjacentHTML('afterend', '&nbsp;'+txt);
     }
     // load settings and insert values into DOM
     function ldS() {
@@ -161,7 +197,8 @@
             }
             if (urows==="") urows = "Usermods configuration not found.<br>Press <i>Save</i> to initialize defaults.";
             gId("um").innerHTML = urows;
-            GetV();
+            var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=8';
+    		loadJS(url, false);	// If we set async false, file is loaded and executed, then next statement is processed
         })
         .catch((error)=>{
             gId('lserr').style.display = "inline";
@@ -172,7 +209,6 @@
         e.preventDefault();
         if (d.Sf.checkValidity()) d.Sf.submit(); //https://stackoverflow.com/q/37323914
     }
-    function GetV() {} // replaced during 'npm run build'
     </script>
     <style>@import url("style.css");</style>
 </head>
@@ -186,6 +222,15 @@
 		<span id="lserr" style="color:red; display:none">&#9888; Could not load configuration.</span><hr>
 		</div>
 		<h2>Usermod Setup</h2>
+        Global I<sup>2</sup>C GPIOs (HW)<br>
+        <i style="color: orange;">(only changable on ESP32, change requires reboot!)</i><br>
+        SDA:<input type="number" min="-1" max="33" name="SDA" onchange="check(this,'if')" class="s" placeholder="SDA">
+        SCL:<input type="number" min="-1" max="33" name="SCL" onchange="check(this,'if')" class="s" placeholder="SCL">
+        <hr style="width:260px">
+        Global SPI GPIOs (HW)<br>
+        <i style="color: orange;">(only changable on ESP32, change requires reboot!)</i><br>
+        MOSI:<input type="number" min="-1" max="33" name="MOSI" onchange="check(this,'if')" class="s" placeholder="MOSI">
+        SCLK:<input type="number" min="-1" max="33" name="SCLK" onchange="check(this,'if')" class="s" placeholder="SCLK">
         <div id="um">Loading settings...</div>
 		<hr><button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 	</form>

@@ -177,7 +177,7 @@ void getSettingsJS(byte subPage, char* dest)
   obuf = dest;
   olen = 0;
 
-  if (subPage <0 || subPage >9) return;
+  if (subPage <0 || subPage >10) return;
 
   if (subPage == 0)
   {
@@ -261,6 +261,15 @@ void getSettingsJS(byte subPage, char* dest)
     // add reserved and usermod pins as d.um_p array
     oappend(SET_F("d.um_p=[6,7,8,9,10,11"));
 
+    if (i2c_sda > -1 && i2c_scl > -1) {
+      oappend(","); oappend(itoa(i2c_sda,nS,10));
+      oappend(","); oappend(itoa(i2c_scl,nS,10));
+    }
+    if (spi_mosi > -1 && spi_sclk > -1) {
+      oappend(","); oappend(itoa(spi_mosi,nS,10));
+      oappend(","); oappend(itoa(spi_sclk,nS,10));
+    }
+
     if (requestJSONBufferLock(6)) {
       // if we can't allocate JSON buffer ignore usermod pins
       JsonObject mods = doc.createNestedObject(F("um"));
@@ -308,9 +317,14 @@ void getSettingsJS(byte subPage, char* dest)
 
     // set limits
     oappend(SET_F("bLimits("));
+    #if defined(ESP32) && defined(USERMOD_AUDIOREACTIVE)
+    // requested by @softhack007 https://github.com/blazoncek/WLED/issues/33
+    oappend(itoa(WLED_MAX_BUSSES-2,nS,10)); oappend(","); // prevent use of I2S buses if audio installed
+    #else
     oappend(itoa(WLED_MAX_BUSSES,nS,10));  oappend(",");
+    #endif
     oappend(itoa(MAX_LEDS_PER_BUS,nS,10)); oappend(",");
-    oappend(itoa(MAX_LED_MEMORY,nS,10)); oappend(",");
+    oappend(itoa(MAX_LED_MEMORY,nS,10));   oappend(",");
     oappend(itoa(MAX_LEDS,nS,10));
     oappend(SET_F(");"));
 
@@ -320,6 +334,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("CB"),strip.cctBlending);
     sappend('v',SET_F("FR"),strip.getTargetFps());
     sappend('v',SET_F("AW"),Bus::getAutoWhiteMode());
+    sappend('v',SET_F("LD"),strip.useLedsArray);
 
     for (uint8_t s=0; s < busses.getNumBusses(); s++) {
       Bus* bus = busses.getBus(s);
@@ -580,6 +595,9 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(SET_F(" (build "));
     oappendi(VERSION);
     oappend(SET_F(")\";"));
+    oappend(SET_F("sd=\""));
+    oappend(serverDescription);
+    oappend(SET_F("\";"));
   }
   
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
@@ -615,6 +633,14 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(SET_F("numM="));
     oappendi(usermods.getModCount());
     oappend(";");
+    sappend('v',SET_F("SDA"),i2c_sda);
+    sappend('v',SET_F("SCL"),i2c_scl);
+    sappend('v',SET_F("MOSI"),spi_mosi);
+    sappend('v',SET_F("SCLK"),spi_sclk);
+    oappend(SET_F("addInfo('SDA','"));  oappendi(HW_PIN_SDA);      oappend(SET_F("');"));
+    oappend(SET_F("addInfo('SCL','"));  oappendi(HW_PIN_SCL);      oappend(SET_F("');"));
+    oappend(SET_F("addInfo('MOSI','")); oappendi(HW_PIN_DATASPI);  oappend(SET_F("');"));
+    oappend(SET_F("addInfo('SCLK','")); oappendi(HW_PIN_CLOCKSPI); oappend(SET_F("');"));
     usermods.appendConfigData();
   }
 
@@ -631,5 +657,38 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(SET_F(" build "));
     oappendi(VERSION);
     oappend(SET_F(")\";"));
+  }
+
+  if (subPage == 10) // 2D matrices
+  {
+    sappend('v',SET_F("SOMP"),strip.isMatrix);
+    #ifndef WLED_DISABLE_2D
+    oappend(SET_F("resetPanels();"));
+    if (strip.isMatrix) {
+      sappend('v',SET_F("PH"),strip.panelH);
+      sappend('v',SET_F("PW"),strip.panelW);
+      sappend('v',SET_F("MPH"),strip.hPanels);
+      sappend('v',SET_F("MPV"),strip.vPanels);
+      sappend('v',SET_F("PB"),strip.matrix.bottomStart);
+      sappend('v',SET_F("PR"),strip.matrix.rightStart);
+      sappend('v',SET_F("PV"),strip.matrix.vertical);
+      sappend('c',SET_F("PS"),strip.matrix.serpentine);
+      // panels
+      for (uint8_t i=0; i<strip.hPanels*strip.vPanels; i++) {
+        char n[5];
+        oappend(SET_F("addPanel("));
+        oappend(itoa(i,n,10));
+        oappend(SET_F(");"));
+        char pO[8]; sprintf_P(pO, PSTR("P%d"), i);
+        uint8_t l = strlen(pO); pO[l+1] = 0;
+        pO[l] = 'B'; sappend('v',pO,strip.panel[i].bottomStart);
+        pO[l] = 'R'; sappend('v',pO,strip.panel[i].rightStart);
+        pO[l] = 'V'; sappend('v',pO,strip.panel[i].vertical);
+        pO[l] = 'S'; sappend('c',pO,strip.panel[i].serpentine);
+      }
+    }
+    #else
+    oappend(SET_F("gId(\"somp\").remove(1);")); // remove 2D option from dropdown
+    #endif
   }
 }

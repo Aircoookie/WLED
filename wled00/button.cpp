@@ -195,11 +195,11 @@ void handleAnalog(uint8_t b)
       colorHStoRGB(aRead*256,255,col);
     } else {
       // otherwise use "double press" for segment selection
-      WS2812FX::Segment& seg = strip.getSegment(macroDoublePress[b]);
+      Segment& seg = strip.getSegment(macroDoublePress[b]);
       if (aRead == 0) {
         seg.setOption(SEG_OPTION_ON, 0); // off
       } else {
-        seg.setOpacity(aRead, macroDoublePress[b]);
+        seg.setOpacity(aRead);
         seg.setOption(SEG_OPTION_ON, 1);
       }
       // this will notify clients of update (websockets,mqtt,etc)
@@ -216,10 +216,13 @@ void handleAnalog(uint8_t b)
 void handleButton()
 {
   static unsigned long lastRead = 0UL;
+  static unsigned long lastRun = 0UL;
   bool analog = false;
   unsigned long now = millis();
 
-  if (strip.isUpdating()) return; // don't interfere with strip updates. Our button will still be there in 1ms (next cycle)
+  //if (strip.isUpdating()) return; // don't interfere with strip updates. Our button will still be there in 1ms (next cycle)
+  if (strip.isUpdating() && (millis() - lastRun < 400)) return;   // be niced, but avoid button starvation
+  lastRun = millis();
 
   for (uint8_t b=0; b<WLED_MAX_BUTTONS; b++) {
     #ifdef ESP8266
@@ -265,7 +268,9 @@ void handleButton()
       if (b == 0 && dur > WLED_LONG_AP) { // long press on button 0 (when released)
         if (dur > WLED_LONG_FACTORY_RESET) { // factory reset if pressed > 10 seconds
           WLED_FS.format();
+          #ifdef WLED_ADD_EEPROM_SUPPORT
           clearEEPROM();
+          #endif
           doReboot = true;
         } else {
           WLED::instance().initAP(true);

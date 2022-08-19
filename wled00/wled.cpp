@@ -118,6 +118,7 @@ void WLED::loop()
     if (stripMillis > maxStripMillis) maxStripMillis = stripMillis;
     #endif
   }
+
   yield();
 #ifdef ESP8266
   MDNS.update();
@@ -204,6 +205,7 @@ void WLED::loop()
     DEBUG_PRINT(F("Loops/sec: "));       DEBUG_PRINTLN(loops / 30);
     DEBUG_PRINT(F("UM time[ms]: "));     DEBUG_PRINT(avgUsermodMillis/loops); DEBUG_PRINT("/");DEBUG_PRINTLN(maxUsermodMillis);
     DEBUG_PRINT(F("Strip time[ms]: "));  DEBUG_PRINT(avgStripMillis/loops); DEBUG_PRINT("/"); DEBUG_PRINTLN(maxStripMillis);
+    strip.printSize();
     loops = 0;
     maxUsermodMillis = 0;
     maxStripMillis = 0;
@@ -313,7 +315,10 @@ void WLED::setup()
   if (!fsinit) {
     DEBUGFS_PRINTLN(F("FS failed!"));
     errorFlag = ERR_FS_BEGIN;
-  } else deEEP();
+  } 
+#ifdef WLED_ADD_EEPROM_SUPPORT
+  else deEEP();
+#endif
   updateFSInfo();
 
   DEBUG_PRINTLN(F("Reading config"));
@@ -410,6 +415,7 @@ void WLED::beginStrip()
 {
   // Initialize NeoPixel Strip and button
   strip.finalizeInit(); // busses created during deserializeConfig()
+  strip.loadCustomPalettes();
   strip.deserializeMap();
   strip.makeAutoSegments();
   strip.setBrightness(0);
@@ -692,6 +698,7 @@ void WLED::handleConnection()
       DEBUG_PRINT(F("Heap too low! "));
       DEBUG_PRINTLN(heap);
       forceReconnect = true;
+      strip.purgeSegments(true); // remove all but one segments from memory
     }
     lastHeap = heap;
     heapTime = now;

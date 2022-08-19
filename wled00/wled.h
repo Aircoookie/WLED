@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2208140
+#define VERSION 2208191
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -86,6 +86,8 @@
   #endif
   #include "esp_task_wdt.h"
 #endif
+#include <Wire.h>
+#include <SPI.h>
 
 #include "src/dependencies/network/Network.h"
 
@@ -94,7 +96,9 @@
 #endif
 
 #include <ESPAsyncWebServer.h>
-#include <EEPROM.h>
+#ifdef WLED_ADD_EEPROM_SUPPORT
+  #include <EEPROM.h>
+#endif
 #include <WiFiUdp.h>
 #include <DNSServer.h>
 #ifndef WLED_DISABLE_OTA
@@ -152,19 +156,12 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
 #define PSRAMDynamicJsonDocument DynamicJsonDocument
 #endif
 
-#include "fcn_declare.h"
-#include "html_ui.h"
-#ifdef WLED_ENABLE_SIMPLE_UI
-#include "html_simple.h"
-#endif
-#include "html_settings.h"
-#include "html_other.h"
-#include "FX.h"
-#include "ir_codes.h"
 #include "const.h"
+#include "fcn_declare.h"
 #include "NodeStruct.h"
 #include "pin_manager.h"
 #include "bus_manager.h"
+#include "FX.h"
 
 #ifndef CLIENT_SSID
   #define CLIENT_SSID DEFAULT_CLIENT_SSID
@@ -458,12 +455,12 @@ WLED_GLOBAL bool wasConnected _INIT(false);
 WLED_GLOBAL byte lastRandomIndex _INIT(0);        // used to save last random color so the new one is not the same
 
 // transitions
-WLED_GLOBAL bool transitionActive _INIT(false);
-WLED_GLOBAL uint16_t transitionDelayDefault _INIT(transitionDelay);
-WLED_GLOBAL uint16_t transitionDelayTemp _INIT(transitionDelay);
+WLED_GLOBAL bool          transitionActive       _INIT(false);
+WLED_GLOBAL uint16_t      transitionDelayDefault _INIT(transitionDelay); // default transition time (storec in cfg.json)
+WLED_GLOBAL uint16_t      transitionDelayTemp    _INIT(transitionDelay); // actual transition duration (overrides transitionDelay in certain cases)
 WLED_GLOBAL unsigned long transitionStartTime;
-WLED_GLOBAL float tperLast _INIT(0);        // crossfade transition progress, 0.0f - 1.0f
-WLED_GLOBAL bool jsonTransitionOnce _INIT(false);
+WLED_GLOBAL float         tperLast               _INIT(0.0f);            // crossfade transition progress, 0.0f - 1.0f
+WLED_GLOBAL bool          jsonTransitionOnce     _INIT(false);           // flag to override transitionDelay (playlist, JSON API: "live" & "seg":{"i"} & "tt")
 
 // nightlight
 WLED_GLOBAL bool nightlightActive _INIT(false);
@@ -642,9 +639,15 @@ WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
 WLED_GLOBAL BusConfig* busConfigs[WLED_MAX_BUSSES] _INIT({nullptr}); //temporary, to remember values from network callback until after
 WLED_GLOBAL bool doInitBusses _INIT(false);
 WLED_GLOBAL int8_t loadLedmap _INIT(-1);
+WLED_GLOBAL uint16_t ledMaps _INIT(0); // bitfield representation of available ledmaps
 
 // Usermod manager
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
+
+WLED_GLOBAL int8_t i2c_sda  _INIT(-1);      // global I2C SDA pin [HW_PIN_SDA] (used for usermods)
+WLED_GLOBAL int8_t i2c_scl  _INIT(-1);      // global I2C SCL pin [HW_PIN_SCL] (used for usermods)
+WLED_GLOBAL int8_t spi_mosi _INIT(-1);      // global SPI DATA/MOSI pin [HW_PIN_DATASPI] (used for usermods)
+WLED_GLOBAL int8_t spi_sclk _INIT(-1);      // global SPI CLOCK/SCLK pin [HW_PIN_CLOCKSPI] (used for usermods)
 
 // global ArduinoJson buffer
 WLED_GLOBAL StaticJsonDocument<JSON_BUFFER_SIZE> doc;

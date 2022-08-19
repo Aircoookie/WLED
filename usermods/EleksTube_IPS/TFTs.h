@@ -355,7 +355,7 @@ public:
     // Color in grayscale bitmaps if Segment 1 exists
     // TODO If secondary and tertiary are black, color all in primary,
     // else color first three from Seg 1 color slots and last three from Seg 2 color slots
-    WS2812FX::Segment& seg1 = strip.getSegment(tubeSegment);
+    Segment& seg1 = strip.getSegment(tubeSegment);
     if (seg1.isActive()) {
       digitColor = strip.getPixelColor(seg1.start + digit);
       dimming = seg1.opacity;

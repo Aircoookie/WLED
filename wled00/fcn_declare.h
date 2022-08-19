@@ -58,21 +58,23 @@ bool getJsonValue(const JsonVariant& element, DestType& destination, const Defau
 
 
 //colors.cpp
+uint32_t color_blend(uint32_t,uint32_t,uint16_t,bool b16=false);
+uint32_t color_add(uint32_t,uint32_t);
 inline uint32_t colorFromRgbw(byte* rgbw) { return uint32_t((byte(rgbw[3]) << 24) | (byte(rgbw[0]) << 16) | (byte(rgbw[1]) << 8) | (byte(rgbw[2]))); }
 void colorHStoRGB(uint16_t hue, byte sat, byte* rgb); //hue, sat to rgb
 void colorKtoRGB(uint16_t kelvin, byte* rgb);
 void colorCTtoRGB(uint16_t mired, byte* rgb); //white spectrum to rgb
-
 void colorXYtoRGB(float x, float y, byte* rgb); // only defined if huesync disabled TODO
 void colorRGBtoXY(byte* rgb, float* xy); // only defined if huesync disabled TODO
-
 void colorFromDecOrHexString(byte* rgb, char* in);
 bool colorFromHexString(byte* rgb, const char* in);
-
 uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb);
 uint16_t approximateKelvinFromRGB(uint32_t rgb);
-
 void setRandomColor(byte* rgb);
+uint8_t gamma8_cal(uint8_t b, float gamma);
+void calcGammaTable(float gamma);
+uint8_t gamma8(uint8_t b);
+uint32_t gamma32(uint32_t);
 
 //dmx.cpp
 void initDMX();
@@ -129,7 +131,7 @@ void handleIR();
 
 void deserializeSegment(JsonObject elem, byte it, byte presetId = 0);
 bool deserializeState(JsonObject root, byte callMode = CALL_MODE_DIRECT_CHANGE, byte presetId = 0);
-void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset = false, bool segmentBounds = true);
+void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset = false, bool segmentBounds = true);
 void serializeState(JsonObject root, bool forPreset = false, bool includeBri = true, bool segmentBounds = true);
 void serializeInfo(JsonObject root);
 void serializeModeNames(JsonArray arr, const char *qstring);
@@ -296,7 +298,7 @@ class UsermodManager {
     void onUpdateBegin(bool);
     bool add(Usermod* um);
     Usermod* lookup(uint16_t mod_id);
-    byte getModCount();
+    byte getModCount() {return numMods;};
 };
 
 //usermods_list.cpp
@@ -311,7 +313,7 @@ void userLoop();
 int getNumVal(const String* req, uint16_t pos);
 void parseNumber(const char* str, byte* val, byte minv=0, byte maxv=255);
 bool getVal(JsonVariant elem, byte* val, byte minv=0, byte maxv=255);
-bool updateVal(const String* req, const char* key, byte* val, byte minv=0, byte maxv=255);
+bool updateVal(const char* req, const char* key, byte* val, byte minv=0, byte maxv=255);
 bool oappend(const char* txt); // append new c string to temp buffer efficiently
 bool oappendi(int i);          // append new number to temp buffer efficiently
 void sappend(char stype, const char* key, int val);
@@ -321,12 +323,19 @@ bool isAsterisksOnly(const char* str, byte maxLen);
 bool requestJSONBufferLock(uint8_t module=255);
 void releaseJSONBufferLock();
 uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLen);
+uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxLen, uint8_t *var = nullptr);
+int16_t extractModeDefaults(uint8_t mode, const char *segVar);
+uint16_t crc16(const unsigned char* data_p, size_t length);
+um_data_t* simulateSound(uint8_t simulationId);
+void enumerateLedmaps();
 
+#ifdef WLED_ADD_EEPROM_SUPPORT
 //wled_eeprom.cpp
 void applyMacro(byte index);
 void deEEP();
 void deEEPSettings();
 void clearEEPROM();
+#endif
 
 //wled_math.cpp
 #ifndef WLED_USE_REAL_MATH

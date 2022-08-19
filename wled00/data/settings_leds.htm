@@ -8,10 +8,29 @@
 	<script>
     var d=document,laprev=55,maxB=1,maxM=4000,maxPB=4096,maxL=1333,maxLbquot=0; //maximum bytes for LED allocation: 4kB for 8266, 32kB for 32
 		var customStarts=false,startsDirty=[],maxCOOverrides=5;
+    var loc = false, locip;
     function H(){window.open("https://kno.wled.ge/features/settings/#led-settings");}
 		function B(){window.open("/settings","_self");}
     function gId(n){return d.getElementById(n);}
     function off(n){d.getElementsByName(n)[0].value = -1;}
+    // https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
+    function loadJS(FILE_URL, async = true) {
+      let scE = d.createElement("script");
+      scE.setAttribute("src", FILE_URL);
+      scE.setAttribute("type", "text/javascript");
+      scE.setAttribute("async", async);
+      d.body.appendChild(scE);
+      // success event 
+      scE.addEventListener("load", () => {
+        //console.log("File loaded");
+        GetV();checkSi();setABL();
+      });
+      // error event
+      scE.addEventListener("error", (ev) => {
+        console.log("Error on loading file", ev);
+        alert("Loading of configuration script failed.\nIncomplete page data!");
+      });
+    }
     var timeout;
     function showToast(text, error = false)
     {
@@ -131,7 +150,7 @@
         if (s[i].name.substring(0,2)=="LT") {
           var n = s[i].name.substring(2);
           var t = parseInt(s[i].value,10);
-          gId("p0d"+n).innerHTML = (t>=80 && t<96) ? "IP address:" : (t > 49) ? "Data GPIO:" : (t >41) ? "GPIOs:" : "GPIO:";
+          gId("p0d"+n).innerHTML = (t>=80 && t<96) ? "IP address:" : (t > 49) ? "Data GPIO:" : (t > 41) ? "GPIOs:" : "GPIO:";
           gId("p1d"+n).innerHTML = (t> 49 && t<64) ? "Clk GPIO:" : "";
           var LK = d.getElementsByName("L1"+n)[0]; // clock pin
 
@@ -157,18 +176,18 @@
             gId("rf"+n).checked = (gId("rf"+n).checked || t == 31); // LEDs require data in off state
             if (t > 31 && t < 48) d.getElementsByName("LC"+n)[0].value = 1; // for sanity change analog count just to 1 LED
           }
-          gId("rf"+n).onclick = (t == 31) ? (function(){return false}) : (function(){});  // prevent change for TM1814
+          gId("rf"+n).onclick = (t == 31) ? (()=>{return false}) : (()=>{});  // prevent change for TM1814
           isRGBW |= (t == 30 || t == 31 || (t > 40 && t < 46 && t != 43)); // RGBW checkbox, TYPE_xxxx values from const.h
-          gId("co"+n).style.display = ((t>=80 && t<96) || (t > 40 && t < 48)) ? "none":"inline";  // hide color order for PWM
+          gId("co"+n).style.display = ((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? "none":"inline";  // hide color order for PWM
           gId("dig"+n+"w").style.display = (t == 30 || t == 31) ? "inline":"none";  // show swap channels dropdown
           if (!(t == 30 || t == 31)) d.getElementsByName("WO"+n)[0].value = 0; // reset swapping
-          gId("dig"+n+"c").style.display = (t > 40 && t < 48) ? "none":"inline";  // hide count for analog
-          gId("dig"+n+"r").style.display = (t>=80 && t<96) ? "none":"inline";  // hide reversed for virtual
-          gId("dig"+n+"s").style.display = ((t>=80 && t<96) || (t > 40 && t < 48)) ? "none":"inline";  // hide skip 1st for virtual & analog
-          gId("dig"+n+"f").style.display = (t>=16 && t<32 || t>=50 && t<64) ? "inline":"none";  // hide refresh
-          gId("dig"+n+"a").style.display = (isRGBW) ? "inline":"none";  // auto calculate white
-          gId("rev"+n).innerHTML = (t > 40 && t < 48) ? "Inverted output":"Reversed (rotated 180°)";  // change reverse text for analog
-          gId("psd"+n).innerHTML = (t > 40 && t < 48) ? "Index:":"Start:";    // change analog start description
+          gId("dig"+n+"c").style.display = (t >= 40 && t < 48) ? "none":"inline";  // hide count for analog
+          gId("dig"+n+"r").style.display = (t >= 80 && t < 96) ? "none":"inline";  // hide reversed for virtual
+          gId("dig"+n+"s").style.display = ((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? "none":"inline";  // hide skip 1st for virtual & analog
+          gId("dig"+n+"f").style.display = ((t >= 16 && t < 32) || (t >= 50 && t < 64)) ? "inline":"none";  // hide refresh
+          gId("dig"+n+"a").style.display = (isRGBW && t != 40) ? "inline":"none";  // auto calculate white
+          gId("rev"+n).innerHTML = (t >= 40 && t < 48) ? "Inverted output":"Reversed (rotated 180°)";  // change reverse text for analog
+          gId("psd"+n).innerHTML = (t >= 40 && t < 48) ? "Index:":"Start:";    // change analog start description
         }
       }
       // display white channel calculation method
@@ -297,11 +316,13 @@ ${i+1}:
 <option value="30">SK6812 RGBW</option>
 <option value="31">TM1814</option>
 <option value="24">400kHz</option>
+<option value="25">TM1829</option>
 <option value="50">WS2801</option>
 <option value="51">APA102</option>
 <option value="52">LPD8806</option>
 <option value="54">LPD6803</option>
 <option value="53">P9813</option>
+<option value="40">On/Off</option>
 <option value="41">PWM White</option>
 <option value="42">PWM CCT</option>
 <option value="43">PWM RGB</option>
@@ -506,12 +527,17 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
         }
       }
     }
-		function S(){GetV();checkSi();setABL();}
-		function GetV()
-		{
-      //values injected by server while sending HTML
-      //d.um_p=[6,7,8,9,10,11,1];bLimits(3,4096,4000,1664);d.Sf.MS.checked=1;addLEDs(1);d.Sf.L00.value=2;d.Sf.LC0.value=30;d.Sf.LT0.value=22;d.Sf.CO0.value=0;d.Sf.LS0.value=15;d.Sf.CV0.checked=1;d.Sf.SL0.checked=0;addLEDs(1);d.Sf.L01.value=10;d.Sf.L11.value=10;d.Sf.L21.value=1;d.Sf.L31.value=10;d.Sf.LC1.value=60;d.Sf.LT1.value=80;d.Sf.CO1.value=1;d.Sf.LS1.value=0;d.Sf.CV1.checked=0;d.Sf.SL1.checked=0;d.Sf.MA.value=850;d.Sf.LA.value=0;d.Sf.CA.value=56;d.Sf.AW.value=3;d.Sf.BO.checked=1;d.Sf.BP.value=80;d.Sf.GB.checked=0;d.Sf.GC.checked=1;d.Sf.TF.checked=1;d.Sf.TD.value=700;d.Sf.PF.checked=0;d.Sf.BF.value=100;d.Sf.TB.value=0;d.Sf.TL.value=60;d.Sf.TW.value=0;d.Sf.PB.selectedIndex=0;d.Sf.RL.value=12;d.Sf.RM.checked=1;addBtn(0,0,0);addBtn(1,-1,0);d.Sf.TT.value=32;d.Sf.IR.value=-1;d.Sf.IT.value=0;
-      //d.um_p=[6,7,8,9,10,11,14,15,13,1,21,19,22,25,26,27,5,23,18,17];bLimits(10,2048,64000,8192);d.Sf.MS.checked=1;d.Sf.CCT.checked=0;addLEDs(1);d.Sf.L00.value=192;d.Sf.L10.value=168;d.Sf.L20.value=0;d.Sf.L30.value=61;d.Sf.LC0.value=421;d.Sf.LT0.value=80;d.Sf.CO0.value=1;d.Sf.LS0.value=0;d.Sf.CV0.checked=0;d.Sf.SL0.checked=0;d.Sf.RF0.checked=0;d.Sf.MA.value=850;d.Sf.LA.value=0;d.Sf.CA.value=127;d.Sf.AW.value=3;d.Sf.BO.checked=0;d.Sf.BP.value=0;d.Sf.GB.checked=0;d.Sf.GC.checked=1;d.Sf.TF.checked=1;d.Sf.TD.value=700;d.Sf.PF.checked=1;d.Sf.BF.value=100;d.Sf.TB.value=0;d.Sf.TL.value=60;d.Sf.TW.value=1;d.Sf.PB.selectedIndex=0;d.Sf.RL.value=-1;d.Sf.RM.checked=1;addBtn(0,-1,0);addBtn(1,-1,0);addBtn(2,-1,0);addBtn(3,-1,0);d.Sf.TT.value=32;d.Sf.IR.value=-1;d.Sf.IT.value=8;
+		function S(){
+			if (window.location.protocol == "file:") {
+				loc = true;
+				locip = localStorage.getItem('locIp');
+				if (!locip) {
+					locip = prompt("File Mode. Please enter WLED IP!");
+					localStorage.setItem('locIp', locip);
+				}
+			}
+			var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=2';
+			loadJS(url, false);	// If we set async false, file is loaded and executed, then next statement is processed
     }
 	</script>
 	<style>@import url("style.css");</style>
@@ -564,8 +590,9 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
       Use less than <span id="wreason">800 LEDs per output</span> for the best experience!<br>
     </div>
     <hr style="width:260px">
-    Make a segment for each output: <input type="checkbox" name="MS"> <br>
-    Custom bus start indices: <input type="checkbox" onchange="tglSi(this.checked)" id="si"> <br>
+    Make a segment for each output: <input type="checkbox" name="MS"><br>
+    Custom bus start indices: <input type="checkbox" onchange="tglSi(this.checked)" id="si"><br>
+    Use global LED buffer: <input type="checkbox" name="LD"><br>
     <hr style="width:260px">
     <div id="color_order_mapping">
       Color Order Override:

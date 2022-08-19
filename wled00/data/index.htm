@@ -46,9 +46,9 @@
 				}
 			}, 100);
 		});
-		setTimeout(()=>{h.appendChild(l)},50);
+		setTimeout(()=>{h.appendChild(l)},100);
 	});
-	setTimeout(()=>{h.appendChild(l)},50);
+	setTimeout(()=>{h.appendChild(l)},100);
 	</script>
 	<link rel="stylesheet" href="index.css">
 </head>
@@ -200,9 +200,9 @@
 		<div id="fx">
 			<p class="labels hd" id="modeLabel">Effect mode</p>
 			<div class="staytop fnd" id="fxFind">
-				<input type="text" placeholder="Search" oninput="search(this,'fxlist')" onfocus="search(this,'fxlist')" />
+				<input type="text" placeholder="Search" oninput="search(this,'fxlist')" onfocus="search(this,'fxlist');gId('filters').classList.add('fade');" onblur="gId('filters').classList.remove('fade')"/>
 				<i class="icons clear-icon" onclick="clean(this);">&#xe38f;</i>
-				<i class="icons search-icon">&#xe0a1;</i>
+				<i class="icons search-icon" onclick="gId('filters').classList.toggle('hide');" style="cursor:pointer;">&#xe0a1;</i>
 			</div>
 			<div id="fxlist" class="list">
 				<div class="lstI">
@@ -217,50 +217,86 @@
 			</div>
 		</div>
 		<div id="sliders">
-			<p class="labels hd" id="sliderLabel0">Effect speed</p>
-			<div id="slider0">
+			<div id="filters" class="filter">
+				<label id="filterPal" class="check fchkl">&#x1F3A8;
+					<input type="checkbox" data-flt="&#x1F3A8;" onchange="filterFx(this)">
+					<span class="checkmark"></span>
+				</label>
+				<label id="filter1D" class="check fchkl">&#8942;
+					<input type="checkbox" data-flt="&#8942;" onchange="filterFx(this)">
+					<span class="checkmark"></span>
+				</label>
+				<label id="filter2D" class="check fchkl">&#9638;
+					<input type="checkbox" data-flt="&#9638;" onchange="filterFx(this)">
+					<span class="checkmark"></span>
+				</label>
+				<label id="filterVol" class="check fchkl">&#9834;
+					<input type="checkbox" data-flt="&#9834;" onchange="filterFx(this)">
+					<span class="checkmark"></span>
+				</label>
+				<label id="filterFreq" class="check fchkl">&#9835;
+					<input type="checkbox" data-flt="&#9835;" onchange="filterFx(this)">
+					<span class="checkmark"></span>
+				</label>
+			</div>
+			<div id="slider0" class="slider">
 				<i class="icons slider-icon" style="cursor: pointer;" onclick="tglFreeze()">&#xe325;</i>
 				<div class="sliderwrap il">
 					<input id="sliderSpeed" class="noslide" onchange="setSpeed()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
 					<div class="sliderdisplay"></div>
 				</div>
 				<output class="sliderbubble"></output>
+				<span id="sliderLabel0" class="tooltiptext">Effect speed</span>
 			</div>
-			<p class="labels hd" id="sliderLabel1">Effect intensity</p>
-			<div id="slider1">
+			<div id="slider1" class="slider">
 				<i class="icons slider-icon" style="cursor: pointer;" onclick="tglLabels()">&#xe409;</i>
 				<div class="sliderwrap il">
 					<input id="sliderIntensity" class="noslide" onchange="setIntensity()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
 					<div class="sliderdisplay"></div>
 				</div>
 				<output class="sliderbubble"></output>
+				<span class="tooltiptext" id="sliderLabel1">Effect intensity</span>
 			</div>
-			<p class="labels hd" id="sliderLabel2">Custom 1</p>
-			<div id="slider2" class="hide">
+			<div id="slider2" class="slider hide">
 				<i class="icons slider-icon">&#xe410;</i>
 				<div class="sliderwrap il">
-					<input id="sliderC1" class="noslide" onchange="setCustom(1)" oninput="updateTrail(this)" max="255" min="0" type="range" value="6" />
+					<input id="sliderC1" class="noslide" onchange="setCustom(1)" oninput="updateTrail(this)" max="255" min="0" type="range" value="0" />
 					<div class="sliderdisplay"></div>
 				</div>
 				<output class="sliderbubble"></output>
+				<span class="tooltiptext" id="sliderLabel2">Custom 1</span>
 			</div>
-			<p class="labels hd" id="sliderLabel3">Custom 2</p>
-			<div id="slider3" class="hide">
+			<div id="slider3" class="slider hide">
 				<i class="icons slider-icon">&#xe0a2;</i>
 				<div class="sliderwrap il">
-					<input id="sliderC2" class="noslide" onchange="setCustom(2)" oninput="updateTrail(this)" max="255" min="0" type="range" value="6" />
+					<input id="sliderC2" class="noslide" onchange="setCustom(2)" oninput="updateTrail(this)" max="255" min="0" type="range" value="0" />
 					<div class="sliderdisplay"></div>
 				</div>
 				<output class="sliderbubble"></output>
+				<span class="tooltiptext" id="sliderLabel3">Custom 2</span>
 			</div>
-			<p class="labels hd" id="sliderLabel4">Custom 3</p>
-			<div id="slider4" class="hide">
+			<div id="slider4" class="slider hide">
 				<i class="icons slider-icon">&#xe0e8;</i>
 				<div class="sliderwrap il">
-					<input id="sliderC3" class="noslide" onchange="setCustom(3)" oninput="updateTrail(this)" max="255" min="0" type="range" value="6" />
+					<input id="sliderC3" class="noslide" onchange="setCustom(3)" oninput="updateTrail(this)" max="31" min="0" type="range" value="0" />
 					<div class="sliderdisplay"></div>
 				</div>
 				<output class="sliderbubble"></output>
+				<span class="tooltiptext" id="sliderLabel4">Custom 3</span>
+			</div>
+			<div id="fxopt" class="option fade">
+				<label id="opt0" class="check ochkl hide"><i class="icons">&#xe2b3;</i><span class="tooltiptext" id="optLabel0">Check 1</span>
+					<input type="checkbox" onchange="setOption(1, this.checked)">
+					<span class="checkmark"></span>
+				</label>
+				<label id="opt1" class="check ochkl hide"><i class="icons">&#xe34b;</i><span class="tooltiptext" id="optLabel1">Check 2</span>
+					<input type="checkbox" onchange="setOption(2, this.checked)">
+					<span class="checkmark"></span>
+				</label>
+				<label id="opt2" class="check ochkl hide"><i class="icons">&#xe04c;</i><span class="tooltiptext" id="optLabel2">Check 3</span>
+					<input type="checkbox" onchange="setOption(3, this.checked)">
+					<span class="checkmark"></span>
+				</label>
 			</div>
 		</div>
 	</div>
@@ -308,7 +344,7 @@
 	<button class="btn btn-xs close" onclick="toggleInfo()"><i class="icons rot45">&#xe18a;</i></button>
 	<div id="imgw">
 		<img class="wi" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB0AAAAFCAYAAAC5Fuf5AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABbSURBVChTlY9bDoAwDMNW7n9nwCipytQN4Z8tbrTHmDmF4oPzyldwRqp1SSdnV/NuZuzqerAByxXznBw3igkeFEfXyUuhK/yFM0CxJfyqXZEOc6/Sr9/bf7uIC5Nwd7orMvAPAAAAAElFTkSuQmCC" />
-	</div><br>
+	</div>
 	<div id="kv">Loading...</div><br>
 	<div>
 		<button class="btn infobtn" onclick="requestJson()">Refresh</button>
@@ -327,6 +363,10 @@
 	<div style="position:sticky;bottom:0;">
 		<button class="btn infobtn" onclick="loadNodes()">Refresh</button>
 	</div>	
+</div>
+
+<div id="mliveview2D" class="modal">
+	<div id="kliveview2D" style="width:100%; height:100%">Loading...</div><br>
 </div>
 
 <div id="rover" class="modal">

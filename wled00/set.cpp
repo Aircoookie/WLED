@@ -15,8 +15,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     return;
   }
 
-  //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 7: DMX 8: usermods
-  if (subPage <1 || subPage >8 || !correctPIN) return;
+  //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 7: DMX 8: usermods 9: N/A 10: 2D
+  if (subPage <1 || subPage >10 || !correctPIN) return;
 
   //WIFI SETTINGS
   if (subPage == 1)
@@ -85,6 +85,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     Bus::setCCTBlend(strip.cctBlending);
     Bus::setAutoWhiteMode(request->arg(F("AW")).toInt());
     strip.setTargetFps(request->arg(F("FR")).toInt());
+    strip.useLedsArray = request->hasArg(F("LD"));
 
     bool busesChanged = false;
     for (uint8_t s = 0; s < WLED_MAX_BUSSES; s++) {
@@ -99,7 +100,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char aw[4] = "AW"; aw[2] = 48+s; aw[3] = 0; //auto white mode
       char wo[4] = "WO"; wo[2] = 48+s; wo[3] = 0; //channel swap
       if (!request->hasArg(lp)) {
-        DEBUG_PRINTLN(F("No data.")); break;
+        DEBUG_PRINT(F("No data for "));
+        DEBUG_PRINTLN(s);
+        break;
       }
       for (uint8_t i = 0; i < 5; i++) {
         lp[1] = 48+i;
@@ -119,6 +122,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       awmode = request->arg(aw).toInt();
       channelSwap = (type == TYPE_SK6812_RGBW || type == TYPE_TM1814) ? request->arg(wo).toInt() : 0;
       // actual finalization is done in WLED::loop() (removing old busses and adding new)
+      // this may happen even before this loop is finished so we do "doInitBusses" after the loop
       if (busConfigs[s] != nullptr) delete busConfigs[s];
       busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder | (channelSwap<<4), request->hasArg(cv), skip, awmode);
       busesChanged = true;
@@ -185,8 +189,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     fadeTransition = request->hasArg(F("TF"));
     t = request->arg(F("TD")).toInt();
-    if (t >= 0) transitionDelay = t;
-    transitionDelayDefault = t;
+    if (t >= 0) transitionDelayDefault = t;
     strip.paletteFade = request->hasArg(F("PF"));
 
     nightlightTargetBri = request->arg(F("TB")).toInt();
@@ -396,7 +399,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (request->hasArg(F("RS"))) //complete factory reset
     {
       WLED_FS.format();
+      #ifdef WLED_ADD_EEPROM_SUPPORT
       clearEEPROM();
+      #endif
       serveMessage(request, 200, F("All Settings erased."), F("Connect to WLED-AP to setup again"),255);
       doReboot = true;
     }
@@ -472,6 +477,51 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   {
     if (!requestJSONBufferLock(5)) return;
 
+    // global I2C & SPI pins
+    int8_t hw_sda_pin  = !request->arg(F("SDA")).length() ? -1 : max(-1,min(33,(int)request->arg(F("SDA")).toInt()));
+    int8_t hw_scl_pin  = !request->arg(F("SCL")).length() ? -1 : max(-1,min(33,(int)request->arg(F("SCL")).toInt()));
+    #ifdef ESP8266
+    // cannot change pins on ESP8266
+    if (hw_sda_pin >= 0 && hw_sda_pin != HW_PIN_SDA) hw_sda_pin = HW_PIN_SDA;
+    if (hw_scl_pin >= 0 && hw_scl_pin != HW_PIN_SCL) hw_scl_pin = HW_PIN_SCL;
+    #endif
+    PinManagerPinType i2c[2] = { { hw_sda_pin, true }, { hw_scl_pin, true } };
+    if (hw_sda_pin >= 0 && hw_scl_pin >= 0 && pinManager.allocateMultiplePins(i2c, 2, PinOwner::HW_I2C)) {
+      i2c_sda = hw_sda_pin;
+      i2c_scl = hw_scl_pin;
+      #ifdef ESP32
+      Wire.setPins(i2c_sda, i2c_scl); // this will fail if Wire is initilised (Wire.begin() called)
+      #endif
+      Wire.begin();
+    } else {
+      // there is no Wire.end()
+      DEBUG_PRINTLN(F("Could not allocate I2C pins."));
+      uint8_t i2c[2] = { i2c_scl, i2c_sda };
+      pinManager.deallocateMultiplePins(i2c, 2, PinOwner::HW_I2C); // just in case deallocation of old pins
+      i2c_sda = -1;
+      i2c_scl = -1;
+    }
+    int8_t hw_mosi_pin = !request->arg(F("MOSI")).length() ? -1 : max(-1,min(33,(int)request->arg(F("MOSI")).toInt()));
+    int8_t hw_sclk_pin = !request->arg(F("SCLK")).length() ? -1 : max(-1,min(33,(int)request->arg(F("SCLK")).toInt()));
+    #ifdef ESP8266
+    // cannot change pins on ESP8266
+    if (hw_mosi_pin >= 0 && hw_mosi_pin != HW_PIN_DATASPI)  hw_mosi_pin = HW_PIN_DATASPI;
+    if (hw_sclk_pin >= 0 && hw_sclk_pin != HW_PIN_CLOCKSPI) hw_sclk_pin = HW_PIN_CLOCKSPI;
+    #endif
+    PinManagerPinType spi[2] = { { hw_mosi_pin, true }, { hw_sclk_pin, true } };
+    if (hw_mosi_pin >= 0 && hw_sclk_pin >= 0 && pinManager.allocateMultiplePins(spi, 2, PinOwner::HW_SPI)) {
+      spi_mosi = hw_mosi_pin;
+      spi_sclk = hw_sclk_pin;
+      // no bus initialisation
+    } else {
+      //SPI.end();
+      DEBUG_PRINTLN(F("Could not allocate SPI pins."));
+      uint8_t spi[2] = { spi_mosi, spi_sclk };
+      pinManager.deallocateMultiplePins(spi, 2, PinOwner::HW_SPI); // just in case deallocation of old pins
+      spi_mosi = -1;
+      spi_sclk = -1;
+    }
+
     JsonObject um = doc.createNestedObject("um");
 
     size_t args = request->args();
@@ -482,7 +532,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
       // POST request parameters are combined as <usermodname>_<usermodparameter>
       int umNameEnd = name.indexOf(":");
-      if (umNameEnd<1) break;  // parameter does not contain ":" or on 1st place -> wrong
+      if (umNameEnd<1) continue;  // parameter does not contain ":" or on 1st place -> wrong
 
       JsonObject mod = um[name.substring(0,umNameEnd)]; // get a usermod JSON object
       if (mod.isNull()) {
@@ -551,6 +601,32 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     releaseJSONBufferLock();
   }
 
+  #ifndef WLED_DISABLE_2D
+  //2D panels
+  if (subPage == 10)
+  {
+    strip.isMatrix = request->arg(F("SOMP")).toInt();
+    strip.panelH   = MAX(1,MIN(128,request->arg(F("PH")).toInt()));
+    strip.panelW   = MAX(1,MIN(128,request->arg(F("PW")).toInt()));
+    strip.hPanels  = MAX(1,MIN(8,request->arg(F("MPH")).toInt()));
+    strip.vPanels  = MAX(1,MIN(8,request->arg(F("MPV")).toInt()));
+    strip.matrix.bottomStart = request->arg(F("PB")).toInt();
+    strip.matrix.rightStart  = request->arg(F("PR")).toInt();
+    strip.matrix.vertical    = request->arg(F("PV")).toInt();
+    strip.matrix.serpentine  = request->hasArg(F("PS"));
+    for (uint8_t i=0; i<WLED_MAX_PANELS; i++) {
+      char pO[8]; sprintf_P(pO, PSTR("P%d"), i);
+      uint8_t l = strlen(pO); pO[l+1] = 0;
+      pO[l] = 'B'; if (!request->hasArg(pO)) break;
+      pO[l] = 'B'; strip.panel[i].bottomStart = request->arg(pO).toInt();
+      pO[l] = 'R'; strip.panel[i].rightStart  = request->arg(pO).toInt();
+      pO[l] = 'V'; strip.panel[i].vertical    = request->arg(pO).toInt();
+      pO[l] = 'S'; strip.panel[i].serpentine  = request->hasArg(pO);
+    }
+    strip.setUpMatrix(); // will check limits
+  }
+  #endif
+
   lastEditTime = millis();
   if (subPage != 2 && !doReboot) serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)
   if (subPage == 4) alexaInit();
@@ -579,17 +655,17 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   pos = req.indexOf(F("SS="));
   if (pos > 0) {
     byte t = getNumVal(&req, pos);
-    if (t < strip.getMaxSegments()) {
+    if (t < strip.getSegmentsNum()) {
       selectedSeg = t;
       singleSegment = true;
     }
   }
 
-  WS2812FX::Segment& selseg = strip.getSegment(selectedSeg);
+  Segment& selseg = strip.getSegment(selectedSeg);
   pos = req.indexOf(F("SV=")); //segment selected
   if (pos > 0) {
     byte t = getNumVal(&req, pos);
-    if (t == 2) for (uint8_t i = 0; i < strip.getMaxSegments(); i++) strip.getSegment(i).setOption(SEG_OPTION_SELECTED, 0); // unselect other segments
+    if (t == 2) for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) strip.getSegment(i).setOption(SEG_OPTION_SELECTED, 0); // unselect other segments
     selseg.setOption(SEG_OPTION_SELECTED, t);
   }
 
@@ -605,6 +681,8 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   uint16_t startI = selseg.start;
   uint16_t stopI  = selseg.stop;
+  uint16_t startY = selseg.startY;
+  uint16_t stopY  = selseg.stopY;
   uint8_t  grpI   = selseg.grouping;
   uint16_t spcI   = selseg.spacing;
   pos = req.indexOf(F("&S=")); //segment start
@@ -624,7 +702,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (pos > 0) {
     spcI = getNumVal(&req, pos);
   }
-  strip.setSegment(selectedSeg, startI, stopI, grpI, spcI);
+  strip.setSegment(selectedSeg, startI, stopI, grpI, spcI, UINT16_MAX, startY, stopY);
 
   pos = req.indexOf(F("RV=")); //Segment reverse
   if (pos > 0) selseg.setOption(SEG_OPTION_REVERSED, req.charAt(pos+3) != '0');
@@ -635,9 +713,9 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   pos = req.indexOf(F("SB=")); //Segment brightness/opacity
   if (pos > 0) {
     byte segbri = getNumVal(&req, pos);
-    selseg.setOption(SEG_OPTION_ON, segbri, selectedSeg);
+    selseg.setOption(SEG_OPTION_ON, segbri);
     if (segbri) {
-      selseg.setOpacity(segbri, selectedSeg);
+      selseg.setOpacity(segbri);
     }
   }
 
@@ -660,25 +738,25 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (pos > 0) presetCycMax = getNumVal(&req, pos);
 
   //apply preset
-  if (updateVal(&req, "PL=", &presetCycCurr, presetCycMin, presetCycMax)) {
+  if (updateVal(req.c_str(), "PL=", &presetCycCurr, presetCycMin, presetCycMax)) {
 		unloadPlaylist();
     applyPreset(presetCycCurr);
   }
 
   //set brightness
-  updateVal(&req, "&A=", &bri);
+  updateVal(req.c_str(), "&A=", &bri);
 
   bool col0Changed = false, col1Changed = false;
   //set colors
-  col0Changed |= updateVal(&req, "&R=", &colIn[0]);
-  col0Changed |= updateVal(&req, "&G=", &colIn[1]);
-  col0Changed |= updateVal(&req, "&B=", &colIn[2]);
-  col0Changed |= updateVal(&req, "&W=", &colIn[3]);
+  col0Changed |= updateVal(req.c_str(), "&R=", &colIn[0]);
+  col0Changed |= updateVal(req.c_str(), "&G=", &colIn[1]);
+  col0Changed |= updateVal(req.c_str(), "&B=", &colIn[2]);
+  col0Changed |= updateVal(req.c_str(), "&W=", &colIn[3]);
 
-  col1Changed |= updateVal(&req, "R2=", &colInSec[0]);
-  col1Changed |= updateVal(&req, "G2=", &colInSec[1]);
-  col1Changed |= updateVal(&req, "B2=", &colInSec[2]);
-  col1Changed |= updateVal(&req, "W2=", &colInSec[3]);
+  col1Changed |= updateVal(req.c_str(), "R2=", &colInSec[0]);
+  col1Changed |= updateVal(req.c_str(), "G2=", &colInSec[1]);
+  col1Changed |= updateVal(req.c_str(), "B2=", &colInSec[2]);
+  col1Changed |= updateVal(req.c_str(), "W2=", &colInSec[3]);
 
   #ifdef WLED_ENABLE_LOXONE
   //lox parser
@@ -740,7 +818,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (pos > 0) {
     colorFromDecOrHexString(tmpCol, (char*)req.substring(pos + 3).c_str());
     uint32_t col2 = RGBW32(tmpCol[0], tmpCol[1], tmpCol[2], tmpCol[3]);
-    selseg.setColor(2, col2, selectedSeg); // defined above (SS= or main)
+    selseg.setColor(2, col2); // defined above (SS= or main)
     stateChanged = true;
     if (!singleSegment) strip.setColor(2, col2); // will set color to all active & selected segments
   }
@@ -769,37 +847,44 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (col0Changed) {
     stateChanged = true;
     uint32_t colIn0 = RGBW32(colIn[0], colIn[1], colIn[2], colIn[3]);
-    selseg.setColor(0, colIn0, selectedSeg);
+    selseg.setColor(0, colIn0);
     if (!singleSegment) strip.setColor(0, colIn0); // will set color to all active & selected segments
   }
 
   if (col1Changed) {
     stateChanged = true;
     uint32_t colIn1 = RGBW32(colInSec[0], colInSec[1], colInSec[2], colInSec[3]);
-    selseg.setColor(1, colIn1, selectedSeg);
+    selseg.setColor(1, colIn1);
     if (!singleSegment) strip.setColor(1, colIn1); // will set color to all active & selected segments
   }
 
   bool fxModeChanged = false, speedChanged = false, intensityChanged = false, paletteChanged = false;
   // set effect parameters
-  if (updateVal(&req, "FX=", &effectIn, 0, strip.getModeCount()-1)) {
+  if (updateVal(req.c_str(), "FX=", &effectIn, 0, strip.getModeCount()-1)) {
     if (request != nullptr) unloadPlaylist(); // unload playlist if changing FX using web request
     fxModeChanged = true;
   }
-  speedChanged     = updateVal(&req, "SX=", &speedIn);
-  intensityChanged = updateVal(&req, "IX=", &intensityIn);
-  paletteChanged   = updateVal(&req, "FP=", &paletteIn, 0, strip.getPaletteCount()-1);
+  speedChanged     = updateVal(req.c_str(), "SX=", &speedIn);
+  intensityChanged = updateVal(req.c_str(), "IX=", &intensityIn);
+  paletteChanged   = updateVal(req.c_str(), "FP=", &paletteIn, 0, strip.getPaletteCount()-1);
   
   stateChanged |= (fxModeChanged || speedChanged || intensityChanged || paletteChanged);
 
   // apply to main and all selected segments to prevent #1618.
-  for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
-    WS2812FX::Segment& seg = strip.getSegment(i);
+  for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
+    Segment& seg = strip.getSegment(i);
     if (i != selectedSeg && (singleSegment || !seg.isActive() || !seg.isSelected())) continue; // skip non main segments if not applying to all
-    if (fxModeChanged)    strip.setMode(i, effectIn);
+    if (fxModeChanged)  {
+      seg.startTransition(strip.getTransition());
+      seg.mode = effectIn;
+      // TODO: we should load defaults here as well
+    }
     if (speedChanged)     seg.speed     = speedIn;
     if (intensityChanged) seg.intensity = intensityIn;
-    if (paletteChanged)   seg.palette   = paletteIn;
+    if (paletteChanged) {
+      if (strip.paletteBlend) seg.startTransition(strip.getTransition());
+      seg.palette = paletteIn;
+    }
   }
 
   //set advanced overlay
@@ -896,7 +981,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     realtimeOverride = getNumVal(&req, pos);
     if (realtimeOverride > 2) realtimeOverride = REALTIME_OVERRIDE_ALWAYS;
     if (realtimeMode && useMainSegmentOnly) {
-      strip.getMainSegment().setOption(SEG_OPTION_FREEZE, !realtimeOverride, strip.getMainSegmentId());
+      strip.getMainSegment().setOption(SEG_OPTION_FREEZE, !realtimeOverride);
     }
   }
 

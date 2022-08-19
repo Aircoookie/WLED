@@ -90,7 +90,6 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
     colorFromDecOrHexString(col, (char*)payloadStr);
     colorUpdated(CALL_MODE_DIRECT_CHANGE);
   } else if (strcmp_P(topic, PSTR("/api")) == 0) {
-    DEBUG_PRINTLN(F("MQTT JSON buffer requested."));
     if (!requestJSONBufferLock(15)) { delete[] payloadStr; return; }
     if (payload[0] == '{') { //JSON API
       deserializeJson(doc, payloadStr);

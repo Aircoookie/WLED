@@ -123,9 +123,17 @@ button {
 .icons {
 	font-family: 'WIcons';
 	font-style: normal;
-	font-size: 24px;
-	line-height: 1;
+	font-size: 24px !important;
+	line-height: 1 !important;
 	display: inline-block;
+}
+
+.icons.on {
+	color: var(--c-g);
+}
+
+.icons.off {
+	color: var(--c-6);
 }
 
 .top .icons, .bot .icons {
@@ -185,7 +193,7 @@ button {
 	position: absolute;
 	top: 8px;
 	left: 12px;
-	pointer-events: none;
+	/*pointer-events: none;*/
 	width: 24px;
 	height: 24px;
 }
@@ -223,6 +231,17 @@ button {
 	display: none;
 	width: 100%;
 	border: 0px;
+}
+
+#liveview2D {
+	height: 90%;
+	display: none;
+	width: 90%;
+	border: 0px;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%,-50%);
 }
 
 .tab {
@@ -359,27 +378,85 @@ button {
 	bottom: 5px;
 }
 
-#fx {
-	height: calc(100% - 121px);
-	overflow-y: scroll;
-	padding-left: 6px; /* compensate scroll bar */
-}
-
 #sliders {
-	width: 310px;
+	width: 300px;
 	margin: 0 auto;
+	position: sticky;
+	bottom: 0;
 }
 
 #sliders .labels {
 	padding-top: 3px;
+	font-size: small;
 }
 
-#slider0, #slider1, #slider2, #slider3, #slider4 {
-	background: var(--c-2);
-	max-width: 310px;
+.slider {
+	background-color: var(--c-2);
+	max-width: 300px;
 	min-width: 280px;
-	margin: 0 auto 5px;
-	border-radius: 15px;
+	margin: 0 auto; /* add 5px; if you want some vertical space but looks ugly */
+	border-radius: 24px;
+	position: relative;
+}
+
+.filter, .option {
+	background-color: var(--c-4);
+	border-radius: 26px;
+	height: 26px;
+	margin: 0 auto; /* add 4-8px if you want space at the bottom */
+	padding: 4px 2px;
+	position: relative;
+	z-index: 1;
+	opacity: 1;
+	transition: opacity 0.5s linear, height 0.5s, transform 0.5s;
+	transform: scaleY(1);
+}
+
+.option {
+	z-index: unset;
+}
+
+/* Tooltip text */
+.slider .tooltiptext, .option .tooltiptext {
+	visibility: hidden;
+	background-color: var(--c-5);
+	/*border: 2px solid var(--c-2);*/
+	box-shadow: 4px 4px 10px 4px var(--c-1);
+	color: var(--c-f);
+	text-align: center;
+	padding: 5px 10px;
+	border-radius: 6px;
+
+	/* Position the tooltip text */
+	width: 160px;
+	position: absolute;
+	z-index: 1;
+	bottom: 100%;
+	left: 50%;
+	margin-left: -92px;
+
+	/* Fade in tooltip */
+	opacity: 0;
+	transition: opacity 0.75s;
+}
+.option .tooltiptext {
+	bottom: 120%;
+}
+/* Tooltip arrow */
+.slider .tooltiptext::after, .option .tooltiptext::after {
+	content: "";
+	position: absolute;
+	top: 100%;
+	left: 50%;
+	margin-left: -5px;
+	border-width: 5px;
+	border-style: solid;
+	border-color: var(--c-5) transparent transparent transparent;
+}
+/* Show the tooltip text when you mouse over the tooltip container */
+.slider:hover .tooltiptext, .option .check:hover .tooltiptext {
+	visibility: visible;
+	opacity: 1;
 }
 
 #pql, .edit-icon {
@@ -388,6 +465,13 @@ button {
 
 .hide {
 	display: none !important;
+}
+.fade {
+	visibility: hidden; /* hide it */
+	opacity: 0; /* make it transparent */
+	transform: scaleY(0); /* shrink content */
+	height: 0px; /* force other elements to move */
+	padding: 0; /* remove empty space */
 }
 
 .first {
@@ -473,13 +557,14 @@ button {
 	z-index: -2;
 }
 
-#imgw {
-	display: inline-block;
-	margin: 8px;
+#info .slider {
+	max-width: 200px;
+	min-width: 145px;
+	float: right;
+	margin: 0;
 }
-
-#kv, #kn {
-	display: inline-block;
+#info .sliderwrap {
+	width: 200px;
 }
 
 #info table, #nodes table {
@@ -502,6 +587,15 @@ button {
 	margin: 0 auto;
 }
 
+#imgw {
+	/*display: inline-block;*/
+	margin: 8px auto;
+}
+/*
+#kv, #kn {
+	display: inline-block;
+}
+*/
 #lv {
 	max-width: 600px;
 	display: inline-block;
@@ -708,6 +802,9 @@ input[type=range]::-moz-range-thumb {
 #putil .btn-xs {
 	margin: 0;
 }
+#info .btn-xs {
+	border: 1px solid var(--c-4);
+}
 
 #putil .btn-s {
 	width: 135px;
@@ -756,19 +853,22 @@ input[type=range]::-moz-range-thumb {
 }
 
 select {
-	padding: 4px;
+	padding: 4px 8px;
 	margin: 0;
 	font-size: 19px;
 	background-color: var(--c-3);
 	color: var(--c-d);
 	cursor: pointer;
-	border: 1px solid var(--c-2);
-	border-radius: 5px;
+	border: 0 solid var(--c-2);
+	border-radius: 20px;
 	transition-duration: 0.5s;
 	-webkit-backface-visibility: hidden;
 	-webkit-transform:translate3d(0,0,0);
+    -webkit-appearance: none; 
+    -moz-appearance: none; 
 	backface-visibility: hidden;
 	transform:translate3d(0,0,0);
+	text-overflow: ellipsis;
 }
 #tt {
 	text-align: center;
@@ -776,16 +876,26 @@ select {
 .cl {
 	background-color: #000;
 }
-.sel-p {
-	margin: 5px 0 10px;
-	width: 5em;
-}
-.sel-pl {
+select.sel-p, select.sel-pl, select.sel-ple {
+	margin: 5px 0;
 	width: 100%;
-	background-position: 141px 16px;
+	height: 40px;
 }
-.sel-ple {
-	width: 100%;
+div.sel-p {
+	position: relative;
+}
+div.sel-p:after {
+    content: "";
+    position: absolute;
+    right: 10px;
+    top: 22px;
+    width: 0; 
+    height: 0; 
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid var(--c-f);
+}
+select.sel-ple {
 	text-align: center;
 }
 option {
@@ -869,10 +979,18 @@ textarea {
 	white-space: nowrap;
 	cursor: pointer;
 	text-align: center;
-	overflow: hidden;
-	text-overflow: clip;
+	overflow: clip;
+	text-overflow: ellipsis;
 	line-height: 24px;
-	padding: 8px 0;
+	padding: 8px 24px;
+	max-width: 170px;
+	margin: 0 auto;
+	position: relative;
+}
+
+.segname .flr, .pname .flr {
+	transform: rotate(0deg);
+	right: -6px;
 }
 
 /* segment power wrapper */
@@ -907,19 +1025,24 @@ textarea {
 }
 
 .xxs {
-	border: 2px solid var(--c-e) !important;
 	width: 44px;
 	height: 44px;
 	margin: 5px;
-	/*box-shadow: 0 0 0 2px #fff;*/
 }
 
 .xxs-w {
-	border-width: 5px !important;
 	margin: 2px;
 	width: 50px;
 	height: 50px;
-	/*box-shadow: 0 0 0 5px #fff;*/
+}
+
+#csl .xxs {
+	border: 2px solid var(--c-d) !important;
+	/*box-shadow: 0 0 0 2px var(--c-d);*/
+}
+#csl .xxs-w {
+	border-width: 5px !important;
+	/*box-shadow: 0 0 0 5px var(--c-d);*/
 }
 
 .qcs, #namelabel {
@@ -948,11 +1071,12 @@ textarea {
 }
 
 .frz {
-	left: 36px;
+	left: 32px;
 	position: absolute;
 	top: -3px;
 	cursor: pointer;
 	padding: 8px;
+	z-index: 1;
 }
 
 .expanded .frz {
@@ -970,6 +1094,11 @@ textarea {
 	padding: 4px 0px 0px 35px;
 	margin-bottom: 0px;
 	margin-top: 8px;
+}
+
+TD .revchkl {
+	padding: 0 0 0 32px;
+	margin-top: 0;
 }
 
 .check input, .radio input {
@@ -1041,6 +1170,10 @@ textarea {
 	background: var(--c-f);
 }
 
+TD .checkmark, TD .radiomark {
+	top: -6px;
+}
+
 .h {
 	font-size: 13px;
 	text-align: center;
@@ -1068,15 +1201,31 @@ textarea {
 	top: auto !important;	/* prevent sticky */
 	bottom: auto !important;
 }
-/*
-.seg:last-child {
-	margin: 0;
-}
-*/
+/* checkmark labels */
 .seg .schkl {
 	position: absolute;
 	top: 7px;
 	left: 9px;
+}
+/* checkmark labels */
+.filter .fchkl, .option .ochkl {
+	display: inline-block;
+	min-width: 0.7em;
+	padding: 1px 4px 4px 32px;
+	text-align: left;
+	line-height: 24px;
+	vertical-align: middle;
+	-webkit-filter: grayscale(100%); /* Safari 6.0 - 9.0 */
+	filter: grayscale(100%);  
+}
+
+.lbl-s {
+	display: inline-block;
+	/* margin: 10px 4px 0 0; */
+	margin-top: 6px;
+	font-size: 13px;
+	width: 48%;
+	text-align: center;
 }
 
 /* list wrapper */
@@ -1132,6 +1281,7 @@ textarea {
 .lstI.sticky,
 .lstI.selected {
 	z-index: 1;
+	box-shadow: 0px 0px 10px 4px var(--c-1);
 }
 
 #pcont .selected:not([class*="expanded"]) {
@@ -1164,6 +1314,9 @@ textarea {
 /* list item name (for sorting) */
 .lstIname {
 	white-space: nowrap;
+	text-overflow: ellipsis;
+	-webkit-filter: grayscale(100%); /* Safari 6.0 - 9.0 */
+	filter: grayscale(100%);  
 }
 
 /* list item palette preview */
@@ -1193,6 +1346,8 @@ textarea {
 	border-radius: 21px;
 	background: var(--c-2);
 	border: 1px solid var(--c-3);
+	-webkit-filter: grayscale(100%); /* Safari 6.0 - 9.0 */
+	filter: grayscale(100%);  
 }
 
 .fnd input[type="text"]:focus {
@@ -1293,7 +1448,7 @@ textarea {
 		width: 145px;
 	}
 	#info div, #nodes div {
-		width: 320px;
+		max-width: 320px;
 	}
 }
 

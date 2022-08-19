@@ -132,6 +132,13 @@
 #include "../usermods/Si7021_MQTT_HA/usermod_si7021_mqtt_ha.h"
 #endif
 
+#ifdef USERMOD_AUDIOREACTIVE
+  #ifdef WLED_DISABLE_AUDIO
+    #error Incompatible options: WLED_DISABLE_AUDIO and USERMOD_AUDIOREACTIVE
+  #endif
+#include "../usermods/audioreactive/audio_reactive.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -250,5 +257,12 @@ void registerUsermods()
   
   #ifdef USERMOD_SI7021_MQTT_HA
   usermods.add(new Si7021_MQTT_HA());
+  #endif
+  
+  #ifdef USERMOD_AUDIOREACTIVE
+    #ifdef WLED_DISABLE_AUDIO
+      #error Incompatible options: WLED_DISABLE_AUDIO and USERMOD_AUDIOREACTIVE
+    #endif
+  usermods.add(new AudioReactive());
   #endif
 }

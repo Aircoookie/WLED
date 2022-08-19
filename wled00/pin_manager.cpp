@@ -75,10 +75,23 @@ bool PinManagerClass::deallocateMultiplePins(const uint8_t *pinArray, byte array
       return true;
     }
   }
+  if (tag==PinOwner::HW_SPI) {
+    if (spiAllocCount && --spiAllocCount>0) {
+      // no deallocation done until last owner releases pins
+      return true;
+    }
+  }
   for (int i = 0; i < arrayElementCount; i++) {
     deallocatePin(pinArray[i], tag);
   }
   return true;
+}
+
+bool PinManagerClass::deallocateMultiplePins(const managed_pin_type * mptArray, byte arrayElementCount, PinOwner tag)
+{
+  uint8_t pins[arrayElementCount];
+  for (int i=0; i<arrayElementCount; i++) pins[i] = mptArray[i].pin;
+  return deallocateMultiplePins(pins, arrayElementCount, tag);
 }
 
 bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, byte arrayElementCount, PinOwner tag)
@@ -100,8 +113,8 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
       #endif
       shouldFail = true;
     }
-    if (tag==PinOwner::HW_I2C && isPinAllocated(gpio, tag)) {
-      // allow multiple "allocations" of HW I2C bus pins
+    if ((tag==PinOwner::HW_I2C || tag==PinOwner::HW_SPI) && isPinAllocated(gpio, tag)) {
+      // allow multiple "allocations" of HW I2C & SPI bus pins
       continue;
     } else if (isPinAllocated(gpio)) {
       #ifdef WLED_DEBUG
@@ -119,6 +132,7 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
   }
 
   if (tag==PinOwner::HW_I2C) i2cAllocCount++;
+  if (tag==PinOwner::HW_SPI) spiAllocCount++;
 
   // all pins are available .. track each one
   for (int i = 0; i < arrayElementCount; i++) {
@@ -145,8 +159,8 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
 
 bool PinManagerClass::allocatePin(byte gpio, bool output, PinOwner tag)
 {
-  // HW I2C pins have to be allocated using allocateMultiplePins variant since there is always SCL/SDA pair
-  if (!isPinOk(gpio, output) || tag==PinOwner::HW_I2C) return false;
+  // HW I2C & SPI pins have to be allocated using allocateMultiplePins variant since there is always SCL/SDA pair
+  if (!isPinOk(gpio, output) || tag==PinOwner::HW_I2C || tag==PinOwner::HW_SPI) return false;
   if (isPinAllocated(gpio)) {
     #ifdef WLED_DEBUG
     DEBUG_PRINT(F("PIN ALLOC: Pin ")); 

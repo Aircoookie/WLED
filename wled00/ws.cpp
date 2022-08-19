@@ -15,8 +15,8 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
 {
   if(type == WS_EVT_CONNECT){
     //client connected
-    sendDataWs(client);
     DEBUG_PRINTLN(F("WS client connected."));
+    sendDataWs(client);
   } else if(type == WS_EVT_DISCONNECT){
     //client disconnected
     if (client->id() == wsLiveClientId) wsLiveClientId = 0;
@@ -36,7 +36,6 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
         }
 
         bool verboseResponse = false;
-        DEBUG_PRINTLN(F("WS JSON receive buffer requested."));
         if (!requestJSONBufferLock(11)) return;
 
         DeserializationError error = deserializeJson(doc, data, len);
@@ -58,6 +57,10 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
         // force broadcast in 500ms after upadting client
         if (verboseResponse) {
           sendDataWs(client);
+          lastInterfaceUpdate = millis() - (INTERFACE_UPDATE_COOLDOWN -500);
+        } else {
+          // we have to send something back otherwise WS connection closes
+          client->text(F("{\"success\":true}"));
           lastInterfaceUpdate = millis() - (INTERFACE_UPDATE_COOLDOWN -500);
         }
       }
@@ -97,7 +100,6 @@ void sendDataWs(AsyncWebSocketClient * client)
   if (!ws.count()) return;
   AsyncWebSocketMessageBuffer * buffer;
 
-  DEBUG_PRINTLN(F("WS JSON send buffer requested."));
   if (!requestJSONBufferLock(12)) return;
 
   JsonObject state = doc.createNestedObject("state");
@@ -105,21 +107,22 @@ void sendDataWs(AsyncWebSocketClient * client)
   JsonObject info  = doc.createNestedObject("info");
   serializeInfo(info);
 
-  DEBUG_PRINTF("JSON buffer size: %u for WS request.\n", doc.memoryUsage());
   size_t len = measureJson(doc);
+  DEBUG_PRINTF("JSON buffer size: %u for WS request (%u).\n", doc.memoryUsage(), len);
 
   size_t heap1 = ESP.getFreeHeap();
   buffer = ws.makeBuffer(len); // will not allocate correct memory sometimes
   size_t heap2 = ESP.getFreeHeap();
   if (!buffer || heap1-heap2<len) {
     releaseJSONBufferLock();
+    DEBUG_PRINTLN(F("WS buffer allocation failed."));
     ws.closeAll(1013); //code 1013 = temporary overload, try again later
     ws.cleanupClients(0); //disconnect all clients to release memory
     return; //out of memory
   }
 
-  serializeJson(doc, (char *)buffer->get(), len +1);
-  releaseJSONBufferLock();
+  buffer->lock();
+  serializeJson(doc, (char *)buffer->get(), len);
 
   DEBUG_PRINT(F("Sending WS data "));
   if (client) {
@@ -129,9 +132,11 @@ void sendDataWs(AsyncWebSocketClient * client)
     ws.textAll(buffer);
     DEBUG_PRINTLN(F("to multiple clients."));
   }
-}
+  buffer->unlock();
+  ws._cleanBuffers();
 
-#define MAX_LIVE_LEDS_WS 256
+  releaseJSONBufferLock();
+}
 
 bool sendLiveLedsWs(uint32_t wsClient)
 {
@@ -139,16 +144,24 @@ bool sendLiveLedsWs(uint32_t wsClient)
   if (!wsc || wsc->queueLength() > 0) return false; //only send if queue free
 
   uint16_t used = strip.getLengthTotal();
+  const uint16_t MAX_LIVE_LEDS_WS = strip.isMatrix ? 1024 : 256;
   uint16_t n = ((used -1)/MAX_LIVE_LEDS_WS) +1; //only serve every n'th LED if count over MAX_LIVE_LEDS_WS
-  uint16_t bufSize = 2 + (used/n)*3;
+  uint16_t pos = (strip.isMatrix ? 4 : 2);
+  uint16_t bufSize = pos + (used/n)*3;
   AsyncWebSocketMessageBuffer * wsBuf = ws.makeBuffer(bufSize);
   if (!wsBuf) return false; //out of memory
   uint8_t* buffer = wsBuf->get();
   buffer[0] = 'L';
   buffer[1] = 1; //version
+#ifndef WLED_DISABLE_2D
+  if (strip.isMatrix) {
+    buffer[1] = 2; //version
+    buffer[2] = strip.matrixWidth;
+    buffer[3] = strip.matrixHeight;
+  }
+#endif
 
-  uint16_t pos = 2;
-  for (uint16_t i= 0; pos < bufSize -2; i += n)
+  for (uint16_t i = 0; pos < bufSize -2; i += n)
   {
     uint32_t c = strip.getPixelColor(i);
     buffer[pos++] = qadd8(W(c), R(c)); //R, add white channel to RGB channels as a simple RGBW -> RGB map
