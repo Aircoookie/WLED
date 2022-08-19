@@ -325,27 +325,40 @@ void FFTcode(void * parameter)
       else
         currentResult = fftCalc[i];
 
-      if (FFTScalingMode > 0) {
-          if (FFTScalingMode == 1) {
+      switch (FFTScalingMode) {
+        case 1:
             // Logarithmic scaling
             currentResult *= 0.42; // 42 is the answer ;-)
             currentResult -= 8.0; // this skips the lowest row, giving some room for peaks
             if (currentResult > 1.0) 
               currentResult = logf(currentResult); // log to base "e", which is the fastest log() function
             else currentResult = 0.0;              // special handling, because log(1) = 0; log(0) = undefined
-
             currentResult *= 0.85f + (float(i)/18.0f); // extra up-scaling for high frequencies
             currentResult = mapf(currentResult, 0, LOG_256, 0, 255); // map [log(1) ... log(255)] to [0 ... 255]
-            
-          } else {
+        break;
+        case 2:
             // Linear scaling
             currentResult *= 0.30f;                    // needs a bit more damping, get stay below 255
             currentResult -= 4.0;                      // giving a bit more room for peaks
             if (currentResult < 1.0f) currentResult = 0.0f;
             currentResult *= 0.85f + (float(i)/1.8f); // extra up-scaling for high frequencies
-          }
-      } else {
-          currentResult -= 4; // just a bit more room for peaks
+        break;
+        case 3:
+            // square root scaling
+            currentResult *= 0.38f;
+            currentResult -= 6.0f;
+            if (currentResult > 1.0) 
+              currentResult = sqrtf(currentResult);
+            else currentResult = 0.0;               // special handling, because sqrt(0) = undefined
+            currentResult *= 0.85f + (float(i)/5.0f); // extra up-scaling for high frequencies
+            currentResult = mapf(currentResult, 0.0, 16.0, 0.0, 255.0); // map [sqrt(1) ... sqrt(256)] to [0 ... 255]
+        break;
+
+        case 0:
+        default:
+            // no scaling - leave freq bins as-is
+            currentResult -= 4; // just a bit more room for peaks
+        break;
       }
 
       // Now, let's dump it all into fftResult. Need to do this, otherwise other routines might grab fftResult values prematurely.
@@ -1538,6 +1551,7 @@ class AudioReactive : public Usermod {
       oappend(SET_F("dd=addDropdown('AudioReactive','Frequency:Scale');"));
       oappend(SET_F("addOption(dd,'None',0);"));
       oappend(SET_F("addOption(dd,'Linear (Amplitude)',2);"));
+      oappend(SET_F("addOption(dd,'Square Root (Energy)',3);"));
       oappend(SET_F("addOption(dd,'Logarithmic (Loudness)',1);"));
 
       oappend(SET_F("dd=addDropdown('AudioReactive','sync:mode');"));
