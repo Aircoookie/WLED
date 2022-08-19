@@ -665,8 +665,8 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   pos = req.indexOf(F("SV=")); //segment selected
   if (pos > 0) {
     byte t = getNumVal(&req, pos);
-    if (t == 2) for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) strip.getSegment(i).setOption(SEG_OPTION_SELECTED, 0); // unselect other segments
-    selseg.setOption(SEG_OPTION_SELECTED, t);
+    if (t == 2) for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) strip.getSegment(i).selected = false; // unselect other segments
+    selseg.selected = t;
   }
 
   // temporary values, write directly to segments, globals are updated by setValuesFromFirstSelectedSeg()
@@ -705,15 +705,15 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   strip.setSegment(selectedSeg, startI, stopI, grpI, spcI, UINT16_MAX, startY, stopY);
 
   pos = req.indexOf(F("RV=")); //Segment reverse
-  if (pos > 0) selseg.setOption(SEG_OPTION_REVERSED, req.charAt(pos+3) != '0');
+  if (pos > 0) selseg.reverse = req.charAt(pos+3) != '0';
 
   pos = req.indexOf(F("MI=")); //Segment mirror
-  if (pos > 0) selseg.setOption(SEG_OPTION_MIRROR, req.charAt(pos+3) != '0');
+  if (pos > 0) selseg.mirror = req.charAt(pos+3) != '0';
 
   pos = req.indexOf(F("SB=")); //Segment brightness/opacity
   if (pos > 0) {
     byte segbri = getNumVal(&req, pos);
-    selseg.setOption(SEG_OPTION_ON, segbri);
+    selseg.on = segbri;
     if (segbri) {
       selseg.setOpacity(segbri);
     }
@@ -722,9 +722,9 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   pos = req.indexOf(F("SW=")); //segment power
   if (pos > 0) {
     switch (getNumVal(&req, pos)) {
-      case 0: selseg.setOption(SEG_OPTION_ON, false); break;
-      case 1: selseg.setOption(SEG_OPTION_ON, true); break;
-      default: selseg.setOption(SEG_OPTION_ON, !selseg.getOption(SEG_OPTION_ON)); break;
+      case 0:  selseg.on = false;      break;
+      case 1:  selseg.on = true;       break;
+      default: selseg.on = !selseg.on; break;
     }
   }
 
@@ -981,7 +981,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     realtimeOverride = getNumVal(&req, pos);
     if (realtimeOverride > 2) realtimeOverride = REALTIME_OVERRIDE_ALWAYS;
     if (realtimeMode && useMainSegmentOnly) {
-      strip.getMainSegment().setOption(SEG_OPTION_FREEZE, !realtimeOverride);
+      strip.getMainSegment().freeze = !realtimeOverride;
     }
   }
 

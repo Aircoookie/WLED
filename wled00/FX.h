@@ -344,7 +344,7 @@ typedef enum mapping1D2D {
   M12_Block = 3
 } mapping1D2D_t;
 
-// segment, 68 (92 in memory) bytes
+// segment, 72 bytes
 typedef struct Segment {
   public:
     uint16_t start; // start index / start X coordinate 2D (left)
@@ -357,34 +357,38 @@ typedef struct Segment {
     union {
       uint16_t options; //bit pattern: msb first: [transposed mirrorY reverseY] transitional (tbd) paused needspixelstate mirrored on reverse selected
       struct {
-        bool    selected    : 1; //  0 : selected
-        bool    reverse     : 1; //  1 : reversed
-        bool    on          : 1; //  2 : is On
-        bool    mirror      : 1; //  3 : mirrored
-        bool    pxs         : 1; //  4 : indicates that the effect does not use FRAMETIME or needs getPixelColor (?)
-        bool    freeze      : 1; //  5 : paused/frozen
-        bool    reset       : 1; //  6 : indicates that Segment runtime requires reset
-        bool    transitional: 1; //  7 : transitional (there is transition occuring)
-        bool    reverse_y   : 1; //  8 : reversed Y (2D)
-        bool    mirror_y    : 1; //  9 : mirrored Y (2D)
-        bool    transpose   : 1; // 10 : transposed (2D, swapped X & Y)
-        uint8_t map1D2D     : 2; // 11-12 : mapping for 1D effect on 2D (0-strip, 1-expand vertically, 2-circular, 3-rectangular)
-        uint8_t soundSim    : 3; // 13-15 : 0-7 sound simulation types
+        bool    selected    : 1;  //  0 : selected
+        bool    reverse     : 1;  //  1 : reversed
+        bool    on          : 1;  //  2 : is On
+        bool    mirror      : 1;  //  3 : mirrored
+        bool    pxs         : 1;  //  4 : indicates that the effect does not use FRAMETIME or needs getPixelColor (?)
+        bool    freeze      : 1;  //  5 : paused/frozen
+        bool    reset       : 1;  //  6 : indicates that Segment runtime requires reset
+        bool    transitional: 1;  //  7 : transitional (there is transition occuring)
+        bool    reverse_y   : 1;  //  8 : reversed Y (2D)
+        bool    mirror_y    : 1;  //  9 : mirrored Y (2D)
+        bool    transpose   : 1;  // 10 : transposed (2D, swapped X & Y)
+        uint8_t map1D2D     : 3;  // 11-13 : mapping for 1D effect on 2D (0-use as strip, 1-expand vertically, 2-circular/arc, 3-rectangular/corner, ...)
+        uint8_t soundSim    : 2;  // 14-15 : 0-3 sound simulation types
       };
     };
     uint8_t  grouping, spacing;
+    //struct {
+    //  uint8_t grouping : 4;       // maximum 15 pixels in a group
+    //  uint8_t spacing  : 4;       // maximum 15 pixels per gap
+    //};
     uint8_t  opacity;
     uint32_t colors[NUM_COLORS];
-    uint8_t  cct; //0==1900K, 255==10091K
-    uint8_t  custom1, custom2;  // custom FX parameters/sliders
+    uint8_t  cct;                 //0==1900K, 255==10091K
+    uint8_t  custom1, custom2;    // custom FX parameters/sliders
     struct {
-      uint8_t custom3 : 5;      // reduced range slider (0-31)
-      bool    check1  : 1;      // checkmark 1
-      bool    check2  : 1;      // checkmark 2
-      bool    check3  : 1;      // checkmark 3
+      uint8_t custom3 : 5;        // reduced range slider (0-31)
+      bool    check1  : 1;        // checkmark 1
+      bool    check2  : 1;        // checkmark 2
+      bool    check3  : 1;        // checkmark 3
     };
-    uint16_t startY;  // start Y coodrinate 2D (top)
-    uint16_t stopY;   // stop Y coordinate 2D (bottom)
+    uint8_t startY;  // start Y coodrinate 2D (top); there should be no more than 255 rows
+    uint8_t stopY;   // stop Y coordinate 2D (bottom); there should be no more than 255 rows
     char *name;
 
     // runtime data
@@ -627,7 +631,7 @@ typedef struct Segment {
     void wu_pixel(uint32_t x, uint32_t y, CRGB c) {}
   #endif
 } segment;
-//static int i = sizeof(Segment);
+//static int segSize = sizeof(Segment);
 
 // main "strip" class
 class WS2812FX {  // 96 bytes

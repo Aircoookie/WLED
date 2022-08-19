@@ -197,10 +197,10 @@ void handleAnalog(uint8_t b)
       // otherwise use "double press" for segment selection
       Segment& seg = strip.getSegment(macroDoublePress[b]);
       if (aRead == 0) {
-        seg.setOption(SEG_OPTION_ON, 0); // off
+        seg.on = false; // off
       } else {
         seg.setOpacity(aRead);
-        seg.setOption(SEG_OPTION_ON, 1);
+        seg.on = true;
       }
       // this will notify clients of update (websockets,mqtt,etc)
       updateInterfaces(CALL_MODE_BUTTON);
