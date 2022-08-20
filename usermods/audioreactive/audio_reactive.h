@@ -47,11 +47,12 @@
 
 constexpr i2s_port_t I2S_PORT = I2S_NUM_0;
 constexpr int BLOCK_SIZE = 128;
-//constexpr int SAMPLE_RATE = 22050;            // Base sample rate in Hz - 22Khz is a standard rate. Physical sample time -> 23ms
-constexpr int SAMPLE_RATE = 20480;            // Base sample rate in Hz - 20Khz is experimental.    Physical sample time -> 25ms
+constexpr int SAMPLE_RATE = 22050;            // Base sample rate in Hz - 22Khz is a standard rate. Physical sample time -> 23ms
+//constexpr int SAMPLE_RATE = 20480;            // Base sample rate in Hz - 20Khz is experimental.    Physical sample time -> 25ms
 //constexpr int SAMPLE_RATE = 10240;            // Base sample rate in Hz - standard.                 Physical sample time -> 50ms
 
-#define FFT_MIN_CYCLE 22                      // minimum time before FFT task is repeated. Must be less than time needed to read 512 samples at SAMPLE_RATE -> not the same as I2S time!!
+//#define FFT_MIN_CYCLE 22                      // minimum time before FFT task is repeated. Use with 20Khz sampling
+#define FFT_MIN_CYCLE 18                      // minimum time before FFT task is repeated. Use with 22Khz sampling
 
 // globals
 static uint8_t inputLevel = 128;              // UI slider value
@@ -65,7 +66,7 @@ static bool limiterOn = true;                 // bool: enable / disable dynamics
 static uint16_t attackTime =  80;             // int: attack time in milliseconds. Default 0.08sec
 static uint16_t decayTime = 1400;             // int: decay time in milliseconds.  Default 1.40sec
 // user settable options for FFTResult scaling
-static uint8_t FFTScalingMode = 2;            // 0 none; 1 optimized logarithmic; 2 optimized linear
+static uint8_t FFTScalingMode = 3;            // 0 none; 1 optimized logarithmic; 2 optimized linear; 3 optimized sqare root
 
 // 
 // AGC presets
@@ -121,7 +122,10 @@ static float vReal[samplesFFT] = {0.0f};
 static float vImag[samplesFFT] = {0.0f};
 static float fftBin[samplesFFT_2] = {0.0f};
 
-#define FFT_DOWNSCALE 0.65f                             // downscaling factor for FFT results - "Flat-Top" window
+// the following are observed values, supported by a bit of "educated guessing"
+//#define FFT_DOWNSCALE 0.65f                             // 20kHz - downscaling factor for FFT results - "Flat-Top" window @20Khz, old freq channels 
+
+#define FFT_DOWNSCALE 0.46f                             // downscaling factor for FFT results - for "Flat-Top" window @22Khz, new freq channels
 #define LOG_256  5.54517744
 
 #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
@@ -269,7 +273,7 @@ void FFTcode(void * parameter)
  * Multiplier = 1.320367784
  */
     if (sampleAvg > 1) { // noise gate open
-                                        //  Range
+#if 0                                        //  Range
       fftCalc[ 0] = fftAddAvg(2,4);       // 60 - 100
       fftCalc[ 1] = fftAddAvg(4,5);       // 80 - 120
       fftCalc[ 2] = fftAddAvg(5,7);       // 100 - 160
@@ -286,6 +290,26 @@ void FFTcode(void * parameter)
       fftCalc[13] = fftAddAvg(111,147);   // 2220 - 2960
       fftCalc[14] = fftAddAvg(147,194);   // 2940 - 3900
       fftCalc[15] = fftAddAvg(194,250);   // 3880 - 5000 // avoid the last 5 bins, which are usually inaccurate
+#else
+      // optimized for 22050 Hz by softhack007        bins frequency  range
+      fftCalc[ 0] = fftAddAvg(1,2);                 // 1    43 - 86   sub-bass
+      fftCalc[ 1] = fftAddAvg(2,3);                 // 1    86 - 129  bass
+      fftCalc[ 2] = fftAddAvg(3,5);                 // 2   129 - 216  bass
+      fftCalc[ 3] = fftAddAvg(5,7);                 // 2   216 - 301  bass + midrange
+      fftCalc[ 4] = fftAddAvg(7,10);                // 3   301 - 430  midrange
+      fftCalc[ 5] = fftAddAvg(10,13);               // 3   430 - 560  midrange
+      fftCalc[ 6] = fftAddAvg(13,19);               // 5   560 - 818  midrange
+      fftCalc[ 7] = fftAddAvg(19,26);               // 7   818 - 1120 midrange -- 1Khz should always be the center !
+      fftCalc[ 8] = fftAddAvg(26,33);               // 7  1120 - 1421 midrange
+      fftCalc[ 9] = fftAddAvg(33,44);               // 9  1421 - 1895 midrange
+      fftCalc[10] = fftAddAvg(44,56);               // 12 1895 - 2412 midrange + high mid
+      fftCalc[11] = fftAddAvg(56,70);               // 14 2412 - 3015 high mid
+      fftCalc[12] = fftAddAvg(70,86);               // 16 3015 - 3704 high mid
+      fftCalc[13] = fftAddAvg(86,104);              // 18 3704 - 4479 high mid
+      fftCalc[14] = fftAddAvg(104,165) * 0.88f;     // 61 4479 - 7106 high mid + high  -- with slight damping
+      fftCalc[15] = fftAddAvg(165,215) * 0.70f;     // 50 7106 - 9259 high             -- with some damping
+      // don't use the last bins from 216 to 255. They are usually contaminated by aliasing (aka noise) 
+#endif
 
     } else {  // noise gate closed
       for (int i=0; i < 16; i++) {
@@ -350,7 +374,7 @@ void FFTcode(void * parameter)
             if (currentResult > 1.0) 
               currentResult = sqrtf(currentResult);
             else currentResult = 0.0;               // special handling, because sqrt(0) = undefined
-            currentResult *= 0.85f + (float(i)/5.0f); // extra up-scaling for high frequencies
+            currentResult *= 0.85f + (float(i)/4.5f); // extra up-scaling for high frequencies
             currentResult = mapf(currentResult, 0.0, 16.0, 0.0, 255.0); // map [sqrt(1) ... sqrt(256)] to [0 ... 255]
         break;
 
@@ -872,7 +896,8 @@ class AudioReactive : public Usermod {
 
           my_magnitude  = fmaxf(receivedPacket->FFT_Magnitude, 0.0f);
           FFT_Magnitude = my_magnitude;
-          FFT_MajorPeak = fmaxf(receivedPacket->FFT_MajorPeak, 1.0f);
+          FFT_MajorPeak = constrain(receivedPacket->FFT_MajorPeak, 1.0f, 11050.0f);  // restrict value to range expected by effects
+
           //DEBUGSR_PRINTLN("Finished parsing UDP Sync Packet");
           haveFreshData = true;
         }
