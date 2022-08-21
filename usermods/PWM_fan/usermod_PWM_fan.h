@@ -51,6 +51,7 @@ class PWMFanUsermod : public Usermod {
     float   targetTemperature = 25.0;
     uint8_t minPWMValuePct    = 50;
     uint8_t numberOfInterrupsInOneSingleRotation = 2;     // Number of interrupts ESP32 sees on tacho signal on a single fan rotation. All the fans I've seen trigger two interrups.
+    uint8_t pwmValuePct       = 0;
 
     // strings to reduce flash memory usage (used more than twice)
     static const char _name[];
@@ -83,6 +84,8 @@ class PWMFanUsermod : public Usermod {
     }
 
     void updateTacho(void) {
+      // store milliseconds when tacho was measured the last time
+      msLastTachoMeasurement = millis();
       if (tachoPin < 0) return;
 
       // start of tacho measurement
@@ -93,8 +96,6 @@ class PWMFanUsermod : public Usermod {
       last_rpm /= tachoUpdateSec;
       // reset counter
       counter_rpm = 0; 
-      // store milliseconds when tacho was measured the last time
-      msLastTachoMeasurement = millis();
       // attach interrupt again
       attachInterrupt(digitalPinToInterrupt(tachoPin), rpm_fan, FALLING);
     }
@@ -102,6 +103,7 @@ class PWMFanUsermod : public Usermod {
     // https://randomnerdtutorials.com/esp32-pwm-arduino-ide/
     void initPWMfan(void) {
       if (pwmPin < 0 || !pinManager.allocatePin(pwmPin, true, PinOwner::UM_Unspecified)) {
+        enabled = false;
         pwmPin = -1;
         return;
       }
@@ -217,12 +219,41 @@ class PWMFanUsermod : public Usermod {
      * Below it is shown how this could be used for e.g. a light sensor
      */
     void addToJsonInfo(JsonObject& root) {
-      if (tachoPin < 0) return;
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
-      JsonArray data = user.createNestedArray(FPSTR(_name));
-      data.add(last_rpm);
-      data.add(F("rpm"));
+
+      JsonArray infoArr = user.createNestedArray(FPSTR(_name));
+      String uiDomString = F("<button class=\"btn btn-xs\" onclick=\"requestJson({'");
+      uiDomString += FPSTR(_name);
+      uiDomString += F("':{'");
+      uiDomString += FPSTR(_enabled);
+      uiDomString += F("':");
+      uiDomString += enabled ? "false" : "true";
+      uiDomString += F("}});\"><i class=\"icons ");
+      uiDomString += enabled ? "on" : "off";
+      uiDomString += F("\">&#xe08f;</i></button>");
+      infoArr.add(uiDomString);
+
+      if (enabled) {
+        JsonArray infoArr = user.createNestedArray(F("Manual"));
+        String uiDomString = F("<div class=\"slider\"><div class=\"sliderwrap il\"><input class=\"noslide\" onchange=\"requestJson({'");
+        uiDomString += FPSTR(_name);
+        uiDomString += F("':{'");
+        uiDomString += FPSTR(_speed);
+        uiDomString += F("':parseInt(this.value)}});\" oninput=\"updateTrail(this);\" max=100 min=0 type=\"range\" value=");
+        uiDomString += pwmValuePct;
+        uiDomString += F(" /><div class=\"sliderdisplay\"></div></div></div>"); //<output class=\"sliderbubble\"></output>
+        infoArr.add(uiDomString);
+
+        JsonArray data = user.createNestedArray(F("Speed"));
+        if (tachoPin >= 0) {
+          data.add(last_rpm);
+          data.add(F("rpm"));
+        } else {
+          if (lockFan) data.add(F("locked"));
+          else         data.add(F("auto"));
+        }
+      }
     }
 
     /*
@@ -237,14 +268,19 @@ class PWMFanUsermod : public Usermod {
      * Values in the state object may be modified by connected clients
      */
     void readFromJsonState(JsonObject& root) {
-      if (!initDone || !enabled) return;  // prevent crash on boot applyPreset()
+      if (!initDone) return;  // prevent crash on boot applyPreset()
       JsonObject usermod = root[FPSTR(_name)];
       if (!usermod.isNull()) {
-        if (!usermod[FPSTR(_speed)].isNull() && usermod[FPSTR(_speed)].is<int>()) {
-          int pwmValuePct = usermod[FPSTR(_speed)].as<int>();
-          updateFanSpeed((MAX(0,MIN(100,pwmValuePct)) * 255) / 100);
+        if (usermod[FPSTR(_enabled)].is<bool>()) {
+          enabled = usermod[FPSTR(_enabled)].as<bool>();
+          if (!enabled) updateFanSpeed(0);
         }
-        if (!usermod[FPSTR(_lock)].isNull() && usermod[FPSTR(_lock)].is<bool>()) {
+        if (enabled && !usermod[FPSTR(_speed)].isNull() && usermod[FPSTR(_speed)].is<int>()) {
+          pwmValuePct = usermod[FPSTR(_speed)].as<int>();
+          updateFanSpeed((constrain(pwmValuePct,0,100) * 255) / 100);
+          if (pwmValuePct) lockFan = true;
+        }
+        if (enabled && !usermod[FPSTR(_lock)].isNull() && usermod[FPSTR(_lock)].is<bool>()) {
           lockFan = usermod[FPSTR(_lock)].as<bool>();
         }
       }

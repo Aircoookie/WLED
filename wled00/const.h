@@ -154,6 +154,7 @@
 #define TYPE_WS2812_RGB          22
 #define TYPE_GS8608              23            //same driver as WS2812, but will require signal 2x per second (else displays test pattern)
 #define TYPE_WS2811_400KHZ       24            //half-speed WS2812 protocol, used by very old WS2811 units
+#define TYPE_TM1829              25
 #define TYPE_SK6812_RGBW         30
 #define TYPE_TM1814              31
 //"Analog" types (PWM) (32-47)
@@ -168,6 +169,7 @@
 #define TYPE_APA102              51
 #define TYPE_LPD8806             52
 #define TYPE_P9813               53
+#define TYPE_LPD6803             54
 //Network types (master broadcast) (80-95)
 #define TYPE_NET_DDP_RGB         80            //network DDP RGB bus (master broadcast bus)
 #define TYPE_NET_E131_RGB        81            //network E131 RGB bus (master broadcast bus)
@@ -385,6 +387,7 @@
 #if defined(ESP8266) && defined(HW_PIN_CSSPI)
   #undef HW_PIN_CSSPI
 #endif
+// defaults for VSPI
 #ifndef HW_PIN_CLOCKSPI
   #define HW_PIN_CLOCKSPI SCK
 #endif

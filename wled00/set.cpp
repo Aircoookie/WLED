@@ -503,31 +503,23 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
     int8_t hw_mosi_pin = !request->arg(F("MOSI")).length() ? -1 : max(-1,min(33,(int)request->arg(F("MOSI")).toInt()));
     int8_t hw_sclk_pin = !request->arg(F("SCLK")).length() ? -1 : max(-1,min(33,(int)request->arg(F("SCLK")).toInt()));
-    int8_t hw_cs_pin   = !request->arg(F("CS")).length()   ? -1 : max(-1,min(33,(int)request->arg(F("CS")).toInt()));
     #ifdef ESP8266
     // cannot change pins on ESP8266
     if (hw_mosi_pin >= 0 && hw_mosi_pin != HW_PIN_DATASPI)  hw_mosi_pin = HW_PIN_DATASPI;
     if (hw_sclk_pin >= 0 && hw_sclk_pin != HW_PIN_CLOCKSPI) hw_sclk_pin = HW_PIN_CLOCKSPI;
-    if (hw_cs_pin   >= 0 && hw_cs_pin   != HW_PIN_CSSPI)    hw_cs_pin   = HW_PIN_CSSPI;
     #endif
-    PinManagerPinType spi[3] = { { hw_mosi_pin, true }, { hw_sclk_pin, true }, { hw_cs_pin, true } };
-    if (hw_mosi_pin >= 0 && hw_sclk_pin >= 0 && hw_cs_pin >= 0 && pinManager.allocateMultiplePins(spi, 3, PinOwner::HW_SPI)) {
+    PinManagerPinType spi[2] = { { hw_mosi_pin, true }, { hw_sclk_pin, true } };
+    if (hw_mosi_pin >= 0 && hw_sclk_pin >= 0 && pinManager.allocateMultiplePins(spi, 2, PinOwner::HW_SPI)) {
       spi_mosi = hw_mosi_pin;
       spi_sclk = hw_sclk_pin;
-      spi_cs   = hw_cs_pin;
-      #ifdef ESP8266
-      SPI.begin();
-      #else
-      SPI.begin(spi_sclk, (int8_t)-1, spi_mosi, spi_cs);
-      #endif
+      // no bus initialisation
     } else {
       //SPI.end();
       DEBUG_PRINTLN(F("Could not allocate SPI pins."));
-      uint8_t spi[3] = { spi_mosi, spi_sclk, spi_cs };
-      pinManager.deallocateMultiplePins(spi, 3, PinOwner::HW_SPI); // just in case deallocation of old pins
+      uint8_t spi[2] = { spi_mosi, spi_sclk };
+      pinManager.deallocateMultiplePins(spi, 2, PinOwner::HW_SPI); // just in case deallocation of old pins
       spi_mosi = -1;
       spi_sclk = -1;
-      spi_cs   = -1;
     }
 
     JsonObject um = doc.createNestedObject("um");
@@ -673,8 +665,8 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   pos = req.indexOf(F("SV=")); //segment selected
   if (pos > 0) {
     byte t = getNumVal(&req, pos);
-    if (t == 2) for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) strip.getSegment(i).setOption(SEG_OPTION_SELECTED, 0); // unselect other segments
-    selseg.setOption(SEG_OPTION_SELECTED, t);
+    if (t == 2) for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) strip.getSegment(i).selected = false; // unselect other segments
+    selseg.selected = t;
   }
 
   // temporary values, write directly to segments, globals are updated by setValuesFromFirstSelectedSeg()
@@ -713,15 +705,15 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   strip.setSegment(selectedSeg, startI, stopI, grpI, spcI, UINT16_MAX, startY, stopY);
 
   pos = req.indexOf(F("RV=")); //Segment reverse
-  if (pos > 0) selseg.setOption(SEG_OPTION_REVERSED, req.charAt(pos+3) != '0');
+  if (pos > 0) selseg.reverse = req.charAt(pos+3) != '0';
 
   pos = req.indexOf(F("MI=")); //Segment mirror
-  if (pos > 0) selseg.setOption(SEG_OPTION_MIRROR, req.charAt(pos+3) != '0');
+  if (pos > 0) selseg.mirror = req.charAt(pos+3) != '0';
 
   pos = req.indexOf(F("SB=")); //Segment brightness/opacity
   if (pos > 0) {
     byte segbri = getNumVal(&req, pos);
-    selseg.setOption(SEG_OPTION_ON, segbri);
+    selseg.on = segbri;
     if (segbri) {
       selseg.setOpacity(segbri);
     }
@@ -730,9 +722,9 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   pos = req.indexOf(F("SW=")); //segment power
   if (pos > 0) {
     switch (getNumVal(&req, pos)) {
-      case 0: selseg.setOption(SEG_OPTION_ON, false); break;
-      case 1: selseg.setOption(SEG_OPTION_ON, true); break;
-      default: selseg.setOption(SEG_OPTION_ON, !selseg.getOption(SEG_OPTION_ON)); break;
+      case 0:  selseg.on = false;      break;
+      case 1:  selseg.on = true;       break;
+      default: selseg.on = !selseg.on; break;
     }
   }
 
@@ -989,7 +981,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     realtimeOverride = getNumVal(&req, pos);
     if (realtimeOverride > 2) realtimeOverride = REALTIME_OVERRIDE_ALWAYS;
     if (realtimeMode && useMainSegmentOnly) {
-      strip.getMainSegment().setOption(SEG_OPTION_FREEZE, !realtimeOverride);
+      strip.getMainSegment().freeze = !realtimeOverride;
     }
   }
 

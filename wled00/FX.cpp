@@ -75,7 +75,7 @@ int8_t tristate_square8(uint8_t x, uint8_t pulsewidth, uint8_t attdec) {
  */
 uint16_t mode_static(void) {
   SEGMENT.fill(SEGCOLOR(0));
-  return /*(SEGMENT.getOption(SEG_OPTION_TRANSITIONAL)) ? FRAMETIME :*/ 350; //update faster if in transition
+  return 350;
 }
 static const char _data_FX_MODE_STATIC[] PROGMEM = "Solid";
 
@@ -2157,7 +2157,7 @@ uint16_t mode_noise16_2()
 
     //fastled_col = ColorFromPalette(SEGPALETTE, index, noise, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
     //SEGMENT.setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
-    SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0));
+    SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0, noise));
   }
 
   return FRAMETIME;
@@ -2182,7 +2182,7 @@ uint16_t mode_noise16_3()
 
     //fastled_col = ColorFromPalette(SEGPALETTE, index, noise, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
     //SEGMENT.setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
-    SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0));
+    SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0, noise));
   }
 
   return FRAMETIME;
@@ -3987,7 +3987,7 @@ uint16_t mode_flow(void)
     {
       uint8_t colorIndex = (i * 255 / zoneLen) - counter;
       uint16_t led = (z & 0x01) ? i : (zoneLen -1) -i;
-      if (SEGMENT.getOption(SEG_OPTION_REVERSED)) led = (zoneLen -1) -led;
+      if (SEGMENT.reverse) led = (zoneLen -1) -led;
       SEGMENT.setPixelColor(pos + led, SEGMENT.color_from_palette(colorIndex, false, true, 255));
     }
   }
@@ -4928,7 +4928,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   SEGENV.aux1 = SEGENV.aux0;
   SEGENV.aux0 = crc;
 
-  return (SEGMENT.getOption(SEG_OPTION_TRANSITIONAL)) ? FRAMETIME : FRAMETIME_FIXED * (128-(SEGMENT.speed>>1)); // update only when appropriate time passes (in 42 FPS slots)
+  return FRAMETIME_FIXED * (128-(SEGMENT.speed>>1)); // update only when appropriate time passes (in 42 FPS slots)
 } // mode_2Dgameoflife()
 static const char _data_FX_MODE_2DGAMEOFLIFE[] PROGMEM = "Game Of Life@!,;!,!;!;2d";
 

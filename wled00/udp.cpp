@@ -149,7 +149,7 @@ void realtimeLock(uint32_t timeoutMs, byte md)
       Segment& mainseg = strip.getMainSegment();
       start = mainseg.start;
       stop  = mainseg.stop;
-      mainseg.setOption(SEG_OPTION_FREEZE, true);
+      mainseg.freeze = true;
     } else {
       start = 0;
       stop  = strip.getLengthTotal();
@@ -159,7 +159,7 @@ void realtimeLock(uint32_t timeoutMs, byte md)
     // if WLED was off and using main segment only, freeze non-main segments so they stay off
     if (useMainSegmentOnly && bri == 0) {
       for (size_t s=0; s < strip.getSegmentsNum(); s++) {
-        strip.getSegment(s).setOption(SEG_OPTION_FREEZE, true);
+        strip.getSegment(s).freeze = true;
       }
     }
   }
@@ -186,7 +186,7 @@ void exitRealtime() {
   realtimeMode = REALTIME_MODE_INACTIVE; // inform UI immediately
   realtimeIP[0] = 0;
   if (useMainSegmentOnly) { // unfreeze live segment again
-    strip.getMainSegment().setOption(SEG_OPTION_FREEZE, false);
+    strip.getMainSegment().freeze = false;
   }
   updateInterfaces(CALL_MODE_WS_SEND);
 }

@@ -344,7 +344,7 @@ typedef enum mapping1D2D {
   M12_Block = 3
 } mapping1D2D_t;
 
-// segment, 68 (92 in memory) bytes
+// segment, 72 bytes
 typedef struct Segment {
   public:
     uint16_t start; // start index / start X coordinate 2D (left)
@@ -357,34 +357,38 @@ typedef struct Segment {
     union {
       uint16_t options; //bit pattern: msb first: [transposed mirrorY reverseY] transitional (tbd) paused needspixelstate mirrored on reverse selected
       struct {
-        bool    selected    : 1; //  0 : selected
-        bool    reverse     : 1; //  1 : reversed
-        bool    on          : 1; //  2 : is On
-        bool    mirror      : 1; //  3 : mirrored
-        bool    pxs         : 1; //  4 : indicates that the effect does not use FRAMETIME or needs getPixelColor (?)
-        bool    freeze      : 1; //  5 : paused/frozen
-        bool    reset       : 1; //  6 : indicates that Segment runtime requires reset
-        bool    transitional: 1; //  7 : transitional (there is transition occuring)
-        bool    reverse_y   : 1; //  8 : reversed Y (2D)
-        bool    mirror_y    : 1; //  9 : mirrored Y (2D)
-        bool    transpose   : 1; // 10 : transposed (2D, swapped X & Y)
-        uint8_t map1D2D     : 2; // 11-12 : mapping for 1D effect on 2D (0-strip, 1-expand vertically, 2-circular, 3-rectangular)
-        uint8_t soundSim    : 3; // 13-15 : 0-7 sound simulation types
+        bool    selected    : 1;  //  0 : selected
+        bool    reverse     : 1;  //  1 : reversed
+        bool    on          : 1;  //  2 : is On
+        bool    mirror      : 1;  //  3 : mirrored
+        bool    pxs         : 1;  //  4 : indicates that the effect does not use FRAMETIME or needs getPixelColor (?)
+        bool    freeze      : 1;  //  5 : paused/frozen
+        bool    reset       : 1;  //  6 : indicates that Segment runtime requires reset
+        bool    transitional: 1;  //  7 : transitional (there is transition occuring)
+        bool    reverse_y   : 1;  //  8 : reversed Y (2D)
+        bool    mirror_y    : 1;  //  9 : mirrored Y (2D)
+        bool    transpose   : 1;  // 10 : transposed (2D, swapped X & Y)
+        uint8_t map1D2D     : 3;  // 11-13 : mapping for 1D effect on 2D (0-use as strip, 1-expand vertically, 2-circular/arc, 3-rectangular/corner, ...)
+        uint8_t soundSim    : 2;  // 14-15 : 0-3 sound simulation types
       };
     };
     uint8_t  grouping, spacing;
+    //struct {
+    //  uint8_t grouping : 4;       // maximum 15 pixels in a group
+    //  uint8_t spacing  : 4;       // maximum 15 pixels per gap
+    //};
     uint8_t  opacity;
     uint32_t colors[NUM_COLORS];
-    uint8_t  cct; //0==1900K, 255==10091K
-    uint8_t  custom1, custom2;  // custom FX parameters/sliders
+    uint8_t  cct;                 //0==1900K, 255==10091K
+    uint8_t  custom1, custom2;    // custom FX parameters/sliders
     struct {
-      uint8_t custom3 : 5;      // reduced range slider (0-31)
-      bool    check1  : 1;      // checkmark 1
-      bool    check2  : 1;      // checkmark 2
-      bool    check3  : 1;      // checkmark 3
+      uint8_t custom3 : 5;        // reduced range slider (0-31)
+      bool    check1  : 1;        // checkmark 1
+      bool    check2  : 1;        // checkmark 2
+      bool    check3  : 1;        // checkmark 3
     };
-    uint16_t startY;  // start Y coodrinate 2D (top)
-    uint16_t stopY;   // stop Y coordinate 2D (bottom)
+    uint8_t startY;  // start Y coodrinate 2D (top); there should be no more than 255 rows
+    uint8_t stopY;   // stop Y coordinate 2D (bottom); there should be no more than 255 rows
     char *name;
 
     // runtime data
@@ -491,18 +495,18 @@ typedef struct Segment {
     Segment& operator= (Segment &&orig) noexcept; // move assignment
 
 #ifdef WLED_DEBUG
-    size_t getSize() { return sizeof(Segment) + (data?_dataLen:0) + (name?strlen(name):0) + (_t?sizeof(Transition):0) + (!Segment::_globalLeds && leds?sizeof(CRGB)*length():0); }
+    size_t getSize() const { return sizeof(Segment) + (data?_dataLen:0) + (name?strlen(name):0) + (_t?sizeof(Transition):0) + (!Segment::_globalLeds && leds?sizeof(CRGB)*length():0); }
 #endif
 
-    inline bool     getOption(uint8_t n)       { return ((options >> n) & 0x01); }
-    inline bool     isSelected(void)           { return selected; }
-    inline bool     isActive(void)             { return stop > start; }
-    inline bool     is2D(void)                 { return !(startY == 0 && stopY == 1); }
-    inline uint16_t width(void)                { return stop - start; }       // segment width in physical pixels (length if 1D)
-    inline uint16_t height(void)               { return stopY - startY; }     // segment height (if 2D) in physical pixels
-    inline uint16_t length(void)               { return width() * height(); } // segment length (count) in physical pixels
-    inline uint16_t groupLength(void)          { return grouping + spacing; }
-    inline uint8_t  getLightCapabilities(void) { return _capabilities; }
+    inline bool     getOption(uint8_t n) const { return ((options >> n) & 0x01); }
+    inline bool     isSelected(void)     const { return selected; }
+    inline bool     isActive(void)       const { return stop > start; }
+    inline bool     is2D(void)           const { return !(startY == 0 && stopY == 1); }
+    inline uint16_t width(void)          const { return stop - start; }       // segment width in physical pixels (length if 1D)
+    inline uint16_t height(void)         const { return stopY - startY; }     // segment height (if 2D) in physical pixels
+    inline uint16_t length(void)         const { return width() * height(); } // segment length (count) in physical pixels
+    inline uint16_t groupLength(void)    const { return grouping + spacing; }
+    inline uint8_t  getLightCapabilities(void) const { return _capabilities; }
 
     static uint16_t getUsedSegmentData(void)    { return _usedSegmentData; }
     static void     addUsedSegmentData(int len) { _usedSegmentData += len; }
@@ -511,11 +515,11 @@ typedef struct Segment {
     void    setCCT(uint16_t k);
     void    setOpacity(uint8_t o);
     void    setOption(uint8_t n, bool val);
-    uint8_t differs(Segment& b);
+    uint8_t differs(Segment& b) const;
     void    refreshLightCapabilities(void);
 
     // runtime data functions
-    inline uint16_t dataSize(void) { return _dataLen; }
+    inline uint16_t dataSize(void) const { return _dataLen; }
     bool allocateData(size_t len);
     void deallocateData(void);
     void resetIfRequired(void);
@@ -540,7 +544,7 @@ typedef struct Segment {
     CRGBPalette16 &currentPalette(CRGBPalette16 &tgt, uint8_t paletteID);
 
     // 1D strip
-    uint16_t virtualLength(void);
+    uint16_t virtualLength(void) const;
     void setPixelColor(int n, uint32_t c); // set relative pixel within segment with color
     void setPixelColor(int n, byte r, byte g, byte b, byte w = 0) { setPixelColor(n, RGBW32(r,g,b,w)); } // automatically inline
     void setPixelColor(int n, CRGB c)                             { setPixelColor(n, RGBW32(c.r,c.g,c.b,0)); } // automatically inline
@@ -564,8 +568,8 @@ typedef struct Segment {
     uint32_t color_wheel(uint8_t pos);
 
     // 2D matrix
-    uint16_t virtualWidth(void);
-    uint16_t virtualHeight(void);
+    uint16_t virtualWidth(void)  const;
+    uint16_t virtualHeight(void) const;
   #ifndef WLED_DISABLE_2D
     uint16_t XY(uint16_t x, uint16_t y); // support function to get relative index within segment (for leds[])
     void setPixelColorXY(int x, int y, uint32_t c); // set relative pixel within segment with color
@@ -627,7 +631,7 @@ typedef struct Segment {
     void wu_pixel(uint32_t x, uint32_t y, CRGB c) {}
   #endif
 } segment;
-//static int i = sizeof(Segment);
+//static int segSize = sizeof(Segment);
 
 // main "strip" class
 class WS2812FX {  // 96 bytes

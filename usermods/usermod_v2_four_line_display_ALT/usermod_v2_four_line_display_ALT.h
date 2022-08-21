@@ -312,19 +312,30 @@ class FourLineDisplayUsermod : public Usermod {
       bool isHW, isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64);
       PinOwner po = PinOwner::UM_FourLineDisplay;
       if (isSPI) {
-        PinManagerPinType cspins[2] = { { ioPin[3], true }, { ioPin[4], true } };
-        if (!pinManager.allocateMultiplePins(cspins, 2, PinOwner::UM_FourLineDisplay)) { type=NONE; return; }
-        isHW = (ioPin[0]==spi_sclk && ioPin[1]==spi_mosi && ioPin[2]==spi_cs);
+        uint8_t hw_sclk = spi_sclk<0 ? HW_PIN_CLOCKSPI : spi_sclk;
+        uint8_t hw_mosi = spi_mosi<0 ? HW_PIN_DATASPI : spi_mosi;
+        if (ioPin[0] < 0 || ioPin[1] < 0) {
+          ioPin[0] = hw_sclk;
+          ioPin[1] = hw_mosi;
+        }
+        isHW = (ioPin[0]==hw_sclk && ioPin[1]==hw_mosi);
+        PinManagerPinType cspins[3] = { { ioPin[2], true }, { ioPin[3], true }, { ioPin[4], true } };
+        if (!pinManager.allocateMultiplePins(cspins, 3, PinOwner::UM_FourLineDisplay)) { type=NONE; return; }
         if (isHW) po = PinOwner::HW_SPI;  // allow multiple allocations of HW I2C bus pins
-        PinManagerPinType pins[3] = { { ioPin[0], true }, { ioPin[1], true }, { ioPin[2], true } };
-        if (!pinManager.allocateMultiplePins(pins, 5, po)) {
-          pinManager.deallocatePin(ioPin[3], PinOwner::UM_FourLineDisplay);
-          pinManager.deallocatePin(ioPin[4], PinOwner::UM_FourLineDisplay);
+        PinManagerPinType pins[2] = { { ioPin[0], true }, { ioPin[1], true } };
+        if (!pinManager.allocateMultiplePins(pins, 2, po)) {
+          pinManager.deallocateMultiplePins(cspins, 3, PinOwner::UM_FourLineDisplay);
           type = NONE;
           return;
         }
       } else {
-        isHW = (ioPin[0]==i2c_scl && ioPin[1]==i2c_sda);
+        uint8_t hw_scl = i2c_scl<0 ? HW_PIN_SCL : i2c_scl;
+        uint8_t hw_sda = i2c_sda<0 ? HW_PIN_SDA : i2c_sda;
+        if (ioPin[0] < 0 || ioPin[1] < 0) {
+          ioPin[0] = hw_scl;
+          ioPin[1] = hw_sda;
+        }
+        isHW = (ioPin[0]==hw_scl && ioPin[1]==hw_sda);
         if (isHW) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
         PinManagerPinType pins[2] = { {ioPin[0], true }, { ioPin[1], true } };
         if (!pinManager.allocateMultiplePins(pins, 2, po)) { type=NONE; return; }
@@ -1019,8 +1030,8 @@ class FourLineDisplayUsermod : public Usermod {
       oappend(SET_F("addOption(dd,'SSD1305 128x64',5);"));
       oappend(SET_F("addOption(dd,'SSD1306 SPI',6);"));
       oappend(SET_F("addOption(dd,'SSD1306 SPI 128x64',7);"));
-      oappend(SET_F("addInfo('4LineDisplay:pin[]',0,'I2C/SPI CLK');"));
-      oappend(SET_F("addInfo('4LineDisplay:pin[]',1,'I2C/SPI DTA');"));
+      oappend(SET_F("addInfo('4LineDisplay:pin[]',0,'I2C/SPI CLK (-1 use global)');"));
+      oappend(SET_F("addInfo('4LineDisplay:pin[]',1,'I2C/SPI DTA (-1 use global)');"));
       oappend(SET_F("addInfo('4LineDisplay:pin[]',2,'SPI CS');"));
       oappend(SET_F("addInfo('4LineDisplay:pin[]',3,'SPI DC');"));
       oappend(SET_F("addInfo('4LineDisplay:pin[]',4,'SPI RST');"));
@@ -1071,7 +1082,7 @@ class FourLineDisplayUsermod : public Usermod {
     bool readFromConfig(JsonObject& root) {
       bool needsRedraw    = false;
       DisplayType newType = type;
-      int8_t newPin[5]; for (byte i=0; i<5; i++) newPin[i] = ioPin[i];
+      int8_t oldPin[5]; for (byte i=0; i<5; i++) oldPin[i] = ioPin[i];
 
       JsonObject top = root[FPSTR(_name)];
       if (top.isNull()) {
@@ -1082,7 +1093,7 @@ class FourLineDisplayUsermod : public Usermod {
 
       enabled       = top[FPSTR(_enabled)] | enabled;
       newType       = top["type"] | newType;
-      for (byte i=0; i<5; i++) newPin[i] = top["pin"][i] | ioPin[i];
+      for (byte i=0; i<5; i++) ioPin[i] = top["pin"][i] | ioPin[i];
       flip          = top[FPSTR(_flip)] | flip;
       contrast      = top[FPSTR(_contrast)] | contrast;
       #ifndef ARDUINO_ARCH_ESP32
@@ -1102,26 +1113,31 @@ class FourLineDisplayUsermod : public Usermod {
       DEBUG_PRINT(FPSTR(_name));
       if (!initDone) {
         // first run: reading from cfg.json
-        for (byte i=0; i<5; i++) ioPin[i] = newPin[i];
         type = newType;
         DEBUG_PRINTLN(F(" config loaded."));
       } else {
         DEBUG_PRINTLN(F(" config (re)loaded."));
         // changing parameters from settings page
         bool pinsChanged = false;
-        for (byte i=0; i<5; i++) if (ioPin[i] != newPin[i]) { pinsChanged = true; break; }
+        for (byte i=0; i<5; i++) if (ioPin[i] != oldPin[i]) { pinsChanged = true; break; }
         if (pinsChanged || type!=newType) {
           if (type != NONE) delete u8x8;
           PinOwner po = PinOwner::UM_FourLineDisplay;
           bool isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64);
-          if (!isSPI && ioPin[0]==i2c_scl && ioPin[1]==i2c_sda) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
-          if (isSPI && ioPin[0]==spi_sclk && ioPin[1]==spi_mosi && ioPin[2]==spi_cs) po = PinOwner::HW_SPI;  // allow multiple allocations of HW SPI bus pins
-          pinManager.deallocateMultiplePins((const uint8_t *)ioPin, isSPI ? 5 : 2, po);
-          for (byte i=0; i<5; i++) ioPin[i] = newPin[i];
-          if (ioPin[0]<0 || ioPin[1]<0) { // data & clock must be > -1
-            type = NONE;
-            return true;
-          } else type = newType;
+          if (isSPI) {
+            pinManager.deallocateMultiplePins((const uint8_t *)(&oldPin[2]), 3, po);
+            uint8_t hw_sclk = spi_sclk<0 ? HW_PIN_CLOCKSPI : spi_sclk;
+            uint8_t hw_mosi = spi_mosi<0 ? HW_PIN_DATASPI : spi_mosi;
+            bool isHW = (oldPin[0]==hw_sclk && oldPin[1]==hw_mosi);
+            if (isHW) po = PinOwner::HW_SPI;
+          } else {
+            uint8_t hw_scl = i2c_scl<0 ? HW_PIN_SCL : i2c_scl;
+            uint8_t hw_sda = i2c_sda<0 ? HW_PIN_SDA : i2c_sda;
+            bool isHW = (oldPin[0]==hw_scl && oldPin[1]==hw_sda);
+            if (isHW) po = PinOwner::HW_I2C;
+          }
+          pinManager.deallocateMultiplePins((const uint8_t *)oldPin, 2, po);
+          type = newType;
           setup();
           needsRedraw |= true;
         } else {
