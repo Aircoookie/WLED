@@ -185,15 +185,11 @@ void FFTcode(void * parameter)
     delay(1);           // DO NOT DELETE THIS LINE! It is needed to give the IDLE(0) task enough time and to keep the watchdog happy.
                         // taskYIELD(), yield(), vTaskDelay() and esp_task_wdt_feed() didn't seem to work.
 
+    vTaskDelayUntil( &xLastWakeTime, xFrequency);        // release CPU, and let I2S fill its buffers
     // Only run the FFT computing code if we're not in Receive mode and not in realtime mode
     if (disableSoundProcessing || (audioSyncEnabled & 0x02)) {
-      //delay(7);   // release CPU - delay is implemeted using vTaskDelay(). cannot use yield() because we are out of arduino loop context
-      vTaskDelayUntil( &xLastWakeTime, xFrequency);        // release CPU, by doing nothing for FFT_MIN_CYCLE millis
       continue;
     }
-
-    vTaskDelayUntil( &xLastWakeTime, xFrequency);        // release CPU, and let I2S fill its buffers
-    //vTaskDelayUntil( &xLastWakeTime, xFrequency_2);        // release CPU, and let I2S fill its buffers
 
 #ifdef WLED_DEBUG
     uint64_t start = esp_timer_get_time();
@@ -401,10 +397,9 @@ void FFTcode(void * parameter)
     }
 #endif
 
-    //vTaskDelayUntil( &xLastWakeTime, xFrequency_2);        // release CPU, by waiting until FFT_MIN_CYCLE is over
     // release second sample to volume reactive effects. 
 	  // Releasing a second sample now effectively doubles the "sample rate" 
-    micDataReal = maxSample2;
+    micDataReal = maxSample2; // do we really need this? FFT now takes only about 2ms so no need for this
 
   } // for(;;)
 } // FFTcode()
@@ -1008,7 +1003,7 @@ class AudioReactive : public Usermod {
      */
     void connected()
     {
-      if (audioSyncPort > 0 || (audioSyncEnabled & 0x03)) {
+      if (audioSyncPort > 0 && (audioSyncEnabled & 0x03)) {
       #ifndef ESP8266
         udpSyncConnected = fftUdp.beginMulticast(IPAddress(239, 0, 0, 1), audioSyncPort);
       #else
