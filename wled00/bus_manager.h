@@ -134,7 +134,12 @@ struct ColorOrderMap {
 //parent class of BusDigital, BusPwm, and BusNetwork
 class Bus {
   public:
-    Bus(uint8_t type, uint16_t start, uint8_t aw) {
+    Bus(uint8_t type, uint16_t start, uint8_t aw)
+    : _bri(255)
+    , _len(1)
+    , _valid(false)
+    , _needsRefresh(false)
+    {
       _type = type;
       _start = start;
       _autoWhiteMode = Bus::isRgbw(_type) ? aw : RGBW_MODE_MANUAL_ONLY;
@@ -142,13 +147,13 @@ class Bus {
 
     virtual ~Bus() {} //throw the bus under the bus
 
-    virtual void     show() {}
+    virtual void     show() = 0;
     virtual bool     canShow() { return true; }
     virtual void     setStatusPixel(uint32_t c) {}
-    virtual void     setPixelColor(uint16_t pix, uint32_t c) {}
+    virtual void     setPixelColor(uint16_t pix, uint32_t c) = 0;
     virtual uint32_t getPixelColor(uint16_t pix) { return 0; }
-    virtual void     setBrightness(uint8_t b) {}
-    virtual void     cleanup() {}
+    virtual void     setBrightness(uint8_t b) { _bri = b; };
+    virtual void     cleanup() = 0;
     virtual uint8_t  getPins(uint8_t* pinArray) { return 0; }
     virtual uint16_t getLength() { return _len; }
     virtual void     setColorOrder() {}
@@ -195,12 +200,12 @@ class Bus {
     bool reversed = false;
 
   protected:
-    uint8_t  _type = TYPE_NONE;
-    uint8_t  _bri = 255;
-    uint16_t _start = 0;
-    uint16_t _len = 1;
-    bool     _valid = false;
-    bool     _needsRefresh = false;
+    uint8_t  _type;
+    uint8_t  _bri;
+    uint16_t _start;
+    uint16_t _len;
+    bool     _valid;
+    bool     _needsRefresh;
     uint8_t  _autoWhiteMode;
     static uint8_t _gAWM;     // definition in FX_fcn.cpp
     static int16_t _cct;      // definition in FX_fcn.cpp
@@ -262,7 +267,7 @@ class BusDigital : public Bus {
       if (_pins[0] == LED_BUILTIN || _pins[1] == LED_BUILTIN) PolyBus::begin(_busPtr, _iType, _pins); 
     }
     #endif
-    _bri = b;
+    Bus::setBrightness(b);
     PolyBus::setBrightness(_busPtr, _iType, b);
   }
 
@@ -448,10 +453,6 @@ class BusPwm : public Bus {
     }
   }
 
-  inline void setBrightness(uint8_t b) {
-    _bri = b;
-  }
-
   uint8_t getPins(uint8_t* pinArray) {
     if (!_valid) return 0;
     uint8_t numPins = NUM_PWM_PINS(_type);
@@ -529,10 +530,6 @@ class BusOnOff : public Bus {
   void show() {
     if (!_valid) return;
     digitalWrite(_pin, reversed ? !(bool)_data : (bool)_data);
-  }
-
-  inline void setBrightness(uint8_t b) {
-    _bri = b;
   }
 
   uint8_t getPins(uint8_t* pinArray) {
@@ -623,10 +620,6 @@ class BusNetwork : public Bus {
     return !_broadcastLock;
   }
 
-  inline void setBrightness(uint8_t b) {
-    _bri = b;
-  }
-
   uint8_t getPins(uint8_t* pinArray) {
     for (uint8_t i = 0; i < 4; i++) {
       pinArray[i] = _client[i];
@@ -655,7 +648,6 @@ class BusNetwork : public Bus {
 
   private:
     IPAddress _client;
-    uint8_t   _bri = 255;
     uint8_t   _UDPtype;
     uint8_t   _UDPchannels;
     bool      _rgbw;

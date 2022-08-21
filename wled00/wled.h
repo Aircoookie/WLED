@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2208191
+#define VERSION 2208211
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -27,7 +27,7 @@
 //#define WLED_DISABLE_ALEXA       // saves 11kb
 //#define WLED_DISABLE_BLYNK       // saves 6kb
 //#define WLED_DISABLE_HUESYNC     // saves 4kb
-//#define WLED_DISABLE_INFRARED    // there is no pin left for this on ESP8266-01, saves 12kb
+//#define WLED_DISABLE_INFRARED    // saves 12kb
 #ifndef WLED_DISABLE_MQTT
   #define WLED_ENABLE_MQTT         // saves 12kb
 #endif
