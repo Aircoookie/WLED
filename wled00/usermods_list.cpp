@@ -15,6 +15,10 @@
 #include "../usermods/battery_status_basic/usermod_v2_battery_status_basic.h"
 #endif
 
+#ifdef USERMOD_TEKE_TUBE
+#include "../usermods/teke_tube/teke_tube.h"
+#endif
+
 #ifdef USERMOD_DALLASTEMPERATURE
 #include "../usermods/Temperature/usermod_temperature.h"
 #endif
@@ -139,6 +143,10 @@ void registerUsermods()
 
   #ifdef USERMOD_BATTERY_STATUS_BASIC
   usermods.add(new UsermodBatteryBasic());
+  #endif
+
+  #ifdef USERMOD_TEKE_TUBE
+  usermods.add(new UsermodTekeTube());
   #endif
 
   #ifdef USERMOD_DALLASTEMPERATURE

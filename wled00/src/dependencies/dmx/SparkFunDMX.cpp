@@ -31,7 +31,7 @@ Distributed as-is; no warranty is given.
 
 int enablePin = -1;		// disable the enable pin because it is not needed
 int rxPin = -1;       // disable the receiving pin because it is not needed
-int txPin = 2;        // transmit DMX data over this pin (default is pin 2)
+int txPin = -1;        // transmit DMX data over this pin (default is pin 2)
 
 //DMX value array and size. Entry 0 will hold startbyte
 uint8_t dmxData[dmxMaxChannel] = {};
