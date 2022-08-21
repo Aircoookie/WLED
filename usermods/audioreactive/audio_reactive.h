@@ -23,10 +23,8 @@
 // Comment/Uncomment to toggle usb serial debugging
 // #define MIC_LOGGER                   // MIC sampling & sound input debugging (serial plotter)
 // #define FFT_SAMPLING_LOG             // FFT result debugging
-// #define SR_DEBUG                     // generic SR DEBUG messages (including MIC_LOGGER)
+// #define SR_DEBUG                     // generic SR DEBUG messages
 // #define NO_MIC_LOGGER                // exclude MIC_LOGGER from SR_DEBUG
-
-// hackers corner
 
 #ifdef SR_DEBUG
   #define DEBUGSR_PRINT(x) Serial.print(x)
@@ -37,10 +35,6 @@
   #define DEBUGSR_PRINTLN(x)
   #define DEBUGSR_PRINTF(x...)
 #endif
-// legacy support
-// #if defined(SR_DEBUG) && !defined(MIC_LOGGER) && !defined(NO_MIC_LOGGER)
-// #define MIC_LOGGER
-// #endif
 
 
 #include "audio_source.h"
@@ -49,10 +43,11 @@ constexpr i2s_port_t I2S_PORT = I2S_NUM_0;
 constexpr int BLOCK_SIZE = 128;
 constexpr int SAMPLE_RATE = 22050;            // Base sample rate in Hz - 22Khz is a standard rate. Physical sample time -> 23ms
 //constexpr int SAMPLE_RATE = 20480;            // Base sample rate in Hz - 20Khz is experimental.    Physical sample time -> 25ms
-//constexpr int SAMPLE_RATE = 10240;            // Base sample rate in Hz - standard.                 Physical sample time -> 50ms
+//constexpr int SAMPLE_RATE = 10240;            // Base sample rate in Hz - previous default.         Physical sample time -> 50ms
 
-//#define FFT_MIN_CYCLE 22                      // minimum time before FFT task is repeated. Use with 20Khz sampling
 #define FFT_MIN_CYCLE 18                      // minimum time before FFT task is repeated. Use with 22Khz sampling
+//#define FFT_MIN_CYCLE 22                      // minimum time before FFT task is repeated. Use with 20Khz sampling
+//#define FFT_MIN_CYCLE 44                      // minimum time before FFT task is repeated. Use with 10Khz sampling
 
 // globals
 static uint8_t inputLevel = 128;              // UI slider value
@@ -204,26 +199,19 @@ void FFTcode(void * parameter)
     }
 #endif
 
-    const int halfSamplesFFT = samplesFFT / 2;   // samplesFFT divided by 2
-    float maxSample1 = 0.0f;                         // max sample from first half of FFT batch
-    float maxSample2 = 0.0f;                         // max sample from second half of FFT batch
-    for (int i=0; i < halfSamplesFFT; i++) {
+    //const int halfSamplesFFT = samplesFFT / 2;      // samplesFFT divided by 2
+    float maxSample = 0.0f;                         // max sample from FFT batch
+    for (int i=0; i < samplesFFT; i++) {
 	    // set imaginary parts to 0
       vImag[i] = 0;
 	    // pick our  our current mic sample - we take the max value from all samples that go into FFT
 	    if ((vReal[i] <= (INT16_MAX - 1024)) && (vReal[i] >= (INT16_MIN + 1024)))  //skip extreme values - normally these are artefacts
-        if (fabsf((float)vReal[i]) > maxSample1) maxSample1 = fabsf((float)vReal[i]);
+        if (fabsf((float)vReal[i]) > maxSample) maxSample = fabsf((float)vReal[i]);
     }
-    for (int i=halfSamplesFFT; i < samplesFFT; i++) {
-	    // set imaginary parts to 0
-      vImag[i] = 0;
-	    // pick our  our current mic sample - we take the max value from all samples that go into FFT
-	    if ((vReal[i] <= (INT16_MAX - 1024)) && (vReal[i] >= (INT16_MIN + 1024)))  //skip extreme values - normally these are artefacts
-        if (fabsf((float)vReal[i]) > maxSample2) maxSample2 = fabsf((float)vReal[i]);
-    }
-    // release first sample to volume reactive effects
-    micDataReal = maxSample1;
+    // release sample to volume reactive effects
+    micDataReal = maxSample;  // doing this early allows filters (getSample() and agcAvg()) to run on latest values - we'll have up-to-date gain and noise gate values when FFT is done
 
+    // run FFT
 #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
     FFT.dcRemoval();                                            // remove DC offset
     FFT.windowing( FFTWindow::Flat_top, FFTDirection::Forward); // Weigh data using "Flat Top" function - better amplitude accuracy
@@ -246,11 +234,11 @@ void FFTcode(void * parameter)
     //
 
 #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
-    FFT.majorPeak(FFT_MajorPeak, FFT_Magnitude);      // let the effects know which freq was most dominant
+    FFT.majorPeak(FFT_MajorPeak, FFT_Magnitude);                // let the effects know which freq was most dominant
 #else
-    FFT.MajorPeak(&FFT_MajorPeak, &FFT_Magnitude);          // let the effects know which freq was most dominant
+    FFT.MajorPeak(&FFT_MajorPeak, &FFT_Magnitude);              // let the effects know which freq was most dominant
 #endif
-    FFT_MajorPeak = constrain(FFT_MajorPeak, 1.0f, 10240.0f);   
+    FFT_MajorPeak = constrain(FFT_MajorPeak, 1.0f, 11025.0f);   // restrict value to range expected by effects
 
     for (int i = 0; i < samplesFFT_2; i++) {           // Values for bins 0 and 1 are WAY too large. Might as well start at 3.
       float t = fabsf(vReal[i]);                      // just to be sure - values in fft bins should be positive any way
@@ -258,18 +246,17 @@ void FFTcode(void * parameter)
     } // for()
 
 
-/* This FFT post processing is a DIY endeavour. What we really need is someone with sound engineering expertise to do a great job here AND most importantly, that the animations look GREAT as a result.
- *
- *
- * Andrew's updated mapping of 256 bins down to the 16 result bins with Sample Freq = 10240, samplesFFT = 512 and some overlap.
- * Based on testing, the lowest/Start frequency is 60 Hz (with bin 3) and a highest/End frequency of 5120 Hz in bin 255.
- * Now, Take the 60Hz and multiply by 1.320367784 to get the next frequency and so on until the end. Then detetermine the bins.
- * End frequency = Start frequency * multiplier ^ 16
- * Multiplier = (End frequency/ Start frequency) ^ 1/16
- * Multiplier = 1.320367784
- */
     if (sampleAvg > 1) { // noise gate open
-#if 0                                        //  Range
+#if 0
+    /* This FFT post processing is a DIY endeavour. What we really need is someone with sound engineering expertise to do a great job here AND most importantly, that the animations look GREAT as a result.
+    *
+    * Andrew's updated mapping of 256 bins down to the 16 result bins with Sample Freq = 10240, samplesFFT = 512 and some overlap.
+    * Based on testing, the lowest/Start frequency is 60 Hz (with bin 3) and a highest/End frequency of 5120 Hz in bin 255.
+    * Now, Take the 60Hz and multiply by 1.320367784 to get the next frequency and so on until the end. Then detetermine the bins.
+    * End frequency = Start frequency * multiplier ^ 16
+    * Multiplier = (End frequency/ Start frequency) ^ 1/16
+    * Multiplier = 1.320367784
+    */                                    //  Range
       fftCalc[ 0] = fftAddAvg(2,4);       // 60 - 100
       fftCalc[ 1] = fftAddAvg(4,5);       // 80 - 120
       fftCalc[ 2] = fftAddAvg(5,7);       // 100 - 160
@@ -287,7 +274,8 @@ void FFTcode(void * parameter)
       fftCalc[14] = fftAddAvg(147,194);   // 2940 - 3900
       fftCalc[15] = fftAddAvg(194,250);   // 3880 - 5000 // avoid the last 5 bins, which are usually inaccurate
 #else
-      // optimized for 22050 Hz by softhack007        bins frequency  range
+      /* new mapping, optimized for 22050 Hz by softhack007 */
+                                                    // bins frequency  range
       fftCalc[ 0] = fftAddAvg(1,2);                 // 1    43 - 86   sub-bass
       fftCalc[ 1] = fftAddAvg(2,3);                 // 1    86 - 129  bass
       fftCalc[ 2] = fftAddAvg(3,5);                 // 2   129 - 216  bass
@@ -396,10 +384,6 @@ void FFTcode(void * parameter)
       fftTime  = (fftTimeInMillis*3 + fftTime*7)/10; // smooth
     }
 #endif
-
-    // release second sample to volume reactive effects. 
-	  // Releasing a second sample now effectively doubles the "sample rate" 
-    micDataReal = maxSample2; // do we really need this? FFT now takes only about 2ms so no need for this
 
   } // for(;;)
 } // FFTcode()
@@ -816,9 +800,6 @@ class AudioReactive : public Usermod {
 
       audioSyncPacket transmitData;
       strncpy_P(transmitData.header, PSTR(UDP_SYNC_HEADER), 6);
-
-      //transmitData.sampleRaw   = volumeRaw;
-      //transmitData.sampleSmth  = volumeSmth;
       // transmit samples that were not modified by limitSampleDynamics()
       transmitData.sampleRaw   = (soundAgc) ? rawSampleAgc: sampleRaw;
       transmitData.sampleSmth  = (soundAgc) ? sampleAgc   : sampleAvg;
@@ -848,7 +829,6 @@ class AudioReactive : public Usermod {
     bool receiveAudioData()   // check & process new data. return TRUE in case that new audio data was received. 
     {
       if (!udpSyncConnected) return false;
-      //DEBUGSR_PRINTLN("Checking for UDP Microphone Packet");
       bool haveFreshData = false;
       size_t packetSize = fftUdp.parsePacket();
       if (packetSize > 5) {
@@ -891,7 +871,7 @@ class AudioReactive : public Usermod {
 
           my_magnitude  = fmaxf(receivedPacket->FFT_Magnitude, 0.0f);
           FFT_Magnitude = my_magnitude;
-          FFT_MajorPeak = constrain(receivedPacket->FFT_MajorPeak, 1.0f, 11050.0f);  // restrict value to range expected by effects
+          FFT_MajorPeak = constrain(receivedPacket->FFT_MajorPeak, 1.0f, 11025.0f);  // restrict value to range expected by effects
 
           //DEBUGSR_PRINTLN("Finished parsing UDP Sync Packet");
           haveFreshData = true;
@@ -1101,51 +1081,6 @@ class AudioReactive : public Usermod {
         if (volumeSmth < 1 ) my_magnitude = 0.001f;             // noise gate closed - mute
 
         limitSampleDynamics();  // optional - makes volumeSmth very smooth and fluent
-
-#if 0
-        /* currently this is _not_ working. Code relies on "musical note" symbol as second char of the effect name */
-        #error I told you its not working right now
-        // update WebServer UI
-        uint8_t knownMode = strip.getFirstSelectedSeg().mode; // 1st selected segment is more appropriate than main segment
-        if (lastMode != knownMode) { // only execute if mode changes
-          char lineBuffer[4];
-          extractModeName(knownMode, JSON_mode_names, lineBuffer, 3); // use of JSON_mode_names is deprecated, use nullptr
-          agcEffect = (lineBuffer[1] == 226 && lineBuffer[2] == 153); // && (lineBuffer[3] == 170 || lineBuffer[3] == 171 ) encoding of ♪ or ♫
-          // agcEffect = (lineBuffer[4] == 240 && lineBuffer[5] == 159 && lineBuffer[6] == 142 && lineBuffer[7] == 154 ); //encoding of 🎚 No clue why as not found here https://www.iemoji.com/view/emoji/918/objects/level-slider
-          lastMode = knownMode;
-        }
-
-        // update inputLevel Slider based on current AGC gain
-        if ((soundAgc>0) && agcEffect) {
-          unsigned long now_time = millis();    
-
-          // "user kick" feature - if user has moved the slider by at least 32 units, we "kick" AGC gain by 30% (up or down)
-          // only once in 3.5 seconds
-          if (   (lastMode == knownMode)
-              && (abs(last_user_inputLevel - inputLevel) > 31) 
-              && (now_time - last_kick_time > 3500)) {
-            if (last_user_inputLevel > inputLevel) multAgc *= 0.60; // down -> reduce gain
-            if (last_user_inputLevel < inputLevel) multAgc *= 1.50; // up -> increase gain
-            last_kick_time = now_time;
-          }
-
-          int new_user_inputLevel = 128.0f * multAgc;                                       // scale AGC multiplier so that "1" is at 128
-          if (multAgc > 1.0f) new_user_inputLevel = 128.0f * (((multAgc - 1.0f) / 4.0f) +1.0f); // compress range so we can show values up to 4
-          new_user_inputLevel = MIN(MAX(new_user_inputLevel, 0),255);
-
-          // update user interfaces - restrict frequency to avoid flooding UI's with small changes
-          if (( ((now_time - last_update_time > 3500) && (abs(new_user_inputLevel - inputLevel) >  2))    // small change - every 3.5 sec (max) 
-                ||((now_time - last_update_time > 2200) && (abs(new_user_inputLevel - inputLevel) > 15))    // medium change
-                ||((now_time - last_update_time > 1200) && (abs(new_user_inputLevel - inputLevel) > 31)))   // BIG change - every second
-            && !strip.isUpdating())                                                                       // don't interfere while strip is updating
-          {
-            inputLevel = new_user_inputLevel;           // change of least 3 units -> update user variable
-            updateInterfaces(CALL_MODE_WS_SEND);        // is this the correct way to notify UIs ? Yes says blazoncek
-            last_update_time = now_time;
-            last_user_inputLevel = new_user_inputLevel;
-          }
-        }
-#endif
       }
 
 
