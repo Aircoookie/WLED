@@ -822,7 +822,7 @@ function populateEffects()
 	});
 
 	for (let ef of effects) {
-		// WLEDSR: add slider and color control to setX (used by requestjson)
+		// WLEDSR: add slider and color control to setFX (used by requestjson)
 		let id = ef.id;
 		let nm = ef.name+" ";
 		let fd = "";
@@ -841,7 +841,7 @@ function populateEffects()
 					if (r.substring(0,2)=="fr") nm += "&#9835;"; // frequency effects
 				}
 			}
-			html += generateListItemHtml('fx',id,nm,'setX','',fd);
+			html += generateListItemHtml('fx',id,nm,'setFX','',fd);
 		}
 	}
 
@@ -1388,7 +1388,7 @@ function setEffectParameters(idx)
 		let top = parseInt(getComputedStyle(gId("sliders")).height);
 		top += 5;
 		let sel = d.querySelector('#fxlist .selected');
-		if (sel) sel.style.bottom = top + "px"; // we will need to remove this when unselected (in setX())
+		if (sel) sel.style.bottom = top + "px"; // we will need to remove this when unselected (in setFX())
 	},750);
 	// set html color items on/off
 	var cslLabel = '';
@@ -2069,24 +2069,15 @@ function tglFreeze(s=null)
 	requestJson(obj);
 }
 
-function setX(ind = null)
+function setFX(ind = null)
 {
 	if (ind === null) {
 		ind = parseInt(d.querySelector('#fxlist input[name="fx"]:checked').value);
 	} else {
 		d.querySelector(`#fxlist input[name="fx"][value="${ind}"]`).checked = true;
 	}
-/*
-	// this code also in updateSelectedFx
-	var selElement = d.querySelector('#fxlist .selected');
-	if (selElement) {
-		selElement.classList.remove('selected');
-		selElement.style.bottom = null; // remove element style added in slider handling
-	}
 
-	d.querySelector(`#fxlist .lstI[data-id="${ind}"]`).classList.add('selected');
-*/
-	var obj = {"seg": {"fx": parseInt(ind)}};
+	var obj = {"seg": {"fx": parseInt(ind),"fxdef":1}}; // fxdef sets effect parameters to default values, TODO add client setting
 	requestJson(obj);
 }
 
@@ -2097,13 +2088,7 @@ function setPalette(paletteId = null)
 	} else {
 		d.querySelector(`#pallist input[name="palette"][value="${paletteId}"]`).checked = true;
 	}
-/*
-	var selElement = d.querySelector('#pallist .selected');
-	if (selElement) {
-		selElement.classList.remove('selected')
-	}
-	d.querySelector(`#pallist .lstI[data-id="${paletteId}"]`).classList.add('selected');
-*/
+
 	var obj = {"seg": {"pal": paletteId}};
 	requestJson(obj);
 }
