@@ -173,7 +173,6 @@ void FFTcode(void * parameter)
 
   // see https://www.freertos.org/vtaskdelayuntil.html
   const TickType_t xFrequency = FFT_MIN_CYCLE * portTICK_PERIOD_MS;  
-  //const TickType_t xFrequency_2 = (FFT_MIN_CYCLE * portTICK_PERIOD_MS) / 2;
 
   for(;;) {
     TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -208,8 +207,8 @@ void FFTcode(void * parameter)
 	    if ((vReal[i] <= (INT16_MAX - 1024)) && (vReal[i] >= (INT16_MIN + 1024)))  //skip extreme values - normally these are artefacts
         if (fabsf((float)vReal[i]) > maxSample) maxSample = fabsf((float)vReal[i]);
     }
-    // release sample to volume reactive effects
-    micDataReal = maxSample;  // doing this early allows filters (getSample() and agcAvg()) to run on latest values - we'll have up-to-date gain and noise gate values when FFT is done
+    // release sample to volume reactive effects (not really necessary as float FFT calculation takes only 2ms)
+    micDataReal = maxSample;
 
     // run FFT
 #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
@@ -228,10 +227,6 @@ void FFTcode(void * parameter)
     FFT.Compute( FFT_FORWARD );                             // Compute FFT
     FFT.ComplexToMagnitude();                               // Compute magnitudes
 #endif
-    //
-    // vReal[3 .. 255] contain useful data, each a 20Hz interval (60Hz - 5120Hz).
-    // There could be interesting data at bins 0 to 2, but there are too many artifacts.
-    //
 
 #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
     FFT.majorPeak(FFT_MajorPeak, FFT_Magnitude);                // let the effects know which freq was most dominant
@@ -240,9 +235,9 @@ void FFTcode(void * parameter)
 #endif
     FFT_MajorPeak = constrain(FFT_MajorPeak, 1.0f, 11025.0f);   // restrict value to range expected by effects
 
-    for (int i = 0; i < samplesFFT_2; i++) {           // Values for bins 0 and 1 are WAY too large. Might as well start at 3.
+    for (int i = 0; i < samplesFFT_2; i++) {          // Values for bins 0 and 1 are WAY too large. Might as well start at 3.
       float t = fabsf(vReal[i]);                      // just to be sure - values in fft bins should be positive any way
-      fftBin[i] = t / 16.0f;                         // Reduce magnitude. Want end result to be linear and ~4096 max.
+      fftBin[i] = t / 16.0f;                          // Reduce magnitude. Want end result to be linear and ~4096 max.
     } // for()
 
 
@@ -294,7 +289,6 @@ void FFTcode(void * parameter)
       fftCalc[15] = fftAddAvg(165,215) * 0.70f;     // 50 7106 - 9259 high             -- with some damping
       // don't use the last bins from 216 to 255. They are usually contaminated by aliasing (aka noise) 
 #endif
-
     } else {  // noise gate closed
       for (int i=0; i < 16; i++) {
         //fftCalc[i] *= 0.82f;  // decay to zero
@@ -316,7 +310,7 @@ void FFTcode(void * parameter)
 
       // smooth results - rise fast, fall slower
       if(fftCalc[i] > fftAvg[i])   // rise fast 
-        fftAvg[i]    = fftCalc[i] *0.75f + 0.25f*fftAvg[i];  // will need approx 2 cycles (50ms) for converging against fftCalc[i]
+        fftAvg[i] = fftCalc[i] *0.75f + 0.25f*fftAvg[i];  // will need approx 2 cycles (50ms) for converging against fftCalc[i]
       else {                       // fall slow
         if (decayTime < 1000) fftAvg[i] = fftCalc[i]*0.22f + 0.78f*fftAvg[i];       // approx  5 cycles (225ms) for falling to zero
         else if (decayTime < 2000) fftAvg[i] = fftCalc[i]*0.17f + 0.83f*fftAvg[i];  // default - approx  9 cycles (225ms) for falling to zero
@@ -336,29 +330,27 @@ void FFTcode(void * parameter)
       switch (FFTScalingMode) {
         case 1:
             // Logarithmic scaling
-            currentResult *= 0.42; // 42 is the answer ;-)
-            currentResult -= 8.0; // this skips the lowest row, giving some room for peaks
-            if (currentResult > 1.0) 
-              currentResult = logf(currentResult); // log to base "e", which is the fastest log() function
-            else currentResult = 0.0;              // special handling, because log(1) = 0; log(0) = undefined
-            currentResult *= 0.85f + (float(i)/18.0f); // extra up-scaling for high frequencies
+            currentResult *= 0.42;                      // 42 is the answer ;-)
+            currentResult -= 8.0;                       // this skips the lowest row, giving some room for peaks
+            if (currentResult > 1.0) currentResult = logf(currentResult); // log to base "e", which is the fastest log() function
+            else currentResult = 0.0;                   // special handling, because log(1) = 0; log(0) = undefined
+            currentResult *= 0.85f + (float(i)/18.0f);  // extra up-scaling for high frequencies
             currentResult = mapf(currentResult, 0, LOG_256, 0, 255); // map [log(1) ... log(255)] to [0 ... 255]
         break;
         case 2:
             // Linear scaling
-            currentResult *= 0.30f;                    // needs a bit more damping, get stay below 255
-            currentResult -= 4.0;                      // giving a bit more room for peaks
+            currentResult *= 0.30f;                     // needs a bit more damping, get stay below 255
+            currentResult -= 4.0;                       // giving a bit more room for peaks
             if (currentResult < 1.0f) currentResult = 0.0f;
-            currentResult *= 0.85f + (float(i)/1.8f); // extra up-scaling for high frequencies
+            currentResult *= 0.85f + (float(i)/1.8f);   // extra up-scaling for high frequencies
         break;
         case 3:
             // square root scaling
             currentResult *= 0.38f;
             currentResult -= 6.0f;
-            if (currentResult > 1.0) 
-              currentResult = sqrtf(currentResult);
-            else currentResult = 0.0;               // special handling, because sqrt(0) = undefined
-            currentResult *= 0.85f + (float(i)/4.5f); // extra up-scaling for high frequencies
+            if (currentResult > 1.0) currentResult = sqrtf(currentResult);
+            else currentResult = 0.0;                   // special handling, because sqrt(0) = undefined
+            currentResult *= 0.85f + (float(i)/4.5f);   // extra up-scaling for high frequencies
             currentResult = mapf(currentResult, 0.0, 16.0, 0.0, 255.0); // map [sqrt(1) ... sqrt(256)] to [0 ... 255]
         break;
 
@@ -394,7 +386,7 @@ class AudioReactive : public Usermod {
 
   private:
     #ifndef AUDIOPIN
-    int8_t audioPin = 36;
+    int8_t audioPin = -1;
     #else
     int8_t audioPin = AUDIOPIN;
     #endif
@@ -615,7 +607,6 @@ class AudioReactive : public Usermod {
 
         if((fabs(sampleReal) < 2.0f) || (sampleMax < 1.0f)) {
           // MIC signal is "squelched" - deliver silence
-          //multAgcTemp = multAgc;          // keep old control value (no change)
           tmpAgc = 0;
           // we need to "spin down" the intgrated error buffer
           if (fabs(control_integrated) < 0.01)  control_integrated  = 0.0;
@@ -623,27 +614,26 @@ class AudioReactive : public Usermod {
         } else {
           // compute new setpoint
           if (tmpAgc <= agcTarget0Up[AGC_preset])
-            multAgcTemp = agcTarget0[AGC_preset] / sampleMax;  // Make the multiplier so that sampleMax * multiplier = first setpoint
+            multAgcTemp = agcTarget0[AGC_preset] / sampleMax;   // Make the multiplier so that sampleMax * multiplier = first setpoint
           else
-            multAgcTemp = agcTarget1[AGC_preset] / sampleMax;  // Make the multiplier so that sampleMax * multiplier = second setpoint
+            multAgcTemp = agcTarget1[AGC_preset] / sampleMax;   // Make the multiplier so that sampleMax * multiplier = second setpoint
         }
         // limit amplification
-        //multAgcTemp = constrain(multAgcTemp, 0.015625f, 32.0f); // 1/64 < multAgcTemp < 32
         if (multAgcTemp > 32.0f)      multAgcTemp = 32.0f;
         if (multAgcTemp < 1.0f/64.0f) multAgcTemp = 1.0f/64.0f;
 
         // compute error terms
         control_error = multAgcTemp - lastMultAgc;
         
-        if (((multAgcTemp > 0.085f) && (multAgcTemp < 6.5f))        //integrator anti-windup by clamping
-            && (multAgc*sampleMax < agcZoneStop[AGC_preset]))       //integrator ceiling (>140% of max)
-          control_integrated += control_error * 0.002 * 0.25;     // 2ms = intgration time; 0.25 for damping
+        if (((multAgcTemp > 0.085f) && (multAgcTemp < 6.5f))    //integrator anti-windup by clamping
+            && (multAgc*sampleMax < agcZoneStop[AGC_preset]))   //integrator ceiling (>140% of max)
+          control_integrated += control_error * 0.002 * 0.25;   // 2ms = intgration time; 0.25 for damping
         else
-          control_integrated *= 0.9;                              // spin down that beasty integrator
+          control_integrated *= 0.9;                            // spin down that beasty integrator
 
         // apply PI Control 
-        tmpAgc = sampleReal * lastMultAgc;              // check "zone" of the signal using previous gain
-        if ((tmpAgc > agcZoneHigh[AGC_preset]) || (tmpAgc < soundSquelch + agcZoneLow[AGC_preset])) {                  // upper/lower emergy zone
+        tmpAgc = sampleReal * lastMultAgc;                      // check "zone" of the signal using previous gain
+        if ((tmpAgc > agcZoneHigh[AGC_preset]) || (tmpAgc < soundSquelch + agcZoneLow[AGC_preset])) {  // upper/lower emergy zone
           multAgcTemp = lastMultAgc + agcFollowFast[AGC_preset] * agcControlKp[AGC_preset] * control_error;
           multAgcTemp += agcFollowFast[AGC_preset] * agcControlKi[AGC_preset] * control_integrated;
         } else {                                                                         // "normal zone"
@@ -672,9 +662,6 @@ class AudioReactive : public Usermod {
         sampleAgc =  0.5f * tmpAgc + 0.5f * sampleAgc;    // fast path to zero
       else
         sampleAgc += agcSampleSmooth[AGC_preset] * (tmpAgc - sampleAgc); // smooth path
-
-      //userVar0 = sampleAvg * 4;
-      //if (userVar0 > 255) userVar0 = 255;
 
       last_soundAgc = soundAgc;
     } // agcAvg()
@@ -711,7 +698,7 @@ class AudioReactive : public Usermod {
       micLev = ((micLev * 8191.0f) + micDataReal) / 8192.0f;                // takes a few seconds to "catch up" with the Mic Input
       if(micIn < micLev) micLev = ((micLev * 31.0f) + micDataReal) / 32.0f; // align MicLev to lowest input signal
 
-      micIn -= micLev;                                // Let's center it to 0 now
+      micIn -= micLev;                                  // Let's center it to 0 now
       // Using an exponential filter to smooth out the signal. We'll add controls for this in a future release.
       float micInNoDC = fabs(micDataReal - micLev);
       expAdjF = (weighting * micInNoDC + (1.0-weighting) * expAdjF);
@@ -725,12 +712,12 @@ class AudioReactive : public Usermod {
       sampleAdj = tmpSample * sampleGain / 40.0f * inputLevel/128.0f + tmpSample / 16.0f; // Adjust the gain. with inputLevel adjustment
       sampleReal = tmpSample;
 
-      sampleAdj = fmax(fmin(sampleAdj, 255), 0);           // Question: why are we limiting the value to 8 bits ???
-      sampleRaw = (int16_t)sampleAdj;                         // ONLY update sample ONCE!!!!
+      sampleAdj = fmax(fmin(sampleAdj, 255), 0);        // Question: why are we limiting the value to 8 bits ???
+      sampleRaw = (int16_t)sampleAdj;                   // ONLY update sample ONCE!!!!
 
       // keep "peak" sample, but decay value if current sample is below peak
       if ((sampleMax < sampleReal) && (sampleReal > 0.5f)) {
-        sampleMax = sampleMax + 0.5f * (sampleReal - sampleMax);          // new peak - with some filtering
+        sampleMax = sampleMax + 0.5f * (sampleReal - sampleMax);  // new peak - with some filtering
       } else {
         if ((multAgc*sampleMax > agcZoneStop[AGC_preset]) && (soundAgc > 0))
           sampleMax += 0.5f * (sampleReal - sampleMax);        // over AGC Zone - get back quickly
@@ -751,13 +738,12 @@ class AudioReactive : public Usermod {
       //if (userVar1 == 0) samplePeak = 0;
 
       // Poor man's beat detection by seeing if sample > Average + some value.
-      //  if (sample > (sampleAvg + maxVol) && millis() > (timeOfPeak + 200)) {
-      if ((maxVol > 0) && (binNum > 1) && (fftBin[binNum] > maxVol) && (millis() > (timeOfPeak + 100))) {    // This goes through ALL of the 255 bins - but ignores stupid settings
-      // Then we got a peak, else we don't. The peak has to time out on its own in order to support UDP sound sync.
+      if ((maxVol > 0) && (binNum > 1) && (fftBin[binNum] > maxVol) && (millis() > (timeOfPeak + 100))) {
+        // This goes through ALL of the 255 bins - but ignores stupid settings
+        // Then we got a peak, else we don't. The peak has to time out on its own in order to support UDP sound sync.
         samplePeak    = true;
         timeOfPeak    = millis();
         udpSamplePeak = true;
-        //userVar1      = samplePeak;
       }
     } // getSample()
 
@@ -771,7 +757,7 @@ class AudioReactive : public Usermod {
       static unsigned long last_time = 0;
       static float last_volumeSmth = 0.0f;
 
-      if(limiterOn == false) return;
+      if (limiterOn == false) return;
 
       long delta_time = millis() - last_time;
       delta_time = constrain(delta_time , 1, 1000); // below 1ms -> 1ms; above 1sec -> sily lil hick-up
@@ -1043,7 +1029,7 @@ class AudioReactive : public Usermod {
 
       if (audioSyncEnabled & 0x02) disableSoundProcessing = true;   // make sure everything is disabled IF in audio Receive mode
       if (audioSyncEnabled & 0x01) disableSoundProcessing = false;  // keep running audio IF we're in audio Transmit mode
-      if(!audioSource->isInitialized()) disableSoundProcessing = true;  // no audio source
+      if (!audioSource->isInitialized()) disableSoundProcessing = true;  // no audio source
 
 
       // Only run the sampling code IF we're not in Receive mode or realtime mode
@@ -1070,7 +1056,7 @@ class AudioReactive : public Usermod {
           agcAvg(t_now - userloopDelay);      // Calculated the PI adjusted value as sampleAvg
           userloopDelay -= 2;                 // advance "simulated time" by 2ms
         } while (userloopDelay > 0);
-        lastUMRun = t_now;                   // update time keeping
+        lastUMRun = t_now;                    // update time keeping
 
         // update samples for effects (raw, smooth) 
         volumeSmth = (soundAgc) ? sampleAgc   : sampleAvg;
@@ -1078,7 +1064,7 @@ class AudioReactive : public Usermod {
         // update FFTMagnitude, taking into account AGC amplification
         my_magnitude = FFT_Magnitude; // / 16.0f, 8.0f, 4.0f done in effects
         if (soundAgc) my_magnitude *= multAgc;
-        if (volumeSmth < 1 ) my_magnitude = 0.001f;             // noise gate closed - mute
+        if (volumeSmth < 1 ) my_magnitude = 0.001f;  // noise gate closed - mute
 
         limitSampleDynamics();  // optional - makes volumeSmth very smooth and fluent
       }
@@ -1239,61 +1225,62 @@ class AudioReactive : public Usermod {
           uiDomString += F(" /><div class=\"sliderdisplay\"></div></div></div>"); //<output class=\"sliderbubble\"></output>
           infoArr.add(uiDomString);
         } 
-        //else infoArr.add("<br/> <div>&nbsp;</div>");   // no processing - add empty line
+
+        // The following can be used for troubleshooting user errors and is so not enclosed in #ifdef WLED_DEBUG
 
         // current Audio input
         infoArr = user.createNestedArray(F("Audio Source"));
         if (audioSyncEnabled & 0x02) {
-            // UDP sound sync - receive mode
-            infoArr.add("UDP sound sync");
-            if (udpSyncConnected) {
-              if (millis() - last_UDPTime < 2500)
-                infoArr.add(" - receiving");
-              else
-                infoArr.add(" - idle");
-            } else {
-              infoArr.add(" - no connection");
-            }
+          // UDP sound sync - receive mode
+          infoArr.add(F("UDP sound sync"));
+          if (udpSyncConnected) {
+            if (millis() - last_UDPTime < 2500)
+              infoArr.add(F(" - receiving"));
+            else
+              infoArr.add(F(" - idle"));
+          } else {
+            infoArr.add(F(" - no connection"));
+          }
         } else {
           // Analog or I2S digital input
           if (audioSource && (audioSource->isInitialized())) {
-              // audio source sucessfully configured
-              if(audioSource->getType() == AudioSource::Type_I2SAdc) {
-                infoArr.add("ADC analog");
-              } else {
-                infoArr.add("I2S digital");
-              }
-              // input level or "silence"
-              if (maxSample5sec > 1.0) {
-                float my_usage = 100.0f * (maxSample5sec / 255.0f);
-                snprintf(myStringBuffer, 15, " - peak %3d%%", int(my_usage));
-                infoArr.add(myStringBuffer);
-              } else {
-                infoArr.add(" -    quiet");
-              }
+            // audio source sucessfully configured
+            if (audioSource->getType() == AudioSource::Type_I2SAdc) {
+              infoArr.add(F("ADC analog"));
+            } else {
+              infoArr.add(F("I2S digital"));
+            }
+            // input level or "silence"
+            if (maxSample5sec > 1.0) {
+              float my_usage = 100.0f * (maxSample5sec / 255.0f);
+              snprintf_P(myStringBuffer, 15, PSTR(" - peak %3d%%"), int(my_usage));
+              infoArr.add(myStringBuffer);
+            } else {
+              infoArr.add(F(" - quiet"));
+            }
           } else {
-              // error during audio source setup
-              infoArr.add("not initialized");
-              infoArr.add(" - check GPIO config");
+            // error during audio source setup
+            infoArr.add(F("not initialized"));
+            infoArr.add(F(" - check GPIO config"));
           }
         }
 
         // Sound processing (FFT and input filters)
         infoArr = user.createNestedArray(F("Sound Processing"));
         if (audioSource && (disableSoundProcessing == false)) {
-              infoArr.add("running");
+          infoArr.add(F("running"));
         } else {
-            infoArr.add("suspended");
+          infoArr.add(F("suspended"));
         }
 
         // AGC or manual Gain
-        if((soundAgc==0) && (disableSoundProcessing == false) && !(audioSyncEnabled & 0x02)) {
+        if ((soundAgc==0) && (disableSoundProcessing == false) && !(audioSyncEnabled & 0x02)) {
           infoArr = user.createNestedArray(F("Manual Gain"));
           float myGain = ((float)sampleGain/40.0f * (float)inputLevel/128.0f) + 1.0f/16.0f;     // non-AGC gain from presets
           infoArr.add(roundf(myGain*100.0f) / 100.0f);
           infoArr.add("x");
         }
-        if(soundAgc && (disableSoundProcessing == false) && !(audioSyncEnabled & 0x02)) {
+        if (soundAgc && (disableSoundProcessing == false) && !(audioSyncEnabled & 0x02)) {
           infoArr = user.createNestedArray(F("AGC Gain"));
           infoArr.add(roundf(multAgc*100.0f) / 100.0f);
           infoArr.add("x");
@@ -1302,15 +1289,14 @@ class AudioReactive : public Usermod {
         // UDP Sound Sync status
         infoArr = user.createNestedArray(F("UDP Sound Sync"));
         if (audioSyncEnabled) {
-            if (audioSyncEnabled & 0x01) {
-              infoArr.add("send mode");
-            } else if (audioSyncEnabled & 0x02) {
-                infoArr.add("receive mode");
-            }
+          if (audioSyncEnabled & 0x01) {
+            infoArr.add(F("send mode"));
+          } else if (audioSyncEnabled & 0x02) {
+              infoArr.add(F("receive mode"));
+          }
         } else
-            infoArr.add("off");
+          infoArr.add("off");
         if (audioSyncEnabled && !udpSyncConnected) infoArr.add(" <i>(unconnected)</i>");
-        //if (!udpSyncConnected) infoArr.add(" <i>(unconnected)</i>");
 
         #ifdef WLED_DEBUG
         infoArr = user.createNestedArray(F("Sampling time"));
