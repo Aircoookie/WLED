@@ -2826,7 +2826,7 @@ uint16_t mode_bouncing_balls(void) {
   
   // number of balls based on intensity setting to max of 7 (cycles colors)
   // non-chosen color is a random color
-  uint8_t numBalls = int(((SEGMENT.intensity * (maxNumBalls - 0.8f)) / 255) + 1);
+  uint16_t numBalls = int(((SEGMENT.intensity * (maxNumBalls - 0.8f)) / 255) + 1);
   
   float gravity                           = -9.81; // standard value of gravity
   float impactVelocityStart               = sqrt( -2 * gravity);
@@ -2848,7 +2848,7 @@ uint16_t mode_bouncing_balls(void) {
     if (balls[i].height < 0) { //start bounce
       balls[i].height = 0;
       //damping for better effect using multiple balls
-      float dampening = 0.90 - float(i)/(float(numBalls) * float(numBalls));                   // avoid use pow(x, 2) - its extremely slow !
+      float dampening = 0.90 - float(i)/float(numBalls * numBalls); // avoid use pow(x, 2) - its extremely slow !
       balls[i].impactVelocity = dampening * balls[i].impactVelocity;
       balls[i].lastBounceTime = time;
 
