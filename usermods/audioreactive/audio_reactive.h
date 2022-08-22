@@ -189,6 +189,7 @@ void FFTcode(void * parameter)
     uint64_t start = esp_timer_get_time();
 #endif
 
+    // get a fresh batch of samples from I2S
     if (audioSource) audioSource->getSamples(vReal, samplesFFT);
 
 #ifdef WLED_DEBUG
@@ -198,7 +199,7 @@ void FFTcode(void * parameter)
     }
 #endif
 
-    //const int halfSamplesFFT = samplesFFT / 2;      // samplesFFT divided by 2
+    // find highest sample in the batch
     float maxSample = 0.0f;                         // max sample from FFT batch
     for (int i=0; i < samplesFFT; i++) {
 	    // set imaginary parts to 0
@@ -207,10 +208,11 @@ void FFTcode(void * parameter)
 	    if ((vReal[i] <= (INT16_MAX - 1024)) && (vReal[i] >= (INT16_MIN + 1024)))  //skip extreme values - normally these are artefacts
         if (fabsf((float)vReal[i]) > maxSample) maxSample = fabsf((float)vReal[i]);
     }
-    // release sample to volume reactive effects (not really necessary as float FFT calculation takes only 2ms)
+    // release highest sample to volume reactive effects early - not strictly necessary here - could also be done at the end of the function
+    // early release allows the filters (getSample() and agcAvg()) to work with fresh values - we will have matching gain and noise gate values when we want to process the FFT results.    micDataReal = maxSample;
     micDataReal = maxSample;
 
-    // run FFT
+    // run FFT (takes 3-5ms on ESP32)
 #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
     FFT.dcRemoval();                                            // remove DC offset
     FFT.windowing( FFTWindow::Flat_top, FFTDirection::Forward); // Weigh data using "Flat Top" function - better amplitude accuracy
@@ -240,7 +242,7 @@ void FFTcode(void * parameter)
       fftBin[i] = t / 16.0f;                          // Reduce magnitude. Want end result to be linear and ~4096 max.
     } // for()
 
-
+    // mapping of FFT result bins to frequency channels
     if (sampleAvg > 1) { // noise gate open
 #if 0
     /* This FFT post processing is a DIY endeavour. What we really need is someone with sound engineering expertise to do a great job here AND most importantly, that the animations look GREAT as a result.
@@ -289,14 +291,14 @@ void FFTcode(void * parameter)
       fftCalc[15] = fftAddAvg(165,215) * 0.70f;     // 50 7106 - 9259 high             -- with some damping
       // don't use the last bins from 216 to 255. They are usually contaminated by aliasing (aka noise) 
 #endif
-    } else {  // noise gate closed
+    } else {  // noise gate closed - just decay old values
       for (int i=0; i < 16; i++) {
-        //fftCalc[i] *= 0.82f;  // decay to zero
         fftCalc[i] *= 0.85f;  // decay to zero
         if (fftCalc[i] < 4.0f) fftCalc[i] = 0.0f;
       }
     }
 
+    // post-processing of frequency channels (pink noise adjustment, AGC, smooting, scaling)
     for (int i=0; i < 16; i++) {
 
       if (sampleAvg > 1) { // noise gate open
@@ -304,7 +306,7 @@ void FFTcode(void * parameter)
         fftCalc[i] *= fftResultPink[i];
         if (FFTScalingMode > 0) fftCalc[i] *= FFT_DOWNSCALE;  // adjustment related to FFT windowing function
         // Manual linear adjustment of gain using sampleGain adjustment for different input types.
-        fftCalc[i] *= soundAgc ? multAgc : ((float)sampleGain/40.0f * (float)inputLevel/128.0f + 1.0f/16.0f); //with inputLevel adjustment
+        fftCalc[i] *= soundAgc ? multAgc : ((float)sampleGain/40.0f * (float)inputLevel/128.0f + 1.0f/16.0f); //apply gain, with inputLevel adjustment
         if(fftCalc[i] < 0) fftCalc[i] = 0;
       }
 
