@@ -1043,7 +1043,10 @@ function updateLen(s)
 			if (sE) {
 				let sN = sE.querySelector(".lstIname").innerText;
 				let seg = gId(`seg${s}map2D`);
-				if (seg && sN.indexOf("\u25A6")<0) seg.classList.remove("hide"); else seg.classList.add("hide");
+				if (seg) {
+					if (sN.indexOf("\u25A6")<0) seg.classList.remove("hide");
+					else seg.classList.add("hide");
+				}
 			}
 		}
 	}
