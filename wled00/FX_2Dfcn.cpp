@@ -150,7 +150,7 @@ uint16_t IRAM_ATTR Segment::XY(uint16_t x, uint16_t y) {
 void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
 {
   if (!strip.isMatrix) return; // not a matrix set-up
-  if (x >= virtualWidth() || y >= virtualHeight()) return;  // if pixel would fall out of virtual segment just exit
+  if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return;  // if pixel would fall out of virtual segment just exit
 
   if (leds) leds[XY(x,y)] = col;
 
