@@ -442,11 +442,16 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         break;
       case M12_Circle:
         // expand in circular fashion from center
-        for (float degrees = 0.0f; degrees <= 90.0f; degrees += 89.99f / (sqrtf((float)max(vH,vW))*i+1)) { // this may prove too many iterations on larger matrices
-          // may want to try float version as well (with or without antialiasing)
-          int x = roundf(sin_t(degrees*DEG_TO_RAD) * i);
-          int y = roundf(cos_t(degrees*DEG_TO_RAD) * i);
-          setPixelColorXY(x, y, col);
+        if (i==0)
+          setPixelColorXY(0, 0, col);
+        else {
+          float step = HALF_PI / (2*i+1); // sqrtf((float)max(vH,vW))*i+1
+          for (float rad = 0.0f; rad <= HALF_PI; rad += step) {
+            // may want to try float version as well (with or without antialiasing)
+            int x = roundf(sin_t(rad) * i);
+            int y = roundf(cos_t(rad) * i);
+            setPixelColorXY(x, y, col);
+          }
         }
         break;
       case M12_Block:
@@ -455,9 +460,16 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         break;
     }
     return;
+  } else if (width()==1 && height()>1) {
+    // we have a vertical 1D segment
+    setPixelColorXY(0, i, col); // transpose
+  } else if (width()>1 && height()==1) {
+    // we have a horizontal 1D segment
+    setPixelColorXY(i, 0, col);
   }
 #endif
 
+  if (i >= virtualLength()) return;  // if pixel would fall out of segment just exit
   if (leds) leds[i] = col;
 
   uint16_t len = length();

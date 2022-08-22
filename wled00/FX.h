@@ -501,7 +501,7 @@ typedef struct Segment {
     inline bool     getOption(uint8_t n) const { return ((options >> n) & 0x01); }
     inline bool     isSelected(void)     const { return selected; }
     inline bool     isActive(void)       const { return stop > start; }
-    inline bool     is2D(void)           const { return !(startY == 0 && stopY == 1); }
+    inline bool     is2D(void)           const { return (width()>1 && height()>1); }
     inline uint16_t width(void)          const { return stop - start; }       // segment width in physical pixels (length if 1D)
     inline uint16_t height(void)         const { return stopY - startY; }     // segment height (if 2D) in physical pixels
     inline uint16_t length(void)         const { return width() * height(); } // segment length (count) in physical pixels
