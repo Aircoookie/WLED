@@ -460,12 +460,13 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         break;
     }
     return;
-  } else if (width()==1 && height()>1) {
-    // we have a vertical 1D segment
-    setPixelColorXY(0, i, col); // transpose
-  } else if (width()>1 && height()==1) {
-    // we have a horizontal 1D segment
-    setPixelColorXY(i, 0, col);
+  } else if (width()==1 || height()==1) {
+    int x = 0, y = 0;
+    // we have a vertical or horizontal 1D segment
+    if (height()>1) { y = i; }
+    if (width()>1 ) { x = i; }
+    if (transpose ) { int t = x; x = y; y = t; }
+    setPixelColorXY(x, y, col);
   }
 #endif
 

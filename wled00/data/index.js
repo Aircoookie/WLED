@@ -774,7 +774,7 @@ function populateSegments(s)
 		${!isM?rvXck:''}
 		${isM&&stoY-staY>1&&stoX-staX>1?map2D:''}
 		${s.AudioReactive && s.AudioReactive.on ? "" : sndSim}
-		<label class="check revchkl">
+		<label class="check revchkl" id="seg${i}lbtm">
 			${isM?'Transpose':'Mirror effect'}
 			<input type="checkbox" id="seg${i}${isM?'tp':'mi'}" onchange="${(isM?'setTp(':'setMi(')+i})" ${isM?(inst.tp?"checked":""):(inst.mi?"checked":"")}>
 			<span class="checkmark"></span>
@@ -1038,7 +1038,9 @@ function updateLen(s)
 		let startY = parseInt(gId(`seg${s}sY`).value);
 		let stopY = parseInt(gId(`seg${s}eY`).value);
 		len *= (stopY-(cfg.comp.seglen?0:startY));
+		let tPL = gId(`seg${s}lbtm`);
 		if (stop-start>1 && stopY-startY>1) {
+			tPL.classList.remove("hide");
 			let sE = gId('fxlist').querySelector(`.lstI[data-id="${selectedFx}"]`);
 			if (sE) {
 				let sN = sE.querySelector(".lstIname").innerText;
@@ -1048,6 +1050,9 @@ function updateLen(s)
 					else seg.classList.add("hide");
 				}
 			}
+		} else {
+			tPL.classList.add("hide");
+			gId(`seg${s}tp`).checked = false;
 		}
 	}
 	var out = "(delete)";
@@ -1982,6 +1987,7 @@ function setSeg(s)
 		var stopY = parseInt(gId(`seg${s}eY`).value);
 		obj.seg.startY = startY;
 		obj.seg.stopY = (cfg.comp.seglen?startY:0)+stopY;
+		obj.seg.tp = gId(`seg${s}tp`).checked;
 	}
 	if (gId(`seg${s}grp`)) {
 		var grp = parseInt(gId(`seg${s}grp`).value);

@@ -3574,7 +3574,8 @@ static const char _data_FX_MODE_PLASMA[] PROGMEM = "Plasma@Phase,;1,2,3;!;1d";
  */
 uint16_t mode_percent(void) {
 
-	uint8_t percent = MAX(0, MIN(200, SEGMENT.intensity));
+	uint8_t percent = SEGMENT.intensity;
+  percent = constrain(percent, 0, 200);
 	uint16_t active_leds = (percent < 100) ? SEGLEN * percent / 100.0
                                          : SEGLEN * (200 - percent) / 100.0;
   
@@ -4003,7 +4004,8 @@ static const char _data_FX_MODE_FLOW[] PROGMEM = "Flow@!,!;!,!,!;!;mp12=1,1d"; /
  */
 uint16_t mode_chunchun(void)
 {
-  SEGMENT.fill(SEGCOLOR(1));
+  //SEGMENT.fill(SEGCOLOR(1));
+  SEGMENT.fade_out(254);
   uint16_t counter = strip.now * (6 + (SEGMENT.speed >> 4));
   uint16_t numBirds = 2 + (SEGLEN >> 3);  // 2 + 1/8 of a segment
   uint16_t span = (SEGMENT.intensity << 8) / numBirds;
