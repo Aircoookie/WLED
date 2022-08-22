@@ -445,8 +445,8 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         if (i==0)
           setPixelColorXY(0, 0, col);
         else {
-          float step = HALF_PI / (2*i+1); // sqrtf((float)max(vH,vW))*i+1
-          for (float rad = 0.0f; rad <= HALF_PI; rad += step) {
+          float step = HALF_PI / (2*i);
+          for (float rad = 0.0f; rad <= HALF_PI+step/2; rad += step) {
             // may want to try float version as well (with or without antialiasing)
             int x = roundf(sin_t(rad) * i);
             int y = roundf(cos_t(rad) * i);
@@ -469,7 +469,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
   }
 #endif
 
-  if (i >= virtualLength()) return;  // if pixel would fall out of segment just exit
+  if (i >= virtualLength() || i<0) return;  // if pixel would fall out of segment just exit
   if (leds) leds[i] = col;
 
   uint16_t len = length();

@@ -219,6 +219,7 @@ void WLED::loop()
 
 #if WLED_WATCHDOG_TIMEOUT > 0
   // we finished our mainloop, reset the watchdog timer
+  if (!strip.isUpdating())
   #ifdef ARDUINO_ARCH_ESP32
     esp_task_wdt_reset();
   #else
@@ -279,8 +280,6 @@ void WLED::setup()
 #endif
   DEBUG_PRINT(F("heap "));
   DEBUG_PRINTLN(ESP.getFreeHeap());
-
-  enableWatchdog();
 
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
   if (psramFound()) {
@@ -405,6 +404,8 @@ void WLED::setup()
 
   // HTTP server page init
   initServer();
+
+  enableWatchdog();
 
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_DISABLE_BROWNOUT_DET)
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 1); //enable brownout detector
