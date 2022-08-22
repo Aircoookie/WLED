@@ -51,8 +51,8 @@
 
 #ifndef WLED_WATCHDOG_TIMEOUT
   // 3 seconds should be enough to detect a lockup
-  // define WLED_WATCHDOG_TIMEOUT=0 to disable watchdog
-  #define WLED_WATCHDOG_TIMEOUT 3
+  // define WLED_WATCHDOG_TIMEOUT=0 to disable watchdog, default
+  #define WLED_WATCHDOG_TIMEOUT 0
 #endif
 
 //optionally disable brownout detector on ESP32.
