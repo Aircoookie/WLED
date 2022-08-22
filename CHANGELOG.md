@@ -1,5 +1,11 @@
 ## WLED changelog
 
+### WLED release 0.13.3
+
+-   Version bump to v0.13.3 "Toki"
+-   Disable ESP watchdog by default (fixes flickering and boot issues on a fresh install)
+-   Added support for LPD6803
+
 ### WLED release 0.13.2
 
 #### Build 2208140
