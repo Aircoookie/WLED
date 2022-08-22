@@ -75,7 +75,7 @@ int8_t tristate_square8(uint8_t x, uint8_t pulsewidth, uint8_t attdec) {
  */
 uint16_t mode_static(void) {
   SEGMENT.fill(SEGCOLOR(0));
-  return /*(SEGMENT.getOption(SEG_OPTION_TRANSITIONAL)) ? FRAMETIME :*/ 350; //update faster if in transition
+  return 350;
 }
 static const char _data_FX_MODE_STATIC[] PROGMEM = "Solid";
 
@@ -2842,12 +2842,13 @@ uint16_t mode_bouncing_balls(void) {
   
   for (size_t i = 0; i < numBalls; i++) {
     float timeSinceLastBounce = (time - balls[i].lastBounceTime)/((255-SEGMENT.speed)*8/256 +1);
-    balls[i].height = 0.5 * gravity * pow(timeSinceLastBounce/1000 , 2.0) + balls[i].impactVelocity * timeSinceLastBounce/1000;
+    float timeSec = timeSinceLastBounce/1000.0f;
+    balls[i].height = 0.5 * gravity * (timeSec * timeSec) + balls[i].impactVelocity * timeSec; // avoid use pow(x, 2) - its extremely slow !
 
     if (balls[i].height < 0) { //start bounce
       balls[i].height = 0;
       //damping for better effect using multiple balls
-      float dampening = 0.90 - float(i)/pow(numBalls,2);
+      float dampening = 0.90 - float(i)/(float(numBalls) * float(numBalls));                   // avoid use pow(x, 2) - its extremely slow !
       balls[i].impactVelocity = dampening * balls[i].impactVelocity;
       balls[i].lastBounceTime = time;
 
@@ -2863,7 +2864,7 @@ uint16_t mode_bouncing_balls(void) {
       color = SEGCOLOR(i % NUM_COLORS);
     }
 
-    uint16_t pos = round(balls[i].height * (SEGLEN - 1));
+    uint16_t pos = roundf(balls[i].height * (SEGLEN - 1));
     SEGMENT.setPixelColor(pos, color);
   }
 
@@ -3986,7 +3987,7 @@ uint16_t mode_flow(void)
     {
       uint8_t colorIndex = (i * 255 / zoneLen) - counter;
       uint16_t led = (z & 0x01) ? i : (zoneLen -1) -i;
-      if (SEGMENT.getOption(SEG_OPTION_REVERSED)) led = (zoneLen -1) -led;
+      if (SEGMENT.reverse) led = (zoneLen -1) -led;
       SEGMENT.setPixelColor(pos + led, SEGMENT.color_from_palette(colorIndex, false, true, 255));
     }
   }
@@ -4927,7 +4928,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   SEGENV.aux1 = SEGENV.aux0;
   SEGENV.aux0 = crc;
 
-  return (SEGMENT.getOption(SEG_OPTION_TRANSITIONAL)) ? FRAMETIME : FRAMETIME_FIXED * (128-(SEGMENT.speed>>1)); // update only when appropriate time passes (in 42 FPS slots)
+  return FRAMETIME_FIXED * (128-(SEGMENT.speed>>1)); // update only when appropriate time passes (in 42 FPS slots)
 } // mode_2Dgameoflife()
 static const char _data_FX_MODE_2DGAMEOFLIFE[] PROGMEM = "Game Of Life@!,;!,!;!;2d";
 
@@ -5937,7 +5938,7 @@ static const char _data_FX_MODE_2DDRIFTROSE[] PROGMEM = "Drift Rose@Fade,Blur;;;
 
   uint8_t  *binNum = (uint8_t*)&SEGENV.aux1, *maxVol = (uint8_t*)(&SEGENV.aux1+1); // just in case assignment
   bool      samplePeak = false;
-  float     FFT_MajorPeak = 0.0;
+  float     FFT_MajorPeak = 1.0;
   uint8_t  *fftResult = nullptr;
   float    *fftBin = nullptr;
   um_data_t *um_data;
@@ -5956,6 +5957,21 @@ static const char _data_FX_MODE_2DDRIFTROSE[] PROGMEM = "Drift Rose@Fade,Blur;;;
     um_data = simulateSound(SEGMENT.soundSim);
   }
 */
+
+
+// a few constants needed for AudioReactive effects
+
+// for 22Khz sampling
+#define MAX_FREQUENCY   11025    // sample frequency / 2 (as per Nyquist criterion)
+#define MAX_FREQ_LOG10  4.04238f // log10(MAX_FREQUENCY)
+
+// for 20Khz sampling
+//#define MAX_FREQUENCY   10240
+//#define MAX_FREQ_LOG10  4.0103f
+
+// for 10Khz sampling
+//#define MAX_FREQUENCY   5120
+//#define MAX_FREQ_LOG10  3.71f
 
 
 /////////////////////////////////
@@ -6006,7 +6022,9 @@ uint16_t mode_ripplepeak(void) {                // * Ripple peak. By Andrew Tuli
       case 255:                                           // Initialize ripple variables.
         ripples[i].pos = random16(SEGLEN);
         #ifdef ESP32
+          if (FFT_MajorPeak > 1)                          // log10(0) is "forbidden" (throws exception)
           ripples[i].color = (int)(log10f(FFT_MajorPeak)*128);
+          else ripples[i].color = 0;
         #else
           ripples[i].color = random8();
         #endif
@@ -6707,7 +6725,7 @@ static const char _data_FX_MODE_DJLIGHT[] PROGMEM = "DJ Light@Speed;;;mp12=2,ssi
 ////////////////////
 uint16_t mode_freqmap(void) {                   // Map FFT_MajorPeak to SEGLEN. Would be better if a higher framerate.
   // Start frequency = 60 Hz and log10(60) = 1.78
-  // End frequency = 5120 Hz and lo10(5120) = 3.71
+  // End frequency = MAX_FREQUENCY in Hz and lo10(MAX_FREQUENCY) = MAX_FREQ_LOG10
 
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
@@ -6716,16 +6734,17 @@ uint16_t mode_freqmap(void) {                   // Map FFT_MajorPeak to SEGLEN. 
   }
   float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
   float   my_magnitude  = *(float*)   um_data->u_data[5] / 4.0f; 
+  if (FFT_MajorPeak < 1) FFT_MajorPeak = 1;                                         // log10(0) is "forbidden" (throws exception)
 
   SEGMENT.fade_out(SEGMENT.speed);
 
-//  int locn = (log10f((float)FFT_MajorPeak) - 1.78f) * (float)SEGLEN/(3.71f-1.78f);  // log10 frequency range is from 1.78 to 3.71. Let's scale to SEGLEN.
-  int locn = (log10f((float)FFT_MajorPeak) - 1.78f) * (float)SEGLEN/(4.0102f-1.78f);  // log10 frequency range is from 1.78 to 3.71. Let's scale to SEGLEN.
+  int locn = (log10f((float)FFT_MajorPeak) - 1.78f) * (float)SEGLEN/(MAX_FREQ_LOG10 - 1.78f);  // log10 frequency range is from 1.78 to 3.71. Let's scale to SEGLEN.
   if (locn < 1) locn = 0; // avoid underflow
 
   if (locn >=SEGLEN) locn = SEGLEN-1;
-  //uint16_t pixCol = (log10f(FFT_MajorPeak) - 1.78f) * 255.0f/(3.71f-1.78f);   // Scale log10 of frequency values to the 255 colour index.
-  uint16_t pixCol = (log10f(FFT_MajorPeak) - 1.78f) * 255.0f/(4.0102f-1.78f);   // Scale log10 of frequency values to the 255 colour index.
+  uint16_t pixCol = (log10f(FFT_MajorPeak) - 1.78f) * 255.0f/(MAX_FREQ_LOG10 - 1.78f);   // Scale log10 of frequency values to the 255 colour index.
+  if (FFT_MajorPeak < 61.0f) pixCol = 0;                                                 // handle underflow
+
   uint16_t bright = (int)my_magnitude;
 
   SEGMENT.setPixelColor(locn, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(SEGMENT.intensity+pixCol, false, PALETTE_SOLID_WRAP, 0), bright));
@@ -6764,8 +6783,7 @@ uint16_t mode_freqmatrix(void) {                // Freqmatrix. By Andreas Plesch
 
     CRGB color = CRGB::Black;
 
-    //if (FFT_MajorPeak > 5120) FFT_MajorPeak = 0;
-    if (FFT_MajorPeak > 10240) FFT_MajorPeak = 0;
+    if (FFT_MajorPeak > MAX_FREQUENCY) FFT_MajorPeak = 1;
     // MajorPeak holds the freq. value which is most abundant in the last sample.
     // With our sampling rate of 10240Hz we have a usable freq range from roughtly 80Hz to 10240/2 Hz
     // we will treat everything with less than 65Hz as 0
@@ -6773,9 +6791,9 @@ uint16_t mode_freqmatrix(void) {                // Freqmatrix. By Andreas Plesch
     if (FFT_MajorPeak < 80) {
       color = CRGB::Black;
     } else {
-      int upperLimit = 20 * SEGMENT.custom2;
-      int lowerLimit = 2 * SEGMENT.custom1;
-      int i =  lowerLimit!=upperLimit ? map(FFT_MajorPeak, lowerLimit, upperLimit, 0, 255) : FFT_MajorPeak;
+      int upperLimit = 80 + 42 * SEGMENT.custom2;
+      int lowerLimit = 80 + 3 * SEGMENT.custom1;
+      uint8_t i =  lowerLimit!=upperLimit ? map(FFT_MajorPeak, lowerLimit, upperLimit, 0, 255) : FFT_MajorPeak;  // may under/overflow - so we enforce uint8_t
       uint16_t b = 255 * intensity;
       if (b > 255) b = 255;
       color = CHSV(i, 240, (uint8_t)b); // implicit conversion to RGB supplied by FastLED
@@ -6806,14 +6824,15 @@ uint16_t mode_freqpixels(void) {                // Freqpixel. By Andrew Tuline.
   }
   float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
   float   my_magnitude  = *(float*)  um_data->u_data[5] / 16.0f; 
+  if (FFT_MajorPeak < 1) FFT_MajorPeak = 1;                                         // log10(0) is "forbidden" (throws exception)
 
   uint16_t fadeRate = 2*SEGMENT.speed - SEGMENT.speed*SEGMENT.speed/255;    // Get to 255 as quick as you can.
   SEGMENT.fade_out(fadeRate);
 
   for (int i=0; i < SEGMENT.intensity/32+1; i++) {
     uint16_t locn = random16(0,SEGLEN);
-    //uint8_t pixCol = (log10f(FFT_MajorPeak) - 1.78) * 255.0/(3.71-1.78);  // Scale log10 of frequency values to the 255 colour index.
-    uint8_t pixCol = (log10f(FFT_MajorPeak) - 1.78f) * 255.0f/(4.0102f-1.78f);  // Scale log10 of frequency values to the 255 colour index.
+    uint8_t pixCol = (log10f(FFT_MajorPeak) - 1.78f) * 255.0f/(MAX_FREQ_LOG10 - 1.78f);  // Scale log10 of frequency values to the 255 colour index.
+    if (FFT_MajorPeak < 61.0f) pixCol = 0;                                               // handle underflow
     SEGMENT.setPixelColor(locn, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(SEGMENT.intensity+pixCol, false, PALETTE_SOLID_WRAP, 0), (int)my_magnitude));
   }
 
@@ -6863,8 +6882,7 @@ uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschun
 
     CRGB color = 0;
 
-    //if (FFT_MajorPeak > 5120) FFT_MajorPeak = 0.0f;
-    if (FFT_MajorPeak > 10240) FFT_MajorPeak = 0.0f;
+    if (FFT_MajorPeak > MAX_FREQUENCY) FFT_MajorPeak = 1.0f;
     // MajorPeak holds the freq. value which is most abundant in the last sample.
     // With our sampling rate of 10240Hz we have a usable freq range from roughtly 80Hz to 10240/2 Hz
     // we will treat everything with less than 65Hz as 0
@@ -6872,9 +6890,9 @@ uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschun
     if (FFT_MajorPeak < 80) {
       color = CRGB::Black;
     } else {
-      int upperLimit = 20 * SEGMENT.custom2;
-      int lowerLimit = 2 * SEGMENT.custom1;
-      int i =  lowerLimit!=upperLimit ? map(FFT_MajorPeak, lowerLimit, upperLimit, 0, 255) : FFT_MajorPeak;
+      int upperLimit = 80 + 42 * SEGMENT.custom2;
+      int lowerLimit = 80 + 3 * SEGMENT.custom1;
+      uint8_t i =  lowerLimit!=upperLimit ? map(FFT_MajorPeak, lowerLimit, upperLimit, 0, 255) : FFT_MajorPeak; // may under/overflow - so we enforce uint8_t
       uint16_t b = 255.0 * intensity;
       if (b > 255) b=255;
       color = CHSV(i, 240, (uint8_t)b); // implicit conversion to RGB supplied by FastLED
@@ -6908,8 +6926,9 @@ uint16_t mode_gravfreq(void) {                  // Gravfreq. By Andrew Tuline.
   }
   float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
   float   volumeSmth   = *(float*)   um_data->u_data[0];
+  if (FFT_MajorPeak < 1) FFT_MajorPeak = 1;                                         // log10(0) is "forbidden" (throws exception)
 
-  SEGMENT.fade_out(240);
+  SEGMENT.fade_out(250);
 
   float segmentSampleAvg = volumeSmth * (float)SEGMENT.intensity / 255.0;
   segmentSampleAvg *= 0.125; // divide by 8,  to compensate for later "sensitivty" upscaling
@@ -6921,7 +6940,7 @@ uint16_t mode_gravfreq(void) {                  // Gravfreq. By Andrew Tuline.
   for (int i=0; i<tempsamp; i++) {
 
     //uint8_t index = (log10((int)FFT_MajorPeak) - (3.71-1.78)) * 255; //int? shouldn't it be floor() or similar
-    uint8_t index = (log10f(FFT_MajorPeak) - (4.0102f-1.78f)) * 255; //int? shouldn't it be floor() or similar
+    uint8_t index = (log10f(FFT_MajorPeak) - (MAX_FREQ_LOG10 - 1.78f)) * 255; //int? shouldn't it be floor() or similar
 
     SEGMENT.setPixelColor(i+SEGLEN/2, SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0));
     SEGMENT.setPixelColor(SEGLEN/2-i-1, SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0));
@@ -6997,6 +7016,7 @@ uint16_t mode_rocktaves(void) {                 // Rocktaves. Same note from eac
   frTemp = fabs(frTemp * 2.1);                            // Fudge factors to compress octave range starting at 0 and going to 255;
 
   uint16_t i = map(beatsin8(8+octCount*4, 0, 255, 0, octCount*8), 0, 255, 0, SEGLEN-1);
+  i = constrain(i, 0, SEGLEN-1);
   SEGMENT.addPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette((uint8_t)frTemp, false, PALETTE_SOLID_WRAP, 0), volTemp));
 
   return FRAMETIME;
@@ -7022,6 +7042,8 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
   uint8_t *binNum       =  (uint8_t*)um_data->u_data[7];
   float   my_magnitude  = *(float*)   um_data->u_data[5] / 8.0f; 
 
+  if (FFT_MajorPeak < 1) FFT_MajorPeak = 1;                                         // log10(0) is "forbidden" (throws exception)
+
   if (SEGENV.call == 0) {
     SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
@@ -7037,7 +7059,9 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
   if (SEGENV.aux0 != secondHand) {                        // Triggered millis timing.
     SEGENV.aux0 = secondHand;
 
-    uint8_t pixCol = (log10f((float)FFT_MajorPeak) - 2.26f) * 177;  // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
+    //uint8_t pixCol = (log10f((float)FFT_MajorPeak) - 2.26f) * 177;  // 10Khz sampling - log10 frequency range is from 2.26 (182hz) to 3.7 (5012hz). Let's scale accordingly.
+    uint8_t pixCol = (log10f(FFT_MajorPeak) - 2.26f) * 150;           // 22Khz sampling - log10 frequency range is from 2.26 (182hz) to 3.967 (9260hz). Let's scale accordingly.
+    if (FFT_MajorPeak < 182.0f) pixCol = 0;                           // handle underflow
 
     if (samplePeak) {
       SEGMENT.setPixelColor(SEGLEN-1, CHSV(92,92,92));
@@ -7085,6 +7109,7 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
 
   for (int x=0; x < cols; x++) {
     uint8_t  band       = map(x, 0, cols-1, 0, NUM_BANDS - 1);
+    band = constrain(band, 0, 15);
     uint16_t colorIndex = band * 17;
     uint16_t barHeight  = map(fftResult[band], 0, 255, 0, rows); // do not subtract -1 from rows here
     if (barHeight > previousBarHeight[x]) previousBarHeight[x] = barHeight; //drive the peak up
@@ -7145,8 +7170,8 @@ uint16_t mode_2DFunkyPlank(void) {              // Written by ??? Adapted by Wil
     // display values of
     int b = 0;
     for (int band = 0; band < NUMB_BANDS; band += bandInc, b++) {
-      int hue = fftResult[band];
-      int v = map(fftResult[band], 0, 255, 10, 255);
+      int hue = fftResult[band % 16];
+      int v = map(fftResult[band % 16], 0, 255, 10, 255);
       for (int w = 0; w < barWidth; w++) {
          int xpos = (barWidth * b) + w;
          SEGMENT.setPixelColorXY(xpos, 0, CHSV(hue, 255, v));
@@ -7261,6 +7286,7 @@ uint16_t mode_2DAkemi(void) {
   if (um_data && fftResult) {
     for (int x=0; x < cols/8; x++) {
       uint16_t band = x * cols/8;
+      band = constrain(band, 0, 15);
       uint16_t barHeight = map(fftResult[band], 0, 255, 0, 17*rows/32);
       CRGB color = SEGMENT.color_from_palette((band * 35), false, PALETTE_SOLID_WRAP, 0);
 

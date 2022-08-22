@@ -275,12 +275,12 @@ class PWMFanUsermod : public Usermod {
           enabled = usermod[FPSTR(_enabled)].as<bool>();
           if (!enabled) updateFanSpeed(0);
         }
-        if (!usermod[FPSTR(_speed)].isNull() && usermod[FPSTR(_speed)].is<int>()) {
+        if (enabled && !usermod[FPSTR(_speed)].isNull() && usermod[FPSTR(_speed)].is<int>()) {
           pwmValuePct = usermod[FPSTR(_speed)].as<int>();
-          updateFanSpeed((MAX(0,MIN(100,pwmValuePct)) * 255) / 100);
+          updateFanSpeed((constrain(pwmValuePct,0,100) * 255) / 100);
           if (pwmValuePct) lockFan = true;
         }
-        if (!usermod[FPSTR(_lock)].isNull() && usermod[FPSTR(_lock)].is<bool>()) {
+        if (enabled && !usermod[FPSTR(_lock)].isNull() && usermod[FPSTR(_lock)].is<bool>()) {
           lockFan = usermod[FPSTR(_lock)].as<bool>();
         }
       }
