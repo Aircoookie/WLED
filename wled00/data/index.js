@@ -701,6 +701,10 @@ function populateSegments(s)
 			<div class="sliderdisplay"></div>
 		</div>
 	</div>`;
+		let staX = inst.start;
+		let stoX = inst.stop;
+		let staY = inst.startY;
+		let stoY = inst.stopY;
 		let rvXck = `<label class="check revchkl">Reverse ${isM?'':'direction'}<input type="checkbox" id="seg${i}rev" onchange="setRev(${i})" ${inst.rev?"checked":""}><span class="checkmark"></span></label>`;
 		let miXck = `<label class="check revchkl">Mirror<input type="checkbox" id="seg${i}mi" onchange="setMi(${i})" ${inst.mi?"checked":""}><span class="checkmark"></span></label>`;
 		let rvYck = "", miYck ="";
@@ -745,14 +749,14 @@ function populateSegments(s)
 			<td>${isM?'':'Offset'}</td>
 		</tr>
 		<tr>
-			<td><input class="noslide segn" id="seg${i}s" type="number" min="0" max="${(isM?mw:ledCount)-1}" value="${inst.start}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
-			<td><input class="noslide segn" id="seg${i}e" type="number" min="0" max="${(isM?mw:ledCount)-(cfg.comp.seglen?inst.start:0)}" value="${inst.stop-(cfg.comp.seglen?inst.start:0)}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
+			<td><input class="noslide segn" id="seg${i}s" type="number" min="0" max="${(isM?mw:ledCount)-1}" value="${staX}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
+			<td><input class="noslide segn" id="seg${i}e" type="number" min="0" max="${(isM?mw:ledCount)-(cfg.comp.seglen?staX:0)}" value="${stoX-(cfg.comp.seglen?staX:0)}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
 			<td style="text-align:revert;">${isM?miXck+'<br>'+rvXck:''}<input class="noslide segn ${isM?'hide':''}" id="seg${i}of" type="number" value="${inst.of}" oninput="updateLen(${i})"></td>
 		</tr>
 		${isM ? '<tr><td>Start Y</td><td>'+(cfg.comp.seglen?'Height':'Stop Y')+'</td><td></td></tr>'+
 		'<tr>'+
-			'<td><input class="noslide segn" id="seg'+i+'sY" type="number" min="0" max="'+(mh-1)+'" value="'+inst.startY+'" oninput="updateLen('+i+')" onkeydown="segEnter('+i+')"></td>'+
-			'<td><input class="noslide segn" id="seg'+i+'eY" type="number" min="0" max="'+(mh-(cfg.comp.seglen?inst.startY:0))+'" value="'+(inst.stopY-(cfg.comp.seglen?inst.startY:0))+'" oninput="updateLen('+i+')" onkeydown="segEnter('+i+')"></td>'+
+			'<td><input class="noslide segn" id="seg'+i+'sY" type="number" min="0" max="'+(mh-1)+'" value="'+staY+'" oninput="updateLen('+i+')" onkeydown="segEnter('+i+')"></td>'+
+			'<td><input class="noslide segn" id="seg'+i+'eY" type="number" min="0" max="'+(mh-(cfg.comp.seglen?staY:0))+'" value="'+(stoY-(cfg.comp.seglen?staY:0))+'" oninput="updateLen('+i+')" onkeydown="segEnter('+i+')"></td>'+
 			'<td style="text-align:revert;">'+miYck+'<br>'+rvYck+'</td>'+
 		'</tr>':''}
 		<tr>
@@ -768,7 +772,7 @@ function populateSegments(s)
 		</table>
 		<div class="h bp" id="seg${i}len"></div>
 		${!isM?rvXck:''}
-		${isM?map2D:''}
+		${isM&&stoY-staY>1&&stoX-staX>1?map2D:''}
 		${s.AudioReactive && s.AudioReactive.on ? "" : sndSim}
 		<label class="check revchkl">
 			${isM?'Transpose':'Mirror effect'}
@@ -1031,14 +1035,16 @@ function updateLen(s)
 	var stop = parseInt(gId(`seg${s}e`).value);
 	var len = stop - (cfg.comp.seglen?0:start);
 	if (isM) {
-		start = parseInt(gId(`seg${s}sY`).value);
-		stop = parseInt(gId(`seg${s}eY`).value);
-		len *= (stop-(cfg.comp.seglen?0:start));
-		let sE = gId('fxlist').querySelector(`.lstI[data-id="${selectedFx}"]`);
-		if (sE) {
-			let sN = sE.querySelector(".lstIname").innerText;
-			let seg = gId(`seg${s}map2D`);
-			if (stop-start>1 && sN.indexOf("\u25A6")<0) seg.classList.remove("hide"); else seg.classList.add("hide");
+		let startY = parseInt(gId(`seg${s}sY`).value);
+		let stopY = parseInt(gId(`seg${s}eY`).value);
+		len *= (stopY-(cfg.comp.seglen?0:startY));
+		if (stop-start>1 && stopY-startY>1) {
+			let sE = gId('fxlist').querySelector(`.lstI[data-id="${selectedFx}"]`);
+			if (sE) {
+				let sN = sE.querySelector(".lstIname").innerText;
+				let seg = gId(`seg${s}map2D`);
+				if (seg && sN.indexOf("\u25A6")<0) seg.classList.remove("hide"); else seg.classList.add("hide");
+			}
 		}
 	}
 	var out = "(delete)";
