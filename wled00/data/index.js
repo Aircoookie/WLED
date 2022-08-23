@@ -1811,9 +1811,9 @@ ${makePlSel(plJson[i].end?plJson[i].end:0, true)}
 	<span class="checkmark"></span>
 </label>`;
 		if (Array.isArray(lastinfo.maps) && lastinfo.maps.length>0) {
-			content += `<div class="sel">Ledmap:&nbsp;<select class="sel-p" id="p${i}lmp"><option value="">None</option>`;
+			content += `<div class="lbl-l">Ledmap:&nbsp;<div class="sel-p"><select class="sel-p" id="p${i}lmp"><option value="">None</option>`;
 			for (const k of (lastinfo.maps||[])) content += `<option value="${k}"${(i>0 && pJson[i].ledmap==k)?" selected":""}>${k}</option>`;
-			content += "</select></div>";
+			content += "</select></div></div>";
 		}
 	}
 
@@ -1851,6 +1851,10 @@ function makePUtil()
 	p.classList.remove('staybot');
 	p.classList.add('pres');
 	p.innerHTML = `<div class="presin expanded">${makeP(0)}</div>`;
+	let pTx = gId('p0txt');
+	pTx.focus();
+	pTx.value = eJson.find((o)=>{return o.id==selectedFx}).name;
+	pTx.select();
 	p.scrollIntoView({
 		behavior: 'smooth',
 		block: 'center'
@@ -1894,6 +1898,7 @@ function makePlUtil()
 	p.classList.remove('staybot');
 	p.innerHTML = `<div class="pres"><div class="segin expanded" id="seg100">${makeP(0,true)}</div></div>`;
 	refreshPlE(0);
+	gId('p0txt').focus();
 	p.scrollIntoView({
 		behavior: 'smooth',
 		block: 'center'
@@ -1921,7 +1926,11 @@ function tglCs(i)
 function tglSegn(s)
 {
 	let t = gId(s<100?`seg${s}t`:`p${s-100}txt`);
-	if (t) t.classList.toggle("show");
+	if (t) {
+		t.classList.toggle("show");
+		t.focus();
+		t.select();
+	}
 	event.preventDefault();
 	event.stopPropagation();
 }
