@@ -427,6 +427,8 @@ uint16_t Segment::virtualLength() const {
 
 void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
 {
+  if (i >= virtualLength() || i<0) return;  // if pixel would fall out of segment just exit
+
 #ifndef WLED_DISABLE_2D
   if (is2D()) { // if this does not work use strip.isMatrix
     uint16_t vH = virtualHeight();  // segment height in logical pixels
@@ -461,16 +463,15 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
     }
     return;
   } else if (width()==1 || height()==1) {
+    // we have a vertical or horizontal 1D segment (WARNING: virtual...() may be transposed)
     int x = 0, y = 0;
-    // we have a vertical or horizontal 1D segment
-    if (height()>1) { y = i; }
-    if (width()>1 ) { x = i; }
-    if (transpose ) { int t = x; x = y; y = t; }
+    if (virtualHeight()>1) y = i;
+    if (virtualWidth() >1) x = i;
     setPixelColorXY(x, y, col);
+    return;
   }
 #endif
 
-  if (i >= virtualLength() || i<0) return;  // if pixel would fall out of segment just exit
   if (leds) leds[i] = col;
 
   uint16_t len = length();

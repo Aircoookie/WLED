@@ -713,7 +713,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   pos = req.indexOf(F("SB=")); //Segment brightness/opacity
   if (pos > 0) {
     byte segbri = getNumVal(&req, pos);
-    selseg.on = segbri;
+    selseg.setOption(SEG_OPTION_ON, segbri); // use transition
     if (segbri) {
       selseg.setOpacity(segbri);
     }
@@ -722,9 +722,9 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   pos = req.indexOf(F("SW=")); //segment power
   if (pos > 0) {
     switch (getNumVal(&req, pos)) {
-      case 0:  selseg.on = false;      break;
-      case 1:  selseg.on = true;       break;
-      default: selseg.on = !selseg.on; break;
+      case 0:  selseg.setOption(SEG_OPTION_ON, false);      break; // use transition
+      case 1:  selseg.setOption(SEG_OPTION_ON, true);       break; // use transition
+      default: selseg.setOption(SEG_OPTION_ON, !selseg.on); break; // use transition
     }
   }
 

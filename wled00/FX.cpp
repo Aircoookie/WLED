@@ -4005,7 +4005,7 @@ static const char _data_FX_MODE_FLOW[] PROGMEM = "Flow@!,!;!,!,!;!;mp12=1,1d"; /
 uint16_t mode_chunchun(void)
 {
   //SEGMENT.fill(SEGCOLOR(1));
-  SEGMENT.fade_out(254);
+  SEGMENT.fade_out(254); // add a bit of trail
   uint16_t counter = strip.now * (6 + (SEGMENT.speed >> 4));
   uint16_t numBirds = 2 + (SEGLEN >> 3);  // 2 + 1/8 of a segment
   uint16_t span = (SEGMENT.intensity << 8) / numBirds;
@@ -4016,6 +4016,7 @@ uint16_t mode_chunchun(void)
     uint16_t megumin = sin16(counter) + 0x8000;
     uint16_t bird = uint32_t(megumin * SEGLEN) >> 16;
     uint32_t c = SEGMENT.color_from_palette((i * 255)/ numBirds, false, false, 0);  // no palette wrapping
+    bird = constrain(bird, 0, SEGLEN-1);
     SEGMENT.setPixelColor(bird, c);
   }
   return FRAMETIME;
@@ -4943,7 +4944,7 @@ uint16_t mode_2DHiphotic() {                        //  By: ldirko  https://edit
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-  const uint32_t a = strip.now / 8;
+  const uint32_t a = strip.now / ((SEGMENT.custom3>>1)+1);
 
   for (int x = 0; x < cols; x++) {
     for (int y = 0; y < rows; y++) {
@@ -4953,7 +4954,7 @@ uint16_t mode_2DHiphotic() {                        //  By: ldirko  https://edit
 
   return FRAMETIME;
 } // mode_2DHiphotic()
-static const char _data_FX_MODE_2DHIPHOTIC[] PROGMEM = "Hiphotic@X scale,Y scale;;!;2d";
+static const char _data_FX_MODE_2DHIPHOTIC[] PROGMEM = "Hiphotic@X scale,Y scale,,,Speed;;!;2d";
 
 
 /////////////////////////
