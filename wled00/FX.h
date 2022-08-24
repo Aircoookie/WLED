@@ -678,8 +678,8 @@ class WS2812FX {  // 96 bytes
       _length(DEFAULT_LED_COUNT),
       _brightness(DEFAULT_BRIGHTNESS),
       _transitionDur(750),
-		  _targetFps(WLED_FPS),
-		  _frametime(FRAMETIME_FIXED),
+      _targetFps(WLED_FPS),
+      _frametime(FRAMETIME_FIXED),
       _cumulativeFps(2),
       _isServicing(false),
       _isOffRefreshRequired(false),
@@ -733,7 +733,7 @@ class WS2812FX {  // 96 bytes
       fixInvalidSegments(),
       setPixelColor(int n, uint32_t c),
       show(void),
-			setTargetFps(uint8_t fps),
+      setTargetFps(uint8_t fps),
       deserializeMap(uint8_t n=0);
 
     void fill(uint32_t c) { for (int i = 0; i < _length; i++) setPixelColor(i, c); } // fill whole strip with color (inline)
@@ -869,8 +869,8 @@ class WS2812FX {  // 96 bytes
     uint8_t  _brightness;
     uint16_t _transitionDur;
 
-		uint8_t  _targetFps;
-		uint16_t _frametime;
+    uint8_t  _targetFps;
+    uint16_t _frametime;
     uint16_t _cumulativeFps;
 
     // will require only 1 byte

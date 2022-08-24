@@ -196,8 +196,92 @@ void Segment::setUpLeds() {
     #else
     leds = &Segment::_globalLeds[start];
     #endif
-  else if (!leds)
-    leds = (CRGB*)malloc(sizeof(CRGB)*length());
+  else if (!leds) {
+    #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
+    if (psramFound())
+      leds = (CRGB*)ps_malloc(sizeof(CRGB)*length());
+    else
+    #endif
+      leds = (CRGB*)malloc(sizeof(CRGB)*length());
+  }
+}
+
+CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
+  static unsigned long _lastPaletteChange = 0; // perhaps it should be per segment
+  byte tcp[72];
+  if (pal < 245 && pal > GRADIENT_PALETTE_COUNT+13) pal = 0;
+  if (pal > 245 && (strip.customPalettes.size() == 0 || 255U-pal > strip.customPalettes.size()-1)) pal = 0;
+  //default palette. Differs depending on effect
+  if (pal == 0) switch (mode) {
+    case FX_MODE_FIRE_2012  : pal = 35; break; // heat palette
+    case FX_MODE_COLORWAVES : pal = 26; break; // landscape 33
+    case FX_MODE_FILLNOISE8 : pal =  9; break; // ocean colors
+    case FX_MODE_NOISE16_1  : pal = 20; break; // Drywet
+    case FX_MODE_NOISE16_2  : pal = 43; break; // Blue cyan yellow
+    case FX_MODE_NOISE16_3  : pal = 35; break; // heat palette
+    case FX_MODE_NOISE16_4  : pal = 26; break; // landscape 33
+    case FX_MODE_GLITTER    : pal = 11; break; // rainbow colors
+    case FX_MODE_SUNRISE    : pal = 35; break; // heat palette
+    case FX_MODE_FLOW       : pal =  6; break; // party
+  }
+  switch (pal) {
+    case 0: //default palette. Exceptions for specific effects above
+      targetPalette = PartyColors_p; break;
+    case 1: //periodically replace palette with a random one. Doesn't work with multiple FastLED segments
+      if (millis() - _lastPaletteChange > 5000 /*+ ((uint32_t)(255-intensity))*100*/) {
+        targetPalette = CRGBPalette16(
+                        CHSV(random8(), 255, random8(128, 255)),
+                        CHSV(random8(), 255, random8(128, 255)),
+                        CHSV(random8(), 192, random8(128, 255)),
+                        CHSV(random8(), 255, random8(128, 255)));
+        _lastPaletteChange = millis();
+      } break;
+    case 2: {//primary color only
+      CRGB prim = strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0];
+      targetPalette = CRGBPalette16(prim); break;}
+    case 3: {//primary + secondary
+      CRGB prim = strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0];
+      CRGB sec  = strip.gammaCorrectCol ? gamma32(colors[1]) : colors[1];
+      targetPalette = CRGBPalette16(prim,prim,sec,sec); break;}
+    case 4: {//primary + secondary + tertiary
+      CRGB prim = strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0];
+      CRGB sec  = strip.gammaCorrectCol ? gamma32(colors[1]) : colors[1];
+      CRGB ter  = strip.gammaCorrectCol ? gamma32(colors[2]) : colors[2];
+      targetPalette = CRGBPalette16(ter,sec,prim); break;}
+    case 5: {//primary + secondary (+tert if not off), more distinct
+      CRGB prim = strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0];
+      CRGB sec  = strip.gammaCorrectCol ? gamma32(colors[1]) : colors[1];
+      if (colors[2]) {
+        CRGB ter = strip.gammaCorrectCol ? gamma32(colors[2]) : colors[2];
+        targetPalette = CRGBPalette16(prim,prim,prim,prim,prim,sec,sec,sec,sec,sec,ter,ter,ter,ter,ter,prim);
+      } else {
+        targetPalette = CRGBPalette16(prim,prim,prim,prim,prim,prim,prim,prim,sec,sec,sec,sec,sec,sec,sec,sec);
+      }
+      break;}
+    case 6: //Party colors
+      targetPalette = PartyColors_p; break;
+    case 7: //Cloud colors
+      targetPalette = CloudColors_p; break;
+    case 8: //Lava colors
+      targetPalette = LavaColors_p; break;
+    case 9: //Ocean colors
+      targetPalette = OceanColors_p; break;
+    case 10: //Forest colors
+      targetPalette = ForestColors_p; break;
+    case 11: //Rainbow colors
+      targetPalette = RainbowColors_p; break;
+    case 12: //Rainbow stripe colors
+      targetPalette = RainbowStripeColors_p; break;
+    default: //progmem palettes
+      if (pal>245) {
+        targetPalette = strip.customPalettes[255-pal]; // we checked bounds above
+      } else {
+        memcpy_P(tcp, (byte*)pgm_read_dword(&(gGradientPalettes[pal-13])), 72);
+        targetPalette.loadDynamicGradientPalette(tcp);
+      }
+      break;
+  }
+  return targetPalette;
 }
 
 void Segment::startTransition(uint16_t dur) {
@@ -249,84 +333,6 @@ uint8_t Segment::currentMode(uint8_t newMode) {
 
 uint32_t Segment::currentColor(uint8_t slot, uint32_t colorNew) {
   return transitional && _t ? color_blend(_t->_colorT[slot], colorNew, progress(), true) : colorNew;
-}
-
-CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
-  static unsigned long _lastPaletteChange = 0; // perhaps it should be per segment
-  byte tcp[72];
-  if (pal < 245 && pal > GRADIENT_PALETTE_COUNT+13) pal = 0;
-  if (pal > 245 && (strip.customPalettes.size() == 0 || 255U-pal > strip.customPalettes.size()-1)) pal = 0;
-  //default palette. Differs depending on effect
-  if (pal == 0) switch (mode) {
-    case FX_MODE_FIRE_2012  : pal = 35; break; // heat palette
-    case FX_MODE_COLORWAVES : pal = 26; break; // landscape 33
-    case FX_MODE_FILLNOISE8 : pal =  9; break; // ocean colors
-    case FX_MODE_NOISE16_1  : pal = 20; break; // Drywet
-    case FX_MODE_NOISE16_2  : pal = 43; break; // Blue cyan yellow
-    case FX_MODE_NOISE16_3  : pal = 35; break; // heat palette
-    case FX_MODE_NOISE16_4  : pal = 26; break; // landscape 33
-    case FX_MODE_GLITTER    : pal = 11; break; // rainbow colors
-    case FX_MODE_SUNRISE    : pal = 35; break; // heat palette
-    case FX_MODE_FLOW       : pal =  6; break; // party
-  }
-  switch (pal) {
-    case 0: //default palette. Exceptions for specific effects above
-      targetPalette = PartyColors_p; break;
-    case 1: {//periodically replace palette with a random one. Doesn't work with multiple FastLED segments
-      if (millis() - _lastPaletteChange > 1000 + ((uint32_t)(255-intensity))*100) {
-        targetPalette = CRGBPalette16(
-                        CHSV(random8(), 255, random8(128, 255)),
-                        CHSV(random8(), 255, random8(128, 255)),
-                        CHSV(random8(), 192, random8(128, 255)),
-                        CHSV(random8(), 255, random8(128, 255)));
-        _lastPaletteChange = millis();
-      } break;}
-    case 2: {//primary color only
-      CRGB prim = strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0];
-      targetPalette = CRGBPalette16(prim); break;}
-    case 3: {//primary + secondary
-      CRGB prim = strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0];
-      CRGB sec  = strip.gammaCorrectCol ? gamma32(colors[1]) : colors[1];
-      targetPalette = CRGBPalette16(prim,prim,sec,sec); break;}
-    case 4: {//primary + secondary + tertiary
-      CRGB prim = strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0];
-      CRGB sec  = strip.gammaCorrectCol ? gamma32(colors[1]) : colors[1];
-      CRGB ter  = strip.gammaCorrectCol ? gamma32(colors[2]) : colors[2];
-      targetPalette = CRGBPalette16(ter,sec,prim); break;}
-    case 5: {//primary + secondary (+tert if not off), more distinct
-      CRGB prim = strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0];
-      CRGB sec  = strip.gammaCorrectCol ? gamma32(colors[1]) : colors[1];
-      if (colors[2]) {
-        CRGB ter = strip.gammaCorrectCol ? gamma32(colors[2]) : colors[2];
-        targetPalette = CRGBPalette16(prim,prim,prim,prim,prim,sec,sec,sec,sec,sec,ter,ter,ter,ter,ter,prim);
-      } else {
-        targetPalette = CRGBPalette16(prim,prim,prim,prim,prim,prim,prim,prim,sec,sec,sec,sec,sec,sec,sec,sec);
-      }
-      break;}
-    case 6: //Party colors
-      targetPalette = PartyColors_p; break;
-    case 7: //Cloud colors
-      targetPalette = CloudColors_p; break;
-    case 8: //Lava colors
-      targetPalette = LavaColors_p; break;
-    case 9: //Ocean colors
-      targetPalette = OceanColors_p; break;
-    case 10: //Forest colors
-      targetPalette = ForestColors_p; break;
-    case 11: //Rainbow colors
-      targetPalette = RainbowColors_p; break;
-    case 12: //Rainbow stripe colors
-      targetPalette = RainbowStripeColors_p; break;
-    default: //progmem palettes
-      if (pal>245) {
-        targetPalette = strip.customPalettes[255-pal]; // we checked bounds above
-      } else {
-        memcpy_P(tcp, (byte*)pgm_read_dword(&(gGradientPalettes[pal-13])), 72);
-        targetPalette.loadDynamicGradientPalette(tcp);
-      }
-      break;
-  }
-  return targetPalette;
 }
 
 CRGBPalette16 &Segment::currentPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
@@ -447,7 +453,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         if (i==0)
           setPixelColorXY(0, 0, col);
         else {
-          float step = HALF_PI / (2*i);
+          float step = HALF_PI / (2.5f*i);
           for (float rad = 0.0f; rad <= HALF_PI+step/2; rad += step) {
             // may want to try float version as well (with or without antialiasing)
             int x = roundf(sin_t(rad) * i);
@@ -1079,8 +1085,8 @@ uint16_t WS2812FX::getFps() {
 }
 
 void WS2812FX::setTargetFps(uint8_t fps) {
-	if (fps > 0 && fps <= 120) _targetFps = fps;
-	_frametime = 1000 / _targetFps;
+  if (fps > 0 && fps <= 120) _targetFps = fps;
+  _frametime = 1000 / _targetFps;
 }
 
 void WS2812FX::setMode(uint8_t segid, uint8_t m) {
@@ -1127,7 +1133,7 @@ void WS2812FX::setBrightness(uint8_t b, bool direct) {
     // would be dangerous if applied immediately (could exceed ABL), but will not output until the next show()
     busses.setBrightness(b);
   } else {
-	  unsigned long t = millis();
+    unsigned long t = millis();
     if (_segments[0].next_time > t + 22 && t - _lastShow > MIN_SHOW_DELAY) show(); //apply brightness change immediately if no refresh soon
   }
 }
@@ -1180,7 +1186,7 @@ uint16_t WS2812FX::getLengthPhysical(void) {
 //returns if there is an RGBW bus (supports RGB and White, not only white)
 //not influenced by auto-white mode, also true if white slider does not affect output white channel
 bool WS2812FX::hasRGBWBus(void) {
-	for (size_t b = 0; b < busses.getNumBusses(); b++) {
+  for (size_t b = 0; b < busses.getNumBusses(); b++) {
     Bus *bus = busses.getBus(b);
     if (bus == nullptr || bus->getLength()==0) break;
     switch (bus->getType()) {
@@ -1190,12 +1196,12 @@ bool WS2812FX::hasRGBWBus(void) {
         return true;
     }
   }
-	return false;
+  return false;
 }
 
 bool WS2812FX::hasCCTBus(void) {
-	if (cctFromRgb && !correctWB) return false;
-	for (size_t b = 0; b < busses.getNumBusses(); b++) {
+  if (cctFromRgb && !correctWB) return false;
+  for (size_t b = 0; b < busses.getNumBusses(); b++) {
     Bus *bus = busses.getBus(b);
     if (bus == nullptr || bus->getLength()==0) break;
     switch (bus->getType()) {
@@ -1204,7 +1210,7 @@ bool WS2812FX::hasCCTBus(void) {
         return true;
     }
   }
-	return false;
+  return false;
 }
 
 void WS2812FX::purgeSegments(bool force) {
@@ -1237,8 +1243,8 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
     boundsUnchanged &= (seg.startY == startY && seg.stopY == stopY);
   }
   if (boundsUnchanged
-			&& (!grouping || (seg.grouping == grouping && seg.spacing == spacing))
-			&& (offset == UINT16_MAX || offset == seg.offset)) return;
+      && (!grouping || (seg.grouping == grouping && seg.spacing == spacing))
+      && (offset == UINT16_MAX || offset == seg.offset)) return;
 
   //if (seg.stop) setRange(seg.start, seg.stop -1, BLACK); //turn old segment range off
   if (seg.stop) seg.fill(BLACK); //turn old segment range off
@@ -1273,7 +1279,7 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
     seg.grouping = grouping;
     seg.spacing = spacing;
   }
-	if (offset < UINT16_MAX) seg.offset = offset;
+  if (offset < UINT16_MAX) seg.offset = offset;
   seg.markForReset();
   if (!boundsUnchanged) seg.refreshLightCapabilities();
 }

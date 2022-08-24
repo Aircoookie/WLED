@@ -566,16 +566,14 @@ static const char _data_FX_MODE_SAW[] PROGMEM = "Saw@!,Width;!,!,;!;1d";
  * Inspired by www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/
  */
 uint16_t mode_twinkle(void) {
-  const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : SEGMENT.virtualLength();
-  const uint16_t rows = SEGMENT.virtualHeight();
-
-  SEGMENT.fill(SEGCOLOR(1));
+  //SEGMENT.fill(SEGCOLOR(1));
+  SEGMENT.fade_out(224);
 
   uint32_t cycleTime = 20 + (255 - SEGMENT.speed)*5;
   uint32_t it = strip.now / cycleTime;
   if (it != SEGENV.step)
   {
-    uint16_t maxOn = map(SEGMENT.intensity, 0, 255, 1, cols*rows-1); // make sure at least one LED is on
+    uint16_t maxOn = map(SEGMENT.intensity, 0, 255, 1, SEGLEN); // make sure at least one LED is on
     if (SEGENV.aux0 >= maxOn)
     {
       SEGENV.aux0 = 0;
@@ -587,20 +585,17 @@ uint16_t mode_twinkle(void) {
   
   uint16_t PRNG16 = SEGENV.aux1;
 
-  for (int i = 0; i < SEGENV.aux0; i++)
+  for (uint16_t i = 0; i < SEGENV.aux0; i++)
   {
     PRNG16 = (uint16_t)(PRNG16 * 2053) + 13849; // next 'random' number
-    uint32_t p = ((uint32_t)cols*rows * (uint32_t)PRNG16) >> 16;
-    uint16_t j = p % cols;
-    uint16_t k = p / cols;
-    uint32_t col = SEGMENT.color_from_palette(map(p, 0, cols*rows, 0, 255), false, PALETTE_SOLID_WRAP, 0);
-    if (strip.isMatrix) SEGMENT.setPixelColorXY(j, k, col);
-    else                SEGMENT.setPixelColor(j, col);
+    uint32_t p = (uint32_t)SEGLEN * (uint32_t)PRNG16;
+    uint16_t j = p >> 16;
+    SEGMENT.setPixelColor(j, SEGMENT.color_from_palette(j, true, PALETTE_SOLID_WRAP, 0));
   }
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_TWINKLE[] PROGMEM = "Twinkle@!,;!,!,;!;1d,2d"; //pixels
+static const char _data_FX_MODE_TWINKLE[] PROGMEM = "Twinkle@!,;!,!,;!;mp12=0,1d"; //pixels
 
 
 /*
@@ -663,7 +658,7 @@ static const char _data_FX_MODE_DISSOLVE_RANDOM[] PROGMEM = "Dissolve Rnd@Repeat
  * Inspired by www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/
  */
 uint16_t mode_sparkle(void) {
-  for (int i = 0; i < SEGLEN; i++) {
+  for(int i = 0; i < SEGLEN; i++) {
     SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 1));
   }
   uint32_t cycleTime = 10 + (255 - SEGMENT.speed)*2;
@@ -671,15 +666,13 @@ uint16_t mode_sparkle(void) {
   if (it != SEGENV.step)
   {
     SEGENV.aux0 = random16(SEGLEN); // aux0 stores the random led index
-    SEGENV.aux1 = random16(0,SEGMENT.virtualHeight()-1);
     SEGENV.step = it;
   }
   
-  if (strip.isMatrix) SEGMENT.setPixelColorXY(SEGENV.aux0, SEGENV.aux1, SEGCOLOR(0));
-  else                SEGMENT.setPixelColor(SEGENV.aux0, SEGCOLOR(0));
+  SEGMENT.setPixelColor(SEGENV.aux0, SEGCOLOR(0));
   return FRAMETIME;
 }
-static const char _data_FX_MODE_SPARKLE[] PROGMEM = "Sparkle@!,;!,!,;!;1d,2d";
+static const char _data_FX_MODE_SPARKLE[] PROGMEM = "Sparkle@!,;!,!,;!;mp12=0,1d";
 
 
 /*
@@ -687,21 +680,20 @@ static const char _data_FX_MODE_SPARKLE[] PROGMEM = "Sparkle@!,;!,!,;!;1d,2d";
  * Inspired by www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/
  */
 uint16_t mode_flash_sparkle(void) {
-  for (int i = 0; i < SEGLEN; i++) {
+  for(uint16_t i = 0; i < SEGLEN; i++) {
     SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
   }
 
   if (strip.now - SEGENV.aux0 > SEGENV.step) {
     if(random8((255-SEGMENT.intensity) >> 4) == 0) {
-      if (strip.isMatrix) SEGMENT.setPixelColorXY(random16(SEGLEN), random16(0,SEGMENT.virtualHeight()-1), SEGCOLOR(1));
-      else                SEGMENT.setPixelColor(random16(SEGLEN), SEGCOLOR(1)); //flash
+      SEGMENT.setPixelColor(random16(SEGLEN), SEGCOLOR(1)); //flash
     }
     SEGENV.step = strip.now;
     SEGENV.aux0 = 255-SEGMENT.speed;
   }
   return FRAMETIME;
 }
-static const char _data_FX_MODE_FLASH_SPARKLE[] PROGMEM = "Sparkle Dark@!,!;Bg,Fx,;!;1d,2d";
+static const char _data_FX_MODE_FLASH_SPARKLE[] PROGMEM = "Sparkle Dark@!,!;Bg,Fx,;!;mp12=0,1d";
 
 
 /*
@@ -714,10 +706,9 @@ uint16_t mode_hyper_sparkle(void) {
   }
 
   if (strip.now - SEGENV.aux0 > SEGENV.step) {
-    if(random8((255-SEGMENT.intensity) >> 4) == 0) {
+    if (random8((255-SEGMENT.intensity) >> 4) == 0) {
       for (int i = 0; i < MAX(1, SEGLEN/3); i++) {
-        if (strip.isMatrix) SEGMENT.setPixelColorXY(random16(SEGLEN), random16(0,SEGMENT.virtualHeight()), SEGCOLOR(1));
-        else                SEGMENT.setPixelColor(random16(SEGLEN), SEGCOLOR(1));
+        SEGMENT.setPixelColor(random16(SEGLEN), SEGCOLOR(1));
       }
     }
     SEGENV.step = strip.now;
@@ -725,7 +716,7 @@ uint16_t mode_hyper_sparkle(void) {
   }
   return FRAMETIME;
 }
-static const char _data_FX_MODE_HYPER_SPARKLE[] PROGMEM = "Sparkle+@!,!;Bg,Fx,;!;1d,2d";
+static const char _data_FX_MODE_HYPER_SPARKLE[] PROGMEM = "Sparkle+@!,!;Bg,Fx,;!;mp12=0,1d";
 
 
 /*
@@ -1350,7 +1341,7 @@ uint16_t police_base(uint32_t color1, uint32_t color2)
   uint32_t it = strip.now / map(SEGMENT.speed, 0, 255, delay<<4, delay);
   uint16_t offset = it % SEGLEN;
   
-	uint16_t width = ((SEGLEN*(SEGMENT.intensity+1))>>9); //max width is half the strip
+  uint16_t width = ((SEGLEN*(SEGMENT.intensity+1))>>9); //max width is half the strip
   if (!width) width = 1;
   for (int i = 0; i < width; i++) {
     uint16_t indexR = (offset + i) % SEGLEN;
@@ -1389,82 +1380,82 @@ static const char _data_FX_MODE_TWO_DOTS[] PROGMEM = "Two Dots@!,Dot size;1,2,Bg
 typedef struct Flasher {
   uint16_t stateStart;
   uint8_t stateDur;
-	bool stateOn;
+  bool stateOn;
 } flasher;
 
 #define FLASHERS_PER_ZONE 6
 #define MAX_SHIMMER 92
 
 uint16_t mode_fairy() {
-	//set every pixel to a 'random' color from palette (using seed so it doesn't change between frames)
-	uint16_t PRNG16 = 5100 + strip.getCurrSegmentId();
-	for (int i = 0; i < SEGLEN; i++) {
-		PRNG16 = (uint16_t)(PRNG16 * 2053) + 1384; //next 'random' number
-		SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(PRNG16 >> 8, false, false, 0));
-	}
+  //set every pixel to a 'random' color from palette (using seed so it doesn't change between frames)
+  uint16_t PRNG16 = 5100 + strip.getCurrSegmentId();
+  for (int i = 0; i < SEGLEN; i++) {
+    PRNG16 = (uint16_t)(PRNG16 * 2053) + 1384; //next 'random' number
+    SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(PRNG16 >> 8, false, false, 0));
+  }
 
-	//amount of flasher pixels depending on intensity (0: none, 255: every LED)
-	if (SEGMENT.intensity == 0) return FRAMETIME;
-	uint8_t flasherDistance = ((255 - SEGMENT.intensity) / 28) +1; //1-10
-	uint16_t numFlashers = (SEGLEN / flasherDistance) +1;
-	
-	uint16_t dataSize = sizeof(flasher) * numFlashers;
+  //amount of flasher pixels depending on intensity (0: none, 255: every LED)
+  if (SEGMENT.intensity == 0) return FRAMETIME;
+  uint8_t flasherDistance = ((255 - SEGMENT.intensity) / 28) +1; //1-10
+  uint16_t numFlashers = (SEGLEN / flasherDistance) +1;
+
+  uint16_t dataSize = sizeof(flasher) * numFlashers;
   if (!SEGENV.allocateData(dataSize)) return FRAMETIME; //allocation failed
-	Flasher* flashers = reinterpret_cast<Flasher*>(SEGENV.data);
-	uint16_t now16 = strip.now & 0xFFFF;
+  Flasher* flashers = reinterpret_cast<Flasher*>(SEGENV.data);
+  uint16_t now16 = strip.now & 0xFFFF;
 
-	//Up to 11 flashers in one brightness zone, afterwards a new zone for every 6 flashers
-	uint16_t zones = numFlashers/FLASHERS_PER_ZONE;
-	if (!zones) zones = 1;
-	uint8_t flashersInZone = numFlashers/zones;
-	uint8_t flasherBri[FLASHERS_PER_ZONE*2 -1];
+  //Up to 11 flashers in one brightness zone, afterwards a new zone for every 6 flashers
+  uint16_t zones = numFlashers/FLASHERS_PER_ZONE;
+  if (!zones) zones = 1;
+  uint8_t flashersInZone = numFlashers/zones;
+  uint8_t flasherBri[FLASHERS_PER_ZONE*2 -1];
 
-	for (int z = 0; z < zones; z++) {
-		uint16_t flasherBriSum = 0;
-		uint16_t firstFlasher = z*flashersInZone;
-		if (z == zones-1) flashersInZone = numFlashers-(flashersInZone*(zones-1));
+  for (int z = 0; z < zones; z++) {
+    uint16_t flasherBriSum = 0;
+    uint16_t firstFlasher = z*flashersInZone;
+    if (z == zones-1) flashersInZone = numFlashers-(flashersInZone*(zones-1));
 
-		for (int f = firstFlasher; f < firstFlasher + flashersInZone; f++) {
-			uint16_t stateTime = now16 - flashers[f].stateStart;
-			//random on/off time reached, switch state
-			if (stateTime > flashers[f].stateDur * 10) {
-				flashers[f].stateOn = !flashers[f].stateOn;
-				if (flashers[f].stateOn) {
-					flashers[f].stateDur = 12 + random8(12 + ((255 - SEGMENT.speed) >> 2)); //*10, 250ms to 1250ms
-				} else {
-					flashers[f].stateDur = 20 + random8(6 + ((255 - SEGMENT.speed) >> 2)); //*10, 250ms to 1250ms
-				}
-				//flashers[f].stateDur = 51 + random8(2 + ((255 - SEGMENT.speed) >> 1));
-				flashers[f].stateStart = now16;
-				if (stateTime < 255) {
-					flashers[f].stateStart -= 255 -stateTime; //start early to get correct bri
-					flashers[f].stateDur += 26 - stateTime/10;
-					stateTime = 255 - stateTime;
-				} else {
-					stateTime = 0;
-				}
-			}
-			if (stateTime > 255) stateTime = 255; //for flasher brightness calculation, fades in first 255 ms of state
-			//flasherBri[f - firstFlasher] = (flashers[f].stateOn) ? 255-SEGMENT.gamma8((510 - stateTime) >> 1) : SEGMENT.gamma8((510 - stateTime) >> 1);
-			flasherBri[f - firstFlasher] = (flashers[f].stateOn) ? stateTime : 255 - (stateTime >> 0);
-			flasherBriSum += flasherBri[f - firstFlasher];
-		}
-		//dim factor, to create "shimmer" as other pixels get less voltage if a lot of flashers are on
-		uint8_t avgFlasherBri = flasherBriSum / flashersInZone;
-		uint8_t globalPeakBri = 255 - ((avgFlasherBri * MAX_SHIMMER) >> 8); //183-255, suitable for 1/5th of LEDs flashers
+    for (int f = firstFlasher; f < firstFlasher + flashersInZone; f++) {
+      uint16_t stateTime = now16 - flashers[f].stateStart;
+      //random on/off time reached, switch state
+      if (stateTime > flashers[f].stateDur * 10) {
+        flashers[f].stateOn = !flashers[f].stateOn;
+        if (flashers[f].stateOn) {
+          flashers[f].stateDur = 12 + random8(12 + ((255 - SEGMENT.speed) >> 2)); //*10, 250ms to 1250ms
+        } else {
+          flashers[f].stateDur = 20 + random8(6 + ((255 - SEGMENT.speed) >> 2)); //*10, 250ms to 1250ms
+        }
+        //flashers[f].stateDur = 51 + random8(2 + ((255 - SEGMENT.speed) >> 1));
+        flashers[f].stateStart = now16;
+        if (stateTime < 255) {
+          flashers[f].stateStart -= 255 -stateTime; //start early to get correct bri
+          flashers[f].stateDur += 26 - stateTime/10;
+          stateTime = 255 - stateTime;
+        } else {
+          stateTime = 0;
+        }
+      }
+      if (stateTime > 255) stateTime = 255; //for flasher brightness calculation, fades in first 255 ms of state
+      //flasherBri[f - firstFlasher] = (flashers[f].stateOn) ? 255-SEGMENT.gamma8((510 - stateTime) >> 1) : SEGMENT.gamma8((510 - stateTime) >> 1);
+      flasherBri[f - firstFlasher] = (flashers[f].stateOn) ? stateTime : 255 - (stateTime >> 0);
+      flasherBriSum += flasherBri[f - firstFlasher];
+    }
+    //dim factor, to create "shimmer" as other pixels get less voltage if a lot of flashers are on
+    uint8_t avgFlasherBri = flasherBriSum / flashersInZone;
+    uint8_t globalPeakBri = 255 - ((avgFlasherBri * MAX_SHIMMER) >> 8); //183-255, suitable for 1/5th of LEDs flashers
 
-		for (int f = firstFlasher; f < firstFlasher + flashersInZone; f++) {
-			uint8_t bri = (flasherBri[f - firstFlasher] * globalPeakBri) / 255;
-			PRNG16 = (uint16_t)(PRNG16 * 2053) + 1384; //next 'random' number
-			uint16_t flasherPos = f*flasherDistance;
-			SEGMENT.setPixelColor(flasherPos, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(PRNG16 >> 8, false, false, 0), bri));
-			for (int i = flasherPos+1; i < flasherPos+flasherDistance && i < SEGLEN; i++) {
-				PRNG16 = (uint16_t)(PRNG16 * 2053) + 1384; //next 'random' number
-				SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(PRNG16 >> 8, false, false, 0, globalPeakBri));
-			}
-		}
-	}
-	return FRAMETIME;
+    for (int f = firstFlasher; f < firstFlasher + flashersInZone; f++) {
+      uint8_t bri = (flasherBri[f - firstFlasher] * globalPeakBri) / 255;
+      PRNG16 = (uint16_t)(PRNG16 * 2053) + 1384; //next 'random' number
+      uint16_t flasherPos = f*flasherDistance;
+      SEGMENT.setPixelColor(flasherPos, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(PRNG16 >> 8, false, false, 0), bri));
+      for (int i = flasherPos+1; i < flasherPos+flasherDistance && i < SEGLEN; i++) {
+        PRNG16 = (uint16_t)(PRNG16 * 2053) + 1384; //next 'random' number
+        SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(PRNG16 >> 8, false, false, 0, globalPeakBri));
+      }
+    }
+  }
+  return FRAMETIME;
 }
 static const char _data_FX_MODE_FAIRY[] PROGMEM = "Fairy";
 
@@ -1474,46 +1465,46 @@ static const char _data_FX_MODE_FAIRY[] PROGMEM = "Fairy";
  * Warning: Uses 4 bytes of segment data per pixel
  */
 uint16_t mode_fairytwinkle() {
-	uint16_t dataSize = sizeof(flasher) * SEGLEN;
+  uint16_t dataSize = sizeof(flasher) * SEGLEN;
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-	Flasher* flashers = reinterpret_cast<Flasher*>(SEGENV.data);
-	uint16_t now16 = strip.now & 0xFFFF;
-	uint16_t PRNG16 = 5100 + strip.getCurrSegmentId();
+  Flasher* flashers = reinterpret_cast<Flasher*>(SEGENV.data);
+  uint16_t now16 = strip.now & 0xFFFF;
+  uint16_t PRNG16 = 5100 + strip.getCurrSegmentId();
 
-	uint16_t riseFallTime = 400 + (255-SEGMENT.speed)*3;
-	uint16_t maxDur = riseFallTime/100 + ((255 - SEGMENT.intensity) >> 2) + 13 + ((255 - SEGMENT.intensity) >> 1);
+  uint16_t riseFallTime = 400 + (255-SEGMENT.speed)*3;
+  uint16_t maxDur = riseFallTime/100 + ((255 - SEGMENT.intensity) >> 2) + 13 + ((255 - SEGMENT.intensity) >> 1);
 
-	for (int f = 0; f < SEGLEN; f++) {
-		uint16_t stateTime = now16 - flashers[f].stateStart;
-		//random on/off time reached, switch state
-		if (stateTime > flashers[f].stateDur * 100) {
-			flashers[f].stateOn = !flashers[f].stateOn;
-			bool init = !flashers[f].stateDur;
-			if (flashers[f].stateOn) {
-				flashers[f].stateDur = riseFallTime/100 + ((255 - SEGMENT.intensity) >> 2) + random8(12 + ((255 - SEGMENT.intensity) >> 1)) +1;
-			} else {
-				flashers[f].stateDur = riseFallTime/100 + random8(3 + ((255 - SEGMENT.speed) >> 6)) +1;
-			}
-			flashers[f].stateStart = now16;
-			stateTime = 0;
-			if (init) {
-				flashers[f].stateStart -= riseFallTime; //start lit
-				flashers[f].stateDur = riseFallTime/100 + random8(12 + ((255 - SEGMENT.intensity) >> 1)) +5; //fire up a little quicker
-				stateTime = riseFallTime;
-			}
-		}
-		if (flashers[f].stateOn && flashers[f].stateDur > maxDur) flashers[f].stateDur = maxDur; //react more quickly on intensity change
-		if (stateTime > riseFallTime) stateTime = riseFallTime; //for flasher brightness calculation, fades in first 255 ms of state
-		uint8_t fadeprog = 255 - ((stateTime * 255) / riseFallTime);
-		uint8_t flasherBri = (flashers[f].stateOn) ? 255-gamma8(fadeprog) : gamma8(fadeprog);
-		uint16_t lastR = PRNG16;
-		uint16_t diff = 0;
-		while (diff < 0x4000) { //make sure colors of two adjacent LEDs differ enough
-			PRNG16 = (uint16_t)(PRNG16 * 2053) + 1384; //next 'random' number
-			diff = (PRNG16 > lastR) ? PRNG16 - lastR : lastR - PRNG16;
-		}
-		SEGMENT.setPixelColor(f, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(PRNG16 >> 8, false, false, 0), flasherBri));
-	}
+  for (int f = 0; f < SEGLEN; f++) {
+    uint16_t stateTime = now16 - flashers[f].stateStart;
+    //random on/off time reached, switch state
+    if (stateTime > flashers[f].stateDur * 100) {
+      flashers[f].stateOn = !flashers[f].stateOn;
+      bool init = !flashers[f].stateDur;
+      if (flashers[f].stateOn) {
+        flashers[f].stateDur = riseFallTime/100 + ((255 - SEGMENT.intensity) >> 2) + random8(12 + ((255 - SEGMENT.intensity) >> 1)) +1;
+      } else {
+        flashers[f].stateDur = riseFallTime/100 + random8(3 + ((255 - SEGMENT.speed) >> 6)) +1;
+      }
+      flashers[f].stateStart = now16;
+      stateTime = 0;
+      if (init) {
+        flashers[f].stateStart -= riseFallTime; //start lit
+        flashers[f].stateDur = riseFallTime/100 + random8(12 + ((255 - SEGMENT.intensity) >> 1)) +5; //fire up a little quicker
+        stateTime = riseFallTime;
+      }
+    }
+    if (flashers[f].stateOn && flashers[f].stateDur > maxDur) flashers[f].stateDur = maxDur; //react more quickly on intensity change
+    if (stateTime > riseFallTime) stateTime = riseFallTime; //for flasher brightness calculation, fades in first 255 ms of state
+    uint8_t fadeprog = 255 - ((stateTime * 255) / riseFallTime);
+    uint8_t flasherBri = (flashers[f].stateOn) ? 255-gamma8(fadeprog) : gamma8(fadeprog);
+    uint16_t lastR = PRNG16;
+    uint16_t diff = 0;
+    while (diff < 0x4000) { //make sure colors of two adjacent LEDs differ enough
+      PRNG16 = (uint16_t)(PRNG16 * 2053) + 1384; //next 'random' number
+      diff = (PRNG16 > lastR) ? PRNG16 - lastR : lastR - PRNG16;
+    }
+    SEGMENT.setPixelColor(f, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(PRNG16 >> 8, false, false, 0), flasherBri));
+  }
   return FRAMETIME;
 }
 static const char _data_FX_MODE_FAIRYTWINKLE[] PROGMEM = "Fairy Twinkle@;;;mp12=0,1d"; //pixels
@@ -2209,19 +2200,14 @@ static const char _data_FX_MODE_NOISE16_4[] PROGMEM = "Noise 4@!,!;!,!,!;!;1d";
 //based on https://gist.github.com/kriegsman/5408ecd397744ba0393e
 uint16_t mode_colortwinkle()
 {
-  const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-  const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
-
-  uint16_t dataSize = (cols*rows+7) >> 3; //1 bit per LED
+  uint16_t dataSize = (SEGLEN+7) >> 3; //1 bit per LED
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   
   CRGB fastled_col, prev;
   fract8 fadeUpAmount = strip.getBrightness()>28 ? 8 + (SEGMENT.speed>>2) : 68-strip.getBrightness();
   fract8 fadeDownAmount = strip.getBrightness()>28 ? 8 + (SEGMENT.speed>>3) : 68-strip.getBrightness();
-
-  for (int i = 0; i < rows*cols; i++) {
-    uint16_t j = i % cols, k = i / cols;
-    fastled_col = CRGB(strip.isMatrix ? SEGMENT.getPixelColorXY(j, k) : SEGMENT.getPixelColor(i)); // TODO
+  for (uint16_t i = 0; i < SEGLEN; i++) {
+    fastled_col = SEGMENT.getPixelColor(i);
     prev = fastled_col;
     uint16_t index = i >> 3;
     uint8_t  bitNum = i & 0x07;
@@ -2235,36 +2221,28 @@ uint16_t mode_colortwinkle()
       if (fastled_col.red == 255 || fastled_col.green == 255 || fastled_col.blue == 255) {
         bitWrite(SEGENV.data[index], bitNum, false);
       }
+      SEGMENT.setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
 
-      if (strip.isMatrix) SEGMENT.setPixelColorXY(j, k, fastled_col);
-      else                SEGMENT.setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
-
-      uint32_t col = strip.isMatrix ? SEGMENT.getPixelColorXY(j, k) : SEGMENT.getPixelColor(i); // TODO
-      if (CRGB(col) == prev) {  //fix "stuck" pixels
+      if (SEGMENT.getPixelColor(i) == RGBW32(prev.r, prev.g, prev.b, 0)) {  //fix "stuck" pixels
         fastled_col += fastled_col;
-        if (strip.isMatrix) SEGMENT.setPixelColorXY(j, k, fastled_col);
-        else                SEGMENT.setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+        SEGMENT.setPixelColor(i, fastled_col);
       }
     } else {
       fastled_col.nscale8(255 - fadeDownAmount);
-      if (strip.isMatrix) SEGMENT.setPixelColorXY(j, k, fastled_col);
-      else                SEGMENT.setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+      SEGMENT.setPixelColor(i, fastled_col);
     }
   }
 
-  for (int j = 0; j <= rows*cols / 50; j++) {
+  for (uint16_t j = 0; j <= SEGLEN / 50; j++) {
     if (random8() <= SEGMENT.intensity) {
-      for (size_t times = 0; times < 5; times++) { //attempt to spawn a new pixel 5 times
-        uint16_t i = random16(rows*cols);
-        uint16_t j = i % cols, k = i / cols;
-        uint32_t col = strip.isMatrix ? SEGMENT.getPixelColorXY(j, k) : SEGMENT.getPixelColor(i); // TODO
-        if (col == 0) {
+      for (uint8_t times = 0; times < 5; times++) { //attempt to spawn a new pixel 5 times
+        int i = random16(SEGLEN);
+        if (SEGMENT.getPixelColor(i) == 0) {
           fastled_col = ColorFromPalette(SEGPALETTE, random8(), 64, NOBLEND);
           uint16_t index = i >> 3;
           uint8_t  bitNum = i & 0x07;
           bitWrite(SEGENV.data[index], bitNum, true);
-          if (strip.isMatrix) SEGMENT.setPixelColorXY(j, k, fastled_col);
-          else                SEGMENT.setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+          SEGMENT.setPixelColor(i, fastled_col);
           break; //only spawn 1 new pixel per frame per 50 LEDs
         }
       }
@@ -2272,7 +2250,7 @@ uint16_t mode_colortwinkle()
   }
   return FRAMETIME_FIXED;
 }
-static const char _data_FX_MODE_COLORTWINKLE[] PROGMEM = "Colortwinkles@Fade speed,Spawn speed;1,2,3;!;1d,2d"; //pixels
+static const char _data_FX_MODE_COLORTWINKLE[] PROGMEM = "Colortwinkles@Fade speed,Spawn speed;1,2,3;!;mp12=0,1d"; //pixels
 
 
 //Calm effect, like a lake at night
@@ -2651,13 +2629,13 @@ static const char _data_FX_MODE_TWINKLECAT[] PROGMEM = "Twinklecat";
 
 
 //inspired by https://www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/#LEDStripEffectBlinkingHalloweenEyes
-#define HALLOWEEN_EYE_SPACE (2*MAX(1,SEGLEN>>5))
-#define HALLOWEEN_EYE_WIDTH MAX(1,SEGLEN>>5)
-
 uint16_t mode_halloween_eyes()
-{  
+{
+  const uint16_t maxWidth = strip.isMatrix ? SEGMENT.virtualWidth() : SEGLEN;
+  const uint16_t HALLOWEEN_EYE_SPACE = MAX(2, strip.isMatrix ? SEGMENT.virtualWidth()>>4: SEGLEN>>5);
+  const uint16_t HALLOWEEN_EYE_WIDTH = HALLOWEEN_EYE_SPACE/2;
   uint16_t eyeLength = (2*HALLOWEEN_EYE_WIDTH) + HALLOWEEN_EYE_SPACE;
-  if (eyeLength > SEGLEN) return mode_static(); //bail if segment too short
+  if (eyeLength >= maxWidth) return mode_static(); //bail if segment too short
 
   SEGMENT.fill(SEGCOLOR(1)); //fill background
 
@@ -2666,7 +2644,7 @@ uint16_t mode_halloween_eyes()
   if (stateTime == 0) stateTime = 2000;
 
   if (state == 0) { //spawn eyes
-    SEGENV.aux0 = random16(0, SEGLEN - eyeLength); //start pos
+    SEGENV.aux0 = random16(0, maxWidth - eyeLength - 1); //start pos
     SEGENV.aux1 = random8(); //color
     if (strip.isMatrix) SEGMENT.offset = random16(SEGMENT.virtualHeight()-1); // a hack: reuse offset since it is not used in matrices
     state = 1;
@@ -2696,9 +2674,9 @@ uint16_t mode_halloween_eyes()
     if (state > 2) state = 0;
     
     if (state < 2) {
-      stateTime = 100 + (255 - SEGMENT.intensity)*10; //eye fade time
+      stateTime = 100 + SEGMENT.intensity*10; //eye fade time
     } else {
-      uint16_t eyeOffTimeBase = (255 - SEGMENT.speed)*10;
+      uint16_t eyeOffTimeBase = (256 - SEGMENT.speed)*10;
       stateTime = eyeOffTimeBase + random16(eyeOffTimeBase);
     }
     SEGENV.step = strip.now;
@@ -2933,18 +2911,14 @@ uint16_t mode_glitter()
 {
   mode_palette();
 
-  if (strip.isMatrix) {
-    uint16_t height = SEGMENT.virtualHeight();
-    uint16_t width  = SEGMENT.virtualWidth();
-    for (int i = 0; i<height; i++) {
-      if (SEGMENT.intensity > random8()) SEGMENT.setPixelColorXY(random16(width-1), i, ULTRAWHITE);
-    }
-  } else
-    if (SEGMENT.intensity > random8()) SEGMENT.setPixelColor(random16(SEGLEN), ULTRAWHITE);
+  if (SEGMENT.intensity > random8())
+  {
+    SEGMENT.setPixelColor(random16(SEGLEN), ULTRAWHITE);
+  }
   
   return FRAMETIME;
 }
-static const char _data_FX_MODE_GLITTER[] PROGMEM = "Glitter@,!;!,!,!;!;1d,2d"; //pixels
+static const char _data_FX_MODE_GLITTER[] PROGMEM = "Glitter@,!;!,!,!;!;mp12=0,1d"; //pixels
 
 
 //each needs 19 bytes
@@ -3574,9 +3548,9 @@ static const char _data_FX_MODE_PLASMA[] PROGMEM = "Plasma@Phase,;1,2,3;!;1d";
  */
 uint16_t mode_percent(void) {
 
-	uint8_t percent = SEGMENT.intensity;
+  uint8_t percent = SEGMENT.intensity;
   percent = constrain(percent, 0, 200);
-	uint16_t active_leds = (percent < 100) ? SEGLEN * percent / 100.0
+  uint16_t active_leds = (percent < 100) ? SEGLEN * percent / 100.0
                                          : SEGLEN * (200 - percent) / 100.0;
   
   uint8_t size = (1 + ((SEGMENT.speed * SEGLEN) >> 11));
@@ -3584,22 +3558,22 @@ uint16_t mode_percent(void) {
     
   if (percent < 100) {
     for (int i = 0; i < SEGLEN; i++) {
-	  	if (i < SEGENV.aux1) {
+    	if (i < SEGENV.aux1) {
         SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
-	  	}
-	  	else {
+    	}
+    	else {
         SEGMENT.setPixelColor(i, SEGCOLOR(1));
-	  	}
-	  }
+    	}
+    }
   } else {
     for (int i = 0; i < SEGLEN; i++) {
-	  	if (i < (SEGLEN - SEGENV.aux1)) {
+    	if (i < (SEGLEN - SEGENV.aux1)) {
         SEGMENT.setPixelColor(i, SEGCOLOR(1));
-	  	}
-	  	else {
+    	}
+    	else {
         SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
-	  	}
-	  }
+    	}
+    }
   }
 
   if(active_leds > SEGENV.aux1) {  // smooth transition to the target value
@@ -3770,18 +3744,14 @@ uint16_t mode_solid_glitter()
 {
   SEGMENT.fill(SEGCOLOR(0));
 
-  if (strip.isMatrix) {
-    uint16_t height = SEGMENT.virtualHeight();
-    uint16_t width = SEGMENT.virtualWidth();
-    for (int i = 0; i<height; i++) {
-      if (SEGMENT.intensity > random8()) SEGMENT.setPixelColorXY(random16(width-1), i, ULTRAWHITE);
-    }
-  } else
-    if (SEGMENT.intensity > random8()) SEGMENT.setPixelColor(random16(SEGLEN), ULTRAWHITE);
+  if (SEGMENT.intensity > random8())
+  {
+    SEGMENT.setPixelColor(random16(SEGLEN), ULTRAWHITE);
+  }
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_SOLID_GLITTER[] PROGMEM = "Solid Glitter@,!;!,,;0;1d,2d";
+static const char _data_FX_MODE_SOLID_GLITTER[] PROGMEM = "Solid Glitter@,!;!,,;0;mp12=0,1d";
 
 
 /*
@@ -3793,7 +3763,7 @@ uint16_t mode_sunrise() {
   //speed 60 - 120 : sunset time in minutes - 60;
   //speed above: "breathing" rise and set
   if (SEGENV.call == 0 || SEGMENT.speed != SEGENV.aux0) {
-	  SEGENV.step = millis(); //save starting time, millis() because now can change from sync
+    SEGENV.step = millis(); //save starting time, millis() because now can change from sync
     SEGENV.aux0 = SEGMENT.speed;
   }
   
@@ -3803,15 +3773,15 @@ uint16_t mode_sunrise() {
   uint32_t s10SinceStart = (millis() - SEGENV.step) /100; //tenths of seconds
   
   if (SEGMENT.speed > 120) { //quick sunrise and sunset
-	  uint16_t counter = (strip.now >> 1) * (((SEGMENT.speed -120) >> 1) +1);
-	  stage = triwave16(counter);
+    uint16_t counter = (strip.now >> 1) * (((SEGMENT.speed -120) >> 1) +1);
+    stage = triwave16(counter);
   } else if (SEGMENT.speed) { //sunrise
-	  uint8_t durMins = SEGMENT.speed;
-	  if (durMins > 60) durMins -= 60;
-	  uint32_t s10Target = durMins * 600;
-	  if (s10SinceStart > s10Target) s10SinceStart = s10Target;
-	  stage = map(s10SinceStart, 0, s10Target, 0, 0xFFFF);
-	  if (SEGMENT.speed > 60) stage = 0xFFFF - stage; //sunset
+    uint8_t durMins = SEGMENT.speed;
+    if (durMins > 60) durMins -= 60;
+    uint32_t s10Target = durMins * 600;
+    if (s10SinceStart > s10Target) s10SinceStart = s10Target;
+    stage = map(s10SinceStart, 0, s10Target, 0, 0xFFFF);
+    if (SEGMENT.speed > 60) stage = 0xFFFF - stage; //sunset
   }
   
   for (int i = 0; i <= SEGLEN/2; i++)
@@ -3879,24 +3849,18 @@ static const char _data_FX_MODE_PHASEDNOISE[] PROGMEM = "Phased Noise";
 
 
 uint16_t mode_twinkleup(void) {                 // A very short twinkle routine with fade-in and dual controls. By Andrew Tuline.
-  const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-  const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
+  random16_set_seed(535);                       // The randomizer needs to be re-set each time through the loop in order for the same 'random' numbers to be the same each time through.
 
-  random16_set_seed(535);                                 // The randomizer needs to be re-set each time through the loop in order for the same 'random' numbers to be the same each time through.
-
-  for (int i = 0; i<rows*cols; i++) {
-    uint16_t j = i % rows, k = i / rows;
-    uint8_t ranstart = random8();                         // The starting value (aka brightness) for each pixel. Must be consistent each time through the loop for this to work.
+  for (int i = 0; i<SEGLEN; i++) {
+    uint8_t ranstart = random8();               // The starting value (aka brightness) for each pixel. Must be consistent each time through the loop for this to work.
     uint8_t pixBri = sin8(ranstart + 16 * strip.now/(256-SEGMENT.speed));
     if (random8() > SEGMENT.intensity) pixBri = 0;
-    uint32_t col = color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(random8() + strip.now/100, false, PALETTE_SOLID_WRAP, 0), pixBri);
-    if (strip.isMatrix) SEGMENT.setPixelColorXY(j, k, col);
-    else                SEGMENT.setPixelColor(i, col);
+    SEGMENT.setPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(random8()+strip.now/100, false, PALETTE_SOLID_WRAP, 0), pixBri));
   }
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_TWINKLEUP[] PROGMEM = "Twinkleup@!,Intensity;!,!,;!;1d,2d";
+static const char _data_FX_MODE_TWINKLEUP[] PROGMEM = "Twinkleup@!,Intensity;!,!,;!;mp12=0,1d";
 
 
 // Peaceful noise that's slow and with gradually changing palettes. Does not support WLED palettes or default colours or controls.

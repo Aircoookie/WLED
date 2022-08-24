@@ -1036,7 +1036,6 @@ class AudioReactive : public Usermod {
 
       // Only run the sampling code IF we're not in Receive mode or realtime mode
       if (!(audioSyncEnabled & 0x02) && !disableSoundProcessing) {
-        bool agcEffect = false;
         if (soundAgc > AGC_NUM_PRESETS) soundAgc = 0; // make sure that AGC preset is valid (to avoid array bounds violation)
 
         unsigned long t_now = millis();      // remember current time

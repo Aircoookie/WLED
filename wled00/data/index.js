@@ -574,7 +574,7 @@ function populatePresets(fromls)
 	<i class="icons e-icon flr" id="sege${i+100}" onclick="expand(${i+100})">&#xe395;</i>
 	<div class="presin lstIcontent" id="seg${i+100}"></div>
 </div>`;
-    	pNum++;
+		pNum++;
 	}
 
 	gId('pcont').innerHTML = cn;
@@ -643,7 +643,7 @@ function populateInfo(i)
 	var pwru = "Not calculated";
 	if (pwr > 1000) {pwr /= 1000; pwr = pwr.toFixed((pwr > 10) ? 0 : 1); pwru = pwr + " A";}
 	else if (pwr > 0) {pwr = 50 * Math.round(pwr/50); pwru = pwr + " mA";}
-  	var urows="";
+	var urows="";
 	if (i.u) {
 		for (const [k, val] of Object.entries(i.u)) {
 			if (val[1])
@@ -863,10 +863,10 @@ function populatePalettes()
 		html += generateListItemHtml(
 			'palette',
 		    pa[0],
-            pa[1],
-            'setPalette',
+			pa[1],
+			'setPalette',
 			`<div class="lstIprev" style="${genPalPrevCss(pa[0])}"></div>`
-        );
+		);
 	}
 
 	gId('pallist').innerHTML=html;
@@ -932,7 +932,7 @@ function genPalPrevCss(id)
 
 function generateListItemHtml(listName, id, name, clickAction, extraHtml = '', effectPar = '')
 {
-    return `<div class="lstI${id==0?' sticky':''}" data-id="${id}" ${effectPar===''?'':'data-opt="'+effectPar+'"'}onClick="${clickAction}(${id})">
+	return `<div class="lstI${id==0?' sticky':''}" data-id="${id}" ${effectPar===''?'':'data-opt="'+effectPar+'"'}onClick="${clickAction}(${id})">
 	<label class="radio schkl" onclick="event.preventDefault()">
 		<input type="radio" value="${id}" name="${listName}">
 		<span class="radiomark"></span>
@@ -1035,24 +1035,27 @@ function updateLen(s)
 	var stop = parseInt(gId(`seg${s}e`).value);
 	var len = stop - (cfg.comp.seglen?0:start);
 	if (isM) {
+		// matrix setup
 		let startY = parseInt(gId(`seg${s}sY`).value);
 		let stopY = parseInt(gId(`seg${s}eY`).value);
 		len *= (stopY-(cfg.comp.seglen?0:startY));
 		let tPL = gId(`seg${s}lbtm`);
 		if (stop-start>1 && stopY-startY>1) {
-			tPL.classList.remove("hide");
+			// 2D segment
+			tPL.classList.remove("hide"); // unhide transpose checkbox
 			let sE = gId('fxlist').querySelector(`.lstI[data-id="${selectedFx}"]`);
 			if (sE) {
 				let sN = sE.querySelector(".lstIname").innerText;
 				let seg = gId(`seg${s}map2D`);
 				if (seg) {
-					if(sN.indexOf("\u25A6")<0) seg.classList.remove("hide");
-					else seg.classList.add("hide");
+					if(sN.indexOf("\u25A6")<0) seg.classList.remove("hide"); // unhide mapping for 1D effects (| in name)
+					else seg.classList.add("hide");	// hide mapping otherwise
 				}
 			}
 		} else {
-			tPL.classList.add("hide");
-			gId(`seg${s}tp`).checked = false;
+			// 1D segment in 2D set-up
+			tPL.classList.add("hide"); // hide transpose checkbox
+			gId(`seg${s}tp`).checked = false;	// and uncheck it
 		}
 	}
 	var out = "(delete)";
@@ -1250,7 +1253,7 @@ function readState(s,command=false)
 
 	tr = s.transition;
 	gId('tt').value = tr/10;
-  
+
 	populateSegments(s);
 	var selc=0;
 	var sellvl=0; // 0: selc is invalid, 1: selc is mainseg, 2: selc is first selected
@@ -1282,7 +1285,7 @@ function readState(s,command=false)
 		updateUI();
 		return true;
 	}
-  
+
 	var cd = gId('csl').children;
 	for (let e = cd.length-1; e >= 0; e--) {
 		cd[e].dataset.r = i.col[e][0];
@@ -1353,13 +1356,13 @@ function readState(s,command=false)
 function setEffectParameters(idx)
 {
 	if (!(Array.isArray(fxdata) && fxdata.length>idx)) return;
-  	var controlDefined = (fxdata[idx].substr(0,1) == "@");
+	var controlDefined = (fxdata[idx].substr(0,1) == "@");
 	var effectPar = fxdata[idx].substr(1);
 	var effectPars = (effectPar == '')?[]:effectPar.split(";");
 	var slOnOff = (effectPars.length==0 || effectPars[0]=='')?[]:effectPars[0].split(",");
 	var coOnOff = (effectPars.length<2  || effectPars[1]=='')?[]:effectPars[1].split(",");
 	var paOnOff = (effectPars.length<3  || effectPars[2]=='')?[]:effectPars[2].split(",");
-  
+
 	// set html slider items on/off
 	//var nSliders = Math.min(7,Math.floor(gId("sliders").children.length)); // div for each slider + filter + options
 	let nSliders = 5;
@@ -1439,7 +1442,7 @@ function setEffectParameters(idx)
 		}
 	}
 	gId("cslLabel").innerHTML = cslLabel;
-  
+
 	// set palette on/off
 	var palw = gId("palw"); // wrapper
 	var pall = gId("pall");	// label
@@ -1585,28 +1588,28 @@ function toggleSync()
 
 function toggleLiveview()
 {
-  //WLEDSR adding liveview2D support
-  if (isInfo && isM) toggleInfo();
-  if (isNodes && isM) toggleNodes();
-  isLv = !isLv;
+	//WLEDSR adding liveview2D support
+	if (isInfo && isM) toggleInfo();
+	if (isNodes && isM) toggleNodes();
+	isLv = !isLv;
 
-  var lvID = "liveview";
-  if (isM) {   
-	lvID = "liveview2D"
-	if (isLv) {
-	  var cn = '<iframe id="liveview2D" src="about:blank"></iframe>';
-	  d.getElementById('kliveview2D').innerHTML = cn;
+	var lvID = "liveview";
+	if (isM) {   
+		lvID = "liveview2D"
+		if (isLv) {
+		var cn = '<iframe id="liveview2D" src="about:blank"></iframe>';
+		d.getElementById('kliveview2D').innerHTML = cn;
+		}
+
+		gId('mliveview2D').style.transform = (isLv) ? "translateY(0px)":"translateY(100%)";
 	}
 
-	gId('mliveview2D').style.transform = (isLv) ? "translateY(0px)":"translateY(100%)";
-  }
-
-  gId(lvID).style.display = (isLv) ? "block":"none";
-  var url = (loc?`http://${locip}`:'') + "/" + lvID;
-  gId(lvID).src = (isLv) ? url:"about:blank";
-  gId('buttonSr').className = (isLv) ? "active":"";
-  if (!isLv && ws && ws.readyState === WebSocket.OPEN) ws.send('{"lv":false}');
-  size();
+	gId(lvID).style.display = (isLv) ? "block":"none";
+	var url = (loc?`http://${locip}`:'') + "/" + lvID;
+	gId(lvID).src = (isLv) ? url:"about:blank";
+	gId('buttonSr').className = (isLv) ? "active":"";
+	if (!isLv && ws && ws.readyState === WebSocket.OPEN) ws.send('{"lv":false}');
+	size();
 }
 
 function toggleInfo()
@@ -1825,17 +1828,12 @@ ${makePlSel(plJson[i].end?plJson[i].end:0, true)}
 	<span class="lstIname">
 	${pl?"Show playlist editor":(i>0)?"Overwrite with state":"Use current state"}
 	</span>
-    <input type="checkbox" id="p${i}cstgl" onchange="tglCs(${i})" ${(i==0||pl)?"checked":""}>
-    <span class="checkmark"></span>
-  </label>
+	<input type="checkbox" id="p${i}cstgl" onchange="tglCs(${i})" ${(i==0||pl)?"checked":""}>
+	<span class="checkmark"></span>
+</label>
 </div>
-<div class="po2" id="p${i}o2">
-    API command<br>
-    <textarea class="apitxt" id="p${i}api"></textarea>
-</div>
-<div class="po1" id="p${i}o1">
-	${content}
-</div>
+<div class="po2" id="p${i}o2">API command<br><textarea class="apitxt" id="p${i}api"></textarea></div>
+<div class="po1" id="p${i}o1">${content}</div>
 <div class="c">Save to ID <input class="noslide" id="p${i}id" type="number" oninput="checkUsed(${i})" max=250 min=1 value=${(i>0)?i:getLowestUnusedP()}></div>
 <div class="c">
 	<button class="btn btn-p" onclick="saveP(${i},${pl})"><i class="icons btn-icon">&#xe390;</i>Save</button>
@@ -1862,9 +1860,10 @@ function makePUtil()
 	gId('psFind').classList.remove('staytop');
 }
 
-function makePlEntry(p,i) {
-  return `<div class="plentry">
-  	<div class="hrz"></div>
+function makePlEntry(p,i)
+{
+	return `<div class="plentry">
+	<div class="hrz"></div>
 	<table>
 	<tr>
 		<td width="80%" colspan=2>
@@ -2199,7 +2198,7 @@ function saveP(i,pl)
 				gId(`p${i}warn`).innerHTML = "&#9888; Syntax error in custom JSON API command";
 				return;
 			} else if (raw.indexOf("Please") == 0) {
-        		gId(`p${i}warn`).innerHTML = "&#9888; Please refresh the page before modifying this preset";
+				gId(`p${i}warn`).innerHTML = "&#9888; Please refresh the page before modifying this preset";
 				return;
 			}
 		}
