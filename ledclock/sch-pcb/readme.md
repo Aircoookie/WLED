@@ -6,6 +6,8 @@ The main board has two flavours. In the original design I used SMD connectors bu
 
 The *dots* and *digit* PCB design has a THT pad that with a very small hole diameter and fully covered with solder mask. It's a workaround for EasyEDA to get the bottom layer fully covered with copper and solder mask. This is only necessary for aesthetic reasons (to block light shining through and get a nice color instead of the color of the PCB material). Since the bottom layer does not contain anything, it was not exported as a PDF file. If you make your PCB yourself, you can omit the workaround pads completely.
 
+Are you curious about the LED arrangement? Check this [issue](https://github.com/imeszaros/ledclock/issues/2).
+
 ## Main board
 
 - Schematic
