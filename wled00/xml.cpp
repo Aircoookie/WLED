@@ -636,6 +636,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("SDA"),i2c_sda);
     sappend('v',SET_F("SCL"),i2c_scl);
     sappend('v',SET_F("MOSI"),spi_mosi);
+    sappend('v',SET_F("MISO"),spi_miso);
     sappend('v',SET_F("SCLK"),spi_sclk);
     oappend(SET_F("addInfo('SDA','"));  oappendi(HW_PIN_SDA);      oappend(SET_F("');"));
     oappend(SET_F("addInfo('SCL','"));  oappendi(HW_PIN_SCL);      oappend(SET_F("');"));
