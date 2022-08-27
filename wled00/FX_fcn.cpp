@@ -443,7 +443,7 @@ uint16_t Segment::virtualLength() const {
 
 void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
 {
-  uint8_t vStrip = i>>16; // hack to allow running on virtual strips (2D segment columns/rows)
+  int vStrip = i>>16; // hack to allow running on virtual strips (2D segment columns/rows)
   i &= 0xFFFF;
 
   if (i >= virtualLength() || i<0) return;  // if pixel would fall out of segment just exit
@@ -482,7 +482,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         break;
     }
     return;
-  } else if (width()==1 || height()==1) {
+  } else if (strip.isMatrix && (width()==1 || height()==1)) { // TODO remove this hack
     // we have a vertical or horizontal 1D segment (WARNING: virtual...() may be transposed)
     int x = 0, y = 0;
     if (virtualHeight()>1) y = i;
@@ -535,6 +535,9 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
 // anti-aliased normalized version of setPixelColor()
 void Segment::setPixelColor(float i, uint32_t col, bool aa)
 {
+  int vStrip = int(i/10.0f); // hack to allow running on virtual strips (2D segment columns/rows)
+  i -= int(i);
+
   if (i<0.0f || i>1.0f) return; // not normalized
 
   float fC = i * (virtualLength()-1);
@@ -543,27 +546,27 @@ void Segment::setPixelColor(float i, uint32_t col, bool aa)
     uint16_t iR = roundf(fC+0.49f);
     float    dL = fC - iL;
     float    dR = iR - fC;
-    uint32_t cIL = getPixelColor(iL);
-    uint32_t cIR = getPixelColor(iR);
+    uint32_t cIL = getPixelColor(iL | (vStrip<<16));
+    uint32_t cIR = getPixelColor(iR | (vStrip<<16));
     if (iR!=iL) {
       // blend L pixel
       cIL = color_blend(col, cIL, uint8_t(dL*255.0f));
-      setPixelColor(iL, cIL);
+      setPixelColor(iL | (vStrip<<16), cIL);
       // blend R pixel
       cIR = color_blend(col, cIR, uint8_t(dR*255.0f));
-      setPixelColor(iR, cIR);
+      setPixelColor(iR | (vStrip<<16), cIR);
     } else {
       // exact match (x & y land on a pixel)
-      setPixelColor(iL, col);
+      setPixelColor(iL | (vStrip<<16), col);
     }
   } else {
-    setPixelColor(uint16_t(roundf(fC)), col);
+    setPixelColor(uint16_t(roundf(fC)) | (vStrip<<16), col);
   }
 }
 
 uint32_t Segment::getPixelColor(int i)
 {
-  uint8_t vStrip = i>>16;
+  int vStrip = i>>16;
   i &= 0xFFFF;
 
 #ifndef WLED_DISABLE_2D

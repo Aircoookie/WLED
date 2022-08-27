@@ -2848,6 +2848,7 @@ uint16_t mode_bouncing_balls(void) {
 
         int pos = roundf(balls[i].height * (SEGLEN - 1));
         SEGMENT.setPixelColor(pos | int((stripNr+1)<<16), color); // encode virtual strip into index
+        //SEGMENT.setPixelColor(balls[i].height + (stripNr+1)*10.0f, color);
       }
     }
   };
