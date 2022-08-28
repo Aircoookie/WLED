@@ -7109,6 +7109,7 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
 
   for (int x=0; x < cols; x++) {
     uint8_t  band       = map(x, 0, cols-1, 0, NUM_BANDS - 1);
+    if (NUM_BANDS < 16) band = map(band, 0, NUM_BANDS - 1, 0, 15); // always use full range. comment out this line to get the previous behaviour.
     band = constrain(band, 0, 15);
     uint16_t colorIndex = band * 17;
     uint16_t barHeight  = map(fftResult[band], 0, 255, 0, rows); // do not subtract -1 from rows here
