@@ -2796,7 +2796,7 @@ typedef struct Ball {
 */
 uint16_t mode_bouncing_balls(void) {
   //allocate segment data
-  const uint16_t strips = SEGMENT.map1D2D == M12_pBar ? SEGMENT.nrOfVStrips() : 1;
+  const uint16_t strips = SEGMENT.nrOfVStrips(); // adapt for 2D
   const size_t maxNumBalls = 16; 
   uint16_t dataSize = sizeof(ball) * maxNumBalls;
   if (!SEGENV.allocateData(dataSize * strips)) return mode_static(); //allocation failed

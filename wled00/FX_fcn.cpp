@@ -410,7 +410,11 @@ uint16_t Segment::nrOfVStrips() const {
   uint16_t vLen = 1;
 #ifndef WLED_DISABLE_2D
   if (is2D()) {
-    vLen = virtualWidth();
+    switch (map1D2D) {
+      case M12_pBar:
+        vLen = virtualWidth();
+        break;
+    }
   }
 #endif
   return vLen;
@@ -1435,7 +1439,7 @@ void WS2812FX::setTransitionMode(bool t)
 void WS2812FX::printSize()
 {
   size_t size = 0;
-  for (const Segment seg : _segments) size += seg.getSize();
+  for (const Segment &seg : _segments) size += seg.getSize();
   DEBUG_PRINTF("Segments: %d -> %uB\n", _segments.size(), size);
   DEBUG_PRINTF("Modes: %d*%d=%uB\n", sizeof(mode_ptr), _mode.size(), (_mode.capacity()*sizeof(mode_ptr)));
   DEBUG_PRINTF("Data: %d*%d=%uB\n", sizeof(const char *), _modeData.size(), (_modeData.capacity()*sizeof(const char *)));
