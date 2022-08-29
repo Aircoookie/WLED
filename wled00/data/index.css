@@ -1219,6 +1219,12 @@ TD .checkmark, TD .radiomark {
 	filter: grayscale(100%);  
 }
 
+.lbl-l {
+	font-size: 13px;
+	text-align: center;
+	padding: 4px 0;
+}
+
 .lbl-s {
 	display: inline-block;
 	/* margin: 10px 4px 0 0; */

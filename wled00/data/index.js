@@ -574,7 +574,7 @@ function populatePresets(fromls)
 	<i class="icons e-icon flr" id="sege${i+100}" onclick="expand(${i+100})">&#xe395;</i>
 	<div class="presin lstIcontent" id="seg${i+100}"></div>
 </div>`;
-    	pNum++;
+		pNum++;
 	}
 
 	gId('pcont').innerHTML = cn;
@@ -643,7 +643,7 @@ function populateInfo(i)
 	var pwru = "Not calculated";
 	if (pwr > 1000) {pwr /= 1000; pwr = pwr.toFixed((pwr > 10) ? 0 : 1); pwru = pwr + " A";}
 	else if (pwr > 0) {pwr = 50 * Math.round(pwr/50); pwru = pwr + " mA";}
-  	var urows="";
+	var urows="";
 	if (i.u) {
 		for (const [k, val] of Object.entries(i.u)) {
 			if (val[1])
@@ -714,7 +714,7 @@ function populateSegments(s)
 		}
 		let map2D = `<div id="seg${i}map2D" data-map="map2D" class="lbl-s hide">Expand 1D FX<br>
 			<div class="sel-p"><select class="sel-p" id="seg${i}mp12" onchange="setMp12(${i})">
-				<option value="0" ${inst.mp12==0?' selected':''}>None</option>
+				<option value="0" ${inst.mp12==0?' selected':''}>Strip</option>
 				<option value="1" ${inst.mp12==1?' selected':''}>Bar</option>
 				<option value="2" ${inst.mp12==2?' selected':''}>Arc</option>
 				<option value="3" ${inst.mp12==3?' selected':''}>Corner</option>
@@ -774,7 +774,7 @@ function populateSegments(s)
 		${!isM?rvXck:''}
 		${isM&&stoY-staY>1&&stoX-staX>1?map2D:''}
 		${s.AudioReactive && s.AudioReactive.on ? "" : sndSim}
-		<label class="check revchkl">
+		<label class="check revchkl" id="seg${i}lbtm">
 			${isM?'Transpose':'Mirror effect'}
 			<input type="checkbox" id="seg${i}${isM?'tp':'mi'}" onchange="${(isM?'setTp(':'setMi(')+i})" ${isM?(inst.tp?"checked":""):(inst.mi?"checked":"")}>
 			<span class="checkmark"></span>
@@ -863,10 +863,10 @@ function populatePalettes()
 		html += generateListItemHtml(
 			'palette',
 		    pa[0],
-            pa[1],
-            'setPalette',
+			pa[1],
+			'setPalette',
 			`<div class="lstIprev" style="${genPalPrevCss(pa[0])}"></div>`
-        );
+		);
 	}
 
 	gId('pallist').innerHTML=html;
@@ -932,7 +932,7 @@ function genPalPrevCss(id)
 
 function generateListItemHtml(listName, id, name, clickAction, extraHtml = '', effectPar = '')
 {
-    return `<div class="lstI${id==0?' sticky':''}" data-id="${id}" ${effectPar===''?'':'data-opt="'+effectPar+'"'}onClick="${clickAction}(${id})">
+	return `<div class="lstI${id==0?' sticky':''}" data-id="${id}" ${effectPar===''?'':'data-opt="'+effectPar+'"'}onClick="${clickAction}(${id})">
 	<label class="radio schkl" onclick="event.preventDefault()">
 		<input type="radio" value="${id}" name="${listName}">
 		<span class="radiomark"></span>
@@ -1035,19 +1035,27 @@ function updateLen(s)
 	var stop = parseInt(gId(`seg${s}e`).value);
 	var len = stop - (cfg.comp.seglen?0:start);
 	if (isM) {
+		// matrix setup
 		let startY = parseInt(gId(`seg${s}sY`).value);
 		let stopY = parseInt(gId(`seg${s}eY`).value);
 		len *= (stopY-(cfg.comp.seglen?0:startY));
+		let tPL = gId(`seg${s}lbtm`);
 		if (stop-start>1 && stopY-startY>1) {
+			// 2D segment
+			tPL.classList.remove("hide"); // unhide transpose checkbox
 			let sE = gId('fxlist').querySelector(`.lstI[data-id="${selectedFx}"]`);
 			if (sE) {
 				let sN = sE.querySelector(".lstIname").innerText;
 				let seg = gId(`seg${s}map2D`);
 				if (seg) {
-					if (sN.indexOf("\u25A6")<0) seg.classList.remove("hide");
-					else seg.classList.add("hide");
+					if(sN.indexOf("\u25A6")<0) seg.classList.remove("hide"); // unhide mapping for 1D effects (| in name)
+					else seg.classList.add("hide");	// hide mapping otherwise
 				}
 			}
+		} else {
+			// 1D segment in 2D set-up
+			tPL.classList.add("hide"); // hide transpose checkbox
+			gId(`seg${s}tp`).checked = false;	// and uncheck it
 		}
 	}
 	var out = "(delete)";
@@ -1245,7 +1253,7 @@ function readState(s,command=false)
 
 	tr = s.transition;
 	gId('tt').value = tr/10;
-  
+
 	populateSegments(s);
 	var selc=0;
 	var sellvl=0; // 0: selc is invalid, 1: selc is mainseg, 2: selc is first selected
@@ -1277,7 +1285,7 @@ function readState(s,command=false)
 		updateUI();
 		return true;
 	}
-  
+
 	var cd = gId('csl').children;
 	for (let e = cd.length-1; e >= 0; e--) {
 		cd[e].dataset.r = i.col[e][0];
@@ -1348,13 +1356,13 @@ function readState(s,command=false)
 function setEffectParameters(idx)
 {
 	if (!(Array.isArray(fxdata) && fxdata.length>idx)) return;
-  	var controlDefined = (fxdata[idx].substr(0,1) == "@");
+	var controlDefined = (fxdata[idx].substr(0,1) == "@");
 	var effectPar = fxdata[idx].substr(1);
 	var effectPars = (effectPar == '')?[]:effectPar.split(";");
 	var slOnOff = (effectPars.length==0 || effectPars[0]=='')?[]:effectPars[0].split(",");
 	var coOnOff = (effectPars.length<2  || effectPars[1]=='')?[]:effectPars[1].split(",");
 	var paOnOff = (effectPars.length<3  || effectPars[2]=='')?[]:effectPars[2].split(",");
-  
+
 	// set html slider items on/off
 	//var nSliders = Math.min(7,Math.floor(gId("sliders").children.length)); // div for each slider + filter + options
 	let nSliders = 5;
@@ -1434,7 +1442,7 @@ function setEffectParameters(idx)
 		}
 	}
 	gId("cslLabel").innerHTML = cslLabel;
-  
+
 	// set palette on/off
 	var palw = gId("palw"); // wrapper
 	var pall = gId("pall");	// label
@@ -1580,28 +1588,28 @@ function toggleSync()
 
 function toggleLiveview()
 {
-  //WLEDSR adding liveview2D support
-  if (isInfo && isM) toggleInfo();
-  if (isNodes && isM) toggleNodes();
-  isLv = !isLv;
+	//WLEDSR adding liveview2D support
+	if (isInfo && isM) toggleInfo();
+	if (isNodes && isM) toggleNodes();
+	isLv = !isLv;
 
-  var lvID = "liveview";
-  if (isM) {   
-	lvID = "liveview2D"
-	if (isLv) {
-	  var cn = '<iframe id="liveview2D" src="about:blank"></iframe>';
-	  d.getElementById('kliveview2D').innerHTML = cn;
+	var lvID = "liveview";
+	if (isM) {   
+		lvID = "liveview2D"
+		if (isLv) {
+		var cn = '<iframe id="liveview2D" src="about:blank"></iframe>';
+		d.getElementById('kliveview2D').innerHTML = cn;
+		}
+
+		gId('mliveview2D').style.transform = (isLv) ? "translateY(0px)":"translateY(100%)";
 	}
 
-	gId('mliveview2D').style.transform = (isLv) ? "translateY(0px)":"translateY(100%)";
-  }
-
-  gId(lvID).style.display = (isLv) ? "block":"none";
-  var url = (loc?`http://${locip}`:'') + "/" + lvID;
-  gId(lvID).src = (isLv) ? url:"about:blank";
-  gId('buttonSr').className = (isLv) ? "active":"";
-  if (!isLv && ws && ws.readyState === WebSocket.OPEN) ws.send('{"lv":false}');
-  size();
+	gId(lvID).style.display = (isLv) ? "block":"none";
+	var url = (loc?`http://${locip}`:'') + "/" + lvID;
+	gId(lvID).src = (isLv) ? url:"about:blank";
+	gId('buttonSr').className = (isLv) ? "active":"";
+	if (!isLv && ws && ws.readyState === WebSocket.OPEN) ws.send('{"lv":false}');
+	size();
 }
 
 function toggleInfo()
@@ -1806,9 +1814,9 @@ ${makePlSel(plJson[i].end?plJson[i].end:0, true)}
 	<span class="checkmark"></span>
 </label>`;
 		if (Array.isArray(lastinfo.maps) && lastinfo.maps.length>0) {
-			content += `<div class="sel">Ledmap:&nbsp;<select class="sel-p" id="p${i}lmp"><option value="">None</option>`;
+			content += `<div class="lbl-l">Ledmap:&nbsp;<div class="sel-p"><select class="sel-p" id="p${i}lmp"><option value="">None</option>`;
 			for (const k of (lastinfo.maps||[])) content += `<option value="${k}"${(i>0 && pJson[i].ledmap==k)?" selected":""}>${k}</option>`;
-			content += "</select></div>";
+			content += "</select></div></div>";
 		}
 	}
 
@@ -1820,17 +1828,12 @@ ${makePlSel(plJson[i].end?plJson[i].end:0, true)}
 	<span class="lstIname">
 	${pl?"Show playlist editor":(i>0)?"Overwrite with state":"Use current state"}
 	</span>
-    <input type="checkbox" id="p${i}cstgl" onchange="tglCs(${i})" ${(i==0||pl)?"checked":""}>
-    <span class="checkmark"></span>
-  </label>
+	<input type="checkbox" id="p${i}cstgl" onchange="tglCs(${i})" ${(i==0||pl)?"checked":""}>
+	<span class="checkmark"></span>
+</label>
 </div>
-<div class="po2" id="p${i}o2">
-    API command<br>
-    <textarea class="apitxt" id="p${i}api"></textarea>
-</div>
-<div class="po1" id="p${i}o1">
-	${content}
-</div>
+<div class="po2" id="p${i}o2">API command<br><textarea class="apitxt" id="p${i}api"></textarea></div>
+<div class="po1" id="p${i}o1">${content}</div>
 <div class="c">Save to ID <input class="noslide" id="p${i}id" type="number" oninput="checkUsed(${i})" max=250 min=1 value=${(i>0)?i:getLowestUnusedP()}></div>
 <div class="c">
 	<button class="btn btn-p" onclick="saveP(${i},${pl})"><i class="icons btn-icon">&#xe390;</i>Save</button>
@@ -1846,6 +1849,10 @@ function makePUtil()
 	p.classList.remove('staybot');
 	p.classList.add('pres');
 	p.innerHTML = `<div class="presin expanded">${makeP(0)}</div>`;
+	let pTx = gId('p0txt');
+	pTx.focus();
+	pTx.value = eJson.find((o)=>{return o.id==selectedFx}).name;
+	pTx.select();
 	p.scrollIntoView({
 		behavior: 'smooth',
 		block: 'center'
@@ -1853,9 +1860,10 @@ function makePUtil()
 	gId('psFind').classList.remove('staytop');
 }
 
-function makePlEntry(p,i) {
-  return `<div class="plentry">
-  	<div class="hrz"></div>
+function makePlEntry(p,i)
+{
+	return `<div class="plentry">
+	<div class="hrz"></div>
 	<table>
 	<tr>
 		<td width="80%" colspan=2>
@@ -1889,6 +1897,7 @@ function makePlUtil()
 	p.classList.remove('staybot');
 	p.innerHTML = `<div class="pres"><div class="segin expanded" id="seg100">${makeP(0,true)}</div></div>`;
 	refreshPlE(0);
+	gId('p0txt').focus();
 	p.scrollIntoView({
 		behavior: 'smooth',
 		block: 'center'
@@ -1916,7 +1925,11 @@ function tglCs(i)
 function tglSegn(s)
 {
 	let t = gId(s<100?`seg${s}t`:`p${s-100}txt`);
-	if (t) t.classList.toggle("show");
+	if (t) {
+		t.classList.toggle("show");
+		t.focus();
+		t.select();
+	}
 	event.preventDefault();
 	event.stopPropagation();
 }
@@ -1982,6 +1995,7 @@ function setSeg(s)
 		var stopY = parseInt(gId(`seg${s}eY`).value);
 		obj.seg.startY = startY;
 		obj.seg.stopY = (cfg.comp.seglen?startY:0)+stopY;
+		obj.seg.tp = gId(`seg${s}tp`).checked;
 	}
 	if (gId(`seg${s}grp`)) {
 		var grp = parseInt(gId(`seg${s}grp`).value);
@@ -2184,7 +2198,7 @@ function saveP(i,pl)
 				gId(`p${i}warn`).innerHTML = "&#9888; Syntax error in custom JSON API command";
 				return;
 			} else if (raw.indexOf("Please") == 0) {
-        		gId(`p${i}warn`).innerHTML = "&#9888; Please refresh the page before modifying this preset";
+				gId(`p${i}warn`).innerHTML = "&#9888; Please refresh the page before modifying this preset";
 				return;
 			}
 		}

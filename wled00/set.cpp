@@ -502,23 +502,27 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       i2c_scl = -1;
     }
     int8_t hw_mosi_pin = !request->arg(F("MOSI")).length() ? -1 : max(-1,min(33,(int)request->arg(F("MOSI")).toInt()));
+    int8_t hw_miso_pin = !request->arg(F("MISO")).length() ? -1 : max(-1,min(33,(int)request->arg(F("MISO")).toInt()));
     int8_t hw_sclk_pin = !request->arg(F("SCLK")).length() ? -1 : max(-1,min(33,(int)request->arg(F("SCLK")).toInt()));
     #ifdef ESP8266
     // cannot change pins on ESP8266
     if (hw_mosi_pin >= 0 && hw_mosi_pin != HW_PIN_DATASPI)  hw_mosi_pin = HW_PIN_DATASPI;
+    if (hw_miso_pin >= 0 && hw_miso_pin != HW_PIN_MISOSPI)  hw_mosi_pin = HW_PIN_MISOSPI;
     if (hw_sclk_pin >= 0 && hw_sclk_pin != HW_PIN_CLOCKSPI) hw_sclk_pin = HW_PIN_CLOCKSPI;
     #endif
-    PinManagerPinType spi[2] = { { hw_mosi_pin, true }, { hw_sclk_pin, true } };
-    if (hw_mosi_pin >= 0 && hw_sclk_pin >= 0 && pinManager.allocateMultiplePins(spi, 2, PinOwner::HW_SPI)) {
+    PinManagerPinType spi[3] = { { hw_mosi_pin, true }, { hw_miso_pin, true }, { hw_sclk_pin, true } };
+    if (hw_mosi_pin >= 0 && hw_sclk_pin >= 0 && pinManager.allocateMultiplePins(spi, 3, PinOwner::HW_SPI)) {
       spi_mosi = hw_mosi_pin;
+      spi_miso = hw_miso_pin;
       spi_sclk = hw_sclk_pin;
       // no bus initialisation
     } else {
       //SPI.end();
       DEBUG_PRINTLN(F("Could not allocate SPI pins."));
-      uint8_t spi[2] = { spi_mosi, spi_sclk };
-      pinManager.deallocateMultiplePins(spi, 2, PinOwner::HW_SPI); // just in case deallocation of old pins
+      uint8_t spi[3] = { spi_mosi, spi_miso, spi_sclk };
+      pinManager.deallocateMultiplePins(spi, 3, PinOwner::HW_SPI); // just in case deallocation of old pins
       spi_mosi = -1;
+      spi_miso = -1;
       spi_sclk = -1;
     }
 
