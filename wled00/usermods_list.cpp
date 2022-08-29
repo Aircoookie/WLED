@@ -139,6 +139,10 @@
 #include "../usermods/audioreactive/audio_reactive.h"
 #endif
 
+#ifdef USERMOD_CUSTOMEFFECTS
+#include "../usermods/customeffects/usermod_v2_customeffects.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -265,4 +269,9 @@ void registerUsermods()
     #endif
   usermods.add(new AudioReactive());
   #endif
+
+  #ifdef USERMOD_CUSTOMEFFECTS
+  usermods.add(new CustomEffectsUserMod());
+  #endif
+  
 }
