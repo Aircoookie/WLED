@@ -209,10 +209,10 @@ void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
     uint16_t xR = roundf(fX+0.49f);
     uint16_t yT = roundf(fY-0.49f);
     uint16_t yB = roundf(fY+0.49f);
-    float    dL = fX - xL;
-    float    dR = xR - fX;
-    float    dT = fY - yT;
-    float    dB = yB - fY;
+    float    dL = (fX - xL)*(fX - xL);
+    float    dR = (xR - fX)*(xR - fX);
+    float    dT = (fY - yT)*(fY - yT);
+    float    dB = (yB - fY)*(yB - fY);
     uint32_t cXLYT = getPixelColorXY(xL, yT);
     uint32_t cXRYT = getPixelColorXY(xR, yT);
     uint32_t cXLYB = getPixelColorXY(xL, yB);
