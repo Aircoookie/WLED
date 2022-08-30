@@ -548,8 +548,8 @@ void Segment::setPixelColor(float i, uint32_t col, bool aa)
   if (aa) {
     uint16_t iL = roundf(fC-0.49f);
     uint16_t iR = roundf(fC+0.49f);
-    float    dL = fC - iL;
-    float    dR = iR - fC;
+    float    dL = (fC - iL)*(fC - iL);
+    float    dR = (iR - fC)*(iR - fC);
     uint32_t cIL = getPixelColor(iL | (vStrip<<16));
     uint32_t cIR = getPixelColor(iR | (vStrip<<16));
     if (iR!=iL) {
