@@ -728,6 +728,7 @@ function populateSegments(s)
 				<option value="3" ${inst.ssim==3?' selected':''}>U14_3</option>
 			</select></div>
 		</div>`;
+		let cusEff = `<button class="btn" onclick="toggleCEEditor('${inst.n?inst.n:"default"}', ${i})">Custom Effect Editor</button><br>`;
 		cn += `<div class="seg lstI ${i==s.mainseg ? 'selected' : ''} ${exp ? "expanded":""}" id="seg${i}">
 	<label class="check schkl">
 		<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>
@@ -774,6 +775,7 @@ function populateSegments(s)
 		${!isM?rvXck:''}
 		${isM&&stoY-staY>1&&stoX-staX>1?map2D:''}
 		${s.AudioReactive && s.AudioReactive.on ? "" : sndSim}
+		${s.CustomEffects && s.CustomEffects.on ? cusEff : ""}
 		<label class="check revchkl" id="seg${i}lbtm">
 			${isM?'Transpose':'Mirror effect'}
 			<input type="checkbox" id="seg${i}${isM?'tp':'mi'}" onchange="${(isM?'setTp(':'setMi(')+i})" ${isM?(inst.tp?"checked":""):(inst.mi?"checked":"")}>
