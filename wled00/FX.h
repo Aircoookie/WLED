@@ -634,8 +634,6 @@ typedef struct Segment {
 } segment;
 //static int segSize = sizeof(Segment);
 
-#define floatNull -32768 //WLEDSR Custom Effects
-
 // main "strip" class
 class WS2812FX {  // 96 bytes
   typedef uint16_t (*mode_ptr)(void); // pointer to mode function
@@ -900,12 +898,6 @@ class WS2812FX {  // 96 bytes
 
     void
       estimateCurrentAndLimitBri(void);
-
-  public:
-    //WLEDSR Custom Effects
-    float arti_external_function(uint8_t function, float par1 = floatNull, float par2 = floatNull, float par3 = floatNull, float par4 = floatNull, float par5 = floatNull);
-    float arti_get_external_variable(uint8_t variable, float par1 = floatNull, float par2 = floatNull, float par3 = floatNull);
-    void arti_set_external_variable(float value, uint8_t variable, float par1 = floatNull, float par2 = floatNull, float par3 = floatNull);
 };
 
 extern const char JSON_mode_names[];

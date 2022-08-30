@@ -684,11 +684,7 @@ function populateSegments(s)
 	let li = lastinfo;
 	segCount = 0; lowestUnused = 0; lSeg = 0;
 
-	console.log(s);
-
 	for (var inst of (s.seg||[])) {
-		console.log(inst);
-		
 		segCount++;
 
 		let i = parseInt(inst.id);

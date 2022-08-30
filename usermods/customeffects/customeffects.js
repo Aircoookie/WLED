@@ -56,6 +56,21 @@ function loadLogFile(name, attempt) {
     });
 }
 
+function uploadFileWithText(name, text)
+{
+  var req = new XMLHttpRequest();
+  req.addEventListener('load', function(){showToast(this.responseText,this.status >= 400)});
+  req.addEventListener('error', function(e){showToast(e.stack,true);});
+  req.open("POST", "/upload");
+  var formData = new FormData();
+
+  var blob = new Blob([text], {type : 'application/text'});
+  var fileOfBlob = new File([blob], name);
+  formData.append("upload", fileOfBlob);
+
+  req.send(formData);
+}
+
 function saveCE(name, segID) {
     showToast("Saving " + name);
 

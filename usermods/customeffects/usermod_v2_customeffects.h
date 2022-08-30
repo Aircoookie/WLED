@@ -2,12 +2,11 @@
 
 #include "wled.h"
 
-#include "arti.h"
 #include "arti_wled.h"
 
 //declare weathermod global variables (always precede with weather_ (psuedo class static variables)
 static uint32_t usermods_pushLoop = 0; //effect pushes loop to execute. might be interesting for audioreactive too
-
+ARTI * arti;
 
 //effect function
 uint16_t mode_customEffect(void) { 

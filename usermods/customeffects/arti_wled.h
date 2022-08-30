@@ -88,55 +88,19 @@ enum Externals
 };
 
 #if ARTI_PLATFORM != ARTI_ARDUINO
-  class WS2812FX {
-  public:
-    uint16_t matrixWidth = 16, matrixHeight = 16;
-
-    uint16_t XY(uint16_t x, uint16_t y)
-    {
-      return x%matrixWidth + y%matrixHeight * matrixWidth;
-    }
-
-    uint32_t millis()
-    {
-      return 1000; // no millis defined for non embedded yet
-    }
-
-    float arti_external_function(uint8_t function, float par1 = floatNull, float par2 = floatNull, float par3 = floatNull, float par4 = floatNull, float par5 = floatNull);
-    float arti_get_external_variable(uint8_t variable, float par1 = floatNull, float par2 = floatNull, float par3 = floatNull);
-    void arti_set_external_variable(float value, uint8_t variable, float par1 = floatNull, float par2 = floatNull, float par3 = floatNull);
-  }; //class WS2812FX
-
-  WS2812FX strip = WS2812FX();
-
   #define PI 3.141592654
-
 #endif
 
 float ARTI::arti_external_function(uint8_t function, float par1, float par2, float par3, float par4, float par5)
 {
-  return strip.arti_external_function(function, par1, par2, par3, par4, par5);
-}
-
-float ARTI::arti_get_external_variable(uint8_t variable, float par1, float par2, float par3)
-{
-  return strip.arti_get_external_variable(variable, par1, par2, par3);
-}
-
-void ARTI::arti_set_external_variable(float value, uint8_t variable, float par1, float par2, float par3)
-{
-  strip.arti_set_external_variable(value, variable, par1, par2, par3);
-}
-
-float WS2812FX::arti_external_function(uint8_t function, float par1, float par2, float par3, float par4, float par5) { 
   // MEMORY_ARTI("fun %d(%f, %f, %f)\n", function, par1, par2, par3);
   #if ARTI_PLATFORM == ARTI_ARDUINO
     switch (function) {
       case F_setPixelColor: {
         if (par3 == floatNull)
-          setPixelColor(((uint16_t)par1)%SEGLEN, (uint32_t)par2);
+          SEGMENT.setPixelColor(((uint16_t)par1)%SEGLEN, (uint32_t)par2);
         else
-          setPixelColorXY((uint16_t)par1, (uint16_t)par2, (uint32_t)par3);
+          SEGMENT.setPixelColorXY((uint16_t)par1, (uint16_t)par2, (uint32_t)par3);
         return floatNull;
       }
       case F_setPixels:
@@ -144,18 +108,18 @@ float WS2812FX::arti_external_function(uint8_t function, float par1, float par2,
         return floatNull;
       case F_hsv:
        {
-        CRGB color = CHSV(par1, par2, par3);
+        CRGB color = CHSV((uint8_t)par1, (uint8_t)par2, (uint8_t)par3);
         return RGBW32(color.r, color.g, color.b, 0);
        }
       case F_rgbw:
-        return RGBW32(par1, par2, par3, par4);
+        return RGBW32((uint8_t)par1, (uint8_t)par2, (uint8_t)par3, (uint8_t)par4);
 
       case F_setRange: {
-        setRange((uint16_t)par1, (uint16_t)par2, (uint32_t)par3);
+        strip.setRange((uint16_t)par1, (uint16_t)par2, (uint32_t)par3);
         return floatNull;
       }
       case F_fill: {
-        fill((uint32_t)par1);
+        SEGMENT.fill((uint32_t)par1);
         return floatNull;
       }
       case F_colorBlend:
@@ -164,7 +128,11 @@ float WS2812FX::arti_external_function(uint8_t function, float par1, float par2,
         return SEGMENT.color_wheel((uint8_t)par1);
       case F_colorFromPalette: 
       {
-        CRGB color = ColorFromPalette(SEGPALETTE, (uint8_t)par1, (uint8_t)par2, LINEARBLEND);
+        CRGB color;
+        if (par2 == floatNull)
+          color = ColorFromPalette(SEGPALETTE, (uint8_t)par1);
+        else
+          color = ColorFromPalette(SEGPALETTE, (uint8_t)par1, (uint8_t)par2); //brightness
         return RGBW32(color.r, color.g, color.b, 0);
       }
       case F_beatSin:
@@ -182,12 +150,12 @@ float WS2812FX::arti_external_function(uint8_t function, float par1, float par2,
         return SEGCOLOR((uint8_t)par1);
 
       case F_shift: {
-        uint32_t saveFirstPixel = getPixelColor(0);
+        uint32_t saveFirstPixel = SEGMENT.getPixelColor(0);
         for (uint16_t i=0; i<SEGLEN-1; i++)
         {
-          setPixelColor(i, getPixelColor((uint16_t)(i + par1)%SEGLEN));
+          SEGMENT.setPixelColor(i, SEGMENT.getPixelColor((uint16_t)(i + par1)%SEGLEN));
         }
-        setPixelColor(SEGLEN - 1, saveFirstPixel);
+        SEGMENT.setPixelColor(SEGLEN - 1, saveFirstPixel);
         return floatNull;
       }
       case F_circle2D: {
@@ -341,7 +309,8 @@ float WS2812FX::arti_external_function(uint8_t function, float par1, float par2,
   return function;
 }
 
-float WS2812FX::arti_get_external_variable(uint8_t variable, float par1, float par2, float par3) {
+float ARTI::arti_get_external_variable(uint8_t variable, float par1, float par2, float par3)
+{
   // MEMORY_ARTI("get %d(%f, %f, %f)\n", variable, par1, par2, par3);
   #if ARTI_PLATFORM == ARTI_ARDUINO
     switch (variable)
@@ -442,9 +411,8 @@ float WS2812FX::arti_get_external_variable(uint8_t variable, float par1, float p
   return variable;
 }
 
-bool ledsSet; //check if leds is set 
-
-void WS2812FX::arti_set_external_variable(float value, uint8_t variable, float par1, float par2, float par3) {
+void ARTI::arti_set_external_variable(float value, uint8_t variable, float par1, float par2, float par3)
+{
   #if ARTI_PLATFORM == ARTI_ARDUINO
     // MEMORY_ARTI("%s %s %u %u (%u)\n", spaces+50-depth, variable_name, par1, par2, esp_get_free_heap_size());
     switch (variable)
@@ -460,7 +428,6 @@ void WS2812FX::arti_set_external_variable(float value, uint8_t variable, float p
         else
           SEGMENT.setPixelColorXY((uint16_t)par1%SEGMENT.virtualWidth(), (uint16_t)par2%SEGMENT.virtualHeight(), value); //2D value!!
 
-        ledsSet = true;
         return;
     }
   #else
@@ -477,14 +444,13 @@ void WS2812FX::arti_set_external_variable(float value, uint8_t variable, float p
         else
           RUNLOG_ARTI("arti_set_external_variable: leds(%f, %f) := %f\n", par1, par2, value);
 
-        ledsSet = true;
         return;
     }
   #endif
 
   ERROR_ARTI("Error: arti_set_external_variable: %u not implemented\n", variable);
   errorOccurred = true;
-} //arti_set_external_variable
+}
 
 bool ARTI::loop() 
 {
@@ -504,8 +470,6 @@ bool ARTI::loop()
     
     const char * function_name = "renderFrame";
     Symbol* function_symbol = global_scope->lookup(function_name);
-
-    ledsSet = false;
 
     if (function_symbol != nullptr) { //calling undefined function: pre-defined functions e.g. print
 
@@ -553,14 +517,6 @@ bool ARTI::loop()
 
     }
 
-    // if leds has been set during interpret(renderLed)
-    if (ledsSet) {
-      // Serial.println("ledsSet");
-      arti_external_function(F_setPixels);
-    }
-    // else
-    //   Serial.println("not ledsSet");
-
     if (!foundRenderFunction) 
     {
       ERROR_ARTI("%s renderFrame or renderLed not found\n", spaces+50-depth);
@@ -582,9 +538,3 @@ bool ARTI::loop()
 
   return true;
 } // loop
-
-#if ARTI_PLATFORM == ARTI_ARDUINO
-
-ARTI * arti;
-
-#endif
