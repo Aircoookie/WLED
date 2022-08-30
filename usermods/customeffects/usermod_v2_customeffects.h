@@ -100,10 +100,16 @@ class CustomEffectsUserMod : public Usermod {
     unsigned long lastTime = 0; //will be used to download new forecast every hour
     char errorMessage[100] = "";
 
+    bool     enabled = false;
+    bool     initDone = false;
+
   public:
 
     void setup() {
-      strip.addEffect(255, &mode_customEffect, _data_FX_MODE_CUSTOMEFFECT);
+      if (!initDone)
+        strip.addEffect(255, &mode_customEffect, _data_FX_MODE_CUSTOMEFFECT);
+      initDone = true;
+      enabled = true;
     }
 
     void connected() {
@@ -140,6 +146,12 @@ class CustomEffectsUserMod : public Usermod {
     void addToJsonState(JsonObject& root)
     {
       //root["user0"] = userVar0;
+      if (!initDone) return;  // prevent crash on boot applyPreset()
+      JsonObject usermod = root[FPSTR(_name)];
+      if (usermod.isNull()) {
+        usermod = root.createNestedObject(FPSTR(_name));
+      }
+      usermod["on"] = enabled;
     }
 
 
@@ -196,4 +208,4 @@ class CustomEffectsUserMod : public Usermod {
 };
 
 // strings to reduce flash memory usage (used more than twice)
-const char CustomEffectsUserMod::_name[]       PROGMEM = "Custom Effects";
+const char CustomEffectsUserMod::_name[]       PROGMEM = "CustomEffects";

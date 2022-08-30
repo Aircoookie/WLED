@@ -108,6 +108,12 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   bool on = elem["on"] | seg.on;
   if (elem["on"].is<const char*>() && elem["on"].as<const char*>()[0] == 't') on = !on;
   seg.setOption(SEG_OPTION_ON, on); // use transition
+
+  //WLEDSR Custom Effects (but general usable)
+  bool reset = elem["reset"];
+  if (reset)
+    seg.markForReset();
+
   bool frz = elem["frz"] | seg.freeze;
   if (elem["frz"].is<const char*>() && elem["frz"].as<const char*>()[0] == 't') frz = !seg.freeze;
   seg.freeze = frz;
