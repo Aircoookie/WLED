@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2208222
+#define VERSION 2208301
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -51,8 +51,8 @@
 
 #ifndef WLED_WATCHDOG_TIMEOUT
   // 3 seconds should be enough to detect a lockup
-  // define WLED_WATCHDOG_TIMEOUT=0 to disable watchdog
-  #define WLED_WATCHDOG_TIMEOUT 3
+  // define WLED_WATCHDOG_TIMEOUT=0 to disable watchdog, default
+  #define WLED_WATCHDOG_TIMEOUT 0
 #endif
 
 //optionally disable brownout detector on ESP32.
@@ -647,6 +647,7 @@ WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
 WLED_GLOBAL int8_t i2c_sda  _INIT(-1);      // global I2C SDA pin [HW_PIN_SDA] (used for usermods)
 WLED_GLOBAL int8_t i2c_scl  _INIT(-1);      // global I2C SCL pin [HW_PIN_SCL] (used for usermods)
 WLED_GLOBAL int8_t spi_mosi _INIT(-1);      // global SPI DATA/MOSI pin [HW_PIN_DATASPI] (used for usermods)
+WLED_GLOBAL int8_t spi_miso _INIT(-1);      // global SPI DATA/MISO pin [HW_PIN_MISOSPI] (used for usermods)
 WLED_GLOBAL int8_t spi_sclk _INIT(-1);      // global SPI CLOCK/SCLK pin [HW_PIN_CLOCKSPI] (used for usermods)
 
 // global ArduinoJson buffer

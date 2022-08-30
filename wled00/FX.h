@@ -339,9 +339,9 @@
 
 typedef enum mapping1D2D {
   M12_Pixels = 0,
-  M12_VerticalBar = 1,
-  M12_Circle = 2,
-  M12_Block = 3
+  M12_pBar = 1,
+  M12_pArc = 2,
+  M12_pCorner = 3
 } mapping1D2D_t;
 
 // segment, 72 bytes
@@ -551,7 +551,7 @@ typedef struct Segment {
     void setPixelColor(float i, uint32_t c, bool aa = true);
     void setPixelColor(float i, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0, bool aa = true) { setPixelColor(i, RGBW32(r,g,b,w), aa); }
     void setPixelColor(float i, CRGB c, bool aa = true)                                         { setPixelColor(i, RGBW32(c.r,c.g,c.b,0), aa); }
-    uint32_t getPixelColor(uint16_t i);
+    uint32_t getPixelColor(int i);
     // 1D support functions (some implement 2D as well)
     void blur(uint8_t);
     void fill(uint32_t c);
@@ -570,6 +570,7 @@ typedef struct Segment {
     // 2D matrix
     uint16_t virtualWidth(void)  const;
     uint16_t virtualHeight(void) const;
+    uint16_t nrOfVStrips(void) const;
   #ifndef WLED_DISABLE_2D
     uint16_t XY(uint16_t x, uint16_t y); // support function to get relative index within segment (for leds[])
     void setPixelColorXY(int x, int y, uint32_t c); // set relative pixel within segment with color
@@ -678,8 +679,8 @@ class WS2812FX {  // 96 bytes
       _length(DEFAULT_LED_COUNT),
       _brightness(DEFAULT_BRIGHTNESS),
       _transitionDur(750),
-		  _targetFps(WLED_FPS),
-		  _frametime(FRAMETIME_FIXED),
+      _targetFps(WLED_FPS),
+      _frametime(FRAMETIME_FIXED),
       _cumulativeFps(2),
       _isServicing(false),
       _isOffRefreshRequired(false),
@@ -733,7 +734,7 @@ class WS2812FX {  // 96 bytes
       fixInvalidSegments(),
       setPixelColor(int n, uint32_t c),
       show(void),
-			setTargetFps(uint8_t fps),
+      setTargetFps(uint8_t fps),
       deserializeMap(uint8_t n=0);
 
     void fill(uint32_t c) { for (int i = 0; i < _length; i++) setPixelColor(i, c); } // fill whole strip with color (inline)
@@ -869,8 +870,8 @@ class WS2812FX {  // 96 bytes
     uint8_t  _brightness;
     uint16_t _transitionDur;
 
-		uint8_t  _targetFps;
-		uint16_t _frametime;
+    uint8_t  _targetFps;
+    uint16_t _frametime;
     uint16_t _cumulativeFps;
 
     // will require only 1 byte
