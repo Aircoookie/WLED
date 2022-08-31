@@ -79,8 +79,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   uint16_t grp = elem["grp"] | seg.grouping;
   uint16_t spc = elem[F("spc")] | seg.spacing;
   uint16_t of  = seg.offset;
-  uint8_t  soundSim = elem[F("ssim")] | seg.soundSim;
-  uint8_t  map1D2D  = elem[F("mp12")] | seg.map1D2D;
+  uint8_t  soundSim = elem["ssim"] | seg.soundSim;
+  uint8_t  map1D2D  = elem["mp12"] | seg.map1D2D;
 
   if ((spc>0 && spc!=seg.spacing) || seg.map1D2D!=map1D2D) seg.fill(BLACK); // clear spacing gaps
 
@@ -162,12 +162,12 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   }
   #endif
 
-  seg.selected  = elem["sel"]   | seg.selected;
-  seg.reverse   = elem["rev"]   | seg.reverse;
-  seg.mirror    = elem[F("mi")] | seg.mirror;
+  seg.selected  = elem["sel"] | seg.selected;
+  seg.reverse   = elem["rev"] | seg.reverse;
+  seg.mirror    = elem["mi"]  | seg.mirror;
   #ifndef WLED_DISABLE_2D
-  seg.reverse_y = elem[F("rY")] | seg.reverse_y;
-  seg.mirror_y  = elem[F("mY")] | seg.mirror_y;
+  seg.reverse_y = elem["rY"]  | seg.reverse_y;
+  seg.mirror_y  = elem["mY"]  | seg.mirror_y;
   seg.transpose = elem[F("tp")] | seg.transpose;
   #endif
 
@@ -185,17 +185,17 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   if (elem[F("fxdef")])
   {
     int16_t sOpt;
-    sOpt = extractModeDefaults(fx, SET_F("sx"));   if (sOpt >= 0) seg.speed     = sOpt;
-    sOpt = extractModeDefaults(fx, SET_F("ix"));   if (sOpt >= 0) seg.intensity = sOpt;
-    sOpt = extractModeDefaults(fx, SET_F("c1"));   if (sOpt >= 0) seg.custom1   = sOpt;
-    sOpt = extractModeDefaults(fx, SET_F("c2"));   if (sOpt >= 0) seg.custom2   = sOpt;
-    sOpt = extractModeDefaults(fx, SET_F("c3"));   if (sOpt >= 0) seg.custom3   = sOpt;
-    sOpt = extractModeDefaults(fx, SET_F("mp12")); if (sOpt >= 0) seg.map1D2D   = sOpt & 0x07;
-    sOpt = extractModeDefaults(fx, SET_F("ssim")); if (sOpt >= 0) seg.soundSim  = sOpt & 0x03;
-    sOpt = extractModeDefaults(fx, "rev");         if (sOpt >= 0) seg.reverse   = (bool)sOpt;
-    sOpt = extractModeDefaults(fx, SET_F("mi"));   if (sOpt >= 0) seg.mirror    = (bool)sOpt; // NOTE: setting this option is a risky business
-    sOpt = extractModeDefaults(fx, SET_F("rY"));   if (sOpt >= 0) seg.reverse_y = (bool)sOpt;
-    sOpt = extractModeDefaults(fx, SET_F("mY"));   if (sOpt >= 0) seg.mirror_y  = (bool)sOpt; // NOTE: setting this option is a risky business
+    sOpt = extractModeDefaults(fx, "sx");   if (sOpt >= 0) seg.speed     = sOpt;
+    sOpt = extractModeDefaults(fx, "ix");   if (sOpt >= 0) seg.intensity = sOpt;
+    sOpt = extractModeDefaults(fx, "c1");   if (sOpt >= 0) seg.custom1   = sOpt;
+    sOpt = extractModeDefaults(fx, "c2");   if (sOpt >= 0) seg.custom2   = sOpt;
+    sOpt = extractModeDefaults(fx, "c3");   if (sOpt >= 0) seg.custom3   = sOpt;
+    sOpt = extractModeDefaults(fx, "mp12"); if (sOpt >= 0) seg.map1D2D   = sOpt & 0x07;
+    sOpt = extractModeDefaults(fx, "ssim"); if (sOpt >= 0) seg.soundSim  = sOpt & 0x03;
+    sOpt = extractModeDefaults(fx, "rev");  if (sOpt >= 0) seg.reverse   = (bool)sOpt;
+    sOpt = extractModeDefaults(fx, "mi");   if (sOpt >= 0) seg.mirror    = (bool)sOpt; // NOTE: setting this option is a risky business
+    sOpt = extractModeDefaults(fx, "rY");   if (sOpt >= 0) seg.reverse_y = (bool)sOpt;
+    sOpt = extractModeDefaults(fx, "mY");   if (sOpt >= 0) seg.mirror_y  = (bool)sOpt; // NOTE: setting this option is a risky business
     sOpt = extractModeDefaults(fx, "pal");
     if (sOpt >= 0 && sOpt < strip.getPaletteCount() + strip.customPalettes.size()) {
       if (sOpt != seg.palette) {
@@ -206,8 +206,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   }
 
   //getVal also supports inc/decrementing and random
-  getVal(elem[F("sx")], &seg.speed);
-  getVal(elem[F("ix")], &seg.intensity);
+  getVal(elem["sx"], &seg.speed);
+  getVal(elem["ix"], &seg.intensity);
   uint8_t pal = seg.palette;
   if (getVal(elem["pal"], &pal, 1, strip.getPaletteCount())) {
     if (pal != seg.palette) {
@@ -215,15 +215,15 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
       seg.palette = pal;
     }
   }
-  getVal(elem[F("c1")], &seg.custom1);
-  getVal(elem[F("c2")], &seg.custom2);
+  getVal(elem["c1"], &seg.custom1);
+  getVal(elem["c2"], &seg.custom2);
   uint8_t cust3 = seg.custom3;
-  getVal(elem[F("c3")], &cust3); // we can't pass reference to bifield
+  getVal(elem["c3"], &cust3); // we can't pass reference to bifield
   seg.custom3 = cust3;
 
-  seg.check1 = elem[F("o1")] | seg.check1;
-  seg.check2 = elem[F("o2")] | seg.check2;
-  seg.check3 = elem[F("o3")] | seg.check3;
+  seg.check1 = elem["o1"] | seg.check1;
+  seg.check2 = elem["o2"] | seg.check2;
+  seg.check3 = elem["o3"] | seg.check3;
   
   JsonArray iarr = elem[F("i")]; //set individual LEDs
   if (!iarr.isNull()) {
@@ -496,26 +496,26 @@ void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset, b
   strcat(colstr, "]");
   root["col"] = serialized(colstr);
 
-  root["fx"]     = seg.mode;
-  root[F("sx")]  = seg.speed;
-  root[F("ix")]  = seg.intensity;
-  root["pal"]    = seg.palette;
-  root[F("c1")]  = seg.custom1;
-  root[F("c2")]  = seg.custom2;
-  root[F("c3")]  = seg.custom3;
-  root[F("sel")] = seg.isSelected();
-  root["rev"]    = seg.reverse;
-  root[F("mi")]  = seg.mirror;
+  root["fx"]  = seg.mode;
+  root["sx"]  = seg.speed;
+  root["ix"]  = seg.intensity;
+  root["pal"] = seg.palette;
+  root["c1"]  = seg.custom1;
+  root["c2"]  = seg.custom2;
+  root["c3"]  = seg.custom3;
+  root["sel"] = seg.isSelected();
+  root["rev"] = seg.reverse;
+  root["mi"]  = seg.mirror;
   if (strip.isMatrix) {
-    root[F("rY")] = seg.reverse_y;
-    root[F("mY")] = seg.mirror_y;
+    root["rY"] = seg.reverse_y;
+    root["mY"] = seg.mirror_y;
     root[F("tp")] = seg.transpose;
   }
-  root[F("o1")]  = seg.check1;
-  root[F("o2")]  = seg.check2;
-  root[F("o3")]  = seg.check3;
-  root[F("ssim")]  = seg.soundSim;
-  root[F("mp12")]  = seg.map1D2D;
+  root["o1"]   = seg.check1;
+  root["o2"]   = seg.check2;
+  root["o3"]   = seg.check3;
+  root["ssim"] = seg.soundSim;
+  root["mp12"] = seg.map1D2D;
 }
 
 void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segmentBounds)
@@ -920,12 +920,13 @@ void serializeNodes(JsonObject root)
 
 void serializeModeData(JsonArray fxdata)
 {
+  char lineBuffer[128];
   for (size_t i = 0; i < strip.getModeCount(); i++) {
-    String lineBuffer = FPSTR(strip.getModeData(i));
-    if (lineBuffer.length() > 0) {
-      uint8_t endPos = lineBuffer.indexOf('@');
-      if (endPos>0) fxdata.add(lineBuffer.substring(endPos));
-      else          fxdata.add("");
+    strncpy_P(lineBuffer, strip.getModeData(i), 127);
+    if (lineBuffer[0] != 0) {
+      char* dataPtr = strchr(lineBuffer,'@');
+      if (dataPtr) fxdata.add(dataPtr);
+      else         fxdata.add("");
     }
   }
 }
@@ -933,12 +934,13 @@ void serializeModeData(JsonArray fxdata)
 // deserializes mode names string into JsonArray
 // also removes WLED-SR extensions (@...) from deserialised names
 void serializeModeNames(JsonArray arr) {
+  char lineBuffer[128];
   for (size_t i = 0; i < strip.getModeCount(); i++) {
-    String lineBuffer = FPSTR(strip.getModeData(i));
-    if (lineBuffer.length() > 0) {
-      uint8_t endPos = lineBuffer.indexOf('@');
-      if (endPos>0) arr.add(lineBuffer.substring(0, endPos));
-      else          arr.add(lineBuffer);
+    strncpy_P(lineBuffer, strip.getModeData(i), 127);
+    if (lineBuffer[0] != 0) {
+      char* dataPtr = strchr(lineBuffer,'@');
+      if (dataPtr) *dataPtr = 0; // terminate mode data after name
+      arr.add(lineBuffer);
     }
   }
 }
@@ -969,7 +971,6 @@ void serveJson(AsyncWebServerRequest* request)
       request->send(response);
       releaseJSONBufferLock();
     } else {
-      //request->send_P(200, "application/json", JSON_mode_names);
       request->send(503, "application/json", F("{\"error\":3}"));
     }
     return;
@@ -1013,11 +1014,11 @@ void serveJson(AsyncWebServerRequest* request)
       serializeInfo(info);
       if (subJson != 3)
       {
-        //lDoc[F("effects")]  = serialized((const __FlashStringHelper*)JSON_mode_names);
         JsonArray effects = lDoc.createNestedArray(F("effects"));
         serializeModeNames(effects); // remove WLED-SR extensions from effect names
         lDoc[F("palettes")] = serialized((const __FlashStringHelper*)JSON_palette_names);
       }
+      //lDoc["m"] = lDoc.memoryUsage(); // JSON buffer usage, for remote debugging
   }
 
   DEBUG_PRINTF("JSON buffer size: %u for request: %d\n", lDoc.memoryUsage(), subJson);
