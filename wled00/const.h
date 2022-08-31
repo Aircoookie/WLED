@@ -228,13 +228,12 @@
 #define SEG_OPTION_REVERSED       1
 #define SEG_OPTION_ON             2
 #define SEG_OPTION_MIRROR         3            //Indicates that the effect will be mirrored within the segment
-#define SEG_OPTION_NONUNITY       4            //Indicates that the effect does not use FRAMETIME or needs getPixelColor
-#define SEG_OPTION_FREEZE         5            //Segment contents will not be refreshed
-#define SEG_OPTION_RESET          6            //Segment runtime requires reset
-#define SEG_OPTION_TRANSITIONAL   7
-#define SEG_OPTION_REVERSED_Y     8
-#define SEG_OPTION_MIRROR_Y       9
-#define SEG_OPTION_TRANSPOSED    10
+#define SEG_OPTION_FREEZE         4            //Segment contents will not be refreshed
+#define SEG_OPTION_RESET          5            //Segment runtime requires reset
+#define SEG_OPTION_TRANSITIONAL   6
+#define SEG_OPTION_REVERSED_Y     7
+#define SEG_OPTION_MIRROR_Y       8
+#define SEG_OPTION_TRANSPOSED     9
 
 //Segment differs return byte
 #define SEG_DIFFERS_BRI        0x01

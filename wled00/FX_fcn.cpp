@@ -297,8 +297,8 @@ void Segment::startTransition(uint16_t dur) {
 
   if (!_t) _t = new Transition(dur); // no previous transition running
   if (!_t) return; // failed to allocate data
-  _t->_briT = _briT;
-  _t->_cctT = _cctT;
+  _t->_briT  = _briT;
+  _t->_cctT  = _cctT;
   _t->_palT  = _palT;
   _t->_modeP = _modeP;
   for (size_t i=0; i<NUM_COLORS; i++) _t->_colorT[i] = _colorT[i];
@@ -625,7 +625,7 @@ uint8_t Segment::differs(Segment& b) const {
   if (stopY != b.stopY)         d |= SEG_DIFFERS_BOUNDS;
 
   //bit pattern: msb first: [transposed mirrorY reverseY] transitional (tbd) paused needspixelstate mirrored on reverse selected
-  if ((options & 0b1111111100101110) != (b.options & 0b1111111100101110)) d |= SEG_DIFFERS_OPT;
+  if ((options & 0b1111111110011110) != (b.options & 0b1111111110011110)) d |= SEG_DIFFERS_OPT;
   if ((options & 0x01) != (b.options & 0x01))                             d |= SEG_DIFFERS_SEL;
   
   for (uint8_t i = 0; i < NUM_COLORS; i++) if (colors[i] != b.colors[i])  d |= SEG_DIFFERS_COL;
