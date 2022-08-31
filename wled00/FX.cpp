@@ -3470,9 +3470,9 @@ static const char _data_FX_MODE_DRIP[] PROGMEM = "Drip@Gravity,# of drips;!,!;!;
 typedef struct Tetris {
   float    pos;
   float    speed;
-  uint32_t col;
-  uint16_t aux0;  // 2D-fication of SEGENV.aux0 (brick size)
-  uint16_t aux1;  // 2D-fication of SEGENV.aux1 (stack size)
+  uint8_t  col;   // color index
+  uint16_t brick; // brick size in pixels
+  uint16_t stack; // stack size in pixels
   uint32_t step;  // 2D-fication of SEGENV.step (state)
 } tetris;
 
@@ -3491,7 +3491,7 @@ uint16_t mode_tetrix(void) {
     static void runStrip(size_t stripNr, Tetris *drop) {
       // initialize dropping on first call or segment full
       if (SEGENV.call == 0) {
-        drop->aux1 = 0;                   // reset brick stack size
+        drop->stack = 0;                  // reset brick stack size
         drop->step = 0;
         //for (int i=0; i<SEGLEN; i++) SEGMENT.setPixelColor(i | int((stripNr+1)<<16), SEGCOLOR(1));  // will fill virtual strip only
       }
@@ -3504,9 +3504,9 @@ uint16_t mode_tetrix(void) {
         speed = map(speed, 1, 255, 5000, 250); // time taken for full (SEGLEN) drop
         drop->speed = float(SEGLEN * FRAMETIME) / float(speed); // set speed
         drop->pos   = SEGLEN;             // start at end of segment (no need to subtract 1)
-        drop->col   = SEGMENT.color_from_palette(random8(0,15)<<4,false,false,0);     // limit color choices so there is enough HUE gap
+        drop->col   = random8(0,15)<<4;   // limit color choices so there is enough HUE gap
         drop->step  = 1;                  // drop state (0 init, 1 forming, 2 falling)
-        drop->aux0  = (SEGMENT.intensity ? (SEGMENT.intensity>>5)+1 : random8(1,5)) * (1+(SEGLEN>>6));  // size of brick
+        drop->brick = (SEGMENT.intensity ? (SEGMENT.intensity>>5)+1 : random8(1,5)) * (1+(SEGLEN>>6));  // size of brick
       }
       
       if (drop->step == 1) {              // forming
@@ -3516,24 +3516,27 @@ uint16_t mode_tetrix(void) {
       }
 
       if (drop->step == 2) {              // falling
-        if (drop->pos > drop->aux1) {     // fall until top of stack
+        if (drop->pos > drop->stack) {    // fall until top of stack
           drop->pos -= drop->speed;       // may add gravity as: speed += gravity
-          if (uint16_t(drop->pos) < drop->aux1) drop->pos = drop->aux1;
-          for (int i=int(drop->pos); i<SEGLEN; i++) SEGMENT.setPixelColor(i | int((stripNr+1)<<16), i<int(drop->pos)+drop->aux0 ? drop->col : SEGCOLOR(1));
+          if (uint16_t(drop->pos) < drop->stack) drop->pos = drop->stack;
+          for (int i=int(drop->pos); i<SEGLEN; i++) {
+            uint32_t col = i<int(drop->pos)+drop->brick ? SEGMENT.color_from_palette(drop->col, false, false, 0) : SEGCOLOR(1);
+            SEGMENT.setPixelColor(i | int((stripNr+1)<<16), col);
+          }
         } else {                          // we hit bottom
           drop->step = 0;                 // proceed with next brick, go back to init
-          drop->aux1 += drop->aux0;       // increase the stack size
-          if (drop->aux1 >= SEGLEN) drop->step = millis() + 2000; // fade out stack
+          drop->stack += drop->brick;     // increase the stack size
+          if (drop->stack >= SEGLEN) drop->step = millis() + 2000; // fade out stack
         }
       }
 
-      if (drop->step > 2) {
-        drop->aux0 = 0;                   // reset brick size (no more growing)
+      if (drop->step > 2) {               // fade strip
+        drop->brick = 0;                  // reset brick size (no more growing)
         if (drop->step > millis()) {
           // allow fading of virtual strip
-          for (int i=0; i<SEGLEN; i++) SEGMENT.blendPixelColor(i | int((stripNr+1)<<16), SEGCOLOR(1), 25); // 10% blend
+          for (int i=0; i<SEGLEN; i++) SEGMENT.blendPixelColor(i | int((stripNr+1)<<16), SEGCOLOR(1), 25); // 10% blend with Bg color
         } else {
-          drop->aux1 = 0;                 // reset brick stack size
+          drop->stack = 0;                // reset brick stack size
           drop->step = 0;                 // proceed with next brick
         }
       }
