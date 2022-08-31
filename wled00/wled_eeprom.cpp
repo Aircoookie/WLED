@@ -415,8 +415,8 @@ void deEEP() {
         }
         
         segObj["fx"]    = EEPROM.read(i+10);
-        segObj[F("sx")] = EEPROM.read(i+11);
-        segObj[F("ix")] = EEPROM.read(i+16);
+        segObj["sx"] = EEPROM.read(i+11);
+        segObj["ix"] = EEPROM.read(i+16);
         segObj["pal"]   = EEPROM.read(i+17);
       } else {
         Segment* seg = strip.getSegments();

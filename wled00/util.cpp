@@ -360,14 +360,16 @@ int16_t extractModeDefaults(uint8_t mode, const char *segVar)
 {
   if (mode < strip.getModeCount()) {
     char lineBuffer[128] = "";
-    strncpy_P(lineBuffer, PSTR(strip.getModeData(mode)), 127);
-    if (strlen(lineBuffer) > 0) {
+    strncpy_P(lineBuffer, strip.getModeData(mode), 127);
+    lineBuffer[127] = '\0'; // terminate string
+    if (lineBuffer[0] != 0) {
       char* startPtr = strrchr(lineBuffer, ';'); // last ";" in FX data
       if (!startPtr) return -1;
 
       char* stopPtr = strstr(startPtr, segVar);
       if (!stopPtr) return -1;
 
+      stopPtr += strlen(segVar) +1; // skip "="
       return atoi(stopPtr);
     }
   }
