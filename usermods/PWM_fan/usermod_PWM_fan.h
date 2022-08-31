@@ -135,7 +135,7 @@ class PWMFanUsermod : public Usermod {
     }
 
     void updateFanSpeed(uint8_t pwmValue){
-      if (pwmPin < 0) return;
+      if (!enabled || pwmPin < 0) return;
 
       #ifdef ESP8266
       analogWrite(pwmPin, pwmValue);

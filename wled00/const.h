@@ -384,6 +384,9 @@
 #if defined(ESP8266) && defined(HW_PIN_DATASPI)
   #undef HW_PIN_DATASPI
 #endif
+#if defined(ESP8266) && defined(HW_PIN_MISOSPI)
+  #undef HW_PIN_MISOSPI
+#endif
 #if defined(ESP8266) && defined(HW_PIN_CSSPI)
   #undef HW_PIN_CSSPI
 #endif
@@ -393,6 +396,9 @@
 #endif
 #ifndef HW_PIN_DATASPI
   #define HW_PIN_DATASPI MOSI
+#endif
+#ifndef HW_PIN_MISOSPI
+  #define HW_PIN_MISOSPI MISO
 #endif
 #ifndef HW_PIN_CSSPI
   #define HW_PIN_CSSPI SS

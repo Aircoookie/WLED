@@ -1124,7 +1124,7 @@ function setSegBri(s)
 function setEffect(ind = 0)
 {
 	tglFxDropdown();
-	var obj = {"seg": {"fx": parseInt(ind)}};
+	var obj = {"seg": {"fx": parseInt(ind), "fxdef":true}}; // fxdef sets effect parameters to default values, TODO add client setting
 	requestJson(obj);
 }
 
