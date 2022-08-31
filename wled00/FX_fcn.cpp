@@ -466,15 +466,8 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         // expand in circular fashion from center
         if (i==0)
           setPixelColorXY(0, 0, col);
-        else {
-          float step = HALF_PI / (2.85f*i);
-          for (float rad = 0.0f; rad <= HALF_PI+step/2; rad += step) {
-            // may want to try float version as well (with or without antialiasing)
-            int x = roundf(sin_t(rad) * i);
-            int y = roundf(cos_t(rad) * i);
-            setPixelColorXY(x, y, col);
-          }
-        }
+        else
+          drawArc(0, 0, i, col);
         break;
       case M12_pCorner:
         for (int x = 0; x <= i; x++) setPixelColorXY(x, i, col);

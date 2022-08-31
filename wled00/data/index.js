@@ -728,6 +728,7 @@ function populateSegments(s)
 				<option value="3" ${inst.ssim==3?' selected':''}>U14_3</option>
 			</select></div>
 		</div>`;
+		//WLEDSR Custom Effects
 		let cusEff = `<button class="btn" onclick="toggleCEEditor('${inst.n?inst.n:"default"}', ${i})">Custom Effect Editor</button><br>`;
 		cn += `<div class="seg lstI ${i==s.mainseg ? 'selected' : ''} ${exp ? "expanded":""}" id="seg${i}">
 	<label class="check schkl">

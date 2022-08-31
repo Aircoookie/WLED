@@ -100,7 +100,7 @@ function populateCEEditor(name, segID)
             <button class="btn infobtn" onclick="saveCE('${name}.wled', ${segID})">Save and Run</button><br>
             <button class="btn infobtn" onclick="downloadCEFile('${name}.wled')">Download ${name}.wled</button>
             <button class="btn infobtn" onclick="loadCETemplate('${name}')">Load template</button><br>
-            <button class="btn infobtn" onclick="downloadCEFile('wled.json')">Download wled.json</button>
+            <button class="btn infobtn" onclick="downloadCEFile('wledv032.json')">Download wled json</button>
             <button class="btn infobtn" onclick="downloadCEFile('presets.json')">Download presets.json</button><br>
             <a href="https://github.com/MoonModules/WLED-Effects/tree/master/CustomEffects/wled" target="_blank">Custom Effects Library</a><br>
             <a href="https://github.com/atuline/WLED/wiki/WLED-Custom-effects" target="_blank">Custom Effects Help</a><br>
@@ -122,7 +122,7 @@ function downloadCEFile(name) {
 
     fetchAndExecute(url, name, function(text) {
         console.log(text);
-        if (name == "wled.json" || name == "presets.json") {
+        if (name == "wledv032.json" || name == "presets.json") {
             if (!confirm('Are you sure to download/overwrite ' + name + '?'))
               return;
             uploadFileWithText("/" + name, text);
@@ -138,7 +138,7 @@ function downloadCEFile(name) {
   
     var request = new XMLHttpRequest();
     request.onload = function() {
-      if (name == "wled.json" || name == "presets.json") {
+      if (name == "wledv032.json" || name == "presets.json") {
           if (!confirm('Are you sure to download ' + name + '?'))
             return;
           uploadFileWithText("/" + name, request.response);
