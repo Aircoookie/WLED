@@ -534,6 +534,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     else if (url.indexOf("dmx")  > 0) subPage = 7;
     else if (url.indexOf("um")   > 0) subPage = 8;
     else if (url.indexOf("2D")   > 0) subPage = 10;
+    else if (url.indexOf("ar")   > 0) subPage = 11;
     else if (url.indexOf("lock") > 0) subPage = 251;
   }
   else if (url.indexOf("/update") >= 0) subPage = 9; // update page, for PIN check
@@ -598,6 +599,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     case 8:   response = request->beginResponse_P(200, "text/html", PAGE_settings_um,   PAGE_settings_um_length);   break;
     case 9:   response = request->beginResponse_P(200, "text/html", PAGE_update,        PAGE_update_length);        break;
     case 10:  response = request->beginResponse_P(200, "text/html", PAGE_settings_2D,   PAGE_settings_2D_length);   break;
+    case 11:  response = request->beginResponse_P(200, "text/html", PAGE_settings_um2,   PAGE_settings_um2_length);   break;
     case 251: {
       correctPIN = !strlen(settingsPIN); // lock if a pin is set
       createEditHandler(correctPIN);
