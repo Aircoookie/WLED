@@ -355,17 +355,20 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxL
 }
 
 
+// extracts mode parameter defaults from last section of mode data (e.g. "Juggle@!,Trail;!,!,;!;sx=16,ix=240,1d")
 int16_t extractModeDefaults(uint8_t mode, const char *segVar)
 {
   if (mode < strip.getModeCount()) {
-    String lineBuffer = FPSTR(strip.getModeData(mode));
-    if (lineBuffer.length() > 0) {
-      int16_t start = lineBuffer.lastIndexOf(';');
-      if (start<0) return -1;
+    char lineBuffer[128] = "";
+    strncpy_P(lineBuffer, PSTR(strip.getModeData(mode)), 127);
+    if (strlen(lineBuffer) > 0) {
+      char* startPtr = strrchr(lineBuffer, ';'); // last ";" in FX data
+      if (!startPtr) return -1;
 
-      int16_t stop = lineBuffer.indexOf(segVar, start+1);
-      if (stop<0) return -1;
-      return atoi(lineBuffer.substring(stop+strlen(segVar)+1).c_str());
+      char* stopPtr = strstr(startPtr, segVar);
+      if (!stopPtr) return -1;
+
+      return atoi(stopPtr);
     }
   }
   return -1;

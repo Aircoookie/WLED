@@ -665,6 +665,9 @@ void sendSysInfoUDP()
 #define DDP_FLAGS1_STORAGE 0x08
 #define DDP_FLAGS1_TIME 0x10
 
+#define DDP_TYPE_RGB24  0x0A
+#define DDP_TYPE_RGBW32 0x1A // proposal, this is still not an official part of the DDP spec
+
 #define DDP_ID_DISPLAY 1
 #define DDP_ID_CONFIG 250
 #define DDP_ID_STATUS 251
@@ -724,7 +727,7 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8
         // write the header
         /*0*/ddpUdp.write(flags);
         /*1*/ddpUdp.write(sequenceNumber++ & 0x0F); // sequence may be unnecessary unless we are sending twice (as requested in Sync settings)
-        /*2*/ddpUdp.write(0);
+        /*2*/ddpUdp.write(0); // data type, this is not fully defined by the DDP spec and thus left at "undefined" which is assumed to be 24-bit RGB
         /*3*/ddpUdp.write(DDP_ID_DISPLAY);
         // data offset in bytes, 32-bit number, MSB first
         /*4*/ddpUdp.write(0xFF & (channel >> 24));
