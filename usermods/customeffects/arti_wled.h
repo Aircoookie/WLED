@@ -1,7 +1,6 @@
 /*
    @title   Arduino Real Time Interpreter (ARTI)
    @file    arti_wled_plugin.h
-   @version 0.3.1
    @date    20220818
    @author  Ewoud Wijma
    @repo    https://github.com/ewoudwijma/ARTI
@@ -28,15 +27,14 @@
   #include <stdio.h>
 #endif
 
-//make sure the numbers here correspond to the order in which these functions are defined in wled.json!!
+//make sure the numbers here correspond to the order in which these functions are defined in wled000.json!!
 enum Externals
 {
   F_ledCount,
-  F_matrixWidth,
-  F_matrixHeight,
+  F_width,
+  F_height,
   F_setPixelColor,
   F_leds,
-  F_setPixels,
   F_hsv,
   F_rgbw,
 
@@ -61,6 +59,8 @@ enum Externals
 
   F_shift,
   F_circle2D,
+  F_drawLine,
+  F_drawArc,
 
   F_constrain,
   F_map,
@@ -103,14 +103,11 @@ float ARTI::arti_external_function(uint8_t function, float par1, float par2, flo
           SEGMENT.setPixelColorXY((uint16_t)par1, (uint16_t)par2, (uint32_t)par3);
         return floatNull;
       }
-      case F_setPixels:
-        // setPixels(leds); No action needed as allready stored via sPC
-        return floatNull;
       case F_hsv:
-       {
+      {
         CRGB color = CHSV((uint8_t)par1, (uint8_t)par2, (uint8_t)par3);
         return RGBW32(color.r, color.g, color.b, 0);
-       }
+      }
       case F_rgbw:
         return RGBW32((uint8_t)par1, (uint8_t)par2, (uint8_t)par3, (uint8_t)par4);
 
@@ -174,7 +171,15 @@ float ARTI::arti_external_function(uint8_t function, float par1, float par2, flo
         int y = round(round((halfLength - cos(radians(par1)) * halfLength) * 10)/10) + deltaHeight;
         return SEGMENT.XY(x,y);
       }
-
+      case F_drawLine:
+        SEGMENT.drawLine(par1, par2, par3, par4, par5);
+        return floatNull;
+      case F_drawArc:
+        if (par5 == floatNull)
+          SEGMENT.drawArc(par1, par2, par3, par4);
+        else
+          SEGMENT.drawArc(par1, par2, par3, par4, par5); //fillColor
+        return floatNull;
       case F_constrain:
         return constrain(par1, par2, par3);
       case F_map:
@@ -195,9 +200,6 @@ float ARTI::arti_external_function(uint8_t function, float par1, float par2, flo
     {
       case F_setPixelColor:
         PRINT_ARTI("%s(%f, %f, %f)\n", "setPixelColor", par1, par2, par3);
-        return floatNull;
-      case F_setPixels:
-        PRINT_ARTI("%s\n", "setPixels(leds)");
         return floatNull;
       case F_hsv:
         PRINT_ARTI("%s(%f, %f, %f)\n", "hsv", par1, par2, par3);
@@ -235,6 +237,10 @@ float ARTI::arti_external_function(uint8_t function, float par1, float par2, flo
       case F_circle2D:
         PRINT_ARTI("%s(%f)\n", "circle2D", par1);
         return par1 / 2;
+      case F_drawLine:
+        return par1 + par2 + par3 + par4 + par5;
+      case F_drawArc:
+        return par1 + par2 + par3 + par4 + par5;
 
       case F_constrain:
         return par1 + par2 + par3;
@@ -317,10 +323,10 @@ float ARTI::arti_get_external_variable(uint8_t variable, float par1, float par2,
     {
       case F_ledCount:
         return SEGLEN;
-      case F_matrixWidth:
-        return strip.matrixWidth;
-      case F_matrixHeight:
-        return strip.matrixHeight;
+      case F_width:
+        return SEGMENT.virtualWidth();
+      case F_height:
+        return SEGMENT.virtualHeight();
       case F_leds:
         if (par1 == floatNull) {
           ERROR_ARTI("arti_get_external_variable leds without indices not supported yet (get leds)\n");
@@ -367,9 +373,9 @@ float ARTI::arti_get_external_variable(uint8_t variable, float par1, float par2,
     {
       case F_ledCount:
         return 3; // used in testing e.g. for i = 1 to ledCount
-      case F_matrixWidth:
+      case F_width:
         return 2;
-      case F_matrixHeight:
+      case F_height:
         return 4;
       case F_leds:
         if (par1 == floatNull) {

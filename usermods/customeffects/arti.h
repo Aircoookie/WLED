@@ -1,7 +1,6 @@
 /*
    @title   Arduino Real Time Interpreter (ARTI)
    @file    arti.h
-   @version 0.3.1
    @date    20220818
    @author  Ewoud Wijma
    @repo    https://github.com/ewoudwijma/ARTI
@@ -2474,7 +2473,7 @@ public:
 
     if (!definitionFile) 
     {
-      ERROR_ARTI("Definition file %s not found. Press Download wled.json\n", definitionName);
+      ERROR_ARTI("Definition file %s not found. Press Download wled json\n", definitionName);
       return false;
     }
     
@@ -2504,9 +2503,9 @@ public:
     JsonObject::iterator objectIterator = definitionJson.begin();
     JsonObject metaData = objectIterator->value();
     const char * version = metaData["version"];
-    if (strcmp(version, "0.3.1") != 0) 
+    if (strcmp(version, "v032") != 0) 
     {
-      ERROR_ARTI("Version of definition.json file (%s) should be 0.3.1.\nPress Download wled.json\n", version);
+      ERROR_ARTI("Version of definition.json file (%s) should be v032.\nPress Download wled json\n", version);
       return false;
     }
     const char * startNode = metaData["start"];

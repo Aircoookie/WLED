@@ -459,6 +459,29 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
   }
 }
 
+void Segment::drawArc(uint16_t x0, uint16_t y0, uint16_t radius, uint32_t color, uint32_t fillColor) {
+  // float step = degrees / (2.85f*MAX(radius,1));
+  // for (float rad = 0.0f; rad <= degrees+step/2; rad += step) {
+  //   // may want to try float version as well (with or without antialiasing)
+  //   int x = roundf(sin_t(rad) * radius);
+  //   int y = roundf(cos_t(rad) * radius);
+  //   setPixelColorXY(x+x0, y+y0, c);
+  // }
+  float minradius = radius - .5;
+  float maxradius = radius + .5;
+  for (int x=0; x<virtualWidth(); x++) for (int y=0; y<virtualHeight(); y++) {
+
+    int newX = x - x0;
+    int newY = y - y0;
+
+    if (newX*newX + newY*newY >= minradius * minradius && newX*newX + newY*newY <= maxradius * maxradius)
+      setPixelColorXY(x, y, color);
+    if (fillColor != 0)
+      if (newX*newX + newY*newY < minradius * minradius)
+        setPixelColorXY(x, y, fillColor);
+  }
+}
+
 #include "console_font_5x8.h"
 #include "console_font_5x12.h"
 #include "console_font_6x8.h"

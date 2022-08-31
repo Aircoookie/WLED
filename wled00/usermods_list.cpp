@@ -139,6 +139,7 @@
 #include "../usermods/audioreactive/audio_reactive.h"
 #endif
 
+//WLEDSR Custom Effects
 #ifdef USERMOD_CUSTOMEFFECTS
 #include "../usermods/customeffects/usermod_v2_customeffects.h"
 #endif
@@ -274,6 +275,7 @@ void registerUsermods()
   usermods.add(new AudioReactive());
   #endif
 
+  //WLEDSR Custom Effects
   #ifdef USERMOD_CUSTOMEFFECTS
   usermods.add(new CustomEffectsUserMod());
   #endif
