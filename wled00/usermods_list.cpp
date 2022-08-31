@@ -143,6 +143,10 @@
 #include "../usermods/customeffects/usermod_v2_customeffects.h"
 #endif
 
+#ifdef USERMOD_WEATHER
+#include "../usermods/usermod_v2_weather/usermod_v2_weather.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -274,4 +278,8 @@ void registerUsermods()
   usermods.add(new CustomEffectsUserMod());
   #endif
   
+
+  #ifdef USERMOD_WEATHER
+  usermods.add(new WeatherUsermod());
+  #endif
 }

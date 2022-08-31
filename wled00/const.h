@@ -81,6 +81,7 @@
 #define USERMOD_ID_BME280                30     //Usermod "usermod_bme280.h
 #define USERMOD_ID_AUDIOREACTIVE         31     //Usermod "audioreactive.h"
 #define USERMOD_ID_CUSTOMEFFECTS         32     //Usermod "usermod_v2_customeffects.h"
+#define USERMOD_ID_WEATHER               33     //Usermod "usermod_v2_weather.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
