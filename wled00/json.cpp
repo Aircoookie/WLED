@@ -84,8 +84,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   if ((spc>0 && spc!=seg.spacing) || seg.map1D2D!=map1D2D) seg.fill(BLACK); // clear spacing gaps
 
-  seg.map1D2D  = map1D2D & 0x07;
-  seg.soundSim = soundSim & 0x03;
+  seg.map1D2D  = constrain(map1D2D, 0, 7);
+  seg.soundSim = constrain(soundSim, 0, 7);
 
   uint16_t len = 1;
   if (stop > start) len = stop - start;
@@ -190,8 +190,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     sOpt = extractModeDefaults(fx, "c1");   if (sOpt >= 0) seg.custom1   = sOpt;
     sOpt = extractModeDefaults(fx, "c2");   if (sOpt >= 0) seg.custom2   = sOpt;
     sOpt = extractModeDefaults(fx, "c3");   if (sOpt >= 0) seg.custom3   = sOpt;
-    sOpt = extractModeDefaults(fx, "mp12"); if (sOpt >= 0) seg.map1D2D   = sOpt & 0x07;
-    sOpt = extractModeDefaults(fx, "ssim"); if (sOpt >= 0) seg.soundSim  = sOpt & 0x03;
+    sOpt = extractModeDefaults(fx, "mp12"); if (sOpt >= 0) seg.map1D2D   = constrain(sOpt, 0, 7);
+    sOpt = extractModeDefaults(fx, "ssim"); if (sOpt >= 0) seg.soundSim  = constrain(sOpt, 0, 7);
     sOpt = extractModeDefaults(fx, "rev");  if (sOpt >= 0) seg.reverse   = (bool)sOpt;
     sOpt = extractModeDefaults(fx, "mi");   if (sOpt >= 0) seg.mirror    = (bool)sOpt; // NOTE: setting this option is a risky business
     sOpt = extractModeDefaults(fx, "rY");   if (sOpt >= 0) seg.reverse_y = (bool)sOpt;
@@ -219,7 +219,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   getVal(elem["c2"], &seg.custom2);
   uint8_t cust3 = seg.custom3;
   getVal(elem["c3"], &cust3); // we can't pass reference to bifield
-  seg.custom3 = cust3;
+  seg.custom3 = constrain(cust3, 0, 31);
 
   seg.check1 = elem["o1"] | seg.check1;
   seg.check2 = elem["o2"] | seg.check2;
