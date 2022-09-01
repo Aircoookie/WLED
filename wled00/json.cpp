@@ -634,6 +634,7 @@ void serializeInfo(JsonObject root)
   JsonArray spi = root.createNestedArray(F("spi"));
   spi.add(spi_mosi);
   spi.add(spi_sclk);
+  spi.add(spi_miso);
   #endif
 
   root[F("str")] = syncToggleReceive;
