@@ -357,26 +357,21 @@ typedef struct Segment {
     union {
       uint16_t options; //bit pattern: msb first: [transposed mirrorY reverseY] transitional (tbd) paused needspixelstate mirrored on reverse selected
       struct {
-        bool    selected    : 1;  //  0 : selected
-        bool    reverse     : 1;  //  1 : reversed
-        bool    on          : 1;  //  2 : is On
-        bool    mirror      : 1;  //  3 : mirrored
-        bool    pxs         : 1;  //  4 : indicates that the effect does not use FRAMETIME or needs getPixelColor (?)
-        bool    freeze      : 1;  //  5 : paused/frozen
-        bool    reset       : 1;  //  6 : indicates that Segment runtime requires reset
-        bool    transitional: 1;  //  7 : transitional (there is transition occuring)
-        bool    reverse_y   : 1;  //  8 : reversed Y (2D)
-        bool    mirror_y    : 1;  //  9 : mirrored Y (2D)
-        bool    transpose   : 1;  // 10 : transposed (2D, swapped X & Y)
-        uint8_t map1D2D     : 3;  // 11-13 : mapping for 1D effect on 2D (0-use as strip, 1-expand vertically, 2-circular/arc, 3-rectangular/corner, ...)
-        uint8_t soundSim    : 2;  // 14-15 : 0-3 sound simulation types
+        bool    selected    : 1;  //     0 : selected
+        bool    reverse     : 1;  //     1 : reversed
+        bool    on          : 1;  //     2 : is On
+        bool    mirror      : 1;  //     3 : mirrored
+        bool    freeze      : 1;  //     4 : paused/frozen
+        bool    reset       : 1;  //     5 : indicates that Segment runtime requires reset
+        bool    transitional: 1;  //     6 : transitional (there is transition occuring)
+        bool    reverse_y   : 1;  //     7 : reversed Y (2D)
+        bool    mirror_y    : 1;  //     8 : mirrored Y (2D)
+        bool    transpose   : 1;  //     9 : transposed (2D, swapped X & Y)
+        uint8_t map1D2D     : 3;  // 10-12 : mapping for 1D effect on 2D (0-use as strip, 1-expand vertically, 2-circular/arc, 3-rectangular/corner, ...)
+        uint8_t soundSim    : 3;  // 13-15 : 0-7 sound simulation types
       };
     };
     uint8_t  grouping, spacing;
-    //struct {
-    //  uint8_t grouping : 4;       // maximum 15 pixels in a group
-    //  uint8_t spacing  : 4;       // maximum 15 pixels per gap
-    //};
     uint8_t  opacity;
     uint32_t colors[NUM_COLORS];
     uint8_t  cct;                 //0==1900K, 255==10091K
@@ -418,17 +413,20 @@ typedef struct Segment {
     // transition data, valid only if transitional==true, holds values during transition
     struct Transition {
       uint32_t      _colorT[NUM_COLORS];
-      uint8_t       _briT;  // temporary brightness
-      uint8_t       _cctT;  // temporary CCT
-      CRGBPalette16 _palT;  // temporary palette
-      uint8_t       _modeP; // previous mode/effect
+      uint8_t       _briT;        // temporary brightness
+      uint8_t       _cctT;        // temporary CCT
+      CRGBPalette16 _palT;        // temporary palette
+      uint8_t       _modeP;       // previous mode/effect
+      //uint16_t      _aux0, _aux1; // previous mode/effect runtime data
+      //uint32_t      _step, _call; // previous mode/effect runtime data
+      //byte         *_data;        // previous mode/effect runtime data
       uint32_t      _start;
       uint16_t      _dur;
       Transition(uint16_t dur=750) : _briT(255), _cctT(127), _palT(CRGBPalette16(CRGB::Black)), _modeP(FX_MODE_STATIC), _start(millis()), _dur(dur) {}
       Transition(uint16_t d, uint8_t b, uint8_t c, const uint32_t *o) : _briT(b), _cctT(c), _palT(CRGBPalette16(CRGB::Black)), _modeP(FX_MODE_STATIC), _start(millis()), _dur(d) {
         for (size_t i=0; i<NUM_COLORS; i++) _colorT[i] = o[i];
       }
-    } *_t; // this struct will bootloop ESP
+    } *_t;
 
   public:
 
@@ -530,8 +528,7 @@ typedef struct Segment {
       * Safe to call from interrupts and network requests.
       */
     inline void markForReset(void) { reset = true; }  // setOption(SEG_OPTION_RESET, true)
-    //inline void setUpLeds() { if (!leds) leds = (CRGB*)malloc(sizeof(CRGB)*length()); }
-    void setUpLeds(void);
+    void setUpLeds(void);   // set up leds[] array for loseless getPixelColor()
 
     // transition functions
     void     startTransition(uint16_t dur); // transition has to start before actual segment values change
