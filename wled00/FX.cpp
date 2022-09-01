@@ -6254,7 +6254,7 @@ uint16_t mode_gravcentric(void) {                     // Gravcentric. By Andrew 
 
   return FRAMETIME;
 } // mode_gravcentric()
-static const char _data_FX_MODE_GRAVCENTRIC[] PROGMEM = "Gravcentric@Rate of fall,Sensitivity;!;!;ix=128,mp12=2,ssim=0,1d,vo"; // Circle, Beatsin
+static const char _data_FX_MODE_GRAVCENTRIC[] PROGMEM = "Gravcentric@Rate of fall,Sensitivity;!;!;ix=128,mp12=3,ssim=0,1d,vo"; // Corner, Beatsin
 
 
 ///////////////////////
@@ -6390,7 +6390,7 @@ uint16_t mode_midnoise(void) {                  // Midnoise. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_midnoise()
-static const char _data_FX_MODE_MIDNOISE[] PROGMEM = "Midnoise@Fade rate,Maximum length;,!;!;ix=128,mp12=2,ssim=0,1d,vo"; // Circle, Beatsin
+static const char _data_FX_MODE_MIDNOISE[] PROGMEM = "Midnoise@Fade rate,Maximum length;,!;!;ix=128,mp12=1,ssim=0,1d,vo"; // Bar, Beatsin
 
 
 //////////////////////
@@ -6515,7 +6515,7 @@ uint16_t mode_plasmoid(void) {                  // Plasmoid. By Andrew Tuline.
   }
   float   volumeSmth   = *(float*)  um_data->u_data[0];
 
-  SEGMENT.fadeToBlackBy(64);
+  SEGMENT.fadeToBlackBy(32);
 
   plasmoip->thisphase += beatsin8(6,-4,4);                          // You can change direction and speed individually.
   plasmoip->thatphase += beatsin8(7,-4,4);                          // Two phase values to make a complex pattern. By Andrew Tuline.
@@ -6667,7 +6667,8 @@ uint16_t mode_blurz(void) {                    // Blurz. By Andrew Tuline.
     SEGENV.aux0 = 0;
   }
 
-  SEGMENT.fade_out(SEGMENT.speed);
+  int fadeoutDelay = (256 - SEGMENT.speed) / 32; 
+  if ((fadeoutDelay <= 1 ) || ((SEGENV.call % fadeoutDelay) == 0)) SEGMENT.fade_out(SEGMENT.speed);
 
   SEGENV.step += FRAMETIME;
   if (SEGENV.step > SPEED_FORMULA_L) {
@@ -6735,7 +6736,9 @@ uint16_t mode_freqmap(void) {                   // Map FFT_MajorPeak to SEGLEN. 
   float   my_magnitude  = *(float*)   um_data->u_data[5] / 4.0f; 
   if (FFT_MajorPeak < 1) FFT_MajorPeak = 1;                                         // log10(0) is "forbidden" (throws exception)
 
-  SEGMENT.fade_out(SEGMENT.speed);
+  if (SEGENV.call == 0) SEGMENT.fill(BLACK);
+  int fadeoutDelay = (256 - SEGMENT.speed) / 32; 
+  if ((fadeoutDelay <= 1 ) || ((SEGENV.call % fadeoutDelay) == 0)) SEGMENT.fade_out(SEGMENT.speed);
 
   int locn = (log10f((float)FFT_MajorPeak) - 1.78f) * (float)SEGLEN/(MAX_FREQ_LOG10 - 1.78f);  // log10 frequency range is from 1.78 to 3.71. Let's scale to SEGLEN.
   if (locn < 1) locn = 0; // avoid underflow
@@ -6750,7 +6753,7 @@ uint16_t mode_freqmap(void) {                   // Map FFT_MajorPeak to SEGLEN. 
 
   return FRAMETIME;
 } // mode_freqmap()
-static const char _data_FX_MODE_FREQMAP[] PROGMEM = "Freqmap@Fade rate,Starting color;,!;!;mp12=2,ssim=0,1d,fr"; // Circle, Beatsin
+static const char _data_FX_MODE_FREQMAP[] PROGMEM = "Freqmap@Fade rate,Starting color;,!;!;mp12=0,ssim=0,1d,fr"; // Pixels, Beatsin
 
 
 ///////////////////////
@@ -6805,7 +6808,7 @@ uint16_t mode_freqmatrix(void) {                // Freqmatrix. By Andreas Plesch
 
   return FRAMETIME;
 } // mode_freqmatrix()
-static const char _data_FX_MODE_FREQMATRIX[] PROGMEM = "Freqmatrix@Time delay,Sound effect,Low bin,High bin,Sensivity;;;mp12=0,ssim=0,1d,fr"; // Pixels, Beatsin
+static const char _data_FX_MODE_FREQMATRIX[] PROGMEM = "Freqmatrix@Time delay,Sound effect,Low bin,High bin,Sensivity;;;mp12=3,ssim=0,1d,fr"; // Corner, Beatsin
 
 
 //////////////////////
@@ -6826,7 +6829,10 @@ uint16_t mode_freqpixels(void) {                // Freqpixel. By Andrew Tuline.
   if (FFT_MajorPeak < 1) FFT_MajorPeak = 1;                                         // log10(0) is "forbidden" (throws exception)
 
   uint16_t fadeRate = 2*SEGMENT.speed - SEGMENT.speed*SEGMENT.speed/255;    // Get to 255 as quick as you can.
-  SEGMENT.fade_out(fadeRate);
+
+  if (SEGENV.call == 0) SEGMENT.fill(BLACK);
+  int fadeoutDelay = (256 - SEGMENT.speed) / 64; 
+  if ((fadeoutDelay <= 1 ) || ((SEGENV.call % fadeoutDelay) == 0)) SEGMENT.fade_out(fadeRate);
 
   for (int i=0; i < SEGMENT.intensity/32+1; i++) {
     uint16_t locn = random16(0,SEGLEN);
@@ -6958,7 +6964,7 @@ uint16_t mode_gravfreq(void) {                  // Gravfreq. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_gravfreq()
-static const char _data_FX_MODE_GRAVFREQ[] PROGMEM = "Gravfreq@Rate of fall,Sensivity;,!;!;ix=128,mp12=2,ssim=0,1d,fr"; // Circle, Beatsin
+static const char _data_FX_MODE_GRAVFREQ[] PROGMEM = "Gravfreq@Rate of fall,Sensivity;,!;!;ix=128,mp12=0,ssim=0,1d,fr"; // Pixels, Beatsin
 
 
 //////////////////////
@@ -6972,7 +6978,10 @@ uint16_t mode_noisemove(void) {                 // Noisemove.    By: Andrew Tuli
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
 
-  SEGMENT.fade_out(224);                                          // Just in case something doesn't get faded.
+  if (SEGENV.call == 0) SEGMENT.fill(BLACK);
+  //SEGMENT.fade_out(224);                                          // Just in case something doesn't get faded.
+  int fadeoutDelay = (256 - SEGMENT.speed) / 96; 
+  if ((fadeoutDelay <= 1 ) || ((SEGENV.call % fadeoutDelay) == 0)) SEGMENT.fadeToBlackBy(4+ SEGMENT.speed/4);
 
   uint8_t numBins = map(SEGMENT.intensity,0,255,0,16);    // Map slider to fftResult bins.
   for (int i=0; i<numBins; i++) {                         // How many active bins are we using.
@@ -6998,13 +7007,16 @@ uint16_t mode_rocktaves(void) {                 // Rocktaves. Same note from eac
   float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
   float   my_magnitude  = *(float*)   um_data->u_data[5] / 16.0f; 
 
-  SEGMENT.fadeToBlackBy(64);                        // Just in case something doesn't get faded.
+  if (SEGENV.call == 0) SEGMENT.fill(BLACK);
+  SEGMENT.fadeToBlackBy(16);                        // Just in case something doesn't get faded.
 
   float frTemp = FFT_MajorPeak;
   uint8_t octCount = 0;                                   // Octave counter.
   uint8_t volTemp = 0;
 
-  if (my_magnitude > 32) volTemp = 255;                 // We need to squelch out the background noise.
+  volTemp = 32.0f + my_magnitude * 1.5f;                  // brightness = volume (overflows are handled in next lines)
+  if (my_magnitude < 48) volTemp = 0;                     // We need to squelch out the background noise.
+  if (my_magnitude > 144) volTemp = 255;                  // everything above this is full brightness
 
   while ( frTemp > 249 ) {
     octCount++;                                           // This should go up to 5.
@@ -7020,7 +7032,7 @@ uint16_t mode_rocktaves(void) {                 // Rocktaves. Same note from eac
 
   return FRAMETIME;
 } // mode_rocktaves()
-static const char _data_FX_MODE_ROCKTAVES[] PROGMEM = "Rocktaves@;,!;!;mp12=0,ssim=0,1d,fr"; // Pixels, Beatsin
+static const char _data_FX_MODE_ROCKTAVES[] PROGMEM = "Rocktaves@;,!;!;mp12=1,ssim=0,1d,fr"; // Bar, Beatsin
 
 
 ///////////////////////
@@ -7104,7 +7116,9 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
     rippleTime = true;
   }
 
-  SEGMENT.fadeToBlackBy(SEGMENT.speed);
+  if (SEGENV.call == 0) SEGMENT.fill(BLACK);
+  int fadeoutDelay = (256 - SEGMENT.speed) / 64; 
+  if ((fadeoutDelay <= 1 ) || ((SEGENV.call % fadeoutDelay) == 0)) SEGMENT.fadeToBlackBy(SEGMENT.speed);
 
   for (int x=0; x < cols; x++) {
     uint8_t  band       = map(x, 0, cols-1, 0, NUM_BANDS - 1);

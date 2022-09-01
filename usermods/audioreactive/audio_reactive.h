@@ -1317,6 +1317,10 @@ class AudioReactive : public Usermod {
         infoArr.add(fftTime-sampleTime);
         infoArr.add("ms");
         #endif
+
+        // add a small horizontal line, for better readability
+        infoArr = user.createNestedArray(F("<hr style=\"height:1px;border-width:0;color:gray;background-color:gray\" />"));
+        infoArr.add(F(" <hr style=\"height:1px;border-width:0;color:gray;background-color:gray\" /> "));
       }
     }
 
