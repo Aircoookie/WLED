@@ -319,12 +319,6 @@ writeChunks(
       filter: "html-minify",
     },
     {
-      file: "settings_um2.htm",
-      name: "PAGE_settings_um2",
-      method: "gzip",
-      filter: "html-minify",
-    },
-    {
       file: "settings_pin.htm",
       name: "PAGE_settings_pin",
       method: "gzip",

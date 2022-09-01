@@ -1418,10 +1418,6 @@ class AudioReactive : public Usermod {
       sync[F("mode")] = audioSyncEnabled;
     }
 
-    void addToConfigMenu(JsonObject& root) {
-      JsonObject top = root.createNestedObject(FPSTR(_name));
-    }
-
 
     /*
      * readFromConfig() can be used to read back the custom settings you added with addToConfig().
