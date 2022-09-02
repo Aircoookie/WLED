@@ -113,6 +113,11 @@
 #define B_8266_BB_TM2_4 NeoPixelBrightnessBus<NeoBrgFeature, NeoEsp8266BitBangTm1829Method>
 #endif
 
+// dirty HACK
+#if defined(WLED_NO_I2S1_BUS) && defined(WLED_NO_I2S0_BUS) && defined(CONFIG_IDF_TARGET_ESP32S3)
+#define CONFIG_IDF_TARGET_ESP32C3
+#endif
+
 /*** ESP32 Neopixel methods ***/
 #ifdef ARDUINO_ARCH_ESP32
 //RGB
@@ -890,4 +895,9 @@ class PolyBus {
   }
 };
 
+#endif
+
+// dirty HACK
+#if defined(WLED_NO_I2S1_BUS) && defined(WLED_NO_I2S0_BUS) && defined(CONFIG_IDF_TARGET_ESP32S3)
+#undef CONFIG_IDF_TARGET_ESP32C3
 #endif
