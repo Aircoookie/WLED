@@ -26,7 +26,7 @@ void updateBaudRate(uint32_t rate){
   if (rate100 == currentBaud || rate100 < 96) return;
   currentBaud = rate100;
 
-  if (!pinManager.isPinAllocated(1) || pinManager.getPinOwner(1) == PinOwner::DebugOut){
+  if (!pinManager.isPinAllocated(TX) || pinManager.getPinOwner(TX) == PinOwner::DebugOut){
     Serial.print(F("Baud is now ")); Serial.println(rate);
   }
 
@@ -36,7 +36,7 @@ void updateBaudRate(uint32_t rate){
   
 void handleSerial()
 {
-  if (pinManager.isPinAllocated(3)) return;
+  if (pinManager.isPinAllocated(RX)) return;
   
   #ifdef WLED_ENABLE_ADALIGHT
   static auto state = AdaState::Header_A;
@@ -72,7 +72,7 @@ void handleSerial()
         } else if (next == 0xB7) {updateBaudRate(1500000);
         
         } else if (next == 'l') { //RGB(W) LED data return as JSON array. Slow, but easy to use on the other end.
-          if (!pinManager.isPinAllocated(1) || pinManager.getPinOwner(1) == PinOwner::DebugOut){
+          if (!pinManager.isPinAllocated(TX) || pinManager.getPinOwner(TX) == PinOwner::DebugOut){
             uint16_t used = strip.getLengthTotal();
             Serial.write('[');
             for (uint16_t i=0; i<used; i+=1) {
@@ -82,7 +82,7 @@ void handleSerial()
             Serial.println("]");
           }  
         } else if (next == 'L') { //RGB LED data returned as bytes in tpm2 format. Faster, and slightly less easy to use on the other end.
-          if (!pinManager.isPinAllocated(1) || pinManager.getPinOwner(1) == PinOwner::DebugOut) {
+          if (!pinManager.isPinAllocated(TX) || pinManager.getPinOwner(TX) == PinOwner::DebugOut) {
             Serial.write(0xC9); Serial.write(0xDA);
             uint16_t used = strip.getLengthTotal();
             uint16_t len = used*3;
@@ -107,7 +107,7 @@ void handleSerial()
           }
           verboseResponse = deserializeState(doc.as<JsonObject>());
           //only send response if TX pin is unused for other purposes
-          if (verboseResponse && (!pinManager.isPinAllocated(1) || pinManager.getPinOwner(1) == PinOwner::DebugOut)) {
+          if (verboseResponse && (!pinManager.isPinAllocated(TX) || pinManager.getPinOwner(TX) == PinOwner::DebugOut)) {
             doc.clear();
             JsonObject state = doc.createNestedObject("state");
             serializeState(state);
