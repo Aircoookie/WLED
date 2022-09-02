@@ -2943,68 +2943,67 @@ typedef struct Spark {
   uint8_t colIndex;
 } spark;
 
+#define maxNumPopcorn 21 // max 21 on 16 segment ESP8266
 /*
 *  POPCORN
 *  modified from https://github.com/kitesurfer1404/WS2812FX/blob/master/src/custom/Popcorn.h
 */
 uint16_t mode_popcorn(void) {
-  const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-  const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
-
   //allocate segment data
-  uint16_t maxNumPopcorn = 21; // max 21 on 16 segment ESP8266
   uint16_t dataSize = sizeof(spark) * maxNumPopcorn;
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
-  
-  Spark* popcorn = reinterpret_cast<Spark*>(SEGENV.data);
+  if (!SEGENV.allocateData(dataSize * SEGMENT.nrOfVStrips())) return mode_static(); //allocation failed
 
-  float gravity = -0.0001 - (SEGMENT.speed/200000.0); // m/s/s
-  gravity *= rows; //SEGLEN
+  Spark* popcorn = reinterpret_cast<Spark*>(SEGENV.data);
 
   bool hasCol2 = SEGCOLOR(2);
   SEGMENT.fill(hasCol2 ? BLACK : SEGCOLOR(1));
 
-  uint8_t numPopcorn = SEGMENT.intensity*maxNumPopcorn/255;
-  if (numPopcorn == 0) numPopcorn = 1;
+  struct virtualStrip {
+    static void runStrip(uint16_t stripNr, Spark* popcorn) {
+      float gravity = -0.0001 - (SEGMENT.speed/200000.0); // m/s/s
+      gravity *= SEGLEN;
 
-  for (int i = 0; i < numPopcorn; i++) {
-    if (popcorn[i].pos >= 0.0f) { // if kernel is active, update its position
-      popcorn[i].pos += popcorn[i].vel;
-      popcorn[i].vel += gravity;
-    } else { // if kernel is inactive, randomly pop it
-      if (random8() < 2) { // POP!!!
-        popcorn[i].pos = 0.01f;
-        popcorn[i].posX = random16(cols);
-        
-        uint16_t peakHeight = 128 + random8(128); //0-255
-        peakHeight = (peakHeight * (rows -1)) >> 8;
-        popcorn[i].vel = sqrt(-2.0 * gravity * peakHeight);
-        popcorn[i].velX = 0;
-        
-        if (SEGMENT.palette) {
-          popcorn[i].colIndex = random8();
-        } else {
-          byte col = random8(0, NUM_COLORS);
-          if (!hasCol2 || !SEGCOLOR(col)) col = 0;
-          popcorn[i].colIndex = col;
+      uint8_t numPopcorn = SEGMENT.intensity*maxNumPopcorn/255;
+      if (numPopcorn == 0) numPopcorn = 1;
+
+      for(int i = 0; i < numPopcorn; i++) {
+        if (popcorn[i].pos >= 0.0f) { // if kernel is active, update its position
+          popcorn[i].pos += popcorn[i].vel;
+          popcorn[i].vel += gravity;
+        } else { // if kernel is inactive, randomly pop it
+          if (random8() < 2) { // POP!!!
+            popcorn[i].pos = 0.01f;
+
+            uint16_t peakHeight = 128 + random8(128); //0-255
+            peakHeight = (peakHeight * (SEGLEN -1)) >> 8;
+            popcorn[i].vel = sqrt(-2.0 * gravity * peakHeight);
+
+            if (SEGMENT.palette)
+            {
+              popcorn[i].colIndex = random8();
+            } else {
+              byte col = random8(0, NUM_COLORS);
+              if (!SEGCOLOR(2) || !SEGCOLOR(col)) col = 0;
+              popcorn[i].colIndex = col;
+            }
+          }
+        }
+        if (popcorn[i].pos >= 0.0f) { // draw now active popcorn (either active before or just popped)
+          uint32_t col = SEGMENT.color_wheel(popcorn[i].colIndex);
+          if (!SEGMENT.palette && popcorn[i].colIndex < NUM_COLORS) col = SEGCOLOR(popcorn[i].colIndex);
+          uint16_t ledIndex = popcorn[i].pos;
+          if (ledIndex < SEGLEN) SEGMENT.setPixelColor(ledIndex | int((stripNr+1)<<16), col);
         }
       }
     }
-    if (popcorn[i].pos >= 0.0f) { // draw now active popcorn (either active before or just popped)
-      uint32_t col = SEGMENT.color_wheel(popcorn[i].colIndex);
-      if (!SEGMENT.palette && popcorn[i].colIndex < NUM_COLORS) col = SEGCOLOR(popcorn[i].colIndex);
-      
-      uint16_t ledIndex = popcorn[i].pos;
-      if (ledIndex < rows) {
-        if (strip.isMatrix) SEGMENT.setPixelColorXY(uint16_t(popcorn[i].posX), rows - 1 - ledIndex, col);
-        else                SEGMENT.setPixelColor(ledIndex, col);
-      }
-    }
-  }
+  };
+
+  for (int stripNr=0; stripNr<SEGMENT.nrOfVStrips(); stripNr++)
+    virtualStrip::runStrip(stripNr, &popcorn[stripNr * maxNumPopcorn]);
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_POPCORN[] PROGMEM = "Popcorn@!,!;!,!,!;!;1d,2d";
+static const char _data_FX_MODE_POPCORN[] PROGMEM = "Popcorn@!,!;!,!,!;!;mp12=1,1d"; //bar
 
 
 //values close to 100 produce 5Hz flicker, which looks very candle-y
