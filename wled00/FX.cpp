@@ -30,6 +30,7 @@
 
 #define IBN 5100
 #define PALETTE_SOLID_WRAP (strip.paletteBlend == 1 || strip.paletteBlend == 3)
+#define indexToVStrip(index, stripNr) (index) | int((stripNr+1)<<16)
 
 // effect utility functions
 uint8_t sin_gap(uint16_t in) {
@@ -2006,7 +2007,7 @@ uint16_t mode_fire_2012()
 
       // Step 4.  Map from heat cells to LED colors
       for (int j = 0; j < SEGLEN; j++) {
-        SEGMENT.setPixelColor(j | int((stripNr+1)<<16), ColorFromPalette(SEGPALETTE, /*MIN(*/heat[j]/*,240)*/, 255, LINEARBLEND));
+        SEGMENT.setPixelColor(indexToVStrip(j, stripNr), ColorFromPalette(SEGPALETTE, /*MIN(*/heat[j]/*,240)*/, 255, LINEARBLEND));
       }
     }
   };
@@ -2850,7 +2851,7 @@ uint16_t mode_bouncing_balls(void) {
         }
 
         int pos = roundf(balls[i].height * (SEGLEN - 1));
-        if (SEGLEN<32) SEGMENT.setPixelColor(pos | int((stripNr+1)<<16), color); // encode virtual strip into index
+        if (SEGLEN<32) SEGMENT.setPixelColor(indexToVStrip(pos, stripNr), color); // encode virtual strip into index
         else           SEGMENT.setPixelColor(balls[i].height + (stripNr+1)*10.0f, color);
       }
     }
@@ -2992,7 +2993,7 @@ uint16_t mode_popcorn(void) {
           uint32_t col = SEGMENT.color_wheel(popcorn[i].colIndex);
           if (!SEGMENT.palette && popcorn[i].colIndex < NUM_COLORS) col = SEGCOLOR(popcorn[i].colIndex);
           uint16_t ledIndex = popcorn[i].pos;
-          if (ledIndex < SEGLEN) SEGMENT.setPixelColor(ledIndex | int((stripNr+1)<<16), col);
+          if (ledIndex < SEGLEN) SEGMENT.setPixelColor(indexToVStrip(ledIndex, stripNr), col);
         }
       }
     }
@@ -3400,10 +3401,10 @@ uint16_t mode_drip(void)
           drops[j].colIndex = 1;      // drop state (0 init, 1 forming, 2 falling, 5 bouncing)
         }
 
-        SEGMENT.setPixelColor((SEGLEN-1) | int((stripNr+1)<<16), color_blend(BLACK,SEGCOLOR(0), sourcedrop));// water source
+        SEGMENT.setPixelColor(indexToVStrip(SEGLEN-1, stripNr), color_blend(BLACK,SEGCOLOR(0), sourcedrop));// water source
         if (drops[j].colIndex==1) {
           if (drops[j].col>255) drops[j].col=255;
-          SEGMENT.setPixelColor(uint16_t(drops[j].pos) | int((stripNr+1)<<16), color_blend(BLACK,SEGCOLOR(0),drops[j].col));
+          SEGMENT.setPixelColor(indexToVStrip(uint16_t(drops[j].pos), stripNr), color_blend(BLACK,SEGCOLOR(0),drops[j].col));
 
           drops[j].col += map(SEGMENT.speed, 0, 255, 1, 6); // swelling
 
@@ -3420,11 +3421,11 @@ uint16_t mode_drip(void)
 
             for (int i=1;i<7-drops[j].colIndex;i++) { // some minor math so we don't expand bouncing droplets
               uint16_t pos = constrain(uint16_t(drops[j].pos) +i, 0, SEGLEN-1); //this is BAD, returns a pos >= SEGLEN occasionally
-              SEGMENT.setPixelColor(pos | int((stripNr+1)<<16), color_blend(BLACK,SEGCOLOR(0),drops[j].col/i)); //spread pixel with fade while falling
+              SEGMENT.setPixelColor(indexToVStrip(pos, stripNr), color_blend(BLACK,SEGCOLOR(0),drops[j].col/i)); //spread pixel with fade while falling
             }
 
             if (drops[j].colIndex > 2) {       // during bounce, some water is on the floor
-              SEGMENT.setPixelColor(0 | int((stripNr+1)<<16), color_blend(SEGCOLOR(0),BLACK,drops[j].col));
+              SEGMENT.setPixelColor(indexToVStrip(0, stripNr), color_blend(SEGCOLOR(0),BLACK,drops[j].col));
             }
           } else {                             // we hit bottom
             if (drops[j].colIndex > 2) {       // already hit once, so back to forming
@@ -3485,7 +3486,7 @@ uint16_t mode_tetrix(void) {
       if (SEGENV.call == 0) {
         drop->stack = 0;                  // reset brick stack size
         drop->step = 0;
-        //for (int i=0; i<SEGLEN; i++) SEGMENT.setPixelColor(i | int((stripNr+1)<<16), SEGCOLOR(1));  // will fill virtual strip only
+        //for (int i=0; i<SEGLEN; i++) SEGMENT.setPixelColor(indexToVStrip(i, stripNr), SEGCOLOR(1));  // will fill virtual strip only
       }
       
       if (drop->step == 0) {              // init brick
@@ -3513,7 +3514,7 @@ uint16_t mode_tetrix(void) {
           if (uint16_t(drop->pos) < drop->stack) drop->pos = drop->stack;
           for (int i=int(drop->pos); i<SEGLEN; i++) {
             uint32_t col = i<int(drop->pos)+drop->brick ? SEGMENT.color_from_palette(drop->col, false, false, 0) : SEGCOLOR(1);
-            SEGMENT.setPixelColor(i | int((stripNr+1)<<16), col);
+            SEGMENT.setPixelColor(indexToVStrip(i, stripNr), col);
           }
         } else {                          // we hit bottom
           drop->step = 0;                 // proceed with next brick, go back to init
@@ -3526,7 +3527,7 @@ uint16_t mode_tetrix(void) {
         drop->brick = 0;                  // reset brick size (no more growing)
         if (drop->step > millis()) {
           // allow fading of virtual strip
-          for (int i=0; i<SEGLEN; i++) SEGMENT.blendPixelColor(i | int((stripNr+1)<<16), SEGCOLOR(1), 25); // 10% blend with Bg color
+          for (int i=0; i<SEGLEN; i++) SEGMENT.blendPixelColor(indexToVStrip(i, stripNr), SEGCOLOR(1), 25); // 10% blend with Bg color
         } else {
           drop->stack = 0;                // reset brick stack size
           drop->step = 0;                 // proceed with next brick
