@@ -3401,10 +3401,10 @@ uint16_t mode_drip(void)
           drops[j].colIndex = 1;      // drop state (0 init, 1 forming, 2 falling, 5 bouncing)
         }
 
-        SEGMENT.setPixelColor(stripNr, SEGLEN-1, color_blend(BLACK,SEGCOLOR(0), sourcedrop));// water source
+        SEGMENT.setPixelColor((SEGLEN-1) | int((stripNr+1)<<16), color_blend(BLACK,SEGCOLOR(0), sourcedrop));// water source
         if (drops[j].colIndex==1) {
           if (drops[j].col>255) drops[j].col=255;
-          SEGMENT.setPixelColor(stripNr, uint16_t(drops[j].pos), color_blend(BLACK,SEGCOLOR(0),drops[j].col));
+          SEGMENT.setPixelColor(uint16_t(drops[j].pos) | int((stripNr+1)<<16), color_blend(BLACK,SEGCOLOR(0),drops[j].col));
 
           drops[j].col += map(SEGMENT.speed, 0, 255, 1, 6); // swelling
 
