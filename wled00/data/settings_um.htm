@@ -190,23 +190,23 @@
             getPins(json);
             urows="";
             if (isO(umCfg)) {
+                //WLEDSR: read url parameter. e.g. um=AudioReactive and if set only add the usermod with the same name
+                const queryString = window.location.search;
+                const urlParams = new URLSearchParams(queryString);
+                const userMod = urlParams.get('um')
                 for (const [k,o] of Object.entries(umCfg)) {
-                    //WLEDSR: read url parameter. e.g. um=AudioReactive and if set only add the usermod with the same name
-                    const queryString = window.location.search;
-                    const urlParams = new URLSearchParams(queryString);
-                    const userMod = urlParams.get('um')
 
-                    if (userMod == "" || userMod == k) {
-                        urows += `<div id=${k}><hr><h3>${k}</h3>`;
+                    console.log(userMod);
+                    if (userMod == k) {
+                        urows += `<hr><h3>${k}</h3>`;
                         addField(k,'unknown',o);
-                        urows += `</div> <!--ewowi-->`;
                     }
                 }
+                if (userMod != null && urows==="") urows = "Usermods configuration not found.<br>Press <i>Save</i> to initialize defaults.";
             }
             //WLEDSR: only show globalGPIOs if no usermod info is shown (url without um parameter)
             gId("globalGPIOs").style.display = urows===""?"block":"none";
 
-            if (urows==="") urows = "Usermods configuration not found.<br>Press <i>Save</i> to initialize defaults.";
             gId("um").innerHTML = urows;
             var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=8';
     		loadJS(url, false);	// If we set async false, file is loaded and executed, then next statement is processed
