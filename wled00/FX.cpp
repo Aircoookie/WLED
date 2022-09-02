@@ -1982,9 +1982,14 @@ uint16_t mode_fire_2012()
 
         // Step 1.  Cool down every cell a little
         for (int i = 0; i < SEGLEN; i++) {
-          uint8_t cool = (((20 + SEGMENT.speed/3) * 16) / SEGLEN);
-          uint8_t temp = qsub8(heat[i], random8(0, cool + 2));
-          heat[i] = (temp==0 && i<ignition) ? random8(1,16) : temp; // prevent ignition area from becoming black
+          uint8_t cool = random8((((20 + SEGMENT.speed/3) * 16) / SEGLEN)+2);
+          uint8_t minTemp = 0;
+          if (i<ignition) {
+            cool /= (ignition-i); // ignition area cools slower
+            minTemp = 4*(ignition-i) + 8; // and should not become black
+          }
+          uint8_t temp = qsub8(heat[i], cool);
+          heat[i] = i<ignition && temp<minTemp ? minTemp : temp; // prevent ignition area from becoming black
         }
 
         // Step 2.  Heat from each cell drifts 'up' and diffuses a little
@@ -2001,7 +2006,7 @@ uint16_t mode_fire_2012()
 
       // Step 4.  Map from heat cells to LED colors
       for (int j = 0; j < SEGLEN; j++) {
-        SEGMENT.setPixelColor(indexToVStrip(j, stripNr), ColorFromPalette(SEGPALETTE, heat[j], 255, NOBLEND));
+        SEGMENT.setPixelColor(indexToVStrip(j, stripNr), ColorFromPalette(SEGPALETTE, MIN(heat[j],240), 255, NOBLEND));
       }
     }
   };
