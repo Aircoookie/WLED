@@ -653,8 +653,8 @@ function populateInfo(i)
 		}
 	}
 	var vcn = "Kuuhaku";
-	if (i.ver.startsWith("0.13.")) vcn = "Toki";
-	if (i.ver.includes("-bl")) vcn = "Ryujin";
+	if (i.ver.startsWith("0.14.")) vcn = "Hoshi";
+	if (i.ver.includes("-bl")) vcn = "Supāku";
 	if (i.cn) vcn = i.cn;
 
 	cn += `v${i.ver} "${vcn}"<br><br><table>
@@ -714,7 +714,7 @@ function populateSegments(s)
 		}
 		let map2D = `<div id="seg${i}map2D" data-map="map2D" class="lbl-s hide">Expand 1D FX<br>
 			<div class="sel-p"><select class="sel-p" id="seg${i}mp12" onchange="setMp12(${i})">
-				<option value="0" ${inst.mp12==0?' selected':''}>Pxels</option>
+				<option value="0" ${inst.mp12==0?' selected':''}>Pixels</option>
 				<option value="1" ${inst.mp12==1?' selected':''}>Bar</option>
 				<option value="2" ${inst.mp12==2?' selected':''}>Arc</option>
 				<option value="3" ${inst.mp12==3?' selected':''}>Corner</option>

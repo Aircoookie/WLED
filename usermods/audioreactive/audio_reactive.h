@@ -24,7 +24,7 @@
 // #define MIC_LOGGER                   // MIC sampling & sound input debugging (serial plotter)
 // #define FFT_SAMPLING_LOG             // FFT result debugging
 // #define SR_DEBUG                     // generic SR DEBUG messages
-// #define NO_MIC_LOGGER                // exclude MIC_LOGGER from SR_DEBUG
+
 
 #ifdef SR_DEBUG
   #define DEBUGSR_PRINT(x) Serial.print(x)
@@ -103,6 +103,7 @@ static void autoResetPeak(void);     // peak auto-reset function
 ////////////////////
 // Begin FFT Code //
 ////////////////////
+
 #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
 // lib_deps += https://github.com/kosme/arduinoFFT#develop @ 1.9.2
 #define FFT_SPEED_OVER_PRECISION     // enables use of reciprocals (1/x etc), and an a few other speedups
@@ -135,7 +136,6 @@ static float windowWeighingFactors[samplesFFT] = {0.0f};
 #endif
 
 // Try and normalize fftBin values to a max of 4096, so that 4096/16 = 256.
-// Oh, and bins 0,1,2 are no good, so we'll zero them out.
 static float   fftCalc[NUM_GEQ_CHANNELS] = {0.0f};
 static float   fftAvg[NUM_GEQ_CHANNELS] = {0.0f};                     // Calculated frequency channel results, with smoothing (used if dynamics limiter is ON)
 #ifdef SR_DEBUG
@@ -172,7 +172,7 @@ static float fftAddAvg(int from, int to) {
   return result / float(to - from + 1);
 }
 
-// FFT main code
+// FFT main task
 void FFTcode(void * parameter)
 {
   DEBUGSR_PRINT("FFT started on core: "); DEBUGSR_PRINTLN(xPortGetCoreID());
@@ -417,6 +417,10 @@ static void autoResetPeak(void) {
 }
 
 
+////////////////////
+// usermod class  //
+////////////////////
+
 //class name. Use something descriptive and leave the ": public Usermod" part :)
 class AudioReactive : public Usermod {
 
@@ -533,6 +537,10 @@ class AudioReactive : public Usermod {
     static const char UDP_SYNC_HEADER_v1[];
 
     // private methods
+
+    ////////////////////
+    // Debug support  //
+    ////////////////////
     void logAudio()
     {
     #ifdef MIC_LOGGER
@@ -603,6 +611,10 @@ class AudioReactive : public Usermod {
     #endif // FFT_SAMPLING_LOG
     } // logAudio()
 
+
+    //////////////////////
+    // Audio Processing //
+    //////////////////////
 
     /*
     * A "PI controller" multiplier to automatically adjust sound sensitivity.
@@ -698,7 +710,7 @@ class AudioReactive : public Usermod {
       last_soundAgc = soundAgc;
     } // agcAvg()
 
-
+    // post-processing and filtering of MIC sample (micDataReal) from FFTcode()
     void getSample()
     {
       float    sampleAdj;           // Gain adjusted sample value
@@ -793,6 +805,26 @@ class AudioReactive : public Usermod {
     }
 
 
+    //////////////////////
+    // UDP Sound Sync   //
+    //////////////////////
+
+    // try to establish UDP sound sync connection
+    void connectUDPSoundSync(void) {
+      // This function tries to establish a UDP sync connection if needed
+      // necessary as we also want to transmit in "AP Mode", but the standard "connected()" callback only reacts on STA connection
+      static unsigned long last_connection_attempt = 0;
+
+      if ((audioSyncPort <= 0) || ((audioSyncEnabled & 0x03) == 0)) return;  // Sound Sync not enabled
+      if (udpSyncConnected) return;                                          // already connected
+      if (!(apActive || interfacesInited)) return;                           // neither AP nor other connections availeable
+      if (millis() - last_connection_attempt < 15000) return;                // only try once in 15 seconds
+
+      // if we arrive here, we need a UDP connection but don't have one
+      last_connection_attempt = millis();
+      connected(); // try to start UDP
+    }
+
     void transmitAudioData()
     {
       if (!udpSyncConnected) return;
@@ -820,11 +852,9 @@ class AudioReactive : public Usermod {
       return;
     } // transmitAudioData()
 
-
     static bool isValidUdpSyncVersion(const char *header) {
       return strncmp_P(header, PSTR(UDP_SYNC_HEADER), 6) == 0;
     }
-
 
     bool receiveAudioData()   // check & process new data. return TRUE in case that new audio data was received. 
     {
@@ -874,6 +904,10 @@ class AudioReactive : public Usermod {
       return haveFreshData;
     }
 
+
+    //////////////////////
+    // usermod functions//
+    //////////////////////
 
   public:
     //Functions called by WLED or other usermods
@@ -967,6 +1001,7 @@ class AudioReactive : public Usermod {
         disableSoundProcessing = true;
       }
 
+      if (enabled) connectUDPSoundSync();
       initDone = true;
     }
 
@@ -977,6 +1012,11 @@ class AudioReactive : public Usermod {
      */
     void connected()
     {
+      if (udpSyncConnected) {   // clean-up: if open, close old UDP sync connection
+        udpSyncConnected = false;
+        fftUdp.stop();
+      }
+      
       if (audioSyncPort > 0 && (audioSyncEnabled & 0x03)) {
       #ifndef ESP8266
         udpSyncConnected = fftUdp.beginMulticast(IPAddress(239, 0, 0, 1), audioSyncPort);
@@ -1078,6 +1118,8 @@ class AudioReactive : public Usermod {
 
       autoResetPeak();          // auto-reset sample peak after strip minShowDelay
       if (!udpSyncConnected) udpSamplePeak = false;  // reset UDP samplePeak while UDP is unconnected
+
+      connectUDPSoundSync();  // ensure we have a connection - if needed
 
       // UDP Microphone Sync  - receive mode
       if ((audioSyncEnabled & 0x02) && udpSyncConnected) {
@@ -1195,6 +1237,10 @@ class AudioReactive : public Usermod {
       return false;
     }
 
+
+    ////////////////////////////
+    // Settings and Info Page //
+    ////////////////////////////
 
     /*
      * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
@@ -1317,6 +1363,10 @@ class AudioReactive : public Usermod {
         infoArr.add(fftTime-sampleTime);
         infoArr.add("ms");
         #endif
+
+        // add a small horizontal line, for better readability
+        infoArr = user.createNestedArray(F("<hr style=\"height:1px;border-width:0;color:gray;background-color:gray\" />"));
+        infoArr.add(F(" <hr style=\"height:1px;border-width:0;color:gray;background-color:gray\" /> "));
       }
     }
 
