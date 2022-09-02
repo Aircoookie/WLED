@@ -30,7 +30,7 @@
 
 #define IBN 5100
 #define PALETTE_SOLID_WRAP (strip.paletteBlend == 1 || strip.paletteBlend == 3)
-#define indexToVStrip(index, stripNr) (index) | int((stripNr+1)<<16)
+#define indexToVStrip(index, stripNr) ((index) | (int((stripNr)+1)<<16))
 
 // effect utility functions
 uint8_t sin_gap(uint16_t in) {
@@ -1967,7 +1967,8 @@ static const char _data_FX_MODE_PALETTE[] PROGMEM = "Palette@Cycle speed,;1,2,3;
 // in step 3 above) (Effect Intensity = Sparking).
 uint16_t mode_fire_2012()
 {
-  if (!SEGENV.allocateData(SEGMENT.nrOfVStrips()*SEGLEN)) return mode_static(); //allocation failed
+  uint16_t strips = SEGMENT.nrOfVStrips();
+  if (!SEGENV.allocateData(strips * SEGLEN)) return mode_static(); //allocation failed
   byte* heat = SEGENV.data;
 
   uint32_t it = strip.now >> 5; //div 32
@@ -1982,13 +1983,6 @@ uint16_t mode_fire_2012()
         // Step 1.  Cool down every cell a little
         for (int i = 0; i < SEGLEN; i++) {
           uint8_t cool = (((20 + SEGMENT.speed/3) * 16) / SEGLEN);
-          /*
-          // 2D enhancement: cool sides of the flame a bit more
-          if (cols>5) {
-            if (f < q)   cool = qadd8(cool, 2*(uint16_t)((cool *    (q-f))/cols)); // cool segment sides a bit more
-            if (f > 3*q) cool = qadd8(cool, 2*(uint16_t)((cool * (cols-f))/cols)); // cool segment sides a bit more
-          }
-          */
           uint8_t temp = qsub8(heat[i], random8(0, cool + 2));
           heat[i] = (temp==0 && i<ignition) ? random8(1,16) : temp; // prevent ignition area from becoming black
         }
@@ -2007,12 +2001,12 @@ uint16_t mode_fire_2012()
 
       // Step 4.  Map from heat cells to LED colors
       for (int j = 0; j < SEGLEN; j++) {
-        SEGMENT.setPixelColor(indexToVStrip(j, stripNr), ColorFromPalette(SEGPALETTE, /*MIN(*/heat[j]/*,240)*/, 255, LINEARBLEND));
+        SEGMENT.setPixelColor(indexToVStrip(j, stripNr), ColorFromPalette(SEGPALETTE, heat[j], 255, NOBLEND));
       }
     }
   };
 
-  for (int stripNr=0; stripNr<SEGMENT.nrOfVStrips(); stripNr++)
+  for (int stripNr=0; stripNr<strips; stripNr++)
     virtualStrip::runStrip(stripNr, &heat[stripNr * SEGLEN], it);
 
   if (it != SEGENV.step)
@@ -2951,8 +2945,9 @@ typedef struct Spark {
 */
 uint16_t mode_popcorn(void) {
   //allocate segment data
+  uint16_t strips = SEGMENT.nrOfVStrips();
   uint16_t dataSize = sizeof(spark) * maxNumPopcorn;
-  if (!SEGENV.allocateData(dataSize * SEGMENT.nrOfVStrips())) return mode_static(); //allocation failed
+  if (!SEGENV.allocateData(dataSize * strips)) return mode_static(); //allocation failed
 
   Spark* popcorn = reinterpret_cast<Spark*>(SEGENV.data);
 
@@ -2999,7 +2994,7 @@ uint16_t mode_popcorn(void) {
     }
   };
 
-  for (int stripNr=0; stripNr<SEGMENT.nrOfVStrips(); stripNr++)
+  for (int stripNr=0; stripNr<strips; stripNr++)
     virtualStrip::runStrip(stripNr, &popcorn[stripNr * maxNumPopcorn]);
 
   return FRAMETIME;
@@ -3377,9 +3372,10 @@ static const char _data_FX_MODE_EXPLODING_FIREWORKS[] PROGMEM = "Fireworks 1D@Gr
 uint16_t mode_drip(void)
 {
   //allocate segment data
-  uint8_t maxNumDrops = 4; 
+  uint16_t strips = SEGMENT.nrOfVStrips();
+  const int maxNumDrops = 4; 
   uint16_t dataSize = sizeof(spark) * maxNumDrops;
-  if (!SEGENV.allocateData(dataSize * SEGMENT.nrOfVStrips())) return mode_static(); //allocation failed
+  if (!SEGENV.allocateData(dataSize * strips)) return mode_static(); //allocation failed
   Spark* drops = reinterpret_cast<Spark*>(SEGENV.data);
 
   SEGMENT.fill(SEGCOLOR(1));
@@ -3447,7 +3443,7 @@ uint16_t mode_drip(void)
     }
   };
 
-  for (int stripNr=0; stripNr<SEGMENT.nrOfVStrips(); stripNr++)
+  for (int stripNr=0; stripNr<strips; stripNr++)
     virtualStrip::runStrip(stripNr, &drops[stripNr*maxNumDrops]);
 
   return FRAMETIME;
