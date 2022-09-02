@@ -1966,59 +1966,60 @@ static const char _data_FX_MODE_PALETTE[] PROGMEM = "Palette@Cycle speed,;1,2,3;
 // in step 3 above) (Effect Intensity = Sparking).
 uint16_t mode_fire_2012()
 {
-  const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-  const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
-
-  uint32_t it = strip.now >> 5; //div 32
-  //uint16_t q  = cols>>2; // a quarter of flames
-
-  if (!SEGENV.allocateData(cols*rows)) return mode_static(); //allocation failed
-  
+  if (!SEGENV.allocateData(SEGMENT.nrOfVStrips()*SEGLEN)) return mode_static(); //allocation failed
   byte* heat = SEGENV.data;
 
-  if (it != SEGENV.step) {
-    SEGENV.step = it;
-    uint8_t ignition = max(3,rows/10);  // ignition area: 10% of segment length or minimum 3 pixels
+  uint32_t it = strip.now >> 5; //div 32
 
-    for (int f = 0; f < cols; f++) {
-      // Step 1.  Cool down every cell a little
-      for (int i = 0; i < rows; i++) {
-        uint8_t cool = (((20 + SEGMENT.speed/3) * 16) / rows);
-        /*
-        // 2D enhancement: cool sides of the flame a bit more
-        if (cols>5) {
-          if (f < q)   cool = qadd8(cool, 2*(uint16_t)((cool *    (q-f))/cols)); // cool segment sides a bit more
-          if (f > 3*q) cool = qadd8(cool, 2*(uint16_t)((cool * (cols-f))/cols)); // cool segment sides a bit more
+  struct virtualStrip {
+    static void runStrip(uint16_t stripNr, byte* heat, uint32_t it) {
+
+      if (it != SEGENV.step)
+      {
+        uint8_t ignition = max(3,SEGLEN/10);  // ignition area: 10% of segment length or minimum 3 pixels
+
+        // Step 1.  Cool down every cell a little
+        for (int i = 0; i < SEGLEN; i++) {
+          uint8_t cool = (((20 + SEGMENT.speed/3) * 16) / SEGLEN);
+          /*
+          // 2D enhancement: cool sides of the flame a bit more
+          if (cols>5) {
+            if (f < q)   cool = qadd8(cool, 2*(uint16_t)((cool *    (q-f))/cols)); // cool segment sides a bit more
+            if (f > 3*q) cool = qadd8(cool, 2*(uint16_t)((cool * (cols-f))/cols)); // cool segment sides a bit more
+          }
+          */
+          uint8_t temp = qsub8(heat[i], random8(0, cool + 2));
+          heat[i] = (temp==0 && i<ignition) ? random8(1,16) : temp; // prevent ignition area from becoming black
         }
-        */
-        uint8_t temp = qsub8(heat[i+rows*f], random8(0, cool + 2));
-        heat[i+rows*f] = (temp==0 && i<ignition) ? random8(1,16) : temp; // prevent ignition area from becoming black
+
+        // Step 2.  Heat from each cell drifts 'up' and diffuses a little
+        for (int k = SEGLEN -1; k > 1; k--) {
+          heat[k] = (heat[k - 1] + (heat[k - 2]<<1) ) / 3;  // heat[k-2] multiplied by 2
+        }
+
+        // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
+        if (random8() <= SEGMENT.intensity) {
+          uint8_t y = random8(ignition);
+          heat[y] = qadd8(heat[y], random8(160,255));
+        }
       }
 
-      // Step 2.  Heat from each cell drifts 'up' and diffuses a little
-      for (int k = rows -1; k > 1; k--) {
-        heat[k+rows*f] = (heat[k+rows*f - 1] + (heat[k+rows*f - 2]<<1) ) / 3;  // heat[k-2] multiplied by 2
-      }
-
-      // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
-      if (random8() <= SEGMENT.intensity) {
-        uint8_t y = random8(ignition);
-        heat[y+rows*f] = qadd8(heat[y+rows*f], random8(160,255));
+      // Step 4.  Map from heat cells to LED colors
+      for (int j = 0; j < SEGLEN; j++) {
+        SEGMENT.setPixelColor(j | int((stripNr+1)<<16), ColorFromPalette(SEGPALETTE, /*MIN(*/heat[j]/*,240)*/, 255, LINEARBLEND));
       }
     }
-  }
+  };
 
-  for (int f = 0; f < cols; f++) {
-    // Step 4.  Map from heat cells to LED colors
-    for (int j = 0; j < rows; j++) {
-      CRGB color = ColorFromPalette(SEGPALETTE, /*MIN(*/heat[j+rows*f]/*,240)*/, 255, LINEARBLEND);
-      if (strip.isMatrix) SEGMENT.setPixelColorXY(f, rows -j -1, color);
-      else                SEGMENT.setPixelColor(j, color);
-    }
-  }
+  for (int stripNr=0; stripNr<SEGMENT.nrOfVStrips(); stripNr++)
+    virtualStrip::runStrip(stripNr, &heat[stripNr * SEGLEN], it);
+
+  if (it != SEGENV.step)
+    SEGENV.step = it;
+
   return FRAMETIME;
 }
-static const char _data_FX_MODE_FIRE_2012[] PROGMEM = "Fire 2012@Cooling,Spark rate;1,2,3;!;sx=120,ix=64,1d,2d";
+static const char _data_FX_MODE_FIRE_2012[] PROGMEM = "Fire 2012@Cooling,Spark rate;1,2,3;!;sx=120,ix=64,mp12=1,1d"; //bars
 
 
 // ColorWavesWithPalettes by Mark Kriegsman: https://gist.github.com/kriegsman/8281905786e8b2632aeb
@@ -3389,18 +3390,18 @@ uint16_t mode_drip(void)
       uint8_t numDrops = 1 + (SEGMENT.intensity >> 6); // 255>>6 = 3
 
       float gravity = -0.0005 - (SEGMENT.speed/50000.0);
-      gravity *= (SEGLEN*1)-1;
+      gravity *= SEGLEN-1;
       int sourcedrop = 12;
 
       for (int j=0;j<numDrops;j++) {
         if (drops[j].colIndex == 0) { //init
-          drops[j].pos = (SEGLEN*1)-1;    // start at end
+          drops[j].pos = SEGLEN-1;    // start at end
           drops[j].vel = 0;           // speed
           drops[j].col = sourcedrop;  // brightness
           drops[j].colIndex = 1;      // drop state (0 init, 1 forming, 2 falling, 5 bouncing)
         }
 
-        SEGMENT.setPixelColor(stripNr, (SEGLEN*1)-1, color_blend(BLACK,SEGCOLOR(0), sourcedrop));// water source
+        SEGMENT.setPixelColor(stripNr, SEGLEN-1, color_blend(BLACK,SEGCOLOR(0), sourcedrop));// water source
         if (drops[j].colIndex==1) {
           if (drops[j].col>255) drops[j].col=255;
           SEGMENT.setPixelColor(stripNr, uint16_t(drops[j].pos), color_blend(BLACK,SEGCOLOR(0),drops[j].col));
