@@ -3375,91 +3375,83 @@ static const char _data_FX_MODE_EXPLODING_FIREWORKS[] PROGMEM = "Fireworks 1D@Gr
  */
 uint16_t mode_drip(void)
 {
-  const uint16_t cols = strip.isMatrix ? SEGMENT.virtualWidth() : 1;
-  const uint16_t rows = strip.isMatrix ? SEGMENT.virtualHeight() : SEGMENT.virtualLength();
-
   //allocate segment data
-  uint8_t numDrops = 4; 
-  uint16_t dataSize = sizeof(spark) * numDrops;
-  if (!SEGENV.allocateData(dataSize * cols)) return mode_static(); //allocation failed
+  uint8_t maxNumDrops = 4; 
+  uint16_t dataSize = sizeof(spark) * maxNumDrops;
+  if (!SEGENV.allocateData(dataSize * SEGMENT.nrOfVStrips())) return mode_static(); //allocation failed
+  Spark* drops = reinterpret_cast<Spark*>(SEGENV.data);
 
   SEGMENT.fill(SEGCOLOR(1));
   
-  Spark* drops = reinterpret_cast<Spark*>(SEGENV.data);
+  struct virtualStrip {
+    static void runStrip(uint16_t stripNr, Spark* drops) {
 
-  numDrops = 1 + (SEGMENT.intensity >> 6); // 255>>6 = 3
+      uint8_t numDrops = 1 + (SEGMENT.intensity >> 6); // 255>>6 = 3
 
-  float gravity = -0.0005 - (SEGMENT.speed/50000.0);
-  gravity *= rows-1;
-  int sourcedrop = 12;
+      float gravity = -0.0005 - (SEGMENT.speed/50000.0);
+      gravity *= (SEGLEN*1)-1;
+      int sourcedrop = 12;
 
-  for (int k=0; k < cols; k++) {
-    for (size_t j=0; j < numDrops; j++) {
-      uint16_t idx = k*numDrops + j;
-
-      if (drops[idx].colIndex == 0) { //init
-        drops[idx].pos = rows-1;       // start at end
-        drops[idx].vel = 0;           // speed
-        drops[idx].col = sourcedrop;  // brightness
-        drops[idx].colIndex = 1;      // drop state (0 init, 1 forming, 2 falling, 5 bouncing) 
-      }
-      
-      uint32_t col = color_blend(BLACK, SEGCOLOR(0), sourcedrop);
-      if (strip.isMatrix) SEGMENT.setPixelColorXY(k, 0, col);
-      else                SEGMENT.setPixelColor(rows-1, col);// water source
-
-      if (drops[idx].colIndex == 1) {
-        if (drops[idx].col > 255) drops[idx].col = 255;
-        col = color_blend(BLACK,SEGCOLOR(0),drops[idx].col);
-        if (strip.isMatrix) SEGMENT.setPixelColorXY(k, rows - 1 - uint16_t(drops[idx].pos), col);
-        else                SEGMENT.setPixelColor(uint16_t(drops[idx].pos), col);
-        
-        drops[idx].col += map(SEGMENT.speed, 0, 255, 1, 6); // swelling
-        
-        if (random8() < drops[idx].col/10) {   // random drop
-          drops[idx].colIndex = 2;             //fall
-          drops[idx].col = 255;
+      for (int j=0;j<numDrops;j++) {
+        if (drops[j].colIndex == 0) { //init
+          drops[j].pos = (SEGLEN*1)-1;    // start at end
+          drops[j].vel = 0;           // speed
+          drops[j].col = sourcedrop;  // brightness
+          drops[j].colIndex = 1;      // drop state (0 init, 1 forming, 2 falling, 5 bouncing)
         }
-      }  
-      if (drops[idx].colIndex > 1) {           // falling
-        if (drops[idx].pos > 0) {              // fall until end of segment
-          drops[idx].pos += drops[idx].vel;
-          if (drops[idx].pos < 0) drops[idx].pos = 0;
-          drops[idx].vel += gravity;           // gravity is negative
 
-          for (int i = 1; i < 7 - drops[idx].colIndex; i++) { // some minor math so we don't expand bouncing droplets
-            uint16_t pos = constrain(uint16_t(drops[idx].pos) +i, 0, rows-1); //this is BAD, returns a pos >= SEGLEN occasionally
-            col = color_blend(BLACK, SEGCOLOR(0), drops[idx].col/i);
-            if (strip.isMatrix) SEGMENT.setPixelColorXY(k, rows - 1 - pos, col);
-            else                SEGMENT.setPixelColor(pos, col); //spread pixel with fade while falling
+        SEGMENT.setPixelColor(stripNr, (SEGLEN*1)-1, color_blend(BLACK,SEGCOLOR(0), sourcedrop));// water source
+        if (drops[j].colIndex==1) {
+          if (drops[j].col>255) drops[j].col=255;
+          SEGMENT.setPixelColor(stripNr, uint16_t(drops[j].pos), color_blend(BLACK,SEGCOLOR(0),drops[j].col));
+
+          drops[j].col += map(SEGMENT.speed, 0, 255, 1, 6); // swelling
+
+          if (random8() < drops[j].col/10) {               // random drop
+            drops[j].colIndex=2;               //fall
+            drops[j].col=255;
           }
+        }
+        if (drops[j].colIndex > 1) {           // falling
+          if (drops[j].pos > 0) {              // fall until end of segment
+            drops[j].pos += drops[j].vel;
+            if (drops[j].pos < 0) drops[j].pos = 0;
+            drops[j].vel += gravity;           // gravity is negative
 
-          if (drops[idx].colIndex > 2) {         // during bounce, some water is on the floor
-            col = color_blend(SEGCOLOR(0), BLACK, drops[idx].col);
-            if (strip.isMatrix) SEGMENT.setPixelColorXY(k, rows - 1, col);
-            else                SEGMENT.setPixelColor(0, col);
-          }
-        } else {                                 // we hit bottom
-          if (drops[idx].colIndex > 2) {         // already hit once, so back to forming
-            drops[idx].colIndex = 0;
-            drops[idx].col = sourcedrop;
-            
-          } else {
+            for (int i=1;i<7-drops[j].colIndex;i++) { // some minor math so we don't expand bouncing droplets
+              uint16_t pos = constrain(uint16_t(drops[j].pos) +i, 0, SEGLEN-1); //this is BAD, returns a pos >= SEGLEN occasionally
+              SEGMENT.setPixelColor(pos | int((stripNr+1)<<16), color_blend(BLACK,SEGCOLOR(0),drops[j].col/i)); //spread pixel with fade while falling
+            }
 
-            if (drops[idx].colIndex == 2) {      // init bounce
-              drops[idx].vel = -drops[idx].vel/4;// reverse velocity with damping 
-              drops[idx].pos += drops[idx].vel;
-            } 
-            drops[idx].col = sourcedrop*2;
-            drops[idx].colIndex = 5;             // bouncing
+            if (drops[j].colIndex > 2) {       // during bounce, some water is on the floor
+              SEGMENT.setPixelColor(0 | int((stripNr+1)<<16), color_blend(SEGCOLOR(0),BLACK,drops[j].col));
+            }
+          } else {                             // we hit bottom
+            if (drops[j].colIndex > 2) {       // already hit once, so back to forming
+              drops[j].colIndex = 0;
+              drops[j].col = sourcedrop;
+
+            } else {
+
+              if (drops[j].colIndex==2) {      // init bounce
+                drops[j].vel = -drops[j].vel/4;// reverse velocity with damping
+                drops[j].pos += drops[j].vel;
+              }
+              drops[j].col = sourcedrop*2;
+              drops[j].colIndex = 5;           // bouncing
+            }
           }
         }
       }
     }
-  }
+  };
+
+  for (int stripNr=0; stripNr<SEGMENT.nrOfVStrips(); stripNr++)
+    virtualStrip::runStrip(stripNr, &drops[stripNr*maxNumDrops]);
+
   return FRAMETIME;
 }
-static const char _data_FX_MODE_DRIP[] PROGMEM = "Drip@Gravity,# of drips;!,!;!;1d,2d";
+static const char _data_FX_MODE_DRIP[] PROGMEM = "Drip@Gravity,# of drips;!,!;!;mp12=1,1d"; //bar
 
 
 /*
