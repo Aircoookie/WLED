@@ -319,7 +319,7 @@ public:
 };
 
 #if !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
-// ADC over I2S is only availeable in "claasic" ESP32
+// ADC over I2S is only availeable in "classic" ESP32
 
 /* ADC over I2S Microphone
    This microphone is an ADC pin sampled via the I2S interval

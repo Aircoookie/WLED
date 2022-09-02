@@ -219,11 +219,20 @@ PinOwner PinManagerClass::getPinOwner(byte gpio) {
 }
 
 #ifdef ARDUINO_ARCH_ESP32
+#if defined(CONFIG_IDF_TARGET_ESP32C3)
+  #define MAX_LED_CHANNELS 6
+#else
+  #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3)
+    #define MAX_LED_CHANNELS 8
+  #else
+    #define MAX_LED_CHANNELS 16
+  #endif
+#endif
 byte PinManagerClass::allocateLedc(byte channels)
 {
-  if (channels > 16 || channels == 0) return 255;
+  if (channels > MAX_LED_CHANNELS || channels == 0) return 255;
   byte ca = 0;
-  for (byte i = 0; i < 16; i++) {
+  for (byte i = 0; i < MAX_LED_CHANNELS; i++) {
     byte by = i >> 3;
     byte bi = i - 8*by;
     if (bitRead(ledcAlloc[by], bi)) { //found occupied pin
@@ -248,7 +257,7 @@ byte PinManagerClass::allocateLedc(byte channels)
 void PinManagerClass::deallocateLedc(byte pos, byte channels)
 {
   for (byte j = pos; j < pos + channels; j++) {
-    if (j > 16) return;
+    if (j > MAX_LED_CHANNELS) return;
     byte by = j >> 3;
     byte bi = j - 8*by;
     bitWrite(ledcAlloc[by], bi, false);

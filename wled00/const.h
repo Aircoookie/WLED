@@ -25,10 +25,14 @@
   #ifdef ESP8266
     #define WLED_MAX_BUSSES 3
   #else
-    #ifdef CONFIG_IDF_TARGET_ESP32S2
+    #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3)
       #define WLED_MAX_BUSSES 5
     #else
-      #define WLED_MAX_BUSSES 10
+      #if defined(CONFIG_IDF_TARGET_ESP32S3)
+        #define WLED_MAX_BUSSES 8
+      #else
+        #define WLED_MAX_BUSSES 10
+      #endif
     #endif
   #endif
 #endif
