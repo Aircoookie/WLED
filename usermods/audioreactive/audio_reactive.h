@@ -109,6 +109,8 @@ static void autoResetPeak(void);     // peak auto-reset function
 #define FFT_SPEED_OVER_PRECISION     // enables use of reciprocals (1/x etc), and an a few other speedups
 #define FFT_SQRT_APPROXIMATION       // enables "quake3" style inverse sqrt
 #define sqrt(x) sqrtf(x)             // little hack that reduces FFT time by 50% on ESP32 (as alternative to FFT_SQRT_APPROXIMATION)
+#else
+// lib_deps += https://github.com/blazoncek/arduinoFFT.git
 #endif
 #include "arduinoFFT.h"
 
@@ -1050,7 +1052,7 @@ class AudioReactive : public Usermod {
       if (strip.isUpdating() && (millis() - lastUMRun < 2)) return;   // be nice, but not too nice
 
       // suspend local sound processing when "real time mode" is active (E131, UDP, ADALIGHT, ARTNET)
-      if (  (realtimeOverride == REALTIME_OVERRIDE_NONE)  // please odd other orrides here if needed
+      if (  (realtimeOverride == REALTIME_OVERRIDE_NONE)  // please add other overrides here if needed
           &&( (realtimeMode == REALTIME_MODE_GENERIC)
             ||(realtimeMode == REALTIME_MODE_E131)
             ||(realtimeMode == REALTIME_MODE_UDP)
@@ -1363,10 +1365,6 @@ class AudioReactive : public Usermod {
         infoArr.add(fftTime-sampleTime);
         infoArr.add("ms");
         #endif
-
-        // add a small horizontal line, for better readability
-        infoArr = user.createNestedArray(F("<hr style=\"height:1px;border-width:0;color:gray;background-color:gray\" />"));
-        infoArr.add(F(" <hr style=\"height:1px;border-width:0;color:gray;background-color:gray\" /> "));
       }
     }
 
