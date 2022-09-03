@@ -522,7 +522,7 @@ class SPH0654 : public I2SSource {
     void initialize(uint8_t i2swsPin, uint8_t i2ssdPin, uint8_t i2sckPin, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
       I2SSource::initialize(i2swsPin, i2ssdPin, i2sckPin);
 #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
-// these registers are only existing in "claasic" ESP32
+// these registers are only existing in "classic" ESP32
       REG_SET_BIT(I2S_TIMING_REG(I2S_NUM_0), BIT(9));
       REG_SET_BIT(I2S_CONF_REG(I2S_NUM_0), I2S_RX_MSB_SHIFT);
 #else
