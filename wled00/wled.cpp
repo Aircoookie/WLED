@@ -274,12 +274,32 @@ void WLED::setup()
 #ifdef ARDUINO_ARCH_ESP32
   DEBUG_PRINT(F("esp32 "));
   DEBUG_PRINTLN(ESP.getSdkVersion());
+
+  DEBUG_PRINT(F("CPU:   ")); DEBUG_PRINT(ESP.getChipModel());
+  DEBUG_PRINT(F(" rev. ")); DEBUG_PRINT(ESP.getChipRevision());
+  DEBUG_PRINT(F(", ")); DEBUG_PRINT(ESP.getChipCores()); DEBUG_PRINT(F(" core(s)"));
+  DEBUG_PRINT(F(", ")); DEBUG_PRINT(ESP.getCpuFreqMHz()); DEBUG_PRINTLN(F("MHz."));
+  DEBUG_PRINT(F("FLASH: ")); DEBUG_PRINT((ESP.getFlashChipSize()/1024)/1024);
+  DEBUG_PRINT(F("MB, Mode ")); DEBUG_PRINT(ESP.getFlashChipMode());
+  #ifdef WLED_DEBUG
+  switch (ESP.getFlashChipMode()) {
+    // missing: Octal modes
+    case FM_QIO:  DEBUG_PRINT(F(" (QIO)")); break;
+    case FM_QOUT: DEBUG_PRINT(F(" (QOUT)"));break;
+    case FM_DIO:  DEBUG_PRINT(F(" (DIO)")); break;
+    case FM_DOUT: DEBUG_PRINT(F(" (DOUT)"));break;
+    default: break;
+  }
+  #endif
+  DEBUG_PRINT(F(", speed ")); DEBUG_PRINT(ESP.getFlashChipSpeed()/1000000);DEBUG_PRINTLN(F("MHz."));
+
 #else
   DEBUG_PRINT(F("esp8266 "));
   DEBUG_PRINTLN(ESP.getCoreVersion());
 #endif
   DEBUG_PRINT(F("heap "));
   DEBUG_PRINTLN(ESP.getFreeHeap());
+  DEBUG_PRINTLN();
 
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
   if (psramFound()) {
@@ -288,7 +308,13 @@ void WLED::setup()
     managed_pin_type pins[2] = { {16, true}, {17, true} };
     pinManager.allocateMultiplePins(pins, 2, PinOwner::SPI_RAM);
 #endif
-  }
+      DEBUG_PRINT(F("Total PSRAM: "));    DEBUG_PRINT(ESP.getPsramSize()/1024); DEBUG_PRINTLN("kB");
+      DEBUG_PRINT(F("Free PSRAM : "));    DEBUG_PRINT(ESP.getFreePsram()/1024); DEBUG_PRINTLN("kB");
+    } else
+      DEBUG_PRINTLN(F("No PSRAM found."));
+  #endif
+  #if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && !defined(WLED_USE_PSRAM)
+      DEBUG_PRINTLN(F("PSRAM not used."));
   #endif
 
   //DEBUG_PRINT(F("LEDs inited. heap usage ~"));
