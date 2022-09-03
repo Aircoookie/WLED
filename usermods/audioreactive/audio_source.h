@@ -5,8 +5,10 @@
 #include <driver/i2s.h>
 #include <driver/adc.h>
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0)
+#if !defined(CONFIG_IDF_TARGET_ESP32S2)
 #include <driver/adc_deprecated.h>
 #include <driver/adc_types_deprecated.h>
+#endif
 #endif
 
 //#include <driver/i2s_std.h>
@@ -16,7 +18,7 @@
 // see https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/hw-reference/chip-series-comparison.html#related-documents
 // and https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/api-reference/peripherals/i2s.html#overview-of-all-modes
 #if defined(CONFIG_IDF_TARGET_ESP32C2) || defined(CONFIG_IDF_TARGET_ESP32S2)
-  #error This audio reactive usermod does not support the ESP32-C2 or ESP32-S2, because the device has too limited I2S capabilities
+  #warning This audio reactive usermod does not support the ESP32-C2 or ESP32-S2, because the device has too limited I2S capabilities
 #endif
 
 /* ToDo: remove. ES7243 is controlled via compiler defines
@@ -142,10 +144,12 @@ class I2SSource : public AudioSource {
       if (i2sckPin != I2S_PIN_NO_CHANGE) {
         if (!pinManager.allocatePin(i2sckPin, true, PinOwner::UM_Audioreactive)) return;
       } else {
+        #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
         // This is an I2S PDM microphone, these microphones only use a clock and
         // data line, to make it simpler to debug, use the WS pin as CLK and SD
         // pin as DATA
-        _config.mode = i2s_mode_t(I2S_MODE_MASTER | I2S_MODE_RX | I2S_MODE_PDM); // Change mode to pdm if clock pin not provided
+        _config.mode = i2s_mode_t(I2S_MODE_MASTER | I2S_MODE_RX | I2S_MODE_PDM); // Change mode to pdm if clock pin not provided. PDM is not supported on ESP32-S2. PDM RX not supported on ESP32-C3
+        #endif
       }
 
       // Reserve the master clock pin if provided
@@ -227,7 +231,7 @@ class I2SSource : public AudioSource {
 
   protected:
     void _routeMclk(int8_t mclkPin) {
-#if !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
+#if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
     // this way of MCLK routing only works on "classic" ESP32
 
       /* Enable the mclk routing depending on the selected mclk pin
@@ -318,7 +322,7 @@ public:
     int8_t pin_ES7243_SCL;
 };
 
-#if !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
+#if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
 // ADC over I2S is only availeable in "classic" ESP32
 
 /* ADC over I2S Microphone
@@ -517,7 +521,7 @@ class SPH0654 : public I2SSource {
 
     void initialize(uint8_t i2swsPin, uint8_t i2ssdPin, uint8_t i2sckPin, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
       I2SSource::initialize(i2swsPin, i2ssdPin, i2sckPin);
-#if !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
+#if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
 // these registers are only existing in "claasic" ESP32
       REG_SET_BIT(I2S_TIMING_REG(I2S_NUM_0), BIT(9));
       REG_SET_BIT(I2S_CONF_REG(I2S_NUM_0), I2S_RX_MSB_SHIFT);
