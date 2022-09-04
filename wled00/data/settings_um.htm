@@ -115,7 +115,7 @@
                 case "number":
                     c = `value="${o}"`;
                     if (f.substr(-3)==="pin") {
-                        c += ' max="39" min="-1" class="s"';
+                        c += ' max="48" min="-1" class="s"'; // was 39; however on ESP32-S3 we have 48 GPIO
                         t = "int";
                     } else {
                         c += ' step="any" class="xxl"';
@@ -224,14 +224,14 @@
 		<h2>Usermod Setup</h2>
         Global I<sup>2</sup>C GPIOs (HW)<br>
         <i style="color: orange;">(only changable on ESP32, change requires reboot!)</i><br>
-        SDA:<input type="number" min="-1" max="33" name="SDA" onchange="check(this,'if')" class="s" placeholder="SDA">
-        SCL:<input type="number" min="-1" max="33" name="SCL" onchange="check(this,'if')" class="s" placeholder="SCL">
+        SDA:<input type="number" min="-1" max="48" name="SDA" onchange="check(this,'if')" class="s" placeholder="SDA">
+        SCL:<input type="number" min="-1" max="48" name="SCL" onchange="check(this,'if')" class="s" placeholder="SCL">
         <hr style="width:260px">
         Global SPI GPIOs (HW)<br>
         <i style="color: orange;">(only changable on ESP32, change requires reboot!)</i><br>
-        MOSI:<input type="number" min="-1" max="33" name="MOSI" onchange="check(this,'if')" class="s" placeholder="MOSI">
-        MISO:<input type="number" min="-1" max="33" name="MISO" onchange="check(this,'if')" class="s" placeholder="MISO">
-        SCLK:<input type="number" min="-1" max="33" name="SCLK" onchange="check(this,'if')" class="s" placeholder="SCLK">
+        MOSI:<input type="number" min="-1" max="48" name="MOSI" onchange="check(this,'if')" class="s" placeholder="MOSI">
+        MISO:<input type="number" min="-1" max="48" name="MISO" onchange="check(this,'if')" class="s" placeholder="MISO">
+        SCLK:<input type="number" min="-1" max="48" name="SCLK" onchange="check(this,'if')" class="s" placeholder="SCLK">
         <div id="um">Loading settings...</div>
 		<hr><button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 	</form>
