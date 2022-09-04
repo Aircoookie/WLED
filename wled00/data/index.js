@@ -611,13 +611,13 @@ function parseInfo(i) {
 		//gId("filter2D").classList.add("hide");
 		hideModes("2D");
 	}
-	if (i.noaudio) {
-		gId("filterVol").classList.add("hide");
-		gId("filterFreq").classList.add("hide");
-	}
+//	if (i.noaudio) {
+//		gId("filterVol").classList.add("hide");
+//		gId("filterFreq").classList.add("hide");
+//	}
 //	if (!i.u || !i.u.AudioReactive) {
-		//gId("filterVol").classList.add("hide"); hideModes(" ♪"); // hide volume reactive effects
-		//gId("filterFreq").classList.add("hide"); hideModes(" ♫"); // hide frequency reactive effects
+//		gId("filterVol").classList.add("hide"); hideModes(" ♪"); // hide volume reactive effects
+//		gId("filterFreq").classList.add("hide"); hideModes(" ♫"); // hide frequency reactive effects
 //	}
 }
 

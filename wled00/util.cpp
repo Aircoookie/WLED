@@ -390,7 +390,6 @@ uint16_t crc16(const unsigned char* data_p, size_t length) {
 }
 
 
-#ifndef WLED_DISABLE_AUDIO
 ///////////////////////////////////////////////////////////////////////////////
 // Begin simulateSound (to enable audio enhanced effects to display something)
 ///////////////////////////////////////////////////////////////////////////////
@@ -402,7 +401,6 @@ typedef enum UM_SoundSimulations {
   UMS_14_3
 } um_soundSimulations_t;
 
-// this is still work in progress
 um_data_t* simulateSound(uint8_t simulationId) 
 {
   static uint8_t samplePeak;
@@ -507,7 +505,6 @@ um_data_t* simulateSound(uint8_t simulationId)
 
   return um_data;
 }
-#endif
 
 
 void enumerateLedmaps() {

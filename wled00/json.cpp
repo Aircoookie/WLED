@@ -614,10 +614,6 @@ void serializeInfo(JsonObject root)
   leds[F("wv")]   = totalLC & 0x02;     // deprecated, true if white slider should be displayed for any segment
   leds["cct"]     = totalLC & 0x04;     // deprecated, use info.leds.lc
 
-  #ifdef WLED_DISABLE_AUDIO
-  root[F("noaudio")] = true;
-  #endif
-
   #ifdef WLED_DEBUG
   JsonArray i2c = root.createNestedArray(F("i2c"));
   i2c.add(i2c_sda);
