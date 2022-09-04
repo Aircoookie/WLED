@@ -321,7 +321,7 @@ void WLED::setup()
   //DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
 
 #ifdef WLED_DEBUG
-  pinManager.allocatePin(TX, true, PinOwner::DebugOut); // TX (GPIO1 on ESP32) reserved for debug output
+  pinManager.allocatePin(hardwareTX, true, PinOwner::DebugOut); // TX (GPIO1 on ESP32) reserved for debug output
 #endif
 #ifdef WLED_ENABLE_DMX //reserve GPIO2 as hardcoded DMX pin
   pinManager.allocatePin(2, true, PinOwner::DMX);
@@ -376,7 +376,7 @@ void WLED::setup()
   #ifdef WLED_ENABLE_ADALIGHT
   //Serial RX (Adalight, Improv, Serial JSON) only possible if GPIO3 unused
   //Serial TX (Debug, Improv, Serial JSON) only possible if GPIO1 unused
-  if (!pinManager.isPinAllocated(RX) && !pinManager.isPinAllocated(TX)) {
+  if (!pinManager.isPinAllocated(hardwareRX) && !pinManager.isPinAllocated(hardwareTX)) {
     Serial.println(F("Ada"));
   }
   #endif

@@ -251,6 +251,16 @@ WLED_GLOBAL int8_t irPin _INIT(-1);
 WLED_GLOBAL int8_t irPin _INIT(IRPIN);
 #endif
 
+#if defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S2) || (defined(RX) && defined(TX))
+  // use RX/TX as set by the framework - these boards do _not_ have RX=3 and TX=1
+  constexpr uint8_t hardwareRX = RX;
+  constexpr uint8_t hardwareTX = TX;
+#else
+  // use defaults for RX/TX
+  constexpr uint8_t hardwareRX = 3;
+  constexpr uint8_t hardwareTX = 1;
+#endif
+
 //WLED_GLOBAL byte presetToApply _INIT(0);
 
 WLED_GLOBAL char ntpServerName[33] _INIT("0.wled.pool.ntp.org");   // NTP server to use

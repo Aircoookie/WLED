@@ -286,8 +286,12 @@ void getSettingsJS(byte subPage, char* dest)
       oappend(SET_F(",2")); // DMX hardcoded pin
     #endif
 
-    #if defined(WLED_DEBUG) && !defined(CONFIG_IDF_TARGET_ESP32S3)
-      oappend(SET_F(",1")); // debug output (TX) pin - on classic ESP32
+    #if defined(WLED_DEBUG)
+      #if !defined(CONFIG_IDF_TARGET_ESP32S3) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S2)
+        oappend(SET_F(",1")); // debug output (TX) pin - on classic ESP32
+      #else
+        oappend(","); oappend(itoa(hardwareTX,nS,10));
+      #endif
     #endif
 
     //Note: Using pin 3 (RX) disables Adalight / Serial JSON
