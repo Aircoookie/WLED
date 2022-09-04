@@ -265,12 +265,9 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         }
 
         if (set < 2) stop = start + 1;
+        uint32_t c = gamma32(RGBW32(rgbw[0], rgbw[1], rgbw[2], rgbw[3]));
         for (int i = start; i < stop; i++) {
-          if (strip.gammaCorrectCol) {
-            seg.setPixelColor(i, gamma8(rgbw[0]), gamma8(rgbw[1]), gamma8(rgbw[2]), gamma8(rgbw[3]));
-          } else {
-            seg.setPixelColor(i, rgbw[0], rgbw[1], rgbw[2], rgbw[3]);
-          }
+          seg.setPixelColor(i, c);
         }
         if (!set) start++;
         set = 0;

@@ -647,8 +647,6 @@ class WS2812FX {  // 96 bytes
   public:
 
     WS2812FX() :
-      gammaCorrectBri(false),
-      gammaCorrectCol(true),
       paletteFade(0),
       paletteBlend(0),
       milliampsPerLed(55),
@@ -747,8 +745,6 @@ class WS2812FX {  // 96 bytes
     inline void appendSegment(const Segment &seg = Segment()) { _segments.push_back(seg); }
 
     bool
-      gammaCorrectBri,
-      gammaCorrectCol,
       checkSegmentAlignment(void),
       hasRGBWBus(void),
       hasCCTBus(void),

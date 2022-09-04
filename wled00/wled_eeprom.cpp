@@ -140,8 +140,8 @@ void loadSettingsFromEEPROM()
   ntpEnabled = EEPROM.read(327);
   currentTimezone = EEPROM.read(328);
   useAMPM = EEPROM.read(329);
-  strip.gammaCorrectBri = EEPROM.read(330);
-  strip.gammaCorrectCol = EEPROM.read(331);
+  gammaCorrectBri = EEPROM.read(330);
+  gammaCorrectCol = EEPROM.read(331);
   overlayCurrent = EEPROM.read(332);
 
   alexaEnabled = EEPROM.read(333);

@@ -564,7 +564,7 @@ void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w)
 {
   uint16_t pix = i + arlsOffset;
   if (pix < strip.getLengthTotal()) {
-    if (!arlsDisableGammaCorrection && strip.gammaCorrectCol) {
+    if (!arlsDisableGammaCorrection && gammaCorrectCol) {
       r = gamma8(r);
       g = gamma8(g);
       b = gamma8(b);
