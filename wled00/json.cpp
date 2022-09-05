@@ -589,8 +589,6 @@ void serializeInfo(JsonObject root)
   leds["fps"] = strip.getFps();
   leds[F("maxpwr")] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;
   leds[F("maxseg")] = strip.getMaxSegments();
-  //leds[F("actseg")] = strip.getActiveSegmentsNum();
-  //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config
   leds[F("cpal")] = strip.customPalettes.size(); //number of custom palettes
 
   #ifndef WLED_DISABLE_2D

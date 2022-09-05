@@ -5848,12 +5848,13 @@ uint16_t mode_2Dscrollingtext(void) {
 
   int letterWidth;
   int letterHeight;
-  switch (map(SEGMENT.custom2, 0, 255, 1, 4)) {
+  switch (map(SEGMENT.custom2, 0, 255, 1, 5)) {
     default:
-    case 1: letterWidth = 5; letterHeight =  8; break;
-    case 2: letterWidth = 6; letterHeight =  8; break;
-    case 3: letterWidth = 7; letterHeight =  9; break;
-    case 4: letterWidth = 5; letterHeight = 12; break;
+    case 1: letterWidth = 4; letterHeight =  6; break;
+    case 2: letterWidth = 5; letterHeight =  8; break;
+    case 3: letterWidth = 6; letterHeight =  8; break;
+    case 4: letterWidth = 7; letterHeight =  9; break;
+    case 5: letterWidth = 5; letterHeight = 12; break;
   }
   const int yoffset = map(SEGMENT.intensity, 0, 255, -rows/2, rows/2) + (rows-letterHeight)/2;
   char text[33] = {'\0'};
@@ -5893,7 +5894,7 @@ uint16_t mode_2Dscrollingtext(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_2DSCROLLTEXT[] PROGMEM = "Scrolling Text@!,Y Offset,Trail,Font size;!,!;!;ix=96,c1=0,rev=0,mi=0,rY=0,mY=0,2d";
+static const char _data_FX_MODE_2DSCROLLTEXT[] PROGMEM = "Scrolling Text@!,Y Offset,Trail,Font size;!,!;!;ix=128,c1=0,rev=0,mi=0,rY=0,mY=0,2d";
 
 
 ////////////////////////////
