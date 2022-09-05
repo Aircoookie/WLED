@@ -3509,8 +3509,11 @@ uint16_t mode_tetrix(void) {
       if (drop->step == 2) {              // falling
         if (drop->pos > drop->stack) {    // fall until top of stack
           drop->pos -= drop->speed;       // may add gravity as: speed += gravity
-          if (uint16_t(drop->pos) < drop->aux1) drop->pos = drop->aux1;
-          for (int i=int(drop->pos); i<SEGLEN; i++) SEGMENT.setPixelColor(i | int((stripNr+1)<<16), i<int(drop->pos)+drop->aux0 ? drop->col : SEGCOLOR(1));
+          if (uint16_t(drop->pos) < drop->stack) drop->pos = drop->stack;
+          for (int i=int(drop->pos); i<SEGLEN; i++) {
+            uint32_t col = i<int(drop->pos)+drop->brick ? SEGMENT.color_from_palette(drop->col, false, false, 0) : SEGCOLOR(1);
+            SEGMENT.setPixelColor(indexToVStrip(i, stripNr), col);
+          }
         } else {                          // we hit bottom
           drop->step = 0;                 // proceed with next brick, go back to init
           drop->stack += drop->brick;     // increase the stack size
@@ -3522,7 +3525,7 @@ uint16_t mode_tetrix(void) {
         drop->brick = 0;                  // reset brick size (no more growing)
         if (drop->step > millis()) {
           // allow fading of virtual strip
-          for (int i=0; i<SEGLEN; i++) SEGMENT.blendPixelColor(i | int((stripNr+1)<<16), SEGCOLOR(1), 25); // 10% blend
+          for (int i=0; i<SEGLEN; i++) SEGMENT.blendPixelColor(indexToVStrip(i, stripNr), SEGCOLOR(1), 25); // 10% blend
         } else {
           drop->stack = 0;                // reset brick stack size
           drop->step = 0;                 // proceed with next brick
