@@ -611,13 +611,13 @@ function parseInfo(i) {
 		//gId("filter2D").classList.add("hide");
 		hideModes("2D");
 	}
-	if (i.noaudio) {
-		gId("filterVol").classList.add("hide");
-		gId("filterFreq").classList.add("hide");
-	}
+//	if (i.noaudio) {
+//		gId("filterVol").classList.add("hide");
+//		gId("filterFreq").classList.add("hide");
+//	}
 //	if (!i.u || !i.u.AudioReactive) {
-		//gId("filterVol").classList.add("hide"); hideModes(" ♪"); // hide volume reactive effects
-		//gId("filterFreq").classList.add("hide"); hideModes(" ♫"); // hide frequency reactive effects
+//		gId("filterVol").classList.add("hide"); hideModes(" ♪"); // hide volume reactive effects
+//		gId("filterFreq").classList.add("hide"); hideModes(" ♫"); // hide frequency reactive effects
 //	}
 }
 
@@ -654,11 +654,11 @@ function populateInfo(i)
 	}
 	var vcn = "Kuuhaku";
 	if (i.ver.startsWith("0.14.")) vcn = "Hoshi";
-	if (i.ver.includes("-bl")) vcn = "Ryujin";
 	if (i.cn) vcn = i.cn;
 
 	cn += `v${i.ver} "${vcn}"<br><br><table>
 ${urows}
+${urows===""?'':'<tr><td colspan=2><hr style="height:1px;border-width:0;color:gray;background-color:gray"></td></tr>'}
 ${inforow("Build",i.vid)}
 ${inforow("Signal strength",i.wifi.signal +"% ("+ i.wifi.rssi, " dBm)")}
 ${inforow("Uptime",getRuntimeStr(i.uptime))}
@@ -714,7 +714,7 @@ function populateSegments(s)
 		}
 		let map2D = `<div id="seg${i}map2D" data-map="map2D" class="lbl-s hide">Expand 1D FX<br>
 			<div class="sel-p"><select class="sel-p" id="seg${i}mp12" onchange="setMp12(${i})">
-				<option value="0" ${inst.mp12==0?' selected':''}>Strip</option>
+				<option value="0" ${inst.mp12==0?' selected':''}>Pixels</option>
 				<option value="1" ${inst.mp12==1?' selected':''}>Bar</option>
 				<option value="2" ${inst.mp12==2?' selected':''}>Arc</option>
 				<option value="3" ${inst.mp12==3?' selected':''}>Corner</option>

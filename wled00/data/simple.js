@@ -506,7 +506,6 @@ function populateInfo(i)
 	}
 	var vcn = "Kuuhaku";
 	if (i.ver.startsWith("0.14.")) vcn = "Hoshi";
-	if (i.ver.includes("-bl")) vcn = "Ryujin";
 	if (i.cn) vcn = i.cn;
 
 	cn += `v${i.ver} "${vcn}"<br><br><table>

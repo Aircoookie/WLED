@@ -358,7 +358,7 @@ uint8_t gamma8(uint8_t b)
 
 uint32_t gamma32(uint32_t color)
 {
-  //if (!strip.gammaCorrectCol) return color;
+  if (!gammaCorrectCol) return color;
   uint8_t w = W(color);
   uint8_t r = R(color);
   uint8_t g = G(color);
