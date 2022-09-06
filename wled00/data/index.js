@@ -1044,7 +1044,7 @@ function updateLen(s)
 		let tPL = gId(`seg${s}lbtm`);
 		if (stop-start>1 && stopY-startY>1) {
 			// 2D segment
-			tPL.classList.remove("hide"); // unhide transpose checkbox
+			if (tPL) tPL.classList.remove("hide"); // unhide transpose checkbox
 			let sE = gId('fxlist').querySelector(`.lstI[data-id="${selectedFx}"]`);
 			if (sE) {
 				let sN = sE.querySelector(".lstIname").innerText;
@@ -1056,8 +1056,10 @@ function updateLen(s)
 			}
 		} else {
 			// 1D segment in 2D set-up
-			tPL.classList.add("hide"); // hide transpose checkbox
-			gId(`seg${s}tp`).checked = false;	// and uncheck it
+			if (tPL) {
+				tPL.classList.add("hide"); // hide transpose checkbox
+				gId(`seg${s}tp`).checked = false;	// and uncheck it
+			}
 		}
 	}
 	var out = "(delete)";
