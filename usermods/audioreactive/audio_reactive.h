@@ -1068,7 +1068,7 @@ class AudioReactive : public Usermod {
         disableSoundProcessing = true;
       } else {
         #ifdef WLED_DEBUG
-        if ((disableSoundProcessing == true) && (audioSyncEnabled == 0)) {    // we just switched to "disabled"
+        if ((disableSoundProcessing == true) && (audioSyncEnabled == 0) && audioSource->isInitialized()) {    // we just switched to "enabled"
           DEBUG_PRINTLN("[AR userLoop]  realtime mode ended - audio processing resumed.");
           DEBUG_PRINTF( "               RealtimeMode = %d; RealtimeOverride = %d\n", int(realtimeMode), int(realtimeOverride));
         }

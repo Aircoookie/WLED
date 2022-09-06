@@ -25,9 +25,11 @@ void handleDDPPacket(e131_packet_t* p) {
     }
   }
 
-  uint32_t start = htonl(p->channelOffset) /3;
-  start += DMXAddress /3;
-  uint16_t stop = start + htons(p->dataLen) /3;
+  uint8_t ddpChannelsPerLed = (p->dataType == DDP_TYPE_RGBW32) ? 4 : 3; // data type 0x1A is RGBW (type 3, 8 bit/channel)
+
+  uint32_t start =  htonl(p->channelOffset) / ddpChannelsPerLed;
+  start += DMXAddress / ddpChannelsPerLed;
+  uint16_t stop = start + htons(p->dataLen) / ddpChannelsPerLed;
   uint8_t* data = p->data;
   uint16_t c = 0;
   if (p->flags & DDP_TIMECODE_FLAG) c = 4; //packet has timecode flag, we do not support it, but data starts 4 bytes later
@@ -36,8 +38,8 @@ void handleDDPPacket(e131_packet_t* p) {
   
   if (!realtimeOverride || (realtimeMode && useMainSegmentOnly)) {
     for (uint16_t i = start; i < stop; i++) {
-      setRealtimePixel(i, data[c], data[c+1], data[c+2], 0);
-      c+=3;
+      setRealtimePixel(i, data[c], data[c+1], data[c+2], ddpChannelsPerLed >3 ? data[c+3] : 0);
+      c += ddpChannelsPerLed;
     }
   }
 

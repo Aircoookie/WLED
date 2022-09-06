@@ -208,6 +208,7 @@ void Segment::setUpLeds() {
 
 CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
   static unsigned long _lastPaletteChange = 0; // perhaps it should be per segment
+  static CRGBPalette16 randomPalette = CRGBPalette16(DEFAULT_COLOR);
   byte tcp[72];
   if (pal < 245 && pal > GRADIENT_PALETTE_COUNT+13) pal = 0;
   if (pal > 245 && (strip.customPalettes.size() == 0 || 255U-pal > strip.customPalettes.size()-1)) pal = 0;
@@ -229,30 +230,31 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
       targetPalette = PartyColors_p; break;
     case 1: //periodically replace palette with a random one. Doesn't work with multiple FastLED segments
       if (millis() - _lastPaletteChange > 5000 /*+ ((uint32_t)(255-intensity))*100*/) {
-        targetPalette = CRGBPalette16(
-                        CHSV(random8(), 255, random8(128, 255)),
-                        CHSV(random8(), 255, random8(128, 255)),
-                        CHSV(random8(), 192, random8(128, 255)),
-                        CHSV(random8(), 255, random8(128, 255)));
+        randomPalette = CRGBPalette16(
+                        CHSV(random8(), random8(160, 255), random8(128, 255)),
+                        CHSV(random8(), random8(160, 255), random8(128, 255)),
+                        CHSV(random8(), random8(160, 255), random8(128, 255)),
+                        CHSV(random8(), random8(160, 255), random8(128, 255)));
         _lastPaletteChange = millis();
-      } break;
+      }
+      targetPalette = randomPalette; break;
     case 2: {//primary color only
-      CRGB prim = strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0];
+      CRGB prim = gamma32(colors[0]);
       targetPalette = CRGBPalette16(prim); break;}
     case 3: {//primary + secondary
-      CRGB prim = strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0];
-      CRGB sec  = strip.gammaCorrectCol ? gamma32(colors[1]) : colors[1];
+      CRGB prim = gamma32(colors[0]);
+      CRGB sec  = gamma32(colors[1]);
       targetPalette = CRGBPalette16(prim,prim,sec,sec); break;}
     case 4: {//primary + secondary + tertiary
-      CRGB prim = strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0];
-      CRGB sec  = strip.gammaCorrectCol ? gamma32(colors[1]) : colors[1];
-      CRGB ter  = strip.gammaCorrectCol ? gamma32(colors[2]) : colors[2];
+      CRGB prim = gamma32(colors[0]);
+      CRGB sec  = gamma32(colors[1]);
+      CRGB ter  = gamma32(colors[2]);
       targetPalette = CRGBPalette16(ter,sec,prim); break;}
     case 5: {//primary + secondary (+tert if not off), more distinct
-      CRGB prim = strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0];
-      CRGB sec  = strip.gammaCorrectCol ? gamma32(colors[1]) : colors[1];
+      CRGB prim = gamma32(colors[0]);
+      CRGB sec  = gamma32(colors[1]);
       if (colors[2]) {
-        CRGB ter = strip.gammaCorrectCol ? gamma32(colors[2]) : colors[2];
+        CRGB ter = gamma32(colors[2]);
         targetPalette = CRGBPalette16(prim,prim,prim,prim,prim,sec,sec,sec,sec,sec,ter,ter,ter,ter,ter,prim);
       } else {
         targetPalette = CRGBPalette16(prim,prim,prim,prim,prim,prim,prim,prim,sec,sec,sec,sec,sec,sec,sec,sec);
@@ -957,7 +959,7 @@ uint32_t Segment::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_
   // default palette or no RGB support on segment
   if ((palette == 0 && mcol < NUM_COLORS) || !(_capabilities & 0x01)) {
     uint32_t color = (transitional && _t) ? _t->_colorT[mcol] : colors[mcol];
-    color = strip.gammaCorrectCol ? gamma32(color) : color;
+    color = gamma32(color);
     if (pbri == 255) return color;
     return RGBW32(scale8_video(R(color),pbri), scale8_video(G(color),pbri), scale8_video(B(color),pbri), scale8_video(W(color),pbri));
   }

@@ -611,13 +611,13 @@ function parseInfo(i) {
 		//gId("filter2D").classList.add("hide");
 		hideModes("2D");
 	}
-	if (i.noaudio) {
-		gId("filterVol").classList.add("hide");
-		gId("filterFreq").classList.add("hide");
-	}
+//	if (i.noaudio) {
+//		gId("filterVol").classList.add("hide");
+//		gId("filterFreq").classList.add("hide");
+//	}
 //	if (!i.u || !i.u.AudioReactive) {
-		//gId("filterVol").classList.add("hide"); hideModes(" ♪"); // hide volume reactive effects
-		//gId("filterFreq").classList.add("hide"); hideModes(" ♫"); // hide frequency reactive effects
+//		gId("filterVol").classList.add("hide"); hideModes(" ♪"); // hide volume reactive effects
+//		gId("filterFreq").classList.add("hide"); hideModes(" ♫"); // hide frequency reactive effects
 //	}
 }
 
@@ -1045,7 +1045,7 @@ function updateLen(s)
 		let tPL = gId(`seg${s}lbtm`);
 		if (stop-start>1 && stopY-startY>1) {
 			// 2D segment
-			tPL.classList.remove("hide"); // unhide transpose checkbox
+			if (tPL) tPL.classList.remove("hide"); // unhide transpose checkbox
 			let sE = gId('fxlist').querySelector(`.lstI[data-id="${selectedFx}"]`);
 			if (sE) {
 				let sN = sE.querySelector(".lstIname").innerText;
@@ -1057,8 +1057,10 @@ function updateLen(s)
 			}
 		} else {
 			// 1D segment in 2D set-up
-			tPL.classList.add("hide"); // hide transpose checkbox
-			gId(`seg${s}tp`).checked = false;	// and uncheck it
+			if (tPL) {
+				tPL.classList.add("hide"); // hide transpose checkbox
+				gId(`seg${s}tp`).checked = false;	// and uncheck it
+			}
 		}
 	}
 	var out = "(delete)";
@@ -1998,15 +2000,15 @@ function setSeg(s)
 		var stopY = parseInt(gId(`seg${s}eY`).value);
 		obj.seg.startY = startY;
 		obj.seg.stopY = (cfg.comp.seglen?startY:0)+stopY;
-		obj.seg.tp = gId(`seg${s}tp`).checked;
 	}
-	if (gId(`seg${s}grp`)) {
+	if (gId(`seg${s}grp`)) { // advanced options, not present in new segment dialog (makeSeg())
 		var grp = parseInt(gId(`seg${s}grp`).value);
 		var spc = parseInt(gId(`seg${s}spc`).value);
 		var ofs = parseInt(gId(`seg${s}of` ).value);
 		obj.seg.grp = grp;
 		obj.seg.spc = spc;
 		obj.seg.of  = ofs;
+		if (isM) obj.seg.tp = gId(`seg${s}tp`).checked;
 	}
 	requestJson(obj);
 }

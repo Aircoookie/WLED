@@ -1927,10 +1927,7 @@ uint16_t mode_palette()
   for (int i = 0; i < SEGLEN; i++)
   {
     uint8_t colorIndex = (i * 255 / SEGLEN) - counter;
-    
-    if (noWrap) colorIndex = map(colorIndex, 0, 255, 0, 240); //cut off blend at palette "end"
-    
-    SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(colorIndex, false, true, 255));
+    SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(colorIndex, false, noWrap, 255));
   }
   return FRAMETIME;
 }
@@ -3528,7 +3525,7 @@ uint16_t mode_tetrix(void) {
         drop->brick = 0;                  // reset brick size (no more growing)
         if (drop->step > millis()) {
           // allow fading of virtual strip
-          for (int i=0; i<SEGLEN; i++) SEGMENT.blendPixelColor(indexToVStrip(i, stripNr), SEGCOLOR(1), 25); // 10% blend with Bg color
+          for (int i=0; i<SEGLEN; i++) SEGMENT.blendPixelColor(indexToVStrip(i, stripNr), SEGCOLOR(1), 25); // 10% blend
         } else {
           drop->stack = 0;                // reset brick stack size
           drop->step = 0;                 // proceed with next brick
@@ -5842,12 +5839,13 @@ uint16_t mode_2Dscrollingtext(void) {
 
   int letterWidth;
   int letterHeight;
-  switch (map(SEGMENT.custom2, 0, 255, 1, 4)) {
+  switch (map(SEGMENT.custom2, 0, 255, 1, 5)) {
     default:
-    case 1: letterWidth = 5; letterHeight =  8; break;
-    case 2: letterWidth = 6; letterHeight =  8; break;
-    case 3: letterWidth = 7; letterHeight =  9; break;
-    case 4: letterWidth = 5; letterHeight = 12; break;
+    case 1: letterWidth = 4; letterHeight =  6; break;
+    case 2: letterWidth = 5; letterHeight =  8; break;
+    case 3: letterWidth = 6; letterHeight =  8; break;
+    case 4: letterWidth = 7; letterHeight =  9; break;
+    case 5: letterWidth = 5; letterHeight = 12; break;
   }
   const int yoffset = map(SEGMENT.intensity, 0, 255, -rows/2, rows/2) + (rows-letterHeight)/2;
   char text[33] = {'\0'};
@@ -5887,7 +5885,7 @@ uint16_t mode_2Dscrollingtext(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_2DSCROLLTEXT[] PROGMEM = "Scrolling Text@!,Y Offset,Trail,Font size;!,!;!;ix=96,c1=0,rev=0,mi=0,rY=0,mY=0,2d";
+static const char _data_FX_MODE_2DSCROLLTEXT[] PROGMEM = "Scrolling Text@!,Y Offset,Trail,Font size;!,!;!;ix=128,c1=0,rev=0,mi=0,rY=0,mY=0,2d";
 
 
 ////////////////////////////
@@ -5924,7 +5922,6 @@ static const char _data_FX_MODE_2DDRIFTROSE[] PROGMEM = "Drift Rose@Fade,Blur;;;
 #endif // WLED_DISABLE_2D
 
 
-#ifndef WLED_DISABLE_AUDIO
 ///////////////////////////////////////////////////////////////////////////////
 /********************     audio enhanced routines     ************************/
 ///////////////////////////////////////////////////////////////////////////////
@@ -6608,11 +6605,6 @@ uint16_t mode_puddles(void) {                   // Puddles. By Andrew Tuline.
 static const char _data_FX_MODE_PUDDLES[] PROGMEM = "Puddles@Fade rate,Puddle size;!,!;!;mp12=0,ssim=0,1d,vo"; // Pixels, Beatsin
 
 
-///////////////////////////////////////////////////////////////////////////////
-/********************       audio only routines       ************************/
-///////////////////////////////////////////////////////////////////////////////
-#ifdef USERMOD_AUDIOREACTIVE
-
 //////////////////////
 //     * PIXELS     //
 //////////////////////
@@ -7201,14 +7193,7 @@ uint16_t mode_2DFunkyPlank(void) {              // Written by ??? Adapted by Wil
 } // mode_2DFunkyPlank
 static const char _data_FX_MODE_2DFUNKYPLANK[] PROGMEM = "Funky Plank@Scroll speed,,# of bands;;;ssim=0,2d,fr"; // Beatsin
 
-#endif // WLED_DISABLE_2D
 
-
-//end audio only routines
-#endif
-
-
-#ifndef WLED_DISABLE_2D
 /////////////////////////
 //     2D Akemi        //
 /////////////////////////
@@ -7313,7 +7298,6 @@ uint16_t mode_2DAkemi(void) {
 static const char _data_FX_MODE_2DAKEMI[] PROGMEM = "Akemi@Color speed,Dance;Head palette,Arms & Legs,Eyes & Mouth;Face palette;ssim=0,2d,fr"; //beatsin
 #endif // WLED_DISABLE_2D
 
-#endif // WLED_DISABLE_AUDIO
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // mode data
@@ -7495,16 +7479,14 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_2DMETABALLS, &mode_2Dmetaballs, _data_FX_MODE_2DMETABALLS);
   addEffect(FX_MODE_2DPULSER, &mode_2DPulser, _data_FX_MODE_2DPULSER);
   addEffect(FX_MODE_2DDRIFT, &mode_2DDrift, _data_FX_MODE_2DDRIFT);
-
   // --- 2D audio effects ---
-  #ifndef WLED_DISABLE_AUDIO
   addEffect(FX_MODE_2DWAVERLY, &mode_2DWaverly, _data_FX_MODE_2DWAVERLY);
   addEffect(FX_MODE_2DSWIRL, &mode_2DSwirl, _data_FX_MODE_2DSWIRL);
   addEffect(FX_MODE_2DAKEMI, &mode_2DAkemi, _data_FX_MODE_2DAKEMI);
-  #endif
+  addEffect(FX_MODE_2DGEQ, &mode_2DGEQ, _data_FX_MODE_2DGEQ);
+  addEffect(FX_MODE_2DFUNKYPLANK, &mode_2DFunkyPlank, _data_FX_MODE_2DFUNKYPLANK);
 #endif // WLED_DISABLE_2D
 
-#ifndef WLED_DISABLE_AUDIO
   // --- 1D audio effects ---
   addEffect(FX_MODE_PIXELWAVE, &mode_pixelwave, _data_FX_MODE_PIXELWAVE);
   addEffect(FX_MODE_JUGGLES, &mode_juggles, _data_FX_MODE_JUGGLES);
@@ -7519,29 +7501,15 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_RIPPLEPEAK, &mode_ripplepeak, _data_FX_MODE_RIPPLEPEAK);
   addEffect(FX_MODE_GRAVCENTER, &mode_gravcenter, _data_FX_MODE_GRAVCENTER);
   addEffect(FX_MODE_GRAVCENTRIC, &mode_gravcentric, _data_FX_MODE_GRAVCENTRIC);
-#endif // WLED_DISABLE_AUDIO
-
-#ifdef USERMOD_AUDIOREACTIVE
-  // --- WLED-SR audio reactive usermod only effects ---
-  #ifdef WLED_DISABLE_AUDIO
-    #error Incompatible options: WLED_DISABLE_AUDIO and USERMOD_AUDIOREACTIVE
-  #endif
-  #ifdef WLED_DISABLE_2D
-    #error AUDIOREACTIVE usermod requires 2D support.
-  #endif
   addEffect(FX_MODE_PIXELS, &mode_pixels, _data_FX_MODE_PIXELS);
   addEffect(FX_MODE_FREQWAVE, &mode_freqwave, _data_FX_MODE_FREQWAVE);
   addEffect(FX_MODE_FREQMATRIX, &mode_freqmatrix, _data_FX_MODE_FREQMATRIX);
-  addEffect(FX_MODE_2DGEQ, &mode_2DGEQ, _data_FX_MODE_2DGEQ);
   addEffect(FX_MODE_WATERFALL, &mode_waterfall, _data_FX_MODE_WATERFALL);
   addEffect(FX_MODE_FREQPIXELS, &mode_freqpixels, _data_FX_MODE_FREQPIXELS);
   addEffect(FX_MODE_NOISEMOVE, &mode_noisemove, _data_FX_MODE_NOISEMOVE);
   addEffect(FX_MODE_FREQMAP, &mode_freqmap, _data_FX_MODE_FREQMAP);
   addEffect(FX_MODE_GRAVFREQ, &mode_gravfreq, _data_FX_MODE_GRAVFREQ);
   addEffect(FX_MODE_DJLIGHT, &mode_DJLight, _data_FX_MODE_DJLIGHT);
-  addEffect(FX_MODE_2DFUNKYPLANK, &mode_2DFunkyPlank, _data_FX_MODE_2DFUNKYPLANK);
   addEffect(FX_MODE_BLURZ, &mode_blurz, _data_FX_MODE_BLURZ);
   addEffect(FX_MODE_ROCKTAVES, &mode_rocktaves, _data_FX_MODE_ROCKTAVES);
-  //addEffect(FX_MODE_CUSTOMEFFECT, &mode_customEffect, _data_FX_MODE_CUSTOMEFFECT); //WLEDSR Custom Effects
-#endif // USERMOD_AUDIOREACTIVE
 }
