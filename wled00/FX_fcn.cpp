@@ -341,8 +341,11 @@ CRGBPalette16 &Segment::currentPalette(CRGBPalette16 &targetPalette, uint8_t pal
   loadPalette(targetPalette, pal);
   if (transitional && _t && progress() < 0xFFFFU) {
     // blend palettes
-    uint8_t blends = map(_t->_dur, 0, 0xFFFF, 48, 6); // do not blend palettes too quickly (0-65.5s)
-    nblendPaletteTowardPalette(_t->_palT, targetPalette, blends);
+    // there are about 255 blend passes of 48 "blends" to completely blend two palettes (in _dur time)
+    // minimum blend time is 100ms maximum is 65535ms
+    uint32_t timeMS = millis() - _t->_start;
+    uint16_t noOfBlends = (255U * timeMS / _t->_dur) - _t->_prevPaletteBlends;
+    for (int i=0; i<noOfBlends; i++, _t->_prevPaletteBlends++) nblendPaletteTowardPalette(_t->_palT, targetPalette, 48);
     targetPalette = _t->_palT; // copy transitioning/temporary palette
   }
   return targetPalette;

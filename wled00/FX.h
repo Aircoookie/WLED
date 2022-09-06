@@ -388,14 +388,31 @@ typedef struct Segment {
       uint8_t       _briT;        // temporary brightness
       uint8_t       _cctT;        // temporary CCT
       CRGBPalette16 _palT;        // temporary palette
+      uint8_t       _prevPaletteBlends; // number of previous palette blends (there are max 128 belnds possible)
       uint8_t       _modeP;       // previous mode/effect
       //uint16_t      _aux0, _aux1; // previous mode/effect runtime data
       //uint32_t      _step, _call; // previous mode/effect runtime data
       //byte         *_data;        // previous mode/effect runtime data
       uint32_t      _start;
       uint16_t      _dur;
-      Transition(uint16_t dur=750) : _briT(255), _cctT(127), _palT(CRGBPalette16(CRGB::Black)), _modeP(FX_MODE_STATIC), _start(millis()), _dur(dur) {}
-      Transition(uint16_t d, uint8_t b, uint8_t c, const uint32_t *o) : _briT(b), _cctT(c), _palT(CRGBPalette16(CRGB::Black)), _modeP(FX_MODE_STATIC), _start(millis()), _dur(d) {
+      Transition(uint16_t dur=750)
+        : _briT(255)
+        , _cctT(127)
+        , _palT(CRGBPalette16(CRGB::Black))
+        , _prevPaletteBlends(0)
+        , _modeP(FX_MODE_STATIC)
+        , _start(millis())
+        , _dur(dur)
+      {}
+      Transition(uint16_t d, uint8_t b, uint8_t c, const uint32_t *o)
+        : _briT(b)
+        , _cctT(c)
+        , _palT(CRGBPalette16(CRGB::Black))
+        , _prevPaletteBlends(0)
+        , _modeP(FX_MODE_STATIC)
+        , _start(millis())
+        , _dur(d)
+      {
         for (size_t i=0; i<NUM_COLORS; i++) _colorT[i] = o[i];
       }
     } *_t;
