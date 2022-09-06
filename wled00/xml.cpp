@@ -259,7 +259,11 @@ void getSettingsJS(byte subPage, char* dest)
 
     // Pin reservations will become unnecessary when settings pages will read cfg.json directly
     // add reserved and usermod pins as d.um_p array
-    oappend(SET_F("d.um_p=[6,7,8,9,10,11"));
+#if defined(CONFIG_IDF_TARGET_ESP32S3)
+    oappend(SET_F("d.um_p=[19,20,22,23,24,25,26,27,28,29,30,31,32"));   // unusable GPIO on ESP32-S3
+#else
+    oappend(SET_F("d.um_p=[6,7,8,9,10,11"));   // unusable GPIO on classic ESP32
+#endif
 
     if (i2c_sda > -1 && i2c_scl > -1) {
       oappend(","); oappend(itoa(i2c_sda,nS,10));
@@ -282,14 +286,14 @@ void getSettingsJS(byte subPage, char* dest)
       oappend(SET_F(",2")); // DMX hardcoded pin
     #endif
 
-    #ifdef WLED_DEBUG
-      oappend(SET_F(",1")); // debug output (TX) pin
+    #if defined(WLED_DEBUG) && !defined(CONFIG_IDF_TARGET_ESP32S3)
+      oappend(SET_F(",1")); // debug output (TX) pin - on classic ESP32
     #endif
 
     //Note: Using pin 3 (RX) disables Adalight / Serial JSON
 
-    #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
-      if (psramFound()) oappend(SET_F(",16,17")); // GPIO16 & GPIO17 reserved for SPI RAM
+    #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM) && !defined(CONFIG_IDF_TARGET_ESP32S3)
+      if (psramFound()) oappend(SET_F(",16,17")); // GPIO16 & GPIO17 reserved for SPI RAM (on classic ESP32)
     #endif
 
     #ifdef WLED_USE_ETHERNET
@@ -317,9 +321,9 @@ void getSettingsJS(byte subPage, char* dest)
 
     // set limits
     oappend(SET_F("bLimits("));
-    #if defined(ESP32) && defined(USERMOD_AUDIOREACTIVE)
+    #if defined(ESP32) && defined(USERMOD_AUDIOREACTIVE) && !defined(CONFIG_IDF_TARGET_ESP32S3)
     // requested by @softhack007 https://github.com/blazoncek/WLED/issues/33
-    oappend(itoa(WLED_MAX_BUSSES-2,nS,10)); oappend(","); // prevent use of I2S buses if audio installed
+    oappend(itoa(WLED_MAX_BUSSES-2,nS,10)); oappend(","); // prevent use of I2S buses if audio installed. ESP32-S3 currently does not support these busses.
     #else
     oappend(itoa(WLED_MAX_BUSSES,nS,10));  oappend(",");
     #endif
