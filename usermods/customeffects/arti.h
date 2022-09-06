@@ -2450,7 +2450,7 @@ public:
       strcat(logFileName, ".log");
 
       #if ARTI_PLATFORM == ARTI_ARDUINO
-        logFile = WLED_FS.open(logFileName,"w");
+        logFile = LITTLEFS.open(logFileName,"w");
       #else
         logFile = fopen (logFileName,"w");
       #endif
@@ -2463,7 +2463,7 @@ public:
 
     #if ARTI_PLATFORM == ARTI_ARDUINO
       File definitionFile;
-      definitionFile = WLED_FS.open(definitionName, "r");
+      definitionFile = LITTLEFS.open(definitionName, "r");
     #else
       std::fstream definitionFile;
       definitionFile.open(definitionName, std::ios::in);
@@ -2517,7 +2517,7 @@ public:
 
     #if ARTI_PLATFORM == ARTI_ARDUINO
       File programFile;
-      programFile = WLED_FS.open(programName, "r");
+      programFile = LITTLEFS.open(programName, "r");
     #else
       std::fstream programFile;
       programFile.open(programName, std::ios::in);
@@ -2564,7 +2564,7 @@ public:
     #ifdef ARTI_DEBUG // only read write file if debug is on
       #if ARTI_PLATFORM == ARTI_ARDUINO
         File parseTreeFile;
-        parseTreeFile = WLED_FS.open(parseTreeName, loadParseTreeFile?"r":"w");
+        parseTreeFile = LITTLEFS.open(parseTreeName, loadParseTreeFile?"r":"w");
       #else
         std::fstream parseTreeFile;
         parseTreeFile.open(parseTreeName, loadParseTreeFile?std::ios::in:std::ios::out);
@@ -2711,7 +2711,7 @@ public:
     closeLog();
 
     #if ARTI_PLATFORM == ARTI_ARDUINO
-      WLED_FS.remove(logFileName); //cleanup the /edit folder a bit
+      LITTLEFS.remove(logFileName); //cleanup the /edit folder a bit
     #endif
   }
 }; //ARTI

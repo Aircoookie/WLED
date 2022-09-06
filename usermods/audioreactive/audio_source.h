@@ -17,8 +17,8 @@
 
 // see https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/hw-reference/chip-series-comparison.html#related-documents
 // and https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/api-reference/peripherals/i2s.html#overview-of-all-modes
-#if defined(CONFIG_IDF_TARGET_ESP32C2) || defined(CONFIG_IDF_TARGET_ESP32S2)
-  #warning This audio reactive usermod does not support the ESP32-C2 or ESP32-S2, because the device has too limited I2S capabilities
+#if defined(CONFIG_IDF_TARGET_ESP32C2) || defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32H2)
+  #error This audio reactive usermod does not support ESP32-C2, ESP32-C3 or ESP32-S2.
 #endif
 
 /* ToDo: remove. ES7243 is controlled via compiler defines
@@ -233,7 +233,6 @@ class I2SSource : public AudioSource {
     void _routeMclk(int8_t mclkPin) {
 #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
     // this way of MCLK routing only works on "classic" ESP32
-
       /* Enable the mclk routing depending on the selected mclk pin
           Only I2S_NUM_0 is supported
       */
