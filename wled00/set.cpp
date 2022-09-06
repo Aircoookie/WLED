@@ -184,8 +184,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     turnOnAtBoot = request->hasArg(F("BO"));
     t = request->arg(F("BP")).toInt();
     if (t <= 250) bootPreset = t;
-    strip.gammaCorrectBri = request->hasArg(F("GB"));
-    strip.gammaCorrectCol = request->hasArg(F("GC"));
+    gammaCorrectBri = request->hasArg(F("GB"));
+    gammaCorrectCol = request->hasArg(F("GC"));
 
     fadeTransition = request->hasArg(F("TF"));
     t = request->arg(F("TD")).toInt();

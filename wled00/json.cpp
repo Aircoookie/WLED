@@ -271,12 +271,9 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         }
 
         if (set < 2) stop = start + 1;
+        uint32_t c = gamma32(RGBW32(rgbw[0], rgbw[1], rgbw[2], rgbw[3]));
         for (int i = start; i < stop; i++) {
-          if (strip.gammaCorrectCol) {
-            seg.setPixelColor(i, gamma8(rgbw[0]), gamma8(rgbw[1]), gamma8(rgbw[2]), gamma8(rgbw[3]));
-          } else {
-            seg.setPixelColor(i, rgbw[0], rgbw[1], rgbw[2], rgbw[3]);
-          }
+          seg.setPixelColor(i, c);
         }
         if (!set) start++;
         set = 0;
@@ -595,8 +592,6 @@ void serializeInfo(JsonObject root)
   leds["fps"] = strip.getFps();
   leds[F("maxpwr")] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;
   leds[F("maxseg")] = strip.getMaxSegments();
-  //leds[F("actseg")] = strip.getActiveSegmentsNum();
-  //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config
   leds[F("cpal")] = strip.customPalettes.size(); //number of custom palettes
 
   #ifndef WLED_DISABLE_2D
@@ -622,10 +617,6 @@ void serializeInfo(JsonObject root)
   leds[F("rgbw")] = strip.hasRGBWBus(); // deprecated, use info.leds.lc
   leds[F("wv")]   = totalLC & 0x02;     // deprecated, true if white slider should be displayed for any segment
   leds["cct"]     = totalLC & 0x04;     // deprecated, use info.leds.lc
-
-  #ifdef WLED_DISABLE_AUDIO
-  root[F("noaudio")] = true;
-  #endif
 
   #ifdef WLED_DEBUG
   JsonArray i2c = root.createNestedArray(F("i2c"));

@@ -133,9 +133,6 @@
 #endif
 
 #ifdef USERMOD_AUDIOREACTIVE
-  #ifdef WLED_DISABLE_AUDIO
-    #error Incompatible options: WLED_DISABLE_AUDIO and USERMOD_AUDIOREACTIVE
-  #endif
 #include "../usermods/audioreactive/audio_reactive.h"
 #endif
 
@@ -269,9 +266,6 @@ void registerUsermods()
   #endif
   
   #ifdef USERMOD_AUDIOREACTIVE
-    #ifdef WLED_DISABLE_AUDIO
-      #error Incompatible options: WLED_DISABLE_AUDIO and USERMOD_AUDIOREACTIVE
-    #endif
   usermods.add(new AudioReactive());
   #endif
 
