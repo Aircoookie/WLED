@@ -101,10 +101,9 @@ button {
 	position: fixed;
 	bottom: calc(var(--bh) + 6px);
 	right: 6px;
-	color: var(--c-d);
+	color: var(--c-8);
 	cursor: pointer;
 	writing-mode: vertical-rl;
-	transform: rotate(180deg);
 }
 
 .bri {
@@ -1045,7 +1044,7 @@ textarea {
 	/*box-shadow: 0 0 0 5px var(--c-d);*/
 }
 
-.qcs, #namelabel {
+.qcs {
 	text-shadow: -1px -1px 0 var(--c-4), 1px -1px 0 var(--c-4), -1px 1px 0 var(--c-4), 1px 1px 0 var(--c-4);
 }
 

@@ -287,22 +287,13 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   bool stateResponse = root[F("v")] | false;
 
   bool onBefore = bri;
-  uint8_t tmpBri = bri;
-  getVal(root["bri"], &tmpBri);
+  getVal(root["bri"], &bri);
 
-  if (root["on"].isNull()) {
-    if ((onBefore && tmpBri==0) || (!onBefore && tmpBri>0)) toggleOnOff();
-    bri = tmpBri;
-  } else {
-    bool on = root["on"] | onBefore;
-    if (on != onBefore || (root["on"].is<const char*>() && root["on"].as<const char*>()[0] == 't')) {
-      toggleOnOff();
-      // a hack is needed after toggleOnOf()
-      if (!root["bri"].isNull()) {
-        if (bri==0) briLast = tmpBri;
-        else        bri     = tmpBri;
-      }
-    }
+  bool on = root["on"] | (bri > 0);
+  if (!on != !bri) toggleOnOff();
+
+  if (root["on"].is<const char*>() && root["on"].as<const char*>()[0] == 't') {
+    if (onBefore || !bri) toggleOnOff(); // do not toggle off again if just turned on by bri (makes e.g. "{"on":"t","bri":32}" work)
   }
 
   if (bri && !onBefore) { // unfreeze all segments when turning on

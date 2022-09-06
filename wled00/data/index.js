@@ -594,7 +594,9 @@ function parseInfo(i) {
 	lastinfo = i;
 	var name = i.name;
 	gId('namelabel').innerHTML = name;
-	//if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)";
+	if (!name.match(/[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff66-\uff9f\u3131-\uD79D]/))
+		gId('namelabel').style.transform = "rotate(180deg)"; // rotate if no CJK characters
+	if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)"; // Minecraft easter egg
 	if (i.live) name = "(Live) " + name;
 	if (loc)    name = "(L) " + name;
 	d.title     = name;
@@ -1995,15 +1997,15 @@ function setSeg(s)
 		var stopY = parseInt(gId(`seg${s}eY`).value);
 		obj.seg.startY = startY;
 		obj.seg.stopY = (cfg.comp.seglen?startY:0)+stopY;
-		obj.seg.tp = gId(`seg${s}tp`).checked;
 	}
-	if (gId(`seg${s}grp`)) {
+	if (gId(`seg${s}grp`)) { // advanced options, not present in new segment dialog (makeSeg())
 		var grp = parseInt(gId(`seg${s}grp`).value);
 		var spc = parseInt(gId(`seg${s}spc`).value);
 		var ofs = parseInt(gId(`seg${s}of` ).value);
 		obj.seg.grp = grp;
 		obj.seg.spc = spc;
 		obj.seg.of  = ofs;
+		if (isM) obj.seg.tp = gId(`seg${s}tp`).checked;
 	}
 	requestJson(obj);
 }
