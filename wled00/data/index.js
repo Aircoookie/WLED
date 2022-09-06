@@ -713,12 +713,14 @@ function populateSegments(s)
 			rvYck = `<label class="check revchkl">Reverse<input type="checkbox" id="seg${i}rY" onchange="setRevY(${i})" ${inst.rY?"checked":""}><span class="checkmark"></span></label>`;
 			miYck = `<label class="check revchkl">Mirror<input type="checkbox" id="seg${i}mY" onchange="setMiY(${i})" ${inst.mY?"checked":""}><span class="checkmark"></span></label>`;
 		}
+		// WLEDSR: jMap
 		let map2D = `<div id="seg${i}map2D" data-map="map2D" class="lbl-s hide">Expand 1D FX<br>
 			<div class="sel-p"><select class="sel-p" id="seg${i}mp12" onchange="setMp12(${i})">
 				<option value="0" ${inst.mp12==0?' selected':''}>Pixels</option>
 				<option value="1" ${inst.mp12==1?' selected':''}>Bar</option>
 				<option value="2" ${inst.mp12==2?' selected':''}>Arc</option>
 				<option value="3" ${inst.mp12==3?' selected':''}>Corner</option>
+				<option value="4" ${inst.mp12==4?' selected':''}>jMap</option>
 			</select></div>
 		</div>`;
 		let sndSim = `<div data-snd="ssim" class="lbl-s hide">Sound sim<br>

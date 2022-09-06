@@ -420,8 +420,130 @@ uint16_t Segment::nrOfVStrips() const {
   return vLen;
 }
 
+//WLEDSR jMap
+class JMapC {
+  public:
+    char previousSegmentName[50] = "";
+
+    ~JMapC() {
+      Serial.println("~JMapC");
+      if (jMapDoc) {
+        delete jMapDoc; jMapDoc = nullptr;
+      }
+    }
+    uint16_t length() {
+      initjMapDoc();
+      if (jMapDoc)
+        return jMapDoc->size();
+      else
+        return SEGMENT.virtualWidth() * SEGMENT.virtualHeight(); //pixels
+    }
+    void setPixelColor(uint16_t i, uint32_t col) {
+      initjMapDoc();
+      if (jMapDoc) {
+        if (i==0) {
+          SEGMENT.fadeToBlackBy(10); //as not all pixels used
+        }
+        //get itH element of jMap and use x and y to sPCXY call (or multiple calls if tuples)
+        JsonArray outerArray = jMapDoc->as<JsonArray>();
+        if (outerArray[i][0].is<JsonArray>()){
+          for (JsonVariant innerElement: outerArray[i].as<JsonArray>()) {
+            SEGMENT.setPixelColorXY(innerElement[0].as<uint16_t>() * scale, innerElement[1].as<uint16_t>() * scale, col);
+          }
+        }
+        else {
+          SEGMENT.setPixelColorXY(outerArray[i][0].as<uint16_t>() * scale, outerArray[i][1].as<uint16_t>() * scale, col);
+          // SEGMENT.drawLine(outerArray[i][0].as<uint16_t>()*scale, outerArray[i-1][0].as<uint16_t>()*scale, outerArray[i-1][0].as<uint16_t>()*scale, outerArray[i][1].as<uint16_t>()*scale, col);
+        }
+      }
+    }
+    uint32_t getPixelColor(uint16_t i) {
+      initjMapDoc();
+      if (jMapDoc) {
+        JsonArray outerArray = jMapDoc->as<JsonArray>();
+        if (outerArray[i][0].is<JsonArray>())
+          return SEGMENT.getPixelColorXY(outerArray[i][0][0].as<uint16_t>() * scale, outerArray[i][0][1].as<uint16_t>() * scale);
+        else
+          return SEGMENT.getPixelColorXY(outerArray[i][0].as<uint16_t>() * scale, outerArray[i][1].as<uint16_t>() * scale);
+      }
+      return 0;
+    }
+  private:
+    DynamicJsonDocument *jMapDoc = nullptr;
+    uint8_t scale;
+    void initjMapDoc() {
+      // if (jMapDoc && SEGMENT.name == nullptr) {
+      //   Serial.println("Delete jMapDoc");
+      //   delete jMapDoc; jMapDoc = nullptr;
+      // }
+      if (!jMapDoc && SEGMENT.name != nullptr) {
+        Serial.println("Create jMapDoc");
+        jMapDoc = new DynamicJsonDocument(4*4096);
+      }
+
+      if (jMapDoc && SEGMENT.name != nullptr && strcmp(SEGMENT.name, previousSegmentName) != 0) {
+        Serial.println("New name");
+        char jMapFileName[50];
+        strcpy(jMapFileName, "/");
+        strcat(jMapFileName, SEGMENT.name);
+        strcat(jMapFileName, ".jmap");
+        File jMapFile;
+        jMapFile = LITTLEFS.open(jMapFileName, "r");
+
+        DeserializationError err = deserializeJson(*jMapDoc, jMapFile);
+        if (err) 
+        {
+          Serial.printf("deserializeJson() of parseTree failed with code %s\n", err.c_str());
+          SEGMENT.name = nullptr; //need to clear the name as otherwise continuously loaded
+          return;
+        }
+        //get the width and height of the jMap
+        uint8_t maxWidth = 0;
+        uint8_t maxHeight = 0;
+        JsonArray outerArray = jMapDoc->as<JsonArray>();
+        for (JsonVariant outerElement: outerArray) {
+          if (outerElement[0].is<JsonArray>()){
+            for (JsonVariant innerElement: outerElement.as<JsonArray>()) {
+              maxWidth = MAX(maxWidth, innerElement[0].as<uint16_t>());
+              maxHeight = MAX(maxHeight, innerElement[1].as<uint16_t>());
+            }
+          }
+          else {
+            maxWidth = MAX(maxWidth, outerElement[0].as<uint16_t>());
+            maxHeight = MAX(maxHeight, outerElement[1].as<uint16_t>());
+          }
+        }
+        maxWidth++; maxHeight++;
+        scale = MIN(SEGMENT.virtualWidth() / maxWidth, SEGMENT.virtualHeight() / maxHeight);
+
+        Serial.printf("jMapDoc  %u / %u%% (%u %u %u)\n", (unsigned int)jMapDoc->memoryUsage(), 100 * jMapDoc->memoryUsage() / jMapDoc->capacity(), (unsigned int)jMapDoc->size(), jMapDoc->overflowed(), (unsigned int)jMapDoc->nesting());
+        Serial.println(scale);
+        // serializeJson(*jMapDoc, Serial); Serial.println();
+        strcpy(previousSegmentName, SEGMENT.name);
+      }
+    } //initjMapDoc
+}; //class JMapC
+
+//WLEDSR jMap
+void * Segment::getjMap() {
+  if (!jMapC) {
+    Serial.println("getjMap");
+    jMapC = new JMapC();
+  }
+  return jMapC;
+}
+
+//WLEDSR jMap
+void Segment::deletejMap() {
+  //Should be called from ~Segment but causes crash (and ~Segment is called quite often...)
+  if (jMapC) {
+    Serial.println("deletejMap");
+    delete (JMapC *)jMapC; jMapC = nullptr;
+  }
+}
+
 // 1D strip
-uint16_t Segment::virtualLength() const {
+uint16_t Segment::virtualLength() { //WLEDSR jMap: without const
 #ifndef WLED_DISABLE_2D
   if (is2D()) {
     uint16_t vW = virtualWidth();
@@ -434,6 +556,10 @@ uint16_t Segment::virtualLength() const {
       case M12_pCorner:
       case M12_pArc:
         vLen = max(vW,vH); // get the longest dimension
+        break;
+      case M12_jMap: //WLEDSR jMap
+        JMapC *jMapC = (JMapC *)getjMap();
+        vLen = jMapC->length();
         break;
     }
     return vLen;
@@ -483,6 +609,10 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
       case M12_pCorner:
         for (int x = 0; x <= i; x++) setPixelColorXY(x, i, col);
         for (int y = 0; y <  i; y++) setPixelColorXY(i, y, col);
+        break;
+      case M12_jMap: //WLEDSR jMap
+        JMapC *jMapC = (JMapC *)getjMap();
+        jMapC->setPixelColor(i, col);
         break;
     }
     return;
@@ -589,6 +719,10 @@ uint32_t Segment::getPixelColor(int i)
       case M12_pCorner:
         // use longest dimension
         return vW>vH ? getPixelColorXY(i, 0) : getPixelColorXY(0, i);
+        break;
+      case M12_jMap: //WLEDSR jMap
+        JMapC *jMapC = (JMapC *)getjMap();
+        return jMapC->getPixelColor(i);
         break;
     }
     return 0;
