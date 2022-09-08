@@ -4,8 +4,7 @@
 
 #include "arti_wled.h"
 
-//declare weathermod global variables (always precede with weather_ (psuedo class static variables)
-static uint32_t usermods_pushLoop = 0; //effect pushes loop to execute. might be interesting for audioreactive too
+//declare global variables
 ARTI * arti;
 
 //effect function
@@ -96,7 +95,6 @@ class CustomEffectsUserMod : public Usermod {
     // strings to reduce flash memory usage (used more than twice)
     static const char _name[]; //usermod name
 
-    unsigned long lastTime = 0; //will be used to download new forecast every hour
     char errorMessage[100] = "";
 
     bool     enabled = false;
@@ -115,11 +113,6 @@ class CustomEffectsUserMod : public Usermod {
     }
 
     void loop() {
-      //execute only if effect pushes it or every hour
-      if (usermods_pushLoop > millis() - 1000 && (lastTime == 0 || millis() - lastTime > 3600 * 1000)) {
-        lastTime = millis();
-      }
-      usermods_pushLoop = 0;
     }
 
     /*
