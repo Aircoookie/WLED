@@ -1,0 +1,12 @@
+.ceTextarea {
+	width: 90%;
+	height: 300px;
+	resize: none;
+	white-space: pre;
+}
+
+#kceEditor {
+	max-width: 490px;
+	display: inline-block;
+}
+

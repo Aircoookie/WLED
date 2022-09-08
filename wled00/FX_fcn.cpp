@@ -208,6 +208,7 @@ void Segment::setUpLeds() {
 
 CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
   static unsigned long _lastPaletteChange = 0; // perhaps it should be per segment
+  static CRGBPalette16 randomPalette = CRGBPalette16(DEFAULT_COLOR);
   byte tcp[72];
   if (pal < 245 && pal > GRADIENT_PALETTE_COUNT+13) pal = 0;
   if (pal > 245 && (strip.customPalettes.size() == 0 || 255U-pal > strip.customPalettes.size()-1)) pal = 0;
@@ -229,30 +230,31 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
       targetPalette = PartyColors_p; break;
     case 1: //periodically replace palette with a random one. Doesn't work with multiple FastLED segments
       if (millis() - _lastPaletteChange > 5000 /*+ ((uint32_t)(255-intensity))*100*/) {
-        targetPalette = CRGBPalette16(
-                        CHSV(random8(), 255, random8(128, 255)),
-                        CHSV(random8(), 255, random8(128, 255)),
-                        CHSV(random8(), 192, random8(128, 255)),
-                        CHSV(random8(), 255, random8(128, 255)));
+        randomPalette = CRGBPalette16(
+                        CHSV(random8(), random8(160, 255), random8(128, 255)),
+                        CHSV(random8(), random8(160, 255), random8(128, 255)),
+                        CHSV(random8(), random8(160, 255), random8(128, 255)),
+                        CHSV(random8(), random8(160, 255), random8(128, 255)));
         _lastPaletteChange = millis();
-      } break;
+      }
+      targetPalette = randomPalette; break;
     case 2: {//primary color only
-      CRGB prim = strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0];
+      CRGB prim = gamma32(colors[0]);
       targetPalette = CRGBPalette16(prim); break;}
     case 3: {//primary + secondary
-      CRGB prim = strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0];
-      CRGB sec  = strip.gammaCorrectCol ? gamma32(colors[1]) : colors[1];
+      CRGB prim = gamma32(colors[0]);
+      CRGB sec  = gamma32(colors[1]);
       targetPalette = CRGBPalette16(prim,prim,sec,sec); break;}
     case 4: {//primary + secondary + tertiary
-      CRGB prim = strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0];
-      CRGB sec  = strip.gammaCorrectCol ? gamma32(colors[1]) : colors[1];
-      CRGB ter  = strip.gammaCorrectCol ? gamma32(colors[2]) : colors[2];
+      CRGB prim = gamma32(colors[0]);
+      CRGB sec  = gamma32(colors[1]);
+      CRGB ter  = gamma32(colors[2]);
       targetPalette = CRGBPalette16(ter,sec,prim); break;}
     case 5: {//primary + secondary (+tert if not off), more distinct
-      CRGB prim = strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0];
-      CRGB sec  = strip.gammaCorrectCol ? gamma32(colors[1]) : colors[1];
+      CRGB prim = gamma32(colors[0]);
+      CRGB sec  = gamma32(colors[1]);
       if (colors[2]) {
-        CRGB ter = strip.gammaCorrectCol ? gamma32(colors[2]) : colors[2];
+        CRGB ter = gamma32(colors[2]);
         targetPalette = CRGBPalette16(prim,prim,prim,prim,prim,sec,sec,sec,sec,sec,ter,ter,ter,ter,ter,prim);
       } else {
         targetPalette = CRGBPalette16(prim,prim,prim,prim,prim,prim,prim,prim,sec,sec,sec,sec,sec,sec,sec,sec);
@@ -339,8 +341,11 @@ CRGBPalette16 &Segment::currentPalette(CRGBPalette16 &targetPalette, uint8_t pal
   loadPalette(targetPalette, pal);
   if (transitional && _t && progress() < 0xFFFFU) {
     // blend palettes
-    uint8_t blends = map(_t->_dur, 0, 0xFFFF, 48, 6); // do not blend palettes too quickly (0-65.5s)
-    nblendPaletteTowardPalette(_t->_palT, targetPalette, blends);
+    // there are about 255 blend passes of 48 "blends" to completely blend two palettes (in _dur time)
+    // minimum blend time is 100ms maximum is 65535ms
+    uint32_t timeMS = millis() - _t->_start;
+    uint16_t noOfBlends = (255U * timeMS / _t->_dur) - _t->_prevPaletteBlends;
+    for (int i=0; i<noOfBlends; i++, _t->_prevPaletteBlends++) nblendPaletteTowardPalette(_t->_palT, targetPalette, 48);
     targetPalette = _t->_palT; // copy transitioning/temporary palette
   }
   return targetPalette;
@@ -420,6 +425,128 @@ uint16_t Segment::nrOfVStrips() const {
   return vLen;
 }
 
+//WLEDSR jMap
+class JMapC {
+  public:
+    char previousSegmentName[50] = "";
+
+    ~JMapC() {
+      Serial.println("~JMapC");
+      if (jMapDoc) {
+        delete jMapDoc; jMapDoc = nullptr;
+      }
+    }
+    uint16_t length() {
+      updatejMapDoc();
+      if (jMapDoc)
+        return jMapDoc->size();
+      else
+        return SEGMENT.virtualWidth() * SEGMENT.virtualHeight(); //pixels
+    }
+    void setPixelColor(uint16_t i, uint32_t col) {
+      updatejMapDoc();
+      if (jMapDoc) {
+        if (i==0) {
+          SEGMENT.fadeToBlackBy(10); //as not all pixels used
+        }
+        //get itH element of jMap and use x and y to sPCXY call (or multiple calls if tuples)
+        JsonArray outerArray = jMapDoc->as<JsonArray>();
+        if (outerArray[i][0].is<JsonArray>()){
+          for (JsonVariant innerElement: outerArray[i].as<JsonArray>()) {
+            SEGMENT.setPixelColorXY(innerElement[0].as<uint16_t>() * scale, innerElement[1].as<uint16_t>() * scale, col);
+          }
+        }
+        else {
+          SEGMENT.setPixelColorXY(outerArray[i][0].as<uint16_t>() * scale, outerArray[i][1].as<uint16_t>() * scale, col);
+          // SEGMENT.drawLine(outerArray[i][0].as<uint16_t>()*scale, outerArray[i-1][0].as<uint16_t>()*scale, outerArray[i-1][0].as<uint16_t>()*scale, outerArray[i][1].as<uint16_t>()*scale, col);
+        }
+      }
+    }
+    uint32_t getPixelColor(uint16_t i) {
+      updatejMapDoc();
+      if (jMapDoc) {
+        JsonArray outerArray = jMapDoc->as<JsonArray>();
+        if (outerArray[i][0].is<JsonArray>())
+          return SEGMENT.getPixelColorXY(outerArray[i][0][0].as<uint16_t>() * scale, outerArray[i][0][1].as<uint16_t>() * scale);
+        else
+          return SEGMENT.getPixelColorXY(outerArray[i][0].as<uint16_t>() * scale, outerArray[i][1].as<uint16_t>() * scale);
+      }
+      return 0;
+    }
+  private:
+    DynamicJsonDocument *jMapDoc = nullptr;
+    uint8_t scale;
+    void updatejMapDoc() {
+      if (jMapDoc && SEGMENT.name == nullptr) {
+        Serial.println("Delete jMapDoc");
+        delete jMapDoc; jMapDoc = nullptr;
+      }
+
+      if (!jMapDoc && SEGMENT.name != nullptr && SEGMENT.map1D2D == M12_jMap) {
+        Serial.println("Create jMapDoc");
+        jMapDoc = new DynamicJsonDocument(5*4096);
+      }
+
+      if (jMapDoc && SEGMENT.name != nullptr && strcmp(SEGMENT.name, previousSegmentName) != 0) {
+        Serial.println("New name");
+        char jMapFileName[50];
+        strcpy(jMapFileName, "/");
+        strcat(jMapFileName, SEGMENT.name);
+        strcat(jMapFileName, ".jmap");
+        File jMapFile;
+        jMapFile = LITTLEFS.open(jMapFileName, "r");
+
+        DeserializationError err = deserializeJson(*jMapDoc, jMapFile);
+        if (err) 
+        {
+          Serial.printf("deserializeJson() of parseTree failed with code %s\n", err.c_str());
+          delete[] SEGMENT.name; SEGMENT.name = nullptr; //need to clear the name as otherwise continuously loaded
+          return;
+        }
+        //get the width and height of the jMap
+        uint8_t maxWidth = 0;
+        uint8_t maxHeight = 0;
+        JsonArray outerArray = jMapDoc->as<JsonArray>();
+        for (JsonVariant outerElement: outerArray) {
+          if (outerElement[0].is<JsonArray>()){
+            for (JsonVariant innerElement: outerElement.as<JsonArray>()) {
+              maxWidth = MAX(maxWidth, innerElement[0].as<uint16_t>());
+              maxHeight = MAX(maxHeight, innerElement[1].as<uint16_t>());
+            }
+          }
+          else {
+            maxWidth = MAX(maxWidth, outerElement[0].as<uint16_t>());
+            maxHeight = MAX(maxHeight, outerElement[1].as<uint16_t>());
+          }
+        }
+        maxWidth++; maxHeight++;
+        scale = MIN(SEGMENT.virtualWidth() / maxWidth, SEGMENT.virtualHeight() / maxHeight);
+
+        Serial.printf("jMapDoc  %u / %u%% (%u %u %u)\n", (unsigned int)jMapDoc->memoryUsage(), 100 * jMapDoc->memoryUsage() / jMapDoc->capacity(), (unsigned int)jMapDoc->size(), jMapDoc->overflowed(), (unsigned int)jMapDoc->nesting());
+        Serial.println(scale);
+        // serializeJson(*jMapDoc, Serial); Serial.println();
+        strcpy(previousSegmentName, SEGMENT.name);
+      }
+    } //updatejMapDoc
+}; //class JMapC
+
+//WLEDSR jMap
+void Segment::createjMap() {
+  if (!jMap) {
+    Serial.println("createjMap");
+    jMap = new JMapC();
+  }
+}
+
+//WLEDSR jMap
+void Segment::deletejMap() {
+  //Should be called from ~Segment but causes crash (and ~Segment is called quite often...)
+  if (jMap) {
+    Serial.println("deletejMap");
+    delete (JMapC *)jMap; jMap = nullptr;
+  }
+}
+
 // 1D strip
 uint16_t Segment::virtualLength() const {
 #ifndef WLED_DISABLE_2D
@@ -434,6 +561,10 @@ uint16_t Segment::virtualLength() const {
       case M12_pCorner:
       case M12_pArc:
         vLen = max(vW,vH); // get the longest dimension
+        break;
+      case M12_jMap: //WLEDSR jMap
+        if (jMap)
+          vLen = ((JMapC *)jMap)->length();
         break;
     }
     return vLen;
@@ -470,19 +601,16 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         // expand in circular fashion from center
         if (i==0)
           setPixelColorXY(0, 0, col);
-        else {
-          float step = HALF_PI / (2.85f*i);
-          for (float rad = 0.0f; rad <= HALF_PI+step/2; rad += step) {
-            // may want to try float version as well (with or without antialiasing)
-            int x = roundf(sin_t(rad) * i);
-            int y = roundf(cos_t(rad) * i);
-            setPixelColorXY(x, y, col);
-          }
-        }
+        else
+          drawArc(0, 0, i, col);
         break;
       case M12_pCorner:
         for (int x = 0; x <= i; x++) setPixelColorXY(x, i, col);
         for (int y = 0; y <  i; y++) setPixelColorXY(i, y, col);
+        break;
+      case M12_jMap: //WLEDSR jMap
+        if (jMap)
+          ((JMapC *)jMap)->setPixelColor(i, col);
         break;
     }
     return;
@@ -589,6 +717,10 @@ uint32_t Segment::getPixelColor(int i)
       case M12_pCorner:
         // use longest dimension
         return vW>vH ? getPixelColorXY(i, 0) : getPixelColorXY(0, i);
+        break;
+      case M12_jMap: //WLEDSR jMap
+        if (jMap)
+          return ((JMapC *)jMap)->getPixelColor(i);
         break;
     }
     return 0;
@@ -823,7 +955,7 @@ uint32_t Segment::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_
   // default palette or no RGB support on segment
   if ((palette == 0 && mcol < NUM_COLORS) || !(_capabilities & 0x01)) {
     uint32_t color = (transitional && _t) ? _t->_colorT[mcol] : colors[mcol];
-    color = strip.gammaCorrectCol ? gamma32(color) : color;
+    color = gamma32(color);
     if (pbri == 255) return color;
     return RGBW32(scale8_video(R(color),pbri), scale8_video(G(color),pbri), scale8_video(B(color),pbri), scale8_video(W(color),pbri));
   }

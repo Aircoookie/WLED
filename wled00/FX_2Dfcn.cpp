@@ -459,14 +459,40 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
   }
 }
 
-#include "console_font_5x8.h"
-#include "console_font_5x12.h"
-#include "console_font_6x8.h"
-#include "console_font_7x9.h"
+void Segment::drawArc(uint16_t x0, uint16_t y0, uint16_t radius, uint32_t color, uint32_t fillColor) {
+  // float step = degrees / (2.85f*MAX(radius,1));
+  // for (float rad = 0.0f; rad <= degrees+step/2; rad += step) {
+  //   // may want to try float version as well (with or without antialiasing)
+  //   int x = roundf(sin_t(rad) * radius);
+  //   int y = roundf(cos_t(rad) * radius);
+  //   setPixelColorXY(x+x0, y+y0, c);
+  // }
+  float minradius = radius - .5;
+  float maxradius = radius + .5;
+  for (int x=0; x<virtualWidth(); x++) for (int y=0; y<virtualHeight(); y++) {
+
+    int newX = x - x0;
+    int newY = y - y0;
+
+    if (newX*newX + newY*newY >= minradius * minradius && newX*newX + newY*newY <= maxradius * maxradius)
+      setPixelColorXY(x, y, color);
+    if (fillColor != 0)
+      if (newX*newX + newY*newY < minradius * minradius)
+        setPixelColorXY(x, y, fillColor);
+  }
+}
+
+#include "src/font/console_font_4x6.h"
+#include "src/font/console_font_5x8.h"
+#include "src/font/console_font_5x12.h"
+#include "src/font/console_font_6x8.h"
+#include "src/font/console_font_7x9.h"
 
 // draws a raster font character on canvas
 // only supports 5x8=40, 5x12=60, 6x8=48 and 7x9=63 fonts ATM
 void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color) {
+  if (chr < 32 || chr > 126) return; // only ASCII 32-126 supported
+  chr -= 32; // align with font table entries
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
   const int font = w*h;
@@ -478,6 +504,7 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
     if (y0 >= rows) break; // drawing off-screen
     uint8_t bits = 0;
     switch (font) {
+      case 24: bits = pgm_read_byte_near(&console_font_4x6[(chr * h) + i]); break;  // 5x8 font
       case 40: bits = pgm_read_byte_near(&console_font_5x8[(chr * h) + i]); break;  // 5x8 font
       case 48: bits = pgm_read_byte_near(&console_font_6x8[(chr * h) + i]); break;  // 6x8 font
       case 63: bits = pgm_read_byte_near(&console_font_7x9[(chr * h) + i]); break;  // 7x9 font

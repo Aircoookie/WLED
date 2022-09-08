@@ -82,6 +82,12 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   uint8_t  soundSim = elem["ssim"] | seg.soundSim;
   uint8_t  map1D2D  = elem["mp12"] | seg.map1D2D;
 
+  //WLEDSR jMap
+  if (map1D2D == M12_jMap && !seg.jMap)
+    seg.createjMap();
+  if (map1D2D != M12_jMap && seg.jMap)
+    seg.deletejMap();
+
   if ((spc>0 && spc!=seg.spacing) || seg.map1D2D!=map1D2D) seg.fill(BLACK); // clear spacing gaps
 
   seg.map1D2D  = constrain(map1D2D, 0, 7);
@@ -108,6 +114,12 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   bool on = elem["on"] | seg.on;
   if (elem["on"].is<const char*>() && elem["on"].as<const char*>()[0] == 't') on = !on;
   seg.setOption(SEG_OPTION_ON, on); // use transition
+
+  //WLEDSR Custom Effects (but general usable)
+  bool reset = elem["reset"];
+  if (reset)
+    seg.markForReset();
+
   bool frz = elem["frz"] | seg.freeze;
   if (elem["frz"].is<const char*>() && elem["frz"].as<const char*>()[0] == 't') frz = !seg.freeze;
   seg.freeze = frz;
@@ -265,12 +277,9 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         }
 
         if (set < 2) stop = start + 1;
+        uint32_t c = gamma32(RGBW32(rgbw[0], rgbw[1], rgbw[2], rgbw[3]));
         for (int i = start; i < stop; i++) {
-          if (strip.gammaCorrectCol) {
-            seg.setPixelColor(i, gamma8(rgbw[0]), gamma8(rgbw[1]), gamma8(rgbw[2]), gamma8(rgbw[3]));
-          } else {
-            seg.setPixelColor(i, rgbw[0], rgbw[1], rgbw[2], rgbw[3]);
-          }
+          seg.setPixelColor(i, c);
         }
         if (!set) start++;
         set = 0;
@@ -589,8 +598,6 @@ void serializeInfo(JsonObject root)
   leds["fps"] = strip.getFps();
   leds[F("maxpwr")] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;
   leds[F("maxseg")] = strip.getMaxSegments();
-  //leds[F("actseg")] = strip.getActiveSegmentsNum();
-  //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config
   leds[F("cpal")] = strip.customPalettes.size(); //number of custom palettes
 
   #ifndef WLED_DISABLE_2D
@@ -616,10 +623,6 @@ void serializeInfo(JsonObject root)
   leds[F("rgbw")] = strip.hasRGBWBus(); // deprecated, use info.leds.lc
   leds[F("wv")]   = totalLC & 0x02;     // deprecated, true if white slider should be displayed for any segment
   leds["cct"]     = totalLC & 0x04;     // deprecated, use info.leds.lc
-
-  #ifdef WLED_DISABLE_AUDIO
-  root[F("noaudio")] = true;
-  #endif
 
   #ifdef WLED_DEBUG
   JsonArray i2c = root.createNestedArray(F("i2c"));

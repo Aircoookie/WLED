@@ -611,13 +611,13 @@ function parseInfo(i) {
 		//gId("filter2D").classList.add("hide");
 		hideModes("2D");
 	}
-	if (i.noaudio) {
-		gId("filterVol").classList.add("hide");
-		gId("filterFreq").classList.add("hide");
-	}
+//	if (i.noaudio) {
+//		gId("filterVol").classList.add("hide");
+//		gId("filterFreq").classList.add("hide");
+//	}
 //	if (!i.u || !i.u.AudioReactive) {
-		//gId("filterVol").classList.add("hide"); hideModes(" ♪"); // hide volume reactive effects
-		//gId("filterFreq").classList.add("hide"); hideModes(" ♫"); // hide frequency reactive effects
+//		gId("filterVol").classList.add("hide"); hideModes(" ♪"); // hide volume reactive effects
+//		gId("filterFreq").classList.add("hide"); hideModes(" ♫"); // hide frequency reactive effects
 //	}
 }
 
@@ -659,6 +659,7 @@ function populateInfo(i)
 
 	cn += `v${i.ver} "${vcn}"<br><br><table>
 ${urows}
+${urows===""?'':'<tr><td colspan=2><hr style="height:1px;border-width:0;color:gray;background-color:gray"></td></tr>'}
 ${inforow("Build",i.vid)}
 ${inforow("Signal strength",i.wifi.signal +"% ("+ i.wifi.rssi, " dBm)")}
 ${inforow("Uptime",getRuntimeStr(i.uptime))}
@@ -712,12 +713,14 @@ function populateSegments(s)
 			rvYck = `<label class="check revchkl">Reverse<input type="checkbox" id="seg${i}rY" onchange="setRevY(${i})" ${inst.rY?"checked":""}><span class="checkmark"></span></label>`;
 			miYck = `<label class="check revchkl">Mirror<input type="checkbox" id="seg${i}mY" onchange="setMiY(${i})" ${inst.mY?"checked":""}><span class="checkmark"></span></label>`;
 		}
+		// WLEDSR: jMap
 		let map2D = `<div id="seg${i}map2D" data-map="map2D" class="lbl-s hide">Expand 1D FX<br>
 			<div class="sel-p"><select class="sel-p" id="seg${i}mp12" onchange="setMp12(${i})">
 				<option value="0" ${inst.mp12==0?' selected':''}>Pixels</option>
 				<option value="1" ${inst.mp12==1?' selected':''}>Bar</option>
 				<option value="2" ${inst.mp12==2?' selected':''}>Arc</option>
 				<option value="3" ${inst.mp12==3?' selected':''}>Corner</option>
+				<option value="4" ${inst.mp12==4?' selected':''}>jMap</option>
 			</select></div>
 		</div>`;
 		let sndSim = `<div data-snd="ssim" class="lbl-s hide">Sound sim<br>
@@ -728,6 +731,9 @@ function populateSegments(s)
 				<option value="3" ${inst.ssim==3?' selected':''}>U14_3</option>
 			</select></div>
 		</div>`;
+		//WLEDSR Custom Effects
+		let fxName = eJson.find((o)=>{return o.id==selectedFx}).name;
+		let cusEff = `<button class="btn" onclick="toggleCEEditor('${inst.n?inst.n:"default"}', ${i})">Custom Effect Editor</button><br>`;
 		cn += `<div class="seg lstI ${i==s.mainseg ? 'selected' : ''} ${exp ? "expanded":""}" id="seg${i}">
 	<label class="check schkl">
 		<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>
@@ -774,6 +780,7 @@ function populateSegments(s)
 		${!isM?rvXck:''}
 		${isM&&stoY-staY>1&&stoX-staX>1?map2D:''}
 		${s.AudioReactive && s.AudioReactive.on ? "" : sndSim}
+		${s.CustomEffects && s.CustomEffects.on && fxName.includes("Custom Effect") ? cusEff : ""}
 		<label class="check revchkl" id="seg${i}lbtm">
 			${isM?'Transpose':'Mirror effect'}
 			<input type="checkbox" id="seg${i}${isM?'tp':'mi'}" onchange="${(isM?'setTp(':'setMi(')+i})" ${isM?(inst.tp?"checked":""):(inst.mi?"checked":"")}>
@@ -1042,7 +1049,7 @@ function updateLen(s)
 		let tPL = gId(`seg${s}lbtm`);
 		if (stop-start>1 && stopY-startY>1) {
 			// 2D segment
-			tPL.classList.remove("hide"); // unhide transpose checkbox
+			if (tPL) tPL.classList.remove("hide"); // unhide transpose checkbox
 			let sE = gId('fxlist').querySelector(`.lstI[data-id="${selectedFx}"]`);
 			if (sE) {
 				let sN = sE.querySelector(".lstIname").innerText;
@@ -1054,8 +1061,10 @@ function updateLen(s)
 			}
 		} else {
 			// 1D segment in 2D set-up
-			tPL.classList.add("hide"); // hide transpose checkbox
-			gId(`seg${s}tp`).checked = false;	// and uncheck it
+			if (tPL) {
+				tPL.classList.add("hide"); // hide transpose checkbox
+				gId(`seg${s}tp`).checked = false;	// and uncheck it
+			}
 		}
 	}
 	var out = "(delete)";
@@ -1995,15 +2004,15 @@ function setSeg(s)
 		var stopY = parseInt(gId(`seg${s}eY`).value);
 		obj.seg.startY = startY;
 		obj.seg.stopY = (cfg.comp.seglen?startY:0)+stopY;
-		obj.seg.tp = gId(`seg${s}tp`).checked;
 	}
-	if (gId(`seg${s}grp`)) {
+	if (gId(`seg${s}grp`)) { // advanced options, not present in new segment dialog (makeSeg())
 		var grp = parseInt(gId(`seg${s}grp`).value);
 		var spc = parseInt(gId(`seg${s}spc`).value);
 		var ofs = parseInt(gId(`seg${s}of` ).value);
 		obj.seg.grp = grp;
 		obj.seg.spc = spc;
 		obj.seg.of  = ofs;
+		if (isM) obj.seg.tp = gId(`seg${s}tp`).checked;
 	}
 	requestJson(obj);
 }
