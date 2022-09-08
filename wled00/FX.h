@@ -368,7 +368,7 @@ typedef struct Segment {
     byte* data;
     CRGB* leds;
     static CRGB *_globalLeds;
-    void *jMapC; //WLEDSR jMap
+    void *jMap; //WLEDSR jMap
 
   private:
     union {
@@ -478,8 +478,6 @@ typedef struct Segment {
       if (!Segment::_globalLeds && leds) free(leds);
       if (name) delete[] name;
       if (_t) delete _t;
-    Serial.println("~Segment");  //WLEDSR jMap
-      // deletejMap();
       deallocateData();
     }
 
@@ -535,7 +533,7 @@ typedef struct Segment {
     CRGBPalette16 &currentPalette(CRGBPalette16 &tgt, uint8_t paletteID);
 
     // 1D strip
-    uint16_t virtualLength(void); //WLEDSR jMap: without const
+    uint16_t virtualLength(void) const;
     void setPixelColor(int n, uint32_t c); // set relative pixel within segment with color
     void setPixelColor(int n, byte r, byte g, byte b, byte w = 0) { setPixelColor(n, RGBW32(r,g,b,w)); } // automatically inline
     void setPixelColor(int n, CRGB c)                             { setPixelColor(n, RGBW32(c.r,c.g,c.b,0)); } // automatically inline
@@ -562,7 +560,7 @@ typedef struct Segment {
     uint16_t virtualWidth(void)  const;
     uint16_t virtualHeight(void) const;
     uint16_t nrOfVStrips(void) const;
-    void *getjMap(); //WLEDSR jMap
+    void createjMap(); //WLEDSR jMap
     void deletejMap(); //WLEDSR jMap
   #ifndef WLED_DISABLE_2D
     uint16_t XY(uint16_t x, uint16_t y); // support function to get relative index within segment (for leds[])
