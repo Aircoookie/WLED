@@ -302,10 +302,10 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   float light_gc_bri = light["gc"]["bri"];
   float light_gc_col = light["gc"]["col"]; // 2.8
-  if (light_gc_bri > 1.5) strip.gammaCorrectBri = true;
-  else if (light_gc_bri > 0.5) strip.gammaCorrectBri = false;
-  if (light_gc_col > 1.5) strip.gammaCorrectCol = true;
-  else if (light_gc_col > 0.5) strip.gammaCorrectCol = false;
+  if      (light_gc_bri > 1.5) gammaCorrectBri = true;
+  else if (light_gc_bri > 0.5) gammaCorrectBri = false;
+  if      (light_gc_col > 1.5) gammaCorrectCol = true;
+  else if (light_gc_col > 0.5) gammaCorrectCol = false;
 
   JsonObject light_tr = light["tr"];
   CJSON(fadeTransition, light_tr["mode"]);
@@ -759,8 +759,8 @@ void serializeConfig() {
   light[F("aseg")] = autoSegments;
 
   JsonObject light_gc = light.createNestedObject("gc");
-  light_gc["bri"] = (strip.gammaCorrectBri) ? 2.8 : 1.0;
-  light_gc["col"] = (strip.gammaCorrectCol) ? 2.8 : 1.0;
+  light_gc["bri"] = (gammaCorrectBri) ? 2.8 : 1.0;
+  light_gc["col"] = (gammaCorrectCol) ? 2.8 : 1.0;
 
   JsonObject light_tr = light.createNestedObject("tr");
   light_tr["mode"] = fadeTransition;

@@ -402,8 +402,8 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("BO"),turnOnAtBoot);
     sappend('v',SET_F("BP"),bootPreset);
 
-    sappend('c',SET_F("GB"),strip.gammaCorrectBri);
-    sappend('c',SET_F("GC"),strip.gammaCorrectCol);
+    sappend('c',SET_F("GB"),gammaCorrectBri);
+    sappend('c',SET_F("GC"),gammaCorrectCol);
     sappend('c',SET_F("TF"),fadeTransition);
     sappend('v',SET_F("TD"),transitionDelayDefault);
     sappend('c',SET_F("PF"),strip.paletteFade);

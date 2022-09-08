@@ -275,67 +275,39 @@
   #define FX_MODE_2DMETABALLS            142 // non audio
   #define FX_MODE_2DPULSER               143 // non audio
   #define FX_MODE_2DDRIFT                144 // non audio
-#endif
-#ifndef WLED_DISABLE_AUDIO
-  #ifndef WLED_DISABLE_2D
-    #define FX_MODE_2DWAVERLY              145 // audio enhanced
-    #define FX_MODE_2DSWIRL                146 // audio enhanced
-    #define FX_MODE_2DAKEMI                147 // audio enhanced
-    // 148 & 149 reserved
-  #endif
-  #define FX_MODE_PIXELWAVE              150 // audio enhanced
-  #define FX_MODE_JUGGLES                151 // audio enhanced
-  #define FX_MODE_MATRIPIX               152 // audio enhanced
-  #define FX_MODE_GRAVIMETER             153 // audio enhanced
-  #define FX_MODE_PLASMOID               154 // audio enhanced
-  #define FX_MODE_PUDDLES                155 // audio enhanced
-  #define FX_MODE_MIDNOISE               156 // audio enhanced
-  #define FX_MODE_NOISEMETER             157 // audio enhanced
-  #define FX_MODE_NOISEFIRE              158 // audio enhanced
-  #define FX_MODE_PUDDLEPEAK             159 // audio enhanced
-  #define FX_MODE_RIPPLEPEAK             160 // audio enhanced
-  #define FX_MODE_GRAVCENTER             161 // audio enhanced
-  #define FX_MODE_GRAVCENTRIC            162 // audio enhanced
-#endif
+  #define FX_MODE_2DWAVERLY              145 // audio enhanced
+  #define FX_MODE_2DSWIRL                146 // audio enhanced
+  #define FX_MODE_2DAKEMI                147 // audio enhanced
+  #define FX_MODE_2DGEQ                  148 // audio enhanced
+  #define FX_MODE_2DFUNKYPLANK           149 // audio enhanced
+#endif //WLED_DISABLE_2D
+#define FX_MODE_PIXELWAVE              150 // audio enhanced
+#define FX_MODE_JUGGLES                151 // audio enhanced
+#define FX_MODE_MATRIPIX               152 // audio enhanced
+#define FX_MODE_GRAVIMETER             153 // audio enhanced
+#define FX_MODE_PLASMOID               154 // audio enhanced
+#define FX_MODE_PUDDLES                155 // audio enhanced
+#define FX_MODE_MIDNOISE               156 // audio enhanced
+#define FX_MODE_NOISEMETER             157 // audio enhanced
+#define FX_MODE_NOISEFIRE              158 // audio enhanced
+#define FX_MODE_PUDDLEPEAK             159 // audio enhanced
+#define FX_MODE_RIPPLEPEAK             160 // audio enhanced
+#define FX_MODE_GRAVCENTER             161 // audio enhanced
+#define FX_MODE_GRAVCENTRIC            162 // audio enhanced
+#define FX_MODE_PIXELS                 163 // audio enhanced
+#define FX_MODE_FREQWAVE               164 // audio enhanced
+#define FX_MODE_FREQMATRIX             165 // audio enhanced
+#define FX_MODE_WATERFALL              166 // audio enhanced
+#define FX_MODE_FREQPIXELS             167 // audio enhanced
+#define FX_MODE_BINMAP                 168 // audio enhanced
+#define FX_MODE_NOISEMOVE              169 // audio enhanced
+#define FX_MODE_FREQMAP                170 // audio enhanced
+#define FX_MODE_GRAVFREQ               171 // audio enhanced
+#define FX_MODE_DJLIGHT                172 // audio enhanced
+#define FX_MODE_BLURZ                  173 // audio enhanced
+#define FX_MODE_ROCKTAVES              174 // audio enhanced
 
-#ifndef USERMOD_AUDIOREACTIVE
-
-  #ifndef WLED_DISABLE_AUDIO
-  #define MODE_COUNT                   163
-  #else
-    #ifndef WLED_DISABLE_2D
-  #define MODE_COUNT                   145
-    #else
-  #define MODE_COUNT                   118
-    #endif
-  #endif
-
-#else
-
-  #ifdef WLED_DISABLE_AUDIO
-    #error Incompatible options: WLED_DISABLE_AUDIO and USERMOD_AUDIOREACTIVE
-  #endif
-  #ifdef WLED_DISABLE_2D
-    #error AUDIOREACTIVE usermod requires 2D support.
-  #endif
-  #define FX_MODE_2DGEQ                  148
-  #define FX_MODE_2DFUNKYPLANK           149
-  #define FX_MODE_PIXELS                 163
-  #define FX_MODE_FREQWAVE               164
-  #define FX_MODE_FREQMATRIX             165
-  #define FX_MODE_WATERFALL              166
-  #define FX_MODE_FREQPIXELS             167
-  #define FX_MODE_BINMAP                 168
-  #define FX_MODE_NOISEMOVE              169
-  #define FX_MODE_FREQMAP                170
-  #define FX_MODE_GRAVFREQ               171
-  #define FX_MODE_DJLIGHT                172
-  #define FX_MODE_BLURZ                  173
-  #define FX_MODE_ROCKTAVES              174
-  //#define FX_MODE_CUSTOMEFFECT           175 //WLEDSR Custom Effects
-
-  #define MODE_COUNT                     175
-#endif
+#define MODE_COUNT                     175
 
 typedef enum mapping1D2D {
   M12_Pixels = 0,
@@ -416,14 +388,31 @@ typedef struct Segment {
       uint8_t       _briT;        // temporary brightness
       uint8_t       _cctT;        // temporary CCT
       CRGBPalette16 _palT;        // temporary palette
+      uint8_t       _prevPaletteBlends; // number of previous palette blends (there are max 128 belnds possible)
       uint8_t       _modeP;       // previous mode/effect
       //uint16_t      _aux0, _aux1; // previous mode/effect runtime data
       //uint32_t      _step, _call; // previous mode/effect runtime data
       //byte         *_data;        // previous mode/effect runtime data
       uint32_t      _start;
       uint16_t      _dur;
-      Transition(uint16_t dur=750) : _briT(255), _cctT(127), _palT(CRGBPalette16(CRGB::Black)), _modeP(FX_MODE_STATIC), _start(millis()), _dur(dur) {}
-      Transition(uint16_t d, uint8_t b, uint8_t c, const uint32_t *o) : _briT(b), _cctT(c), _palT(CRGBPalette16(CRGB::Black)), _modeP(FX_MODE_STATIC), _start(millis()), _dur(d) {
+      Transition(uint16_t dur=750)
+        : _briT(255)
+        , _cctT(127)
+        , _palT(CRGBPalette16(CRGB::Black))
+        , _prevPaletteBlends(0)
+        , _modeP(FX_MODE_STATIC)
+        , _start(millis())
+        , _dur(dur)
+      {}
+      Transition(uint16_t d, uint8_t b, uint8_t c, const uint32_t *o)
+        : _briT(b)
+        , _cctT(c)
+        , _palT(CRGBPalette16(CRGB::Black))
+        , _prevPaletteBlends(0)
+        , _modeP(FX_MODE_STATIC)
+        , _start(millis())
+        , _dur(d)
+      {
         for (size_t i=0; i<NUM_COLORS; i++) _colorT[i] = o[i];
       }
     } *_t;
@@ -647,8 +636,6 @@ class WS2812FX {  // 96 bytes
   public:
 
     WS2812FX() :
-      gammaCorrectBri(false),
-      gammaCorrectCol(true),
       paletteFade(0),
       paletteBlend(0),
       milliampsPerLed(55),
@@ -747,8 +734,6 @@ class WS2812FX {  // 96 bytes
     inline void appendSegment(const Segment &seg = Segment()) { _segments.push_back(seg); }
 
     bool
-      gammaCorrectBri,
-      gammaCorrectCol,
       checkSegmentAlignment(void),
       hasRGBWBus(void),
       hasCCTBus(void),

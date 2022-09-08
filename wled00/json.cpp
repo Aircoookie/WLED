@@ -84,8 +84,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   if ((spc>0 && spc!=seg.spacing) || seg.map1D2D!=map1D2D) seg.fill(BLACK); // clear spacing gaps
 
-  seg.map1D2D  = map1D2D & 0x07;
-  seg.soundSim = soundSim & 0x03;
+  seg.map1D2D  = constrain(map1D2D, 0, 7);
+  seg.soundSim = constrain(soundSim, 0, 7);
 
   uint16_t len = 1;
   if (stop > start) len = stop - start;
@@ -162,12 +162,12 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   }
   #endif
 
-  seg.selected  = elem["sel"]   | seg.selected;
-  seg.reverse   = elem["rev"]   | seg.reverse;
-  seg.mirror    = elem["mi"] | seg.mirror;
+  seg.selected  = elem["sel"] | seg.selected;
+  seg.reverse   = elem["rev"] | seg.reverse;
+  seg.mirror    = elem["mi"]  | seg.mirror;
   #ifndef WLED_DISABLE_2D
-  seg.reverse_y = elem["rY"] | seg.reverse_y;
-  seg.mirror_y  = elem["mY"] | seg.mirror_y;
+  seg.reverse_y = elem["rY"]  | seg.reverse_y;
+  seg.mirror_y  = elem["mY"]  | seg.mirror_y;
   seg.transpose = elem[F("tp")] | seg.transpose;
   #endif
 
@@ -190,8 +190,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     sOpt = extractModeDefaults(fx, "c1");   if (sOpt >= 0) seg.custom1   = sOpt;
     sOpt = extractModeDefaults(fx, "c2");   if (sOpt >= 0) seg.custom2   = sOpt;
     sOpt = extractModeDefaults(fx, "c3");   if (sOpt >= 0) seg.custom3   = sOpt;
-    sOpt = extractModeDefaults(fx, "mp12"); if (sOpt >= 0) seg.map1D2D   = sOpt & 0x07;
-    sOpt = extractModeDefaults(fx, "ssim"); if (sOpt >= 0) seg.soundSim  = sOpt & 0x03;
+    sOpt = extractModeDefaults(fx, "mp12"); if (sOpt >= 0) seg.map1D2D   = constrain(sOpt, 0, 7);
+    sOpt = extractModeDefaults(fx, "ssim"); if (sOpt >= 0) seg.soundSim  = constrain(sOpt, 0, 7);
     sOpt = extractModeDefaults(fx, "rev");  if (sOpt >= 0) seg.reverse   = (bool)sOpt;
     sOpt = extractModeDefaults(fx, "mi");   if (sOpt >= 0) seg.mirror    = (bool)sOpt; // NOTE: setting this option is a risky business
     sOpt = extractModeDefaults(fx, "rY");   if (sOpt >= 0) seg.reverse_y = (bool)sOpt;
@@ -219,7 +219,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   getVal(elem["c2"], &seg.custom2);
   uint8_t cust3 = seg.custom3;
   getVal(elem["c3"], &cust3); // we can't pass reference to bifield
-  seg.custom3 = cust3;
+  seg.custom3 = constrain(cust3, 0, 31);
 
   seg.check1 = elem["o1"] | seg.check1;
   seg.check2 = elem["o2"] | seg.check2;
@@ -265,12 +265,9 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         }
 
         if (set < 2) stop = start + 1;
+        uint32_t c = gamma32(RGBW32(rgbw[0], rgbw[1], rgbw[2], rgbw[3]));
         for (int i = start; i < stop; i++) {
-          if (strip.gammaCorrectCol) {
-            seg.setPixelColor(i, gamma8(rgbw[0]), gamma8(rgbw[1]), gamma8(rgbw[2]), gamma8(rgbw[3]));
-          } else {
-            seg.setPixelColor(i, rgbw[0], rgbw[1], rgbw[2], rgbw[3]);
-          }
+          seg.setPixelColor(i, c);
         }
         if (!set) start++;
         set = 0;
@@ -290,22 +287,13 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   bool stateResponse = root[F("v")] | false;
 
   bool onBefore = bri;
-  uint8_t tmpBri = bri;
-  getVal(root["bri"], &tmpBri);
+  getVal(root["bri"], &bri);
 
-  if (root["on"].isNull()) {
-    if ((onBefore && tmpBri==0) || (!onBefore && tmpBri>0)) toggleOnOff();
-    bri = tmpBri;
-  } else {
-    bool on = root["on"] | onBefore;
-    if (on != onBefore || (root["on"].is<const char*>() && root["on"].as<const char*>()[0] == 't')) {
-      toggleOnOff();
-      // a hack is needed after toggleOnOf()
-      if (!root["bri"].isNull()) {
-        if (bri==0) briLast = tmpBri;
-        else        bri     = tmpBri;
-      }
-    }
+  bool on = root["on"] | (bri > 0);
+  if (!on != !bri) toggleOnOff();
+
+  if (root["on"].is<const char*>() && root["on"].as<const char*>()[0] == 't') {
+    if (onBefore || !bri) toggleOnOff(); // do not toggle off again if just turned on by bri (makes e.g. "{"on":"t","bri":32}" work)
   }
 
   if (bri && !onBefore) { // unfreeze all segments when turning on
@@ -496,26 +484,26 @@ void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset, b
   strcat(colstr, "]");
   root["col"] = serialized(colstr);
 
-  root["fx"]     = seg.mode;
+  root["fx"]  = seg.mode;
   root["sx"]  = seg.speed;
   root["ix"]  = seg.intensity;
-  root["pal"]    = seg.palette;
+  root["pal"] = seg.palette;
   root["c1"]  = seg.custom1;
   root["c2"]  = seg.custom2;
   root["c3"]  = seg.custom3;
   root["sel"] = seg.isSelected();
-  root["rev"]    = seg.reverse;
+  root["rev"] = seg.reverse;
   root["mi"]  = seg.mirror;
   if (strip.isMatrix) {
     root["rY"] = seg.reverse_y;
     root["mY"] = seg.mirror_y;
     root[F("tp")] = seg.transpose;
   }
-  root["o1"]  = seg.check1;
-  root["o2"]  = seg.check2;
-  root["o3"]  = seg.check3;
-  root["ssim"]  = seg.soundSim;
-  root["mp12"]  = seg.map1D2D;
+  root["o1"]   = seg.check1;
+  root["o2"]   = seg.check2;
+  root["o3"]   = seg.check3;
+  root["ssim"] = seg.soundSim;
+  root["mp12"] = seg.map1D2D;
 }
 
 void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segmentBounds)
@@ -589,8 +577,6 @@ void serializeInfo(JsonObject root)
   leds["fps"] = strip.getFps();
   leds[F("maxpwr")] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;
   leds[F("maxseg")] = strip.getMaxSegments();
-  //leds[F("actseg")] = strip.getActiveSegmentsNum();
-  //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config
   leds[F("cpal")] = strip.customPalettes.size(); //number of custom palettes
 
   #ifndef WLED_DISABLE_2D
@@ -616,10 +602,6 @@ void serializeInfo(JsonObject root)
   leds[F("rgbw")] = strip.hasRGBWBus(); // deprecated, use info.leds.lc
   leds[F("wv")]   = totalLC & 0x02;     // deprecated, true if white slider should be displayed for any segment
   leds["cct"]     = totalLC & 0x04;     // deprecated, use info.leds.lc
-
-  #ifdef WLED_DISABLE_AUDIO
-  root[F("noaudio")] = true;
-  #endif
 
   #ifdef WLED_DEBUG
   JsonArray i2c = root.createNestedArray(F("i2c"));
