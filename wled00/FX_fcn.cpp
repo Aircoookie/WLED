@@ -89,6 +89,7 @@ Segment::Segment(const Segment &orig) {
   if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
   if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
   if (orig.leds && !Segment::_globalLeds) { leds = (CRGB*)malloc(sizeof(CRGB)*length()); if (leds) memcpy(leds, orig.leds, sizeof(CRGB)*length()); }
+  jMap = nullptr; //WLEDSR jMap
 }
 
 // move constructor
@@ -100,6 +101,7 @@ Segment::Segment(Segment &&orig) noexcept {
   orig._dataLen = 0;
   orig._t   = nullptr;
   orig.leds = nullptr;
+  orig.jMap = nullptr; //WLEDSR jMap
 }
 
 // copy assignment
@@ -124,6 +126,7 @@ Segment& Segment::operator= (const Segment &orig) {
     if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
     if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
     if (orig.leds && !Segment::_globalLeds) { leds = (CRGB*)malloc(sizeof(CRGB)*length()); if (leds) memcpy(leds, orig.leds, sizeof(CRGB)*length()); }
+    jMap = nullptr; //WLEDSR jMap
   }
   return *this;
 }
@@ -142,6 +145,7 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
     orig._dataLen = 0;
     orig._t   = nullptr;
     orig.leds = nullptr;
+    orig.jMap = nullptr; //WLEDSR jMap
   }
   return *this;
 }
