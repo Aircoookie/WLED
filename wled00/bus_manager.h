@@ -170,6 +170,7 @@ class Bus {
     static  bool isRgbw(uint8_t type) {
       if (type == TYPE_SK6812_RGBW || type == TYPE_TM1814) return true;
       if (type > TYPE_ONOFF && type <= TYPE_ANALOG_5CH && type != TYPE_ANALOG_3CH) return true;
+      if (type == TYPE_NET_DDP_RGBW) return true;
       return false;
     }
     virtual bool hasRGB() {
@@ -178,7 +179,7 @@ class Bus {
     }
     virtual bool hasWhite() {
       if (_type == TYPE_SK6812_RGBW || _type == TYPE_TM1814 || _type == TYPE_WS2812_1CH || _type == TYPE_WS2812_WWA ||
-          _type == TYPE_ANALOG_1CH || _type == TYPE_ANALOG_2CH || _type == TYPE_ANALOG_4CH || _type == TYPE_ANALOG_5CH) return true;
+          _type == TYPE_ANALOG_1CH || _type == TYPE_ANALOG_2CH || _type == TYPE_ANALOG_4CH || _type == TYPE_ANALOG_5CH || _type == TYPE_NET_DDP_RGBW) return true;
       return false;
     }
     static void setCCT(uint16_t cct) {
@@ -573,9 +574,9 @@ class BusNetwork : public Bus {
 //          _rgbw = false;
 //          _UDPtype = 0;
 //          break;
-//        default:
-          _rgbw = false;
-          _UDPtype = bc.type - TYPE_NET_DDP_RGB;
+//        default: // TYPE_NET_DDP_RGB / TYPE_NET_DDP_RGBW
+          _rgbw = bc.type == TYPE_NET_DDP_RGBW;
+          _UDPtype = 0;
 //          break;
 //      }
       _UDPchannels = _rgbw ? 4 : 3;
