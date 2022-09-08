@@ -82,6 +82,12 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   uint8_t  soundSim = elem["ssim"] | seg.soundSim;
   uint8_t  map1D2D  = elem["mp12"] | seg.map1D2D;
 
+  //WLEDSR jMap
+  if (map1D2D == M12_jMap && !seg.jMap)
+    seg.createjMap();
+  if (map1D2D != M12_jMap && seg.jMap)
+    seg.deletejMap();
+
   if ((spc>0 && spc!=seg.spacing) || seg.map1D2D!=map1D2D) seg.fill(BLACK); // clear spacing gaps
 
   seg.map1D2D  = constrain(map1D2D, 0, 7);

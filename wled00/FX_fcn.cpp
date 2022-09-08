@@ -434,14 +434,14 @@ class JMapC {
       }
     }
     uint16_t length() {
-      initjMapDoc();
+      updatejMapDoc();
       if (jMapDoc)
         return jMapDoc->size();
       else
         return SEGMENT.virtualWidth() * SEGMENT.virtualHeight(); //pixels
     }
     void setPixelColor(uint16_t i, uint32_t col) {
-      initjMapDoc();
+      updatejMapDoc();
       if (jMapDoc) {
         if (i==0) {
           SEGMENT.fadeToBlackBy(10); //as not all pixels used
@@ -460,7 +460,7 @@ class JMapC {
       }
     }
     uint32_t getPixelColor(uint16_t i) {
-      initjMapDoc();
+      updatejMapDoc();
       if (jMapDoc) {
         JsonArray outerArray = jMapDoc->as<JsonArray>();
         if (outerArray[i][0].is<JsonArray>())
@@ -473,14 +473,15 @@ class JMapC {
   private:
     DynamicJsonDocument *jMapDoc = nullptr;
     uint8_t scale;
-    void initjMapDoc() {
-      // if (jMapDoc && SEGMENT.name == nullptr) {
-      //   Serial.println("Delete jMapDoc");
-      //   delete jMapDoc; jMapDoc = nullptr;
-      // }
-      if (!jMapDoc && SEGMENT.name != nullptr) {
+    void updatejMapDoc() {
+      if (jMapDoc && SEGMENT.name == nullptr) {
+        Serial.println("Delete jMapDoc");
+        delete jMapDoc; jMapDoc = nullptr;
+      }
+
+      if (!jMapDoc && SEGMENT.name != nullptr && SEGMENT.map1D2D == M12_jMap) {
         Serial.println("Create jMapDoc");
-        jMapDoc = new DynamicJsonDocument(4*4096);
+        jMapDoc = new DynamicJsonDocument(5*4096);
       }
 
       if (jMapDoc && SEGMENT.name != nullptr && strcmp(SEGMENT.name, previousSegmentName) != 0) {
@@ -496,7 +497,7 @@ class JMapC {
         if (err) 
         {
           Serial.printf("deserializeJson() of parseTree failed with code %s\n", err.c_str());
-          SEGMENT.name = nullptr; //need to clear the name as otherwise continuously loaded
+          delete[] SEGMENT.name; SEGMENT.name = nullptr; //need to clear the name as otherwise continuously loaded
           return;
         }
         //get the width and height of the jMap
@@ -523,29 +524,28 @@ class JMapC {
         // serializeJson(*jMapDoc, Serial); Serial.println();
         strcpy(previousSegmentName, SEGMENT.name);
       }
-    } //initjMapDoc
+    } //updatejMapDoc
 }; //class JMapC
 
 //WLEDSR jMap
-void * Segment::getjMap() {
-  if (!jMapC) {
-    Serial.println("getjMap");
-    jMapC = new JMapC();
+void Segment::createjMap() {
+  if (!jMap) {
+    Serial.println("createjMap");
+    jMap = new JMapC();
   }
-  return jMapC;
 }
 
 //WLEDSR jMap
 void Segment::deletejMap() {
   //Should be called from ~Segment but causes crash (and ~Segment is called quite often...)
-  if (jMapC) {
+  if (jMap) {
     Serial.println("deletejMap");
-    delete (JMapC *)jMapC; jMapC = nullptr;
+    delete (JMapC *)jMap; jMap = nullptr;
   }
 }
 
 // 1D strip
-uint16_t Segment::virtualLength() { //WLEDSR jMap: without const
+uint16_t Segment::virtualLength() const {
 #ifndef WLED_DISABLE_2D
   if (is2D()) {
     uint16_t vW = virtualWidth();
@@ -560,8 +560,8 @@ uint16_t Segment::virtualLength() { //WLEDSR jMap: without const
         vLen = max(vW,vH); // get the longest dimension
         break;
       case M12_jMap: //WLEDSR jMap
-        JMapC *jMapC = (JMapC *)getjMap();
-        vLen = jMapC->length();
+        if (jMap)
+          vLen = ((JMapC *)jMap)->length();
         break;
     }
     return vLen;
@@ -613,8 +613,8 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         for (int y = 0; y <  i; y++) setPixelColorXY(i, y, col);
         break;
       case M12_jMap: //WLEDSR jMap
-        JMapC *jMapC = (JMapC *)getjMap();
-        jMapC->setPixelColor(i, col);
+        if (jMap)
+          ((JMapC *)jMap)->setPixelColor(i, col);
         break;
     }
     return;
@@ -723,8 +723,8 @@ uint32_t Segment::getPixelColor(int i)
         return vW>vH ? getPixelColorXY(i, 0) : getPixelColorXY(0, i);
         break;
       case M12_jMap: //WLEDSR jMap
-        JMapC *jMapC = (JMapC *)getjMap();
-        return jMapC->getPixelColor(i);
+        if (jMap)
+          return ((JMapC *)jMap)->getPixelColor(i);
         break;
     }
     return 0;
