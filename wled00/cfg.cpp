@@ -286,7 +286,11 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(spi_miso, hw_if_spi[2]);
   PinManagerPinType spi[3] = { { spi_mosi, true }, { spi_miso, true }, { spi_sclk, true } };
   if (spi_mosi >= 0 && spi_sclk >= 0 && pinManager.allocateMultiplePins(spi, 3, PinOwner::HW_SPI)) {
-    // do not initialise bus here
+    #ifdef ESP32
+    SPI.begin(spi_sclk, spi_miso, spi_mosi);  // SPI global uses VSPI on ESP32 and FSPI on C3, S3
+    #else
+    SPI.begin();
+    #endif
   } else {
     spi_mosi = -1;
     spi_miso = -1;
