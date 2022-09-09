@@ -80,7 +80,7 @@ class MultiRelay : public Usermod {
     void handleOffTimer() {
       unsigned long now = millis();
       bool activeRelays = false;
-      for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
+      for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
         if (_relay[i].active && _switchTimerStart > 0 && now - _switchTimerStart > (_relay[i].delay*1000)) {
           if (!_relay[i].external) toggleRelay(i);
           _relay[i].active = false;
@@ -182,7 +182,7 @@ class MultiRelay : public Usermod {
      */
     MultiRelay() {
       const int8_t defPins[] = {MULTI_RELAY_PINS};
-      for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
+      for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
         _relay[i].pin      = i<sizeof(defPins) ? defPins[i] : -1;
         _relay[i].delay    = 0;
         _relay[i].mode     = false;
@@ -226,7 +226,7 @@ class MultiRelay : public Usermod {
 
     uint8_t getActiveRelayCount() {
       uint8_t count = 0;
-      for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) if (_relay[i].pin>=0) count++;
+      for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) if (_relay[i].pin>=0) count++;
       return count;
     }
 
@@ -268,7 +268,7 @@ class MultiRelay : public Usermod {
         strcat_P(subuf, PSTR("/relay/#"));
         mqtt->subscribe(subuf, 0);
         if (HAautodiscovery) publishHomeAssistantAutodiscovery();
-        for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
+        for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
           if (_relay[i].pin<0) continue;
           publishMqtt(i); //publish current state
         }
@@ -276,7 +276,7 @@ class MultiRelay : public Usermod {
     }
 
     void publishHomeAssistantAutodiscovery() {
-      for (uint8_t i = 0; i < MULTI_RELAY_MAX_RELAYS; i++) {
+      for (int i = 0; i < MULTI_RELAY_MAX_RELAYS; i++) {
         char uid[24], json_str[1024], buf[128];
         size_t payload_size;
         sprintf_P(uid, PSTR("%s_sw%d"), escapedMac.c_str(), i);
@@ -320,7 +320,7 @@ class MultiRelay : public Usermod {
      */
     void setup() {
       // pins retrieved from cfg.json (readFromConfig()) prior to running setup()
-      for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
+      for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
         if (_relay[i].pin<0) continue;
         if (!pinManager.allocatePin(_relay[i].pin,true, PinOwner::UM_MultiRelay)) {
           _relay[i].pin = -1;  // allocation failed
@@ -357,7 +357,7 @@ class MultiRelay : public Usermod {
       if (_oldMode != offMode) {
         _oldMode = offMode;
         _switchTimerStart = millis();
-        for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
+        for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
           if (_relay[i].pin>=0 && !_relay[i].external) _relay[i].active = true;
         }
       }
@@ -382,7 +382,7 @@ class MultiRelay : public Usermod {
       }
 
       bool handled = false;
-      for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
+      for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
         if (_relay[i].button == b && _relay[i].external) {
           handled = true;
         }
@@ -402,8 +402,8 @@ class MultiRelay : public Usermod {
         if (buttonLongPressed[b] == buttonPressedBefore[b]) return handled;
           
         if (now - buttonPressedTime[b] > WLED_DEBOUNCE_THRESHOLD) { //fire edge event only after 50ms without change (debounce)
-          for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
-            if (_relay[i].pin>=0 && _relay[i].button == b) {
+          for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
+            if (_relay[i].button == b) {
               switchRelay(i, buttonPressedBefore[b]);
               buttonLongPressed[b] = buttonPressedBefore[b]; //save the last "long term" switch state
             }
@@ -450,8 +450,8 @@ class MultiRelay : public Usermod {
       if (buttonWaitTime[b] && now - buttonWaitTime[b] > 350 && !buttonPressedBefore[b]) {
         buttonWaitTime[b] = 0;
         //shortPressAction(b); //not exposed
-        for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
-          if (_relay[i].pin>=0 && _relay[i].button == b) {
+        for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
+          if (_relay[i].button == b) {
             toggleRelay(i);
           }
         }
@@ -473,7 +473,7 @@ class MultiRelay : public Usermod {
         infoArr.add(F(" relays"));
 
         String uiDomString;
-        for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
+        for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
           if (_relay[i].pin<0 || !_relay[i].external) continue;
           uiDomString = F("Relay "); uiDomString += i;
           JsonArray infoArr = user.createNestedArray(uiDomString); // timer value
@@ -507,7 +507,7 @@ class MultiRelay : public Usermod {
       }
       #if MULTI_RELAY_MAX_RELAYS > 1
       JsonArray rel_arr = multiRelay.createNestedArray(F("relays"));
-      for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
+      for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
         if (_relay[i].pin < 0) continue;
         JsonObject relay = rel_arr.createNestedObject();
         relay[FPSTR(_relay_str)] = i;
@@ -527,14 +527,24 @@ class MultiRelay : public Usermod {
       if (!initDone || !enabled) return;  // prevent crash on boot applyPreset()
       JsonObject usermod = root[FPSTR(_name)];
       if (!usermod.isNull()) {
-        if (usermod["on"].is<bool>() && usermod[FPSTR(_relay_str)].is<int>() && usermod[FPSTR(_relay_str)].as<int>()>=0) {
-          switchRelay(usermod[FPSTR(_relay_str)].as<int>(), usermod["on"].as<bool>());
+        if (usermod[FPSTR(_relay_str)].is<int>() && usermod[FPSTR(_relay_str)].as<int>()>=0) {
+          int rly = usermod[FPSTR(_relay_str)].as<int>();
+          if (usermod["on"].is<bool>()) {
+            switchRelay(rly, usermod["on"].as<bool>());
+          } else if (usermod["on"].is<const char*>() && usermod["on"].as<const char*>()[0] == 't') {
+            toggleRelay(rly);
+          }
         }
       } else if (root[FPSTR(_name)].is<JsonArray>()) {
         JsonArray relays = root[FPSTR(_name)].as<JsonArray>();
         for (JsonVariant r : relays) {
-          if (r["on"].is<bool>() && r[FPSTR(_relay_str)].is<int>() && r[FPSTR(_relay_str)].as<int>()>=0) {
-            switchRelay(r[FPSTR(_relay_str)].as<int>(), r["on"].as<bool>());
+          if (r[FPSTR(_relay_str)].is<int>() && r[FPSTR(_relay_str)].as<int>()>=0) {
+            int rly = r[FPSTR(_relay_str)].as<int>();
+            if (r["on"].is<bool>()) {
+              switchRelay(rly, r["on"].as<bool>());
+            } else if (r["on"].is<const char*>() && r["on"].as<const char*>()[0] == 't') {
+              toggleRelay(rly);
+            }
           }
         }
       }
@@ -548,7 +558,7 @@ class MultiRelay : public Usermod {
 
       top[FPSTR(_enabled)] = enabled;
       top[FPSTR(_broadcast)] = periodicBroadcastSec;
-      for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
+      for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
         String parName = FPSTR(_relay_str); parName += '-'; parName += i;
         JsonObject relay = top.createNestedObject(parName);
         relay["pin"]              = _relay[i].pin;
@@ -582,7 +592,7 @@ class MultiRelay : public Usermod {
       periodicBroadcastSec = min(900,max(0,(int)periodicBroadcastSec));
       HAautodiscovery = top[FPSTR(_HAautodiscovery)] | HAautodiscovery;
 
-      for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
+      for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
         String parName = FPSTR(_relay_str); parName += '-'; parName += i;
         oldPin[i]          = _relay[i].pin;
         _relay[i].pin      = top[parName]["pin"] | _relay[i].pin;
@@ -606,12 +616,12 @@ class MultiRelay : public Usermod {
         DEBUG_PRINTLN(F(" config loaded."));
       } else {
         // deallocate all pins 1st
-        for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++)
+        for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++)
           if (oldPin[i]>=0) {
             pinManager.deallocatePin(oldPin[i], PinOwner::UM_MultiRelay);
           }
         // allocate new pins
-        for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
+        for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
           if (_relay[i].pin>=0 && pinManager.allocatePin(_relay[i].pin, true, PinOwner::UM_MultiRelay)) {
             if (!_relay[i].external) {
               _relay[i].state = !offMode;

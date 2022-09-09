@@ -424,9 +424,12 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       if (root["win"].isNull()) presetCycCurr = currentPreset;
       stateChanged = false; // cancel state change update (preset was set directly by applying values stored in UI JSON array)
     } else if (root["win"].isNull() && getVal(root["ps"], &ps, 0, 0) && ps > 0 && ps < 251 && ps != currentPreset) {
-      // b) preset ID only (use embedded cycling limits if they exist in getVal())
+      // b) preset ID only or preset that does not change state (use embedded cycling limits if they exist in getVal())
       presetCycCurr = ps;
-      applyPreset(ps, callMode); // async load
+      root.remove(F("v"));    // may be added in UI call
+      root.remove(F("time")); // may be added in UI call
+      root.remove("ps");
+      if (root.size() == 0) applyPreset(ps, callMode); // async load (only preset ID was specified)
       return stateResponse;
     }
   }
