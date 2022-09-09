@@ -279,11 +279,15 @@
 #endif
 
 #ifndef MAX_LED_MEMORY
-#ifdef ESP8266
-#define MAX_LED_MEMORY 4000
-#else
-#define MAX_LED_MEMORY 64000
-#endif
+  #ifdef ESP8266
+    #define MAX_LED_MEMORY 4000
+  #else
+    #ifdef ARDUINO_ARCH_ESP32S2
+      #define MAX_LED_MEMORY 32000
+    #else
+      #define MAX_LED_MEMORY 64000
+    #endif
+  #endif
 #endif
 
 #ifndef MAX_LEDS_PER_BUS
@@ -333,7 +337,8 @@
   #define JSON_BUFFER_SIZE 24576
 #endif
 
-#define MIN_HEAP_SIZE (MAX_LED_MEMORY+2048)
+//#define MIN_HEAP_SIZE (MAX_LED_MEMORY+2048)
+#define MIN_HEAP_SIZE (8192)
 
 // Maximum size of node map (list of other WLED instances)
 #ifdef ESP8266
