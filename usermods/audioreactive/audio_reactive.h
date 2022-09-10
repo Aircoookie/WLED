@@ -146,8 +146,8 @@ static float   fftResultMax[NUM_GEQ_CHANNELS] = {0.0f};               // A table
 #endif
 
 #ifdef WLED_DEBUG
-static unsigned long fftTime = 0;
-static unsigned long sampleTime = 0;
+static uint64_t fftTime = 0;
+static uint64_t sampleTime = 0;
 #endif
 
 // Table of multiplication factors so that we can even out the frequency response.
@@ -208,7 +208,7 @@ void FFTcode(void * parameter)
 
 #ifdef WLED_DEBUG
     if (start < esp_timer_get_time()) { // filter out overflows
-      unsigned long sampleTimeInMillis = (esp_timer_get_time() - start +500ULL) / 1000ULL; // "+500" to ensure proper rounding
+      unsigned long sampleTimeInMillis = (esp_timer_get_time() - start +5ULL) / 10ULL; // "+5" to ensure proper rounding
       sampleTime = (sampleTimeInMillis*3 + sampleTime*7)/10; // smooth
     }
 #endif
@@ -389,7 +389,7 @@ void FFTcode(void * parameter)
 
 #ifdef WLED_DEBUG
     if (start < esp_timer_get_time()) { // filter out overflows
-      unsigned long fftTimeInMillis = ((esp_timer_get_time() - start) +500ULL) / 1000ULL; // "+500" to ensure proper rounding
+      unsigned long fftTimeInMillis = ((esp_timer_get_time() - start) +5ULL) / 10ULL; // "+5" to ensure proper rounding
       fftTime  = (fftTimeInMillis*3 + fftTime*7)/10; // smooth
     }
 #endif
@@ -956,20 +956,10 @@ class AudioReactive : public Usermod {
 
       // Reset I2S peripheral for good measure
       i2s_driver_uninstall(I2S_NUM_0);
-      #if !defined(CONFIG_IDF_TARGET_ESP32C3)
-        periph_module_reset(PERIPH_I2S0_MODULE);   // not possible on -C3
-      #endif
+      periph_module_reset(PERIPH_I2S0_MODULE);
+
       delay(100);         // Give that poor microphone some time to setup.
       switch (dmType) {
-      #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S3)
-        // stub cases for not-yet-supported I2S modes on other ESP32 chips
-        case 0:  //ADC analog
-        case 3:  //MCLK
-        case 4:  //SPH0645
-        #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3)
-        case 5:  //PDM Microphone
-        #endif
-      #endif
         case 1:
           DEBUGSR_PRINT(F("AR: Generic I2S Microphone - ")); DEBUGSR_PRINTLN(F(I2S_MIC_CHANNEL_TEXT));
           audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE);
@@ -982,34 +972,24 @@ class AudioReactive : public Usermod {
           delay(100);
           if (audioSource) audioSource->initialize(sdaPin, sclPin, i2swsPin, i2ssdPin, i2sckPin, mclkPin);
           break;
-        #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
-        // SPH0645 is currently only possible on "classic" ESP32
         case 3:
           DEBUGSR_PRINT(F("AR: SPH0645 Microphone - ")); DEBUGSR_PRINTLN(F(I2S_MIC_CHANNEL_TEXT));
           audioSource = new SPH0654(SAMPLE_RATE, BLOCK_SIZE);
           delay(100);
           audioSource->initialize(i2swsPin, i2ssdPin, i2sckPin);
           break;
-        #endif
-        #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
-        // MCLK routing currently only works on "classic" ESP32
         case 4:
           DEBUGSR_PRINT(F("AR: Generic I2S Microphone with Master Clock - ")); DEBUGSR_PRINTLN(F(I2S_MIC_CHANNEL_TEXT));
           audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE);
           delay(100);
           if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin, i2sckPin, mclkPin);
           break;
-        #endif
-        #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
         case 5:
           DEBUGSR_PRINT(F("AR: I2S PDM Microphone - ")); DEBUGSR_PRINTLN(F(I2S_MIC_CHANNEL_TEXT));
           audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE);
           delay(100);
           if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin);
           break;
-        #endif
-        #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
-        // ADC over I2S is only possible on "classic" ESP32
         case 0:
         default:
           DEBUGSR_PRINTLN(F("AR: Analog Microphone (left channel only)."));
@@ -1017,7 +997,6 @@ class AudioReactive : public Usermod {
           delay(100);
           if (audioSource) audioSource->initialize(audioPin);
           break;
-        #endif
       }
       delay(250); // give microphone enough time to initialise
 
@@ -1394,11 +1373,11 @@ class AudioReactive : public Usermod {
 
         #ifdef WLED_DEBUG
         infoArr = user.createNestedArray(F("Sampling time"));
-        infoArr.add(sampleTime);
-        infoArr.add("ms");
+        infoArr.add(float(sampleTime)/100.0f);
+        infoArr.add(" ms");
         infoArr = user.createNestedArray(F("FFT time"));
-        infoArr.add(fftTime-sampleTime);
-        infoArr.add("ms");
+        infoArr.add(float(fftTime-sampleTime)/100.0f);
+        infoArr.add(" ms");
         #endif
       }
     }
@@ -1566,18 +1545,12 @@ class AudioReactive : public Usermod {
     void appendConfigData()
     {
       oappend(SET_F("dd=addDropdown('AudioReactive','digitalmic:type');"));
-    #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
       oappend(SET_F("addOption(dd,'Generic Analog',0);"));
-    #endif
       oappend(SET_F("addOption(dd,'Generic I2S',1);"));
       oappend(SET_F("addOption(dd,'ES7243',2);"));
-    #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
       oappend(SET_F("addOption(dd,'SPH0654',3);"));
       oappend(SET_F("addOption(dd,'Generic I2S with Mclk',4);"));
-    #endif
-    #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
       oappend(SET_F("addOption(dd,'Generic I2S PDM',5);"));
-    #endif
       oappend(SET_F("dd=addDropdown('AudioReactive','cfg:AGC');"));
       oappend(SET_F("addOption(dd,'Off',0);"));
       oappend(SET_F("addOption(dd,'Normal',1);"));
