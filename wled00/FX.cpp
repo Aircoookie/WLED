@@ -1982,11 +1982,11 @@ uint16_t mode_fire_2012()
           uint8_t cool = random8((((20 + SEGMENT.speed/3) * 16) / SEGLEN)+2);
           uint8_t minTemp = 0;
           if (i<ignition) {
-            cool /= (ignition-i); // ignition area cools slower
-            minTemp = 4*(ignition-i) + 8; // and should not become black
+            cool /= (ignition-i)/3 + 1;     // ignition area cools slower
+            minTemp = (ignition-i)/4 + 16;  // and should not become black
           }
           uint8_t temp = qsub8(heat[i], cool);
-          heat[i] = i<ignition && temp<minTemp ? minTemp : temp; // prevent ignition area from becoming black
+          heat[i] = temp<minTemp ? minTemp : temp;
         }
 
         // Step 2.  Heat from each cell drifts 'up' and diffuses a little
