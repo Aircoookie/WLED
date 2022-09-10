@@ -23,7 +23,12 @@
       // success event 
       scE.addEventListener("load", () => {
         //console.log("File loaded");
+        d.um_p = [];
+        d.rsvd = [];
+        d.ro_pins = [];
+        d.max_gpio = 39;
         GetV();checkSi();setABL();
+        if (d.um_p[0]==-1) d.um_p.shift();
       });
       // error event
       scE.addEventListener("error", (ev) => {
@@ -58,8 +63,8 @@
         if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4" || nm=="RL" || nm=="BT" || nm=="IR")
           if (LCs[i].value!="" && LCs[i].value!="-1") {
             if (d.um_p && d.um_p.some((e)=>e==parseInt(LCs[i].value,10))) {alert(`Sorry, pins ${JSON.stringify(d.um_p)} can't be used.`);LCs[i].value="";LCs[i].focus();return false;}
-            else if (LCs[i].value > 5 && LCs[i].value < 12) {alert("Sorry, pins 6-11 can not be used.");LCs[i].value="";LCs[i].focus();return false;}
-            else if (!(nm == "IR" || nm=="BT") && LCs[i].value > 33) {alert("Sorry, pins >33 are input only.");LCs[i].value="";LCs[i].focus();return false;}
+            //else if (LCs[i].value > 5 && LCs[i].value < 12) {alert("Sorry, pins 6-11 can not be used.");LCs[i].value="";LCs[i].focus();return false;}
+            else if (!(nm == "IR" || nm=="BT") && d.ro_pins.some((e)=>e==parseInt(LCs[i].value,10))) {alert(`Sorry, pins ${JSON.stringify(d.ro_gpio)} are input only.`);LCs[i].value="";LCs[i].focus();return false;}
             for (j=i+1; j<LCs.length; j++)
             {
               var n2 = LCs[j].name.substring(0,2);
@@ -230,7 +235,7 @@
             LCs[i].style.color="#fff";
             continue; // do not check conflicts
           } else {
-            LCs[i].max = 33;
+            LCs[i].max = d.max_gpio;
             LCs[i].min = -1;
           }
         }
@@ -238,7 +243,8 @@
         if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4" || nm=="RL" || nm=="BT" || nm=="IR")
           if (LCs[i].value!="" && LCs[i].value!="-1") {
             var p = []; // used pin array
-            if (d.um_p && Array.isArray(d.um_p)) for (k=0;k<d.um_p.length;k++) p.push(d.um_p[k]); // fill with reservations
+            for (k=0;k<d.rsvd.length;k++) p.push(d.rsvd[k]); // fill with reservations
+            for (k=0;k<d.um_p.length;k++) p.push(d.um_p[k]); // fill with usermod pins
             for (j=0; j<LCs.length; j++) {
               if (i==j) continue;
               var n2 = LCs[j].name.substring(0,2);
@@ -252,8 +258,13 @@
               }
             }
             // now check for conflicts
-            if (p.some((e)=>e==parseInt(LCs[i].value,10))) LCs[i].style.color="red"; else LCs[i].style.color=parseInt(LCs[i].value,10)>33?"orange":"#fff";
+            if (p.some((e)=>e==parseInt(LCs[i].value,10))) LCs[i].style.color="red"; else LCs[i].style.color=d.ro_gpio.some((e)=>e==parseInt(LCs[i].value,10))?"orange":"#fff";
           }
+        // check buttons, IR & relay
+        if (nm=="IR" || nm=="BT" || nm=="RL") {
+          LCs[i].max = d.max_gpio;
+          LCs[i].min = -1;
+        }
       }
       // update total led count
       gId("lc").textContent = sLC;
@@ -605,7 +616,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
     <hr style="width:260px">
     <div id="btns"></div>
     Touch threshold: <input type="number" class="s" min="0" max="100" name="TT" required><br>
-    IR GPIO: <input type="number" min="-1" max="40" name="IR" onchange="UI()" class="xs"><select name="IT" onchange="UI()">
+    IR GPIO: <input type="number" min="-1" max="39" name="IR" onchange="UI()" class="xs"><select name="IT" onchange="UI()">
     <option value=0>Remote disabled</option>
     <option value=1>24-key RGB</option>
     <option value=2>24-key with CT</option>
@@ -619,7 +630,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
     Apply IR change to main segment only: <input type="checkbox" name="MSO"><br>
     <div id="json" style="display:none;">JSON file: <input type="file" name="data" accept=".json"><button type="button" class="sml" onclick="uploadFile('/ir.json')">Upload</button><br></div>
     <a href="https://kno.wled.ge/interfaces/infrared/" target="_blank">IR info</a><br>
-    Relay GPIO: <input type="number" min="-1" max="33" name="RL" onchange="UI()" class="xs"> Invert <input type="checkbox" name="RM"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#x2715;</span><br>
+    Relay GPIO: <input type="number" min="-1" max="39" name="RL" onchange="UI()" class="xs"> Invert <input type="checkbox" name="RM"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#x2715;</span><br>
     <hr style="width:260px">
 		<h3>Defaults</h3>
 		Turn LEDs on after power up/reset: <input type="checkbox" name="BO"><br>
