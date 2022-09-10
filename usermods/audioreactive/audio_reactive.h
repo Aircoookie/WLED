@@ -151,13 +151,14 @@ static unsigned long sampleTime = 0;
 #endif
 
 // Table of multiplication factors so that we can even out the frequency response.
-#define MAX_PINK 6  // 0 = standard, 1= line-in (pink moise only), 2..4 = IMNP441, 5 = ICS-43434, 6 = flat (no pink noise adjustment)
+#define MAX_PINK 5  // 0 = standard, 1= line-in (pink moise only), 2..3 = IMNP441, 4 = ICS-43434, 5 = flat (no pink noise adjustment)
 static const float fftResultPink[MAX_PINK+1][NUM_GEQ_CHANNELS] = { 
           { 1.70f, 1.71f, 1.73f, 1.78f, 1.68f, 1.56f, 1.55f, 1.63f, 1.79f, 1.62f, 1.80f, 2.06f, 2.47f, 3.35f, 6.83f, 9.55f },  // default from SR WLED
           { 1.30f, 1.32f, 1.40f, 1.46f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 2.39f, 3.09f, 4.34f },  // pink noise adjustment only. Good for line-in, without microphone distortion
 
           { 1.82f, 1.72f, 1.70f, 1.50f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 2.90f, 3.86f, 6.29f },  // IMNP441 datasheet response profile * pink noise
-          { 12.0f, 6.60f, 2.60f, 1.15f, 1.35f, 2.05f, 2.85f, 2.50f, 2.85f, 3.30f, 2.25f, 4.35f, 3.80f, 3.75f, 6.50f, 9.00f },  // IMNP441 - voice, or small speaker
+        //disabled, because not much different from "IMNP441 datasheet"
+        //{ 12.0f, 6.60f, 2.60f, 1.15f, 1.35f, 2.05f, 2.85f, 2.50f, 2.85f, 3.30f, 2.25f, 4.35f, 3.80f, 3.75f, 6.50f, 9.00f },  // IMNP441 - voice, or small speaker
           { 2.80f, 2.20f, 1.30f, 1.15f, 1.55f, 2.45f, 4.20f, 2.80f, 3.20f, 3.60f, 4.20f, 4.90f, 5.70f, 6.05f,10.50f,14.85f},   // IMNP441 - big speaker, strong bass
 
           { 2.34f, 1.60f, 1.40f, 1.46f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 2.15f, 2.55f, 2.90f },  // ICS-43434 datasheet response * pink noise
@@ -1610,11 +1611,10 @@ class AudioReactive : public Usermod {
       oappend(SET_F("dd=addDropdown('AudioReactive','Frequency:Profile');"));
       oappend(SET_F("addOption(dd,'Standard',0);"));
       oappend(SET_F("addOption(dd,'Line-In',1);"));
-      oappend(SET_F("addOption(dd,'IMNP441 (datasheet)',2);"));
-      oappend(SET_F("addOption(dd,'IMNP441 (small speaker)',3);"));
-      oappend(SET_F("addOption(dd,'IMNP441 (big speaker)',4);"));
-      oappend(SET_F("addOption(dd,'ICS-43434  (datasheet)',5);"));
-      oappend(SET_F("addOption(dd,'flat',6);"));
+      oappend(SET_F("addOption(dd,'IMNP441',2);"));
+      oappend(SET_F("addOption(dd,'IMNP441 (big speaker)',3);"));
+      oappend(SET_F("addOption(dd,'ICS-43434',4);"));
+      oappend(SET_F("addOption(dd,'flat',5);"));
 
       oappend(SET_F("dd=addDropdown('AudioReactive','sync:mode');"));
       oappend(SET_F("addOption(dd,'Off',0);"));
