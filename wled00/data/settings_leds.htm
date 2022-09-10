@@ -359,11 +359,11 @@ ${i+1}:
 <span id="psd${i}">Start:</span> <input type="number" name="LS${i}" id="ls${i}" class="l starts" min="0" max="8191" value="${lastEnd(i)}" oninput="startsDirty[${i}]=true;UI();" required />&nbsp;
 <div id="dig${i}c" style="display:inline">Length: <input type="number" name="LC${i}" class="l" min="1" max="${maxPB}" value="1" required oninput="UI()" /></div><br>
 </div>
-<span id="p0d${i}">GPIO:</span> <input type="number" name="L0${i}" min="0" max="33" required class="s" onchange="UI()"/>
-<span id="p1d${i}"></span><input type="number" name="L1${i}" min="0" max="33" class="s" onchange="UI()"/>
-<span id="p2d${i}"></span><input type="number" name="L2${i}" min="0" max="33" class="s" onchange="UI()"/>
-<span id="p3d${i}"></span><input type="number" name="L3${i}" min="0" max="33" class="s" onchange="UI()"/>
-<span id="p4d${i}"></span><input type="number" name="L4${i}" min="0" max="33" class="s" onchange="UI()"/>
+<span id="p0d${i}">GPIO:</span> <input type="number" name="L0${i}" min="0" max="48" required class="s" onchange="UI()"/>
+<span id="p1d${i}"></span><input type="number" name="L1${i}" min="0" max="48" class="s" onchange="UI()"/>
+<span id="p2d${i}"></span><input type="number" name="L2${i}" min="0" max="48" class="s" onchange="UI()"/>
+<span id="p3d${i}"></span><input type="number" name="L3${i}" min="0" max="48" class="s" onchange="UI()"/>
+<span id="p4d${i}"></span><input type="number" name="L4${i}" min="0" max="48" class="s" onchange="UI()"/>
 <div id="dig${i}r" style="display:inline"><br><span id="rev${i}">Reversed</span>: <input type="checkbox" name="CV${i}"></div>
 <div id="dig${i}s" style="display:inline"><br>Skip first LEDs: <input type="number" name="SL${i}" min="0" max="255" value="0" oninput="UI()"></div>
 <div id="dig${i}f" style="display:inline"><br>Off Refresh: <input id="rf${i}" type="checkbox" name="RF${i}"></div>
@@ -433,7 +433,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
       var c = gId("btns").innerHTML;
       var bt = "BT" + String.fromCharCode((i<10?48:55)+i);
       var be = "BE" + String.fromCharCode((i<10?48:55)+i);
-      c += `Button ${i} GPIO: <input type="number" min="-1" max="40" name="${bt}" onchange="UI()" class="xs" value="${p}">`;
+      c += `Button ${i} GPIO: <input type="number" min="-1" max="48" name="${bt}" onchange="UI()" class="xs" value="${p}">`;
       c += `&nbsp;<select name="${be}">`
       c += `<option value="0" ${t==0?"selected":""}>Disabled</option>`;
       c += `<option value="2" ${t==2?"selected":""}>Pushbutton</option>`;
@@ -616,7 +616,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
     <hr style="width:260px">
     <div id="btns"></div>
     Touch threshold: <input type="number" class="s" min="0" max="100" name="TT" required><br>
-    IR GPIO: <input type="number" min="-1" max="39" name="IR" onchange="UI()" class="xs"><select name="IT" onchange="UI()">
+    IR GPIO: <input type="number" min="-1" max="48" name="IR" onchange="UI()" class="xs"><select name="IT" onchange="UI()">
     <option value=0>Remote disabled</option>
     <option value=1>24-key RGB</option>
     <option value=2>24-key with CT</option>
@@ -630,7 +630,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
     Apply IR change to main segment only: <input type="checkbox" name="MSO"><br>
     <div id="json" style="display:none;">JSON file: <input type="file" name="data" accept=".json"><button type="button" class="sml" onclick="uploadFile('/ir.json')">Upload</button><br></div>
     <a href="https://kno.wled.ge/interfaces/infrared/" target="_blank">IR info</a><br>
-    Relay GPIO: <input type="number" min="-1" max="39" name="RL" onchange="UI()" class="xs"> Invert <input type="checkbox" name="RM"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#x2715;</span><br>
+    Relay GPIO: <input type="number" min="-1" max="48" name="RL" onchange="UI()" class="xs"> Invert <input type="checkbox" name="RM"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#x2715;</span><br>
     <hr style="width:260px">
 		<h3>Defaults</h3>
 		Turn LEDs on after power up/reset: <input type="checkbox" name="BO"><br>
