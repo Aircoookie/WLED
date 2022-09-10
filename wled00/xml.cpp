@@ -241,8 +241,10 @@ void appendGPIOinfo() {
 
   // add info for read-only GPIO
   oappend(SET_F("d.ro_gpio=["));
-  #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3)
+  #if defined(CONFIG_IDF_TARGET_ESP32S2)
   oappendi(46);
+  #elif defined(CONFIG_IDF_TARGET_ESP32S3)
+  oappend(SET_F("39,41,42,44"));
   #elif defined(CONFIG_IDF_TARGET_ESP32C3)
   // none for C3
   #elif defined(ESP32)
@@ -254,8 +256,10 @@ void appendGPIOinfo() {
 
   // add info about max. # of pins
   oappend(SET_F("d.max_gpio="));
-  #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3)
+  #if defined(CONFIG_IDF_TARGET_ESP32S2)
   oappendi(46);
+  #elif defined(CONFIG_IDF_TARGET_ESP32S3)
+  oappendi(48);
   #elif defined(CONFIG_IDF_TARGET_ESP32C3)
   oappendi(21);
   #elif defined(ESP32)
