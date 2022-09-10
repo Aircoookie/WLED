@@ -33,6 +33,11 @@
 			GetV();
 			for (let k=0; k<d.rsvd.length; k++) { pins.push(d.rsvd[k]); pinO.push("rsvd"); }
 			if (d.um_p[0]==-1) d.um_p.shift();
+			d.Sf.SDA.max = d.max_gpio;
+			d.Sf.SCL.max = d.max_gpio;
+			d.Sf.MOSI.max = d.max_gpio;
+			d.Sf.SCLK.max = d.max_gpio;
+			d.Sf.MISO.max = d.max_gpio;
 		});
 		// error event
 		scE.addEventListener("error", (ev) => {
