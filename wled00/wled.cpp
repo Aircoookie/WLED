@@ -302,10 +302,14 @@ void WLED::setup()
 
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
   if (psramFound()) {
-#if !defined(CONFIG_IDF_TARGET_ESP32S3)
+#if !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32S3)
     // GPIO16/GPIO17 reserved for SPI RAM
     managed_pin_type pins[2] = { {16, true}, {17, true} };
     pinManager.allocateMultiplePins(pins, 2, PinOwner::SPI_RAM);
+#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+    // S3: add GPIO 33-37 for "octal" PSRAM
+    managed_pin_type pins[5] = { {33, true}, {34, true}, {35, true}, {36, true}, {37, true} };
+    pinManager.allocateMultiplePins(pins, 5, PinOwner::SPI_RAM);
 #endif
       DEBUG_PRINT(F("Total PSRAM: "));    DEBUG_PRINT(ESP.getPsramSize()/1024); DEBUG_PRINTLN("kB");
       DEBUG_PRINT(F("Free PSRAM : "));    DEBUG_PRINT(ESP.getFreePsram()/1024); DEBUG_PRINTLN("kB");
