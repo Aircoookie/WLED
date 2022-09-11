@@ -388,7 +388,7 @@ typedef struct Segment {
       uint8_t       _briT;        // temporary brightness
       uint8_t       _cctT;        // temporary CCT
       CRGBPalette16 _palT;        // temporary palette
-      uint8_t       _prevPaletteBlends; // number of previous palette blends (there are max 128 belnds possible)
+      uint8_t       _prevPaletteBlends; // number of previous palette blends (there are max 255 belnds possible)
       uint8_t       _modeP;       // previous mode/effect
       //uint16_t      _aux0, _aux1; // previous mode/effect runtime data
       //uint32_t      _step, _call; // previous mode/effect runtime data

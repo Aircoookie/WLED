@@ -287,22 +287,13 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   bool stateResponse = root[F("v")] | false;
 
   bool onBefore = bri;
-  uint8_t tmpBri = bri;
-  getVal(root["bri"], &tmpBri);
+  getVal(root["bri"], &bri);
 
-  if (root["on"].isNull()) {
-    if ((onBefore && tmpBri==0) || (!onBefore && tmpBri>0)) toggleOnOff();
-    bri = tmpBri;
-  } else {
-    bool on = root["on"] | onBefore;
-    if (on != onBefore || (root["on"].is<const char*>() && root["on"].as<const char*>()[0] == 't')) {
-      toggleOnOff();
-      // a hack is needed after toggleOnOf()
-      if (!root["bri"].isNull()) {
-        if (bri==0) briLast = tmpBri;
-        else        bri     = tmpBri;
-      }
-    }
+  bool on = root["on"] | (bri > 0);
+  if (!on != !bri) toggleOnOff();
+
+  if (root["on"].is<const char*>() && root["on"].as<const char*>()[0] == 't') {
+    if (onBefore || !bri) toggleOnOff(); // do not toggle off again if just turned on by bri (makes e.g. "{"on":"t","bri":32}" work)
   }
 
   if (bri && !onBefore) { // unfreeze all segments when turning on
@@ -433,9 +424,12 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       if (root["win"].isNull()) presetCycCurr = currentPreset;
       stateChanged = false; // cancel state change update (preset was set directly by applying values stored in UI JSON array)
     } else if (root["win"].isNull() && getVal(root["ps"], &ps, 0, 0) && ps > 0 && ps < 251 && ps != currentPreset) {
-      // b) preset ID only (use embedded cycling limits if they exist in getVal())
+      // b) preset ID only or preset that does not change state (use embedded cycling limits if they exist in getVal())
       presetCycCurr = ps;
-      applyPreset(ps, callMode); // async load
+      root.remove(F("v"));    // may be added in UI call
+      root.remove(F("time")); // may be added in UI call
+      root.remove("ps");
+      if (root.size() == 0) applyPreset(ps, callMode); // async load (only preset ID was specified)
       return stateResponse;
     }
   }
