@@ -3367,12 +3367,6 @@ uint16_t mode_exploding_fireworks(void)
 static const char _data_FX_MODE_EXPLODING_FIREWORKS[] PROGMEM = "Fireworks 1D@Gravity,Firing side;!,!,;!=11;ix=128,1d,2d";
 
 
-// float version of map()
-static float mapf(float x, float in_min, float in_max, float out_min, float out_max){
-  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-}
-
-
 /*
  * Drip Effect
  * ported of: https://www.youtube.com/watch?v=sru2fXh4r7k
@@ -3391,34 +3385,35 @@ uint16_t mode_drip(void)
   struct virtualStrip {
     static void runStrip(uint16_t stripNr, Spark* drops) {
 
-      uint8_t numDrops = map(SEGMENT.intensity, 0, 255, 1, 4);
+      uint8_t numDrops = 1 + (SEGMENT.intensity >> 6); // 255>>6 = 3
 
-      float gravity = -0.0005 - (SEGMENT.speed/25000.0); //increased max speed 50000->25000
+      float gravity = -0.0005 - (SEGMENT.speed/25000.0); //increased gravity (50000 to 25000)
       gravity *= SEGLEN-1;
-      // const int sourcedrop = 12;
+      int sourcedrop = 12;
 
       for (int j=0;j<numDrops;j++) {
-        if (drops[j].colIndex == 0) { // drop state (0 init, 1 forming, 2 falling, 5 bouncing)
+        if (drops[j].colIndex == 0) { //init
           drops[j].pos = SEGLEN-1;    // start at end
           drops[j].vel = 0;           // speed
-          drops[j].col = 0;           // brightness, start with 0
+          drops[j].col = sourcedrop;  // brightness
+          drops[j].colIndex = 1;      // drop state (0 init, 1 forming, 2 falling, 5 bouncing)
           drops[j].velX = SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0); // random color
-          if (j==0) drops[j].colIndex = 1; // only first drop starts forming
         }
-        // if drop is falling, form the next drop
-        if (j>0 && drops[j-1].colIndex > 1 && drops[j].colIndex == 0) drops[j].colIndex = 1;
+        uint32_t dropColor = drops[j].velX;
 
-        if (drops[j].colIndex==1) {            // forming
-          if (drops[j].col>255) {              // swelling/brightness max, start falling
+        SEGMENT.setPixelColor(indexToVStrip(SEGLEN-1, stripNr), color_blend(BLACK,dropColor, sourcedrop));// water source
+        if (drops[j].colIndex==1) {
+          if (drops[j].col>255) drops[j].col=255;
+          SEGMENT.setPixelColor(indexToVStrip(uint16_t(drops[j].pos), stripNr), color_blend(BLACK,dropColor,drops[j].col));
+
+          drops[j].col += map(SEGMENT.custom1, 0, 255, 1, 6); // swelling
+
+          if (random16() <= drops[j].col * SEGMENT.custom1 * SEGMENT.custom1 / 10 / 128) {               // random drop
+            drops[j].colIndex=2;               //fall
             drops[j].col=255;
-            drops[j].colIndex=2;               // fall
           }
-          //draw forming drop (lower the brightness so forming is more visible)
-          SEGMENT.setPixelColor(indexToVStrip(uint16_t(drops[j].pos), stripNr), color_blend(BLACK, drops[j].velX, drops[j].col/8));
-
-          drops[j].col += mapf(SEGMENT.custom1, 0, 255, 0.01, 2.5) * random8()/128; // swelling with randomness
         }
-        else if (drops[j].colIndex > 1) {      // falling
+        if (drops[j].colIndex > 1) {           // falling
           if (drops[j].pos > 0) {              // fall until end of segment
             drops[j].pos += drops[j].vel;
             if (drops[j].pos < 0) drops[j].pos = 0;
@@ -3426,22 +3421,24 @@ uint16_t mode_drip(void)
 
             for (int i=1;i<7-drops[j].colIndex;i++) { // some minor math so we don't expand bouncing droplets
               uint16_t pos = constrain(uint16_t(drops[j].pos) +i, 0, SEGLEN-1); //this is BAD, returns a pos >= SEGLEN occasionally
-              SEGMENT.setPixelColor(indexToVStrip(pos, stripNr), color_blend(BLACK, drops[j].velX, drops[j].col/i)); //spread pixel with fade while falling
+              SEGMENT.setPixelColor(indexToVStrip(pos, stripNr), color_blend(BLACK,dropColor,drops[j].col/i)); //spread pixel with fade while falling
             }
 
             if (drops[j].colIndex > 2) {       // during bounce, some water is on the floor
-              SEGMENT.setPixelColor(indexToVStrip(0, stripNr), color_blend(drops[j].velX, BLACK, drops[j].col));
+              SEGMENT.setPixelColor(indexToVStrip(0, stripNr), color_blend(dropColor,BLACK,drops[j].col));
             }
           } else {                             // we hit bottom
-            if (drops[j].colIndex == 5) {      // already hit once, so back to forming
+            if (drops[j].colIndex > 2) {       // already hit once, so back to forming
               drops[j].colIndex = 0;
+              // drops[j].col = sourcedrop;
+
             } else {
 
               if (drops[j].colIndex==2) {      // init bounce
-                drops[j].vel = -drops[j].vel/3;// reverse velocity with damping
+                drops[j].vel = -drops[j].vel/4;// reverse velocity with damping
                 drops[j].pos += drops[j].vel;
               }
-              drops[j].col = 24;               // low brightness
+              drops[j].col = sourcedrop*2;
               drops[j].colIndex = 5;           // bouncing
             }
           }
@@ -3455,7 +3452,7 @@ uint16_t mode_drip(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_DRIP[] PROGMEM = "Drip@Gravity,# of drips,Swelling;!,!;!;mp12=1,1d"; //bar
+static const char _data_FX_MODE_DRIP[] PROGMEM = "Drip@Gravity,# of drips,Fall ratio;!,!;!;mp12=1,1d"; //bar
 
 
 /*
@@ -6145,6 +6142,11 @@ uint16_t mode_2DWaverly(void) {
 static const char _data_FX_MODE_2DWAVERLY[] PROGMEM = "Waverly@Amplification,Sensitivity;;!;ix=64,ssim=0,2d,vo"; // Beatsin
 
 #endif // WLED_DISABLE_2D
+
+// float version of map()
+static float mapf(float x, float in_min, float in_max, float out_min, float out_max){
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
 
 // Gravity struct requited for GRAV* effects
 typedef struct Gravity {
