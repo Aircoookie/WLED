@@ -41,9 +41,9 @@
 
 constexpr i2s_port_t I2S_PORT = I2S_NUM_0;
 constexpr int BLOCK_SIZE = 128;
-constexpr int SAMPLE_RATE = 22050;            // Base sample rate in Hz - 22Khz is a standard rate. Physical sample time -> 23ms
-//constexpr int SAMPLE_RATE = 20480;            // Base sample rate in Hz - 20Khz is experimental.    Physical sample time -> 25ms
-//constexpr int SAMPLE_RATE = 10240;            // Base sample rate in Hz - previous default.         Physical sample time -> 50ms
+constexpr SRate_t SAMPLE_RATE = 22050;          // Base sample rate in Hz - 22Khz is a standard rate. Physical sample time -> 23ms
+//constexpr SRate_t SAMPLE_RATE = 20480;        // Base sample rate in Hz - 20Khz is experimental.    Physical sample time -> 25ms
+//constexpr SRate_t SAMPLE_RATE = 10240;        // Base sample rate in Hz - previous default.         Physical sample time -> 50ms
 
 #define FFT_MIN_CYCLE 18                      // minimum time before FFT task is repeated. Use with 22Khz sampling
 //#define FFT_MIN_CYCLE 22                      // minimum time before FFT task is repeated. Use with 20Khz sampling
@@ -112,7 +112,7 @@ static void autoResetPeak(void);     // peak auto-reset function
 #else
 // lib_deps += https://github.com/blazoncek/arduinoFFT.git
 #endif
-#include "arduinoFFT.h"
+#include <arduinoFFT.h>
 
 // FFT Output variables shared with animations
 #define NUM_GEQ_CHANNELS 16                     // number of frequency channels. Don't change !!

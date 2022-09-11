@@ -9,10 +9,15 @@
 #include <driver/adc_deprecated.h>
 #include <driver/adc_types_deprecated.h>
 #endif
+// type of i2s_config_t.SampleRate was changed from "int" to "unsigned" in IDF 4.4.x
+#define SRate_t uint32_t
+#else
+#define SRate_t int
 #endif
 
 //#include <driver/i2s_std.h>
 //#include <driver/i2s_pdm.h>
+//#include <driver/i2s_tdm.h>
 //#include <driver/gpio.h>
 
 // see https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/hw-reference/chip-series-comparison.html#related-documents
@@ -98,13 +103,13 @@ class AudioSource {
     virtual I2S_datatype postProcessSample(I2S_datatype sample_in) {return(sample_in);}   // default method can be overriden by instances (ADC) that need sample postprocessing
 
     // Private constructor, to make sure it is not callable except from derived classes
-    AudioSource(int sampleRate, int blockSize) :
+    AudioSource(SRate_t sampleRate, int blockSize) :
       _sampleRate(sampleRate),
       _blockSize(blockSize),
       _initialized(false)
     {};
 
-    int _sampleRate;                // Microphone sampling rate
+    SRate_t _sampleRate;            // Microphone sampling rate
     int _blockSize;                 // I2S block size
     bool _initialized;              // Gets set to true if initialization is successful
 };
@@ -114,7 +119,7 @@ class AudioSource {
 */
 class I2SSource : public AudioSource {
   public:
-    I2SSource(int sampleRate, int blockSize) :
+    I2SSource(SRate_t sampleRate, int blockSize) :
       AudioSource(sampleRate, blockSize) {
       _config = {
         .mode = i2s_mode_t(I2S_MODE_MASTER | I2S_MODE_RX),
@@ -289,7 +294,7 @@ class ES7243 : public I2SSource {
     }
 
 public:
-    ES7243(int sampleRate, int blockSize) :
+    ES7243(SRate_t sampleRate, int blockSize) :
       I2SSource(sampleRate, blockSize) {
       _config.channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT;
     };
@@ -331,7 +336,7 @@ public:
 */
 class I2SAdcSource : public I2SSource {
   public:
-    I2SAdcSource(int sampleRate, int blockSize) :
+    I2SAdcSource(SRate_t sampleRate, int blockSize) :
       I2SSource(sampleRate, blockSize) {
       _config = {
         .mode = i2s_mode_t(I2S_MODE_MASTER | I2S_MODE_RX | I2S_MODE_ADC_BUILT_IN),
@@ -514,7 +519,7 @@ class I2SAdcSource : public I2SSource {
 */
 class SPH0654 : public I2SSource {
   public:
-    SPH0654(int sampleRate, int blockSize) :
+    SPH0654(SRate_t sampleRate, int blockSize) :
       I2SSource(sampleRate, blockSize)
     {}
 
