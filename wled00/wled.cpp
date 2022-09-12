@@ -831,7 +831,7 @@ void WLED::handleStatusLED()
     ledStatusType = 4;
   } else if (apActive) {
     c = RGBW32(0,0,255,0);
-    ledStatusType = 2;
+    ledStatusType = 1;
   }
   if (ledStatusType) {
     if (millis() - ledStatusLastMillis >= (1000/ledStatusType)) {
