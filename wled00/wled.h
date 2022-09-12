@@ -290,7 +290,7 @@ WLED_GLOBAL byte bootPreset   _INIT(0);                   // save preset to load
 WLED_GLOBAL bool autoSegments    _INIT(false);
 WLED_GLOBAL bool correctWB       _INIT(false); // CCT color correction of RGB color
 WLED_GLOBAL bool cctFromRgb      _INIT(false); // CCT is calculated from RGB instead of using seg.cct
-WLED_GLOBAL bool gammaCorrectCol _INIT(false); // use gamma correction on colors
+WLED_GLOBAL bool gammaCorrectCol _INIT(true ); // use gamma correction on colors
 WLED_GLOBAL bool gammaCorrectBri _INIT(false); // use gamma correction on brightness
 
 WLED_GLOBAL byte col[]    _INIT_N(({ 255, 160, 0, 0 }));  // current RGB(W) primary color. col[] should be updated if you want to change the color.
