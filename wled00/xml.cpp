@@ -197,7 +197,7 @@ void appendGPIOinfo() {
   #elif defined(CONFIG_IDF_TARGET_ESP32C3)
   oappend(SET_F("d.rsvd=[11,12,13,14,15,16,17"));
   #elif defined(ESP32)
-  oappend(SET_F("d.rsvd=[6,7,8,9,10,11,24,28,29,30,31,37,38"));      // ? what are 37+38 reserved for on ESP32?
+  oappend(SET_F("d.rsvd=[6,7,8,9,10,11,24,28,29,30,31"));
   #else
   oappend(SET_F("d.rsvd=[6,7,8,9,10,11"));
   #endif
@@ -216,7 +216,7 @@ void appendGPIOinfo() {
     #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32S3) && !defined(CONFIG_IDF_TARGET_ESP32C3)
     if (psramFound()) oappend(SET_F(",16,17")); // GPIO16 & GPIO17 reserved for SPI RAM on ESP32 (not on S2, S3 or C3)
     #elif defined(CONFIG_IDF_TARGET_ESP32S3)
-    if (psramFound()) oappend(SET_F(",33,34,35,36,37"));                                 // in use for "octal" PSRAM or "octal" FLASH -seems that octal PSRAM is very common on S3.
+    if (psramFound()) oappend(SET_F(",33,34,35,36,37")); // in use for "octal" PSRAM or "octal" FLASH -seems that octal PSRAM is very common on S3.
     #endif
   #endif
 
