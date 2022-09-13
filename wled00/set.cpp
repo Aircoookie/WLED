@@ -478,8 +478,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (!requestJSONBufferLock(5)) return;
 
     // global I2C & SPI pins
-    int8_t hw_sda_pin  = !request->arg(F("SDA")).length() ? -1 : max(-1,min(33,(int)request->arg(F("SDA")).toInt()));
-    int8_t hw_scl_pin  = !request->arg(F("SCL")).length() ? -1 : max(-1,min(33,(int)request->arg(F("SCL")).toInt()));
+    int8_t hw_sda_pin  = !request->arg(F("SDA")).length() ? -1 : (int)request->arg(F("SDA")).toInt();
+    int8_t hw_scl_pin  = !request->arg(F("SCL")).length() ? -1 : (int)request->arg(F("SCL")).toInt();
     #ifdef ESP8266
     // cannot change pins on ESP8266
     if (hw_sda_pin >= 0 && hw_sda_pin != HW_PIN_SDA) hw_sda_pin = HW_PIN_SDA;
@@ -501,9 +501,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       i2c_sda = -1;
       i2c_scl = -1;
     }
-    int8_t hw_mosi_pin = !request->arg(F("MOSI")).length() ? -1 : max(-1,min(33,(int)request->arg(F("MOSI")).toInt()));
-    int8_t hw_miso_pin = !request->arg(F("MISO")).length() ? -1 : max(-1,min(33,(int)request->arg(F("MISO")).toInt()));
-    int8_t hw_sclk_pin = !request->arg(F("SCLK")).length() ? -1 : max(-1,min(33,(int)request->arg(F("SCLK")).toInt()));
+    int8_t hw_mosi_pin = !request->arg(F("MOSI")).length() ? -1 : (int)request->arg(F("MOSI")).toInt();
+    int8_t hw_miso_pin = !request->arg(F("MISO")).length() ? -1 : (int)request->arg(F("MISO")).toInt();
+    int8_t hw_sclk_pin = !request->arg(F("SCLK")).length() ? -1 : (int)request->arg(F("SCLK")).toInt();
     #ifdef ESP8266
     // cannot change pins on ESP8266
     if (hw_mosi_pin >= 0 && hw_mosi_pin != HW_PIN_DATASPI)  hw_mosi_pin = HW_PIN_DATASPI;
