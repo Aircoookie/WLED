@@ -1194,7 +1194,7 @@ TD .checkmark, TD .radiomark {
   	/*filter: brightness(1);*/
 	font-size: 19px;
 	border-radius: 21px;
-	min-width: 280px;
+	/*min-width: 264px;*/
 }
 
 .seg {

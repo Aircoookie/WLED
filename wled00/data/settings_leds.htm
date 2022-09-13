@@ -62,8 +62,10 @@
         //check for pin conflicts
         if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4" || nm=="RL" || nm=="BT" || nm=="IR")
           if (LCs[i].value!="" && LCs[i].value!="-1") {
-            if (d.um_p && d.um_p.some((e)=>e==parseInt(LCs[i].value,10))) {alert(`Sorry, pins ${JSON.stringify(d.um_p)} can't be used.`);LCs[i].value="";LCs[i].focus();return false;}
-            //else if (LCs[i].value > 5 && LCs[i].value < 12) {alert("Sorry, pins 6-11 can not be used.");LCs[i].value="";LCs[i].focus();return false;}
+            var p = []; // used pin array
+            for (k=0;k<d.rsvd.length;k++) p.push(d.rsvd[k]); // fill with reservations
+            for (k=0;k<d.um_p.length;k++) p.push(d.um_p[k]); // fill with usermod pins
+            if (p.some((e)=>e==parseInt(LCs[i].value,10))) {alert(`Sorry, pins ${JSON.stringify(p)} can't be used.`);LCs[i].value="";LCs[i].focus();return false;}
             else if (!(nm == "IR" || nm=="BT") && d.ro_pins.some((e)=>e==parseInt(LCs[i].value,10))) {alert(`Sorry, pins ${JSON.stringify(d.ro_gpio)} are input only.`);LCs[i].value="";LCs[i].focus();return false;}
             for (j=i+1; j<LCs.length; j++)
             {
@@ -279,25 +281,25 @@
       gId('wreason').innerHTML = (bquot > 80) ? "80% of max. LED memory" +(bquot>100 ? ` (<b>ERROR: Using over ${maxM}B!</b>)` : "") : "800 LEDs per output";
       // calculate power
       var val = Math.ceil((100 + sPC * laprev)/500)/2;
-			val = (val > 5) ? Math.ceil(val) : val;
-			var s = "";
+      val = (val > 5) ? Math.ceil(val) : val;
+      var s = "";
       var is12V = (d.Sf.LAsel.value == 30);
       var isWS2815 = (d.Sf.LAsel.value == 255);
-			if (val < 1.02 && !is12V && !isWS2815)
-			{
-				s = "ESP 5V pin with 1A USB supply";
-			} else
-			{
-        		s += is12V ? "12V ": isWS2815 ? "WS2815 12V " : "5V ";
-				s += val;
-				s += "A supply connected to LEDs";
-			}
+      if (val < 1.02 && !is12V && !isWS2815)
+      {
+        s = "ESP 5V pin with 1A USB supply";
+      } else
+      {
+        s += is12V ? "12V ": isWS2815 ? "WS2815 12V " : "5V ";
+        s += val;
+        s += "A supply connected to LEDs";
+      }
       var val2 = Math.ceil((100 + sPC * laprev)/1500)/2;
       val2 = (val2 > 5) ? Math.ceil(val2) : val2;
       var s2 = "(for most effects, ~";
       s2 += val2;
       s2 += "A is enough)<br>";
-			gId('psu').innerHTML = s;
+      gId('psu').innerHTML = s;
       gId('psu2').innerHTML = isWS2815 ? "" : s2;
       gId("json").style.display = d.Sf.IT.value==8 ? "" : "none";
     }
