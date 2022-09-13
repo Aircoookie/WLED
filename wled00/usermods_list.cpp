@@ -136,6 +136,10 @@
 #include "../usermods/audioreactive/audio_reactive.h"
 #endif
 
+#ifdef USERMOD_GAMES
+#include "../usermods/usermod_v2_games/usermod_v2_games.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -258,5 +262,8 @@ void registerUsermods()
   
   #ifdef USERMOD_AUDIOREACTIVE
   usermods.add(new AudioReactive());
+  #endif
+  #ifdef USERMOD_GAMES
+  usermods.add(new GamesUsermod());
   #endif
 }
