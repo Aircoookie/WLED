@@ -198,7 +198,7 @@ bool PinManagerClass::isPinAllocated(byte gpio, PinOwner tag)
   return bitRead(pinAlloc[by], bi);
 }
 
-#ifdef CONFIG_IDF_TARGET_ESP32S3
+#if defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3)
 // ESP32-S3 GPIO layout
   /* see https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/api-reference/peripherals/gpio.html
    * The ESP32-S3 chip features 45 physical GPIO pins (GPIO0 ~ GPIO21 and GPIO26 ~ GPIO48). Each pin can be used as a general-purpose I/O
@@ -217,18 +217,24 @@ bool PinManagerClass::isPinAllocated(byte gpio, PinOwner tag)
    */
 bool PinManagerClass::isPinOk(byte gpio, bool output)
 {
-  if (gpio < 19) return  true;   // 00 to 18 are for general use. Be careful about straping pins GPIO0 and GPIO3 - these may be pulled-up or pulled-down on your board.
-  if (gpio < 21) return  false;  // 19 + 20 = USB-JTAG. Not recommended for other uses.
-  if((gpio > 21) && (gpio < 26)) return false;  // 22 to 25: not connected
-
-  if (gpio < 33) return false;   // 26 to 32:  SPI flash and PSRAM. Not recommended for other uses.
-  //if (gpio <38) return false;   // 33 to 37: not availeable if using _octal_ SPI Flash or _octal_ PSRAM
-  
-  if (gpio < 49) return true;    // 38 to 48 are for general use. Be careful about straping pins GPIO45 and GPIO46 - these may be pull-up or pulled-down on your board.
-
+  #if defined(CONFIG_IDF_TARGET_ESP32C3)
+    if ((gpio > 10) && (gpio < 18)) return false;  // 11-17 SPI FLASH
+    if (gpio<22) return true;
+  #else // S2 & S3
+    #if defined(CONFIG_IDF_TARGET_ESP32S3)
+      if (gpio < 19) return  true;    // 00 to 18 are for general use. Be careful about straping pins GPIO0 and GPIO3 - these may be pulled-up or pulled-down on your board.
+      if (gpio < 21) return  false;   // 19 + 20 = USB-JTAG. Not recommended for other uses.
+      if ((gpio > 21) && (gpio < 33)) return false; // 22 to 32: not connected + SPI FLASH
+      //if (gpio <38) return false;   // 33 to 37: not available if using _octal_ SPI Flash or _octal_ PSRAM
+      if (gpio < 49) return true;     // 38 to 48 are for general use. Be careful about straping pins GPIO45 and GPIO46 - these may be pull-up or pulled-down on your board.
+    #elif defined(CONFIG_IDF_TARGET_ESP32S2)
+      if ((gpio > 21) && (gpio < 33)) return false; // 22 to 32: not connected + SPI FLASH
+      if (gpio < 46) return true;     // 33 to 45 are for general use.
+      if (gpio == 46 && !output) return true; // 46 input only
+    #endif
+  #endif
   return false;
 }
-
 #else // ESP32 and ESP8266 GPIO layout
 bool PinManagerClass::isPinOk(byte gpio, bool output)
 {
