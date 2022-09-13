@@ -1982,7 +1982,7 @@ uint16_t mode_fire_2012()
           uint8_t cool = random8((((20 + SEGMENT.speed/3) * 16) / SEGLEN)+2);
           uint8_t minTemp = 0;
           if (i<ignition) {
-            cool /= (ignition-i)/3 + 1;     // ignition area cools slower
+            //cool /= (ignition-i)/3 + 1;     // ignition area cools slower
             minTemp = (ignition-i)/4 + 16;  // and should not become black
           }
           uint8_t temp = qsub8(heat[i], cool);
@@ -2290,24 +2290,23 @@ uint16_t mode_meteor() {
     {
       byte meteorTrailDecay = 128 + random8(127);
       trail[i] = scale8(trail[i], meteorTrailDecay);
-      SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(trail[i], false, true, 255));
+      SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(i, true, false, 0, trail[i]));
     }
   }
 
   // draw meteor
   for (int j = 0; j < meteorSize; j++) {
     uint16_t index = in + j;
-    if(index >= SEGLEN) {
-      index = (in + j - SEGLEN);
+    if (index >= SEGLEN) {
+      index -= SEGLEN;
     }
-
     trail[index] = 240;
-    SEGMENT.setPixelColor(index, SEGMENT.color_from_palette(trail[index], false, true, 255));
+    SEGMENT.setPixelColor(index, SEGMENT.color_from_palette(index, true, false, 0, 255));
   }
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_METEOR[] PROGMEM = "Meteor@!,Trail length;!,!,;!;1d";
+static const char _data_FX_MODE_METEOR[] PROGMEM = "Meteor@!,Trail length;!,,;!;1d";
 
 
 // smooth meteor effect
@@ -2329,24 +2328,24 @@ uint16_t mode_meteor_smooth() {
       trail[i] += change;
       if (trail[i] > 245) trail[i] = 0;
       if (trail[i] > 240) trail[i] = 240;
-      SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(trail[i], false, true, 255));
+      SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(i, true, false, 0, trail[i]));
     }
   }
   
   // draw meteor
-  for (int j = 0; j < meteorSize; j++) {  
-    uint16_t index = in + j;   
-    if(in + j >= SEGLEN) {
-      index = (in + j - SEGLEN);
+  for (int j = 0; j < meteorSize; j++) {
+    uint16_t index = in + j;
+    if (index >= SEGLEN) {
+      index -= SEGLEN;
     }
-    SEGMENT.setPixelColor(index, color_blend(SEGMENT.getPixelColor(index), SEGMENT.color_from_palette(240, false, true, 255), 48));
     trail[index] = 240;
+    SEGMENT.setPixelColor(index, SEGMENT.color_from_palette(index, true, false, 0, 255));
   }
 
   SEGENV.step += SEGMENT.speed +1;
   return FRAMETIME;
 }
-static const char _data_FX_MODE_METEOR_SMOOTH[] PROGMEM = "Meteor Smooth@!,Trail length;!,!,;!;1d";
+static const char _data_FX_MODE_METEOR_SMOOTH[] PROGMEM = "Meteor Smooth@!,Trail length;!,,;!;1d";
 
 
 //Railway Crossing / Christmas Fairy lights
@@ -7211,7 +7210,7 @@ static uint8_t akemi[] PROGMEM = {
   0,0,0,0,0,0,0,3,2,0,6,5,5,5,5,5,5,5,5,5,5,4,0,2,3,0,0,0,0,0,0,0,
   0,0,0,0,0,0,3,2,3,6,5,5,7,7,5,5,5,5,7,7,5,5,4,3,2,3,0,0,0,0,0,0,
   0,0,0,0,0,2,3,1,3,6,5,1,7,7,7,5,5,1,7,7,7,5,4,3,1,3,2,0,0,0,0,0,
-  0,0,0,0,0,8,3,1,3,6,5,1,7,7,7,5,5,1,7,7,7,5,4,3,1,3,8,9,0,0,0,0,
+  0,0,0,0,0,8,3,1,3,6,5,1,7,7,7,5,5,1,7,7,7,5,4,3,1,3,8,0,0,0,0,0,
   0,0,0,0,0,8,3,1,3,6,5,5,1,1,5,5,5,5,1,1,5,5,4,3,1,3,8,0,0,0,0,0,
   0,0,0,0,0,2,3,1,3,6,5,5,5,5,5,5,5,5,5,5,5,5,4,3,1,3,2,0,0,0,0,0,
   0,0,0,0,0,0,3,2,3,6,5,5,5,5,5,5,5,5,5,5,5,5,4,3,2,3,0,0,0,0,0,0,
@@ -7261,7 +7260,6 @@ uint16_t mode_2DAkemi(void) {
     CRGB armsAndLegsColor = SEGCOLOR(1) > 0 ? SEGCOLOR(1) : 0xFFE0A0; //default warmish white 0xABA8FF; //0xFF52e5;//
     uint8_t ak = pgm_read_byte_near(akemi + ((y * 32)/rows) * 32 + (x * 32)/cols); // akemi[(y * 32)/rows][(x * 32)/cols]
     switch (ak) {
-      case 0: color = BLACK; break;
       case 3: armsAndLegsColor.r *= lightFactor;  armsAndLegsColor.g *= lightFactor;  armsAndLegsColor.b *= lightFactor;  color = armsAndLegsColor; break; //light arms and legs 0x9B9B9B
       case 2: armsAndLegsColor.r *= normalFactor; armsAndLegsColor.g *= normalFactor; armsAndLegsColor.b *= normalFactor; color = armsAndLegsColor; break; //normal arms and legs 0x888888
       case 1: color = armsAndLegsColor; break; //dark arms and legs 0x686868
@@ -7270,7 +7268,7 @@ uint16_t mode_2DAkemi(void) {
       case 4: color = faceColor; break; //dark face 0x007DC6
       case 7: color = SEGCOLOR(2) > 0 ? SEGCOLOR(2) : 0xFFFFFF; break; //eyes and mouth default white
       case 8: if (base > 0.4) {soundColor.r *= base; soundColor.g *= base; soundColor.b *= base; color=soundColor;} else color = armsAndLegsColor; break;
-      default: color = BLACK;
+      default: color = BLACK; break;
     }
 
     if (SEGMENT.intensity > 128 && fftResult && fftResult[0] > 128) { //dance if base is high

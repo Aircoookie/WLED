@@ -594,7 +594,9 @@ function parseInfo(i) {
 	lastinfo = i;
 	var name = i.name;
 	gId('namelabel').innerHTML = name;
-	//if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)";
+	if (!name.match(/[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff66-\uff9f\u3131-\uD79D]/))
+		gId('namelabel').style.transform = "rotate(180deg)"; // rotate if no CJK characters
+	if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)"; // Minecraft easter egg
 	if (i.live) name = "(Live) " + name;
 	if (loc)    name = "(L) " + name;
 	d.title     = name;
