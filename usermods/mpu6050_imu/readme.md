@@ -78,7 +78,7 @@ to the info object
 ## Usermod installation
 
 1. Copy the file `usermod_mpu6050_imu.h` to the `wled00` directory.
-2. Register the usermod by adding `#include "usermod_mpu6050_imu.h.h"` in the top and `registerUsermod(new MPU6050Driver());` in the bottom of `usermods_list.cpp`.
+2. Register the usermod by adding `#include "usermod_mpu6050_imu.h"` in the top and `registerUsermod(new MPU6050Driver());` in the bottom of `usermods_list.cpp`.
 
 Example **usermods_list.cpp**:
 
