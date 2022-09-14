@@ -946,6 +946,8 @@ void serializeConfig() {
   if (f) serializeJson(doc, f);
   f.close();
   releaseJSONBufferLock();
+
+  doSerializeConfig = false;
 }
 
 //settings in /wsec.json, not accessible via webserver, for passwords and tokens

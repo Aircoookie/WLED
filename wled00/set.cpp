@@ -607,7 +607,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       }
     }
     usermods.readFromConfig(um);  // force change of usermod parameters
-
+    DEBUG_PRINTLN(F("Done re-init usermods."));
     releaseJSONBufferLock();
   }
 
@@ -638,7 +638,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   #endif
 
   lastEditTime = millis();
-  if (subPage != 2 && !doReboot) serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)
+  if (subPage != 2 && !doReboot) doSerializeConfig = true; //serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)
   if (subPage == 4) alexaInit();
 }
 

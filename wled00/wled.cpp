@@ -71,6 +71,8 @@ void WLED::loop()
 
   yield();
 
+  if (doSerializeConfig) serializeConfig();
+
   if (doReboot && !doInitBusses) // if busses have to be inited & saved, wait until next iteration
     reset();
 
@@ -351,6 +353,7 @@ void WLED::setup()
 #endif
   updateFSInfo();
 
+  strcpy_P(apSSID, PSTR("WLED-AP"));  // otherwise it is empty on first boot until config is saved
   DEBUG_PRINTLN(F("Reading config"));
   deserializeConfigFromFS();
 
@@ -388,25 +391,16 @@ void WLED::setup()
   escapedMac = WiFi.macAddress();
   escapedMac.replace(":", "");
   escapedMac.toLowerCase();
-  if (strcmp(cmDNS, "x") == 0)        // fill in unique mdns default
-  {
-    strcpy_P(cmDNS, PSTR("wled-"));
-    sprintf(cmDNS + 5, "%*s", 6, escapedMac.c_str() + 6);
-  }
-  if (mqttDeviceTopic[0] == 0) {
-    strcpy_P(mqttDeviceTopic, PSTR("wled/"));
-    sprintf(mqttDeviceTopic + 5, "%*s", 6, escapedMac.c_str() + 6);
-  }
-  if (mqttClientID[0] == 0) {
-    strcpy_P(mqttClientID, PSTR("WLED-"));
-    sprintf(mqttClientID + 5, "%*s", 6, escapedMac.c_str() + 6);
-  }
+  // fill in unique mdns default
+  if (strcmp(cmDNS, "x") == 0) sprintf_P(cmDNS, PSTR("wled-%*s"), 6, escapedMac.c_str() + 6);
+  if (mqttDeviceTopic[0] == 0) sprintf_P(mqttDeviceTopic, PSTR("wled/%*s"), 6, escapedMac.c_str() + 6);
+  if (mqttClientID[0] == 0)    sprintf_P(mqttClientID, PSTR("WLED-%*s"), 6, escapedMac.c_str() + 6);
 
 #ifdef WLED_ENABLE_ADALIGHT
   if (Serial.available() > 0 && Serial.peek() == 'I') handleImprovPacket();
 #endif
 
-  strip.service();
+  strip.service(); // why?
 
 #ifndef WLED_DISABLE_OTA
   if (aOtaEnabled) {
@@ -474,10 +468,10 @@ void WLED::initAP(bool resetAP)
   if (apBehavior == AP_BEHAVIOR_BUTTON_ONLY && !resetAP)
     return;
 
-  if (!apSSID[0] || resetAP)
+  if (resetAP) {
     strcpy_P(apSSID, PSTR("WLED-AP"));
-  if (resetAP)
     strcpy_P(apPass, PSTR(DEFAULT_AP_PASS));
+  }
   DEBUG_PRINT(F("Opening access point "));
   DEBUG_PRINTLN(apSSID);
   WiFi.softAPConfig(IPAddress(4, 3, 2, 1), IPAddress(4, 3, 2, 1), IPAddress(255, 255, 255, 0));
