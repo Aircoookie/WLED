@@ -220,7 +220,8 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
 }
 
 void handleArtnetPollReply(IPAddress ipAddress) {
-  prepareArtnetPollReply();
+  ArtPollReply artnetPollReply;
+  prepareArtnetPollReply(&artnetPollReply);
 
   uint16_t startUniverse = e131Universe;
   uint16_t endUniverse = e131Universe;
@@ -269,136 +270,135 @@ void handleArtnetPollReply(IPAddress ipAddress) {
   }
 
   for (uint16_t i = startUniverse; i <= endUniverse; ++i) {
-    sendArtnetPollReply(ipAddress, i);
+    sendArtnetPollReply(&artnetPollReply, ipAddress, i);
   }
 }
 
-void prepareArtnetPollReply() {
+void prepareArtnetPollReply(ArtPollReply *reply) {
   // Art-Net
-  artnetPollReply.reply_id[0] = 0x41;
-  artnetPollReply.reply_id[1] = 0x72;
-  artnetPollReply.reply_id[2] = 0x74;
-  artnetPollReply.reply_id[3] = 0x2d;
-  artnetPollReply.reply_id[4] = 0x4e;
-  artnetPollReply.reply_id[5] = 0x65;
-  artnetPollReply.reply_id[6] = 0x74;
-  artnetPollReply.reply_id[7] = 0x00;
+  reply->reply_id[0] = 0x41;
+  reply->reply_id[1] = 0x72;
+  reply->reply_id[2] = 0x74;
+  reply->reply_id[3] = 0x2d;
+  reply->reply_id[4] = 0x4e;
+  reply->reply_id[5] = 0x65;
+  reply->reply_id[6] = 0x74;
+  reply->reply_id[7] = 0x00;
 
-  artnetPollReply.reply_opcode = ARTNET_OPCODE_OPPOLLREPLY;
+  reply->reply_opcode = ARTNET_OPCODE_OPPOLLREPLY;
 
   IPAddress localIP = Network.localIP();
   for (uint8_t i = 0; i < 4; i++) {
-    artnetPollReply.reply_ip[i] = localIP[i];
+    reply->reply_ip[i] = localIP[i];
   }
 
-  artnetPollReply.reply_port = ARTNET_DEFAULT_PORT;
+  reply->reply_port = ARTNET_DEFAULT_PORT;
 
-  char wledVersion[] = TOSTRING(WLED_VERSION);
-  char * numberEnd = wledVersion;
-  artnetPollReply.reply_version_h = (uint8_t)strtol(numberEnd, &numberEnd, 10);
+  char * numberEnd = versionString;
+  reply->reply_version_h = (uint8_t)strtol(numberEnd, &numberEnd, 10);
   numberEnd++;
-  artnetPollReply.reply_version_l = (uint8_t)strtol(numberEnd, &numberEnd, 10);
+  reply->reply_version_l = (uint8_t)strtol(numberEnd, &numberEnd, 10);
 
   // Switch values depend on universe, set before sending
-  artnetPollReply.reply_net_sw = 0x00;
-  artnetPollReply.reply_sub_sw = 0x00;
+  reply->reply_net_sw = 0x00;
+  reply->reply_sub_sw = 0x00;
 
-  artnetPollReply.reply_oem_h = 0x00;
-  artnetPollReply.reply_oem_l = 0x00;
+  reply->reply_oem_h = 0x00; // TODO add assigned oem code
+  reply->reply_oem_l = 0x00;
 
-  artnetPollReply.reply_ubea_ver = 0x00;
+  reply->reply_ubea_ver = 0x00;
 
   // Indicators in Normal Mode
   // All or part of Port-Address programmed by network or Web browser
-  artnetPollReply.reply_status_1 = 0xE0;
+  reply->reply_status_1 = 0xE0;
 
-  artnetPollReply.reply_esta_man = 0x0000;
+  reply->reply_esta_man = 0x0000;
 
-  strlcpy((char *)(artnetPollReply.reply_short_name), serverDescription, 18);
-  strlcpy((char *)(artnetPollReply.reply_long_name), serverDescription, 64);
+  strlcpy((char *)(reply->reply_short_name), serverDescription, 18);
+  strlcpy((char *)(reply->reply_long_name), serverDescription, 64);
 
-  artnetPollReply.reply_node_report[0] = '\0';
+  reply->reply_node_report[0] = '\0';
 
-  artnetPollReply.reply_num_ports_h = 0x00;
-  artnetPollReply.reply_num_ports_l = 0x01; // One output port
+  reply->reply_num_ports_h = 0x00;
+  reply->reply_num_ports_l = 0x01; // One output port
 
-  artnetPollReply.reply_port_types[0] = 0x80; // Output DMX data
-  artnetPollReply.reply_port_types[1] = 0x00;
-  artnetPollReply.reply_port_types[2] = 0x00;
-  artnetPollReply.reply_port_types[3] = 0x00;
+  reply->reply_port_types[0] = 0x80; // Output DMX data
+  reply->reply_port_types[1] = 0x00;
+  reply->reply_port_types[2] = 0x00;
+  reply->reply_port_types[3] = 0x00;
 
   // No inputs
-  artnetPollReply.reply_good_input[0] = 0x00;
-  artnetPollReply.reply_good_input[1] = 0x00;
-  artnetPollReply.reply_good_input[2] = 0x00;
-  artnetPollReply.reply_good_input[3] = 0x00;
+  reply->reply_good_input[0] = 0x00;
+  reply->reply_good_input[1] = 0x00;
+  reply->reply_good_input[2] = 0x00;
+  reply->reply_good_input[3] = 0x00;
 
   // One output
-  artnetPollReply.reply_good_output_a[0] = 0x80; // Data is being transmitted
-  artnetPollReply.reply_good_output_a[1] = 0x00;
-  artnetPollReply.reply_good_output_a[2] = 0x00;
-  artnetPollReply.reply_good_output_a[3] = 0x00;
+  reply->reply_good_output_a[0] = 0x80; // Data is being transmitted
+  reply->reply_good_output_a[1] = 0x00;
+  reply->reply_good_output_a[2] = 0x00;
+  reply->reply_good_output_a[3] = 0x00;
 
   // Values depend on universe, set before sending
-  artnetPollReply.reply_sw_in[0] = 0x00;
-  artnetPollReply.reply_sw_in[1] = 0x00;
-  artnetPollReply.reply_sw_in[2] = 0x00;
-  artnetPollReply.reply_sw_in[3] = 0x00;
+  reply->reply_sw_in[0] = 0x00;
+  reply->reply_sw_in[1] = 0x00;
+  reply->reply_sw_in[2] = 0x00;
+  reply->reply_sw_in[3] = 0x00;
 
   // Values depend on universe, set before sending
-  artnetPollReply.reply_sw_out[0] = 0x00;
-  artnetPollReply.reply_sw_out[1] = 0x00;
-  artnetPollReply.reply_sw_out[2] = 0x00;
-  artnetPollReply.reply_sw_out[3] = 0x00;
+  reply->reply_sw_out[0] = 0x00;
+  reply->reply_sw_out[1] = 0x00;
+  reply->reply_sw_out[2] = 0x00;
+  reply->reply_sw_out[3] = 0x00;
 
-  artnetPollReply.reply_sw_video = 0x00;
-  artnetPollReply.reply_sw_macro = 0x00;
-  artnetPollReply.reply_sw_remote = 0x00;
+  reply->reply_sw_video = 0x00;
+  reply->reply_sw_macro = 0x00;
+  reply->reply_sw_remote = 0x00;
 
-  artnetPollReply.reply_spare[0] = 0x00;
-  artnetPollReply.reply_spare[1] = 0x00;
-  artnetPollReply.reply_spare[2] = 0x00;
+  reply->reply_spare[0] = 0x00;
+  reply->reply_spare[1] = 0x00;
+  reply->reply_spare[2] = 0x00;
 
   // A DMX to / from Art-Net device
-  artnetPollReply.reply_style = 0x00;
+  reply->reply_style = 0x00;
 
-  Network.localMAC(artnetPollReply.reply_mac);
+  Network.localMAC(reply->reply_mac);
 
   for (uint8_t i = 0; i < 4; i++) {
-    artnetPollReply.reply_bind_ip[i] = localIP[i];
+    reply->reply_bind_ip[i] = localIP[i];
   }
 
-  artnetPollReply.reply_bind_index = 1;
+  reply->reply_bind_index = 1;
 
   // Product supports web browser configuration
   // Node’s IP is DHCP or manually configured
   // Node is DHCP capable
   // Node supports 15 bit Port-Address (Art-Net 3 or 4)
   // Node is able to switch between ArtNet and sACN
-  artnetPollReply.reply_status_2 = (staticIP[0] == 0) ? 0x1F : 0x1D;
+  reply->reply_status_2 = (staticIP[0] == 0) ? 0x1F : 0x1D;
 
   // RDM is disabled
   // Output style is continuous
-  artnetPollReply.reply_good_output_b[0] = 0xC0;
-  artnetPollReply.reply_good_output_b[1] = 0xC0;
-  artnetPollReply.reply_good_output_b[2] = 0xC0;
-  artnetPollReply.reply_good_output_b[3] = 0xC0;
+  reply->reply_good_output_b[0] = 0xC0;
+  reply->reply_good_output_b[1] = 0xC0;
+  reply->reply_good_output_b[2] = 0xC0;
+  reply->reply_good_output_b[3] = 0xC0;
 
   // Fail-over state: Hold last state
   // Node does not support fail-over
-  artnetPollReply.reply_status_3 = 0x00;
+  reply->reply_status_3 = 0x00;
 
   for (uint8_t i = 0; i < 21; i++) {
-    artnetPollReply.reply_filler[i] = 0x00;
+    reply->reply_filler[i] = 0x00;
   }
 }
 
-void sendArtnetPollReply(IPAddress ipAddress, uint16_t portAddress) {
-  artnetPollReply.reply_net_sw = (uint8_t)((portAddress >> 8) & 0x007F);
-  artnetPollReply.reply_sub_sw = (uint8_t)((portAddress >> 4) & 0x000F);
-  artnetPollReply.reply_sw_out[0] = (uint8_t)(portAddress & 0x000F);
+void sendArtnetPollReply(ArtPollReply *reply, IPAddress ipAddress, uint16_t portAddress) {
+  reply->reply_net_sw = (uint8_t)((portAddress >> 8) & 0x007F);
+  reply->reply_sub_sw = (uint8_t)((portAddress >> 4) & 0x000F);
+  reply->reply_sw_out[0] = (uint8_t)(portAddress & 0x000F);
 
-  sprintf((char *)artnetPollReply.reply_node_report, "#0001 [%04u] OK - WLED version: " TOSTRING(WLED_VERSION), pollReplyCount);
+  sprintf((char *)reply->reply_node_report, "#0001 [%04u] OK - WLED v" TOSTRING(WLED_VERSION), pollReplyCount);
   
   if (pollReplyCount < 9999) {
     pollReplyCount++;
@@ -406,9 +406,9 @@ void sendArtnetPollReply(IPAddress ipAddress, uint16_t portAddress) {
     pollReplyCount = 0;
   }
 
-  pollReplyUDP.beginPacket(ipAddress, ARTNET_DEFAULT_PORT);
-  pollReplyUDP.write(artnetPollReply.raw, sizeof(ArtPollReply));
-  pollReplyUDP.endPacket();
+  notifierUdp.beginPacket(ipAddress, ARTNET_DEFAULT_PORT);
+  notifierUdp.write(reply->raw, sizeof(ArtPollReply));
+  notifierUdp.endPacket();
 
-  artnetPollReply.reply_bind_index++;
+  reply->reply_bind_index++;
 }

@@ -81,8 +81,8 @@ void handleDMX();
 //e131.cpp
 void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol);
 void handleArtnetPollReply(IPAddress ipAddress);
-void prepareArtnetPollReply();
-void sendArtnetPollReply(IPAddress ipAddress, uint16_t portAddress);
+void prepareArtnetPollReply(ArtPollReply* reply);
+void sendArtnetPollReply(ArtPollReply* reply, IPAddress ipAddress, uint16_t portAddress);
 
 //file.cpp
 bool handleFileRead(AsyncWebServerRequest*, String path);
