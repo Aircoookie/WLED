@@ -36,7 +36,7 @@ lib_deps =
     AsyncTCP@1.0.3
     Esp Async WebServer@1.2.0
     IRremoteESP8266@2.7.3
-    I2Cdevlib-MPU6050@fbde122cc5
+    jrowberg/I2Cdevlib-MPU6050@^1.0.0
 ```
 
 ## Wiring
