@@ -194,7 +194,7 @@ function loadSkinCSS(cId)
 		l.id   = cId;
 		l.rel  = 'stylesheet';
 		l.type = 'text/css';
-		l.href = (loc?`http://${locip}`:'.') + '/skin.css';
+		l.href = (loc?`http://${locip}`:sessionStorage['baseurl']) + '/skin.css';
 		l.media = 'all';
 		h.appendChild(l);
 	}
@@ -202,6 +202,10 @@ function loadSkinCSS(cId)
 
 function onLoad()
 {
+	sessionStorage['baseurl'] = window.location.href.endsWith('/') ? window.location.href.slice(0,-1) : window.location.href;
+	sessionStorage['hostname'] = window.location.hostname;
+	sessionStorage['basepath'] = window.location.pathname.slice(0, -1);
+
 	if (window.location.protocol == "file:") {
 		loc = true;
 		locip = localStorage.getItem('locIp');
@@ -217,7 +221,7 @@ function onLoad()
 
 	applyCfg();
 	if (cfg.comp.hdays) { //load custom holiday list
-		fetch((loc?`http://${locip}`:'.') + "/holidays.json", {	// may be loaded from external source
+		fetch((loc?`http://${locip}`:'') + "/holidays.json", {	// may be loaded from external source
 			method: 'get'
 		})
 		.then((res)=>{
@@ -434,7 +438,7 @@ function loadPresets(callback = null)
 	// afterwards
 	if (!callback && pmt == pmtLast) return;
 
-	var url = (loc?`http://${locip}`:'') + '/presets.json';
+	var url = (loc?`http://${locip}`:sessionStorage['baseurl']) + '/presets.json';
 
 	fetch(url, {
 		method: 'get'
@@ -460,7 +464,7 @@ function loadPresets(callback = null)
 
 function loadPalettes(callback = null)
 {
-	var url = (loc?`http://${locip}`:'') + '/json/palettes';
+	var url = (loc?`http://${locip}`:sessionStorage['baseurl']) + '/json/palettes';
 
 	fetch(url, {
 		method: 'get'
@@ -484,7 +488,7 @@ function loadPalettes(callback = null)
 
 function loadFX(callback = null)
 {
-	var url = (loc?`http://${locip}`:'') + '/json/effects';
+	var url = (loc?`http://${locip}`:sessionStorage['baseurl']) + '/json/effects';
 
 	fetch(url, {
 		method: 'get'
@@ -508,7 +512,7 @@ function loadFX(callback = null)
 
 function loadFXData(callback = null)
 {
-	var url = (loc?`http://${locip}`:'') + '/json/fxdata';
+	var url = (loc?`http://${locip}`:sessionStorage['baseurl']) + '/json/fxdata';
 
 	fetch(url, {
 		method: 'get'
@@ -989,7 +993,7 @@ function populateNodes(i,n)
 
 function loadNodes()
 {
-	var url = (loc?`http://${locip}`:'') + '/json/nodes';
+	var url = (loc?`http://${locip}`:sessionStorage['baseurl']) + '/json/nodes';
 	fetch(url, {
 		method: 'get'
 	})
@@ -1206,7 +1210,7 @@ function cmpP(a, b)
 
 function makeWS() {
 	if (ws || lastinfo.ws < 0) return;
-	ws = new WebSocket((window.location.protocol == "https:"?"wss":"ws")+'://'+(loc?locip:window.location.hostname)+'/ws');
+	ws = new WebSocket((window.location.protocol == "https:"?"wss":"ws")+'://'+(loc?locip: sessionStorage['hostname'] + sessionStorage['basepath'])+'/ws');
 	ws.binaryType = "arraybuffer";
 	ws.onmessage = (e)=>{
 		if (e.data instanceof ArrayBuffer) return; // liveview packet
@@ -1481,7 +1485,7 @@ function requestJson(command=null)
 	if (command && !reqsLegal) return; // stop post requests from chrome onchange event on page restore
 	if (!jsonTimeout) jsonTimeout = setTimeout(()=>{if (ws) ws.close(); ws=null; showErrorToast()}, 3000);
 	var req = null;
-	var url = (loc?`http://${locip}`:'') + '/json/si';
+	var url = (loc?`http://${locip}`:sessionStorage['baseurl']) + '/json/si';
 	var useWs = (ws && ws.readyState === WebSocket.OPEN);
 	var type = command ? 'post':'get';
 	if (command) {
@@ -1609,7 +1613,7 @@ function toggleLiveview()
 	}
 
 	gId(lvID).style.display = (isLv) ? "block":"none";
-	var url = (loc?`http://${locip}`:'') + "/" + lvID;
+	var url = (loc?`http://${locip}`:sessionStorage['baseurl']) + "/" + lvID;
 	gId(lvID).src = (isLv) ? url:"about:blank";
 	gId('buttonSr').className = (isLv) ? "active":"";
 	if (!isLv && ws && ws.readyState === WebSocket.OPEN) ws.send('{"lv":false}');
@@ -2513,7 +2517,7 @@ function loadPalettesData(callback = null)
 
 function getPalettesData(page, callback)
 {
-	var url = (loc?`http://${locip}`:'') + `/json/palx?page=${page}`;
+	var url = (loc?`http://${locip}`:sessionStorage['baseurl']) + `/json/palx?page=${page}`;
 
 	fetch(url, {
 		method: 'get',

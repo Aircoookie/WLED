@@ -33,7 +33,7 @@
 			if (ws && ws.readyState === WebSocket.OPEN) {
 				ws.send("{'lv':true}");
 			} else {
-				ws = new WebSocket((window.location.protocol == "https:"?"wss":"ws")+"://"+document.location.host+"/ws");
+				ws = new WebSocket((window.location.protocol == "https:"?"wss":"ws")+"://" + sessionStorage['hostname'] + sessionStorage['basepath'] + "/ws");
 				ws.onopen = ()=>{
 					ws.send("{'lv':true}");
 				}

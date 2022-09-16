@@ -9,8 +9,8 @@
 		var d = document;
 		var loc = false, locip;
 		function H() { window.open("https://kno.wled.ge/features/settings/#security-settings"); }
-		function B() { window.open("/settings","_self"); }
-		function U() { window.open("/update","_self"); }
+		function B() { window.open(".","_self"); }
+		function U() { window.open("../update","_self"); }
 		function gId(s) { return d.getElementById(s); }
 		function isObj(o) { return (o && typeof o === 'object' && !Array.isArray(o)); }
 		// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
@@ -73,7 +73,7 @@
 					localStorage.setItem('locIp', locip);
 				}
 			}
-			var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=6';
+			var url = (loc?`http://${locip}`:sessionStorage['baseurl']) + '/settings/s.js?p=6';
 			loadJS(url, false);	// If we set async false, file is loaded and executed, then next statement is processed
 		}
 	</script>
@@ -106,9 +106,9 @@
 		Enable ArduinoOTA: <input type="checkbox" name="AO">
 		<hr>
 		<h3>Backup & Restore</h3>
-		<a class="btn lnk" id="bckcfg" href="/presets.json" download="presets">Backup presets</a><br>
+		<a class="btn lnk" id="bckcfg" href="./presets.json" download="presets">Backup presets</a><br>
 		<div>Restore presets<br><input type="file" name="data" accept=".json"> <button type="button" onclick="uploadFile(d.Sf.data,'/presets.json');">Upload</button><br></div><br>
-		<a class="btn lnk" id="bckpresets" href="/cfg.json" download="cfg">Backup configuration</a><br>
+		<a class="btn lnk" id="bckpresets" href="./cfg.json" download="cfg">Backup configuration</a><br>
 		<div>Restore configuration<br><input type="file" name="data2" accept=".json"> <button type="button" onclick="uploadFile(d.Sf.data2,'/cfg.json');">Upload</button><br></div>
 		<div style="color: #fa0;">&#9888; Restoring presets/configuration will OVERWRITE your current presets/configuration.<br>
 		Incorrect configuration may require a factory reset or re-flashing of your ESP.</div>

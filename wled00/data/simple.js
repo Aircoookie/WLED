@@ -148,7 +148,7 @@ function loadSkinCSS(cId)
 		l.id   = cId;
 		l.rel  = 'stylesheet';
 		l.type = 'text/css';
-		l.href = (loc?`http://${locip}`:'.') + '/skin.css';
+		l.href = (loc?`http://${locip}`:sessionStorage['baseurl']) + '/skin.css';
 		l.media = 'all';
 		h.appendChild(l);
 	}
@@ -156,6 +156,10 @@ function loadSkinCSS(cId)
 
 async function onLoad()
 {
+	sessionStorage['baseurl'] = window.location.href.endsWith('/') ? window.location.href.slice(0,-1) : window.location.href;
+	sessionStorage['hostname'] = window.location.hostname;
+	sessionStorage['basepath'] = window.location.pathname.slice(0, -1);
+
 	if (window.location.protocol == "file:") {
 		loc = true;
 		locip = localStorage.getItem('locIp');
@@ -173,7 +177,7 @@ async function onLoad()
 	applyCfg();
 	if (cfg.theme.bg.url=="" || cfg.theme.bg.url === "https://picsum.photos/1920/1080") {
 		var iUrl = cfg.theme.bg.url;
-		fetch((loc?`http://${locip}`:'.') + "/holidays.json", {
+		fetch((loc?`http://${locip}`:'') + "/holidays.json", {
 			method: 'get'
 		})
 		.then((res)=>{
@@ -330,7 +334,7 @@ function loadPresets(callback = null)
 
 	pmtLast = pmt;
 
-	var url = (loc?`http://${locip}`:'') + '/presets.json';
+	var url = (loc?`http://${locip}`:sessionStorage['baseurl']) + '/presets.json';
 
 	fetch(url, {
 		method: 'get'
@@ -355,7 +359,7 @@ function loadPresets(callback = null)
 
 function loadPalettes(callback = null)
 {
-	var url = (loc?`http://${locip}`:'') + '/json/palettes';
+	var url = (loc?`http://${locip}`:sessionStorage['baseurl']) + '/json/palettes';
 
 	fetch(url, {
 		method: 'get'
@@ -379,7 +383,7 @@ function loadPalettes(callback = null)
 
 function loadFX(callback = null)
 {
-	var url = (loc?`http://${locip}`:'') + '/json/effects';
+	var url = (loc?`http://${locip}`:sessionStorage['baseurl']) + '/json/effects';
 
 	fetch(url, {
 		method: 'get'
@@ -403,7 +407,7 @@ function loadFX(callback = null)
 
 function loadFXData(callback = null)
 {
-	var url = (loc?`http://${locip}`:'') + '/json/fxdata';
+	var url = (loc?`http://${locip}`:sessionStorage['baseurl']) + '/json/fxdata';
 
 	fetch(url, {
 		method: 'get'
@@ -610,7 +614,7 @@ function populateNodes(i,n)
 
 function loadNodes()
 {
-	var url = (loc?`http://${locip}`:'') + '/json/nodes';
+	var url = (loc?`http://${locip}`:sessionStorage['baseurl']) + '/json/nodes';
 	fetch(url, {
 		method: 'get'
 	})
@@ -973,7 +977,7 @@ function requestJson(command=null)
 	if (command && !reqsLegal) return; //stop post requests from chrome onchange event on page restore
 	if (!jsonTimeout) jsonTimeout = setTimeout(showErrorToast, 3000);
 	var req = null;
-	var url = (loc?`http://${locip}`:'') + '/json/si';
+	var url = (loc?`http://${locip}`:sessionStorage['baseurl']) + '/json/si';
 	var useWs = (ws && ws.readyState === WebSocket.OPEN);
 	var type = command ? 'post':'get';
 	if (command) {
@@ -1313,7 +1317,7 @@ function loadPalettesData(callback = null)
 
 function getPalettesData(page, callback)
 {
-	var url = (loc?`http://${locip}`:'') + `/json/palx?page=${page}`;
+	var url = (loc?`http://${locip}`:sessionStorage['baseurl']) + `/json/palx?page=${page}`;
 
 	fetch(url, {
 		method: 'get',
