@@ -145,8 +145,8 @@ static float   fftResultMax[NUM_GEQ_CHANNELS] = {0.0f};               // A table
 #endif
 
 #ifdef WLED_DEBUG
-static unsigned long fftTime = 0;
-static unsigned long sampleTime = 0;
+static uint64_t fftTime = 0;
+static uint64_t sampleTime = 0;
 #endif
 
 // Table of multiplication factors so that we can even out the frequency response.
@@ -202,7 +202,7 @@ void FFTcode(void * parameter)
 
 #ifdef WLED_DEBUG
     if (start < esp_timer_get_time()) { // filter out overflows
-      unsigned long sampleTimeInMillis = (esp_timer_get_time() - start +500ULL) / 1000ULL; // "+500" to ensure proper rounding
+      unsigned long sampleTimeInMillis = (esp_timer_get_time() - start +5ULL) / 10ULL; // "+5" to ensure proper rounding
       sampleTime = (sampleTimeInMillis*3 + sampleTime*7)/10; // smooth
     }
 #endif
@@ -382,7 +382,7 @@ void FFTcode(void * parameter)
 
 #ifdef WLED_DEBUG
     if (start < esp_timer_get_time()) { // filter out overflows
-      unsigned long fftTimeInMillis = ((esp_timer_get_time() - start) +500ULL) / 1000ULL; // "+500" to ensure proper rounding
+      unsigned long fftTimeInMillis = ((esp_timer_get_time() - start) +5ULL) / 10ULL; // "+5" to ensure proper rounding
       fftTime  = (fftTimeInMillis*3 + fftTime*7)/10; // smooth
     }
 #endif
@@ -1380,11 +1380,11 @@ class AudioReactive : public Usermod {
 
         #ifdef WLED_DEBUG
         infoArr = user.createNestedArray(F("Sampling time"));
-        infoArr.add(sampleTime);
-        infoArr.add("ms");
+        infoArr.add(float(sampleTime)/100.0f);
+        infoArr.add(" ms");
         infoArr = user.createNestedArray(F("FFT time"));
-        infoArr.add(fftTime-sampleTime);
-        infoArr.add("ms");
+        infoArr.add(float(fftTime-sampleTime)/100.0f);
+        infoArr.add(" ms");
         #endif
       }
     }
