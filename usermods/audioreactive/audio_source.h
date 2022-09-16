@@ -4,6 +4,7 @@
 #include "wled.h"
 #include <driver/i2s.h>
 #include <driver/adc.h>
+#include <soc/i2s_reg.h>  // needed for SPH0465 timing workaround (classic ESP32)
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0)
 #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32S3) && !defined(CONFIG_IDF_TARGET_ESP32C3)
 #include <driver/adc_deprecated.h>
@@ -32,13 +33,6 @@
 
 // if you have problems to get your microphone work on the left channel, uncomment the following line
 //#define I2S_USE_RIGHT_CHANNEL    // (experimental) define this to use right channel (digital mics only)
-#ifdef I2S_USE_RIGHT_CHANNEL
-#define I2S_MIC_CHANNEL I2S_CHANNEL_FMT_ONLY_RIGHT
-#define I2S_MIC_CHANNEL_TEXT "right channel only."
-#else
-#define I2S_MIC_CHANNEL I2S_CHANNEL_FMT_ONLY_LEFT
-#define I2S_MIC_CHANNEL_TEXT "left channel only."
-#endif
 
 // Uncomment the line below to utilize ADC1 _exclusively_ for I2S sound input.
 // benefit: analog mic inputs will be sampled contiously -> better response times and less "glitches"
@@ -48,17 +42,55 @@
 
 // data type requested from the I2S driver - currently we always use 32bit
 //#define I2S_USE_16BIT_SAMPLES   // (experimental) define this to request 16bit - more efficient but possibly less compatible
+
 #ifdef I2S_USE_16BIT_SAMPLES
 #define I2S_SAMPLE_RESOLUTION I2S_BITS_PER_SAMPLE_16BIT
 #define I2S_datatype int16_t
 #define I2S_unsigned_datatype uint16_t
+#define I2S_data_size I2S_BITS_PER_CHAN_16BIT
 #undef  I2S_SAMPLE_DOWNSCALE_TO_16BIT
 #else
 #define I2S_SAMPLE_RESOLUTION I2S_BITS_PER_SAMPLE_32BIT
+//#define I2S_SAMPLE_RESOLUTION I2S_BITS_PER_SAMPLE_24BIT 
 #define I2S_datatype int32_t
 #define I2S_unsigned_datatype uint32_t
+#define I2S_data_size I2S_BITS_PER_CHAN_32BIT
 #define I2S_SAMPLE_DOWNSCALE_TO_16BIT
 #endif
+
+/* There are several (confusing) options  in IDF 4.4.x:
+ * I2S_CHANNEL_FMT_RIGHT_LEFT, I2S_CHANNEL_FMT_ALL_RIGHT and I2S_CHANNEL_FMT_ALL_LEFT stands for stereo mode, which means two channels will transport different data.
+ * I2S_CHANNEL_FMT_ONLY_RIGHT and I2S_CHANNEL_FMT_ONLY_LEFT they are mono mode, both channels will only transport same data.
+ * I2S_CHANNEL_FMT_MULTIPLE means TDM channels, up to 16 channel will available, and they are stereo as default.
+ * if you want to receive two channels, one is the actual data from microphone and another channel is suppose to receive 0, it's different data in two channels, you need to choose I2S_CHANNEL_FMT_RIGHT_LEFT in this case.
+*/
+
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0)) && (ESP_IDF_VERSION <= ESP_IDF_VERSION_VAL(4, 4, 3))
+// espressif bug: only_left has no sound, left and right are swapped 
+// https://github.com/espressif/esp-idf/issues/9635  I2S mic not working since 4.4 (IDFGH-8138)
+// https://github.com/espressif/esp-idf/issues/8538  I2S channel selection issue? (IDFGH-6918)
+// https://github.com/espressif/esp-idf/issues/6625  I2S: left/right channels are swapped for read (IDFGH-4826)
+#ifdef I2S_USE_RIGHT_CHANNEL
+#define I2S_MIC_CHANNEL I2S_CHANNEL_FMT_ONLY_LEFT
+#define I2S_MIC_CHANNEL_TEXT "right channel only (work-around swapped channel bug in IDF 4.4)."
+#else
+//#define I2S_MIC_CHANNEL I2S_CHANNEL_FMT_ALL_LEFT
+//#define I2S_MIC_CHANNEL I2S_CHANNEL_FMT_RIGHT_LEFT
+#define I2S_MIC_CHANNEL I2S_CHANNEL_FMT_ONLY_RIGHT
+#define I2S_MIC_CHANNEL_TEXT "left channel only (work-around swapped channel bug in IDF 4.4)."
+#endif
+
+#else
+// not swapped
+#ifdef I2S_USE_RIGHT_CHANNEL
+#define I2S_MIC_CHANNEL I2S_CHANNEL_FMT_ONLY_RIGHT
+#define I2S_MIC_CHANNEL_TEXT "right channel only."
+#else
+#define I2S_MIC_CHANNEL I2S_CHANNEL_FMT_ONLY_LEFT
+#define I2S_MIC_CHANNEL_TEXT "left channel only."
+#endif
+#endif
+
 
 /* Interface class
    AudioSource serves as base class for all microphone types
@@ -128,12 +160,19 @@ class I2SSource : public AudioSource {
         .channel_format = I2S_MIC_CHANNEL,
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
         .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_STAND_I2S),
+        //.intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
+        .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2,
+        .dma_buf_count = 8,
+        .dma_buf_len = _blockSize,
+        .use_apll = 0,
+        .bits_per_chan = I2S_data_size,
 #else
         .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB),
-#endif
         .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
         .dma_buf_count = 8,
-        .dma_buf_len = _blockSize
+        .dma_buf_len = _blockSize,
+        .use_apll = false
+#endif
       };
     }
 
@@ -141,13 +180,17 @@ class I2SSource : public AudioSource {
       if (i2swsPin != I2S_PIN_NO_CHANGE && i2ssdPin != I2S_PIN_NO_CHANGE) {
         if (!pinManager.allocatePin(i2swsPin, true, PinOwner::UM_Audioreactive) ||
             !pinManager.allocatePin(i2ssdPin, false, PinOwner::UM_Audioreactive)) { // #206
+          DEBUGSR_PRINTF("\nAR: Failed to allocate I2S pins: ws=%d, sd=%d\n",  i2swsPin, i2ssdPin); 
           return;
         }
       }
 
       // i2ssckPin needs special treatment, since it might be unused on PDM mics
       if (i2sckPin != I2S_PIN_NO_CHANGE) {
-        if (!pinManager.allocatePin(i2sckPin, true, PinOwner::UM_Audioreactive)) return;
+        if (!pinManager.allocatePin(i2sckPin, true, PinOwner::UM_Audioreactive)) {
+          DEBUGSR_PRINTF("\nAR: Failed to allocate I2S pins: sck=%d\n",  i2sckPin); 
+          return;
+        }
       } else {
         #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
         // This is an I2S PDM microphone, these microphones only use a clock and
@@ -165,6 +208,9 @@ class I2SSource : public AudioSource {
       }
 
       _pinConfig = {
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0)
+        .mck_io_num = mclkPin,            // "classic" ESP32 supports setting MCK on GPIO0/GPIO1/GPIO3 only. i2s_set_pin() will fail if wrong mck_io_num is provided.
+#endif
         .bck_io_num = i2sckPin,
         .ws_io_num = i2swsPin,
         .data_out_num = I2S_PIN_NO_CHANGE,
@@ -180,9 +226,18 @@ class I2SSource : public AudioSource {
       err = i2s_set_pin(I2S_NUM_0, &_pinConfig);
       if (err != ESP_OK) {
         DEBUGSR_PRINTF("Failed to set i2s pin config: %d\n", err);
+        i2s_driver_uninstall(I2S_NUM_0);  // uninstall already-installed driver
         return;
       }
 
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
+      err = i2s_set_clk(I2S_NUM_0, _sampleRate, I2S_SAMPLE_RESOLUTION, I2S_CHANNEL_MONO);  // set bit clocks. Also takes care of MCLK routing if needed.
+      if (err != ESP_OK) {
+        DEBUGSR_PRINTF("Failed to configure i2s clocks: %d\n", err);
+        i2s_driver_uninstall(I2S_NUM_0);  // uninstall already-installed driver
+        return;
+      }
+#endif
       _initialized = true;
     }
 
@@ -237,8 +292,10 @@ class I2SSource : public AudioSource {
   protected:
     void _routeMclk(int8_t mclkPin) {
 #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
+  // MCLK routing by writing registers is not needed any more with IDF > 4.4.0
+  #if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 4, 0)
     // this way of MCLK routing only works on "classic" ESP32
-      /* Enable the mclk routing depending on the selected mclk pin
+      /* Enable the mclk routing depending on the selected mclk pin (ESP32: only 0,1,3)
           Only I2S_NUM_0 is supported
       */
       if (mclkPin == GPIO_NUM_0) {
@@ -251,6 +308,7 @@ class I2SSource : public AudioSource {
         PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0RXD_U, FUNC_U0RXD_CLK_OUT2);
         WRITE_PERI_REG(PIN_CTRL, 0xFF00);
       }
+  #endif
 #else
 #warning FIX ME!
 #endif
@@ -517,6 +575,9 @@ class I2SAdcSource : public I2SSource {
    This is an I2S microphone with some timing quirks that need
    special consideration.
 */
+
+// https://github.com/espressif/esp-idf/issues/7192  SPH0645 i2s microphone issue when migrate from legacy esp-idf version (IDFGH-5453)
+// a user recommended this: Try to set .communication_format to I2S_COMM_FORMAT_STAND_I2S and call i2s_set_clk() after i2s_set_pin().
 class SPH0654 : public I2SSource {
   public:
     SPH0654(SRate_t sampleRate, int blockSize) :
