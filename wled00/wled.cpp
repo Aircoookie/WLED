@@ -276,9 +276,15 @@ void WLED::setup()
 #ifdef ARDUINO_ARCH_ESP32
   DEBUG_PRINT(F("esp32 "));
   DEBUG_PRINTLN(ESP.getSdkVersion());
+  #if defined(ESP_ARDUINO_VERSION)
+    //DEBUG_PRINTF(F("arduino-esp32  0x%06x\n"), ESP_ARDUINO_VERSION);
+    DEBUG_PRINTF("arduino-esp32 v%d.%d.%d\n", int(ESP_ARDUINO_VERSION_MAJOR), int(ESP_ARDUINO_VERSION_MINOR), int(ESP_ARDUINO_VERSION_PATCH));  // availeable since v2.0.0
+  #else
+    DEBUG_PRINTLN(F("arduino-esp32 v1.0.x\n"));  // we can't say in more detail.
+  #endif
 
   DEBUG_PRINT(F("CPU:   ")); DEBUG_PRINT(ESP.getChipModel());
-  DEBUG_PRINT(F(" rev. ")); DEBUG_PRINT(ESP.getChipRevision());
+  DEBUG_PRINT(F(" rev.")); DEBUG_PRINT(ESP.getChipRevision());
   DEBUG_PRINT(F(", ")); DEBUG_PRINT(ESP.getChipCores()); DEBUG_PRINT(F(" core(s)"));
   DEBUG_PRINT(F(", ")); DEBUG_PRINT(ESP.getCpuFreqMHz()); DEBUG_PRINTLN(F("MHz."));
   DEBUG_PRINT(F("FLASH: ")); DEBUG_PRINT((ESP.getFlashChipSize()/1024)/1024);
