@@ -448,7 +448,7 @@ class AudioReactive : public Usermod {
     int8_t i2swsPin = I2S_WSPIN;
     #endif
     #ifndef I2S_CKPIN // aka BCLK
-    int8_t i2sckPin = 14;
+    int8_t i2sckPin = 14; /*PDM: set to I2S_PIN_NO_CHANGE*/
     #else
     int8_t i2sckPin = I2S_CKPIN;
     #endif
@@ -463,9 +463,9 @@ class AudioReactive : public Usermod {
     int8_t sclPin = ES7243_SCLPIN;
     #endif
     #ifndef MCLK_PIN
-    int8_t mclkPin = -1;
+    int8_t mclkPin = I2S_PIN_NO_CHANGE;  /* ESP32: only -1, 0, 1, 3 allowed*/
     #else
-    int8_t mclkPin = MLCK_PIN;
+    int8_t mclkPin = MCLK_PIN;
     #endif
 
     // new "V2" audiosync struct - 40 Bytes
