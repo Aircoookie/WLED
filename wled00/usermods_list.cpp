@@ -145,6 +145,10 @@
 #include "../usermods/usermod_v2_weather/usermod_v2_weather.h"
 #endif
 
+#ifdef USERMOD_GAMES
+#include "../usermods/usermod_v2_games/usermod_v2_games.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -274,8 +278,11 @@ void registerUsermods()
   usermods.add(new CustomEffectsUserMod());
   #endif
   
-
   #ifdef USERMOD_WEATHER
   usermods.add(new WeatherUsermod());
+  #endif
+
+  #ifdef USERMOD_GAMES
+  usermods.add(new GamesUsermod());
   #endif
 }
