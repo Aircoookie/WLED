@@ -309,8 +309,6 @@ class I2SSource : public AudioSource {
         WRITE_PERI_REG(PIN_CTRL, 0xFF00);
       }
   #endif
-#else
-#warning FIX ME!
 #endif
     }
 
