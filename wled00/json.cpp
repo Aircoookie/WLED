@@ -95,7 +95,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   if (stop > start && of > len -1) of = len -1;
   strip.setSegment(id, start, stop, grp, spc, of);
 
-  byte segbri = 0;
+  byte segbri = seg.opacity;
   if (getVal(elem["bri"], &segbri)) {
     if (segbri > 0) seg.setOpacity(segbri, id);
     seg.setOption(SEG_OPTION_ON, segbri, id);
@@ -135,17 +135,13 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         byte sz = colX.size();
         if (sz == 0) continue; //do nothing on empty array
 
-        byte cp = copyArray(colX, rgbw, 4);      
-        if (cp == 1 && rgbw[0] == 0) 
-          seg.setColor(i, 0, id);
+        copyArray(colX, rgbw, 4);
         colValid = true;
       }
 
       if (!colValid) continue;
 
-      uint32_t color = RGBW32(rgbw[0],rgbw[1],rgbw[2],rgbw[3]);
-      colorChanged |= (seg.colors[i] != color);
-      seg.setColor(i, color, id);
+      seg.setColor(i, RGBW32(rgbw[0],rgbw[1],rgbw[2],rgbw[3]), id);
       if (seg.mode == FX_MODE_STATIC) strip.trigger(); //instant refresh
     }
   }
@@ -181,7 +177,12 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   if (!iarr.isNull()) {
     uint8_t oldSegId = strip.setPixelSegment(id);
 
-    //freeze and init to black
+    // set brightness immediately and disable transition
+    transitionDelayTemp = 0;
+    jsonTransitionOnce = true;
+    strip.setBrightness(scaledBri(bri), true);
+
+    // freeze and init to black
     if (!seg.getOption(SEG_OPTION_FREEZE)) {
       seg.setOption(SEG_OPTION_FREEZE, true);
       strip.fill(0);
@@ -204,7 +205,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         JsonArray icol = iarr[i];
         if (!icol.isNull()) { //array, e.g. [255,0,0]
           byte sz = icol.size();
-          if (sz > 0 || sz < 5) copyArray(icol, rgbw);
+          if (sz > 0 && sz < 5) copyArray(icol, rgbw);
         } else { //hex string, e.g. "FF0000"
           byte brgbw[] = {0,0,0,0};
           const char* hexCol = iarr[i];
@@ -227,11 +228,13 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     }
     strip.setPixelSegment(oldSegId);
     strip.trigger();
-  } else if (!elem["frz"] && iarr.isNull()) { //return to regular effect
-    seg.setOption(SEG_OPTION_FREEZE, false);
+//  } else if (!elem["frz"] && iarr.isNull()) { //return to regular effect
+//    seg.setOption(SEG_OPTION_FREEZE, false);
   }
-  //send UDP if not in preset and something changed that is not just selection
-  if (!presetId && (seg.differs(prev) & 0x7F)) effectChanged = true;
+  // send UDP if not in preset and something changed that is not just selection
+  //if (!presetId && (seg.differs(prev) & 0x7F)) stateChanged = true;
+  // send UDP if something changed that is not just selection
+  if (seg.differs(prev) & 0x7F) stateChanged = true;
   return;
 }
 
@@ -240,12 +243,22 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 {
   bool stateResponse = root[F("v")] | false;
 
+  bool onBefore = bri;
   getVal(root["bri"], &bri);
 
   bool on = root["on"] | (bri > 0);
   if (!on != !bri) toggleOnOff();
 
   if (root["on"].is<const char*>() && root["on"].as<const char*>()[0] == 't') toggleOnOff();
+
+  if (bri && !onBefore) { // unfreeze all segments when turning on
+    for (uint8_t s=0; s < strip.getMaxSegments(); s++) {
+      strip.getSegment(s).setOption(SEG_OPTION_FREEZE, false, s);
+    }
+    if (realtimeMode && !realtimeOverride && useMainSegmentOnly) { // keep live segment frozen if live
+      strip.getMainSegment().setOption(SEG_OPTION_FREEZE, true, strip.getMainSegmentId());
+    }
+  }
 
   int tr = -1;
   if (!presetId || currentPlaylist < 0) { //do not apply transition time from preset if playlist active, as it would override playlist transition times
@@ -265,15 +278,15 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     transitionDelayTemp *= 100;
     jsonTransitionOnce = true;
   }
-  strip.setTransition(transitionDelayTemp);
+  strip.setTransition(transitionDelayTemp); // required here for color transitions to have correct duration
 
   tr = root[F("tb")] | -1;
   if (tr >= 0) strip.timebase = ((uint32_t)tr) - millis();
 
   JsonObject nl       = root["nl"];
   nightlightActive    = nl["on"]      | nightlightActive;
-  nightlightDelayMins = nl["dur"]  | nightlightDelayMins;
-  nightlightMode      = nl["mode"] | nightlightMode;
+  nightlightDelayMins = nl["dur"]     | nightlightDelayMins;
+  nightlightMode      = nl["mode"]    | nightlightMode;
   nightlightTargetBri = nl[F("tbri")] | nightlightTargetBri;
 
   JsonObject udpn      = root["udpn"];
@@ -289,16 +302,23 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   doReboot = root[F("rb")] | doReboot;
 
+  strip.setMainSegmentId(root[F("mainseg")] | strip.getMainSegmentId()); // must be before realtimeLock() if "live"
+
   realtimeOverride = root[F("lor")] | realtimeOverride;
   if (realtimeOverride > 2) realtimeOverride = REALTIME_OVERRIDE_ALWAYS;
-
-  if (root.containsKey("live")) {
-    bool lv = root["live"];
-    if (lv) realtimeLock(65000); //enter realtime without timeout
-    else    realtimeTimeout = 0; //cancel realtime mode immediately
+  if (realtimeMode && useMainSegmentOnly) {
+    strip.getMainSegment().setOption(SEG_OPTION_FREEZE, !realtimeOverride, strip.getMainSegmentId());
   }
 
-  strip.setMainSegmentId(root[F("mainseg")] | strip.getMainSegmentId());
+  if (root.containsKey("live")) {
+    if (root["live"].as<bool>()) {
+      transitionDelayTemp = 0;
+      jsonTransitionOnce = true;
+      realtimeLock(65000);
+    } else {
+      exitRealtime();
+    }
+  }
 
   int it = 0;
   JsonVariant segVar = root["seg"];
@@ -332,22 +352,13 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     }
   }
 
-  //refresh main segment (ensure it is selected, if there are any selected segments)
-  strip.setMainSegmentId(strip.getMainSegmentId());
-
-  #ifndef WLED_DISABLE_CRONIXIE
-    if (root["nx"].is<const char*>()) {
-      strncpy(cronixieDisplay, root["nx"], 6);
-    }
-  #endif
-
   usermods.readFromJsonState(root);
 
   loadLedmap = root[F("ledmap")] | loadLedmap;
 
   byte ps = root[F("psave")];
   if (ps > 0) {
-    savePreset(ps, true, nullptr, root);
+    savePreset(ps, nullptr, root);
   } else {
     ps = root[F("pdel")]; //deletion
     if (ps > 0) {
@@ -508,15 +519,6 @@ void serializeInfo(JsonObject root)
 
   JsonObject leds = root.createNestedObject("leds");
   leds[F("count")] = strip.getLengthTotal();
-  leds[F("rgbw")] = strip.hasRGBWBus();         //deprecated, use info.leds.lc
-  leds[F("wv")] = false;                        //deprecated, use info.leds.lc
-  leds["cct"] = correctWB || strip.hasCCTBus(); //deprecated, use info.leds.lc
-  switch (Bus::getAutoWhiteMode()) {
-    case RGBW_MODE_MANUAL_ONLY:
-    case RGBW_MODE_DUAL:
-      if (strip.hasWhiteChannel()) leds[F("wv")] = true;
-      break;
-  }
 
   leds[F("pwr")] = strip.currentMilliamps;
   leds["fps"] = strip.getFps();
@@ -535,11 +537,17 @@ void serializeInfo(JsonObject root)
 
   leds["lc"] = totalLC;
 
+  leds[F("rgbw")] = strip.hasRGBWBus(); // deprecated, use info.leds.lc
+  leds[F("wv")]   = totalLC & 0x02;     // deprecated, true if white slider should be displayed for any segment
+  leds["cct"]     = totalLC & 0x04;     // deprecated, use info.leds.lc
+
   root[F("str")] = syncToggleReceive;
 
   root[F("name")] = serverDescription;
   root[F("udpport")] = udpPort;
   root["live"] = (bool)realtimeMode;
+  root[F("liveseg")] = useMainSegmentOnly ? strip.getMainSegmentId() : -1;  // if using main segment only for live
+  //root[F("mso")] = useMainSegmentOnly;  // using main segment only for live
 
   switch (realtimeMode) {
     case REALTIME_MODE_INACTIVE: root["lm"] = ""; break;
@@ -624,7 +632,7 @@ void serializeInfo(JsonObject root)
   #ifndef WLED_DISABLE_BLYNK
   os += 0x20;
   #endif
-  #ifndef WLED_DISABLE_CRONIXIE
+  #ifdef USERMOD_CRONIXIE
   os += 0x10;
   #endif
   #ifndef WLED_DISABLE_FILESYSTEM

@@ -1,6 +1,98 @@
 ## WLED changelog
 
-### Builds after release 0.12.0
+### WLED release 0.13.3
+
+-   Version bump to v0.13.3 "Toki"
+-   Disable ESP watchdog by default (fixes flickering and boot issues on a fresh install)
+-   Added support for LPD6803
+
+### WLED release 0.13.2
+
+#### Build 2208140
+
+-   Version bump to v0.13.2 "Toki"
+-   Added option to receive live data on the main segment only (PR #2601)
+-   Enable ESP watchdog by default (PR #2657)
+-   Fixed race condition when saving bus config
+-   Better potentiometer filtering (PR #2693)
+-   More suitable DMX libraries (PR #2652)
+-   Fixed outgoing serial TPM2 message length (PR #2628)
+-   Fixed next universe overflow and Art-Net DMX start address (PR #2607)
+-   Fixed relative segment brightness (PR #2665)
+
+### Builds between releases 0.13.1 and 0.13.2
+
+#### Build 2203191
+
+-   Fixed sunrise/set calculation (once again)
+
+#### Build 2203190
+
+-   Fixed `/json/cfg` unable to set busses (#2589)
+-   Fixed Peek with odd LED counts > 255 (#2586)
+
+#### Build 2203160
+
+-   Version bump to v0.13.2-a0 "Toki"
+-   Add ability to skip up to 255 LEDs
+-   Dependency version bumps
+
+### WLED release 0.13.1
+
+#### Build 2203150
+
+-   Version bump to v0.13.1 "Toki"
+-   Fix persistent preset bug, preventing save of new presets
+
+### WLED release 0.13.0
+
+#### Build 2203142
+
+-   Release of WLED v0.13.0 "Toki"
+-   Reduce APA102 hardware SPI frequency to 5Mhz
+-   Remove `persistent` parameter in `savePreset()`
+
+### Builds between releases 0.12.0 and 0.13.0
+
+#### Build 2203140
+
+-   Added factory reset by pressing button 0 for >10 seconds
+-   Added ability to set presets from DMX Effect mode
+-   Simplified label hiding JS in user interface
+-   Fixed JSON `{"live":true}` indefinite realtime mode
+
+#### Build 2203080
+
+-   Disabled auto white mode in segments with no RGB bus
+-   Fixed hostname string not 0-terminated 
+-   Fixed Popcorn mode not lighting first LED on pop
+
+#### Build 2203060
+
+-   Dynamic hiding of unused color controls in UI (PR #2567)
+-   Removed native Cronixie support and added Cronixie usermod
+-   Fixed disabled timed preset expanding calendar
+-   Fixed Color Order setting shown for analog busses
+-   Fixed incorrect operator (#2566)
+
+#### Build 2203011
+
+-   IR rewrite (PR #2561), supports CCT
+-   Added locate button to Time settings
+-   CSS fixes and adjustments
+-   Consistent Tab indentation in index JS and CSS
+-   Added initial contribution style guideline
+
+#### Build 2202222
+
+-   Version bump to 0.13.0-b7 "Toki"
+-   Fixed HTTP API commands not applying to all selected segments in some conditions
+-   Blynk support is not compiled in by default on ESP32 builds
+
+#### Build 2202210
+
+-   Fixed HTTP API commands not applying to all selected segments if called from JSON
+-   Improved Stream effects, no longer rely on LED state and won't fade out at low brightness
 
 #### Build 2202200
 

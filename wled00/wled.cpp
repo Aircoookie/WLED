@@ -28,7 +28,7 @@ void WLED::reset()
     yield();        // enough time to send response to client
   }
   applyBri();
-  DEBUG_PRINTLN(F("MODULE RESET"));
+  DEBUG_PRINTLN(F("WLED RESET"));
   ESP.restart();
 }
 
@@ -62,18 +62,19 @@ void prepareHostname(char* hostname)
       hostname[pos] = '-';
       pos++;
     }
-      // else do nothing - no leading hyphens and do not include hyphens for all other characters.
-      pC++;
+    // else do nothing - no leading hyphens and do not include hyphens for all other characters.
+    pC++;
+  }
+  // if the hostname is left blank, use the mac address/default mdns name
+  if (pos < 6) {
+    sprintf(hostname + 5, "%*s", 6, escapedMac.c_str() + 6);
+  } else { //last character must not be hyphen
+    hostname[pos] = '\0'; // terminate string
+    while (pos > 0 && hostname[pos -1] == '-') {
+      hostname[pos -1] = '\0';
+      pos--;
     }
-    // if the hostname is left blank, use the mac address/default mdns name
-    if (pos < 6) {
-      sprintf(hostname + 5, "%*s", 6, escapedMac.c_str() + 6);
-    } else { //last character must not be hyphen
-      while (pos > 0 && hostname[pos -1] == '-') {
-        hostname[pos -1] = 0;
-        pos--;
-      }
-    }
+  }
 }
 
 //handle Ethernet connection event
@@ -147,33 +148,38 @@ void WLED::loop()
   yield();
   handleIO();
   handleIR();
+  #ifndef WLED_DISABLE_ALEXA
   handleAlexa();
+  #endif
 
   yield();
 
-  if (doReboot)
+  if (doReboot && !doInitBusses) // if busses have to be inited & saved, wait until next iteration
     reset();
   if (doCloseFile) {
     closeFile();
     yield();
   }
 
-  if (!realtimeMode || realtimeOverride)  // block stuff if WARLS/Adalight is enabled
+  if (!realtimeMode || realtimeOverride || (realtimeMode && useMainSegmentOnly))  // block stuff if WARLS/Adalight is enabled
   {
-    if (apActive)
-      dnsServer.processNextRequest();
-#ifndef WLED_DISABLE_OTA
-    if (WLED_CONNECTED && aOtaEnabled)
-      ArduinoOTA.handle();
-#endif
+    if (apActive) dnsServer.processNextRequest();
+    #ifndef WLED_DISABLE_OTA
+    if (WLED_CONNECTED && aOtaEnabled) ArduinoOTA.handle();
+    #endif
     handleNightlight();
     handlePlaylist();
     yield();
 
+    #ifndef WLED_DISABLE_HUESYNC
     handleHue();
-#ifndef WLED_DISABLE_BLYNK
+    yield();
+    #endif
+
+    #ifndef WLED_DISABLE_BLYNK
     handleBlynk();
-#endif
+    yield();
+    #endif
 
     yield();
 
@@ -270,6 +276,44 @@ void WLED::loop()
   loops++;
 #endif        // WLED_DEBUG
   toki.resetTick();
+
+#if WLED_WATCHDOG_TIMEOUT > 0
+  // we finished our mainloop, reset the watchdog timer
+  #ifdef ARDUINO_ARCH_ESP32
+    esp_task_wdt_reset();
+  #else
+    ESP.wdtFeed();
+  #endif
+#endif
+}
+
+void WLED::enableWatchdog() {
+#if WLED_WATCHDOG_TIMEOUT > 0
+#ifdef ARDUINO_ARCH_ESP32
+  esp_err_t watchdog = esp_task_wdt_init(WLED_WATCHDOG_TIMEOUT, true);
+  DEBUG_PRINT(F("Watchdog enabled: "));
+  if (watchdog == ESP_OK) {
+    DEBUG_PRINTLN(F("OK"));
+  } else {
+    DEBUG_PRINTLN(watchdog);
+    return;
+  }
+  esp_task_wdt_add(NULL);
+#else
+  ESP.wdtEnable(WLED_WATCHDOG_TIMEOUT * 1000);
+#endif
+#endif
+}
+
+void WLED::disableWatchdog() {
+#if WLED_WATCHDOG_TIMEOUT > 0
+DEBUG_PRINTLN(F("Watchdog: disabled"));
+#ifdef ARDUINO_ARCH_ESP32
+  esp_task_wdt_delete(NULL);
+#else
+  ESP.wdtDisable();
+#endif
+#endif
 }
 
 void WLED::setup()
@@ -295,6 +339,8 @@ void WLED::setup()
 #endif
   DEBUG_PRINT(F("heap "));
   DEBUG_PRINTLN(ESP.getFreeHeap());
+
+  enableWatchdog();
 
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
   if (psramFound()) {
@@ -358,8 +404,8 @@ void WLED::setup()
   #endif
 
   #ifdef WLED_ENABLE_ADALIGHT
-	//Serial RX (Adalight, Improv, Serial JSON) only possible if GPIO3 unused
-	//Serial TX (Debug, Improv, Serial JSON) only possible if GPIO1 unused
+  //Serial RX (Adalight, Improv, Serial JSON) only possible if GPIO3 unused
+  //Serial TX (Debug, Improv, Serial JSON) only possible if GPIO1 unused
   if (!pinManager.isPinAllocated(3) && !pinManager.isPinAllocated(1)) {
     Serial.println(F("Ada"));
   }
@@ -383,7 +429,9 @@ void WLED::setup()
     sprintf(mqttClientID + 5, "%*s", 6, escapedMac.c_str() + 6);
   }
 
+#ifdef WLED_ENABLE_ADALIGHT
   if (Serial.available() > 0 && Serial.peek() == 'I') handleImprovPacket();
+#endif
 
   strip.service();
 
@@ -393,7 +441,12 @@ void WLED::setup()
 #ifdef ESP8266
       wifi_set_sleep_type(NONE_SLEEP_T);
 #endif
+      WLED::instance().disableWatchdog();
       DEBUG_PRINTLN(F("Start ArduinoOTA"));
+    });
+    ArduinoOTA.onError([](ota_error_t error) {
+      // reenable watchdog on failed update
+      WLED::instance().enableWatchdog();
     });
     if (strlen(cmDNS) > 0)
       ArduinoOTA.setHostname(cmDNS);
@@ -403,7 +456,10 @@ void WLED::setup()
   initDMX();
 #endif
 
+#ifdef WLED_ENABLE_ADALIGHT
   if (Serial.available() > 0 && Serial.peek() == 'I') handleImprovPacket();
+#endif
+
   // HTTP server page init
   initServer();
 

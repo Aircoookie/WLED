@@ -10,33 +10,6 @@ void setRandomColor(byte* rgb)
   colorHStoRGB(lastRandomIndex*256,255,rgb);
 }
 
-void colorFromUint32(uint32_t in, bool secondary)
-{
-  byte *_col = secondary ? colSec : col;
-  _col[0] = R(in);
-  _col[1] = G(in);
-  _col[2] = B(in);
-  _col[3] = W(in);
-}
-
-//load a color without affecting the white channel
-void colorFromUint24(uint32_t in, bool secondary)
-{
-  byte *_col = secondary ? colSec : col;
-  _col[0] = R(in);
-  _col[1] = G(in);
-  _col[2] = B(in);
-}
-
-//relatively change white brightness, minumum A=5
-void relativeChangeWhite(int8_t amount, byte lowerBoundary)
-{
-  int16_t new_val = (int16_t) col[3] + amount;
-  if (new_val > 0xFF) new_val = 0xFF;
-  else if (new_val < lowerBoundary) new_val = lowerBoundary;
-  col[3] = new_val;
-}
-
 void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) //hue, sat to rgb
 {
   float h = ((float)hue)/65535.0;

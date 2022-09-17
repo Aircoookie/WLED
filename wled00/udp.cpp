@@ -140,24 +140,51 @@ void notify(byte callMode, bool followUp)
 
 void realtimeLock(uint32_t timeoutMs, byte md)
 {
-  if (!realtimeMode && !realtimeOverride){
-    uint16_t totalLen = strip.getLengthTotal();
-    for (uint16_t i = 0; i < totalLen; i++)
-    {
-      strip.setPixelColor(i,0,0,0,0);
+  if (!realtimeMode && !realtimeOverride) {
+    uint16_t stop, start;
+    if (useMainSegmentOnly) {
+      WS2812FX::Segment& mainseg = strip.getMainSegment();
+      start = mainseg.start;
+      stop  = mainseg.stop;
+      mainseg.setOption(SEG_OPTION_FREEZE, true, strip.getMainSegmentId());
+    } else {
+      start = 0;
+      stop  = strip.getLengthTotal();
+    }
+    // clear strip/segment
+    for (uint16_t i = start; i < stop; i++) strip.setPixelColor(i,0,0,0,0);
+    // if WLED was off and using main segment only, freeze non-main segments so they stay off
+    if (useMainSegmentOnly && bri == 0) {
+      for (uint8_t s=0; s < strip.getMaxSegments(); s++) {
+        strip.getSegment(s).setOption(SEG_OPTION_FREEZE, true, s);
+      }
     }
   }
-
-  realtimeTimeout = millis() + timeoutMs;
-  if (timeoutMs == 255001 || timeoutMs == 65000) realtimeTimeout = UINT32_MAX;
   // if strip is off (bri==0) and not already in RTM
-  if (bri == 0 && !realtimeMode) {
-    strip.setBrightness(scaledBri(briLast));
+  if (briT == 0 && !realtimeMode && !realtimeOverride) {
+    strip.setBrightness(scaledBri(briLast), true);
+  }
+
+  if (realtimeTimeout != UINT32_MAX) {
+    realtimeTimeout = (timeoutMs == 255001 || timeoutMs == 65000) ? UINT32_MAX : millis() + timeoutMs;
   }
   realtimeMode = md;
 
-  if (arlsForceMaxBri && !realtimeOverride) strip.setBrightness(scaledBri(255));
-  if (md == REALTIME_MODE_GENERIC) strip.show();
+  if (realtimeOverride) return;
+  if (arlsForceMaxBri) strip.setBrightness(scaledBri(255), true);
+  if (briT > 0 && md == REALTIME_MODE_GENERIC) strip.show();
+}
+
+void exitRealtime() {
+  if (!realtimeMode) return;
+  if (realtimeOverride == REALTIME_OVERRIDE_ONCE) realtimeOverride = REALTIME_OVERRIDE_NONE;
+  strip.setBrightness(scaledBri(bri));
+  realtimeTimeout = 0; // cancel realtime mode immediately
+  realtimeMode = REALTIME_MODE_INACTIVE; // inform UI immediately
+  realtimeIP[0] = 0;
+  if (useMainSegmentOnly) { // unfreeze live segment again
+    strip.getMainSegment().setOption(SEG_OPTION_FREEZE, false, strip.getMainSegmentId());
+  }
 }
 
 
@@ -187,13 +214,7 @@ void handleNotifications()
   }
 
   //unlock strip when realtime UDP times out
-  if (realtimeMode && millis() > realtimeTimeout)
-  {
-    if (realtimeOverride == REALTIME_OVERRIDE_ONCE) realtimeOverride = REALTIME_OVERRIDE_NONE;
-    strip.setBrightness(scaledBri(bri));
-    realtimeMode = REALTIME_MODE_INACTIVE;
-    realtimeIP[0] = 0;
-  }
+  if (realtimeMode && millis() > realtimeTimeout) exitRealtime();
 
   //receive UDP notifications
   if (!udpConnected) return;
@@ -292,28 +313,19 @@ void handleNotifications()
 
     //apply colors from notification to main segment, only if not syncing full segments
     if ((receiveNotificationColor || !someSel) && (version < 11 || !receiveSegmentOptions)) {
-      col[0] = udpIn[3];
-      col[1] = udpIn[4];
-      col[2] = udpIn[5];
-      if (version > 0) //sending module's white val is intended
-      {
-        col[3] = udpIn[10];
-        if (version > 1) {
-          colSec[0] = udpIn[12];
-          colSec[1] = udpIn[13];
-          colSec[2] = udpIn[14];
-          colSec[3] = udpIn[15];
-        }
-        if (version > 6) {
-          strip.setColor(2, RGBW32(udpIn[20], udpIn[21], udpIn[22], udpIn[23])); //tertiary color
-          if (version > 9 && version < 200 && udpIn[37] < 255) { //valid CCT/Kelvin value
-            uint8_t cct = udpIn[38];
-            if (udpIn[37] > 0) { //Kelvin
-              cct = (((udpIn[37] << 8) + udpIn[38]) - 1900) >> 5; 
-            }
-            uint8_t segid = strip.getMainSegmentId();
-            strip.getSegment(segid).setCCT(cct, segid);
+      // primary color, only apply white if intented (version > 0)
+      strip.setColor(0, RGBW32(udpIn[3], udpIn[4], udpIn[5], (version > 0) ? udpIn[10] : 0));
+      if (version > 1) {
+        strip.setColor(1, RGBW32(udpIn[12], udpIn[13], udpIn[14], udpIn[15])); // secondary color
+      }
+      if (version > 6) {
+        strip.setColor(2, RGBW32(udpIn[20], udpIn[21], udpIn[22], udpIn[23])); // tertiary color
+        if (version > 9 && version < 200 && udpIn[37] < 255) { // valid CCT/Kelvin value
+          uint8_t cct = udpIn[38];
+          if (udpIn[37] > 0) { //Kelvin
+            cct = (((udpIn[37] << 8) + udpIn[38]) - 1900) >> 5; 
           }
+          strip.setCCT(cct);
         }
       }
     }
@@ -359,15 +371,20 @@ void handleNotifications()
             strip.setSegment(id, selseg.start, selseg.stop, udpIn[5+ofs], udpIn[6+ofs], selseg.offset);
           }
         }
-        effectChanged = true;
-        colorChanged = true;
+        stateChanged = true;
       }
       
-      if (applyEffects && (version < 11 || !receiveSegmentOptions)) { //simple effect sync, applies to all selected
-        if (udpIn[8] < strip.getModeCount()) effectCurrent = udpIn[8];
-        effectSpeed   = udpIn[9];
-        if (version > 2) effectIntensity = udpIn[16];
-        if (version > 4 && udpIn[19] < strip.getPaletteCount()) effectPalette = udpIn[19];
+      // simple effect sync, applies to all selected segments
+      if (applyEffects && (version < 11 || !receiveSegmentOptions)) {
+        for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
+          WS2812FX::Segment& seg = strip.getSegment(i);
+          if (!seg.isActive() || !seg.isSelected()) continue;
+          if (udpIn[8] < strip.getModeCount()) strip.setMode(i, udpIn[8]);
+          seg.speed = udpIn[9];
+          if (version > 2) seg.intensity = udpIn[16];
+          if (version > 4 && udpIn[19] < strip.getPaletteCount()) seg.palette = udpIn[19];
+        }
+        stateChanged = true;
       }
 
       if (applyEffects && version > 5) {
@@ -412,7 +429,7 @@ void handleNotifications()
     if (nightlightActive) nightlightDelayMins = udpIn[7];
     
     if (receiveNotificationBrightness || !someSel) bri = udpIn[2];
-    colorUpdated(CALL_MODE_NOTIFICATION);
+    stateUpdated(CALL_MODE_NOTIFICATION);
     return;
   }
 
@@ -656,19 +673,16 @@ void sendSysInfoUDP()
 uint8_t sequenceNumber = 0; // this needs to be shared across all outputs
 
 uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8_t *buffer, uint8_t bri, bool isRGBW)  {
-  if (!interfacesInited) return 1;  // network not initialised
+  if (!(apActive || interfacesInited) || !client[0] || !length) return 1;  // network not initialised or dummy/unset IP address  031522 ajn added check for ap 
 
   WiFiUDP ddpUdp;
 
   switch (type) {
     case 0: // DDP
     {
-      // calclate the number of UDP packets we need to send
+      // calculate the number of UDP packets we need to send
       uint16_t channelCount = length * 3; // 1 channel for every R,G,B value
-      uint16_t packetCount = channelCount / DDP_CHANNELS_PER_PACKET;
-      if (channelCount % DDP_CHANNELS_PER_PACKET) {
-        packetCount++;
-      }
+      uint16_t packetCount = ((channelCount-1) / DDP_CHANNELS_PER_PACKET) +1;
 
       // there are 3 channels per RGB pixel
       uint32_t channel = 0; // TODO: allow specifying the start channel

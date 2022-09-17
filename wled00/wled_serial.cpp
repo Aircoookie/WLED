@@ -86,8 +86,8 @@ void handleSerial()
             Serial.write(0xC9); Serial.write(0xDA);
             uint16_t used = strip.getLengthTotal();
             uint16_t len = used*3;
-            Serial.write((len << 8) & 0xFF);
-            Serial.write( len       & 0xFF);
+            Serial.write(highByte(len));
+            Serial.write(lowByte(len));
             for (uint16_t i=0; i < used; i++) {
               uint32_t c = strip.getPixelColor(i);
               Serial.write(qadd8(W(c), R(c))); //R, add white channel to RGB channels as a simple RGBW -> RGB map
@@ -174,7 +174,6 @@ void handleSerial()
         if (!realtimeOverride) setRealtimePixel(pixel++, red, green, blue, 0);
         if (--count > 0) state = AdaState::Data_Red;
         else {
-          if (!realtimeMode && bri == 0) strip.setBrightness(briLast);
           realtimeLock(realtimeTimeoutMs, REALTIME_MODE_ADALIGHT);
 
           if (!realtimeOverride) strip.show();

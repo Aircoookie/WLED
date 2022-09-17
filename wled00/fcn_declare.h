@@ -58,10 +58,7 @@ bool getJsonValue(const JsonVariant& element, DestType& destination, const Defau
 
 
 //colors.cpp
-void colorFromUint32(uint32_t in, bool secondary = false);
-void colorFromUint24(uint32_t in, bool secondary = false);
 inline uint32_t colorFromRgbw(byte* rgbw) { return uint32_t((byte(rgbw[3]) << 24) | (byte(rgbw[0]) << 16) | (byte(rgbw[1]) << 8) | (byte(rgbw[2]))); }
-void relativeChangeWhite(int8_t amount, byte lowerBoundary = 0);
 void colorHStoRGB(uint16_t hue, byte sat, byte* rgb); //hue, sat to rgb
 void colorKtoRGB(uint16_t kelvin, byte* rgb);
 void colorCTtoRGB(uint16_t mired, byte* rgb); //white spectrum to rgb
@@ -108,11 +105,9 @@ void sendImprovInfoResponse();
 void sendImprovRPCResponse(uint8_t commandId);
 
 //ir.cpp
-bool decodeIRCustom(uint32_t code);
+//bool decodeIRCustom(uint32_t code);
 void applyRepeatActions();
-void relativeChange(byte* property, int8_t amount, byte lowerBoundary = 0, byte higherBoundary = 0xFF);
-void changeEffectSpeed(int8_t amount);
-void changeEffectIntensity(int8_t amount);
+byte relativeChange(byte property, int8_t amount, byte lowerBoundary = 0, byte higherBoundary = 0xFF);
 void decodeIR(uint32_t code);
 void decodeIR24(uint32_t code);
 void decodeIR24OLD(uint32_t code);
@@ -144,11 +139,14 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient = 0);
 #endif
 
 //led.cpp
+void setValuesFromSegment(uint8_t s);
 void setValuesFromMainSeg();
+void setValuesFromFirstSelectedSeg();
 void resetTimebase();
 void toggleOnOff();
 void applyBri();
 void applyFinalBri();
+void applyValuesToSelectedSegs();
 void colorUpdated(byte callMode);
 void stateUpdated(byte callMode);
 void updateInterfaces(uint8_t callMode);
@@ -179,16 +177,9 @@ void calculateSunriseAndSunset();
 void setTimeFromAPI(uint32_t timein);
 
 //overlay.cpp
-void initCronixie();
-void handleOverlays();
 void handleOverlayDraw();
 void _overlayAnalogCountdown();
 void _overlayAnalogClock();
-
-byte getSameCodeLength(char code, int index, char const cronixieDisplay[]);
-void setCronixie();
-void _overlayCronixie();    
-void _drawOverlayCronixie();
 
 //playlist.cpp
 void shufflePlaylist();
@@ -200,8 +191,8 @@ void handlePlaylist();
 String getPresetName(byte index); 
 bool applyPreset(byte index, byte callMode = CALL_MODE_DIRECT_CHANGE);
 inline bool applyTemporaryPreset() {return applyPreset(255);};
-void savePreset(byte index, bool persist = true, const char* pname = nullptr, JsonObject saveobj = JsonObject());
-inline void saveTemporaryPreset() {savePreset(255, false);};
+void savePreset(byte index, const char* pname = nullptr, JsonObject saveobj = JsonObject());
+inline void saveTemporaryPreset() {savePreset(255);};
 void deletePreset(byte index);
 
 //set.cpp
@@ -216,6 +207,7 @@ bool updateVal(const String* req, const char* key, byte* val, byte minv=0, byte 
 void notify(byte callMode, bool followUp=false);
 uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, byte *buffer, uint8_t bri=255, bool isRGBW=false);
 void realtimeLock(uint32_t timeoutMs, byte md = REALTIME_MODE_GENERIC);
+void exitRealtime();
 void handleNotifications();
 void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w);
 void refreshNodeList();
