@@ -367,7 +367,7 @@ void getSettingsJS(byte subPage, char* dest)
 
     // set limits
     oappend(SET_F("bLimits("));
-    #if defined(ESP32) && defined(USERMOD_AUDIOREACTIVE) && !defined(CONFIG_IDF_TARGET_ESP32S3) && !defined(CONFIG_IDF_TARGET_ESP32C3)
+    #if defined(ESP32) && defined(USERMOD_AUDIOREACTIVE)  && !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32S3) && !defined(CONFIG_IDF_TARGET_ESP32C3)
     // requested by @softhack007 https://github.com/blazoncek/WLED/issues/33
     oappend(itoa(WLED_MAX_BUSSES-2,nS,10)); oappend(","); // prevent use of I2S buses if audio installed. ESP32-S3 currently does not support these busses.
     #else
