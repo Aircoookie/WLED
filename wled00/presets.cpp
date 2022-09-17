@@ -37,7 +37,10 @@ void handlePresets(bool force)
   //crude way to determine if this was called by a network request
   uint8_t core = 1;
   #ifdef ARDUINO_ARCH_ESP32
-  core = xPortGetCoreID();
+    #if !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S2)
+    // this does not make sense on single core
+    core = xPortGetCoreID();
+    #endif
   #endif
   //only allow use of fileDoc from the core responsible for network requests (AKA HTTP JSON API)
   //do not use active network request doc from preset called by main loop (playlist, schedule, ...)
