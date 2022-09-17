@@ -160,7 +160,23 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
 bool PinManagerClass::allocatePin(byte gpio, bool output, PinOwner tag)
 {
   // HW I2C & SPI pins have to be allocated using allocateMultiplePins variant since there is always SCL/SDA pair
-  if (!isPinOk(gpio, output) || tag==PinOwner::HW_I2C || tag==PinOwner::HW_SPI) return false;
+  if (!isPinOk(gpio, output) || tag==PinOwner::HW_I2C || tag==PinOwner::HW_SPI) {
+    #ifdef WLED_DEBUG
+    if (gpio < 255) {  // 255 (-1) is the "not defined GPIO"
+      if (!isPinOk(gpio, output)) {
+        DEBUG_PRINT(F("PIN ALLOC: FAIL for owner "));
+        DebugPrintOwnerTag(tag);
+        DEBUG_PRINT(F(": GPIO ")); DEBUG_PRINT(gpio);
+        if (output) DEBUG_PRINTLN(F(" cannot be used for i/o on this MCU."));
+        else DEBUG_PRINTLN(F(" cannot be used as input on this MCU."));
+      } else {
+        DEBUG_PRINT(F("PIN ALLOC: FAIL: GPIO ")); DEBUG_PRINT(gpio);
+        DEBUG_PRINTLN(F(" - HW I2C & SPI pins have to be allocated using allocateMultiplePins()"));
+      }
+    }
+    #endif
+    return false;
+  }
   if (isPinAllocated(gpio)) {
     #ifdef WLED_DEBUG
     DEBUG_PRINT(F("PIN ALLOC: Pin ")); 
@@ -179,7 +195,7 @@ bool PinManagerClass::allocatePin(byte gpio, bool output, PinOwner tag)
   #ifdef WLED_DEBUG
   DEBUG_PRINT(F("PIN ALLOC: Pin ")); 
   DEBUG_PRINT(gpio);
-  DEBUG_PRINT(F(" allocated by "));
+  DEBUG_PRINT(F(" successfully allocated by "));
   DebugPrintOwnerTag(tag);
   DEBUG_PRINTLN(F(""));
   #endif  
