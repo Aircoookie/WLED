@@ -11,7 +11,7 @@
 	var el=false;
 	var ms=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 	function H() { window.open("https://kno.wled.ge/features/settings/#time-settings"); }
-	function B() { window.open("/settings","_self"); }
+	function B() { window.open("./","_self"); }
 	function gId(s) { return d.getElementById(s); }
 	function gN(s) { return d.getElementsByName(s)[0]; }
 	// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
@@ -41,7 +41,7 @@
 				localStorage.setItem('locIp', locip);
 			}
 		}
-		var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=5';
+		var url = (loc?`http://${locip}`:sessionStorage['baseurl']) + '/settings/s.js?p=5';
 		loadJS(url, false);	// If we set async false, file is loaded and executed, then next statement is processed
 	}
 	function expand(o,i)
