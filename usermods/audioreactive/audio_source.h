@@ -444,13 +444,17 @@ class I2SAdcSource : public I2SSource {
         return;
       }
 
+      adc1_config_width(ADC_WIDTH_BIT_12);   // ensure that ADC runs with 12bit resolution
+
       // Enable I2S mode of ADC
       err = i2s_set_adc_mode(ADC_UNIT_1, adc1_channel_t(channel));
       if (err != ESP_OK) {
         DEBUGSR_PRINTF("Failed to set i2s adc mode: %d\n", err);
         return;
       }
-      // adc1_config_channel_atten(adc1_channel_t(channel), ADC_ATTEN_DB_11)); //see https://github.com/espressif/arduino-esp32/blob/master/libraries/ESP32/examples/I2S/HiFreq_ADC/HiFreq_ADC.ino
+
+      // see example in https://github.com/espressif/arduino-esp32/blob/master/libraries/ESP32/examples/I2S/HiFreq_ADC/HiFreq_ADC.ino
+      adc1_config_channel_atten(adc1_channel_t(channel), ADC_ATTEN_DB_11);   // configure ADC input amplification
 
       #if defined(I2S_GRAB_ADC1_COMPLETELY)
       // according to docs from espressif, the ADC needs to be started explicitly
