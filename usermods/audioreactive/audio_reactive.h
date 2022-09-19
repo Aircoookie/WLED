@@ -222,30 +222,42 @@ void FFTcode(void * parameter)
     // early release allows the filters (getSample() and agcAvg()) to work with fresh values - we will have matching gain and noise gate values when we want to process the FFT results.    micDataReal = maxSample;
     micDataReal = maxSample;
 
-    // run FFT (takes 3-5ms on ESP32)
-#ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
-    FFT.dcRemoval();                                            // remove DC offset
-    FFT.windowing( FFTWindow::Flat_top, FFTDirection::Forward); // Weigh data using "Flat Top" function - better amplitude accuracy
-    //FFT.windowing(FFTWindow::Blackman_Harris, FFTDirection::Forward);  // Weigh data using "Blackman- Harris" window - sharp peaks due to excellent sideband rejection
-    FFT.compute( FFTDirection::Forward );                       // Compute FFT
-    FFT.complexToMagnitude();                                   // Compute magnitudes
+#ifdef SR_DEBUG
+    if (true) {  // this allows measure FFT runtimes, as it disables the "only when needed" optimization 
 #else
-    FFT.DCRemoval(); // let FFT lib remove DC component, so we don't need to care about this in getSamples()
+    if (sampleAvg > 1) { // noise gate open means that FFT results will be used. Don't run FFT if results are not needed.
+#endif
 
-    //FFT.Windowing( FFT_WIN_TYP_HAMMING, FFT_FORWARD );        // Weigh data - standard Hamming window
-    //FFT.Windowing( FFT_WIN_TYP_BLACKMAN, FFT_FORWARD );       // Blackman window - better side freq rejection
-    //FFT.Windowing( FFT_WIN_TYP_BLACKMAN_HARRIS, FFT_FORWARD );// Blackman-Harris - excellent sideband rejection
-    FFT.Windowing( FFT_WIN_TYP_FLT_TOP, FFT_FORWARD );          // Flat Top Window - better amplitude accuracy
-    FFT.Compute( FFT_FORWARD );                             // Compute FFT
-    FFT.ComplexToMagnitude();                               // Compute magnitudes
+      // run FFT (takes 3-5ms on ESP32, ~12ms on ESP32-S2)
+#ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
+      FFT.dcRemoval();                                            // remove DC offset
+      FFT.windowing( FFTWindow::Flat_top, FFTDirection::Forward); // Weigh data using "Flat Top" function - better amplitude accuracy
+      //FFT.windowing(FFTWindow::Blackman_Harris, FFTDirection::Forward);  // Weigh data using "Blackman- Harris" window - sharp peaks due to excellent sideband rejection
+      FFT.compute( FFTDirection::Forward );                       // Compute FFT
+      FFT.complexToMagnitude();                                   // Compute magnitudes
+#else
+      FFT.DCRemoval(); // let FFT lib remove DC component, so we don't need to care about this in getSamples()
+
+      //FFT.Windowing( FFT_WIN_TYP_HAMMING, FFT_FORWARD );        // Weigh data - standard Hamming window
+      //FFT.Windowing( FFT_WIN_TYP_BLACKMAN, FFT_FORWARD );       // Blackman window - better side freq rejection
+      //FFT.Windowing( FFT_WIN_TYP_BLACKMAN_HARRIS, FFT_FORWARD );// Blackman-Harris - excellent sideband rejection
+      FFT.Windowing( FFT_WIN_TYP_FLT_TOP, FFT_FORWARD );          // Flat Top Window - better amplitude accuracy
+      FFT.Compute( FFT_FORWARD );                             // Compute FFT
+      FFT.ComplexToMagnitude();                               // Compute magnitudes
 #endif
 
 #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
-    FFT.majorPeak(FFT_MajorPeak, FFT_Magnitude);                // let the effects know which freq was most dominant
+      FFT.majorPeak(FFT_MajorPeak, FFT_Magnitude);                // let the effects know which freq was most dominant
 #else
-    FFT.MajorPeak(&FFT_MajorPeak, &FFT_Magnitude);              // let the effects know which freq was most dominant
+      FFT.MajorPeak(&FFT_MajorPeak, &FFT_Magnitude);              // let the effects know which freq was most dominant
 #endif
-    FFT_MajorPeak = constrain(FFT_MajorPeak, 1.0f, 11025.0f);   // restrict value to range expected by effects
+      FFT_MajorPeak = constrain(FFT_MajorPeak, 1.0f, 11025.0f);   // restrict value to range expected by effects
+
+    } else { // noise gate closed - only clear results as FFT was skipped. MIC samples are still valid when we do this.
+      memset(vReal, 0, sizeof(vReal));
+      FFT_MajorPeak = 1;
+      FFT_Magnitude = 0.001;
+    }
 
     for (int i = 0; i < samplesFFT; i++) {
       float t = fabsf(vReal[i]);                      // just to be sure - values in fft bins should be positive any way
