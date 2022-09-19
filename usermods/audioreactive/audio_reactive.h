@@ -8,7 +8,7 @@
   #error This audio reactive usermod does not support the ESP8266.
 #endif
 
-#ifdef WLED_DEBUG
+#if defined(WLED_DEBUG) || defined(SR_DEBUG)
 #include <esp_timer.h>
 #endif
 
@@ -45,9 +45,9 @@ constexpr SRate_t SAMPLE_RATE = 22050;          // Base sample rate in Hz - 22Kh
 //constexpr SRate_t SAMPLE_RATE = 20480;        // Base sample rate in Hz - 20Khz is experimental.    Physical sample time -> 25ms
 //constexpr SRate_t SAMPLE_RATE = 10240;        // Base sample rate in Hz - previous default.         Physical sample time -> 50ms
 
-#define FFT_MIN_CYCLE 18                      // minimum time before FFT task is repeated. Use with 22Khz sampling
-//#define FFT_MIN_CYCLE 22                      // minimum time before FFT task is repeated. Use with 20Khz sampling
-//#define FFT_MIN_CYCLE 44                      // minimum time before FFT task is repeated. Use with 10Khz sampling
+#define FFT_MIN_CYCLE 21                      // minimum time before FFT task is repeated. Use with 22Khz sampling
+//#define FFT_MIN_CYCLE 23                      // minimum time before FFT task is repeated. Use with 20Khz sampling
+//#define FFT_MIN_CYCLE 46                      // minimum time before FFT task is repeated. Use with 10Khz sampling
 
 // globals
 static uint8_t inputLevel = 128;              // UI slider value
@@ -144,7 +144,7 @@ static float   fftAvg[NUM_GEQ_CHANNELS] = {0.0f};                     // Calcula
 static float   fftResultMax[NUM_GEQ_CHANNELS] = {0.0f};               // A table used for testing to determine how our post-processing is working.
 #endif
 
-#ifdef WLED_DEBUG
+#if defined(WLED_DEBUG) || defined(SR_DEBUG)
 static uint64_t fftTime = 0;
 static uint64_t sampleTime = 0;
 #endif
@@ -182,30 +182,32 @@ void FFTcode(void * parameter)
   // see https://www.freertos.org/vtaskdelayuntil.html
   const TickType_t xFrequency = FFT_MIN_CYCLE * portTICK_PERIOD_MS;  
 
+  TickType_t xLastWakeTime = xTaskGetTickCount();
   for(;;) {
-    TickType_t xLastWakeTime = xTaskGetTickCount();
     delay(1);           // DO NOT DELETE THIS LINE! It is needed to give the IDLE(0) task enough time and to keep the watchdog happy.
                         // taskYIELD(), yield(), vTaskDelay() and esp_task_wdt_feed() didn't seem to work.
 
-    vTaskDelayUntil( &xLastWakeTime, xFrequency);        // release CPU, and let I2S fill its buffers
-    // Only run the FFT computing code if we're not in Receive mode and not in realtime mode
+    // Don't run FFT computing code if we're in Receive mode or in realtime mode
     if (disableSoundProcessing || (audioSyncEnabled & 0x02)) {
+      vTaskDelayUntil( &xLastWakeTime, xFrequency);        // release CPU, and let I2S fill its buffers
       continue;
     }
 
-#ifdef WLED_DEBUG
+#if defined(WLED_DEBUG) || defined(SR_DEBUG)
     uint64_t start = esp_timer_get_time();
 #endif
 
     // get a fresh batch of samples from I2S
     if (audioSource) audioSource->getSamples(vReal, samplesFFT);
 
-#ifdef WLED_DEBUG
+#if defined(WLED_DEBUG) || defined(SR_DEBUG)
     if (start < esp_timer_get_time()) { // filter out overflows
       unsigned long sampleTimeInMillis = (esp_timer_get_time() - start +5ULL) / 10ULL; // "+5" to ensure proper rounding
       sampleTime = (sampleTimeInMillis*3 + sampleTime*7)/10; // smooth
     }
 #endif
+
+    xLastWakeTime = xTaskGetTickCount();       // update "last unblocked time" for vTaskDelay
 
     // find highest sample in the batch
     float maxSample = 0.0f;                         // max sample from FFT batch
@@ -380,7 +382,7 @@ void FFTcode(void * parameter)
       fftResult[i] = constrain((int)currentResult, 0, 255);
     }
 
-#ifdef WLED_DEBUG
+#if defined(WLED_DEBUG) || defined(SR_DEBUG)
     if (start < esp_timer_get_time()) { // filter out overflows
       unsigned long fftTimeInMillis = ((esp_timer_get_time() - start) +5ULL) / 10ULL; // "+5" to ensure proper rounding
       fftTime  = (fftTimeInMillis*3 + fftTime*7)/10; // smooth
@@ -389,6 +391,8 @@ void FFTcode(void * parameter)
     // run peak detection
     autoResetPeak();
     detectSamplePeak();
+
+    vTaskDelayUntil( &xLastWakeTime, xFrequency);        // release CPU, and let I2S fill its buffers
 
   } // for(;;)ever
 } // FFTcode() task end
@@ -1370,13 +1374,15 @@ class AudioReactive : public Usermod {
           infoArr.add("off");
         if (audioSyncEnabled && !udpSyncConnected) infoArr.add(" <i>(unconnected)</i>");
 
-        #ifdef WLED_DEBUG
+        #if defined(WLED_DEBUG) || defined(SR_DEBUG)
         infoArr = user.createNestedArray(F("Sampling time"));
         infoArr.add(float(sampleTime)/100.0f);
         infoArr.add(" ms");
         infoArr = user.createNestedArray(F("FFT time"));
         infoArr.add(float(fftTime-sampleTime)/100.0f);
         infoArr.add(" ms");
+        DEBUGSR_PRINTF("AR Sampling time: %5.2f ms\n", float(sampleTime)/100.0f);
+        DEBUGSR_PRINTF("AR FFT time     : %5.2f ms\n", float(fftTime-sampleTime)/100.0f);
         #endif
       }
     }
