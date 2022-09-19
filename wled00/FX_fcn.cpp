@@ -1263,7 +1263,7 @@ void WS2812FX::setColor(uint8_t slot, uint32_t c) {
   if (slot >= NUM_COLORS) return;
 
   for (segment &seg : _segments) {
-    if (seg.isSelected()) {
+    if (seg.isActive() && seg.isSelected()) {
       seg.setColor(slot, c);
     }
   }
@@ -1299,7 +1299,7 @@ uint8_t WS2812FX::getFirstSelectedSegId(void)
 {
   size_t i = 0;
   for (segment &seg : _segments) {
-    if (seg.isSelected()) return i;
+    if (seg.isActive() && seg.isSelected()) return i;
     i++;
   }
   // if none selected, use the main segment
