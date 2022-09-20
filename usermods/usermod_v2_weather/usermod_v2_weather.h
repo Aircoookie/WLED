@@ -173,7 +173,7 @@ class WeatherUsermod : public Usermod {
           // Allocate the JSON document
           // Use arduinojson.org/v6/assistant to compute the capacity.
           // const size_t capacity = JSON_OBJECT_SIZE(3) + JSON_ARRAY_SIZE(2) + 60;
-          DynamicJsonDocument weatherDoc(24000); //in practive about 20.000
+          PSRAMDynamicJsonDocument weatherDoc(24000); //in practive about 20.000
 
           // Parse JSON object
           DeserializationError error = deserializeJson(weatherDoc, client);
