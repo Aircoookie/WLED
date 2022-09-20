@@ -475,7 +475,7 @@ class JMapC {
       return 0;
     }
   private:
-    DynamicJsonDocument *jMapDoc = nullptr;
+    PSRAMDynamicJsonDocument *jMapDoc = nullptr;
     uint8_t scale;
     void updatejMapDoc() {
       if (jMapDoc && SEGMENT.name == nullptr) {
@@ -485,7 +485,7 @@ class JMapC {
 
       if (!jMapDoc && SEGMENT.name != nullptr && SEGMENT.map1D2D == M12_jMap) {
         Serial.println("Create jMapDoc");
-        jMapDoc = new DynamicJsonDocument(5*4096);
+        jMapDoc = new PSRAMDynamicJsonDocument(5*4096);
       }
 
       if (jMapDoc && SEGMENT.name != nullptr && strcmp(SEGMENT.name, previousSegmentName) != 0) {
