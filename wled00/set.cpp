@@ -184,8 +184,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     turnOnAtBoot = request->hasArg(F("BO"));
     t = request->arg(F("BP")).toInt();
     if (t <= 250) bootPreset = t;
-    strip.gammaCorrectBri = request->hasArg(F("GB"));
-    strip.gammaCorrectCol = request->hasArg(F("GC"));
+    gammaCorrectBri = request->hasArg(F("GB"));
+    gammaCorrectCol = request->hasArg(F("GC"));
 
     fadeTransition = request->hasArg(F("TF"));
     t = request->arg(F("TD")).toInt();
@@ -515,7 +515,13 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       spi_mosi = hw_mosi_pin;
       spi_miso = hw_miso_pin;
       spi_sclk = hw_sclk_pin;
-      // no bus initialisation
+      // no bus re-initialisation as usermods do not get any notification
+      //SPI.end();
+      #ifdef ESP32
+      //SPI.begin(spi_sclk, spi_miso, spi_mosi);
+      #else
+      //SPI.begin();
+      #endif
     } else {
       //SPI.end();
       DEBUG_PRINTLN(F("Could not allocate SPI pins."));
