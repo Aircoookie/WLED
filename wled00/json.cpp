@@ -710,8 +710,10 @@ void serializeInfo(JsonObject root)
   root[F("lwip")] = LWIP_VERSION_MAJOR;
   #endif
 
+  root[F("totalheap")] = ESP.getHeapSize(); //WLEDSR
   root[F("freeheap")] = ESP.getFreeHeap();
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
+  if (psramFound()) root[F("tpram")] = ESP.getPsramSize(); //WLEDSR
   if (psramFound()) root[F("psram")] = ESP.getFreePsram();
   #endif
   root[F("uptime")] = millis()/1000 + rolloverMillis*4294967;
