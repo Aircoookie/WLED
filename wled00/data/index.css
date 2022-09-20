@@ -101,9 +101,10 @@ button {
 	position: fixed;
 	bottom: calc(var(--bh) + 6px);
 	right: 6px;
-	color: var(--c-8);
+	color: var(--c-d);	/* must remain bright with dark shadow (see below) to be legible on gray background */
 	cursor: pointer;
 	writing-mode: vertical-rl;
+	/* transform: rotate(180deg); */
 }
 
 .bri {
@@ -1044,7 +1045,7 @@ textarea {
 	/*box-shadow: 0 0 0 5px var(--c-d);*/
 }
 
-.qcs {
+.qcs, #namelabel { /* text shadow for name to be legible on grey backround */
 	text-shadow: -1px -1px 0 var(--c-4), 1px -1px 0 var(--c-4), -1px 1px 0 var(--c-4), 1px 1px 0 var(--c-4);
 }
 
@@ -1193,7 +1194,7 @@ TD .checkmark, TD .radiomark {
   	/*filter: brightness(1);*/
 	font-size: 19px;
 	border-radius: 21px;
-	min-width: 280px;
+	/*min-width: 264px;*/
 }
 
 .seg {
