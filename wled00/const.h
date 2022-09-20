@@ -172,8 +172,9 @@
 #define TYPE_LPD6803             54
 //Network types (master broadcast) (80-95)
 #define TYPE_NET_DDP_RGB         80            //network DDP RGB bus (master broadcast bus)
-#define TYPE_NET_E131_RGB        81            //network E131 RGB bus (master broadcast bus)
-#define TYPE_NET_ARTNET_RGB      82            //network ArtNet RGB bus (master broadcast bus)
+#define TYPE_NET_E131_RGB        81            //network E131 RGB bus (master broadcast bus, unused)
+#define TYPE_NET_ARTNET_RGB      82            //network ArtNet RGB bus (master broadcast bus, unused)
+#define TYPE_NET_DDP_RGBW        88            //network DDP RGBW bus (master broadcast bus)
 
 #define IS_DIGITAL(t) ((t) & 0x10) //digital are 16-31 and 48-63
 #define IS_PWM(t)     ((t) > 40 && (t) < 46)
@@ -226,13 +227,12 @@
 #define SEG_OPTION_REVERSED       1
 #define SEG_OPTION_ON             2
 #define SEG_OPTION_MIRROR         3            //Indicates that the effect will be mirrored within the segment
-#define SEG_OPTION_NONUNITY       4            //Indicates that the effect does not use FRAMETIME or needs getPixelColor
-#define SEG_OPTION_FREEZE         5            //Segment contents will not be refreshed
-#define SEG_OPTION_RESET          6            //Segment runtime requires reset
-#define SEG_OPTION_TRANSITIONAL   7
-#define SEG_OPTION_REVERSED_Y     8
-#define SEG_OPTION_MIRROR_Y       9
-#define SEG_OPTION_TRANSPOSED    10
+#define SEG_OPTION_FREEZE         4            //Segment contents will not be refreshed
+#define SEG_OPTION_RESET          5            //Segment runtime requires reset
+#define SEG_OPTION_TRANSITIONAL   6
+#define SEG_OPTION_REVERSED_Y     7
+#define SEG_OPTION_MIRROR_Y       8
+#define SEG_OPTION_TRANSPOSED     9
 
 //Segment differs return byte
 #define SEG_DIFFERS_BRI        0x01

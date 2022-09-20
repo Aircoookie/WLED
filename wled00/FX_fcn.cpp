@@ -208,6 +208,7 @@ void Segment::setUpLeds() {
 
 CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
   static unsigned long _lastPaletteChange = 0; // perhaps it should be per segment
+  static CRGBPalette16 randomPalette = CRGBPalette16(DEFAULT_COLOR);
   byte tcp[72];
   if (pal < 245 && pal > GRADIENT_PALETTE_COUNT+13) pal = 0;
   if (pal > 245 && (strip.customPalettes.size() == 0 || 255U-pal > strip.customPalettes.size()-1)) pal = 0;
@@ -229,30 +230,31 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
       targetPalette = PartyColors_p; break;
     case 1: //periodically replace palette with a random one. Doesn't work with multiple FastLED segments
       if (millis() - _lastPaletteChange > 5000 /*+ ((uint32_t)(255-intensity))*100*/) {
-        targetPalette = CRGBPalette16(
-                        CHSV(random8(), 255, random8(128, 255)),
-                        CHSV(random8(), 255, random8(128, 255)),
-                        CHSV(random8(), 192, random8(128, 255)),
-                        CHSV(random8(), 255, random8(128, 255)));
+        randomPalette = CRGBPalette16(
+                        CHSV(random8(), random8(160, 255), random8(128, 255)),
+                        CHSV(random8(), random8(160, 255), random8(128, 255)),
+                        CHSV(random8(), random8(160, 255), random8(128, 255)),
+                        CHSV(random8(), random8(160, 255), random8(128, 255)));
         _lastPaletteChange = millis();
-      } break;
+      }
+      targetPalette = randomPalette; break;
     case 2: {//primary color only
-      CRGB prim = strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0];
+      CRGB prim = gamma32(colors[0]);
       targetPalette = CRGBPalette16(prim); break;}
     case 3: {//primary + secondary
-      CRGB prim = strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0];
-      CRGB sec  = strip.gammaCorrectCol ? gamma32(colors[1]) : colors[1];
+      CRGB prim = gamma32(colors[0]);
+      CRGB sec  = gamma32(colors[1]);
       targetPalette = CRGBPalette16(prim,prim,sec,sec); break;}
     case 4: {//primary + secondary + tertiary
-      CRGB prim = strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0];
-      CRGB sec  = strip.gammaCorrectCol ? gamma32(colors[1]) : colors[1];
-      CRGB ter  = strip.gammaCorrectCol ? gamma32(colors[2]) : colors[2];
+      CRGB prim = gamma32(colors[0]);
+      CRGB sec  = gamma32(colors[1]);
+      CRGB ter  = gamma32(colors[2]);
       targetPalette = CRGBPalette16(ter,sec,prim); break;}
     case 5: {//primary + secondary (+tert if not off), more distinct
-      CRGB prim = strip.gammaCorrectCol ? gamma32(colors[0]) : colors[0];
-      CRGB sec  = strip.gammaCorrectCol ? gamma32(colors[1]) : colors[1];
+      CRGB prim = gamma32(colors[0]);
+      CRGB sec  = gamma32(colors[1]);
       if (colors[2]) {
-        CRGB ter = strip.gammaCorrectCol ? gamma32(colors[2]) : colors[2];
+        CRGB ter = gamma32(colors[2]);
         targetPalette = CRGBPalette16(prim,prim,prim,prim,prim,sec,sec,sec,sec,sec,ter,ter,ter,ter,ter,prim);
       } else {
         targetPalette = CRGBPalette16(prim,prim,prim,prim,prim,prim,prim,prim,sec,sec,sec,sec,sec,sec,sec,sec);
@@ -297,8 +299,8 @@ void Segment::startTransition(uint16_t dur) {
 
   if (!_t) _t = new Transition(dur); // no previous transition running
   if (!_t) return; // failed to allocate data
-  _t->_briT = _briT;
-  _t->_cctT = _cctT;
+  _t->_briT  = _briT;
+  _t->_cctT  = _cctT;
   _t->_palT  = _palT;
   _t->_modeP = _modeP;
   for (size_t i=0; i<NUM_COLORS; i++) _t->_colorT[i] = _colorT[i];
@@ -339,8 +341,11 @@ CRGBPalette16 &Segment::currentPalette(CRGBPalette16 &targetPalette, uint8_t pal
   loadPalette(targetPalette, pal);
   if (transitional && _t && progress() < 0xFFFFU) {
     // blend palettes
-    uint8_t blends = map(_t->_dur, 0, 0xFFFF, 48, 6); // do not blend palettes too quickly (0-65.5s)
-    nblendPaletteTowardPalette(_t->_palT, targetPalette, blends);
+    // there are about 255 blend passes of 48 "blends" to completely blend two palettes (in _dur time)
+    // minimum blend time is 100ms maximum is 65535ms
+    uint32_t timeMS = millis() - _t->_start;
+    uint16_t noOfBlends = (255U * timeMS / _t->_dur) - _t->_prevPaletteBlends;
+    for (int i=0; i<noOfBlends; i++, _t->_prevPaletteBlends++) nblendPaletteTowardPalette(_t->_palT, targetPalette, 48);
     targetPalette = _t->_palT; // copy transitioning/temporary palette
   }
   return targetPalette;
@@ -410,7 +415,11 @@ uint16_t Segment::nrOfVStrips() const {
   uint16_t vLen = 1;
 #ifndef WLED_DISABLE_2D
   if (is2D()) {
-    vLen = virtualWidth();
+    switch (map1D2D) {
+      case M12_pBar:
+        vLen = virtualWidth();
+        break;
+    }
   }
 #endif
   return vLen;
@@ -544,8 +553,8 @@ void Segment::setPixelColor(float i, uint32_t col, bool aa)
   if (aa) {
     uint16_t iL = roundf(fC-0.49f);
     uint16_t iR = roundf(fC+0.49f);
-    float    dL = fC - iL;
-    float    dR = iR - fC;
+    float    dL = (fC - iL)*(fC - iL);
+    float    dR = (iR - fC)*(iR - fC);
     uint32_t cIL = getPixelColor(iL | (vStrip<<16));
     uint32_t cIR = getPixelColor(iR | (vStrip<<16));
     if (iR!=iL) {
@@ -621,7 +630,7 @@ uint8_t Segment::differs(Segment& b) const {
   if (stopY != b.stopY)         d |= SEG_DIFFERS_BOUNDS;
 
   //bit pattern: msb first: [transposed mirrorY reverseY] transitional (tbd) paused needspixelstate mirrored on reverse selected
-  if ((options & 0b1111111100101110) != (b.options & 0b1111111100101110)) d |= SEG_DIFFERS_OPT;
+  if ((options & 0b1111111110011110) != (b.options & 0b1111111110011110)) d |= SEG_DIFFERS_OPT;
   if ((options & 0x01) != (b.options & 0x01))                             d |= SEG_DIFFERS_SEL;
   
   for (uint8_t i = 0; i < NUM_COLORS; i++) if (colors[i] != b.colors[i])  d |= SEG_DIFFERS_COL;
@@ -819,7 +828,7 @@ uint32_t Segment::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_
   // default palette or no RGB support on segment
   if ((palette == 0 && mcol < NUM_COLORS) || !(_capabilities & 0x01)) {
     uint32_t color = (transitional && _t) ? _t->_colorT[mcol] : colors[mcol];
-    color = strip.gammaCorrectCol ? gamma32(color) : color;
+    color = gamma32(color);
     if (pbri == 255) return color;
     return RGBW32(scale8_video(R(color),pbri), scale8_video(G(color),pbri), scale8_video(B(color),pbri), scale8_video(W(color),pbri));
   }
@@ -1127,7 +1136,7 @@ void WS2812FX::setColor(uint8_t slot, uint32_t c) {
   if (slot >= NUM_COLORS) return;
 
   for (segment &seg : _segments) {
-    if (seg.isSelected()) {
+    if (seg.isActive() && seg.isSelected()) {
       seg.setColor(slot, c);
     }
   }
@@ -1163,7 +1172,7 @@ uint8_t WS2812FX::getFirstSelectedSegId(void)
 {
   size_t i = 0;
   for (segment &seg : _segments) {
-    if (seg.isSelected()) return i;
+    if (seg.isActive() && seg.isSelected()) return i;
     i++;
   }
   // if none selected, use the main segment
@@ -1435,7 +1444,7 @@ void WS2812FX::setTransitionMode(bool t)
 void WS2812FX::printSize()
 {
   size_t size = 0;
-  for (const Segment seg : _segments) size += seg.getSize();
+  for (const Segment &seg : _segments) size += seg.getSize();
   DEBUG_PRINTF("Segments: %d -> %uB\n", _segments.size(), size);
   DEBUG_PRINTF("Modes: %d*%d=%uB\n", sizeof(mode_ptr), _mode.size(), (_mode.capacity()*sizeof(mode_ptr)));
   DEBUG_PRINTF("Data: %d*%d=%uB\n", sizeof(const char *), _modeData.size(), (_modeData.capacity()*sizeof(const char *)));
@@ -1541,7 +1550,7 @@ const char JSON_mode_names[] PROGMEM = R"=====(["Mode names have moved"])=====";
 const char JSON_palette_names[] PROGMEM = R"=====([
 "Default","* Random Cycle","* Color 1","* Colors 1&2","* Color Gradient","* Colors Only","Party","Cloud","Lava","Ocean",
 "Forest","Rainbow","Rainbow Bands","Sunset","Rivendell","Breeze","Red & Blue","Yellowout","Analogous","Splash",
-"Pastel","Sunset 2","Beech","Vintage","Departure","Landscape","Beach","Sherbet","Hult","Hult 64",
+"Pastel","Sunset 2","Beach","Vintage","Departure","Landscape","Beech","Sherbet","Hult","Hult 64",
 "Drywet","Jul","Grintage","Rewhi","Tertiary","Fire","Icefire","Cyane","Light Pink","Autumn",
 "Magenta","Magred","Yelmag","Yelblu","Orange & Teal","Tiamat","April Night","Orangery","C9","Sakura",
 "Aurora","Atlantica","C9 2","C9 New","Temperature","Aurora 2","Retro Clown","Candy","Toxy Reaf","Fairy Reaf",

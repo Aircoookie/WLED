@@ -275,67 +275,39 @@
   #define FX_MODE_2DMETABALLS            142 // non audio
   #define FX_MODE_2DPULSER               143 // non audio
   #define FX_MODE_2DDRIFT                144 // non audio
-#endif
-#ifndef WLED_DISABLE_AUDIO
-  #ifndef WLED_DISABLE_2D
-    #define FX_MODE_2DWAVERLY              145 // audio enhanced
-    #define FX_MODE_2DSWIRL                146 // audio enhanced
-    #define FX_MODE_2DAKEMI                147 // audio enhanced
-    // 148 & 149 reserved
-  #endif
-  #define FX_MODE_PIXELWAVE              150 // audio enhanced
-  #define FX_MODE_JUGGLES                151 // audio enhanced
-  #define FX_MODE_MATRIPIX               152 // audio enhanced
-  #define FX_MODE_GRAVIMETER             153 // audio enhanced
-  #define FX_MODE_PLASMOID               154 // audio enhanced
-  #define FX_MODE_PUDDLES                155 // audio enhanced
-  #define FX_MODE_MIDNOISE               156 // audio enhanced
-  #define FX_MODE_NOISEMETER             157 // audio enhanced
-  #define FX_MODE_NOISEFIRE              158 // audio enhanced
-  #define FX_MODE_PUDDLEPEAK             159 // audio enhanced
-  #define FX_MODE_RIPPLEPEAK             160 // audio enhanced
-  #define FX_MODE_GRAVCENTER             161 // audio enhanced
-  #define FX_MODE_GRAVCENTRIC            162 // audio enhanced
-#endif
+  #define FX_MODE_2DWAVERLY              145 // audio enhanced
+  #define FX_MODE_2DSWIRL                146 // audio enhanced
+  #define FX_MODE_2DAKEMI                147 // audio enhanced
+  #define FX_MODE_2DGEQ                  148 // audio enhanced
+  #define FX_MODE_2DFUNKYPLANK           149 // audio enhanced
+#endif //WLED_DISABLE_2D
+#define FX_MODE_PIXELWAVE              150 // audio enhanced
+#define FX_MODE_JUGGLES                151 // audio enhanced
+#define FX_MODE_MATRIPIX               152 // audio enhanced
+#define FX_MODE_GRAVIMETER             153 // audio enhanced
+#define FX_MODE_PLASMOID               154 // audio enhanced
+#define FX_MODE_PUDDLES                155 // audio enhanced
+#define FX_MODE_MIDNOISE               156 // audio enhanced
+#define FX_MODE_NOISEMETER             157 // audio enhanced
+#define FX_MODE_NOISEFIRE              158 // audio enhanced
+#define FX_MODE_PUDDLEPEAK             159 // audio enhanced
+#define FX_MODE_RIPPLEPEAK             160 // audio enhanced
+#define FX_MODE_GRAVCENTER             161 // audio enhanced
+#define FX_MODE_GRAVCENTRIC            162 // audio enhanced
+#define FX_MODE_PIXELS                 163 // audio enhanced
+#define FX_MODE_FREQWAVE               164 // audio enhanced
+#define FX_MODE_FREQMATRIX             165 // audio enhanced
+#define FX_MODE_WATERFALL              166 // audio enhanced
+#define FX_MODE_FREQPIXELS             167 // audio enhanced
+#define FX_MODE_BINMAP                 168 // audio enhanced
+#define FX_MODE_NOISEMOVE              169 // audio enhanced
+#define FX_MODE_FREQMAP                170 // audio enhanced
+#define FX_MODE_GRAVFREQ               171 // audio enhanced
+#define FX_MODE_DJLIGHT                172 // audio enhanced
+#define FX_MODE_BLURZ                  173 // audio enhanced
+#define FX_MODE_ROCKTAVES              174 // audio enhanced
 
-#ifndef USERMOD_AUDIOREACTIVE
-
-  #ifndef WLED_DISABLE_AUDIO
-  #define MODE_COUNT                   163
-  #else
-    #ifndef WLED_DISABLE_2D
-  #define MODE_COUNT                   145
-    #else
-  #define MODE_COUNT                   118
-    #endif
-  #endif
-
-#else
-
-  #ifdef WLED_DISABLE_AUDIO
-    #error Incompatible options: WLED_DISABLE_AUDIO and USERMOD_AUDIOREACTIVE
-  #endif
-  #ifdef WLED_DISABLE_2D
-    #error AUDIOREACTIVE usermod requires 2D support.
-  #endif
-  #define FX_MODE_2DGEQ                  148
-  #define FX_MODE_2DFUNKYPLANK           149
-  #define FX_MODE_PIXELS                 163
-  #define FX_MODE_FREQWAVE               164
-  #define FX_MODE_FREQMATRIX             165
-  #define FX_MODE_WATERFALL              166
-  #define FX_MODE_FREQPIXELS             167
-  #define FX_MODE_BINMAP                 168
-  #define FX_MODE_NOISEMOVE              169
-  #define FX_MODE_FREQMAP                170
-  #define FX_MODE_GRAVFREQ               171
-  #define FX_MODE_DJLIGHT                172
-  #define FX_MODE_BLURZ                  173
-  #define FX_MODE_ROCKTAVES              174
-  //#define FX_MODE_CUSTOMEFFECT           175 //WLEDSR Custom Effects
-
-  #define MODE_COUNT                     175
-#endif
+#define MODE_COUNT                     175
 
 typedef enum mapping1D2D {
   M12_Pixels = 0,
@@ -357,26 +329,21 @@ typedef struct Segment {
     union {
       uint16_t options; //bit pattern: msb first: [transposed mirrorY reverseY] transitional (tbd) paused needspixelstate mirrored on reverse selected
       struct {
-        bool    selected    : 1;  //  0 : selected
-        bool    reverse     : 1;  //  1 : reversed
-        bool    on          : 1;  //  2 : is On
-        bool    mirror      : 1;  //  3 : mirrored
-        bool    pxs         : 1;  //  4 : indicates that the effect does not use FRAMETIME or needs getPixelColor (?)
-        bool    freeze      : 1;  //  5 : paused/frozen
-        bool    reset       : 1;  //  6 : indicates that Segment runtime requires reset
-        bool    transitional: 1;  //  7 : transitional (there is transition occuring)
-        bool    reverse_y   : 1;  //  8 : reversed Y (2D)
-        bool    mirror_y    : 1;  //  9 : mirrored Y (2D)
-        bool    transpose   : 1;  // 10 : transposed (2D, swapped X & Y)
-        uint8_t map1D2D     : 3;  // 11-13 : mapping for 1D effect on 2D (0-use as strip, 1-expand vertically, 2-circular/arc, 3-rectangular/corner, ...)
-        uint8_t soundSim    : 2;  // 14-15 : 0-3 sound simulation types
+        bool    selected    : 1;  //     0 : selected
+        bool    reverse     : 1;  //     1 : reversed
+        bool    on          : 1;  //     2 : is On
+        bool    mirror      : 1;  //     3 : mirrored
+        bool    freeze      : 1;  //     4 : paused/frozen
+        bool    reset       : 1;  //     5 : indicates that Segment runtime requires reset
+        bool    transitional: 1;  //     6 : transitional (there is transition occuring)
+        bool    reverse_y   : 1;  //     7 : reversed Y (2D)
+        bool    mirror_y    : 1;  //     8 : mirrored Y (2D)
+        bool    transpose   : 1;  //     9 : transposed (2D, swapped X & Y)
+        uint8_t map1D2D     : 3;  // 10-12 : mapping for 1D effect on 2D (0-use as strip, 1-expand vertically, 2-circular/arc, 3-rectangular/corner, ...)
+        uint8_t soundSim    : 3;  // 13-15 : 0-7 sound simulation types
       };
     };
     uint8_t  grouping, spacing;
-    //struct {
-    //  uint8_t grouping : 4;       // maximum 15 pixels in a group
-    //  uint8_t spacing  : 4;       // maximum 15 pixels per gap
-    //};
     uint8_t  opacity;
     uint32_t colors[NUM_COLORS];
     uint8_t  cct;                 //0==1900K, 255==10091K
@@ -418,17 +385,37 @@ typedef struct Segment {
     // transition data, valid only if transitional==true, holds values during transition
     struct Transition {
       uint32_t      _colorT[NUM_COLORS];
-      uint8_t       _briT;  // temporary brightness
-      uint8_t       _cctT;  // temporary CCT
-      CRGBPalette16 _palT;  // temporary palette
-      uint8_t       _modeP; // previous mode/effect
+      uint8_t       _briT;        // temporary brightness
+      uint8_t       _cctT;        // temporary CCT
+      CRGBPalette16 _palT;        // temporary palette
+      uint8_t       _prevPaletteBlends; // number of previous palette blends (there are max 255 belnds possible)
+      uint8_t       _modeP;       // previous mode/effect
+      //uint16_t      _aux0, _aux1; // previous mode/effect runtime data
+      //uint32_t      _step, _call; // previous mode/effect runtime data
+      //byte         *_data;        // previous mode/effect runtime data
       uint32_t      _start;
       uint16_t      _dur;
-      Transition(uint16_t dur=750) : _briT(255), _cctT(127), _palT(CRGBPalette16(CRGB::Black)), _modeP(FX_MODE_STATIC), _start(millis()), _dur(dur) {}
-      Transition(uint16_t d, uint8_t b, uint8_t c, const uint32_t *o) : _briT(b), _cctT(c), _palT(CRGBPalette16(CRGB::Black)), _modeP(FX_MODE_STATIC), _start(millis()), _dur(d) {
+      Transition(uint16_t dur=750)
+        : _briT(255)
+        , _cctT(127)
+        , _palT(CRGBPalette16(CRGB::Black))
+        , _prevPaletteBlends(0)
+        , _modeP(FX_MODE_STATIC)
+        , _start(millis())
+        , _dur(dur)
+      {}
+      Transition(uint16_t d, uint8_t b, uint8_t c, const uint32_t *o)
+        : _briT(b)
+        , _cctT(c)
+        , _palT(CRGBPalette16(CRGB::Black))
+        , _prevPaletteBlends(0)
+        , _modeP(FX_MODE_STATIC)
+        , _start(millis())
+        , _dur(d)
+      {
         for (size_t i=0; i<NUM_COLORS; i++) _colorT[i] = o[i];
       }
-    } *_t; // this struct will bootloop ESP
+    } *_t;
 
   public:
 
@@ -530,8 +517,7 @@ typedef struct Segment {
       * Safe to call from interrupts and network requests.
       */
     inline void markForReset(void) { reset = true; }  // setOption(SEG_OPTION_RESET, true)
-    //inline void setUpLeds() { if (!leds) leds = (CRGB*)malloc(sizeof(CRGB)*length()); }
-    void setUpLeds(void);
+    void setUpLeds(void);   // set up leds[] array for loseless getPixelColor()
 
     // transition functions
     void     startTransition(uint16_t dur); // transition has to start before actual segment values change
@@ -650,8 +636,6 @@ class WS2812FX {  // 96 bytes
   public:
 
     WS2812FX() :
-      gammaCorrectBri(false),
-      gammaCorrectCol(true),
       paletteFade(0),
       paletteBlend(0),
       milliampsPerLed(55),
@@ -750,8 +734,6 @@ class WS2812FX {  // 96 bytes
     inline void appendSegment(const Segment &seg = Segment()) { _segments.push_back(seg); }
 
     bool
-      gammaCorrectBri,
-      gammaCorrectCol,
       checkSegmentAlignment(void),
       hasRGBWBus(void),
       hasCCTBus(void),

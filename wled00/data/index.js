@@ -594,7 +594,9 @@ function parseInfo(i) {
 	lastinfo = i;
 	var name = i.name;
 	gId('namelabel').innerHTML = name;
-	//if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)";
+	if (!name.match(/[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff66-\uff9f\u3131-\uD79D]/))
+		gId('namelabel').style.transform = "rotate(180deg)"; // rotate if no CJK characters
+	if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)"; // Minecraft easter egg
 	if (i.live) name = "(Live) " + name;
 	if (loc)    name = "(L) " + name;
 	d.title     = name;
@@ -611,13 +613,13 @@ function parseInfo(i) {
 		//gId("filter2D").classList.add("hide");
 		hideModes("2D");
 	}
-	if (i.noaudio) {
-		gId("filterVol").classList.add("hide");
-		gId("filterFreq").classList.add("hide");
-	}
+//	if (i.noaudio) {
+//		gId("filterVol").classList.add("hide");
+//		gId("filterFreq").classList.add("hide");
+//	}
 //	if (!i.u || !i.u.AudioReactive) {
-		//gId("filterVol").classList.add("hide"); hideModes(" ♪"); // hide volume reactive effects
-		//gId("filterFreq").classList.add("hide"); hideModes(" ♫"); // hide frequency reactive effects
+//		gId("filterVol").classList.add("hide"); hideModes(" ♪"); // hide volume reactive effects
+//		gId("filterFreq").classList.add("hide"); hideModes(" ♫"); // hide frequency reactive effects
 //	}
 }
 
@@ -653,12 +655,13 @@ function populateInfo(i)
 		}
 	}
 	var vcn = "Kuuhaku";
-	if (i.ver.startsWith("0.13.")) vcn = "Toki";
-	if (i.ver.includes("-bl")) vcn = "Ryujin";
+	if (i.ver.startsWith("0.14.")) vcn = "Hoshi";
+	if (i.ver.includes("-bl")) vcn = "Supāku";
 	if (i.cn) vcn = i.cn;
 
 	cn += `v${i.ver} "${vcn}"<br><br><table>
 ${urows}
+${urows===""?'':'<tr><td colspan=2><hr style="height:1px;border-width:0;color:gray;background-color:gray"></td></tr>'}
 ${inforow("Build",i.vid)}
 ${inforow("Signal strength",i.wifi.signal +"% ("+ i.wifi.rssi, " dBm)")}
 ${inforow("Uptime",getRuntimeStr(i.uptime))}
@@ -714,7 +717,7 @@ function populateSegments(s)
 		}
 		let map2D = `<div id="seg${i}map2D" data-map="map2D" class="lbl-s hide">Expand 1D FX<br>
 			<div class="sel-p"><select class="sel-p" id="seg${i}mp12" onchange="setMp12(${i})">
-				<option value="0" ${inst.mp12==0?' selected':''}>Strip</option>
+				<option value="0" ${inst.mp12==0?' selected':''}>Pixels</option>
 				<option value="1" ${inst.mp12==1?' selected':''}>Bar</option>
 				<option value="2" ${inst.mp12==2?' selected':''}>Arc</option>
 				<option value="3" ${inst.mp12==3?' selected':''}>Corner</option>
@@ -1042,7 +1045,7 @@ function updateLen(s)
 		let tPL = gId(`seg${s}lbtm`);
 		if (stop-start>1 && stopY-startY>1) {
 			// 2D segment
-			tPL.classList.remove("hide"); // unhide transpose checkbox
+			if (tPL) tPL.classList.remove("hide"); // unhide transpose checkbox
 			let sE = gId('fxlist').querySelector(`.lstI[data-id="${selectedFx}"]`);
 			if (sE) {
 				let sN = sE.querySelector(".lstIname").innerText;
@@ -1054,8 +1057,10 @@ function updateLen(s)
 			}
 		} else {
 			// 1D segment in 2D set-up
-			tPL.classList.add("hide"); // hide transpose checkbox
-			gId(`seg${s}tp`).checked = false;	// and uncheck it
+			if (tPL) {
+				tPL.classList.add("hide"); // hide transpose checkbox
+				gId(`seg${s}tp`).checked = false;	// and uncheck it
+			}
 		}
 	}
 	var out = "(delete)";
@@ -1995,15 +2000,15 @@ function setSeg(s)
 		var stopY = parseInt(gId(`seg${s}eY`).value);
 		obj.seg.startY = startY;
 		obj.seg.stopY = (cfg.comp.seglen?startY:0)+stopY;
-		obj.seg.tp = gId(`seg${s}tp`).checked;
 	}
-	if (gId(`seg${s}grp`)) {
+	if (gId(`seg${s}grp`)) { // advanced options, not present in new segment dialog (makeSeg())
 		var grp = parseInt(gId(`seg${s}grp`).value);
 		var spc = parseInt(gId(`seg${s}spc`).value);
 		var ofs = parseInt(gId(`seg${s}of` ).value);
 		obj.seg.grp = grp;
 		obj.seg.spc = spc;
 		obj.seg.of  = ofs;
+		if (isM) obj.seg.tp = gId(`seg${s}tp`).checked;
 	}
 	requestJson(obj);
 }

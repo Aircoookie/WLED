@@ -140,8 +140,8 @@ void loadSettingsFromEEPROM()
   ntpEnabled = EEPROM.read(327);
   currentTimezone = EEPROM.read(328);
   useAMPM = EEPROM.read(329);
-  strip.gammaCorrectBri = EEPROM.read(330);
-  strip.gammaCorrectCol = EEPROM.read(331);
+  gammaCorrectBri = EEPROM.read(330);
+  gammaCorrectCol = EEPROM.read(331);
   overlayCurrent = EEPROM.read(332);
 
   alexaEnabled = EEPROM.read(333);
@@ -414,10 +414,10 @@ void deEEP() {
           for (byte j = 0; j < numChannels; j++) colX.add(EEPROM.read(memloc + j));
         }
         
-        segObj["fx"]    = EEPROM.read(i+10);
-        segObj[F("sx")] = EEPROM.read(i+11);
-        segObj[F("ix")] = EEPROM.read(i+16);
-        segObj["pal"]   = EEPROM.read(i+17);
+        segObj["fx"]  = EEPROM.read(i+10);
+        segObj["sx"]  = EEPROM.read(i+11);
+        segObj["ix"]  = EEPROM.read(i+16);
+        segObj["pal"] = EEPROM.read(i+17);
       } else {
         Segment* seg = strip.getSegments();
         memcpy(seg, EEPROM.getDataPtr() +i+2, 240);

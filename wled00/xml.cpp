@@ -394,8 +394,8 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("BO"),turnOnAtBoot);
     sappend('v',SET_F("BP"),bootPreset);
 
-    sappend('c',SET_F("GB"),strip.gammaCorrectBri);
-    sappend('c',SET_F("GC"),strip.gammaCorrectCol);
+    sappend('c',SET_F("GB"),gammaCorrectBri);
+    sappend('c',SET_F("GC"),gammaCorrectCol);
     sappend('c',SET_F("TF"),fadeTransition);
     sappend('v',SET_F("TD"),transitionDelayDefault);
     sappend('c',SET_F("PF"),strip.paletteFade);
@@ -641,6 +641,7 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(SET_F("addInfo('SDA','"));  oappendi(HW_PIN_SDA);      oappend(SET_F("');"));
     oappend(SET_F("addInfo('SCL','"));  oappendi(HW_PIN_SCL);      oappend(SET_F("');"));
     oappend(SET_F("addInfo('MOSI','")); oappendi(HW_PIN_DATASPI);  oappend(SET_F("');"));
+    oappend(SET_F("addInfo('MISO','")); oappendi(HW_PIN_MISOSPI);  oappend(SET_F("');"));
     oappend(SET_F("addInfo('SCLK','")); oappendi(HW_PIN_CLOCKSPI); oappend(SET_F("');"));
     usermods.appendConfigData();
   }

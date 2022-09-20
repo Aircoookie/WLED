@@ -564,7 +564,7 @@ void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w)
 {
   uint16_t pix = i + arlsOffset;
   if (pix < strip.getLengthTotal()) {
-    if (!arlsDisableGammaCorrection && strip.gammaCorrectCol) {
+    if (!arlsDisableGammaCorrection && gammaCorrectCol) {
       r = gamma8(r);
       g = gamma8(g);
       b = gamma8(b);
@@ -692,7 +692,7 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8
     case 0: // DDP
     {
       // calculate the number of UDP packets we need to send
-      size_t channelCount = length * 3; // 1 channel for every R,G,B value
+      size_t channelCount = length * (isRGBW? 4:3); // 1 channel for every R,G,B value
       size_t packetCount = ((channelCount-1) / DDP_CHANNELS_PER_PACKET) +1;
 
       // there are 3 channels per RGB pixel
@@ -724,7 +724,7 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8
         // write the header
         /*0*/ddpUdp.write(flags);
         /*1*/ddpUdp.write(sequenceNumber++ & 0x0F); // sequence may be unnecessary unless we are sending twice (as requested in Sync settings)
-        /*2*/ddpUdp.write(0);
+        /*2*/ddpUdp.write(isRGBW ?  DDP_TYPE_RGBW32 : DDP_TYPE_RGB24);
         /*3*/ddpUdp.write(DDP_ID_DISPLAY);
         // data offset in bytes, 32-bit number, MSB first
         /*4*/ddpUdp.write(0xFF & (channel >> 24));
@@ -741,7 +741,7 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8
           ddpUdp.write(scale8(buffer[bufferOffset++], bri)); // R
           ddpUdp.write(scale8(buffer[bufferOffset++], bri)); // G
           ddpUdp.write(scale8(buffer[bufferOffset++], bri)); // B
-          if (isRGBW) bufferOffset++;
+          if (isRGBW) ddpUdp.write(scale8(buffer[bufferOffset++], bri)); // W
         }
 
         if (!ddpUdp.endPacket()) {            

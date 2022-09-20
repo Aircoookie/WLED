@@ -209,10 +209,10 @@ void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
     uint16_t xR = roundf(fX+0.49f);
     uint16_t yT = roundf(fY-0.49f);
     uint16_t yB = roundf(fY+0.49f);
-    float    dL = fX - xL;
-    float    dR = xR - fX;
-    float    dT = fY - yT;
-    float    dB = yB - fY;
+    float    dL = (fX - xL)*(fX - xL);
+    float    dR = (xR - fX)*(xR - fX);
+    float    dT = (fY - yT)*(fY - yT);
+    float    dB = (yB - fY)*(yB - fY);
     uint32_t cXLYT = getPixelColorXY(xL, yT);
     uint32_t cXRYT = getPixelColorXY(xR, yT);
     uint32_t cXLYB = getPixelColorXY(xL, yB);
@@ -437,8 +437,7 @@ void Segment::nscale8(uint8_t scale) {
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
   for(uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
-    if (leds) leds[XY(x,y)].nscale8(scale);
-    else setPixelColorXY(x, y, CRGB(getPixelColorXY(x, y)).nscale8(scale));
+    setPixelColorXY(x, y, CRGB(getPixelColorXY(x, y)).nscale8(scale));
   }
 }
 
@@ -451,7 +450,7 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
   const int16_t dy = abs(y1-y0), sy = y0<y1 ? 1 : -1; 
   int16_t err = (dx>dy ? dx : -dy)/2, e2;
   for (;;) {
-    setPixelColorXY(x0,y0,c);
+    addPixelColorXY(x0,y0,c);
     if (x0==x1 && y0==y1) break;
     e2 = err;
     if (e2 >-dx) { err -= dy; x0 += sx; }
@@ -459,14 +458,17 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
   }
 }
 
-#include "console_font_5x8.h"
-#include "console_font_5x12.h"
-#include "console_font_6x8.h"
-#include "console_font_7x9.h"
+#include "src/font/console_font_4x6.h"
+#include "src/font/console_font_5x8.h"
+#include "src/font/console_font_5x12.h"
+#include "src/font/console_font_6x8.h"
+#include "src/font/console_font_7x9.h"
 
 // draws a raster font character on canvas
-// only supports 5x8=40, 5x12=60, 6x8=48 and 7x9=63 fonts ATM
+// only supports: 4x6=24, 5x8=40, 5x12=60, 6x8=48 and 7x9=63 fonts ATM
 void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color) {
+  if (chr < 32 || chr > 126) return; // only ASCII 32-126 supported
+  chr -= 32; // align with font table entries
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
   const int font = w*h;
@@ -478,6 +480,7 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
     if (y0 >= rows) break; // drawing off-screen
     uint8_t bits = 0;
     switch (font) {
+      case 24: bits = pgm_read_byte_near(&console_font_4x6[(chr * h) + i]); break;  // 5x8 font
       case 40: bits = pgm_read_byte_near(&console_font_5x8[(chr * h) + i]); break;  // 5x8 font
       case 48: bits = pgm_read_byte_near(&console_font_6x8[(chr * h) + i]); break;  // 6x8 font
       case 63: bits = pgm_read_byte_near(&console_font_7x9[(chr * h) + i]); break;  // 7x9 font
@@ -487,7 +490,7 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
     for (int j = 0; j<w; j++) { // character width
       int16_t x0 = x + (w-1) - j;
       if ((x0 >= 0 || x0 < cols) && ((bits>>(j+(8-w))) & 0x01)) { // bit set & drawing on-screen
-        setPixelColorXY(x0, y0, color);
+        addPixelColorXY(x0, y0, color);
       }
     }
   }
