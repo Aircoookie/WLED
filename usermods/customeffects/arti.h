@@ -1040,8 +1040,8 @@ class ARTI {
 private:
   Lexer *lexer = nullptr;
 
-  DynamicJsonDocument *definitionJsonDoc = nullptr;
-  DynamicJsonDocument *parseTreeJsonDoc = nullptr;
+  PSRAMDynamicJsonDocument *definitionJsonDoc = nullptr;
+  PSRAMDynamicJsonDocument *parseTreeJsonDoc = nullptr;
   JsonObject definitionJson;
   JsonVariant parseTreeJson;
 
@@ -2479,9 +2479,9 @@ public:
     
     //open definitionFile
     #if ARTI_PLATFORM == ARTI_ARDUINO
-      definitionJsonDoc = new DynamicJsonDocument(8192); //currently 5335
+      definitionJsonDoc = new PSRAMDynamicJsonDocument(8192); //currently 5335
     #else
-      definitionJsonDoc = new DynamicJsonDocument(16384); //currently 9521
+      definitionJsonDoc = new PSRAMDynamicJsonDocument(16384); //currently 9521
     #endif
 
     // mandatory tokens:
@@ -2552,9 +2552,9 @@ public:
     //   strcpy(parseTreeName, "Gen");
     strcat(parseTreeName, ".json");
     #if ARTI_PLATFORM == ARTI_ARDUINO
-      parseTreeJsonDoc = new DynamicJsonDocument(32768); //less memory on arduino: 32 vs 64 bit?
+      parseTreeJsonDoc = new PSRAMDynamicJsonDocument(32768); //less memory on arduino: 32 vs 64 bit?
     #else
-      parseTreeJsonDoc = new DynamicJsonDocument(65536);
+      parseTreeJsonDoc = new PSRAMDynamicJsonDocument(65536);
     #endif
 
     MEMORY_ARTI("parseTree %u => %u ✓\n", (unsigned int)parseTreeJsonDoc->capacity(), FREE_SIZE);
