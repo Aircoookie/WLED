@@ -11,29 +11,36 @@ static char *tmpRAMbuffer = nullptr;
 static volatile byte presetToApply = 0;
 static volatile byte callModeToApply = 0;
 
-bool applyPreset(byte index, byte callMode, bool fromJson)
+bool applyPreset(byte index, byte callMode)
 {
   DEBUG_PRINT(F("Request to apply preset: "));
   DEBUG_PRINTLN(index);
   presetToApply = index;
   callModeToApply = callMode;
+/*
   // the following is needed in case of HTTP JSON API call to return correct state to the caller
   // fromJson is true in case when deserializeState() was called with presetId==0
   if (fromJson) handlePresets(true); // force immediate processing
+*/
   return true;
 }
 
-void handlePresets(bool force)
+void handlePresets()
 {
   bool changePreset = false;
   uint8_t tmpPreset = presetToApply; // store temporary since deserializeState() may call applyPreset()
   uint8_t tmpMode   = callModeToApply;
 
-  if (tmpPreset == 0 || (fileDoc && !force)) return; // JSON buffer already allocated and not force apply or no preset waiting
+  if (tmpPreset == 0 || (fileDoc /*&& !force*/)) return; // JSON buffer already allocated and not force apply or no preset waiting
 
   JsonObject fdo;
   const char *filename = tmpPreset < 255 ? "/presets.json" : "/tmp.json";
 
+/*
+ * The following code is no longer needed as handlePreset() is never run from
+ * network callback.
+ * **************************************************************************
+ * 
   //crude way to determine if this was called by a network request
   uint8_t core = 1;
   #ifdef ARDUINO_ARCH_ESP32
@@ -80,7 +87,7 @@ void handlePresets(bool force)
   }
 
   if (force) return; // something went wrong with force option (most likely WS request), quit and wait for async load
-
+*/
   // allocate buffer
   if (!requestJSONBufferLock(9)) return;  // will also assign fileDoc
 

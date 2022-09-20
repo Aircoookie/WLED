@@ -267,6 +267,9 @@ void WLED::setup()
 
   Serial.begin(115200);
   Serial.setTimeout(50);
+  #if defined(WLED_DEBUG) && (defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3))
+  delay(2500);  // allow CDC USB serial to initialise
+  #endif
   DEBUG_PRINTLN();
   DEBUG_PRINT(F("---WLED "));
   DEBUG_PRINT(versionString);
