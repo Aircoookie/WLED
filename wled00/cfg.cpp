@@ -540,8 +540,8 @@ void deserializeConfigFromFS() {
   if (!success) { //if file does not exist, try reading from EEPROM
     #ifdef WLED_ADD_EEPROM_SUPPORT
     deEEPSettings();
-    #endif
     return;
+    #endif
   }
 
   if (!requestJSONBufferLock(1)) return;
@@ -946,6 +946,8 @@ void serializeConfig() {
   if (f) serializeJson(doc, f);
   f.close();
   releaseJSONBufferLock();
+
+  doSerializeConfig = false;
 }
 
 //settings in /wsec.json, not accessible via webserver, for passwords and tokens

@@ -7099,7 +7099,7 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
   if (SEGENV.call == 0) for (int i=0; i<cols; i++) previousBarHeight[i] = 0;
 
   bool rippleTime = false;
-  if (millis() - SEGENV.step >= (256 - SEGMENT.intensity)) {
+  if (millis() - SEGENV.step >= (256U - SEGMENT.intensity)) {
     SEGENV.step = millis();
     rippleTime = true;
   }
