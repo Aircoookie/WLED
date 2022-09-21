@@ -73,6 +73,62 @@ struct BusConfig {
   }
 };
 
+// Defines an LED Strip and its color ordering.
+struct ColorOrderMapEntry {
+  uint16_t start;
+  uint16_t len;
+  uint8_t colorOrder;
+};
+
+struct ColorOrderMap {
+  void add(uint16_t start, uint16_t len, uint8_t colorOrder) {
+    if (_count >= WLED_MAX_COLOR_ORDER_MAPPINGS) {
+      return;
+    }
+    if (len == 0) {
+      return;
+    }
+    if (colorOrder > COL_ORDER_MAX) {
+      return;
+    }
+    _mappings[_count].start = start;
+    _mappings[_count].len = len;
+    _mappings[_count].colorOrder = colorOrder;
+    _count++;
+  }
+
+  uint8_t count() const {
+    return _count;
+  }
+
+  void reset() {
+    _count = 0;
+    memset(_mappings, 0, sizeof(_mappings));
+  }
+
+  const ColorOrderMapEntry* get(uint8_t n) const {
+    if (n > _count) {
+      return nullptr;
+    }
+    return &(_mappings[n]);
+  }
+
+  inline uint8_t IRAM_ATTR getPixelColorOrder(uint16_t pix, uint8_t defaultColorOrder) const {
+    if (_count == 0) return defaultColorOrder;
+
+    for (uint8_t i = 0; i < _count; i++) {
+      if (pix >= _mappings[i].start && pix < (_mappings[i].start + _mappings[i].len)) {
+        return _mappings[i].colorOrder;
+      }
+    }
+    return defaultColorOrder;
+  }
+
+  private:
+  uint8_t _count;
+  ColorOrderMapEntry _mappings[WLED_MAX_COLOR_ORDER_MAPPINGS];
+};
+
 //parent class of BusDigital, BusPwm, and BusNetwork
 class Bus {
   public:
@@ -91,7 +147,7 @@ class Bus {
     virtual void     setBrightness(uint8_t b) {}
     virtual void     cleanup() {}
     virtual uint8_t  getPins(uint8_t* pinArray) { return 0; }
-    inline  uint16_t getLength() { return _len; }
+    virtual uint16_t getLength() { return _len; }
     virtual void     setColorOrder() {}
     virtual uint8_t  getColorOrder() { return COL_ORDER_RGB; }
     virtual uint8_t  skippedLeds() { return 0; }
@@ -152,7 +208,7 @@ class Bus {
 
 class BusDigital : public Bus {
   public:
-  BusDigital(BusConfig &bc, uint8_t nr) : Bus(bc.type, bc.start) {
+  BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com) : Bus(bc.type, bc.start), _colorOrderMap(com) {
     if (!IS_DIGITAL(bc.type) || !bc.count) return;
     if (!pinManager.allocatePin(bc.pins[0], true, PinOwner::BusDigital)) return;
     _pins[0] = bc.pins[0];
@@ -197,7 +253,7 @@ class BusDigital : public Bus {
 	//TODO only show if no new show due in the next 50ms
 	void setStatusPixel(uint32_t c) {
     if (_skip && canShow()) {
-      PolyBus::setPixelColor(_busPtr, _iType, 0, c, _colorOrder);
+      PolyBus::setPixelColor(_busPtr, _iType, 0, c, _colorOrderMap.getPixelColorOrder(_start, _colorOrder));
       PolyBus::show(_busPtr, _iType);
     }
   }
@@ -207,20 +263,20 @@ class BusDigital : public Bus {
     if (_cct >= 1900) c = colorBalanceFromKelvin(_cct, c); //color correction from CCT
     if (reversed) pix = _len - pix -1;
     else pix += _skip;
-    PolyBus::setPixelColor(_busPtr, _iType, pix, c, _colorOrder);
+    PolyBus::setPixelColor(_busPtr, _iType, pix, c, _colorOrderMap.getPixelColorOrder(pix+_start, _colorOrder));
   }
 
   uint32_t getPixelColor(uint16_t pix) {
     if (reversed) pix = _len - pix -1;
     else pix += _skip;
-    return PolyBus::getPixelColor(_busPtr, _iType, pix, _colorOrder);
+    return PolyBus::getPixelColor(_busPtr, _iType, pix, _colorOrderMap.getPixelColorOrder(pix+_start, _colorOrder));
   }
 
   inline uint8_t getColorOrder() {
     return _colorOrder;
   }
 
-  inline uint16_t getLength() {
+  uint16_t getLength() {
     return _len - _skip;
   }
 
@@ -263,6 +319,7 @@ class BusDigital : public Bus {
   uint8_t _iType = I_NONE;
   uint8_t _skip = 0;
   void * _busPtr = nullptr;
+  const ColorOrderMap &_colorOrderMap;
 };
 
 
@@ -288,7 +345,7 @@ class BusPwm : public Bus {
       if (!pinManager.allocatePin(currentPin, true, PinOwner::BusPwm)) {
         deallocatePins(); return;
       }
-      _pins[i] = currentPin; // store only after allocatePin() succeeds
+      _pins[i] = currentPin; //store only after allocatePin() succeeds
       #ifdef ESP8266
       pinMode(_pins[i], OUTPUT);
       #else
@@ -318,8 +375,12 @@ class BusPwm : public Bus {
       cct = (approximateKelvinFromRGB(c) - 1900) >> 5;
     }
 
-		//0 - linear (CCT 127 = 50% warm, 50% cold), 127 - additive CCT blending (CCT 127 = 100% warm, 100% cold)
 		uint8_t ww, cw;
+		#ifdef WLED_USE_IC_CCT
+		ww = w;
+		cw = cct;
+		#else
+		//0 - linear (CCT 127 = 50% warm, 50% cold), 127 - additive CCT blending (CCT 127 = 100% warm, 100% cold)
 		if (cct       < _cctBlend) ww = 255;
 		else ww = ((255-cct) * 255) / (255 - _cctBlend);
 
@@ -328,6 +389,7 @@ class BusPwm : public Bus {
 
 		ww = (w * ww) / 255; //brightness scaling
 		cw = (w * cw) / 255;
+		#endif
 
     switch (_type) {
       case TYPE_ANALOG_1CH: //one channel (white), relies on auto white calculation
@@ -392,7 +454,7 @@ class BusPwm : public Bus {
 
   private: 
   uint8_t _pins[5] = {255, 255, 255, 255, 255};
-  uint8_t _data[5] = {255, 255, 255, 255, 255};
+  uint8_t _data[5] = {0};
   #ifdef ARDUINO_ARCH_ESP32
   uint8_t _ledcStart = 255;
   #endif
@@ -449,8 +511,8 @@ class BusNetwork : public Bus {
 
   void setPixelColor(uint16_t pix, uint32_t c) {
     if (!_valid || pix >= _len) return;
+		if (isRgbw()) c = autoWhiteCalc(c);
     if (_cct >= 1900) c = colorBalanceFromKelvin(_cct, c); //color correction from CCT
-    c = autoWhiteCalc(c);
     uint16_t offset = pix * _UDPchannels;
     _data[offset]   = R(c);
     _data[offset+1] = G(c);
@@ -526,7 +588,7 @@ class BusManager {
   //utility to get the approx. memory usage of a given BusConfig
   static uint32_t memUsage(BusConfig &bc) {
     uint8_t type = bc.type;
-    uint16_t len = bc.count;
+    uint16_t len = bc.count + bc.skipAmount;
     if (type > 15 && type < 32) {
       #ifdef ESP8266
         if (bc.pins[0] == 3) { //8266 DMA uses 5x the mem
@@ -550,7 +612,7 @@ class BusManager {
     if (bc.type >= TYPE_NET_DDP_RGB && bc.type < 96) {
       busses[numBusses] = new BusNetwork(bc);
     } else if (IS_DIGITAL(bc.type)) {
-      busses[numBusses] = new BusDigital(bc, numBusses);
+      busses[numBusses] = new BusDigital(bc, numBusses, colorOrderMap);
     } else {
       busses[numBusses] = new BusPwm(bc);
     }
@@ -578,7 +640,7 @@ class BusManager {
 		}
 	}
 
-  void setPixelColor(uint16_t pix, uint32_t c, int16_t cct=-1) {
+  void IRAM_ATTR setPixelColor(uint16_t pix, uint32_t c, int16_t cct=-1) {
     for (uint8_t i = 0; i < numBusses; i++) {
       Bus* b = busses[i];
       uint16_t bstart = b->getStart();
@@ -635,8 +697,17 @@ class BusManager {
     return len;
   }
 
+  void updateColorOrderMap(const ColorOrderMap &com) {
+    memcpy(&colorOrderMap, &com, sizeof(ColorOrderMap));
+  }
+
+  const ColorOrderMap& getColorOrderMap() const {
+    return colorOrderMap;
+  }
+
   private:
   uint8_t numBusses = 0;
   Bus* busses[WLED_MAX_BUSSES];
+  ColorOrderMap colorOrderMap;
 };
 #endif
