@@ -1395,7 +1395,7 @@ function setEffectParameters(idx)
 	if (slOnOff.length>5) {
 		gId('fxopt').classList.remove('fade');
 		for (let i = 0; i<3; i++) {
-			if (slOnOff[5+i]!=='') {
+			if (5+i<slOnOff.length && slOnOff[5+i]!=='') {
 				gId('opt'+i).classList.remove('hide');
 				gId('optLabel'+i).innerHTML = slOnOff[5+i]=="!" ? 'Option' : slOnOff[5+i].substr(0,16);
 			} else
