@@ -198,7 +198,7 @@
 #define BTN_TYPE_ANALOG_INVERTED  8
 
 //Ethernet board types
-#define WLED_NUM_ETH_TYPES        8
+#define WLED_NUM_ETH_TYPES        9
 
 #define WLED_ETH_NONE             0
 #define WLED_ETH_WT32_ETH01       1
@@ -207,7 +207,8 @@
 #define WLED_ETH_QUINLED          4
 #define WLED_ETH_TWILIGHTLORD     5
 #define WLED_ETH_ESP32DEUX        6
-#define WLED_ETH_LILYGO           7
+#define WLED_ETH_KIT_VE           7
+#define WLED_ETH_LILYGO           8
 
 //Hue error codes
 #define HUE_ERROR_INACTIVE        0
