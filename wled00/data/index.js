@@ -399,7 +399,7 @@ function presetError(empty)
 		if (bckstr.length > 10) hasBackup = true;
 	} catch (e) {}
 
-	var cn = `<div class="pres c" ${empty?'style="padding:8px 0;margin-top: 15px;"':'onclick="loadPresets()" style="cursor:pointer;padding:8px 0;"'}>`;
+	var cn = `<div class="pres c" ${empty?'style="padding:8px;margin-top: 16px;"':'onclick="loadPresets()" style="cursor:pointer;padding:8px;margin-top: 16px;"'}>`;
 	if (empty)
 		cn += `You have no presets yet!`;
 	else
@@ -1395,7 +1395,7 @@ function setEffectParameters(idx)
 	if (slOnOff.length>5) {
 		gId('fxopt').classList.remove('fade');
 		for (let i = 0; i<3; i++) {
-			if (slOnOff[5+i]!=='') {
+			if (5+i<slOnOff.length && slOnOff[5+i]!=='') {
 				gId('opt'+i).classList.remove('hide');
 				gId('optLabel'+i).innerHTML = slOnOff[5+i]=="!" ? 'Option' : slOnOff[5+i].substr(0,16);
 			} else

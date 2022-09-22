@@ -426,11 +426,14 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     } else if (root["win"].isNull() && getVal(root["ps"], &ps, 0, 0) && ps > 0 && ps < 251 && ps != currentPreset) {
       // b) preset ID only or preset that does not change state (use embedded cycling limits if they exist in getVal())
       presetCycCurr = ps;
+      presetId = ps;
       root.remove(F("v"));    // may be added in UI call
       root.remove(F("time")); // may be added in UI call
       root.remove("ps");
-      if (root.size() == 0) applyPreset(ps, callMode); // async load (only preset ID was specified)
-      return stateResponse;
+      if (root.size() == 0) {
+        applyPreset(ps, callMode); // async load (only preset ID was specified)
+        return stateResponse;
+      }
     }
   }
 
@@ -580,6 +583,8 @@ void serializeInfo(JsonObject root)
   leds["fps"] = strip.getFps();
   leds[F("maxpwr")] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;
   leds[F("maxseg")] = strip.getMaxSegments();
+  //leds[F("actseg")] = strip.getActiveSegmentsNum();
+  //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config
   leds[F("cpal")] = strip.customPalettes.size(); //number of custom palettes
 
   #ifndef WLED_DISABLE_2D
@@ -675,7 +680,11 @@ void serializeInfo(JsonObject root)
     wifi_info[F("txPower")] = (int) WiFi.getTxPower();
     wifi_info[F("sleep")] = (bool) WiFi.getSleep();
   #endif
-  root[F("arch")] = "esp32";
+  #if !defined(CONFIG_IDF_TARGET_ESP32C2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32S3)
+    root[F("arch")] = "esp32";
+  #else
+    root[F("arch")] = ESP.getChipModel();
+  #endif
   root[F("core")] = ESP.getSdkVersion();
   //root[F("maxalloc")] = ESP.getMaxAllocHeap();
   #ifdef WLED_DEBUG

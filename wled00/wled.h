@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2209091
+#define VERSION 2209211
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -249,6 +249,16 @@ WLED_GLOBAL bool rlyMde _INIT(RLYMDE);
 WLED_GLOBAL int8_t irPin _INIT(-1);
 #else
 WLED_GLOBAL int8_t irPin _INIT(IRPIN);
+#endif
+
+#if defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S2) || (defined(RX) && defined(TX))
+  // use RX/TX as set by the framework - these boards do _not_ have RX=3 and TX=1
+  constexpr uint8_t hardwareRX = RX;
+  constexpr uint8_t hardwareTX = TX;
+#else
+  // use defaults for RX/TX
+  constexpr uint8_t hardwareRX = 3;
+  constexpr uint8_t hardwareTX = 1;
 #endif
 
 //WLED_GLOBAL byte presetToApply _INIT(0);
@@ -609,8 +619,9 @@ WLED_GLOBAL byte errorFlag _INIT(0);
 WLED_GLOBAL String messageHead, messageSub;
 WLED_GLOBAL byte optionType;
 
-WLED_GLOBAL bool doReboot _INIT(false);        // flag to initiate reboot from async handlers
-WLED_GLOBAL bool doPublishMqtt _INIT(false);
+WLED_GLOBAL bool doSerializeConfig _INIT(false);        // flag to initiate saving of config
+WLED_GLOBAL bool doReboot          _INIT(false);        // flag to initiate reboot from async handlers
+WLED_GLOBAL bool doPublishMqtt     _INIT(false);
 
 // status led
 #if defined(STATUSLED)
