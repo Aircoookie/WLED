@@ -7,6 +7,16 @@ There are 2 parameters to chnage the behaviour:
 active: enable/disable usermod
 diplayItIs: enable/disable display of "Es ist" on the clock.
 
+### Update for alternatative wiring pattern
+Based on this fantastic work I added an alternative wiring pattern.
+For original you have to use a long wire to connect DO - DI from first line to the next line.
+
+I wired my clock in meander style. So the first LED in second line is in the right.
+With this problem every second line was inverted and showed the wrong letter.
+
+I added a switch in usermod called "meander wiring?" to enable/disable alternativ wiring pattern.
+
+
 ## Installation
 
 Copy and update the example `platformio_override.ini.sample` 
@@ -22,5 +32,7 @@ This file should be placed in the same directory as `platformio.ini`.
 No special requirements.
 
 ## Change Log
+
+2022/08/18 added meander wiring pattern.
 
 2022/03/30 initial commit
