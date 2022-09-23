@@ -180,8 +180,8 @@ uint16_t mode_pongGame(void) {
 
 static const char _data_FX_MODE_PONGGAME[] PROGMEM = "🎮 Pong@!;!;!;2d";
 
-const uint16_t MPU_ADDR = 0x68; // I2C address of the MPU-6050. If AD0 pin is set to HIGH, the I2C address will be 0x69.
-
+//https://howtomechatronics.com/tutorials/arduino/arduino-and-mpu6050-accelerometer-and-gyroscope-tutorial/
+#define MPU_ADDR 0x68 // I2C address of the MPU-6050. If AD0 pin is set to HIGH, the I2C address will be 0x69.
 int16_t accelerometer_x, accelerometer_y, accelerometer_z; // variables for accelerometer raw data
 int16_t gyro_x, gyro_y, gyro_z; // variables for gyro raw data
 int16_t temperature; // variables for temperature data
@@ -202,20 +202,38 @@ uint16_t mode_gyro(void) {
 }
 static const char _data_FX_MODE_GYRO[] PROGMEM = "🎮 Gyro@!;!;!;2d";
 
+#ifndef FLD_PIN_SCL
+  #define FLD_PIN_SCL i2c_scl
+#endif
+#ifndef FLD_PIN_SDA
+  #define FLD_PIN_SDA i2c_sda
+#endif
 
-//class name. Use something descriptive and leave the ": public Usermod" part :)
+
 class GamesUsermod : public Usermod {
   private:
-    //Private class members. You can declare variables and functions only accessible to your usermod here
+    bool enabled = true;
+    int8_t ioPin[5] = {FLD_PIN_SCL, FLD_PIN_SDA, -1, -1, -1};        // I2C pins: SCL, SDA
+    unsigned long lastUMRun = millis();
 
   public:
     //Functions called by WLED
 
-    /*
-     * setup() is called once at boot. WiFi is not yet connected at this point.
-     * You can use it to initialize variables, sensors or similar.
-     */
     void setup() {
+      bool isHW;
+      PinOwner po = PinOwner::UM_Unspecified;
+      uint8_t hw_scl = i2c_scl<0 ? HW_PIN_SCL : i2c_scl;
+      uint8_t hw_sda = i2c_sda<0 ? HW_PIN_SDA : i2c_sda;
+      if (ioPin[0] < 0 || ioPin[1] < 0) {
+        ioPin[0] = hw_scl;
+        ioPin[1] = hw_sda;
+      }
+      isHW = (ioPin[0]==hw_scl && ioPin[1]==hw_sda);
+      if (isHW) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
+      PinManagerPinType pins[2] = { {ioPin[0], true }, { ioPin[1], true } };
+      if (!pinManager.allocateMultiplePins(pins, 2, po)) { enabled = false; return; }
+      // PinManagerPinType pins[2] = { { i2c_scl, true }, { i2c_sda, true } };
+      // if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) { enabled = false; return; }
       Wire.begin();
       Wire.beginTransmission(MPU_ADDR); // Begins a transmission to the I2C slave (GY-521 board)
       Wire.write(0x6B); // PWR_MGMT_1 register
@@ -235,10 +253,13 @@ class GamesUsermod : public Usermod {
     }
 
     void loop() {
+      if (!enabled || (strip.isUpdating() && (millis() - lastUMRun < 2))) return;   // be nice, but not too nice
+      lastUMRun = millis();                    // update time keeping
+
       Wire.beginTransmission(MPU_ADDR);
       Wire.write(0x3B); // starting with register 0x3B (ACCEL_XOUT_H) [MPU-6000 and MPU-6050 Register Map and Descriptions Revision 4.2, p.40]
       Wire.endTransmission(false); // the parameter indicates that the Arduino will send a restart. As a result, the connection is kept active.
-      Wire.requestFrom(MPU_ADDR, (uint8_t)(7*2), true); // request a total of 7*2=14 registers
+      Wire.requestFrom(MPU_ADDR, 7*2); // request a total of 7*2=14 registers
       
       // "Wire.read()<<8 | Wire.read();" means two registers are read and stored in the same variable
       accelerometer_x = Wire.read()<<8 | Wire.read(); // reading registers: 0x3B (ACCEL_XOUT_H) and 0x3C (ACCEL_XOUT_L)
@@ -268,7 +289,7 @@ class GamesUsermod : public Usermod {
     bool readFromConfig(JsonObject& root)
     {
 
-      JsonObject top = root["exampleUsermod"];
+      JsonObject top = root["gamesUsermod"];
 
       bool configComplete = !top.isNull();
 
@@ -281,6 +302,6 @@ class GamesUsermod : public Usermod {
 
     uint16_t getId()
     {
-      return USERMOD_ID_EXAMPLE;
+      return USERMOD_ID_GAMES;
     }
 };
