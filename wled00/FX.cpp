@@ -3583,10 +3583,13 @@ uint16_t mode_percent(void) {
   uint8_t size = (1 + ((SEGMENT.speed * SEGLEN) >> 11));
   if (SEGMENT.speed == 255) size = 255;
     
-  if (percent < 100) {
+  if (percent <= 100) {
     for (int i = 0; i < SEGLEN; i++) {
     	if (i < SEGENV.aux1) {
-        SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
+        if (SEGMENT.check1)
+          SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(map(percent,0,100,0,255), false, false, 0));
+        else
+          SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
     	}
     	else {
         SEGMENT.setPixelColor(i, SEGCOLOR(1));
@@ -3598,7 +3601,10 @@ uint16_t mode_percent(void) {
         SEGMENT.setPixelColor(i, SEGCOLOR(1));
     	}
     	else {
-        SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
+        if (SEGMENT.check1)
+          SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(map(percent,100,200,255,0), false, false, 0));
+        else
+          SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
     	}
     }
   }
@@ -3613,7 +3619,7 @@ uint16_t mode_percent(void) {
 
  	return FRAMETIME;
 }
-static const char _data_FX_MODE_PERCENT[] PROGMEM = "Percent@,% of fill;!,!,;!;1d";
+static const char _data_FX_MODE_PERCENT[] PROGMEM = "Percent@,% of fill,,,,One color;!,!,;!;1d";
 
 
 /*
