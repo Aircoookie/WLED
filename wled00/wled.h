@@ -130,7 +130,7 @@
 #endif
 
 #include "src/dependencies/e131/ESPAsyncE131.h"
-#include "src/dependencies/async-mqtt-client/AsyncMqttClient.h"
+#include <AsyncMqttClient.h>
 
 #define ARDUINOJSON_DECODE_UNICODE 0
 #include "src/dependencies/json/AsyncJson-v6.h"
