@@ -167,8 +167,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       int hw_btn_pin = request->arg(bt).toInt();
       if (pinManager.allocatePin(hw_btn_pin,false,PinOwner::Button)) {
         btnPin[i] = hw_btn_pin;
-        pinMode(btnPin[i], INPUT_PULLUP);
         buttonType[i] = request->arg(be).toInt();
+        #ifdef ESP32
+        pinMode(btnPin[i], buttonType[i]==BTN_TYPE_PUSH_ACT_HIGH ? INPUT_PULLDOWN : INPUT_PULLUP);
+        #else
+        pinMode(btnPin[i], INPUT_PULLUP);
+        #endif
       } else {
         btnPin[i] = -1;
         buttonType[i] = BTN_TYPE_NONE;

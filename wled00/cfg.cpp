@@ -200,7 +200,11 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       int8_t pin = btn["pin"][0] | -1;
       if (pin > -1 && pinManager.allocatePin(pin, false, PinOwner::Button)) {
         btnPin[s] = pin;
+        #ifdef ESP32
+        pinMode(btnPin[s], buttonType[s]==BTN_TYPE_PUSH_ACT_HIGH ? INPUT_PULLDOWN : INPUT_PULLUP);
+        #else
         pinMode(btnPin[s], INPUT_PULLUP);
+        #endif
       } else {
         btnPin[s] = -1;
       }
