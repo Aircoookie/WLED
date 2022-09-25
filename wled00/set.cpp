@@ -90,6 +90,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     Bus::setAutoWhiteMode(strip.autoWhiteMode);
     strip.setTargetFps(request->arg(F("FR")).toInt());
 
+    bool busesChanged = false;
     for (uint8_t s = 0; s < WLED_MAX_BUSSES; s++) {
       char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
       char lc[4] = "LC"; lc[2] = 48+s; lc[3] = 0; //strip length
@@ -97,7 +98,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char lt[4] = "LT"; lt[2] = 48+s; lt[3] = 0; //strip type
       char ls[4] = "LS"; ls[2] = 48+s; ls[3] = 0; //strip start LED
       char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
-      char sl[4] = "SL"; sl[2] = 48+s; sl[3] = 0; //skip 1st LED
+      char sl[4] = "SL"; sl[2] = 48+s; sl[3] = 0; //skip first N LEDs
       char rf[4] = "RF"; rf[2] = 48+s; rf[3] = 0; //refresh required
       if (!request->hasArg(lp)) {
         DEBUG_PRINTLN(F("No data.")); break;
@@ -109,7 +110,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       }
       type = request->arg(lt).toInt();
       type |= request->hasArg(rf) << 7; // off refresh override
-      skip = request->hasArg(sl) ? LED_SKIP_AMOUNT : 0;
+      skip = request->arg(sl).toInt();
       colorOrder = request->arg(co).toInt();
       start = (request->hasArg(ls)) ? request->arg(ls).toInt() : t;
       if (request->hasArg(lc) && request->arg(lc).toInt() > 0) {
@@ -121,8 +122,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       // actual finalization is done in WLED::loop() (removing old busses and adding new)
       if (busConfigs[s] != nullptr) delete busConfigs[s];
       busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv), skip);
-      doInitBusses = true;
+      busesChanged = true;
     }
+    //doInitBusses = busesChanged; // we will do that below to ensure all input data is processed
 
     ColorOrderMap com = {};
     for (uint8_t s = 0; s < WLED_MAX_COLOR_ORDER_MAPPINGS; s++) {
@@ -198,6 +200,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t >= 0 && t < 4) strip.paletteBlend = t;
     t = request->arg(F("BF")).toInt();
     if (t > 0) briMultiplier = t;
+
+    doInitBusses = busesChanged;
   }
 
   //UI
@@ -237,6 +241,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     nodeBroadcastEnabled = request->hasArg(F("NB"));
 
     receiveDirect = request->hasArg(F("RD"));
+    useMainSegmentOnly = request->hasArg(F("MO"));
     e131SkipOutOfSequence = request->hasArg(F("ES"));
     e131Multicast = request->hasArg(F("EM"));
     t = request->arg(F("EP")).toInt();
@@ -1007,6 +1012,9 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (pos > 0) {
     realtimeOverride = getNumVal(&req, pos);
     if (realtimeOverride > 2) realtimeOverride = REALTIME_OVERRIDE_ALWAYS;
+    if (realtimeMode && useMainSegmentOnly) {
+      strip.getMainSegment().setOption(SEG_OPTION_FREEZE, !realtimeOverride, strip.getMainSegmentId());
+    }
   }
 
   pos = req.indexOf(F("RB"));

@@ -74,6 +74,11 @@
 #define USERMOD_ID_QUINLED_AN_PENTA      23     //Usermod "quinled-an-penta.h"
 #define USERMOD_ID_SSDR                  24     //Usermod "usermod_v2_seven_segment_display_reloaded.h"
 #define USERMOD_ID_CRONIXIE              25     //Usermod "usermod_cronixie.h"
+#define USERMOD_ID_WIZLIGHTS             26     //Usermod "wizlights.h"
+#define USERMOD_ID_WORDCLOCK             27     //Usermod "usermod_v2_word_clock.h"
+#define USERMOD_ID_MY9291                28     //Usermod "usermod_MY9291.h"
+#define USERMOD_ID_SI7021_MQTT_HA        29     //Usermod "usermod_si7021_mqtt_ha.h"
+#define USERMOD_ID_BME280                30     //Usermod "usermod_bme280.h
 
 #define USERMOD_ID_LEDCLOCK              99
 
@@ -164,6 +169,7 @@
 #define TYPE_APA102              51
 #define TYPE_LPD8806             52
 #define TYPE_P9813               53
+#define TYPE_LPD6803             54
 //Network types (master broadcast) (80-95)
 #define TYPE_NET_DDP_RGB         80            //network DDP RGB bus (master broadcast bus)
 #define TYPE_NET_E131_RGB        81            //network E131 RGB bus (master broadcast bus)
@@ -196,7 +202,7 @@
 #define BTN_TYPE_ANALOG_INVERTED  8
 
 //Ethernet board types
-#define WLED_NUM_ETH_TYPES        7
+#define WLED_NUM_ETH_TYPES        8
 
 #define WLED_ETH_NONE             0
 #define WLED_ETH_WT32_ETH01       1
@@ -297,7 +303,11 @@
 #endif
 
 #ifndef ABL_MILLIAMPS_DEFAULT
-#define ABL_MILLIAMPS_DEFAULT 850  // auto lower brightness to stay close to milliampere limit
+  #define ABL_MILLIAMPS_DEFAULT 850  // auto lower brightness to stay close to milliampere limit
+#else
+  #if ABL_MILLIAMPS_DEFAULT < 250  // make sure value is at least 250
+   #define ABL_MILLIAMPS_DEFAULT 250
+  #endif
 #endif
 
 // PWM settings

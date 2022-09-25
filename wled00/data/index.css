@@ -864,6 +864,19 @@ input[type=number]::-webkit-outer-spin-button {
 	right: 8px;
 }
 
+.frz {
+	left: 36px;
+	position: absolute;
+	top: 0px;
+	cursor: pointer;
+	padding: 8px;
+}
+
+/* TODO expanded does not seem to apply to .frz, what is this for? */
+.expanded .frz {
+	display: none;
+}
+
 .check, .radio {
 	display: inline-block;
 	position: relative;

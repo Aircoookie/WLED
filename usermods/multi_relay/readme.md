@@ -81,11 +81,13 @@ void registerUsermods()
 Usermod can be configured in Usermods settings page.
 
 * `enabled` - enable/disable usermod
-* `pin` - GPIO pin where relay is attached to ESP
+* `pin` - GPIO pin where relay is attached to ESP (can be configured at compile time `-D MULTI_RELAY_PINS=xx,xx,...`)
 * `delay-s` - delay in seconds after on/off command is received
 * `active-high` - toggle high/low activation of relay (can be used to reverse relay states)
 * `external` - if enabled WLED does not control relay, it can only be triggered by external command (MQTT, HTTP, JSON or button)
 * `button` - button (from LED Settings) that controls this relay
+* `broadcast`- time in seconds between state broadcasts using MQTT
+* `HA-discovery`- enable Home Assistant auto discovery
 
 If there is no MultiRelay section, just save current configuration and re-open Usermods settings page. 
 

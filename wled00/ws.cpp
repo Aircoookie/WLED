@@ -136,14 +136,15 @@ bool sendLiveLedsWs(uint32_t wsClient)
 
   uint16_t used = strip.getLengthTotal();
   uint16_t n = ((used -1)/MAX_LIVE_LEDS_WS) +1; //only serve every n'th LED if count over MAX_LIVE_LEDS_WS
-  AsyncWebSocketMessageBuffer * wsBuf = ws.makeBuffer(2 + (used*3)/n);
+  uint16_t bufSize = 2 + (used/n)*3;
+  AsyncWebSocketMessageBuffer * wsBuf = ws.makeBuffer(bufSize);
   if (!wsBuf) return false; //out of memory
   uint8_t* buffer = wsBuf->get();
   buffer[0] = 'L';
   buffer[1] = 1; //version
 
   uint16_t pos = 2;
-  for (uint16_t i= 0; i < used; i += n)
+  for (uint16_t i= 0; pos < bufSize -2; i += n)
   {
     uint32_t c = strip.getPixelColor(i);
     buffer[pos++] = qadd8(W(c), R(c)); //R, add white channel to RGB channels as a simple RGBW -> RGB map

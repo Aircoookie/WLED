@@ -1,5 +1,42 @@
 ## WLED changelog
 
+### WLED release 0.13.3
+
+-   Version bump to v0.13.3 "Toki"
+-   Disable ESP watchdog by default (fixes flickering and boot issues on a fresh install)
+-   Added support for LPD6803
+
+### WLED release 0.13.2
+
+#### Build 2208140
+
+-   Version bump to v0.13.2 "Toki"
+-   Added option to receive live data on the main segment only (PR #2601)
+-   Enable ESP watchdog by default (PR #2657)
+-   Fixed race condition when saving bus config
+-   Better potentiometer filtering (PR #2693)
+-   More suitable DMX libraries (PR #2652)
+-   Fixed outgoing serial TPM2 message length (PR #2628)
+-   Fixed next universe overflow and Art-Net DMX start address (PR #2607)
+-   Fixed relative segment brightness (PR #2665)
+
+### Builds between releases 0.13.1 and 0.13.2
+
+#### Build 2203191
+
+-   Fixed sunrise/set calculation (once again)
+
+#### Build 2203190
+
+-   Fixed `/json/cfg` unable to set busses (#2589)
+-   Fixed Peek with odd LED counts > 255 (#2586)
+
+#### Build 2203160
+
+-   Version bump to v0.13.2-a0 "Toki"
+-   Add ability to skip up to 255 LEDs
+-   Dependency version bumps
+
 ### WLED release 0.13.1
 
 #### Build 2203150
@@ -1011,4 +1048,3 @@
 
 -   Created changelog.md - make tracking changes to code easier
 -   Merged pull request #766 by @pille: Fix E1.31 out-of sequence detection
-
