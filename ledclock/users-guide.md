@@ -193,6 +193,8 @@ If you need to upgrade, follow the procedure below:
 - tap on **Update!**
 - the update could take around 30-60 seconds, the device will reboot automatically
 
+If you're using the Android app and the version number has not changed following the upgrade, please clear the data of the Android application and re-add your clock to force reloading the new version of the UI.
+
 If for any reason the over-the-air upgrade fails, try the [USB installation method](https://imeszaros.github.io/ledclock/).
 
 ## 10. Help
