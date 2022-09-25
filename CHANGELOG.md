@@ -1,5 +1,10 @@
 ## LED Clock changelog
 
+### LED Clock release 1.2.0
+
+-   Upgraded to WLED 0.13.3
+-   Concentric effect added
+
 ### LED Clock release 1.1.0
 
 -   Fixed swapped dot positions

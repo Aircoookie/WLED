@@ -4103,6 +4103,68 @@ uint16_t WS2812FX::mode_lc2sofix() {
 }
 
 /*
+  Concentric
+*/
+
+#define _LC_CON_INC_MIN .003
+#define _LC_CON_INC_MAX .05
+#define _LC_CON_SCALE_MIN .5
+#define _LC_CON_SCALE_MAX 3
+
+typedef struct {
+  bool inited = false;
+  uint8_t width;
+  uint8_t height;
+  float radius;
+  float offset;
+} _lcConcentricData;
+
+uint16_t WS2812FX::mode_lcConcentric() {
+  if (!SEGENV.allocateData(sizeof(_lcConcentricData))) return mode_static(); //allocation failed
+  _lcConcentricData* d = reinterpret_cast<_lcConcentricData*>(SEGENV.data);
+
+  if (!d->inited) {
+    d->inited = true;
+
+    d->width = ledClockDisplay()->columnCount();
+    d->height = ledClockDisplay()->rowCount();
+
+    d->radius = sqrtf(powf(d->width / (float) 2, 2) + powf(d->height / (float) 2, 2));
+
+    d->offset = 0;
+  }
+
+  d->offset += _lc_map8f(SEGMENT.speed, _LC_CON_INC_MIN, _LC_CON_INC_MAX);
+  d->offset = fmodf(d->offset, 1);
+
+  for (uint8_t x = 0; x < d->width; ++x) {
+      for (uint8_t y = 0; y < d->height; ++y) {
+          uint8_t i = ledClockDisplay()->indexOfCoords(y, x);
+          if (i != _7SEG_INDEX_UNDEF) {
+
+            float _x = x - d->width / (float) 2;
+            float _y = -(y - d->height / (float) 2);
+
+            float absX = abs(_x);
+            float absY = abs(_y);
+
+            float radius = (absX == 0 || absY == 0)
+              ? (absX == 0 ? absY : absX)
+              : sqrtf(powf(absX, 2) + powf(absY, 2));
+
+            float scaledRadius = d->radius * _lc_map8f(SEGMENT.intensity, _LC_CON_SCALE_MIN, _LC_CON_SCALE_MAX);
+            float idx = fmodf((1 - d->offset) + radius / scaledRadius, 1);
+            uint32_t color = color_from_palette(idx * 255, false, true, 3, 255);
+
+            setPixelColor(i, color);
+          }
+      }
+  }
+
+  return FRAMETIME;
+}
+
+/*
   TV Simulator
   Modified and adapted to WLED by Def3nder, based on "Fake TV Light for Engineers" by Phillip Burgess https://learn.adafruit.com/fake-tv-light-for-engineers/arduino-sketch
 */
