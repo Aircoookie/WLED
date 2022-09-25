@@ -33,9 +33,23 @@ class AutoSaveUsermod : public Usermod {
     bool enabled = true;
 
     // configurable parameters
+    #ifdef AUTOSAVE_AFTER_SEC
+    uint16_t autoSaveAfterSec = AUTOSAVE_AFTER_SEC;
+    #else
     uint16_t autoSaveAfterSec = 15;       // 15s by default
+    #endif
+
+    #ifdef AUTOSAVE_PRESET_NUM
+    uint8_t autoSavePreset = AUTOSAVE_PRESET_NUM;
+    #else
     uint8_t autoSavePreset = 250;         // last possible preset
+    #endif
+
+    #ifdef USERMOD_AUTO_SAVE_ON_BOOT
+    bool applyAutoSaveOnBoot = USERMOD_AUTO_SAVE_ON_BOOT; 
+    #else
     bool applyAutoSaveOnBoot = false;     // do we load auto-saved preset on boot?
+    #endif
 
     // If we've detected the need to auto save, this will be non zero.
     unsigned long autoSaveAfter = 0;
