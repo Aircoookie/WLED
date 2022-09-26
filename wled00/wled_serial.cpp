@@ -28,7 +28,7 @@ void updateBaudRate(uint32_t rate){
   if (rate100 == currentBaud || rate100 < 96) return;
   currentBaud = rate100;
 
-  if (!pinManager.isPinAllocated(1) || pinManager.getPinOwner(1) == PinOwner::DebugOut){
+  if (!pinManager.isPinAllocated(hardwareTX) || pinManager.getPinOwner(hardwareTX) == PinOwner::DebugOut){
     Serial.print(F("Baud is now ")); Serial.println(rate);
   }
 
@@ -38,10 +38,10 @@ void updateBaudRate(uint32_t rate){
 
 // RGB LED data return as JSON array. Slow, but easy to use on the other end.
 void sendJSON(){
-  if (!pinManager.isPinAllocated(1) || pinManager.getPinOwner(1) == PinOwner::DebugOut){
+  if (!pinManager.isPinAllocated(hardwareTX) || pinManager.getPinOwner(hardwareTX) == PinOwner::DebugOut) {
     uint16_t used = strip.getLengthTotal();
     Serial.write('[');
-    for (uint16_t i=0; i<used; i+=1) {
+    for (uint16_t i=0; i<used; i++) {
       Serial.print(strip.getPixelColor(i));
       if (i != used-1) Serial.write(',');
     }
@@ -51,7 +51,7 @@ void sendJSON(){
 
 // RGB LED data returned as bytes in TPM2 format. Faster, and slightly less easy to use on the other end.
 void sendBytes(){
-  if (!pinManager.isPinAllocated(1) || pinManager.getPinOwner(1) == PinOwner::DebugOut) {
+  if (!pinManager.isPinAllocated(hardwareTX) || pinManager.getPinOwner(hardwareTX) == PinOwner::DebugOut) {
     Serial.write(0xC9); Serial.write(0xDA);
     uint16_t used = strip.getLengthTotal();
     uint16_t len = used*3;
@@ -69,7 +69,7 @@ void sendBytes(){
 
 void handleSerial()
 {
-  if (pinManager.isPinAllocated(3)) return;
+  if (pinManager.isPinAllocated(hardwareRX)) return;
   
   #ifdef WLED_ENABLE_ADALIGHT
   static auto state = AdaState::Header_A;
@@ -112,11 +112,7 @@ void handleSerial()
 
         } else if (next == '{') { //JSON API
           bool verboseResponse = false;
-          #ifdef WLED_USE_DYNAMIC_JSON
-          DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-          #else
           if (!requestJSONBufferLock(16)) return;
-          #endif
           Serial.setTimeout(100);
           DeserializationError error = deserializeJson(doc, Serial);
           if (error) {
@@ -125,7 +121,7 @@ void handleSerial()
           }
           verboseResponse = deserializeState(doc.as<JsonObject>());
           //only send response if TX pin is unused for other purposes
-          if (verboseResponse && (!pinManager.isPinAllocated(1) || pinManager.getPinOwner(1) == PinOwner::DebugOut)) {
+          if (verboseResponse && (!pinManager.isPinAllocated(hardwareTX) || pinManager.getPinOwner(hardwareTX) == PinOwner::DebugOut)) {
             doc.clear();
             JsonObject state = doc.createNestedObject("state");
             serializeState(state);

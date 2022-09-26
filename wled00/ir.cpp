@@ -1,5 +1,7 @@
 #include "wled.h"
 
+#include "ir_codes.h"
+
 /*
  * Infrared sensor support for generic 24/40/44 key RGB remotes
  */
@@ -71,12 +73,10 @@ void decBrightness()
 // apply preset or fallback to a effect and palette if it doesn't exist
 void presetFallback(uint8_t presetID, uint8_t effectID, uint8_t paletteID) 
 {
-  byte prevError = errorFlag;
-  if (!applyPreset(presetID, CALL_MODE_BUTTON_PRESET)) { 
-    effectCurrent = effectID;
-    effectPalette = paletteID;
-    errorFlag = prevError; //clear error 12 from non-existent preset
-  }
+  applyPreset(presetID, CALL_MODE_BUTTON_PRESET);
+  //these two will be overwritten if preset exists in handlePresets()
+  effectCurrent = effectID;      
+  effectPalette = paletteID;
 }
 
 byte relativeChange(byte property, int8_t amount, byte lowerBoundary, byte higherBoundary)
@@ -91,8 +91,8 @@ byte relativeChange(byte property, int8_t amount, byte lowerBoundary, byte highe
 void changeEffect(uint8_t fx)
 {
   if (irApplyToAllSelected) {
-    for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
-      WS2812FX::Segment& seg = strip.getSegment(i);
+    for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
+      Segment& seg = strip.getSegment(i);
       if (!seg.isActive() || !seg.isSelected()) continue;
       strip.setMode(i, fx);
     }
@@ -107,8 +107,8 @@ void changeEffect(uint8_t fx)
 void changePalette(uint8_t pal)
 {
   if (irApplyToAllSelected) {
-    for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
-      WS2812FX::Segment& seg = strip.getSegment(i);
+    for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
+      Segment& seg = strip.getSegment(i);
       if (!seg.isActive() || !seg.isSelected()) continue;
       seg.palette = pal;
     }
@@ -126,8 +126,8 @@ void changeEffectSpeed(int8_t amount)
     int16_t new_val = (int16_t) effectSpeed + amount;
     effectSpeed = (byte)constrain(new_val,0,255);
     if (irApplyToAllSelected) {
-      for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
-        WS2812FX::Segment& seg = strip.getSegment(i);
+      for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
+        Segment& seg = strip.getSegment(i);
         if (!seg.isActive() || !seg.isSelected()) continue;
         seg.speed = effectSpeed;
       }
@@ -137,7 +137,7 @@ void changeEffectSpeed(int8_t amount)
       setValuesFromMainSeg();
     }
   } else { // if Effect == "solid Color", change the hue of the primary color
-    WS2812FX::Segment& sseg = irApplyToAllSelected ? strip.getFirstSelectedSeg() : strip.getMainSegment();
+    Segment& sseg = irApplyToAllSelected ? strip.getFirstSelectedSeg() : strip.getMainSegment();
     CRGB fastled_col;
     fastled_col.red   = R(sseg.colors[0]);
     fastled_col.green = G(sseg.colors[0]);
@@ -149,8 +149,8 @@ void changeEffectSpeed(int8_t amount)
     prim_hsv.h = (byte)new_val;
     hsv2rgb_rainbow(prim_hsv, fastled_col);
     if (irApplyToAllSelected) {
-      for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
-        WS2812FX::Segment& seg = strip.getSegment(i);
+      for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
+        Segment& seg = strip.getSegment(i);
         if (!seg.isActive() || !seg.isSelected()) continue;
         seg.colors[0] = RGBW32(fastled_col.red, fastled_col.green, fastled_col.blue, W(sseg.colors[0]));
       }
@@ -173,8 +173,8 @@ void changeEffectIntensity(int8_t amount)
     int16_t new_val = (int16_t) effectIntensity + amount;
     effectIntensity = (byte)constrain(new_val,0,255);
     if (irApplyToAllSelected) {
-      for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
-        WS2812FX::Segment& seg = strip.getSegment(i);
+      for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
+        Segment& seg = strip.getSegment(i);
         if (!seg.isActive() || !seg.isSelected()) continue;
         seg.intensity = effectIntensity;
       }
@@ -184,7 +184,7 @@ void changeEffectIntensity(int8_t amount)
       setValuesFromMainSeg();
     }
   } else { // if Effect == "solid Color", change the saturation of the primary color
-    WS2812FX::Segment& sseg = irApplyToAllSelected ? strip.getFirstSelectedSeg() : strip.getMainSegment();
+    Segment& sseg = irApplyToAllSelected ? strip.getFirstSelectedSeg() : strip.getMainSegment();
     CRGB fastled_col;
     fastled_col.red   = R(sseg.colors[0]);
     fastled_col.green = G(sseg.colors[0]);
@@ -194,8 +194,8 @@ void changeEffectIntensity(int8_t amount)
     prim_hsv.s = (byte)constrain(new_val,0,255);  // constrain to 0-255
     hsv2rgb_rainbow(prim_hsv, fastled_col);
     if (irApplyToAllSelected) {
-      for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
-        WS2812FX::Segment& seg = strip.getSegment(i);
+      for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
+        Segment& seg = strip.getSegment(i);
         if (!seg.isActive() || !seg.isSelected()) continue;
         seg.colors[0] = RGBW32(fastled_col.red, fastled_col.green, fastled_col.blue, W(sseg.colors[0]));
       }
@@ -216,36 +216,38 @@ void changeColor(uint32_t c, int16_t cct=-1)
 {
   if (irApplyToAllSelected) {
     // main segment may not be selected!
-    for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
-      WS2812FX::Segment& seg = strip.getSegment(i);
+    for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
+      Segment& seg = strip.getSegment(i);
       if (!seg.isActive() || !seg.isSelected()) continue;
       byte capabilities = seg.getLightCapabilities();
       uint32_t mask = 0;
-      bool isRGB = GET_BIT(capabilities, 0); // when RGBW_MODE_AUTO_ACCURATE this is always true
-      bool hasW  = GET_BIT(capabilities, 1);
-      bool isCCT = GET_BIT(capabilities, 2);
+      bool isRGB   = GET_BIT(capabilities, 0);  // is segment RGB capable
+      bool hasW    = GET_BIT(capabilities, 1);  // do we have white/CCT channel
+      bool isCCT   = GET_BIT(capabilities, 2);  // is segment CCT capable
+      bool wSlider = GET_BIT(capabilities, 3);  // is white auto calculated (white slider NOT shown in UI)
       if (isRGB) mask |= 0x00FFFFFF; // RGB
       if (hasW)  mask |= 0xFF000000; // white
-      if (hasW && (strip.autoWhiteMode == RGBW_MODE_AUTO_ACCURATE) && (c & 0xFF000000)) { // white channel & white specified
-        seg.setColor(0, c | 0xFFFFFF, i); // for accurate mode we fake white
-      } else if (c & mask) seg.setColor(0, c & mask, i); // only apply if not black
-      if (isCCT && cct >= 0) seg.setCCT(cct, i);
+      if (hasW && !wSlider && (c & 0xFF000000)) { // segment has white channel & white channel is auto calculated & white specified
+        seg.setColor(0, c | 0xFFFFFF); // for accurate/brighter mode we fake white (since button may not set white color to 0xFFFFFF)
+      } else if (c & mask) seg.setColor(0, c & mask); // only apply if not black
+      if (isCCT && cct >= 0) seg.setCCT(cct);
     }
     setValuesFromFirstSelectedSeg();
   } else {
     byte i = strip.getMainSegmentId();
-    WS2812FX::Segment& seg = strip.getSegment(i);
+    Segment& seg = strip.getSegment(i);
     byte capabilities = seg.getLightCapabilities();
     uint32_t mask = 0;
-    bool isRGB = GET_BIT(capabilities, 0);
-    bool hasW  = GET_BIT(capabilities, 1);
-    bool isCCT = GET_BIT(capabilities, 2);
+    bool isRGB   = GET_BIT(capabilities, 0);  // is segment RGB capable
+    bool hasW    = GET_BIT(capabilities, 1);  // do we have white/CCT channel
+    bool isCCT   = GET_BIT(capabilities, 2);  // is segment CCT capable
+    bool wSlider = GET_BIT(capabilities, 3);  // is white auto calculated (white slider NOT shown in UI)
     if (isRGB) mask |= 0x00FFFFFF; // RGB
     if (hasW)  mask |= 0xFF000000; // white
-    if (hasW && (strip.autoWhiteMode == RGBW_MODE_AUTO_ACCURATE) && (c & 0xFF000000)) { // white channel & white specified
-      seg.setColor(0, c | 0xFFFFFF, i); // for accurate mode we fake white
-    } else if (c & mask) seg.setColor(0, c & mask, i); // only apply if not black
-    if (isCCT && cct >= 0) seg.setCCT(cct, i);
+    if (hasW && !wSlider && (c & 0xFF000000)) { // segment has white channel & white channel is auto calculated & white specified
+      seg.setColor(0, c | 0xFFFFFF); // for accurate/brighter mode we fake white (since button may not set white color to 0xFFFFFF)
+    } else if (c & mask) seg.setColor(0, c & mask); // only apply if not black
+    if (isCCT && cct >= 0) seg.setCCT(cct);
     setValuesFromMainSeg();
   }
   stateChanged = true;
@@ -253,7 +255,7 @@ void changeColor(uint32_t c, int16_t cct=-1)
 
 void changeWhite(int8_t amount, int16_t cct=-1)
 {
-  WS2812FX::Segment& seg = irApplyToAllSelected ? strip.getFirstSelectedSeg() : strip.getMainSegment();
+  Segment& seg = irApplyToAllSelected ? strip.getFirstSelectedSeg() : strip.getMainSegment();
   byte r = R(seg.colors[0]);
   byte g = G(seg.colors[0]);
   byte b = B(seg.colors[0]);
@@ -424,7 +426,7 @@ void decodeIR24CT(uint32_t code)
 
 void decodeIR40(uint32_t code)
 {
-  WS2812FX::Segment& seg = irApplyToAllSelected ? strip.getFirstSelectedSeg() : strip.getMainSegment();
+  Segment& seg = irApplyToAllSelected ? strip.getFirstSelectedSeg() : strip.getMainSegment();
   byte r = R(seg.colors[0]);
   byte g = G(seg.colors[0]);
   byte b = B(seg.colors[0]);
@@ -502,8 +504,8 @@ void decodeIR44(uint32_t code)
     case IR44_WARMWHITE   : changeColor(COLOR_WARMWHITE,     63); changeEffect(FX_MODE_STATIC);  break;
     case IR44_COLDWHITE   : changeColor(COLOR_COLDWHITE,    191); changeEffect(FX_MODE_STATIC);  break;
     case IR44_COLDWHITE2  : changeColor(COLOR_COLDWHITE2,   255); changeEffect(FX_MODE_STATIC);  break;
-    case IR44_REDPLUS     : changeEffect(relativeChange(effectCurrent,  1, 0, MODE_COUNT -1));               break;
-    case IR44_REDMINUS    : changeEffect(relativeChange(effectCurrent, -1, 0, MODE_COUNT -1));               break;
+    case IR44_REDPLUS     : changeEffect(relativeChange(effectCurrent,  1, 0, strip.getModeCount() -1));               break;
+    case IR44_REDMINUS    : changeEffect(relativeChange(effectCurrent, -1, 0, strip.getModeCount() -1));               break;
     case IR44_GREENPLUS   : changePalette(relativeChange(effectPalette,  1, 0, strip.getPaletteCount() -1)); break;
     case IR44_GREENMINUS  : changePalette(relativeChange(effectPalette, -1, 0, strip.getPaletteCount() -1)); break;
     case IR44_BLUEPLUS    : changeEffectIntensity( 16);                  break;
@@ -562,7 +564,7 @@ void decodeIR6(uint32_t code)
     case IR6_POWER:        toggleOnOff();                                                    break;
     case IR6_CHANNEL_UP:   incBrightness();                                                  break;
     case IR6_CHANNEL_DOWN: decBrightness();                                                  break;
-    case IR6_VOLUME_UP:    changeEffect(relativeChange(effectCurrent, 1, 0, MODE_COUNT -1)); break;
+    case IR6_VOLUME_UP:    changeEffect(relativeChange(effectCurrent, 1, 0, strip.getModeCount() -1)); break;
     case IR6_VOLUME_DOWN:  changePalette(relativeChange(effectPalette, 1, 0, strip.getPaletteCount() -1));
       switch(lastIR6ColourIdx) {
         case 0: changeColor(COLOR_RED);       break;
@@ -600,7 +602,7 @@ void decodeIR9(uint32_t code)
     case IR9_DOWN       : decBrightness();                                                  break;
     case IR9_LEFT       : changeEffectSpeed(-16);                                           break;
     case IR9_RIGHT      : changeEffectSpeed(16);                                            break;
-    case IR9_SELECT     : changeEffect(relativeChange(effectCurrent, 1, 0, MODE_COUNT -1)); break;
+    case IR9_SELECT     : changeEffect(relativeChange(effectCurrent, 1, 0, strip.getModeCount() -1)); break;
     default: return;
   }
   lastValidCode = code;
@@ -637,11 +639,7 @@ void decodeIRJson(uint32_t code)
   JsonObject fdo;
   JsonObject jsonCmdObj;
 
-  #ifdef WLED_USE_DYNAMIC_JSON
-  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-  #else
   if (!requestJSONBufferLock(13)) return;
-  #endif
 
   sprintf_P(objKey, PSTR("\"0x%lX\":"), (unsigned long)code);
 
@@ -674,7 +672,7 @@ void decodeIRJson(uint32_t code)
         decBrightness();
       } else if (cmdStr.startsWith(F("!presetF"))) { //!presetFallback
         uint8_t p1 = fdo["PL"] | 1;
-        uint8_t p2 = fdo["FX"] | random8(MODE_COUNT -1);
+        uint8_t p2 = fdo["FX"] | random8(strip.getModeCount() -1);
         uint8_t p3 = fdo["FP"] | 0;
         presetFallback(p1, p2, p3);
       }
@@ -716,7 +714,7 @@ void initIR()
 
 void handleIR()
 {
-  if (irEnabled > 0 && millis() - irCheckedTime > 120)
+  if (irEnabled > 0 && millis() - irCheckedTime > 120 && !strip.isUpdating())
   {
     irCheckedTime = millis();
     if (irEnabled > 0)
@@ -730,7 +728,7 @@ void handleIR()
       {
         if (results.value != 0) // only print results if anything is received ( != 0 )
         {
-					if (!pinManager.isPinAllocated(1) || pinManager.getPinOwner(1) == PinOwner::DebugOut) //GPIO 1 - Serial TX pin
+					if (!pinManager.isPinAllocated(hardwareTX) || pinManager.getPinOwner(hardwareTX) == PinOwner::DebugOut) // Serial TX pin (GPIO 1 on ESP32 and ESP8266)
           	Serial.printf_P(PSTR("IR recv: 0x%lX\n"), (unsigned long)results.value);
         }
         decodeIR(results.value);

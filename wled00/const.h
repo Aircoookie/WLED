@@ -5,6 +5,8 @@
  * Readability defines and their associated numerical values + compile-time constants
  */
 
+#define GRADIENT_PALETTE_COUNT 58
+
 //Defaults
 #define DEFAULT_CLIENT_SSID "Your_Network"
 #define DEFAULT_AP_PASS     "wled1234"
@@ -23,10 +25,14 @@
   #ifdef ESP8266
     #define WLED_MAX_BUSSES 3
   #else
-    #ifdef CONFIG_IDF_TARGET_ESP32S2
+    #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3)
       #define WLED_MAX_BUSSES 5
     #else
-      #define WLED_MAX_BUSSES 10
+      #if defined(CONFIG_IDF_TARGET_ESP32S3)
+        #define WLED_MAX_BUSSES 8
+      #else
+        #define WLED_MAX_BUSSES 10
+      #endif
     #endif
   #endif
 #endif
@@ -76,6 +82,8 @@
 #define USERMOD_ID_WORDCLOCK             27     //Usermod "usermod_v2_word_clock.h"
 #define USERMOD_ID_MY9291                28     //Usermod "usermod_MY9291.h"
 #define USERMOD_ID_SI7021_MQTT_HA        29     //Usermod "usermod_si7021_mqtt_ha.h"
+#define USERMOD_ID_BME280                30     //Usermod "usermod_bme280.h
+#define USERMOD_ID_AUDIOREACTIVE         31     //Usermod "audioreactive.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
@@ -150,6 +158,7 @@
 #define TYPE_WS2812_RGB          22
 #define TYPE_GS8608              23            //same driver as WS2812, but will require signal 2x per second (else displays test pattern)
 #define TYPE_WS2811_400KHZ       24            //half-speed WS2812 protocol, used by very old WS2811 units
+#define TYPE_TM1829              25
 #define TYPE_SK6812_RGBW         30
 #define TYPE_TM1814              31
 //"Analog" types (PWM) (32-47)
@@ -164,10 +173,12 @@
 #define TYPE_APA102              51
 #define TYPE_LPD8806             52
 #define TYPE_P9813               53
+#define TYPE_LPD6803             54
 //Network types (master broadcast) (80-95)
 #define TYPE_NET_DDP_RGB         80            //network DDP RGB bus (master broadcast bus)
-#define TYPE_NET_E131_RGB        81            //network E131 RGB bus (master broadcast bus)
-#define TYPE_NET_ARTNET_RGB      82            //network ArtNet RGB bus (master broadcast bus)
+#define TYPE_NET_E131_RGB        81            //network E131 RGB bus (master broadcast bus, unused)
+#define TYPE_NET_ARTNET_RGB      82            //network ArtNet RGB bus (master broadcast bus, unused)
+#define TYPE_NET_DDP_RGBW        88            //network DDP RGBW bus (master broadcast bus)
 
 #define IS_DIGITAL(t) ((t) & 0x10) //digital are 16-31 and 48-63
 #define IS_PWM(t)     ((t) > 40 && (t) < 46)
@@ -220,9 +231,12 @@
 #define SEG_OPTION_REVERSED       1
 #define SEG_OPTION_ON             2
 #define SEG_OPTION_MIRROR         3            //Indicates that the effect will be mirrored within the segment
-#define SEG_OPTION_NONUNITY       4            //Indicates that the effect does not use FRAMETIME or needs getPixelColor
-#define SEG_OPTION_FREEZE         5            //Segment contents will not be refreshed
-#define SEG_OPTION_TRANSITIONAL   7
+#define SEG_OPTION_FREEZE         4            //Segment contents will not be refreshed
+#define SEG_OPTION_RESET          5            //Segment runtime requires reset
+#define SEG_OPTION_TRANSITIONAL   6
+#define SEG_OPTION_REVERSED_Y     7
+#define SEG_OPTION_MIRROR_Y       8
+#define SEG_OPTION_TRANSPOSED     9
 
 //Segment differs return byte
 #define SEG_DIFFERS_BRI        0x01
@@ -239,6 +253,7 @@
 // WLED Error modes
 #define ERR_NONE         0  // All good :)
 #define ERR_EEP_COMMIT   2  // Could not commit to EEPROM (wrong flash layout?)
+#define ERR_NOBUF        3  // JSON buffer was not released in time, request cannot be handled at this time
 #define ERR_JSON         9  // JSON parsing failed (input too large?)
 #define ERR_FS_BEGIN    10  // Could not init filesystem (no partition?)
 #define ERR_FS_QUOTA    11  // The FS is full or the maximum file size is reached
@@ -268,15 +283,19 @@
 #endif
 
 #ifndef MAX_LED_MEMORY
-#ifdef ESP8266
-#define MAX_LED_MEMORY 4000
-#else
-#define MAX_LED_MEMORY 64000
-#endif
+  #ifdef ESP8266
+    #define MAX_LED_MEMORY 4000
+  #else
+    #ifdef ARDUINO_ARCH_ESP32S2
+      #define MAX_LED_MEMORY 32000
+    #else
+      #define MAX_LED_MEMORY 64000
+    #endif
+  #endif
 #endif
 
 #ifndef MAX_LEDS_PER_BUS
-#define MAX_LEDS_PER_BUS 4096
+#define MAX_LEDS_PER_BUS 2048   // may not be enough for fast LEDs (i.e. APA102)
 #endif
 
 // string temp buffer (now stored in stack locally)
@@ -319,14 +338,11 @@
 #ifdef ESP8266
   #define JSON_BUFFER_SIZE 10240
 #else
-  #define JSON_BUFFER_SIZE 20480
+  #define JSON_BUFFER_SIZE 24576
 #endif
 
-#ifdef WLED_USE_DYNAMIC_JSON
-  #define MIN_HEAP_SIZE JSON_BUFFER_SIZE+512
-#else
-  #define MIN_HEAP_SIZE 4096
-#endif
+//#define MIN_HEAP_SIZE (MAX_LED_MEMORY+2048)
+#define MIN_HEAP_SIZE (8192)
 
 // Maximum size of node map (list of other WLED instances)
 #ifdef ESP8266
@@ -337,10 +353,10 @@
 
 //this is merely a default now and can be changed at runtime
 #ifndef LEDPIN
-#ifdef ESP8266
+#if defined(ESP8266) || (defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM))
   #define LEDPIN 2    // GPIO2 (D4) on Wemod D1 mini compatible boards
 #else
-  #define LEDPIN 2   // Changed from 16 to restore compatibility with ESP32-pico
+  #define LEDPIN 16   // aligns with GPIO2 (D4) on Wemos D1 mini32 compatible boards
 #endif
 #endif
 
@@ -357,5 +373,44 @@
 #endif
 
 #define INTERFACE_UPDATE_COOLDOWN 2000 //time in ms to wait between websockets, alexa, and MQTT updates
+
+#if defined(ESP8266) && defined(HW_PIN_SCL)
+  #undef HW_PIN_SCL
+#endif
+#if defined(ESP8266) && defined(HW_PIN_SDA)
+  #undef HW_PIN_SDA
+#endif
+#ifndef HW_PIN_SCL
+  #define HW_PIN_SCL SCL
+#endif
+#ifndef HW_PIN_SDA
+  #define HW_PIN_SDA SDA
+#endif
+
+#if defined(ESP8266) && defined(HW_PIN_CLOCKSPI)
+  #undef HW_PIN_CLOCKSPI
+#endif
+#if defined(ESP8266) && defined(HW_PIN_DATASPI)
+  #undef HW_PIN_DATASPI
+#endif
+#if defined(ESP8266) && defined(HW_PIN_MISOSPI)
+  #undef HW_PIN_MISOSPI
+#endif
+#if defined(ESP8266) && defined(HW_PIN_CSSPI)
+  #undef HW_PIN_CSSPI
+#endif
+// defaults for VSPI
+#ifndef HW_PIN_CLOCKSPI
+  #define HW_PIN_CLOCKSPI SCK
+#endif
+#ifndef HW_PIN_DATASPI
+  #define HW_PIN_DATASPI MOSI
+#endif
+#ifndef HW_PIN_MISOSPI
+  #define HW_PIN_MISOSPI MISO
+#endif
+#ifndef HW_PIN_CSSPI
+  #define HW_PIN_CSSPI SS
+#endif
 
 #endif

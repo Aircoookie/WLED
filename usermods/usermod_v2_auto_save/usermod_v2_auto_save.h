@@ -64,6 +64,7 @@ class AutoSaveUsermod : public Usermod {
         PSTR("~ %02d-%02d %02d:%02d:%02d ~"),
         month(localTime), day(localTime),
         hour(localTime), minute(localTime), second(localTime));
+      cacheInvalidate++;  // force reload of presets
       savePreset(autoSavePreset, presetNameBuffer);
     }
 

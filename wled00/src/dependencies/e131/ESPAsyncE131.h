@@ -53,7 +53,12 @@ typedef struct ip_addr ip4_addr_t;
 #define DDP_PUSH_FLAG 0x01
 #define DDP_TIMECODE_FLAG 0x10
 
+#define DDP_TYPE_RGB24  0x0A
+#define DDP_TYPE_RGBW32 0x1A
+
 #define ARTNET_OPCODE_OPDMX 0x5000
+#define ARTNET_OPCODE_OPPOLL 0x2000
+#define ARTNET_OPCODE_OPPOLLREPLY 0x2100
 
 #define P_E131   0
 #define P_ARTNET 1
@@ -150,6 +155,48 @@ typedef union {
 
   uint8_t raw[1458];
 } e131_packet_t;
+
+typedef union {
+  struct {
+    uint8_t reply_id[8];
+    uint16_t reply_opcode;
+    uint8_t reply_ip[4];
+    uint16_t reply_port;
+    uint8_t reply_version_h;
+    uint8_t reply_version_l;
+    uint8_t reply_net_sw;
+    uint8_t reply_sub_sw;
+    uint8_t reply_oem_h;
+    uint8_t reply_oem_l;
+    uint8_t reply_ubea_ver;
+    uint8_t reply_status_1;
+    uint16_t reply_esta_man;
+    uint8_t reply_short_name[18];
+    uint8_t reply_long_name[64];
+    uint8_t reply_node_report[64];
+    uint8_t reply_num_ports_h;
+    uint8_t reply_num_ports_l;
+    uint8_t reply_port_types[4];
+    uint8_t reply_good_input[4];
+    uint8_t reply_good_output_a[4];
+    uint8_t reply_sw_in[4];
+    uint8_t reply_sw_out[4];
+    uint8_t reply_sw_video;
+    uint8_t reply_sw_macro;
+    uint8_t reply_sw_remote;
+    uint8_t reply_spare[3];
+    uint8_t reply_style;
+    uint8_t reply_mac[6];
+    uint8_t reply_bind_ip[4];
+    uint8_t reply_bind_index;
+    uint8_t reply_status_2;
+    uint8_t reply_good_output_b[4];
+    uint8_t reply_status_3;
+    uint8_t reply_filler[21];
+  } __attribute__((packed));
+  
+  uint8_t raw[239];
+} ArtPollReply;
 
 // new packet callback
 typedef void (*e131_packet_callback_function) (e131_packet_t* p, IPAddress clientIP, byte protocol);
