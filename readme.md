@@ -28,6 +28,11 @@ Here are two pictures of the completed project:
 ![Photo 1](ledclock/images/photo1.jpg)
 ![Photo 2](ledclock/images/photo2.jpg)
 
+
+YouTube video:
+
+[![Assembly video](https://img.youtube.com/vi/T4L4ywKFfpU/0.jpg)](https://www.youtube.com/watch?v=T4L4ywKFfpU)
+
 ## Features
 
 - Clock function
@@ -62,7 +67,7 @@ This repository has all information you need to make this project:
 - [Schematic and PCB design](/ledclock/sch-pcb/)
 - [Gerber files for PCB production](/ledclock/gerber/)
 - [Bill of materials](/ledclock/bill-of-materials.md)
-- [Detailed assembly guide with pictures](/ledclock/assembly-guide.md)
+- [Assembly video](/ledclock/assembly-guide.md)
 
 ## Do you like it?
 
