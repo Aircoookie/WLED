@@ -1,24 +1,18 @@
+/*
+  Games usermod by ewowi, september 2022
+
+  Contains:
+    - mode_pongGame
+    - Depending on USERMOD_MPU6050_IMU
+      - mode_IMUTest (shows IMU values only if WLED_DEBUG)
+    - class Frame3D and struct Voxel
+    - mode_3DIMUCube (uses class Frame3D to show a rotating cube, if USERMOD_MPU6050_IMU then IMU used for rotation)
+    - class GamesUsermod (Add the modes/effects and initiates IMU)
+*/
+
 #pragma once
 
 #include "wled.h"
-
-/*
- * Usermods allow you to add own functionality to WLED more easily
- * See: https://github.com/Aircoookie/WLED/wiki/Add-own-functionality
- * 
- * This is an example for a v2 usermod.
- * v2 usermods are class inheritance based and can (but don't have to) implement more functions, each of them is shown in this example.
- * Multiple v2 usermods can be added to one compilation easily.
- * 
- * Creating a usermod:
- * This file serves as an example. If you want to create a usermod, it is recommended to use usermod_v2_empty.h from the usermods folder as a template.
- * Please remember to rename the class and file to a descriptive name.
- * You may also use multiple .h and .cpp files.
- * 
- * Using a usermod:
- * 1. Copy the usermod into the sketch folder (same folder as wled00.ino)
- * 2. Register the usermod by adding #include "usermod_filename.h" in the top and registerUsermod(new MyUsermodClass()) in the bottom of usermods_list.cpp
- */
 
 //inspired by https://noobtuts.com/cpp/2d-pong-game
 typedef struct PongBall {
@@ -181,94 +175,170 @@ uint16_t mode_pongGame(void) {
 static const char _data_FX_MODE_PONGGAME[] PROGMEM = "🎮 Pong@!;!;!;2d";
 
 //https://howtomechatronics.com/tutorials/arduino/arduino-and-mpu6050-accelerometer-and-gyroscope-tutorial/
-#define MPU_ADDR 0x68 // I2C address of the MPU-6050. If AD0 pin is set to HIGH, the I2C address will be 0x69.
-int16_t accelerometer_x, accelerometer_y, accelerometer_z; // variables for accelerometer raw data
-int16_t gyro_x, gyro_y, gyro_z; // variables for gyro raw data
-int16_t temperature; // variables for temperature data
 
-uint16_t mode_gyro(void) { 
+#ifdef USERMOD_MPU6050_IMU
+MPU6050Driver *IMU = nullptr;
+uint16_t mode_IMUTest(void) { 
   SEGMENT.fill(BLACK);
 
   uint8_t y = 0;
 
-  SEGMENT.setPixelColorXY(SEGMENT.virtualWidth() * (accelerometer_x+INT16_MAX)/(2*INT16_MAX), y+=2, BLUE);
-  SEGMENT.setPixelColorXY(SEGMENT.virtualWidth() * (accelerometer_y+INT16_MAX)/(2*INT16_MAX), y+=2, BLUE);
-  SEGMENT.setPixelColorXY(SEGMENT.virtualWidth() * (accelerometer_z+INT16_MAX)/(2*INT16_MAX), y+=2, BLUE);
-  SEGMENT.setPixelColorXY(SEGMENT.virtualWidth() * (gyro_x+INT16_MAX)/(2*INT16_MAX), y+=2, BLUE);
-  SEGMENT.setPixelColorXY(SEGMENT.virtualWidth() * (gyro_y+INT16_MAX)/(2*INT16_MAX), y+=2, BLUE);
-  SEGMENT.setPixelColorXY(SEGMENT.virtualWidth() * (gyro_z+INT16_MAX)/(2*INT16_MAX), y+=2, BLUE);
+  if (IMU != nullptr) {
+    SEGMENT.setPixelColorXY(SEGMENT.virtualWidth() * (IMU->aa.x+INT16_MAX)/(2*INT16_MAX), y+=1, BLUE);
+    SEGMENT.setPixelColorXY(SEGMENT.virtualWidth() * (IMU->aa.y+INT16_MAX)/(2*INT16_MAX), y+=1, BLUE);
+    SEGMENT.setPixelColorXY(SEGMENT.virtualWidth() * (IMU->aa.z+INT16_MAX)/(2*INT16_MAX), y+=1, BLUE);
+    
+    SEGMENT.setPixelColorXY(SEGMENT.virtualWidth() * (IMU->aaReal.x+INT16_MAX)/(2*INT16_MAX), y+=1, BLUE);
+    SEGMENT.setPixelColorXY(SEGMENT.virtualWidth() * (IMU->aaReal.y+INT16_MAX)/(2*INT16_MAX), y+=1, BLUE);
+    SEGMENT.setPixelColorXY(SEGMENT.virtualWidth() * (IMU->aaReal.z+INT16_MAX)/(2*INT16_MAX), y+=1, BLUE);
+    
+    SEGMENT.setPixelColorXY(SEGMENT.virtualWidth() * (IMU->gy.x+1024)/(2*1024), y+=1, RED);
+    SEGMENT.setPixelColorXY(SEGMENT.virtualWidth() * (IMU->gy.y+1024)/(2*1024), y+=1, RED);
+    SEGMENT.setPixelColorXY(SEGMENT.virtualWidth() * (IMU->gy.z+1024)/(2*1024), y+=1, RED);
+
+    SEGMENT.setPixelColorXY(SEGMENT.virtualWidth() * (IMU->aaWorld.x+INT16_MAX)/(2*INT16_MAX), y+=1, BLUE);
+    SEGMENT.setPixelColorXY(SEGMENT.virtualWidth() * (IMU->aaWorld.y+INT16_MAX)/(2*INT16_MAX), y+=1, BLUE);
+    SEGMENT.setPixelColorXY(SEGMENT.virtualWidth() * (IMU->aaWorld.z+INT16_MAX)/(2*INT16_MAX), y+=1, BLUE);
+    
+    SEGMENT.setPixelColorXY(SEGMENT.virtualWidth() * (IMU->ypr[0]* 180/M_PI+180)/(2*180), y+=1, RED);
+    SEGMENT.setPixelColorXY(SEGMENT.virtualWidth() * (IMU->ypr[1]* 180/M_PI+180)/(2*180), y+=1, RED);
+    SEGMENT.setPixelColorXY(SEGMENT.virtualWidth() * (IMU->ypr[2]* 180/M_PI+180)/(2*180), y+=1, RED);
+  }
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_GYRO[] PROGMEM = "🎮 Gyro@!;!;!;2d";
+static const char _data_FX_MODE_IMUTest[] PROGMEM = "🎮 IMUTest@;;;2d";
 
-#ifndef FLD_PIN_SCL
-  #define FLD_PIN_SCL i2c_scl
-#endif
-#ifndef FLD_PIN_SDA
-  #define FLD_PIN_SDA i2c_sda
 #endif
 
+//WLEDSR 3D to 2D mapping
+struct Voxel {
+  float x;
+  float y;
+  float z;
+  uint32_t col;
+};
+
+class Frame3D {
+  private:
+    std::vector<Voxel> points;
+    void rotate(float a, float b, float angle, float &x, float &y) {
+      x = cosf(angle) * a - sinf(angle) * b;
+      y = sinf(angle) * a + cosf(angle) * b;
+    }
+    float yaw;
+    float pitch; 
+    float roll;
+  public:
+    Frame3D(float yaw1, float pitch1, float roll1) {
+      points.clear();
+      yaw = yaw1;
+      pitch = pitch1;
+      roll = roll1;
+    }
+    ~Frame3D() {
+      std::sort(points.begin(), points.end(), [](const Voxel &lhs, const Voxel &rhs) {return lhs.z > rhs.z;});
+      for(size_t i = 0; i < points.size(); ++i) {
+        float w = 0.5;//SEGMENT.virtualWidth()/2;
+        float h = 0.5;//SEGMENT.virtualHeight()/2;
+        float perspective = SEGMENT.intensity / 64.0;
+        if(points[i].z > 0) {
+          float projX, projY;
+          projX = w+points[i].x/points[i].z*perspective;
+          projY = h+points[i].y/points[i].z*perspective;
+          SEGMENT.setPixelColorXY(projX, projY, points[i].col, false); //no aa
+        }
+      }
+    }
+    void setPixelColorXYZ(Voxel voxel) {
+      float camx = 0;
+      float camy = 0;
+      float camz = -6;
+      rotate(voxel.x,voxel.z,yaw, voxel.x, voxel.z); // Camera yaw
+      rotate(voxel.y,voxel.z,pitch, voxel.y, voxel.z); // Camera pitch
+      rotate(voxel.x,voxel.y,roll, voxel.x, voxel.y); // Camera roll
+      voxel.x -= camx;
+      voxel.y -= camy;
+      voxel.z -= camz;
+      points.push_back(voxel);
+    }
+    void drawLineXYZ(Voxel from, Voxel to, uint32_t col) {
+      for (float x=MIN(from.x, to.x); x<=MAX(from.x, to.x); x+=.05)
+        for (float y=MIN(from.y, to.y); y<=MAX(from.y, to.y); y+=.05)
+          for (float z=MIN(from.z, to.z); z<=MAX(from.z, to.z); z+=.05)
+            setPixelColorXYZ({x, y, z, col});
+    }
+};
+
+uint16_t mode_3DIMUCube(void) { 
+  SEGMENT.fill(BLACK);
+
+  float yaw = 0;
+  float pitch = 0; 
+  float roll = 0;
+
+  #ifdef USERMOD_MPU6050_IMU
+    if (IMU != nullptr) {
+      yaw = -IMU->ypr[0];
+      pitch = IMU->ypr[1];
+      roll = IMU->ypr[2];
+    }
+  #else
+    //simulate rotation
+    yaw = (fmod(SEGENV.call, 360)-180) / (180/M_PI); //-180 .. 180
+    pitch = yaw;
+    roll = yaw;
+  #endif
+
+  Frame3D frame3D = Frame3D(yaw, pitch, roll);
+
+  Voxel leftbottomback = {-1,-1,-1};
+  Voxel rightbottomback = {1,-1,-1};
+  Voxel lefttopback = {-1,1,-1};
+  Voxel righttopback = {1,1,-1};
+  Voxel leftbottomfront = {-1,-1,1};
+  Voxel rightbottomfront = {1,-1,1};
+  Voxel lefttopfront = {-1,1,1};
+  Voxel righttopfront = {1,1,1};
+  frame3D.drawLineXYZ(leftbottomback, rightbottomback, SEGMENT.color_from_palette(255/12, false, true, 0));
+  frame3D.drawLineXYZ(leftbottomback, lefttopback, SEGMENT.color_from_palette(255/12*2, false, true, 0));
+  frame3D.drawLineXYZ(rightbottomback, righttopback, SEGMENT.color_from_palette(255/12*3, false, true, 0));
+  frame3D.drawLineXYZ(lefttopback, righttopback, SEGMENT.color_from_palette(255/12*4, false, true, 0));
+
+  frame3D.drawLineXYZ(leftbottomfront, leftbottomback, SEGMENT.color_from_palette(255/12*9, false, true, 0));
+  frame3D.drawLineXYZ(rightbottomfront, rightbottomback, SEGMENT.color_from_palette(255/12*10, false, true, 0));
+  frame3D.drawLineXYZ(lefttopfront, lefttopback, SEGMENT.color_from_palette(255/12*11, false, true, 0));
+  frame3D.drawLineXYZ(righttopfront, righttopback, SEGMENT.color_from_palette(255/12*12, false, true, 0));
+
+  frame3D.drawLineXYZ(leftbottomfront, rightbottomfront, SEGMENT.color_from_palette(255/12*5, false, true, 0));
+  frame3D.drawLineXYZ(leftbottomfront, lefttopfront, SEGMENT.color_from_palette(255/12*6, false, true, 0));
+  frame3D.drawLineXYZ(rightbottomfront, righttopfront, SEGMENT.color_from_palette(255/12*7, false, true, 0));
+  frame3D.drawLineXYZ(lefttopfront, righttopfront, SEGMENT.color_from_palette(255/12*8, false, true, 0));
+
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_3DIMUCube[] PROGMEM = "🎮 3DIMUCube@,Perspective;!;!;,pal=1,2d"; //random cycle
 
 class GamesUsermod : public Usermod {
   private:
-    bool enabled = true;
-    int8_t ioPin[5] = {FLD_PIN_SCL, FLD_PIN_SDA, -1, -1, -1};        // I2C pins: SCL, SDA
-    unsigned long lastUMRun = millis();
 
   public:
-    //Functions called by WLED
 
     void setup() {
-      bool isHW;
-      PinOwner po = PinOwner::UM_Unspecified;
-      uint8_t hw_scl = i2c_scl<0 ? HW_PIN_SCL : i2c_scl;
-      uint8_t hw_sda = i2c_sda<0 ? HW_PIN_SDA : i2c_sda;
-      if (ioPin[0] < 0 || ioPin[1] < 0) {
-        ioPin[0] = hw_scl;
-        ioPin[1] = hw_sda;
-      }
-      isHW = (ioPin[0]==hw_scl && ioPin[1]==hw_sda);
-      if (isHW) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
-      PinManagerPinType pins[2] = { {ioPin[0], true }, { ioPin[1], true } };
-      if (!pinManager.allocateMultiplePins(pins, 2, po)) { enabled = false; return; }
-      // PinManagerPinType pins[2] = { { i2c_scl, true }, { i2c_sda, true } };
-      // if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) { enabled = false; return; }
-      Wire.begin();
-      Wire.beginTransmission(MPU_ADDR); // Begins a transmission to the I2C slave (GY-521 board)
-      Wire.write(0x6B); // PWR_MGMT_1 register
-      Wire.write(0); // set to zero (wakes up the MPU-6050)
-      Wire.endTransmission(true);
-
       strip.addEffect(255, &mode_pongGame, _data_FX_MODE_PONGGAME);
-      strip.addEffect(255, &mode_gyro, _data_FX_MODE_GYRO);
+      #ifdef USERMOD_MPU6050_IMU
+        IMU = (MPU6050Driver *)usermods.lookup(USERMOD_ID_IMU);
+        #ifdef WLED_DEBUG
+          strip.addEffect(255, &mode_IMUTest, _data_FX_MODE_IMUTest);
+        #endif
+      #endif
+      strip.addEffect(255, &mode_3DIMUCube, _data_FX_MODE_3DIMUCube); //works also without IMU
     }
 
-    /*
-     * connected() is called every time the WiFi is (re)connected
-     * Use it to initialize network interfaces
-     */
     void connected() {
-      //Serial.println("Connected to WiFi!");
     }
 
     void loop() {
-      if (!enabled || (strip.isUpdating() && (millis() - lastUMRun < 2))) return;   // be nice, but not too nice
-      lastUMRun = millis();                    // update time keeping
-
-      Wire.beginTransmission(MPU_ADDR);
-      Wire.write(0x3B); // starting with register 0x3B (ACCEL_XOUT_H) [MPU-6000 and MPU-6050 Register Map and Descriptions Revision 4.2, p.40]
-      Wire.endTransmission(false); // the parameter indicates that the Arduino will send a restart. As a result, the connection is kept active.
-      Wire.requestFrom(MPU_ADDR, 7*2); // request a total of 7*2=14 registers
-      
-      // "Wire.read()<<8 | Wire.read();" means two registers are read and stored in the same variable
-      accelerometer_x = Wire.read()<<8 | Wire.read(); // reading registers: 0x3B (ACCEL_XOUT_H) and 0x3C (ACCEL_XOUT_L)
-      accelerometer_y = Wire.read()<<8 | Wire.read(); // reading registers: 0x3D (ACCEL_YOUT_H) and 0x3E (ACCEL_YOUT_L)
-      accelerometer_z = Wire.read()<<8 | Wire.read(); // reading registers: 0x3F (ACCEL_ZOUT_H) and 0x40 (ACCEL_ZOUT_L)
-      temperature = Wire.read()<<8 | Wire.read(); // reading registers: 0x41 (TEMP_OUT_H) and 0x42 (TEMP_OUT_L)
-      gyro_x = Wire.read()<<8 | Wire.read(); // reading registers: 0x43 (GYRO_XOUT_H) and 0x44 (GYRO_XOUT_L)
-      gyro_y = Wire.read()<<8 | Wire.read(); // reading registers: 0x45 (GYRO_YOUT_H) and 0x46 (GYRO_YOUT_L)
-      gyro_z = Wire.read()<<8 | Wire.read(); // reading registers: 0x47 (GYRO_ZOUT_H) and 0x48 (GYRO_ZOUT_L)
     }
 
     void addToJsonState(JsonObject& root)

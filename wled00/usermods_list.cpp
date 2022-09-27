@@ -145,6 +145,9 @@
 #include "../usermods/usermod_v2_weather/usermod_v2_weather.h"
 #endif
 
+#ifdef USERMOD_MPU6050_IMU
+#include "../usermods/mpu6050_imu/usermod_mpu6050_imu.h"
+#endif
 #ifdef USERMOD_GAMES
 #include "../usermods/usermod_v2_games/usermod_v2_games.h"
 #endif
@@ -280,6 +283,11 @@ void registerUsermods()
   
   #ifdef USERMOD_WEATHER
   usermods.add(new WeatherUsermod());
+  #endif
+
+
+  #ifdef USERMOD_MPU6050_IMU
+  usermods.add(new MPU6050Driver());
   #endif
 
   #ifdef USERMOD_GAMES
