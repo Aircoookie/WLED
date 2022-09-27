@@ -383,10 +383,10 @@ WLED_GLOBAL uint16_t e131Universe _INIT(1);                       // settings fo
 WLED_GLOBAL uint16_t e131Port _INIT(5568);                        // DMX in port. E1.31 default is 5568, Art-Net is 6454
 WLED_GLOBAL byte DMXMode _INIT(DMX_MODE_MULTIPLE_RGB);            // DMX mode (s.a.)
 WLED_GLOBAL uint16_t DMXAddress _INIT(1);                         // DMX start address of fixture, a.k.a. first Channel [for E1.31 (sACN) protocol]
-WLED_GLOBAL byte DMXOldDimmer _INIT(0);                           // only update brightness on change
 WLED_GLOBAL byte e131LastSequenceNumber[E131_MAX_UNIVERSE_COUNT]; // to detect packet loss
 WLED_GLOBAL bool e131Multicast _INIT(false);                      // multicast or unicast
 WLED_GLOBAL bool e131SkipOutOfSequence _INIT(false);              // freeze instead of flickering
+WLED_GLOBAL uint16_t pollReplyCount _INIT(0);                     // count number of replies for ArtPoll node report
 
 WLED_GLOBAL bool mqttEnabled _INIT(false);
 WLED_GLOBAL char mqttDeviceTopic[33] _INIT("");            // main MQTT topic (individual per device, default is wled/mac)
