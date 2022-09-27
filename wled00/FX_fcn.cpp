@@ -498,7 +498,7 @@ class JMapC {
         strcat(jMapFileName, SEGMENT.name);
         strcat(jMapFileName, ".jmap");
         File jMapFile;
-        jMapFile = LITTLEFS.open(jMapFileName, "r");
+        jMapFile = WLED_FS.open(jMapFileName, "r");
 
         DeserializationError err = deserializeJson(*jMapDoc, jMapFile);
         if (err) 
