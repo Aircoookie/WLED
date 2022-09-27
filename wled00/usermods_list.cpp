@@ -136,6 +136,9 @@
 #include "../usermods/audioreactive/audio_reactive.h"
 #endif
 
+#ifdef USERMOD_MPU6050_IMU
+#include "../usermods/mpu6050_imu/usermod_mpu6050_imu.h"
+#endif
 #ifdef USERMOD_GAMES
 #include "../usermods/usermod_v2_games/usermod_v2_games.h"
 #endif
@@ -263,6 +266,11 @@ void registerUsermods()
   #ifdef USERMOD_AUDIOREACTIVE
   usermods.add(new AudioReactive());
   #endif
+
+  #ifdef USERMOD_MPU6050_IMU
+  usermods.add(new MPU6050Driver());
+  #endif
+
   #ifdef USERMOD_GAMES
   usermods.add(new GamesUsermod());
   #endif

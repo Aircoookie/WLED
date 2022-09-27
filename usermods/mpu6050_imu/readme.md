@@ -20,9 +20,9 @@ react to the globes orientation. See the blog post on building it <https://www.r
 
 I2Cdev and MPU6050 must be installed.
 
-To install them, add I2Cdevlib-MPU6050@fbde122cc5 to lib_deps in the platformio.ini file.
+To install them, add ElectronicCats/MPU6050 @ 0.6.0 to lib_deps in the platformio.ini file.
 
-You also need to change lib_compat_mode from strict to soft in platformio.ini (This ignores that I2Cdevlib-MPU6050 doesn't list platform compatibility)
+<!-- You also need to change lib_compat_mode from strict to soft in platformio.ini (This ignores that I2Cdevlib-MPU6050 doesn't list platform compatibility) -->
 
 For example:
 
@@ -36,7 +36,7 @@ lib_deps =
     AsyncTCP@1.0.3
     Esp Async WebServer@1.2.0
     IRremoteESP8266@2.7.3
-    I2Cdevlib-MPU6050@fbde122cc5
+    ElectronicCats/MPU6050 @ 0.6.0
 ```
 
 ## Wiring
@@ -77,18 +77,19 @@ to the info object
 
 ## Usermod installation
 
-1. Copy the file `usermod_mpu6050_imu.h` to the `wled00` directory.
-2. Register the usermod by adding `#include "usermod_mpu6050_imu.h.h"` in the top and `registerUsermod(new MPU6050Driver());` in the bottom of `usermods_list.cpp`.
+<!-- 1. Copy the file `usermod_mpu6050_imu.h` to the `wled00` directory. -->
+2. Register the usermod by adding `#include "usermod_mpu6050_imu.h"` in the top and `registerUsermod(new MPU6050Driver());` in the bottom of `usermods_list.cpp`.
 
 Example **usermods_list.cpp**:
 
 ```cpp
 #include "wled.h"
 
-#include "usermod_mpu6050_imu.h"
+#ifdef USERMOD_MPU6050_IMU
+#include "../usermods/mpu6050_imu/usermod_mpu6050_imu.h"
+#endif
 
-void registerUsermods()
-{
+#ifdef USERMOD_MPU6050_IMU
   usermods.add(new MPU6050Driver());
-}
+#endif
 ```
