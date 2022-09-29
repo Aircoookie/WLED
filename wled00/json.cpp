@@ -174,18 +174,16 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   byte fx = seg.mode;
   if (getVal(elem["fx"], &fx, 0, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 0-255 exact value)
     if (!presetId && currentPlaylist>=0) unloadPlaylist();
-    if (fx != seg.mode) {
-      seg.setMode(fx, elem[F("fxdef")]);
-    }
+    if (fx != seg.mode) seg.setMode(fx, elem[F("fxdef")]);
   }
 
   //getVal also supports inc/decrementing and random
   getVal(elem["sx"], &seg.speed);
   getVal(elem["ix"], &seg.intensity);
+
   uint8_t pal = seg.palette;
-  if (getVal(elem["pal"], &pal, 1, strip.getPaletteCount())) {
-    seg.setPalette(pal);
-  }
+  if (getVal(elem["pal"], &pal, 1, strip.getPaletteCount())) seg.setPalette(pal);
+
   getVal(elem["c1"], &seg.custom1);
   getVal(elem["c2"], &seg.custom2);
   uint8_t cust3 = seg.custom3;

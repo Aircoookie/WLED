@@ -531,11 +531,11 @@ public:
       for (byte i=0; i<strip.getSegmentsNum(); i++) {
         Segment& seg = strip.getSegment(i);
         if (!seg.isActive()) continue;
-        strip.setMode(i, effectCurrent);
+        seg.setMode(effectCurrent);
       }
     } else {
-      //Segment& seg = strip.getSegment(strip.getMainSegmentId());
-      strip.setMode(strip.getMainSegmentId(), effectCurrent);
+      Segment& seg = strip.getSegment(strip.getMainSegmentId());
+      seg.setMode(effectCurrent);
     }
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
@@ -661,11 +661,11 @@ public:
       for (byte i=0; i<strip.getSegmentsNum(); i++) {
         Segment& seg = strip.getSegment(i);
         if (!seg.isActive()) continue;
-        seg.palette = effectPalette;
+        seg.setPalette(effectPalette);
       }
     } else {
       Segment& seg = strip.getSegment(strip.getMainSegmentId());
-      seg.palette = effectPalette;
+      seg.setPalette(effectPalette);
     }
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
