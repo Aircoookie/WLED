@@ -174,47 +174,16 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   byte fx = seg.mode;
   if (getVal(elem["fx"], &fx, 0, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 0-255 exact value)
     if (!presetId && currentPlaylist>=0) unloadPlaylist();
-    if (fx != seg.mode) {
-      seg.startTransition(strip.getTransition()); // set effect transitions
-      //seg.markForReset();
-      seg.mode = fx;
-    }
-  }
-
-  // load default values from effect string
-  if (elem[F("fxdef")])
-  {
-    int16_t sOpt;
-    sOpt = extractModeDefaults(fx, "sx");   if (sOpt >= 0) seg.speed     = sOpt;
-    sOpt = extractModeDefaults(fx, "ix");   if (sOpt >= 0) seg.intensity = sOpt;
-    sOpt = extractModeDefaults(fx, "c1");   if (sOpt >= 0) seg.custom1   = sOpt;
-    sOpt = extractModeDefaults(fx, "c2");   if (sOpt >= 0) seg.custom2   = sOpt;
-    sOpt = extractModeDefaults(fx, "c3");   if (sOpt >= 0) seg.custom3   = sOpt;
-    sOpt = extractModeDefaults(fx, "mp12"); if (sOpt >= 0) seg.map1D2D   = constrain(sOpt, 0, 7);
-    sOpt = extractModeDefaults(fx, "ssim"); if (sOpt >= 0) seg.soundSim  = constrain(sOpt, 0, 7);
-    sOpt = extractModeDefaults(fx, "rev");  if (sOpt >= 0) seg.reverse   = (bool)sOpt;
-    sOpt = extractModeDefaults(fx, "mi");   if (sOpt >= 0) seg.mirror    = (bool)sOpt; // NOTE: setting this option is a risky business
-    sOpt = extractModeDefaults(fx, "rY");   if (sOpt >= 0) seg.reverse_y = (bool)sOpt;
-    sOpt = extractModeDefaults(fx, "mY");   if (sOpt >= 0) seg.mirror_y  = (bool)sOpt; // NOTE: setting this option is a risky business
-    sOpt = extractModeDefaults(fx, "pal");
-    if (sOpt >= 0 && sOpt < strip.getPaletteCount() + strip.customPalettes.size()) {
-      if (sOpt != seg.palette) {
-        if (strip.paletteFade && !seg.transitional) seg.startTransition(strip.getTransition());
-        seg.palette = sOpt;
-      }
-    }
+    if (fx != seg.mode) seg.setMode(fx, elem[F("fxdef")]);
   }
 
   //getVal also supports inc/decrementing and random
   getVal(elem["sx"], &seg.speed);
   getVal(elem["ix"], &seg.intensity);
+
   uint8_t pal = seg.palette;
-  if (getVal(elem["pal"], &pal, 1, strip.getPaletteCount())) {
-    if (pal != seg.palette) {
-      if (strip.paletteFade && !seg.transitional) seg.startTransition(strip.getTransition());
-      seg.palette = pal;
-    }
-  }
+  if (getVal(elem["pal"], &pal, 1, strip.getPaletteCount())) seg.setPalette(pal);
+
   getVal(elem["c1"], &seg.custom1);
   getVal(elem["c2"], &seg.custom2);
   uint8_t cust3 = seg.custom3;

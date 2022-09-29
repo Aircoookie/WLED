@@ -888,17 +888,10 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
     Segment& seg = strip.getSegment(i);
     if (i != selectedSeg && (singleSegment || !seg.isActive() || !seg.isSelected())) continue; // skip non main segments if not applying to all
-    if (fxModeChanged)  {
-      seg.startTransition(strip.getTransition());
-      seg.mode = effectIn;
-      // TODO: we should load defaults here as well
-    }
+    if (fxModeChanged)    seg.setMode(effectIn, req.indexOf(F("FXD="))>0);  // apply defaults if FXD= is specified
     if (speedChanged)     seg.speed     = speedIn;
     if (intensityChanged) seg.intensity = intensityIn;
-    if (paletteChanged) {
-      if (strip.paletteBlend) seg.startTransition(strip.getTransition());
-      seg.palette = paletteIn;
-    }
+    if (paletteChanged)   seg.setPalette(paletteIn);
   }
 
   //set advanced overlay
