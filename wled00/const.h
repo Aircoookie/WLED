@@ -285,7 +285,7 @@
 #ifdef ESP8266
 #define SETTINGS_STACK_BUF_SIZE 2048
 #else
-#define SETTINGS_STACK_BUF_SIZE 3096 
+#define SETTINGS_STACK_BUF_SIZE 3096
 #endif
 
 #ifdef WLED_USE_ETHERNET
@@ -302,6 +302,7 @@
   #define ABL_MILLIAMPS_DEFAULT 850  // auto lower brightness to stay close to milliampere limit
 #else
   #if ABL_MILLIAMPS_DEFAULT < 250  // make sure value is at least 250
+   #warning "make sure value is at least 250"
    #define ABL_MILLIAMPS_DEFAULT 250
   #endif
 #endif
