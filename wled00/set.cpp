@@ -167,8 +167,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       int hw_btn_pin = request->arg(bt).toInt();
       if (pinManager.allocatePin(hw_btn_pin,false,PinOwner::Button)) {
         btnPin[i] = hw_btn_pin;
-        pinMode(btnPin[i], INPUT_PULLUP);
         buttonType[i] = request->arg(be).toInt();
+        #ifdef ESP32
+        pinMode(btnPin[i], buttonType[i]==BTN_TYPE_PUSH_ACT_HIGH ? INPUT_PULLDOWN : INPUT_PULLUP);
+        #else
+        pinMode(btnPin[i], INPUT_PULLUP);
+        #endif
       } else {
         btnPin[i] = -1;
         buttonType[i] = BTN_TYPE_NONE;
@@ -478,8 +482,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (!requestJSONBufferLock(5)) return;
 
     // global I2C & SPI pins
-    int8_t hw_sda_pin  = !request->arg(F("SDA")).length() ? -1 : max(-1,min(33,(int)request->arg(F("SDA")).toInt()));
-    int8_t hw_scl_pin  = !request->arg(F("SCL")).length() ? -1 : max(-1,min(33,(int)request->arg(F("SCL")).toInt()));
+    int8_t hw_sda_pin  = !request->arg(F("SDA")).length() ? -1 : (int)request->arg(F("SDA")).toInt();
+    int8_t hw_scl_pin  = !request->arg(F("SCL")).length() ? -1 : (int)request->arg(F("SCL")).toInt();
     #ifdef ESP8266
     // cannot change pins on ESP8266
     if (hw_sda_pin >= 0 && hw_sda_pin != HW_PIN_SDA) hw_sda_pin = HW_PIN_SDA;
@@ -501,9 +505,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       i2c_sda = -1;
       i2c_scl = -1;
     }
-    int8_t hw_mosi_pin = !request->arg(F("MOSI")).length() ? -1 : max(-1,min(33,(int)request->arg(F("MOSI")).toInt()));
-    int8_t hw_miso_pin = !request->arg(F("MISO")).length() ? -1 : max(-1,min(33,(int)request->arg(F("MISO")).toInt()));
-    int8_t hw_sclk_pin = !request->arg(F("SCLK")).length() ? -1 : max(-1,min(33,(int)request->arg(F("SCLK")).toInt()));
+    int8_t hw_mosi_pin = !request->arg(F("MOSI")).length() ? -1 : (int)request->arg(F("MOSI")).toInt();
+    int8_t hw_miso_pin = !request->arg(F("MISO")).length() ? -1 : (int)request->arg(F("MISO")).toInt();
+    int8_t hw_sclk_pin = !request->arg(F("SCLK")).length() ? -1 : (int)request->arg(F("SCLK")).toInt();
     #ifdef ESP8266
     // cannot change pins on ESP8266
     if (hw_mosi_pin >= 0 && hw_mosi_pin != HW_PIN_DATASPI)  hw_mosi_pin = HW_PIN_DATASPI;
@@ -515,7 +519,13 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       spi_mosi = hw_mosi_pin;
       spi_miso = hw_miso_pin;
       spi_sclk = hw_sclk_pin;
-      // no bus initialisation
+      // no bus re-initialisation as usermods do not get any notification
+      //SPI.end();
+      #ifdef ESP32
+      //SPI.begin(spi_sclk, spi_miso, spi_mosi);
+      #else
+      //SPI.begin();
+      #endif
     } else {
       //SPI.end();
       DEBUG_PRINTLN(F("Could not allocate SPI pins."));
@@ -601,7 +611,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       }
     }
     usermods.readFromConfig(um);  // force change of usermod parameters
-
+    DEBUG_PRINTLN(F("Done re-init usermods."));
     releaseJSONBufferLock();
   }
 
@@ -632,7 +642,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   #endif
 
   lastEditTime = millis();
-  if (subPage != 2 && !doReboot) serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)
+  if (subPage != 2 && !doReboot) doSerializeConfig = true; //serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)
   if (subPage == 4) alexaInit();
 }
 
@@ -878,17 +888,10 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
     Segment& seg = strip.getSegment(i);
     if (i != selectedSeg && (singleSegment || !seg.isActive() || !seg.isSelected())) continue; // skip non main segments if not applying to all
-    if (fxModeChanged)  {
-      seg.startTransition(strip.getTransition());
-      seg.mode = effectIn;
-      // TODO: we should load defaults here as well
-    }
+    if (fxModeChanged)    seg.setMode(effectIn, req.indexOf(F("FXD="))>0);  // apply defaults if FXD= is specified
     if (speedChanged)     seg.speed     = speedIn;
     if (intensityChanged) seg.intensity = intensityIn;
-    if (paletteChanged) {
-      if (strip.paletteBlend) seg.startTransition(strip.getTransition());
-      seg.palette = paletteIn;
-    }
+    if (paletteChanged)   seg.setPalette(paletteIn);
   }
 
   //set advanced overlay

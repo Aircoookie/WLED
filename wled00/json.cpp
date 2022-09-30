@@ -186,47 +186,16 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   byte fx = seg.mode;
   if (getVal(elem["fx"], &fx, 0, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 0-255 exact value)
     if (!presetId && currentPlaylist>=0) unloadPlaylist();
-    if (fx != seg.mode) {
-      seg.startTransition(strip.getTransition()); // set effect transitions
-      //seg.markForReset();
-      seg.mode = fx;
-    }
-  }
-
-  // load default values from effect string
-  if (elem[F("fxdef")])
-  {
-    int16_t sOpt;
-    sOpt = extractModeDefaults(fx, "sx");   if (sOpt >= 0) seg.speed     = sOpt;
-    sOpt = extractModeDefaults(fx, "ix");   if (sOpt >= 0) seg.intensity = sOpt;
-    sOpt = extractModeDefaults(fx, "c1");   if (sOpt >= 0) seg.custom1   = sOpt;
-    sOpt = extractModeDefaults(fx, "c2");   if (sOpt >= 0) seg.custom2   = sOpt;
-    sOpt = extractModeDefaults(fx, "c3");   if (sOpt >= 0) seg.custom3   = sOpt;
-    sOpt = extractModeDefaults(fx, "mp12"); if (sOpt >= 0) seg.map1D2D   = constrain(sOpt, 0, 7);
-    sOpt = extractModeDefaults(fx, "ssim"); if (sOpt >= 0) seg.soundSim  = constrain(sOpt, 0, 7);
-    sOpt = extractModeDefaults(fx, "rev");  if (sOpt >= 0) seg.reverse   = (bool)sOpt;
-    sOpt = extractModeDefaults(fx, "mi");   if (sOpt >= 0) seg.mirror    = (bool)sOpt; // NOTE: setting this option is a risky business
-    sOpt = extractModeDefaults(fx, "rY");   if (sOpt >= 0) seg.reverse_y = (bool)sOpt;
-    sOpt = extractModeDefaults(fx, "mY");   if (sOpt >= 0) seg.mirror_y  = (bool)sOpt; // NOTE: setting this option is a risky business
-    sOpt = extractModeDefaults(fx, "pal");
-    if (sOpt >= 0 && sOpt < strip.getPaletteCount() + strip.customPalettes.size()) {
-      if (sOpt != seg.palette) {
-        if (strip.paletteFade && !seg.transitional) seg.startTransition(strip.getTransition());
-        seg.palette = sOpt;
-      }
-    }
+    if (fx != seg.mode) seg.setMode(fx, elem[F("fxdef")]);
   }
 
   //getVal also supports inc/decrementing and random
   getVal(elem["sx"], &seg.speed);
   getVal(elem["ix"], &seg.intensity);
+
   uint8_t pal = seg.palette;
-  if (getVal(elem["pal"], &pal, 1, strip.getPaletteCount())) {
-    if (pal != seg.palette) {
-      if (strip.paletteFade && !seg.transitional) seg.startTransition(strip.getTransition());
-      seg.palette = pal;
-    }
-  }
+  if (getVal(elem["pal"], &pal, 1, strip.getPaletteCount())) seg.setPalette(pal);
+
   getVal(elem["c1"], &seg.custom1);
   getVal(elem["c2"], &seg.custom2);
   uint8_t cust3 = seg.custom3;
@@ -299,22 +268,13 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   bool stateResponse = root[F("v")] | false;
 
   bool onBefore = bri;
-  uint8_t tmpBri = bri;
-  getVal(root["bri"], &tmpBri);
+  getVal(root["bri"], &bri);
 
-  if (root["on"].isNull()) {
-    if ((onBefore && tmpBri==0) || (!onBefore && tmpBri>0)) toggleOnOff();
-    bri = tmpBri;
-  } else {
-    bool on = root["on"] | onBefore;
-    if (on != onBefore || (root["on"].is<const char*>() && root["on"].as<const char*>()[0] == 't')) {
-      toggleOnOff();
-      // a hack is needed after toggleOnOf()
-      if (!root["bri"].isNull()) {
-        if (bri==0) briLast = tmpBri;
-        else        bri     = tmpBri;
-      }
-    }
+  bool on = root["on"] | (bri > 0);
+  if (!on != !bri) toggleOnOff();
+
+  if (root["on"].is<const char*>() && root["on"].as<const char*>()[0] == 't') {
+    if (onBefore || !bri) toggleOnOff(); // do not toggle off again if just turned on by bri (makes e.g. "{"on":"t","bri":32}" work)
   }
 
   if (bri && !onBefore) { // unfreeze all segments when turning on
@@ -445,10 +405,16 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       if (root["win"].isNull()) presetCycCurr = currentPreset;
       stateChanged = false; // cancel state change update (preset was set directly by applying values stored in UI JSON array)
     } else if (root["win"].isNull() && getVal(root["ps"], &ps, 0, 0) && ps > 0 && ps < 251 && ps != currentPreset) {
-      // b) preset ID only (use embedded cycling limits if they exist in getVal())
+      // b) preset ID only or preset that does not change state (use embedded cycling limits if they exist in getVal())
       presetCycCurr = ps;
-      applyPreset(ps, callMode); // async load
-      return stateResponse;
+      presetId = ps;
+      root.remove(F("v"));    // may be added in UI call
+      root.remove(F("time")); // may be added in UI call
+      root.remove("ps");
+      if (root.size() == 0) {
+        applyPreset(ps, callMode); // async load (only preset ID was specified)
+        return stateResponse;
+      }
     }
   }
 
@@ -598,6 +564,8 @@ void serializeInfo(JsonObject root)
   leds["fps"] = strip.getFps();
   leds[F("maxpwr")] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;
   leds[F("maxseg")] = strip.getMaxSegments();
+  //leds[F("actseg")] = strip.getActiveSegmentsNum();
+  //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config
   leds[F("cpal")] = strip.customPalettes.size(); //number of custom palettes
 
   #ifndef WLED_DISABLE_2D
@@ -693,7 +661,11 @@ void serializeInfo(JsonObject root)
     wifi_info[F("txPower")] = (int) WiFi.getTxPower();
     wifi_info[F("sleep")] = (bool) WiFi.getSleep();
   #endif
-  root[F("arch")] = "esp32";
+  #if !defined(CONFIG_IDF_TARGET_ESP32C2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32S3)
+    root[F("arch")] = "esp32";
+  #else
+    root[F("arch")] = ESP.getChipModel();
+  #endif
   root[F("core")] = ESP.getSdkVersion();
   //root[F("maxalloc")] = ESP.getMaxAllocHeap();
   #ifdef WLED_DEBUG

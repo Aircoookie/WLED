@@ -399,7 +399,7 @@ function presetError(empty)
 		if (bckstr.length > 10) hasBackup = true;
 	} catch (e) {}
 
-	var cn = `<div class="pres c" ${empty?'style="padding:8px 0;margin-top: 15px;"':'onclick="loadPresets()" style="cursor:pointer;padding:8px 0;"'}>`;
+	var cn = `<div class="pres c" ${empty?'style="padding:8px;margin-top: 16px;"':'onclick="loadPresets()" style="cursor:pointer;padding:8px;margin-top: 16px;"'}>`;
 	if (empty)
 		cn += `You have no presets yet!`;
 	else
@@ -594,7 +594,9 @@ function parseInfo(i) {
 	lastinfo = i;
 	var name = i.name;
 	gId('namelabel').innerHTML = name;
-	//if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)";
+	if (!name.match(/[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff66-\uff9f\u3131-\uD79D]/))
+		gId('namelabel').style.transform = "rotate(180deg)"; // rotate if no CJK characters
+	if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)"; // Minecraft easter egg
 	if (i.live) name = "(Live) " + name;
 	if (loc)    name = "(L) " + name;
 	d.title     = name;
@@ -1399,7 +1401,7 @@ function setEffectParameters(idx)
 	if (slOnOff.length>5) {
 		gId('fxopt').classList.remove('fade');
 		for (let i = 0; i<3; i++) {
-			if (slOnOff[5+i]!=='') {
+			if (5+i<slOnOff.length && slOnOff[5+i]!=='') {
 				gId('opt'+i).classList.remove('hide');
 				gId('optLabel'+i).innerHTML = slOnOff[5+i]=="!" ? 'Option' : slOnOff[5+i].substr(0,16);
 			} else

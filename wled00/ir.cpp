@@ -728,7 +728,7 @@ void handleIR()
       {
         if (results.value != 0) // only print results if anything is received ( != 0 )
         {
-					if (!pinManager.isPinAllocated(1) || pinManager.getPinOwner(1) == PinOwner::DebugOut) //GPIO 1 - Serial TX pin
+					if (!pinManager.isPinAllocated(hardwareTX) || pinManager.getPinOwner(hardwareTX) == PinOwner::DebugOut) // Serial TX pin (GPIO 1 on ESP32 and ESP8266)
           	Serial.printf_P(PSTR("IR recv: 0x%lX\n"), (unsigned long)results.value);
         }
         decodeIR(results.value);

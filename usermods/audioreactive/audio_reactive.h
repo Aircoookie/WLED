@@ -8,7 +8,7 @@
   #error This audio reactive usermod does not support the ESP8266.
 #endif
 
-#ifdef WLED_DEBUG
+#if defined(WLED_DEBUG) || defined(SR_DEBUG)
 #include <esp_timer.h>
 #endif
 
@@ -41,13 +41,15 @@
 
 constexpr i2s_port_t I2S_PORT = I2S_NUM_0;
 constexpr int BLOCK_SIZE = 128;
-constexpr int SAMPLE_RATE = 22050;            // Base sample rate in Hz - 22Khz is a standard rate. Physical sample time -> 23ms
-//constexpr int SAMPLE_RATE = 20480;            // Base sample rate in Hz - 20Khz is experimental.    Physical sample time -> 25ms
-//constexpr int SAMPLE_RATE = 10240;            // Base sample rate in Hz - previous default.         Physical sample time -> 50ms
+constexpr SRate_t SAMPLE_RATE = 22050;          // Base sample rate in Hz - 22Khz is a standard rate. Physical sample time -> 23ms
+//constexpr SRate_t SAMPLE_RATE = 16000;        // 16kHz - use if FFTtask takes more than 20ms. Physical sample time -> 32ms
+//constexpr SRate_t SAMPLE_RATE = 20480;        // Base sample rate in Hz - 20Khz is experimental.    Physical sample time -> 25ms
+//constexpr SRate_t SAMPLE_RATE = 10240;        // Base sample rate in Hz - previous default.         Physical sample time -> 50ms
 
-#define FFT_MIN_CYCLE 18                      // minimum time before FFT task is repeated. Use with 22Khz sampling
-//#define FFT_MIN_CYCLE 22                      // minimum time before FFT task is repeated. Use with 20Khz sampling
-//#define FFT_MIN_CYCLE 44                      // minimum time before FFT task is repeated. Use with 10Khz sampling
+#define FFT_MIN_CYCLE 21                      // minimum time before FFT task is repeated. Use with 22Khz sampling
+//#define FFT_MIN_CYCLE 30                      // Use with 16Khz sampling
+//#define FFT_MIN_CYCLE 23                      // minimum time before FFT task is repeated. Use with 20Khz sampling
+//#define FFT_MIN_CYCLE 46                      // minimum time before FFT task is repeated. Use with 10Khz sampling
 
 // globals
 static uint8_t inputLevel = 128;              // UI slider value
@@ -113,7 +115,7 @@ static void autoResetPeak(void);     // peak auto-reset function
 #else
 // lib_deps += https://github.com/blazoncek/arduinoFFT.git
 #endif
-#include "arduinoFFT.h"
+#include <arduinoFFT.h>
 
 // FFT Output variables shared with animations
 #define NUM_GEQ_CHANNELS 16                     // number of frequency channels. Don't change !!
@@ -145,9 +147,9 @@ static float   fftAvg[NUM_GEQ_CHANNELS] = {0.0f};                     // Calcula
 static float   fftResultMax[NUM_GEQ_CHANNELS] = {0.0f};               // A table used for testing to determine how our post-processing is working.
 #endif
 
-#ifdef WLED_DEBUG
-static unsigned long fftTime = 0;
-static unsigned long sampleTime = 0;
+#if defined(WLED_DEBUG) || defined(SR_DEBUG)
+static uint64_t fftTime = 0;
+static uint64_t sampleTime = 0;
 #endif
 
 // Table of multiplication factors so that we can even out the frequency response.
@@ -196,30 +198,32 @@ void FFTcode(void * parameter)
   // see https://www.freertos.org/vtaskdelayuntil.html
   const TickType_t xFrequency = FFT_MIN_CYCLE * portTICK_PERIOD_MS;  
 
+  TickType_t xLastWakeTime = xTaskGetTickCount();
   for(;;) {
-    TickType_t xLastWakeTime = xTaskGetTickCount();
     delay(1);           // DO NOT DELETE THIS LINE! It is needed to give the IDLE(0) task enough time and to keep the watchdog happy.
                         // taskYIELD(), yield(), vTaskDelay() and esp_task_wdt_feed() didn't seem to work.
 
-    vTaskDelayUntil( &xLastWakeTime, xFrequency);        // release CPU, and let I2S fill its buffers
-    // Only run the FFT computing code if we're not in Receive mode and not in realtime mode
+    // Don't run FFT computing code if we're in Receive mode or in realtime mode
     if (disableSoundProcessing || (audioSyncEnabled & 0x02)) {
+      vTaskDelayUntil( &xLastWakeTime, xFrequency);        // release CPU, and let I2S fill its buffers
       continue;
     }
 
-#ifdef WLED_DEBUG
+#if defined(WLED_DEBUG) || defined(SR_DEBUG)
     uint64_t start = esp_timer_get_time();
 #endif
 
     // get a fresh batch of samples from I2S
     if (audioSource) audioSource->getSamples(vReal, samplesFFT);
 
-#ifdef WLED_DEBUG
+#if defined(WLED_DEBUG) || defined(SR_DEBUG)
     if (start < esp_timer_get_time()) { // filter out overflows
-      unsigned long sampleTimeInMillis = (esp_timer_get_time() - start +500ULL) / 1000ULL; // "+500" to ensure proper rounding
+      unsigned long sampleTimeInMillis = (esp_timer_get_time() - start +5ULL) / 10ULL; // "+5" to ensure proper rounding
       sampleTime = (sampleTimeInMillis*3 + sampleTime*7)/10; // smooth
     }
 #endif
+
+    xLastWakeTime = xTaskGetTickCount();       // update "last unblocked time" for vTaskDelay
 
     // find highest sample in the batch
     float maxSample = 0.0f;                         // max sample from FFT batch
@@ -234,30 +238,42 @@ void FFTcode(void * parameter)
     // early release allows the filters (getSample() and agcAvg()) to work with fresh values - we will have matching gain and noise gate values when we want to process the FFT results.    micDataReal = maxSample;
     micDataReal = maxSample;
 
-    // run FFT (takes 3-5ms on ESP32)
-#ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
-    FFT.dcRemoval();                                            // remove DC offset
-    FFT.windowing( FFTWindow::Flat_top, FFTDirection::Forward); // Weigh data using "Flat Top" function - better amplitude accuracy
-    //FFT.windowing(FFTWindow::Blackman_Harris, FFTDirection::Forward);  // Weigh data using "Blackman- Harris" window - sharp peaks due to excellent sideband rejection
-    FFT.compute( FFTDirection::Forward );                       // Compute FFT
-    FFT.complexToMagnitude();                                   // Compute magnitudes
+#ifdef SR_DEBUG
+    if (true) {  // this allows measure FFT runtimes, as it disables the "only when needed" optimization 
 #else
-    FFT.DCRemoval(); // let FFT lib remove DC component, so we don't need to care about this in getSamples()
+    if (sampleAvg > 1) { // noise gate open means that FFT results will be used. Don't run FFT if results are not needed.
+#endif
 
-    //FFT.Windowing( FFT_WIN_TYP_HAMMING, FFT_FORWARD );        // Weigh data - standard Hamming window
-    //FFT.Windowing( FFT_WIN_TYP_BLACKMAN, FFT_FORWARD );       // Blackman window - better side freq rejection
-    //FFT.Windowing( FFT_WIN_TYP_BLACKMAN_HARRIS, FFT_FORWARD );// Blackman-Harris - excellent sideband rejection
-    FFT.Windowing( FFT_WIN_TYP_FLT_TOP, FFT_FORWARD );          // Flat Top Window - better amplitude accuracy
-    FFT.Compute( FFT_FORWARD );                             // Compute FFT
-    FFT.ComplexToMagnitude();                               // Compute magnitudes
+      // run FFT (takes 3-5ms on ESP32, ~12ms on ESP32-S2)
+#ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
+      FFT.dcRemoval();                                            // remove DC offset
+      FFT.windowing( FFTWindow::Flat_top, FFTDirection::Forward); // Weigh data using "Flat Top" function - better amplitude accuracy
+      //FFT.windowing(FFTWindow::Blackman_Harris, FFTDirection::Forward);  // Weigh data using "Blackman- Harris" window - sharp peaks due to excellent sideband rejection
+      FFT.compute( FFTDirection::Forward );                       // Compute FFT
+      FFT.complexToMagnitude();                                   // Compute magnitudes
+#else
+      FFT.DCRemoval(); // let FFT lib remove DC component, so we don't need to care about this in getSamples()
+
+      //FFT.Windowing( FFT_WIN_TYP_HAMMING, FFT_FORWARD );        // Weigh data - standard Hamming window
+      //FFT.Windowing( FFT_WIN_TYP_BLACKMAN, FFT_FORWARD );       // Blackman window - better side freq rejection
+      //FFT.Windowing( FFT_WIN_TYP_BLACKMAN_HARRIS, FFT_FORWARD );// Blackman-Harris - excellent sideband rejection
+      FFT.Windowing( FFT_WIN_TYP_FLT_TOP, FFT_FORWARD );          // Flat Top Window - better amplitude accuracy
+      FFT.Compute( FFT_FORWARD );                             // Compute FFT
+      FFT.ComplexToMagnitude();                               // Compute magnitudes
 #endif
 
 #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
-    FFT.majorPeak(FFT_MajorPeak, FFT_Magnitude);                // let the effects know which freq was most dominant
+      FFT.majorPeak(FFT_MajorPeak, FFT_Magnitude);                // let the effects know which freq was most dominant
 #else
-    FFT.MajorPeak(&FFT_MajorPeak, &FFT_Magnitude);              // let the effects know which freq was most dominant
+      FFT.MajorPeak(&FFT_MajorPeak, &FFT_Magnitude);              // let the effects know which freq was most dominant
 #endif
-    FFT_MajorPeak = constrain(FFT_MajorPeak, 1.0f, 11025.0f);   // restrict value to range expected by effects
+      FFT_MajorPeak = constrain(FFT_MajorPeak, 1.0f, 11025.0f);   // restrict value to range expected by effects
+
+    } else { // noise gate closed - only clear results as FFT was skipped. MIC samples are still valid when we do this.
+      memset(vReal, 0, sizeof(vReal));
+      FFT_MajorPeak = 1;
+      FFT_Magnitude = 0.001;
+    }
 
     for (int i = 0; i < samplesFFT; i++) {
       float t = fabsf(vReal[i]);                      // just to be sure - values in fft bins should be positive any way
@@ -398,15 +414,17 @@ void FFTcode(void * parameter)
       fftResult[i] = constrain((int)currentResult, 0, 255);
     }
 
-#ifdef WLED_DEBUG
+#if defined(WLED_DEBUG) || defined(SR_DEBUG)
     if (start < esp_timer_get_time()) { // filter out overflows
-      unsigned long fftTimeInMillis = ((esp_timer_get_time() - start) +500ULL) / 1000ULL; // "+500" to ensure proper rounding
+      unsigned long fftTimeInMillis = ((esp_timer_get_time() - start) +5ULL) / 10ULL; // "+5" to ensure proper rounding
       fftTime  = (fftTimeInMillis*3 + fftTime*7)/10; // smooth
     }
 #endif
     // run peak detection
     autoResetPeak();
     detectSamplePeak();
+
+    vTaskDelayUntil( &xLastWakeTime, xFrequency);        // release CPU, and let I2S fill its buffers
 
   } // for(;;)ever
 } // FFTcode() task end
@@ -466,7 +484,7 @@ class AudioReactive : public Usermod {
     int8_t i2swsPin = I2S_WSPIN;
     #endif
     #ifndef I2S_CKPIN // aka BCLK
-    int8_t i2sckPin = 14;
+    int8_t i2sckPin = 14; /*PDM: set to I2S_PIN_NO_CHANGE*/
     #else
     int8_t i2sckPin = I2S_CKPIN;
     #endif
@@ -481,9 +499,9 @@ class AudioReactive : public Usermod {
     int8_t sclPin = ES7243_SCLPIN;
     #endif
     #ifndef MCLK_PIN
-    int8_t mclkPin = -1;
+    int8_t mclkPin = I2S_PIN_NO_CHANGE;  /* ESP32: only -1, 0, 1, 3 allowed*/
     #else
-    int8_t mclkPin = MLCK_PIN;
+    int8_t mclkPin = MCLK_PIN;
     #endif
 
     // new "V2" audiosync struct - 40 Bytes
@@ -975,8 +993,6 @@ class AudioReactive : public Usermod {
       #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S3)
         // stub cases for not-yet-supported I2S modes on other ESP32 chips
         case 0:  //ADC analog
-        case 3:  //MCLK
-        case 4:  //SPH0645
         #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3)
         case 5:  //PDM Microphone
         #endif
@@ -993,24 +1009,18 @@ class AudioReactive : public Usermod {
           delay(100);
           if (audioSource) audioSource->initialize(sdaPin, sclPin, i2swsPin, i2ssdPin, i2sckPin, mclkPin);
           break;
-        #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
-        // SPH0645 is currently only possible on "classic" ESP32
         case 3:
           DEBUGSR_PRINT(F("AR: SPH0645 Microphone - ")); DEBUGSR_PRINTLN(F(I2S_MIC_CHANNEL_TEXT));
           audioSource = new SPH0654(SAMPLE_RATE, BLOCK_SIZE);
           delay(100);
           audioSource->initialize(i2swsPin, i2ssdPin, i2sckPin);
           break;
-        #endif
-        #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
-        // MCLK routing currently only works on "classic" ESP32
         case 4:
           DEBUGSR_PRINT(F("AR: Generic I2S Microphone with Master Clock - ")); DEBUGSR_PRINTLN(F(I2S_MIC_CHANNEL_TEXT));
           audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE);
           delay(100);
           if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin, i2sckPin, mclkPin);
           break;
-        #endif
         #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
         case 5:
           DEBUGSR_PRINT(F("AR: I2S PDM Microphone - ")); DEBUGSR_PRINTLN(F(I2S_MIC_CHANNEL_TEXT));
@@ -1403,13 +1413,15 @@ class AudioReactive : public Usermod {
           infoArr.add("off");
         if (audioSyncEnabled && !udpSyncConnected) infoArr.add(" <i>(unconnected)</i>");
 
-        #ifdef WLED_DEBUG
+        #if defined(WLED_DEBUG) || defined(SR_DEBUG)
         infoArr = user.createNestedArray(F("Sampling time"));
-        infoArr.add(sampleTime);
-        infoArr.add("ms");
+        infoArr.add(float(sampleTime)/100.0f);
+        infoArr.add(" ms");
         infoArr = user.createNestedArray(F("FFT time"));
-        infoArr.add(fftTime-sampleTime);
-        infoArr.add("ms");
+        infoArr.add(float(fftTime-sampleTime)/100.0f);
+        infoArr.add(" ms");
+        DEBUGSR_PRINTF("AR Sampling time: %5.2f ms\n", float(sampleTime)/100.0f);
+        DEBUGSR_PRINTF("AR FFT time     : %5.2f ms\n", float(fftTime-sampleTime)/100.0f);
         #endif
       }
     }
@@ -1582,10 +1594,8 @@ class AudioReactive : public Usermod {
     #endif
       oappend(SET_F("addOption(dd,'Generic I2S',1);"));
       oappend(SET_F("addOption(dd,'ES7243',2);"));
-    #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
       oappend(SET_F("addOption(dd,'SPH0654',3);"));
       oappend(SET_F("addOption(dd,'Generic I2S with Mclk',4);"));
-    #endif
     #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
       oappend(SET_F("addOption(dd,'Generic I2S PDM',5);"));
     #endif
@@ -1624,7 +1634,11 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',0,'I2S SD');"));
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',1,'I2S WS');"));
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',2,'I2S SCK');"));
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'I2S Master CLK');"));
+      #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
+        oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'I2S Master CLK <i>only use -1, 0, 1 or 3 for MCLK</i>');"));
+      #else
+        oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'I2S Master CLK');"));
+      #endif
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',4,'I2C SDA');"));
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',5,'I2C SCL');"));
     }

@@ -82,6 +82,9 @@ void handleDMX();
 
 //e131.cpp
 void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol);
+void handleArtnetPollReply(IPAddress ipAddress);
+void prepareArtnetPollReply(ArtPollReply* reply);
+void sendArtnetPollReply(ArtPollReply* reply, IPAddress ipAddress, uint16_t portAddress);
 
 //file.cpp
 bool handleFileRead(AsyncWebServerRequest*, String path);
@@ -191,8 +194,8 @@ int16_t loadPlaylist(JsonObject playlistObject, byte presetId = 0);
 void handlePlaylist();
 
 //presets.cpp
-void handlePresets(bool force = false);
-bool applyPreset(byte index, byte callMode = CALL_MODE_DIRECT_CHANGE, bool fromJson = false);
+void handlePresets();
+bool applyPreset(byte index, byte callMode = CALL_MODE_DIRECT_CHANGE);
 inline bool applyTemporaryPreset() {return applyPreset(255);};
 void savePreset(byte index, const char* pname = nullptr, JsonObject saveobj = JsonObject());
 inline void saveTemporaryPreset() {savePreset(255);};

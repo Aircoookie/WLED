@@ -402,10 +402,12 @@ class FourLineDisplayUsermod : public Usermod {
           else       u8x8 = (U8X8 *) new U8X8_SSD1305_128X64_ADAFRUIT_HW_I2C(U8X8_PIN_NONE, ioPin[0], ioPin[1]); // Pins are Reset, SCL, SDA
           break;
         case SSD1306_SPI:
+          // u8x8 uses global SPI variable that is attached to VSPI bus on ESP32
           if (!isHW)  u8x8 = (U8X8 *) new U8X8_SSD1306_128X32_UNIVISION_4W_SW_SPI(ioPin[0], ioPin[1], ioPin[2], ioPin[3], ioPin[4]);
           else        u8x8 = (U8X8 *) new U8X8_SSD1306_128X32_UNIVISION_4W_HW_SPI(ioPin[2], ioPin[3], ioPin[4]); // Pins are cs, dc, reset
           break;
         case SSD1306_SPI64:
+          // u8x8 uses global SPI variable that is attached to VSPI bus on ESP32
           if (!isHW) u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_4W_SW_SPI(ioPin[0], ioPin[1], ioPin[2], ioPin[3], ioPin[4]);
           else       u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_4W_HW_SPI(ioPin[2], ioPin[3], ioPin[4]); // Pins are cs, dc, reset
           break;
@@ -1052,10 +1054,25 @@ class FourLineDisplayUsermod : public Usermod {
      * I highly recommend checking out the basics of ArduinoJson serialization and deserialization in order to use custom settings!
      */
     void addToConfig(JsonObject& root) {
+      // determine if we are using global HW pins (data & clock)
+      int8_t hw_dta, hw_clk;
+      if ((type == SSD1306_SPI || type == SSD1306_SPI64)) {
+        hw_clk = spi_sclk<0 ? HW_PIN_CLOCKSPI : spi_sclk;
+        hw_dta = spi_mosi<0 ? HW_PIN_DATASPI : spi_mosi;
+      } else {
+        hw_clk = i2c_scl<0 ? HW_PIN_SCL : i2c_scl;
+        hw_dta = i2c_sda<0 ? HW_PIN_SDA : i2c_sda;
+      }
+
       JsonObject top   = root.createNestedObject(FPSTR(_name));
       top[FPSTR(_enabled)]       = enabled;
+
       JsonArray io_pin = top.createNestedArray("pin");
-      for (byte i=0; i<5; i++) io_pin.add(ioPin[i]);
+      for (int i=0; i<5; i++) {
+        if      (i==0 && ioPin[i]==hw_clk) io_pin.add(-1); // do not store global HW pin
+        else if (i==1 && ioPin[i]==hw_dta) io_pin.add(-1); // do not store global HW pin
+        else                               io_pin.add(ioPin[i]);
+      }
       top["type"]                = type;
       top[FPSTR(_flip)]          = (bool) flip;
       top[FPSTR(_contrast)]      = contrast;

@@ -200,7 +200,11 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       int8_t pin = btn["pin"][0] | -1;
       if (pin > -1 && pinManager.allocatePin(pin, false, PinOwner::Button)) {
         btnPin[s] = pin;
+        #ifdef ESP32
+        pinMode(btnPin[s], buttonType[s]==BTN_TYPE_PUSH_ACT_HIGH ? INPUT_PULLDOWN : INPUT_PULLUP);
+        #else
         pinMode(btnPin[s], INPUT_PULLUP);
+        #endif
       } else {
         btnPin[s] = -1;
       }
@@ -286,7 +290,11 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(spi_miso, hw_if_spi[2]);
   PinManagerPinType spi[3] = { { spi_mosi, true }, { spi_miso, true }, { spi_sclk, true } };
   if (spi_mosi >= 0 && spi_sclk >= 0 && pinManager.allocateMultiplePins(spi, 3, PinOwner::HW_SPI)) {
-    // do not initialise bus here
+    #ifdef ESP32
+    SPI.begin(spi_sclk, spi_miso, spi_mosi);  // SPI global uses VSPI on ESP32 and FSPI on C3, S3
+    #else
+    SPI.begin();
+    #endif
   } else {
     spi_mosi = -1;
     spi_miso = -1;
@@ -369,6 +377,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(e131Universe, if_live_dmx[F("uni")]);
   CJSON(e131SkipOutOfSequence, if_live_dmx[F("seqskip")]);
   CJSON(DMXAddress, if_live_dmx[F("addr")]);
+  if (!DMXAddress || DMXAddress > 510) DMXAddress = 1;
   CJSON(DMXMode, if_live_dmx["mode"]);
 
   tdd = if_live[F("timeout")] | -1;
@@ -536,8 +545,8 @@ void deserializeConfigFromFS() {
   if (!success) { //if file does not exist, try reading from EEPROM
     #ifdef WLED_ADD_EEPROM_SUPPORT
     deEEPSettings();
-    #endif
     return;
+    #endif
   }
 
   if (!requestJSONBufferLock(1)) return;
@@ -942,6 +951,8 @@ void serializeConfig() {
   if (f) serializeJson(doc, f);
   f.close();
   releaseJSONBufferLock();
+
+  doSerializeConfig = false;
 }
 
 //settings in /wsec.json, not accessible via webserver, for passwords and tokens
