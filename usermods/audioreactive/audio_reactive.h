@@ -20,6 +20,8 @@
  * ....
  */
 
+#define FFT_PREFER_EXACT_PEAKS  // use different FFT wndowing -> results in "sharper" peaks and less "leaking" into other frequencies
+
 // Comment/Uncomment to toggle usb serial debugging
 // #define MIC_LOGGER                   // MIC sampling & sound input debugging (serial plotter)
 // #define FFT_SAMPLING_LOG             // FFT result debugging
@@ -60,8 +62,8 @@ static uint8_t audioSyncEnabled = 0;          // bit field: bit 0 - send, bit 1 
 
 // user settable parameters for limitSoundDynamics()
 static bool limiterOn = true;                 // bool: enable / disable dynamics limiter
-static uint16_t attackTime =  80;             // int: attack time in milliseconds. Default 0.08sec
-static uint16_t decayTime = 1400;             // int: decay time in milliseconds.  Default 1.40sec
+static uint16_t attackTime = 50;              // int: attack time in milliseconds. Default 0.08sec
+static uint16_t decayTime = 300;              // int: decay time in milliseconds.  New default 300ms. Old default was 1.40sec
 // user settable options for FFTResult scaling
 static uint8_t FFTScalingMode = 3;            // 0 none; 1 optimized logarithmic; 2 optimized linear; 3 optimized sqare root
 static uint8_t pinkIndex = 0;                 // 0: default; 1: line-in; 2: IMNP441
@@ -218,7 +220,7 @@ void FFTcode(void * parameter)
 
 #if defined(WLED_DEBUG) || defined(SR_DEBUG)
     if (start < esp_timer_get_time()) { // filter out overflows
-      unsigned long sampleTimeInMillis = (esp_timer_get_time() - start +5ULL) / 10ULL; // "+5" to ensure proper rounding
+      uint64_t sampleTimeInMillis = (esp_timer_get_time() - start +5ULL) / 10ULL; // "+5" to ensure proper rounding
       sampleTime = (sampleTimeInMillis*3 + sampleTime*7)/10; // smooth
     }
 #endif
@@ -247,8 +249,11 @@ void FFTcode(void * parameter)
       // run FFT (takes 3-5ms on ESP32, ~12ms on ESP32-S2)
 #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
       FFT.dcRemoval();                                            // remove DC offset
-      FFT.windowing( FFTWindow::Flat_top, FFTDirection::Forward); // Weigh data using "Flat Top" function - better amplitude accuracy
-      //FFT.windowing(FFTWindow::Blackman_Harris, FFTDirection::Forward);  // Weigh data using "Blackman- Harris" window - sharp peaks due to excellent sideband rejection
+      #if !defined(FFT_PREFER_EXACT_PEAKS)
+        FFT.windowing( FFTWindow::Flat_top, FFTDirection::Forward);        // Weigh data using "Flat Top" function - better amplitude accuracy
+      #else
+        FFT.windowing(FFTWindow::Blackman_Harris, FFTDirection::Forward);  // Weigh data using "Blackman- Harris" window - sharp peaks due to excellent sideband rejection
+      #endif
       FFT.compute( FFTDirection::Forward );                       // Compute FFT
       FFT.complexToMagnitude();                                   // Compute magnitudes
 #else
@@ -256,8 +261,11 @@ void FFTcode(void * parameter)
 
       //FFT.Windowing( FFT_WIN_TYP_HAMMING, FFT_FORWARD );        // Weigh data - standard Hamming window
       //FFT.Windowing( FFT_WIN_TYP_BLACKMAN, FFT_FORWARD );       // Blackman window - better side freq rejection
-      //FFT.Windowing( FFT_WIN_TYP_BLACKMAN_HARRIS, FFT_FORWARD );// Blackman-Harris - excellent sideband rejection
-      FFT.Windowing( FFT_WIN_TYP_FLT_TOP, FFT_FORWARD );          // Flat Top Window - better amplitude accuracy
+      #if !defined(FFT_PREFER_EXACT_PEAKS)
+        FFT.Windowing( FFT_WIN_TYP_FLT_TOP, FFT_FORWARD );        // Flat Top Window - better amplitude accuracy
+      #else
+        FFT.Windowing( FFT_WIN_TYP_BLACKMAN_HARRIS, FFT_FORWARD );// Blackman-Harris - excellent sideband rejection
+      #endif
       FFT.Compute( FFT_FORWARD );                             // Compute FFT
       FFT.ComplexToMagnitude();                               // Compute magnitudes
 #endif
@@ -384,24 +392,26 @@ void FFTcode(void * parameter)
         case 2:
             // Linear scaling
             currentResult *= 0.30f;                     // needs a bit more damping, get stay below 255
-            currentResult -= 4.0;                       // giving a bit more room for peaks
+            currentResult -= 2.0;                       // giving a bit more room for peaks
             if (currentResult < 1.0f) currentResult = 0.0f;
             currentResult *= 0.85f + (float(i)/1.8f);   // extra up-scaling for high frequencies
         break;
         case 3:
             // square root scaling
             currentResult *= 0.38f;
+            //currentResult *= 0.34f;                   //experiment
             currentResult -= 6.0f;
             if (currentResult > 1.0) currentResult = sqrtf(currentResult);
             else currentResult = 0.0;                   // special handling, because sqrt(0) = undefined
             currentResult *= 0.85f + (float(i)/4.5f);   // extra up-scaling for high frequencies
+            //currentResult *= 0.80f + (float(i)/5.6f); //experiment
             currentResult = mapf(currentResult, 0.0, 16.0, 0.0, 255.0); // map [sqrt(1) ... sqrt(256)] to [0 ... 255]
         break;
 
         case 0:
         default:
             // no scaling - leave freq bins as-is
-            currentResult -= 4; // just a bit more room for peaks
+            currentResult -= 2; // just a bit more room for peaks
         break;
       }
 
@@ -416,7 +426,7 @@ void FFTcode(void * parameter)
 
 #if defined(WLED_DEBUG) || defined(SR_DEBUG)
     if (start < esp_timer_get_time()) { // filter out overflows
-      unsigned long fftTimeInMillis = ((esp_timer_get_time() - start) +5ULL) / 10ULL; // "+5" to ensure proper rounding
+      uint64_t fftTimeInMillis = ((esp_timer_get_time() - start) +5ULL) / 10ULL; // "+5" to ensure proper rounding
       fftTime  = (fftTimeInMillis*3 + fftTime*7)/10; // smooth
     }
 #endif
@@ -1622,6 +1632,7 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addOption(dd,'Standard',0);"));
       oappend(SET_F("addOption(dd,'Line-In',1);"));
       oappend(SET_F("addOption(dd,'IMNP441',2);"));
+      //oappend(SET_F("addOption(dd,'IMNP441 (small speaker)',3);"));
       oappend(SET_F("addOption(dd,'IMNP441 (big speaker)',3);"));
       oappend(SET_F("addOption(dd,'ICS-43434',4);"));
       oappend(SET_F("addOption(dd,'flat',5);"));
