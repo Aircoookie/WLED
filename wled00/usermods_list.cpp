@@ -68,7 +68,6 @@
 #endif
 
 #ifdef USERMOD_VL53L0X_GESTURES
-#include <Wire.h> //it's needed here to correctly resolve dependencies
 #include "../usermods/VL53L0X_gestures/usermod_vl53l0x_gestures.h"
 #endif
 
