@@ -401,6 +401,7 @@ void Segment::setOption(uint8_t n, bool val) {
 }
 
 void Segment::setMode(uint8_t fx, bool loadDefaults) {
+  // if we have a valid mode & is not reserved
   if (fx < strip.getModeCount() && strncmp_P("RSVD", strip.getModeData(fx), 4)) {
     if (fx != mode) {
       startTransition(strip.getTransition()); // set effect transitions
@@ -433,9 +434,11 @@ void Segment::setMode(uint8_t fx, bool loadDefaults) {
 }
 
 void Segment::setPalette(uint8_t pal) {
-  if (pal != palette) {
-    if (strip.paletteFade && !transitional) startTransition(strip.getTransition());
-    palette = pal;
+  if (pal < strip.getPaletteCount()) {
+    if (pal != palette) {
+      if (strip.paletteFade) startTransition(strip.getTransition());
+      palette = pal;
+    }
   }
 }
 

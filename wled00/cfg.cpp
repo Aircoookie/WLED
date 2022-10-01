@@ -377,6 +377,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(e131Universe, if_live_dmx[F("uni")]);
   CJSON(e131SkipOutOfSequence, if_live_dmx[F("seqskip")]);
   CJSON(DMXAddress, if_live_dmx[F("addr")]);
+  if (!DMXAddress || DMXAddress > 510) DMXAddress = 1;
   CJSON(DMXMode, if_live_dmx["mode"]);
 
   tdd = if_live[F("timeout")] | -1;
