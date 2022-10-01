@@ -472,69 +472,69 @@ uint16_t Segment::nrOfVStrips() const {
 }
 
 //WLEDSR jMap
+struct XandY {
+  uint8_t x;
+  uint8_t y;
+};
+struct ArrayAndSize {
+  uint8_t size;
+  XandY *array;
+};
 class JMapC {
   public:
     char previousSegmentName[50] = "";
 
     ~JMapC() {
       Serial.println("~JMapC");
-      if (jMapDoc) {
-        delete jMapDoc; jMapDoc = nullptr;
+      deletejVectorMap();
+    }
+    void deletejVectorMap() {
+      if (jVectorMap.size() > 0) {
+        Serial.println("delete jVectorMap");
+        for (int i=0; i<jVectorMap.size(); i++)
+          delete jVectorMap[i].array; 
+        jVectorMap.clear();
       }
     }
     uint16_t length() {
       updatejMapDoc();
-      if (jMapDoc)
-        return jMapDoc->size();
+      size_t size = jVectorMap.size();
+      if (size > 0)
+        return size;
       else
         return SEGMENT.virtualWidth() * SEGMENT.virtualHeight(); //pixels
     }
     void setPixelColor(uint16_t i, uint32_t col) {
       updatejMapDoc();
-      if (jMapDoc) {
+      if (jVectorMap.size() > i) {
         if (i==0) {
           SEGMENT.fadeToBlackBy(10); //as not all pixels used
         }
-        //get itH element of jMap and use x and y to sPCXY call (or multiple calls if tuples)
-        JsonArray outerArray = jMapDoc->as<JsonArray>();
-        if (outerArray[i][0].is<JsonArray>()){
-          for (JsonVariant innerElement: outerArray[i].as<JsonArray>()) {
-            SEGMENT.setPixelColorXY(innerElement[0].as<uint16_t>() * scale, innerElement[1].as<uint16_t>() * scale, col);
-          }
-        }
-        else {
-          SEGMENT.setPixelColorXY(outerArray[i][0].as<uint16_t>() * scale, outerArray[i][1].as<uint16_t>() * scale, col);
-          // SEGMENT.drawLine(outerArray[i][0].as<uint16_t>()*scale, outerArray[i-1][0].as<uint16_t>()*scale, outerArray[i-1][0].as<uint16_t>()*scale, outerArray[i][1].as<uint16_t>()*scale, col);
+        for (int j=0; j<jVectorMap[i].size; j++) {
+          SEGMENT.setPixelColorXY(jVectorMap[i].array[j].x * scale, jVectorMap[i].array[j].y * scale, col);
         }
       }
     }
     uint32_t getPixelColor(uint16_t i) {
       updatejMapDoc();
-      if (jMapDoc) {
-        JsonArray outerArray = jMapDoc->as<JsonArray>();
-        if (outerArray[i][0].is<JsonArray>())
-          return SEGMENT.getPixelColorXY(outerArray[i][0][0].as<uint16_t>() * scale, outerArray[i][0][1].as<uint16_t>() * scale);
-        else
-          return SEGMENT.getPixelColorXY(outerArray[i][0].as<uint16_t>() * scale, outerArray[i][1].as<uint16_t>() * scale);
-      }
-      return 0;
+      if (jVectorMap.size() > 0)
+        return SEGMENT.getPixelColorXY(jVectorMap[i].array[0].x * scale, jVectorMap[i].array[0].y * scale);
+      else
+        return 0;
     }
   private:
-    PSRAMDynamicJsonDocument *jMapDoc = nullptr;
+    std::vector<ArrayAndSize> jVectorMap; 
+    StaticJsonDocument<4096> docChunk; //must fit forks with about 32 points each
     uint8_t scale;
+
     void updatejMapDoc() {
-      if (jMapDoc && SEGMENT.name == nullptr) {
-        Serial.println("Delete jMapDoc");
-        delete jMapDoc; jMapDoc = nullptr;
+      if (SEGMENT.name == nullptr && jVectorMap.size() > 0) {
+        deletejVectorMap();
       }
-
-      if (!jMapDoc && SEGMENT.name != nullptr && SEGMENT.map1D2D == M12_jMap) {
-        Serial.println("Create jMapDoc");
-        jMapDoc = new PSRAMDynamicJsonDocument(5*4096);
-      }
-
-      if (jMapDoc && SEGMENT.name != nullptr && strcmp(SEGMENT.name, previousSegmentName) != 0) {
-        Serial.println("New name");
+      else if (SEGMENT.name != nullptr && strcmp(SEGMENT.name, previousSegmentName) != 0) {
+        uint32_t dataSize = 0;
+        deletejVectorMap();
+        Serial.print("New "); Serial.println(SEGMENT.name);
         char jMapFileName[50];
         strcpy(jMapFileName, "/");
         strcat(jMapFileName, SEGMENT.name);
@@ -542,35 +542,62 @@ class JMapC {
         File jMapFile;
         jMapFile = WLED_FS.open(jMapFileName, "r");
 
-        DeserializationError err = deserializeJson(*jMapDoc, jMapFile);
-        if (err) 
-        {
-          Serial.printf("deserializeJson() of parseTree failed with code %s\n", err.c_str());
-          delete[] SEGMENT.name; SEGMENT.name = nullptr; //need to clear the name as otherwise continuously loaded
-          return;
-        }
-        //get the width and height of the jMap
         uint8_t maxWidth = 0;
         uint8_t maxHeight = 0;
-        JsonArray outerArray = jMapDoc->as<JsonArray>();
-        for (JsonVariant outerElement: outerArray) {
-          if (outerElement[0].is<JsonArray>()){
-            for (JsonVariant innerElement: outerElement.as<JsonArray>()) {
-              maxWidth = MAX(maxWidth, innerElement[0].as<uint16_t>());
-              maxHeight = MAX(maxHeight, innerElement[1].as<uint16_t>());
+
+        //https://arduinojson.org/v6/how-to/deserialize-a-very-large-document/
+        jMapFile.find("[");
+        do {
+          DeserializationError err = deserializeJson(docChunk, jMapFile);
+          // serializeJson(docChunk, Serial); Serial.println();
+          // Serial.printf("docChunk  %u / %u%% (%u %u %u) %u\n", (unsigned int)docChunk.memoryUsage(), 100 * docChunk.memoryUsage() / docChunk.capacity(), (unsigned int)docChunk.size(), docChunk.overflowed(), (unsigned int)docChunk.nesting(), jMapFile.size());
+          if (err) 
+          {
+            Serial.printf("deserializeJson() of parseTree failed with code %s\n", err.c_str());
+            delete[] SEGMENT.name; SEGMENT.name = nullptr; //need to clear the name as otherwise continuously loaded
+            return;
+          }
+
+          if (docChunk.is<JsonArray>()) { //each item is or an array of arrays (fork) or an array of x,y (no fork)
+            //fill the vector with arrays and get the width and height of the jMap
+
+            JsonArray arrayChunk = docChunk.as<JsonArray>();
+            ArrayAndSize arrayAndSize;
+            arrayAndSize.size = 0;
+            if (arrayChunk[0].is<JsonArray>()) { //if array of arrays
+              arrayAndSize.array = new XandY[arrayChunk.size()];
+              for (JsonVariant arrayElement: arrayChunk) {
+                maxWidth = MAX(maxWidth, arrayElement[0].as<uint8_t>());
+                maxHeight = MAX(maxHeight, arrayElement[1].as<uint8_t>());
+                arrayAndSize.array[arrayAndSize.size].x = arrayElement[0].as<uint8_t>();
+                arrayAndSize.array[arrayAndSize.size].y = arrayElement[1].as<uint8_t>();
+                arrayAndSize.size++;
+                dataSize += sizeof(XandY);
+              }
             }
+            else { // if array (of x and y)
+              arrayAndSize.array = new XandY[1];
+              maxWidth = MAX(maxWidth, arrayChunk[0].as<uint8_t>());
+              maxHeight = MAX(maxHeight, arrayChunk[1].as<uint8_t>());
+              arrayAndSize.array[arrayAndSize.size].x = arrayChunk[0].as<uint8_t>();
+              arrayAndSize.array[arrayAndSize.size].y = arrayChunk[1].as<uint8_t>();
+              arrayAndSize.size++;
+              dataSize += sizeof(XandY);
+            }
+            jVectorMap.push_back(arrayAndSize);
+            dataSize += sizeof(arrayAndSize);
           }
-          else {
-            maxWidth = MAX(maxWidth, outerElement[0].as<uint16_t>());
-            maxHeight = MAX(maxHeight, outerElement[1].as<uint16_t>());
-          }
-        }
+
+        } while (jMapFile.findUntil(",", "]"));
+
         maxWidth++; maxHeight++;
         scale = MIN(SEGMENT.virtualWidth() / maxWidth, SEGMENT.virtualHeight() / maxHeight);
 
-        Serial.printf("jMapDoc  %u / %u%% (%u %u %u)\n", (unsigned int)jMapDoc->memoryUsage(), 100 * jMapDoc->memoryUsage() / jMapDoc->capacity(), (unsigned int)jMapDoc->size(), jMapDoc->overflowed(), (unsigned int)jMapDoc->nesting());
+        dataSize += sizeof(jVectorMap);
+        Serial.print("dataSize ");
+        Serial.print(dataSize);
+        Serial.print(" scale ");
         Serial.println(scale);
-        // serializeJson(*jMapDoc, Serial); Serial.println();
         strcpy(previousSegmentName, SEGMENT.name);
       }
     } //updatejMapDoc
