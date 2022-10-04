@@ -197,6 +197,7 @@ void FFTcode(void * parameter)
 
 #if defined(WLED_DEBUG) || defined(SR_DEBUG)
     uint64_t start = esp_timer_get_time();
+    bool haveDoneFFT = false; // indicates if second measurement (FFT time) is valid
 #endif
 
     // get a fresh batch of samples from I2S
@@ -204,9 +205,10 @@ void FFTcode(void * parameter)
 
 #if defined(WLED_DEBUG) || defined(SR_DEBUG)
     if (start < esp_timer_get_time()) { // filter out overflows
-      unsigned long sampleTimeInMillis = (esp_timer_get_time() - start +5ULL) / 10ULL; // "+5" to ensure proper rounding
+      uint64_t sampleTimeInMillis = (esp_timer_get_time() - start +5ULL) / 10ULL; // "+5" to ensure proper rounding
       sampleTime = (sampleTimeInMillis*3 + sampleTime*7)/10; // smooth
     }
+    start = esp_timer_get_time(); // start measuring FFT time
 #endif
 
     xLastWakeTime = xTaskGetTickCount();       // update "last unblocked time" for vTaskDelay
@@ -254,6 +256,10 @@ void FFTcode(void * parameter)
       FFT.MajorPeak(&FFT_MajorPeak, &FFT_Magnitude);              // let the effects know which freq was most dominant
 #endif
       FFT_MajorPeak = constrain(FFT_MajorPeak, 1.0f, 11025.0f);   // restrict value to range expected by effects
+
+#if defined(WLED_DEBUG) || defined(SR_DEBUG)
+      haveDoneFFT = true;
+#endif
 
     } else { // noise gate closed - only clear results as FFT was skipped. MIC samples are still valid when we do this.
       memset(vReal, 0, sizeof(vReal));
@@ -397,8 +403,8 @@ void FFTcode(void * parameter)
     }
 
 #if defined(WLED_DEBUG) || defined(SR_DEBUG)
-    if (start < esp_timer_get_time()) { // filter out overflows
-      unsigned long fftTimeInMillis = ((esp_timer_get_time() - start) +5ULL) / 10ULL; // "+5" to ensure proper rounding
+    if (haveDoneFFT && (start < esp_timer_get_time())) { // filter out overflows
+      uint64_t fftTimeInMillis = ((esp_timer_get_time() - start) +5ULL) / 10ULL; // "+5" to ensure proper rounding
       fftTime  = (fftTimeInMillis*3 + fftTime*7)/10; // smooth
     }
 #endif
@@ -563,21 +569,21 @@ class AudioReactive : public Usermod {
     ////////////////////
     void logAudio()
     {
+      if (disableSoundProcessing && (!udpSyncConnected || ((audioSyncEnabled & 0x02) == 0))) return;   // no audio availeable
     #ifdef MIC_LOGGER
       // Debugging functions for audio input and sound processing. Comment out the values you want to see
       Serial.print("micReal:");     Serial.print(micDataReal); Serial.print("\t");
-      //Serial.print("micIn:");       Serial.print(micIn);       Serial.print("\t");
-      //Serial.print("micLev:");      Serial.print(micLev);      Serial.print("\t");
-      //Serial.print("sampleReal:");  Serial.print(sampleReal);  Serial.print("\t");
-      //Serial.print("sample:");      Serial.print(sample);      Serial.print("\t");
+      Serial.print("volumeSmth:");  Serial.print(volumeSmth);  Serial.print("\t");
+      //Serial.print("volumeRaw:");   Serial.print(volumeRaw);   Serial.print("\t");
+      //Serial.print("DC_Level:");    Serial.print(micLev);      Serial.print("\t");
+      //Serial.print("sampleAgc:");   Serial.print(sampleAgc);   Serial.print("\t");
       //Serial.print("sampleAvg:");   Serial.print(sampleAvg);   Serial.print("\t");
+      //Serial.print("sampleReal:");  Serial.print(sampleReal);  Serial.print("\t");
+      //Serial.print("micIn:");       Serial.print(micIn);       Serial.print("\t");
+      //Serial.print("sample:");      Serial.print(sample);      Serial.print("\t");
       //Serial.print("sampleMax:");   Serial.print(sampleMax);   Serial.print("\t");
       //Serial.print("samplePeak:");  Serial.print((samplePeak!=0) ? 128:0);   Serial.print("\t");
       //Serial.print("multAgc:");     Serial.print(multAgc, 4);  Serial.print("\t");
-      Serial.print("sampleAgc:");   Serial.print(sampleAgc);   Serial.print("\t");
-      //Serial.print("volumeRaw:");   Serial.print(volumeRaw);   Serial.print("\t");
-      //Serial.print("volumeSmth:");  Serial.print(volumeSmth);  Serial.print("\t");
-
       Serial.println();
     #endif
 
@@ -1170,9 +1176,11 @@ class AudioReactive : public Usermod {
       }
 
       #if defined(MIC_LOGGER) || defined(MIC_SAMPLING_LOG) || defined(FFT_SAMPLING_LOG)
-      EVERY_N_MILLIS(20) {
-          logAudio();
-       }
+      static unsigned long lastMicLoggerTime = 0;
+      if (millis()-lastMicLoggerTime > 20) {
+        lastMicLoggerTime = millis();
+        logAudio();
+      }
       #endif
 
       // Info Page: keep max sample from last 5 seconds
@@ -1392,11 +1400,18 @@ class AudioReactive : public Usermod {
         infoArr = user.createNestedArray(F("Sampling time"));
         infoArr.add(float(sampleTime)/100.0f);
         infoArr.add(" ms");
+
         infoArr = user.createNestedArray(F("FFT time"));
-        infoArr.add(float(fftTime-sampleTime)/100.0f);
-        infoArr.add(" ms");
+        infoArr.add(float(fftTime)/100.0f);        
+        if ((fftTime/100) >= FFT_MIN_CYCLE) // FFT time over budget -> I2S buffer will overflow 
+          infoArr.add("<b style=\"color:red;\">! ms</b>");
+        else if ((fftTime/80 + sampleTime/80) >= FFT_MIN_CYCLE) // FFT time >75% of budget -> risk of instability
+          infoArr.add("<b style=\"color:orange;\"> ms!</b>");
+        else
+          infoArr.add(" ms");
+
         DEBUGSR_PRINTF("AR Sampling time: %5.2f ms\n", float(sampleTime)/100.0f);
-        DEBUGSR_PRINTF("AR FFT time     : %5.2f ms\n", float(fftTime-sampleTime)/100.0f);
+        DEBUGSR_PRINTF("AR FFT time     : %5.2f ms\n", float(fftTime)/100.0f);
         #endif
       }
     }
