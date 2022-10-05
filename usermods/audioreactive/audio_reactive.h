@@ -155,20 +155,53 @@ static uint64_t sampleTime = 0;
 #endif
 
 // Table of multiplication factors so that we can even out the frequency response.
-#define MAX_PINK 5  // 0 = standard, 1= line-in (pink moise only), 2..3 = IMNP441, 4 = ICS-43434, 5 = flat (no pink noise adjustment)
+#define MAX_PINK 9  // 0 = standard, 1= line-in (pink moise only), 2..4 = IMNP441, 5..6 = ICS-43434, 6..7 = userdef, 9= flat (no pink noise adjustment)
 static const float fftResultPink[MAX_PINK+1][NUM_GEQ_CHANNELS] = { 
           { 1.70f, 1.71f, 1.73f, 1.78f, 1.68f, 1.56f, 1.55f, 1.63f, 1.79f, 1.62f, 1.80f, 2.06f, 2.47f, 3.35f, 6.83f, 9.55f },  // default from SR WLED
-          { 1.30f, 1.32f, 1.40f, 1.46f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 2.39f, 3.09f, 4.34f },  // pink noise adjustment only. Good for line-in without microphone distortion
+          { 1.30f, 1.32f, 1.40f, 1.46f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 2.39f, 3.09f, 4.34f },  // Line-In - pink noise adjustment only, without microphone distortion
 
-          { 1.82f, 1.72f, 1.70f, 1.50f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 2.90f, 3.86f, 6.29f },  // IMNP441 datasheet response profile * pink noise
-        //disabled, because not much different from "IMNP441 datasheet"
-        //{ 12.0f, 6.60f, 2.60f, 1.15f, 1.35f, 2.05f, 2.85f, 2.50f, 2.85f, 3.30f, 2.25f, 4.35f, 3.80f, 3.75f, 6.50f, 9.00f },  // IMNP441 - voice, or small speaker
+          { 1.82f, 1.72f, 1.70f, 1.50f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 2.90f, 3.86f, 6.29f},   // IMNP441 datasheet response profile * pink noise
           { 2.80f, 2.20f, 1.30f, 1.15f, 1.55f, 2.45f, 4.20f, 2.80f, 3.20f, 3.60f, 4.20f, 4.90f, 5.70f, 6.05f,10.50f,14.85f},   // IMNP441 - big speaker, strong bass
+          // next one has not much visual differece compared to default IMNP441 profile
+          { 12.0f, 6.60f, 2.60f, 1.15f, 1.35f, 2.05f, 2.85f, 2.50f, 2.85f, 3.30f, 2.25f, 4.35f, 3.80f, 3.75f, 6.50f, 9.00f},   // IMNP441 - voice, or small speaker
 
-          { 2.34f, 1.60f, 1.40f, 1.46f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 2.15f, 2.55f, 2.90f },  // ICS-43434 datasheet response * pink noise
+          { 2.75f, 1.60f, 1.40f, 1.46f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 1.75f, 2.55f, 3.60f },  // ICS-43434 datasheet response * pink noise
+          { 2.25f, 1.20f, 1.00f, 1.20f, 1.80f, 3.20f, 3.06f, 2.50f, 2.85f, 2.80f, 3.10f, 3.25f, 3.15f, 2.40f, 2.80f, 3.20f },  // ICS-43434 - big speaker, strong bass
 
-          { 2.38f, 2.18f, 2.07f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 2.07f, 1.70f, 2.13f, 2.47f }   // FLAT (IMNP441)
+          { 2.25f, 1.60f, 1.30f, 1.60f, 2.20f, 3.20f, 3.06f, 2.60f, 2.85f, 3.50f, 3.90f, 4.50f, 3.35f, 3.20f, 3.60f, 4.20f },  // ICS-43434 - userdef #1 for ewowi (enhance median freqs)
+          { 4.75f, 3.60f, 2.40f, 2.46f, 3.52f, 1.60f, 1.68f, 3.20f, 2.20f, 2.00f, 2.30f, 2.41f, 2.30f, 1.25f, 4.55f, 6.50f },  // ICS-43434 - userdef #2 for softhack (mic hidden inside mini-shield)
+
+          { 2.38f, 2.18f, 2.07f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 1.95f, 1.70f, 2.13f, 2.47f }   // almost FLAT (IMNP441 but no PINK noise adjustments)
 };
+
+  /* how to make your own profile:
+  * ===============================
+   * preparation: make sure your microphone has direct line-of-sigh with the speaker, 1-2meter distance is best
+   * Prepare your HiFi equipment: disable all "Sound enhancements" - like Loudness, Equalizer, Bass Boost. Bass/Trebble controls set to middle.
+   * Your HiFi equipment should receive its audio input from Line-In, SPDIF, HDMI, or another "undistorted" connection (like CDROM). 
+   * Try not to use Bluetooth or MP3 when playing the "pink noise" audio. BT-audio and MP3 both perform "acoustic adjustments" that we don't want now.
+
+   * SR WLED: enable AGC ("standard" or "lazy"), set squelch to a low level, check that LEDs don't reacts in silence.
+   * SR WLED: select "Generic Line-In" as your Frequency Profile, "Linear" or "Square Root" as Frequency Scale
+   * SR WLED: Dynamic Limiter On, Dynamics Fall Time around 4200 - makes GEQ hold peaks for much longer
+   * SR WLED: Select GEQ effect, move all effect slider to max (i.e. right side)
+
+   * Measure: play Pink Noise for 2-3 minutes - for examples from youtube https://www.youtube.com/watch?v=ZXtimhT-ff4
+   * Measure: Take a Photo. Make sure that LEDs for each "bar" are well visible (ou need to count them later)
+
+   * Your own profile: 
+   *  - Target for each LED bar is 50% to 75% of the max height --> 8(high) x 16(wide) panel means target = 5. 32 x 16 means target = 22.
+   *  - From left to right - count the LEDs in each of the 16 frequency colums (that's why you need the photo). This is the barheight for each channel.
+   *  - math time! Find the multiplier that will bring each bar to to target.
+   *    * in case of square root scale: multiplier = (target * target) / (barheight * barheight)
+   *    * in case of linear scale:      multiplier = target / barheight
+   * 
+   *  - start with a copy of the parameter line "Line-In"
+   *  - go through your new parameter line, multiply each entry with the mutliplier you found for that column.
+
+   * Compile + upload
+   * Test your new profile (same procedure as above). Iterate the process to improve results.
+   */
 
 // Create FFT object
 #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
@@ -566,7 +599,7 @@ class AudioReactive : public Usermod {
     // variables used by getSample() and agcAvg()
     int16_t  micIn = 0;           // Current sample starts with negative values and large values, which is why it's 16 bit signed
     double   sampleMax = 0.0;     // Max sample over a few seconds. Needed for AGC controler.
-    float    micLev = 0.0f;       // Used to convert returned value to have '0' as minimum. A leveller
+    double   micLev = 0.0f;       // Used to convert returned value to have '0' as minimum. A leveller
     float    expAdjF = 0.0f;      // Used for exponential filter.
     float    sampleReal = 0.0f;	  // "sampleRaw" as float, to provide bits that are lost otherwise (before amplification by sampleGain or inputLevel). Needed for AGC.
     int16_t  sampleRaw = 0;       // Current sample. Must only be updated ONCE!!! (amplified mic value by sampleGain and inputLevel)
@@ -796,7 +829,8 @@ class AudioReactive : public Usermod {
         #endif
       #endif
 
-      micLev = ((micLev * 8191.0f) + micDataReal) / 8192.0f;                // takes a few seconds to "catch up" with the Mic Input
+      //micLev = ((micLev * 8191.0f) + micDataReal) / 8192.0f;                // takes a few seconds to "catch up" with the Mic Input
+      micLev += (micDataReal-micLev) / 12288.0f;
       if(micIn < micLev) micLev = ((micLev * 31.0f) + micDataReal) / 32.0f; // align MicLev to lowest input signal
 
       micIn -= micLev;                                  // Let's center it to 0 now
@@ -1647,13 +1681,16 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addOption(dd,'Logarithmic (Loudness)',1);"));
 
       oappend(SET_F("dd=addDropdown('AudioReactive','Frequency:Profile');"));
-      oappend(SET_F("addOption(dd,'Standard',0);"));
-      oappend(SET_F("addOption(dd,'Line-In',1);"));
+      oappend(SET_F("addOption(dd,'Generic Microphone',0);"));
+      oappend(SET_F("addOption(dd,'Generic Line-In',1);"));
       oappend(SET_F("addOption(dd,'IMNP441',2);"));
-      //oappend(SET_F("addOption(dd,'IMNP441 (small speaker)',3);"));
-      oappend(SET_F("addOption(dd,'IMNP441 (big speaker)',3);"));
-      oappend(SET_F("addOption(dd,'ICS-43434',4);"));
-      oappend(SET_F("addOption(dd,'flat',5);"));
+      oappend(SET_F("addOption(dd,'IMNP441 - big speakers',3);"));
+      oappend(SET_F("addOption(dd,'IMNP441 - small speakers',4);"));
+      oappend(SET_F("addOption(dd,'ICS-43434',5);"));
+      oappend(SET_F("addOption(dd,'ICS-43434 - big speakers',6);"));
+      oappend(SET_F("addOption(dd,'ICS-43434 - userdef #1',7);"));
+      oappend(SET_F("addOption(dd,'ICS-43434 - userdef #2',8);"));
+      oappend(SET_F("addOption(dd,'flat - no adjustments',9);"));
 
       oappend(SET_F("dd=addDropdown('AudioReactive','sync:mode');"));
       oappend(SET_F("addOption(dd,'Off',0);"));
