@@ -20,6 +20,8 @@
  * ....
  */
 
+#define FFT_PREFER_EXACT_PEAKS  // use different FFT wndowing -> results in "sharper" peaks and less "leaking" into other frequencies
+
 // Comment/Uncomment to toggle usb serial debugging
 // #define MIC_LOGGER                   // MIC sampling & sound input debugging (serial plotter)
 // #define FFT_SAMPLING_LOG             // FFT result debugging
@@ -60,8 +62,8 @@ static uint8_t audioSyncEnabled = 0;          // bit field: bit 0 - send, bit 1 
 
 // user settable parameters for limitSoundDynamics()
 static bool limiterOn = true;                 // bool: enable / disable dynamics limiter
-static uint16_t attackTime =  80;             // int: attack time in milliseconds. Default 0.08sec
-static uint16_t decayTime = 1400;             // int: decay time in milliseconds.  Default 1.40sec
+static uint16_t attackTime = 50;              // int: attack time in milliseconds. Default 0.08sec
+static uint16_t decayTime = 300;              // int: decay time in milliseconds.  New default 300ms. Old default was 1.40sec
 // user settable options for FFTResult scaling
 static uint8_t FFTScalingMode = 3;            // 0 none; 1 optimized logarithmic; 2 optimized linear; 3 optimized sqare root
 static uint8_t pinkIndex = 0;                 // 0: default; 1: line-in; 2: IMNP441
@@ -153,12 +155,53 @@ static uint64_t sampleTime = 0;
 #endif
 
 // Table of multiplication factors so that we can even out the frequency response.
-#define MAX_PINK 2  // 0 = standard, 1= line-in (pink moise only), 2 = IMNP441, ...
-static float fftResultPink[MAX_PINK+1][NUM_GEQ_CHANNELS] = { 
+#define MAX_PINK 9  // 0 = standard, 1= line-in (pink moise only), 2..4 = IMNP441, 5..6 = ICS-43434, 6..7 = userdef, 9= flat (no pink noise adjustment)
+static const float fftResultPink[MAX_PINK+1][NUM_GEQ_CHANNELS] = { 
           { 1.70f, 1.71f, 1.73f, 1.78f, 1.68f, 1.56f, 1.55f, 1.63f, 1.79f, 1.62f, 1.80f, 2.06f, 2.47f, 3.35f, 6.83f, 9.55f },  // default from SR WLED
-          { 1.30f, 1.32f, 1.40f, 1.46f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 2.39f, 3.09f, 4.34f },  // pink noise adjustment only. Good for line-in when there is nomicrophone distortion
-          { 2.60f, 2.20f, 1.30f, 1.15f, 1.35f, 2.05f, 2.90f, 2.24f, 2.00f, 2.00f, 2.55f, 2.90f, 2.70f, 2.05f, 4.50f, 8.85f }   // optimized for IMNP441
+          { 1.30f, 1.32f, 1.40f, 1.46f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 2.39f, 3.09f, 4.34f },  // Line-In - pink noise adjustment only, without microphone distortion
+
+          { 1.82f, 1.72f, 1.70f, 1.50f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 2.90f, 3.86f, 6.29f},   // IMNP441 datasheet response profile * pink noise
+          { 2.80f, 2.20f, 1.30f, 1.15f, 1.55f, 2.45f, 4.20f, 2.80f, 3.20f, 3.60f, 4.20f, 4.90f, 5.70f, 6.05f,10.50f,14.85f},   // IMNP441 - big speaker, strong bass
+          // next one has not much visual differece compared to default IMNP441 profile
+          { 12.0f, 6.60f, 2.60f, 1.15f, 1.35f, 2.05f, 2.85f, 2.50f, 2.85f, 3.30f, 2.25f, 4.35f, 3.80f, 3.75f, 6.50f, 9.00f},   // IMNP441 - voice, or small speaker
+
+          { 2.75f, 1.60f, 1.40f, 1.46f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 1.75f, 2.55f, 3.60f },  // ICS-43434 datasheet response * pink noise
+          { 2.25f, 1.20f, 1.00f, 1.20f, 1.80f, 3.20f, 3.06f, 2.50f, 2.85f, 2.80f, 3.10f, 3.25f, 3.15f, 2.40f, 2.80f, 3.20f },  // ICS-43434 - big speaker, strong bass
+
+          { 2.25f, 1.60f, 1.30f, 1.60f, 2.20f, 3.20f, 3.06f, 2.60f, 2.85f, 3.50f, 3.90f, 4.50f, 3.35f, 3.20f, 3.60f, 4.20f },  // ICS-43434 - userdef #1 for ewowi (enhance median freqs)
+          { 4.75f, 3.60f, 2.40f, 2.46f, 3.52f, 1.60f, 1.68f, 3.20f, 2.20f, 2.00f, 2.30f, 2.41f, 2.30f, 1.25f, 4.55f, 6.50f },  // ICS-43434 - userdef #2 for softhack (mic hidden inside mini-shield)
+
+          { 2.38f, 2.18f, 2.07f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 1.95f, 1.70f, 2.13f, 2.47f }   // almost FLAT (IMNP441 but no PINK noise adjustments)
 };
+
+  /* how to make your own profile:
+  * ===============================
+   * preparation: make sure your microphone has direct line-of-sigh with the speaker, 1-2meter distance is best
+   * Prepare your HiFi equipment: disable all "Sound enhancements" - like Loudness, Equalizer, Bass Boost. Bass/Trebble controls set to middle.
+   * Your HiFi equipment should receive its audio input from Line-In, SPDIF, HDMI, or another "undistorted" connection (like CDROM). 
+   * Try not to use Bluetooth or MP3 when playing the "pink noise" audio. BT-audio and MP3 both perform "acoustic adjustments" that we don't want now.
+
+   * SR WLED: enable AGC ("standard" or "lazy"), set squelch to a low level, check that LEDs don't reacts in silence.
+   * SR WLED: select "Generic Line-In" as your Frequency Profile, "Linear" or "Square Root" as Frequency Scale
+   * SR WLED: Dynamic Limiter On, Dynamics Fall Time around 4200 - makes GEQ hold peaks for much longer
+   * SR WLED: Select GEQ effect, move all effect slider to max (i.e. right side)
+
+   * Measure: play Pink Noise for 2-3 minutes - for examples from youtube https://www.youtube.com/watch?v=ZXtimhT-ff4
+   * Measure: Take a Photo. Make sure that LEDs for each "bar" are well visible (ou need to count them later)
+
+   * Your own profile: 
+   *  - Target for each LED bar is 50% to 75% of the max height --> 8(high) x 16(wide) panel means target = 5. 32 x 16 means target = 22.
+   *  - From left to right - count the LEDs in each of the 16 frequency colums (that's why you need the photo). This is the barheight for each channel.
+   *  - math time! Find the multiplier that will bring each bar to to target.
+   *    * in case of square root scale: multiplier = (target * target) / (barheight * barheight)
+   *    * in case of linear scale:      multiplier = target / barheight
+   * 
+   *  - start with a copy of the parameter line "Line-In"
+   *  - go through your new parameter line, multiply each entry with the mutliplier you found for that column.
+
+   * Compile + upload
+   * Test your new profile (same procedure as above). Iterate the process to improve results.
+   */
 
 // Create FFT object
 #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
@@ -203,6 +246,7 @@ void FFTcode(void * parameter)
 
 #if defined(WLED_DEBUG) || defined(SR_DEBUG)
     uint64_t start = esp_timer_get_time();
+    bool haveDoneFFT = false; // indicates if second measurement (FFT time) is valid
 #endif
 
     // get a fresh batch of samples from I2S
@@ -210,9 +254,10 @@ void FFTcode(void * parameter)
 
 #if defined(WLED_DEBUG) || defined(SR_DEBUG)
     if (start < esp_timer_get_time()) { // filter out overflows
-      unsigned long sampleTimeInMillis = (esp_timer_get_time() - start +5ULL) / 10ULL; // "+5" to ensure proper rounding
+      uint64_t sampleTimeInMillis = (esp_timer_get_time() - start +5ULL) / 10ULL; // "+5" to ensure proper rounding
       sampleTime = (sampleTimeInMillis*3 + sampleTime*7)/10; // smooth
     }
+    start = esp_timer_get_time(); // start measuring FFT time
 #endif
 
     xLastWakeTime = xTaskGetTickCount();       // update "last unblocked time" for vTaskDelay
@@ -239,8 +284,11 @@ void FFTcode(void * parameter)
       // run FFT (takes 3-5ms on ESP32, ~12ms on ESP32-S2)
 #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
       FFT.dcRemoval();                                            // remove DC offset
-      FFT.windowing( FFTWindow::Flat_top, FFTDirection::Forward); // Weigh data using "Flat Top" function - better amplitude accuracy
-      //FFT.windowing(FFTWindow::Blackman_Harris, FFTDirection::Forward);  // Weigh data using "Blackman- Harris" window - sharp peaks due to excellent sideband rejection
+      #if !defined(FFT_PREFER_EXACT_PEAKS)
+        FFT.windowing( FFTWindow::Flat_top, FFTDirection::Forward);        // Weigh data using "Flat Top" function - better amplitude accuracy
+      #else
+        FFT.windowing(FFTWindow::Blackman_Harris, FFTDirection::Forward);  // Weigh data using "Blackman- Harris" window - sharp peaks due to excellent sideband rejection
+      #endif
       FFT.compute( FFTDirection::Forward );                       // Compute FFT
       FFT.complexToMagnitude();                                   // Compute magnitudes
 #else
@@ -248,8 +296,11 @@ void FFTcode(void * parameter)
 
       //FFT.Windowing( FFT_WIN_TYP_HAMMING, FFT_FORWARD );        // Weigh data - standard Hamming window
       //FFT.Windowing( FFT_WIN_TYP_BLACKMAN, FFT_FORWARD );       // Blackman window - better side freq rejection
-      //FFT.Windowing( FFT_WIN_TYP_BLACKMAN_HARRIS, FFT_FORWARD );// Blackman-Harris - excellent sideband rejection
-      FFT.Windowing( FFT_WIN_TYP_FLT_TOP, FFT_FORWARD );          // Flat Top Window - better amplitude accuracy
+      #if !defined(FFT_PREFER_EXACT_PEAKS)
+        FFT.Windowing( FFT_WIN_TYP_FLT_TOP, FFT_FORWARD );        // Flat Top Window - better amplitude accuracy
+      #else
+        FFT.Windowing( FFT_WIN_TYP_BLACKMAN_HARRIS, FFT_FORWARD );// Blackman-Harris - excellent sideband rejection
+      #endif
       FFT.Compute( FFT_FORWARD );                             // Compute FFT
       FFT.ComplexToMagnitude();                               // Compute magnitudes
 #endif
@@ -260,6 +311,10 @@ void FFTcode(void * parameter)
       FFT.MajorPeak(&FFT_MajorPeak, &FFT_Magnitude);              // let the effects know which freq was most dominant
 #endif
       FFT_MajorPeak = constrain(FFT_MajorPeak, 1.0f, 11025.0f);   // restrict value to range expected by effects
+
+#if defined(WLED_DEBUG) || defined(SR_DEBUG)
+      haveDoneFFT = true;
+#endif
 
     } else { // noise gate closed - only clear results as FFT was skipped. MIC samples are still valid when we do this.
       memset(vReal, 0, sizeof(vReal));
@@ -345,10 +400,13 @@ void FFTcode(void * parameter)
       if(fftCalc[i] > fftAvg[i])   // rise fast 
         fftAvg[i] = fftCalc[i] *0.75f + 0.25f*fftAvg[i];  // will need approx 2 cycles (50ms) for converging against fftCalc[i]
       else {                       // fall slow
-        if (decayTime < 1000) fftAvg[i] = fftCalc[i]*0.22f + 0.78f*fftAvg[i];       // approx  5 cycles (225ms) for falling to zero
+        if (decayTime < 250)      fftAvg[i] = fftCalc[i]*0.4f + 0.6f*fftAvg[i]; 
+        else if (decayTime < 500)  fftAvg[i] = fftCalc[i]*0.33f + 0.67f*fftAvg[i]; 
+        else if (decayTime < 1000) fftAvg[i] = fftCalc[i]*0.22f + 0.78f*fftAvg[i];  // approx  5 cycles (225ms) for falling to zero
         else if (decayTime < 2000) fftAvg[i] = fftCalc[i]*0.17f + 0.83f*fftAvg[i];  // default - approx  9 cycles (225ms) for falling to zero
         else if (decayTime < 3000) fftAvg[i] = fftCalc[i]*0.14f + 0.86f*fftAvg[i];  // approx 14 cycles (350ms) for falling to zero
-        else fftAvg[i] = fftCalc[i]*0.1f  + 0.9f*fftAvg[i];                         // approx 20 cycles (500ms) for falling to zero
+        else if (decayTime < 4000) fftAvg[i] = fftCalc[i]*0.1f  + 0.9f*fftAvg[i];
+        else fftAvg[i] = fftCalc[i]*0.05f  + 0.95f*fftAvg[i];
       }
       // constrain internal vars - just to be sure
       fftCalc[i] = constrain(fftCalc[i], 0.0f, 1023.0f);
@@ -373,24 +431,26 @@ void FFTcode(void * parameter)
         case 2:
             // Linear scaling
             currentResult *= 0.30f;                     // needs a bit more damping, get stay below 255
-            currentResult -= 4.0;                       // giving a bit more room for peaks
+            currentResult -= 2.0;                       // giving a bit more room for peaks
             if (currentResult < 1.0f) currentResult = 0.0f;
             currentResult *= 0.85f + (float(i)/1.8f);   // extra up-scaling for high frequencies
         break;
         case 3:
             // square root scaling
             currentResult *= 0.38f;
+            //currentResult *= 0.34f;                   //experiment
             currentResult -= 6.0f;
             if (currentResult > 1.0) currentResult = sqrtf(currentResult);
             else currentResult = 0.0;                   // special handling, because sqrt(0) = undefined
             currentResult *= 0.85f + (float(i)/4.5f);   // extra up-scaling for high frequencies
+            //currentResult *= 0.80f + (float(i)/5.6f); //experiment
             currentResult = mapf(currentResult, 0.0, 16.0, 0.0, 255.0); // map [sqrt(1) ... sqrt(256)] to [0 ... 255]
         break;
 
         case 0:
         default:
             // no scaling - leave freq bins as-is
-            currentResult -= 4; // just a bit more room for peaks
+            currentResult -= 2; // just a bit more room for peaks
         break;
       }
 
@@ -404,16 +464,19 @@ void FFTcode(void * parameter)
     }
 
 #if defined(WLED_DEBUG) || defined(SR_DEBUG)
-    if (start < esp_timer_get_time()) { // filter out overflows
-      unsigned long fftTimeInMillis = ((esp_timer_get_time() - start) +5ULL) / 10ULL; // "+5" to ensure proper rounding
+    if (haveDoneFFT && (start < esp_timer_get_time())) { // filter out overflows
+      uint64_t fftTimeInMillis = ((esp_timer_get_time() - start) +5ULL) / 10ULL; // "+5" to ensure proper rounding
       fftTime  = (fftTimeInMillis*3 + fftTime*7)/10; // smooth
     }
 #endif
     // run peak detection
     autoResetPeak();
     detectSamplePeak();
-
-    vTaskDelayUntil( &xLastWakeTime, xFrequency);        // release CPU, and let I2S fill its buffers
+    
+    #if !defined(I2S_GRAB_ADC1_COMPLETELY)    
+    if ((audioSource == nullptr) || (audioSource->getType() != AudioSource::Type_I2SAdc))  // the "delay trick" does not help for analog ADC
+    #endif
+      vTaskDelayUntil( &xLastWakeTime, xFrequency);        // release CPU, and let I2S fill its buffers
 
   } // for(;;)ever
 } // FFTcode() task end
@@ -536,7 +599,7 @@ class AudioReactive : public Usermod {
     // variables used by getSample() and agcAvg()
     int16_t  micIn = 0;           // Current sample starts with negative values and large values, which is why it's 16 bit signed
     double   sampleMax = 0.0;     // Max sample over a few seconds. Needed for AGC controler.
-    float    micLev = 0.0f;       // Used to convert returned value to have '0' as minimum. A leveller
+    double   micLev = 0.0f;       // Used to convert returned value to have '0' as minimum. A leveller
     float    expAdjF = 0.0f;      // Used for exponential filter.
     float    sampleReal = 0.0f;	  // "sampleRaw" as float, to provide bits that are lost otherwise (before amplification by sampleGain or inputLevel). Needed for AGC.
     int16_t  sampleRaw = 0;       // Current sample. Must only be updated ONCE!!! (amplified mic value by sampleGain and inputLevel)
@@ -570,21 +633,21 @@ class AudioReactive : public Usermod {
     ////////////////////
     void logAudio()
     {
+      if (disableSoundProcessing && (!udpSyncConnected || ((audioSyncEnabled & 0x02) == 0))) return;   // no audio availeable
     #ifdef MIC_LOGGER
       // Debugging functions for audio input and sound processing. Comment out the values you want to see
       Serial.print("micReal:");     Serial.print(micDataReal); Serial.print("\t");
-      //Serial.print("micIn:");       Serial.print(micIn);       Serial.print("\t");
-      //Serial.print("micLev:");      Serial.print(micLev);      Serial.print("\t");
-      //Serial.print("sampleReal:");  Serial.print(sampleReal);  Serial.print("\t");
-      //Serial.print("sample:");      Serial.print(sample);      Serial.print("\t");
+      Serial.print("volumeSmth:");  Serial.print(volumeSmth);  Serial.print("\t");
+      //Serial.print("volumeRaw:");   Serial.print(volumeRaw);   Serial.print("\t");
+      //Serial.print("DC_Level:");    Serial.print(micLev);      Serial.print("\t");
+      //Serial.print("sampleAgc:");   Serial.print(sampleAgc);   Serial.print("\t");
       //Serial.print("sampleAvg:");   Serial.print(sampleAvg);   Serial.print("\t");
+      //Serial.print("sampleReal:");  Serial.print(sampleReal);  Serial.print("\t");
+      //Serial.print("micIn:");       Serial.print(micIn);       Serial.print("\t");
+      //Serial.print("sample:");      Serial.print(sample);      Serial.print("\t");
       //Serial.print("sampleMax:");   Serial.print(sampleMax);   Serial.print("\t");
       //Serial.print("samplePeak:");  Serial.print((samplePeak!=0) ? 128:0);   Serial.print("\t");
       //Serial.print("multAgc:");     Serial.print(multAgc, 4);  Serial.print("\t");
-      Serial.print("sampleAgc:");   Serial.print(sampleAgc);   Serial.print("\t");
-      //Serial.print("volumeRaw:");   Serial.print(volumeRaw);   Serial.print("\t");
-      //Serial.print("volumeSmth:");  Serial.print(volumeSmth);  Serial.print("\t");
-
       Serial.println();
     #endif
 
@@ -766,7 +829,8 @@ class AudioReactive : public Usermod {
         #endif
       #endif
 
-      micLev = ((micLev * 8191.0f) + micDataReal) / 8192.0f;                // takes a few seconds to "catch up" with the Mic Input
+      //micLev = ((micLev * 8191.0f) + micDataReal) / 8192.0f;                // takes a few seconds to "catch up" with the Mic Input
+      micLev += (micDataReal-micLev) / 12288.0f;
       if(micIn < micLev) micLev = ((micLev * 31.0f) + micDataReal) / 32.0f; // align MicLev to lowest input signal
 
       micIn -= micLev;                                  // Let's center it to 0 now
@@ -1177,9 +1241,11 @@ class AudioReactive : public Usermod {
       }
 
       #if defined(MIC_LOGGER) || defined(MIC_SAMPLING_LOG) || defined(FFT_SAMPLING_LOG)
-      EVERY_N_MILLIS(20) {
-          logAudio();
-       }
+      static unsigned long lastMicLoggerTime = 0;
+      if (millis()-lastMicLoggerTime > 20) {
+        lastMicLoggerTime = millis();
+        logAudio();
+      }
       #endif
 
       // Info Page: keep max sample from last 5 seconds
@@ -1406,11 +1472,18 @@ class AudioReactive : public Usermod {
         infoArr = user.createNestedArray(F("Sampling time"));
         infoArr.add(float(sampleTime)/100.0f);
         infoArr.add(" ms");
+
         infoArr = user.createNestedArray(F("FFT time"));
-        infoArr.add(float(fftTime-sampleTime)/100.0f);
-        infoArr.add(" ms");
+        infoArr.add(float(fftTime)/100.0f);        
+        if ((fftTime/100) >= FFT_MIN_CYCLE) // FFT time over budget -> I2S buffer will overflow 
+          infoArr.add("<b style=\"color:red;\">! ms</b>");
+        else if ((fftTime/80 + sampleTime/80) >= FFT_MIN_CYCLE) // FFT time >75% of budget -> risk of instability
+          infoArr.add("<b style=\"color:orange;\"> ms!</b>");
+        else
+          infoArr.add(" ms");
+
         DEBUGSR_PRINTF("AR Sampling time: %5.2f ms\n", float(sampleTime)/100.0f);
-        DEBUGSR_PRINTF("AR FFT time     : %5.2f ms\n", float(fftTime-sampleTime)/100.0f);
+        DEBUGSR_PRINTF("AR FFT time     : %5.2f ms\n", float(fftTime)/100.0f);
         #endif
       }
     }
@@ -1608,9 +1681,16 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addOption(dd,'Logarithmic (Loudness)',1);"));
 
       oappend(SET_F("dd=addDropdown('AudioReactive','Frequency:Profile');"));
-      oappend(SET_F("addOption(dd,'standard',0);"));
-      oappend(SET_F("addOption(dd,'Line-In',1);"));
+      oappend(SET_F("addOption(dd,'Generic Microphone',0);"));
+      oappend(SET_F("addOption(dd,'Generic Line-In',1);"));
       oappend(SET_F("addOption(dd,'IMNP441',2);"));
+      oappend(SET_F("addOption(dd,'IMNP441 - big speakers',3);"));
+      oappend(SET_F("addOption(dd,'IMNP441 - small speakers',4);"));
+      oappend(SET_F("addOption(dd,'ICS-43434',5);"));
+      oappend(SET_F("addOption(dd,'ICS-43434 - big speakers',6);"));
+      oappend(SET_F("addOption(dd,'ICS-43434 - userdef #1',7);"));
+      oappend(SET_F("addOption(dd,'ICS-43434 - userdef #2',8);"));
+      oappend(SET_F("addOption(dd,'flat - no adjustments',9);"));
 
       oappend(SET_F("dd=addDropdown('AudioReactive','sync:mode');"));
       oappend(SET_F("addOption(dd,'Off',0);"));

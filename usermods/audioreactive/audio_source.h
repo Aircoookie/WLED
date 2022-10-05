@@ -288,6 +288,8 @@ class I2SSource : public AudioSource {
               currSample = (float) newSamples[i];                 // 16bit input -> use as-is
 #endif
           buffer[i] = currSample;
+          //buffer[i] *= 0.6f;                                    // (ICS-43434): compensate for higher sensitivity (reduce by 2db)
+
         }
       }
     }

@@ -47,6 +47,18 @@ void handlePresets()
     #if !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S2)
     // this does not make sense on single core
     core = xPortGetCoreID();
+    // begin WLEDSR specific
+	  //      loopTask (arduino main loop) sometimes runs on core #1
+	  if ((core == 1) && (strncmp(pcTaskGetTaskName(NULL), "loopTask", 8) == 0)) {
+		  DEBUG_PRINTF("[applyPreset] called from loopTask on core %d; forcing core = 0\n", (int)core); 
+		  core = 0;
+	  }
+	  //      async_tcp (network requests) sometimes runs on core #0
+	  if ((core == 0) && (strncmp(pcTaskGetTaskName(NULL), "async_tcp", 9) == 0)) {
+		  DEBUG_PRINTF("[applyPreset] called from async_tcp on core %d; forcing core = 1\n", (int)core); 
+		  core = 1;
+	  }
+	  // end WLEDSR specific
     #endif
   #endif
   //only allow use of fileDoc from the core responsible for network requests (AKA HTTP JSON API)
