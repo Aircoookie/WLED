@@ -47,13 +47,11 @@ struct BusConfig {
   uint8_t colorOrder;
   bool reversed;
   uint8_t skipAmount;
-  bool refreshReq;
+  uint16_t hardwareSettings;
   uint8_t autoWhite;
   uint8_t pins[5] = {LEDPIN, 255, 255, 255, 255};
-  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint8_t skip = 0, byte aw=RGBW_MODE_MANUAL_ONLY) {
-    refreshReq = (bool) GET_BIT(busType,7);
-    type = busType & 0x7F;  // bit 7 may be/is hacked to include refresh info (1=refresh in off state, 0=no refresh)
-    count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev; skipAmount = skip; autoWhite = aw;
+  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint8_t skip = 0, byte aw=RGBW_MODE_MANUAL_ONLY, uint16_t settings = 0) {
+    type = busType; count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev; skipAmount = skip; autoWhite = aw; hardwareSettings = settings;
     uint8_t nPins = 1;
     if (type >= TYPE_NET_DDP_RGB && type < 96) nPins = 4; //virtual network bus. 4 "pins" store IP address
     else if (type > 47) nPins = 2;
@@ -166,6 +164,7 @@ class Bus {
     inline  void     setReversed(uint16_t reversed) { _reversed = reversed; }
     inline  bool     isOk() { return _valid; }
     inline  bool     isOffRefreshRequired() { return _needsRefresh; }
+    inline  uint16_t getHardwareSettings() { return _hardwareSettings; }
             bool     containsPixel(uint16_t pix) { return pix >= _start && pix < _start+_len; }
 
     virtual bool isRgbw() { return Bus::isRgbw(_type); }
@@ -209,6 +208,7 @@ class Bus {
     bool     _reversed = false;
     bool     _needsRefresh;
     uint8_t  _autoWhiteMode;
+    uint16_t _hardwareSettings = 0;
     static uint8_t _gAWM;     // definition in FX_fcn.cpp
     static int16_t _cct;      // definition in FX_fcn.cpp
 		static uint8_t _cctBlend; // definition in FX_fcn.cpp
@@ -242,13 +242,14 @@ class BusDigital : public Bus {
       }
       _pins[1] = bc.pins[1];
     }
-    _needsRefresh = bc.refreshReq || bc.type == TYPE_TM1814;
     _reversed = bc.reversed;
+    _needsRefresh = GET_BIT(bc.hardwareSettings, 0) || bc.type == TYPE_TM1814;
+    _hardwareSettings = bc.hardwareSettings;
     _skip = bc.skipAmount;    //sacrificial pixels
     _len = bc.count + _skip;
     _iType = PolyBus::getI(bc.type, _pins, nr);
     if (_iType == I_NONE) return;
-    _busPtr = PolyBus::create(_iType, _pins, _len, nr);
+    _busPtr = PolyBus::create(_iType, _pins, _len, nr, _hardwareSettings);
     _valid = (_busPtr != nullptr);
     _colorOrder = bc.colorOrder;
     DEBUG_PRINTF("Successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u)\n",nr, _len, bc.type, _pins[0],_pins[1],_iType);

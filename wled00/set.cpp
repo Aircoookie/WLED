@@ -96,7 +96,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char ls[4] = "LS"; ls[2] = 48+s; ls[3] = 0; //strip start LED
       char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
       char sl[4] = "SL"; sl[2] = 48+s; sl[3] = 0; //skip first N LEDs
-      char rf[4] = "RF"; rf[2] = 48+s; rf[3] = 0; //refresh required
+      char rf[4] = "RF"; rf[2] = 48+s; rf[3] = 0; //off refresh required (stored within hardware specific settings)
+      char ss[4] = "SS"; ss[2] = 48+s; ss[3] = 0; //hardware specific settings
       char aw[4] = "AW"; aw[2] = 48+s; aw[3] = 0; //auto white mode
       char wo[4] = "WO"; wo[2] = 48+s; wo[3] = 0; //channel swap
       if (!request->hasArg(lp)) {
@@ -110,7 +111,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         pins[i] = (request->arg(lp).length() > 0) ? request->arg(lp).toInt() : 255;
       }
       type = request->arg(lt).toInt();
-      type |= request->hasArg(rf) << 7; // off refresh override
       skip = request->arg(sl).toInt();
       colorOrder = request->arg(co).toInt();
       start = (request->hasArg(ls)) ? request->arg(ls).toInt() : t;
@@ -121,10 +121,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       }
       awmode = request->arg(aw).toInt();
       channelSwap = (type == TYPE_SK6812_RGBW || type == TYPE_TM1814) ? request->arg(wo).toInt() : 0;
+      uint16_t settings = request->hasArg(ss) ? request->arg(ss).toInt() : 0;
+      settings |= request->hasArg(rf) << 0; // set bit 0 in settings for refresh required (1=refresh in off state, 0=no refresh)
       // actual finalization is done in WLED::loop() (removing old busses and adding new)
       // this may happen even before this loop is finished so we do "doInitBusses" after the loop
       if (busConfigs[s] != nullptr) delete busConfigs[s];
-      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder | (channelSwap<<4), request->hasArg(cv), skip, awmode);
+      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder | (channelSwap<<4), request->hasArg(cv), skip, awmode, settings);
       busesChanged = true;
     }
     //doInitBusses = busesChanged; // we will do that below to ensure all input data is processed

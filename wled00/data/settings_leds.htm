@@ -7,11 +7,12 @@
 	<title>LED Settings</title>
 	<script>
     var d=document,laprev=55,maxB=1,maxM=4000,maxPB=4096,maxL=1333,maxLbquot=0; //maximum bytes for LED allocation: 4kB for 8266, 32kB for 32
-		var customStarts=false,startsDirty=[],maxCOOverrides=5;
+		var customStarts=false,startsDirty=[],settingsInitalised=[],maxCOOverrides=5;
     var loc = false, locip;
     function H(){window.open("https://kno.wled.ge/features/settings/#led-settings");}
 		function B(){window.open("/settings","_self");}
     function gId(n){return d.getElementById(n);}
+    function gName(n){return d.getElementsByName(n)[0];}
     function off(n){d.getElementsByName(n)[0].value = -1;}
     // https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
     function loadJS(FILE_URL, async = true) {
@@ -141,14 +142,11 @@
       if (t == 44 || t == 45) return len*4; //RGBW
       return len*3;
     }
-		function UI(change=false)
-		{
-      var isRGBW = false, memu = 0;
+    function UI(change=false)
+    {
+      var isRGBW = false, mAPerLedOverride = false, memu = 0;
 
       gId('ampwarning').style.display = (d.Sf.MA.value > 7200) ? 'inline':'none';
-
-	    if (d.Sf.LA.value == 255) laprev = 12;
-	    else if (d.Sf.LA.value > 0) laprev = d.Sf.LA.value;
 
       // enable/disable LED fields
       var s = d.getElementsByTagName("select");
@@ -183,7 +181,8 @@
             gId("rf"+n).checked = (gId("rf"+n).checked || t == 31); // LEDs require data in off state
             if (t > 31 && t < 48) d.getElementsByName("LC"+n)[0].value = 1; // for sanity change analog count just to 1 LED
           }
-          gId("rf"+n).onclick = (t == 31) ? (()=>{return false}) : (()=>{});  // prevent change for TM1814
+          gId("rf"+n).onclick = (t == 31) ? (()=>{return false}) : (()=>{}); // prevent change for TM1814
+          gId("dig"+n+"ssCL").style.display = (t != 31) ? "none":"inline"; // hardware specific settings: current level for TM1814
           isRGBW = (t == 30 || t == 31 || (t > 40 && t < 46 && t != 43) || t == 88); // RGBW checkbox, TYPE_xxxx values from const.h
           gId("co"+n).style.display = ((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? "none":"inline";  // hide color order for PWM
           gId("dig"+n+"w").style.display = (t == 30 || t == 31) ? "inline":"none";  // show swap channels dropdown
@@ -195,8 +194,45 @@
           gId("dig"+n+"a").style.display = (isRGBW && t != 40) ? "inline":"none";  // auto calculate white
           gId("rev"+n).innerHTML = (t >= 40 && t < 48) ? "Inverted output":"Reversed (rotated 180°)";  // change reverse text for analog
           gId("psd"+n).innerHTML = (t >= 40 && t < 48) ? "Index:":"Start:";    // change analog start description
+
+          // hardware specific settings
+		  var mAPerLed = 0; settings = 0;
+
+          if (t == 31) {
+            // TM1814
+            if (!settingsInitalised[n]) {
+              var ss = parseInt(gName("SS"+n).value, 10) || 0;
+
+              var currentLevel = (ss >> 10) & 63; // get these 6 bits from the last 6 bits (10-15) of settings
+              if (currentLevel == 0) currentLevel = 32; // if zero, default to 22.5mA (6.5mA + (32 * 0.5mA))
+              gName("ssCL"+n).value = currentLevel;
+
+              settingsInitalised[n] = true;
+            }
+
+            var currentLevel = gName("ssCL"+n).value; // 64 (6 bits) possible levels of current (0 - 63  = 6.5mA - 38mA, 0.5ma per level)
+            settings |= (currentLevel << 10); // set these 6 bits in the last 6 bits (10-15) of settings
+
+            // if all strips are TM1814, and all their current levels are the same, we can force the LED current in the brightness limiter
+            mAPerLed = (6.5 + (currentLevel * 0.5)) * 4; // x4 channels in each LED
+          }
+
+          gName("SS"+n).value = settings;
+          if(mAPerLedOverride !== false && mAPerLedOverride !== mAPerLed) mAPerLedOverride = 0;
+          if(mAPerLedOverride === false) mAPerLedOverride = mAPerLed;
         }
       }
+
+      if (gId('able').checked && mAPerLedOverride !== false && mAPerLedOverride > 0) {
+        d.Sf.LAsel.value = 50;
+        d.Sf.LA.value = mAPerLedOverride;
+        gId('LAdis').style.display = 'inline';
+      }
+
+      if (d.Sf.LA.value == 255) laprev = 12;
+      else if (mAPerLedOverride > 0) laprev = mAPerLedOverride;
+      else if (d.Sf.LA.value > 0) laprev = d.Sf.LA.value;
+
       // display white channel calculation method
       var myC = d.querySelectorAll('.wc'),
 			l = myC.length;
@@ -320,10 +356,12 @@
 
       var f = gId("mLC");
       if (n==1) {
+        settingsInitalised[i] = false;
 // npm run build has trouble minimizing spaces inside string
         var cn = `<div class="iST">
 <hr style="width:260px">
 ${i+1}:
+<input type="hidden" name="SS${i}" value="0">
 <select name="LT${i}" onchange="UI(true)">
 <option value="22" selected>WS281x</option>
 <option value="30">SK6812 RGBW</option>
@@ -366,6 +404,7 @@ ${i+1}:
 <span id="p2d${i}"></span><input type="number" name="L2${i}" min="0" max="48" class="s" onchange="UI()"/>
 <span id="p3d${i}"></span><input type="number" name="L3${i}" min="0" max="48" class="s" onchange="UI()"/>
 <span id="p4d${i}"></span><input type="number" name="L4${i}" min="0" max="48" class="s" onchange="UI()"/>
+<div id="dig${i}ssCL" style="display:inline"><br>Current Level: <select name="ssCL${i}" onchange="UI();"><option value="1">7mA</option><option value="2">7.5mA</option><option value="3">8mA</option><option value="4">8.5mA</option><option value="5">9mA</option><option value="6">9.5mA</option><option value="7">10mA</option><option value="8">10.5mA</option><option value="9">11mA</option><option value="10">11.5mA</option><option value="11">12mA</option><option value="12">12.5mA</option><option value="13">13mA</option><option value="14">13.5mA</option><option value="15">14mA</option><option value="16">14.5mA</option><option value="17">15mA</option><option value="18">15.5mA</option><option value="19">16mA</option><option value="20">16.5mA</option><option value="21">17mA</option><option value="22">17.5mA</option><option value="23">18mA</option><option value="24">18.5mA</option><option value="25">19mA</option><option value="26">19.5mA</option><option value="27">20mA</option><option value="28">20.5mA</option><option value="29">21mA</option><option value="30">21.5mA</option><option value="31">22mA</option><option value="32">22.5mA</option><option value="33">23mA</option><option value="34">23.5mA</option><option value="35">24mA</option><option value="36">24.5mA</option><option value="37">25mA</option><option value="38">25.5mA</option><option value="39">26mA</option><option value="40">26.5mA</option><option value="41">27mA</option><option value="42">27.5mA</option><option value="43">28mA</option><option value="44">28.5mA</option><option value="45">29mA</option><option value="46">29.5mA</option><option value="47">30mA</option><option value="48">30.5mA</option><option value="49">31mA</option><option value="50">31.5mA</option><option value="51">32mA</option><option value="52">32.5mA</option><option value="53">33mA</option><option value="54">33.5mA</option><option value="55">34mA</option><option value="56">34.5mA</option><option value="57">35mA</option><option value="58">35.5mA</option><option value="59">36mA</option><option value="60">36.5mA</option><option value="61">37mA</option><option value="62">37.5mA</option><option value="63">38mA</option></select></div>
 <div id="dig${i}r" style="display:inline"><br><span id="rev${i}">Reversed</span>: <input type="checkbox" name="CV${i}"></div>
 <div id="dig${i}s" style="display:inline"><br>Skip first LEDs: <input type="number" name="SL${i}" min="0" max="255" value="0" oninput="UI()"></div>
 <div id="dig${i}f" style="display:inline"><br>Off Refresh: <input id="rf${i}" type="checkbox" name="RF${i}"></div>
@@ -505,14 +544,15 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
             var l = c.hw.led;
             l.ins.forEach((v,i,a)=>{
               addLEDs(1);
-              for (var j=0; j<v.pin.length; j++) d.getElementsByName(`L${j}${i}`)[0].value = v.pin[j];
-              d.getElementsByName("LT"+i)[0].value = v.type;
-              d.getElementsByName("LS"+i)[0].value = v.start;
-              d.getElementsByName("LC"+i)[0].value = v.len;
-              d.getElementsByName("CO"+i)[0].value = v.order;
-              d.getElementsByName("SL"+i)[0].value = v.skip;
-              d.getElementsByName("RF"+i)[0].checked = v.ref;
-              d.getElementsByName("CV"+i)[0].checked = v.rev;
+              for (var j=0; j<v.pin.length; j++) gName(`L${j}${i}`).value = v.pin[j];
+              gName("LT"+i).value = v.type;
+              gName("LS"+i).value = v.start;
+              gName("LC"+i).value = v.len;
+              gName("CO"+i).value = v.order;
+              gName("SL"+i).value = v.skip;
+              gName("CV"+i).checked = v.rev;
+              gName("SS"+i).value = (v.settings || 0);
+              gName("RF"+i).checked = ((v.ref || 0) || ((v.settings || 0) & (1 << 0)) !== 0); // legacy compatibility: ref may be set, or get bit 0 from settings for refresh required (1=refresh in off state, 0=no refresh)
             });
           }
           if(c.hw.com) {

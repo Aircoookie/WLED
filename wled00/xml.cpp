@@ -396,7 +396,8 @@ void getSettingsJS(byte subPage, char* dest)
       char ls[4] = "LS"; ls[2] = 48+s; ls[3] = 0; //strip start LED
       char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
       char sl[4] = "SL"; sl[2] = 48+s; sl[3] = 0; //skip 1st LED
-      char rf[4] = "RF"; rf[2] = 48+s; rf[3] = 0; //off refresh
+      char rf[4] = "RF"; rf[2] = 48+s; rf[3] = 0; //off refresh required (stored within hardware specific settings)
+	  char ss[4] = "SS"; ss[2] = 48+s; ss[3] = 0; //hardware specific settings
       char aw[4] = "AW"; aw[2] = 48+s; aw[3] = 0; //auto white mode
       char wo[4] = "WO"; wo[2] = 48+s; wo[3] = 0; //swap channels
       oappend(SET_F("addLEDs(1);"));
@@ -413,6 +414,7 @@ void getSettingsJS(byte subPage, char* dest)
       sappend('c',cv,bus->getReversed());
       sappend('v',sl,bus->skippedLeds());
       sappend('c',rf,bus->isOffRefreshRequired());
+      sappend('v',ss,bus->getHardwareSettings());
       sappend('v',aw,bus->getAWMode());
       sappend('v',wo,bus->getColorOrder() >> 4);
     }
