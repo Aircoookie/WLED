@@ -162,6 +162,8 @@ class Bus {
     inline  uint16_t getStart() { return _start; }
     inline  void     setStart(uint16_t start) { _start = start; }
     inline  uint8_t  getType() { return _type; }
+    inline  bool     getReversed() { return _reversed; }
+    inline  void     setReversed(uint16_t reversed) { _reversed = reversed; }
     inline  bool     isOk() { return _valid; }
     inline  bool     isOffRefreshRequired() { return _needsRefresh; }
             bool     containsPixel(uint16_t pix) { return pix >= _start && pix < _start+_len; }
@@ -198,14 +200,13 @@ class Bus {
     inline static void    setAutoWhiteMode(uint8_t m) { if (m < 4) _gAWM = m; else _gAWM = 255; }
     inline static uint8_t getAutoWhiteMode()          { return _gAWM; }
 
-    bool reversed = false;
-
   protected:
     uint8_t  _type;
     uint8_t  _bri;
     uint16_t _start;
     uint16_t _len;
     bool     _valid;
+    bool     _reversed = false;
     bool     _needsRefresh;
     uint8_t  _autoWhiteMode;
     static uint8_t _gAWM;     // definition in FX_fcn.cpp
@@ -241,8 +242,8 @@ class BusDigital : public Bus {
       }
       _pins[1] = bc.pins[1];
     }
-    reversed = bc.reversed;
     _needsRefresh = bc.refreshReq || bc.type == TYPE_TM1814;
+    _reversed = bc.reversed;
     _skip = bc.skipAmount;    //sacrificial pixels
     _len = bc.count + _skip;
     _iType = PolyBus::getI(bc.type, _pins, nr);
@@ -284,13 +285,13 @@ class BusDigital : public Bus {
   void setPixelColor(uint16_t pix, uint32_t c) {
     if (_type == TYPE_SK6812_RGBW || _type == TYPE_TM1814) c = autoWhiteCalc(c);
     if (_cct >= 1900) c = colorBalanceFromKelvin(_cct, c); //color correction from CCT
-    if (reversed) pix = _len - pix -1;
+    if (_reversed) pix = _len - pix -1;
     else pix += _skip;
     PolyBus::setPixelColor(_busPtr, _iType, pix, c, _colorOrderMap.getPixelColorOrder(pix+_start, _colorOrder));
   }
 
   uint32_t getPixelColor(uint16_t pix) {
-    if (reversed) pix = _len - pix -1;
+    if (_reversed) pix = _len - pix -1;
     else pix += _skip;
     return PolyBus::getPixelColor(_busPtr, _iType, pix, _colorOrderMap.getPixelColorOrder(pix+_start, _colorOrder));
   }
@@ -377,7 +378,7 @@ class BusPwm : public Bus {
       ledcAttachPin(_pins[i], _ledcStart + i);
       #endif
     }
-    reversed = bc.reversed;
+    _reversed = bc.reversed;
     _valid = true;
   };
 
@@ -445,7 +446,7 @@ class BusPwm : public Bus {
     uint8_t numPins = NUM_PWM_PINS(_type);
     for (uint8_t i = 0; i < numPins; i++) {
       uint8_t scaled = (_data[i] * _bri) / 255;
-      if (reversed) scaled = 255 - scaled;
+      if (_reversed) scaled = 255 - scaled;
       #ifdef ESP8266
       analogWrite(_pins[i], scaled);
       #else
@@ -508,7 +509,7 @@ class BusOnOff : public Bus {
     }
     _pin = currentPin; //store only after allocatePin() succeeds
     pinMode(_pin, OUTPUT);
-    reversed = bc.reversed;
+    _reversed = bc.reversed;
     _valid = true;
   };
 
@@ -530,7 +531,7 @@ class BusOnOff : public Bus {
 
   void show() {
     if (!_valid) return;
-    digitalWrite(_pin, reversed ? !(bool)_data : (bool)_data);
+    digitalWrite(_pin, _reversed ? !(bool)_data : (bool)_data);
   }
 
   uint8_t getPins(uint8_t* pinArray) {
