@@ -278,9 +278,13 @@ public:
       return;
     }
 
-    pinMode(pinA, INPUT_PULLUP);
-    pinMode(pinB, INPUT_PULLUP);
-    pinMode(pinC, INPUT_PULLUP);
+    #ifndef USERMOD_ROTARY_ENCODER_GPIO
+      #define USERMOD_ROTARY_ENCODER_GPIO INPUT_PULLUP
+    #endif
+    pinMode(pinA, USERMOD_ROTARY_ENCODER_GPIO);
+    pinMode(pinB, USERMOD_ROTARY_ENCODER_GPIO);
+    pinMode(pinC, USERMOD_ROTARY_ENCODER_GPIO);
+
     loopTime = millis();
 
     currentCCT = (approximateKelvinFromRGB(RGBW32(col[0], col[1], col[2], col[3])) - 1900) >> 5;

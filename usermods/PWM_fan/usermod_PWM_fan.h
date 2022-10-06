@@ -48,8 +48,8 @@ class PWMFanUsermod : public Usermod {
     int8_t  tachoPin          = TACHO_PIN;
     int8_t  pwmPin            = PWM_PIN;
     uint8_t tachoUpdateSec    = 30;
-    float   targetTemperature = 25.0;
-    uint8_t minPWMValuePct    = 50;
+    float   targetTemperature = 35.0;
+    uint8_t minPWMValuePct    = 0;
     uint8_t numberOfInterrupsInOneSingleRotation = 2;     // Number of interrupts ESP32 sees on tacho signal on a single fan rotation. All the fans I've seen trigger two interrups.
     uint8_t pwmValuePct       = 0;
 
