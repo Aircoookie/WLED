@@ -314,7 +314,7 @@
     #define E131_MAX_UNIVERSE_COUNT 12
   #endif
 #endif
-#define ABL_MILLIAMPS_DEFAULT 200
+
 #ifndef ABL_MILLIAMPS_DEFAULT
   #define ABL_MILLIAMPS_DEFAULT 850   // auto lower brightness to stay close to milliampere limit
 #else
