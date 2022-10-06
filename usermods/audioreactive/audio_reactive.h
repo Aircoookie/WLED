@@ -278,7 +278,7 @@ void FFTcode(void * parameter)
 #ifdef SR_DEBUG
     if (true) {  // this allows measure FFT runtimes, as it disables the "only when needed" optimization 
 #else
-    if (sampleAvg > 1) { // noise gate open means that FFT results will be used. Don't run FFT if results are not needed.
+    if (sampleAvg > 0.5f) { // noise gate open means that FFT results will be used. Don't run FFT if results are not needed.
 #endif
 
       // run FFT (takes 3-5ms on ESP32, ~12ms on ESP32-S2)
@@ -328,7 +328,7 @@ void FFTcode(void * parameter)
     } // for()
 
     // mapping of FFT result bins to frequency channels
-    if (sampleAvg > 1) { // noise gate open
+    if (sampleAvg > 0.5f) { // noise gate open
 #if 0
     /* This FFT post processing is a DIY endeavour. What we really need is someone with sound engineering expertise to do a great job here AND most importantly, that the animations look GREAT as a result.
     *
@@ -387,7 +387,7 @@ void FFTcode(void * parameter)
     if (pinkIndex > MAX_PINK) pinkIndex = MAX_PINK;
     for (int i=0; i < NUM_GEQ_CHANNELS; i++) {
 
-      if (sampleAvg > 1) { // noise gate open
+      if (sampleAvg > 0.5f) { // noise gate open
         // Adjustment for frequency curves.
         fftCalc[i] *= fftResultPink[pinkIndex][i];
         if (FFTScalingMode > 0) fftCalc[i] *= FFT_DOWNSCALE;  // adjustment related to FFT windowing function
@@ -739,7 +739,7 @@ class AudioReactive : public Usermod {
       if (time_now - last_time > 2)  {
         last_time = time_now;
 
-        if((fabs(sampleReal) < 2.0f) || (sampleMax < 1.0f)) {
+        if((fabsf(sampleReal) < 2.0f) || (sampleMax < 1.0f)) {
           // MIC signal is "squelched" - deliver silence
           tmpAgc = 0;
           // we need to "spin down" the intgrated error buffer
@@ -797,6 +797,7 @@ class AudioReactive : public Usermod {
       else
         sampleAgc += agcSampleSmooth[AGC_preset] * (tmpAgc - sampleAgc); // smooth path
 
+      sampleAgc = fabsf(sampleAgc);                                      // // make sure we have a positive value
       last_soundAgc = soundAgc;
     } // agcAvg()
 
@@ -835,12 +836,13 @@ class AudioReactive : public Usermod {
 
       micIn -= micLev;                                  // Let's center it to 0 now
       // Using an exponential filter to smooth out the signal. We'll add controls for this in a future release.
-      float micInNoDC = fabs(micDataReal - micLev);
+      float micInNoDC = fabsf(micDataReal - micLev);
       expAdjF = (weighting * micInNoDC + (1.0-weighting) * expAdjF);
+      expAdjF = fabsf(expAdjF);                         // Now (!) take the absolute value
+
       expAdjF = (expAdjF <= soundSquelch) ? 0: expAdjF; // simple noise gate
       if ((soundSquelch == 0) && (expAdjF < 0.25f)) expAdjF = 0; // do something meaningfull when "squelch = 0"
 
-      expAdjF = fabsf(expAdjF);                         // Now (!) take the absolute value
       tmpSample = expAdjF;
       micIn = abs(micIn);                               // And get the absolute value of each sample
 
@@ -862,6 +864,7 @@ class AudioReactive : public Usermod {
       if (sampleMax < 0.5f) sampleMax = 0.0f;
 
       sampleAvg = ((sampleAvg * 15.0f) + sampleAdj) / 16.0f;   // Smooth it out over the last 16 samples.
+      sampleAvg = fabsf(sampleAvg);                            // make sure we have a positive value
     } // getSample()
 
 
