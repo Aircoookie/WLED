@@ -166,7 +166,7 @@ static const float fftResultPink[MAX_PINK+1][NUM_GEQ_CHANNELS] = {
           { 12.0f, 6.60f, 2.60f, 1.15f, 1.35f, 2.05f, 2.85f, 2.50f, 2.85f, 3.30f, 2.25f, 4.35f, 3.80f, 3.75f, 6.50f, 9.00f},   // IMNP441 - voice, or small speaker
 
           { 2.75f, 1.60f, 1.40f, 1.46f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 1.75f, 2.55f, 3.60f },  // ICS-43434 datasheet response * pink noise
-          { 2.25f, 1.20f, 1.00f, 1.20f, 1.80f, 3.20f, 3.06f, 2.50f, 2.85f, 2.80f, 3.10f, 3.25f, 3.15f, 2.40f, 2.80f, 3.20f },  // ICS-43434 - big speaker, strong bass
+          { 2.25f, 1.20f, 1.00f, 1.20f, 1.80f, 3.20f, 5.10f, 5.50f, 4.00f, 4.80f, 6.70f, 6.40f, 5.80f, 3.90f, 6.00f, 5.10f },  // ICS-43434 - big speaker, strong bass
 
           { 2.25f, 1.60f, 1.30f, 1.60f, 2.20f, 3.20f, 3.06f, 2.60f, 2.85f, 3.50f, 3.90f, 4.50f, 3.35f, 3.20f, 3.60f, 4.20f },  // ICS-43434 - userdef #1 for ewowi (enhance median freqs)
           { 4.75f, 3.60f, 2.40f, 2.46f, 3.52f, 1.60f, 1.68f, 3.20f, 2.20f, 2.00f, 2.30f, 2.41f, 2.30f, 1.25f, 4.55f, 6.50f },  // ICS-43434 - userdef #2 for softhack (mic hidden inside mini-shield)
