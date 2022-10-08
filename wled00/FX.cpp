@@ -4524,7 +4524,7 @@ uint16_t mode_perlinmove(void) {
 
   return FRAMETIME;
 } // mode_perlinmove()
-static const char _data_FX_MODE_PERLINMOVE[] PROGMEM = "Perlin Move@!,# of pixels,fade rate;,!;!;1d";
+static const char _data_FX_MODE_PERLINMOVE[] PROGMEM = "Perlin Move@!,# of pixels,fade rate;!,!;!;1d";
 
 
 /////////////////////////
