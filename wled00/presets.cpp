@@ -169,8 +169,8 @@ void savePreset(byte index, const char* pname, JsonObject sObj)
   sObj.remove(F("error"));
   sObj.remove(F("psave"));
   if (sObj["o"].isNull()) { // "o" marks a playlist or manually entered API
-    includeBri   = sObj["ib"].as<bool>();
-    segBounds    = sObj["sb"].as<bool>();
+    includeBri   = sObj["ib"].as<bool>() || index==255; // temporary preset needs brightness
+    segBounds    = sObj["sb"].as<bool>() || index==255; // temporary preset needs bounds
     selectedOnly = sObj[F("sc")].as<bool>();
     sObj.remove("ib");
     sObj.remove("sb");
