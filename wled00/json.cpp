@@ -309,7 +309,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   receiveNotifications = udpn["recv"] | receiveNotifications;
   if ((bool)udpn[F("nn")]) callMode = CALL_MODE_NO_NOTIFY; //send no notification just for this request
 
-  unsigned long timein = root[F("time")] | UINT32_MAX; //backup time source if NTP not synced
+  unsigned long timein = root["time"] | UINT32_MAX; //backup time source if NTP not synced
   if (timein != UINT32_MAX) {
     setTimeFromAPI(timein);
     if (presetsModifiedTime == 0) presetsModifiedTime = timein;
@@ -396,8 +396,8 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       // b) preset ID only or preset that does not change state (use embedded cycling limits if they exist in getVal())
       presetCycCurr = ps;
       presetId = ps;
-      root.remove(F("v"));    // may be added in UI call
-      root.remove(F("time")); // may be added in UI call
+      root.remove("v");    // may be added in UI call
+      root.remove("time"); // may be added in UI call
       root.remove("ps");
       if (root.size() == 0) {
         applyPreset(ps, callMode); // async load (only preset ID was specified)

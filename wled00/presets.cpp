@@ -36,13 +36,13 @@ static void doSaveState() {
   }
   sObj["n"] = saveName;
   if (quickLoad[0]) sObj[F("ql")] = quickLoad;
-
+/*
   #ifdef WLED_DEBUG
     DEBUG_PRINTLN(F("Serialized preset"));
     serializeJson(doc,Serial);
     DEBUG_PRINTLN();
   #endif
-
+*/
   #if defined(ARDUINO_ARCH_ESP32)
   if (!persist) {
     if (tmpRAMbuffer!=nullptr) free(tmpRAMbuffer);
@@ -165,7 +165,7 @@ void savePreset(byte index, const char* pname, JsonObject sObj)
   playlistSave = false;
   if (sObj[F("ql")].is<const char*>()) strlcpy(quickLoad, sObj[F("ql")].as<const char*>(), 3); // only 2 chars for QL
   sObj.remove("v");
-  sObj.remove(F("time"));
+  sObj.remove("time");
   sObj.remove(F("error"));
   sObj.remove(F("psave"));
   if (sObj["o"].isNull()) { // "o" marks a playlist or manually entered API
@@ -196,7 +196,7 @@ void savePreset(byte index, const char* pname, JsonObject sObj)
 
 void deletePreset(byte index) {
   StaticJsonDocument<24> empty;
-  writeObjectToFileUsingId("/presets.json", index, &empty);
+  writeObjectToFileUsingId(getName(), index, &empty);
   presetsModifiedTime = toki.second(); //unix time
   updateFSInfo();
 }
