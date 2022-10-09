@@ -152,7 +152,7 @@ void handlePlaylist() {
 
 
 void serializePlaylist(JsonObject sObj) {
-  JsonObject playlist = sObj.createNestedObject("playlist");
+  JsonObject playlist = sObj.createNestedObject(F("playlist"));
   JsonArray ps = playlist.createNestedArray("ps");
   JsonArray dur = playlist.createNestedArray("dur");
   JsonArray transition = playlist.createNestedArray(F("transition"));
