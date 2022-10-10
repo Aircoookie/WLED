@@ -1541,7 +1541,7 @@ function requestJson(command=null)
 					div.outerHTML = generateListItemHtml(
 						'palette',
 						255-j,
-						'~ Custom '+j+1+' ~',
+						'~ Custom '+j+' ~',
 						'setPalette',
 						`<div class="lstIprev" style="${genPalPrevCss(255-j)}"></div>`
 					);
