@@ -8,6 +8,10 @@
 #include "soc/rtc_cntl_reg.h"
 #endif
 
+#if defined(WLED_DEBUG) && defined(ARDUINO_ARCH_ESP32)
+#include "../tools/ESP32-Chip_info.hpp"
+#endif
+
 /*
  * Main WLED class implementation. Mostly initialization and connection logic
  */
@@ -190,10 +194,13 @@ void WLED::loop()
     DEBUG_PRINT(F("Free heap: "));     DEBUG_PRINTLN(ESP.getFreeHeap());
     #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
     if (psramFound()) {
-      DEBUG_PRINT(F("Total PSRAM: "));    DEBUG_PRINT(ESP.getPsramSize()/1024); DEBUG_PRINTLN("kB");
-      DEBUG_PRINT(F("Free PSRAM: "));     DEBUG_PRINT(ESP.getFreePsram()/1024); DEBUG_PRINTLN("kB");
-    } else
-      DEBUG_PRINTLN(F("No PSRAM"));
+      //DEBUG_PRINT(F("Total PSRAM: "));    DEBUG_PRINT(ESP.getPsramSize()/1024); DEBUG_PRINTLN("kB");
+      DEBUG_PRINT(F("Free PSRAM:  "));     DEBUG_PRINT(ESP.getFreePsram()/1024); DEBUG_PRINTLN("kB");
+	  DEBUG_PRINT(F("PSRAM in use:")); DEBUG_PRINT(ESP.getPsramSize() - ESP.getFreePsram()); DEBUG_PRINTLN(F(" Bytes"));
+
+    } else {
+      //DEBUG_PRINTLN(F("No PSRAM"));
+	}
     #endif
     DEBUG_PRINT(F("Wifi state: "));      DEBUG_PRINTLN(WiFi.status());
 
@@ -305,6 +312,10 @@ void WLED::setup()
   }
   #endif
   DEBUG_PRINT(F(", speed ")); DEBUG_PRINT(ESP.getFlashChipSpeed()/1000000);DEBUG_PRINTLN(F("MHz."));
+  
+  #if defined(WLED_DEBUG) && defined(ARDUINO_ARCH_ESP32)
+  showRealSpeed();
+  #endif
 
 #else
   DEBUG_PRINT(F("esp8266 "));
