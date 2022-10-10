@@ -875,12 +875,22 @@ class PolyBus {
       }
       #else //ESP32
       uint8_t offset = 0; //0 = RMT (num 0-7) 8 = I2S0 9 = I2S1
-      #ifndef CONFIG_IDF_TARGET_ESP32S2
+      #ifdef CONFIG_IDF_TARGET_ESP32S2
+      // ESP32-S2 only has 4 RMT channels
+      if (num > 4) return I_NONE;
+      if (num > 3) offset = num -3;
+      #elif defined(CONFIG_IDF_TARGET_ESP32C3)
+      // On ESP32-C3 only the first 2 RMT channels are usable for transmitting
+      if (num > 1) return I_NONE;
+      //if (num > 2) offset = num -2; // I2S not supported yet
+      #elif defined(CONFIG_IDF_TARGET_ESP32S3)
+      // On ESP32-S3 only the first 4 RMT channels are usable for transmitting
+      if (num > 3) return I_NONE;
+      //if (num > 4) offset = num -4; // I2S not supported yet
+      #else
+      // standard ESP32 has 8 RMT and 2 I2S channels
       if (num > 9) return I_NONE;
       if (num > 7) offset = num -7;
-      #else //ESP32 S2 only has 4 RMT channels
-      if (num > 5) return I_NONE;
-      if (num > 4) offset = num -4;
       #endif
       switch (busType) {
         case TYPE_WS2812_RGB:
