@@ -93,12 +93,12 @@ void updateTimezone() {
       break;
     }
     case TZ_AUSTRALIA_EASTERN : {
-      tcrDaylight = {Second, Sun, Oct, 2, 660};   //AEDT = UTC + 11 hours
+      tcrDaylight = {First,  Sun, Oct, 2, 660};   //AEDT = UTC + 11 hours
       tcrStandard = {First,  Sun, Apr, 3, 600};   //AEST = UTC + 10 hours
       break;
     }
     case TZ_NEW_ZEALAND : {
-      tcrDaylight = {Second, Sun, Sep, 2, 780};   //NZDT = UTC + 13 hours
+      tcrDaylight = {Last,   Sun, Sep, 2, 780};   //NZDT = UTC + 13 hours
       tcrStandard = {First,  Sun, Apr, 3, 720};   //NZST = UTC + 12 hours
       break;
     }
