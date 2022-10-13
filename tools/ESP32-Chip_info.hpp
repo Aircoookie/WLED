@@ -11,6 +11,9 @@
  * detailed license conditions: https://github.com/Jason2866/ESP32_Show_Info/blob/main/LICENSE
  */
 #include <Arduino.h>
+
+#ifdef ARDUINO_ARCH_ESP32
+
 #include "soc/spi_reg.h"
 #include <soc/efuse_reg.h>
 
@@ -370,16 +373,38 @@ static void my_show_chip_info(void) {
 #include <rom/rtc.h>
 #endif
 
+#if 0
+// ESP8266 does this a bit differently
+//
+// include <user_interface.h>
+// 
+//  struct rst_info * rst_info;
+//  system_rtc_mem_read(0, &rst_info, sizeof(rst_info));
+//  reason = rst_info->reason;
+//     or
+//  reason = ESP.getResetInfoPtr()->reason;
+// 
+//    REASON_DEFAULT_RST      = 0,    /* normal startup by power on */
+//    REASON_WDT_RST          = 1,    /* hardware watch dog reset */
+//    REASON_EXCEPTION_RST    = 2,    /* exception reset, GPIO status won’t change */
+//    REASON_SOFT_WDT_RST     = 3,    /* software watch dog reset, GPIO status won’t change */
+//    REASON_SOFT_RESTART     = 4,    /* software restart ,system_restart , GPIO status won’t change */
+//    REASON_DEEP_SLEEP_AWAKE = 5,    /* wake up from deep-sleep */
+//    REASON_EXT_SYS_RST      = 6     /* external system reset */
+//    reason > 6 = user-defined reason codes
+#endif
+
 void my_print_reset_reason(int reason)
 {
   Serial.print(reason);
   switch (reason)
   {
-    case 0 : Serial.print ("  NA"); break;
+    case 0 : Serial.print ("  NO_MEAN"); break;
     case 1 : Serial.print ("  POWERON_RESET");break;          /**<1,  Vbat power on reset*/
+    case 2 : Serial.print ("  unknown exception"); break;     /**<2,  this code is not defined on ESP32 */
     case 3 : Serial.print ("  SW_RESET");break;               /**<3,  Software reset digital core*/
     case 4 : Serial.print ("  OWDT_RESET");break;             /**<4,  Legacy watch dog reset digital core*/
-    case 5 : Serial.print ("  DEEPSLEEP_RESET");break;        /**<5,  Deep Sleep reset digital core*/
+    case 5 : Serial.print ("  DEEPSLEEP_RESET");break;        /**<5,  Deep Sleep wakeup reset digital core*/
     case 6 : Serial.print ("  SDIO_RESET");break;             /**<6,  Reset by SLC module, reset digital core*/
     case 7 : Serial.print ("  TG0WDT_SYS_RESET");break;       /**<7,  Timer Group0 Watch dog reset digital core*/
     case 8 : Serial.print ("  TG1WDT_SYS_RESET");break;       /**<8,  Timer Group1 Watch dog reset digital core*/
@@ -391,13 +416,13 @@ void my_print_reset_reason(int reason)
     case 14 : Serial.print(" EXT_CPU_RESET");break;           /**<14, for APP CPU, reseted by PRO CPU*/
     case 15 : Serial.print(" RTCWDT_BROWN_OUT_RESET");break;  /**<15, Reset when the vdd voltage is not stable*/
     case 16 : Serial.print(" RTCWDT_RTC_RESET");break;        /**<16, RTC Watch dog reset digital core and rtc module*/
-    case 17 : Serial.print (" TG1WDT_CPU_RESET");break;       /**<17, Time Group1 reset CPU*/
-    case 18 : Serial.print (" SUPER_WDT_RESET");break;        /**<18, super watchdog reset digital core and rtc module*/
-    case 19 : Serial.print (" GLITCH_RTC_RESET");break;       /**<19, glitch reset digital core and rtc module*/
-    case 20 : Serial.print (" EFUSE_RESET");break;            /**<20, efuse reset digital core*/
-    case 21 : Serial.print (" USB_UART_CHIP_RESET");break;    /**<21, usb uart reset digital core */
-    case 22 : Serial.print (" USB_JTAG_CHIP_RESET");break;    /**<22, usb jtag reset digital core */
-    case 23 : Serial.print (" POWER_GLITCH_RESET");break;     /**<23, power glitch reset digital core and rtc module*/
+    case 17 : Serial.print(" TG1WDT_CPU_RESET");break;        /**<17, Time Group1 reset CPU*/
+    case 18 : Serial.print(" SUPER_WDT_RESET");break;         /**<18, super watchdog reset digital core and rtc module*/
+    case 19 : Serial.print(" GLITCH_RTC_RESET");break;        /**<19, glitch reset digital core and rtc module*/
+    case 20 : Serial.print(" EFUSE_RESET");break;             /**<20, efuse reset digital core*/
+    case 21 : Serial.print(" USB_UART_CHIP_RESET");break;     /**<21, usb uart reset digital core */
+    case 22 : Serial.print(" USB_JTAG_CHIP_RESET");break;     /**<22, usb jtag reset digital core */
+    case 23 : Serial.print(" POWER_GLITCH_RESET");break;      /**<23, power glitch reset digital core and rtc module*/
     default : Serial.print (" NO_MEAN");
   }
 }
@@ -556,3 +581,8 @@ void showRealSpeed() {
   Serial.println(F("====================================\n"));
   Serial.flush();
 }
+
+
+#else
+  #error this tool only supports ESP32 chips
+#endif

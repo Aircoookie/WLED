@@ -1083,7 +1083,7 @@ uint16_t mode_running_random(void) {
 
   uint8_t z = it % zoneSize;
   bool nzone = (!z && it != SEGENV.aux1);
-  for (int i=SEGLEN-1; i > 0; i--) {
+  for (int i=SEGLEN-1; i >= 0; i--) {  // WLEDSR bugfix
     if (nzone || z >= zoneSize) {
       uint8_t lastrand = PRNG16 >> 8;
       int16_t diff = 0;
@@ -1724,7 +1724,7 @@ uint16_t mode_random_chase(void)
   uint32_t color = SEGENV.step;
   random16_set_seed(SEGENV.aux0);
 
-  for (int i = SEGLEN -1; i > 0; i--) {
+  for (int i = SEGLEN -1; i >= 0; i--) {  // WLEDSR bugfix
     uint8_t r = random8(6) != 0 ? (color >> 16 & 0xFF) : random8();
     uint8_t g = random8(6) != 0 ? (color >> 8  & 0xFF) : random8();
     uint8_t b = random8(6) != 0 ? (color       & 0xFF) : random8();
@@ -2831,7 +2831,7 @@ uint16_t mode_bouncing_balls(void) {
           balls[i].lastBounceTime = time;
 
           if (balls[i].impactVelocity < 0.015f) {
-            float impactVelocityStart = sqrt(-2 * gravity) * random8(5,11)/10.0f; // randomize impact velocity
+            float impactVelocityStart = sqrtf(-2 * gravity) * random8(5,11)/10.0f; // randomize impact velocity
             balls[i].impactVelocity = impactVelocityStart;
           }
         } else if (balls[i].height > 1.0f) {
@@ -2973,7 +2973,7 @@ uint16_t mode_popcorn(void) {
 
             uint16_t peakHeight = 128 + random8(128); //0-255
             peakHeight = (peakHeight * (SEGLEN -1)) >> 8;
-            popcorn[i].vel = sqrt(-2.0 * gravity * peakHeight);
+            popcorn[i].vel = sqrtf(-2.0 * gravity * peakHeight);
 
             if (SEGMENT.palette)
             {
@@ -3273,7 +3273,7 @@ uint16_t mode_exploding_fireworks(void)
       flare->posX = strip.isMatrix ? random16(2,cols-1) : (SEGMENT.intensity > random8()); // will enable random firing side on 1D
       uint16_t peakHeight = 75 + random8(180); //0-255
       peakHeight = (peakHeight * (rows -1)) >> 8;
-      flare->vel = sqrt(-2.0f * gravity * peakHeight);
+      flare->vel = sqrtf(-2.0f * gravity * peakHeight);
       flare->velX = strip.isMatrix ? (random8(8)-4)/32.f : 0; // no X velocity on 1D
       flare->col = 255; //brightness
       SEGENV.aux0 = 1; 
@@ -5332,7 +5332,7 @@ uint16_t mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevskyy  https
       SEGMENT.setPixelColorXY(x, y, ColorFromPalette(auroraPalette,
                                       qsub8(
                                         inoise8((SEGENV.step%2) + x * _scale, y * 16 + SEGENV.step % 16, SEGENV.step / _speed),
-                                        fabs((float)rows / 2 - (float)y) * adjustHeight)));
+                                        fabsf((float)rows / 2 - (float)y) * adjustHeight)));
     }
   }
 
@@ -5784,13 +5784,13 @@ uint16_t mode_2Dfloatingblobs(void) {
     // change radius if needed
     if (blob->grow[i]) {
       // enlarge radius until it is >= 4
-      blob->r[i] += (fabs(blob->sX[i]) > fabs(blob->sY[i]) ? fabs(blob->sX[i]) : fabs(blob->sY[i])) * 0.05f;
+      blob->r[i] += (fabsf(blob->sX[i]) > fabsf(blob->sY[i]) ? fabsf(blob->sX[i]) : fabsf(blob->sY[i])) * 0.05f;
       if (blob->r[i] >= MIN(cols/4.f,2.f)) {
         blob->grow[i] = false;
       }
     } else {
       // reduce radius until it is < 1
-      blob->r[i] -= (fabs(blob->sX[i]) > fabs(blob->sY[i]) ? fabs(blob->sX[i]) : fabs(blob->sY[i])) * 0.05f;
+      blob->r[i] -= (fabsf(blob->sX[i]) > fabsf(blob->sY[i]) ? fabsf(blob->sX[i]) : fabsf(blob->sY[i])) * 0.05f;
       if (blob->r[i] < 1.f) {
         blob->grow[i] = true; 
       }
@@ -7020,7 +7020,7 @@ uint16_t mode_rocktaves(void) {                 // Rocktaves. Same note from eac
   }
 
   frTemp -=132;                                           // This should give us a base musical note of C3
-  frTemp = fabs(frTemp * 2.1);                            // Fudge factors to compress octave range starting at 0 and going to 255;
+  frTemp = fabsf(frTemp * 2.1);                           // Fudge factors to compress octave range starting at 0 and going to 255;
 
   uint16_t i = map(beatsin8(8+octCount*4, 0, 255, 0, octCount*8), 0, 255, 0, SEGLEN-1);
   i = constrain(i, 0, SEGLEN-1);

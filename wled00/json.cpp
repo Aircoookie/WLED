@@ -2,6 +2,29 @@
 
 #include "palettes.h"
 
+// begin WLEDSR
+#ifdef ARDUINO_ARCH_ESP32
+#include <Esp.h>
+// get the right RTC.H for each MCU
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0)
+#if CONFIG_IDF_TARGET_ESP32S2
+#include <esp32s2/rom/rtc.h>
+#elif CONFIG_IDF_TARGET_ESP32C3
+#include <esp32c3/rom/rtc.h>
+#elif CONFIG_IDF_TARGET_ESP32S3
+#include <esp32s3/rom/rtc.h>
+#elif CONFIG_IDF_TARGET_ESP32 // ESP32/PICO-D4
+#include <esp32/rom/rtc.h>
+#endif
+#else // ESP32 Before IDF 4.0
+#include <rom/rtc.h>
+#endif
+#else // for 8266
+#include <Esp.h>
+#include <user_interface.h>
+#endif
+// end WLEDSR
+
 /*
  * JSON API (De)serialization
  */
@@ -552,6 +575,63 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
   }
 }
 
+// begin WLEDSR
+#ifdef ARDUINO_ARCH_ESP32
+static String resetCode2Info(int reason) {
+  switch(reason) {
+
+    case 1 : //  1 =  Vbat power on reset
+      return F("power-on"); break;
+    case 2 : // 2 = this code is not defined on ESP32
+      return F("exception"); break;
+    case 3 : // 3 = Software reset digital core
+    case 12: //12 = Software reset CPU
+       return F("SW reboot"); break;
+    case 5 : // 5 = Deep Sleep wakeup reset digital core
+       return F("wakeup"); break;
+    case 14:  //14 = for APP CPU, reset by PRO CPU
+      return F("restart"); break;
+    case 15: //15 = Reset when the vdd voltage is not stable (brownout)
+      return F("brown-out"); break;
+
+    // watchdog resets
+    case 4 : // 4 = Legacy watch dog reset digital core
+    case 6 : // 6 = Reset by SLC module, reset digital core
+    case 7 : // 7 = Timer Group0 Watch dog reset digital core
+    case 8 : // 8 = Timer Group1 Watch dog reset digital core
+    case 9 : // 9 = RTC Watch dog Reset digital core
+    case 11: //11 = Time Group watchdog reset CPU
+    case 13: //13 = RTC Watch dog Reset CPU
+    case 16: //16 = RTC Watch dog reset digital core and rtc module
+    case 17: //17 = Time Group1 reset CPU
+      return F("watchdog"); break;
+    case 18: //18 = super watchdog reset digital core and rtc module
+      return F("super watchdog"); break;
+
+    // misc
+    case 10: // 10 = Instrusion tested to reset CPU
+      return F("intrusion"); break;
+    case 19: //19 = glitch reset digital core and rtc module
+      return F("glitch"); break;
+    case 20: //20 = efuse reset digital core
+      return F("EFUSE reset"); break;
+    case 21: //21 = usb uart reset digital core
+      return F("USB UART reset"); break;
+    case 22: //22 = usb jtag reset digital core
+     return F("JTAG reset"); break;
+    case 23: //23 = power glitch reset digital core and rtc module
+      return F("power glitch"); break;
+
+    // unknown reason code
+    case 0:
+      return F(""); break;
+    default: 
+      return F("unknown"); break;
+  }
+}
+#endif
+// end WLEDSR
+
 void serializeInfo(JsonObject root)
 {
   root[F("ver")] = versionString;
@@ -670,9 +750,11 @@ void serializeInfo(JsonObject root)
   //root[F("maxalloc")] = ESP.getMaxAllocHeap();
   #ifdef WLED_DEBUG
     root[F("resetReason0")] = (int)rtc_get_reset_reason(0);
-    root[F("resetReason1")] = (int)rtc_get_reset_reason(1);
+    if(ESP.getChipCores() > 1)    // WLEDSR
+   	  root[F("resetReason1")] = (int)rtc_get_reset_reason(1);
   #endif
   root[F("lwip")] = 0; //deprecated
+  root[F("totalheap")] = ESP.getHeapSize(); //WLEDSR
   #else
   root[F("arch")] = "esp8266";
   root[F("core")] = ESP.getCoreVersion();
@@ -683,12 +765,43 @@ void serializeInfo(JsonObject root)
   root[F("lwip")] = LWIP_VERSION_MAJOR;
   #endif
 
-  root[F("totalheap")] = ESP.getHeapSize(); //WLEDSR
   root[F("freeheap")] = ESP.getFreeHeap();
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
   if (psramFound()) root[F("tpram")] = ESP.getPsramSize(); //WLEDSR
   if (psramFound()) root[F("psram")] = ESP.getFreePsram();
   #endif
+
+  // begin WLEDSR
+  #ifdef ARDUINO_ARCH_ESP32
+  root[F("e32core0code")] = (int)rtc_get_reset_reason(0);
+  root[F("e32core0text")] = resetCode2Info(rtc_get_reset_reason(0));
+  if(ESP.getChipCores() > 1) {
+    root[F("e32core1code")] = (int)rtc_get_reset_reason(1);
+    root[F("e32core1text")] = resetCode2Info(rtc_get_reset_reason(1));
+  }
+  static char msgbuf[32];
+  snprintf(msgbuf, sizeof(msgbuf)-1, "%s rev.%d", ESP.getChipModel(), ESP.getChipRevision());
+  root[F("e32model")] = msgbuf;
+  root[F("e32cores")] = ESP.getChipCores();
+  root[F("e32speed")] = ESP.getCpuFreqMHz();
+  root[F("e32flash")] = int((ESP.getFlashChipSize()/1024)/1024);
+  root[F("e32flashspeed")] = int(ESP.getFlashChipSpeed()/1000000);
+  root[F("e32flashmode")] = int(ESP.getFlashChipMode());
+  switch (ESP.getFlashChipMode()) {
+    // missing: Octal modes
+    case FM_QIO:  root[F("e32flashtext")] = F(" (QIO)"); break;
+    case FM_QOUT: root[F("e32flashtext")] = F(" (QOUT)");break;
+    case FM_DIO:  root[F("e32flashtext")] = F(" (DIO)"); break;
+    case FM_DOUT: root[F("e32flashtext")] = F(" (DOUT or other)");break;
+    default: root[F("e32flashtext")] = F(" (other)"); break;
+  }
+
+  #else // for 8266
+  root[F("e32core0code")] = (int)ESP.getResetInfoPtr()->reason;
+  root[F("e32core0text")] = F("");
+  #endif
+  // end WLEDSR
+
   root[F("uptime")] = millis()/1000 + rolloverMillis*4294967;
 
   usermods.addToJsonInfo(root);
