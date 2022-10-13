@@ -400,6 +400,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       root.remove("time"); // may be added in UI call
       root.remove("ps");
       if (root.size() == 0) {
+        unloadPlaylist();  // we need to unload playlist
         applyPreset(ps, callMode); // async load (only preset ID was specified)
         return stateResponse;
       }
