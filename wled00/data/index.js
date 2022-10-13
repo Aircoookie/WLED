@@ -670,12 +670,19 @@ ${inforow("Uptime",getRuntimeStr(i.uptime))}
 ${inforow("Total heap",theap," kB")}
 ${inforow("Free heap",heap," kB")}
 ${i.tpram?inforow("Total PSRAM",(i.tpram/1024).toFixed(1)," kB"):""}
-${i.psram?inforow("Free PSRAM",(i.psram/1024).toFixed(1)," kB"):""}
+${i.psram?inforow("Used PSRAM",(i.tpram-i.psram)," B"):""}
 ${inforow("Estimated current",pwru)}
 ${inforow("Average FPS",i.leds.fps)}
 ${inforow("MAC address",i.mac)}
 ${inforow("Filesystem",i.fs.u + "/" + i.fs.t + " kB (" +Math.round(i.fs.u*100/i.fs.t) + "%)")}
 ${inforow("Environment",i.arch + " " + i.core + " (" + i.lwip + ")")}
+<!-- WLEDSR begin--> 
+<tr><td colspan=2><hr style="height:1px;border-width:0;color:SeaGreen;background-color:SeaGreen"></td></tr>
+${i.e32model?inforow(i.e32model,i.e32cores +" core(s)"," "+i.e32speed+" Mhz"):""}
+${i.e32flash?inforow("Flash "+i.e32flash+" MB"+", mode "+i.e32flashmode+i.e32flashtext,i.e32flashspeed," Mhz"):""}
+${i.e32core0code?inforow("Core0 bootcode", i.e32core0code, " "+i.e32core0text):""}
+${i.e32core1code?inforow("Core1 bootcode",i.e32core1code, " "+i.e32core1text):""}
+<!-- WLEDSR end--> 
 </table>`;
 	gId('kv').innerHTML = cn;
 	//  update all sliders in Info
