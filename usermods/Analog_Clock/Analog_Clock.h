@@ -125,15 +125,6 @@ private:
         );
     }
 
-    static inline uint32_t gamma32(uint32_t c) {
-        return RGBW32(
-            strip.gamma8(R(c)),
-            strip.gamma8(G(c)),
-            strip.gamma8(B(c)),
-            strip.gamma8(W(c))
-        );
-    }
-
     static inline int16_t dec(int16_t n, int16_t i, Segment const& seg) {
         return n - seg.firstLed >= i
                 ? n - i
