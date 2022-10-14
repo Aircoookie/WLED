@@ -102,7 +102,7 @@ void loadSettingsFromEEPROM()
   busses.add(bc);
 
   notifyButton = EEPROM.read(230);
-  notifyTwice = EEPROM.read(231);
+  //spare = EEPROM.read(231);
   buttonType[0] = EEPROM.read(232) ? BTN_TYPE_PUSH : BTN_TYPE_NONE;
 
   staticIP[0] = EEPROM.read(234);

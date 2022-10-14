@@ -359,8 +359,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(notifyAlexa, if_sync_send["va"]);
   CJSON(notifyHue, if_sync_send["hue"]);
   CJSON(notifyMacro, if_sync_send["macro"]);
-  CJSON(notifyTwice, if_sync_send[F("twice")]);
   CJSON(syncGroups, if_sync_send["grp"]);
+  CJSON(ubUdpNumRetries, if_sync_send["ret"]);
 
   JsonObject if_nodes = interfaces["nodes"];
   CJSON(nodeListEnabled, if_nodes[F("list")]);
@@ -807,8 +807,8 @@ void serializeConfig() {
   if_sync_send["va"] = notifyAlexa;
   if_sync_send["hue"] = notifyHue;
   if_sync_send["macro"] = notifyMacro;
-  if_sync_send[F("twice")] = notifyTwice;
   if_sync_send["grp"] = syncGroups;
+  if_sync_send["ret"] = ubUdpNumRetries;
 
   JsonObject if_nodes = interfaces.createNestedObject("nodes");
   if_nodes[F("list")] = nodeListEnabled;
