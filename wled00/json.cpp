@@ -585,8 +585,9 @@ static String resetCode2Info(int reason) {
     case 2 : // 2 = this code is not defined on ESP32
       return F("exception"); break;
     case 3 : // 3 = Software reset digital core
+       return F("SW reset"); break;
     case 12: //12 = Software reset CPU
-       return F("SW reboot"); break;
+       return F("SW restart"); break;
     case 5 : // 5 = Deep Sleep wakeup reset digital core
        return F("wakeup"); break;
     case 14:  //14 = for APP CPU, reset by PRO CPU

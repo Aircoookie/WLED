@@ -641,7 +641,7 @@ function populateInfo(i)
 	var cn="";
 	var heap = i.freeheap/1000;
 	heap = heap.toFixed(1);
-	var theap = i.totalheap/1000; theap = theap.toFixed(1); //WLEDSR
+	var theap = (i.totalheap>0)?i.totalheap/1000:-1; theap = theap.toFixed(1); //WLEDSR - total heap is not available on 8266
 	var pwr = i.leds.pwr;
 	var pwru = "Not calculated";
 	if (pwr > 1000) {pwr /= 1000; pwr = pwr.toFixed((pwr > 10) ? 0 : 1); pwru = pwr + " A";}
@@ -667,7 +667,7 @@ ${urows===""?'':'<tr><td colspan=2><hr style="height:1px;border-width:0;color:gr
 ${inforow("Build",i.vid)}
 ${inforow("Signal strength",i.wifi.signal +"% ("+ i.wifi.rssi, " dBm)")}
 ${inforow("Uptime",getRuntimeStr(i.uptime))}
-${inforow("Total heap",theap," kB")}
+${theap>0?inforow("Total heap",theap," kB"):""}
 ${inforow("Free heap",heap," kB")}
 ${i.tpram?inforow("Total PSRAM",(i.tpram/1024).toFixed(1)," kB"):""}
 ${i.psram?inforow("Used PSRAM",(i.tpram-i.psram)," B"):""}
@@ -680,8 +680,8 @@ ${inforow("Environment",i.arch + " " + i.core + " (" + i.lwip + ")")}
 <tr><td colspan=2><hr style="height:1px;border-width:0;color:SeaGreen;background-color:SeaGreen"></td></tr>
 ${i.e32model?inforow(i.e32model,i.e32cores +" core(s)"," "+i.e32speed+" Mhz"):""}
 ${i.e32flash?inforow("Flash "+i.e32flash+" MB"+", mode "+i.e32flashmode+i.e32flashtext,i.e32flashspeed," Mhz"):""}
-${i.e32core0code?inforow("Core0 bootcode", i.e32core0code, " "+i.e32core0text):""}
-${i.e32core1code?inforow("Core1 bootcode",i.e32core1code, " "+i.e32core1text):""}
+${i.e32core0code?inforow("Core0 rst reason",i.e32core0code, " "+i.e32core0text):""}
+${i.e32core1code?inforow("Core1 rst reason",i.e32core1code, " "+i.e32core1text):""}
 <!-- WLEDSR end--> 
 </table>`;
 	gId('kv').innerHTML = cn;
