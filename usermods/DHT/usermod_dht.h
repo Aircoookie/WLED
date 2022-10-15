@@ -62,7 +62,7 @@ class UsermodDHT : public Usermod {
     float humidity, temperature = 0;
     bool initializing = true;
     bool disabled = false;
-    #ifdef USERMOD_DTH_MQTT
+    #ifdef USERMOD_DHT_MQTT
     char dhtMqttTopic[64];
     size_t dhtMqttTopicLen;
     #endif
@@ -80,8 +80,8 @@ class UsermodDHT : public Usermod {
     void setup() {
       nextReadTime = millis() + USERMOD_DHT_FIRST_MEASUREMENT_AT;
       lastReadTime = millis();
-      #ifdef USERMOD_DTH_MQTT
-      sprintf(dhtMqttTopic, "%s/dth", mqttDeviceTopic);
+      #ifdef USERMOD_DHT_MQTT
+      sprintf(dhtMqttTopic, "%s/dht", mqttDeviceTopic);
       dhtMqttTopicLen = strlen(dhtMqttTopic);
       #endif
       #ifdef USERMOD_DHT_STATS
@@ -118,7 +118,7 @@ class UsermodDHT : public Usermod {
         temperature = tempC * 9 / 5 + 32;
         #endif
 
-        #ifdef USERMOD_DTH_MQTT
+        #ifdef USERMOD_DHT_MQTT
         // 10^n where n is number of decimal places to display in mqtt message. Please adjust buff size together with this constant
         #define FLOAT_PREC 100
         if (WLED_MQTT_CONNECTED) {

@@ -5,6 +5,10 @@ The sensor readings are displayed in the Info section of the web UI (and optiona
 
 If sensor is not detected after a while (10 update intervals), this usermod will be disabled.
 
+If enabled measured temperature and humidity will be published to the following MQTT topics
+* `{devceTopic}/dht/temperature`
+* `{devceTopic}/dht/humidity`
+
 ## Installation
 
 Copy the example `platformio_override.ini` to the root directory.  This file should be placed in the same directory as `platformio.ini`.
@@ -17,7 +21,7 @@ Copy the example `platformio_override.ini` to the root directory.  This file sho
 * `USERMOD_DHT_CELSIUS`              - define this to report temperatures in degrees celsious, otherwise fahrenheit will be reported
 * `USERMOD_DHT_MEASUREMENT_INTERVAL` - the number of milliseconds between measurements, defaults to 60 seconds
 * `USERMOD_DHT_FIRST_MEASUREMENT_AT` - the number of milliseconds after boot to take first measurement, defaults to 90 seconds
-* `USERMOD_DTH_MQTT`                 - publish measurements to the MQTT broker
+* `USERMOD_DHT_MQTT`                 - publish measurements to the MQTT broker
 * `USERMOD_DHT_STATS`                - For debug, report delay stats
 
 ## Project link
