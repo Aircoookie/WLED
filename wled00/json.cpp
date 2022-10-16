@@ -344,7 +344,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   receiveNotifications = udpn["recv"] | receiveNotifications;
   if ((bool)udpn[F("nn")]) callMode = CALL_MODE_NO_NOTIFY; //send no notification just for this request
 
-  unsigned long timein = root[F("time")] | UINT32_MAX; //backup time source if NTP not synced
+  unsigned long timein = root["time"] | UINT32_MAX; //backup time source if NTP not synced
   if (timein != UINT32_MAX) {
     setTimeFromAPI(timein);
     if (presetsModifiedTime == 0) presetsModifiedTime = timein;
@@ -431,10 +431,11 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       // b) preset ID only or preset that does not change state (use embedded cycling limits if they exist in getVal())
       presetCycCurr = ps;
       presetId = ps;
-      root.remove(F("v"));    // may be added in UI call
-      root.remove(F("time")); // may be added in UI call
+      root.remove("v");    // may be added in UI call
+      root.remove("time"); // may be added in UI call
       root.remove("ps");
       if (root.size() == 0) {
+        unloadPlaylist();  // we need to unload playlist
         applyPreset(ps, callMode); // async load (only preset ID was specified)
         return stateResponse;
       }
@@ -516,7 +517,7 @@ void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset, b
   root["mp12"] = seg.map1D2D;
 }
 
-void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segmentBounds)
+void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segmentBounds, bool selectedSegmentsOnly)
 {
   if (includeBri) {
     root["on"] = (bri > 0);
@@ -552,11 +553,10 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
 
   root[F("mainseg")] = strip.getMainSegmentId();
 
-  bool selectedSegmentsOnly = root[F("sc")] | false;
   JsonArray seg = root.createNestedArray("seg");
   for (size_t s = 0; s < strip.getMaxSegments(); s++) {
     if (s >= strip.getSegmentsNum()) {
-      if (forPreset && segmentBounds) { //disable segments not part of preset
+      if (forPreset && segmentBounds && !selectedSegmentsOnly) { //disable segments not part of preset
         JsonObject seg0 = seg.createNestedObject();
         seg0["stop"] = 0;
         continue;
@@ -564,7 +564,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
         break;
     }
     Segment &sg = strip.getSegment(s);
-    if (!forPreset && selectedSegmentsOnly && !sg.isSelected()) continue;
+    if (forPreset && selectedSegmentsOnly && !sg.isSelected()) continue;
     if (sg.isActive()) {
       JsonObject seg0 = seg.createNestedObject();
       serializeSegment(seg0, sg, s, forPreset, segmentBounds);

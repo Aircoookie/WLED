@@ -158,9 +158,9 @@ bool oappend(const char* txt)
 
 void prepareHostname(char* hostname)
 {
+  sprintf_P(hostname, "wled-%*s", 6, escapedMac.c_str() + 6);
   const char *pC = serverDescription;
-  uint8_t pos = 5;
-
+  uint8_t pos = 5;          // keep "wled-"
   while (*pC && pos < 24) { // while !null and not over length
     if (isalnum(*pC)) {     // if the current char is alpha-numeric append it to the hostname
       hostname[pos] = *pC;
@@ -169,18 +169,14 @@ void prepareHostname(char* hostname)
       hostname[pos] = '-';
       pos++;
     }
-      // else do nothing - no leading hyphens and do not include hyphens for all other characters.
-      pC++;
-    }
-    // if the hostname is left blank, use the mac address/default mdns name
-    if (pos < 6) {
-      sprintf(hostname + 5, "%*s", 6, escapedMac.c_str() + 6);
-    } else { //last character must not be hyphen
-      while (pos > 0 && hostname[pos -1] == '-') {
-        hostname[pos -1] = 0;
-        pos--;
-      }
-    }
+    // else do nothing - no leading hyphens and do not include hyphens for all other characters.
+    pC++;
+  }
+  //last character must not be hyphen
+  if (pos > 5) {
+    while (pos > 4 && hostname[pos -1] == '-') pos--;
+    hostname[pos] = '\0'; // terminate string (leave at least "wled")
+  }
 }
 
 

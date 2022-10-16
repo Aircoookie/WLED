@@ -399,7 +399,7 @@ function presetError(empty)
 		if (bckstr.length > 10) hasBackup = true;
 	} catch (e) {}
 
-	var cn = `<div class="pres c" ${empty?'style="padding:8px;margin-top: 16px;"':'onclick="loadPresets()" style="cursor:pointer;padding:8px;margin-top: 16px;"'}>`;
+	var cn = `<div class="pres c" ${empty?'style="padding:8px;margin-top: 16px;"':'onclick="pmtLast=0;loadPresets();" style="cursor:pointer;padding:8px;margin-top: 16px;"'}>`;
 	if (empty)
 		cn += `You have no presets yet!`;
 	else
@@ -2257,7 +2257,7 @@ function saveP(i,pl)
 	}
 	populatePresets();
 	resetPUtil();
-	setTimeout(()=>{pmtLast=0; loadPresets();}, 500); // force reloading of presets
+	setTimeout(()=>{pmtLast=0; loadPresets();}, 750); // force reloading of presets
 }
 
 function testPl(i,bt) {
@@ -2286,6 +2286,7 @@ function delP(i) {
 		requestJson(obj);
 		delete pJson[i];
 		populatePresets();
+		gId('putil').classList.add("staybot");
 	} else {
 		bt.style.color = "var(--c-r)";
 		bt.innerHTML = "<i class='icons btn-icon'>&#xe037;</i>Delete!";
