@@ -306,8 +306,9 @@
 #define FX_MODE_DJLIGHT                172 // audio enhanced
 #define FX_MODE_BLURZ                  173 // audio enhanced
 #define FX_MODE_ROCKTAVES              174 // audio enhanced
+#define FX_MODE_CUSTOMEFFECT           187 //WLEDSR Custom Effects
 
-#define MODE_COUNT                     175
+#define MODE_COUNT                     188
 
 typedef enum mapping1D2D {
   M12_Pixels = 0,

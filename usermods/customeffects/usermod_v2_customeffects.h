@@ -104,7 +104,7 @@ class CustomEffectsUserMod : public Usermod {
 
     void setup() {
       if (!initDone)
-        strip.addEffect(255, &mode_customEffect, _data_FX_MODE_CUSTOMEFFECT);
+        strip.addEffect(FX_MODE_CUSTOMEFFECT, &mode_customEffect, _data_FX_MODE_CUSTOMEFFECT);
       initDone = true;
       enabled = true;
     }
