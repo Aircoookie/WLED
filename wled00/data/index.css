@@ -104,7 +104,7 @@ button {
 	color: var(--c-d);	/* must remain bright with dark shadow (see below) to be legible on gray background */
 	cursor: pointer;
 	writing-mode: vertical-rl;
-	transform: rotate(180deg);
+	/* transform: rotate(180deg); */
 }
 
 .bri {
@@ -1194,7 +1194,7 @@ TD .checkmark, TD .radiomark {
   	/*filter: brightness(1);*/
 	font-size: 19px;
 	border-radius: 21px;
-	min-width: 280px;
+	/*min-width: 264px;*/
 }
 
 .seg {

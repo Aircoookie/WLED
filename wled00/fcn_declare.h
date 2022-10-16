@@ -82,6 +82,9 @@ void handleDMX();
 
 //e131.cpp
 void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol);
+void handleArtnetPollReply(IPAddress ipAddress);
+void prepareArtnetPollReply(ArtPollReply* reply);
+void sendArtnetPollReply(ArtPollReply* reply, IPAddress ipAddress, uint16_t portAddress);
 
 //file.cpp
 bool handleFileRead(AsyncWebServerRequest*, String path);
@@ -132,7 +135,7 @@ void handleIR();
 void deserializeSegment(JsonObject elem, byte it, byte presetId = 0);
 bool deserializeState(JsonObject root, byte callMode = CALL_MODE_DIRECT_CHANGE, byte presetId = 0);
 void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset = false, bool segmentBounds = true);
-void serializeState(JsonObject root, bool forPreset = false, bool includeBri = true, bool segmentBounds = true);
+void serializeState(JsonObject root, bool forPreset = false, bool includeBri = true, bool segmentBounds = true, bool selectedSegmentsOnly = false);
 void serializeInfo(JsonObject root);
 void serializeModeNames(JsonArray arr, const char *qstring);
 void serializeModeData(JsonObject root);
@@ -189,10 +192,11 @@ void shufflePlaylist();
 void unloadPlaylist();
 int16_t loadPlaylist(JsonObject playlistObject, byte presetId = 0);
 void handlePlaylist();
+void serializePlaylist(JsonObject obj);
 
 //presets.cpp
-void handlePresets(bool force = false);
-bool applyPreset(byte index, byte callMode = CALL_MODE_DIRECT_CHANGE, bool fromJson = false);
+void handlePresets();
+bool applyPreset(byte index, byte callMode = CALL_MODE_DIRECT_CHANGE);
 inline bool applyTemporaryPreset() {return applyPreset(255);};
 void savePreset(byte index, const char* pname = nullptr, JsonObject saveobj = JsonObject());
 inline void saveTemporaryPreset() {savePreset(255);};

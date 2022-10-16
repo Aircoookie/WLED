@@ -504,7 +504,7 @@ class BusOnOff : public Bus {
 
     uint8_t currentPin = bc.pins[0];
     if (!pinManager.allocatePin(currentPin, true, PinOwner::BusOnOff)) {
-      deallocatePins(); return;
+      return;
     }
     _pin = currentPin; //store only after allocatePin() succeeds
     pinMode(_pin, OUTPUT);
@@ -540,7 +540,7 @@ class BusOnOff : public Bus {
   }
 
   void cleanup() {
-    deallocatePins();
+    pinManager.deallocatePin(_pin, PinOwner::BusOnOff);
   }
 
   ~BusOnOff() {
@@ -550,10 +550,6 @@ class BusOnOff : public Bus {
   private: 
   uint8_t _pin = 255;
   uint8_t _data = 0;
-
-  void deallocatePins() {
-    pinManager.deallocatePin(_pin, PinOwner::BusOnOff);
-  }
 };
 
 
@@ -689,6 +685,8 @@ class BusManager {
       busses[numBusses] = new BusNetwork(bc);
     } else if (IS_DIGITAL(bc.type)) {
       busses[numBusses] = new BusDigital(bc, numBusses, colorOrderMap);
+    } else if (bc.type == TYPE_ONOFF) {
+      busses[numBusses] = new BusOnOff(bc);
     } else {
       busses[numBusses] = new BusPwm(bc);
     }

@@ -167,6 +167,112 @@ void fillUMPins(JsonObject &mods)
   }
 }
 
+void appendGPIOinfo() {
+  char nS[8];
+
+  oappend(SET_F("d.um_p=[-1")); // has to have 1 element
+  if (i2c_sda > -1 && i2c_scl > -1) {
+    oappend(","); oappend(itoa(i2c_sda,nS,10));
+    oappend(","); oappend(itoa(i2c_scl,nS,10));
+  }
+  if (spi_mosi > -1 && spi_sclk > -1) {
+    oappend(","); oappend(itoa(spi_mosi,nS,10));
+    oappend(","); oappend(itoa(spi_sclk,nS,10));
+  }
+  // usermod pin reservations will become unnecessary when settings pages will read cfg.json directly
+  if (requestJSONBufferLock(6)) {
+    // if we can't allocate JSON buffer ignore usermod pins
+    JsonObject mods = doc.createNestedObject(F("um"));
+    usermods.addToConfig(mods);
+    if (!mods.isNull()) fillUMPins(mods);
+    releaseJSONBufferLock();
+  }
+  oappend(SET_F("];"));
+
+  // add reserved and usermod pins as d.um_p array
+  #if defined(CONFIG_IDF_TARGET_ESP32S2)
+  oappend(SET_F("d.rsvd=[22,23,24,25,26,27,28,29,30,31,32"));
+  #elif defined(CONFIG_IDF_TARGET_ESP32S3)
+  oappend(SET_F("d.rsvd=[19,20,22,23,24,25,26,27,28,29,30,31,32"));  // includes 19+20 for USB OTG (JTAG)
+  #elif defined(CONFIG_IDF_TARGET_ESP32C3)
+  oappend(SET_F("d.rsvd=[11,12,13,14,15,16,17"));
+  #elif defined(ESP32)
+  oappend(SET_F("d.rsvd=[6,7,8,9,10,11,24,28,29,30,31"));
+  #else
+  oappend(SET_F("d.rsvd=[6,7,8,9,10,11"));
+  #endif
+
+  #ifdef WLED_ENABLE_DMX
+  oappend(SET_F(",2")); // DMX hardcoded pin
+  #endif
+
+  #ifdef WLED_DEBUG
+  oappend(SET_F(",")); oappend(itoa(hardwareTX,nS,10));// debug output (TX) pin
+  #endif
+
+  //Note: Using pin 3 (RX) disables Adalight / Serial JSON
+
+  #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
+    #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32S3) && !defined(CONFIG_IDF_TARGET_ESP32C3)
+    if (psramFound()) oappend(SET_F(",16,17")); // GPIO16 & GPIO17 reserved for SPI RAM on ESP32 (not on S2, S3 or C3)
+    #elif defined(CONFIG_IDF_TARGET_ESP32S3)
+    if (psramFound()) oappend(SET_F(",33,34,35,36,37")); // in use for "octal" PSRAM or "octal" FLASH -seems that octal PSRAM is very common on S3.
+    #endif
+  #endif
+
+  #ifdef WLED_USE_ETHERNET
+  if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
+    for (uint8_t p=0; p<WLED_ETH_RSVD_PINS_COUNT; p++) { oappend(","); oappend(itoa(esp32_nonconfigurable_ethernet_pins[p].pin,nS,10)); }
+    if (ethernetBoards[ethernetType].eth_power>=0)     { oappend(","); oappend(itoa(ethernetBoards[ethernetType].eth_power,nS,10)); }
+    if (ethernetBoards[ethernetType].eth_mdc>=0)       { oappend(","); oappend(itoa(ethernetBoards[ethernetType].eth_mdc,nS,10)); }
+    if (ethernetBoards[ethernetType].eth_mdio>=0)      { oappend(","); oappend(itoa(ethernetBoards[ethernetType].eth_mdio,nS,10)); }
+    switch (ethernetBoards[ethernetType].eth_clk_mode) {
+      case ETH_CLOCK_GPIO0_IN:
+      case ETH_CLOCK_GPIO0_OUT:
+        oappend(SET_F(",0"));
+        break;
+      case ETH_CLOCK_GPIO16_OUT:
+        oappend(SET_F(",16"));
+        break;
+      case ETH_CLOCK_GPIO17_OUT:
+        oappend(SET_F(",17"));
+        break;
+    }
+  }
+  #endif
+
+  oappend(SET_F("];"));
+
+  // add info for read-only GPIO
+  oappend(SET_F("d.ro_gpio=["));
+  #if defined(CONFIG_IDF_TARGET_ESP32S2)
+  oappendi(46);
+  #elif defined(CONFIG_IDF_TARGET_ESP32S3)
+  // none for S3
+  #elif defined(CONFIG_IDF_TARGET_ESP32C3)
+  // none for C3
+  #elif defined(ESP32)
+  oappend(SET_F("34,35,36,37,38,39"));
+  #else
+  // none for ESP8266
+  #endif
+  oappend(SET_F("];"));
+
+  // add info about max. # of pins
+  oappend(SET_F("d.max_gpio="));
+  #if defined(CONFIG_IDF_TARGET_ESP32S2)
+  oappendi(46);
+  #elif defined(CONFIG_IDF_TARGET_ESP32S3)
+  oappendi(48);
+  #elif defined(CONFIG_IDF_TARGET_ESP32C3)
+  oappendi(21);
+  #elif defined(ESP32)
+  oappendi(39);
+  #else
+  oappendi(16);
+  #endif
+  oappend(SET_F(";"));
+}
 
 //get values for settings form in javascript
 void getSettingsJS(byte subPage, char* dest)
@@ -257,72 +363,11 @@ void getSettingsJS(byte subPage, char* dest)
   {
     char nS[8];
 
-    // Pin reservations will become unnecessary when settings pages will read cfg.json directly
-    // add reserved and usermod pins as d.um_p array
-    oappend(SET_F("d.um_p=[6,7,8,9,10,11"));
-
-    if (i2c_sda > -1 && i2c_scl > -1) {
-      oappend(","); oappend(itoa(i2c_sda,nS,10));
-      oappend(","); oappend(itoa(i2c_scl,nS,10));
-    }
-    if (spi_mosi > -1 && spi_sclk > -1) {
-      oappend(","); oappend(itoa(spi_mosi,nS,10));
-      oappend(","); oappend(itoa(spi_sclk,nS,10));
-    }
-
-    if (requestJSONBufferLock(6)) {
-      // if we can't allocate JSON buffer ignore usermod pins
-      JsonObject mods = doc.createNestedObject(F("um"));
-      usermods.addToConfig(mods);
-      if (!mods.isNull()) fillUMPins(mods);
-      releaseJSONBufferLock();
-    }
-
-    #ifdef WLED_ENABLE_DMX
-      oappend(SET_F(",2")); // DMX hardcoded pin
-    #endif
-
-    #ifdef WLED_DEBUG
-      oappend(SET_F(",1")); // debug output (TX) pin
-    #endif
-
-    //Note: Using pin 3 (RX) disables Adalight / Serial JSON
-
-    #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
-      if (psramFound()) oappend(SET_F(",16,17")); // GPIO16 & GPIO17 reserved for SPI RAM
-    #endif
-
-    #ifdef WLED_USE_ETHERNET
-    if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
-      for (uint8_t p=0; p<WLED_ETH_RSVD_PINS_COUNT; p++) { oappend(","); oappend(itoa(esp32_nonconfigurable_ethernet_pins[p].pin,nS,10)); }
-      if (ethernetBoards[ethernetType].eth_power>=0)     { oappend(","); oappend(itoa(ethernetBoards[ethernetType].eth_power,nS,10)); }
-      if (ethernetBoards[ethernetType].eth_mdc>=0)       { oappend(","); oappend(itoa(ethernetBoards[ethernetType].eth_mdc,nS,10)); }
-      if (ethernetBoards[ethernetType].eth_mdio>=0)      { oappend(","); oappend(itoa(ethernetBoards[ethernetType].eth_mdio,nS,10)); }
-      switch (ethernetBoards[ethernetType].eth_clk_mode) {
-        case ETH_CLOCK_GPIO0_IN:
-        case ETH_CLOCK_GPIO0_OUT:
-          oappend(SET_F(",0"));
-          break;
-        case ETH_CLOCK_GPIO16_OUT:
-          oappend(SET_F(",16"));
-          break;
-        case ETH_CLOCK_GPIO17_OUT:
-          oappend(SET_F(",17"));
-          break;
-      }
-    }
-    #endif
-
-    oappend(SET_F("];"));
+    appendGPIOinfo();
 
     // set limits
     oappend(SET_F("bLimits("));
-    #if defined(ESP32) && defined(USERMOD_AUDIOREACTIVE)
-    // requested by @softhack007 https://github.com/blazoncek/WLED/issues/33
-    oappend(itoa(WLED_MAX_BUSSES-2,nS,10)); oappend(","); // prevent use of I2S buses if audio installed
-    #else
     oappend(itoa(WLED_MAX_BUSSES,nS,10));  oappend(",");
-    #endif
     oappend(itoa(MAX_LEDS_PER_BUS,nS,10)); oappend(",");
     oappend(itoa(MAX_LED_MEMORY,nS,10));   oappend(",");
     oappend(itoa(MAX_LEDS,nS,10));
@@ -500,14 +545,14 @@ void getSettingsJS(byte subPage, char* dest)
     char hueErrorString[25];
     switch (hueError)
     {
-      case HUE_ERROR_INACTIVE     : strcpy(hueErrorString,(char*)F("Inactive"));                break;
-      case HUE_ERROR_ACTIVE       : strcpy(hueErrorString,(char*)F("Active"));                  break;
-      case HUE_ERROR_UNAUTHORIZED : strcpy(hueErrorString,(char*)F("Unauthorized"));            break;
-      case HUE_ERROR_LIGHTID      : strcpy(hueErrorString,(char*)F("Invalid light ID"));        break;
-      case HUE_ERROR_PUSHLINK     : strcpy(hueErrorString,(char*)F("Link button not pressed")); break;
-      case HUE_ERROR_JSON_PARSING : strcpy(hueErrorString,(char*)F("JSON parsing error"));      break;
-      case HUE_ERROR_TIMEOUT      : strcpy(hueErrorString,(char*)F("Timeout"));                 break;
-      default: sprintf(hueErrorString,(char*)F("Bridge Error %i"),hueError);
+      case HUE_ERROR_INACTIVE     : strcpy_P(hueErrorString,PSTR("Inactive"));                break;
+      case HUE_ERROR_ACTIVE       : strcpy_P(hueErrorString,PSTR("Active"));                  break;
+      case HUE_ERROR_UNAUTHORIZED : strcpy_P(hueErrorString,PSTR("Unauthorized"));            break;
+      case HUE_ERROR_LIGHTID      : strcpy_P(hueErrorString,PSTR("Invalid light ID"));        break;
+      case HUE_ERROR_PUSHLINK     : strcpy_P(hueErrorString,PSTR("Link button not pressed")); break;
+      case HUE_ERROR_JSON_PARSING : strcpy_P(hueErrorString,PSTR("JSON parsing error"));      break;
+      case HUE_ERROR_TIMEOUT      : strcpy_P(hueErrorString,PSTR("Timeout"));                 break;
+      default: sprintf_P(hueErrorString,PSTR("Bridge Error %i"),hueError);
     }
     
     sappends('m',SET_F("(\"sip\")[0]"),hueErrorString);
@@ -630,6 +675,7 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == 8) //usermods
   {
+    appendGPIOinfo();
     oappend(SET_F("numM="));
     oappendi(usermods.getModCount());
     oappend(";");

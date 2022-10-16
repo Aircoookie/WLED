@@ -23,7 +23,12 @@
       // success event 
       scE.addEventListener("load", () => {
         //console.log("File loaded");
+        d.um_p = [];
+        d.rsvd = [];
+        d.ro_pins = [];
+        d.max_gpio = 39;
         GetV();checkSi();setABL();
+        if (d.um_p[0]==-1) d.um_p.shift();
       });
       // error event
       scE.addEventListener("error", (ev) => {
@@ -57,9 +62,11 @@
         //check for pin conflicts
         if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4" || nm=="RL" || nm=="BT" || nm=="IR")
           if (LCs[i].value!="" && LCs[i].value!="-1") {
-            if (d.um_p && d.um_p.some((e)=>e==parseInt(LCs[i].value,10))) {alert(`Sorry, pins ${JSON.stringify(d.um_p)} can't be used.`);LCs[i].value="";LCs[i].focus();return false;}
-            else if (LCs[i].value > 5 && LCs[i].value < 12) {alert("Sorry, pins 6-11 can not be used.");LCs[i].value="";LCs[i].focus();return false;}
-            else if (!(nm == "IR" || nm=="BT") && LCs[i].value > 33) {alert("Sorry, pins >33 are input only.");LCs[i].value="";LCs[i].focus();return false;}
+            var p = []; // used pin array
+            for (k=0;k<d.rsvd.length;k++) p.push(d.rsvd[k]); // fill with reservations
+            for (k=0;k<d.um_p.length;k++) p.push(d.um_p[k]); // fill with usermod pins
+            if (p.some((e)=>e==parseInt(LCs[i].value,10))) {alert(`Sorry, pins ${JSON.stringify(p)} can't be used.`);LCs[i].value="";LCs[i].focus();return false;}
+            else if (!(nm == "IR" || nm=="BT") && d.ro_pins.some((e)=>e==parseInt(LCs[i].value,10))) {alert(`Sorry, pins ${JSON.stringify(d.ro_gpio)} are input only.`);LCs[i].value="";LCs[i].focus();return false;}
             for (j=i+1; j<LCs.length; j++)
             {
               var n2 = LCs[j].name.substring(0,2);
@@ -230,7 +237,7 @@
             LCs[i].style.color="#fff";
             continue; // do not check conflicts
           } else {
-            LCs[i].max = 33;
+            LCs[i].max = d.max_gpio;
             LCs[i].min = -1;
           }
         }
@@ -238,7 +245,8 @@
         if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4" || nm=="RL" || nm=="BT" || nm=="IR")
           if (LCs[i].value!="" && LCs[i].value!="-1") {
             var p = []; // used pin array
-            if (d.um_p && Array.isArray(d.um_p)) for (k=0;k<d.um_p.length;k++) p.push(d.um_p[k]); // fill with reservations
+            for (k=0;k<d.rsvd.length;k++) p.push(d.rsvd[k]); // fill with reservations
+            for (k=0;k<d.um_p.length;k++) p.push(d.um_p[k]); // fill with usermod pins
             for (j=0; j<LCs.length; j++) {
               if (i==j) continue;
               var n2 = LCs[j].name.substring(0,2);
@@ -252,8 +260,13 @@
               }
             }
             // now check for conflicts
-            if (p.some((e)=>e==parseInt(LCs[i].value,10))) LCs[i].style.color="red"; else LCs[i].style.color=parseInt(LCs[i].value,10)>33?"orange":"#fff";
+            if (p.some((e)=>e==parseInt(LCs[i].value,10))) LCs[i].style.color="red"; else LCs[i].style.color=d.ro_gpio.some((e)=>e==parseInt(LCs[i].value,10))?"orange":"#fff";
           }
+        // check buttons, IR & relay
+        if (nm=="IR" || nm=="BT" || nm=="RL") {
+          LCs[i].max = d.max_gpio;
+          LCs[i].min = -1;
+        }
       }
       // update total led count
       gId("lc").textContent = sLC;
@@ -268,25 +281,25 @@
       gId('wreason').innerHTML = (bquot > 80) ? "80% of max. LED memory" +(bquot>100 ? ` (<b>ERROR: Using over ${maxM}B!</b>)` : "") : "800 LEDs per output";
       // calculate power
       var val = Math.ceil((100 + sPC * laprev)/500)/2;
-			val = (val > 5) ? Math.ceil(val) : val;
-			var s = "";
+      val = (val > 5) ? Math.ceil(val) : val;
+      var s = "";
       var is12V = (d.Sf.LAsel.value == 30);
       var isWS2815 = (d.Sf.LAsel.value == 255);
-			if (val < 1.02 && !is12V && !isWS2815)
-			{
-				s = "ESP 5V pin with 1A USB supply";
-			} else
-			{
-        		s += is12V ? "12V ": isWS2815 ? "WS2815 12V " : "5V ";
-				s += val;
-				s += "A supply connected to LEDs";
-			}
+      if (val < 1.02 && !is12V && !isWS2815)
+      {
+        s = "ESP 5V pin with 1A USB supply";
+      } else
+      {
+        s += is12V ? "12V ": isWS2815 ? "WS2815 12V " : "5V ";
+        s += val;
+        s += "A supply connected to LEDs";
+      }
       var val2 = Math.ceil((100 + sPC * laprev)/1500)/2;
       val2 = (val2 > 5) ? Math.ceil(val2) : val2;
       var s2 = "(for most effects, ~";
       s2 += val2;
       s2 += "A is enough)<br>";
-			gId('psu').innerHTML = s;
+      gId('psu').innerHTML = s;
       gId('psu2').innerHTML = isWS2815 ? "" : s2;
       gId("json").style.display = d.Sf.IT.value==8 ? "" : "none";
     }
@@ -348,11 +361,11 @@ ${i+1}:
 <span id="psd${i}">Start:</span> <input type="number" name="LS${i}" id="ls${i}" class="l starts" min="0" max="8191" value="${lastEnd(i)}" oninput="startsDirty[${i}]=true;UI();" required />&nbsp;
 <div id="dig${i}c" style="display:inline">Length: <input type="number" name="LC${i}" class="l" min="1" max="${maxPB}" value="1" required oninput="UI()" /></div><br>
 </div>
-<span id="p0d${i}">GPIO:</span> <input type="number" name="L0${i}" min="0" max="33" required class="s" onchange="UI()"/>
-<span id="p1d${i}"></span><input type="number" name="L1${i}" min="0" max="33" class="s" onchange="UI()"/>
-<span id="p2d${i}"></span><input type="number" name="L2${i}" min="0" max="33" class="s" onchange="UI()"/>
-<span id="p3d${i}"></span><input type="number" name="L3${i}" min="0" max="33" class="s" onchange="UI()"/>
-<span id="p4d${i}"></span><input type="number" name="L4${i}" min="0" max="33" class="s" onchange="UI()"/>
+<span id="p0d${i}">GPIO:</span> <input type="number" name="L0${i}" min="0" max="48" required class="s" onchange="UI()"/>
+<span id="p1d${i}"></span><input type="number" name="L1${i}" min="0" max="48" class="s" onchange="UI()"/>
+<span id="p2d${i}"></span><input type="number" name="L2${i}" min="0" max="48" class="s" onchange="UI()"/>
+<span id="p3d${i}"></span><input type="number" name="L3${i}" min="0" max="48" class="s" onchange="UI()"/>
+<span id="p4d${i}"></span><input type="number" name="L4${i}" min="0" max="48" class="s" onchange="UI()"/>
 <div id="dig${i}r" style="display:inline"><br><span id="rev${i}">Reversed</span>: <input type="checkbox" name="CV${i}"></div>
 <div id="dig${i}s" style="display:inline"><br>Skip first LEDs: <input type="number" name="SL${i}" min="0" max="255" value="0" oninput="UI()"></div>
 <div id="dig${i}f" style="display:inline"><br>Off Refresh: <input id="rf${i}" type="checkbox" name="RF${i}"></div>
@@ -422,7 +435,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
       var c = gId("btns").innerHTML;
       var bt = "BT" + String.fromCharCode((i<10?48:55)+i);
       var be = "BE" + String.fromCharCode((i<10?48:55)+i);
-      c += `Button ${i} GPIO: <input type="number" min="-1" max="40" name="${bt}" onchange="UI()" class="xs" value="${p}">`;
+      c += `Button ${i} GPIO: <input type="number" min="-1" max="48" name="${bt}" onchange="UI()" class="xs" value="${p}">`;
       c += `&nbsp;<select name="${be}">`
       c += `<option value="0" ${t==0?"selected":""}>Disabled</option>`;
       c += `<option value="2" ${t==2?"selected":""}>Pushbutton</option>`;
@@ -605,7 +618,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
     <hr style="width:260px">
     <div id="btns"></div>
     Touch threshold: <input type="number" class="s" min="0" max="100" name="TT" required><br>
-    IR GPIO: <input type="number" min="-1" max="40" name="IR" onchange="UI()" class="xs"><select name="IT" onchange="UI()">
+    IR GPIO: <input type="number" min="-1" max="48" name="IR" onchange="UI()" class="xs"><select name="IT" onchange="UI()">
     <option value=0>Remote disabled</option>
     <option value=1>24-key RGB</option>
     <option value=2>24-key with CT</option>
@@ -619,7 +632,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
     Apply IR change to main segment only: <input type="checkbox" name="MSO"><br>
     <div id="json" style="display:none;">JSON file: <input type="file" name="data" accept=".json"><button type="button" class="sml" onclick="uploadFile('/ir.json')">Upload</button><br></div>
     <a href="https://kno.wled.ge/interfaces/infrared/" target="_blank">IR info</a><br>
-    Relay GPIO: <input type="number" min="-1" max="33" name="RL" onchange="UI()" class="xs"> Invert <input type="checkbox" name="RM"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#x2715;</span><br>
+    Relay GPIO: <input type="number" min="-1" max="48" name="RL" onchange="UI()" class="xs"> Invert <input type="checkbox" name="RM"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#x2715;</span><br>
     <hr style="width:260px">
 		<h3>Defaults</h3>
 		Turn LEDs on after power up/reset: <input type="checkbox" name="BO"><br>
