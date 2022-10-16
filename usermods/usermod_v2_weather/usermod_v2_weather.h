@@ -54,8 +54,8 @@ uint16_t mode_2DWeather(void) {
 
   // Serial.print(" temp ");
 
-  char tempString[5] = "";
-  sprintf(tempString, "%5.2f", currentTemp);
+  char tempString[6] = { '\0' };  // initialize string with zeros
+  snprintf(tempString, 5, "%5.2f", currentTemp); // snprintf will prevent overflow
   // Serial.println();
 
   CRGB color = ColorFromPalette(SEGPALETTE, map((uint8_t)currentTemp, 0, 40, 0, 255), 255, LINEARBLEND);
