@@ -111,13 +111,18 @@ void sendDataWs(AsyncWebSocketClient * client)
   DEBUG_PRINTF("JSON buffer size: %u for WS request (%u).\n", doc.memoryUsage(), len);
 
   size_t heap1 = ESP.getFreeHeap();
-  buffer = ws.makeBuffer(len); // will not allocate correct memory sometimes
+  buffer = ws.makeBuffer(len); // will not allocate correct memory sometimes on ESP8266
+  #ifdef ESP8266
   size_t heap2 = ESP.getFreeHeap();
+  #else
+  size_t heap2 = 0; // ESP32 variants do not have the same issue and will work without checking heap allocation
+  #endif
   if (!buffer || heap1-heap2<len) {
     releaseJSONBufferLock();
     DEBUG_PRINTLN(F("WS buffer allocation failed."));
     ws.closeAll(1013); //code 1013 = temporary overload, try again later
     ws.cleanupClients(0); //disconnect all clients to release memory
+    ws._cleanBuffers();
     return; //out of memory
   }
 

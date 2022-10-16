@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2209091
+#define VERSION 2210101
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -27,7 +27,7 @@
 //#define WLED_DISABLE_ALEXA       // saves 11kb
 //#define WLED_DISABLE_BLYNK       // saves 6kb
 //#define WLED_DISABLE_HUESYNC     // saves 4kb
-//#define WLED_DISABLE_INFRARED    // saves 12kb
+//#define WLED_DISABLE_INFRARED    // saves 12kb, there is no pin left for this on ESP8266-01
 #ifndef WLED_DISABLE_MQTT
   #define WLED_ENABLE_MQTT         // saves 12kb
 #endif
@@ -251,6 +251,16 @@ WLED_GLOBAL int8_t irPin _INIT(-1);
 WLED_GLOBAL int8_t irPin _INIT(IRPIN);
 #endif
 
+#if defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S2) || (defined(RX) && defined(TX))
+  // use RX/TX as set by the framework - these boards do _not_ have RX=3 and TX=1
+  constexpr uint8_t hardwareRX = RX;
+  constexpr uint8_t hardwareTX = TX;
+#else
+  // use defaults for RX/TX
+  constexpr uint8_t hardwareRX = 3;
+  constexpr uint8_t hardwareTX = 1;
+#endif
+
 //WLED_GLOBAL byte presetToApply _INIT(0);
 
 WLED_GLOBAL char ntpServerName[33] _INIT("0.wled.pool.ntp.org");   // NTP server to use
@@ -373,10 +383,10 @@ WLED_GLOBAL uint16_t e131Universe _INIT(1);                       // settings fo
 WLED_GLOBAL uint16_t e131Port _INIT(5568);                        // DMX in port. E1.31 default is 5568, Art-Net is 6454
 WLED_GLOBAL byte DMXMode _INIT(DMX_MODE_MULTIPLE_RGB);            // DMX mode (s.a.)
 WLED_GLOBAL uint16_t DMXAddress _INIT(1);                         // DMX start address of fixture, a.k.a. first Channel [for E1.31 (sACN) protocol]
-WLED_GLOBAL byte DMXOldDimmer _INIT(0);                           // only update brightness on change
 WLED_GLOBAL byte e131LastSequenceNumber[E131_MAX_UNIVERSE_COUNT]; // to detect packet loss
 WLED_GLOBAL bool e131Multicast _INIT(false);                      // multicast or unicast
 WLED_GLOBAL bool e131SkipOutOfSequence _INIT(false);              // freeze instead of flickering
+WLED_GLOBAL uint16_t pollReplyCount _INIT(0);                     // count number of replies for ArtPoll node report
 
 WLED_GLOBAL bool mqttEnabled _INIT(false);
 WLED_GLOBAL char mqttDeviceTopic[33] _INIT("");            // main MQTT topic (individual per device, default is wled/mac)
@@ -609,8 +619,9 @@ WLED_GLOBAL byte errorFlag _INIT(0);
 WLED_GLOBAL String messageHead, messageSub;
 WLED_GLOBAL byte optionType;
 
-WLED_GLOBAL bool doReboot _INIT(false);        // flag to initiate reboot from async handlers
-WLED_GLOBAL bool doPublishMqtt _INIT(false);
+WLED_GLOBAL bool doSerializeConfig _INIT(false);        // flag to initiate saving of config
+WLED_GLOBAL bool doReboot          _INIT(false);        // flag to initiate reboot from async handlers
+WLED_GLOBAL bool doPublishMqtt     _INIT(false);
 
 // status led
 #if defined(STATUSLED)

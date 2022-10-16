@@ -278,9 +278,13 @@ public:
       return;
     }
 
-    pinMode(pinA, INPUT_PULLUP);
-    pinMode(pinB, INPUT_PULLUP);
-    pinMode(pinC, INPUT_PULLUP);
+    #ifndef USERMOD_ROTARY_ENCODER_GPIO
+      #define USERMOD_ROTARY_ENCODER_GPIO INPUT_PULLUP
+    #endif
+    pinMode(pinA, USERMOD_ROTARY_ENCODER_GPIO);
+    pinMode(pinB, USERMOD_ROTARY_ENCODER_GPIO);
+    pinMode(pinC, USERMOD_ROTARY_ENCODER_GPIO);
+
     loopTime = millis();
 
     currentCCT = (approximateKelvinFromRGB(RGBW32(col[0], col[1], col[2], col[3])) - 1900) >> 5;
@@ -531,11 +535,11 @@ public:
       for (byte i=0; i<strip.getSegmentsNum(); i++) {
         Segment& seg = strip.getSegment(i);
         if (!seg.isActive()) continue;
-        strip.setMode(i, effectCurrent);
+        seg.setMode(effectCurrent);
       }
     } else {
-      //Segment& seg = strip.getSegment(strip.getMainSegmentId());
-      strip.setMode(strip.getMainSegmentId(), effectCurrent);
+      Segment& seg = strip.getSegment(strip.getMainSegmentId());
+      seg.setMode(effectCurrent);
     }
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
@@ -661,11 +665,11 @@ public:
       for (byte i=0; i<strip.getSegmentsNum(); i++) {
         Segment& seg = strip.getSegment(i);
         if (!seg.isActive()) continue;
-        seg.palette = effectPalette;
+        seg.setPalette(effectPalette);
       }
     } else {
       Segment& seg = strip.getSegment(strip.getMainSegmentId());
-      seg.palette = effectPalette;
+      seg.setPalette(effectPalette);
     }
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY

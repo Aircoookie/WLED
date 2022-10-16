@@ -293,8 +293,8 @@ class MultiRelay : public Usermod {
 
           json[F("stat_t")]  = "~";
           json[F("cmd_t")]   = F("~/command");
-          json[F("pl_off")]  = F("off");
-          json[F("pl_on")]   = F("on");
+          json[F("pl_off")]  = "off";
+          json[F("pl_on")]   = "on";
           json[F("uniq_id")] = uid;
 
           strcpy(buf, mqttDeviceTopic); //max length: 33 + 7 = 40

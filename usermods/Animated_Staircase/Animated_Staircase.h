@@ -114,8 +114,8 @@ class Animated_Staircase : public Usermod {
 
           // We may need to copy mode and colors from segment 0 to make sure
           // changes are propagated even when the config is changed during a wipe
-          // segments->mode = mainsegment.mode;
-          // segments->colors[0] = mainsegment.colors[0];
+          // seg.setMode(mainsegment.mode);
+          // seg.setColor(0, mainsegment.colors[0]);
         } else {
           seg.setOption(SEG_OPTION_ON, false);
         }
