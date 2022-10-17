@@ -667,16 +667,19 @@ ${urows===""?'':'<tr><td colspan=2><hr style="height:1px;border-width:0;color:gr
 ${inforow("Build",i.vid)}
 ${inforow("Signal strength",i.wifi.signal +"% ("+ i.wifi.rssi, " dBm)")}
 ${inforow("Uptime",getRuntimeStr(i.uptime))}
-${theap>0?inforow("Total heap",theap," kB"):""}
-${inforow("Free heap",heap," kB")}
-${i.tpram?inforow("Total PSRAM",(i.tpram/1024).toFixed(1)," kB"):""}
-${i.psram?inforow("Used PSRAM",(i.tpram-i.psram)," B"):""}
 ${inforow("Estimated current",pwru)}
 ${inforow("Average FPS",i.leds.fps)}
+<!-- WLEDSR begin--> 
+<tr><td colspan=2><hr style="height:1px;border-width:0;color:SeaGreen;background-color:SeaGreen"></td></tr>
 ${inforow("MAC address",i.mac)}
 ${inforow("Filesystem",i.fs.u + "/" + i.fs.t + " kB (" +Math.round(i.fs.u*100/i.fs.t) + "%)")}
 ${inforow("Environment",i.arch + " " + i.core + " (" + i.lwip + ")")}
-<!-- WLEDSR begin--> 
+${theap>0?inforow("Total heap",theap," kB"):""}
+${theap>0?inforow("used heap",((i.totalheap-i.freeheap)/1000).toFixed(1)," kB"):inforow("Free heap",heap," kB")}
+${i.minfreeheap?inforow("Max used heap",((i.totalheap-i.minfreeheap)/1000).toFixed(1)," kB"):""}
+${i.tpram?inforow("Total PSRAM",(i.tpram/1024).toFixed(1)," kB"):""}
+${i.psram?((i.tpram-i.psram)>16383?inforow("Used PSRAM",((i.tpram-i.psram)/1024).toFixed(1)," kB"):inforow("Used PSRAM",(i.tpram-i.psram)," B")):""}
+${i.psusedram?((i.tpram-i.psusedram)>16383?inforow("Max Used PSRAM",((i.tpram-i.psusedram)/1024).toFixed(1)," kB"):inforow("Max Used PSRAM",(i.tpram-i.psusedram)," B")):""}
 <tr><td colspan=2><hr style="height:1px;border-width:0;color:SeaGreen;background-color:SeaGreen"></td></tr>
 ${i.e32model?inforow(i.e32model,i.e32cores +" core(s)"," "+i.e32speed+" Mhz"):""}
 ${i.e32flash?inforow("Flash "+i.e32flash+" MB"+", mode "+i.e32flashmode+i.e32flashtext,i.e32flashspeed," Mhz"):""}

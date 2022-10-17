@@ -148,8 +148,10 @@ bool oappendi(int i)
 bool oappend(const char* txt)
 {
   uint16_t len = strlen(txt);
-  if (olen + len >= SETTINGS_STACK_BUF_SIZE)
+  if (olen + len >= SETTINGS_STACK_BUF_SIZE) {
+    DEBUG_PRINTLN(F("oappend() error: buffer full. Increase SETTINGS_STACK_BUF_SIZE."));
     return false;        // buffer full
+  }
   strcpy(obuf + olen, txt);
   olen += len;
   return true;

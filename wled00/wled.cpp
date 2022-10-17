@@ -457,6 +457,15 @@ void WLED::setup()
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_DISABLE_BROWNOUT_DET)
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 1); //enable brownout detector
   #endif
+  
+  #ifdef ARDUINO_ARCH_ESP32
+  #ifdef ARDUINO_RUNNING_CORE
+    DEBUG_PRINTF("Arduino core=%d (loop is now on core #%d)\n", int(ARDUINO_RUNNING_CORE), int(xPortGetCoreID()));
+  #endif
+  #ifdef ARDUINO_EVENT_RUNNING_CORE
+      DEBUG_PRINTF("Arduino Event core=%d\n", int(ARDUINO_EVENT_RUNNING_CORE));
+  #endif
+  #endif
 }
 
 void WLED::beginStrip()

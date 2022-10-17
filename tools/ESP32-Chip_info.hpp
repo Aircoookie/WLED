@@ -502,6 +502,7 @@ void show_psram_info_part2(void)
     }
   #endif
 
+  #if 0  // this test makes the "max used PSRAM" info unusable
   // try to allocate PSRAM (one 640KB chunk so we can be sure it will not fit into DRAM)
   void * buff2 = ps_malloc(640 * 1024);
   uint8_t * buf = (uint8_t*)malloc(620 * 1024);
@@ -518,6 +519,7 @@ void show_psram_info_part2(void)
     free(buf);
     Serial.println("* Can allocate big memory with malloc()");
   }
+  #endif
 
 #endif
 }
