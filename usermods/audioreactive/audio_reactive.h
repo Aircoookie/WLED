@@ -21,6 +21,7 @@
  */
 
 #define FFT_PREFER_EXACT_PEAKS  // use different FFT wndowing -> results in "sharper" peaks and less "leaking" into other frequencies
+//#define SR_STATS
 
 // Comment/Uncomment to toggle usb serial debugging
 // #define MIC_LOGGER                   // MIC sampling & sound input debugging (serial plotter)
@@ -59,6 +60,7 @@ static uint8_t soundSquelch = 10;             // squelch value for volume reacti
 static uint8_t sampleGain = 60;               // sample gain (config value)
 static uint8_t soundAgc = 0;                  // Automagic gain control: 0 - none, 1 - normal, 2 - vivid, 3 - lazy (config value)
 static uint8_t audioSyncEnabled = 0;          // bit field: bit 0 - send, bit 1 - receive (config value)
+static bool udpSyncConnected = false;         // UDP connection status -> true if connected to multicast group
 
 // user settable parameters for limitSoundDynamics()
 static bool limiterOn = true;                 // bool: enable / disable dynamics limiter
@@ -94,6 +96,12 @@ static volatile bool disableSoundProcessing = false;      // if true, sound proc
 static float    micDataReal = 0.0f;             // MicIn data with full 24bit resolution - lowest 8bit after decimal point
 static float    multAgc = 1.0f;                 // sample * multAgc = sampleAgc. Our AGC multiplier
 static float    sampleAvg = 0.0f;               // Smoothed Average sample - sampleAvg < 1 means "quiet" (simple noise gate)
+static float    sampleAgc = 0.0f;               // Smoothed AGC sample
+
+// variables used in effects
+static float    volumeSmth = 0.0f;   // either sampleAvg or sampleAgc depending on soundAgc; smoothed sample
+//static int16_t  volumeRaw = 0;       // either sampleRaw or rawSampleAgc depending on soundAgc
+//static float my_magnitude =0.0f;     // FFT_Magnitude, scaled by multAgc
 
 // peak detection
 static bool samplePeak = false;      // Boolean flag for peak - used in effects. Responding routine may reset this flag. Auto-reset after strip.getMinShowDelay()
@@ -149,7 +157,7 @@ static float   fftAvg[NUM_GEQ_CHANNELS] = {0.0f};                     // Calcula
 static float   fftResultMax[NUM_GEQ_CHANNELS] = {0.0f};               // A table used for testing to determine how our post-processing is working.
 #endif
 
-#if defined(WLED_DEBUG) || defined(SR_DEBUG)
+#if defined(WLED_DEBUG) || defined(SR_DEBUG) || defined(SR_STATS)
 static uint64_t fftTime = 0;
 static uint64_t sampleTime = 0;
 #endif
@@ -168,8 +176,8 @@ static const float fftResultPink[MAX_PINK+1][NUM_GEQ_CHANNELS] = {
           { 2.75f, 1.60f, 1.40f, 1.46f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 1.75f, 2.55f, 3.60f },  // ICS-43434 datasheet response * pink noise
           { 2.25f, 1.20f, 1.00f, 1.20f, 1.80f, 3.20f, 5.10f, 5.50f, 4.00f, 4.80f, 6.70f, 6.40f, 5.80f, 3.90f, 6.00f, 5.10f },  // ICS-43434 - big speaker, strong bass
 
-          { 2.25f, 1.60f, 1.30f, 1.60f, 2.20f, 3.20f, 3.06f, 2.60f, 2.85f, 3.50f, 3.90f, 4.50f, 3.35f, 3.20f, 3.60f, 4.20f },  // ICS-43434 - userdef #1 for ewowi (enhance median freqs)
-          { 4.75f, 3.60f, 2.40f, 2.46f, 3.52f, 1.60f, 1.68f, 3.20f, 2.20f, 2.00f, 2.30f, 2.41f, 2.30f, 1.25f, 4.55f, 6.50f },  // ICS-43434 - userdef #2 for softhack (mic hidden inside mini-shield)
+          { 2.25f, 1.60f, 1.30f, 1.60f, 2.20f, 3.20f, 3.06f, 2.60f, 2.85f, 3.50f, 4.10f, 4.80f, 5.70f, 6.05f,10.50f,14.85f },  // userdef #1 for ewowi (enhance median/high freqs)
+          { 4.75f, 3.60f, 2.40f, 2.46f, 3.52f, 1.60f, 1.68f, 3.20f, 2.20f, 2.00f, 2.30f, 2.41f, 2.30f, 1.25f, 4.55f, 6.50f },  // userdef #2 for softhack (mic hidden inside mini-shield)
 
           { 2.38f, 2.18f, 2.07f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 1.95f, 1.70f, 2.13f, 2.47f }   // almost FLAT (IMNP441 but no PINK noise adjustments)
 };
@@ -244,7 +252,7 @@ void FFTcode(void * parameter)
       continue;
     }
 
-#if defined(WLED_DEBUG) || defined(SR_DEBUG)
+#if defined(WLED_DEBUG) || defined(SR_DEBUG)|| defined(SR_STATS)
     uint64_t start = esp_timer_get_time();
     bool haveDoneFFT = false; // indicates if second measurement (FFT time) is valid
 #endif
@@ -252,7 +260,7 @@ void FFTcode(void * parameter)
     // get a fresh batch of samples from I2S
     if (audioSource) audioSource->getSamples(vReal, samplesFFT);
 
-#if defined(WLED_DEBUG) || defined(SR_DEBUG)
+#if defined(WLED_DEBUG) || defined(SR_DEBUG)|| defined(SR_STATS)
     if (start < esp_timer_get_time()) { // filter out overflows
       uint64_t sampleTimeInMillis = (esp_timer_get_time() - start +5ULL) / 10ULL; // "+5" to ensure proper rounding
       sampleTime = (sampleTimeInMillis*3 + sampleTime*7)/10; // smooth
@@ -275,11 +283,9 @@ void FFTcode(void * parameter)
     // early release allows the filters (getSample() and agcAvg()) to work with fresh values - we will have matching gain and noise gate values when we want to process the FFT results.    micDataReal = maxSample;
     micDataReal = maxSample;
 
-#ifdef SR_DEBUG
-    if (true) {  // this allows measure FFT runtimes, as it disables the "only when needed" optimization 
-#else
-    if (sampleAvg > 0.5f) { // noise gate open means that FFT results will be used. Don't run FFT if results are not needed.
-#endif
+    // run FFT (takes 3-5ms on ESP32)
+    //if (fabsf(sampleAvg) > 0.25f) { // noise gate open
+    if (fabsf(volumeSmth) > 0.25f) { // noise gate open
 
       // run FFT (takes 3-5ms on ESP32, ~12ms on ESP32-S2)
 #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
@@ -312,7 +318,7 @@ void FFTcode(void * parameter)
 #endif
       FFT_MajorPeak = constrain(FFT_MajorPeak, 1.0f, 11025.0f);   // restrict value to range expected by effects
 
-#if defined(WLED_DEBUG) || defined(SR_DEBUG)
+#if defined(WLED_DEBUG) || defined(SR_DEBUG) || defined(SR_STATS)
       haveDoneFFT = true;
 #endif
 
@@ -328,7 +334,8 @@ void FFTcode(void * parameter)
     } // for()
 
     // mapping of FFT result bins to frequency channels
-    if (sampleAvg > 0.5f) { // noise gate open
+    //if (fabsf(sampleAvg) > 0.25f) { // noise gate open
+    if (fabsf(volumeSmth) > 0.25f) { // noise gate open
 #if 0
     /* This FFT post processing is a DIY endeavour. What we really need is someone with sound engineering expertise to do a great job here AND most importantly, that the animations look GREAT as a result.
     *
@@ -387,7 +394,8 @@ void FFTcode(void * parameter)
     if (pinkIndex > MAX_PINK) pinkIndex = MAX_PINK;
     for (int i=0; i < NUM_GEQ_CHANNELS; i++) {
 
-      if (sampleAvg > 0.5f) { // noise gate open
+      //if (fabsf(sampleAvg) > 0.25f) { // noise gate open
+      if (fabsf(volumeSmth)  > 0.25f) { // noise gate open
         // Adjustment for frequency curves.
         fftCalc[i] *= fftResultPink[pinkIndex][i];
         if (FFTScalingMode > 0) fftCalc[i] *= FFT_DOWNSCALE;  // adjustment related to FFT windowing function
@@ -463,8 +471,9 @@ void FFTcode(void * parameter)
       fftResult[i] = constrain((int)currentResult, 0, 255);
     }
 
-#if defined(WLED_DEBUG) || defined(SR_DEBUG)
-    if (haveDoneFFT && (start < esp_timer_get_time())) { // filter out overflows
+#if defined(WLED_DEBUG) || defined(SR_DEBUG)|| defined(SR_STATS)
+    //if (haveDoneFFT && (start < esp_timer_get_time())) { // filter out overflows
+    if ((start <= esp_timer_get_time())) { // filter out overflows
       uint64_t fftTimeInMillis = ((esp_timer_get_time() - start) +5ULL) / 10ULL; // "+5" to ensure proper rounding
       fftTime  = (fftTimeInMillis*3 + fftTime*7)/10; // smooth
     }
@@ -488,14 +497,30 @@ void FFTcode(void * parameter)
 
 // peak detection is called from FFT task when vReal[] contains valid FFT results
 static void detectSamplePeak(void) {
+  bool havePeak = false;
+
   // Poor man's beat detection by seeing if sample > Average + some value.
+  // This goes through ALL of the 255 bins - but ignores stupid settings
+  // Then we got a peak, else we don't. The peak has to time out on its own in order to support UDP sound sync.
   if ((sampleAvg > 1) && (maxVol > 0) && (binNum > 1) && (vReal[binNum] > maxVol) && ((millis() - timeOfPeak) > 100)) {
-    // This goes through ALL of the 255 bins - but ignores stupid settings
-    // Then we got a peak, else we don't. The peak has to time out on its own in order to support UDP sound sync.
+    havePeak = true;
+  }
+
+#if 0
+  // alternate detection, based on FFT_MajorPeak and FFT_Magnitude. Not much better...
+  if ((binNum > 1) && (binNum < 10) && (sampleAgc > 127) && 
+      (FFT_MajorPeak > 50) && (FFT_MajorPeak < 250) && (FFT_Magnitude > (16.0f * (maxVol+42.0)) /*my_magnitude > 136.0f*16.0f*/) && 
+      (millis() - timeOfPeak > 80)) {
+    havePeak = true;
+  }
+#endif
+
+  if (havePeak) {
     samplePeak    = true;
     timeOfPeak    = millis();
     udpSamplePeak = true;
   }
+
 }
 
 static void autoResetPeak(void) {
@@ -587,7 +612,6 @@ class AudioReactive : public Usermod {
 
     // variables  for UDP sound sync
     WiFiUDP fftUdp;               // UDP object for sound sync (from WiFi UDP, not Async UDP!) 
-    bool udpSyncConnected = false;// UDP connection status -> true if connected to multicast group
     unsigned long lastTime = 0;   // last time of running UDP Microphone Sync
     const uint16_t delayMs = 10;  // I don't want to sample too often and overload WLED
     uint16_t audioSyncPort= 11988;// default port for UDP sound sync
@@ -604,10 +628,8 @@ class AudioReactive : public Usermod {
     float    sampleReal = 0.0f;	  // "sampleRaw" as float, to provide bits that are lost otherwise (before amplification by sampleGain or inputLevel). Needed for AGC.
     int16_t  sampleRaw = 0;       // Current sample. Must only be updated ONCE!!! (amplified mic value by sampleGain and inputLevel)
     int16_t  rawSampleAgc = 0;    // not smoothed AGC sample
-    float    sampleAgc = 0.0f;    // Smoothed AGC sample
 
     // variables used in effects
-    float    volumeSmth = 0.0f;   // either sampleAvg or sampleAgc depending on soundAgc; smoothed sample
     int16_t  volumeRaw = 0;       // either sampleRaw or rawSampleAgc depending on soundAgc
     float my_magnitude =0.0f;     // FFT_Magnitude, scaled by multAgc
 
@@ -855,6 +877,14 @@ class AudioReactive : public Usermod {
       // keep "peak" sample, but decay value if current sample is below peak
       if ((sampleMax < sampleReal) && (sampleReal > 0.5f)) {
         sampleMax = sampleMax + 0.5f * (sampleReal - sampleMax);  // new peak - with some filtering
+#if 1
+        // another simple way to detect samplePeak
+        if ((binNum < 10) && (millis() - timeOfPeak > 80) && (sampleAvg > 1)) {
+          samplePeak    = true;
+          timeOfPeak    = millis();
+          udpSamplePeak = true;
+        }
+#endif
       } else {
         if ((multAgc*sampleMax > agcZoneStop[AGC_preset]) && (soundAgc > 0))
           sampleMax += 0.5f * (sampleReal - sampleMax);        // over AGC Zone - get back quickly
@@ -1471,13 +1501,13 @@ class AudioReactive : public Usermod {
           infoArr.add("off");
         if (audioSyncEnabled && !udpSyncConnected) infoArr.add(" <i>(unconnected)</i>");
 
-        #if defined(WLED_DEBUG) || defined(SR_DEBUG)
+        #if defined(WLED_DEBUG) || defined(SR_DEBUG) || defined(SR_STATS)
         infoArr = user.createNestedArray(F("Sampling time"));
         infoArr.add(float(sampleTime)/100.0f);
         infoArr.add(" ms");
 
         infoArr = user.createNestedArray(F("FFT time"));
-        infoArr.add(float(fftTime)/100.0f);        
+        infoArr.add(float(fftTime)/100.0f);
         if ((fftTime/100) >= FFT_MIN_CYCLE) // FFT time over budget -> I2S buffer will overflow 
           infoArr.add("<b style=\"color:red;\">! ms</b>");
         else if ((fftTime/80 + sampleTime/80) >= FFT_MIN_CYCLE) // FFT time >75% of budget -> risk of instability
@@ -1691,8 +1721,8 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addOption(dd,'IMNP441 - small speakers',4);"));
       oappend(SET_F("addOption(dd,'ICS-43434',5);"));
       oappend(SET_F("addOption(dd,'ICS-43434 - big speakers',6);"));
-      oappend(SET_F("addOption(dd,'ICS-43434 - userdef #1',7);"));
-      oappend(SET_F("addOption(dd,'ICS-43434 - userdef #2',8);"));
+      oappend(SET_F("addOption(dd,'userdefined #1',7);"));
+      oappend(SET_F("addOption(dd,'userdefined #2',8);"));
       oappend(SET_F("addOption(dd,'flat - no adjustments',9);"));
 
       oappend(SET_F("dd=addDropdown('AudioReactive','sync:mode');"));
@@ -1704,7 +1734,7 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',1,'I2S WS');"));
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',2,'I2S SCK');"));
       #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
-        oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'I2S Master CLK <i>only use -1, 0, 1 or 3 for MCLK</i>');"));
+        oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'I2S Master CLK <br/><i>only use -1, 0, 1 or 3 for MCLK</i>');"));
       #else
         oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'I2S Master CLK');"));
       #endif
