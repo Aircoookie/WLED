@@ -25,10 +25,18 @@
   #ifdef ESP8266
     #define WLED_MAX_BUSSES 3
   #else
-    #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3)
-      #define WLED_MAX_BUSSES 5
+    #if defined(CONFIG_IDF_TARGET_ESP32C3)    // 2 RMT, 6 LEDC, only has 1 I2S but NPB does not support it ATM
+      #define WLED_MAX_BUSSES 3               // will allow 2 digital & 1 analog (or the other way around)
+    #elif defined(CONFIG_IDF_TARGET_ESP32S2)  // 4 RMT, 8 LEDC, only has 1 I2S bus, supported in NPB
+      #if defined(USERMOD_AUDIOREACTIVE)      // requested by @softhack007 https://github.com/blazoncek/WLED/issues/33
+        #define WLED_MAX_BUSSES 6             // will allow 4 digital & 2 analog
+      #else
+        #define WLED_MAX_BUSSES 7             // will allow 5 digital & 2 analog
+      #endif
+    #elif defined(CONFIG_IDF_TARGET_ESP32S3)  // 4 RMT, 8 LEDC, has 2 I2S but NPB does not support them ATM
+      #define WLED_MAX_BUSSES 6               // will allow 4 digital & 2 analog
     #else
-      #if defined(CONFIG_IDF_TARGET_ESP32S3)
+      #if defined(USERMOD_AUDIOREACTIVE)      // requested by @softhack007 https://github.com/blazoncek/WLED/issues/33
         #define WLED_MAX_BUSSES 8
       #else
         #define WLED_MAX_BUSSES 10
@@ -286,7 +294,7 @@
   #ifdef ESP8266
     #define MAX_LED_MEMORY 4000
   #else
-    #ifdef ARDUINO_ARCH_ESP32S2
+    #if defined(ARDUINO_ARCH_ESP32S2) || defined(ARDUINO_ARCH_ESP32C3)
       #define MAX_LED_MEMORY 32000
     #else
       #define MAX_LED_MEMORY 64000
