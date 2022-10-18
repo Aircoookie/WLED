@@ -681,7 +681,7 @@ class Lexer {
 
       for (JsonPair tokenPair: definitionJson["TOKENS"].as<JsonObject>()) {
         const char * value = tokenPair.value();
-        char currentValue[charLength];
+        char currentValue[charLength+1];
         strncpy(currentValue, this->text + this->pos, charLength);
         currentValue[strlen(value)] = '\0';
         if (strcmp(value, currentValue) == 0 && strlen(value) > longestTokenLength) {
