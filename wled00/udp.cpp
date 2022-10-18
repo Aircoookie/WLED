@@ -207,7 +207,7 @@ void handleNotifications()
   IPAddress localIP;
 
   //send second notification if enabled
-  if(udpConnected && (notificationCount < ubUdpNumRetries) && ((millis()-notificationSentTime) > 250)){
+  if(udpConnected && (notificationCount < udpNumRetries) && ((millis()-notificationSentTime) > 250)){
     notify(notificationSentCallMode,true);
   }
   

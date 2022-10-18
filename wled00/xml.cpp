@@ -489,7 +489,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("SB"),notifyButton);
     sappend('c',SET_F("SH"),notifyHue);
     sappend('c',SET_F("SM"),notifyMacro);
-    sappend('v',SET_F("UR"),ubUdpNumRetries);
+    sappend('v',SET_F("UR"),udpNumRetries);
 
     sappend('c',SET_F("NL"),nodeListEnabled);
     sappend('c',SET_F("NB"),nodeBroadcastEnabled);

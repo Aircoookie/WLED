@@ -249,7 +249,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     notifyMacro = request->hasArg(F("SM"));
 
     t = request->arg(F("UR")).toInt();
-    if ((t>=0) && (t<30)) ubUdpNumRetries = t;
+    if ((t>=0) && (t<30)) udpNumRetries = t;
 
 
     nodeListEnabled = request->hasArg(F("NL"));
