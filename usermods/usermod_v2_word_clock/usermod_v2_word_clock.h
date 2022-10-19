@@ -23,6 +23,7 @@ class WordClockUsermod : public Usermod
     // set your config variables to their boot default value (this can also be done in readFromConfig() or a constructor if you prefer)
     bool usermodActive = false;
     bool displayItIs = false;
+    int ledOffset = 100;
     bool meander = false;
     
     // defines for mask sizes
@@ -407,6 +408,7 @@ class WordClockUsermod : public Usermod
       JsonObject top = root.createNestedObject("WordClockUsermod");
       top["active"] = usermodActive;
       top["displayItIs"] = displayItIs;
+      top["ledOffset"] = ledOffset;
       top["Meander wiring?"] = meander;
     }
 
@@ -436,6 +438,7 @@ class WordClockUsermod : public Usermod
 
       configComplete &= getJsonValue(top["active"], usermodActive);
       configComplete &= getJsonValue(top["displayItIs"], displayItIs);
+      configComplete &= getJsonValue(top["ledOffset"], ledOffset);
       configComplete &= getJsonValue(top["Meander wiring?"], meander);
 
       return configComplete;
@@ -458,7 +461,7 @@ class WordClockUsermod : public Usermod
           if (maskLedsOn[x] == 0)
           {
             // set pixel off
-            strip.setPixelColor(x, RGBW32(0,0,0,0));
+            strip.setPixelColor(x + ledOffset, RGBW32(0,0,0,0));
           }
         }
       }

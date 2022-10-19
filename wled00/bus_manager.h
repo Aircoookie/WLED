@@ -41,18 +41,19 @@ void colorRGBtoRGBW(byte* rgb);
 
 //temporary struct for passing bus configuration to bus
 struct BusConfig {
-  uint8_t type = TYPE_WS2812_RGB;
+  uint8_t type;
   uint16_t count;
   uint16_t start;
   uint8_t colorOrder;
   bool reversed;
   uint8_t skipAmount;
   bool refreshReq;
+  uint8_t autoWhite;
   uint8_t pins[5] = {LEDPIN, 255, 255, 255, 255};
-  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint8_t skip = 0) {
+  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint8_t skip = 0, byte aw=RGBW_MODE_MANUAL_ONLY) {
     refreshReq = (bool) GET_BIT(busType,7);
     type = busType & 0x7F;  // bit 7 may be/is hacked to include refresh info (1=refresh in off state, 0=no refresh)
-    count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev; skipAmount = skip;
+    count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev; skipAmount = skip; autoWhite = aw;
     uint8_t nPins = 1;
     if (type >= TYPE_NET_DDP_RGB && type < 96) nPins = 4; //virtual network bus. 4 "pins" store IP address
     else if (type > 47) nPins = 2;
@@ -115,10 +116,11 @@ struct ColorOrderMap {
 
   inline uint8_t IRAM_ATTR getPixelColorOrder(uint16_t pix, uint8_t defaultColorOrder) const {
     if (_count == 0) return defaultColorOrder;
-
+    // upper nibble containd W swap information
+    uint8_t swapW = defaultColorOrder >> 4;
     for (uint8_t i = 0; i < _count; i++) {
       if (pix >= _mappings[i].start && pix < (_mappings[i].start + _mappings[i].len)) {
-        return _mappings[i].colorOrder;
+        return _mappings[i].colorOrder | (swapW << 4);
       }
     }
     return defaultColorOrder;
@@ -132,20 +134,26 @@ struct ColorOrderMap {
 //parent class of BusDigital, BusPwm, and BusNetwork
 class Bus {
   public:
-    Bus(uint8_t type, uint16_t start) {
+    Bus(uint8_t type, uint16_t start, uint8_t aw)
+    : _bri(255)
+    , _len(1)
+    , _valid(false)
+    , _needsRefresh(false)
+    {
       _type = type;
       _start = start;
+      _autoWhiteMode = Bus::isRgbw(_type) ? aw : RGBW_MODE_MANUAL_ONLY;
     };
 
     virtual ~Bus() {} //throw the bus under the bus
 
-    virtual void     show() {}
+    virtual void     show() = 0;
     virtual bool     canShow() { return true; }
-		virtual void     setStatusPixel(uint32_t c) {}
-    virtual void     setPixelColor(uint16_t pix, uint32_t c) {}
+    virtual void     setStatusPixel(uint32_t c) {}
+    virtual void     setPixelColor(uint16_t pix, uint32_t c) = 0;
     virtual uint32_t getPixelColor(uint16_t pix) { return 0; }
-    virtual void     setBrightness(uint8_t b) {}
-    virtual void     cleanup() {}
+    virtual void     setBrightness(uint8_t b) { _bri = b; };
+    virtual void     cleanup() = 0;
     virtual uint8_t  getPins(uint8_t* pinArray) { return 0; }
     virtual uint16_t getLength() { return _len; }
     virtual void     setColorOrder() {}
@@ -162,6 +170,16 @@ class Bus {
     static  bool isRgbw(uint8_t type) {
       if (type == TYPE_SK6812_RGBW || type == TYPE_TM1814) return true;
       if (type > TYPE_ONOFF && type <= TYPE_ANALOG_5CH && type != TYPE_ANALOG_3CH) return true;
+      if (type == TYPE_NET_DDP_RGBW) return true;
+      return false;
+    }
+    virtual bool hasRGB() {
+      if (_type == TYPE_WS2812_1CH || _type == TYPE_WS2812_WWA || _type == TYPE_ANALOG_1CH || _type == TYPE_ANALOG_2CH || _type == TYPE_ONOFF) return false;
+      return true;
+    }
+    virtual bool hasWhite() {
+      if (_type == TYPE_SK6812_RGBW || _type == TYPE_TM1814 || _type == TYPE_WS2812_1CH || _type == TYPE_WS2812_WWA ||
+          _type == TYPE_ANALOG_1CH || _type == TYPE_ANALOG_2CH || _type == TYPE_ANALOG_4CH || _type == TYPE_ANALOG_5CH || _type == TYPE_NET_DDP_RGBW) return true;
       return false;
     }
     static void setCCT(uint16_t cct) {
@@ -175,32 +193,37 @@ class Bus {
 				if (_cctBlend > WLED_MAX_CCT_BLEND) _cctBlend = WLED_MAX_CCT_BLEND;
 			#endif
 		}
-		inline static void    setAutoWhiteMode(uint8_t m) { if (m < 4) _autoWhiteMode = m; }
-		inline static uint8_t getAutoWhiteMode() { return _autoWhiteMode; }
+		inline        void    setAWMode(uint8_t m)        { if (m < 4) _autoWhiteMode = m; }
+		inline        uint8_t getAWMode()                 { return _autoWhiteMode; }
+    inline static void    setAutoWhiteMode(uint8_t m) { if (m < 4) _gAWM = m; else _gAWM = 255; }
+    inline static uint8_t getAutoWhiteMode()          { return _gAWM; }
 
     bool reversed = false;
 
   protected:
-    uint8_t  _type = TYPE_NONE;
-    uint8_t  _bri = 255;
-    uint16_t _start = 0;
-    uint16_t _len = 1;
-    bool     _valid = false;
-    bool     _needsRefresh = false;
-    static uint8_t _autoWhiteMode;
-    static int16_t _cct;
-		static uint8_t _cctBlend;
+    uint8_t  _type;
+    uint8_t  _bri;
+    uint16_t _start;
+    uint16_t _len;
+    bool     _valid;
+    bool     _needsRefresh;
+    uint8_t  _autoWhiteMode;
+    static uint8_t _gAWM;     // definition in FX_fcn.cpp
+    static int16_t _cct;      // definition in FX_fcn.cpp
+		static uint8_t _cctBlend; // definition in FX_fcn.cpp
   
     uint32_t autoWhiteCalc(uint32_t c) {
-      if (_autoWhiteMode == RGBW_MODE_MANUAL_ONLY) return c;
+      uint8_t aWM = _autoWhiteMode;
+      if (_gAWM < 255) aWM = _gAWM;
+      if (aWM == RGBW_MODE_MANUAL_ONLY) return c;
       uint8_t w = W(c);
       //ignore auto-white calculation if w>0 and mode DUAL (DUAL behaves as BRIGHTER if w==0)
-      if (w > 0 && _autoWhiteMode == RGBW_MODE_DUAL) return c;
+      if (w > 0 && aWM == RGBW_MODE_DUAL) return c;
       uint8_t r = R(c);
       uint8_t g = G(c);
       uint8_t b = B(c);
       w = r < g ? (r < b ? r : b) : (g < b ? g : b);
-      if (_autoWhiteMode == RGBW_MODE_AUTO_ACCURATE) { r -= w; g -= w; b -= w; } //subtract w in ACCURATE mode
+      if (aWM == RGBW_MODE_AUTO_ACCURATE) { r -= w; g -= w; b -= w; } //subtract w in ACCURATE mode
       return RGBW32(r, g, b, w);
     }
 };
@@ -208,7 +231,7 @@ class Bus {
 
 class BusDigital : public Bus {
   public:
-  BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com) : Bus(bc.type, bc.start), _colorOrderMap(com) {
+  BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com) : Bus(bc.type, bc.start, bc.autoWhite), _colorOrderMap(com) {
     if (!IS_DIGITAL(bc.type) || !bc.count) return;
     if (!pinManager.allocatePin(bc.pins[0], true, PinOwner::BusDigital)) return;
     _pins[0] = bc.pins[0];
@@ -227,7 +250,7 @@ class BusDigital : public Bus {
     _busPtr = PolyBus::create(_iType, _pins, _len, nr);
     _valid = (_busPtr != nullptr);
     _colorOrder = bc.colorOrder;
-    DEBUG_PRINTF("Successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u)\n",nr, _len, bc.type, _pins[0],_pins[1],_iType);
+    DEBUG_PRINTF("%successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u)\n", _valid?"S":"Uns", nr, _len, bc.type, _pins[0],_pins[1],_iType);
   };
 
   inline void show() {
@@ -245,7 +268,7 @@ class BusDigital : public Bus {
       if (_pins[0] == LED_BUILTIN || _pins[1] == LED_BUILTIN) PolyBus::begin(_busPtr, _iType, _pins); 
     }
     #endif
-    _bri = b;
+    Bus::setBrightness(b);
     PolyBus::setBrightness(_busPtr, _iType, b);
   }
 
@@ -287,7 +310,8 @@ class BusDigital : public Bus {
   }
 
   void setColorOrder(uint8_t colorOrder) {
-    if (colorOrder > 5) return;
+    // upper nibble contains W swap information
+    if ((colorOrder & 0x0F) > 5) return;
     _colorOrder = colorOrder;
   }
 
@@ -325,7 +349,7 @@ class BusDigital : public Bus {
 
 class BusPwm : public Bus {
   public:
-  BusPwm(BusConfig &bc) : Bus(bc.type, bc.start) {
+  BusPwm(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
     _valid = false;
     if (!IS_PWM(bc.type)) return;
     uint8_t numPins = NUM_PWM_PINS(bc.type);
@@ -385,7 +409,7 @@ class BusPwm : public Bus {
 		else ww = ((255-cct) * 255) / (255 - _cctBlend);
 
 		if ((255-cct) < _cctBlend) cw = 255;
-		else cw = (cct       * 255) / (255 - _cctBlend);
+		else                       cw = (cct * 255) / (255 - _cctBlend);
 
 		ww = (w * ww) / 255; //brightness scaling
 		cw = (w * cw) / 255;
@@ -400,7 +424,6 @@ class BusPwm : public Bus {
         _data[0] = ww;
         break;
       case TYPE_ANALOG_5CH: //RGB + warm white + cold white
-        // perhaps a non-linear adjustment would be in order. need to test
         _data[4] = cw;
         w = ww;
       case TYPE_ANALOG_4CH: //RGBW
@@ -431,10 +454,6 @@ class BusPwm : public Bus {
     }
   }
 
-  inline void setBrightness(uint8_t b) {
-    _bri = b;
-  }
-
   uint8_t getPins(uint8_t* pinArray) {
     if (!_valid) return 0;
     uint8_t numPins = NUM_PWM_PINS(_type);
@@ -444,7 +463,7 @@ class BusPwm : public Bus {
     return numPins;
   }
 
-  inline void cleanup() {
+  void cleanup() {
     deallocatePins();
   }
 
@@ -477,9 +496,66 @@ class BusPwm : public Bus {
 };
 
 
+class BusOnOff : public Bus {
+  public:
+  BusOnOff(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
+    _valid = false;
+    if (bc.type != TYPE_ONOFF) return;
+
+    uint8_t currentPin = bc.pins[0];
+    if (!pinManager.allocatePin(currentPin, true, PinOwner::BusOnOff)) {
+      return;
+    }
+    _pin = currentPin; //store only after allocatePin() succeeds
+    pinMode(_pin, OUTPUT);
+    reversed = bc.reversed;
+    _valid = true;
+  };
+
+  void setPixelColor(uint16_t pix, uint32_t c) {
+    if (pix != 0 || !_valid) return; //only react to first pixel
+		c = autoWhiteCalc(c);
+    uint8_t r = R(c);
+    uint8_t g = G(c);
+    uint8_t b = B(c);
+    uint8_t w = W(c);
+
+    _data = bool((r+g+b+w) && _bri) ? 0xFF : 0;
+  }
+
+  uint32_t getPixelColor(uint16_t pix) {
+    if (!_valid) return 0;
+    return RGBW32(_data, _data, _data, _data);
+  }
+
+  void show() {
+    if (!_valid) return;
+    digitalWrite(_pin, reversed ? !(bool)_data : (bool)_data);
+  }
+
+  uint8_t getPins(uint8_t* pinArray) {
+    if (!_valid) return 0;
+    pinArray[0] = _pin;
+    return 1;
+  }
+
+  void cleanup() {
+    pinManager.deallocatePin(_pin, PinOwner::BusOnOff);
+  }
+
+  ~BusOnOff() {
+    cleanup();
+  }
+
+  private: 
+  uint8_t _pin = 255;
+  uint8_t _data = 0;
+};
+
+
 class BusNetwork : public Bus {
   public:
-    BusNetwork(BusConfig &bc) : Bus(bc.type, bc.start) {
+    BusNetwork(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
       _valid = false;
 //      switch (bc.type) {
 //        case TYPE_NET_ARTNET_RGB:
@@ -494,9 +570,9 @@ class BusNetwork : public Bus {
 //          _rgbw = false;
 //          _UDPtype = 0;
 //          break;
-//        default:
-          _rgbw = false;
-          _UDPtype = bc.type - TYPE_NET_DDP_RGB;
+//        default: // TYPE_NET_DDP_RGB / TYPE_NET_DDP_RGBW
+          _rgbw = bc.type == TYPE_NET_DDP_RGBW;
+          _UDPtype = 0;
 //          break;
 //      }
       _UDPchannels = _rgbw ? 4 : 3;
@@ -508,6 +584,9 @@ class BusNetwork : public Bus {
       _broadcastLock = false;
       _valid = true;
     };
+
+  bool hasRGB() { return true; }
+  bool hasWhite() { return _rgbw; }
 
   void setPixelColor(uint16_t pix, uint32_t c) {
     if (!_valid || pix >= _len) return;
@@ -538,10 +617,6 @@ class BusNetwork : public Bus {
     return !_broadcastLock;
   }
 
-  inline void setBrightness(uint8_t b) {
-    _bri = b;
-  }
-
   uint8_t getPins(uint8_t* pinArray) {
     for (uint8_t i = 0; i < 4; i++) {
       pinArray[i] = _client[i];
@@ -570,7 +645,6 @@ class BusNetwork : public Bus {
 
   private:
     IPAddress _client;
-    uint8_t   _bri = 255;
     uint8_t   _UDPtype;
     uint8_t   _UDPchannels;
     bool      _rgbw;
@@ -581,9 +655,7 @@ class BusNetwork : public Bus {
 
 class BusManager {
   public:
-  BusManager() {
-
-  };
+  BusManager() {};
 
   //utility to get the approx. memory usage of a given BusConfig
   static uint32_t memUsage(BusConfig &bc) {
@@ -613,6 +685,8 @@ class BusManager {
       busses[numBusses] = new BusNetwork(bc);
     } else if (IS_DIGITAL(bc.type)) {
       busses[numBusses] = new BusDigital(bc, numBusses, colorOrderMap);
+    } else if (bc.type == TYPE_ONOFF) {
+      busses[numBusses] = new BusOnOff(bc);
     } else {
       busses[numBusses] = new BusPwm(bc);
     }
