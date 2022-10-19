@@ -661,6 +661,7 @@ function populateInfo(i)
 	if (i.cn) vcn = i.cn;
 
 	//WLEDSR: add total heap and total PSRAM, and build number
+	if (i.ver.includes("14.1-")) vcn = "Sitting Ducks"; // easter egg
 	if (i.ver.includes("14.0-mdev")) vcn = "Lupo";
 	cn += `v${i.ver} &nbsp;<i>"${vcn}"</i><p><em>build ${i.vid}</em></p><table>
 ${urows}
