@@ -103,25 +103,24 @@ class Animated_Staircase : public Usermod {
 
     void updateSegments() {
       mainSegmentId = strip.getMainSegmentId();
-      WS2812FX::Segment* segments = strip.getSegments();
-      for (int i = 0; i < MAX_NUM_SEGMENTS; i++, segments++) {
-        if (!segments->isActive()) {
+      for (int i = 0; i < strip.getSegmentsNum(); i++) {
+        Segment &seg = strip.getSegment(i);
+        if (!seg.isActive()) {
           maxSegmentId = i - 1;
           break;
         }
-
         if (i >= onIndex && i < offIndex) {
-          segments->setOption(SEG_OPTION_ON, 1, i);
+          seg.setOption(SEG_OPTION_ON, true);
 
           // We may need to copy mode and colors from segment 0 to make sure
           // changes are propagated even when the config is changed during a wipe
-          // segments->mode = mainsegment.mode;
-          // segments->colors[0] = mainsegment.colors[0];
+          // seg.setMode(mainsegment.mode);
+          // seg.setColor(0, mainsegment.colors[0]);
         } else {
-          segments->setOption(SEG_OPTION_ON, 0, i);
+          seg.setOption(SEG_OPTION_ON, false);
         }
         // Always mark segments as "transitional", we are animating the staircase
-        segments->setOption(SEG_OPTION_TRANSITIONAL, 1, i);
+        seg.setOption(SEG_OPTION_TRANSITIONAL, true);
       }
       colorUpdated(CALL_MODE_DIRECT_CHANGE);
     }
@@ -290,13 +289,13 @@ class Animated_Staircase : public Usermod {
         }
       } else {
         // Restore segment options
-        WS2812FX::Segment* segments = strip.getSegments();
-        for (int i = 0; i < MAX_NUM_SEGMENTS; i++, segments++) {
-          if (!segments->isActive()) {
+        for (int i = 0; i < strip.getSegmentsNum(); i++) {
+          Segment &seg = strip.getSegment(i);
+          if (!seg.isActive()) {
             maxSegmentId = i - 1;
             break;
           }
-          segments->setOption(SEG_OPTION_ON, 1, i);
+          seg.setOption(SEG_OPTION_ON, true);
         }
         colorUpdated(CALL_MODE_DIRECT_CHANGE);
         DEBUG_PRINTLN(F("Animated Staircase disabled."));
@@ -406,6 +405,14 @@ class Animated_Staircase : public Usermod {
       }
     }
 
+    void appendConfigData() {
+      //oappend(SET_F("dd=addDropdown('staircase','selectfield');"));
+      //oappend(SET_F("addOption(dd,'1st value',0);"));
+      //oappend(SET_F("addOption(dd,'2nd value',1);"));
+      //oappend(SET_F("addInfo('staircase:selectfield',1,'additional info');"));  // 0 is field type, 1 is actual field
+    }
+
+
     /*
     * Writes the configuration to internal flash memory.
     */
@@ -500,22 +507,22 @@ class Animated_Staircase : public Usermod {
     * tab of the web-UI.
     */
     void addToJsonInfo(JsonObject& root) {
-      JsonObject staircase = root["u"];
-      if (staircase.isNull()) {
-        staircase = root.createNestedObject("u");
+      JsonObject user = root["u"];
+      if (user.isNull()) {
+        user = root.createNestedObject("u");
       }
 
-      JsonArray usermodEnabled = staircase.createNestedArray(F("Staircase"));  // name
-      String btn = F("<button class=\"btn infobtn\" onclick=\"requestJson({staircase:{enabled:");
-      if (enabled) {
-        btn += F("false}});\">");
-        btn += F("enabled");
-      } else {
-        btn += F("true}});\">");
-        btn += F("disabled");
-      }
-      btn += F("</button>");
-      usermodEnabled.add(btn);                             // value
+      JsonArray infoArr = user.createNestedArray(FPSTR(_name));  // name
+
+      String uiDomString = F("<button class=\"btn btn-xs\" onclick=\"requestJson({");
+      uiDomString += FPSTR(_name);
+      uiDomString += F(":{");
+      uiDomString += FPSTR(_enabled);
+      uiDomString += enabled ? F(":false}});\">") : F(":true}});\">");
+      uiDomString += F("<i class=\"icons ");
+      uiDomString += enabled ? "on" : "off";
+      uiDomString += F("\">&#xe08f;</i></button>");
+      infoArr.add(uiDomString);
     }
 };
 

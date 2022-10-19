@@ -19,49 +19,43 @@
   </style>
 </head>
 <body>
-  <div id="canv" />
+  <div id="canv"></div>
   <script>
-    function updatePreview(leds) {
-      var str = "linear-gradient(90deg,";
-      var len = leds.length;        
-      for (i = 2; i < len; i+=3) {
-        str += `rgb(${leds[i]},${leds[i+1]},${leds[i+2]})`;
-        if (i < len -3) str += ","
-      }
-      str += ")";
-      document.getElementById("canv").style.background = str;
-    }
-
-    function getLiveJson(e) {
-      try {
-        if (toString.call(e.data) === '[object ArrayBuffer]') {
-          let leds = new Uint8Array(event.data);
-          if (leds[0] != 76) return; //'L'
-          updatePreview(leds);
-        }
-      }
-      catch (err) {
-        console.error("Peek WS error:",err);
-      } 
-    }
-
     var ws;
     try {
       ws = top.window.ws;
     } catch (e) {}
     if (ws && ws.readyState === WebSocket.OPEN) {
-      console.info("Peek uses top WS");
+      //console.info("Peek uses top WS");
       ws.send("{'lv':true}");
     } else {
       console.info("Peek WS opening");
       ws = new WebSocket((window.location.protocol == "https:"?"wss":"ws")+"://"+document.location.host+"/ws");
       ws.onopen = function () {
-        console.info("Peek WS open");
+        //console.info("Peek WS open");
         ws.send("{'lv':true}");
       }
     }
     ws.binaryType = "arraybuffer";
-    ws.addEventListener('message',getLiveJson);
+    ws.addEventListener('message', (e) => {
+      try {
+        if (toString.call(e.data) === '[object ArrayBuffer]') {
+          let leds = new Uint8Array(event.data);
+          if (leds[0] != 76) return; //'L'
+          let str = "linear-gradient(90deg,";
+          let len = leds.length;
+          let start = leds[1]==2 ? 4 : 2; // 1 = 1D, 2 = 1D/2D (leds[2]=w, leds[3]=h)
+          for (i = start; i < len; i+=3) {
+            str += `rgb(${leds[i]},${leds[i+1]},${leds[i+2]})`;
+            if (i < len -3) str += ","
+          }
+          str += ")";
+          document.getElementById("canv").style.background = str;
+        }
+      } catch (err) {
+        console.error("Peek WS error:",err);
+      } 
+    });
   </script>
 </body>
 </html>
