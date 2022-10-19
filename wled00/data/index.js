@@ -660,8 +660,9 @@ function populateInfo(i)
 	if (i.ver.includes("-bl")) vcn = "Supāku";
 	if (i.cn) vcn = i.cn;
 
-	//WLEDSR: add total heap and total PSRAM
-	cn += `v${i.ver} "${vcn}"<br><br><table>
+	//WLEDSR: add total heap and total PSRAM, and build number
+	if (i.ver.includes("14.0-mdev")) vcn = "Lupo";
+	cn += `v${i.ver} &nbsp;<i>"${vcn}"</i><p><em>build ${i.vid}</em></p><table>
 ${urows}
 ${urows===""?'':'<tr><td colspan=2><hr style="height:1px;border-width:0;color:gray;background-color:gray"></td></tr>'}
 ${inforow("Build",i.vid)}
