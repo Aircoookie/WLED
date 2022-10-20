@@ -151,7 +151,7 @@ bool sendLiveLedsWs(uint32_t wsClient)
   uint16_t used = strip.getLengthTotal();
   const uint16_t MAX_LIVE_LEDS_WS = strip.isMatrix ? 1024 : 256;
   uint16_t n = ((used -1)/MAX_LIVE_LEDS_WS) +1; //only serve every n'th LED if count over MAX_LIVE_LEDS_WS
-  uint16_t pos = (strip.isMatrix ? 4 : 2);
+  uint16_t pos = (strip.isMatrix ? 6 : 2); //WLEDSR 6 instead of 4
   uint16_t bufSize = pos + (used/n)*3;
   AsyncWebSocketMessageBuffer * wsBuf = ws.makeBuffer(bufSize);
   if (!wsBuf) return false; //out of memory
@@ -163,6 +163,8 @@ bool sendLiveLedsWs(uint32_t wsClient)
     buffer[1] = 2; //version
     buffer[2] = strip.matrixWidth;
     buffer[3] = strip.matrixHeight;
+    buffer[4] = currentPreset; //WLEDSR
+    buffer[5] = currentPlaylist; //WLEDSR
   }
 #endif
 
