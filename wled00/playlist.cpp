@@ -149,3 +149,19 @@ void handlePlaylist() {
     applyPreset(playlistEntries[playlistIndex].preset);
   }
 }
+
+
+void serializePlaylist(JsonObject sObj) {
+  JsonObject playlist = sObj.createNestedObject(F("playlist"));
+  JsonArray ps = playlist.createNestedArray("ps");
+  JsonArray dur = playlist.createNestedArray("dur");
+  JsonArray transition = playlist.createNestedArray(F("transition"));
+  playlist[F("repeat")] = playlistRepeat;
+  playlist["end"] = playlistEndPreset;
+  playlist["r"] = playlistOptions & PL_OPTION_SHUFFLE;
+  for (int i=0; i<playlistLen; i++) {
+    ps.add(playlistEntries[i].preset);
+    dur.add(playlistEntries[i].dur);
+    transition.add(playlistEntries[i].tr);
+  }
+}

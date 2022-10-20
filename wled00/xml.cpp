@@ -367,12 +367,7 @@ void getSettingsJS(byte subPage, char* dest)
 
     // set limits
     oappend(SET_F("bLimits("));
-    #if defined(ESP32) && defined(USERMOD_AUDIOREACTIVE)  && !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32S3) && !defined(CONFIG_IDF_TARGET_ESP32C3)
-    // requested by @softhack007 https://github.com/blazoncek/WLED/issues/33
-    oappend(itoa(WLED_MAX_BUSSES-2,nS,10)); oappend(","); // prevent use of I2S buses if audio installed. ESP32-S3 currently does not support these busses.
-    #else
     oappend(itoa(WLED_MAX_BUSSES,nS,10));  oappend(",");
-    #endif
     oappend(itoa(MAX_LEDS_PER_BUS,nS,10)); oappend(",");
     oappend(itoa(MAX_LED_MEMORY,nS,10));   oappend(",");
     oappend(itoa(MAX_LEDS,nS,10));
@@ -494,7 +489,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("SB"),notifyButton);
     sappend('c',SET_F("SH"),notifyHue);
     sappend('c',SET_F("SM"),notifyMacro);
-    sappend('c',SET_F("S2"),notifyTwice);
+    sappend('v',SET_F("UR"),udpNumRetries);
 
     sappend('c',SET_F("NL"),nodeListEnabled);
     sappend('c',SET_F("NB"),nodeBroadcastEnabled);
