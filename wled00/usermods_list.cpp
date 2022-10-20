@@ -143,6 +143,10 @@
 #include "../usermods/Analog_Clock/Analog_Clock.h"
 #endif
 
+#ifdef USERMOD_PING_PONG_CLOCK
+#include "../usermods/usermod_v2_ping_pong_clock/usermod_v2_ping_pong_clock.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -262,7 +266,7 @@ void registerUsermods()
   #ifdef USERMOD_SI7021_MQTT_HA
   usermods.add(new Si7021_MQTT_HA());
   #endif
-  
+
   #ifdef USERMOD_SMARTNEST
   usermods.add(new Smartnest());
   #endif
@@ -273,5 +277,9 @@ void registerUsermods()
 
   #ifdef USERMOD_ANALOG_CLOCK
   usermods.add(new AnalogClockUsermod());
+  #endif
+  
+  #ifdef USERMOD_PING_PONG_CLOCK
+  usermods.add(new PingPongClockUsermod());
   #endif
 }

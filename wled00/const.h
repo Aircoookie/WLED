@@ -94,6 +94,7 @@
 #define USERMOD_ID_SMARTNEST             31     //Usermod "usermod_smartnest.h"
 #define USERMOD_ID_AUDIOREACTIVE         32     //Usermod "audioreactive.h"
 #define USERMOD_ID_ANALOG_CLOCK          33     //Usermod "Analog_Clock.h"
+#define USERMOD_ID_PING_PONG_CLOCK       34     //Usermod "usermod_v2_ping_pong_clock.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
