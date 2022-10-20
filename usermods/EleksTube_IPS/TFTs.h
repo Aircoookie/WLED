@@ -75,7 +75,7 @@ private:
     
     uint8_t lineBuffer[w * 2];
 
-    if (!realtimeMode || realtimeOverride) strip.service();
+    if (!realtimeMode || realtimeOverride || (realtimeMode && useMainSegmentOnly)) strip.service();
 
     // 0,0 coordinates are top left
     for (row = 0; row < h; row++) {
@@ -169,7 +169,7 @@ private:
     uint32_t lineSize = ((bitDepth * w +31) >> 5) * 4;
     uint8_t lineBuffer[lineSize];
     
-    uint8_t serviceStrip = (!realtimeMode || realtimeOverride) ? 7 : 0;
+    uint8_t serviceStrip = (!realtimeMode || realtimeOverride || (realtimeMode && useMainSegmentOnly)) ? 7 : 0;
     // row is decremented as the BMP image is drawn bottom up
     for (row = h-1; row >= 0; row--) {
       if ((row & 0b00000111) == serviceStrip) strip.service(); //still refresh backlight to mitigate stutter every few rows
@@ -250,7 +250,7 @@ private:
     
     uint8_t lineBuffer[w * 2];
     
-    if (!realtimeMode || realtimeOverride) strip.service();
+    if (!realtimeMode || realtimeOverride || (realtimeMode && useMainSegmentOnly)) strip.service();
 
     // 0,0 coordinates are top left
     for (row = 0; row < h; row++) {
@@ -355,7 +355,7 @@ public:
     // Color in grayscale bitmaps if Segment 1 exists
     // TODO If secondary and tertiary are black, color all in primary,
     // else color first three from Seg 1 color slots and last three from Seg 2 color slots
-    WS2812FX::Segment& seg1 = strip.getSegment(tubeSegment);
+    Segment& seg1 = strip.getSegment(tubeSegment);
     if (seg1.isActive()) {
       digitColor = strip.getPixelColor(seg1.start + digit);
       dimming = seg1.opacity;

@@ -42,14 +42,6 @@
     #include "Wire.h"
 #endif
 
-#ifdef ARDUINO_ARCH_ESP32
-  #define HW_PIN_SCL 22
-  #define HW_PIN_SDA 21
-#else
-  #define HW_PIN_SCL 5
-  #define HW_PIN_SDA 4
-#endif
-
 // ================================================================
 // ===               INTERRUPT DETECTION ROUTINE                ===
 // ================================================================
@@ -93,7 +85,7 @@ class MPU6050Driver : public Usermod {
      * setup() is called once at boot. WiFi is not yet connected at this point.
      */
     void setup() {
-      PinManagerPinType pins[2] = { { HW_PIN_SCL, true }, { HW_PIN_SDA, true } };
+      PinManagerPinType pins[2] = { { i2c_scl, true }, { i2c_sda, true } };
       if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) { enabled = false; return; }
       // join I2C bus (I2Cdev library doesn't do this automatically)
       #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
@@ -258,20 +250,20 @@ class MPU6050Driver : public Usermod {
      * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    void addToJsonState(JsonObject& root)
-    {
+    //void addToJsonState(JsonObject& root)
+    //{
       //root["user0"] = userVar0;
-    }
+    //}
 
 
     /*
      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    void readFromJsonState(JsonObject& root)
-    {
+    //void readFromJsonState(JsonObject& root)
+    //{
       //if (root["bri"] == 255) DEBUG_PRINTLN(F("Don't burn down your garage!"));
-    }
+    //}
 
 
     /*
@@ -279,13 +271,13 @@ class MPU6050Driver : public Usermod {
      * It will be called by WLED when settings are actually saved (for example, LED settings are saved)
      * I highly recommend checking out the basics of ArduinoJson serialization and deserialization in order to use custom settings!
      */
-    void addToConfig(JsonObject& root)
-    {
-      JsonObject top = root.createNestedObject("MPU6050_IMU");
-      JsonArray pins = top.createNestedArray("pin");
-      pins.add(HW_PIN_SCL);
-      pins.add(HW_PIN_SDA);
-    }
+//    void addToConfig(JsonObject& root)
+//    {
+//      JsonObject top = root.createNestedObject("MPU6050_IMU");
+//      JsonArray pins = top.createNestedArray("pin");
+//      pins.add(HW_PIN_SCL);
+//      pins.add(HW_PIN_SDA);
+//    }
 
     /*
      * getId() allows you to optionally give your V2 usermod an unique ID (please define it in const.h!).

@@ -21,14 +21,6 @@
 #include <Wire.h>
 #include <VL53L0X.h>
 
-#ifdef ARDUINO_ARCH_ESP32
-  #define HW_PIN_SCL 22
-  #define HW_PIN_SDA 21
-#else
-  #define HW_PIN_SCL 5
-  #define HW_PIN_SDA 4
-#endif
-
 #ifndef VL53L0X_MAX_RANGE_MM
 #define VL53L0X_MAX_RANGE_MM 230 // max height in millimiters to react for motions
 #endif
@@ -59,7 +51,7 @@ class UsermodVL53L0XGestures : public Usermod {
   public:
 
     void setup() {
-      PinManagerPinType pins[2] = { { HW_PIN_SCL, true }, { HW_PIN_SDA, true } };
+      PinManagerPinType pins[2] = { { i2c_scl, true }, { i2c_sda, true } };
       if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) { enabled = false; return; }
       Wire.begin();
 
@@ -127,13 +119,13 @@ class UsermodVL53L0XGestures : public Usermod {
      * It will be called by WLED when settings are actually saved (for example, LED settings are saved)
      * I highly recommend checking out the basics of ArduinoJson serialization and deserialization in order to use custom settings!
      */
-    void addToConfig(JsonObject& root)
-    {
-      JsonObject top = root.createNestedObject("VL53L0x");
-      JsonArray pins = top.createNestedArray("pin");
-      pins.add(HW_PIN_SCL);
-      pins.add(HW_PIN_SDA);
-    }
+//    void addToConfig(JsonObject& root)
+//    {
+//      JsonObject top = root.createNestedObject("VL53L0x");
+//      JsonArray pins = top.createNestedArray("pin");
+//      pins.add(i2c_scl);
+//      pins.add(i2c_sda);
+//    }
 
     /*
      * getId() allows you to optionally give your V2 usermod an unique ID (please define it in const.h!).

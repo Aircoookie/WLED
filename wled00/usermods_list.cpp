@@ -96,6 +96,10 @@
 #include "../usermods/rgb-rotary-encoder/rgb-rotary-encoder.h"
 #endif
 
+#ifdef USERMOD_ST7789_DISPLAY
+#include "../usermods/ST7789_display/ST7789_Display.h"
+#endif
+
 #ifdef USERMOD_SEVEN_SEGMENT
 #include "../usermods/seven_segment_display/usermod_v2_seven_segment_display.h"
 #endif
@@ -126,6 +130,18 @@
 
 #ifdef USERMOD_SI7021_MQTT_HA
 #include "../usermods/Si7021_MQTT_HA/usermod_si7021_mqtt_ha.h"
+#endif
+
+#ifdef USERMOD_SMARTNEST
+#include "../usermods/smartnest/usermod_smartnest.h"
+#endif
+
+#ifdef USERMOD_AUDIOREACTIVE
+#include "../usermods/audioreactive/audio_reactive.h"
+#endif
+
+#ifdef USERMOD_ANALOG_CLOCK
+#include "../usermods/Analog_Clock/Analog_Clock.h"
 #endif
 
 void registerUsermods()
@@ -212,6 +228,10 @@ void registerUsermods()
   usermods.add(new RgbRotaryEncoderUsermod());
   #endif
 
+  #ifdef USERMOD_ST7789_DISPLAY
+  usermods.add(new St7789DisplayUsermod());
+  #endif
+  
   #ifdef USERMOD_SEVEN_SEGMENT
   usermods.add(new SevenSegmentDisplay());
   #endif
@@ -242,5 +262,17 @@ void registerUsermods()
   
   #ifdef USERMOD_SI7021_MQTT_HA
   usermods.add(new Si7021_MQTT_HA());
+  #endif
+  
+  #ifdef USERMOD_SMARTNEST
+  usermods.add(new Smartnest());
+  #endif
+  
+  #ifdef USERMOD_AUDIOREACTIVE
+  usermods.add(new AudioReactive());
+  #endif
+
+  #ifdef USERMOD_ANALOG_CLOCK
+  usermods.add(new AnalogClockUsermod());
   #endif
 }

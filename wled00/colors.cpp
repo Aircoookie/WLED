@@ -1,12 +1,57 @@
 #include "wled.h"
 
 /*
- * Color conversion methods
+ * Color conversion & utility methods
  */
+
+/*
+ * color blend function
+ */
+uint32_t color_blend(uint32_t color1, uint32_t color2, uint16_t blend, bool b16) {
+  if(blend == 0)   return color1;
+  uint16_t blendmax = b16 ? 0xFFFF : 0xFF;
+  if(blend == blendmax) return color2;
+  uint8_t shift = b16 ? 16 : 8;
+
+  uint32_t w1 = W(color1);
+  uint32_t r1 = R(color1);
+  uint32_t g1 = G(color1);
+  uint32_t b1 = B(color1);
+
+  uint32_t w2 = W(color2);
+  uint32_t r2 = R(color2);
+  uint32_t g2 = G(color2);
+  uint32_t b2 = B(color2);
+
+  uint32_t w3 = ((w2 * blend) + (w1 * (blendmax - blend))) >> shift;
+  uint32_t r3 = ((r2 * blend) + (r1 * (blendmax - blend))) >> shift;
+  uint32_t g3 = ((g2 * blend) + (g1 * (blendmax - blend))) >> shift;
+  uint32_t b3 = ((b2 * blend) + (b1 * (blendmax - blend))) >> shift;
+
+  return RGBW32(r3, g3, b3, w3);
+}
+
+/*
+ * color add function that preserves ratio
+ * idea: https://github.com/Aircoookie/WLED/pull/2465 by https://github.com/Proto-molecule
+ */
+uint32_t color_add(uint32_t c1, uint32_t c2)
+{
+  uint32_t r = R(c1) + R(c2);
+  uint32_t g = G(c1) + G(c2);
+  uint32_t b = B(c1) + B(c2);
+  uint32_t w = W(c1) + W(c2);
+  uint16_t max = r;
+  if (g > max) max = g;
+  if (b > max) max = b;
+  if (w > max) max = w;
+  if (max < 256) return RGBW32(r, g, b, w);
+  else           return RGBW32(r * 255 / max, g * 255 / max, b * 255 / max, w * 255 / max);
+}
 
 void setRandomColor(byte* rgb)
 {
-  lastRandomIndex = strip.get_random_wheel_index(lastRandomIndex);
+  lastRandomIndex = strip.getMainSegment().get_random_wheel_index(lastRandomIndex);
   colorHStoRGB(lastRandomIndex*256,255,rgb);
 }
 
@@ -273,4 +318,54 @@ uint16_t approximateKelvinFromRGB(uint32_t rgb) {
     uint16_t k = 8080 + (225-r) *86;
     return (k > 10091) ? 10091 : k;
   }
+}
+
+//gamma 2.8 lookup table used for color correction
+static byte gammaT[] = {
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,
+    1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,
+    2,  3,  3,  3,  3,  3,  3,  3,  4,  4,  4,  4,  4,  5,  5,  5,
+    5,  6,  6,  6,  6,  7,  7,  7,  7,  8,  8,  8,  9,  9,  9, 10,
+   10, 10, 11, 11, 11, 12, 12, 13, 13, 13, 14, 14, 15, 15, 16, 16,
+   17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 24, 24, 25,
+   25, 26, 27, 27, 28, 29, 29, 30, 31, 32, 32, 33, 34, 35, 35, 36,
+   37, 38, 39, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 50,
+   51, 52, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 66, 67, 68,
+   69, 70, 72, 73, 74, 75, 77, 78, 79, 81, 82, 83, 85, 86, 87, 89,
+   90, 92, 93, 95, 96, 98, 99,101,102,104,105,107,109,110,112,114,
+  115,117,119,120,122,124,126,127,129,131,133,135,137,138,140,142,
+  144,146,148,150,152,154,156,158,160,162,164,167,169,171,173,175,
+  177,180,182,184,186,189,191,193,196,198,200,203,205,208,210,213,
+  215,218,220,223,225,228,231,233,236,239,241,244,247,249,252,255 };
+
+uint8_t gamma8_cal(uint8_t b, float gamma)
+{
+  return (int)(powf((float)b / 255.0f, gamma) * 255.0f + 0.5f);
+}
+
+void calcGammaTable(float gamma)
+{
+  for (uint16_t i = 0; i < 256; i++) {
+    gammaT[i] = gamma8_cal(i, gamma);
+  }
+}
+
+uint8_t gamma8(uint8_t b)
+{
+  return gammaT[b];
+}
+
+uint32_t gamma32(uint32_t color)
+{
+  if (!gammaCorrectCol) return color;
+  uint8_t w = W(color);
+  uint8_t r = R(color);
+  uint8_t g = G(color);
+  uint8_t b = B(color);
+  w = gammaT[w];
+  r = gammaT[r];
+  g = gammaT[g];
+  b = gammaT[b];
+  return RGBW32(r, g, b, w);
 }

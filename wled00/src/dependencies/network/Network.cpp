@@ -43,6 +43,34 @@ IPAddress NetworkClass::gatewayIP()
   return INADDR_NONE;
 }
 
+void NetworkClass::localMAC(uint8_t* MAC)
+{
+#if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
+  // ETH.macAddress(MAC); // Does not work because of missing ETHClass:: in ETH.ccp
+
+  // Start work around
+  String macString = ETH.macAddress();
+  char macChar[18];
+  char * octetEnd = macChar;
+
+  strlcpy(macChar, macString.c_str(), 18);
+
+  for (uint8_t i = 0; i < 6; i++) {
+    MAC[i] = (uint8_t)strtol(octetEnd, &octetEnd, 16);
+    octetEnd++;
+  }
+  // End work around
+
+  for (uint8_t i = 0; i < 6; i++) {
+    if (MAC[i] != 0x00) {
+      return;
+    }
+  }
+#endif
+  WiFi.macAddress(MAC);
+  return;
+}
+
 bool NetworkClass::isConnected()
 {
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)

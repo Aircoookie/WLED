@@ -19,7 +19,6 @@ struct NodeStruct
 {
   String    nodeName;
   IPAddress ip;
-  uint8_t   unit;
   uint8_t   age;
   uint8_t   nodeType;
   uint32_t  build;
