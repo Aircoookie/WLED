@@ -250,7 +250,7 @@ class BusDigital : public Bus {
     _busPtr = PolyBus::create(_iType, _pins, _len, nr);
     _valid = (_busPtr != nullptr);
     _colorOrder = bc.colorOrder;
-    DEBUG_PRINTF("Successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u)\n",nr, _len, bc.type, _pins[0],_pins[1],_iType);
+    DEBUG_PRINTF("%successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u)\n", _valid?"S":"Uns", nr, _len, bc.type, _pins[0],_pins[1],_iType);
   };
 
   inline void show() {

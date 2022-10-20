@@ -132,8 +132,16 @@
 #include "../usermods/Si7021_MQTT_HA/usermod_si7021_mqtt_ha.h"
 #endif
 
+#ifdef USERMOD_SMARTNEST
+#include "../usermods/smartnest/usermod_smartnest.h"
+#endif
+
 #ifdef USERMOD_AUDIOREACTIVE
 #include "../usermods/audioreactive/audio_reactive.h"
+#endif
+
+#ifdef USERMOD_ANALOG_CLOCK
+#include "../usermods/Analog_Clock/Analog_Clock.h"
 #endif
 
 void registerUsermods()
@@ -256,7 +264,15 @@ void registerUsermods()
   usermods.add(new Si7021_MQTT_HA());
   #endif
   
+  #ifdef USERMOD_SMARTNEST
+  usermods.add(new Smartnest());
+  #endif
+  
   #ifdef USERMOD_AUDIOREACTIVE
   usermods.add(new AudioReactive());
+  #endif
+
+  #ifdef USERMOD_ANALOG_CLOCK
+  usermods.add(new AnalogClockUsermod());
   #endif
 }

@@ -207,7 +207,7 @@ void initServer()
       if (!isConfig) {
         serveJson(request); return; //if JSON contains "v"
       } else {
-        serializeConfig(); //Save new settings to FS
+        doSerializeConfig = true; //serializeConfig(); //Save new settings to FS
       }
     } 
     request->send(200, "application/json", F("{\"success\":true}"));

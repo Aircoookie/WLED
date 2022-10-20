@@ -174,47 +174,16 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   byte fx = seg.mode;
   if (getVal(elem["fx"], &fx, 0, strip.getModeCount())) { //load effect ('r' random, '~' inc/dec, 0-255 exact value)
     if (!presetId && currentPlaylist>=0) unloadPlaylist();
-    if (fx != seg.mode) {
-      seg.startTransition(strip.getTransition()); // set effect transitions
-      //seg.markForReset();
-      seg.mode = fx;
-    }
-  }
-
-  // load default values from effect string
-  if (elem[F("fxdef")])
-  {
-    int16_t sOpt;
-    sOpt = extractModeDefaults(fx, "sx");   if (sOpt >= 0) seg.speed     = sOpt;
-    sOpt = extractModeDefaults(fx, "ix");   if (sOpt >= 0) seg.intensity = sOpt;
-    sOpt = extractModeDefaults(fx, "c1");   if (sOpt >= 0) seg.custom1   = sOpt;
-    sOpt = extractModeDefaults(fx, "c2");   if (sOpt >= 0) seg.custom2   = sOpt;
-    sOpt = extractModeDefaults(fx, "c3");   if (sOpt >= 0) seg.custom3   = sOpt;
-    sOpt = extractModeDefaults(fx, "mp12"); if (sOpt >= 0) seg.map1D2D   = constrain(sOpt, 0, 7);
-    sOpt = extractModeDefaults(fx, "ssim"); if (sOpt >= 0) seg.soundSim  = constrain(sOpt, 0, 7);
-    sOpt = extractModeDefaults(fx, "rev");  if (sOpt >= 0) seg.reverse   = (bool)sOpt;
-    sOpt = extractModeDefaults(fx, "mi");   if (sOpt >= 0) seg.mirror    = (bool)sOpt; // NOTE: setting this option is a risky business
-    sOpt = extractModeDefaults(fx, "rY");   if (sOpt >= 0) seg.reverse_y = (bool)sOpt;
-    sOpt = extractModeDefaults(fx, "mY");   if (sOpt >= 0) seg.mirror_y  = (bool)sOpt; // NOTE: setting this option is a risky business
-    sOpt = extractModeDefaults(fx, "pal");
-    if (sOpt >= 0 && sOpt < strip.getPaletteCount() + strip.customPalettes.size()) {
-      if (sOpt != seg.palette) {
-        if (strip.paletteFade && !seg.transitional) seg.startTransition(strip.getTransition());
-        seg.palette = sOpt;
-      }
-    }
+    if (fx != seg.mode) seg.setMode(fx, elem[F("fxdef")]);
   }
 
   //getVal also supports inc/decrementing and random
   getVal(elem["sx"], &seg.speed);
   getVal(elem["ix"], &seg.intensity);
+
   uint8_t pal = seg.palette;
-  if (getVal(elem["pal"], &pal, 1, strip.getPaletteCount())) {
-    if (pal != seg.palette) {
-      if (strip.paletteFade && !seg.transitional) seg.startTransition(strip.getTransition());
-      seg.palette = pal;
-    }
-  }
+  if (getVal(elem["pal"], &pal, 1, strip.getPaletteCount())) seg.setPalette(pal);
+
   getVal(elem["c1"], &seg.custom1);
   getVal(elem["c2"], &seg.custom2);
   uint8_t cust3 = seg.custom3;
@@ -340,7 +309,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   receiveNotifications = udpn["recv"] | receiveNotifications;
   if ((bool)udpn[F("nn")]) callMode = CALL_MODE_NO_NOTIFY; //send no notification just for this request
 
-  unsigned long timein = root[F("time")] | UINT32_MAX; //backup time source if NTP not synced
+  unsigned long timein = root["time"] | UINT32_MAX; //backup time source if NTP not synced
   if (timein != UINT32_MAX) {
     setTimeFromAPI(timein);
     if (presetsModifiedTime == 0) presetsModifiedTime = timein;
@@ -427,10 +396,11 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       // b) preset ID only or preset that does not change state (use embedded cycling limits if they exist in getVal())
       presetCycCurr = ps;
       presetId = ps;
-      root.remove(F("v"));    // may be added in UI call
-      root.remove(F("time")); // may be added in UI call
+      root.remove("v");    // may be added in UI call
+      root.remove("time"); // may be added in UI call
       root.remove("ps");
       if (root.size() == 0) {
+        unloadPlaylist();  // we need to unload playlist
         applyPreset(ps, callMode); // async load (only preset ID was specified)
         return stateResponse;
       }
@@ -512,7 +482,7 @@ void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset, b
   root["mp12"] = seg.map1D2D;
 }
 
-void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segmentBounds)
+void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segmentBounds, bool selectedSegmentsOnly)
 {
   if (includeBri) {
     root["on"] = (bri > 0);
@@ -548,11 +518,10 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
 
   root[F("mainseg")] = strip.getMainSegmentId();
 
-  bool selectedSegmentsOnly = root[F("sc")] | false;
   JsonArray seg = root.createNestedArray("seg");
   for (size_t s = 0; s < strip.getMaxSegments(); s++) {
     if (s >= strip.getSegmentsNum()) {
-      if (forPreset && segmentBounds) { //disable segments not part of preset
+      if (forPreset && segmentBounds && !selectedSegmentsOnly) { //disable segments not part of preset
         JsonObject seg0 = seg.createNestedObject();
         seg0["stop"] = 0;
         continue;
@@ -560,7 +529,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
         break;
     }
     Segment &sg = strip.getSegment(s);
-    if (!forPreset && selectedSegmentsOnly && !sg.isSelected()) continue;
+    if (forPreset && selectedSegmentsOnly && !sg.isSelected()) continue;
     if (sg.isActive()) {
       JsonObject seg0 = seg.createNestedObject();
       serializeSegment(seg0, sg, s, forPreset, segmentBounds);
@@ -680,7 +649,11 @@ void serializeInfo(JsonObject root)
     wifi_info[F("txPower")] = (int) WiFi.getTxPower();
     wifi_info[F("sleep")] = (bool) WiFi.getSleep();
   #endif
-  root[F("arch")] = "esp32";
+  #if !defined(CONFIG_IDF_TARGET_ESP32C2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32S3)
+    root[F("arch")] = "esp32";
+  #else
+    root[F("arch")] = ESP.getChipModel();
+  #endif
   root[F("core")] = ESP.getSdkVersion();
   //root[F("maxalloc")] = ESP.getMaxAllocHeap();
   #ifdef WLED_DEBUG

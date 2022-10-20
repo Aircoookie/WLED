@@ -396,6 +396,48 @@ void Segment::setOption(uint8_t n, bool val) {
   else     options &= ~(0x01 << n);
 }
 
+void Segment::setMode(uint8_t fx, bool loadDefaults) {
+  // if we have a valid mode & is not reserved
+  if (fx < strip.getModeCount() && strncmp_P("RSVD", strip.getModeData(fx), 4)) {
+    if (fx != mode) {
+      startTransition(strip.getTransition()); // set effect transitions
+      //markForReset(); // transition will handle this
+      mode = fx;
+
+      // load default values from effect string
+      if (loadDefaults) {
+        int16_t sOpt;
+        sOpt = extractModeDefaults(fx, "sx");   if (sOpt >= 0) speed     = sOpt;
+        sOpt = extractModeDefaults(fx, "ix");   if (sOpt >= 0) intensity = sOpt;
+        sOpt = extractModeDefaults(fx, "c1");   if (sOpt >= 0) custom1   = sOpt;
+        sOpt = extractModeDefaults(fx, "c2");   if (sOpt >= 0) custom2   = sOpt;
+        sOpt = extractModeDefaults(fx, "c3");   if (sOpt >= 0) custom3   = sOpt;
+        sOpt = extractModeDefaults(fx, "mp12"); if (sOpt >= 0) map1D2D   = constrain(sOpt, 0, 7);
+        sOpt = extractModeDefaults(fx, "ssim"); if (sOpt >= 0) soundSim  = constrain(sOpt, 0, 7);
+        sOpt = extractModeDefaults(fx, "rev");  if (sOpt >= 0) reverse   = (bool)sOpt;
+        sOpt = extractModeDefaults(fx, "mi");   if (sOpt >= 0) mirror    = (bool)sOpt; // NOTE: setting this option is a risky business
+        sOpt = extractModeDefaults(fx, "rY");   if (sOpt >= 0) reverse_y = (bool)sOpt;
+        sOpt = extractModeDefaults(fx, "mY");   if (sOpt >= 0) mirror_y  = (bool)sOpt; // NOTE: setting this option is a risky business
+        sOpt = extractModeDefaults(fx, "pal");
+        if (sOpt >= 0 && (size_t)sOpt < strip.getPaletteCount() + strip.customPalettes.size()) {
+          if (sOpt != palette) {
+            palette = sOpt;
+          }
+        }
+      }
+    }
+  }
+}
+
+void Segment::setPalette(uint8_t pal) {
+  if (pal < strip.getPaletteCount()) {
+    if (pal != palette) {
+      if (strip.paletteFade) startTransition(strip.getTransition());
+      palette = pal;
+    }
+  }
+}
+
 // 2D matrix
 uint16_t Segment::virtualWidth() const {
   uint16_t groupLen = groupLength();
@@ -1459,9 +1501,7 @@ void WS2812FX::loadCustomPalettes()
   CRGBPalette16 targetPalette;
   for (int index = 0; index<10; index++) {
     char fileName[32];
-    strcpy_P(fileName, PSTR("/palette"));
-    sprintf(fileName +8, "%d", index);
-    strcat(fileName, ".json");
+    sprintf_P(fileName, PSTR("/palette%d.json"), index);
 
     StaticJsonDocument<1536> pDoc; // barely enough to fit 72 numbers
     if (WLED_FS.exists(fileName)) {

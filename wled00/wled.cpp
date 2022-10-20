@@ -71,6 +71,8 @@ void WLED::loop()
 
   yield();
 
+  if (doSerializeConfig) serializeConfig();
+
   if (doReboot && !doInitBusses) // if busses have to be inited & saved, wait until next iteration
     reset();
 
@@ -265,6 +267,9 @@ void WLED::setup()
 
   Serial.begin(115200);
   Serial.setTimeout(50);
+  #if defined(WLED_DEBUG) && (defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3))
+  delay(2500);  // allow CDC USB serial to initialise
+  #endif
   DEBUG_PRINTLN();
   DEBUG_PRINT(F("---WLED "));
   DEBUG_PRINT(versionString);
@@ -274,6 +279,31 @@ void WLED::setup()
 #ifdef ARDUINO_ARCH_ESP32
   DEBUG_PRINT(F("esp32 "));
   DEBUG_PRINTLN(ESP.getSdkVersion());
+  #if defined(ESP_ARDUINO_VERSION)
+    //DEBUG_PRINTF(F("arduino-esp32  0x%06x\n"), ESP_ARDUINO_VERSION);
+    DEBUG_PRINTF("arduino-esp32 v%d.%d.%d\n", int(ESP_ARDUINO_VERSION_MAJOR), int(ESP_ARDUINO_VERSION_MINOR), int(ESP_ARDUINO_VERSION_PATCH));  // availeable since v2.0.0
+  #else
+    DEBUG_PRINTLN(F("arduino-esp32 v1.0.x\n"));  // we can't say in more detail.
+  #endif
+
+  DEBUG_PRINT(F("CPU:   ")); DEBUG_PRINT(ESP.getChipModel());
+  DEBUG_PRINT(F(" rev.")); DEBUG_PRINT(ESP.getChipRevision());
+  DEBUG_PRINT(F(", ")); DEBUG_PRINT(ESP.getChipCores()); DEBUG_PRINT(F(" core(s)"));
+  DEBUG_PRINT(F(", ")); DEBUG_PRINT(ESP.getCpuFreqMHz()); DEBUG_PRINTLN(F("MHz."));
+  DEBUG_PRINT(F("FLASH: ")); DEBUG_PRINT((ESP.getFlashChipSize()/1024)/1024);
+  DEBUG_PRINT(F("MB, Mode ")); DEBUG_PRINT(ESP.getFlashChipMode());
+  #ifdef WLED_DEBUG
+  switch (ESP.getFlashChipMode()) {
+    // missing: Octal modes
+    case FM_QIO:  DEBUG_PRINT(F(" (QIO)")); break;
+    case FM_QOUT: DEBUG_PRINT(F(" (QOUT)"));break;
+    case FM_DIO:  DEBUG_PRINT(F(" (DIO)")); break;
+    case FM_DOUT: DEBUG_PRINT(F(" (DOUT)"));break;
+    default: break;
+  }
+  #endif
+  DEBUG_PRINT(F(", speed ")); DEBUG_PRINT(ESP.getFlashChipSpeed()/1000000);DEBUG_PRINTLN(F("MHz."));
+
 #else
   DEBUG_PRINT(F("esp8266 "));
   DEBUG_PRINTLN(ESP.getCoreVersion());
@@ -283,17 +313,29 @@ void WLED::setup()
 
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
   if (psramFound()) {
+#if !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32S3)
     // GPIO16/GPIO17 reserved for SPI RAM
     managed_pin_type pins[2] = { {16, true}, {17, true} };
     pinManager.allocateMultiplePins(pins, 2, PinOwner::SPI_RAM);
-  }
+#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+    // S3: add GPIO 33-37 for "octal" PSRAM
+    managed_pin_type pins[5] = { {33, true}, {34, true}, {35, true}, {36, true}, {37, true} };
+    pinManager.allocateMultiplePins(pins, 5, PinOwner::SPI_RAM);
+#endif
+      DEBUG_PRINT(F("Total PSRAM: "));    DEBUG_PRINT(ESP.getPsramSize()/1024); DEBUG_PRINTLN("kB");
+      DEBUG_PRINT(F("Free PSRAM : "));    DEBUG_PRINT(ESP.getFreePsram()/1024); DEBUG_PRINTLN("kB");
+    } else
+      DEBUG_PRINTLN(F("No PSRAM found."));
+  #endif
+  #if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && !defined(WLED_USE_PSRAM)
+      DEBUG_PRINTLN(F("PSRAM not used."));
   #endif
 
   //DEBUG_PRINT(F("LEDs inited. heap usage ~"));
   //DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
 
 #ifdef WLED_DEBUG
-  pinManager.allocatePin(1, true, PinOwner::DebugOut); // GPIO1 reserved for debug output
+  pinManager.allocatePin(hardwareTX, true, PinOwner::DebugOut); // TX (GPIO1 on ESP32) reserved for debug output
 #endif
 #ifdef WLED_ENABLE_DMX //reserve GPIO2 as hardcoded DMX pin
   pinManager.allocatePin(2, true, PinOwner::DMX);
@@ -320,6 +362,7 @@ void WLED::setup()
 #endif
   updateFSInfo();
 
+  strcpy_P(apSSID, PSTR("WLED-AP"));  // otherwise it is empty on first boot until config is saved
   DEBUG_PRINTLN(F("Reading config"));
   deserializeConfigFromFS();
 
@@ -348,7 +391,7 @@ void WLED::setup()
   #ifdef WLED_ENABLE_ADALIGHT
   //Serial RX (Adalight, Improv, Serial JSON) only possible if GPIO3 unused
   //Serial TX (Debug, Improv, Serial JSON) only possible if GPIO1 unused
-  if (!pinManager.isPinAllocated(3) && !pinManager.isPinAllocated(1)) {
+  if (!pinManager.isPinAllocated(hardwareRX) && !pinManager.isPinAllocated(hardwareTX)) {
     Serial.println(F("Ada"));
   }
   #endif
@@ -357,25 +400,16 @@ void WLED::setup()
   escapedMac = WiFi.macAddress();
   escapedMac.replace(":", "");
   escapedMac.toLowerCase();
-  if (strcmp(cmDNS, "x") == 0)        // fill in unique mdns default
-  {
-    strcpy_P(cmDNS, PSTR("wled-"));
-    sprintf(cmDNS + 5, "%*s", 6, escapedMac.c_str() + 6);
-  }
-  if (mqttDeviceTopic[0] == 0) {
-    strcpy_P(mqttDeviceTopic, PSTR("wled/"));
-    sprintf(mqttDeviceTopic + 5, "%*s", 6, escapedMac.c_str() + 6);
-  }
-  if (mqttClientID[0] == 0) {
-    strcpy_P(mqttClientID, PSTR("WLED-"));
-    sprintf(mqttClientID + 5, "%*s", 6, escapedMac.c_str() + 6);
-  }
+  // fill in unique mdns default
+  if (strcmp(cmDNS, "x") == 0) sprintf_P(cmDNS, PSTR("wled-%*s"), 6, escapedMac.c_str() + 6);
+  if (mqttDeviceTopic[0] == 0) sprintf_P(mqttDeviceTopic, PSTR("wled/%*s"), 6, escapedMac.c_str() + 6);
+  if (mqttClientID[0] == 0)    sprintf_P(mqttClientID, PSTR("WLED-%*s"), 6, escapedMac.c_str() + 6);
 
 #ifdef WLED_ENABLE_ADALIGHT
   if (Serial.available() > 0 && Serial.peek() == 'I') handleImprovPacket();
 #endif
 
-  strip.service();
+  strip.service(); // why?
 
 #ifndef WLED_DISABLE_OTA
   if (aOtaEnabled) {
@@ -443,10 +477,10 @@ void WLED::initAP(bool resetAP)
   if (apBehavior == AP_BEHAVIOR_BUTTON_ONLY && !resetAP)
     return;
 
-  if (!apSSID[0] || resetAP)
+  if (resetAP) {
     strcpy_P(apSSID, PSTR("WLED-AP"));
-  if (resetAP)
     strcpy_P(apPass, PSTR(DEFAULT_AP_PASS));
+  }
   DEBUG_PRINT(F("Opening access point "));
   DEBUG_PRINTLN(apSSID);
   WiFi.softAPConfig(IPAddress(4, 3, 2, 1), IPAddress(4, 3, 2, 1), IPAddress(255, 255, 255, 0));
@@ -600,7 +634,7 @@ void WLED::initConnection()
   DEBUG_PRINTLN("...");
 
   // convert the "serverDescription" into a valid DNS hostname (alphanumeric)
-  char hostname[25] = "wled-";
+  char hostname[25];
   prepareHostname(hostname);
 
 #ifdef ESP8266
@@ -800,7 +834,7 @@ void WLED::handleStatusLED()
     ledStatusType = 4;
   } else if (apActive) {
     c = RGBW32(0,0,255,0);
-    ledStatusType = 2;
+    ledStatusType = 1;
   }
   if (ledStatusType) {
     if (millis() - ledStatusLastMillis >= (1000/ledStatusType)) {

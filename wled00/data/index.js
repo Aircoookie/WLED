@@ -403,7 +403,7 @@ function presetError(empty)
 		if (bckstr.length > 10) hasBackup = true;
 	} catch (e) {}
 
-	var cn = `<div class="pres c" ${empty?'style="padding:8px 0;margin-top: 15px;"':'onclick="loadPresets()" style="cursor:pointer;padding:8px 0;"'}>`;
+	var cn = `<div class="pres c" ${empty?'style="padding:8px;margin-top: 16px;"':'onclick="pmtLast=0;loadPresets();" style="cursor:pointer;padding:8px;margin-top: 16px;"'}>`;
 	if (empty)
 		cn += `You have no presets yet!`;
 	else
@@ -660,6 +660,7 @@ function populateInfo(i)
 	}
 	var vcn = "Kuuhaku";
 	if (i.ver.startsWith("0.14.")) vcn = "Hoshi";
+	if (i.ver.includes("-bl")) vcn = "Supāku";
 	if (i.cn) vcn = i.cn;
 
 	cn += `v${i.ver} "${vcn}"<br><br><table>
@@ -1398,7 +1399,7 @@ function setEffectParameters(idx)
 	if (slOnOff.length>5) {
 		gId('fxopt').classList.remove('fade');
 		for (let i = 0; i<3; i++) {
-			if (slOnOff[5+i]!=='') {
+			if (5+i<slOnOff.length && slOnOff[5+i]!=='') {
 				gId('opt'+i).classList.remove('hide');
 				gId('optLabel'+i).innerHTML = slOnOff[5+i]=="!" ? 'Option' : slOnOff[5+i].substr(0,16);
 			} else
@@ -1534,7 +1535,7 @@ function requestJson(command=null)
 					div.outerHTML = generateListItemHtml(
 						'palette',
 						255-j,
-						'~ Custom '+j+1+' ~',
+						'~ Custom '+j+' ~',
 						'setPalette',
 						`<div class="lstIprev" style="${genPalPrevCss(255-j)}"></div>`
 					);
@@ -2243,7 +2244,7 @@ function saveP(i,pl)
 	}
 	populatePresets();
 	resetPUtil();
-	setTimeout(()=>{pmtLast=0; loadPresets();}, 500); // force reloading of presets
+	setTimeout(()=>{pmtLast=0; loadPresets();}, 750); // force reloading of presets
 }
 
 function testPl(i,bt) {
@@ -2272,6 +2273,7 @@ function delP(i) {
 		requestJson(obj);
 		delete pJson[i];
 		populatePresets();
+		gId('putil').classList.add("staybot");
 	} else {
 		bt.style.color = "var(--c-r)";
 		bt.innerHTML = "<i class='icons btn-icon'>&#xe037;</i>Delete!";

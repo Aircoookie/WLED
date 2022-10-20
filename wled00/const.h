@@ -25,10 +25,22 @@
   #ifdef ESP8266
     #define WLED_MAX_BUSSES 3
   #else
-    #ifdef CONFIG_IDF_TARGET_ESP32S2
-      #define WLED_MAX_BUSSES 5
+    #if defined(CONFIG_IDF_TARGET_ESP32C3)    // 2 RMT, 6 LEDC, only has 1 I2S but NPB does not support it ATM
+      #define WLED_MAX_BUSSES 3               // will allow 2 digital & 1 analog (or the other way around)
+    #elif defined(CONFIG_IDF_TARGET_ESP32S2)  // 4 RMT, 8 LEDC, only has 1 I2S bus, supported in NPB
+      #if defined(USERMOD_AUDIOREACTIVE)      // requested by @softhack007 https://github.com/blazoncek/WLED/issues/33
+        #define WLED_MAX_BUSSES 6             // will allow 4 digital & 2 analog
+      #else
+        #define WLED_MAX_BUSSES 7             // will allow 5 digital & 2 analog
+      #endif
+    #elif defined(CONFIG_IDF_TARGET_ESP32S3)  // 4 RMT, 8 LEDC, has 2 I2S but NPB does not support them ATM
+      #define WLED_MAX_BUSSES 6               // will allow 4 digital & 2 analog
     #else
-      #define WLED_MAX_BUSSES 10
+      #if defined(USERMOD_AUDIOREACTIVE)      // requested by @softhack007 https://github.com/blazoncek/WLED/issues/33
+        #define WLED_MAX_BUSSES 8
+      #else
+        #define WLED_MAX_BUSSES 10
+      #endif
     #endif
   #endif
 #endif
@@ -79,7 +91,9 @@
 #define USERMOD_ID_MY9291                28     //Usermod "usermod_MY9291.h"
 #define USERMOD_ID_SI7021_MQTT_HA        29     //Usermod "usermod_si7021_mqtt_ha.h"
 #define USERMOD_ID_BME280                30     //Usermod "usermod_bme280.h
-#define USERMOD_ID_AUDIOREACTIVE         31     //Usermod "audioreactive.h"
+#define USERMOD_ID_SMARTNEST             31     //Usermod "usermod_smartnest.h"
+#define USERMOD_ID_AUDIOREACTIVE         32     //Usermod "audioreactive.h"
+#define USERMOD_ID_ANALOG_CLOCK          33     //Usermod "Analog_Clock.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
@@ -279,11 +293,15 @@
 #endif
 
 #ifndef MAX_LED_MEMORY
-#ifdef ESP8266
-#define MAX_LED_MEMORY 4000
-#else
-#define MAX_LED_MEMORY 64000
-#endif
+  #ifdef ESP8266
+    #define MAX_LED_MEMORY 4000
+  #else
+    #if defined(ARDUINO_ARCH_ESP32S2) || defined(ARDUINO_ARCH_ESP32C3)
+      #define MAX_LED_MEMORY 32000
+    #else
+      #define MAX_LED_MEMORY 64000
+    #endif
+  #endif
 #endif
 
 #ifndef MAX_LEDS_PER_BUS
@@ -308,9 +326,11 @@
 #endif
 
 #ifndef ABL_MILLIAMPS_DEFAULT
-  #define ABL_MILLIAMPS_DEFAULT 850  // auto lower brightness to stay close to milliampere limit
+  #define ABL_MILLIAMPS_DEFAULT 850   // auto lower brightness to stay close to milliampere limit
 #else
-  #if ABL_MILLIAMPS_DEFAULT < 250  // make sure value is at least 250
+  #if ABL_MILLIAMPS_DEFAULT == 0      // disable ABL
+  #elif ABL_MILLIAMPS_DEFAULT < 250   // make sure value is at least 250
+   #warning "make sure value is at least 250"
    #define ABL_MILLIAMPS_DEFAULT 250
   #endif
 #endif
@@ -333,7 +353,8 @@
   #define JSON_BUFFER_SIZE 24576
 #endif
 
-#define MIN_HEAP_SIZE (MAX_LED_MEMORY+2048)
+//#define MIN_HEAP_SIZE (MAX_LED_MEMORY+2048)
+#define MIN_HEAP_SIZE (8192)
 
 // Maximum size of node map (list of other WLED instances)
 #ifdef ESP8266
@@ -344,7 +365,7 @@
 
 //this is merely a default now and can be changed at runtime
 #ifndef LEDPIN
-#if defined(ESP8266) || (defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM))
+#if defined(ESP8266) || (defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)) || defined(CONFIG_IDF_TARGET_ESP32C3)
   #define LEDPIN 2    // GPIO2 (D4) on Wemod D1 mini compatible boards
 #else
   #define LEDPIN 16   // aligns with GPIO2 (D4) on Wemos D1 mini32 compatible boards
