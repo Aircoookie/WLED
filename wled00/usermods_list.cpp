@@ -140,6 +140,10 @@
 #include "../usermods/audioreactive/audio_reactive.h"
 #endif
 
+#ifdef USERMOD_ANALOG_CLOCK
+#include "../usermods/Analog_Clock/Analog_Clock.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -266,5 +270,9 @@ void registerUsermods()
   
   #ifdef USERMOD_AUDIOREACTIVE
   usermods.add(new AudioReactive());
+  #endif
+
+  #ifdef USERMOD_ANALOG_CLOCK
+  usermods.add(new AnalogClockUsermod());
   #endif
 }

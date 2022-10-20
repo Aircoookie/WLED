@@ -93,6 +93,7 @@
 #define USERMOD_ID_BME280                30     //Usermod "usermod_bme280.h
 #define USERMOD_ID_SMARTNEST             31     //Usermod "usermod_smartnest.h"
 #define USERMOD_ID_AUDIOREACTIVE         32     //Usermod "audioreactive.h"
+#define USERMOD_ID_ANALOG_CLOCK          33     //Usermod "Analog_Clock.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
