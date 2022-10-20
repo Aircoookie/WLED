@@ -15,10 +15,12 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
 {
   if(type == WS_EVT_CONNECT){
     //client connected
+    DEBUG_PRINTLN(F("WS client connected."));
     sendDataWs(client);
   } else if(type == WS_EVT_DISCONNECT){
     //client disconnected
     if (client->id() == wsLiveClientId) wsLiveClientId = 0;
+    DEBUG_PRINTLN(F("WS client disconnected."));
   } else if(type == WS_EVT_DATA){
     //data packet
     AwsFrameInfo * info = (AwsFrameInfo*)arg;
@@ -32,37 +34,35 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
           client->text(F("pong"));
           return;
         }
-        bool verboseResponse = false;
-        { //scope JsonDocument so it releases its buffer
-          #ifdef WLED_USE_DYNAMIC_JSON
-          DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-          #else
-          if (!requestJSONBufferLock(11)) return;
-          #endif
 
-          DeserializationError error = deserializeJson(doc, data, len);
-          JsonObject root = doc.as<JsonObject>();
-          if (error || root.isNull()) {
-            releaseJSONBufferLock();
-            return;
-          }
-          if (root["v"] && root.size() == 1) {
-            //if the received value is just "{"v":true}", send only to this client
-            verboseResponse = true;
-          } else if (root.containsKey("lv"))
-          {
-            wsLiveClientId = root["lv"] ? client->id() : 0;
-          } else {
-            verboseResponse = deserializeState(root);
-            if (!interfaceUpdateCallMode) {
-              //special case, only on playlist load, avoid sending twice in rapid succession
-              if (millis() - lastInterfaceUpdate > (INTERFACE_UPDATE_COOLDOWN -300)) verboseResponse = false;
-            }
-          }
-          releaseJSONBufferLock(); // will clean fileDoc
+        bool verboseResponse = false;
+        if (!requestJSONBufferLock(11)) return;
+
+        DeserializationError error = deserializeJson(doc, data, len);
+        JsonObject root = doc.as<JsonObject>();
+        if (error || root.isNull()) {
+          releaseJSONBufferLock();
+          return;
         }
-        //update if it takes longer than 300ms until next "broadcast"
-        if (verboseResponse && (millis() - lastInterfaceUpdate < (INTERFACE_UPDATE_COOLDOWN -300) || !interfaceUpdateCallMode)) sendDataWs(client);
+        if (root["v"] && root.size() == 1) {
+          //if the received value is just "{"v":true}", send only to this client
+          verboseResponse = true;
+        } else if (root.containsKey("lv")) {
+          wsLiveClientId = root["lv"] ? client->id() : 0;
+        } else {
+          verboseResponse = deserializeState(root);
+        }
+        releaseJSONBufferLock(); // will clean fileDoc
+
+        // force broadcast in 500ms after upadting client
+        if (verboseResponse) {
+          sendDataWs(client);
+          lastInterfaceUpdate = millis() - (INTERFACE_UPDATE_COOLDOWN -500);
+        } else {
+          // we have to send something back otherwise WS connection closes
+          client->text(F("{\"success\":true}"));
+          lastInterfaceUpdate = millis() - (INTERFACE_UPDATE_COOLDOWN -500);
+        }
       }
     } else {
       //message is comprised of multiple frames or the frame is split into multiple packets
@@ -82,12 +82,15 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
           }
         }
       }
+      DEBUG_PRINTLN(F("WS multipart message."));
     }
   } else if(type == WS_EVT_ERROR){
     //error was received from the other end
+    DEBUG_PRINTLN(F("WS error."));
 
   } else if(type == WS_EVT_PONG){
     //pong message was received (in response to a ping request maybe)
+    DEBUG_PRINTLN(F("WS pong."));
 
   }
 }
@@ -97,37 +100,48 @@ void sendDataWs(AsyncWebSocketClient * client)
   if (!ws.count()) return;
   AsyncWebSocketMessageBuffer * buffer;
 
-  { //scope JsonDocument so it releases its buffer
-    #ifdef WLED_USE_DYNAMIC_JSON
-    DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-    #else
-    if (!requestJSONBufferLock(12)) return;
-    #endif
-    JsonObject state = doc.createNestedObject("state");
-    serializeState(state);
-    JsonObject info  = doc.createNestedObject("info");
-    serializeInfo(info);
-    size_t len = measureJson(doc);
-    size_t heap1 = ESP.getFreeHeap();
-    buffer = ws.makeBuffer(len); // will not allocate correct memory sometimes
-    size_t heap2 = ESP.getFreeHeap();
-    if (!buffer || heap1-heap2<len) {
-      releaseJSONBufferLock();
-      ws.closeAll(1013); //code 1013 = temporary overload, try again later
-      ws.cleanupClients(0); //disconnect all clients to release memory
-      return; //out of memory
-    }
-    serializeJson(doc, (char *)buffer->get(), len +1);
+  if (!requestJSONBufferLock(12)) return;
+
+  JsonObject state = doc.createNestedObject("state");
+  serializeState(state);
+  JsonObject info  = doc.createNestedObject("info");
+  serializeInfo(info);
+
+  size_t len = measureJson(doc);
+  DEBUG_PRINTF("JSON buffer size: %u for WS request (%u).\n", doc.memoryUsage(), len);
+
+  size_t heap1 = ESP.getFreeHeap();
+  buffer = ws.makeBuffer(len); // will not allocate correct memory sometimes on ESP8266
+  #ifdef ESP8266
+  size_t heap2 = ESP.getFreeHeap();
+  #else
+  size_t heap2 = 0; // ESP32 variants do not have the same issue and will work without checking heap allocation
+  #endif
+  if (!buffer || heap1-heap2<len) {
     releaseJSONBufferLock();
-  } 
+    DEBUG_PRINTLN(F("WS buffer allocation failed."));
+    ws.closeAll(1013); //code 1013 = temporary overload, try again later
+    ws.cleanupClients(0); //disconnect all clients to release memory
+    ws._cleanBuffers();
+    return; //out of memory
+  }
+
+  buffer->lock();
+  serializeJson(doc, (char *)buffer->get(), len);
+
+  DEBUG_PRINT(F("Sending WS data "));
   if (client) {
     client->text(buffer);
+    DEBUG_PRINTLN(F("to a single client."));
   } else {
     ws.textAll(buffer);
+    DEBUG_PRINTLN(F("to multiple clients."));
   }
-}
+  buffer->unlock();
+  ws._cleanBuffers();
 
-#define MAX_LIVE_LEDS_WS 256
+  releaseJSONBufferLock();
+}
 
 bool sendLiveLedsWs(uint32_t wsClient)
 {
@@ -135,16 +149,24 @@ bool sendLiveLedsWs(uint32_t wsClient)
   if (!wsc || wsc->queueLength() > 0) return false; //only send if queue free
 
   uint16_t used = strip.getLengthTotal();
+  const uint16_t MAX_LIVE_LEDS_WS = strip.isMatrix ? 1024 : 256;
   uint16_t n = ((used -1)/MAX_LIVE_LEDS_WS) +1; //only serve every n'th LED if count over MAX_LIVE_LEDS_WS
-  uint16_t bufSize = 2 + (used/n)*3;
+  uint16_t pos = (strip.isMatrix ? 4 : 2);
+  uint16_t bufSize = pos + (used/n)*3;
   AsyncWebSocketMessageBuffer * wsBuf = ws.makeBuffer(bufSize);
   if (!wsBuf) return false; //out of memory
   uint8_t* buffer = wsBuf->get();
   buffer[0] = 'L';
   buffer[1] = 1; //version
+#ifndef WLED_DISABLE_2D
+  if (strip.isMatrix) {
+    buffer[1] = 2; //version
+    buffer[2] = strip.matrixWidth;
+    buffer[3] = strip.matrixHeight;
+  }
+#endif
 
-  uint16_t pos = 2;
-  for (uint16_t i= 0; pos < bufSize -2; i += n)
+  for (uint16_t i = 0; pos < bufSize -2; i += n)
   {
     uint32_t c = strip.getPixelColor(i);
     buffer[pos++] = qadd8(W(c), R(c)); //R, add white channel to RGB channels as a simple RGBW -> RGB map
@@ -166,8 +188,7 @@ void handleWs()
     ws.cleanupClients();
     #endif
     bool success = true;
-    if (wsLiveClientId)
-      success = sendLiveLedsWs(wsLiveClientId);
+    if (wsLiveClientId) success = sendLiveLedsWs(wsLiveClientId);
     wsLastLiveTime = millis();
     if (!success) wsLastLiveTime -= 20; //try again in 20ms if failed due to non-empty WS queue
   }

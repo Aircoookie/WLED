@@ -68,7 +68,6 @@
 #endif
 
 #ifdef USERMOD_VL53L0X_GESTURES
-#include <Wire.h> //it's needed here to correctly resolve dependencies
 #include "../usermods/VL53L0X_gestures/usermod_vl53l0x_gestures.h"
 #endif
 
@@ -94,6 +93,10 @@
 
 #ifdef RGB_ROTARY_ENCODER
 #include "../usermods/rgb-rotary-encoder/rgb-rotary-encoder.h"
+#endif
+
+#ifdef USERMOD_ST7789_DISPLAY
+#include "../usermods/ST7789_display/ST7789_Display.h"
 #endif
 
 #ifdef USERMOD_SEVEN_SEGMENT
@@ -126,6 +129,18 @@
 
 #ifdef USERMOD_SI7021_MQTT_HA
 #include "../usermods/Si7021_MQTT_HA/usermod_si7021_mqtt_ha.h"
+#endif
+
+#ifdef USERMOD_SMARTNEST
+#include "../usermods/smartnest/usermod_smartnest.h"
+#endif
+
+#ifdef USERMOD_AUDIOREACTIVE
+#include "../usermods/audioreactive/audio_reactive.h"
+#endif
+
+#ifdef USERMOD_ANALOG_CLOCK
+#include "../usermods/Analog_Clock/Analog_Clock.h"
 #endif
 
 #ifdef USERMOD_PING_PONG_CLOCK
@@ -216,6 +231,10 @@ void registerUsermods()
   usermods.add(new RgbRotaryEncoderUsermod());
   #endif
 
+  #ifdef USERMOD_ST7789_DISPLAY
+  usermods.add(new St7789DisplayUsermod());
+  #endif
+  
   #ifdef USERMOD_SEVEN_SEGMENT
   usermods.add(new SevenSegmentDisplay());
   #endif
@@ -248,6 +267,18 @@ void registerUsermods()
   usermods.add(new Si7021_MQTT_HA());
   #endif
 
+  #ifdef USERMOD_SMARTNEST
+  usermods.add(new Smartnest());
+  #endif
+  
+  #ifdef USERMOD_AUDIOREACTIVE
+  usermods.add(new AudioReactive());
+  #endif
+
+  #ifdef USERMOD_ANALOG_CLOCK
+  usermods.add(new AnalogClockUsermod());
+  #endif
+  
   #ifdef USERMOD_PING_PONG_CLOCK
   usermods.add(new PingPongClockUsermod());
   #endif

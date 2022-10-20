@@ -1,6 +1,3 @@
-#ifndef WLED_MATH_H
-#define WLED_MATH_H
-
 /*
  * Contains some trigonometric functions.
  * The ANSI C equivalents are likely faster, but using any sin/cos/tan function incurs a memory penalty of 460 bytes on ESP8266, likely for lookup tables.
@@ -117,7 +114,7 @@ float atan_t(float x) {
     res = -res;
   }
   #ifdef WLED_DEBUG_MATH
-  Serial.printf("atan,%f,%f,%f\n",xinput,res,atan(xinput));
+  Serial.printf("atan: %f,%f,%f,(%f)\n",xinput,res,atan(xinput),res-atan(xinput));
   #endif
   return res;
 }
@@ -140,5 +137,3 @@ float fmod_t(float num, float denom) {
   #endif
   return res;
 }
-
-#endif

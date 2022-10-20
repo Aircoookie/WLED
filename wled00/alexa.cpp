@@ -92,7 +92,7 @@ void onAlexaChange(EspalexaDevice* dev)
       } else {
         colorKtoRGB(k, rgbw);
       }
-      strip.setColor(0, rgbw[0], rgbw[1], rgbw[2], rgbw[3]);
+      strip.setColor(0, RGBW32(rgbw[0], rgbw[1], rgbw[2], rgbw[3]));
     } else {
       uint32_t color = espalexaDevice->getRGB();
       strip.setColor(0, color);
