@@ -52,7 +52,7 @@ void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t
   }
   if (final) {
     request->_tempFile.close();
-    if (filename == F("/cfg.json")) {
+    if (filename == "/cfg.json") {
       doReboot = true;
       request->send(200, "text/plain", F("Configuration restore successful.\nRebooting..."));
     } else
