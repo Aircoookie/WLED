@@ -219,6 +219,7 @@ struct Voxel {
   uint32_t col;
 };
 
+//https://xem.github.io/articles/projection.html
 class Frame3D {
   private:
     std::vector<Voxel> points;

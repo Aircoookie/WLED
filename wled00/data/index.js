@@ -739,6 +739,8 @@ function populateSegments(s)
 				<option value="2" ${inst.mp12==2?' selected':''}>Arc</option>
 				<option value="3" ${inst.mp12==3?' selected':''}>Corner</option>
 				<option value="4" ${inst.mp12==4?' selected':''}>jMap</option>
+				<option value="5" ${inst.mp12==5?' selected':''}>Circles</option>
+				<option value="6" ${inst.mp12==6?' selected':''}>Block</option>
 			</select></div>
 		</div>`;
 		let sndSim = `<div data-snd="ssim" class="lbl-s hide">Sound sim<br>
@@ -865,6 +867,7 @@ function populateEffects()
 				let m = (eP.length<4 || eP[3]==='')?[]:eP[3].split(","); // metadata
 				if (m.length>0) for (let r of m) {
 					if (r.substring(0,2)=="1d") nm += "&#8942;"; // 1D effects
+					if (r.substring(0,4)=="1.5d") nm += "&#8942;&#8942;"; // 1D effects + vStrips
 					if (r.substring(0,2)=="2d") nm += "&#9638;"; // 2D effects
 					if (r.substring(0,2)=="vo") nm += "&#9834;"; // volume effects
 					if (r.substring(0,2)=="fr") nm += "&#9835;"; // frequency effects

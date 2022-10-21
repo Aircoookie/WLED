@@ -465,6 +465,12 @@ uint16_t Segment::nrOfVStrips() const {
       case M12_pBar:
         vLen = virtualWidth();
         break;
+      case M12_sCircle: //WLEDSR
+        vLen = (virtualWidth() + virtualHeight()) / 6; // take third of the average width
+        break;
+      case M12_sBlock: //WLEDSR
+        vLen = (virtualWidth() + virtualHeight()) / 8; // take half of the average width
+        break;
     }
   }
 #endif
@@ -639,6 +645,16 @@ uint16_t Segment::virtualLength() const {
         if (jMap)
           vLen = ((JMapC *)jMap)->length();
         break;
+      case M12_sCircle: //WLEDSR
+        vLen = max(vW,vH); // get the longest dimension
+        // vLen = (virtualWidth() + virtualHeight()) * 3;
+        break;
+      case M12_sBlock: //WLEDSR
+        if (nrOfVStrips()>1)
+          vLen = max(vW,vH) * 4;//0.5; // get the longest dimension
+        else 
+          vLen = max(vW,vH) * 0.5; // get the longest dimension
+        break;
     }
     return vLen;
   }
@@ -647,6 +663,32 @@ uint16_t Segment::virtualLength() const {
   uint16_t vLength = (length() + groupLen - 1) / groupLen;
   if (mirror) vLength = (vLength + 1) /2;  // divide by 2 if mirror, leave at least a single LED
   return vLength;
+}
+
+//WLEDSR used for M12_sBlock
+void xyFromBlock(uint16_t &x,uint16_t &y, uint16_t i, uint16_t vW, uint16_t vH, uint16_t vStrip) {
+  float i2;
+  if (i<=SEGLEN*0.25) { //top, left to right
+    i2 = i/(SEGLEN*0.25);
+    x = vW / 2 - vStrip - 1 + i2 * vStrip * 2;
+    y = vH / 2 - vStrip - 1;
+  }
+  else if (i <= SEGLEN * 0.5) { //right, top to bottom
+    i2 = (i-SEGLEN*0.25)/(SEGLEN*0.25);
+    x = vW / 2 + vStrip;
+    y = vH / 2 - vStrip - 1 + i2 * vStrip * 2;
+  }
+  else if (i <= SEGLEN * 0.75) { //bottom, right to left
+    i2 = (i-SEGLEN*0.5)/(SEGLEN*0.25);
+    x = vW / 2 + vStrip - i2 * vStrip * 2;
+    y = vH / 2 + vStrip;
+  }
+  else if (i <= SEGLEN) { //left, bottom to top
+    i2 = (i-SEGLEN*0.75)/(SEGLEN*0.25);
+    x = vW / 2 - vStrip - 1;
+    y = vH / 2 + vStrip - i2 * vStrip * 2;
+  }
+
 }
 
 void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
@@ -684,6 +726,35 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
       case M12_jMap: //WLEDSR jMap
         if (jMap)
           ((JMapC *)jMap)->setPixelColor(i, col);
+        break;
+      case M12_sCircle: //WLEDSR
+        if (vStrip > 0)
+        {
+          int x = roundf(sin_t(360*i/SEGLEN*DEG_TO_RAD) * vW * (vStrip+1)/nrOfVStrips());
+          int y = roundf(cos_t(360*i/SEGLEN*DEG_TO_RAD) * vW * (vStrip+1)/nrOfVStrips());
+          setPixelColorXY(x + vW/2, y + vH/2, col);
+        }
+        else // pArc -> circle
+          drawArc(vW/2, vH/2, i/2, col);
+        break;
+      case M12_sBlock: //WLEDSR
+        if (vStrip > 0)
+        {
+          //vStrip+1 is distance from centre, i is how much of the square is filled
+          uint16_t x=0,y=0;
+          xyFromBlock(x,y, i, vW, vH, (vStrip+1)*2);
+          setPixelColorXY(x, y, col);
+        }
+        else { // pCorner -> block
+          for (int x = vW / 2 - i - 1; x <= vW / 2 + i; x++) { // top and bottom horizontal lines
+              setPixelColorXY(x, vH / 2 - i - 1, col);
+              setPixelColorXY(x, vH / 2 + i    , col);
+          }
+          for (int y = vH / 2 - i - 1 + 1; y <= vH / 2 + i - 1; y++) { //left and right vertical lines
+            setPixelColorXY(vW / 2 - i - 1, y, col);
+            setPixelColorXY(vW / 2 + i    , y, col);
+          }
+        }
         break;
     }
     return;
@@ -794,6 +865,26 @@ uint32_t Segment::getPixelColor(int i)
       case M12_jMap: //WLEDSR jMap
         if (jMap)
           return ((JMapC *)jMap)->getPixelColor(i);
+        break;
+      case M12_sCircle: //WLEDSR
+        if (vStrip > 0)
+        {
+          int x = roundf(sin_t(360*i/SEGLEN*DEG_TO_RAD) * vW * (vStrip+1)/nrOfVStrips());
+          int y = roundf(cos_t(360*i/SEGLEN*DEG_TO_RAD) * vW * (vStrip+1)/nrOfVStrips());
+          return getPixelColorXY(x + vW/2, y + vH/2);
+        }
+        else
+          return vW>vH ? getPixelColorXY(i, 0) : getPixelColorXY(0, i);
+        break;
+      case M12_sBlock: //WLEDSR
+        if (vStrip > 0)
+        {
+          uint16_t x=0,y=0;
+          xyFromBlock(x,y, i, vW, vH, (vStrip+1)*2);
+          return getPixelColorXY(x, y);
+        }
+        else
+          return getPixelColorXY(vW / 2, vH / 2 - i - 1);
         break;
     }
     return 0;

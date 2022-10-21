@@ -326,7 +326,9 @@ typedef enum mapping1D2D {
   M12_pBar = 1,
   M12_pArc = 2,
   M12_pCorner = 3,
-  M12_jMap = 4 //WLEDSR jMap
+  M12_jMap = 4, //WLEDSR jMap
+  M12_sCircle = 5, //WLEDSR jMap
+  M12_sBlock = 6 //WLEDSR jMap
 } mapping1D2D_t;
 
 // segment, 72 bytes
