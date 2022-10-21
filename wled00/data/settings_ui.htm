@@ -3,10 +3,12 @@
 <head lang="en">
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=500">
+	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
 	<title>UI Settings</title>
 	<script>
 		var d = document;
-		var initial_ds, initial_st;
+		var loc = false, locip;
+		var initial_ds, initial_st, initial_su;
 		var sett = null;
 		var l = {
 			"comp":{
@@ -21,8 +23,10 @@
 				"pcmbot": "Show bottom tab bar in PC mode",
 				"pid": "Show preset IDs",
 				"seglen": "Set segment length instead of stop LED",
-        "css": "Enable custom CSS",
-        "hdays": "Enable custom Holidays list"
+				"segpwr": "Hide segment power &amp; brightness",
+				"segexp" : "Always expand first segment",
+				"css": "Enable custom CSS",
+				"hdays": "Enable custom Holidays list"
 			},
 			"theme":{
 				"alpha": {
@@ -38,10 +42,7 @@
 				}
 			}
 		};
-		function gId(s)
-		{
-			return d.getElementById(s);
-		}
+		function gId(s) { return d.getElementById(s); }
 		function isObject(item) {
 			return (item && typeof item === 'object' && !Array.isArray(item));
 		}
@@ -61,10 +62,10 @@
 		{
 			var x = gId("toast");
 			x.innerHTML = text;
-			x.className = error ? "error":"show";
+			x.classList.add(error ? "error":"show");
 			clearTimeout(timeout);
 			x.style.animation = 'none';
-			timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
+			timeout = setTimeout(function(){ x.classList.remove("show"); }, 2900);
 		}
 		function addRec(s, path = "", label = null)
 		{
@@ -147,27 +148,57 @@
 				gId('lserr').innerHTML = "&#9888; Settings JSON saving failed. (" + e + ")";
 			}
 		}
+
+		function cLS()
+		{
+			localStorage.removeItem('wledP');
+			localStorage.removeItem('wledPmt');
+			localStorage.removeItem('wledPalx');
+			showToast("Cleared.");
+		}
 		
 		function Save() {
 			SetLS();
-			if (d.Sf.DS.value != initial_ds || d.Sf.ST.checked != initial_st) d.Sf.submit();
+			if (d.Sf.DS.value != initial_ds || d.Sf.ST.checked != initial_st || d.Sf.SU.checked != initial_su) d.Sf.submit();
 		}
 		
+		// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
+		function loadJS(FILE_URL, async = true) {
+			let scE = d.createElement("script");
+			scE.setAttribute("src", FILE_URL);
+			scE.setAttribute("type", "text/javascript");
+			scE.setAttribute("async", async);
+			d.body.appendChild(scE);
+			// success event 
+			scE.addEventListener("load", () => {
+				//console.log("File loaded");
+				GetV(); 
+				initial_ds = d.Sf.DS.value;
+				initial_st = d.Sf.ST.checked;
+				initial_su = d.Sf.SU.checked;
+				GetLS();
+			});
+			// error event
+			scE.addEventListener("error", (ev) => {
+				console.log("Error on loading file", ev);
+				alert("Loading of configuration script failed.\nIncomplete page data!");
+			});
+		}
 		function S()
 		{
-			GetV(); 
-			initial_ds = d.Sf.DS.value;
-			initial_st = d.Sf.ST.checked;
-			GetLS();
+			if (window.location.protocol == "file:") {
+				loc = true;
+				locip = localStorage.getItem('locIp');
+				if (!locip) {
+					locip = prompt("File Mode. Please enter WLED IP!");
+					localStorage.setItem('locIp', locip);
+				}
+			}
+			var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=3';
+			loadJS(url, false);	// If we set async false, file is loaded and executed, then next statement is processed
 		}
-		function H()
-		{
-			window.open("https://github.com/Aircoookie/WLED/wiki/Settings#user-interface-settings");
-		}
-		function B()
-		{
-			window.open("/settings","_self");
-		}
+		function H() { window.open("https://kno.wled.ge/features/settings/#user-interface-settings"); }
+		function B() { window.open("/settings","_self"); }
 		function UI()
 		{
 			gId('idonthateyou').style.display = (gId('dm').checked) ? 'inline':'none';
@@ -201,22 +232,22 @@
 			req.send(formData);
 			fO.value = '';
 			return false;
-	    }
-		function GetV(){var d=document;}
+		}
 	</script>
 	<style>@import url("style.css");</style>
 </head>
 <body onload="S()">
 	<form id="form_s" name="Sf" method="post">
-		<div style="position:sticky;top:0;background-color:#222;z-index:1;">
+		<div class="toprow">
 		<div class="helpB"><button type="button" onclick="H()">?</button></div>
 		<button type="button" onclick="B()">Back</button><button type="button" onclick="Save()">Save</button><br>
 		<span id="lssuc" style="color:green; display:none">&#10004; Local UI settings saved!</span>
 		<span id="lserr" style="color:red; display:none">&#9888; Could not access local storage. Make sure it is enabled in your browser.</span><hr>
 		</div>
 		<h2>Web Setup</h2>
-		Server description: <input name="DS" maxlength="32"><br>
-    	Sync button toggles both send and receive: <input type="checkbox" name="ST"><br>
+		Server description: <input type="text" name="DS" maxlength="32"><br>
+		Sync button toggles both send and receive: <input type="checkbox" name="ST"><br>
+		Enable simplified UI: <input type="checkbox" name="SU"><br>
 		<i>The following UI customization settings are unique both to the WLED device and this browser.<br>
 		You will need to set them again if using a different browser, device or WLED IP address.<br>
 		Refresh the main UI to apply changes.</i><br>
@@ -225,22 +256,25 @@
 		
 		<h3>UI Appearance</h3>
 		<span class="l"></span>: <input type="checkbox" id="comp_labels" class="agi cb"><br>
-    	<span class="l"></span>: <input type="checkbox" id="comp_pcmbot" class="agi cb"><br>
-    	<span class="l"></span>: <input type="checkbox" id="comp_pid" class="agi cb"><br>
-    	<span class="l"></span>: <input type="checkbox" id="comp_seglen" class="agi cb"><br>
+		<span class="l"></span>: <input type="checkbox" id="comp_pcmbot" class="agi cb"><br>
+		<span class="l"></span>: <input type="checkbox" id="comp_pid" class="agi cb"><br>
+		<span class="l"></span>: <input type="checkbox" id="comp_seglen" class="agi cb"><br>
+		<span class="l"></span>: <input type="checkbox" id="comp_segpwr" class="agi cb"><br>
+		<span class="l"></span>: <input type="checkbox" id="comp_segexp" class="agi cb"><br>
 		I hate dark mode: <input type="checkbox" id="dm" onchange="UI()"><br>
 		<span id="idonthateyou" style="display:none"><i>Why would you? </i>&#x1F97A;<br></span>
 		<span class="l"></span>: <input type="number" min=0.0 max=1.0 step=0.01 id="theme_alpha_tab" class="agi"><br>
 		<span class="l"></span>: <input type="number" min=0.0 max=1.0 step=0.01 id="theme_alpha_bg" class="agi"><br>
-		<span class="l"></span>: <input id="theme_color_bg" maxlength="9" class="agi"><br>
-		<span class="l">BG image URL</span>: <input id="theme_bg_url" class="agi" oninput="checkRandomBg()"><br>
+		<span class="l"></span>: <input type="text" id="theme_color_bg" maxlength="9" class="agi"><br>
+		<span class="l">BG image URL</span>: <input type="text" id="theme_bg_url" class="agi" oninput="checkRandomBg()"><br>
 		<span class="l">Random BG image</span>: <input type="checkbox" id="theme_bg_random" class="agi cb" onchange="setRandomBg()"><br>
 		<input id="theme_base" class="agi" style="display:none">
-    <span class="l"></span>: <input type="checkbox" id="comp_css" class="agi cb"><br>
+		<span class="l"></span>: <input type="checkbox" id="comp_css" class="agi cb"><br>
 		<div id="skin">Custom CSS: <input type="file" name="data" accept=".css"> <input type="button" value="Upload" onclick="uploadFile(d.Sf.data,'/skin.css');"><br></div>
 		<span class="l"></span>: <input type="checkbox" id="comp_hdays" class="agi cb"><br>
-    <div id="holidays">Holidays: <input type="file" name="data2" accept=".json"> <input type="button" value="Upload" onclick="uploadFile(d.Sf.data2,'/holidays.json');"><br></div>
+		<div id="holidays">Holidays: <input type="file" name="data2" accept=".json"> <input type="button" value="Upload" onclick="uploadFile(d.Sf.data2,'/holidays.json');"><br></div>
 		<div id="toast"></div>
+		<hr><button type="button" onclick="cLS()">Clear local storage</button>
 		<hr><button type="button" onclick="B()">Back</button><button type="button" onclick="Save()">Save</button>
 	</form>
 </body>

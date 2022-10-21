@@ -1,7 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8">
+<head>
+	<meta charset="UTF-8">
+	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
 	<title>WLED Settings</title>
+	<script>
+		var d=document;
+		var loc = false, locip;
+		function gId(n){return d.getElementById(n);}
+		// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
+		function loadJS(FILE_URL, async = true) {
+			let scE = d.createElement("script");
+			scE.setAttribute("src", FILE_URL);
+			scE.setAttribute("type", "text/javascript");
+			scE.setAttribute("async", async);
+			d.body.appendChild(scE);
+			// success event 
+			scE.addEventListener("load", () => {
+				//console.log("File loaded");
+				GetV();
+			});
+			// error event
+			scE.addEventListener("error", (ev) => {
+				console.log("Error on loading file", ev);
+				alert("Loading of configuration script failed.\nIncomplete page data!");
+			});
+		}
+		function S(){
+			if (window.location.protocol == "file:") {
+				loc = true;
+				locip = localStorage.getItem('locIp');
+				if (!locip) {
+					locip = prompt("File Mode. Please enter WLED IP!");
+					localStorage.setItem('locIp', locip);
+				}
+			}
+			var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=0';
+			loadJS(url, false);	// If we set async false, file is loaded and executed, then next statement is processed
+		}
+	</script>
 	<style>
 		body {
 			text-align: center;
@@ -10,29 +47,33 @@
 			margin: 0;
 		}
 		html {
-			--h: 10.2vh;
+			--h: 9vh;
 		}
 		button {
 			background: #333;
 			color: #fff;
 			font-family: Verdana, Helvetica, sans-serif;
+			display: block;
 			border: 1px solid #333;
 			border-radius: var(--h);
 			font-size: 6vmin;
 			height: var(--h);
 			width: calc(100% - 40px);
-			margin-top: 2vh;
+			margin: 2vh auto 0;
+			cursor: pointer;
 		}
 	</style>
 </head>
-<body>
-<form action="/"><button type=submit id="b">Back</button></form>
-<form action="/settings/wifi"><button type="submit">WiFi Setup</button></form>
-<form action="/settings/leds"><button type="submit">LED Preferences</button></form>
-<form action="/settings/ui"><button type="submit">User Interface</button></form>
-<form action="/settings/sync"><button type="submit">Sync Interfaces</button></form>
-<form action="/settings/time"><button type="submit">Time & Macros</button></form>
-<form action="/settings/um"><button type="submit">Usermods</button></form>
-<form action="/settings/sec"><button type="submit">Security & Updates</button></form>
+<body onload="S()">
+<button type=submit id="b" onclick="window.location='/'">Back</button>
+<button type="submit" onclick="window.location='./settings/wifi'">WiFi Setup</button>
+<button type="submit" onclick="window.location='./settings/leds'">LED Preferences</button>
+<button type="submit" onclick="window.location='./settings/2D'">2D Configuration</button>
+<button type="submit" onclick="window.location='./settings/ui'">User Interface</button>
+<button id="dmxbtn" style="display: none;" type="submit" onclick="window.location='./settings/dmx'">DMX Output</button>
+<button type="submit" onclick="window.location='./settings/sync'">Sync Interfaces</button>
+<button type="submit" onclick="window.location='./settings/time'">Time & Macros</button>
+<button type="submit" onclick="window.location='./settings/um'">Usermods</button>
+<button type="submit" onclick="window.location='./settings/sec'">Security & Updates</button>
 </body>
 </html>

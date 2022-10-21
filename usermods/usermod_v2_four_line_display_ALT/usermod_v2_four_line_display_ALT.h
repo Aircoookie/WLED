@@ -25,54 +25,32 @@
 //
 
 //The SCL and SDA pins are defined here. 
+#ifndef FLD_PIN_SCL
+  #define FLD_PIN_SCL i2c_scl
+#endif
+#ifndef FLD_PIN_SDA
+  #define FLD_PIN_SDA i2c_sda
+#endif
+#ifndef FLD_PIN_CLOCKSPI
+  #define FLD_PIN_CLOCKSPI spi_sclk
+#endif
+  #ifndef FLD_PIN_DATASPI
+  #define FLD_PIN_DATASPI spi_mosi
+#endif   
+#ifndef FLD_PIN_CS
+  #define FLD_PIN_CS spi_cs
+#endif
+
 #ifdef ARDUINO_ARCH_ESP32
-  #define HW_PIN_SCL 22
-  #define HW_PIN_SDA 21
-  #define HW_PIN_CLOCKSPI 18
-  #define HW_PIN_DATASPI 23
-  #ifndef FLD_PIN_SCL
-    #define FLD_PIN_SCL 22
-  #endif
-  #ifndef FLD_PIN_SDA
-    #define FLD_PIN_SDA 21
-  #endif
-  #ifndef FLD_PIN_CLOCKSPI
-    #define FLD_PIN_CLOCKSPI 18
-  #endif
-   #ifndef FLD_PIN_DATASPI
-    #define FLD_PIN_DATASPI 23
-  #endif   
   #ifndef FLD_PIN_DC
     #define FLD_PIN_DC 19
-  #endif
-  #ifndef FLD_PIN_CS
-    #define FLD_PIN_CS 5
   #endif
   #ifndef FLD_PIN_RESET
     #define FLD_PIN_RESET 26
   #endif
 #else
-  #define HW_PIN_SCL 5
-  #define HW_PIN_SDA 4
-  #define HW_PIN_CLOCKSPI 14
-  #define HW_PIN_DATASPI 13
-  #ifndef FLD_PIN_SCL
-    #define FLD_PIN_SCL 5
-  #endif
-  #ifndef FLD_PIN_SDA
-    #define FLD_PIN_SDA 4
-  #endif
-  #ifndef FLD_PIN_CLOCKSPI
-    #define FLD_PIN_CLOCKSPI 14
-  #endif
-   #ifndef FLD_PIN_DATASPI
-    #define FLD_PIN_DATASPI 13
-  #endif   
   #ifndef FLD_PIN_DC
     #define FLD_PIN_DC 12
-  #endif
-    #ifndef FLD_PIN_CS
-    #define FLD_PIN_CS 15
   #endif
   #ifndef FLD_PIN_RESET
     #define FLD_PIN_RESET 16
@@ -92,12 +70,19 @@
 #define SCREEN_TIMEOUT_MS  60*1000    // 1 min
 
 // Minimum time between redrawing screen in ms
-#define USER_LOOP_REFRESH_RATE_MS 1000
+#define REFRESH_RATE_MS 1000
 
 // Extra char (+1) for null
 #define LINE_BUFFER_SIZE            16+1
 #define MAX_JSON_CHARS              19+1
 #define MAX_MODE_LINE_SPACE         13+1
+
+
+#ifdef ARDUINO_ARCH_ESP32
+static TaskHandle_t Display_Task = nullptr;
+void DisplayTaskCode(void * parameter);
+#endif
+
 
 typedef enum {
   NONE = 0,
@@ -112,10 +97,15 @@ typedef enum {
 
 
 class FourLineDisplayUsermod : public Usermod {
+  public:
+    FourLineDisplayUsermod() { if (!instance) instance = this; }
+    static FourLineDisplayUsermod* getInstance(void) { return instance; }
 
   private:
 
+    static FourLineDisplayUsermod *instance;
     bool initDone = false;
+    volatile bool drawing = false;
 
     // HW interface & configuration
     U8X8 *u8x8 = nullptr;           // pointer to U8X8 display object
@@ -132,8 +122,8 @@ class FourLineDisplayUsermod : public Usermod {
     bool flip = false;              // flip display 180°
     uint8_t contrast = 10;          // screen contrast
     uint8_t lineHeight = 1;         // 1 row or 2 rows
-    uint16_t refreshRate = USER_LOOP_REFRESH_RATE_MS; // in ms
-    uint32_t screenTimeout = SCREEN_TIMEOUT_MS;       // in ms
+    uint16_t refreshRate = REFRESH_RATE_MS;     // in ms
+    uint32_t screenTimeout = SCREEN_TIMEOUT_MS; // in ms
     bool sleepMode = true;          // allow screen sleep?
     bool clockMode = false;         // display clock
     bool showSeconds = true;        // display clock with seconds
@@ -195,6 +185,123 @@ class FourLineDisplayUsermod : public Usermod {
       u8x8_cad_EndTransfer(u8x8_struct);
     }
 
+    /**
+     * Wrappers for screen drawing
+     */
+    void setFlipMode(uint8_t mode) {
+      if (type == NONE || !enabled) return;
+      u8x8->setFlipMode(mode);
+    }
+    void setContrast(uint8_t contrast) {
+      if (type == NONE || !enabled) return;
+      u8x8->setContrast(contrast);
+    }
+    void drawString(uint8_t col, uint8_t row, const char *string, bool ignoreLH=false) {
+      if (type == NONE || !enabled) return;
+      u8x8->setFont(u8x8_font_chroma48medium8_r);
+      if (!ignoreLH && lineHeight==2) u8x8->draw1x2String(col, row, string);
+      else                            u8x8->drawString(col, row, string);
+    }
+    void draw2x2String(uint8_t col, uint8_t row, const char *string) {
+      if (type == NONE || !enabled) return;
+      u8x8->setFont(u8x8_font_chroma48medium8_r);
+      u8x8->draw2x2String(col, row, string);
+    }
+    void drawGlyph(uint8_t col, uint8_t row, char glyph, const uint8_t *font, bool ignoreLH=false) {
+      if (type == NONE || !enabled) return;
+      u8x8->setFont(font);
+      if (!ignoreLH && lineHeight==2) u8x8->draw1x2Glyph(col, row, glyph);
+      else                            u8x8->drawGlyph(col, row, glyph);
+    }
+    void draw2x2Glyph(uint8_t col, uint8_t row, char glyph, const uint8_t *font) {
+      if (type == NONE || !enabled) return;
+      u8x8->setFont(font);
+      u8x8->draw2x2Glyph(col, row, glyph);
+    }
+    uint8_t getCols() {
+      if (type==NONE || !enabled) return 0;
+      return u8x8->getCols();
+    }
+    void clear() {
+      if (type == NONE || !enabled) return;
+      u8x8->clear();
+    }
+    void setPowerSave(uint8_t save) {
+      if (type == NONE || !enabled) return;
+      u8x8->setPowerSave(save);
+    }
+
+    void center(String &line, uint8_t width) {
+      int len = line.length();
+      if (len<width) for (byte i=(width-len)/2; i>0; i--) line = ' ' + line;
+      for (byte i=line.length(); i<width; i++) line += ' ';
+    }
+
+    void draw2x2GlyphIcons() {
+      if (lineHeight == 2) {
+        drawGlyph( 1,            0, 1, u8x8_4LineDisplay_WLED_icons_2x2, true); //brightness icon
+        drawGlyph( 5,            0, 2, u8x8_4LineDisplay_WLED_icons_2x2, true); //speed icon
+        drawGlyph( 9,            0, 3, u8x8_4LineDisplay_WLED_icons_2x2, true); //intensity icon
+        drawGlyph(14, 2*lineHeight, 4, u8x8_4LineDisplay_WLED_icons_2x2, true); //palette icon
+        drawGlyph(14, 3*lineHeight, 5, u8x8_4LineDisplay_WLED_icons_2x2, true); //effect icon
+      } else {
+        drawGlyph( 1, 0, 1, u8x8_4LineDisplay_WLED_icons_2x1); //brightness icon
+        drawGlyph( 5, 0, 2, u8x8_4LineDisplay_WLED_icons_2x1); //speed icon
+        drawGlyph( 9, 0, 3, u8x8_4LineDisplay_WLED_icons_2x1); //intensity icon
+        drawGlyph(15, 2, 4, u8x8_4LineDisplay_WLED_icons_1x1); //palette icon
+        drawGlyph(15, 3, 5, u8x8_4LineDisplay_WLED_icons_1x1); //effect icon
+      }
+    }
+
+    /**
+     * Display the current date and time in large characters
+     * on the middle rows. Based 24 or 12 hour depending on
+     * the useAMPM configuration.
+     */
+    void showTime() {
+      if (type == NONE || !enabled || !displayTurnedOff) return;
+
+      unsigned long now = millis();
+      while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
+      drawing = true;
+
+      char lineBuffer[LINE_BUFFER_SIZE];
+      static byte lastSecond;
+      byte secondCurrent = second(localTime);
+      byte minuteCurrent = minute(localTime);
+      byte hourCurrent   = hour(localTime);
+
+      if (knownMinute != minuteCurrent) {  //only redraw clock if it has changed
+        //updateLocalTime();
+        byte AmPmHour = hourCurrent;
+        boolean isitAM = true;
+        if (useAMPM) {
+          if (AmPmHour > 11) { AmPmHour -= 12; isitAM = false; }
+          if (AmPmHour == 0) { AmPmHour  = 12; }
+        }
+        if (knownHour != hourCurrent) {
+          // only update date when hour changes
+          sprintf_P(lineBuffer, PSTR("%s %2d "), monthShortStr(month(localTime)), day(localTime)); 
+          draw2x2String(2, lineHeight==1 ? 0 : lineHeight, lineBuffer); // adjust for 8 line displays, draw month and day
+        }
+        sprintf_P(lineBuffer,PSTR("%2d:%02d"), (useAMPM ? AmPmHour : hourCurrent), minuteCurrent);
+        draw2x2String(2, lineHeight*2, lineBuffer); //draw hour, min. blink ":" depending on odd/even seconds
+        if (useAMPM) drawString(12, lineHeight*2, (isitAM ? "AM" : "PM"), true); //draw am/pm if using 12 time
+
+        drawStatusIcons(); //icons power, wifi, timer, etc
+
+        knownMinute = minuteCurrent;
+        knownHour   = hourCurrent;
+      }
+      if (showSeconds && secondCurrent != lastSecond) {
+        lastSecond = secondCurrent;
+        draw2x2String(6, lineHeight*2, secondCurrent%2 ? " " : ":");
+        sprintf_P(lineBuffer, PSTR("%02d"), secondCurrent);
+        drawString(12, lineHeight*2+1, lineBuffer, true); // even with double sized rows print seconds in 1 line
+      }
+      drawing = false;
+    }
+
   public:
 
     // gets called once at boot. Do all initialization that doesn't depend on
@@ -205,13 +312,32 @@ class FourLineDisplayUsermod : public Usermod {
       bool isHW, isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64);
       PinOwner po = PinOwner::UM_FourLineDisplay;
       if (isSPI) {
-        isHW = (ioPin[0]==HW_PIN_CLOCKSPI && ioPin[1]==HW_PIN_DATASPI);
-        PinManagerPinType pins[5] = { { ioPin[0], true }, { ioPin[1], true }, { ioPin[2], true }, { ioPin[3], true }, { ioPin[4], true }};
-        if (!pinManager.allocateMultiplePins(pins, 5, po)) { type=NONE; return; }
-      } else {
-        isHW = (ioPin[0]==HW_PIN_SCL && ioPin[1]==HW_PIN_SDA);
+        uint8_t hw_sclk = spi_sclk<0 ? HW_PIN_CLOCKSPI : spi_sclk;
+        uint8_t hw_mosi = spi_mosi<0 ? HW_PIN_DATASPI : spi_mosi;
+        if (ioPin[0] < 0 || ioPin[1] < 0) {
+          ioPin[0] = hw_sclk;
+          ioPin[1] = hw_mosi;
+        }
+        isHW = (ioPin[0]==hw_sclk && ioPin[1]==hw_mosi);
+        PinManagerPinType cspins[3] = { { ioPin[2], true }, { ioPin[3], true }, { ioPin[4], true } };
+        if (!pinManager.allocateMultiplePins(cspins, 3, PinOwner::UM_FourLineDisplay)) { type=NONE; return; }
+        if (isHW) po = PinOwner::HW_SPI;  // allow multiple allocations of HW I2C bus pins
         PinManagerPinType pins[2] = { { ioPin[0], true }, { ioPin[1], true } };
-        if (ioPin[0]==HW_PIN_SCL && ioPin[1]==HW_PIN_SDA) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
+        if (!pinManager.allocateMultiplePins(pins, 2, po)) {
+          pinManager.deallocateMultiplePins(cspins, 3, PinOwner::UM_FourLineDisplay);
+          type = NONE;
+          return;
+        }
+      } else {
+        uint8_t hw_scl = i2c_scl<0 ? HW_PIN_SCL : i2c_scl;
+        uint8_t hw_sda = i2c_sda<0 ? HW_PIN_SDA : i2c_sda;
+        if (ioPin[0] < 0 || ioPin[1] < 0) {
+          ioPin[0] = hw_scl;
+          ioPin[1] = hw_sda;
+        }
+        isHW = (ioPin[0]==hw_scl && ioPin[1]==hw_sda);
+        if (isHW) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
+        PinManagerPinType pins[2] = { {ioPin[0], true }, { ioPin[1], true } };
         if (!pinManager.allocateMultiplePins(pins, 2, po)) { type=NONE; return; }
       }
 
@@ -276,10 +402,12 @@ class FourLineDisplayUsermod : public Usermod {
           else       u8x8 = (U8X8 *) new U8X8_SSD1305_128X64_ADAFRUIT_HW_I2C(U8X8_PIN_NONE, ioPin[0], ioPin[1]); // Pins are Reset, SCL, SDA
           break;
         case SSD1306_SPI:
+          // u8x8 uses global SPI variable that is attached to VSPI bus on ESP32
           if (!isHW)  u8x8 = (U8X8 *) new U8X8_SSD1306_128X32_UNIVISION_4W_SW_SPI(ioPin[0], ioPin[1], ioPin[2], ioPin[3], ioPin[4]);
           else        u8x8 = (U8X8 *) new U8X8_SSD1306_128X32_UNIVISION_4W_HW_SPI(ioPin[2], ioPin[3], ioPin[4]); // Pins are cs, dc, reset
           break;
         case SSD1306_SPI64:
+          // u8x8 uses global SPI variable that is attached to VSPI bus on ESP32
           if (!isHW) u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_4W_SW_SPI(ioPin[0], ioPin[1], ioPin[2], ioPin[3], ioPin[4]);
           else       u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_4W_HW_SPI(ioPin[2], ioPin[3], ioPin[4]); // Pins are cs, dc, reset
           break;
@@ -304,6 +432,7 @@ class FourLineDisplayUsermod : public Usermod {
       setPowerSave(0);
       //drawString(0, 0, "Loading...");
       overlayLogo(3500);
+      onUpdateBegin(false);  // create Display task
       initDone = true;
     }
 
@@ -319,63 +448,13 @@ class FourLineDisplayUsermod : public Usermod {
      * Da loop.
      */
     void loop() {
+    #ifndef ARDUINO_ARCH_ESP32
       if (!enabled || strip.isUpdating()) return;
       unsigned long now = millis();
       if (now < nextUpdate) return;
       nextUpdate = now + ((displayTurnedOff && clockMode && showSeconds) ? 1000 : refreshRate);
       redraw(false);
-    }
-
-    /**
-     * Wrappers for screen drawing
-     */
-    void setFlipMode(uint8_t mode) {
-      if (type == NONE || !enabled) return;
-      u8x8->setFlipMode(mode);
-    }
-    void setContrast(uint8_t contrast) {
-      if (type == NONE || !enabled) return;
-      u8x8->setContrast(contrast);
-    }
-    void drawString(uint8_t col, uint8_t row, const char *string, bool ignoreLH=false) {
-      if (type == NONE || !enabled) return;
-      u8x8->setFont(u8x8_font_chroma48medium8_r);
-      if (!ignoreLH && lineHeight==2) u8x8->draw1x2String(col, row, string);
-      else                            u8x8->drawString(col, row, string);
-    }
-    void draw2x2String(uint8_t col, uint8_t row, const char *string) {
-      if (type == NONE || !enabled) return;
-      u8x8->setFont(u8x8_font_chroma48medium8_r);
-      u8x8->draw2x2String(col, row, string);
-    }
-    void drawGlyph(uint8_t col, uint8_t row, char glyph, const uint8_t *font, bool ignoreLH=false) {
-      if (type == NONE || !enabled) return;
-      u8x8->setFont(font);
-      if (!ignoreLH && lineHeight==2) u8x8->draw1x2Glyph(col, row, glyph);
-      else                            u8x8->drawGlyph(col, row, glyph);
-    }
-    void draw2x2Glyph(uint8_t col, uint8_t row, char glyph, const uint8_t *font) {
-      if (type == NONE || !enabled) return;
-      u8x8->setFont(font);
-      u8x8->draw2x2Glyph(col, row, glyph);
-    }
-    uint8_t getCols() {
-      if (type==NONE || !enabled) return 0;
-      return u8x8->getCols();
-    }
-    void clear() {
-      if (type == NONE || !enabled) return;
-      u8x8->clear();
-    }
-    void setPowerSave(uint8_t save) {
-      if (type == NONE || !enabled) return;
-      u8x8->setPowerSave(save);
-    }
-
-    void center(String &line, uint8_t width) {
-      int len = line.length();
-      if (len<width) for (byte i=(width-len)/2; i>0; i--) line = ' ' + line;
-      for (byte i=line.length(); i<width; i++) line += ' ';
+    #endif
     }
 
     //function to update lastredraw
@@ -403,6 +482,8 @@ class FourLineDisplayUsermod : public Usermod {
           return;
         }
       }
+
+      while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
 
       if (apActive && WLED_WIFI_CONFIGURED && now<15000) {
         knownSsid = apSSID;
@@ -529,22 +610,6 @@ class FourLineDisplayUsermod : public Usermod {
       }
     }
 
-    void draw2x2GlyphIcons() {
-      if (lineHeight == 2) {
-        drawGlyph( 1,            0, 1, u8x8_4LineDisplay_WLED_icons_2x2, true); //brightness icon
-        drawGlyph( 5,            0, 2, u8x8_4LineDisplay_WLED_icons_2x2, true); //speed icon
-        drawGlyph( 9,            0, 3, u8x8_4LineDisplay_WLED_icons_2x2, true); //intensity icon
-        drawGlyph(14, 2*lineHeight, 4, u8x8_4LineDisplay_WLED_icons_2x2, true); //palette icon
-        drawGlyph(14, 3*lineHeight, 5, u8x8_4LineDisplay_WLED_icons_2x2, true); //effect icon
-      } else {
-        drawGlyph( 1, 0, 1, u8x8_4LineDisplay_WLED_icons_2x1); //brightness icon
-        drawGlyph( 5, 0, 2, u8x8_4LineDisplay_WLED_icons_2x1); //speed icon
-        drawGlyph( 9, 0, 3, u8x8_4LineDisplay_WLED_icons_2x1); //intensity icon
-        drawGlyph(15, 2, 4, u8x8_4LineDisplay_WLED_icons_1x1); //palette icon
-        drawGlyph(15, 3, 5, u8x8_4LineDisplay_WLED_icons_1x1); //effect icon
-      }
-    }
-
     void drawStatusIcons() {
       uint8_t col = 15;
       uint8_t row = 0;
@@ -570,8 +635,8 @@ class FourLineDisplayUsermod : public Usermod {
       if (markColNum != 255 && markLineNum !=255) drawGlyph(markColNum, markLineNum*lineHeight, 21, u8x8_4LineDisplay_WLED_icons_1x1);
     }
 
-     //Display the current effect or palette (desiredEntry) 
-     // on the appropriate line (row). 
+    //Display the current effect or palette (desiredEntry) 
+    // on the appropriate line (row). 
     void showCurrentEffectOrPalette(int inputEffPal, const char *qstring, uint8_t row) {
       char lineBuffer[MAX_JSON_CHARS];
       if (overlayUntil == 0) {
@@ -581,6 +646,10 @@ class FourLineDisplayUsermod : public Usermod {
           // remove "* " from dynamic palettes
           for (byte i=2; i<=printedChars; i++) lineBuffer[i-2] = lineBuffer[i]; //include '\0'
           printedChars -= 2;
+        } else if ((lineBuffer[0]==' ' && lineBuffer[1]>127)) {
+          // remove note symbol from effect names
+          for (byte i=5; i<=printedChars; i++) lineBuffer[i-5] = lineBuffer[i]; //include '\0'
+          printedChars -= 5;
         }
         if (lineHeight == 2) {                                 // use this code for 8 line display
           char smallBuffer1[MAX_MODE_LINE_SPACE];
@@ -635,10 +704,14 @@ class FourLineDisplayUsermod : public Usermod {
     bool wakeDisplay() {
       if (type == NONE || !enabled) return false;
       if (displayTurnedOff) {
+        unsigned long now = millis();
+        while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
+        drawing = true;
         clear();
         // Turn the display back on
         sleepOrClock(false);
         //lastRedraw = millis();
+        drawing = false;
         return true;
       }
       return false;
@@ -650,6 +723,9 @@ class FourLineDisplayUsermod : public Usermod {
      * Used in Rotary Encoder usermod.
      */
     void overlay(const char* line1, long showHowLong, byte glyphType) {
+      unsigned long now = millis();
+      while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
+      drawing = true;
       // Turn the display back on
       if (!wakeDisplay()) clear();
       // Print the overlay
@@ -663,6 +739,7 @@ class FourLineDisplayUsermod : public Usermod {
         drawString(0, (glyphType<255?3:0)*lineHeight, buf.c_str());
       }
       overlayUntil = millis() + showHowLong;
+      drawing = false;
     }
 
     /**
@@ -670,6 +747,9 @@ class FourLineDisplayUsermod : public Usermod {
      * Clears the screen and prints.
      */
     void overlayLogo(long showHowLong) {
+      unsigned long now = millis();
+      while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
+      drawing = true;
       // Turn the display back on
       if (!wakeDisplay()) clear();
       // Print the overlay
@@ -719,6 +799,7 @@ class FourLineDisplayUsermod : public Usermod {
         }
       }
       overlayUntil = millis() + showHowLong;
+      drawing = false;
     }
 
     /**
@@ -727,6 +808,9 @@ class FourLineDisplayUsermod : public Usermod {
      * Used in Auto Save usermod
      */
     void overlay(const char* line1, const char* line2, long showHowLong) {
+      unsigned long now = millis();
+      while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
+      drawing = true;
       // Turn the display back on
       if (!wakeDisplay()) clear();
       // Print the overlay
@@ -741,9 +825,14 @@ class FourLineDisplayUsermod : public Usermod {
         drawString(0, 2*lineHeight, buf.c_str());
       }
       overlayUntil = millis() + showHowLong;
+      drawing = false;
     }
 
     void networkOverlay(const char* line1, long showHowLong) {
+      unsigned long now = millis();
+      while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
+      drawing = true;
+
       String line;
       // Turn the display back on
       if (!wakeDisplay()) clear();
@@ -774,6 +863,7 @@ class FourLineDisplayUsermod : public Usermod {
       center(line, getCols());
       drawString(0, lineHeight*3, line.c_str());
       overlayUntil = millis() + showHowLong;
+      drawing = false;
     }
 
 
@@ -791,52 +881,6 @@ class FourLineDisplayUsermod : public Usermod {
       } else {
         displayTurnedOff = false;
         setPowerSave(0);
-      }
-    }
-
-    /**
-     * Display the current date and time in large characters
-     * on the middle rows. Based 24 or 12 hour depending on
-     * the useAMPM configuration.
-     */
-    void showTime() {
-      if (type == NONE || !enabled || !displayTurnedOff) return;
-
-      char lineBuffer[LINE_BUFFER_SIZE];
-      static byte lastSecond;
-      byte secondCurrent = second(localTime);
-      byte minuteCurrent = minute(localTime);
-      byte hourCurrent   = hour(localTime);
-
-      if (knownMinute != minuteCurrent) {  //only redraw clock if it has changed
-        //updateLocalTime();
-        byte AmPmHour = hourCurrent;
-        boolean isitAM = true;
-        if (useAMPM) {
-          if (AmPmHour > 11) { AmPmHour -= 12; isitAM = false; }
-          if (AmPmHour == 0) { AmPmHour  = 12; }
-        }
-        if (knownHour != hourCurrent) {
-          // only update date when hour changes
-          sprintf_P(lineBuffer, PSTR("%s %2d "), monthShortStr(month(localTime)), day(localTime)); 
-          draw2x2String(2, lineHeight==1 ? 0 : lineHeight, lineBuffer); // adjust for 8 line displays, draw month and day
-        }
-        sprintf_P(lineBuffer,PSTR("%2d:%02d"), (useAMPM ? AmPmHour : hourCurrent), minuteCurrent);
-        draw2x2String(2, lineHeight*2, lineBuffer); //draw hour, min. blink ":" depending on odd/even seconds
-        if (useAMPM) drawString(12, lineHeight*2, (isitAM ? "AM" : "PM"), true); //draw am/pm if using 12 time
-
-        drawStatusIcons(); //icons power, wifi, timer, etc
-
-        knownMinute = minuteCurrent;
-        knownHour   = hourCurrent;
-      } else {
-        if (secondCurrent == lastSecond) return;
-      }
-      if (showSeconds) {
-        lastSecond = secondCurrent;
-        draw2x2String(6, lineHeight*2, secondCurrent%2 ? " " : ":");
-        sprintf_P(lineBuffer, PSTR("%02d"), secondCurrent);
-        drawString(12, lineHeight*2+1, lineBuffer, true); // even with double sized rows print seconds in 1 line
       }
     }
 
@@ -913,7 +957,44 @@ class FourLineDisplayUsermod : public Usermod {
       }
       return handled;
     }
-  
+
+    #if CONFIG_FREERTOS_UNICORE
+    #define ARDUINO_RUNNING_CORE 0
+    #else
+    #define ARDUINO_RUNNING_CORE 1
+    #endif
+    void onUpdateBegin(bool init) {
+    #ifdef ARDUINO_ARCH_ESP32
+      if (init && Display_Task) {
+        vTaskSuspend(Display_Task);   // update is about to begin, disable task to prevent crash
+      } else {
+        // update has failed or create task requested
+        if (Display_Task)
+          vTaskResume(Display_Task);
+        else
+          xTaskCreatePinnedToCore(
+            [](void * par) {                  // Function to implement the task
+              // see https://www.freertos.org/vtaskdelayuntil.html
+              const TickType_t xFrequency = REFRESH_RATE_MS * portTICK_PERIOD_MS / 2;  
+              TickType_t xLastWakeTime = xTaskGetTickCount();
+              for(;;) {
+                delay(1); // DO NOT DELETE THIS LINE! It is needed to give the IDLE(0) task enough time and to keep the watchdog happy.
+                          // taskYIELD(), yield(), vTaskDelay() and esp_task_wdt_feed() didn't seem to work.
+                vTaskDelayUntil(&xLastWakeTime, xFrequency); // release CPU, by doing nothing for REFRESH_RATE_MS millis
+                FourLineDisplayUsermod::getInstance()->redraw(false);
+              }
+            },
+            "4LD",                // Name of the task
+            3072,                 // Stack size in words
+            NULL,                 // Task input parameter
+            1,                    // Priority of the task (not idle)
+            &Display_Task,        // Task handle
+            ARDUINO_RUNNING_CORE
+          );
+      }
+    #endif
+    }
+
     /*
      * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
      * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
@@ -941,6 +1022,23 @@ class FourLineDisplayUsermod : public Usermod {
     //  if (!initDone) return;  // prevent crash on boot applyPreset()
     //}
 
+    void appendConfigData() {
+      oappend(SET_F("dd=addDropdown('4LineDisplay','type');"));
+      oappend(SET_F("addOption(dd,'None',0);"));
+      oappend(SET_F("addOption(dd,'SSD1306',1);"));
+      oappend(SET_F("addOption(dd,'SH1106',2);"));
+      oappend(SET_F("addOption(dd,'SSD1306 128x64',3);"));
+      oappend(SET_F("addOption(dd,'SSD1305',4);"));
+      oappend(SET_F("addOption(dd,'SSD1305 128x64',5);"));
+      oappend(SET_F("addOption(dd,'SSD1306 SPI',6);"));
+      oappend(SET_F("addOption(dd,'SSD1306 SPI 128x64',7);"));
+      oappend(SET_F("addInfo('4LineDisplay:pin[]',0,'I2C/SPI CLK (-1 use global)');"));
+      oappend(SET_F("addInfo('4LineDisplay:pin[]',1,'I2C/SPI DTA (-1 use global)');"));
+      oappend(SET_F("addInfo('4LineDisplay:pin[]',2,'SPI CS');"));
+      oappend(SET_F("addInfo('4LineDisplay:pin[]',3,'SPI DC');"));
+      oappend(SET_F("addInfo('4LineDisplay:pin[]',4,'SPI RST');"));
+    }
+
     /*
      * addToConfig() can be used to add custom persistent settings to the cfg.json file in the "um" (usermod) object.
      * It will be called by WLED when settings are actually saved (for example, LED settings are saved)
@@ -956,17 +1054,32 @@ class FourLineDisplayUsermod : public Usermod {
      * I highly recommend checking out the basics of ArduinoJson serialization and deserialization in order to use custom settings!
      */
     void addToConfig(JsonObject& root) {
+      // determine if we are using global HW pins (data & clock)
+      int8_t hw_dta, hw_clk;
+      if ((type == SSD1306_SPI || type == SSD1306_SPI64)) {
+        hw_clk = spi_sclk<0 ? HW_PIN_CLOCKSPI : spi_sclk;
+        hw_dta = spi_mosi<0 ? HW_PIN_DATASPI : spi_mosi;
+      } else {
+        hw_clk = i2c_scl<0 ? HW_PIN_SCL : i2c_scl;
+        hw_dta = i2c_sda<0 ? HW_PIN_SDA : i2c_sda;
+      }
+
       JsonObject top   = root.createNestedObject(FPSTR(_name));
       top[FPSTR(_enabled)]       = enabled;
+
       JsonArray io_pin = top.createNestedArray("pin");
-      for (byte i=0; i<5; i++) io_pin.add(ioPin[i]);
-      top["help4Pins"]           = F("Clk,Data,CS,DC,RST"); // help for Settings page
+      for (int i=0; i<5; i++) {
+        if      (i==0 && ioPin[i]==hw_clk) io_pin.add(-1); // do not store global HW pin
+        else if (i==1 && ioPin[i]==hw_dta) io_pin.add(-1); // do not store global HW pin
+        else                               io_pin.add(ioPin[i]);
+      }
       top["type"]                = type;
-      top["help4Type"]           = F("1=SSD1306,2=SH1106,3=SSD1306_128x64,4=SSD1305,5=SSD1305_128x64,6=SSD1306_SPI,7=SSD1306_SPI_128x64"); // help for Settings page
       top[FPSTR(_flip)]          = (bool) flip;
       top[FPSTR(_contrast)]      = contrast;
       top[FPSTR(_contrastFix)]   = (bool) contrastFix;
+      #ifndef ARDUINO_ARCH_ESP32
       top[FPSTR(_refreshRate)]   = refreshRate;
+      #endif
       top[FPSTR(_screenTimeOut)] = screenTimeout/1000;
       top[FPSTR(_sleepMode)]     = (bool) sleepMode;
       top[FPSTR(_clockMode)]     = (bool) clockMode;
@@ -986,7 +1099,7 @@ class FourLineDisplayUsermod : public Usermod {
     bool readFromConfig(JsonObject& root) {
       bool needsRedraw    = false;
       DisplayType newType = type;
-      int8_t newPin[5]; for (byte i=0; i<5; i++) newPin[i] = ioPin[i];
+      int8_t oldPin[5]; for (byte i=0; i<5; i++) oldPin[i] = ioPin[i];
 
       JsonObject top = root[FPSTR(_name)];
       if (top.isNull()) {
@@ -997,11 +1110,13 @@ class FourLineDisplayUsermod : public Usermod {
 
       enabled       = top[FPSTR(_enabled)] | enabled;
       newType       = top["type"] | newType;
-      for (byte i=0; i<5; i++) newPin[i] = top["pin"][i] | ioPin[i];
+      for (byte i=0; i<5; i++) ioPin[i] = top["pin"][i] | ioPin[i];
       flip          = top[FPSTR(_flip)] | flip;
       contrast      = top[FPSTR(_contrast)] | contrast;
+      #ifndef ARDUINO_ARCH_ESP32
       refreshRate   = top[FPSTR(_refreshRate)] | refreshRate;
       refreshRate   = min(5000, max(250, (int)refreshRate));
+      #endif
       screenTimeout = (top[FPSTR(_screenTimeOut)] | screenTimeout/1000) * 1000;
       sleepMode     = top[FPSTR(_sleepMode)] | sleepMode;
       clockMode     = top[FPSTR(_clockMode)] | clockMode;
@@ -1015,24 +1130,31 @@ class FourLineDisplayUsermod : public Usermod {
       DEBUG_PRINT(FPSTR(_name));
       if (!initDone) {
         // first run: reading from cfg.json
-        for (byte i=0; i<5; i++) ioPin[i] = newPin[i];
         type = newType;
         DEBUG_PRINTLN(F(" config loaded."));
       } else {
         DEBUG_PRINTLN(F(" config (re)loaded."));
         // changing parameters from settings page
         bool pinsChanged = false;
-        for (byte i=0; i<5; i++) if (ioPin[i] != newPin[i]) { pinsChanged = true; break; }
+        for (byte i=0; i<5; i++) if (ioPin[i] != oldPin[i]) { pinsChanged = true; break; }
         if (pinsChanged || type!=newType) {
           if (type != NONE) delete u8x8;
           PinOwner po = PinOwner::UM_FourLineDisplay;
-          if (ioPin[0]==HW_PIN_SCL && ioPin[1]==HW_PIN_SDA) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
-          pinManager.deallocateMultiplePins((const uint8_t *)ioPin, (type == SSD1306_SPI || type == SSD1306_SPI64) ? 5 : 2, po);
-          for (byte i=0; i<5; i++) ioPin[i] = newPin[i];
-          if (ioPin[0]<0 || ioPin[1]<0) { // data & clock must be > -1
-            type = NONE;
-            return true;
-          } else type = newType;
+          bool isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64);
+          if (isSPI) {
+            pinManager.deallocateMultiplePins((const uint8_t *)(&oldPin[2]), 3, po);
+            uint8_t hw_sclk = spi_sclk<0 ? HW_PIN_CLOCKSPI : spi_sclk;
+            uint8_t hw_mosi = spi_mosi<0 ? HW_PIN_DATASPI : spi_mosi;
+            bool isHW = (oldPin[0]==hw_sclk && oldPin[1]==hw_mosi);
+            if (isHW) po = PinOwner::HW_SPI;
+          } else {
+            uint8_t hw_scl = i2c_scl<0 ? HW_PIN_SCL : i2c_scl;
+            uint8_t hw_sda = i2c_sda<0 ? HW_PIN_SDA : i2c_sda;
+            bool isHW = (oldPin[0]==hw_scl && oldPin[1]==hw_sda);
+            if (isHW) po = PinOwner::HW_I2C;
+          }
+          pinManager.deallocateMultiplePins((const uint8_t *)oldPin, 2, po);
+          type = newType;
           setup();
           needsRedraw |= true;
         } else {
@@ -1070,3 +1192,5 @@ const char FourLineDisplayUsermod::_clockMode[]       PROGMEM = "clockMode";
 const char FourLineDisplayUsermod::_showSeconds[]     PROGMEM = "showSeconds";
 const char FourLineDisplayUsermod::_busClkFrequency[] PROGMEM = "i2c-freq-kHz";
 const char FourLineDisplayUsermod::_contrastFix[]     PROGMEM = "contrastFix";
+
+FourLineDisplayUsermod *FourLineDisplayUsermod::instance = nullptr;
