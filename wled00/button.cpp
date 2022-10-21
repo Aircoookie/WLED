@@ -300,6 +300,29 @@ void handleButton()
   if (analog) lastRead = now;
 }
 
+// If enabled, RMT idle level is set to HIGH when off
+// to prevent leakage current when using an N-channel MOSFET to toggle LED power
+#ifdef ESP32_DATA_IDLE_HIGH
+void esp32RMTInvertIdle()
+{
+  bool idle_out;
+  for (uint8_t u = 0; u < busses.getNumBusses(); u++)
+  {
+    if (u > 7) return; // only 8 RMT channels, TODO: ESP32 variants have less RMT channels
+    Bus *bus = busses.getBus(u);
+    if (!bus || bus->getLength()==0 || !IS_DIGITAL(bus->getType()) || IS_2PIN(bus->getType())) continue;
+    //assumes that bus number to rmt channel mapping stays 1:1
+    rmt_channel_t ch = static_cast<rmt_channel_t>(u);
+    rmt_idle_level_t lvl;
+    rmt_get_idle_level(ch, &idle_out, &lvl);
+    if (lvl == RMT_IDLE_LEVEL_HIGH) lvl = RMT_IDLE_LEVEL_LOW;
+    else if (lvl == RMT_IDLE_LEVEL_LOW) lvl = RMT_IDLE_LEVEL_HIGH;
+    else continue;
+    rmt_set_idle_level(ch, idle_out, lvl);
+  }
+}
+#endif
+
 void handleIO()
 {
   handleButton();
@@ -310,6 +333,9 @@ void handleIO()
     lastOnTime = millis();
     if (offMode)
     {
+      #ifdef ESP32_DATA_IDLE_HIGH
+      esp32RMTInvertIdle();
+      #endif
       if (rlyPin>=0) {
         pinMode(rlyPin, OUTPUT);
         digitalWrite(rlyPin, rlyMde);
@@ -327,6 +353,9 @@ void handleIO()
         pinMode(LED_BUILTIN, OUTPUT);
         digitalWrite(LED_BUILTIN, HIGH);
       }
+      #endif
+      #ifdef ESP32_DATA_IDLE_HIGH
+      esp32RMTInvertIdle();
       #endif
       if (rlyPin>=0) {
         pinMode(rlyPin, OUTPUT);
