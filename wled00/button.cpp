@@ -279,14 +279,17 @@ void handleButton()
   if (analog) lastRead = millis();
 }
 
+// If enabled, RMT idle level is set to HIGH when off
+// to prevent leakage current when using an N-channel MOSFET to toggle LED power
 #ifdef ESP32_DATA_IDLE_HIGH
 void esp32RMTInvertIdle()
 {
   bool idle_out;
   for (uint8_t u = 0; u < busses.getNumBusses(); u++)
   {
+    if (u > 7) return; // only 8 RMT channels, TODO: ESP32 variants have less RMT channels
     Bus *bus = busses.getBus(u);
-    if (!bus || bus->getLength()==0 || !IS_DIGITAL(bus->getType())) continue;
+    if (!bus || bus->getLength()==0 || !IS_DIGITAL(bus->getType()) || IS_2PIN(bus->getType())) continue;
     //assumes that bus number to rmt channel mapping stays 1:1
     rmt_channel_t ch = static_cast<rmt_channel_t>(u);
     rmt_idle_level_t lvl;
