@@ -147,6 +147,10 @@
 #include "../usermods/usermod_v2_ping_pong_clock/usermod_v2_ping_pong_clock.h"
 #endif
 
+#ifdef USERMOD_ADS1115
+#include "../usermods/ADS1115_v2/usermod_ads1115.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -281,5 +285,9 @@ void registerUsermods()
   
   #ifdef USERMOD_PING_PONG_CLOCK
   usermods.add(new PingPongClockUsermod());
+  #endif
+  
+  #ifdef USERMOD_ADS1115
+  usermods.add(new ADS1115Usermod());
   #endif
 }
