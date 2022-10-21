@@ -1,50 +1,58 @@
 #include "wled.h"
 
 /*
- * Color conversion methods
+ * Color conversion & utility methods
  */
 
-void colorFromUint32(uint32_t in, bool secondary)
-{
-  if (secondary) {
-    colSec[3] = in >> 24 & 0xFF;
-    colSec[0] = in >> 16 & 0xFF;
-    colSec[1] = in >> 8  & 0xFF;
-    colSec[2] = in       & 0xFF;
-  } else {
-    col[3] = in >> 24 & 0xFF;
-    col[0] = in >> 16 & 0xFF;
-    col[1] = in >> 8  & 0xFF;
-    col[2] = in       & 0xFF;
-  }
+/*
+ * color blend function
+ */
+uint32_t color_blend(uint32_t color1, uint32_t color2, uint16_t blend, bool b16) {
+  if(blend == 0)   return color1;
+  uint16_t blendmax = b16 ? 0xFFFF : 0xFF;
+  if(blend == blendmax) return color2;
+  uint8_t shift = b16 ? 16 : 8;
+
+  uint32_t w1 = W(color1);
+  uint32_t r1 = R(color1);
+  uint32_t g1 = G(color1);
+  uint32_t b1 = B(color1);
+
+  uint32_t w2 = W(color2);
+  uint32_t r2 = R(color2);
+  uint32_t g2 = G(color2);
+  uint32_t b2 = B(color2);
+
+  uint32_t w3 = ((w2 * blend) + (w1 * (blendmax - blend))) >> shift;
+  uint32_t r3 = ((r2 * blend) + (r1 * (blendmax - blend))) >> shift;
+  uint32_t g3 = ((g2 * blend) + (g1 * (blendmax - blend))) >> shift;
+  uint32_t b3 = ((b2 * blend) + (b1 * (blendmax - blend))) >> shift;
+
+  return RGBW32(r3, g3, b3, w3);
 }
 
-//load a color without affecting the white channel
-void colorFromUint24(uint32_t in, bool secondary)
+/*
+ * color add function that preserves ratio
+ * idea: https://github.com/Aircoookie/WLED/pull/2465 by https://github.com/Proto-molecule
+ */
+uint32_t color_add(uint32_t c1, uint32_t c2)
 {
-  if (secondary) {
-    colSec[0] = in >> 16 & 0xFF;
-    colSec[1] = in >> 8  & 0xFF;
-    colSec[2] = in       & 0xFF;
-  } else {
-    col[0] = in >> 16 & 0xFF;
-    col[1] = in >> 8  & 0xFF;
-    col[2] = in       & 0xFF;
-  }
+  uint32_t r = R(c1) + R(c2);
+  uint32_t g = G(c1) + G(c2);
+  uint32_t b = B(c1) + B(c2);
+  uint32_t w = W(c1) + W(c2);
+  uint16_t max = r;
+  if (g > max) max = g;
+  if (b > max) max = b;
+  if (w > max) max = w;
+  if (max < 256) return RGBW32(r, g, b, w);
+  else           return RGBW32(r * 255 / max, g * 255 / max, b * 255 / max, w * 255 / max);
 }
 
-//store color components in uint32_t
-uint32_t colorFromRgbw(byte* rgbw) {
-  return (rgbw[0] << 16) + (rgbw[1] << 8) + rgbw[2] + (rgbw[3] << 24);
-}
-
-//relatively change white brightness, minumum A=5
-void relativeChangeWhite(int8_t amount, byte lowerBoundary)
+void setRandomColor(byte* rgb)
 {
-  int16_t new_val = (int16_t) col[3] + amount;
-  if (new_val > 0xFF) new_val = 0xFF;
-  else if (new_val < lowerBoundary) new_val = lowerBoundary;
-  col[3] = new_val;
+  lastRandomIndex = strip.getMainSegment().get_random_wheel_index(lastRandomIndex);
+  colorHStoRGB(lastRandomIndex*256,255,rgb);
 }
 
 void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) //hue, sat to rgb
@@ -64,9 +72,9 @@ void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) //hue, sat to rgb
     case 4: rgb[0]=t,rgb[1]=p,rgb[2]=255;break;
     case 5: rgb[0]=255,rgb[1]=p,rgb[2]=q;
   }
-  if (strip.isRgbw && strip.rgbwMode == RGBW_MODE_LEGACY) colorRGBtoRGBW(col);
 }
 
+//get RGB values from color temperature in K (https://tannerhelland.com/2012/09/18/convert-temperature-rgb-algorithm-code.html)
 void colorKtoRGB(uint16_t kelvin, byte* rgb) //white spectrum to rgb, calc
 {
   float r = 0, g = 0, b = 0;
@@ -84,7 +92,7 @@ void colorKtoRGB(uint16_t kelvin, byte* rgb) //white spectrum to rgb, calc
     g = round(288.1221695283 * pow((temp - 60), -0.0755148492));
     b = 255;
   } 
-  g += 15; //mod by Aircoookie, a bit less accurate but visibly less pinkish
+  //g += 12; //mod by Aircoookie, a bit less accurate but visibly less pinkish
   rgb[0] = (uint8_t) constrain(r, 0, 255);
   rgb[1] = (uint8_t) constrain(g, 0, 255);
   rgb[2] = (uint8_t) constrain(b, 0, 255);
@@ -111,7 +119,6 @@ void colorCTtoRGB(uint16_t mired, byte* rgb) //white spectrum to rgb, bins
   } else {
     rgb[0]=237;rgb[1]=255;rgb[2]=239;//150
   }
-  if (strip.isRgbw && strip.rgbwMode == RGBW_MODE_LEGACY) colorRGBtoRGBW(col);
 }
 
 #ifndef WLED_DISABLE_HUESYNC
@@ -169,7 +176,6 @@ void colorXYtoRGB(float x, float y, byte* rgb) //coordinates to rgb (https://www
   rgb[0] = 255.0*r;
   rgb[1] = 255.0*g;
   rgb[2] = 255.0*b;
-  if (strip.isRgbw && strip.rgbwMode == RGBW_MODE_LEGACY) colorRGBtoRGBW(col);
 }
 
 void colorRGBtoXY(byte* rgb, float* xy) //rgb to coordinates (https://www.developers.meethue.com/documentation/color-conversions-rgb-xy)
@@ -197,10 +203,10 @@ void colorFromDecOrHexString(byte* rgb, char* in)
     c = strtoul(in, NULL, 10);
   }
 
-  rgb[3] = (c >> 24) & 0xFF;
-  rgb[0] = (c >> 16) & 0xFF;
-  rgb[1] = (c >>  8) & 0xFF;
-  rgb[2] =  c        & 0xFF;
+  rgb[0] = R(c);
+  rgb[1] = G(c);
+  rgb[2] = B(c);
+  rgb[3] = W(c);
 }
 
 //contrary to the colorFromDecOrHexString() function, this uses the more standard RRGGBB / RRGGBBWW order
@@ -212,14 +218,14 @@ bool colorFromHexString(byte* rgb, const char* in) {
   uint32_t c = strtoul(in, NULL, 16);
 
   if (inputSize == 6) {
-    rgb[0] = (c >> 16) & 0xFF;
-    rgb[1] = (c >>  8) & 0xFF;
-    rgb[2] =  c        & 0xFF;
+    rgb[0] = (c >> 16);
+    rgb[1] = (c >>  8);
+    rgb[2] =  c       ;
   } else {
-    rgb[0] = (c >> 24) & 0xFF;
-    rgb[1] = (c >> 16) & 0xFF;
-    rgb[2] = (c >>  8) & 0xFF;
-    rgb[3] =  c        & 0xFF;
+    rgb[0] = (c >> 24);
+    rgb[1] = (c >> 16);
+    rgb[2] = (c >>  8);
+    rgb[3] =  c       ;
   }
   return true;
 }
@@ -236,11 +242,130 @@ float maxf (float v, float w)
   return v;
 }
 
+/*
+uint32_t colorRGBtoRGBW(uint32_t c)
+{
+  byte rgb[4];
+  rgb[0] = R(c);
+  rgb[1] = G(c);
+  rgb[2] = B(c);
+  rgb[3] = W(c);
+  colorRGBtoRGBW(rgb);
+  return RGBW32(rgb[0], rgb[1], rgb[2], rgb[3]);
+}
+
 void colorRGBtoRGBW(byte* rgb) //rgb to rgbw (http://codewelt.com/rgbw). (RGBW_MODE_LEGACY)
 {
   float low = minf(rgb[0],minf(rgb[1],rgb[2]));
   float high = maxf(rgb[0],maxf(rgb[1],rgb[2]));
   if (high < 0.1f) return;
-  float sat = 100.0f * ((high - low) / high);;   // maximum saturation is 100  (corrected from 255)
+  float sat = 100.0f * ((high - low) / high);   // maximum saturation is 100  (corrected from 255)
   rgb[3] = (byte)((255.0f - sat) / 255.0f * (rgb[0] + rgb[1] + rgb[2]) / 3);
+}
+*/
+
+byte correctionRGB[4] = {0,0,0,0};
+uint16_t lastKelvin = 0;
+
+// adjust RGB values based on color temperature in K (range [2800-10200]) (https://en.wikipedia.org/wiki/Color_balance)
+uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb)
+{
+  //remember so that slow colorKtoRGB() doesn't have to run for every setPixelColor()
+  if (lastKelvin != kelvin) colorKtoRGB(kelvin, correctionRGB);  // convert Kelvin to RGB
+  lastKelvin = kelvin;
+  byte rgbw[4];
+  rgbw[0] = ((uint16_t) correctionRGB[0] * R(rgb)) /255; // correct R
+  rgbw[1] = ((uint16_t) correctionRGB[1] * G(rgb)) /255; // correct G
+  rgbw[2] = ((uint16_t) correctionRGB[2] * B(rgb)) /255; // correct B
+  rgbw[3] =                                W(rgb);
+  return RGBW32(rgbw[0],rgbw[1],rgbw[2],rgbw[3]);
+}
+
+//approximates a Kelvin color temperature from an RGB color.
+//this does no check for the "whiteness" of the color,
+//so should be used combined with a saturation check (as done by auto-white)
+//values from http://www.vendian.org/mncharity/dir3/blackbody/UnstableURLs/bbr_color.html (10deg)
+//equation spreadsheet at https://bit.ly/30RkHaN
+//accuracy +-50K from 1900K up to 8000K
+//minimum returned: 1900K, maximum returned: 10091K (range of 8192)
+uint16_t approximateKelvinFromRGB(uint32_t rgb) {
+  //if not either red or blue is 255, color is dimmed. Scale up
+  uint8_t r = R(rgb), b = B(rgb);
+  if (r == b) return 6550; //red == blue at about 6600K (also can't go further if both R and B are 0)
+
+  if (r > b) {
+    //scale blue up as if red was at 255
+    uint16_t scale = 0xFFFF / r; //get scale factor (range 257-65535)
+    b = ((uint16_t)b * scale) >> 8;
+    //For all temps K<6600 R is bigger than B (for full bri colors R=255)
+    //-> Use 9 linear approximations for blackbody radiation blue values from 2000-6600K (blue is always 0 below 2000K)
+    if (b < 33)  return 1900 + b       *6;
+    if (b < 72)  return 2100 + (b-33)  *10;
+    if (b < 101) return 2492 + (b-72)  *14;
+    if (b < 132) return 2900 + (b-101) *16;
+    if (b < 159) return 3398 + (b-132) *19;
+    if (b < 186) return 3906 + (b-159) *22;
+    if (b < 210) return 4500 + (b-186) *25;
+    if (b < 230) return 5100 + (b-210) *30;
+                 return 5700 + (b-230) *34;
+  } else {
+    //scale red up as if blue was at 255
+    uint16_t scale = 0xFFFF / b; //get scale factor (range 257-65535)
+    r = ((uint16_t)r * scale) >> 8;
+    //For all temps K>6600 B is bigger than R (for full bri colors B=255)
+    //-> Use 2 linear approximations for blackbody radiation red values from 6600-10091K (blue is always 0 below 2000K)
+    if (r > 225) return 6600 + (254-r) *50;
+    uint16_t k = 8080 + (225-r) *86;
+    return (k > 10091) ? 10091 : k;
+  }
+}
+
+//gamma 2.8 lookup table used for color correction
+static byte gammaT[] = {
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,
+    1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,
+    2,  3,  3,  3,  3,  3,  3,  3,  4,  4,  4,  4,  4,  5,  5,  5,
+    5,  6,  6,  6,  6,  7,  7,  7,  7,  8,  8,  8,  9,  9,  9, 10,
+   10, 10, 11, 11, 11, 12, 12, 13, 13, 13, 14, 14, 15, 15, 16, 16,
+   17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 24, 24, 25,
+   25, 26, 27, 27, 28, 29, 29, 30, 31, 32, 32, 33, 34, 35, 35, 36,
+   37, 38, 39, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 50,
+   51, 52, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 66, 67, 68,
+   69, 70, 72, 73, 74, 75, 77, 78, 79, 81, 82, 83, 85, 86, 87, 89,
+   90, 92, 93, 95, 96, 98, 99,101,102,104,105,107,109,110,112,114,
+  115,117,119,120,122,124,126,127,129,131,133,135,137,138,140,142,
+  144,146,148,150,152,154,156,158,160,162,164,167,169,171,173,175,
+  177,180,182,184,186,189,191,193,196,198,200,203,205,208,210,213,
+  215,218,220,223,225,228,231,233,236,239,241,244,247,249,252,255 };
+
+uint8_t gamma8_cal(uint8_t b, float gamma)
+{
+  return (int)(powf((float)b / 255.0f, gamma) * 255.0f + 0.5f);
+}
+
+void calcGammaTable(float gamma)
+{
+  for (uint16_t i = 0; i < 256; i++) {
+    gammaT[i] = gamma8_cal(i, gamma);
+  }
+}
+
+uint8_t gamma8(uint8_t b)
+{
+  return gammaT[b];
+}
+
+uint32_t gamma32(uint32_t color)
+{
+  if (!gammaCorrectCol) return color;
+  uint8_t w = W(color);
+  uint8_t r = R(color);
+  uint8_t g = G(color);
+  uint8_t b = B(color);
+  w = gammaT[w];
+  r = gammaT[r];
+  g = gammaT[g];
+  b = gammaT[b];
+  return RGBW32(r, g, b, w);
 }

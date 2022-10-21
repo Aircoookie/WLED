@@ -114,8 +114,6 @@
     <ClInclude Include="cronixie.h" />
     <ClInclude Include="dmx.h" />
     <ClInclude Include="file.h" />
-    <ClInclude Include="html_classic.h" />
-    <ClInclude Include="html_mobile.h" />
     <ClInclude Include="html_other.h" />
     <ClInclude Include="html_settings.h" />
     <ClInclude Include="html_ui.h" />
@@ -126,7 +124,6 @@
     <ClInclude Include="led.h" />
     <ClInclude Include="mqtt.h" />
     <ClInclude Include="notify.h" />
-    <ClInclude Include="NpbWrapper.h" />
     <ClInclude Include="ntp.h" />
     <ClInclude Include="overlay.h" />
     <ClInclude Include="palettes.h" />
@@ -198,6 +195,7 @@
     <ClCompile Include="led.cpp" />
     <ClCompile Include="mqtt.cpp" />
     <ClCompile Include="notify.cpp" />
+    <ClCompile Include="network.cpp" />
     <ClCompile Include="ntp.cpp" />
     <ClCompile Include="overlay.cpp" />
     <ClCompile Include="set.cpp" />
@@ -223,7 +221,9 @@
     <ClCompile Include="FX.cpp" />
     <ClCompile Include="FX_fcn.cpp" />
     <ClCompile Include="usermod.cpp" />
+    <ClInclude Include="util.cpp" />
     <ClCompile Include="wled.cpp" />
+    <ClCompile Include="wled_math.cpp" />
     <ClCompile Include="wled_eeprom.cpp" />
     <ClCompile Include="wled_server.cpp" />
     <ClCompile Include="xml.cpp" />

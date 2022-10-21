@@ -76,7 +76,7 @@ private:
   unsigned char Enc_B;
   unsigned char Enc_A_prev = 0;
 
-  bool currentEffectAndPaleeteInitialized = false;
+  bool currentEffectAndPaletteInitialized = false;
   uint8_t effectCurrentIndex = 0;
   uint8_t effectPaletteIndex = 0;
 
@@ -97,13 +97,26 @@ public:
      */
   void setup()
   {
-    if (!pinManager.allocatePin(pinA)) { enabled = false; return;}
-    if (!pinManager.allocatePin(pinB)) { pinManager.deallocatePin(pinA); enabled = false; return; }
-    if (!pinManager.allocatePin(pinC)) { pinManager.deallocatePin(pinA); pinManager.deallocatePin(pinB); enabled = false; return; }
+    DEBUG_PRINTLN(F("Usermod Rotary Encoder init."));
+    PinManagerPinType pins[3] = { { pinA, false }, { pinB, false }, { pinC, false } };
+    if (!pinManager.allocateMultiplePins(pins, 3, PinOwner::UM_RotaryEncoderUI)) {
+      // BUG: configuring this usermod with conflicting pins
+      //      will cause it to de-allocate pins it does not own
+      //      (at second config)
+      //      This is the exact type of bug solved by pinManager
+      //      tracking the owner tags....
+      pinA = pinB = pinC = -1;
+      enabled = false;
+      return;
+    }
 
-    pinMode(pinA, INPUT_PULLUP);
-    pinMode(pinB, INPUT_PULLUP);
-    pinMode(pinC, INPUT_PULLUP);
+    #ifndef USERMOD_ROTARY_ENCODER_GPIO
+      #define USERMOD_ROTARY_ENCODER_GPIO INPUT_PULLUP
+    #endif
+    pinMode(pinA, USERMOD_ROTARY_ENCODER_GPIO);
+    pinMode(pinB, USERMOD_ROTARY_ENCODER_GPIO);
+    pinMode(pinC, USERMOD_ROTARY_ENCODER_GPIO);
+
     currentTime = millis();
     loopTime = currentTime;
 
@@ -152,7 +165,7 @@ public:
     // Initialize effectCurrentIndex and effectPaletteIndex to
     // current state. We do it here as (at least) effectCurrent
     // is not yet initialized when setup is called.
-    if (!currentEffectAndPaleeteInitialized) {
+    if (!currentEffectAndPaletteInitialized) {
       findCurrentEffectAndPalette();
     }
 
@@ -248,7 +261,7 @@ public:
   }
 
   void findCurrentEffectAndPalette() {
-    currentEffectAndPaleeteInitialized = true;
+    currentEffectAndPaletteInitialized = true;
     for (uint8_t i = 0; i < strip.getModeCount(); i++) {
       //byte value = modes_alpha_indexes[i];
       if (modes_alpha_indexes[i] == effectCurrent) {
@@ -282,12 +295,8 @@ public:
   }
 
   void lampUdated() {
-    bool fxChanged = strip.setEffectConfig(effectCurrent, effectSpeed, effectIntensity, effectPalette);
-
-    //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (No notification)
-    // 6: fx changed 7: hue 8: preset cycle 9: blynk 10: alexa
-    colorUpdated(CALL_MODE_DIRECT_CHANGE);
-    updateInterfaces(CALL_MODE_DIRECT_CHANGE);
+    colorUpdated(CALL_MODE_BUTTON);
+    updateInterfaces(CALL_MODE_BUTTON);
   }
 
   void changeBrightness(bool increase) {
@@ -435,14 +444,11 @@ public:
       DEBUG_PRINTLN(F(": No config found. (Using defaults.)"));
       return false;
     }
-    int8_t newDTpin  = pinA;
-    int8_t newCLKpin = pinB;
-    int8_t newSWpin  = pinC;
+    int8_t newDTpin  = top[FPSTR(_DT_pin)]  | pinA;
+    int8_t newCLKpin = top[FPSTR(_CLK_pin)] | pinB;
+    int8_t newSWpin  = top[FPSTR(_SW_pin)]  | pinC;
 
     enabled   = top[FPSTR(_enabled)] | enabled;
-    newDTpin  = top[FPSTR(_DT_pin)]  | newDTpin;
-    newCLKpin = top[FPSTR(_CLK_pin)] | newCLKpin;
-    newSWpin  = top[FPSTR(_SW_pin)]  | newSWpin;
 
     DEBUG_PRINT(FPSTR(_name));
     if (!initDone) {
@@ -455,9 +461,9 @@ public:
       DEBUG_PRINTLN(F(" config (re)loaded."));
       // changing parameters from settings page
       if (pinA!=newDTpin || pinB!=newCLKpin || pinC!=newSWpin) {
-        pinManager.deallocatePin(pinA);
-        pinManager.deallocatePin(pinB);
-        pinManager.deallocatePin(pinC);
+        pinManager.deallocatePin(pinA, PinOwner::UM_RotaryEncoderUI);
+        pinManager.deallocatePin(pinB, PinOwner::UM_RotaryEncoderUI);
+        pinManager.deallocatePin(pinC, PinOwner::UM_RotaryEncoderUI);
         pinA = newDTpin;
         pinB = newCLKpin;
         pinC = newSWpin;

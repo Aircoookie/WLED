@@ -1,6 +1,6 @@
 #include "src/dependencies/timezone/Timezone.h"
 #include "wled.h"
-#include "wled_math.h"
+#include "fcn_declare.h"
 
 /*
  * Acquires time from NTP server
@@ -29,6 +29,10 @@ Timezone* tz;
 #define TZ_AUSTRALIA_NORTHERN  16
 #define TZ_AUSTRALIA_SOUTHERN  17
 #define TZ_HAWAII              18
+#define TZ_NOVOSIBIRSK         19
+#define TZ_ANCHORAGE           20
+#define TZ_MX_CENTRAL          21
+#define TZ_PAKISTAN            22
 #define TZ_INIT               255
 
 byte tzCurrent = TZ_INIT; //uninitialized
@@ -90,12 +94,12 @@ void updateTimezone() {
       break;
     }
     case TZ_AUSTRALIA_EASTERN : {
-      tcrDaylight = {Second, Sun, Oct, 2, 660};   //AEDT = UTC + 11 hours
+      tcrDaylight = {First,  Sun, Oct, 2, 660};   //AEDT = UTC + 11 hours
       tcrStandard = {First,  Sun, Apr, 3, 600};   //AEST = UTC + 10 hours
       break;
     }
     case TZ_NEW_ZEALAND : {
-      tcrDaylight = {Second, Sun, Sep, 2, 780};   //NZDT = UTC + 13 hours
+      tcrDaylight = {Last,   Sun, Sep, 2, 780};   //NZDT = UTC + 13 hours
       tcrStandard = {First,  Sun, Apr, 3, 720};   //NZST = UTC + 12 hours
       break;
     }
@@ -129,6 +133,26 @@ void updateTimezone() {
       tcrStandard = tcrDaylight;
       break;
     }
+    case TZ_NOVOSIBIRSK : {
+      tcrDaylight = {Last, Sun, Mar, 1, 420};     //CST = UTC + 7 hours
+      tcrStandard = tcrDaylight;
+      break;
+    }
+    case TZ_ANCHORAGE : {
+      tcrDaylight = {Second, Sun, Mar, 2, -480};  //AKDT = UTC - 8 hours
+      tcrStandard = {First, Sun, Nov, 2, -540};   //AKST = UTC - 9 hours
+      break;
+    }
+     case TZ_MX_CENTRAL : {
+      tcrDaylight = {First, Sun, Apr, 2, -300};  //CDT = UTC - 5 hours
+      tcrStandard = {Last,  Sun, Oct, 2, -360};  //CST = UTC - 6 hours
+      break;
+    }
+    case TZ_PAKISTAN : {
+      tcrDaylight = {Last, Sun, Mar, 1, 300};     //Pakistan Standard Time = UTC + 5 hours
+      tcrStandard = tcrDaylight;
+      break;
+    }
   }
 
   tzCurrent = currentTimezone;
@@ -151,7 +175,6 @@ void handleTime() {
     updateLocalTime();
     checkTimers();
     checkCountdown();
-    handleOverlays();
   }
 }
 
@@ -300,6 +323,32 @@ byte weekdayMondayFirst()
   return wd;
 }
 
+bool isTodayInDateRange(byte monthStart, byte dayStart, byte monthEnd, byte dayEnd)
+{
+	if (monthStart == 0 || dayStart == 0) return true;
+	if (monthEnd == 0) monthEnd = monthStart;
+	if (dayEnd == 0) dayEnd = 31;
+	byte d = day(localTime);
+	byte m = month(localTime);
+
+	if (monthStart < monthEnd) {
+		if (m > monthStart && m < monthEnd) return true;
+		if (m == monthStart) return (d >= dayStart);
+		if (m == monthEnd) return (d <= dayEnd);
+		return false;
+	}
+	if (monthEnd < monthStart) { //range spans change of year
+		if (m > monthStart || m < monthEnd) return true;
+		if (m == monthStart) return (d >= dayStart);
+		if (m == monthEnd) return (d <= dayEnd);
+		return false;
+	}
+
+	//start month and end month are the same
+	if (dayEnd < dayStart) return (m != monthStart || (d <= dayEnd || d >= dayStart)); //all year, except the designated days in this month
+	return (m == monthStart && d >= dayStart && d <= dayEnd); //just the designated days this month
+}
+
 void checkTimers()
 {
   if (lastTimerMinute != minute(localTime)) //only check once a new minute begins
@@ -313,11 +362,14 @@ void checkTimers()
     for (uint8_t i = 0; i < 8; i++)
     {
       if (timerMacro[i] != 0
+          && (timerWeekday[i] & 0x01) //timer is enabled
           && (timerHours[i] == hour(localTime) || timerHours[i] == 24) //if hour is set to 24, activate every hour 
           && timerMinutes[i] == minute(localTime)
-          && (timerWeekday[i] & 0x01) //timer is enabled
-          && ((timerWeekday[i] >> weekdayMondayFirst()) & 0x01)) //timer should activate at current day of week
+          && ((timerWeekday[i] >> weekdayMondayFirst()) & 0x01) //timer should activate at current day of week
+          && isTodayInDateRange(((timerMonth[i] >> 4) & 0x0F), timerDay[i], timerMonth[i] & 0x0F, timerDayEnd[i])
+         )
       {
+        unloadPlaylist();
         applyPreset(timerMacro[i]);
       }
     }
@@ -331,6 +383,7 @@ void checkTimers()
           && (timerWeekday[8] & 0x01) //timer is enabled
           && ((timerWeekday[8] >> weekdayMondayFirst()) & 0x01)) //timer should activate at current day of week
       {
+        unloadPlaylist();
         applyPreset(timerMacro[8]);
         DEBUG_PRINTF("Sunrise macro %d triggered.",timerMacro[8]);
       }
@@ -345,6 +398,7 @@ void checkTimers()
           && (timerWeekday[9] & 0x01) //timer is enabled
           && ((timerWeekday[9] >> weekdayMondayFirst()) & 0x01)) //timer should activate at current day of week
       {
+        unloadPlaylist();
         applyPreset(timerMacro[9]);
         DEBUG_PRINTF("Sunset macro %d triggered.",timerMacro[9]);
       }
@@ -418,9 +472,10 @@ void calculateSunriseAndSunset() {
     int minUTC = getSunriseUTC(year(localTime), month(localTime), day(localTime), latitude, longitude);
     if (minUTC) {
       // there is a sunrise
+      if (minUTC < 0) minUTC += 24*60; // add a day if negative
       tim_0.tm_hour = minUTC / 60;
       tim_0.tm_min = minUTC % 60;
-      sunrise = tz->toLocal(mktime(&tim_0) - utcOffsetSecs);
+      sunrise = tz->toLocal(mktime(&tim_0) + utcOffsetSecs);
       DEBUG_PRINTF("Sunrise: %02d:%02d\n", hour(sunrise), minute(sunrise));
     } else {
       sunrise = 0;
@@ -429,9 +484,10 @@ void calculateSunriseAndSunset() {
     minUTC = getSunriseUTC(year(localTime), month(localTime), day(localTime), latitude, longitude, true);
     if (minUTC) {
       // there is a sunset
+      if (minUTC < 0) minUTC += 24*60; // add a day if negative
       tim_0.tm_hour = minUTC / 60;
       tim_0.tm_min = minUTC % 60;
-      sunset = tz->toLocal(mktime(&tim_0) - utcOffsetSecs);
+      sunset = tz->toLocal(mktime(&tim_0) + utcOffsetSecs);
       DEBUG_PRINTF("Sunset: %02d:%02d\n", hour(sunset), minute(sunset));
     } else {
       sunset = 0;

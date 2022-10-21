@@ -5,7 +5,7 @@
  */
 
 #ifdef ARDUINO_ARCH_ESP32 //FS info bare IDF function until FS wrapper is available for ESP32
-#if WLED_FS != LITTLEFS
+#if WLED_FS != LITTLEFS && ESP_IDF_VERSION_MAJOR < 4
   #include "esp_spiffs.h"
 #endif
 #endif
@@ -359,9 +359,9 @@ bool readObjectFromFile(const char* file, const char* key, JsonDocument* dest)
 
 void updateFSInfo() {
   #ifdef ARDUINO_ARCH_ESP32
-    #if WLED_FS == LITTLEFS
-    fsBytesTotal = LITTLEFS.totalBytes();
-    fsBytesUsed = LITTLEFS.usedBytes();
+    #if WLED_FS == LITTLEFS || ESP_IDF_VERSION_MAJOR >= 4
+    fsBytesTotal = WLED_FS.totalBytes();
+    fsBytesUsed = WLED_FS.usedBytes();
     #else
     esp_spiffs_info(nullptr, &fsBytesTotal, &fsBytesUsed);
     #endif
@@ -379,11 +379,11 @@ String getContentType(AsyncWebServerRequest* request, String filename){
   if(request->hasArg("download")) return "application/octet-stream";
   else if(filename.endsWith(".htm")) return "text/html";
   else if(filename.endsWith(".html")) return "text/html";
-//  else if(filename.endsWith(".css")) return "text/css";
-//  else if(filename.endsWith(".js")) return "application/javascript";
+  else if(filename.endsWith(".css")) return "text/css";
+  else if(filename.endsWith(".js")) return "application/javascript";
   else if(filename.endsWith(".json")) return "application/json";
   else if(filename.endsWith(".png")) return "image/png";
-//  else if(filename.endsWith(".gif")) return "image/gif";
+  else if(filename.endsWith(".gif")) return "image/gif";
   else if(filename.endsWith(".jpg")) return "image/jpeg";
   else if(filename.endsWith(".ico")) return "image/x-icon";
 //  else if(filename.endsWith(".xml")) return "text/xml";

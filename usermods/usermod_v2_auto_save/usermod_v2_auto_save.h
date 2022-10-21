@@ -33,12 +33,26 @@ class AutoSaveUsermod : public Usermod {
     bool enabled = true;
 
     // configurable parameters
+    #ifdef AUTOSAVE_AFTER_SEC
+    uint16_t autoSaveAfterSec = AUTOSAVE_AFTER_SEC;
+    #else
     uint16_t autoSaveAfterSec = 15;       // 15s by default
+    #endif
+
+    #ifdef AUTOSAVE_PRESET_NUM
+    uint8_t autoSavePreset = AUTOSAVE_PRESET_NUM;
+    #else
     uint8_t autoSavePreset = 250;         // last possible preset
+    #endif
+
+    #ifdef USERMOD_AUTO_SAVE_ON_BOOT
+    bool applyAutoSaveOnBoot = USERMOD_AUTO_SAVE_ON_BOOT; 
+    #else
     bool applyAutoSaveOnBoot = false;     // do we load auto-saved preset on boot?
+    #endif
 
     // If we've detected the need to auto save, this will be non zero.
-    uint16_t autoSaveAfter = 0;
+    unsigned long autoSaveAfter = 0;
 
     uint8_t knownBrightness = 0;
     uint8_t knownEffectSpeed = 0;
@@ -64,7 +78,8 @@ class AutoSaveUsermod : public Usermod {
         PSTR("~ %02d-%02d %02d:%02d:%02d ~"),
         month(localTime), day(localTime),
         hour(localTime), minute(localTime), second(localTime));
-      savePreset(autoSavePreset, true, presetNameBuffer);
+      cacheInvalidate++;  // force reload of presets
+      savePreset(autoSavePreset, presetNameBuffer);
     }
 
     void inline displayOverlay() {
@@ -87,6 +102,12 @@ class AutoSaveUsermod : public Usermod {
       display = (FourLineDisplayUsermod*) usermods.lookup(USERMOD_ID_FOUR_LINE_DISP);
       #endif
       initDone = true;
+      if (enabled && applyAutoSaveOnBoot) applyPreset(autoSavePreset);
+      knownBrightness = bri;
+      knownEffectSpeed = effectSpeed;
+      knownEffectIntensity = effectIntensity;
+      knownMode = strip.getMainSegment().mode;
+      knownPalette = strip.getMainSegment().palette;
     }
 
     // gets called every time WiFi is (re-)connected. Initialize own network
@@ -97,21 +118,11 @@ class AutoSaveUsermod : public Usermod {
      * Da loop.
      */
     void loop() {
-      if (!autoSaveAfterSec || !enabled || strip.isUpdating()) return;  // setting 0 as autosave seconds disables autosave
+      if (!autoSaveAfterSec || !enabled || strip.isUpdating() || currentPreset>0) return;  // setting 0 as autosave seconds disables autosave
 
       unsigned long now = millis();
-      uint8_t currentMode = strip.getMode();
-      uint8_t currentPalette = strip.getSegment(0).palette;
-      if (firstLoop) {
-        firstLoop = false;
-        if (applyAutoSaveOnBoot) applyPreset(autoSavePreset);
-        knownBrightness = bri;
-        knownEffectSpeed = effectSpeed;
-        knownEffectIntensity = effectIntensity;
-        knownMode = currentMode;
-        knownPalette = currentPalette;
-        return;
-      }
+      uint8_t currentMode = strip.getMainSegment().mode;
+      uint8_t currentPalette = strip.getMainSegment().palette;
 
       unsigned long wouldAutoSaveAfter = now + autoSaveAfterSec*1000;
       if (knownBrightness != bri) {

@@ -101,7 +101,7 @@ void onHueData(void* arg, AsyncClient* client, void *data, size_t len)
       hueError = HUE_ERROR_JSON_PARSING; return;
     }
     
-    int hueErrorCode = root[0][F("error")][F("type")];
+    int hueErrorCode = root[0][F("error")]["type"];
     if (hueErrorCode)//hue bridge returned error
     {
       hueError = hueErrorCode;
@@ -119,7 +119,7 @@ void onHueData(void* arg, AsyncClient* client, void *data, size_t len)
       const char* apikey = root[0][F("success")][F("username")];
       if (apikey != nullptr && strlen(apikey) < sizeof(hueApiKey))
       {
-        strcpy(hueApiKey, apikey);
+        strlcpy(hueApiKey, apikey, sizeof(hueApiKey));
         hueAuthRequired = false;
         hueNewKey = true;
       }

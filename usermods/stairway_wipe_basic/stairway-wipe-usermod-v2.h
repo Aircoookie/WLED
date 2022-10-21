@@ -96,7 +96,7 @@ class StairwayWipeUsermod : public Usermod {
     resetTimebase(); //make sure wipe starts from beginning
 
     //set wipe direction
-    WS2812FX::Segment& seg = strip.getSegment(0);
+    Segment& seg = strip.getSegment(0);
     bool doReverse = (userVar0 == 2);
     seg.setOption(1, doReverse);
 
@@ -111,7 +111,7 @@ class StairwayWipeUsermod : public Usermod {
     transitionDelayTemp = 4000; //fade out slowly
     #endif
     bri = 0;
-    colorUpdated(CALL_MODE_NOTIFICATION);
+    stateUpdated(CALL_MODE_NOTIFICATION);
     wipeState = 0;
     userVar0 = 0;
     previousUserVar0 = 0;
