@@ -5347,7 +5347,7 @@ static const char _data_FX_MODE_2DPOLARLIGHTS[] PROGMEM = "Polar Lights@Speed,Sc
 uint16_t mode_2DPulser(void) {                       // By: ldirko   https://editor.soulmatelights.com/gallery/878-pulse-test , modifed by: Andrew Tuline
   if (!strip.isMatrix) return mode_static(); // not a 2D set-up
 
-  //const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t cols = SEGMENT.virtualWidth();  // WLEDSR bugfix
   const uint16_t rows = SEGMENT.virtualHeight();
 
   if (SEGENV.call == 0) {
@@ -5357,8 +5357,8 @@ uint16_t mode_2DPulser(void) {                       // By: ldirko   https://edi
 
   SEGMENT.fadeToBlackBy(8 - (SEGMENT.intensity>>5));
 
-  uint16_t a = strip.now / (18 - SEGMENT.speed / 16);
-  uint16_t x = (a / 14);
+  uint32_t a = strip.now / (18 - SEGMENT.speed / 16);
+  uint16_t x = (a / 14) % cols;                  // WLEDSR bugfix
   uint16_t y = map((sin8(a * 5) + sin8(a * 4) + sin8(a * 2)), 0, 765, rows-1, 0);
   SEGMENT.setPixelColorXY(x, y, ColorFromPalette(SEGPALETTE, map(y, 0, rows-1, 0, 255), 255, LINEARBLEND));
 
