@@ -280,7 +280,7 @@ void FFTcode(void * parameter)
         if (fabsf((float)vReal[i]) > maxSample) maxSample = fabsf((float)vReal[i]);
     }
     // release highest sample to volume reactive effects early - not strictly necessary here - could also be done at the end of the function
-    // early release allows the filters (getSample() and agcAvg()) to work with fresh values - we will have matching gain and noise gate values when we want to process the FFT results.    micDataReal = maxSample;
+    // early release allows the filters (getSample() and agcAvg()) to work with fresh values - we will have matching gain and noise gate values when we want to process the FFT results.
     micDataReal = maxSample;
 
     // run FFT (takes 3-5ms on ESP32)
@@ -635,6 +635,7 @@ class AudioReactive : public Usermod {
 
     // used to feed "Info" Page
     unsigned long last_UDPTime = 0;    // time of last valid UDP sound sync datapacket
+    int receivedFormat = 0;            // last received UDP sound sync format - 0=none, 1=v1 (0.13.x), 2=v2 (0.14.x)
     float maxSample5sec = 0.0f;        // max sample (after AGC) in last 5 seconds 
     unsigned long sampleMaxTimer = 0;  // last time maxSample5sec was reset
     #define CYCLE_SAMPLEMAX 3500       // time window for merasuring
@@ -979,11 +980,67 @@ class AudioReactive : public Usermod {
     static bool isValidUdpSyncVersion(const char *header) {
       return strncmp_P(header, PSTR(UDP_SYNC_HEADER), 6) == 0;
     }
+    static bool isValidUdpSyncVersion_v1(const char *header) {
+      return strncmp_P(header, PSTR(UDP_SYNC_HEADER_v1), 6) == 0;
+    }
+
+    void decodeAudioData(int packetSize, uint8_t *fftBuff) {
+      audioSyncPacket *receivedPacket = reinterpret_cast<audioSyncPacket*>(fftBuff);
+      // update samples for effects
+      volumeSmth   = fmaxf(receivedPacket->sampleSmth, 0.0f);
+      volumeRaw    = fmaxf(receivedPacket->sampleRaw, 0.0f);
+      // update internal samples
+      sampleRaw    = volumeRaw;
+      sampleAvg    = volumeSmth;
+      rawSampleAgc = volumeRaw;
+      sampleAgc    = volumeSmth;
+      multAgc      = 1.0f;   
+      // Only change samplePeak IF it's currently false.
+      // If it's true already, then the animation still needs to respond.
+      autoResetPeak();
+      if (!samplePeak) {
+            samplePeak = receivedPacket->samplePeak >0 ? true:false;
+            if (samplePeak) timeOfPeak = millis();
+            //userVar1 = samplePeak;
+      }
+      //These values are only available on the ESP32
+      for (int i = 0; i < NUM_GEQ_CHANNELS; i++) fftResult[i] = receivedPacket->fftResult[i];
+      my_magnitude  = fmaxf(receivedPacket->FFT_Magnitude, 0.0f);
+      FFT_Magnitude = my_magnitude;
+      FFT_MajorPeak = constrain(receivedPacket->FFT_MajorPeak, 1.0f, 11025.0f);  // restrict value to range expected by effects
+    }
+
+    void decodeAudioData_v1(int packetSize, uint8_t *fftBuff) {
+      audioSyncPacket_v1 *receivedPacket = reinterpret_cast<audioSyncPacket_v1*>(fftBuff);
+      // update samples for effects
+      volumeSmth   = fmaxf(receivedPacket->sampleAgc, 0.0f);
+      volumeRaw    = volumeSmth;   // V1 format does not have "raw" AGC sample
+      // update internal samples
+      sampleRaw    = fmaxf(receivedPacket->sampleRaw, 0.0f);
+      sampleAvg    = fmaxf(receivedPacket->sampleAvg, 0.0f);;
+      sampleAgc    = volumeSmth;
+      rawSampleAgc = volumeRaw;
+      multAgc      = 1.0f;   
+      // Only change samplePeak IF it's currently false.
+      // If it's true already, then the animation still needs to respond.
+      autoResetPeak();
+      if (!samplePeak) {
+            samplePeak = receivedPacket->samplePeak >0 ? true:false;
+            if (samplePeak) timeOfPeak = millis();
+            //userVar1 = samplePeak;
+      }
+      //These values are only available on the ESP32
+      for (int i = 0; i < NUM_GEQ_CHANNELS; i++) fftResult[i] = receivedPacket->fftResult[i];
+      my_magnitude  = fmaxf(receivedPacket->FFT_Magnitude, 0.0);
+      FFT_Magnitude = my_magnitude;
+      FFT_MajorPeak = constrain(receivedPacket->FFT_MajorPeak, 1.0, 11025.0);  // restrict value to range expected by effects
+    }
 
     bool receiveAudioData()   // check & process new data. return TRUE in case that new audio data was received. 
     {
       if (!udpSyncConnected) return false;
       bool haveFreshData = false;
+
       size_t packetSize = fftUdp.parsePacket();
       if (packetSize > 5) {
         //DEBUGSR_PRINTLN("Received UDP Sync Packet");
@@ -992,37 +1049,17 @@ class AudioReactive : public Usermod {
 
         // VERIFY THAT THIS IS A COMPATIBLE PACKET
         if (packetSize == sizeof(audioSyncPacket) && (isValidUdpSyncVersion((const char *)fftBuff))) {
-          audioSyncPacket *receivedPacket = reinterpret_cast<audioSyncPacket*>(fftBuff);
-
-          // update samples for effects
-          volumeSmth   = fmaxf(receivedPacket->sampleSmth, 0.0f);
-          volumeRaw    = fmaxf(receivedPacket->sampleRaw, 0.0f);
-
-          // update internal samples
-          sampleRaw    = volumeRaw;
-          sampleAvg    = volumeSmth;
-          rawSampleAgc = volumeRaw;
-          sampleAgc    = volumeSmth;
-          multAgc      = 1.0f;
-
-          autoResetPeak();
-          // Only change samplePeak IF it's currently false.
-          // If it's true already, then the animation still needs to respond.
-          if (!samplePeak) {
-            samplePeak = receivedPacket->samplePeak >0 ? true:false;
-            if (samplePeak) timeOfPeak = millis();
-            //userVar1 = samplePeak;
-          }
-
-          //These values are only available on the ESP32
-          for (int i = 0; i < NUM_GEQ_CHANNELS; i++) fftResult[i] = receivedPacket->fftResult[i];
-
-          my_magnitude  = fmaxf(receivedPacket->FFT_Magnitude, 0.0f);
-          FFT_Magnitude = my_magnitude;
-          FFT_MajorPeak = constrain(receivedPacket->FFT_MajorPeak, 1.0f, 11025.0f);  // restrict value to range expected by effects
-
-          //DEBUGSR_PRINTLN("Finished parsing UDP Sync Packet");
+          decodeAudioData(packetSize, fftBuff);
+          //DEBUGSR_PRINTLN("Finished parsing UDP Sync Packet v2");
           haveFreshData = true;
+          receivedFormat = 2;
+        } else {
+          if (packetSize == sizeof(audioSyncPacket_v1) && (isValidUdpSyncVersion_v1((const char *)fftBuff))) {
+            decodeAudioData_v1(packetSize, fftBuff);
+            //DEBUGSR_PRINTLN("Finished parsing UDP Sync Packet v1");
+            haveFreshData = true;
+            receivedFormat = 1;
+          } else receivedFormat = 0; // unknown format
         }
       }
       return haveFreshData;
@@ -1494,12 +1531,17 @@ class AudioReactive : public Usermod {
         if (audioSyncEnabled) {
           if (audioSyncEnabled & 0x01) {
             infoArr.add(F("send mode"));
+            if ((udpSyncConnected) && (millis() - lastTime < 2500)) infoArr.add(F(" v2"));
           } else if (audioSyncEnabled & 0x02) {
               infoArr.add(F("receive mode"));
           }
         } else
           infoArr.add("off");
         if (audioSyncEnabled && !udpSyncConnected) infoArr.add(" <i>(unconnected)</i>");
+        if (audioSyncEnabled && udpSyncConnected && (millis() - last_UDPTime < 2500)) {
+            if (receivedFormat == 1) infoArr.add(F(" v1"));
+            if (receivedFormat == 2) infoArr.add(F(" v2"));
+        }
 
         #if defined(WLED_DEBUG) || defined(SR_DEBUG) || defined(SR_STATS)
         infoArr = user.createNestedArray(F("Sampling time"));
