@@ -1501,9 +1501,7 @@ void WS2812FX::loadCustomPalettes()
   CRGBPalette16 targetPalette;
   for (int index = 0; index<10; index++) {
     char fileName[32];
-    strcpy_P(fileName, PSTR("/palette"));
-    sprintf(fileName +8, "%d", index);
-    strcat(fileName, ".json");
+    sprintf_P(fileName, PSTR("/palette%d.json"), index);
 
     StaticJsonDocument<1536> pDoc; // barely enough to fit 72 numbers
     if (WLED_FS.exists(fileName)) {

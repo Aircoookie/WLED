@@ -4106,14 +4106,14 @@ uint16_t mode_dancing_shadows(void)
 
     if (spotlights[i].width <= 1) {
       if (start >= 0 && start < SEGLEN) {
-        SEGMENT.blendPixelColor(start, color, 128); // TODO
+        SEGMENT.blendPixelColor(start, color, 128);
       }
     } else {
       switch (spotlights[i].type) {
         case SPOT_TYPE_SOLID:
           for (size_t j = 0; j < spotlights[i].width; j++) {
             if ((start + j) >= 0 && (start + j) < SEGLEN) {
-              SEGMENT.blendPixelColor(start + j, color, 128); // TODO
+              SEGMENT.blendPixelColor(start + j, color, 128);
             }
           }
         break;
@@ -4121,7 +4121,7 @@ uint16_t mode_dancing_shadows(void)
         case SPOT_TYPE_GRADIENT:
           for (size_t j = 0; j < spotlights[i].width; j++) {
             if ((start + j) >= 0 && (start + j) < SEGLEN) {
-              SEGMENT.blendPixelColor(start + j, color, cubicwave8(map(j, 0, spotlights[i].width - 1, 0, 255))); // TODO
+              SEGMENT.blendPixelColor(start + j, color, cubicwave8(map(j, 0, spotlights[i].width - 1, 0, 255)));
             }
           }
         break;
@@ -4129,7 +4129,7 @@ uint16_t mode_dancing_shadows(void)
         case SPOT_TYPE_2X_GRADIENT:
           for (size_t j = 0; j < spotlights[i].width; j++) {
             if ((start + j) >= 0 && (start + j) < SEGLEN) {
-              SEGMENT.blendPixelColor(start + j, color, cubicwave8(2 * map(j, 0, spotlights[i].width - 1, 0, 255))); // TODO
+              SEGMENT.blendPixelColor(start + j, color, cubicwave8(2 * map(j, 0, spotlights[i].width - 1, 0, 255)));
             }
           }
         break;
@@ -4137,7 +4137,7 @@ uint16_t mode_dancing_shadows(void)
         case SPOT_TYPE_2X_DOT:
           for (size_t j = 0; j < spotlights[i].width; j += 2) {
             if ((start + j) >= 0 && (start + j) < SEGLEN) {
-              SEGMENT.blendPixelColor(start + j, color, 128); // TODO
+              SEGMENT.blendPixelColor(start + j, color, 128);
             }
           }
         break;
@@ -4145,7 +4145,7 @@ uint16_t mode_dancing_shadows(void)
         case SPOT_TYPE_3X_DOT:
           for (size_t j = 0; j < spotlights[i].width; j += 3) {
             if ((start + j) >= 0 && (start + j) < SEGLEN) {
-              SEGMENT.blendPixelColor(start + j, color, 128); // TODO
+              SEGMENT.blendPixelColor(start + j, color, 128);
             }
           }
         break;
@@ -4153,7 +4153,7 @@ uint16_t mode_dancing_shadows(void)
         case SPOT_TYPE_4X_DOT:
           for (size_t j = 0; j < spotlights[i].width; j += 4) {
             if ((start + j) >= 0 && (start + j) < SEGLEN) {
-              SEGMENT.blendPixelColor(start + j, color, 128); // TODO
+              SEGMENT.blendPixelColor(start + j, color, 128);
             }
           }
         break;
@@ -4163,7 +4163,7 @@ uint16_t mode_dancing_shadows(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_DANCING_SHADOWS[] PROGMEM = "Dancing Shadows@!,# of shadows;!,,;!;1d";
+static const char _data_FX_MODE_DANCING_SHADOWS[] PROGMEM = "Dancing Shadows@!,# of shadows;!,!,!;!;1d";
 
 
 /*
@@ -4524,7 +4524,7 @@ uint16_t mode_perlinmove(void) {
 
   return FRAMETIME;
 } // mode_perlinmove()
-static const char _data_FX_MODE_PERLINMOVE[] PROGMEM = "Perlin Move@!,# of pixels,fade rate;,!;!;1d";
+static const char _data_FX_MODE_PERLINMOVE[] PROGMEM = "Perlin Move@!,# of pixels,fade rate;!,!;!;1d";
 
 
 /////////////////////////
