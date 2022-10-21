@@ -1,141 +1,226 @@
 <!DOCTYPE html>
 <html>
 <head lang="en">
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=500">
-    <title>Usermod Settings</title>
-    <script>
-    var d = document;
-    var umCfg = {};
-    var pins = [6,7,8,9,10,11];
-    var pinO = ["rsvd","rsvd","rsvd","rsvd","rsvd","rsvd"], owner;
-    var loc = false, locip;
-    var urows;
-    var numM = 0;
-    function gId(s) { return d.getElementById(s); }
-    function isO(i) { return (i && typeof i === 'object' && !Array.isArray(i)); }
-    function H() { window.open("https://github.com/Aircoookie/WLED/wiki/Settings#usermod-settings"); }
-    function B() { window.open("/settings","_self"); }
-    function S() {
-        if (window.location.protocol == "file:") {
-            loc = true;
-            locip = localStorage.getItem('locIp');
-            if (!locip) {
-                locip = prompt("File Mode. Please enter WLED IP!");
-                localStorage.setItem('locIp', locip);
-            }
-        }
-        GetV();
-        if (numM > 0 || locip) ldS();
-        else gId("um").innerHTML = "No Usermods installed.";
-    }
-    // https://stackoverflow.com/questions/3885817/how-do-i-check-that-a-number-is-float-or-integer
-    function isF(n) { return n === +n && n !== (n|0); }
-    function isI(n) { return n === +n && n === (n|0); }
-    function check(o,k) {   // input object, pin owner key
-        var n = o.name.replace("[]","").substr(-3);
-        if (o.type=="number" && n.substr(0,3)=="pin") {
-            for (var i=0; i<pins.length; i++) {
-                if (k==pinO[i]) continue;
-                if (o.value==pins[i] || o.value<-1 || o.value>39) { o.style.color="red"; break; } else o.style.color=o.value>33?"orange":"#fff";
-            }
-        }
-    }
-    function getPins(o) {
-        if (isO(o)) {
-            for (const [k,v] of Object.entries(o)) {
-                if (isO(v)) {
-                    owner = k;
-                    getPins(v);
-                    continue;
-                }
-                if (k.replace("[]","").substr(-3)=="pin") {
-                    if (Array.isArray(v)) {
-                        for (var i=0; i<v.length; i++) if (v[i]>=0) { pins.push(v[i]); pinO.push(owner); }
-                    } else {
-                        if (v>=0) { pins.push(v); pinO.push(owner); }
-                    }
-                } else if (Array.isArray(v)) {
-                    for (var i=0; i<v.length; i++) getPins(v[i]);
-                }
-            }
-        }
-    }
-    function addField(k,f,o,a=false) {  //key, field, (sub)object, isArray
-        if (isO(o)) {
-            for (const [s,v] of Object.entries(o)) {
-                // possibility to nest objects (only 1 level)
-                if (f!=='unknown' && !k.includes(":")) addField(k+":"+f,s,v);
-                else addField(k,s,v);
-            }
-        } else if (Array.isArray(o)) {
-            for (var j=0; j<o.length; j++) {
-                addField(k,f,o[j],true);
-            }
-        } else {
-            var c, t = typeof o;
-            switch (t) {
-                case "boolean":
-                    t = "checkbox"; c = 'value="true"' + (o ? ' checked' : '');
-                    break;
-                case "number":
-                    c = `value="${o}"`;
-                    if (f.substr(-3)==="pin") {
-                        c += ' max="39" min="-1" style="width:40px;"';
-                        t = "int";
-                    } else {
-                        c += ' step="any" style="width:100px;"';
-                    }
-                    break;
-                default:
-                    t = "text"; c = `value="${o}" style="width:250px;"`;
-                    break;
-            }
-            if (k.includes(":")) urows += k.substr(k.indexOf(":")+1);
-            urows += ` ${f}: `;
-            // https://stackoverflow.com/questions/11657123/posting-both-checked-and-unchecked-checkboxes
-            if (t=="checkbox") urows += `<input type="hidden" name="${k}:${f}${a?"[]":""}" value="false">`;
-            else if (!a)       urows += `<input type="hidden" name="${k}:${f}${a?"[]":""}" value="${t}">`;
-            urows += `<input type="${t==="int"?"number":t}" name="${k}:${f}${a?"[]":""}" ${c} oninput="check(this,'${k.substr(k.indexOf(":")+1)}')"><br>`;
-        }
-    }
-    function ldS() {
-        var url = (loc?`http://${locip}`:'') + '/cfg.json';
-        fetch(url, {
-            method: 'get'
-        })
-        .then(res => {
-            if (!res.ok) gId('lserr').style.display = "inline";
-            return res.json();
-        })
-        .then(json => {
-            umCfg = json.um;
-            getPins(json);
-            urows="";
-            if (isO(umCfg)) {
-                for (const [k,o] of Object.entries(umCfg)) {
-                    urows += `<hr><h3>${k}</h3>`;
-                    addField(k,'unknown',o);
-                }
-            }
-            if (urows==="") urows = "Usermods configuration not found.<br>Press <i>Save</i> to initialize defaults.";
-            gId("um").innerHTML = urows;
-        })
-        .catch(function (error) {
-            gId('lserr').style.display = "inline"
-            console.log(error);
-        });
-    }
-    function svS(e) {
-        e.preventDefault();
-        console.log(d.Sf);
-        if (d.Sf.checkValidity()) d.Sf.submit(); //https://stackoverflow.com/q/37323914
-    }
-    function GetV() {}
-    </script>
-    <style>
-        @import url("style.css");
-    </style>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=500">
+	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+	<title>Usermod Settings</title>
+	<script>
+	var d = document;
+	var umCfg = {};
+	var pins = [], pinO = [], owner;
+	var loc = false, locip;
+	var urows;
+	var numM = 0;
+	function gId(s) { return d.getElementById(s); }
+	function isO(i) { return (i && typeof i === 'object' && !Array.isArray(i)); }
+	function H() { window.open("https://github.com/Aircoookie/WLED/wiki/Settings#usermod-settings"); }
+	function B() { window.open("/settings","_self"); }
+	// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
+	function loadJS(FILE_URL, async = true) {
+		let scE = d.createElement("script");
+		scE.setAttribute("src", FILE_URL);
+		scE.setAttribute("type", "text/javascript");
+		scE.setAttribute("async", async);
+		d.body.appendChild(scE);
+		// success event 
+		scE.addEventListener("load", () => {
+			//console.log("File loaded");
+			d.um_p = [];
+			d.rsvd = [];
+			d.ro_pins = [];
+			d.max_gpio = 39;
+			GetV();
+			for (let k=0; k<d.rsvd.length; k++) { pins.push(d.rsvd[k]); pinO.push("rsvd"); }
+			if (d.um_p[0]==-1) d.um_p.shift();
+			d.Sf.SDA.max = d.max_gpio;
+			d.Sf.SCL.max = d.max_gpio;
+			d.Sf.MOSI.max = d.max_gpio;
+			d.Sf.SCLK.max = d.max_gpio;
+			d.Sf.MISO.max = d.max_gpio;
+		});
+		// error event
+		scE.addEventListener("error", (ev) => {
+			console.log("Error on loading file", ev);
+			alert("Loading of configuration script failed.\nIncomplete page data!");
+		});
+	}
+	function S() {
+		if (window.location.protocol == "file:") {
+			loc = true;
+			locip = localStorage.getItem('locIp');
+			if (!locip) {
+				locip = prompt("File Mode. Please enter WLED IP!");
+				localStorage.setItem('locIp', locip);
+			}
+		}
+		ldS();
+		if (!numM) gId("um").innerHTML = "No Usermods installed.";
+	}
+	// https://stackoverflow.com/questions/3885817/how-do-i-check-that-a-number-is-float-or-integer
+	function isF(n) { return n === +n && n !== (n|0); }
+	function isI(n) { return n === +n && n === (n|0); }
+	function check(o,k) {   // input object, pin owner key
+		var n = o.name.replace("[]","").substr(-3);
+		if (o.type=="number" && n.substr(0,3)=="pin") {
+			for (var i=0; i<pins.length; i++) {
+				if (k==pinO[i]) continue;
+				if (o.value==pins[i] && pinO[i]==="if") { o.style.color="lime"; break; }
+				if (o.value==pins[i] || o.value<-1 || o.value>d.max_gpio) { o.style.color="red"; break; } else o.style.color=d.ro_gpio.some((e)=>e==parseInt(o.value,10))?"orange":"#fff";
+			}
+		} else {
+			switch (o.name) {
+				case "SDA": break;
+				case "SCL": break;
+				case "MOSI": break;
+				case "SCLK": break;
+				case "MISO": break;
+				default: return;
+			}
+			for (var i=0; i<pins.length; i++) {
+				//if (k==pinO[i]) continue; // same owner
+				if (o.value==pins[i] && pinO[i]==="if") { o.style.color="tomato"; break; }
+				if (o.value==pins[i] || o.value<-1 || o.value>d.max_gpio) { o.style.color="red"; break; } else o.style.color=d.ro_gpio.some((e)=>e==parseInt(o.value,10))?"orange":"#fff";
+			}
+		}
+	}
+	function getPins(o) {
+		if (isO(o)) {
+			for (const [k,v] of Object.entries(o)) {
+				if (isO(v)) {
+					owner = k;
+					getPins(v);
+					continue;
+				}
+				if (k.replace("[]","").substr(-3)=="pin") {
+					if (Array.isArray(v)) {
+						for (var i=0; i<v.length; i++) if (v[i]>=0) { pins.push(v[i]); pinO.push(owner); }
+					} else {
+						if (v>=0) { pins.push(v); pinO.push(owner); }
+					}
+				} else if (Array.isArray(v)) {
+					for (var i=0; i<v.length; i++) getPins(v[i]);
+				}
+			}
+		}
+	}
+	function addField(k,f,o,a=false) {  //key, field, (sub)object, isArray
+		if (isO(o)) {
+			urows += '<hr style="width:260px">';
+			for (const [s,v] of Object.entries(o)) {
+				// possibility to nest objects (only 1 level)
+				if (f!=='unknown' && !k.includes(":")) addField(k+":"+f,s,v);
+				else addField(k,s,v);
+			}
+		} else if (Array.isArray(o)) {
+			for (var j=0; j<o.length; j++) {
+				addField(k,f,o[j],true);
+			}
+		} else {
+			var c, t = typeof o;
+			switch (t) {
+				case "boolean":
+					t = "checkbox"; c = 'value="true"' + (o ? ' checked' : '');
+					break;
+				case "number":
+					c = `value="${o}"`;
+					if (f.substr(-3)==="pin") {
+						c += ` max="${d.max_gpio}" min="-1" class="s"`;
+						t = "int";
+					} else {
+						c += ' step="any" class="xxl"';
+					}
+					break;
+				default:
+					t = "text"; c = `value="${o}" style="width:250px;"`;
+					break;
+			}
+			if (k.includes(":")) urows += k.substr(k.indexOf(":")+1);
+			urows += ` ${f}: `;
+			// https://stackoverflow.com/questions/11657123/posting-both-checked-and-unchecked-checkboxes
+			if (t=="checkbox") urows += `<input type="hidden" name="${k}:${f}${a?"[]":""}" value="false">`;
+			else if (!a)       urows += `<input type="hidden" name="${k}:${f}${a?"[]":""}" value="${t}">`;
+			urows += `<input type="${t==="int"?"number":t}" name="${k}:${f}${a?"[]":""}" ${c} oninput="check(this,'${k.substr(k.indexOf(":")+1)}')"><br>`;
+		}
+	}
+	// https://stackoverflow.com/questions/39729741/javascript-change-input-text-to-select-option
+	function addDropdown(um,fld) {
+		let sel = d.createElement('select');
+		let arr = d.getElementsByName(um+":"+fld);
+		let inp = arr[1]; // assume 1st field to be hidden (type)
+		if (inp && inp.tagName === "INPUT" && (inp.type === "text" || inp.type === "number")) {  // may also use nodeName
+			let v = inp.value;
+			let n = inp.name;
+			// copy the existing input element's attributes to the new select element
+			for (var i = 0; i < inp.attributes.length; ++ i) {
+				var att = inp.attributes[i];
+				// type and value don't apply, so skip them
+				// ** you might also want to skip style, or others -- modify as needed **
+				if (att.name != 'type' && att.name != 'value' && att.name != 'class' && att.name != 'style') {
+					sel.setAttribute(att.name, att.value);
+				}
+			}
+			sel.setAttribute("data-val", v);
+			// finally, replace the old input element with the new select element
+			inp.parentElement.replaceChild(sel, inp);
+			return sel;
+		}
+		return null;
+	}
+	function addOption(sel,txt,val) {
+		if (sel===null) return; // select object missing
+		let opt = d.createElement("option");
+		opt.value = val;
+		opt.text = txt;
+		sel.appendChild(opt);
+		for (let i=0; i<sel.childNodes.length; i++) {
+			let c = sel.childNodes[i];
+			if (c.value == sel.dataset.val) sel.selectedIndex = i;
+		}
+	}
+	// https://stackoverflow.com/questions/26440494/insert-text-after-this-input-element-with-javascript
+	function addInfo(name,el,txt) {
+		let obj = d.getElementsByName(name);
+		if (!obj.length) return;
+		if (typeof el === "string" && obj[0]) obj[0].placeholder = el;
+		else if (obj[el]) obj[el].insertAdjacentHTML('afterend', '&nbsp;'+txt);
+	}
+	// load settings and insert values into DOM
+	function ldS() {
+		var url = (loc?`http://${locip}`:'') + '/cfg.json';
+		fetch(url, {
+			method: 'get'
+		})
+		.then(res => {
+			if (!res.ok) gId('lserr').style.display = "inline";
+			return res.json();
+		})
+		.then(json => {
+			umCfg = json.um;
+			getPins(json);
+			urows="";
+			if (isO(umCfg)) {
+				for (const [k,o] of Object.entries(umCfg)) {
+					urows += `<hr><h3>${k}</h3>`;
+					addField(k,'unknown',o);
+				}
+			}
+			if (urows==="") urows = "Usermods configuration not found.<br>Press <i>Save</i> to initialize defaults.";
+			gId("um").innerHTML = urows;
+			var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=8';
+			loadJS(url, false);	// If we set async false, file is loaded and executed, then next statement is processed
+		})
+		.catch((error)=>{
+			gId('lserr').style.display = "inline";
+			console.log(error);
+		});
+	}
+	function svS(e) {
+		e.preventDefault();
+		if (d.Sf.checkValidity()) d.Sf.submit(); //https://stackoverflow.com/q/37323914
+	}
+	</script>
+	<style>@import url("style.css");</style>
 </head>
 
 <body onload="S()">
@@ -147,7 +232,17 @@
 		<span id="lserr" style="color:red; display:none">&#9888; Could not load configuration.</span><hr>
 		</div>
 		<h2>Usermod Setup</h2>
-        <div id="um">Loading settings...</div>
+		Global I<sup>2</sup>C GPIOs (HW)<br>
+		<i style="color: orange;">(only changable on ESP32, change requires reboot!)</i><br>
+		SDA:<input type="number" min="-1" max="48" name="SDA" onchange="check(this,'if')" class="s" placeholder="SDA">
+		SCL:<input type="number" min="-1" max="48" name="SCL" onchange="check(this,'if')" class="s" placeholder="SCL">
+		<hr style="width:260px">
+		Global SPI GPIOs (HW)<br>
+		<i style="color: orange;">(only changable on ESP32, change requires reboot!)</i><br>
+		MOSI:<input type="number" min="-1" max="48" name="MOSI" onchange="check(this,'if')" class="s" placeholder="MOSI">
+		MISO:<input type="number" min="-1" max="48" name="MISO" onchange="check(this,'if')" class="s" placeholder="MISO">
+		SCLK:<input type="number" min="-1" max="48" name="SCLK" onchange="check(this,'if')" class="s" placeholder="SCLK">
+		<div id="um">Loading settings...</div>
 		<hr><button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 	</form>
 </body>
