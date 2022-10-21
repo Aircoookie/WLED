@@ -56,6 +56,7 @@ enum struct PinOwner : uint8_t {
   UM_RGBRotaryEncoder  = USERMOD_RGB_ROTARY_ENCODER,    // 0x16 // Usermod "rgb-rotary-encoder.h"
   UM_QuinLEDAnPenta    = USERMOD_ID_QUINLED_AN_PENTA,   // 0x17 // Usermod "quinled-an-penta.h"
   UM_BME280            = USERMOD_ID_BME280,             // 0x18 // Usermod "usermod_bme280.h -- Uses "standard" HW_I2C pins
+  UM_BH1750            = USERMOD_ID_BH1750,             // 0x19 // Usermod "usermod_bme280.h -- Uses "standard" HW_I2C pins
   UM_Audioreactive     = USERMOD_ID_AUDIOREACTIVE       // 0x1E // Usermod "audio_reactive.h"
 };
 static_assert(0u == static_cast<uint8_t>(PinOwner::None), "PinOwner::None must be zero, so default array initialization works as expected");
