@@ -93,7 +93,17 @@ const ethernet_settings ethernetBoards[] = {
     18,                   // eth_mdio, 
     ETH_PHY_IP101,     // eth_type,
     ETH_CLOCK_GPIO0_IN  // eth_clk_mode
-  }
+  },
+
+  // QuinLed-Dig-Octa Brainboard-32-8L and LilyGO-T-ETH-POE
+  {
+    0,			              // eth_address,
+    -1,			              // eth_power,
+    23,			              // eth_mdc,
+    18,			              // eth_mdio,
+    ETH_PHY_LAN8720,      // eth_type,
+    ETH_CLOCK_GPIO17_OUT	// eth_clk_mode
+  },
 };
 #endif
 

@@ -117,6 +117,7 @@ void publishMqtt()
   if (!WLED_MQTT_CONNECTED) return;
   DEBUG_PRINTLN(F("Publish MQTT"));
 
+  #ifndef USERMOD_SMARTNEST
   char s[10];
   char subuf[38];
 
@@ -139,6 +140,7 @@ void publishMqtt()
   strlcpy(subuf, mqttDeviceTopic, 33);
   strcat_P(subuf, PSTR("/v"));
   mqtt->publish(subuf, 0, false, apires);   // do not retain message
+  #endif
 }
 
 
@@ -166,9 +168,11 @@ bool initMqtt()
   mqtt->setClientId(mqttClientID);
   if (mqttUser[0] && mqttPass[0]) mqtt->setCredentials(mqttUser, mqttPass);
 
+  #ifndef USERMOD_SMARTNEST
   strlcpy(mqttStatusTopic, mqttDeviceTopic, 33);
   strcat_P(mqttStatusTopic, PSTR("/status"));
   mqtt->setWill(mqttStatusTopic, 0, true, "offline"); // LWT message
+  #endif
   mqtt->setKeepAlive(MQTT_KEEP_ALIVE_TIME);
   mqtt->connect();
   return true;

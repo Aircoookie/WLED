@@ -138,7 +138,7 @@ void notify(byte callMode, bool followUp)
   notifierUdp.endPacket();
   notificationSentCallMode = callMode;
   notificationSentTime = millis();
-  notificationTwoRequired = (followUp)? false:notifyTwice;
+  notificationCount = followUp ? notificationCount + 1 : 0;
 }
 
 void realtimeLock(uint32_t timeoutMs, byte md)
@@ -207,7 +207,7 @@ void handleNotifications()
   IPAddress localIP;
 
   //send second notification if enabled
-  if(udpConnected && notificationTwoRequired && millis()-notificationSentTime > 250){
+  if(udpConnected && (notificationCount < udpNumRetries) && ((millis()-notificationSentTime) > 250)){
     notify(notificationSentCallMode,true);
   }
   
