@@ -503,7 +503,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     } else {
       // there is no Wire.end()
       DEBUG_PRINTLN(F("Could not allocate I2C pins."));
-      uint8_t i2c[2] = { i2c_scl, i2c_sda };
+      uint8_t i2c[2] = { static_cast<uint8_t>(i2c_scl), static_cast<uint8_t>(i2c_sda) };
       pinManager.deallocateMultiplePins(i2c, 2, PinOwner::HW_I2C); // just in case deallocation of old pins
       i2c_sda = -1;
       i2c_scl = -1;
@@ -532,7 +532,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     } else {
       //SPI.end();
       DEBUG_PRINTLN(F("Could not allocate SPI pins."));
-      uint8_t spi[3] = { spi_mosi, spi_miso, spi_sclk };
+      uint8_t spi[3] = { static_cast<uint8_t>(spi_mosi), static_cast<uint8_t>(spi_miso), static_cast<uint8_t>(spi_sclk) };
       pinManager.deallocateMultiplePins(spi, 3, PinOwner::HW_SPI); // just in case deallocation of old pins
       spi_mosi = -1;
       spi_miso = -1;
