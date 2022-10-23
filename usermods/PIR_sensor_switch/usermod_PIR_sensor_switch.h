@@ -1,6 +1,3 @@
-// force the compiler to show a warning to confirm that this file is included
-#warning **** Included USERMOD_PIR_SENSOR_SWITCH ****
-
 #pragma once
 
 #include "wled.h"
@@ -65,6 +62,9 @@ private:
   bool m_offOnly            = false;
   bool m_offMode            = offMode;
 
+  // Home Assistant
+  bool HomeAssistantDiscovery = false;        // is HA discovery turned on
+
   // strings to reduce flash memory usage (used more than twice)
   static const char _name[];
   static const char _switchOffDelay[];
@@ -74,12 +74,8 @@ private:
   static const char _nightTime[];
   static const char _mqttOnly[];
   static const char _offOnly[];
-  static const char _homeAssistantDiscoveryPIR[];
+  static const char _haDiscovery[];
   static const char _notify[];
-
-  // MQTT and Home Assistant
-  bool mqttInitialized = false;
-  bool HomeAssistantDiscovery = false; // is HA discovery turned on
 
   /**
    * check if it is daytime
@@ -159,12 +155,7 @@ private:
   void publishMqtt(const char* state)
   {
     //Check if MQTT Connected, otherwise it will crash the 8266
-    if (WLED_MQTT_CONNECTED){
-      if (!mqttInitialized)
-      {
-        _mqttInitialize();
-        mqttInitialized = true;
-      }
+    if (WLED_MQTT_CONNECTED) {
       char subuf[64];
       strcpy(subuf, mqttDeviceTopic);
       strcat_P(subuf, PSTR("/motion"));
@@ -172,15 +163,6 @@ private:
     }
   }
 
-  //Set MQTT topics and create home assistant discovery topics
-  void _mqttInitialize()
-  {
-    if (HomeAssistantDiscovery)
-    {
-      _createMqttBinarySensor(String(F("Motion")), mqttDeviceTopic + String(F("/motion")), F("motion"));
-    }
-  }
-  
   // Create an MQTT Binary Sensor for Home Assistant Discovery purposes, this includes a pointer to the topic that is published to in the Loop.
   void _createMqttBinarySensor(const String &name, const String &topic, const String &deviceClass)
   {
@@ -284,6 +266,11 @@ public:
    */
   void connected()
   {
+    if (WLED_MQTT_CONNECTED) {
+      if (HomeAssistantDiscovery) {
+        _createMqttBinarySensor(String(F("Motion")), mqttDeviceTopic + String(F("/motion")), F("motion"));
+      }
+    }
   }
 
   /**
@@ -406,9 +393,15 @@ public:
     top[FPSTR(_nightTime)]      = m_nightTimeOnly;
     top[FPSTR(_mqttOnly)]       = m_mqttOnly;
     top[FPSTR(_offOnly)]        = m_offOnly;
-    top[FPSTR(_homeAssistantDiscoveryPIR)] = HomeAssistantDiscovery;
+    top[FPSTR(_haDiscovery)]    = HomeAssistantDiscovery;
     top[FPSTR(_notify)]         = (NotifyUpdateMode != CALL_MODE_NO_NOTIFY);
     DEBUG_PRINTLN(F("PIR config saved."));
+  }
+
+  void appendConfigData()
+  {
+    oappend(SET_F("addInfo('PIRsensorSwitch:HA-discovery',1,'HA=Home Assistant');"));     // 0 is field type, 1 is actual field
+    oappend(SET_F("addInfo('PIRsensorSwitch:notifications',1,'Periodic WS updates');"));  // 0 is field type, 1 is actual field
   }
 
   /**
@@ -443,7 +436,7 @@ public:
     m_nightTimeOnly = top[FPSTR(_nightTime)] | m_nightTimeOnly;
     m_mqttOnly      = top[FPSTR(_mqttOnly)] | m_mqttOnly;
     m_offOnly       = top[FPSTR(_offOnly)] | m_offOnly;
-    HomeAssistantDiscovery = top[FPSTR(_homeAssistantDiscoveryPIR)] | HomeAssistantDiscovery;
+    HomeAssistantDiscovery = top[FPSTR(_haDiscovery)] | HomeAssistantDiscovery;
 
     NotifyUpdateMode = top[FPSTR(_notify)] ? CALL_MODE_DIRECT_CHANGE : CALL_MODE_NO_NOTIFY;
 
@@ -472,7 +465,7 @@ public:
       DEBUG_PRINTLN(F(" config (re)loaded."));
     }
     // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
-    return !top[FPSTR(_homeAssistantDiscoveryPIR)].isNull();
+    return !top[FPSTR(_haDiscovery)].isNull();
   }
 
   /**
@@ -494,5 +487,5 @@ const char PIRsensorSwitch::_offPreset[]      PROGMEM = "off-preset";
 const char PIRsensorSwitch::_nightTime[]      PROGMEM = "nighttime-only";
 const char PIRsensorSwitch::_mqttOnly[]       PROGMEM = "mqtt-only";
 const char PIRsensorSwitch::_offOnly[]        PROGMEM = "off-only";
-const char PIRsensorSwitch::_homeAssistantDiscoveryPIR[] PROGMEM = "HomeAssistantDiscoveryPIR";
+const char PIRsensorSwitch::_haDiscovery[]    PROGMEM = "HA-discovery";
 const char PIRsensorSwitch::_notify[]         PROGMEM = "notifications";
