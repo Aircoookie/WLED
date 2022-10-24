@@ -37,21 +37,30 @@ void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t
     return;
   }
   if (!index) {
-    request->_tempFile = WLED_FS.open(filename, "w");
+    String finalname = filename;
+    if (finalname.charAt(0) != '/') {
+      finalname = "/" + finalname; // prepend slash if missing
+    }
+
+    request->_tempFile = WLED_FS.open(finalname, "w");
     DEBUG_PRINT("Uploading ");
-    DEBUG_PRINTLN(filename);
-    if (filename == F("/presets.json")) presetsModifiedTime = toki.second();
+    DEBUG_PRINTLN(finalname);
+    if (finalname.equals("/presets.json")) presetsModifiedTime = toki.second();  // WLEDSR
   }
   if (len) {
     request->_tempFile.write(data,len);
   }
   if (final) {
     request->_tempFile.close();
-    if (filename == F("/cfg.json")) {
-      doReboot = true;
+    if (filename.equalsIgnoreCase("/cfg.json") || filename.equalsIgnoreCase("cfg.json")) { // WLEDSR
       request->send(200, "text/plain", F("Configuration restore successful.\nRebooting..."));
-    } else
-      request->send(200, "text/plain", F("File Uploaded!"));
+      doReboot = true;
+    } else {
+      if (filename.equals("/presets.json") || filename.equals("presets.json")) {  // WLEDSR
+        request->send(200, "text/plain", F("Presets File Uploaded!"));
+      } else
+        request->send(200, "text/plain", F("File Uploaded!"));
+    }
     cacheInvalidate++;
   }
 }
