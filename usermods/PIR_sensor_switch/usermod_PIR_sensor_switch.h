@@ -22,36 +22,20 @@
  * 
  * v2 usermods are class inheritance based and can (but don't have to) implement more functions, each of them is shown in this example.
  * Multiple v2 usermods can be added to one compilation easily.
- * 
- * Creating a usermod:
- * This file serves as an example. If you want to create a usermod, it is recommended to use usermod_v2_empty.h from the usermods folder as a template.
- * Please remember to rename the class and file to a descriptive name.
- * You may also use multiple .h and .cpp files.
- * 
- * Using a usermod:
- * 1. Copy the usermod into the sketch folder (same folder as wled00.ino)
- * 2. Register the usermod by adding #include "usermod_filename.h" in the top and registerUsermod(new MyUsermodClass()) in the bottom of usermods_list.cpp
  */
 
 class PIRsensorSwitch : public Usermod
 {
 public:
-  /**
-   * constructor
-   */
+  // constructor
   PIRsensorSwitch() {}
-  /**
-   * desctructor
-   */
+  // destructor
   ~PIRsensorSwitch() {}
 
-  /**
-   * Enable/Disable the PIR sensor
-   */
+  //Enable/Disable the PIR sensor
   void EnablePIRsensor(bool en) { enabled = en; }
-  /**
-   * Get PIR sensor enabled/disabled state
-   */
+  
+  // Get PIR sensor enabled/disabled state
   bool PIRsensorEnabled() { return enabled; }
 
 private:
@@ -78,6 +62,9 @@ private:
   bool m_offOnly            = false;
   bool m_offMode            = offMode;
 
+  // Home Assistant
+  bool HomeAssistantDiscovery = false;        // is HA discovery turned on
+
   // strings to reduce flash memory usage (used more than twice)
   static const char _name[];
   static const char _switchOffDelay[];
@@ -87,6 +74,7 @@ private:
   static const char _nightTime[];
   static const char _mqttOnly[];
   static const char _offOnly[];
+  static const char _haDiscovery[];
   static const char _notify[];
 
   /**
@@ -167,12 +155,41 @@ private:
   void publishMqtt(const char* state)
   {
     //Check if MQTT Connected, otherwise it will crash the 8266
-    if (WLED_MQTT_CONNECTED){
+    if (WLED_MQTT_CONNECTED) {
       char subuf[64];
       strcpy(subuf, mqttDeviceTopic);
       strcat_P(subuf, PSTR("/motion"));
       mqtt->publish(subuf, 0, false, state);
     }
+  }
+
+  // Create an MQTT Binary Sensor for Home Assistant Discovery purposes, this includes a pointer to the topic that is published to in the Loop.
+  void _createMqttBinarySensor(const String &name, const String &topic, const String &deviceClass)
+  {
+    StaticJsonDocument<600> doc;
+    
+    doc[F("name")] = String(serverDescription) + " " + name;
+    doc[F("state_topic")] = topic;
+    doc[F("payload_on")] = "on";
+    doc[F("payload_off")] = "off";
+    doc[F("unique_id")] = String(mqttClientID) + name;
+    if (deviceClass != "")
+      doc[F("device_class")] = deviceClass;
+    doc[F("expire_after")] = 1800;
+
+    JsonObject device = doc.createNestedObject(F("device")); // attach the sensor to the same device
+    device[F("name")] = serverDescription;
+    device[F("identifiers")] = String(F("wled-sensor-")) + mqttClientID;
+    device[F("manufacturer")] = "WLED";
+    device[F("model")] = F("FOSS");
+    device[F("sw_version")] = versionString;
+    
+    String temp;
+    serializeJson(doc, temp);
+    DEBUG_PRINTLN(topic);
+    DEBUG_PRINTLN(temp);
+
+    mqtt->publish(topic.c_str(), 0, true, temp.c_str()); // do we really need to retain?
   }
 
   /**
@@ -249,6 +266,11 @@ public:
    */
   void connected()
   {
+    if (WLED_MQTT_CONNECTED) {
+      if (HomeAssistantDiscovery) {
+        _createMqttBinarySensor(String(F("Motion")), mqttDeviceTopic + String(F("/motion")), F("motion"));
+      }
+    }
   }
 
   /**
@@ -371,8 +393,15 @@ public:
     top[FPSTR(_nightTime)]      = m_nightTimeOnly;
     top[FPSTR(_mqttOnly)]       = m_mqttOnly;
     top[FPSTR(_offOnly)]        = m_offOnly;
+    top[FPSTR(_haDiscovery)]    = HomeAssistantDiscovery;
     top[FPSTR(_notify)]         = (NotifyUpdateMode != CALL_MODE_NO_NOTIFY);
     DEBUG_PRINTLN(F("PIR config saved."));
+  }
+
+  void appendConfigData()
+  {
+    oappend(SET_F("addInfo('PIRsensorSwitch:HA-discovery',1,'HA=Home Assistant');"));     // 0 is field type, 1 is actual field
+    oappend(SET_F("addInfo('PIRsensorSwitch:notifications',1,'Periodic WS updates');"));  // 0 is field type, 1 is actual field
   }
 
   /**
@@ -407,6 +436,7 @@ public:
     m_nightTimeOnly = top[FPSTR(_nightTime)] | m_nightTimeOnly;
     m_mqttOnly      = top[FPSTR(_mqttOnly)] | m_mqttOnly;
     m_offOnly       = top[FPSTR(_offOnly)] | m_offOnly;
+    HomeAssistantDiscovery = top[FPSTR(_haDiscovery)] | HomeAssistantDiscovery;
 
     NotifyUpdateMode = top[FPSTR(_notify)] ? CALL_MODE_DIRECT_CHANGE : CALL_MODE_NO_NOTIFY;
 
@@ -435,7 +465,7 @@ public:
       DEBUG_PRINTLN(F(" config (re)loaded."));
     }
     // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
-    return !top[FPSTR(_notify)].isNull();
+    return !top[FPSTR(_haDiscovery)].isNull();
   }
 
   /**
@@ -457,4 +487,5 @@ const char PIRsensorSwitch::_offPreset[]      PROGMEM = "off-preset";
 const char PIRsensorSwitch::_nightTime[]      PROGMEM = "nighttime-only";
 const char PIRsensorSwitch::_mqttOnly[]       PROGMEM = "mqtt-only";
 const char PIRsensorSwitch::_offOnly[]        PROGMEM = "off-only";
+const char PIRsensorSwitch::_haDiscovery[]    PROGMEM = "HA-discovery";
 const char PIRsensorSwitch::_notify[]         PROGMEM = "notifications";
