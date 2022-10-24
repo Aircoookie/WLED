@@ -75,22 +75,20 @@ static void doSaveState() {
   playlistSave = false;
 }
 
-String getPresetName(byte index) 
+bool getPresetName(byte index, String& name) 
 {
-  String name="";
-  DEBUGFS_PRINTLN(F("Make read buf"));
-  #ifdef WLED_USE_DYNAMIC_JSON
-  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-  #else
-  if (!requestJSONBufferLock(9)) return "";
-  #endif
+  if (!requestJSONBufferLock(9)) return false;
+  bool presetExists = false;
   if (readObjectFromFileUsingId("/presets.json", index, &doc))
   { 
     JsonObject fdo = doc.as<JsonObject>();
-    if (fdo["n"] ) name = (const char*)(fdo["n"]);
+    if (fdo["n"]) {
+      name = (const char*)(fdo["n"]);
+      presetExists = true;
+    }
   }
   releaseJSONBufferLock();
-  return name;
+  return presetExists;
 }
 
 bool applyPreset(byte index, byte callMode)

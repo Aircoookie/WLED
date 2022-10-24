@@ -14,23 +14,22 @@ void onAlexaChange(EspalexaDevice* dev);
 
 void alexaInit()
 {
-  if (alexaEnabled && WLED_CONNECTED)
+  if (!alexaEnabled || !WLED_CONNECTED) return;
+
+  espalexa.removeAllDevices();
+  // the original configured device for on/off or macros (added first, i.e. index 0)
+  espalexaDevice = new EspalexaDevice(alexaInvocationName, onAlexaChange, EspalexaDeviceType::extendedcolor);
+  espalexa.addDevice(espalexaDevice);
+  // up to 9 devices (added second, third, ... i.e. index 1 to 9) serve for switching on up to nine presets (preset IDs 1 to 9 in WLED), 
+  // names are identical as the preset names, switching off can be done by switching off any of them
+  String name = "";
+  for (byte presetIndex=1; presetIndex<=9; ++presetIndex) 
   {
-    espalexa.removeAllDevices();
-    // the original configured device for on/off or macros (added first, i.e. index 0)
-    espalexaDevice = new EspalexaDevice(alexaInvocationName, onAlexaChange, EspalexaDeviceType::extendedcolor);
-    espalexa.addDevice(espalexaDevice);
-    // up to 9 devices (added second, third, ... i.e. index 1 to 9) serve for switching on up to nine presets (preset IDs 1 to 9 in WLED), 
-    // names are identical as the preset names, switching off can be done by switching off any of them
-    for (byte presetIndex=1; presetIndex<=9; ++presetIndex) 
-    {
-      String name = getPresetName(presetIndex);
-      if (name == "") break; // no more presets
-      espalexaDevice = new EspalexaDevice(name.c_str(), onAlexaChange, EspalexaDeviceType::extendedcolor);
-      espalexa.addDevice(espalexaDevice);
-    }
-    espalexa.begin(&server);
-  } 
+    if (!getPresetName(presetIndex, name)) break; // no more presets
+    EspalexaDevice* dev = new EspalexaDevice(name.c_str(), onAlexaChange, EspalexaDeviceType::extendedcolor);
+    espalexa.addDevice(dev);
+  }
+  espalexa.begin(&server);
 }
 
 void handleAlexa()
@@ -57,7 +56,7 @@ void onAlexaChange(EspalexaDevice* dev)
       } else 
       {
         applyPreset(macroAlexaOn, CALL_MODE_ALEXA);
-        if (bri == 0) espalexaDevice->setValue(briLast); //stop Alexa from complaining if macroAlexaOn does not actually turn on
+        if (bri == 0) dev->setValue(briLast); //stop Alexa from complaining if macroAlexaOn does not actually turn on
       }
     } else // switch-on behavior for preset devices
     {
@@ -83,22 +82,22 @@ void onAlexaChange(EspalexaDevice* dev)
     } else 
     {
       applyPreset(macroAlexaOff, CALL_MODE_ALEXA);
-      if (bri != 0) espalexaDevice->setValue(0); //stop Alexa from complaining if macroAlexaOff does not actually turn off
+      // below for loop stops Alexa from complaining if macroAlexaOff does not actually turn off
     }
-    for (byte alexaIndex=0; alexaIndex<espalexa.getDeviceCount(); ++alexaIndex)
+    for (byte i = 0; i < espalexa.getDeviceCount(); i++)
     {
-      espalexa.getDevice(alexaIndex)->setValue(0);
+      espalexa.getDevice(i)->setValue(0);
     }
   } else if (m == EspalexaDeviceProperty::bri)
   {
-    bri = espalexaDevice->getValue();
+    bri = dev->getValue();
     stateUpdated(CALL_MODE_ALEXA);
   } else //color
   {
-    if (espalexaDevice->getColorMode() == EspalexaColorMode::ct) //shade of white
+    if (dev->getColorMode() == EspalexaColorMode::ct) //shade of white
     {
       byte rgbw[4];
-      uint16_t ct = espalexaDevice->getCt();
+      uint16_t ct = dev->getCt();
 			if (!ct) return;
 			uint16_t k = 1000000 / ct; //mireds to kelvin
 			
@@ -119,7 +118,7 @@ void onAlexaChange(EspalexaDevice* dev)
       }
       strip.setColor(0, RGBW32(rgbw[0], rgbw[1], rgbw[2], rgbw[3]));
     } else {
-      uint32_t color = espalexaDevice->getRGB();
+      uint32_t color = dev->getRGB();
       strip.setColor(0, color);
     }
     stateUpdated(CALL_MODE_ALEXA);
