@@ -45,14 +45,14 @@ void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t
     request->_tempFile = WLED_FS.open(finalname, "w");
     DEBUG_PRINT("Uploading ");
     DEBUG_PRINTLN(finalname);
-    if (finalname.indexOf("presets.json") >= 0) presetsModifiedTime = toki.second();
+    if (finalname.equals("/presets.json") >= 0) presetsModifiedTime = toki.second();
   }
   if (len) {
     request->_tempFile.write(data,len);
   }
   if (final) {
     request->_tempFile.close();
-    if (filename.indexOf("cfg.json") >= 0) {
+    if (filename.indexOf("cfg.json") >= 0) { // check for filename with or without slash
       doReboot = true;
       request->send(200, "text/plain", F("Configuration restore successful.\nRebooting..."));
     } else
