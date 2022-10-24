@@ -359,7 +359,7 @@ public:
     return false;
   }
 
-  // get device count
+  // get device count, function only in WLED version of Espalexa
   uint8_t getDeviceCount() {
     return currentDeviceCount;
   }
@@ -398,6 +398,7 @@ public:
     }
   }
 
+  // Function only in WLED version of Espalexa, does not actually release memory for names
   void removeAllDevices()
   {
     currentDeviceCount=0;

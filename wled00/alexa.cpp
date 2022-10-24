@@ -17,7 +17,7 @@ void alexaInit()
   if (alexaEnabled && WLED_CONNECTED)
   {
     espalexa.removeAllDevices();
-    // the original configured device for keeping old behavior (added first, i.e. index 0)
+    // the original configured device for on/off or macros (added first, i.e. index 0)
     espalexaDevice = new EspalexaDevice(alexaInvocationName, onAlexaChange, EspalexaDeviceType::extendedcolor);
     espalexa.addDevice(espalexaDevice);
     // up to 9 devices (added second, third, ... i.e. index 1 to 9) serve for switching on up to nine presets (preset IDs 1 to 9 in WLED), 
@@ -41,44 +41,34 @@ void handleAlexa()
 
 void onAlexaChange(EspalexaDevice* dev)
 {
-  espalexaDevice = dev;
-  EspalexaDeviceProperty m = espalexaDevice->getLastChangedProperty();
-  String name = espalexaDevice->getName();
+  EspalexaDeviceProperty m = dev->getLastChangedProperty();
   
   if (m == EspalexaDeviceProperty::on)
   {
-    if (name == alexaInvocationName) 
+    if (dev->getId() == 0) // Device 0 is for on/off or macros
     {
-      // keep the old switch-on behavior for the configured name
       if (!macroAlexaOn)
       {
         if (bri == 0)
         {
           bri = briLast;
-        stateUpdated(CALL_MODE_ALEXA);
+          stateUpdated(CALL_MODE_ALEXA);
         }
       } else 
       {
         applyPreset(macroAlexaOn, CALL_MODE_ALEXA);
         if (bri == 0) espalexaDevice->setValue(briLast); //stop Alexa from complaining if macroAlexaOn does not actually turn on
       }
-    } else 
+    } else // switch-on behavior for preset devices
     {
-      // new switch-on behavior for preset devices
-      byte preset = 0;
-      // find the index with the right name, leave out index 0 (device with alexaInvocationName does not occur in this else branch)
-      for (byte alexaIndex=1; alexaIndex<espalexa.getDeviceCount(); ++alexaIndex)
+      // turn off other preset devices
+      for (byte i = 1; i < espalexa.getDeviceCount(); i++)
       {
-        if (name == espalexa.getDevice(alexaIndex)->getName())
-        {
-          preset = alexaIndex; // in alexaInit() preset 1 device was added second (index 1), preset 2 third (index 2) etc.
-        } else
-        {
-          espalexa.getDevice(alexaIndex)->setValue(0); // set other presets off
-        }
+        if (i == dev->getId()) continue;
+        espalexa.getDevice(i)->setValue(0); // turn off other presets
       }
-      applyPreset(preset,CALL_MODE_ALEXA);
-      espalexa.getDevice(0)->setValue(espalexaDevice->getValue()); // set alexaInvocationName device to the current value
+
+      applyPreset(dev->getId(), CALL_MODE_ALEXA); // in alexaInit() preset 1 device was added second (index 1), preset 2 third (index 2) etc.
     }
   } else if (m == EspalexaDeviceProperty::off)
   {
