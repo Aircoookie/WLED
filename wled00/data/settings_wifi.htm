@@ -3,32 +3,55 @@
 <head>
   <meta charset="utf-8">
 	<meta name="viewport" content="width=500">
+	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
 	<title>WiFi Settings</title>
 	<script>
-		function H()
-		{
-			window.open("https://github.com/Aircoookie/WLED/wiki/Settings#wifi-settings");
+		var d=document;
+		var loc = false, locip;
+		function H(){window.open("https://kno.wled.ge/features/settings/#wifi-settings");}
+		function B(){window.open("/settings","_self");}
+		// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
+		function loadJS(FILE_URL, async = true) {
+			let scE = d.createElement("script");
+			scE.setAttribute("src", FILE_URL);
+			scE.setAttribute("type", "text/javascript");
+			scE.setAttribute("async", async);
+			d.body.appendChild(scE);
+			// success event 
+			scE.addEventListener("load", () => {
+				//console.log("File loaded");
+				GetV();
+			});
+			// error event
+			scE.addEventListener("error", (ev) => {
+				console.log("Error on loading file", ev);
+				alert("Loading of configuration script failed.\nIncomplete page data!");
+			});
 		}
-		function B()
-		{
-			window.open("/settings","_self");
-		}
-		function GetV()
-		{
-			//values injected by server while sending HTML
+		function S() {
+			if (window.location.protocol == "file:") {
+				loc = true;
+				locip = localStorage.getItem('locIp');
+				if (!locip) {
+					locip = prompt("File Mode. Please enter WLED IP!");
+					localStorage.setItem('locIp', locip);
+				}
+			}
+			var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=1';
+			loadJS(url, false);	// If we set async false, file is loaded and executed, then next statement is processed
 		}
 	</script>
-	<style>
-		@import url("style.css");
-	</style>
+	<style>@import url("style.css");</style>
 </head>
-<body onload="GetV()">
+<body onload="S()">
 	<form id="form_s" name="Sf" method="post">
+		<div class="toprow">
 		<div class="helpB"><button type="button" onclick="H()">?</button></div>
 		<button type="button" onclick="B()">Back</button><button type="submit">Save & Connect</button><hr>
+		</div>
 		<h2>WiFi setup</h2>
 		<h3>Connect to existing network</h3>
-		Network name (SSID, empty to not connect): <br><input name="CS" maxlength="32"><br>
+		Network name (SSID, empty to not connect): <br><input type="text" name="CS" maxlength="32"><br>
 		Network password: <br> <input type="password" name="CP" maxlength="63"><br>
 		Static IP (leave at 0.0.0.0 for DHCP):<br>
 		<input name="I0" type="number" class="s" min="0" max="255" required> .
@@ -46,36 +69,38 @@
 		<input name="S2" type="number" class="s" min="0" max="255" required> .
 		<input name="S3" type="number" class="s" min="0" max="255" required><br>
 		mDNS address (leave empty for no mDNS):<br/>
-		http:// <input name="CM" maxlength="32"> .local<br>
+		http:// <input type="text" name="CM" maxlength="32"> .local<br>
 		Client IP: <span class="sip"> Not connected </span> <br>
 		<h3>Configure Access Point</h3>
-		AP SSID (leave empty for no AP):<br> <input name="AS" maxlength="32"><br>
+		AP SSID (leave empty for no AP):<br> <input type="text" name="AS" maxlength="32"><br>
 		Hide AP name: <input type="checkbox" name="AH"><br>
 		AP password (leave empty for open):<br> <input type="password" name="AP" maxlength="63" pattern="(.{8,63})|()" title="Empty or min. 8 characters"><br>
 		Access Point WiFi channel: <input name="AC" type="number" class="xs" min="1" max="13" required><br>
-    AP opens:
-    <select name="AB">
-    <option value="0">No connection after boot</option>
-    <option value="1">Disconnected</option>
-    <option value="2">Always</option>
-    <option value="3">Never (not recommended)</option></select><br>
+		AP opens:
+		<select name="AB">
+		<option value="0">No connection after boot</option>
+		<option value="1">Disconnected</option>
+		<option value="2">Always</option>
+		<option value="3">Never (not recommended)</option></select><br>
 		AP IP: <span class="sip"> Not active </span><br>
 		<h3>Experimental</h3>
 		Disable WiFi sleep: <input type="checkbox" name="WS"><br>
 		<i>Can help with connectivity issues.<br>
 		Do not enable if WiFi is working correctly, increases power consumption.</i>
 		<div id="ethd">
-		<h3>Ethernet Type</h3>
-		<select name="ETH">
-		<option value="0">None</option>
-		<option value="2">ESP32-POE</option>
-		<option value="6">ESP32Deux</option>
-		<option value="7">KIT-VE</option>
-		<option value="4">QuinLED-ESP32</option>
-		<option value="5">TwilightLord-ESP32</option>
-		<option value="3">WESP32</option>
-		<option value="1">WT32-ETH01</option>
-		</select><br><br></div>
+			<h3>Ethernet Type</h3>
+			<select name="ETH">
+				<option value="0">None</option>
+				<option value="2">ESP32-POE</option>
+				<option value="6">ESP32Deux</option>
+				<option value="7">KIT-VE</option>
+				<option value="8">QuinLED-Dig-Octa</option>
+				<option value="4">QuinLED-ESP32</option>
+				<option value="5">TwilightLord-ESP32</option>
+				<option value="3">WESP32</option>
+				<option value="1">WT32-ETH01</option>
+			</select><br><br>
+		</div>
 		<hr>
 		<button type="button" onclick="B()">Back</button><button type="submit">Save & Connect</button>
 	</form>

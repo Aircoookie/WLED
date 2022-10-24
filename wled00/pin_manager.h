@@ -25,7 +25,7 @@ enum struct PinOwner : uint8_t {
   // High bit is set for all built-in pin owners
   Ethernet      = 0x81,
   BusDigital    = 0x82,
-  BusDigital2   = 0x83,
+  BusOnOff      = 0x83,
   BusPwm        = 0x84,   // 'BusP' == PWM output using BusPwm
   Button        = 0x85,   // 'Butn' == button from configuration
   IR            = 0x86,   // 'IR'   == IR receiver pin from configuration
@@ -34,6 +34,7 @@ enum struct PinOwner : uint8_t {
   DebugOut      = 0x89,   // 'Dbg'  == debug output always IO1
   DMX           = 0x8A,   // 'DMX'  == hard-coded to IO2
   HW_I2C        = 0x8B,   // 'I2C'  == hardware I2C pins (4&5 on ESP8266, 21&22 on ESP32)
+  HW_SPI        = 0x8C,   // 'SPI'  == hardware (V)SPI pins (13,14&15 on ESP8266, 5,18&23 on ESP32)
   // Use UserMod IDs from const.h here
   UM_Unspecified       = USERMOD_ID_UNSPECIFIED,        // 0x01
   UM_Example           = USERMOD_ID_EXAMPLE,            // 0x02 // Usermod "usermod_v2_example.h"
@@ -54,7 +55,9 @@ enum struct PinOwner : uint8_t {
   // #define USERMOD_ID_SN_PHOTORESISTOR                // 0x11 // Usermod "usermod_sn_photoresistor.h" -- Uses hard-coded pin (PHOTORESISTOR_PIN == A0), but could be easily updated to use pinManager
   UM_RGBRotaryEncoder  = USERMOD_RGB_ROTARY_ENCODER,    // 0x16 // Usermod "rgb-rotary-encoder.h"
   UM_QuinLEDAnPenta    = USERMOD_ID_QUINLED_AN_PENTA,   // 0x17 // Usermod "quinled-an-penta.h"
-  UM_BME280            = USERMOD_ID_BME280              // 0x18 // Usermod "usermod_bme280.h -- Uses "standard" HW_I2C pins
+  UM_BME280            = USERMOD_ID_BME280,             // 0x18 // Usermod "usermod_bme280.h -- Uses "standard" HW_I2C pins
+  UM_BH1750            = USERMOD_ID_BH1750,             // 0x19 // Usermod "usermod_bme280.h -- Uses "standard" HW_I2C pins
+  UM_Audioreactive     = USERMOD_ID_AUDIOREACTIVE       // 0x1E // Usermod "audio_reactive.h"
 };
 static_assert(0u == static_cast<uint8_t>(PinOwner::None), "PinOwner::None must be zero, so default array initialization works as expected");
 
@@ -68,13 +71,18 @@ class PinManagerClass {
   uint8_t ledcAlloc[2] = {0x00, 0x00}; //16 LEDC channels
   PinOwner ownerTag[40] = { PinOwner::None };
   #endif
-  uint8_t i2cAllocCount = 0; // allow multiple allocation of I2C bus pins but keep track of allocations
+  struct {
+    uint8_t i2cAllocCount : 4; // allow multiple allocation of I2C bus pins but keep track of allocations
+    uint8_t spiAllocCount : 4; // allow multiple allocation of SPI bus pins but keep track of allocations
+  };
 
   public:
+  PinManagerClass() : i2cAllocCount(0), spiAllocCount(0) {}
   // De-allocates a single pin
   bool deallocatePin(byte gpio, PinOwner tag);
   // De-allocates multiple pins but only if all can be deallocated (PinOwner has to be specified)
   bool deallocateMultiplePins(const uint8_t *pinArray, byte arrayElementCount, PinOwner tag);
+  bool deallocateMultiplePins(const managed_pin_type *pinArray, byte arrayElementCount, PinOwner tag);
   // Allocates a single pin, with an owner tag.
   // De-allocation requires the same owner tag (or override)
   bool allocatePin(byte gpio, bool output, PinOwner tag);

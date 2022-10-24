@@ -1,6 +1,6 @@
 #include "src/dependencies/timezone/Timezone.h"
 #include "wled.h"
-#include "wled_math.h"
+#include "fcn_declare.h"
 
 /*
  * Acquires time from NTP server
@@ -31,7 +31,8 @@ Timezone* tz;
 #define TZ_HAWAII              18
 #define TZ_NOVOSIBIRSK         19
 #define TZ_ANCHORAGE           20
-#define TZ_MX_CENTRAL          21  
+#define TZ_MX_CENTRAL          21
+#define TZ_PAKISTAN            22
 #define TZ_INIT               255
 
 byte tzCurrent = TZ_INIT; //uninitialized
@@ -93,12 +94,12 @@ void updateTimezone() {
       break;
     }
     case TZ_AUSTRALIA_EASTERN : {
-      tcrDaylight = {Second, Sun, Oct, 2, 660};   //AEDT = UTC + 11 hours
+      tcrDaylight = {First,  Sun, Oct, 2, 660};   //AEDT = UTC + 11 hours
       tcrStandard = {First,  Sun, Apr, 3, 600};   //AEST = UTC + 10 hours
       break;
     }
     case TZ_NEW_ZEALAND : {
-      tcrDaylight = {Second, Sun, Sep, 2, 780};   //NZDT = UTC + 13 hours
+      tcrDaylight = {Last,   Sun, Sep, 2, 780};   //NZDT = UTC + 13 hours
       tcrStandard = {First,  Sun, Apr, 3, 720};   //NZST = UTC + 12 hours
       break;
     }
@@ -145,6 +146,11 @@ void updateTimezone() {
      case TZ_MX_CENTRAL : {
       tcrDaylight = {First, Sun, Apr, 2, -300};  //CDT = UTC - 5 hours
       tcrStandard = {Last,  Sun, Oct, 2, -360};  //CST = UTC - 6 hours
+      break;
+    }
+    case TZ_PAKISTAN : {
+      tcrDaylight = {Last, Sun, Mar, 1, 300};     //Pakistan Standard Time = UTC + 5 hours
+      tcrStandard = tcrDaylight;
       break;
     }
   }
