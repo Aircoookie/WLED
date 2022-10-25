@@ -20,10 +20,12 @@ void alexaInit()
   // the original configured device for on/off or macros (added first, i.e. index 0)
   espalexaDevice = new EspalexaDevice(alexaInvocationName, onAlexaChange, EspalexaDeviceType::extendedcolor);
   espalexa.addDevice(espalexaDevice);
+
   // up to 9 devices (added second, third, ... i.e. index 1 to 9) serve for switching on up to nine presets (preset IDs 1 to 9 in WLED), 
   // names are identical as the preset names, switching off can be done by switching off any of them
+  if (!alexaNumPresets) return;
   String name = "";
-  for (byte presetIndex=1; presetIndex<=9; ++presetIndex) 
+  for (byte presetIndex = 1; presetIndex <= alexaNumPresets; presetIndex++) 
   {
     if (!getPresetName(presetIndex, name)) break; // no more presets
     EspalexaDevice* dev = new EspalexaDevice(name.c_str(), onAlexaChange, EspalexaDeviceType::extendedcolor);

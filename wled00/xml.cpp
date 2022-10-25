@@ -509,6 +509,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("AL"),alexaEnabled);
     sappends('s',SET_F("AI"),alexaInvocationName);
     sappend('c',SET_F("SA"),notifyAlexa);
+    sappend('v',SET_F("AP"),alexaNumPresets);
     sappends('s',SET_F("BK"),(char*)((blynkEnabled)?SET_F("Hidden"):""));
     #ifndef WLED_DISABLE_BLYNK
     sappends('s',SET_F("BH"),blynkHost);
