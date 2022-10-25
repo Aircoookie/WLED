@@ -555,7 +555,7 @@ void deserializeConfigFromFS() {
   DEBUG_PRINTLN(F("Reading settings from /cfg.json..."));
 
   success = readObjectFromFile("/cfg.json", nullptr, &doc);
-  if (!success) { //if file does not exist, try reading from EEPROM
+  if (!success) { // if file does not exist, optionally try reading from EEPROM and then save defaults to FS
     releaseJSONBufferLock();
     #ifdef WLED_ADD_EEPROM_SUPPORT
     deEEPSettings();
@@ -566,6 +566,10 @@ void deserializeConfigFromFS() {
     JsonObject empty = JsonObject();
     usermods.readFromConfig(empty);
     serializeConfig();
+    // init Ethernet (in case default type is set at compile time)
+    #ifdef WLED_USE_ETHERNET
+    WLED::instance().initEthernet();
+    #endif
     return;
   }
 
