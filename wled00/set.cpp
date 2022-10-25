@@ -247,7 +247,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     notifyAlexa = request->hasArg(F("SA"));
     notifyHue = request->hasArg(F("SH"));
     notifyMacro = request->hasArg(F("SM"));
-    notifyTwice = request->hasArg(F("S2"));
+
+    t = request->arg(F("UR")).toInt();
+    if ((t>=0) && (t<30)) udpNumRetries = t;
+
 
     nodeListEnabled = request->hasArg(F("NL"));
     if (!nodeListEnabled) Nodes.clear();
