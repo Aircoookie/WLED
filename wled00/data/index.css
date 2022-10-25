@@ -101,7 +101,7 @@ button {
 	position: fixed;
 	bottom: calc(var(--bh) + 6px);
 	right: 6px;
-	color: var(--c-8);	/* should remain bright (--c-d) with dark shadow (see below) to be legible on gray background */
+	color: var(--c-8); /* set bright (--c-d) with dark text shadow (see below) to be legible on gray background (in image) */
 	cursor: pointer;
 	writing-mode: vertical-rl;
 	/* transform: rotate(180deg); */
@@ -1045,8 +1045,8 @@ textarea {
 	/*box-shadow: 0 0 0 5px var(--c-d);*/
 }
 
-.qcs/*, #namelabel*/ { /* text shadow for name to be legible on grey backround */
-	text-shadow: -1px -1px 0 var(--c-4), 1px -1px 0 var(--c-4), -1px 1px 0 var(--c-4), 1px 1px 0 var(--c-4);
+.qcs, #namelabel { /* text shadow for name to be legible on grey backround */
+	text-shadow: -1px -1px 0 var(--c-1), 1px -1px 0 var(--c-1), -1px 1px 0 var(--c-1), 1px 1px 0 var(--c-1);
 }
 
 .psts {

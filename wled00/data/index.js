@@ -182,6 +182,7 @@ function loadBg(iUrl)
 		bg.style.opacity = a;
 		bg.style.backgroundImage = `url(${img.src})`;
 		img = null;
+		gId('namelabel').style.color = "var(--c-c)"; // improve namelabel legibility on background image
 	});
 }
 
@@ -1494,7 +1495,8 @@ function requestJson(command=null)
 			if (tn != tr) command.transition = tn;
 		}
 		req = JSON.stringify(command);
-		if (req.length > 1430) useWs = false; // do not send very long requests over websocket
+		if (req.length > 1340) useWs = false; // do not send very long requests over websocket
+		if (req.length >  500 && lastinfo && lastinfo.arch == "esp8266") useWs = false; // esp8266 can only handle 500 bytes
 	};
 
 	if (useWs) {
