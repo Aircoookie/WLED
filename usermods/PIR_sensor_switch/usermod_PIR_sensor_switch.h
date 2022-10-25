@@ -164,32 +164,37 @@ private:
   }
 
   // Create an MQTT Binary Sensor for Home Assistant Discovery purposes, this includes a pointer to the topic that is published to in the Loop.
-  void _createMqttBinarySensor(const String &name, const String &topic, const String &deviceClass)
+  void publishHomeAssistantAutodiscovery()
   {
-    StaticJsonDocument<600> doc;
-    
-    doc[F("name")] = String(serverDescription) + " " + name;
-    doc[F("state_topic")] = topic;
-    doc[F("payload_on")] = "on";
-    doc[F("payload_off")] = "off";
-    doc[F("unique_id")] = String(mqttClientID) + name;
-    if (deviceClass != "")
-      doc[F("device_class")] = deviceClass;
-    doc[F("expire_after")] = 1800;
+    if (WLED_MQTT_CONNECTED) {
+      StaticJsonDocument<600> doc;
+      char uid[24], json_str[1024], buf[128];
 
-    JsonObject device = doc.createNestedObject(F("device")); // attach the sensor to the same device
-    device[F("name")] = serverDescription;
-    device[F("identifiers")] = String(F("wled-sensor-")) + mqttClientID;
-    device[F("manufacturer")] = "WLED";
-    device[F("model")] = F("FOSS");
-    device[F("sw_version")] = versionString;
-    
-    String temp;
-    serializeJson(doc, temp);
-    DEBUG_PRINTLN(topic);
-    DEBUG_PRINTLN(temp);
+      sprintf_P(buf, PSTR("%s Motion"), serverDescription); //max length: 33 + 7 = 40
+      doc[F("name")] = buf;
+      sprintf_P(buf, PSTR("%s/motion"), mqttDeviceTopic);   //max length: 33 + 7 = 40
+      doc[F("stat_t")] = buf;
+      doc[F("pl_on")]  = "on";
+      doc[F("pl_off")] = "off";
+      sprintf_P(uid, PSTR("%s_motion"), escapedMac.c_str());
+      doc[F("uniq_id")] = uid;
+      doc[F("dev_cla")] = F("motion");
+      doc[F("exp_aft")] = 1800;
 
-    mqtt->publish(topic.c_str(), 0, true, temp.c_str()); // do we really need to retain?
+      JsonObject device = doc.createNestedObject(F("device")); // attach the sensor to the same device
+      device[F("name")] = serverDescription;
+      device[F("ids")]  = String(F("wled-sensor-")) + mqttClientID;
+      device[F("mf")]   = "WLED";
+      device[F("mdl")]  = F("FOSS");
+      device[F("sw")]   = versionString;
+      
+      sprintf_P(buf, PSTR("homeassistant/binary_sensor/%s/config"), uid);
+      DEBUG_PRINTLN(buf);
+      size_t payload_size = serializeJson(doc, json_str);
+      DEBUG_PRINTLN(json_str);
+
+      mqtt->publish(buf, 0, true, json_str, payload_size); // do we really need to retain?
+    }
   }
 
   /**
@@ -266,10 +271,14 @@ public:
    */
   void connected()
   {
-    if (WLED_MQTT_CONNECTED) {
-      if (HomeAssistantDiscovery) {
-        _createMqttBinarySensor(String(F("Motion")), mqttDeviceTopic + String(F("/motion")), F("motion"));
-      }
+  }
+
+  /**
+   * onMqttConnect() is called when MQTT connection is established
+   */
+  void onMqttConnect(bool sessionPresent) {
+    if (HomeAssistantDiscovery) {
+      publishHomeAssistantAutodiscovery();
     }
   }
 
