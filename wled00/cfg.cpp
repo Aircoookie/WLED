@@ -392,6 +392,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(macroAlexaOn, interfaces["va"]["macros"][0]);
   CJSON(macroAlexaOff, interfaces["va"]["macros"][1]);
 
+  CJSON(alexaNumPresets, interfaces["va"]["p"]);
+
 #ifndef WLED_DISABLE_BLYNK
   const char* apikey = interfaces["blynk"][F("token")] | "Hidden";
   tdd = strnlen(apikey, 36);
@@ -848,6 +850,8 @@ void serializeConfig() {
   JsonArray if_va_macros = if_va.createNestedArray("macros");
   if_va_macros.add(macroAlexaOn);
   if_va_macros.add(macroAlexaOff);
+
+  if_va["p"] = alexaNumPresets;
 
 #ifndef WLED_DISABLE_BLYNK
   JsonObject if_blynk = interfaces.createNestedObject("blynk");
