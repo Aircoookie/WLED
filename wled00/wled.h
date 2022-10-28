@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2210241
+#define VERSION 2210281
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -222,6 +222,7 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
 
 // Global Variable definitions
 WLED_GLOBAL char versionString[] _INIT(TOSTRING(WLED_VERSION));
+WLED_GLOBAL char releaseString[] _INIT(TOSTRING(WLED_RELEASE_NAME)); //WLEDSR: to show on update page
 #define WLED_CODENAME "Hoshi"
 
 // AP and OTA default passwords (for maximum security change them!)
