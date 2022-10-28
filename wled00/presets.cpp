@@ -75,6 +75,22 @@ static void doSaveState() {
   playlistSave = false;
 }
 
+bool getPresetName(byte index, String& name) 
+{
+  if (!requestJSONBufferLock(9)) return false;
+  bool presetExists = false;
+  if (readObjectFromFileUsingId("/presets.json", index, &doc))
+  { 
+    JsonObject fdo = doc.as<JsonObject>();
+    if (fdo["n"]) {
+      name = (const char*)(fdo["n"]);
+      presetExists = true;
+    }
+  }
+  releaseJSONBufferLock();
+  return presetExists;
+}
+
 bool applyPreset(byte index, byte callMode)
 {
   DEBUG_PRINT(F("Request to apply preset: "));

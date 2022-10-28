@@ -42,7 +42,7 @@ private:
   bool getLuminanceComplete = false;
 
   // flag set at startup
-  bool disabled = false;
+  bool enabled = true;
 
   // strings to reduce flash memory usage (used more than twice)
   static const char _name[];
@@ -133,7 +133,7 @@ public:
 
   void loop()
   {
-    if (disabled || strip.isUpdating())
+    if ((!enabled) || strip.isUpdating())
       return;
 
     unsigned long now = millis();
@@ -205,7 +205,7 @@ public:
   {
     // we add JSON object.
     JsonObject top = root.createNestedObject(FPSTR(_name)); // usermodname
-    top[FPSTR(_enabled)] = !disabled;
+    top[FPSTR(_enabled)] = enabled;
     top[FPSTR(_maxReadInterval)] = maxReadingInterval;
     top[FPSTR(_minReadInterval)] = minReadingInterval;
     top[FPSTR(_HomeAssistantDiscovery)] = HomeAssistantDiscovery;
@@ -233,7 +233,7 @@ public:
     }
     bool configComplete = !top.isNull();
 
-    configComplete &= getJsonValue(top[FPSTR(_enabled)], disabled, false);
+    configComplete &= getJsonValue(top[FPSTR(_enabled)], enabled, false);
     configComplete &= getJsonValue(top[FPSTR(_maxReadInterval)], maxReadingInterval, 10000); //ms
     configComplete &= getJsonValue(top[FPSTR(_minReadInterval)], minReadingInterval, 500); //ms
     configComplete &= getJsonValue(top[FPSTR(_HomeAssistantDiscovery)], HomeAssistantDiscovery, false);

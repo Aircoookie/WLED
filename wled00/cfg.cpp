@@ -392,6 +392,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(macroAlexaOn, interfaces["va"]["macros"][0]);
   CJSON(macroAlexaOff, interfaces["va"]["macros"][1]);
 
+  CJSON(alexaNumPresets, interfaces["va"]["p"]);
+
 #ifndef WLED_DISABLE_BLYNK
   const char* apikey = interfaces["blynk"][F("token")] | "Hidden";
   tdd = strnlen(apikey, 36);
@@ -555,11 +557,21 @@ void deserializeConfigFromFS() {
   DEBUG_PRINTLN(F("Reading settings from /cfg.json..."));
 
   success = readObjectFromFile("/cfg.json", nullptr, &doc);
-  if (!success) { //if file does not exist, try reading from EEPROM
+  if (!success) { // if file does not exist, optionally try reading from EEPROM and then save defaults to FS
+    releaseJSONBufferLock();
     #ifdef WLED_ADD_EEPROM_SUPPORT
     deEEPSettings();
     #endif
-    releaseJSONBufferLock();
+
+    // save default values to /cfg.json
+    // call readFromConfig() with an empty object so that usermods can initialize to defaults prior to saving
+    JsonObject empty = JsonObject();
+    usermods.readFromConfig(empty);
+    serializeConfig();
+    // init Ethernet (in case default type is set at compile time)
+    #ifdef WLED_USE_ETHERNET
+    WLED::instance().initEthernet();
+    #endif
     return;
   }
 
@@ -568,7 +580,7 @@ void deserializeConfigFromFS() {
   bool needsSave = deserializeConfig(doc.as<JsonObject>(), true);
   releaseJSONBufferLock();
 
-  if (needsSave) serializeConfig(); // usermods required new prameters
+  if (needsSave) serializeConfig(); // usermods required new parameters
 }
 
 void serializeConfig() {
@@ -838,6 +850,8 @@ void serializeConfig() {
   JsonArray if_va_macros = if_va.createNestedArray("macros");
   if_va_macros.add(macroAlexaOn);
   if_va_macros.add(macroAlexaOff);
+
+  if_va["p"] = alexaNumPresets;
 
 #ifndef WLED_DISABLE_BLYNK
   JsonObject if_blynk = interfaces.createNestedObject("blynk");

@@ -39,11 +39,11 @@ void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t
   if (!index) {
     String finalname = filename;
     if (finalname.charAt(0) != '/') {
-      finalname = "/" + finalname; // prepend slash if missing
+      finalname = '/' + finalname; // prepend slash if missing
     }
 
     request->_tempFile = WLED_FS.open(finalname, "w");
-    DEBUG_PRINT("Uploading ");
+    DEBUG_PRINT(F("Uploading "));
     DEBUG_PRINTLN(finalname);
     if (finalname.equals("/presets.json")) presetsModifiedTime = toki.second();  // WLEDSR
   }
