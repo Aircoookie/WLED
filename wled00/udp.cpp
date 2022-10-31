@@ -4,7 +4,7 @@
  * UDP sync notifier / Realtime / Hyperion / TPM2.NET
  */
 
-#define UDP_SEG_SIZE 28
+#define UDP_SEG_SIZE 36
 #define SEG_OFFSET (41+(MAX_NUM_SEGMENTS*UDP_SEG_SIZE))
 #define WLEDPACKETSIZE (41+(MAX_NUM_SEGMENTS*UDP_SEG_SIZE)+0)
 #define UDP_IN_MAXSIZE 1472
@@ -46,7 +46,8 @@ void notify(byte callMode, bool followUp)
   //3: supports FX intensity, 24 byte packet 4: supports transitionDelay 5: sup palette
   //6: supports timebase syncing, 29 byte packet 7: supports tertiary color 8: supports sys time sync, 36 byte packet
   //9: supports sync groups, 37 byte packet 10: supports CCT, 39 byte packet 11: per segment options, variable packet length (40+MAX_NUM_SEGMENTS*3)
-  udpOut[11] = 11;
+  //12: enhanced effct sliders, 2D & mapping options
+  udpOut[11] = 12;
   col = mainseg.colors[1];
   udpOut[12] = R(col);
   udpOut[13] = G(col);
@@ -105,7 +106,7 @@ void notify(byte callMode, bool followUp)
     udpOut[6 +ofs] = selseg.spacing;
     udpOut[7 +ofs] = selseg.offset >> 8;
     udpOut[8 +ofs] = selseg.offset & 0xFF;
-    udpOut[9 +ofs] = selseg.options & 0x0F; //only take into account mirrored, selected, on, reversed
+    udpOut[9 +ofs] = selseg.options & 0x8F; //only take into account selected, mirrored, on, reversed, reverse_y (for 2D); ignore freeze, reset, transitional
     udpOut[10+ofs] = selseg.opacity;
     udpOut[11+ofs] = selseg.mode;
     udpOut[12+ofs] = selseg.speed;
@@ -124,6 +125,14 @@ void notify(byte callMode, bool followUp)
     udpOut[25+ofs] = B(selseg.colors[2]);
     udpOut[26+ofs] = W(selseg.colors[2]);
     udpOut[27+ofs] = selseg.cct;
+    udpOut[28+ofs] = (selseg.options>>8) & 0xFF; //mirror_y, transpose, 2D mapping & sound
+    udpOut[29+ofs] = selseg.custom1;
+    udpOut[30+ofs] = selseg.custom2;
+    udpOut[31+ofs] = selseg.custom3 | (selseg.check1<<5) | (selseg.check2<<6) | (selseg.check3<<7);
+    udpOut[32+ofs] = selseg.startY >> 8;
+    udpOut[33+ofs] = selseg.startY & 0xFF;
+    udpOut[34+ofs] = selseg.stopY >> 8;
+    udpOut[35+ofs] = selseg.stopY & 0xFF;
     ++s;
   }
 
@@ -347,14 +356,16 @@ void handleNotifications()
           uint8_t id = udpIn[0 +ofs];
           if (id > strip.getSegmentsNum()) break;
           Segment& selseg = strip.getSegment(id);
-          uint16_t start  = (udpIn[1+ofs] << 8 | udpIn[2+ofs]);
-          uint16_t stop   = (udpIn[3+ofs] << 8 | udpIn[4+ofs]);
+          if (!selseg.isActive() || !selseg.isSelected()) continue; //do not apply to non selected segments
+          uint16_t startY = 0, start  = (udpIn[1+ofs] << 8 | udpIn[2+ofs]);
+          uint16_t stopY  = 1, stop   = (udpIn[3+ofs] << 8 | udpIn[4+ofs]);
           uint16_t offset = (udpIn[7+ofs] << 8 | udpIn[8+ofs]);
           if (!receiveSegmentOptions) {
-            strip.setSegment(id, start, stop, selseg.grouping, selseg.spacing, offset);
+            strip.setSegment(id, start, stop, selseg.grouping, selseg.spacing, offset, startY, stopY);
             continue;
           }
-          for (size_t j = 0; j<4; j++) selseg.setOption(j, (udpIn[9 +ofs] >> j) & 0x01); //only take into account mirrored, selected, on, reversed
+          //for (size_t j = 1; j<4; j++) selseg.setOption(j, (udpIn[9 +ofs] >> j) & 0x01); //only take into account mirrored, on, reversed; ignore selected
+          selseg.options = (selseg.options & 0xFF80) | (udpIn[9 +ofs] & 0x0E); // ignore selected, freeze, reset & transitional
           selseg.setOpacity(udpIn[10+ofs]);
           if (applyEffects) {
             strip.setMode(id,  udpIn[11+ofs]);
@@ -368,11 +379,26 @@ void handleNotifications()
             selseg.setColor(2, RGBW32(udpIn[23+ofs],udpIn[24+ofs],udpIn[25+ofs],udpIn[26+ofs]));
             selseg.setCCT(udpIn[27+ofs]);
           }
+          if (version > 11) {
+            // when applying synced options ignore selected as it may be used as indicator of which segments to sync
+            // freeze, reset & transitional should never be synced
+            selseg.options = (selseg.options & 0xFF8F) | (udpIn[28+ofs]<<8) | (udpIn[9 +ofs] & 0x8E); // ignore selected, freeze, reset & transitional
+            if (applyEffects) {
+              selseg.custom1 = udpIn[29+ofs];
+              selseg.custom2 = udpIn[30+ofs];
+              selseg.custom3 = udpIn[31+ofs] & 0x1F;
+              selseg.check1  = (udpIn[31+ofs]>>5) & 0x1;
+              selseg.check1  = (udpIn[31+ofs]>>6) & 0x1;
+              selseg.check1  = (udpIn[31+ofs]>>7) & 0x1;
+            }
+            startY = (udpIn[32+ofs] << 8 | udpIn[33+ofs]);
+            stopY  = (udpIn[34+ofs] << 8 | udpIn[35+ofs]);
+          }
           //setSegment() also properly resets segments
           if (receiveSegmentBounds) {
-            strip.setSegment(id, start, stop, udpIn[5+ofs], udpIn[6+ofs], offset);
+            strip.setSegment(id, start, stop, udpIn[5+ofs], udpIn[6+ofs], offset, startY, stopY);
           } else {
-            strip.setSegment(id, selseg.start, selseg.stop, udpIn[5+ofs], udpIn[6+ofs], selseg.offset);
+            strip.setSegment(id, selseg.start, selseg.stop, udpIn[5+ofs], udpIn[6+ofs], selseg.offset, selseg.startY, selseg.stopY);
           }
         }
         stateChanged = true;
