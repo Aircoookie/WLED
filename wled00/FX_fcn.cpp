@@ -691,7 +691,7 @@ void xyFromBlock(uint16_t &x,uint16_t &y, uint16_t i, uint16_t vW, uint16_t vH, 
 
 }
 
-void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
+void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col) //WLEDSR: IRAM_ATTR conditionaly
 {
   int vStrip = i>>16; // hack to allow running on virtual strips (2D segment columns/rows)
   i &= 0xFFFF;

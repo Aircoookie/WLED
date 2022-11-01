@@ -431,4 +431,12 @@
   #define HW_PIN_CSSPI SS
 #endif
 
+// WLEDSR: IRAM_ATTR for 8266 causes error: section `.text1' will not fit in region `iram1_0_seg'
+//         error only in MM, not in upstream... tbd: find out why
+#ifdef ARDUINO_ARCH_ESP32
+  #define IRAM_ATTR_YN IRAM_ATTR
+#else
+  #define IRAM_ATTR_YN
+#endif
+
 #endif

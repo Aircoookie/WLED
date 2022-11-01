@@ -35,7 +35,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   if (id >= strip.getMaxSegments()) return;
 
   //WLEDSR: add compatibility for SR presets
-  // Serial.printf("before %d: %s %s %s %s\n", id, elem["start"].as<std::string>().c_str(), elem["stop"].as<std::string>().c_str(), elem["startY"].as<std::string>().c_str(), elem["stopY"].as<std::string>().c_str());
+  #ifndef WLED_DISABLE_2D
+    // Serial.printf("before %d: %s %s %s %s\n", id, elem["start"].as<std::string>().c_str(), elem["stop"].as<std::string>().c_str(), elem["startY"].as<std::string>().c_str(), elem["stopY"].as<std::string>().c_str());
   if (strip.isMatrix && !elem["start"].isNull() && !elem["stop"].isNull() && elem["startY"].isNull() && elem["stopY"].isNull()) {
     uint16_t start1=elem["start"], stop1=elem["stop"];
     elem["start"] = start1%strip.matrixWidth;
@@ -44,6 +45,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     elem["stopY"]= strip.matrixWidth?((stop1-1) / strip.matrixWidth) + 1:0;
     // Serial.printf("after %s %s %s %s\n", elem["start"].as<std::string>().c_str(), elem["stop"].as<std::string>().c_str(), elem["startY"].as<std::string>().c_str(), elem["stopY"].as<std::string>().c_str());
   }
+  #endif
   if (!elem["c1x"].isNull()) elem["c1"] = elem["c1x"];
   if (!elem["c2x"].isNull()) elem["c2"] = elem["c2x"];
   if (!elem["c3x"].isNull()) elem["c3"] = elem["c3x"];
