@@ -334,9 +334,9 @@ void handleNotifications()
       if (version > 6) {
         strip.setColor(2, RGBW32(udpIn[20], udpIn[21], udpIn[22], udpIn[23])); // tertiary color
         if (version > 9 && version < 200 && udpIn[37] < 255) { // valid CCT/Kelvin value
-          uint8_t cct = udpIn[38];
+          uint16_t cct = udpIn[38];
           if (udpIn[37] > 0) { //Kelvin
-            cct = (((udpIn[37] << 8) + udpIn[38]) - 1900) >> 5; 
+            cct |= (udpIn[37] << 8); 
           }
           strip.setCCT(cct);
         }
@@ -355,8 +355,10 @@ void handleNotifications()
           uint16_t ofs = 41 + i*udpIn[40]; //start of segment offset byte
           uint8_t id = udpIn[0 +ofs];
           if (id > strip.getSegmentsNum()) break;
+
           Segment& selseg = strip.getSegment(id);
           if (!selseg.isActive() || !selseg.isSelected()) continue; //do not apply to non selected segments
+
           uint16_t startY = 0, start  = (udpIn[1+ofs] << 8 | udpIn[2+ofs]);
           uint16_t stopY  = 1, stop   = (udpIn[3+ofs] << 8 | udpIn[4+ofs]);
           uint16_t offset = (udpIn[7+ofs] << 8 | udpIn[8+ofs]);
@@ -365,7 +367,7 @@ void handleNotifications()
             continue;
           }
           //for (size_t j = 1; j<4; j++) selseg.setOption(j, (udpIn[9 +ofs] >> j) & 0x01); //only take into account mirrored, on, reversed; ignore selected
-          selseg.options = (selseg.options & 0xFF80) | (udpIn[9 +ofs] & 0x0E); // ignore selected, freeze, reset & transitional
+          selseg.options = (selseg.options & 0x0071U) | (udpIn[9 +ofs] & 0x0E); // ignore selected, freeze, reset & transitional
           selseg.setOpacity(udpIn[10+ofs]);
           if (applyEffects) {
             strip.setMode(id,  udpIn[11+ofs]);
@@ -382,7 +384,7 @@ void handleNotifications()
           if (version > 11) {
             // when applying synced options ignore selected as it may be used as indicator of which segments to sync
             // freeze, reset & transitional should never be synced
-            selseg.options = (selseg.options & 0xFF8F) | (udpIn[28+ofs]<<8) | (udpIn[9 +ofs] & 0x8E); // ignore selected, freeze, reset & transitional
+            selseg.options = (selseg.options & 0x0071U) | (udpIn[28+ofs]<<8) | (udpIn[9 +ofs] & 0x8E); // ignore selected, freeze, reset & transitional
             if (applyEffects) {
               selseg.custom1 = udpIn[29+ofs];
               selseg.custom2 = udpIn[30+ofs];
@@ -658,6 +660,12 @@ void sendSysInfoUDP()
   memcpy((byte *)data + 6, serverDescription, 32);
   #ifdef ESP8266
   data[38] = NODE_TYPE_ID_ESP8266;
+  #elif defined(CONFIG_IDF_TARGET_ESP32C3)
+  data[38] = NODE_TYPE_ID_ESP32C3;
+  #elif defined(CONFIG_IDF_TARGET_ESP32S3)
+  data[38] = NODE_TYPE_ID_ESP32S3;
+  #elif defined(CONFIG_IDF_TARGET_ESP32S2)
+  data[38] = NODE_TYPE_ID_ESP32S2;
   #elif defined(ARDUINO_ARCH_ESP32)
   data[38] = NODE_TYPE_ID_ESP32;
   #else

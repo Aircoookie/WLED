@@ -954,6 +954,9 @@ function btype(b)
 {
 	switch (b) {
 		case 32: return "ESP32";
+		case 33: return "ESP32-S2";
+		case 34: return "ESP32-S3";
+		case 35: return "ESP32-C3";
 		case 82: return "ESP8266";
 	}
 	return "?";
