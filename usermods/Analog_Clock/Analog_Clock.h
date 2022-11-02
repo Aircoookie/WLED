@@ -45,7 +45,7 @@ private:
     bool     enabled          = false;
     Segment  mainSegment;
     bool     hourMarksEnabled = true;
-    uint32_t hourMarkColor = 0xFF0000;
+    uint32_t hourMarkColor    = 0xFF0000;
     uint32_t hourColor        = 0x0000FF;
     uint32_t minuteColor      = 0x00FF00;
     bool     secondsEnabled   = true;
@@ -208,8 +208,8 @@ public:
         top["First LED (Main Ring)"]         = mainSegment.firstLed;
         top["Last LED (Main Ring)"]          = mainSegment.lastLed;
         top["Center/12h LED (Main Ring)"]    = mainSegment.centerLed;
-        top["Hour marks Enabled"]            = hourMarksEnabled;
-        top["Hour mark Color (RRGGBB)"]      = colorToHexString(hourMarkColor);
+        top["Hour Marks Enabled"]            = hourMarksEnabled;
+        top["Hour Mark Color (RRGGBB)"]      = colorToHexString(hourMarkColor);
         top["Hour Color (RRGGBB)"]           = colorToHexString(hourColor);
         top["Minute Color (RRGGBB)"]         = colorToHexString(minuteColor);
         top["Show Seconds"]                  = secondsEnabled;
