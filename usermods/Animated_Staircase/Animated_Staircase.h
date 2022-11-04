@@ -114,9 +114,10 @@ class Animated_Staircase : public Usermod {
           seg.setOption(SEG_OPTION_ON, false);
         }
         // Always mark segments as "transitional", we are animating the staircase
-        //seg.setOption(SEG_OPTION_TRANSITIONAL, true); // not needed anymore
+        //seg.setOption(SEG_OPTION_TRANSITIONAL, true); // not needed anymore as setOption() does it
       }
-      stateChanged = true;
+      strip.trigger();  // force strip refresh
+      stateChanged = true;  // inform external devices/UI of change
       colorUpdated(CALL_MODE_DIRECT_CHANGE);
     }
 
@@ -287,9 +288,10 @@ class Animated_Staircase : public Usermod {
         onIndex  = minSegmentId = strip.getMainSegmentId(); // it may not be the best idea to start with main segment as it may not be the first one
         offIndex = maxSegmentId = strip.getLastActiveSegmentId() + 1;
 
-        // shorten the strip trnasition time to be equal or shorter than segment delay
+        // shorten the strip transition time to be equal or shorter than segment delay
         transitionDelayTemp = transitionDelay = segment_delay_ms;
         strip.setTransition(segment_delay_ms/100);
+        strip.trigger();
       } else {
         // Restore segment options
         for (int i = 0; i <= strip.getLastActiveSegmentId(); i++) {
@@ -297,7 +299,8 @@ class Animated_Staircase : public Usermod {
           if (!seg.isActive()) continue; // skip vector gaps
           seg.setOption(SEG_OPTION_ON, true);
         }
-        stateChanged = true;
+        strip.trigger();  // force strip update
+        stateChanged = true;  // inform external dvices/UI of change
         colorUpdated(CALL_MODE_DIRECT_CHANGE);
         DEBUG_PRINTLN(F("Animated Staircase disabled."));
       }
