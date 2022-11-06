@@ -4,16 +4,10 @@
 
 NetworkDebugPrinter NetDebug;
 
-void NetworkDebugPrinter::printchar(char s) {
-  debugUdp.write(s);
-}
+void NetworkDebugPrinter::print(const char *s, bool newline) {
+  if (!WLED_CONNECTED || !udpConnected || s == nullptr) return;
 
-void NetworkDebugPrinter::print(const char *s) {
-  if (!WLED_CONNECTED || s == nullptr) {
-    return;
-  }
-  IPAddress debugPrintHostIP;
-  if (!debugPrintHostIP.fromString(netDebugPrintHost)) {
+  if (!debugPrintHostIP && !debugPrintHostIP.fromString(netDebugPrintHost)) {
     #ifdef ESP8266
       WiFi.hostByName(netDebugPrintHost, debugPrintHostIP, 750);
     #else
@@ -24,49 +18,49 @@ void NetworkDebugPrinter::print(const char *s) {
       #endif
     #endif
   }
+
+  WiFiUDP debugUdp;
   debugUdp.beginPacket(debugPrintHostIP, netDebugPrintPort);
-  //for (size_t i=0; i<strlen(s); i++) printchar(s[i]);
   debugUdp.write(reinterpret_cast<const uint8_t *>(s), strlen(s));
+  if (newline) debugUdp.write('\n');
   debugUdp.endPacket();
 }
 
-void NetworkDebugPrinter::print(const __FlashStringHelper* s) {
-  print(reinterpret_cast<const char *>(s));
+void NetworkDebugPrinter::print(const __FlashStringHelper* s, bool newline) {
+  char buf[512];
+  strncpy_P(buf, (PGM_P)s, 512);
+  print(buf, newline);
 }
 
 void NetworkDebugPrinter::print(String s) {
   print(s.c_str());
 }
 
-void NetworkDebugPrinter::print(unsigned int n) {
+void NetworkDebugPrinter::print(unsigned int n, bool newline) {
   char s[10];
   snprintf_P(s, sizeof(s), PSTR("%d"), n);
   s[9] = '\0';
-  print(s);
+  print(s, newline);
 }
 
 void NetworkDebugPrinter::println() {
-  print("\n");
+  print("", true);
 }
 
 void NetworkDebugPrinter::println(const char *s) {
-  print(s);
-  print("\n");
+  print(s, true);
 }
 
 void NetworkDebugPrinter::println(const __FlashStringHelper* s) {
-  print(s);
-  print("\n");
+  print(s, true);
 }
 
 void NetworkDebugPrinter::println(String s) {
-  print(s);
-  print("\n");
+  print(s.c_str(), true);
 }
 
 void NetworkDebugPrinter::println(unsigned int n) {
-  print(n);
-  print("\n");
+  print(n, true);
 }
 
 void NetworkDebugPrinter::printf(const char *fmt...) {

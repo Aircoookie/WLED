@@ -6,13 +6,12 @@
 
 class NetworkDebugPrinter {
 private:
-    WiFiUDP debugUdp;
-    void printchar(char c);
+    IPAddress debugPrintHostIP;
 public:
-    void print(const char *s);
-    void print(const __FlashStringHelper* s);
+    void print(const char *s, bool newline = false);
+    void print(const __FlashStringHelper* s, bool newline = false);
     void print(String s);
-    void print(unsigned int n);
+    void print(unsigned int n, bool newline = false);
     void println();
     void println(const char *s);
     void println(const __FlashStringHelper* s);
