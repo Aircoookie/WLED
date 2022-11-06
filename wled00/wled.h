@@ -95,6 +95,10 @@
   #include "my_config.h"
 #endif
 
+#ifdef WLED_DEBUG_HOST
+#include "net_debug.h"
+#endif
+
 #include <ESPAsyncWebServer.h>
 #ifdef WLED_ADD_EEPROM_SUPPORT
   #include <EEPROM.h>
@@ -669,13 +673,27 @@ WLED_GLOBAL StaticJsonDocument<JSON_BUFFER_SIZE> doc;
 WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
 
 // enable additional debug output
+#if defined(WLED_DEBUG_HOST)
+  // On the host side, use netcat to receive the log statements: nc -l 7868 -u
+  // use -D WLED_DEBUG_HOST='"192.168.xxx.xxx"' or FQDN within quotes
+  #define DEBUGOUT NetDebug
+  WLED_GLOBAL char netDebugPrintHost[33] _INIT(WLED_DEBUG_HOST);
+  #if defined(WLED_DEBUG_NET_PORT)
+  WLED_GLOBAL int netDebugPrintPort _INIT(WLED_DEBUG_PORT);
+  #else
+  WLED_GLOBAL int netDebugPrintPort _INIT(7868);
+  #endif
+#else
+  #define DEBUGOUT Serial
+#endif
+
 #ifdef WLED_DEBUG
   #ifndef ESP8266
   #include <rom/rtc.h>
   #endif
-  #define DEBUG_PRINT(x) Serial.print(x)
-  #define DEBUG_PRINTLN(x) Serial.println(x)
-  #define DEBUG_PRINTF(x...) Serial.printf(x)
+  #define DEBUG_PRINT(x) DEBUGOUT.print(x)
+  #define DEBUG_PRINTLN(x) DEBUGOUT.println(x)
+  #define DEBUG_PRINTF(x...) DEBUGOUT.printf(x)
 #else
   #define DEBUG_PRINT(x)
   #define DEBUG_PRINTLN(x)
@@ -683,9 +701,9 @@ WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
 #endif
 
 #ifdef WLED_DEBUG_FS
-  #define DEBUGFS_PRINT(x) Serial.print(x)
-  #define DEBUGFS_PRINTLN(x) Serial.println(x)
-  #define DEBUGFS_PRINTF(x...) Serial.printf(x)
+  #define DEBUGFS_PRINT(x) DEBUGOUT.print(x)
+  #define DEBUGFS_PRINTLN(x) DEBUGOUT.println(x)
+  #define DEBUGFS_PRINTF(x...) DEBUGOUT.printf(x)
 #else
   #define DEBUGFS_PRINT(x)
   #define DEBUGFS_PRINTLN(x)
