@@ -23,44 +23,7 @@ You can also use usermod's off timer instead of sensor's. In such case rotate th
 
 ## Usermod installation
 
-1. Copy the file `usermod_PIR_sensor_switch.h` to the `wled00` directory.
-2. Register the usermod by adding `#include "usermod_PIR_sensor_switch.h"` in the top and `registerUsermod(new PIRsensorSwitch());` in the bottom of `usermods_list.cpp`.
-
-Example **usermods_list.cpp**:
-
-```cpp
-#include "wled.h"
-/*
- * Register your v2 usermods here!
- *   (for v1 usermods using just usermod.cpp, you can ignore this file)
- */
-
-/*
- * Add/uncomment your usermod filename here (and once more below)
- * || || ||
- * \/ \/ \/
- */
-//#include "usermod_v2_example.h"
-//#include "usermod_temperature.h"
-//#include "usermod_v2_empty.h"
-#include "usermod_PIR_sensor_switch.h"
-
-void registerUsermods()
-{
-  /*
-   * Add your usermod class name here
-   * || || ||
-   * \/ \/ \/
-   */
-  //usermods.add(new MyExampleUsermod());
-  //usermods.add(new UsermodTemperature());
-  //usermods.add(new UsermodRenameMe());
-  usermods.add(new PIRsensorSwitch());
-
-}
-```
-
-**NOTE:** Usermod has been included in master branch of WLED so it can be compiled in directly just by defining `-D USERMOD_PIRSWITCH` and optionaly `-D PIR_SENSOR_PIN=16` to override default pin.
+**NOTE:** Usermod has been included in master branch of WLED so it can be compiled in directly just by defining `-D USERMOD_PIRSWITCH` and optionaly `-D PIR_SENSOR_PIN=16` to override default pin. You can also change the default off tim by adding `-D PIR_SENSOR_OFF_SEC=30`.
 
 ## API to enable/disable the PIR sensor from outside. For example from another usermod.
 
@@ -122,3 +85,8 @@ Have fun - @gegu & @blazoncek
 2021-11
 * Added information about dynamic configuration options
 * Added option to temporary enable/disble usermod from WLED UI (Info dialog)
+
+2022-11
+* Added compile time option for off timer.
+* Added Home Assistant autodiscovery MQTT broadcast.
+* Updated info on compiling.

@@ -11,6 +11,11 @@
   #endif
 #endif
 
+#ifndef PIR_SENSOR_OFF_SEC
+  #define PIR_SENSOR_OFF_SEC 600
+#endif
+
+
 /*
  * This usermod handles PIR sensor states.
  * The strip will be switched on and the off timer will be resetted when the sensor goes HIGH. 
@@ -53,7 +58,7 @@ private:
   // configurable parameters
   bool enabled              = true;           // PIR sensor enabled
   int8_t PIRsensorPin       = PIR_SENSOR_PIN; // PIR sensor pin
-  uint32_t m_switchOffDelay = 600000;         // delay before switch off after the sensor state goes LOW (10min)
+  uint32_t m_switchOffDelay = PIR_SENSOR_OFF_SEC*1000;  // delay before switch off after the sensor state goes LOW (10min)
   uint8_t m_onPreset        = 0;              // on preset
   uint8_t m_offPreset       = 0;              // off preset
   bool m_nightTimeOnly      = false;          // flag to indicate that PIR sensor should activate WLED during nighttime only
