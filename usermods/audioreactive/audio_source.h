@@ -494,11 +494,12 @@ class I2SAdcSource : public I2SSource {
             //return;
         }
       #else
-        err = i2s_adc_disable(I2S_NUM_0);
-		    //err = i2s_stop(I2S_NUM_0);
-        if (err != ESP_OK) {
-            DEBUGSR_PRINTF("Failed to initially disable i2s adc: %d\n", err);
-        }
+        // bugfix: do not disable ADC initially - its already disabled after driver install.
+        //err = i2s_adc_disable(I2S_NUM_0);
+		    // //err = i2s_stop(I2S_NUM_0);
+        //if (err != ESP_OK) {
+        //    DEBUGSR_PRINTF("Failed to initially disable i2s adc: %d\n", err);
+        //}
       #endif
 
       _initialized = true;
