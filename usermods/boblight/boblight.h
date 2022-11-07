@@ -12,7 +12,6 @@
   #define BOB_PORT 19333       // Default boblightd port
 #endif
 
-//class name. Use something descriptive and leave the ": public Usermod" part :)
 class BobLightUsermod : public Usermod {
   typedef struct _LIGHT {
     char lightname[5];
@@ -366,7 +365,7 @@ class BobLightUsermod : public Usermod {
       //strip.setPixelColor(0, RGBW32(0,0,0,0)) // set the first pixel to black
     }
 
-    uint16_t getId() { return USERMOD_ID_EXAMPLE; }
+    uint16_t getId() { return USERMOD_ID_BOBLIGHT; }
 
     void BobSync()  { yield(); } // allow other tasks
     void BobClear() { for (size_t i=0; i<numLights; i++) setRealtimePixel(i, 0, 0, 0, 0); }
