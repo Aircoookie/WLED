@@ -462,6 +462,9 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("IR"),irPin);
     sappend('v',SET_F("IT"),irEnabled);
     sappend('c',SET_F("MSO"),!irApplyToAllSelected);
+    #if !defined(WLED_DISABLE_INFRARED)
+    oappend(SET_F("hideNoIR();"));  // hide "not compiled in" message
+    #endif
   }
 
   if (subPage == 3)

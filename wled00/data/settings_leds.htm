@@ -12,6 +12,7 @@
     function H(){window.open("https://kno.wled.ge/features/settings/#led-settings");}
 		function B(){window.open("/settings","_self");}
     function gId(n){return d.getElementById(n);}
+    function hideNoIR(){gId("irOnOff2").style.display="none";}
     function off(n){d.getElementsByName(n)[0].value = -1;}
     // https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
     function loadJS(FILE_URL, async = true) {
@@ -618,6 +619,9 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
     <hr style="width:260px">
     <div id="btns"></div>
     Touch threshold: <input type="number" class="s" min="0" max="100" name="TT" required><br>
+    <div id="irOnOff2">
+      <em style="color:darkorange">This firmware build does not include IR Remote support. <br></em>
+    </div>    
     IR GPIO: <input type="number" min="-1" max="48" name="IR" onchange="UI()" class="xs"><select name="IT" onchange="UI()">
     <option value=0>Remote disabled</option>
     <option value=1>24-key RGB</option>
