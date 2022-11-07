@@ -202,7 +202,7 @@ class BobLightUsermod : public Usermod {
 
     void loop() {
       if (!enabled || strip.isUpdating()) return;
-      if (millis() - lastTime > 1000) {
+      if (millis() - lastTime > 10) {
         lastTime = millis();
         pollBob();
       }
@@ -226,7 +226,7 @@ class BobLightUsermod : public Usermod {
       //    return true;
       //  }
       //}
-      //return false;
+      return false;
     }
 
     /**
@@ -300,10 +300,9 @@ class BobLightUsermod : public Usermod {
     void addToConfig(JsonObject& root)
     {
       JsonObject umData = root.createNestedObject(FPSTR(_name));
-
+      umData[F("port")] = bobPort;
       int b=0,r=0,t=0,l=0;
       float pct=0;
-
       for ( int i=0; i<numLights; i++ ) {
         switch ( lights[i].lightname[0] ) {
           case 'b' : b++; if (!pct) pct = lights[i].vscan[1] - lights[i].vscan[0]; break;
@@ -312,11 +311,11 @@ class BobLightUsermod : public Usermod {
           case 'r' : r++; if (!pct) pct = lights[i].hscan[1] - lights[i].hscan[0]; break;
         }
       }
-      umData["top"]    = t;
-      umData["bottom"] = b;
-      umData["left"]   = l;
-      umData["right"]  = r;
-      umData["pct"]    = pct;
+      umData[F("top")]    = t;
+      umData[F("bottom")] = b;
+      umData[F("left")]   = l;
+      umData[F("right")]  = r;
+      umData[F("pct")]    = (int)roundf(pct);
     }
 
     bool readFromConfig(JsonObject& root)
@@ -331,11 +330,13 @@ class BobLightUsermod : public Usermod {
       uint16_t prevLights = numLights, totalLights;
       byte bottom, left, top, right, pct;
 
-      configComplete &= getJsonValue(umData["bottom"], bottom,    16);  
-      configComplete &= getJsonValue(umData["top"],    top,       16);
-      configComplete &= getJsonValue(umData["left"],   left,       9);
-      configComplete &= getJsonValue(umData["right"],  right,      9);
-      configComplete &= getJsonValue(umData["pct"],    pct,        5); // Depth of scan [%]
+      configComplete &= getJsonValue(umData[F("port")],   bobPort);
+      configComplete &= getJsonValue(umData[F("bottom")], bottom,    16);
+      configComplete &= getJsonValue(umData[F("top")],    top,       16);
+      configComplete &= getJsonValue(umData[F("left")],   left,       9);
+      configComplete &= getJsonValue(umData[F("right")],  right,      9);
+      configComplete &= getJsonValue(umData[F("pct")],    pct,        5); // Depth of scan [%]
+      pct = MIN(50,MAX(1,pct));
 
       totalLights = bottom + left + top + right;
       if ( totalLights > strip.getLengthTotal() ) {
@@ -345,7 +346,7 @@ class BobLightUsermod : public Usermod {
         left = right = totalLights*9/50;
       }
       if (initDone && prevLights != totalLights) {
-        delete[] lights;
+        if (lights) delete[] lights;
         lights = new light_t[totalLights];
       } else if (!lights) {
         lights = new light_t[totalLights];
@@ -367,14 +368,12 @@ class BobLightUsermod : public Usermod {
 
     uint16_t getId() { return USERMOD_ID_BOBLIGHT; }
 
-    void BobSync()  { yield(); } // allow other tasks
+    void BobSync()  { yield(); } // allow other tasks, should also be used to force pixel redraw (not with WLED)
     void BobClear() { for (size_t i=0; i<numLights; i++) setRealtimePixel(i, 0, 0, 0, 0); }
 
     // main boblight handling
     void pollBob() {
       
-      return;
-
       //check if there are any new clients
       if (bob && bob->hasClient())
       {
@@ -388,11 +387,14 @@ class BobLightUsermod : public Usermod {
         WiFiClient bobClient = bob->available();
         bobClient.stop();
         BobClear();
+        exitRealtime();
       }
       
       //check clients for data
       if (bobClient && bobClient.connected())
       {
+        realtimeLock(realtimeTimeoutMs); // lock strip as we have a client connected
+
         if (bobClient.available())
         {
           //get data from the client
