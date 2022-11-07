@@ -138,28 +138,33 @@ class AudioSource {
     virtual I2S_datatype postProcessSample(I2S_datatype sample_in) {return(sample_in);}   // default method can be overriden by instances (ADC) that need sample postprocessing
 
     // Private constructor, to make sure it is not callable except from derived classes
-    AudioSource(SRate_t sampleRate, int blockSize) :
+    AudioSource(SRate_t sampleRate, int blockSize, bool i2sMaster = true, float sampleScale = 1.0f) :
       _sampleRate(sampleRate),
       _blockSize(blockSize),
-      _initialized(false)
+      _initialized(false),
+      _i2sMaster(i2sMaster),
+      _sampleScale(sampleScale)
     {};
 
     SRate_t _sampleRate;            // Microphone sampling rate
     int _blockSize;                 // I2S block size
     bool _initialized;              // Gets set to true if initialization is successful
+    bool _i2sMaster;                // when false, ESP32 will be in I2S SLAVE mode (for devices that only operate in MASTER mode). Only workds in newer IDF >= 4.4.x
+    float _sampleScale;             // pre-scaling factor for I2S samples
 };
 
 /* Basic I2S microphone source
    All functions are marked virtual, so derived classes can replace them
+   WARNING: i2sMaster = false is experimental, and most likely will not work
 */
 class I2SSource : public AudioSource {
   public:
-    I2SSource(SRate_t sampleRate, int blockSize) :
-      AudioSource(sampleRate, blockSize) {
+    I2SSource(SRate_t sampleRate, int blockSize, bool i2sMaster=true, float sampleScale = 1.0f) :
+      AudioSource(sampleRate, blockSize, i2sMaster, sampleScale) {
       _config = {
-        .mode = i2s_mode_t(I2S_MODE_MASTER | I2S_MODE_RX),
+        .mode = i2sMaster ? i2s_mode_t(I2S_MODE_MASTER | I2S_MODE_RX) : i2s_mode_t(I2S_MODE_SLAVE | I2S_MODE_RX),
         .sample_rate = _sampleRate,
-        .bits_per_sample = I2S_SAMPLE_RESOLUTION,
+        .bits_per_sample = I2S_SAMPLE_RESOLUTION,  // slave mode: may help to set this to 96000, as the other side (master) controls sample rates
         .channel_format = I2S_MIC_CHANNEL,
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
         .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_STAND_I2S),
@@ -168,6 +173,7 @@ class I2SSource : public AudioSource {
         .dma_buf_count = 8,
         .dma_buf_len = _blockSize,
         .use_apll = 0,
+        //.fixed_mclk = 0,
         .bits_per_chan = I2S_data_size,
 #else
         .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB),
@@ -203,6 +209,21 @@ class I2SSource : public AudioSource {
         #endif
       }
 
+      if (mclkPin != I2S_PIN_NO_CHANGE) {
+        _config.use_apll = true; // experimental - use aPLL clock source to improve sampling quality, and to avoid glitches.
+        // //_config.fixed_mclk = 512 * _sampleRate;
+        // //_config.fixed_mclk = 256 * _sampleRate;
+      }
+      #if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32S3) && !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
+      if (ESP.getChipRevision() == 0) _config.use_apll = false; // APLL is broken on ESP32 revision 0
+      #endif
+
+      if (_i2sMaster == false) {
+          DEBUG_PRINTLN(F("AR: Warning - i2S SLAVE mode is experimental!"));        
+        if ((_config.mode & I2S_MODE_MASTER) != 0) 
+          DEBUG_PRINTLN("AR: (oops) I2S SLAVE mode requested but not configured!");
+      }
+
       // Reserve the master clock pin if provided
       _mclkPin = mclkPin;
       if (mclkPin != I2S_PIN_NO_CHANGE) {
@@ -222,13 +243,20 @@ class I2SSource : public AudioSource {
 
       esp_err_t err = i2s_driver_install(I2S_NUM_0, &_config, 0, nullptr);
       if (err != ESP_OK) {
-        DEBUGSR_PRINTF("Failed to install i2s driver: %d\n", err);
+        DEBUGSR_PRINTF("AR: Failed to install i2s driver: %d\n", err);
         return;
       }
 
+      DEBUGSR_PRINTF("AR: I2S#0 driver %s aPLL; fixed_mclk=%d.\n", _config.use_apll? "uses":"without", _config.fixed_mclk);
+      DEBUGSR_PRINTF("AR: Sample scaling factor = %6.4f\n", _sampleScale);
+      if(_config.mode & I2S_MODE_MASTER) 
+        DEBUGSR_PRINTLN(F("AR: I2S#0 driver installed in MASTER mode."));
+      else
+        DEBUGSR_PRINTLN(F("AR: I2S#0 driver installed in SLAVE mode."));
+
       err = i2s_set_pin(I2S_NUM_0, &_pinConfig);
       if (err != ESP_OK) {
-        DEBUGSR_PRINTF("Failed to set i2s pin config: %d\n", err);
+        DEBUGSR_PRINTF("AR: Failed to set i2s pin config: %d\n", err);
         i2s_driver_uninstall(I2S_NUM_0);  // uninstall already-installed driver
         return;
       }
@@ -236,7 +264,7 @@ class I2SSource : public AudioSource {
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
       err = i2s_set_clk(I2S_NUM_0, _sampleRate, I2S_SAMPLE_RESOLUTION, I2S_CHANNEL_MONO);  // set bit clocks. Also takes care of MCLK routing if needed.
       if (err != ESP_OK) {
-        DEBUGSR_PRINTF("Failed to configure i2s clocks: %d\n", err);
+        DEBUGSR_PRINTF("AR: Failed to configure i2s clocks: %d\n", err);
         i2s_driver_uninstall(I2S_NUM_0);  // uninstall already-installed driver
         return;
       }
@@ -288,8 +316,7 @@ class I2SSource : public AudioSource {
               currSample = (float) newSamples[i];                 // 16bit input -> use as-is
 #endif
           buffer[i] = currSample;
-          //buffer[i] *= 0.6f;                                    // (ICS-43434): compensate for higher sensitivity (reduce by 2db)
-
+          buffer[i] *= _sampleScale;                              // scale samples
         }
       }
     }

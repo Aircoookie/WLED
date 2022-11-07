@@ -662,7 +662,7 @@ class AudioReactive : public Usermod {
       Serial.print("micReal:");     Serial.print(micDataReal); Serial.print("\t");
       Serial.print("volumeSmth:");  Serial.print(volumeSmth);  Serial.print("\t");
       //Serial.print("volumeRaw:");   Serial.print(volumeRaw);   Serial.print("\t");
-      //Serial.print("DC_Level:");    Serial.print(micLev);      Serial.print("\t");
+      Serial.print("DC_Level:");    Serial.print(micLev);      Serial.print("\t");
       //Serial.print("sampleAgc:");   Serial.print(sampleAgc);   Serial.print("\t");
       //Serial.print("sampleAvg:");   Serial.print(sampleAvg);   Serial.print("\t");
       //Serial.print("sampleReal:");  Serial.print(sampleReal);  Serial.print("\t");
@@ -1107,8 +1107,9 @@ class AudioReactive : public Usermod {
       }
 
       // Reset I2S peripheral for good measure
-      i2s_driver_uninstall(I2S_NUM_0);
+      i2s_driver_uninstall(I2S_NUM_0);   // E (696) I2S: i2s_driver_uninstall(2006): I2S port 0 has not installed
       #if !defined(CONFIG_IDF_TARGET_ESP32C3)
+        delay(100);
         periph_module_reset(PERIPH_I2S0_MODULE);   // not possible on -C3
       #endif
       delay(100);         // Give that poor microphone some time to setup.
@@ -1140,7 +1141,8 @@ class AudioReactive : public Usermod {
           break;
         case 4:
           DEBUGSR_PRINT(F("AR: Generic I2S Microphone with Master Clock - ")); DEBUGSR_PRINTLN(F(I2S_MIC_CHANNEL_TEXT));
-          audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE);
+          audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, true, 1.0f/16.0f);
+          //audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, false, 1.0f/16.0f);   // I2S SLAVE mode - does not work, unfortunately
           delay(100);
           if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin, i2sckPin, mclkPin);
           break;
