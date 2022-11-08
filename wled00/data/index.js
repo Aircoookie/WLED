@@ -262,7 +262,7 @@ function onLoad()
 	d.addEventListener("visibilitychange", handleVisibilityChange, false);
 	size();
 	gId("cv").style.opacity=0;
-	if (localStorage.getItem('pcm') == "true") togglePcMode(true);
+	if (localStorage.getItem('pcm') == "true" || (!/Mobi/.test(navigator.userAgent) && localStorage.getItem('pcm') == null)) togglePcMode(true);
 	var sls = d.querySelectorAll('input[type="range"]');
 	for (var sl of sls) {
 		sl.addEventListener('touchstart', toggleBubble);
@@ -979,6 +979,9 @@ function btype(b)
 {
 	switch (b) {
 		case 32: return "ESP32";
+		case 33: return "ESP32-S2";
+		case 34: return "ESP32-S3";
+		case 35: return "ESP32-C3";
 		case 82: return "ESP8266";
 	}
 	return "?";

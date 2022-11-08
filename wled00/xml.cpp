@@ -719,7 +719,13 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(SET_F("_"));
     oappend(releaseString);
     oappend(SET_F(".bin"));
-    #ifdef ARDUINO_ARCH_ESP32
+    #if defined(CONFIG_IDF_TARGET_ESP32C3)
+    oappend(SET_F("<br>(ESP32-C3"));
+    #elif defined(CONFIG_IDF_TARGET_ESP32S3)
+    oappend(SET_F("<br>(ESP32-S3"));
+    #elif defined(CONFIG_IDF_TARGET_ESP32S2)
+    oappend(SET_F("<br>(ESP32-S2"));
+    #elif defined(ARDUINO_ARCH_ESP32)
     oappend(SET_F("<br>(ESP32"));
     #else
     oappend(SET_F("<br>(ESP8266"));

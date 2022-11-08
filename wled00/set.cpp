@@ -947,11 +947,13 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     } else {
       nightlightActive = true;
       if (!aNlDef) nightlightDelayMins = getNumVal(&req, pos);
+      else         nightlightDelayMins = nightlightDelayMinsDefault;
       nightlightStartTime = millis();
     }
   } else if (aNlDef)
   {
     nightlightActive = true;
+    nightlightDelayMins = nightlightDelayMinsDefault;
     nightlightStartTime = millis();
   }
 
