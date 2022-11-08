@@ -395,8 +395,8 @@ class BobLightUsermod : public Usermod {
       {
         realtimeLock(realtimeTimeoutMs); // lock strip as we have a client connected
 
-        if (bobClient.available())
-        {
+//        if (bobClient.available())
+//        {
           //get data from the client
           while (bobClient.available())
           {
@@ -484,7 +484,7 @@ class BobLightUsermod : public Usermod {
               BobClear();
             }
           }
-        }
+//        }
       }
     }
 
