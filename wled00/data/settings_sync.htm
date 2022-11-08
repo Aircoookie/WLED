@@ -12,6 +12,7 @@
     return d.getElementById(s);
   }
 
+  function hideNoDMX(){gId("dmxOnOff2").style.display="none";}
   function hideALEXA(){gId("aleOnOff").style.display="none";}
   function hideNoALEXA(){gId("aleOnOff2").style.display="none";}
   function hideBLYNK(){gId("blyOnOff").style.display="none";}
@@ -20,6 +21,7 @@
   function hideNoMQTT(){gId("mqtOnOff2").style.display="none";}
   function hideHUE(){gId("hueOnOff").style.display="none";}
   function hideNoHUE(){gId("hueOnOff2").style.display="none";}
+  function hideNoLOX(){gId("loxOnOff2").style.display="none";}
 
   function H(){window.open("https://kno.wled.ge/interfaces/udp-notifier/");}
   function B(){window.open("/settings","_self");}
@@ -173,6 +175,9 @@ Timeout: <input name="ET" type="number" min="1" max="65000" required> ms<br>
 Force max brightness: <input type="checkbox" name="FB"><br>
 Disable realtime gamma correction: <input type="checkbox" name="RG"><br>
 Realtime LED offset: <input name="WO" type="number" min="-255" max="255" required>
+<div id="dmxOnOff2">
+  <br><em style="color:darkorange">This firmware build does not include DMX output support. <br></em>
+</div>
 <h3>Alexa Voice Assistant</h3>
 <div id="aleOnOff2">
   <em style="color:darkorange">This firmware build does not include Alexa support. <br></em>
@@ -231,6 +236,9 @@ Hue Bridge IP:<br>
 (when first connecting)<br>
 </div>
 Hue status: <span class="sip"> Disabled in this build </span>
+<div id="loxOnOff2">
+  <br><em style="color:darkorange">This firmware build does not include Loxone Lighting support. <br></em>
+</div>
 <h3>Serial</h3>
 Baud rate:
 <select name=BD>

@@ -503,6 +503,9 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("ES"),e131SkipOutOfSequence);
     sappend('c',SET_F("EM"),e131Multicast);
     sappend('v',SET_F("EU"),e131Universe);
+#ifdef WLED_ENABLE_DMX
+    oappend(SET_F("hideNoDMX();"));  // hide "not compiled in" message    
+#endif    
     sappend('v',SET_F("DA"),DMXAddress);
     sappend('v',SET_F("DM"),DMXMode);
     sappend('v',SET_F("ET"),realtimeTimeoutMs);
@@ -576,6 +579,10 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(SET_F("hideHUE();"));    // hide Hue Sync settings if not compiled in
     #endif
     sappend('v',SET_F("BD"),serialBaud);
+
+#ifdef WLED_ENABLE_LOXONE
+    oappend(SET_F("hideNoLOX();"));  // hide "not compiled in" message    
+#endif    
   }
 
   if (subPage == 5)
