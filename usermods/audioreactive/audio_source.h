@@ -76,11 +76,15 @@
 #ifdef I2S_USE_RIGHT_CHANNEL
 #define I2S_MIC_CHANNEL I2S_CHANNEL_FMT_ONLY_LEFT
 #define I2S_MIC_CHANNEL_TEXT "right channel only (work-around swapped channel bug in IDF 4.4)."
+#define I2S_PDM_MIC_CHANNEL I2S_CHANNEL_FMT_ONLY_RIGHT
+#define I2S_PDM_MIC_CHANNEL_TEXT "right channel only"
 #else
 //#define I2S_MIC_CHANNEL I2S_CHANNEL_FMT_ALL_LEFT
 //#define I2S_MIC_CHANNEL I2S_CHANNEL_FMT_RIGHT_LEFT
 #define I2S_MIC_CHANNEL I2S_CHANNEL_FMT_ONLY_RIGHT
 #define I2S_MIC_CHANNEL_TEXT "left channel only (work-around swapped channel bug in IDF 4.4)."
+#define I2S_PDM_MIC_CHANNEL I2S_CHANNEL_FMT_ONLY_LEFT
+#define I2S_PDM_MIC_CHANNEL_TEXT "left channel only."
 #endif
 
 #else
@@ -92,6 +96,9 @@
 #define I2S_MIC_CHANNEL I2S_CHANNEL_FMT_ONLY_LEFT
 #define I2S_MIC_CHANNEL_TEXT "left channel only."
 #endif
+#define I2S_PDM_MIC_CHANNEL I2S_MIC_CHANNEL
+#define I2S_PDM_MIC_CHANNEL_TEXT I2S_MIC_CHANNEL_TEXT
+
 #endif
 
 
@@ -212,7 +219,7 @@ class I2SSource : public AudioSource {
         // data line, to make it simpler to debug, use the WS pin as CLK and SD
         // pin as DATA
         _config.mode = i2s_mode_t(I2S_MODE_MASTER | I2S_MODE_RX | I2S_MODE_PDM); // Change mode to pdm if clock pin not provided. PDM is not supported on ESP32-S2. PDM RX not supported on ESP32-C3
-        _config.channel_format =I2S_CHANNEL_FMT_ONLY_LEFT;                       // seems that PDM mono mode always uses left channel.
+        _config.channel_format =I2S_PDM_MIC_CHANNEL;                             // seems that PDM mono mode always uses left channel.
         //_config.use_apll = true;                                                 // experimental - use aPLL clock source to improve sampling quality
         //_config.bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT;                     // not needed
         #endif

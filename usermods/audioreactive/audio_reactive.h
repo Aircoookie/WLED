@@ -830,13 +830,14 @@ class AudioReactive : public Usermod {
       float    sampleAdj;           // Gain adjusted sample value
       float    tmpSample;           // An interim sample variable used for calculatioins.
       const float weighting = 0.2f; // Exponential filter weighting. Will be adjustable in a future release.
+      const float weighting2 = 0.073f; // Exponential filter weighting, for rising signal (a bit more robust against spikes)
       const int   AGC_preset = (soundAgc > 0)? (soundAgc-1): 0; // make sure the _compiler_ knows this value will not change while we are inside the function
 
       #ifdef WLED_DISABLE_SOUND
         micIn = inoise8(millis(), millis());          // Simulated analog read
         micDataReal = micIn;
       #else
-        #ifdef ESP32
+        #ifdef ARDUINO_ARCH_ESP32
         micIn = int(micDataReal);      // micDataSm = ((micData * 3) + micData)/4;
         #else
         // this is the minimal code for reading analog mic input on 8266.
@@ -860,9 +861,15 @@ class AudioReactive : public Usermod {
       micIn -= micLev;                                  // Let's center it to 0 now
       // Using an exponential filter to smooth out the signal. We'll add controls for this in a future release.
       float micInNoDC = fabsf(micDataReal - micLev);
-      expAdjF = (weighting * micInNoDC + (1.0-weighting) * expAdjF);
+
+      if ((micInNoDC > expAdjF) && (expAdjF > soundSquelch))               // MicIn rising, and above squelch threshold?
+        expAdjF = (weighting2 * micInNoDC + (1.0f-weighting2) * expAdjF);  // rise slower
+      else
+        expAdjF = (weighting * micInNoDC + (1.0f-weighting) * expAdjF);    // fall faster
+
       expAdjF = fabsf(expAdjF);                         // Now (!) take the absolute value
 
+      //expAdjF = (micInNoDC <= soundSquelch) ? 0: expAdjF; // simple noise gate - experimental
       expAdjF = (expAdjF <= soundSquelch) ? 0: expAdjF; // simple noise gate
       if ((soundSquelch == 0) && (expAdjF < 0.25f)) expAdjF = 0; // do something meaningfull when "squelch = 0"
 
@@ -1148,7 +1155,7 @@ class AudioReactive : public Usermod {
           break;
         #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
         case 5:
-          DEBUGSR_PRINT(F("AR: I2S PDM Microphone - ")); DEBUGSR_PRINTLN(F(I2S_MIC_CHANNEL_TEXT));
+          DEBUGSR_PRINT(F("AR: I2S PDM Microphone - ")); DEBUGSR_PRINTLN(F(I2S_PDM_MIC_CHANNEL_TEXT));
           audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, true, 1.0f/4.0f);
           delay(100);
           if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin);
