@@ -661,10 +661,10 @@ function populateInfo(i)
 	if (i.ver.includes("-bl")) vcn = "Supāku";
 	if (i.cn) vcn = i.cn;
 
-	//WLEDSR: add total heap and total PSRAM, and build number
+	//WLEDSR: add total heap and total PSRAM, and build number, add bin name
 	if (i.ver.includes(".14.1-")) vcn = "Sitting Ducks"; // easter egg
 	if ((i.ver.includes("14.0."))&&(i.ver.includes("_MM"))) vcn = "Lupo";
-	cn += `v${i.ver} &nbsp;<i>"${vcn}"</i><p><em>build ${i.vid}</em></p><table>
+	cn += `v${i.ver} &nbsp;<i>"${vcn}"</i><p>(WLEDMM_${i.ver}_${i.rel}.bin)</p><p><em>build ${i.vid}</em></p><table>
 ${urows}
 ${urows===""?'':'<tr><td colspan=2><hr style="height:1px;border-width:0;color:gray;background-color:gray"></td></tr>'}
 ${inforow("Build",i.vid)}
