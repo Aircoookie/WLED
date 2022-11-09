@@ -317,7 +317,7 @@
 #define FX_MODE_WAVESINS               184
 #define FX_MODE_ROCKTAVES              185
 #define FX_MODE_2DAKEMI                186
-#define FX_MODE_CUSTOMEFFECT           187 //WLEDSR Custom Effects
+#define FX_MODE_CUSTOMEFFECT           187 //WLEDMM Custom Effects
 
 #define MODE_COUNT                     188
 
@@ -326,9 +326,9 @@ typedef enum mapping1D2D {
   M12_pBar = 1,
   M12_pArc = 2,
   M12_pCorner = 3,
-  M12_jMap = 4, //WLEDSR jMap
-  M12_sCircle = 5, //WLEDSR jMap
-  M12_sBlock = 6 //WLEDSR jMap
+  M12_jMap = 4, //WLEDMM jMap
+  M12_sCircle = 5, //WLEDMM jMap
+  M12_sBlock = 6 //WLEDMM jMap
 } mapping1D2D_t;
 
 // segment, 72 bytes
@@ -382,7 +382,7 @@ typedef struct Segment {
     byte* data;
     CRGB* leds;
     static CRGB *_globalLeds;
-    void *jMap; //WLEDSR jMap
+    void *jMap; //WLEDMM jMap
 
   private:
     union {
@@ -473,7 +473,7 @@ typedef struct Segment {
     }
 
     Segment(uint16_t sStartX, uint16_t sStopX, uint16_t sStartY, uint16_t sStopY) : Segment(sStartX, sStopX) {
-    Serial.println("Segment"); //WLEDSR jMap
+    Serial.println("Segment"); //WLEDMM jMap
       startY = sStartY;
       stopY  = sStopY;
     }
@@ -576,8 +576,8 @@ typedef struct Segment {
     uint16_t virtualWidth(void)  const;
     uint16_t virtualHeight(void) const;
     uint16_t nrOfVStrips(void) const;
-    void createjMap(); //WLEDSR jMap
-    void deletejMap(); //WLEDSR jMap
+    void createjMap(); //WLEDMM jMap
+    void deletejMap(); //WLEDMM jMap
   #ifndef WLED_DISABLE_2D
     uint16_t XY(uint16_t x, uint16_t y); // support function to get relative index within segment (for leds[])
     void setPixelColorXY(int x, int y, uint32_t c); // set relative pixel within segment with color

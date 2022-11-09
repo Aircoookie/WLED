@@ -719,8 +719,8 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == 9) // update
   {
-    //WLEDSR: show bin name
-    sappends('m',SET_F("(\"sip\")[0]"),(char*)F("WLED_"));
+    //WLEDMM: show bin name
+    sappends('m',SET_F("(\"sip\")[0]"),(char*)F("WLEDMM_"));
     olen -= 2; //delete ";
     oappend(versionString);
     oappend(SET_F("_"));

@@ -1083,7 +1083,7 @@ uint16_t mode_running_random(void) {
 
   uint8_t z = it % zoneSize;
   bool nzone = (!z && it != SEGENV.aux1);
-  for (int i=SEGLEN-1; i >= 0; i--) {  // WLEDSR bugfix
+  for (int i=SEGLEN-1; i >= 0; i--) {  // WLEDMM bugfix
     if (nzone || z >= zoneSize) {
       uint8_t lastrand = PRNG16 >> 8;
       int16_t diff = 0;
@@ -1724,7 +1724,7 @@ uint16_t mode_random_chase(void)
   uint32_t color = SEGENV.step;
   random16_set_seed(SEGENV.aux0);
 
-  for (int i = SEGLEN -1; i >= 0; i--) {  // WLEDSR bugfix
+  for (int i = SEGLEN -1; i >= 0; i--) {  // WLEDMM bugfix
     uint8_t r = random8(6) != 0 ? (color >> 16 & 0xFF) : random8();
     uint8_t g = random8(6) != 0 ? (color >> 8  & 0xFF) : random8();
     uint8_t b = random8(6) != 0 ? (color       & 0xFF) : random8();
@@ -5347,7 +5347,7 @@ static const char _data_FX_MODE_2DPOLARLIGHTS[] PROGMEM = "Polar Lights@Speed,Sc
 uint16_t mode_2DPulser(void) {                       // By: ldirko   https://editor.soulmatelights.com/gallery/878-pulse-test , modifed by: Andrew Tuline
   if (!strip.isMatrix) return mode_static(); // not a 2D set-up
 
-  const uint16_t cols = SEGMENT.virtualWidth();  // WLEDSR bugfix
+  const uint16_t cols = SEGMENT.virtualWidth();  // WLEDMM bugfix
   const uint16_t rows = SEGMENT.virtualHeight();
 
   if (SEGENV.call == 0) {
@@ -5358,7 +5358,7 @@ uint16_t mode_2DPulser(void) {                       // By: ldirko   https://edi
   SEGMENT.fadeToBlackBy(8 - (SEGMENT.intensity>>5));
 
   uint32_t a = strip.now / (18 - SEGMENT.speed / 16);
-  uint16_t x = (a / 14) % cols;                  // WLEDSR bugfix
+  uint16_t x = (a / 14) % cols;                  // WLEDMM bugfix
   uint16_t y = map((sin8(a * 5) + sin8(a * 4) + sin8(a * 2)), 0, 765, rows-1, 0);
   SEGMENT.setPixelColorXY(x, y, ColorFromPalette(SEGPALETTE, map(y, 0, rows-1, 0, 255), 255, LINEARBLEND));
 

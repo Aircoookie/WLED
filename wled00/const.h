@@ -96,7 +96,7 @@
 #define USERMOD_ID_ANALOG_CLOCK          33     //Usermod "Analog_Clock.h"
 #define USERMOD_ID_PING_PONG_CLOCK       34     //Usermod "usermod_v2_ping_pong_clock.h"
 #define USERMOD_ID_ADS1115               35     //Usermod "usermod_ads1115.h"
-//WLEDSR
+//WLEDMM
 #define USERMOD_ID_CUSTOMEFFECTS         36     //Usermod "usermod_v2_customeffects.h"
 #define USERMOD_ID_WEATHER               37     //Usermod "usermod_v2_weather.h"
 #define USERMOD_ID_GAMES                 38     //Usermod "usermod_v2_games.h"
@@ -431,7 +431,7 @@
   #define HW_PIN_CSSPI SS
 #endif
 
-// WLEDSR: IRAM_ATTR for 8266 causes error: section `.text1' will not fit in region `iram1_0_seg'
+// WLEDMM: IRAM_ATTR for 8266 causes error: section `.text1' will not fit in region `iram1_0_seg'
 //         error only in MM, not in upstream... tbd: find out why
 #ifdef ARDUINO_ARCH_ESP32
   #define IRAM_ATTR_YN IRAM_ATTR

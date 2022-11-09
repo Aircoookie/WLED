@@ -339,7 +339,7 @@ class FourLineDisplayUsermod : public Usermod {
         // isHW = true;
         if (isHW) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
         PinManagerPinType pins[2] = { {ioPin[0], true }, { ioPin[1], true } };
-        if (ioPin[0] < 0 || ioPin[1] < 0)  { type=NONE; return; }  //WLEDSR bugfix - ensure that "final" GPIO are valid
+        if (ioPin[0] < 0 || ioPin[1] < 0)  { type=NONE; return; }  //WLEDMM bugfix - ensure that "final" GPIO are valid
         if (!pinManager.allocateMultiplePins(pins, 2, po)) { type=NONE; return; }
       }
 

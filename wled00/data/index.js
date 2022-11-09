@@ -642,7 +642,7 @@ function populateInfo(i)
 	var cn="";
 	var heap = i.freeheap/1000;
 	heap = heap.toFixed(1);
-	var theap = (i.totalheap>0)?i.totalheap/1000:-1; theap = theap.toFixed(1); //WLEDSR - total heap is not available on 8266
+	var theap = (i.totalheap>0)?i.totalheap/1000:-1; theap = theap.toFixed(1); //WLEDMM - total heap is not available on 8266
 	var pwr = i.leds.pwr;
 	var pwru = "Not calculated";
 	if (pwr > 1000) {pwr /= 1000; pwr = pwr.toFixed((pwr > 10) ? 0 : 1); pwru = pwr + " A";}
@@ -661,10 +661,10 @@ function populateInfo(i)
 	if (i.ver.includes("-bl")) vcn = "Supāku";
 	if (i.cn) vcn = i.cn;
 
-	//WLEDSR: add total heap and total PSRAM, and build number
+	//WLEDMM: add total heap and total PSRAM, and build number, add bin name
 	if (i.ver.includes(".14.1-")) vcn = "Sitting Ducks"; // easter egg
 	if ((i.ver.includes("14.0."))&&(i.ver.includes("_MM"))) vcn = "Lupo";
-	cn += `v${i.ver} &nbsp;<i>"${vcn}"</i><p><em>build ${i.vid}</em></p><table>
+	cn += `v${i.ver} &nbsp;<i>"${vcn}"</i><p>(WLEDMM_${i.ver}_${i.rel}.bin)</p><p><em>build ${i.vid}</em></p><table>
 ${urows}
 ${urows===""?'':'<tr><td colspan=2><hr style="height:1px;border-width:0;color:gray;background-color:gray"></td></tr>'}
 ${inforow("Build",i.vid)}
@@ -672,7 +672,7 @@ ${inforow("Signal strength",i.wifi.signal +"% ("+ i.wifi.rssi, " dBm)")}
 ${inforow("Uptime",getRuntimeStr(i.uptime))}
 ${inforow("Estimated current",pwru)}
 ${inforow("Average FPS",i.leds.fps)}
-<!-- WLEDSR begin--> 
+<!-- WLEDMM begin--> 
 <tr><td colspan=2><hr style="height:1px;border-width:0;color:SeaGreen;background-color:SeaGreen"></td></tr>
 ${inforow("MAC address",i.mac)}
 ${inforow("Filesystem",i.fs.u + "/" + i.fs.t + " kB (" +Math.round(i.fs.u*100/i.fs.t) + "%)")}
@@ -688,7 +688,7 @@ ${i.e32model?inforow(i.e32model,i.e32cores +" core(s)"," "+i.e32speed+" Mhz"):""
 ${i.e32flash?inforow("Flash "+i.e32flash+" MB"+", mode "+i.e32flashmode+i.e32flashtext,i.e32flashspeed," Mhz"):""}
 ${i.e32core0code?inforow("Core0 rst reason",i.e32core0code, " "+i.e32core0text):""}
 ${i.e32core1code?inforow("Core1 rst reason",i.e32core1code, " "+i.e32core1text):""}
-<!-- WLEDSR end--> 
+<!-- WLEDMM end--> 
 </table>`;
 	gId('kv').innerHTML = cn;
 	//  update all sliders in Info
@@ -732,7 +732,7 @@ function populateSegments(s)
 			rvYck = `<label class="check revchkl">Reverse<input type="checkbox" id="seg${i}rY" onchange="setRevY(${i})" ${inst.rY?"checked":""}><span class="checkmark"></span></label>`;
 			miYck = `<label class="check revchkl">Mirror<input type="checkbox" id="seg${i}mY" onchange="setMiY(${i})" ${inst.mY?"checked":""}><span class="checkmark"></span></label>`;
 		}
-		// WLEDSR: jMap
+		// WLEDMM: jMap
 		let map2D = `<div id="seg${i}map2D" data-map="map2D" class="lbl-s hide">Expand 1D FX<br>
 			<div class="sel-p"><select class="sel-p" id="seg${i}mp12" onchange="setMp12(${i})">
 				<option value="0" ${inst.mp12==0?' selected':''}>Pixels</option>
@@ -752,7 +752,7 @@ function populateSegments(s)
 				<option value="3" ${inst.ssim==3?' selected':''}>U14_3</option>
 			</select></div>
 		</div>`;
-		//WLEDSR Custom Effects
+		//WLEDMM Custom Effects
 		let fxName = eJson.find((o)=>{return o.id==selectedFx}).name;
 		let cusEff = `<button class="btn" onclick="toggleCEEditor('${inst.n?inst.n:"default"}', ${i})">Custom Effect Editor</button><br>`;
 		cn += `<div class="seg lstI ${i==s.mainseg ? 'selected' : ''} ${exp ? "expanded":""}" id="seg${i}">
@@ -854,7 +854,7 @@ function populateEffects()
 	});
 
 	for (let ef of effects) {
-		// WLEDSR: add slider and color control to setFX (used by requestjson)
+		// WLEDMM: add slider and color control to setFX (used by requestjson)
 		let id = ef.id;
 		let nm = ef.name+" ";
 		let fd = "";
@@ -1366,7 +1366,7 @@ function readState(s,command=false)
 	return true;
 }
 
-// WLEDSR: control HTML elements for Slider and Color Control
+// WLEDMM: control HTML elements for Slider and Color Control
 // Technical notes
 // ===============
 // If an effect name is followed by an @, slider and color control is effective.
@@ -1623,7 +1623,7 @@ function toggleSync()
 
 function toggleLiveview()
 {
-	//WLEDSR adding liveview2D support
+	//WLEDMM adding liveview2D support
 	if (isInfo && isM) toggleInfo();
 	if (isNodes && isM) toggleNodes();
 	isLv = !isLv;

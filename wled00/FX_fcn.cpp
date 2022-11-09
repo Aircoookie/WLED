@@ -89,7 +89,7 @@ Segment::Segment(const Segment &orig) {
   if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
   if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
   if (orig.leds && !Segment::_globalLeds) { leds = (CRGB*)malloc(sizeof(CRGB)*length()); if (leds) memcpy(leds, orig.leds, sizeof(CRGB)*length()); }
-  jMap = nullptr; //WLEDSR jMap
+  jMap = nullptr; //WLEDMM jMap
 }
 
 // move constructor
@@ -101,7 +101,7 @@ Segment::Segment(Segment &&orig) noexcept {
   orig._dataLen = 0;
   orig._t   = nullptr;
   orig.leds = nullptr;
-  orig.jMap = nullptr; //WLEDSR jMap
+  orig.jMap = nullptr; //WLEDMM jMap
 }
 
 // copy assignment
@@ -126,7 +126,7 @@ Segment& Segment::operator= (const Segment &orig) {
     if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
     if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
     if (orig.leds && !Segment::_globalLeds) { leds = (CRGB*)malloc(sizeof(CRGB)*length()); if (leds) memcpy(leds, orig.leds, sizeof(CRGB)*length()); }
-    jMap = nullptr; //WLEDSR jMap
+    jMap = nullptr; //WLEDMM jMap
   }
   return *this;
 }
@@ -145,7 +145,7 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
     orig._dataLen = 0;
     orig._t   = nullptr;
     orig.leds = nullptr;
-    orig.jMap = nullptr; //WLEDSR jMap
+    orig.jMap = nullptr; //WLEDMM jMap
   }
   return *this;
 }
@@ -465,10 +465,10 @@ uint16_t Segment::nrOfVStrips() const {
       case M12_pBar:
         vLen = virtualWidth();
         break;
-      case M12_sCircle: //WLEDSR
+      case M12_sCircle: //WLEDMM
         vLen = (virtualWidth() + virtualHeight()) / 6; // take third of the average width
         break;
-      case M12_sBlock: //WLEDSR
+      case M12_sBlock: //WLEDMM
         vLen = (virtualWidth() + virtualHeight()) / 8; // take half of the average width
         break;
     }
@@ -477,7 +477,7 @@ uint16_t Segment::nrOfVStrips() const {
   return vLen;
 }
 
-//WLEDSR jMap
+//WLEDMM jMap
 struct XandY {
   uint8_t x;
   uint8_t y;
@@ -609,7 +609,7 @@ class JMapC {
     } //updatejMapDoc
 }; //class JMapC
 
-//WLEDSR jMap
+//WLEDMM jMap
 void Segment::createjMap() {
   if (!jMap) {
     Serial.println("createjMap");
@@ -617,7 +617,7 @@ void Segment::createjMap() {
   }
 }
 
-//WLEDSR jMap
+//WLEDMM jMap
 void Segment::deletejMap() {
   //Should be called from ~Segment but causes crash (and ~Segment is called quite often...)
   if (jMap) {
@@ -641,15 +641,15 @@ uint16_t Segment::virtualLength() const {
       case M12_pArc:
         vLen = max(vW,vH); // get the longest dimension
         break;
-      case M12_jMap: //WLEDSR jMap
+      case M12_jMap: //WLEDMM jMap
         if (jMap)
           vLen = ((JMapC *)jMap)->length();
         break;
-      case M12_sCircle: //WLEDSR
+      case M12_sCircle: //WLEDMM
         vLen = max(vW,vH); // get the longest dimension
         // vLen = (virtualWidth() + virtualHeight()) * 3;
         break;
-      case M12_sBlock: //WLEDSR
+      case M12_sBlock: //WLEDMM
         if (nrOfVStrips()>1)
           vLen = max(vW,vH) * 4;//0.5; // get the longest dimension
         else 
@@ -665,7 +665,7 @@ uint16_t Segment::virtualLength() const {
   return vLength;
 }
 
-//WLEDSR used for M12_sBlock
+//WLEDMM used for M12_sBlock
 void xyFromBlock(uint16_t &x,uint16_t &y, uint16_t i, uint16_t vW, uint16_t vH, uint16_t vStrip) {
   float i2;
   if (i<=SEGLEN*0.25) { //top, left to right
@@ -691,7 +691,7 @@ void xyFromBlock(uint16_t &x,uint16_t &y, uint16_t i, uint16_t vW, uint16_t vH, 
 
 }
 
-void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col) //WLEDSR: IRAM_ATTR conditionaly
+void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col) //WLEDMM: IRAM_ATTR conditionaly
 {
   int vStrip = i>>16; // hack to allow running on virtual strips (2D segment columns/rows)
   i &= 0xFFFF;
@@ -723,11 +723,11 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col) //WLEDSR: IRAM_ATT
         for (int x = 0; x <= i; x++) setPixelColorXY(x, i, col);
         for (int y = 0; y <  i; y++) setPixelColorXY(i, y, col);
         break;
-      case M12_jMap: //WLEDSR jMap
+      case M12_jMap: //WLEDMM jMap
         if (jMap)
           ((JMapC *)jMap)->setPixelColor(i, col);
         break;
-      case M12_sCircle: //WLEDSR
+      case M12_sCircle: //WLEDMM
         if (vStrip > 0)
         {
           int x = roundf(sin_t(360*i/SEGLEN*DEG_TO_RAD) * vW * (vStrip+1)/nrOfVStrips());
@@ -737,7 +737,7 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col) //WLEDSR: IRAM_ATT
         else // pArc -> circle
           drawArc(vW/2, vH/2, i/2, col);
         break;
-      case M12_sBlock: //WLEDSR
+      case M12_sBlock: //WLEDMM
         if (vStrip > 0)
         {
           //vStrip+1 is distance from centre, i is how much of the square is filled
@@ -862,11 +862,11 @@ uint32_t Segment::getPixelColor(int i)
         // use longest dimension
         return vW>vH ? getPixelColorXY(i, 0) : getPixelColorXY(0, i);
         break;
-      case M12_jMap: //WLEDSR jMap
+      case M12_jMap: //WLEDMM jMap
         if (jMap)
           return ((JMapC *)jMap)->getPixelColor(i);
         break;
-      case M12_sCircle: //WLEDSR
+      case M12_sCircle: //WLEDMM
         if (vStrip > 0)
         {
           int x = roundf(sin_t(360*i/SEGLEN*DEG_TO_RAD) * vW * (vStrip+1)/nrOfVStrips());
@@ -876,7 +876,7 @@ uint32_t Segment::getPixelColor(int i)
         else
           return vW>vH ? getPixelColorXY(i, 0) : getPixelColorXY(0, i);
         break;
-      case M12_sBlock: //WLEDSR
+      case M12_sBlock: //WLEDMM
         if (vStrip > 0)
         {
           uint16_t x=0,y=0;
