@@ -160,6 +160,10 @@
 #include "../usermods/ADS1115_v2/usermod_ads1115.h"
 #endif
 
+#ifdef USERMOD_PLAYBACK_RECORDINGS
+#include "../usermods/playback_recordings/usermod_playback_recordings.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -306,5 +310,9 @@ void registerUsermods()
   
   #ifdef USERMOD_ADS1115
   usermods.add(new ADS1115Usermod());
+  #endif
+
+  #ifdef USERMOD_PLAYBACK_RECORDINGS
+  usermods.add(new PlaybackRecordings());
   #endif
 }
