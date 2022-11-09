@@ -698,16 +698,11 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('m',SET_F("(\"sip\")[0]"),(char*)F("WLED "));
     olen -= 2; //delete ";
     oappend(versionString);
-    #if defined(CONFIG_IDF_TARGET_ESP32C3)
-    oappend(SET_F("<br>(ESP32-C3"));
-    #elif defined(CONFIG_IDF_TARGET_ESP32S3)
-    oappend(SET_F("<br>(ESP32-S3"));
-    #elif defined(CONFIG_IDF_TARGET_ESP32S2)
-    oappend(SET_F("<br>(ESP32-S2"));
-    #elif defined(ARDUINO_ARCH_ESP32)
-    oappend(SET_F("<br>(ESP32"));
+    oappend(SET_F("<br>("));
+    #if defined(ARDUINO_ARCH_ESP32)
+    oappend(ESP.getChipModel());
     #else
-    oappend(SET_F("<br>(ESP8266"));
+    oappend("esp8266");
     #endif
     oappend(SET_F(" build "));
     oappendi(VERSION);

@@ -1473,7 +1473,10 @@ function setEffectParameters(idx)
 	}
 	// not all color selectors shown, hide palettes created from color selectors
 	for (let e of (gId('pallist').querySelectorAll('.lstI')||[])) {
-		if (cslCnt < 3 && e.querySelector('.lstIname').innerText.indexOf("* C")>=0) e.classList.add('hide'); else e.classList.remove('hide');
+		let fltr = "* C";
+		if (cslCnt==1 && csel==0) fltr = "* Colors";
+		else if (cslCnt==2) fltr = "* Colors Only";
+		if (cslCnt < 3 && e.querySelector('.lstIname').innerText.indexOf(fltr)>=0) e.classList.add('hide'); else e.classList.remove('hide');
 	}
 }
 

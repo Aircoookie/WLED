@@ -3087,14 +3087,14 @@ uint16_t mode_candle()
 {
   return candle(false);
 }
-static const char _data_FX_MODE_CANDLE[] PROGMEM = "Candle@Flicker rate,Flicker intensity;!,!,;;sx=96,ix=224,pal=0,1d";
+static const char _data_FX_MODE_CANDLE[] PROGMEM = "Candle@Flicker rate,Flicker intensity;!,!,;!;sx=96,ix=224,pal=0,1d";
 
 
 uint16_t mode_candle_multi()
 {
   return candle(true);
 }
-static const char _data_FX_MODE_CANDLE_MULTI[] PROGMEM = "Candle Multi@Flicker rate,Flicker intensity;!,!,;;sx=96,ix=224,pal=0,1d";
+static const char _data_FX_MODE_CANDLE_MULTI[] PROGMEM = "Candle Multi@Flicker rate,Flicker intensity;!,!,;!;sx=96,ix=224,pal=0,1d";
 
 
 /*

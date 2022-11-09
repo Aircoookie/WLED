@@ -465,13 +465,13 @@ typedef struct Segment {
     Segment(Segment &&orig) noexcept; // move constructor
 
     ~Segment() {
-      #ifdef WLED_DEBUG
-      Serial.print(F("Destroying segment:"));
-      if (name) Serial.printf(" %s (%p)", name, name);
-      if (data) Serial.printf(" %d (%p)", (int)_dataLen, data);
-      if (leds) Serial.printf(" [%u]", length()*sizeof(CRGB));
-      Serial.println();
-      #endif
+      //#ifdef WLED_DEBUG
+      //Serial.print(F("Destroying segment:"));
+      //if (name) Serial.printf(" %s (%p)", name, name);
+      //if (data) Serial.printf(" %d (%p)", (int)_dataLen, data);
+      //if (leds) Serial.printf(" [%u]", length()*sizeof(CRGB));
+      //Serial.println();
+      //#endif
       if (!Segment::_globalLeds && leds) free(leds);
       if (name) delete[] name;
       if (_t) delete _t;

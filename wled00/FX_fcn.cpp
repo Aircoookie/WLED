@@ -78,7 +78,7 @@ CRGB    *Segment::_globalLeds = nullptr;
 
 // copy constructor
 Segment::Segment(const Segment &orig) {
-  DEBUG_PRINTLN(F("-- Copy segment constructor --"));
+  //DEBUG_PRINTLN(F("-- Copy segment constructor --"));
   memcpy(this, &orig, sizeof(Segment));
   name = nullptr;
   data = nullptr;
@@ -93,7 +93,7 @@ Segment::Segment(const Segment &orig) {
 
 // move constructor
 Segment::Segment(Segment &&orig) noexcept {
-  DEBUG_PRINTLN(F("-- Move segment constructor --"));
+  //DEBUG_PRINTLN(F("-- Move segment constructor --"));
   memcpy(this, &orig, sizeof(Segment));
   orig.name = nullptr;
   orig.data = nullptr;
@@ -104,7 +104,7 @@ Segment::Segment(Segment &&orig) noexcept {
 
 // copy assignment
 Segment& Segment::operator= (const Segment &orig) {
-  DEBUG_PRINTLN(F("-- Copying segment --"));
+  //DEBUG_PRINTLN(F("-- Copying segment --"));
   if (this != &orig) {
     // clean destination
     if (name) delete[] name;
@@ -130,7 +130,7 @@ Segment& Segment::operator= (const Segment &orig) {
 
 // move assignment
 Segment& Segment::operator= (Segment &&orig) noexcept {
-  DEBUG_PRINTLN(F("-- Moving segment --"));
+  //DEBUG_PRINTLN(F("-- Moving segment --"));
   if (this != &orig) {
     if (name) delete[] name; // free old name
     deallocateData(); // free old runtime data
@@ -868,8 +868,8 @@ uint8_t Segment::get_random_wheel_index(uint8_t pos) {
 uint32_t Segment::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri)
 {
   // default palette or no RGB support on segment
-  if ((palette == 0 && mcol < NUM_COLORS) || !(_capabilities & 0x01)) {
-    uint32_t color = (transitional && _t) ? _t->_colorT[mcol] : colors[mcol];
+  if ((palette == 0 && mcol < NUM_COLORS) || !_isRGB) {
+    uint32_t color = currentColor(mcol, colors[mcol]);
     color = gamma32(color);
     if (pbri == 255) return color;
     return RGBW32(scale8_video(R(color),pbri), scale8_video(G(color),pbri), scale8_video(B(color),pbri), scale8_video(W(color),pbri));
