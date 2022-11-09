@@ -225,6 +225,7 @@ class I2SSource : public AudioSource {
         #endif
       }
 
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
       if (mclkPin != I2S_PIN_NO_CHANGE) {
         _config.use_apll = true; // experimental - use aPLL clock source to improve sampling quality, and to avoid glitches.
         // //_config.fixed_mclk = 512 * _sampleRate;
@@ -233,6 +234,7 @@ class I2SSource : public AudioSource {
       #if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32S3) && !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
       if (ESP.getChipRevision() == 0) _config.use_apll = false; // APLL is broken on ESP32 revision 0
       #endif
+#endif
 
       if (_i2sMaster == false) {
           DEBUG_PRINTLN(F("AR: Warning - i2S SLAVE mode is experimental!"));        
@@ -243,7 +245,10 @@ class I2SSource : public AudioSource {
       // Reserve the master clock pin if provided
       _mclkPin = mclkPin;
       if (mclkPin != I2S_PIN_NO_CHANGE) {
-        if(!pinManager.allocatePin(mclkPin, true, PinOwner::UM_Audioreactive)) return;
+        if(!pinManager.allocatePin(mclkPin, true, PinOwner::UM_Audioreactive)) { 
+          DEBUGSR_PRINTF("\nAR: Failed to allocate I2S pin: MCLK=%d\n",  mclkPin); 
+          return;
+        } else
         _routeMclk(mclkPin);
       }
 
