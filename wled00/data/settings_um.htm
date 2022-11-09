@@ -55,7 +55,7 @@
 			}
 		}
 		ldS();
-		if (!numM) gId("um").innerHTML = ""; //WLEDSR: Do not display no usermods installed
+		if (!numM) gId("um").innerHTML = ""; //WLEDMM: Do not display no usermods installed
 	}
 	// https://stackoverflow.com/questions/3885817/how-do-i-check-that-a-number-is-float-or-integer
 	function isF(n) { return n === +n && n !== (n|0); }
@@ -200,7 +200,7 @@
 			getPins(json);
 			urows="";
 			if (isO(umCfg)) {
-                //WLEDSR: read url parameter. e.g. um=AudioReactive and if set only add the usermod with the same name
+                //WLEDMM: read url parameter. e.g. um=AudioReactive and if set only add the usermod with the same name
                 const queryString = window.location.search;
                 const urlParams = new URLSearchParams(queryString);
                 const userMod = urlParams.get('um')
@@ -214,7 +214,7 @@
                 }
                 if (userMod != null && urows==="") urows = "Usermods configuration not found.<br>Press <i>Save</i> to initialize defaults.";
             }
-            //WLEDSR: only show globalGPIOs if no usermod info is shown (url without um parameter)
+            //WLEDMM: only show globalGPIOs if no usermod info is shown (url without um parameter)
             gId("globalGPIOs").style.display = urows===""?"block":"none";
 
             gId("um").innerHTML = urows;
@@ -242,7 +242,7 @@
 		<span id="lssuc" style="color:green; display:none">&#10004; Configuration saved!</span>
 		<span id="lserr" style="color:red; display:none">&#9888; Could not load configuration.</span>
 		</div>
-        <div id="globalGPIOs" style="display:none;"> <!--WLEDSR: show in ldS-->
+        <div id="globalGPIOs" style="display:none;"> <!--WLEDMM: show in ldS-->
         <hr>
 		<h2>Usermod Setup</h2>
 		Global I<sup>2</sup>C GPIOs (HW)<br>

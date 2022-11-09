@@ -211,7 +211,7 @@ static const char _data_FX_MODE_IMUTest[] PROGMEM = "🎮 IMUTest@;;;2d";
 
 #endif
 
-//WLEDSR 3D to 2D mapping
+//WLEDMM 3D to 2D mapping
 struct Voxel {
   float x;
   float y;

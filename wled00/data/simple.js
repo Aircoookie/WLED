@@ -491,7 +491,7 @@ function populateInfo(i)
 	var cn="";
 	var heap = i.freeheap/1000;
 	heap = heap.toFixed(1);
-	var theap = (i.totalheap>0)?i.totalheap/1000:-1; theap = theap.toFixed(1); //WLEDSR - total heap is not available on 8266
+	var theap = (i.totalheap>0)?i.totalheap/1000:-1; theap = theap.toFixed(1); //WLEDMM - total heap is not available on 8266
 	var pwr = i.leds.pwr;
 	var pwru = "Not calculated";
 	if (pwr > 1000) {pwr /= 1000; pwr = pwr.toFixed((pwr > 10) ? 0 : 1); pwru = pwr + " A";}
@@ -510,7 +510,7 @@ function populateInfo(i)
 	if (i.ver.includes("-bl")) vcn = "Supāku";
 	if (i.cn) vcn = i.cn;
 
-	//WLEDSR: add total heap and total PSRAM, and build number
+	//WLEDMM: add total heap and total PSRAM, and build number
 	if (i.ver.includes("14.1-")) vcn = "Sitting Ducks"; // easter egg
 	if (i.ver.includes("14.0-mdev")) vcn = "Lupo";
 	cn += `v${i.ver} &nbsp;<i>"${vcn}"</i><p><em>build ${i.vid}</em></p><table>
@@ -520,7 +520,7 @@ ${inforow("Signal strength",i.wifi.signal +"% ("+ i.wifi.rssi, " dBm)")}
 ${inforow("Uptime",getRuntimeStr(i.uptime))}
 ${inforow("Estimated current",pwru)}
 ${inforow("Average FPS",i.leds.fps)}
-<!-- WLEDSR begin--> 
+<!-- WLEDMM begin--> 
 <tr><td colspan=2><hr style="height:1px;border-width:0;color:SeaGreen;background-color:SeaGreen"></td></tr>
 ${inforow("MAC address",i.mac)}
 ${inforow("Filesystem",i.fs.u + "/" + i.fs.t + " kB (" +Math.round(i.fs.u*100/i.fs.t) + "%)")}
@@ -531,7 +531,7 @@ ${i.tpram?inforow("Total PSRAM",(i.tpram/1024).toFixed(1)," kB"):""}
 ${i.psusedram?((i.tpram-i.psusedram)>16383?inforow("Max Used PSRAM",((i.tpram-i.psusedram)/1024).toFixed(1)," kB"):inforow("Max Used PSRAM",(i.tpram-i.psusedram)," B")):""}
 ${i.e32model?inforow(i.e32model,i.e32cores +" core(s)"," "+i.e32speed+" Mhz"):""}
 ${i.e32flash?inforow("Flash "+i.e32flash+" MB"+", mode "+i.e32flashmode+i.e32flashtext,i.e32flashspeed," Mhz"):""}
-<!-- WLEDSR end--> 
+<!-- WLEDMM end--> 
 </table>`;
 	gId('kv').innerHTML = cn;
 }
@@ -654,7 +654,7 @@ function populateEffects()
 	});
 
 	for (let i = 0; i < effects.length; i++) {
-		// WLEDSR: add slider and color control to setEffect (used by requestjson)
+		// WLEDMM: add slider and color control to setEffect (used by requestjson)
 		if (effects[i].name.indexOf("RSVD") < 0) {
 			var posAt = effects[i].name.indexOf("@");
 			var extra = '';

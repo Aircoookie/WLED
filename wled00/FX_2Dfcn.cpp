@@ -109,7 +109,7 @@ void WS2812FX::setUpMatrix() {
 }
 
 // absolute matrix version of setPixelColor()
-void IRAM_ATTR_YN WS2812FX::setPixelColorXY(int x, int y, uint32_t col) //WLEDSR: IRAM_ATTR conditionaly
+void IRAM_ATTR_YN WS2812FX::setPixelColorXY(int x, int y, uint32_t col) //WLEDMM: IRAM_ATTR conditionaly
 {
 #ifndef WLED_DISABLE_2D
   if (!isMatrix) return; // not a matrix set-up
@@ -141,13 +141,13 @@ uint32_t WS2812FX::getPixelColorXY(uint16_t x, uint16_t y) {
 #ifndef WLED_DISABLE_2D
 
 // XY(x,y) - gets pixel index within current segment (often used to reference leds[] array element)
-uint16_t IRAM_ATTR_YN Segment::XY(uint16_t x, uint16_t y) { //WLEDSR: IRAM_ATTR conditionaly
+uint16_t IRAM_ATTR_YN Segment::XY(uint16_t x, uint16_t y) { //WLEDMM: IRAM_ATTR conditionaly
   uint16_t width  = virtualWidth();   // segment width in logical pixels
   uint16_t height = virtualHeight();  // segment height in logical pixels
   return (x%width) + (y%height) * width;
 }
 
-void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col) //WLEDSR: IRAM_ATTR conditionaly
+void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col) //WLEDMM: IRAM_ATTR conditionaly
 {
   if (!strip.isMatrix) return; // not a matrix set-up
   if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return;  // if pixel would fall out of virtual segment just exit

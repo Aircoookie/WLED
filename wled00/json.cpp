@@ -2,7 +2,7 @@
 
 #include "palettes.h"
 
-// begin WLEDSR
+// begin WLEDMM
 #ifdef ARDUINO_ARCH_ESP32
 #include <Esp.h>
 // get the right RTC.H for each MCU
@@ -23,7 +23,7 @@
 #include <Esp.h>
 #include <user_interface.h>
 #endif
-// end WLEDSR
+// end WLEDMM
 
 /*
  * JSON API (De)serialization
@@ -34,7 +34,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   byte id = elem["id"] | it;
   if (id >= strip.getMaxSegments()) return;
 
-  //WLEDSR: add compatibility for SR presets
+  //WLEDMM: add compatibility for SR presets
   #ifndef WLED_DISABLE_2D
     // Serial.printf("before %d: %s %s %s %s\n", id, elem["start"].as<std::string>().c_str(), elem["stop"].as<std::string>().c_str(), elem["startY"].as<std::string>().c_str(), elem["stopY"].as<std::string>().c_str());
   if (strip.isMatrix && !elem["start"].isNull() && !elem["stop"].isNull() && elem["startY"].isNull() && elem["stopY"].isNull()) {
@@ -123,7 +123,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   uint8_t  soundSim = elem["ssim"] | seg.soundSim;
   uint8_t  map1D2D  = elem["mp12"] | seg.map1D2D;
 
-  //WLEDSR jMap
+  //WLEDMM jMap
   if (map1D2D == M12_jMap && !seg.jMap)
     seg.createjMap();
   if (map1D2D != M12_jMap && seg.jMap)
@@ -156,7 +156,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   if (elem["on"].is<const char*>() && elem["on"].as<const char*>()[0] == 't') on = !on;
   seg.setOption(SEG_OPTION_ON, on); // use transition
 
-  //WLEDSR Custom Effects (but general usable)
+  //WLEDMM Custom Effects (but general usable)
   bool reset = elem["reset"];
   if (reset)
     seg.markForReset();
@@ -593,7 +593,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
   }
 }
 
-// begin WLEDSR
+// begin WLEDMM
 #ifdef ARDUINO_ARCH_ESP32
 static String resetCode2Info(int reason) {
   switch(reason) {
@@ -649,12 +649,12 @@ static String resetCode2Info(int reason) {
   }
 }
 #endif
-// end WLEDSR
+// end WLEDMM
 
 void serializeInfo(JsonObject root)
 {
   root[F("ver")] = versionString;
-  root[F("rel")] = releaseString; //WLEDSR to add bin name
+  root[F("rel")] = releaseString; //WLEDMM to add bin name
   root[F("vid")] = VERSION;
   //root[F("cn")] = WLED_CODENAME;
 
@@ -770,11 +770,11 @@ void serializeInfo(JsonObject root)
   //root[F("maxalloc")] = ESP.getMaxAllocHeap();
   #ifdef WLED_DEBUG
     root[F("resetReason0")] = (int)rtc_get_reset_reason(0);
-    if(ESP.getChipCores() > 1)    // WLEDSR
+    if(ESP.getChipCores() > 1)    // WLEDMM
    	  root[F("resetReason1")] = (int)rtc_get_reset_reason(1);
   #endif
   root[F("lwip")] = 0; //deprecated
-  root[F("totalheap")] = ESP.getHeapSize(); //WLEDSR
+  root[F("totalheap")] = ESP.getHeapSize(); //WLEDMM
   #else
   root[F("arch")] = "esp8266";
   root[F("core")] = ESP.getCoreVersion();
@@ -786,24 +786,24 @@ void serializeInfo(JsonObject root)
   #endif
 
   root[F("freeheap")] = ESP.getFreeHeap();
-  //WLEDSR: conditional on esp32
+  //WLEDMM: conditional on esp32
   #if defined(ARDUINO_ARCH_ESP32)
     root[F("minfreeheap")] = ESP.getMinFreeHeap();
   #endif
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM) && defined(BOARD_HAS_PSRAM)
   if (psramFound()) {
-    root[F("tpram")] = ESP.getPsramSize(); //WLEDSR
+    root[F("tpram")] = ESP.getPsramSize(); //WLEDMM
     root[F("psram")] = ESP.getFreePsram();
     root[F("psusedram")] = ESP.getMinFreePsram();
   }
   #else
   // for testing
-  //  root[F("tpram")] = 4194304; //WLEDSR
+  //  root[F("tpram")] = 4194304; //WLEDMM
   //  root[F("psram")] = 4193000;
   //  root[F("psusedram")] = 3083000;
   #endif
 
-  // begin WLEDSR
+  // begin WLEDMM
   #ifdef ARDUINO_ARCH_ESP32
   root[F("e32core0code")] = (int)rtc_get_reset_reason(0);
   root[F("e32core0text")] = resetCode2Info(rtc_get_reset_reason(0));
@@ -832,7 +832,7 @@ void serializeInfo(JsonObject root)
   root[F("e32core0code")] = (int)ESP.getResetInfoPtr()->reason;
   root[F("e32core0text")] = F("");
   #endif
-  // end WLEDSR
+  // end WLEDMM
 
   root[F("uptime")] = millis()/1000 + rolloverMillis*4294967;
 

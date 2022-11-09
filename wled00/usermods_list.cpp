@@ -160,7 +160,7 @@
 #include "../usermods/ADS1115_v2/usermod_ads1115.h"
 #endif
 
-//WLEDSR Custom Effects
+//WLEDMM Custom Effects
 #ifdef USERMOD_CUSTOMEFFECTS
 #include "../usermods/customeffects/usermod_v2_customeffects.h"
 #endif
@@ -324,7 +324,7 @@ void registerUsermods()
   usermods.add(new ADS1115Usermod());
   #endif
 
-  //WLEDSR Custom Effects
+  //WLEDMM Custom Effects
   #ifdef USERMOD_CUSTOMEFFECTS
   usermods.add(new CustomEffectsUserMod());
   #endif

@@ -45,18 +45,18 @@ void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t
     request->_tempFile = WLED_FS.open(finalname, "w");
     DEBUG_PRINT(F("Uploading "));
     DEBUG_PRINTLN(finalname);
-    if (finalname.equals("/presets.json")) presetsModifiedTime = toki.second();  // WLEDSR
+    if (finalname.equals("/presets.json")) presetsModifiedTime = toki.second();  // WLEDMM
   }
   if (len) {
     request->_tempFile.write(data,len);
   }
   if (final) {
     request->_tempFile.close();
-    if (filename.equalsIgnoreCase("/cfg.json") || filename.equalsIgnoreCase("cfg.json")) { // WLEDSR
+    if (filename.equalsIgnoreCase("/cfg.json") || filename.equalsIgnoreCase("cfg.json")) { // WLEDMM
       request->send(200, "text/plain", F("Configuration restore successful.\nRebooting..."));
       doReboot = true;
     } else {
-      if (filename.equals("/presets.json") || filename.equals("presets.json")) {  // WLEDSR
+      if (filename.equals("/presets.json") || filename.equals("presets.json")) {  // WLEDMM
         request->send(200, "text/plain", F("Presets File Uploaded!"));
       } else
         request->send(200, "text/plain", F("File Uploaded!"));
