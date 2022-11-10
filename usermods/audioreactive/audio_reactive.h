@@ -204,8 +204,8 @@ static const float fftResultPink[MAX_PINK+1][NUM_GEQ_CHANNELS] = {
    *    * in case of square root scale: multiplier = (target * target) / (barheight * barheight)
    *    * in case of linear scale:      multiplier = target / barheight
    * 
-   *  - start with a copy of the parameter line "Line-In"
-   *  - go through your new parameter line, multiply each entry with the mutliplier you found for that column.
+   *  - replace one of the "userdef" lines with a copy of the parameter line for "Line-In", 
+   *  - go through your new "userdef" parameter line, multiply each entry with the mutliplier you found for that column.
 
    * Compile + upload
    * Test your new profile (same procedure as above). Iterate the process to improve results.
@@ -472,8 +472,7 @@ void FFTcode(void * parameter)
     }
 
 #if defined(WLED_DEBUG) || defined(SR_DEBUG)|| defined(SR_STATS)
-    //if (haveDoneFFT && (start < esp_timer_get_time())) { // filter out overflows
-    if ((start <= esp_timer_get_time())) { // filter out overflows
+    if (haveDoneFFT && (start < esp_timer_get_time())) { // filter out overflows
       uint64_t fftTimeInMillis = ((esp_timer_get_time() - start) +5ULL) / 10ULL; // "+5" to ensure proper rounding
       fftTime  = (fftTimeInMillis*3 + fftTime*7)/10; // smooth
     }
