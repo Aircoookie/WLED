@@ -890,6 +890,7 @@ void serializeNodes(JsonObject root)
   }
 }
 
+// deserializes mode data string into JsonArray
 void serializeModeData(JsonArray fxdata)
 {
   char lineBuffer[128];
@@ -897,14 +898,14 @@ void serializeModeData(JsonArray fxdata)
     strncpy_P(lineBuffer, strip.getModeData(i), 127);
     if (lineBuffer[0] != 0) {
       char* dataPtr = strchr(lineBuffer,'@');
-      if (dataPtr) fxdata.add(dataPtr);
+      if (dataPtr) fxdata.add(dataPtr+1);
       else         fxdata.add("");
     }
   }
 }
 
 // deserializes mode names string into JsonArray
-// also removes WLED-SR extensions (@...) from deserialised names
+// also removes effect data extensions (@...) from deserialised names
 void serializeModeNames(JsonArray arr) {
   char lineBuffer[128];
   for (size_t i = 0; i < strip.getModeCount(); i++) {
