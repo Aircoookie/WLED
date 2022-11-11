@@ -106,7 +106,7 @@
 	}
 	function addField(k,f,o,a=false) {  //key, field, (sub)object, isArray
 		if (isO(o)) {
-			urows += '<hr style="width:260px">';
+			urows += '<hr class="sml">';
 			for (const [s,v] of Object.entries(o)) {
 				// possibility to nest objects (only 1 level)
 				if (f!=='unknown' && !k.includes(":")) addField(k+":"+f,s,v);
@@ -236,7 +236,7 @@
 		<i style="color: orange;">(only changable on ESP32, change requires reboot!)</i><br>
 		SDA:<input type="number" min="-1" max="48" name="SDA" onchange="check(this,'if')" class="s" placeholder="SDA">
 		SCL:<input type="number" min="-1" max="48" name="SCL" onchange="check(this,'if')" class="s" placeholder="SCL">
-		<hr style="width:260px">
+		<hr class="sml">
 		Global SPI GPIOs (HW)<br>
 		<i style="color: orange;">(only changable on ESP32, change requires reboot!)</i><br>
 		MOSI:<input type="number" min="-1" max="48" name="MOSI" onchange="check(this,'if')" class="s" placeholder="MOSI">

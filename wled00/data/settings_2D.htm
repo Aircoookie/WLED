@@ -70,7 +70,7 @@
 	function addPanel(i=0) {
 		let p = gId("panels");
 		if (p.children.length >= maxPanels) return;
-		let b = `<div id="pnl${i}">${i===0?"":'<hr style="width:260px">'}Panel ${i}<br>1<sup>st</sup> LED: <select name="P${i}B">
+		let b = `<div id="pnl${i}">${i===0?"":'<hr class="sml">'}Panel ${i}<br>1<sup>st</sup> LED: <select name="P${i}B">
 	<option value="0">Top</option>
 	<option value="1">Bottom</option>
 </select><select name="P${i}R">
@@ -134,11 +134,11 @@ Serpentine: <input type="checkbox" name="P${i}S"></div>`;
 			<option value="1">Vertical</option>
 		</select><br>
 		Serpentine: <input type="checkbox" name="PS">
-		<hr style="width:260px">
+		<hr class="sml">
 		<i>A matrix is made of 1 or more physical LED panels of the same dimensions.<br>
 		Panels should be arranged from top-left to bottom-right order, starting with lower panel number on the left (or top if transposed).<br>
 		Each panel can have different LED orientation and/or starting point and/or layout.</i><br>
-		<hr style="width:260px">
+		<hr class="sml">
 		<h3>LED panel layout</h3>
 		<div id="panels">
 		</div>
