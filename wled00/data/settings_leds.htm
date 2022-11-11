@@ -322,7 +322,7 @@
       if (n==1) {
 // npm run build has trouble minimizing spaces inside string
         var cn = `<div class="iST">
-<hr style="width:260px">
+<hr class="sml">
 ${i+1}:
 <select name="LT${i}" onchange="UI(true)">
 <option value="22" selected>WS281x</option>
@@ -388,7 +388,7 @@ ${i+1}:
       if (i >= 10) return;
 
       var b = `<div class="com_entry">
-<hr style="width:260px">
+<hr class="sml">
 ${i+1}: Start: <input type="number" name="XS${i}" id="xs${i}" class="l starts" min="0" max="65535" value="${start}" oninput="UI();" required="">&nbsp;
 Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65535" value="${len}" required="" oninput="UI()">
 <div style="display:inline">Color Order:
@@ -594,7 +594,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
     </div>
     <h3>Hardware setup</h3>
     <div id="mLC">LED outputs:</div>
-    <hr style="width:260px">
+    <hr class="sml">
     <button type="button" id="+" onclick="addLEDs(1,false)">+</button>
     <button type="button" id="-" onclick="addLEDs(-1,false)">-</button><br>
     LED Memory Usage: <span id="m0">0</span> / <span id="m1">?</span> B<br>
@@ -603,19 +603,19 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
       &#9888; You might run into stability or lag issues.<br>
       Use less than <span id="wreason">800 LEDs per output</span> for the best experience!<br>
     </div>
-    <hr style="width:260px">
+    <hr class="sml">
     Make a segment for each output: <input type="checkbox" name="MS"><br>
     Custom bus start indices: <input type="checkbox" onchange="tglSi(this.checked)" id="si"><br>
     Use global LED buffer: <input type="checkbox" name="LD"><br>
-    <hr style="width:260px">
+    <hr class="sml">
     <div id="color_order_mapping">
       Color Order Override:
       <div id="com_entries"></div>
-      <hr style="width:260px">
+      <hr class="sml">
       <button type="button" id="com_add" onclick="addCOM()">+</button>
       <button type="button" id="com_rem" onclick="remCOM()">-</button><br>
     </div>
-    <hr style="width:260px">
+    <hr class="sml">
     <div id="btns"></div>
     Touch threshold: <input type="number" class="s" min="0" max="100" name="TT" required><br>
     IR GPIO: <input type="number" min="-1" max="48" name="IR" onchange="UI()" class="xs"><select name="IT" onchange="UI()">
@@ -633,7 +633,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
     <div id="json" style="display:none;">JSON file: <input type="file" name="data" accept=".json"><button type="button" class="sml" onclick="uploadFile('/ir.json')">Upload</button><br></div>
     <a href="https://kno.wled.ge/interfaces/infrared/" target="_blank">IR info</a><br>
     Relay GPIO: <input type="number" min="-1" max="48" name="RL" onchange="UI()" class="xs"> Invert <input type="checkbox" name="RM"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#x2715;</span><br>
-    <hr style="width:260px">
+    <hr class="sml">
 		<h3>Defaults</h3>
 		Turn LEDs on after power up/reset: <input type="checkbox" name="BO"><br>
     Default brightness: <input name="CA" type="number" class="m" min="0" max="255" required> (0-255)<br><br>
@@ -679,7 +679,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
 			<option value="3">None (not recommended)</option>
 		</select><br>
 		Target refresh rate: <input type="number" class="s" min="1" max="120" name="FR" required> FPS
-    <hr style="width:260px">
+    <hr class="sml">
     <div id="cfg">Config template: <input type="file" name="data2" accept=".json"><button type="button" class="sml" onclick="loadCfg(d.Sf.data2)">Apply</button><br></div>
     <hr>
     <button type="button" onclick="B()">Back</button><button type="submit">Save</button>
