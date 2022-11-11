@@ -28,12 +28,10 @@ void colorRGBtoRGBW(byte* rgb);
   #define DEBUG_PRINT(x) DEBUGOUT.print(x)
   #define DEBUG_PRINTLN(x) DEBUGOUT.println(x)
   #define DEBUG_PRINTF(x...) DEBUGOUT.printf(x)
-  #define DEBUG_FLUSH() DEBUGOUT.flush()
 #else
   #define DEBUG_PRINT(x)
   #define DEBUG_PRINTLN(x)
   #define DEBUG_PRINTF(x...)
-  #define DEBUG_FLUSH()
 #endif
 
 #define GET_BIT(var,bit)    (((var)>>(bit))&0x01)
