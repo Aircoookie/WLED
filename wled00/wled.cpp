@@ -218,7 +218,6 @@ void WLED::loop()
     debugTime = millis();
   }
   loops++;
-  DEBUG_FLUSH();
 #endif        // WLED_DEBUG
   toki.resetTick();
 
@@ -447,8 +446,6 @@ void WLED::setup()
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_DISABLE_BROWNOUT_DET)
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 1); //enable brownout detector
   #endif
-
-  DEBUG_FLUSH();
 }
 
 void WLED::beginStrip()
