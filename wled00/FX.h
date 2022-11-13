@@ -293,9 +293,9 @@
 #define FX_MODE_2DSUNRADIATION         166
 #define FX_MODE_2DCOLOREDBURSTS        167
 #define FX_MODE_2DJULIA                168
-#define FX_MODE_2DPOOLNOISE            169 //have been removed in WLED SR in the past because of low mem but should be added back
-#define FX_MODE_2DTWISTER              170 //have been removed in WLED SR in the past because of low mem but should be added back
-#define FX_MODE_2DCAELEMENTATY         171 //have been removed in WLED SR in the past because of low mem but should be added back
+// #define FX_MODE_2DPOOLNOISE            169 //have been removed in WLED SR in the past because of low mem but should be added back
+// #define FX_MODE_2DTWISTER              170 //have been removed in WLED SR in the past because of low mem but should be added back
+// #define FX_MODE_2DCAELEMENTATY         171 //have been removed in WLED SR in the past because of low mem but should be added back
 #define FX_MODE_2DGAMEOFLIFE           172
 #define FX_MODE_2DTARTAN               173
 #define FX_MODE_2DPOLARLIGHTS          174
