@@ -244,9 +244,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     }
     strip.trigger();
   }
-  // send UDP if not in preset and something changed that is not just selection
-  // send UDP if something changed that is not just selection or segment power/opacity
-  if ((seg.differs(prev) & 0x7E) && seg.on == prev.on) stateChanged = true;
+  // send UDP/WS if segment options changed (except selection; will also deselect current preset)
+  if (seg.differs(prev) & 0x7F) stateChanged = true;
 }
 
 // deserializes WLED state (fileDoc points to doc object if called from web server)
@@ -403,6 +402,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       root.remove("v");    // may be added in UI call
       root.remove("time"); // may be added in UI call
       root.remove("ps");
+      root.remove("on");   // some exetrnal calls add "on" to "ps" call
       if (root.size() == 0) {
         unloadPlaylist();  // we need to unload playlist
         applyPreset(ps, callMode); // async load (only preset ID was specified)

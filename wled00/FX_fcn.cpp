@@ -326,11 +326,7 @@ uint8_t Segment::currentBri(uint8_t briNew, bool useCct) {
 }
 
 uint8_t Segment::currentMode(uint8_t newMode) {
-  if (transitional && _t) {
-    return _t->_modeP;
-  } else {
-    return newMode;
-  }
+  return (progress()>32767U) ? newMode : _t->_modeP; // change effect in the middle of transition
 }
 
 uint32_t Segment::currentColor(uint8_t slot, uint32_t colorNew) {
@@ -369,6 +365,7 @@ bool Segment::setColor(uint8_t slot, uint32_t c) { //returns true if changed
   if (slot >= NUM_COLORS || c == colors[slot]) return false;
   if (fadeTransition) startTransition(strip.getTransition()); // start transition prior to change
   colors[slot] = c;
+  stateChanged = true; // send UDP/WS broadcast
   return true;
 }
 
@@ -381,12 +378,14 @@ void Segment::setCCT(uint16_t k) {
   if (cct == k) return;
   if (fadeTransition) startTransition(strip.getTransition()); // start transition prior to change
   cct = k;
+  stateChanged = true; // send UDP/WS broadcast
 }
 
 void Segment::setOpacity(uint8_t o) {
   if (opacity == o) return;
   if (fadeTransition) startTransition(strip.getTransition()); // start transition prior to change
   opacity = o;
+  stateChanged = true; // send UDP/WS broadcast
 }
 
 void Segment::setOption(uint8_t n, bool val) {
@@ -394,6 +393,7 @@ void Segment::setOption(uint8_t n, bool val) {
   if (fadeTransition && n == SEG_OPTION_ON && val != prevOn) startTransition(strip.getTransition()); // start transition prior to change
   if (val) options |=   0x01 << n;
   else     options &= ~(0x01 << n);
+  if (!(n == SEG_OPTION_SELECTED || n == SEG_OPTION_RESET || n == SEG_OPTION_TRANSITIONAL)) stateChanged = true; // send UDP/WS broadcast
 }
 
 void Segment::setMode(uint8_t fx, bool loadDefaults) {
@@ -425,6 +425,7 @@ void Segment::setMode(uint8_t fx, bool loadDefaults) {
           }
         }
       }
+      stateChanged = true; // send UDP/WS broadcast
     }
   }
 }
@@ -436,6 +437,7 @@ void Segment::setPalette(uint8_t pal) {
       palette = pal;
     }
   }
+  stateChanged = true; // send UDP/WS broadcast
 }
 
 // 2D matrix
@@ -671,11 +673,10 @@ uint8_t Segment::differs(Segment& b) const {
   if (startY != b.startY)       d |= SEG_DIFFERS_BOUNDS;
   if (stopY != b.stopY)         d |= SEG_DIFFERS_BOUNDS;
 
-  //bit pattern: msb first: [transposed mirrorY reverseY] transitional (tbd) paused needspixelstate mirrored on reverse selected
-  if ((options & 0b1111111110011110) != (b.options & 0b1111111110011110)) d |= SEG_DIFFERS_OPT;
-  if ((options & 0x01) != (b.options & 0x01))                             d |= SEG_DIFFERS_SEL;
-  
-  for (uint8_t i = 0; i < NUM_COLORS; i++) if (colors[i] != b.colors[i])  d |= SEG_DIFFERS_COL;
+  //bit pattern: (msb first) sound:3, mapping:3, transposed, mirrorY, reverseY, [transitional, reset,] paused, mirrored, on, reverse, [selected]
+  if ((options & 0b1111111110011110U) != (b.options & 0b1111111110011110U)) d |= SEG_DIFFERS_OPT;
+  if ((options & 0x0001U) != (b.options & 0x0001U))                         d |= SEG_DIFFERS_SEL;
+  for (uint8_t i = 0; i < NUM_COLORS; i++) if (colors[i] != b.colors[i])    d |= SEG_DIFFERS_COL;
 
   return d;
 }
