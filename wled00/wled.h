@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2211050
+#define VERSION 2211130
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -677,6 +677,7 @@ WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
   // On the host side, use netcat to receive the log statements: nc -l 7868 -u
   // use -D WLED_DEBUG_HOST='"192.168.xxx.xxx"' or FQDN within quotes
   #define DEBUGOUT NetDebug
+  WLED_GLOBAL bool netDebugEnabled _INIT(true);
   WLED_GLOBAL char netDebugPrintHost[33] _INIT(WLED_DEBUG_HOST);
   #if defined(WLED_DEBUG_NET_PORT)
   WLED_GLOBAL int netDebugPrintPort _INIT(WLED_DEBUG_PORT);

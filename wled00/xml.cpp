@@ -510,10 +510,15 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',SET_F("AI"),alexaInvocationName);
     sappend('c',SET_F("SA"),notifyAlexa);
     sappend('v',SET_F("AP"),alexaNumPresets);
+    #ifdef WLED_DISABLE_ALEXA
+    oappend(SET_F("toggle('Alexa');"));  // hide Alexa settings
+    #endif
     sappends('s',SET_F("BK"),(char*)((blynkEnabled)?SET_F("Hidden"):""));
     #ifndef WLED_DISABLE_BLYNK
     sappends('s',SET_F("BH"),blynkHost);
     sappend('v',SET_F("BP"),blynkPort);
+    #else
+    oappend(SET_F("toggle('Blynk');"));    // hide BLYNK settings
     #endif
 
     #ifdef WLED_ENABLE_MQTT
@@ -530,6 +535,8 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',"MD",mqttDeviceTopic);
     sappends('s',SET_F("MG"),mqttGroupTopic);
     sappend('c',SET_F("BM"),buttonPublishMqtt);
+    #else
+    oappend(SET_F("toggle('MQTT');"));    // hide MQTT settings
     #endif
 
     #ifndef WLED_DISABLE_HUESYNC
@@ -557,6 +564,8 @@ void getSettingsJS(byte subPage, char* dest)
     }
     
     sappends('m',SET_F("(\"sip\")[0]"),hueErrorString);
+    #else
+    oappend(SET_F("toggle('Hue');"));    // hide Hue Sync settings
     #endif
     sappend('v',SET_F("BD"),serialBaud);
   }
