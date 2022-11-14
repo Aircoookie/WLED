@@ -160,6 +160,18 @@
 #include "../usermods/ADS1115_v2/usermod_ads1115.h"
 #endif
 
+#if defined(WLED_USE_SD_MMC) || defined(WLED_USE_SD_SPI)
+// This include of SD.h and SD_MMC.h must happen here, else they won't be
+// resolved correctly (when included in mod's header only)
+  #ifdef WLED_USE_SD_MMC
+    #include "SD_MMC.h"
+  #elif defined(WLED_USE_SD_SPI)    
+    #include "SD.h"
+    #include "SPI.h"
+  #endif
+  #include "../usermods/sd_card/usermod_sd_card.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -306,5 +318,9 @@ void registerUsermods()
   
   #ifdef USERMOD_ADS1115
   usermods.add(new ADS1115Usermod());
+  #endif
+
+  #ifdef SD_ADAPTER
+  usermods.add(new UsermodSdCard());
   #endif
 }
