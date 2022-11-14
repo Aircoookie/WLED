@@ -1147,7 +1147,7 @@ class AudioReactive : public Usermod {
           break;
         case 4:
           DEBUGSR_PRINT(F("AR: Generic I2S Microphone with Master Clock - ")); DEBUGSR_PRINTLN(F(I2S_MIC_CHANNEL_TEXT));
-          audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, true, 1.0f/16.0f);
+          audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, true, 1.0f/24.0f);
           //audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, false, 1.0f/16.0f);   // I2S SLAVE mode - does not work, unfortunately
           delay(100);
           if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin, i2sckPin, mclkPin);
