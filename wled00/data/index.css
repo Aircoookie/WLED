@@ -517,7 +517,7 @@ button {
 	transform: translateY(100%);
 	transition: transform 0.4s;
 	padding: 8px;
-	font-size: 20px;
+	font-size: 18px; /* WLEDMM: smaller is better (was 20px)*/
 	overflow: auto;
 }
 
