@@ -44,6 +44,8 @@ private:
     // configuration (available in API and stored in flash)
     bool     enabled          = false;
     Segment  mainSegment;
+    bool     hourMarksEnabled = true;
+    uint32_t hourMarkColor    = 0xFF0000;
     uint32_t hourColor        = 0x0000FF;
     uint32_t minuteColor      = 0x00FF00;
     bool     secondsEnabled   = true;
@@ -87,10 +89,9 @@ private:
     }
 
     bool hexStringToColor(String const& s, uint32_t& c, uint32_t def) {
-        errno = 0;
-        char* ep;
+        char *ep;
         unsigned long long r = strtoull(s.c_str(), &ep, 16);
-        if (*ep == 0 && errno != ERANGE) {
+        if (*ep == 0) {
             c = r;
             return true;
         } else {
@@ -162,11 +163,18 @@ public:
         lastOverlayDraw = millis();
 
         auto time = toki.getTime();
-        auto localSec = tz ? tz->toLocal(time.sec) : time.sec;
-        double secondP = second(localSec) / 60.0;
-        double minuteP = minute(localSec) / 60.0;
-        double hourP = (hour(localSec) % 12) / 12.0 + minuteP / 12.0;
-
+        double secondP = second(localTime) / 60.0;
+        double minuteP = minute(localTime) / 60.0;
+        double hourP = (hour(localTime) % 12) / 12.0 + minuteP / 12.0;
+        
+        if (hourMarksEnabled)         {
+            for (int Led = 0; Led <= 55; Led = Led + 5)
+            {
+                int16_t hourmarkled = adjustToSegment(Led / 60.0, mainSegment);
+                setPixelColor(hourmarkled, hourMarkColor);
+            }
+        }
+        
         if (secondsEnabled) {
             int16_t secondLed = adjustToSegment(secondP, secondsSegment);
 
@@ -200,6 +208,8 @@ public:
         top["First LED (Main Ring)"]         = mainSegment.firstLed;
         top["Last LED (Main Ring)"]          = mainSegment.lastLed;
         top["Center/12h LED (Main Ring)"]    = mainSegment.centerLed;
+        top["Hour Marks Enabled"]            = hourMarksEnabled;
+        top["Hour Mark Color (RRGGBB)"]      = colorToHexString(hourMarkColor);
         top["Hour Color (RRGGBB)"]           = colorToHexString(hourColor);
         top["Minute Color (RRGGBB)"]         = colorToHexString(minuteColor);
         top["Show Seconds"]                  = secondsEnabled;
@@ -221,6 +231,8 @@ public:
         configComplete &= getJsonValue(top["First LED (Main Ring)"], mainSegment.firstLed, 0);
         configComplete &= getJsonValue(top["Last LED (Main Ring)"], mainSegment.lastLed, 59);
         configComplete &= getJsonValue(top["Center/12h LED (Main Ring)"], mainSegment.centerLed, 0);
+        configComplete &= getJsonValue(top["Hour marks Enabled"], hourMarksEnabled, false);
+        configComplete &= getJsonValue(top["Hour mark Color (RRGGBB)"], color, "FF0000") && hexStringToColor(color, hourMarkColor, 0x0000FF);
         configComplete &= getJsonValue(top["Hour Color (RRGGBB)"], color, "0000FF") && hexStringToColor(color, hourColor, 0x0000FF);
         configComplete &= getJsonValue(top["Minute Color (RRGGBB)"], color, "00FF00") && hexStringToColor(color, minuteColor, 0x00FF00);
         configComplete &= getJsonValue(top["Show Seconds"], secondsEnabled, true);
