@@ -13,8 +13,12 @@ platform = ${common.platform_wled_default}
 platform_packages = ${common.platform_packages}
 board_build.ldscript = ${common.ldscript_1m128k}
 lib_deps = ${esp8266.lib_deps}
+monitor_speed = 115200
+# fast upload speed (remove ';' when building for development use)
+upload_speed = 921600
 build_unflags = ${common.build_unflags}
 build_flags = ${common.build_flags_esp8266}
+   ${common.debug_flags}
 ; *********************************************************************
 ; *** Use custom settings from file my_config.h
    -DWLED_USE_MY_CONFIG

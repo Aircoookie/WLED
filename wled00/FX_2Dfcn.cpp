@@ -34,78 +34,140 @@
 // note: matrix may be comprised of multiple panels each with different orientation
 // but ledmap takes care of that. ledmap is constructed upon initialization
 // so matrix should disable regular ledmap processing
+// void WS2812FX::setUpMatrix() {
+// #ifndef WLED_DISABLE_2D
+//   // erase old ledmap, just in case.
+//   if (customMappingTable != nullptr) delete[] customMappingTable;
+//   customMappingTable = nullptr;
+//   customMappingSize = 0;
+
+//   // erase old custom map, just in case
+//   customMappingMap.clear();
+  
+
+//   if (isMatrix) {
+
+//     if (matrixMode != MATRIX_MODE_LEGACY){
+//       setUpCustom();
+//       return;
+//     }
+
+//     matrixWidth  = hPanels * panelW;
+//     matrixHeight = vPanels * panelH;
+
+//     // safety check
+//     if (matrixWidth * matrixHeight > MAX_LEDS) {
+//       matrixWidth = _length;
+//       matrixHeight = 1;
+//       isMatrix = false;
+//       return;
+//     }
+
+//     customMappingSize  = matrixWidth * matrixHeight;
+//     customMappingTable = new uint16_t[customMappingSize];
+
+//     if (customMappingTable != nullptr) {
+//       uint16_t startL; // index in custom mapping array (logical strip)
+//       uint16_t startP; // position of 1st pixel of panel on (virtual) strip
+//       uint16_t x, y, offset;
+//       uint8_t h = matrix.vertical ? vPanels : hPanels;
+//       uint8_t v = matrix.vertical ? hPanels : vPanels;
+
+//       for (uint8_t j=0, p=0; j<v; j++) {
+//         for (uint8_t i=0; i<h; i++, p++) {
+//           y = (matrix.vertical ? matrix.rightStart : matrix.bottomStart) ? v - j - 1 : j;
+//           x = (matrix.vertical ? matrix.bottomStart : matrix.rightStart) ? h - i - 1 : i;
+//           x = matrix.serpentine && j%2 ? h - x - 1 : x;
+
+//           startL = (matrix.vertical ? y : x) * panelW + (matrix.vertical ? x : y) * matrixWidth * panelH; // logical index (top-left corner)
+//           startP = p * panelW * panelH; // physical index (top-left corner)
+
+//           uint8_t H = panel[h*j + i].vertical ? panelW : panelH;
+//           uint8_t W = panel[h*j + i].vertical ? panelH : panelW;
+//           for (uint16_t l=0, q=0; l<H; l++) {
+//             for (uint16_t k=0; k<W; k++, q++) {
+//               y = (panel[h*j + i].vertical ? panel[h*j + i].rightStart : panel[h*j + i].bottomStart) ? H - l - 1 : l;
+//               x = (panel[h*j + i].vertical ? panel[h*j + i].bottomStart : panel[h*j + i].rightStart) ? W - k - 1 : k;
+//               x = (panel[h*j + i].serpentine && l%2) ? (W - x - 1) : x;
+//               offset = (panel[h*j + i].vertical ? y : x) + (panel[h*j + i].vertical ? x : y) * matrixWidth;
+//               customMappingTable[startL + offset] = startP + q;
+//             }
+//           }
+//         }
+//       }
+//       #ifdef WLED_DEBUG
+//       DEBUG_PRINT(F("Matrix ledmap:"));
+//       for (uint16_t i=0; i<customMappingSize; i++) {
+//         if (!(i%matrixWidth)) DEBUG_PRINTLN();
+//         DEBUG_PRINTF("%4d,", customMappingTable[i]);
+//       }
+//       DEBUG_PRINTLN();
+//       #endif
+//     } else {
+//       // memory allocation error
+//       matrixWidth = _length;
+//       matrixHeight = 1;
+//       isMatrix = false;
+//       return;
+//     }
+//   } else { 
+//     // not a matrix set up
+//     matrixWidth = _length;
+//     matrixHeight = 1;
+//   }
+// #endif
+// }
+
 void WS2812FX::setUpMatrix() {
 #ifndef WLED_DISABLE_2D
-  // erase old ledmap, just in case.
+  // erase 1D ledmap, no longer needed if existed
   if (customMappingTable != nullptr) delete[] customMappingTable;
   customMappingTable = nullptr;
   customMappingSize = 0;
 
+  matrixWidth = (DEFAULT_LED_COUNT),
+  matrixHeight = (1),
+  // erase 2D led map just in case
+  customMappingMap.clear();
   if (isMatrix) {
-    matrixWidth  = hPanels * panelW;
-    matrixHeight = vPanels * panelH;
-
-    // safety check
-    if (matrixWidth * matrixHeight > MAX_LEDS) {
-      matrixWidth = _length;
-      matrixHeight = 1;
-      isMatrix = false;
-      return;
-    }
-
-    customMappingSize  = matrixWidth * matrixHeight;
-    customMappingTable = new uint16_t[customMappingSize];
-
-    if (customMappingTable != nullptr) {
-      uint16_t startL; // index in custom mapping array (logical strip)
-      uint16_t startP; // position of 1st pixel of panel on (virtual) strip
-      uint16_t x, y, offset;
-      uint8_t h = matrix.vertical ? vPanels : hPanels;
-      uint8_t v = matrix.vertical ? hPanels : vPanels;
-
-      for (uint8_t j=0, p=0; j<v; j++) {
-        for (uint8_t i=0; i<h; i++, p++) {
-          y = (matrix.vertical ? matrix.rightStart : matrix.bottomStart) ? v - j - 1 : j;
-          x = (matrix.vertical ? matrix.bottomStart : matrix.rightStart) ? h - i - 1 : i;
-          x = matrix.serpentine && j%2 ? h - x - 1 : x;
-
-          startL = (matrix.vertical ? y : x) * panelW + (matrix.vertical ? x : y) * matrixWidth * panelH; // logical index (top-left corner)
-          startP = p * panelW * panelH; // physical index (top-left corner)
-
-          uint8_t H = panel[h*j + i].vertical ? panelW : panelH;
-          uint8_t W = panel[h*j + i].vertical ? panelH : panelW;
-          for (uint16_t l=0, q=0; l<H; l++) {
-            for (uint16_t k=0; k<W; k++, q++) {
-              y = (panel[h*j + i].vertical ? panel[h*j + i].rightStart : panel[h*j + i].bottomStart) ? H - l - 1 : l;
-              x = (panel[h*j + i].vertical ? panel[h*j + i].bottomStart : panel[h*j + i].rightStart) ? W - k - 1 : k;
-              x = (panel[h*j + i].serpentine && l%2) ? (W - x - 1) : x;
-              offset = (panel[h*j + i].vertical ? y : x) + (panel[h*j + i].vertical ? x : y) * matrixWidth;
-              customMappingTable[startL + offset] = startP + q;
-            }
-          }
-        }
-      }
-      #ifdef WLED_DEBUG
-      DEBUG_PRINT(F("Matrix ledmap:"));
-      for (uint16_t i=0; i<customMappingSize; i++) {
-        if (!(i%matrixWidth)) DEBUG_PRINTLN();
-        DEBUG_PRINTF("%4d,", customMappingTable[i]);
-      }
-      DEBUG_PRINTLN();
-      #endif
-    } else {
-      // memory allocation error
-      matrixWidth = _length;
-      matrixHeight = 1;
-      isMatrix = false;
-      return;
-    }
-  } else { 
-    // not a matrix set up
-    matrixWidth = _length;
-    matrixHeight = 1;
+    // customMappingMap = std::move(mapped);
   }
 #endif
+}
+
+void WS2812FX::insertMatrix(uint16_t x,uint16_t y,uint16_t i) {
+  #ifndef WLED_DISABLE_2D
+    if (x > matrixWidth){
+      matrixWidth = x;
+    }
+    if (y > matrixHeight){
+      matrixHeight = y;
+    }
+    customMappingMap[y][x] = i;
+  #endif
+}
+
+uint16_t WS2812FX::getIndex(uint16_t x, uint16_t y){
+  // custom_map_t::iterator it = customMappingMap.find((uint16_t)u);
+  // //return if it couldnt find an xy in the matrix
+  // if (it == customMappingMap.end()){
+  //   return 0;
+  // }
+  //   std::map<uint16_t,uint16_t> outside = it -> second;
+  //   std::map<uint16_t,uint16_t>::iterator it2 = outside.find((uint16_t)x);
+  //   if (it2 == outside.end()){
+  //     return 0;
+  //   }
+  //   return it2 -> second;
+  // return 0;
+
+    if(customMappingMap.count((uint16_t)y)==0) return 0;
+    auto internal = customMappingMap.at((uint16_t)y);
+
+    if(internal.count((uint16_t)x)==0) return 0;
+    return internal.at((uint16_t)x);
+
+
 }
 
 // absolute matrix version of setPixelColor()
@@ -113,7 +175,10 @@ void IRAM_ATTR WS2812FX::setPixelColorXY(int x, int y, uint32_t col)
 {
 #ifndef WLED_DISABLE_2D
   if (!isMatrix) return; // not a matrix set-up
-  uint16_t index = y * matrixWidth + x;
+  uint16_t index = getIndex((uint16_t)x,(uint16_t)y);
+  if(index == MAX_LEDS){
+    return;
+  }
 #else
   uint16_t index = x;
 #endif
@@ -125,7 +190,10 @@ void IRAM_ATTR WS2812FX::setPixelColorXY(int x, int y, uint32_t col)
 // returns RGBW values of pixel
 uint32_t WS2812FX::getPixelColorXY(uint16_t x, uint16_t y) {
 #ifndef WLED_DISABLE_2D
-  uint16_t index = (y * matrixWidth + x);
+  uint16_t index = getIndex((uint16_t)x,(uint16_t)y);
+  if(index == MAX_LEDS){
+    return 0;
+  }
 #else
   uint16_t index = x;
 #endif

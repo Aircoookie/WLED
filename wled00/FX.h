@@ -28,6 +28,7 @@
 #define WS2812FX_h
 
 #include <vector>
+#include <map>
 
 #include "const.h"
 
@@ -638,10 +639,13 @@ class WS2812FX {  // 96 bytes
     ModeData(uint8_t id, uint16_t (*fcn)(void), const char *data) : _id(id), _fcn(fcn), _data(data) {}
   } mode_data_t;
 
+  
   static WS2812FX* instance;
   
   public:
-
+      
+    typedef std::map<uint16_t, std::map<uint16_t, uint16_t>> custom_map_t;
+    
     WS2812FX() :
       paletteFade(0),
       paletteBlend(0),
@@ -653,14 +657,14 @@ class WS2812FX {  // 96 bytes
       timebase(0),
       isMatrix(false),
 #ifndef WLED_DISABLE_2D
-      hPanels(1),
-      vPanels(1),
-      panelH(8),
-      panelW(8),
+      // hPanels(1),
+      // vPanels(1),
+      // panelH(8),
+      // panelW(8),
       matrixWidth(DEFAULT_LED_COUNT),
       matrixHeight(1),
-      matrix{0,0,0,0},
-      panel{{0,0,0,0}},
+      // matrix{0,0,0,0},
+      // panel{{0,0,0,0}},
 #endif
       // semi-private (just obscured) used in effect functions through macros
       _currentPalette(CRGBPalette16(CRGB::Black)),
@@ -694,6 +698,7 @@ class WS2812FX {  // 96 bytes
 
     ~WS2812FX() {
       if (customMappingTable) delete[] customMappingTable;
+      customMappingMap.clear();
       _mode.clear();
       _modeData.clear();
       _segments.clear();
@@ -808,29 +813,30 @@ class WS2812FX {  // 96 bytes
 
 #ifndef WLED_DISABLE_2D
     #define WLED_MAX_PANELS 64
-    uint8_t
-      hPanels,
-      vPanels;
+    // uint8_t
+    //   hPanels,
+    //   vPanels;
 
     uint16_t
-      panelH,
-      panelW,
+      // panelH,
+      // panelW,
       matrixWidth,
       matrixHeight;
 
-    typedef struct panel_bitfield_t {
-      bool bottomStart : 1; // starts at bottom?
-      bool rightStart  : 1; // starts on right?
-      bool vertical    : 1; // is vertical?
-      bool serpentine  : 1; // is serpentine?
-    } Panel;
-    Panel
-      matrix,
-      panel[WLED_MAX_PANELS];
+    // typedef struct panel_bitfield_t {
+    //   bool bottomStart : 1; // starts at bottom?
+    //   bool rightStart  : 1; // starts on right?
+    //   bool vertical    : 1; // is vertical?
+    //   bool serpentine  : 1; // is serpentine?
+    // } Panel;
+    // Panel
+    //   matrix,
+    //   panel[WLED_MAX_PANELS];
 #endif
-
+    uint16_t getIndex(uint16_t x, uint16_t y);
     void
       setUpMatrix(),
+      insertMatrix(uint16_t x,uint16_t y,uint16_t i),
       setPixelColorXY(int x, int y, uint32_t c);
 
     // outsmart the compiler :) by correctly overloading
@@ -853,6 +859,8 @@ class WS2812FX {  // 96 bytes
 
     std::vector<segment> _segments;
     friend class Segment;
+
+    custom_map_t customMappingMap;
 
   private:
     uint16_t _length;
@@ -879,7 +887,7 @@ class WS2812FX {  // 96 bytes
 
     uint16_t* customMappingTable;
     uint16_t  customMappingSize;
-    
+
     uint32_t _lastShow;
     
     uint8_t _segment_index;

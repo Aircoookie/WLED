@@ -111,14 +111,15 @@ Serpentine: <input type="checkbox" name="P${i}S"></div>`;
 		<div class="helpB"><button type="button" onclick="H()">?</button></div>
 		<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 	</div>
-	<h2>2D setup</h2>
+	<h2>2D POOPY</h2>
     Strip or panel:
-	<select id="somp" name="SOMP" onchange="resetPanels();addPanels();UI();" >
+	<select id="somp" name="SOMP" onchange="UI();" >
 		<option value="0">1D Strip</option>
 		<option value="1">2D Matrix</option>
 	</select><br>
 	<div id="mpdiv" style="display:none;">
 		<h3>Panel set-up</h3>
+		<span class="l">Json Input</span>: <input type="text" name="MAP" class="agi"><br>
 		Panel dimensions (WxH): <input name="PW" type="number" min="1" max="128" value="8"> x <input name="PH" type="number" min="1" max="128" value="8"><br>
 		Horizontal panels: <input name="MPH" type="number" min="1" max="8" value="1" oninput="UI()">
 		Vertical panels: <input name="MPV" type="number" min="1" max="8" value="1" oninput="UI()"><br>
