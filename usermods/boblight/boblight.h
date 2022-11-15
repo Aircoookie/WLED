@@ -189,13 +189,12 @@ class BobLightUsermod : public Usermod {
   public:
 
     void setup() {
-      bob = new WiFiServer(bobPort, 1);
-      bob->begin();
-      bob->setNoDelay(true);
       initDone = true;
     }
 
     void connected() {
+      // we can only start server when WiFi is connected
+      if (!bob) bob = new WiFiServer(bobPort, 1);
       bob->begin();
       bob->setNoDelay(true);
     }
@@ -293,7 +292,7 @@ class BobLightUsermod : public Usermod {
       oappend(SET_F("addInfo('BobLight:top',1,'LEDs');"));                // 0 is field type, 1 is actual field
       oappend(SET_F("addInfo('BobLight:bottom',1,'LEDs');"));             // 0 is field type, 1 is actual field
       oappend(SET_F("addInfo('BobLight:left',1,'LEDs');"));               // 0 is field type, 1 is actual field
-      oappend(SET_F("addInfo('BobLight:righet',1,'LEDs');"));             // 0 is field type, 1 is actual field
+      oappend(SET_F("addInfo('BobLight:right',1,'LEDs');"));              // 0 is field type, 1 is actual field
       oappend(SET_F("addInfo('BobLight:pct',1,'Depth of scan [%]');"));   // 0 is field type, 1 is actual field
     }
 
