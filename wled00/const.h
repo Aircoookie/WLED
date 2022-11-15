@@ -96,10 +96,11 @@
 #define USERMOD_ID_ANALOG_CLOCK          33     //Usermod "Analog_Clock.h"
 #define USERMOD_ID_PING_PONG_CLOCK       34     //Usermod "usermod_v2_ping_pong_clock.h"
 #define USERMOD_ID_ADS1115               35     //Usermod "usermod_ads1115.h"
+#define USERMOD_ID_SD_CARD               37     //Usermod "usermod_sd_card.h"
 //WLEDMM
-#define USERMOD_ID_CUSTOMEFFECTS         36     //Usermod "usermod_v2_customeffects.h"
-#define USERMOD_ID_WEATHER               37     //Usermod "usermod_v2_weather.h"
-#define USERMOD_ID_GAMES                 38     //Usermod "usermod_v2_games.h"
+#define USERMOD_ID_CUSTOMEFFECTS         38     //Usermod "usermod_v2_customeffects.h"
+#define USERMOD_ID_WEATHER               39     //Usermod "usermod_v2_weather.h"
+#define USERMOD_ID_GAMES                 40     //Usermod "usermod_v2_games.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
@@ -255,13 +256,13 @@
 #define SEG_OPTION_TRANSPOSED     9
 
 //Segment differs return byte
-#define SEG_DIFFERS_BRI        0x01
-#define SEG_DIFFERS_OPT        0x02
-#define SEG_DIFFERS_COL        0x04
-#define SEG_DIFFERS_FX         0x08
-#define SEG_DIFFERS_BOUNDS     0x10
-#define SEG_DIFFERS_GSO        0x20
-#define SEG_DIFFERS_SEL        0x80
+#define SEG_DIFFERS_BRI        0x01 // opacity
+#define SEG_DIFFERS_OPT        0x02 // all segment options except: selected, reset & transitional
+#define SEG_DIFFERS_COL        0x04 // colors
+#define SEG_DIFFERS_FX         0x08 // effect/mode parameters
+#define SEG_DIFFERS_BOUNDS     0x10 // segment start/stop ounds
+#define SEG_DIFFERS_GSO        0x20 // grouping, spacing & offset
+#define SEG_DIFFERS_SEL        0x80 // selected
 
 //Playlist option byte
 #define PL_OPTION_SHUFFLE      0x01

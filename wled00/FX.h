@@ -243,12 +243,6 @@
 #define FX_MODE_TV_SIMULATOR           116
 #define FX_MODE_DYNAMIC_SMOOTH         117
 
-//WLED SR READ THIS!:
-//these id's should never change as they are saved in api commands of presets and used in sync
-//118 to 127 was reserved for future AC effects in SR 0.13 and partly filled in 0.14
-//numbering reflects the order in which they were added
-//there are still gaps which can be filled by future effects
-
 // new 0.14 2D effects
 #define FX_MODE_2DSPACESHIPS           118 //gap fill
 #define FX_MODE_2DCRAZYBEES            119 //gap fill
@@ -299,9 +293,9 @@
 #define FX_MODE_2DSUNRADIATION         166
 #define FX_MODE_2DCOLOREDBURSTS        167
 #define FX_MODE_2DJULIA                168
-#define FX_MODE_2DPOOLNOISE            169 //have been removed in WLED SR in the past because of low mem but should be added back
-#define FX_MODE_2DTWISTER              170 //have been removed in WLED SR in the past because of low mem but should be added back
-#define FX_MODE_2DCAELEMENTATY         171 //have been removed in WLED SR in the past because of low mem but should be added back
+// #define FX_MODE_2DPOOLNOISE            169 //have been removed in WLED SR in the past because of low mem but should be added back
+// #define FX_MODE_2DTWISTER              170 //have been removed in WLED SR in the past because of low mem but should be added back
+// #define FX_MODE_2DCAELEMENTATY         171 //have been removed in WLED SR in the past because of low mem but should be added back
 #define FX_MODE_2DGAMEOFLIFE           172
 #define FX_MODE_2DTARTAN               173
 #define FX_MODE_2DPOLARLIGHTS          174
@@ -482,13 +476,13 @@ typedef struct Segment {
     Segment(Segment &&orig) noexcept; // move constructor
 
     ~Segment() {
-      #ifdef WLED_DEBUG
-      Serial.print(F("Destroying segment:"));
-      if (name) Serial.printf(" %s (%p)", name, name);
-      if (data) Serial.printf(" %d (%p)", (int)_dataLen, data);
-      if (leds) Serial.printf(" [%u]", length()*sizeof(CRGB));
-      Serial.println();
-      #endif
+      //#ifdef WLED_DEBUG
+      //Serial.print(F("Destroying segment:"));
+      //if (name) Serial.printf(" %s (%p)", name, name);
+      //if (data) Serial.printf(" %d (%p)", (int)_dataLen, data);
+      //if (leds) Serial.printf(" [%u]", length()*sizeof(CRGB));
+      //Serial.println();
+      //#endif
       if (!Segment::_globalLeds && leds) free(leds);
       if (name) delete[] name;
       if (_t) delete _t;

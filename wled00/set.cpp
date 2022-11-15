@@ -697,13 +697,18 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   byte speedIn     = selseg.speed;
   byte intensityIn = selseg.intensity;
   byte paletteIn   = selseg.palette;
-
-  uint16_t startI = selseg.start;
-  uint16_t stopI  = selseg.stop;
-  uint16_t startY = selseg.startY;
-  uint16_t stopY  = selseg.stopY;
-  uint8_t  grpI   = selseg.grouping;
-  uint16_t spcI   = selseg.spacing;
+  byte custom1In   = selseg.custom1;
+  byte custom2In   = selseg.custom2;
+  byte custom3In   = selseg.custom3;
+  byte check1In    = selseg.check1;
+  byte check2In    = selseg.check2;
+  byte check3In    = selseg.check3;
+  uint16_t startI  = selseg.start;
+  uint16_t stopI   = selseg.stop;
+  uint16_t startY  = selseg.startY;
+  uint16_t stopY   = selseg.stopY;
+  uint8_t  grpI    = selseg.grouping;
+  uint16_t spcI    = selseg.spacing;
   pos = req.indexOf(F("&S=")); //segment start
   if (pos > 0) {
     startI = getNumVal(&req, pos);
@@ -838,7 +843,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     colorFromDecOrHexString(tmpCol, (char*)req.substring(pos + 3).c_str());
     uint32_t col2 = RGBW32(tmpCol[0], tmpCol[1], tmpCol[2], tmpCol[3]);
     selseg.setColor(2, col2); // defined above (SS= or main)
-    stateChanged = true;
     if (!singleSegment) strip.setColor(2, col2); // will set color to all active & selected segments
   }
 
@@ -864,20 +868,19 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   // apply colors to selected segment, and all selected segments if applicable
   if (col0Changed) {
-    stateChanged = true;
     uint32_t colIn0 = RGBW32(colIn[0], colIn[1], colIn[2], colIn[3]);
     selseg.setColor(0, colIn0);
     if (!singleSegment) strip.setColor(0, colIn0); // will set color to all active & selected segments
   }
 
   if (col1Changed) {
-    stateChanged = true;
     uint32_t colIn1 = RGBW32(colInSec[0], colInSec[1], colInSec[2], colInSec[3]);
     selseg.setColor(1, colIn1);
     if (!singleSegment) strip.setColor(1, colIn1); // will set color to all active & selected segments
   }
 
   bool fxModeChanged = false, speedChanged = false, intensityChanged = false, paletteChanged = false;
+  bool custom1Changed = false, custom2Changed = false, custom3Changed = false, check1Changed = false, check2Changed = false, check3Changed = false;
   // set effect parameters
   if (updateVal(req.c_str(), "FX=", &effectIn, 0, strip.getModeCount()-1)) {
     if (request != nullptr) unloadPlaylist(); // unload playlist if changing FX using web request
@@ -886,8 +889,14 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   speedChanged     = updateVal(req.c_str(), "SX=", &speedIn);
   intensityChanged = updateVal(req.c_str(), "IX=", &intensityIn);
   paletteChanged   = updateVal(req.c_str(), "FP=", &paletteIn, 0, strip.getPaletteCount()-1);
-  
-  stateChanged |= (fxModeChanged || speedChanged || intensityChanged || paletteChanged);
+  custom1Changed   = updateVal(req.c_str(), "X1=", &custom1In);
+  custom2Changed   = updateVal(req.c_str(), "X2=", &custom2In);
+  custom3Changed   = updateVal(req.c_str(), "X3=", &custom3In);
+  check1Changed    = updateVal(req.c_str(), "M1=", &check1In);
+  check2Changed    = updateVal(req.c_str(), "M2=", &check2In);
+  check3Changed    = updateVal(req.c_str(), "M3=", &check3In);
+
+  stateChanged |= (fxModeChanged || speedChanged || intensityChanged || paletteChanged || custom1Changed || custom2Changed || custom3Changed || check1Changed || check2Changed || check3Changed);
 
   // apply to main and all selected segments to prevent #1618.
   for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
@@ -897,6 +906,12 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     if (speedChanged)     seg.speed     = speedIn;
     if (intensityChanged) seg.intensity = intensityIn;
     if (paletteChanged)   seg.setPalette(paletteIn);
+    if (custom1Changed)   seg.custom1   = custom1In;
+    if (custom2Changed)   seg.custom2   = custom2In;
+    if (custom3Changed)   seg.custom3   = custom3In;
+    if (check1Changed)    seg.check1    = (bool)check1In;
+    if (check2Changed)    seg.check2    = (bool)check2In;
+    if (check3Changed)    seg.check3    = (bool)check3In;
   }
 
   //set advanced overlay
