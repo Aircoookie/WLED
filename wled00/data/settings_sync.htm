@@ -9,6 +9,8 @@
   var loc = false, locip;
   function gId(s){return d.getElementById(s);}
   function toggle(el){gId(el).classList.toggle("hide"); gId('No'+el).classList.toggle("hide");}
+  function hideNoDMX(){gId("dmxOnOff2").style.display="none";}
+  function hideNoLOX(){gId("loxOnOff2").style.display="none";}
   function H(){window.open("https://kno.wled.ge/interfaces/udp-notifier/");}
   function B(){window.open("/settings","_self");}
   function adj(){if (d.Sf.DI.value == 6454) {if (d.Sf.EU.value == 1) d.Sf.EU.value = 0;}
@@ -163,6 +165,9 @@ Timeout: <input name="ET" type="number" min="1" max="65000" required> ms<br>
 Force max brightness: <input type="checkbox" name="FB"><br>
 Disable realtime gamma correction: <input type="checkbox" name="RG"><br>
 Realtime LED offset: <input name="WO" type="number" min="-255" max="255" required>
+<div id="dmxOnOff2">
+  <br><em style="color:darkorange">This firmware build does not include DMX output support. <br></em>
+</div> 
 <hr class="sml">
 <h3>Alexa Voice Assistant</h3>
 <div id="NoAlexa" class="hide">
@@ -225,6 +230,8 @@ Hue Bridge IP:<br>
 (when first connecting)<br>
 </div>
 Hue status: <span class="sip"> Disabled in this build </span>
+<div id="loxOnOff2">
+  <br><em style="color:darkorange">This firmware build does not include Loxone Lighting support. <br></em>
 </div>
 <h3>Serial</h3>
 Baud rate:
