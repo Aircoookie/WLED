@@ -1850,7 +1850,7 @@ ${makePlSel(plJson[i].end?plJson[i].end:0, true)}
 </label>`;
 		if (Array.isArray(lastinfo.maps) && lastinfo.maps.length>0) {
 			content += `<div class="lbl-l">Ledmap:&nbsp;<div class="sel-p"><select class="sel-p" id="p${i}lmp"><option value="">None</option>`;
-			for (const k of (lastinfo.maps||[])) content += `<option value="${k}"${(i>0 && pJson[i].ledmap==k)?" selected":""}>${k}</option>`;
+			for (const k of (lastinfo.maps||[])) content += `<option value="${k}"${(i>0 && pJson[i].ledmap==k)?" selected":""}>ledmap${k}.json</option>`;
 			content += "</select></div></div>";
 		}
 	}

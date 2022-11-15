@@ -506,7 +506,7 @@ um_data_t* simulateSound(uint8_t simulationId)
 
 
 void enumerateLedmaps() {
-  ledMaps = 1;
+  ledMaps = 0; //WLEDMM: instead of 1 (which adds ledmap 0 to the binary encoded list of ledmaps)
   for (size_t i=1; i<10; i++) {
     char fileName[16];
     sprintf_P(fileName, PSTR("/ledmap%d.json"), i);

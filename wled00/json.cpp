@@ -420,7 +420,11 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   usermods.readFromJsonState(root);
 
-  loadLedmap = root[F("ledmap")] | loadLedmap;
+  //WLEDMM: if no ledmap loadLedmap=0 (which erases customMappingTable in deserializeMap if exists)
+  if (root[F("ledmap")].isNull())
+    loadLedmap = 0;
+  else
+    loadLedmap = root[F("ledmap")] | loadLedmap;
 
   byte ps = root[F("psave")];
   if (ps > 0 && ps < 251) savePreset(ps, nullptr, root);
@@ -542,6 +546,11 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     root["bri"] = briLast;
     root[F("transition")] = transitionDelay/100; //in 100ms
   }
+  //WLEDMM only add ledmap if defined, otherwise remove (then ledmap is 0 is assumed in deserializeState)
+  if (loadLedmap>0)
+    root[F("ledmap")] = loadLedmap;
+  else
+    root.remove(F("ledmap"));
 
   if (!forPreset) {
     if (errorFlag) {root[F("error")] = errorFlag; errorFlag = ERR_NONE;} //prevent error message to persist on screen
