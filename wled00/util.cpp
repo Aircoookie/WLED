@@ -504,7 +504,7 @@ um_data_t* simulateSound(uint8_t simulationId)
 
 
 void enumerateLedmaps() {
-  ledMaps = 1;
+  ledMaps = 0;
   for (size_t i=1; i<10; i++) {
     char fileName[16];
     sprintf_P(fileName, PSTR("/ledmap%d.json"), i);

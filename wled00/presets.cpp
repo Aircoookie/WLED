@@ -13,7 +13,7 @@ static volatile byte callModeToApply = 0;
 static volatile byte presetToSave = 0;
 static char quickLoad[3];
 static char saveName[33];
-static bool includeBri = true, segBounds = true, selectedOnly = false, playlistSave = false;;
+static bool includeBri = true, segBounds = true, selectedOnly = false, playlistSave = false;
 
 static const char *getName(bool persist = true) {
   return persist ? "/presets.json" : "/tmp.json";
@@ -208,6 +208,7 @@ void savePreset(byte index, const char* pname, JsonObject sObj)
       playlistSave = true;
     }
   }
+  loadLedmap = sObj["ledmap"];
 }
 
 void deletePreset(byte index) {
