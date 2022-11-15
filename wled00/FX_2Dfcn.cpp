@@ -131,17 +131,31 @@ void WS2812FX::setUpMatrix() {
   customMappingMap.clear();
   if (isMatrix) {
     // customMappingMap = std::move(mapped);
+  }else{
+    matrixWidth = _length;
   }
 #endif
 }
 
 void WS2812FX::insertMatrix(uint16_t x,uint16_t y,uint16_t i) {
   #ifndef WLED_DISABLE_2D
-    if (x > matrixWidth){
-      matrixWidth = x;
+    if (x >= matrixWidth){
+      matrixWidth = x+1;
+      #ifdef WLED_DEBUG
+        DEBUG_PRINT(F("matrix w/h: "));
+        DEBUG_PRINT(matrixWidth);
+        DEBUG_PRINT(F(", "));
+        DEBUG_PRINTLN(matrixHeight);
+      #endif
     }
-    if (y > matrixHeight){
-      matrixHeight = y;
+    if (y >= matrixHeight){
+      matrixHeight = y+1;
+      #ifdef WLED_DEBUG
+        DEBUG_PRINT(F("matrix w/h: "));
+        DEBUG_PRINT(matrixWidth);
+        DEBUG_PRINT(F(", "));
+        DEBUG_PRINTLN(matrixHeight);
+      #endif
     }
     customMappingMap[std::make_pair(x,y)] = i;
   #endif
@@ -208,9 +222,13 @@ uint32_t WS2812FX::getPixelColorXY(uint16_t x, uint16_t y) {
 
 // XY(x,y) - gets pixel index within current segment (often used to reference leds[] array element)
 uint16_t IRAM_ATTR Segment::XY(uint16_t x, uint16_t y) {
-  uint16_t width  = virtualWidth();   // segment width in logical pixels
-  uint16_t height = virtualHeight();  // segment height in logical pixels
-  return (x%width) + (y%height) * width;
+  // uint16_t width  = virtualWidth();   // segment width in logical pixels
+  // uint16_t height = virtualHeight();  // segment height in logical pixels
+  // return (x%width) + (y%height) * width;
+  if(strip.customMappingMap.count(std::make_pair(x,y))==0) return -1;
+  auto internal = strip.customMappingMap.at(std::make_pair(x,y));
+  return internal;
+
 }
 
 void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
@@ -218,7 +236,12 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
   if (!strip.isMatrix) return; // not a matrix set-up
   if (x >= virtualWidth() || y >= virtualHeight() || x<0 || y<0) return;  // if pixel would fall out of virtual segment just exit
 
-  if (leds) leds[XY(x,y)] = col;
+  uint16_t index = XY(x,y);
+  if (index == (uint16_t) -1){
+    return;
+  }
+
+  if (leds) leds[index] = col;
 
   uint8_t _bri_t = currentBri(on ? opacity : 0);
   if (_bri_t < 255) {
@@ -306,6 +329,7 @@ void Segment::setPixelColorXY(float x, float y, uint32_t col, bool aa)
 // returns RGBW values of pixel
 uint32_t Segment::getPixelColorXY(uint16_t x, uint16_t y) {
   int i = XY(x,y);
+  if (i==(uint16_t)-1) return 0;
   if (leds) return RGBW32(leds[i].r, leds[i].g, leds[i].b, 0);
   if (reverse  ) x = virtualWidth()  - x - 1;
   if (reverse_y) y = virtualHeight() - y - 1;
