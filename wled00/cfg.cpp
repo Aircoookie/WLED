@@ -709,14 +709,13 @@ void serializeConfig() {
   // }
 
   JsonArray hw_led_matrix = hw_led.createNestedArray("matrix");
-    for (const auto& kvy : strip.customMappingMap) {
-      for (const auto& kvx : kvy.second){
+    for (const auto& kv : strip.customMappingMap) {
         JsonObject ins = hw_led_matrix.createNestedObject();
-        ins["y"] = kvy.first;
-        ins["x"] = kvx.first;
-        ins["i"] = kvx.second;
+        ins["x"] = kv.first.first;
+        ins["y"] = kv.first.second;
+        ins["i"] = kv.second;
       }
-    }
+    
   #endif
 
   JsonArray hw_led_ins = hw_led.createNestedArray("ins");

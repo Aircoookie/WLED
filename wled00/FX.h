@@ -644,7 +644,7 @@ class WS2812FX {  // 96 bytes
   
   public:
       
-    typedef std::map<uint16_t, std::map<uint16_t, uint16_t>> custom_map_t;
+    typedef std::map<std::pair<uint16_t,uint16_t>,uint16_t> custom_map_t;
     
     WS2812FX() :
       paletteFade(0),

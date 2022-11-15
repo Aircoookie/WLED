@@ -125,7 +125,7 @@ void WS2812FX::setUpMatrix() {
   customMappingTable = nullptr;
   customMappingSize = 0;
 
-  matrixWidth = (DEFAULT_LED_COUNT),
+  matrixWidth = (1),
   matrixHeight = (1),
   // erase 2D led map just in case
   customMappingMap.clear();
@@ -143,7 +143,7 @@ void WS2812FX::insertMatrix(uint16_t x,uint16_t y,uint16_t i) {
     if (y > matrixHeight){
       matrixHeight = y;
     }
-    customMappingMap[y][x] = i;
+    customMappingMap[std::make_pair(x,y)] = i;
   #endif
 }
 
@@ -161,11 +161,9 @@ uint16_t WS2812FX::getIndex(uint16_t x, uint16_t y){
   //   return it2 -> second;
   // return 0;
 
-    if(customMappingMap.count((uint16_t)y)==0) return 0;
-    auto internal = customMappingMap.at((uint16_t)y);
-
-    if(internal.count((uint16_t)x)==0) return 0;
-    return internal.at((uint16_t)x);
+    if(customMappingMap.count(std::make_pair(x,y))==0) return -1;
+    auto internal = customMappingMap.at(std::make_pair(x,y));
+    return internal;
 
 
 }
