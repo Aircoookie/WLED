@@ -4537,7 +4537,7 @@ uint16_t mode_wavesins(void) {
 
   for (int i = 0; i < SEGLEN; i++) {
     uint8_t bri = sin8(millis()/4 + i * SEGMENT.intensity);
-    uint8_t index = beatsin8(SEGMENT.speed, SEGMENT.custom1, SEGMENT.custom1+SEGMENT.custom2, 0, i * (SEGMENT.custom3<<3)); // custom3 is reduced resolution slider
+    uint8_t index = beatsin8(SEGMENT.speed, SEGMENT.custom1, SEGMENT.custom1+SEGMENT.custom2, 0, i * (SEGMENT.custom3));
     //SEGMENT.setPixelColor(i, ColorFromPalette(SEGPALETTE, index, bri, LINEARBLEND));
     SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0, bri));
   }
@@ -5080,18 +5080,21 @@ uint16_t mode_2DLissajous(void) {            // By: Andrew Tuline
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
+  if (SEGENV.call == 0) SEGMENT.setUpLeds();
+
   SEGMENT.fadeToBlackBy(SEGMENT.intensity);
 
   //for (int i=0; i < 4*(cols+rows); i ++) {
   for (int i=0; i < 256; i ++) {
     //float xlocn = float(sin8(now/4+i*(SEGMENT.speed>>5))) / 255.0f;
     //float ylocn = float(cos8(now/4+i*2)) / 255.0f;
-    uint8_t xlocn = sin8(strip.now/2+i*(SEGMENT.speed>>5));
+    uint8_t xlocn = sin8(strip.now/2+i*(SEGMENT.speed>>6));
     uint8_t ylocn = cos8(strip.now/2+i*2);
     xlocn = map(xlocn,0,255,0,cols-1);
     ylocn = map(ylocn,0,255,0,rows-1);
     SEGMENT.setPixelColorXY(xlocn, ylocn, SEGMENT.color_from_palette(strip.now/100+i, false, PALETTE_SOLID_WRAP, 0));
   }
+
 
   return FRAMETIME;
 } // mode_2DLissajous()
@@ -6127,12 +6130,7 @@ uint16_t mode_2DWaverly(void) {
 
   long t = millis() / 2;
   for (int i = 0; i < cols; i++) {
-    uint16_t thisVal = (1 + SEGMENT.intensity/64) * inoise8(i * 45 , t , t)/2;
-    // use audio if available
-    if (um_data) {
-      thisVal /= 32; // reduce intensity of inoise8()
-      thisVal *= volumeSmth;
-    }
+    uint16_t thisVal = volumeSmth*SEGMENT.intensity/64 * inoise8(i * 45 , t , t)/64;
     uint16_t thisMax = map(thisVal, 0, 512, 0, rows);
 
     for (int j = 0; j < thisMax; j++) {
@@ -7244,6 +7242,8 @@ uint16_t mode_2DAkemi(void) {
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
+
+  if (SEGENV.call == 0) SEGMENT.setUpLeds();
 
   uint16_t counter = (strip.now * ((SEGMENT.speed >> 2) +2)) & 0xFFFF;
   counter = counter >> 8;
