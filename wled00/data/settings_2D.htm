@@ -53,7 +53,7 @@
 		}
 
 		gId("mpdiv").style.display = "block";
-		maxPanels = parseInt(d.Sf.MPH.value) * parseInt(d.Sf.MPV.value);
+		maxPanels = parseInt(d.Sf.MPC.value);
 
 		let i = gId("panels").children.length;
 		if (i<maxPanels) for (let j=i; j<maxPanels; j++) addPanel(j);
@@ -62,9 +62,8 @@
 	}
 
 	function addPanels() {
-		let h = parseInt(d.Sf.MPH.value);
-		let v = parseInt(d.Sf.MPV.value);
-		for (let i=0; i<h*v; i++) addPanel(i);
+		let c = parseInt(d.Sf.MPC.value);
+		for (let i=0; i<c; i++) addPanel(i);
 	}
 
 	function addPanel(i=0) {
@@ -81,6 +80,8 @@ Orientation: <select name="P${i}V">
 	<option value="0">Horizontal</option>
 	<option value="1">Vertical</option>
 </select><br>
+X Offset From Top Left (in LEDs) <input name="P${i}X" type="number" min="0" max="256" value="0">
+Y Offset <input name="P${i}Y" type="number" min="0" max="256" value="0"><br>
 Serpentine: <input type="checkbox" name="P${i}S"></div>`;
 		p.insertAdjacentHTML("beforeend", b);
 	}
@@ -95,6 +96,7 @@ Serpentine: <input type="checkbox" name="P${i}S"></div>`;
 	function resetPanels() {
 		d.Sf.MPH.value = 1;
 		d.Sf.MPV.value = 1;
+		d.Sf.MPC.value = 1;
 		for (let e of gId("panels").children) e.remove();
 	}
 
@@ -120,8 +122,9 @@ Serpentine: <input type="checkbox" name="P${i}S"></div>`;
 	<div id="mpdiv" style="display:none;">
 		<h3>Panel set-up</h3>
 		Panel dimensions (WxH): <input name="PW" type="number" min="1" max="128" value="8"> x <input name="PH" type="number" min="1" max="128" value="8"><br>
-		Horizontal panels: <input name="MPH" type="number" min="1" max="8" value="1" oninput="UI()">
-		Vertical panels: <input name="MPV" type="number" min="1" max="8" value="1" oninput="UI()"><br>
+		Number panels: <input name="MPC" type="number" min="1" max="256" value="1" oninput="UI()"><br>
+		UNUSED Horizontal panels: <input name="MPH" type="number" min="1" max="8" value="1" oninput="UI()">
+		UNUSED Vertical panels: <input name="MPV" type="number" min="1" max="8" value="1" oninput="UI()"><br>
 		1<sup>st</sup> panel: <select name="PB">
 			<option value="0">Top</option>
 			<option value="1">Bottom</option>

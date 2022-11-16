@@ -726,14 +726,13 @@ void getSettingsJS(byte subPage, char* dest)
     if (strip.isMatrix) {
       sappend('v',SET_F("PH"),strip.panelH);
       sappend('v',SET_F("PW"),strip.panelW);
-      sappend('v',SET_F("MPH"),strip.hPanels);
-      sappend('v',SET_F("MPV"),strip.vPanels);
+      sappend('v',SET_F("MPC"),strip.panels);
       sappend('v',SET_F("PB"),strip.matrix.bottomStart);
       sappend('v',SET_F("PR"),strip.matrix.rightStart);
       sappend('v',SET_F("PV"),strip.matrix.vertical);
       sappend('c',SET_F("PS"),strip.matrix.serpentine);
       // panels
-      for (uint8_t i=0; i<strip.hPanels*strip.vPanels; i++) {
+      for (uint8_t i=0; i<strip.panels; i++) {
         char n[5];
         oappend(SET_F("addPanel("));
         oappend(itoa(i,n,10));

@@ -653,8 +653,7 @@ class WS2812FX {  // 96 bytes
       timebase(0),
       isMatrix(false),
 #ifndef WLED_DISABLE_2D
-      hPanels(1),
-      vPanels(1),
+      panels(1),
       panelH(8),
       panelW(8),
       matrixWidth(DEFAULT_LED_COUNT),
@@ -809,8 +808,7 @@ class WS2812FX {  // 96 bytes
 #ifndef WLED_DISABLE_2D
     #define WLED_MAX_PANELS 64
     uint8_t
-      hPanels,
-      vPanels;
+      panels;
 
     uint16_t
       panelH,
@@ -819,12 +817,15 @@ class WS2812FX {  // 96 bytes
       matrixHeight;
 
     typedef struct panel_bitfield_t {
-      bool bottomStart : 1; // starts at bottom?
-      bool rightStart  : 1; // starts on right?
-      bool vertical    : 1; // is vertical?
-      bool serpentine  : 1; // is serpentine?
+      unsigned int xOffset  : 8; //x offset relative to the top left of matrix in LEDs
+      unsigned int yOffset  : 8; //y offset relative to the top left of matrix in LEDs
+      bool bottomStart      : 1; // starts at bottom?
+      bool rightStart       : 1; // starts on right?
+      bool vertical         : 1; // is vertical?
+      bool serpentine       : 1; // is serpentine?
     } Panel;
     Panel
+      // may not be needed anymore since each panel has offset. Will leave for now
       matrix,
       panel[WLED_MAX_PANELS];
 #endif

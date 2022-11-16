@@ -99,8 +99,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     strip.isMatrix = true;
     CJSON(strip.panelH,  matrix[F("ph")]);
     CJSON(strip.panelW,  matrix[F("pw")]);
-    CJSON(strip.hPanels, matrix[F("mph")]);
-    CJSON(strip.vPanels, matrix[F("mpv")]);
+    CJSON(strip.panels, matrix[F("mpc")]);
     CJSON(strip.matrix.bottomStart, matrix[F("pb")]);
     CJSON(strip.matrix.rightStart,  matrix[F("pr")]);
     CJSON(strip.matrix.vertical,    matrix[F("pv")]);
@@ -114,6 +113,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
         CJSON(strip.panel[s].rightStart, pnl["r"]);
         CJSON(strip.panel[s].vertical, pnl["v"]);
         CJSON(strip.panel[s].serpentine, pnl["s"]);
+        CJSON(strip.panel[s].xOffset, pnl["x"]);
+        CJSON(strip.panel[s].yOffset, pnl["y"]);
         if (++s >= WLED_MAX_PANELS) break; // max panels reached
       }
     }
@@ -682,20 +683,21 @@ void serializeConfig() {
     JsonObject matrix = hw_led.createNestedObject(F("matrix"));
     matrix[F("ph")] = strip.panelH;
     matrix[F("pw")] = strip.panelW;
-    matrix[F("mph")] = strip.hPanels;
-    matrix[F("mpv")] = strip.vPanels;
+    matrix[F("mpc")] = strip.panels;
     matrix[F("pb")] = strip.matrix.bottomStart;
     matrix[F("pr")] = strip.matrix.rightStart;
     matrix[F("pv")] = strip.matrix.vertical;
     matrix[F("ps")] = strip.matrix.serpentine;
 
     JsonArray panels = matrix.createNestedArray(F("panels"));
-    for (uint8_t i=0; i<strip.hPanels*strip.vPanels; i++) {
+    for (uint8_t i=0; i<strip.panels; i++) {
       JsonObject pnl = panels.createNestedObject();
       pnl["b"] = strip.panel[i].bottomStart;
       pnl["r"] = strip.panel[i].rightStart;
       pnl["v"] = strip.panel[i].vertical;
       pnl["s"] = strip.panel[i].serpentine;
+      pnl["x"] = strip.panel[i].xOffset;
+      pnl["y"] = strip.panel[i].yOffset;
     }
   }
   #endif
