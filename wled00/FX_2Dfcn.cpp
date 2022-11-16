@@ -86,6 +86,8 @@ void WS2812FX::setUpMatrix() {
         DEBUG_PRINT(F(", "));
         DEBUG_PRINTLN(panelH);
 
+
+      //TODO: make this work with existing serpentine, bottom/right, etc
       for (uint8_t k = 0; k < panels; k++){
         auto p = panel[k];
         x = p.xOffset;
