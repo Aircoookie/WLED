@@ -467,7 +467,6 @@ typedef struct Segment {
     }
 
     Segment(uint16_t sStartX, uint16_t sStopX, uint16_t sStartY, uint16_t sStopY) : Segment(sStartX, sStopX) {
-    Serial.println("Segment"); //WLEDMM jMap
       startY = sStartY;
       stopY  = sStopY;
     }
@@ -756,7 +755,7 @@ class WS2812FX {  // 96 bytes
       hasCCTBus(void),
       // return true if the strip is being sent pixel updates
       isUpdating(void),
-      useLedsArray = false;
+      useLedsArray = true; //WLEDMM default true as recommended for overlapping segments
 
     inline bool isServicing(void) { return _isServicing; }
     inline bool hasWhiteChannel(void) {return _hasWhiteChannel;}

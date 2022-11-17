@@ -4537,7 +4537,7 @@ uint16_t mode_wavesins(void) {
 
   for (int i = 0; i < SEGLEN; i++) {
     uint8_t bri = sin8(millis()/4 + i * SEGMENT.intensity);
-    uint8_t index = beatsin8(SEGMENT.speed, SEGMENT.custom1, SEGMENT.custom1+SEGMENT.custom2, 0, i * (SEGMENT.custom3));
+    uint8_t index = beatsin8(SEGMENT.speed, SEGMENT.custom1, SEGMENT.custom1+SEGMENT.custom2, 0, i * (SEGMENT.custom3<<3));
     //SEGMENT.setPixelColor(i, ColorFromPalette(SEGPALETTE, index, bri, LINEARBLEND));
     SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0, bri));
   }
@@ -5080,8 +5080,6 @@ uint16_t mode_2DLissajous(void) {            // By: Andrew Tuline
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  if (SEGENV.call == 0) SEGMENT.setUpLeds();
-
   SEGMENT.fadeToBlackBy(SEGMENT.intensity);
 
   //for (int i=0; i < 4*(cols+rows); i ++) {
@@ -5422,7 +5420,7 @@ uint16_t mode_2Dsquaredswirl(void) {            // By: Mark Kriegsman. https://g
 
   SEGMENT.fadeToBlackBy(24);
 
-  uint8_t blurAmount = SEGMENT.custom3>>1; // reduced resolution slider
+  uint8_t blurAmount = SEGMENT.custom3<<3; // reduced resolution slider
   SEGMENT.blur(blurAmount);
 
   // Use two out-of-sync sine waves
@@ -7243,7 +7241,7 @@ uint16_t mode_2DAkemi(void) {
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  if (SEGENV.call == 0) SEGMENT.setUpLeds();
+  // if (SEGENV.call == 0) SEGMENT.setUpLeds(); 
 
   uint16_t counter = (strip.now * ((SEGMENT.speed >> 2) +2)) & 0xFFFF;
   counter = counter >> 8;
