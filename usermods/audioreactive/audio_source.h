@@ -220,7 +220,7 @@ class I2SSource : public AudioSource {
         // pin as DATA
         _config.mode = i2s_mode_t(I2S_MODE_MASTER | I2S_MODE_RX | I2S_MODE_PDM); // Change mode to pdm if clock pin not provided. PDM is not supported on ESP32-S2. PDM RX not supported on ESP32-C3
         _config.channel_format =I2S_PDM_MIC_CHANNEL;                             // seems that PDM mono mode always uses left channel.
-        //_config.use_apll = true;                                                 // experimental - use aPLL clock source to improve sampling quality
+        _config.use_apll = true;                                                 // experimental - use aPLL clock source to improve sampling quality
         //_config.bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT;                     // not needed
         #endif
       }
@@ -269,7 +269,7 @@ class I2SSource : public AudioSource {
       }
 
       DEBUGSR_PRINTF("AR: I2S#0 driver %s aPLL; fixed_mclk=%d.\n", _config.use_apll? "uses":"without", _config.fixed_mclk);
-      DEBUGSR_PRINTF("AR: Sample scaling factor = %6.4f\n", _sampleScale);
+      DEBUGSR_PRINTF("AR: %d bits, Sample scaling factor = %6.4f\n",  _config.bits_per_sample, _sampleScale);
       if(_config.mode & I2S_MODE_MASTER) {
         if (_config.mode & I2S_MODE_PDM)
           DEBUGSR_PRINTLN(F("AR: I2S#0 driver installed in PDM MASTER mode."));

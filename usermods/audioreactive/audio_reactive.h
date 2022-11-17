@@ -91,6 +91,7 @@ const float agcSampleSmooth[AGC_NUM_PRESETS]  = {  1/12.f,   1/6.f,  1/16.f}; //
 
 static AudioSource *audioSource = nullptr;
 static volatile bool disableSoundProcessing = false;      // if true, sound processing (FFT, filters, AGC) will be suspended. "volatile" as its shared between tasks.
+static bool useBandPassFilter = false;                    // if true, enables a bandpass filter 80Hz-16Khz to remove noise. Applies before FFT.
 
 // audioreactive variables shared with FFT task
 static float    micDataReal = 0.0f;             // MicIn data with full 24bit resolution - lowest 8bit after decimal point
@@ -225,6 +226,7 @@ static float mapf(float x, float in_min, float in_max, float out_min, float out_
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
+#if 1  // linear average
 static float fftAddAvg(int from, int to) {
   float result = 0.0f;
   for (int i = from; i <= to; i++) {
@@ -232,6 +234,16 @@ static float fftAddAvg(int from, int to) {
   }
   return result / float(to - from + 1);
 }
+
+#else // RMS average
+static float fftAddAvg(int from, int to) {
+  double result = 0.0;
+  for (int i = from; i <= to; i++) {
+    result += vReal[i] * vReal[i];
+  }
+  return sqrtf(result / float(to - from + 1));
+}
+#endif
 
 // FFT main task
 void FFTcode(void * parameter)
@@ -269,6 +281,37 @@ void FFTcode(void * parameter)
 #endif
 
     xLastWakeTime = xTaskGetTickCount();       // update "last unblocked time" for vTaskDelay
+
+    // band pass filter - can reduce noise floor by a factor of 50
+    // downside: frequencies below 100Hz will be ignored
+    if (useBandPassFilter) {
+      // low frequency cutoff parameter
+      //constexpr float alpha = 0.04f;   // 100hz
+      constexpr float alpha = 0.03f;   // 80hz
+      //constexpr float alpha = 0.0225f; // 60hz
+      // high frequency cutoff  parameter
+      //constexpr float beta1 = 0.75;    // 11Khz
+      //constexpr float beta1 = 0.82;    // 15Khz
+      //constexpr float beta1 = 0.8285;  // 18Khz
+      constexpr float beta1 = 0.85;   // 20Khz
+
+      constexpr float beta2 = (1.0f - beta1) / 2.0;
+      static float last_vals[2] = { 0.0f }; // FIR high freq cutoff filter
+      static float lowfilt = 0.0f;          // IIR low frequency cutoff filter
+
+      for (int i=0; i < samplesFFT; i++) {
+        // FIR lowpass, to remove high frequency noise
+        float highFilteredSample;
+        if (i < (samplesFFT-1)) highFilteredSample = beta1*vReal[i] + beta2*last_vals[0] + beta2*vReal[i+1];  // smooth out spikes
+        else highFilteredSample = beta1*vReal[i] + beta2*last_vals[0]  + beta2*last_vals[1];                  // spcial handling for last sample in array
+        last_vals[1] = last_vals[0];
+        last_vals[0] = vReal[i];
+        vReal[i] = highFilteredSample;
+        // IIR highpass, to remove low frequency noise
+        lowfilt += alpha * (vReal[i] - lowfilt);
+        vReal[i] = vReal[i] - lowfilt;
+      }  
+    }
 
     // find highest sample in the batch
     float maxSample = 0.0f;                         // max sample from FFT batch
@@ -365,10 +408,22 @@ void FFTcode(void * parameter)
 #else
       /* new mapping, optimized for 22050 Hz by softhack007 */
                                                     // bins frequency  range
-      fftCalc[ 0] = fftAddAvg(1,2);                 // 1    43 - 86   sub-bass
-      fftCalc[ 1] = fftAddAvg(2,3);                 // 1    86 - 129  bass
-      fftCalc[ 2] = fftAddAvg(3,5);                 // 2   129 - 216  bass
-      fftCalc[ 3] = fftAddAvg(5,7);                 // 2   216 - 301  bass + midrange
+      if (useBandPassFilter) {
+        // skip frequencies below 100hz
+        fftCalc[ 0] = 0.8f * fftAddAvg(3,4);
+        fftCalc[ 1] = 0.9f * fftAddAvg(4,5);
+        fftCalc[ 2] = fftAddAvg(5,6);
+        fftCalc[ 3] = fftAddAvg(6,7);
+        // don't use the last bins from 206 to 255. 
+        fftCalc[15] = fftAddAvg(165,205) * 0.75f;   // 40 7106 - 8828 high             -- with some damping
+      } else {
+        fftCalc[ 0] = fftAddAvg(1,2);               // 1    43 - 86   sub-bass
+        fftCalc[ 1] = fftAddAvg(2,3);               // 1    86 - 129  bass
+        fftCalc[ 2] = fftAddAvg(3,5);               // 2   129 - 216  bass
+        fftCalc[ 3] = fftAddAvg(5,7);               // 2   216 - 301  bass + midrange
+        // don't use the last bins from 216 to 255. They are usually contaminated by aliasing (aka noise) 
+        fftCalc[15] = fftAddAvg(165,215) * 0.70f;   // 50 7106 - 9259 high             -- with some damping
+      }
       fftCalc[ 4] = fftAddAvg(7,10);                // 3   301 - 430  midrange
       fftCalc[ 5] = fftAddAvg(10,13);               // 3   430 - 560  midrange
       fftCalc[ 6] = fftAddAvg(13,19);               // 5   560 - 818  midrange
@@ -380,8 +435,6 @@ void FFTcode(void * parameter)
       fftCalc[12] = fftAddAvg(70,86);               // 16 3015 - 3704 high mid
       fftCalc[13] = fftAddAvg(86,104);              // 18 3704 - 4479 high mid
       fftCalc[14] = fftAddAvg(104,165) * 0.88f;     // 61 4479 - 7106 high mid + high  -- with slight damping
-      fftCalc[15] = fftAddAvg(165,215) * 0.70f;     // 50 7106 - 9259 high             -- with some damping
-      // don't use the last bins from 216 to 255. They are usually contaminated by aliasing (aka noise) 
 #endif
     } else {  // noise gate closed - just decay old values
       for (int i=0; i < NUM_GEQ_CHANNELS; i++) {
@@ -854,7 +907,11 @@ class AudioReactive : public Usermod {
       #endif
 
       //micLev = ((micLev * 8191.0f) + micDataReal) / 8192.0f;                // takes a few seconds to "catch up" with the Mic Input
+      //if (useBandPassFilter) 
+      //  micLev += (micDataReal-micLev) / 8192.0f;                             // we expect some more fluctuations with mics that need pre-filtering
+      //else 
       micLev += (micDataReal-micLev) / 12288.0f;
+
       if(micIn < micLev) micLev = ((micLev * 31.0f) + micDataReal) / 32.0f; // align MicLev to lowest input signal
 
       micIn -= micLev;                                  // Let's center it to 0 now
@@ -1119,6 +1176,8 @@ class AudioReactive : public Usermod {
         periph_module_reset(PERIPH_I2S0_MODULE);   // not possible on -C3
       #endif
       delay(100);         // Give that poor microphone some time to setup.
+
+      useBandPassFilter = false;
       switch (dmType) {
       #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S3)
         // stub cases for not-yet-supported I2S modes on other ESP32 chips
@@ -1156,6 +1215,7 @@ class AudioReactive : public Usermod {
         case 5:
           DEBUGSR_PRINT(F("AR: I2S PDM Microphone - ")); DEBUGSR_PRINTLN(F(I2S_PDM_MIC_CHANNEL_TEXT));
           audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, true, 1.0f/4.0f);
+          useBandPassFilter = true;  // this reduces the noise floor on SPM1423 from 5% Vpp (~380) down to 0.05% Vpp (~5)
           delay(100);
           if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin);
           break;
