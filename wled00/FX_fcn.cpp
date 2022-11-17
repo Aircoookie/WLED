@@ -1213,7 +1213,8 @@ void WS2812FX::finalizeInit(void)
   }
 
   //segments are created in makeAutoSegments();
-  setBrightness(_brightness);
+  loadCustomPalettes(); // (re)load all custom palettes
+  deserializeMap();     // (re)load default ledmap
 }
 
 void WS2812FX::service() {
@@ -1749,6 +1750,7 @@ void WS2812FX::loadCustomPalettes()
 {
   byte tcp[72]; //support gradient palettes with up to 18 entries
   CRGBPalette16 targetPalette;
+  customPalettes.clear(); // start fresh
   for (int index = 0; index<10; index++) {
     char fileName[32];
     sprintf_P(fileName, PSTR("/palette%d.json"), index);

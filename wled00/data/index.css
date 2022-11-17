@@ -740,7 +740,7 @@ input[type=range]::-moz-range-thumb {
 	margin-top: var(--bmt);
 }
 
-#picker, #rgbwrap, #kwrap, #wwrap, #wbal, #vwrap, #qcs-w, #hexw, #pall {
+#picker, #rgbwrap, #kwrap, #wwrap, #wbal, #vwrap, #qcs-w, #hexw, #pall, #ledmap {
 	margin: 0 auto;
 	width: 260px;
 }
@@ -897,6 +897,10 @@ div.sel-p:after {
 }
 select.sel-ple {
 	text-align: center;
+}
+select.sel-sg {
+	margin: 5px 0;
+	height: 40px;
 }
 option {
 	background-color: var(--c-3);
