@@ -279,7 +279,8 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
     case 12: //Rainbow stripe colors
       targetPalette = RainbowStripeColors_p; break;
     case 71: //WLEDMM netmindz ar palette +1
-        targetPalette = getAudioPalette(); break;
+    case 72: //WLEDMM netmindz ar palette +1
+        targetPalette = getAudioPalette(pal); break;
     default: //progmem palettes
       if (pal>245) {
         targetPalette = strip.customPalettes[255-pal]; // we checked bounds above
@@ -1140,7 +1141,7 @@ uint32_t Segment::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_
 }
 
  //WLEDMM netmindz ar palette
-CRGBPalette16 Segment::getAudioPalette() {
+CRGBPalette16 Segment::getAudioPalette(int pal) {
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     um_data = simulateSound(SEGMENT.soundSim);
@@ -1149,20 +1150,20 @@ CRGBPalette16 Segment::getAudioPalette() {
   uint8_t xyz[12];  // Needs to be 4 times however many colors are being used.
                     // 3 colors = 12, 4 colors = 16, etc.
 
-  CRGB rgb = getCRGBForBand(0, fftResult);
+  CRGB rgb = getCRGBForBand(0, fftResult, pal);
   
   xyz[0] = 0;  // anchor of first color - must be zero
   xyz[1] = rgb.r;
   xyz[2] = rgb.g;
   xyz[3] = rgb.b;
 
-  rgb = getCRGBForBand(4, fftResult);
+  rgb = getCRGBForBand(4, fftResult, pal);
   xyz[4] = 128;
   xyz[5] = rgb.r;
   xyz[6] = rgb.g;
   xyz[7] = rgb.b;
   
-  rgb = getCRGBForBand(8, fftResult);
+  rgb = getCRGBForBand(8, fftResult, pal);
   xyz[8] = 255;  // anchor of last color - must be 255
   xyz[9] = rgb.r;
   xyz[10] = rgb.g;
@@ -1883,5 +1884,5 @@ const char JSON_palette_names[] PROGMEM = R"=====([
 "Magenta","Magred","Yelmag","Yelblu","Orange & Teal","Tiamat","April Night","Orangery","C9","Sakura",
 "Aurora","Atlantica","C9 2","C9 New","Temperature","Aurora 2","Retro Clown","Candy","Toxy Reaf","Fairy Reaf",
 "Semi Blue","Pink Candy","Red Reaf","Aqua Flash","Yelblu Hot","Lite Light","Red Flash","Blink Red","Red Shift","Red Tide",
-"Candy2","Audio Responsive"
+"Candy2","Audio Responsive Hue","Audio Responsive Ratio"
 ])=====";

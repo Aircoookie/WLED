@@ -633,7 +633,7 @@ typedef struct Segment {
     void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB color) {}
     void wu_pixel(uint32_t x, uint32_t y, CRGB c) {}
   #endif
-  CRGBPalette16 getAudioPalette(); //WLEDMM netmindz ar palette
+  CRGBPalette16 getAudioPalette(int pal); //WLEDMM netmindz ar palette
 } segment;
 //static int segSize = sizeof(Segment);
 
