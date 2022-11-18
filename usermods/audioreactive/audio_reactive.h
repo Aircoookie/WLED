@@ -285,10 +285,11 @@ void FFTcode(void * parameter)
     // band pass filter - can reduce noise floor by a factor of 50
     // downside: frequencies below 100Hz will be ignored
     if (useBandPassFilter) {
-      // low frequency cutoff parameter
-      //constexpr float alpha = 0.04f;   // 100hz
-      constexpr float alpha = 0.03f;   // 80hz
-      //constexpr float alpha = 0.0225f; // 60hz
+      // low frequency cutoff parameter - see https://dsp.stackexchange.com/questions/40462/exponential-moving-average-cut-off-frequency
+      //constexpr float alpha = 0.04f;   // 150Hz
+      //constexpr float alpha = 0.03f;   // 110Hz
+      constexpr float alpha = 0.0225f; // 80hz
+      //constexpr float alpha = 0.01693f;// 60hz
       // high frequency cutoff  parameter
       //constexpr float beta1 = 0.75;    // 11Khz
       //constexpr float beta1 = 0.82;    // 15Khz
