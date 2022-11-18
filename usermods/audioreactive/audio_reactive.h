@@ -56,9 +56,17 @@ constexpr SRate_t SAMPLE_RATE = 22050;          // Base sample rate in Hz - 22Kh
 
 // globals
 static uint8_t inputLevel = 128;              // UI slider value
-static uint8_t soundSquelch = 10;             // squelch value for volume reactive routines (config value)
-static uint8_t sampleGain = 60;               // sample gain (config value)
-static uint8_t soundAgc = 0;                  // Automagic gain control: 0 - none, 1 - normal, 2 - vivid, 3 - lazy (config value)
+#ifndef SR_SQUELCH
+  uint8_t soundSquelch = 10;     // squelch value for volume reactive routines (config value)
+#else
+  uint8_t soundSquelch = SR_SQUELCH;     // squelch value for volume reactive routines (config value)
+#endif
+#ifndef SR_GAIN
+  uint8_t sampleGain = 60;          // sample gain (config value)
+#else
+  uint8_t sampleGain = SR_GAIN;          // sample gain (config value)
+#endif
+static uint8_t soundAgc = 1;                  // Automagic gain control: 0 - none, 1 - normal, 2 - vivid, 3 - lazy (config value)
 static uint8_t audioSyncEnabled = 0;          // bit field: bit 0 - send, bit 1 - receive (config value)
 static bool udpSyncConnected = false;         // UDP connection status -> true if connected to multicast group
 
@@ -68,7 +76,11 @@ static uint16_t attackTime = 50;              // int: attack time in millisecond
 static uint16_t decayTime = 300;              // int: decay time in milliseconds.  New default 300ms. Old default was 1.40sec
 // user settable options for FFTResult scaling
 static uint8_t FFTScalingMode = 3;            // 0 none; 1 optimized logarithmic; 2 optimized linear; 3 optimized sqare root
-static uint8_t pinkIndex = 0;                 // 0: default; 1: line-in; 2: IMNP441
+#ifndef SR_FREQ_PROF
+  static uint8_t pinkIndex = 0;                 // 0: default; 1: line-in; 2: IMNP441
+#else
+  static uint8_t pinkIndex = SR_FREQ_PROF;    // 0: default; 1: line-in; 2: IMNP441
+#endif
 
 // 
 // AGC presets
@@ -598,10 +610,10 @@ class AudioReactive : public Usermod {
     #else
     int8_t audioPin = AUDIOPIN;
     #endif
-    #ifndef DMTYPE // I2S mic type
+    #ifndef SR_DMTYPE // I2S mic type
     uint8_t dmType = 1; // 0=none/disabled/analog; 1=generic I2S
     #else
-    uint8_t dmType = DMTYPE;
+    uint8_t dmType = SR_DMTYPE;
     #endif
     #ifndef I2S_SDPIN // aka DOUT
     int8_t i2ssdPin = 32;
