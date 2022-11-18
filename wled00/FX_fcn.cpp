@@ -280,7 +280,7 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
       targetPalette = RainbowStripeColors_p; break;
     case 71: //WLEDMM netmindz ar palette +1
     case 72: //WLEDMM netmindz ar palette +1
-        targetPalette = getAudioPalette(pal); break;
+        targetPalette.loadDynamicGradientPalette(getAudioPalette(pal)); break; 
     default: //progmem palettes
       if (pal>245) {
         targetPalette = strip.customPalettes[255-pal]; // we checked bounds above
@@ -1141,14 +1141,17 @@ uint32_t Segment::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_
 }
 
  //WLEDMM netmindz ar palette
-CRGBPalette16 Segment::getAudioPalette(int pal) {
+uint8_t * Segment::getAudioPalette(int pal) {
+  // https://forum.makerforums.info/t/hi-is-it-possible-to-define-a-gradient-palette-at-runtime-the-define-gradient-palette-uses-the/63339
+  
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
-  uint8_t xyz[12];  // Needs to be 4 times however many colors are being used.
-                    // 3 colors = 12, 4 colors = 16, etc.
+
+  static uint8_t xyz[12];  // Needs to be 4 times however many colors are being used.
+                           // 3 colors = 12, 4 colors = 16, etc.
 
   CRGB rgb = getCRGBForBand(0, fftResult, pal);
   
@@ -1169,7 +1172,7 @@ CRGBPalette16 Segment::getAudioPalette(int pal) {
   xyz[10] = rgb.g;
   xyz[11] = rgb.b;
 
-  return CRGBPalette16(xyz);
+  return xyz;
 }
 
 
