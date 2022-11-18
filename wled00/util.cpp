@@ -531,8 +531,8 @@ CRGB getCRGBForBand(int x, uint8_t *fftResult, int pal) {
     } 
   }
   else if(pal == 72) {
-    int b = map(x, 0, 255, 0, 16); // convert palette position to freq band
-    hsv = CHSV(fftResult[b], 255, map(fftResult[b], 0, 255, 50, 255));  // pick hue
+    int b = map(x, 0, 255, 0, 8); // convert palette position to lower half of freq band
+    hsv = CHSV(fftResult[b], 255, map(fftResult[b], 0, 255, 30, 255));  // pick hue
     hsv2rgb_rainbow(hsv, value);  // convert to R,G,B
   }
   return value;
