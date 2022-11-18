@@ -514,3 +514,19 @@ void enumerateLedmaps() {
     if (isFile) ledMaps |= 1 << i;
   }
 }
+
+//WLEDMM netmindz ar palette
+CRGB getCRGBForBand(int x, uint8_t *fftResult) {
+  CRGB value;
+  CHSV hsv;
+  if(x == 0) {
+    value = CRGB(fftResult[10]/2, fftResult[4]/2, fftResult[0]/2);
+  }
+  else if(x == 255) {
+    value = CRGB(fftResult[10]/2, fftResult[0]/2, fftResult[4]/2);
+  } 
+  else {
+    value = CRGB(fftResult[0]/2, fftResult[4]/2, fftResult[10]/2);
+  } 
+  return value;
+}
