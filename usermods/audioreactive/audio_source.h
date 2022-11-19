@@ -23,11 +23,15 @@
 
 // see https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/hw-reference/chip-series-comparison.html#related-documents
 // and https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/api-reference/peripherals/i2s.html#overview-of-all-modes
-#if defined(CONFIG_IDF_TARGET_ESP32C2) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C5) || defined(CONFIG_IDF_TARGET_ESP32C6) || defined(CONFIG_IDF_TARGET_ESP32H2)
+#if defined(CONFIG_IDF_TARGET_ESP32C2) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C5) || defined(CONFIG_IDF_TARGET_ESP32C6) || defined(CONFIG_IDF_TARGET_ESP32H2) || defined(ESP8266) || defined(ESP8265)
   // there are two things in these MCUs that could lead to problems with audio processing:
   // * no floating point hardware (FPU) support - FFT uses float calculations. If done in software, a strong slow-down can be expected (between 8x and 20x)
   // * single core, so FFT task might slow down other things like LED updates
+  #if !defined(SOC_I2S_NUM) || (SOC_I2S_NUM < 1)
+  #error This audio reactive usermod does not support ESP32-C2, ESP32-C3 or ESP32-S2.
+  #else
   #warning This audio reactive usermod does not support ESP32-C2, ESP32-C3 or ESP32-S2.
+  #endif
 #endif
 
 /* ToDo: remove. ES7243 is controlled via compiler defines
@@ -231,6 +235,11 @@ class I2SSource : public AudioSource {
         // //_config.fixed_mclk = 512 * _sampleRate;
         // //_config.fixed_mclk = 256 * _sampleRate;
       }
+      #if !defined(SOC_I2S_SUPPORTS_APLL)
+        #warning this MCU does not have an APLL high accuracy clock for audio
+        // S3: not supported; S2: supported; C3: not supported
+        _config.use_apll = false; // APLL not supported on this MCU
+      #endif
       #if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32S3) && !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
       if (ESP.getChipRevision() == 0) _config.use_apll = false; // APLL is broken on ESP32 revision 0
       #endif
@@ -436,6 +445,13 @@ public:
     int8_t pin_ES7243_SDA;
     int8_t pin_ES7243_SCL;
 };
+
+
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
+#if !defined(SOC_I2S_SUPPORTS_ADC) && !defined(SOC_I2S_SUPPORTS_ADC_DAC)
+  #warning this MCU does not support analog sound input
+#endif
+#endif
 
 #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
 // ADC over I2S is only availeable in "classic" ESP32
