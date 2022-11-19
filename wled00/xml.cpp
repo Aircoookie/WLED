@@ -743,6 +743,8 @@ void getSettingsJS(byte subPage, char* dest)
         pO[l] = 'R'; sappend('v',pO,strip.panel[i].rightStart);
         pO[l] = 'V'; sappend('v',pO,strip.panel[i].vertical);
         pO[l] = 'S'; sappend('c',pO,strip.panel[i].serpentine);
+        pO[l] = 'X'; sappend('v',pO,strip.panel[i].xOffset);
+        pO[l] = 'Y'; sappend('v',pO,strip.panel[i].yOffset);
       }
     }
     #else

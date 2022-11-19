@@ -74,56 +74,28 @@ void WS2812FX::setUpMatrix() {
     }
 
     if (customMappingTable != nullptr) {
-      uint16_t startL; // index in custom mapping array (logical strip)
-      uint16_t startP; // position of 1st pixel of panel on (virtual) strip
-      uint16_t x, y, offset;
-      // uint8_t h = matrix.vertical ? vPanels : hPanels;
-      // uint8_t v = matrix.vertical ? hPanels : vPanels;
-      uint16_t cur = 0;
+      uint16_t x, y;
 
       DEBUG_PRINT(F("Panel W/H: "));
-        DEBUG_PRINT(panelW);
-        DEBUG_PRINT(F(", "));
-        DEBUG_PRINTLN(panelH);
+      DEBUG_PRINT(panelW);
+      DEBUG_PRINT(F(", "));
+      DEBUG_PRINTLN(panelH);
 
-
-      //TODO: make this work with existing serpentine, bottom/right, etc
-      for (uint8_t k = 0; k < panels; k++){
-        auto p = panel[k];
-        x = p.xOffset;
-        y = p.yOffset;
-        for(uint16_t j = 0; j < panelH; j++){
-          for(uint16_t i = 0; i < panelW; i++){
-            customMappingTable[(y+j)*matrixWidth+x+i] = cur;
-            cur += 1;
+      uint16_t pix=0; //pixel
+      for (uint8_t pan = 0; pan < panels; pan++){
+        Panel p = panel[pan];
+        uint16_t h = p.vertical? panelH:panelW;
+        uint16_t v = p.vertical? panelW:panelH;
+        for (uint16_t j = 0; j<v; j++){
+          for(uint16_t i = 0; i < h; i++, pix++){
+            y = (p.vertical?p.rightStart:p.bottomStart) ? v-j-1: j;
+            x = (p.vertical?p.bottomStart:p.rightStart) ?h-i-1 : i;
+            x = p.serpentine && j%2 ? h-x-1: x;
+            customMappingTable[(p.yOffset+(p.vertical?x:y))*matrixWidth+p.xOffset+(p.vertical?y:x)] = pix;
           }
         }
       }
-      
 
-
-      // for (uint8_t j=0, p=0; j<v; j++) {
-      //   for (uint8_t i=0; i<h; i++, p++) {
-      //     y = (matrix.vertical ? matrix.rightStart : matrix.bottomStart) ? v - j - 1 : j;
-      //     x = (matrix.vertical ? matrix.bottomStart : matrix.rightStart) ? h - i - 1 : i;
-      //     x = matrix.serpentine && j%2 ? h - x - 1 : x;
-
-      //     startL = (matrix.vertical ? y : x) * panelW + (matrix.vertical ? x : y) * matrixWidth * panelH; // logical index (top-left corner)
-      //     startP = p * panelW * panelH; // physical index (top-left corner)
-
-      //     uint8_t H = panel[h*j + i].vertical ? panelW : panelH;
-      //     uint8_t W = panel[h*j + i].vertical ? panelH : panelW;
-      //     for (uint16_t l=0, q=0; l<H; l++) {
-      //       for (uint16_t k=0; k<W; k++, q++) {
-      //         y = (panel[h*j + i].vertical ? panel[h*j + i].rightStart : panel[h*j + i].bottomStart) ? H - l - 1 : l;
-      //         x = (panel[h*j + i].vertical ? panel[h*j + i].bottomStart : panel[h*j + i].rightStart) ? W - k - 1 : k;
-      //         x = (panel[h*j + i].serpentine && l%2) ? (W - x - 1) : x;
-      //         offset = (panel[h*j + i].vertical ? y : x) + (panel[h*j + i].vertical ? x : y) * matrixWidth;
-      //         customMappingTable[startL + offset] = startP + q;
-      //       }
-      //     }
-      //   }
-      // }
       #ifdef WLED_DEBUG
       DEBUG_PRINT(F("Matrix ledmap:"));
       for (uint16_t i=0; i<customMappingSize; i++) {
