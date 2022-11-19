@@ -915,7 +915,9 @@ const byte* const gGradientPalettes[] PROGMEM = {
   red_shift_gp,                 //68-55 Red Shift
   red_tide_gp,                  //69-56 Red Tide
   candy2_gp,                    //70-57 Candy2
-  audio_responsive_gp,          //71-58 AudioResponsive  WLEDMM netmindz ar palette
+  // Palette contents not actually used as built on the fly, just here to create menu option
+  audio_responsive_gp,          //71-58 AudioResponsive  WLEDMM netmindz ar palette - placeholder1
+  audio_responsive_gp,          //72-59 AudioResponsive  WLEDMM netmindz ar palette - placeholder2
 };
 
 #endif
