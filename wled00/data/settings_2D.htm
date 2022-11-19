@@ -64,7 +64,6 @@
 		let i = gId("panels").children.length;
 		if (i<maxPanels) for (let j=i; j<maxPanels; j++) addPanel(j);
 		if (i>maxPanels) for (let j=i; j>maxPanels; j--) remPanel();
-		//btnPanel(gId("panels").children.length);
 	}
 
 	function addPanels() {
@@ -72,7 +71,7 @@
 		for (let i=0; i<c; i++) addPanel(i);
 	}
 
-	function addPanel(i=0,x=0,y=0) {
+	function addPanel(i=0) {
 		let p = gId("panels");
 		if (p.children.length >= maxPanels) return;
 		let b = `<div id="pnl${i}">${i===0?"":'<hr class="sml">'}Panel ${i}<br>1<sup>st</sup> LED: <select name="P${i}B">
@@ -86,8 +85,8 @@ Orientation: <select name="P${i}V">
 	<option value="0">Horizontal</option>
 	<option value="1">Vertical</option>
 </select><br>
-X Offset From Top Left (in LEDs) <input name="P${i}X" type="number" min="0" max="256" value="${x}">
-Y Offset <input name="P${i}Y" type="number" min="0" max="256" value="${y}"><br>
+X Offset From Top Left (in LEDs) <input id="P${i}X" name="P${i}X" type="number" min="0" max="256" value="0">
+Y Offset <input id="P${i}Y" name="P${i}Y" type="number" min="0" max="256" value="0"><br>
 Serpentine: <input type="checkbox" name="P${i}S"></div>`;
 		p.insertAdjacentHTML("beforeend", b);
 	}
@@ -110,18 +109,21 @@ Serpentine: <input type="checkbox" name="P${i}S"></div>`;
 	}
 
 	function gen() {
-		resetPanels();
+		// resetPanels();
 		var pansH = parseInt(d.Sf.MPH.value);
 		var pansV = parseInt(d.Sf.MPV.value);
 		var c = pansH*pansV;
 		maxPanels = c;
 		d.Sf.MPC.value = c; // number of panels
+
+		UI();
+
 		var ps = d.Sf.PS.checked; //serpentine
 		var pv = d.Sf.PV.value==="1"; //vertical
-		var pb = d.Sf.PB.value==="1"; //panel bottom
-		var pr = d.Sf.PR.value==="1"; //panel right
-		var pw = parseInt(d.Sf.PW.value); //panel width
-		var ph = parseInt(d.Sf.PH.value); //panel height
+		var pb = d.Sf.PB.value==="1"; //matrix bottom
+		var pr = d.Sf.PR.value==="1"; //matrix right
+		var pw = parseInt(d.Sf.PW.value); //matrix width
+		var ph = parseInt(d.Sf.PH.value); //matrix height
 
 		var h = pv ? pansV :pansH; //how many vertical panels (adjusted for verticality)
 		var v = pv ? pansH : pansV; //how many horizontal panels 
@@ -130,11 +132,10 @@ Serpentine: <input type="checkbox" name="P${i}S"></div>`;
 				var y = (pv?pr:pb) ? v-j-1: j;
 				var x = (pv?pb:pr) ?h-i-1 : i;
 				x = ps && j%2 ? h-x-1: x;
-				addPanel(p,(pv?y:x)*pw,(pv?x:y)*ph);
+				gId("P"+p+"X").value = (pv?y:x)*pw;
+				gId("P"+p+"Y").value = (pv?x:y)*ph
 			}
 		}
-
-		UI();
 	}
 
 	</script>
