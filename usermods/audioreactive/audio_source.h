@@ -271,6 +271,8 @@ class I2SSource : public AudioSource {
         .data_in_num = i2ssdPin
       };
 
+      //DEBUGSR_PRINTF("[AR] I2S: SD=%d, WS=%d, SCK=%d, MCLK=%d\n", i2ssdPin, i2swsPin, i2sckPin, mclkPin);
+
       esp_err_t err = i2s_driver_install(I2S_NUM_0, &_config, 0, nullptr);
       if (err != ESP_OK) {
         DEBUGSR_PRINTF("AR: Failed to install i2s driver: %d\n", err);
@@ -282,7 +284,8 @@ class I2SSource : public AudioSource {
       if(_config.mode & I2S_MODE_MASTER) {
         if (_config.mode & I2S_MODE_PDM)
           DEBUGSR_PRINTLN(F("AR: I2S#0 driver installed in PDM MASTER mode."));
-        else DEBUGSR_PRINTLN(F("AR: I2S#0 driver installed in MASTER mode."));
+        else 
+          DEBUGSR_PRINTLN(F("AR: I2S#0 driver installed in MASTER mode."));
       } else
         DEBUGSR_PRINTLN(F("AR: I2S#0 driver installed in SLAVE mode."));
 
@@ -425,6 +428,12 @@ public:
         DEBUGSR_PRINTF("\nAR: invalid ES7243 I2C pins: SDA=%d, SCL=%d\n", sdaPin, sclPin); 
         return;
       }
+
+      if ((i2sckPin < 0) || (mclkPin < 0)) {
+        DEBUGSR_PRINTF("\nAR: invalid I2S pin: SCK=%d, MCLK=%d\n", i2sckPin, mclkPin); 
+        return;
+      }
+
       // Reserve SDA and SCL pins of the I2C interface
       PinManagerPinType es7243Pins[2] = { { sdaPin, true }, { sclPin, true } };
       if (!pinManager.allocateMultiplePins(es7243Pins, 2, PinOwner::HW_I2C)) {
