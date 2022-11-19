@@ -361,6 +361,8 @@ void WLED::setup()
   } 
 #ifdef WLED_ADD_EEPROM_SUPPORT
   else deEEP();
+#else
+  initPresetsFile();
 #endif
   updateFSInfo();
 
@@ -452,8 +454,6 @@ void WLED::beginStrip()
 {
   // Initialize NeoPixel Strip and button
   strip.finalizeInit(); // busses created during deserializeConfig()
-  strip.loadCustomPalettes();
-  strip.deserializeMap();
   strip.makeAutoSegments();
   strip.setBrightness(0);
   strip.setShowCallback(handleOverlayDraw);

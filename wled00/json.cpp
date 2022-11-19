@@ -244,9 +244,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     }
     strip.trigger();
   }
-  // send UDP if not in preset and something changed that is not just selection
-  // send UDP if something changed that is not just selection or segment power/opacity
-  if ((seg.differs(prev) & 0x7E) && seg.on == prev.on) stateChanged = true;
+  // send UDP/WS if segment options changed (except selection; will also deselect current preset)
+  if (seg.differs(prev) & 0x7F) stateChanged = true;
 }
 
 // deserializes WLED state (fileDoc points to doc object if called from web server)
@@ -254,6 +253,10 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 bool deserializeState(JsonObject root, byte callMode, byte presetId)
 {
   bool stateResponse = root[F("v")] | false;
+
+  #if defined(WLED_DEBUG) && defined(WLED_DEBUG_HOST)
+  netDebugEnabled = root[F("debug")] | netDebugEnabled;
+  #endif
 
   bool onBefore = bri;
   getVal(root["bri"], &bri);
@@ -399,6 +402,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       root.remove("v");    // may be added in UI call
       root.remove("time"); // may be added in UI call
       root.remove("ps");
+      root.remove("on");   // some exetrnal calls add "on" to "ps" call
       if (root.size() == 0) {
         unloadPlaylist();  // we need to unload playlist
         applyPreset(ps, callMode); // async load (only preset ID was specified)
@@ -679,9 +683,13 @@ void serializeInfo(JsonObject root)
 
   usermods.addToJsonInfo(root);
 
-  byte os = 0;
+  uint16_t os = 0;
   #ifdef WLED_DEBUG
   os  = 0x80;
+    #ifdef WLED_DEBUG_HOST
+    os |= 0x0100;
+    if (!netDebugEnabled) os &= ~0x0080;
+    #endif
   #endif
   #ifndef WLED_DISABLE_ALEXA
   os += 0x40;
@@ -882,6 +890,7 @@ void serializeNodes(JsonObject root)
   }
 }
 
+// deserializes mode data string into JsonArray
 void serializeModeData(JsonArray fxdata)
 {
   char lineBuffer[128];
@@ -889,14 +898,14 @@ void serializeModeData(JsonArray fxdata)
     strncpy_P(lineBuffer, strip.getModeData(i), 127);
     if (lineBuffer[0] != 0) {
       char* dataPtr = strchr(lineBuffer,'@');
-      if (dataPtr) fxdata.add(dataPtr);
+      if (dataPtr) fxdata.add(dataPtr+1);
       else         fxdata.add("");
     }
   }
 }
 
 // deserializes mode names string into JsonArray
-// also removes WLED-SR extensions (@...) from deserialised names
+// also removes effect data extensions (@...) from deserialised names
 void serializeModeNames(JsonArray arr) {
   char lineBuffer[128];
   for (size_t i = 0; i < strip.getModeCount(); i++) {

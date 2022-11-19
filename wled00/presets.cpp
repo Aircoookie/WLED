@@ -11,6 +11,7 @@ static char *tmpRAMbuffer = nullptr;
 static volatile byte presetToApply = 0;
 static volatile byte callModeToApply = 0;
 static volatile byte presetToSave = 0;
+static volatile int8_t saveLedmap = -1;
 static char quickLoad[3];
 static char saveName[33];
 static bool includeBri = true, segBounds = true, selectedOnly = false, playlistSave = false;;
@@ -25,6 +26,7 @@ static void doSaveState() {
 
   if (!requestJSONBufferLock(10)) return;   // will set fileDoc
 
+  initPresetsFile(); // just in case if someone deleted presets.json using /edit
   JsonObject sObj = doc.to<JsonObject>();
 
   DEBUG_PRINTLN(F("Serialize current state"));
@@ -36,6 +38,7 @@ static void doSaveState() {
   }
   sObj["n"] = saveName;
   if (quickLoad[0]) sObj[F("ql")] = quickLoad;
+  if (saveLedmap >= 0) sObj[F("ledmap")] = saveLedmap;
 /*
   #ifdef WLED_DEBUG
     DEBUG_PRINTLN(F("Serialized preset"));
@@ -69,6 +72,7 @@ static void doSaveState() {
   updateFSInfo();
 
   // clean up
+  saveLedmap   = -1;
   presetToSave = 0;
   saveName[0]  = '\0';
   quickLoad[0] = '\0';
@@ -79,7 +83,7 @@ bool getPresetName(byte index, String& name)
 {
   if (!requestJSONBufferLock(9)) return false;
   bool presetExists = false;
-  if (readObjectFromFileUsingId("/presets.json", index, &doc))
+  if (readObjectFromFileUsingId(getName(), index, &doc))
   { 
     JsonObject fdo = doc.as<JsonObject>();
     if (fdo["n"]) {
@@ -89,6 +93,22 @@ bool getPresetName(byte index, String& name)
   }
   releaseJSONBufferLock();
   return presetExists;
+}
+
+void initPresetsFile()
+{
+  if (WLED_FS.exists(getName())) return;
+
+  StaticJsonDocument<64> doc;
+  JsonObject sObj = doc.to<JsonObject>();
+  sObj.createNestedObject("0");
+  File f = WLED_FS.open(getName(), "w");
+  if (!f) {
+    errorFlag = ERR_FS_GENERAL;
+    return;
+  }
+  serializeJson(doc, f);
+  f.close();
 }
 
 bool applyPreset(byte index, byte callMode)
@@ -188,6 +208,7 @@ void savePreset(byte index, const char* pname, JsonObject sObj)
     includeBri   = sObj["ib"].as<bool>() || index==255; // temporary preset needs brightness
     segBounds    = sObj["sb"].as<bool>() || index==255; // temporary preset needs bounds
     selectedOnly = sObj[F("sc")].as<bool>();
+    saveLedmap   = sObj[F("ledmap")] | -1;
     sObj.remove("ib");
     sObj.remove("sb");
     sObj.remove(F("sc"));
@@ -198,6 +219,7 @@ void savePreset(byte index, const char* pname, JsonObject sObj)
       presetToSave = 0; // we will save API immediately
       if (index < 251 && fileDoc) {
         if (sObj["n"].isNull()) sObj["n"] = saveName;
+        initPresetsFile(); // just in case if someone deleted presets.json using /edit
         writeObjectToFileUsingId(getName(index), index, fileDoc);
         presetsModifiedTime = toki.second(); //unix time
         updateFSInfo();

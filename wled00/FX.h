@@ -172,14 +172,12 @@
 #define FX_MODE_FIRE_FLICKER            45
 #define FX_MODE_GRADIENT                46
 #define FX_MODE_LOADING                 47
-//#define FX_MODE_POLICE                  48  // candidate for removal (after below three)
-#define FX_MODE_WAVESINS                48  // was Police prior to 0.14 (use Two Dots with Red/Blue)
+// #define FX_MODE_POLICE                  48  // removed in 0.14!
 #define FX_MODE_FAIRY                   49  //was Police All prior to 0.13.0-b6 (use "Two Dots" with Red/Blue and full intensity)
 #define FX_MODE_TWO_DOTS                50
 #define FX_MODE_FAIRYTWINKLE            51  //was Two Areas prior to 0.13.0-b6 (use "Two Dots" with full intensity)
 #define FX_MODE_RUNNING_DUAL            52
-//#define FX_MODE_HALLOWEEN               53  // candidate for removal
-#define FX_MODE_PERLINMOVE              53 // was Halloween prior to 0.14 (use Cahse 2 with Purple/Orange)
+// #define FX_MODE_HALLOWEEN               53  // removed in 0.14!
 #define FX_MODE_TRICOLOR_CHASE          54
 #define FX_MODE_TRICOLOR_WIPE           55
 #define FX_MODE_TRICOLOR_FADE           56
@@ -240,74 +238,81 @@
 #define FX_MODE_CHUNCHUN               111
 #define FX_MODE_DANCING_SHADOWS        112
 #define FX_MODE_WASHING_MACHINE        113
-//#define FX_MODE_CANDY_CANE             114  // candidate for removal
-#define FX_MODE_FLOWSTRIPE             114  // was Cany Cane prior to 0.14 (use Cahse 2 with Red/White)
+// #define FX_MODE_CANDY_CANE             114  // removed in 0.14!
 #define FX_MODE_BLENDS                 115
 #define FX_MODE_TV_SIMULATOR           116
 #define FX_MODE_DYNAMIC_SMOOTH         117
-#ifndef WLED_DISABLE_2D
-  // new 2D effects
-  #define FX_MODE_2DSPACESHIPS           118
-  #define FX_MODE_2DCRAZYBEES            119
-  #define FX_MODE_2DGHOSTRIDER           120
-  #define FX_MODE_2DBLOBS                121
-  #define FX_MODE_2DSCROLLTEXT           122
-  #define FX_MODE_2DDRIFTROSE            123
-  // WLED-SR effects (non SR compatible IDs)
-  #define FX_MODE_2DBLACKHOLE            124 // non audio
-  #define FX_MODE_2DDNASPIRAL            125 // non audio
-  #define FX_MODE_2DHIPHOTIC             126 // non audio
-  #define FX_MODE_2DPLASMABALL           127 // non audio
-  #define FX_MODE_2DSINDOTS              128 // non audio
-  #define FX_MODE_2DFRIZZLES             129 // non audio
-  #define FX_MODE_2DLISSAJOUS            130 // non audio
-  #define FX_MODE_2DPOLARLIGHTS          131 // non audio
-  #define FX_MODE_2DTARTAN               132 // non audio
-  #define FX_MODE_2DGAMEOFLIFE           133 // non audio
-  #define FX_MODE_2DJULIA                134 // non audio
-  #define FX_MODE_2DCOLOREDBURSTS        135 // non audio
-  #define FX_MODE_2DSUNRADIATION         136 // non audio
-  #define FX_MODE_2DNOISE                137 // non audio
-  #define FX_MODE_2DFIRENOISE            138 // non audio
-  #define FX_MODE_2DSQUAREDSWIRL         139 // non audio
-  #define FX_MODE_2DDNA                  140 // non audio
-  #define FX_MODE_2DMATRIX               141 // non audio
-  #define FX_MODE_2DMETABALLS            142 // non audio
-  #define FX_MODE_2DPULSER               143 // non audio
-  #define FX_MODE_2DDRIFT                144 // non audio
-  #define FX_MODE_2DWAVERLY              145 // audio enhanced
-  #define FX_MODE_2DSWIRL                146 // audio enhanced
-  #define FX_MODE_2DAKEMI                147 // audio enhanced
-  #define FX_MODE_2DGEQ                  148 // audio enhanced
-  #define FX_MODE_2DFUNKYPLANK           149 // audio enhanced
-#endif //WLED_DISABLE_2D
-#define FX_MODE_PIXELWAVE              150 // audio enhanced
-#define FX_MODE_JUGGLES                151 // audio enhanced
-#define FX_MODE_MATRIPIX               152 // audio enhanced
-#define FX_MODE_GRAVIMETER             153 // audio enhanced
-#define FX_MODE_PLASMOID               154 // audio enhanced
-#define FX_MODE_PUDDLES                155 // audio enhanced
-#define FX_MODE_MIDNOISE               156 // audio enhanced
-#define FX_MODE_NOISEMETER             157 // audio enhanced
-#define FX_MODE_NOISEFIRE              158 // audio enhanced
-#define FX_MODE_PUDDLEPEAK             159 // audio enhanced
-#define FX_MODE_RIPPLEPEAK             160 // audio enhanced
-#define FX_MODE_GRAVCENTER             161 // audio enhanced
-#define FX_MODE_GRAVCENTRIC            162 // audio enhanced
-#define FX_MODE_PIXELS                 163 // audio enhanced
-#define FX_MODE_FREQWAVE               164 // audio enhanced
-#define FX_MODE_FREQMATRIX             165 // audio enhanced
-#define FX_MODE_WATERFALL              166 // audio enhanced
-#define FX_MODE_FREQPIXELS             167 // audio enhanced
-#define FX_MODE_BINMAP                 168 // audio enhanced
-#define FX_MODE_NOISEMOVE              169 // audio enhanced
-#define FX_MODE_FREQMAP                170 // audio enhanced
-#define FX_MODE_GRAVFREQ               171 // audio enhanced
-#define FX_MODE_DJLIGHT                172 // audio enhanced
-#define FX_MODE_BLURZ                  173 // audio enhanced
-#define FX_MODE_ROCKTAVES              174 // audio enhanced
 
-#define MODE_COUNT                     175
+// new 0.14 2D effects
+#define FX_MODE_2DSPACESHIPS           118 //gap fill
+#define FX_MODE_2DCRAZYBEES            119 //gap fill
+#define FX_MODE_2DGHOSTRIDER           120 //gap fill
+#define FX_MODE_2DBLOBS                121 //gap fill
+#define FX_MODE_2DSCROLLTEXT           122 //gap fill
+#define FX_MODE_2DDRIFTROSE            123 //gap fill
+
+// WLED-SR effects (SR compatible IDs !!!)
+#define FX_MODE_PIXELS                 128
+#define FX_MODE_PIXELWAVE              129
+#define FX_MODE_JUGGLES                130
+#define FX_MODE_MATRIPIX               131
+#define FX_MODE_GRAVIMETER             132
+#define FX_MODE_PLASMOID               133
+#define FX_MODE_PUDDLES                134
+#define FX_MODE_MIDNOISE               135
+#define FX_MODE_NOISEMETER             136
+#define FX_MODE_FREQWAVE               137
+#define FX_MODE_FREQMATRIX             138
+#define FX_MODE_2DGEQ                  139
+#define FX_MODE_WATERFALL              140
+#define FX_MODE_FREQPIXELS             141
+#define FX_MODE_BINMAP                 142
+#define FX_MODE_NOISEFIRE              143
+#define FX_MODE_PUDDLEPEAK             144
+#define FX_MODE_NOISEMOVE              145
+#define FX_MODE_2DNOISE                146
+#define FX_MODE_PERLINMOVE             147
+#define FX_MODE_RIPPLEPEAK             148
+#define FX_MODE_2DFIRENOISE            149
+#define FX_MODE_2DSQUAREDSWIRL         150
+#define FX_MODE_2DFIRE2012             151
+#define FX_MODE_2DDNA                  152
+#define FX_MODE_2DMATRIX               153
+#define FX_MODE_2DMETABALLS            154
+#define FX_MODE_FREQMAP                155
+#define FX_MODE_GRAVCENTER             156
+#define FX_MODE_GRAVCENTRIC            157
+#define FX_MODE_GRAVFREQ               158
+#define FX_MODE_DJLIGHT                159
+#define FX_MODE_2DFUNKYPLANK           160
+#define FX_MODE_2DCENTERBARS           161
+#define FX_MODE_2DPULSER               162
+#define FX_MODE_BLURZ                  163
+#define FX_MODE_2DDRIFT                164
+#define FX_MODE_2DWAVERLY              165
+#define FX_MODE_2DSUNRADIATION         166
+#define FX_MODE_2DCOLOREDBURSTS        167
+#define FX_MODE_2DJULIA                168
+// #define FX_MODE_2DPOOLNOISE            169 //have been removed in WLED SR in the past because of low mem but should be added back
+// #define FX_MODE_2DTWISTER              170 //have been removed in WLED SR in the past because of low mem but should be added back
+// #define FX_MODE_2DCAELEMENTATY         171 //have been removed in WLED SR in the past because of low mem but should be added back
+#define FX_MODE_2DGAMEOFLIFE           172
+#define FX_MODE_2DTARTAN               173
+#define FX_MODE_2DPOLARLIGHTS          174
+#define FX_MODE_2DSWIRL                175
+#define FX_MODE_2DLISSAJOUS            176
+#define FX_MODE_2DFRIZZLES             177
+#define FX_MODE_2DPLASMABALL           178
+#define FX_MODE_FLOWSTRIPE             179
+#define FX_MODE_2DHIPHOTIC             180
+#define FX_MODE_2DSINDOTS              181
+#define FX_MODE_2DDNASPIRAL            182
+#define FX_MODE_2DBLACKHOLE            183
+#define FX_MODE_WAVESINS               184
+#define FX_MODE_ROCKTAVES              185
+#define FX_MODE_2DAKEMI                186
+
+#define MODE_COUNT                     187
 
 typedef enum mapping1D2D {
   M12_Pixels = 0,
@@ -465,13 +470,13 @@ typedef struct Segment {
     Segment(Segment &&orig) noexcept; // move constructor
 
     ~Segment() {
-      #ifdef WLED_DEBUG
-      Serial.print(F("Destroying segment:"));
-      if (name) Serial.printf(" %s (%p)", name, name);
-      if (data) Serial.printf(" %d (%p)", (int)_dataLen, data);
-      if (leds) Serial.printf(" [%u]", length()*sizeof(CRGB));
-      Serial.println();
-      #endif
+      //#ifdef WLED_DEBUG
+      //Serial.print(F("Destroying segment:"));
+      //if (name) Serial.printf(" %s (%p)", name, name);
+      //if (data) Serial.printf(" %d (%p)", (int)_dataLen, data);
+      //if (leds) Serial.printf(" [%u]", length()*sizeof(CRGB));
+      //Serial.println();
+      //#endif
       if (!Segment::_globalLeds && leds) free(leds);
       if (name) delete[] name;
       if (_t) delete _t;

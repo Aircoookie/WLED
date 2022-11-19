@@ -133,16 +133,16 @@ int getSignalQuality(int rssi)
 void WiFiEvent(WiFiEvent_t event)
 {
   #ifdef WLED_USE_ETHERNET
-  char hostname[25] = "wled-";
+  char hostname[25];
   #endif
   
   switch (event) {
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
     case SYSTEM_EVENT_ETH_START:
-      DEBUG_PRINT(F("ETH Started"));
+      DEBUG_PRINTLN(F("ETH Started"));
       break;
     case SYSTEM_EVENT_ETH_CONNECTED:
-      DEBUG_PRINT(F("ETH Connected"));
+      DEBUG_PRINTLN(F("ETH Connected"));
       if (!apActive) {
         WiFi.disconnect(true);
       }
@@ -157,7 +157,7 @@ void WiFiEvent(WiFiEvent_t event)
       showWelcomePage = false;
       break;
     case SYSTEM_EVENT_ETH_DISCONNECTED:
-      DEBUG_PRINT(F("ETH Disconnected"));
+      DEBUG_PRINTLN(F("ETH Disconnected"));
       // This doesn't really affect ethernet per se,
       // as it's only configured once.  Rather, it
       // may be necessary to reconnect the WiFi when
