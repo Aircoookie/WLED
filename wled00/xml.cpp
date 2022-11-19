@@ -501,6 +501,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("EM"),e131Multicast);
     sappend('v',SET_F("EU"),e131Universe);
     sappend('v',SET_F("DA"),DMXAddress);
+    sappend('v',SET_F("XX"),DMXSegmentSpacing);
     sappend('v',SET_F("DM"),DMXMode);
     sappend('v',SET_F("ET"),realtimeTimeoutMs);
     sappend('c',SET_F("FB"),arlsForceMaxBri);

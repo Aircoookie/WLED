@@ -46,6 +46,22 @@ void applyValuesToSelectedSegs()
   }
 }
 
+// applies global legacy values to segment i (opacity, col, colSec, effectCurrent...)
+bool applyValuesToSegment(uint8_t i)
+{
+  if (i >= strip.getSegmentsNum()) {return false;}
+  Segment& seg = strip.getSegment(i);
+  if (opacity         != seg.opacity)   {seg.setOpacity(opacity);         stateChanged = true;}
+  if (effectSpeed     != seg.speed)     {seg.speed     = effectSpeed;     stateChanged = true;}
+  if (effectIntensity != seg.intensity) {seg.intensity = effectIntensity; stateChanged = true;}
+  if (effectPalette   != seg.palette)   {seg.palette   = effectPalette;   stateChanged = true;}
+  if (effectCurrent   != seg.mode)      {strip.setMode(i, effectCurrent); stateChanged = true;}
+  uint32_t col0 = RGBW32(   col[0],    col[1],    col[2],    col[3]);
+  uint32_t col1 = RGBW32(colSec[0], colSec[1], colSec[2], colSec[3]);
+  if (col0 != seg.colors[0])            {seg.setColor(0, col0);           stateChanged = true;}
+  if (col1 != seg.colors[1])            {seg.setColor(1, col1);           stateChanged = true;}
+  return stateChanged;
+}
 
 void resetTimebase()
 {

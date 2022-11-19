@@ -132,7 +132,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
       return;  // nothing to do
       break;
 
-    case DMX_MODE_SINGLE_RGB: // RGB only
+    case DMX_MODE_SINGLE_RGB:   // 3 channel: [R,G,B]
       if (uni != e131Universe) return;
       if (availDMXLen < 3) return;
 
@@ -145,7 +145,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
         setRealtimePixel(i, e131_data[dataOffset+0], e131_data[dataOffset+1], e131_data[dataOffset+2], wChannel);
       break;
 
-    case DMX_MODE_SINGLE_DRGB: // Dimmer + RGB
+    case DMX_MODE_SINGLE_DRGB:  // 4 channel: [Dimmer,R,G,B]
       if (uni != e131Universe) return;
       if (availDMXLen < 4) return;
 
@@ -162,38 +162,67 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
         setRealtimePixel(i, e131_data[dataOffset+1], e131_data[dataOffset+2], e131_data[dataOffset+3], wChannel);
       break;
 
-    case DMX_MODE_EFFECT: // Length 1: Apply Preset ID, length 11-13: apply effect config
-      if (uni != e131Universe) return;
-      if (availDMXLen < 11) {
-        if (availDMXLen > 1) return;
-        applyPreset(e131_data[dataOffset+0], CALL_MODE_NOTIFICATION);
-        return;
-      }
-
-      if (bri != e131_data[dataOffset+0]) {
-        bri = e131_data[dataOffset+0];
-      }
-      if (e131_data[dataOffset+1] < strip.getModeCount())
-      effectCurrent   = e131_data[dataOffset+ 1];
-      effectSpeed     = e131_data[dataOffset+ 2];  // flickers
-      effectIntensity = e131_data[dataOffset+ 3];
-      effectPalette   = e131_data[dataOffset+ 4];
-      col[0]          = e131_data[dataOffset+ 5];
-      col[1]          = e131_data[dataOffset+ 6];
-      col[2]          = e131_data[dataOffset+ 7];
-      colSec[0]       = e131_data[dataOffset+ 8];
-      colSec[1]       = e131_data[dataOffset+ 9];
-      colSec[2]       = e131_data[dataOffset+10];
-      if (availDMXLen > 11)
-      {
-        col[3]        = e131_data[dataOffset+11]; //white
-        colSec[3]     = e131_data[dataOffset+12];
-      }
-      transitionDelayTemp = 0;               // act fast
-      colorUpdated(CALL_MODE_NOTIFICATION);  // don't send UDP
-      return;                                // don't activate realtime live mode
+    case DMX_MODE_PRESET:       // 1 channel: WLED Preset number [#]
+      if (uni != e131Universe || availDMXLen < 1) return;
+      applyPreset(e131_data[dataOffset], CALL_MODE_NOTIFICATION);
+      return;
       break;
 
+    case DMX_MODE_EFFECT:           // 11 channels [bri,effectCurrent,effectSpeed,effectIntensity,effectPalette,R,G,B,R2,G2,B2]
+    case DMX_MODE_EFFECT_W:         // 13 channels, same as above but with extra +2 white channels [..,W,W2]
+    case DMX_MODE_EFFECT_SEGMENT:   // 11 channels per segment; max[#] = floor[512/(11+DMXSegmentSpacing)] = 46,42,39, ..
+    case DMX_MODE_EFFECT_SEGMENT_W: // 13 Channels per segment; max[#] = floor[512/(13+DMXSegmentSpacing)] = 39,36,34,32, ..
+      {
+        if (uni != e131Universe) return;
+        bool segmentUpdated = false;
+        bool isSegmentMode = DMXMode == DMX_MODE_EFFECT_SEGMENT || DMXMode == DMX_MODE_EFFECT_SEGMENT_W;
+        uint8_t dmxEffectChannels = (DMXMode == DMX_MODE_EFFECT || DMXMode == DMX_MODE_EFFECT_SEGMENT) ? 11 : 13;
+        for (uint8_t seg = 0; seg < strip.getSegmentsNum(); seg++) {
+          if (isSegmentMode)
+            dataOffset = DMXAddress + seg * (dmxEffectChannels + DMXSegmentSpacing);
+          else
+            dataOffset = DMXAddress;
+          // Modify address for Art-Net data
+          if (protocol == P_ARTNET && dataOffset > 0)
+            dataOffset--;
+          // Skip out of universe addresses
+          if (dataOffset > dmxChannels - dmxEffectChannels)
+            return;
+
+          if (e131_data[dataOffset+1] < strip.getModeCount())
+            effectCurrent = e131_data[dataOffset+ 1];
+          effectSpeed     = e131_data[dataOffset+ 2]; // flickers
+          effectIntensity = e131_data[dataOffset+ 3];
+          effectPalette   = e131_data[dataOffset+ 4];
+          col[0]          = e131_data[dataOffset+ 5];
+          col[1]          = e131_data[dataOffset+ 6];
+          col[2]          = e131_data[dataOffset+ 7];
+          colSec[0]       = e131_data[dataOffset+ 8];
+          colSec[1]       = e131_data[dataOffset+ 9];
+          colSec[2]       = e131_data[dataOffset+10];
+          if (dmxEffectChannels == 13) {
+            col[3]        = e131_data[dataOffset+11]; // white
+            colSec[3]     = e131_data[dataOffset+12];
+          }
+          if (isSegmentMode) {
+            opacity = e131_data[dataOffset+ 0];
+            segmentUpdated |= applyValuesToSegment(seg);
+          } else {
+            if (bri != e131_data[dataOffset+0])
+              bri = e131_data[dataOffset+0];
+            transitionDelayTemp = 0;                  // act fast
+            colorUpdated(CALL_MODE_NOTIFICATION);     // don't send UDP
+            return;                                   // don't activate realtime live mode
+          }
+        }
+        if (segmentUpdated) {
+          transitionDelayTemp = 0;
+          stateUpdated(CALL_MODE_NOTIFICATION);
+          return;
+        }
+        break;
+      }
+      
     case DMX_MODE_MULTIPLE_DRGB:
     case DMX_MODE_MULTIPLE_RGB:
     case DMX_MODE_MULTIPLE_RGBW:
@@ -279,7 +308,11 @@ void handleArtnetPollReply(IPAddress ipAddress) {
 
     case DMX_MODE_SINGLE_RGB:
     case DMX_MODE_SINGLE_DRGB:
+    case DMX_MODE_PRESET:
     case DMX_MODE_EFFECT:
+    case DMX_MODE_EFFECT_W:
+    case DMX_MODE_EFFECT_SEGMENT:
+    case DMX_MODE_EFFECT_SEGMENT_W:
       break;  // 1 universe is enough
 
     case DMX_MODE_MULTIPLE_DRGB:

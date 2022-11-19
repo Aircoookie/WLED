@@ -153,6 +153,7 @@ void toggleOnOff();
 void applyBri();
 void applyFinalBri();
 void applyValuesToSelectedSegs();
+bool applyValuesToSegment(uint8_t i);
 void colorUpdated(byte callMode);
 void stateUpdated(byte callMode);
 void updateInterfaces(uint8_t callMode);
