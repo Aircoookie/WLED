@@ -117,22 +117,20 @@ Serpentine: <input type="checkbox" name="P${i}S"></div>`;
 		maxPanels = c;
 		d.Sf.MPC.value = c; // number of panels
 		var ps = d.Sf.PS.checked; //serpentine
-		var pv = d.Sf.PV.value==="0"; //vertical
+		var pv = d.Sf.PV.value==="1"; //vertical
 		var pb = d.Sf.PB.value==="1"; //panel bottom
 		var pr = d.Sf.PR.value==="1"; //panel right
 		var pw = parseInt(d.Sf.PW.value); //panel width
 		var ph = parseInt(d.Sf.PH.value); //panel height
 
-		//TODO: fix here, I broke it
-		var v = pv ? pansV :pansH; //how many vertical panels (adjusted for verticality)
-		var h = pv ? pansH : pansV; //how many horizontal panels 
+		var h = pv ? pansV :pansH; //how many vertical panels (adjusted for verticality)
+		var v = pv ? pansH : pansV; //how many horizontal panels 
 		for(let j = 0, p = 0; j < v; j++){
 			for(let i = 0; i < h; i++, p++){
 				var y = (pv?pr:pb) ? v-j-1: j;
 				var x = (pv?pb:pr) ?h-i-1 : i;
 				x = ps && j%2 ? h-x-1: x;
-				console.log(x,y)
-				addPanel(p,x*pw,y*ph);
+				addPanel(p,(pv?y:x)*pw,(pv?x:y)*ph);
 			}
 		}
 
