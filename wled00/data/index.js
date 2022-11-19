@@ -1674,7 +1674,7 @@ function makeSeg()
 			<tr>
 				<td><input class="noslide segn" id="seg${lu}s" type="number" min="0" max="${isM?mw-1:ledCount-1}" value="${ns}" oninput="updateLen(${lu})" onkeydown="segEnter(${lu})"></td>
 				<td><input class="noslide segn" id="seg${lu}e" type="number" min="0" max="${ct}" value="${ct}" oninput="updateLen(${lu})" onkeydown="segEnter(${lu})"></td>
-				<td><button class="btn btn-xs" onclick="setSeg(${lu});resetUtil();"><i class="icons bth-icon" id="segc${lu}">&#xe390;</i></button></td>
+				<td><button class="btn btn-xs" onclick="setSeg(${lu});"><i class="icons bth-icon" id="segc${lu}">&#xe390;</i></button></td>
 			</tr>
 			${isM ? '<tr><td>Start Y</td><td>'+(cfg.comp.seglen?'Height':'Stop Y')+'</td></tr>'+
 			'<tr>'+
@@ -2003,13 +2003,21 @@ function rptSeg(s)
 function setSeg(s)
 {
 	var name = gId(`seg${s}t`).value;
-	var start = parseInt(gId(`seg${s}s`).value);
-	var stop = parseInt(gId(`seg${s}e`).value);
+	let sX = gId(`seg${s}s`);
+	let eX = gId(`seg${s}e`);
+	var start = parseInt(sX.value);
+	var stop = parseInt(eX.value);
+	if (start<sX.min || start>sX.max) {sX.value=sX.min; return;} // prevent out of bounds
+	if (stop<eX.min || stop>eX.max) {eX.value=eX.max; return;} // prevent out of bounds
 	if ((cfg.comp.seglen && stop == 0) || (!cfg.comp.seglen && stop <= start)) {delSeg(s); return;}
 	var obj = {"seg": {"id": s, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop}};
 	if (isM) {
-		var startY = parseInt(gId(`seg${s}sY`).value);
-		var stopY = parseInt(gId(`seg${s}eY`).value);
+		let sY = gId(`seg${s}sY`);
+		let eY = gId(`seg${s}eY`);
+		var startY = parseInt(sY.value);
+		var stopY = parseInt(eY.value);
+		if (startY<sY.min || startY>sY.max) {sY.value=sY.min; return;} // prevent out of bounds
+		if (stopY<eY.min || stop>eY.max) {eY.value=eY.max; return;} // prevent out of bounds
 		obj.seg.startY = startY;
 		obj.seg.stopY = (cfg.comp.seglen?startY:0)+stopY;
 	}
@@ -2022,6 +2030,7 @@ function setSeg(s)
 		obj.seg.of  = ofs;
 		if (isM) obj.seg.tp = gId(`seg${s}tp`).checked;
 	}
+	resetUtil(); // close add segment dialog just in case
 	requestJson(obj);
 }
 
