@@ -1861,9 +1861,9 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',1,'I2S Left/Right Clock: WS / LRCK / CLK');"));
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',2,'I2S Serial Clock: SCK / BCLK');"));
       #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
-        oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'MCLK: I2S Master CLK<br/><i>only use -1, 0, 1 or 3 for MCLK</i>');"));
+        oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'MCLK: I2S Master Clock<br/><i>only use -1, 0, 1 or 3 for MCLK</i>');"));
       #else
-        oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'MCLK: I2S Master CLK');"));
+        oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'MCLK: I2S Master Clock');"));
       #endif
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',4,'ES7243 I2C: SDA');"));
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',5,'ES7243 I2C: SCL');"));
