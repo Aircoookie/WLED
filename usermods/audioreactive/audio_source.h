@@ -420,9 +420,16 @@ public:
     };
 
     void initialize(int8_t sdaPin, int8_t sclPin, int8_t i2swsPin, int8_t i2ssdPin, int8_t i2sckPin, int8_t mclkPin) {
+      // check that pins are valid
+      if ((sdaPin < 0) || (sclPin < 0)) {
+        DEBUGSR_PRINTF("\nAR: invalid ES7243 I2C pins: SDA=%d, SCL=%d\n", sdaPin, sclPin); 
+        return;
+      }
       // Reserve SDA and SCL pins of the I2C interface
-      if (!pinManager.allocatePin(sdaPin, true, PinOwner::HW_I2C) ||
-          !pinManager.allocatePin(sclPin, true, PinOwner::HW_I2C)) {
+      PinManagerPinType es7243Pins[2] = { { sdaPin, true }, { sclPin, true } };
+      if (!pinManager.allocateMultiplePins(es7243Pins, 2, PinOwner::HW_I2C)) {
+        pinManager.deallocateMultiplePins(es7243Pins, 2, PinOwner::HW_I2C);
+        DEBUGSR_PRINTF("\nAR: Failed to allocate ES7243 I2C pins: SDA=%d, SCL=%d\n", sdaPin, sclPin); 
         return;
       }
 
@@ -436,8 +443,8 @@ public:
 
     void deinitialize() {
       // Release SDA and SCL pins of the I2C interface
-      pinManager.deallocatePin(pin_ES7243_SDA, PinOwner::HW_I2C);
-      pinManager.deallocatePin(pin_ES7243_SCL, PinOwner::HW_I2C);
+      PinManagerPinType es7243Pins[2] = { { pin_ES7243_SDA, true }, { pin_ES7243_SCL, true } };
+      pinManager.deallocateMultiplePins(es7243Pins, 2, PinOwner::HW_I2C);
       I2SSource::deinitialize();
     }
 
