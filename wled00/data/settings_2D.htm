@@ -109,7 +109,6 @@ Serpentine: <input type="checkbox" name="P${i}S"></div>`;
 	}
 
 	function gen() {
-		// resetPanels();
 		var pansH = parseInt(d.Sf.MPH.value);
 		var pansV = parseInt(d.Sf.MPV.value);
 		var c = pansH*pansV;
@@ -118,15 +117,15 @@ Serpentine: <input type="checkbox" name="P${i}S"></div>`;
 
 		UI();
 
-		var ps = d.Sf.PS.checked; //serpentine
-		var pv = d.Sf.PV.value==="1"; //vertical
-		var pb = d.Sf.PB.value==="1"; //matrix bottom
-		var pr = d.Sf.PR.value==="1"; //matrix right
-		var pw = parseInt(d.Sf.PW.value); //matrix width
-		var ph = parseInt(d.Sf.PH.value); //matrix height
+		var ps = d.Sf.PS.checked;
+		var pv = d.Sf.PV.value==="1";
+		var pb = d.Sf.PB.value==="1";
+		var pr = d.Sf.PR.value==="1";
+		var pw = parseInt(d.Sf.PW.value);
+		var ph = parseInt(d.Sf.PH.value);
 
-		var h = pv ? pansV :pansH; //how many vertical panels (adjusted for verticality)
-		var v = pv ? pansH : pansV; //how many horizontal panels 
+		var h = pv ? pansV :pansH;
+		var v = pv ? pansH : pansV;
 		for(let j = 0, p = 0; j < v; j++){
 			for(let i = 0; i < h; i++, p++){
 				var y = (pv?pr:pb) ? v-j-1: j;

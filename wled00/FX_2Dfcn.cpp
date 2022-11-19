@@ -42,9 +42,6 @@ void WS2812FX::setUpMatrix() {
   customMappingSize = 0;
 
   if (isMatrix) {
-    // matrixWidth  = hPanels * panelW;
-    // matrixHeight = vPanels * panelH;
-
     // calculate width dynamically because it will have gaps
     matrixWidth = 0;
     matrixHeight = 0;
