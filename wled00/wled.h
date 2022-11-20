@@ -176,16 +176,6 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
          Please change WLED_AP_SSID to something unique.
 #endif
 
-#if defined(WLED_AP_SSID_UNIQUE) && !defined(WLED_AP_SSID)
-  #error WLED_AP_SSID_UNIQUE is defined but WLED_AP_SSID is still the \
-         default. Please change WLED_AP_SSID to something unique.
-#endif
-
-#if defined(WLED_AP_SSID_UNIQUE) && !defined(WLED_AP_PASS)
-  #error WLED_AP_SSID_UNIQUE is defined but WLED_AP_PASS is still the \
-         default. Please change WLED_AP_PASS to something unique.
-#endif
-
 #ifndef WLED_AP_SSID
   #define WLED_AP_SSID DEFAULT_AP_SSID
 #endif
