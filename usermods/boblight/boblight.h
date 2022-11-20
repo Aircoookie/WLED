@@ -299,6 +299,7 @@ class BobLightUsermod : public Usermod {
     void addToConfig(JsonObject& root)
     {
       JsonObject umData = root.createNestedObject(FPSTR(_name));
+      umData[FPSTR(_enabled)] = enabled;
       umData[F("port")] = bobPort;
       int b=0,r=0,t=0,l=0;
       float pct=0;

@@ -326,6 +326,7 @@ void registerUsermods()
   
   #ifdef USERMOD_BOBLIGHT
   usermods.add(new BobLightUsermod());
+  #endif
 
   #ifdef SD_ADAPTER
   usermods.add(new UsermodSdCard());
