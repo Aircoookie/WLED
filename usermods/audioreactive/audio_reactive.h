@@ -1729,7 +1729,7 @@ class AudioReactive : public Usermod {
       amic["pin"] = audioPin;
 
       JsonObject dmic = top.createNestedObject(FPSTR(_digitalmic));
-      dmic[F("type")] = dmType;
+      dmic[F("Type")] = dmType;
       JsonArray pinArray = dmic.createNestedArray("pin");
       pinArray.add(i2ssdPin);
       pinArray.add(i2swsPin);
@@ -1738,12 +1738,12 @@ class AudioReactive : public Usermod {
       pinArray.add(sdaPin);
       pinArray.add(sclPin);
 
-      JsonObject cfg = top.createNestedObject("cfg");
-      cfg[F("squelch")] = soundSquelch;
-      cfg[F("gain")] = sampleGain;
+      JsonObject cfg = top.createNestedObject("Config");
+      cfg[F("Squelch")] = soundSquelch;
+      cfg[F("Gain")] = sampleGain;
       cfg[F("AGC")] = soundAgc;
 
-      JsonObject dynLim = top.createNestedObject("dynamics");
+      JsonObject dynLim = top.createNestedObject("Dynamics");
       dynLim[F("Limiter")] = limiterOn;
       dynLim[F("Rise")] = attackTime;
       dynLim[F("Fall")] = decayTime;
@@ -1752,9 +1752,9 @@ class AudioReactive : public Usermod {
       freqScale[F("Scale")] = FFTScalingMode;
       freqScale[F("Profile")] = pinkIndex;
 
-      JsonObject sync = top.createNestedObject("sync");
-      sync[F("port")] = audioSyncPort;
-      sync[F("mode")] = audioSyncEnabled;
+      JsonObject sync = top.createNestedObject("Sync");
+      sync[F("Port")] = audioSyncPort;
+      sync[F("Mode")] = audioSyncEnabled;
     }
 
 
@@ -1782,7 +1782,7 @@ class AudioReactive : public Usermod {
 
       configComplete &= getJsonValue(top[FPSTR(_analogmic)]["pin"], audioPin);
 
-      configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["type"],   dmType);
+      configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["Type"],   dmType);
       configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["pin"][0], i2ssdPin);
       configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["pin"][1], i2swsPin);
       configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["pin"][2], i2sckPin);
@@ -1790,19 +1790,19 @@ class AudioReactive : public Usermod {
       configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["pin"][4], sdaPin);
       configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["pin"][5], sclPin);
 
-      configComplete &= getJsonValue(top["cfg"][F("squelch")], soundSquelch);
-      configComplete &= getJsonValue(top["cfg"][F("gain")],    sampleGain);
-      configComplete &= getJsonValue(top["cfg"][F("AGC")],     soundAgc);
+      configComplete &= getJsonValue(top["Config"][F("Squelch")], soundSquelch);
+      configComplete &= getJsonValue(top["Config"][F("Gain")],    sampleGain);
+      configComplete &= getJsonValue(top["Config"][F("AGC")],     soundAgc);
 
-      configComplete &= getJsonValue(top["dynamics"][F("Limiter")], limiterOn);
-      configComplete &= getJsonValue(top["dynamics"][F("Rise")],  attackTime);
-      configComplete &= getJsonValue(top["dynamics"][F("Fall")],  decayTime);
+      configComplete &= getJsonValue(top["Dynamics"][F("Limiter")], limiterOn);
+      configComplete &= getJsonValue(top["Dynamics"][F("Rise")],  attackTime);
+      configComplete &= getJsonValue(top["Dynamics"][F("Fall")],  decayTime);
 
       configComplete &= getJsonValue(top["Frequency"][F("Scale")], FFTScalingMode);
       configComplete &= getJsonValue(top["Frequency"][F("Profile")], pinkIndex);
 
-      configComplete &= getJsonValue(top["sync"][F("port")], audioSyncPort);
-      configComplete &= getJsonValue(top["sync"][F("mode")], audioSyncEnabled);
+      configComplete &= getJsonValue(top["Sync"][F("Port")], audioSyncPort);
+      configComplete &= getJsonValue(top["Sync"][F("Mode")], audioSyncEnabled);
 
       return configComplete;
     }
@@ -1810,7 +1810,7 @@ class AudioReactive : public Usermod {
 
     void appendConfigData()
     {
-      oappend(SET_F("dd=addDropdown('AudioReactive','digitalmic:type');"));
+      oappend(SET_F("dd=addDropdown('AudioReactive','Digitalmic:type');"));
     #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
       oappend(SET_F("addOption(dd,'Generic Analog',0);"));
     #endif
@@ -1821,18 +1821,18 @@ class AudioReactive : public Usermod {
     #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
       oappend(SET_F("addOption(dd,'Generic I2S PDM',5);"));
     #endif
-      oappend(SET_F("dd=addDropdown('AudioReactive','cfg:AGC');"));
+      oappend(SET_F("dd=addDropdown('AudioReactive','Config:AGC');"));
       oappend(SET_F("addOption(dd,'Off',0);"));
       oappend(SET_F("addOption(dd,'Normal',1);"));
       oappend(SET_F("addOption(dd,'Vivid',2);"));
       oappend(SET_F("addOption(dd,'Lazy',3);"));
 
-      oappend(SET_F("dd=addDropdown('AudioReactive','dynamics:Limiter');"));
+      oappend(SET_F("dd=addDropdown('AudioReactive','Dynamics:Limiter');"));
       oappend(SET_F("addOption(dd,'Off',0);"));
       oappend(SET_F("addOption(dd,'On',1);"));
-      oappend(SET_F("addInfo('AudioReactive:dynamics:Limiter',0,' On ');"));  // 0 is field type, 1 is actual field
-      oappend(SET_F("addInfo('AudioReactive:dynamics:Rise',1,'ms <i>(&#x266A; effects only)</i>');"));
-      oappend(SET_F("addInfo('AudioReactive:dynamics:Fall',1,'ms <i>(&#x266A; effects only)</i>');"));
+      oappend(SET_F("addInfo('AudioReactive:Dynamics:Limiter',0,' On ');"));  // 0 is field type, 1 is actual field
+      oappend(SET_F("addInfo('AudioReactive:Dynamics:Rise',1,'ms <i>(&#x266A; effects only)</i>');"));
+      oappend(SET_F("addInfo('AudioReactive:Dynamics:Fall',1,'ms <i>(&#x266A; effects only)</i>');"));
 
       oappend(SET_F("dd=addDropdown('AudioReactive','Frequency:Scale');"));
       oappend(SET_F("addOption(dd,'None',0);"));
@@ -1856,17 +1856,17 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addOption(dd,'Off',0);"));
       oappend(SET_F("addOption(dd,'Send',1);"));
       oappend(SET_F("addOption(dd,'Receive',2);"));
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:type',1,'<i>requires reboot!</i>');"));  // 0 is field type, 1 is actual field
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',0,'I2S Serial Data: SD / DOUT / DATA');"));
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',1,'I2S Left/Right Clock: WS / LRCK / CLK');"));
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',2,'I2S Serial Clock: SCK / BCLK');"));
+      oappend(SET_F("addInfo('AudioReactive:Digitalmic:type',1,'<i>requires reboot!</i>');"));  // 0 is field type, 1 is actual field
+      oappend(SET_F("addInfo('AudioReactive:Digitalmic:pin[]',0,'I2S Serial Data', '<i><span class=\"h\">sd/data/dout</span></i>');"));
+      oappend(SET_F("addInfo('AudioReactive:Digitalmic:pin[]',1,'I2S L/R Clock','<i><span class=\"h\">ws/clk/lrck</span></i>');"));
+      oappend(SET_F("addInfo('AudioReactive:Digitalmic:pin[]',2,'I2S Serial Clock','<i>sck/bclk</i>');"));
       #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
-        oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'MCLK: I2S Master Clock<br/><i>only use -1, 0, 1 or 3 for MCLK</i>');"));
+        oappend(SET_F("addInfo('AudioReactive:Digitalmic:pin[]',3,'I2S Master CLK','<i>only use -1, 0, 1 or 3 for mclk</i>');"));
       #else
-        oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'MCLK: I2S Master Clock');"));
+        oappend(SET_F("addInfo('AudioReactive:Digitalmic:pin[]',3,'I2S Master CLK','');"));
       #endif
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',4,'ES7243 I2C: SDA');"));
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',5,'ES7243 I2C: SCL');"));
+      oappend(SET_F("addInfo('AudioReactive:Digitalmic:pin[]',4,'I2C SDA',' ');"));
+      oappend(SET_F("addInfo('AudioReactive:Digitalmic:pin[]',5,'I2C SCL',' ');"));
     }
 
 
@@ -1895,7 +1895,7 @@ class AudioReactive : public Usermod {
 const char AudioReactive::_name[]       PROGMEM = "AudioReactive";
 const char AudioReactive::_enabled[]    PROGMEM = "enabled";
 const char AudioReactive::_inputLvl[]   PROGMEM = "inputLevel";
-const char AudioReactive::_analogmic[]  PROGMEM = "analogmic";
-const char AudioReactive::_digitalmic[] PROGMEM = "digitalmic";
+const char AudioReactive::_analogmic[]  PROGMEM = "Analogmic";
+const char AudioReactive::_digitalmic[] PROGMEM = "Digitalmic";
 const char AudioReactive::UDP_SYNC_HEADER[]    PROGMEM = "00002"; // new sync header version, as format no longer compatible with previous structure
 const char AudioReactive::UDP_SYNC_HEADER_v1[] PROGMEM = "00001"; // old sync header version - need to add backwards-compatibility feature
