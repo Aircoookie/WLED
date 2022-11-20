@@ -1810,7 +1810,7 @@ class AudioReactive : public Usermod {
 
     void appendConfigData()
     {
-      oappend(SET_F("dd=addDropdown('AudioReactive','Digitalmic:type');"));
+      oappend(SET_F("dd=addDropdown('AudioReactive','Digitalmic:Type');"));
     #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
       oappend(SET_F("addOption(dd,'Generic Analog',0);"));
     #endif
@@ -1852,11 +1852,11 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addOption(dd,'userdefined #2',8);"));
       oappend(SET_F("addOption(dd,'flat - no adjustments',9);"));
 
-      oappend(SET_F("dd=addDropdown('AudioReactive','sync:mode');"));
+      oappend(SET_F("dd=addDropdown('AudioReactive','Sync:Mode');"));
       oappend(SET_F("addOption(dd,'Off',0);"));
       oappend(SET_F("addOption(dd,'Send',1);"));
       oappend(SET_F("addOption(dd,'Receive',2);"));
-      oappend(SET_F("addInfo('AudioReactive:Digitalmic:type',1,'<i>requires reboot!</i>');"));  // 0 is field type, 1 is actual field
+      oappend(SET_F("addInfo('AudioReactive:Digitalmic:Type',1,'<i>requires reboot!</i>');"));  // 0 is field type, 1 is actual field
       oappend(SET_F("addInfo('AudioReactive:Digitalmic:pin[]',0,'I2S Serial Data', '<i><span class=\"h\">sd/data/dout</span></i>');"));
       oappend(SET_F("addInfo('AudioReactive:Digitalmic:pin[]',1,'I2S L/R Clock','<i><span class=\"h\">ws/clk/lrck</span></i>');"));
       oappend(SET_F("addInfo('AudioReactive:Digitalmic:pin[]',2,'I2S Serial Clock','<i>sck/bclk</i>');"));
