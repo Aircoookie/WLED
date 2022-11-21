@@ -104,10 +104,14 @@
 			}
 		}
 	}
+	const initCap = (s) => {
+  		if (typeof s !== 'string') return ''
+  		return s.charAt(0).toUpperCase() + s.slice(1)
+	}
 	function addField(k,f,o,a=false) {  //key, field, (sub)object, isArray
 		if (isO(o)) {
 			urows += '<hr class="sml">';
-			if (f!=='unknown' && !k.includes(":")) urows += `<p><u>${f}</u></p>`; //show group title
+			if (f!=='unknown' && !k.includes(":")) urows += `<p><u>${initCap(f)}</u></p>`; //show group title
 			for (const [s,v] of Object.entries(o)) {
 				// possibility to nest objects (only 1 level)
 				if (f!=='unknown' && !k.includes(":")) addField(k+":"+f,s,v);
@@ -136,7 +140,7 @@
 					t = "text"; c = `value="${o}" style="width:250px;"`;
 					break;
 			}
-			urows += ` ${f} `; //only show field (key is shown in grouping)
+			urows += ` ${initCap(f)} `; //only show field (key is shown in grouping)
 			// https://stackoverflow.com/questions/11657123/posting-both-checked-and-unchecked-checkboxes
 			if (t=="checkbox") urows += `<input type="hidden" name="${k}:${f}${a?"[]":""}" value="false">`;
 			else if (!a)       urows += `<input type="hidden" name="${k}:${f}${a?"[]":""}" value="${t}">`;
