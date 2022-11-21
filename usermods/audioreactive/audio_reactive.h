@@ -179,7 +179,8 @@ static uint64_t sampleTime = 0;
 #define MAX_PINK 9  // 0 = standard, 1= line-in (pink moise only), 2..4 = IMNP441, 5..6 = ICS-43434, 6..7 = userdef, 9= flat (no pink noise adjustment)
 static const float fftResultPink[MAX_PINK+1][NUM_GEQ_CHANNELS] = { 
           { 1.70f, 1.71f, 1.73f, 1.78f, 1.68f, 1.56f, 1.55f, 1.63f, 1.79f, 1.62f, 1.80f, 2.06f, 2.47f, 3.35f, 6.83f, 9.55f },  // default from SR WLED
-          { 1.30f, 1.32f, 1.40f, 1.46f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 2.39f, 3.09f, 4.34f },  // Line-In - pink noise adjustment only, without microphone distortion
+      //  { 1.30f, 1.32f, 1.40f, 1.46f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 2.39f, 3.09f, 4.34f },  // Line-In Generic -> pink noise adjustment only
+          { 1.24f, 1.20f, 1.30f, 1.40f, 1.48f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.14f, 2.26f, 2.60f, 3.00f, 3.70f, 5.20f },  // Line-In CS5343
 
           { 1.82f, 1.72f, 1.70f, 1.50f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 2.90f, 3.86f, 6.29f},   // IMNP441 datasheet response profile * pink noise
           { 2.80f, 2.20f, 1.30f, 1.15f, 1.55f, 2.45f, 4.20f, 2.80f, 3.20f, 3.60f, 4.20f, 4.90f, 5.70f, 6.05f,10.50f,14.85f},   // IMNP441 - big speaker, strong bass
@@ -1207,6 +1208,7 @@ class AudioReactive : public Usermod {
           break;
         case 2:
           DEBUGSR_PRINTLN(F("AR: ES7243 Microphone (right channel only)."));
+          //useBandPassFilter = true;
           audioSource = new ES7243(SAMPLE_RATE, BLOCK_SIZE);
           delay(100);
           if (audioSource) audioSource->initialize(sdaPin, sclPin, i2swsPin, i2ssdPin, i2sckPin, mclkPin);
@@ -1219,6 +1221,7 @@ class AudioReactive : public Usermod {
           break;
         case 4:
           DEBUGSR_PRINT(F("AR: Generic I2S Microphone with Master Clock - ")); DEBUGSR_PRINTLN(F(I2S_MIC_CHANNEL_TEXT));
+          //useBandPassFilter = true;
           audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, true, 1.0f/24.0f);
           //audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, false, 1.0f/16.0f);   // I2S SLAVE mode - does not work, unfortunately
           delay(100);
@@ -1238,6 +1241,7 @@ class AudioReactive : public Usermod {
         case 0:
         default:
           DEBUGSR_PRINTLN(F("AR: Analog Microphone (left channel only)."));
+          //useBandPassFilter = true;
           audioSource = new I2SAdcSource(SAMPLE_RATE, BLOCK_SIZE);
           delay(100);
           if (audioSource) audioSource->initialize(audioPin);
