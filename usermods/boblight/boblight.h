@@ -26,6 +26,8 @@ class BobLightUsermod : public Usermod {
 
     light_t *lights = nullptr;
     uint16_t numLights = 0;  // 16 + 9 + 16 + 9
+    uint16_t top, bottom, left, right;  // will be filled in readFromConfig()
+    uint16_t pct;
 
     WiFiClient bobClient;
     WiFiServer *bob;
@@ -186,9 +188,24 @@ class BobLightUsermod : public Usermod {
       #endif
     }
 
+    void BobSync()  { yield(); } // allow other tasks, should also be used to force pixel redraw (not with WLED)
+    void BobClear() { for (size_t i=0; i<numLights; i++) setRealtimePixel(i, 0, 0, 0, 0); }
+    void pollBob();
+
   public:
 
     void setup() {
+      uint16_t totalLights = bottom + left + top + right;
+      if ( totalLights > strip.getLengthTotal() ) {
+        DEBUG_PRINTLN(F("BobLight: Too many lights."));
+        DEBUG_PRINTF("%d+%d+%d+%d>%d\n", bottom, left, top, right, strip.getLengthTotal());
+        totalLights = strip.getLengthTotal();
+        top = bottom = (uint16_t) roundf((float)totalLights * 16.0f / 50.0f);
+        left = right = (uint16_t) roundf((float)totalLights *  9.0f / 50.0f);
+      }
+      lights = new light_t[totalLights];
+      if (lights) fillBobLights(bottom, left, top, right, float(pct)); // will fill numLights
+      else        enable(false);
       initDone = true;
     }
 
@@ -281,7 +298,7 @@ class BobLightUsermod : public Usermod {
           String str = um[FPSTR(_enabled)]; // checkbox -> off or on
           en = (bool)(str!="off"); // off is guaranteed to be present
         }
-        if (en != enabled) enable(en);
+        if (en != enabled && lights) enable(en);
       }
     }
 
@@ -300,22 +317,12 @@ class BobLightUsermod : public Usermod {
     {
       JsonObject umData = root.createNestedObject(FPSTR(_name));
       umData[FPSTR(_enabled)] = enabled;
-      umData[F("port")] = bobPort;
-      int b=0,r=0,t=0,l=0;
-      float pct=0;
-      for ( int i=0; i<numLights; i++ ) {
-        switch ( lights[i].lightname[0] ) {
-          case 'b' : b++; if (!pct) pct = lights[i].vscan[1] - lights[i].vscan[0]; break;
-          case 'l' : l++; if (!pct) pct = lights[i].hscan[1] - lights[i].hscan[0]; break;
-          case 't' : t++; if (!pct) pct = lights[i].vscan[1] - lights[i].vscan[0]; break;
-          case 'r' : r++; if (!pct) pct = lights[i].hscan[1] - lights[i].hscan[0]; break;
-        }
-      }
-      umData[F("top")]    = t;
-      umData[F("bottom")] = b;
-      umData[F("left")]   = l;
-      umData[F("right")]  = r;
-      umData[F("pct")]    = (int)roundf(pct);
+      umData[F("port")]       = bobPort;
+      umData[F("top")]        = top;
+      umData[F("bottom")]     = bottom;
+      umData[F("left")]       = left;
+      umData[F("right")]      = right;
+      umData[F("pct")]        = pct;
     }
 
     bool readFromConfig(JsonObject& root)
@@ -327,9 +334,6 @@ class BobLightUsermod : public Usermod {
       configComplete &= getJsonValue(umData[FPSTR(_enabled)], en);
       enable(en);
 
-      uint16_t prevLights = numLights, totalLights;
-      byte bottom, left, top, right, pct;
-
       configComplete &= getJsonValue(umData[F("port")],   bobPort);
       configComplete &= getJsonValue(umData[F("bottom")], bottom,    16);
       configComplete &= getJsonValue(umData[F("top")],    top,       16);
@@ -338,21 +342,11 @@ class BobLightUsermod : public Usermod {
       configComplete &= getJsonValue(umData[F("pct")],    pct,        5); // Depth of scan [%]
       pct = MIN(50,MAX(1,pct));
 
-      totalLights = bottom + left + top + right;
-      if ( totalLights > strip.getLengthTotal() ) {
-        DEBUG_PRINTLN(F("BobLight: Too many lights."));
-        totalLights = strip.getLengthTotal();
-        top = bottom = totalLights*16/50;
-        left = right = totalLights*9/50;
-      }
-      if (initDone && prevLights != totalLights) {
+      uint16_t totalLights = bottom + left + top + right;
+      if (initDone && numLights != totalLights) {
         if (lights) delete[] lights;
-        lights = new light_t[totalLights];
-      } else if (!lights) {
-        lights = new light_t[totalLights];
+        setup();
       }
-      if (lights) fillBobLights(bottom, left, top, right, float(pct)); // will fill numLights
-      else        enable(false);
       return configComplete;
     }
 
@@ -368,128 +362,99 @@ class BobLightUsermod : public Usermod {
 
     uint16_t getId() { return USERMOD_ID_BOBLIGHT; }
 
-    void BobSync()  { yield(); } // allow other tasks, should also be used to force pixel redraw (not with WLED)
-    void BobClear() { for (size_t i=0; i<numLights; i++) setRealtimePixel(i, 0, 0, 0, 0); }
-
-    // main boblight handling
-    void pollBob() {
-      
-      //check if there are any new clients
-      if (bob && bob->hasClient())
-      {
-        //find free/disconnected spot
-        if (!bobClient || !bobClient.connected())
-        {
-          if (bobClient) bobClient.stop();
-          bobClient = bob->available();
-        }
-        //no free/disconnected spot so reject
-        WiFiClient bobClient = bob->available();
-        bobClient.stop();
-        BobClear();
-        exitRealtime();
-      }
-      
-      //check clients for data
-      if (bobClient && bobClient.connected())
-      {
-        realtimeLock(realtimeTimeoutMs); // lock strip as we have a client connected
-
-//        if (bobClient.available())
-//        {
-          //get data from the client
-          while (bobClient.available())
-          {
-            String input = bobClient.readStringUntil('\n');
-            //DEBUG_PRINT("Client: "); DEBUG_PRINTLN(input);
-            if (input.startsWith(F("hello")))
-            {
-              DEBUG_PRINTLN(F("hello"));
-              bobClient.print(F("hello\n"));
-            }
-            else if (input.startsWith(F("ping")))
-            {
-              DEBUG_PRINTLN(F("ping 1"));
-              bobClient.print(F("ping 1\n"));
-            }
-            else if (input.startsWith(F("get version")))
-            {
-              DEBUG_PRINTLN(F("version 5"));
-              bobClient.print(F("version 5\n"));
-            }
-            else if (input.startsWith(F("get lights")))
-            {
-              char tmp[64];
-              String answer = "";
-              sprintf_P(tmp, PSTR("lights %d\n"), numLights);
-              DEBUG_PRINTLN(tmp);
-              answer.concat(tmp);
-              for (int i=0; i<numLights; i++)
-              {
-                sprintf_P(tmp, PSTR("light %s scan %2.1f %2.1f %2.1f %2.1f\n"), lights[i].lightname, lights[i].vscan[0], lights[i].vscan[1], lights[i].hscan[0], lights[i].hscan[1]);
-                DEBUG_PRINT(tmp);
-                answer.concat(tmp);
-              }
-              bobClient.print(answer);
-            }
-            else if (input.startsWith(F("set priority")))
-            {
-              DEBUG_PRINTLN(F("set priority not implemented"));
-              // not implemented
-            }
-            else if (input.startsWith(F("set light ")))
-            { // <id> <cmd in rgb, speed, interpolation> <value> ...
-              input.remove(0,10);
-              String tmp = input.substring(0,input.indexOf(' '));
-              
-              int light_id = -1;
-              for ( uint16_t i=0; i<numLights; i++ )
-              {
-                if ( strncmp(lights[i].lightname, tmp.c_str(), 4) == 0 )
-                {
-                  light_id = i;
-                  break;
-                }
-              }
-              if ( light_id == -1 )
-                return;
-
-              input.remove(0,input.indexOf(' ')+1);
-              if ( input.startsWith(F("rgb ")) )
-              {
-                input.remove(0,4);
-                tmp = input.substring(0,input.indexOf(' '));
-                uint8_t red = (uint8_t)(255.0f*tmp.toFloat());
-                input.remove(0,input.indexOf(' ')+1);        // remove first float value
-                tmp = input.substring(0,input.indexOf(' '));
-                uint8_t green = (uint8_t)(255.0f*tmp.toFloat());
-                input.remove(0,input.indexOf(' ')+1);        // remove second float value
-                tmp = input.substring(0,input.indexOf(' '));
-                uint8_t blue = (uint8_t)(255.0f*tmp.toFloat());
-
-                //strip.setPixelColor(light_id, RGBW32(red, green, blue, 0));
-                setRealtimePixel(light_id, red, green, blue, 0);
-              } // currently no support for interpolation or speed, we just ignore this
-            }
-            else if (input.startsWith(F("sync")))
-            {
-              BobSync();
-            }        
-            else
-            {
-              // Client sent gibberish
-              DEBUG_PRINTLN(F("Client sent gibberish."));
-              bobClient.stop();
-              bobClient = bob->available();
-              BobClear();
-            }
-          }
-//        }
-      }
-    }
-
 };
 
 // strings to reduce flash memory usage (used more than twice)
 const char BobLightUsermod::_name[]    PROGMEM = "BobLight";
 const char BobLightUsermod::_enabled[] PROGMEM = "enabled";
+
+// main boblight handling (definition here prevents inlining)
+void BobLightUsermod::pollBob() {
+  
+  //check if there are any new clients
+  if (bob && bob->hasClient()) {
+    //find free/disconnected spot
+    if (!bobClient || !bobClient.connected()) {
+      if (bobClient) bobClient.stop();
+      bobClient = bob->available();
+      DEBUG_PRINTLN(F("Boblight: Client connected."));
+    }
+    //no free/disconnected spot so reject
+    WiFiClient bobClientTmp = bob->available();
+    bobClientTmp.stop();
+    BobClear();
+    exitRealtime();
+  }
+  
+  //check clients for data
+  if (bobClient && bobClient.connected()) {
+    realtimeLock(realtimeTimeoutMs); // lock strip as we have a client connected
+
+    //get data from the client
+    while (bobClient.available()) {
+      String input = bobClient.readStringUntil('\n');
+      // DEBUG_PRINT("Client: "); DEBUG_PRINTLN(input); // may be to stressful on Serial
+      if (input.startsWith(F("hello"))) {
+        DEBUG_PRINTLN(F("hello"));
+        bobClient.print(F("hello\n"));
+      } else if (input.startsWith(F("ping"))) {
+        DEBUG_PRINTLN(F("ping 1"));
+        bobClient.print(F("ping 1\n"));
+      } else if (input.startsWith(F("get version"))) {
+        DEBUG_PRINTLN(F("version 5"));
+        bobClient.print(F("version 5\n"));
+      } else if (input.startsWith(F("get lights"))) {
+        char tmp[64];
+        String answer = "";
+        sprintf_P(tmp, PSTR("lights %d\n"), numLights);
+        DEBUG_PRINT(tmp);
+        answer.concat(tmp);
+        for (int i=0; i<numLights; i++) {
+          sprintf_P(tmp, PSTR("light %s scan %2.1f %2.1f %2.1f %2.1f\n"), lights[i].lightname, lights[i].vscan[0], lights[i].vscan[1], lights[i].hscan[0], lights[i].hscan[1]);
+          DEBUG_PRINT(tmp);
+          answer.concat(tmp);
+        }
+        bobClient.print(answer);
+      } else if (input.startsWith(F("set priority"))) {
+        DEBUG_PRINTLN(F("set priority not implemented"));
+        // not implemented
+      } else if (input.startsWith(F("set light "))) { // <id> <cmd in rgb, speed, interpolation> <value> ...
+        input.remove(0,10);
+        String tmp = input.substring(0,input.indexOf(' '));
+        
+        int light_id = -1;
+        for (uint16_t i=0; i<numLights; i++) {
+          if (strncmp(lights[i].lightname, tmp.c_str(), 4) == 0) {
+            light_id = i;
+            break;
+          }
+        }
+        if (light_id == -1) return;
+
+        input.remove(0,input.indexOf(' ')+1);
+        if (input.startsWith(F("rgb "))) {
+          input.remove(0,4);
+          tmp = input.substring(0,input.indexOf(' '));
+          uint8_t red = (uint8_t)(255.0f*tmp.toFloat());
+          input.remove(0,input.indexOf(' ')+1);        // remove first float value
+          tmp = input.substring(0,input.indexOf(' '));
+          uint8_t green = (uint8_t)(255.0f*tmp.toFloat());
+          input.remove(0,input.indexOf(' ')+1);        // remove second float value
+          tmp = input.substring(0,input.indexOf(' '));
+          uint8_t blue = (uint8_t)(255.0f*tmp.toFloat());
+
+          //strip.setPixelColor(light_id, RGBW32(red, green, blue, 0));
+          setRealtimePixel(light_id, red, green, blue, 0);
+        } // currently no support for interpolation or speed, we just ignore this
+      } else if (input.startsWith(F("sync"))) {
+        BobSync();
+      } else {
+        // Client sent gibberish
+        DEBUG_PRINTLN(F("Client sent gibberish."));
+        bobClient.stop();
+        bobClient = bob->available();
+        BobClear();
+      }
+    }
+  }
+}
