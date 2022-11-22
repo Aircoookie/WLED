@@ -15,6 +15,7 @@
 #else
 #define SRate_t int
 #endif
+#include "ES8388.h"
 
 //#include <driver/i2s_std.h>
 //#include <driver/i2s_pdm.h>
@@ -436,6 +437,58 @@ public:
     int8_t pin_ES7243_SDA;
     int8_t pin_ES7243_SCL;
 };
+
+class ES8388Source : public I2SSource {
+  private:
+
+    void _es8388InitAdc() {
+      if (!es8388.init()) Serial.println("Init Fail");
+       es8388.inputSelect(IN2);
+       es8388.setInputGain(8);
+       es8388.outputSelect(OUT2);
+       es8388.setOutputVolume(12);
+       es8388.mixerSourceSelect(MIXADC, MIXADC);
+       es8388.mixerSourceControl(DACOUT);
+       uint8_t *reg;
+       for (uint8_t i = 0; i < 53; i++) {
+         reg = es8388.readAllReg();
+         Serial.printf("Reg-%02d = 0x%02x\r\n", i, reg[i]);
+       }
+    }
+
+public:
+    ES8388Source(int sampleRate, int blockSize, int sdaPin, int sclPin) :
+      I2SSource(sampleRate, blockSize) {
+      _config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
+      pin_ES8388_SDA = sdaPin;
+      pin_ES8388_SCL = sclPin;
+    };
+
+    void initialize(int8_t i2swsPin, int8_t i2ssdPin, int8_t i2sckPin) {
+      // Reserve SDA and SCL pins of the I2C interface
+      if (!pinManager.allocatePin(pin_ES8388_SDA, true, PinOwner::HW_I2C) ||
+          !pinManager.allocatePin(pin_ES8388_SCL, true, PinOwner::HW_I2C)) {
+        return;
+      }
+
+      _es8388InitAdc();
+      I2SSource::initialize(i2swsPin, i2ssdPin, i2sckPin);
+    }
+
+    void deinitialize() {
+      // Release SDA and SCL pins of the I2C interface
+      pinManager.deallocatePin(pin_ES8388_SDA, PinOwner::HW_I2C);
+      pinManager.deallocatePin(pin_ES8388_SCL, PinOwner::HW_I2C);
+      I2SSource::deinitialize();
+    }
+
+  private:
+    int8_t pin_ES8388_SDA;
+    int8_t pin_ES8388_SCL;
+    ES8388 es8388 = ES8388(pin_ES8388_SDA, pin_ES8388_SCL, 400000);
+};
+
+
 
 #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
 // ADC over I2S is only availeable in "classic" ESP32
