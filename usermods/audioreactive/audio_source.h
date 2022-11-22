@@ -443,17 +443,17 @@ class ES8388Source : public I2SSource {
 
     void _es8388InitAdc() {
       if (!es8388.init()) Serial.println("Init Fail");
-       es8388.inputSelect(IN2);
-       es8388.setInputGain(8);
-       es8388.outputSelect(OUT2);
-       es8388.setOutputVolume(12);
-       es8388.mixerSourceSelect(MIXADC, MIXADC);
-       es8388.mixerSourceControl(DACOUT);
-       uint8_t *reg;
-       for (uint8_t i = 0; i < 53; i++) {
-         reg = es8388.readAllReg();
-         Serial.printf("Reg-%02d = 0x%02x\r\n", i, reg[i]);
-       }
+      es8388.inputSelect(IN2);
+      es8388.setInputGain(8);
+      es8388.outputSelect(OUT2);
+      es8388.setOutputVolume(12);
+      es8388.mixerSourceSelect(MIXADC, MIXADC);
+      es8388.mixerSourceControl(DACOUT);
+      uint8_t *reg;
+      for (uint8_t i = 0; i < 53; i++) {
+        reg = es8388.readAllReg();
+        Serial.printf("Reg-%02d = 0x%02x\r\n", i, reg[i]);
+      }
     }
 
 public:
@@ -472,6 +472,11 @@ public:
       }
 
       _es8388InitAdc();
+      // i2s
+      PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
+      WRITE_PERI_REG(PIN_CTRL, 0xFFF0);
+      i2s_set_sample_rates(I2S_NUM_0, 16000); // 16000 further reduces distortion, retaining acceptable quality 
+
       I2SSource::initialize(i2swsPin, i2ssdPin, i2sckPin);
     }
 
