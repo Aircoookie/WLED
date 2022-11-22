@@ -1822,7 +1822,7 @@ void WS2812FX::loadCustomPalettes()
 
 //load custom mapping table from JSON file (called from finalizeInit() or deserializeState())
 void WS2812FX::deserializeMap(uint8_t n) {
-  if (isMatrix) return; // 2D support creates its own ledmap
+  // WLEDMM: also supports isMatrix
 
   char fileName[32];
   strcpy_P(fileName, PSTR("/ledmap"));
@@ -1833,9 +1833,14 @@ void WS2812FX::deserializeMap(uint8_t n) {
   if (!isFile) {
     // erase custom mapping if selecting nonexistent ledmap.json (n==0)
     if (!n && customMappingTable != nullptr) {
-      customMappingSize = 0;
-      delete[] customMappingTable;
-      customMappingTable = nullptr;
+      //WLEDMM: if isMatrix then not erase but back to matrix default 
+      if (isMatrix)
+        setUpMatrix(true);
+      else {
+        customMappingSize = 0;
+        delete[] customMappingTable;
+        customMappingTable = nullptr;
+      }
     }
     return;
   }
@@ -1859,12 +1864,19 @@ void WS2812FX::deserializeMap(uint8_t n) {
 
   JsonArray map = doc[F("map")];
   if (!map.isNull() && map.size()) {  // not an empty map
-    customMappingSize  = map.size();
+    //WLEDMM: if isMatrix then customMap size is whole matrix
+    if (isMatrix)
+      customMappingSize  = matrixWidth * matrixHeight;
+    else
+      customMappingSize  = map.size();
     customMappingTable = new uint16_t[customMappingSize];
-    for (uint16_t i=0; i<customMappingSize; i++) {
+    for (uint16_t i=0; i<map.size(); i++) {
       customMappingTable[i] = (uint16_t) map[i];
     }
+    setUpMatrix(false); //WLEDMM: apply logical to physical mapping after the ledmap
   }
+  else 
+    setUpMatrix(true); //WLEDMM: if no map then back to matrix default 
 
   releaseJSONBufferLock();
 }

@@ -840,7 +840,7 @@ class WS2812FX {  // 96 bytes
 #endif
 
     void
-      setUpMatrix(),
+      setUpMatrix(bool reset = true), //WLEDMM: add reset option to switch on/off reset of customMappingTable
       setPixelColorXY(int x, int y, uint32_t c);
 
     // outsmart the compiler :) by correctly overloading

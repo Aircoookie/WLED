@@ -34,12 +34,14 @@
 // note: matrix may be comprised of multiple panels each with different orientation
 // but ledmap takes care of that. ledmap is constructed upon initialization
 // so matrix should disable regular ledmap processing
-void WS2812FX::setUpMatrix() {
+void WS2812FX::setUpMatrix(bool reset) {
 #ifndef WLED_DISABLE_2D
   // erase old ledmap, just in case.
-  if (customMappingTable != nullptr) delete[] customMappingTable;
-  customMappingTable = nullptr;
-  customMappingSize = 0;
+  if (reset) { //WLEDMM: add reset option to switch on/off reset of customMappingTable
+    if (customMappingTable != nullptr) delete[] customMappingTable;
+    customMappingTable = nullptr;
+    customMappingSize = 0;
+  }
 
   if (isMatrix) {
     matrixWidth  = hPanels * panelW;
@@ -53,8 +55,14 @@ void WS2812FX::setUpMatrix() {
       return;
     }
 
-    customMappingSize  = matrixWidth * matrixHeight;
-    customMappingTable = new uint16_t[customMappingSize];
+    if (reset) { //WLEDMM: add reset option to switch on/off reset of customMappingTable
+      customMappingSize  = matrixWidth * matrixHeight;
+      customMappingTable = new uint16_t[customMappingSize];
+      //WLEDMM: init customMappingTable with a 1:1 mapping (for customMappingTable[customMappingTable[x]])
+      for (uint16_t i=0; i<customMappingSize; i++) {
+        customMappingTable[i] = i;
+      }
+    }
 
     if (customMappingTable != nullptr) {
       uint16_t startL; // index in custom mapping array (logical strip)
@@ -80,7 +88,7 @@ void WS2812FX::setUpMatrix() {
               x = (panel[h*j + i].vertical ? panel[h*j + i].bottomStart : panel[h*j + i].rightStart) ? W - k - 1 : k;
               x = (panel[h*j + i].serpentine && l%2) ? (W - x - 1) : x;
               offset = (panel[h*j + i].vertical ? y : x) + (panel[h*j + i].vertical ? x : y) * matrixWidth;
-              customMappingTable[startL + offset] = startP + q;
+              customMappingTable[customMappingTable[startL + offset]] = startP + q; //WLEDMM: allow for 2 transitions if reset = false (ledmap and logical to physical)
             }
           }
         }
