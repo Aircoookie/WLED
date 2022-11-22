@@ -85,10 +85,10 @@ void WS2812FX::setUpMatrix() {
         uint16_t v = p.vertical? panelW:panelH;
         for (uint16_t j = 0; j<v; j++){
           for(uint16_t i = 0; i < h; i++, pix++){
-            y = (p.vertical?p.rightStart:p.bottomStart) ? v-j-1: j;
-            x = (p.vertical?p.bottomStart:p.rightStart) ?h-i-1 : i;
-            x = p.serpentine && j%2 ? h-x-1: x;
-            customMappingTable[(p.yOffset+(p.vertical?x:y))*matrixWidth+p.xOffset+(p.vertical?y:x)] = pix;
+            y = (p.vertical?p.rightStart:p.bottomStart) ? v-j-1 : j;
+            x = (p.vertical?p.bottomStart:p.rightStart) ? h-i-1 : i;
+            x = p.serpentine && j%2 ? h-x-1 : x;
+            customMappingTable[(p.yOffset + (p.vertical?x:y)) * matrixWidth + p.xOffset + (p.vertical?y:x)] = pix;
           }
         }
       }

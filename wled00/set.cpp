@@ -627,7 +627,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     strip.isMatrix = request->arg(F("SOMP")).toInt();
     strip.panelH   = MAX(1,MIN(128,request->arg(F("PH")).toInt()));
     strip.panelW   = MAX(1,MIN(128,request->arg(F("PW")).toInt()));
-    strip.panels  = MAX(1,MIN(8,request->arg(F("MPC")).toInt()));
+    strip.panels  = MAX(1,MIN(WLED_MAX_PANELS,request->arg(F("MPC")).toInt()));
     strip.matrix.bottomStart = request->arg(F("PB")).toInt();
     strip.matrix.rightStart  = request->arg(F("PR")).toInt();
     strip.matrix.vertical    = request->arg(F("PV")).toInt();
