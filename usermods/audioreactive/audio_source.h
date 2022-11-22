@@ -230,11 +230,18 @@ class I2SSource : public AudioSource {
       }
 
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
+      if ((_i2sMaster == false) && (_config.mode & I2S_MODE_SLAVE)) { // I2S slave mode (experimental).
+          // Seems we need to drive clocks in slave mode
+          _config.use_apll = true;
+          _config.fixed_mclk = 512 * int(_config.sample_rate);
+      }
+
       if (mclkPin != I2S_PIN_NO_CHANGE) {
         _config.use_apll = true; // experimental - use aPLL clock source to improve sampling quality, and to avoid glitches.
         // //_config.fixed_mclk = 512 * _sampleRate;
         // //_config.fixed_mclk = 256 * _sampleRate;
       }
+      
       #if !defined(SOC_I2S_SUPPORTS_APLL)
         #warning this MCU does not have an APLL high accuracy clock for audio
         // S3: not supported; S2: supported; C3: not supported
