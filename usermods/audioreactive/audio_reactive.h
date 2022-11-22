@@ -56,9 +56,17 @@ constexpr SRate_t SAMPLE_RATE = 22050;          // Base sample rate in Hz - 22Kh
 
 // globals
 static uint8_t inputLevel = 128;              // UI slider value
-static uint8_t soundSquelch = 10;             // squelch value for volume reactive routines (config value)
-static uint8_t sampleGain = 60;               // sample gain (config value)
-static uint8_t soundAgc = 0;                  // Automagic gain control: 0 - none, 1 - normal, 2 - vivid, 3 - lazy (config value)
+#ifndef SR_SQUELCH
+  uint8_t soundSquelch = 10;     // squelch value for volume reactive routines (config value)
+#else
+  uint8_t soundSquelch = SR_SQUELCH;     // squelch value for volume reactive routines (config value)
+#endif
+#ifndef SR_GAIN
+  uint8_t sampleGain = 60;          // sample gain (config value)
+#else
+  uint8_t sampleGain = SR_GAIN;          // sample gain (config value)
+#endif
+static uint8_t soundAgc = 1;                  // Automagic gain control: 0 - none, 1 - normal, 2 - vivid, 3 - lazy (config value)
 static uint8_t audioSyncEnabled = 0;          // bit field: bit 0 - send, bit 1 - receive (config value)
 static bool udpSyncConnected = false;         // UDP connection status -> true if connected to multicast group
 
@@ -68,7 +76,11 @@ static uint16_t attackTime = 50;              // int: attack time in millisecond
 static uint16_t decayTime = 300;              // int: decay time in milliseconds.  New default 300ms. Old default was 1.40sec
 // user settable options for FFTResult scaling
 static uint8_t FFTScalingMode = 3;            // 0 none; 1 optimized logarithmic; 2 optimized linear; 3 optimized sqare root
-static uint8_t pinkIndex = 0;                 // 0: default; 1: line-in; 2: IMNP441
+#ifndef SR_FREQ_PROF
+  static uint8_t pinkIndex = 0;                 // 0: default; 1: line-in; 2: IMNP441
+#else
+  static uint8_t pinkIndex = SR_FREQ_PROF;    // 0: default; 1: line-in; 2: IMNP441
+#endif
 
 // 
 // AGC presets
@@ -167,7 +179,8 @@ static uint64_t sampleTime = 0;
 #define MAX_PINK 9  // 0 = standard, 1= line-in (pink moise only), 2..4 = IMNP441, 5..6 = ICS-43434, 6..7 = userdef, 9= flat (no pink noise adjustment)
 static const float fftResultPink[MAX_PINK+1][NUM_GEQ_CHANNELS] = { 
           { 1.70f, 1.71f, 1.73f, 1.78f, 1.68f, 1.56f, 1.55f, 1.63f, 1.79f, 1.62f, 1.80f, 2.06f, 2.47f, 3.35f, 6.83f, 9.55f },  // default from SR WLED
-          { 1.30f, 1.32f, 1.40f, 1.46f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 2.39f, 3.09f, 4.34f },  // Line-In - pink noise adjustment only, without microphone distortion
+      //  { 1.30f, 1.32f, 1.40f, 1.46f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 2.39f, 3.09f, 4.34f },  // Line-In Generic -> pink noise adjustment only
+          { 1.24f, 1.20f, 1.30f, 1.40f, 1.48f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.14f, 2.26f, 2.60f, 3.00f, 3.70f, 5.20f },  // Line-In CS5343
 
           { 1.82f, 1.72f, 1.70f, 1.50f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 2.90f, 3.86f, 6.29f},   // IMNP441 datasheet response profile * pink noise
           { 2.80f, 2.20f, 1.30f, 1.15f, 1.55f, 2.45f, 4.20f, 2.80f, 3.20f, 3.60f, 4.20f, 4.90f, 5.70f, 6.05f,10.50f,14.85f},   // IMNP441 - big speaker, strong bass
@@ -285,10 +298,11 @@ void FFTcode(void * parameter)
     // band pass filter - can reduce noise floor by a factor of 50
     // downside: frequencies below 100Hz will be ignored
     if (useBandPassFilter) {
-      // low frequency cutoff parameter
-      //constexpr float alpha = 0.04f;   // 100hz
-      constexpr float alpha = 0.03f;   // 80hz
-      //constexpr float alpha = 0.0225f; // 60hz
+      // low frequency cutoff parameter - see https://dsp.stackexchange.com/questions/40462/exponential-moving-average-cut-off-frequency
+      //constexpr float alpha = 0.04f;   // 150Hz
+      //constexpr float alpha = 0.03f;   // 110Hz
+      constexpr float alpha = 0.0225f; // 80hz
+      //constexpr float alpha = 0.01693f;// 60hz
       // high frequency cutoff  parameter
       //constexpr float beta1 = 0.75;    // 11Khz
       //constexpr float beta1 = 0.82;    // 15Khz
@@ -597,10 +611,10 @@ class AudioReactive : public Usermod {
     #else
     int8_t audioPin = AUDIOPIN;
     #endif
-    #ifndef DMTYPE // I2S mic type
+    #ifndef SR_DMTYPE // I2S mic type
     uint8_t dmType = 1; // 0=none/disabled/analog; 1=generic I2S
     #else
-    uint8_t dmType = DMTYPE;
+    uint8_t dmType = SR_DMTYPE;
     #endif
     #ifndef I2S_SDPIN // aka DOUT
     int8_t i2ssdPin = 32;
@@ -1194,6 +1208,7 @@ class AudioReactive : public Usermod {
           break;
         case 2:
           DEBUGSR_PRINTLN(F("AR: ES7243 Microphone (right channel only)."));
+          //useBandPassFilter = true;
           audioSource = new ES7243(SAMPLE_RATE, BLOCK_SIZE);
           delay(100);
           if (audioSource) audioSource->initialize(sdaPin, sclPin, i2swsPin, i2ssdPin, i2sckPin, mclkPin);
@@ -1206,6 +1221,7 @@ class AudioReactive : public Usermod {
           break;
         case 4:
           DEBUGSR_PRINT(F("AR: Generic I2S Microphone with Master Clock - ")); DEBUGSR_PRINTLN(F(I2S_MIC_CHANNEL_TEXT));
+          //useBandPassFilter = true;
           audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, true, 1.0f/24.0f);
           //audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, false, 1.0f/16.0f);   // I2S SLAVE mode - does not work, unfortunately
           delay(100);
@@ -1232,6 +1248,7 @@ class AudioReactive : public Usermod {
         case 0:
         default:
           DEBUGSR_PRINTLN(F("AR: Analog Microphone (left channel only)."));
+          //useBandPassFilter = true;
           audioSource = new I2SAdcSource(SAMPLE_RATE, BLOCK_SIZE);
           delay(100);
           if (audioSource) audioSource->initialize(audioPin);
@@ -1246,7 +1263,11 @@ class AudioReactive : public Usermod {
       if (enabled) disableSoundProcessing = false;       // all good - enable audio processing
 
       if((!audioSource) || (!audioSource->isInitialized())) {  // audio source failed to initialize. Still stay "enabled", as there might be input arriving via UDP Sound Sync 
+      #ifdef WLED_DEBUG
+        DEBUG_PRINTLN(F("AR: Failed to initialize sound input driver. Please check input PIN settings."));
+      #else
         DEBUGSR_PRINTLN(F("AR: Failed to initialize sound input driver. Please check input PIN settings."));
+      #endif
         disableSoundProcessing = true;
       }
 
@@ -1728,19 +1749,19 @@ class AudioReactive : public Usermod {
       pinArray.add(sdaPin);
       pinArray.add(sclPin);
 
-      JsonObject cfg = top.createNestedObject("cfg");
+      JsonObject cfg = top.createNestedObject("config");
       cfg[F("squelch")] = soundSquelch;
       cfg[F("gain")] = sampleGain;
       cfg[F("AGC")] = soundAgc;
 
       JsonObject dynLim = top.createNestedObject("dynamics");
-      dynLim[F("Limiter")] = limiterOn;
-      dynLim[F("Rise")] = attackTime;
-      dynLim[F("Fall")] = decayTime;
+      dynLim[F("limiter")] = limiterOn;
+      dynLim[F("rise")] = attackTime;
+      dynLim[F("fall")] = decayTime;
 
-      JsonObject freqScale = top.createNestedObject("Frequency");
-      freqScale[F("Scale")] = FFTScalingMode;
-      freqScale[F("Profile")] = pinkIndex;
+      JsonObject freqScale = top.createNestedObject("frequency");
+      freqScale[F("scale")] = FFTScalingMode;
+      freqScale[F("profile")] = pinkIndex;
 
       JsonObject sync = top.createNestedObject("sync");
       sync[F("port")] = audioSyncPort;
@@ -1780,16 +1801,16 @@ class AudioReactive : public Usermod {
       configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["pin"][4], sdaPin);
       configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["pin"][5], sclPin);
 
-      configComplete &= getJsonValue(top["cfg"][F("squelch")], soundSquelch);
-      configComplete &= getJsonValue(top["cfg"][F("gain")],    sampleGain);
-      configComplete &= getJsonValue(top["cfg"][F("AGC")],     soundAgc);
+      configComplete &= getJsonValue(top["config"][F("squelch")], soundSquelch);
+      configComplete &= getJsonValue(top["config"][F("gain")],    sampleGain);
+      configComplete &= getJsonValue(top["config"][F("AGC")],     soundAgc);
 
-      configComplete &= getJsonValue(top["dynamics"][F("Limiter")], limiterOn);
-      configComplete &= getJsonValue(top["dynamics"][F("Rise")],  attackTime);
-      configComplete &= getJsonValue(top["dynamics"][F("Fall")],  decayTime);
+      configComplete &= getJsonValue(top["dynamics"][F("limiter")], limiterOn);
+      configComplete &= getJsonValue(top["dynamics"][F("rise")],  attackTime);
+      configComplete &= getJsonValue(top["dynamics"][F("fall")],  decayTime);
 
-      configComplete &= getJsonValue(top["Frequency"][F("Scale")], FFTScalingMode);
-      configComplete &= getJsonValue(top["Frequency"][F("Profile")], pinkIndex);
+      configComplete &= getJsonValue(top["frequency"][F("scale")], FFTScalingMode);
+      configComplete &= getJsonValue(top["frequency"][F("profile")], pinkIndex);
 
       configComplete &= getJsonValue(top["sync"][F("port")], audioSyncPort);
       configComplete &= getJsonValue(top["sync"][F("mode")], audioSyncEnabled);
@@ -1812,26 +1833,26 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addOption(dd,'Generic I2S PDM',5);"));
     #endif
       oappend(SET_F("addOption(dd,'ES8388',6);"));
-      oappend(SET_F("dd=addDropdown('AudioReactive','cfg:AGC');"));
+      oappend(SET_F("dd=addDropdown('AudioReactive','config:AGC');"));
       oappend(SET_F("addOption(dd,'Off',0);"));
       oappend(SET_F("addOption(dd,'Normal',1);"));
       oappend(SET_F("addOption(dd,'Vivid',2);"));
       oappend(SET_F("addOption(dd,'Lazy',3);"));
 
-      oappend(SET_F("dd=addDropdown('AudioReactive','dynamics:Limiter');"));
+      oappend(SET_F("dd=addDropdown('AudioReactive','dynamics:limiter');"));
       oappend(SET_F("addOption(dd,'Off',0);"));
       oappend(SET_F("addOption(dd,'On',1);"));
-      oappend(SET_F("addInfo('AudioReactive:dynamics:Limiter',0,' On ');"));  // 0 is field type, 1 is actual field
-      oappend(SET_F("addInfo('AudioReactive:dynamics:Rise',1,'ms <i>(&#x266A; effects only)</i>');"));
-      oappend(SET_F("addInfo('AudioReactive:dynamics:Fall',1,'ms <i>(&#x266A; effects only)</i>');"));
+      oappend(SET_F("addInfo('AudioReactive:dynamics:limiter',0,' On ');"));  // 0 is field type, 1 is actual field
+      oappend(SET_F("addInfo('AudioReactive:dynamics:rise',1,'ms <i>(&#x266A; effects only)</i>');"));
+      oappend(SET_F("addInfo('AudioReactive:dynamics:fall',1,'ms <i>(&#x266A; effects only)</i>');"));
 
-      oappend(SET_F("dd=addDropdown('AudioReactive','Frequency:Scale');"));
+      oappend(SET_F("dd=addDropdown('AudioReactive','frequency:scale');"));
       oappend(SET_F("addOption(dd,'None',0);"));
       oappend(SET_F("addOption(dd,'Linear (Amplitude)',2);"));
       oappend(SET_F("addOption(dd,'Square Root (Energy)',3);"));
       oappend(SET_F("addOption(dd,'Logarithmic (Loudness)',1);"));
 
-      oappend(SET_F("dd=addDropdown('AudioReactive','Frequency:Profile');"));
+      oappend(SET_F("dd=addDropdown('AudioReactive','frequency:profile');"));
       oappend(SET_F("addOption(dd,'Generic Microphone',0);"));
       oappend(SET_F("addOption(dd,'Generic Line-In',1);"));
       oappend(SET_F("addOption(dd,'IMNP441',2);"));
@@ -1848,16 +1869,16 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addOption(dd,'Send',1);"));
       oappend(SET_F("addOption(dd,'Receive',2);"));
       oappend(SET_F("addInfo('AudioReactive:digitalmic:type',1,'<i>requires reboot!</i>');"));  // 0 is field type, 1 is actual field
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',0,'I2S SD');"));
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',1,'I2S WS');"));
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',2,'I2S SCK');"));
+      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',0,'I2S Serial Data', '<i><span class=\"h\">sd/data/dout</span></i>');"));
+      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',1,'I2S L/R Clock','<i><span class=\"h\">ws/clk/lrck</span></i>');"));
+      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',2,'I2S Serial Clock','<i>sck/bclk</i>');"));
       #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
-        oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'I2S Master CLK <br/><i>only use -1, 0, 1 or 3 for MCLK</i>');"));
+        oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'I2S Master CLK','<i>only use -1, 0, 1 or 3</i>');"));
       #else
-        oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'I2S Master CLK');"));
+        oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'I2S Master CLK','');"));
       #endif
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',4,'I2C SDA');"));
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',5,'I2C SCL');"));
+      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',4,'I2C SDA',' ');"));
+      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',5,'I2C SCL',' ');"));
     }
 
 

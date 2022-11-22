@@ -54,8 +54,8 @@
 class RotaryEncoderUIUsermod : public Usermod {
 private:
   int fadeAmount = 10;             // Amount to change every step (brightness)
-  unsigned long currentTime;
-  unsigned long loopTime;
+  unsigned long currentTime = 0;
+  unsigned long loopTime = 0;
   int8_t pinA = ENCODER_DT_PIN;       // DT from encoder
   int8_t pinB = ENCODER_CLK_PIN;      // CLK from encoder
   int8_t pinC = ENCODER_SW_PIN;       // SW from encoder
@@ -107,6 +107,7 @@ public:
       //      tracking the owner tags....
       pinA = pinB = pinC = -1;
       enabled = false;
+      DEBUG_PRINTLN(F("Failed to alocate GPIO pins for Usermod Rotary Encoder."));   //WLEDMM add debug info
       return;
     }
 

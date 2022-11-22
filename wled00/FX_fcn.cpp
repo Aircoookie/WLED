@@ -279,7 +279,8 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
     case 12: //Rainbow stripe colors
       targetPalette = RainbowStripeColors_p; break;
     case 71: //WLEDMM netmindz ar palette +1
-        targetPalette = getAudioPalette(); break;
+    case 72: //WLEDMM netmindz ar palette +1
+        targetPalette.loadDynamicGradientPalette(getAudioPalette(pal)); break; 
     default: //progmem palettes
       if (pal>245) {
         targetPalette = strip.customPalettes[255-pal]; // we checked bounds above
@@ -1140,35 +1141,38 @@ uint32_t Segment::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_
 }
 
  //WLEDMM netmindz ar palette
-CRGBPalette16 Segment::getAudioPalette() {
+uint8_t * Segment::getAudioPalette(int pal) {
+  // https://forum.makerforums.info/t/hi-is-it-possible-to-define-a-gradient-palette-at-runtime-the-define-gradient-palette-uses-the/63339
+  
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
-  uint8_t xyz[12];  // Needs to be 4 times however many colors are being used.
-                    // 3 colors = 12, 4 colors = 16, etc.
 
-  CRGB rgb = getCRGBForBand(0, fftResult);
+  static uint8_t xyz[12];  // Needs to be 4 times however many colors are being used.
+                           // 3 colors = 12, 4 colors = 16, etc.
+
+  CRGB rgb = getCRGBForBand(0, fftResult, pal);
   
   xyz[0] = 0;  // anchor of first color - must be zero
   xyz[1] = rgb.r;
   xyz[2] = rgb.g;
   xyz[3] = rgb.b;
 
-  rgb = getCRGBForBand(4, fftResult);
+  rgb = getCRGBForBand(4, fftResult, pal);
   xyz[4] = 128;
   xyz[5] = rgb.r;
   xyz[6] = rgb.g;
   xyz[7] = rgb.b;
   
-  rgb = getCRGBForBand(8, fftResult);
+  rgb = getCRGBForBand(8, fftResult, pal);
   xyz[8] = 255;  // anchor of last color - must be 255
   xyz[9] = rgb.r;
   xyz[10] = rgb.g;
   xyz[11] = rgb.b;
 
-  return CRGBPalette16(xyz);
+  return xyz;
 }
 
 
@@ -1818,7 +1822,7 @@ void WS2812FX::loadCustomPalettes()
 
 //load custom mapping table from JSON file (called from finalizeInit() or deserializeState())
 void WS2812FX::deserializeMap(uint8_t n) {
-  if (isMatrix) return; // 2D support creates its own ledmap
+  // WLEDMM: also supports isMatrix
 
   char fileName[32];
   strcpy_P(fileName, PSTR("/ledmap"));
@@ -1829,9 +1833,14 @@ void WS2812FX::deserializeMap(uint8_t n) {
   if (!isFile) {
     // erase custom mapping if selecting nonexistent ledmap.json (n==0)
     if (!n && customMappingTable != nullptr) {
-      customMappingSize = 0;
-      delete[] customMappingTable;
-      customMappingTable = nullptr;
+      //WLEDMM: if isMatrix then not erase but back to matrix default 
+      if (isMatrix)
+        setUpMatrix(true);
+      else {
+        customMappingSize = 0;
+        delete[] customMappingTable;
+        customMappingTable = nullptr;
+      }
     }
     return;
   }
@@ -1855,12 +1864,19 @@ void WS2812FX::deserializeMap(uint8_t n) {
 
   JsonArray map = doc[F("map")];
   if (!map.isNull() && map.size()) {  // not an empty map
-    customMappingSize  = map.size();
+    //WLEDMM: if isMatrix then customMap size is whole matrix
+    if (isMatrix)
+      customMappingSize  = matrixWidth * matrixHeight;
+    else
+      customMappingSize  = map.size();
     customMappingTable = new uint16_t[customMappingSize];
-    for (uint16_t i=0; i<customMappingSize; i++) {
+    for (uint16_t i=0; i<map.size(); i++) {
       customMappingTable[i] = (uint16_t) map[i];
     }
+    setUpMatrix(false); //WLEDMM: apply logical to physical mapping after the ledmap
   }
+  else 
+    setUpMatrix(true); //WLEDMM: if no map then back to matrix default 
 
   releaseJSONBufferLock();
 }
@@ -1883,5 +1899,5 @@ const char JSON_palette_names[] PROGMEM = R"=====([
 "Magenta","Magred","Yelmag","Yelblu","Orange & Teal","Tiamat","April Night","Orangery","C9","Sakura",
 "Aurora","Atlantica","C9 2","C9 New","Temperature","Aurora 2","Retro Clown","Candy","Toxy Reaf","Fairy Reaf",
 "Semi Blue","Pink Candy","Red Reaf","Aqua Flash","Yelblu Hot","Lite Light","Red Flash","Blink Red","Red Shift","Red Tide",
-"Candy2","Audio Responsive"
+"Candy2","Audio Responsive Ratio","Audio Responsive Hue"
 ])=====";

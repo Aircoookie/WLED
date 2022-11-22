@@ -633,7 +633,7 @@ typedef struct Segment {
     void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB color) {}
     void wu_pixel(uint32_t x, uint32_t y, CRGB c) {}
   #endif
-  CRGBPalette16 getAudioPalette(); //WLEDMM netmindz ar palette
+  uint8_t * getAudioPalette(int pal); //WLEDMM netmindz ar palette
 } segment;
 //static int segSize = sizeof(Segment);
 
@@ -840,7 +840,7 @@ class WS2812FX {  // 96 bytes
 #endif
 
     void
-      setUpMatrix(),
+      setUpMatrix(bool reset = true), //WLEDMM: add reset option to switch on/off reset of customMappingTable
       setPixelColorXY(int x, int y, uint32_t c);
 
     // outsmart the compiler :) by correctly overloading

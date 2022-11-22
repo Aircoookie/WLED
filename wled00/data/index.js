@@ -414,7 +414,7 @@ function presetError(empty)
 		else
 			cn += `Here is a backup of the last known good state:`;
 		cn += `<textarea id="bck"></textarea><br>
-			<button class="btn btn-p" onclick="cpBck()">Copy to clipboard</button>`;
+			<button class="btn" onclick="cpBck()">Copy to clipboard</button>`;
 	}
 	cn += `</div>`;
 	gId('pcont').innerHTML = cn;
@@ -1699,7 +1699,7 @@ function makeSeg()
 			<tr>
 				<td><input class="noslide segn" id="seg${lu}s" type="number" min="0" max="${isM?mw-1:ledCount-1}" value="${ns}" oninput="updateLen(${lu})" onkeydown="segEnter(${lu})"></td>
 				<td><input class="noslide segn" id="seg${lu}e" type="number" min="0" max="${ct}" value="${ct}" oninput="updateLen(${lu})" onkeydown="segEnter(${lu})"></td>
-				<td><button class="btn btn-xs" onclick="setSeg(${lu});resetUtil();"><i class="icons bth-icon" id="segc${lu}">&#xe390;</i></button></td>
+				<td><button class="btn btn-xs" onclick="setSeg(${lu});"><i class="icons bth-icon" id="segc${lu}">&#xe390;</i></button></td>
 			</tr>
 			${isM ? '<tr><td>Start Y</td><td>'+(cfg.comp.seglen?'Height':'Stop Y')+'</td></tr>'+
 			'<tr>'+
@@ -1719,7 +1719,7 @@ function resetUtil()
 //	gId('segutil').innerHTML = '<button class="btn btn-s" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>segment</button>';
 	gId('segutil').innerHTML = '<div class="seg btn btn-s" style="border-radius:24px;padding:0;">'
 	+ '<label class="check schkl"><input type="checkbox" id="selall" onchange="selSegAll(this)"><span class="checkmark"></span></label>'
-	+ '<div class="segname" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>segment</div></div>';
+	+ '<div class="segname" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>Add segment</div></div>';
 }
 
 var plJson = {"0":{
@@ -1854,7 +1854,7 @@ ${makePlSel(plJson[i].end?plJson[i].end:0, true)}
 	<input type="checkbox" id="p${i}sbchk">
 	<span class="checkmark"></span>
 </label>`;
-		if (Array.isArray(lastinfo.maps) && lastinfo.maps.length>1) {
+		if (Array.isArray(lastinfo.maps) && lastinfo.maps.length>0) {
 			content += `<div class="lbl-l">Ledmap:&nbsp;<div class="sel-p"><select class="sel-p" id="p${i}lmp"><option value="">Unchanged</option>`;
 			for (const k of (lastinfo.maps||[])) content += `<option value="${k}"${(i>0 && pJson[i].ledmap==k)?" selected":""}>${k==0?'Default':'ledmap'+k+'.json'}</option>`;
 			content += "</select></div></div>";
@@ -1873,9 +1873,9 @@ ${makePlSel(plJson[i].end?plJson[i].end:0, true)}
 	<span class="checkmark"></span>
 </label>
 </div>
-<div class="po2" id="p${i}o2">API command<br><textarea class="apitxt" id="p${i}api"></textarea></div>
+<div class="po2" id="p${i}o2">API command<br><textarea class="apitxt noslide" id="p${i}api"></textarea></div>
 <div class="po1" id="p${i}o1">${content}</div>
-<div class="c">Save to ID <input class="noslide" id="p${i}id" type="number" oninput="checkUsed(${i})" max=250 min=1 value=${(i>0)?i:getLowestUnusedP()}></div>
+<div class="c m6">Save to ID <input class="noslide" id="p${i}id" type="number" oninput="checkUsed(${i})" max=250 min=1 value=${(i>0)?i:getLowestUnusedP()}></div>
 <div class="c">
 	<button class="btn btn-p" onclick="saveP(${i},${pl})"><i class="icons btn-icon">&#xe390;</i>Save</button>
 	${(i>0)?'<button class="btn btn-p" id="p'+i+'del" onclick="delP('+i+')"><i class="icons btn-icon">&#xe037;</i>Delete':'<button class="btn btn-p" onclick="resetPUtil()">Cancel'}</button>
@@ -1936,7 +1936,8 @@ function makePlUtil()
 	if (plJson[0].transition[0] < 0) plJson[0].transition[0] = tr;
 	let p = gId('putil');
 	p.classList.remove('staybot');
-	p.innerHTML = `<div class="pres"><div class="segin expanded" id="seg100">${makeP(0,true)}</div></div>`;
+	p.classList.add('pres');
+	p.innerHTML = `<div class="presin expanded" id="seg100">${makeP(0,true)}</div></div>`;
 	refreshPlE(0);
 	gId('p0txt').focus();
 	p.scrollIntoView({
@@ -1952,8 +1953,8 @@ function resetPUtil()
 	let p = gId('putil');
 	p.classList.add('staybot');
 	p.classList.remove('pres');
-	p.innerHTML = `<button class="btn btn-s" onclick="makePUtil()" style="float:left;"><i class="icons btn-icon">&#xe18a;</i>preset</button>`
-	+ `<button class="btn btn-s" onclick="makePlUtil()" style="float:right;"><i class="icons btn-icon">&#xe18a;</i>playlist</button>`;
+	p.innerHTML = `<button class="btn btn-s" onclick="makePUtil()" style="float:left;"><i class="icons btn-icon">&#xe18a;</i>Preset</button>`
+	+ `<button class="btn btn-s" onclick="makePlUtil()" style="float:right;"><i class="icons btn-icon">&#xe18a;</i>Playlist</button>`;
 }
 
 function tglCs(i)
@@ -2027,13 +2028,21 @@ function rptSeg(s)
 function setSeg(s)
 {
 	var name = gId(`seg${s}t`).value;
-	var start = parseInt(gId(`seg${s}s`).value);
-	var stop = parseInt(gId(`seg${s}e`).value);
+	let sX = gId(`seg${s}s`);
+	let eX = gId(`seg${s}e`);
+	var start = parseInt(sX.value);
+	var stop = parseInt(eX.value);
+	if (start<sX.min || start>sX.max) {sX.value=sX.min; return;} // prevent out of bounds
+	if (stop<eX.min || stop>eX.max) {eX.value=eX.max; return;} // prevent out of bounds
 	if ((cfg.comp.seglen && stop == 0) || (!cfg.comp.seglen && stop <= start)) {delSeg(s); return;}
 	var obj = {"seg": {"id": s, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop}};
 	if (isM) {
-		var startY = parseInt(gId(`seg${s}sY`).value);
-		var stopY = parseInt(gId(`seg${s}eY`).value);
+		let sY = gId(`seg${s}sY`);
+		let eY = gId(`seg${s}eY`);
+		var startY = parseInt(sY.value);
+		var stopY = parseInt(eY.value);
+		if (startY<sY.min || startY>sY.max) {sY.value=sY.min; return;} // prevent out of bounds
+		if (stopY<eY.min || stop>eY.max) {eY.value=eY.max; return;} // prevent out of bounds
 		obj.seg.startY = startY;
 		obj.seg.stopY = (cfg.comp.seglen?startY:0)+stopY;
 	}
@@ -2046,6 +2055,7 @@ function setSeg(s)
 		obj.seg.of  = ofs;
 		if (isM) obj.seg.tp = gId(`seg${s}tp`).checked;
 	}
+	resetUtil(); // close add segment dialog just in case
 	requestJson(obj);
 }
 

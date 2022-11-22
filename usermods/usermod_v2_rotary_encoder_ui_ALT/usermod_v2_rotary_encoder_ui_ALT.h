@@ -116,7 +116,7 @@ static int re_qstringCmp(const void *ap, const void *bp) {
 class RotaryEncoderUIUsermod : public Usermod {
 private:
   int8_t fadeAmount = 5;              // Amount to change every step (brightness)
-  unsigned long loopTime;
+  unsigned long loopTime = 0;
 
   unsigned long buttonPressedTime = 0;
   unsigned long buttonWaitTime = 0;
@@ -275,6 +275,7 @@ public:
       //      tracking the owner tags....
       pinA = pinB = pinC = -1;
       enabled = false;
+      DEBUG_PRINTLN(F("Failed to alocate GPIO pins for Usermod Rotary Encoder (ALT)."));   //WLEDMM add debug info
       return;
     }
 
@@ -327,8 +328,10 @@ public:
    */
   void loop()
   {
-    if (!enabled || strip.isUpdating()) return;
+    if (!enabled) return;
     unsigned long currentTime = millis(); // get the current elapsed time
+
+    if (strip.isUpdating() && (currentTime - loopTime < 4)) return;  // WLEDMM: be nice, but not too nice
 
     // Initialize effectCurrentIndex and effectPaletteIndex to
     // current state. We do it here as (at least) effectCurrent
@@ -342,7 +345,7 @@ public:
       currentEffectAndPaletteInitialized = false;
     }
 
-    if (currentTime >= (loopTime + 2)) // 2ms since last check of encoder = 500Hz
+    if (currentTime - loopTime >= 2) // 2ms since last check of encoder = 500Hz
     {
       loopTime = currentTime; // Updates loopTime
 
@@ -642,8 +645,8 @@ public:
     }
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
-    char lineBuffer[64];
-    sprintf(lineBuffer, "%d", val);
+    char lineBuffer[64] = { '\0' };
+    snprintf(lineBuffer, 63, "%d", val); // WLEDMM: avoid string buffer overflow
     display->overlay(lineBuffer, 500, 10); // use star
   #endif
   }
@@ -702,8 +705,8 @@ public:
     }
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
-    char lineBuffer[64];
-    sprintf(lineBuffer, "%d", currentHue1);
+    char lineBuffer[64] = { '\0' };
+    snprintf(lineBuffer, 63, "%d", currentHue1);  // WLEDMM: avoid string buffer overflow
     display->overlay(lineBuffer, 500, 7); // use brush
   #endif
   }
@@ -731,8 +734,8 @@ public:
     }
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
-    char lineBuffer[64];
-    sprintf(lineBuffer, "%d", currentSat1);
+    char lineBuffer[64] = { '\0' };
+    snprintf(lineBuffer, 63, "%d", currentSat1);  // WLEDMM: avoid string buffer overflow
     display->overlay(lineBuffer, 500, 8); // use contrast
   #endif
   }
@@ -748,7 +751,7 @@ public:
   #endif
     if (presetHigh && presetLow && presetHigh > presetLow) {
       StaticJsonDocument<64> root;
-      char str[64];
+      char str[64] = { '\0' };
       sprintf_P(str, PSTR("%d~%d~%s"), presetLow, presetHigh, increase?"":"-");
       root[F("ps")] = str;
       deserializeState(root.as<JsonObject>(), CALL_MODE_BUTTON_PRESET);
@@ -763,7 +766,7 @@ public:
 */
       lampUdated();
     #ifdef USERMOD_FOUR_LINE_DISPLAY
-      sprintf(str, "%d", currentPreset);
+      snprintf(str, 63, "%d", currentPreset);    // WLEDMM: avoid string buffer overflow
       display->overlay(str, 500, 11); // use heart
     #endif
     }
@@ -791,8 +794,8 @@ public:
 //    }
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
-    char lineBuffer[64];
-    sprintf(lineBuffer, "%d", currentCCT);
+    char lineBuffer[64] = { '\0' };
+    snprintf(lineBuffer, 63, "%d", currentCCT); // WLEDMM: avoid string buffer overflow
     display->overlay(lineBuffer, 500, 10); // use star
   #endif
   }

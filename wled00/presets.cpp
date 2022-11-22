@@ -294,7 +294,6 @@ void savePreset(byte index, const char* pname, JsonObject sObj)
       playlistSave = true;
     }
   }
-  loadLedmap = sObj["ledmap"]; //WLEDMM: assign ledmap
 }
 
 void deletePreset(byte index) {

@@ -516,17 +516,24 @@ void enumerateLedmaps() {
 }
 
 //WLEDMM netmindz ar palette
-CRGB getCRGBForBand(int x, uint8_t *fftResult) {
+CRGB getCRGBForBand(int x, uint8_t *fftResult, int pal) { 
   CRGB value;
   CHSV hsv;
-  if(x == 0) {
-    value = CRGB(fftResult[10]/2, fftResult[4]/2, fftResult[0]/2);
+  if(pal == 71) { // bit hacky to use palette id here, but don't want to litter the code with lots of different methods. TODO: add enum for palette creation type
+    if(x == 0) {
+      value = CRGB(fftResult[10]/2, fftResult[4]/2, fftResult[0]/2);
+    }
+    else if(x == 255) {
+      value = CRGB(fftResult[10]/2, fftResult[0]/2, fftResult[4]/2);
+    } 
+    else {
+      value = CRGB(fftResult[0]/2, fftResult[4]/2, fftResult[10]/2);
+    } 
   }
-  else if(x == 255) {
-    value = CRGB(fftResult[10]/2, fftResult[0]/2, fftResult[4]/2);
-  } 
-  else {
-    value = CRGB(fftResult[0]/2, fftResult[4]/2, fftResult[10]/2);
-  } 
+  else if(pal == 72) {
+    int b = map(x, 0, 255, 0, 8); // convert palette position to lower half of freq band
+    hsv = CHSV(fftResult[b], 255, map(fftResult[b], 0, 255, 30, 255));  // pick hue
+    hsv2rgb_rainbow(hsv, value);  // convert to R,G,B
+  }
   return value;
 }

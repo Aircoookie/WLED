@@ -5,7 +5,7 @@
  * Readability defines and their associated numerical values + compile-time constants
  */
 
-#define GRADIENT_PALETTE_COUNT 59 //WLEDMM netmindz ar palette +1
+#define GRADIENT_PALETTE_COUNT 60 //WLEDMM netmindz ar palette +2
 
 //Defaults
 #define DEFAULT_CLIENT_SSID "Your_Network"

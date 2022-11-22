@@ -24,11 +24,15 @@
 
 // see https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/hw-reference/chip-series-comparison.html#related-documents
 // and https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/api-reference/peripherals/i2s.html#overview-of-all-modes
-#if defined(CONFIG_IDF_TARGET_ESP32C2) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C5) || defined(CONFIG_IDF_TARGET_ESP32C6) || defined(CONFIG_IDF_TARGET_ESP32H2)
+#if defined(CONFIG_IDF_TARGET_ESP32C2) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C5) || defined(CONFIG_IDF_TARGET_ESP32C6) || defined(CONFIG_IDF_TARGET_ESP32H2) || defined(ESP8266) || defined(ESP8265)
   // there are two things in these MCUs that could lead to problems with audio processing:
   // * no floating point hardware (FPU) support - FFT uses float calculations. If done in software, a strong slow-down can be expected (between 8x and 20x)
   // * single core, so FFT task might slow down other things like LED updates
+  #if !defined(SOC_I2S_NUM) || (SOC_I2S_NUM < 1)
+  #error This audio reactive usermod does not support ESP32-C2, ESP32-C3 or ESP32-S2.
+  #else
   #warning This audio reactive usermod does not support ESP32-C2, ESP32-C3 or ESP32-S2.
+  #endif
 #endif
 
 /* ToDo: remove. ES7243 is controlled via compiler defines
@@ -227,11 +231,23 @@ class I2SSource : public AudioSource {
       }
 
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
+      if ((_i2sMaster == false) && (_config.mode & I2S_MODE_SLAVE)) { // I2S slave mode (experimental).
+          // Seems we need to drive clocks in slave mode
+          _config.use_apll = true;
+          _config.fixed_mclk = 512 * int(_config.sample_rate);
+      }
+
       if (mclkPin != I2S_PIN_NO_CHANGE) {
         _config.use_apll = true; // experimental - use aPLL clock source to improve sampling quality, and to avoid glitches.
         // //_config.fixed_mclk = 512 * _sampleRate;
         // //_config.fixed_mclk = 256 * _sampleRate;
       }
+      
+      #if !defined(SOC_I2S_SUPPORTS_APLL)
+        #warning this MCU does not have an APLL high accuracy clock for audio
+        // S3: not supported; S2: supported; C3: not supported
+        _config.use_apll = false; // APLL not supported on this MCU
+      #endif
       #if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32S3) && !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
       if (ESP.getChipRevision() == 0) _config.use_apll = false; // APLL is broken on ESP32 revision 0
       #endif
@@ -263,6 +279,8 @@ class I2SSource : public AudioSource {
         .data_in_num = i2ssdPin
       };
 
+      //DEBUGSR_PRINTF("[AR] I2S: SD=%d, WS=%d, SCK=%d, MCLK=%d\n", i2ssdPin, i2swsPin, i2sckPin, mclkPin);
+
       esp_err_t err = i2s_driver_install(I2S_NUM_0, &_config, 0, nullptr);
       if (err != ESP_OK) {
         DEBUGSR_PRINTF("AR: Failed to install i2s driver: %d\n", err);
@@ -274,7 +292,8 @@ class I2SSource : public AudioSource {
       if(_config.mode & I2S_MODE_MASTER) {
         if (_config.mode & I2S_MODE_PDM)
           DEBUGSR_PRINTLN(F("AR: I2S#0 driver installed in PDM MASTER mode."));
-        else DEBUGSR_PRINTLN(F("AR: I2S#0 driver installed in MASTER mode."));
+        else 
+          DEBUGSR_PRINTLN(F("AR: I2S#0 driver installed in MASTER mode."));
       } else
         DEBUGSR_PRINTLN(F("AR: I2S#0 driver installed in SLAVE mode."));
 
@@ -412,9 +431,22 @@ public:
     };
 
     void initialize(int8_t sdaPin, int8_t sclPin, int8_t i2swsPin, int8_t i2ssdPin, int8_t i2sckPin, int8_t mclkPin) {
+      // check that pins are valid
+      if ((sdaPin < 0) || (sclPin < 0)) {
+        DEBUGSR_PRINTF("\nAR: invalid ES7243 I2C pins: SDA=%d, SCL=%d\n", sdaPin, sclPin); 
+        return;
+      }
+
+      if ((i2sckPin < 0) || (mclkPin < 0)) {
+        DEBUGSR_PRINTF("\nAR: invalid I2S pin: SCK=%d, MCLK=%d\n", i2sckPin, mclkPin); 
+        return;
+      }
+
       // Reserve SDA and SCL pins of the I2C interface
-      if (!pinManager.allocatePin(sdaPin, true, PinOwner::HW_I2C) ||
-          !pinManager.allocatePin(sclPin, true, PinOwner::HW_I2C)) {
+      PinManagerPinType es7243Pins[2] = { { sdaPin, true }, { sclPin, true } };
+      if (!pinManager.allocateMultiplePins(es7243Pins, 2, PinOwner::HW_I2C)) {
+        pinManager.deallocateMultiplePins(es7243Pins, 2, PinOwner::HW_I2C);
+        DEBUGSR_PRINTF("\nAR: Failed to allocate ES7243 I2C pins: SDA=%d, SCL=%d\n", sdaPin, sclPin); 
         return;
       }
 
@@ -428,8 +460,8 @@ public:
 
     void deinitialize() {
       // Release SDA and SCL pins of the I2C interface
-      pinManager.deallocatePin(pin_ES7243_SDA, PinOwner::HW_I2C);
-      pinManager.deallocatePin(pin_ES7243_SCL, PinOwner::HW_I2C);
+      PinManagerPinType es7243Pins[2] = { { pin_ES7243_SDA, true }, { pin_ES7243_SCL, true } };
+      pinManager.deallocateMultiplePins(es7243Pins, 2, PinOwner::HW_I2C);
       I2SSource::deinitialize();
     }
 
@@ -494,6 +526,12 @@ public:
 };
 
 
+
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
+#if !defined(SOC_I2S_SUPPORTS_ADC) && !defined(SOC_I2S_SUPPORTS_ADC_DAC)
+  #warning this MCU does not support analog sound input
+#endif
+#endif
 
 #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
 // ADC over I2S is only availeable in "classic" ESP32
