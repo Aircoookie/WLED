@@ -162,9 +162,13 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
         setRealtimePixel(i, e131_data[dataOffset+1], e131_data[dataOffset+2], e131_data[dataOffset+3], wChannel);
       break;
 
-    case DMX_MODE_PRESET:       // 1 channel: WLED Preset number [#]
-      if (uni != e131Universe || availDMXLen < 1) return;
-      applyPreset(e131_data[dataOffset], CALL_MODE_NOTIFICATION);
+    case DMX_MODE_PRESET:       // 2 channel: [Dimmer,Preset]
+      if (uni != e131Universe || availDMXLen < 2) return;
+      applyPreset(e131_data[dataOffset+1], CALL_MODE_NOTIFICATION);
+      if (bri != e131_data[dataOffset]) {
+        bri = e131_data[dataOffset];
+        strip.setBrightness(bri, true);
+      }
       return;
       break;
 
