@@ -46,11 +46,11 @@ void WS2812FX::setUpMatrix() {
     matrixWidth = 0;
     matrixHeight = 0;
     for(auto p : panel){
-      if (p.xOffset + panelW > matrixWidth){
-        matrixWidth = p.xOffset + panelW;
+      if (p.xOffset + p.width > matrixWidth){
+        matrixWidth = p.xOffset + p.width;
       }
-      if (p.yOffset + panelH > matrixHeight){
-        matrixHeight = p.yOffset + panelH;
+      if (p.yOffset + p.height > matrixHeight){
+        matrixHeight = p.yOffset + p.height;
       }
     }
 
@@ -71,18 +71,11 @@ void WS2812FX::setUpMatrix() {
     }
 
     if (customMappingTable != nullptr) {
-      uint16_t x, y;
-
-      DEBUG_PRINT(F("Panel W/H: "));
-      DEBUG_PRINT(panelW);
-      DEBUG_PRINT(F(", "));
-      DEBUG_PRINTLN(panelH);
-
-      uint16_t pix=0; //pixel
+      uint16_t x, y, pix=0; //pixel
       for (uint8_t pan = 0; pan < panels; pan++){
         Panel p = panel[pan];
-        uint16_t h = p.vertical? panelH:panelW;
-        uint16_t v = p.vertical? panelW:panelH;
+        uint16_t h = p.vertical? p.height:p.width;
+        uint16_t v = p.vertical? p.width:p.height;
         for (uint16_t j = 0; j<v; j++){
           for(uint16_t i = 0; i < h; i++, pix++){
             y = (p.vertical?p.rightStart:p.bottomStart) ? v-j-1 : j;

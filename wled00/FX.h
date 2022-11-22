@@ -654,8 +654,6 @@ class WS2812FX {  // 96 bytes
       isMatrix(false),
 #ifndef WLED_DISABLE_2D
       panels(1),
-      panelH(8),
-      panelW(8),
       matrixWidth(DEFAULT_LED_COUNT),
       matrixHeight(1),
       matrix{0,0,0,0},
@@ -811,14 +809,14 @@ class WS2812FX {  // 96 bytes
       panels;
 
     uint16_t
-      panelH,
-      panelW,
       matrixWidth,
       matrixHeight;
 
     typedef struct panel_bitfield_t {
-      unsigned int xOffset  : 8; //x offset relative to the top left of matrix in LEDs
-      unsigned int yOffset  : 8; //y offset relative to the top left of matrix in LEDs
+      unsigned int xOffset  : 8; // x offset relative to the top left of matrix in LEDs
+      unsigned int yOffset  : 8; // y offset relative to the top left of matrix in LEDs
+      unsigned int width    : 8; // width of the panel
+      unsigned int height   : 8; // height of the panel
       bool bottomStart      : 1; // starts at bottom?
       bool rightStart       : 1; // starts on right?
       bool vertical         : 1; // is vertical?

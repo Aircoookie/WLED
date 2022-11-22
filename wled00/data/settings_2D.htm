@@ -74,7 +74,8 @@
 	function addPanel(i=0) {
 		let p = gId("panels");
 		if (p.children.length >= maxPanels) return;
-		let b = `<div id="pnl${i}">${i===0?"":'<hr class="sml">'}Panel ${i}<br>1<sup>st</sup> LED: <select name="P${i}B">
+		let b = `<div id="pnl${i}">${i===0?"":'<hr class="sml">'}Panel ${i}<br>Panel dimensions (WxH): <input id="P${i}W" name="P${i}W" type="number" min="1" max="128" value="8"> x <input id="P${i}H" name="P${i}H" type="number" min="1" max="128" value="8"><br>
+1<sup>st</sup> LED: <select name="P${i}B">
 	<option value="0">Top</option>
 	<option value="1">Bottom</option>
 </select><select name="P${i}R">
@@ -126,13 +127,15 @@ Serpentine: <input type="checkbox" name="P${i}S"></div>`;
 
 		var h = pv ? pansV :pansH;
 		var v = pv ? pansH : pansV;
-		for(let j = 0, p = 0; j < v; j++){
-			for(let i = 0; i < h; i++, p++){
+		for (let j = 0, p = 0; j < v; j++){
+			for (let i = 0; i < h; i++, p++){
 				var y = (pv?pr:pb) ? v-j-1: j;
-				var x = (pv?pb:pr) ?h-i-1 : i;
-				x = ps && j%2 ? h-x-1: x;
-				gId("P"+p+"X").value = (pv?y:x)*pw;
-				gId("P"+p+"Y").value = (pv?x:y)*ph
+				var x = (pv?pb:pr) ? h-i-1 : i;
+				x = ps && j%2 ? h-x-1 : x;
+				gId("P"+p+"X").value = (pv?y:x) * pw;
+				gId("P"+p+"Y").value = (pv?x:y) * ph
+				gId("P"+p+"W").value = pw;
+				gId("P"+p+"H").value = ph;
 			}
 		}
 	}
@@ -154,13 +157,13 @@ Serpentine: <input type="checkbox" name="P${i}S"></div>`;
 	</select><br>
 	<div id="mpdiv" style="display:none;">
 		<h3>Panel set-up</h3>
-		Panel dimensions (WxH): <input name="PW" type="number" min="1" max="128" value="8"> x <input name="PH" type="number" min="1" max="128" value="8"><br>
 		Number of panels: <input name="MPC" type="number" min="1" max="64" value="1" oninput="UI()"><br>
 		<h3>Matrix Generator</h3>
 		<hr class="sml">
 		<i>Can populate LED panel layout with pre-arranged matrix.<br>
 		<i>Values will not affect final layout.<br>
 		<hr class="sml">
+		Panel dimensions (WxH): <input name="PW" type="number" min="1" max="128" value="8"> x <input name="PH" type="number" min="1" max="128" value="8"><br>
 		Horizontal panels: <input name="MPH" type="number" min="1" max="8" value="1" oninput="UI()">
 		Vertical panels: <input name="MPV" type="number" min="1" max="8" value="1" oninput="UI()"><br>
 		1<sup>st</sup> panel: <select name="PB">

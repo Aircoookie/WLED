@@ -625,8 +625,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   if (subPage == 10)
   {
     strip.isMatrix = request->arg(F("SOMP")).toInt();
-    strip.panelH   = MAX(1,MIN(128,request->arg(F("PH")).toInt()));
-    strip.panelW   = MAX(1,MIN(128,request->arg(F("PW")).toInt()));
+    // strip.panelH   = MAX(1,MIN(128,request->arg(F("PH")).toInt()));
+    // strip.panelW   = MAX(1,MIN(128,request->arg(F("PW")).toInt()));
     strip.panels  = MAX(1,MIN(WLED_MAX_PANELS,request->arg(F("MPC")).toInt()));
     strip.matrix.bottomStart = request->arg(F("PB")).toInt();
     strip.matrix.rightStart  = request->arg(F("PR")).toInt();
@@ -642,6 +642,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       pO[l] = 'S'; strip.panel[i].serpentine  = request->hasArg(pO);
       pO[l] = 'X'; strip.panel[i].xOffset     = request->arg(pO).toInt();
       pO[l] = 'Y'; strip.panel[i].yOffset     = request->arg(pO).toInt();
+      pO[l] = 'W'; strip.panel[i].width       = request->arg(pO).toInt();
+      pO[l] = 'H'; strip.panel[i].height      = request->arg(pO).toInt();
     }
     strip.setUpMatrix(); // will check limits
   }
