@@ -1665,10 +1665,10 @@ class AudioReactive : public Usermod {
       #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
         oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'I2S Master CLK','<i>only use -1, 0, 1 or 3</i>');"));
       #else
-        oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'I2S Master CLK','');"));
+        oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'', 'I2S Master CLK');"));
       #endif
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',4,'I2C SDA',' ');"));
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',5,'I2C SCL',' ');"));
+      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',4,'', 'I2C SDA');"));
+      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',5,'', 'I2C SCL');"));
     }
 
 

@@ -104,7 +104,7 @@
 			}
 		}
 	}
-	const initCap = (s) => {
+	function initCap(s) {
   		if (typeof s !== 'string') return ''
   		return s.charAt(0).toUpperCase() + s.slice(1)
 	}
@@ -188,12 +188,8 @@
 		if (!obj.length) return;
 		if (typeof el === "string" && obj[0]) obj[0].placeholder = el;
 		else if (obj[el]) {
-			if (txt2!="") { //add pre and post texts
-				obj[el].insertAdjacentHTML('beforebegin', txt + '&nbsp;');
-				obj[el].insertAdjacentHTML('afterend', '&nbsp;'+txt2);
-			}
-			else
-				obj[el].insertAdjacentHTML('afterend', '&nbsp;'+txt);
+			if (txt!="") obj[el].insertAdjacentHTML('afterend', '&nbsp;'+txt);
+			if (txt2!="") obj[el].insertAdjacentHTML('beforebegin', txt2 + '&nbsp;');  //add pre texts
 		}
 	}
 	// load settings and insert values into DOM
