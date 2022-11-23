@@ -4,7 +4,7 @@
 #include <driver/i2s.h>
 #include <driver/adc.h>
 
-#ifndef ESP32
+#ifndef ARDUINO_ARCH_ESP32
   #error This audio reactive usermod does not support the ESP8266.
 #endif
 
@@ -28,43 +28,32 @@
 // #define FFT_SAMPLING_LOG             // FFT result debugging
 // #define SR_DEBUG                     // generic SR DEBUG messages
 
-
 #ifdef SR_DEBUG
-  #define DEBUGSR_PRINT(x) Serial.print(x)
-  #define DEBUGSR_PRINTLN(x) Serial.println(x)
-  #define DEBUGSR_PRINTF(x...) Serial.printf(x)
+  #define DEBUGSR_PRINT(x) DEBUGOUT.print(x)
+  #define DEBUGSR_PRINTLN(x) DEBUGOUT.println(x)
+  #define DEBUGSR_PRINTF(x...) DEBUGOUT.printf(x)
 #else
   #define DEBUGSR_PRINT(x)
   #define DEBUGSR_PRINTLN(x)
   #define DEBUGSR_PRINTF(x...)
 #endif
 
-
+// use audio source class (ESP32 specific)
 #include "audio_source.h"
-
-constexpr i2s_port_t I2S_PORT = I2S_NUM_0;
-constexpr int BLOCK_SIZE = 128;
-constexpr SRate_t SAMPLE_RATE = 22050;          // Base sample rate in Hz - 22Khz is a standard rate. Physical sample time -> 23ms
-//constexpr SRate_t SAMPLE_RATE = 16000;        // 16kHz - use if FFTtask takes more than 20ms. Physical sample time -> 32ms
-//constexpr SRate_t SAMPLE_RATE = 20480;        // Base sample rate in Hz - 20Khz is experimental.    Physical sample time -> 25ms
-//constexpr SRate_t SAMPLE_RATE = 10240;        // Base sample rate in Hz - previous default.         Physical sample time -> 50ms
-
-#define FFT_MIN_CYCLE 21                      // minimum time before FFT task is repeated. Use with 22Khz sampling
-//#define FFT_MIN_CYCLE 30                      // Use with 16Khz sampling
-//#define FFT_MIN_CYCLE 23                      // minimum time before FFT task is repeated. Use with 20Khz sampling
-//#define FFT_MIN_CYCLE 46                      // minimum time before FFT task is repeated. Use with 10Khz sampling
+constexpr i2s_port_t I2S_PORT = I2S_NUM_0;       // I2S port to use (do not change !)
+constexpr int BLOCK_SIZE = 128;                  // I2S buffer size (samples)
 
 // globals
 static uint8_t inputLevel = 128;              // UI slider value
 #ifndef SR_SQUELCH
-  uint8_t soundSquelch = 10;     // squelch value for volume reactive routines (config value)
+  uint8_t soundSquelch = 10;                  // squelch value for volume reactive routines (config value)
 #else
-  uint8_t soundSquelch = SR_SQUELCH;     // squelch value for volume reactive routines (config value)
+  uint8_t soundSquelch = SR_SQUELCH;          // squelch value for volume reactive routines (config value)
 #endif
 #ifndef SR_GAIN
-  uint8_t sampleGain = 60;          // sample gain (config value)
+  uint8_t sampleGain = 60;                    // sample gain (config value)
 #else
-  uint8_t sampleGain = SR_GAIN;          // sample gain (config value)
+  uint8_t sampleGain = SR_GAIN;               // sample gain (config value)
 #endif
 static uint8_t soundAgc = 1;                  // Automagic gain control: 0 - none, 1 - normal, 2 - vivid, 3 - lazy (config value)
 static uint8_t audioSyncEnabled = 0;          // bit field: bit 0 - send, bit 1 - receive (config value)
@@ -77,10 +66,11 @@ static uint16_t decayTime = 300;              // int: decay time in milliseconds
 // user settable options for FFTResult scaling
 static uint8_t FFTScalingMode = 3;            // 0 none; 1 optimized logarithmic; 2 optimized linear; 3 optimized sqare root
 #ifndef SR_FREQ_PROF
-  static uint8_t pinkIndex = 0;                 // 0: default; 1: line-in; 2: IMNP441
+  static uint8_t pinkIndex = 0;               // 0: default; 1: line-in; 2: IMNP441
 #else
   static uint8_t pinkIndex = SR_FREQ_PROF;    // 0: default; 1: line-in; 2: IMNP441
 #endif
+
 
 // 
 // AGC presets
@@ -130,50 +120,14 @@ static void autoResetPeak(void);     // peak auto-reset function
 // Begin FFT Code //
 ////////////////////
 
-#ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
-// lib_deps += https://github.com/kosme/arduinoFFT#develop @ 1.9.2
-#define FFT_SPEED_OVER_PRECISION     // enables use of reciprocals (1/x etc), and an a few other speedups
-#define FFT_SQRT_APPROXIMATION       // enables "quake3" style inverse sqrt
-#define sqrt(x) sqrtf(x)             // little hack that reduces FFT time by 50% on ESP32 (as alternative to FFT_SQRT_APPROXIMATION)
-#else
-// lib_deps += https://github.com/blazoncek/arduinoFFT.git
-#endif
-#include <arduinoFFT.h>
+// some prototypes, to ensure consistent interfaces
+void FFTcode(void * parameter);      // audio processing task: read samples, run FFT, fill GEQ channels from FFT results
+static void runMicFilter(uint16_t numSamples, float *sampleBuffer);          // pre-filtering of raw samples (band-pass)
+static void postProcessFFTResults(bool noiseGateOpen, int numberOfChannels); // post-processing and post-amp of GEQ channels
 
-// FFT Output variables shared with animations
-#define NUM_GEQ_CHANNELS 16                     // number of frequency channels. Don't change !!
-static float FFT_MajorPeak = 1.0f;              // FFT: strongest (peak) frequency
-static float FFT_Magnitude = 0.0f;              // FFT: volume (magnitude) of peak frequency
-static uint8_t fftResult[NUM_GEQ_CHANNELS]= {0};// Our calculated freq. channel result table to be used by effects
+#define NUM_GEQ_CHANNELS 16                                           // number of frequency channels. Don't change !!
 
-// FFT Constants
-constexpr uint16_t samplesFFT = 512;            // Samples in an FFT batch - This value MUST ALWAYS be a power of 2
-constexpr uint16_t samplesFFT_2 = 256;          // meaningfull part of FFT results - only the "lower half" contains useful information.
-
-// These are the input and output vectors.  Input vectors receive computed results from FFT.
-static float vReal[samplesFFT] = {0.0f};       // FFT sample inputs / freq output -  these are our raw result bins
-static float vImag[samplesFFT] = {0.0f};       // imaginary parts
-
-// the following are observed values, supported by a bit of "educated guessing"
-//#define FFT_DOWNSCALE 0.65f                             // 20kHz - downscaling factor for FFT results - "Flat-Top" window @20Khz, old freq channels 
-#define FFT_DOWNSCALE 0.46f                             // downscaling factor for FFT results - for "Flat-Top" window @22Khz, new freq channels
-#define LOG_256  5.54517744
-
-#ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
-static float windowWeighingFactors[samplesFFT] = {0.0f};
-#endif
-
-// Try and normalize fftBin values to a max of 4096, so that 4096/16 = 256.
-static float   fftCalc[NUM_GEQ_CHANNELS] = {0.0f};
-static float   fftAvg[NUM_GEQ_CHANNELS] = {0.0f};                     // Calculated frequency channel results, with smoothing (used if dynamics limiter is ON)
-#ifdef SR_DEBUG
-static float   fftResultMax[NUM_GEQ_CHANNELS] = {0.0f};               // A table used for testing to determine how our post-processing is working.
-#endif
-
-#if defined(WLED_DEBUG) || defined(SR_DEBUG) || defined(SR_STATS)
-static uint64_t fftTime = 0;
-static uint64_t sampleTime = 0;
-#endif
+static TaskHandle_t FFT_Task = nullptr;
 
 // Table of multiplication factors so that we can even out the frequency response.
 #define MAX_PINK 9  // 0 = standard, 1= line-in (pink moise only), 2..4 = IMNP441, 5..6 = ICS-43434, 6..7 = userdef, 9= flat (no pink noise adjustment)
@@ -225,20 +179,71 @@ static const float fftResultPink[MAX_PINK+1][NUM_GEQ_CHANNELS] = {
    * Test your new profile (same procedure as above). Iterate the process to improve results.
    */
 
+// globals and FFT Output variables shared with animations
+static float FFT_MajorPeak = 1.0f;              // FFT: strongest (peak) frequency
+static float FFT_Magnitude = 0.0f;              // FFT: volume (magnitude) of peak frequency
+static uint8_t fftResult[NUM_GEQ_CHANNELS]= {0};// Our calculated freq. channel result table to be used by effects
+#if defined(WLED_DEBUG) || defined(SR_DEBUG) || defined(SR_STATS)
+static uint64_t fftTime = 0;
+static uint64_t sampleTime = 0;
+#endif
+
+// FFT Task variables (filtering and post-processing)
+static float   fftCalc[NUM_GEQ_CHANNELS] = {0.0f};                    // Try and normalize fftBin values to a max of 4096, so that 4096/16 = 256.
+static float   fftAvg[NUM_GEQ_CHANNELS] = {0.0f};                     // Calculated frequency channel results, with smoothing (used if dynamics limiter is ON)
+#ifdef SR_DEBUG
+static float   fftResultMax[NUM_GEQ_CHANNELS] = {0.0f};               // A table used for testing to determine how our post-processing is working.
+#endif
+
+// audio source parameters and constant
+constexpr SRate_t SAMPLE_RATE = 22050;        // Base sample rate in Hz - 22Khz is a standard rate. Physical sample time -> 23ms
+//constexpr SRate_t SAMPLE_RATE = 16000;        // 16kHz - use if FFTtask takes more than 20ms. Physical sample time -> 32ms
+//constexpr SRate_t SAMPLE_RATE = 20480;        // Base sample rate in Hz - 20Khz is experimental.    Physical sample time -> 25ms
+//constexpr SRate_t SAMPLE_RATE = 10240;        // Base sample rate in Hz - previous default.         Physical sample time -> 50ms
+#define FFT_MIN_CYCLE 21                      // minimum time before FFT task is repeated. Use with 22Khz sampling
+//#define FFT_MIN_CYCLE 30                      // Use with 16Khz sampling
+//#define FFT_MIN_CYCLE 23                      // minimum time before FFT task is repeated. Use with 20Khz sampling
+//#define FFT_MIN_CYCLE 46                      // minimum time before FFT task is repeated. Use with 10Khz sampling
+
+// FFT Constants
+constexpr uint16_t samplesFFT = 512;            // Samples in an FFT batch - This value MUST ALWAYS be a power of 2
+constexpr uint16_t samplesFFT_2 = 256;          // meaningfull part of FFT results - only the "lower half" contains useful information.
+// the following are observed values, supported by a bit of "educated guessing"
+//#define FFT_DOWNSCALE 0.65f                             // 20kHz - downscaling factor for FFT results - "Flat-Top" window @20Khz, old freq channels 
+#define FFT_DOWNSCALE 0.46f                             // downscaling factor for FFT results - for "Flat-Top" window @22Khz, new freq channels
+#define LOG_256  5.54517744                             // log2(256)
+
+// These are the input and output vectors.  Input vectors receive computed results from FFT.
+static float vReal[samplesFFT] = {0.0f};       // FFT sample inputs / freq output -  these are our raw result bins
+static float vImag[samplesFFT] = {0.0f};       // imaginary parts
+#ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
+static float windowWeighingFactors[samplesFFT] = {0.0f};
+#endif
+
 // Create FFT object
+#ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
+// lib_deps += https://github.com/kosme/arduinoFFT#develop @ 1.9.2
+#define FFT_SPEED_OVER_PRECISION     // enables use of reciprocals (1/x etc), and an a few other speedups
+#define FFT_SQRT_APPROXIMATION       // enables "quake3" style inverse sqrt
+#define sqrt(x) sqrtf(x)             // little hack that reduces FFT time by 50% on ESP32 (as alternative to FFT_SQRT_APPROXIMATION)
+#else
+// lib_deps += https://github.com/blazoncek/arduinoFFT.git
+#endif
+#include <arduinoFFT.h>
 #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
 static ArduinoFFT<float> FFT = ArduinoFFT<float>( vReal, vImag, samplesFFT, SAMPLE_RATE, windowWeighingFactors);
 #else
 static arduinoFFT FFT = arduinoFFT(vReal, vImag, samplesFFT, SAMPLE_RATE);
 #endif
 
-static TaskHandle_t FFT_Task = nullptr;
+// Helper functions
 
 // float version of map()
 static float mapf(float x, float in_min, float in_max, float out_min, float out_max){
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
+// compute average of several FFT resut bins
 #if 1  // linear average
 static float fftAddAvg(int from, int to) {
   float result = 0.0f;
@@ -247,7 +252,6 @@ static float fftAddAvg(int from, int to) {
   }
   return result / float(to - from + 1);
 }
-
 #else // RMS average
 static float fftAddAvg(int from, int to) {
   double result = 0.0;
@@ -258,7 +262,9 @@ static float fftAddAvg(int from, int to) {
 }
 #endif
 
+//
 // FFT main task
+//
 void FFTcode(void * parameter)
 {
   DEBUGSR_PRINT("FFT started on core: "); DEBUGSR_PRINTLN(xPortGetCoreID());
@@ -297,35 +303,7 @@ void FFTcode(void * parameter)
 
     // band pass filter - can reduce noise floor by a factor of 50
     // downside: frequencies below 100Hz will be ignored
-    if (useBandPassFilter) {
-      // low frequency cutoff parameter - see https://dsp.stackexchange.com/questions/40462/exponential-moving-average-cut-off-frequency
-      //constexpr float alpha = 0.04f;   // 150Hz
-      //constexpr float alpha = 0.03f;   // 110Hz
-      constexpr float alpha = 0.0225f; // 80hz
-      //constexpr float alpha = 0.01693f;// 60hz
-      // high frequency cutoff  parameter
-      //constexpr float beta1 = 0.75;    // 11Khz
-      //constexpr float beta1 = 0.82;    // 15Khz
-      //constexpr float beta1 = 0.8285;  // 18Khz
-      constexpr float beta1 = 0.85;   // 20Khz
-
-      constexpr float beta2 = (1.0f - beta1) / 2.0;
-      static float last_vals[2] = { 0.0f }; // FIR high freq cutoff filter
-      static float lowfilt = 0.0f;          // IIR low frequency cutoff filter
-
-      for (int i=0; i < samplesFFT; i++) {
-        // FIR lowpass, to remove high frequency noise
-        float highFilteredSample;
-        if (i < (samplesFFT-1)) highFilteredSample = beta1*vReal[i] + beta2*last_vals[0] + beta2*vReal[i+1];  // smooth out spikes
-        else highFilteredSample = beta1*vReal[i] + beta2*last_vals[0]  + beta2*last_vals[1];                  // spcial handling for last sample in array
-        last_vals[1] = last_vals[0];
-        last_vals[0] = vReal[i];
-        vReal[i] = highFilteredSample;
-        // IIR highpass, to remove low frequency noise
-        lowfilt += alpha * (vReal[i] - lowfilt);
-        vReal[i] = vReal[i] - lowfilt;
-      }  
-    }
+    if (useBandPassFilter) runMicFilter(samplesFFT, vReal);
 
     // find highest sample in the batch
     float maxSample = 0.0f;                         // max sample from FFT batch
@@ -459,10 +437,68 @@ void FFTcode(void * parameter)
 
     // post-processing of frequency channels (pink noise adjustment, AGC, smooting, scaling)
     if (pinkIndex > MAX_PINK) pinkIndex = MAX_PINK;
-    for (int i=0; i < NUM_GEQ_CHANNELS; i++) {
+    //postProcessFFTResults((fabsf(sampleAvg) > 0.25f)? true : false , NUM_GEQ_CHANNELS);
+    postProcessFFTResults((fabsf(volumeSmth)>0.25f)? true : false , NUM_GEQ_CHANNELS);
 
-      //if (fabsf(sampleAvg) > 0.25f) { // noise gate open
-      if (fabsf(volumeSmth)  > 0.25f) { // noise gate open
+#if defined(WLED_DEBUG) || defined(SR_DEBUG)|| defined(SR_STATS)
+    if (haveDoneFFT && (start < esp_timer_get_time())) { // filter out overflows
+      uint64_t fftTimeInMillis = ((esp_timer_get_time() - start) +5ULL) / 10ULL; // "+5" to ensure proper rounding
+      fftTime  = (fftTimeInMillis*3 + fftTime*7)/10; // smooth
+    }
+#endif
+    // run peak detection
+    autoResetPeak();
+    detectSamplePeak();
+    
+    #if !defined(I2S_GRAB_ADC1_COMPLETELY)    
+    if ((audioSource == nullptr) || (audioSource->getType() != AudioSource::Type_I2SAdc))  // the "delay trick" does not help for analog ADC
+    #endif
+      vTaskDelayUntil( &xLastWakeTime, xFrequency);        // release CPU, and let I2S fill its buffers
+
+  } // for(;;)ever
+} // FFTcode() task end
+
+
+///////////////////////////
+// Pre / Postprocessing  //
+///////////////////////////
+
+static void runMicFilter(uint16_t numSamples, float *sampleBuffer)          // pre-filtering of raw samples (band-pass)
+{
+  // low frequency cutoff parameter - see https://dsp.stackexchange.com/questions/40462/exponential-moving-average-cut-off-frequency
+  //constexpr float alpha = 0.04f;   // 150Hz
+  //constexpr float alpha = 0.03f;   // 110Hz
+  constexpr float alpha = 0.0225f; // 80hz
+  //constexpr float alpha = 0.01693f;// 60hz
+  // high frequency cutoff  parameter
+  //constexpr float beta1 = 0.75;    // 11Khz
+  //constexpr float beta1 = 0.82;    // 15Khz
+  //constexpr float beta1 = 0.8285;  // 18Khz
+  constexpr float beta1 = 0.85;   // 20Khz
+
+  constexpr float beta2 = (1.0f - beta1) / 2.0;
+  static float last_vals[2] = { 0.0f }; // FIR high freq cutoff filter
+  static float lowfilt = 0.0f;          // IIR low frequency cutoff filter
+
+  for (int i=0; i < numSamples; i++) {
+        // FIR lowpass, to remove high frequency noise
+        float highFilteredSample;
+        if (i < (numSamples-1)) highFilteredSample = beta1*sampleBuffer[i] + beta2*last_vals[0] + beta2*sampleBuffer[i+1];  // smooth out spikes
+        else highFilteredSample = beta1*sampleBuffer[i] + beta2*last_vals[0]  + beta2*last_vals[1];                  // spcial handling for last sample in array
+        last_vals[1] = last_vals[0];
+        last_vals[0] = sampleBuffer[i];
+        sampleBuffer[i] = highFilteredSample;
+        // IIR highpass, to remove low frequency noise
+        lowfilt += alpha * (sampleBuffer[i] - lowfilt);
+        sampleBuffer[i] = sampleBuffer[i] - lowfilt;
+  }
+}
+
+static void postProcessFFTResults(bool noiseGateOpen, int numberOfChannels) // post-processing and post-amp of GEQ channels
+{
+    for (int i=0; i < numberOfChannels; i++) {
+
+      if (noiseGateOpen) { // noise gate open
         // Adjustment for frequency curves.
         fftCalc[i] *= fftResultPink[pinkIndex][i];
         if (FFTScalingMode > 0) fftCalc[i] *= FFT_DOWNSCALE;  // adjustment related to FFT windowing function
@@ -473,7 +509,7 @@ void FFTcode(void * parameter)
 
       // smooth results - rise fast, fall slower
       if(fftCalc[i] > fftAvg[i])   // rise fast 
-        fftAvg[i] = fftCalc[i] *0.75f + 0.25f*fftAvg[i];  // will need approx 2 cycles (50ms) for converging against fftCalc[i]
+        fftAvg[i] = fftCalc[i] *0.78f + 0.22f*fftAvg[i];  // will need approx 1-2 cycles (50ms) for converging against fftCalc[i]
       else {                       // fall slow
         if (decayTime < 250)      fftAvg[i] = fftCalc[i]*0.4f + 0.6f*fftAvg[i]; 
         else if (decayTime < 500)  fftAvg[i] = fftCalc[i]*0.33f + 0.67f*fftAvg[i]; 
@@ -537,26 +573,7 @@ void FFTcode(void * parameter)
       }
       fftResult[i] = constrain((int)currentResult, 0, 255);
     }
-
-#if defined(WLED_DEBUG) || defined(SR_DEBUG)|| defined(SR_STATS)
-    if (haveDoneFFT && (start < esp_timer_get_time())) { // filter out overflows
-      uint64_t fftTimeInMillis = ((esp_timer_get_time() - start) +5ULL) / 10ULL; // "+5" to ensure proper rounding
-      fftTime  = (fftTimeInMillis*3 + fftTime*7)/10; // smooth
-    }
-#endif
-    // run peak detection
-    autoResetPeak();
-    detectSamplePeak();
-    
-    #if !defined(I2S_GRAB_ADC1_COMPLETELY)    
-    if ((audioSource == nullptr) || (audioSource->getType() != AudioSource::Type_I2SAdc))  // the "delay trick" does not help for analog ADC
-    #endif
-      vTaskDelayUntil( &xLastWakeTime, xFrequency);        // release CPU, and let I2S fill its buffers
-
-  } // for(;;)ever
-} // FFTcode() task end
-
-
+}
 ////////////////////
 // Peak detection //
 ////////////////////
