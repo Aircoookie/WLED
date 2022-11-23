@@ -303,35 +303,7 @@ void FFTcode(void * parameter)
 
     // band pass filter - can reduce noise floor by a factor of 50
     // downside: frequencies below 100Hz will be ignored
-    if (useBandPassFilter) {
-      // low frequency cutoff parameter - see https://dsp.stackexchange.com/questions/40462/exponential-moving-average-cut-off-frequency
-      //constexpr float alpha = 0.04f;   // 150Hz
-      //constexpr float alpha = 0.03f;   // 110Hz
-      constexpr float alpha = 0.0225f; // 80hz
-      //constexpr float alpha = 0.01693f;// 60hz
-      // high frequency cutoff  parameter
-      //constexpr float beta1 = 0.75;    // 11Khz
-      //constexpr float beta1 = 0.82;    // 15Khz
-      //constexpr float beta1 = 0.8285;  // 18Khz
-      constexpr float beta1 = 0.85;   // 20Khz
-
-      constexpr float beta2 = (1.0f - beta1) / 2.0;
-      static float last_vals[2] = { 0.0f }; // FIR high freq cutoff filter
-      static float lowfilt = 0.0f;          // IIR low frequency cutoff filter
-
-      for (int i=0; i < samplesFFT; i++) {
-        // FIR lowpass, to remove high frequency noise
-        float highFilteredSample;
-        if (i < (samplesFFT-1)) highFilteredSample = beta1*vReal[i] + beta2*last_vals[0] + beta2*vReal[i+1];  // smooth out spikes
-        else highFilteredSample = beta1*vReal[i] + beta2*last_vals[0]  + beta2*last_vals[1];                  // spcial handling for last sample in array
-        last_vals[1] = last_vals[0];
-        last_vals[0] = vReal[i];
-        vReal[i] = highFilteredSample;
-        // IIR highpass, to remove low frequency noise
-        lowfilt += alpha * (vReal[i] - lowfilt);
-        vReal[i] = vReal[i] - lowfilt;
-      }  
-    }
+    if (useBandPassFilter) runMicFilter(samplesFFT, vReal);
 
     // find highest sample in the batch
     float maxSample = 0.0f;                         // max sample from FFT batch
@@ -465,10 +437,68 @@ void FFTcode(void * parameter)
 
     // post-processing of frequency channels (pink noise adjustment, AGC, smooting, scaling)
     if (pinkIndex > MAX_PINK) pinkIndex = MAX_PINK;
-    for (int i=0; i < NUM_GEQ_CHANNELS; i++) {
+    //postProcessFFTResults((fabsf(sampleAvg) > 0.25f)? true : false , NUM_GEQ_CHANNELS);
+    postProcessFFTResults((fabsf(volumeSmth)>0.25f)? true : false , NUM_GEQ_CHANNELS);
 
-      //if (fabsf(sampleAvg) > 0.25f) { // noise gate open
-      if (fabsf(volumeSmth)  > 0.25f) { // noise gate open
+#if defined(WLED_DEBUG) || defined(SR_DEBUG)|| defined(SR_STATS)
+    if (haveDoneFFT && (start < esp_timer_get_time())) { // filter out overflows
+      uint64_t fftTimeInMillis = ((esp_timer_get_time() - start) +5ULL) / 10ULL; // "+5" to ensure proper rounding
+      fftTime  = (fftTimeInMillis*3 + fftTime*7)/10; // smooth
+    }
+#endif
+    // run peak detection
+    autoResetPeak();
+    detectSamplePeak();
+    
+    #if !defined(I2S_GRAB_ADC1_COMPLETELY)    
+    if ((audioSource == nullptr) || (audioSource->getType() != AudioSource::Type_I2SAdc))  // the "delay trick" does not help for analog ADC
+    #endif
+      vTaskDelayUntil( &xLastWakeTime, xFrequency);        // release CPU, and let I2S fill its buffers
+
+  } // for(;;)ever
+} // FFTcode() task end
+
+
+///////////////////////////
+// Pre / Postprocessing  //
+///////////////////////////
+
+static void runMicFilter(uint16_t numSamples, float *sampleBuffer)          // pre-filtering of raw samples (band-pass)
+{
+  // low frequency cutoff parameter - see https://dsp.stackexchange.com/questions/40462/exponential-moving-average-cut-off-frequency
+  //constexpr float alpha = 0.04f;   // 150Hz
+  //constexpr float alpha = 0.03f;   // 110Hz
+  constexpr float alpha = 0.0225f; // 80hz
+  //constexpr float alpha = 0.01693f;// 60hz
+  // high frequency cutoff  parameter
+  //constexpr float beta1 = 0.75;    // 11Khz
+  //constexpr float beta1 = 0.82;    // 15Khz
+  //constexpr float beta1 = 0.8285;  // 18Khz
+  constexpr float beta1 = 0.85;   // 20Khz
+
+  constexpr float beta2 = (1.0f - beta1) / 2.0;
+  static float last_vals[2] = { 0.0f }; // FIR high freq cutoff filter
+  static float lowfilt = 0.0f;          // IIR low frequency cutoff filter
+
+  for (int i=0; i < numSamples; i++) {
+        // FIR lowpass, to remove high frequency noise
+        float highFilteredSample;
+        if (i < (numSamples-1)) highFilteredSample = beta1*sampleBuffer[i] + beta2*last_vals[0] + beta2*sampleBuffer[i+1];  // smooth out spikes
+        else highFilteredSample = beta1*sampleBuffer[i] + beta2*last_vals[0]  + beta2*last_vals[1];                  // spcial handling for last sample in array
+        last_vals[1] = last_vals[0];
+        last_vals[0] = sampleBuffer[i];
+        sampleBuffer[i] = highFilteredSample;
+        // IIR highpass, to remove low frequency noise
+        lowfilt += alpha * (sampleBuffer[i] - lowfilt);
+        sampleBuffer[i] = sampleBuffer[i] - lowfilt;
+  }
+}
+
+static void postProcessFFTResults(bool noiseGateOpen, int numberOfChannels) // post-processing and post-amp of GEQ channels
+{
+    for (int i=0; i < numberOfChannels; i++) {
+
+      if (noiseGateOpen) { // noise gate open
         // Adjustment for frequency curves.
         fftCalc[i] *= fftResultPink[pinkIndex][i];
         if (FFTScalingMode > 0) fftCalc[i] *= FFT_DOWNSCALE;  // adjustment related to FFT windowing function
@@ -479,7 +509,7 @@ void FFTcode(void * parameter)
 
       // smooth results - rise fast, fall slower
       if(fftCalc[i] > fftAvg[i])   // rise fast 
-        fftAvg[i] = fftCalc[i] *0.75f + 0.25f*fftAvg[i];  // will need approx 2 cycles (50ms) for converging against fftCalc[i]
+        fftAvg[i] = fftCalc[i] *0.78f + 0.22f*fftAvg[i];  // will need approx 1-2 cycles (50ms) for converging against fftCalc[i]
       else {                       // fall slow
         if (decayTime < 250)      fftAvg[i] = fftCalc[i]*0.4f + 0.6f*fftAvg[i]; 
         else if (decayTime < 500)  fftAvg[i] = fftCalc[i]*0.33f + 0.67f*fftAvg[i]; 
@@ -543,31 +573,7 @@ void FFTcode(void * parameter)
       }
       fftResult[i] = constrain((int)currentResult, 0, 255);
     }
-
-#if defined(WLED_DEBUG) || defined(SR_DEBUG)|| defined(SR_STATS)
-    if (haveDoneFFT && (start < esp_timer_get_time())) { // filter out overflows
-      uint64_t fftTimeInMillis = ((esp_timer_get_time() - start) +5ULL) / 10ULL; // "+5" to ensure proper rounding
-      fftTime  = (fftTimeInMillis*3 + fftTime*7)/10; // smooth
-    }
-#endif
-    // run peak detection
-    autoResetPeak();
-    detectSamplePeak();
-    
-    #if !defined(I2S_GRAB_ADC1_COMPLETELY)    
-    if ((audioSource == nullptr) || (audioSource->getType() != AudioSource::Type_I2SAdc))  // the "delay trick" does not help for analog ADC
-    #endif
-      vTaskDelayUntil( &xLastWakeTime, xFrequency);        // release CPU, and let I2S fill its buffers
-
-  } // for(;;)ever
-} // FFTcode() task end
-
-
-///////////////////////////
-// Pre / Postprocessing  //
-///////////////////////////
-
-
+}
 ////////////////////
 // Peak detection //
 ////////////////////
