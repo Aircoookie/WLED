@@ -178,12 +178,12 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
     case DMX_MODE_EFFECT_SEGMENT_W: // 13 Channels per segment; max[#] = floor[512/(13+DMXSegmentSpacing)] = 39,36,34,32, ..
       {
         if (uni != e131Universe) return;
-        bool segmentUpdated = false;
         bool isSegmentMode = DMXMode == DMX_MODE_EFFECT_SEGMENT || DMXMode == DMX_MODE_EFFECT_SEGMENT_W;
         uint8_t dmxEffectChannels = (DMXMode == DMX_MODE_EFFECT || DMXMode == DMX_MODE_EFFECT_SEGMENT) ? 11 : 13;
-        for (uint8_t seg = 0; seg < strip.getSegmentsNum(); seg++) {
+        for (uint8_t id = 0; id < strip.getSegmentsNum(); id++) {
+          Segment& seg = strip.getSegment(id);
           if (isSegmentMode)
-            dataOffset = DMXAddress + seg * (dmxEffectChannels + DMXSegmentSpacing);
+            dataOffset = DMXAddress + id * (dmxEffectChannels + DMXSegmentSpacing);
           else
             dataOffset = DMXAddress;
           // Modify address for Art-Net data
@@ -194,35 +194,36 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
             return;
 
           if (e131_data[dataOffset+1] < strip.getModeCount())
-            effectCurrent = e131_data[dataOffset+ 1];
-          effectSpeed     = e131_data[dataOffset+ 2]; // flickers
-          effectIntensity = e131_data[dataOffset+ 3];
-          effectPalette   = e131_data[dataOffset+ 4];
-          col[0]          = e131_data[dataOffset+ 5];
-          col[1]          = e131_data[dataOffset+ 6];
-          col[2]          = e131_data[dataOffset+ 7];
-          colSec[0]       = e131_data[dataOffset+ 8];
-          colSec[1]       = e131_data[dataOffset+ 9];
-          colSec[2]       = e131_data[dataOffset+10];
+            if (e131_data[dataOffset+1] != seg.mode)  {strip.setMode(id,  e131_data[dataOffset+1]); stateChanged = true;}
+          if (e131_data[dataOffset+2]   != seg.speed)     {seg.speed     = e131_data[dataOffset+2]; stateChanged = true;}      
+          if (e131_data[dataOffset+3]   != seg.intensity) {seg.intensity = e131_data[dataOffset+3]; stateChanged = true;}
+          if (e131_data[dataOffset+4]   != seg.palette)   {seg.palette   = e131_data[dataOffset+4]; stateChanged = true;}
+
+          uint32_t colors[2];
+          byte whites[2] = {0,0};
           if (dmxEffectChannels == 13) {
-            col[3]        = e131_data[dataOffset+11]; // white
-            colSec[3]     = e131_data[dataOffset+12];
+            whites[0] = e131_data[dataOffset+11];
+            whites[1] = e131_data[dataOffset+12];
           }
+          colors[0] = RGBW32(e131_data[dataOffset+5], e131_data[dataOffset+6], e131_data[dataOffset+ 7], whites[0]);
+          colors[1] = RGBW32(e131_data[dataOffset+8], e131_data[dataOffset+9], e131_data[dataOffset+10], whites[1]);
+          if (colors[0] != seg.colors[0]) {seg.setColor(0, colors[0]); stateChanged = true;}
+          if (colors[1] != seg.colors[1]) {seg.setColor(1, colors[1]); stateChanged = true;}
+
+          // Set segment opacity or global brightness
           if (isSegmentMode) {
-            opacity = e131_data[dataOffset+ 0];
-            segmentUpdated |= applyValuesToSegment(seg);
-          } else {
-            if (bri != e131_data[dataOffset+0])
-              bri = e131_data[dataOffset+0];
-            transitionDelayTemp = 0;                  // act fast
-            colorUpdated(CALL_MODE_NOTIFICATION);     // don't send UDP
-            return;                                   // don't activate realtime live mode
+            if (e131_data[dataOffset]   != seg.opacity)   {seg.opacity   = e131_data[dataOffset]; stateChanged = true;}
+          } else if ( id == strip.getSegmentsNum()-1 ) {
+            if (bri != e131_data[dataOffset]) {
+              bri = e131_data[dataOffset];
+              strip.setBrightness(bri, true);
+            }
           }
         }
-        if (segmentUpdated) {
-          transitionDelayTemp = 0;
-          stateUpdated(CALL_MODE_NOTIFICATION);
-          return;
+        if (stateChanged) {
+          transitionDelayTemp = 0;                      // act fast
+          stateUpdated(CALL_MODE_NOTIFICATION);         // don't send UDP
+          return;                                       // don't activate realtime live mode
         }
         break;
       }
