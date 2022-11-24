@@ -848,7 +848,10 @@ function populateEffects()
 		if (ef.name.indexOf("RSVD") < 0) {
 			if (Array.isArray(fxdata) && fxdata.length>id) {
 				if (fxdata[id].length==0) fd = ";;!;1d"
-				else fd = fxdata[id];
+				else {
+					fd = fxdata[id];
+					fd.replace(/\!(?!,|;)/g, "!,"); // add comma after ! if missing, since optional in fxdata
+				}
 				let eP = (fd == '')?[]:fd.split(";"); // effect parameters
 				let p = (eP.length<3 || eP[2]==='')?[]:eP[2].split(","); // palette data
 				if (p.length>0 && (p[0] !== "" && !isNumeric(p[0]))) nm += "&#x1F3A8;";	// effects using palette
@@ -1378,6 +1381,7 @@ function setEffectParameters(idx)
 	if (!(Array.isArray(fxdata) && fxdata.length>idx)) return;
 	var controlDefined = fxdata[idx].length;
 	var effectPar = fxdata[idx];
+	effectPar.replace(/\!(?!,|;)/g, "!,"); // add comma after ! if missing, since optional in fxdata
 	var effectPars = (effectPar == '')?[]:effectPar.split(";");
 	var slOnOff = (effectPars.length==0 || effectPars[0]=='')?[]:effectPars[0].split(",");
 	var coOnOff = (effectPars.length<2  || effectPars[1]=='')?[]:effectPars[1].split(",");

@@ -120,7 +120,7 @@ uint16_t blink(uint32_t color1, uint32_t color2, bool strobe, bool do_palette) {
 uint16_t mode_blink(void) {
   return blink(SEGCOLOR(0), SEGCOLOR(1), false, true);
 }
-static const char _data_FX_MODE_BLINK[] PROGMEM = "Blink@!,Duty cycle;!,!;!;1d";
+static const char _data_FX_MODE_BLINK[] PROGMEM = "Blink@!,Duty cycle;!!;!;1d";
 
 
 /*
@@ -129,7 +129,7 @@ static const char _data_FX_MODE_BLINK[] PROGMEM = "Blink@!,Duty cycle;!,!;!;1d";
 uint16_t mode_blink_rainbow(void) {
   return blink(SEGMENT.color_wheel(SEGENV.call & 0xFF), SEGCOLOR(1), false, false);
 }
-static const char _data_FX_MODE_BLINK_RAINBOW[] PROGMEM = "Blink Rainbow@Frequency,Blink duration;!,!;!;1d";
+static const char _data_FX_MODE_BLINK_RAINBOW[] PROGMEM = "Blink Rainbow@Frequency,Blink duration;!!;!;1d";
 
 
 /*
@@ -138,7 +138,7 @@ static const char _data_FX_MODE_BLINK_RAINBOW[] PROGMEM = "Blink Rainbow@Frequen
 uint16_t mode_strobe(void) {
   return blink(SEGCOLOR(0), SEGCOLOR(1), true, true);
 }
-static const char _data_FX_MODE_STROBE[] PROGMEM = "Strobe@!;!,!;!;1d";
+static const char _data_FX_MODE_STROBE[] PROGMEM = "Strobe@!;!!;!;1d";
 
 
 /*
@@ -213,7 +213,7 @@ uint16_t color_wipe(bool rev, bool useRandomColors) {
 uint16_t mode_color_wipe(void) {
   return color_wipe(false, false);
 }
-static const char _data_FX_MODE_COLOR_WIPE[] PROGMEM = "Wipe@!,!;!,!;!;1d";
+static const char _data_FX_MODE_COLOR_WIPE[] PROGMEM = "Wipe@!!;!!;!;1d";
 
 
 /*
@@ -222,7 +222,7 @@ static const char _data_FX_MODE_COLOR_WIPE[] PROGMEM = "Wipe@!,!;!,!;!;1d";
 uint16_t mode_color_sweep(void) {
   return color_wipe(true, false);
 }
-static const char _data_FX_MODE_COLOR_SWEEP[] PROGMEM = "Sweep@!,!;!,!;!;1d";
+static const char _data_FX_MODE_COLOR_SWEEP[] PROGMEM = "Sweep@!!;!!;!;1d";
 
 
 /*
@@ -317,7 +317,7 @@ uint16_t dynamic(boolean smooth=false) {
 uint16_t mode_dynamic(void) {
   return dynamic(false);
 }
-static const char _data_FX_MODE_DYNAMIC[] PROGMEM = "Dynamic@!,!;1,2,3;!;1d";
+static const char _data_FX_MODE_DYNAMIC[] PROGMEM = "Dynamic@!!;1,2,3;!;1d";
 
 
 /*
@@ -348,7 +348,7 @@ uint16_t mode_breath(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_BREATH[] PROGMEM = "Breathe@!;!,!;!;1d";
+static const char _data_FX_MODE_BREATH[] PROGMEM = "Breathe@!;!!;!;1d";
 
 
 /*
@@ -364,7 +364,7 @@ uint16_t mode_fade(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_FADE[] PROGMEM = "Fade@!;!,!;!;1d";
+static const char _data_FX_MODE_FADE[] PROGMEM = "Fade@!;!!;!;1d";
 
 
 /*
@@ -404,7 +404,7 @@ uint16_t scan(bool dual)
 uint16_t mode_scan(void) {
   return scan(false);
 }
-static const char _data_FX_MODE_SCAN[] PROGMEM = "Scan@!,# of dots;!,!,!;!;1d";
+static const char _data_FX_MODE_SCAN[] PROGMEM = "Scan@!,# of dots;!!!;!;1d";
 
 
 /*
@@ -413,7 +413,7 @@ static const char _data_FX_MODE_SCAN[] PROGMEM = "Scan@!,# of dots;!,!,!;!;1d";
 uint16_t mode_dual_scan(void) {
   return scan(true);
 }
-static const char _data_FX_MODE_DUAL_SCAN[] PROGMEM = "Scan Dual@!,# of dots;!,!,!;!;1d";
+static const char _data_FX_MODE_DUAL_SCAN[] PROGMEM = "Scan Dual@!,# of dots;!!!;!;1d";
 
 
 /*
@@ -488,7 +488,7 @@ uint16_t running(uint32_t color1, uint32_t color2, bool theatre = false) {
 uint16_t mode_theater_chase(void) {
   return running(SEGCOLOR(0), SEGCOLOR(1), true);
 }
-static const char _data_FX_MODE_THEATER_CHASE[] PROGMEM = "Theater@!,Gap size;!,!;!;1d";
+static const char _data_FX_MODE_THEATER_CHASE[] PROGMEM = "Theater@!,Gap size;!!;!;1d";
 
 
 /*
@@ -550,7 +550,7 @@ static const char _data_FX_MODE_RUNNING_DUAL[] PROGMEM = "Running Dual";
 uint16_t mode_running_lights(void) {
   return running_base(false);
 }
-static const char _data_FX_MODE_RUNNING_LIGHTS[] PROGMEM = "Running@!,Wave width;!,!;!;1d";
+static const char _data_FX_MODE_RUNNING_LIGHTS[] PROGMEM = "Running@!,Wave width;!!;!;1d";
 
 
 /*
@@ -559,7 +559,7 @@ static const char _data_FX_MODE_RUNNING_LIGHTS[] PROGMEM = "Running@!,Wave width
 uint16_t mode_saw(void) {
   return running_base(true);
 }
-static const char _data_FX_MODE_SAW[] PROGMEM = "Saw@!,Width;!,!;!;1d";
+static const char _data_FX_MODE_SAW[] PROGMEM = "Saw@!,Width;!!;!;1d";
 
 
 /*
@@ -596,7 +596,7 @@ uint16_t mode_twinkle(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_TWINKLE[] PROGMEM = "Twinkle@!;!,!;!;m12=0,1d"; //pixels
+static const char _data_FX_MODE_TWINKLE[] PROGMEM = "Twinkle@!;!!;!;m12=0,1d"; //pixels
 
 
 /*
@@ -642,7 +642,7 @@ uint16_t dissolve(uint32_t color) {
 uint16_t mode_dissolve(void) {
   return dissolve(SEGCOLOR(0));
 }
-static const char _data_FX_MODE_DISSOLVE[] PROGMEM = "Dissolve@Repeat speed,Dissolve speed;!,!;!;1d";
+static const char _data_FX_MODE_DISSOLVE[] PROGMEM = "Dissolve@Repeat speed,Dissolve speed;!!;!;1d";
 
 
 /*
@@ -673,7 +673,7 @@ uint16_t mode_sparkle(void) {
   SEGMENT.setPixelColor(SEGENV.aux0, SEGCOLOR(0));
   return FRAMETIME;
 }
-static const char _data_FX_MODE_SPARKLE[] PROGMEM = "Sparkle@!;!,!;!;m12=0,1d";
+static const char _data_FX_MODE_SPARKLE[] PROGMEM = "Sparkle@!;!!;!;m12=0,1d";
 
 
 /*
@@ -694,7 +694,7 @@ uint16_t mode_flash_sparkle(void) {
   }
   return FRAMETIME;
 }
-static const char _data_FX_MODE_FLASH_SPARKLE[] PROGMEM = "Sparkle Dark@!,!;Bg,Fx;!;m12=0,1d";
+static const char _data_FX_MODE_FLASH_SPARKLE[] PROGMEM = "Sparkle Dark@!!;Bg,Fx;!;m12=0,1d";
 
 
 /*
@@ -717,7 +717,7 @@ uint16_t mode_hyper_sparkle(void) {
   }
   return FRAMETIME;
 }
-static const char _data_FX_MODE_HYPER_SPARKLE[] PROGMEM = "Sparkle+@!,!;Bg,Fx;!;m12=0,1d";
+static const char _data_FX_MODE_HYPER_SPARKLE[] PROGMEM = "Sparkle+@!!;Bg,Fx;!;m12=0,1d";
 
 
 /*
@@ -747,7 +747,7 @@ uint16_t mode_multi_strobe(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_MULTI_STROBE[] PROGMEM = "Strobe Mega@!,!;!,!;!;1d";
+static const char _data_FX_MODE_MULTI_STROBE[] PROGMEM = "Strobe Mega@!!;!!;!;1d";
 
 
 /*
@@ -799,7 +799,7 @@ uint16_t mode_android(void) {
 
   return 3 + ((8 * (uint32_t)(255 - SEGMENT.speed)) / SEGLEN);
 }
-static const char _data_FX_MODE_ANDROID[] PROGMEM = "Android@!,Width;!,!;!;m12=1,1d"; //vertical
+static const char _data_FX_MODE_ANDROID[] PROGMEM = "Android@!,Width;!!;!;m12=1,1d"; //vertical
 
 
 /*
@@ -880,7 +880,7 @@ uint16_t chase(uint32_t color1, uint32_t color2, uint32_t color3, bool do_palett
 uint16_t mode_chase_color(void) {
   return chase(SEGCOLOR(1), (SEGCOLOR(2)) ? SEGCOLOR(2) : SEGCOLOR(0), SEGCOLOR(0), true);
 }
-static const char _data_FX_MODE_CHASE_COLOR[] PROGMEM = "Chase@!,Width;!,!,!;!;1d";
+static const char _data_FX_MODE_CHASE_COLOR[] PROGMEM = "Chase@!,Width;!!!;!;1d";
 
 
 /*
@@ -903,7 +903,7 @@ uint16_t mode_chase_rainbow(void) {
 
   return chase(color, SEGCOLOR(0), SEGCOLOR(1), false);
 }
-static const char _data_FX_MODE_CHASE_RAINBOW[] PROGMEM = "Chase Rainbow@!,Width;!,!;;1d";
+static const char _data_FX_MODE_CHASE_RAINBOW[] PROGMEM = "Chase Rainbow@!,Width;!!;;1d";
 
 
 /*
@@ -1067,7 +1067,7 @@ static const char _data_FX_MODE_CHASE_FLASH_RANDOM[] PROGMEM = "Chase Flash Rnd@
 uint16_t mode_running_color(void) {
   return running(SEGCOLOR(0), SEGCOLOR(1));
 }
-static const char _data_FX_MODE_RUNNING_COLOR[] PROGMEM = "Chase 2@!,Width;!,!;!;1d";
+static const char _data_FX_MODE_RUNNING_COLOR[] PROGMEM = "Chase 2@!,Width;!!;!;1d";
 
 
 /*
@@ -1146,7 +1146,7 @@ uint16_t larson_scanner(bool dual) {
 uint16_t mode_larson_scanner(void){
   return larson_scanner(false);
 }
-static const char _data_FX_MODE_LARSON_SCANNER[] PROGMEM = "Scanner@!,Fade rate;!,!;!;m12=0,1d";
+static const char _data_FX_MODE_LARSON_SCANNER[] PROGMEM = "Scanner@!,Fade rate;!!;!;m12=0,1d";
 
 
 /*
@@ -1156,7 +1156,7 @@ static const char _data_FX_MODE_LARSON_SCANNER[] PROGMEM = "Scanner@!,Fade rate;
 uint16_t mode_dual_larson_scanner(void){
   return larson_scanner(true);
 }
-static const char _data_FX_MODE_DUAL_LARSON_SCANNER[] PROGMEM = "Scanner Dual@!,Fade rate;!,!;!;m12=0,1d";
+static const char _data_FX_MODE_DUAL_LARSON_SCANNER[] PROGMEM = "Scanner Dual@!,Fade rate;!!;!;m12=0,1d";
 
 
 /*
@@ -1183,7 +1183,7 @@ uint16_t mode_comet(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_COMET[] PROGMEM = "Lighthouse@!,Fade rate;!,!,!;!;1d";
+static const char _data_FX_MODE_COMET[] PROGMEM = "Lighthouse@!,Fade rate;!!!;!;1d";
 
 
 /*
@@ -1221,7 +1221,7 @@ uint16_t mode_fireworks() {
   }
   return FRAMETIME;
 }
-static const char _data_FX_MODE_FIREWORKS[] PROGMEM = "Fireworks@,Frequency;!,!;!;ix=192,pal=11,1d,2d";
+static const char _data_FX_MODE_FIREWORKS[] PROGMEM = "Fireworks@,Frequency;!!;!;ix=192,pal=11,1d,2d";
 
 
 //Twinkling LEDs running. Inspired by https://github.com/kitesurfer1404/WS2812FX/blob/master/src/custom/Rain.h
@@ -1256,7 +1256,7 @@ uint16_t mode_rain()
   }
   return mode_fireworks();
 }
-static const char _data_FX_MODE_RAIN[] PROGMEM = "Rain@!,Spawning rate;!,!;;ix=128,pal=0,1d,2d";
+static const char _data_FX_MODE_RAIN[] PROGMEM = "Rain@!,Spawning rate;!!;;ix=128,pal=0,1d,2d";
 
 
 /*
@@ -1285,7 +1285,7 @@ uint16_t mode_fire_flicker(void) {
   SEGENV.step = it;
   return FRAMETIME;
 }
-static const char _data_FX_MODE_FIRE_FLICKER[] PROGMEM = "Fire Flicker@!,!;!;!;1d";
+static const char _data_FX_MODE_FIRE_FLICKER[] PROGMEM = "Fire Flicker@!!;!;!;1d";
 
 
 /*
@@ -1323,7 +1323,7 @@ uint16_t gradient_base(bool loading) {
 uint16_t mode_gradient(void) {
   return gradient_base(false);
 }
-static const char _data_FX_MODE_GRADIENT[] PROGMEM = "Gradient@!,Spread;!,!;!;ix=16,1d";
+static const char _data_FX_MODE_GRADIENT[] PROGMEM = "Gradient@!,Spread;!!;!;ix=16,1d";
 
 
 /*
@@ -1332,7 +1332,7 @@ static const char _data_FX_MODE_GRADIENT[] PROGMEM = "Gradient@!,Spread;!,!;!;ix
 uint16_t mode_loading(void) {
   return gradient_base(true);
 }
-static const char _data_FX_MODE_LOADING[] PROGMEM = "Loading@!,Fade;!,!;!;ix=16,1d";
+static const char _data_FX_MODE_LOADING[] PROGMEM = "Loading@!,Fade;!!;!;ix=16,1d";
 
 
 //American Police Light with all LEDs Red and Blue 
@@ -1911,7 +1911,7 @@ uint16_t mode_juggle(void){
   }
   return FRAMETIME;
 }
-static const char _data_FX_MODE_JUGGLE[] PROGMEM = "Juggle@!,Trail;!,!;!;sx=16,ix=240,1d";
+static const char _data_FX_MODE_JUGGLE[] PROGMEM = "Juggle@!,Trail;!!;!;sx=16,ix=240,1d";
 
 
 uint16_t mode_palette()
@@ -2071,7 +2071,7 @@ uint16_t mode_colorwaves()
   SEGENV.aux0 = sHue16;
   return FRAMETIME;
 }
-static const char _data_FX_MODE_COLORWAVES[] PROGMEM = "Colorwaves@!,!;!,!,!;!;1d";
+static const char _data_FX_MODE_COLORWAVES[] PROGMEM = "Colorwaves@!!;!!!;!;1d";
 
 
 // colored stripes pulsing at a defined Beats-Per-Minute (BPM)
@@ -2104,7 +2104,7 @@ uint16_t mode_fillnoise8()
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_FILLNOISE8[] PROGMEM = "Fill Noise@!,!;!,!,!;!;1d";
+static const char _data_FX_MODE_FILLNOISE8[] PROGMEM = "Fill Noise@!!;!!!;!;1d";
 
 
 uint16_t mode_noise16_1()
@@ -2129,7 +2129,7 @@ uint16_t mode_noise16_1()
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_NOISE16_1[] PROGMEM = "Noise 1@!,!;!,!,!;!;1d";
+static const char _data_FX_MODE_NOISE16_1[] PROGMEM = "Noise 1@!!;!!!;!;1d";
 
 
 uint16_t mode_noise16_2()
@@ -2151,7 +2151,7 @@ uint16_t mode_noise16_2()
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_NOISE16_2[] PROGMEM = "Noise 2@!,!;!,!,!;!;1d";
+static const char _data_FX_MODE_NOISE16_2[] PROGMEM = "Noise 2@!!;!!!;!;1d";
 
 
 uint16_t mode_noise16_3()
@@ -2176,7 +2176,7 @@ uint16_t mode_noise16_3()
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_NOISE16_3[] PROGMEM = "Noise 3@!,!;!,!,!;!;1d";
+static const char _data_FX_MODE_NOISE16_3[] PROGMEM = "Noise 3@!!;!!!;!;1d";
 
 
 //https://github.com/aykevl/ledstrip-spark/blob/master/ledstrip.ino
@@ -2192,7 +2192,7 @@ uint16_t mode_noise16_4()
   }
   return FRAMETIME;
 }
-static const char _data_FX_MODE_NOISE16_4[] PROGMEM = "Noise 4@!,!;!,!,!;!;1d";
+static const char _data_FX_MODE_NOISE16_4[] PROGMEM = "Noise 4@!!;!!!;!;1d";
 
 
 //based on https://gist.github.com/kriegsman/5408ecd397744ba0393e
@@ -2684,7 +2684,7 @@ uint16_t mode_halloween_eyes()
   
   return FRAMETIME;
 }
-static const char _data_FX_MODE_HALLOWEEN_EYES[] PROGMEM = "Halloween Eyes@Duration,Eye fade time;!,!;!;1d,2d";
+static const char _data_FX_MODE_HALLOWEEN_EYES[] PROGMEM = "Halloween Eyes@Duration,Eye fade time;!!;!;1d,2d";
 
 
 //Speed slider sets amount of LEDs lit, intensity sets unlit
@@ -2767,7 +2767,7 @@ uint16_t mode_spots()
 {
   return spots_base((255 - SEGMENT.speed) << 8);
 }
-static const char _data_FX_MODE_SPOTS[] PROGMEM = "Spots@Spread,Width;!,!;!;1d";
+static const char _data_FX_MODE_SPOTS[] PROGMEM = "Spots@Spread,Width;!!;!;1d";
 
 
 //Intensity slider sets number of "lights", LEDs per light fade in and out
@@ -2778,7 +2778,7 @@ uint16_t mode_spots_fade()
   uint16_t tr = (t >> 1) + (t >> 2);
   return spots_base(tr);
 }
-static const char _data_FX_MODE_SPOTS_FADE[] PROGMEM = "Spots Fade@Spread,Width;!,!;!;1d";
+static const char _data_FX_MODE_SPOTS_FADE[] PROGMEM = "Spots Fade@Spread,Width;!!;!;1d";
 
 
 //each needs 12 bytes
@@ -2857,7 +2857,7 @@ uint16_t mode_bouncing_balls(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_BOUNCINGBALLS[] PROGMEM = "Bouncing Balls@Gravity,# of balls;!,!,!;!;m12=1,1d"; //bar
+static const char _data_FX_MODE_BOUNCINGBALLS[] PROGMEM = "Bouncing Balls@Gravity,# of balls;!!!;!;m12=1,1d"; //bar
 
 
 /*
@@ -2927,7 +2927,7 @@ uint16_t mode_glitter()
   
   return FRAMETIME;
 }
-static const char _data_FX_MODE_GLITTER[] PROGMEM = "Glitter@,!;!,!,!;!;m12=0,1d"; //pixels
+static const char _data_FX_MODE_GLITTER[] PROGMEM = "Glitter@,!;!!!;!;m12=0,1d"; //pixels
 
 
 //each needs 19 bytes
@@ -3000,7 +3000,7 @@ uint16_t mode_popcorn(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_POPCORN[] PROGMEM = "Popcorn@!,!;!,!,!;!;m12=1,1d"; //bar
+static const char _data_FX_MODE_POPCORN[] PROGMEM = "Popcorn@!!;!!!;!;m12=1,1d"; //bar
 
 
 //values close to 100 produce 5Hz flicker, which looks very candle-y
@@ -3087,14 +3087,14 @@ uint16_t mode_candle()
 {
   return candle(false);
 }
-static const char _data_FX_MODE_CANDLE[] PROGMEM = "Candle@Flicker rate,Flicker intensity;!,!;!;sx=96,ix=224,pal=0,1d";
+static const char _data_FX_MODE_CANDLE[] PROGMEM = "Candle@Flicker rate,Flicker intensity;!!;!;sx=96,ix=224,pal=0,1d";
 
 
 uint16_t mode_candle_multi()
 {
   return candle(true);
 }
-static const char _data_FX_MODE_CANDLE_MULTI[] PROGMEM = "Candle Multi@Flicker rate,Flicker intensity;!,!;!;sx=96,ix=224,pal=0,1d";
+static const char _data_FX_MODE_CANDLE_MULTI[] PROGMEM = "Candle Multi@Flicker rate,Flicker intensity;!!;!;sx=96,ix=224,pal=0,1d";
 
 
 /*
@@ -3363,7 +3363,7 @@ uint16_t mode_exploding_fireworks(void)
   return FRAMETIME;  
 }
 #undef MAX_SPARKS
-static const char _data_FX_MODE_EXPLODING_FIREWORKS[] PROGMEM = "Fireworks 1D@Gravity,Firing side;!,!;!=11;ix=128,1d,2d";
+static const char _data_FX_MODE_EXPLODING_FIREWORKS[] PROGMEM = "Fireworks 1D@Gravity,Firing side;!!;!=11;ix=128,1d,2d";
 
 
 /*
@@ -3449,7 +3449,7 @@ uint16_t mode_drip(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_DRIP[] PROGMEM = "Drip@Gravity,# of drips;!,!;!;m12=1,1d"; //bar
+static const char _data_FX_MODE_DRIP[] PROGMEM = "Drip@Gravity,# of drips;!!;!;m12=1,1d"; //bar
 
 
 /*
@@ -3538,7 +3538,7 @@ uint16_t mode_tetrix(void) {
 
   return FRAMETIME;  
 }
-static const char _data_FX_MODE_TETRIX[] PROGMEM = "Tetrix@!,Width;!,!;!;sx=0,ix=0,pal=11,m12=1,1d";
+static const char _data_FX_MODE_TETRIX[] PROGMEM = "Tetrix@!,Width;!!;!;sx=0,ix=0,pal=11,m12=1,1d";
 
 
 /*
@@ -3617,7 +3617,7 @@ uint16_t mode_percent(void) {
 
  	return FRAMETIME;
 }
-static const char _data_FX_MODE_PERCENT[] PROGMEM = "Percent@,% of fill,,,,One color;!,!;!;1d";
+static const char _data_FX_MODE_PERCENT[] PROGMEM = "Percent@,% of fill,,,,One color;!!;!;1d";
 
 
 /*
@@ -3650,7 +3650,7 @@ uint16_t mode_heartbeat(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_HEARTBEAT[] PROGMEM = "Heartbeat@!,!;!,!;!;m12=1,1d";
+static const char _data_FX_MODE_HEARTBEAT[] PROGMEM = "Heartbeat@!!;!!;!;m12=1,1d";
 
 
 //  "Pacifica"
@@ -3891,7 +3891,7 @@ uint16_t mode_twinkleup(void) {                 // A very short twinkle routine 
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_TWINKLEUP[] PROGMEM = "Twinkleup@!,Intensity;!,!;!;m12=0,1d";
+static const char _data_FX_MODE_TWINKLEUP[] PROGMEM = "Twinkleup@!,Intensity;!!;!;m12=0,1d";
 
 
 // Peaceful noise that's slow and with gradually changing palettes. Does not support WLED palettes or default colours or controls.
@@ -3990,7 +3990,7 @@ uint16_t mode_flow(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_FLOW[] PROGMEM = "Flow@!,!;!,!,!;!;m12=1,1d"; //vertical
+static const char _data_FX_MODE_FLOW[] PROGMEM = "Flow@!!;!!!;!;m12=1,1d"; //vertical
 
 
 /*
@@ -4016,7 +4016,7 @@ uint16_t mode_chunchun(void)
   }
   return FRAMETIME;
 }
-static const char _data_FX_MODE_CHUNCHUN[] PROGMEM = "Chunchun@!,Gap size;!,!;!;1d";
+static const char _data_FX_MODE_CHUNCHUN[] PROGMEM = "Chunchun@!,Gap size;!!;!;1d";
 
 
 //13 bytes
@@ -4163,7 +4163,7 @@ uint16_t mode_dancing_shadows(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_DANCING_SHADOWS[] PROGMEM = "Dancing Shadows@!,# of shadows;!,!,!;!;1d";
+static const char _data_FX_MODE_DANCING_SHADOWS[] PROGMEM = "Dancing Shadows@!,# of shadows;!!!;!;1d";
 
 
 /*
@@ -4504,7 +4504,7 @@ uint16_t mode_aurora(void) {
   
   return FRAMETIME;
 }
-static const char _data_FX_MODE_AURORA[] PROGMEM = "Aurora@!,!;1,2,3;!;sx=24,pal=50,1d";
+static const char _data_FX_MODE_AURORA[] PROGMEM = "Aurora@!!;1,2,3;!;sx=24,pal=50,1d";
 
 // WLED-SR effects
 
@@ -4524,7 +4524,7 @@ uint16_t mode_perlinmove(void) {
 
   return FRAMETIME;
 } // mode_perlinmove()
-static const char _data_FX_MODE_PERLINMOVE[] PROGMEM = "Perlin Move@!,# of pixels,fade rate;!,!;!;1d";
+static const char _data_FX_MODE_PERLINMOVE[] PROGMEM = "Perlin Move@!,# of pixels,fade rate;!!;!;1d";
 
 
 /////////////////////////
@@ -4928,7 +4928,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
 
   return FRAMETIME_FIXED * (128-(SEGMENT.speed>>1)); // update only when appropriate time passes (in 42 FPS slots)
 } // mode_2Dgameoflife()
-static const char _data_FX_MODE_2DGAMEOFLIFE[] PROGMEM = "Game Of Life@!;!,!;!;2d";
+static const char _data_FX_MODE_2DGAMEOFLIFE[] PROGMEM = "Game Of Life@!;!!;!;2d";
 
 
 /////////////////////////
@@ -5093,7 +5093,7 @@ uint16_t mode_2DLissajous(void) {            // By: Andrew Tuline
 
   return FRAMETIME;
 } // mode_2DLissajous()
-static const char _data_FX_MODE_2DLISSAJOUS[] PROGMEM = "Lissajous@X frequency,Fade rate;!,!,!;!;2d";
+static const char _data_FX_MODE_2DLISSAJOUS[] PROGMEM = "Lissajous@X frequency,Fade rate;!!!;!;2d";
 
 
 ///////////////////////
@@ -5215,7 +5215,7 @@ uint16_t mode_2Dmetaballs(void) {   // Metaballs by Stefan Petrick. Cannot have 
 
   return FRAMETIME;
 } // mode_2Dmetaballs()
-static const char _data_FX_MODE_2DMETABALLS[] PROGMEM = "Metaballs@Speed;!,!,!;!;2d";
+static const char _data_FX_MODE_2DMETABALLS[] PROGMEM = "Metaballs@Speed;!!!;!;2d";
 
 
 //////////////////////
@@ -5238,7 +5238,7 @@ uint16_t mode_2Dnoise(void) {                  // By Andrew Tuline
 
   return FRAMETIME;
 } // mode_2Dnoise()
-static const char _data_FX_MODE_2DNOISE[] PROGMEM = "Noise2D@Speed,Scale;!,!,!;!;2d";
+static const char _data_FX_MODE_2DNOISE[] PROGMEM = "Noise2D@Speed,Scale;!!!;!;2d";
 
 
 //////////////////////////////
@@ -5281,7 +5281,7 @@ uint16_t mode_2DPlasmaball(void) {                   // By: Stepko https://edito
 
   return FRAMETIME;
 } // mode_2DPlasmaball()
-static const char _data_FX_MODE_2DPLASMABALL[] PROGMEM = "Plasma Ball@Speed,,Fade,Blur;!,!,!;!;2d";
+static const char _data_FX_MODE_2DPLASMABALL[] PROGMEM = "Plasma Ball@Speed,,Fade,Blur;!!!;!;2d";
 
 
 ////////////////////////////////
@@ -5565,7 +5565,7 @@ uint16_t mode_2Dspaceships(void) {    //// Space ships by stepko (c)05.02.21 [ht
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_2DSPACESHIPS[] PROGMEM = "Spaceships@!,Blur;!,!,!;!;2d";
+static const char _data_FX_MODE_2DSPACESHIPS[] PROGMEM = "Spaceships@!,Blur;!!!;!;2d";
 
 
 /////////////////////////
@@ -5729,7 +5729,7 @@ uint16_t mode_2Dghostrider(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_2DGHOSTRIDER[] PROGMEM = "Ghost Rider@Fade rate,Blur;!,!,!;!;2d";
+static const char _data_FX_MODE_2DGHOSTRIDER[] PROGMEM = "Ghost Rider@Fade rate,Blur;!!!;!;2d";
 
 
 ////////////////////////////
@@ -5830,7 +5830,7 @@ uint16_t mode_2Dfloatingblobs(void) {
   return FRAMETIME;
 }
 #undef MAX_BLOBS
-static const char _data_FX_MODE_2DBLOBS[] PROGMEM = "Blobs@!,# blobs,Blur;!,!;!;c1=8,2d";
+static const char _data_FX_MODE_2DBLOBS[] PROGMEM = "Blobs@!,# blobs,Blur;!!;!;c1=8,2d";
 
 
 ////////////////////////////
@@ -5890,7 +5890,7 @@ uint16_t mode_2Dscrollingtext(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_2DSCROLLTEXT[] PROGMEM = "Scrolling Text@!,Y Offset,Trail,Font size;!,!;!;ix=128,c1=0,rev=0,mi=0,rY=0,mY=0,2d";
+static const char _data_FX_MODE_2DSCROLLTEXT[] PROGMEM = "Scrolling Text@!,Y Offset,Trail,Font size;!!;!;ix=128,c1=0,rev=0,mi=0,rY=0,mY=0,2d";
 
 
 ////////////////////////////
@@ -6048,7 +6048,7 @@ uint16_t mode_ripplepeak(void) {                // * Ripple peak. By Andrew Tuli
 
   return FRAMETIME;
 } // mode_ripplepeak()
-static const char _data_FX_MODE_RIPPLEPEAK[] PROGMEM = "Ripple Peak@Fade rate,Max # of ripples,Select bin,Volume (min);!,!;!;c2=0,m12=0,si=0,1d,vo"; // Pixel, Beatsin
+static const char _data_FX_MODE_RIPPLEPEAK[] PROGMEM = "Ripple Peak@Fade rate,Max # of ripples,Select bin,Volume (min);!!;!;c2=0,m12=0,si=0,1d,vo"; // Pixel, Beatsin
 
 
 #ifndef WLED_DISABLE_2D
@@ -6299,7 +6299,7 @@ uint16_t mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_gravimeter()
-static const char _data_FX_MODE_GRAVIMETER[] PROGMEM = "Gravimeter@Rate of fall,Sensitivity;!,!;!;ix=128,m12=2,si=0,1d,vo"; // Circle, Beatsin
+static const char _data_FX_MODE_GRAVIMETER[] PROGMEM = "Gravimeter@Rate of fall,Sensitivity;!!;!;ix=128,m12=2,si=0,1d,vo"; // Circle, Beatsin
 
 
 //////////////////////
@@ -6354,7 +6354,7 @@ uint16_t mode_matripix(void) {                  // Matripix. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_matripix()
-static const char _data_FX_MODE_MATRIPIX[] PROGMEM = "Matripix@!,Brightness;!,!;!;ix=64,m12=2,si=1,1d,vo"; //,rev=1,mi=1,rY=1,mY=1 Circle, WeWillRockYou, reverseX
+static const char _data_FX_MODE_MATRIPIX[] PROGMEM = "Matripix@!,Brightness;!!;!;ix=64,m12=2,si=1,1d,vo"; //,rev=1,mi=1,rY=1,mY=1 Circle, WeWillRockYou, reverseX
 
 
 //////////////////////
@@ -6422,7 +6422,7 @@ uint16_t mode_noisefire(void) {                 // Noisefire. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_noisefire()
-static const char _data_FX_MODE_NOISEFIRE[] PROGMEM = "Noisefire@!,!;;;m12=2,si=0,1d,vo"; // Circle, Beatsin
+static const char _data_FX_MODE_NOISEFIRE[] PROGMEM = "Noisefire@!!;;;m12=2,si=0,1d,vo"; // Circle, Beatsin
 
 
 ///////////////////////
@@ -6457,7 +6457,7 @@ uint16_t mode_noisemeter(void) {                // Noisemeter. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_noisemeter()
-static const char _data_FX_MODE_NOISEMETER[] PROGMEM = "Noisemeter@Fade rate,Width;!,!;!;ix=128,m12=2,si=0,1d,vo"; // Circle, Beatsin
+static const char _data_FX_MODE_NOISEMETER[] PROGMEM = "Noisemeter@Fade rate,Width;!!;!;ix=128,m12=2,si=0,1d,vo"; // Circle, Beatsin
 
 
 //////////////////////
@@ -6491,7 +6491,7 @@ uint16_t mode_pixelwave(void) {                 // Pixelwave. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_pixelwave()
-static const char _data_FX_MODE_PIXELWAVE[] PROGMEM = "Pixelwave@!,Sensitivity;!,!;!;ix=64,m12=2,si=0,1d,vo"; // Circle, Beatsin
+static const char _data_FX_MODE_PIXELWAVE[] PROGMEM = "Pixelwave@!,Sensitivity;!!;!;ix=64,m12=2,si=0,1d,vo"; // Circle, Beatsin
 
 
 //////////////////////
@@ -6532,7 +6532,7 @@ uint16_t mode_plasmoid(void) {                  // Plasmoid. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_plasmoid()
-static const char _data_FX_MODE_PLASMOID[] PROGMEM = "Plasmoid@Phase,# of pixels;!,!;!;sx=128,ix=128,m12=0,si=0,1d,vo"; // Pixels, Beatsin
+static const char _data_FX_MODE_PLASMOID[] PROGMEM = "Plasmoid@Phase,# of pixels;!!;!;sx=128,ix=128,m12=0,si=0,1d,vo"; // Pixels, Beatsin
 
 
 ///////////////////////
@@ -6576,7 +6576,7 @@ uint16_t mode_puddlepeak(void) {                // Puddlepeak. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_puddlepeak()
-static const char _data_FX_MODE_PUDDLEPEAK[] PROGMEM = "Puddlepeak@Fade rate,Puddle size,Select bin,Volume (min);!,!;!;c2=0,m12=0,si=0,1d,vo"; // Pixels, Beatsin
+static const char _data_FX_MODE_PUDDLEPEAK[] PROGMEM = "Puddlepeak@Fade rate,Puddle size,Select bin,Volume (min);!!;!;c2=0,m12=0,si=0,1d,vo"; // Pixels, Beatsin
 
 
 //////////////////////
@@ -6607,7 +6607,7 @@ uint16_t mode_puddles(void) {                   // Puddles. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_puddles()
-static const char _data_FX_MODE_PUDDLES[] PROGMEM = "Puddles@Fade rate,Puddle size;!,!;!;m12=0,si=0,1d,vo"; // Pixels, Beatsin
+static const char _data_FX_MODE_PUDDLES[] PROGMEM = "Puddles@Fade rate,Puddle size;!!;!;m12=0,si=0,1d,vo"; // Pixels, Beatsin
 
 
 //////////////////////
@@ -7078,7 +7078,7 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
 
   return FRAMETIME;
 } // mode_waterfall()
-static const char _data_FX_MODE_WATERFALL[] PROGMEM = "Waterfall@!,Adjust color,Select bin,Volume (min);!,!;!;c2=0,m12=2,si=0,1d,fr"; // Circles, Beatsin
+static const char _data_FX_MODE_WATERFALL[] PROGMEM = "Waterfall@!,Adjust color,Select bin,Volume (min);!!;!;c2=0,m12=2,si=0,1d,fr"; // Circles, Beatsin
 
 
 #ifndef WLED_DISABLE_2D
