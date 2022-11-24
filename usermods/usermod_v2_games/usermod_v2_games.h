@@ -164,8 +164,8 @@ uint16_t mode_pongGame(void) {
     SEGMENT.setPixelColorXY(vW/2, i, BLUE);
   }
 
-  char tempString[2] = "";
-  sprintf(tempString, "%1d%1d", ball->scoreRight, ball->scoreLeft);
+  char tempString[4] = { '\0' };
+  snprintf(tempString, 4, "%1d%1d", ball->scoreRight, ball->scoreLeft);
   SEGMENT.drawCharacter(tempString[0], vW/2-5, -2, 5, 8, BLUE);
   SEGMENT.drawCharacter(tempString[1], vW/2+2, -2, 5, 8, BLUE);
 
