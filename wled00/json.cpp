@@ -894,18 +894,18 @@ void serializeNetworks(JsonObject root)
   }
 
   for (int i = 0; i < status; i++) {
-      JsonObject node = networks.createNestedObject();
-      node["ssid"] = String(WiFi.SSID(i));
-      node["rssi"] = WiFi.RSSI(i);
-      node["bssid"] = String(WiFi.BSSIDstr(i));
-      node["channel"] = WiFi.channel(i);
-      node["enc"] = WiFi.encryptionType(i);
+    JsonObject node = networks.createNestedObject();
+    node["ssid"]    = WiFi.SSID(i);
+    node["rssi"]    = WiFi.RSSI(i);
+    node["bssid"]   = WiFi.BSSIDstr(i);
+    node["channel"] = WiFi.channel(i);
+    node["enc"]     = WiFi.encryptionType(i);
   }
 
   WiFi.scanDelete();
 
   if (WiFi.scanComplete() == WIFI_SCAN_FAILED) {
-      WiFi.scanNetworks(true);
+    WiFi.scanNetworks(true);
   }
 }
 

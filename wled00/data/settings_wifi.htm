@@ -8,7 +8,7 @@
 	<script>
 		var d = document;
 		var loc = false, locip;
-		var scanLoops = 0;
+		var scanLoops = 0, preScanSSID = "";
 
 		function gId(e) { return d.getElementById(e); }
 		function cE(e) { return d.createElement(e); }
@@ -59,6 +59,8 @@
 					let select = cE("select");
 					select.setAttribute("id", "CS");
 					select.setAttribute("name", "CS");
+					select.setAttribute("onchange", "T()");
+					preScanSSID = cs.value;
 
 					for (let i = 0; i < select.children.length; i++) {
 						select.removeChild(select.children[i]);
@@ -76,6 +78,11 @@
 
 						select.appendChild(option);
 					}
+					const option = cE("option");
+
+					option.setAttribute("value", "!Cs");
+					option.innerHTML = `Other network...`;
+					select.appendChild(option);
 
 					cs.replaceWith(select);
 				}
@@ -83,6 +90,18 @@
 				button.disabled = false;
 				button.innerHTML = "Scan";
 			});
+		}
+		// replace WiFi select with custom SSID input field again
+		function T() {
+			let cs = gId("CS");
+			if (!cs || cs.value != "!Cs") return;
+			let input = cE("input");
+			input.type = "text";
+			input.id = "CS";
+			input.name ="CS";
+			input.setAttribute("maxlength",32);
+			input.value = preScanSSID;
+			cs.replaceWith(input);
 		}
 		// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
 		function loadJS(FILE_URL, async = true) {
@@ -125,9 +144,9 @@
 		</div>
 		<h2>WiFi setup</h2>
 		<h3>Connect to existing network</h3>
-		Network name (SSID, empty to not connect): <br>
-		<input type="text" id="CS" name="CS" maxlength="32">
 		<button type="button" id="scan" onclick="N()">Scan</button><br>
+		Network name (SSID, empty to not connect):<br>
+		<input type="text" id="CS" name="CS" maxlength="32"><br>
 		Network password: <br> <input type="password" name="CP" maxlength="63"><br>
 		Static IP (leave at 0.0.0.0 for DHCP):<br>
 		<input name="I0" type="number" class="s" min="0" max="255" required> .
@@ -144,7 +163,7 @@
 		<input name="S1" type="number" class="s" min="0" max="255" required> .
 		<input name="S2" type="number" class="s" min="0" max="255" required> .
 		<input name="S3" type="number" class="s" min="0" max="255" required><br>
-		mDNS address (leave empty for no mDNS):<br/>
+		mDNS address (leave empty for no mDNS):<br>
 		http:// <input type="text" name="CM" maxlength="32"> .local<br>
 		Client IP: <span class="sip"> Not connected </span> <br>
 		<h3>Configure Access Point</h3>
