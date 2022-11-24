@@ -318,7 +318,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonObject light_tr = light["tr"];
   CJSON(fadeTransition, light_tr["mode"]);
   int tdd = light_tr["dur"] | -1;
-  if (tdd >= 0) transitionDelayDefault = tdd * 100;
+  if (tdd >= 0) transitionDelay = transitionDelayDefault = tdd * 100;
   CJSON(strip.paletteFade, light_tr["pal"]);
 
   JsonObject light_nl = light["nl"];

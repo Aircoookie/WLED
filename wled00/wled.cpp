@@ -137,7 +137,7 @@ void WLED::loop()
     ntpLastSyncTime = 0;
     strip.restartRuntime();
   }
-  if (millis() - lastMqttReconnectAttempt > 30000) {
+  if (millis() - lastMqttReconnectAttempt > 30000 || lastMqttReconnectAttempt == 0) { // lastMqttReconnectAttempt==0 forces immediate broadcast
     lastMqttReconnectAttempt = millis();
     initMqtt();
     yield();
@@ -377,7 +377,13 @@ void WLED::setup()
 #endif
   updateFSInfo();
 
-  strcpy_P(apSSID, PSTR("WLED-AP"));  // otherwise it is empty on first boot until config is saved
+  // generate module IDs must be done before AP setup
+  escapedMac = WiFi.macAddress();
+  escapedMac.replace(":", "");
+  escapedMac.toLowerCase();
+
+  WLED_SET_AP_SSID(); // otherwise it is empty on first boot until config is saved
+
   DEBUG_PRINTLN(F("Reading config"));
   deserializeConfigFromFS();
 
@@ -411,10 +417,6 @@ void WLED::setup()
   }
   #endif
 
-  // generate module IDs
-  escapedMac = WiFi.macAddress();
-  escapedMac.replace(":", "");
-  escapedMac.toLowerCase();
   // fill in unique mdns default
   if (strcmp(cmDNS, "x") == 0) sprintf_P(cmDNS, PSTR("wled-%*s"), 6, escapedMac.c_str() + 6);
   if (mqttDeviceTopic[0] == 0) sprintf_P(mqttDeviceTopic, PSTR("wled/%*s"), 6, escapedMac.c_str() + 6);
@@ -500,8 +502,8 @@ void WLED::initAP(bool resetAP)
     return;
 
   if (resetAP) {
-    strcpy_P(apSSID, PSTR("WLED-AP"));
-    strcpy_P(apPass, PSTR(DEFAULT_AP_PASS));
+    WLED_SET_AP_SSID();
+    strcpy_P(apPass, PSTR(WLED_AP_PASS));
   }
   DEBUG_PRINT(F("Opening access point "));
   DEBUG_PRINTLN(apSSID);
@@ -822,6 +824,7 @@ void WLED::handleConnection()
     initInterfaces();
     userConnected();
     usermods.connected();
+    lastMqttReconnectAttempt = 0; // force immediate update
 
     // shut down AP
     if (apBehavior != AP_BEHAVIOR_ALWAYS && apActive) {
