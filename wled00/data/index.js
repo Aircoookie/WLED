@@ -522,7 +522,7 @@ function loadFXData(callback = null)
 		fxdata = json||[];
 		// add default value for Solid
 		fxdata.shift()
-		fxdata.unshift(";!;0");
+		fxdata.unshift(";!;");
 	})
 	.catch((e)=>{
 		fxdata = [];
@@ -847,20 +847,21 @@ function populateEffects()
 		let fd = "";
 		if (ef.name.indexOf("RSVD") < 0) {
 			if (Array.isArray(fxdata) && fxdata.length>id) {
-				if (fxdata[id].length==0) fd = ";;!;1d"
+				if (fxdata[id].length==0) fd = ";;!;1"
 				else {
 					fd = fxdata[id];
-					fd.replace(/\!(?!,|;)/g, "!,"); // add comma after ! if missing, since optional in fxdata
+					fd = fd.replace(/\!(?!,|;)/g, "!,"); // add comma after ! if missing, since optional in fxdata
 				}
 				let eP = (fd == '')?[]:fd.split(";"); // effect parameters
 				let p = (eP.length<3 || eP[2]==='')?[]:eP[2].split(","); // palette data
 				if (p.length>0 && (p[0] !== "" && !isNumeric(p[0]))) nm += "&#x1F3A8;";	// effects using palette
-				let m = (eP.length<4 || eP[3]==='')?[]:eP[3].split(","); // metadata
-				if (m.length>0) for (let r of m) {
-					if (r.substring(0,2)=="1d") nm += "&#8942;"; // 1D effects
-					if (r.substring(0,2)=="2d") nm += "&#9638;"; // 2D effects
-					if (r.substring(0,2)=="vo") nm += "&#9834;"; // volume effects
-					if (r.substring(0,2)=="fr") nm += "&#9835;"; // frequency effects
+				let m = (eP.length<4 || eP[3]==='')?'1':eP[3]; // flags
+				if (id == 0) m = ''; // solid has no flags
+				if (m.length>0) {
+					if (m.includes('1')) nm += "&#8942;"; // 1D effects
+					if (m.includes('2')) nm += "&#9638;"; // 2D effects
+					if (m.includes('v')) nm += "&#9834;"; // volume effects
+					if (m.includes('f')) nm += "&#9835;"; // frequency effects
 				}
 			}
 			html += generateListItemHtml('fx',id,nm,'setFX','',fd);
@@ -1381,7 +1382,7 @@ function setEffectParameters(idx)
 	if (!(Array.isArray(fxdata) && fxdata.length>idx)) return;
 	var controlDefined = fxdata[idx].length;
 	var effectPar = fxdata[idx];
-	effectPar.replace(/\!(?!,|;)/g, "!,"); // add comma after ! if missing, since optional in fxdata
+	effectPar = effectPar.replace(/\!(?!,|;)/g, "!,"); // add comma after ! if missing, since optional in fxdata
 	var effectPars = (effectPar == '')?[]:effectPar.split(";");
 	var slOnOff = (effectPars.length==0 || effectPars[0]=='')?[]:effectPars[0].split(",");
 	var coOnOff = (effectPars.length<2  || effectPars[1]=='')?[]:effectPars[1].split(",");
