@@ -735,22 +735,22 @@ function populateSegments(s)
 		}
 		// WLEDMM: jMap
 		let map2D = `<div id="seg${i}map2D" data-map="map2D" class="lbl-s hide">Expand 1D FX<br>
-			<div class="sel-p"><select class="sel-p" id="seg${i}mp12" onchange="setMp12(${i})">
-				<option value="0" ${inst.mp12==0?' selected':''}>Pixels</option>
-				<option value="1" ${inst.mp12==1?' selected':''}>Bar</option>
-				<option value="2" ${inst.mp12==2?' selected':''}>Arc</option>
-				<option value="3" ${inst.mp12==3?' selected':''}>Corner</option>
-				<option value="4" ${inst.mp12==4?' selected':''}>jMap</option>
-				<option value="5" ${inst.mp12==5?' selected':''}>Circles</option>
-				<option value="6" ${inst.mp12==6?' selected':''}>Block</option>
+			<div class="sel-p"><select class="sel-p" id="seg${i}m12" onchange="setM12(${i})">
+				<option value="0" ${inst.m12==0?' selected':''}>Pixels</option>
+				<option value="1" ${inst.m12==1?' selected':''}>Bar</option>
+				<option value="2" ${inst.m12==2?' selected':''}>Arc</option>
+				<option value="3" ${inst.m12==3?' selected':''}>Corner</option>
+				<option value="4" ${inst.m12==4?' selected':''}>jMap</option>
+				<option value="5" ${inst.m12==5?' selected':''}>Circles</option>
+				<option value="6" ${inst.m12==6?' selected':''}>Block</option>
 			</select></div>
 		</div>`;
-		let sndSim = `<div data-snd="ssim" class="lbl-s hide">Sound sim<br>
-			<div class="sel-p"><select class="sel-p" id="seg${i}ssim" onchange="setSSim(${i})">
-				<option value="0" ${inst.ssim==0?' selected':''}>BeatSin</option>
-				<option value="1" ${inst.ssim==1?' selected':''}>WeWillRockYou</option>
-				<option value="2" ${inst.ssim==2?' selected':''}>U10_3</option>
-				<option value="3" ${inst.ssim==3?' selected':''}>U14_3</option>
+		let sndSim = `<div data-snd="si" class="lbl-s hide">Sound sim<br>
+			<div class="sel-p"><select class="sel-p" id="seg${i}si" onchange="setSi(${i})">
+				<option value="0" ${inst.si==0?' selected':''}>BeatSin</option>
+				<option value="1" ${inst.si==1?' selected':''}>WeWillRockYou</option>
+				<option value="2" ${inst.si==2?' selected':''}>U10_3</option>
+				<option value="3" ${inst.si==3?' selected':''}>U14_3</option>
 			</select></div>
 		</div>`;
 		//WLEDMM Custom Effects
@@ -1220,7 +1220,7 @@ function updateSelectedFx()
 		var selectedName = selectedEffect.querySelector(".lstIname").innerText;
 		var segs = gId("segcont").querySelectorAll(`div[data-map="map2D"]`);
 		for (const seg of segs) if (selectedName.indexOf("\u25A6")<0) seg.classList.remove("hide"); else seg.classList.add("hide");
-		var segs = gId("segcont").querySelectorAll(`div[data-snd="ssim"]`);
+		var segs = gId("segcont").querySelectorAll(`div[data-snd="si"]`);
 		for (const seg of segs) if (selectedName.indexOf("\u266A")<0 && selectedName.indexOf("\266B")<0) seg.classList.add("hide"); else seg.classList.remove("hide"); // also "♫ "?
 	}
 }
@@ -2098,17 +2098,17 @@ function setMiY(s)
 	requestJson(obj);
 }
 
-function setMp12(s)
+function setM12(s)
 {
-	var value = gId(`seg${s}mp12`).selectedIndex;
-	var obj = {"seg": {"id": s, "mp12": value}};
+	var value = gId(`seg${s}m12`).selectedIndex;
+	var obj = {"seg": {"id": s, "m12": value}};
 	requestJson(obj);
 }
 
-function setSSim(s)
+function setSi(s)
 {
-	var value = gId(`seg${s}ssim`).selectedIndex;
-	var obj = {"seg": {"id": s, "ssim": value}};
+	var value = gId(`seg${s}si`).selectedIndex;
+	var obj = {"seg": {"id": s, "si": value}};
 	requestJson(obj);
 }
 
