@@ -87,8 +87,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   uint16_t grp = elem["grp"] | seg.grouping;
   uint16_t spc = elem[F("spc")] | seg.spacing;
   uint16_t of  = seg.offset;
-  uint8_t  soundSim = elem["ssim"] | seg.soundSim;
-  uint8_t  map1D2D  = elem["mp12"] | seg.map1D2D;
+  uint8_t  soundSim = elem["si"] | seg.soundSim;
+  uint8_t  map1D2D  = elem["m12"] | seg.map1D2D;
 
   if ((spc>0 && spc!=seg.spacing) || seg.map1D2D!=map1D2D) seg.fill(BLACK); // clear spacing gaps
 
@@ -490,8 +490,8 @@ void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset, b
   root["o1"]   = seg.check1;
   root["o2"]   = seg.check2;
   root["o3"]   = seg.check3;
-  root["ssim"] = seg.soundSim;
-  root["mp12"] = seg.map1D2D;
+  root["si"] = seg.soundSim;
+  root["m12"] = seg.map1D2D;
 }
 
 void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segmentBounds, bool selectedSegmentsOnly)
