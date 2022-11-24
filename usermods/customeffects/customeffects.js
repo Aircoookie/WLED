@@ -121,7 +121,6 @@ function downloadCEFile(name) {
     var url = "https://raw.githubusercontent.com/MoonModules/WLED-Effects/master/CustomEffects/wled/";
 
     fetchAndExecute(url, name, function(text) {
-        console.log(text);
         if (name == "wledv032.json" || name == "presets.json") {
             if (!confirm('Are you sure to download/overwrite ' + name + '?'))
               return;

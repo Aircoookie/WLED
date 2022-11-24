@@ -1865,9 +1865,11 @@ void WS2812FX::deserializeMap(uint8_t n) {
   JsonArray map = doc[F("map")];
   if (!map.isNull() && map.size()) {  // not an empty map
     //WLEDMM: if isMatrix then customMap size is whole matrix
+#ifndef WLED_DISABLE_2D
     if (isMatrix)
       customMappingSize  = matrixWidth * matrixHeight;
     else
+#endif
       customMappingSize  = map.size();
     customMappingTable = new uint16_t[customMappingSize];
     for (uint16_t i=0; i<map.size(); i++) {
