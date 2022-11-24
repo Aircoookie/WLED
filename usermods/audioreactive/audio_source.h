@@ -254,8 +254,9 @@ class I2SSource : public AudioSource {
 
       if (_i2sMaster == false) {
           DEBUG_PRINTLN(F("AR: Warning - i2S SLAVE mode is experimental!"));        
-        if ((_config.mode & I2S_MODE_MASTER) != 0) 
+        if ((_config.mode & I2S_MODE_MASTER) != 0) {
           DEBUG_PRINTLN("AR: (oops) I2S SLAVE mode requested but not configured!");
+        }
       }
 
       // Reserve the master clock pin if provided
@@ -289,12 +290,14 @@ class I2SSource : public AudioSource {
       DEBUGSR_PRINTF("AR: I2S#0 driver %s aPLL; fixed_mclk=%d.\n", _config.use_apll? "uses":"without", _config.fixed_mclk);
       DEBUGSR_PRINTF("AR: %d bits, Sample scaling factor = %6.4f\n",  _config.bits_per_sample, _sampleScale);
       if(_config.mode & I2S_MODE_MASTER) {
-        if (_config.mode & I2S_MODE_PDM)
+        if (_config.mode & I2S_MODE_PDM) {
           DEBUGSR_PRINTLN(F("AR: I2S#0 driver installed in PDM MASTER mode."));
-        else 
+        } else { 
           DEBUGSR_PRINTLN(F("AR: I2S#0 driver installed in MASTER mode."));
-      } else
+        }
+      } else {
         DEBUGSR_PRINTLN(F("AR: I2S#0 driver installed in SLAVE mode."));
+      }
 
       err = i2s_set_pin(I2S_NUM_0, &_pinConfig);
       if (err != ESP_OK) {
