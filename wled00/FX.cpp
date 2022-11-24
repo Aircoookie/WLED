@@ -596,7 +596,7 @@ uint16_t mode_twinkle(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_TWINKLE[] PROGMEM = "Twinkle@!;!,!;!;mp12=0,1d"; //pixels
+static const char _data_FX_MODE_TWINKLE[] PROGMEM = "Twinkle@!;!,!;!;m12=0,1d"; //pixels
 
 
 /*
@@ -673,7 +673,7 @@ uint16_t mode_sparkle(void) {
   SEGMENT.setPixelColor(SEGENV.aux0, SEGCOLOR(0));
   return FRAMETIME;
 }
-static const char _data_FX_MODE_SPARKLE[] PROGMEM = "Sparkle@!;!,!;!;mp12=0,1d";
+static const char _data_FX_MODE_SPARKLE[] PROGMEM = "Sparkle@!;!,!;!;m12=0,1d";
 
 
 /*
@@ -694,7 +694,7 @@ uint16_t mode_flash_sparkle(void) {
   }
   return FRAMETIME;
 }
-static const char _data_FX_MODE_FLASH_SPARKLE[] PROGMEM = "Sparkle Dark@!,!;Bg,Fx;!;mp12=0,1d";
+static const char _data_FX_MODE_FLASH_SPARKLE[] PROGMEM = "Sparkle Dark@!,!;Bg,Fx;!;m12=0,1d";
 
 
 /*
@@ -717,7 +717,7 @@ uint16_t mode_hyper_sparkle(void) {
   }
   return FRAMETIME;
 }
-static const char _data_FX_MODE_HYPER_SPARKLE[] PROGMEM = "Sparkle+@!,!;Bg,Fx;!;mp12=0,1d";
+static const char _data_FX_MODE_HYPER_SPARKLE[] PROGMEM = "Sparkle+@!,!;Bg,Fx;!;m12=0,1d";
 
 
 /*
@@ -799,7 +799,7 @@ uint16_t mode_android(void) {
 
   return 3 + ((8 * (uint32_t)(255 - SEGMENT.speed)) / SEGLEN);
 }
-static const char _data_FX_MODE_ANDROID[] PROGMEM = "Android@!,Width;!,!;!;mp12=1,1d"; //vertical
+static const char _data_FX_MODE_ANDROID[] PROGMEM = "Android@!,Width;!,!;!;m12=1,1d"; //vertical
 
 
 /*
@@ -1146,7 +1146,7 @@ uint16_t larson_scanner(bool dual) {
 uint16_t mode_larson_scanner(void){
   return larson_scanner(false);
 }
-static const char _data_FX_MODE_LARSON_SCANNER[] PROGMEM = "Scanner@!,Fade rate;!,!;!;mp12=0,1d";
+static const char _data_FX_MODE_LARSON_SCANNER[] PROGMEM = "Scanner@!,Fade rate;!,!;!;m12=0,1d";
 
 
 /*
@@ -1156,7 +1156,7 @@ static const char _data_FX_MODE_LARSON_SCANNER[] PROGMEM = "Scanner@!,Fade rate;
 uint16_t mode_dual_larson_scanner(void){
   return larson_scanner(true);
 }
-static const char _data_FX_MODE_DUAL_LARSON_SCANNER[] PROGMEM = "Scanner Dual@!,Fade rate;!,!;!;mp12=0,1d";
+static const char _data_FX_MODE_DUAL_LARSON_SCANNER[] PROGMEM = "Scanner Dual@!,Fade rate;!,!;!;m12=0,1d";
 
 
 /*
@@ -1508,7 +1508,7 @@ uint16_t mode_fairytwinkle() {
   }
   return FRAMETIME;
 }
-static const char _data_FX_MODE_FAIRYTWINKLE[] PROGMEM = "Fairy Twinkle@;;;mp12=0,1d"; //pixels
+static const char _data_FX_MODE_FAIRYTWINKLE[] PROGMEM = "Fairy Twinkle@;;;m12=0,1d"; //pixels
 
 
 /*
@@ -2016,7 +2016,7 @@ uint16_t mode_fire_2012()
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_FIRE_2012[] PROGMEM = "Fire 2012@Cooling,Spark rate;1,2,3;!;sx=120,ix=64,mp12=1,1d"; //bars
+static const char _data_FX_MODE_FIRE_2012[] PROGMEM = "Fire 2012@Cooling,Spark rate;1,2,3;!;sx=120,ix=64,m12=1,1d"; //bars
 
 
 // ColorWavesWithPalettes by Mark Kriegsman: https://gist.github.com/kriegsman/8281905786e8b2632aeb
@@ -2248,7 +2248,7 @@ uint16_t mode_colortwinkle()
   }
   return FRAMETIME_FIXED;
 }
-static const char _data_FX_MODE_COLORTWINKLE[] PROGMEM = "Colortwinkles@Fade speed,Spawn speed;1,2,3;!;mp12=0,1d"; //pixels
+static const char _data_FX_MODE_COLORTWINKLE[] PROGMEM = "Colortwinkles@Fade speed,Spawn speed;1,2,3;!;m12=0,1d"; //pixels
 
 
 //Calm effect, like a lake at night
@@ -2857,7 +2857,7 @@ uint16_t mode_bouncing_balls(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_BOUNCINGBALLS[] PROGMEM = "Bouncing Balls@Gravity,# of balls;!,!,!;!;mp12=1,1d"; //bar
+static const char _data_FX_MODE_BOUNCINGBALLS[] PROGMEM = "Bouncing Balls@Gravity,# of balls;!,!,!;!;m12=1,1d"; //bar
 
 
 /*
@@ -2927,7 +2927,7 @@ uint16_t mode_glitter()
   
   return FRAMETIME;
 }
-static const char _data_FX_MODE_GLITTER[] PROGMEM = "Glitter@,!;!,!,!;!;mp12=0,1d"; //pixels
+static const char _data_FX_MODE_GLITTER[] PROGMEM = "Glitter@,!;!,!,!;!;m12=0,1d"; //pixels
 
 
 //each needs 19 bytes
@@ -3000,7 +3000,7 @@ uint16_t mode_popcorn(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_POPCORN[] PROGMEM = "Popcorn@!,!;!,!,!;!;mp12=1,1d"; //bar
+static const char _data_FX_MODE_POPCORN[] PROGMEM = "Popcorn@!,!;!,!,!;!;m12=1,1d"; //bar
 
 
 //values close to 100 produce 5Hz flicker, which looks very candle-y
@@ -3227,7 +3227,7 @@ uint16_t mode_starburst(void) {
   return FRAMETIME;
 }
 #undef STARBURST_MAX_FRAG
-static const char _data_FX_MODE_STARBURST[] PROGMEM = "Fireworks Starburst@Chance,Fragments;,!;!;pal=11,mp12=0,1d";
+static const char _data_FX_MODE_STARBURST[] PROGMEM = "Fireworks Starburst@Chance,Fragments;,!;!;pal=11,m12=0,1d";
 
 
 /*
@@ -3449,7 +3449,7 @@ uint16_t mode_drip(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_DRIP[] PROGMEM = "Drip@Gravity,# of drips;!,!;!;mp12=1,1d"; //bar
+static const char _data_FX_MODE_DRIP[] PROGMEM = "Drip@Gravity,# of drips;!,!;!;m12=1,1d"; //bar
 
 
 /*
@@ -3538,7 +3538,7 @@ uint16_t mode_tetrix(void) {
 
   return FRAMETIME;  
 }
-static const char _data_FX_MODE_TETRIX[] PROGMEM = "Tetrix@!,Width;!,!;!;sx=0,ix=0,pal=11,mp12=1,1d";
+static const char _data_FX_MODE_TETRIX[] PROGMEM = "Tetrix@!,Width;!,!;!;sx=0,ix=0,pal=11,m12=1,1d";
 
 
 /*
@@ -3650,7 +3650,7 @@ uint16_t mode_heartbeat(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_HEARTBEAT[] PROGMEM = "Heartbeat@!,!;!,!;!;mp12=1,1d";
+static const char _data_FX_MODE_HEARTBEAT[] PROGMEM = "Heartbeat@!,!;!,!;!;m12=1,1d";
 
 
 //  "Pacifica"
@@ -3782,7 +3782,7 @@ uint16_t mode_solid_glitter()
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_SOLID_GLITTER[] PROGMEM = "Solid Glitter@,!;!;0;mp12=0,1d";
+static const char _data_FX_MODE_SOLID_GLITTER[] PROGMEM = "Solid Glitter@,!;!;0;m12=0,1d";
 
 
 /*
@@ -3891,7 +3891,7 @@ uint16_t mode_twinkleup(void) {                 // A very short twinkle routine 
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_TWINKLEUP[] PROGMEM = "Twinkleup@!,Intensity;!,!;!;mp12=0,1d";
+static const char _data_FX_MODE_TWINKLEUP[] PROGMEM = "Twinkleup@!,Intensity;!,!;!;m12=0,1d";
 
 
 // Peaceful noise that's slow and with gradually changing palettes. Does not support WLED palettes or default colours or controls.
@@ -3990,7 +3990,7 @@ uint16_t mode_flow(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_FLOW[] PROGMEM = "Flow@!,!;!,!,!;!;mp12=1,1d"; //vertical
+static const char _data_FX_MODE_FLOW[] PROGMEM = "Flow@!,!;!,!,!;!;m12=1,1d"; //vertical
 
 
 /*
@@ -6048,7 +6048,7 @@ uint16_t mode_ripplepeak(void) {                // * Ripple peak. By Andrew Tuli
 
   return FRAMETIME;
 } // mode_ripplepeak()
-static const char _data_FX_MODE_RIPPLEPEAK[] PROGMEM = "Ripple Peak@Fade rate,Max # of ripples,Select bin,Volume (min);!,!;!;c2=0,mp12=0,ssim=0,1d,vo"; // Pixel, Beatsin
+static const char _data_FX_MODE_RIPPLEPEAK[] PROGMEM = "Ripple Peak@Fade rate,Max # of ripples,Select bin,Volume (min);!,!;!;c2=0,m12=0,si=0,1d,vo"; // Pixel, Beatsin
 
 
 #ifndef WLED_DISABLE_2D
@@ -6096,7 +6096,7 @@ uint16_t mode_2DSwirl(void) {
 
   return FRAMETIME;
 } // mode_2DSwirl()
-static const char _data_FX_MODE_2DSWIRL[] PROGMEM = "Swirl@!,Sensitivity,Blur;,Bg Swirl;!;ix=64ssim=0,2d,vo"; // Beatsin
+static const char _data_FX_MODE_2DSWIRL[] PROGMEM = "Swirl@!,Sensitivity,Blur;,Bg Swirl;!;ix=64si=0,2d,vo"; // Beatsin
 
 
 /////////////////////////
@@ -6142,7 +6142,7 @@ uint16_t mode_2DWaverly(void) {
 
   return FRAMETIME;
 } // mode_2DWaverly()
-static const char _data_FX_MODE_2DWAVERLY[] PROGMEM = "Waverly@Amplification,Sensitivity;;!;ix=64,ssim=0,2d,vo"; // Beatsin
+static const char _data_FX_MODE_2DWAVERLY[] PROGMEM = "Waverly@Amplification,Sensitivity;;!;ix=64,si=0,2d,vo"; // Beatsin
 
 #endif // WLED_DISABLE_2D
 
@@ -6202,7 +6202,7 @@ uint16_t mode_gravcenter(void) {                // Gravcenter. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_gravcenter()
-static const char _data_FX_MODE_GRAVCENTER[] PROGMEM = "Gravcenter@Rate of fall,Sensitivity;,!;!;ix=128,mp12=2,ssim=0,1d,vo"; // Circle, Beatsin
+static const char _data_FX_MODE_GRAVCENTER[] PROGMEM = "Gravcenter@Rate of fall,Sensitivity;,!;!;ix=128,m12=2,si=0,1d,vo"; // Circle, Beatsin
 
 
 ///////////////////////
@@ -6253,7 +6253,7 @@ uint16_t mode_gravcentric(void) {                     // Gravcentric. By Andrew 
 
   return FRAMETIME;
 } // mode_gravcentric()
-static const char _data_FX_MODE_GRAVCENTRIC[] PROGMEM = "Gravcentric@Rate of fall,Sensitivity;!;!;ix=128,mp12=3,ssim=0,1d,vo"; // Corner, Beatsin
+static const char _data_FX_MODE_GRAVCENTRIC[] PROGMEM = "Gravcentric@Rate of fall,Sensitivity;!;!;ix=128,m12=3,si=0,1d,vo"; // Corner, Beatsin
 
 
 ///////////////////////
@@ -6299,7 +6299,7 @@ uint16_t mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_gravimeter()
-static const char _data_FX_MODE_GRAVIMETER[] PROGMEM = "Gravimeter@Rate of fall,Sensitivity;!,!;!;ix=128,mp12=2,ssim=0,1d,vo"; // Circle, Beatsin
+static const char _data_FX_MODE_GRAVIMETER[] PROGMEM = "Gravimeter@Rate of fall,Sensitivity;!,!;!;ix=128,m12=2,si=0,1d,vo"; // Circle, Beatsin
 
 
 //////////////////////
@@ -6322,7 +6322,7 @@ uint16_t mode_juggles(void) {                   // Juggles. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_juggles()
-static const char _data_FX_MODE_JUGGLES[] PROGMEM = "Juggles@!,# of balls;,!;!;mp12=0,ssim=0,1d,vo"; // Pixels, Beatsin
+static const char _data_FX_MODE_JUGGLES[] PROGMEM = "Juggles@!,# of balls;,!;!;m12=0,si=0,1d,vo"; // Pixels, Beatsin
 
 
 //////////////////////
@@ -6354,7 +6354,7 @@ uint16_t mode_matripix(void) {                  // Matripix. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_matripix()
-static const char _data_FX_MODE_MATRIPIX[] PROGMEM = "Matripix@!,Brightness;!,!;!;ix=64,mp12=2,ssim=1,1d,vo"; //,rev=1,mi=1,rY=1,mY=1 Circle, WeWillRockYou, reverseX
+static const char _data_FX_MODE_MATRIPIX[] PROGMEM = "Matripix@!,Brightness;!,!;!;ix=64,m12=2,si=1,1d,vo"; //,rev=1,mi=1,rY=1,mY=1 Circle, WeWillRockYou, reverseX
 
 
 //////////////////////
@@ -6389,7 +6389,7 @@ uint16_t mode_midnoise(void) {                  // Midnoise. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_midnoise()
-static const char _data_FX_MODE_MIDNOISE[] PROGMEM = "Midnoise@Fade rate,Maximum length;,!;!;ix=128,mp12=1,ssim=0,1d,vo"; // Bar, Beatsin
+static const char _data_FX_MODE_MIDNOISE[] PROGMEM = "Midnoise@Fade rate,Maximum length;,!;!;ix=128,m12=1,si=0,1d,vo"; // Bar, Beatsin
 
 
 //////////////////////
@@ -6422,7 +6422,7 @@ uint16_t mode_noisefire(void) {                 // Noisefire. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_noisefire()
-static const char _data_FX_MODE_NOISEFIRE[] PROGMEM = "Noisefire@!,!;;;mp12=2,ssim=0,1d,vo"; // Circle, Beatsin
+static const char _data_FX_MODE_NOISEFIRE[] PROGMEM = "Noisefire@!,!;;;m12=2,si=0,1d,vo"; // Circle, Beatsin
 
 
 ///////////////////////
@@ -6457,7 +6457,7 @@ uint16_t mode_noisemeter(void) {                // Noisemeter. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_noisemeter()
-static const char _data_FX_MODE_NOISEMETER[] PROGMEM = "Noisemeter@Fade rate,Width;!,!;!;ix=128,mp12=2,ssim=0,1d,vo"; // Circle, Beatsin
+static const char _data_FX_MODE_NOISEMETER[] PROGMEM = "Noisemeter@Fade rate,Width;!,!;!;ix=128,m12=2,si=0,1d,vo"; // Circle, Beatsin
 
 
 //////////////////////
@@ -6491,7 +6491,7 @@ uint16_t mode_pixelwave(void) {                 // Pixelwave. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_pixelwave()
-static const char _data_FX_MODE_PIXELWAVE[] PROGMEM = "Pixelwave@!,Sensitivity;!,!;!;ix=64,mp12=2,ssim=0,1d,vo"; // Circle, Beatsin
+static const char _data_FX_MODE_PIXELWAVE[] PROGMEM = "Pixelwave@!,Sensitivity;!,!;!;ix=64,m12=2,si=0,1d,vo"; // Circle, Beatsin
 
 
 //////////////////////
@@ -6532,7 +6532,7 @@ uint16_t mode_plasmoid(void) {                  // Plasmoid. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_plasmoid()
-static const char _data_FX_MODE_PLASMOID[] PROGMEM = "Plasmoid@Phase,# of pixels;!,!;!;sx=128,ix=128,mp12=0,ssim=0,1d,vo"; // Pixels, Beatsin
+static const char _data_FX_MODE_PLASMOID[] PROGMEM = "Plasmoid@Phase,# of pixels;!,!;!;sx=128,ix=128,m12=0,si=0,1d,vo"; // Pixels, Beatsin
 
 
 ///////////////////////
@@ -6576,7 +6576,7 @@ uint16_t mode_puddlepeak(void) {                // Puddlepeak. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_puddlepeak()
-static const char _data_FX_MODE_PUDDLEPEAK[] PROGMEM = "Puddlepeak@Fade rate,Puddle size,Select bin,Volume (min);!,!;!;c2=0,mp12=0,ssim=0,1d,vo"; // Pixels, Beatsin
+static const char _data_FX_MODE_PUDDLEPEAK[] PROGMEM = "Puddlepeak@Fade rate,Puddle size,Select bin,Volume (min);!,!;!;c2=0,m12=0,si=0,1d,vo"; // Pixels, Beatsin
 
 
 //////////////////////
@@ -6607,7 +6607,7 @@ uint16_t mode_puddles(void) {                   // Puddles. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_puddles()
-static const char _data_FX_MODE_PUDDLES[] PROGMEM = "Puddles@Fade rate,Puddle size;!,!;!;mp12=0,ssim=0,1d,vo"; // Pixels, Beatsin
+static const char _data_FX_MODE_PUDDLES[] PROGMEM = "Puddles@Fade rate,Puddle size;!,!;!;m12=0,si=0,1d,vo"; // Pixels, Beatsin
 
 
 //////////////////////
@@ -6635,7 +6635,7 @@ uint16_t mode_pixels(void) {                    // Pixels. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_pixels()
-static const char _data_FX_MODE_PIXELS[] PROGMEM = "Pixels@Fade rate,# of pixels;,!;!;mp12=0,ssim=0,1d,vo"; // Pixels, Beatsin
+static const char _data_FX_MODE_PIXELS[] PROGMEM = "Pixels@Fade rate,# of pixels;,!;!;m12=0,si=0,1d,vo"; // Pixels, Beatsin
 
 
 ///////////////////////////////
@@ -6676,7 +6676,7 @@ uint16_t mode_blurz(void) {                    // Blurz. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_blurz()
-static const char _data_FX_MODE_BLURZ[] PROGMEM = "Blurz@Fade rate,Blur amount;!,Color mix;!;mp12=0,ssim=0,1d,fr"; // Pixels, Beatsin
+static const char _data_FX_MODE_BLURZ[] PROGMEM = "Blurz@Fade rate,Blur amount;!,Color mix;!;m12=0,si=0,1d,fr"; // Pixels, Beatsin
 
 
 /////////////////////////
@@ -6711,7 +6711,7 @@ uint16_t mode_DJLight(void) {                   // Written by ??? Adapted by Wil
 
   return FRAMETIME;
 } // mode_DJLight()
-static const char _data_FX_MODE_DJLIGHT[] PROGMEM = "DJ Light@Speed;;;mp12=2,ssim=0,1d,fr"; // Circle, Beatsin
+static const char _data_FX_MODE_DJLIGHT[] PROGMEM = "DJ Light@Speed;;;m12=2,si=0,1d,fr"; // Circle, Beatsin
 
 
 ////////////////////
@@ -6747,7 +6747,7 @@ uint16_t mode_freqmap(void) {                   // Map FFT_MajorPeak to SEGLEN. 
 
   return FRAMETIME;
 } // mode_freqmap()
-static const char _data_FX_MODE_FREQMAP[] PROGMEM = "Freqmap@Fade rate,Starting color;,!;!;mp12=0,ssim=0,1d,fr"; // Pixels, Beatsin
+static const char _data_FX_MODE_FREQMAP[] PROGMEM = "Freqmap@Fade rate,Starting color;,!;!;m12=0,si=0,1d,fr"; // Pixels, Beatsin
 
 
 ///////////////////////
@@ -6802,7 +6802,7 @@ uint16_t mode_freqmatrix(void) {                // Freqmatrix. By Andreas Plesch
 
   return FRAMETIME;
 } // mode_freqmatrix()
-static const char _data_FX_MODE_FREQMATRIX[] PROGMEM = "Freqmatrix@Time delay,Sound effect,Low bin,High bin,Sensivity;;;mp12=3,ssim=0,1d,fr"; // Corner, Beatsin
+static const char _data_FX_MODE_FREQMATRIX[] PROGMEM = "Freqmatrix@Time delay,Sound effect,Low bin,High bin,Sensivity;;;m12=3,si=0,1d,fr"; // Corner, Beatsin
 
 
 //////////////////////
@@ -6837,7 +6837,7 @@ uint16_t mode_freqpixels(void) {                // Freqpixel. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_freqpixels()
-static const char _data_FX_MODE_FREQPIXELS[] PROGMEM = "Freqpixels@Fade rate,Starting colour and # of pixels;;;mp12=0,ssim=0,1d,fr"; // Pixels, Beatsin
+static const char _data_FX_MODE_FREQPIXELS[] PROGMEM = "Freqpixels@Fade rate,Starting colour and # of pixels;;;m12=0,si=0,1d,fr"; // Pixels, Beatsin
 
 
 //////////////////////
@@ -6906,7 +6906,7 @@ uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschun
 
   return FRAMETIME;
 } // mode_freqwave()
-static const char _data_FX_MODE_FREQWAVE[] PROGMEM = "Freqwave@Time delay,Sound effect,Low bin,High bin,Pre-amp;;;mp12=2,ssim=0,1d,fr"; // Circle, Beatsin
+static const char _data_FX_MODE_FREQWAVE[] PROGMEM = "Freqwave@Time delay,Sound effect,Low bin,High bin,Pre-amp;;;m12=2,si=0,1d,fr"; // Circle, Beatsin
 
 
 ///////////////////////
@@ -6958,7 +6958,7 @@ uint16_t mode_gravfreq(void) {                  // Gravfreq. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_gravfreq()
-static const char _data_FX_MODE_GRAVFREQ[] PROGMEM = "Gravfreq@Rate of fall,Sensivity;,!;!;ix=128,mp12=0,ssim=0,1d,fr"; // Pixels, Beatsin
+static const char _data_FX_MODE_GRAVFREQ[] PROGMEM = "Gravfreq@Rate of fall,Sensivity;,!;!;ix=128,m12=0,si=0,1d,fr"; // Pixels, Beatsin
 
 
 //////////////////////
@@ -6986,7 +6986,7 @@ uint16_t mode_noisemove(void) {                 // Noisemove.    By: Andrew Tuli
 
   return FRAMETIME;
 } // mode_noisemove()
-static const char _data_FX_MODE_NOISEMOVE[] PROGMEM = "Noisemove@Speed of perlin movement,Fade rate;,!;!;mp12=0,ssim=0,1d,fr"; // Pixels, Beatsin
+static const char _data_FX_MODE_NOISEMOVE[] PROGMEM = "Noisemove@Speed of perlin movement,Fade rate;,!;!;m12=0,si=0,1d,fr"; // Pixels, Beatsin
 
 
 //////////////////////
@@ -7026,7 +7026,7 @@ uint16_t mode_rocktaves(void) {                 // Rocktaves. Same note from eac
 
   return FRAMETIME;
 } // mode_rocktaves()
-static const char _data_FX_MODE_ROCKTAVES[] PROGMEM = "Rocktaves@;,!;!;mp12=1,ssim=0,1d,fr"; // Bar, Beatsin
+static const char _data_FX_MODE_ROCKTAVES[] PROGMEM = "Rocktaves@;,!;!;m12=1,si=0,1d,fr"; // Bar, Beatsin
 
 
 ///////////////////////
@@ -7078,7 +7078,7 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
 
   return FRAMETIME;
 } // mode_waterfall()
-static const char _data_FX_MODE_WATERFALL[] PROGMEM = "Waterfall@!,Adjust color,Select bin,Volume (min);!,!;!;c2=0,mp12=2,ssim=0,1d,fr"; // Circles, Beatsin
+static const char _data_FX_MODE_WATERFALL[] PROGMEM = "Waterfall@!,Adjust color,Select bin,Volume (min);!,!;!;c2=0,m12=2,si=0,1d,fr"; // Circles, Beatsin
 
 
 #ifndef WLED_DISABLE_2D
@@ -7138,7 +7138,7 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
 
   return FRAMETIME;
 } // mode_2DGEQ()
-static const char _data_FX_MODE_2DGEQ[] PROGMEM = "GEQ@Fade speed,Ripple decay,# of bands,,,Color bars;!,,Peak Color;!;c1=255,c2=64,pal=11,ssim=0,2d,fr"; // Beatsin
+static const char _data_FX_MODE_2DGEQ[] PROGMEM = "GEQ@Fade speed,Ripple decay,# of bands,,,Color bars;!,,Peak Color;!;c1=255,c2=64,pal=11,si=0,2d,fr"; // Beatsin
 
 
 /////////////////////////
@@ -7196,7 +7196,7 @@ uint16_t mode_2DFunkyPlank(void) {              // Written by ??? Adapted by Wil
 
   return FRAMETIME;
 } // mode_2DFunkyPlank
-static const char _data_FX_MODE_2DFUNKYPLANK[] PROGMEM = "Funky Plank@Scroll speed,,# of bands;;;ssim=0,2d,fr"; // Beatsin
+static const char _data_FX_MODE_2DFUNKYPLANK[] PROGMEM = "Funky Plank@Scroll speed,,# of bands;;;si=0,2d,fr"; // Beatsin
 
 
 /////////////////////////
@@ -7299,7 +7299,7 @@ uint16_t mode_2DAkemi(void) {
 
   return FRAMETIME;
 } // mode_2DAkemi
-static const char _data_FX_MODE_2DAKEMI[] PROGMEM = "Akemi@Color speed,Dance;Head palette,Arms & Legs,Eyes & Mouth;Face palette;ssim=0,2d,fr"; //beatsin
+static const char _data_FX_MODE_2DAKEMI[] PROGMEM = "Akemi@Color speed,Dance;Head palette,Arms & Legs,Eyes & Mouth;Face palette;si=0,2d,fr"; //beatsin
 #endif // WLED_DISABLE_2D
 
 
