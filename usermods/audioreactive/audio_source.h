@@ -149,7 +149,7 @@ class AudioSource {
     virtual I2S_datatype postProcessSample(I2S_datatype sample_in) {return(sample_in);}   // default method can be overriden by instances (ADC) that need sample postprocessing
 
     // Private constructor, to make sure it is not callable except from derived classes
-    AudioSource(SRate_t sampleRate, int blockSize, bool i2sMaster = true, float sampleScale = 1.0f) :
+    AudioSource(SRate_t sampleRate, int blockSize, float sampleScale, bool i2sMaster) :
       _sampleRate(sampleRate),
       _blockSize(blockSize),
       _initialized(false),
@@ -170,8 +170,8 @@ class AudioSource {
 */
 class I2SSource : public AudioSource {
   public:
-    I2SSource(SRate_t sampleRate, int blockSize, bool i2sMaster=true, float sampleScale = 1.0f) :
-      AudioSource(sampleRate, blockSize, i2sMaster, sampleScale) {
+    I2SSource(SRate_t sampleRate, int blockSize, float sampleScale = 1.0f, bool i2sMaster=true) :
+      AudioSource(sampleRate, blockSize, sampleScale, i2sMaster) {
       _config = {
         .mode = i2sMaster ? i2s_mode_t(I2S_MODE_MASTER | I2S_MODE_RX) : i2s_mode_t(I2S_MODE_SLAVE | I2S_MODE_RX),
         .sample_rate = _sampleRate,
@@ -427,8 +427,8 @@ class ES7243 : public I2SSource {
     }
 
 public:
-    ES7243(SRate_t sampleRate, int blockSize) :
-      I2SSource(sampleRate, blockSize) {
+    ES7243(SRate_t sampleRate, int blockSize, float sampleScale = 1.0f, bool i2sMaster=true) :
+      I2SSource(sampleRate, blockSize, sampleScale, i2sMaster) {
       _config.channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT;
     };
 
@@ -489,8 +489,8 @@ public:
 */
 class I2SAdcSource : public I2SSource {
   public:
-    I2SAdcSource(SRate_t sampleRate, int blockSize) :
-      I2SSource(sampleRate, blockSize) {
+    I2SAdcSource(SRate_t sampleRate, int blockSize, float sampleScale = 1.0f) :
+      I2SSource(sampleRate, blockSize, sampleScale, true) {
       _config = {
         .mode = i2s_mode_t(I2S_MODE_MASTER | I2S_MODE_RX | I2S_MODE_ADC_BUILT_IN),
         .sample_rate = _sampleRate,
@@ -680,8 +680,8 @@ class I2SAdcSource : public I2SSource {
 // a user recommended this: Try to set .communication_format to I2S_COMM_FORMAT_STAND_I2S and call i2s_set_clk() after i2s_set_pin().
 class SPH0654 : public I2SSource {
   public:
-    SPH0654(SRate_t sampleRate, int blockSize) :
-      I2SSource(sampleRate, blockSize)
+    SPH0654(SRate_t sampleRate, int blockSize, float sampleScale = 1.0f, bool i2sMaster=true) :
+      I2SSource(sampleRate, blockSize, sampleScale, i2sMaster)
     {}
 
     void initialize(uint8_t i2swsPin, uint8_t i2ssdPin, uint8_t i2sckPin, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
