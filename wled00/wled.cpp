@@ -133,7 +133,7 @@ void WLED::loop()
     ntpLastSyncTime = 0;
     strip.restartRuntime();
   }
-  if (millis() - lastMqttReconnectAttempt > 30000) {
+  if (millis() - lastMqttReconnectAttempt > 30000 || lastMqttReconnectAttempt == 0) { // lastMqttReconnectAttempt==0 forces immediate broadcast
     lastMqttReconnectAttempt = millis();
     initMqtt();
     yield();
@@ -804,6 +804,7 @@ void WLED::handleConnection()
     initInterfaces();
     userConnected();
     usermods.connected();
+    lastMqttReconnectAttempt = 0; // force immediate update
 
     // shut down AP
     if (apBehavior != AP_BEHAVIOR_ALWAYS && apActive) {

@@ -41,6 +41,9 @@ button.sml {
   min-width: 40px;
   margin: 0 0 0 10px;
 }
+#scan {
+  margin-top: -10px;
+}
 .toprow {
   top: 0;
   position: sticky;
