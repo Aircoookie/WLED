@@ -38,6 +38,22 @@
   #define DEBUGSR_PRINTF(x...)
 #endif
 
+#if defined(SR_DEBUG)
+#define ERRORSR_PRINT(x) DEBUGSR_PRINT(x)
+#define ERRORSR_PRINTLN(x) DEBUGSR_PRINTLN(x)
+#define ERRORSR_PRINTF(x...) DEBUGSR_PRINTF(x)
+#else
+#if defined(WLED_DEBUG)
+#define ERRORSR_PRINT(x) DEBUG_PRINT(x)
+#define ERRORSR_PRINTLN(x) DEBUG_PRINTLN(x)
+#define ERRORSR_PRINTF(x...) DEBUG_PRINTF(x)
+#else
+  #define ERRORSR_PRINT(x)
+  #define ERRORSR_PRINTLN(x)
+  #define ERRORSR_PRINTF(x...)
+#endif
+#endif
+
 // use audio source class (ESP32 specific)
 #include "audio_source.h"
 constexpr i2s_port_t I2S_PORT = I2S_NUM_0;       // I2S port to use (do not change !)
@@ -1278,7 +1294,7 @@ class AudioReactive : public Usermod {
       #ifdef WLED_DEBUG
         DEBUG_PRINTLN(F("AR: Failed to initialize sound input driver. Please check input PIN settings."));
       #else
-        DEBUGSR_PRINTLN(F("AR: Failed to initialize sound input driver. Please check input PIN settings."));
+        ERRORSR_PRINTLN(F("AR: Failed to initialize sound input driver. Please check input PIN settings."));
       #endif
         disableSoundProcessing = true;
       }

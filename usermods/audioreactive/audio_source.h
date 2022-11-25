@@ -200,7 +200,7 @@ class I2SSource : public AudioSource {
       if (i2swsPin != I2S_PIN_NO_CHANGE && i2ssdPin != I2S_PIN_NO_CHANGE) {
         if (!pinManager.allocatePin(i2swsPin, true, PinOwner::UM_Audioreactive) ||
             !pinManager.allocatePin(i2ssdPin, false, PinOwner::UM_Audioreactive)) { // #206
-          DEBUGSR_PRINTF("\nAR: Failed to allocate I2S pins: ws=%d, sd=%d\n",  i2swsPin, i2ssdPin); 
+          ERRORSR_PRINTF("\nAR: Failed to allocate I2S pins: ws=%d, sd=%d\n",  i2swsPin, i2ssdPin); 
           return;
         }
       }
@@ -208,7 +208,7 @@ class I2SSource : public AudioSource {
       // i2ssckPin needs special treatment, since it might be unused on PDM mics
       if (i2sckPin != I2S_PIN_NO_CHANGE) {
         if (!pinManager.allocatePin(i2sckPin, true, PinOwner::UM_Audioreactive)) {
-          DEBUGSR_PRINTF("\nAR: Failed to allocate I2S pins: sck=%d\n",  i2sckPin); 
+          ERRORSR_PRINTF("\nAR: Failed to allocate I2S pins: sck=%d\n",  i2sckPin); 
           return;
         }
       } else {
@@ -263,7 +263,7 @@ class I2SSource : public AudioSource {
       _mclkPin = mclkPin;
       if (mclkPin != I2S_PIN_NO_CHANGE) {
         if(!pinManager.allocatePin(mclkPin, true, PinOwner::UM_Audioreactive)) { 
-          DEBUGSR_PRINTF("\nAR: Failed to allocate I2S pin: MCLK=%d\n",  mclkPin); 
+          ERRORSR_PRINTF("\nAR: Failed to allocate I2S pin: MCLK=%d\n",  mclkPin); 
           return;
         } else
         _routeMclk(mclkPin);
@@ -283,7 +283,7 @@ class I2SSource : public AudioSource {
 
       esp_err_t err = i2s_driver_install(I2S_NUM_0, &_config, 0, nullptr);
       if (err != ESP_OK) {
-        DEBUGSR_PRINTF("AR: Failed to install i2s driver: %d\n", err);
+        ERRORSR_PRINTF("AR: Failed to install i2s driver: %d\n", err);
         return;
       }
 
@@ -301,7 +301,7 @@ class I2SSource : public AudioSource {
 
       err = i2s_set_pin(I2S_NUM_0, &_pinConfig);
       if (err != ESP_OK) {
-        DEBUGSR_PRINTF("AR: Failed to set i2s pin config: %d\n", err);
+        ERRORSR_PRINTF("AR: Failed to set i2s pin config: %d\n", err);
         i2s_driver_uninstall(I2S_NUM_0);  // uninstall already-installed driver
         return;
       }
@@ -309,7 +309,7 @@ class I2SSource : public AudioSource {
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
       err = i2s_set_clk(I2S_NUM_0, _sampleRate, I2S_SAMPLE_RESOLUTION, I2S_CHANNEL_MONO);  // set bit clocks. Also takes care of MCLK routing if needed.
       if (err != ESP_OK) {
-        DEBUGSR_PRINTF("AR: Failed to configure i2s clocks: %d\n", err);
+        ERRORSR_PRINTF("AR: Failed to configure i2s clocks: %d\n", err);
         i2s_driver_uninstall(I2S_NUM_0);  // uninstall already-installed driver
         return;
       }
@@ -402,18 +402,25 @@ class ES7243 : public I2SSource {
   private:
     // I2C initialization functions for ES7243
     void _es7243I2cBegin() {
-      Wire.begin(pin_ES7243_SDA, pin_ES7243_SCL, 100000U);
+      bool i2c_initialized = Wire.begin(pin_ES7243_SDA, pin_ES7243_SCL, 100000U);
+      if (i2c_initialized == false) {
+        ERRORSR_PRINTLN(F("AR: ES7243 failed to initialize I2C bus driver."));
+      }
     }
 
     void _es7243I2cWrite(uint8_t reg, uint8_t val) {
 #ifndef ES7243_ADDR
       Wire.beginTransmission(0x13);
+      #define ES7243_ADDR 0x13   // default address
 #else
       Wire.beginTransmission(ES7243_ADDR);
 #endif
       Wire.write((uint8_t)reg);
       Wire.write((uint8_t)val);
-      Wire.endTransmission();
+      uint8_t i2cErr = Wire.endTransmission();  // i2cErr == 0 means OK
+      if (i2cErr != 0) {
+        DEBUGSR_PRINTF("AR: ES7243 I2C write failed with error=%d  (addr=0x%X, reg 0x%X, val 0x%X).\n", ES7243_ADDR, i2cErr, reg, val);
+      }
     }
 
     void _es7243InitAdc() {
@@ -435,12 +442,12 @@ public:
     void initialize(int8_t sdaPin, int8_t sclPin, int8_t i2swsPin, int8_t i2ssdPin, int8_t i2sckPin, int8_t mclkPin) {
       // check that pins are valid
       if ((sdaPin < 0) || (sclPin < 0)) {
-        DEBUGSR_PRINTF("\nAR: invalid ES7243 I2C pins: SDA=%d, SCL=%d\n", sdaPin, sclPin); 
+        ERRORSR_PRINTF("\nAR: invalid ES7243 I2C pins: SDA=%d, SCL=%d\n", sdaPin, sclPin); 
         return;
       }
 
       if ((i2sckPin < 0) || (mclkPin < 0)) {
-        DEBUGSR_PRINTF("\nAR: invalid I2S pin: SCK=%d, MCLK=%d\n", i2sckPin, mclkPin); 
+        ERRORSR_PRINTF("\nAR: invalid I2S pin: SCK=%d, MCLK=%d\n", i2sckPin, mclkPin); 
         return;
       }
 
@@ -448,7 +455,7 @@ public:
       PinManagerPinType es7243Pins[2] = { { sdaPin, true }, { sclPin, true } };
       if (!pinManager.allocateMultiplePins(es7243Pins, 2, PinOwner::HW_I2C)) {
         pinManager.deallocateMultiplePins(es7243Pins, 2, PinOwner::HW_I2C);
-        DEBUGSR_PRINTF("\nAR: Failed to allocate ES7243 I2C pins: SDA=%d, SCL=%d\n", sdaPin, sclPin); 
+        ERRORSR_PRINTF("\nAR: Failed to allocate ES7243 I2C pins: SDA=%d, SCL=%d\n", sdaPin, sclPin); 
         return;
       }
 
@@ -516,7 +523,7 @@ class I2SAdcSource : public I2SSource {
     void initialize(int8_t audioPin, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
       _myADCchannel = 0x0F;
       if(!pinManager.allocatePin(audioPin, false, PinOwner::UM_Audioreactive)) {
-         DEBUGSR_PRINTF("failed to allocate GPIO for audio analog input: %d\n", audioPin);
+         ERRORSR_PRINTF("failed to allocate GPIO for audio analog input: %d\n", audioPin);
         return;
       }
       _audioPin = audioPin;
@@ -524,7 +531,7 @@ class I2SAdcSource : public I2SSource {
       // Determine Analog channel. Only Channels on ADC1 are supported
       int8_t channel = digitalPinToAnalogChannel(_audioPin);
       if (channel > 9) {
-        DEBUGSR_PRINTF("Incompatible GPIO used for audio in: %d\n", _audioPin);
+        ERRORSR_PRINTF("Incompatible GPIO used for analog audio input: %d\n", _audioPin);
         return;
       } else {
         adc_gpio_init(ADC_UNIT_1, adc_channel_t(channel));
@@ -534,7 +541,7 @@ class I2SAdcSource : public I2SSource {
       // Install Driver
       esp_err_t err = i2s_driver_install(I2S_NUM_0, &_config, 0, nullptr);
       if (err != ESP_OK) {
-        DEBUGSR_PRINTF("Failed to install i2s driver: %d\n", err);
+        ERRORSR_PRINTF("Failed to install i2s driver: %d\n", err);
         return;
       }
 
