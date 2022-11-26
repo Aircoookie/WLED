@@ -90,16 +90,9 @@ class PwmOutputsUsermod : public Usermod {
     }
 
     void loop() {
-      const unsigned long now = millis();
-      if (now - lastUpdate_ > 2000) {
-        Serial.println("I'm alive!");
-        DEBUG_PRINTLN("PWM output beat");
-        lastUpdate_ = now;
-      }
     }
 
     void addToJsonState(JsonObject& root) {
-      DEBUG_PRINTLN("PwmOutputs: addToJsonState");
       for (int i = 0; i < USERMOD_PWM_OUTPUT_PINS; i++) {
         const PwmOutput& pwm = pwms_[i];
         if (!pwm.isEnabled())
@@ -109,7 +102,6 @@ class PwmOutputsUsermod : public Usermod {
     }
 
     void readFromJsonState(JsonObject& root) {
-      DEBUG_PRINTLN("PwmOutputs: readFromJsonState");
       for (int i = 0; i < USERMOD_PWM_OUTPUT_PINS; i++) {
         PwmOutput& pwm = pwms_[i];
         if (!pwm.isEnabled())
@@ -122,7 +114,6 @@ class PwmOutputsUsermod : public Usermod {
     }
 
     void addToJsonInfo(JsonObject& root) {
-      DEBUG_PRINTLN("PwmOutputs: addToJsonInfo");
       JsonObject user = root["u"];
       if (user.isNull())
         user = root.createNestedObject("u");
@@ -138,7 +129,6 @@ class PwmOutputsUsermod : public Usermod {
     }
 
     void addToConfig(JsonObject& root) {
-      DEBUG_PRINTLN("PwmOutputs: addToConfig");
       JsonObject top = root.createNestedObject(USERMOD_NAME);
       for (int i = 0; i < USERMOD_PWM_OUTPUT_PINS; i++) {
         const PwmOutput& pwm = pwms_[i];
@@ -148,7 +138,6 @@ class PwmOutputsUsermod : public Usermod {
     }
 
     bool readFromConfig(JsonObject& root) {
-      DEBUG_PRINTLN("PwmOutputs: readFromConfig");
       JsonObject top = root[USERMOD_NAME];
       bool configComplete = !top.isNull();
       for (int i = 0; i < USERMOD_PWM_OUTPUT_PINS; i++) {
@@ -173,7 +162,6 @@ class PwmOutputsUsermod : public Usermod {
     }
 
   private:
-    unsigned long lastUpdate_ = 0;
     PwmOutput pwms_[USERMOD_PWM_OUTPUT_PINS];
 
 };
