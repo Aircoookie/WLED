@@ -44,16 +44,16 @@ ArduinoFFT `develop` library is slightly more accurate, and slighly faster than 
 
 All parameters are runtime configurable though some may require hard boot after change (I2S microphone or selected GPIOs).
 
-If you want to define default GPIOs during compile time use the following (default values in parentheses):
+If you want to define default GPIOs during compile time use the following addtional build_flags (default values in parentheses):
 
-- `SR_DMTYPE=x` : defines digital microphone type: 0=analog, 1=generic I2S (default), 2=ES7243 I2S, 3=SPH0645 I2S, 4=generic I2S with master clock, 5=PDM I2S
-- `AUDIOPIN=x`  : GPIO for analog microphone/AUX-in (36)
-- `I2S_SDPIN=x` : GPIO for SD pin on digital microphone (32)
-- `I2S_WSPIN=x` : GPIO for WS pin on digital microphone (15)
-- `I2S_CKPIN=x` : GPIO for SCK pin on digital microphone (14)
-- `MCLK_PIN=x`  : GPIO for master clock pin on digital Line-In boards (-1)
-- `ES7243_SDAPIN` : GPIO for I2C SDA pin on ES7243 microphone (-1)
-- `ES7243_SCLPIN` : GPIO for I2C SCL pin on ES7243 microphone (-1)
+- `-D SR_DMTYPE=x` : defines digital microphone type: 0=analog, 1=generic I2S (default), 2=ES7243 I2S, 3=SPH0645 I2S, 4=generic I2S with master clock, 5=PDM I2S
+- `-D AUDIOPIN=x`  : GPIO for analog microphone/AUX-in (36)
+- `-D I2S_SDPIN=x` : GPIO for SD pin on digital microphone (32)
+- `-D I2S_WSPIN=x` : GPIO for WS pin on digital microphone (15)
+- `-D I2S_CKPIN=x` : GPIO for SCK pin on digital microphone (14)
+- `-D MCLK_PIN=x`  : GPIO for master clock pin on digital Line-In boards (-1)
+- `-D ES7243_SDAPIN` : GPIO for I2C SDA pin on ES7243 microphone (-1)
+- `-D ES7243_SCLPIN` : GPIO for I2C SCL pin on ES7243 microphone (-1)
 
 **NOTE** Due to the fact that usermod uses I2S peripherial for analog audio sampling, use of analog *buttons* (i.e. potentiometers) is disabled while running this usermod with analog microphone.
 
