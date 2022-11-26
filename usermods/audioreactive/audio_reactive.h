@@ -35,6 +35,16 @@
   #define DEBUGSR_PRINTF(x...)
 #endif
 
+#if defined(MIC_LOGGER) || defined(FFT_SAMPLING_LOG)
+  #define PLOT_PRINT(x) DEBUGOUT.print(x)
+  #define PLOT_PRINTLN(x) DEBUGOUT.println(x)
+  #define PLOT_PRINTF(x...) DEBUGOUT.printf(x)
+#else
+  #define PLOT_PRINT(x)
+  #define PLOT_PRINTLN(x)
+  #define PLOT_PRINTF(x...)
+#endif
+
 // use audio source class (ESP32 specific)
 #include "audio_source.h"
 constexpr i2s_port_t I2S_PORT = I2S_NUM_0;       // I2S port to use (do not change !)
@@ -152,7 +162,7 @@ constexpr uint16_t samplesFFT_2 = 256;          // meaningfull part of FFT resul
 // the following are observed values, supported by a bit of "educated guessing"
 //#define FFT_DOWNSCALE 0.65f                             // 20kHz - downscaling factor for FFT results - "Flat-Top" window @20Khz, old freq channels 
 #define FFT_DOWNSCALE 0.46f                             // downscaling factor for FFT results - for "Flat-Top" window @22Khz, new freq channels
-#define LOG_256  5.54517744                             // log(256)
+#define LOG_256  5.54517744f                            // log(256)
 
 // These are the input and output vectors.  Input vectors receive computed results from FFT.
 static float vReal[samplesFFT] = {0.0f};       // FFT sample inputs / freq output -  these are our raw result bins
@@ -396,10 +406,10 @@ static void runMicFilter(uint16_t numSamples, float *sampleBuffer)          // p
   constexpr float alpha = 0.0225f; // 80hz
   //constexpr float alpha = 0.01693f;// 60hz
   // high frequency cutoff  parameter
-  //constexpr float beta1 = 0.75;    // 11Khz
-  //constexpr float beta1 = 0.82;    // 15Khz
-  //constexpr float beta1 = 0.8285;  // 18Khz
-  constexpr float beta1 = 0.85;   // 20Khz
+  //constexpr float beta1 = 0.75f;   // 11Khz
+  //constexpr float beta1 = 0.82f;   // 15Khz
+  //constexpr float beta1 = 0.8285f; // 18Khz
+  constexpr float beta1 = 0.85f;  // 20Khz
 
   constexpr float beta2 = (1.0f - beta1) / 2.0;
   static float last_vals[2] = { 0.0f }; // FIR high freq cutoff filter
@@ -509,15 +519,6 @@ static void detectSamplePeak(void) {
     havePeak = true;
   }
 
-#if 0
-  // alternate detection, based on FFT_MajorPeak and FFT_Magnitude. Not much better...
-  if ((binNum > 1) && (binNum < 10) && (sampleAgc > 127) && 
-      (FFT_MajorPeak > 50) && (FFT_MajorPeak < 250) && (FFT_Magnitude > (16.0f * (maxVol+42.0)) /*my_magnitude > 136.0f*16.0f*/) && 
-      (millis() - timeOfPeak > 80)) {
-    havePeak = true;
-  }
-#endif
-
   if (havePeak) {
     samplePeak    = true;
     timeOfPeak    = millis();
@@ -626,7 +627,7 @@ class AudioReactive : public Usermod {
     // variables used by getSample() and agcAvg()
     int16_t  micIn = 0;           // Current sample starts with negative values and large values, which is why it's 16 bit signed
     double   sampleMax = 0.0;     // Max sample over a few seconds. Needed for AGC controler.
-    double   micLev = 0.0f;       // Used to convert returned value to have '0' as minimum. A leveller
+    double   micLev = 0.0;        // Used to convert returned value to have '0' as minimum. A leveller
     float    expAdjF = 0.0f;      // Used for exponential filter.
     float    sampleReal = 0.0f;	  // "sampleRaw" as float, to provide bits that are lost otherwise (before amplification by sampleGain or inputLevel). Needed for AGC.
     int16_t  sampleRaw = 0;       // Current sample. Must only be updated ONCE!!! (amplified mic value by sampleGain and inputLevel)
@@ -663,28 +664,28 @@ class AudioReactive : public Usermod {
       if (disableSoundProcessing && (!udpSyncConnected || ((audioSyncEnabled & 0x02) == 0))) return;   // no audio availeable
     #ifdef MIC_LOGGER
       // Debugging functions for audio input and sound processing. Comment out the values you want to see
-      Serial.print("micReal:");     Serial.print(micDataReal); Serial.print("\t");
-      Serial.print("volumeSmth:");  Serial.print(volumeSmth);  Serial.print("\t");
-      //Serial.print("volumeRaw:");   Serial.print(volumeRaw);   Serial.print("\t");
-      Serial.print("DC_Level:");    Serial.print(micLev);      Serial.print("\t");
-      //Serial.print("sampleAgc:");   Serial.print(sampleAgc);   Serial.print("\t");
-      //Serial.print("sampleAvg:");   Serial.print(sampleAvg);   Serial.print("\t");
-      //Serial.print("sampleReal:");  Serial.print(sampleReal);  Serial.print("\t");
-      //Serial.print("micIn:");       Serial.print(micIn);       Serial.print("\t");
-      //Serial.print("sample:");      Serial.print(sample);      Serial.print("\t");
-      //Serial.print("sampleMax:");   Serial.print(sampleMax);   Serial.print("\t");
-      //Serial.print("samplePeak:");  Serial.print((samplePeak!=0) ? 128:0);   Serial.print("\t");
-      //Serial.print("multAgc:");     Serial.print(multAgc, 4);  Serial.print("\t");
-      Serial.println();
+      PLOT_PRINT("micReal:");     PLOT_PRINT(micDataReal); PLOT_PRINT("\t");
+      PLOT_PRINT("volumeSmth:");  PLOT_PRINT(volumeSmth);  PLOT_PRINT("\t");
+      //PLOT_PRINT("volumeRaw:");   PLOT_PRINT(volumeRaw);   PLOT_PRINT("\t");
+      PLOT_PRINT("DC_Level:");    PLOT_PRINT(micLev);      PLOT_PRINT("\t");
+      //PLOT_PRINT("sampleAgc:");   PLOT_PRINT(sampleAgc);   PLOT_PRINT("\t");
+      //PLOT_PRINT("sampleAvg:");   PLOT_PRINT(sampleAvg);   PLOT_PRINT("\t");
+      //PLOT_PRINT("sampleReal:");  PLOT_PRINT(sampleReal);  PLOT_PRINT("\t");
+      //PLOT_PRINT("micIn:");       PLOT_PRINT(micIn);       PLOT_PRINT("\t");
+      //PLOT_PRINT("sample:");      PLOT_PRINT(sample);      PLOT_PRINT("\t");
+      //PLOT_PRINT("sampleMax:");   PLOT_PRINT(sampleMax);   PLOT_PRINT("\t");
+      //PLOT_PRINT("samplePeak:");  PLOT_PRINT((samplePeak!=0) ? 128:0);   PLOT_PRINT("\t");
+      //PLOT_PRINT("multAgc:");     PLOT_PRINT(multAgc, 4);  PLOT_PRINT("\t");
+      PLOT_PRINTLN();
     #endif
 
     #ifdef FFT_SAMPLING_LOG
       #if 0
         for(int i=0; i<NUM_GEQ_CHANNELS; i++) {
-          Serial.print(fftResult[i]);
-          Serial.print("\t");
+          PLOT_PRINT(fftResult[i]);
+          PLOT_PRINT("\t");
         }
-        Serial.println();
+        PLOT_PRINTLN();
       #endif
 
       // OPTIONS are in the following format: Description \n Option
@@ -711,20 +712,21 @@ class AudioReactive : public Usermod {
         if(fftResult[i] < minVal) minVal = fftResult[i];
       }
       for(int i = 0; i < NUM_GEQ_CHANNELS; i++) {
-        Serial.print(i); Serial.print(":");
-        Serial.printf("%04ld ", map(fftResult[i], 0, (scaleValuesFromCurrentMaxVal ? maxVal : defaultScalingFromHighValue), (mapValuesToPlotterSpace*i*scalingToHighValue)+0, (mapValuesToPlotterSpace*i*scalingToHighValue)+scalingToHighValue-1));
+        PLOT_PRINT(i); PLOT_PRINT(":");
+        PLOT_PRINTF("%04ld ", map(fftResult[i], 0, (scaleValuesFromCurrentMaxVal ? maxVal : defaultScalingFromHighValue), (mapValuesToPlotterSpace*i*scalingToHighValue)+0, (mapValuesToPlotterSpace*i*scalingToHighValue)+scalingToHighValue-1));
       }
       if(printMaxVal) {
-        Serial.printf("maxVal:%04d ", maxVal + (mapValuesToPlotterSpace ? 16*256 : 0));
+        PLOT_PRINTF("maxVal:%04d ", maxVal + (mapValuesToPlotterSpace ? 16*256 : 0));
       }
       if(printMinVal) {
-        Serial.printf("%04d:minVal ", minVal);  // printed with value first, then label, so negative values can be seen in Serial Monitor but don't throw off y axis in Serial Plotter
+        PLOT_PRINTF("%04d:minVal ", minVal);  // printed with value first, then label, so negative values can be seen in Serial Monitor but don't throw off y axis in Serial Plotter
       }
       if(mapValuesToPlotterSpace)
-        Serial.printf("max:%04d ", (printMaxVal ? 17 : 16)*256); // print line above the maximum value we expect to see on the plotter to avoid autoscaling y axis
-      else
-        Serial.printf("max:%04d ", 256);
-      Serial.println();
+        PLOT_PRINTF("max:%04d ", (printMaxVal ? 17 : 16)*256); // print line above the maximum value we expect to see on the plotter to avoid autoscaling y axis
+      else {
+        PLOT_PRINTF("max:%04d ", 256);
+      }
+      PLOT_PRINTLN();
     #endif // FFT_SAMPLING_LOG
     } // logAudio()
 
@@ -881,14 +883,12 @@ class AudioReactive : public Usermod {
       // keep "peak" sample, but decay value if current sample is below peak
       if ((sampleMax < sampleReal) && (sampleReal > 0.5f)) {
         sampleMax = sampleMax + 0.5f * (sampleReal - sampleMax);  // new peak - with some filtering
-#if 1
         // another simple way to detect samplePeak
         if ((binNum < 10) && (millis() - timeOfPeak > 80) && (sampleAvg > 1)) {
           samplePeak    = true;
           timeOfPeak    = millis();
           udpSamplePeak = true;
         }
-#endif
       } else {
         if ((multAgc*sampleMax > agcZoneStop[AGC_preset]) && (soundAgc > 0))
           sampleMax += 0.5f * (sampleReal - sampleMax);        // over AGC Zone - get back quickly
