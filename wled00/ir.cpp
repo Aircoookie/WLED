@@ -110,7 +110,7 @@ void changePalette(uint8_t pal)
     for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
       Segment& seg = strip.getSegment(i);
       if (!seg.isActive() || !seg.isSelected()) continue;
-      seg.palette = pal;
+      seg.setPalette(pal);
     }
     setValuesFromFirstSelectedSeg();
   } else {

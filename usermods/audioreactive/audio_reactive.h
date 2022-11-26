@@ -1554,18 +1554,18 @@ class AudioReactive : public Usermod {
       pinArray.add(sdaPin);
       pinArray.add(sclPin);
 
-      JsonObject cfg = top.createNestedObject("cfg");
+      JsonObject cfg = top.createNestedObject("config");
       cfg[F("squelch")] = soundSquelch;
       cfg[F("gain")] = sampleGain;
       cfg[F("AGC")] = soundAgc;
 
       JsonObject dynLim = top.createNestedObject("dynamics");
-      dynLim[F("Limiter")] = limiterOn;
-      dynLim[F("Rise")] = attackTime;
-      dynLim[F("Fall")] = decayTime;
+      dynLim[F("limiter")] = limiterOn;
+      dynLim[F("rise")] = attackTime;
+      dynLim[F("fall")] = decayTime;
 
-      JsonObject freqScale = top.createNestedObject("Frequency");
-      freqScale[F("Scale")] = FFTScalingMode;
+      JsonObject freqScale = top.createNestedObject("frequency");
+      freqScale[F("scale")] = FFTScalingMode;
 
       JsonObject sync = top.createNestedObject("sync");
       sync[F("port")] = audioSyncPort;
@@ -1605,15 +1605,15 @@ class AudioReactive : public Usermod {
       configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["pin"][4], sdaPin);
       configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["pin"][5], sclPin);
 
-      configComplete &= getJsonValue(top["cfg"][F("squelch")], soundSquelch);
-      configComplete &= getJsonValue(top["cfg"][F("gain")],    sampleGain);
-      configComplete &= getJsonValue(top["cfg"][F("AGC")],     soundAgc);
+      configComplete &= getJsonValue(top["config"][F("squelch")], soundSquelch);
+      configComplete &= getJsonValue(top["config"][F("gain")],    sampleGain);
+      configComplete &= getJsonValue(top["config"][F("AGC")],     soundAgc);
 
-      configComplete &= getJsonValue(top["dynamics"][F("Limiter")], limiterOn);
-      configComplete &= getJsonValue(top["dynamics"][F("Rise")],  attackTime);
-      configComplete &= getJsonValue(top["dynamics"][F("Fall")],  decayTime);
+      configComplete &= getJsonValue(top["dynamics"][F("limiter")], limiterOn);
+      configComplete &= getJsonValue(top["dynamics"][F("rise")],  attackTime);
+      configComplete &= getJsonValue(top["dynamics"][F("fall")],  decayTime);
 
-      configComplete &= getJsonValue(top["Frequency"][F("Scale")], FFTScalingMode);
+      configComplete &= getJsonValue(top["frequency"][F("scale")], FFTScalingMode);
 
       configComplete &= getJsonValue(top["sync"][F("port")], audioSyncPort);
       configComplete &= getJsonValue(top["sync"][F("mode")], audioSyncEnabled);
@@ -1635,20 +1635,20 @@ class AudioReactive : public Usermod {
     #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
       oappend(SET_F("addOption(dd,'Generic I2S PDM',5);"));
     #endif
-      oappend(SET_F("dd=addDropdown('AudioReactive','cfg:AGC');"));
+      oappend(SET_F("dd=addDropdown('AudioReactive','config:AGC');"));
       oappend(SET_F("addOption(dd,'Off',0);"));
       oappend(SET_F("addOption(dd,'Normal',1);"));
       oappend(SET_F("addOption(dd,'Vivid',2);"));
       oappend(SET_F("addOption(dd,'Lazy',3);"));
 
-      oappend(SET_F("dd=addDropdown('AudioReactive','dynamics:Limiter');"));
+      oappend(SET_F("dd=addDropdown('AudioReactive','dynamics:limiter');"));
       oappend(SET_F("addOption(dd,'Off',0);"));
       oappend(SET_F("addOption(dd,'On',1);"));
-      oappend(SET_F("addInfo('AudioReactive:dynamics:Limiter',0,' On ');"));  // 0 is field type, 1 is actual field
-      oappend(SET_F("addInfo('AudioReactive:dynamics:Rise',1,'ms <i>(&#x266A; effects only)</i>');"));
-      oappend(SET_F("addInfo('AudioReactive:dynamics:Fall',1,'ms <i>(&#x266A; effects only)</i>');"));
+      oappend(SET_F("addInfo('AudioReactive:dynamics:limiter',0,' On ');"));  // 0 is field type, 1 is actual field
+      oappend(SET_F("addInfo('AudioReactive:dynamics:rise',1,'ms <i>(&#x266A; effects only)</i>');"));
+      oappend(SET_F("addInfo('AudioReactive:dynamics:fall',1,'ms <i>(&#x266A; effects only)</i>');"));
 
-      oappend(SET_F("dd=addDropdown('AudioReactive','Frequency:Scale');"));
+      oappend(SET_F("dd=addDropdown('AudioReactive','frequency:scale');"));
       oappend(SET_F("addOption(dd,'None',0);"));
       oappend(SET_F("addOption(dd,'Linear (Amplitude)',2);"));
       oappend(SET_F("addOption(dd,'Square Root (Energy)',3);"));
@@ -1659,16 +1659,16 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addOption(dd,'Send',1);"));
       oappend(SET_F("addOption(dd,'Receive',2);"));
       oappend(SET_F("addInfo('AudioReactive:digitalmic:type',1,'<i>requires reboot!</i>');"));  // 0 is field type, 1 is actual field
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',0,'I2S SD');"));
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',1,'I2S WS');"));
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',2,'I2S SCK');"));
+      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',0,'I2S Serial Data', '<i><span class=\"h\">sd/data/dout</span></i>');"));
+      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',1,'I2S L/R Clock','<i><span class=\"h\">ws/clk/lrck</span></i>');"));
+      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',2,'I2S Serial Clock','<i>sck/bclk</i>');"));
       #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
-        oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'I2S Master CLK <i>only use -1, 0, 1 or 3 for MCLK</i>');"));
+        oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'I2S Master CLK','<i>only use -1, 0, 1 or 3</i>');"));
       #else
-        oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'I2S Master CLK');"));
+        oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'', 'I2S Master CLK');"));
       #endif
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',4,'I2C SDA');"));
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',5,'I2C SCL');"));
+      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',4,'', 'I2C SDA');"));
+      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',5,'', 'I2C SCL');"));
     }
 
 
