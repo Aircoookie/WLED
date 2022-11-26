@@ -14,8 +14,22 @@ class PwmOutput {
     }
 
     PwmOutput(int8_t pin, uint32_t freq) : pin_(pin), freq_(freq) {
-      DEBUG_PRINTF("pwm_output[%d]: setup at freq %d\n", pin_, freq_);
-      open();
+      DEBUG_PRINTF("pwm_output[%d]: setup to freq %d\n", pin_, freq_);
+      if (pin_ < 0 || !pinManager.allocatePin(pin_, true, PinOwner::UM_PWM_OUTPUTS)) {
+        return;
+      }
+      
+      channel_ = pinManager.allocateLedc(1);
+      if (channel_ == 255) {
+        DEBUG_PRINTF("pwm_output[%d]: failed to quire ledc\n", pin_);
+        pinManager.deallocatePin(pin_, PinOwner::UM_PWM_OUTPUTS);
+        return;
+      }
+
+      ledcSetup(channel_, freq_, bit_depth_);
+      ledcAttachPin(pin_, channel_);
+      DEBUG_PRINTF("pwm_output[%d]: init successful\n", pin_);
+      enabled_ = true;
     }
 
     void close() {
@@ -62,29 +76,7 @@ class PwmOutput {
     uint8_t bit_depth_ = 12;
     uint8_t channel_ {255};
     bool enabled_ {false};
-    float duty_ {-1.0f}; // Unknown duty
-
-    void open() {
-      DEBUG_PRINTF("pwm_output[%d]: open...\n", pin_);
-      if (enabled_)
-        return;
-
-      if (pin_ < 0 || !pinManager.allocatePin(pin_, true, PinOwner::UM_PWM_OUTPUTS)) {
-        return;
-      }
-      
-      channel_ = pinManager.allocateLedc(1);
-      if (channel_ == 255) {
-        DEBUG_PRINTF("pwm_output[%d]: failed to quire ledc\n", pin_);
-        pinManager.deallocatePin(pin_, PinOwner::UM_PWM_OUTPUTS);
-        return;
-      }
-
-      ledcSetup(channel_, freq_, bit_depth_);
-      ledcAttachPin(pin_, channel_);
-      DEBUG_PRINTF("pwm_output[%d]: open successful\n", pin_);
-      enabled_ = true;
-    }
+    float duty_ {0.0f};
 };
 
 
@@ -139,7 +131,7 @@ class PwmOutputsUsermod : public Usermod {
         const PwmOutput& pwm = pwms_[i];
         if (!pwm.isEnabled())
           continue;
-        JsonArray data = user.createNestedArray("pwm_" + String(i));
+        JsonArray data = user.createNestedArray("PWM pin " + String(pwm.getPin()));
         data.add(1e2f * pwm.getDuty());
         data.add(F("%"));
       }
