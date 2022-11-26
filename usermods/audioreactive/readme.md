@@ -19,11 +19,12 @@ This usermod is an evolution of [SR-WLED](https://github.com/atuline/WLED), and 
 ## Supported MCUs
 This audioreactive usermod works best on "classic ESP32" (dual core), and on ESP32-S3 which also has dual core and hardware floating point support. 
 
-It will compile succesfully for ESP32-S2 and ESP32-C3, however might not work well, as other WLED functions will become slow. Audio processing requires a lot of computing power, which is a problem on smaller MCUs like -S2 and -C3. 
+It will compile succesfully for ESP32-S2 and ESP32-C3, however might not work well, as other WLED functions will become slow. Audio processing requires a lot of computing power, which can be problematic on smaller MCUs like -S2 and -C3. 
 
 Analog audio is only possible on "classic" ESP32, but not on other MCUs like ESP32-S3.
 
-Currently ESP8266 is not supported, due to low speed and small RAM of this chip.
+Currently ESP8266 is not supported, due to low speed and small RAM of this chip. 
+There are however plans to create a lightweight audioreactive for the 8266, with reduced features.
 ## Installation 
 
 ### using customised _arduinoFFT_ library for use with this usermod
@@ -34,7 +35,7 @@ Customised _arduinoFFT_ library for use with this usermod can be found at https:
 
 ### using latest (develop) _arduinoFFT_ library
 Alternatively, you can use the latest arduinoFFT development version.
-ArduinoFFT `develop` is slightly more accurate, and slighly faster than our customised library, however also needs additional 2kB RAM.
+ArduinoFFT `develop` library is slightly more accurate, and slighly faster than our customised library, however also needs additional 2kB RAM.
 
 * `build_flags` = `-D USERMOD_AUDIOREACTIVE` `-D UM_AUDIOREACTIVE_USE_NEW_FFT`
 * `lib_deps`= `https://github.com/kosme/arduinoFFT#develop @ 1.9.2`
@@ -68,5 +69,5 @@ You can use the following additional flags in your `build_flags`
 
 ## Release notes
 
-2022-06 Ported from [soundreactive WLED](https://github.com/atuline/WLED) - by @blazoncek (AKA Blaz Kristan) and the [SR-WLED team](https://github.com/atuline/WLED/wiki#sound-reactive-wled-fork-team).
-2022-11 Updated to align with "[MoonModules/WLED](https://amg.wled.me)" audioreactive usermod - by @softhack007 (AKA Frank M&ouml;hle).
+* 2022-06 Ported from [soundreactive WLED](https://github.com/atuline/WLED) - by @blazoncek (AKA Blaz Kristan) and the [SR-WLED team](https://github.com/atuline/WLED/wiki#sound-reactive-wled-fork-team).
+* 2022-11 Updated to align with "[MoonModules/WLED](https://amg.wled.me)" audioreactive usermod - by @softhack007 (AKA Frank M&ouml;hle).
