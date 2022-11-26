@@ -253,7 +253,12 @@ class I2SSource : public AudioSource {
 #endif
 
       if (_i2sMaster == false) {
-          DEBUG_PRINTLN(F("AR: Warning - i2S SLAVE mode is experimental!"));        
+        DEBUG_PRINTLN(F("AR: Warning - i2S SLAVE mode is experimental!"));
+        if (_config.mode & I2S_MODE_PDM) {
+          // APLL does not work in DAC or PDM "Slave Mode": https://github.com/espressif/esp-idf/issues/1244, https://github.com/espressif/esp-idf/issues/2634
+          _config.use_apll = false;
+          _config.fixed_mclk =  0;
+        }
         if ((_config.mode & I2S_MODE_MASTER) != 0) {
           DEBUG_PRINTLN("AR: (oops) I2S SLAVE mode requested but not configured!");
         }
