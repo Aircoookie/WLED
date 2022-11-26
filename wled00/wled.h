@@ -510,7 +510,6 @@ WLED_GLOBAL byte briOld              _INIT(0);             // global brightnes w
 WLED_GLOBAL byte briT                _INIT(0);             // global brightness during transition
 WLED_GLOBAL byte briLast             _INIT(128);           // brightness before turned off. Used for toggle function
 WLED_GLOBAL byte whiteLast           _INIT(128);           // white channel before turned off. Used for toggle function
-WLED_GLOBAL byte opacity             _INIT(128);           // global segment opacity (set)
 
 // button
 WLED_GLOBAL bool buttonPublishMqtt                            _INIT(false);

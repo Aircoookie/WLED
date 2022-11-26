@@ -174,8 +174,8 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
 
     case DMX_MODE_EFFECT:           // 15 channels [bri,effectCurrent,effectSpeed,effectIntensity,effectPalette,effectOption,R,G,B,R2,G2,B2,R3,G3,B3]
     case DMX_MODE_EFFECT_W:         // 18 channels, same as above but with extra +3 white channels [..,W,W2,W3]
-    case DMX_MODE_EFFECT_SEGMENT:   // 15 channels per segment; max[#] = floor[512/(11+DMXSegmentSpacing)] = 46,42,39, ..
-    case DMX_MODE_EFFECT_SEGMENT_W: // 18 Channels per segment; max[#] = floor[512/(13+DMXSegmentSpacing)] = 39,36,34,32, ..
+    case DMX_MODE_EFFECT_SEGMENT:   // 15 channels per segment; max[#] = floor[512/(11+DMXSegmentSpacing)]
+    case DMX_MODE_EFFECT_SEGMENT_W: // 18 Channels per segment; max[#] = floor[512/(13+DMXSegmentSpacing)]
       {
         if (uni != e131Universe) return;
         bool isSegmentMode = DMXMode == DMX_MODE_EFFECT_SEGMENT || DMXMode == DMX_MODE_EFFECT_SEGMENT_W;
