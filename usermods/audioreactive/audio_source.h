@@ -489,17 +489,24 @@ class ES8388Source : public I2SSource {
   private:
 
     void _es8388InitAdc() {
-      if (!es8388.init()) Serial.println("Init Fail");
-      es8388.inputSelect(IN2);
+      DEBUGSR_PRINTF("\nAR: _es8388InitAdc\n"); 
+
+      if (!es8388.init()) {
+        Serial.println("_es8388InitAdc init Fail\n");
+        return;
+      }
+      es8388.inputSelect(IN2); // IN2  Line-In
       es8388.setInputGain(8);
-      es8388.outputSelect(OUT2);
+      es8388.outputSelect(OUT1);  // OUT1 - Headphones
       es8388.setOutputVolume(12);
       es8388.mixerSourceSelect(MIXADC, MIXADC);
       es8388.mixerSourceControl(DACOUT);
+      es8388.setALCmode(MUSIC);
+      es8388.analogBypass(true); 
       uint8_t *reg;
       for (uint8_t i = 0; i < 53; i++) {
         reg = es8388.readAllReg();
-        Serial.printf("Reg-%02d = 0x%02x\r\n", i, reg[i]);
+        DEBUGSR_PRINTF("Reg-%02d = 0x%02x\r\n", i, reg[i]);
       }
     }
 
@@ -509,22 +516,27 @@ public:
       _config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
       pin_ES8388_SDA = sdaPin;
       pin_ES8388_SCL = sclPin;
+      DEBUGSR_PRINTF("\nAR: ES8388Source\n"); 
     };
 
-    void initialize(int8_t i2swsPin, int8_t i2ssdPin, int8_t i2sckPin) {
+    void initialize(int8_t i2swsPin, int8_t i2ssdPin, int8_t i2sckPin, int8_t mclkPin, int8_t = I2S_PIN_NO_CHANGE, int8_t = I2S_PIN_NO_CHANGE) {
+      DEBUGSR_PRINTF("\nAR: ES8388Source initialize called\n");
       // Reserve SDA and SCL pins of the I2C interface
-      if (!pinManager.allocatePin(pin_ES8388_SDA, true, PinOwner::HW_I2C) ||
-          !pinManager.allocatePin(pin_ES8388_SCL, true, PinOwner::HW_I2C)) {
+      PinManagerPinType pins[2] = { { pin_ES8388_SDA, true }, { pin_ES8388_SCL, true } };
+      if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) {
+        pinManager.deallocateMultiplePins(pins, 2, PinOwner::HW_I2C);
+        ERRORSR_PRINTF("\nAR: Failed to allocate ES8388 I2C pins: SDA=%d, SCL=%d\n", pin_ES8388_SDA, pin_ES8388_SCL); 
         return;
       }
 
       _es8388InitAdc();
       // i2s
-      PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
-      WRITE_PERI_REG(PIN_CTRL, 0xFFF0);
-      i2s_set_sample_rates(I2S_NUM_0, 16000); // 16000 further reduces distortion, retaining acceptable quality 
+      // PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1); 
+      // WRITE_PERI_REG(PIN_CTRL, 0xFFF0);
+      // i2s_set_sample_rates(I2S_NUM_0, 22050);
 
-      I2SSource::initialize(i2swsPin, i2ssdPin, i2sckPin);
+      DEBUGSR_PRINTF("\nAR: ES8388Source calling I2SSource::initialize\n");
+      I2SSource::initialize(i2swsPin, i2ssdPin, i2sckPin, mclkPin);
     }
 
     void deinitialize() {
@@ -537,7 +549,7 @@ public:
   private:
     int8_t pin_ES8388_SDA;
     int8_t pin_ES8388_SCL;
-    ES8388 es8388 = ES8388(pin_ES8388_SDA, pin_ES8388_SCL, 400000);
+    ES8388 es8388 = ES8388(18, 23, 400000);
 };
 
 
