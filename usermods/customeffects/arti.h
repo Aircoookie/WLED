@@ -1496,11 +1496,12 @@ public:
                   Symbol* var_symbol = current_scope->lookup(variable_name); //lookup here and parent scopes
                   if (node == F_VarRef) 
                   {
-                    if (var_symbol == nullptr) 
+                    if (var_symbol == nullptr) {
                       WARNING_ARTI("%s VarRef %s ID not found in scope of %s\n", spaces+50-depth, variable_name, current_scope->scope_name); 
                       //only warning: value 0 in interpreter (div 0 is captured)
-                    else 
+                    } else { 
                       ANDBG_ARTI("%s VarRef found %s.%s (%u)\n", spaces+50-depth, var_symbol->scope->scope_name, variable_name, depth);
+                    }
                   }
                   else //assign and var/formal
                   {
@@ -2007,8 +2008,9 @@ public:
                     // valueStack->push(callResult);
 
                   } //function_symbol != nullptr
-                  else
+                  else {
                     RUNLOG_ARTI("%s %s not found %s\n", spaces+50-depth, key, function_name);
+                  }
                 } //external functions
 
                 visitedAlready = true;
@@ -2276,8 +2278,9 @@ public:
                     valueStack->push(-valueStack->floatStack[oldIndex + 1]);
                     RUNLOG_ARTI("%s unary - %f (push %u)\n", spaces+50-depth, valueStack->floatStack[oldIndex + 1], valueStack->stack_index );
                   }
-                  else
+                  else {
                     RUNLOG_ARTI("%s unary operator not supported %u %s\n", spaces+50-depth, operatorx, tokenToString(operatorx));
+                  }
                 }
 
                 visitedAlready = true;

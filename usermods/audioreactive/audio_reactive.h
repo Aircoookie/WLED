@@ -38,6 +38,22 @@
   #define DEBUGSR_PRINTF(x...)
 #endif
 
+#if defined(SR_DEBUG)
+#define ERRORSR_PRINT(x) DEBUGSR_PRINT(x)
+#define ERRORSR_PRINTLN(x) DEBUGSR_PRINTLN(x)
+#define ERRORSR_PRINTF(x...) DEBUGSR_PRINTF(x)
+#else
+#if defined(WLED_DEBUG)
+#define ERRORSR_PRINT(x) DEBUG_PRINT(x)
+#define ERRORSR_PRINTLN(x) DEBUG_PRINTLN(x)
+#define ERRORSR_PRINTF(x...) DEBUG_PRINTF(x)
+#else
+  #define ERRORSR_PRINT(x)
+  #define ERRORSR_PRINTLN(x)
+  #define ERRORSR_PRINTF(x...)
+#endif
+#endif
+
 // use audio source class (ESP32 specific)
 #include "audio_source.h"
 constexpr i2s_port_t I2S_PORT = I2S_NUM_0;       // I2S port to use (do not change !)
@@ -130,24 +146,25 @@ static void postProcessFFTResults(bool noiseGateOpen, int numberOfChannels); // 
 static TaskHandle_t FFT_Task = nullptr;
 
 // Table of multiplication factors so that we can even out the frequency response.
-#define MAX_PINK 9  // 0 = standard, 1= line-in (pink moise only), 2..4 = IMNP441, 5..6 = ICS-43434, 6..7 = userdef, 9= flat (no pink noise adjustment)
+#define MAX_PINK 10  // 0 = standard, 1= line-in (pink moise only), 2..4 = IMNP441, 5..6 = ICS-43434, ,7=SPM1423, 8..9 = userdef, 10= flat (no pink noise adjustment)
 static const float fftResultPink[MAX_PINK+1][NUM_GEQ_CHANNELS] = { 
-          { 1.70f, 1.71f, 1.73f, 1.78f, 1.68f, 1.56f, 1.55f, 1.63f, 1.79f, 1.62f, 1.80f, 2.06f, 2.47f, 3.35f, 6.83f, 9.55f },  // default from SR WLED
-      //  { 1.30f, 1.32f, 1.40f, 1.46f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 2.39f, 3.09f, 4.34f },  // Line-In Generic -> pink noise adjustment only
-          { 1.24f, 1.20f, 1.30f, 1.40f, 1.48f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.14f, 2.26f, 2.60f, 3.00f, 3.70f, 5.20f },  // Line-In CS5343
+          { 1.70f, 1.71f, 1.73f, 1.78f, 1.68f, 1.56f, 1.55f, 1.63f, 1.79f, 1.62f, 1.80f, 2.06f, 2.47f, 3.35f, 6.83f, 9.55f },  //  0 default from SR WLED
+      //  { 1.30f, 1.32f, 1.40f, 1.46f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 2.39f, 3.09f, 4.34f },  //  - Line-In Generic -> pink noise adjustment only
+          { 1.24f, 1.20f, 1.30f, 1.40f, 1.48f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.14f, 2.26f, 2.60f, 3.00f, 3.70f, 5.20f },  //  1 Line-In CS5343
 
-          { 1.82f, 1.72f, 1.70f, 1.50f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 2.90f, 3.86f, 6.29f},   // IMNP441 datasheet response profile * pink noise
-          { 2.80f, 2.20f, 1.30f, 1.15f, 1.55f, 2.45f, 4.20f, 2.80f, 3.20f, 3.60f, 4.20f, 4.90f, 5.70f, 6.05f,10.50f,14.85f},   // IMNP441 - big speaker, strong bass
+          { 1.82f, 1.72f, 1.70f, 1.50f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 2.90f, 3.86f, 6.29f},   //  2 IMNP441 datasheet response profile * pink noise
+          { 2.80f, 2.20f, 1.30f, 1.15f, 1.55f, 2.45f, 4.20f, 2.80f, 3.20f, 3.60f, 4.20f, 4.90f, 5.70f, 6.05f,10.50f,14.85f},   //  3 IMNP441 - big speaker, strong bass
           // next one has not much visual differece compared to default IMNP441 profile
-          { 12.0f, 6.60f, 2.60f, 1.15f, 1.35f, 2.05f, 2.85f, 2.50f, 2.85f, 3.30f, 2.25f, 4.35f, 3.80f, 3.75f, 6.50f, 9.00f},   // IMNP441 - voice, or small speaker
+          { 12.0f, 6.60f, 2.60f, 1.15f, 1.35f, 2.05f, 2.85f, 2.50f, 2.85f, 3.30f, 2.25f, 4.35f, 3.80f, 3.75f, 6.50f, 9.00f},   //  4 IMNP441 - voice, or small speaker
 
-          { 2.75f, 1.60f, 1.40f, 1.46f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 1.75f, 2.55f, 3.60f },  // ICS-43434 datasheet response * pink noise
-          { 2.25f, 1.20f, 1.00f, 1.20f, 1.80f, 3.20f, 5.10f, 5.50f, 4.00f, 4.80f, 6.70f, 6.40f, 5.80f, 3.90f, 6.00f, 5.10f },  // ICS-43434 - big speaker, strong bass
+          { 2.75f, 1.60f, 1.40f, 1.46f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 1.75f, 2.55f, 3.60f },  //  5 ICS-43434 datasheet response * pink noise
+          { 2.25f, 1.20f, 1.00f, 1.20f, 1.80f, 3.20f, 5.10f, 5.50f, 4.00f, 4.80f, 6.70f, 6.40f, 5.80f, 3.90f, 6.00f, 5.10f },  //  6 ICS-43434 - big speaker, strong bass
 
-          { 2.25f, 1.60f, 1.30f, 1.60f, 2.20f, 3.20f, 3.06f, 2.60f, 2.85f, 3.50f, 4.10f, 4.80f, 5.70f, 6.05f,10.50f,14.85f },  // userdef #1 for ewowi (enhance median/high freqs)
-          { 4.75f, 3.60f, 2.40f, 2.46f, 3.52f, 1.60f, 1.68f, 3.20f, 2.20f, 2.00f, 2.30f, 2.41f, 2.30f, 1.25f, 4.55f, 6.50f },  // userdef #2 for softhack (mic hidden inside mini-shield)
+          { 1.65f, 1.00f, 1.05f, 1.30f, 1.48f, 1.30f, 1.80f, 3.00f, 1.50f, 1.65f, 2.56f, 3.00f, 2.60f, 2.30f, 5.00f, 3.00f },  //  7 SPM1423
+          { 2.25f, 1.60f, 1.30f, 1.60f, 2.20f, 3.20f, 3.06f, 2.60f, 2.85f, 3.50f, 4.10f, 4.80f, 5.70f, 6.05f,10.50f,14.85f },  //  8 userdef #1 for ewowi (enhance median/high freqs)
+          { 4.75f, 3.60f, 2.40f, 2.46f, 3.52f, 1.60f, 1.68f, 3.20f, 2.20f, 2.00f, 2.30f, 2.41f, 2.30f, 1.25f, 4.55f, 6.50f },  //  9 userdef #2 for softhack (mic hidden inside mini-shield)
 
-          { 2.38f, 2.18f, 2.07f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 1.95f, 1.70f, 2.13f, 2.47f }   // almost FLAT (IMNP441 but no PINK noise adjustments)
+          { 2.38f, 2.18f, 2.07f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 1.70f, 1.95f, 1.70f, 2.13f, 2.47f }   // 10 almost FLAT (IMNP441 but no PINK noise adjustments)
 };
 
   /* how to make your own profile:
@@ -630,6 +647,7 @@ class AudioReactive : public Usermod {
     #endif
     #ifndef SR_DMTYPE // I2S mic type
     uint8_t dmType = 1; // 0=none/disabled/analog; 1=generic I2S
+    #define SR_DMTYPE 1 // default type = I2S
     #else
     uint8_t dmType = SR_DMTYPE;
     #endif
@@ -1239,15 +1257,15 @@ class AudioReactive : public Usermod {
         case 4:
           DEBUGSR_PRINT(F("AR: Generic I2S Microphone with Master Clock - ")); DEBUGSR_PRINTLN(F(I2S_MIC_CHANNEL_TEXT));
           //useBandPassFilter = true;
-          audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, true, 1.0f/24.0f);
-          //audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, false, 1.0f/16.0f);   // I2S SLAVE mode - does not work, unfortunately
+          audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, 1.0f/24.0f);
+          //audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, 1.0f/24.0f, false);   // I2S SLAVE mode - does not work, unfortunately
           delay(100);
           if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin, i2sckPin, mclkPin);
           break;
         #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
         case 5:
           DEBUGSR_PRINT(F("AR: I2S PDM Microphone - ")); DEBUGSR_PRINTLN(F(I2S_PDM_MIC_CHANNEL_TEXT));
-          audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, true, 1.0f/4.0f);
+          audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, 1.0f/4.0f);
           useBandPassFilter = true;  // this reduces the noise floor on SPM1423 from 5% Vpp (~380) down to 0.05% Vpp (~5)
           delay(100);
           if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin);
@@ -1283,7 +1301,7 @@ class AudioReactive : public Usermod {
       #ifdef WLED_DEBUG
         DEBUG_PRINTLN(F("AR: Failed to initialize sound input driver. Please check input PIN settings."));
       #else
-        DEBUGSR_PRINTLN(F("AR: Failed to initialize sound input driver. Please check input PIN settings."));
+        ERRORSR_PRINTLN(F("AR: Failed to initialize sound input driver. Please check input PIN settings."));
       #endif
         disableSoundProcessing = true;
       }
@@ -1753,8 +1771,10 @@ class AudioReactive : public Usermod {
       JsonObject top = root.createNestedObject(FPSTR(_name));
       top[FPSTR(_enabled)] = enabled;
 
+    #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
       JsonObject amic = top.createNestedObject(FPSTR(_analogmic));
       amic["pin"] = audioPin;
+#endif
 
       JsonObject dmic = top.createNestedObject(FPSTR(_digitalmic));
       dmic[F("type")] = dmType;
@@ -1808,9 +1828,20 @@ class AudioReactive : public Usermod {
 
       configComplete &= getJsonValue(top[FPSTR(_enabled)], enabled);
 
+    #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
       configComplete &= getJsonValue(top[FPSTR(_analogmic)]["pin"], audioPin);
+    #else
+      audioPin = -1; // MCU does not support analog mic
+    #endif
 
       configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["type"],   dmType);
+    #if  defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S3)
+      if (dmType == 0) dmType = SR_DMTYPE;   // MCU does not support analog
+      #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3)
+      if (dmType == 5) dmType = SR_DMTYPE;   // MCU does not support PDM
+      #endif
+    #endif
+
       configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["pin"][0], i2ssdPin);
       configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["pin"][1], i2swsPin);
       configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["pin"][2], i2sckPin);
@@ -1872,14 +1903,15 @@ class AudioReactive : public Usermod {
       oappend(SET_F("dd=addDropdown('AudioReactive','frequency:profile');"));
       oappend(SET_F("addOption(dd,'Generic Microphone',0);"));
       oappend(SET_F("addOption(dd,'Generic Line-In',1);"));
+      oappend(SET_F("addOption(dd,'ICS-43434',5);"));
+      oappend(SET_F("addOption(dd,'ICS-43434 - big speakers',6);"));
+      oappend(SET_F("addOption(dd,'SPM1423',7);"));
       oappend(SET_F("addOption(dd,'IMNP441',2);"));
       oappend(SET_F("addOption(dd,'IMNP441 - big speakers',3);"));
       oappend(SET_F("addOption(dd,'IMNP441 - small speakers',4);"));
-      oappend(SET_F("addOption(dd,'ICS-43434',5);"));
-      oappend(SET_F("addOption(dd,'ICS-43434 - big speakers',6);"));
-      oappend(SET_F("addOption(dd,'userdefined #1',7);"));
-      oappend(SET_F("addOption(dd,'userdefined #2',8);"));
-      oappend(SET_F("addOption(dd,'flat - no adjustments',9);"));
+      oappend(SET_F("addOption(dd,'flat - no adjustments',10);"));
+      oappend(SET_F("addOption(dd,'userdefined #1',8);"));
+      oappend(SET_F("addOption(dd,'userdefined #2',9);"));
 
       oappend(SET_F("dd=addDropdown('AudioReactive','sync:mode');"));
       oappend(SET_F("addOption(dd,'Off',0);"));

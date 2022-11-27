@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2211201
+#define VERSION 2211242
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -175,6 +175,19 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
   #define CLIENT_PASS ""
 #endif
 
+#if defined(WLED_AP_PASS) && !defined(WLED_AP_SSID)
+  #error WLED_AP_PASS is defined but WLED_AP_SSID is still the default. \
+         Please change WLED_AP_SSID to something unique.
+#endif
+
+#ifndef WLED_AP_SSID
+  #define WLED_AP_SSID DEFAULT_AP_SSID
+#endif
+
+#ifndef WLED_AP_PASS
+  #define WLED_AP_PASS DEFAULT_AP_PASS
+#endif
+
 #ifndef SPIFFS_EDITOR_AIRCOOOKIE
   #error You are not using the Aircoookie fork of the ESPAsyncWebserver library.\
   Using upstream puts your WiFi password at risk of being served by the filesystem.\
@@ -230,7 +243,7 @@ WLED_GLOBAL char releaseString[] _INIT(TOSTRING(WLED_RELEASE_NAME)); //WLEDMM: t
 #define WLED_CODENAME "Hoshi"
 
 // AP and OTA default passwords (for maximum security change them!)
-WLED_GLOBAL char apPass[65]  _INIT(DEFAULT_AP_PASS);
+WLED_GLOBAL char apPass[65]  _INIT(WLED_AP_PASS);
 WLED_GLOBAL char otaPass[33] _INIT(DEFAULT_OTA_PASS);
 
 // Hardware and pin config
@@ -727,6 +740,23 @@ WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
 #endif
 #define WLED_WIFI_CONFIGURED (strlen(clientSSID) >= 1 && strcmp(clientSSID, DEFAULT_CLIENT_SSID) != 0)
 #define WLED_MQTT_CONNECTED (mqtt != nullptr && mqtt->connected())
+
+#ifndef WLED_AP_SSID_UNIQUE
+  #define WLED_SET_AP_SSID() do { \
+    strcpy_P(apSSID, PSTR(WLED_AP_SSID)); \
+  } while(0)
+#else
+  #define WLED_SET_AP_SSID() do { \
+    strcpy_P(apSSID, PSTR(WLED_AP_SSID)); \
+    snprintf_P(\
+      apSSID+strlen(WLED_AP_SSID), \
+      sizeof(apSSID)-strlen(WLED_AP_SSID), \
+      PSTR("-%*s"), \
+      6, \
+      escapedMac.c_str() + 6\
+    ); \
+  } while(0)
+#endif
 
 //macro to convert F to const
 #define SET_F(x)  (const char*)F(x)

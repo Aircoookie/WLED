@@ -419,8 +419,8 @@ void Segment::setMode(uint8_t fx, bool loadDefaults) {
         sOpt = extractModeDefaults(fx, "c1");   if (sOpt >= 0) custom1   = sOpt;
         sOpt = extractModeDefaults(fx, "c2");   if (sOpt >= 0) custom2   = sOpt;
         sOpt = extractModeDefaults(fx, "c3");   if (sOpt >= 0) custom3   = sOpt;
-        sOpt = extractModeDefaults(fx, "mp12"); if (sOpt >= 0) map1D2D   = constrain(sOpt, 0, 7);
-        sOpt = extractModeDefaults(fx, "ssim"); if (sOpt >= 0) soundSim  = constrain(sOpt, 0, 7);
+        sOpt = extractModeDefaults(fx, "m12");  if (sOpt >= 0) map1D2D   = constrain(sOpt, 0, 7);
+        sOpt = extractModeDefaults(fx, "si");   if (sOpt >= 0) soundSim  = constrain(sOpt, 0, 7);
         sOpt = extractModeDefaults(fx, "rev");  if (sOpt >= 0) reverse   = (bool)sOpt;
         sOpt = extractModeDefaults(fx, "mi");   if (sOpt >= 0) mirror    = (bool)sOpt; // NOTE: setting this option is a risky business
         sOpt = extractModeDefaults(fx, "rY");   if (sOpt >= 0) reverse_y = (bool)sOpt;
@@ -1865,9 +1865,11 @@ void WS2812FX::deserializeMap(uint8_t n) {
   JsonArray map = doc[F("map")];
   if (!map.isNull() && map.size()) {  // not an empty map
     //WLEDMM: if isMatrix then customMap size is whole matrix
+#ifndef WLED_DISABLE_2D
     if (isMatrix)
       customMappingSize  = matrixWidth * matrixHeight;
     else
+#endif
       customMappingSize  = map.size();
     customMappingTable = new uint16_t[customMappingSize];
     for (uint16_t i=0; i<map.size(); i++) {
