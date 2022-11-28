@@ -31,8 +31,8 @@ Also shows if the timer is enabled
 ## Installation
 
 Please refer to the original `usermod_v2_rotary_encoder_ui` readme for the main instructions
-Then to activate this alternative usermod add `#define USE_ALT_DISPlAY` to the `usermods_list.cpp` file,
-                                        or add `-D USE_ALT_DISPlAY` to the original `platformio_override.ini.sample` file
+Then to activate this alternative usermod add `#define USE_ALT_DISPLAY` to the `usermods_list.cpp` file,
+                                        or add `-D USE_ALT_DISPLAY` to the original `platformio_override.ini.sample` file
 
 
 ### PlatformIO requirements
