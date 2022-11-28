@@ -94,12 +94,12 @@ class PwmOutput {
       if (pwmConfig.isNull())
         return false;
         
-      bool configComplete = false;
+      bool configComplete = true;
       int8_t newPin = pin_;
       uint32_t newFreq = freq_;
       configComplete &= getJsonValue(pwmConfig[F("pin")], newPin);  
-      configComplete &= getJsonValue(pwmConfig[F("freq")], newFreq);  
-      
+      configComplete &= getJsonValue(pwmConfig[F("freq")], newFreq);
+
       open(newPin, newFreq);
 
       return configComplete;
@@ -128,7 +128,7 @@ class PwmOutputsUsermod : public Usermod {
     }
 
     void addToJsonState(JsonObject& root) {
-      JsonObject pwmStates = root.createNestedObject(USERMOD_NAME);
+      JsonObject pwmStates = root.createNestedObject(F("pwm"));
       for (int i = 0; i < USERMOD_PWM_OUTPUT_PINS; i++) {
         const PwmOutput& pwm = pwms_[i];
         if (!pwm.isEnabled())
@@ -139,7 +139,7 @@ class PwmOutputsUsermod : public Usermod {
     }
 
     void readFromJsonState(JsonObject& root) {
-      JsonObject pwmStates = root[USERMOD_NAME];
+      JsonObject pwmStates = root[F("pwm")];
       if (pwmStates.isNull())
         return;
 
@@ -174,10 +174,13 @@ class PwmOutputsUsermod : public Usermod {
 
     bool readFromConfig(JsonObject& root) {
       JsonObject top = root[USERMOD_NAME];
-      bool configComplete = !top.isNull();
+      if (top.isNull())
+        return false;
+
+      bool configComplete = true;
       for (int i = 0; i < USERMOD_PWM_OUTPUT_PINS; i++) {
         PwmOutput& pwm = pwms_[i];
-        JsonObject pwmConfig = root[String(i)];
+        JsonObject pwmConfig = top[String(i)];
         configComplete &= pwm.readFromConfig(pwmConfig);
       }
       return configComplete;
