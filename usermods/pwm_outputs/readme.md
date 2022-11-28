@@ -17,5 +17,11 @@ By default PWM outputs are disabled, navigate to Usermods settings and configure
 If PWM output is configured, it starts to publish its duty cycle value (0-1) both to state JSON and to info JSON (visible in UI info panel). To set PWM duty cycle, use JSON api (over HTTP or over Serial)
 
 ```json
-{"pwm_0": 0.0, "pwm_1": 0.1, ...}
+{
+    "pwm": {
+        "0": {"duty": 0.1},
+        "1": {"duty": 0.2},
+        ...
+    }
+}
 ```
