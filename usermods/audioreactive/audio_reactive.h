@@ -1918,8 +1918,8 @@ class AudioReactive : public Usermod {
       #else
         oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'', 'I2S Master CLK');"));
       #endif
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',4,'', 'I2C SDA');"));
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',5,'', 'I2C SCL');"));
+      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',4,'I2C SDA',' ');"));
+      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',5,'I2C SCL',' ');"));
     }
 
 
