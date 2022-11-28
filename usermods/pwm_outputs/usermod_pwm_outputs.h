@@ -1,6 +1,10 @@
 #pragma once
 #include "wled.h"
 
+#ifndef ESP32
+  #error This usermod does not support the ESP8266.
+#endif
+
 #ifndef USERMOD_PWM_OUTPUT_PINS
   #define USERMOD_PWM_OUTPUT_PINS 3
 #endif
