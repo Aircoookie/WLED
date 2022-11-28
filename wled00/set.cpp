@@ -161,6 +161,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
     rlyMde = (bool)request->hasArg(F("RM"));
 
+    disablePullUp = (bool)request->hasArg(F("IP"));
     for (uint8_t i=0; i<WLED_MAX_BUTTONS; i++) {
       char bt[4] = "BT"; bt[2] = (i<10?48:55)+i; bt[3] = 0; // button pin (use A,B,C,... if WLED_MAX_BUTTONS>10)
       char be[4] = "BE"; be[2] = (i<10?48:55)+i; be[3] = 0; // button type (use A,B,C,... if WLED_MAX_BUTTONS>10)
@@ -168,11 +169,15 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       if (pinManager.allocatePin(hw_btn_pin,false,PinOwner::Button)) {
         btnPin[i] = hw_btn_pin;
         buttonType[i] = request->arg(be).toInt();
-        #ifdef ESP32
-        pinMode(btnPin[i], buttonType[i]==BTN_TYPE_PUSH_ACT_HIGH ? INPUT_PULLDOWN : INPUT_PULLUP);
-        #else
-        pinMode(btnPin[i], INPUT_PULLUP);
-        #endif
+        if (disablePullUp) {
+          pinMode(btnPin[i], INPUT);
+        } else {
+          #ifdef ESP32
+          pinMode(btnPin[i], buttonType[i]==BTN_TYPE_PUSH_ACT_HIGH ? INPUT_PULLDOWN : INPUT_PULLUP);
+          #else
+          pinMode(btnPin[i], INPUT_PULLUP);
+          #endif
+        }
       } else {
         btnPin[i] = -1;
         buttonType[i] = BTN_TYPE_NONE;

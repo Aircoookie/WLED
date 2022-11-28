@@ -192,6 +192,9 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   // read multiple button configuration
   JsonObject btn_obj = hw["btn"];
+  int pull = -1; // trick for inverted setting
+  CJSON(pull, btn_obj[F("pull")]);
+  if (pull>=0) disablePullUp = pull;
   JsonArray hw_btn_ins = btn_obj[F("ins")];
   if (!hw_btn_ins.isNull()) {
     uint8_t s = 0;
@@ -200,11 +203,15 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       int8_t pin = btn["pin"][0] | -1;
       if (pin > -1 && pinManager.allocatePin(pin, false, PinOwner::Button)) {
         btnPin[s] = pin;
-        #ifdef ESP32
-        pinMode(btnPin[s], buttonType[s]==BTN_TYPE_PUSH_ACT_HIGH ? INPUT_PULLDOWN : INPUT_PULLUP);
-        #else
-        pinMode(btnPin[s], INPUT_PULLUP);
-        #endif
+        if (disablePullUp) {
+          pinMode(btnPin[s], INPUT);
+        } else {
+          #ifdef ESP32
+          pinMode(btnPin[s], buttonType[s]==BTN_TYPE_PUSH_ACT_HIGH ? INPUT_PULLDOWN : INPUT_PULLUP);
+          #else
+          pinMode(btnPin[s], INPUT_PULLUP);
+          #endif
+        }
       } else {
         btnPin[s] = -1;
       }
@@ -737,6 +744,7 @@ void serializeConfig() {
   // button(s)
   JsonObject hw_btn = hw.createNestedObject("btn");
   hw_btn["max"] = WLED_MAX_BUTTONS; // just information about max number of buttons (not actually used)
+  hw_btn[F("pull")] = !disablePullUp;
   JsonArray hw_btn_ins = hw_btn.createNestedArray("ins");
 
   // configuration for all buttons
