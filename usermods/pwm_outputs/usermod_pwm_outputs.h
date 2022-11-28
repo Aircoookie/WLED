@@ -13,15 +13,21 @@
 class PwmOutput {
   public:
 
-    PwmOutput() {
-      DEBUG_PRINTLN("pwm_output[-1]: setup disabled output");
-    }
-
-    PwmOutput(int8_t pin, uint32_t freq) : pin_(pin), freq_(freq) {
+    void open(int8_t pin, uint32_t freq) {
       DEBUG_PRINTF("pwm_output[%d]: setup to freq %d\n", pin_, freq_);
-      if (pin_ < 0 || !pinManager.allocatePin(pin_, true, PinOwner::UM_PWM_OUTPUTS)) {
-        return;
+
+      if (enabled_) {
+        if (pin == pin && freq == freq_) {
+          return;  // PWM output is already open
+        } else {
+          close();  // Config has changed, close and reopen
+        }
       }
+
+      pin_ = pin;
+      freq_ = freq;
+      if (pin_ < 0 || !pinManager.allocatePin(pin_, true, PinOwner::UM_PWM_OUTPUTS))
+        return;
       
       channel_ = pinManager.allocateLedc(1);
       if (channel_ == 255) {
@@ -44,34 +50,21 @@ class PwmOutput {
       if (channel_ != 255)
         pinManager.deallocateLedc(channel_, 1);
       channel_ = 255;
+      duty_ = 0.0f;
       enabled_ = false;
-      duty_ = -1.0f;
     }
-  
+
     void setDuty(const float duty) {
       DEBUG_PRINTF("pwm_output[%d]: set duty %f\n", pin_, duty);
-      if (!enabled_) {
+      if (!enabled_)
         return;
-      }
       duty_ = min(1.0f, max(0.0f, duty));
-      uint32_t value = static_cast<uint32_t>((1 << bit_depth_) * duty_);
+      const uint32_t value = static_cast<uint32_t>((1 << bit_depth_) * duty_);
       ledcWrite(channel_, value);
     }
 
     bool isEnabled() const {
       return enabled_;
-    }
-
-    int8_t getPin() const {
-      return pin_;
-    }
-
-    uint32_t getFreq() const {
-      return freq_;
-    }
-
-    float getDuty() const {
-      return duty_;
     }
 
     void addToJsonState(JsonObject& pwmState) const {
@@ -84,13 +77,41 @@ class PwmOutput {
       getJsonValue(pwmState[F("duty")], duty_);
     }
 
+    void addToJsonInfo(JsonObject& user) const {
+      if (!enabled_)
+        return;
+      JsonArray data = user.createNestedArray("PWM pin " + String(pin_));
+      data.add(1e2f * duty_);
+      data.add(F("%"));
+    }
+
+    void addToConfig(JsonObject& pwmConfig) const {
+      pwmConfig[F("pin")] = pin_;
+      pwmConfig[F("freq")] = freq_;
+    }
+
+    bool readFromConfig(JsonObject& pwmConfig) {
+      if (pwmConfig.isNull())
+        return false;
+        
+      bool configComplete = false;
+      int8_t newPin = pin_;
+      uint32_t newFreq = freq_;
+      configComplete &= getJsonValue(pwmConfig[F("pin")], newPin);  
+      configComplete &= getJsonValue(pwmConfig[F("freq")], newFreq);  
+      
+      open(newPin, newFreq);
+
+      return configComplete;
+    }
+
   private:
     int8_t pin_ {-1};
     uint32_t freq_ {50};
-    uint8_t bit_depth_ = 12;
+    static const uint8_t bit_depth_ {12};
     uint8_t channel_ {255};
-    bool enabled_ {false};
     float duty_ {0.0f};
+    bool enabled_ {false};
 };
 
 
@@ -138,11 +159,7 @@ class PwmOutputsUsermod : public Usermod {
 
       for (int i = 0; i < USERMOD_PWM_OUTPUT_PINS; i++) {
         const PwmOutput& pwm = pwms_[i];
-        if (!pwm.isEnabled())
-          continue;
-        JsonArray data = user.createNestedArray("PWM pin " + String(pwm.getPin()));
-        data.add(1e2f * pwm.getDuty());
-        data.add(F("%"));
+        pwm.addToJsonInfo(user);
       }
     }
 
@@ -150,8 +167,8 @@ class PwmOutputsUsermod : public Usermod {
       JsonObject top = root.createNestedObject(USERMOD_NAME);
       for (int i = 0; i < USERMOD_PWM_OUTPUT_PINS; i++) {
         const PwmOutput& pwm = pwms_[i];
-        top["pin_" + String(i)] = pwm.getPin();
-        top["freq_" + String(i)] = pwm.getFreq();
+        JsonObject pwmConfig = top.createNestedObject(String(i));
+        pwm.addToConfig(pwmConfig);
       }
     }
 
@@ -160,17 +177,8 @@ class PwmOutputsUsermod : public Usermod {
       bool configComplete = !top.isNull();
       for (int i = 0; i < USERMOD_PWM_OUTPUT_PINS; i++) {
         PwmOutput& pwm = pwms_[i];
-
-        int8_t newPin = pwm.getPin();
-        uint32_t newFreq = pwm.getFreq();
-        configComplete &= getJsonValue(top["pin_" + String(i)], newPin);  
-        configComplete &= getJsonValue(top["freq_" + String(i)], newFreq);  
-
-        // Recreate output if config has changed
-        if (newPin != pwm.getPin() || newFreq != pwm.getFreq()) {
-          pwm.close();
-          pwm = PwmOutput(newPin, newFreq);
-        }
+        JsonObject pwmConfig = root[String(i)];
+        configComplete &= pwm.readFromConfig(pwmConfig);
       }
       return configComplete;
     }
