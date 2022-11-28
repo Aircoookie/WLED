@@ -75,13 +75,13 @@ class PwmOutput {
     }
 
     void addToJsonState(JsonObject& pwmState) const {
-      pwmState["duty"] = duty_;
+      pwmState[F("duty")] = duty_;
     }
 
     void readFromJsonState(JsonObject& pwmState) {
       if (pwmState.isNull())
         return;
-      getJsonValue(pwmState["duty"], duty_);
+      getJsonValue(pwmState[F("duty")], duty_);
     }
 
   private:
@@ -132,9 +132,9 @@ class PwmOutputsUsermod : public Usermod {
     }
 
     void addToJsonInfo(JsonObject& root) {
-      JsonObject user = root["u"];
+      JsonObject user = root[F("u")];
       if (user.isNull())
-        user = root.createNestedObject("u");
+        user = root.createNestedObject(F("u"));
 
       for (int i = 0; i < USERMOD_PWM_OUTPUT_PINS; i++) {
         const PwmOutput& pwm = pwms_[i];
