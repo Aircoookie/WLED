@@ -327,6 +327,7 @@ void registerUsermods()
 
   #ifdef SD_ADAPTER
   usermods.add(new UsermodSdCard());
+  #endif
   
   #ifdef USERMOD_PWM_OUTPUTS
   usermods.add(new PwmOutputsUsermod());
