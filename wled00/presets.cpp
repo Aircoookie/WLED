@@ -12,7 +12,7 @@ static volatile byte presetToApply = 0;
 static volatile byte callModeToApply = 0;
 static volatile byte presetToSave = 0;
 static volatile int8_t saveLedmap = -1;
-static char quickLoad[3];
+static char quickLoad[9];
 static char saveName[33];
 static bool includeBri = true, segBounds = true, selectedOnly = false, playlistSave = false;
 
@@ -263,7 +263,7 @@ void savePreset(byte index, const char* pname, JsonObject sObj)
 
   presetToSave = index;
   playlistSave = false;
-  if (sObj[F("ql")].is<const char*>()) strlcpy(quickLoad, sObj[F("ql")].as<const char*>(), 3); // only 2 chars for QL
+  if (sObj[F("ql")].is<const char*>()) strlcpy(quickLoad, sObj[F("ql")].as<const char*>(), 9); // client limits QL to 2 chars, buffer for 8 bytes to allow unicode
   sObj.remove("v");
   sObj.remove("time");
   sObj.remove(F("error"));

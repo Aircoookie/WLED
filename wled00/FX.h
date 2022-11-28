@@ -777,7 +777,7 @@ class WS2812FX {  // 96 bytes
     inline uint8_t getSegmentsNum(void) { return _segments.size(); }  // returns currently present segments
     inline uint8_t getCurrSegmentId(void) { return _segment_index; }
     inline uint8_t getMainSegmentId(void) { return _mainSegment; }
-    inline uint8_t getPaletteCount() { return 13 + GRADIENT_PALETTE_COUNT; }
+    inline uint8_t getPaletteCount() { return 13 + GRADIENT_PALETTE_COUNT; }  // will only return built-in palette count
     inline uint8_t getTargetFps() { return _targetFps; }
     inline uint8_t getModeCount() { return _modeCount; }
 

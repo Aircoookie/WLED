@@ -122,10 +122,11 @@ void IRAM_ATTR_YN WS2812FX::setPixelColorXY(int x, int y, uint32_t col) //WLEDMM
 #ifndef WLED_DISABLE_2D
   if (!isMatrix) return; // not a matrix set-up
   uint16_t index = y * matrixWidth + x;
+  if (index >= customMappingSize) return; // customMappingSize is always W * H of matrix in 2D setup
 #else
   uint16_t index = x;
-#endif
   if (index >= _length) return;
+#endif
   if (index < customMappingSize) index = customMappingTable[index];
   busses.setPixelColor(index, col);
 }
@@ -134,10 +135,11 @@ void IRAM_ATTR_YN WS2812FX::setPixelColorXY(int x, int y, uint32_t col) //WLEDMM
 uint32_t WS2812FX::getPixelColorXY(uint16_t x, uint16_t y) {
 #ifndef WLED_DISABLE_2D
   uint16_t index = (y * matrixWidth + x);
+  if (index >= customMappingSize) return 0; // customMappingSize is always W * H of matrix in 2D setup
 #else
   uint16_t index = x;
-#endif
   if (index >= _length) return 0;
+#endif
   if (index < customMappingSize) index = customMappingTable[index];
   return busses.getPixelColor(index);
 }

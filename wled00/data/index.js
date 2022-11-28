@@ -1560,8 +1560,8 @@ function requestJson(command=null)
 		if (json.info) {
 			let i = json.info;
 			// append custom palettes (when loading for the 1st time)
-			if (!command && isEmpty(lastinfo) && i.leds && i.leds.cpal) {
-				for (let j = 0; j<i.leds.cpal; j++) {
+			if (!command && isEmpty(lastinfo) && i.cpalcount) {
+				for (let j = 0; j<i.cpalcount; j++) {
 					let div = d.createElement("div");
 					gId('pallist').appendChild(div);
 					div.outerHTML = generateListItemHtml(
