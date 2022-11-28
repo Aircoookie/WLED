@@ -58,10 +58,6 @@ class PwmOutput {
       ledcWrite(channel_, value);
     }
 
-    void setDuty(const uint8_t duty) {
-      setDuty(static_cast<float>(duty) / 255.0f);
-    }
-
     bool isEnabled() const {
       return enabled_;
     }
