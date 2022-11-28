@@ -14,10 +14,9 @@ class PwmOutput {
   public:
 
     void open(int8_t pin, uint32_t freq) {
-      DEBUG_PRINTF("pwm_output[%d]: setup to freq %d\n", pin_, freq_);
 
       if (enabled_) {
-        if (pin == pin && freq == freq_) {
+        if (pin == pin_ && freq == freq_) {
           return;  // PWM output is already open
         } else {
           close();  // Config has changed, close and reopen
@@ -26,7 +25,11 @@ class PwmOutput {
 
       pin_ = pin;
       freq_ = freq;
-      if (pin_ < 0 || !pinManager.allocatePin(pin_, true, PinOwner::UM_PWM_OUTPUTS))
+      if (pin_ < 0)
+        return;
+
+      DEBUG_PRINTF("pwm_output[%d]: setup to freq %d\n", pin_, freq_);
+      if (!pinManager.allocatePin(pin_, true, PinOwner::UM_PWM_OUTPUTS))
         return;
       
       channel_ = pinManager.allocateLedc(1);
@@ -72,9 +75,13 @@ class PwmOutput {
     }
 
     void readFromJsonState(JsonObject& pwmState) {
-      if (pwmState.isNull())
+      if (pwmState.isNull()) {
         return;
-      getJsonValue(pwmState[F("duty")], duty_);
+      }
+      float duty;
+      if (getJsonValue(pwmState[F("duty")], duty)) {
+        setDuty(duty);
+      }
     }
 
     void addToJsonInfo(JsonObject& user) const {
@@ -147,7 +154,7 @@ class PwmOutputsUsermod : public Usermod {
         PwmOutput& pwm = pwms_[i];
         if (!pwm.isEnabled())
           continue;
-        JsonObject pwmState = root[String(i)];
+        JsonObject pwmState = pwmStates[String(i)];
         pwm.readFromJsonState(pwmState);
       }
     }
@@ -167,7 +174,7 @@ class PwmOutputsUsermod : public Usermod {
       JsonObject top = root.createNestedObject(USERMOD_NAME);
       for (int i = 0; i < USERMOD_PWM_OUTPUT_PINS; i++) {
         const PwmOutput& pwm = pwms_[i];
-        JsonObject pwmConfig = top.createNestedObject(String(i));
+        JsonObject pwmConfig = top.createNestedObject("PWM " + String(i));
         pwm.addToConfig(pwmConfig);
       }
     }
@@ -180,7 +187,7 @@ class PwmOutputsUsermod : public Usermod {
       bool configComplete = true;
       for (int i = 0; i < USERMOD_PWM_OUTPUT_PINS; i++) {
         PwmOutput& pwm = pwms_[i];
-        JsonObject pwmConfig = top[String(i)];
+        JsonObject pwmConfig = top["PWM " + String(i)];
         configComplete &= pwm.readFromConfig(pwmConfig);
       }
       return configComplete;
