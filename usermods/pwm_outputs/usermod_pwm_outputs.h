@@ -78,6 +78,16 @@ class PwmOutput {
       return duty_;
     }
 
+    void addToJsonState(JsonObject& pwmState) const {
+      pwmState["duty"] = duty_;
+    }
+
+    void readFromJsonState(JsonObject& pwmState) {
+      if (pwmState.isNull())
+        return;
+      getJsonValue(pwmState["duty"], duty_);
+    }
+
   private:
     int8_t pin_ {-1};
     uint32_t freq_ {50};
@@ -101,23 +111,27 @@ class PwmOutputsUsermod : public Usermod {
     }
 
     void addToJsonState(JsonObject& root) {
+      JsonObject pwmStates = root.createNestedObject(USERMOD_NAME);
       for (int i = 0; i < USERMOD_PWM_OUTPUT_PINS; i++) {
         const PwmOutput& pwm = pwms_[i];
         if (!pwm.isEnabled())
           continue;
-        root["pwm_" + String(i)] = pwm.getDuty();
+        JsonObject pwmState = pwmStates.createNestedObject(String(i));
+        pwm.addToJsonState(pwmState);
       }
     }
 
     void readFromJsonState(JsonObject& root) {
+      JsonObject pwmStates = root[USERMOD_NAME];
+      if (pwmStates.isNull())
+        return;
+
       for (int i = 0; i < USERMOD_PWM_OUTPUT_PINS; i++) {
         PwmOutput& pwm = pwms_[i];
         if (!pwm.isEnabled())
           continue;
-        float duty = 0.0f;
-        if (getJsonValue(root["pwm_" + String(i)], duty)) {
-          pwm.setDuty(duty);
-        }
+        JsonObject pwmState = root[String(i)];
+        pwm.readFromJsonState(pwmState);
       }
     }
 
