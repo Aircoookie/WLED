@@ -507,9 +507,12 @@ bool ARTI::loop()
 
       for (int i = 0; i< arti_get_external_variable(F_ledCount); i++)
       {
-        ar->set(function_symbol->function_scope->symbols[0]->scope_index, i%strip.matrixWidth); // set x
-        if (function_symbol->function_scope->nrOfFormals == 2) // 2D
+        if (function_symbol->function_scope->nrOfFormals == 2) {// 2D
+          ar->set(function_symbol->function_scope->symbols[0]->scope_index, i%strip.matrixWidth); // set x
           ar->set(function_symbol->function_scope->symbols[1]->scope_index, i/strip.matrixWidth); // set y
+        }
+        else
+          ar->set(function_symbol->function_scope->symbols[0]->scope_index, i); // set x
 
         this->callStack->push(ar);
 

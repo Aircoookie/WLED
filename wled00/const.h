@@ -334,7 +334,7 @@
 #endif
 
 #ifndef ABL_MILLIAMPS_DEFAULT
-  #define ABL_MILLIAMPS_DEFAULT 850   // auto lower brightness to stay close to milliampere limit
+  #define ABL_MILLIAMPS_DEFAULT 1500   // auto lower brightness to stay close to milliampere limit WLEDMM: min 1500 for 1024leds
 #else
   #if ABL_MILLIAMPS_DEFAULT == 0      // disable ABL
   #elif ABL_MILLIAMPS_DEFAULT < 250   // make sure value is at least 250

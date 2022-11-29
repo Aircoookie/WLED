@@ -718,7 +718,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('m',SET_F("(\"sip\")[0]"),(char*)F("WLEDMM_"));
     olen -= 2; //delete ";
     oappend(versionString);
-    oappend(SET_F("_"));
+    oappend(SET_F(" "));
     oappend(releaseString);
     oappend(SET_F(".bin<br>("));
     #if defined(CONFIG_IDF_TARGET_ESP32C3)

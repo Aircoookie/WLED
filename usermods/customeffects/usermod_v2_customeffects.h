@@ -14,8 +14,10 @@ uint16_t mode_customEffect(void) {
   static bool notEnoughHeap;
 
   static char previousEffect[charLength];
-  if (SEGENV.call == 0)
+  if (SEGENV.call == 0) {
     strcpy(previousEffect, ""); //force init
+    SEGMENT.fill(BLACK); //in case not all leds used e.g. when using expand 1d Circles. Tbd: fill black should never be used to allow for blends/transitions
+  }
 
   char currentEffect[charLength];
   strcpy(currentEffect, (SEGMENT.name != nullptr)?SEGMENT.name:"default"); //note: switching preset with segment name to preset without does not clear the SEGMENT.name variable, but not gonna solve here ;-)

@@ -1799,7 +1799,7 @@ class AudioReactive : public Usermod {
 
       JsonObject freqScale = top.createNestedObject("frequency");
       freqScale[F("scale")] = FFTScalingMode;
-      freqScale[F("profile")] = pinkIndex;
+      freqScale[F("profile")] = pinkIndex; //WLEDMM
 
       JsonObject sync = top.createNestedObject("sync");
       sync[F("port")] = audioSyncPort;
@@ -1859,7 +1859,7 @@ class AudioReactive : public Usermod {
       configComplete &= getJsonValue(top["dynamics"][F("fall")],  decayTime);
 
       configComplete &= getJsonValue(top["frequency"][F("scale")], FFTScalingMode);
-      configComplete &= getJsonValue(top["frequency"][F("profile")], pinkIndex);
+      configComplete &= getJsonValue(top["frequency"][F("profile")], pinkIndex);  //WLEDMM
 
       configComplete &= getJsonValue(top["sync"][F("port")], audioSyncPort);
       configComplete &= getJsonValue(top["sync"][F("mode")], audioSyncEnabled);
@@ -1900,6 +1900,7 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addOption(dd,'Square Root (Energy)',3);"));
       oappend(SET_F("addOption(dd,'Logarithmic (Loudness)',1);"));
 
+      //WLEDMM
       oappend(SET_F("dd=addDropdown('AudioReactive','frequency:profile');"));
       oappend(SET_F("addOption(dd,'Generic Microphone',0);"));
       oappend(SET_F("addOption(dd,'Generic Line-In',1);"));
