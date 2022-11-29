@@ -6269,6 +6269,9 @@ uint16_t mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth  = *(float*)  um_data->u_data[0];
+  #ifdef SR_DEBUG
+  uint8_t samplePeak = *(uint8_t*)um_data->u_data[3];
+  #endif
 
   //SEGMENT.fade_out(240);
   SEGMENT.fade_out(249);  // 25%
@@ -6294,6 +6297,13 @@ uint16_t mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
     SEGMENT.setPixelColor(gravcen->topLED, SEGMENT.color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0));
   }
   gravcen->gravityCounter = (gravcen->gravityCounter + 1) % gravity;
+
+#ifdef SR_DEBUG
+  // WLEDMM: abuse last 2 pixels for debugging peak detection
+  SEGMENT.setPixelColor(SEGLEN-2, (samplePeak > 0) ? GREEN : BLACK);
+  if (samplePeak > 0) SEGMENT.setPixelColor(SEGLEN-1, GREEN);
+  // WLEDMM end
+#endif
 
   return FRAMETIME;
 } // mode_gravimeter()
@@ -7099,6 +7109,9 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
     um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
+  #ifdef SR_DEBUG
+  uint8_t samplePeak = *(uint8_t*)um_data->u_data[3];
+  #endif
 
   if (SEGENV.call == 0) for (int i=0; i<cols; i++) previousBarHeight[i] = 0;
 
@@ -7134,6 +7147,12 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
     if (rippleTime && previousBarHeight[x]>0) previousBarHeight[x]--;    //delay/ripple effect
   }
 
+#ifdef SR_DEBUG
+  // WLEDMM: abuse top left/right pixels for peak detection debugging
+  SEGMENT.setPixelColorXY(cols-1, rows-1, (samplePeak > 0) ? GREEN : BLACK);
+  if (samplePeak > 0) SEGMENT.setPixelColorXY(0, rows-1, GREEN);
+  // WLEDMM end
+#endif
   return FRAMETIME;
 } // mode_2DGEQ()
 static const char _data_FX_MODE_2DGEQ[] PROGMEM = "GEQ@Fade speed,Ripple decay,# of bands,,,Color bars;!,,Peak Color;!;c1=255,c2=64,pal=11,si=0,2d,fr"; // Beatsin
