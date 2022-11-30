@@ -55,31 +55,27 @@ class BobLightUsermod : public Usermod {
     # You should have received a copy of the GNU General Public License along
     # with this program.  If not, see <http://www.gnu.org/licenses/>.
     */
-    void fillBobLights(int bottom, int left, int top, int right, float pct_scan)
-    {
+    void fillBobLights(int bottom, int left, int top, int right, float pct_scan) {
 
       int lightcount = 0;
       int total = top+left+right+bottom;
       int bcount;
 
-      if ( total > strip.getLengthTotal() ) {
+      if (total > strip.getLengthTotal()) {
         DEBUG_PRINTLN(F("BobLight: Too many lights."));
         return;
       }
 
-      if ( bottom > 0 )
-      {
+      if (bottom > 0) {
         bcount = 1;
         float brange = 100.0/bottom;
         float bcurrent = 50.0;
-        if ( bottom < top )
-        {
+        if (bottom < top) {
           int diff = top - bottom;
           brange = 100.0/top;
           bcurrent -= (diff/2)*brange;
         }
-        while ( bcount <= bottom/2 ) 
-        {
+        while (bcount <= bottom/2) {
           float btop = bcurrent - brange;
           String name = "b"+String(bcount);
           strncpy(lights[lightcount].lightname, name.c_str(), 4);
@@ -93,13 +89,11 @@ class BobLightUsermod : public Usermod {
         }
       }
 
-      if ( left > 0 )
-      {
+      if (left > 0) {
         int lcount = 1;
         float lrange = 100.0/left;
         float lcurrent = 100.0;
-        while (lcount <= left )
-        {
+        while (lcount <= left) {
           float ltop = lcurrent - lrange;
           String name = "l"+String(lcount);
           strncpy(lights[lightcount].lightname, name.c_str(), 4);
@@ -113,13 +107,11 @@ class BobLightUsermod : public Usermod {
         }
       }
 
-      if ( top > 0 )
-      {
+      if (top > 0) {
         int tcount = 1;
         float trange = 100.0/top;
         float tcurrent = 0;
-        while ( tcount <= top )
-        {
+        while (tcount <= top) {
           float ttop = tcurrent + trange;
           String name = "t"+String(tcount);
           strncpy(lights[lightcount].lightname, name.c_str(), 4);
@@ -133,13 +125,11 @@ class BobLightUsermod : public Usermod {
         }
       }
 
-      if ( right > 0 )
-      {
+      if (right > 0) {
         int rcount = 1;
         float rrange = 100.0/right;
         float rcurrent = 0;
-        while ( rcount <= right )
-        {
+        while (rcount <= right) {
           float rtop = rcurrent + rrange;
           String name = "r"+String(rcount);
           strncpy(lights[lightcount].lightname, name.c_str(), 4);
@@ -154,16 +144,13 @@ class BobLightUsermod : public Usermod {
       }
       
             
-      if ( bottom > 0 )
-      {
+      if (bottom > 0) {
         float brange = 100.0/bottom;
         float bcurrent = 100;
-        if ( bottom < top )
-        {
+        if (bottom < top) {
           brange = 100.0/top;
         }
-        while ( bcount <= bottom )
-        {
+        while (bcount <= bottom) {
           float btop = bcurrent - brange;
           String name = "b"+String(bcount);
           strncpy(lights[lightcount].lightname, name.c_str(), 4);
@@ -286,8 +273,7 @@ class BobLightUsermod : public Usermod {
      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    void readFromJsonState(JsonObject& root)
-    {
+    void readFromJsonState(JsonObject& root) {
       if (!initDone) return;  // prevent crash on boot applyPreset()
       bool en = enabled;
       JsonObject um = root[FPSTR(_name)];
@@ -313,8 +299,7 @@ class BobLightUsermod : public Usermod {
       oappend(SET_F("addInfo('BobLight:pct',1,'Depth of scan [%]');"));   // 0 is field type, 1 is actual field
     }
 
-    void addToConfig(JsonObject& root)
-    {
+    void addToConfig(JsonObject& root) {
       JsonObject umData = root.createNestedObject(FPSTR(_name));
       umData[FPSTR(_enabled)] = enabled;
       umData[F("port")]       = bobPort;
@@ -325,8 +310,7 @@ class BobLightUsermod : public Usermod {
       umData[F("pct")]        = pct;
     }
 
-    bool readFromConfig(JsonObject& root)
-    {
+    bool readFromConfig(JsonObject& root) {
       JsonObject umData = root[FPSTR(_name)];
       bool configComplete = !umData.isNull();
 
@@ -355,8 +339,7 @@ class BobLightUsermod : public Usermod {
      * Use this to blank out some LEDs or set them to a different color regardless of the set effect mode.
      * Commonly used for custom clocks (Cronixie, 7 segment)
      */
-    void handleOverlayDraw()
-    {
+    void handleOverlayDraw() {
       //strip.setPixelColor(0, RGBW32(0,0,0,0)) // set the first pixel to black
     }
 
