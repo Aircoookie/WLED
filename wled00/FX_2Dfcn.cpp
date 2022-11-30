@@ -460,7 +460,7 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
   const int16_t dy = abs(y1-y0), sy = y0<y1 ? 1 : -1; 
   int16_t err = (dx>dy ? dx : -dy)/2, e2;
   for (;;) {
-    addPixelColorXY(x0,y0,c);
+    setPixelColorXY(x0,y0,c); //WLEDMM replace addPC by setPC as makes more sense in way it is used now
     if (x0==x1 && y0==y1) break;
     e2 = err;
     if (e2 >-dx) { err -= dy; x0 += sx; }
