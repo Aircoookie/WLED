@@ -470,6 +470,27 @@ void WLED::setup()
       DEBUG_PRINTF("Arduino Event core=%d\n", int(ARDUINO_EVENT_RUNNING_CORE));
   #endif
   #endif
+
+  // WLEDMM : dump GPIO infos (experimental, UI integration pending)
+  #ifdef WLED_DEBUG
+  Serial.println(F("WLED initialization completed."));
+  Serial.println(F("\nGPIO\t| Assigned to\t\t| Info"));
+  Serial.println(F("--------|-----------------------|------------"));
+  for(int pinNr = 0; pinNr < 50; pinNr++) { // 49 = highest PIN on ESP32-S3
+    if(pinManager.isPinOk(pinNr, false)) {
+      if ((!pinManager.isPinAllocated(pinNr)) && (pinManager.getPinSpecialText(pinNr).length() == 0)) continue;      // comment out to also show unused GPIO pins
+      bool is_inOut = pinManager.isPinOk(pinNr, true);
+      Serial.printf("%s  %2d\t  %-18s\t  %s\n", 
+          (is_inOut?"i/o":"in "), 
+          pinNr, 
+          pinManager.getPinOwnerText(pinNr).c_str(), 
+          pinManager.getPinSpecialText(pinNr).c_str()
+      );
+    }
+  }
+  Serial.println();
+  #endif
+  // WLEDMM end
 }
 
 void WLED::beginStrip()

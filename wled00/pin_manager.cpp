@@ -1,6 +1,12 @@
 #include "pin_manager.h"
 #include "wled.h"
 
+#ifdef ARDUINO_ARCH_ESP32
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
+#include <soc/soc_caps.h> // WLEDMM
+#endif
+#endif
+
 #ifdef WLED_DEBUG
 static void DebugPrintOwnerTag(PinOwner tag)
 {
@@ -12,6 +18,99 @@ static void DebugPrintOwnerTag(PinOwner tag)
   }
 }
 #endif
+
+// WLEDMM begin
+
+String PinManagerClass::getPinOwnerText(int gpio) {
+  if ((gpio < 0) || (gpio == 0xFF)) return(F(""));
+  //if (gpio >= GPIO_PIN_COUNT) return(F("n/a"));
+  if (!isPinOk(gpio, false)) return(F("n/a"));
+  if (!isPinAllocated(gpio)) return(F("./."));
+
+  switch(getPinOwner(gpio)) {
+    case PinOwner::None       : return(F("availeable")); break;     // no owner
+    case PinOwner::DebugOut   : return(F("debug")); break;          // 'Dbg'  == debug output always IO1
+    case PinOwner::Ethernet   : return(F("Ethernet")); break;       // Ethernet
+    case PinOwner::BusDigital : return(F("LEDs (digital)")); break; // Digital LEDs
+    case PinOwner::BusPwm     : return(F("LEDs (PWM)")); break;     // PWM output using BusPwm
+    case PinOwner::BusOnOff   : return(F("LEDs (on-off)")); break;  // 
+    case PinOwner::Button     : return(F("Button")); break;         // 'Butn' == button from configuration
+    case PinOwner::IR         : return(F("IR Receiver")); break;    // 'IR'   == IR receiver pin from configuration
+    case PinOwner::Relay      : return(F("Relay")); break;          // 'Rly'  == Relay pin from configuration
+    case PinOwner::SPI_RAM    : return(F("PSRAM")); break;          // 'SpiR' == SPI RAM (aka PSRAM)
+    case PinOwner::DMX        : return(F("DMX out")); break;        // 'DMX'  == hard-coded to IO2
+    case PinOwner::HW_I2C     : return(F("I2C")); break;            // 'I2C'  == hardware I2C pins (4&5 on ESP8266, 21&22 on ESP32)
+    case PinOwner::HW_SPI     : return(F("SPI")); break;            // 'SPI'  == hardware (V)SPI pins (13,14&15 on ESP8266, 5,18&23 on ESP32)
+
+    case PinOwner::UM_Audioreactive     : return(F("AudioReactive (UM)")); break;     // audioreative usermod - analog or digital audio input
+    case PinOwner::UM_Temperature       : return(F("Temperature (UM)")); break;       // "usermod_temperature.h"
+    case PinOwner::UM_PIR               : return(F("PIR (UM)")); break;               // "usermod_PIR_sensor_switch.h"
+    case PinOwner::UM_FourLineDisplay   : return(F("4Line Display (UM)")); break;     // "usermod_v2_four_line_display.h -- May use "standard" HW_I2C pins
+    case PinOwner::UM_RotaryEncoderUI   : return(F("Rotary Enc. (UM)")); break;       // "usermod_v2_rotary_encoder_ui.h"
+    case PinOwner::UM_MultiRelay        : return(F("Multi Relay (UM)")); break;       // "usermod_multi_relay.h"
+    case PinOwner::UM_AnimatedStaircase : return(F("AnimatedStaircase (UM)")); break; // "Animated_Staircase.h"
+    case PinOwner::UM_RGBRotaryEncoder  : return(F("RGB Rotary Enc. (UM)")); break;   // "rgb-rotary-encoder.h"
+    case PinOwner::UM_QuinLEDAnPenta    : return(F("QuinLEDAnPenta (UM)")); break;    // "quinled-an-penta.h"
+    case PinOwner::UM_BME280            : return(F("BME280 (UM)")); break;            // "usermod_bme280.h" -- Uses "standard" HW_I2C pins
+    case PinOwner::UM_BH1750            : return(F("BH1750 (UM)")); break;            // "usermod_bh1750.h" -- Uses "standard" HW_I2C pins
+    case PinOwner::UM_SdCard            : return(F("SD-Card (UM)")); break;           // "usermod_sd_card.h" -- Uses SPI pins
+
+    case PinOwner::UM_Example      : return(F("example (UM)")); break;            // unspecified usermod
+    case PinOwner::UM_Unspecified  : return(F("usermod (UM)")); break;            // unspecified usermod
+  }
+  return(F("other")); // should not happen
+}
+
+String PinManagerClass::getPinSpecialText(int gpio) {  // special purpose PIN info
+  if ((gpio == 0xFF) || (gpio < 0)) return(F(""));      // explicitly allow clients to free -1 as a no-op
+  //if (gpio >= NUM_DIGITAL_PINS) return(F(""));          // GPIO number too high
+  //if (gpio >= GPIO_PIN_COUNT) return(F("n/a"));
+
+  // audioreactive settings - unfortunately, these are hiddden inside usermod now :-(
+  // if((gpio == audioPin) && (dmType == 0)) return(F("analog audio in"));
+  // if((gpio == i2ssdPin) && (dmType > 0)) return(F("I2S SD"));
+  // if((gpio == i2swsPin) && (dmType > 0)) return(F("I2S WS"));
+  // if((gpio == i2sckPin) && (dmType > 0) && (dmType != 5)) return(F("I2S SCK"));
+  // if((gpio == mclkPin) && ((dmType == 2) || (dmType == 4))) return(F("I2S MCLK"));
+
+  // hardware special purpose PINS
+  if(gpio == hardwareTX) return(F("Serial TX"));   // Serial (debug monitor) TX pin (usually GPIO1)
+  if(gpio == hardwareRX) return(F("Serial RX"));   // Serial (debug monitor) RX pin (usually GPIO3)
+  if((gpio == i2c_sda) || (gpio == HW_PIN_SDA)) return(F("I2C SDA"));
+  if((gpio == i2c_scl) || (gpio == HW_PIN_SCL)) return(F("I2C SCL"));
+  if((gpio == spi_sclk) || (gpio == HW_PIN_CLOCKSPI)) return(F("SPI CLK"));
+  if((gpio == spi_mosi) || (gpio == HW_PIN_DATASPI))  return(F("SPI MOSI"));
+  if((gpio == spi_miso) || (gpio == HW_PIN_MISOSPI))  return(F("SPI MISO"));
+  if((gpio == HW_PIN_CSSPI)) return(F("SPI SS"));  // no part of usermod default settings
+
+  // special PINS
+  #if defined(LED_BUILTIN) || defined(BUILTIN_LED)
+  if (gpio == LED_BUILTIN) return(F("might be onboard LED"));
+  #endif
+  #if defined(STATUSLED)
+  #endif
+
+  if (!isPinOk(gpio, false)) return(F(""));
+
+#if 0
+  // analog pin infos - experimental !
+  #ifdef ARDUINO_ARCH_ESP32
+  // ADC PINs - not for 8266
+  if (digitalPinToAnalogChannel(gpio) >= 0) {  // ADC pin
+  #ifdef SOC_ADC_CHANNEL_NUM
+    if (digitalPinToAnalogChannel(gpio) < SOC_ADC_CHANNEL_NUM(0)) return(F("ADC-1")); // for ESP32-S3, ESP32-S2, ESP32-C3 
+  #else
+    if (digitalPinToAnalogChannel(gpio) < 8) return(F("ADC-1"));   // for classic ESP32
+  #endif
+    else return(F("ADC-2"));
+  } 
+  #endif
+#endif
+
+  return(F("")); // default - nothing special to say
+}
+
+// WLEDMM end
 
 /// Actual allocation/deallocation routines
 bool PinManagerClass::deallocatePin(byte gpio, PinOwner tag)
@@ -25,6 +124,7 @@ bool PinManagerClass::deallocatePin(byte gpio, PinOwner tag)
     DEBUG_PRINT(F("PIN DEALLOC: IO "));
     DEBUG_PRINT(gpio);
     DEBUG_PRINT(F(" allocated by "));
+    DEBUG_PRINT(getPinOwnerText(gpio)); DEBUG_PRINT(F(" - ")); // WLEDMM
     DebugPrintOwnerTag(ownerTag[gpio]);
     DEBUG_PRINT(F(", but attempted de-allocation by "));
     DebugPrintOwnerTag(tag);
@@ -60,6 +160,7 @@ bool PinManagerClass::deallocateMultiplePins(const uint8_t *pinArray, byte array
     DEBUG_PRINT(F("PIN DEALLOC: IO "));
     DEBUG_PRINT(gpio);
     DEBUG_PRINT(F(" allocated by "));
+    DEBUG_PRINT(getPinOwnerText(gpio)); DEBUG_PRINT(F(" - ")); // WLEDMM
     DebugPrintOwnerTag(ownerTag[gpio]);
     DEBUG_PRINT(F(", but attempted de-allocation by "));
     DebugPrintOwnerTag(tag);
@@ -121,6 +222,7 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
       DEBUG_PRINT(F("PIN ALLOC: FAIL: IO ")); 
       DEBUG_PRINT(gpio);
       DEBUG_PRINT(F(" already allocated by "));
+      DEBUG_PRINT(getPinOwnerText(gpio)); DEBUG_PRINT(F(" - ")); // WLEDMM
       DebugPrintOwnerTag(ownerTag[gpio]);
       DEBUG_PRINTLN(F(""));
       #endif
@@ -150,6 +252,7 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
     DEBUG_PRINT(F("PIN ALLOC: Pin ")); 
     DEBUG_PRINT(gpio);
     DEBUG_PRINT(F(" allocated by "));
+    DEBUG_PRINT(getPinOwnerText(gpio)); DEBUG_PRINT(F(" - ")); // WLEDMM
     DebugPrintOwnerTag(tag);
     DEBUG_PRINTLN(F(""));
     #endif
@@ -182,6 +285,7 @@ bool PinManagerClass::allocatePin(byte gpio, bool output, PinOwner tag)
     DEBUG_PRINT(F("PIN ALLOC: Pin ")); 
     DEBUG_PRINT(gpio);
     DEBUG_PRINT(F(" already allocated by "));
+    DEBUG_PRINT(getPinOwnerText(gpio)); DEBUG_PRINT(F(" - ")); // WLEDMM
     DebugPrintOwnerTag(ownerTag[gpio]);
     DEBUG_PRINTLN(F(""));
     #endif
@@ -196,6 +300,7 @@ bool PinManagerClass::allocatePin(byte gpio, bool output, PinOwner tag)
   DEBUG_PRINT(F("PIN ALLOC: Pin ")); 
   DEBUG_PRINT(gpio);
   DEBUG_PRINT(F(" successfully allocated by "));
+  DEBUG_PRINT(getPinOwnerText(gpio)); DEBUG_PRINT(F(" - ")); // WLEDMM
   DebugPrintOwnerTag(tag);
   DEBUG_PRINTLN(F(""));
   #endif  
