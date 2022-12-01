@@ -88,8 +88,13 @@ String PinManagerClass::getPinSpecialText(int gpio) {  // special purpose PIN in
   if (gpio == LED_BUILTIN) return(F("might be onboard LED"));
   #endif
   #if defined(STATUSLED)
+  if (gpio == STATUSLED) return(F("WLED Status LED"));
+  #endif
+  #ifdef WLED_ENABLE_DMX
+  if (gpio == 2) return(F("hardcoded DMX output pin"));
   #endif
 
+  // Not-OK PINS
   if (!isPinOk(gpio, false)) return(F(""));
 
 #if 0
