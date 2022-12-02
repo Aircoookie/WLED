@@ -122,7 +122,7 @@ String PinManagerClass::getPinSpecialText(int gpio) {  // special purpose PIN in
       //if (gpio == 0 || gpio == 2 || gpio == 5) return (F("(strapping pin)"));
       //if (gpio == 12) return (F("(strapping pin - MTDI)"));
       //if (gpio == 15) return (F("(strapping pin - MTDO)"));
-      if (gpio > 11 && gpio < 16) return (F("(optional) JTAG debug probe"));
+      //if (gpio > 11 && gpio < 16) return (F("(optional) JTAG debug probe"));
       #if defined(BOARD_HAS_PSRAM)
         if (gpio == 16 || gpio == 17) return (F("(reserved) PSRAM"));
       #endif
