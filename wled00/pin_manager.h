@@ -68,9 +68,9 @@ class PinManagerClass {
   uint8_t pinAlloc[3] = {0x00, 0x00, 0x00}; //24bit, 1 bit per pin, we use first 17bits
   PinOwner ownerTag[17] = { PinOwner::None };
   #else
-  uint8_t pinAlloc[5] = {0x00, 0x00, 0x00, 0x00, 0x00}; //40bit, 1 bit per pin, we use all bits
+  uint8_t pinAlloc[7] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; //WLEDMM bugfix - 56bit, 1 bit per pin, we use 50 bits on -S3
   uint8_t ledcAlloc[2] = {0x00, 0x00}; //16 LEDC channels
-  PinOwner ownerTag[40] = { PinOwner::None };
+  PinOwner ownerTag[50] = { PinOwner::None }; // WLEDMM bugfix - new MCU's have up to 50 GPIO
   #endif
   struct {
     uint8_t i2cAllocCount : 4; // allow multiple allocation of I2C bus pins but keep track of allocations
@@ -108,6 +108,7 @@ class PinManagerClass {
   bool isPinOk(byte gpio, bool output = true);
 
   PinOwner getPinOwner(byte gpio);
+  //String getOwnerText(PinOwner tag); // WLEDMM work in progress
   String getPinOwnerText(int gpio); // WLEDMM
   String getPinSpecialText(int gpio); // WLEDMM
   #ifdef ARDUINO_ARCH_ESP32
