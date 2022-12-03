@@ -104,7 +104,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     CJSON(strip.matrix.bottomStart, matrix[F("pb")]);
     CJSON(strip.matrix.rightStart,  matrix[F("pr")]);
     CJSON(strip.matrix.vertical,    matrix[F("pv")]);
-    CJSON(strip.matrix.serpentine,  matrix[F("ps")]);
+    CJSON(strip.matrix.serpentine,  matrix["ps"]);
 
     JsonArray panels = matrix[F("panels")];
     uint8_t s = 0;
@@ -694,7 +694,7 @@ void serializeConfig() {
     matrix[F("pb")] = strip.matrix.bottomStart;
     matrix[F("pr")] = strip.matrix.rightStart;
     matrix[F("pv")] = strip.matrix.vertical;
-    matrix[F("ps")] = strip.matrix.serpentine;
+    matrix["ps"] = strip.matrix.serpentine;
 
     JsonArray panels = matrix.createNestedArray(F("panels"));
     for (uint8_t i=0; i<strip.hPanels*strip.vPanels; i++) {
