@@ -5,7 +5,7 @@ Experimental Bluetooth Control for WLED.
 * Bluetooth device shows up as whatever is set in "Server description", "WLED" by default.
 * Normal WiFi functionality can be accessed for general WLED setup under the following conditions
   * Normal WiFi functionality until "Apply preset at boot" is set.
-  * If active preset changes by any means during first 5 seconds, normal WiFi functionality will resume.
+  * If active preset changes by any means during first 5 seconds, normal WiFi functionality will resume. (simple button press would suffice)
   * If 'e' is sent over the bluetooth serial connection, normal WiFi functionality will resume.
 * Only tested on D1 Mini ESP32 with the following PlatformIO example
 * [Serial Bluetooth Terminal](https://play.google.com/store/apps/details?id=de.kai_morich.serial_bluetooth_terminal) Android app for testing
