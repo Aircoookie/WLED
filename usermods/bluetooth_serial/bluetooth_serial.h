@@ -17,6 +17,10 @@ class BluetoothSerialUsermod : public Usermod {
       SerialBT.begin(serverDescription);
 
       Serial.println("Bluetooth Serial Usermod setup complete");
+      Serial.print("Bluetooth Name: ");
+      Serial.println(serverDescription);
+      Serial.print("Bluetooth Address: ");
+      Serial.println("todo");
     }
 
 
