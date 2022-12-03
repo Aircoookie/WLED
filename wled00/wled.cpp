@@ -716,6 +716,10 @@ void WLED::initInterfaces()
 
 void WLED::handleConnection()
 {
+  // If deferConnections is set, do nothing until unset
+  if (deferConnections)
+    return;
+
   static byte stacO = 0;
   static uint32_t lastHeap = UINT32_MAX;
   static unsigned long heapTime = 0;

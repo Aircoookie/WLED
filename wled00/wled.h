@@ -481,6 +481,12 @@ WLED_GLOBAL uint32_t lastReconnectAttempt _INIT(0);
 WLED_GLOBAL bool interfacesInited _INIT(false);
 WLED_GLOBAL bool wasConnected _INIT(false);
 
+#ifdef WLED_DEFER_CONNECTIONS
+WLED_GLOBAL bool deferConnections _INIT(true);
+#else
+WLED_GLOBAL bool deferConnections _INIT(false);
+#endif
+
 // color
 WLED_GLOBAL byte lastRandomIndex _INIT(0);        // used to save last random color so the new one is not the same
 
