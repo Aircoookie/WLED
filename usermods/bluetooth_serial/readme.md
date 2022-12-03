@@ -1,7 +1,7 @@
-Experimental Bluetooth Control for WLED.
+# Experimental Bluetooth Control for WLED.
 
 * Allows access to JSON API over Bluetooth Serial Connection.
-* Normal WiFi functionality is disabled while Bluetooth is in use
+* __Normal WiFi functionality is disabled while Bluetooth is in use__
 * Bluetooth device shows up as whatever is set in "Server description", "WLED" by default.
 * Normal WiFi functionality can be accessed for general WLED setup under the following conditions
   * Normal WiFi functionality until "Apply preset at boot" is set.
@@ -9,8 +9,8 @@ Experimental Bluetooth Control for WLED.
   * If 'e' is sent over the bluetooth serial connection, normal WiFi functionality will resume.
 * Only tested on D1 Mini ESP32 with the following PlatformIO example
 * [Serial Bluetooth Terminal](https://play.google.com/store/apps/details?id=de.kai_morich.serial_bluetooth_terminal) Android app for testing
-* [Python to WLED bluetooth serial reference](https://medium.com/@18218004/devlog-6-bluetooth-and-esp32-ba076a8e207d)
-
+* [Reference: Python to ESP32 bluetooth serial](https://medium.com/@18218004/devlog-6-bluetooth-and-esp32-ba076a8e207d)
+* [Example Python Script](https://gist.github.com/ChuckMash/7752b77ea1bf204a7e8f0acac6e27641) for WLED control over Bluetooth Serial
 
 
 
