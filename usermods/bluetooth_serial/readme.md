@@ -7,16 +7,10 @@
   * Normal WiFi functionality until "Apply preset at boot" is set.
   * If active preset changes by any means during first 5 seconds, normal WiFi functionality will resume. (simple button press would suffice)
   * If 'e' is sent over the bluetooth serial connection, normal WiFi functionality will resume.
-* __Only tested on D1 Mini ESP32 with the following PlatformIO example__
 * [Serial Bluetooth Terminal](https://play.google.com/store/apps/details?id=de.kai_morich.serial_bluetooth_terminal) Android app for testing
 * [Reference: Python to ESP32 bluetooth serial](https://medium.com/@18218004/devlog-6-bluetooth-and-esp32-ba076a8e207d)
 * [Example Python Script](https://gist.github.com/ChuckMash/7752b77ea1bf204a7e8f0acac6e27641) for WLED control over Bluetooth Serial
-
-
-
-
-
-
+* __Only tested on D1 Mini ESP32 with the following PlatformIO example__
 
 ```
 [platformio]
