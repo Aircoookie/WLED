@@ -9,7 +9,7 @@ Experimental Bluetooth Control for WLED.
   * If 'e' is sent over the bluetooth serial connection, normal WiFi functionality will resume.
 * Only tested on D1 Mini ESP32 with the following PlatformIO example
 * [Serial Bluetooth Terminal](https://play.google.com/store/apps/details?id=de.kai_morich.serial_bluetooth_terminal) Android app for testing
-
+* [Python to WLED bluetooth serial reference](https://medium.com/@18218004/devlog-6-bluetooth-and-esp32-ba076a8e207d)
 
 
 
