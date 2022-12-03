@@ -2,7 +2,6 @@
 
 #include "wled.h"
 
-//class name. Use something descriptive and leave the ": public Usermod" part :)
 class PowerAPUsermod : public Usermod {
   private:
     unsigned long lastTime = 0;
