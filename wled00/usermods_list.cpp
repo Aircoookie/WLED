@@ -176,6 +176,10 @@
 #include "../usermods/pwm_outputs/usermod_pwm_outputs.h"
 #endif
 
+#ifdef USERMOD_POWER_AP
+#include "../usermods/powerap/powerap.h"
+#endif
+
 
 void registerUsermods()
 {
@@ -331,5 +335,9 @@ void registerUsermods()
   
   #ifdef USERMOD_PWM_OUTPUTS
   usermods.add(new PwmOutputsUsermod());
+  #endif
+
+  #ifdef USERMOD_POWER_AP
+  usermods.add(new PowerAPUsermod());
   #endif
 }
