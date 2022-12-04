@@ -68,6 +68,7 @@ String PinManagerClass::getOwnerText(PinOwner tag) {
 String PinManagerClass::getPinSpecialText(int gpio) {  // special purpose PIN info
   if ((gpio == 0xFF) || (gpio < 0)) return(F(""));      // explicitly allow -1 as a no-op
 
+#ifdef USERMOD_AUDIOREACTIVE
   // audioreactive settings - unfortunately, these are hiddden inside usermod now :-(
   // if((gpio == audioPin) && (dmType == 0)) return(F("analog audio in"));
   // if((gpio == i2ssdPin) && (dmType > 0)) return(F("I2S SD"));
@@ -86,16 +87,19 @@ String PinManagerClass::getPinSpecialText(int gpio) {  // special purpose PIN in
   #ifdef MCLK_PIN
     if (gpio == MCLK_PIN) return(F("(default) I2S MCLK"));
   #endif
+#endif
 
   // hardware special purpose PINS
   if (gpio == hardwareTX) return(F("Serial TX"));   // Serial (debug monitor) TX pin (usually GPIO1)
   if (gpio == hardwareRX) return(F("Serial RX"));   // Serial (debug monitor) RX pin (usually GPIO3)
   if ((gpio == i2c_sda)  || ((gpio == HW_PIN_SDA) && (i2c_sda < 0))) return(F("(default) I2C SDA"));
   if ((gpio == i2c_scl)  || ((gpio == HW_PIN_SCL) && (i2c_scl < 0))) return(F("(default) I2C SCL"));
-  if ((gpio == spi_sclk) || ((gpio == HW_PIN_CLOCKSPI) && (spi_sclk < 0))) return(F("(default) SPI CLK"));
-  if ((gpio == spi_mosi) || ((gpio == HW_PIN_DATASPI) && (spi_mosi < 0)))  return(F("(default) SPI MOSI"));
-  if ((gpio == spi_miso) || ((gpio == HW_PIN_MISOSPI) && (spi_miso < 0)))  return(F("(default) SPI MISO"));
-  if ((gpio == HW_PIN_CSSPI)) return(F("(default) SPI SS"));  // no part of usermod default settings
+  if ((gpio == spi_sclk) || ((gpio == HW_PIN_CLOCKSPI) && (spi_sclk < 0))) return(F("(default) SPI SLK , aka SCK"));
+  if ((gpio == spi_mosi) || ((gpio == HW_PIN_DATASPI) && (spi_mosi < 0)))  return(F("(default) SPI PICO, aka MOSI"));
+  if ((gpio == spi_miso) || ((gpio == HW_PIN_MISOSPI) && (spi_miso < 0)))  return(F("(default) SPI POCI, aka MISO"));
+#if defined(WLED_USE_SD_MMC) || defined(WLED_USE_SD_SPI) || defined(SD_ADAPTER)
+  if ((gpio == HW_PIN_CSSPI)) return(F("(default) SPI SS"));  // no part of usermod default settings, currently only needed by SD_CARD usermod
+#endif
 
   // MCU special PINS
   #ifdef ARDUINO_ARCH_ESP32
@@ -118,7 +122,6 @@ String PinManagerClass::getPinSpecialText(int gpio) {  // special purpose PIN in
     #elif defined(CONFIG_IDF_TARGET_ESP32C3)
       // ESP32-C3
       if (gpio > 17 && gpio < 20) return (F("USB (CDC) / JTAG"));
-      if (gpio == 46) return (F("pulled-down, input only"));
       //if (gpio == 2 || gpio == 8 || gpio == 9) return (F("(strapping pin)"));
 
     #else
@@ -298,7 +301,7 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
       DEBUG_PRINT(" as "); DEBUG_PRINT(mptArray[i].isOutput ? "output": "input"); // WLEDMM
       DEBUG_PRINTLN(F(""));
       #endif
-      if ((gpio < 50) && (gpio >= 0) && (tag != PinOwner::None)) {
+      if ((gpio < WLED_NUM_PINS) && (gpio >= 0) && (tag != PinOwner::None)) {
         ownerConflict[gpio] = tag; // WLEDMM record conflict
       }
       shouldFail = true;
@@ -333,6 +336,9 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
       // as this can greatly simplify configuration arrays
       continue;
     }
+    if (gpio >= WLED_NUM_PINS) 
+      continue; // WLEDMM - invalid GPIO => avoid array bounds violation
+
     byte by = gpio >> 3;
     byte bi = gpio - 8*by;
     bitWrite(pinAlloc[by], bi, true);
@@ -352,11 +358,11 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
 bool PinManagerClass::allocatePin(byte gpio, bool output, PinOwner tag)
 {
   // HW I2C & SPI pins have to be allocated using allocateMultiplePins variant since there is always SCL/SDA pair
-  if (!isPinOk(gpio, output) || tag==PinOwner::HW_I2C || tag==PinOwner::HW_SPI) {
+  if (!isPinOk(gpio, output) || (gpio >= WLED_NUM_PINS) || tag==PinOwner::HW_I2C || tag==PinOwner::HW_SPI) { // WLEDMM bugfix - avoid array bounds violation
     #ifdef WLED_DEBUG
     if (gpio < 255) {  // 255 (-1) is the "not defined GPIO"
       if (!isPinOk(gpio, output)) {
-        if ((gpio < 50) && (gpio >= 0) && (tag != PinOwner::None)) {
+        if ((gpio < WLED_NUM_PINS) && (gpio >= 0) && (tag != PinOwner::None)) {
           ownerConflict[gpio] = tag; // WLEDMM record conflict
         }
         DEBUG_PRINT(F("PIN ALLOC: FAIL for owner "));

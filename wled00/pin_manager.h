@@ -65,14 +65,16 @@ static_assert(0u == static_cast<uint8_t>(PinOwner::None), "PinOwner::None must b
 class PinManagerClass {
   private:
   #ifdef ESP8266
+  #define WLED_NUM_PINS 17
   uint8_t pinAlloc[3] = {0x00, 0x00, 0x00}; //24bit, 1 bit per pin, we use first 17bits
-  PinOwner ownerTag[17] = { PinOwner::None };
-  PinOwner ownerConflict[17] = { PinOwner::None }; // WLEDMM: record pin alloc conflicts
+  PinOwner ownerTag[WLED_NUM_PINS] = { PinOwner::None };
+  PinOwner ownerConflict[WLED_NUM_PINS] = { PinOwner::None }; // WLEDMM: record pin alloc conflicts
   #else
+  #define WLED_NUM_PINS 50
   uint8_t pinAlloc[7] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; //WLEDMM bugfix - 56bit, 1 bit per pin, we use 50 bits on -S3
   uint8_t ledcAlloc[2] = {0x00, 0x00}; //16 LEDC channels
-  PinOwner ownerTag[50] = { PinOwner::None }; // WLEDMM bugfix - new MCU's have up to 50 GPIO
-  PinOwner ownerConflict[50] = { PinOwner::None }; // WLEDMM: record pin alloc conflicts
+  PinOwner ownerTag[WLED_NUM_PINS] = { PinOwner::None }; // WLEDMM bugfix - new MCU's have up to 50 GPIO
+  PinOwner ownerConflict[WLED_NUM_PINS] = { PinOwner::None }; // WLEDMM: record pin alloc conflicts
   #endif
   struct {
     uint8_t i2cAllocCount : 4; // allow multiple allocation of I2C bus pins but keep track of allocations

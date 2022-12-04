@@ -476,7 +476,7 @@ void WLED::setup()
   Serial.println(F("WLED initialization completed."));
   Serial.println(F("\nGPIO\t| Assigned to\t\t| Info"));
   Serial.println(F("--------|-----------------------|------------"));
-  for(int pinNr = 0; pinNr < 50; pinNr++) { // 49 = highest PIN on ESP32-S3
+  for(int pinNr = 0; pinNr < WLED_NUM_PINS; pinNr++) { // 49 = highest PIN on ESP32-S3
     if(pinManager.isPinOk(pinNr, false)) {
       if ((!pinManager.isPinAllocated(pinNr)) && (pinManager.getPinSpecialText(pinNr).length() == 0)) continue;      // comment out to include no-name,unused GPIO pins
       bool is_inOut = pinManager.isPinOk(pinNr, true);
