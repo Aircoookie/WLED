@@ -89,17 +89,11 @@ String PinManagerClass::getPinSpecialText(int gpio) {  // special purpose PIN in
   #endif
 #endif
 
-  // hardware special purpose PINS
+  // hardware special purpose PINS. part1 
   if (gpio == hardwareTX) return(F("Serial TX"));   // Serial (debug monitor) TX pin (usually GPIO1)
   if (gpio == hardwareRX) return(F("Serial RX"));   // Serial (debug monitor) RX pin (usually GPIO3)
   if ((gpio == i2c_sda)  || ((gpio == HW_PIN_SDA) && (i2c_sda < 0))) return(F("(default) I2C SDA"));
   if ((gpio == i2c_scl)  || ((gpio == HW_PIN_SCL) && (i2c_scl < 0))) return(F("(default) I2C SCL"));
-  if ((gpio == spi_sclk) || ((gpio == HW_PIN_CLOCKSPI) && (spi_sclk < 0))) return(F("(default) SPI SLK  / SCK"));
-  if ((gpio == spi_mosi) || ((gpio == HW_PIN_DATASPI) && (spi_mosi < 0)))  return(F("(default) SPI PICO / MOSI"));
-  if ((gpio == spi_miso) || ((gpio == HW_PIN_MISOSPI) && (spi_miso < 0)))  return(F("(default) SPI POCI / MISO"));
-#if defined(WLED_USE_SD_MMC) || defined(WLED_USE_SD_SPI) || defined(SD_ADAPTER)
-  if ((gpio == HW_PIN_CSSPI)) return(F("(default) SPI SS"));  // no part of usermod default settings, currently only needed by SD_CARD usermod
-#endif
 
   // MCU special PINS
   #ifdef ARDUINO_ARCH_ESP32
@@ -140,6 +134,18 @@ String PinManagerClass::getPinSpecialText(int gpio) {  // special purpose PIN in
 
   #endif
 
+  #if defined(STATUSLED)
+    if (gpio == STATUSLED) return(F("WLED Status LED"));
+  #endif
+
+  // hardware special purpose PINS. part2
+  if ((gpio == spi_sclk) || ((gpio == HW_PIN_CLOCKSPI) && (spi_sclk < 0))) return(F("(default) SPI SLK  / SCK"));
+  if ((gpio == spi_mosi) || ((gpio == HW_PIN_DATASPI) && (spi_mosi < 0)))  return(F("(default) SPI PICO / MOSI"));
+  if ((gpio == spi_miso) || ((gpio == HW_PIN_MISOSPI) && (spi_miso < 0)))  return(F("(default) SPI POCI / MISO"));
+#if defined(WLED_USE_SD_MMC) || defined(WLED_USE_SD_SPI) || defined(SD_ADAPTER)
+  if ((gpio == HW_PIN_CSSPI)) return(F("(default) SPI CS  / SS"));  // no part of usermod default settings, currently only needed by SD_CARD usermod
+#endif
+
   // Arduino and WLED special PINS
   #if !defined(ARDUINO_ARCH_ESP32)  // these only make sense on 8266
     #if defined(LED_BUILTIN) || defined(BUILTIN_LED)
@@ -163,9 +169,6 @@ String PinManagerClass::getPinSpecialText(int gpio) {  // special purpose PIN in
 
   #ifdef WLED_ENABLE_DMX
     if (gpio == 2) return(F("hardcoded DMX output pin"));
-  #endif
-  #if defined(STATUSLED)
-    if (gpio == STATUSLED) return(F("WLED Status LED"));
   #endif
 
   // Not-OK PINS
@@ -301,7 +304,7 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
       DEBUG_PRINT(" as "); DEBUG_PRINT(mptArray[i].isOutput ? "output": "input"); // WLEDMM
       DEBUG_PRINTLN(F(""));
       #else  // WLEDMM
-      USER_PRINTF("PIN ALLOC: cannot use GPIO%d for %s.\n", gpio, mptArray[i].isOutput ? "output": "input");
+      USER_PRINTF("PIN ALLOC: invalid pin - cannot use GPIO%d for %s.\n", gpio, mptArray[i].isOutput ? "output": "input");
       #endif
       if ((gpio < WLED_NUM_PINS) && (gpio >= 0) && (tag != PinOwner::None)) {
         ownerConflict[gpio] = tag; // WLEDMM record conflict
@@ -320,7 +323,7 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
       DebugPrintOwnerTag(ownerTag[gpio]);
       DEBUG_PRINTLN(F(""));
       #else  // WLEDMM
-      USER_PRINTF("PIN ALLOC: failed to assign GPIO%d to %s.\n", gpio, getOwnerText(tag).c_str());
+      USER_PRINTF("PIN ALLOC: failed to assign GPIO%d to %s - already in use for %s.\n", gpio, getOwnerText(tag).c_str(), getPinOwnerText(gpio).c_str());
       #endif
       shouldFail = true;
     }
@@ -381,7 +384,7 @@ bool PinManagerClass::allocatePin(byte gpio, bool output, PinOwner tag)
     }
     #else  // WLEDMM
       if (gpio < 255) { 
-        USER_PRINTF("PIN ALLOC: cannot use GPIO%d for %s.\n", gpio, output ? "output": "input");
+        USER_PRINTF("PIN ALLOC: invalid pin - cannot use GPIO%d for %s.\n", gpio, output ? "output": "input");
       }
     #endif
     return false;
@@ -395,7 +398,7 @@ bool PinManagerClass::allocatePin(byte gpio, bool output, PinOwner tag)
     DebugPrintOwnerTag(ownerTag[gpio]);
     DEBUG_PRINTLN(F(""));
     #else  // WLEDMM
-    USER_PRINTF("PIN ALLOC: failed to assign GPIO%d to %s.\n", gpio, getOwnerText(tag).c_str());
+      USER_PRINTF("PIN ALLOC: failed to assign GPIO%d to %s - already in use for %s.\n", gpio, getOwnerText(tag).c_str(), getPinOwnerText(gpio).c_str());
     #endif
     return false;
   }

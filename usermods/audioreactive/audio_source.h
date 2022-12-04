@@ -541,7 +541,7 @@ class I2SAdcSource : public I2SSource {
       // Determine Analog channel. Only Channels on ADC1 are supported
       int8_t channel = digitalPinToAnalogChannel(_audioPin);
       if (channel > 9) {
-        ERRORSR_PRINTF("Incompatible GPIO used for analog audio input: %d\n", _audioPin);
+        USER_PRINTF("AR: Incompatible GPIO used for analog audio input: %d\n", _audioPin);
         return;
       } else {
         adc_gpio_init(ADC_UNIT_1, adc_channel_t(channel));
@@ -560,7 +560,7 @@ class I2SAdcSource : public I2SSource {
       // Enable I2S mode of ADC
       err = i2s_set_adc_mode(ADC_UNIT_1, adc1_channel_t(channel));
       if (err != ESP_OK) {
-        DEBUGSR_PRINTF("Failed to set i2s adc mode: %d\n", err);
+        USER_PRINTF("AR: Failed to set i2s adc mode: %d\n", err);
         return;
       }
 
