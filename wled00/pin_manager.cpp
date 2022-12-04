@@ -12,6 +12,7 @@ static void DebugPrintOwnerTag(PinOwner tag)
 {
   uint32_t q = static_cast<uint8_t>(tag);
   if (q) {
+    DEBUG_PRINT(pinManager.getOwnerText(tag)); DEBUG_PRINT(F(" = ")); // WLEDMM
     DEBUG_PRINTF("0x%02x (%d)", q, q);
   } else {
     DEBUG_PRINT(F("(no owner)"));
@@ -26,8 +27,11 @@ String PinManagerClass::getPinOwnerText(int gpio) {
   //if (gpio >= GPIO_PIN_COUNT) return(F("n/a"));
   if (!isPinOk(gpio, false)) return(F("n/a"));
   if (!isPinAllocated(gpio)) return(F("./."));
+  return(getOwnerText(getPinOwner(gpio)));
+}
 
-  switch(getPinOwner(gpio)) {
+String PinManagerClass::getOwnerText(PinOwner tag) {
+  switch(tag) {
     case PinOwner::None       : return(F("no owner")); break;       // unknown - no owner
     case PinOwner::DebugOut   : return(F("debug output")); break;   // 'Dbg'  == debug output always IO1
     case PinOwner::Ethernet   : return(F("Ethernet")); break;       // Ethernet
@@ -62,7 +66,7 @@ String PinManagerClass::getPinOwnerText(int gpio) {
 }
 
 String PinManagerClass::getPinSpecialText(int gpio) {  // special purpose PIN info
-  if ((gpio == 0xFF) || (gpio < 0)) return(F(""));      // explicitly allow clients to free -1 as a no-op
+  if ((gpio == 0xFF) || (gpio < 0)) return(F(""));      // explicitly allow -1 as a no-op
 
   // audioreactive settings - unfortunately, these are hiddden inside usermod now :-(
   // if((gpio == audioPin) && (dmType == 0)) return(F("analog audio in"));
@@ -182,6 +186,16 @@ String PinManagerClass::getPinSpecialText(int gpio) {  // special purpose PIN in
   return(F("")); // default - nothing special to say
 }
 
+String PinManagerClass::getPinConflicts(int gpio) {
+  if ((gpio == 0xFF) || (gpio < 0)) return(F(""));      // explicitly allow -1 as a no-op
+  if (!isPinOk(gpio, false)) return(F(""));             // invalid GPIO
+
+  if (ownerConflict[gpio] == PinOwner::None) {
+    return(F(""));             // no conflict fot this GPIO
+  } else {                     // found previous conflic!
+    return String("!! Conflict with ") + getOwnerText(ownerConflict[gpio]) + String(" !!");
+  }
+}
 // WLEDMM end
 
 /// Actual allocation/deallocation routines
@@ -196,7 +210,6 @@ bool PinManagerClass::deallocatePin(byte gpio, PinOwner tag)
     DEBUG_PRINT(F("PIN DEALLOC: IO "));
     DEBUG_PRINT(gpio);
     DEBUG_PRINT(F(" allocated by "));
-    DEBUG_PRINT(getPinOwnerText(gpio)); DEBUG_PRINT(F(" = ")); // WLEDMM
     DebugPrintOwnerTag(ownerTag[gpio]);
     DEBUG_PRINT(F(", but attempted de-allocation by "));
     DebugPrintOwnerTag(tag);
@@ -208,6 +221,7 @@ bool PinManagerClass::deallocatePin(byte gpio, PinOwner tag)
   byte bi = gpio - 8*by;
   bitWrite(pinAlloc[by], bi, false);
   ownerTag[gpio] = PinOwner::None;
+  // ownerConflict[gpio] = PinOwner::None;  // WLEDMM clear conflict (if any)
   return true;
 }
 
@@ -232,7 +246,6 @@ bool PinManagerClass::deallocateMultiplePins(const uint8_t *pinArray, byte array
     DEBUG_PRINT(F("PIN DEALLOC: IO "));
     DEBUG_PRINT(gpio);
     DEBUG_PRINT(F(" allocated by "));
-    DEBUG_PRINT(getPinOwnerText(gpio)); DEBUG_PRINT(F(" = ")); // WLEDMM
     DebugPrintOwnerTag(ownerTag[gpio]);
     DEBUG_PRINT(F(", but attempted de-allocation by "));
     DebugPrintOwnerTag(tag);
@@ -280,8 +293,9 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
     }
     if (!isPinOk(gpio, mptArray[i].isOutput)) {
       #ifdef WLED_DEBUG
-      DEBUG_PRINT(F("PIN ALLOC: Invalid pin attempted to be allocated: "));
+      DEBUG_PRINT(F("PIN ALLOC: Invalid pin attempted to be allocated: GPIO "));
       DEBUG_PRINT(gpio);
+      DEBUG_PRINT(" as "); DEBUG_PRINT(mptArray[i].isOutput ? "output": "input"); // WLEDMM
       DEBUG_PRINTLN(F(""));
       #endif
       shouldFail = true;
@@ -290,11 +304,11 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
       // allow multiple "allocations" of HW I2C & SPI bus pins
       continue;
     } else if (isPinAllocated(gpio)) {
+      ownerConflict[gpio] = tag; // WLEDMM record conflict
       #ifdef WLED_DEBUG
       DEBUG_PRINT(F("PIN ALLOC: FAIL: IO ")); 
       DEBUG_PRINT(gpio);
       DEBUG_PRINT(F(" already allocated by "));
-      DEBUG_PRINT(getPinOwnerText(gpio)); DEBUG_PRINT(F(" = ")); // WLEDMM
       DebugPrintOwnerTag(ownerTag[gpio]);
       DEBUG_PRINTLN(F(""));
       #endif
@@ -320,11 +334,11 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
     byte bi = gpio - 8*by;
     bitWrite(pinAlloc[by], bi, true);
     ownerTag[gpio] = tag;
+    // ownerConflict[gpio] = PinOwner::None; // WLEDMM clear conflict (if any)
     #ifdef WLED_DEBUG
     DEBUG_PRINT(F("PIN ALLOC: Pin ")); 
     DEBUG_PRINT(gpio);
     DEBUG_PRINT(F(" allocated by "));
-    DEBUG_PRINT(getPinOwnerText(gpio)); DEBUG_PRINT(F(" = ")); // WLEDMM
     DebugPrintOwnerTag(tag);
     DEBUG_PRINTLN(F(""));
     #endif
@@ -353,11 +367,11 @@ bool PinManagerClass::allocatePin(byte gpio, bool output, PinOwner tag)
     return false;
   }
   if (isPinAllocated(gpio)) {
+    ownerConflict[gpio] = tag; // WLEDMM record conflict
     #ifdef WLED_DEBUG
     DEBUG_PRINT(F("PIN ALLOC: Pin ")); 
     DEBUG_PRINT(gpio);
     DEBUG_PRINT(F(" already allocated by "));
-    DEBUG_PRINT(getPinOwnerText(gpio)); DEBUG_PRINT(F(" = ")); // WLEDMM
     DebugPrintOwnerTag(ownerTag[gpio]);
     DEBUG_PRINTLN(F(""));
     #endif
@@ -368,11 +382,11 @@ bool PinManagerClass::allocatePin(byte gpio, bool output, PinOwner tag)
   byte bi = gpio - 8*by;
   bitWrite(pinAlloc[by], bi, true);
   ownerTag[gpio] = tag;
+  // ownerConflict[gpio] = PinOwner::None; // WLEDMM clear conflict (if any)
   #ifdef WLED_DEBUG
   DEBUG_PRINT(F("PIN ALLOC: Pin ")); 
   DEBUG_PRINT(gpio);
   DEBUG_PRINT(F(" successfully allocated by "));
-  DEBUG_PRINT(getPinOwnerText(gpio)); DEBUG_PRINT(F(" = ")); // WLEDMM
   DebugPrintOwnerTag(tag);
   DEBUG_PRINTLN(F(""));
   #endif  
@@ -383,9 +397,17 @@ bool PinManagerClass::allocatePin(byte gpio, bool output, PinOwner tag)
 // if tag is set to PinOwner::None, checks for ANY owner of the pin.
 // if tag is set to any other value, checks if that tag is the current owner of the pin.
 bool PinManagerClass::isPinAllocated(byte gpio, PinOwner tag)
-{
+{  
   if (!isPinOk(gpio, false)) return true;
-  if ((tag != PinOwner::None) && (ownerTag[gpio] != tag)) return false;
+  if (gpio == 0xFF) {
+    DEBUG_PRINT(F(" isPinAllocated: -1 is never allocacted! ")); 
+    return false; // WLEDMM bugfix - avoid invalid index to array
+  }
+
+  if ((tag != PinOwner::None) && (ownerTag[gpio] != tag)) {
+    if ((ownerTag[gpio] != PinOwner::None) && (tag != PinOwner::HW_I2C) && (tag != PinOwner::HW_SPI)) ownerConflict[gpio] = tag; // WLEDMM record conflict
+    return false;
+  }
   byte by = gpio >> 3;
   byte bi = gpio - (by<<3);
   return bitRead(pinAlloc[by], bi);

@@ -480,10 +480,11 @@ void WLED::setup()
     if(pinManager.isPinOk(pinNr, false)) {
       if ((!pinManager.isPinAllocated(pinNr)) && (pinManager.getPinSpecialText(pinNr).length() == 0)) continue;      // comment out to include no-name,unused GPIO pins
       bool is_inOut = pinManager.isPinOk(pinNr, true);
-      Serial.printf("%s  %2d\t  %-18s\t  %s\n", 
+      Serial.printf("%s  %2d\t  %-17s %s\t  %s\n", 
           (is_inOut?"i/o":"in "), 
           pinNr, 
-          pinManager.getPinOwnerText(pinNr).c_str(), 
+          pinManager.getPinOwnerText(pinNr).c_str(),
+          pinManager.getPinConflicts(pinNr).c_str(),
           pinManager.getPinSpecialText(pinNr).c_str()
       );
     }

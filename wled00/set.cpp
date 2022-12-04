@@ -169,7 +169,14 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         btnPin[i] = hw_btn_pin;
         buttonType[i] = request->arg(be).toInt();
         #ifdef ESP32
-        pinMode(btnPin[i], buttonType[i]==BTN_TYPE_PUSH_ACT_HIGH ? INPUT_PULLDOWN : INPUT_PULLUP);
+        if (((buttonType[i] == BTN_TYPE_ANALOG) || (buttonType[i] == BTN_TYPE_ANALOG_INVERTED)) && (digitalPinToAnalogChannel(btnPin[i]) < 0)) { // WLEDMM
+          // not an ADC analog pin
+          DEBUG_PRINTF("PIN ALLOC error: GPIO%d for analog button #%d is not an analog pin!\n", btnPin[i], i);
+          btnPin[i] = -1;
+          pinManager.deallocatePin(hw_btn_pin,PinOwner::Button);
+        } else { // WLEDMM end
+          pinMode(btnPin[i], buttonType[i]==BTN_TYPE_PUSH_ACT_HIGH ? INPUT_PULLDOWN : INPUT_PULLUP);
+        }
         #else
         pinMode(btnPin[i], INPUT_PULLUP);
         #endif
