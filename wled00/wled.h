@@ -723,9 +723,9 @@ WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
   #define USER_PRINTF(x...) DEBUG_PRINTF(x)
 #else
   // check if serial is availeable, then use Serial.print directly
-  #define USER_PRINT(x)      { if (canUseSerial()) {Serial.print(x);   Serial.flush();}}
-  #define USER_PRINTLN(x)    { if (canUseSerial()) {Serial.println(x); Serial.flush();}}
-  #define USER_PRINTF(x...)  { if (canUseSerial()) {Serial.printf(x);  Serial.flush();}}
+  #define USER_PRINT(x)      { if (canUseSerial()) Serial.print(x); }
+  #define USER_PRINTLN(x)    { if (canUseSerial()) Serial.println(x); }
+  #define USER_PRINTF(x...)  { if (canUseSerial()) Serial.printf(x); }
 #endif
 // WLEDMM end
 
