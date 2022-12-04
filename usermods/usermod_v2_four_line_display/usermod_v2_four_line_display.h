@@ -177,9 +177,9 @@ class FourLineDisplayUsermod : public Usermod {
         isHW = (ioPin[0]==i2c_scl && ioPin[1]==i2c_sda);
         //isHW = true;
         if (isHW) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
-        if (ioPin[0] < 0 || ioPin[1] < 0)  { type=NONE; return; }  //WLEDMM bugfix - ensure that "final" GPIO are valid
+        if (ioPin[0] < 0 || ioPin[1] < 0)  { type=NONE; enabled = false; return; }  //WLEDMM bugfix - ensure that "final" GPIO are valid
         PinManagerPinType pins[2] = { { ioPin[0], true }, { ioPin[1], true } };
-        if (!pinManager.allocateMultiplePins(pins, 2, po)) { type=NONE; return; }
+        if (!pinManager.allocateMultiplePins(pins, 2, po)) { type=NONE; enabled = false; return; }
       }
 
       DEBUG_PRINTLN(F("Allocating display."));
@@ -224,14 +224,14 @@ class FourLineDisplayUsermod : public Usermod {
       }
 
       if (nullptr == u8x8) {
-          DEBUG_PRINTLN(F("Display init failed."));
+          USER_PRINTLN(F("Display init failed."));
           pinManager.deallocateMultiplePins((const uint8_t*)ioPin, (type == SSD1306_SPI || type == SSD1306_SPI64) ? 5 : 2, po);
           type = NONE;
           return;
       }
 
       initDone = true;
-      DEBUG_PRINTLN(F("Starting display."));
+      USER_PRINTLN(F("Starting display."));
       /*if (!(type == SSD1306_SPI || type == SSD1306_SPI64))*/ u8x8->setBusClock(ioFrequency);  // can be used for SPI too
       u8x8->begin();
       setFlipMode(flip);

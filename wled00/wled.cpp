@@ -279,12 +279,16 @@ void WLED::setup()
   #if defined(WLED_DEBUG) && (defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3))
   delay(2500);  // allow CDC USB serial to initialise
   #endif
-  DEBUG_PRINTLN();
-  DEBUG_PRINT(F("---WLED "));
-  DEBUG_PRINT(versionString);
-  DEBUG_PRINT(" ");
-  DEBUG_PRINT(VERSION);
-  DEBUG_PRINTLN(F(" INIT---"));
+  USER_PRINTLN();
+  USER_PRINT(F("---WLED "));
+  USER_PRINT(versionString);
+  USER_PRINT(" ");
+  USER_PRINT(VERSION);
+  USER_PRINTLN(F(" INIT---"));
+  #ifdef WLED_RELEASE_NAME
+  USER_PRINTF("WLEDMM_%s %s\n", versionString, releaseString); // WLEDMM specific
+  #endif
+
 #ifdef ARDUINO_ARCH_ESP32
   DEBUG_PRINT(F("esp32 "));
   DEBUG_PRINTLN(ESP.getSdkVersion());
@@ -354,20 +358,21 @@ void WLED::setup()
   pinManager.allocatePin(2, true, PinOwner::DMX);
 #endif
 
+  USER_PRINTLN();
   DEBUG_PRINTLN(F("Registering usermods ..."));
   registerUsermods();
 
   for (uint8_t i=1; i<WLED_MAX_BUTTONS; i++) btnPin[i] = -1;
 
   bool fsinit = false;
-  DEBUGFS_PRINTLN(F("Mount FS"));
+  DEBUG_PRINTLN(F("Mount FS"));
 #ifdef ARDUINO_ARCH_ESP32
   fsinit = WLED_FS.begin(true);
 #else
   fsinit = WLED_FS.begin();
 #endif
   if (!fsinit) {
-    DEBUGFS_PRINTLN(F("FS failed!"));
+    DEBUG_PRINTLN(F("FS failed!"));
     errorFlag = ERR_FS_BEGIN;
   } 
 #ifdef WLED_ADD_EEPROM_SUPPORT
@@ -398,7 +403,7 @@ void WLED::setup()
   DEBUG_PRINTLN(F("Initializing strip"));
   beginStrip();
 
-  DEBUG_PRINTLN(F("Usermods setup"));
+  USER_PRINTLN(F("Usermods setup ..."));
   userSetup();
   usermods.setup();
 
@@ -472,15 +477,14 @@ void WLED::setup()
   #endif
 
   // WLEDMM : dump GPIO infos (experimental, UI integration pending)
-  #ifdef WLED_DEBUG
-  Serial.println(F("WLED initialization completed."));
-  Serial.println(F("\nGPIO\t| Assigned to\t\t| Info"));
-  Serial.println(F("--------|-----------------------|------------"));
+  //#ifdef WLED_DEBUG
+  USER_PRINTLN(F("\nGPIO\t| Assigned to\t\t| Info"));
+  USER_PRINTLN(F("--------|-----------------------|------------"));
   for(int pinNr = 0; pinNr < WLED_NUM_PINS; pinNr++) { // 49 = highest PIN on ESP32-S3
     if(pinManager.isPinOk(pinNr, false)) {
-      if ((!pinManager.isPinAllocated(pinNr)) && (pinManager.getPinSpecialText(pinNr).length() == 0)) continue;      // comment out to include no-name,unused GPIO pins
+      //if ((!pinManager.isPinAllocated(pinNr)) && (pinManager.getPinSpecialText(pinNr).length() == 0)) continue;      // un-comment to hide no-name,unused GPIO pins
       bool is_inOut = pinManager.isPinOk(pinNr, true);
-      Serial.printf("%s  %2d\t  %-17s %s\t  %s\n", 
+      USER_PRINTF("%s  %2d\t  %-17s %s\t  %s\n", 
           (is_inOut?"i/o":"in "), 
           pinNr, 
           pinManager.getPinOwnerText(pinNr).c_str(),
@@ -489,8 +493,16 @@ void WLED::setup()
       );
     }
   }
-  Serial.println();
+  USER_PRINTLN(F("WLED initialization done.\n"));
+  delay(50);
+  // repeat Ada prompt
+  #ifdef WLED_ENABLE_ADALIGHT
+  if (!pinManager.isPinAllocated(hardwareRX) && !pinManager.isPinAllocated(hardwareTX)) {
+    Serial.println(F("Ada"));
+  }
   #endif
+
+  //#endif
   // WLEDMM end
 }
 
@@ -527,8 +539,8 @@ void WLED::initAP(bool resetAP)
     WLED_SET_AP_SSID();
     strcpy_P(apPass, PSTR(WLED_AP_PASS));
   }
-  DEBUG_PRINT(F("Opening access point "));
-  DEBUG_PRINTLN(apSSID);
+  USER_PRINT(F("Opening access point "));  // WLEDMM
+  USER_PRINTLN(apSSID);                    // WLEDMM
   WiFi.softAPConfig(IPAddress(4, 3, 2, 1), IPAddress(4, 3, 2, 1), IPAddress(255, 255, 255, 0));
   WiFi.softAP(apSSID, apPass, apChannel, apHide);
 
@@ -631,7 +643,7 @@ bool WLED::initEthernet()
   }
 
   successfullyConfiguredEthernet = true;
-  DEBUG_PRINTLN(F("initC: *** Ethernet successfully configured! ***"));
+  USER_PRINTLN(F("initC: *** Ethernet successfully configured! ***"));  // WLEDMM
   return true;
 #else
   return false; // Ethernet not enabled for build
@@ -660,7 +672,7 @@ void WLED::initConnection()
   lastReconnectAttempt = millis();
 
   if (!WLED_WIFI_CONFIGURED) {
-    DEBUG_PRINTLN(F("No connection configured."));
+    USER_PRINTLN(F("No WiFi connection configured."));  // WLEDMM
     if (!apActive) initAP();        // instantly go to ap mode
     return;
   } else if (!apActive) {
@@ -675,9 +687,9 @@ void WLED::initConnection()
   }
   showWelcomePage = false;
 
-  DEBUG_PRINT(F("Connecting to "));
-  DEBUG_PRINT(clientSSID);
-  DEBUG_PRINTLN("...");
+  USER_PRINT(F("Connecting to "));
+  USER_PRINT(clientSSID);
+  USER_PRINTLN("...");
 
   // convert the "serverDescription" into a valid DNS hostname (alphanumeric)
   char hostname[25];
@@ -728,7 +740,7 @@ void WLED::initInterfaces()
     MDNS.end();
     MDNS.begin(cmDNS);
 
-    DEBUG_PRINTLN(F("mDNS started"));
+    USER_PRINTLN(F("mDNS started."));
     MDNS.addService("http", "tcp", 80);
     MDNS.addService("wled", "tcp", 80);
     MDNS.addServiceTxt("wled", "tcp", "mac", escapedMac.c_str());
@@ -807,7 +819,7 @@ void WLED::handleConnection()
     }
   }
   if (forceReconnect) {
-    DEBUG_PRINTLN(F("Forcing reconnect."));
+    USER_PRINTLN(F("Forcing reconnect."));
     initConnection();
     interfacesInited = false;
     forceReconnect = false;
@@ -816,7 +828,7 @@ void WLED::handleConnection()
   }
   if (!Network.isConnected()) {
     if (interfacesInited) {
-      DEBUG_PRINTLN(F("Disconnected!"));
+      USER_PRINTLN(F("Disconnected!"));
       interfacesInited = false;
       initConnection();
     }
@@ -836,8 +848,8 @@ void WLED::handleConnection()
     }
   } else if (!interfacesInited) { //newly connected
     DEBUG_PRINTLN("");
-    DEBUG_PRINT(F("Connected! IP address: "));
-    DEBUG_PRINTLN(Network.localIP());
+    USER_PRINT(F("Connected! IP address: "));
+    USER_PRINTLN(Network.localIP());
     if (improvActive) {
       if (improvError == 3) sendImprovStateResponse(0x00, true);
       sendImprovStateResponse(0x04);
@@ -853,7 +865,7 @@ void WLED::handleConnection()
       dnsServer.stop();
       WiFi.softAPdisconnect(true);
       apActive = false;
-      DEBUG_PRINTLN(F("Access point disabled (handle)."));
+      USER_PRINTLN(F("Access point disabled (handle)."));
     }
   }
 }

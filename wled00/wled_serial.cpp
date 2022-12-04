@@ -67,6 +67,18 @@ void sendBytes(){
   }  
 }
 
+bool canUseSerial(void) {   // WLEDMM returns true if Serial can be used for debug output (i.e. not configured for other purpose)
+  if (pinManager.isPinAllocated(hardwareTX) && (pinManager.getPinOwner(hardwareTX) != PinOwner::DebugOut)) 
+    return false;  // TX allocated to LEDs or other functions
+  if ((realtimeMode == REALTIME_MODE_GENERIC) ||  (realtimeMode == REALTIME_MODE_ADALIGHT) || (realtimeMode == REALTIME_MODE_TPM2NET)) 
+    return false;  // Serial in use for adaLight or other serial communication
+  //if ((improvActive == 1) || (improvActive == 2)) return false; // don't interfere when IMPROV communication is ongoing
+  if (improvActive > 0) return false;              // don't interfere when IMPROV communication is ongoing
+  if (continuousSendLED == true) return false;     // Continuous Serial Streaming
+
+  return true;
+} // WLEDMM end
+
 void handleSerial()
 {
   if (pinManager.isPinAllocated(hardwareRX)) return;

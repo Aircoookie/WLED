@@ -300,6 +300,8 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
       DEBUG_PRINT(gpio);
       DEBUG_PRINT(" as "); DEBUG_PRINT(mptArray[i].isOutput ? "output": "input"); // WLEDMM
       DEBUG_PRINTLN(F(""));
+      #else  // WLEDMM
+      USER_PRINTF("PIN ALLOC: cannot use GPIO%d for %s.\n", gpio, mptArray[i].isOutput ? "output": "input");
       #endif
       if ((gpio < WLED_NUM_PINS) && (gpio >= 0) && (tag != PinOwner::None)) {
         ownerConflict[gpio] = tag; // WLEDMM record conflict
@@ -317,6 +319,8 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
       DEBUG_PRINT(F(" already allocated by "));
       DebugPrintOwnerTag(ownerTag[gpio]);
       DEBUG_PRINTLN(F(""));
+      #else  // WLEDMM
+      USER_PRINTF("PIN ALLOC: failed to assign GPIO%d to %s.\n", gpio, getOwnerText(tag).c_str());
       #endif
       shouldFail = true;
     }
@@ -375,6 +379,10 @@ bool PinManagerClass::allocatePin(byte gpio, bool output, PinOwner tag)
         DEBUG_PRINTLN(F(" - HW I2C & SPI pins have to be allocated using allocateMultiplePins()"));
       }
     }
+    #else  // WLEDMM
+      if (gpio < 255) { 
+        USER_PRINTF("PIN ALLOC: cannot use GPIO%d for %s.\n", gpio, output ? "output": "input");
+      }
     #endif
     return false;
   }
@@ -386,6 +394,8 @@ bool PinManagerClass::allocatePin(byte gpio, bool output, PinOwner tag)
     DEBUG_PRINT(F(" already allocated by "));
     DebugPrintOwnerTag(ownerTag[gpio]);
     DEBUG_PRINTLN(F(""));
+    #else  // WLEDMM
+    USER_PRINTF("PIN ALLOC: failed to assign GPIO%d to %s.\n", gpio, getOwnerText(tag).c_str());
     #endif
     return false;
   }

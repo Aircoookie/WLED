@@ -164,7 +164,7 @@ class UsermodTemperature : public Usermod {
       temperature = -127.0f; // default to -127, DS18B20 only goes down to -50C
       if (enabled) {
         // config says we are enabled
-        DEBUG_PRINTLN(F("Allocating temperature pin..."));
+        USER_PRINTLN(F("Finding temperature pin..."));
         // pin retrieved from cfg.json (readFromConfig()) prior to running setup()
         if (temperaturePin >= 0 && pinManager.allocatePin(temperaturePin, true, PinOwner::UM_Temperature)) {
           oneWire = new OneWire(temperaturePin);
@@ -175,13 +175,14 @@ class UsermodTemperature : public Usermod {
           }
         } else {
           if (temperaturePin >= 0) {
-            DEBUG_PRINTLN(F("Temperature pin allocation failed."));
+            USER_PRINTLN(F("Temperature pin allocation failed."));
           }
           temperaturePin = -1;  // allocation failed
         }
       }
       lastMeasurement = millis() - readingInterval + 10000;
       initDone = true;
+      USER_PRINTLN(F("temperature usermod initialized."));
     }
 
     void loop() {

@@ -1302,9 +1302,11 @@ class AudioReactive : public Usermod {
       #ifdef WLED_DEBUG
         DEBUG_PRINTLN(F("AR: Failed to initialize sound input driver. Please check input PIN settings."));
       #else
-        ERRORSR_PRINTLN(F("AR: Failed to initialize sound input driver. Please check input PIN settings."));
+        USER_PRINTLN(F("AR: Failed to initialize sound input driver. Please check input PIN settings."));
       #endif
         disableSoundProcessing = true;
+      } else {
+        USER_PRINTLN(F("AR: sound input driver initialized successfully."));        
       }
 
       if (enabled) connectUDPSoundSync();

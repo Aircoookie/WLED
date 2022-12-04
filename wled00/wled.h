@@ -715,6 +715,20 @@ WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
   #define DEBUG_PRINTF(x...)
 #endif
 
+// WLEDMM: macros to print "user messages" to Serial
+#ifdef WLED_DEBUG
+  // use DEBUG_PRINT
+  #define USER_PRINT(x) DEBUG_PRINT(x)
+  #define USER_PRINTLN(x) DEBUG_PRINTLN(x)
+  #define USER_PRINTF(x...) DEBUG_PRINTF(x)
+#else
+  // check if serial is availeable, then use Serial.print directly
+  #define USER_PRINT(x)      { if (canUseSerial()) {Serial.print(x);   Serial.flush();}}
+  #define USER_PRINTLN(x)    { if (canUseSerial()) {Serial.println(x); Serial.flush();}}
+  #define USER_PRINTF(x...)  { if (canUseSerial()) {Serial.printf(x);  Serial.flush();}}
+#endif
+// WLEDMM end
+
 #ifdef WLED_DEBUG_FS
   #define DEBUGFS_PRINT(x) DEBUGOUT.print(x)
   #define DEBUGFS_PRINTLN(x) DEBUGOUT.println(x)

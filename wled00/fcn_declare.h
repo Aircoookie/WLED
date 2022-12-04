@@ -369,6 +369,7 @@ void clearEEPROM();
 //wled_serial.cpp
 void handleSerial();
 void updateBaudRate(uint32_t rate);
+bool canUseSerial(void);   // WLEDMM returns true if Serial can be used for debug output (i.e. not configured for other purpose)
 
 //wled_server.cpp
 bool isIp(String str);
