@@ -286,7 +286,7 @@ void WLED::setup()
   USER_PRINT(VERSION);
   USER_PRINTLN(F(" INIT---"));
   #ifdef WLED_RELEASE_NAME
-  USER_PRINTF("WLEDMM_%s %s\n", versionString, releaseString); // WLEDMM specific
+  USER_PRINTF(" WLEDMM_%s %s, build %s.\n", versionString, releaseString, TOSTRING(VERSION)); // WLEDMM specific
   #endif
 
 #ifdef ARDUINO_ARCH_ESP32
