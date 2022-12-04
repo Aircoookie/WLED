@@ -1,7 +1,7 @@
 # Experimental Bluetooth Control for WLED.
 
 * Allows access to JSON API over Bluetooth Serial Connection.
-* __Normal WiFi functionality is disabled while Bluetooth is in use__
+* __Normal WiFi functionality is disabled while Bluetooth is in use. OTA disabled due to size constraints__
 * Bluetooth device shows up as whatever is set in "Server description", "WLED" by default.
 * Normal WiFi functionality can be accessed for general WLED setup under the following conditions
   * Normal WiFi functionality until "Apply preset at boot" is set.
