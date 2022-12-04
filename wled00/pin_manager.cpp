@@ -298,6 +298,9 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
       DEBUG_PRINT(" as "); DEBUG_PRINT(mptArray[i].isOutput ? "output": "input"); // WLEDMM
       DEBUG_PRINTLN(F(""));
       #endif
+      if ((gpio < 50) && (gpio >= 0) && (tag != PinOwner::None)) {
+        ownerConflict[gpio] = tag; // WLEDMM record conflict
+      }
       shouldFail = true;
     }
     if ((tag==PinOwner::HW_I2C || tag==PinOwner::HW_SPI) && isPinAllocated(gpio, tag)) {
@@ -353,6 +356,9 @@ bool PinManagerClass::allocatePin(byte gpio, bool output, PinOwner tag)
     #ifdef WLED_DEBUG
     if (gpio < 255) {  // 255 (-1) is the "not defined GPIO"
       if (!isPinOk(gpio, output)) {
+        if ((gpio < 50) && (gpio >= 0) && (tag != PinOwner::None)) {
+          ownerConflict[gpio] = tag; // WLEDMM record conflict
+        }
         DEBUG_PRINT(F("PIN ALLOC: FAIL for owner "));
         DebugPrintOwnerTag(tag);
         DEBUG_PRINT(F(": GPIO ")); DEBUG_PRINT(gpio);
