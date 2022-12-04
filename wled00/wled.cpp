@@ -32,7 +32,8 @@ void WLED::reset()
     yield();        // enough time to send response to client
   }
   applyBri();
-  DEBUG_PRINTLN(F("WLED RESET"));
+  USER_PRINTLN(F("WLED RESET"));
+  if (canUseSerial()) Serial.flush();   // WLEDMM: wait until Serial has completed sending its buffer
   ESP.restart();
 }
 
@@ -491,6 +492,7 @@ void WLED::setup()
           pinManager.getPinConflicts(pinNr).c_str(),
           pinManager.getPinSpecialText(pinNr).c_str()
       );
+      if (canUseSerial()) Serial.flush();  // avoid lost lines (buffer overflow?)
     }
   }
   USER_PRINTLN(F("WLED initialization done.\n"));
