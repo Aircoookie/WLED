@@ -9,6 +9,7 @@ class BluetoothSerialUsermod : public Usermod {
  
   public:
 
+
     void setup() {
 
       // Tell WLED to defer all WiFi Connectivity

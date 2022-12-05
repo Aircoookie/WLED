@@ -110,6 +110,7 @@ void handleSerial()
         } else if (next == 'o') {continuousSendLED = false; // Disable Continuous Serial Streaming  
         } else if (next == 'O') {continuousSendLED = true; // Enable Continuous Serial Streaming
 
+        // If compiled with defered connection option, add serial command to end deferment
         #ifdef WLED_DEFER_CONNECTIONS
         } else if (next == 'e') {if(deferConnections) deferConnections = false;
         #endif
