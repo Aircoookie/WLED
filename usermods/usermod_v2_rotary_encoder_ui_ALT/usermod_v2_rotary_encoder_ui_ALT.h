@@ -356,7 +356,7 @@ public:
       loopTime = currentTime; // Updates loopTime
 
       bool buttonPressed = false;
-      if (pinC > 0) buttonPressed = !digitalRead(pinC); //0=pressed, 1=released
+      if (pinC >= 0) buttonPressed = !digitalRead(pinC); //0=pressed, 1=released
       if (buttonPressed) {
         if (!buttonPressedBefore) buttonPressedTime = currentTime;
         buttonPressedBefore = true;

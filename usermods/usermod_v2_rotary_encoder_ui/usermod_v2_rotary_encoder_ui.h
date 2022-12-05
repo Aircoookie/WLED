@@ -178,7 +178,7 @@ public:
 
     if (currentTime >= (loopTime + 2)) // 2ms since last check of encoder = 500Hz
     {
-      button_state = digitalRead(pinC);
+      if (pinC >= 0) button_state = digitalRead(pinC);
       if (prev_button_state != button_state)
       {
         if (button_state == LOW)
