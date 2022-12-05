@@ -1,6 +1,7 @@
 #pragma once
 #include "wled.h"
 #include "BluetoothSerial.h"
+#include "esp_bt_device.h"
 
 BluetoothSerial SerialBT;
 
@@ -17,10 +18,21 @@ class BluetoothSerialUsermod : public Usermod {
       SerialBT.begin(serverDescription);
 
       Serial.println("Bluetooth Serial Usermod setup complete");
+
+      // The name the bluetooth device will appear as, same as set in server description
       Serial.print("Bluetooth Name: ");
       Serial.println(serverDescription);
+
+      // The local bluetooth device address
       Serial.print("Bluetooth Address: ");
-      Serial.println("todo");
+      const uint8_t* point = esp_bt_dev_get_address();
+      for (int i = 0; i < 6; i++) {
+        char str[3];
+        sprintf(str, "%02X", (int)point[i]);
+        Serial.print(str);
+        if (i < 5) Serial.print(":");
+      }
+      Serial.println();
     }
 
 
