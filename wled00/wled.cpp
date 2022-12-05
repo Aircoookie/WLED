@@ -603,6 +603,7 @@ void WLED::initConnection()
   ws.onEvent(wsEvent);
   #endif
 
+  if (wifiDisabled) return; // can still use ethernet
 
   WiFi.disconnect(true);        // close old connections
 #ifdef ESP8266
@@ -863,4 +864,13 @@ void WLED::handleStatusLED()
     #endif
   }
   #endif
+}
+
+void WLED::disableWiFi() {
+  wifiDisabled = true;
+  WiFi.disconnect(true);
+}
+
+void WLED::enableWiFi() {
+  wifiDisabled = false;
 }
