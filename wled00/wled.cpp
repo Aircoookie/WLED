@@ -32,8 +32,8 @@ void WLED::reset()
     yield();        // enough time to send response to client
   }
   applyBri();
-  USER_PRINTLN(F("WLED RESET"));
-  if (canUseSerial()) Serial.flush();   // WLEDMM: wait until Serial has completed sending its buffer
+  USER_PRINTLN(F("\nWLED RESTART\n"));
+  USER_FLUSH();   // WLEDMM: wait until Serial has completed sending buffered data
   ESP.restart();
 }
 
@@ -280,6 +280,8 @@ void WLED::setup()
   #if defined(WLED_DEBUG) && (defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3))
   delay(2500);  // allow CDC USB serial to initialise
   #endif
+  //Serial.setDebugOutput(true);
+  USER_FLUSH(); delay(100);
   USER_PRINTLN();
   USER_PRINT(F("---WLED "));
   USER_PRINT(versionString);
@@ -351,6 +353,7 @@ void WLED::setup()
 
   //DEBUG_PRINT(F("LEDs inited. heap usage ~"));
   //DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
+  USER_FLUSH();  // WLEDMM flush buffer now, before anything time-critial is started.
 
 #ifdef WLED_DEBUG
   pinManager.allocatePin(hardwareTX, true, PinOwner::DebugOut); // TX (GPIO1 on ESP32) reserved for debug output
@@ -492,7 +495,7 @@ void WLED::setup()
           pinManager.getPinConflicts(pinNr).c_str(),
           pinManager.getPinSpecialText(pinNr).c_str()
       );
-      if (canUseSerial()) Serial.flush();  // avoid lost lines (buffer overflow?)
+      USER_FLUSH();  // avoid lost lines (Serial buffer overflow)
     }
   }
   USER_PRINTLN(F("WLED initialization done.\n"));
@@ -768,6 +771,13 @@ void WLED::initInterfaces()
   initMqtt();
   interfacesInited = true;
   wasConnected = true;
+
+  #ifndef WLED_DISABLE_OTA   // WLEDMM
+  if (aOtaEnabled) {
+    USER_PRINT(F("           ArduinoOTA: "));
+    USER_PRINTLN(ArduinoOTA.getHostname());
+  }
+  #endif                     // WLEDMM end
 }
 
 void WLED::handleConnection()

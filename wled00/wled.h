@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2212043
+#define VERSION 2212051
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -716,16 +716,23 @@ WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
 #endif
 
 // WLEDMM: macros to print "user messages" to Serial
-#ifdef WLED_DEBUG
+// cannot do this on -S2, due to buggy USBCDC serial driver
+#if defined(WLED_DEBUG) || defined(WLED_DEBUG_HOST) || defined(CONFIG_IDF_TARGET_ESP32S2)
   // use DEBUG_PRINT
   #define USER_PRINT(x) DEBUG_PRINT(x)
   #define USER_PRINTLN(x) DEBUG_PRINTLN(x)
   #define USER_PRINTF(x...) DEBUG_PRINTF(x)
+  #ifdef WLED_DEBUG_HOST
+    #define USER_FLUSH() {}
+  #else
+    #define USER_FLUSH() {DEBUGOUT.flush();}
+  #endif
 #else
-  // check if serial is availeable, then use Serial.print directly
+  // if serial is availeable, we use Serial.print directly
   #define USER_PRINT(x)      { if (canUseSerial()) Serial.print(x); }
   #define USER_PRINTLN(x)    { if (canUseSerial()) Serial.println(x); }
   #define USER_PRINTF(x...)  { if (canUseSerial()) Serial.printf(x); }
+  #define USER_FLUSH()       {Serial.flush();}
 #endif
 // WLEDMM end
 

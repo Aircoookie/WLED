@@ -52,6 +52,8 @@ void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t
   }
   if (final) {
     request->_tempFile.close();
+    USER_PRINT(F("File uploaded: "));  // WLEDMM
+    USER_PRINTLN(filename);            // WLEDMM
     if (filename.equalsIgnoreCase("/cfg.json") || filename.equalsIgnoreCase("cfg.json")) { // WLEDMM
       request->send(200, "text/plain", F("Configuration restore successful.\nRebooting..."));
       doReboot = true;

@@ -89,12 +89,16 @@ String PinManagerClass::getPinSpecialText(int gpio) {  // special purpose PIN in
   #endif
 #endif
 
-  // hardware special purpose PINS. part1 
+  // hardware special purpose PINS. part1 - assigned pins
   if (gpio == hardwareTX) return(F("Serial TX"));   // Serial (debug monitor) TX pin (usually GPIO1)
   if (gpio == hardwareRX) return(F("Serial RX"));   // Serial (debug monitor) RX pin (usually GPIO3)
-  if ((gpio == i2c_sda)  || ((gpio == HW_PIN_SDA) && (i2c_sda < 0))) return(F("(default) I2C SDA"));
-  if ((gpio == i2c_scl)  || ((gpio == HW_PIN_SCL) && (i2c_scl < 0))) return(F("(default) I2C SCL"));
-
+  if (isPinAllocated(gpio)) {
+    if ((gpio == i2c_sda)  && (getPinOwner(gpio) == PinOwner::HW_I2C)) return(F("I2C SDA"));
+    if ((gpio == i2c_scl)  && (getPinOwner(gpio) == PinOwner::HW_I2C)) return(F("I2C SCL"));
+    if ((gpio == spi_sclk) && (getPinOwner(gpio) == PinOwner::HW_SPI)) return(F("SPI SLK  / SCK"));
+    if ((gpio == spi_mosi) && (getPinOwner(gpio) == PinOwner::HW_SPI)) return(F("SPI PICO / MOSI"));
+    if ((gpio == spi_miso) && (getPinOwner(gpio) == PinOwner::HW_SPI)) return(F("SPI POCI / MISO"));
+  }
   // MCU special PINS
   #ifdef ARDUINO_ARCH_ESP32
     #if defined(CONFIG_IDF_TARGET_ESP32S3)
@@ -138,7 +142,9 @@ String PinManagerClass::getPinSpecialText(int gpio) {  // special purpose PIN in
     if (gpio == STATUSLED) return(F("WLED Status LED"));
   #endif
 
-  // hardware special purpose PINS. part2
+  // hardware special purpose PINS. part2 - default pins
+  if ((gpio == i2c_sda)  || ((gpio == HW_PIN_SDA) && (i2c_sda < 0))) return(F("(default) I2C SDA"));
+  if ((gpio == i2c_scl)  || ((gpio == HW_PIN_SCL) && (i2c_scl < 0))) return(F("(default) I2C SCL"));
   if ((gpio == spi_sclk) || ((gpio == HW_PIN_CLOCKSPI) && (spi_sclk < 0))) return(F("(default) SPI SLK  / SCK"));
   if ((gpio == spi_mosi) || ((gpio == HW_PIN_DATASPI) && (spi_mosi < 0)))  return(F("(default) SPI PICO / MOSI"));
   if ((gpio == spi_miso) || ((gpio == HW_PIN_MISOSPI) && (spi_miso < 0)))  return(F("(default) SPI POCI / MISO"));
@@ -490,6 +496,7 @@ bool PinManagerClass::isPinOk(byte gpio, bool output)
 
 PinOwner PinManagerClass::getPinOwner(byte gpio) {
   if (!isPinOk(gpio, false)) return PinOwner::None;
+  if (gpio >= WLED_NUM_PINS) return PinOwner::None; // WLEDMM: catch error cases
   return ownerTag[gpio];
 }
 
