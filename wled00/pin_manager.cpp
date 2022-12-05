@@ -107,8 +107,9 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
     }
     if (!isPinOk(gpio, mptArray[i].isOutput)) {
       #ifdef WLED_DEBUG
-      DEBUG_PRINT(F("PIN ALLOC: Invalid pin attempted to be allocated: "));
+      DEBUG_PRINT(F("PIN ALLOC: Invalid pin attempted to be allocated: GPIO "));
       DEBUG_PRINT(gpio);
+      DEBUG_PRINT(" as "); DEBUG_PRINT(mptArray[i].isOutput ? "output": "input");
       DEBUG_PRINTLN(F(""));
       #endif
       shouldFail = true;
@@ -142,6 +143,9 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
       // as this can greatly simplify configuration arrays
       continue;
     }
+    if (gpio >= WLED_NUM_PINS) 
+      continue; // other unexpected GPIO => avoid array bounds violation
+
     byte by = gpio >> 3;
     byte bi = gpio - 8*by;
     bitWrite(pinAlloc[by], bi, true);
@@ -160,7 +164,7 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
 bool PinManagerClass::allocatePin(byte gpio, bool output, PinOwner tag)
 {
   // HW I2C & SPI pins have to be allocated using allocateMultiplePins variant since there is always SCL/SDA pair
-  if (!isPinOk(gpio, output) || tag==PinOwner::HW_I2C || tag==PinOwner::HW_SPI) {
+  if (!isPinOk(gpio, output) || (gpio >= WLED_NUM_PINS) || tag==PinOwner::HW_I2C || tag==PinOwner::HW_SPI) {
     #ifdef WLED_DEBUG
     if (gpio < 255) {  // 255 (-1) is the "not defined GPIO"
       if (!isPinOk(gpio, output)) {
@@ -209,6 +213,7 @@ bool PinManagerClass::isPinAllocated(byte gpio, PinOwner tag)
 {
   if (!isPinOk(gpio, false)) return true;
   if ((tag != PinOwner::None) && (ownerTag[gpio] != tag)) return false;
+  if (gpio >= WLED_NUM_PINS) return false; // catch error case, to avoid array out-of-bounds access
   byte by = gpio >> 3;
   byte bi = gpio - (by<<3);
   return bitRead(pinAlloc[by], bi);
@@ -265,6 +270,7 @@ bool PinManagerClass::isPinOk(byte gpio, bool output)
 }
 
 PinOwner PinManagerClass::getPinOwner(byte gpio) {
+  if (gpio >= WLED_NUM_PINS) return PinOwner::None; // catch error case, to avoid array out-of-bounds access
   if (!isPinOk(gpio, false)) return PinOwner::None;
   return ownerTag[gpio];
 }
