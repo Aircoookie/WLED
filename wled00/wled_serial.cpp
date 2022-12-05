@@ -110,6 +110,10 @@ void handleSerial()
         } else if (next == 'o') {continuousSendLED = false; // Disable Continuous Serial Streaming  
         } else if (next == 'O') {continuousSendLED = true; // Enable Continuous Serial Streaming
 
+        #ifdef WLED_DEFER_CONNECTIONS
+        } else if (next == 'e') {if(deferConnections) deferConnections = false;
+        #endif
+
         } else if (next == '{') { //JSON API
           bool verboseResponse = false;
           if (!requestJSONBufferLock(16)) return;
