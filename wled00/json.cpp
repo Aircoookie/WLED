@@ -403,6 +403,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       // if preset contains HTTP API call do not change presetCycCurr
       if (root["win"].isNull()) presetCycCurr = currentPreset;
       stateChanged = false; // cancel state change update (preset was set directly by applying values stored in UI JSON array)
+      notify(callMode);
     } else if (root["win"].isNull() && getVal(root["ps"], &ps, 0, 0) && ps > 0 && ps < 251 && ps != currentPreset) {
       // b) preset ID only or preset that does not change state (use embedded cycling limits if they exist in getVal())
       presetCycCurr = ps;
