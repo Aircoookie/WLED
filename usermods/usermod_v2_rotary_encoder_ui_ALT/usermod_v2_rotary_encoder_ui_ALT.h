@@ -267,6 +267,11 @@ public:
   {
     DEBUG_PRINTLN(F("Usermod Rotary Encoder init."));
     PinManagerPinType pins[3] = { { pinA, false }, { pinB, false }, { pinC, false } };
+    if ((pinA < 0) || (pinB < 0)) {                                               //WLEDMM catch error: [  1839][E][esp32-hal-gpio.c:102] __pinMode(): Invalid pin selected
+      enabled = false;
+      DEBUG_PRINTLN(F("Invalid GPIO pins for Usermod Rotary Encoder (ALT)."));   //WLEDMM add debug info
+      return;      
+    }
     if (!pinManager.allocateMultiplePins(pins, 3, PinOwner::UM_RotaryEncoderUI)) {
       // BUG: configuring this usermod with conflicting pins
       //      will cause it to de-allocate pins it does not own
@@ -284,7 +289,7 @@ public:
     #endif
     pinMode(pinA, USERMOD_ROTARY_ENCODER_GPIO);
     pinMode(pinB, USERMOD_ROTARY_ENCODER_GPIO);
-    pinMode(pinC, USERMOD_ROTARY_ENCODER_GPIO);
+    if (pinC >= 0) pinMode(pinC, USERMOD_ROTARY_ENCODER_GPIO);   // WLEDMM catch error
 
     loopTime = millis();
 
@@ -305,6 +310,7 @@ public:
     Enc_A = digitalRead(pinA); // Read encoder pins
     Enc_B = digitalRead(pinB);
     Enc_A_prev = Enc_A;
+    USER_PRINTLN(F("Rotary encoder (ALT) setup completed."));   // WLEDMM inform user
   }
 
   /*
@@ -349,7 +355,8 @@ public:
     {
       loopTime = currentTime; // Updates loopTime
 
-      bool buttonPressed = !digitalRead(pinC); //0=pressed, 1=released
+      bool buttonPressed = false;
+      if (pinC > 0) buttonPressed = !digitalRead(pinC); //0=pressed, 1=released
       if (buttonPressed) {
         if (!buttonPressedBefore) buttonPressedTime = currentTime;
         buttonPressedBefore = true;

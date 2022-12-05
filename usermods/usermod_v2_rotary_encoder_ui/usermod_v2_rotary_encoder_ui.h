@@ -99,6 +99,12 @@ public:
   {
     DEBUG_PRINTLN(F("Usermod Rotary Encoder init."));
     PinManagerPinType pins[3] = { { pinA, false }, { pinB, false }, { pinC, false } };
+    if ((pinA < 0) || (pinB < 0)) {                                               //WLEDMM catch error: [  1839][E][esp32-hal-gpio.c:102] __pinMode(): Invalid pin selected
+      enabled = false;
+      DEBUG_PRINTLN(F("Invalid GPIO pins for Usermod Rotary Encoder."));   //WLEDMM add debug info
+      return;      
+    }
+
     if (!pinManager.allocateMultiplePins(pins, 3, PinOwner::UM_RotaryEncoderUI)) {
       // BUG: configuring this usermod with conflicting pins
       //      will cause it to de-allocate pins it does not own
@@ -116,8 +122,7 @@ public:
     #endif
     pinMode(pinA, USERMOD_ROTARY_ENCODER_GPIO);
     pinMode(pinB, USERMOD_ROTARY_ENCODER_GPIO);
-    pinMode(pinC, USERMOD_ROTARY_ENCODER_GPIO);
-
+    if (pinC >= 0) pinMode(pinC, USERMOD_ROTARY_ENCODER_GPIO);   // WLEDMM catch error
     currentTime = millis();
     loopTime = currentTime;
 
@@ -136,6 +141,7 @@ public:
 #endif
 
     initDone = true;
+    USER_PRINTLN(F("Rotary encoder setup completed."));   // WLEDMM inform user
   }
 
   /*
