@@ -160,6 +160,10 @@
 #include "../usermods/ADS1115_v2/usermod_ads1115.h"
 #endif
 
+#ifdef USERMOD_PLAYBACK_RECORDINGS
+#include "../usermods/playback_recordings/usermod_playback_recordings.h"
+#endif
+
 #if defined(WLED_USE_SD_MMC) || defined(WLED_USE_SD_SPI)
 // This include of SD.h and SD_MMC.h must happen here, else they won't be
 // resolved correctly (when included in mod's header only)
@@ -325,6 +329,10 @@ void registerUsermods()
   usermods.add(new ADS1115Usermod());
   #endif
 
+  #ifdef USERMOD_PLAYBACK_RECORDINGS
+  usermods.add(new PlaybackRecordings());
+  #endif
+  
   #ifdef SD_ADAPTER
   usermods.add(new UsermodSdCard());
   #endif
