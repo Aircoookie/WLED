@@ -55,6 +55,8 @@ class BobLightUsermod : public Usermod {
     # You should have received a copy of the GNU General Public License along
     # with this program.  If not, see <http://www.gnu.org/licenses/>.
     */
+
+    // fills the lights[] array with position & depth of scan for each LED
     void fillBobLights(int bottom, int left, int top, int right, float pct_scan) {
 
       int lightcount = 0;
@@ -66,6 +68,7 @@ class BobLightUsermod : public Usermod {
         return;
       }
 
+      // start left part of bottom strip (clockwise direction, 1st half)
       if (bottom > 0) {
         bcount = 1;
         float brange = 100.0/bottom;
@@ -89,6 +92,7 @@ class BobLightUsermod : public Usermod {
         }
       }
 
+      // left side
       if (left > 0) {
         int lcount = 1;
         float lrange = 100.0/left;
@@ -107,6 +111,7 @@ class BobLightUsermod : public Usermod {
         }
       }
 
+      // top side
       if (top > 0) {
         int tcount = 1;
         float trange = 100.0/top;
@@ -125,6 +130,7 @@ class BobLightUsermod : public Usermod {
         }
       }
 
+      // right side
       if (right > 0) {
         int rcount = 1;
         float rrange = 100.0/right;
@@ -143,7 +149,7 @@ class BobLightUsermod : public Usermod {
         }
       }
       
-            
+      // right side of bottom strip (2nd half)
       if (bottom > 0) {
         float brange = 100.0/bottom;
         float bcurrent = 100;
@@ -284,7 +290,15 @@ class BobLightUsermod : public Usermod {
           String str = um[FPSTR(_enabled)]; // checkbox -> off or on
           en = (bool)(str!="off"); // off is guaranteed to be present
         }
-        if (en != enabled && lights) enable(en);
+        if (en != enabled && lights) {
+          enable(en);
+          if (!enabled && bob && bob->hasClient()) {
+            if (bobClient) bobClient.stop();
+            bobClient = bob->available();
+            BobClear();
+            exitRealtime();
+          }
+        }
       }
     }
 
