@@ -176,6 +176,11 @@
   #include "../usermods/sd_card/usermod_sd_card.h"
 #endif
 
+#ifdef USERMOD_PWM_OUTPUTS
+#include "../usermods/pwm_outputs/usermod_pwm_outputs.h"
+#endif
+
+
 void registerUsermods()
 {
 /*
@@ -330,5 +335,9 @@ void registerUsermods()
 
   #ifdef SD_ADAPTER
   usermods.add(new UsermodSdCard());
+  #endif
+  
+  #ifdef USERMOD_PWM_OUTPUTS
+  usermods.add(new PwmOutputsUsermod());
   #endif
 }
