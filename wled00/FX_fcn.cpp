@@ -1867,7 +1867,7 @@ void WS2812FX::deserializeMap(uint8_t n) {
 #endif
       customMappingSize  = map.size();
     customMappingTable = new uint16_t[customMappingSize];
-    for (uint16_t i=0; i<map.size(); i++) {
+    for (uint16_t i=0; i<MIN(map.size(),customMappingSize); i++) {
       customMappingTable[i] = (uint16_t) map[i];
     }
     setUpMatrix(false); //WLEDMM: apply logical to physical mapping after the ledmap

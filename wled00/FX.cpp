@@ -3451,7 +3451,7 @@ uint16_t mode_drip(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_DRIP[] PROGMEM = "Drip@Gravity,# of drips;!,!;!;1.5d;m12=1"; //bar WLEDMM 1.5d
+static const char _data_FX_MODE_DRIP[] PROGMEM = "Drip@Gravity,# of drips,Fall ratio;!,!;!;1.5d;m12=1"; //bar WLEDMM 1.5d
 
 
 /*
