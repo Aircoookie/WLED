@@ -36,16 +36,19 @@ body:
       label: Install Method
       description: How did you install WLED?
       options:
+        - From MoonModules Release Page https://github.com/MoonModules/WLED/releases
+        - From srg74 firmware repository https://github.com/srg74/WLED-wemos-shield/tree/master/resources/experimental/Firmware/AudioReactive
+        - From https://wled-install.github.io/
         - Binary from WLED.me
-        - Self-Compiled
+        - Self-Compiled or other
     validations:
       required: true
   - type: input
     id: version
     attributes:
-      label: What version of WLED?
+      label: What version/release of MM WLED?
       description: You can find this in by going to Config -> Security & Updates -> Scroll to Bottom. Copy and paste the entire line after "Server message"
-      placeholder: "e.g. WLED 0.13.1 (build 2203150)"
+      placeholder: "e.g. WLEDMM_0.14.0.2.1_esp32_4MB_max (build 2212061)"
     validations:
       required: true
   - type: dropdown
