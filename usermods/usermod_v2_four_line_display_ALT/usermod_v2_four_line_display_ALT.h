@@ -312,8 +312,8 @@ class FourLineDisplayUsermod : public Usermod {
       bool isHW, isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64);
       PinOwner po = PinOwner::UM_FourLineDisplay;
       if (isSPI) {
-        uint8_t hw_sclk = spi_sclk<0 ? HW_PIN_CLOCKSPI : spi_sclk;
-        uint8_t hw_mosi = spi_mosi<0 ? HW_PIN_DATASPI : spi_mosi;
+        int8_t hw_sclk = spi_sclk<0 ? HW_PIN_CLOCKSPI : spi_sclk;
+        int8_t hw_mosi = spi_mosi<0 ? HW_PIN_DATASPI : spi_mosi;
         if (ioPin[0] < 0 || ioPin[1] < 0) {
           ioPin[0] = hw_sclk;
           ioPin[1] = hw_mosi;
@@ -329,8 +329,8 @@ class FourLineDisplayUsermod : public Usermod {
           return;
         }
       } else {
-        uint8_t hw_scl = i2c_scl<0 ? HW_PIN_SCL : i2c_scl;
-        uint8_t hw_sda = i2c_sda<0 ? HW_PIN_SDA : i2c_sda;
+        int8_t hw_scl = i2c_scl<0 ? HW_PIN_SCL : i2c_scl;
+        int8_t hw_sda = i2c_sda<0 ? HW_PIN_SDA : i2c_sda;
         if (ioPin[0] < 0 || ioPin[1] < 0) {
           ioPin[0] = hw_scl;
           ioPin[1] = hw_sda;

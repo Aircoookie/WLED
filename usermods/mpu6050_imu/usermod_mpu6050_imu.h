@@ -2,10 +2,12 @@
 
 #include "wled.h"
 
+  // #define MPU6050_INT_GPIO 13  // WLEDMM - better choice on ESP32
+
 #ifdef WLED_DEBUG
-  #define DEBUG_PRINT_IMU(x) Serial.print(x)
-  #define DEBUG_PRINT_IMULN(x) Serial.println(x)
-  #define DEBUG_PRINT_IMUF(x...) Serial.printf(x)
+  #define DEBUG_PRINT_IMU(x) DEBUG_PRINT(x)
+  #define DEBUG_PRINT_IMULN(x) DEBUG_PRINTLN(x)
+  #define DEBUG_PRINT_IMUF(x...) DEBUG_PRINTF(x)
 #else
   #define DEBUG_PRINT_IMU(x)
   #define DEBUG_PRINT_IMULN(x)
@@ -46,6 +48,21 @@
 
 #include "MPU6050_6Axis_MotionApps20.h"
 
+// WLEDMM - need to re-define WLED DEBUG_PRINT maros, because the were overwritten by MPU6050_6Axis_MotionApps20.h
+#undef DEBUG_PRINT
+#undef DEBUG_PRINTLN
+#undef DEBUG_PRINTF
+
+#ifdef WLED_DEBUG
+  #define DEBUG_PRINT(x) DEBUGOUT.print(x)
+  #define DEBUG_PRINTLN(x) DEBUGOUT.println(x)
+  #define DEBUG_PRINTF(x...) DEBUGOUT.printf(x)
+#else
+  #define DEBUG_PRINT(x)
+  #define DEBUG_PRINTLN(x)
+  #define DEBUG_PRINTF(x...)
+#endif
+
 // Arduino Wire library is required if I2Cdev I2CDEV_ARDUINO_WIRE implementation
 // is used in I2Cdev.h
 #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
@@ -84,19 +101,38 @@ class MPU6050Driver : public Usermod {
     VectorInt16 aaReal;     // [x, y, z]            gravity-free accel sensor measurements
     VectorInt16 aaWorld;    // [x, y, z]            world-frame accel sensor measurements
     VectorFloat gravity;    // [x, y, z]            gravity vector
-    float euler[3];         // [psi, theta, phi]    Euler angle container
-    float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
+    float euler[3] = {0.0f};// [psi, theta, phi]    Euler angle container
+    float ypr[3]  = {0.0f}; // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
 
+    #if !defined(ARDUINO_ARCH_ESP32) || !defined(MPU6050_INT_GPIO)
     static const int INTERRUPT_PIN = 15; // use pin 15 on ESP8266
+    #else
+    static const int INTERRUPT_PIN = MPU6050_INT_GPIO;       // WLEDMM
+    #endif
 
     void setup() {
       DEBUG_PRINT_IMULN("mpu setup");
-      PinManagerPinType pins[2] = { { i2c_scl, true }, { i2c_sda, true } };
-      if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) { enabled = false; return; }
+    // WLEDMM begin
+      int8_t hw_scl = i2c_scl<0 ? HW_PIN_SCL : i2c_scl;
+      int8_t hw_sda = i2c_sda<0 ? HW_PIN_SDA : i2c_sda;
+
+      PinManagerPinType pins[2] = { { hw_scl, true }, { hw_sda, true } };
+      if ((hw_scl < 0) || (hw_sda < 0)) {
+        //enabled = false;
+        USER_PRINTF("mpu6050: warning - ivalid I2C pins: sda=%d scl=%d\n", hw_sda, hw_scl);
+        //return;
+      }
+
+      if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) { 
+        enabled = false;
+        USER_PRINTF("mpu6050: failed to allocate I2C sda=%d scl=%d\n", hw_sda, hw_scl);
+        return;
+      }
+    // WLEDMM end
 
       // join I2C bus (I2Cdev library doesn't do this automatically)
       #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
-          Wire.begin();
+          Wire.begin();        // WLEDMM fixme - this completely ignores any PINS
           Wire.setClock(400000); // 400kHz I2C clock. Comment this line if having compilation difficulties
       #elif I2CDEV_IMPLEMENTATION == I2CDEV_BUILTIN_FASTWIRE
           Fastwire::setup(400, true);
@@ -116,12 +152,21 @@ class MPU6050Driver : public Usermod {
 
       // initialize device
       DEBUG_PRINT_IMULN(F("Initializing I2C devices..."));
+      // WLEDMM begin
+      if (!pinManager.allocatePin(INTERRUPT_PIN, false, PinOwner::UM_Unspecified))
+      {
+        //enabled = false;
+        USER_PRINTF("mpu6050: warning - failed to allocate interrupt GPIO %d\n", INTERRUPT_PIN);
+        //return;
+      }
+      // WLEDMM end
+
       mpu.initialize();
       pinMode(INTERRUPT_PIN, INPUT);
 
       // verify connection
       DEBUG_PRINT_IMULN(F("Testing device connections..."));
-      DEBUG_PRINT_IMULN(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));
+      USER_PRINTLN(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));
 
       // // wait for ready
       // DEBUG_PRINT_IMULN(F("\nSend any character to begin DMP programming and demo: "));
@@ -169,9 +214,9 @@ class MPU6050Driver : public Usermod {
           // 1 = initial memory load failed
           // 2 = DMP configuration updates failed
           // (if it's going to break, usually the code will be 1)
-          DEBUG_PRINT_IMU(F("DMP Initialization failed (code "));
-          DEBUG_PRINT_IMU(devStatus);
-          DEBUG_PRINT_IMULN(F(")"));
+          USER_PRINT(F("mpu6050: DMP Initialization failed (code "));
+          USER_PRINT(devStatus);
+          USER_PRINTLN(F(")"));
       }
     }
 
