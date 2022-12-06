@@ -161,6 +161,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
     rlyMde = (bool)request->hasArg(F("RM"));
 
+    disablePullUp = (bool)request->hasArg(F("IP"));
     for (uint8_t i=0; i<WLED_MAX_BUTTONS; i++) {
       char bt[4] = "BT"; bt[2] = (i<10?48:55)+i; bt[3] = 0; // button pin (use A,B,C,... if WLED_MAX_BUTTONS>10)
       char be[4] = "BE"; be[2] = (i<10?48:55)+i; be[3] = 0; // button type (use A,B,C,... if WLED_MAX_BUTTONS>10)

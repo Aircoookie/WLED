@@ -307,7 +307,7 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
       #ifdef WLED_DEBUG
       DEBUG_PRINT(F("PIN ALLOC: Invalid pin attempted to be allocated: GPIO "));
       DEBUG_PRINT(gpio);
-      DEBUG_PRINT(" as "); DEBUG_PRINT(mptArray[i].isOutput ? "output": "input"); // WLEDMM
+      DEBUG_PRINT(" as "); DEBUG_PRINT(mptArray[i].isOutput ? "output": "input");
       DEBUG_PRINTLN(F(""));
       #else  // WLEDMM
       USER_PRINTF("PIN ALLOC: invalid pin - cannot use GPIO%d for %s.\n", gpio, mptArray[i].isOutput ? "output": "input");
@@ -350,7 +350,7 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
       continue;
     }
     if (gpio >= WLED_NUM_PINS) 
-      continue; // WLEDMM - invalid GPIO => avoid array bounds violation
+      continue; // other unexpected GPIO => avoid array bounds violation
 
     byte by = gpio >> 3;
     byte bi = gpio - 8*by;
@@ -371,7 +371,7 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
 bool PinManagerClass::allocatePin(byte gpio, bool output, PinOwner tag)
 {
   // HW I2C & SPI pins have to be allocated using allocateMultiplePins variant since there is always SCL/SDA pair
-  if (!isPinOk(gpio, output) || (gpio >= WLED_NUM_PINS) || tag==PinOwner::HW_I2C || tag==PinOwner::HW_SPI) { // WLEDMM bugfix - avoid array bounds violation
+  if (!isPinOk(gpio, output) || (gpio >= WLED_NUM_PINS) || tag==PinOwner::HW_I2C || tag==PinOwner::HW_SPI) {
     #ifdef WLED_DEBUG
     if (gpio < 255) {  // 255 (-1) is the "not defined GPIO"
       if (!isPinOk(gpio, output)) {
@@ -495,6 +495,7 @@ bool PinManagerClass::isPinOk(byte gpio, bool output)
 }
 
 PinOwner PinManagerClass::getPinOwner(byte gpio) {
+  if (gpio >= WLED_NUM_PINS) return PinOwner::None; // catch error case, to avoid array out-of-bounds access
   if (!isPinOk(gpio, false)) return PinOwner::None;
   if (gpio >= WLED_NUM_PINS) return PinOwner::None; // WLEDMM: catch error cases
   return ownerTag[gpio];

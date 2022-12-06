@@ -245,7 +245,8 @@ void handlePresets()
   #endif
 
   releaseJSONBufferLock(); // will also clear fileDoc
-  colorUpdated(tmpMode);
+  if (changePreset) notify(tmpMode); // force UDP notification
+  stateUpdated(tmpMode);  // was colorUpdated() if anything breaks
   updateInterfaces(tmpMode);
 }
 

@@ -458,6 +458,7 @@ void getSettingsJS(byte subPage, char* dest)
       oappend(itoa(buttonType[i],nS,10));
       oappend(SET_F(");"));
     }
+    sappend('c',SET_F("IP"),disablePullUp);
     sappend('v',SET_F("TT"),touchThreshold);
     sappend('v',SET_F("IR"),irPin);
     sappend('v',SET_F("IT"),irEnabled);

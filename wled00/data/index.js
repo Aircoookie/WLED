@@ -17,6 +17,7 @@ var d = document;
 var palettesData;
 var fxdata = [];
 var pJson = {}, eJson = {}, lJson = {};
+var plJson = {}; // array of playlists
 var pN = "", pI = 0, pNum = 0;
 var pmt = 1, pmtLS = 0, pmtLast = 0;
 var lastinfo = {};
@@ -522,7 +523,7 @@ function loadFXData(callback = null)
 		fxdata = json||[];
 		// add default value for Solid
 		fxdata.shift()
-		fxdata.unshift(";!;0");
+		fxdata.unshift(";!;");
 	})
 	.catch((e)=>{
 		fxdata = [];
@@ -871,18 +872,19 @@ function populateEffects()
 		let fd = "";
 		if (ef.name.indexOf("RSVD") < 0) {
 			if (Array.isArray(fxdata) && fxdata.length>id) {
-				if (fxdata[id].length==0) fd = ";;!;1d"
+				if (fxdata[id].length==0) fd = ";;!;1"
 				else fd = fxdata[id];
 				let eP = (fd == '')?[]:fd.split(";"); // effect parameters
 				let p = (eP.length<3 || eP[2]==='')?[]:eP[2].split(","); // palette data
 				if (p.length>0 && (p[0] !== "" && !isNumeric(p[0]))) nm += "&#x1F3A8;";	// effects using palette
-				let m = (eP.length<4 || eP[3]==='')?[]:eP[3].split(","); // metadata
-				if (m.length>0) for (let r of m) {
-					if (r.substring(0,2)=="1d") nm += "&#8942;"; // 1D effects
-					if (r.substring(0,4)=="1.5d") nm += "&#8942;&#8942;"; // 1D effects + vStrips
-					if (r.substring(0,2)=="2d") nm += "&#9638;"; // 2D effects
-					if (r.substring(0,2)=="vo") nm += "&#9834;"; // volume effects
-					if (r.substring(0,2)=="fr") nm += "&#9835;"; // frequency effects
+				let m = (eP.length<4 || eP[3]==='')?'1':eP[3]; // flags
+				if (id == 0) m = ''; // solid has no flags
+				if (m.length>0) {
+					if (m.includes('1')) nm += "&#8942;"; // 1D effects
+					if (m.includes("1.5d")) nm += "&#8942;"; // WLEDMM: vStrips
+					if (m.includes('2')) nm += "&#9638;"; // 2D effects
+					if (m.includes('v')) nm += "&#9834;"; // volume effects
+					if (m.includes('f')) nm += "&#9835;"; // frequency effects
 				}
 			}
 			html += generateListItemHtml('fx',id,nm,'setFX','',fd);
@@ -1722,15 +1724,6 @@ function resetUtil()
 	+ '<div class="segname" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>Add segment</div></div>';
 }
 
-var plJson = {"0":{
-	"ps": [0],
-	"dur": [100],
-	"transition": [-1],	// to be inited to default transition dur
-	"repeat": 0,
-	"r": false,
-	"end": 0
-}};
-
 function makePlSel(el, incPl=false) {
 	var plSelContent = "";
 	delete pJson["0"];	// remove filler preset
@@ -1811,6 +1804,14 @@ function plR(p) {
 function makeP(i,pl) {
 	var content = "";
 	if (pl) {
+		if (i===0) plJson[0] = {
+			ps: [1],
+			dur: [100],
+			transition: [tr],
+			repeat: 0,
+			r: false,
+			end: 0
+		};
 		var rep = plJson[i].repeat ? plJson[i].repeat : 0;
 		content = 
 `<div id="ple${i}" style="margin-top:10px;"></div><label class="check revchkl">Shuffle
@@ -1933,7 +1934,6 @@ function makePlUtil()
 	if (pNum < 2) {
 		showToast("You need at least 2 presets to make a playlist!"); //return;
 	}
-	if (plJson[0].transition[0] < 0) plJson[0].transition[0] = tr;
 	let p = gId('putil');
 	p.classList.remove('staybot');
 	p.classList.add('pres');

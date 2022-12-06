@@ -98,10 +98,11 @@
 #define USERMOD_ID_PING_PONG_CLOCK       34     //Usermod "usermod_v2_ping_pong_clock.h"
 #define USERMOD_ID_ADS1115               35     //Usermod "usermod_ads1115.h"
 #define USERMOD_ID_SD_CARD               37     //Usermod "usermod_sd_card.h"
+#define USERMOD_ID_PWM_OUTPUTS           38     //Usermod "usermod_pwm_outputs.h
 //WLEDMM
-#define USERMOD_ID_CUSTOMEFFECTS         38     //Usermod "usermod_v2_customeffects.h"
-#define USERMOD_ID_WEATHER               39     //Usermod "usermod_v2_weather.h"
-#define USERMOD_ID_GAMES                 40     //Usermod "usermod_v2_games.h"
+#define USERMOD_ID_CUSTOMEFFECTS         39     //Usermod "usermod_v2_customeffects.h"
+#define USERMOD_ID_WEATHER               40     //Usermod "usermod_v2_weather.h"
+#define USERMOD_ID_GAMES                 41     //Usermod "usermod_v2_games.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot

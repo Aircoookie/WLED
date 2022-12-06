@@ -760,7 +760,7 @@ public:
       StaticJsonDocument<64> root;
       char str[64] = { '\0' };
       sprintf_P(str, PSTR("%d~%d~%s"), presetLow, presetHigh, increase?"":"-");
-      root[F("ps")] = str;
+      root["ps"] = str;
       deserializeState(root.as<JsonObject>(), CALL_MODE_BUTTON_PRESET);
 /*
       String apireq = F("win&PL=~");

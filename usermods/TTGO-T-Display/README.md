@@ -55,8 +55,8 @@ Also, while in the `platformio.ini` file, you must change the environment setup 
 
 Comment out the line described below:
 ```ini
-# Travis CI binaries (comment this out when building for single board)
-; default_envs = travis_esp8266, esp01, esp01_1m_ota, travis_esp32
+# Release binaries
+; default_envs = nodemcuv2, esp8266_2m, esp01_1m_full, esp32dev, esp32_eth, esp32s2_saola, esp32c3
 ```
 and UNCOMMENT the following line in the 'Single binaries' section:
 ```ini
