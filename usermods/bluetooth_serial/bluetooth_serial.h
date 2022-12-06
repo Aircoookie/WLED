@@ -9,16 +9,19 @@ class BluetoothSerialUsermod : public Usermod {
  
   public:
 
+    //const char *pin = "987654";
 
     void setup() {
 
       // Tell WLED to defer all WiFi Connectivity
       deferConnections = true;
-      
+
+      //SerialBT.setPin(pin); // Deeper issues are here, does not work as is
+
       // Begin Bluetooth device with same name as server description
       SerialBT.begin(serverDescription);
-
-      Serial.println("Bluetooth Serial Usermod setup complete");
+      
+      DEBUG_PRINTLN(F("Bluetooth Serial Usermod setup complete"));
 
       // The name the bluetooth device will appear as, same as set in server description
       Serial.print("Bluetooth Name: ");
@@ -43,7 +46,8 @@ class BluetoothSerialUsermod : public Usermod {
       SerialBT.flush();
       SerialBT.end();
       deferConnections=false;
-      Serial.println("Stop Bluetooth Serial and use WLED normally");
+      forceReconnect=true; // May not be needed
+      DEBUG_PRINTLN(F("Stop Bluetooth Serial and use WLED normally"));
     }
 
 
@@ -56,7 +60,7 @@ class BluetoothSerialUsermod : public Usermod {
 
       // If not set up or if preset changes in first 5* seconds of boot, disable Bluetooth and end WiFi deferment
       unsigned long now = millis();
-      if(now > 1000 && now < 6000 && (currentPreset != bootPreset || currentPreset == 0 && bootPreset == 0)){
+      if((now > 1000 && now < 6000) && ((currentPreset != bootPreset) || (currentPreset == 0 && bootPreset == 0))){
         stop();
       }
 
