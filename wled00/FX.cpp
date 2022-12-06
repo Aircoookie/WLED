@@ -6128,7 +6128,7 @@ uint16_t mode_2DWaverly(void) {
 
   long t = millis() / 2;
   for (int i = 0; i < cols; i++) {
-    uint16_t thisVal = volumeSmth*SEGMENT.intensity/64 * inoise8(i * 45 , t , t)/64;
+    uint16_t thisVal = volumeSmth*SEGMENT.intensity/64 * inoise8(i * 45 , t , t)/64;      // WLEDMM back to SR code
     uint16_t thisMax = map(thisVal, 0, 512, 0, rows);
 
     for (int j = 0; j < thisMax; j++) {

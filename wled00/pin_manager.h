@@ -74,7 +74,7 @@ class PinManagerClass {
   #define WLED_NUM_PINS 50
   uint8_t pinAlloc[7] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; //WLEDMM bugfix - 56bit, 1 bit per pin, we use 50 bits on -S3
   uint8_t ledcAlloc[2] = {0x00, 0x00}; //16 LEDC channels
-  PinOwner ownerTag[WLED_NUM_PINS] = { PinOwner::None }; // WLEDMM bugfix - new MCU's have up to 50 GPIO
+  PinOwner ownerTag[WLED_NUM_PINS] = { PinOwner::None }; // new MCU's have up to 50 GPIO
   PinOwner ownerConflict[WLED_NUM_PINS] = { PinOwner::None }; // WLEDMM: record pin alloc conflicts
   #endif
   struct {

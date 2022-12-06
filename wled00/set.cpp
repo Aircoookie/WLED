@@ -176,8 +176,11 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
           btnPin[i] = -1;
           pinManager.deallocatePin(hw_btn_pin,PinOwner::Button);
         } else { // WLEDMM end
+        if (disablePullUp) {
+          pinMode(btnPin[i], INPUT);
+        } else {
           pinMode(btnPin[i], buttonType[i]==BTN_TYPE_PUSH_ACT_HIGH ? INPUT_PULLDOWN : INPUT_PULLUP);
-        }
+        } }
         #else
         pinMode(btnPin[i], INPUT_PULLUP);
         #endif

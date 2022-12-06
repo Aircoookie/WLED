@@ -45,7 +45,7 @@ void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t
     request->_tempFile = WLED_FS.open(finalname, "w");
     DEBUG_PRINT(F("Uploading "));
     DEBUG_PRINTLN(finalname);
-    if (finalname.equals("/presets.json")) presetsModifiedTime = toki.second();  // WLEDMM
+    if (finalname.equals("/presets.json")) presetsModifiedTime = toki.second();
   }
   if (len) {
     request->_tempFile.write(data,len);
