@@ -2004,17 +2004,17 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addInfo('AudioReactive:digitalmic:type',1,'<i>requires reboot!</i>');"));  // 0 is field type, 1 is actual field
     #ifdef I2S_SDPIN
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',0,'<i>sd/data/dout, default ")); oappendi(I2S_SDPIN); oappend("</i>','I2S SD');");
-    #elif
+    #else
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',0,'<i>sd/data/dout</i>','I2S SD');"));
     #endif
     #ifdef I2S_WSPIN
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',1,'<i>ws/clk/lrck, default ")); oappendi(I2S_WSPIN); oappend("</i>','I2S WS');");
-    #elif
+    #else
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',1,'<i>ws/clk/lrck</i>','I2S WS');"));
     #endif
     #ifdef I2S_CKPIN
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',2,'<i>sck/bclk, default ")); oappendi(I2S_CKPIN); oappend("</i>','I2S SCK');");
-    #elif
+    #else
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',2,'<i>sck/bclk</i>','I2S SCK');"));
     #endif
       #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
