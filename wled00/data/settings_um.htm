@@ -213,8 +213,6 @@
                 const urlParams = new URLSearchParams(queryString);
                 const userMod = urlParams.get('um')
                 for (const [k,o] of Object.entries(umCfg)) {
-
-                    console.log(userMod);
                     if (userMod == k) {
                         urows += `<hr><h3>${k}</h3>`;
                         addField(k,'unknown',o);
@@ -255,13 +253,13 @@
 		<h2>Usermod Setup</h2>
 		Global I<sup>2</sup>C GPIOs (HW)<br>
 		<i style="color: orange;">(only changable on ESP32, change requires reboot!)</i><br>
-		SDA:<input type="number" min="-1" max="48" name="SDA" onchange="check(this,'if')" class="s" placeholder="SDA">
+		SDA:<input type="number" min="-1" max="48" name="SDA" onchange="check(this,'if')" class="s" placeholder="SDA"><br>
 		SCL:<input type="number" min="-1" max="48" name="SCL" onchange="check(this,'if')" class="s" placeholder="SCL">
 		<hr class="sml">
 		Global SPI GPIOs (HW)<br>
 		<i style="color: orange;">(only changable on ESP32, change requires reboot!)</i><br>
-		MOSI:<input type="number" min="-1" max="48" name="MOSI" onchange="check(this,'if')" class="s" placeholder="MOSI">
-		MISO:<input type="number" min="-1" max="48" name="MISO" onchange="check(this,'if')" class="s" placeholder="MISO">
+		MOSI:<input type="number" min="-1" max="48" name="MOSI" onchange="check(this,'if')" class="s" placeholder="MOSI"><br>
+		MISO:<input type="number" min="-1" max="48" name="MISO" onchange="check(this,'if')" class="s" placeholder="MISO"><br>
 		SCLK:<input type="number" min="-1" max="48" name="SCLK" onchange="check(this,'if')" class="s" placeholder="SCLK">
 		</div>
 		<div id="um">Loading settings...</div>

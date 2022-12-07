@@ -655,7 +655,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("NO"),otaLock);
     sappend('c',SET_F("OW"),wifiLock);
     sappend('c',SET_F("AO"),aOtaEnabled);
-    sappends('m',SET_F("(\"sip\")[0]"),(char*)F("WLED "));
+    sappends('m',SET_F("(\"sip\")[0]"),(char*)F("WLEDMM ")); //WLEDMM server message
     olen -= 2; //delete ";
     oappend(versionString);
     oappend(SET_F(" (build "));
@@ -705,11 +705,29 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("MOSI"),spi_mosi);
     sappend('v',SET_F("MISO"),spi_miso);
     sappend('v',SET_F("SCLK"),spi_sclk);
-    oappend(SET_F("addInfo('SDA','"));  oappendi(HW_PIN_SDA);      oappend(SET_F("');"));
-    oappend(SET_F("addInfo('SCL','"));  oappendi(HW_PIN_SCL);      oappend(SET_F("');"));
-    oappend(SET_F("addInfo('MOSI','")); oappendi(HW_PIN_DATASPI);  oappend(SET_F("');"));
-    oappend(SET_F("addInfo('MISO','")); oappendi(HW_PIN_MISOSPI);  oappend(SET_F("');"));
-    oappend(SET_F("addInfo('SCLK','")); oappendi(HW_PIN_CLOCKSPI); oappend(SET_F("');"));
+    //WLEDMM: add help info showing defaults
+    #ifdef HW_PIN_SDA
+      oappend(SET_F("addInfo('SDA',0,'<i>default ")); oappendi(HW_PIN_SDA); oappend("</i>');");
+    #endif
+    #ifdef HW_PIN_SCL
+      oappend(SET_F("addInfo('SCL',0,'<i>default ")); oappendi(HW_PIN_SCL); oappend("</i>');");
+    #endif
+    #ifdef HW_PIN_DATASPI
+      oappend(SET_F("addInfo('MOSI',0,'<i>default ")); oappendi(HW_PIN_DATASPI); oappend("</i>');");
+    #endif
+    #ifdef HW_PIN_MISOSPI
+      oappend(SET_F("addInfo('MISO',0,'<i>default ")); oappendi(HW_PIN_MISOSPI); oappend("</i>');");
+    #endif
+    #ifdef HW_PIN_CLOCKSPI
+      oappend(SET_F("addInfo('SCLK',0,'<i>default ")); oappendi(HW_PIN_CLOCKSPI); oappend("</i>');");
+    #endif
+
+    //WLEDMM: this puts info in the placeholder of the field, not intuitive
+    // oappend(SET_F("addInfo('SDA','"));  oappendi(HW_PIN_SDA);      oappend(SET_F("');"));
+    // oappend(SET_F("addInfo('SCL','"));  oappendi(HW_PIN_SCL);      oappend(SET_F("');"));
+    // oappend(SET_F("addInfo('MOSI','")); oappendi(HW_PIN_DATASPI);  oappend(SET_F("');"));
+    // oappend(SET_F("addInfo('MISO','")); oappendi(HW_PIN_MISOSPI);  oappend(SET_F("');"));
+    // oappend(SET_F("addInfo('SCLK','")); oappendi(HW_PIN_CLOCKSPI); oappend(SET_F("');"));
     usermods.appendConfigData();
   }
 
