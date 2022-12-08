@@ -1324,6 +1324,9 @@ function readState(s,command=false)
 	gId('sliderC1').value  = i.c1 ? i.c1 : 0;
 	gId('sliderC2').value  = i.c2 ? i.c2 : 0;
 	gId('sliderC3').value  = i.c3 ? i.c3 : 0;
+	gId('checkO1').checked = !(!i.o1);
+	gId('checkO2').checked = !(!i.o2);
+	gId('checkO3').checked = !(!i.o3);
 
 	if (s.error && s.error != 0) {
 	  var errstr = "";

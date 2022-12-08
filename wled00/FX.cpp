@@ -3483,6 +3483,7 @@ uint16_t mode_tetrix(void) {
       if (SEGENV.call == 0) {
         drop->stack = 0;                  // reset brick stack size
         drop->step = 0;
+        if (SEGMENT.check1) drop->col = 0;// use only one color from palette
         //for (int i=0; i<SEGLEN; i++) SEGMENT.setPixelColor(indexToVStrip(i, stripNr), SEGCOLOR(1));  // will fill virtual strip only
       }
       
@@ -3494,7 +3495,7 @@ uint16_t mode_tetrix(void) {
         speed = map(speed, 1, 255, 5000, 250); // time taken for full (SEGLEN) drop
         drop->speed = float(SEGLEN * FRAMETIME) / float(speed); // set speed
         drop->pos   = SEGLEN;             // start at end of segment (no need to subtract 1)
-        drop->col   = random8(0,15)<<4;   // limit color choices so there is enough HUE gap
+        if (!SEGMENT.check1) drop->col = random8(0,15)<<4;   // limit color choices so there is enough HUE gap
         drop->step  = 1;                  // drop state (0 init, 1 forming, 2 falling)
         drop->brick = (SEGMENT.intensity ? (SEGMENT.intensity>>5)+1 : random8(1,5)) * (1+(SEGLEN>>6));  // size of brick
       }
@@ -3508,7 +3509,7 @@ uint16_t mode_tetrix(void) {
       if (drop->step == 2) {              // falling
         if (drop->pos > drop->stack) {    // fall until top of stack
           drop->pos -= drop->speed;       // may add gravity as: speed += gravity
-          if (uint16_t(drop->pos) < drop->stack) drop->pos = drop->stack;
+          if (int(drop->pos) < int(drop->stack)) drop->pos = drop->stack;
           for (int i=int(drop->pos); i<SEGLEN; i++) {
             uint32_t col = i<int(drop->pos)+drop->brick ? SEGMENT.color_from_palette(drop->col, false, false, 0) : SEGCOLOR(1);
             SEGMENT.setPixelColor(indexToVStrip(i, stripNr), col);
@@ -3528,6 +3529,7 @@ uint16_t mode_tetrix(void) {
         } else {
           drop->stack = 0;                // reset brick stack size
           drop->step = 0;                 // proceed with next brick
+          if (SEGMENT.check1) drop->col += 8;   // gradually increase palette index
         }
       }
     }
@@ -3538,7 +3540,7 @@ uint16_t mode_tetrix(void) {
 
   return FRAMETIME;  
 }
-static const char _data_FX_MODE_TETRIX[] PROGMEM = "Tetrix@!,Width;!,!;!;;sx=0,ix=0,pal=11,m12=1";
+static const char _data_FX_MODE_TETRIX[] PROGMEM = "Tetrix@!,Width,,,,One color;!,!;!;;sx=0,ix=0,pal=11,m12=1";
 
 
 /*
