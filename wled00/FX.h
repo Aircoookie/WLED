@@ -311,8 +311,12 @@
 #define FX_MODE_WAVESINS               184
 #define FX_MODE_ROCKTAVES              185
 #define FX_MODE_2DAKEMI                186
+#define FX_MODE_OVERLAY_GLITTER        187
+#define FX_MODE_OVERLAY_SPARKLE        188
+#define FX_MODE_OVERLAY_FLASH_SPARKLE  189
+#define FX_MODE_OVERLAY_HYPER_SPARKLE  190
 
-#define MODE_COUNT                     187
+#define MODE_COUNT                     191
 
 typedef enum mapping1D2D {
   M12_Pixels = 0,
@@ -517,9 +521,9 @@ typedef struct Segment {
     bool allocateData(size_t len);
     void deallocateData(void);
     void resetIfRequired(void);
-    /** 
+    /**
       * Flags that before the next effect is calculated,
-      * the internal segment state should be reset. 
+      * the internal segment state should be reset.
       * Call resetIfRequired before calling the next effect function.
       * Safe to call from interrupts and network requests.
       */
@@ -639,7 +643,7 @@ class WS2812FX {  // 96 bytes
   } mode_data_t;
 
   static WS2812FX* instance;
-  
+
   public:
 
     WS2812FX() :
@@ -879,9 +883,9 @@ class WS2812FX {  // 96 bytes
 
     uint16_t* customMappingTable;
     uint16_t  customMappingSize;
-    
+
     uint32_t _lastShow;
-    
+
     uint8_t _segment_index;
     uint8_t _mainSegment;
 
