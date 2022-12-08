@@ -707,19 +707,19 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("SCLK"),spi_sclk);
     //WLEDMM: add help info showing defaults
     #ifdef HW_PIN_SDA
-      oappend(SET_F("addInfo('SDA',0,'<i>default ")); oappendi(HW_PIN_SDA); oappend("</i>');");
+      oappend(SET_F("addInfo('SDA',0,'<i>&#9100; ")); oappendi(HW_PIN_SDA); oappend("</i>');");
     #endif
     #ifdef HW_PIN_SCL
-      oappend(SET_F("addInfo('SCL',0,'<i>default ")); oappendi(HW_PIN_SCL); oappend("</i>');");
+      oappend(SET_F("addInfo('SCL',0,'<i>&#9100; ")); oappendi(HW_PIN_SCL); oappend("</i>');");
     #endif
     #ifdef HW_PIN_DATASPI
-      oappend(SET_F("addInfo('MOSI',0,'<i>default ")); oappendi(HW_PIN_DATASPI); oappend("</i>');");
+      oappend(SET_F("addInfo('MOSI',0,'<i>&#9100; ")); oappendi(HW_PIN_DATASPI); oappend("</i>');");
     #endif
     #ifdef HW_PIN_MISOSPI
-      oappend(SET_F("addInfo('MISO',0,'<i>default ")); oappendi(HW_PIN_MISOSPI); oappend("</i>');");
+      oappend(SET_F("addInfo('MISO',0,'<i>&#9100; ")); oappendi(HW_PIN_MISOSPI); oappend("</i>');");
     #endif
     #ifdef HW_PIN_CLOCKSPI
-      oappend(SET_F("addInfo('SCLK',0,'<i>default ")); oappendi(HW_PIN_CLOCKSPI); oappend("</i>');");
+      oappend(SET_F("addInfo('SCLK',0,'<i>&#9100; ")); oappendi(HW_PIN_CLOCKSPI); oappend("</i>');");
     #endif
 
     //WLEDMM: this puts info in the placeholder of the field, not intuitive

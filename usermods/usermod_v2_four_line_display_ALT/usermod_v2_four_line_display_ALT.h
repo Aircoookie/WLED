@@ -1038,12 +1038,12 @@ class FourLineDisplayUsermod : public Usermod {
       oappend(SET_F("addOption(dd,'SSD1306 SPI 128x64',7);"));
       // WLEDMM add defaults
     #ifdef FLD_PIN_SCL
-      oappend(SET_F("addInfo('4LineDisplay:pin[]',0,'<i>-1 use global, default ")); oappendi(FLD_PIN_SCL); oappend("</i>','I2C/SPI CLK');");
+      oappend(SET_F("addInfo('4LineDisplay:pin[]',0,'<i>-1 use global, &#9100; ")); oappendi(FLD_PIN_SCL); oappend("</i>','I2C/SPI CLK');");
     #else
       oappend(SET_F("addInfo('4LineDisplay:pin[]',0,'<i>-1 use global</i>','I2C/SPI CLK');"));
     #endif
     #ifdef FLD_PIN_SDA
-      oappend(SET_F("addInfo('4LineDisplay:pin[]',1,'<i>-1 use global, default ")); oappendi(FLD_PIN_SDA); oappend("</i>','I2C/SPI DTA');");
+      oappend(SET_F("addInfo('4LineDisplay:pin[]',1,'<i>-1 use global, &#9100; ")); oappendi(FLD_PIN_SDA); oappend("</i>','I2C/SPI DTA');");
     #else
       oappend(SET_F("addInfo('4LineDisplay:pin[]',1,'<i>-1 use global</i>','I2C/SPI DTA');"));
     #endif

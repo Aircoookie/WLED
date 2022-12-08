@@ -1874,50 +1874,50 @@ class AudioReactive : public Usermod {
     {
       //WLEDMM: add defaults
     #ifdef AUDIOPIN
-      oappend(SET_F("addInfo('AudioReactive:analogmic:pin',1,'<i>default ")); oappendi(AUDIOPIN); oappend("</i>');");  // 0 is field type, 1 is actual field
+      oappend(SET_F("addInfo('AudioReactive:analogmic:pin',1,'<i>&#9100; ")); oappendi(AUDIOPIN); oappend("</i>');");  // 0 is field type, 1 is actual field
     #endif
 
       oappend(SET_F("dd=addDropdown('AudioReactive','digitalmic:type');"));
     #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
     #if SR_DMTYPE==0
-      oappend(SET_F("addOption(dd,'Generic Analog (default)',0);"));
+      oappend(SET_F("addOption(dd,'Generic Analog (⎌)',0);"));
     #else
       oappend(SET_F("addOption(dd,'Generic Analog',0);"));
     #endif
     #endif
     #if SR_DMTYPE==1
-      oappend(SET_F("addOption(dd,'Generic I2S (default)',1);"));
+      oappend(SET_F("addOption(dd,'Generic I2S (⎌)',1);"));
     #else
       oappend(SET_F("addOption(dd,'Generic I2S',1);"));
     #endif
     #if SR_DMTYPE==2
-      oappend(SET_F("addOption(dd,'ES7243 (default)',2);"));
+      oappend(SET_F("addOption(dd,'ES7243 (⎌)',2);"));
     #else
       oappend(SET_F("addOption(dd,'ES7243',2);"));
     #endif
     #if SR_DMTYPE==3
-      oappend(SET_F("addOption(dd,'SPH0654 (default)',3);"));
+      oappend(SET_F("addOption(dd,'SPH0654 (⎌)',3);"));
     #else
       oappend(SET_F("addOption(dd,'SPH0654',3);"));
     #endif
     #if SR_DMTYPE==4
-      oappend(SET_F("addOption(dd,'Generic I2S with Mclk (default)',4);"));
+      oappend(SET_F("addOption(dd,'Generic I2S with Mclk (⎌)',4);"));
     #else
       oappend(SET_F("addOption(dd,'Generic I2S with Mclk',4);"));
     #endif
     #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
     #if SR_DMTYPE==5
-      oappend(SET_F("addOption(dd,'Generic I2S PDM (default)',5);"));
+      oappend(SET_F("addOption(dd,'Generic I2S PDM (⎌)',5);"));
     #else
       oappend(SET_F("addOption(dd,'Generic I2S PDM',5);"));
     #endif
     #endif
 
     #ifdef SR_SQUELCH
-      oappend(SET_F("addInfo('AudioReactive:config:squelch',1,'<i>default ")); oappendi(SR_SQUELCH); oappend("</i>');");  // 0 is field type, 1 is actual field
+      oappend(SET_F("addInfo('AudioReactive:config:squelch',1,'<i>&#9100; ")); oappendi(SR_SQUELCH); oappend("</i>');");  // 0 is field type, 1 is actual field
     #endif
     #ifdef SR_GAIN
-      oappend(SET_F("addInfo('AudioReactive:config:gain',1,'<i>default ")); oappendi(SR_GAIN); oappend("</i>');");  // 0 is field type, 1 is actual field
+      oappend(SET_F("addInfo('AudioReactive:config:gain',1,'<i>&#9100; ")); oappendi(SR_GAIN); oappend("</i>');");  // 0 is field type, 1 is actual field
     #endif
 
       oappend(SET_F("dd=addDropdown('AudioReactive','config:AGC');"));
@@ -1942,57 +1942,57 @@ class AudioReactive : public Usermod {
       //WLEDMM add defaults
       oappend(SET_F("dd=addDropdown('AudioReactive','frequency:profile');"));
     #if SR_FREQ_PROF==0
-      oappend(SET_F("addOption(dd,'Generic Microphone (default)',0);"));
+      oappend(SET_F("addOption(dd,'Generic Microphone (⎌)',0);"));
     #else
       oappend(SET_F("addOption(dd,'Generic Microphone',0);"));
     #endif
     #if SR_FREQ_PROF==1
-      oappend(SET_F("addOption(dd,'Generic Line-In (default)',1);"));
+      oappend(SET_F("addOption(dd,'Generic Line-In (⎌)',1);"));
     #else
       oappend(SET_F("addOption(dd,'Generic Line-In',1);"));
     #endif
     #if SR_FREQ_PROF==5
-      oappend(SET_F("addOption(dd,'ICS-43434 (default)',5);"));
+      oappend(SET_F("addOption(dd,'ICS-43434 (⎌)',5);"));
     #else
       oappend(SET_F("addOption(dd,'ICS-43434',5);"));
     #endif
     #if SR_FREQ_PROF==6
-      oappend(SET_F("addOption(dd,'ICS-43434 - big speakers (default)',6);"));
+      oappend(SET_F("addOption(dd,'ICS-43434 - big speakers (⎌)',6);"));
     #else
       oappend(SET_F("addOption(dd,'ICS-43434 - big speakers',6);"));
     #endif
     #if SR_FREQ_PROF==7
-      oappend(SET_F("addOption(dd,'SPM1423 (default)',7);"));
+      oappend(SET_F("addOption(dd,'SPM1423 (⎌)',7);"));
     #else
       oappend(SET_F("addOption(dd,'SPM1423',7);"));
     #endif
     #if SR_FREQ_PROF==2
-      oappend(SET_F("addOption(dd,'IMNP441 (default)',2);"));
+      oappend(SET_F("addOption(dd,'IMNP441 (⎌)',2);"));
     #else
       oappend(SET_F("addOption(dd,'IMNP441',2);"));
     #endif
     #if SR_FREQ_PROF==3
-      oappend(SET_F("addOption(dd,'IMNP441 - big speakers (default)',3);"));
+      oappend(SET_F("addOption(dd,'IMNP441 - big speakers (⎌)',3);"));
     #else
       oappend(SET_F("addOption(dd,'IMNP441 - big speakers',3);"));
     #endif
     #if SR_FREQ_PROF==4
-      oappend(SET_F("addOption(dd,'IMNP441 - small speakers (default)',4);"));
+      oappend(SET_F("addOption(dd,'IMNP441 - small speakers (⎌)',4);"));
     #else
       oappend(SET_F("addOption(dd,'IMNP441 - small speakers',4);"));
     #endif
     #if SR_FREQ_PROF==10
-      oappend(SET_F("addOption(dd,'flat - no adjustments (default)',10);"));
+      oappend(SET_F("addOption(dd,'flat - no adjustments (⎌)',10);"));
     #else
       oappend(SET_F("addOption(dd,'flat - no adjustments',10);"));
     #endif
     #if SR_FREQ_PROF==8
-      oappend(SET_F("addOption(dd,'userdefined #1 (default)',8);"));
+      oappend(SET_F("addOption(dd,'userdefined #1 (⎌)',8);"));
     #else
       oappend(SET_F("addOption(dd,'userdefined #1',8);"));
     #endif
     #if SR_FREQ_PROF==9
-      oappend(SET_F("addOption(dd,'userdefined #2 (default)',9);"));
+      oappend(SET_F("addOption(dd,'userdefined #2 (⎌)',9);"));
     #else
       oappend(SET_F("addOption(dd,'userdefined #2',9);"));
     #endif
@@ -2003,17 +2003,17 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addOption(dd,'Receive',2);"));
       oappend(SET_F("addInfo('AudioReactive:digitalmic:type',1,'<i>requires reboot!</i>');"));  // 0 is field type, 1 is actual field
     #ifdef I2S_SDPIN
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',0,'<i>sd/data/dout, default ")); oappendi(I2S_SDPIN); oappend("</i>','I2S SD');");
+      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',0,'<i>sd/data/dout, &#9100; ")); oappendi(I2S_SDPIN); oappend("</i>','I2S SD');");
     #else
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',0,'<i>sd/data/dout</i>','I2S SD');"));
     #endif
     #ifdef I2S_WSPIN
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',1,'<i>ws/clk/lrck, default ")); oappendi(I2S_WSPIN); oappend("</i>','I2S WS');");
+      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',1,'<i>ws/clk/lrck, &#9100; ")); oappendi(I2S_WSPIN); oappend("</i>','I2S WS');");
     #else
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',1,'<i>ws/clk/lrck</i>','I2S WS');"));
     #endif
     #ifdef I2S_CKPIN
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',2,'<i>sck/bclk, default ")); oappendi(I2S_CKPIN); oappend("</i>','I2S SCK');");
+      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',2,'<i>sck/bclk, &#9100; ")); oappendi(I2S_CKPIN); oappend("</i>','I2S SCK');");
     #else
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',2,'<i>sck/bclk</i>','I2S SCK');"));
     #endif
