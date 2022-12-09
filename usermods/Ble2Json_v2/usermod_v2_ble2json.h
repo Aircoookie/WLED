@@ -1,136 +1,9 @@
 #pragma once
 
 #include "wled.h"
-// #include "ble.h"
+#include "BleMainSwitch.h"
 
-#include <BLEDevice.h>
-#include <BLEServer.h>
-#include <BLEUtils.h>
-
-BLEServer* pServer = NULL;
-BLECharacteristic* pCharacteristic = NULL;
-#define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
-#define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
 #define PASSKEY 999999
-
-/////////////////////
-//BLE Secure Server//
-/////////////////////
-
-class ServerCallback: public BLEServerCallbacks {
-    void onConnect(BLEServer* pServer) {
-      Serial.println(" - ServerCallback - onConnect");
-    };
-
-    void onDisconnect(BLEServer* pServer) {
-      Serial.println(" - ServerCallback - onDisconnect");
-    }
-
-};
-
-class SecurityCallback : public BLESecurityCallbacks {
-
-  uint32_t onPassKeyRequest(){
-    Serial.println("onPassKeyRequest"); 
-    return 000000;
-  }
-
-  void onPassKeyNotify(uint32_t pass_key){
-    Serial.println("onPassKeyNotify"); 
-  }
-
-  bool onConfirmPIN(uint32_t pass_key){
-    Serial.println("confirming pin");
-    return true;
-  }
-
-  bool onSecurityRequest(){
-    Serial.println("onSecurityRequest");
-    return true;
-  }
-
-  void onAuthenticationComplete(esp_ble_auth_cmpl_t cmpl){
-    if(cmpl.success){
-      Serial.println("   - SecurityCallback - Authentication Success");       
-    }else{
-      Serial.printf_P(PSTR("%u\n"),cmpl.fail_reason);
-      Serial.println("   - SecurityCallback - Authentication Failure* ");
-      pServer->removePeerDevice(pServer->getConnId(), true);
-    }
-    BLEDevice::startAdvertising();
-  }
-};
-
-void bleSecurity(){
-  esp_ble_auth_req_t auth_req = ESP_LE_AUTH_REQ_SC_BOND;
-  esp_ble_io_cap_t iocap = ESP_IO_CAP_OUT;          
-  uint8_t key_size = 16;     
-  uint8_t init_key = ESP_BLE_ENC_KEY_MASK | ESP_BLE_ID_KEY_MASK;
-  uint8_t rsp_key = ESP_BLE_ENC_KEY_MASK | ESP_BLE_ID_KEY_MASK;
-  uint32_t passkey = PASSKEY;
-  uint8_t auth_option = ESP_BLE_ONLY_ACCEPT_SPECIFIED_AUTH_DISABLE;
-  esp_ble_gap_set_security_param(ESP_BLE_SM_SET_STATIC_PASSKEY, &passkey, sizeof(uint32_t));
-  esp_ble_gap_set_security_param(ESP_BLE_SM_AUTHEN_REQ_MODE, &auth_req, sizeof(uint8_t));
-  esp_ble_gap_set_security_param(ESP_BLE_SM_IOCAP_MODE, &iocap, sizeof(uint8_t));
-  esp_ble_gap_set_security_param(ESP_BLE_SM_MAX_KEY_SIZE, &key_size, sizeof(uint8_t));
-  esp_ble_gap_set_security_param(ESP_BLE_SM_ONLY_ACCEPT_SPECIFIED_SEC_AUTH, &auth_option, sizeof(uint8_t));
-  esp_ble_gap_set_security_param(ESP_BLE_SM_SET_INIT_KEY, &init_key, sizeof(uint8_t));
-  esp_ble_gap_set_security_param(ESP_BLE_SM_SET_RSP_KEY, &rsp_key, sizeof(uint8_t));
-}
-
-void bleInit(BLECharacteristicCallbacks *charCallbackHandler){
-  Serial.println("bleInit");
-  BLEDevice::init("ble2json for wled");
-  BLEDevice::setEncryptionLevel(ESP_BLE_SEC_ENCRYPT);
-  BLEDevice::setSecurityCallbacks(new SecurityCallback());
-
-  pServer = BLEDevice::createServer();
-  pServer->setCallbacks(new ServerCallback());
-
-  BLEService *pService = pServer->createService(SERVICE_UUID);
-  pCharacteristic = pService->createCharacteristic(
-                      CHARACTERISTIC_UUID,
-                      BLECharacteristic::PROPERTY_READ   |
-                      BLECharacteristic::PROPERTY_WRITE  |
-                      BLECharacteristic::PROPERTY_NOTIFY 
-                    );
-
-  pCharacteristic->setAccessPermissions(ESP_GATT_PERM_READ_ENCRYPTED | ESP_GATT_PERM_WRITE_ENCRYPTED);
-  pCharacteristic->setCallbacks(charCallbackHandler);
-
-  pService->start();
-
-  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
-  pAdvertising->addServiceUUID(SERVICE_UUID);
-  pAdvertising->setScanResponse(false);
-  pAdvertising->setMinPreferred(0x0);
-  BLEDevice::startAdvertising();
-
-  bleSecurity();
-}
-
-class Ble2JsonCallbacks {
-  public:
-    virtual void turnOffBle() = 0;
-};
-
-class MyCallbackHandler: public BLECharacteristicCallbacks {
-  private: 
-    Ble2JsonCallbacks *userMod;
-
-  public: 
-    MyCallbackHandler(Ble2JsonCallbacks *_userMod) {
-      userMod = _userMod;
-    }
-
-	// void onRead(BLECharacteristic *pCharacteristic) {
-	// }
-
-	void onWrite(BLECharacteristic* pCharacteristic) {
-    std::string value = pCharacteristic->getValue();
-    userMod->turnOffBle();
-  }
-};
 
 /*
  * Usermods allow you to add own functionality to WLED more easily
@@ -151,35 +24,19 @@ class MyCallbackHandler: public BLECharacteristicCallbacks {
  */
 
 //class name. Use something descriptive and leave the ": public Usermod" part :)
-class Ble2JsonUsermod : public Usermod, Ble2JsonCallbacks {
+class Ble2JsonUsermod : public Usermod, Ble2JsonConfig {
   private:
     //Private class members. You can declare variables and functions only accessible to your usermod here
     unsigned long lastTime = 0;
 
-    bool bleOnFlag = false;
-    uint32_t blePairingPin = PASSKEY;
+    // Settings
+    bool m_bleOnFlag = false;
+    uint32_t m_blePairingPin = PASSKEY;
+    bool m_bleUnPairDevices = false;
 
-    bool bleInitted = false;
-    bool configDirty = false;
+    bool m_configDirty = false;
 
-    void checkBleInit(bool fromSetup) {
-      Serial.println("checkBleInit");
-
-      if (fromSetup && bleOnFlag && !bleInitted) {
-        Serial.println("bleInitting");
-        WLED::instance().disableWiFi();
-        bleInit(new MyCallbackHandler(this));
-        bleInitted = true;
-      }
-      else if (!fromSetup && bleOnFlag && !bleInitted) {
-        WLED::instance().reset();
-      }
-      else if (!bleOnFlag && bleInitted) {
-        Serial.println("ble on reset");
-        // TODO bleTearDown? and enableWiFi
-        WLED::instance().reset();
-      }
-    }
+    BleMainSwitch *m_mainSwitch;
 
   public:
     //Functions called by WLED
@@ -189,9 +46,10 @@ class Ble2JsonUsermod : public Usermod, Ble2JsonCallbacks {
      * You can use it to initialize variables, sensors or similar.
      */
     void setup() {
-      Serial.printf_P(PSTR("PIN: %u\n"),blePairingPin);
+      Serial.printf_P(PSTR("PIN mod: %u\n"), m_blePairingPin);
+      m_mainSwitch = new BleMainSwitch(this);
 
-      checkBleInit(true);
+      m_mainSwitch->setup();
     }
 
 
@@ -219,11 +77,11 @@ class Ble2JsonUsermod : public Usermod, Ble2JsonCallbacks {
         // Serial.println("I'm alive!");
         lastTime = millis();
 
-        if (configDirty) {
+        if (m_configDirty) {
           serializeConfig();
         }
 
-        checkBleInit(false);
+        m_mainSwitch->loop();
       }
     }
 
@@ -247,25 +105,13 @@ class Ble2JsonUsermod : public Usermod, Ble2JsonCallbacks {
     }
     */
 
-
-    /*
-     * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
-     * Values in the state object may be modified by connected clients
-     */
-    void addToJsonState(JsonObject& root)
-    {
-      //root["user0"] = userVar0;
-    }
-
-
     /*
      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
     void readFromJsonState(JsonObject& root)
     {
-      // userVar0 = root["user0"] | userVar0; //if "user0" key exists in JSON, update, else keep old value
-      //if (root["bri"] == 255) // Serial.println(F("Don't burn down your garage!"));
+      m_mainSwitch->readFromJsonState(root);
     }
 
 
@@ -307,10 +153,11 @@ class Ble2JsonUsermod : public Usermod, Ble2JsonCallbacks {
     void addToConfig(JsonObject& root)
     {
       JsonObject top = root.createNestedObject("ble2jsonUsermod");
-      top["bleOnFlag"] = bleOnFlag; 
-      top["blePairingPin"] = blePairingPin;
+      top["bleOnFlag"] = m_bleOnFlag; 
+      top["blePairingPin"] = m_blePairingPin;
+      top["bleUnPairDevices"] = m_bleUnPairDevices; 
 
-      Serial.printf_P(PSTR("add: %u\n"),blePairingPin);
+      Serial.printf_P(PSTR("add: %u %d\n"),m_blePairingPin, m_bleOnFlag);
 
       Serial.println("Add to config");
     }
@@ -341,10 +188,11 @@ class Ble2JsonUsermod : public Usermod, Ble2JsonCallbacks {
 
       bool configComplete = !top.isNull();
 
-      configComplete &= getJsonValue(top["bleOnFlag"], bleOnFlag, false);
-      configComplete &= getJsonValue(top["blePairingPin"], blePairingPin, PASSKEY);
+      configComplete &= getJsonValue(top["bleOnFlag"], m_bleOnFlag, false);
+      configComplete &= getJsonValue(top["blePairingPin"], m_blePairingPin, PASSKEY);
+      configComplete &= getJsonValue(top["bleUnPairDevices"], m_bleUnPairDevices, false);
 
-      Serial.printf_P(PSTR("read: %u\n"),blePairingPin);
+      Serial.printf_P(PSTR("read: %u\n"), m_blePairingPin);
 
       return configComplete;
     }
@@ -373,9 +221,29 @@ class Ble2JsonUsermod : public Usermod, Ble2JsonCallbacks {
    //More methods can be added in the future, this example will then be extended.
    //Your usermod will remain compatible as it does not need to implement all methods from the Usermod base class!
 
-  void turnOffBle() {
-    bleOnFlag = false;
-    configDirty = true;
+  bool getBleOnFlag() {
+    return m_bleOnFlag;
   }
 
+  void setBleOnFlag(bool bleOnFlag) {
+    Serial.printf_P(PSTR("setting on flag: %d\n"), bleOnFlag);
+    
+    m_bleOnFlag = bleOnFlag;
+    m_configDirty = true;
+  }
+
+  uint32_t getBlePairingPin() {
+    Serial.printf_P(PSTR("returning PIN mod: %u\n"), m_blePairingPin);
+
+    return m_blePairingPin;
+  }
+
+  bool getBleUnPairDevices() {
+    return m_bleUnPairDevices;
+  }
+
+  void setBleUnPairDevice(bool bleUnPairDevices) {
+    m_bleUnPairDevices = bleUnPairDevices;
+    m_configDirty = true;
+  }
 };
