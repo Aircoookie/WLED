@@ -484,6 +484,9 @@ void WLED::beginStrip()
 
 void WLED::initAP(bool resetAP)
 {
+#ifdef WLED_DISABLE_AP
+  return;
+#else  
   if (apBehavior == AP_BEHAVIOR_BUTTON_ONLY && !resetAP)
     return;
 
@@ -516,6 +519,7 @@ void WLED::initAP(bool resetAP)
     dnsServer.start(53, "*", WiFi.softAPIP());
   }
   apActive = true;
+#endif
 }
 
 bool WLED::initEthernet()
