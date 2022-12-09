@@ -1690,9 +1690,9 @@ function makeSeg()
 
 function resetUtil(off=false)
 {
-	gId('segutil').innerHTML = '<div class="seg btn btn-s" style="border-radius:24px;padding:0;">'
+	gId('segutil').innerHTML = `<div class="seg btn btn-s ${off?'off':''}" style="border-radius:24px;padding:0;">`
 	+ '<label class="check schkl"><input type="checkbox" id="selall" onchange="selSegAll(this)"><span class="checkmark"></span></label>'
-	+ `<div class="segname" ${off?'style="color:var(--c-6);"':'onclick="makeSeg()"'}><i class="icons btn-icon ${off?'off':''}">&#xe18a;</i>Add segment</div></div>`;
+	+ `<div class="segname" ${off?'':'onclick="makeSeg()"'}><i class="icons btn-icon">&#xe18a;</i>Add segment</div></div>`;
 }
 
 function makePlSel(el, incPl=false)
