@@ -190,7 +190,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
           if (protocol == P_ARTNET && dataOffset > 0)
             dataOffset--;
           // Skip out of universe addresses
-          if (dataOffset > dmxChannels - dmxEffectChannels)
+          if (dataOffset > dmxChannels - dmxEffectChannels + 1)
             return;
 
           if (e131_data[dataOffset+1] < strip.getModeCount())
