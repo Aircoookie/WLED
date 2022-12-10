@@ -41,7 +41,7 @@ static int currentChannel = 0;
 // Some new MCUs (-S2, -C3) don't have HardwareSerial(2)
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
   #if SOC_UART_NUM < 3
-  #error DMX output is not possible on your MCU, as it not have HardwareSerial(2)
+  #error DMX output is not possible on your MCU, as it doesn't have HardwareSerial(2)
   #endif
 #endif
 

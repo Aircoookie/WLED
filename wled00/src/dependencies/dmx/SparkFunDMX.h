@@ -26,10 +26,10 @@ Distributed as-is; no warranty is given.
 class SparkFunDMX {
 public:
   void initWrite(int maxChan);
-  #if !defined(DMX_SEND_ONLY)
+#if !defined(DMX_SEND_ONLY)
   void initRead(int maxChan);
   uint8_t read(int Channel);
-  #endif
+#endif
   void write(int channel, uint8_t value);
   void update();
 private:
