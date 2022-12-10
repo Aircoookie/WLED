@@ -12,6 +12,9 @@
 
 
 class BleStateService :public BleServiceBase {
+  private:
+    std::string *m_toSave = NULL;
+
   protected:
     bool writeData(BleChunker *chunker) {
       Serial.println("BleStateService writeData");
@@ -26,6 +29,35 @@ class BleStateService :public BleServiceBase {
 
       return ret;
     }
+
+    void saveData() {
+      if (m_toSave != NULL) {
+        DynamicJsonDocument localDoc(JSON_BUFFER_SIZE);
+
+        DeserializationError error = deserializeJson(localDoc, m_toSave->data());
+
+        if (error) {
+          ESP_LOGD("State Server", "error : %d", error.code());
+          return;
+        }
+
+        JsonObject obj = localDoc.as<JsonObject>();
+
+        serializeJson(obj, Serial);
+        Serial.println("");
+        serializeJson(localDoc, Serial);
+        Serial.println("");
+        
+        deserializeState(obj, CALL_MODE_BUTTON_PRESET);
+
+        stateUpdated(CALL_MODE_BUTTON);
+
+        ESP_LOGD("State Server", "saving data : %s", m_toSave->data());
+
+        delete m_toSave;
+        m_toSave = NULL;
+      }
+    }
     
   public: 
     BleStateService() {
@@ -37,6 +69,7 @@ class BleStateService :public BleServiceBase {
     }
 
     void loop() {
+      saveData();
 
       // bool dirty = false;
       // std::string newData = "{";
@@ -92,5 +125,12 @@ class BleStateService :public BleServiceBase {
 
     void onWrite(std::string value) {
       ESP_LOGD("State Server", ">> got write : %s", value.data());
+
+      if (m_toSave) {
+        delete m_toSave;
+        m_toSave = NULL;
+      }
+
+      m_toSave = new std::string(value);
     }
 };
