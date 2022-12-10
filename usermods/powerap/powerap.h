@@ -10,20 +10,24 @@ class PowerAPUsermod : public Usermod {
   public:
     void setup() {
       if (WLED_FS.exists(fname)) {
-        File fl = WLED_FS.open(fname,"w");
-        fl.seek(0);
+        File fl = WLED_FS.open(fname,"r+");
+        if (!fl) DEBUG_PRINTLN(F("--- File read failed ---"));
         char data = fl.read();
+        DEBUG_PRINT(F("--- Read ")); DEBUG_PRINT(data); DEBUG_PRINT('('); DEBUG_PRINT((int)data); DEBUG_PRINTLN(F(") ---"));
         if (data == '0') {
+          DEBUG_PRINTLN(F("--- 2nd boot ---"));
           fl.seek(0);
           fl.write('1');
         } else if (data == '1') {
+          DEBUG_PRINTLN(F("--- 3rd boot ---"));
           apBehavior = AP_BEHAVIOR_ALWAYS;
           WLED::instance().initAP(true);
         }
         fl.close();
       } else {
+        DEBUG_PRINTLN(F("--- 1st boot ---"));
         File fl = WLED_FS.open(fname,"w");
-        fl.write('0');
+        fl.write((uint8_t*)"0 ", 2);
         fl.close();
       }
     }
@@ -32,6 +36,7 @@ class PowerAPUsermod : public Usermod {
       if (millis() < 10000 && millis() - lastTime > 5000) {
         lastTime = millis();
         if (WLED_FS.exists(fname)) {
+          DEBUG_PRINTLN(F("--- Removing boot file ---"));
           WLED_FS.remove(fname);
         }
      }
