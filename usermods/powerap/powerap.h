@@ -13,7 +13,6 @@ class PowerAPUsermod : public Usermod {
         File fl = WLED_FS.open(fname,"r+");
         if (!fl) DEBUG_PRINTLN(F("--- File read failed ---"));
         char data = fl.read();
-        DEBUG_PRINT(F("--- Read ")); DEBUG_PRINT(data); DEBUG_PRINT('('); DEBUG_PRINT((int)data); DEBUG_PRINTLN(F(") ---"));
         if (data == '0') {
           DEBUG_PRINTLN(F("--- 2nd boot ---"));
           fl.seek(0);
@@ -27,7 +26,7 @@ class PowerAPUsermod : public Usermod {
       } else {
         DEBUG_PRINTLN(F("--- 1st boot ---"));
         File fl = WLED_FS.open(fname,"w");
-        fl.write((uint8_t*)"0 ", 2);
+        fl.write((uint8_t*)"0 ", 2);  // write('0'); does not work somehow
         fl.close();
       }
     }
