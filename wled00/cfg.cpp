@@ -219,7 +219,6 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
             pinMode(btnPin[s], INPUT);
           } else {
             #ifdef ESP32
-            // first check that analog button is valid
             pinMode(btnPin[s], buttonType[s]==BTN_TYPE_PUSH_ACT_HIGH ? INPUT_PULLDOWN : INPUT_PULLUP);
             #else
             pinMode(btnPin[s], INPUT_PULLUP);
