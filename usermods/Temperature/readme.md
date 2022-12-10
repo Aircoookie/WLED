@@ -1,9 +1,9 @@
 # Temperature usermod
 
-Based on the excellent `QuinLED_Dig_Uno_Temp_MQTT` by srg74 and 400killer!  
-This usermod will read from an attached DS18B20 temperature sensor (as available on the QuinLED Dig-Uno)  
-The temperature is displayed both in the Info section of the web UI as well as published to the `/temperature` MQTT topic if enabled.  
-This usermod may be expanded with support for different sensor types in the future.
+Based on the excellent `QuinLED_Dig_Uno_Temp_MQTT` usermod by srg74 and 400killer!  
+Reads an attached DS18B20 temperature sensor (as available on the QuinLED Dig-Uno)  
+Temperature is displayed in both the Info section of the web UI as well as published to the `/temperature` MQTT topic, if enabled.  
+May be expanded with support for different sensor types in the future.
 
 If temperature sensor is not detected during boot, this usermod will be disabled.
 
@@ -13,10 +13,10 @@ Copy the example `platformio_override.ini` to the root directory.  This file sho
 
 ### Define Your Options
 
-* `USERMOD_DALLASTEMPERATURE`                      - define this to have this user mod included wled00\usermods_list.cpp
-* `USERMOD_DALLASTEMPERATURE_FIRST_MEASUREMENT_AT` - the number of milliseconds after boot to take first measurement, defaults to 20 seconds
+* `USERMOD_DALLASTEMPERATURE`                      - enables this user mod wled00/usermods_list.cpp
+* `USERMOD_DALLASTEMPERATURE_FIRST_MEASUREMENT_AT` - umber of milliseconds after boot to take first measurement, defaults to 20000 ms
 
-All parameters can be configured at runtime using Usermods settings page, including pin, selection to display temerature in degrees Celsius or Farenheit mand measurement interval.
+All parameters can be configured at runtime via the Usermods settings page, including pin, temperature in degrees Celsius or Farenheit and measurement interval.
 
 ## Project link
 
@@ -50,8 +50,8 @@ lib_deps =
 ## Change Log
 
 2020-09-12 
-* Changed to use async, non-blocking implementation
-* Do not report low temperatures that indicate an error to mqtt
+* Changed to use async non-blocking implementation
+* Do not report erroneous low temperatures to MQTT
 * Disable plugin if temperature sensor not detected
 * Report the number of seconds until the first read in the info screen instead of sensor error
 2021-04

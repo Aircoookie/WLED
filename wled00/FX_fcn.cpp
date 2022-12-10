@@ -418,12 +418,7 @@ void Segment::setMode(uint8_t fx, bool loadDefaults) {
         sOpt = extractModeDefaults(fx, "mi");   if (sOpt >= 0) mirror    = (bool)sOpt; // NOTE: setting this option is a risky business
         sOpt = extractModeDefaults(fx, "rY");   if (sOpt >= 0) reverse_y = (bool)sOpt;
         sOpt = extractModeDefaults(fx, "mY");   if (sOpt >= 0) mirror_y  = (bool)sOpt; // NOTE: setting this option is a risky business
-        sOpt = extractModeDefaults(fx, "pal");
-        if (sOpt >= 0 && (size_t)sOpt < strip.getPaletteCount() + strip.customPalettes.size()) {
-          if (sOpt != palette) {
-            palette = sOpt;
-          }
-        }
+        sOpt = extractModeDefaults(fx, "pal");  if (sOpt >= 0) setPalette(sOpt);
       }
       stateChanged = true; // send UDP/WS broadcast
     }
@@ -431,13 +426,13 @@ void Segment::setMode(uint8_t fx, bool loadDefaults) {
 }
 
 void Segment::setPalette(uint8_t pal) {
-  if (pal < strip.getPaletteCount()) {
-    if (pal != palette) {
-      if (strip.paletteFade) startTransition(strip.getTransition());
-      palette = pal;
-    }
+  if (pal < 245 && pal > GRADIENT_PALETTE_COUNT+13) pal = 0; // built in palettes
+  if (pal > 245 && (strip.customPalettes.size() == 0 || 255U-pal > strip.customPalettes.size()-1)) pal = 0; // custom palettes
+  if (pal != palette) {
+    if (strip.paletteFade) startTransition(strip.getTransition());
+    palette = pal;
+    stateChanged = true; // send UDP/WS broadcast
   }
-  stateChanged = true; // send UDP/WS broadcast
 }
 
 // 2D matrix
