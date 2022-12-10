@@ -190,7 +190,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   getVal(elem["ix"], &seg.intensity);
 
   uint8_t pal = seg.palette;
-  if (getVal(elem["pal"], &pal, 1, strip.getPaletteCount())) seg.setPalette(pal);
+  if (getVal(elem["pal"], &pal)) seg.setPalette(pal);
 
   getVal(elem["c1"], &seg.custom1);
   getVal(elem["c2"], &seg.custom2);
@@ -403,6 +403,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       // if preset contains HTTP API call do not change presetCycCurr
       if (root["win"].isNull()) presetCycCurr = currentPreset;
       stateChanged = false; // cancel state change update (preset was set directly by applying values stored in UI JSON array)
+      notify(callMode);
     } else if (root["win"].isNull() && getVal(root["ps"], &ps, 0, 0) && ps > 0 && ps < 251 && ps != currentPreset) {
       // b) preset ID only or preset that does not change state (use embedded cycling limits if they exist in getVal())
       presetCycCurr = ps;
@@ -410,7 +411,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       root.remove("v");    // may be added in UI call
       root.remove("time"); // may be added in UI call
       root.remove("ps");
-      root.remove("on");   // some exetrnal calls add "on" to "ps" call
+      root.remove("on");   // some external calls add "on" to "ps" call
       if (root.size() == 0) {
         unloadPlaylist();  // we need to unload playlist
         applyPreset(ps, callMode); // async load (only preset ID was specified)
@@ -566,7 +567,6 @@ void serializeInfo(JsonObject root)
   leds[F("maxseg")] = strip.getMaxSegments();
   //leds[F("actseg")] = strip.getActiveSegmentsNum();
   //leds[F("seglock")] = false; //might be used in the future to prevent modifications to segment config
-  leds[F("cpal")] = strip.customPalettes.size(); //number of custom palettes
 
   #ifndef WLED_DISABLE_2D
   if (strip.isMatrix) {
@@ -636,6 +636,7 @@ void serializeInfo(JsonObject root)
 
   root[F("fxcount")] = strip.getModeCount();
   root[F("palcount")] = strip.getPaletteCount();
+  root[F("cpalcount")] = strip.customPalettes.size(); //number of custom palettes
 
   JsonArray ledmaps = root.createNestedArray(F("maps"));
   for (size_t i=0; i<10; i++) {
