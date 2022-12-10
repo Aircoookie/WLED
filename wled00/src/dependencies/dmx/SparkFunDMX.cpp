@@ -14,9 +14,10 @@ Distributed as-is; no warranty is given.
 ******************************************************************************/
 
 /* ----- LIBRARIES ----- */
-#if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C3)  && !defined(CONFIG_IDF_TARGET_ESP32S2)
+#if defined(ARDUINO_ARCH_ESP32)
 
 #include <Arduino.h>
+#if !defined(CONFIG_IDF_TARGET_ESP32C3)  && !defined(CONFIG_IDF_TARGET_ESP32S2)
 
 #include "SparkFunDMX.h"
 #include <HardwareSerial.h>
@@ -36,7 +37,9 @@ static const int txPin = 2;        // transmit DMX data over this pin (default i
 //DMX value array and size. Entry 0 will hold startbyte
 static uint8_t dmxData[dmxMaxChannel] = { 0 };
 static int chanSize = 0;
+#if !defined(DMX_SEND_ONLY)
 static int currentChannel = 0;
+#endif
 
 // Some new MCUs (-S2, -C3) don't have HardwareSerial(2)
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
@@ -48,8 +51,10 @@ static int currentChannel = 0;
 static HardwareSerial DMXSerial(2);
 
 /* Interrupt Timer for DMX Receive */
+#if !defined(DMX_SEND_ONLY)
 static hw_timer_t * timer = NULL;
 static portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
+#endif
 
 static volatile int _interruptCounter = 0;
 static volatile bool _startCodeDetected = false;
@@ -173,5 +178,5 @@ void SparkFunDMX::update() {
 }
 
 // Function to update the DMX bus
-
+#endif
 #endif
