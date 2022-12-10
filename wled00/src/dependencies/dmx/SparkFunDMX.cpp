@@ -14,7 +14,7 @@ Distributed as-is; no warranty is given.
 ******************************************************************************/
 
 /* ----- LIBRARIES ----- */
-#ifdef ARDUINO_ARCH_ESP32
+#if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C3)  && !defined(CONFIG_IDF_TARGET_ESP32S2)
 
 #include <Arduino.h>
 
@@ -41,7 +41,7 @@ static int currentChannel = 0;
 // Some new MCUs (-S2, -C3) don't have HardwareSerial(2)
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
   #if SOC_UART_NUM < 3
-  #error DMX output is not possible on your MCU, as it doesn't have HardwareSerial(2)
+  #error DMX output is not possible on your MCU, as it does not have HardwareSerial(2)
   #endif
 #endif
 
