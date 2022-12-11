@@ -346,9 +346,13 @@ uint16_t mode_breath(void) {
     SEGMENT.setPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0), lum));
   }
 
+  if(SEGMENT.check2) {
+    glitter_base(0);
+  }
+
   return FRAMETIME;
 }
-static const char _data_FX_MODE_BREATH[] PROGMEM = "Breathe@!;!,!;!";
+static const char _data_FX_MODE_BREATH[] PROGMEM = "Breathe@!,,,Glitter intensity,,,Glitter;!,!;!";
 
 
 /*
@@ -2069,9 +2073,14 @@ uint16_t mode_colorwaves()
   }
   SEGENV.step = sPseudotime;
   SEGENV.aux0 = sHue16;
+
+  if(SEGMENT.check2) {
+    glitter_base(0);
+  }
+
   return FRAMETIME;
 }
-static const char _data_FX_MODE_COLORWAVES[] PROGMEM = "Colorwaves@!,Hue;!;!";
+static const char _data_FX_MODE_COLORWAVES[] PROGMEM = "Colorwaves@!,Hue,,Glitter intensity,,,Glitter;!;!";
 
 
 // colored stripes pulsing at a defined Beats-Per-Minute (BPM)
@@ -2246,9 +2255,14 @@ uint16_t mode_colortwinkle()
       }
     }
   }
+
+  if(SEGMENT.check2) {
+    glitter_base(0);
+  }
+
   return FRAMETIME_FIXED;
 }
-static const char _data_FX_MODE_COLORTWINKLE[] PROGMEM = "Colortwinkles@Fade speed,Spawn speed;;!;;m12=0"; //pixels
+static const char _data_FX_MODE_COLORTWINKLE[] PROGMEM = "Colortwinkles@Fade speed,Spawn speed,,Glitter intensity,,,Glitter;;!;;m12=0"; //pixels
 
 
 //Calm effect, like a lake at night
@@ -2919,16 +2933,19 @@ static const char _data_FX_MODE_SINELON_RAINBOW[] PROGMEM = "Sinelon Rainbow@!,T
  * Glitter base
  *
  * @param fx_bg_type Effect background type (0=NONE, 1=COLOR, 2=PALETTE)
- * @param fx_color Effect color
  */
-uint16_t glitter_base(uint8_t fx_bg_type, uint32_t fx_color=ULTRAWHITE) {
+uint16_t glitter_base(uint8_t fx_bg_type) {
   if (fx_bg_type == 1) {
     SEGMENT.fill(SEGCOLOR(0));
   } else if (fx_bg_type == 2) {
     mode_palette();
   }
-  if (SEGMENT.intensity > random8()) {
-    SEGMENT.setPixelColor(random16(SEGLEN), fx_color);
+
+  if (
+       (fx_bg_type == 0 && SEGMENT.custom2 > random8()) ||
+       (fx_bg_type >= 1 && SEGMENT.intensity > random8())
+     ) {
+          SEGMENT.setPixelColor(random16(SEGLEN), ULTRAWHITE);
   }
 
   return FRAMETIME;
@@ -4508,9 +4525,13 @@ uint16_t mode_aurora(void) {
     SEGMENT.setPixelColor(i, mixedRgb[0], mixedRgb[1], mixedRgb[2]);
   }
 
+  if(SEGMENT.check2) {
+    glitter_base(0);
+  }
+
   return FRAMETIME;
 }
-static const char _data_FX_MODE_AURORA[] PROGMEM = "Aurora@!,!;1,2,3;!;;sx=24,pal=50";
+static const char _data_FX_MODE_AURORA[] PROGMEM = "Aurora@!,!,,Glitter intensity,,,Glitter;1,2,3;!;;sx=24,pal=50";
 
 // WLED-SR effects
 
@@ -7308,60 +7329,6 @@ uint16_t mode_2DAkemi(void) {
 static const char _data_FX_MODE_2DAKEMI[] PROGMEM = "Akemi@Color speed,Dance;Head palette,Arms & Legs,Eyes & Mouth;Face palette;2f;si=0"; //beatsin
 #endif // WLED_DISABLE_2D
 
-#ifndef WLED_DISABLE_OVERLAY
-// Overlay: Glitter
-uint16_t mode_overlay_glitter() {
-  return glitter_base(0, SEGCOLOR(0));
-}
-static const char _data_FX_MODE_OVERLAY_GLITTER[] PROGMEM = "Overlay: Glitter@,!;!;;;m12=0";
-
-
-// Overlay: Sparkle
-uint16_t mode_overlay_sparkle() {
-  uint32_t cycleTime = 10 + (255 - SEGMENT.speed)*2;
-  uint32_t it = strip.now / cycleTime;
-  if (it != SEGENV.step) {
-    SEGENV.aux0 = random16(SEGLEN);
-    SEGENV.step = it;
-  }
-  SEGMENT.setPixelColor(SEGENV.aux0, SEGCOLOR(0));
-
-  return FRAMETIME;
-}
-static const char _data_FX_MODE_OVERLAY_SPARKLE[] PROGMEM = "Overlay: Sparkle@!;!;;;m12=0";
-
-
-// Overlay: Sparkle Dark
-uint16_t mode_overlay_flash_sparkle() {
-  if (strip.now - SEGENV.aux0 > SEGENV.step) {
-    if(random8((255-SEGMENT.intensity) >> 4) == 0) {
-      SEGMENT.setPixelColor(random16(SEGLEN), SEGCOLOR(0)); //flash
-    }
-    SEGENV.step = strip.now;
-    SEGENV.aux0 = 255-SEGMENT.speed;
-  }
-
-  return FRAMETIME;
-}
-static const char _data_FX_MODE_OVERLAY_FLASH_SPARKLE[] PROGMEM = "Overlay: Sparkle Dark+@!,!;!;;;m12=0";
-
-
-// Overlay: Sparkle+
-uint16_t mode_overlay_hyper_sparkle() {
-  if (strip.now - SEGENV.aux0 > SEGENV.step) {
-    if (random8((255-SEGMENT.intensity) >> 4) == 0) {
-      for (int i = 0; i < MAX(1, SEGLEN/3); i++) {
-        SEGMENT.setPixelColor(random16(SEGLEN), SEGCOLOR(0));
-      }
-    }
-    SEGENV.step = strip.now;
-    SEGENV.aux0 = 255-SEGMENT.speed;
-  }
-
-  return FRAMETIME;
-}
-static const char _data_FX_MODE_OVERLAY_HYPER_SPARKLE[] PROGMEM = "Overlay: Sparkle+@!,!;!;;;m12=0";
-#endif // WLED_DISABLE_OVERLAY
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // mode data
@@ -7596,12 +7563,5 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_2DAKEMI, &mode_2DAkemi, _data_FX_MODE_2DAKEMI); // audio
 #endif // WLED_DISABLE_2D
 
-  // --- Overlay  effects ---
-#ifndef WLED_DISABLE_OVERLAY
-  addEffect(FX_MODE_OVERLAY_SPARKLE, &mode_overlay_sparkle, _data_FX_MODE_OVERLAY_SPARKLE);
-  addEffect(FX_MODE_OVERLAY_FLASH_SPARKLE, &mode_overlay_flash_sparkle, _data_FX_MODE_OVERLAY_FLASH_SPARKLE);
-  addEffect(FX_MODE_OVERLAY_HYPER_SPARKLE, &mode_overlay_hyper_sparkle, _data_FX_MODE_OVERLAY_HYPER_SPARKLE);
-  addEffect(FX_MODE_OVERLAY_GLITTER, &mode_overlay_glitter, _data_FX_MODE_OVERLAY_GLITTER);
-#endif // WLED_DISABLE_OVERLAY
 
 }

@@ -311,12 +311,8 @@
 #define FX_MODE_WAVESINS               184
 #define FX_MODE_ROCKTAVES              185
 #define FX_MODE_2DAKEMI                186
-#define FX_MODE_OVERLAY_GLITTER        187
-#define FX_MODE_OVERLAY_SPARKLE        188
-#define FX_MODE_OVERLAY_FLASH_SPARKLE  189
-#define FX_MODE_OVERLAY_HYPER_SPARKLE  190
 
-#define MODE_COUNT                     191
+#define MODE_COUNT                     187
 
 typedef enum mapping1D2D {
   M12_Pixels = 0,
@@ -895,5 +891,9 @@ class WS2812FX {  // 96 bytes
 
 extern const char JSON_mode_names[];
 extern const char JSON_palette_names[];
+
+// function declaration to avoid ordering effects
+uint16_t mode_palette();
+uint16_t glitter_base(uint8_t fx_bg_type);
 
 #endif
