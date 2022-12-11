@@ -2,7 +2,7 @@
 This usermod makes your staircase look cool by illuminating it with an animation. It uses
 PIR or ultrasonic sensors at the top and bottom of your stairs to:
 
-- Light up the steps in the direction you're your walking.
+- Light up the steps in the direction you're walking.
 - Switch off the steps after you, in the direction of the last detected movement.
 - Always switch on when one of the sensors detects movement, even if an effect
   is still running. It can gracefully handle multiple people on the stairs.
