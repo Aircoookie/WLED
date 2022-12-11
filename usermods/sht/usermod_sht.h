@@ -213,29 +213,29 @@ class ShtUsermod : public Usermod
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
 
-      JsonArray jsonTemp = user.createNestedArray("Temperature");
-      JsonArray jsonHumidity = user.createNestedArray("Humidity");
+      JsonArray jsonTemp = user.createNestedArray(F("Temperature"));
+      JsonArray jsonHumidity = user.createNestedArray(F("Humidity"));
 
       if (shtLastTimeUpdated == 0 || !shtReadDataSuccess) {
         jsonTemp.add(0);
         jsonHumidity.add(0);
         if (shtLastTimeUpdated == 0) {
-          jsonTemp.add(" Not read yet");
-          jsonHumidity.add(" Not read yet");
+          jsonTemp.add(F(" Not read yet"));
+          jsonHumidity.add(F(" Not read yet"));
         }
         else {
-          jsonTemp.add(" Error");
-          jsonHumidity.add(" Error");
+          jsonTemp.add(F(" Error"));
+          jsonHumidity.add(F(" Error"));
         }
 
         return;
       }
 
       jsonHumidity.add(shtCurrentHumidity);
-      jsonHumidity.add(" RH");
+      jsonHumidity.add(F(" RH"));
 
       jsonTemp.add(shtCurrentTemp);
-      jsonTemp.add(" °C");
+      jsonTemp.add(F(" °C"));
     }
 
     void publishTemperatureAndHumidityViaMqtt() {
@@ -288,11 +288,11 @@ class ShtUsermod : public Usermod
 
     void appendDeviceToMqttDiscoveryMessage(JsonDocument& root) {
       JsonObject device = root.createNestedObject("dev");
-      device["ids"] = escapedMac.c_str();
-      device["name"] = serverDescription;
-      device["sw"] = versionString;
-      device["mdl"] = ESP.getChipModel();
-      device["mf"] = "espressif";
+      device[F("ids")] = escapedMac.c_str();
+      device[F("name")] = serverDescription;
+      device[F("sw")] = versionString;
+      device[F("mdl")] = ESP.getChipModel();
+      device[F("mf")] = F("espressif");
     }
 
     /*
@@ -307,6 +307,6 @@ class ShtUsermod : public Usermod
 
 // strings to reduce flash memory usage (used more than twice)
 // Config settings
-const char ShtUsermod::_name[]    PROGMEM = "SHT Temperature & Humidity Sensor";
+const char ShtUsermod::_name[]    PROGMEM = "SHT Sensor";
 const char ShtUsermod::_enabled[] PROGMEM = "Enabled";
 const char ShtUsermod::_haMqttDiscovery[] PROGMEM = "Add-To-Home-Assistant-MQTT-Discovery";
