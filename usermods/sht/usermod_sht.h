@@ -2,6 +2,10 @@
 
 #include "SHT85.h"
 
+#define USERMOD_SHT_TYPE_SHT30 0
+#define USERMOD_SHT_TYPE_SHT31 1
+#define USERMOD_SHT_TYPE_SHT35 2
+#define USERMOD_SHT_TYPE_SHT85 3
 
 class ShtUsermod : public Usermod
 {
@@ -10,9 +14,10 @@ class ShtUsermod : public Usermod
     bool firstRunDone = false;
     bool initDone = false;
     bool haMqttDiscovery = false;
-    SHT *shtTempHumidSensor;
 
     // SHT vars
+    SHT *shtTempHumidSensor;
+    byte shtType = 0;
     bool shtInitDone = false;
     bool shtReadDataSuccess = false;
     byte shtI2cAddress = 0x44;
@@ -26,28 +31,12 @@ class ShtUsermod : public Usermod
 
     void initShtTempHumiditySensor()
     {
-      PinManagerPinType pins[2] = { { i2c_sda, true }, { i2c_scl, true } };
-      if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) {
-        DEBUG_PRINTF("[%s] SHT pin allocation failed!\n", _name);
-        shtInitDone = false;
-        cleanupShtTempHumiditySensor();
-        cleanup();
-        return;
+      switch (shtType) {
+        case USERMOD_SHT_TYPE_SHT30: shtTempHumidSensor = (SHT *) new SHT30(); break;
+        case USERMOD_SHT_TYPE_SHT31: shtTempHumidSensor = (SHT *) new SHT31(); break;
+        case USERMOD_SHT_TYPE_SHT35: shtTempHumidSensor = (SHT *) new SHT35(); break;
+        case USERMOD_SHT_TYPE_SHT85: shtTempHumidSensor = (SHT *) new SHT85(); break;
       }
-
-      #ifdef USERMOD_SHT_TYPE_SHT31
-        shtTempHumidSensor = (SHT *) new SHT31();
-      #else
-        #ifdef USERMOD_SHT_TYPE_SHT35
-          shtTempHumidSensor = (SHT *) new SHT35();
-        #else
-          #ifdef USERMOD_SHT_TYPE_SHT85
-            shtTempHumidSensor = (SHT *) new SHT85();
-          #else
-            shtTempHumidSensor = (SHT *) new SHT30();
-          #endif
-        #endif
-      #endif
 
       shtTempHumidSensor->begin(shtI2cAddress, i2c_sda, i2c_scl);
       if (shtTempHumidSensor->readStatus() == 0xFFFF) {
@@ -67,9 +56,6 @@ class ShtUsermod : public Usermod
         shtTempHumidSensor->reset();
       }
 
-      pinManager.deallocatePin(i2c_sda, PinOwner::HW_I2C);
-      pinManager.deallocatePin(i2c_scl, PinOwner::HW_I2C);
-
       delete shtTempHumidSensor;
 
       shtInitDone = false;
@@ -80,6 +66,9 @@ class ShtUsermod : public Usermod
       if (isShtReady()) {
         cleanupShtTempHumiditySensor();
       }
+
+      pinManager.deallocatePin(i2c_sda, PinOwner::HW_I2C);
+      pinManager.deallocatePin(i2c_scl, PinOwner::HW_I2C);
 
       enabled = false;
     }
@@ -95,6 +84,7 @@ class ShtUsermod : public Usermod
     static const char _name[];
     static const char _enabled[];
     static const char _haMqttDiscovery[];
+    static const char _shtType[];
 
     /*
       * setup() is called once at boot. WiFi is not yet connected at this point.
@@ -103,6 +93,15 @@ class ShtUsermod : public Usermod
     void setup()
     {
       if (enabled) {
+        PinManagerPinType pins[2] = { { i2c_sda, true }, { i2c_scl, true } };
+        if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) {
+          DEBUG_PRINTF("[%s] SHT pin allocation failed!\n", _name);
+          shtInitDone = false;
+          cleanupShtTempHumiditySensor();
+          cleanup();
+          return;
+        }
+
         initShtTempHumiditySensor();
 
         initDone = true;
@@ -156,12 +155,25 @@ class ShtUsermod : public Usermod
       if (haMqttDiscovery) publishHomeAssistantAutodiscovery();
     }
 
+    void appendConfigData() {
+      oappend(SET_F("dd=addDropdown('"));
+      oappend(_name);
+      oappend(SET_F("','"));
+      oappend(_shtType);
+      oappend(SET_F("');"));
+      oappend(SET_F("addOption(dd,'SHT30',0);"));
+      oappend(SET_F("addOption(dd,'SHT31',1);"));
+      oappend(SET_F("addOption(dd,'SHT35',2);"));
+      oappend(SET_F("addOption(dd,'SHT85',3);"));
+    }
+
     void addToConfig(JsonObject &root)
     {
       JsonObject top = root.createNestedObject(FPSTR(_name)); // usermodname
 
       top[FPSTR(_enabled)] = enabled;
       top[FPSTR(_haMqttDiscovery)] = haMqttDiscovery;
+      top[FPSTR(_shtType)] = shtType;
     }
 
     /**
@@ -179,9 +191,11 @@ class ShtUsermod : public Usermod
 
       bool oldEnabled = enabled;
       bool oldHaMqttDiscovery = haMqttDiscovery;
-      
+      byte oldShtType = shtType;
+
       getJsonValue(top[FPSTR(_enabled)], enabled);
       getJsonValue(top[FPSTR(_haMqttDiscovery)], haMqttDiscovery);
+      getJsonValue(top[FPSTR(_shtType)], shtType);
 
       // First run: reading from cfg.json, nothing to do here, will be all done in setup()
       if (!firstRunDone) {
@@ -196,6 +210,11 @@ class ShtUsermod : public Usermod
       else if (enabled) {
         if (oldHaMqttDiscovery != haMqttDiscovery && haMqttDiscovery) {
           publishHomeAssistantAutodiscovery();
+        }
+
+        if (oldShtType != shtType) {
+          cleanupShtTempHumiditySensor();
+          initShtTempHumiditySensor();
         }
 
         DEBUG_PRINTF("[%s] Config (re)loaded\n", _name);
@@ -307,6 +326,7 @@ class ShtUsermod : public Usermod
 
 // strings to reduce flash memory usage (used more than twice)
 // Config settings
-const char ShtUsermod::_name[]    PROGMEM = "SHT Sensor";
+const char ShtUsermod::_name[]    PROGMEM = "SHT-Sensor";
 const char ShtUsermod::_enabled[] PROGMEM = "Enabled";
 const char ShtUsermod::_haMqttDiscovery[] PROGMEM = "Add-To-Home-Assistant-MQTT-Discovery";
+const char ShtUsermod::_shtType[] PROGMEM = "SHT-Type";
