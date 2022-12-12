@@ -17,14 +17,15 @@ class ShtUsermod : public Usermod
 
     // SHT vars
     SHT *shtTempHumidSensor;
-    byte shtType = 0;
+    byte shtType = 0; // Default: SHT30
+    byte unitOfTemp = 0; // Default: Celsius (0 = Celsius, 1 = Fahrenheit)
     bool shtInitDone = false;
     bool shtReadDataSuccess = false;
     byte shtI2cAddress = 0x44;
     unsigned long shtLastTimeUpdated = 0;
     bool shtDataRequested = false;
-    float shtCurrentTemp = 0;
-    float shtLastKnownTemp = 0;
+    float shtCurrentTempC = 0;
+    float shtCurrentTempF = 0;
     float shtCurrentHumidity = 0;
     float shtLastKnownHumidity = 0;
 
@@ -85,6 +86,7 @@ class ShtUsermod : public Usermod
     static const char _enabled[];
     static const char _haMqttDiscovery[];
     static const char _shtType[];
+    static const char _unitOfTemp[];
 
     /*
       * setup() is called once at boot. WiFi is not yet connected at this point.
@@ -135,7 +137,8 @@ class ShtUsermod : public Usermod
         if (shtDataRequested) {
           if (shtTempHumidSensor->dataReady()) {
             if (shtTempHumidSensor->readData(false)) {
-              shtCurrentTemp = shtTempHumidSensor->getTemperature();
+              shtCurrentTempC = shtTempHumidSensor->getTemperature();
+              shtCurrentTempF = shtTempHumidSensor->getFahrenheit();
               shtCurrentHumidity = shtTempHumidSensor->getHumidity();
 
               publishTemperatureAndHumidityViaMqtt();
@@ -165,6 +168,13 @@ class ShtUsermod : public Usermod
       oappend(SET_F("addOption(dd,'SHT31',1);"));
       oappend(SET_F("addOption(dd,'SHT35',2);"));
       oappend(SET_F("addOption(dd,'SHT85',3);"));
+      oappend(SET_F("dd=addDropdown('"));
+      oappend(_name);
+      oappend(SET_F("','"));
+      oappend(_unitOfTemp);
+      oappend(SET_F("');"));
+      oappend(SET_F("addOption(dd,'Celsius',0);"));
+      oappend(SET_F("addOption(dd,'Fahrenheit',1);"));
     }
 
     void addToConfig(JsonObject &root)
@@ -174,6 +184,7 @@ class ShtUsermod : public Usermod
       top[FPSTR(_enabled)] = enabled;
       top[FPSTR(_haMqttDiscovery)] = haMqttDiscovery;
       top[FPSTR(_shtType)] = shtType;
+      top[FPSTR(_unitOfTemp)] = unitOfTemp;
     }
 
     /**
@@ -196,6 +207,7 @@ class ShtUsermod : public Usermod
       getJsonValue(top[FPSTR(_enabled)], enabled);
       getJsonValue(top[FPSTR(_haMqttDiscovery)], haMqttDiscovery);
       getJsonValue(top[FPSTR(_shtType)], shtType);
+      getJsonValue(top[FPSTR(_unitOfTemp)], unitOfTemp);
 
       // First run: reading from cfg.json, nothing to do here, will be all done in setup()
       if (!firstRunDone) {
@@ -253,8 +265,8 @@ class ShtUsermod : public Usermod
       jsonHumidity.add(shtCurrentHumidity);
       jsonHumidity.add(F(" RH"));
 
-      jsonTemp.add(shtCurrentTemp);
-      jsonTemp.add(F(" °C"));
+      unitOfTemp ? jsonTemp.add(getTemperatureF()) : jsonTemp.add(getTemperatureC());
+      unitOfTemp ? jsonTemp.add(F(" °F")) : jsonTemp.add(F(" °C"));
     }
 
     void publishTemperatureAndHumidityViaMqtt() {
@@ -262,7 +274,7 @@ class ShtUsermod : public Usermod
       char buf[128];
 
       sprintf_P(buf, PSTR("%s/temperature"), mqttDeviceTopic);
-      mqtt->publish(buf, 0, false, String(shtCurrentTemp).c_str());
+      mqtt->publish(buf, 0, false, String((unitOfTemp ? getTemperatureF() : getTemperatureC())).c_str());
       sprintf_P(buf, PSTR("%s/humidity"), mqttDeviceTopic);
       mqtt->publish(buf, 0, false, String(shtCurrentHumidity).c_str());
     }
@@ -314,6 +326,14 @@ class ShtUsermod : public Usermod
       device[F("mf")] = F("espressif");
     }
 
+    float getTemperatureC() {
+      return shtCurrentTempC;
+    }
+
+    float getTemperatureF() {
+      return shtCurrentTempF;
+    }
+
     /*
       * getId() allows you to optionally give your V2 usermod an unique ID (please define it in const.h!).
       * This could be used in the future for the system to determine whether your usermod is installed.
@@ -330,3 +350,4 @@ const char ShtUsermod::_name[]    PROGMEM = "SHT-Sensor";
 const char ShtUsermod::_enabled[] PROGMEM = "Enabled";
 const char ShtUsermod::_haMqttDiscovery[] PROGMEM = "Add-To-Home-Assistant-MQTT-Discovery";
 const char ShtUsermod::_shtType[] PROGMEM = "SHT-Type";
+const char ShtUsermod::_unitOfTemp[] PROGMEM = "Unit";
