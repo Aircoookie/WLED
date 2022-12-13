@@ -660,7 +660,7 @@ static const char _data_FX_MODE_DISSOLVE_RANDOM[] PROGMEM = "Dissolve Rnd@Repeat
  */
 uint16_t sparkle_background(bool aa=true) {
   if (!SEGMENT.check2) {
-    for(int i = 0; i < SEGLEN; i++) {
+    for (int i = 0; i < SEGLEN; i++) {
       SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, aa));
     }
   }
