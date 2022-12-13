@@ -2020,7 +2020,7 @@ function setSeg(s)
 		var startY = parseInt(sY.value);
 		var stopY = parseInt(eY.value);
 		if (startY<sY.min || startY>sY.max) {sY.value=sY.min; return;} // prevent out of bounds
-		if (stopY<eY.min || stop>eY.max) {eY.value=eY.max; return;} // prevent out of bounds
+		if (stopY<eY.min || stopY>eY.max) {eY.value=eY.max; return;} // prevent out of bounds
 		obj.seg.startY = startY;
 		obj.seg.stopY = (cfg.comp.seglen?startY:0)+stopY;
 	}
