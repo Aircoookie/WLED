@@ -892,8 +892,4 @@ class WS2812FX {  // 96 bytes
 extern const char JSON_mode_names[];
 extern const char JSON_palette_names[];
 
-// function declaration to avoid ordering effects
-uint16_t mode_palette();
-uint16_t glitter_base(uint8_t fx_bg_type);
-
 #endif
