@@ -346,13 +346,9 @@ uint16_t mode_breath(void) {
     SEGMENT.setPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0), lum));
   }
 
-  if(SEGMENT.check2) {
-    glitter_base(0);
-  }
-
   return FRAMETIME;
 }
-static const char _data_FX_MODE_BREATH[] PROGMEM = "Breathe@!,,,Glitter intensity,,,Glitter;!,!;!";
+static const char _data_FX_MODE_BREATH[] PROGMEM = "Breathe@!;!,!;!";
 
 
 /*
@@ -2074,13 +2070,9 @@ uint16_t mode_colorwaves()
   SEGENV.step = sPseudotime;
   SEGENV.aux0 = sHue16;
 
-  if(SEGMENT.check2) {
-    glitter_base(0);
-  }
-
   return FRAMETIME;
 }
-static const char _data_FX_MODE_COLORWAVES[] PROGMEM = "Colorwaves@!,Hue,,Glitter intensity,,,Glitter;!;!";
+static const char _data_FX_MODE_COLORWAVES[] PROGMEM = "Colorwaves@!,Hue;!;!";
 
 
 // colored stripes pulsing at a defined Beats-Per-Minute (BPM)
@@ -2256,13 +2248,9 @@ uint16_t mode_colortwinkle()
     }
   }
 
-  if(SEGMENT.check2) {
-    glitter_base(0);
-  }
-
   return FRAMETIME_FIXED;
 }
-static const char _data_FX_MODE_COLORTWINKLE[] PROGMEM = "Colortwinkles@Fade speed,Spawn speed,,Glitter intensity,,,Glitter;;!;;m12=0"; //pixels
+static const char _data_FX_MODE_COLORTWINKLE[] PROGMEM = "Colortwinkles@Fade speed,Spawn speed;;!;;m12=0"; //pixels
 
 
 //Calm effect, like a lake at night
@@ -2932,20 +2920,17 @@ static const char _data_FX_MODE_SINELON_RAINBOW[] PROGMEM = "Sinelon Rainbow@!,T
 /**
  * Glitter base
  *
- * @param fx_bg_type Effect background type (0=NONE, 1=COLOR, 2=PALETTE)
+ * @param fx_bg_type Effect background type (0=COLOR, 1=PALETTE)
  */
 uint16_t glitter_base(uint8_t fx_bg_type) {
   if (fx_bg_type == 1) {
-    SEGMENT.fill(SEGCOLOR(0));
-  } else if (fx_bg_type == 2) {
     mode_palette();
+  } else if (!SEGMENT.check2) {
+    SEGMENT.fill(SEGCOLOR(1));
   }
 
-  if (
-       (fx_bg_type == 0 && SEGMENT.custom2 > random8()) ||
-       (fx_bg_type >= 1 && SEGMENT.intensity > random8())
-     ) {
-          SEGMENT.setPixelColor(random16(SEGLEN), ULTRAWHITE);
+  if (SEGMENT.intensity > random8()) {
+    SEGMENT.setPixelColor(random16(SEGLEN), SEGCOLOR(0));
   }
 
   return FRAMETIME;
@@ -2954,16 +2939,16 @@ uint16_t glitter_base(uint8_t fx_bg_type) {
 
 // Rainbow with glitter, inspired by https://gist.github.com/kriegsman/062e10f7f07ba8518af6
 uint16_t mode_glitter() {
-  return glitter_base(2);
+  return glitter_base(1);
 }
-static const char _data_FX_MODE_GLITTER[] PROGMEM = "Glitter@!,!;;!;;m12=0"; //pixels
+static const char _data_FX_MODE_GLITTER[] PROGMEM = "Glitter@!,!;!;!;;m12=0"; //pixels
 
 
 // Solid colour background with glitter
 uint16_t mode_solid_glitter() {
-  return glitter_base(1);
+  return glitter_base(0);
 }
-static const char _data_FX_MODE_SOLID_GLITTER[] PROGMEM = "Solid Glitter@,!;!;;;m12=0";
+static const char _data_FX_MODE_SOLID_GLITTER[] PROGMEM = "Solid Glitter@,!,,,,,FX only;!,!;;;m12=0";
 
 
 //each needs 19 bytes
@@ -4525,13 +4510,9 @@ uint16_t mode_aurora(void) {
     SEGMENT.setPixelColor(i, mixedRgb[0], mixedRgb[1], mixedRgb[2]);
   }
 
-  if(SEGMENT.check2) {
-    glitter_base(0);
-  }
-
   return FRAMETIME;
 }
-static const char _data_FX_MODE_AURORA[] PROGMEM = "Aurora@!,!,,Glitter intensity,,,Glitter;1,2,3;!;;sx=24,pal=50";
+static const char _data_FX_MODE_AURORA[] PROGMEM = "Aurora@!,!;1,2,3;!;;sx=24,pal=50";
 
 // WLED-SR effects
 
