@@ -2930,7 +2930,11 @@ uint16_t glitter_base(uint8_t fx_bg_type) {
   }
 
   if (SEGMENT.intensity > random8()) {
-    SEGMENT.setPixelColor(random16(SEGLEN), SEGCOLOR(0));
+    if (SEGMENT.is2D()) {
+      SEGMENT.setPixelColorXY(random16(SEGMENT.virtualWidth()), random16(SEGMENT.virtualHeight()), SEGCOLOR(0));
+    } else {
+      SEGMENT.setPixelColor(random16(SEGLEN), SEGCOLOR(0));
+    }
   }
 
   return FRAMETIME;
