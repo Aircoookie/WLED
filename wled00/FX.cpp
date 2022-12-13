@@ -2939,11 +2939,7 @@ uint16_t glitter_base(uint8_t fx_bg_type) {
   }
 
   if (SEGMENT.intensity > random8()) {
-    if (SEGMENT.is2D()) {
-      SEGMENT.setPixelColorXY(random16(SEGMENT.virtualWidth()), random16(SEGMENT.virtualHeight()), SEGCOLOR(0));
-    } else {
-      SEGMENT.setPixelColor(random16(SEGLEN), SEGCOLOR(0));
-    }
+    SEGMENT.setPixelColor(random16(SEGLEN), SEGCOLOR(0));
   }
 
   return FRAMETIME;
@@ -7556,6 +7552,5 @@ void WS2812FX::setupEffectData() {
 
   addEffect(FX_MODE_2DAKEMI, &mode_2DAkemi, _data_FX_MODE_2DAKEMI); // audio
 #endif // WLED_DISABLE_2D
-
 
 }
