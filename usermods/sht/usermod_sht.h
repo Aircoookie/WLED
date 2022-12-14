@@ -143,9 +143,9 @@ void ShtUsermod::publishTemperatureAndHumidityViaMqtt() {
   if (!WLED_MQTT_CONNECTED) return;
   char buf[128];
 
-  sprintf_P(buf, PSTR("%s/temperature"), mqttDeviceTopic);
+  snprintf_P(buf, 127, PSTR("%s/temperature"), mqttDeviceTopic);
   mqtt->publish(buf, 0, false, String((unitOfTemp ? getTemperatureF() : getTemperatureC())).c_str());
-  sprintf_P(buf, PSTR("%s/humidity"), mqttDeviceTopic);
+  snprintf_P(buf, 127, PSTR("%s/humidity"), mqttDeviceTopic);
   mqtt->publish(buf, 0, false, String(shtCurrentHumidity).c_str());
 }
 
@@ -156,34 +156,34 @@ void ShtUsermod::publishHomeAssistantAutodiscovery() {
   size_t payload_size;
   StaticJsonDocument<1024> json;
 
-  sprintf_P(buf, PSTR("%s Temperature"), serverDescription);
+  snprintf_P(buf, 127, PSTR("%s Temperature"), serverDescription);
   json[F("name")] = buf;
-  sprintf_P(buf, PSTR("%s/temperature"), mqttDeviceTopic);
+  snprintf_P(buf, 127, PSTR("%s/temperature"), mqttDeviceTopic);
   json[F("stat_t")] = buf;
   json[F("dev_cla")] = F("temperature");
   json[F("stat_cla")] = F("measurement");
-  sprintf_P(buf, PSTR("%s-temperature"), escapedMac.c_str());
+  snprintf_P(buf, 127, PSTR("%s-temperature"), escapedMac.c_str());
   json[F("uniq_id")] = buf;
   json[F("unit_of_meas")] = F("°C");
   appendDeviceToMqttDiscoveryMessage(json);
   payload_size = serializeJson(json, json_str);
-  sprintf_P(buf, PSTR("homeassistant/sensor/%s/%s-temperature/config"), escapedMac.c_str(), escapedMac.c_str());
+  snprintf_P(buf, 127, PSTR("homeassistant/sensor/%s/%s-temperature/config"), escapedMac.c_str(), escapedMac.c_str());
   mqtt->publish(buf, 0, true, json_str, payload_size);
 
   json.clear();
 
-  sprintf_P(buf, PSTR("%s Humidity"), serverDescription);
+  snprintf_P(buf, 127, PSTR("%s Humidity"), serverDescription);
   json[F("name")] = buf;
-  sprintf_P(buf, PSTR("%s/humidity"), mqttDeviceTopic);
+  snprintf_P(buf, 127, PSTR("%s/humidity"), mqttDeviceTopic);
   json[F("stat_t")] = buf;
   json[F("dev_cla")] = F("humidity");
   json[F("stat_cla")] = F("measurement");
-  sprintf_P(buf, PSTR("%s-humidity"), escapedMac.c_str());
+  snprintf_P(buf, 127, PSTR("%s-humidity"), escapedMac.c_str());
   json[F("uniq_id")] = buf;
   json[F("unit_of_meas")] = F("%");
   appendDeviceToMqttDiscoveryMessage(json);
   payload_size = serializeJson(json, json_str);
-  sprintf_P(buf, PSTR("homeassistant/sensor/%s/%s-humidity/config"), escapedMac.c_str(), escapedMac.c_str());
+  snprintf_P(buf, 127, PSTR("homeassistant/sensor/%s/%s-humidity/config"), escapedMac.c_str(), escapedMac.c_str());
   mqtt->publish(buf, 0, true, json_str, payload_size);
 }
 
