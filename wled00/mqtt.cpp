@@ -90,20 +90,16 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
     colorFromDecOrHexString(col, (char*)payloadStr);
     colorUpdated(CALL_MODE_DIRECT_CHANGE);
   } else if (strcmp_P(topic, PSTR("/api")) == 0) {
+    if (!requestJSONBufferLock(15)) { delete[] payloadStr; return; }
     if (payload[0] == '{') { //JSON API
-      #ifdef WLED_USE_DYNAMIC_JSON
-      DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-      #else
-      if (!requestJSONBufferLock(15)) return;
-      #endif
       deserializeJson(doc, payloadStr);
       deserializeState(doc.as<JsonObject>());
-      releaseJSONBufferLock();
     } else { //HTTP API
-      String apireq = "win&";
+      String apireq = "win"; apireq += '&'; // reduce flash string usage
       apireq += (char*)payloadStr;
       handleSet(nullptr, apireq);
     }
+    releaseJSONBufferLock();
   } else if (strlen(topic) != 0) {
     // non standard topic, check with usermods
     usermods.onMqttMessage(topic, payloadStr);
@@ -121,6 +117,7 @@ void publishMqtt()
   if (!WLED_MQTT_CONNECTED) return;
   DEBUG_PRINTLN(F("Publish MQTT"));
 
+  #ifndef USERMOD_SMARTNEST
   char s[10];
   char subuf[38];
 
@@ -143,6 +140,7 @@ void publishMqtt()
   strlcpy(subuf, mqttDeviceTopic, 33);
   strcat_P(subuf, PSTR("/v"));
   mqtt->publish(subuf, 0, false, apires);   // do not retain message
+  #endif
 }
 
 
@@ -170,9 +168,11 @@ bool initMqtt()
   mqtt->setClientId(mqttClientID);
   if (mqttUser[0] && mqttPass[0]) mqtt->setCredentials(mqttUser, mqttPass);
 
+  #ifndef USERMOD_SMARTNEST
   strlcpy(mqttStatusTopic, mqttDeviceTopic, 33);
   strcat_P(mqttStatusTopic, PSTR("/status"));
   mqtt->setWill(mqttStatusTopic, 0, true, "offline"); // LWT message
+  #endif
   mqtt->setKeepAlive(MQTT_KEEP_ALIVE_TIME);
   mqtt->connect();
   return true;

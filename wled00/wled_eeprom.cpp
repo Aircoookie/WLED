@@ -1,3 +1,4 @@
+#ifdef WLED_ADD_EEPROM_SUPPORT
 #include <EEPROM.h>
 #include "wled.h"
 
@@ -101,7 +102,7 @@ void loadSettingsFromEEPROM()
   busses.add(bc);
 
   notifyButton = EEPROM.read(230);
-  notifyTwice = EEPROM.read(231);
+  if (EEPROM.read(231)) udpNumRetries = 1;
   buttonType[0] = EEPROM.read(232) ? BTN_TYPE_PUSH : BTN_TYPE_NONE;
 
   staticIP[0] = EEPROM.read(234);
@@ -139,8 +140,8 @@ void loadSettingsFromEEPROM()
   ntpEnabled = EEPROM.read(327);
   currentTimezone = EEPROM.read(328);
   useAMPM = EEPROM.read(329);
-  strip.gammaCorrectBri = EEPROM.read(330);
-  strip.gammaCorrectCol = EEPROM.read(331);
+  gammaCorrectBri = EEPROM.read(330);
+  gammaCorrectCol = EEPROM.read(331);
   overlayCurrent = EEPROM.read(332);
 
   alexaEnabled = EEPROM.read(333);
@@ -374,11 +375,7 @@ void deEEP() {
   
   DEBUG_PRINTLN(F("Preset file not found, attempting to load from EEPROM"));
   DEBUGFS_PRINTLN(F("Allocating saving buffer for dEEP"));
-  #ifdef WLED_USE_DYNAMIC_JSON
-  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-  #else
   if (!requestJSONBufferLock(8)) return;
-  #endif
 
   JsonObject sObj = doc.to<JsonObject>();
   sObj.createNestedObject("0");
@@ -418,17 +415,17 @@ void deEEP() {
         }
         
         segObj["fx"]  = EEPROM.read(i+10);
-        segObj[F("sx")]  = EEPROM.read(i+11);
-        segObj[F("ix")]  = EEPROM.read(i+16);
+        segObj["sx"]  = EEPROM.read(i+11);
+        segObj["ix"]  = EEPROM.read(i+16);
         segObj["pal"] = EEPROM.read(i+17);
       } else {
-        WS2812FX::Segment* seg = strip.getSegments();
+        Segment* seg = strip.getSegments();
         memcpy(seg, EEPROM.getDataPtr() +i+2, 240);
         if (ver == 2) { //versions before 2004230 did not have opacity
           for (byte j = 0; j < strip.getMaxSegments(); j++)
           {
             strip.getSegment(j).opacity = 255;
-            strip.getSegment(j).setOption(SEG_OPTION_ON, 1);
+            strip.getSegment(j).setOption(SEG_OPTION_ON, true); // use transistion
           }
         }
         serializeState(pObj, true, false, true);
@@ -470,10 +467,5 @@ void deEEPSettings() {
   EEPROM.begin(EEPSIZE);
   loadSettingsFromEEPROM();
   EEPROM.end();
-
-  //call readFromConfig() with an empty object so that usermods can initialize to defaults prior to saving
-  JsonObject empty = JsonObject();
-  usermods.readFromConfig(empty);
-
-  serializeConfig();
 }
+#endif

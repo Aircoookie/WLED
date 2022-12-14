@@ -46,6 +46,8 @@ class UsermodTemperature : public Usermod {
 
     bool enabled = true;
 
+    bool HApublished = false;
+
     // strings to reduce flash memory usage (used more than twice)
     static const char _name[];
     static const char _enabled[];
@@ -132,6 +134,28 @@ class UsermodTemperature : public Usermod {
       return false;
     }
 
+    void publishHomeAssistantAutodiscovery() {
+      if (!WLED_MQTT_CONNECTED) return;
+
+      char json_str[1024], buf[128];
+      size_t payload_size;
+      StaticJsonDocument<1024> json;
+
+      sprintf_P(buf, PSTR("%s Temperature"), serverDescription);
+      json[F("name")] = buf;
+      strcpy(buf, mqttDeviceTopic);
+      strcat_P(buf, PSTR("/temperature"));
+      json[F("state_topic")] = buf;
+      json[F("device_class")] = F("temperature");
+      json[F("unique_id")] = escapedMac.c_str();
+      json[F("unit_of_measurement")] = F("°C");
+      payload_size = serializeJson(json, json_str);
+
+      sprintf_P(buf, PSTR("homeassistant/sensor/%s/config"), escapedMac.c_str());
+      mqtt->publish(buf, 0, true, json_str, payload_size);
+      HApublished = true;
+    }
+
   public:
 
     void setup() {
@@ -206,6 +230,23 @@ class UsermodTemperature : public Usermod {
       }
     }
 
+    /**
+     * connected() is called every time the WiFi is (re)connected
+     * Use it to initialize network interfaces
+     */
+    //void connected() {}
+
+    /**
+     * subscribe to MQTT topic if needed
+     */
+    void onMqttConnect(bool sessionPresent) {
+      //(re)subscribe to required topics
+      //char subuf[64];
+      if (mqttDeviceTopic[0] != 0) {
+        publishHomeAssistantAutodiscovery();
+      }
+    }
+
     /*
      * API calls te enable data exchange between WLED modules
      */
@@ -229,7 +270,6 @@ class UsermodTemperature : public Usermod {
       if (user.isNull()) user = root.createNestedObject("u");
 
       JsonArray temp = user.createNestedArray(FPSTR(_name));
-      //temp.add(F("Loaded."));
 
       if (temperature <= -100.0f) {
         temp.add(0);
@@ -238,8 +278,13 @@ class UsermodTemperature : public Usermod {
       }
 
       temp.add(degC ? getTemperatureC() : getTemperatureF());
-      if (degC) temp.add(F("°C"));
-      else      temp.add(F("°F"));
+      temp.add(degC ? F("°C") : F("°F"));
+
+      JsonObject sensor = root[F("sensor")];
+      if (sensor.isNull()) sensor = root.createNestedObject(F("sensor"));
+      temp = sensor.createNestedArray(F("temp"));
+      temp.add(degC ? temperature : (float)temperature * 1.8f + 32);
+      temp.add(degC ? F("°C") : F("°F"));
     }
 
     /**

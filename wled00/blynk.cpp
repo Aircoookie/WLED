@@ -1,5 +1,7 @@
 #include "wled.h"
+#ifndef WLED_DISABLE_BLYNK
 #include "src/dependencies/blynk/Blynk/BlynkHandlers.h"
+#endif
 
 /*
  * Remote light control with the free Blynk app

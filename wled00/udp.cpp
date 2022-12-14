@@ -4,7 +4,7 @@
  * UDP sync notifier / Realtime / Hyperion / TPM2.NET
  */
 
-#define UDP_SEG_SIZE 28
+#define UDP_SEG_SIZE 36
 #define SEG_OFFSET (41+(MAX_NUM_SEGMENTS*UDP_SEG_SIZE))
 #define WLEDPACKETSIZE (41+(MAX_NUM_SEGMENTS*UDP_SEG_SIZE)+0)
 #define UDP_IN_MAXSIZE 1472
@@ -28,7 +28,7 @@ void notify(byte callMode, bool followUp)
     default: return;
   }
   byte udpOut[WLEDPACKETSIZE];
-  WS2812FX::Segment& mainseg = strip.getMainSegment();
+  Segment& mainseg = strip.getMainSegment();
   udpOut[0] = 0; //0: wled notifier protocol 1: WARLS protocol
   udpOut[1] = callMode;
   udpOut[2] = bri;
@@ -46,7 +46,8 @@ void notify(byte callMode, bool followUp)
   //3: supports FX intensity, 24 byte packet 4: supports transitionDelay 5: sup palette
   //6: supports timebase syncing, 29 byte packet 7: supports tertiary color 8: supports sys time sync, 36 byte packet
   //9: supports sync groups, 37 byte packet 10: supports CCT, 39 byte packet 11: per segment options, variable packet length (40+MAX_NUM_SEGMENTS*3)
-  udpOut[11] = 11;
+  //12: enhanced effct sliders, 2D & mapping options
+  udpOut[11] = 12;
   col = mainseg.colors[1];
   udpOut[12] = R(col);
   udpOut[13] = G(col);
@@ -89,12 +90,14 @@ void notify(byte callMode, bool followUp)
   udpOut[37] = strip.hasCCTBus() ? 0 : 255; //check this is 0 for the next value to be significant
   udpOut[38] = mainseg.cct;
 
-  udpOut[39] = strip.getMaxSegments();
+  udpOut[39] = strip.getActiveSegmentsNum();
   udpOut[40] = UDP_SEG_SIZE; //size of each loop iteration (one segment)
-  for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
-    WS2812FX::Segment &selseg = strip.getSegment(i);
-    uint16_t ofs = 41 + i*UDP_SEG_SIZE; //start of segment offset byte
-    udpOut[0 +ofs] = i;
+  size_t s = 0, nsegs = strip.getSegmentsNum();
+  for (size_t i = 0; i < nsegs; i++) {
+    Segment &selseg = strip.getSegment(i);
+    if (!selseg.isActive()) continue;
+    uint16_t ofs = 41 + s*UDP_SEG_SIZE; //start of segment offset byte
+    udpOut[0 +ofs] = s;
     udpOut[1 +ofs] = selseg.start >> 8;
     udpOut[2 +ofs] = selseg.start & 0xFF;
     udpOut[3 +ofs] = selseg.stop >> 8;
@@ -103,7 +106,7 @@ void notify(byte callMode, bool followUp)
     udpOut[6 +ofs] = selseg.spacing;
     udpOut[7 +ofs] = selseg.offset >> 8;
     udpOut[8 +ofs] = selseg.offset & 0xFF;
-    udpOut[9 +ofs] = selseg.options & 0x0F; //only take into account mirrored, selected, on, reversed
+    udpOut[9 +ofs] = selseg.options & 0x8F; //only take into account selected, mirrored, on, reversed, reverse_y (for 2D); ignore freeze, reset, transitional
     udpOut[10+ofs] = selseg.opacity;
     udpOut[11+ofs] = selseg.mode;
     udpOut[12+ofs] = selseg.speed;
@@ -122,6 +125,15 @@ void notify(byte callMode, bool followUp)
     udpOut[25+ofs] = B(selseg.colors[2]);
     udpOut[26+ofs] = W(selseg.colors[2]);
     udpOut[27+ofs] = selseg.cct;
+    udpOut[28+ofs] = (selseg.options>>8) & 0xFF; //mirror_y, transpose, 2D mapping & sound
+    udpOut[29+ofs] = selseg.custom1;
+    udpOut[30+ofs] = selseg.custom2;
+    udpOut[31+ofs] = selseg.custom3 | (selseg.check1<<5) | (selseg.check2<<6) | (selseg.check3<<7);
+    udpOut[32+ofs] = selseg.startY >> 8;
+    udpOut[33+ofs] = selseg.startY & 0xFF;
+    udpOut[34+ofs] = selseg.stopY >> 8;
+    udpOut[35+ofs] = selseg.stopY & 0xFF;
+    ++s;
   }
 
   //uint16_t offs = SEG_OFFSET;
@@ -135,7 +147,7 @@ void notify(byte callMode, bool followUp)
   notifierUdp.endPacket();
   notificationSentCallMode = callMode;
   notificationSentTime = millis();
-  notificationTwoRequired = (followUp)? false:notifyTwice;
+  notificationCount = followUp ? notificationCount + 1 : 0;
 }
 
 void realtimeLock(uint32_t timeoutMs, byte md)
@@ -143,20 +155,20 @@ void realtimeLock(uint32_t timeoutMs, byte md)
   if (!realtimeMode && !realtimeOverride) {
     uint16_t stop, start;
     if (useMainSegmentOnly) {
-      WS2812FX::Segment& mainseg = strip.getMainSegment();
+      Segment& mainseg = strip.getMainSegment();
       start = mainseg.start;
       stop  = mainseg.stop;
-      mainseg.setOption(SEG_OPTION_FREEZE, true, strip.getMainSegmentId());
+      mainseg.freeze = true;
     } else {
       start = 0;
       stop  = strip.getLengthTotal();
     }
     // clear strip/segment
-    for (uint16_t i = start; i < stop; i++) strip.setPixelColor(i,0,0,0,0);
+    for (size_t i = start; i < stop; i++) strip.setPixelColor(i,BLACK);
     // if WLED was off and using main segment only, freeze non-main segments so they stay off
     if (useMainSegmentOnly && bri == 0) {
-      for (uint8_t s=0; s < strip.getMaxSegments(); s++) {
-        strip.getSegment(s).setOption(SEG_OPTION_FREEZE, true, s);
+      for (size_t s=0; s < strip.getSegmentsNum(); s++) {
+        strip.getSegment(s).freeze = true;
       }
     }
   }
@@ -183,8 +195,9 @@ void exitRealtime() {
   realtimeMode = REALTIME_MODE_INACTIVE; // inform UI immediately
   realtimeIP[0] = 0;
   if (useMainSegmentOnly) { // unfreeze live segment again
-    strip.getMainSegment().setOption(SEG_OPTION_FREEZE, false, strip.getMainSegmentId());
+    strip.getMainSegment().freeze = false;
   }
+  updateInterfaces(CALL_MODE_WS_SEND);
 }
 
 
@@ -203,7 +216,7 @@ void handleNotifications()
   IPAddress localIP;
 
   //send second notification if enabled
-  if(udpConnected && notificationTwoRequired && millis()-notificationSentTime > 250){
+  if(udpConnected && (notificationCount < udpNumRetries) && ((millis()-notificationSentTime) > 250)){
     notify(notificationSentCallMode,true);
   }
   
@@ -220,7 +233,7 @@ void handleNotifications()
   if (!udpConnected) return;
     
   bool isSupp = false;
-  uint16_t packetSize = notifierUdp.parsePacket();
+  size_t packetSize = notifierUdp.parsePacket();
   if (!packetSize && udp2Connected) {
     packetSize = notifier2Udp.parsePacket();
     isSupp = true;
@@ -237,15 +250,15 @@ void handleNotifications()
       uint8_t lbuf[packetSize];
       rgbUdp.read(lbuf, packetSize);
       realtimeLock(realtimeTimeoutMs, REALTIME_MODE_HYPERION);
-      if (realtimeOverride) return;
+      if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) return;
       uint16_t id = 0;
       uint16_t totalLen = strip.getLengthTotal();
-      for (uint16_t i = 0; i < packetSize -2; i += 3)
+      for (size_t i = 0; i < packetSize -2; i += 3)
       {
         setRealtimePixel(id, lbuf[i], lbuf[i+1], lbuf[i+2], 0);
         id++; if (id >= totalLen) break;
       }
-      strip.show();
+      if (!(realtimeMode && useMainSegmentOnly)) strip.show();
       return;
     } 
   }
@@ -274,7 +287,7 @@ void handleNotifications()
     }
 
     if (it != Nodes.end()) {
-      for (byte x = 0; x < 4; x++) {
+      for (size_t x = 0; x < 4; x++) {
         it->second.ip[x] = udpIn[x + 2];
       }
       it->second.age = 0; // reset 'age counter'
@@ -286,7 +299,7 @@ void handleNotifications()
       it->second.nodeType = udpIn[38];
       uint32_t build = 0;
       if (len >= 44)
-        for (byte i=0; i<sizeof(uint32_t); i++)
+        for (size_t i=0; i<sizeof(uint32_t); i++)
           build |= udpIn[40+i]<<(8*i);
       it->second.build = build;
     }
@@ -321,9 +334,9 @@ void handleNotifications()
       if (version > 6) {
         strip.setColor(2, RGBW32(udpIn[20], udpIn[21], udpIn[22], udpIn[23])); // tertiary color
         if (version > 9 && version < 200 && udpIn[37] < 255) { // valid CCT/Kelvin value
-          uint8_t cct = udpIn[38];
+          uint16_t cct = udpIn[38];
           if (udpIn[37] > 0) { //Kelvin
-            cct = (((udpIn[37] << 8) + udpIn[38]) - 1900) >> 5; 
+            cct |= (udpIn[37] << 8); 
           }
           strip.setCCT(cct);
         }
@@ -338,20 +351,24 @@ void handleNotifications()
       if (applyEffects && currentPlaylist >= 0) unloadPlaylist();
       if (version > 10 && (receiveSegmentOptions || receiveSegmentBounds)) {
         uint8_t numSrcSegs = udpIn[39];
-        for (uint8_t i = 0; i < numSrcSegs; i++) {
+        for (size_t i = 0; i < numSrcSegs; i++) {
           uint16_t ofs = 41 + i*udpIn[40]; //start of segment offset byte
           uint8_t id = udpIn[0 +ofs];
-          if (id > strip.getMaxSegments()) continue;
-          WS2812FX::Segment& selseg = strip.getSegment(id);
-          uint16_t start  = (udpIn[1+ofs] << 8 | udpIn[2+ofs]);
-          uint16_t stop   = (udpIn[3+ofs] << 8 | udpIn[4+ofs]);
+          if (id > strip.getSegmentsNum()) break;
+
+          Segment& selseg = strip.getSegment(id);
+          if (!selseg.isActive() || !selseg.isSelected()) continue; //do not apply to non selected segments
+
+          uint16_t startY = 0, start  = (udpIn[1+ofs] << 8 | udpIn[2+ofs]);
+          uint16_t stopY  = 1, stop   = (udpIn[3+ofs] << 8 | udpIn[4+ofs]);
           uint16_t offset = (udpIn[7+ofs] << 8 | udpIn[8+ofs]);
           if (!receiveSegmentOptions) {
-            strip.setSegment(id, start, stop, selseg.grouping, selseg.spacing, offset);
+            strip.setSegment(id, start, stop, selseg.grouping, selseg.spacing, offset, startY, stopY);
             continue;
           }
-          for (uint8_t j = 0; j<4; j++) selseg.setOption(j, (udpIn[9 +ofs] >> j) & 0x01); //only take into account mirrored, selected, on, reversed
-          selseg.setOpacity(udpIn[10+ofs], id);
+          //for (size_t j = 1; j<4; j++) selseg.setOption(j, (udpIn[9 +ofs] >> j) & 0x01); //only take into account mirrored, on, reversed; ignore selected
+          selseg.options = (selseg.options & 0x0071U) | (udpIn[9 +ofs] & 0x0E); // ignore selected, freeze, reset & transitional
+          selseg.setOpacity(udpIn[10+ofs]);
           if (applyEffects) {
             strip.setMode(id,  udpIn[11+ofs]);
             selseg.speed     = udpIn[12+ofs];
@@ -359,16 +376,31 @@ void handleNotifications()
             selseg.palette   = udpIn[14+ofs];
           }
           if (receiveNotificationColor || !someSel) {
-            selseg.setColor(0, RGBW32(udpIn[15+ofs],udpIn[16+ofs],udpIn[17+ofs],udpIn[18+ofs]), id);
-            selseg.setColor(1, RGBW32(udpIn[19+ofs],udpIn[20+ofs],udpIn[21+ofs],udpIn[22+ofs]), id);
-            selseg.setColor(2, RGBW32(udpIn[23+ofs],udpIn[24+ofs],udpIn[25+ofs],udpIn[26+ofs]), id);
-            selseg.setCCT(udpIn[27+ofs], id);
+            selseg.setColor(0, RGBW32(udpIn[15+ofs],udpIn[16+ofs],udpIn[17+ofs],udpIn[18+ofs]));
+            selseg.setColor(1, RGBW32(udpIn[19+ofs],udpIn[20+ofs],udpIn[21+ofs],udpIn[22+ofs]));
+            selseg.setColor(2, RGBW32(udpIn[23+ofs],udpIn[24+ofs],udpIn[25+ofs],udpIn[26+ofs]));
+            selseg.setCCT(udpIn[27+ofs]);
+          }
+          if (version > 11) {
+            // when applying synced options ignore selected as it may be used as indicator of which segments to sync
+            // freeze, reset & transitional should never be synced
+            selseg.options = (selseg.options & 0x0071U) | (udpIn[28+ofs]<<8) | (udpIn[9 +ofs] & 0x8E); // ignore selected, freeze, reset & transitional
+            if (applyEffects) {
+              selseg.custom1 = udpIn[29+ofs];
+              selseg.custom2 = udpIn[30+ofs];
+              selseg.custom3 = udpIn[31+ofs] & 0x1F;
+              selseg.check1  = (udpIn[31+ofs]>>5) & 0x1;
+              selseg.check1  = (udpIn[31+ofs]>>6) & 0x1;
+              selseg.check1  = (udpIn[31+ofs]>>7) & 0x1;
+            }
+            startY = (udpIn[32+ofs] << 8 | udpIn[33+ofs]);
+            stopY  = (udpIn[34+ofs] << 8 | udpIn[35+ofs]);
           }
           //setSegment() also properly resets segments
           if (receiveSegmentBounds) {
-            strip.setSegment(id, start, stop, udpIn[5+ofs], udpIn[6+ofs], offset);
+            strip.setSegment(id, start, stop, udpIn[5+ofs], udpIn[6+ofs], offset, startY, stopY);
           } else {
-            strip.setSegment(id, selseg.start, selseg.stop, udpIn[5+ofs], udpIn[6+ofs], selseg.offset);
+            strip.setSegment(id, selseg.start, selseg.stop, udpIn[5+ofs], udpIn[6+ofs], selseg.offset, selseg.startY, selseg.stopY);
           }
         }
         stateChanged = true;
@@ -376,13 +408,13 @@ void handleNotifications()
       
       // simple effect sync, applies to all selected segments
       if (applyEffects && (version < 11 || !receiveSegmentOptions)) {
-        for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
-          WS2812FX::Segment& seg = strip.getSegment(i);
+        for (size_t i = 0; i < strip.getSegmentsNum(); i++) {
+          Segment& seg = strip.getSegment(i);
           if (!seg.isActive() || !seg.isSelected()) continue;
-          if (udpIn[8] < strip.getModeCount()) strip.setMode(i, udpIn[8]);
+          seg.setMode(udpIn[8]);
           seg.speed = udpIn[9];
           if (version > 2) seg.intensity = udpIn[16];
-          if (version > 4 && udpIn[19] < strip.getPaletteCount()) seg.palette = udpIn[19];
+          if (version > 4) seg.setPalette(udpIn[19]);
         }
         stateChanged = true;
       }
@@ -448,7 +480,7 @@ void handleNotifications()
 
     realtimeIP = (isSupp) ? notifier2Udp.remoteIP() : notifierUdp.remoteIP();
     realtimeLock(realtimeTimeoutMs, REALTIME_MODE_TPM2NET);
-    if (realtimeOverride) return;
+    if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) return;
 
     tpmPacketCount++; //increment the packet count
     if (tpmPacketCount == 1) tpmPayloadFrameSize = (udpIn[2] << 8) + udpIn[3]; //save frame size for the whole payload if this is the first packet
@@ -457,7 +489,7 @@ void handleNotifications()
 
     uint16_t id = (tpmPayloadFrameSize/3)*(packetNum-1); //start LED
     uint16_t totalLen = strip.getLengthTotal();
-    for (uint16_t i = 6; i < tpmPayloadFrameSize + 4; i += 3)
+    for (size_t i = 6; i < tpmPayloadFrameSize + 4U; i += 3)
     {
       if (id < totalLen)
       {
@@ -488,19 +520,19 @@ void handleNotifications()
     } else {
       realtimeLock(udpIn[1]*1000 +1, REALTIME_MODE_UDP);
     }
-    if (realtimeOverride) return;
+    if (realtimeOverride && !(realtimeMode && useMainSegmentOnly)) return;
 
     uint16_t totalLen = strip.getLengthTotal();
     if (udpIn[0] == 1) //warls
     {
-      for (uint16_t i = 2; i < packetSize -3; i += 4)
+      for (size_t i = 2; i < packetSize -3; i += 4)
       {
         setRealtimePixel(udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3], 0);
       }
     } else if (udpIn[0] == 2) //drgb
     {
       uint16_t id = 0;
-      for (uint16_t i = 2; i < packetSize -2; i += 3)
+      for (size_t i = 2; i < packetSize -2; i += 3)
       {
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
 
@@ -509,7 +541,7 @@ void handleNotifications()
     } else if (udpIn[0] == 3) //drgbw
     {
       uint16_t id = 0;
-      for (uint16_t i = 2; i < packetSize -3; i += 4)
+      for (size_t i = 2; i < packetSize -3; i += 4)
       {
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
         
@@ -518,7 +550,7 @@ void handleNotifications()
     } else if (udpIn[0] == 4) //dnrgb
     {
       uint16_t id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
-      for (uint16_t i = 4; i < packetSize -2; i += 3)
+      for (size_t i = 4; i < packetSize -2; i += 3)
       {
         if (id >= totalLen) break;
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
@@ -527,7 +559,7 @@ void handleNotifications()
     } else if (udpIn[0] == 5) //dnrgbw
     {
       uint16_t id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
-      for (uint16_t i = 4; i < packetSize -2; i += 4)
+      for (size_t i = 4; i < packetSize -2; i += 4)
       {
         if (id >= totalLen) break;
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
@@ -541,15 +573,17 @@ void handleNotifications()
   // API over UDP
   udpIn[packetSize] = '\0';
 
-  if (udpIn[0] >= 'A' && udpIn[0] <= 'Z') { //HTTP API
-    String apireq = "win&";
-    apireq += (char*)udpIn;
-    handleSet(nullptr, apireq);
-  } else if (udpIn[0] == '{') { //JSON API
-    DynamicJsonDocument jsonBuffer(2048);
-    DeserializationError error = deserializeJson(jsonBuffer, udpIn);
-    JsonObject root = jsonBuffer.as<JsonObject>();
-    if (!error && !root.isNull()) deserializeState(root);
+  if (requestJSONBufferLock(18)) {
+    if (udpIn[0] >= 'A' && udpIn[0] <= 'Z') { //HTTP API
+      String apireq = "win"; apireq += '&'; // reduce flash string usage
+      apireq += (char*)udpIn;
+      handleSet(nullptr, apireq);
+    } else if (udpIn[0] == '{') { //JSON API
+      DeserializationError error = deserializeJson(doc, udpIn);
+      JsonObject root = doc.as<JsonObject>();
+      if (!error && !root.isNull()) deserializeState(root);
+    }
+    releaseJSONBufferLock();
   }
 }
 
@@ -557,11 +591,16 @@ void handleNotifications()
 void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w)
 {
   uint16_t pix = i + arlsOffset;
-  if (pix < strip.getLengthTotal())
-  {
-    if (!arlsDisableGammaCorrection && strip.gammaCorrectCol)
-    {
-      strip.setPixelColor(pix, strip.gamma8(r), strip.gamma8(g), strip.gamma8(b), strip.gamma8(w));
+  if (pix < strip.getLengthTotal()) {
+    if (!arlsDisableGammaCorrection && gammaCorrectCol) {
+      r = gamma8(r);
+      g = gamma8(g);
+      b = gamma8(b);
+      w = gamma8(w);
+    }
+    if (useMainSegmentOnly) {
+      Segment &seg = strip.getMainSegment();
+      if (pix<seg.length()) seg.setPixelColor(pix, r, g, b, w);
     } else {
       strip.setPixelColor(pix, r, g, b, w);
     }
@@ -615,12 +654,18 @@ void sendSysInfoUDP()
   data[0] = 255;
   data[1] = 1;
   
-  for (byte x = 0; x < 4; x++) {
+  for (size_t x = 0; x < 4; x++) {
     data[x + 2] = ip[x];
   }
   memcpy((byte *)data + 6, serverDescription, 32);
   #ifdef ESP8266
   data[38] = NODE_TYPE_ID_ESP8266;
+  #elif defined(CONFIG_IDF_TARGET_ESP32C3)
+  data[38] = NODE_TYPE_ID_ESP32C3;
+  #elif defined(CONFIG_IDF_TARGET_ESP32S3)
+  data[38] = NODE_TYPE_ID_ESP32S3;
+  #elif defined(CONFIG_IDF_TARGET_ESP32S2)
+  data[38] = NODE_TYPE_ID_ESP32S2;
   #elif defined(ARDUINO_ARCH_ESP32)
   data[38] = NODE_TYPE_ID_ESP32;
   #else
@@ -629,7 +674,7 @@ void sendSysInfoUDP()
   data[39] = ip[3]; // unit ID == last IP number
 
   uint32_t build = VERSION;
-  for (byte i=0; i<sizeof(uint32_t); i++)
+  for (size_t i=0; i<sizeof(uint32_t); i++)
     data[40+i] = (build>>(8*i)) & 0xFF;
 
   IPAddress broadcastIP(255, 255, 255, 255);
@@ -681,15 +726,15 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8
     case 0: // DDP
     {
       // calculate the number of UDP packets we need to send
-      uint16_t channelCount = length * 3; // 1 channel for every R,G,B value
-      uint16_t packetCount = ((channelCount-1) / DDP_CHANNELS_PER_PACKET) +1;
+      size_t channelCount = length * (isRGBW? 4:3); // 1 channel for every R,G,B value
+      size_t packetCount = ((channelCount-1) / DDP_CHANNELS_PER_PACKET) +1;
 
       // there are 3 channels per RGB pixel
       uint32_t channel = 0; // TODO: allow specifying the start channel
       // the current position in the buffer 
-      uint16_t bufferOffset = 0;
+      size_t bufferOffset = 0;
 
-      for (uint16_t currentPacket = 0; currentPacket < packetCount; currentPacket++) {
+      for (size_t currentPacket = 0; currentPacket < packetCount; currentPacket++) {
         if (sequenceNumber > 15) sequenceNumber = 0;
 
         if (!ddpUdp.beginPacket(client, DDP_DEFAULT_PORT)) {  // port defined in ESPAsyncE131.h
@@ -698,10 +743,10 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8
         }
 
         // the amount of data is AFTER the header in the current packet
-        uint16_t packetSize = DDP_CHANNELS_PER_PACKET;
+        size_t packetSize = DDP_CHANNELS_PER_PACKET;
 
         uint8_t flags = DDP_FLAGS1_VER1;
-        if (currentPacket == (packetCount - 1)) {
+        if (currentPacket == (packetCount - 1U)) {
           // last packet, set the push flag
           // TODO: determine if we want to send an empty push packet to each destination after sending the pixel data
           flags = DDP_FLAGS1_VER1 | DDP_FLAGS1_PUSH;
@@ -713,7 +758,7 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8
         // write the header
         /*0*/ddpUdp.write(flags);
         /*1*/ddpUdp.write(sequenceNumber++ & 0x0F); // sequence may be unnecessary unless we are sending twice (as requested in Sync settings)
-        /*2*/ddpUdp.write(0);
+        /*2*/ddpUdp.write(isRGBW ?  DDP_TYPE_RGBW32 : DDP_TYPE_RGB24);
         /*3*/ddpUdp.write(DDP_ID_DISPLAY);
         // data offset in bytes, 32-bit number, MSB first
         /*4*/ddpUdp.write(0xFF & (channel >> 24));
@@ -726,11 +771,11 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8
 
         // write the colors, the write write(const uint8_t *buffer, size_t size) 
         // function is just a loop internally too
-        for (uint16_t i = 0; i < packetSize; i += 3) {
+        for (size_t i = 0; i < packetSize; i += 3) {
           ddpUdp.write(scale8(buffer[bufferOffset++], bri)); // R
           ddpUdp.write(scale8(buffer[bufferOffset++], bri)); // G
           ddpUdp.write(scale8(buffer[bufferOffset++], bri)); // B
-          if (isRGBW) bufferOffset++;
+          if (isRGBW) ddpUdp.write(scale8(buffer[bufferOffset++], bri)); // W
         }
 
         if (!ddpUdp.endPacket()) {            

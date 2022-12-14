@@ -11,6 +11,9 @@
 #define NODE_TYPE_ID_UNDEFINED        0
 #define NODE_TYPE_ID_ESP8266         82
 #define NODE_TYPE_ID_ESP32           32
+#define NODE_TYPE_ID_ESP32S2         33
+#define NODE_TYPE_ID_ESP32S3         34
+#define NODE_TYPE_ID_ESP32C3         35
 
 /*********************************************************************************************\
 * NodeStruct
@@ -19,7 +22,6 @@ struct NodeStruct
 {
   String    nodeName;
   IPAddress ip;
-  uint8_t   unit;
   uint8_t   age;
   uint8_t   nodeType;
   uint32_t  build;

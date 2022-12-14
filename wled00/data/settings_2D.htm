@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=500">
+	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+	<title>2D Set-up</title>
+	<script>
+	var d=document;
+    var loc = false, locip;
+	function H(){window.open("https://kno.wled.ge/features/2D");}
+	function B(){window.open("/settings","_self");}
+	function gId(n){return d.getElementById(n);}
+	// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
+	function loadJS(FILE_URL, async = true) {
+		let scE = d.createElement("script");
+		scE.setAttribute("src", FILE_URL);
+		scE.setAttribute("type", "text/javascript");
+		scE.setAttribute("async", async);
+		d.body.appendChild(scE);
+		// success event 
+		scE.addEventListener("load", () => {
+			//console.log("File loaded");
+			GetV();
+			UI();
+		});
+		// error event
+		scE.addEventListener("error", (ev) => {
+			console.log("Error on loading file", ev);
+			alert("Loading of configuration script failed.\nIncomplete page data!");
+		});
+	}
+	function S() {
+        if (window.location.protocol == "file:") {
+            loc = true;
+            locip = localStorage.getItem('locIp');
+            if (!locip) {
+                locip = prompt("File Mode. Please enter WLED IP!");
+                localStorage.setItem('locIp', locip);
+            }
+        }
+        var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=10';
+		loadJS(url, false);	// If we set async false, file is loaded and executed, then next statement is processed
+	}
+
+	var maxPanels=64;
+	function UI(change=false)
+	{
+		if (gId("somp").value === "0") {
+			gId("mpdiv").style.display = "none";
+			resetPanels();
+			return;
+		}
+
+		gId("mpdiv").style.display = "block";
+		maxPanels = parseInt(d.Sf.MPH.value) * parseInt(d.Sf.MPV.value);
+
+		let i = gId("panels").children.length;
+		if (i<maxPanels) for (let j=i; j<maxPanels; j++) addPanel(j);
+		if (i>maxPanels) for (let j=i; j>maxPanels; j--) remPanel();
+		//btnPanel(gId("panels").children.length);
+	}
+
+	function addPanels() {
+		let h = parseInt(d.Sf.MPH.value);
+		let v = parseInt(d.Sf.MPV.value);
+		for (let i=0; i<h*v; i++) addPanel(i);
+	}
+
+	function addPanel(i=0) {
+		let p = gId("panels");
+		if (p.children.length >= maxPanels) return;
+		let b = `<div id="pnl${i}">${i===0?"":'<hr class="sml">'}Panel ${i}<br>1<sup>st</sup> LED: <select name="P${i}B">
+	<option value="0">Top</option>
+	<option value="1">Bottom</option>
+</select><select name="P${i}R">
+	<option value="0">Left</option>
+	<option value="1">Right</option>
+</select><br>
+Orientation: <select name="P${i}V">
+	<option value="0">Horizontal</option>
+	<option value="1">Vertical</option>
+</select><br>
+Serpentine: <input type="checkbox" name="P${i}S"></div>`;
+		p.insertAdjacentHTML("beforeend", b);
+	}
+
+    function remPanel() {
+		let p = gId("panels").children;
+      	var i = p.length;
+      	if (i <= 1) return;
+      	p[i-1].remove();
+    }
+
+	function resetPanels() {
+		d.Sf.MPH.value = 1;
+		d.Sf.MPV.value = 1;
+		for (let e of gId("panels").children) e.remove();
+	}
+
+	function btnPanel(i) {
+		gId("pnl_add").style.display = (i<maxPanels) ? "inline":"none";
+		gId("pnl_rem").style.display = (i>1) ? "inline":"none";
+	}
+	</script>
+	<style>@import url("style.css");</style>
+</head>
+<body onload="S()">
+	<form id="form_s" name="Sf" method="post">
+	<div class="toprow">
+		<div class="helpB"><button type="button" onclick="H()">?</button></div>
+		<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
+	</div>
+	<h2>2D setup</h2>
+    Strip or panel:
+	<select id="somp" name="SOMP" onchange="resetPanels();addPanels();UI();" >
+		<option value="0">1D Strip</option>
+		<option value="1">2D Matrix</option>
+	</select><br>
+	<div id="mpdiv" style="display:none;">
+		<h3>Panel set-up</h3>
+		Panel dimensions (WxH): <input name="PW" type="number" min="1" max="128" value="8"> x <input name="PH" type="number" min="1" max="128" value="8"><br>
+		Horizontal panels: <input name="MPH" type="number" min="1" max="8" value="1" oninput="UI()">
+		Vertical panels: <input name="MPV" type="number" min="1" max="8" value="1" oninput="UI()"><br>
+		1<sup>st</sup> panel: <select name="PB">
+			<option value="0">Top</option>
+			<option value="1">Bottom</option>
+		</select><select name="PR">
+			<option value="0">Left</option>
+			<option value="1">Right</option>
+		</select><br>
+		Orientation: <select name="PV">
+			<option value="0">Horizontal</option>
+			<option value="1">Vertical</option>
+		</select><br>
+		Serpentine: <input type="checkbox" name="PS">
+		<hr class="sml">
+		<i>A matrix is made of 1 or more physical LED panels of the same dimensions.<br>
+		Panels should be arranged from top-left to bottom-right order, starting with lower panel number on the left (or top if transposed).<br>
+		Each panel can have different LED orientation and/or starting point and/or layout.</i><br>
+		<hr class="sml">
+		<h3>LED panel layout</h3>
+		<div id="panels">
+		</div>
+	</div>
+	<hr>
+	<button type="button" onclick="B()">Back</button><button type="submit">Save</button>
+	</form>
+</body>
+</html>
