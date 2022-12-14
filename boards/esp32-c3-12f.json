@@ -1,0 +1,36 @@
+{
+  "build": {
+    "arduino":{
+      "ldscript": "esp32c3_out.ld"
+    },
+    "core": "esp32",
+    "f_cpu": "160000000L",
+    "f_flash": "80000000L",
+    "flash_mode": "dio",
+    "extra_flags": [
+      "-DARDUINO_USB_MODE=1"
+    ],
+    "mcu": "esp32c3",
+    "variant": "esp32c3"
+  },
+  "connectivity": [
+    "wifi"
+  ],
+  "debug": {
+    "openocd_target": "esp32c3.cfg"
+  },
+  "frameworks": [
+    "arduino",
+    "espidf"
+  ],
+  "name": "Ai-Thinker ESP32-C3-12F",
+  "upload": {
+    "flash_size": "2MB",
+    "maximum_ram_size": 327680,
+    "maximum_size": 2097152,
+    "require_upload_port": true,
+    "speed": 460800
+  },
+  "url": "https://www.electrodragon.com/product/esp-led-strip-board/",
+  "vendor": "Ai-Thinker"
+}
