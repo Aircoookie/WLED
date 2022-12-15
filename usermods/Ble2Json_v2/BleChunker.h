@@ -8,16 +8,20 @@
 #include <BLEDevice.h>
 #include <BLEServer.h>
 #include <BLEUtils.h>
+#include <BLE2902.h>
+#include <BLE2904.h>
 
 #define CHUNK_SIZE 512
 
-class BleChunkerCallbacks {
+class BleChunkerCallbacks
+{
 public:
   virtual void onReadyToRead() = 0;
   virtual void onWrite(std::string value) = 0;
 };
 
-class BleChunker : public BLECharacteristicCallbacks {
+class BleChunker : public BLECharacteristicCallbacks
+{
 private:
   std::string m_writeBuffer = "";
   std::string m_readBuffer = "";
@@ -31,36 +35,46 @@ private:
   BLECharacteristic *m_data;
   BLECharacteristic *m_control;
 
-  BLECharacteristic *initChar(uint16_t id, BLEService *pService) {
+  BLECharacteristic *initChar(uint16_t id, BLEService *pService)
+  {
     BLECharacteristic *pCharacteristic = pService->createCharacteristic(
-              BLE_UUID(id),
-              BLECharacteristic::PROPERTY_READ   |
-              BLECharacteristic::PROPERTY_WRITE  |
-              BLECharacteristic::PROPERTY_NOTIFY 
-            );
+        BLE_UUID(id),
+        BLECharacteristic::PROPERTY_READ |
+            BLECharacteristic::PROPERTY_WRITE |
+            BLECharacteristic::PROPERTY_NOTIFY);
 
     pCharacteristic->setAccessPermissions(ESP_GATT_PERM_READ_ENCRYPTED | ESP_GATT_PERM_WRITE_ENCRYPTED);
     pCharacteristic->setCallbacks(this);
     pCharacteristic->setValue("");
+    BLE2902 *myBLE2902 = new BLE2902();
+    BLE2904 *myBLE2904 = new BLE2904();
+    myBLE2904->setFormat(BLE2904::FORMAT_UTF8);
+    myBLE2902->setNotifications(false);
+
+    pCharacteristic->addDescriptor(myBLE2902);
+    pCharacteristic->addDescriptor(myBLE2904);
 
     return pCharacteristic;
   }
 
-  void writeChunk() {
+  void writeChunk()
+  {
     size_t len = m_writeBuffer.length();
 
-    if (len <= m_currentPos) {
+    if (len <= m_currentPos)
+    {
       return;
     }
 
-    if (m_currentPos == 0 && len % CHUNK_SIZE == 0) {
+    if (m_currentPos == 0 && len % CHUNK_SIZE == 0)
+    {
       m_writeBuffer += " ";
       len++;
     }
 
-    size_t toWriteLen = len - m_currentPos > CHUNK_SIZE ? CHUNK_SIZE:len - m_currentPos;
+    size_t toWriteLen = len - m_currentPos > CHUNK_SIZE ? CHUNK_SIZE : len - m_currentPos;
 
-    uint8_t *toWrite = (uint8_t*)m_writeBuffer.data() + m_currentPos;
+    uint8_t *toWrite = (uint8_t *)m_writeBuffer.data() + m_currentPos;
 
     m_data->setValue(toWrite, toWriteLen);
     // m_writeReady = false;
@@ -68,12 +82,14 @@ private:
 
     ESP_LOGD("BleChunker", ">> writeChunk: curr pos=%d, len=%d, to write=%d, writing=%d to write=%s", m_currentPos, len, toWriteLen, m_writing, toWrite);
 
-    if (len - m_currentPos > CHUNK_SIZE) {
-      Serial.println("updating");
+    if (len - m_currentPos > CHUNK_SIZE)
+    {
+      DEBUG_PRINTLN("updating");
       m_writing = true;
       m_currentPos = m_currentPos + toWriteLen;
     }
-    else {
+    else
+    {
       m_writing = false;
       m_writeBuffer = "";
     }
@@ -82,24 +98,30 @@ private:
   }
 
 public:
-  BleChunker(uint16_t dataId, uint16_t controlId, BLEService *service, BleChunkerCallbacks *callbacks) {
+  BleChunker(uint16_t dataId, uint16_t controlId, BLEService *service, BleChunkerCallbacks *callbacks)
+  {
     m_callbacks = callbacks;
 
     m_data = initChar(dataId, service);
     m_control = initChar(controlId, service);
   }
 
-  bool writeData(JsonObject data) {
-    Serial.println("BleChunker writeData");
+  bool writeData(JsonObject data)
+  {
+    DEBUG_PRINTLN("BleChunker writeData");
 
-    if (!m_writing) {
+    if (!m_writing)
+    {
+      DEBUG_PRINTF("writing data: %s", m_writeBuffer.data());
+
       serializeJson(data, m_writeBuffer);
 
       m_writeReady = true;
       m_writing = true;
       m_currentPos = 0;
 
-      while (m_writing && m_writeReady) {
+      while (m_writing && m_writeReady)
+      {
         writeChunk();
       }
 
@@ -108,27 +130,33 @@ public:
     return false;
   }
 
-  void onRead(BLECharacteristic* pCharacteristic) {
+  void onRead(BLECharacteristic *pCharacteristic)
+  {
     // ignore read requests... communicate through m_control
   }
 
-	void onWrite(BLECharacteristic* pCharacteristic) {
-    if (pCharacteristic == m_control) {
+  void onWrite(BLECharacteristic *pCharacteristic)
+  {
+    if (pCharacteristic == m_control)
+    {
       std::string command = pCharacteristic->getValue();
 
-      if (command == "r") {
+      if (command == "r")
+      {
         m_callbacks->onReadyToRead();
         return;
       }
     }
-    else {
+    else
+    {
       m_readBuffer += pCharacteristic->getValue();
       m_reading = true;
 
-      ESP_LOGD("BleChunker", ">> onWrite: len=%d, recv=%s", pCharacteristic->getValue().length(), 
-        pCharacteristic->getValue().data());
+      ESP_LOGD("BleChunker", ">> onWrite: len=%d, recv=%s", pCharacteristic->getValue().length(),
+               pCharacteristic->getValue().data());
 
-      if (pCharacteristic->getValue().length() != CHUNK_SIZE) {
+      if (pCharacteristic->getValue().length() != CHUNK_SIZE)
+      {
         m_callbacks->onWrite(m_readBuffer);
         m_reading = false;
         m_readBuffer = "";
