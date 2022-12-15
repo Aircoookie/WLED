@@ -10,24 +10,24 @@
 class ShtUsermod : public Usermod
 {
   private:
-    bool enabled = false;
-    bool firstRunDone = false;
-    bool initDone = false;
-    bool haMqttDiscovery = false;
+    bool enabled = false; // Is usermod enabled or not
+    bool firstRunDone = false; // Remembers if the first config load run had been done
+    bool initDone = false; // Remembers if the mod has been completely initialised
+    bool haMqttDiscovery = false; // Is MQTT discovery enabled or not
+    bool haMqttDiscoveryDone = false; // Remembers if we already published the HA discovery topics
 
     // SHT vars
-    SHT *shtTempHumidSensor;
-    byte shtType = 0; // Default: SHT30
-    byte unitOfTemp = 0; // Default: Celsius (0 = Celsius, 1 = Fahrenheit)
-    bool shtInitDone = false;
-    bool shtReadDataSuccess = false;
-    byte shtI2cAddress = 0x44;
-    unsigned long shtLastTimeUpdated = 0;
-    bool shtDataRequested = false;
-    float shtCurrentTempC = 0;
-    float shtCurrentTempF = 0;
-    float shtCurrentHumidity = 0;
-    float shtLastKnownHumidity = 0;
+    SHT *shtTempHumidSensor; // Instance of SHT lib
+    byte shtType = 0; // SHT sensor type to be used. Default: SHT30
+    byte unitOfTemp = 0; // Temperature unit to be used. Default: Celsius (0 = Celsius, 1 = Fahrenheit)
+    bool shtInitDone = false; // Remembers if SHT sensor has been initialised
+    bool shtReadDataSuccess = false; // Did we have a successful data read and is a valid temperature and humidity available?
+    const byte shtI2cAddress = 0x44; // i2c address of the sensor. 0x44 is the default for all SHT sensors. Change this, if needed
+    unsigned long shtLastTimeUpdated = 0; // Remembers when we read data the last time
+    bool shtDataRequested = false; // Reading data is done async. This remembers if we asked the sensor to read data
+    float shtCurrentTempC = 0; // Last read temperature in Celsius
+    float shtCurrentTempF = 0; // Last read temperature in Fahrenheit
+    float shtCurrentHumidity = 0; // Last read humidity in RH%
 
 
     void initShtTempHumiditySensor();
@@ -40,29 +40,14 @@ class ShtUsermod : public Usermod
     void appendDeviceToMqttDiscoveryMessage(JsonDocument& root);
 
   public:
-    // strings to reduce flash memory usage (used more than twice)
+    // Strings to reduce flash memory usage (used more than twice)
     static const char _name[];
     static const char _enabled[];
     static const char _shtType[];
     static const char _unitOfTemp[];
     static const char _haMqttDiscovery[];
 
-    /*
-      * setup() is called once at boot. WiFi is not yet connected at this point.
-      * You can use it to initialize variables, sensors or similar.
-      */
     void setup();
-
-    /*
-      * loop() is called continuously. Here you can check for events, read sensors, etc.
-      *
-      * Tips:
-      * 1. You can use "if (WLED_CONNECTED)" to check for a successful network connection.
-      *    Additionally, "if (WLED_MQTT_CONNECTED)" is available to check for a connection to an MQTT broker.
-      *
-      * 2. Try to avoid using the delay() function. NEVER use delays longer than 10 milliseconds.
-      *    Instead, use a timer check as shown here.
-      */
     void loop();
     void onMqttConnect(bool sessionPresent);
     void appendConfigData();
@@ -74,22 +59,24 @@ class ShtUsermod : public Usermod
     float getTemperatureF();
     float getHumidity();
 
-    /*
-      * getId() allows you to optionally give your V2 usermod an unique ID (please define it in const.h!).
-      * This could be used in the future for the system to determine whether your usermod is installed.
-      */
     uint16_t getId() { return USERMOD_ID_SHT; }
 };
 
-// strings to reduce flash memory usage (used more than twice)
-// Config settings
+// Strings to reduce flash memory usage (used more than twice)
 const char ShtUsermod::_name[]    PROGMEM = "SHT-Sensor";
 const char ShtUsermod::_enabled[] PROGMEM = "Enabled";
 const char ShtUsermod::_shtType[] PROGMEM = "SHT-Type";
 const char ShtUsermod::_unitOfTemp[] PROGMEM = "Unit";
 const char ShtUsermod::_haMqttDiscovery[] PROGMEM = "Add-To-HA-MQTT-Discovery";
 
-
+/**
+ * Initialise SHT sensor.
+ *
+ * Using the correct constructor according to config and initialises it using the
+ * global i2c pins.
+ *
+ * @return void
+ */
 void ShtUsermod::initShtTempHumiditySensor()
 {
   switch (shtType) {
@@ -111,6 +98,13 @@ void ShtUsermod::initShtTempHumiditySensor()
   shtInitDone = true;
 }
 
+/**
+ * Cleanup the SHT sensor.
+ *
+ * Properly calls "reset" for the sensor then releases it from memory.
+ *
+ * @return void
+ */
 void ShtUsermod::cleanupShtTempHumiditySensor()
 {
   if (shtInitDone) {
@@ -122,6 +116,14 @@ void ShtUsermod::cleanupShtTempHumiditySensor()
   shtInitDone = false;
 }
 
+/**
+ * Cleanup the mod completely.
+ *
+ * Calls ::cleanupShtTempHumiditySensor() to cleanup the SHT sensor and
+ * deallocates pins.
+ *
+ * @return void
+ */
 void ShtUsermod::cleanup()
 {
   if (isShtReady()) {
@@ -134,11 +136,24 @@ void ShtUsermod::cleanup()
   enabled = false;
 }
 
+/**
+ * Checks if the SHT sensor has been initialised.
+  *
+ * @return bool
+ */
 bool ShtUsermod::isShtReady()
 {
   return shtInitDone;
 }
 
+/**
+ * Publish temperature and humidity to WLED device topic.
+ *
+ * Will add a "/temperature" and "/humidity" topic to the WLED device topic.
+ * Temperature will be written in configured unit.
+ *
+ * @return void
+ */
 void ShtUsermod::publishTemperatureAndHumidityViaMqtt() {
   if (!WLED_MQTT_CONNECTED) return;
   char buf[128];
@@ -149,6 +164,15 @@ void ShtUsermod::publishTemperatureAndHumidityViaMqtt() {
   mqtt->publish(buf, 0, false, String(shtCurrentHumidity).c_str());
 }
 
+/**
+ * If enabled, publishes HA MQTT device discovery topics.
+ *
+ * Will make Home Assistant add temperature and humidity as entities automatically.
+ *
+ * Note: Whenever usermods are part of the WLED integration in HA, this can be dropped.
+ *
+ * @return void
+ */
 void ShtUsermod::publishHomeAssistantAutodiscovery() {
   if (!WLED_MQTT_CONNECTED) return;
 
@@ -185,8 +209,15 @@ void ShtUsermod::publishHomeAssistantAutodiscovery() {
   payload_size = serializeJson(json, json_str);
   snprintf_P(buf, 127, PSTR("homeassistant/sensor/%s/%s-humidity/config"), escapedMac.c_str(), escapedMac.c_str());
   mqtt->publish(buf, 0, true, json_str, payload_size);
+
+  haMqttDiscoveryDone = true;
 }
 
+/**
+ * Helper to add device information to MQTT discovery topic.
+ *
+ * @return void
+ */
 void ShtUsermod::appendDeviceToMqttDiscoveryMessage(JsonDocument& root) {
   JsonObject device = root.createNestedObject("dev");
   device[F("ids")] = escapedMac.c_str();
@@ -196,10 +227,17 @@ void ShtUsermod::appendDeviceToMqttDiscoveryMessage(JsonDocument& root) {
   device[F("mf")] = F("espressif");
 }
 
-/*
-  * setup() is called once at boot. WiFi is not yet connected at this point.
-  * You can use it to initialize variables, sensors or similar.
-  */
+/**
+ * Setup the mod.
+ *
+ * Allocates i2c pins as PinOwner::HW_I2C, so they can be allocated multiple times.
+ * And calls ::initShtTempHumiditySensor() to initialise the sensor.
+ *
+ * @see Usermod::setup()
+ * @see UsermodManager::setup()
+ *
+ * @return void
+ */
 void ShtUsermod::setup()
 {
   if (enabled) {
@@ -220,16 +258,19 @@ void ShtUsermod::setup()
   firstRunDone = true;
 }
 
-/*
-  * loop() is called continuously. Here you can check for events, read sensors, etc.
-  *
-  * Tips:
-  * 1. You can use "if (WLED_CONNECTED)" to check for a successful network connection.
-  *    Additionally, "if (WLED_MQTT_CONNECTED)" is available to check for a connection to an MQTT broker.
-  *
-  * 2. Try to avoid using the delay() function. NEVER use delays longer than 10 milliseconds.
-  *    Instead, use a timer check as shown here.
-  */
+/**
+ * Actually reading data (async) from the sensor every 30 seconds.
+ *
+ * If last reading is at least 30 seconds, it will trigger a reading using
+ * SHT::requestData(). We will then continiously check SHT::dataReady() if
+ * data is ready to be read. If so, it's read, stored locally and published
+ * via MQTT.
+ *
+ * @see Usermod::loop()
+ * @see UsermodManager::loop()
+ *
+ * @return void
+ */
 void ShtUsermod::loop()
 {
   if (!enabled || !initDone || strip.isUpdating()) return;
@@ -262,10 +303,28 @@ void ShtUsermod::loop()
   }
 }
 
+/**
+ * Whenever MQTT is connected, publish HA autodiscovery topics.
+ *
+ * Is only donce once.
+ *
+ * @see Usermod::onMqttConnect()
+ * @see UsermodManager::onMqttConnect()
+ *
+ * @return void
+ */
 void ShtUsermod::onMqttConnect(bool sessionPresent) {
-  if (haMqttDiscovery) publishHomeAssistantAutodiscovery();
+  if (haMqttDiscovery && !haMqttDiscoveryDone) publishHomeAssistantAutodiscovery();
 }
 
+/**
+ * Add dropdown for sensor type and unit to UM config page.
+ *
+ * @see Usermod::appendConfigData()
+ * @see UsermodManager::appendConfigData()
+ *
+ * @return void
+ */
 void ShtUsermod::appendConfigData() {
   oappend(SET_F("dd=addDropdown('"));
   oappend(_name);
@@ -285,6 +344,14 @@ void ShtUsermod::appendConfigData() {
   oappend(SET_F("addOption(dd,'Fahrenheit',1);"));
 }
 
+/**
+ * Add config data to be stored in cfg.json.
+ *
+ * @see Usermod::addToConfig()
+ * @see UsermodManager::addToConfig()
+ *
+ * @return void
+ */
 void ShtUsermod::addToConfig(JsonObject &root)
 {
   JsonObject top = root.createNestedObject(FPSTR(_name)); // usermodname
@@ -296,9 +363,16 @@ void ShtUsermod::addToConfig(JsonObject &root)
 }
 
 /**
- * readFromConfig() is called before setup() to populate properties from values stored in cfg.json
+ * Apply config on boot or save of UM config page.
  *
- * The function should return true if configuration was successfully loaded or false if there was no configuration.
+ * This is called whenever WLED boots and loads cfg.json, or when the UM config
+ * page is saved. Will properly re-instantiate the SHT class upon type change and
+ * publish HA discovery after enabling.
+ *
+ * @see Usermod::readFromConfig()
+ * @see UsermodManager::readFromConfig()
+ *
+ * @return bool
  */
 bool ShtUsermod::readFromConfig(JsonObject &root)
 {
@@ -328,13 +402,13 @@ bool ShtUsermod::readFromConfig(JsonObject &root)
   }
   // Config has been changed, so adopt to changes
   else if (enabled) {
-    if (oldHaMqttDiscovery != haMqttDiscovery && haMqttDiscovery) {
-      publishHomeAssistantAutodiscovery();
-    }
-
     if (oldShtType != shtType) {
       cleanupShtTempHumiditySensor();
       initShtTempHumiditySensor();
+    }
+
+    if (oldHaMqttDiscovery != haMqttDiscovery && haMqttDiscovery) {
+      publishHomeAssistantAutodiscovery();
     }
 
     DEBUG_PRINTF("[%s] Config (re)loaded\n", _name);
@@ -343,6 +417,16 @@ bool ShtUsermod::readFromConfig(JsonObject &root)
   return true;
 }
 
+/**
+ * Adds the temperature and humidity actually to the info section and /json info.
+ *
+ * This is called every time the info section is opened ot /json is called.
+ *
+ * @see Usermod::addToJsonInfo()
+ * @see UsermodManager::addToJsonInfo()
+ *
+ * @return void
+ */
 void ShtUsermod::addToJsonInfo(JsonObject& root)
 {
   if (!enabled && !isShtReady()) {
@@ -377,14 +461,29 @@ void ShtUsermod::addToJsonInfo(JsonObject& root)
   unitOfTemp ? jsonTemp.add(F(" °F")) : jsonTemp.add(F(" °C"));
 }
 
+/**
+ * Getter for last read temperature in Celsius.
+ *
+ * @return float
+ */
 float ShtUsermod::getTemperatureC() {
   return shtCurrentTempC;
 }
 
+/**
+ * Getter for last read temperature in Fahrenheit.
+ *
+ * @return float
+ */
 float ShtUsermod::getTemperatureF() {
   return shtCurrentTempF;
 }
 
+/**
+ * Getter for last read humidity in RH%.
+ *
+ * @return float
+ */
 float ShtUsermod::getHumidity() {
   return shtCurrentHumidity;
 }
