@@ -369,9 +369,10 @@ typedef struct Segment {
     uint32_t call;  // call counter
     uint16_t aux0;  // custom var
     uint16_t aux1;  // custom var
-    byte* data;
-    CRGB* leds;
-    static CRGB *_globalLeds;
+    byte* data;     // effect data pointer
+    CRGB* leds;     // local leds[] array (may be a pointer to global)
+    static CRGB *_globalLeds;             // global leds[] array
+    static uint16_t maxWidth, maxHeight;  // these define matrix width & height (max. segment dimensions)
 
   private:
     union {
@@ -657,8 +658,6 @@ class WS2812FX {  // 96 bytes
       vPanels(1),
       panelH(8),
       panelW(8),
-      matrixWidth(DEFAULT_LED_COUNT),
-      matrixHeight(1),
       matrix{0,0,0,0},
       panel{{0,0,0,0}},
 #endif
@@ -814,9 +813,7 @@ class WS2812FX {  // 96 bytes
 
     uint16_t
       panelH,
-      panelW,
-      matrixWidth,
-      matrixHeight;
+      panelW;
 
     typedef struct panel_bitfield_t {
       bool bottomStart : 1; // starts at bottom?

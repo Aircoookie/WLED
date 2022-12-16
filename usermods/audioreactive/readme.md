@@ -1,11 +1,11 @@
 # Audioreactive usermod
 
-This usermod allows controlling LEDs using audio input. Audio input can be either microphone or analog-in (AUX) using appropriate adapter.
-Supported microphones range from cheap analog (MAX4466, MAX9814, ...) to high quality digital (INMP441, ICS-43434, ...) and dgital Line-In.
+Enabless controlling LEDs via audio input. Audio source can be a microphone or analog-in (AUX) using an appropriate adapter.
+Supported microphones range from analog (MAX4466, MAX9814, ...) to digital (INMP441, ICS-43434, ...).
 
-The usermod does audio processing and provides data structure that specially written effect can use.
+Does audio processing and provides data structure that specially written effects can use.
 
-The usermod **does not** provide effects or draws anything to LED strip/matrix.
+**does not** provide effects or draw anything to an LED strip/matrix.
 
 ## Additional Documentation
 This usermod is an evolution of [SR-WLED](https://github.com/atuline/WLED), and a lot of documentation and information can be found in the [SR-WLED wiki](https://github.com/atuline/WLED/wiki):
@@ -42,9 +42,9 @@ ArduinoFFT `develop` library is slightly more accurate, and slighly faster than 
 
 ## Configuration
 
-All parameters are runtime configurable though some may require hard boot after change (I2S microphone or selected GPIOs).
+All parameters are runtime configurable. Some may require a hard reset after changing them (I2S microphone or selected GPIOs).
 
-If you want to define default GPIOs during compile time use the following addtional build_flags (default values in parentheses):
+If you want to define default GPIOs during compile time, use the following (default values in parentheses):
 
 - `-D SR_DMTYPE=x` : defines digital microphone type: 0=analog, 1=generic I2S (default), 2=ES7243 I2S, 3=SPH0645 I2S, 4=generic I2S with master clock, 5=PDM I2S
 - `-D AUDIOPIN=x`  : GPIO for analog microphone/AUX-in (36)
@@ -55,7 +55,7 @@ If you want to define default GPIOs during compile time use the following addtio
 - `-D ES7243_SDAPIN` : GPIO for I2C SDA pin on ES7243 microphone (-1)
 - `-D ES7243_SCLPIN` : GPIO for I2C SCL pin on ES7243 microphone (-1)
 
-**NOTE** Due to the fact that usermod uses I2S peripherial for analog audio sampling, use of analog *buttons* (i.e. potentiometers) is disabled while running this usermod with analog microphone.
+**NOTE** I2S is used for analog audio sampling. Hence, the analog *buttons* (i.e. potentiometers) are disabled when running this usermod with an analog microphone.
 
 ### Advanced Compile-Time Options
 You can use the following additional flags in your `build_flags`

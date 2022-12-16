@@ -24,8 +24,8 @@
   Modified heavily for WLED
 */
 
-#include "FX.h"
 #include "wled.h"
+#include "FX.h"
 #include "fcn_declare.h"
 
 #define IBN 5100
