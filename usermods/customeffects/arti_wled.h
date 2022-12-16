@@ -1,6 +1,6 @@
 /*
    @title   Arduino Real Time Interpreter (ARTI)
-   @file    arti_wled_plugin.h
+   @file    arti_wled.h
    @date    20220818
    @author  Ewoud Wijma
    @repo    https://github.com/ewoudwijma/ARTI
@@ -55,7 +55,8 @@ enum Externals
   F_custom1Slider,
   F_custom2Slider,
   F_custom3Slider,
-  F_sampleAvg,
+  F_volume,
+  F_fftResult,
 
   F_shift,
   F_circle2D,
@@ -146,6 +147,18 @@ float ARTI::arti_external_function(uint8_t function, float par1, float par2, flo
       case F_segcolor:
         return SEGCOLOR((uint8_t)par1);
 
+      case F_fftResult:
+      {
+        um_data_t *um_data;
+        if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+          // add support for no audio
+          um_data = simulateSound(SEGMENT.soundSim);
+        }
+        uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
+
+        return fftResult[(uint8_t)par1%16];
+      }
+
       case F_shift: {
         uint32_t saveFirstPixel = SEGMENT.getPixelColor(0);
         for (uint16_t i=0; i<SEGLEN-1; i++)
@@ -229,6 +242,9 @@ float ARTI::arti_external_function(uint8_t function, float par1, float par2, flo
         return par1;
 
       case F_segcolor:
+        return par1;
+
+      case F_fftResult:
         return par1;
 
       case F_shift:
@@ -350,14 +366,14 @@ float ARTI::arti_get_external_variable(uint8_t variable, float par1, float par2,
         return SEGMENT.custom2;
       case F_custom3Slider:
         return SEGMENT.custom3;
-      case F_sampleAvg:
+      case F_volume:
       {
         um_data_t *um_data;
         if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
           // add support for no audio
           um_data = simulateSound(SEGMENT.soundSim);
         }
-        float   volumeSmth  = *(float*)   um_data->u_data[0]; //ewowi: use instead of sampleAvg???
+        float   volumeSmth  = *(float*)   um_data->u_data[0];
 
         return volumeSmth;
       }
@@ -400,8 +416,8 @@ float ARTI::arti_get_external_variable(uint8_t variable, float par1, float par2,
         return F_custom2Slider;
       case F_custom3Slider:
         return F_custom3Slider;
-      case F_sampleAvg:
-        return F_sampleAvg;
+      case F_volume:
+        return F_volume;
 
       case F_hour:
         return F_hour;

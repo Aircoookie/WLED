@@ -42,7 +42,7 @@ uint16_t mode_customEffect(void) {
     strcat(programFileName, currentEffect);
     strcat(programFileName, ".wled");
 
-    succesful = arti->setup("/wledv032.json", programFileName);
+    succesful = arti->setup("/wledv033.json", programFileName);
 
     if (!succesful)
       ERROR_ARTI("Setup not succesful\n");
@@ -90,7 +90,7 @@ uint16_t mode_customEffect(void) {
   return FRAMETIME;
 }
 
-static const char _data_FX_MODE_CUSTOMEFFECT[] PROGMEM = "⚙️ Custom Effect@Speed,Intensity,Custom 1, Custom 2, Custom 3;!;!;mp12=0,1d";
+static const char _data_FX_MODE_CUSTOMEFFECT[] PROGMEM = "⚙️ Custom Effect@Speed,Intensity,Custom 1, Custom 2, Custom 3;!;!;1d;mp12=0";
 
 class CustomEffectsUserMod : public Usermod {
   private:

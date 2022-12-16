@@ -2506,9 +2506,9 @@ public:
     JsonObject::iterator objectIterator = definitionJson.begin();
     JsonObject metaData = objectIterator->value();
     const char * version = metaData["version"];
-    if (strcmp(version, "v032") != 0) 
+    if (strcmp(version, "v033") != 0) 
     {
-      ERROR_ARTI("Version of definition.json file (%s) should be v032.\nPress Download wled json\n", version);
+      ERROR_ARTI("Version of definition.json file (%s) should be v033.\nPress Download wled json\n", version);
       return false;
     }
     const char * startNode = metaData["start"];
