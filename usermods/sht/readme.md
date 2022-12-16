@@ -19,7 +19,7 @@ lib_deps = ${esp32.lib_deps}
 
 ESP8266:
 ```
-[env:custom_d1_mini_usermod_quinled_an_penta]
+[env:custom_d1_mini_usermod_sht]
 extends = env:d1_mini
 build_flags = ${common.build_flags_esp8266}
   -D USERMOD_SHT
