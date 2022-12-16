@@ -277,7 +277,7 @@ void WLED::setup()
 
   Serial.begin(115200);
   Serial.setTimeout(50);
-  #if defined(WLED_DEBUG) && (defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3))
+  #if defined(WLED_DEBUG) && defined(ARDUINO_ARCH_ESP32) && (defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3) || ARDUINO_USB_CDC_ON_BOOT)
   delay(2500);  // allow CDC USB serial to initialise
   #endif
   //Serial.setDebugOutput(true);

@@ -77,7 +77,7 @@
 #endif
 
 #ifdef USERMOD_VL53L0X_GESTURES
-#include "../usermods/VL53L0X_gestures/usermod_vl53l0x_gestures.h"
+  #include "../usermods/VL53L0X_gestures/usermod_vl53l0x_gestures.h"
 #endif
 
 #ifdef USERMOD_ANIMATED_STAIRCASE
@@ -105,7 +105,7 @@
 #endif
 
 #ifdef USERMOD_ST7789_DISPLAY
-#include "../usermods/ST7789_display/ST7789_Display.h"
+  #include "../usermods/ST7789_display/ST7789_Display.h"
 #endif
 
 #ifdef USERMOD_SEVEN_SEGMENT
@@ -141,23 +141,27 @@
 #endif
 
 #ifdef USERMOD_SMARTNEST
-#include "../usermods/smartnest/usermod_smartnest.h"
+  #include "../usermods/smartnest/usermod_smartnest.h"
 #endif
 
 #ifdef USERMOD_AUDIOREACTIVE
-#include "../usermods/audioreactive/audio_reactive.h"
+  #include "../usermods/audioreactive/audio_reactive.h"
 #endif
 
 #ifdef USERMOD_ANALOG_CLOCK
-#include "../usermods/Analog_Clock/Analog_Clock.h"
+  #include "../usermods/Analog_Clock/Analog_Clock.h"
 #endif
 
 #ifdef USERMOD_PING_PONG_CLOCK
-#include "../usermods/usermod_v2_ping_pong_clock/usermod_v2_ping_pong_clock.h"
+  #include "../usermods/usermod_v2_ping_pong_clock/usermod_v2_ping_pong_clock.h"
 #endif
 
 #ifdef USERMOD_ADS1115
-#include "../usermods/ADS1115_v2/usermod_ads1115.h"
+  #include "../usermods/ADS1115_v2/usermod_ads1115.h"
+#endif
+
+#ifdef USERMOD_BOBLIGHT
+  #include "../usermods/boblight/boblight.h"
 #endif
 
 #if defined(WLED_USE_SD_MMC) || defined(WLED_USE_SD_SPI)
@@ -339,6 +343,10 @@ void registerUsermods()
   
   #ifdef USERMOD_ADS1115
   usermods.add(new ADS1115Usermod());
+  #endif
+  
+  #ifdef USERMOD_BOBLIGHT
+  usermods.add(new BobLightUsermod());
   #endif
 
   #ifdef SD_ADAPTER

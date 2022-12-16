@@ -1349,6 +1349,9 @@ function readState(s,command=false)
 	gId('sliderC1').value  = i.c1 ? i.c1 : 0;
 	gId('sliderC2').value  = i.c2 ? i.c2 : 0;
 	gId('sliderC3').value  = i.c3 ? i.c3 : 0;
+	gId('checkO1').checked = !(!i.o1);
+	gId('checkO2').checked = !(!i.o2);
+	gId('checkO3').checked = !(!i.o3);
 
 	if (s.error && s.error != 0) {
 	  var errstr = "";
@@ -2042,7 +2045,7 @@ function setSeg(s)
 		var startY = parseInt(sY.value);
 		var stopY = parseInt(eY.value);
 		if (startY<sY.min || startY>sY.max) {sY.value=sY.min; return;} // prevent out of bounds
-		if (stopY<eY.min || stop>eY.max) {eY.value=eY.max; return;} // prevent out of bounds
+		if (stopY<eY.min || stopY>eY.max) {eY.value=eY.max; return;} // prevent out of bounds
 		obj.seg.startY = startY;
 		obj.seg.stopY = (cfg.comp.seglen?startY:0)+stopY;
 	}
@@ -2216,12 +2219,12 @@ function setPreset(i)
 {
 	var obj = {"ps":i};
 	if (pJson && pJson[i] && (!pJson[i].win || pJson[i].win.indexOf("Please") <= 0)) {
-		// we will send complete preset content as to avoid delay introduced by
-		// async nature of applyPreset(). json.cpp has to decide wether to call applyPreset()
-		// or not (by looking at the JSON content, if "ps" only)
+		// we will send the complete preset content as to avoid delay introduced by
+		// async nature of applyPreset() and having to read the preset from file system.
+		obj = {"pd":i}; // use "pd" instead of "ps" to indicate that we are sending the preset content directly
 		Object.assign(obj, pJson[i]);
-		delete obj.ql;	// no need for quick load
-		delete obj.n;	// no need for name
+		delete obj.ql; // no need for quick load
+		delete obj.n;  // no need for name
 	}
 	if (isPlaylist(i)) obj.on = true; // force on
 	showToast("Loading preset " + pName(i) +" (" + i + ")");

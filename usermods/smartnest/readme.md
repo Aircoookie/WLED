@@ -1,6 +1,6 @@
 # Smartnest
 
-This usermod-v2 modification allows integration with `smartnest.cz` service which provides MQTT integration with voice assistants.
+Enables integration with `smartnest.cz` service which provides MQTT integration with voice assistants.
 In order to setup Smartnest follow the [documentation](https://www.docu.smartnest.cz/).
 
 ## MQTT API
@@ -49,7 +49,7 @@ void registerUsermods()
 
 ## Configuration
 
-Usermod has no configuration but relies on the MQTT configuration.\
+Usermod has no configuration, but it relies on the MQTT configuration.\
 Under Config > Sync Interfaces > MQTT:
 * Enable MQTT check box
 * Set the `Broker` field to: `smartnest.cz`

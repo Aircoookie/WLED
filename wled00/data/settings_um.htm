@@ -106,8 +106,9 @@
 	}
 	//WLEDMM util function
 	function initCap(s) {
-  		if (typeof s !== 'string') return ''
-  		return s.charAt(0).toUpperCase() + s.slice(1)
+  		if (typeof s !== 'string') return '';
+		// https://www.freecodecamp.org/news/how-to-capitalize-words-in-javascript/
+		return s.replace(/[\W_]/g,' ').replace(/(^\w{1})|(\s+\w{1})/g, l=>l.toUpperCase()); // replace - and _ with space, capitalize every 1st letter
 	}
 	function addField(k,f,o,a=false) {  //key, field, (sub)object, isArray
 		if (isO(o)) {

@@ -447,29 +447,22 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     handleSet(nullptr, apireq, false);    // may set stateChanged
   }
 
-  // applying preset (2 cases: a) API call includes all preset values, b) API only specifies preset ID)
-  if (!root["ps"].isNull()) {
+  // applying preset (2 cases: a) API call includes all preset values ("pd"), b) API only specifies preset ID ("ps"))
+  byte presetToRestore = 0;
+  // a) already applied preset content (requires "seg" or "win" but will ignore the rest)
+  if (!root["pd"].isNull() && stateChanged) {
+    currentPreset = root[F("pd")] | currentPreset;
+    if (root["win"].isNull()) presetCycCurr = currentPreset;
+    presetToRestore = currentPreset; // stateUpdated() will clear the preset, so we need to restore it after
+    //unloadPlaylist(); // applying a preset unloads the playlist, may be needed here too?
+  } else if (!root["ps"].isNull()) {
     ps = presetCycCurr;
-    if (stateChanged) {
-      // a) already applied preset content (requires "seg" or "win" but will ignore the rest)
-      currentPreset = root["ps"] | currentPreset;
-      // if preset contains HTTP API call do not change presetCycCurr
-      if (root["win"].isNull()) presetCycCurr = currentPreset;
-      stateChanged = false; // cancel state change update (preset was set directly by applying values stored in UI JSON array)
-      notify(callMode);
-    } else if (root["win"].isNull() && getVal(root["ps"], &ps, 0, 0) && ps > 0 && ps < 251 && ps != currentPreset) {
+    if (root["win"].isNull() && getVal(root["ps"], &ps, 0, 0) && ps > 0 && ps < 251 && ps != currentPreset) {
       // b) preset ID only or preset that does not change state (use embedded cycling limits if they exist in getVal())
       presetCycCurr = ps;
-      presetId = ps;
-      root.remove("v");    // may be added in UI call
-      root.remove("time"); // may be added in UI call
-      root.remove("ps");
-      root.remove("on");   // some external calls add "on" to "ps" call
-      if (root.size() == 0) {
-        unloadPlaylist();  // we need to unload playlist
-        applyPreset(ps, callMode); // async load (only preset ID was specified)
-        return stateResponse;
-      }
+      unloadPlaylist();          // applying a preset unloads the playlist
+      applyPreset(ps, callMode); // async load from file system (only preset ID was specified)
+      return stateResponse;
     }
   }
 
@@ -481,6 +474,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   }
 
   stateUpdated(callMode);
+  if (presetToRestore) currentPreset = presetToRestore;
 
   return stateResponse;
 }
