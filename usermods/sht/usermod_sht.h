@@ -12,6 +12,7 @@ class ShtUsermod : public Usermod
   private:
     bool enabled = false; // Is usermod enabled or not
     bool firstRunDone = false; // Remembers if the first config load run had been done
+    bool pinAllocDone = true; // Remembers if we have allocated pins
     bool initDone = false; // Remembers if the mod has been completely initialised
     bool haMqttDiscovery = false; // Is MQTT discovery enabled or not
     bool haMqttDiscoveryDone = false; // Remembers if we already published the HA discovery topics
@@ -89,7 +90,6 @@ void ShtUsermod::initShtTempHumiditySensor()
   shtTempHumidSensor->begin(shtI2cAddress, i2c_sda, i2c_scl);
   if (shtTempHumidSensor->readStatus() == 0xFFFF) {
     DEBUG_PRINTF("[%s] SHT init failed!\n", _name);
-    shtInitDone = false;
     cleanupShtTempHumiditySensor();
     cleanup();
     return;
@@ -107,7 +107,7 @@ void ShtUsermod::initShtTempHumiditySensor()
  */
 void ShtUsermod::cleanupShtTempHumiditySensor()
 {
-  if (shtInitDone) {
+  if (isShtReady()) {
     shtTempHumidSensor->reset();
   }
 
@@ -130,8 +130,11 @@ void ShtUsermod::cleanup()
     cleanupShtTempHumiditySensor();
   }
 
-  pinManager.deallocatePin(i2c_sda, PinOwner::HW_I2C);
-  pinManager.deallocatePin(i2c_scl, PinOwner::HW_I2C);
+  if (pinAllocDone) {
+    PinManagerPinType pins[2] = { { i2c_sda, true }, { i2c_scl, true } };
+    pinManager.deallocateMultiplePins(pins, 2, PinOwner::HW_I2C);
+    pinAllocDone = false;
+  }
 
   enabled = false;
 }
@@ -244,11 +247,10 @@ void ShtUsermod::setup()
     PinManagerPinType pins[2] = { { i2c_sda, true }, { i2c_scl, true } };
     if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) {
       DEBUG_PRINTF("[%s] SHT pin allocation failed!\n", _name);
-      shtInitDone = false;
-      cleanupShtTempHumiditySensor();
       cleanup();
       return;
     }
+    pinAllocDone = true;
 
     initShtTempHumiditySensor();
 
