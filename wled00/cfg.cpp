@@ -208,7 +208,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
         if (((buttonType[s] == BTN_TYPE_ANALOG) || (buttonType[s] == BTN_TYPE_ANALOG_INVERTED)) && (digitalPinToAnalogChannel(btnPin[s]) < 0)) 
         {
           // not an ADC analog pin
-          DEBUG_PRINTF("PIN ALLOC error: GPIO%d for analog button #%d is not an analog pin!\n", btnPin[s], s);
+          USER_PRINTF("PIN ALLOC error: GPIO%d for analog button #%d is not an analog pin!\n", btnPin[s], s); // WLEDMM
           btnPin[s] = -1;
           pinManager.deallocatePin(pin,PinOwner::Button);
         } 
