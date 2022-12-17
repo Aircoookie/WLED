@@ -20,7 +20,7 @@
 			scE.setAttribute("type", "text/javascript");
 			scE.setAttribute("async", async);
 			d.body.appendChild(scE);
-			// success event 
+			// success event
 			scE.addEventListener("load", () => {
 				//console.log("File loaded");
 				GetV();
@@ -88,6 +88,10 @@
 		<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 		</div>
 		<h2>Security & Update setup</h2>
+		Enable HTTP Basic Auth: <input type="checkbox" name="BA"><br>
+		Username: <input type="text" name="BU" maxlength="32" title="Maximum 32 character"><br>
+		Password: <input type="password" name="BP" maxlength="32" title="Maximum 32 character">
+		<div style="color: #fa0;">&#9888; Unencrypted transmission.</div><br><br>
 		Settings PIN: <input type="password" id="PIN" name="PIN" size="4" maxlength="4" minlength="4" onkeydown="checkNum(this)" pattern="[0-9]*" inputmode="numeric" title="Please enter a 4 digit number"><br>
 		<div style="color: #fa0;">&#9888; Unencrypted transmission. Be prudent when selecting PIN, do NOT use your banking, door, SIM, etc. pin!</div><br><br>
 		Lock wireless (OTA) software update: <input type="checkbox" name="NO"><br>

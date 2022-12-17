@@ -171,14 +171,14 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         buttonType[i] = request->arg(be).toInt();
       #ifdef ARDUINO_ARCH_ESP32
         // ESP32 only: check that analog button pin is a valid ADC gpio
-        if (((buttonType[i] == BTN_TYPE_ANALOG) || (buttonType[i] == BTN_TYPE_ANALOG_INVERTED)) && (digitalPinToAnalogChannel(btnPin[i]) < 0)) 
+        if (((buttonType[i] == BTN_TYPE_ANALOG) || (buttonType[i] == BTN_TYPE_ANALOG_INVERTED)) && (digitalPinToAnalogChannel(btnPin[i]) < 0))
         {
           // not an ADC analog pin
           if (btnPin[i] >= 0) DEBUG_PRINTF("PIN ALLOC error: GPIO%d for analog button #%d is not an analog pin!\n", btnPin[i], i);
           btnPin[i] = -1;
           pinManager.deallocatePin(hw_btn_pin,PinOwner::Button);
-        } 
-        else 
+        }
+        else
       #endif
         {
           if (disablePullUp) {
@@ -200,7 +200,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     strip.ablMilliampsMax = request->arg(F("MA")).toInt();
     strip.milliampsPerLed = request->arg(F("LA")).toInt();
-    
+
     briS = request->arg(F("CA")).toInt();
 
     turnOnAtBoot = request->hasArg(F("BO"));
@@ -362,7 +362,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     longitude = request->arg(F("LN")).toFloat();
     latitude = request->arg(F("LT")).toFloat();
     // force a sunrise/sunset re-calculation
-    calculateSunriseAndSunset(); 
+    calculateSunriseAndSunset();
 
     overlayCurrent = request->hasArg(F("OL")) ? 1 : 0;
 
@@ -431,6 +431,24 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       #endif
       serveMessage(request, 200, F("All Settings erased."), F("Connect to WLED-AP to setup again"),255);
       doReboot = true;
+    }
+
+    // HTTP Basic Auth
+    http_auth = request->hasArg(F("BA"));
+    if (request->hasArg(F("BU"))) {
+      const char *bu = request->arg(F("BU")).c_str();
+      if (strlen(bu) <= 32) {
+        strlcpy(http_user, bu, strlen(bu) + 1);
+      }
+    }
+    if (request->hasArg(F("BP"))) {
+      const char *bp = request->arg(F("BP")).c_str();
+      if (strlen(bp) <= 32) {
+        strlcpy(http_pass, bp, strlen(bp) + 1);
+      }
+    }
+    if (http_user[0] == 0 && http_pass[0] == 0) {
+      http_auth = false;
     }
 
     if (request->hasArg(F("PIN"))) {

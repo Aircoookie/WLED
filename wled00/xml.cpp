@@ -639,6 +639,11 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == 6)
   {
+    // HTTP Basic Auth
+    sappend('c',SET_F("BA"),http_auth);
+    sappends('s',SET_F("BU"),http_user);
+    sappends('s',SET_F("BP"),http_pass);
+
     byte l = strlen(settingsPIN);
     char fpass[l+1]; //fill PIN field with 0000
     fpass[l] = 0;

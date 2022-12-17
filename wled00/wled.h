@@ -130,7 +130,7 @@
   #include "src/dependencies/dmx/ESPDMX.h"
  #else //ESP32
   #include "src/dependencies/dmx/SparkFunDMX.h"
- #endif  
+ #endif
 #endif
 
 #include "src/dependencies/e131/ESPAsyncE131.h"
@@ -393,8 +393,8 @@ WLED_GLOBAL bool arlsForceMaxBri _INIT(false);                    // enable to f
  #ifdef ESP8266
   WLED_GLOBAL DMXESPSerial dmx;
  #else //ESP32
-  WLED_GLOBAL SparkFunDMX dmx; 
- #endif 
+  WLED_GLOBAL SparkFunDMX dmx;
+ #endif
 WLED_GLOBAL uint16_t e131ProxyUniverse _INIT(0);                  // output this E1.31 (sACN) / ArtNet universe via MAX485 (0 = disabled)
 #endif
 WLED_GLOBAL uint16_t e131Universe _INIT(1);                       // settings for E1.31 (sACN) protocol (only DMX_MODE_MULTIPLE_* can span over consequtive universes)
@@ -578,7 +578,7 @@ WLED_GLOBAL int16_t currentPlaylist _INIT(-1);
 //still used for "PL=~" HTTP API command
 WLED_GLOBAL byte presetCycCurr _INIT(0);
 WLED_GLOBAL byte presetCycMin _INIT(1);
-WLED_GLOBAL byte presetCycMax _INIT(5); 
+WLED_GLOBAL byte presetCycMax _INIT(5);
 
 // realtime
 WLED_GLOBAL byte realtimeMode _INIT(REALTIME_MODE_INACTIVE);
@@ -685,6 +685,11 @@ WLED_GLOBAL int8_t spi_sclk _INIT(-1);      // global SPI CLOCK/SCLK pin [HW_PIN
 // global ArduinoJson buffer
 WLED_GLOBAL StaticJsonDocument<JSON_BUFFER_SIZE> doc;
 WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
+
+// HTTP Basic Auth
+WLED_GLOBAL bool http_auth _INIT(false);   // HTTP basic auth
+WLED_GLOBAL char http_user[33]  _INIT(""); // HTTP basic auth username
+WLED_GLOBAL char http_pass[33]  _INIT(""); // HTTP basic auth password
 
 // enable additional debug output
 #if defined(WLED_DEBUG_HOST)
