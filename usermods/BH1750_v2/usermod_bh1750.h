@@ -3,8 +3,10 @@
 
 #pragma once
 
-#include "wled.h"
+#include <Arduino.h>   // WLEDMM: make sure that I2C drivers have the "right" Wire Object
 #include <Wire.h>
+
+#include "wled.h"
 #include <BH1750.h>
 
 // the max frequency to check photoresistor, 10 seconds
@@ -53,9 +55,13 @@ private:
   static const char _HomeAssistantDiscovery[];
 
   // set the default pins based on the architecture, these get overridden by Usermod menu settings
-  #ifdef ARDUINO_ARCH_ESP32 // ESP32 boards
-    #define HW_PIN_SCL 22
-    #define HW_PIN_SDA 21
+  #ifdef ARDUINO_ARCH_ESP32 // ESP32 boards -- WLEDMM: don't override already defined HW pins
+    #ifndef HW_PIN_SDA
+      #define HW_PIN_SCL 22
+    #endif
+    #ifndef HW_PIN_SDA
+      #define HW_PIN_SDA 21
+    #endif
   #else // ESP8266 boards
     #define HW_PIN_SCL 5
     #define HW_PIN_SDA 4
@@ -121,11 +127,20 @@ public:
   {
     bool HW_Pins_Used = (ioPin[0]==HW_PIN_SCL && ioPin[1]==HW_PIN_SDA); // note whether architecture-based hardware SCL/SDA pins used
     PinOwner po = PinOwner::UM_BH1750; // defaults to being pinowner for SCL/SDA pins
-    PinManagerPinType pins[2] = { { ioPin[0], true }, { ioPin[1], true } };  // allocate pins
     if (HW_Pins_Used) po = PinOwner::HW_I2C; // allow multiple allocations of HW I2C bus pins
+    if ((i2c_scl >= 0) && (i2c_sda >=0)) { // WLEDMM: make sure that global HW pins are used if defined 
+      ioPin[0] = i2c_scl;
+      ioPin[1] = i2c_sda;
+      po = PinOwner::HW_I2C;
+    }
+    PinManagerPinType pins[2] = { { ioPin[0], true }, { ioPin[1], true } };  // allocate pins // WLEDMM: after selecting final pins
     if (!pinManager.allocateMultiplePins(pins, 2, po)) return;
     
-    Wire.begin(ioPin[1], ioPin[0]);
+#if defined(ARDUINO_ARCH_ESP32)
+      Wire.begin(pins[1].pin, pins[0].pin);  // WLEDMM this might silently fail, which is OK as it just means that I2C bus is already running.
+#else
+      Wire.begin();  // WLEDMM - i2c pins on 8266 are fixed.
+#endif
 
     sensorFound = lightMeter.begin();
     initDone = true;
@@ -136,6 +151,7 @@ public:
     if ((!enabled) || strip.isUpdating())
       return;
 
+    if (!sensorFound) return;  // WLEDMM bugfix
     unsigned long now = millis();
 
     // check to see if we are due for taking a measurement
@@ -179,6 +195,8 @@ public:
 
   void addToJsonInfo(JsonObject &root)
   {
+    if ((!enabled) || (!sensorFound)) return;  // WLEDMM bugfix
+
     JsonObject user = root[F("u")];
     if (user.isNull())
       user = root.createNestedObject(F("u"));

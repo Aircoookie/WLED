@@ -1,5 +1,8 @@
 #pragma once
 
+#include <Arduino.h>   // WLEDMM: make sure that I2C drivers have the "right" Wire Object
+#include <Wire.h>
+
 #include "src/dependencies/time/DS1307RTC.h"
 #include "wled.h"
 
@@ -13,7 +16,17 @@ class RTCUsermod : public Usermod {
 
     void setup() {
       PinManagerPinType pins[2] = { { i2c_scl, true }, { i2c_sda, true } };
+#if defined(ARDUINO_ARCH_ESP32) && defined(HW_PIN_SDA) && defined(HW_PIN_SCL)
+      if (pins[0].pin < 0) pins[0].pin = HW_PIN_SCL; //WLEDMM 
+      if (pins[1].pin < 0) pins[1].pin = HW_PIN_SDA; //WLEDMM 
+#endif
       if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) { disabled = true; return; }
+#if defined(ARDUINO_ARCH_ESP32)
+      Wire.begin(pins[1].pin, pins[0].pin);  // WLEDMM this might silently fail, which is OK as it just means that I2C bus is already running.
+#else
+      Wire.begin();  // WLEDMM - i2c pins on 8266 are fixed.
+#endif
+
       RTC.begin();
       time_t rtcTime = RTC.get();
       if (rtcTime) {

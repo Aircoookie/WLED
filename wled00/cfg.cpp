@@ -1,3 +1,6 @@
+#include <Arduino.h>              // WLEDMM: make sure that I2C drivers have the "right" Wire Object
+#include <Wire.h>
+
 #include "wled.h"
 #include "wled_ethernet.h"
 

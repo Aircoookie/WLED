@@ -1,5 +1,8 @@
 #pragma once
 
+#include <Arduino.h>   // WLEDMM: make sure that I2C drivers have the "right" Wire Object
+#include <Wire.h>
+
 #include "wled.h"
 
   // #define MPU6050_INT_GPIO 13  // WLEDMM - better choice on ESP32
@@ -44,9 +47,12 @@
   5. Wire up the MPU6050 as detailed above.
 */
 
-#include "I2Cdev.h"
+// WLEDMM: make sure that the "standard" Wire object is used
+#define I2CDEV_IMPLEMENTATION       I2CDEV_ARDUINO_WIRE
 
-#include "MPU6050_6Axis_MotionApps20.h"
+#include <I2Cdev.h>
+
+#include <MPU6050_6Axis_MotionApps20.h>
 
 // WLEDMM - need to re-define WLED DEBUG_PRINT maros, because the were overwritten by MPU6050_6Axis_MotionApps20.h
 #undef DEBUG_PRINT
@@ -132,7 +138,12 @@ class MPU6050Driver : public Usermod {
 
       // join I2C bus (I2Cdev library doesn't do this automatically)
       #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
-          Wire.begin();        // WLEDMM fixme - this completely ignores any PINS
+#if defined(ARDUINO_ARCH_ESP32)
+      Wire.begin(pins[1].pin, pins[0].pin);        // WLEDMM fix - need to use proper pins, in case that Wire was not started yet. Call will silently fail if Wire is initialized already.
+#else
+      Wire.begin();  // WLEDMM - i2c pins on 8266 are fixed.
+#endif
+
           Wire.setClock(400000); // 400kHz I2C clock. Comment this line if having compilation difficulties
       #elif I2CDEV_IMPLEMENTATION == I2CDEV_BUILTIN_FASTWIRE
           Fastwire::setup(400, true);
