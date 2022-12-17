@@ -22,6 +22,7 @@ class RTCUsermod : public Usermod {
 #endif
       if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) { disabled = true; return; }
 #if defined(ARDUINO_ARCH_ESP32)
+      if (pins[1].pin < 0 || pins[0].pin < 0)  { disabled=true; return; }  //WLEDMM bugfix - ensure that "final" GPIO are valid and no "-1" sneaks trough
       Wire.begin(pins[1].pin, pins[0].pin);  // WLEDMM this might silently fail, which is OK as it just means that I2C bus is already running.
 #else
       Wire.begin();  // WLEDMM - i2c pins on 8266 are fixed.

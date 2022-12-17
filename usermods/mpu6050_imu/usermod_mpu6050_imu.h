@@ -139,6 +139,7 @@ class MPU6050Driver : public Usermod {
       // join I2C bus (I2Cdev library doesn't do this automatically)
       #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
 #if defined(ARDUINO_ARCH_ESP32)
+      if (pins[1].pin < 0 || pins[0].pin < 0)  { enabled=false; dmpReady = false; return; }  //WLEDMM bugfix - ensure that "final" GPIO are valid and no "-1" sneaks trough
       Wire.begin(pins[1].pin, pins[0].pin);        // WLEDMM fix - need to use proper pins, in case that Wire was not started yet. Call will silently fail if Wire is initialized already.
 #else
       Wire.begin();  // WLEDMM - i2c pins on 8266 are fixed.
