@@ -120,8 +120,11 @@ class FourLineDisplayUsermod : public Usermod {
     uint32_t screenTimeout = SCREEN_TIMEOUT_MS;       // in ms
     bool sleepMode = true;          // allow screen sleep?
     bool clockMode = false;         // display clock
+#if defined(ARDUINO_ARCH_ESP32) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0)
+    bool enabled = false;  // WLEDMM workaround for I2C bugs in IDF v4.4.1
+#else
     bool enabled = true;
-
+#endif
     // Next variables hold the previous known values to determine if redraw is
     // required.
     String knownSsid = "";
