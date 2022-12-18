@@ -96,7 +96,7 @@ bool captivePortal(AsyncWebServerRequest *request)
   String hostH;
   if (!request->hasHeader("Host")) return false;
   hostH = request->getHeader("Host")->value();
-  
+
   if (!isIp(hostH) && hostH.indexOf("wled.me") < 0 && hostH.indexOf(cmDNS) < 0) {
     DEBUG_PRINTLN("Captive portal");
     AsyncWebServerResponse *response = request->beginResponse(302);
@@ -153,14 +153,6 @@ void initServer()
       //request->send_P(200, "text/html", PAGE_liveview);
   }});
 #endif
-<<<<<<< Updated upstream
-  
-  //settings page
-  server.on("/settings", HTTP_GET, [](AsyncWebServerRequest *request){
-    serveSettings(request);
-  });
-  
-=======
 
   // settings page
   server.on("/settings", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -170,39 +162,9 @@ void initServer()
       serveSettings(request);
   }});
 
->>>>>>> Stashed changes
   // "/settings/settings.js&p=x" request also handled by serveSettings()
-  
+
   server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
-<<<<<<< Updated upstream
-    if (handleIfNoneMatchCacheHeader(request)) return;
-    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/css", PAGE_settingsCss, PAGE_settingsCss_length);
-    response->addHeader(FPSTR(s_content_enc),"gzip");
-    setStaticContentCacheHeaders(response);
-    request->send(response);
-  });
-  
-  server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){
-    if(!handleFileRead(request, "/favicon.ico"))
-    {
-      request->send_P(200, "image/x-icon", favicon, 156);
-    }
-  });
-  
-  server.on("/sliders", HTTP_GET, [](AsyncWebServerRequest *request){
-    serveIndex(request);
-  });
-  
-  server.on("/welcome", HTTP_GET, [](AsyncWebServerRequest *request){
-    serveSettings(request);
-  });
-  
-  server.on("/reset", HTTP_GET, [](AsyncWebServerRequest *request){
-    serveMessage(request, 200,F("Rebooting now..."),F("Please wait ~10 seconds..."),129);
-    doReboot = true;
-  });
-  
-=======
     if (http_auth && !request->authenticate(http_user, http_pass)) {
       request->requestAuthentication();
     } else {
@@ -245,7 +207,6 @@ void initServer()
       doReboot = true;
   }});
 
->>>>>>> Stashed changes
   server.on("/settings", HTTP_POST, [](AsyncWebServerRequest *request){
     if (http_auth && !request->authenticate(http_user, http_pass)) {
       request->requestAuthentication();
@@ -295,39 +256,12 @@ void initServer()
       } else {
         doSerializeConfig = true; //serializeConfig(); //Save new settings to FS
       }
-    } 
+    }
     request->send(200, "application/json", F("{\"success\":true}"));
   });
   server.addHandler(handler);
 
   server.on("/version", HTTP_GET, [](AsyncWebServerRequest *request){
-<<<<<<< Updated upstream
-    request->send(200, "text/plain", (String)VERSION);
-  });
-    
-  server.on("/uptime", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(200, "text/plain", (String)millis());
-  });
-    
-  server.on("/freeheap", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(200, "text/plain", (String)ESP.getFreeHeap());
-  });
-  
-  server.on("/u", HTTP_GET, [](AsyncWebServerRequest *request){
-    if (handleIfNoneMatchCacheHeader(request)) return;
-    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_usermod, PAGE_usermod_length);
-    response->addHeader(FPSTR(s_content_enc),"gzip");
-    setStaticContentCacheHeaders(response);
-    request->send(response);
-    //request->send_P(200, "text/html", PAGE_usermod);
-  });
-    
-  //Deprecated, use of /json/state and presets recommended instead
-  server.on("/url", HTTP_GET, [](AsyncWebServerRequest *request){
-    URL_response(request);
-  });
-    
-=======
     if (http_auth && !request->authenticate(http_user, http_pass)) {
       request->requestAuthentication();
     } else {
@@ -368,7 +302,6 @@ void initServer()
       URL_response(request);
   }});
 
->>>>>>> Stashed changes
   server.on("/teapot", HTTP_GET, [](AsyncWebServerRequest *request){
     if (http_auth && !request->authenticate(http_user, http_pass)) {
       request->requestAuthentication();
@@ -398,21 +331,6 @@ void initServer()
 #endif
 
   server.on("/iro.js", HTTP_GET, [](AsyncWebServerRequest *request){
-<<<<<<< Updated upstream
-    AsyncWebServerResponse *response = request->beginResponse_P(200, "application/javascript", iroJs, iroJs_length);
-    response->addHeader(FPSTR(s_content_enc),"gzip");
-    setStaticContentCacheHeaders(response);
-    request->send(response);
-  });
-  
-  server.on("/rangetouch.js", HTTP_GET, [](AsyncWebServerRequest *request){
-    AsyncWebServerResponse *response = request->beginResponse_P(200, "application/javascript", rangetouchJs, rangetouchJs_length);
-    response->addHeader(FPSTR(s_content_enc),"gzip");
-    setStaticContentCacheHeaders(response);
-    request->send(response);
-  });
-  
-=======
     if (http_auth && !request->authenticate(http_user, http_pass)) {
       request->requestAuthentication();
     } else {
@@ -432,20 +350,11 @@ void initServer()
       request->send(response);
   }});
 
->>>>>>> Stashed changes
   createEditHandler(correctPIN);
 
 #ifndef WLED_DISABLE_OTA
   //init ota page
   server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
-<<<<<<< Updated upstream
-    if (otaLock) {
-      serveMessage(request, 500, "Access Denied", FPSTR(s_unlock_ota), 254);
-    } else
-      serveSettings(request); // checks for "upd" in URL and handles PIN
-  });
-  
-=======
     if (http_auth && !request->authenticate(http_user, http_pass)) {
       request->requestAuthentication();
     } else {
@@ -455,39 +364,16 @@ void initServer()
         serveSettings(request); // checks for "upd" in URL and handles PIN
   }});
 
->>>>>>> Stashed changes
   server.on("/update", HTTP_POST, [](AsyncWebServerRequest *request){
     if (http_auth && !request->authenticate(http_user, http_pass)) {
       request->requestAuthentication();
     } else {
-<<<<<<< Updated upstream
-      serveMessage(request, 200, F("Update successful!"), F("Rebooting..."), 131); 
-      doReboot = true;
-    }
-  },[](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final){
-    if (!correctPIN || otaLock) return;
-    if(!index){
-      DEBUG_PRINTLN(F("OTA Update Start"));
-      WLED::instance().disableWatchdog();
-      usermods.onUpdateBegin(true); // notify usermods that update is about to begin (some may require task de-init)
-      lastEditTime = millis(); // make sure PIN does not lock during update
-      #ifdef ESP8266
-      Update.runAsync(true);
-      #endif
-      Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000);
-    }
-    if(!Update.hasError()) Update.write(data, len);
-    if(final){
-      if(Update.end(true)){
-        DEBUG_PRINTLN(F("Update Success"));
-=======
       if (!correctPIN) {
         serveSettings(request, true); // handle PIN page POST request
         return;
       }
       if (Update.hasError() || otaLock) {
         serveMessage(request, 500, F("Update failed!"), F("Please check your file and retry!"), 254);
->>>>>>> Stashed changes
       } else {
         serveMessage(request, 200, F("Update successful!"), F("Rebooting..."), 131);
         doReboot = true;
@@ -554,7 +440,7 @@ void initServer()
   #ifdef WLED_ENABLE_WEBSOCKETS
   server.addHandler(&ws);
   #endif
-  
+
   //called when the url is not defined here, ajax-in; get-settings
   server.onNotFound([](AsyncWebServerRequest *request){
     if (http_auth && !request->authenticate(http_user, http_pass)) {
@@ -582,25 +468,8 @@ void initServer()
       response->addHeader(FPSTR(s_content_enc),"gzip");
       setStaticContentCacheHeaders(response);
       request->send(response);
-<<<<<<< Updated upstream
-      return;
-    }
-    
-    if(handleSet(request, request->url())) return;
-    #ifndef WLED_DISABLE_ALEXA
-    if(espalexa.handleAlexaApiCall(request)) return;
-    #endif
-    if(handleFileRead(request, request->url())) return;
-    AsyncWebServerResponse *response = request->beginResponse_P(404, "text/html", PAGE_404, PAGE_404_length);
-    response->addHeader(FPSTR(s_content_enc),"gzip");
-    setStaticContentCacheHeaders(response);
-    request->send(response);
-    //request->send_P(404, "text/html", PAGE_404);
-  });
-=======
       //request->send_P(404, "text/html", PAGE_404);
   }});
->>>>>>> Stashed changes
 }
 
 
@@ -697,7 +566,7 @@ void serveMessage(AsyncWebServerRequest* request, uint16_t code, const String& h
   messageHead = headl;
   messageSub = subl;
   optionType = optionT;
-  
+
   request->send_P(code, "text/html", PAGE_msg, msgProcessor);
 }
 
@@ -719,7 +588,7 @@ String dmxProcessor(const String& var)
       mapJS += "0];";
     }
   #endif
-  
+
   return mapJS;
 }
 #endif
@@ -752,7 +621,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
   byte subPage = 0, originalSubPage = 0;
   const String& url = request->url();
 
-  if (url.indexOf("sett") >= 0) 
+  if (url.indexOf("sett") >= 0)
   {
     if      (url.indexOf(".js")  > 0) subPage = 254;
     else if (url.indexOf(".css") > 0) subPage = 253;
@@ -815,7 +684,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
       return;
     }
   }
-  
+
   AsyncWebServerResponse *response;
   switch (subPage)
   {
