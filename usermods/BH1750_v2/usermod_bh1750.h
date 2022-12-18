@@ -66,7 +66,8 @@ private:
     #define HW_PIN_SCL 5
     #define HW_PIN_SDA 4
   #endif
-  int8_t ioPin[2] = {HW_PIN_SCL, HW_PIN_SDA};        // I2C pins: SCL, SDA...defaults to Arch hardware pins but overridden at setup()
+  //int8_t ioPin[2] = {HW_PIN_SCL, HW_PIN_SDA};        // I2C pins: SCL, SDA...defaults to Arch hardware pins but overridden at setup()
+  int8_t ioPin[2] = {-1, -1};        // WLEDMM - I2C pins: wait until hw pins get allocated
   bool initDone = false;
   bool sensorFound = false;
 
@@ -137,7 +138,7 @@ public:
     if (!pinManager.allocateMultiplePins(pins, 2, po)) return;
     
 #if defined(ARDUINO_ARCH_ESP32)
-      if (pins[1].pin < 0 || pins[0].pin < 0)  { sensorFound=false; return; }  //WLEDMM bugfix - ensure that "final" GPIO are valid and no "-1" sneaks trough
+      if (pins[1].pin < 0 || pins[0].pin < 0)  { sensorFound=false; enabled=false; return; }  //WLEDMM bugfix - ensure that "final" GPIO are valid and no "-1" sneaks trough
       Wire.begin(pins[1].pin, pins[0].pin);  // WLEDMM this might silently fail, which is OK as it just means that I2C bus is already running.
 #else
       Wire.begin();  // WLEDMM - i2c pins on 8266 are fixed.
@@ -181,7 +182,7 @@ public:
             mqttInitialized = true;
           }
         mqtt->publish(mqttLuminanceTopic.c_str(), 0, true, String(lux).c_str());
-        DEBUG_PRINTLN(F("Brightness: ") + String(lux) + F("lx"));
+        DEBUG_PRINTLN(String("Brightness: ") + String(lux) + String("lx"));  // WLEDMM fix compilation warning
       }
       else
       {

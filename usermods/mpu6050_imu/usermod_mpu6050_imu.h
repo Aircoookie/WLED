@@ -117,10 +117,15 @@ class MPU6050Driver : public Usermod {
     #endif
 
     void setup() {
-      DEBUG_PRINT_IMULN("mpu setup");
     // WLEDMM begin
+      USER_PRINTLN(F("mpu setup"));
+#if 0  // WLEDMM: delay I2C pin alloc
       int8_t hw_scl = i2c_scl<0 ? HW_PIN_SCL : i2c_scl;
       int8_t hw_sda = i2c_sda<0 ? HW_PIN_SDA : i2c_sda;
+#else
+      int8_t hw_scl = i2c_scl;
+      int8_t hw_sda = i2c_sda;
+#endif
 
       PinManagerPinType pins[2] = { { hw_scl, true }, { hw_sda, true } };
       if ((hw_scl < 0) || (hw_sda < 0)) {
@@ -128,6 +133,8 @@ class MPU6050Driver : public Usermod {
         USER_PRINTF("mpu6050: warning - ivalid I2C pins: sda=%d scl=%d\n", hw_sda, hw_scl);
         //return;
       }
+
+      if (pins[1].pin < 0 || pins[0].pin < 0)  { enabled=false; dmpReady = false; return; }  //WLEDMM bugfix - ensure that "final" GPIO are valid and no "-1" sneaks trough
 
       if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) { 
         enabled = false;
@@ -139,7 +146,6 @@ class MPU6050Driver : public Usermod {
       // join I2C bus (I2Cdev library doesn't do this automatically)
       #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
 #if defined(ARDUINO_ARCH_ESP32)
-      if (pins[1].pin < 0 || pins[0].pin < 0)  { enabled=false; dmpReady = false; return; }  //WLEDMM bugfix - ensure that "final" GPIO are valid and no "-1" sneaks trough
       Wire.begin(pins[1].pin, pins[0].pin);        // WLEDMM fix - need to use proper pins, in case that Wire was not started yet. Call will silently fail if Wire is initialized already.
 #else
       Wire.begin();  // WLEDMM - i2c pins on 8266 are fixed.
