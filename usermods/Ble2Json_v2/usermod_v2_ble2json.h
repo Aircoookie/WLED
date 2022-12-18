@@ -94,19 +94,14 @@ public:
    * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
    * Below it is shown how this could be used for e.g. a light sensor
    */
-  /*
-  void addToJsonInfo(JsonObject& root)
+  void addToJsonInfo(JsonObject &root)
   {
-    int reading = 20;
-    //this code adds "u":{"Light":[20," lux"]} to the info object
-    JsonObject user = root["u"];
-    if (user.isNull()) user = root.createNestedObject("u");
+    JsonObject ble = root["ble"];
+    if (ble.isNull())
+      ble = root.createNestedObject("ble");
 
-    JsonArray lightArr = user.createNestedArray("Light"); //name
-    lightArr.add(reading); //value
-    lightArr.add(" lux"); //unit
+    ble["support"] = true;
   }
-  */
 
   /*
    * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
@@ -115,6 +110,12 @@ public:
   void readFromJsonState(JsonObject &root)
   {
     m_mainSwitch->readFromJsonState(root);
+
+    // toggle ble on (applies only once)
+    if (root["bleToggle"])
+    {
+      setBleOnFlag(!m_bleOnFlag);
+    }
   }
 
   /*
