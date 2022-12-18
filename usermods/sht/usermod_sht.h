@@ -245,7 +245,8 @@ void ShtUsermod::setup()
 {
   if (enabled) {
     PinManagerPinType pins[2] = { { i2c_sda, true }, { i2c_scl, true } };
-    if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) {
+    // GPIOs can be set to -1 and allocateMultiplePins() will return true, so check they're gt zero
+    if (i2c_sda < 0 || i2c_scl < 0 || !pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) {
       DEBUG_PRINTF("[%s] SHT pin allocation failed!\n", _name);
       cleanup();
       return;
