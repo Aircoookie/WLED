@@ -738,6 +738,13 @@ void WLED::initInterfaces()
 
   strip.service();
 
+  #ifndef WLED_DISABLE_OTA   // WLEDMM
+  if (aOtaEnabled) {
+    USER_PRINT(F("           ArduinoOTA: "));
+    USER_PRINTLN(ArduinoOTA.getHostname());
+  }
+  #endif                     // WLEDMM end
+
   // Set up mDNS responder:
   if (strlen(cmDNS) > 0) {
     // "end" must be called before "begin" is called a 2nd time
@@ -745,7 +752,7 @@ void WLED::initInterfaces()
     MDNS.end();
     MDNS.begin(cmDNS);
 
-    USER_PRINTLN(F("mDNS started."));
+    USER_PRINTF("mDNS started: %s.local\n", cmDNS); // WLEDMM
     MDNS.addService("http", "tcp", 80);
     MDNS.addService("wled", "tcp", 80);
     MDNS.addServiceTxt("wled", "tcp", "mac", escapedMac.c_str());
@@ -771,13 +778,6 @@ void WLED::initInterfaces()
   initMqtt();
   interfacesInited = true;
   wasConnected = true;
-
-  #ifndef WLED_DISABLE_OTA   // WLEDMM
-  if (aOtaEnabled) {
-    USER_PRINT(F("           ArduinoOTA: "));
-    USER_PRINTLN(ArduinoOTA.getHostname());
-  }
-  #endif                     // WLEDMM end
 }
 
 void WLED::handleConnection()
