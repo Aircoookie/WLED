@@ -10,7 +10,7 @@
 #include <BLEServer.h>
 #include <BLEUtils.h>
 
-class BleStateService : public BleServiceBase
+class BleStateInfoService : public BleServiceBase
 {
 private:
   std::string *m_toSave = NULL;
@@ -18,14 +18,32 @@ private:
 protected:
   bool writeData(BleChunker *chunker)
   {
-    DEBUG_PRINTLN("BleStateService writeData");
+    DEBUG_PRINTLN("BleStateInfoService writeData");
+    if (!requestJSONBufferLock(100))
+      return false;
+    JsonObject state = doc.createNestedObject("state");
+    JsonObject info = doc.createNestedObject("info");
+
+    serializeState(state);
+    serializeInfo(info);
+
+    bool ret = chunker->writeData(doc.as<JsonObject>(), false);
+
+    releaseJSONBufferLock();
+
+    return ret;
+  }
+
+  bool writeNotify(BleChunker *chunker)
+  {
+    DEBUG_PRINTLN("BleStateInfoService writeNotify");
     if (!requestJSONBufferLock(100))
       return false;
     JsonObject state = doc.createNestedObject("state");
 
     serializeState(state);
 
-    bool ret = chunker->writeData(state);
+    bool ret = chunker->writeData(state, true);
 
     releaseJSONBufferLock();
 
@@ -70,14 +88,14 @@ protected:
   }
 
 public:
-  BleStateService()
+  BleStateInfoService()
   {
   }
 
   void setupBle(BLEServer *server)
   {
-    BleServiceBase::setupBle(WLED_BLE_STATE_SERVICE_ID, WLED_BLE_STATE_DATA_ID,
-                             WLED_BLE_STATE_CONTROL_ID, server);
+    BleServiceBase::setupBle(WLED_BLE_DATA_SERVICE_ID, WLED_BLE_STATE_INFO_DATA_ID,
+                             WLED_BLE_STATE_INFO_CONTROL_ID, WLEC_BLE_STATE_NOTIFY_ID, server);
   }
 
   void loop()

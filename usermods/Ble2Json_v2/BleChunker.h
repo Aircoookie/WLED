@@ -34,6 +34,7 @@ private:
   BleChunkerCallbacks *m_callbacks;
   BLECharacteristic *m_data;
   BLECharacteristic *m_control;
+  BLECharacteristic *m_notify;
 
   BLECharacteristic *initChar(uint16_t id, BLEService *pService)
   {
@@ -57,7 +58,7 @@ private:
     return pCharacteristic;
   }
 
-  void writeChunk()
+  void writeChunk(bool notify)
   {
     size_t len = m_writeBuffer.length();
 
@@ -76,9 +77,11 @@ private:
 
     uint8_t *toWrite = (uint8_t *)m_writeBuffer.data() + m_currentPos;
 
-    m_data->setValue(toWrite, toWriteLen);
+    BLECharacteristic *pChar = notify ? m_notify : m_data;
+
+    pChar->setValue(toWrite, toWriteLen);
     // m_writeReady = false;
-    m_data->notify(true);
+    pChar->notify(true);
 
     ESP_LOGD("BleChunker", ">> writeChunk: curr pos=%d, len=%d, to write=%d, writing=%d to write=%s", m_currentPos, len, toWriteLen, m_writing, toWrite);
 
@@ -98,15 +101,19 @@ private:
   }
 
 public:
-  BleChunker(uint16_t dataId, uint16_t controlId, BLEService *service, BleChunkerCallbacks *callbacks)
+  BleChunker(uint16_t dataId, uint16_t controlId, uint16_t notifyId, BLEService *service, BleChunkerCallbacks *callbacks)
   {
     m_callbacks = callbacks;
 
     m_data = initChar(dataId, service);
     m_control = initChar(controlId, service);
+    if (notifyId != 0)
+    {
+      m_notify = initChar(notifyId, service);
+    }
   }
 
-  bool writeData(JsonObject data)
+  bool writeData(JsonObject data, bool notify)
   {
     DEBUG_PRINTLN("BleChunker writeData");
 
@@ -122,7 +129,7 @@ public:
 
       while (m_writing && m_writeReady)
       {
-        writeChunk();
+        writeChunk(notify);
       }
 
       return true;

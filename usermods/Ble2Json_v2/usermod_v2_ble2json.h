@@ -75,7 +75,7 @@ public:
    */
   void loop()
   {
-    if (millis() - lastTime > 3000)
+    if (millis() - lastTime > 1000)
     {
       DEBUG_PRINTLN("I'm alive!");
       lastTime = millis();
@@ -110,6 +110,8 @@ public:
   void readFromJsonState(JsonObject &root)
   {
     m_mainSwitch->readFromJsonState(root);
+
+    serializeJson(root, Serial);
 
     // toggle ble on (applies only once)
     if (root["bleToggle"])

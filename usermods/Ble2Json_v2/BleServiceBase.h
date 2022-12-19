@@ -14,23 +14,25 @@ class BleServiceBase : public BleChunkerCallbacks
 {
 private:
   bool m_shouldWrite = false;
+  bool m_shouldNotify = false;
   BleChunker *m_chunker = NULL;
   BLEServer *m_server = NULL;
 
 protected:
   virtual bool writeData(BleChunker *chunker) = 0;
+  virtual bool writeNotify(BleChunker *chunker) = 0;
 
 public:
   BleServiceBase()
   {
   }
 
-  virtual void setupBle(uint32_t serviceId, uint32_t dataId, uint32_t controlId, BLEServer *server)
+  virtual void setupBle(uint16_t serviceId, uint16_t dataId, uint16_t controlId, uint16_t notifyId, BLEServer *server)
   {
     m_server = server;
     BLEService *pService = server->createService(BLE_UUID(serviceId));
 
-    m_chunker = new BleChunker(dataId, controlId, pService, this);
+    m_chunker = new BleChunker(dataId, controlId, notifyId, pService, this);
 
     pService->start();
 
@@ -51,11 +53,24 @@ public:
         m_shouldWrite = false;
       }
     }
+
+    if (m_shouldNotify && m_server->getPeerDevices(true).size() > 0)
+    {
+      if (writeNotify(m_chunker))
+      {
+        m_shouldNotify = false;
+      }
+    }
   }
 
   virtual void setShouldWrite(bool shouldWrite)
   {
     m_shouldWrite = shouldWrite;
+  }
+
+  virtual void setShouldNotify(boolean shouldNotify)
+  {
+    m_shouldNotify = shouldNotify;
   }
 
   virtual void onReadyToRead()

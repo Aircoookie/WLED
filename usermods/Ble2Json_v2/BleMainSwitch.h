@@ -3,9 +3,7 @@
 #include "wled.h"
 #include "ble_const.h"
 #include "ble_unpair.h"
-#include "BleStateService.h"
-#include "BleInfoService.h"
-#include "BleCfgService.h"
+#include "BleStateInfoService.h"
 
 #include <BLEDevice.h>
 #include <BLEServer.h>
@@ -134,9 +132,7 @@ class BleMainSwitch
 {
 private:
   Ble2JsonConfig *m_config = NULL;
-  BleStateService *m_stateService = NULL;
-  BleInfoService *m_infoService = NULL;
-  BleCfgService *m_cfgService = NULL;
+  BleStateInfoService *m_stateService = NULL;
 
   bool m_bleInitted = false;
 
@@ -216,14 +212,9 @@ private:
     pAdvertising->setMinPreferred(0x0);
     setAdvertisementData(pAdvertising);
 
-    m_stateService = new BleStateService();
+    m_stateService = new BleStateInfoService();
     m_stateService->setupBle(pServer);
 
-    m_infoService = new BleInfoService();
-    m_infoService->setupBle(pServer);
-
-    // m_cfgService = new BleCfgService();
-    // m_cfgService->setupBle(pServer);
     BLEDevice::startAdvertising();
     bleSecurity(passkey);
   }
@@ -263,8 +254,6 @@ public:
   {
     checkBleInit(false);
     serviceLoop(m_stateService);
-    serviceLoop(m_infoService);
-    // serviceLoop(m_cfgService);
   }
 
   /*
