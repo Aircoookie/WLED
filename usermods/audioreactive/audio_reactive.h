@@ -146,10 +146,11 @@ static void autoResetPeak(void);     // peak auto-reset function
 // shared vars for debugging
 #ifdef MIC_LOGGER
 static volatile float    micReal_min = 0.0f;             // MicIn data min from last batch of samples
+static volatile float    micReal_avg = 0.0f;             // MicIn data average (from last batch of samples)
 static volatile float    micReal_max = 0.0f;             // MicIn data max from last batch of samples
 #if 0
-static volatile float    micReal_min2 = 0.0f;             // MicIn data min from last batch of samples
-static volatile float    micReal_max2 = 0.0f;             // MicIn data max from last batch of samples
+static volatile float    micReal_min2 = 0.0f;             // MicIn data min after filtering
+static volatile float    micReal_max2 = 0.0f;             // MicIn data max after filtering
 #endif
 #endif
 
@@ -345,6 +346,7 @@ void FFTcode(void * parameter)
 #ifdef MIC_LOGGER
     float datMin = 0.0f;
     float datMax = 0.0f;
+    double datAvg = 0.0f;
     for (int i=0; i < samplesFFT; i++) {
       if (i==0) {
         datMin = datMax = vReal[i];
@@ -352,6 +354,7 @@ void FFTcode(void * parameter)
         if (datMin >  vReal[i]) datMin =  vReal[i];
         if (datMax <  vReal[i]) datMax =  vReal[i];
       }
+      datAvg +=  vReal[i];
     }
 #endif
 
@@ -374,6 +377,7 @@ void FFTcode(void * parameter)
 #ifdef MIC_LOGGER
     micReal_min = datMin;
     micReal_max = datMax;
+    micReal_avg = datAvg / samplesFFT;
 #if 0
     // compute mix/max again after filering - usefull for filter debugging
     for (int i=0; i < samplesFFT; i++) {
@@ -814,6 +818,7 @@ class AudioReactive : public Usermod {
       // Debugging functions for audio input and sound processing. Comment out the values you want to see
       PLOT_PRINT("micMin:");     PLOT_PRINT(micReal_min);  PLOT_PRINT("\t");
       PLOT_PRINT("micMax:");     PLOT_PRINT(micReal_max);  PLOT_PRINT("\t");
+      //PLOT_PRINT("micAvg:");     PLOT_PRINT(micReal_avg);  PLOT_PRINT("\t");
       //PLOT_PRINT("micDC:");      PLOT_PRINT((micReal_min + micReal_max)/2.0f);PLOT_PRINT("\t");
       PLOT_PRINT("micReal:");     PLOT_PRINT(micDataReal); PLOT_PRINT("\t");
       PLOT_PRINT("volumeSmth:");  PLOT_PRINT(volumeSmth);  PLOT_PRINT("\t");
