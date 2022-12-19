@@ -191,7 +191,7 @@ void ShtUsermod::publishHomeAssistantAutodiscovery() {
   json[F("stat_cla")] = F("measurement");
   snprintf_P(buf, 127, PSTR("%s-temperature"), escapedMac.c_str());
   json[F("uniq_id")] = buf;
-  json[F("unit_of_meas")] = F("°C");
+  json[F("unit_of_meas")] = F((unitOfTemp ? "°F" : "°C"));
   appendDeviceToMqttDiscoveryMessage(json);
   payload_size = serializeJson(json, json_str);
   snprintf_P(buf, 127, PSTR("homeassistant/sensor/%s/%s-temperature/config"), escapedMac.c_str(), escapedMac.c_str());
