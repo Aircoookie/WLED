@@ -268,7 +268,7 @@ class MPU6050Driver : public Usermod {
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
 
-      StaticJsonDocument<600> doc; //measured 528
+      StaticJsonDocument<800> doc; //measured 528  // WLEDMM added some margin (was 600)
 
       JsonObject imu_meas = doc.createNestedObject("IMU");
       #ifdef WLED_DEBUG
@@ -306,12 +306,15 @@ class MPU6050Driver : public Usermod {
       orient_json.add(ypr[0] * 180/M_PI);
       orient_json.add(ypr[1] * 180/M_PI);
       orient_json.add(ypr[2] * 180/M_PI);
- 
-      char stringBuffer[300]; // measured 266
+      char stringBuffer[400]; // measured 266 // WLEDMM added some margin (was 300)
       serializeJson(imu_meas, stringBuffer);
       JsonArray mainObject = user.createNestedArray("IMU");
-      mainObject.add(stringBuffer);
-
+      if (!dmpReady || !enabled) {       // WLEDMM
+        if (!dmpReady) mainObject.add(F("Sensor Not Found"));
+        else if (!enabled) mainObject.add(F("usermod disabled"));
+      } else {
+        mainObject.add(stringBuffer);
+      }
       // Serial.printf("imu_meas %u (%u %u) stringBuffer %u\n", (unsigned int)imu_meas.memoryUsage(), (unsigned int)imu_meas.size(), (unsigned int)imu_meas.nesting(), strlen(stringBuffer));
 
     }
