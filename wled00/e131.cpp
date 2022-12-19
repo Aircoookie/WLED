@@ -90,8 +90,11 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
   }
   #endif
 
-  // ignore packages with priority smaller configured port priority
-  if ( (prio != 0 && e131Priority != 0) && prio < e131Priority ) return;
+  // ignore packages by priority
+  if (prio != 0) 
+    if (e131Priority != 0)
+      if (prio != e131Priority)
+        return;
 
   // only listen for universes we're handling & allocated memory
   if (uni < e131Universe || uni >= (e131Universe + E131_MAX_UNIVERSE_COUNT)) return;
