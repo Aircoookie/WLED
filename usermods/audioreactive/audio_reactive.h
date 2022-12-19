@@ -2047,6 +2047,7 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addOption(dd,'Off',0);"));
       oappend(SET_F("addOption(dd,'Send',1);"));
       oappend(SET_F("addOption(dd,'Receive',2);"));
+      oappend(SET_F("addInfo('AudioReactive:help',0,'<a href=\"https://moonmodules.github.io/WLED-Docs/soundreactive/Sound-Settings\">Help</a>');"));  // 0 is field type, 1 is actual field
       oappend(SET_F("addInfo('AudioReactive:digitalmic:type',1,'<i>requires reboot!</i>');"));  // 0 is field type, 1 is actual field
     #ifdef I2S_SDPIN
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',0,'<i>sd/data/dout, &#9100; ")); oappendi(I2S_SDPIN); oappend("</i>','I2S SD');");

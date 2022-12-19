@@ -215,7 +215,7 @@
                 const userMod = urlParams.get('um')
                 for (const [k,o] of Object.entries(umCfg)) {
                     if (userMod == k) {
-                        urows += `<hr><h3>${k}</h3>`;
+                        urows += `<hr><h3>${k}</h3><div name="${k}:help"></div>`;
                         addField(k,'unknown',o);
                     }
                 }

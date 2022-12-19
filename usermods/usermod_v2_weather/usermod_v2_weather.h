@@ -317,6 +317,7 @@ class WeatherUsermod : public Usermod {
 
     void appendConfigData()
     {
+      oappend(SET_F("addInfo('WeatherUserMod:help',0,'<a href=\"https://moonmodules.github.io/WLED-Docs/moonmodules/weather-usermod\">Help</a>');"));  // 0 is field type, 1 is actual field
       oappend(SET_F("dd=addDropdown('WeatherUserMod','units');"));
       oappend(SET_F("addOption(dd,'Kelvin',0);"));
       oappend(SET_F("addOption(dd,'Celcius',1);"));
