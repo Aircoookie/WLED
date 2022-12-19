@@ -169,13 +169,13 @@ float ARTI::arti_external_function(uint8_t function, float par1, float par2, flo
         return floatNull;
       }
       case F_circle2D: {
-        uint16_t circleLength = min(strip.matrixWidth, strip.matrixHeight);
+        uint16_t circleLength = min(Segment::maxWidth, Segment::maxHeight);
         uint16_t deltaWidth=0, deltaHeight=0;
 
-        if (circleLength < strip.matrixHeight) //portrait
-          deltaHeight = (strip.matrixHeight - circleLength) / 2;
-        if (circleLength < strip.matrixWidth) //portrait
-          deltaWidth = (strip.matrixWidth - circleLength) / 2;
+        if (circleLength < Segment::maxHeight) //portrait
+          deltaHeight = (Segment::maxHeight - circleLength) / 2;
+        if (circleLength < Segment::maxWidth) //portrait
+          deltaWidth = (Segment::maxWidth - circleLength) / 2;
 
         float halfLength = (circleLength-1)/2.0;
 
@@ -524,8 +524,8 @@ bool ARTI::loop()
       for (int i = 0; i< arti_get_external_variable(F_ledCount); i++)
       {
         if (function_symbol->function_scope->nrOfFormals == 2) {// 2D
-          ar->set(function_symbol->function_scope->symbols[0]->scope_index, i%strip.matrixWidth); // set x
-          ar->set(function_symbol->function_scope->symbols[1]->scope_index, i/strip.matrixWidth); // set y
+          ar->set(function_symbol->function_scope->symbols[0]->scope_index, i%Segment::maxWidth); // set x
+          ar->set(function_symbol->function_scope->symbols[1]->scope_index, i/Segment::maxWidth); // set y
         }
         else
           ar->set(function_symbol->function_scope->symbols[0]->scope_index, i); // set x

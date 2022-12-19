@@ -128,12 +128,13 @@ button {
 	display: inline-block;
 }
 
-.icons.on {
-	color: var(--c-g);
+.on {
+	color: var(--c-g) !important;
 }
 
-.icons.off {
-	color: var(--c-6);
+.off {
+	color: var(--c-6) !important;
+	cursor: default !important;
 }
 
 .top .icons, .bot .icons {
@@ -981,7 +982,7 @@ textarea {
 
 .segname, .pname {
 	white-space: nowrap;
-	cursor: pointer;
+	/*cursor: pointer;*/
 	text-align: center;
 	overflow: clip;
 	text-overflow: ellipsis;

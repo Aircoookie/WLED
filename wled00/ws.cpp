@@ -161,8 +161,8 @@ bool sendLiveLedsWs(uint32_t wsClient)
 #ifndef WLED_DISABLE_2D
   if (strip.isMatrix) {
     buffer[1] = 2; //version
-    buffer[2] = strip.matrixWidth;
-    buffer[3] = strip.matrixHeight;
+    buffer[2] = Segment::maxWidth;
+    buffer[3] = Segment::maxHeight;
     buffer[4] = currentPreset; //WLEDMM
     buffer[5] = currentPlaylist; //WLEDMM
   }

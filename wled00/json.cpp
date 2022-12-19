@@ -47,10 +47,10 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     // Serial.printf("before %d: %s %s %s %s\n", id, elem["start"].as<std::string>().c_str(), elem["stop"].as<std::string>().c_str(), elem["startY"].as<std::string>().c_str(), elem["stopY"].as<std::string>().c_str());
   if (strip.isMatrix && !elem["start"].isNull() && !elem["stop"].isNull() && elem["startY"].isNull() && elem["stopY"].isNull()) {
     uint16_t start1=elem["start"], stop1=elem["stop"];
-    elem["start"] = start1%strip.matrixWidth;
-    elem["startY"]= strip.matrixWidth?(start1 / strip.matrixWidth):0;
-    elem["stop"] = (stop1-1)%strip.matrixWidth + 1;
-    elem["stopY"]= strip.matrixWidth?((stop1-1) / strip.matrixWidth) + 1:0;
+    elem["start"] = start1%Segment::maxWidth;
+    elem["startY"]= Segment::maxWidth?(start1 / Segment::maxWidth):0;
+    elem["stop"] = (stop1-1)%Segment::maxWidth + 1;
+    elem["stopY"]= Segment::maxWidth?((stop1-1) / Segment::maxWidth) + 1:0;
     // Serial.printf("after %s %s %s %s\n", elem["start"].as<std::string>().c_str(), elem["stop"].as<std::string>().c_str(), elem["startY"].as<std::string>().c_str(), elem["stopY"].as<std::string>().c_str());
   }
   #endif
@@ -677,8 +677,8 @@ void serializeInfo(JsonObject root)
   #ifndef WLED_DISABLE_2D
   if (strip.isMatrix) {
     JsonObject matrix = leds.createNestedObject("matrix");
-    matrix["w"] = strip.matrixWidth;
-    matrix["h"] = strip.matrixHeight;
+    matrix["w"] = Segment::maxWidth;
+    matrix["h"] = Segment::maxHeight;
   }
   #endif
 

@@ -180,6 +180,9 @@
 #include "../usermods/pwm_outputs/usermod_pwm_outputs.h"
 #endif
 
+#ifdef USERMOD_SHT
+#include "../usermods/sht/usermod_sht.h"
+#endif
 
 //WLEDMM Custom Effects
 #ifdef USERMOD_CUSTOMEFFECTS
@@ -308,7 +311,7 @@ void registerUsermods()
   #ifdef QUINLED_AN_PENTA
   usermods.add(new QuinLEDAnPentaUsermod());
   #endif
-  
+ 
   #ifdef USERMOD_WIZLIGHTS
   usermods.add(new WizLightsUsermod());
   #endif
@@ -355,6 +358,10 @@ void registerUsermods()
   
   #ifdef USERMOD_PWM_OUTPUTS
   usermods.add(new PwmOutputsUsermod());
+  #endif
+
+  #ifdef USERMOD_SHT
+  usermods.add(new ShtUsermod());
   #endif
 
   //WLEDMM Custom Effects
