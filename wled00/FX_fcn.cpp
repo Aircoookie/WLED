@@ -1324,6 +1324,7 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
     // disabled segments should get removed using purgeSegments()
     DEBUG_PRINT(F("-- Segment ")); DEBUG_PRINT(n); DEBUG_PRINTLN(F(" marked inactive."));
     seg.stop = 0;
+    seg.options = 0b0000000000000101; // on & selected
     //if (seg.name) {
     //  delete[] seg.name;
     //  seg.name = nullptr;
