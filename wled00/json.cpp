@@ -565,8 +565,8 @@ void serializeInfo(JsonObject root)
   #ifndef WLED_DISABLE_2D
   if (strip.isMatrix) {
     JsonObject matrix = leds.createNestedObject("matrix");
-    matrix["w"] = strip.matrixWidth;
-    matrix["h"] = strip.matrixHeight;
+    matrix["w"] = Segment::maxWidth;
+    matrix["h"] = Segment::maxHeight;
   }
   #endif
 
