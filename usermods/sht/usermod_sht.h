@@ -387,6 +387,7 @@ bool ShtUsermod::readFromConfig(JsonObject &root)
 
   bool oldEnabled = enabled;
   byte oldShtType = shtType;
+  byte oldUnitOfTemp = unitOfTemp;
   bool oldHaMqttDiscovery = haMqttDiscovery;
 
   getJsonValue(top[FPSTR(_enabled)], enabled);
@@ -408,6 +409,11 @@ bool ShtUsermod::readFromConfig(JsonObject &root)
     if (oldShtType != shtType) {
       cleanupShtTempHumiditySensor();
       initShtTempHumiditySensor();
+    }
+
+    if (oldUnitOfTemp != unitOfTemp) {
+      publishTemperatureAndHumidityViaMqtt();
+      publishHomeAssistantAutodiscovery();
     }
 
     if (oldHaMqttDiscovery != haMqttDiscovery && haMqttDiscovery) {
