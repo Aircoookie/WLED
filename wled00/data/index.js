@@ -1,6 +1,5 @@
 //page js
 var loc = false, locip;
-var noNewSegs = false;
 var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true;
 var hasWhite = false, hasRGB = false, hasCCT = false;
 var nlDur = 60, nlTar = 0;
@@ -795,18 +794,14 @@ function populateSegments(s)
 	}
 
 	gId('segcont').innerHTML = cn;
-	if (lowestUnused >= maxSeg) {
-		gId('segutil').innerHTML = '<span class="h">Maximum number of segments reached.</span>';
-		noNewSegs = true;
-	} else if (noNewSegs) {
-		resetUtil();
-		noNewSegs = false;
-	}
+	let noNewSegs = (lowestUnused >= maxSeg);
+	resetUtil(noNewSegs);
+	if (gId('selall')) gId('selall').checked = true;
 	for (var i = 0; i <= lSeg; i++) {
 		updateLen(i);
 		updateTrail(gId(`seg${i}bri`));
 		gId(`segr${i}`).style.display = "none";
-		if (!gId(`seg${i}sel`).checked) gId(`selall`).checked = false;
+		if (!gId(`seg${i}sel`).checked && gId('selall')) gId('selall').checked = false; // uncheck if at least one is unselected.
 	}
 	if (segCount < 2) gId(`segd${lSeg}`).style.display = "none";
 	if (!isM && !noNewSegs && (cfg.comp.seglen?parseInt(gId(`seg${lSeg}s`).value):0)+parseInt(gId(`seg${lSeg}e`).value)<ledCount) gId(`segr${lSeg}`).style.display = "inline";
@@ -1694,15 +1689,15 @@ function makeSeg()
 	gId('segutil').innerHTML = cn;
 }
 
-function resetUtil()
+function resetUtil(off=false)
 {
-//	gId('segutil').innerHTML = '<button class="btn btn-s" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>segment</button>';
-	gId('segutil').innerHTML = '<div class="seg btn btn-s" style="border-radius:24px;padding:0;">'
+	gId('segutil').innerHTML = `<div class="seg btn btn-s ${off?'off':''}" style="border-radius:24px;padding:0;">`
 	+ '<label class="check schkl"><input type="checkbox" id="selall" onchange="selSegAll(this)"><span class="checkmark"></span></label>'
-	+ '<div class="segname" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>Add segment</div></div>';
+	+ `<div class="segname" ${off?'':'onclick="makeSeg()"'}><i class="icons btn-icon">&#xe18a;</i>Add segment</div></div>`;
 }
 
-function makePlSel(el, incPl=false) {
+function makePlSel(el, incPl=false)
+{
 	var plSelContent = "";
 	delete pJson["0"];	// remove filler preset
 	var arr = Object.entries(pJson);
@@ -1714,7 +1709,8 @@ function makePlSel(el, incPl=false) {
 	return plSelContent;
 }
 
-function refreshPlE(p) {
+function refreshPlE(p)
+{
 	var plEDiv = gId(`ple${p}`);
 	if (!plEDiv) return;
 	var content = "<div class=\"first c\">Playlist entries</div>";
@@ -1736,14 +1732,16 @@ function refreshPlE(p) {
 }
 
 // p: preset ID, i: ps index
-function addPl(p,i) {
+function addPl(p,i)
+{
 	plJson[p].ps.splice(i+1,0,0);
 	plJson[p].dur.splice(i+1,0,plJson[p].dur[i]);
 	plJson[p].transition.splice(i+1,0,plJson[p].transition[i]);
 	refreshPlE(p);
 }
 
-function delPl(p,i) {
+function delPl(p,i)
+{
 	if (plJson[p].ps.length < 2) return;
 	plJson[p].ps.splice(i,1);
 	plJson[p].dur.splice(i,1);
@@ -1751,21 +1749,25 @@ function delPl(p,i) {
 	refreshPlE(p);
 }
 
-function plePs(p,i,field) {
+function plePs(p,i,field)
+{
 	plJson[p].ps[i] = parseInt(field.value);
 }
 
-function pleDur(p,i,field) {
+function pleDur(p,i,field)
+{
 	if (field.validity.valid)
 		plJson[p].dur[i] = Math.floor(field.value*10);
 }
 
-function pleTr(p,i,field) {
+function pleTr(p,i,field)
+{
 	if (field.validity.valid)
 		plJson[p].transition[i] = Math.floor(field.value*10);
 }
 
-function plR(p) {
+function plR(p)
+{
 	var pl = plJson[p];
 	pl.r = gId(`pl${p}rtgl`).checked;
 	if (gId(`pl${p}rptgl`).checked) { // infinite
@@ -1779,7 +1781,8 @@ function plR(p) {
 	}
 }
 
-function makeP(i,pl) {
+function makeP(i,pl)
+{
 	var content = "";
 	if (pl) {
 		if (i===0) plJson[0] = {
@@ -1963,7 +1966,7 @@ function selSegAll(o)
 
 function selSegEx(s)
 {
-	gId(`selall`).checked = false;
+	if (gId('selall')) gId('selall').checked = false;
 	var obj = {"seg":[]};
 	for (let i=0; i<=lSeg; i++) obj.seg.push({"id":i,"sel":(i==s)});
 	obj.mainseg = s;
@@ -1972,7 +1975,7 @@ function selSegEx(s)
 
 function selSeg(s)
 {
-	gId(`selall`).checked = false;
+	if (gId('selall')) gId('selall').checked = false;
 	var sel = gId(`seg${s}sel`).checked;
 	var obj = {"seg": {"id": s, "sel": sel}};
 	requestJson(obj);
@@ -2020,7 +2023,7 @@ function setSeg(s)
 		var startY = parseInt(sY.value);
 		var stopY = parseInt(eY.value);
 		if (startY<sY.min || startY>sY.max) {sY.value=sY.min; return;} // prevent out of bounds
-		if (stopY<eY.min || stop>eY.max) {eY.value=eY.max; return;} // prevent out of bounds
+		if (stopY<eY.min || stopY>eY.max) {eY.value=eY.max; return;} // prevent out of bounds
 		obj.seg.startY = startY;
 		obj.seg.stopY = (cfg.comp.seglen?startY:0)+stopY;
 	}
@@ -2194,12 +2197,12 @@ function setPreset(i)
 {
 	var obj = {"ps":i};
 	if (pJson && pJson[i] && (!pJson[i].win || pJson[i].win.indexOf("Please") <= 0)) {
-		// we will send complete preset content as to avoid delay introduced by
-		// async nature of applyPreset(). json.cpp has to decide wether to call applyPreset()
-		// or not (by looking at the JSON content, if "ps" only)
+		// we will send the complete preset content as to avoid delay introduced by
+		// async nature of applyPreset() and having to read the preset from file system.
+		obj = {"pd":i}; // use "pd" instead of "ps" to indicate that we are sending the preset content directly
 		Object.assign(obj, pJson[i]);
-		delete obj.ql;	// no need for quick load
-		delete obj.n;	// no need for name
+		delete obj.ql; // no need for quick load
+		delete obj.n;  // no need for name
 	}
 	if (isPlaylist(i)) obj.on = true; // force on
 	showToast("Loading preset " + pName(i) +" (" + i + ")");
