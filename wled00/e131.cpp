@@ -56,7 +56,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
 
   uint16_t uni = 0, dmxChannels = 0;
   uint8_t* e131_data = nullptr;
-  uint8_t seq = 0, mde = REALTIME_MODE_E131;
+  uint8_t seq = 0, mde = REALTIME_MODE_E131, prio = 0;
 
   if (protocol == P_ARTNET)
   {
@@ -74,6 +74,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
     dmxChannels = htons(p->property_value_count) -1;
     e131_data = p->property_values;
     seq = p->sequence_number;
+    prio = p->priority;
   } else { //DDP
     realtimeIP = clientIP;
     handleDDPPacket(p);
@@ -88,6 +89,9 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
     dmx.update();
   }
   #endif
+
+  // ignore packages with priority smaller configured port priority
+  if ( (prio != 0 && e131Priority != 0) && prio < e131Priority ) return;
 
   // only listen for universes we're handling & allocated memory
   if (uni < e131Universe || uni >= (e131Universe + E131_MAX_UNIVERSE_COUNT)) return;

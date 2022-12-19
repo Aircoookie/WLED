@@ -388,6 +388,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   if (!DMXAddress || DMXAddress > 510) DMXAddress = 1;
   CJSON(DMXSegmentSpacing, if_live_dmx[F("dss")]);
   if (DMXSegmentSpacing > 150) DMXSegmentSpacing = 0;
+  CJSON(e131Priority, if_live_dmx[F("e131prio")]);
+  if (e131Priority > 200) e131Priority = 200;
   CJSON(DMXMode, if_live_dmx["mode"]);
 
   tdd = if_live[F("timeout")] | -1;
@@ -846,6 +848,7 @@ void serializeConfig() {
   JsonObject if_live_dmx = if_live.createNestedObject("dmx");
   if_live_dmx[F("uni")] = e131Universe;
   if_live_dmx[F("seqskip")] = e131SkipOutOfSequence;
+  if_live_dmx[F("e131prio")] = e131Priority;
   if_live_dmx[F("addr")] = DMXAddress;
   if_live_dmx[F("dss")] = DMXSegmentSpacing;
   if_live_dmx["mode"] = DMXMode;
