@@ -73,7 +73,7 @@ void createEditHandler(bool enable) {
       #endif
     }
     #else
-    editHandler = server.on("/edit", HTTP_GET, [](AsyncWebServerRequest *request){
+    editHandler = &server.on("/edit", HTTP_GET, [](AsyncWebServerRequest *request){
       if (http_auth && !request->authenticate(http_user, http_pass))
         return request->requestAuthentication();
       serveMessage(request, 501, "Not implemented", F("The FS editor is disabled in this build."), 254);
