@@ -1284,7 +1284,7 @@ class AudioReactive : public Usermod {
         case 0:
         default:
           DEBUGSR_PRINTLN(F("AR: Analog Microphone (left channel only)."));
-          //useBandPassFilter = true;
+          useBandPassFilter = true;
           audioSource = new I2SAdcSource(SAMPLE_RATE, BLOCK_SIZE);
           delay(100);
           if (audioSource) audioSource->initialize(audioPin);
