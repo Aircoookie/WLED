@@ -58,10 +58,12 @@
   #define PLOT_PRINT(x) DEBUGOUT.print(x)
   #define PLOT_PRINTLN(x) DEBUGOUT.println(x)
   #define PLOT_PRINTF(x...) DEBUGOUT.printf(x)
+  #define PLOT_FLUSH() DEBUGOUT.flush()
 #else
   #define PLOT_PRINT(x)
   #define PLOT_PRINTLN(x)
   #define PLOT_PRINTF(x...)
+  #define PLOT_FLUSH()
 #endif
 
 // use audio source class (ESP32 specific)
@@ -141,6 +143,15 @@ static unsigned long timeOfPeak = 0; // time of last sample peak detection.
 static void detectSamplePeak(void);  // peak detection function (needs scaled FFT reasults in vReal[])
 static void autoResetPeak(void);     // peak auto-reset function
 
+// shared vars for debugging
+#ifdef MIC_LOGGER
+static volatile float    micReal_min = 0.0f;             // MicIn data min from last batch of samples
+static volatile float    micReal_max = 0.0f;             // MicIn data max from last batch of samples
+#if 0
+static volatile float    micReal_min2 = 0.0f;             // MicIn data min from last batch of samples
+static volatile float    micReal_max2 = 0.0f;             // MicIn data max from last batch of samples
+#endif
+#endif
 
 ////////////////////
 // Begin FFT Code //
@@ -331,6 +342,19 @@ void FFTcode(void * parameter)
 
     xLastWakeTime = xTaskGetTickCount();       // update "last unblocked time" for vTaskDelay
 
+#ifdef MIC_LOGGER
+    float datMin = 0.0f;
+    float datMax = 0.0f;
+    for (int i=0; i < samplesFFT; i++) {
+      if (i==0) {
+        datMin = datMax = vReal[i];
+      } else {
+        if (datMin >  vReal[i]) datMin =  vReal[i];
+        if (datMax <  vReal[i]) datMax =  vReal[i];
+      }
+    }
+#endif
+
     // band pass filter - can reduce noise floor by a factor of 50
     // downside: frequencies below 100Hz will be ignored
     if (useBandPassFilter) runMicFilter(samplesFFT, vReal);
@@ -347,7 +371,23 @@ void FFTcode(void * parameter)
     // release highest sample to volume reactive effects early - not strictly necessary here - could also be done at the end of the function
     // early release allows the filters (getSample() and agcAvg()) to work with fresh values - we will have matching gain and noise gate values when we want to process the FFT results.
     micDataReal = maxSample;
-
+#ifdef MIC_LOGGER
+    micReal_min = datMin;
+    micReal_max = datMax;
+#if 0
+    // compute mix/max again after filering - usefull for filter debugging
+    for (int i=0; i < samplesFFT; i++) {
+      if (i==0) {
+        datMin = datMax = vReal[i];
+      } else {
+        if (datMin >  vReal[i]) datMin =  vReal[i];
+        if (datMax <  vReal[i]) datMax =  vReal[i];
+      }
+    }
+    micReal_min2 = datMin;
+    micReal_max2 = datMax;
+#endif
+#endif
     // run FFT (takes 3-5ms on ESP32)
     //if (fabsf(sampleAvg) > 0.25f) { // noise gate open
     if (fabsf(volumeSmth) > 0.25f) { // noise gate open
@@ -772,10 +812,15 @@ class AudioReactive : public Usermod {
       if (disableSoundProcessing && (!udpSyncConnected || ((audioSyncEnabled & 0x02) == 0))) return;   // no audio availeable
     #ifdef MIC_LOGGER
       // Debugging functions for audio input and sound processing. Comment out the values you want to see
+      PLOT_PRINT("micMin:");     PLOT_PRINT(micReal_min);  PLOT_PRINT("\t");
+      PLOT_PRINT("micMax:");     PLOT_PRINT(micReal_max);  PLOT_PRINT("\t");
+      //PLOT_PRINT("micDC:");      PLOT_PRINT((micReal_min + micReal_max)/2.0f);PLOT_PRINT("\t");
       PLOT_PRINT("micReal:");     PLOT_PRINT(micDataReal); PLOT_PRINT("\t");
       PLOT_PRINT("volumeSmth:");  PLOT_PRINT(volumeSmth);  PLOT_PRINT("\t");
       //PLOT_PRINT("volumeRaw:");   PLOT_PRINT(volumeRaw);   PLOT_PRINT("\t");
       PLOT_PRINT("DC_Level:");    PLOT_PRINT(micLev);      PLOT_PRINT("\t");
+      // //PLOT_PRINT("filtmicMin:");     PLOT_PRINT(micReal_min2);  PLOT_PRINT("\t");
+      // //PLOT_PRINT("filtmicMax:");     PLOT_PRINT(micReal_max2);  PLOT_PRINT("\t");
       //PLOT_PRINT("sampleAgc:");   PLOT_PRINT(sampleAgc);   PLOT_PRINT("\t");
       //PLOT_PRINT("sampleAvg:");   PLOT_PRINT(sampleAvg);   PLOT_PRINT("\t");
       //PLOT_PRINT("sampleReal:");  PLOT_PRINT(sampleReal);  PLOT_PRINT("\t");
@@ -785,6 +830,7 @@ class AudioReactive : public Usermod {
       //PLOT_PRINT("samplePeak:");  PLOT_PRINT((samplePeak!=0) ? 128:0);   PLOT_PRINT("\t");
       //PLOT_PRINT("multAgc:");     PLOT_PRINT(multAgc, 4);  PLOT_PRINT("\t");
       PLOT_PRINTLN();
+      PLOT_FLUSH();
     #endif
 
     #ifdef FFT_SAMPLING_LOG
