@@ -1776,16 +1776,16 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addOption(dd,'Send',1);"));
       oappend(SET_F("addOption(dd,'Receive',2);"));
       oappend(SET_F("addInfo('AudioReactive:digitalmic:type',1,'<i>requires reboot!</i>');"));  // 0 is field type, 1 is actual field
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',0,'I2S Serial Data', '<i><span class=\"h\">sd/data/dout</span></i>');"));
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',1,'I2S L/R Clock','<i><span class=\"h\">ws/clk/lrck</span></i>');"));
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',2,'I2S Serial Clock','<i>sck/bclk</i>');"));
+      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',0,'<i>sd/data/dout</i>','I2S SD');"));
+      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',1,'<i>ws/clk/lrck</i>','I2S WS');"));
+      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',2,'<i>sck/bclk</i>','I2S SCK');"));
       #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
-        oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'I2S Master CLK','<i>only use -1, 0, 1 or 3</i>');"));
+        oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'<i>only use -1, 0, 1 or 3</i>','I2S MCLK');"));
       #else
-        oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'', 'I2S Master CLK');"));
+        oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'<i>master clock</i>','I2S MCLK');"));
       #endif
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',4,'', 'I2C SDA');"));
-      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',5,'', 'I2C SCL');"));
+      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',4,'','I2C SDA');"));
+      oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',5,'','I2C SCL');"));
     }
 
 

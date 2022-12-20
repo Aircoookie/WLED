@@ -71,7 +71,7 @@ void createEditHandler(bool enable) {
       editHandler = &server.addHandler(new SPIFFSEditor("","",WLED_FS));//http_username,http_password));
       #endif
     #else
-      editHandler = server.on("/edit", HTTP_GET, [](AsyncWebServerRequest *request){
+      editHandler = &server.on("/edit", HTTP_GET, [](AsyncWebServerRequest *request){
         serveMessage(request, 501, "Not implemented", F("The FS editor is disabled in this build."), 254);
       });
     #endif
