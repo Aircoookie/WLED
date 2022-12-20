@@ -58,19 +58,22 @@ enum struct PinOwner : uint8_t {
   UM_BME280            = USERMOD_ID_BME280,             // 0x18 // Usermod "usermod_bme280.h -- Uses "standard" HW_I2C pins
   UM_BH1750            = USERMOD_ID_BH1750,             // 0x19 // Usermod "usermod_bme280.h -- Uses "standard" HW_I2C pins
   UM_Audioreactive     = USERMOD_ID_AUDIOREACTIVE,      // 0x1E // Usermod "audio_reactive.h"
-  UM_SdCard            = USERMOD_ID_SD_CARD             // 0x24 // Usermod "usermod_sd_card.h"
+  UM_SdCard            = USERMOD_ID_SD_CARD,            // 0x24 // Usermod "usermod_sd_card.h"
+  UM_PWM_OUTPUTS       = USERMOD_ID_PWM_OUTPUTS         // 0x21 // Usermod "usermod_pwm_outputs.h"
 };
 static_assert(0u == static_cast<uint8_t>(PinOwner::None), "PinOwner::None must be zero, so default array initialization works as expected");
 
 class PinManagerClass {
   private:
   #ifdef ESP8266
+  #define WLED_NUM_PINS 17
   uint8_t pinAlloc[3] = {0x00, 0x00, 0x00}; //24bit, 1 bit per pin, we use first 17bits
-  PinOwner ownerTag[17] = { PinOwner::None };
+  PinOwner ownerTag[WLED_NUM_PINS] = { PinOwner::None };
   #else
-  uint8_t pinAlloc[5] = {0x00, 0x00, 0x00, 0x00, 0x00}; //40bit, 1 bit per pin, we use all bits
+  #define WLED_NUM_PINS 50
+  uint8_t pinAlloc[7] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // 56bit, 1 bit per pin, we use 50 bits on ESP32-S3
   uint8_t ledcAlloc[2] = {0x00, 0x00}; //16 LEDC channels
-  PinOwner ownerTag[40] = { PinOwner::None };
+  PinOwner ownerTag[WLED_NUM_PINS] = { PinOwner::None }; // new MCU's have up to 50 GPIO
   #endif
   struct {
     uint8_t i2cAllocCount : 4; // allow multiple allocation of I2C bus pins but keep track of allocations

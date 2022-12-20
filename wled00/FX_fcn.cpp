@@ -75,6 +75,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 uint16_t Segment::_usedSegmentData = 0U; // amount of RAM all segments use for their data[]
 CRGB    *Segment::_globalLeds = nullptr;
+uint16_t Segment::maxWidth = DEFAULT_LED_COUNT;
+uint16_t Segment::maxHeight = 1;
 
 // copy constructor
 Segment::Segment(const Segment &orig) {
@@ -192,7 +194,7 @@ void Segment::setUpLeds() {
   // deallocation happens in resetIfRequired() as it is called when segment changes or in destructor
   if (Segment::_globalLeds)
     #ifndef WLED_DISABLE_2D
-    leds = &Segment::_globalLeds[start + startY*strip.matrixWidth]; // TODO: remove this hack
+    leds = &Segment::_globalLeds[start + startY*Segment::maxWidth];
     #else
     leds = &Segment::_globalLeds[start];
     #endif
@@ -497,7 +499,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
   if (i >= virtualLength() || i<0) return;  // if pixel would fall out of segment just exit
 
 #ifndef WLED_DISABLE_2D
-  if (is2D()) { // if this does not work use strip.isMatrix
+  if (is2D()) {
     uint16_t vH = virtualHeight();  // segment height in logical pixels
     uint16_t vW = virtualWidth();
     switch (map1D2D) {
@@ -530,7 +532,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         break;
     }
     return;
-  } else if (strip.isMatrix && (width()==1 || height()==1)) { // TODO remove this hack
+  } else if (Segment::maxHeight!=1 && (width()==1 || height()==1)) {
     // we have a vertical or horizontal 1D segment (WARNING: virtual...() may be transposed)
     int x = 0, y = 0;
     if (virtualHeight()>1) y = i;
@@ -618,7 +620,7 @@ uint32_t Segment::getPixelColor(int i)
   i &= 0xFFFF;
 
 #ifndef WLED_DISABLE_2D
-  if (is2D()) { // if this does not work use strip.isMatrix
+  if (is2D()) {
     uint16_t vH = virtualHeight();  // segment height in logical pixels
     uint16_t vW = virtualWidth();
     switch (map1D2D) {
@@ -1322,6 +1324,7 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
     // disabled segments should get removed using purgeSegments()
     DEBUG_PRINT(F("-- Segment ")); DEBUG_PRINT(n); DEBUG_PRINTLN(F(" marked inactive."));
     seg.stop = 0;
+    seg.options = 0b0000000000000101; // on & selected
     //if (seg.name) {
     //  delete[] seg.name;
     //  seg.name = nullptr;
@@ -1333,10 +1336,10 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
   }
   if (isMatrix) {
     #ifndef WLED_DISABLE_2D
-    if (i1 < matrixWidth) seg.start = i1;
-    seg.stop = i2 > matrixWidth ? matrixWidth : i2;
-    if (startY < matrixHeight) seg.startY = startY;
-    seg.stopY = stopY > matrixHeight ? matrixHeight : MAX(1,stopY);
+    if (i1 < Segment::maxWidth) seg.start = i1;
+    seg.stop = i2 > Segment::maxWidth ? Segment::maxWidth : i2;
+    if (startY < Segment::maxHeight) seg.startY = startY;
+    seg.stopY = stopY > Segment::maxHeight ? Segment::maxHeight : MAX(1,stopY);
     #endif
   } else {
     if (i1 < _length) seg.start = i1;
@@ -1360,7 +1363,7 @@ void WS2812FX::restartRuntime() {
 void WS2812FX::resetSegments() {
   _segments.clear(); // destructs all Segment as part of clearing
   #ifndef WLED_DISABLE_2D
-  segment seg = isMatrix ? Segment(0, matrixWidth, 0, matrixHeight) : Segment(0, _length);
+  segment seg = isMatrix ? Segment(0, Segment::maxWidth, 0, Segment::maxHeight) : Segment(0, _length);
   #else
   segment seg = Segment(0, _length);
   #endif
@@ -1376,9 +1379,9 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
     else if (getActiveSegmentsNum() == 1) {
       size_t i = getLastActiveSegmentId();
       _segments[i].start  = 0;
-      _segments[i].stop   = matrixWidth;
+      _segments[i].stop   = Segment::maxWidth;
       _segments[i].startY = 0;
-      _segments[i].stopY  = matrixHeight;
+      _segments[i].stopY  = Segment::maxHeight;
       _segments[i].grouping = 1;
       _segments[i].spacing  = 0;
       _mainSegment = i;
