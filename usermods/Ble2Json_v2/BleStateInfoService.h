@@ -95,7 +95,7 @@ public:
   void setupBle(BLEServer *server)
   {
     BleServiceBase::setupBle(WLED_BLE_DATA_SERVICE_ID, WLED_BLE_STATE_INFO_DATA_ID,
-                             WLED_BLE_STATE_INFO_CONTROL_ID, WLEC_BLE_STATE_NOTIFY_ID, server);
+                             WLED_BLE_STATE_INFO_CONTROL_ID, WLED_BLE_STATE_NOTIFY_ID, server);
   }
 
   void loop()
@@ -113,7 +113,7 @@ public:
    */
   void readFromJsonState(JsonObject &root)
   {
-    setShouldWrite(true);
+    setShouldNotify(true);
   }
 
   void onWrite(std::string value)
