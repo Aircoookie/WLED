@@ -46,7 +46,7 @@
   #define USERMOD_BATTERY_MAX_VOLTAGE 4.2f
 #endif
 
-class UsermodBatteryBasic : public Usermod 
+class UsermodBattery : public Usermod 
 {
   private:
     // battery pin can be defined in my_config.h
@@ -68,6 +68,24 @@ class UsermodBatteryBasic : public Usermod
     float voltage = 0.0;
     // mapped battery level based on voltage
     long batteryLevel = 0;
+    
+    // time left estimation feature
+    bool calculateTimeLeftEnabled = true;
+    long estimatedTimeLeft = 0;
+
+    // auto shutdown/shutoff/master off feature
+    bool autoOffEnabled = true;
+    int8_t autoOffThreshold = 10;
+
+    // low power indicator feature
+    bool lowPowerIndicatorEnabled = true;
+    byte lowPowerIndicatorPreset = 0;
+    int8_t lowPowerIndicatorThreshold = 20;
+    long lowPowerIndicatorDuration = 15;
+    bool lowPowerDetected = false;
+    bool lowPowerIndicationComplete = false;
+    byte lastPreset = 0;
+
     bool initDone = false;
     bool initializing = true;
 
@@ -95,6 +113,19 @@ class UsermodBatteryBasic : public Usermod
       }
       x = y / pow(10, dec);
       return x;
+    }
+
+    void turnOff()
+    {
+      bri = 0;
+      stateUpdated(CALL_MODE_DIRECT_CHANGE);
+    }
+
+    void indicateLowPower()
+    {
+      // lowPowerIndicationComplete = true;
+      // lastPreset = currentPreset;
+      // bool p = applyPreset(lowPowerIndicatorPreset);
     }
 
 
@@ -147,6 +178,9 @@ class UsermodBatteryBasic : public Usermod
     {
       if(strip.isUpdating()) return;
 
+      if(lowPowerDetected && !lowPowerIndicationComplete)
+        indicateLowPower();
+
       // check the battery level every USERMOD_BATTERY_MEASUREMENT_INTERVAL (ms)
       if (millis() < nextReadTime) return;
 
@@ -170,8 +204,15 @@ class UsermodBatteryBasic : public Usermod
       */
       batteryLevel = mapf(voltage, minBatteryVoltage, maxBatteryVoltage, 0, 100);
 
+      // Auto off -- Master power off
+      if (autoOffEnabled && (autoOffThreshold >= batteryLevel)) turnOff();
+
+      // Low power indicator
+      if (lowPowerIndicatorEnabled && (lowPowerIndicatorThreshold >= batteryLevel)) lowPowerDetected = true;
+      
 
       // SmartHome stuff
+      // still don't know much about MQTT and or HA
       if (WLED_MQTT_CONNECTED) {
         char subuf[64];
         strcpy(subuf, mqttDeviceTopic);
@@ -189,35 +230,41 @@ class UsermodBatteryBasic : public Usermod
      */
     void addToJsonInfo(JsonObject& root)
     {
-      
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
 
       // info modal display names
-      JsonArray batteryPercentage = user.createNestedArray("Battery level");
-      JsonArray batteryVoltage = user.createNestedArray("Battery voltage");
+      JsonArray infoPercentage = user.createNestedArray("Battery level");
+      JsonArray infoVoltage = user.createNestedArray("Battery voltage");
+      if (calculateTimeLeftEnabled)
+      {
+        JsonArray infoEstimatedTimeLeft = user.createNestedArray("Estimated time left");
+        if (initializing) infoEstimatedTimeLeft.add("init");
+      }
+      JsonArray infoNextUpdate = user.createNestedArray("Next update");
 
+      infoNextUpdate.add((nextReadTime - millis()) / 1000);
+      infoNextUpdate.add(" sec");
+      
       if (initializing) {
-        batteryPercentage.add((nextReadTime - millis()) / 1000);
-        batteryPercentage.add(" sec");
-        batteryVoltage.add((nextReadTime - millis()) / 1000);
-        batteryVoltage.add(" sec");
+        infoPercentage.add("init");
+        infoVoltage.add("init");
         return;
       }
 
-      if(batteryLevel < 0) {
-        batteryPercentage.add(F("invalid"));
+      if (batteryLevel < 0) {
+        infoPercentage.add(F("invalid"));
       } else {
-        batteryPercentage.add(batteryLevel);
+        infoPercentage.add(batteryLevel);
       }
-      batteryPercentage.add(F(" %"));
+      infoPercentage.add(F(" %"));
 
-      if(voltage < 0) {
-        batteryVoltage.add(F("invalid"));
+      if (voltage < 0) {
+        infoVoltage.add(F("invalid"));
       } else {
-        batteryVoltage.add(truncate(voltage, 2));
+        infoVoltage.add(truncate(voltage, 2));
       }
-      batteryVoltage.add(F(" V"));
+      infoVoltage.add(F(" V"));
     }
 
 
@@ -284,21 +331,44 @@ class UsermodBatteryBasic : public Usermod
       // created JSON object: 
       /*
       {
-        "Battery-Level": {
-          "pin": "A0",              <--- only when using esp32 boards
-          "minBatteryVoltage": 2.6, 
-          "maxBatteryVoltage": 4.2,
-          "read-interval-ms": 30000  
+        "Battery": {
+          "pin": "A0",                    <--- only when using esp32 boards
+          "calculate-time-left": 3600,    <-- time in seconds
+          "min-battery-voltage": 2.6, 
+          "max-battery-voltage": 4.2,
+          "read-interval-ms": 30000,      <-- time in milliseconds
+          "auto-off": {
+            "auto-off-enabled": true,
+            "auto-off-threshold": 10,     <-- in percent
+          },
+          "low-power-indicator": {
+            "low-power-enabled": true,
+            "low-power-preset": 0,        <-- preset ID
+            "low-power-threshold": 10,    <-- in percent
+            "low-power-duration": 5,      <-- time in seconds
+          }  
         }
       }
       */ 
-      JsonObject battery = root.createNestedObject(FPSTR(_name)); // usermodname
+      JsonObject battery = root.createNestedObject(FPSTR(_name));           // usermodname
       #ifdef ARDUINO_ARCH_ESP32
-        battery["pin"] = batteryPin;                              // usermodparam
+        battery["pin"] = batteryPin;
       #endif
-      battery["minBatteryVoltage"] = minBatteryVoltage;           // usermodparam
-      battery["maxBatteryVoltage"] = maxBatteryVoltage;           // usermodparam
+
+      battery["calculate-time-left"] = calculateTimeLeftEnabled;
+      battery["min-battery-voltage"] = minBatteryVoltage;
+      battery["max-battery-voltage"] = maxBatteryVoltage;
       battery[FPSTR(_readInterval)] = readingInterval;
+      
+      JsonObject ao = battery.createNestedObject("auto-off");               // auto off section
+      ao["auto-off-enabled"] = autoOffEnabled;
+      ao["auto-off-threshold"] = autoOffThreshold;
+
+      JsonObject lp = battery.createNestedObject("low-power-indicator");    // low power section
+      lp["low-power-enabled"] = lowPowerIndicatorEnabled;
+      lp["low-power-preset"] = lowPowerIndicatorPreset;
+      lp["low-power-threshold"] = lowPowerIndicatorThreshold;
+      lp["low-power-duration"] = lowPowerIndicatorDuration;
 
       DEBUG_PRINTLN(F("Battery config saved."));
     }
@@ -324,11 +394,22 @@ class UsermodBatteryBasic : public Usermod
       // looking for JSON object: 
       /*
       {
-        "BatteryLevel": {
-          "pin": "A0",              <--- only when using esp32 boards
-          "minBatteryVoltage": 2.6, 
-          "maxBatteryVoltage": 4.2,
-          "read-interval-ms": 30000  
+        "Battery": {
+          "pin": "A0",                    <--- only when using esp32 boards
+          "calculate-time-left": 3600,    <-- time in seconds
+          "min-battery-voltage": 2.6, 
+          "max-battery-voltage": 4.2,
+          "read-interval-ms": 30000,      <-- time in milliseconds
+          "auto-off": {
+            "auto-off-enabled": true,
+            "auto-off-threshold": 10,     <-- in percent
+          },
+          "low-power-indicator": {
+            "low-power-enabled": true,
+            "low-power-preset": 0,        <-- preset ID
+            "low-power-threshold": 10,    <-- in percent
+            "low-power-duration": 5,      <-- time in seconds
+          }  
         }
       }
       */
@@ -347,12 +428,24 @@ class UsermodBatteryBasic : public Usermod
       #ifdef ARDUINO_ARCH_ESP32
         newBatteryPin     = battery["pin"] | newBatteryPin;
       #endif
-      minBatteryVoltage   = battery["minBatteryVoltage"] | minBatteryVoltage;
+      calculateTimeLeftEnabled = battery["calculate-time-left"] | calculateTimeLeftEnabled;
+      minBatteryVoltage   = battery["min-battery-voltage"] | minBatteryVoltage;
       //minBatteryVoltage = min(12.0f, (int)readingInterval);
-      maxBatteryVoltage   = battery["maxBatteryVoltage"] | maxBatteryVoltage;
+      maxBatteryVoltage   = battery["max-battery-voltage"] | maxBatteryVoltage;
       //maxBatteryVoltage = min(14.4f, max(3.3f,(int)readingInterval));
       readingInterval     = battery["read-interval-ms"] | readingInterval;
-      readingInterval     = max(3000, (int)readingInterval); // minimum repetition is >5000ms (5s)
+      readingInterval     = max(3000, (int)readingInterval); // minimum repetition is >3000ms (3s)
+
+      JsonObject ao     = battery["auto-off"];
+      autoOffEnabled    = ao["auto-off-enabled"] | autoOffEnabled;
+      autoOffThreshold  = ao["auto-off-threshold"] | autoOffThreshold;
+
+      JsonObject lp               = battery["low-power-indicator"];
+      lowPowerIndicatorEnabled    = lp["low-power-enabled"] | lowPowerIndicatorEnabled;
+      lowPowerIndicatorPreset     = lp["low-power-preset"] | lowPowerIndicatorPreset;
+      lowPowerIndicatorThreshold  = lp["low-power-threshold"] | lowPowerIndicatorThreshold;
+      lowPowerIndicatorThreshold  = max(10, (int)lowPowerIndicatorThreshold); // lower limit is 10%
+      lowPowerIndicatorDuration   = lp["low-power-duration"] | lowPowerIndicatorDuration;
 
       DEBUG_PRINT(FPSTR(_name));
 
@@ -389,10 +482,10 @@ class UsermodBatteryBasic : public Usermod
      */
     uint16_t getId()
     {
-      return USERMOD_ID_BATTERY_STATUS_BASIC;
+      return USERMOD_ID_BATTERY;
     }
 };
 
 // strings to reduce flash memory usage (used more than twice)
-const char UsermodBatteryBasic::_name[]         PROGMEM = "Battery-level";
-const char UsermodBatteryBasic::_readInterval[] PROGMEM = "read-interval-ms";
+const char UsermodBattery::_name[]         PROGMEM = "Battery";
+const char UsermodBattery::_readInterval[] PROGMEM = "read-interval-ms";

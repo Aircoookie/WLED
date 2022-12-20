@@ -13,7 +13,7 @@ If you have an ESP32 board, connect the positive side of the battery to ADC1 (GP
 
 ## Installation
 
-define `USERMOD_BATTERY_STATUS_BASIC` in `my_config.h`
+define `USERMOD_BATTERY` in `my_config.h`
 
 ### Basic wiring diagram
 <p align="center">
@@ -22,7 +22,7 @@ define `USERMOD_BATTERY_STATUS_BASIC` in `my_config.h`
 
 ### Define Your Options
 
-* `USERMOD_BATTERY_STATUS_BASIC`                   - define this (in `my_config.h`) to have this usermod included wled00\usermods_list.cpp
+* `USERMOD_BATTERY`                                - define this (in `my_config.h`) to have this usermod included wled00\usermods_list.cpp
 * `USERMOD_BATTERY_MEASUREMENT_PIN`                - defaults to A0 on ESP8266 and GPIO32 on ESP32
 * `USERMOD_BATTERY_MEASUREMENT_INTERVAL`           - battery check interval. defaults to 30 seconds
 * `USERMOD_BATTERY_MIN_VOLTAGE`                    - minimum battery voltage. default is 2.6 (18650 battery standard)
