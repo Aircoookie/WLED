@@ -149,6 +149,7 @@ String PinManagerClass::getPinSpecialText(int gpio) {  // special purpose PIN in
   if ((gpio == spi_sclk) || ((gpio == HW_PIN_CLOCKSPI) && (spi_sclk < 0))) return(F("(default) SPI SLK  / SCK"));
   if ((gpio == spi_mosi) || ((gpio == HW_PIN_DATASPI) && (spi_mosi < 0)))  return(F("(default) SPI PICO / MOSI"));
   if ((gpio == spi_miso) || ((gpio == HW_PIN_MISOSPI) && (spi_miso < 0)))  return(F("(default) SPI POCI / MISO"));
+  //if ((gpio == spi_cs)   || ((gpio == HW_PIN_CS) && (spi_cs < 0)))         return(F("(default) SPI CS   / SS"));
 #if defined(WLED_USE_SD_MMC) || defined(WLED_USE_SD_SPI) || defined(SD_ADAPTER)
   if ((gpio == HW_PIN_CSSPI)) return(F("(default) SPI CS  / SS"));  // no part of usermod default settings, currently only needed by SD_CARD usermod
 #endif
@@ -176,6 +177,53 @@ String PinManagerClass::getPinSpecialText(int gpio) {  // special purpose PIN in
 
   #ifdef WLED_ENABLE_DMX
     if (gpio == 2) return(F("hardcoded DMX output pin"));
+  #endif
+
+  //
+  // usermod PINS
+  //
+  #ifdef USERMOD_ROTARY_ENCODER_UI
+    #ifdef ENCODER_DT_PIN
+      if (gpio == ENCODER_DT_PIN) return(F("(default) Rotary DT  pin"));
+    #else
+      if (gpio == 18) return(F("(default) Rotary DT  pin"));
+    #endif
+    #ifdef ENCODER_CLK_PIN
+      if (gpio == ENCODER_CLK_PIN) return(F("(default) Rotary CLK pin"));
+    #else
+      if (gpio == 5) return(F("(default) Rotary CLK pin"));
+    #endif
+    #ifdef ENCODER_SW_PIN
+      if (gpio == ENCODER_SW_PIN) return(F("(default) Rotary SW  pin"));
+    #else
+      if (gpio == 19) return(F("(default) Rotary SW  pin"));
+    #endif
+  #endif
+
+  #if defined(USERMOD_FOUR_LINE_DISPLAY)
+    #if defined(FLD_PIN_SDA) && defined(FLD_PIN_SDA)
+      if (gpio == FLD_PIN_SDA) return(F("(default) 4lines disp. I2C SDA"));
+      if (gpio == FLD_PIN_SCL) return(F("(default) 4lines disp. I2C SCL"));
+    #endif
+    #if defined(FLD_PIN_CLOCKSPI) && defined(FLD_PIN_DATASPI)
+      if (gpio == FLD_PIN_CLOCKSPI) return(F("(default) 4lines disp. SPI SCLK"));
+      if (gpio == FLD_PIN_DATASPI)  return(F("(default) 4lines disp. SPI DATA"));
+    #endif
+    #if defined(FLD_PIN_CS)
+      if (gpio == FLD_PIN_CS) return(F("(default) 4lines disp. SPI CS"));
+    #endif
+    #if defined(FLD_PIN_DC) && defined(FLD_PIN_RESET)
+      if (gpio == FLD_PIN_DC) return(F("(default) 4lines disp. DC"));
+      if (gpio == FLD_PIN_RESET) return(F("(default) 4lines disp. RESET"));
+    #endif
+  #endif
+
+  #if defined(USERMOD_MPU6050_IMU)
+    #ifdef MPU6050_INT_GPIO
+      if (gpio == MPU6050_INT_GPIO) return(F("(default) mpu6050 INT pin"));
+    #else
+      if (gpio == 15) return(F("(default) mpu6050 INT pin"));
+    #endif
   #endif
 
   // Not-OK PINS
@@ -302,6 +350,7 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
     if (gpio == 0xFF) {
       // explicit support for io -1 as a no-op (no allocation of pin),
       // as this can greatly simplify configuration arrays
+      //if (tag==PinOwner::HW_I2C) USER_PRINTF("I2C alloc attempted for %d\n", gpio);
       continue;
     }
     if (!isPinOk(gpio, mptArray[i].isOutput)) {
@@ -340,6 +389,7 @@ bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, by
   }
 
   if (tag==PinOwner::HW_I2C) i2cAllocCount++;
+  //if (tag==PinOwner::HW_I2C) DEBUG_PRINTF("I2C alloc counter %d\n", int(i2cAllocCount));
   if (tag==PinOwner::HW_SPI) spiAllocCount++;
 
   // all pins are available .. track each one
