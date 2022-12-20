@@ -217,7 +217,17 @@ String PinManagerClass::getPinSpecialText(int gpio) {  // special purpose PIN in
       if (gpio == FLD_PIN_RESET) return(F("(default) 4lines disp. RESET"));
     #endif
   #endif
-
+  #ifdef USERMOD_DALLASTEMPERATURE
+    #ifdef USERMOD_DHT_PIN
+      if (gpio == USERMOD_DHT_PIN) return(F("(default) DHT temperature pin"));
+    #else
+      #ifdef ARDUINO_ARCH_ESP32
+        if (gpio == 21) return(F("(default) DHT temperature pin"));
+      #else
+        if (gpio == 4)  return(F("(default) DHT temperature pin"));
+      #endif
+    #endif
+  #endif
   #if defined(USERMOD_MPU6050_IMU)
     #ifdef MPU6050_INT_GPIO
       if (gpio == MPU6050_INT_GPIO) return(F("(default) mpu6050 INT pin"));
