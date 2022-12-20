@@ -56,9 +56,13 @@ class ShtUsermod : public Usermod
     bool readFromConfig(JsonObject &root);
     void addToJsonInfo(JsonObject& root);
 
-    float getTemperatureC();
-    float getTemperatureF();
-    float getHumidity();
+    bool isEnabled() { return enabled; }
+
+    float getTemperature();
+    float getTemperatureC() { return shtCurrentTempC; }
+    float getTemperatureF() { return shtCurrentTempF; }
+    float getHumidity() { return shtCurrentHumidity; }
+    const char* getUnitString();
 
     uint16_t getId() { return USERMOD_ID_SHT; }
 };
@@ -162,9 +166,9 @@ void ShtUsermod::publishTemperatureAndHumidityViaMqtt() {
   char buf[128];
 
   snprintf_P(buf, 127, PSTR("%s/temperature"), mqttDeviceTopic);
-  mqtt->publish(buf, 0, false, String((unitOfTemp ? getTemperatureF() : getTemperatureC())).c_str());
+  mqtt->publish(buf, 0, false, String(getTemperature()).c_str());
   snprintf_P(buf, 127, PSTR("%s/humidity"), mqttDeviceTopic);
-  mqtt->publish(buf, 0, false, String(shtCurrentHumidity).c_str());
+  mqtt->publish(buf, 0, false, String(getHumidity()).c_str());
 }
 
 /**
@@ -463,36 +467,27 @@ void ShtUsermod::addToJsonInfo(JsonObject& root)
     return;
   }
 
-  jsonHumidity.add(shtCurrentHumidity);
+  jsonHumidity.add(getHumidity());
   jsonHumidity.add(F(" RH"));
 
-  unitOfTemp ? jsonTemp.add(getTemperatureF()) : jsonTemp.add(getTemperatureC());
+  jsonTemp.add(getTemperature());
   unitOfTemp ? jsonTemp.add(F(" °F")) : jsonTemp.add(F(" °C"));
 }
 
 /**
- * Getter for last read temperature in Celsius.
+ * Getter for last read temperature for configured unit.
  *
  * @return float
  */
-float ShtUsermod::getTemperatureC() {
-  return shtCurrentTempC;
+float ShtUsermod::getTemperature() {
+  return unitOfTemp ? getTemperatureF() : getTemperatureC();
 }
 
 /**
- * Getter for last read temperature in Fahrenheit.
+ * Returns the current configured unit as human readable string.
  *
- * @return float
+ * @return const char*
  */
-float ShtUsermod::getTemperatureF() {
-  return shtCurrentTempF;
-}
-
-/**
- * Getter for last read humidity in RH%.
- *
- * @return float
- */
-float ShtUsermod::getHumidity() {
-  return shtCurrentHumidity;
+const char* ShtUsermod::getUnitString() {
+  return unitOfTemp ? "°F" : "°C";
 }
