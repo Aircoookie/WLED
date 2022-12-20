@@ -71,11 +71,6 @@ protected:
 
       JsonObject obj = localDoc.as<JsonObject>();
 
-      serializeJson(obj, Serial);
-      DEBUG_PRINTLN("");
-      serializeJson(localDoc, Serial);
-      DEBUG_PRINTLN("");
-
       deserializeState(obj, CALL_MODE_BUTTON_PRESET);
 
       stateUpdated(CALL_MODE_BUTTON);

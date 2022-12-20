@@ -78,7 +78,6 @@ class SecurityCallback : public BLESecurityCallbacks
     }
     else
     {
-      // Serial.printf_P(PSTR("%u\n"), cmpl.fail_reason);
       DEBUG_PRINTLN("   - SecurityCallback - Authentication Failure* ");
       pServer->removePeerDevice(pServer->getConnId(), true);
     }
@@ -245,8 +244,6 @@ public:
 
   void setup()
   {
-    Serial.printf_P(PSTR("Switch PIN: %u\n"), m_config->getBlePairingPin());
-
     checkBleInit(true);
   }
 

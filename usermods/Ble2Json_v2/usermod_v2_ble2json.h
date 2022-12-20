@@ -48,7 +48,6 @@ public:
    */
   void setup()
   {
-    Serial.printf_P(PSTR("PIN mod: %u\n"), m_blePairingPin);
     m_mainSwitch = new BleMainSwitch(this);
 
     m_mainSwitch->setup();
@@ -111,8 +110,6 @@ public:
   {
     m_mainSwitch->readFromJsonState(root);
 
-    serializeJson(root, Serial);
-
     // toggle ble on (applies only once)
     if (root["bleToggle"])
     {
@@ -162,7 +159,7 @@ public:
     top["blePairingPin"] = m_blePairingPin;
     top["bleUnPairDevices"] = m_bleUnPairDevices;
 
-    Serial.printf_P(PSTR("add: %u %d\n"), m_blePairingPin, m_bleOnFlag);
+    DEBUG_PRINTF(PSTR("add: %u %d\n"), m_blePairingPin, m_bleOnFlag);
 
     DEBUG_PRINTLN("Add to config");
   }
@@ -196,7 +193,7 @@ public:
     configComplete &= getJsonValue(top["blePairingPin"], m_blePairingPin, PASSKEY);
     configComplete &= getJsonValue(top["bleUnPairDevices"], m_bleUnPairDevices, false);
 
-    Serial.printf_P(PSTR("read: %u\n"), m_blePairingPin);
+    DEBUG_PRINTF(PSTR("read: %u\n"), m_blePairingPin);
 
     return configComplete;
   }
@@ -230,7 +227,7 @@ public:
 
   void setBleOnFlag(bool bleOnFlag)
   {
-    Serial.printf_P(PSTR("setting on flag: %d\n"), bleOnFlag);
+    DEBUG_PRINTF(PSTR("setting on flag: %d\n"), bleOnFlag);
 
     m_bleOnFlag = bleOnFlag;
     m_configDirty = true;
@@ -238,7 +235,7 @@ public:
 
   uint32_t getBlePairingPin()
   {
-    Serial.printf_P(PSTR("returning PIN mod: %u\n"), m_blePairingPin);
+    DEBUG_PRINTF(PSTR("returning PIN mod: %u\n"), m_blePairingPin);
 
     return m_blePairingPin;
   }
