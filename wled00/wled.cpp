@@ -150,7 +150,7 @@ void WLED::loop()
   }
 
   //LED settings have been saved, re-init busses
-  //This code block causes severe FPS drop on ESP32 with the original "if (busConfigs[0] != nullptr)" conditional. Investigate! 
+  //This code block causes severe FPS drop on ESP32 with the original "if (busConfigs[0] != nullptr)" conditional. Investigate!
   if (doInitBusses) {
     doInitBusses = false;
     DEBUG_PRINTLN(F("Re-init busses."));
@@ -361,7 +361,7 @@ void WLED::setup()
   if (!fsinit) {
     DEBUGFS_PRINTLN(F("FS failed!"));
     errorFlag = ERR_FS_BEGIN;
-  } 
+  }
 #ifdef WLED_ADD_EEPROM_SUPPORT
   else deEEP();
 #else
@@ -576,10 +576,10 @@ bool WLED::initEthernet()
   }
 
   if (!ETH.begin(
-                (uint8_t) es.eth_address, 
-                (int)     es.eth_power, 
-                (int)     es.eth_mdc, 
-                (int)     es.eth_mdio, 
+                (uint8_t) es.eth_address,
+                (int)     es.eth_power,
+                (int)     es.eth_mdc,
+                (int)     es.eth_mdio,
                 (eth_phy_type_t)   es.eth_type,
                 (eth_clock_mode_t) es.eth_clk_mode
                 )) {
@@ -604,6 +604,7 @@ void WLED::initConnection()
 {
   #ifdef WLED_ENABLE_WEBSOCKETS
   ws.onEvent(wsEvent);
+  if (http_auth) ws.setAuthentication(http_user, http_pass);
   #endif
 
 
