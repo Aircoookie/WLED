@@ -471,7 +471,7 @@ void ShtUsermod::addToJsonInfo(JsonObject& root)
   jsonHumidity.add(F(" RH"));
 
   jsonTemp.add(getTemperature());
-  unitOfTemp ? jsonTemp.add(F(" °F")) : jsonTemp.add(F(" °C"));
+  jsonTemp.add(unitOfTemp ? F(" °F") : F(" °C"));
 }
 
 /**
