@@ -1741,6 +1741,8 @@ class AudioReactive : public Usermod {
 
     void appendConfigData()
     {
+      oappend(SET_F("addInfo('AudioReactive:help',0,'<button onclick=\"location.href=&quot;https://kno.wled.ge/usermods/AudioReactive&quot;\" type=\"button\">?</button>');"));  // 0 is field type, 1 is actual field
+
       oappend(SET_F("dd=addDropdown('AudioReactive','digitalmic:type');"));
     #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
       oappend(SET_F("addOption(dd,'Generic Analog',0);"));
