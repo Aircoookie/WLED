@@ -61,22 +61,41 @@ void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t
   }
 }
 
+// HTTP authentication
+bool httpAuth(AsyncWebServerRequest *request) {
+  if (http_auth && !request->authenticate(http_user, http_pass)) {
+    request->requestAuthentication();
+    return false;
+  }
+  return true;
+}
+
 void createEditHandler(bool enable) {
   if (editHandler != nullptr) server.removeHandler(editHandler);
   if (enable) {
     #ifdef WLED_ENABLE_FS_EDITOR
       #ifdef ARDUINO_ARCH_ESP32
-      editHandler = &server.addHandler(new SPIFFSEditor(WLED_FS));//http_username,http_password));
+      if (http_auth) {
+        editHandler = &server.addHandler(new SPIFFSEditor(WLED_FS, http_user, http_pass));
+      } else {
+        editHandler = &server.addHandler(new SPIFFSEditor(WLED_FS));//http_username,http_password));
+      }
       #else
-      editHandler = &server.addHandler(new SPIFFSEditor("","",WLED_FS));//http_username,http_password));
+      if (http_auth) {
+        editHandler = &server.addHandler(new SPIFFSEditor(http_user, http_pass, WLED_FS));
+      } else {
+        editHandler = &server.addHandler(new SPIFFSEditor("", "", WLED_FS));//http_username,http_password));
+      }
       #endif
     #else
-      editHandler = &server.on("/edit", HTTP_GET, [](AsyncWebServerRequest *request){
-        serveMessage(request, 501, "Not implemented", F("The FS editor is disabled in this build."), 254);
-      });
+    editHandler = &server.on("/edit", HTTP_GET, [](AsyncWebServerRequest *request){
+      if (!httpAuth(request)) return;
+      serveMessage(request, 501, "Not implemented", F("The FS editor is disabled in this build."), 254);
+    });
     #endif
   } else {
     editHandler = &server.on("/edit", HTTP_ANY, [](AsyncWebServerRequest *request){
+      if (!httpAuth(request)) return;
       serveMessage(request, 500, "Access Denied", FPSTR(s_unlock_cfg), 254);
     });
   }
@@ -88,7 +107,7 @@ bool captivePortal(AsyncWebServerRequest *request)
   String hostH;
   if (!request->hasHeader("Host")) return false;
   hostH = request->getHeader("Host")->value();
-  
+
   if (!isIp(hostH) && hostH.indexOf("wled.me") < 0 && hostH.indexOf(cmDNS) < 0) {
     DEBUG_PRINTLN("Captive portal");
     AsyncWebServerResponse *response = request->beginResponse(302);
@@ -106,8 +125,10 @@ void initServer()
   DefaultHeaders::Instance().addHeader(F("Access-Control-Allow-Methods"), "*");
   DefaultHeaders::Instance().addHeader(F("Access-Control-Allow-Headers"), "*");
 
+
 #ifdef WLED_ENABLE_WEBSOCKETS
   server.on("/liveview", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (!httpAuth(request)) return;
     if (handleIfNoneMatchCacheHeader(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_liveviewws, PAGE_liveviewws_length);
     response->addHeader(FPSTR(s_content_enc),"gzip");
@@ -117,6 +138,7 @@ void initServer()
   });
   #ifndef WLED_DISABLE_2D
   server.on("/liveview2D", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (!httpAuth(request)) return;
     if (handleIfNoneMatchCacheHeader(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_liveviewws2D, PAGE_liveviewws2D_length);
     response->addHeader(FPSTR(s_content_enc),"gzip");
@@ -127,6 +149,7 @@ void initServer()
   #endif
 #else
   server.on("/liveview", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (!httpAuth(request)) return;
     if (handleIfNoneMatchCacheHeader(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_liveview, PAGE_liveview_length);
     response->addHeader(FPSTR(s_content_enc),"gzip");
@@ -135,51 +158,60 @@ void initServer()
     //request->send_P(200, "text/html", PAGE_liveview);
   });
 #endif
-  
-  //settings page
-  server.on("/settings", HTTP_GET, [](AsyncWebServerRequest *request){
+
+  // settings page
+  server.on("/settings", HTTP_GET, [](AsyncWebServerRequest *request) {
+    if (!httpAuth(request)) return;
     serveSettings(request);
   });
-  
+
   // "/settings/settings.js&p=x" request also handled by serveSettings()
-  
+
   server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (!httpAuth(request)) return;
     if (handleIfNoneMatchCacheHeader(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/css", PAGE_settingsCss, PAGE_settingsCss_length);
     response->addHeader(FPSTR(s_content_enc),"gzip");
     setStaticContentCacheHeaders(response);
     request->send(response);
   });
-  
+
   server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (!httpAuth(request)) return;
     if(!handleFileRead(request, "/favicon.ico"))
-    {
       request->send_P(200, "image/x-icon", favicon, 156);
-    }
   });
-  
+
   server.on("/sliders", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (!httpAuth(request)) return;
     serveIndex(request);
   });
-  
+
   server.on("/welcome", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (!httpAuth(request)) return;
     serveSettings(request);
   });
-  
+
   server.on("/reset", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (!httpAuth(request)) return;
     serveMessage(request, 200,F("Rebooting now..."),F("Please wait ~10 seconds..."),129);
     doReboot = true;
   });
-  
+
   server.on("/settings", HTTP_POST, [](AsyncWebServerRequest *request){
+    if (!httpAuth(request)) return;
     serveSettings(request, true);
   });
 
   server.on("/json", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (!httpAuth(request)) return;
     serveJson(request);
   });
 
   AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/json", [](AsyncWebServerRequest *request) {
+    if (!httpAuth(request))
+      return request->send(401, "application/json", F("{\"error\":\"Unauthorized\"}"));
+
     bool verboseResponse = false;
     bool isConfig = false;
 
@@ -214,24 +246,28 @@ void initServer()
       } else {
         doSerializeConfig = true; //serializeConfig(); //Save new settings to FS
       }
-    } 
+    }
     request->send(200, "application/json", F("{\"success\":true}"));
   });
   server.addHandler(handler);
 
   server.on("/version", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (!httpAuth(request)) return;
     request->send(200, "text/plain", (String)VERSION);
   });
-    
+
   server.on("/uptime", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (!httpAuth(request)) return;
     request->send(200, "text/plain", (String)millis());
   });
-    
+
   server.on("/freeheap", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (!httpAuth(request)) return;
     request->send(200, "text/plain", (String)ESP.getFreeHeap());
   });
-  
+
   server.on("/u", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (!httpAuth(request)) return;
     if (handleIfNoneMatchCacheHeader(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_usermod, PAGE_usermod_length);
     response->addHeader(FPSTR(s_content_enc),"gzip");
@@ -239,23 +275,27 @@ void initServer()
     request->send(response);
     //request->send_P(200, "text/html", PAGE_usermod);
   });
-    
+
   //Deprecated, use of /json/state and presets recommended instead
   server.on("/url", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (!httpAuth(request)) return;
     URL_response(request);
   });
-    
+
   server.on("/teapot", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (!httpAuth(request)) return;
     serveMessage(request, 418, F("418. I'm a teapot."), F("(Tangible Embedded Advanced Project Of Twinkling)"), 254);
   });
 
-  server.on("/upload", HTTP_POST, [](AsyncWebServerRequest *request) {},
-        [](AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data,
+  server.on("/upload", HTTP_POST, [](AsyncWebServerRequest *request) {
+    if (!httpAuth(request)) return;
+  }, [](AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data,
                       size_t len, bool final) {handleUpload(request, filename, index, data, len, final);}
   );
 
 #ifdef WLED_ENABLE_SIMPLE_UI
   server.on("/simple.htm", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (!httpAuth(request)) return;
     if (handleFileRead(request, "/simple.htm")) return;
     if (handleIfNoneMatchCacheHeader(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_simple, PAGE_simple_L);
@@ -266,31 +306,35 @@ void initServer()
 #endif
 
   server.on("/iro.js", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (!httpAuth(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "application/javascript", iroJs, iroJs_length);
     response->addHeader(FPSTR(s_content_enc),"gzip");
     setStaticContentCacheHeaders(response);
     request->send(response);
   });
-  
+
   server.on("/rangetouch.js", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (!httpAuth(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "application/javascript", rangetouchJs, rangetouchJs_length);
     response->addHeader(FPSTR(s_content_enc),"gzip");
     setStaticContentCacheHeaders(response);
     request->send(response);
   });
-  
+
   createEditHandler(correctPIN);
 
 #ifndef WLED_DISABLE_OTA
   //init ota page
   server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (!httpAuth(request)) return;
     if (otaLock) {
       serveMessage(request, 500, "Access Denied", FPSTR(s_unlock_ota), 254);
     } else
       serveSettings(request); // checks for "upd" in URL and handles PIN
   });
-  
+
   server.on("/update", HTTP_POST, [](AsyncWebServerRequest *request){
+    if (!httpAuth(request)) return;
     if (!correctPIN) {
       serveSettings(request, true); // handle PIN page POST request
       return;
@@ -298,10 +342,11 @@ void initServer()
     if (Update.hasError() || otaLock) {
       serveMessage(request, 500, F("Update failed!"), F("Please check your file and retry!"), 254);
     } else {
-      serveMessage(request, 200, F("Update successful!"), F("Rebooting..."), 131); 
+      serveMessage(request, 200, F("Update successful!"), F("Rebooting..."), 131);
       doReboot = true;
     }
-  },[](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final){
+  }, [](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final){
+    if (!httpAuth(request)) return;
     if (!correctPIN || otaLock) return;
     if(!index){
       DEBUG_PRINTLN(F("OTA Update Start"));
@@ -326,6 +371,7 @@ void initServer()
   });
 #else
   server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (!httpAuth(request)) return;
     serveMessage(request, 501, "Not implemented", F("OTA updating is disabled in this build."), 254);
   });
 #endif
@@ -333,14 +379,17 @@ void initServer()
 
   #ifdef WLED_ENABLE_DMX
   server.on("/dmxmap", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (!httpAuth(request)) return;
     request->send_P(200, "text/html", PAGE_dmxmap     , dmxProcessor);
   });
   #else
   server.on("/dmxmap", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (!httpAuth(request)) return;
     serveMessage(request, 501, "Not implemented", F("DMX support is not enabled in this build."), 254);
   });
   #endif
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (!httpAuth(request)) return;
     if (captivePortal(request)) return;
     serveIndexOrWelcome(request);
   });
@@ -348,32 +397,32 @@ void initServer()
   #ifdef WLED_ENABLE_WEBSOCKETS
   server.addHandler(&ws);
   #endif
-  
+
   //called when the url is not defined here, ajax-in; get-settings
   server.onNotFound([](AsyncWebServerRequest *request){
+    if (!httpAuth(request)) return;
     DEBUG_PRINTLN("Not-Found HTTP call:");
     DEBUG_PRINTLN("URI: " + request->url());
     if (captivePortal(request)) return;
 
     //make API CORS compatible
-    if (request->method() == HTTP_OPTIONS)
-    {
+    if (request->method() == HTTP_OPTIONS) {
       AsyncWebServerResponse *response = request->beginResponse(200);
       response->addHeader(F("Access-Control-Max-Age"), F("7200"));
       request->send(response);
       return;
     }
-    
-    if(handleSet(request, request->url())) return;
-    #ifndef WLED_DISABLE_ALEXA
-    if(espalexa.handleAlexaApiCall(request)) return;
-    #endif
-    if(handleFileRead(request, request->url())) return;
-    AsyncWebServerResponse *response = request->beginResponse_P(404, "text/html", PAGE_404, PAGE_404_length);
-    response->addHeader(FPSTR(s_content_enc),"gzip");
-    setStaticContentCacheHeaders(response);
-    request->send(response);
-    //request->send_P(404, "text/html", PAGE_404);
+
+      if(handleSet(request, request->url())) return;
+      #ifndef WLED_DISABLE_ALEXA
+      if(espalexa.handleAlexaApiCall(request)) return;
+      #endif
+      if(handleFileRead(request, request->url())) return;
+      AsyncWebServerResponse *response = request->beginResponse_P(404, "text/html", PAGE_404, PAGE_404_length);
+      response->addHeader(FPSTR(s_content_enc),"gzip");
+      setStaticContentCacheHeaders(response);
+      request->send(response);
+      //request->send_P(404, "text/html", PAGE_404);
   });
 }
 
@@ -440,24 +489,19 @@ String msgProcessor(const String& var)
     messageBody += messageSub;
     uint32_t optt = optionType;
 
-    if (optt < 60) //redirect to settings after optionType seconds
-    {
+    if (optt < 60) { //redirect to settings after optionType seconds
       messageBody += F("<script>setTimeout(RS,");
       messageBody +=String(optt*1000);
       messageBody += F(")</script>");
-    } else if (optt < 120) //redirect back after optionType-60 seconds, unused
-    {
+    } else if (optt < 120) { //redirect back after optionType-60 seconds, unused
       //messageBody += "<script>setTimeout(B," + String((optt-60)*1000) + ")</script>";
-    } else if (optt < 180) //reload parent after optionType-120 seconds
-    {
+    } else if (optt < 180) { //reload parent after optionType-120 seconds
       messageBody += F("<script>setTimeout(RP,");
       messageBody += String((optt-120)*1000);
       messageBody += F(")</script>");
-    } else if (optt == 253)
-    {
+    } else if (optt == 253) {
       messageBody += F("<br><br><form action=/settings><button class=\"bt\" type=submit>Back</button></form>"); //button to settings
-    } else if (optt == 254)
-    {
+    } else if (optt == 254) {
       messageBody += F("<br><br><button type=\"button\" class=\"bt\" onclick=\"B()\">Back</button>");
     }
     return messageBody;
@@ -471,7 +515,7 @@ void serveMessage(AsyncWebServerRequest* request, uint16_t code, const String& h
   messageHead = headl;
   messageSub = subl;
   optionType = optionT;
-  
+
   request->send_P(code, "text/html", PAGE_msg, msgProcessor);
 }
 
@@ -493,7 +537,7 @@ String dmxProcessor(const String& var)
       mapJS += "0];";
     }
   #endif
-  
+
   return mapJS;
 }
 #endif
@@ -526,8 +570,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
   byte subPage = 0, originalSubPage = 0;
   const String& url = request->url();
 
-  if (url.indexOf("sett") >= 0) 
-  {
+  if (url.indexOf("sett") >= 0) {
     if      (url.indexOf(".js")  > 0) subPage = 254;
     else if (url.indexOf(".css") > 0) subPage = 253;
     else if (url.indexOf("wifi") > 0) subPage = 1;
@@ -551,8 +594,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
   }
 
   // if OTA locked or too frequent PIN entry requests fail hard
-  if ((subPage == 1 && wifiLock && otaLock) || (post && !correctPIN && millis()-lastEditTime < 3000))
-  {
+  if ((subPage == 1 && wifiLock && otaLock) || (post && !correctPIN && millis()-lastEditTime < 3000)) {
     serveMessage(request, 500, "Access Denied", FPSTR(s_unlock_ota), 254); return;
   }
 
@@ -589,10 +631,9 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
       return;
     }
   }
-  
+
   AsyncWebServerResponse *response;
-  switch (subPage)
-  {
+  switch (subPage) {
     case 1:   response = request->beginResponse_P(200, "text/html", PAGE_settings_wifi, PAGE_settings_wifi_length); break;
     case 2:   response = request->beginResponse_P(200, "text/html", PAGE_settings_leds, PAGE_settings_leds_length); break;
     case 3:   response = request->beginResponse_P(200, "text/html", PAGE_settings_ui,   PAGE_settings_ui_length);   break;
