@@ -1924,6 +1924,7 @@ class AudioReactive : public Usermod {
     void appendConfigData()
     {
       oappend(SET_F("addInfo('AudioReactive:help',0,'<button onclick=\"location.href=&quot;https://mm.kno.wled.ge/soundreactive/Sound-Settings&quot;\" type=\"button\">?</button>');"));  // 0 is field type, 1 is actual field
+      
       //WLEDMM: add defaults
     #ifdef AUDIOPIN
       oappend(SET_F("addInfo('AudioReactive:analogmic:pin',1,'<i>&#9100; ")); oappendi(AUDIOPIN); oappend("</i>');");  // 0 is field type, 1 is actual field

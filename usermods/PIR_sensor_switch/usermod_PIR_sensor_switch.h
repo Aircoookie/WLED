@@ -414,6 +414,8 @@ public:
 
   void appendConfigData()
   {
+    oappend(SET_F("addInfo('PIRsensorSwitch:help',0,'<button onclick=\"location.href=&quot;https://mm.kno.wled.ge/usermods/PIRsensorSwitch&quot;\" type=\"button\">?</button>');"));  // 0 is field type, 1 is actual field
+
     oappend(SET_F("addInfo('PIRsensorSwitch:HA-discovery',1,'HA=Home Assistant');"));     // 0 is field type, 1 is actual field
     oappend(SET_F("addInfo('PIRsensorSwitch:notifications',1,'Periodic WS updates');"));  // 0 is field type, 1 is actual field
   }
