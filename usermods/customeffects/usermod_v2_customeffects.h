@@ -133,13 +133,13 @@ class CustomEffectsUserMod : public Usermod {
      */
     void addToJsonState(JsonObject& root)
     {
-      // //root["user0"] = userVar0;
-      // if (!initDone) return;  // prevent crash on boot applyPreset()
-      // JsonObject usermod = root[FPSTR(_name)];
-      // if (usermod.isNull()) {
-      //   usermod = root.createNestedObject(FPSTR(_name));
-      // }
-      // usermod["on"] = enabled;
+      //root["user0"] = userVar0;
+      if (!initDone) return;  // prevent crash on boot applyPreset()
+      JsonObject usermod = root[FPSTR(_name)];
+      if (usermod.isNull()) {
+        usermod = root.createNestedObject(FPSTR(_name));
+      }
+      usermod["on"] = enabled;
     }
 
 
