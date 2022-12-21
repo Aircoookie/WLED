@@ -71,6 +71,7 @@
   #include <user_interface.h>
   }
 #else // ESP32
+  #include <HardwareSerial.h>  // WLEDMM: needed to get Serial and HWCDC when using arduino-esp32 v2.0.x
   #include <WiFi.h>
   #include <ETH.h>
   #include "esp_wifi.h"
@@ -744,7 +745,7 @@ WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
 
 // WLEDMM: macros to print "user messages" to Serial
 // cannot do this on -S2, due to buggy USBCDC serial driver
-#if defined(WLED_DEBUG) || defined(WLED_DEBUG_HOST) || defined(CONFIG_IDF_TARGET_ESP32S2)
+#if defined(WLED_DEBUG) || defined(WLED_DEBUG_HOST)
   // use DEBUG_PRINT
   #define USER_PRINT(x) DEBUG_PRINT(x)
   #define USER_PRINTLN(x) DEBUG_PRINTLN(x)
@@ -756,10 +757,10 @@ WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
   #endif
 #else
   // if serial is availeable, we use Serial.print directly
-  #define USER_PRINT(x)      { if (canUseSerial()) Serial.print(x); }
-  #define USER_PRINTLN(x)    { if (canUseSerial()) Serial.println(x); }
-  #define USER_PRINTF(x...)  { if (canUseSerial()) Serial.printf(x); }
-  #define USER_FLUSH()       {Serial.flush();}
+  #define USER_PRINT(x)      { if (canUseSerial()) DEBUGOUT.print(x); }
+  #define USER_PRINTLN(x)    { if (canUseSerial()) DEBUGOUT.println(x); }
+  #define USER_PRINTF(x...)  { if (canUseSerial()) DEBUGOUT.printf(x); }
+  #define USER_FLUSH()       {DEBUGOUT.flush();}
 #endif
 // WLEDMM end
 

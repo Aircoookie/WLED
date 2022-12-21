@@ -114,7 +114,7 @@ String PinManagerClass::getPinSpecialText(int gpio) {  // special purpose PIN in
 
     #elif defined(CONFIG_IDF_TARGET_ESP32S2)
       // ESP32-S2
-      if (gpio > 38 && gpio < 43) return (F("USB (CDC) / JTAG"));
+      //if (gpio > 38 && gpio < 43) return (F("USB (CDC) / JTAG"));  // note to self: this seems to be wrong. need to fix later.
       if (gpio == 46) return (F("pulled-down, input only"));
       //if (gpio == 0 || gpio == 45 || gpio == 46) return (F("(strapping pin)"));
 

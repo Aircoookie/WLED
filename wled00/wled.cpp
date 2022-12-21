@@ -276,10 +276,22 @@ void WLED::setup()
   #endif
 
   Serial.begin(115200);
-  Serial.setTimeout(50);
   #if defined(WLED_DEBUG) && defined(ARDUINO_ARCH_ESP32) && (defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3) || ARDUINO_USB_CDC_ON_BOOT)
   delay(2500);  // allow CDC USB serial to initialise
   #endif
+
+  #if ARDUINO_USB_CDC_ON_BOOT
+  delay(2500);  // WLEDMM: always allow CDC USB serial to initialise
+  Serial.flush();
+  //Serial.setTimeout(350); // WLEDMM: don't change timeout, as it causes crashes later
+  // WLEDMM: redirect debug output to HWCDC
+  Serial0.setDebugOutput(false);
+  Serial.setDebugOutput(true);
+  #else
+  Serial.setTimeout(50);
+  #endif
+
+  //Serial0.setDebugOutput(false);
   //Serial.setDebugOutput(true);
   USER_FLUSH(); delay(100);
   USER_PRINTLN();
@@ -362,6 +374,18 @@ void WLED::setup()
   pinManager.allocatePin(2, true, PinOwner::DMX);
 #endif
 
+// WLEDMM experimental: support for single neoPixel on Adafruit boards
+#if 0
+  //#ifdef PIN_NEOPIXEL
+  //pinManager.allocatePin(PIN_NEOPIXEL, true, PinOwner::BusDigital);
+  //#endif
+  #ifdef NEOPIXEL_POWER
+    pinManager.allocatePin(NEOPIXEL_POWER, true, PinOwner::Relay);  // just to ensure this GPIO will not get used for other purposes
+    pinMode(NEOPIXEL_POWER, OUTPUT);
+    digitalWrite(NEOPIXEL_POWER, HIGH);
+  #endif
+#endif
+
   USER_PRINTLN();
   DEBUG_PRINTLN(F("Registering usermods ..."));
   registerUsermods();
@@ -369,7 +393,7 @@ void WLED::setup()
   for (uint8_t i=1; i<WLED_MAX_BUTTONS; i++) btnPin[i] = -1;
 
   bool fsinit = false;
-  DEBUG_PRINTLN(F("Mount FS"));
+  USER_PRINTLN(F("Mount FS"));
 #ifdef ARDUINO_ARCH_ESP32
   fsinit = WLED_FS.begin(true);
 #else
@@ -385,6 +409,8 @@ void WLED::setup()
   initPresetsFile();
 #endif
   updateFSInfo();
+
+  USER_PRINTLN(F("done Mounting FS"));
 
   // generate module IDs must be done before AP setup
   escapedMac = WiFi.macAddress();

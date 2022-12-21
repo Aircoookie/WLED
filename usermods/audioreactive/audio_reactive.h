@@ -309,7 +309,7 @@ static float fftAddAvg(int from, int to) {
 //
 void FFTcode(void * parameter)
 {
-  DEBUGSR_PRINT("FFT started on core: "); DEBUGSR_PRINTLN(xPortGetCoreID());
+  // DEBUGSR_PRINT("FFT started on core: "); DEBUGSR_PRINTLN(xPortGetCoreID()); // causes trouble on -S2
 
   // see https://www.freertos.org/vtaskdelayuntil.html
   const TickType_t xFrequency = FFT_MIN_CYCLE * portTICK_PERIOD_MS;  
