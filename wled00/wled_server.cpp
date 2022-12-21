@@ -61,7 +61,7 @@ void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t
   }
 }
 
-// HTTP Basic Auth
+// HTTP authentication
 bool httpAuth(AsyncWebServerRequest *request) {
   if (http_auth && !request->authenticate(http_user, http_pass)) {
     request->requestAuthentication();

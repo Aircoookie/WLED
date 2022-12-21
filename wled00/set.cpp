@@ -433,7 +433,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       doReboot = true;
     }
 
-    // HTTP Basic Auth
+    // HTTP authentication
     http_auth = request->hasArg(F("BA"));
     if (request->hasArg(F("BU"))) {
       const char *bu = request->arg(F("BU")).c_str();

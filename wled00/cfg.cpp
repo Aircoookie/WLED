@@ -1036,7 +1036,7 @@ bool deserializeConfigSec() {
   CJSON(wifiLock, ota[F("lock-wifi")]);
   CJSON(aOtaEnabled, ota[F("aota")]);
 
-  // HTTP Basic Auth
+  // HTTP authentication
   JsonObject ba = doc["ba"];
   CJSON(http_auth, ba[F("auth")]);
   getStringFromJson(http_user, ba[F("user")], 33);
@@ -1083,7 +1083,7 @@ void serializeConfigSec() {
   ota[F("lock-wifi")] = wifiLock;
   ota[F("aota")] = aOtaEnabled;
 
-  // HTTP Basic Auth
+  // HTTP authentication
   JsonObject ba = doc.createNestedObject("ba");
   ba[F("auth")] = http_auth;
   ba[F("user")] = http_user;

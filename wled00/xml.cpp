@@ -639,7 +639,7 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == 6)
   {
-    // HTTP Basic Auth
+    // HTTP authentication
     sappend('c',SET_F("BA"),http_auth);
     sappends('s',SET_F("BU"),http_user);
     sappends('s',SET_F("BP"),http_pass);
