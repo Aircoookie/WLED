@@ -211,6 +211,7 @@ void Segment::setUpLeds() {
 CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
   static unsigned long _lastPaletteChange = 0; // perhaps it should be per segment
   static CRGBPalette16 randomPalette = CRGBPalette16(DEFAULT_COLOR);
+  static CRGBPalette16 prevRandomPalette = CRGBPalette16(CRGB(BLACK));
   byte tcp[72];
   if (pal < 245 && pal > GRADIENT_PALETTE_COUNT+13) pal = 0;
   if (pal > 245 && (strip.customPalettes.size() == 0 || 255U-pal > strip.customPalettes.size()-1)) pal = 0;
@@ -230,16 +231,28 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
   switch (pal) {
     case 0: //default palette. Exceptions for specific effects above
       targetPalette = PartyColors_p; break;
-    case 1: //periodically replace palette with a random one. Doesn't work with multiple FastLED segments
-      if (millis() - _lastPaletteChange > 5000 /*+ ((uint32_t)(255-intensity))*100*/) {
+    case 1: {//periodically replace palette with a random one. Transition palette change in 500ms
+      uint32_t timeSinceLastChange = millis() - _lastPaletteChange;
+      if (timeSinceLastChange > 5000 /*+ ((uint32_t)(255-intensity))*100*/) {
+        prevRandomPalette = randomPalette;
         randomPalette = CRGBPalette16(
                         CHSV(random8(), random8(160, 255), random8(128, 255)),
                         CHSV(random8(), random8(160, 255), random8(128, 255)),
                         CHSV(random8(), random8(160, 255), random8(128, 255)),
                         CHSV(random8(), random8(160, 255), random8(128, 255)));
         _lastPaletteChange = millis();
+        timeSinceLastChange = 0;
       }
-      targetPalette = randomPalette; break;
+      if (timeSinceLastChange <= 500) {
+        targetPalette = prevRandomPalette;
+        // there needs to be 255 palette blends (48) for full blend but that is too resource intensive
+        // so 128 is a compromise
+        size_t noOfBlends = ((128U * timeSinceLastChange) / 500U);
+        for (size_t i=0; i<noOfBlends; i++) nblendPaletteTowardPalette(targetPalette, randomPalette, 48);
+      } else {
+        targetPalette = randomPalette;
+      }
+      break;}
     case 2: {//primary color only
       CRGB prim = gamma32(colors[0]);
       targetPalette = CRGBPalette16(prim); break;}
@@ -294,7 +307,7 @@ void Segment::startTransition(uint16_t dur) {
   // starting a transition has to occur before change so we get current values 1st
   uint8_t _briT = currentBri(on ? opacity : 0);
   uint8_t _cctT = currentBri(cct, true);
-  CRGBPalette16 _palT; loadPalette(_palT, palette);
+  CRGBPalette16 _palT = CRGBPalette16(DEFAULT_COLOR); loadPalette(_palT, palette);
   uint8_t _modeP = mode;
   uint32_t _colorT[NUM_COLORS];
   for (size_t i=0; i<NUM_COLORS; i++) _colorT[i] = currentColor(i, colors[i]);
@@ -1511,7 +1524,7 @@ void WS2812FX::loadCustomPalettes()
 
       if (readObjectFromFile(fileName, nullptr, &pDoc)) {
         JsonArray pal = pDoc[F("palette")];
-        if (!pal.isNull() && pal.size()>7) { // not an empty palette (at least 2 entries)
+        if (!pal.isNull() && pal.size()>4) { // not an empty palette (at least 2 entries)
           if (pal[0].is<int>() && pal[1].is<const char *>()) {
             // we have an array of index & hex strings
             size_t palSize = MIN(pal.size(), 36);
@@ -1520,8 +1533,8 @@ void WS2812FX::loadCustomPalettes()
               uint8_t rgbw[] = {0,0,0,0};
               tcp[ j ] = (uint8_t) pal[ i ].as<int>(); // index
               colorFromHexString(rgbw, pal[i+1].as<const char *>()); // will catch non-string entires
-              for (size_t c=0; c<3; c++) tcp[j+c] = rgbw[c]; // only use RGB component
-              DEBUG_PRINTF("%d(%d) : %d %d %d\n", i, int(tcp[i]), int(tcp[i+1]), int(tcp[i+2]), int(tcp[i+3]));
+              for (size_t c=0; c<3; c++) tcp[j+1+c] = rgbw[c]; // only use RGB component
+              DEBUG_PRINTF("%d(%d) : %d %d %d\n", i, int(tcp[j]), int(tcp[j+1]), int(tcp[j+2]), int(tcp[j+3]));
             }
           } else {
             size_t palSize = MIN(pal.size(), 72);

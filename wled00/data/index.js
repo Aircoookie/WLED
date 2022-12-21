@@ -1966,7 +1966,6 @@ function selSegAll(o)
 
 function selSegEx(s)
 {
-	if (gId('selall')) gId('selall').checked = false;
 	var obj = {"seg":[]};
 	for (let i=0; i<=lSeg; i++) obj.seg.push({"id":i,"sel":(i==s)});
 	obj.mainseg = s;
@@ -1975,7 +1974,6 @@ function selSegEx(s)
 
 function selSeg(s)
 {
-	if (gId('selall')) gId('selall').checked = false;
 	var sel = gId(`seg${s}sel`).checked;
 	var obj = {"seg": {"id": s, "sel": sel}};
 	requestJson(obj);
