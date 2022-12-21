@@ -71,6 +71,7 @@
   #include <user_interface.h>
   }
 #else // ESP32
+  #include <HardwareSerial.h>  // ensure we have the correct "Serial" on new MCUs (depends on ARDUINO_USB_MODE and ARDUINO_USB_CDC_ON_BOOT)
   #include <WiFi.h>
   #include <ETH.h>
   #include "esp_wifi.h"
