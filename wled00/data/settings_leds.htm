@@ -9,7 +9,7 @@
     var d=document,laprev=55,maxB=1,maxM=4000,maxPB=4096,maxL=1333,maxLbquot=0; //maximum bytes for LED allocation: 4kB for 8266, 32kB for 32
 		var customStarts=false,startsDirty=[],maxCOOverrides=5;
     var loc = false, locip;
-    function H(){window.open("https://kno.wled.ge/features/settings/#led-settings");}
+    function H(){window.open("https://mm.kno.wled.ge/features/settings/#led-settings");}
 		function B(){window.open("/settings","_self");}
     function gId(n){return d.getElementById(n);}
     function hideNoIR(){gId("irOnOff2").style.display="none";}
@@ -637,7 +637,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
     </select><span style="cursor: pointer;" onclick="off('IR')">&nbsp;&#x2715;</span><br>
     Apply IR change to main segment only: <input type="checkbox" name="MSO"><br>
     <div id="json" style="display:none;">JSON file: <input type="file" name="data" accept=".json"><button type="button" class="sml" onclick="uploadFile('/ir.json')">Upload</button><br></div>
-    <a href="https://kno.wled.ge/interfaces/infrared/" target="_blank">IR info</a><br>
+    <a href="https://mm.kno.wled.ge/interfaces/infrared/" target="_blank">IR info</a><br>
     Relay GPIO: <input type="number" min="-1" max="48" name="RL" onchange="UI()" class="xs"> Invert <input type="checkbox" name="RM"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#x2715;</span><br>
     <hr class="sml">
 		<h3>Defaults</h3>

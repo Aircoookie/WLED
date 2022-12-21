@@ -2,7 +2,7 @@
  * Binary array for the Web UI.
  * gzip is used for smaller size and improved speeds.
  * 
- * Please see https://kno.wled.ge/advanced/custom-features/#changing-web-ui
+ * Please see https://mm.kno.wled.ge/advanced/custom-features/#changing-web-ui
  * to find out how to easily modify the web UI source!
  */
  

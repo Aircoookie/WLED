@@ -134,7 +134,7 @@ function writeHtmlGzipped(sourceFile, resultFile, page) {
  * Binary array for the Web UI.
  * gzip is used for smaller size and improved speeds.
  * 
- * Please see https://kno.wled.ge/advanced/custom-features/#changing-web-ui
+ * Please see https://mm.kno.wled.ge/advanced/custom-features/#changing-web-ui
  * to find out how to easily modify the web UI source!
  */
  
@@ -199,7 +199,7 @@ function writeChunks(srcDir, specs, resultFile) {
   let src = `/*
  * More web UI HTML source arrays.
  * This file is auto generated, please don't make any changes manually.
- * Instead, see https://kno.wled.ge/advanced/custom-features/#changing-web-ui
+ * Instead, see https://mm.kno.wled.ge/advanced/custom-features/#changing-web-ui
  * to find out how to easily modify the web UI source!
  */ 
 `;

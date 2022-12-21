@@ -49,21 +49,21 @@ A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control 
 
 ## 📲 Quick start guide and documentation
 
-See the [documentation on our official site](https://kno.wled.ge)!
+See the [documentation on our official site](https://mm.kno.wled.ge)!
 
-[On this page](https://kno.wled.ge/basics/tutorials/) you can find excellent tutorials and tools to help you get your new project up and running!
+[On this page](https://mm.kno.wled.ge/basics/tutorials/) you can find excellent tutorials and tools to help you get your new project up and running!
 
 ## 🖼️ User interface
 <img src="/images/macbook-pro-space-gray-on-the-wooden-table.jpg" width="50%"><img src="/images/walking-with-iphone-x.jpg" width="50%">
 
 ## 💾 Compatible hardware
 
-See [here](https://kno.wled.ge/basics/compatible-hardware)!
+See [here](https://mm.kno.wled.ge/basics/compatible-hardware)!
 
 ## ✌️ Other
 
 Licensed under the MIT license  
-Credits [here](https://kno.wled.ge/about/contributors/)!
+Credits [here](https://mm.kno.wled.ge/about/contributors/)!
 
 Join the Discord server to discuss everything about WLED!
 

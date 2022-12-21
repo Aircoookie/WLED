@@ -11,7 +11,7 @@
   function toggle(el){gId(el).classList.toggle("hide"); gId('No'+el).classList.toggle("hide");}
   function hideNoDMX(){gId("dmxOnOff2").style.display="none";}
   function hideNoLOX(){gId("loxOnOff2").style.display="none";}
-  function H(){window.open("https://kno.wled.ge/interfaces/udp-notifier/");}
+  function H(){window.open("https://mm.kno.wled.ge/interfaces/udp-notifier/");}
   function B(){window.open("/settings","_self");}
   function adj(){if (d.Sf.DI.value == 6454) {if (d.Sf.EU.value == 1) d.Sf.EU.value = 0;}
                 else if (d.Sf.DI.value == 5568) {if (d.Sf.DA.value == 0) d.Sf.DA.value = 1; if (d.Sf.EU.value == 0) d.Sf.EU.value = 1;} }
@@ -160,7 +160,7 @@ DMX mode:
 <option value=5>Dimmer + Multi RGB</option>
 <option value=6>Multi RGBW</option>
 </select><br>
-<a href="https://kno.wled.ge/interfaces/e1.31-dmx/" target="_blank">E1.31 info</a><br>
+<a href="https://mm.kno.wled.ge/interfaces/e1.31-dmx/" target="_blank">E1.31 info</a><br>
 Timeout: <input name="ET" type="number" min="1" max="65000" required> ms<br>
 Force max brightness: <input type="checkbox" name="FB"><br>
 Disable realtime gamma correction: <input type="checkbox" name="RG"><br>
@@ -193,7 +193,7 @@ For best results, only use one of these services at a time.<br>
 Host: <input type="text" name="BH" maxlength="32">
 Port: <input name="BP" type="number" min="1" max="65535" value="80" class="d5"><br>
 Device Auth token: <input name="BK" maxlength="33"><br>
-<i>Clear the token field to disable. </i><a href="https://kno.wled.ge/interfaces/blynk/" target="_blank">Setup info</a>
+<i>Clear the token field to disable. </i><a href="https://mm.kno.wled.ge/interfaces/blynk/" target="_blank">Setup info</a>
 </div>
 <h3>MQTT</h3>
 <div id="NoMQTT" class="hide">
@@ -211,7 +211,7 @@ Client ID: <input type="text" name="MQCID" maxlength="40"><br>
 Device Topic: <input type="text" name="MD" maxlength="32"><br>
 Group Topic: <input type="text" name="MG" maxlength="32"><br>
 Publish on button press: <input type="checkbox" name="BM"><br>
-<i>Reboot required to apply changes. </i><a href="https://kno.wled.ge/interfaces/mqtt/" target="_blank">MQTT info</a>
+<i>Reboot required to apply changes. </i><a href="https://mm.kno.wled.ge/interfaces/mqtt/" target="_blank">MQTT info</a>
 </div>
 <h3>Philips Hue</h3>
 <div id="NoHue" class="hide">
