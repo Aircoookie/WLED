@@ -102,8 +102,8 @@ function populateCEEditor(name, segID)
             <button class="btn infobtn" onclick="loadCETemplate('${name}')">Load template</button><br>
             <button class="btn infobtn" onclick="downloadCEFile('wledv033.json')">Download wled json</button>
             <button class="btn infobtn" onclick="downloadCEFile('presets.json')">Download presets.json</button><br>
-            <a href="https://github.com/MoonModules/WLED-Effects/tree/master/CustomEffects/wled" target="_blank">Custom Effects Library</a><br>
-            <a href="https://mm.kno.wled.ge/moonmodules/custom-effects" target="_blank">Custom Effects Help</a><br>
+            <button class="btn infobtn" onclick="location.href='https://github.com/MoonModules/WLED-Effects/tree/master/CustomEffects/wled'" type="button">Custom Effects Library</button>
+            <button class="btn infobtn btn-xs" onclick="location.href='https://mm.kno.wled.ge/moonmodules/custom-effects'" type="button">?</button><br>
             <br><i>Compile and Run Log</i><br>
             <textarea class="ceTextarea" id="ceLogArea"></textarea><br>
             <i>Run log > 3 seconds is send to Serial Ouput.</i>`;
