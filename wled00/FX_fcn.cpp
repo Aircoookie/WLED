@@ -376,6 +376,45 @@ void Segment::handleTransition() {
   }
 }
 
+void Segment::set(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t ofs, uint16_t i1Y, uint16_t i2Y) {
+  //return if neither bounds nor grouping have changed
+  bool boundsUnchanged = (start == i1 && stop == i2);
+  if (Segment::maxHeight>1) { //2D
+    boundsUnchanged &= (startY == i1Y && stopY == i2Y);
+  }
+  if (boundsUnchanged
+      && (!grp || (grouping == grp && spacing == spc))
+      && (ofs == UINT16_MAX || ofs == offset)) return;
+
+  if (stop) fill(BLACK); //turn old segment range off
+  if (i2 <= i1) { //disable segment
+    stop = 0;
+    markForReset();
+    return;
+  }
+  if (Segment::maxHeight>1) { // 2D
+    #ifndef WLED_DISABLE_2D
+    if (i1 < Segment::maxWidth) start = i1;
+    stop = i2 > Segment::maxWidth ? Segment::maxWidth : i2;
+    if (i1Y < Segment::maxHeight) startY = i1Y;
+    stopY = i2Y > Segment::maxHeight ? Segment::maxHeight : MAX(1,i2Y);
+    #endif
+  } else {
+    if (i1 < strip.getLengthTotal()) start = i1;
+    stop = i2 > strip.getLengthTotal() ? strip.getLengthTotal() : i2;
+    startY = 0;
+    stopY  = 1;
+  }
+  if (grp) {
+    grouping = grp;
+    spacing = spc;
+  }
+  if (ofs < UINT16_MAX) offset = ofs;
+  markForReset();
+  if (!boundsUnchanged) refreshLightCapabilities();
+}
+
+
 bool Segment::setColor(uint8_t slot, uint32_t c) { //returns true if changed
   if (slot >= NUM_COLORS || c == colors[slot]) return false;
   if (fadeTransition) startTransition(strip.getTransition()); // start transition prior to change
@@ -957,6 +996,11 @@ void WS2812FX::finalizeInit(void)
     #endif
   }
 
+  if (!isMatrix) { // if 2D then max values defined in setUpMatrix() using panel set-up
+    Segment::maxWidth  = _length;
+    Segment::maxHeight = 1;
+   }
+
   //initialize leds array. TBD: realloc if nr of leds change
   if (Segment::_globalLeds) {
     purgeSegments(true);
@@ -1319,54 +1363,7 @@ Segment& WS2812FX::getSegment(uint8_t id) {
 
 void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping, uint8_t spacing, uint16_t offset, uint16_t startY, uint16_t stopY) {
   if (n >= _segments.size()) return;
-  Segment& seg = _segments[n];
-
-  //return if neither bounds nor grouping have changed
-  bool boundsUnchanged = (seg.start == i1 && seg.stop == i2);
-  if (isMatrix) {
-    boundsUnchanged &= (seg.startY == startY && seg.stopY == stopY);
-  }
-  if (boundsUnchanged
-      && (!grouping || (seg.grouping == grouping && seg.spacing == spacing))
-      && (offset == UINT16_MAX || offset == seg.offset)) return;
-
-  //if (seg.stop) setRange(seg.start, seg.stop -1, BLACK); //turn old segment range off
-  if (seg.stop) seg.fill(BLACK); //turn old segment range off
-  if (i2 <= i1) //disable segment
-  {
-    // disabled segments should get removed using purgeSegments()
-    DEBUG_PRINT(F("-- Segment ")); DEBUG_PRINT(n); DEBUG_PRINTLN(F(" marked inactive."));
-    seg.stop = 0;
-    seg.options = 0b0000000000000101; // on & selected
-    //if (seg.name) {
-    //  delete[] seg.name;
-    //  seg.name = nullptr;
-    //}
-    // if main segment is deleted, set first active as main segment
-    if (n == _mainSegment) setMainSegmentId(0);
-    seg.markForReset();
-    return;
-  }
-  if (isMatrix) {
-    #ifndef WLED_DISABLE_2D
-    if (i1 < Segment::maxWidth) seg.start = i1;
-    seg.stop = i2 > Segment::maxWidth ? Segment::maxWidth : i2;
-    if (startY < Segment::maxHeight) seg.startY = startY;
-    seg.stopY = stopY > Segment::maxHeight ? Segment::maxHeight : MAX(1,stopY);
-    #endif
-  } else {
-    if (i1 < _length) seg.start = i1;
-    seg.stop = i2 > _length ? _length : i2;
-    seg.startY = 0;
-    seg.stopY  = 1;
-  }
-  if (grouping) {
-    seg.grouping = grouping;
-    seg.spacing = spacing;
-  }
-  if (offset < UINT16_MAX) seg.offset = offset;
-  seg.markForReset();
-  if (!boundsUnchanged) seg.refreshLightCapabilities();
+  _segments[n].set(i1, i2, grouping, spacing, offset, startY, stopY);
 }
 
 void WS2812FX::restartRuntime() {

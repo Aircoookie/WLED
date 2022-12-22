@@ -43,21 +43,22 @@ void WS2812FX::setUpMatrix() {
 
   // isMatrix is set in cfg.cpp or set.cpp
   if (isMatrix) {
-    Segment::maxWidth  = hPanels * panelW;
-    Segment::maxHeight = vPanels * panelH;
+    uint16_t maxWidth  = hPanels * panelW;
+    uint16_t maxHeight = vPanels * panelH;
 
     // safety check
-    if (Segment::maxWidth * Segment::maxHeight > MAX_LEDS || Segment::maxWidth == 1 || Segment::maxHeight == 1) {
-      Segment::maxWidth = _length;
-      Segment::maxHeight = 1;
+    if (maxWidth * maxHeight > MAX_LEDS || maxWidth == 1 || maxHeight == 1) {
       isMatrix = false;
       return;
     }
 
-    customMappingSize  = Segment::maxWidth * Segment::maxHeight;
-    customMappingTable = new uint16_t[customMappingSize];
+    customMappingTable = new uint16_t[maxWidth * maxHeight];
 
     if (customMappingTable != nullptr) {
+      Segment::maxWidth  = maxWidth;
+      Segment::maxHeight = maxHeight;
+      customMappingSize  = maxWidth * maxHeight;
+
       uint16_t startL; // index in custom mapping array (logical strip)
       uint16_t startP; // position of 1st pixel of panel on (virtual) strip
       uint16_t x, y, offset;
@@ -94,18 +95,12 @@ void WS2812FX::setUpMatrix() {
       }
       DEBUG_PRINTLN();
       #endif
-    } else {
-      // memory allocation error
-      Segment::maxWidth = _length;
-      Segment::maxHeight = 1;
+    } else { // memory allocation error
       isMatrix = false;
-      return;
     }
-  } else { 
-    // not a matrix set up
-    Segment::maxWidth = _length;
-    Segment::maxHeight = 1;
   }
+#else
+  isMatrix = false; // no matter what config says
 #endif
 }
 

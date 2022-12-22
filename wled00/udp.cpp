@@ -363,7 +363,7 @@ void handleNotifications()
           uint16_t stopY  = 1, stop   = (udpIn[3+ofs] << 8 | udpIn[4+ofs]);
           uint16_t offset = (udpIn[7+ofs] << 8 | udpIn[8+ofs]);
           if (!receiveSegmentOptions) {
-            strip.setSegment(id, start, stop, selseg.grouping, selseg.spacing, offset, startY, stopY);
+            selseg.set(start, stop, selseg.grouping, selseg.spacing, offset, startY, stopY);
             continue;
           }
           //for (size_t j = 1; j<4; j++) selseg.setOption(j, (udpIn[9 +ofs] >> j) & 0x01); //only take into account mirrored, on, reversed; ignore selected
@@ -396,11 +396,10 @@ void handleNotifications()
             startY = (udpIn[32+ofs] << 8 | udpIn[33+ofs]);
             stopY  = (udpIn[34+ofs] << 8 | udpIn[35+ofs]);
           }
-          //setSegment() also properly resets segments
           if (receiveSegmentBounds) {
-            strip.setSegment(id, start, stop, udpIn[5+ofs], udpIn[6+ofs], offset, startY, stopY);
+            selseg.set(start, stop, udpIn[5+ofs], udpIn[6+ofs], offset, startY, stopY);
           } else {
-            strip.setSegment(id, selseg.start, selseg.stop, udpIn[5+ofs], udpIn[6+ofs], selseg.offset, selseg.startY, selseg.stopY);
+            selseg.set(selseg.start, selseg.stop, udpIn[5+ofs], udpIn[6+ofs], selseg.offset, selseg.startY, selseg.stopY);
           }
         }
         stateChanged = true;
