@@ -17,9 +17,10 @@ private:
   bool m_shouldNotify = false;
   BleChunker *m_chunker = NULL;
   BLEServer *m_server = NULL;
+  std::string m_page = "";
 
 protected:
-  virtual bool writeData(BleChunker *chunker) = 0;
+  virtual bool writeData(BleChunker *chunker, std::string page) = 0;
   virtual bool writeNotify(BleChunker *chunker) = 0;
 
 public:
@@ -32,6 +33,10 @@ public:
     m_server = server;
     BLEService *pService = server->createService(BLE_UUID(serviceId));
 
+    Serial.printf("serviceId: %s data id: %02X control: %02X, notify: %02X",
+                  BLE_UUID(serviceId).toString().data(), dataId, controlId, notifyId);
+
+    Serial.println("");
     m_chunker = new BleChunker(dataId, controlId, notifyId, pService, this);
 
     pService->start();
@@ -48,7 +53,7 @@ public:
 
     if (m_shouldWrite && m_server->getPeerDevices(true).size() > 0)
     {
-      if (writeData(m_chunker))
+      if (writeData(m_chunker, m_page))
       {
         m_shouldWrite = false;
       }
@@ -73,10 +78,11 @@ public:
     m_shouldNotify = shouldNotify;
   }
 
-  virtual void onReadyToRead()
+  virtual void onReadyToRead(std::string page)
   {
     DEBUG_PRINTLN("Ready to read");
 
+    m_page = page;
     m_shouldWrite = true;
   }
 

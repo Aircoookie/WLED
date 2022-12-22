@@ -16,7 +16,7 @@
 class BleChunkerCallbacks
 {
 public:
-  virtual void onReadyToRead() = 0;
+  virtual void onReadyToRead(std::string page) = 0;
   virtual void onWrite(std::string value) = 0;
 };
 
@@ -115,13 +115,13 @@ public:
 
   bool writeData(JsonObject data, bool notify)
   {
-    DEBUG_PRINTLN("BleChunker writeData");
+    Serial.println("BleChunker writeData");
 
     if (!m_writing)
     {
-      DEBUG_PRINTF("writing data: %s", m_writeBuffer.data());
-
       serializeJson(data, m_writeBuffer);
+
+      Serial.printf("writing data: %s", m_writeBuffer.data());
 
       m_writeReady = true;
       m_writing = true;
@@ -144,13 +144,17 @@ public:
 
   void onWrite(BLECharacteristic *pCharacteristic)
   {
+    Serial.printf("got a write from char %s", m_data->getUUID().toString().data());
+
     if (pCharacteristic == m_control)
     {
       std::string command = pCharacteristic->getValue();
 
-      if (command == "r")
+      Serial.printf("got a write from char %s", pCharacteristic->getUUID().toString().data());
+
+      if (command.at(0) == 'r')
       {
-        m_callbacks->onReadyToRead();
+        m_callbacks->onReadyToRead(command.substr(1));
         return;
       }
     }

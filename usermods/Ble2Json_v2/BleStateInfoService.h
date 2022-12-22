@@ -16,7 +16,7 @@ private:
   std::string *m_toSave = NULL;
 
 protected:
-  bool writeData(BleChunker *chunker)
+  bool writeData(BleChunker *chunker, std::string page)
   {
     DEBUG_PRINTLN("BleStateInfoService writeData");
     if (!requestJSONBufferLock(100))

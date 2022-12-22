@@ -4,6 +4,7 @@
 #include "ble_const.h"
 #include "ble_unpair.h"
 #include "BleStateInfoService.h"
+#include "BleReadOnlyService.h"
 
 #include <BLEDevice.h>
 #include <BLEServer.h>
@@ -105,33 +106,16 @@ void bleSecurity(uint32_t passkey)
   esp_ble_gap_set_security_param(ESP_BLE_SM_SET_RSP_KEY, &rsp_key, sizeof(uint8_t));
 }
 
-class MyCallbackHandler : public BLECharacteristicCallbacks
-{
-private:
-  Ble2JsonConfig *m_config;
-
-public:
-  MyCallbackHandler(Ble2JsonConfig *config)
-  {
-    m_config = config;
-  }
-
-  void onWrite(BLECharacteristic *pCharacteristic)
-  {
-    ESP_LOGD("main switch", ">> on write %s", pCharacteristic->getValue().data());
-
-    if (strcmp(pCharacteristic->getValue().data(), "off") == 0)
-    {
-      m_config->setBleOnFlag(false);
-    }
-  }
-};
-
 class BleMainSwitch
 {
 private:
   Ble2JsonConfig *m_config = NULL;
   BleStateInfoService *m_stateService = NULL;
+  BleReadOnlyService *m_fxNamesService = NULL;
+  BleReadOnlyService *m_fxDetailsService = NULL;
+  BleReadOnlyService *m_presetsService = NULL;
+  BleReadOnlyService *m_paletteNamesService = NULL;
+  BleReadOnlyService *m_paletteDetailsDataService = NULL;
 
   bool m_bleInitted = false;
 
@@ -145,7 +129,7 @@ private:
     {
       DEBUG_PRINTLN("bleInitting");
       WLED::instance().disableWiFi();
-      bleInit(new MyCallbackHandler(m_config), m_config->getBlePairingPin());
+      bleInit(m_config->getBlePairingPin());
       m_bleInitted = true;
       checkUnPair();
     }
@@ -171,7 +155,14 @@ private:
     ad->setAdvertisementData(data);
   }
 
-  void bleInit(BLECharacteristicCallbacks *charCallbackHandler, uint32_t passkey)
+  BleReadOnlyService *createReadonlyService(uint16_t serviceId, uint16_t dataId, uint16_t controlId, BLEServer *pServer)
+  {
+    BleReadOnlyService *service = new BleReadOnlyService(serviceId, dataId, controlId);
+    service->setupBle(pServer);
+    return service;
+  }
+
+  void bleInit(uint32_t passkey)
   {
     DEBUG_PRINTLN("bleInit");
     BLEDevice::init(WLED_BLE_2_JSON_NAME);
@@ -181,38 +172,33 @@ private:
     pServer = BLEDevice::createServer();
     pServer->setCallbacks(new ServerCallback());
 
-    BLEService *pService = pServer->createService(BLE_UUID(WLED_BLE_MAIN_SERVICE_ID));
-
-    BLECharacteristic *pCharacteristic = pService->createCharacteristic(
-        BLE_UUID(WLED_BLE_MAIN_BLE_ON_ID),
-        BLECharacteristic::PROPERTY_READ |
-            BLECharacteristic::PROPERTY_WRITE |
-            BLECharacteristic::PROPERTY_NOTIFY);
-
-    pCharacteristic->setAccessPermissions(ESP_GATT_PERM_READ_ENCRYPTED | ESP_GATT_PERM_WRITE_ENCRYPTED);
-    pCharacteristic->setCallbacks(charCallbackHandler);
-    pCharacteristic->setValue("on");
-
-    BLE2902 *myBLE2902 = new BLE2902();
-    BLE2904 *myBLE2904 = new BLE2904();
-    myBLE2904->setFormat(BLE2904::FORMAT_UTF8);
-    myBLE2902->setNotifications(false);
-
-    pCharacteristic->addDescriptor(myBLE2902);
-    pCharacteristic->addDescriptor(myBLE2904);
-
-    myBLE2902->setNotifications(false);
-
-    pService->start();
-
-    BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
-    pAdvertising->addServiceUUID(BLE_UUID(WLED_BLE_MAIN_SERVICE_ID));
-    pAdvertising->setScanResponse(false);
-    pAdvertising->setMinPreferred(0x0);
-    setAdvertisementData(pAdvertising);
-
     m_stateService = new BleStateInfoService();
     m_stateService->setupBle(pServer);
+
+    m_paletteNamesService = createReadonlyService(WLED_BLE_PALETTE_NAME_SERVICE_ID,
+                                                  WLED_BLE_PALETTE_NAME_DATA_ID,
+                                                  WLED_BLE_PALETTE_NAME_CONTROL_ID,
+                                                  pServer);
+
+    m_fxDetailsService = createReadonlyService(WLED_BLE_FX_DETAILS_SERVICE_ID,
+                                               WLED_BLE_FX_DETAILS_DATA_ID,
+                                               WLED_BLE_FX_DETAILS_CONTROL_ID,
+                                               pServer);
+
+    m_fxNamesService = createReadonlyService(WLED_BLE_FX_NAMES_SERVICE_ID,
+                                             WLED_BLE_FX_NAMES_DATA_ID,
+                                             WLED_BLE_FX_NAMES_CONTROL_ID,
+                                             pServer);
+
+    m_presetsService = createReadonlyService(WLED_BLE_PRESETS_SERVICE_ID,
+                                             WLED_BLE_PRESETS_DATA_ID,
+                                             WLED_BLE_PRESETS_CONTROL_ID,
+                                             pServer);
+
+    m_paletteDetailsDataService = createReadonlyService(WLED_BLE_PALETTE_DETAILS_SERVICE_ID,
+                                                        WLED_BLE_PALETTE_DETAILS_DATA_ID,
+                                                        WLED_BLE_PALETTE_DETAILS_CONTROL_ID,
+                                                        pServer);
 
     BLEDevice::startAdvertising();
     bleSecurity(passkey);
@@ -251,6 +237,12 @@ public:
   {
     checkBleInit(false);
     serviceLoop(m_stateService);
+
+    serviceLoop(m_fxNamesService);
+    serviceLoop(m_fxDetailsService);
+    serviceLoop(m_presetsService);
+    serviceLoop(m_paletteNamesService);
+    serviceLoop(m_paletteDetailsDataService);
   }
 
   /*
