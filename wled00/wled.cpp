@@ -282,8 +282,13 @@ void WLED::setup()
 
   #if ARDUINO_USB_CDC_ON_BOOT
   delay(2500);  // WLEDMM: always allow CDC USB serial to initialise
+  Serial.println("wait 1");  // waiting a bit longer ensures that a  debug messages are shown in serial monitor
+  delay(2500);
+  Serial.println("wait 2");
+  delay(2500);
+
   Serial.flush();
-  //Serial.setTimeout(350); // WLEDMM: don't change timeout, as it causes crashes later
+  Serial.setTimeout(350); // WLEDMM: don't change timeout, as it causes crashes later
   // WLEDMM: redirect debug output to HWCDC
   Serial0.setDebugOutput(false);
   Serial.setDebugOutput(true);

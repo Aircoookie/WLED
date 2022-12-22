@@ -264,10 +264,14 @@ static float windowWeighingFactors[samplesFFT] = {0.0f};
 // Create FFT object
 #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
 // lib_deps += https://github.com/kosme/arduinoFFT#develop @ 1.9.2
+#if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
+// these options actually cause slow-down on -S2 (-S2 doesn't have floating point hardware)
 #define FFT_SPEED_OVER_PRECISION     // enables use of reciprocals (1/x etc), and an a few other speedups
 #define FFT_SQRT_APPROXIMATION       // enables "quake3" style inverse sqrt
-#define sqrt(x) sqrtf(x)             // little hack that reduces FFT time by 50% on ESP32 (as alternative to FFT_SQRT_APPROXIMATION)
+#endif
+#define sqrt(x) sqrtf(x)             // little hack that reduces FFT time by 10-50% on ESP32 (as alternative to FFT_SQRT_APPROXIMATION)
 #else
+  // around 50% slower on -S2
 // lib_deps += https://github.com/blazoncek/arduinoFFT.git
 #endif
 #include <arduinoFFT.h>
@@ -1447,10 +1451,10 @@ class AudioReactive : public Usermod {
         int userloopDelay = int(t_now - lastUMRun);
         if (lastUMRun == 0) userloopDelay=0; // startup - don't have valid data from last run.
 
-        #ifdef WLED_DEBUG
+        #if defined(WLED_DEBUG) || defined(SR_DEBUG) || defined(SR_STATS)
           // complain when audio userloop has been delayed for long time. Currently we need userloop running between 500 and 1500 times per second. 
-          if ((userloopDelay > 23) && !disableSoundProcessing && (audioSyncEnabled == 0)) {
-            DEBUG_PRINTF("[AR userLoop] hickup detected -> was inactive for last %d millis!\n", userloopDelay);
+          if ((userloopDelay > /*23*/ 30) && !disableSoundProcessing && (audioSyncEnabled == 0)) {
+            USER_PRINTF("[AR userLoop] hickup detected -> was inactive for last %d millis!\n", userloopDelay);
           }
         #endif
 
