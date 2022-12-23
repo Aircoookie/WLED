@@ -33,11 +33,11 @@
 			GetV();
 			for (let k=0; k<d.rsvd.length; k++) { pins.push(d.rsvd[k]); pinO.push("rsvd"); }
 			if (d.um_p[0]==-1) d.um_p.shift();
-			d.Sf.SDA.max = d.max_gpio;
-			d.Sf.SCL.max = d.max_gpio;
-			d.Sf.MOSI.max = d.max_gpio;
-			d.Sf.SCLK.max = d.max_gpio;
-			d.Sf.MISO.max = d.max_gpio;
+			d.Sf.SDApin.max = d.max_gpio;
+			d.Sf.SCLpin.max = d.max_gpio;
+			d.Sf.MOSIpin.max = d.max_gpio;
+			d.Sf.SCLKpin.max = d.max_gpio;
+			d.Sf.MISOpin.max = d.max_gpio;
 		});
 		// error event
 		scE.addEventListener("error", (ev) => {
@@ -62,6 +62,7 @@
 	function isI(n) { return n === +n && n === (n|0); }
 	function check(o,k) {   // input object, pin owner key
 		var n = o.name.replace("[]","").substr(-3);
+		// console.log("check", o, k, n, pins, pinO);
 		if (o.type=="number" && n.substr(0,3)=="pin") {
 			for (var i=0; i<pins.length; i++) {
 				if (k==pinO[i]) continue;
@@ -70,11 +71,11 @@
 			}
 		} else {
 			switch (o.name) {
-				case "SDA": break;
-				case "SCL": break;
-				case "MOSI": break;
-				case "SCLK": break;
-				case "MISO": break;
+				case "SDApin": break;
+				case "SCLpin": break;
+				case "MOSIpin": break;
+				case "SCLKpin": break;
+				case "MISOpin": break;
 				default: return;
 			}
 			for (var i=0; i<pins.length; i++) {
@@ -111,6 +112,7 @@
 		return s.replace(/[\W_]/g,' ').replace(/(^\w{1})|(\s+\w{1})/g, l=>l.toUpperCase()); // replace - and _ with space, capitalize every 1st letter
 	}
 	function addField(k,f,o,a=false) {  //key, field, (sub)object, isArray
+		// console.log("addField", k, f, o, a);
 		if (isO(o)) {
 			urows += '<hr class="sml">';
 			if (f!=='unknown' && !k.includes(":")) urows += `<p><u>${initCap(f)}</u></p>`; //WLEDMM show group title
@@ -131,8 +133,10 @@
 					break;
 				case "number":
 					c = `value="${o}"`;
+					// console.log("addField nr", c);
 					if (f.substr(-3)==="pin") {
 						c += ` max="${d.max_gpio}" min="-1" class="s"`;
+						// console.log("addField nr pin should not happen", c);
 						t = "int";
 					} else {
 						c += ' step="any" class="xxl"';
@@ -146,7 +150,37 @@
 			// https://stackoverflow.com/questions/11657123/posting-both-checked-and-unchecked-checkboxes
 			if (t=="checkbox") urows += `<input type="hidden" name="${k}:${f}${a?"[]":""}" value="false">`;
 			else if (!a)       urows += `<input type="hidden" name="${k}:${f}${a?"[]":""}" value="${t}">`;
-			urows += `<input type="${t==="int"?"number":t}" name="${k}:${f}${a?"[]":""}" ${c} oninput="check(this,'${k.substr(k.indexOf(":")+1)}')"><br>`;
+			// make a dropdown for pin variables
+			if (f.includes("pin")) { //} || f == "SDApin" || f == "SCLpin" || f == "MOSIpin" || f == "SCLKpin" || f == "MISOpin") {
+				var n = this.name.replace("[]","").substr(-3);
+				// console.log("addPin", k, f, o, a, n, pins, pinO);
+				urows += `<select name="${k}:${f}${a?"[]":""}">`;
+				// urows += `<option value="-1">Use global</option>`;
+				// urows += `<option value="-2">Use ⎌</option>`;
+				for (var j=-1; j<=39; j++) { // all possible pins (d.max_gpio not working)
+					let foundPin = -1;
+					for (var i=0; i<pins.length; i++) { // check if pin is reserved
+						if (pins[i] == j) foundPin = i;
+					}
+					urows += `<option value="${j}"`;
+					if (j==o) urows += ` selected`; //add selected value
+					if (foundPin >=0) {// already reserved pin
+						if (!k.includes(pinO[foundPin]) && pinO[foundPin] != "if") urows += ` disabled`; 
+					}
+					if (j==-1) urows += `>undefined`; else urows += `>${j}`; // don't show -1
+					if (foundPin >=0) {// already reserved pin
+						urows += ` ${pinO[foundPin]}`;
+						if (k.includes(pinO[foundPin]) || pinO[foundPin] == "if") urows += ` 😀`; else urows += ` ⛔`; //add pins assigned here
+					}
+					urows += `</option>`;
+					// if (j==5) //exclude pin 6 to 11
+					// 	j=11
+				}
+				urows += `</select>`;
+			}
+			else
+				urows += `<input type="${t==="int"?"number":t}" name="${k}:${f}${a?"[]":""}" ${c} oninput="check(this,'${k.substr(k.indexOf(":")+1)}')">`;
+			urows += `<br>`;
 		}
 	}
 	// https://stackoverflow.com/questions/39729741/javascript-change-input-text-to-select-option
@@ -184,6 +218,17 @@
 			if (c.value == sel.dataset.val) sel.selectedIndex = i;
 		}
 	}
+	//WLEDMM: replaceOption to set build flag defaults and globals
+	function replaceOption(name,el,txt,val) {
+		let obj = d.getElementsByName(name);
+		if (obj[el]) {
+			let sel = obj[el];
+			for (let i=0; i<sel.childNodes.length; i++) {
+				let c = sel.childNodes[i];
+				if (c.value == val) c.text = txt;
+			}
+		}
+	}
 	// https://stackoverflow.com/questions/26440494/insert-text-after-this-input-element-with-javascript
 	function addInfo(name,el,txt, txt2="") {
 		let obj = d.getElementsByName(name);
@@ -208,11 +253,15 @@
 			umCfg = json.um;
 			getPins(json);
 			urows="";
+			// addField("SCL", "pin", -1, true);
+			// addField("SCL", "pin", -1, true);
+			// addInfo('SCL:pin[]',0,'','SCL');
+			// addInfo('SCL:pin[]',1,'','SCLK');
+			const queryString = window.location.search;
+			const urlParams = new URLSearchParams(queryString);
+            const userMod = urlParams.get('um')
 			if (isO(umCfg)) {
                 //WLEDMM: read url parameter. e.g. um=AudioReactive and if set only add the usermod with the same name
-                const queryString = window.location.search;
-                const urlParams = new URLSearchParams(queryString);
-                const userMod = urlParams.get('um')
                 for (const [k,o] of Object.entries(umCfg)) {
                     if (userMod == k) {
                         urows += `<hr><h3>${k}</h3><div name="${k}:help"></div>`;
@@ -222,7 +271,7 @@
                 if (userMod != null && urows==="") urows = "Usermods configuration not found.<br>Press <i>Save</i> to initialize defaults.";
             }
             //WLEDMM: only show globalGPIOs if no usermod info is shown (url without um parameter)
-            gId("globalGPIOs").style.display = urows===""?"block":"none";
+            gId("globalGPIOs").style.display = (userMod == null)?"block":"none";
 
             gId("um").innerHTML = urows;
             var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=8';
@@ -254,14 +303,14 @@
 		<h2>Usermod Setup</h2>
 		Global I<sup>2</sup>C GPIOs (HW)<br>
 		<i style="color: orange;">(only changable on ESP32, change requires reboot!)</i><br>
-		SDA:<input type="number" min="-1" max="48" name="SDA" onchange="check(this,'if')" class="s" placeholder="SDA"><br>
-		SCL:<input type="number" min="-1" max="48" name="SCL" onchange="check(this,'if')" class="s" placeholder="SCL">
+		SDA:<input type="number" min="-1" max="48" name="SDApin" onchange="check(this,'if')" class="s" placeholder="SDApin"><br>
+		SCL:<input type="number" min="-1" max="48" name="SCLpin" onchange="check(this,'if')" class="s" placeholder="SCLpin">
 		<hr class="sml">
 		Global SPI GPIOs (HW)<br>
 		<i style="color: orange;">(only changable on ESP32, change requires reboot!)</i><br>
-		MOSI:<input type="number" min="-1" max="48" name="MOSI" onchange="check(this,'if')" class="s" placeholder="MOSI"><br>
-		MISO:<input type="number" min="-1" max="48" name="MISO" onchange="check(this,'if')" class="s" placeholder="MISO"><br>
-		SCLK:<input type="number" min="-1" max="48" name="SCLK" onchange="check(this,'if')" class="s" placeholder="SCLK">
+		MOSI:<input type="number" min="-1" max="48" name="MOSIpin" onchange="check(this,'if')" class="s" placeholder="MOSIpin"><br>
+		MISO:<input type="number" min="-1" max="48" name="MISOpin" onchange="check(this,'if')" class="s" placeholder="MISOpin"><br>
+		SCLK:<input type="number" min="-1" max="48" name="SCLKpin" onchange="check(this,'if')" class="s" placeholder="SCLKpin">
 		</div>
 		<div id="um">Loading settings...</div>
 		<hr><button type="button" onclick="B()">Back</button><button type="submit">Save</button>
