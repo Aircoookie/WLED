@@ -273,9 +273,9 @@ function onLoad()
 function updateTablinks(tabI)
 {
 	var tablinks = gEBCN("tablinks");
-	for (var i of tablinks) i.classList.remove("active");
+	for (var i of tablinks) i.classList.remove('active');
 	if (pcMode) return;
-	tablinks[tabI].classList.add("active");
+	tablinks[tabI].classList.add('active');
 }
 
 function openTab(tabI, force = false)
@@ -291,13 +291,13 @@ var timeout;
 function showToast(text, error = false)
 {
 	if (error) gId('connind').style.backgroundColor = "var(--c-r)";
-	var x = gId("toast");
+	var x = gId('toast');
 	//if (error) text += '<i class="icons btn-icon" style="transform:rotate(45deg);position:absolute;top:10px;right:0px;" onclick="clearErrorToast(100);">&#xe18a;</i>';
 	x.innerHTML = text;
-	x.classList.add(error ? "error":"show");
+	x.classList.add(error ? 'error':'show');
 	clearTimeout(timeout);
 	x.style.animation = 'none';
-	timeout = setTimeout(()=>{ x.classList.remove("show"); }, 2900);
+	timeout = setTimeout(()=>{ x.classList.remove('show'); }, 2900);
 	if (error) console.log(text);
 }
 
@@ -308,12 +308,12 @@ function showErrorToast()
 
 function clearErrorToast(n=5000)
 {
-	var x = gId("toast");
-	if (x.classList.contains("error")) {
+	var x = gId('toast');
+	if (x.classList.contains('error')) {
 		clearTimeout(timeout);
 		timeout = setTimeout(()=>{
-			x.classList.remove("show");
-			x.classList.remove("error");
+			x.classList.remove('show');
+			x.classList.remove('error');
 		}, n);
 	}
 }
@@ -544,8 +544,8 @@ function populateQL()
 		for (var key of (pQL||[])) {
 			cn += `<button class="btn btn-xs psts" id="p${key[0]}qlb" title="${key[2]?key[2]:''}" onclick="setPreset(${key[0]});">${key[1]}</button>`;
 		}
-		gId('pql').classList.add("expanded");
-	} else gId('pql').classList.remove("expanded");
+		gId('pql').classList.add('expanded');
+	} else gId('pql').classList.remove('expanded');
 	gId('pql').innerHTML = cn;
 }
 
@@ -610,8 +610,8 @@ function parseInfo(i) {
 	mh = i.leds.matrix ? i.leds.matrix.h : 0;
 	isM = mw>0 && mh>0;
 	if (!isM) {
-		gId("filter1D").classList.add("hide");
-		//gId("filter2D").classList.add("hide");
+		gId("filter1D").classList.add('hide');
+		//gId("filter2D").classList.add('hide');
 		hideModes("2D");
 	}
 //	if (i.noaudio) {
@@ -697,7 +697,7 @@ function populateSegments(s)
 		if (i > lSeg) lSeg = i;
 
 		let sg = gId(`seg${i}`);
-		let exp = sg ? (sg.classList.contains("expanded") || (i===0 && cfg.comp.segexp)) : false;
+		let exp = sg ? (sg.classList.contains('expanded') || (i===0 && cfg.comp.segexp)) : false;
 
 		let segp = `<div id="segp${i}" class="sbs">
 		<i class="icons e-icon pwr ${inst.on ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})">&#xe08f;</i>
@@ -812,9 +812,9 @@ function populateSegments(s)
 		for (const k of (li.maps||[])) cont += `<option value="${k}">${k==0?'Default':'ledmap'+k+'.json'}</option>`;
 		cont += "</select></div>";
 		gId("ledmap").innerHTML = cont;
-		gId("ledmap").classList.remove("hide");
+		gId("ledmap").classList.remove('hide');
 	} else {
-		gId("ledmap").classList.add("hide");
+		gId("ledmap").classList.add('hide');
 	}
 }
 
@@ -1057,20 +1057,20 @@ function updateLen(s)
 		let tPL = gId(`seg${s}lbtm`);
 		if (stop-start>1 && stopY-startY>1) {
 			// 2D segment
-			if (tPL) tPL.classList.remove("hide"); // unhide transpose checkbox
+			if (tPL) tPL.classList.remove('hide'); // unhide transpose checkbox
 			let sE = gId('fxlist').querySelector(`.lstI[data-id="${selectedFx}"]`);
 			if (sE) {
 				let sN = sE.querySelector(".lstIname").innerText;
 				let seg = gId(`seg${s}map2D`);
 				if (seg) {
-					if(sN.indexOf("\u25A6")<0) seg.classList.remove("hide"); // unhide mapping for 1D effects (| in name)
-					else seg.classList.add("hide");	// hide mapping otherwise
+					if(sN.indexOf("\u25A6")<0) seg.classList.remove('hide'); // unhide mapping for 1D effects (| in name)
+					else seg.classList.add('hide');	// hide mapping otherwise
 				}
 			}
 		} else {
 			// 1D segment in 2D set-up
 			if (tPL) {
-				tPL.classList.add("hide"); // hide transpose checkbox
+				tPL.classList.add('hide'); // hide transpose checkbox
 				gId(`seg${s}tp`).checked = false;	// and uncheck it
 			}
 		}
@@ -1102,7 +1102,7 @@ function updatePA()
 	ps = gEBCN("psts"); for (let p of ps) p.classList.remove('selected');
 	if (currentPreset > 0) {
 		var acv = gId(`p${currentPreset}o`);
-		if (acv /*&& !acv.classList.contains("expanded")*/) {
+		if (acv /*&& !acv.classList.contains('expanded')*/) {
 			acv.classList.add('selected');
 			/*
 			// scroll selected preset into view (on WS refresh)
@@ -1119,13 +1119,13 @@ function updatePA()
 
 function updateUI()
 {
-	gId('buttonPower').className = (isOn) ? "active":"";
-	gId('buttonNl').className = (nlA) ? "active":"";
-	gId('buttonSync').className = (syncSend) ? "active":"";
+	gId('buttonPower').className = (isOn) ? 'active':'';
+	gId('buttonNl').className = (nlA) ? 'active':'';
+	gId('buttonSync').className = (syncSend) ? 'active':'';
 	showNodes();
 
-	updateSelectedPalette();
 	updateSelectedFx();
+	updateSelectedPalette(selectedPal); // must be after updateSelectedFx() to un-hide color slots for * palettes
 
 	updateTrail(gId('sliderBri'));
 	updateTrail(gId('sliderSpeed'));
@@ -1159,17 +1159,27 @@ function updateUI()
 	updatePSliders();
 }
 
-function updateSelectedPalette()
+function updateSelectedPalette(s)
 {
 	var parent = gId('pallist');
-	var selPaletteInput = parent.querySelector(`input[name="palette"][value="${selectedPal}"]`);
+	var selPaletteInput = parent.querySelector(`input[name="palette"][value="${s}"]`);
 	if (selPaletteInput) selPaletteInput.checked = true;
 
 	var selElement = parent.querySelector('.selected');
 	if (selElement) selElement.classList.remove('selected');
 
-	var selectedPalette = parent.querySelector(`.lstI[data-id="${selectedPal}"]`);
-	if (selectedPalette) parent.querySelector(`.lstI[data-id="${selectedPal}"]`).classList.add('selected');
+	var selectedPalette = parent.querySelector(`.lstI[data-id="${s}"]`);
+	if (selectedPalette)  parent.querySelector(`.lstI[data-id="${s}"]`).classList.add('selected');
+
+	// in case of special palettes (* Colors...), force show color selectors (if hidden by effect data)
+	let cd = gId('csl').children; // color selectors
+	if (s > 1 && s < 6) {
+		cd[0].classList.remove('hide'); // * Color 1
+		if (s > 2) cd[1].classList.remove('hide'); // * Color 1 & 2
+		if (s == 5) cd[2].classList.remove('hide'); // all colors
+	} else {
+		for (let i of cd) if (i.dataset.hide == '1') i.classList.add('hide');
+	}
 }
 
 function updateSelectedFx()
@@ -1191,9 +1201,9 @@ function updateSelectedFx()
 
 		var selectedName = selectedEffect.querySelector(".lstIname").innerText;
 		var segs = gId("segcont").querySelectorAll(`div[data-map="map2D"]`);
-		for (const seg of segs) if (selectedName.indexOf("\u25A6")<0) seg.classList.remove("hide"); else seg.classList.add("hide");
+		for (const seg of segs) if (selectedName.indexOf("\u25A6")<0) seg.classList.remove('hide'); else seg.classList.add('hide');
 		var segs = gId("segcont").querySelectorAll(`div[data-snd="si"]`);
-		for (const seg of segs) if (selectedName.indexOf("\u266A")<0 && selectedName.indexOf("\266B")<0) seg.classList.add("hide"); else seg.classList.remove("hide"); // also "♫ "?
+		for (const seg of segs) if (selectedName.indexOf("\u266A")<0 && selectedName.indexOf("\266B")<0) seg.classList.add('hide'); else seg.classList.remove('hide'); // also "♫ "?
 	}
 }
 
@@ -1394,9 +1404,9 @@ function setEffectParameters(idx)
 			else if (i==0)                           label.innerHTML = "Effect speed";
 			else if (i==1)                           label.innerHTML = "Effect intensity";
 			else                                     label.innerHTML = "Custom" + (i-1);
-			slider.classList.remove("hide");
+			slider.classList.remove('hide');
 		} else {
-			slider.classList.add("hide");
+			slider.classList.add('hide');
 		}
 	}
 	if (slOnOff.length>5) { // up to 3 checkboxes
@@ -1422,14 +1432,14 @@ function setEffectParameters(idx)
 	// set html color items on/off
 	var cslLabel = '';
 	var sep = '';
-	var hide = true;
 	var cslCnt = 0, oCsel = csel;
 	for (let i=0; i<gId("csl").children.length; i++) {
 		var btn = gId("csl" + i);
 		// if no controlDefined or coOnOff has a value
 		if (coOnOff.length>i && coOnOff[i] != "") {
-			btn.style.display = "inline";
-			if (coOnOff.length>i && coOnOff[i] != "!") {
+			btn.classList.remove('hide');
+			btn.dataset.hide = 0;
+			if (coOnOff[i] != "!") {
 				var abbreviation = coOnOff[i].substr(0,2);
 				btn.innerHTML = abbreviation;
 				if (abbreviation != coOnOff[i]) {
@@ -1440,17 +1450,18 @@ function setEffectParameters(idx)
 			else if (i==0) btn.innerHTML = "Fx";
 			else if (i==1) btn.innerHTML = "Bg";
 			else btn.innerHTML = "Cs";
-			hide = false;
 			if (!cslCnt || oCsel==i) selectSlot(i); // select 1st displayed slot or old one
 			cslCnt++;
 		} else if (!controlDefined) { // if no controls then all buttons should be shown for color 1..3
-			btn.style.display = "inline";
+			btn.classList.remove('hide');
+			btn.dataset.hide = 0;
 			btn.innerHTML = `${i+1}`;
-			hide = false;
 			if (!cslCnt || oCsel==i) selectSlot(i); // select 1st displayed slot or old one
 			cslCnt++;
 		} else {
-			btn.style.display = "none";
+			btn.classList.add('hide');
+			btn.dataset.hide = 1;
+			btn.innerHTML = `${i+1}`; // name hidden buttons 1..3 for * palettes
 		}
 	}
 	gId("cslLabel").innerHTML = cslLabel;
@@ -1473,13 +1484,6 @@ function setEffectParameters(idx)
 		// disable palette list
 		pall.innerHTML = '<i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i> Color palette not used';
 		palw.style.display = "none";
-	}
-	// not all color selectors shown, hide palettes created from color selectors
-	for (let e of (gId('pallist').querySelectorAll('.lstI')||[])) {
-		let fltr = "* C";
-		if (cslCnt==1 && csel==0) fltr = "* Colors";
-		else if (cslCnt==2) fltr = "* Colors Only";
-		if (cslCnt < 3 && e.querySelector('.lstIname').innerText.indexOf(fltr)>=0) e.classList.add('hide'); else e.classList.remove('hide');
 	}
 }
 
@@ -1949,7 +1953,7 @@ function tglSegn(s)
 {
 	let t = gId(s<100?`seg${s}t`:`p${s-100}txt`);
 	if (t) {
-		t.classList.toggle("show");
+		t.classList.toggle('show');
 		t.focus();
 		t.select();
 	}
@@ -1991,7 +1995,7 @@ function rptSeg(s)
 	var rev = gId(`seg${s}rev`).checked;
 	var mi = gId(`seg${s}mi`).checked;
 	var sel = gId(`seg${s}sel`).checked;
-	var pwr = gId(`seg${s}pwr`).classList.contains("act");
+	var pwr = gId(`seg${s}pwr`).classList.contains('act');
 	var obj = {"seg": {"id": s, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop, "rev": rev, "mi": mi, "on": pwr, "bri": parseInt(gId(`seg${s}bri`).value), "sel": sel}};
 	if (gId(`seg${s}grp`)) {
 		var grp = parseInt(gId(`seg${s}grp`).value);
@@ -2102,7 +2106,7 @@ function setTp(s)
 
 function setSegPwr(s)
 {
-	var pwr = gId(`seg${s}pwr`).classList.contains("act");
+	var pwr = gId(`seg${s}pwr`).classList.contains('act');
 	var obj = {"seg": {"id": s, "on": !pwr}};
 	requestJson(obj);
 }
@@ -2296,7 +2300,7 @@ function delP(i) {
 		requestJson(obj);
 		delete pJson[i];
 		populatePresets();
-		gId('putil').classList.add("staybot");
+		gId('putil').classList.add('staybot');
 	} else {
 		bt.style.color = "var(--c-r)";
 		bt.innerHTML = "<i class='icons btn-icon'>&#xe037;</i>Delete!";
@@ -2571,7 +2575,7 @@ function hideModes(txt)
 		let f = false;
 		if (txt==="2D") f = iT.indexOf("\u25A6") >= 0 && iT.indexOf("\u22EE") < 0; // 2D && !1D
 		else f = iT.indexOf(txt) >= 0;
-		if (f) e.classList.add("hide"); //else e.classList.remove("hide");
+		if (f) e.classList.add('hide'); //else e.classList.remove('hide');
 	}
 }
 
@@ -2642,9 +2646,9 @@ function expand(i)
 {
 	var seg = i<100 ? gId('seg' +i) : gId(`p${i-100}o`);
 	let ps = gId("pcont").children; // preset wrapper
-	if (i>100) for (let p of ps) { p.classList.remove("selected"); if (p!==seg) p.classList.remove("expanded"); } // collapse all other presets & remove selected
+	if (i>100) for (let p of ps) { p.classList.remove('selected'); if (p!==seg) p.classList.remove('expanded'); } // collapse all other presets & remove selected
 
-	seg.classList.toggle("expanded");
+	seg.classList.toggle('expanded');
 
 	// presets
 	if (i >= 100) {
@@ -2666,11 +2670,11 @@ function expand(i)
 			gId(`p${p}api`).value = papi;
 			if (papi.indexOf("Please") == 0) gId(`p${p}cstgl`).checked = false;
 			tglCs(p);
-			gId('putil').classList.remove("staybot");
+			gId('putil').classList.remove('staybot');
 		} else {
 			updatePA();
 			gId('seg' +i).innerHTML = "";
-			gId('putil').classList.add("staybot");
+			gId('putil').classList.add('staybot');
 		}
 	}
 
