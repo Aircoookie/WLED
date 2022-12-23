@@ -1,5 +1,12 @@
 ## WLED changelog
 
+### WLED release 0.14.0-b1
+
+#### Build 2212222
+
+-   Version bump to v0.14.0-b1 "Hoshi"
+-   Full changelog TBD
+
 ### WLED release 0.13.3
 
 -   Version bump to v0.13.3 "Toki"

@@ -75,6 +75,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 uint16_t Segment::_usedSegmentData = 0U; // amount of RAM all segments use for their data[]
 CRGB    *Segment::_globalLeds = nullptr;
+uint16_t Segment::maxWidth = DEFAULT_LED_COUNT;
+uint16_t Segment::maxHeight = 1;
 
 // copy constructor
 Segment::Segment(const Segment &orig) {
@@ -192,7 +194,7 @@ void Segment::setUpLeds() {
   // deallocation happens in resetIfRequired() as it is called when segment changes or in destructor
   if (Segment::_globalLeds)
     #ifndef WLED_DISABLE_2D
-    leds = &Segment::_globalLeds[start + startY*strip.matrixWidth]; // TODO: remove this hack
+    leds = &Segment::_globalLeds[start + startY*Segment::maxWidth];
     #else
     leds = &Segment::_globalLeds[start];
     #endif
@@ -412,18 +414,13 @@ void Segment::setMode(uint8_t fx, bool loadDefaults) {
         sOpt = extractModeDefaults(fx, "c1");   if (sOpt >= 0) custom1   = sOpt;
         sOpt = extractModeDefaults(fx, "c2");   if (sOpt >= 0) custom2   = sOpt;
         sOpt = extractModeDefaults(fx, "c3");   if (sOpt >= 0) custom3   = sOpt;
-        sOpt = extractModeDefaults(fx, "mp12"); if (sOpt >= 0) map1D2D   = constrain(sOpt, 0, 7);
-        sOpt = extractModeDefaults(fx, "ssim"); if (sOpt >= 0) soundSim  = constrain(sOpt, 0, 7);
+        sOpt = extractModeDefaults(fx, "m12");  if (sOpt >= 0) map1D2D   = constrain(sOpt, 0, 7);
+        sOpt = extractModeDefaults(fx, "si");   if (sOpt >= 0) soundSim  = constrain(sOpt, 0, 7);
         sOpt = extractModeDefaults(fx, "rev");  if (sOpt >= 0) reverse   = (bool)sOpt;
         sOpt = extractModeDefaults(fx, "mi");   if (sOpt >= 0) mirror    = (bool)sOpt; // NOTE: setting this option is a risky business
         sOpt = extractModeDefaults(fx, "rY");   if (sOpt >= 0) reverse_y = (bool)sOpt;
         sOpt = extractModeDefaults(fx, "mY");   if (sOpt >= 0) mirror_y  = (bool)sOpt; // NOTE: setting this option is a risky business
-        sOpt = extractModeDefaults(fx, "pal");
-        if (sOpt >= 0 && (size_t)sOpt < strip.getPaletteCount() + strip.customPalettes.size()) {
-          if (sOpt != palette) {
-            palette = sOpt;
-          }
-        }
+        sOpt = extractModeDefaults(fx, "pal");  if (sOpt >= 0) setPalette(sOpt);
       }
       stateChanged = true; // send UDP/WS broadcast
     }
@@ -431,13 +428,13 @@ void Segment::setMode(uint8_t fx, bool loadDefaults) {
 }
 
 void Segment::setPalette(uint8_t pal) {
-  if (pal < strip.getPaletteCount()) {
-    if (pal != palette) {
-      if (strip.paletteFade) startTransition(strip.getTransition());
-      palette = pal;
-    }
+  if (pal < 245 && pal > GRADIENT_PALETTE_COUNT+13) pal = 0; // built in palettes
+  if (pal > 245 && (strip.customPalettes.size() == 0 || 255U-pal > strip.customPalettes.size()-1)) pal = 0; // custom palettes
+  if (pal != palette) {
+    if (strip.paletteFade) startTransition(strip.getTransition());
+    palette = pal;
+    stateChanged = true; // send UDP/WS broadcast
   }
-  stateChanged = true; // send UDP/WS broadcast
 }
 
 // 2D matrix
@@ -502,7 +499,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
   if (i >= virtualLength() || i<0) return;  // if pixel would fall out of segment just exit
 
 #ifndef WLED_DISABLE_2D
-  if (is2D()) { // if this does not work use strip.isMatrix
+  if (is2D()) {
     uint16_t vH = virtualHeight();  // segment height in logical pixels
     uint16_t vW = virtualWidth();
     switch (map1D2D) {
@@ -535,7 +532,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
         break;
     }
     return;
-  } else if (strip.isMatrix && (width()==1 || height()==1)) { // TODO remove this hack
+  } else if (Segment::maxHeight!=1 && (width()==1 || height()==1)) {
     // we have a vertical or horizontal 1D segment (WARNING: virtual...() may be transposed)
     int x = 0, y = 0;
     if (virtualHeight()>1) y = i;
@@ -623,7 +620,7 @@ uint32_t Segment::getPixelColor(int i)
   i &= 0xFFFF;
 
 #ifndef WLED_DISABLE_2D
-  if (is2D()) { // if this does not work use strip.isMatrix
+  if (is2D()) {
     uint16_t vH = virtualHeight();  // segment height in logical pixels
     uint16_t vW = virtualWidth();
     switch (map1D2D) {
@@ -964,7 +961,8 @@ void WS2812FX::finalizeInit(void)
   }
 
   //segments are created in makeAutoSegments();
-  setBrightness(_brightness);
+  loadCustomPalettes(); // (re)load all custom palettes
+  deserializeMap();     // (re)load default ledmap
 }
 
 void WS2812FX::service() {
@@ -1326,6 +1324,7 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
     // disabled segments should get removed using purgeSegments()
     DEBUG_PRINT(F("-- Segment ")); DEBUG_PRINT(n); DEBUG_PRINTLN(F(" marked inactive."));
     seg.stop = 0;
+    seg.options = 0b0000000000000101; // on & selected
     //if (seg.name) {
     //  delete[] seg.name;
     //  seg.name = nullptr;
@@ -1337,10 +1336,10 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
   }
   if (isMatrix) {
     #ifndef WLED_DISABLE_2D
-    if (i1 < matrixWidth) seg.start = i1;
-    seg.stop = i2 > matrixWidth ? matrixWidth : i2;
-    if (startY < matrixHeight) seg.startY = startY;
-    seg.stopY = stopY > matrixHeight ? matrixHeight : MAX(1,stopY);
+    if (i1 < Segment::maxWidth) seg.start = i1;
+    seg.stop = i2 > Segment::maxWidth ? Segment::maxWidth : i2;
+    if (startY < Segment::maxHeight) seg.startY = startY;
+    seg.stopY = stopY > Segment::maxHeight ? Segment::maxHeight : MAX(1,stopY);
     #endif
   } else {
     if (i1 < _length) seg.start = i1;
@@ -1364,7 +1363,7 @@ void WS2812FX::restartRuntime() {
 void WS2812FX::resetSegments() {
   _segments.clear(); // destructs all Segment as part of clearing
   #ifndef WLED_DISABLE_2D
-  segment seg = isMatrix ? Segment(0, matrixWidth, 0, matrixHeight) : Segment(0, _length);
+  segment seg = isMatrix ? Segment(0, Segment::maxWidth, 0, Segment::maxHeight) : Segment(0, _length);
   #else
   segment seg = Segment(0, _length);
   #endif
@@ -1380,9 +1379,9 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
     else if (getActiveSegmentsNum() == 1) {
       size_t i = getLastActiveSegmentId();
       _segments[i].start  = 0;
-      _segments[i].stop   = matrixWidth;
+      _segments[i].stop   = Segment::maxWidth;
       _segments[i].startY = 0;
-      _segments[i].stopY  = matrixHeight;
+      _segments[i].stopY  = Segment::maxHeight;
       _segments[i].grouping = 1;
       _segments[i].spacing  = 0;
       _mainSegment = i;
@@ -1500,6 +1499,7 @@ void WS2812FX::loadCustomPalettes()
 {
   byte tcp[72]; //support gradient palettes with up to 18 entries
   CRGBPalette16 targetPalette;
+  customPalettes.clear(); // start fresh
   for (int index = 0; index<10; index++) {
     char fileName[32];
     sprintf_P(fileName, PSTR("/palette%d.json"), index);

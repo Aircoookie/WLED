@@ -411,10 +411,10 @@ void handleNotifications()
         for (size_t i = 0; i < strip.getSegmentsNum(); i++) {
           Segment& seg = strip.getSegment(i);
           if (!seg.isActive() || !seg.isSelected()) continue;
-          if (udpIn[8] < strip.getModeCount()) strip.setMode(i, udpIn[8]);
+          seg.setMode(udpIn[8]);
           seg.speed = udpIn[9];
           if (version > 2) seg.intensity = udpIn[16];
-          if (version > 4 && udpIn[19] < strip.getPaletteCount()) seg.palette = udpIn[19];
+          if (version > 4) seg.setPalette(udpIn[19]);
         }
         stateChanged = true;
       }

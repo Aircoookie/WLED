@@ -128,12 +128,13 @@ button {
 	display: inline-block;
 }
 
-.icons.on {
-	color: var(--c-g);
+.on {
+	color: var(--c-g) !important;
 }
 
-.icons.off {
-	color: var(--c-6);
+.off {
+	color: var(--c-6) !important;
+	cursor: default !important;
 }
 
 .top .icons, .bot .icons {
@@ -587,7 +588,7 @@ button {
 	margin: 0 auto;
 }
 
-#imgw {
+#info #imgw {
 	/*display: inline-block;*/
 	margin: 8px auto;
 }
@@ -654,7 +655,7 @@ img {
 	border-radius: 10px;
 	background: var(--c-3);
 	color: var(--c-f);
-	padding: 4px 4px 2px;
+	padding: 2px 4px;
 	font-size: 14px;
 	right: 3px;
 	transition: visibility 0.25s ease, opacity 0.25s ease;
@@ -740,7 +741,7 @@ input[type=range]::-moz-range-thumb {
 	margin-top: var(--bmt);
 }
 
-#picker, #rgbwrap, #kwrap, #wwrap, #wbal, #vwrap, #qcs-w, #hexw, #pall {
+#picker, #rgbwrap, #kwrap, #wwrap, #wbal, #vwrap, #qcs-w, #hexw, #pall, #ledmap {
 	margin: 0 auto;
 	width: 260px;
 }
@@ -780,7 +781,7 @@ input[type=range]::-moz-range-thumb {
 	margin: 0;
 }
 .btn-icon {
-	margin: -4px 4px 0 0;
+	margin: -4px 4px -1px 0;
 	vertical-align: middle;
 	display: inline-block;
 }
@@ -898,6 +899,10 @@ div.sel-p:after {
 select.sel-ple {
 	text-align: center;
 }
+select.sel-sg {
+	margin: 5px 0;
+	height: 40px;
+}
 option {
 	background-color: var(--c-3);
 	color: var(--c-f);
@@ -907,7 +912,7 @@ input[type=text] {
 	background: var(--c-3);
 	color: var(--c-f);
 	border: 0px solid var(--c-2);
-	border-radius: 5px;
+	border-radius: 10px;
 	padding: 8px;
 	/*margin: 6px 6px 6px 0;*/
 	font-size: 19px;
@@ -967,7 +972,7 @@ textarea {
 }
 
 .ptxt {
-    margin: 0 4px 4px !important;
+  margin: -1px 4px 8px !important;
 	display: none;
 }
 
@@ -977,7 +982,7 @@ textarea {
 
 .segname, .pname {
 	white-space: nowrap;
-	cursor: pointer;
+	/*cursor: pointer;*/
 	text-align: center;
 	overflow: clip;
 	text-overflow: ellipsis;
@@ -1187,7 +1192,7 @@ TD .checkmark, TD .radiomark {
 /* segment & preset wrapper */
 .seg, .pres {
 	background-color: var(--c-2);
-	color: var(--c-f);
+	/*color: var(--c-f);*/ /* seems to affect only the Add segment button, which should be same color as reset segments */
 	border: 0px solid var(--c-f);
 	text-align: left;
 	transition: background-color 0.5s;
@@ -1278,6 +1283,10 @@ TD .checkmark, TD .radiomark {
 	background-color: var(--c-3);
 }
 
+/*.selected .radiomark {
+	border: 1px solid var(--c-3);
+}*/
+
 /* selected list item */
 .lstI.selected {
 	top: 0;
@@ -1328,7 +1337,7 @@ TD .checkmark, TD .radiomark {
 /* list item palette preview */
 .lstIprev {
 	width: 100%;
-	height: 7px;
+	height: 6px;
 	position: absolute;
 	bottom: 0;
 	left: 0;
@@ -1398,6 +1407,10 @@ TD .checkmark, TD .radiomark {
 	display: inline-block !important;
 }
 
+.m6 {
+	margin: 6px 0;
+}
+
 .c {
 	text-align: center;
 }
@@ -1411,6 +1424,7 @@ TD .checkmark, TD .radiomark {
 	color: red;
 }
 
+/* horizontal divider (playlist entries) */
 .hrz {
 	width: auto;
 	height: 2px;
