@@ -137,6 +137,7 @@ bool bufferedFindObjectEnd() {
 
   if (!f || !f.size()) return false;
 
+  bool foundNonSpace = false;
   uint16_t objDepth = 0; //num of '{' minus num of '}'. return once 0
   //size_t start = f.position();
   byte buf[FS_BUFSIZE];
@@ -146,9 +147,10 @@ bool bufferedFindObjectEnd() {
     uint16_t count = 0;
     
     while (count < bufsize) {
+      if (buf[count] != ' ') foundNonSpace = true;
       if (buf[count] == '{') objDepth++;
       if (buf[count] == '}') objDepth--;
-      if (objDepth == 0) {
+      if (objDepth == 0 && foundNonSpace) {
         f.seek((f.position() - bufsize) + count +1);
         DEBUGFS_PRINTF("} at pos %d, took %d ms", f.position(), millis() - s);
         return true;
