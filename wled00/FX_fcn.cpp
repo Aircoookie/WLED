@@ -246,7 +246,8 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
       if (timeSinceLastChange <= 500) {
         targetPalette = prevRandomPalette;
         // there needs to be 255 palette blends (48) for full blend but that is too resource intensive
-        // so 128 is a compromise
+        // so 128 is a compromise (we need to perform full blend of the two palettes as each segment can have random
+        // palette selected but only 2 static palettes are used)
         size_t noOfBlends = ((128U * timeSinceLastChange) / 500U);
         for (size_t i=0; i<noOfBlends; i++) nblendPaletteTowardPalette(targetPalette, randomPalette, 48);
       } else {
@@ -379,9 +380,9 @@ void Segment::handleTransition() {
 void Segment::set(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t ofs, uint16_t i1Y, uint16_t i2Y) {
   //return if neither bounds nor grouping have changed
   bool boundsUnchanged = (start == i1 && stop == i2);
-  if (Segment::maxHeight>1) { //2D
-    boundsUnchanged &= (startY == i1Y && stopY == i2Y);
-  }
+  #ifndef WLED_DISABLE_2D
+  if (Segment::maxHeight>1) boundsUnchanged &= (startY == i1Y && stopY == i2Y); // 2D
+  #endif
   if (boundsUnchanged
       && (!grp || (grouping == grp && spacing == spc))
       && (ofs == UINT16_MAX || ofs == offset)) return;
@@ -392,19 +393,16 @@ void Segment::set(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t o
     markForReset();
     return;
   }
+  if (i1 < Segment::maxWidth) start = i1; // Segment::maxWidth equals strip.getLengthTotal() for 1D
+  stop = i2 > Segment::maxWidth ? Segment::maxWidth : MAX(1,i2);
+  startY = 0;
+  stopY  = 1;
+  #ifndef WLED_DISABLE_2D
   if (Segment::maxHeight>1) { // 2D
-    #ifndef WLED_DISABLE_2D
-    if (i1 < Segment::maxWidth) start = i1;
-    stop = i2 > Segment::maxWidth ? Segment::maxWidth : i2;
     if (i1Y < Segment::maxHeight) startY = i1Y;
     stopY = i2Y > Segment::maxHeight ? Segment::maxHeight : MAX(1,i2Y);
-    #endif
-  } else {
-    if (i1 < strip.getLengthTotal()) start = i1;
-    stop = i2 > strip.getLengthTotal() ? strip.getLengthTotal() : i2;
-    startY = 0;
-    stopY  = 1;
   }
+  #endif
   if (grp) {
     grouping = grp;
     spacing = spc;
