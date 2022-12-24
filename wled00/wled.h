@@ -3,12 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.14.0-b0
+   @version 0.14.0-b1
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2212191
+#define VERSION 2212222
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -71,7 +71,7 @@
   #include <user_interface.h>
   }
 #else // ESP32
-  #include <HardwareSerial.h>  // WLEDMM: needed to get Serial and HWCDC when using arduino-esp32 v2.0.x
+  #include <HardwareSerial.h>  // ensure we have the correct "Serial" on new MCUs (depends on ARDUINO_USB_MODE and ARDUINO_USB_CDC_ON_BOOT)
   #include <WiFi.h>
   #include <ETH.h>
   #include "esp_wifi.h"
