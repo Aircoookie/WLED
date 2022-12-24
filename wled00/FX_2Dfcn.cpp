@@ -41,6 +41,11 @@ void WS2812FX::setUpMatrix() {
   customMappingTable = nullptr;
   customMappingSize = 0;
 
+  // important if called from set.cpp, irrelevant if called from cfg.cpp
+  // fix limits if not a matrix set-up (no finalizeInit() called from set.cpp)
+  Segment::maxWidth  = _length;
+  Segment::maxHeight = 1;
+
   // isMatrix is set in cfg.cpp or set.cpp
   if (isMatrix) {
     uint16_t maxWidth  = hPanels * panelW;
