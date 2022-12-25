@@ -449,30 +449,22 @@ class UsermodBattery : public Usermod
         newBatteryPin     = battery[F("pin"] | newBatteryPin;
       #endif
       // calculateTimeLeftEnabled = battery[F("calculate-time-left")] | calculateTimeLeftEnabled;
-      minBatteryVoltage    = battery[F("min-battery-voltage")] | minBatteryVoltage;
-      //minBatteryVoltage  = min(12.0f, (int)readingInterval);
-      maxBatteryVoltage    = battery[F("max-battery-voltage")] | maxBatteryVoltage;
-      //maxBatteryVoltage  = min(14.4f, max(3.3f,(int)readingInterval));
-      totalBatteryCapacity = battery[F("total-battery-capacity")] | totalBatteryCapacity;
-      calibration          = battery[F("calibration")] | calibration;
-      readingInterval      = battery[F("read-interval-ms")] | readingInterval;
-      readingInterval      = max(3000, (int)readingInterval); // minimum repetition is 3000ms (3s)
+      setMinBatteryVoltage(battery[F("min-battery-voltage")] | minBatteryVoltage);
+      setMaxBatteryVoltage(battery[F("max-battery-voltage")] | maxBatteryVoltage);
+      setTotalBatteryCapacity(battery[F("total-battery-capacity")] | totalBatteryCapacity);
+      setCalibration(battery[F("calibration")] | calibration);
+      setReadingInterval(battery[F("read-interval-ms")] | readingInterval);
 
       JsonObject ao     = battery[F("auto-off")];
-      autoOffEnabled    = ao[FPSTR(_enabled)] | autoOffEnabled;
-      autoOffThreshold  = ao[FPSTR(_threshold)] | autoOffThreshold;
-      // when low power indicator is enabled the auto-off threshold cannot be above indicator threshold
-      autoOffThreshold  = lowPowerIndicatorEnabled /*&& autoOffEnabled*/ ? min(lowPowerIndicatorThreshold-1, (int)autoOffThreshold) : autoOffThreshold;
+      setAutoOffEnabled(ao[FPSTR(_enabled)] | autoOffEnabled);
+      setAutoOffThreshold(ao[FPSTR(_threshold)] | autoOffThreshold);
 
       JsonObject lp               = battery[F("low-power-indicator")];
-      lowPowerIndicatorEnabled    = lp[FPSTR(_enabled)] | lowPowerIndicatorEnabled;
-      lowPowerIndicatorPreset     = lp[FPSTR(_preset)] | lowPowerIndicatorPreset; // dropdown trickery (int)lp["preset"] 
-      // lowPowerIndicatorPreset     = getPresetName(lowPowerIndicatorPreset, n) ? lowPowerIndicatorPreset+1 : 88;
-      lowPowerIndicatorThreshold  = lp[FPSTR(_threshold)] | lowPowerIndicatorThreshold;
-      // when auto-off is enabled the indicator threshold cannot be below auto-off threshold
-      lowPowerIndicatorThreshold  = autoOffEnabled /*&& lowPowerIndicatorEnabled*/ ? max(autoOffThreshold+1, (int)lowPowerIndicatorThreshold) : max(5, (int)lowPowerIndicatorThreshold);
+      setLowPowerIndicatorEnabled(lp[FPSTR(_enabled)] | lowPowerIndicatorEnabled);
+      setLowPowerIndicatorPreset(lp[FPSTR(_preset)] | lowPowerIndicatorPreset); // dropdown trickery (int)lp["preset"]
+      setLowPowerIndicatorThreshold(lp[FPSTR(_threshold)] | lowPowerIndicatorThreshold);
       lowPowerIndicatorReactivationThreshold = lowPowerIndicatorThreshold+10;
-      lowPowerIndicatorDuration   = lp[FPSTR(_duration)] | lowPowerIndicatorDuration;
+      setLowPowerIndicatorDuration(lp[FPSTR(_duration)] | lowPowerIndicatorDuration);
 
       DEBUG_PRINT(FPSTR(_name));
 
@@ -555,9 +547,12 @@ class UsermodBattery : public Usermod
       return readingInterval;
     }
 
+    /*
+     * minimum repetition is 3000ms (3s) 
+     */
     void setReadingInterval(unsigned long newReadingInterval)
     {
-      readingInterval = newReadingInterval;
+      readingInterval = max((unsigned long)3000, newReadingInterval);
     }
 
 
@@ -594,6 +589,7 @@ class UsermodBattery : public Usermod
     {
       maxBatteryVoltage = max(getMinBatteryVoltage()+1.0f, voltage);
     }
+
 
     /*
      * Get the capacity of all cells in parralel sumed up
@@ -661,6 +657,7 @@ class UsermodBattery : public Usermod
       calibration = offset;
     }
 
+
     /*
      * Get auto-off feature enabled status
      * is auto-off enabled, true/false
@@ -692,7 +689,10 @@ class UsermodBattery : public Usermod
     void setAutoOffThreshold(int8_t threshold)
     {
       autoOffThreshold = min((int8_t)100, max((int8_t)0, threshold));
+      // when low power indicator is enabled the auto-off threshold cannot be above indicator threshold
+      autoOffThreshold  = lowPowerIndicatorEnabled /*&& autoOffEnabled*/ ? min(lowPowerIndicatorThreshold-1, (int)autoOffThreshold) : autoOffThreshold;
     }
+
 
     /*
      * Get low-power-indicator feature enabled status
@@ -722,9 +722,10 @@ class UsermodBattery : public Usermod
     /* 
      * Set low-power-indicator preset to activate when low power is detected
      */
-    void SetLowPowerIndicatorPreset(int8_t presetId)
+    void setLowPowerIndicatorPreset(int8_t presetId)
     {
-      lowPowerIndicatorPreset = presetId;
+      String tmp = "";
+      lowPowerIndicatorPreset = getPresetName(presetId, tmp) ? presetId : lowPowerIndicatorPreset;
     }
 
     /*
@@ -738,9 +739,11 @@ class UsermodBattery : public Usermod
     /*
      * Set low-power-indicator threshold in percent (0-100)
      */
-    void SetLowPowerIndicatorThreshold(int8_t threshold)
+    void setLowPowerIndicatorThreshold(int8_t threshold)
     {
       lowPowerIndicatorThreshold = threshold;
+      // when auto-off is enabled the indicator threshold cannot be below auto-off threshold
+      lowPowerIndicatorThreshold  = autoOffEnabled /*&& lowPowerIndicatorEnabled*/ ? max(autoOffThreshold+1, (int)lowPowerIndicatorThreshold) : max(5, (int)lowPowerIndicatorThreshold);
     }
 
     /*
@@ -758,6 +761,7 @@ class UsermodBattery : public Usermod
     {
       lowPowerIndicatorDuration = duration;
     }
+
 
     /*
      * Get low-power-indicator status when the indication is done thsi returns true
