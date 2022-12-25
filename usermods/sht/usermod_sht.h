@@ -26,9 +26,8 @@ class ShtUsermod : public Usermod
     const byte shtI2cAddress = 0x44; // i2c address of the sensor. 0x44 is the default for all SHT sensors. Change this, if needed
     unsigned long shtLastTimeUpdated = 0; // Remembers when we read data the last time
     bool shtDataRequested = false; // Reading data is done async. This remembers if we asked the sensor to read data
-    float shtCurrentTempC = 0; // Last read temperature in Celsius
-    float shtCurrentTempF = 0; // Last read temperature in Fahrenheit
-    float shtCurrentHumidity = 0; // Last read humidity in RH%
+    float shtCurrentTempC = 0.0f; // Last read temperature in Celsius
+    float shtCurrentHumidity = 0.0f; // Last read humidity in RH%
 
 
     void initShtTempHumiditySensor();
@@ -60,7 +59,7 @@ class ShtUsermod : public Usermod
 
     float getTemperature();
     float getTemperatureC() { return shtCurrentTempC; }
-    float getTemperatureF() { return shtCurrentTempF; }
+    float getTemperatureF() { return (shtCurrentTempC * 1.8f) + 32.0f; }
     float getHumidity() { return shtCurrentHumidity; }
     const char* getUnitString();
 
@@ -68,10 +67,10 @@ class ShtUsermod : public Usermod
 };
 
 // Strings to reduce flash memory usage (used more than twice)
-const char ShtUsermod::_name[]    PROGMEM = "SHT-Sensor";
-const char ShtUsermod::_enabled[] PROGMEM = "Enabled";
-const char ShtUsermod::_shtType[] PROGMEM = "SHT-Type";
-const char ShtUsermod::_unitOfTemp[] PROGMEM = "Unit";
+const char ShtUsermod::_name[]            PROGMEM = "SHT-Sensor";
+const char ShtUsermod::_enabled[]         PROGMEM = "Enabled";
+const char ShtUsermod::_shtType[]         PROGMEM = "SHT-Type";
+const char ShtUsermod::_unitOfTemp[]      PROGMEM = "Unit";
 const char ShtUsermod::_haMqttDiscovery[] PROGMEM = "Add-To-HA-MQTT-Discovery";
 
 /**
@@ -94,7 +93,6 @@ void ShtUsermod::initShtTempHumiditySensor()
   shtTempHumidSensor->begin(shtI2cAddress, i2c_sda, i2c_scl);
   if (shtTempHumidSensor->readStatus() == 0xFFFF) {
     DEBUG_PRINTF("[%s] SHT init failed!\n", _name);
-    cleanupShtTempHumiditySensor();
     cleanup();
     return;
   }
@@ -111,12 +109,8 @@ void ShtUsermod::initShtTempHumiditySensor()
  */
 void ShtUsermod::cleanupShtTempHumiditySensor()
 {
-  if (isShtReady()) {
-    shtTempHumidSensor->reset();
-  }
-
+  if (isShtReady()) shtTempHumidSensor->reset();
   delete shtTempHumidSensor;
-
   shtInitDone = false;
 }
 
@@ -130,9 +124,7 @@ void ShtUsermod::cleanupShtTempHumiditySensor()
  */
 void ShtUsermod::cleanup()
 {
-  if (isShtReady()) {
-    cleanupShtTempHumiditySensor();
-  }
+  cleanupShtTempHumiditySensor();
 
   if (pinAllocDone) {
     PinManagerPinType pins[2] = { { i2c_sda, true }, { i2c_scl, true } };
@@ -226,7 +218,7 @@ void ShtUsermod::publishHomeAssistantAutodiscovery() {
  * @return void
  */
 void ShtUsermod::appendDeviceToMqttDiscoveryMessage(JsonDocument& root) {
-  JsonObject device = root.createNestedObject("dev");
+  JsonObject device = root.createNestedObject(F("dev"));
   device[F("ids")] = escapedMac.c_str();
   device[F("name")] = serverDescription;
   device[F("sw")] = versionString;
@@ -294,13 +286,11 @@ void ShtUsermod::loop()
       if (shtTempHumidSensor->dataReady()) {
         if (shtTempHumidSensor->readData(false)) {
           shtCurrentTempC = shtTempHumidSensor->getTemperature();
-          shtCurrentTempF = shtTempHumidSensor->getFahrenheit();
           shtCurrentHumidity = shtTempHumidSensor->getHumidity();
 
           publishTemperatureAndHumidityViaMqtt();
           shtReadDataSuccess = true;
-        }
-        else {
+        } else {
           shtReadDataSuccess = false;
         }
 
@@ -458,12 +448,10 @@ void ShtUsermod::addToJsonInfo(JsonObject& root)
     if (shtLastTimeUpdated == 0) {
       jsonTemp.add(F(" Not read yet"));
       jsonHumidity.add(F(" Not read yet"));
-    }
-    else {
+    } else {
       jsonTemp.add(F(" Error"));
       jsonHumidity.add(F(" Error"));
     }
-
     return;
   }
 
@@ -471,7 +459,7 @@ void ShtUsermod::addToJsonInfo(JsonObject& root)
   jsonHumidity.add(F(" RH"));
 
   jsonTemp.add(getTemperature());
-  jsonTemp.add(unitOfTemp ? F(" °F") : F(" °C"));
+  jsonTemp.add(unitOfTemp ? "°F") : "°C");
 }
 
 /**
