@@ -1,51 +1,15 @@
 #pragma once
 
 #include "wled.h"
+#include "battery_defaults.h"
 
-
-
-
-// pin defaults
-// for the esp32 it is best to use the ADC1: GPIO32 - GPIO39
-// https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/adc.html
-#ifndef USERMOD_BATTERY_MEASUREMENT_PIN
-  #ifdef ARDUINO_ARCH_ESP32
-    #define USERMOD_BATTERY_MEASUREMENT_PIN 32
-  #else //ESP8266 boards
-    #define USERMOD_BATTERY_MEASUREMENT_PIN A0
-  #endif
-#endif
-
-// esp32 has a 12bit adc resolution
-// esp8266 only 10bit
-#ifndef USERMOD_BATTERY_ADC_PRECISION
-  #ifdef ARDUINO_ARCH_ESP32
-    // 12 bits
-    #define USERMOD_BATTERY_ADC_PRECISION 4095.0f
-  #else
-    // 10 bits
-    #define USERMOD_BATTERY_ADC_PRECISION 1024.0f
-  #endif
-#endif
-
-
-// the frequency to check the battery, 30 sec
-#ifndef USERMOD_BATTERY_MEASUREMENT_INTERVAL
-  #define USERMOD_BATTERY_MEASUREMENT_INTERVAL 30000
-#endif
-
-
-// default for 18650 battery
-// https://batterybro.com/blogs/18650-wholesale-battery-reviews/18852515-when-to-recycle-18650-batteries-and-how-to-start-a-collection-center-in-your-vape-shop
-// Discharge voltage: 2.5 volt + .1 for personal safety
-#ifndef USERMOD_BATTERY_MIN_VOLTAGE
-  #define USERMOD_BATTERY_MIN_VOLTAGE 2.6f
-#endif
-
-#ifndef USERMOD_BATTERY_MAX_VOLTAGE
-  #define USERMOD_BATTERY_MAX_VOLTAGE 4.2f
-#endif
-
+/*
+ * Usermod by Maximilian Mewes
+ * Mail: mewes.maximilian@gmx.de
+ * GitHub: itCarl
+ * Date: 25.12.2022
+ * If you have any questions, please feel free to contact me.
+ */
 class UsermodBattery : public Usermod 
 {
   private:
@@ -59,40 +23,46 @@ class UsermodBattery : public Usermod
     float minBatteryVoltage = USERMOD_BATTERY_MIN_VOLTAGE;
     // battery max. voltage
     float maxBatteryVoltage = USERMOD_BATTERY_MAX_VOLTAGE;
-    // 0 - 1024 for esp8266 (10-bit resolution)
-    // 0 - 4095 for esp32 (Default is 12-bit resolution)
-    float adcPrecision = USERMOD_BATTERY_ADC_PRECISION;
+    // all battery cells summed up
+    unsigned int totalBatteryCapacity = USERMOD_BATTERY_TOTAL_CAPACITY;
     // raw analog reading 
     float rawValue = 0.0;
     // calculated voltage            
-    float voltage = 0.0;
+    float voltage = maxBatteryVoltage;
     // mapped battery level based on voltage
-    long batteryLevel = 0;
+    int8_t batteryLevel = 100;
+    // offset or calibration value to fine tune the calculated voltage
+    float calibration = USERMOD_BATTERY_CALIBRATION;
     
     // time left estimation feature
-    bool calculateTimeLeftEnabled = true;
-    long estimatedTimeLeft = 0;
+    // bool calculateTimeLeftEnabled = USERMOD_BATTERY_CALCULATE_TIME_LEFT_ENABLED;
+    // float estimatedTimeLeft = 0.0;
 
     // auto shutdown/shutoff/master off feature
-    bool autoOffEnabled = true;
-    int8_t autoOffThreshold = 10;
+    bool autoOffEnabled = USERMOD_BATTERY_AUTO_OFF_ENABLED;
+    int8_t autoOffThreshold = USERMOD_BATTERY_AUTO_OFF_THRESHOLD;
 
     // low power indicator feature
-    bool lowPowerIndicatorEnabled = true;
-    byte lowPowerIndicatorPreset = 0;
-    int8_t lowPowerIndicatorThreshold = 20;
-    long lowPowerIndicatorDuration = 15;
-    bool lowPowerDetected = false;
-    bool lowPowerIndicationComplete = false;
-    byte lastPreset = 0;
+    bool lowPowerIndicatorEnabled = USERMOD_BATTERY_LOW_POWER_INDICATOR_ENABLED;
+    int8_t lowPowerIndicatorPreset = USERMOD_BATTERY_LOW_POWER_INDICATOR_PRESET;
+    int8_t lowPowerIndicatorThreshold = USERMOD_BATTERY_LOW_POWER_INDICATOR_THRESHOLD;
+    int8_t lowPowerIndicatorReactivationThreshold = lowPowerIndicatorThreshold+10;
+    int8_t lowPowerIndicatorDuration = USERMOD_BATTERY_LOW_POWER_INDICATOR_DURATION;
+    bool lowPowerIndicationDone = false;
+    unsigned long lowPowerActivationTime = 0; // used temporary during active time
+    int8_t lastPreset = 0;
 
     bool initDone = false;
     bool initializing = true;
 
-
     // strings to reduce flash memory usage (used more than twice)
     static const char _name[];
     static const char _readInterval[];
+    static const char _enabled[];
+    static const char _threshold[];
+    static const char _preset[];
+    static const char _duration[];
+    static const char _init[];
     
 
     // custom map function
@@ -102,33 +72,50 @@ class UsermodBattery : public Usermod
       return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
     }
 
-    float truncate(float val, byte dec) 
+    float truncate(float val, int8_t dec) 
     {
       float x = val * pow(10, dec);
       float y = round(x);
       float z = x - y;
       if ((int)z == 5)
-      {
-          y++;
-      }
+        y++;
       x = y / pow(10, dec);
       return x;
     }
 
+    /*
+     * Turn off all leds
+     */
     void turnOff()
     {
       bri = 0;
       stateUpdated(CALL_MODE_DIRECT_CHANGE);
     }
 
-    void indicateLowPower()
+    /*
+     * Indicate low power by activating a configured preset for a given time and then switching back to the preset that was selected previously
+     */
+    void lowPowerIndicator()
     {
-      // lowPowerIndicationComplete = true;
-      // lastPreset = currentPreset;
-      // bool p = applyPreset(lowPowerIndicatorPreset);
+      if (!lowPowerIndicatorEnabled) return;
+      if (lowPowerIndicationDone && lowPowerIndicatorReactivationThreshold <= batteryLevel) lowPowerIndicationDone = false;
+      if (lowPowerIndicatorThreshold <= batteryLevel) return;
+      if (lowPowerIndicationDone) return;
+      if (lowPowerActivationTime <= 1) {
+        lowPowerActivationTime = millis();
+        lastPreset = currentPreset;
+        applyPreset(lowPowerIndicatorPreset);
+        colorUpdated(CALL_MODE_DIRECT_CHANGE);
+      }
+
+      if(lowPowerActivationTime+(lowPowerIndicatorDuration*1000) <= millis())
+      {
+        lowPowerIndicationDone = true;
+        lowPowerActivationTime = 0;
+        applyPreset(lastPreset);
+        colorUpdated(CALL_MODE_DIRECT_CHANGE);
+      }      
     }
-
-
 
   public:
     //Functions called by WLED
@@ -178,12 +165,10 @@ class UsermodBattery : public Usermod
     {
       if(strip.isUpdating()) return;
 
-      if(lowPowerDetected && !lowPowerIndicationComplete)
-        indicateLowPower();
+      lowPowerIndicator();
 
       // check the battery level every USERMOD_BATTERY_MEASUREMENT_INTERVAL (ms)
       if (millis() < nextReadTime) return;
-
 
       nextReadTime = millis() + readingInterval;
       lastReadTime = millis();
@@ -193,7 +178,7 @@ class UsermodBattery : public Usermod
       rawValue = analogRead(batteryPin);
 
       // calculate the voltage     
-      voltage = (rawValue / adcPrecision) * maxBatteryVoltage ;
+      voltage = ((rawValue / getAdcPrecision()) * maxBatteryVoltage) + calibration;
       // check if voltage is within specified voltage range
       voltage = voltage<minBatteryVoltage||voltage>maxBatteryVoltage?-1.0f:voltage;
 
@@ -204,15 +189,17 @@ class UsermodBattery : public Usermod
       */
       batteryLevel = mapf(voltage, minBatteryVoltage, maxBatteryVoltage, 0, 100);
 
-      // Auto off -- Master power off
-      if (autoOffEnabled && (autoOffThreshold >= batteryLevel)) turnOff();
+      // if (calculateTimeLeftEnabled) {
+      //   float currentBatteryCapacity = totalBatteryCapacity;
+      //   estimatedTimeLeft = (currentBatteryCapacity/strip.currentMilliamps)*60;
+      // }
 
-      // Low power indicator
-      if (lowPowerIndicatorEnabled && (lowPowerIndicatorThreshold >= batteryLevel)) lowPowerDetected = true;
-      
+      // Auto off -- Master power off
+      if (autoOffEnabled && (autoOffThreshold >= batteryLevel))
+        turnOff();
 
       // SmartHome stuff
-      // still don't know much about MQTT and or HA
+      // still don't know much about MQTT and/or HA
       if (WLED_MQTT_CONNECTED) {
         char subuf[64];
         strcpy(subuf, mqttDeviceTopic);
@@ -221,7 +208,6 @@ class UsermodBattery : public Usermod
       }
 
     }
-
 
     /*
      * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
@@ -234,21 +220,26 @@ class UsermodBattery : public Usermod
       if (user.isNull()) user = root.createNestedObject("u");
 
       // info modal display names
-      JsonArray infoPercentage = user.createNestedArray("Battery level");
-      JsonArray infoVoltage = user.createNestedArray("Battery voltage");
-      if (calculateTimeLeftEnabled)
-      {
-        JsonArray infoEstimatedTimeLeft = user.createNestedArray("Estimated time left");
-        if (initializing) infoEstimatedTimeLeft.add("init");
-      }
-      JsonArray infoNextUpdate = user.createNestedArray("Next update");
+      JsonArray infoPercentage = user.createNestedArray(F("Battery level"));
+      JsonArray infoVoltage = user.createNestedArray(F("Battery voltage"));
+      // if (calculateTimeLeftEnabled)
+      // {
+      //   JsonArray infoEstimatedTimeLeft = user.createNestedArray(F("Estimated time left"));
+      //   if (initializing) {
+      //     infoEstimatedTimeLeft.add(FPSTR(_init));
+      //   } else {
+      //     infoEstimatedTimeLeft.add(estimatedTimeLeft);
+      //     infoEstimatedTimeLeft.add(F(" min"));
+      //   }
+      // }
+      JsonArray infoNextUpdate = user.createNestedArray(F("Next update"));
 
       infoNextUpdate.add((nextReadTime - millis()) / 1000);
-      infoNextUpdate.add(" sec");
+      infoNextUpdate.add(F(" sec"));
       
       if (initializing) {
-        infoPercentage.add("init");
-        infoVoltage.add("init");
+        infoPercentage.add(FPSTR(_init));
+        infoVoltage.add(FPSTR(_init));
         return;
       }
 
@@ -336,16 +327,18 @@ class UsermodBattery : public Usermod
           "calculate-time-left": 3600,    <-- time in seconds
           "min-battery-voltage": 2.6, 
           "max-battery-voltage": 4.2,
+          "total-battery-capacity": 3000, <-- in mAh
+          "calibration": 0,
           "read-interval-ms": 30000,      <-- time in milliseconds
           "auto-off": {
-            "auto-off-enabled": true,
-            "auto-off-threshold": 10,     <-- in percent
+            "enabled": true,
+            "threshold": 10,     <-- in percent
           },
           "low-power-indicator": {
-            "low-power-enabled": true,
-            "low-power-preset": 0,        <-- preset ID
-            "low-power-threshold": 10,    <-- in percent
-            "low-power-duration": 5,      <-- time in seconds
+            "enabled": true,
+            "preset": 0,        <-- preset ID
+            "threshold": 10,    <-- in percent
+            "duration": 5,      <-- time in seconds
           }  
         }
       }
@@ -355,22 +348,47 @@ class UsermodBattery : public Usermod
         battery["pin"] = batteryPin;
       #endif
 
-      battery["calculate-time-left"] = calculateTimeLeftEnabled;
-      battery["min-battery-voltage"] = minBatteryVoltage;
-      battery["max-battery-voltage"] = maxBatteryVoltage;
+      // battery[F("calculate-time-left")] = calculateTimeLeftEnabled;
+      battery[F("min-battery-voltage")] = minBatteryVoltage;
+      battery[F("max-battery-voltage")] = maxBatteryVoltage;
+      battery[F("total-battery-capacity")] = totalBatteryCapacity;
+      battery[F("calibration")] = calibration;
       battery[FPSTR(_readInterval)] = readingInterval;
       
-      JsonObject ao = battery.createNestedObject("auto-off");               // auto off section
-      ao["auto-off-enabled"] = autoOffEnabled;
-      ao["auto-off-threshold"] = autoOffThreshold;
+      JsonObject ao = battery.createNestedObject(F("auto-off"));               // auto off section
+      ao[FPSTR(_enabled)] = autoOffEnabled;
+      ao[FPSTR(_threshold)] = autoOffThreshold;
 
-      JsonObject lp = battery.createNestedObject("low-power-indicator");    // low power section
-      lp["low-power-enabled"] = lowPowerIndicatorEnabled;
-      lp["low-power-preset"] = lowPowerIndicatorPreset;
-      lp["low-power-threshold"] = lowPowerIndicatorThreshold;
-      lp["low-power-duration"] = lowPowerIndicatorDuration;
+      JsonObject lp = battery.createNestedObject(F("low-power-indicator"));    // low power section
+      lp[FPSTR(_enabled)] = lowPowerIndicatorEnabled;
+      lp[FPSTR(_preset)] = lowPowerIndicatorPreset; // dropdown trickery (String)lowPowerIndicatorPreset; 
+      lp[FPSTR(_threshold)] = lowPowerIndicatorThreshold;
+      lp[FPSTR(_duration)] = lowPowerIndicatorDuration;
 
       DEBUG_PRINTLN(F("Battery config saved."));
+    }
+
+    void appendConfigData()
+    {
+      oappend(SET_F("addInfo('Battery:min-battery-voltage', 1, 'v');"));
+      oappend(SET_F("addInfo('Battery:max-battery-voltage', 1, 'v');"));
+      oappend(SET_F("addInfo('Battery:total-battery-capacity', 1, 'mAh');"));
+      oappend(SET_F("addInfo('Battery:read-interval', 1, 'ms');"));
+      oappend(SET_F("addInfo('Battery:auto-off:threshold', 1, '%');"));
+      oappend(SET_F("addInfo('Battery:low-power-indicator:threshold', 1, '%');"));
+      oappend(SET_F("addInfo('Battery:low-power-indicator:duration', 1, 's');"));
+      
+      // cannot quite get this mf to work. its exeeding some buffer limit i think
+      // what i wanted is a list of all presets to select one from
+      // oappend(SET_F("bd=addDropdown('Battery:low-power-indicator', 'preset');"));
+      // the loop generates: oappend(SET_F("addOption(bd, 'preset name', preset id);"));
+      // for(int8_t i=1; i < 42; i++) {
+      //   oappend(SET_F("addOption(bd, 'Preset#"));
+      //   oappendi(i);
+      //   oappend(SET_F("',"));
+      //   oappendi(i);
+      //   oappend(SET_F(");"));
+      // }
     }
 
 
@@ -391,7 +409,7 @@ class UsermodBattery : public Usermod
      */
     bool readFromConfig(JsonObject& root)
     {
-      // looking for JSON object: 
+      // JSON object to be reed: 
       /*
       {
         "Battery": {
@@ -399,16 +417,18 @@ class UsermodBattery : public Usermod
           "calculate-time-left": 3600,    <-- time in seconds
           "min-battery-voltage": 2.6, 
           "max-battery-voltage": 4.2,
+          "total-battery-capacity": 3000, <-- in mAh
+          "calibration": 0,
           "read-interval-ms": 30000,      <-- time in milliseconds
           "auto-off": {
-            "auto-off-enabled": true,
-            "auto-off-threshold": 10,     <-- in percent
+            "enabled": true,
+            "threshold": 10,     <-- in percent
           },
           "low-power-indicator": {
-            "low-power-enabled": true,
-            "low-power-preset": 0,        <-- preset ID
-            "low-power-threshold": 10,    <-- in percent
-            "low-power-duration": 5,      <-- time in seconds
+            "enabled": true,
+            "preset": 0,        <-- preset ID
+            "threshold": 10,    <-- in percent
+            "duration": 5,      <-- time in seconds
           }  
         }
       }
@@ -416,7 +436,7 @@ class UsermodBattery : public Usermod
       #ifdef ARDUINO_ARCH_ESP32
         int8_t newBatteryPin = batteryPin;
       #endif
-
+      
       JsonObject battery = root[FPSTR(_name)];
       if (battery.isNull()) 
       {
@@ -426,26 +446,33 @@ class UsermodBattery : public Usermod
       }
 
       #ifdef ARDUINO_ARCH_ESP32
-        newBatteryPin     = battery["pin"] | newBatteryPin;
+        newBatteryPin     = battery[F("pin"] | newBatteryPin;
       #endif
-      calculateTimeLeftEnabled = battery["calculate-time-left"] | calculateTimeLeftEnabled;
-      minBatteryVoltage   = battery["min-battery-voltage"] | minBatteryVoltage;
-      //minBatteryVoltage = min(12.0f, (int)readingInterval);
-      maxBatteryVoltage   = battery["max-battery-voltage"] | maxBatteryVoltage;
-      //maxBatteryVoltage = min(14.4f, max(3.3f,(int)readingInterval));
-      readingInterval     = battery["read-interval-ms"] | readingInterval;
-      readingInterval     = max(3000, (int)readingInterval); // minimum repetition is >3000ms (3s)
+      // calculateTimeLeftEnabled = battery[F("calculate-time-left")] | calculateTimeLeftEnabled;
+      minBatteryVoltage    = battery[F("min-battery-voltage")] | minBatteryVoltage;
+      //minBatteryVoltage  = min(12.0f, (int)readingInterval);
+      maxBatteryVoltage    = battery[F("max-battery-voltage")] | maxBatteryVoltage;
+      //maxBatteryVoltage  = min(14.4f, max(3.3f,(int)readingInterval));
+      totalBatteryCapacity = battery[F("total-battery-capacity")] | totalBatteryCapacity;
+      calibration          = battery[F("calibration")] | calibration;
+      readingInterval      = battery[F("read-interval-ms")] | readingInterval;
+      readingInterval      = max(3000, (int)readingInterval); // minimum repetition is 3000ms (3s)
 
-      JsonObject ao     = battery["auto-off"];
-      autoOffEnabled    = ao["auto-off-enabled"] | autoOffEnabled;
-      autoOffThreshold  = ao["auto-off-threshold"] | autoOffThreshold;
+      JsonObject ao     = battery[F("auto-off")];
+      autoOffEnabled    = ao[FPSTR(_enabled)] | autoOffEnabled;
+      autoOffThreshold  = ao[FPSTR(_threshold)] | autoOffThreshold;
+      // when low power indicator is enabled the auto-off threshold cannot be above indicator threshold
+      autoOffThreshold  = lowPowerIndicatorEnabled /*&& autoOffEnabled*/ ? min(lowPowerIndicatorThreshold-1, (int)autoOffThreshold) : autoOffThreshold;
 
-      JsonObject lp               = battery["low-power-indicator"];
-      lowPowerIndicatorEnabled    = lp["low-power-enabled"] | lowPowerIndicatorEnabled;
-      lowPowerIndicatorPreset     = lp["low-power-preset"] | lowPowerIndicatorPreset;
-      lowPowerIndicatorThreshold  = lp["low-power-threshold"] | lowPowerIndicatorThreshold;
-      lowPowerIndicatorThreshold  = max(10, (int)lowPowerIndicatorThreshold); // lower limit is 10%
-      lowPowerIndicatorDuration   = lp["low-power-duration"] | lowPowerIndicatorDuration;
+      JsonObject lp               = battery[F("low-power-indicator")];
+      lowPowerIndicatorEnabled    = lp[FPSTR(_enabled)] | lowPowerIndicatorEnabled;
+      lowPowerIndicatorPreset     = lp[FPSTR(_preset)] | lowPowerIndicatorPreset; // dropdown trickery (int)lp["preset"] 
+      // lowPowerIndicatorPreset     = getPresetName(lowPowerIndicatorPreset, n) ? lowPowerIndicatorPreset+1 : 88;
+      lowPowerIndicatorThreshold  = lp[FPSTR(_threshold)] | lowPowerIndicatorThreshold;
+      // when auto-off is enabled the indicator threshold cannot be below auto-off threshold
+      lowPowerIndicatorThreshold  = autoOffEnabled /*&& lowPowerIndicatorEnabled*/ ? max(autoOffThreshold+1, (int)lowPowerIndicatorThreshold) : max(5, (int)lowPowerIndicatorThreshold);
+      lowPowerIndicatorReactivationThreshold = lowPowerIndicatorThreshold+10;
+      lowPowerIndicatorDuration   = lp[FPSTR(_duration)] | lowPowerIndicatorDuration;
 
       DEBUG_PRINT(FPSTR(_name));
 
@@ -475,7 +502,44 @@ class UsermodBattery : public Usermod
       return !battery[FPSTR(_readInterval)].isNull();
     }
 
+    /*
+     * Generate a preset sample for low power indication 
+     */
+    void generateExamplePreset()
+    {
+      // StaticJsonDocument<300> j;
+      // JsonObject preset = j.createNestedObject();
+      // preset["mainseg"] = 0;
+      // JsonArray seg = preset.createNestedArray("seg");
+      // JsonObject seg0 = seg.createNestedObject();
+      // seg0["id"] = 0;
+      // seg0["start"] = 0;
+      // seg0["stop"] = 60;
+      // seg0["grp"] = 0;
+      // seg0["spc"] = 0;
+      // seg0["on"] = true;
+      // seg0["bri"] = 255;
+
+      // JsonArray col0 = seg0.createNestedArray("col");
+      // JsonArray col00 = col0.createNestedArray();
+      // col00.add(255);
+      // col00.add(0);
+      // col00.add(0);
+
+      // seg0["fx"] = 1;
+      // seg0["sx"] = 128;
+      // seg0["ix"] = 128;
+
+      // savePreset(199, "Low power Indicator", preset);
+    }
    
+
+    /*
+     *
+     * Getter and Setter. Just in case some other usermod wants to interact with this in the future
+     *
+     */
+
     /*
      * getId() allows you to optionally give your V2 usermod an unique ID (please define it in const.h!).
      * This could be used in the future for the system to determine whether your usermod is installed.
@@ -484,8 +548,231 @@ class UsermodBattery : public Usermod
     {
       return USERMOD_ID_BATTERY;
     }
+
+
+    unsigned long getReadingInterval()
+    {
+      return readingInterval;
+    }
+
+    void setReadingInterval(unsigned long newReadingInterval)
+    {
+      readingInterval = newReadingInterval;
+    }
+
+
+    /*
+     * Get lowest configured battery voltage
+     */
+    float getMinBatteryVoltage()
+    {
+      return minBatteryVoltage;
+    }
+
+    /*
+     * Set lowest battery voltage
+     * can't be below 0 volt
+     */
+    void setMinBatteryVoltage(float voltage)
+    {
+      minBatteryVoltage = max(0.0f, voltage);
+    }
+
+    /*
+     * Get highest configured battery voltage
+     */
+    float getMaxBatteryVoltage()
+    {
+      return maxBatteryVoltage;
+    }
+    
+    /*
+     * Set highest battery voltage
+     * can't be below minBatteryVoltage
+     */
+    void setMaxBatteryVoltage(float voltage)
+    {
+      maxBatteryVoltage = max(getMinBatteryVoltage()+1.0f, voltage);
+    }
+
+    /*
+     * Get the capacity of all cells in parralel sumed up
+     * unit: mAh
+     */
+    unsigned int getTotalBatteryCapacity()
+    {
+      return totalBatteryCapacity;
+    }
+
+    void setTotalBatteryCapacity(unsigned int capacity)
+    {
+      totalBatteryCapacity = capacity;
+    }
+
+    /*
+     * Get the choosen adc precision
+     * esp8266 = 10bit resolution = 1024.0f 
+     * esp32 = 12bit resolution = 4095.0f
+     */
+    float getAdcPrecision()
+    {
+      #ifdef ARDUINO_ARCH_ESP32
+        // esp32
+        return 4095.0f;
+      #else
+        // esp8266
+        return 1024.0f;
+      #endif
+    }
+
+    /*
+     * Get the calculated voltage
+     * formula: (adc pin value / adc precision * max voltage) + calibration
+     */
+    float getVoltage()
+    {
+      return voltage;
+    }
+
+    /*
+     * Get the mapped battery level (0 - 100) based on voltage
+     * important: voltage can drop when a load is applied, so its only an estimate
+     */
+    int8_t getBatteryLevel()
+    {
+      return batteryLevel;
+    }
+
+    /*
+     * Get the configured calibration value
+     * a offset value to fine-tune the calculated voltage.
+     */
+    float getCalibration()
+    {
+      return calibration;
+    }
+
+    /*
+     * Set the voltage calibration offset value
+     * a offset value to fine-tune the calculated voltage.
+     */
+    void setCalibration(float offset)
+    {
+      calibration = offset;
+    }
+
+    /*
+     * Get auto-off feature enabled status
+     * is auto-off enabled, true/false
+     */
+    bool getAutoOffEnabled()
+    {
+      return autoOffEnabled;
+    }
+
+    /*
+     * Set auto-off feature status 
+     */
+    void setAutoOffEnabled(bool enabled)
+    {
+      autoOffEnabled = enabled;
+    }
+    
+    /*
+     * Get auto-off threshold in percent (0-100)
+     */
+    int8_t getAutoOffThreshold()
+    {
+      return autoOffThreshold;
+    }
+
+    /*
+     * Set auto-off threshold in percent (0-100) 
+     */
+    void setAutoOffThreshold(int8_t threshold)
+    {
+      autoOffThreshold = min((int8_t)100, max((int8_t)0, threshold));
+    }
+
+    /*
+     * Get low-power-indicator feature enabled status
+     * is the low-power-indicator enabled, true/false
+     */
+    bool getLowPowerIndicatorEnabled()
+    {
+      return lowPowerIndicatorEnabled;
+    }
+
+    /*
+     * Set low-power-indicator feature status 
+     */
+    void setLowPowerIndicatorEnabled(bool enabled)
+    {
+      lowPowerIndicatorEnabled = enabled;
+    }
+
+    /*
+     * Get low-power-indicator preset to activate when low power is detected
+     */
+    int8_t getLowPowerIndicatorPreset()
+    {
+      return lowPowerIndicatorPreset;
+    }
+
+    /* 
+     * Set low-power-indicator preset to activate when low power is detected
+     */
+    void SetLowPowerIndicatorPreset(int8_t presetId)
+    {
+      lowPowerIndicatorPreset = presetId;
+    }
+
+    /*
+     * Get low-power-indicator threshold in percent (0-100)
+     */
+    int8_t getLowPowerIndicatorThreshold()
+    {
+      return lowPowerIndicatorThreshold;
+    }
+
+    /*
+     * Set low-power-indicator threshold in percent (0-100)
+     */
+    void SetLowPowerIndicatorThreshold(int8_t threshold)
+    {
+      lowPowerIndicatorThreshold = threshold;
+    }
+
+    /*
+     * Get low-power-indicator duration in seconds
+     */
+    int8_t getLowPowerIndicatorDuration()
+    {
+      return lowPowerIndicatorDuration;
+    }
+
+    /*
+     * Set low-power-indicator duration in seconds
+     */
+    void setLowPowerIndicatorDuration(int8_t duration)
+    {
+      lowPowerIndicatorDuration = duration;
+    }
+
+    /*
+     * Get low-power-indicator status when the indication is done thsi returns true
+     */
+    bool getLowPowerIndicatorDone()
+    {
+      return lowPowerIndicationDone;
+    }
 };
 
 // strings to reduce flash memory usage (used more than twice)
-const char UsermodBattery::_name[]         PROGMEM = "Battery";
-const char UsermodBattery::_readInterval[] PROGMEM = "read-interval-ms";
+const char UsermodBattery::_name[]          PROGMEM = "Battery";
+const char UsermodBattery::_readInterval[]  PROGMEM = "read-interval";
+const char UsermodBattery::_enabled[]       PROGMEM = "enabled";
+const char UsermodBattery::_threshold[]     PROGMEM = "threshold";
+const char UsermodBattery::_preset[]        PROGMEM = "preset";
+const char UsermodBattery::_duration[]      PROGMEM = "duration";
+const char UsermodBattery::_init[]          PROGMEM = "init";
