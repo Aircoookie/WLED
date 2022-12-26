@@ -455,11 +455,11 @@ class UsermodBattery : public Usermod
       setCalibration(battery[F("calibration")] | calibration);
       setReadingInterval(battery[F("read-interval-ms")] | readingInterval);
 
-      JsonObject ao     = battery[F("auto-off")];
+      JsonObject ao = battery[F("auto-off")];
       setAutoOffEnabled(ao[FPSTR(_enabled)] | autoOffEnabled);
       setAutoOffThreshold(ao[FPSTR(_threshold)] | autoOffThreshold);
 
-      JsonObject lp               = battery[F("low-power-indicator")];
+      JsonObject lp = battery[F("low-power-indicator")];
       setLowPowerIndicatorEnabled(lp[FPSTR(_enabled)] | lowPowerIndicatorEnabled);
       setLowPowerIndicatorPreset(lp[FPSTR(_preset)] | lowPowerIndicatorPreset); // dropdown trickery (int)lp["preset"]
       setLowPowerIndicatorThreshold(lp[FPSTR(_threshold)] | lowPowerIndicatorThreshold);
@@ -724,8 +724,9 @@ class UsermodBattery : public Usermod
      */
     void setLowPowerIndicatorPreset(int8_t presetId)
     {
-      String tmp = "";
-      lowPowerIndicatorPreset = getPresetName(presetId, tmp) ? presetId : lowPowerIndicatorPreset;
+      // String tmp = ""; For what ever reason this doesn't work :(
+      // lowPowerIndicatorPreset = getPresetName(presetId, tmp) ? presetId : lowPowerIndicatorPreset;
+      lowPowerIndicatorPreset = presetId;
     }
 
     /*
