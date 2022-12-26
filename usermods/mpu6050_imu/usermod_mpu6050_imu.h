@@ -138,7 +138,7 @@ class MPU6050Driver : public Usermod {
         // (if it's going to break, usually the code will be 1)
         DEBUG_PRINT(F("DMP Initialization failed (code "));
         DEBUG_PRINT(devStatus);
-        DEBUG_PRINTLN(F(")"));
+        DEBUG_PRINTLN(")");
       }
     }
 
