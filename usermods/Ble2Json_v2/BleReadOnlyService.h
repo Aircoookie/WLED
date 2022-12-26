@@ -18,40 +18,46 @@ private:
   uint16_t m_controlId;
 
 protected:
-  bool writeData(BleChunker *chunker, std::string page)
+  bool writeData(BleComms *comms, std::string subCommand)
   {
-    DEBUG_PRINTLN("BleStateInfoService writeData");
+    if (m_dataId == WLED_BLE_PRESETS_DATA_ID)
+    {
+      return comms->streamFile("/presets.json");
+    }
+
+    DEBUG_PRINTLN("BleReadOnlyService writeData");
     if (!requestJSONBufferLock(100))
       return false;
 
-    Serial.printf("read only write: %d", m_dataId);
+    DEBUG_PRINTF("read only write: %d\n", m_dataId);
+
+    JsonArray data = doc.createNestedArray("array");
 
     switch (m_dataId)
     {
     case WLED_BLE_FX_DETAILS_DATA_ID:
-      serializeModeData(doc.as<JsonArray>());
+      DEBUG_PRINTLN("reading mode data");
+      serializeModeData(data);
       break;
     case WLED_BLE_FX_NAMES_DATA_ID:
-      serializeModeNames(doc.as<JsonArray>());
-      break;
-    case WLED_BLE_PRESETS_DATA_ID:
-      readObjectFromFile("/presets.json", nullptr, &doc);
+      DEBUG_PRINTLN("reading mode names");
+      serializeModeNames(data);
       break;
     case WLED_BLE_PALETTE_NAME_DATA_ID:
-      doc[F("palettes")] = serialized((const __FlashStringHelper *)JSON_palette_names);
+      doc[F("array")] = serialized((const __FlashStringHelper *)JSON_palette_names);
       break;
     default:
       break;
     }
 
-    bool ret = chunker->writeData(doc.as<JsonObject>(), false);
+    bool ret = comms->writeData(doc.as<JsonObject>(), false);
 
     releaseJSONBufferLock();
 
     return ret;
   }
 
-  bool writeNotify(BleChunker *chunker)
+  bool writeNotify(BleComms *comms)
   {
     // Doesn't notify
     return true;

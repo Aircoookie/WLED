@@ -4,24 +4,22 @@
 
 #include "ble_const.h"
 
-#include "BleChunker.h"
+#include "BleComms.h"
 
 #include <BLEDevice.h>
 #include <BLEServer.h>
 #include <BLEUtils.h>
 
-class BleServiceBase : public BleChunkerCallbacks
+class BleServiceBase : public BleCommsCallbacks
 {
 private:
-  bool m_shouldWrite = false;
   bool m_shouldNotify = false;
-  BleChunker *m_chunker = NULL;
+  BleComms *m_comms = NULL;
   BLEServer *m_server = NULL;
-  std::string m_page = "";
 
 protected:
-  virtual bool writeData(BleChunker *chunker, std::string page) = 0;
-  virtual bool writeNotify(BleChunker *chunker) = 0;
+  virtual bool writeData(BleComms *comms, std::string subCommand) = 0;
+  virtual bool writeNotify(BleComms *comms) = 0;
 
 public:
   BleServiceBase()
@@ -33,11 +31,11 @@ public:
     m_server = server;
     BLEService *pService = server->createService(BLE_UUID(serviceId));
 
-    Serial.printf("serviceId: %s data id: %02X control: %02X, notify: %02X",
-                  BLE_UUID(serviceId).toString().data(), dataId, controlId, notifyId);
+    DEBUG_PRINTF("serviceId: %s data id: %02X control: %02X, notify: %02X",
+                 BLE_UUID(serviceId).toString().data(), dataId, controlId, notifyId);
 
-    Serial.println("");
-    m_chunker = new BleChunker(dataId, controlId, notifyId, pService, this);
+    DEBUG_PRINTLN("");
+    m_comms = new BleComms(dataId, controlId, notifyId, pService, this);
 
     pService->start();
 
@@ -51,26 +49,13 @@ public:
   {
     DEBUG_PRINTLN("base loop");
 
-    if (m_shouldWrite && m_server->getPeerDevices(true).size() > 0)
-    {
-      if (writeData(m_chunker, m_page))
-      {
-        m_shouldWrite = false;
-      }
-    }
-
     if (m_shouldNotify && m_server->getPeerDevices(true).size() > 0)
     {
-      if (writeNotify(m_chunker))
+      if (writeNotify(m_comms))
       {
         m_shouldNotify = false;
       }
     }
-  }
-
-  virtual void setShouldWrite(bool shouldWrite)
-  {
-    m_shouldWrite = shouldWrite;
   }
 
   virtual void setShouldNotify(boolean shouldNotify)
@@ -78,16 +63,14 @@ public:
     m_shouldNotify = shouldNotify;
   }
 
-  virtual void onReadyToRead(std::string page)
+  virtual void onReadyToRead(std::string subCommand)
   {
     DEBUG_PRINTLN("Ready to read");
-
-    m_page = page;
-    m_shouldWrite = true;
+    writeData(m_comms, subCommand);
   }
 
-  virtual void onWrite(std::string value)
+  virtual void onWrite(std::string *pValue)
   {
-    ESP_LOGD("Service Base", ">> got write : %s", value);
+    DEBUG_PRINTF("ServiceBase >> got write : %s\n", pValue->data());
   }
 };

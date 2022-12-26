@@ -13,10 +13,10 @@
 class BleStateInfoService : public BleServiceBase
 {
 private:
-  std::string *m_toSave = NULL;
+  std::string *m_toSave = nullptr;
 
 protected:
-  bool writeData(BleChunker *chunker, std::string page)
+  bool writeData(BleComms *comms, std::string subCommand)
   {
     DEBUG_PRINTLN("BleStateInfoService writeData");
     if (!requestJSONBufferLock(100))
@@ -27,14 +27,14 @@ protected:
     serializeState(state);
     serializeInfo(info);
 
-    bool ret = chunker->writeData(doc.as<JsonObject>(), false);
+    bool ret = comms->writeData(doc.as<JsonObject>(), false);
 
     releaseJSONBufferLock();
 
     return ret;
   }
 
-  bool writeNotify(BleChunker *chunker)
+  bool writeNotify(BleComms *comms)
   {
     DEBUG_PRINTLN("BleStateInfoService writeNotify");
     if (!requestJSONBufferLock(100))
@@ -43,7 +43,7 @@ protected:
 
     serializeState(state);
 
-    bool ret = chunker->writeData(state, true);
+    bool ret = comms->writeData(state, true);
 
     releaseJSONBufferLock();
 
@@ -54,22 +54,25 @@ protected:
   {
     DEBUG_PRINTLN("check save");
 
-    if (m_toSave != NULL)
+    if (m_toSave != nullptr)
     {
-      DEBUG_PRINTLN("trying to save data");
-      DynamicJsonDocument localDoc(JSON_BUFFER_SIZE);
+      DEBUG_PRINTF("trying to save data");
+      if (!requestJSONBufferLock(100))
+        return;
 
-      DeserializationError error = deserializeJson(localDoc, m_toSave->data());
+      DeserializationError error = deserializeJson(doc, m_toSave->data());
 
       if (error)
       {
-        ESP_LOGD("State Server", "error : %d", error.code());
+        DEBUG_PRINTF("State Server error : %d %s\n", error.code(), m_toSave->data());
+        releaseJSONBufferLock();
+
         return;
       }
 
-      DEBUG_PRINTF("got data %s", m_toSave->data());
+      DEBUG_PRINTF("got data %s\n", m_toSave->data());
 
-      JsonObject obj = localDoc.as<JsonObject>();
+      JsonObject obj = doc.as<JsonObject>();
 
       deserializeState(obj, CALL_MODE_BUTTON_PRESET);
 
@@ -77,8 +80,8 @@ protected:
 
       ESP_LOGD("State Server", "saving data : %s", m_toSave->data());
 
-      delete m_toSave;
-      m_toSave = NULL;
+      m_toSave = nullptr;
+      releaseJSONBufferLock();
     }
   }
 
@@ -111,16 +114,10 @@ public:
     setShouldNotify(true);
   }
 
-  void onWrite(std::string value)
+  virtual void onWrite(std::string *pValue)
   {
-    ESP_LOGD("State Server", ">> got write : %s", value.data());
+    DEBUG_PRINTF("State Service>> got write : %s\n", pValue->data());
 
-    if (m_toSave)
-    {
-      delete m_toSave;
-      m_toSave = NULL;
-    }
-
-    m_toSave = new std::string(value);
+    m_toSave = pValue;
   }
 };
