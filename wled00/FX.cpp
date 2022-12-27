@@ -5929,6 +5929,46 @@ static const char _data_FX_MODE_2DDRIFTROSE[] PROGMEM = "Drift Rose@Fade,Blur;;;
 #endif // WLED_DISABLE_2D
 
 
+uint16_t mode_supercomputer(void)
+{
+  static const uint16_t minTime = 125;
+  static const uint16_t maxTime = 16000;
+  const uint16_t period = max(minTime, (uint16_t)map(SEGMENT.speed, 0, 255, 0, maxTime));
+  const uint16_t fadeTime = period / 2 * SEGMENT.intensity / 255;
+  const uint16_t holdTime = period / 2 - fadeTime;
+  const uint16_t halfDriftMax = period / 8;
+
+  for (int i = 0; i < SEGLEN; ++i) {
+    const int16_t drift = map(inoise16(i * 26017 + (i * 193) % 256) * SEGMENT.custom1 / 255, 0, 65535, -halfDriftMax, halfDriftMax - 1) * strip.now / period;
+    const uint16_t offset = map(inoise16(i * 39563 + (i * 181) % 256) * SEGMENT.custom2 / 255, 0, 65535, -(period / 2), (period / 2) - 1);
+    const uint16_t cycleTime = (period + strip.now + drift + offset) % period;
+    
+    uint8_t value;
+    // Fade in
+    if (cycleTime < fadeTime) {
+      value = cycleTime * 255 / fadeTime;
+    }
+    // Hold on
+    else if (cycleTime < fadeTime + holdTime) {
+      value = 255;
+    }
+    // Fade out
+    else if (cycleTime < 2 * fadeTime + holdTime) {
+      value = 255 - (cycleTime - (fadeTime + holdTime)) * 255 / fadeTime;
+    }
+    // Hold off
+    else {
+      value = 0;
+    }
+
+    SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(value, false, PALETTE_SOLID_WRAP, 0));
+  }
+
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_SUPERCOMPUTER[] PROGMEM = "Supercomputer@Speed,Fade,Drift,Offset;!;!;1;sx=31,ix=31,c1=31,c2=0";
+
+
 ///////////////////////////////////////////////////////////////////////////////
 /********************     audio enhanced routines     ************************/
 ///////////////////////////////////////////////////////////////////////////////
@@ -7500,6 +7540,8 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_2DBLOBS, &mode_2Dfloatingblobs, _data_FX_MODE_2DBLOBS);
   addEffect(FX_MODE_2DSCROLLTEXT, &mode_2Dscrollingtext, _data_FX_MODE_2DSCROLLTEXT);
   addEffect(FX_MODE_2DDRIFTROSE, &mode_2Ddriftrose, _data_FX_MODE_2DDRIFTROSE);
+  
+  addEffect(FX_MODE_SUPERCOMPUTER, &mode_supercomputer, _data_FX_MODE_SUPERCOMPUTER);
 
   addEffect(FX_MODE_2DGEQ, &mode_2DGEQ, _data_FX_MODE_2DGEQ); // audio
 
