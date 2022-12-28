@@ -5961,7 +5961,7 @@ uint16_t mode_supercomputer(void)
       value = 0;
     }
 
-    SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(value, false, PALETTE_SOLID_WRAP, 0));
+    SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(value, false, false, 0));
   }
 
   return FRAMETIME;
