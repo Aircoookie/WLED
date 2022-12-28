@@ -235,7 +235,7 @@ private:
     if (offTimerStart > 0 && millis() - offTimerStart > m_switchOffDelay) {
       offTimerStart = 0;
       if (enabled == true) {
-        if (!m_mqttOnly && (!m_nightTimeOnly || (m_nightTimeOnly && !isDayTime()))) switchStrip(false);
+        if (!m_mqttOnly && (!m_nightTimeOnly || (m_nightTimeOnly && !isDayTime()) || PIRtriggered)) switchStrip(false);
         else if (NotifyUpdateMode != CALL_MODE_NO_NOTIFY) updateInterfaces(CALL_MODE_WS_SEND);
         publishMqtt("off");
       }

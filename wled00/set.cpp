@@ -169,14 +169,27 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       if (pinManager.allocatePin(hw_btn_pin,false,PinOwner::Button)) {
         btnPin[i] = hw_btn_pin;
         buttonType[i] = request->arg(be).toInt();
-        if (disablePullUp) {
-          pinMode(btnPin[i], INPUT);
-        } else {
-          #ifdef ESP32
-          pinMode(btnPin[i], buttonType[i]==BTN_TYPE_PUSH_ACT_HIGH ? INPUT_PULLDOWN : INPUT_PULLUP);
-          #else
-          pinMode(btnPin[i], INPUT_PULLUP);
-          #endif
+      #ifdef ARDUINO_ARCH_ESP32
+        // ESP32 only: check that analog button pin is a valid ADC gpio
+        if (((buttonType[i] == BTN_TYPE_ANALOG) || (buttonType[i] == BTN_TYPE_ANALOG_INVERTED)) && (digitalPinToAnalogChannel(btnPin[i]) < 0)) 
+        {
+          // not an ADC analog pin
+          if (btnPin[i] >= 0) DEBUG_PRINTF("PIN ALLOC error: GPIO%d for analog button #%d is not an analog pin!\n", btnPin[i], i);
+          btnPin[i] = -1;
+          pinManager.deallocatePin(hw_btn_pin,PinOwner::Button);
+        } 
+        else 
+      #endif
+        {
+          if (disablePullUp) {
+            pinMode(btnPin[i], INPUT);
+          } else {
+            #ifdef ESP32
+            pinMode(btnPin[i], buttonType[i]==BTN_TYPE_PUSH_ACT_HIGH ? INPUT_PULLDOWN : INPUT_PULLUP);
+            #else
+            pinMode(btnPin[i], INPUT_PULLUP);
+            #endif
+          }
         }
       } else {
         btnPin[i] = -1;
@@ -731,7 +744,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (pos > 0) {
     spcI = getNumVal(&req, pos);
   }
-  strip.setSegment(selectedSeg, startI, stopI, grpI, spcI, UINT16_MAX, startY, stopY);
+  selseg.set(startI, stopI, grpI, spcI, UINT16_MAX, startY, stopY);
 
   pos = req.indexOf(F("RV=")); //Segment reverse
   if (pos > 0) selseg.reverse = req.charAt(pos+3) != '0';

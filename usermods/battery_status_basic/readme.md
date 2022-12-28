@@ -1,12 +1,11 @@
 # :battery: Battery status/level Usermod :battery:
-
-This Usermod allows you to monitor the battery level of your battery powered project.
+Enables battery level monitoring of your project.
 
 You can see the battery level and voltage in the `info modal`. 
 
-For this to work the positive side of the (18650) battery must be connected to pin `A0` of the d1mini/esp8266 with a 100k ohm resistor (see [Useful Links](#useful-links)).
+For this to work, the positive side of the (18650) battery must be connected to pin `A0` of the d1 mini/esp8266 with a 100k Ohm resistor (see [Useful Links](#useful-links)).
 
-If you have a esp32 board it is best to connect the positive side of the battery to ADC1 (GPIO32 - GPIO39)
+If you have an ESP32 board, connect the positive side of the battery to ADC1 (GPIO32 - GPIO39)
 
 <p align="center">
   <img width="300" src="assets/battery_info_screen.png">
@@ -23,16 +22,16 @@ define `USERMOD_BATTERY_STATUS_BASIC` in `my_config.h`
 
 ### Define Your Options
 
-* `USERMOD_BATTERY_STATUS_BASIC`                   - define this (in `my_config.h`) to have this user mod included wled00\usermods_list.cpp
-* `USERMOD_BATTERY_MEASUREMENT_PIN`                - defaults to A0 on esp8266 and GPIO32 on esp32
-* `USERMOD_BATTERY_MEASUREMENT_INTERVAL`           - the frequency to check the battery, defaults to 30 seconds
-* `USERMOD_BATTERY_MIN_VOLTAGE`                    - minimum voltage of the Battery used, default is 2.6 (18650 battery standard)
-* `USERMOD_BATTERY_MAX_VOLTAGE`                    - maximum voltage of the Battery used, default is 4.2 (18650 battery standard)
+* `USERMOD_BATTERY_STATUS_BASIC`                   - define this (in `my_config.h`) to have this usermod included wled00\usermods_list.cpp
+* `USERMOD_BATTERY_MEASUREMENT_PIN`                - defaults to A0 on ESP8266 and GPIO32 on ESP32
+* `USERMOD_BATTERY_MEASUREMENT_INTERVAL`           - battery check interval. defaults to 30 seconds
+* `USERMOD_BATTERY_MIN_VOLTAGE`                    - minimum battery voltage. default is 2.6 (18650 battery standard)
+* `USERMOD_BATTERY_MAX_VOLTAGE`                    - maximum battery voltage. default is 4.2 (18650 battery standard)
 
-All parameters can be configured at runtime using Usermods settings page.
+All parameters can be configured at runtime via the Usermods settings page.
 
 ## Important :warning:
-* Make sure you know your battery specification ! not every battery is the same !
+* Make sure you know your battery specifications! All batteries are **NOT** the same!
 * Example:
 
 | Your battery specification table  |                 | Options you can define        | 

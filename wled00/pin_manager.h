@@ -66,12 +66,14 @@ static_assert(0u == static_cast<uint8_t>(PinOwner::None), "PinOwner::None must b
 class PinManagerClass {
   private:
   #ifdef ESP8266
+  #define WLED_NUM_PINS 17
   uint8_t pinAlloc[3] = {0x00, 0x00, 0x00}; //24bit, 1 bit per pin, we use first 17bits
-  PinOwner ownerTag[17] = { PinOwner::None };
+  PinOwner ownerTag[WLED_NUM_PINS] = { PinOwner::None };
   #else
+  #define WLED_NUM_PINS 50
   uint8_t pinAlloc[7] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // 56bit, 1 bit per pin, we use 50 bits on ESP32-S3
   uint8_t ledcAlloc[2] = {0x00, 0x00}; //16 LEDC channels
-  PinOwner ownerTag[50] = { PinOwner::None }; // new MCU's have up to 50 GPIO
+  PinOwner ownerTag[WLED_NUM_PINS] = { PinOwner::None }; // new MCU's have up to 50 GPIO
   #endif
   struct {
     uint8_t i2cAllocCount : 4; // allow multiple allocation of I2C bus pins but keep track of allocations

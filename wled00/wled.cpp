@@ -268,9 +268,15 @@ void WLED::setup()
   #endif
 
   Serial.begin(115200);
-  Serial.setTimeout(50);
-  #if defined(WLED_DEBUG) && (defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3))
+  #if !ARDUINO_USB_CDC_ON_BOOT
+  Serial.setTimeout(50);  // this causes troubles on new MCUs that have a "virtual" USB Serial (HWCDC)
+  #else
+  #endif
+  #if defined(WLED_DEBUG) && defined(ARDUINO_ARCH_ESP32) && (defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3) || ARDUINO_USB_CDC_ON_BOOT)
   delay(2500);  // allow CDC USB serial to initialise
+  #endif
+  #if !defined(WLED_DEBUG) && defined(ARDUINO_ARCH_ESP32) && !defined(WLED_DEBUG_HOST) && ARDUINO_USB_CDC_ON_BOOT
+  Serial.setDebugOutput(false); // switch off kernel messages when using USBCDC
   #endif
   DEBUG_PRINTLN();
   DEBUG_PRINT(F("---WLED "));
@@ -565,7 +571,7 @@ bool WLED::initEthernet()
   } else {
     DEBUG_PRINT(F("initE: Failing due to invalid eth_clk_mode ("));
     DEBUG_PRINT(es.eth_clk_mode);
-    DEBUG_PRINTLN(F(")"));
+    DEBUG_PRINTLN(")");
     return false;
   }
 
