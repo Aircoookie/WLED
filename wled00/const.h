@@ -79,7 +79,7 @@
 #define USERMOD_ID_RTC                   15     //Usermod "usermod_rtc.h"
 #define USERMOD_ID_ELEKSTUBE_IPS         16     //Usermod "usermod_elekstube_ips.h"
 #define USERMOD_ID_SN_PHOTORESISTOR      17     //Usermod "usermod_sn_photoresistor.h"
-#define USERMOD_ID_BATTERY_STATUS_BASIC  18     //Usermod "usermod_v2_battery_status_basic.h"
+#define USERMOD_ID_BATTERY               18     //Usermod "usermod_v2_battery.h"
 #define USERMOD_ID_PWM_FAN               19     //Usermod "usermod_PWM_fan.h"
 #define USERMOD_ID_BH1750                20     //Usermod "usermod_bh1750.h"
 #define USERMOD_ID_SEVEN_SEGMENT_DISPLAY 21     //Usermod "usermod_v2_seven_segment_display.h"
