@@ -426,8 +426,8 @@ class BusPwm : public Bus {
         _data[0] = w;
         break;
       case TYPE_ANALOG_2CH: //warm white + cold white
-        _data[1] = cw;
-        _data[0] = ww;
+        _data[0] = (w > 127) ? 0 : map(w, 0, 127, 255, 0); //LED1
+        _data[1] = (w < 128) ? 0 : map(w, 128, 255, 0, 255); //LED2
         break;
       case TYPE_ANALOG_5CH: //RGB + warm white + cold white
         _data[4] = cw;
