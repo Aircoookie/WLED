@@ -26,7 +26,7 @@ class UsermodBattery : public Usermod
     // all battery cells summed up
     unsigned int totalBatteryCapacity = USERMOD_BATTERY_TOTAL_CAPACITY;
     // raw analog reading 
-    float rawValue = 0.0;
+    float rawValue = 0.0f;
     // calculated voltage            
     float voltage = maxBatteryVoltage;
     // mapped battery level based on voltage
@@ -72,15 +72,10 @@ class UsermodBattery : public Usermod
       return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
     }
 
-    float truncate(float val, int8_t dec) 
+    float dot2round(float x) 
     {
-      float x = val * pow(10, dec);
-      float y = round(x);
-      float z = x - y;
-      if ((int)z == 5)
-        y++;
-      x = y / pow(10, dec);
-      return x;
+      float nx = (int)(x * 100 + .5);
+      return (float)(nx / 100);
     }
 
     /*
@@ -105,15 +100,12 @@ class UsermodBattery : public Usermod
         lowPowerActivationTime = millis();
         lastPreset = currentPreset;
         applyPreset(lowPowerIndicatorPreset);
-        colorUpdated(CALL_MODE_DIRECT_CHANGE);
       }
 
-      if(lowPowerActivationTime+(lowPowerIndicatorDuration*1000) <= millis())
-      {
+      if (lowPowerActivationTime+(lowPowerIndicatorDuration*1000) <= millis()) {
         lowPowerIndicationDone = true;
         lowPowerActivationTime = 0;
         applyPreset(lastPreset);
-        colorUpdated(CALL_MODE_DIRECT_CHANGE);
       }      
     }
 
@@ -127,12 +119,16 @@ class UsermodBattery : public Usermod
     void setup() 
     {
       #ifdef ARDUINO_ARCH_ESP32
+        bool success = false;
         DEBUG_PRINTLN(F("Allocating battery pin..."));
-        if (batteryPin >= 0 && pinManager.allocatePin(batteryPin, false)) 
-        {
-          DEBUG_PRINTLN(F("Battery pin allocation succeeded."));
-        } else {
-          if (batteryPin >= 0) DEBUG_PRINTLN(F("Battery pin allocation failed."));
+        if (batteryPin >= 0 && digitalPinToAnalogChannel(batteryPin) >= 0) 
+          if (pinManager.allocatePin(batteryPin, false, PinOwner::UM_Battery)) {
+            DEBUG_PRINTLN(F("Battery pin allocation succeeded."));
+            success = true;
+          }
+
+        if (!success) {
+          DEBUG_PRINTLN(F("Battery pin allocation failed."));
           batteryPin = -1;  // allocation failed
         }
       #else //ESP8266 boards have only one analog input pin A0
@@ -201,10 +197,9 @@ class UsermodBattery : public Usermod
       // SmartHome stuff
       // still don't know much about MQTT and/or HA
       if (WLED_MQTT_CONNECTED) {
-        char subuf[64];
-        strcpy(subuf, mqttDeviceTopic);
-        strcat_P(subuf, PSTR("/voltage"));
-        mqtt->publish(subuf, 0, false, String(voltage).c_str());
+        char buf[64]; // buffer for snprintf()
+        snprintf_P(buf, 63, PSTR("/voltage"), mqttDeviceTopic);
+        mqtt->publish(buf, 0, false, String(voltage).c_str());
       }
 
     }
@@ -253,7 +248,7 @@ class UsermodBattery : public Usermod
       if (voltage < 0) {
         infoVoltage.add(F("invalid"));
       } else {
-        infoVoltage.add(truncate(voltage, 2));
+        infoVoltage.add(dot2round(voltage));
       }
       infoVoltage.add(F(" V"));
     }
@@ -319,39 +314,15 @@ class UsermodBattery : public Usermod
      */
     void addToConfig(JsonObject& root)
     {
-      // created JSON object: 
-      /*
-      {
-        "Battery": {
-          "pin": "A0",                    <--- only when using esp32 boards
-          "calculate-time-left": 3600,    <-- time in seconds
-          "min-battery-voltage": 2.6, 
-          "max-battery-voltage": 4.2,
-          "total-battery-capacity": 3000, <-- in mAh
-          "calibration": 0,
-          "read-interval-ms": 30000,      <-- time in milliseconds
-          "auto-off": {
-            "enabled": true,
-            "threshold": 10,     <-- in percent
-          },
-          "low-power-indicator": {
-            "enabled": true,
-            "preset": 0,        <-- preset ID
-            "threshold": 10,    <-- in percent
-            "duration": 5,      <-- time in seconds
-          }  
-        }
-      }
-      */ 
       JsonObject battery = root.createNestedObject(FPSTR(_name));           // usermodname
       #ifdef ARDUINO_ARCH_ESP32
         battery["pin"] = batteryPin;
       #endif
 
-      // battery[F("calculate-time-left")] = calculateTimeLeftEnabled;
-      battery[F("min-battery-voltage")] = minBatteryVoltage;
-      battery[F("max-battery-voltage")] = maxBatteryVoltage;
-      battery[F("total-battery-capacity")] = totalBatteryCapacity;
+      // battery[F("time-left")] = calculateTimeLeftEnabled;
+      battery[F("min-voltage")] = minBatteryVoltage;
+      battery[F("max-voltage")] = maxBatteryVoltage;
+      battery[F("capacity")] = totalBatteryCapacity;
       battery[F("calibration")] = calibration;
       battery[FPSTR(_readInterval)] = readingInterval;
       
@@ -359,7 +330,7 @@ class UsermodBattery : public Usermod
       ao[FPSTR(_enabled)] = autoOffEnabled;
       ao[FPSTR(_threshold)] = autoOffThreshold;
 
-      JsonObject lp = battery.createNestedObject(F("low-power-indicator"));    // low power section
+      JsonObject lp = battery.createNestedObject(F("indicator"));    // low power section
       lp[FPSTR(_enabled)] = lowPowerIndicatorEnabled;
       lp[FPSTR(_preset)] = lowPowerIndicatorPreset; // dropdown trickery (String)lowPowerIndicatorPreset; 
       lp[FPSTR(_threshold)] = lowPowerIndicatorThreshold;
@@ -370,13 +341,13 @@ class UsermodBattery : public Usermod
 
     void appendConfigData()
     {
-      oappend(SET_F("addInfo('Battery:min-battery-voltage', 1, 'v');"));
-      oappend(SET_F("addInfo('Battery:max-battery-voltage', 1, 'v');"));
-      oappend(SET_F("addInfo('Battery:total-battery-capacity', 1, 'mAh');"));
-      oappend(SET_F("addInfo('Battery:read-interval', 1, 'ms');"));
+      oappend(SET_F("addInfo('Battery:min-voltage', 1, 'v');"));
+      oappend(SET_F("addInfo('Battery:max-voltage', 1, 'v');"));
+      oappend(SET_F("addInfo('Battery:capacity', 1, 'mAh');"));
+      oappend(SET_F("addInfo('Battery:interval', 1, 'ms');"));
       oappend(SET_F("addInfo('Battery:auto-off:threshold', 1, '%');"));
-      oappend(SET_F("addInfo('Battery:low-power-indicator:threshold', 1, '%');"));
-      oappend(SET_F("addInfo('Battery:low-power-indicator:duration', 1, 's');"));
+      oappend(SET_F("addInfo('Battery:indicator:threshold', 1, '%');"));
+      oappend(SET_F("addInfo('Battery:indicator:duration', 1, 's');"));
       
       // cannot quite get this mf to work. its exeeding some buffer limit i think
       // what i wanted is a list of all presets to select one from
@@ -409,30 +380,6 @@ class UsermodBattery : public Usermod
      */
     bool readFromConfig(JsonObject& root)
     {
-      // JSON object to be reed: 
-      /*
-      {
-        "Battery": {
-          "pin": "A0",                    <--- only when using esp32 boards
-          "calculate-time-left": 3600,    <-- time in seconds
-          "min-battery-voltage": 2.6, 
-          "max-battery-voltage": 4.2,
-          "total-battery-capacity": 3000, <-- in mAh
-          "calibration": 0,
-          "read-interval-ms": 30000,      <-- time in milliseconds
-          "auto-off": {
-            "enabled": true,
-            "threshold": 10,     <-- in percent
-          },
-          "low-power-indicator": {
-            "enabled": true,
-            "preset": 0,        <-- preset ID
-            "threshold": 10,    <-- in percent
-            "duration": 5,      <-- time in seconds
-          }  
-        }
-      }
-      */
       #ifdef ARDUINO_ARCH_ESP32
         int8_t newBatteryPin = batteryPin;
       #endif
@@ -448,18 +395,18 @@ class UsermodBattery : public Usermod
       #ifdef ARDUINO_ARCH_ESP32
         newBatteryPin     = battery[F("pin"] | newBatteryPin;
       #endif
-      // calculateTimeLeftEnabled = battery[F("calculate-time-left")] | calculateTimeLeftEnabled;
-      setMinBatteryVoltage(battery[F("min-battery-voltage")] | minBatteryVoltage);
-      setMaxBatteryVoltage(battery[F("max-battery-voltage")] | maxBatteryVoltage);
-      setTotalBatteryCapacity(battery[F("total-battery-capacity")] | totalBatteryCapacity);
+      // calculateTimeLeftEnabled = battery[F("time-left")] | calculateTimeLeftEnabled;
+      setMinBatteryVoltage(battery[F("min-Voltage")] | minBatteryVoltage);
+      setMaxBatteryVoltage(battery[F("max-Voltage")] | maxBatteryVoltage);
+      setTotalBatteryCapacity(battery[F("capacity")] | totalBatteryCapacity);
       setCalibration(battery[F("calibration")] | calibration);
-      setReadingInterval(battery[F("read-interval-ms")] | readingInterval);
+      setReadingInterval(battery[FPSTR(_readInterval)] | readingInterval);
 
       JsonObject ao = battery[F("auto-off")];
       setAutoOffEnabled(ao[FPSTR(_enabled)] | autoOffEnabled);
       setAutoOffThreshold(ao[FPSTR(_threshold)] | autoOffThreshold);
 
-      JsonObject lp = battery[F("low-power-indicator")];
+      JsonObject lp = battery[F("indicator")];
       setLowPowerIndicatorEnabled(lp[FPSTR(_enabled)] | lowPowerIndicatorEnabled);
       setLowPowerIndicatorPreset(lp[FPSTR(_preset)] | lowPowerIndicatorPreset); // dropdown trickery (int)lp["preset"]
       setLowPowerIndicatorThreshold(lp[FPSTR(_threshold)] | lowPowerIndicatorThreshold);
@@ -775,7 +722,7 @@ class UsermodBattery : public Usermod
 
 // strings to reduce flash memory usage (used more than twice)
 const char UsermodBattery::_name[]          PROGMEM = "Battery";
-const char UsermodBattery::_readInterval[]  PROGMEM = "read-interval";
+const char UsermodBattery::_readInterval[]  PROGMEM = "interval";
 const char UsermodBattery::_enabled[]       PROGMEM = "enabled";
 const char UsermodBattery::_threshold[]     PROGMEM = "threshold";
 const char UsermodBattery::_preset[]        PROGMEM = "preset";
