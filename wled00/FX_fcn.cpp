@@ -211,6 +211,7 @@ void Segment::setUpLeds() {
 CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
   static unsigned long _lastPaletteChange = 0; // perhaps it should be per segment
   static CRGBPalette16 randomPalette = CRGBPalette16(DEFAULT_COLOR);
+  static CRGBPalette16 prevRandomPalette = CRGBPalette16(CRGB(BLACK));
   byte tcp[72];
   if (pal < 245 && pal > GRADIENT_PALETTE_COUNT+13) pal = 0;
   if (pal > 245 && (strip.customPalettes.size() == 0 || 255U-pal > strip.customPalettes.size()-1)) pal = 0;
@@ -230,16 +231,29 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
   switch (pal) {
     case 0: //default palette. Exceptions for specific effects above
       targetPalette = PartyColors_p; break;
-    case 1: //periodically replace palette with a random one. Doesn't work with multiple FastLED segments
-      if (millis() - _lastPaletteChange > 5000 /*+ ((uint32_t)(255-intensity))*100*/) {
+    case 1: {//periodically replace palette with a random one. Transition palette change in 500ms
+      uint32_t timeSinceLastChange = millis() - _lastPaletteChange;
+      if (timeSinceLastChange > 5000 /*+ ((uint32_t)(255-intensity))*100*/) {
+        prevRandomPalette = randomPalette;
         randomPalette = CRGBPalette16(
                         CHSV(random8(), random8(160, 255), random8(128, 255)),
                         CHSV(random8(), random8(160, 255), random8(128, 255)),
                         CHSV(random8(), random8(160, 255), random8(128, 255)),
                         CHSV(random8(), random8(160, 255), random8(128, 255)));
         _lastPaletteChange = millis();
+        timeSinceLastChange = 0;
       }
-      targetPalette = randomPalette; break;
+      if (timeSinceLastChange <= 500) {
+        targetPalette = prevRandomPalette;
+        // there needs to be 255 palette blends (48) for full blend but that is too resource intensive
+        // so 128 is a compromise (we need to perform full blend of the two palettes as each segment can have random
+        // palette selected but only 2 static palettes are used)
+        size_t noOfBlends = ((128U * timeSinceLastChange) / 500U);
+        for (size_t i=0; i<noOfBlends; i++) nblendPaletteTowardPalette(targetPalette, randomPalette, 48);
+      } else {
+        targetPalette = randomPalette;
+      }
+      break;}
     case 2: {//primary color only
       CRGB prim = gamma32(colors[0]);
       targetPalette = CRGBPalette16(prim); break;}
@@ -294,7 +308,7 @@ void Segment::startTransition(uint16_t dur) {
   // starting a transition has to occur before change so we get current values 1st
   uint8_t _briT = currentBri(on ? opacity : 0);
   uint8_t _cctT = currentBri(cct, true);
-  CRGBPalette16 _palT; loadPalette(_palT, palette);
+  CRGBPalette16 _palT = CRGBPalette16(DEFAULT_COLOR); loadPalette(_palT, palette);
   uint8_t _modeP = mode;
   uint32_t _colorT[NUM_COLORS];
   for (size_t i=0; i<NUM_COLORS; i++) _colorT[i] = currentColor(i, colors[i]);
@@ -362,6 +376,42 @@ void Segment::handleTransition() {
     transitional = false; // finish transitioning segment
   }
 }
+
+void Segment::set(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t ofs, uint16_t i1Y, uint16_t i2Y) {
+  //return if neither bounds nor grouping have changed
+  bool boundsUnchanged = (start == i1 && stop == i2);
+  #ifndef WLED_DISABLE_2D
+  if (Segment::maxHeight>1) boundsUnchanged &= (startY == i1Y && stopY == i2Y); // 2D
+  #endif
+  if (boundsUnchanged
+      && (!grp || (grouping == grp && spacing == spc))
+      && (ofs == UINT16_MAX || ofs == offset)) return;
+
+  if (stop) fill(BLACK); //turn old segment range off
+  if (i2 <= i1) { //disable segment
+    stop = 0;
+    markForReset();
+    return;
+  }
+  if (i1 < Segment::maxWidth) start = i1; // Segment::maxWidth equals strip.getLengthTotal() for 1D
+  stop = i2 > Segment::maxWidth ? Segment::maxWidth : MAX(1,i2);
+  startY = 0;
+  stopY  = 1;
+  #ifndef WLED_DISABLE_2D
+  if (Segment::maxHeight>1) { // 2D
+    if (i1Y < Segment::maxHeight) startY = i1Y;
+    stopY = i2Y > Segment::maxHeight ? Segment::maxHeight : MAX(1,i2Y);
+  }
+  #endif
+  if (grp) {
+    grouping = grp;
+    spacing = spc;
+  }
+  if (ofs < UINT16_MAX) offset = ofs;
+  markForReset();
+  if (!boundsUnchanged) refreshLightCapabilities();
+}
+
 
 bool Segment::setColor(uint8_t slot, uint32_t c) { //returns true if changed
   if (slot >= NUM_COLORS || c == colors[slot]) return false;
@@ -689,7 +739,7 @@ void Segment::refreshLightCapabilities() {
     if (bus->getStart() + bus->getLength() <= start) continue;
 
     uint8_t type = bus->getType();
-    if (type == TYPE_ANALOG_1CH || (!cctFromRgb && type == TYPE_ANALOG_2CH)) capabilities &= 0xFE; // does not support RGB
+    if (type == TYPE_ONOFF || type == TYPE_ANALOG_1CH || (!cctFromRgb && type == TYPE_ANALOG_2CH)) capabilities &= 0xFE; // does not support RGB
     if (bus->isRgbw()) capabilities |= 0x02; // segment supports white channel
     if (!cctFromRgb) {
       switch (type) {
@@ -698,7 +748,7 @@ void Segment::refreshLightCapabilities() {
           capabilities |= 0x04; //segment supports white CCT 
       }
     }
-    if (correctWB && type != TYPE_ANALOG_1CH) capabilities |= 0x04; //white balance correction (uses CCT slider)
+    if (correctWB && !(type == TYPE_ANALOG_1CH || type == TYPE_ONOFF)) capabilities |= 0x04; //white balance correction (uses CCT slider)
     uint8_t aWM = Bus::getAutoWhiteMode()<255 ? Bus::getAutoWhiteMode() : bus->getAWMode();
     bool whiteSlider = (aWM == RGBW_MODE_DUAL || aWM == RGBW_MODE_MANUAL_ONLY); // white slider allowed
     if (bus->isRgbw() && (whiteSlider || !(capabilities & 0x01))) capabilities |= 0x08; // allow white channel adjustments (AWM allows or is not RGB)
@@ -943,6 +993,11 @@ void WS2812FX::finalizeInit(void)
     if (pins[0] == 3) bd->reinit();
     #endif
   }
+
+  if (!isMatrix) { // if 2D then max values defined in setUpMatrix() using panel set-up
+    Segment::maxWidth  = _length;
+    Segment::maxHeight = 1;
+   }
 
   //initialize leds array. TBD: realloc if nr of leds change
   if (Segment::_globalLeds) {
@@ -1306,54 +1361,7 @@ Segment& WS2812FX::getSegment(uint8_t id) {
 
 void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping, uint8_t spacing, uint16_t offset, uint16_t startY, uint16_t stopY) {
   if (n >= _segments.size()) return;
-  Segment& seg = _segments[n];
-
-  //return if neither bounds nor grouping have changed
-  bool boundsUnchanged = (seg.start == i1 && seg.stop == i2);
-  if (isMatrix) {
-    boundsUnchanged &= (seg.startY == startY && seg.stopY == stopY);
-  }
-  if (boundsUnchanged
-      && (!grouping || (seg.grouping == grouping && seg.spacing == spacing))
-      && (offset == UINT16_MAX || offset == seg.offset)) return;
-
-  //if (seg.stop) setRange(seg.start, seg.stop -1, BLACK); //turn old segment range off
-  if (seg.stop) seg.fill(BLACK); //turn old segment range off
-  if (i2 <= i1) //disable segment
-  {
-    // disabled segments should get removed using purgeSegments()
-    DEBUG_PRINT(F("-- Segment ")); DEBUG_PRINT(n); DEBUG_PRINTLN(F(" marked inactive."));
-    seg.stop = 0;
-    seg.options = 0b0000000000000101; // on & selected
-    //if (seg.name) {
-    //  delete[] seg.name;
-    //  seg.name = nullptr;
-    //}
-    // if main segment is deleted, set first active as main segment
-    if (n == _mainSegment) setMainSegmentId(0);
-    seg.markForReset();
-    return;
-  }
-  if (isMatrix) {
-    #ifndef WLED_DISABLE_2D
-    if (i1 < Segment::maxWidth) seg.start = i1;
-    seg.stop = i2 > Segment::maxWidth ? Segment::maxWidth : i2;
-    if (startY < Segment::maxHeight) seg.startY = startY;
-    seg.stopY = stopY > Segment::maxHeight ? Segment::maxHeight : MAX(1,stopY);
-    #endif
-  } else {
-    if (i1 < _length) seg.start = i1;
-    seg.stop = i2 > _length ? _length : i2;
-    seg.startY = 0;
-    seg.stopY  = 1;
-  }
-  if (grouping) {
-    seg.grouping = grouping;
-    seg.spacing = spacing;
-  }
-  if (offset < UINT16_MAX) seg.offset = offset;
-  seg.markForReset();
-  if (!boundsUnchanged) seg.refreshLightCapabilities();
+  _segments[n].set(i1, i2, grouping, spacing, offset, startY, stopY);
 }
 
 void WS2812FX::restartRuntime() {
@@ -1511,15 +1519,28 @@ void WS2812FX::loadCustomPalettes()
 
       if (readObjectFromFile(fileName, nullptr, &pDoc)) {
         JsonArray pal = pDoc[F("palette")];
-        if (!pal.isNull() && pal.size()>7) { // not an empty palette (at least 2 entries)
-          size_t palSize = MIN(pal.size(), 72);
-          palSize -= palSize % 4; // make sure size is multiple of 4
-          for (size_t i=0; i<palSize && pal[i].as<int>()<256; i+=4) {
-            tcp[ i ] = (uint8_t) pal[ i ].as<int>(); // index
-            tcp[i+1] = (uint8_t) pal[i+1].as<int>(); // R
-            tcp[i+2] = (uint8_t) pal[i+2].as<int>(); // G
-            tcp[i+3] = (uint8_t) pal[i+3].as<int>(); // B
-            DEBUG_PRINTF("%d(%d) : %d %d %d\n", i, int(tcp[i]), int(tcp[i+1]), int(tcp[i+2]), int(tcp[i+3]));
+        if (!pal.isNull() && pal.size()>4) { // not an empty palette (at least 2 entries)
+          if (pal[0].is<int>() && pal[1].is<const char *>()) {
+            // we have an array of index & hex strings
+            size_t palSize = MIN(pal.size(), 36);
+            palSize -= palSize % 2; // make sure size is multiple of 2
+            for (size_t i=0, j=0; i<palSize && pal[i].as<int>()<256; i+=2, j+=4) {
+              uint8_t rgbw[] = {0,0,0,0};
+              tcp[ j ] = (uint8_t) pal[ i ].as<int>(); // index
+              colorFromHexString(rgbw, pal[i+1].as<const char *>()); // will catch non-string entires
+              for (size_t c=0; c<3; c++) tcp[j+1+c] = rgbw[c]; // only use RGB component
+              DEBUG_PRINTF("%d(%d) : %d %d %d\n", i, int(tcp[j]), int(tcp[j+1]), int(tcp[j+2]), int(tcp[j+3]));
+            }
+          } else {
+            size_t palSize = MIN(pal.size(), 72);
+            palSize -= palSize % 4; // make sure size is multiple of 4
+            for (size_t i=0; i<palSize && pal[i].as<int>()<256; i+=4) {
+              tcp[ i ] = (uint8_t) pal[ i ].as<int>(); // index
+              tcp[i+1] = (uint8_t) pal[i+1].as<int>(); // R
+              tcp[i+2] = (uint8_t) pal[i+2].as<int>(); // G
+              tcp[i+3] = (uint8_t) pal[i+3].as<int>(); // B
+              DEBUG_PRINTF("%d(%d) : %d %d %d\n", i, int(tcp[i]), int(tcp[i+1]), int(tcp[i+2]), int(tcp[i+3]));
+            }
           }
           customPalettes.push_back(targetPalette.loadDynamicGradientPalette(tcp));
         }
