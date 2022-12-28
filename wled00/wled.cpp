@@ -569,7 +569,7 @@ bool WLED::initEthernet()
   } else {
     DEBUG_PRINT(F("initE: Failing due to invalid eth_clk_mode ("));
     DEBUG_PRINT(es.eth_clk_mode);
-    DEBUG_PRINTLN(F(")"));
+    DEBUG_PRINTLN(")");
     return false;
   }
 
