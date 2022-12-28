@@ -2,6 +2,16 @@
 
 #include <BLEUtils.h>
 
+#ifdef BLE_WLED_DEBUG
+#define BLE_DEBUG_PRINT(x) DEBUGOUT.print(x)
+#define BLE_DEBUG_PRINTLN(x) DEBUGOUT.println(x)
+#define BLE_DEBUG_PRINTF(x...) DEBUGOUT.printf(x)
+#else
+#define BLE_DEBUG_PRINT(x)
+#define BLE_DEBUG_PRINTLN(x)
+#define BLE_DEBUG_PRINTF(x...)
+#endif
+
 #define WLED_BLE_2_JSON_NAME "WLED BLE2JSON"
 #define WLED_BLE_SERVICE_ID "bee3d55e-a2eb-4f7a-889b-13192c8c1819"
 

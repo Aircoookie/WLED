@@ -18,7 +18,7 @@ private:
 protected:
   bool writeData(BleComms *comms, std::string subCommand)
   {
-    DEBUG_PRINTLN("BleStateInfoService writeData");
+    BLE_DEBUG_PRINTLN("BleStateInfoService writeData");
     if (!requestJSONBufferLock(100))
       return false;
     JsonObject state = doc.createNestedObject("state");
@@ -36,7 +36,7 @@ protected:
 
   bool writeNotify(BleComms *comms)
   {
-    DEBUG_PRINTLN("BleStateInfoService writeNotify");
+    BLE_DEBUG_PRINTLN("BleStateInfoService writeNotify");
     if (!requestJSONBufferLock(100))
       return false;
     JsonObject state = doc.createNestedObject("state");
@@ -52,11 +52,11 @@ protected:
 
   void saveData()
   {
-    DEBUG_PRINTLN("check save");
+    BLE_DEBUG_PRINTLN("check save");
 
     if (m_toSave != nullptr)
     {
-      DEBUG_PRINTF("trying to save data");
+      BLE_DEBUG_PRINTF("trying to save data");
       if (!requestJSONBufferLock(100))
         return;
 
@@ -64,13 +64,13 @@ protected:
 
       if (error)
       {
-        DEBUG_PRINTF("State Server error : %d %s\n", error.code(), m_toSave->data());
+        BLE_DEBUG_PRINTF("State Server error : %d %s\n", error.code(), m_toSave->data());
         releaseJSONBufferLock();
 
         return;
       }
 
-      DEBUG_PRINTF("got data %s\n", m_toSave->data());
+      BLE_DEBUG_PRINTF("got data %s\n", m_toSave->data());
 
       JsonObject obj = doc.as<JsonObject>();
 
@@ -98,7 +98,7 @@ public:
 
   void loop()
   {
-    DEBUG_PRINTLN("state service loop");
+    BLE_DEBUG_PRINTLN("state service loop");
 
     BleServiceBase::loop();
 
@@ -116,7 +116,7 @@ public:
 
   virtual void onWrite(std::string *pValue)
   {
-    DEBUG_PRINTF("State Service>> got write : %s\n", pValue->data());
+    BLE_DEBUG_PRINTF("State Service>> got write : %s\n", pValue->data());
 
     m_toSave = pValue;
   }

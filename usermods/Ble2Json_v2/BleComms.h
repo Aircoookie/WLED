@@ -85,7 +85,7 @@ private:
 
       uint16_t bufsize = fileToWrite.read(buf, CHUNK_SIZE);
 
-      DEBUG_PRINTF("writing chunk: %d\n", bufsize);
+      BLE_DEBUG_PRINTF("writing chunk: %d\n", bufsize);
 
       pChar->setValue(buf, bufsize);
       // m_writeReady = false;
@@ -103,14 +103,22 @@ private:
 
       size_t toWriteLen = len - pos > CHUNK_SIZE ? CHUNK_SIZE : len - pos;
 
-      uint8_t *toWrite = (uint8_t *)m_writeBuffer.data() + pos;
+      // uint8_t *toWrite = (uint8_t *)m_writeBuffer.data() + pos;
 
-      pChar->setValue(toWrite, toWriteLen);
+      BLE_DEBUG_PRINTLN("about to write");
+
+      pChar->setValue(m_writeBuffer.substr(pos, toWriteLen));
+
+      BLE_DEBUG_PRINTLN("wrote");
+
       // m_writeReady = false;
       pChar->notify(true);
 
+      // BLE_DEBUG_PRINTF("notified %d\n", toWriteLen);
+
       if (toWriteLen != CHUNK_SIZE)
       {
+        BLE_DEBUG_PRINTLN("clearing");
         m_writing = false;
         m_writeBuffer = "";
       }
@@ -132,13 +140,13 @@ public:
 
   bool writeData(JsonObject data, bool notify)
   {
-    DEBUG_PRINTLN("BleComms writeData");
+    BLE_DEBUG_PRINTLN("BleComms writeData");
 
     m_writing = true;
 
     serializeJson(data, m_writeBuffer);
 
-    DEBUG_PRINTF("writing data: %s\n", m_writeBuffer.data());
+    BLE_DEBUG_PRINTF("writing data: %s\n", m_writeBuffer.data());
 
     m_writeReady = true;
     m_writing = true;
@@ -183,14 +191,14 @@ public:
 
   void onWrite(BLECharacteristic *pCharacteristic)
   {
-    DEBUG_PRINTF("got a write from char %s\n", m_data->getUUID().toString().data());
+    BLE_DEBUG_PRINTF("got a write from char %s\n", m_data->getUUID().toString().data());
 
     if (pCharacteristic == m_control)
     {
       // Command in format r<infoForService>:pageNumber
       std::string command = pCharacteristic->getValue();
 
-      DEBUG_PRINTF("got a write from char %s\n", pCharacteristic->getUUID().toString().data());
+      BLE_DEBUG_PRINTF("got a write from char %s\n", pCharacteristic->getUUID().toString().data());
 
       if (command.at(0) == 'r')
       {
@@ -205,7 +213,7 @@ public:
 
         int pageNum = std::atoi(pageNumStr.data());
 
-        DEBUG_PRINTF("after sscanf %s %d\n", subCommand.data(), pageNum);
+        BLE_DEBUG_PRINTF("after sscanf %s %d\n", subCommand.data(), pageNum);
 
         if (pageNum != 1)
         {
@@ -228,8 +236,8 @@ public:
       m_readBuffer += pCharacteristic->getValue();
       m_reading = true;
 
-      DEBUG_PRINTF("BleComms >> onWrite: len=%d, recv=%s\n", pCharacteristic->getValue().length(),
-                   pCharacteristic->getValue().data());
+      BLE_DEBUG_PRINTF("BleComms >> onWrite: len=%d, recv=%s\n", pCharacteristic->getValue().length(),
+                       pCharacteristic->getValue().data());
 
       if (pCharacteristic->getValue().length() != CHUNK_SIZE)
       {

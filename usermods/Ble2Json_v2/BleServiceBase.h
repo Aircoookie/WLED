@@ -31,10 +31,10 @@ public:
     m_server = server;
     BLEService *pService = server->createService(BLE_UUID(serviceId));
 
-    DEBUG_PRINTF("serviceId: %s data id: %02X control: %02X, notify: %02X",
+    BLE_DEBUG_PRINTF("serviceId: %s data id: %02X control: %02X, notify: %02X",
                  BLE_UUID(serviceId).toString().data(), dataId, controlId, notifyId);
 
-    DEBUG_PRINTLN("");
+    BLE_DEBUG_PRINTLN("");
     m_comms = new BleComms(dataId, controlId, notifyId, pService, this);
 
     pService->start();
@@ -47,7 +47,7 @@ public:
 
   virtual void loop()
   {
-    DEBUG_PRINTLN("base loop");
+    BLE_DEBUG_PRINTLN("base loop");
 
     if (m_shouldNotify && m_server->getPeerDevices(true).size() > 0)
     {
@@ -65,12 +65,12 @@ public:
 
   virtual void onReadyToRead(std::string subCommand)
   {
-    DEBUG_PRINTLN("Ready to read");
+    BLE_DEBUG_PRINTLN("Ready to read");
     writeData(m_comms, subCommand);
   }
 
   virtual void onWrite(std::string *pValue)
   {
-    DEBUG_PRINTF("ServiceBase >> got write : %s\n", pValue->data());
+    BLE_DEBUG_PRINTF("ServiceBase >> got write : %s\n", pValue->data());
   }
 };

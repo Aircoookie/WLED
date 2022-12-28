@@ -59,7 +59,7 @@ public:
    */
   void connected()
   {
-    DEBUG_PRINTLN("Connected to WiFi!");
+    BLE_DEBUG_PRINTLN("Connected to WiFi!");
   }
 
   /*
@@ -76,7 +76,6 @@ public:
   {
     if (millis() - lastTime > 1000)
     {
-      DEBUG_PRINTLN("I'm alive!");
       lastTime = millis();
 
       if (m_configDirty)
@@ -159,9 +158,9 @@ public:
     top["blePairingPin"] = m_blePairingPin;
     top["bleUnPairDevices"] = m_bleUnPairDevices;
 
-    DEBUG_PRINTF(PSTR("add: %u %d\n"), m_blePairingPin, m_bleOnFlag);
+    BLE_DEBUG_PRINTF(PSTR("add: %u %d\n"), m_blePairingPin, m_bleOnFlag);
 
-    DEBUG_PRINTLN("Add to config");
+    BLE_DEBUG_PRINTLN("Add to config");
   }
 
   /*
@@ -183,7 +182,7 @@ public:
   {
     // default settings values could be set here (or below using the 3-argument getJsonValue()) instead of in the class definition or constructor
     // setting them inside readFromConfig() is slightly more robust, handling the rare but plausible use case of single value being missing after boot (e.g. if the cfg.json was manually edited and a value was removed)
-    DEBUG_PRINTLN("read from config");
+    BLE_DEBUG_PRINTLN("read from config");
 
     JsonObject top = root["ble2jsonUsermod"];
 
@@ -193,7 +192,7 @@ public:
     configComplete &= getJsonValue(top["blePairingPin"], m_blePairingPin, PASSKEY);
     configComplete &= getJsonValue(top["bleUnPairDevices"], m_bleUnPairDevices, false);
 
-    DEBUG_PRINTF(PSTR("read: %u\n"), m_blePairingPin);
+    BLE_DEBUG_PRINTF(PSTR("read: %u\n"), m_blePairingPin);
 
     return configComplete;
   }
@@ -227,7 +226,7 @@ public:
 
   void setBleOnFlag(bool bleOnFlag)
   {
-    DEBUG_PRINTF(PSTR("setting on flag: %d\n"), bleOnFlag);
+    BLE_DEBUG_PRINTF(PSTR("setting on flag: %d\n"), bleOnFlag);
 
     m_bleOnFlag = bleOnFlag;
     m_configDirty = true;
@@ -235,7 +234,7 @@ public:
 
   uint32_t getBlePairingPin()
   {
-    DEBUG_PRINTF(PSTR("returning PIN mod: %u\n"), m_blePairingPin);
+    BLE_DEBUG_PRINTF(PSTR("returning PIN mod: %u\n"), m_blePairingPin);
 
     return m_blePairingPin;
   }
