@@ -9,10 +9,12 @@
  */
 
 //alexa.cpp
+#ifndef WLED_DISABLE_ALEXA
 void onAlexaChange(EspalexaDevice* dev);
 void alexaInit();
 void handleAlexa();
 void onAlexaChange(EspalexaDevice* dev);
+#endif
 
 //blynk.cpp
 #ifndef WLED_DISABLE_BLYNK
@@ -77,8 +79,10 @@ uint8_t gamma8(uint8_t b);
 uint32_t gamma32(uint32_t);
 
 //dmx.cpp
+#ifdef WLED_ENABLE_DMX
 void initDMX();
 void handleDMX();
+#endif
 
 //e131.cpp
 void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol);
@@ -96,12 +100,14 @@ void updateFSInfo();
 void closeFile();
 
 //hue.cpp
+#ifndef WLED_DISABLE_HUESYNC
 void handleHue();
 void reconnectHue();
 void onHueError(void* arg, AsyncClient* client, int8_t error);
 void onHueConnect(void* arg, AsyncClient* client);
 void sendHuePoll();
 void onHueData(void* arg, AsyncClient* client, void *data, size_t len);
+#endif
 
 //improv.cpp
 void handleImprovPacket();
@@ -110,6 +116,7 @@ void sendImprovInfoResponse();
 void sendImprovRPCResponse(uint8_t commandId);
 
 //ir.cpp
+#ifndef WLED_DISABLE_IR
 void applyRepeatActions();
 byte relativeChange(byte property, int8_t amount, byte lowerBoundary = 0, byte higherBoundary = 0xFF);
 void decodeIR(uint32_t code);
@@ -125,6 +132,7 @@ void decodeIRJson(uint32_t code);
 
 void initIR();
 void handleIR();
+#endif
 
 //json.cpp
 #include "ESPAsyncWebServer.h"
@@ -165,8 +173,10 @@ bool parseLx(int lxValue, byte* rgbw);
 void parseLxJson(int lxValue, byte segId, bool secondary);
 
 //mqtt.cpp
+#ifndef WLED_DISABLE_MQTT
 bool initMqtt();
 void publishMqtt();
+#endif
 
 //ntp.cpp
 void handleTime();

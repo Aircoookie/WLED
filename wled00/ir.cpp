@@ -1,14 +1,11 @@
 #include "wled.h"
 
+#ifndef WLED_DISABLE_INFRARED
 #include "ir_codes.h"
 
 /*
  * Infrared sensor support for generic 24/40/44 key RGB remotes
  */
-
-#if defined(WLED_DISABLE_INFRARED)
-void handleIR(){}
-#else
 
 IRrecv* irrecv;
 //change pin in NpbWrapper.h

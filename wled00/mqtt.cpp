@@ -178,7 +178,4 @@ bool initMqtt()
   return true;
 }
 
-#else
-bool initMqtt(){return false;}
-void publishMqtt(){}
 #endif

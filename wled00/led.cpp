@@ -171,7 +171,9 @@ void updateInterfaces(uint8_t callMode)
   if (callMode != CALL_MODE_BLYNK && 
       callMode != CALL_MODE_NO_NOTIFY) updateBlynk();
   #endif
+  #ifndef WLED_DISABLE_MQTT
   doPublishMqtt = true;
+  #endif
   interfaceUpdateCallMode = 0; //disable
 }
 
@@ -180,7 +182,9 @@ void handleTransitions()
 {
   //handle still pending interface update
   if (interfaceUpdateCallMode && millis() - lastInterfaceUpdate > INTERFACE_UPDATE_COOLDOWN) updateInterfaces(interfaceUpdateCallMode);
+  #ifndef WLED_DISABLE_MQTT
   if (doPublishMqtt) publishMqtt();
+  #endif
   
   if (transitionActive && transitionDelayTemp > 0)
   {

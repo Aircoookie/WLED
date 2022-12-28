@@ -25,11 +25,13 @@ void shortPressAction(uint8_t b)
   }
 
   // publish MQTT message
+  #ifndef WLED_DISABLE_MQTT
   if (buttonPublishMqtt && WLED_MQTT_CONNECTED) {
     char subuf[64];
     sprintf_P(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
     mqtt->publish(subuf, 0, false, "short");
   }
+  #endif
 }
 
 void longPressAction(uint8_t b)
@@ -44,11 +46,13 @@ void longPressAction(uint8_t b)
   }
 
   // publish MQTT message
+  #ifndef WLED_DISABLE_MQTT
   if (buttonPublishMqtt && WLED_MQTT_CONNECTED) {
     char subuf[64];
     sprintf_P(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
     mqtt->publish(subuf, 0, false, "long");
   }
+  #endif
 }
 
 void doublePressAction(uint8_t b)
@@ -63,11 +67,13 @@ void doublePressAction(uint8_t b)
   }
 
   // publish MQTT message
+  #ifndef WLED_DISABLE_MQTT
   if (buttonPublishMqtt && WLED_MQTT_CONNECTED) {
     char subuf[64];
     sprintf_P(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
     mqtt->publish(subuf, 0, false, "double");
   }
+  #endif
 }
 
 bool isButtonPressed(uint8_t i)
@@ -120,12 +126,14 @@ void handleSwitch(uint8_t b)
     }
 
     // publish MQTT message
+    #ifndef WLED_DISABLE_MQTT
     if (buttonPublishMqtt && WLED_MQTT_CONNECTED) {
       char subuf[64];
       if (buttonType[b] == BTN_TYPE_PIR_SENSOR) sprintf_P(subuf, PSTR("%s/motion/%d"), mqttDeviceTopic, (int)b);
       else sprintf_P(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
       mqtt->publish(subuf, 0, false, !buttonPressedBefore[b] ? "off" : "on");
     }
+    #endif
 
     buttonLongPressed[b] = buttonPressedBefore[b]; //save the last "long term" switch state
   }

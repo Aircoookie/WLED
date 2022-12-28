@@ -1,5 +1,6 @@
 #include "wled.h"
 
+#ifdef WLED_ENABLE_ADALIGHT
 /*
  * Adalight and TPM2 handler
  */
@@ -18,6 +19,7 @@ enum class AdaState {
   TPM2_Header_CountHi,
   TPM2_Header_CountLo,
 };
+#endif
 
 uint16_t currentBaud = 1152; //default baudrate 115200 (divided by 100)
 bool continuousSendLED = false;

@@ -42,7 +42,9 @@ void WLED::loop()
   #endif
 
   handleTime();
+#ifndef WLED_DISABLE_IR
   handleIR();        // 2nd call to function needed for ESP32 to return valid results -- should be good for ESP8266, too
+#endif  
   handleConnection();
   handleSerial();
   handleNotifications();
@@ -64,7 +66,9 @@ void WLED::loop()
 
   yield();
   handleIO();
+  #ifndef WLED_DISABLE_IR
   handleIR();
+  #endif
   #ifndef WLED_DISABLE_ALEXA
   handleAlexa();
   #endif
@@ -135,7 +139,9 @@ void WLED::loop()
   }
   if (millis() - lastMqttReconnectAttempt > 30000 || lastMqttReconnectAttempt == 0) { // lastMqttReconnectAttempt==0 forces immediate broadcast
     lastMqttReconnectAttempt = millis();
+#ifndef WLED_DISABLE_MQTT
     initMqtt();
+#endif    
     yield();
     // refresh WLED nodes list
     refreshNodeList();
@@ -679,8 +685,10 @@ void WLED::initInterfaces()
 #endif
 
   // init Alexa hue emulation
+#ifndef WLED_DISABLE_ALEXA
   if (alexaEnabled)
     alexaInit();
+#endif    
 
 #ifndef WLED_DISABLE_OTA
   if (aOtaEnabled)
@@ -718,8 +726,12 @@ void WLED::initInterfaces()
 #endif
   e131.begin(e131Multicast, e131Port, e131Universe, E131_MAX_UNIVERSE_COUNT);
   ddp.begin(false, DDP_DEFAULT_PORT);
+#ifndef WLED_DISABLE_HUESYNC  
   reconnectHue();
+#endif
+#ifndef WLED_DISABLE_MQTT
   initMqtt();
+#endif  
   interfacesInited = true;
   wasConnected = true;
 }

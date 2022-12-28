@@ -110,7 +110,9 @@
   #define NO_OTA_PORT
   #include <ArduinoOTA.h>
 #endif
+#ifdef WLED_ENABLE_FS_EDITOR
 #include <SPIFFSEditor.h>
+#endif
 #include "src/dependencies/time/TimeLib.h"
 #include "src/dependencies/timezone/Timezone.h"
 #include "src/dependencies/toki/Toki.h"
@@ -135,7 +137,9 @@
 #endif
 
 #include "src/dependencies/e131/ESPAsyncE131.h"
+#ifdef WLED_ENABLE_MQTT
 #include "src/dependencies/async-mqtt-client/AsyncMqttClient.h"
+#endif
 
 #define ARDUINOJSON_DECODE_UNICODE 0
 #include "src/dependencies/json/AsyncJson-v6.h"
@@ -641,7 +645,9 @@ WLED_GLOBAL byte optionType;
 
 WLED_GLOBAL bool doSerializeConfig _INIT(false);        // flag to initiate saving of config
 WLED_GLOBAL bool doReboot          _INIT(false);        // flag to initiate reboot from async handlers
+#ifndef WLED_DISABLE_MQTT
 WLED_GLOBAL bool doPublishMqtt     _INIT(false);
+#endif
 
 // status led
 #if defined(STATUSLED)
@@ -656,7 +662,9 @@ WLED_GLOBAL AsyncWebServer server _INIT_N(((80)));
 WLED_GLOBAL AsyncWebSocket ws _INIT_N((("/ws")));
 #endif
 WLED_GLOBAL AsyncClient* hueClient _INIT(NULL);
+#ifdef WLED_ENABLE_MQTT
 WLED_GLOBAL AsyncMqttClient* mqtt _INIT(NULL);
+#endif
 WLED_GLOBAL AsyncWebHandler *editHandler _INIT(nullptr);
 
 // udp interface objects
@@ -766,7 +774,9 @@ WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
   #define WLED_CONNECTED (WiFi.status() == WL_CONNECTED)
 #endif
 #define WLED_WIFI_CONFIGURED (strlen(clientSSID) >= 1 && strcmp(clientSSID, DEFAULT_CLIENT_SSID) != 0)
+#ifndef WLED_DISABLE_MQTT
 #define WLED_MQTT_CONNECTED (mqtt != nullptr && mqtt->connected())
+#endif
 
 #ifndef WLED_AP_SSID_UNIQUE
   #define WLED_SET_AP_SSID() do { \

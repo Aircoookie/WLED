@@ -202,7 +202,4 @@ void onHueData(void* arg, AsyncClient* client, void *data, size_t len)
   }
   hueReceived = true;
 }
-#else
-void handleHue(){}
-void reconnectHue(){}
 #endif
