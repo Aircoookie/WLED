@@ -141,14 +141,18 @@ private:
     h = read32(bmpFS); // height
     read16(bmpFS); // color planes (must be 1)
     bitDepth = read16(bmpFS);
-
+    bool monochromatic = false;
+    
     if (read32(bmpFS) != 0 || (bitDepth != 24 && bitDepth != 1 && bitDepth != 4 && bitDepth != 8)) {
       Serial.println(F("BMP format not recognized."));
       bmpFS.close();
       return false;
+    } else {
+      if (bitDepth == 1) monochromatic = true;
     }
 
     uint32_t palette[256];
+    uint32_t palette0 = 255;
     if (bitDepth <= 8) // 1,4,8 bit bitmap: read color palette
     {
       read32(bmpFS); read32(bmpFS); read32(bmpFS); // size, w resolution, h resolution
@@ -157,6 +161,10 @@ private:
       bmpFS.seek(14 + headerSize); // start of color palette
       for (uint16_t i = 0; i < paletteSize; i++) {
         palette[i] = read32(bmpFS);
+      }
+      if (monochromatic) {
+        palette[0] = 0;
+        palette[1] = palette0;
       }
     }
 
