@@ -71,8 +71,8 @@ public:
     m_controlId = controlId;
   }
 
-  void setupBle(BLEServer *server)
+  void setupBle(BLEServer *server, uint16_t gatts_if)
   {
-    BleServiceBase::setupBle(m_serviceId, m_dataId, m_controlId, 0, server);
+    BleServiceBase::setupBle(m_serviceId, m_dataId, m_controlId, 0, server, gatts_if);
   }
 };

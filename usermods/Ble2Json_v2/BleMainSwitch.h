@@ -17,6 +17,18 @@
 #include "esp_err.h"
 
 BLEServer *pServer = NULL;
+uint16_t m_gatts_if = ESP_GATT_IF_NONE;
+
+void gattServerEventHandler(
+    esp_gatts_cb_event_t event,
+    esp_gatt_if_t gatts_if,
+    esp_ble_gatts_cb_param_t *param)
+{
+  if (event == ESP_GATTS_REG_EVT)
+  {
+    m_gatts_if = gatts_if;
+  }
+}
 
 class Ble2JsonConfig
 {
@@ -118,6 +130,7 @@ private:
   BleReadOnlyService *m_paletteDetailsDataService = NULL;
 
   bool m_bleInitted = false;
+  unsigned long lastTime = 0;
 
   void checkBleInit(bool fromSetup)
   {
@@ -145,20 +158,10 @@ private:
     }
   }
 
-  void setAdvertisementData(BLEAdvertising *ad)
-  {
-    BLEAdvertisementData data = BLEAdvertisementData();
-
-    data.setManufacturerData("WLED");
-    data.setName(cmDNS);
-
-    ad->setAdvertisementData(data);
-  }
-
   BleReadOnlyService *createReadonlyService(uint16_t serviceId, uint16_t dataId, uint16_t controlId, BLEServer *pServer)
   {
     BleReadOnlyService *service = new BleReadOnlyService(serviceId, dataId, controlId);
-    service->setupBle(pServer);
+    service->setupBle(pServer, m_gatts_if);
     return service;
   }
 
@@ -166,6 +169,7 @@ private:
   {
     BLE_DEBUG_PRINTLN("bleInit");
     BLEDevice::init(WLED_BLE_2_JSON_NAME);
+    BLEDevice::setCustomGattsHandler(gattServerEventHandler);
     BLEDevice::setEncryptionLevel(ESP_BLE_SEC_ENCRYPT);
     BLEDevice::setSecurityCallbacks(new SecurityCallback());
 
@@ -173,7 +177,7 @@ private:
     pServer->setCallbacks(new ServerCallback());
 
     m_stateService = new BleStateInfoService();
-    m_stateService->setupBle(pServer);
+    m_stateService->setupBle(pServer, m_gatts_if);
 
     m_paletteNamesService = createReadonlyService(WLED_BLE_PALETTE_NAME_SERVICE_ID,
                                                   WLED_BLE_PALETTE_NAME_DATA_ID,
@@ -217,7 +221,6 @@ private:
   {
     if (m_bleInitted && service != NULL)
     {
-      BLE_DEBUG_PRINTLN("Calling service");
       service->loop();
     }
   }
@@ -235,7 +238,12 @@ public:
 
   void loop()
   {
-    checkBleInit(false);
+    if (millis() - lastTime > 1000)
+    {
+      lastTime = millis();
+      checkBleInit(false);
+    }
+
     serviceLoop(m_stateService);
 
     serviceLoop(m_fxNamesService);

@@ -19,7 +19,7 @@ class BleComms;
 class BleCommsCallbacks
 {
 public:
-  virtual void onReadyToRead(std::string page) = 0;
+  virtual void onReadyToRead(std::string subCommand, int page) = 0;
   virtual void onWrite(std::string *pValue) = 0;
 };
 
@@ -41,9 +41,13 @@ private:
   BLECharacteristic *m_data;
   BLECharacteristic *m_control;
   BLECharacteristic *m_notify;
+  BLEService *m_service;
+
+  uint16_t m_gatts_if;
 
   BLECharacteristic *initChar(uint16_t id, BLEService *pService)
   {
+    m_service = pService;
     BLECharacteristic *pCharacteristic = pService->createCharacteristic(
         BLE_UUID(id),
         BLECharacteristic::PROPERTY_READ |
@@ -64,19 +68,44 @@ private:
     return pCharacteristic;
   }
 
+  void sendData(BLECharacteristic *pChar, uint8_t *value, uint16_t len)
+  {
+    for (auto &myPair : m_service->getServer()->getPeerDevices(false))
+    {
+      ::esp_ble_gatts_send_indicate(
+          m_gatts_if,
+          myPair.first,
+          pChar->getHandle(), len, value, false); // The need_confirm = false makes this a notify.
+    }
+  }
+
+public:
+  BleComms(uint16_t dataId, uint16_t controlId, uint16_t notifyId,
+           BLEService *service, BleCommsCallbacks *callbacks, uint16_t gatts_if)
+  {
+    m_gatts_if = gatts_if;
+    m_callbacks = callbacks;
+
+    m_data = initChar(dataId, service);
+    m_control = initChar(controlId, service);
+    if (notifyId != 0)
+    {
+      m_notify = initChar(notifyId, service);
+    }
+  }
+
   void writeNext(int page, BLECharacteristic *pChar)
   {
     uint32_t pos = (page - 1) * CHUNK_SIZE;
 
     if (m_writingFile)
     {
-      byte buf[CHUNK_SIZE];
+      uint8_t buf[CHUNK_SIZE];
 
       if (pos == fileToWrite.size())
       {
-        pChar->setValue(" ");
-        // m_writeReady = false;
-        pChar->notify(true);
+        buf[0] = ' ';
+        sendData(pChar, buf, 1);
         m_writingFile = false;
         return;
       }
@@ -87,9 +116,7 @@ private:
 
       BLE_DEBUG_PRINTF("writing chunk: %d\n", bufsize);
 
-      pChar->setValue(buf, bufsize);
-      // m_writeReady = false;
-      pChar->notify(true);
+      sendData(pChar, buf, bufsize);
 
       if (bufsize != CHUNK_SIZE)
       {
@@ -103,18 +130,13 @@ private:
 
       size_t toWriteLen = len - pos > CHUNK_SIZE ? CHUNK_SIZE : len - pos;
 
-      // uint8_t *toWrite = (uint8_t *)m_writeBuffer.data() + pos;
+      uint8_t *toWrite = (uint8_t *)m_writeBuffer.data() + pos;
 
       BLE_DEBUG_PRINTLN("about to write");
 
-      pChar->setValue(m_writeBuffer.substr(pos, toWriteLen));
+      sendData(pChar, toWrite, toWriteLen);
 
-      BLE_DEBUG_PRINTLN("wrote");
-
-      // m_writeReady = false;
-      pChar->notify(true);
-
-      // BLE_DEBUG_PRINTF("notified %d\n", toWriteLen);
+      BLE_DEBUG_PRINTF("notified %d\n", toWriteLen);
 
       if (toWriteLen != CHUNK_SIZE)
       {
@@ -122,19 +144,6 @@ private:
         m_writing = false;
         m_writeBuffer = "";
       }
-    }
-  }
-
-public:
-  BleComms(uint16_t dataId, uint16_t controlId, uint16_t notifyId, BLEService *service, BleCommsCallbacks *callbacks)
-  {
-    m_callbacks = callbacks;
-
-    m_data = initChar(dataId, service);
-    m_control = initChar(controlId, service);
-    if (notifyId != 0)
-    {
-      m_notify = initChar(notifyId, service);
     }
   }
 
@@ -215,14 +224,8 @@ public:
 
         BLE_DEBUG_PRINTF("after sscanf %s %d\n", subCommand.data(), pageNum);
 
-        if (pageNum != 1)
-        {
-          writeNext(pageNum, m_data);
-        }
-        else
-        {
-          m_callbacks->onReadyToRead(subCommand);
-        }
+        m_callbacks->onReadyToRead(subCommand, pageNum);
+
         return;
       }
     }
@@ -245,5 +248,10 @@ public:
         m_reading = false;
       }
     }
+  }
+
+  BLECharacteristic *getDataChar()
+  {
+    return m_data;
   }
 };

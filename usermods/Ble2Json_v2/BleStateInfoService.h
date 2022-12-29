@@ -52,8 +52,6 @@ protected:
 
   void saveData()
   {
-    BLE_DEBUG_PRINTLN("check save");
-
     if (m_toSave != nullptr)
     {
       BLE_DEBUG_PRINTF("trying to save data");
@@ -90,16 +88,14 @@ public:
   {
   }
 
-  void setupBle(BLEServer *server)
+  void setupBle(BLEServer *server, uint16_t gatts_if)
   {
     BleServiceBase::setupBle(WLED_BLE_DATA_SERVICE_ID, WLED_BLE_STATE_INFO_DATA_ID,
-                             WLED_BLE_STATE_INFO_CONTROL_ID, WLED_BLE_STATE_NOTIFY_ID, server);
+                             WLED_BLE_STATE_INFO_CONTROL_ID, WLED_BLE_STATE_NOTIFY_ID, server, gatts_if);
   }
 
   void loop()
   {
-    BLE_DEBUG_PRINTLN("state service loop");
-
     BleServiceBase::loop();
 
     saveData();

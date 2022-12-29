@@ -82,9 +82,8 @@ public:
       {
         serializeConfig();
       }
-
-      m_mainSwitch->loop();
     }
+    m_mainSwitch->loop();
   }
 
   /*

@@ -16,6 +16,9 @@ private:
   bool m_shouldNotify = false;
   BleComms *m_comms = NULL;
   BLEServer *m_server = NULL;
+  bool m_shouldWrite = false;
+  int m_page = 0;
+  std::string m_subCommand = "";
 
 protected:
   virtual bool writeData(BleComms *comms, std::string subCommand) = 0;
@@ -26,16 +29,28 @@ public:
   {
   }
 
-  virtual void setupBle(uint16_t serviceId, uint16_t dataId, uint16_t controlId, uint16_t notifyId, BLEServer *server)
+  void setAdvertisementData(BLEAdvertising *ad)
+  {
+    BLEAdvertisementData data = BLEAdvertisementData();
+
+    data.setManufacturerData("WLED");
+    data.setName(cmDNS);
+
+    ad->setAdvertisementData(data);
+  }
+
+  virtual void setupBle(uint16_t serviceId, uint16_t dataId,
+                        uint16_t controlId, uint16_t notifyId,
+                        BLEServer *server, uint16_t gatts_if)
   {
     m_server = server;
     BLEService *pService = server->createService(BLE_UUID(serviceId));
 
     BLE_DEBUG_PRINTF("serviceId: %s data id: %02X control: %02X, notify: %02X",
-                 BLE_UUID(serviceId).toString().data(), dataId, controlId, notifyId);
+                     BLE_UUID(serviceId).toString().data(), dataId, controlId, notifyId);
 
     BLE_DEBUG_PRINTLN("");
-    m_comms = new BleComms(dataId, controlId, notifyId, pService, this);
+    m_comms = new BleComms(dataId, controlId, notifyId, pService, this, gatts_if);
 
     pService->start();
 
@@ -43,18 +58,26 @@ public:
     pAdvertising->addServiceUUID(BLE_UUID(serviceId));
     pAdvertising->setScanResponse(false);
     pAdvertising->setMinPreferred(0x0);
+    setAdvertisementData(pAdvertising);
   }
 
   virtual void loop()
   {
-    BLE_DEBUG_PRINTLN("base loop");
-
     if (m_shouldNotify && m_server->getPeerDevices(true).size() > 0)
     {
       if (writeNotify(m_comms))
       {
         m_shouldNotify = false;
       }
+    }
+
+    if (m_shouldWrite && m_server->getPeerDevices(true).size() > 0)
+    {
+      m_shouldWrite = false;
+      if (m_page == 1)
+        writeData(m_comms, m_subCommand);
+      else
+        m_comms->writeNext(m_page, m_comms->getDataChar());
     }
   }
 
@@ -63,10 +86,12 @@ public:
     m_shouldNotify = shouldNotify;
   }
 
-  virtual void onReadyToRead(std::string subCommand)
+  virtual void onReadyToRead(std::string subCommand, int page)
   {
     BLE_DEBUG_PRINTLN("Ready to read");
-    writeData(m_comms, subCommand);
+    m_shouldWrite = true;
+    m_page = page;
+    m_subCommand = subCommand;
   }
 
   virtual void onWrite(std::string *pValue)
