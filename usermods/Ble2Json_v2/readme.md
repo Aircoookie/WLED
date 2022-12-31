@@ -124,10 +124,17 @@ WLED_BLE_PALETTE_DETAILS_CONTROL_ID = 'BEE30602-A2EB-4F7A-889B-13192C8C1819';
 
 ## react-native app
 
+there is a [react-native](https://reactnative.dev/) app [here](https://github.com/johne/WledAppV2) that implements the bluetooth connection to wled. some features:
+
+- supports discovery of both wifi and ble devices
+- allows switching the device between ble and wifi mode
+- uses the existing wled web interface by downloading the code from github for the right version at runtime
+- supports most of the web interface (does not allow access to "config" tab in ble mode)
+
+more information is available in the github project
+
 ## TODO
 
-- provide instructions in readme
-- remove `platformio_overide`
 - notify with full state when v:true
 - test ethernet and ble at the same time
 - implement palette details call
