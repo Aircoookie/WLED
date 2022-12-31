@@ -56,12 +56,12 @@
     #if WLED_MAX_BUSES > 5
       #error Maximum number of buses is 5.
     #endif
-    #define WLED_MIN_VIRTUAL_BUSSES (5-WLED_MAX_BUSES)
+    #define WLED_MIN_VIRTUAL_BUSSES (5-WLED_MAX_BUSSES)
   #else
     #if WLED_MAX_BUSES > 10
       #error Maximum number of buses is 10.
     #endif
-    #define WLED_MIN_VIRTUAL_BUSSES (10-WLED_MAX_BUSES)
+    #define WLED_MIN_VIRTUAL_BUSSES (10-WLED_MAX_BUSSES)
   #endif
 #endif
 
