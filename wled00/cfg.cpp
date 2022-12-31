@@ -137,7 +137,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     uint32_t mem = 0;
     bool busesChanged = false;
     for (JsonObject elm : ins) {
-      if (s >= WLED_MAX_BUSSES) break;
+      if (s >= WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES) break;
       uint8_t pins[5] = {255, 255, 255, 255, 255};
       JsonArray pinArr = elm["pin"];
       if (pinArr.size() == 0) continue;
@@ -161,7 +161,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       if (fromFS) {
         BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode);
         mem += BusManager::memUsage(bc);
-        if (mem <= MAX_LED_MEMORY && busses.getNumBusses() <= WLED_MAX_BUSSES) busses.add(bc);  // finalization will be done in WLED::beginStrip()
+        if (mem <= MAX_LED_MEMORY) if (busses.add(bc) == -1) break;  // finalization will be done in WLED::beginStrip()
       } else {
         if (busConfigs[s] != nullptr) delete busConfigs[s];
         busConfigs[s] = new BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode);
