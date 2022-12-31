@@ -136,7 +136,7 @@ more information is available in the github project
 ## TODO
 
 - notify with full state when v:true
-- test ethernet and ble at the same time
 - implement palette details call
 - figure out how to turn off/on ble without reboot
 - figure out what to wrap disable wifi with
+- figure out why w32-eth01 doesn't work in ble mode
