@@ -231,8 +231,8 @@ public:
         configComplete &= getJsonValue(top["First LED (Main Ring)"], mainSegment.firstLed, 0);
         configComplete &= getJsonValue(top["Last LED (Main Ring)"], mainSegment.lastLed, 59);
         configComplete &= getJsonValue(top["Center/12h LED (Main Ring)"], mainSegment.centerLed, 0);
-        configComplete &= getJsonValue(top["Hour marks Enabled"], hourMarksEnabled, false);
-        configComplete &= getJsonValue(top["Hour mark Color (RRGGBB)"], color, "FF0000") && hexStringToColor(color, hourMarkColor, 0x0000FF);
+        configComplete &= getJsonValue(top["Hour Marks Enabled"], hourMarksEnabled, false);
+        configComplete &= getJsonValue(top["Hour Mark Color (RRGGBB)"], color, "FF0000") && hexStringToColor(color, hourMarkColor, 0x0000FF);
         configComplete &= getJsonValue(top["Hour Color (RRGGBB)"], color, "0000FF") && hexStringToColor(color, hourColor, 0x0000FF);
         configComplete &= getJsonValue(top["Minute Color (RRGGBB)"], color, "00FF00") && hexStringToColor(color, minuteColor, 0x00FF00);
         configComplete &= getJsonValue(top["Show Seconds"], secondsEnabled, true);
