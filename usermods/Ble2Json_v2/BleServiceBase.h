@@ -88,7 +88,7 @@ public:
 
   virtual void onReadyToRead(std::string subCommand, int page)
   {
-    BLE_DEBUG_PRINTLN("Ready to read");
+    BLE_DEBUG_PRINTLN(F("Ready to read"));
     m_shouldWrite = true;
     m_page = page;
     m_subCommand = subCommand;
@@ -96,6 +96,6 @@ public:
 
   virtual void onWrite(std::string *pValue)
   {
-    BLE_DEBUG_PRINTF("ServiceBase >> got write : %s\n", pValue->data());
+    BLE_DEBUG_PRINTF(F("ServiceBase >> got write : %s\n"), pValue->data());
   }
 };

@@ -48,12 +48,12 @@ class ServerCallback : public BLEServerCallbacks
 {
   void onConnect(BLEServer *pServer)
   {
-    BLE_DEBUG_PRINTLN(" - ServerCallback - onConnect");
+    BLE_DEBUG_PRINTLN(F(" - ServerCallback - onConnect"));
   };
 
   void onDisconnect(BLEServer *pServer)
   {
-    BLE_DEBUG_PRINTLN(" - ServerCallback - onDisconnect");
+    BLE_DEBUG_PRINTLN(F(" - ServerCallback - onDisconnect"));
   }
 };
 
@@ -62,24 +62,24 @@ class SecurityCallback : public BLESecurityCallbacks
 
   uint32_t onPassKeyRequest()
   {
-    BLE_DEBUG_PRINTLN("onPassKeyRequest");
+    BLE_DEBUG_PRINTLN(F("onPassKeyRequest"));
     return 000000;
   }
 
   void onPassKeyNotify(uint32_t pass_key)
   {
-    BLE_DEBUG_PRINTLN("onPassKeyNotify");
+    BLE_DEBUG_PRINTLN(F("onPassKeyNotify"));
   }
 
   bool onConfirmPIN(uint32_t pass_key)
   {
-    BLE_DEBUG_PRINTLN("confirming pin");
+    BLE_DEBUG_PRINTLN(F("confirming pin"));
     return true;
   }
 
   bool onSecurityRequest()
   {
-    BLE_DEBUG_PRINTLN("onSecurityRequest");
+    BLE_DEBUG_PRINTLN(F("onSecurityRequest"));
     return true;
   }
 
@@ -87,11 +87,11 @@ class SecurityCallback : public BLESecurityCallbacks
   {
     if (cmpl.success)
     {
-      BLE_DEBUG_PRINTLN("   - SecurityCallback - Authentication Success");
+      BLE_DEBUG_PRINTLN(F("   - SecurityCallback - Authentication Success"));
     }
     else
     {
-      BLE_DEBUG_PRINTLN("   - SecurityCallback - Authentication Failure* ");
+      BLE_DEBUG_PRINTLN(F("   - SecurityCallback - Authentication Failure* "));
       pServer->removePeerDevice(pServer->getConnId(), true);
     }
     BLEDevice::startAdvertising();
@@ -134,13 +134,13 @@ private:
 
   void checkBleInit(bool fromSetup)
   {
-    BLE_DEBUG_PRINTLN("checkBleInit");
+    BLE_DEBUG_PRINTLN(F("checkBleInit"));
 
     bool bleOnFlag = m_config->getBleOnFlag();
 
     if (fromSetup && bleOnFlag && !m_bleInitted)
     {
-      BLE_DEBUG_PRINTLN("bleInitting");
+      BLE_DEBUG_PRINTLN(F("bleInitting"));
       WLED::instance().disableWiFi();
       bleInit(m_config->getBlePairingPin());
       m_bleInitted = true;
@@ -148,12 +148,12 @@ private:
     }
     else if (!fromSetup && bleOnFlag && !m_bleInitted)
     {
-      BLE_DEBUG_PRINTLN("ble going on reset");
+      BLE_DEBUG_PRINTLN(F("ble going on reset"));
       WLED::instance().reset();
     }
     else if (!bleOnFlag && m_bleInitted)
     {
-      BLE_DEBUG_PRINTLN("ble going off reset");
+      BLE_DEBUG_PRINTLN(F("ble going off reset"));
       WLED::instance().reset();
     }
   }
@@ -167,7 +167,7 @@ private:
 
   void bleInit(uint32_t passkey)
   {
-    BLE_DEBUG_PRINTLN("bleInit");
+    BLE_DEBUG_PRINTLN(F("bleInit"));
     BLEDevice::init(WLED_BLE_2_JSON_NAME);
     BLEDevice::setCustomGattsHandler(gattServerEventHandler);
     BLEDevice::setEncryptionLevel(ESP_BLE_SEC_ENCRYPT);

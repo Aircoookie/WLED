@@ -25,22 +25,22 @@ protected:
       return comms->streamFile("/presets.json");
     }
 
-    BLE_DEBUG_PRINTLN("BleReadOnlyService writeData");
+    BLE_DEBUG_PRINTLN(F("BleReadOnlyService writeData"));
     if (!requestJSONBufferLock(100))
       return false;
 
-    BLE_DEBUG_PRINTF("read only write: %d\n", m_dataId);
+    BLE_DEBUG_PRINTF(F("read only write: %d\n"), m_dataId);
 
     JsonArray data = doc.createNestedArray("array");
 
     switch (m_dataId)
     {
     case WLED_BLE_FX_DETAILS_DATA_ID:
-      BLE_DEBUG_PRINTLN("reading mode data");
+      BLE_DEBUG_PRINTLN(F("reading mode data"));
       serializeModeData(data);
       break;
     case WLED_BLE_FX_NAMES_DATA_ID:
-      BLE_DEBUG_PRINTLN("reading mode names");
+      BLE_DEBUG_PRINTLN(F("reading mode names"));
       serializeModeNames(data);
       break;
     case WLED_BLE_PALETTE_NAME_DATA_ID:
