@@ -655,10 +655,7 @@ class WS2812FX {  // 96 bytes
       isMatrix(false),
 #ifndef WLED_DISABLE_2D
       panels(1),
-      matrixWidth(DEFAULT_LED_COUNT),
-      matrixHeight(1),
       matrix{0,0,0,0},
-      panel{{0,0,0,0}},
 #endif
       // semi-private (just obscured) used in effect functions through macros
       _currentPalette(CRGBPalette16(CRGB::Black)),
@@ -695,6 +692,7 @@ class WS2812FX {  // 96 bytes
       _mode.clear();
       _modeData.clear();
       _segments.clear();
+      panel.clear();
       customPalettes.clear();
       if (useLedsArray && Segment::_globalLeds) free(Segment::_globalLeds);
     }
@@ -809,24 +807,29 @@ class WS2812FX {  // 96 bytes
     uint8_t
       panels;
 
-    uint16_t
-      matrixWidth,
-      matrixHeight;
+    struct {
+      bool bottomStart : 1;
+      bool rightStart  : 1;
+      bool vertical    : 1;
+      bool serpentine  : 1;
+    } matrix;
 
-    typedef struct panel_bitfield_t {
-      unsigned int xOffset  : 8; // x offset relative to the top left of matrix in LEDs
-      unsigned int yOffset  : 8; // y offset relative to the top left of matrix in LEDs
-      unsigned int width    : 8; // width of the panel
-      unsigned int height   : 8; // height of the panel
-      bool bottomStart      : 1; // starts at bottom?
-      bool rightStart       : 1; // starts on right?
-      bool vertical         : 1; // is vertical?
-      bool serpentine       : 1; // is serpentine?
+    typedef struct panel_t {
+      uint16_t xOffset; // x offset relative to the top left of matrix in LEDs
+      uint16_t yOffset; // y offset relative to the top left of matrix in LEDs
+      uint8_t  width;   // width of the panel
+      uint8_t  height;  // height of the panel
+      union {
+        uint8_t options;
+        struct {
+          bool bottomStart : 1; // starts at bottom?
+          bool rightStart  : 1; // starts on right?
+          bool vertical    : 1; // is vertical?
+          bool serpentine  : 1; // is serpentine?
+        };
+      };
     } Panel;
-    Panel
-      // may not be needed anymore since each panel has offset. Will leave for now
-      matrix,
-      panel[WLED_MAX_PANELS];
+    std::vector<Panel> panel;
 #endif
 
     void

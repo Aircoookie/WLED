@@ -97,33 +97,38 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonObject matrix = hw_led[F("matrix")];
   if (!matrix.isNull()) {
     strip.isMatrix = true;
-    CJSON(strip.panels, matrix[F("mpc")]);
+    CJSON(strip.panels,             matrix[F("mpc")]);
     CJSON(strip.matrix.bottomStart, matrix[F("pb")]);
     CJSON(strip.matrix.rightStart,  matrix[F("pr")]);
     CJSON(strip.matrix.vertical,    matrix[F("pv")]);
     CJSON(strip.matrix.serpentine,  matrix["ps"]);
 
+    strip.panel.clear();
     JsonArray panels = matrix[F("panels")];
     uint8_t s = 0;
     if (!panels.isNull()) {
+      strip.panel.reserve(max(1U,min(panels.size(),(size_t)WLED_MAX_PANELS)));  // pre-allocate memory for panels
       for (JsonObject pnl : panels) {
-        CJSON(strip.panel[s].bottomStart, pnl["b"]);
-        CJSON(strip.panel[s].rightStart, pnl["r"]);
-        CJSON(strip.panel[s].vertical, pnl["v"]);
-        CJSON(strip.panel[s].serpentine, pnl["s"]);
-        CJSON(strip.panel[s].xOffset, pnl["x"]);
-        CJSON(strip.panel[s].yOffset, pnl["y"]);
-        CJSON(strip.panel[s].height, pnl["h"]);
-        CJSON(strip.panel[s].width, pnl["w"]);
+        WS2812FX::Panel p;
+        CJSON(p.bottomStart, pnl["b"]);
+        CJSON(p.rightStart,  pnl["r"]);
+        CJSON(p.vertical,    pnl["v"]);
+        CJSON(p.serpentine,  pnl["s"]);
+        CJSON(p.xOffset,     pnl["x"]);
+        CJSON(p.yOffset,     pnl["y"]);
+        CJSON(p.height,      pnl["h"]);
+        CJSON(p.width,       pnl["w"]);
+        strip.panel.push_back(p);
         if (++s >= WLED_MAX_PANELS) break; // max panels reached
       }
-    }
-    // clear remaining panels
-    for (; s<WLED_MAX_PANELS; s++) {
-      strip.panel[s].bottomStart = 0;
-      strip.panel[s].rightStart = 0;
-      strip.panel[s].vertical = 0;
-      strip.panel[s].serpentine = 0;
+    } else {
+      // fallback
+      WS2812FX::Panel p;
+      strip.panels = 1;
+      p.height = p.width = 8;
+      p.xOffset = p.yOffset = 0;
+      p.options = 0;
+      strip.panel.push_back(p);
     }
 
     strip.setUpMatrix();

@@ -44,14 +44,14 @@ void WS2812FX::setUpMatrix() {
   // isMatrix is set in cfg.cpp or set.cpp
   if (isMatrix) {
     // calculate width dynamically because it will have gaps
-    matrixWidth = 0;
-    matrixHeight = 0;
-    for(auto p : panel){
-      if (p.xOffset + p.width > matrixWidth){
-        matrixWidth = p.xOffset + p.width;
+    Segment::maxWidth = 0;
+    Segment::maxHeight = 0;
+    for (auto p : panel){
+      if (p.xOffset + p.width > Segment::maxWidth){
+        Segment::maxWidth = p.xOffset + p.width;
       }
-      if (p.yOffset + p.height > matrixHeight){
-        matrixHeight = p.yOffset + p.height;
+      if (p.yOffset + p.height > Segment::maxHeight){
+        Segment::maxHeight = p.yOffset + p.height;
       }
     }
 
@@ -60,6 +60,8 @@ void WS2812FX::setUpMatrix() {
       Segment::maxWidth = _length;
       Segment::maxHeight = 1;
       isMatrix = false;
+      panels = 0;
+      panel.clear(); // release memory allocated by panels
       return;
     }
 
@@ -67,22 +69,22 @@ void WS2812FX::setUpMatrix() {
     customMappingTable = new uint16_t[customMappingSize];
 
     // fill with empty in case we don't fill the entire matrix
-    for(uint16_t i = 0; i< customMappingSize; i++){
+    for (size_t i = 0; i< customMappingSize; i++){
       customMappingTable[i] = (uint16_t)-1;
     }
 
     if (customMappingTable != nullptr) {
       uint16_t x, y, pix=0; //pixel
-      for (uint8_t pan = 0; pan < panels; pan++){
+      for (size_t pan = 0; pan < panels; pan++){
         Panel p = panel[pan];
-        uint16_t h = p.vertical? p.height:p.width;
-        uint16_t v = p.vertical? p.width:p.height;
-        for (uint16_t j = 0; j<v; j++){
-          for(uint16_t i = 0; i < h; i++, pix++){
+        uint16_t h = p.vertical ? p.height : p.width;
+        uint16_t v = p.vertical ? p.width  : p.height;
+        for (size_t j = 0; j < v; j++){
+          for(size_t i = 0; i < h; i++, pix++) {
             y = (p.vertical?p.rightStart:p.bottomStart) ? v-j-1 : j;
             x = (p.vertical?p.bottomStart:p.rightStart) ? h-i-1 : i;
             x = p.serpentine && j%2 ? h-x-1 : x;
-            customMappingTable[(p.yOffset + (p.vertical?x:y)) * matrixWidth + p.xOffset + (p.vertical?y:x)] = pix;
+            customMappingTable[(p.yOffset + (p.vertical?x:y)) * Segment::maxWidth + p.xOffset + (p.vertical?y:x)] = pix;
           }
         }
       }
@@ -100,6 +102,8 @@ void WS2812FX::setUpMatrix() {
       Segment::maxWidth = _length;
       Segment::maxHeight = 1;
       isMatrix = false;
+      panels = 0;
+      panel.clear();
       return;
     }
   } else { 
@@ -115,7 +119,7 @@ void IRAM_ATTR WS2812FX::setPixelColorXY(int x, int y, uint32_t col)
 {
 #ifndef WLED_DISABLE_2D
   if (!isMatrix) return; // not a matrix set-up
-  uint16_t index = y * matrixWidth + x;
+  uint16_t index = y * Segment::maxWidth + x;
   if (index >= customMappingSize) return;
 #else
   uint16_t index = x;
