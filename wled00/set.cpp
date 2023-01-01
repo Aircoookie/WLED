@@ -658,21 +658,21 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         char pO[8]; sprintf_P(pO, PSTR("P%d"), i);
         uint8_t l = strlen(pO); pO[l+1] = 0;
         pO[l] = 'B'; if (!request->hasArg(pO)) break;
-        pO[l] = 'B'; strip.panel[i].bottomStart = request->arg(pO).toInt();
-        pO[l] = 'R'; strip.panel[i].rightStart  = request->arg(pO).toInt();
-        pO[l] = 'V'; strip.panel[i].vertical    = request->arg(pO).toInt();
-        pO[l] = 'S'; strip.panel[i].serpentine  = request->hasArg(pO);
-        pO[l] = 'X'; strip.panel[i].xOffset     = request->arg(pO).toInt();
-        pO[l] = 'Y'; strip.panel[i].yOffset     = request->arg(pO).toInt();
-        pO[l] = 'W'; strip.panel[i].width       = request->arg(pO).toInt();
-        pO[l] = 'H'; strip.panel[i].height      = request->arg(pO).toInt();
+        pO[l] = 'B'; p.bottomStart = request->arg(pO).toInt();
+        pO[l] = 'R'; p.rightStart  = request->arg(pO).toInt();
+        pO[l] = 'V'; p.vertical    = request->arg(pO).toInt();
+        pO[l] = 'S'; p.serpentine  = request->hasArg(pO);
+        pO[l] = 'X'; p.xOffset     = request->arg(pO).toInt();
+        pO[l] = 'Y'; p.yOffset     = request->arg(pO).toInt();
+        pO[l] = 'W'; p.width       = request->arg(pO).toInt();
+        pO[l] = 'H'; p.height      = request->arg(pO).toInt();
         strip.panel.push_back(p);
       }
-      strip.setUpMatrix(); // will check limits
     } else {
-      Segment::maxWidth = strip.getLengthTotal();
+      Segment::maxWidth  = strip.getLengthTotal();
       Segment::maxHeight = 1;
     }
+    strip.setUpMatrix(); // will check limits
   }
   #endif
 

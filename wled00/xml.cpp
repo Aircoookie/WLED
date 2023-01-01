@@ -726,6 +726,7 @@ void getSettingsJS(byte subPage, char* dest)
   {
     sappend('v',SET_F("SOMP"),strip.isMatrix);
     #ifndef WLED_DISABLE_2D
+    oappend(SET_F("maxPanels=")); oappendi(WLED_MAX_PANELS); oappend(SET_F(";"));
     oappend(SET_F("resetPanels();"));
     if (strip.isMatrix) {
       if(strip.panels>0){

@@ -44,19 +44,21 @@ void WS2812FX::setUpMatrix() {
   // isMatrix is set in cfg.cpp or set.cpp
   if (isMatrix) {
     // calculate width dynamically because it will have gaps
-    Segment::maxWidth = 0;
-    Segment::maxHeight = 0;
-    for (auto p : panel){
-      if (p.xOffset + p.width > Segment::maxWidth){
+    Segment::maxWidth = 1;
+    Segment::maxHeight = 1;
+    for (size_t i = 0; i < panel.size(); i++) {
+      Panel &p = panel[i];
+      if (p.xOffset + p.width > Segment::maxWidth) {
         Segment::maxWidth = p.xOffset + p.width;
       }
-      if (p.yOffset + p.height > Segment::maxHeight){
+      if (p.yOffset + p.height > Segment::maxHeight) {
         Segment::maxHeight = p.yOffset + p.height;
       }
     }
 
     // safety check
-    if (Segment::maxWidth * Segment::maxHeight > MAX_LEDS || Segment::maxWidth == 1 || Segment::maxHeight == 1) {
+    if (Segment::maxWidth * Segment::maxHeight > MAX_LEDS || Segment::maxWidth <= 1 || Segment::maxHeight <= 1) {
+      DEBUG_PRINTLN(F("2D Bounds error."));
       isMatrix = false;
       Segment::maxWidth = _length;
       Segment::maxHeight = 1;
@@ -67,15 +69,17 @@ void WS2812FX::setUpMatrix() {
 
     customMappingTable = new uint16_t[Segment::maxWidth * Segment::maxHeight];
 
-    // fill with empty in case we don't fill the entire matrix
-    for (size_t i = 0; i< customMappingSize; i++){
-      customMappingTable[i] = (uint16_t)-1;
-    }
-
     if (customMappingTable != nullptr) {
+      customMappingSize = Segment::maxWidth * Segment::maxHeight;
+
+      // fill with empty in case we don't fill the entire matrix
+      for (size_t i = 0; i< customMappingSize; i++) {
+        customMappingTable[i] = (uint16_t)-1;
+      }
+
       uint16_t x, y, pix=0; //pixel
-      for (size_t pan = 0; pan < panels; pan++){
-        Panel p = panel[pan];
+      for (size_t pan = 0; pan < panel.size(); pan++) {
+        Panel &p = panel[pan];
         uint16_t h = p.vertical ? p.height : p.width;
         uint16_t v = p.vertical ? p.width  : p.height;
         for (size_t j = 0; j < v; j++){
@@ -97,6 +101,7 @@ void WS2812FX::setUpMatrix() {
       DEBUG_PRINTLN();
       #endif
     } else { // memory allocation error
+      DEBUG_PRINTLN(F("Ledmap alloc error."));
       isMatrix = false;
       panels = 0;
       panel.clear();

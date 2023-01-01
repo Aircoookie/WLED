@@ -107,7 +107,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     JsonArray panels = matrix[F("panels")];
     uint8_t s = 0;
     if (!panels.isNull()) {
-      strip.panel.reserve(max(1U,min(panels.size(),(size_t)WLED_MAX_PANELS)));  // pre-allocate memory for panels
+      strip.panel.reserve(max(1U,min((size_t)strip.panels,(size_t)WLED_MAX_PANELS)));  // pre-allocate memory for panels
       for (JsonObject pnl : panels) {
         WS2812FX::Panel p;
         CJSON(p.bottomStart, pnl["b"]);
@@ -119,7 +119,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
         CJSON(p.height,      pnl["h"]);
         CJSON(p.width,       pnl["w"]);
         strip.panel.push_back(p);
-        if (++s >= WLED_MAX_PANELS) break; // max panels reached
+        if (++s >= WLED_MAX_PANELS || s >= strip.panels) break; // max panels reached
       }
     } else {
       // fallback
@@ -713,7 +713,7 @@ void serializeConfig() {
     matrix["ps"] = strip.matrix.serpentine;
 
     JsonArray panels = matrix.createNestedArray(F("panels"));
-    for (uint8_t i=0; i<strip.panels; i++) {
+    for (uint8_t i=0; i<strip.panel.size(); i++) {
       JsonObject pnl = panels.createNestedObject();
       pnl["b"] = strip.panel[i].bottomStart;
       pnl["r"] = strip.panel[i].rightStart;
