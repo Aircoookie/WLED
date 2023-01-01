@@ -132,6 +132,13 @@ String PinManagerClass::getPinSpecialText(int gpio) {  // special purpose PIN in
       #if defined(BOARD_HAS_PSRAM)
         if (gpio == 16 || gpio == 17) return (F("(reserved) PSRAM"));
       #endif
+      #if defined(ARDUINO_TTGO_T7_V14_Mini32) || defined(ARDUINO_LOLIN_D32_PRO) || defined(ARDUINO_ADAFRUIT_FEATHER_ESP32_V2)
+        if (gpio == 35) return (F("(reserved) _VBAT voltage monitoring"));  // WLEDMM experimental
+      #endif
+      #if (defined(ARDUINO_TTGO_T7_V14_Mini32) || defined(ARDUINO_TTGO_T7_V15_Mini32)) && defined(BOARD_HAS_PSRAM)
+        if (gpio == 25) return (F("cross-connected to pin 16")); // WLEDMM experimental
+        if (gpio == 27) return (F("Cross-connected to pin 17")); // WLEDMM experimental
+      #endif
     #endif
   #else
     // ESP 8266

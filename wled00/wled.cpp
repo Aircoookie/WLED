@@ -393,6 +393,11 @@ void WLED::setup()
     pinMode(NEOPIXEL_POWER, OUTPUT);
     digitalWrite(NEOPIXEL_POWER, HIGH);
   #endif
+  #ifdef NEOPIXEL_I2C_POWER
+    pinManager.allocatePin(NEOPIXEL_I2C_POWER, true, PinOwner::Relay);  // just to ensure this GPIO will not get used for other purposes
+    pinMode(NEOPIXEL_I2C_POWER, OUTPUT);
+    digitalWrite(NEOPIXEL_I2C_POWER, HIGH);
+  #endif
 #endif
 
   USER_PRINTLN();
