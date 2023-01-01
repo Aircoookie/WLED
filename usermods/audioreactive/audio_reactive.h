@@ -266,8 +266,8 @@ static float windowWeighingFactors[samplesFFT] = {0.0f};
 // lib_deps += https://github.com/kosme/arduinoFFT#develop @ 1.9.2
 #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
 // these options actually cause slow-down on -S2 (-S2 doesn't have floating point hardware)
-#define FFT_SPEED_OVER_PRECISION     // enables use of reciprocals (1/x etc), and an a few other speedups
-#define FFT_SQRT_APPROXIMATION       // enables "quake3" style inverse sqrt
+//#define FFT_SPEED_OVER_PRECISION     // enables use of reciprocals (1/x etc), and an a few other speedups - WLEDMM not faster on ESP32
+//#define FFT_SQRT_APPROXIMATION       // enables "quake3" style inverse sqrt                               - WLEDMM slower on ESP32
 #endif
 #define sqrt(x) sqrtf(x)             // little hack that reduces FFT time by 10-50% on ESP32 (as alternative to FFT_SQRT_APPROXIMATION)
 #else
@@ -659,13 +659,14 @@ static void postProcessFFTResults(bool noiseGateOpen, int numberOfChannels) // p
 // peak detection is called from FFT task when vReal[] contains valid FFT results
 static void detectSamplePeak(void) {
   bool havePeak = false;
-
+#if 0
   // Poor man's beat detection by seeing if sample > Average + some value.
   // This goes through ALL of the 255 bins - but ignores stupid settings
   // Then we got a peak, else we don't. The peak has to time out on its own in order to support UDP sound sync.
   if ((sampleAvg > 1) && (maxVol > 0) && (binNum > 1) && (vReal[binNum] > maxVol) && ((millis() - timeOfPeak) > 100)) {
     havePeak = true;
   }
+#endif
 
 #if 0
   // alternate detection, based on FFT_MajorPeak and FFT_Magnitude. Not much better...
@@ -1116,8 +1117,16 @@ class AudioReactive : public Usermod {
       static unsigned long last_connection_attempt = 0;
 
       if ((audioSyncPort <= 0) || ((audioSyncEnabled & 0x03) == 0)) return;  // Sound Sync not enabled
+      if (!(apActive || WLED_CONNECTED || interfacesInited))  {
+        if (udpSyncConnected) {
+          udpSyncConnected = false;
+          fftUdp.stop();
+          last_UDPTime = millis();
+          DEBUGSR_PRINTLN(F("AR connectUDPSoundSync(): connection lost, UDP closed."));
+        }
+        return;                           // neither AP nor other connections availeable
+      }
       if (udpSyncConnected) return;                                          // already connected
-      if (!(apActive || interfacesInited)) return;                           // neither AP nor other connections availeable
       if (millis() - last_connection_attempt < 15000) return;                // only try once in 15 seconds
 
       // if we arrive here, we need a UDP connection but don't have one
@@ -1378,6 +1387,8 @@ class AudioReactive : public Usermod {
       if (udpSyncConnected) {   // clean-up: if open, close old UDP sync connection
         udpSyncConnected = false;
         fftUdp.stop();
+        last_UDPTime = millis();
+        DEBUGSR_PRINTLN(F("AR connected(): old UDP connection closed."));
       }
       
       if (audioSyncPort > 0 && (audioSyncEnabled & 0x03)) {
@@ -1386,6 +1397,12 @@ class AudioReactive : public Usermod {
       #else
         udpSyncConnected = fftUdp.beginMulticast(WiFi.localIP(), IPAddress(239, 0, 0, 1), audioSyncPort);
       #endif
+        if (udpSyncConnected) last_UDPTime = millis();
+        if (apActive && !(WLED_CONNECTED)) {
+          DEBUGSR_PRINTLN(udpSyncConnected ? F("AR connected(): UDP: connected using AP.") : F("AR connected(): UDP is disconnected (AP)."));
+        } else {
+          DEBUGSR_PRINTLN(udpSyncConnected ? F("AR connected(): UDP: connected to WIFI.") :  F("AR connected(): UDP is disconnected (Wifi)."));
+        }
       }
     }
 
@@ -1499,6 +1516,19 @@ class AudioReactive : public Usermod {
           limitSampleDynamics();                              // run dynamics limiter on received volumeSmth, to hide jumps and hickups
       }
 
+      if (   (audioSyncEnabled & 0x02) // receive mode
+          && udpSyncConnected          // connected
+          && ((millis() - last_UDPTime) > 25000)) {   // close connection after 25sec idle
+        udpSyncConnected = false;
+        last_UDPTime = millis();
+        fftUdp.stop();
+        volumeSmth =0.0f;
+        volumeRaw =0;
+        my_magnitude = 0.1; FFT_Magnitude = 0.01; FFT_MajorPeak = 2;
+        multAgc = 1;
+        DEBUGSR_PRINTLN(F("AR  loop(): UDP closed due to inactivity."));
+      }
+
       #if defined(MIC_LOGGER) || defined(MIC_SAMPLING_LOG) || defined(FFT_SAMPLING_LOG)
       static unsigned long lastMicLoggerTime = 0;
       if (millis()-lastMicLoggerTime > 20) {
@@ -1558,10 +1588,12 @@ class AudioReactive : public Usermod {
       autoResetPeak();
 
       if (init && FFT_Task) {
+        delay(25);                // WLEDMM: givesome time for I2S driver to finish sampling
         vTaskSuspend(FFT_Task);   // update is about to begin, disable task to prevent crash
         if (udpSyncConnected) {   // close UDP sync connection (if open)
           udpSyncConnected = false;
           fftUdp.stop();
+          DEBUGSR_PRINTLN(F("AR onUpdateBegin(true): UDP connection closed."));
         }
       } else {
         // update has failed or create task requested
