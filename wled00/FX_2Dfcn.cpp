@@ -57,16 +57,15 @@ void WS2812FX::setUpMatrix() {
 
     // safety check
     if (Segment::maxWidth * Segment::maxHeight > MAX_LEDS || Segment::maxWidth == 1 || Segment::maxHeight == 1) {
+      isMatrix = false;
       Segment::maxWidth = _length;
       Segment::maxHeight = 1;
-      isMatrix = false;
       panels = 0;
       panel.clear(); // release memory allocated by panels
       return;
     }
 
-    customMappingSize  = Segment::maxWidth * Segment::maxHeight;
-    customMappingTable = new uint16_t[customMappingSize];
+    customMappingTable = new uint16_t[Segment::maxWidth * Segment::maxHeight];
 
     // fill with empty in case we don't fill the entire matrix
     for (size_t i = 0; i< customMappingSize; i++){
@@ -97,20 +96,17 @@ void WS2812FX::setUpMatrix() {
       }
       DEBUG_PRINTLN();
       #endif
-    } else {
-      // memory allocation error
-      Segment::maxWidth = _length;
-      Segment::maxHeight = 1;
+    } else { // memory allocation error
       isMatrix = false;
       panels = 0;
       panel.clear();
+      Segment::maxWidth = _length;
+      Segment::maxHeight = 1;
       return;
     }
-  } else { 
-    // not a matrix set up
-    Segment::maxWidth = _length;
-    Segment::maxHeight = 1;
   }
+#else
+  isMatrix = false; // no matter what config says
 #endif
 }
 

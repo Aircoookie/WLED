@@ -6,7 +6,7 @@
   <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
 	<title>LED Settings</title>
 	<script>
-    var d=document,laprev=55,maxB=1,maxM=4000,maxPB=4096,maxL=1333,maxLbquot=0; //maximum bytes for LED allocation: 4kB for 8266, 32kB for 32
+    var d=document,laprev=55,maxB=1,maxV=0,maxM=4000,maxPB=4096,maxL=1333,maxLbquot=0; //maximum bytes for LED allocation: 4kB for 8266, 32kB for 32
 		var customStarts=false,startsDirty=[],maxCOOverrides=5;
     var loc = false, locip;
     function H(){window.open("https://kno.wled.ge/features/settings/#led-settings");}
@@ -46,8 +46,8 @@
       x.style.animation = 'none';
       timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
     }
-    function bLimits(b,p,m,l) {
-      maxB = b; maxM = m; maxPB = p; maxL = l;
+    function bLimits(b,v,p,m,l) {
+      maxB = b; maxV = v; maxM = m; maxPB = p; maxL = l;
     }
     function pinsOK() {
       var LCs = d.getElementsByTagName("input");
@@ -316,7 +316,7 @@
       var o = d.getElementsByClassName("iST");
       var i = o.length;
 
-      if ((n==1 && i>=maxB) || (n==-1 && i==0)) return;
+      if ((n==1 && i>=maxB+maxV) || (n==-1 && i==0)) return;
 
       var f = gId("mLC");
       if (n==1) {
@@ -324,24 +324,24 @@
         var cn = `<div class="iST">
 <hr class="sml">
 ${i+1}:
-<select name="LT${i}" onchange="UI(true)">
-<option value="22" selected>WS281x</option>
-<option value="30">SK6812 RGBW</option>
-<option value="31">TM1814</option>
-<option value="24">400kHz</option>
-<option value="25">TM1829</option>
-<option value="50">WS2801</option>
-<option value="51">APA102</option>
-<option value="52">LPD8806</option>
-<option value="54">LPD6803</option>
-<option value="53">P9813</option>
-<option value="40">On/Off</option>
-<option value="41">PWM White</option>
-<option value="42">PWM CCT</option>
-<option value="43">PWM RGB</option>
-<option value="44">PWM RGBW</option>
-<option value="45">PWM RGB+CCT</option>
-<!--option value="46">PWM RGB+DCCT</option-->
+<select name="LT${i}" onchange="UI(true)">${i>=maxB ? '' :
+'<option value="22" selected>WS281x</option>\
+<option value="30">SK6812 RGBW</option>\
+<option value="31">TM1814</option>\
+<option value="24">400kHz</option>\
+<option value="25">TM1829</option>\
+<option value="50">WS2801</option>\
+<option value="51">APA102</option>\
+<option value="52">LPD8806</option>\
+<option value="54">LPD6803</option>\
+<option value="53">P9813</option>\
+<option value="40">On/Off</option>\
+<option value="41">PWM White</option>\
+<option value="42">PWM CCT</option>\
+<option value="43">PWM RGB</option>\
+<option value="44">PWM RGBW</option>\
+<option value="45">PWM RGB+CCT</option>\
+<!--option value="46">PWM RGB+DCCT</option-->'}
 <option value="80">DDP RGB (network)</option>
 <!--option value="81">E1.31 RGB (network)</option-->
 <!--option value="82">ArtNet RGB (network)</option-->
@@ -377,7 +377,7 @@ ${i+1}:
         o[--i].remove();--i;
       }
 
-      gId("+").style.display = (i<maxB-1) ? "inline":"none";
+      gId("+").style.display = (i<maxB+maxV-1) ? "inline":"none";
       gId("-").style.display = (i>0) ? "inline":"none";
 
       if (!init) UI();
