@@ -907,7 +907,7 @@ public:
         pinA = newDTpin;
         pinB = newCLKpin;
         pinC = newSWpin;
-        if (pinA<0 || pinB<0 || pinC<0) {
+        if (pinA<0 || pinB<0) { // WLEDMM support for rotary without pushbutton
           enabled = false;
           return true;
         }
