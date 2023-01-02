@@ -228,13 +228,13 @@ class MPU6050Driver : public Usermod {
           // get expected DMP packet size for later comparison
           packetSize = mpu.dmpGetFIFOPacketSize();
       } else {
-          // ERROR!
-          // 1 = initial memory load failed
-          // 2 = DMP configuration updates failed
-          // (if it's going to break, usually the code will be 1)
-          USER_PRINT(F("mpu6050: DMP Initialization failed (code "));
-          USER_PRINT(devStatus);
-          USER_PRINTLN(F(")"));
+        // ERROR!
+        // 1 = initial memory load failed
+        // 2 = DMP configuration updates failed
+        // (if it's going to break, usually the code will be 1)
+        DEBUG_PRINT(F("DMP Initialization failed (code "));
+        DEBUG_PRINT(devStatus);
+        DEBUG_PRINTLN(")");
       }
     }
 
