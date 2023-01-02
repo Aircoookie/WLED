@@ -21,8 +21,7 @@ private:
   std::string m_subCommand = "";
 
 protected:
-  virtual bool writeData(BleComms *comms, std::string subCommand) = 0;
-  virtual bool writeNotify(BleComms *comms) = 0;
+  virtual bool writeData(BleComms *comms, std::string subCommand, bool notify) = 0;
 
 public:
   BleServiceBase()
@@ -65,7 +64,7 @@ public:
   {
     if (m_shouldNotify && m_server->getPeerDevices(true).size() > 0)
     {
-      if (writeNotify(m_comms))
+      if (writeData(m_comms, "", true))
       {
         m_shouldNotify = false;
       }
@@ -75,7 +74,7 @@ public:
     {
       m_shouldWrite = false;
       if (m_page == 1)
-        writeData(m_comms, m_subCommand);
+        writeData(m_comms, m_subCommand, false);
       else
         m_comms->writeNext(m_page, m_comms->getDataChar());
     }

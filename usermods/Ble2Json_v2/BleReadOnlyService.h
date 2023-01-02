@@ -18,7 +18,7 @@ private:
   uint16_t m_controlId;
 
 protected:
-  bool writeData(BleComms *comms, std::string subCommand)
+  bool writeData(BleComms *comms, std::string subCommand, bool notify)
   {
     if (m_dataId == WLED_BLE_PRESETS_DATA_ID)
     {

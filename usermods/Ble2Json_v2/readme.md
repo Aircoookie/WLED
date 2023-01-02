@@ -20,7 +20,11 @@ tested to not work (not sure the problem but it couldn't create all the necessar
 ### build flags
 
 add the following build flags:
-`-D USERMOD_BLE_2_JSON`
+
+```
+-D USERMOD_BLE_2_JSON
+-D WLED_SUPPORT_WIFI_OFF
+```
 
 for serial debugging output add:
 `-D BLE_WLED_DEBUG`
@@ -37,6 +41,21 @@ add the following library
 
 if you are using a 4mb device, change the partition to
 `board_build.partitions = tools/WLED_ESP32_4MB_1MB_FS_NO_OTA.csv`
+
+### example build config
+
+```
+[env:esp32dev_ble]
+extends = env:esp32dev
+build_flags = ${env:esp32dev.build_flags}
+  -D USERMOD_BLE_2_JSON
+  -D WLED_SUPPORT_WIFI_OFF
+  -D WLED_DISABLE_OTA
+lib_deps =
+  ${esp32.lib_deps}
+  ESP32 BLE Arduino
+board_build.partitions = tools/WLED_ESP32_4MB_1MB_FS_NO_OTA.csv
+```
 
 ## config
 
@@ -135,7 +154,6 @@ more information is available in the github project
 
 ## TODO
 
-- notify with full state when v:true
 - implement palette details call
 - figure out how to turn off/on ble without reboot
 - figure out what to wrap disable wifi with

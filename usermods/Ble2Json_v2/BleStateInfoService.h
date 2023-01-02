@@ -16,7 +16,14 @@ private:
   std::string *m_toSave = nullptr;
 
 protected:
-  bool writeData(BleComms *comms, std::string subCommand)
+  /*
+   * writeData(BleComms *comms, std::string subCommand, bool notify) called by the service base
+   * in the loop if there is a data to write (either as response to read or as a notification)
+   *
+   * will gather the state/info data and write it back to the connected device
+   *
+   */
+  bool writeData(BleComms *comms, std::string subCommand, bool notify)
   {
     BLE_DEBUG_PRINTLN(F("BleStateInfoService writeData"));
     if (!requestJSONBufferLock(100))
@@ -27,60 +34,51 @@ protected:
     serializeState(state);
     serializeInfo(info);
 
-    bool ret = comms->writeData(doc.as<JsonObject>(), false);
+    bool ret = comms->writeData(doc.as<JsonObject>(), notify);
 
     releaseJSONBufferLock();
 
     return ret;
   }
 
-  bool writeNotify(BleComms *comms)
-  {
-    BLE_DEBUG_PRINTLN(F("BleStateInfoService writeNotify"));
-    if (!requestJSONBufferLock(100))
-      return false;
-    JsonObject state = doc.createNestedObject("state");
-
-    serializeState(state);
-
-    bool ret = comms->writeData(state, true);
-
-    releaseJSONBufferLock();
-
-    return ret;
-  }
-
+  /*
+   * saveData() is called in the loop...
+   *
+   * if there is data to save to state, this is where that happens
+   */
   void saveData()
   {
-    if (m_toSave != nullptr)
+    BLE_DEBUG_PRINTF(F("trying to save data"));
+    if (!requestJSONBufferLock(100))
+      return;
+
+    DeserializationError error = deserializeJson(doc, m_toSave->data());
+
+    if (error)
     {
-      BLE_DEBUG_PRINTF(F("trying to save data"));
-      if (!requestJSONBufferLock(100))
-        return;
-
-      DeserializationError error = deserializeJson(doc, m_toSave->data());
-
-      if (error)
-      {
-        BLE_DEBUG_PRINTF(F("State Server error : %d %s\n"), error.code(), m_toSave->data());
-        releaseJSONBufferLock();
-
-        return;
-      }
-
-      BLE_DEBUG_PRINTF(F("got data %s\n"), m_toSave->data());
-
-      JsonObject obj = doc.as<JsonObject>();
-
-      deserializeState(obj, CALL_MODE_BUTTON_PRESET);
-
-      stateUpdated(CALL_MODE_BUTTON);
-
-      BLE_DEBUG_PRINTF(F("State Server saving data : %s"), m_toSave->data());
-
-      m_toSave = nullptr;
+      BLE_DEBUG_PRINTF(F("State Server error : %d %s\n"), error.code(), m_toSave->data());
       releaseJSONBufferLock();
+
+      return;
     }
+
+    BLE_DEBUG_PRINTF(F("got data %s\n"), m_toSave->data());
+
+    JsonObject obj = doc.as<JsonObject>();
+
+    deserializeState(obj, CALL_MODE_BUTTON_PRESET);
+
+    stateUpdated(CALL_MODE_BUTTON);
+
+    BLE_DEBUG_PRINTF(F("State Server saving data : %s"), m_toSave->data());
+
+    if (doc['v'])
+    {
+      setShouldNotify(true);
+    }
+
+    m_toSave = nullptr;
+    releaseJSONBufferLock();
   }
 
 public:
@@ -98,18 +96,24 @@ public:
   {
     BleServiceBase::loop();
 
-    saveData();
+    if (m_toSave != nullptr)
+    {
+      saveData();
+    }
   }
 
   /*
-   * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
-   * Values in the state object may be modified by connected clients
+   * readFromJsonState() state changed, notify all connected devices
    */
   void readFromJsonState(JsonObject &root)
   {
     setShouldNotify(true);
   }
 
+  /*
+   * onWrite(std::string *pValue) got a write from a connected device...
+   * will set state in the loop
+   */
   virtual void onWrite(std::string *pValue)
   {
     BLE_DEBUG_PRINTF(F("State Service>> got write : %s\n"), pValue->data());
