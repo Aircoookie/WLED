@@ -646,22 +646,34 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   if (subPage == 10)
   {
     strip.isMatrix = request->arg(F("SOMP")).toInt();
-    strip.panelH   = MAX(1,MIN(128,request->arg(F("PH")).toInt()));
-    strip.panelW   = MAX(1,MIN(128,request->arg(F("PW")).toInt()));
-    strip.hPanels  = MAX(1,MIN(8,request->arg(F("MPH")).toInt()));
-    strip.vPanels  = MAX(1,MIN(8,request->arg(F("MPV")).toInt()));
-    strip.matrix.bottomStart = request->arg(F("PB")).toInt();
-    strip.matrix.rightStart  = request->arg(F("PR")).toInt();
-    strip.matrix.vertical    = request->arg(F("PV")).toInt();
-    strip.matrix.serpentine  = request->hasArg(F("PS"));
-    for (uint8_t i=0; i<WLED_MAX_PANELS; i++) {
-      char pO[8]; sprintf_P(pO, PSTR("P%d"), i);
-      uint8_t l = strlen(pO); pO[l+1] = 0;
-      pO[l] = 'B'; if (!request->hasArg(pO)) break;
-      pO[l] = 'B'; strip.panel[i].bottomStart = request->arg(pO).toInt();
-      pO[l] = 'R'; strip.panel[i].rightStart  = request->arg(pO).toInt();
-      pO[l] = 'V'; strip.panel[i].vertical    = request->arg(pO).toInt();
-      pO[l] = 'S'; strip.panel[i].serpentine  = request->hasArg(pO);
+    // strip.panelH   = MAX(1,MIN(128,request->arg(F("PH")).toInt()));
+    // strip.panelW   = MAX(1,MIN(128,request->arg(F("PW")).toInt()));
+    strip.panel.clear(); // release memory if allocated
+    if (strip.isMatrix) {
+      strip.panels  = MAX(1,MIN(WLED_MAX_PANELS,request->arg(F("MPC")).toInt()));
+      strip.matrix.bottomStart = request->arg(F("PB")).toInt();
+      strip.matrix.rightStart  = request->arg(F("PR")).toInt();
+      strip.matrix.vertical    = request->arg(F("PV")).toInt();
+      strip.matrix.serpentine  = request->hasArg(F("PS"));
+      strip.panel.reserve(strip.panels); // pre-allocate memory
+      for (uint8_t i=0; i<strip.panels; i++) {
+        WS2812FX::Panel p;
+        char pO[8]; sprintf_P(pO, PSTR("P%d"), i);
+        uint8_t l = strlen(pO); pO[l+1] = 0;
+        pO[l] = 'B'; if (!request->hasArg(pO)) break;
+        pO[l] = 'B'; p.bottomStart = request->arg(pO).toInt();
+        pO[l] = 'R'; p.rightStart  = request->arg(pO).toInt();
+        pO[l] = 'V'; p.vertical    = request->arg(pO).toInt();
+        pO[l] = 'S'; p.serpentine  = request->hasArg(pO);
+        pO[l] = 'X'; p.xOffset     = request->arg(pO).toInt();
+        pO[l] = 'Y'; p.yOffset     = request->arg(pO).toInt();
+        pO[l] = 'W'; p.width       = request->arg(pO).toInt();
+        pO[l] = 'H'; p.height      = request->arg(pO).toInt();
+        strip.panel.push_back(p);
+      }
+    } else {
+      Segment::maxWidth  = strip.getLengthTotal();
+      Segment::maxHeight = 1;
     }
     strip.setUpMatrix(); // will check limits
   }
