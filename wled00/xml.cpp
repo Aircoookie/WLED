@@ -781,8 +781,8 @@ void getSettingsJS(byte subPage, char* dest)
         oappend(SET_F("addPanel("));
         oappend(itoa(i,n,10));
         oappend(SET_F(");"));
-        char pO[8]; sprintf_P(pO, PSTR("P%d"), i);
-        uint8_t l = strlen(pO); pO[l+1] = 0;
+        char pO[8] = {'\0'}; snprintf_P(pO, 8, PSTR("P%d"), i);  // WLEDMM fix potential string overflow
+        uint8_t l = strlen(pO); if ((l-1) < sizeof(pO)) pO[l+1] = 0; // WLEDMM fix array-out-of-bounds write
         pO[l] = 'B'; sappend('v',pO,strip.panel[i].bottomStart);
         pO[l] = 'R'; sappend('v',pO,strip.panel[i].rightStart);
         pO[l] = 'V'; sappend('v',pO,strip.panel[i].vertical);

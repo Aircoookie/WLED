@@ -658,8 +658,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       strip.panel.reserve(strip.panels); // pre-allocate memory
       for (uint8_t i=0; i<strip.panels; i++) {
         WS2812FX::Panel p;
-        char pO[8]; sprintf_P(pO, PSTR("P%d"), i);
-        uint8_t l = strlen(pO); pO[l+1] = 0;
+        char pO[8] = {'\0'}; snprintf_P(pO, 8, PSTR("P%d"), i);  // WLEDMM fix potential string overflow
+        uint8_t l = strlen(pO); if ((l-1) < sizeof(pO)) pO[l+1] = 0; // WLEDMM fix array-out-of-bounds write
         pO[l] = 'B'; if (!request->hasArg(pO)) break;
         pO[l] = 'B'; p.bottomStart = request->arg(pO).toInt();
         pO[l] = 'R'; p.rightStart  = request->arg(pO).toInt();
