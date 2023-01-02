@@ -726,18 +726,20 @@ void getSettingsJS(byte subPage, char* dest)
   {
     sappend('v',SET_F("SOMP"),strip.isMatrix);
     #ifndef WLED_DISABLE_2D
+    oappend(SET_F("maxPanels=")); oappendi(WLED_MAX_PANELS); oappend(SET_F(";"));
     oappend(SET_F("resetPanels();"));
     if (strip.isMatrix) {
-      sappend('v',SET_F("PH"),strip.panelH);
-      sappend('v',SET_F("PW"),strip.panelW);
-      sappend('v',SET_F("MPH"),strip.hPanels);
-      sappend('v',SET_F("MPV"),strip.vPanels);
+      if(strip.panels>0){
+        sappend('v',SET_F("PW"),strip.panel[0].width); //Set generator Width and Height to first panel size for convenience
+        sappend('v',SET_F("PH"),strip.panel[0].height);
+      }
+      sappend('v',SET_F("MPC"),strip.panels);
       sappend('v',SET_F("PB"),strip.matrix.bottomStart);
       sappend('v',SET_F("PR"),strip.matrix.rightStart);
       sappend('v',SET_F("PV"),strip.matrix.vertical);
       sappend('c',SET_F("PS"),strip.matrix.serpentine);
       // panels
-      for (uint8_t i=0; i<strip.hPanels*strip.vPanels; i++) {
+      for (uint8_t i=0; i<strip.panels; i++) {
         char n[5];
         oappend(SET_F("addPanel("));
         oappend(itoa(i,n,10));
@@ -748,6 +750,10 @@ void getSettingsJS(byte subPage, char* dest)
         pO[l] = 'R'; sappend('v',pO,strip.panel[i].rightStart);
         pO[l] = 'V'; sappend('v',pO,strip.panel[i].vertical);
         pO[l] = 'S'; sappend('c',pO,strip.panel[i].serpentine);
+        pO[l] = 'X'; sappend('v',pO,strip.panel[i].xOffset);
+        pO[l] = 'Y'; sappend('v',pO,strip.panel[i].yOffset);
+        pO[l] = 'W'; sappend('v',pO,strip.panel[i].width);
+        pO[l] = 'H'; sappend('v',pO,strip.panel[i].height);
       }
     }
     #else
