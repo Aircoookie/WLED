@@ -197,8 +197,8 @@ class UsermodBattery : public Usermod
       // SmartHome stuff
       // still don't know much about MQTT and/or HA
       if (WLED_MQTT_CONNECTED) {
-        char buf[64]; // buffer for snprintf()
-        snprintf_P(buf, 63, PSTR("/voltage"), mqttDeviceTopic);
+        char buf[64] = { '\0' }; // buffer for snprintf()  // WLEDMM initialize buffer before using
+        snprintf_P(buf, 63, PSTR("/voltage%s"), mqttDeviceTopic);  // WLEDMM fix bad format string
         mqtt->publish(buf, 0, false, String(voltage).c_str());
       }
 
@@ -393,7 +393,7 @@ class UsermodBattery : public Usermod
       }
 
       #ifdef ARDUINO_ARCH_ESP32
-        newBatteryPin     = battery[F("pin"] | newBatteryPin;
+        newBatteryPin     = battery[F("pin")] | newBatteryPin;
       #endif
       // calculateTimeLeftEnabled = battery[F("time-left")] | calculateTimeLeftEnabled;
       setMinBatteryVoltage(battery[F("min-Voltage")] | minBatteryVoltage);
