@@ -1121,7 +1121,7 @@ class AudioReactive : public Usermod {
         if (udpSyncConnected) {
           udpSyncConnected = false;
           fftUdp.stop();
-          last_UDPTime = millis();
+          receivedFormat = 0;
           DEBUGSR_PRINTLN(F("AR connectUDPSoundSync(): connection lost, UDP closed."));
         }
         return;                           // neither AP nor other connections availeable
@@ -1387,7 +1387,7 @@ class AudioReactive : public Usermod {
       if (udpSyncConnected) {   // clean-up: if open, close old UDP sync connection
         udpSyncConnected = false;
         fftUdp.stop();
-        last_UDPTime = millis();
+        receivedFormat = 0;
         DEBUGSR_PRINTLN(F("AR connected(): old UDP connection closed."));
       }
       
@@ -1397,6 +1397,7 @@ class AudioReactive : public Usermod {
       #else
         udpSyncConnected = fftUdp.beginMulticast(WiFi.localIP(), IPAddress(239, 0, 0, 1), audioSyncPort);
       #endif
+        receivedFormat = 0;
         if (udpSyncConnected) last_UDPTime = millis();
         if (apActive && !(WLED_CONNECTED)) {
           DEBUGSR_PRINTLN(udpSyncConnected ? F("AR connected(): UDP: connected using AP.") : F("AR connected(): UDP is disconnected (AP)."));
@@ -1514,13 +1515,16 @@ class AudioReactive : public Usermod {
           if (have_new_sample) syncVolumeSmth = volumeSmth;   // remember received sample
           else volumeSmth = syncVolumeSmth;                   // restore originally received sample for next run of dynamics limiter
           limitSampleDynamics();                              // run dynamics limiter on received volumeSmth, to hide jumps and hickups
+      } else {
+          receivedFormat = 0;
       }
 
       if (   (audioSyncEnabled & 0x02) // receive mode
           && udpSyncConnected          // connected
+          && (receivedFormat > 0)      // we actually received something in the past
           && ((millis() - last_UDPTime) > 25000)) {   // close connection after 25sec idle
         udpSyncConnected = false;
-        last_UDPTime = millis();
+        receivedFormat = 0;
         fftUdp.stop();
         volumeSmth =0.0f;
         volumeRaw =0;
@@ -1594,6 +1598,7 @@ class AudioReactive : public Usermod {
           udpSyncConnected = false;
           fftUdp.stop();
           DEBUGSR_PRINTLN(F("AR onUpdateBegin(true): UDP connection closed."));
+          receivedFormat = 0;
         }
       } else {
         // update has failed or create task requested
