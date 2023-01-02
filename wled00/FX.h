@@ -703,7 +703,9 @@ class WS2812FX {  // 96 bytes
       _mode.clear();
       _modeData.clear();
       _segments.clear();
+#ifndef WLED_DISABLE_2D
       panel.clear();
+#endif
       customPalettes.clear();
       if (useLedsArray && Segment::_globalLeds) free(Segment::_globalLeds);
     }
