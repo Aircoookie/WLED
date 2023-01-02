@@ -42,7 +42,7 @@ class RTCUsermod : public Usermod {
       if (strip.isUpdating()) return;
       if (!disabled && toki.isTick()) {
         time_t t = toki.second();
-        if (t != RTC.get()) RTC.set(t); //set RTC to NTP/UI-provided value
+        if (abs(t - RTC.get())> 2) RTC.set(t); //set RTC to NTP/UI-provided value - WLEDMM allow up to 3 sec deviation
       }
     }
 
