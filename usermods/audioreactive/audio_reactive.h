@@ -1373,6 +1373,10 @@ class AudioReactive : public Usermod {
         USER_PRINTLN(F("AR: sound input driver initialized successfully."));        
       }
 
+      // try to start UDP
+      last_UDPTime = 0;
+      receivedFormat = 0;
+      delay(100);
       if (enabled) connectUDPSoundSync();
       initDone = true;
     }
