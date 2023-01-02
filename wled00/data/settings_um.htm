@@ -229,6 +229,22 @@
 			}
 		}
 	}
+	//WLEDMM: removeOptions to remove options e.g. mclk
+	function removeOptions(name,el,valFrom,valTo) {
+		let obj = d.getElementsByName(name);
+		if (obj[el]) {
+			let select = obj[el];
+			for (let i=0; i<select.options.length; i++) {
+				let c = select.options[i];
+				if (c.value >= valFrom && c.value <= valTo) {
+					select.removeChild(c);
+					i--; //decrease i by one because the index has been adjusted
+				}
+				//https://www.javascripttutorial.net/javascript-dom/javascript-add-remove-options/
+				//https://www.javascripttutorial.net/javascript-dom/javascript-remove-items-from-a-select-conditionally/
+			}
+		}
+	}
 	// https://stackoverflow.com/questions/26440494/insert-text-after-this-input-element-with-javascript
 	function addInfo(name,el,txt, txt2="") {
 		let obj = d.getElementsByName(name);
