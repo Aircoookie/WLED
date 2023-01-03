@@ -316,11 +316,13 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',SET_F("AS"),apSSID);
     sappend('c',SET_F("AH"),apHide);
 
+#ifndef WLED_DISABLE_AP
     l = strlen(apPass);
     char fapass[l+1]; //fill password field with ***
     fapass[l] = 0;
     memset(fapass,'*',l);
     sappends('s',SET_F("AP"),fapass);
+#endif
 
     sappend('v',SET_F("AC"),apChannel);
     sappend('c',SET_F("WS"),noWifiSleep);

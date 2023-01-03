@@ -403,8 +403,10 @@ void WLED::setup()
   userSetup();
   usermods.setup();
 
+#ifdef WLED_DISABLE_AP
   if (strcmp(clientSSID, DEFAULT_CLIENT_SSID) == 0)
     showWelcomePage = true;
+#endif
   WiFi.persistent(false);
   #ifdef WLED_USE_ETHERNET
   WiFi.onEvent(WiFiEvent);

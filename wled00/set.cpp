@@ -30,8 +30,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     apBehavior = request->arg(F("AB")).toInt();
     strlcpy(apSSID, request->arg(F("AS")).c_str(), 33);
     apHide = request->hasArg(F("AH"));
+#ifndef WLED_DISABLE_AP
     int passlen = request->arg(F("AP")).length();
     if (passlen == 0 || (passlen > 7 && !isAsterisksOnly(request->arg(F("AP")).c_str(), 65))) strlcpy(apPass, request->arg(F("AP")).c_str(), 65);
+#endif
     int t = request->arg(F("AC")).toInt(); if (t > 0 && t < 14) apChannel = t;
 
     noWifiSleep = request->hasArg(F("WS"));

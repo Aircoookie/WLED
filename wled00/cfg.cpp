@@ -52,6 +52,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     CJSON(staticSubnet[i], nw_ins_0_sn[i]);
   }
 
+#ifndef WLED_DISABLE_AP
   JsonObject ap = doc["ap"];
   getStringFromJson(apSSID, ap[F("ssid")], 33);
   getStringFromJson(apPass, ap["psk"] , 65); //normally not present due to security
@@ -71,6 +72,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     apIP[i] = ap_ip;
   }
   */
+#endif
 
   noWifiSleep = doc[F("wifi")][F("sleep")] | !noWifiSleep; // inverted
   noWifiSleep = !noWifiSleep;
@@ -642,6 +644,7 @@ void serializeConfig() {
     nw_ins_0_sn.add(staticSubnet[i]);
   }
 
+#ifndef WLED_DISABLE_AP
   JsonObject ap = doc.createNestedObject("ap");
   ap[F("ssid")] = apSSID;
   ap[F("pskl")] = strlen(apPass);
@@ -653,7 +656,8 @@ void serializeConfig() {
   ap_ip.add(4);
   ap_ip.add(3);
   ap_ip.add(2);
-  ap_ip.add(1);
+  ap_ip.add(1);  
+#endif
 
   JsonObject wifi = doc.createNestedObject("wifi");
   wifi[F("sleep")] = !noWifiSleep;
@@ -1006,8 +1010,10 @@ bool deserializeConfigSec() {
   JsonObject nw_ins_0 = doc["nw"]["ins"][0];
   getStringFromJson(clientPass, nw_ins_0["psk"], 65);
 
+#ifndef WLED_DISABLE_AP
   JsonObject ap = doc["ap"];
   getStringFromJson(apPass, ap["psk"] , 65);
+#endif  
 
   JsonObject interfaces = doc["if"];
 
@@ -1052,8 +1058,10 @@ void serializeConfigSec() {
   JsonObject nw_ins_0 = nw_ins.createNestedObject();
   nw_ins_0["psk"] = clientPass;
 
+#ifndef WLED_DISABLE_AP
   JsonObject ap = doc.createNestedObject("ap");
   ap["psk"] = apPass;
+#endif
 
   JsonObject interfaces = doc.createNestedObject("if");
 #ifndef WLED_DISABLE_BLYNK

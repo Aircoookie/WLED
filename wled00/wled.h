@@ -247,7 +247,9 @@ WLED_GLOBAL char versionString[] _INIT(TOSTRING(WLED_VERSION));
 #define WLED_CODENAME "Hoshi"
 
 // AP and OTA default passwords (for maximum security change them!)
+#ifndef WLED_DISABLE_AP
 WLED_GLOBAL char apPass[65]  _INIT(WLED_AP_PASS);
+#endif
 WLED_GLOBAL char otaPass[33] _INIT(DEFAULT_OTA_PASS);
 
 // Hardware and pin config
