@@ -304,6 +304,7 @@ class UsermodManager {
     void onUpdateBegin(bool);
     bool add(Usermod* um);
     Usermod* lookup(uint16_t mod_id);
+    Usermod* lookupName(const char *mod_name); //WLEDMM
     byte getModCount() {return numMods;};
 };
 
@@ -393,6 +394,6 @@ void sendDataWs(AsyncWebSocketClient * client = nullptr);
 //xml.cpp
 void XML_response(AsyncWebServerRequest *request, char* dest = nullptr);
 void URL_response(AsyncWebServerRequest *request);
-void getSettingsJS(byte subPage, char* dest);
+void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest); //WLEDMM add request
 
 #endif

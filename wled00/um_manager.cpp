@@ -53,6 +53,23 @@ Usermod* UsermodManager::lookup(uint16_t mod_id) {
   return nullptr;
 }
 
+//WLEDMM: used by Usermods in xml.cpp
+Usermod* UsermodManager::lookupName(const char *mod_name) {
+  //WLEDMM: hack to get the usermod object with the mod_name (better would be to store the usermod name in the class but that requires change to all usermods)
+  for (byte i = 0; i < numMods; i++) {
+    // StaticJsonDocument <1024> docx;
+    JsonObject um = doc.createNestedObject("um"); //WLEDMM reuse the global doc variable here
+
+    ums[i]->addToConfig(um);
+
+    //check the name in the config of ums[i]
+    for (JsonPair kv : um) {
+      if (strcmp(kv.key().c_str(), mod_name) == 0) return ums[i]; //if same as mod_name, return this mod
+    }
+  }
+  return nullptr;
+}
+
 bool UsermodManager::add(Usermod* um)
 {
   if (numMods >= WLED_MAX_USERMODS || um == nullptr) return false;

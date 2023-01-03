@@ -218,8 +218,8 @@
 			if (c.value == sel.dataset.val) sel.selectedIndex = i;
 		}
 	}
-	//WLEDMM: replaceOption to set build flag defaults and globals
-	function replaceOption(name,el,txt,val) {
+	//WLEDMM: replace Option to set build flag defaults and globals
+	function rOption(name,el,txt,val) {
 		let obj = d.getElementsByName(name);
 		if (obj[el]) {
 			let sel = obj[el];
@@ -229,8 +229,8 @@
 			}
 		}
 	}
-	//WLEDMM: removeOptions to remove options e.g. mclk
-	function removeOptions(name,el,valFrom,valTo) {
+	//WLEDMM: delete Options to remove options e.g. mclk
+	function dOptions(name,el,valFrom,valTo) {
 		let obj = d.getElementsByName(name);
 		if (obj[el]) {
 			let select = obj[el];
@@ -290,7 +290,8 @@
             gId("globalGPIOs").style.display = (userMod == null)?"block":"none";
 
             gId("um").innerHTML = urows;
-            var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=8';
+			var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=8';
+			if (userMod != null) url+= '&um=' + userMod;
     		loadJS(url, false);	// If we set async false, file is loaded and executed, then next statement is processed
         })
 		.catch((error)=>{

@@ -275,7 +275,7 @@ void appendGPIOinfo() {
 }
 
 //get values for settings form in javascript
-void getSettingsJS(byte subPage, char* dest)
+void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //WLEDMM add request
 {
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec
   DEBUG_PRINT(F("settings resp"));
@@ -731,7 +731,12 @@ void getSettingsJS(byte subPage, char* dest)
     // oappend(SET_F("addInfo('MOSIpin','")); oappendi(HW_PIN_DATASPI);  oappend(SET_F("');"));
     // oappend(SET_F("addInfo('MISOpin','")); oappendi(HW_PIN_MISOSPI);  oappend(SET_F("');"));
     // oappend(SET_F("addInfo('SCLKpin','")); oappendi(HW_PIN_CLOCKSPI); oappend(SET_F("');"));
-    usermods.appendConfigData();
+    if (request->hasParam("um")) { //to do: http://<ip>>/settings/um (global pins) also is succesful here and should not be
+      Usermod *usermod = usermods.lookupName(request->getParam("um")->value().c_str());
+      if (usermod) usermod->appendConfigData(); // if (usermod) to deal with http://<ip>>/settings/um
+    }
+    else
+      usermods.appendConfigData();
   }
 
   if (subPage == 9) // update

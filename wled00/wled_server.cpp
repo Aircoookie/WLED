@@ -521,7 +521,7 @@ void serveSettingsJS(AsyncWebServerRequest* request)
     return;
   }
   strcat_P(buf,PSTR("function GetV(){var d=document;"));
-  getSettingsJS(subPage, buf+strlen(buf));  // this may overflow by 35bytes!!!
+  getSettingsJS(request, subPage, buf+strlen(buf));  // this may overflow by 35bytes!!! WLEDMM add request
   strcat_P(buf,PSTR("}"));
   request->send(200, "application/javascript", buf);
 }
