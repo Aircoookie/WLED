@@ -198,7 +198,7 @@ class UsermodBattery : public Usermod
       // still don't know much about MQTT and/or HA
       if (WLED_MQTT_CONNECTED) {
         char buf[64]; // buffer for snprintf()
-        snprintf_P(buf, 63, PSTR("/voltage%s"), mqttDeviceTopic);
+        snprintf_P(buf, 63, PSTR("%s/voltage"), mqttDeviceTopic);
         mqtt->publish(buf, 0, false, String(voltage).c_str());
       }
 
