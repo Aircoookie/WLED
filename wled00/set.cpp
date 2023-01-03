@@ -656,11 +656,11 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       for (uint8_t i=0; i<strip.panels; i++) {
         WS2812FX::Panel p;
         char pO[8] = { '\0' };
-        snprintf_P(pO, 7, PSTR("P%d"), i);
+        snprintf_P(pO, 7, PSTR("P%d"), i);       // MAX_PANELS is 64 so pO will always only be 4 characters or less
         pO[7] = '\0';
         uint8_t l = strlen(pO);
-        // softhack007: please check if the code below is correct. The first element is pO[0], so maybe you want to modify pO[l-1]?
-        pO[l] = 'B'; if (!request->hasArg(pO)) break;  // softhack007: this line looks suspicious to me .. break() aborts the loop .. maybe you need continue()?
+        // create P0B, P1B, ..., P63B, etc for other PxxX
+        pO[l] = 'B'; if (!request->hasArg(pO)) break;
         pO[l] = 'B'; p.bottomStart = request->arg(pO).toInt();
         pO[l] = 'R'; p.rightStart  = request->arg(pO).toInt();
         pO[l] = 'V'; p.vertical    = request->arg(pO).toInt();

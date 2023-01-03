@@ -745,10 +745,10 @@ void getSettingsJS(byte subPage, char* dest)
         oappend(itoa(i,n,10));
         oappend(SET_F(");"));
         char pO[8] = { '\0' };
-        snprintf_P(pO, 7, PSTR("P%d"), i);
+        snprintf_P(pO, 7, PSTR("P%d"), i);       // MAX_PANELS is 64 so pO will always only be 4 characters or less
         pO[7] = '\0';
         uint8_t l = strlen(pO);
-        // softhack007: please check if the code below is correct. The first element is pO[0], so maybe you want to modify pO[l-1]?
+        // create P0B, P1B, ..., P63B, etc for other PxxX
         pO[l] = 'B'; sappend('v',pO,strip.panel[i].bottomStart);
         pO[l] = 'R'; sappend('v',pO,strip.panel[i].rightStart);
         pO[l] = 'V'; sappend('v',pO,strip.panel[i].vertical);
