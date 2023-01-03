@@ -12,7 +12,7 @@
 //#include "../usermods/EXAMPLE_v2/usermod_v2_example.h"
 
 #ifdef USERMOD_BATTERY
-  #include "../usermods/battery/usermod_v2_battery.h"
+  #include "../usermods/Battery/usermod_v2_battery.h"
 #endif
 
 #ifdef USERMOD_DALLASTEMPERATURE
