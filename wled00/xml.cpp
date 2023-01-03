@@ -744,8 +744,11 @@ void getSettingsJS(byte subPage, char* dest)
         oappend(SET_F("addPanel("));
         oappend(itoa(i,n,10));
         oappend(SET_F(");"));
-        char pO[8]; sprintf_P(pO, PSTR("P%d"), i);
-        uint8_t l = strlen(pO); pO[l+1] = 0;
+        char pO[8] = { '\0' };
+        snprintf_P(pO, 7, PSTR("P%d"), i);
+        pO[7] = '\0';
+        uint8_t l = strlen(pO);
+        // softhack007: please check if the code below is correct. The first element is pO[0], so maybe you want to modify pO[l-1]?
         pO[l] = 'B'; sappend('v',pO,strip.panel[i].bottomStart);
         pO[l] = 'R'; sappend('v',pO,strip.panel[i].rightStart);
         pO[l] = 'V'; sappend('v',pO,strip.panel[i].vertical);

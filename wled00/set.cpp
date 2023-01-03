@@ -655,9 +655,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       strip.panel.reserve(strip.panels); // pre-allocate memory
       for (uint8_t i=0; i<strip.panels; i++) {
         WS2812FX::Panel p;
-        char pO[8]; sprintf_P(pO, PSTR("P%d"), i);
-        uint8_t l = strlen(pO); pO[l+1] = 0;
-        pO[l] = 'B'; if (!request->hasArg(pO)) break;
+        char pO[8] = { '\0' };
+        snprintf_P(pO, 7, PSTR("P%d"), i);
+        pO[7] = '\0';
+        uint8_t l = strlen(pO);
+        // softhack007: please check if the code below is correct. The first element is pO[0], so maybe you want to modify pO[l-1]?
+        pO[l] = 'B'; if (!request->hasArg(pO)) break;  // softhack007: this line looks suspicious to me .. break() aborts the loop .. maybe you need continue()?
         pO[l] = 'B'; p.bottomStart = request->arg(pO).toInt();
         pO[l] = 'R'; p.rightStart  = request->arg(pO).toInt();
         pO[l] = 'V'; p.vertical    = request->arg(pO).toInt();
