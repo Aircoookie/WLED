@@ -818,7 +818,9 @@ class WS2812FX {  // 96 bytes
 #ifndef WLED_DISABLE_2D
     #define WLED_MAX_PANELS 64
     uint8_t
-      panels;
+      panels,
+      panelsH, //WLEDMM quick fix
+      panelsV; //WLEDMM quick fix
 
     struct {
       bool bottomStart : 1;

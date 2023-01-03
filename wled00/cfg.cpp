@@ -101,6 +101,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   if (!matrix.isNull()) {
     strip.isMatrix = true;
     CJSON(strip.panels,             matrix[F("mpc")]);
+    CJSON(strip.panelsV,            matrix[F("mpv")]); //WLEDMM quick fix
+    CJSON(strip.panelsH,            matrix[F("mph")]); //WLEDMM quick fix
     CJSON(strip.matrix.bottomStart, matrix[F("pb")]);
     CJSON(strip.matrix.rightStart,  matrix[F("pr")]);
     CJSON(strip.matrix.vertical,    matrix[F("pv")]);
@@ -710,6 +712,8 @@ void serializeConfig() {
   if (strip.isMatrix) {
     JsonObject matrix = hw_led.createNestedObject(F("matrix"));
     matrix[F("mpc")] = strip.panels;
+    matrix[F("mph")] = strip.panelsH; //WLEDMM quick fix
+    matrix[F("mpv")] = strip.panelsV; //WLEDMM quick fix
     matrix[F("pb")] = strip.matrix.bottomStart;
     matrix[F("pr")] = strip.matrix.rightStart;
     matrix[F("pv")] = strip.matrix.vertical;

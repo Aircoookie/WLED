@@ -44,7 +44,7 @@
 		loadJS(url, false);	// If we set async false, file is loaded and executed, then next statement is processed
 	}
 
-	function UI(panels=1)
+	function UI(panels=-1) //WLEDM quick fix
 	{
 		gId("mpdiv").style.display = "block";
 
@@ -54,9 +54,11 @@
 			return;
 		}
 
-		let i = gId("panels").children.length;
-		if (i<panels) for (let j=i; j<panels; j++) addPanel(j);
-		if (i>panels) for (let j=i; j>panels; j--) remPanel();
+		if (panels != -1) { //WLEDM quick fix
+			let i = gId("panels").children.length;
+			if (i<panels) for (let j=i; j<panels; j++) addPanel(j);
+			if (i>panels) for (let j=i; j>panels; j--) remPanel();
+		}
 	}
 
 	function addPanels() {

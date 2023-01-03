@@ -651,6 +651,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     strip.panel.clear(); // release memory if allocated
     if (strip.isMatrix) {
       strip.panels  = MAX(1,MIN(WLED_MAX_PANELS,request->arg(F("MPC")).toInt()));
+      strip.panelsH  = request->arg(F("MPH")).toInt(); //WLEDM quick fix
+      strip.panelsV  = request->arg(F("MPV")).toInt(); //WLEDM quick fix
       strip.matrix.bottomStart = request->arg(F("PB")).toInt();
       strip.matrix.rightStart  = request->arg(F("PR")).toInt();
       strip.matrix.vertical    = request->arg(F("PV")).toInt();

@@ -776,6 +776,8 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
         sappend('v',SET_F("PH"),strip.panel[0].height);
       }
       sappend('v',SET_F("MPC"),strip.panels);
+      sappend('v',SET_F("MPH"),strip.panelsH); //WLEDM quick fix
+      sappend('v',SET_F("MPV"),strip.panelsV); //WLEDM quick fix
       sappend('v',SET_F("PB"),strip.matrix.bottomStart);
       sappend('v',SET_F("PR"),strip.matrix.rightStart);
       sappend('v',SET_F("PV"),strip.matrix.vertical);
