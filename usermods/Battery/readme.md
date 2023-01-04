@@ -36,7 +36,7 @@ define `USERMOD_BATTERY` in `wled00/my_config.h`
 | Name                                            | Unit        | Description                                                                           |
 | ----------------------------------------------- | ----------- |-------------------------------------------------------------------------------------- |
 | `USERMOD_BATTERY`                               |             | define this (in `my_config.h`) to have this usermod included wled00\usermods_list.cpp |
-| `USERMOD_BATTERY_MEASUREMENT_PIN`               |             | defaults to A0 on ESP8266 and GPIO32 on ESP32                                         |
+| `USERMOD_BATTERY_MEASUREMENT_PIN`               |             | defaults to A0 on ESP8266 and GPIO35 on ESP32                                         |
 | `USERMOD_BATTERY_MEASUREMENT_INTERVAL`          | ms          | battery check interval. defaults to 30 seconds                                        |
 | `USERMOD_BATTERY_MIN_VOLTAGE`                   | v           | minimum battery voltage. default is 2.6 (18650 battery standard)                      |
 | `USERMOD_BATTERY_MAX_VOLTAGE`                   | v           | maximum battery voltage. default is 4.2 (18650 battery standard)                      |
