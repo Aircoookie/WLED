@@ -700,43 +700,42 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
   if (subPage == 8) //usermods
   {
     appendGPIOinfo();
-    oappend(SET_F("numM="));
-    oappendi(usermods.getModCount());
-    oappend(";");
-    sappend('v',SET_F("SDApin"),i2c_sda);
-    sappend('v',SET_F("SCLpin"),i2c_scl);
-    sappend('v',SET_F("MOSIpin"),spi_mosi);
-    sappend('v',SET_F("MISOpin"),spi_miso);
-    sappend('v',SET_F("SCLKpin"),spi_sclk);
-    //WLEDMM: add help info showing defaults
+    if (!request->hasParam("um") ) {
+      // oappend(SET_F("numM="));
+      // oappendi(usermods.getModCount());
+      // oappend(";");
+      oappend(SET_F("d.getElementsByName(\"SDA2:pin\")[1].value=")); oappendi(i2c_sda); oappend(";"); 
+      oappend(SET_F("d.getElementsByName(\"SCL2:pin\")[1].value=")); oappendi(i2c_scl); oappend(";"); 
+      oappend(SET_F("d.getElementsByName(\"MOSI2:pin\")[1].value=")); oappendi(spi_mosi); oappend(";"); 
+      oappend(SET_F("d.getElementsByName(\"MISO2:pin\")[1].value=")); oappendi(spi_miso); oappend(";"); 
+      oappend(SET_F("d.getElementsByName(\"SCLK2:pin\")[1].value=")); oappendi(spi_sclk); oappend(";"); 
+      //WLEDMM: add help info showing defaults
+      oappend(SET_F("addInfo('SDA2:pin',0,'', 'SDA');"));
     #ifdef HW_PIN_SDA
-      oappend(SET_F("addInfo('SDApin',0,'<i>&#9100; ")); oappendi(HW_PIN_SDA); oappend("</i>');");
+      oappend(SET_F("xOption('SDA2:pin',1,' ⎌',")); oappendi(HW_PIN_SDA); oappend(");"); 
     #endif
+      oappend(SET_F("addInfo('SCL2:pin',0,'', 'SCL');"));
     #ifdef HW_PIN_SCL
-      oappend(SET_F("addInfo('SCLpin',0,'<i>&#9100; ")); oappendi(HW_PIN_SCL); oappend("</i>');");
+      oappend(SET_F("xOption('SCL2:pin',1,' ⎌',")); oappendi(HW_PIN_SCL); oappend(");"); 
     #endif
+      oappend(SET_F("addInfo('MOSI2:pin',0,'', 'MOSI');"));
     #ifdef HW_PIN_DATASPI
-      oappend(SET_F("addInfo('MOSIpin',0,'<i>&#9100; ")); oappendi(HW_PIN_DATASPI); oappend("</i>');");
+      oappend(SET_F("xOption('MOSI2:pin',1,' ⎌',")); oappendi(HW_PIN_DATASPI); oappend(");"); 
     #endif
+      oappend(SET_F("addInfo('MISO2:pin',0,'', 'MISO');"));
     #ifdef HW_PIN_MISOSPI
-      oappend(SET_F("addInfo('MISOpin',0,'<i>&#9100; ")); oappendi(HW_PIN_MISOSPI); oappend("</i>');");
+      oappend(SET_F("xOption('MISO2:pin',1,' ⎌',")); oappendi(HW_PIN_MISOSPI); oappend(");"); 
     #endif
+      oappend(SET_F("addInfo('SCLK2:pin',0,'', 'SCLK');"));
     #ifdef HW_PIN_CLOCKSPI
-      oappend(SET_F("addInfo('SCLKpin',0,'<i>&#9100; ")); oappendi(HW_PIN_CLOCKSPI); oappend("</i>');");
+      oappend(SET_F("xOption('SCLK2:pin',1,' ⎌',")); oappendi(HW_PIN_CLOCKSPI); oappend(");"); 
     #endif
-
-    //WLEDMM: this puts info in the placeholder of the field, not intuitive
-    // oappend(SET_F("addInfo('SDApin','"));  oappendi(HW_PIN_SDA);      oappend(SET_F("');"));
-    // oappend(SET_F("addInfo('SCLpin','"));  oappendi(HW_PIN_SCL);      oappend(SET_F("');"));
-    // oappend(SET_F("addInfo('MOSIpin','")); oappendi(HW_PIN_DATASPI);  oappend(SET_F("');"));
-    // oappend(SET_F("addInfo('MISOpin','")); oappendi(HW_PIN_MISOSPI);  oappend(SET_F("');"));
-    // oappend(SET_F("addInfo('SCLKpin','")); oappendi(HW_PIN_CLOCKSPI); oappend(SET_F("');"));
-    if (request->hasParam("um")) { //to do: http://<ip>>/settings/um (global pins) also is succesful here and should not be
-      Usermod *usermod = usermods.lookupName(request->getParam("um")->value().c_str());
-      if (usermod) usermod->appendConfigData(); // if (usermod) to deal with http://<ip>>/settings/um
     }
-    else
-      usermods.appendConfigData();
+
+    else {
+      Usermod *usermod = usermods.lookupName(request->getParam("um")->value().c_str());
+      if (usermod) usermod->appendConfigData();
+    }
   }
 
   if (subPage == 9) // update

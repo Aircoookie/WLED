@@ -865,6 +865,21 @@ public:
     DEBUG_PRINTLN(F("Rotary Encoder config saved."));
   }
 
+  //WLEDMM: add appendConfigData
+  void appendConfigData()
+  {
+    oappend(SET_F("addInfo('Rotary-Encoder:help',0,'<button onclick=\"location.href=&quot;https://mm.kno.wled.ge/usermods/Rotary-Encoder&quot;\" type=\"button\">?</button>');"));  // 0 is field type, 1 is actual field
+    #ifdef ENCODER_DT_PIN
+      oappend(SET_F("xOption('Rotary-Encoder:DT-pin',1,' ⎌',")); oappendi(ENCODER_DT_PIN); oappend(");"); 
+    #endif
+    #ifdef ENCODER_CLK_PIN
+      oappend(SET_F("xOption('Rotary-Encoder:CLK-pin',1,' ⎌',")); oappendi(ENCODER_CLK_PIN); oappend(");"); 
+    #endif
+    #ifdef ENCODER_SW_PIN
+      oappend(SET_F("xOption('Rotary-Encoder:SW-pin',1,' ⎌',")); oappendi(ENCODER_SW_PIN); oappend(");"); 
+    #endif
+  }
+
   /**
    * readFromConfig() is called before setup() to populate properties from values stored in cfg.json
    *

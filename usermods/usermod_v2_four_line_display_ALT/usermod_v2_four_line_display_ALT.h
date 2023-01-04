@@ -1050,12 +1050,12 @@ class FourLineDisplayUsermod : public Usermod {
       // WLEDMM add defaults
       oappend(SET_F("addInfo('4LineDisplay:pin[]',0,'','I2C/SPI CLK');"));
     #ifdef FLD_PIN_SCL
-      oappend(SET_F("rOption('4LineDisplay:pin[]',0,'")); oappendi(FLD_PIN_SCL); oappend(" ⎌',"); oappendi(FLD_PIN_SCL); oappend(");"); 
+      oappend(SET_F("xOption('4LineDisplay:pin[]',0,' ⎌',")); oappendi(FLD_PIN_SCL); oappend(");"); 
     #endif
       oappend(SET_F("rOption('4LineDisplay:pin[]',0,'use global (")); oappendi(i2c_scl); oappend(")',-1);"); 
       oappend(SET_F("addInfo('4LineDisplay:pin[]',1,'','I2C/SPI DTA');"));
     #ifdef FLD_PIN_SDA
-      oappend(SET_F("rOption('4LineDisplay:pin[]',1,'")); oappendi(FLD_PIN_SDA); oappend(" ⎌',"); oappendi(FLD_PIN_SDA); oappend(");"); 
+      oappend(SET_F("xOption('4LineDisplay:pin[]',1,' ⎌',")); oappendi(FLD_PIN_SDA); oappend(");"); 
     #endif
       oappend(SET_F("rOption('4LineDisplay:pin[]',1,'use global (")); oappendi(i2c_sda); oappend(")',-1);"); 
       oappend(SET_F("addInfo('4LineDisplay:pin[]',2,'','SPI CS');"));

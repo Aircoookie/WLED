@@ -11,7 +11,7 @@
 	var pins = [], pinO = [], owner;
 	var loc = false, locip;
 	var urows;
-	var numM = 0;
+	// var numM = 0;
 	function gId(s) { return d.getElementById(s); }
 	function isO(i) { return (i && typeof i === 'object' && !Array.isArray(i)); }
 	function H() { window.open("https://github.com/Aircoookie/WLED/wiki/Settings#usermod-settings"); }
@@ -33,11 +33,6 @@
 			GetV();
 			for (let k=0; k<d.rsvd.length; k++) { pins.push(d.rsvd[k]); pinO.push("rsvd"); }
 			if (d.um_p[0]==-1) d.um_p.shift();
-			d.Sf.SDApin.max = d.max_gpio;
-			d.Sf.SCLpin.max = d.max_gpio;
-			d.Sf.MOSIpin.max = d.max_gpio;
-			d.Sf.SCLKpin.max = d.max_gpio;
-			d.Sf.MISOpin.max = d.max_gpio;
 		});
 		// error event
 		scE.addEventListener("error", (ev) => {
@@ -55,36 +50,12 @@
 			}
 		}
 		ldS();
-		if (!numM) gId("um").innerHTML = ""; //WLEDMM: Do not display no usermods installed
+		// if (!numM) gId("um").innerHTML = ""; //WLEDMM: Do not display no usermods installed
 	}
 	// https://stackoverflow.com/questions/3885817/how-do-i-check-that-a-number-is-float-or-integer
 	function isF(n) { return n === +n && n !== (n|0); }
 	function isI(n) { return n === +n && n === (n|0); }
-	function check(o,k) {   // input object, pin owner key
-		var n = o.name.replace("[]","").substr(-3);
-		// console.log("check", o, k, n, pins, pinO);
-		if (o.type=="number" && n.substr(0,3)=="pin") {
-			for (var i=0; i<pins.length; i++) {
-				if (k==pinO[i]) continue;
-				if (o.value==pins[i] && pinO[i]==="if") { o.style.color="lime"; break; }
-				if (o.value==pins[i] || o.value<-1 || o.value>d.max_gpio) { o.style.color="red"; break; } else o.style.color=d.ro_gpio.some((e)=>e==parseInt(o.value,10))?"orange":"#fff";
-			}
-		} else {
-			switch (o.name) {
-				case "SDApin": break;
-				case "SCLpin": break;
-				case "MOSIpin": break;
-				case "SCLKpin": break;
-				case "MISOpin": break;
-				default: return;
-			}
-			for (var i=0; i<pins.length; i++) {
-				//if (k==pinO[i]) continue; // same owner
-				if (o.value==pins[i] && pinO[i]==="if") { o.style.color="tomato"; break; }
-				if (o.value==pins[i] || o.value<-1 || o.value>d.max_gpio) { o.style.color="red"; break; } else o.style.color=d.ro_gpio.some((e)=>e==parseInt(o.value,10))?"orange":"#fff";
-			}
-		}
-	}
+	// function check(o,k) {}   //WLEDMM not needed as we use dropdowns
 	function getPins(o) {
 		if (isO(o)) {
 			for (const [k,v] of Object.entries(o)) {
@@ -112,7 +83,6 @@
 		return s.replace(/[\W_]/g,' ').replace(/(^\w{1})|(\s+\w{1})/g, l=>l.toUpperCase()); // replace - and _ with space, capitalize every 1st letter
 	}
 	function addField(k,f,o,a=false) {  //key, field, (sub)object, isArray
-		// console.log("addField", k, f, o, a);
 		if (isO(o)) {
 			urows += '<hr class="sml">';
 			if (f!=='unknown' && !k.includes(":")) urows += `<p><u>${initCap(f)}</u></p>`; //WLEDMM show group title
@@ -133,10 +103,8 @@
 					break;
 				case "number":
 					c = `value="${o}"`;
-					// console.log("addField nr", c);
-					if (f.substr(-3)==="pin") {
+					if (f.substr(-3)==="pin") { //WLEDMM: this will not be used as pins are now dropdowns
 						c += ` max="${d.max_gpio}" min="-1" class="s"`;
-						// console.log("addField nr pin should not happen", c);
 						t = "int";
 					} else {
 						c += ' step="any" class="xxl"';
@@ -150,14 +118,11 @@
 			// https://stackoverflow.com/questions/11657123/posting-both-checked-and-unchecked-checkboxes
 			if (t=="checkbox") urows += `<input type="hidden" name="${k}:${f}${a?"[]":""}" value="false">`;
 			else if (!a)       urows += `<input type="hidden" name="${k}:${f}${a?"[]":""}" value="${t}">`;
-			// make a dropdown for pin variables
-			if (f.includes("pin")) { //} || f == "SDApin" || f == "SCLpin" || f == "MOSIpin" || f == "SCLKpin" || f == "MISOpin") {
+			// WLEDMM make a dropdown for pin variables
+			if (f.includes("pin")) {
 				var n = this.name.replace("[]","").substr(-3);
-				// console.log("addPin", k, f, o, a, n, pins, pinO);
 				urows += `<select name="${k}:${f}${a?"[]":""}">`;
-				// urows += `<option value="-1">Use global</option>`;
-				// urows += `<option value="-2">Use ⎌</option>`;
-				for (var j=-1; j<=39; j++) { // all possible pins (d.max_gpio not working)
+				for (var j=-1; j<=39; j++) { // all possible pins (d.max_gpio not working as it is set after addField during load and appendGPIOInfo)
 					let foundPin = -1;
 					for (var i=0; i<pins.length; i++) { // check if pin is reserved
 						if (pins[i] == j) foundPin = i;
@@ -179,7 +144,7 @@
 				urows += `</select>`;
 			}
 			else
-				urows += `<input type="${t==="int"?"number":t}" name="${k}:${f}${a?"[]":""}" ${c} oninput="check(this,'${k.substr(k.indexOf(":")+1)}')">`;
+				urows += `<input type="${t==="int"?"number":t}" name="${k}:${f}${a?"[]":""}" ${c}>`; //WLEDMM no need for oninput="check(this,'${k.substr(k.indexOf(":")+1)}')"
 			urows += `<br>`;
 		}
 	}
@@ -218,31 +183,39 @@
 			if (c.value == sel.dataset.val) sel.selectedIndex = i;
 		}
 	}
-	//WLEDMM: replace Option to set build flag defaults and globals
+	//WLEDMM: replace Option to set globals
 	function rOption(name,el,txt,val) {
 		let obj = d.getElementsByName(name);
-		if (obj[el]) {
-			let sel = obj[el];
-			for (let i=0; i<sel.childNodes.length; i++) {
-				let c = sel.childNodes[i];
-				if (c.value == val) c.text = txt;
-			}
+		var select = obj;
+		if (obj[el]) select = obj[el];
+		for (let i=0; i<select.childNodes.length; i++) {
+			let c = select.childNodes[i];
+			if (c.value == val) c.text = txt;
+		}
+	}
+	//WLEDMM: extend Option to set build flag defaults
+	function xOption(name,el,txt,val) {
+		let obj = d.getElementsByName(name);
+		var select = obj;
+		if (obj[el]) select = obj[el];
+		for (let i=0; i<select.childNodes.length; i++) {
+			let c = select.childNodes[i];
+			if (c.value == val) c.text += txt;
 		}
 	}
 	//WLEDMM: delete Options to remove options e.g. mclk
 	function dOptions(name,el,valFrom,valTo) {
 		let obj = d.getElementsByName(name);
-		if (obj[el]) {
-			let select = obj[el];
-			for (let i=0; i<select.options.length; i++) {
-				let c = select.options[i];
-				if (c.value >= valFrom && c.value <= valTo) {
-					select.removeChild(c);
-					i--; //decrease i by one because the index has been adjusted
-				}
-				//https://www.javascripttutorial.net/javascript-dom/javascript-add-remove-options/
-				//https://www.javascripttutorial.net/javascript-dom/javascript-remove-items-from-a-select-conditionally/
+		var select = obj;
+		if (obj[el]) select = obj[el];
+		for (let i=0; i<select.options.length; i++) {
+			let c = select.options[i];
+			if (c.value >= valFrom && c.value <= valTo) {
+				select.removeChild(c);
+				i--; //decrease i by one because the index has been adjusted
 			}
+			//https://www.javascripttutorial.net/javascript-dom/javascript-add-remove-options/
+			//https://www.javascripttutorial.net/javascript-dom/javascript-remove-items-from-a-select-conditionally/
 		}
 	}
 	// https://stackoverflow.com/questions/26440494/insert-text-after-this-input-element-with-javascript
@@ -269,13 +242,24 @@
 			umCfg = json.um;
 			getPins(json);
 			urows="";
-			// addField("SCL", "pin", -1, true);
-			// addField("SCL", "pin", -1, true);
-			// addInfo('SCL:pin[]',0,'','SCL');
-			// addInfo('SCL:pin[]',1,'','SCLK');
 			const queryString = window.location.search;
 			const urlParams = new URLSearchParams(queryString);
-            const userMod = urlParams.get('um')
+            const userMod = urlParams.get('um');
+			if (userMod == null) {
+				urows+="<h2>Usermods Global pins</h2>";
+				urows+="<button onclick=\"location.href=&quot;https://mm.kno.wled.ge/usermods/globalpins&quot;\" type=\"button\">?</button>";
+				urows+="<hr class=\"sml\">";
+				urows+="<i style=\"color:orange\">(only changable on ESP32, change requires reboot!)</i>";
+				urows+="<hr class=\"sml\">";
+				urows+="<p><u>Global I2C GPIOs (HW)</u></p>";
+				addField("SDA2", "pin", -1, false);
+				addField("SCL2", "pin", -1, false);
+				urows+="<hr class=\"sml\">";
+				urows+="<p><u>Global SPI GPIOs (HW)</u></p>";
+				addField("MOSI2", "pin", -1, false);
+				addField("MISO2", "pin", -1, false);
+				addField("SCLK2", "pin", -1, false);
+			}
 			if (isO(umCfg)) {
                 //WLEDMM: read url parameter. e.g. um=AudioReactive and if set only add the usermod with the same name
                 for (const [k,o] of Object.entries(umCfg)) {
@@ -286,12 +270,10 @@
                 }
                 if (userMod != null && urows==="") urows = "Usermods configuration not found.<br>Press <i>Save</i> to initialize defaults.";
             }
-            //WLEDMM: only show globalGPIOs if no usermod info is shown (url without um parameter)
-            gId("globalGPIOs").style.display = (userMod == null)?"block":"none";
 
             gId("um").innerHTML = urows;
 			var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=8';
-			if (userMod != null) url+= '&um=' + userMod;
+			if (userMod != null) url+= '&um=' + userMod; //WLEDMM add userMod as parameter
     		loadJS(url, false);	// If we set async false, file is loaded and executed, then next statement is processed
         })
 		.catch((error)=>{
@@ -315,20 +297,7 @@
 		<span id="lssuc" style="color:green; display:none">&#10004; Configuration saved!</span>
 		<span id="lserr" style="color:red; display:none">&#9888; Could not load configuration.</span>
 		</div>
-        <div id="globalGPIOs" style="display:none;"> <!--WLEDMM: show in ldS-->
-        <hr>
-		<h2>Usermod Setup</h2>
-		Global I<sup>2</sup>C GPIOs (HW)<br>
-		<i style="color: orange;">(only changable on ESP32, change requires reboot!)</i><br>
-		SDA:<input type="number" min="-1" max="48" name="SDApin" onchange="check(this,'if')" class="s" placeholder="SDApin"><br>
-		SCL:<input type="number" min="-1" max="48" name="SCLpin" onchange="check(this,'if')" class="s" placeholder="SCLpin">
-		<hr class="sml">
-		Global SPI GPIOs (HW)<br>
-		<i style="color: orange;">(only changable on ESP32, change requires reboot!)</i><br>
-		MOSI:<input type="number" min="-1" max="48" name="MOSIpin" onchange="check(this,'if')" class="s" placeholder="MOSIpin"><br>
-		MISO:<input type="number" min="-1" max="48" name="MISOpin" onchange="check(this,'if')" class="s" placeholder="MISOpin"><br>
-		SCLK:<input type="number" min="-1" max="48" name="SCLKpin" onchange="check(this,'if')" class="s" placeholder="SCLKpin">
-		</div>
+		<!-- WLEDMM: no gpios here as it is generated -->
 		<div id="um">Loading settings...</div>
 		<hr><button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 	</form>
