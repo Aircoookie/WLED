@@ -203,9 +203,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   // read multiple button configuration
   JsonObject btn_obj = hw["btn"];
-  int pull = -1; // trick for inverted setting
-  CJSON(pull, btn_obj[F("pull")]);
-  if (pull>=0) disablePullUp = pull;
+  bool pull = btn_obj[F("pull")] | (!disablePullUp); // if true, pullup is enabled
+  disablePullUp = !pull;
   JsonArray hw_btn_ins = btn_obj[F("ins")];
   if (!hw_btn_ins.isNull()) {
     uint8_t s = 0;

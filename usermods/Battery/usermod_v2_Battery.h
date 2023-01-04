@@ -93,6 +93,7 @@ class UsermodBattery : public Usermod
     void lowPowerIndicator()
     {
       if (!lowPowerIndicatorEnabled) return;
+      if (batteryPin < 0) return;  // no measurement
       if (lowPowerIndicationDone && lowPowerIndicatorReactivationThreshold <= batteryLevel) lowPowerIndicationDone = false;
       if (lowPowerIndicatorThreshold <= batteryLevel) return;
       if (lowPowerIndicationDone) return;
@@ -130,6 +131,8 @@ class UsermodBattery : public Usermod
         if (!success) {
           DEBUG_PRINTLN(F("Battery pin allocation failed."));
           batteryPin = -1;  // allocation failed
+        } else {
+          pinMode(batteryPin, INPUT);
         }
       #else //ESP8266 boards have only one analog input pin A0
 
@@ -168,6 +171,9 @@ class UsermodBattery : public Usermod
 
       nextReadTime = millis() + readingInterval;
       lastReadTime = millis();
+
+      if (batteryPin < 0) return;  // nothing to read
+
       initializing = false;
 
       // read battery raw input
@@ -197,8 +203,8 @@ class UsermodBattery : public Usermod
       // SmartHome stuff
       // still don't know much about MQTT and/or HA
       if (WLED_MQTT_CONNECTED) {
-        char buf[64] = { '\0' }; // buffer for snprintf()  // WLEDMM initialize buffer before using
-        snprintf_P(buf, 63, PSTR("/voltage%s"), mqttDeviceTopic);  // WLEDMM fix bad format string
+        char buf[64]; // buffer for snprintf()
+        snprintf_P(buf, 63, PSTR("%s/voltage"), mqttDeviceTopic);
         mqtt->publish(buf, 0, false, String(voltage).c_str());
       }
 
@@ -213,6 +219,13 @@ class UsermodBattery : public Usermod
     {
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
+
+      if (batteryPin < 0) {
+        JsonArray infoVoltage = user.createNestedArray(F("Battery voltage"));
+        infoVoltage.add(F("n/a"));
+        infoVoltage.add(F(" invalid GPIO"));
+        return;  // no GPIO - nothing to report
+      }
 
       // info modal display names
       JsonArray infoPercentage = user.createNestedArray(F("Battery level"));
@@ -430,7 +443,7 @@ class UsermodBattery : public Usermod
           if (newBatteryPin != batteryPin) 
           {
             // deallocate pin
-            pinManager.deallocatePin(batteryPin);
+            pinManager.deallocatePin(batteryPin, PinOwner::UM_Battery);
             batteryPin = newBatteryPin;
             // initialise
             setup();
@@ -561,7 +574,7 @@ class UsermodBattery : public Usermod
     {
       #ifdef ARDUINO_ARCH_ESP32
         // esp32
-        return 4095.0f;
+        return 4096.0f;
       #else
         // esp8266
         return 1024.0f;

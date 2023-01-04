@@ -787,8 +787,11 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
         oappend(SET_F("addPanel("));
         oappend(itoa(i,n,10));
         oappend(SET_F(");"));
-        char pO[8] = {'\0'}; snprintf_P(pO, 8, PSTR("P%d"), i);  // WLEDMM fix potential string overflow
-        uint8_t l = strlen(pO); if ((l-1) < sizeof(pO)) pO[l+1] = 0; // WLEDMM fix array-out-of-bounds write
+        char pO[8] = { '\0' };
+        snprintf_P(pO, 7, PSTR("P%d"), i);       // MAX_PANELS is 64 so pO will always only be 4 characters or less
+        pO[7] = '\0';
+        uint8_t l = strlen(pO);
+        // create P0B, P1B, ..., P63B, etc for other PxxX
         pO[l] = 'B'; sappend('v',pO,strip.panel[i].bottomStart);
         pO[l] = 'R'; sappend('v',pO,strip.panel[i].rightStart);
         pO[l] = 'V'; sappend('v',pO,strip.panel[i].vertical);
