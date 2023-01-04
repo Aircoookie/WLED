@@ -79,6 +79,12 @@ Specification from:  [Molicel INR18650-M35A, 3500mAh 10A Lithium-ion battery, 3.
 
 ## 📝 Change Log
 
+2023-01-04
+
+- improved support for esp32 (read calibrated voltage)
+- corrected config saving (measurement pin, and battery min/max were lost)
+- various bugfixes
+
 2022-12-25
 
 - added "auto-off" feature

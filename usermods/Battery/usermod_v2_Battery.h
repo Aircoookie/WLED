@@ -176,13 +176,22 @@ class UsermodBattery : public Usermod
 
       initializing = false;
 
+#ifdef ARDUINO_ARCH_ESP32
+      // use calibrated millivolts analogread on esp32 (150 mV ~ 2450 mV)
+      rawValue = analogReadMilliVolts(batteryPin);
+      // calculate the voltage
+      voltage = (rawValue / 1000.0f) + calibration;
+      // usually a voltage divider (50%) is used on ESP32, so we need to multiply by 2
+      voltage *= 2.0f;
+#else
       // read battery raw input
       rawValue = analogRead(batteryPin);
 
       // calculate the voltage     
       voltage = ((rawValue / getAdcPrecision()) * maxBatteryVoltage) + calibration;
+#endif
       // check if voltage is within specified voltage range
-      voltage = voltage<minBatteryVoltage||voltage>maxBatteryVoltage?-1.0f:voltage;
+      voltage = ((voltage<minBatteryVoltage) || (voltage>maxBatteryVoltage)) ? -1.0f : voltage;
 
       // translate battery voltage into percentage
       /*
@@ -329,7 +338,7 @@ class UsermodBattery : public Usermod
     {
       JsonObject battery = root.createNestedObject(FPSTR(_name));           // usermodname
       #ifdef ARDUINO_ARCH_ESP32
-        battery["pin"] = batteryPin;
+        battery[F("pin")] = batteryPin;
       #endif
 
       // battery[F("time-left")] = calculateTimeLeftEnabled;
@@ -409,8 +418,8 @@ class UsermodBattery : public Usermod
         newBatteryPin     = battery[F("pin")] | newBatteryPin;
       #endif
       // calculateTimeLeftEnabled = battery[F("time-left")] | calculateTimeLeftEnabled;
-      setMinBatteryVoltage(battery[F("min-Voltage")] | minBatteryVoltage);
-      setMaxBatteryVoltage(battery[F("max-Voltage")] | maxBatteryVoltage);
+      setMinBatteryVoltage(battery[F("min-voltage")] | minBatteryVoltage);
+      setMaxBatteryVoltage(battery[F("max-voltage")] | maxBatteryVoltage);
       setTotalBatteryCapacity(battery[F("capacity")] | totalBatteryCapacity);
       setCalibration(battery[F("calibration")] | calibration);
       setReadingInterval(battery[FPSTR(_readInterval)] | readingInterval);
@@ -432,14 +441,14 @@ class UsermodBattery : public Usermod
         if (!initDone) 
         {
           // first run: reading from cfg.json
-          newBatteryPin = batteryPin;
+          batteryPin = newBatteryPin;
           DEBUG_PRINTLN(F(" config loaded."));
         } 
         else 
         {
           DEBUG_PRINTLN(F(" config (re)loaded."));
 
-          // changing paramters from settings page
+          // changing parameters from settings page
           if (newBatteryPin != batteryPin) 
           {
             // deallocate pin
