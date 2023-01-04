@@ -443,7 +443,7 @@ class UsermodBattery : public Usermod
           if (newBatteryPin != batteryPin) 
           {
             // deallocate pin
-            pinManager.deallocatePin(batteryPin);
+            pinManager.deallocatePin(batteryPin, PinOwner::UM_Battery);
             batteryPin = newBatteryPin;
             // initialise
             setup();
