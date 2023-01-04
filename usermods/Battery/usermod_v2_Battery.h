@@ -190,15 +190,30 @@ class UsermodBattery : public Usermod
       // calculate the voltage     
       voltage = ((rawValue / getAdcPrecision()) * maxBatteryVoltage) + calibration;
 #endif
-      // check if voltage is within specified voltage range
-      voltage = ((voltage<minBatteryVoltage) || (voltage>maxBatteryVoltage)) ? -1.0f : voltage;
+      // check if voltage is within specified voltage range, allow 10% over/under voltage
+      voltage = ((voltage < minBatteryVoltage * 0.85f) || (voltage > maxBatteryVoltage * 1.1f)) ? -1.0f : voltage;
 
       // translate battery voltage into percentage
       /*
         the standard "map" function doesn't work
         https://www.arduino.cc/reference/en/language/functions/math/map/  notes and warnings at the bottom
       */
-      batteryLevel = mapf(voltage, minBatteryVoltage, maxBatteryVoltage, 0, 100);
+      #ifdef USERMOD_BATTERY_USE_LIPO
+        batteryLevel = mapf(voltage, minBatteryVoltage, maxBatteryVoltage, 0, 100); // basic mapping
+        // LiPo batteries have a differnt dischargin curve, see 
+        //  https://blog.ampow.com/lipo-voltage-chart/
+        if (batteryLevel < 40.0f) 
+          batteryLevel = mapf(batteryLevel, 0, 40, 0, 12);       // last 45% -> drops very quickly
+        else {
+          if (batteryLevel < 90.0f)
+            batteryLevel = mapf(batteryLevel, 40, 90, 12, 95);   // 90% ... 40% -> almost linear drop
+          else // level >  90%
+            batteryLevel = mapf(batteryLevel, 90, 105, 95, 100); // highest 15% -> drop slowly
+        }
+      #else
+        batteryLevel = mapf(voltage, minBatteryVoltage, maxBatteryVoltage, 0, 100);
+      #endif
+      if (voltage > -1.0f) batteryLevel = constrain(batteryLevel, 0.0f, 110.0f);
 
       // if (calculateTimeLeftEnabled) {
       //   float currentBatteryCapacity = totalBatteryCapacity;
@@ -556,7 +571,11 @@ class UsermodBattery : public Usermod
      */
     void setMaxBatteryVoltage(float voltage)
     {
-      maxBatteryVoltage = max(getMinBatteryVoltage()+1.0f, voltage);
+      #ifdef USERMOD_BATTERY_USE_LIPO
+        maxBatteryVoltage = max(getMinBatteryVoltage()+0.7f, voltage);
+      #else
+        maxBatteryVoltage = max(getMinBatteryVoltage()+1.0f, voltage);
+      #endif
     }
 
 

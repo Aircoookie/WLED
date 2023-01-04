@@ -18,7 +18,12 @@
 // https://batterybro.com/blogs/18650-wholesale-battery-reviews/18852515-when-to-recycle-18650-batteries-and-how-to-start-a-collection-center-in-your-vape-shop
 // Discharge voltage: 2.5 volt + .1 for personal safety
 #ifndef USERMOD_BATTERY_MIN_VOLTAGE
-  #define USERMOD_BATTERY_MIN_VOLTAGE 2.6f
+  #ifdef USERMOD_BATTERY_USE_LIPO
+    // LiPo "1S" Batteries should not be dischared below 3V !!
+    #define USERMOD_BATTERY_MIN_VOLTAGE 3.2f
+  #else
+    #define USERMOD_BATTERY_MIN_VOLTAGE 2.6f
+  #endif
 #endif
 
 #ifndef USERMOD_BATTERY_MAX_VOLTAGE
