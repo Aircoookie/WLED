@@ -143,7 +143,7 @@
 #define IR40_AUTO          0xFF50AF  // AUTO
 #define IR40_SLOW          0xFFD02F  // SLOW
 
-// 44-key defs, to be done later
+// 44-key defs
 #define IR44_BPLUS         0xFF3AC5  // 
 #define IR44_BMINUS        0xFFBA45  // 
 #define IR44_OFF           0xFF827D  // 
