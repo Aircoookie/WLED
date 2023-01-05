@@ -18,8 +18,11 @@ class UsermodBattery : public Usermod
   private:
     // battery pin can be defined in my_config.h
     int8_t batteryPin = USERMOD_BATTERY_MEASUREMENT_PIN;
+
+    int8_t batteryType = USERMOB_BATTERY_DEFAULT_TYPE;
     // Battery object
     Battery* bat;
+    
     // how often to read the battery voltage
     unsigned long readingInterval = USERMOD_BATTERY_MEASUREMENT_INTERVAL;
     unsigned long nextReadTime = 0;
@@ -118,14 +121,14 @@ class UsermodBattery : public Usermod
         pinMode(batteryPin, INPUT);
       #endif
 
-      // this could also be handled with a factory class but for only 2 types now it should be sufficient
-     if(USERMOB_BATTERY_DEFAULT_TYPE == 1) {
+      // this could also be handled with a factory class but for only 2 types it should be sufficient for now
+     if(batteryType == 1) {
       bat = new Lipo();
      } else 
-     if(USERMOB_BATTERY_DEFAULT_TYPE == 2) {
+     if(batteryType == 2) {
       bat = new Lion();
      } else {
-      bat = new Lipo();
+      bat = new Lipo(); // in the future one could create a nullObject
      }
 
       nextReadTime = millis() + readingInterval;
@@ -317,6 +320,10 @@ class UsermodBattery : public Usermod
       battery[F("capacity")] = bat->getCapacity();
       battery[F("calibration")] = bat->getCalibration();
       battery[FPSTR(_readInterval)] = readingInterval;
+
+      // JsonArray type = battery[F("Type")];
+      // type[0] = 1;
+      // type[1] = 2;
       
       JsonObject ao = battery.createNestedObject(F("auto-off"));  // auto off section
       ao[FPSTR(_enabled)] = autoOffEnabled;
@@ -393,6 +400,9 @@ class UsermodBattery : public Usermod
       bat->setCapacity(battery[F("capacity")] | bat->getCapacity());
       bat->setCalibration(battery[F("calibration")] | bat->getCalibration());
       setReadingInterval(battery[FPSTR(_readInterval)] | readingInterval);
+      
+      // JsonArray type = battery[F("Type")];
+      // batteryType = type["bt"] | batteryType;
 
       JsonObject ao = battery[F("auto-off")];
       setAutoOffEnabled(ao[FPSTR(_enabled)] | autoOffEnabled);

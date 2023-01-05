@@ -35,6 +35,8 @@ class Lipo : public Battery
             else // level >  90%
                 lvl = this->linearMapping(lvl, 90, 105, 95, 100); // highest 15% -> drop slowly
             }
+
+            return lvl;
         };
 
         void calculateAndSetLevel(float voltage) override

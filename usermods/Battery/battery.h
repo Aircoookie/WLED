@@ -81,11 +81,7 @@ class Battery
         */
         virtual void setMaxVoltage(float voltage)
         {
-            #ifdef USERMOD_BATTERY_USE_LIPO
-                this->maxVoltage = max(getMinVoltage()+0.7f, voltage);
-            #else
-                this->maxVoltage = max(getMinVoltage()+1.0f, voltage);
-            #endif
+            this->maxVoltage = max(getMinVoltage()+.5f, voltage);
         }
 
         /*
