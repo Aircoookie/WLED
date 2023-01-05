@@ -36,6 +36,7 @@ define `USERMOD_BATTERY` in `wled00/my_config.h`
 | Name                                            | Unit        | Description                                                                           |
 | ----------------------------------------------- | ----------- |-------------------------------------------------------------------------------------- |
 | `USERMOD_BATTERY`                               |             | define this (in `my_config.h`) to have this usermod included wled00\usermods_list.cpp |
+| `USERMOD_BATTERY_USE_LIPO`                      |             | define this (in `my_config.h`) if you use LiPo rechargeables (1S)                     |
 | `USERMOD_BATTERY_MEASUREMENT_PIN`               |             | defaults to A0 on ESP8266 and GPIO35 on ESP32                                         |
 | `USERMOD_BATTERY_MEASUREMENT_INTERVAL`          | ms          | battery check interval. defaults to 30 seconds                                        |
 | `USERMOD_BATTERY_MIN_VOLTAGE`                   | v           | minimum battery voltage. default is 2.6 (18650 battery standard)                      |
@@ -78,6 +79,13 @@ Specification from:  [Molicel INR18650-M35A, 3500mAh 10A Lithium-ion battery, 3.
 - https://arduinodiy.wordpress.com/2016/12/25/monitoring-lipo-battery-voltage-with-wemos-d1-minibattery-shield-and-thingspeak/
 
 ## 📝 Change Log
+
+2023-01-04
+
+- basic support for LiPo rechargeable batteries ( `-D USERMOD_BATTERY_USE_LIPO`)
+- improved support for esp32 (read calibrated voltage)
+- corrected config saving (measurement pin, and battery min/max were lost)
+- various bugfixes
 
 2022-12-25
 
