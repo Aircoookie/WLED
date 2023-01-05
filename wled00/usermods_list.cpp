@@ -44,7 +44,7 @@
 #endif
 
 #ifdef USERMOD_BH1750
-  #include "../usermods/BH1750_v2/usermod_BH1750.h"
+  #include "../usermods/BH1750_v2/usermod_bh1750.h" //WLEDMM: usermod_bh1750.h in small caps!
 #endif
 
 // BME280 v2 usermod. Define "USERMOD_BME280" in my_config.h
