@@ -1,6 +1,6 @@
 /*
   FX_2Dfcn.cpp contains all 2D utility functions
-  
+
   LICENSE
   The MIT License (MIT)
   Copyright (c) 2022  Blaz Kristan (https://blaz.at/home)
@@ -428,6 +428,29 @@ void Segment::move(uint8_t dir, uint8_t delta) {
   }
 }
 
+void Segment::draw_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
+  // Bresenham’s Algorithm
+  int d = 3 - (2*radius);
+  int y = radius, x = 0;
+  while (y >= x) {
+    addPixelColorXY(cx+x, cy+y, col);
+    addPixelColorXY(cx-x, cy+y, col);
+    addPixelColorXY(cx+x, cy-y, col);
+    addPixelColorXY(cx-x, cy-y, col);
+    addPixelColorXY(cx+y, cy+x, col);
+    addPixelColorXY(cx-y, cy+x, col);
+    addPixelColorXY(cx+y, cy-x, col);
+    addPixelColorXY(cx-y, cy-x, col);
+    x++;
+    if (d > 0) {
+      y--;
+      d += 4 * (x - y) + 10;
+    } else {
+      d += 4 * x + 6;
+    }
+  }
+}
+
 // by stepko, taken from https://editor.soulmatelights.com/gallery/573-blobs
 void Segment::fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
   const uint16_t cols = virtualWidth();
@@ -456,7 +479,7 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
   const uint16_t rows = virtualHeight();
   if (x0 >= cols || x1 >= cols || y0 >= rows || y1 >= rows) return;
   const int16_t dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
-  const int16_t dy = abs(y1-y0), sy = y0<y1 ? 1 : -1; 
+  const int16_t dy = abs(y1-y0), sy = y0<y1 ? 1 : -1;
   int16_t err = (dx>dy ? dx : -dy)/2, e2;
   for (;;) {
     addPixelColorXY(x0,y0,c);
