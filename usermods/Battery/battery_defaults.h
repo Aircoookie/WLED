@@ -14,6 +14,15 @@
   #define USERMOD_BATTERY_MEASUREMENT_INTERVAL 30000
 #endif
 
+
+/* Default Battery Type
+ * 1 = Lipo
+ * 2 = Lion
+ */
+#ifndef USERMOB_BATTERY_DEFAULT_TYPE
+  #define USERMOB_BATTERY_DEFAULT_TYPE 1
+#endif
+
 // default for 18650 battery
 // https://batterybro.com/blogs/18650-wholesale-battery-reviews/18852515-when-to-recycle-18650-batteries-and-how-to-start-a-collection-center-in-your-vape-shop
 // Discharge voltage: 2.5 volt + .1 for personal safety

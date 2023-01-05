@@ -2,6 +2,9 @@
 
 #include "wled.h"
 #include "battery_defaults.h"
+#include "battery.h"
+#include "lion.h"
+#include "lipo.h"
 
 /*
  * Usermod by Maximilian Mewes
@@ -15,28 +18,12 @@ class UsermodBattery : public Usermod
   private:
     // battery pin can be defined in my_config.h
     int8_t batteryPin = USERMOD_BATTERY_MEASUREMENT_PIN;
+    // Battery object
+    Battery* bat;
     // how often to read the battery voltage
     unsigned long readingInterval = USERMOD_BATTERY_MEASUREMENT_INTERVAL;
     unsigned long nextReadTime = 0;
     unsigned long lastReadTime = 0;
-    // battery min. voltage
-    float minBatteryVoltage = USERMOD_BATTERY_MIN_VOLTAGE;
-    // battery max. voltage
-    float maxBatteryVoltage = USERMOD_BATTERY_MAX_VOLTAGE;
-    // all battery cells summed up
-    unsigned int totalBatteryCapacity = USERMOD_BATTERY_TOTAL_CAPACITY;
-    // raw analog reading 
-    float rawValue = 0.0f;
-    // calculated voltage            
-    float voltage = maxBatteryVoltage;
-    // mapped battery level based on voltage
-    int8_t batteryLevel = 100;
-    // offset or calibration value to fine tune the calculated voltage
-    float calibration = USERMOD_BATTERY_CALIBRATION;
-    
-    // time left estimation feature
-    // bool calculateTimeLeftEnabled = USERMOD_BATTERY_CALCULATE_TIME_LEFT_ENABLED;
-    // float estimatedTimeLeft = 0.0;
 
     // auto shutdown/shutoff/master off feature
     bool autoOffEnabled = USERMOD_BATTERY_AUTO_OFF_ENABLED;
@@ -63,14 +50,6 @@ class UsermodBattery : public Usermod
     static const char _preset[];
     static const char _duration[];
     static const char _init[];
-    
-
-    // custom map function
-    // https://forum.arduino.cc/t/floating-point-using-map-function/348113/2
-    double mapf(double x, double in_min, double in_max, double out_min, double out_max) 
-    {
-      return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-    }
 
     float dot2round(float x) 
     {
@@ -94,8 +73,8 @@ class UsermodBattery : public Usermod
     {
       if (!lowPowerIndicatorEnabled) return;
       if (batteryPin < 0) return;  // no measurement
-      if (lowPowerIndicationDone && lowPowerIndicatorReactivationThreshold <= batteryLevel) lowPowerIndicationDone = false;
-      if (lowPowerIndicatorThreshold <= batteryLevel) return;
+      if (lowPowerIndicationDone && lowPowerIndicatorReactivationThreshold <= bat->getLevel()) lowPowerIndicationDone = false;
+      if (lowPowerIndicatorThreshold <= bat->getLevel()) return;
       if (lowPowerIndicationDone) return;
       if (lowPowerActivationTime <= 1) {
         lowPowerActivationTime = millis();
@@ -139,6 +118,16 @@ class UsermodBattery : public Usermod
         pinMode(batteryPin, INPUT);
       #endif
 
+      // this could also be handled with a factory class but for only 2 types now it should be sufficient
+     if(USERMOB_BATTERY_DEFAULT_TYPE == 1) {
+      bat = new Lipo();
+     } else 
+     if(USERMOB_BATTERY_DEFAULT_TYPE == 2) {
+      bat = new Lion();
+     } else {
+      bat = new Lipo();
+     }
+
       nextReadTime = millis() + readingInterval;
       lastReadTime = millis();
 
@@ -174,8 +163,9 @@ class UsermodBattery : public Usermod
 
       if (batteryPin < 0) return;  // nothing to read
 
-      initializing = false;
-
+      initializing = false;     
+      float voltage = -1.0f;
+      float rawValue = 0.0f;
 #ifdef ARDUINO_ARCH_ESP32
       // use calibrated millivolts analogread on esp32 (150 mV ~ 2450 mV)
       rawValue = analogReadMilliVolts(batteryPin);
@@ -188,40 +178,15 @@ class UsermodBattery : public Usermod
       rawValue = analogRead(batteryPin);
 
       // calculate the voltage     
-      voltage = ((rawValue / getAdcPrecision()) * maxBatteryVoltage) + calibration;
+      voltage = ((rawValue / getAdcPrecision()) * bat->getMaxVoltage()) + bat->getCalibration();
 #endif
-      // check if voltage is within specified voltage range, allow 10% over/under voltage
-      voltage = ((voltage < minBatteryVoltage * 0.85f) || (voltage > maxBatteryVoltage * 1.1f)) ? -1.0f : voltage;
 
+      bat->setVoltage(voltage);
       // translate battery voltage into percentage
-      /*
-        the standard "map" function doesn't work
-        https://www.arduino.cc/reference/en/language/functions/math/map/  notes and warnings at the bottom
-      */
-      #ifdef USERMOD_BATTERY_USE_LIPO
-        batteryLevel = mapf(voltage, minBatteryVoltage, maxBatteryVoltage, 0, 100); // basic mapping
-        // LiPo batteries have a differnt dischargin curve, see 
-        //  https://blog.ampow.com/lipo-voltage-chart/
-        if (batteryLevel < 40.0f) 
-          batteryLevel = mapf(batteryLevel, 0, 40, 0, 12);       // last 45% -> drops very quickly
-        else {
-          if (batteryLevel < 90.0f)
-            batteryLevel = mapf(batteryLevel, 40, 90, 12, 95);   // 90% ... 40% -> almost linear drop
-          else // level >  90%
-            batteryLevel = mapf(batteryLevel, 90, 105, 95, 100); // highest 15% -> drop slowly
-        }
-      #else
-        batteryLevel = mapf(voltage, minBatteryVoltage, maxBatteryVoltage, 0, 100);
-      #endif
-      if (voltage > -1.0f) batteryLevel = constrain(batteryLevel, 0.0f, 110.0f);
-
-      // if (calculateTimeLeftEnabled) {
-      //   float currentBatteryCapacity = totalBatteryCapacity;
-      //   estimatedTimeLeft = (currentBatteryCapacity/strip.currentMilliamps)*60;
-      // }
+      bat->calculateAndSetLevel(voltage);
 
       // Auto off -- Master power off
-      if (autoOffEnabled && (autoOffThreshold >= batteryLevel))
+      if (autoOffEnabled && (autoOffThreshold >= bat->getLevel()))
         turnOff();
 
       // SmartHome stuff
@@ -254,16 +219,6 @@ class UsermodBattery : public Usermod
       // info modal display names
       JsonArray infoPercentage = user.createNestedArray(F("Battery level"));
       JsonArray infoVoltage = user.createNestedArray(F("Battery voltage"));
-      // if (calculateTimeLeftEnabled)
-      // {
-      //   JsonArray infoEstimatedTimeLeft = user.createNestedArray(F("Estimated time left"));
-      //   if (initializing) {
-      //     infoEstimatedTimeLeft.add(FPSTR(_init));
-      //   } else {
-      //     infoEstimatedTimeLeft.add(estimatedTimeLeft);
-      //     infoEstimatedTimeLeft.add(F(" min"));
-      //   }
-      // }
       JsonArray infoNextUpdate = user.createNestedArray(F("Next update"));
 
       infoNextUpdate.add((nextReadTime - millis()) / 1000);
@@ -275,17 +230,17 @@ class UsermodBattery : public Usermod
         return;
       }
 
-      if (batteryLevel < 0) {
+      if (bat->getLevel() < 0) {
         infoPercentage.add(F("invalid"));
       } else {
-        infoPercentage.add(batteryLevel);
+        infoPercentage.add(bat->getLevel());
       }
       infoPercentage.add(F(" %"));
 
-      if (voltage < 0) {
+      if (bat->getVoltage() < 0) {
         infoVoltage.add(F("invalid"));
       } else {
-        infoVoltage.add(dot2round(voltage));
+        infoVoltage.add(dot2round(bat->getVoltage()));
       }
       infoVoltage.add(F(" V"));
     }
@@ -298,7 +253,7 @@ class UsermodBattery : public Usermod
     /*
     void addToJsonState(JsonObject& root)
     {
-
+      // TBD
     }
     */
 
@@ -310,6 +265,7 @@ class UsermodBattery : public Usermod
     /*
     void readFromJsonState(JsonObject& root)
     {
+      // TBD
     }
     */
 
@@ -356,18 +312,17 @@ class UsermodBattery : public Usermod
         battery[F("pin")] = batteryPin;
       #endif
 
-      // battery[F("time-left")] = calculateTimeLeftEnabled;
-      battery[F("min-voltage")] = minBatteryVoltage;
-      battery[F("max-voltage")] = maxBatteryVoltage;
-      battery[F("capacity")] = totalBatteryCapacity;
-      battery[F("calibration")] = calibration;
+      battery[F("min-voltage")] = bat->getMinVoltage();
+      battery[F("max-voltage")] = bat->getMaxVoltage();
+      battery[F("capacity")] = bat->getCapacity();
+      battery[F("calibration")] = bat->getCalibration();
       battery[FPSTR(_readInterval)] = readingInterval;
       
-      JsonObject ao = battery.createNestedObject(F("auto-off"));               // auto off section
+      JsonObject ao = battery.createNestedObject(F("auto-off"));  // auto off section
       ao[FPSTR(_enabled)] = autoOffEnabled;
       ao[FPSTR(_threshold)] = autoOffThreshold;
 
-      JsonObject lp = battery.createNestedObject(F("indicator"));    // low power section
+      JsonObject lp = battery.createNestedObject(F("indicator")); // low power section
       lp[FPSTR(_enabled)] = lowPowerIndicatorEnabled;
       lp[FPSTR(_preset)] = lowPowerIndicatorPreset; // dropdown trickery (String)lowPowerIndicatorPreset; 
       lp[FPSTR(_threshold)] = lowPowerIndicatorThreshold;
@@ -432,11 +387,11 @@ class UsermodBattery : public Usermod
       #ifdef ARDUINO_ARCH_ESP32
         newBatteryPin     = battery[F("pin")] | newBatteryPin;
       #endif
-      // calculateTimeLeftEnabled = battery[F("time-left")] | calculateTimeLeftEnabled;
-      setMinBatteryVoltage(battery[F("min-voltage")] | minBatteryVoltage);
-      setMaxBatteryVoltage(battery[F("max-voltage")] | maxBatteryVoltage);
-      setTotalBatteryCapacity(battery[F("capacity")] | totalBatteryCapacity);
-      setCalibration(battery[F("calibration")] | calibration);
+
+      bat->setMinVoltage(battery[F("min-voltage")] | bat->getMinVoltage());
+      bat->setMaxVoltage(battery[F("max-voltage")] | bat->getMaxVoltage());
+      bat->setCapacity(battery[F("capacity")] | bat->getCapacity());
+      bat->setCalibration(battery[F("calibration")] | bat->getCalibration());
       setReadingInterval(battery[FPSTR(_readInterval)] | readingInterval);
 
       JsonObject ao = battery[F("auto-off")];
@@ -479,7 +434,8 @@ class UsermodBattery : public Usermod
     }
 
     /*
-     * Generate a preset sample for low power indication 
+     * TBD: Generate a preset sample for low power indication
+     * a button on the config page would be cool, currently not possible
      */
     void generateExamplePreset()
     {
@@ -539,60 +495,6 @@ class UsermodBattery : public Usermod
       readingInterval = max((unsigned long)3000, newReadingInterval);
     }
 
-
-    /*
-     * Get lowest configured battery voltage
-     */
-    float getMinBatteryVoltage()
-    {
-      return minBatteryVoltage;
-    }
-
-    /*
-     * Set lowest battery voltage
-     * can't be below 0 volt
-     */
-    void setMinBatteryVoltage(float voltage)
-    {
-      minBatteryVoltage = max(0.0f, voltage);
-    }
-
-    /*
-     * Get highest configured battery voltage
-     */
-    float getMaxBatteryVoltage()
-    {
-      return maxBatteryVoltage;
-    }
-    
-    /*
-     * Set highest battery voltage
-     * can't be below minBatteryVoltage
-     */
-    void setMaxBatteryVoltage(float voltage)
-    {
-      #ifdef USERMOD_BATTERY_USE_LIPO
-        maxBatteryVoltage = max(getMinBatteryVoltage()+0.7f, voltage);
-      #else
-        maxBatteryVoltage = max(getMinBatteryVoltage()+1.0f, voltage);
-      #endif
-    }
-
-
-    /*
-     * Get the capacity of all cells in parralel sumed up
-     * unit: mAh
-     */
-    unsigned int getTotalBatteryCapacity()
-    {
-      return totalBatteryCapacity;
-    }
-
-    void setTotalBatteryCapacity(unsigned int capacity)
-    {
-      totalBatteryCapacity = capacity;
-    }
-
     /*
      * Get the choosen adc precision
      * esp8266 = 10bit resolution = 1024.0f 
@@ -608,43 +510,6 @@ class UsermodBattery : public Usermod
         return 1024.0f;
       #endif
     }
-
-    /*
-     * Get the calculated voltage
-     * formula: (adc pin value / adc precision * max voltage) + calibration
-     */
-    float getVoltage()
-    {
-      return voltage;
-    }
-
-    /*
-     * Get the mapped battery level (0 - 100) based on voltage
-     * important: voltage can drop when a load is applied, so its only an estimate
-     */
-    int8_t getBatteryLevel()
-    {
-      return batteryLevel;
-    }
-
-    /*
-     * Get the configured calibration value
-     * a offset value to fine-tune the calculated voltage.
-     */
-    float getCalibration()
-    {
-      return calibration;
-    }
-
-    /*
-     * Set the voltage calibration offset value
-     * a offset value to fine-tune the calculated voltage.
-     */
-    void setCalibration(float offset)
-    {
-      calibration = offset;
-    }
-
 
     /*
      * Get auto-off feature enabled status
