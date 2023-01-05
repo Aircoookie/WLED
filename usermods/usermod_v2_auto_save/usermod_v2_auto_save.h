@@ -204,6 +204,10 @@ class AutoSaveUsermod : public Usermod {
       }
     }
 
+    void appendConfigData() {
+      oappend(SET_F("addInfo('Autosave:help',0,'<button onclick=\"location.href=&quot;https://mm.kno.wled.ge/usermods/Autosave&quot;\" type=\"button\">?</button>');"));
+    }
+
     /*
      * addToConfig() can be used to add custom persistent settings to the cfg.json file in the "um" (usermod) object.
      * It will be called by WLED when settings are actually saved (for example, LED settings are saved)

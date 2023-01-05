@@ -305,6 +305,10 @@ class UsermodTemperature : public Usermod {
     //  if (!initDone) return;  // prevent crash on boot applyPreset()
     //}
 
+    void appendConfigData() {
+      oappend(SET_F("addInfo('Temperature:help',0,'<button onclick=\"location.href=&quot;https://mm.kno.wled.ge/usermods/Temperature&quot;\" type=\"button\">?</button>');"));
+    }
+
     /**
      * addToConfig() (called from set.cpp) stores persistent properties to cfg.json
      */
