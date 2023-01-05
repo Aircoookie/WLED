@@ -2490,12 +2490,15 @@ uint16_t ripple_base(bool rainbow)
       uint8_t propF = propagation & 0xFF;
       uint8_t amp = (ripplestate < 17) ? triwave8((ripplestate-1)*8) : map(ripplestate,17,255,255,2);
 
+      #ifndef WLED_DISABLE_2D
       if (SEGMENT.is2D()) {
         uint16_t cx = rippleorigin >> 8;
         uint16_t cy = rippleorigin & 0xFF;
         uint8_t mag = scale8(cubicwave8((propF>>2)), amp);
         if (propI > 0) SEGMENT.draw_circle(cx, cy, propI, color_blend(SEGMENT.getPixelColorXY(cx + propI, cy), col, mag));
-      } else {
+      } else
+      #endif
+      {
         int16_t left = rippleorigin - propI -1;
         for (int16_t v = left; v < left +4; v++) {
           uint8_t mag = scale8(cubicwave8((propF>>2)+(v-left)*64), amp);
