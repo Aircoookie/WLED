@@ -321,8 +321,8 @@ class FourLineDisplayUsermod : public Usermod {
       bool isHW, isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64);
       PinOwner po = PinOwner::UM_FourLineDisplay;
       if (isSPI) {
-        int8_t hw_sclk = spi_sclk<0 ? HW_PIN_CLOCKSPI : spi_sclk;
-        int8_t hw_mosi = spi_mosi<0 ? HW_PIN_DATASPI : spi_mosi;
+        int8_t hw_sclk = spi_sclk;
+        int8_t hw_mosi = spi_mosi;
         if (ioPin[0] < 0 || ioPin[1] < 0) {
           ioPin[0] = hw_sclk;
           ioPin[1] = hw_mosi;
@@ -338,8 +338,8 @@ class FourLineDisplayUsermod : public Usermod {
           return;
         }
       } else {
-        int8_t hw_scl = i2c_scl<0 ? HW_PIN_SCL : i2c_scl;
-        int8_t hw_sda = i2c_sda<0 ? HW_PIN_SDA : i2c_sda;
+        int8_t hw_scl = i2c_scl;
+        int8_t hw_sda = i2c_sda;
         if (ioPin[0] < 0 || ioPin[1] < 0) {
           ioPin[0] = hw_scl;
           ioPin[1] = hw_sda;
@@ -1036,7 +1036,7 @@ class FourLineDisplayUsermod : public Usermod {
     //}
 
     void appendConfigData() {
-      oappend(SET_F("addInfo('4LineDisplay:help',0,'<button onclick=\"location.href=&quot;https://mm.kno.wled.ge/usermods/4LineDisplay&quot;\" type=\"button\">?</button>');"));  // 0 is field type, 1 is actual field
+      oappend(SET_F("addInfo('4LineDisplay:help',0,'<button onclick=\"location.href=&quot;https://mm.kno.wled.ge/usermods/4LineDisplay&quot;\" type=\"button\">?</button>');"));
       
       oappend(SET_F("dd=addDropdown('4LineDisplay','type');"));
       oappend(SET_F("addOption(dd,'None',0);"));
@@ -1081,11 +1081,11 @@ class FourLineDisplayUsermod : public Usermod {
       // determine if we are using global HW pins (data & clock)
       int8_t hw_dta, hw_clk;
       if ((type == SSD1306_SPI || type == SSD1306_SPI64)) {
-        hw_clk = spi_sclk<0 ? HW_PIN_CLOCKSPI : spi_sclk;
-        hw_dta = spi_mosi<0 ? HW_PIN_DATASPI : spi_mosi;
+        hw_clk = spi_sclk;
+        hw_dta = spi_mosi;
       } else {
-        hw_clk = i2c_scl<0 ? HW_PIN_SCL : i2c_scl;
-        hw_dta = i2c_sda<0 ? HW_PIN_SDA : i2c_sda;
+        hw_clk = i2c_scl;
+        hw_dta = i2c_sda;
       }
 
       JsonObject top   = root.createNestedObject(FPSTR(_name));
@@ -1167,13 +1167,13 @@ class FourLineDisplayUsermod : public Usermod {
           bool isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64);
           if (isSPI) {
             pinManager.deallocateMultiplePins((const uint8_t *)(&oldPin[2]), 3, po);
-            uint8_t hw_sclk = spi_sclk<0 ? HW_PIN_CLOCKSPI : spi_sclk;
-            uint8_t hw_mosi = spi_mosi<0 ? HW_PIN_DATASPI : spi_mosi;
+            uint8_t hw_sclk = spi_sclk;
+            uint8_t hw_mosi = spi_mosi;
             bool isHW = (oldPin[0]==hw_sclk && oldPin[1]==hw_mosi);
             if (isHW) po = PinOwner::HW_SPI;
           } else {
-            uint8_t hw_scl = i2c_scl<0 ? HW_PIN_SCL : i2c_scl;
-            uint8_t hw_sda = i2c_sda<0 ? HW_PIN_SDA : i2c_sda;
+            uint8_t hw_scl = i2c_scl;
+            uint8_t hw_sda = i2c_sda;
             bool isHW = (oldPin[0]==hw_scl && oldPin[1]==hw_sda);
             if (isHW) po = PinOwner::HW_I2C;
           }

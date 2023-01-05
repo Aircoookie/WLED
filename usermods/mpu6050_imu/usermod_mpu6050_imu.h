@@ -119,13 +119,8 @@ class MPU6050Driver : public Usermod {
     void setup() {
     // WLEDMM begin
       USER_PRINTLN(F("mpu setup"));
-#if 0  // WLEDMM: delay I2C pin alloc
-      int8_t hw_scl = i2c_scl<0 ? HW_PIN_SCL : i2c_scl;
-      int8_t hw_sda = i2c_sda<0 ? HW_PIN_SDA : i2c_sda;
-#else
       int8_t hw_scl = i2c_scl;
       int8_t hw_sda = i2c_sda;
-#endif
 
       PinManagerPinType pins[2] = { { hw_scl, true }, { hw_sda, true } };
       if ((hw_scl < 0) || (hw_sda < 0)) {

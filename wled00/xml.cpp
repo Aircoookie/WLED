@@ -704,31 +704,31 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
       // oappend(SET_F("numM="));
       // oappendi(usermods.getModCount());
       // oappend(";");
-      oappend(SET_F("d.getElementsByName(\"SDA2:pin\")[1].value=")); oappendi(i2c_sda); oappend(";"); 
-      oappend(SET_F("d.getElementsByName(\"SCL2:pin\")[1].value=")); oappendi(i2c_scl); oappend(";"); 
-      oappend(SET_F("d.getElementsByName(\"MOSI2:pin\")[1].value=")); oappendi(spi_mosi); oappend(";"); 
-      oappend(SET_F("d.getElementsByName(\"MISO2:pin\")[1].value=")); oappendi(spi_miso); oappend(";"); 
-      oappend(SET_F("d.getElementsByName(\"SCLK2:pin\")[1].value=")); oappendi(spi_sclk); oappend(";"); 
+      oappend(SET_F("d.getElementsByName(\"SDA:pin\")[1].value=")); oappendi(i2c_sda); oappend(";"); 
+      oappend(SET_F("d.getElementsByName(\"SCL:pin\")[1].value=")); oappendi(i2c_scl); oappend(";"); 
+      oappend(SET_F("d.getElementsByName(\"MOSI:pin\")[1].value=")); oappendi(spi_mosi); oappend(";"); 
+      oappend(SET_F("d.getElementsByName(\"MISO:pin\")[1].value=")); oappendi(spi_miso); oappend(";"); 
+      oappend(SET_F("d.getElementsByName(\"SCLK:pin\")[1].value=")); oappendi(spi_sclk); oappend(";"); 
       //WLEDMM: add help info showing defaults
-      oappend(SET_F("addInfo('SDA2:pin',0,'', 'SDA');"));
+      oappend(SET_F("addInfo('SDA:pin',0,'', 'SDA');"));
     #ifdef HW_PIN_SDA
-      oappend(SET_F("xOption('SDA2:pin',1,' ⎌',")); oappendi(HW_PIN_SDA); oappend(");"); 
+      oappend(SET_F("xOption('SDA:pin',1,' ⎌',")); oappendi(HW_PIN_SDA); oappend(");");
     #endif
-      oappend(SET_F("addInfo('SCL2:pin',0,'', 'SCL');"));
+      oappend(SET_F("addInfo('SCL:pin',0,'', 'SCL');"));
     #ifdef HW_PIN_SCL
-      oappend(SET_F("xOption('SCL2:pin',1,' ⎌',")); oappendi(HW_PIN_SCL); oappend(");"); 
+      oappend(SET_F("xOption('SCL:pin',1,' ⎌',")); oappendi(HW_PIN_SCL); oappend(");"); 
     #endif
-      oappend(SET_F("addInfo('MOSI2:pin',0,'', 'MOSI');"));
+      oappend(SET_F("addInfo('MOSI:pin',0,'', 'MOSI');"));
     #ifdef HW_PIN_DATASPI
-      oappend(SET_F("xOption('MOSI2:pin',1,' ⎌',")); oappendi(HW_PIN_DATASPI); oappend(");"); 
+      oappend(SET_F("xOption('MOSI:pin',1,' ⎌',")); oappendi(HW_PIN_DATASPI); oappend(");"); 
     #endif
-      oappend(SET_F("addInfo('MISO2:pin',0,'', 'MISO');"));
+      oappend(SET_F("addInfo('MISO:pin',0,'', 'MISO');"));
     #ifdef HW_PIN_MISOSPI
-      oappend(SET_F("xOption('MISO2:pin',1,' ⎌',")); oappendi(HW_PIN_MISOSPI); oappend(");"); 
+      oappend(SET_F("xOption('MISO:pin',1,' ⎌',")); oappendi(HW_PIN_MISOSPI); oappend(");"); 
     #endif
-      oappend(SET_F("addInfo('SCLK2:pin',0,'', 'SCLK');"));
+      oappend(SET_F("addInfo('SCLK:pin',0,'', 'SCLK');"));
     #ifdef HW_PIN_CLOCKSPI
-      oappend(SET_F("xOption('SCLK2:pin',1,' ⎌',")); oappendi(HW_PIN_CLOCKSPI); oappend(");"); 
+      oappend(SET_F("xOption('SCLK:pin',1,' ⎌',")); oappendi(HW_PIN_CLOCKSPI); oappend(");"); 
     #endif
     }
 

@@ -16,10 +16,6 @@ class RTCUsermod : public Usermod {
 
     void setup() {
       PinManagerPinType pins[2] = { { i2c_scl, true }, { i2c_sda, true } };
-#if defined(ARDUINO_ARCH_ESP32) && defined(HW_PIN_SDA) && defined(HW_PIN_SCL)
-      //if (pins[0].pin < 0) pins[0].pin = HW_PIN_SCL; //WLEDMM 
-      //if (pins[1].pin < 0) pins[1].pin = HW_PIN_SDA; //WLEDMM 
-#endif
       if (pins[1].pin < 0 || pins[0].pin < 0)  { disabled=true; return; }  //WLEDMM bugfix - ensure that "final" GPIO are valid and no "-1" sneaks trough
       if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) { disabled = true; return; }
 #if defined(ARDUINO_ARCH_ESP32)

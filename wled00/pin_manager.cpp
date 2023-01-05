@@ -152,11 +152,11 @@ String PinManagerClass::getPinSpecialText(int gpio) {  // special purpose PIN in
   #endif
 
   // hardware special purpose PINS. part2 - default pins
-  if ((gpio == i2c_sda)  || ((gpio == HW_PIN_SDA) && (i2c_sda < 0))) return(F("(default) I2C SDA"));
-  if ((gpio == i2c_scl)  || ((gpio == HW_PIN_SCL) && (i2c_scl < 0))) return(F("(default) I2C SCL"));
-  if ((gpio == spi_sclk) || ((gpio == HW_PIN_CLOCKSPI) && (spi_sclk < 0))) return(F("(default) SPI SLK  / SCK"));
-  if ((gpio == spi_mosi) || ((gpio == HW_PIN_DATASPI) && (spi_mosi < 0)))  return(F("(default) SPI PICO / MOSI"));
-  if ((gpio == spi_miso) || ((gpio == HW_PIN_MISOSPI) && (spi_miso < 0)))  return(F("(default) SPI POCI / MISO"));
+  if (gpio == i2c_sda)   return(F("(default) I2C SDA"));
+  if (gpio == i2c_scl)   return(F("(default) I2C SCL"));
+  if (gpio == spi_sclk)  return(F("(default) SPI SLK  / SCK"));
+  if (gpio == spi_mosi)  return(F("(default) SPI PICO / MOSI"));
+  if (gpio == spi_miso)  return(F("(default) SPI POCI / MISO"));
   //if ((gpio == spi_cs)   || ((gpio == HW_PIN_CS) && (spi_cs < 0)))         return(F("(default) SPI CS   / SS"));
 #if defined(WLED_USE_SD_MMC) || defined(WLED_USE_SD_SPI) || defined(SD_ADAPTER)
   if ((gpio == HW_PIN_CSSPI)) return(F("(default) SPI CS  / SS"));  // no part of usermod default settings, currently only needed by SD_CARD usermod

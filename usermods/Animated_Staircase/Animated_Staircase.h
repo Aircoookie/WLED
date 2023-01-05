@@ -414,7 +414,7 @@ class Animated_Staircase : public Usermod {
     }
 
     void appendConfigData() {
-      oappend(SET_F("addInfo('staircase:help',0,'<button onclick=\"location.href=&quot;https://mm.kno.wled.ge/usermods/staircase&quot;\" type=\"button\">?</button>');"));  // 0 is field type, 1 is actual field
+      oappend(SET_F("addInfo('staircase:help',0,'<button onclick=\"location.href=&quot;https://mm.kno.wled.ge/usermods/staircase&quot;\" type=\"button\">?</button>');"));
       
       //oappend(SET_F("dd=addDropdown('staircase','selectfield');"));
       //oappend(SET_F("addOption(dd,'1st value',0);"));

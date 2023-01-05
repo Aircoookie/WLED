@@ -252,13 +252,13 @@
 				urows+="<i style=\"color:orange\">(only changable on ESP32, change requires reboot!)</i>";
 				urows+="<hr class=\"sml\">";
 				urows+="<p><u>Global I2C GPIOs (HW)</u></p>";
-				addField("SDA2", "pin", -1, false);
-				addField("SCL2", "pin", -1, false);
+				addField("SDA", "pin", -1, false);
+				addField("SCL", "pin", -1, false);
 				urows+="<hr class=\"sml\">";
 				urows+="<p><u>Global SPI GPIOs (HW)</u></p>";
-				addField("MOSI2", "pin", -1, false);
-				addField("MISO2", "pin", -1, false);
-				addField("SCLK2", "pin", -1, false);
+				addField("MOSI", "pin", -1, false);
+				addField("MISO", "pin", -1, false);
+				addField("SCLK", "pin", -1, false);
 			}
 			if (isO(umCfg)) {
                 //WLEDMM: read url parameter. e.g. um=AudioReactive and if set only add the usermod with the same name

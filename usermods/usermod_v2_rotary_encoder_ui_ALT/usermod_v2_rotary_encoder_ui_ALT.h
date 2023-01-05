@@ -868,7 +868,7 @@ public:
   //WLEDMM: add appendConfigData
   void appendConfigData()
   {
-    oappend(SET_F("addInfo('Rotary-Encoder:help',0,'<button onclick=\"location.href=&quot;https://mm.kno.wled.ge/usermods/Rotary-Encoder&quot;\" type=\"button\">?</button>');"));  // 0 is field type, 1 is actual field
+    oappend(SET_F("addInfo('Rotary-Encoder:help',0,'<button onclick=\"location.href=&quot;https://mm.kno.wled.ge/usermods/Rotary-Encoder&quot;\" type=\"button\">?</button>');"));
     #ifdef ENCODER_DT_PIN
       oappend(SET_F("xOption('Rotary-Encoder:DT-pin',1,' ⎌',")); oappendi(ENCODER_DT_PIN); oappend(");"); 
     #endif

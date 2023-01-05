@@ -55,17 +55,17 @@ private:
   static const char _HomeAssistantDiscovery[];
 
   // set the default pins based on the architecture, these get overridden by Usermod menu settings
-  #ifdef ARDUINO_ARCH_ESP32 // ESP32 boards -- WLEDMM: don't override already defined HW pins
-    #ifndef HW_PIN_SDA
-      #define HW_PIN_SCL 22
-    #endif
-    #ifndef HW_PIN_SDA
-      #define HW_PIN_SDA 21
-    #endif
-  #else // ESP8266 boards
-    #define HW_PIN_SCL 5
-    #define HW_PIN_SDA 4
-  #endif
+  // #ifdef ARDUINO_ARCH_ESP32 // ESP32 boards -- WLEDMM: don't override already defined HW pins
+  //   #ifndef HW_PIN_SDA
+  //     #define HW_PIN_SCL 22
+  //   #endif
+  //   #ifndef HW_PIN_SDA
+  //     #define HW_PIN_SDA 21
+  //   #endif
+  // #else // ESP8266 boards
+  //   #define HW_PIN_SCL 5
+  //   #define HW_PIN_SDA 4
+  // #endif
   //int8_t ioPin[2] = {HW_PIN_SCL, HW_PIN_SDA};        // I2C pins: SCL, SDA...defaults to Arch hardware pins but overridden at setup()
   int8_t ioPin[2] = {-1, -1};        // WLEDMM - I2C pins: wait until hw pins get allocated
   bool initDone = false;
@@ -126,7 +126,7 @@ private:
 public:
   void setup()
   {
-    bool HW_Pins_Used = (ioPin[0]==HW_PIN_SCL && ioPin[1]==HW_PIN_SDA); // note whether architecture-based hardware SCL/SDA pins used
+    bool HW_Pins_Used = (ioPin[0]==i2c_scl && ioPin[1]==i2c_sda); // note whether architecture-based hardware SCL/SDA pins used
     PinOwner po = PinOwner::UM_BH1750; // defaults to being pinowner for SCL/SDA pins
     if (HW_Pins_Used) po = PinOwner::HW_I2C; // allow multiple allocations of HW I2C bus pins
     if ((i2c_scl >= 0) && (i2c_sda >=0)) { // WLEDMM: make sure that global HW pins are used if defined 
@@ -220,6 +220,14 @@ public:
     }
   }
 
+  void appendConfigData() {
+    oappend(SET_F("addInfo('BH1750:help',0,'<button onclick=\"location.href=&quot;https://mm.kno.wled.ge/usermods/BH1750&quot;\" type=\"button\">?</button>');"));
+    oappend(SET_F("addInfo('BH1750:pin[]',1,'','I2C SDA');"));
+    oappend(SET_F("rOption('BH1750:pin[]',1,'use global (")); oappendi(i2c_sda); oappend(")',-1);"); 
+    oappend(SET_F("addInfo('BH1750:pin[]',0,'','I2C SCL');"));
+    oappend(SET_F("rOption('BH1750:pin[]',0,'use global (")); oappendi(i2c_scl); oappend(")',-1);"); 
+  }    
+
   // (called from set.cpp) stores persistent properties to cfg.json
   void addToConfig(JsonObject &root)
   {
@@ -232,7 +240,7 @@ public:
     top[FPSTR(_offset)] = offset;
     JsonArray io_pin = top.createNestedArray(F("pin"));
     for (byte i=0; i<2; i++) io_pin.add(ioPin[i]);
-    top[F("help4Pins")] = F("SCL,SDA"); // help for Settings page
+    // top[F("help4Pins")] = F("SCL,SDA"); // help for Settings page
 
     DEBUG_PRINTLN(F("BH1750 config saved."));
   }
@@ -272,7 +280,7 @@ public:
       for (byte i=0; i<2; i++) if (ioPin[i] != newPin[i]) { pinsChanged = true; break; } // check if any pins changed
       if (pinsChanged) { //if pins changed, deallocate old pins and allocate new ones
         PinOwner po = PinOwner::UM_BH1750;
-        if (ioPin[0]==HW_PIN_SCL && ioPin[1]==HW_PIN_SDA) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
+        if (ioPin[0]==i2c_scl && ioPin[1]==i2c_sda) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
         pinManager.deallocateMultiplePins((const uint8_t *)ioPin, 2, po);  // deallocate pins
         for (byte i=0; i<2; i++) ioPin[i] = newPin[i];
         setup();
