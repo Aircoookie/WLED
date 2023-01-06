@@ -5,7 +5,7 @@
 #include "battery.h"
 
 /**
- * Lipo Battery
+ *  Lipo Battery
  * 
  */
 class Lipo : public Battery
@@ -13,9 +13,13 @@ class Lipo : public Battery
     private:
 
     public:
-        Lipo() : Battery()
+        Lipo()
         {
-
+            this->setMinVoltage(USERMOD_BATTERY_LIPO_MIN_VOLTAGE);
+            this->setMaxVoltage(USERMOD_BATTERY_LIPO_MAX_VOLTAGE);
+            this->setCapacity(USERMOD_BATTERY_LIPO_CAPACITY);
+            this->setVoltage(this->getVoltage());
+            this->setCalibration(USERMOD_BATTERY_LIPO_CALIBRATION);
         }
 
         /**

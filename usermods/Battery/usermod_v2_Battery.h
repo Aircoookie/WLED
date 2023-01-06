@@ -3,6 +3,7 @@
 #include "wled.h"
 #include "battery_defaults.h"
 #include "battery.h"
+#include "unkown.h"
 #include "lion.h"
 #include "lipo.h"
 
@@ -18,16 +19,9 @@ class UsermodBattery : public Usermod
   private:
     // battery pin can be defined in my_config.h
     int8_t batteryPin = USERMOD_BATTERY_MEASUREMENT_PIN;
-
-    int8_t batteryType = USERMOB_BATTERY_DEFAULT_TYPE;
-
-    float minVoltage = USERMOD_BATTERY_MIN_VOLTAGE;
-    float maxVoltage = USERMOD_BATTERY_MAX_VOLTAGE;
-    unsigned int capacity = USERMOD_BATTERY_TOTAL_CAPACITY; // current capacity
-    float voltage = this->maxVoltage;                       // current voltage
-    int8_t level = 100;                                     // current level
-    float calibration = USERMOD_BATTERY_CALIBRATION;        // offset or calibration value to fine tune the calculated voltage
+    
     Battery* bat = nullptr;
+    batteryConfig bcfg;
 
     // how often to read the battery voltage
     unsigned long readingInterval = USERMOD_BATTERY_MEASUREMENT_INTERVAL;
@@ -127,16 +121,17 @@ class UsermodBattery : public Usermod
         pinMode(batteryPin, INPUT);
       #endif
 
-     //this could also be handled with a factory class but for only 2 types it should be sufficient for now
-     if(batteryType == 1) {
-      bat = new Lipo();
-     } else 
-     if(batteryType == 2) {
-      bat = new Lion();
-     } else {
-      bat = new Lipo(); // in the future one could create a nullObject
-     }
+      //this could also be handled with a factory class but for only 2 types it should be sufficient for now
+      if(bcfg.type == (batteryType)lipo) {
+        bat = new Lipo();
+      } else 
+      if(bcfg.type == (batteryType)lion) {
+        bat = new Lion();
+      } else {
+        bat = new Unkown(); // nullObject
+      }
 
+      bat->update(bcfg);
       nextReadTime = millis() + readingInterval;
       lastReadTime = millis();
 
@@ -321,12 +316,11 @@ class UsermodBattery : public Usermod
         battery[F("pin")] = batteryPin;
       #endif
 
-      if(bat) {
-        battery[F("min-voltage")] = bat->getMinVoltage();
-        battery[F("max-voltage")] = bat->getMaxVoltage();
-        battery[F("capacity")] = bat->getCapacity();
-        battery[F("calibration")] = bat->getCalibration();
-      }
+      battery[F("type")] = (String)bcfg.type;
+      battery[F("min-voltage")] = bat->getMinVoltage();
+      battery[F("max-voltage")] = bat->getMaxVoltage();
+      battery[F("capacity")] = bat->getCapacity();
+      battery[F("calibration")] = bat->getCalibration();
       battery[FPSTR(_readInterval)] = readingInterval;
       
       JsonObject ao = battery.createNestedObject(F("auto-off"));  // auto off section
@@ -344,6 +338,11 @@ class UsermodBattery : public Usermod
 
     void appendConfigData()
     {
+      oappend(SET_F("td=addDropdown('Battery', 'type');"));
+      oappend(SET_F("addOption(td, 'Unkown', '0');"));
+      oappend(SET_F("addOption(td, 'LiPo', '1');"));
+      oappend(SET_F("addOption(td, 'LiOn', '2');"));
+      oappend(SET_F("addInfo('Battery:type',1,'<small style=\"color:orange\">requires reboot</small>');"));
       oappend(SET_F("addInfo('Battery:min-voltage', 1, 'v');"));
       oappend(SET_F("addInfo('Battery:max-voltage', 1, 'v');"));
       oappend(SET_F("addInfo('Battery:capacity', 1, 'mAh');"));
@@ -399,16 +398,15 @@ class UsermodBattery : public Usermod
         newBatteryPin     = battery[F("pin")] | newBatteryPin;
       #endif
 
-      if(bat) {
-        bat->setMinVoltage(battery[F("min-voltage")] | bat->getMinVoltage());
-        bat->setMaxVoltage(battery[F("max-voltage")] | bat->getMaxVoltage());
-        bat->setCapacity(battery[F("capacity")] | bat->getCapacity());
-        bat->setCalibration(battery[F("calibration")] | bat->getCalibration());
-      }
+      getJsonValue(battery[F("type")], bcfg.type);
+      getJsonValue(battery[F("min-voltage")], bcfg.minVoltage);
+      getJsonValue(battery[F("max-voltage")], bcfg.maxVoltage);
+      getJsonValue(battery[F("capacity")], bcfg.capacity);
+      getJsonValue(battery[F("calibration")], bcfg.calibration);
       setReadingInterval(battery[FPSTR(_readInterval)] | readingInterval);
       
       // JsonArray type = battery[F("Type")];
-      // batteryType = type["bt"] | batteryType;
+      // batteryType = type["bt"] | btype;
 
       JsonObject ao = battery[F("auto-off")];
       setAutoOffEnabled(ao[FPSTR(_enabled)] | autoOffEnabled);
@@ -446,7 +444,7 @@ class UsermodBattery : public Usermod
         }
       #endif
 
-      return !battery[FPSTR(_readInterval)].isNull();
+      return !battery[F("min-voltage")].isNull();
     }
 
     /*

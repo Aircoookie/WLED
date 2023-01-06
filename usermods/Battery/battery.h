@@ -12,12 +12,12 @@ class Battery
     private:
 
     protected:
-        float minVoltage = USERMOD_BATTERY_MIN_VOLTAGE;
-        float maxVoltage = USERMOD_BATTERY_MAX_VOLTAGE;
-        unsigned int capacity = USERMOD_BATTERY_TOTAL_CAPACITY; // current capacity
-        float voltage = this->maxVoltage;                       // current voltage
-        int8_t level = 100;                                     // current level
-        float calibration = USERMOD_BATTERY_CALIBRATION;        // offset or calibration value to fine tune the calculated voltage
+        float minVoltage;
+        float maxVoltage;
+        unsigned int capacity;
+        float voltage;
+        int8_t level = 100;
+        float calibration; // offset or calibration value to fine tune the calculated voltage
         
         float linearMapping(float v, float min, float max, float oMin = 0.0f, float oMax = 100.0f)
         {
@@ -28,6 +28,15 @@ class Battery
         Battery()
         {
 
+        }
+
+        virtual void update(batteryConfig cfg)
+        {
+            if(cfg.minVoltage) this->setMinVoltage(cfg.minVoltage);
+            if(cfg.maxVoltage) this->setMaxVoltage(cfg.maxVoltage);
+            if(cfg.calibration) this->setCapacity(cfg.calibration);
+            if(cfg.level) this->setLevel(cfg.level);
+            if(cfg.calibration) this->setCalibration(cfg.calibration);
         }
 
         /**
