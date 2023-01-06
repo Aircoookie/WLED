@@ -132,6 +132,7 @@ class UsermodBattery : public Usermod
       }
 
       bat->update(bcfg);
+
       nextReadTime = millis() + readingInterval;
       lastReadTime = millis();
 
@@ -316,7 +317,7 @@ class UsermodBattery : public Usermod
         battery[F("pin")] = batteryPin;
       #endif
 
-      battery[F("type")] = (String)bcfg.type;
+      battery[F("type")] = (String)bcfg.type; // has to be a String otherwise it won't get converted to a Dropdown
       battery[F("min-voltage")] = bat->getMinVoltage();
       battery[F("max-voltage")] = bat->getMaxVoltage();
       battery[F("capacity")] = bat->getCapacity();
@@ -404,9 +405,6 @@ class UsermodBattery : public Usermod
       getJsonValue(battery[F("capacity")], bcfg.capacity);
       getJsonValue(battery[F("calibration")], bcfg.calibration);
       setReadingInterval(battery[FPSTR(_readInterval)] | readingInterval);
-      
-      // JsonArray type = battery[F("Type")];
-      // batteryType = type["bt"] | btype;
 
       JsonObject ao = battery[F("auto-off")];
       setAutoOffEnabled(ao[FPSTR(_enabled)] | autoOffEnabled);
@@ -444,7 +442,10 @@ class UsermodBattery : public Usermod
         }
       #endif
 
-      return !battery[F("min-voltage")].isNull();
+      if(initDone) 
+        bat->update(bcfg);
+
+      return !battery[FPSTR(_readInterval)].isNull();
     }
 
     /*

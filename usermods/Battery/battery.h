@@ -30,14 +30,7 @@ class Battery
 
         }
 
-        virtual void update(batteryConfig cfg)
-        {
-            if(cfg.minVoltage) this->setMinVoltage(cfg.minVoltage);
-            if(cfg.maxVoltage) this->setMaxVoltage(cfg.maxVoltage);
-            if(cfg.calibration) this->setCapacity(cfg.calibration);
-            if(cfg.level) this->setLevel(cfg.level);
-            if(cfg.calibration) this->setCalibration(cfg.calibration);
-        }
+        virtual void update(batteryConfig cfg) = 0;
 
         /**
          * Corresponding battery curves

@@ -22,6 +22,15 @@ class Lion : public Battery
             this->setCalibration(USERMOD_BATTERY_LION_CALIBRATION);
         }
 
+        void update(batteryConfig cfg)
+        {
+            if(cfg.minVoltage) this->setMinVoltage(cfg.minVoltage);
+            if(cfg.maxVoltage) this->setMaxVoltage(cfg.maxVoltage);
+            if(cfg.calibration) this->setCapacity(cfg.calibration);
+            if(cfg.level) this->setLevel(cfg.level);
+            if(cfg.calibration) this->setCalibration(cfg.calibration);
+        }
+
         float mapVoltage(float v, float min, float max) override
         {
             return this->linearMapping(v, min, max); // basic mapping
