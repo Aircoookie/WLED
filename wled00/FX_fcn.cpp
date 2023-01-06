@@ -610,6 +610,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
 
   uint16_t len = length();
   uint8_t _bri_t = currentBri(on ? opacity : 0);
+  if (!_bri_t) return;
   if (_bri_t < 255) {
     byte r = scale8(R(col), _bri_t);
     byte g = scale8(G(col), _bri_t);
@@ -1070,7 +1071,7 @@ void WS2812FX::service() {
         //if (seg.transitional && seg._modeP) (*_mode[seg._modeP])(progress());
         delay = (*_mode[seg.currentMode(seg.mode)])();
         if (seg.mode != FX_MODE_HALLOWEEN_EYES) seg.call++;
-        if (seg.transitional && delay > FRAMETIME) delay = FRAMETIME; // foce faster updates during transition
+        if (seg.transitional && delay > FRAMETIME) delay = FRAMETIME; // force faster updates during transition
 
         seg.handleTransition();
       }

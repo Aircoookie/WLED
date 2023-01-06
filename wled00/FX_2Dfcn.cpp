@@ -164,6 +164,7 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
   if (leds) leds[XY(x,y)] = col;
 
   uint8_t _bri_t = currentBri(on ? opacity : 0);
+  if (!_bri_t) return;
   if (_bri_t < 255) {
     byte r = scale8(R(col), _bri_t);
     byte g = scale8(G(col), _bri_t);
@@ -433,14 +434,14 @@ void Segment::draw_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
   int d = 3 - (2*radius);
   int y = radius, x = 0;
   while (y >= x) {
-    addPixelColorXY(cx+x, cy+y, col);
-    addPixelColorXY(cx-x, cy+y, col);
-    addPixelColorXY(cx+x, cy-y, col);
-    addPixelColorXY(cx-x, cy-y, col);
-    addPixelColorXY(cx+y, cy+x, col);
-    addPixelColorXY(cx-y, cy+x, col);
-    addPixelColorXY(cx+y, cy-x, col);
-    addPixelColorXY(cx-y, cy-x, col);
+    setPixelColorXY(cx+x, cy+y, col);
+    setPixelColorXY(cx-x, cy+y, col);
+    setPixelColorXY(cx+x, cy-y, col);
+    setPixelColorXY(cx-x, cy-y, col);
+    setPixelColorXY(cx+y, cy+x, col);
+    setPixelColorXY(cx-y, cy+x, col);
+    setPixelColorXY(cx+y, cy-x, col);
+    setPixelColorXY(cx-y, cy-x, col);
     x++;
     if (d > 0) {
       y--;
@@ -460,7 +461,7 @@ void Segment::fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
       if (x * x + y * y <= radius * radius &&
           int16_t(cx)+x>=0 && int16_t(cy)+y>=0 &&
           int16_t(cx)+x<cols && int16_t(cy)+y<rows)
-        addPixelColorXY(cx + x, cy + y, col);
+        setPixelColorXY(cx + x, cy + y, col);
     }
   }
 }
@@ -482,7 +483,7 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
   const int16_t dy = abs(y1-y0), sy = y0<y1 ? 1 : -1;
   int16_t err = (dx>dy ? dx : -dy)/2, e2;
   for (;;) {
-    addPixelColorXY(x0,y0,c);
+    setPixelColorXY(x0,y0,c);
     if (x0==x1 && y0==y1) break;
     e2 = err;
     if (e2 >-dx) { err -= dy; x0 += sx; }
