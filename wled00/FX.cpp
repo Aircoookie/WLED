@@ -404,7 +404,7 @@ uint16_t scan(bool dual)
 uint16_t mode_scan(void) {
   return scan(false);
 }
-static const char _data_FX_MODE_SCAN[] PROGMEM = "Scan@!,# of dots,,,,,No Bg;!,!,!;!";
+static const char _data_FX_MODE_SCAN[] PROGMEM = "Scan@!,# of dots,,,,,Overlay;!,!,!;!";
 
 
 /*
@@ -413,7 +413,7 @@ static const char _data_FX_MODE_SCAN[] PROGMEM = "Scan@!,# of dots,,,,,No Bg;!,!
 uint16_t mode_dual_scan(void) {
   return scan(true);
 }
-static const char _data_FX_MODE_DUAL_SCAN[] PROGMEM = "Scan Dual@!,# of dots,,,,,No Bg;!,!,!;!";
+static const char _data_FX_MODE_DUAL_SCAN[] PROGMEM = "Scan Dual@!,# of dots,,,,,Overlay;!,!,!;!";
 
 
 /*
@@ -673,7 +673,7 @@ uint16_t mode_sparkle(void) {
   SEGMENT.setPixelColor(SEGENV.aux0, SEGCOLOR(0));
   return FRAMETIME;
 }
-static const char _data_FX_MODE_SPARKLE[] PROGMEM = "Sparkle@!,,,,,,No Bg;!,!;!;;m12=0";
+static const char _data_FX_MODE_SPARKLE[] PROGMEM = "Sparkle@!,,,,,,Overlay;!,!;!;;m12=0";
 
 
 /*
@@ -694,7 +694,7 @@ uint16_t mode_flash_sparkle(void) {
   }
   return FRAMETIME;
 }
-static const char _data_FX_MODE_FLASH_SPARKLE[] PROGMEM = "Sparkle Dark@!,!,,,,,No Bg;Bg,Fx;!;;m12=0";
+static const char _data_FX_MODE_FLASH_SPARKLE[] PROGMEM = "Sparkle Dark@!,!,,,,,Overlay;Bg,Fx;!;;m12=0";
 
 
 /*
@@ -717,7 +717,7 @@ uint16_t mode_hyper_sparkle(void) {
   }
   return FRAMETIME;
 }
-static const char _data_FX_MODE_HYPER_SPARKLE[] PROGMEM = "Sparkle+@!,!,,,,,No Bg;Bg,Fx;!;;m12=0";
+static const char _data_FX_MODE_HYPER_SPARKLE[] PROGMEM = "Sparkle+@!,!,,,,,Overlay;Bg,Fx;!;;m12=0";
 
 
 /*
@@ -1368,10 +1368,9 @@ uint16_t mode_two_dots()
 {
   if (!SEGMENT.check2) SEGMENT.fill(SEGCOLOR(2));
   uint32_t color2 = (SEGCOLOR(1) == SEGCOLOR(2)) ? SEGCOLOR(0) : SEGCOLOR(1);
-
   return police_base(SEGCOLOR(0), color2);
 }
-static const char _data_FX_MODE_TWO_DOTS[] PROGMEM = "Two Dots@!,Dot size,,,,,No Bg;1,2,Bg;!";
+static const char _data_FX_MODE_TWO_DOTS[] PROGMEM = "Two Dots@!,Dot size,,,,,Overlay;1,2,Bg;!";
 
 
 /*
@@ -1580,7 +1579,7 @@ uint16_t mode_icu(void) {
 
   return SPEED_FORMULA_L;
 }
-static const char _data_FX_MODE_ICU[] PROGMEM = "ICU@!,!,,,,,No Bg;!,!;!";
+static const char _data_FX_MODE_ICU[] PROGMEM = "ICU@!,!,,,,,Overlay;!,!;!";
 
 
 /*
@@ -1848,7 +1847,7 @@ uint16_t mode_lightning(void)
   }
   return FRAMETIME;
 }
-static const char _data_FX_MODE_LIGHTNING[] PROGMEM = "Lightning@!,!,,,,,No Bg;!,!;!";
+static const char _data_FX_MODE_LIGHTNING[] PROGMEM = "Lightning@!,!,,,,,Overlay;!,!;!";
 
 
 // Pride2015
@@ -2459,7 +2458,7 @@ uint16_t mode_ripple(void) {
   if (!SEGMENT.check2) SEGMENT.fill(SEGCOLOR(1));
   return ripple_base();
 }
-static const char _data_FX_MODE_RIPPLE[] PROGMEM = "Ripple@!,Wave #,,,,,No Bg;,!;!;12";
+static const char _data_FX_MODE_RIPPLE[] PROGMEM = "Ripple@!,Wave #,,,,,Overlay;,!;!;12";
 
 
 uint16_t mode_ripple_rainbow(void) {
@@ -2683,7 +2682,7 @@ uint16_t mode_halloween_eyes()
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_HALLOWEEN_EYES[] PROGMEM = "Halloween Eyes@Duration,Eye fade time,,,,,No Bg;!,!;!;12";
+static const char _data_FX_MODE_HALLOWEEN_EYES[] PROGMEM = "Halloween Eyes@Duration,Eye fade time,,,,,Overlay;!,!;!;12";
 
 
 //Speed slider sets amount of LEDs lit, intensity sets unlit
@@ -2766,7 +2765,7 @@ uint16_t mode_spots()
 {
   return spots_base((255 - SEGMENT.speed) << 8);
 }
-static const char _data_FX_MODE_SPOTS[] PROGMEM = "Spots@,Width,,,,,No Bg;!,!;!";
+static const char _data_FX_MODE_SPOTS[] PROGMEM = "Spots@,Width,,,,,Overlay;!,!;!";
 
 
 //Intensity slider sets number of "lights", LEDs per light fade in and out
@@ -2777,7 +2776,7 @@ uint16_t mode_spots_fade()
   uint16_t tr = (t >> 1) + (t >> 2);
   return spots_base(tr);
 }
-static const char _data_FX_MODE_SPOTS_FADE[] PROGMEM = "Spots Fade@Spread,Width,,,,,No Bg;!,!;!";
+static const char _data_FX_MODE_SPOTS_FADE[] PROGMEM = "Spots Fade@Spread,Width,,,,,Overlay;!,!;!";
 
 
 //each needs 12 bytes
@@ -2856,7 +2855,7 @@ uint16_t mode_bouncing_balls(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_BOUNCINGBALLS[] PROGMEM = "Bouncing Balls@Gravity,# of balls,,,,,No Bg;!,!,!;!;1;m12=1"; //bar
+static const char _data_FX_MODE_BOUNCINGBALLS[] PROGMEM = "Bouncing Balls@Gravity,# of balls,,,,,Overlay;!,!,!;!;1;m12=1"; //bar
 
 
 /*
@@ -2932,7 +2931,7 @@ uint16_t mode_glitter()
   glitter_base(SEGMENT.intensity);
   return FRAMETIME;
 }
-static const char _data_FX_MODE_GLITTER[] PROGMEM = "Glitter@!,!,,,,,No Bg;;!;;m12=0"; //pixels
+static const char _data_FX_MODE_GLITTER[] PROGMEM = "Glitter@!,!,,,,,Overlay;;!;;m12=0"; //pixels
 
 
 //Solid colour background with glitter
@@ -3015,7 +3014,7 @@ uint16_t mode_popcorn(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_POPCORN[] PROGMEM = "Popcorn@!,!,,,,,No Bg;!,!,!;!;;m12=1"; //bar
+static const char _data_FX_MODE_POPCORN[] PROGMEM = "Popcorn@!,!,,,,,Overlay;!,!,!;!;;m12=1"; //bar
 
 
 //values close to 100 produce 5Hz flicker, which looks very candle-y
@@ -3242,7 +3241,7 @@ uint16_t mode_starburst(void) {
   return FRAMETIME;
 }
 #undef STARBURST_MAX_FRAG
-static const char _data_FX_MODE_STARBURST[] PROGMEM = "Fireworks Starburst@Chance,Fragments,,,,,No Bg;,!;!;;pal=11,m12=0";
+static const char _data_FX_MODE_STARBURST[] PROGMEM = "Fireworks Starburst@Chance,Fragments,,,,,Overlay;,!;!;;pal=11,m12=0";
 
 
 /*
@@ -3463,7 +3462,7 @@ uint16_t mode_drip(void)
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_DRIP[] PROGMEM = "Drip@Gravity,# of drips,,,,,No Bg;!,!;!;;m12=1"; //bar
+static const char _data_FX_MODE_DRIP[] PROGMEM = "Drip@Gravity,# of drips,,,,,Overlay;!,!;!;;m12=1"; //bar
 
 
 /*
