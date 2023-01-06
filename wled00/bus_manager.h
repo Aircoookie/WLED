@@ -217,7 +217,7 @@ class Bus {
     static uint8_t _gAWM;     // definition in FX_fcn.cpp
     static int16_t _cct;      // definition in FX_fcn.cpp
 		static uint8_t _cctBlend; // definition in FX_fcn.cpp
-  
+
     uint32_t autoWhiteCalc(uint32_t c) {
       uint8_t aWM = _autoWhiteMode;
       if (_gAWM < 255) aWM = _gAWM;
@@ -271,7 +271,7 @@ class BusDigital : public Bus {
     //Fix for turning off onboard LED breaking bus
     #ifdef LED_BUILTIN
     if (_bri == 0 && b > 0) {
-      if (_pins[0] == LED_BUILTIN || _pins[1] == LED_BUILTIN) PolyBus::begin(_busPtr, _iType, _pins); 
+      if (_pins[0] == LED_BUILTIN || _pins[1] == LED_BUILTIN) PolyBus::begin(_busPtr, _iType, _pins);
     }
     #endif
     Bus::setBrightness(b);
@@ -343,7 +343,7 @@ class BusDigital : public Bus {
     cleanup();
   }
 
-  private: 
+  private:
   uint8_t _colorOrder = COL_ORDER_GRB;
   uint8_t _pins[2] = {255, 255};
   uint8_t _iType = I_NONE;
@@ -477,7 +477,7 @@ class BusPwm : public Bus {
     cleanup();
   }
 
-  private: 
+  private:
   uint8_t _pins[5] = {255, 255, 255, 255, 255};
   uint8_t _data[5] = {0};
   #ifdef ARDUINO_ARCH_ESP32
@@ -553,7 +553,7 @@ class BusOnOff : public Bus {
     cleanup();
   }
 
-  private: 
+  private:
   uint8_t _pin = 255;
   uint8_t _data = 0;
 };
@@ -717,7 +717,7 @@ class BusManager {
   //do not call this method from system context (network callback)
   void removeAll() {
     DEBUG_PRINTLN(F("Removing all."));
-    //prevents crashes due to deleting busses while in use. 
+    //prevents crashes due to deleting busses while in use.
     while (!canAllShow()) yield();
     for (uint8_t i = 0; i < numBusses; i++) delete busses[i];
     numBusses = 0;

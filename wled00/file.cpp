@@ -102,7 +102,7 @@ bool bufferedFindSpace(uint16_t targetLen, bool fromStart = true) {
   while (f.position() < f.size() -1) {
     uint16_t bufsize = f.read(buf, FS_BUFSIZE);
     uint16_t count = 0;
-    
+
     while (count < bufsize) {
       if(buf[count] == ' ') {
         if(++index >= targetLen) { // return true if space long enough
@@ -144,7 +144,7 @@ bool bufferedFindObjectEnd() {
   while (f.position() < f.size() -1) {
     uint16_t bufsize = f.read(buf, FS_BUFSIZE);
     uint16_t count = 0;
-    
+
     while (count < bufsize) {
       if (buf[count] == '{') objDepth++;
       if (buf[count] == '}') objDepth--;
@@ -194,7 +194,7 @@ bool appendObjectToFile(const char* key, JsonDocument* content, uint32_t s, uint
     doCloseFile = true;
     return true; //nothing  to append
   }
-  
+
   //if there is enough empty space in file, insert there instead of appending
   if (!contentLen) contentLen = measureJson(*content);
   DEBUGFS_PRINTF("CLen %d\n", contentLen);
@@ -211,18 +211,18 @@ bool appendObjectToFile(const char* key, JsonDocument* content, uint32_t s, uint
 
   //permitted space for presets exceeded
   updateFSInfo();
-  
+
   if (f.size() + 9000 > (fsBytesTotal - fsBytesUsed)) { //make sure there is enough space to at least copy the file once
     errorFlag = ERR_FS_QUOTA;
     doCloseFile = true;
     return false;
   }
-  
+
   //check if last character in file is '}' (typical)
   uint32_t eof = f.size() -1;
   f.seek(eof, SeekSet);
   if (f.read() == '}') pos = eof;
-  
+
   if (pos == 0) //not found
   {
     DEBUGFS_PRINTLN("not }");
@@ -277,12 +277,12 @@ bool writeObjectToFile(const char* file, const char* key, JsonDocument* content)
     DEBUGFS_PRINTLN(F("Failed to open!"));
     return false;
   }
-  
+
   if (!bufferedFind(key)) //key does not exist in file
   {
     return appendObjectToFile(key, content, s);
-  } 
-  
+  }
+
   //an object with this key already exists, replace or delete it
   pos = f.position();
   //measure out end of old object
@@ -297,7 +297,7 @@ bool writeObjectToFile(const char* file, const char* key, JsonDocument* content)
   //2. The new content is smaller than the old, overwrite and fill diff with spaces
   //3. The new content is larger than the old, but smaller than old + trailing spaces, overwrite with new
   //4. The new content is larger than old + trailing spaces, delete old and append
-  
+
   uint32_t contentLen = 0;
   if (!content->isNull()) contentLen = measureJson(*content);
 

@@ -55,7 +55,7 @@
 #ifdef USERMOD_FOUR_LINE_DISPLAY
   #ifdef USE_ALT_DISPlAY
     #include "../usermods/usermod_v2_four_line_display_ALT/usermod_v2_four_line_display_ALT.h"
-  #else 
+  #else
     #include "../usermods/usermod_v2_four_line_display/usermod_v2_four_line_display.h"
   #endif
 #endif
@@ -169,7 +169,7 @@
 // resolved correctly (when included in mod's header only)
   #ifdef WLED_USE_SD_MMC
     #include "SD_MMC.h"
-  #elif defined(WLED_USE_SD_SPI)    
+  #elif defined(WLED_USE_SD_SPI)
     #include "SD.h"
     #include "SPI.h"
   #endif
@@ -196,119 +196,119 @@ void registerUsermods()
   #ifdef USERMOD_BATTERY
   usermods.add(new UsermodBattery());
   #endif
-  
+
   #ifdef USERMOD_DALLASTEMPERATURE
   usermods.add(new UsermodTemperature());
   #endif
-  
+
   #ifdef USERMOD_SN_PHOTORESISTOR
   usermods.add(new Usermod_SN_Photoresistor());
   #endif
-  
+
   #ifdef USERMOD_PWM_FAN
   usermods.add(new PWMFanUsermod());
   #endif
-  
+
   #ifdef USERMOD_BUZZER
   usermods.add(new BuzzerUsermod());
   #endif
-  
+
   #ifdef USERMOD_BH1750
   usermods.add(new Usermod_BH1750());
   #endif
-  
+
   #ifdef USERMOD_BME280
   usermods.add(new UsermodBME280());
   #endif
-  
+
   #ifdef USERMOD_SENSORSTOMQTT
   usermods.add(new UserMod_SensorsToMQTT());
   #endif
-  
+
   #ifdef USERMOD_PIRSWITCH
   usermods.add(new PIRsensorSwitch());
   #endif
-  
+
   #ifdef USERMOD_MODE_SORT
   usermods.add(new ModeSortUsermod());
   #endif
-  
+
   #ifdef USERMOD_FOUR_LINE_DISPLAY
   usermods.add(new FourLineDisplayUsermod());
   #endif
-  
+
   #ifdef USERMOD_ROTARY_ENCODER_UI
   usermods.add(new RotaryEncoderUIUsermod()); // can use USERMOD_FOUR_LINE_DISPLAY
   #endif
-  
+
   #ifdef USERMOD_AUTO_SAVE
   usermods.add(new AutoSaveUsermod());  // can use USERMOD_FOUR_LINE_DISPLAY
   #endif
-  
+
   #ifdef USERMOD_DHT
   usermods.add(new UsermodDHT());
   #endif
-  
+
   #ifdef USERMOD_VL53L0X_GESTURES
   usermods.add(new UsermodVL53L0XGestures());
   #endif
-  
+
   #ifdef USERMOD_ANIMATED_STAIRCASE
   usermods.add(new Animated_Staircase());
   #endif
-  
+
   #ifdef USERMOD_MULTI_RELAY
   usermods.add(new MultiRelay());
   #endif
-  
+
   #ifdef USERMOD_RTC
   usermods.add(new RTCUsermod());
   #endif
-  
+
   #ifdef USERMOD_ELEKSTUBE_IPS
   usermods.add(new ElekstubeIPSUsermod());
   #endif
-  
+
   #ifdef USERMOD_ROTARY_ENCODER_BRIGHTNESS_COLOR
   usermods.add(new RotaryEncoderBrightnessColor());
   #endif
-  
+
   #ifdef RGB_ROTARY_ENCODER
   usermods.add(new RgbRotaryEncoderUsermod());
   #endif
-  
+
   #ifdef USERMOD_ST7789_DISPLAY
   usermods.add(new St7789DisplayUsermod());
   #endif
-  
+
   #ifdef USERMOD_SEVEN_SEGMENT
   usermods.add(new SevenSegmentDisplay());
   #endif
-  
+
   #ifdef USERMOD_SSDR
   usermods.add(new UsermodSSDR());
   #endif
-  
+
   #ifdef USERMOD_CRONIXIE
   usermods.add(new UsermodCronixie());
   #endif
-  
+
   #ifdef QUINLED_AN_PENTA
   usermods.add(new QuinLEDAnPentaUsermod());
   #endif
- 
+
   #ifdef USERMOD_WIZLIGHTS
   usermods.add(new WizLightsUsermod());
   #endif
-  
+
   #ifdef USERMOD_WORDCLOCK
   usermods.add(new WordClockUsermod());
   #endif
-  
+
   #ifdef USERMOD_MY9291
   usermods.add(new MY9291Usermod());
   #endif
-  
+
   #ifdef USERMOD_SI7021_MQTT_HA
   usermods.add(new Si7021_MQTT_HA());
   #endif
@@ -316,7 +316,7 @@ void registerUsermods()
   #ifdef USERMOD_SMARTNEST
   usermods.add(new Smartnest());
   #endif
-  
+
   #ifdef USERMOD_AUDIOREACTIVE
   usermods.add(new AudioReactive());
   #endif
@@ -324,15 +324,15 @@ void registerUsermods()
   #ifdef USERMOD_ANALOG_CLOCK
   usermods.add(new AnalogClockUsermod());
   #endif
-  
+
   #ifdef USERMOD_PING_PONG_CLOCK
   usermods.add(new PingPongClockUsermod());
   #endif
-  
+
   #ifdef USERMOD_ADS1115
   usermods.add(new ADS1115Usermod());
   #endif
-  
+
   #ifdef USERMOD_BOBLIGHT
   usermods.add(new BobLightUsermod());
   #endif
@@ -340,7 +340,7 @@ void registerUsermods()
   #ifdef SD_ADAPTER
   usermods.add(new UsermodSdCard());
   #endif
-  
+
   #ifdef USERMOD_PWM_OUTPUTS
   usermods.add(new PwmOutputsUsermod());
   #endif
