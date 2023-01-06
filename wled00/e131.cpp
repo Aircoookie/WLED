@@ -96,11 +96,11 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
 
   if (e131SkipOutOfSequence)
     if (seq < e131LastSequenceNumber[previousUniverses] && seq > 20 && e131LastSequenceNumber[previousUniverses] < 250){
-      DEBUG_PRINT("skipping E1.31 frame (last seq=");
+      DEBUG_PRINT(F("skipping E1.31 frame (last seq="));
       DEBUG_PRINT(e131LastSequenceNumber[previousUniverses]);
-      DEBUG_PRINT(", current seq=");
+      DEBUG_PRINT(F(", current seq="));
       DEBUG_PRINT(seq);
-      DEBUG_PRINT(", universe=");
+      DEBUG_PRINT(F(", universe="));
       DEBUG_PRINT(uni);
       DEBUG_PRINTLN(")");
       return;
@@ -444,7 +444,7 @@ void sendArtnetPollReply(ArtPollReply *reply, IPAddress ipAddress, uint16_t port
   reply->reply_sub_sw = (uint8_t)((portAddress >> 4) & 0x000F);
   reply->reply_sw_out[0] = (uint8_t)(portAddress & 0x000F);
 
-  sprintf((char *)reply->reply_node_report, "#0001 [%04u] OK - WLED v" TOSTRING(WLED_VERSION), pollReplyCount);
+  snprintf_P((char *)reply->reply_node_report, sizeof(reply->reply_node_report)-1, PSTR("#0001 [%04u] OK - WLED v" TOSTRING(WLED_VERSION)), pollReplyCount);
   
   if (pollReplyCount < 9999) {
     pollReplyCount++;

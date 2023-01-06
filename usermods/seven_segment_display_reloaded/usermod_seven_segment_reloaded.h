@@ -384,7 +384,7 @@ public:
     if (!umSSDRDisplayTime || strip.isUpdating()) {
       return;
     }
-    #ifdef USERMOD_ID_SN_PHOTORESISTOR
+    #ifdef USERMOD_SN_PHOTORESISTOR
       if(bri != 0 && umSSDREnableLDR && (millis() - umSSDRLastRefresh > umSSDRResfreshTime)) {
         if (ptr != nullptr) {
           uint16_t lux = ptr->getLastLDRValue();

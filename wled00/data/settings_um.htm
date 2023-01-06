@@ -104,9 +104,15 @@
 			}
 		}
 	}
+	function initCap(s) {
+  		if (typeof s !== 'string') return '';
+		// https://www.freecodecamp.org/news/how-to-capitalize-words-in-javascript/
+		return s.replace(/[\W_]/g,' ').replace(/(^\w{1})|(\s+\w{1})/g, l=>l.toUpperCase()); // replace - and _ with space, capitalize every 1st letter
+	}
 	function addField(k,f,o,a=false) {  //key, field, (sub)object, isArray
 		if (isO(o)) {
-			urows += '<hr style="width:260px">';
+			urows += '<hr class="sml">';
+			if (f!=='unknown' && !k.includes(":")) urows += `<p><u>${initCap(f)}</u></p>`; //show group title
 			for (const [s,v] of Object.entries(o)) {
 				// possibility to nest objects (only 1 level)
 				if (f!=='unknown' && !k.includes(":")) addField(k+":"+f,s,v);
@@ -135,8 +141,7 @@
 					t = "text"; c = `value="${o}" style="width:250px;"`;
 					break;
 			}
-			if (k.includes(":")) urows += k.substr(k.indexOf(":")+1);
-			urows += ` ${f}: `;
+			urows += ` ${initCap(f)} `; //only show field (key is shown in grouping)
 			// https://stackoverflow.com/questions/11657123/posting-both-checked-and-unchecked-checkboxes
 			if (t=="checkbox") urows += `<input type="hidden" name="${k}:${f}${a?"[]":""}" value="false">`;
 			else if (!a)       urows += `<input type="hidden" name="${k}:${f}${a?"[]":""}" value="${t}">`;
@@ -179,11 +184,14 @@
 		}
 	}
 	// https://stackoverflow.com/questions/26440494/insert-text-after-this-input-element-with-javascript
-	function addInfo(name,el,txt) {
+	function addInfo(name,el,txt, txt2="") {
 		let obj = d.getElementsByName(name);
 		if (!obj.length) return;
 		if (typeof el === "string" && obj[0]) obj[0].placeholder = el;
-		else if (obj[el]) obj[el].insertAdjacentHTML('afterend', '&nbsp;'+txt);
+		else if (obj[el]) {
+			if (txt!="") obj[el].insertAdjacentHTML('afterend', '&nbsp;'+txt);
+			if (txt2!="") obj[el].insertAdjacentHTML('beforebegin', txt2 + '&nbsp;');  //add pre texts
+		}
 	}
 	// load settings and insert values into DOM
 	function ldS() {
@@ -236,7 +244,7 @@
 		<i style="color: orange;">(only changable on ESP32, change requires reboot!)</i><br>
 		SDA:<input type="number" min="-1" max="48" name="SDA" onchange="check(this,'if')" class="s" placeholder="SDA">
 		SCL:<input type="number" min="-1" max="48" name="SCL" onchange="check(this,'if')" class="s" placeholder="SCL">
-		<hr style="width:260px">
+		<hr class="sml">
 		Global SPI GPIOs (HW)<br>
 		<i style="color: orange;">(only changable on ESP32, change requires reboot!)</i><br>
 		MOSI:<input type="number" min="-1" max="48" name="MOSI" onchange="check(this,'if')" class="s" placeholder="MOSI">

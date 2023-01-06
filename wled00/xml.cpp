@@ -367,12 +367,8 @@ void getSettingsJS(byte subPage, char* dest)
 
     // set limits
     oappend(SET_F("bLimits("));
-    #if defined(ESP32) && defined(USERMOD_AUDIOREACTIVE)  && !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32S3) && !defined(CONFIG_IDF_TARGET_ESP32C3)
-    // requested by @softhack007 https://github.com/blazoncek/WLED/issues/33
-    oappend(itoa(WLED_MAX_BUSSES-2,nS,10)); oappend(","); // prevent use of I2S buses if audio installed. ESP32-S3 currently does not support these busses.
-    #else
     oappend(itoa(WLED_MAX_BUSSES,nS,10));  oappend(",");
-    #endif
+    oappend(itoa(WLED_MIN_VIRTUAL_BUSSES,nS,10));  oappend(",");
     oappend(itoa(MAX_LEDS_PER_BUS,nS,10)); oappend(",");
     oappend(itoa(MAX_LED_MEMORY,nS,10));   oappend(",");
     oappend(itoa(MAX_LEDS,nS,10));
@@ -397,7 +393,7 @@ void getSettingsJS(byte subPage, char* dest)
       char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
       char sl[4] = "SL"; sl[2] = 48+s; sl[3] = 0; //skip 1st LED
       char rf[4] = "RF"; rf[2] = 48+s; rf[3] = 0; //off refresh required (stored within hardware specific settings)
-	  char ss[4] = "SS"; ss[2] = 48+s; ss[3] = 0; //hardware specific settings
+      char ss[4] = "SS"; ss[2] = 48+s; ss[3] = 0; //hardware specific settings
       char aw[4] = "AW"; aw[2] = 48+s; aw[3] = 0; //auto white mode
       char wo[4] = "WO"; wo[2] = 48+s; wo[3] = 0; //swap channels
       oappend(SET_F("addLEDs(1);"));
@@ -465,6 +461,7 @@ void getSettingsJS(byte subPage, char* dest)
       oappend(itoa(buttonType[i],nS,10));
       oappend(SET_F(");"));
     }
+    sappend('c',SET_F("IP"),disablePullUp);
     sappend('v',SET_F("TT"),touchThreshold);
     sappend('v',SET_F("IR"),irPin);
     sappend('v',SET_F("IT"),irEnabled);
@@ -477,6 +474,8 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("ST"),syncToggleReceive);
   #ifdef WLED_ENABLE_SIMPLE_UI
     sappend('c',SET_F("SU"),simplifiedUI);
+  #else
+    oappend(SET_F("toggle('Simple');"));    // hide Simplified UI settings
   #endif
   }
 
@@ -496,7 +495,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("SB"),notifyButton);
     sappend('c',SET_F("SH"),notifyHue);
     sappend('c',SET_F("SM"),notifyMacro);
-    sappend('c',SET_F("S2"),notifyTwice);
+    sappend('v',SET_F("UR"),udpNumRetries);
 
     sappend('c',SET_F("NL"),nodeListEnabled);
     sappend('c',SET_F("NB"),nodeBroadcastEnabled);
@@ -516,10 +515,16 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("AL"),alexaEnabled);
     sappends('s',SET_F("AI"),alexaInvocationName);
     sappend('c',SET_F("SA"),notifyAlexa);
+    sappend('v',SET_F("AP"),alexaNumPresets);
+    #ifdef WLED_DISABLE_ALEXA
+    oappend(SET_F("toggle('Alexa');"));  // hide Alexa settings
+    #endif
     sappends('s',SET_F("BK"),(char*)((blynkEnabled)?SET_F("Hidden"):""));
     #ifndef WLED_DISABLE_BLYNK
     sappends('s',SET_F("BH"),blynkHost);
     sappend('v',SET_F("BP"),blynkPort);
+    #else
+    oappend(SET_F("toggle('Blynk');"));    // hide BLYNK settings
     #endif
 
     #ifdef WLED_ENABLE_MQTT
@@ -536,6 +541,8 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',"MD",mqttDeviceTopic);
     sappends('s',SET_F("MG"),mqttGroupTopic);
     sappend('c',SET_F("BM"),buttonPublishMqtt);
+    #else
+    oappend(SET_F("toggle('MQTT');"));    // hide MQTT settings
     #endif
 
     #ifndef WLED_DISABLE_HUESYNC
@@ -563,6 +570,8 @@ void getSettingsJS(byte subPage, char* dest)
     }
     
     sappends('m',SET_F("(\"sip\")[0]"),hueErrorString);
+    #else
+    oappend(SET_F("toggle('Hue');"));    // hide Hue Sync settings
     #endif
     sappend('v',SET_F("BD"),serialBaud);
   }
@@ -704,10 +713,11 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('m',SET_F("(\"sip\")[0]"),(char*)F("WLED "));
     olen -= 2; //delete ";
     oappend(versionString);
-    #ifdef ARDUINO_ARCH_ESP32
-    oappend(SET_F("<br>(ESP32"));
+    oappend(SET_F("<br>("));
+    #if defined(ARDUINO_ARCH_ESP32)
+    oappend(ESP.getChipModel());
     #else
-    oappend(SET_F("<br>(ESP8266"));
+    oappend("esp8266");
     #endif
     oappend(SET_F(" build "));
     oappendi(VERSION);
@@ -718,28 +728,37 @@ void getSettingsJS(byte subPage, char* dest)
   {
     sappend('v',SET_F("SOMP"),strip.isMatrix);
     #ifndef WLED_DISABLE_2D
+    oappend(SET_F("maxPanels=")); oappendi(WLED_MAX_PANELS); oappend(SET_F(";"));
     oappend(SET_F("resetPanels();"));
     if (strip.isMatrix) {
-      sappend('v',SET_F("PH"),strip.panelH);
-      sappend('v',SET_F("PW"),strip.panelW);
-      sappend('v',SET_F("MPH"),strip.hPanels);
-      sappend('v',SET_F("MPV"),strip.vPanels);
+      if(strip.panels>0){
+        sappend('v',SET_F("PW"),strip.panel[0].width); //Set generator Width and Height to first panel size for convenience
+        sappend('v',SET_F("PH"),strip.panel[0].height);
+      }
+      sappend('v',SET_F("MPC"),strip.panels);
       sappend('v',SET_F("PB"),strip.matrix.bottomStart);
       sappend('v',SET_F("PR"),strip.matrix.rightStart);
       sappend('v',SET_F("PV"),strip.matrix.vertical);
       sappend('c',SET_F("PS"),strip.matrix.serpentine);
       // panels
-      for (uint8_t i=0; i<strip.hPanels*strip.vPanels; i++) {
+      for (uint8_t i=0; i<strip.panels; i++) {
         char n[5];
         oappend(SET_F("addPanel("));
         oappend(itoa(i,n,10));
         oappend(SET_F(");"));
-        char pO[8]; sprintf_P(pO, PSTR("P%d"), i);
-        uint8_t l = strlen(pO); pO[l+1] = 0;
+        char pO[8] = { '\0' };
+        snprintf_P(pO, 7, PSTR("P%d"), i);       // MAX_PANELS is 64 so pO will always only be 4 characters or less
+        pO[7] = '\0';
+        uint8_t l = strlen(pO);
+        // create P0B, P1B, ..., P63B, etc for other PxxX
         pO[l] = 'B'; sappend('v',pO,strip.panel[i].bottomStart);
         pO[l] = 'R'; sappend('v',pO,strip.panel[i].rightStart);
         pO[l] = 'V'; sappend('v',pO,strip.panel[i].vertical);
         pO[l] = 'S'; sappend('c',pO,strip.panel[i].serpentine);
+        pO[l] = 'X'; sappend('v',pO,strip.panel[i].xOffset);
+        pO[l] = 'Y'; sappend('v',pO,strip.panel[i].yOffset);
+        pO[l] = 'W'; sappend('v',pO,strip.panel[i].width);
+        pO[l] = 'H'; sappend('v',pO,strip.panel[i].height);
       }
     }
     #else

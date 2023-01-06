@@ -3,12 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.14.0-b0
+   @version 0.14.0-b1
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2209201
+#define VERSION 2301030
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -27,7 +27,7 @@
 //#define WLED_DISABLE_ALEXA       // saves 11kb
 //#define WLED_DISABLE_BLYNK       // saves 6kb
 //#define WLED_DISABLE_HUESYNC     // saves 4kb
-//#define WLED_DISABLE_INFRARED    // saves 12kb
+//#define WLED_DISABLE_INFRARED    // saves 12kb, there is no pin left for this on ESP8266-01
 #ifndef WLED_DISABLE_MQTT
   #define WLED_ENABLE_MQTT         // saves 12kb
 #endif
@@ -71,6 +71,7 @@
   #include <user_interface.h>
   }
 #else // ESP32
+  #include <HardwareSerial.h>  // ensure we have the correct "Serial" on new MCUs (depends on ARDUINO_USB_MODE and ARDUINO_USB_CDC_ON_BOOT)
   #include <WiFi.h>
   #include <ETH.h>
   #include "esp_wifi.h"
@@ -95,6 +96,10 @@
   #include "my_config.h"
 #endif
 
+#ifdef WLED_DEBUG_HOST
+#include "net_debug.h"
+#endif
+
 #include <ESPAsyncWebServer.h>
 #ifdef WLED_ADD_EEPROM_SUPPORT
   #include <EEPROM.h>
@@ -113,7 +118,7 @@
 #ifndef WLED_DISABLE_ALEXA
   #define ESPALEXA_ASYNC
   #define ESPALEXA_NO_SUBPAGE
-  #define ESPALEXA_MAXDEVICES 1
+  #define ESPALEXA_MAXDEVICES 10
   // #define ESPALEXA_DEBUG
   #include "src/dependencies/espalexa/Espalexa.h"
 #endif
@@ -126,7 +131,7 @@
   #include "src/dependencies/dmx/ESPDMX.h"
  #else //ESP32
   #include "src/dependencies/dmx/SparkFunDMX.h"
- #endif  
+ #endif
 #endif
 
 #include "src/dependencies/e131/ESPAsyncE131.h"
@@ -169,6 +174,19 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
 
 #ifndef CLIENT_PASS
   #define CLIENT_PASS ""
+#endif
+
+#if defined(WLED_AP_PASS) && !defined(WLED_AP_SSID)
+  #error WLED_AP_PASS is defined but WLED_AP_SSID is still the default. \
+         Please change WLED_AP_SSID to something unique.
+#endif
+
+#ifndef WLED_AP_SSID
+  #define WLED_AP_SSID DEFAULT_AP_SSID
+#endif
+
+#ifndef WLED_AP_PASS
+  #define WLED_AP_PASS DEFAULT_AP_PASS
 #endif
 
 #ifndef SPIFFS_EDITOR_AIRCOOOKIE
@@ -225,7 +243,7 @@ WLED_GLOBAL char versionString[] _INIT(TOSTRING(WLED_VERSION));
 #define WLED_CODENAME "Hoshi"
 
 // AP and OTA default passwords (for maximum security change them!)
-WLED_GLOBAL char apPass[65]  _INIT(DEFAULT_AP_PASS);
+WLED_GLOBAL char apPass[65]  _INIT(WLED_AP_PASS);
 WLED_GLOBAL char otaPass[33] _INIT(DEFAULT_OTA_PASS);
 
 // Hardware and pin config
@@ -354,10 +372,11 @@ WLED_GLOBAL bool notifyButton _INIT(false);                       // send if upd
 WLED_GLOBAL bool notifyAlexa  _INIT(false);                       // send notification if updated via Alexa
 WLED_GLOBAL bool notifyMacro  _INIT(false);                       // send notification for macro
 WLED_GLOBAL bool notifyHue    _INIT(true);                        // send notification if Hue light changes
-WLED_GLOBAL bool notifyTwice  _INIT(false);                       // notifications use UDP: enable if devices don't sync reliably
+WLED_GLOBAL uint8_t udpNumRetries _INIT(0);                       // Number of times a UDP sync message is retransmitted. Increase to increase reliability
 
 WLED_GLOBAL bool alexaEnabled _INIT(false);                       // enable device discovery by Amazon Echo
 WLED_GLOBAL char alexaInvocationName[33] _INIT("Light");          // speech control name of device. Choose something voice-to-text can understand
+WLED_GLOBAL byte alexaNumPresets _INIT(0);                        // number of presets to expose to Alexa, starting from preset 1, up to 9
 
 #ifndef WLED_DISABLE_BLYNK
 WLED_GLOBAL char blynkApiKey[36] _INIT("");                       // Auth token for Blynk server. If empty, no connection will be made
@@ -375,8 +394,8 @@ WLED_GLOBAL bool arlsForceMaxBri _INIT(false);                    // enable to f
  #ifdef ESP8266
   WLED_GLOBAL DMXESPSerial dmx;
  #else //ESP32
-  WLED_GLOBAL SparkFunDMX dmx; 
- #endif 
+  WLED_GLOBAL SparkFunDMX dmx;
+ #endif
 WLED_GLOBAL uint16_t e131ProxyUniverse _INIT(0);                  // output this E1.31 (sACN) / ArtNet universe via MAX485 (0 = disabled)
 #endif
 WLED_GLOBAL uint16_t e131Universe _INIT(1);                       // settings for E1.31 (sACN) protocol (only DMX_MODE_MULTIPLE_* can span over consequtive universes)
@@ -498,6 +517,7 @@ WLED_GLOBAL bool buttonPressedBefore[WLED_MAX_BUTTONS]        _INIT({false});
 WLED_GLOBAL bool buttonLongPressed[WLED_MAX_BUTTONS]          _INIT({false});
 WLED_GLOBAL unsigned long buttonPressedTime[WLED_MAX_BUTTONS] _INIT({0});
 WLED_GLOBAL unsigned long buttonWaitTime[WLED_MAX_BUTTONS]    _INIT({0});
+WLED_GLOBAL bool disablePullUp                                _INIT(false);
 WLED_GLOBAL byte touchThreshold                               _INIT(TOUCH_THRESHOLD);
 
 // notifications
@@ -505,7 +525,7 @@ WLED_GLOBAL bool notifyDirectDefault _INIT(notifyDirect);
 WLED_GLOBAL bool receiveNotifications _INIT(true);
 WLED_GLOBAL unsigned long notificationSentTime _INIT(0);
 WLED_GLOBAL byte notificationSentCallMode _INIT(CALL_MODE_INIT);
-WLED_GLOBAL bool notificationTwoRequired _INIT(false);
+WLED_GLOBAL uint8_t notificationCount _INIT(0);
 
 // effects
 WLED_GLOBAL byte effectCurrent _INIT(0);
@@ -559,7 +579,7 @@ WLED_GLOBAL int16_t currentPlaylist _INIT(-1);
 //still used for "PL=~" HTTP API command
 WLED_GLOBAL byte presetCycCurr _INIT(0);
 WLED_GLOBAL byte presetCycMin _INIT(1);
-WLED_GLOBAL byte presetCycMax _INIT(5); 
+WLED_GLOBAL byte presetCycMax _INIT(5);
 
 // realtime
 WLED_GLOBAL byte realtimeMode _INIT(REALTIME_MODE_INACTIVE);
@@ -649,7 +669,7 @@ WLED_GLOBAL bool e131NewData _INIT(false);
 // led fx library object
 WLED_GLOBAL BusManager busses _INIT(BusManager());
 WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
-WLED_GLOBAL BusConfig* busConfigs[WLED_MAX_BUSSES] _INIT({nullptr}); //temporary, to remember values from network callback until after
+WLED_GLOBAL BusConfig* busConfigs[WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES] _INIT({nullptr}); //temporary, to remember values from network callback until after
 WLED_GLOBAL bool doInitBusses _INIT(false);
 WLED_GLOBAL int8_t loadLedmap _INIT(-1);
 WLED_GLOBAL uint16_t ledMaps _INIT(0); // bitfield representation of available ledmaps
@@ -657,24 +677,65 @@ WLED_GLOBAL uint16_t ledMaps _INIT(0); // bitfield representation of available l
 // Usermod manager
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
 
-WLED_GLOBAL int8_t i2c_sda  _INIT(-1);      // global I2C SDA pin [HW_PIN_SDA] (used for usermods)
-WLED_GLOBAL int8_t i2c_scl  _INIT(-1);      // global I2C SCL pin [HW_PIN_SCL] (used for usermods)
-WLED_GLOBAL int8_t spi_mosi _INIT(-1);      // global SPI DATA/MOSI pin [HW_PIN_DATASPI] (used for usermods)
-WLED_GLOBAL int8_t spi_miso _INIT(-1);      // global SPI DATA/MISO pin [HW_PIN_MISOSPI] (used for usermods)
-WLED_GLOBAL int8_t spi_sclk _INIT(-1);      // global SPI CLOCK/SCLK pin [HW_PIN_CLOCKSPI] (used for usermods)
+// global I2C SDA pin (used for usermods)
+#ifndef I2CSDAPIN
+WLED_GLOBAL int8_t i2c_sda  _INIT(-1);
+#else
+WLED_GLOBAL int8_t i2c_sda  _INIT(I2CSDAPIN);
+#endif
+// global I2C SCL pin (used for usermods)
+#ifndef I2CSCLPIN
+WLED_GLOBAL int8_t i2c_scl  _INIT(-1);
+#else
+WLED_GLOBAL int8_t i2c_scl  _INIT(I2CSCLPIN);
+#endif
+
+// global SPI DATA/MOSI pin (used for usermods)
+#ifndef SPIMOSIPIN
+WLED_GLOBAL int8_t spi_mosi  _INIT(-1);
+#else
+WLED_GLOBAL int8_t spi_mosi  _INIT(SPIMOSIPIN);
+#endif
+// global SPI DATA/MISO pin (used for usermods)
+#ifndef SPIMISOPIN
+WLED_GLOBAL int8_t spi_miso  _INIT(-1);
+#else
+WLED_GLOBAL int8_t spi_miso  _INIT(SPIMISOPIN);
+#endif
+// global SPI CLOCK/SCLK pin (used for usermods)
+#ifndef SPISCLKPIN
+WLED_GLOBAL int8_t spi_sclk  _INIT(-1);
+#else
+WLED_GLOBAL int8_t spi_sclk  _INIT(SPISCLKPIN);
+#endif
 
 // global ArduinoJson buffer
 WLED_GLOBAL StaticJsonDocument<JSON_BUFFER_SIZE> doc;
 WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
 
 // enable additional debug output
+#if defined(WLED_DEBUG_HOST)
+  // On the host side, use netcat to receive the log statements: nc -l 7868 -u
+  // use -D WLED_DEBUG_HOST='"192.168.xxx.xxx"' or FQDN within quotes
+  #define DEBUGOUT NetDebug
+  WLED_GLOBAL bool netDebugEnabled _INIT(true);
+  WLED_GLOBAL char netDebugPrintHost[33] _INIT(WLED_DEBUG_HOST);
+  #if defined(WLED_DEBUG_NET_PORT)
+  WLED_GLOBAL int netDebugPrintPort _INIT(WLED_DEBUG_PORT);
+  #else
+  WLED_GLOBAL int netDebugPrintPort _INIT(7868);
+  #endif
+#else
+  #define DEBUGOUT Serial
+#endif
+
 #ifdef WLED_DEBUG
   #ifndef ESP8266
   #include <rom/rtc.h>
   #endif
-  #define DEBUG_PRINT(x) Serial.print(x)
-  #define DEBUG_PRINTLN(x) Serial.println(x)
-  #define DEBUG_PRINTF(x...) Serial.printf(x)
+  #define DEBUG_PRINT(x) DEBUGOUT.print(x)
+  #define DEBUG_PRINTLN(x) DEBUGOUT.println(x)
+  #define DEBUG_PRINTF(x...) DEBUGOUT.printf(x)
 #else
   #define DEBUG_PRINT(x)
   #define DEBUG_PRINTLN(x)
@@ -682,9 +743,9 @@ WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
 #endif
 
 #ifdef WLED_DEBUG_FS
-  #define DEBUGFS_PRINT(x) Serial.print(x)
-  #define DEBUGFS_PRINTLN(x) Serial.println(x)
-  #define DEBUGFS_PRINTF(x...) Serial.printf(x)
+  #define DEBUGFS_PRINT(x) DEBUGOUT.print(x)
+  #define DEBUGFS_PRINTLN(x) DEBUGOUT.println(x)
+  #define DEBUGFS_PRINTF(x...) DEBUGOUT.printf(x)
 #else
   #define DEBUGFS_PRINT(x)
   #define DEBUGFS_PRINTLN(x)
@@ -706,6 +767,23 @@ WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
 #endif
 #define WLED_WIFI_CONFIGURED (strlen(clientSSID) >= 1 && strcmp(clientSSID, DEFAULT_CLIENT_SSID) != 0)
 #define WLED_MQTT_CONNECTED (mqtt != nullptr && mqtt->connected())
+
+#ifndef WLED_AP_SSID_UNIQUE
+  #define WLED_SET_AP_SSID() do { \
+    strcpy_P(apSSID, PSTR(WLED_AP_SSID)); \
+  } while(0)
+#else
+  #define WLED_SET_AP_SSID() do { \
+    strcpy_P(apSSID, PSTR(WLED_AP_SSID)); \
+    snprintf_P(\
+      apSSID+strlen(WLED_AP_SSID), \
+      sizeof(apSSID)-strlen(WLED_AP_SSID), \
+      PSTR("-%*s"), \
+      6, \
+      escapedMac.c_str() + 6\
+    ); \
+  } while(0)
+#endif
 
 //macro to convert F to const
 #define SET_F(x)  (const char*)F(x)

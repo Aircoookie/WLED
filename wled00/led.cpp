@@ -195,14 +195,14 @@ void handleTransitions()
     }
     if (tper - tperLast < 0.004) return;
     tperLast = tper;
-    briT    = briOld   +((bri    - briOld   )*tper);
+    briT = briOld + ((bri - briOld) * tper);
     
     applyBri();
   }
 }
 
 
-//legacy method, applies values from col, effectCurrent, ... to selected segments
+// legacy method, applies values from col, effectCurrent, ... to selected segments
 void colorUpdated(byte callMode){
   applyValuesToSelectedSegs();
   stateUpdated(callMode);
@@ -213,8 +213,8 @@ void handleNightlight()
 {
   static unsigned long lastNlUpdate;
   unsigned long now = millis();
-  if (now < 100 && lastNlUpdate > 0) lastNlUpdate = 0; //take care of millis() rollover
-  if (now - lastNlUpdate < 100) return; //allow only 10 NL updates per second
+  if (now < 100 && lastNlUpdate > 0) lastNlUpdate = 0; // take care of millis() rollover
+  if (now - lastNlUpdate < 100) return; // allow only 10 NL updates per second
   lastNlUpdate = now;
 
   if (nightlightActive)

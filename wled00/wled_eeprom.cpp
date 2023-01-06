@@ -102,7 +102,7 @@ void loadSettingsFromEEPROM()
   busses.add(bc);
 
   notifyButton = EEPROM.read(230);
-  notifyTwice = EEPROM.read(231);
+  if (EEPROM.read(231)) udpNumRetries = 1;
   buttonType[0] = EEPROM.read(232) ? BTN_TYPE_PUSH : BTN_TYPE_NONE;
 
   staticIP[0] = EEPROM.read(234);
@@ -467,11 +467,5 @@ void deEEPSettings() {
   EEPROM.begin(EEPSIZE);
   loadSettingsFromEEPROM();
   EEPROM.end();
-
-  //call readFromConfig() with an empty object so that usermods can initialize to defaults prior to saving
-  JsonObject empty = JsonObject();
-  usermods.readFromConfig(empty);
-
-  serializeConfig();
 }
 #endif

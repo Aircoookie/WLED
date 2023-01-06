@@ -22,15 +22,15 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
     if (client->id() == wsLiveClientId) wsLiveClientId = 0;
     DEBUG_PRINTLN(F("WS client disconnected."));
   } else if(type == WS_EVT_DATA){
-    //data packet
+    // data packet
     AwsFrameInfo * info = (AwsFrameInfo*)arg;
     if(info->final && info->index == 0 && info->len == len){
-      //the whole message is in a single frame and we got all of its data (max. 1450byte)
+      // the whole message is in a single frame and we got all of its data (max. 1450 bytes)
       if(info->opcode == WS_TEXT)
       {
         if (len > 0 && len < 10 && data[0] == 'p') {
-          //application layer ping/pong heartbeat.
-          //client-side socket layer ping packets are unresponded (investigate)
+          // application layer ping/pong heartbeat.
+          // client-side socket layer ping packets are unresponded (investigate)
           client->text(F("pong"));
           return;
         }
@@ -54,7 +54,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
         }
         releaseJSONBufferLock(); // will clean fileDoc
 
-        // force broadcast in 500ms after upadting client
+        // force broadcast in 500ms after updating client
         if (verboseResponse) {
           sendDataWs(client);
           lastInterfaceUpdate = millis() - (INTERFACE_UPDATE_COOLDOWN -500);
@@ -161,8 +161,8 @@ bool sendLiveLedsWs(uint32_t wsClient)
 #ifndef WLED_DISABLE_2D
   if (strip.isMatrix) {
     buffer[1] = 2; //version
-    buffer[2] = strip.matrixWidth;
-    buffer[3] = strip.matrixHeight;
+    buffer[2] = Segment::maxWidth;
+    buffer[3] = Segment::maxHeight;
   }
 #endif
 

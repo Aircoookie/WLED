@@ -191,7 +191,7 @@ private:
     re_sortModes(modes_qstrings, modes_alpha_indexes, strip.getModeCount(), MODE_SORT_SKIP_COUNT);
 
     palettes_qstrings = re_findModeStrings(JSON_palette_names, strip.getPaletteCount());
-    palettes_alpha_indexes = re_initIndexArray(strip.getPaletteCount());
+    palettes_alpha_indexes = re_initIndexArray(strip.getPaletteCount());  // only use internal palettes
 
     // How many palette names start with '*' and should not be sorted?
     // (Also skipping the first one, 'Default').
@@ -278,9 +278,13 @@ public:
       return;
     }
 
-    pinMode(pinA, INPUT_PULLUP);
-    pinMode(pinB, INPUT_PULLUP);
-    pinMode(pinC, INPUT_PULLUP);
+    #ifndef USERMOD_ROTARY_ENCODER_GPIO
+      #define USERMOD_ROTARY_ENCODER_GPIO INPUT_PULLUP
+    #endif
+    pinMode(pinA, USERMOD_ROTARY_ENCODER_GPIO);
+    pinMode(pinB, USERMOD_ROTARY_ENCODER_GPIO);
+    pinMode(pinC, USERMOD_ROTARY_ENCODER_GPIO);
+
     loopTime = millis();
 
     currentCCT = (approximateKelvinFromRGB(RGBW32(col[0], col[1], col[2], col[3])) - 1900) >> 5;
@@ -746,7 +750,7 @@ public:
       StaticJsonDocument<64> root;
       char str[64];
       sprintf_P(str, PSTR("%d~%d~%s"), presetLow, presetHigh, increase?"":"-");
-      root[F("ps")] = str;
+      root["ps"] = str;
       deserializeState(root.as<JsonObject>(), CALL_MODE_BUTTON_PRESET);
 /*
       String apireq = F("win&PL=~");

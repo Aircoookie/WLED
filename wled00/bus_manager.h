@@ -15,13 +15,19 @@ uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb);
 void colorRGBtoRGBW(byte* rgb);
 
 // enable additional debug output
+#if defined(WLED_DEBUG_HOST)
+  #define DEBUGOUT NetDebug
+#else
+  #define DEBUGOUT Serial
+#endif
+
 #ifdef WLED_DEBUG
   #ifndef ESP8266
   #include <rom/rtc.h>
   #endif
-  #define DEBUG_PRINT(x) Serial.print(x)
-  #define DEBUG_PRINTLN(x) Serial.println(x)
-  #define DEBUG_PRINTF(x...) Serial.printf(x)
+  #define DEBUG_PRINT(x) DEBUGOUT.print(x)
+  #define DEBUG_PRINTLN(x) DEBUGOUT.println(x)
+  #define DEBUG_PRINTF(x...) DEBUGOUT.printf(x)
 #else
   #define DEBUG_PRINT(x)
   #define DEBUG_PRINTLN(x)
@@ -252,7 +258,7 @@ class BusDigital : public Bus {
     _busPtr = PolyBus::create(_iType, _pins, _len, nr, _hardwareSettings);
     _valid = (_busPtr != nullptr);
     _colorOrder = bc.colorOrder;
-    DEBUG_PRINTF("Successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u)\n",nr, _len, bc.type, _pins[0],_pins[1],_iType);
+    DEBUG_PRINTF("%successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u)\n", _valid?"S":"Uns", nr, _len, bc.type, _pins[0],_pins[1],_iType);
   };
 
   inline void show() {
@@ -680,9 +686,24 @@ class BusManager {
     if (type == 44 || type == 45) return len*4; //RGBW
     return len*3; //RGB
   }
-  
+
+/*
+  int      add(BusConfig &bc);
+  void     removeAll();  //do not call this method from system context (network callback)
+  void     setStatusPixel(uint32_t c);
+  void     setPixelColor(uint16_t pix, uint32_t c, int16_t cct=-1);
+  void     setBrightness(uint8_t b);
+  void     setSegmentCCT(int16_t cct, bool allowWBCorrection = false);
+  uint32_t getPixelColor(uint16_t pix);
+  bool     canAllShow();
+  Bus*     getBus(uint8_t busNr);
+  void     show();
+  uint16_t getTotalLength();  //semi-duplicate of strip.getLengthTotal() (though that just returns strip._length, calculated in finalizeInit())
+*/
+  // the following functions are inlined by compiler since they are defined within class definition
+  // they should be placed in cpp file instead
   int add(BusConfig &bc) {
-    if (numBusses >= WLED_MAX_BUSSES) return -1;
+    if (getNumBusses() - getNumVirtualBusses() >= WLED_MAX_BUSSES) return -1;
     if (bc.type >= TYPE_NET_DDP_RGB && bc.type < 96) {
       busses[numBusses] = new BusNetwork(bc);
     } else if (IS_DIGITAL(bc.type)) {
@@ -710,11 +731,11 @@ class BusManager {
     }
   }
 
-	void setStatusPixel(uint32_t c) {
+  void setStatusPixel(uint32_t c) {
     for (uint8_t i = 0; i < numBusses; i++) {
-			busses[i]->setStatusPixel(c);
-		}
-	}
+      busses[i]->setStatusPixel(c);
+    }
+  }
 
   void IRAM_ATTR setPixelColor(uint16_t pix, uint32_t c, int16_t cct=-1) {
     for (uint8_t i = 0; i < numBusses; i++) {
@@ -762,10 +783,6 @@ class BusManager {
     return busses[busNr];
   }
 
-  inline uint8_t getNumBusses() {
-    return numBusses;
-  }
-
   //semi-duplicate of strip.getLengthTotal() (though that just returns strip._length, calculated in finalizeInit())
   uint16_t getTotalLength() {
     uint16_t len = 0;
@@ -773,17 +790,27 @@ class BusManager {
     return len;
   }
 
-  void updateColorOrderMap(const ColorOrderMap &com) {
+  inline void updateColorOrderMap(const ColorOrderMap &com) {
     memcpy(&colorOrderMap, &com, sizeof(ColorOrderMap));
   }
 
-  const ColorOrderMap& getColorOrderMap() const {
+  inline const ColorOrderMap& getColorOrderMap() const {
     return colorOrderMap;
+  }
+
+  inline uint8_t getNumBusses() {
+    return numBusses;
   }
 
   private:
   uint8_t numBusses = 0;
-  Bus* busses[WLED_MAX_BUSSES];
+  Bus* busses[WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES];
   ColorOrderMap colorOrderMap;
+
+  inline uint8_t getNumVirtualBusses() {
+    int j = 0;
+    for (int i=0; i<numBusses; i++) if (busses[i]->getType() >= TYPE_NET_DDP_RGB && busses[i]->getType() < 96) j++;
+    return j;
+  }
 };
 #endif

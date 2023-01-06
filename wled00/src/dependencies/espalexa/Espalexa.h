@@ -359,6 +359,11 @@ public:
     return false;
   }
 
+  // get device count, function only in WLED version of Espalexa
+  uint8_t getDeviceCount() {
+    return currentDeviceCount;
+  }
+
   //service loop
   void loop() {
     #ifndef ESPALEXA_ASYNC
@@ -391,6 +396,13 @@ public:
       EA_DEBUGLN("Responding search req...");
       respondToSearch();
     }
+  }
+
+  // Function only in WLED version of Espalexa, does not actually release memory for names
+  void removeAllDevices()
+  {
+    currentDeviceCount=0;
+    return;
   }
 
   // returns device index or 0 on failure

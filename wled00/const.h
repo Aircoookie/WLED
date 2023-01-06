@@ -9,6 +9,7 @@
 
 //Defaults
 #define DEFAULT_CLIENT_SSID "Your_Network"
+#define DEFAULT_AP_SSID     "WLED-AP"
 #define DEFAULT_AP_PASS     "wled1234"
 #define DEFAULT_OTA_PASS    "wledota"
 
@@ -24,16 +25,43 @@
 #ifndef WLED_MAX_BUSSES
   #ifdef ESP8266
     #define WLED_MAX_BUSSES 3
+    #define WLED_MIN_VIRTUAL_BUSSES 2
   #else
-    #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3)
-      #define WLED_MAX_BUSSES 5
+    #if defined(CONFIG_IDF_TARGET_ESP32C3)    // 2 RMT, 6 LEDC, only has 1 I2S but NPB does not support it ATM
+      #define WLED_MAX_BUSSES 3               // will allow 2 digital & 1 analog (or the other way around)
+      #define WLED_MIN_VIRTUAL_BUSSES 3
+    #elif defined(CONFIG_IDF_TARGET_ESP32S2)  // 4 RMT, 8 LEDC, only has 1 I2S bus, supported in NPB
+      #if defined(USERMOD_AUDIOREACTIVE)      // requested by @softhack007 https://github.com/blazoncek/WLED/issues/33
+        #define WLED_MAX_BUSSES 6             // will allow 4 digital & 2 analog
+        #define WLED_MIN_VIRTUAL_BUSSES 4
+      #else
+        #define WLED_MAX_BUSSES 7             // will allow 5 digital & 2 analog
+        #define WLED_MIN_VIRTUAL_BUSSES 3
+      #endif
+    #elif defined(CONFIG_IDF_TARGET_ESP32S3)  // 4 RMT, 8 LEDC, has 2 I2S but NPB does not support them ATM
+      #define WLED_MAX_BUSSES 6               // will allow 4 digital & 2 analog
+      #define WLED_MIN_VIRTUAL_BUSSES 4
     #else
-      #if defined(CONFIG_IDF_TARGET_ESP32S3)
+      #if defined(USERMOD_AUDIOREACTIVE)      // requested by @softhack007 https://github.com/blazoncek/WLED/issues/33
         #define WLED_MAX_BUSSES 8
+        #define WLED_MIN_VIRTUAL_BUSSES 2
       #else
         #define WLED_MAX_BUSSES 10
+        #define WLED_MIN_VIRTUAL_BUSSES 0
       #endif
     #endif
+  #endif
+#else
+  #ifdef ESP8266
+    #if WLED_MAX_BUSES > 5
+      #error Maximum number of buses is 5.
+    #endif
+    #define WLED_MIN_VIRTUAL_BUSSES (5-WLED_MAX_BUSSES)
+  #else
+    #if WLED_MAX_BUSES > 10
+      #error Maximum number of buses is 10.
+    #endif
+    #define WLED_MIN_VIRTUAL_BUSSES (10-WLED_MAX_BUSSES)
   #endif
 #endif
 
@@ -70,7 +98,7 @@
 #define USERMOD_ID_RTC                   15     //Usermod "usermod_rtc.h"
 #define USERMOD_ID_ELEKSTUBE_IPS         16     //Usermod "usermod_elekstube_ips.h"
 #define USERMOD_ID_SN_PHOTORESISTOR      17     //Usermod "usermod_sn_photoresistor.h"
-#define USERMOD_ID_BATTERY_STATUS_BASIC  18     //Usermod "usermod_v2_battery_status_basic.h"
+#define USERMOD_ID_BATTERY               18     //Usermod "usermod_v2_battery.h"
 #define USERMOD_ID_PWM_FAN               19     //Usermod "usermod_PWM_fan.h"
 #define USERMOD_ID_BH1750                20     //Usermod "usermod_bh1750.h"
 #define USERMOD_ID_SEVEN_SEGMENT_DISPLAY 21     //Usermod "usermod_v2_seven_segment_display.h"
@@ -83,7 +111,15 @@
 #define USERMOD_ID_MY9291                28     //Usermod "usermod_MY9291.h"
 #define USERMOD_ID_SI7021_MQTT_HA        29     //Usermod "usermod_si7021_mqtt_ha.h"
 #define USERMOD_ID_BME280                30     //Usermod "usermod_bme280.h
-#define USERMOD_ID_AUDIOREACTIVE         31     //Usermod "audioreactive.h"
+#define USERMOD_ID_SMARTNEST             31     //Usermod "usermod_smartnest.h"
+#define USERMOD_ID_AUDIOREACTIVE         32     //Usermod "audioreactive.h"
+#define USERMOD_ID_ANALOG_CLOCK          33     //Usermod "Analog_Clock.h"
+#define USERMOD_ID_PING_PONG_CLOCK       34     //Usermod "usermod_v2_ping_pong_clock.h"
+#define USERMOD_ID_ADS1115               35     //Usermod "usermod_ads1115.h"
+#define USERMOD_ID_BOBLIGHT              36     //Usermod "boblight.h"
+#define USERMOD_ID_SD_CARD               37     //Usermod "usermod_sd_card.h"
+#define USERMOD_ID_PWM_OUTPUTS           38     //Usermod "usermod_pwm_outputs.h
+#define USERMOD_ID_SHT                   39     //Usermod "usermod_sht.h
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
@@ -207,7 +243,7 @@
 #define BTN_TYPE_ANALOG_INVERTED  8
 
 //Ethernet board types
-#define WLED_NUM_ETH_TYPES        8
+#define WLED_NUM_ETH_TYPES        9
 
 #define WLED_ETH_NONE             0
 #define WLED_ETH_WT32_ETH01       1
@@ -239,13 +275,13 @@
 #define SEG_OPTION_TRANSPOSED     9
 
 //Segment differs return byte
-#define SEG_DIFFERS_BRI        0x01
-#define SEG_DIFFERS_OPT        0x02
-#define SEG_DIFFERS_COL        0x04
-#define SEG_DIFFERS_FX         0x08
-#define SEG_DIFFERS_BOUNDS     0x10
-#define SEG_DIFFERS_GSO        0x20
-#define SEG_DIFFERS_SEL        0x80
+#define SEG_DIFFERS_BRI        0x01 // opacity
+#define SEG_DIFFERS_OPT        0x02 // all segment options except: selected, reset & transitional
+#define SEG_DIFFERS_COL        0x04 // colors
+#define SEG_DIFFERS_FX         0x08 // effect/mode parameters
+#define SEG_DIFFERS_BOUNDS     0x10 // segment start/stop ounds
+#define SEG_DIFFERS_GSO        0x20 // grouping, spacing & offset
+#define SEG_DIFFERS_SEL        0x80 // selected
 
 //Playlist option byte
 #define PL_OPTION_SHUFFLE      0x01
@@ -286,7 +322,7 @@
   #ifdef ESP8266
     #define MAX_LED_MEMORY 4000
   #else
-    #ifdef ARDUINO_ARCH_ESP32S2
+    #if defined(ARDUINO_ARCH_ESP32S2) || defined(ARDUINO_ARCH_ESP32C3)
       #define MAX_LED_MEMORY 32000
     #else
       #define MAX_LED_MEMORY 64000
@@ -316,9 +352,11 @@
 #endif
 
 #ifndef ABL_MILLIAMPS_DEFAULT
-  #define ABL_MILLIAMPS_DEFAULT 850  // auto lower brightness to stay close to milliampere limit
+  #define ABL_MILLIAMPS_DEFAULT 850   // auto lower brightness to stay close to milliampere limit
 #else
-  #if ABL_MILLIAMPS_DEFAULT < 250  // make sure value is at least 250
+  #if ABL_MILLIAMPS_DEFAULT == 0      // disable ABL
+  #elif ABL_MILLIAMPS_DEFAULT < 250   // make sure value is at least 250
+   #warning "make sure value is at least 250"
    #define ABL_MILLIAMPS_DEFAULT 250
   #endif
 #endif
@@ -353,7 +391,7 @@
 
 //this is merely a default now and can be changed at runtime
 #ifndef LEDPIN
-#if defined(ESP8266) || (defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM))
+#if defined(ESP8266) || (defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)) || defined(CONFIG_IDF_TARGET_ESP32C3)
   #define LEDPIN 2    // GPIO2 (D4) on Wemod D1 mini compatible boards
 #else
   #define LEDPIN 16   // aligns with GPIO2 (D4) on Wemos D1 mini32 compatible boards
@@ -374,12 +412,22 @@
 
 #define INTERFACE_UPDATE_COOLDOWN 2000 //time in ms to wait between websockets, alexa, and MQTT updates
 
+// HW_PIN_SCL & HW_PIN_SDA are used for information in usermods settings page and usermods themselves
+// which GPIO pins are actually used in a hardwarea layout (controller board)
+#if defined(I2CSCLPIN) && !defined(HW_PIN_SCL)
+  #define HW_PIN_SCL I2CSCLPIN
+#endif
+#if defined(I2CSDAPIN) && !defined(HW_PIN_SDA)
+  #define HW_PIN_SDA I2CSDAPIN
+#endif
+// you cannot change HW I2C pins on 8266
 #if defined(ESP8266) && defined(HW_PIN_SCL)
   #undef HW_PIN_SCL
 #endif
 #if defined(ESP8266) && defined(HW_PIN_SDA)
   #undef HW_PIN_SDA
 #endif
+// defaults for 1st I2C on ESP32 (Wire global)
 #ifndef HW_PIN_SCL
   #define HW_PIN_SCL SCL
 #endif
@@ -387,6 +435,18 @@
   #define HW_PIN_SDA SDA
 #endif
 
+// HW_PIN_SCLKSPI & HW_PIN_MOSISPI & HW_PIN_MISOSPI are used for information in usermods settings page and usermods themselves
+// which GPIO pins are actually used in a hardwarea layout (controller board)
+#if defined(SPISCLKPIN) && !defined(HW_PIN_CLOCKSPI)
+  #define HW_PIN_CLOCKSPI SPISCLKPIN
+#endif
+#if defined(SPIMOSIPIN) && !defined(HW_PIN_MOSISPI)
+  #define HW_PIN_MOSISPI SPIMOSIPIN
+#endif
+#if defined(SPIMISOPIN) && !defined(HW_PIN_MISOSPI)
+  #define HW_PIN_MISOSPI SPIMISOPIN
+#endif
+// you cannot change HW SPI pins on 8266
 #if defined(ESP8266) && defined(HW_PIN_CLOCKSPI)
   #undef HW_PIN_CLOCKSPI
 #endif
@@ -396,10 +456,7 @@
 #if defined(ESP8266) && defined(HW_PIN_MISOSPI)
   #undef HW_PIN_MISOSPI
 #endif
-#if defined(ESP8266) && defined(HW_PIN_CSSPI)
-  #undef HW_PIN_CSSPI
-#endif
-// defaults for VSPI
+// defaults for VSPI on ESP32 (SPI global, SPI.cpp) as HSPI is used by WLED (bus_wrapper.h)
 #ifndef HW_PIN_CLOCKSPI
   #define HW_PIN_CLOCKSPI SCK
 #endif
@@ -408,9 +465,6 @@
 #endif
 #ifndef HW_PIN_MISOSPI
   #define HW_PIN_MISOSPI MISO
-#endif
-#ifndef HW_PIN_CSSPI
-  #define HW_PIN_CSSPI SS
 #endif
 
 #endif

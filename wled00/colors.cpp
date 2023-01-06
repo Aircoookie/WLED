@@ -344,6 +344,7 @@ uint8_t gamma8_cal(uint8_t b, float gamma)
   return (int)(powf((float)b / 255.0f, gamma) * 255.0f + 0.5f);
 }
 
+// re-calculates & fills gamma table
 void calcGammaTable(float gamma)
 {
   for (uint16_t i = 0; i < 256; i++) {
@@ -351,11 +352,13 @@ void calcGammaTable(float gamma)
   }
 }
 
+// used for individual channel or brightness gamma correction
 uint8_t gamma8(uint8_t b)
 {
   return gammaT[b];
 }
 
+// used for color gamma correction
 uint32_t gamma32(uint32_t color)
 {
   if (!gammaCorrectCol) return color;

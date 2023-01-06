@@ -135,7 +135,7 @@ void handleIR();
 void deserializeSegment(JsonObject elem, byte it, byte presetId = 0);
 bool deserializeState(JsonObject root, byte callMode = CALL_MODE_DIRECT_CHANGE, byte presetId = 0);
 void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset = false, bool segmentBounds = true);
-void serializeState(JsonObject root, bool forPreset = false, bool includeBri = true, bool segmentBounds = true);
+void serializeState(JsonObject root, bool forPreset = false, bool includeBri = true, bool segmentBounds = true, bool selectedSegmentsOnly = false);
 void serializeInfo(JsonObject root);
 void serializeModeNames(JsonArray arr, const char *qstring);
 void serializeModeData(JsonObject root);
@@ -192,14 +192,17 @@ void shufflePlaylist();
 void unloadPlaylist();
 int16_t loadPlaylist(JsonObject playlistObject, byte presetId = 0);
 void handlePlaylist();
+void serializePlaylist(JsonObject obj);
 
 //presets.cpp
+void initPresetsFile();
 void handlePresets();
 bool applyPreset(byte index, byte callMode = CALL_MODE_DIRECT_CHANGE);
 inline bool applyTemporaryPreset() {return applyPreset(255);};
 void savePreset(byte index, const char* pname = nullptr, JsonObject saveobj = JsonObject());
 inline void saveTemporaryPreset() {savePreset(255);};
 void deletePreset(byte index);
+bool getPresetName(byte index, String& name); 
 
 //set.cpp
 bool isAsterisksOnly(const char* str, byte maxLen);
