@@ -2457,7 +2457,7 @@ uint16_t ripple_base()
 
 uint16_t mode_ripple(void) {
   if (!SEGMENT.check2) SEGMENT.fill(SEGCOLOR(1));
-  return ripple_base(false);
+  return ripple_base();
 }
 static const char _data_FX_MODE_RIPPLE[] PROGMEM = "Ripple@!,Wave #,,,,,No Bg;,!;!;12";
 
@@ -2475,7 +2475,7 @@ uint16_t mode_ripple_rainbow(void) {
     SEGENV.aux0--;
   }
   SEGMENT.fill(color_blend(SEGMENT.color_wheel(SEGENV.aux0),BLACK,235));
-  return ripple_base(true);
+  return ripple_base();
 }
 static const char _data_FX_MODE_RIPPLE_RAINBOW[] PROGMEM = "Ripple Rainbow@!,Wave #;;!;12";
 
@@ -2929,7 +2929,7 @@ void glitter_base(uint8_t intensity, uint32_t col = ULTRAWHITE) {
 uint16_t mode_glitter()
 {
   if (!SEGMENT.check2) mode_palette();
-  glitter_base(SEGMENT.intensity)
+  glitter_base(SEGMENT.intensity);
   return FRAMETIME;
 }
 static const char _data_FX_MODE_GLITTER[] PROGMEM = "Glitter@!,!,,,,,No Bg;;!;;m12=0"; //pixels
