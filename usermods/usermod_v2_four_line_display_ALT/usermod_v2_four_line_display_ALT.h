@@ -112,6 +112,8 @@ class FourLineDisplayUsermod : public Usermod {
     bool initDone = false;
     volatile bool drawing = false;
 
+    char errorMessage[100] = "No errors"; //WLEDMM: show error in um settings if occurred
+
     // HW interface & configuration
     U8X8 *u8x8 = nullptr;           // pointer to U8X8 display object
 
@@ -124,6 +126,7 @@ class FourLineDisplayUsermod : public Usermod {
     #endif
 
     DisplayType type = FLD_TYPE;    // display type
+    bool typeOK = true;             //WLEDMM: instead of type == NULL and type=NULL
     bool flip = false;              // flip display 180°
     uint8_t contrast = 10;          // screen contrast
     uint8_t lineHeight = 1;         // 1 row or 2 rows
@@ -198,32 +201,32 @@ class FourLineDisplayUsermod : public Usermod {
      * Wrappers for screen drawing
      */
     void setFlipMode(uint8_t mode) {
-      if (type == NONE || !enabled) return;
+      if (!typeOK || !enabled) return;
       u8x8->setFlipMode(mode);
     }
     void setContrast(uint8_t contrast) {
-      if (type == NONE || !enabled) return;
+      if (!typeOK || !enabled) return;
       u8x8->setContrast(contrast);
     }
     void drawString(uint8_t col, uint8_t row, const char *string, bool ignoreLH=false) {
-      if (type == NONE || !enabled) return;
+      if (!typeOK || !enabled) return;
       u8x8->setFont(u8x8_font_chroma48medium8_r);
       if (!ignoreLH && lineHeight==2) u8x8->draw1x2String(col, row, string);
       else                            u8x8->drawString(col, row, string);
     }
     void draw2x2String(uint8_t col, uint8_t row, const char *string) {
-      if (type == NONE || !enabled) return;
+      if (!typeOK || !enabled) return;
       u8x8->setFont(u8x8_font_chroma48medium8_r);
       u8x8->draw2x2String(col, row, string);
     }
     void drawGlyph(uint8_t col, uint8_t row, char glyph, const uint8_t *font, bool ignoreLH=false) {
-      if (type == NONE || !enabled) return;
+      if (!typeOK || !enabled) return;
       u8x8->setFont(font);
       if (!ignoreLH && lineHeight==2) u8x8->draw1x2Glyph(col, row, glyph);
       else                            u8x8->drawGlyph(col, row, glyph);
     }
     void draw2x2Glyph(uint8_t col, uint8_t row, char glyph, const uint8_t *font) {
-      if (type == NONE || !enabled) return;
+      if (!typeOK || !enabled) return;
       u8x8->setFont(font);
       u8x8->draw2x2Glyph(col, row, glyph);
     }
@@ -232,11 +235,11 @@ class FourLineDisplayUsermod : public Usermod {
       return u8x8->getCols();
     }
     void clear() {
-      if (type == NONE || !enabled) return;
+      if (!typeOK || !enabled) return;
       u8x8->clear();
     }
     void setPowerSave(uint8_t save) {
-      if (type == NONE || !enabled) return;
+      if (!typeOK || !enabled) return;
       u8x8->setPowerSave(save);
     }
 
@@ -268,7 +271,7 @@ class FourLineDisplayUsermod : public Usermod {
      * the useAMPM configuration.
      */
     void showTime() {
-      if (type == NONE || !enabled || !displayTurnedOff) return;
+      if (!typeOK || !enabled || !displayTurnedOff) return;
 
       unsigned long now = millis();
       while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
@@ -316,40 +319,37 @@ class FourLineDisplayUsermod : public Usermod {
     // gets called once at boot. Do all initialization that doesn't depend on
     // network here
     void setup() {
-      if (type == NONE || !enabled) return;
+      if (!typeOK || !enabled) return;
 
       bool isHW, isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64);
       PinOwner po = PinOwner::UM_FourLineDisplay;
       if (isSPI) {
-        int8_t hw_sclk = spi_sclk;
-        int8_t hw_mosi = spi_mosi;
         if (ioPin[0] < 0 || ioPin[1] < 0) {
-          ioPin[0] = hw_sclk;
-          ioPin[1] = hw_mosi;
+          ioPin[0] = spi_sclk;
+          ioPin[1] = spi_mosi;
         }
-        isHW = (ioPin[0]==hw_sclk && ioPin[1]==hw_mosi);
+        isHW = (ioPin[0]==spi_sclk && ioPin[1]==spi_mosi);
         PinManagerPinType cspins[3] = { { ioPin[2], true }, { ioPin[3], true }, { ioPin[4], true } };
-        if (!pinManager.allocateMultiplePins(cspins, 3, PinOwner::UM_FourLineDisplay)) { type=NONE; return; }
+        if (!pinManager.allocateMultiplePins(cspins, 3, PinOwner::UM_FourLineDisplay)) { typeOK=false; strcpy(errorMessage, PSTR("SPI3 alloc pins failed")); return; }
         if (isHW) po = PinOwner::HW_SPI;  // allow multiple allocations of HW I2C bus pins
         PinManagerPinType pins[2] = { { ioPin[0], true }, { ioPin[1], true } };
         if (!pinManager.allocateMultiplePins(pins, 2, po)) {
           pinManager.deallocateMultiplePins(cspins, 3, PinOwner::UM_FourLineDisplay);
-          type = NONE;
+          typeOK=false;
+          strcpy(errorMessage, PSTR("SPI2 alloc pins failed"));
           return;
         }
       } else {
-        int8_t hw_scl = i2c_scl;
-        int8_t hw_sda = i2c_sda;
         if (ioPin[0] < 0 || ioPin[1] < 0) {
-          ioPin[0] = hw_scl;
-          ioPin[1] = hw_sda;
+          ioPin[0] = i2c_scl;
+          ioPin[1] = i2c_sda;
         }
-        isHW = (ioPin[0]==hw_scl && ioPin[1]==hw_sda);
+        isHW = (ioPin[0]==i2c_scl && ioPin[1]==i2c_sda);
         // isHW = true;
         if (isHW) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
         PinManagerPinType pins[2] = { {ioPin[0], true }, { ioPin[1], true } };
-        if (ioPin[0] < 0 || ioPin[1] < 0)  { type=NONE; enabled=false; return; }  //WLEDMM bugfix - ensure that "final" GPIO are valid
-        if (!pinManager.allocateMultiplePins(pins, 2, po)) { type=NONE; enabled=false; return; }
+        if (ioPin[0] < 0 || ioPin[1] < 0)  { typeOK=false; strcpy(errorMessage, PSTR("I2C No Pins defined")); return; }  //WLEDMM bugfix - ensure that "final" GPIO are valid
+        if (!pinManager.allocateMultiplePins(pins, 2, po)) { typeOK=false; strcpy(errorMessage, PSTR("I2C Alloc pins failed")); return; }
       }
 
       DEBUG_PRINTLN(F("Allocating display."));
@@ -380,7 +380,8 @@ class FourLineDisplayUsermod : public Usermod {
           u8x8_Setup(u8x8.getU8x8(), u8x8_d_ssd1306_128x64_noname, u8x8_cad_001, u8x8_byte_arduino_4wire_sw_spi, u8x8_gpio_and_delay_arduino);
           break;
         default:
-          type = NONE;
+          typeOK=false;
+          strcpy(errorMessage, PSTR("No valid type"));
           return;
       }
       if (isSPI) {
@@ -429,7 +430,8 @@ class FourLineDisplayUsermod : public Usermod {
       if (nullptr == u8x8) {
           USER_PRINTLN(F("Display init failed."));
           pinManager.deallocateMultiplePins((const uint8_t*)ioPin, isSPI ? 5 : 2, po);
-          type = NONE;
+          typeOK=false;
+          strcpy(errorMessage, PSTR("Display init failed"));
           return;
       }
 
@@ -481,7 +483,7 @@ class FourLineDisplayUsermod : public Usermod {
       bool needRedraw = false;
       unsigned long now = millis();
  
-      if (type == NONE || !enabled) return;
+      if (!typeOK || !enabled) return;
       if (overlayUntil > 0) {
         if (now >= overlayUntil) {
           // Time to display the overlay has elapsed.
@@ -713,7 +715,7 @@ class FourLineDisplayUsermod : public Usermod {
      * to wake up the screen.
      */
     bool wakeDisplay() {
-      if (type == NONE || !enabled) return false;
+      if (!typeOK || !enabled) return false;
       if (displayTurnedOff) {
         unsigned long now = millis();
         while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
@@ -1047,20 +1049,34 @@ class FourLineDisplayUsermod : public Usermod {
       oappend(SET_F("addOption(dd,'SSD1305 128x64',5);"));
       oappend(SET_F("addOption(dd,'SSD1306 SPI',6);"));
       oappend(SET_F("addOption(dd,'SSD1306 SPI 128x64',7);"));
+      bool isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64);
       // WLEDMM add defaults
       oappend(SET_F("addInfo('4LineDisplay:pin[]',0,'','I2C/SPI CLK');"));
     #ifdef FLD_PIN_SCL
       oappend(SET_F("xOption('4LineDisplay:pin[]',0,' ⎌',")); oappendi(FLD_PIN_SCL); oappend(");"); 
     #endif
-      oappend(SET_F("rOption('4LineDisplay:pin[]',0,'use global (")); oappendi(i2c_scl); oappend(")',-1);"); 
+      if (isSPI) {
+        oappend(SET_F("rOption('4LineDisplay:pin[]',0,'use global (")); oappendi(spi_sclk); oappend(")',-1);"); 
+      } else {
+        oappend(SET_F("rOption('4LineDisplay:pin[]',0,'use global (")); oappendi(i2c_scl); oappend(")',-1);"); 
+      }
       oappend(SET_F("addInfo('4LineDisplay:pin[]',1,'','I2C/SPI DTA');"));
     #ifdef FLD_PIN_SDA
       oappend(SET_F("xOption('4LineDisplay:pin[]',1,' ⎌',")); oappendi(FLD_PIN_SDA); oappend(");"); 
     #endif
-      oappend(SET_F("rOption('4LineDisplay:pin[]',1,'use global (")); oappendi(i2c_sda); oappend(")',-1);"); 
+      if (isSPI) {
+        oappend(SET_F("rOption('4LineDisplay:pin[]',1,'use global (")); oappendi(spi_mosi); oappend(")',-1);"); 
+      } else {
+        oappend(SET_F("rOption('4LineDisplay:pin[]',1,'use global (")); oappendi(i2c_sda); oappend(")',-1);"); 
+      }
       oappend(SET_F("addInfo('4LineDisplay:pin[]',2,'','SPI CS');"));
       oappend(SET_F("addInfo('4LineDisplay:pin[]',3,'','SPI DC');"));
       oappend(SET_F("addInfo('4LineDisplay:pin[]',4,'','SPI RST');"));
+
+      //WLEDMM add errorMessage to um settings
+      if (strcmp(errorMessage, "") != 0) {
+        oappend(SET_F("addInfo('errorMessage', 0, '<i>error: ")); oappend(SET_F(errorMessage)); oappend("!</i>');");
+      }
     }
 
     /*
@@ -1167,9 +1183,7 @@ class FourLineDisplayUsermod : public Usermod {
           bool isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64);
           if (isSPI) {
             pinManager.deallocateMultiplePins((const uint8_t *)(&oldPin[2]), 3, po);
-            uint8_t hw_sclk = spi_sclk;
-            uint8_t hw_mosi = spi_mosi;
-            bool isHW = (oldPin[0]==hw_sclk && oldPin[1]==hw_mosi);
+            bool isHW = (oldPin[0]==spi_sclk && oldPin[1]==spi_mosi);
             if (isHW) po = PinOwner::HW_SPI;
           } else {
             uint8_t hw_scl = i2c_scl;

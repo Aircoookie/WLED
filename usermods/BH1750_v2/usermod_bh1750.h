@@ -223,10 +223,10 @@ public:
   void appendConfigData() {
     oappend(SET_F("addHB('")); oappend(SET_F(_name)); oappend("');");
 
-    oappend(SET_F("addInfo('BH1750:pin[]',1,'','I2C SDA');"));
-    oappend(SET_F("rOption('BH1750:pin[]',1,'use global (")); oappendi(i2c_sda); oappend(")',-1);"); 
     oappend(SET_F("addInfo('BH1750:pin[]',0,'','I2C SCL');"));
     oappend(SET_F("rOption('BH1750:pin[]',0,'use global (")); oappendi(i2c_scl); oappend(")',-1);"); 
+    oappend(SET_F("addInfo('BH1750:pin[]',1,'','I2C SDA');"));
+    oappend(SET_F("rOption('BH1750:pin[]',1,'use global (")); oappendi(i2c_sda); oappend(")',-1);"); 
   }    
 
   // (called from set.cpp) stores persistent properties to cfg.json
@@ -240,7 +240,10 @@ public:
     top[FPSTR(_HomeAssistantDiscovery)] = HomeAssistantDiscovery;
     top[FPSTR(_offset)] = offset;
     JsonArray io_pin = top.createNestedArray(F("pin"));
-    for (byte i=0; i<2; i++) io_pin.add(ioPin[i]);
+    //WLEDMM: Only save if not same as global
+    io_pin.add((ioPin[0]==i2c_scl)?-1:ioPin[0]);
+    io_pin.add((ioPin[1]==i2c_sda)?-1:ioPin[1]);
+
     // top[F("help4Pins")] = F("SCL,SDA"); // help for Settings page
 
     DEBUG_PRINTLN(F("BH1750 config saved."));

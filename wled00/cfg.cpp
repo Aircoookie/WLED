@@ -311,8 +311,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     #endif
     Wire.begin();
   } else {
-    i2c_sda = -1;
-    i2c_scl = -1;
+    Serial.printf("pinmgr not success i2c %d %d\n", i2c_sda, i2c_scl);
   }
   JsonArray hw_if_spi = hw[F("if")][F("spi-pin")];
   CJSON(spi_mosi, hw_if_spi[0]);
@@ -326,9 +325,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     SPI.begin();
     #endif
   } else {
-    spi_mosi = -1;
-    spi_miso = -1;
-    spi_sclk = -1;
+    Serial.printf("pinmgr not success spi %d %d %d\n", spi_mosi, spi_miso, spi_sclk);
   }
 
   //int hw_status_pin = hw[F("status")]["pin"]; // -1
