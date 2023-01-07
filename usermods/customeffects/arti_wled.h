@@ -3,6 +3,7 @@
    @file    arti_wled.h
    @date    20220818
    @author  Ewoud Wijma
+   @Copyright (c) 2023 Ewoud Wijma
    @repo    https://github.com/ewoudwijma/ARTI
  */
 

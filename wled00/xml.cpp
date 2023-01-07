@@ -465,7 +465,7 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
     sappend('v',SET_F("IT"),irEnabled);
     sappend('c',SET_F("MSO"),!irApplyToAllSelected);
     #if !defined(WLED_DISABLE_INFRARED)
-    oappend(SET_F("hideNoIR();"));  // hide "not compiled in" message
+    oappend(SET_F("hideNoIR();"));  // WLEDMM hide "not compiled in" message
     #endif
   }
 

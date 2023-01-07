@@ -1,3 +1,12 @@
+/*
+   @title   Usermod Custom Effects (CE)
+   @file    usermod_v2_customeffects.h
+   @date    20220818
+   @author  Ewoud Wijma
+   @Copyright (c) 2023 Ewoud Wijma
+   @repo    https://github.com/ewoudwijma/ARTI
+ */
+
 #pragma once
 
 #include "wled.h"
@@ -16,7 +25,7 @@ uint16_t mode_customEffect(void) {
   static char previousEffect[charLength];
   if (SEGENV.call == 0) {
     strcpy(previousEffect, ""); //force init
-    SEGMENT.fill(BLACK); //in case not all leds used e.g. when using expand 1d Circles. Tbd: fill black should never be used to allow for blends/transitions
+    SEGMENT.fill(BLACK); //in case not all leds used e.g. when using expand 1d Circle. Tbd: fill black should never be used to allow for blends/transitions
   }
 
   char currentEffect[charLength];

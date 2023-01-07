@@ -12,7 +12,7 @@
     function H(){window.open("https://mm.kno.wled.ge/features/settings/#led-settings");}
 		function B(){window.open("/settings","_self");}
     function gId(n){return d.getElementById(n);}
-    function hideNoIR(){gId("irOnOff2").style.display="none";}
+    function hideNoIR(){gId("irOnOff2").style.display="none";} //WLEDMM
     function off(n){d.getElementsByName(n)[0].value = -1;}
     // https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
     function loadJS(FILE_URL, async = true) {
@@ -608,7 +608,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
     Make a segment for each output: <input type="checkbox" name="MS"><br>
     Custom bus start indices: <input type="checkbox" onchange="tglSi(this.checked)" id="si"><br>
     Use global LED buffer: <input type="checkbox" name="LD"><br>
-    <i>Recommended for overlapping segments (0.13 style)</i><br>
+    <i>WLEDMM: Recommended for overlapping segments (0.13 style)</i><br>
     <hr class="sml">
     <div id="color_order_mapping">
       Color Order Override:
@@ -621,7 +621,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
     <div id="btns"></div>
     Disable internal pull-up/down: <input type="checkbox" name="IP"><br>
     Touch threshold: <input type="number" class="s" min="0" max="100" name="TT" required><br>
-    <div id="irOnOff2">
+    <div id="irOnOff2"> <!--WLEDMM-->
       <em style="color:darkorange">This firmware build does not include IR Remote support. <br></em>
     </div>    
     IR GPIO: <input type="number" min="-1" max="48" name="IR" onchange="UI()" class="xs"><select name="IT" onchange="UI()">
