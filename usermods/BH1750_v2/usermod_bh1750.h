@@ -221,7 +221,8 @@ public:
   }
 
   void appendConfigData() {
-    oappend(SET_F("addInfo('BH1750:help',0,'<button onclick=\"location.href=&quot;https://mm.kno.wled.ge/usermods/BH1750&quot;\" type=\"button\">?</button>');"));
+    oappend(SET_F("addHB('")); oappend(SET_F(_name)); oappend("');");
+
     oappend(SET_F("addInfo('BH1750:pin[]',1,'','I2C SDA');"));
     oappend(SET_F("rOption('BH1750:pin[]',1,'use global (")); oappendi(i2c_sda); oappend(")',-1);"); 
     oappend(SET_F("addInfo('BH1750:pin[]',0,'','I2C SCL');"));

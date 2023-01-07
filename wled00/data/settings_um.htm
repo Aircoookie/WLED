@@ -228,6 +228,11 @@
 			if (txt2!="") obj[el].insertAdjacentHTML('beforebegin', txt2 + '&nbsp;');  //add pre texts
 		}
 	}
+	// add Help Button
+	function addHB(um)
+	{
+		addInfo(um + ':help',0,'<button onclick=\"location.href=&quot;https://mm.kno.wled.ge/usermods/' + um + '&quot;\" type=\"button\">?</button>')
+	}
 	// load settings and insert values into DOM
 	function ldS() {
 		var url = (loc?`http://${locip}`:'') + '/cfg.json';

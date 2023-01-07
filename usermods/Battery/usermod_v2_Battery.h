@@ -378,7 +378,8 @@ class UsermodBattery : public Usermod
 
     void appendConfigData()
     {
-      oappend(SET_F("addInfo('Battery:help',0,'<button onclick=\"location.href=&quot;https://mm.kno.wled.ge/usermods/Battery&quot;\" type=\"button\">?</button>');"));
+      oappend(SET_F("addHB('")); oappend(SET_F(_name)); oappend("');");
+
       oappend(SET_F("addInfo('Battery:min-voltage', 1, 'v');"));
       oappend(SET_F("addInfo('Battery:max-voltage', 1, 'v');"));
       oappend(SET_F("addInfo('Battery:capacity', 1, 'mAh');"));

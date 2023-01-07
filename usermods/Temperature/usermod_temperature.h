@@ -306,7 +306,7 @@ class UsermodTemperature : public Usermod {
     //}
 
     void appendConfigData() {
-      oappend(SET_F("addInfo('Temperature:help',0,'<button onclick=\"location.href=&quot;https://mm.kno.wled.ge/usermods/Temperature&quot;\" type=\"button\">?</button>');"));
+      oappend(SET_F("addHB('")); oappend(SET_F(_name)); oappend("');");
     }
 
     /**
