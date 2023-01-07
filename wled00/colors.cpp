@@ -91,7 +91,7 @@ void colorKtoRGB(uint16_t kelvin, byte* rgb) //white spectrum to rgb, calc
     r = round(329.698727446 * pow((temp - 60), -0.1332047592));
     g = round(288.1221695283 * pow((temp - 60), -0.0755148492));
     b = 255;
-  } 
+  }
   //g += 12; //mod by Aircoookie, a bit less accurate but visibly less pinkish
   rgb[0] = (uint8_t) constrain(r, 0, 255);
   rgb[1] = (uint8_t) constrain(g, 0, 255);
@@ -194,7 +194,7 @@ void colorFromDecOrHexString(byte* rgb, char* in)
   if (in[0] == 0) return;
   char first = in[0];
   uint32_t c = 0;
-  
+
   if (first == '#' || first == 'h' || first == 'H') //is HEX encoded
   {
     c = strtoul(in +1, NULL, 16);

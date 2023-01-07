@@ -99,7 +99,7 @@ void handleImprovPacket() {
               uint8_t improvState = 0x02; //authorized
               if (WLED_WIFI_CONFIGURED) improvState = 0x03; //provisioning
               if (Network.isConnected()) improvState = 0x04; //provisioned
-              sendImprovStateResponse(improvState, false); 
+              sendImprovStateResponse(improvState, false);
               if (improvState == 0x04) sendImprovRPCResponse(ImprovRPCType::Request_State);
               break;
             }
@@ -166,7 +166,7 @@ void sendImprovRPCResponse(byte commandId) {
     out[11] = len;
     out[10] = 1 + len;
     out[8] = 3 + len; //RPC command type + data len + url len + url
-    packetLen = 13 + len; 
+    packetLen = 13 + len;
   }
 
   uint8_t checksum = 0;

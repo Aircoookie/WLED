@@ -172,7 +172,7 @@ void publishMqtt();
 void handleTime();
 void handleNetworkTime();
 void sendNTPPacket();
-bool checkNTPResponse();    
+bool checkNTPResponse();
 void updateLocalTime();
 void getTimeString(char* out);
 bool checkCountdown();
@@ -202,7 +202,7 @@ inline bool applyTemporaryPreset() {return applyPreset(255);};
 void savePreset(byte index, const char* pname = nullptr, JsonObject saveobj = JsonObject());
 inline void saveTemporaryPreset() {savePreset(255);};
 void deletePreset(byte index);
-bool getPresetName(byte index, String& name); 
+bool getPresetName(byte index, String& name);
 
 //set.cpp
 bool isAsterisksOnly(const char* str, byte maxLen);
