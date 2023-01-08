@@ -47,6 +47,9 @@ For example "H:m" (default)
 - Y - 2021 year
 - : for a colon
 
+### Remove preceding zero of hours
+Remove o not remove preceding zero of hour digits
+
 ### LED-Numbers
 - LED-Numbers-Hours
 - LED-Numbers-Minutes
