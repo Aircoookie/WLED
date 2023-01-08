@@ -1,5 +1,5 @@
-// force the compiler to show a warning to confirm that this file is included
-#warning **** Included USERMOD_BH1750 ****
+// force the compiler to show a warning to confirm that this file is included WLEDMM: commented this warning as we want serious warnings ;-)
+// #warning **** Included USERMOD_BH1750 ****
 
 #pragma once
 

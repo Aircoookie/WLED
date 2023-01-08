@@ -119,13 +119,10 @@ class MPU6050Driver : public Usermod {
     void setup() {
     // WLEDMM begin
       USER_PRINTLN(F("mpu setup"));
-      int8_t hw_scl = i2c_scl;
-      int8_t hw_sda = i2c_sda;
-
-      PinManagerPinType pins[2] = { { hw_scl, true }, { hw_sda, true } };
-      if ((hw_scl < 0) || (hw_sda < 0)) {
+      PinManagerPinType pins[2] = { { i2c_scl, true }, { i2c_sda, true } };
+      if ((i2c_scl < 0) || (i2c_sda < 0)) {
         //enabled = false;
-        USER_PRINTF("mpu6050: warning - ivalid I2C pins: sda=%d scl=%d\n", hw_sda, hw_scl);
+        USER_PRINTF("mpu6050: warning - ivalid I2C pins: sda=%d scl=%d\n", i2c_sda, i2c_scl);
         //return;
       }
 
@@ -133,7 +130,7 @@ class MPU6050Driver : public Usermod {
 
       if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) { 
         enabled = false;
-        USER_PRINTF("mpu6050: failed to allocate I2C sda=%d scl=%d\n", hw_sda, hw_scl);
+        USER_PRINTF("mpu6050: failed to allocate I2C sda=%d scl=%d\n", i2c_sda, i2c_scl);
         return;
       }
     // WLEDMM end

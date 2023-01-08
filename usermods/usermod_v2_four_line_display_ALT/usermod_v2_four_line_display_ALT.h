@@ -1186,9 +1186,7 @@ class FourLineDisplayUsermod : public Usermod {
             bool isHW = (oldPin[0]==spi_sclk && oldPin[1]==spi_mosi);
             if (isHW) po = PinOwner::HW_SPI;
           } else {
-            uint8_t hw_scl = i2c_scl;
-            uint8_t hw_sda = i2c_sda;
-            bool isHW = (oldPin[0]==hw_scl && oldPin[1]==hw_sda);
+            bool isHW = (oldPin[0]==i2c_scl && oldPin[1]==i2c_sda);
             if (isHW) po = PinOwner::HW_I2C;
           }
           pinManager.deallocateMultiplePins((const uint8_t *)oldPin, 2, po);

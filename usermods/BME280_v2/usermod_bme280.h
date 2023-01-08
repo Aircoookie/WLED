@@ -1,5 +1,5 @@
-// force the compiler to show a warning to confirm that this file is included
-#warning **** Included USERMOD_BME280 version 2.0 ****
+// force the compiler to show a warning to confirm that this file is included  WLEDMM: commented this warning as we want serious warnings ;-)
+// #warning **** Included USERMOD_BME280 version 2.0 ****
 
 #pragma once
 
