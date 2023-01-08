@@ -577,7 +577,8 @@ bool PinManagerClass::joinWire(int8_t pinSDA, int8_t pinSCL) {
     USER_PRINTLN(F("PIN Manager: warning - wire.setPins failed!"));
   }
 
-  wireIsOK = Wire.begin();  // this will fail if wire is already running
+  //wireIsOK = Wire.begin();  // this will fail if wire is already running
+  Wire.begin();  // returns void on 8266
 
   if (wireIsOK == false) {
     USER_PRINTLN(F("PIN Manager: warning - wire.begin failed!"));
