@@ -72,7 +72,7 @@
 // Arduino Wire library is required if I2Cdev I2CDEV_ARDUINO_WIRE implementation
 // is used in I2Cdev.h
 #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
-    #include "Wire.h"
+    //#include "Wire.h"        // WLEDMM not necessary
 #endif
 
 // ================================================================
@@ -127,20 +127,23 @@ class MPU6050Driver : public Usermod {
       }
 
       if (pins[1].pin < 0 || pins[0].pin < 0)  { enabled=false; dmpReady = false; return; }  //WLEDMM bugfix - ensure that "final" GPIO are valid and no "-1" sneaks trough
+      //if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) {       
 
-      if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) { 
+      // WLEDMM join I2C HW wire
+      if (!pinManager.joinWire()) {
         enabled = false;
+        dmpReady = false;
         USER_PRINTF("mpu6050: failed to allocate I2C sda=%d scl=%d\n", i2c_sda, i2c_scl);
         return;
       }
-    // WLEDMM end
+      // WLEDMM end
 
       // join I2C bus (I2Cdev library doesn't do this automatically)
       #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
 #if defined(ARDUINO_ARCH_ESP32)
-      Wire.begin(pins[1].pin, pins[0].pin);        // WLEDMM fix - need to use proper pins, in case that Wire was not started yet. Call will silently fail if Wire is initialized already.
+      //Wire.begin(pins[1].pin, pins[0].pin);        // WLEDMM fix - need to use proper pins, in case that Wire was not started yet. Call will silently fail if Wire is initialized already.
 #else
-      Wire.begin();  // WLEDMM - i2c pins on 8266 are fixed.
+      //Wire.begin();  // WLEDMM - i2c pins on 8266 are fixed.
 #endif
 
           Wire.setClock(400000); // 400kHz I2C clock. Comment this line if having compilation difficulties

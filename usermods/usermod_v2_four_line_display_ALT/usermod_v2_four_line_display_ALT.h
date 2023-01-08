@@ -348,8 +348,14 @@ class FourLineDisplayUsermod : public Usermod {
         // isHW = true;
         if (isHW) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
         PinManagerPinType pins[2] = { {ioPin[0], true }, { ioPin[1], true } };
+
         if (ioPin[0] < 0 || ioPin[1] < 0)  { typeOK=false; strcpy(errorMessage, PSTR("I2C No Pins defined")); return; }  //WLEDMM bugfix - ensure that "final" GPIO are valid
-        if (!pinManager.allocateMultiplePins(pins, 2, po)) { typeOK=false; strcpy(errorMessage, PSTR("I2C Alloc pins failed")); return; }
+
+        if (isHW) {
+          if (!pinManager.joinWire(ioPin[1], ioPin[0])) { typeOK=false; strcpy(errorMessage, PSTR("I2C init failed")); return; }  // WLEDMM join the HW bus
+        } else {
+          if (!pinManager.allocateMultiplePins(pins, 2, po)) { typeOK=false; strcpy(errorMessage, PSTR("I2C Alloc pins failed")); return; } // WLEDMM use software bus
+        }
       }
 
       DEBUG_PRINTLN(F("Allocating display."));
@@ -462,7 +468,7 @@ class FourLineDisplayUsermod : public Usermod {
      */
     void loop() {
     #ifndef ARDUINO_ARCH_ESP32
-      if (!enabled || strip.isUpdating()) return;
+      if (!enabled || !typeOK || strip.isUpdating()) return;
       unsigned long now = millis();
       if (now < nextUpdate) return;
       nextUpdate = now + ((displayTurnedOff && clockMode && showSeconds) ? 1000 : refreshRate);

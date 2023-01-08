@@ -139,10 +139,15 @@ public:
     
 #if defined(ARDUINO_ARCH_ESP32)
       if (pins[1].pin < 0 || pins[0].pin < 0)  { sensorFound=false; enabled=false; return; }  //WLEDMM bugfix - ensure that "final" GPIO are valid and no "-1" sneaks trough
-      Wire.begin(pins[1].pin, pins[0].pin);  // WLEDMM this might silently fail, which is OK as it just means that I2C bus is already running.
+      //Wire.begin(pins[1].pin, pins[0].pin);  // WLEDMM this might silently fail, which is OK as it just means that I2C bus is already running.
 #else
-      Wire.begin();  // WLEDMM - i2c pins on 8266 are fixed.
+      //Wire.begin();  // WLEDMM - i2c pins on 8266 are fixed.
 #endif
+    if (!pinManager.joinWire()) {  // WLEDMM - this allocates global I2C pins, then starts Wire - if not started previously
+      sensorFound = false;
+      enabled = false;
+      return;
+    }
 
     sensorFound = lightMeter.begin();
     initDone = true;
@@ -222,11 +227,11 @@ public:
 
   void appendConfigData() {
     oappend(SET_F("addHB('")); oappend(SET_F(_name)); oappend("');");
-
-    oappend(SET_F("addInfo('BH1750:pin[]',0,'','I2C SCL');"));
-    oappend(SET_F("rOption('BH1750:pin[]',0,'use global (")); oappendi(i2c_scl); oappend(")',-1);"); 
-    oappend(SET_F("addInfo('BH1750:pin[]',1,'','I2C SDA');"));
-    oappend(SET_F("rOption('BH1750:pin[]',1,'use global (")); oappendi(i2c_sda); oappend(")',-1);"); 
+    // WLEDMM this usermod can ONLY use HW_I2C - so always use globals
+    //oappend(SET_F("addInfo('BH1750:pin[]',0,'','I2C SCL');"));
+    //oappend(SET_F("rOption('BH1750:pin[]',0,'use global (")); oappendi(i2c_scl); oappend(")',-1);"); 
+    //oappend(SET_F("addInfo('BH1750:pin[]',1,'','I2C SDA');"));
+    //oappend(SET_F("rOption('BH1750:pin[]',1,'use global (")); oappendi(i2c_sda); oappend(")',-1);"); 
   }    
 
   // (called from set.cpp) stores persistent properties to cfg.json
@@ -239,10 +244,12 @@ public:
     top[FPSTR(_minReadInterval)] = minReadingInterval;
     top[FPSTR(_HomeAssistantDiscovery)] = HomeAssistantDiscovery;
     top[FPSTR(_offset)] = offset;
-    JsonArray io_pin = top.createNestedArray(F("pin"));
+
+    // WLEDMM this usermod can ONLY use HW_I2C - so always use globals
+    //JsonArray io_pin = top.createNestedArray(F("pin"));
     //WLEDMM: avoid global pin hijacking
-    io_pin.add((ioPin[0]==i2c_scl)?-1:ioPin[0]);
-    io_pin.add((ioPin[1]==i2c_sda)?-1:ioPin[1]);
+    //io_pin.add((ioPin[0]==i2c_scl)?-1:ioPin[0]);
+    //io_pin.add((ioPin[1]==i2c_sda)?-1:ioPin[1]);
 
     // top[F("help4Pins")] = F("SCL,SDA"); // help for Settings page
 
@@ -252,7 +259,8 @@ public:
   // called before setup() to populate properties from values stored in cfg.json
   bool readFromConfig(JsonObject &root)
   {
-    int8_t newPin[2]; for (byte i=0; i<2; i++) newPin[i] = ioPin[i]; // prepare to note changed pins
+    int8_t newPin[2] = {-1, -1}; // WLEDMM this usermod can ONLY use HW_I2C - so always use globals
+    //for (byte i=0; i<2; i++) newPin[i] = ioPin[i]; // prepare to note changed pins
 
     // we look for JSON object.
     JsonObject top = root[FPSTR(_name)];
@@ -270,7 +278,8 @@ public:
     configComplete &= getJsonValue(top[FPSTR(_minReadInterval)], minReadingInterval, 500); //ms
     configComplete &= getJsonValue(top[FPSTR(_HomeAssistantDiscovery)], HomeAssistantDiscovery, false);
     configComplete &= getJsonValue(top[FPSTR(_offset)], offset, 1);
-    for (byte i=0; i<2; i++) configComplete &= getJsonValue(top[F("pin")][i], newPin[i], ioPin[i]);
+    // WLEDMM this usermod can ONLY use HW_I2C - so always use globals
+    //for (byte i=0; i<2; i++) configComplete &= getJsonValue(top[F("pin")][i], newPin[i], ioPin[i]);
 
     DEBUG_PRINT(FPSTR(_name));
     if (!initDone) {
@@ -285,6 +294,7 @@ public:
       if (pinsChanged) { //if pins changed, deallocate old pins and allocate new ones
         PinOwner po = PinOwner::UM_BH1750;
         if (ioPin[0]==i2c_scl && ioPin[1]==i2c_sda) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
+        if (ioPin[0]==-1 && ioPin[1]==-1) po = PinOwner::HW_I2C;            // WLEDMM global HW I2C bus pins
         pinManager.deallocateMultiplePins((const uint8_t *)ioPin, 2, po);  // deallocate pins
         for (byte i=0; i<2; i++) ioPin[i] = newPin[i];
         setup();
