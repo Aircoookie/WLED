@@ -412,7 +412,9 @@ public:
     top[F("UseCelsius")] = UseCelsius;
     top[F("HomeAssistantDiscovery")] = HomeAssistantDiscovery;
     JsonArray io_pin = top.createNestedArray(F("pin"));
-    for (byte i=0; i<2; i++) io_pin.add(ioPin[i]);
+    //WLEDMM: avoid global pin hijacking
+    io_pin.add((ioPin[0]==i2c_scl)?-1:ioPin[0]);
+    io_pin.add((ioPin[1]==i2c_sda)?-1:ioPin[1]);
     top[F("help4Pins")] = F("SCL,SDA"); // help for Settings page
     DEBUG_PRINTLN(F("BME280 config saved."));
   }

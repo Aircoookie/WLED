@@ -240,7 +240,7 @@ public:
     top[FPSTR(_HomeAssistantDiscovery)] = HomeAssistantDiscovery;
     top[FPSTR(_offset)] = offset;
     JsonArray io_pin = top.createNestedArray(F("pin"));
-    //WLEDMM: Only save if not same as global
+    //WLEDMM: avoid global pin hijacking
     io_pin.add((ioPin[0]==i2c_scl)?-1:ioPin[0]);
     io_pin.add((ioPin[1]==i2c_sda)?-1:ioPin[1]);
 

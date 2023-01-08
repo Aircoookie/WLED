@@ -639,6 +639,7 @@ class FourLineDisplayUsermod : public Usermod {
       JsonObject top   = root.createNestedObject(FPSTR(_name));
       top[FPSTR(_enabled)]       = enabled;
       JsonArray io_pin = top.createNestedArray("pin");
+      #warning WLEDMM: this causes global pin hijacking
       for (byte i=0; i<5; i++) io_pin.add(ioPin[i]);
       top["help4Pins"]           = F("Clk,Data,CS,DC,RST"); // help for Settings page
       top["type"]                = type;
