@@ -50,6 +50,11 @@
 // WLEDMM: make sure that the "standard" Wire object is used
 #define I2CDEV_IMPLEMENTATION       I2CDEV_ARDUINO_WIRE
 
+// WLEDMM avoid stupid warnings
+#undef DEBUG_PRINT
+#undef DEBUG_PRINTLN
+#undef DEBUG_PRINTF
+
 #include <I2Cdev.h>
 
 #include <MPU6050_6Axis_MotionApps20.h>
