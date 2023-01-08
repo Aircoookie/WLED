@@ -433,10 +433,10 @@
 #endif
 // defaults for 1st I2C on ESP32 (Wire global)
 #ifndef HW_PIN_SCL
-  #define HW_PIN_SCL SCL
+  #define HW_PIN_SCL SCL //WLEDMM to check if -1 is better
 #endif
 #ifndef HW_PIN_SDA
-  #define HW_PIN_SDA SDA
+  #define HW_PIN_SDA SDA //WLEDMM to check if -1 is better
 #endif
 
 // HW_PIN_SCLKSPI & HW_PIN_MOSISPI & HW_PIN_MISOSPI are used for information in usermods settings page and usermods themselves
@@ -444,7 +444,7 @@
 #if defined(SPISCLKPIN) && !defined(HW_PIN_CLOCKSPI)
   #define HW_PIN_CLOCKSPI SPISCLKPIN
 #endif
-#if defined(SPIMOSIPIN) && !defined(HW_PIN_MOSISPI)
+#if defined(SPIMOSIPIN) && !defined(HW_PIN_MOSISPI) //WLEDMM not HW_PIN_DATASPI???
   #define HW_PIN_MOSISPI SPIMOSIPIN
 #endif
 #if defined(SPIMISOPIN) && !defined(HW_PIN_MISOSPI)
@@ -462,13 +462,13 @@
 #endif
 // defaults for VSPI on ESP32 (SPI global, SPI.cpp) as HSPI is used by WLED (bus_wrapper.h)
 #ifndef HW_PIN_CLOCKSPI
-  #define HW_PIN_CLOCKSPI SCK
+  #define HW_PIN_CLOCKSPI SCK //WLEDMM to check if -1 is better
 #endif
 #ifndef HW_PIN_DATASPI
-  #define HW_PIN_DATASPI MOSI
+  #define HW_PIN_DATASPI MOSI //WLEDMM to check if -1 is better
 #endif
 #ifndef HW_PIN_MISOSPI
-  #define HW_PIN_MISOSPI MISO
+  #define HW_PIN_MISOSPI MISO //WLEDMM to check if -1 is better
 #endif
 
 // WLEDMM: IRAM_ATTR for 8266 causes error: section `.text1' will not fit in region `iram1_0_seg'

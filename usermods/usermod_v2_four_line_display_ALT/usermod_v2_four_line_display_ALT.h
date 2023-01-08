@@ -112,7 +112,7 @@ class FourLineDisplayUsermod : public Usermod {
     bool initDone = false;
     volatile bool drawing = false;
 
-    char errorMessage[100] = "No errors"; //WLEDMM: show error in um settings if occurred
+    char errorMessage[100] = ""; //WLEDMM: show error in um settings if occurred
 
     // HW interface & configuration
     U8X8 *u8x8 = nullptr;           // pointer to U8X8 display object
@@ -231,7 +231,7 @@ class FourLineDisplayUsermod : public Usermod {
       u8x8->draw2x2Glyph(col, row, glyph);
     }
     uint8_t getCols() {
-      if (type==NONE || !enabled) return 0;
+      if (!typeOK || !enabled) return 0;
       return u8x8->getCols();
     }
     void clear() {
@@ -1075,7 +1075,7 @@ class FourLineDisplayUsermod : public Usermod {
 
       //WLEDMM add errorMessage to um settings
       if (strcmp(errorMessage, "") != 0) {
-        oappend(SET_F("addInfo('errorMessage', 0, '<i>error: ")); oappend(SET_F(errorMessage)); oappend("!</i>');");
+        oappend(SET_F("addInfo('errorMessage', 0, '<i>error: ")); oappend(SET_F(errorMessage)); oappend("! Correct and reboot</i>');");
       }
     }
 

@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2301081
+#define VERSION 2301082
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -679,35 +679,35 @@ WLED_GLOBAL uint16_t ledMaps _INIT(0); // bitfield representation of available l
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
 
 // global I2C SDA pin (used for usermods)
-#ifndef I2CSDAPIN
+#ifndef HW_PIN_SDA //WLEDMM not I2CSDAPIN
 WLED_GLOBAL int8_t i2c_sda  _INIT(-1);
 #else
-WLED_GLOBAL int8_t i2c_sda  _INIT(I2CSDAPIN);
+WLED_GLOBAL int8_t i2c_sda  _INIT(HW_PIN_SDA);
 #endif
 // global I2C SCL pin (used for usermods)
-#ifndef I2CSCLPIN
+#ifndef HW_PIN_SCL //WLEDMM not I2CSCLPIN
 WLED_GLOBAL int8_t i2c_scl  _INIT(-1);
 #else
-WLED_GLOBAL int8_t i2c_scl  _INIT(I2CSCLPIN);
+WLED_GLOBAL int8_t i2c_scl  _INIT(HW_PIN_SCL);
 #endif
 
 // global SPI DATA/MOSI pin (used for usermods)
-#ifndef SPIMOSIPIN
+#ifndef HW_PIN_MOSISPI // WLEDMM not SPIMOSIPIN, what about HW_PIN_DATASPI ????
 WLED_GLOBAL int8_t spi_mosi  _INIT(-1);
 #else
-WLED_GLOBAL int8_t spi_mosi  _INIT(SPIMOSIPIN);
+WLED_GLOBAL int8_t spi_mosi  _INIT(HW_PIN_MOSISPI);
 #endif
 // global SPI DATA/MISO pin (used for usermods)
-#ifndef SPIMISOPIN
+#ifndef HW_PIN_MISOSPI //WLEDMM not SPIMISOPIN
 WLED_GLOBAL int8_t spi_miso  _INIT(-1);
 #else
-WLED_GLOBAL int8_t spi_miso  _INIT(SPIMISOPIN);
+WLED_GLOBAL int8_t spi_miso  _INIT(HW_PIN_MISOSPI);
 #endif
 // global SPI CLOCK/SCLK pin (used for usermods)
-#ifndef SPISCLKPIN
+#ifndef HW_PIN_CLOCKSPI //WLEDMM not SPISCLKPIN
 WLED_GLOBAL int8_t spi_sclk  _INIT(-1);
 #else
-WLED_GLOBAL int8_t spi_sclk  _INIT(SPISCLKPIN);
+WLED_GLOBAL int8_t spi_sclk  _INIT(HW_PIN_CLOCKSPI);
 #endif
 
 // global ArduinoJson buffer
