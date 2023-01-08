@@ -83,8 +83,13 @@ class PinManagerClass {
     uint8_t spiAllocCount : 4; // allow multiple allocation of SPI bus pins but keep track of allocations
   };
 
+  // WLEDMM: central handling of Wire (only for first bus)
+  bool wire0isStarted = false;  // true is wire.begin() was done already
+  int8_t wire0PinSDA = -1;       // GPIO currently in use for SDA 
+  int8_t wire0PinSCL = -1;       // GPIO currently in use for SCL 
+
   public:
-  PinManagerClass() : i2cAllocCount(0), spiAllocCount(0) {}
+  PinManagerClass() : i2cAllocCount(0), spiAllocCount(0), wire0isStarted(false) {}  // WLEDMM: initialize wire0isStarted=false
   // De-allocates a single pin
   bool deallocatePin(byte gpio, PinOwner tag);
   // De-allocates multiple pins but only if all can be deallocated (PinOwner has to be specified)
@@ -107,6 +112,11 @@ class PinManagerClass {
   [[deprecated("Replaced by two-parameter deallocatePin(gpio, ownerTag), for improved debugging")]]
   #endif
   inline void deallocatePin(byte gpio) { deallocatePin(gpio, PinOwner::None); }
+
+  // WLEDMM: central initialization of Wire  (Wire1 not supported yet)
+  bool joinWire();                                          // shortcut - use global pins when no parameters provided
+  bool joinWire(int8_t pinSDA, int8_t pinSCL);              // use this instead of Wire.begin(SDA, SCL)
+  // toDo: may need to add calls for Wire.setClock, Wire.setPins Wire.end 
 
   // will return true for reserved pins
   bool isPinAllocated(byte gpio, PinOwner tag = PinOwner::None);

@@ -309,7 +309,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     #ifdef ESP32
     Wire.setPins(i2c_sda, i2c_scl); // this will fail if Wire is initilised (Wire.begin() called prior)
     #endif
-    Wire.begin();
+    // Wire.begin(); // WLEDMM moved into pinManager
   } else {
     Serial.printf("pinmgr not success for global i2c %d %d\n", i2c_sda, i2c_scl);
   }

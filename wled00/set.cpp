@@ -543,7 +543,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       #ifdef ESP32
       Wire.setPins(i2c_sda, i2c_scl); // this will fail if Wire is initilised (Wire.begin() called)
       #endif
-      Wire.begin();
+      // Wire.begin(); // WLEDMM moved into pinManager
     } else {
       // there is no Wire.end()
       DEBUG_PRINTLN(F("Could not allocate I2C pins."));

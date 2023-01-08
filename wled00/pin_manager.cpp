@@ -513,6 +513,89 @@ bool PinManagerClass::isPinAllocated(byte gpio, PinOwner tag)
   return bitRead(pinAlloc[by], bi);
 }
 
+//
+// WLEDMM: central handling of I2C startup (global Wire #0)
+//
+
+bool PinManagerClass::joinWire() {    // shortcut in case no parameters provided
+  #ifdef ARDUINO_ARCH_ESP32
+    // ESP32 - i2c pins can be mapped to any GPIO
+    return joinWire(i2c_sda, i2c_scl);
+  #else
+    // ESP8266: I2C pins are fixed
+    return joinWire(HW_PIN_SDA, HW_PIN_SCL);
+  #endif
+}
+
+bool PinManagerClass::joinWire(int8_t pinSDA, int8_t pinSCL) {
+  // reject PIN = -1, reject SDA=SCL, reject "forbidden" pins
+  if (  (pinSDA < 0) || (pinSCL < 0) 
+     || (pinSDA == pinSCL) 
+     || !isPinOk(pinSDA, true) 
+     || !isPinOk(pinSCL, true)) {
+    DEBUG_PRINT(F("PIN Manager: invalid GPIO for I2C: SDA="));
+    DEBUG_PRINTF("%d, SCL=%d !\n",pinSDA, pinSCL);
+    return(false);
+  } 
+
+  if ((wire0PinSDA < 0) || (wire0PinSCL < 0)) wire0isStarted = false; // this should not happen
+
+  // if wire already started, reject any other GPIO
+  if ((wire0isStarted == true) && 
+      (pinSDA != wire0PinSDA) && (pinSDA != wire0PinSCL) &&       // allow "swapped pins2, i.e. SDA <->SCL
+      (pinSCL != wire0PinSCL) && (pinSCL != wire0PinSDA)) {
+    DEBUG_PRINT(F("PIN Manager: invalid GPIO for I2C: SDA="));
+    DEBUG_PRINTF("%d, SCL=%d. Wire already started with sda=%d and scl=%d!\n",pinSDA, pinSCL, wirePinSDA, wirePinSCL);
+    return(false);
+  }
+
+  // make sure pins are allocated
+  PinManagerPinType pins[2] = {{pinSCL, true}, {pinSDA, true}};
+  if (!allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) {    // this will only FAIL when pins are invalid, or used already for other purposes
+    DEBUG_PRINT(F("PIN Manager: failed to allocate GPIO for I2C: SDA="));
+    DEBUG_PRINTF("%d, SCL=%d !\n",pinSDA, pinSCL);
+    return(false);
+  }
+
+  if(wire0isStarted == true) {
+    DEBUG_PRINTLN(F("PIN Manager: all good, I2C already started, nothing to do :-)"));
+    return(true);
+  }
+
+  // NOW do it - start Wire !!! fire ;-)
+
+  bool wireIsOK = true;
+  #ifdef ARDUINO_ARCH_ESP32         // ESP32 - i2c pins can be mapped to any GPIO
+    wireIsOK = Wire.setPins(pinSDA, pinSCL);   // this will fail if Wire is initialised already (i.e. Wire.begin() called prior)
+  #else // 8266 - I2C pins are fixed
+    if((pinSDA != HW_PIN_SDA) || (pinSCL != HW_PIN_SCL)) {
+      DEBUG_PRINT(F("PIN Manager: warning ESP8266 I2C pins are fixed. please use SDA="));
+      DEBUG_PRINTF("%d, SCL=%d !\n",HW_PIN_SDA, HW_PIN_SCL);
+    }
+  #endif
+  if (wireIsOK == false) {
+    USER_PRINTLN(F("PIN Manager: warning - wire.setPins failed!"));
+  }
+
+  wireIsOK = Wire.begin();  // this will fail if wire is already running
+
+  if (wireIsOK == false) {
+    USER_PRINTLN(F("PIN Manager: warning - wire.begin failed!"));
+  } else {
+    USER_PRINTLN(F("PIN Manager: wire.begin successfull."));
+  }
+
+#ifdef ARDUINO_ARCH_ESP32S3
+  Wire.setTimeOut(50);   // workaround for wire timeout bug on -S3
+  Wire.setClock(400000); // 400kHz I2C clock. Comment this line if having wiring difficulties
+#endif
+
+  wire0isStarted = true;
+  wire0PinSDA = pinSDA;
+  wire0PinSCL = pinSCL;
+  return(true);
+}
+
 /* see https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/api-reference/peripherals/gpio.html
  * The ESP32-S3 chip features 45 physical GPIO pins (GPIO0 ~ GPIO21 and GPIO26 ~ GPIO48). Each pin can be used as a general-purpose I/O
  * Strapping pins: GPIO0, GPIO3, GPIO45 and GPIO46 are strapping pins. For more infomation, please refer to ESP32-S3 datasheet.
