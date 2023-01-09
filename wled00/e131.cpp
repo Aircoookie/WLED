@@ -81,6 +81,9 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
     return;
   }
 
+  // when priority != 0: skip packages with priority != config priority
+  if ((e131Priority != 0 && prio != 0) && prio != e131Priority) return;
+
   #ifdef WLED_ENABLE_DMX
   // does not act on out-of-order packets yet
   if (e131ProxyUniverse > 0 && uni == e131ProxyUniverse) {
@@ -89,12 +92,6 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
     dmx.update();
   }
   #endif
-
-  // ignore packages by priority
-  if (prio != 0) 
-    if (e131Priority != 0)
-      if (prio != e131Priority)
-        return;
 
   // only listen for universes we're handling & allocated memory
   if (uni < e131Universe || uni >= (e131Universe + E131_MAX_UNIVERSE_COUNT)) return;
