@@ -10,6 +10,9 @@
  * \/ \/ \/
  */
 //#include "../usermods/EXAMPLE_v2/usermod_v2_example.h"
+#ifdef USERMOD_TEXT_OVERLAY
+  #include "../usermods/usermod_v2_text_overlay/usermod_v2_text_overlay.h"
+#endif
 
 #ifdef USERMOD_BATTERY
   #include "../usermods/Battery/usermod_v2_Battery.h"
