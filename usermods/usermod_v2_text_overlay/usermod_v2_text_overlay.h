@@ -8,15 +8,15 @@ class TextOverlayUsermod : public Usermod {
     bool enabled = false; //config
     uint16_t scrollStep = 500; //config
     uint8_t fontsize = 1; //config
-    int configColor[3] = {0, 200, 0}; // config
+    uint configColor[3] = {0, 200, 0}; // config
 
     int textColor = 0;
     uint16_t scrollMove = 0;
-    int lastScrollStep = 0;
-    int overlayStart = 0;
+    uint lastScrollStep = 0;
+    uint overlayStart = 0;
         
-    int timeout = 0;
-    int color[3];
+    uint timeout = 0;
+    uint color[3];
     char text[200];
 
   public:
@@ -106,8 +106,8 @@ class TextOverlayUsermod : public Usermod {
       const uint16_t cols = strip.getSegment(segmentId).virtualWidth();
       const uint16_t rows = strip.getSegment(segmentId).virtualHeight();
 
-      int letterWidth;
-      int letterHeight;
+      uint16_t letterWidth;
+      uint16_t letterHeight;
       switch (fontsize) {
         default:
         case 1: letterWidth = 4; letterHeight =  6; break;
@@ -117,8 +117,8 @@ class TextOverlayUsermod : public Usermod {
         case 5: letterWidth = 5; letterHeight = 12; break;
       }
 
-      const int yoffset = map(strip.getSegment(segmentId).intensity, 0, 255, -rows/2, rows/2) + (rows-letterHeight)/2;
-      const int numberOfLetters = strlen(text);
+      const uint16_t yoffset = map(strip.getSegment(segmentId).intensity, 0, 255, -rows/2, rows/2) + (rows-letterHeight)/2;
+      const uint16_t numberOfLetters = strlen(text);
 
       //scroll
       if ((numberOfLetters * letterWidth) > cols) {
