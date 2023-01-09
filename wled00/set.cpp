@@ -554,7 +554,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     #ifdef ESP8266
     // cannot change pins on ESP8266
-    if (hw_mosi_pin >= 0 && hw_mosi_pin != HW_PIN_DATASPI)  hw_mosi_pin = HW_PIN_DATASPI;
+    if (hw_mosi_pin >= 0 && hw_mosi_pin != HW_PIN_MOSISPI)  hw_mosi_pin = HW_PIN_MOSISPI; //WLEDMM renamed from HW_PIN_DATASPI
     if (hw_miso_pin >= 0 && hw_miso_pin != HW_PIN_MISOSPI)  hw_mosi_pin = HW_PIN_MISOSPI;
     if (hw_sclk_pin >= 0 && hw_sclk_pin != HW_PIN_CLOCKSPI) hw_sclk_pin = HW_PIN_CLOCKSPI;
     #endif

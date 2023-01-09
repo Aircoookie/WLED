@@ -33,8 +33,8 @@
 #ifndef FLD_PIN_CLOCKSPI
   #define FLD_PIN_CLOCKSPI spi_sclk
 #endif
-  #ifndef FLD_PIN_DATASPI
-  #define FLD_PIN_DATASPI spi_mosi
+  #ifndef FLD_PIN_MOSISPI //WLEDMM renamed from HW_PIN_DATASPI
+  #define FLD_PIN_MOSISPI spi_mosi
 #endif   
 #ifndef FLD_PIN_CS
   #define FLD_PIN_CS spi_cs
@@ -109,7 +109,7 @@ class FourLineDisplayUsermod : public Usermod {
     int8_t ioPin[5] = {FLD_PIN_SCL, FLD_PIN_SDA, -1, -1, -1};        // I2C pins: SCL, SDA
     uint32_t ioFrequency = 400000;  // in Hz (minimum is 100000, baseline is 400000 and maximum should be 3400000)
     #else
-    int8_t ioPin[5] = {FLD_PIN_CLOCKSPI, FLD_PIN_DATASPI, FLD_PIN_CS, FLD_PIN_DC, FLD_PIN_RESET}; // SPI pins: CLK, MOSI, CS, DC, RST
+    int8_t ioPin[5] = {FLD_PIN_CLOCKSPI, FLD_PIN_MOSISPI, FLD_PIN_CS, FLD_PIN_DC, FLD_PIN_RESET}; // SPI pins: CLK, MOSI, CS, DC, RST
     uint32_t ioFrequency = 1000000;  // in Hz (minimum is 500kHz, baseline is 1MHz and maximum should be 20MHz)
     #endif
     DisplayType type = FLD_TYPE;    // display type

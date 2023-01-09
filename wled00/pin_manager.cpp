@@ -213,9 +213,9 @@ String PinManagerClass::getPinSpecialText(int gpio) {  // special purpose PIN in
       if (gpio == FLD_PIN_SDA) return(F("(default) 4lines disp. I2C SDA"));
       if (gpio == FLD_PIN_SCL) return(F("(default) 4lines disp. I2C SCL"));
     #endif
-    #if defined(FLD_PIN_CLOCKSPI) && defined(FLD_PIN_DATASPI)
+    #if defined(FLD_PIN_CLOCKSPI) && defined(FLD_PIN_MOSISPI) //WLEDMM renamed from HW_PIN_DATASPI
       if (gpio == FLD_PIN_CLOCKSPI) return(F("(default) 4lines disp. SPI SCLK"));
-      if (gpio == FLD_PIN_DATASPI)  return(F("(default) 4lines disp. SPI DATA"));
+      if (gpio == FLD_PIN_MOSISPI)  return(F("(default) 4lines disp. SPI DATA"));
     #endif
     #if defined(FLD_PIN_CS)
       if (gpio == FLD_PIN_CS) return(F("(default) 4lines disp. SPI CS"));

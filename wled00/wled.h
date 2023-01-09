@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2301083
+#define VERSION 2301091
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -692,7 +692,7 @@ WLED_GLOBAL int8_t i2c_scl  _INIT(HW_PIN_SCL);
 #endif
 
 // global SPI DATA/MOSI pin (used for usermods)
-#ifndef HW_PIN_MOSISPI // WLEDMM not SPIMOSIPIN, what about HW_PIN_DATASPI ????
+#ifndef HW_PIN_MOSISPI // WLEDMM not SPIMOSIPIN
 WLED_GLOBAL int8_t spi_mosi  _INIT(-1);
 #else
 WLED_GLOBAL int8_t spi_mosi  _INIT(HW_PIN_MOSISPI);

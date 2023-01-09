@@ -719,8 +719,8 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
       oappend(SET_F("xOption('SCL:pin',1,' ⎌',")); oappendi(HW_PIN_SCL); oappend(");"); 
     #endif
       oappend(SET_F("addInfo('MOSI:pin',0,'', 'MOSI');"));
-    #ifdef HW_PIN_DATASPI
-      oappend(SET_F("xOption('MOSI:pin',1,' ⎌',")); oappendi(HW_PIN_DATASPI); oappend(");"); 
+    #ifdef HW_PIN_MOSISPI //WLEDMM renamed from HW_PIN_DATASPI
+      oappend(SET_F("xOption('MOSI:pin',1,' ⎌',")); oappendi(HW_PIN_MOSISPI); oappend(");"); 
     #endif
       oappend(SET_F("addInfo('MISO:pin',0,'', 'MISO');"));
     #ifdef HW_PIN_MISOSPI

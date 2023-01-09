@@ -418,12 +418,6 @@
 
 // HW_PIN_SCL & HW_PIN_SDA are used for information in usermods settings page and usermods themselves
 // which GPIO pins are actually used in a hardwarea layout (controller board)
-#if defined(I2CSCLPIN) && !defined(HW_PIN_SCL)
-  #define HW_PIN_SCL I2CSCLPIN
-#endif
-#if defined(I2CSDAPIN) && !defined(HW_PIN_SDA)
-  #define HW_PIN_SDA I2CSDAPIN
-#endif
 // you cannot change HW I2C pins on 8266
 #if defined(ESP8266) && defined(HW_PIN_SCL)
   #undef HW_PIN_SCL
@@ -441,21 +435,12 @@
 
 // HW_PIN_SCLKSPI & HW_PIN_MOSISPI & HW_PIN_MISOSPI are used for information in usermods settings page and usermods themselves
 // which GPIO pins are actually used in a hardwarea layout (controller board)
-#if defined(SPISCLKPIN) && !defined(HW_PIN_CLOCKSPI)
-  #define HW_PIN_CLOCKSPI SPISCLKPIN
-#endif
-#if defined(SPIMOSIPIN) && !defined(HW_PIN_MOSISPI) //WLEDMM not HW_PIN_DATASPI???
-  #define HW_PIN_MOSISPI SPIMOSIPIN
-#endif
-#if defined(SPIMISOPIN) && !defined(HW_PIN_MISOSPI)
-  #define HW_PIN_MISOSPI SPIMISOPIN
-#endif
 // you cannot change HW SPI pins on 8266
 #if defined(ESP8266) && defined(HW_PIN_CLOCKSPI)
   #undef HW_PIN_CLOCKSPI
 #endif
-#if defined(ESP8266) && defined(HW_PIN_DATASPI)
-  #undef HW_PIN_DATASPI
+#if defined(ESP8266) && defined(HW_PIN_MOSISPI)  //WLEDMM renamed from HW_PIN_DATASPI
+  #undef HW_PIN_MOSISPI
 #endif
 #if defined(ESP8266) && defined(HW_PIN_MISOSPI)
   #undef HW_PIN_MISOSPI
@@ -464,8 +449,8 @@
 #ifndef HW_PIN_CLOCKSPI
   #define HW_PIN_CLOCKSPI SCK //WLEDMM to check if -1 is better
 #endif
-#ifndef HW_PIN_DATASPI
-  #define HW_PIN_DATASPI MOSI //WLEDMM to check if -1 is better
+#ifndef HW_PIN_MOSISPI  //WLEDMM renamed from HW_PIN_DATASPI
+  #define HW_PIN_MOSISPI MOSI //WLEDMM to check if -1 is better
 #endif
 #ifndef HW_PIN_MISOSPI
   #define HW_PIN_MISOSPI MISO //WLEDMM to check if -1 is better
