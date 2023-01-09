@@ -545,7 +545,7 @@ bool PinManagerClass::joinWire(int8_t pinSDA, int8_t pinSCL) {
       (pinSDA != wire0PinSDA) && (pinSDA != wire0PinSCL) &&       // allow "swapped pins2, i.e. SDA <->SCL
       (pinSCL != wire0PinSCL) && (pinSCL != wire0PinSDA)) {
     DEBUG_PRINT(F("PIN Manager: invalid GPIO for I2C: SDA="));
-    DEBUG_PRINTF("%d, SCL=%d. Wire already started with sda=%d and scl=%d!\n",pinSDA, pinSCL, wirePinSDA, wirePinSCL);
+    DEBUG_PRINTF("%d, SCL=%d. Wire already started with sda=%d and scl=%d!\n",pinSDA, pinSCL, wire0PinSDA, wire0PinSCL);
     return(false);
   }
 
