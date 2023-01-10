@@ -174,18 +174,18 @@ void Segment::deallocateData() {
   _dataLen = 0;
 }
 
-/** 
+/**
   * If reset of this segment was requested, clears runtime
   * settings of this segment.
   * Must not be called while an effect mode function is running
-  * because it could access the data buffer and this method 
+  * because it could access the data buffer and this method
   * may free that data buffer.
   */
 void Segment::resetIfRequired() {
   if (reset) {
     if (leds && !Segment::_globalLeds) { free(leds); leds = nullptr; }
     //if (_t) { delete _t; _t = nullptr; transitional = false; }
-    next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0; 
+    next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0;
     reset = false; // setOption(SEG_OPTION_RESET, false);
   }
 }
@@ -574,6 +574,20 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
             int y = roundf(cos_t(rad) * i);
             setPixelColorXY(x, y, col);
           }
+          // Bresenham’s Algorithm
+          //int d = 3 - (2*i);
+          //int y = i, x = 0;
+          //while (y >= x) {
+          //  setPixelColorXY(x, y, col);
+          //  setPixelColorXY(y, x, col);
+          //  x++;
+          //  if (d > 0) {
+          //    y--;
+          //    d += 4 * (x - y) + 10;
+          //  } else {
+          //    d += 4 * x + 6;
+          //  }
+          //}
         }
         break;
       case M12_pCorner:
@@ -596,6 +610,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
 
   uint16_t len = length();
   uint8_t _bri_t = currentBri(on ? opacity : 0);
+  if (!_bri_t) return;
   if (_bri_t < 255) {
     byte r = scale8(R(col), _bri_t);
     byte g = scale8(G(col), _bri_t);
@@ -620,7 +635,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
     uint16_t indexSet = i + ((reverse) ? -j : j);
     if (indexSet >= start && indexSet < stop) {
       if (mirror) { //set the corresponding mirrored pixel
-        uint16_t indexMir = stop - indexSet + start - 1;          
+        uint16_t indexMir = stop - indexSet + start - 1;
         indexMir += offset; // offset/phase
         if (indexMir >= stop) indexMir -= len; // wrap
         strip.setPixelColor(indexMir, col);
@@ -745,7 +760,7 @@ void Segment::refreshLightCapabilities() {
       switch (type) {
         case TYPE_ANALOG_5CH:
         case TYPE_ANALOG_2CH:
-          capabilities |= 0x04; //segment supports white CCT 
+          capabilities |= 0x04; //segment supports white CCT
       }
     }
     if (correctWB && !(type == TYPE_ANALOG_1CH || type == TYPE_ONOFF)) capabilities |= 0x04; //white balance correction (uses CCT slider)
@@ -1056,7 +1071,7 @@ void WS2812FX::service() {
         //if (seg.transitional && seg._modeP) (*_mode[seg._modeP])(progress());
         delay = (*_mode[seg.currentMode(seg.mode)])();
         if (seg.mode != FX_MODE_HALLOWEEN_EYES) seg.call++;
-        if (seg.transitional && delay > FRAMETIME) delay = FRAMETIME; // foce faster updates during transition
+        if (seg.transitional && delay > FRAMETIME) delay = FRAMETIME; // force faster updates during transition
 
         seg.handleTransition();
       }
@@ -1097,7 +1112,7 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
 //Stay safe with high amperage and have a reasonable safety margin!
 //I am NOT to be held liable for burned down garages!
 
-//fine tune power estimation constants for your setup                  
+//fine tune power estimation constants for your setup
 #define MA_FOR_ESP        100 //how much mA does the ESP use (Wemos D1 about 80mA, ESP32 about 120mA)
                               //you can set it to 0 if the ESP is powered by USB and the LEDs by external
 
@@ -1156,7 +1171,7 @@ void WS2812FX::estimateCurrentAndLimitBri() {
 
   uint32_t powerSum0 = powerSum;
   powerSum *= _brightness;
-  
+
   if (powerSum > powerBudget) //scale brightness down to stay in current limit
   {
     float scale = (float)powerBudget / (float)powerSum;
@@ -1180,7 +1195,7 @@ void WS2812FX::show(void) {
   if (callback) callback();
 
   estimateCurrentAndLimitBri();
-  
+
   // some buses send asynchronously and this method will return before
   // all of the data has been sent.
   // See https://github.com/Makuna/NeoPixelBus/wiki/ESP32-NeoMethods#neoesp32rmt-methods
@@ -1217,7 +1232,7 @@ void WS2812FX::setTargetFps(uint8_t fps) {
 
 void WS2812FX::setMode(uint8_t segid, uint8_t m) {
   if (segid >= _segments.size()) return;
-   
+
   if (m >= getModeCount()) m = getModeCount() - 1;
 
   if (_segments[segid].mode != m) {
