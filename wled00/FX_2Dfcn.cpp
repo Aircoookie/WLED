@@ -1,6 +1,6 @@
 /*
   FX_2Dfcn.cpp contains all 2D utility functions
-  
+
   LICENSE
   The MIT License (MIT)
   Copyright (c) 2022  Blaz Kristan (https://blaz.at/home)
@@ -173,6 +173,7 @@ void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col) //WLEDMM:
   if (leds) leds[XY(x,y)] = col;
 
   uint8_t _bri_t = currentBri(on ? opacity : 0);
+  if (!_bri_t) return;
   if (_bri_t < 255) {
     byte r = scale8(R(col), _bri_t);
     byte g = scale8(G(col), _bri_t);
@@ -437,6 +438,29 @@ void Segment::move(uint8_t dir, uint8_t delta) {
   }
 }
 
+void Segment::draw_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
+  // Bresenham’s Algorithm
+  int d = 3 - (2*radius);
+  int y = radius, x = 0;
+  while (y >= x) {
+    setPixelColorXY(cx+x, cy+y, col);
+    setPixelColorXY(cx-x, cy+y, col);
+    setPixelColorXY(cx+x, cy-y, col);
+    setPixelColorXY(cx-x, cy-y, col);
+    setPixelColorXY(cx+y, cy+x, col);
+    setPixelColorXY(cx-y, cy+x, col);
+    setPixelColorXY(cx+y, cy-x, col);
+    setPixelColorXY(cx-y, cy-x, col);
+    x++;
+    if (d > 0) {
+      y--;
+      d += 4 * (x - y) + 10;
+    } else {
+      d += 4 * x + 6;
+    }
+  }
+}
+
 // by stepko, taken from https://editor.soulmatelights.com/gallery/573-blobs
 void Segment::fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
   const uint16_t cols = virtualWidth();
@@ -446,7 +470,7 @@ void Segment::fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
       if (x * x + y * y <= radius * radius &&
           int16_t(cx)+x>=0 && int16_t(cy)+y>=0 &&
           int16_t(cx)+x<cols && int16_t(cy)+y<rows)
-        addPixelColorXY(cx + x, cy + y, col);
+        setPixelColorXY(cx + x, cy + y, col);
     }
   }
 }
@@ -465,10 +489,10 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
   const uint16_t rows = virtualHeight();
   if (x0 >= cols || x1 >= cols || y0 >= rows || y1 >= rows) return;
   const int16_t dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
-  const int16_t dy = abs(y1-y0), sy = y0<y1 ? 1 : -1; 
+  const int16_t dy = abs(y1-y0), sy = y0<y1 ? 1 : -1;
   int16_t err = (dx>dy ? dx : -dy)/2, e2;
   for (;;) {
-    setPixelColorXY(x0,y0,c); //WLEDMM replace addPC by setPC as makes more sense in way it is used now
+    setPixelColorXY(x0,y0,c);
     if (x0==x1 && y0==y1) break;
     e2 = err;
     if (e2 >-dx) { err -= dy; x0 += sx; }

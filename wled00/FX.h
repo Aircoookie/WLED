@@ -524,9 +524,9 @@ typedef struct Segment {
     bool allocateData(size_t len);
     void deallocateData(void);
     void resetIfRequired(void);
-    /** 
+    /**
       * Flags that before the next effect is calculated,
-      * the internal segment state should be reset. 
+      * the internal segment state should be reset.
       * Call resetIfRequired before calling the next effect function.
       * Safe to call from interrupts and network requests.
       */
@@ -595,6 +595,7 @@ typedef struct Segment {
     void moveX(int8_t delta);
     void moveY(int8_t delta);
     void move(uint8_t dir, uint8_t delta);
+    void draw_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB c);
     void fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB c);
     void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint32_t c);
     void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c) { drawLine(x0, y0, x1, y1, RGBW32(c.r,c.g,c.b,0)); } // automatic inline
@@ -651,7 +652,7 @@ class WS2812FX {  // 96 bytes
   } mode_data_t;
 
   static WS2812FX* instance;
-  
+
   public:
 
     WS2812FX() :
@@ -897,9 +898,9 @@ class WS2812FX {  // 96 bytes
 
     uint16_t* customMappingTable;
     uint16_t  customMappingSize;
-    
+
     uint32_t _lastShow;
-    
+
     uint8_t _segment_index;
     uint8_t _mainSegment;
 
