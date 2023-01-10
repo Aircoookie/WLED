@@ -246,7 +246,7 @@ private:
   void _setMaskToLeds() {
     for(int i = 0; i <= umSSDRLength; i++) {
       if ((!umSSDRInverted && !umSSDRMask[i]) || (umSSDRInverted && umSSDRMask[i])) {
-        strip.setPixelColor(i, 0x000000);
+        busses.setPixelColor(i, 0x000000);
       }
     }
   }

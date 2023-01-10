@@ -130,3 +130,37 @@ The second digit starts again with **segment A** and LEDs **0 and 13**, **segmen
 - Segment E: 8, 9
 - Segment F: 11, 12
 - Segment G: 3, 10
+
+# Led mapping
+Use [LED mapping](https://kno.wled.ge/advanced/mapping/) to more easily adjust segments and create the correct direction of effects. You can use different ledmapX.json files for different effect direction. For some effects it's better to have the LEDs in one segment in sequence.
+
+For example, a files ledmapX.json for the clock [Lazy 7 Quick Build Edition](https://www.instructables.com/Lazy-7-Quick-Build-Edition/) at depending on the orientation is
+
+ledmap1.json
+```
+{"map":[
+52,53,6,7,
+51,50,54,55,5,4,8,9,
+49,56,3,10,
+48,47,57,58,2,1,11,12,
+46,59,0,13,
+45,30,29,14,
+44,31,28,15,
+43,42,32,33,27,26,16,17,
+41,34,25,18,
+40,39,35,36,24,23,19,20,
+38,37,22,21
+]}
+```
+
+ledmap2.json
+```
+{"map":[
+51,50,48,47,43,42,40,39,
+52,53,49,56,46,59,44,31,41,34,38,37,
+54,55,57,58,45,30,32,33,35,36,
+5,4,2,1,29,14,27,26,24,23,
+6,7,3,10,0,13,28,15,25,18,22,21,
+8,9,11,12,16,17,19,20
+]}
+```
