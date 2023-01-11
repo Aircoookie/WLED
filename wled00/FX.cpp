@@ -4862,7 +4862,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
       if (state == 0)
         SEGMENT.setPixelColorXY(x,y, backgroundColor);
       else
-        SEGMENT.setPixelColorXY(x,y, !SEGMENT.check1?SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0): esp_random()); //WLEDMM support all colors
+        SEGMENT.setPixelColorXY(x,y, !SEGMENT.check1?SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0): random(32)); //WLEDMM support all colors
     }
 
     for (int y = 0; y < rows; y++) for (int x = 0; x < cols; x++) prevLeds[XY(x,y)] = CRGB::Black;
