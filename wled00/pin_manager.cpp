@@ -523,7 +523,10 @@ bool PinManagerClass::joinWire() {    // shortcut in case no parameters provided
     return joinWire(i2c_sda, i2c_scl);
   #else
     // ESP8266: I2C pins are fixed
-    return joinWire(HW_PIN_SDA, HW_PIN_SCL);
+    if ((i2c_sda < 0) || (i2c_scl < 0))
+      return joinWire(i2c_sda, i2c_scl);        // special case: -1 = disable i2c
+    else 
+      return joinWire(4, 5);                    // normal case - use HW pins -> SDA = 4, SCL = 5
   #endif
 }
 
@@ -568,9 +571,10 @@ bool PinManagerClass::joinWire(int8_t pinSDA, int8_t pinSCL) {
   #ifdef ARDUINO_ARCH_ESP32         // ESP32 - i2c pins can be mapped to any GPIO
     wireIsOK = Wire.setPins(pinSDA, pinSCL);   // this will fail if Wire is initialised already (i.e. Wire.begin() called prior)
   #else // 8266 - I2C pins are fixed
-    if((pinSDA != HW_PIN_SDA) || (pinSCL != HW_PIN_SCL)) {
+    if((pinSDA != 4) || (pinSCL != 5)) {     // fixed PINS: SDA = 4, SCL = 5
       DEBUG_PRINT(F("PIN Manager: warning ESP8266 I2C pins are fixed. please use SDA="));
-      DEBUG_PRINTF("%d, SCL=%d !\n",HW_PIN_SDA, HW_PIN_SCL);
+      DEBUG_PRINTF("%d, SCL=%d !\n",4, 5);
+      return(false);
     }
   #endif
   if (wireIsOK == false) {
@@ -583,7 +587,9 @@ bool PinManagerClass::joinWire(int8_t pinSDA, int8_t pinSCL) {
   if (wireIsOK == false) {
     USER_PRINTLN(F("PIN Manager: warning - wire.begin failed!"));
   } else {
-    USER_PRINTLN(F("PIN Manager: wire.begin successfull."));
+    USER_PRINT(F("PIN Manager: wire.begin successfull! "));
+    USER_PRINT(F("I2C bus is active. SDA="));
+    USER_PRINTF("%d SCL=%d.\n", pinSDA, pinSCL);
   }
 
 #ifdef ARDUINO_ARCH_ESP32S3

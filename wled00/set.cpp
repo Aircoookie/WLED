@@ -533,8 +533,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     #ifdef ESP8266
     // cannot change pins on ESP8266
-    if (hw_sda_pin >= 0 && hw_sda_pin != HW_PIN_SDA) hw_sda_pin = HW_PIN_SDA;
-    if (hw_scl_pin >= 0 && hw_scl_pin != HW_PIN_SCL) hw_scl_pin = HW_PIN_SCL;
+    // WLEDMM: HW_PIN_xx could be set to -1 --> use pins as defined by the framework! SDA = 4, SCL = 5
+    if (hw_sda_pin >= 0 && hw_sda_pin != 4) hw_sda_pin = 4;
+    if (hw_scl_pin >= 0 && hw_scl_pin != 5) hw_scl_pin = 5;
     #endif
     PinManagerPinType i2c[2] = { { hw_sda_pin, true }, { hw_scl_pin, true } };
     if (hw_sda_pin >= 0 && hw_scl_pin >= 0 && pinManager.allocateMultiplePins(i2c, 2, PinOwner::HW_I2C)) {
@@ -546,6 +547,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       // Wire.begin(); // WLEDMM moved into pinManager
     } else {
       // there is no Wire.end()
+      if (hw_sda_pin < 0 || hw_scl_pin < 0) { // WLEDMM bugfix allow pin = -1
+        i2c_sda = -1;
+        i2c_scl = -1;
+      }
       DEBUG_PRINTLN(F("Could not allocate I2C pins."));
       uint8_t i2c[2] = { static_cast<uint8_t>(i2c_scl), static_cast<uint8_t>(i2c_sda) };
       pinManager.deallocateMultiplePins(i2c, 2, PinOwner::HW_I2C); // just in case deallocation of old pins
@@ -572,6 +577,11 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       #endif
     } else {
       //SPI.end();
+      if (hw_mosi_pin < 0 || hw_sclk_pin < 0) { // WLEDMM bugfix allow pin = -1
+        spi_mosi = hw_mosi_pin;
+        spi_miso = hw_miso_pin;
+        spi_sclk = hw_sclk_pin;
+      }
       DEBUG_PRINTLN(F("Could not allocate SPI pins."));
       uint8_t spi[3] = { static_cast<uint8_t>(spi_mosi), static_cast<uint8_t>(spi_miso), static_cast<uint8_t>(spi_sclk) };
       pinManager.deallocateMultiplePins(spi, 3, PinOwner::HW_SPI); // just in case deallocation of old pins
