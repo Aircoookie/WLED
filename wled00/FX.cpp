@@ -4842,9 +4842,12 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   const uint16_t rows = SEGMENT.virtualHeight();
   const uint16_t dataSize = sizeof(CRGB) * SEGMENT.length();  // using width*height prevents reallocation if mirroring is enabled
 
-  if (!SEGENV.allocateData(dataSize + sizeof(unsigned long))) return mode_static(); //allocation failed
+  //array of patterns. Needed to identify repeating patterns. A pattern is one iteration of leds, without the color (on/off only)
+  const int patternsSize = (cols + rows) * 2; //seems to be a good value to catch also repetition in moving patterns
+  if (!SEGENV.allocateData(dataSize + sizeof(unsigned long) + sizeof(uint16_t) * patternsSize)) return mode_static(); //allocation failed
   CRGB *prevLeds = reinterpret_cast<CRGB*>(SEGENV.data);
   unsigned long *resetMillis = reinterpret_cast<unsigned long*>(SEGENV.data + dataSize); // triggers reset
+  uint16_t* patterns = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize + sizeof(unsigned long)); //WLEDMM we need patterns!!!
 
   CRGB backgroundColor = SEGCOLOR(1);
 
@@ -4859,14 +4862,15 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
       if (state == 0)
         SEGMENT.setPixelColorXY(x,y, backgroundColor);
       else
-        SEGMENT.setPixelColorXY(x,y, SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0));
+        SEGMENT.setPixelColorXY(x,y, !SEGMENT.check1?SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 0): esp_random()); //WLEDMM support all colors
     }
 
     for (int y = 0; y < rows; y++) for (int x = 0; x < cols; x++) prevLeds[XY(x,y)] = CRGB::Black;
 
-
-    SEGENV.aux1 = 0;
-    SEGENV.aux0 = 0xFFFF;
+    //WLEDMM back to 0.13 style!!!
+    //init patterns
+    SEGENV.aux0 = 0; //ewowi20210629: pka static! patternsize: round robin index of next slot to add pattern
+    for (int i=0; i<patternsSize; i++) patterns[i] = 0;
   }
 
   //copy previous leds (save previous generation)
@@ -4880,11 +4884,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
     //iterate through neighbors and count them and their different colors
     int neighbors = 0;
     for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) { //iterate through 9*9 matrix
-      // wrap around segment
-      int16_t xx = x+i, yy = y+j;
-      if (x+i < 0) xx = cols-1; else if (x+i >= cols)  xx = 0;
-      if (y+j < 0) yy = rows-1; else if (y+j >= rows) yy = 0;
-      uint16_t xy = XY(xx, yy); // previous cell xy to check
+      uint16_t xy = XY((x+i+cols)%cols, (y+j+rows)%rows); //previous cell xy to check, wrap around segment (WLEDMM 0.13 style)
 
       // count different neighbours and colors, except the centre cell
       if (xy != XY(x,y) && prevLeds[xy] != backgroundColor) {
@@ -4906,7 +4906,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
     uint32_t bgc = RGBW32(backgroundColor.r, backgroundColor.g, backgroundColor.b, 0);
     if      ((col != bgc) && (neighbors <  2)) SEGMENT.setPixelColorXY(x,y, bgc); // Loneliness
     else if ((col != bgc) && (neighbors >  3)) SEGMENT.setPixelColorXY(x,y, bgc); // Overpopulation
-    else if ((col == bgc) && (neighbors == 3)) {                                              // Reproduction
+    else if ((col == bgc) && (neighbors == 3)) {                                  // Reproduction
       //find dominantcolor and assign to cell
       colorCount dominantColorCount = {backgroundColor, 0};
       for (int i=0; i<9 && colorsCount[i].count != 0; i++)
@@ -4919,16 +4919,28 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
   // calculate CRC16 of leds
   uint16_t crc = crc16((const unsigned char*)prevLeds, dataSize-1); //ewowi: prevLeds instead of leds work as well, tbd: compare more patterns, see SR!
 
-  // check if we had same CRC and reset if needed
-  // same CRC would mean image did not change or was repeating itself
-  if (!(crc == SEGENV.aux0 || crc == SEGENV.aux1)) *resetMillis = strip.now; //if no repetition avoid reset
-  // remember last two
-  SEGENV.aux1 = SEGENV.aux0;
-  SEGENV.aux0 = crc;
+  // WLEDMM: this is work in progress in case we are not happy with crc16
+  // byte index=0;
+  // for (int x = 0; x < cols; x+=MAX(cols/8,1)) for (int y = 0; y < rows; y+=MAX(rows/8,1)) {
+  //   if (SEGMENT.getPixelColorXY(x,y) != (uint32_t)backgroundColor) crc = crc|crc << index;
+  //   index ++;
+  // }
+
+  //WLEDMM back to 0.13 style!!!
+  //check if repetition of patterns occurs
+  bool repetition = false;
+  for (int i=0; i<patternsSize && !repetition; i++)
+    repetition = patterns[(SEGENV.aux0 - 1 - i + patternsSize)%patternsSize] == crc;
+
+  //add current pattern to array and increase index (round robin)
+  patterns[SEGENV.aux0] = crc;
+  SEGENV.aux0 = (SEGENV.aux0+1)%patternsSize;
+
+  if (!repetition) *resetMillis = strip.now; //if no repetition avoid reset
 
   return FRAMETIME_FIXED * (128-(SEGMENT.speed>>1)); // update only when appropriate time passes (in 42 FPS slots)
 } // mode_2Dgameoflife()
-static const char _data_FX_MODE_2DGAMEOFLIFE[] PROGMEM = "Game Of Life@!;!,!;!;2";
+static const char _data_FX_MODE_2DGAMEOFLIFE[] PROGMEM = "Game Of Life@!,,,,,All colors=0;!,!;!;2"; //WLEDMM support all colors
 
 
 /////////////////////////
