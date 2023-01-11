@@ -303,7 +303,9 @@ void WLED::setup()
   #endif
 
   //Serial0.setDebugOutput(false);
-  //Serial.setDebugOutput(true);
+  #ifdef WLED_DEBUG
+  Serial.setDebugOutput(true);
+  #endif
   USER_FLUSH(); delay(100);
   USER_PRINTLN();
   USER_PRINT(F("---WLED "));
@@ -325,12 +327,12 @@ void WLED::setup()
     DEBUG_PRINTLN(F("arduino-esp32 v1.0.x\n"));  // we can't say in more detail.
   #endif
 
-  DEBUG_PRINT(F("CPU:   ")); DEBUG_PRINT(ESP.getChipModel());
-  DEBUG_PRINT(F(" rev.")); DEBUG_PRINT(ESP.getChipRevision());
-  DEBUG_PRINT(F(", ")); DEBUG_PRINT(ESP.getChipCores()); DEBUG_PRINT(F(" core(s)"));
-  DEBUG_PRINT(F(", ")); DEBUG_PRINT(ESP.getCpuFreqMHz()); DEBUG_PRINTLN(F("MHz."));
-  DEBUG_PRINT(F("FLASH: ")); DEBUG_PRINT((ESP.getFlashChipSize()/1024)/1024);
-  DEBUG_PRINT(F("MB, Mode ")); DEBUG_PRINT(ESP.getFlashChipMode());
+  USER_PRINT(F("CPU:   ")); USER_PRINT(ESP.getChipModel());
+  USER_PRINT(F(" rev.")); USER_PRINT(ESP.getChipRevision());
+  USER_PRINT(F(", ")); USER_PRINT(ESP.getChipCores()); USER_PRINT(F(" core(s)"));
+  USER_PRINT(F(", ")); USER_PRINT(ESP.getCpuFreqMHz()); USER_PRINTLN(F("MHz."));
+  USER_PRINT(F("FLASH: ")); USER_PRINT((ESP.getFlashChipSize()/1024)/1024);
+  USER_PRINT(F("MB, Mode ")); USER_PRINT(ESP.getFlashChipMode());
   #ifdef WLED_DEBUG
   switch (ESP.getFlashChipMode()) {
     // missing: Octal modes
@@ -341,7 +343,7 @@ void WLED::setup()
     default: break;
   }
   #endif
-  DEBUG_PRINT(F(", speed ")); DEBUG_PRINT(ESP.getFlashChipSpeed()/1000000);DEBUG_PRINTLN(F("MHz."));
+  USER_PRINT(F(", speed ")); USER_PRINT(ESP.getFlashChipSpeed()/1000000);USER_PRINTLN(F("MHz."));
   
   #if defined(WLED_DEBUG) && defined(ARDUINO_ARCH_ESP32)
   showRealSpeed();
@@ -349,15 +351,15 @@ void WLED::setup()
 
 #else
   // WLEDMM: more info for 8266
-  DEBUG_PRINTLN();
-  DEBUG_PRINTF("CPU:   ESP8266 (id 0x%08X)", ESP.getChipId());
-  DEBUG_PRINT(F(", ")); DEBUG_PRINT(ESP.getCpuFreqMHz()); DEBUG_PRINTLN(F("MHz."));
+  USER_PRINTLN();
+  USER_PRINTF("CPU:   ESP8266 (id 0x%08X)", ESP.getChipId());
+  USER_PRINT(F(", ")); USER_PRINT(ESP.getCpuFreqMHz()); USER_PRINTLN(F("MHz."));
   USER_PRINT(F("CPU    Last Restart Reason = "));
   USER_PRINT((int)ESP.getResetInfoPtr()->reason); USER_PRINT(F(" -> "));
   USER_PRINTLN(ESP.getResetInfo());
 
-  DEBUG_PRINT(F("FLASH: ")); DEBUG_PRINT((ESP.getFlashChipRealSize()/1024)/1024);
-  DEBUG_PRINT(F("MB, Mode ")); DEBUG_PRINT((int)ESP.getFlashChipMode());
+  USER_PRINT(F("FLASH: ")); USER_PRINT((ESP.getFlashChipRealSize()/1024)/1024);
+  USER_PRINT(F("MB, Mode ")); USER_PRINT((int)ESP.getFlashChipMode());
   #ifdef WLED_DEBUG
   switch (ESP.getFlashChipMode()) {
     // missing: Octal modes
@@ -368,7 +370,9 @@ void WLED::setup()
     default: break;
   }
   #endif
-  DEBUG_PRINT(F(", speed ")); DEBUG_PRINT(ESP.getFlashChipSpeed()/1000000);DEBUG_PRINTLN(F("MHz."));
+  USER_PRINT(F(", speed ")); USER_PRINT(ESP.getFlashChipSpeed()/1000000);USER_PRINT(F("MHz; "));
+  USER_PRINT(F(" chip ID = 0x"));
+  USER_PRINTF("%08X\n", ESP.getFlashChipId());
   USER_PRINTLN();
 
   DEBUG_PRINT(F("esp8266 "));
