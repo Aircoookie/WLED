@@ -116,7 +116,7 @@ class MPU6050Driver : public Usermod {
     float ypr[3]  = {0.0f}; // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
 
     #if !defined(ARDUINO_ARCH_ESP32) || !defined(MPU6050_INT_GPIO)
-    static const int INTERRUPT_PIN = 15; // use pin 15 on ESP8266
+    static const int INTERRUPT_PIN = -1; // WLEDMM: not use pin 15 (on ESP8266) as can and will cause conflict with other pins
     #else
     static const int INTERRUPT_PIN = MPU6050_INT_GPIO;       // WLEDMM
     #endif

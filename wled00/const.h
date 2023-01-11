@@ -427,10 +427,10 @@
 #endif
 // defaults for 1st I2C on ESP32 (Wire global)
 #ifndef HW_PIN_SCL
-  #define HW_PIN_SCL SCL //WLEDMM to check if -1 is better
+  #define HW_PIN_SCL -1 //WLEDMM if not defined, -1 will be used (not SCL/22) (also for esp8266?)
 #endif
 #ifndef HW_PIN_SDA
-  #define HW_PIN_SDA SDA //WLEDMM to check if -1 is better
+  #define HW_PIN_SDA -1 //WLEDMM if not defined, -1 will be used (not SDA/21) (also for esp8266?)
 #endif
 
 // HW_PIN_SCLKSPI & HW_PIN_MOSISPI & HW_PIN_MISOSPI are used for information in usermods settings page and usermods themselves
@@ -447,13 +447,13 @@
 #endif
 // defaults for VSPI on ESP32 (SPI global, SPI.cpp) as HSPI is used by WLED (bus_wrapper.h)
 #ifndef HW_PIN_CLOCKSPI
-  #define HW_PIN_CLOCKSPI SCK //WLEDMM to check if -1 is better
+  #define HW_PIN_CLOCKSPI -1 //WLEDMM if not defined -1 will be used (not SCK/18)
 #endif
 #ifndef HW_PIN_MOSISPI  //WLEDMM renamed from HW_PIN_DATASPI
-  #define HW_PIN_MOSISPI MOSI //WLEDMM to check if -1 is better
+  #define HW_PIN_MOSISPI -1 //WLEDMM if not defined -1 will be used (not MOSI/23)
 #endif
 #ifndef HW_PIN_MISOSPI
-  #define HW_PIN_MISOSPI MISO //WLEDMM to check if -1 is better
+  #define HW_PIN_MISOSPI -1 //WLEDMM if not defined -1 will be used (not MISO/19)
 #endif
 
 // WLEDMM: IRAM_ATTR for 8266 causes error: section `.text1' will not fit in region `iram1_0_seg'
