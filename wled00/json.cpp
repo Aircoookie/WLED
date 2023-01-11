@@ -30,6 +30,15 @@
 #else // for 8266
 #include <Esp.h>
 #include <user_interface.h>
+
+#include <core_esp8266_features.h>
+#include <core_version.h>
+#include <spi_vendors.h>
+
+#include <flash_utils.h>
+#include <memory>
+#include <cont.h>
+#include <coredecls.h>
 #endif
 // end WLEDMM
 
@@ -839,7 +848,21 @@ void serializeInfo(JsonObject root)
 
   #else // for 8266
   root[F("e32core0code")] = (int)ESP.getResetInfoPtr()->reason;
-  root[F("e32core0text")] = F("");
+  root[F("e32core0text")] = ESP.getResetReason();
+
+  root[F("e32model")] = F("ESP8266  (id 0x") + String(ESP.getChipId(), 16) + String(") ");      // can only be "ESP8266EX" or "ESP8285"
+  root[F("e32cores")] = 1;
+  root[F("e32speed")] = ESP.getCpuFreqMHz();
+  root[F("e32flash")] = int((ESP.getFlashChipRealSize()/1024)/1024);
+  root[F("e32flashspeed")] = int(ESP.getFlashChipSpeed()/1000000);
+  root[F("e32flashmode")] = int(ESP.getFlashChipMode());
+  switch (ESP.getFlashChipMode()) {
+    case FM_QIO:  root[F("e32flashtext")] = F(" (QIO)"); break;
+    case FM_QOUT: root[F("e32flashtext")] = F(" (QOUT)");break;
+    case FM_DIO:  root[F("e32flashtext")] = F(" (DIO)"); break;
+    case FM_DOUT: root[F("e32flashtext")] = F(" (DOUT)");break;
+    default: root[F("e32flashtext")] = F(" (other)"); break;
+  }
   #endif
   // end WLEDMM
 

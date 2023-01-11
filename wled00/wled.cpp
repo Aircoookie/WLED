@@ -276,6 +276,8 @@ void WLED::setup()
   #endif
 
   Serial.begin(115200);
+  if (!Serial) delay(1000); // WLEDMM make sure that Serial has initalized
+
   #if !ARDUINO_USB_CDC_ON_BOOT
   Serial.setTimeout(50);  // this causes troubles on new MCUs that have a "virtual" USB Serial (HWCDC)
   #else
@@ -346,6 +348,29 @@ void WLED::setup()
   #endif
 
 #else
+  // WLEDMM: more info for 8266
+  DEBUG_PRINTLN();
+  DEBUG_PRINTF("CPU:   ESP8266 (id 0x%08X)", ESP.getChipId());
+  DEBUG_PRINT(F(", ")); DEBUG_PRINT(ESP.getCpuFreqMHz()); DEBUG_PRINTLN(F("MHz."));
+  USER_PRINT(F("CPU    Last Restart Reason = "));
+  USER_PRINT((int)ESP.getResetInfoPtr()->reason); USER_PRINT(F(" -> "));
+  USER_PRINTLN(ESP.getResetInfo());
+
+  DEBUG_PRINT(F("FLASH: ")); DEBUG_PRINT((ESP.getFlashChipRealSize()/1024)/1024);
+  DEBUG_PRINT(F("MB, Mode ")); DEBUG_PRINT((int)ESP.getFlashChipMode());
+  #ifdef WLED_DEBUG
+  switch (ESP.getFlashChipMode()) {
+    // missing: Octal modes
+    case FM_QIO:  DEBUG_PRINT(F(" (QIO)")); break;
+    case FM_QOUT: DEBUG_PRINT(F(" (QOUT)"));break;
+    case FM_DIO:  DEBUG_PRINT(F(" (DIO)")); break;
+    case FM_DOUT: DEBUG_PRINT(F(" (DOUT)"));break;
+    default: break;
+  }
+  #endif
+  DEBUG_PRINT(F(", speed ")); DEBUG_PRINT(ESP.getFlashChipSpeed()/1000000);DEBUG_PRINTLN(F("MHz."));
+  USER_PRINTLN();
+
   DEBUG_PRINT(F("esp8266 "));
   DEBUG_PRINTLN(ESP.getCoreVersion());
 #endif

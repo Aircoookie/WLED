@@ -458,7 +458,11 @@ WLED_GLOBAL byte macroDoublePress[WLED_MAX_BUTTONS]   _INIT({0});
 // Security CONFIG
 WLED_GLOBAL bool otaLock     _INIT(false);  // prevents OTA firmware updates without password. ALWAYS enable if system exposed to any public networks
 WLED_GLOBAL bool wifiLock    _INIT(false);  // prevents access to WiFi settings when OTA lock is enabled
+#ifdef ARDUINO_ARCH_ESP32
 WLED_GLOBAL bool aOtaEnabled _INIT(true);   // ArduinoOTA allows easy updates directly from the IDE. Careful, it does not auto-disable when OTA lock is on
+#else
+WLED_GLOBAL bool aOtaEnabled _INIT(false);   // WLEDMM: start with OTA disabled, as it seems to be unstable on 8266
+#endif
 WLED_GLOBAL char settingsPIN[5] _INIT("");  // PIN for settings pages
 WLED_GLOBAL bool correctPIN     _INIT(true);
 WLED_GLOBAL unsigned long lastEditTime _INIT(0);
