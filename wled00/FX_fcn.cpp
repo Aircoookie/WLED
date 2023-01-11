@@ -243,12 +243,12 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
         _lastPaletteChange = millis();
         timeSinceLastChange = 0;
       }
-      if (timeSinceLastChange <= 500) {
+      if (timeSinceLastChange <= 250) {
         targetPalette = prevRandomPalette;
         // there needs to be 255 palette blends (48) for full blend but that is too resource intensive
         // so 128 is a compromise (we need to perform full blend of the two palettes as each segment can have random
         // palette selected but only 2 static palettes are used)
-        size_t noOfBlends = ((128U * timeSinceLastChange) / 500U);
+        size_t noOfBlends = ((128U * timeSinceLastChange) / 250U);
         for (size_t i=0; i<noOfBlends; i++) nblendPaletteTowardPalette(targetPalette, randomPalette, 48);
       } else {
         targetPalette = randomPalette;

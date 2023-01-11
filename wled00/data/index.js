@@ -807,7 +807,7 @@ function populateSegments(s)
 	if (!isM && !noNewSegs && (cfg.comp.seglen?parseInt(gId(`seg${lSeg}s`).value):0)+parseInt(gId(`seg${lSeg}e`).value)<ledCount) gId(`segr${lSeg}`).style.display = "inline";
 	gId('segutil2').style.display = (segCount > 1) ? "block":"none"; // rsbtn parent
 
-	if (Array.isArray(li.maps) && li.maps.length>1) {
+	if (!isM && Array.isArray(li.maps) && li.maps.length>1) {
 		let cont = `Ledmap:&nbsp;<select class="sel-sg" onchange="requestJson({'ledmap':parseInt(this.value)})"><option value="" selected>Unchanged</option>`;
 		for (const k of (li.maps||[])) cont += `<option value="${k}">${k==0?'Default':'ledmap'+k+'.json'}</option>`;
 		cont += "</select></div>";
@@ -837,7 +837,7 @@ function populateEffects()
 	});
 
 	for (let ef of effects) {
-		// WLEDSR: add slider and color control to setFX (used by requestjson)
+		// add slider and color control to setFX (used by requestjson)
 		let id = ef.id;
 		let nm = ef.name+" ";
 		let fd = "";
@@ -1362,7 +1362,7 @@ function readState(s,command=false)
 	return true;
 }
 
-// WLEDSR: control HTML elements for Slider and Color Control
+// control HTML elements for Slider and Color Control (original ported form WLED-SR)
 // Technical notes
 // ===============
 // If an effect name is followed by an @, slider and color control is effective.
@@ -1485,6 +1485,14 @@ function setEffectParameters(idx)
 		pall.innerHTML = '<i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i> Color palette not used';
 		palw.style.display = "none";
 	}
+	// not all color selectors shown, hide palettes created from color selectors
+	// NOTE: this will disallow user to select "* Color ..." palettes which may be undesirable in some cases or for some users
+	//for (let e of (gId('pallist').querySelectorAll('.lstI')||[])) {
+	//	let fltr = "* C";
+	//	if (cslCnt==1 && csel==0) fltr = "* Colors";
+	//	else if (cslCnt==2) fltr = "* Colors Only";
+	//	if (cslCnt < 3 && e.querySelector('.lstIname').innerText.indexOf(fltr)>=0) e.classList.add('hide'); else e.classList.remove('hide');
+	//}
 }
 
 var jsonTimeout;
@@ -1840,7 +1848,7 @@ ${makePlSel(plJson[i].end?plJson[i].end:0, true)}
 	<input type="checkbox" id="p${i}sbchk">
 	<span class="checkmark"></span>
 </label>`;
-		if (Array.isArray(lastinfo.maps) && lastinfo.maps.length>1) {
+		if (!isM && Array.isArray(lastinfo.maps) && lastinfo.maps.length>1) {
 			content += `<div class="lbl-l">Ledmap:&nbsp;<div class="sel-p"><select class="sel-p" id="p${i}lmp"><option value="">Unchanged</option>`;
 			for (const k of (lastinfo.maps||[])) content += `<option value="${k}"${(i>0 && pJson[i].ledmap==k)?" selected":""}>${k==0?'Default':'ledmap'+k+'.json'}</option>`;
 			content += "</select></div></div>";

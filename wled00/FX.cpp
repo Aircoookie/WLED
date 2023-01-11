@@ -4625,8 +4625,8 @@ uint16_t mode_2DColoredBursts() {              // By: ldirko   https://editor.so
     SEGENV.aux0 = 0; // start with red hue
   }
 
-  bool dot = false;
-  bool grad = true;
+  bool dot = SEGMENT.check3;
+  bool grad = SEGMENT.check1;
 
   byte numLines = SEGMENT.intensity/16 + 1;
 
@@ -4642,12 +4642,14 @@ uint16_t mode_2DColoredBursts() {              // By: ldirko   https://editor.so
     byte xsteps = abs8(x1 - y1) + 1;
     byte ysteps = abs8(x2 - y2) + 1;
     byte steps = xsteps >= ysteps ? xsteps : ysteps;
-
+    //Draw gradient line
     for (size_t i = 1; i <= steps; i++) {
-      byte dx = lerp8by8(x1, y1, i * 255 / steps);
-      byte dy = lerp8by8(x2, y2, i * 255 / steps);
-      SEGMENT.addPixelColorXY(dx, dy, color); // use setPixelColorXY for different look
-      if (grad) SEGMENT.fadePixelColorXY(dx, dy, (i * 255 / steps)); //Draw gradient line
+      uint8_t rate = i * 255 / steps;
+      byte dx = lerp8by8(x1, y1, rate);
+      byte dy = lerp8by8(x2, y2, rate);
+      SEGMENT.setPixelColorXY(dx, dy, grad ? color.nscale8_video(255-rate) : color); // use addPixelColorXY for different look
+      //SEGMENT.addPixelColorXY(dx, dy, color); // use setPixelColorXY for different look
+      //if (grad) SEGMENT.fadePixelColorXY(dx, dy, rate);
     }
 
     if (dot) { //add white point at the ends of line
@@ -4655,11 +4657,11 @@ uint16_t mode_2DColoredBursts() {              // By: ldirko   https://editor.so
       SEGMENT.addPixelColorXY(y1, y2, WHITE);
     }
   }
-  SEGMENT.blur(4);
+  if (SEGMENT.custom3) SEGMENT.blur(SEGMENT.custom3/2);
 
   return FRAMETIME;
 } // mode_2DColoredBursts()
-static const char _data_FX_MODE_2DCOLOREDBURSTS[] PROGMEM = "Colored Bursts@Speed,# of lines;;!;2";
+static const char _data_FX_MODE_2DCOLOREDBURSTS[] PROGMEM = "Colored Bursts@Speed,# of lines,,,Blur,Gradient,,Dots;;!;2;c3=16";
 
 
 /////////////////////
@@ -4701,10 +4703,9 @@ uint16_t mode_2DDNASpiral() {               // By: ldirko  https://editor.soulma
   if (SEGENV.call == 0) {
     SEGMENT.setUpLeds();
     SEGMENT.fill(BLACK);
-    SEGENV.aux0 = 0; // hue
   }
 
-  uint8_t speeds = SEGMENT.speed/2;
+  uint8_t speeds = SEGMENT.speed/2 + 1;
   uint8_t freq = SEGMENT.intensity/8;
 
   uint32_t ms = millis() / 20;
@@ -4713,17 +4714,19 @@ uint16_t mode_2DDNASpiral() {               // By: ldirko  https://editor.soulma
   for (int i = 0; i < rows; i++) {
     uint16_t x  = beatsin8(speeds, 0, cols - 1, 0, i * freq) + beatsin8(speeds - 7, 0, cols - 1, 0, i * freq + 128);
     uint16_t x1 = beatsin8(speeds, 0, cols - 1, 0, 128 + i * freq) + beatsin8(speeds - 7, 0, cols - 1, 0, 128 + 64 + i * freq);
-    SEGENV.aux0 = i * 128 / cols + ms; //ewowi20210629: not width - 1 to avoid crash if width = 1
+    uint8_t hue = (i * 128 / rows) + ms;
+    // skip every 4th row every now and then (fade it more)
     if ((i + ms / 8) & 3) {
+      // draw a gradient line between x and x1
       x = x / 2; x1 = x1 / 2;
-      byte steps = abs8(x - x1) + 1;
+      uint8_t steps = abs8(x - x1) + 1;
       for (size_t k = 1; k <= steps; k++) {
-        byte dx = lerp8by8(x, x1, k * 255 / steps);
-        SEGMENT.addPixelColorXY(dx, i, ColorFromPalette(SEGPALETTE, SEGENV.aux0, 255, LINEARBLEND));
-        SEGMENT.fadePixelColorXY(dx, i, (k * 255 / steps));
+        uint8_t rate = k * 255 / steps;
+        uint8_t dx = lerp8by8(x, x1, rate);
+        SEGMENT.setPixelColorXY(dx, i, ColorFromPalette(SEGPALETTE, hue, 255, LINEARBLEND).nscale8_video(rate));
       }
-      SEGMENT.addPixelColorXY(x, i, DARKSLATEGRAY);
-      SEGMENT.addPixelColorXY(x1, i, WHITE);
+      SEGMENT.setPixelColorXY(x, i, DARKSLATEGRAY);
+      SEGMENT.setPixelColorXY(x1, i, WHITE);
     }
   }
 
@@ -5169,15 +5172,15 @@ uint16_t mode_2Dmetaballs(void) {   // Metaballs by Stefan Petrick. Cannot have 
   float speed = 0.25f * (1+(SEGMENT.speed>>6));
 
   // get some 2 random moving points
-  uint8_t x2 = inoise8(strip.now * speed, 25355, 685 ) / 16;
-  uint8_t y2 = inoise8(strip.now * speed, 355, 11685 ) / 16;
+  uint8_t x2 = map(inoise8(strip.now * speed, 25355, 685), 0, 255, 0, cols-1);
+  uint8_t y2 = map(inoise8(strip.now * speed, 355, 11685), 0, 255, 0, rows-1);
 
-  uint8_t x3 = inoise8(strip.now * speed, 55355, 6685 ) / 16;
-  uint8_t y3 = inoise8(strip.now * speed, 25355, 22685 ) / 16;
+  uint8_t x3 = map(inoise8(strip.now * speed, 55355, 6685), 0, 255, 0, cols-1);
+  uint8_t y3 = map(inoise8(strip.now * speed, 25355, 22685), 0, 255, 0, rows-1);
 
   // and one Lissajou function
-  uint8_t x1 = beatsin8(23 * speed, 0, 15);
-  uint8_t y1 = beatsin8(28 * speed, 0, 15);
+  uint8_t x1 = beatsin8(23 * speed, 0, cols-1);
+  uint8_t y1 = beatsin8(28 * speed, 0, rows-1);
 
   for (int y = 0; y < rows; y++) {
     for (int x = 0; x < cols; x++) {
@@ -5196,7 +5199,7 @@ uint16_t mode_2Dmetaballs(void) {   // Metaballs by Stefan Petrick. Cannot have 
       dist += sqrt16((dx * dx) + (dy * dy));
 
       // inverse result
-      byte color = 1000 / dist;
+      byte color = dist ? 1000 / dist : 255;
 
       // map color between thresholds
       if (color > 0 and color < 60) {
