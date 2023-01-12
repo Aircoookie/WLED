@@ -219,6 +219,7 @@ class BobLightUsermod : public Usermod {
 
     void enable(bool en) { enabled = en; }
     
+#ifndef WLED_DISABLE_MQTT
     /**
      * handling of MQTT message
      * topic only contains stripped topic (part after /wled/MAC)
@@ -249,6 +250,7 @@ class BobLightUsermod : public Usermod {
       //  mqtt->subscribe(subuf, 0);
       //}
     }
+#endif
 
     void addToJsonInfo(JsonObject& root)
     {
