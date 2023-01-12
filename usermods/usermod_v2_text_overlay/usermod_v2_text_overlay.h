@@ -9,6 +9,8 @@ class TextOverlayUsermod : public Usermod {
     uint16_t scrollStep = 500; //config
     uint8_t fontsize = 1; //config
     uint configColor[3] = {0, 200, 0}; // config
+    int8_t yOffsetConfig = 0;
+    bool overwriteYOffset = false;
 
     int textColor = 0;
     uint16_t scrollMove = 0;
@@ -62,6 +64,8 @@ class TextOverlayUsermod : public Usermod {
       top["color_r"] = configColor[0];
       top["color_g"] = configColor[1];
       top["color_b"] = configColor[2];
+      top["y_offset"] = yOffsetConfig;
+      top["overwrite_y_offset"] = overwriteYOffset;
     }
 
     bool readFromConfig(JsonObject& root)
@@ -77,6 +81,8 @@ class TextOverlayUsermod : public Usermod {
       configComplete &= getJsonValue(top["color_r"], configColor[0]);
       configComplete &= getJsonValue(top["color_g"], configColor[1]);
       configComplete &= getJsonValue(top["color_b"], configColor[2]);
+      configComplete &= getJsonValue(top["y_offset"], yOffsetConfig);
+      configComplete &= getJsonValue(top["overwrite_y_offset"], overwriteYOffset);
 
       return configComplete;
     }
@@ -117,7 +123,11 @@ class TextOverlayUsermod : public Usermod {
         case 5: letterWidth = 5; letterHeight = 12; break;
       }
 
-      const uint16_t yoffset = map(strip.getSegment(segmentId).intensity, 0, 255, -rows/2, rows/2) + (rows-letterHeight)/2;
+      int16_t yoffset = (map(strip.getSegment(segmentId).intensity, 0, 255, -rows/2, rows/2) + (rows-letterHeight)/2) + yOffsetConfig;
+      if (overwriteYOffset) {
+        yoffset = yOffsetConfig;
+      }
+    
       const uint16_t numberOfLetters = strlen(text);
 
       //scroll
