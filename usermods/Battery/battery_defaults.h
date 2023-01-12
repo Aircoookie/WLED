@@ -1,6 +1,8 @@
 #ifndef UMBDefaults_h
 #define UMBDefaults_h
 
+#include "wled.h"
+
 // pin defaults
 // for the esp32 it is best to use the ADC1: GPIO32 - GPIO39
 // https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/adc.html
