@@ -5087,11 +5087,11 @@ uint16_t mode_2DLissajous(void) {            // By: Andrew Tuline
   for (int i=0; i < 256; i ++) {
     //float xlocn = float(sin8(now/4+i*(SEGMENT.speed>>5))) / 255.0f;
     //float ylocn = float(cos8(now/4+i*2)) / 255.0f;
-    uint8_t xlocn = sin8(strip.now/2+i*(SEGMENT.speed>>5));
-    uint8_t ylocn = cos8(strip.now/2+i*2);
+    uint8_t xlocn = sin8(millis()/4+i*(SEGMENT.speed>>5));
+    uint8_t ylocn = cos8(millis()/4+i*2);
     xlocn = map(xlocn,0,255,0,cols-1);
     ylocn = map(ylocn,0,255,0,rows-1);
-    SEGMENT.setPixelColorXY(xlocn, ylocn, SEGMENT.color_from_palette(strip.now/100+i, false, PALETTE_SOLID_WRAP, 0));
+    SEGMENT.setPixelColorXY(xlocn, ylocn, SEGMENT.color_from_palette(millis()/100+i, false, PALETTE_SOLID_WRAP, 0));
   }
 
   return FRAMETIME;
@@ -7307,6 +7307,61 @@ uint16_t mode_2DAkemi(void) {
   return FRAMETIME;
 } // mode_2DAkemi
 static const char _data_FX_MODE_2DAKEMI[] PROGMEM = "Akemi@Color speed,Dance;Head palette,Arms & Legs,Eyes & Mouth;Face palette;2f;si=0"; //beatsin
+
+
+// Distortion waves - ldirko
+// https://editor.soulmatelights.com/gallery/1089-distorsion-waves
+// apated for WLD by @blazoncek
+uint16_t mode_2Ddistortionwaves() {
+  if (!strip.isMatrix) return mode_static(); // not a 2D set-up
+
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+
+  uint8_t speed = SEGMENT.speed/32;
+  uint8_t scale = SEGMENT.intensity/32;
+
+  uint8_t  w = 2;
+
+  uint16_t a  = millis()/32;
+  uint16_t a2 = a/2;
+  uint16_t a3 = a/3;
+
+  uint16_t cx =  beatsin8(10-speed,0,cols-1)*scale;
+  uint16_t cy =  beatsin8(12-speed,0,rows-1)*scale;
+  uint16_t cx1 = beatsin8(13-speed,0,cols-1)*scale;
+  uint16_t cy1 = beatsin8(15-speed,0,rows-1)*scale;
+  uint16_t cx2 = beatsin8(17-speed,0,cols-1)*scale;
+  uint16_t cy2 = beatsin8(14-speed,0,rows-1)*scale;
+  
+  uint16_t xoffs = 0;
+  for (int x = 0; x < cols; x++) {
+    xoffs += scale;
+    uint16_t yoffs = 0;
+
+    for (int y = 0; y < rows; y++) {
+       yoffs += scale;
+
+      byte rdistort = cos8((cos8(((x<<3)+a )&255)+cos8(((y<<3)-a2)&255)+a3   )&255)>>1; 
+      byte gdistort = cos8((cos8(((x<<3)-a2)&255)+cos8(((y<<3)+a3)&255)+a+32 )&255)>>1; 
+      byte bdistort = cos8((cos8(((x<<3)+a3)&255)+cos8(((y<<3)-a) &255)+a2+64)&255)>>1; 
+
+      byte valueR = rdistort+ w*  (a- ( ((xoffs - cx)  * (xoffs - cx)  + (yoffs - cy)  * (yoffs - cy))>>7  ));
+      byte valueG = gdistort+ w*  (a2-( ((xoffs - cx1) * (xoffs - cx1) + (yoffs - cy1) * (yoffs - cy1))>>7 ));
+      byte valueB = bdistort+ w*  (a3-( ((xoffs - cx2) * (xoffs - cx2) + (yoffs - cy2) * (yoffs - cy2))>>7 ));
+
+      valueR = gamma8(cos8(valueR));
+      valueG = gamma8(cos8(valueG));
+      valueB = gamma8(cos8(valueB));
+
+      SEGMENT.setPixelColorXY(x, y, RGBW32(valueR, valueG, valueB, 0)); 
+    }
+  }
+
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_2DDISTORTIONWAVES[] PROGMEM = "Distortion Waves@!,Scale;;;2;";
+
 #endif // WLED_DISABLE_2D
 
 
@@ -7505,6 +7560,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_2DBLOBS, &mode_2Dfloatingblobs, _data_FX_MODE_2DBLOBS);
   addEffect(FX_MODE_2DSCROLLTEXT, &mode_2Dscrollingtext, _data_FX_MODE_2DSCROLLTEXT);
   addEffect(FX_MODE_2DDRIFTROSE, &mode_2Ddriftrose, _data_FX_MODE_2DDRIFTROSE);
+  addEffect(FX_MODE_2DDISTORTIONWAVES, &mode_2Ddistortionwaves, _data_FX_MODE_2DDISTORTIONWAVES);
 
   addEffect(FX_MODE_2DGEQ, &mode_2DGEQ, _data_FX_MODE_2DGEQ); // audio
 
