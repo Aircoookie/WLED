@@ -353,6 +353,9 @@
 		<button class="btn infobtn" onclick="toggleNodes()">Instance List</button>
 		<button class="btn infobtn" onclick="window.open('/update','_self');">Update WLED</button>
 		<button class="btn infobtn" id="resetbtn" onclick="cnfReset()">Reboot WLED</button>
+		<button class="btn infobtn" id="genPresets" onclick="genPresets()">Generate presets</button>
+		<button class="btn infobtn" id="savePresetsGen" onclick="savePresetsGen()" hidden="true">Save generated presets</button>
+		<textarea id="presetsGen" hidden="true"></textarea><br>
 	</div>
 	<br>
 	<span class="h">Made with <span id="heart">&#10084;&#xFE0E;</span> by Aircoookie and the <a href="https://wled.discourse.group/" target="_blank">WLED community</a></span>

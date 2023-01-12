@@ -2017,7 +2017,7 @@ uint16_t mode_fire_2012()
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_FIRE_2012[] PROGMEM = "Fire 2012@Cooling,Spark rate;;!;1.5d;sx=120,ix=64,m12=1"; // bars WLEDMM 1.5d
+static const char _data_FX_MODE_FIRE_2012[] PROGMEM = "Fire 2012@Cooling,Spark rate;;!;1.5d;pal=0,sx=120,ix=64,m12=1"; // bars WLEDMM 1.5d, pal = 0
 
 
 // ColorWavesWithPalettes by Mark Kriegsman: https://gist.github.com/kriegsman/8281905786e8b2632aeb

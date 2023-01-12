@@ -2548,6 +2548,113 @@ function rSegs()
 	requestJson(obj);
 }
 
+//WLEDMM generate presets.json file
+function genPresets()
+{
+	var result = '{"0":{}';
+
+	var effects = eJson;
+	var seq = 30;
+	var playlistPS = JSON.parse("{}");
+	var playlistSep = JSON.parse("{}");
+	var playlistDur = JSON.parse("{}");
+	var playlistTrans = JSON.parse("{}");
+	function addToPlaylist(m) {
+		if (!playlistPS[m]) playlistPS[m] = "";
+		if (!playlistDur[m]) playlistDur[m] = "";
+		if (!playlistTrans[m]) playlistTrans[m] = "";
+		if (!playlistSep[m]) playlistSep[m] = "";
+		playlistPS[m] += playlistSep[m] + `${seq}`;
+		playlistDur[m] += playlistSep[m] + "100";
+		playlistTrans[m] += playlistSep[m] + "7";
+		playlistSep[m] = ",";
+	}
+	for (let ef of effects) {
+		let id = ef.id;
+		let nm = ef.name+" ";
+		let fd = "";
+		if (ef.name.indexOf("RSVD") < 0) {
+			if (Array.isArray(fxdata) && fxdata.length>id) {
+				fd = fxdata[id];
+				let eP = (fd == '')?[]:fd.split(";"); // effect parameters
+				let m = (eP.length<4 || eP[3]==='')?'1':eP[3]; // flags
+				// console.log(ef, eP);
+				//transform key values in json format
+				var defaultString = "";
+				if (eP.length>4) {
+					let defaults = (eP[4] == '')?[]:eP[4].split(",");
+					for (let i=0; i<defaults.length;i++) {
+						let keyValue = (defaults[i] == '')?[]:defaults[i].split("=");
+						defaultString += `,"${keyValue[0]}":${keyValue[1]}`;
+					}
+				}
+				if (!defaultString.includes("sx")) defaultString += ',"sx":128'; //Speed
+				if (!defaultString.includes("ix")) defaultString += ',"ix":128'; //Intensity
+				if (!defaultString.includes("c1")) defaultString += ',"c1":128'; //Custom 1
+				if (!defaultString.includes("c2")) defaultString += ',"c2":128'; //Custom 2
+				if (!defaultString.includes("c3")) defaultString += ',"c3":16'; //Custom 3
+				if (!defaultString.includes("o1")) defaultString += ',"o1":0'; //Check 1
+				if (!defaultString.includes("o2")) defaultString += ',"o2":0'; //Check 2
+				if (!defaultString.includes("o3")) defaultString += ',"o3":0'; //Check 3
+				if (!defaultString.includes("pal")) defaultString += ',"pal":1'; //Random palette
+				if (!defaultString.includes("m12")) {
+					if (m.includes("1") && !m.includes("1.5")) defaultString += ',"rev":true,"mi":true,"rY":true,"mY":true,"m12":2'; //Arc expansion
+					else defaultString += ',"rev":false,"mi":false,"rY":false,"mY":false,"m12":0'; //pixels expansion
+				} 
+				result += `\n,"${seq}":{"n":"${ef.name}","mainseg":0,"seg":[{"id":0,"fx":${id}${defaultString}}]}`; //,"ql":"${seq}"
+				addToPlaylist(m);
+				addToPlaylist("All");
+				if (m.includes("1")) addToPlaylist("All1");
+				if (m.includes("2")) addToPlaylist("All2");
+				seq++;
+			} //fxData is array
+		} //not RSVD
+	} //all effects
+
+	seq=10; //Playlist start here
+	// console.log(playlistPS, playlistDur, playlistTrans);
+	for (const m in playlistPS) {
+		let playListString = `\n,"${seq}":{"n":"${m}D Playlist","ql":"${seq}","on":true,"playlist":{"ps":[${playlistPS[m]}],"dur":[${playlistDur[m]}],"transition":[${playlistTrans[m]}],"repeat":0,"end":0,"r":1}}`;
+		// console.log(playListString);
+		result += playListString;
+		seq++;
+	}
+
+	result += "}";
+
+	//assign result and show text and save button
+	gId("genPresets").hidden = true;
+	gId("savePresetsGen").hidden = false;
+	gId("presetsGen").hidden = false;
+	gId("presetsGen").value = result;
+	// console.log(result);
+
+}
+
+//WLEDMM: utility function to save file to FS
+function uploadFileWithText(name, text)
+{
+  var req = new XMLHttpRequest();
+  req.addEventListener('load', function(){showToast(this.responseText,this.status >= 400)});
+  req.addEventListener('error', function(e){showToast(e.stack,true);});
+  req.open("POST", "/upload");
+  var formData = new FormData();
+
+  var blob = new Blob([text], {type : 'application/text'});
+  var fileOfBlob = new File([blob], name);
+  formData.append("upload", fileOfBlob);
+
+  req.send(formData);
+}
+
+//WLEDMM: save the presets.json to FS
+function savePresetsGen()
+{
+	if (!confirm('Are you sure to (over)write presets.json?')) return;
+
+	uploadFileWithText("/presets.json", gId("presetsGen").value);
+}
+
 function loadPalettesData(callback = null)
 {
 	if (palettesData) return;

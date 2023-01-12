@@ -172,7 +172,7 @@ uint16_t mode_pongGame(void) {
   return FRAMETIME;
 }
 
-static const char _data_FX_MODE_PONGGAME[] PROGMEM = "🎮 Pong@!;!;!;2d";
+static const char _data_FX_MODE_PONGGAME[] PROGMEM = "🎮 Pong@!;!;!;2";
 
 //https://howtomechatronics.com/tutorials/arduino/arduino-and-mpu6050-accelerometer-and-gyroscope-tutorial/
 
@@ -318,7 +318,7 @@ uint16_t mode_3DIMUCube(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_3DIMUCube[] PROGMEM = "🎮 3DIMUCube@,Perspective;!;!;,pal=1,2d"; //random cycle
+static const char _data_FX_MODE_3DIMUCube[] PROGMEM = "🎮 3DIMUCube@,Perspective;!;!;2;pal=1"; //random cycle
 
 class GamesUsermod : public Usermod {
   private:

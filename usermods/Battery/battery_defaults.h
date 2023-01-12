@@ -3,7 +3,7 @@
 // https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/adc.html
 #ifndef USERMOD_BATTERY_MEASUREMENT_PIN
   #ifdef ARDUINO_ARCH_ESP32
-    #define USERMOD_BATTERY_MEASUREMENT_PIN 35
+    #define USERMOD_BATTERY_MEASUREMENT_PIN -1 //WLEDMM instead of 35
   #else //ESP8266 boards
     #define USERMOD_BATTERY_MEASUREMENT_PIN A0
   #endif
