@@ -4647,14 +4647,14 @@ uint16_t mode_2DColoredBursts() {              // By: ldirko   https://editor.so
       uint8_t rate = i * 255 / steps;
       byte dx = lerp8by8(x1, y1, rate);
       byte dy = lerp8by8(x2, y2, rate);
-      SEGMENT.setPixelColorXY(dx, dy, grad ? color.nscale8_video(255-rate) : color); // use addPixelColorXY for different look
-      //SEGMENT.addPixelColorXY(dx, dy, color); // use setPixelColorXY for different look
-      //if (grad) SEGMENT.fadePixelColorXY(dx, dy, rate);
+      //SEGMENT.setPixelColorXY(dx, dy, grad ? color.nscale8_video(255-rate) : color); // use addPixelColorXY for different look
+      SEGMENT.addPixelColorXY(dx, dy, color); // use setPixelColorXY for different look
+      if (grad) SEGMENT.fadePixelColorXY(dx, dy, rate);
     }
 
     if (dot) { //add white point at the ends of line
-      SEGMENT.addPixelColorXY(x1, x2, WHITE);
-      SEGMENT.addPixelColorXY(y1, y2, WHITE);
+      SEGMENT.setPixelColorXY(x1, x2, WHITE);
+      SEGMENT.setPixelColorXY(y1, y2, DARKSLATEGRAY);
     }
   }
   if (SEGMENT.custom3) SEGMENT.blur(SEGMENT.custom3/2);
@@ -4723,7 +4723,9 @@ uint16_t mode_2DDNASpiral() {               // By: ldirko  https://editor.soulma
       for (size_t k = 1; k <= steps; k++) {
         uint8_t rate = k * 255 / steps;
         uint8_t dx = lerp8by8(x, x1, rate);
-        SEGMENT.setPixelColorXY(dx, i, ColorFromPalette(SEGPALETTE, hue, 255, LINEARBLEND).nscale8_video(rate));
+        //SEGMENT.setPixelColorXY(dx, i, ColorFromPalette(SEGPALETTE, hue, 255, LINEARBLEND).nscale8_video(rate));
+        SEGMENT.addPixelColorXY(dx, i, ColorFromPalette(SEGPALETTE, hue, 255, LINEARBLEND)); // use setPixelColorXY for different look
+        SEGMENT.fadePixelColorXY(dx, i, rate);
       }
       SEGMENT.setPixelColorXY(x, i, DARKSLATEGRAY);
       SEGMENT.setPixelColorXY(x1, i, WHITE);

@@ -574,7 +574,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
             int y = roundf(cos_t(rad) * i);
             setPixelColorXY(x, y, col);
           }
-          // Bresenham’s Algorithm
+          // Bresenham’s Algorithm (may not fill every pixel)
           //int d = 3 - (2*i);
           //int y = i, x = 0;
           //while (y >= x) {

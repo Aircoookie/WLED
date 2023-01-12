@@ -272,7 +272,7 @@ void Segment::addPixelColorXY(int x, int y, uint32_t color) {
 
 void Segment::fadePixelColorXY(uint16_t x, uint16_t y, uint8_t fade) {
   CRGB pix = CRGB(getPixelColorXY(x,y)).nscale8_video(fade);
-  setPixelColor(x, y, pix);
+  setPixelColorXY(x, y, pix);
 }
 
 // blurRow: perform a blur on a row of a rectangular matrix
