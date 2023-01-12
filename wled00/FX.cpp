@@ -2938,10 +2938,10 @@ static const char _data_FX_MODE_GLITTER[] PROGMEM = "Glitter@!,!,,,,,Overlay;1,2
 uint16_t mode_solid_glitter()
 {
   SEGMENT.fill(SEGCOLOR(0));
-  glitter_base(SEGMENT.intensity, SEGCOLOR(1));
+  glitter_base(SEGMENT.intensity, SEGCOLOR(2) ? SEGCOLOR(2) : ULTRAWHITE);
   return FRAMETIME;
 }
-static const char _data_FX_MODE_SOLID_GLITTER[] PROGMEM = "Solid Glitter@,!;Bg,Glitter color;;;m12=0";
+static const char _data_FX_MODE_SOLID_GLITTER[] PROGMEM = "Solid Glitter@,!;Bg,,Glitter color;;;m12=0";
 
 
 //each needs 19 bytes
