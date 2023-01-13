@@ -471,7 +471,7 @@ void Segment::setMode(uint8_t fx, bool loadDefaults) {
         sOpt = extractModeDefaults(fx, "c1");   if (sOpt >= 0) custom1   = sOpt;
         sOpt = extractModeDefaults(fx, "c2");   if (sOpt >= 0) custom2   = sOpt;
         sOpt = extractModeDefaults(fx, "c3");   if (sOpt >= 0) custom3   = sOpt;
-        // sOpt = extractModeDefaults(fx, "m12");  if (sOpt >= 0) map1D2D   = constrain(sOpt, 0, 7);
+        // sOpt = extractModeDefaults(fx, "m12");  if (sOpt >= 0) map1D2D   = constrain(sOpt, 0, 7); WLEDMM: Disable for the time being as it disturbs other effects too much
         sOpt = extractModeDefaults(fx, "si");   if (sOpt >= 0) soundSim  = constrain(sOpt, 0, 7);
         sOpt = extractModeDefaults(fx, "rev");  if (sOpt >= 0) reverse   = (bool)sOpt;
         sOpt = extractModeDefaults(fx, "mi");   if (sOpt >= 0) mirror    = (bool)sOpt; // NOTE: setting this option is a risky business
@@ -768,8 +768,31 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col) //WLEDMM: IRAM_ATT
         // expand in circular fashion from center
         if (i==0)
           setPixelColorXY(0, 0, col);
-        else
-          drawArc(0, 0, i, col); //WLEDMM: drawArc will take care if drawing
+        else {
+          //WLEDMM: drawArc(0, 0, i, col); could work as alternative
+
+          float step = HALF_PI / (2.85f*i);
+          for (float rad = 0.0f; rad <= HALF_PI+step/2; rad += step) {
+            // may want to try float version as well (with or without antialiasing)
+            int x = roundf(sin_t(rad) * i);
+            int y = roundf(cos_t(rad) * i);
+            setPixelColorXY(x, y, col);
+          }
+          // Bresenham’s Algorithm (may not fill every pixel)
+          //int d = 3 - (2*i);
+          //int y = i, x = 0;
+          //while (y >= x) {
+          //  setPixelColorXY(x, y, col);
+          //  setPixelColorXY(y, x, col);
+          //  x++;
+          //  if (d > 0) {
+          //    y--;
+          //    d += 4 * (x - y) + 10;
+          //  } else {
+          //    d += 4 * x + 6;
+          //  }
+          //}
+        }
         break;
       case M12_pCorner:
         for (int x = 0; x <= i; x++) setPixelColorXY(x, i, col);
@@ -824,7 +847,7 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col) //WLEDMM: IRAM_ATT
 
   uint16_t len = length();
   uint8_t _bri_t = currentBri(on ? opacity : 0);
-  if (!_bri_t) return;
+  if (!_bri_t && !transitional) return;
   if (_bri_t < 255) {
     byte r = scale8(R(col), _bri_t);
     byte g = scale8(G(col), _bri_t);
