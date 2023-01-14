@@ -224,11 +224,11 @@
 		let obj = d.getElementsByName(name);
 		var select = obj;
 		if (obj[el]) select = obj[el];
-		console.log("disableROPins", name, el, obj, "s", select, d.ro_gpio);
-		for (let i=0; i<d.ro_gpio.length; i++) {
-			let c = select.options[d.ro_gpio[i]];
-			console.log("disableROPins option", c);
-			if (c) c.disabled=true;
+		// console.log("disableROPins", name, el, obj, "s", select, d.ro_gpio);
+		for (let i=0; i<select.options.length; i++) {
+			let c = select.options[i];
+			// console.log("disableROPins option", c, c.value, d.ro_gpio.includes(c.value));
+			for (let j=0; j<d.ro_gpio.length; j++) if (d.ro_gpio[j] == c.value) c.disabled=true; //if (d.ro_gpio.includes(c.value))
 		}
 	}
 
@@ -237,21 +237,16 @@
 		// console.log('pinDropdownsPost', d.max_gpio, d.ro_pins, d.ro_gpio, d.rsvd);
 		var elements = gId("form_s").elements;
 
-		for (var i = 0, element; element = elements[i++];) {
-			if (element.name.includes("pin") && element.options!=null) { //select all pin select elements
-				for (let i=0; i<d.ro_gpio.length; i++) {
-					let c = element.options[d.ro_gpio[i]];
-					if (c) {c.text += " read only 🟠"; } //not always included e.g. mclk
-				}
-				for (let i=0; i<d.rsvd.length; i++) {
-					let c = element.options[d.rsvd[i]];
-					if (c) {c.text += " reserved 🟣"; c.disabled=true;} //not always included e.g. mclk (now always disabled as post is done last)
-				}
+		for (var i = 0, select; select = elements[i++];) {
+			if (select.name.includes("pin") && select.options!=null) { //select all pin select elements
 				// console.log(element);
-				for (let i=0; i<element.options.length; i++) {
-					let c = element.options[i];
+				for (let i=0; i<select.options.length; i++) {
+					let c = select.options[i];
+					// console.log("pinDropdownsPost option", c, c.value, d.ro_gpio.includes(c.value));
+					for (let j=0; j<d.ro_gpio.length; j++) if (d.ro_gpio[j] == c.value) c.text += " read only 🟠"; //if (d.ro_gpio.includes(c.value)) not working ???
+					for (let j=0; j<d.rsvd.length; j++) if (d.rsvd[j] == c.value) {c.text += " reserved 🟣"; c.disabled=true;} //now always disabled as post is done last if (d.rsvd.includes(c.value))
 					if (c.value > d.max_gpio) {
-						element.removeChild(c);
+						select.removeChild(c);
 						i--; //decrease i by one because the index has been adjusted
 					}
 					//https://www.javascripttutorial.net/javascript-dom/javascript-add-remove-options/
