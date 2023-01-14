@@ -228,11 +228,11 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     for (size_t i = 0; i < iarr.size(); i++) {
       if(iarr[i].is<JsonInteger>()) {
         if (!set) {
-          start = iarr[i];
-          set = 1;
+          start = abs(iarr[i].as<int>());
+          set++;
         } else {
-          stop = iarr[i];
-          set = 2;
+          stop = abs(iarr[i].as<int>());
+          set++;
         }
       } else { //color
         uint8_t rgbw[] = {0,0,0,0};
@@ -248,16 +248,13 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
           }
         }
 
-        if (set < 2) stop = start + 1;
+        if (set < 2 || stop <= start) stop = start + 1;
         uint32_t c = gamma32(RGBW32(rgbw[0], rgbw[1], rgbw[2], rgbw[3]));
-        for (int i = start; i < stop; i++) {
-          seg.setPixelColor(i, c);
-        }
-        if (!set) start++;
+        while (start < stop) seg.setPixelColor(start++, c);
         set = 0;
       }
     }
-    strip.trigger();
+    strip.trigger(); // force segment update
   }
   // send UDP/WS if segment options changed (except selection; will also deselect current preset)
   if (seg.differs(prev) & 0x7F) stateChanged = true;
