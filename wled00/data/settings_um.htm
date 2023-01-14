@@ -122,7 +122,7 @@
 			if (f.includes("pin")) {
 				var n = this.name.replace("[]","").substr(-3);
 				urows += `<select name="${k}:${f}${a?"[]":""}">`;
-				for (var j=-1; j<=39; j++) { // all possible pins (d.max_gpio not working as it is set after addField during load and appendGPIOInfo)
+				for (var j=-1; j<50; j++) { // all possible pins (d.max_gpio not working as it is set after addField during load and appendGPIOInfo)
 					let foundPin = -1;
 					for (var i=0; i<pins.length; i++) { // check if pin is reserved
 						if (pins[i] == j) foundPin = i;
@@ -130,12 +130,12 @@
 					urows += `<option value="${j}"`;
 					if (j==o) urows += ` selected`; //add selected value
 					if (foundPin >=0) {// already reserved pin
-						if (!k.includes(pinO[foundPin]) && pinO[foundPin] != "if") urows += ` disabled`; 
+						if (!k.includes(pinO[foundPin])) urows += ` disabled`; // && pinO[foundPin] != "if"
 					}
 					if (j==-1) urows += `>undefined`; else urows += `>${j}`; // don't show -1
 					if (foundPin >=0) {// already reserved pin
-						urows += ` ${pinO[foundPin]}`;
-						if (k.includes(pinO[foundPin]) || pinO[foundPin] == "if") urows += ` 😀`; else urows += ` ⛔`; //add pins assigned here
+						urows += ` ${pinO[foundPin]=="if"?"global":pinO[foundPin]}`;
+						if (!k.includes(pinO[foundPin])) urows += " 🔴"; //add pins assigned here || pinO[foundPin] == "if" urows += " 🟢"; else 
 					}
 					urows += `</option>`;
 					// if (j==5) //exclude pin 6 to 11
@@ -218,6 +218,49 @@
 			//https://www.javascripttutorial.net/javascript-dom/javascript-remove-items-from-a-select-conditionally/
 		}
 	}
+
+	//WLEDMM
+	function disableROPins(name,el) {
+		let obj = d.getElementsByName(name);
+		var select = obj;
+		if (obj[el]) select = obj[el];
+		console.log("disableROPins", name, el, obj, "s", select, d.ro_gpio);
+		for (let i=0; i<d.ro_gpio.length; i++) {
+			let c = select.options[d.ro_gpio[i]];
+			console.log("disableROPins option", c);
+			if (c) c.disabled=true;
+		}
+	}
+
+	//WLEDMM read only pins 🟠, reserved pins 🟣 and disabled, and remove pins > max_gpio
+	function pinDropdownsPost() {
+		// console.log('pinDropdownsPost', d.max_gpio, d.ro_pins, d.ro_gpio, d.rsvd);
+		var elements = gId("form_s").elements;
+
+		for (var i = 0, element; element = elements[i++];) {
+			if (element.name.includes("pin") && element.options!=null) { //select all pin select elements
+				for (let i=0; i<d.ro_gpio.length; i++) {
+					let c = element.options[d.ro_gpio[i]];
+					if (c) {c.text += " read only 🟠"; } //not always included e.g. mclk
+				}
+				for (let i=0; i<d.rsvd.length; i++) {
+					let c = element.options[d.rsvd[i]];
+					if (c) {c.text += " reserved 🟣"; c.disabled=true;} //not always included e.g. mclk (now always disabled as post is done last)
+				}
+				// console.log(element);
+				for (let i=0; i<element.options.length; i++) {
+					let c = element.options[i];
+					if (c.value > d.max_gpio) {
+						element.removeChild(c);
+						i--; //decrease i by one because the index has been adjusted
+					}
+					//https://www.javascripttutorial.net/javascript-dom/javascript-add-remove-options/
+					//https://www.javascripttutorial.net/javascript-dom/javascript-remove-items-from-a-select-conditionally/
+				}
+			}
+		}
+	}
+
 	// https://stackoverflow.com/questions/26440494/insert-text-after-this-input-element-with-javascript
 	function addInfo(name,el,txt, txt2="") {
 		let obj = d.getElementsByName(name);
@@ -257,13 +300,13 @@
 				urows+="<i style=\"color:orange\">(only changable on ESP32, change requires reboot!)</i>";
 				urows+="<hr class=\"sml\">";
 				urows+="<p><u>Global I2C GPIOs (HW)</u></p>";
-				addField("SDA", "pin", -1, false);
-				addField("SCL", "pin", -1, false);
+				addField("if:SDA", "pin", -1, false);
+				addField("if:SCL", "pin", -1, false);
 				urows+="<hr class=\"sml\">";
 				urows+="<p><u>Global SPI GPIOs (HW)</u></p>";
-				addField("MOSI", "pin", -1, false);
-				addField("MISO", "pin", -1, false);
-				addField("SCLK", "pin", -1, false);
+				addField("if:MOSI", "pin", -1, false);
+				addField("if:MISO", "pin", -1, false);
+				addField("if:SCLK", "pin", -1, false);
 			}
 			if (isO(umCfg)) {
                 //WLEDMM: read url parameter. e.g. um=AudioReactive and if set only add the usermod with the same name

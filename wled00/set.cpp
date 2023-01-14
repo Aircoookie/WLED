@@ -522,11 +522,11 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       AsyncWebParameter* p = request->getParam(i);
       if (p_prev != nullptr && p->name() == p_prev->name())
       {
-        if (p->name() == "SDA:pin") hw_sda_pin = p->value().toInt();
-        if (p->name() == "SCL:pin") hw_scl_pin = p->value().toInt();
-        if (p->name() == "MOSI:pin") hw_mosi_pin = p->value().toInt();
-        if (p->name() == "MISO:pin") hw_miso_pin = p->value().toInt();
-        if (p->name() == "SCLK:pin") hw_sclk_pin = p->value().toInt();
+        if (p->name() == "if:SDA:pin") hw_sda_pin = p->value().toInt();
+        if (p->name() == "if:SCL:pin") hw_scl_pin = p->value().toInt();
+        if (p->name() == "if:MOSI:pin") hw_mosi_pin = p->value().toInt();
+        if (p->name() == "if:MISO:pin") hw_miso_pin = p->value().toInt();
+        if (p->name() == "if:SCLK:pin") hw_sclk_pin = p->value().toInt();
       }
       p_prev = p;
   }

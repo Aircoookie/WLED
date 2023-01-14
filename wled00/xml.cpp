@@ -189,18 +189,29 @@ void appendGPIOinfo() {
   }
   oappend(SET_F("];"));
 
+//WLEDMM: use isPinOK instead of hardcoded pins
+  char rsvd[140] = "d.rsvd=[";
+  size_t rsLen = strlen(rsvd);
+  char ro_gpio[140] = "d.ro_gpio=[";
+  size_t roLen = strlen(ro_gpio);
+  char pinString[10];
+  for(int pinNr = 0; pinNr < WLED_NUM_PINS; pinNr++) { // 49 = highest PIN on ESP32-S3
+    if(!pinManager.isPinOk(pinNr, false)) {
+      sprintf(pinString, "%s%d", strlen(rsvd)==rsLen?"":",", pinNr);
+      strcat(rsvd, pinString);
+    }
+    else {
+      //if ((!pinManager.isPinAllocated(pinNr)) && (pinManager.getPinSpecialText(pinNr).length() == 0)) continue;      // un-comment to hide no-name,unused GPIO pins
+      bool is_inOut = pinManager.isPinOk(pinNr, true);
+      if (!is_inOut) {
+        sprintf(pinString, "%s%d", strlen(ro_gpio)==roLen?"":",", pinNr);
+        strcat(ro_gpio, pinString);
+      }
+    }
+  }
+
   // add reserved and usermod pins as d.um_p array
-  #if defined(CONFIG_IDF_TARGET_ESP32S2)
-  oappend(SET_F("d.rsvd=[22,23,24,25,26,27,28,29,30,31,32"));
-  #elif defined(CONFIG_IDF_TARGET_ESP32S3)
-  oappend(SET_F("d.rsvd=[19,20,22,23,24,25,26,27,28,29,30,31,32"));  // includes 19+20 for USB OTG (JTAG)
-  #elif defined(CONFIG_IDF_TARGET_ESP32C3)
-  oappend(SET_F("d.rsvd=[11,12,13,14,15,16,17"));
-  #elif defined(ESP32)
-  oappend(SET_F("d.rsvd=[6,7,8,9,10,11,24,28,29,30,31"));
-  #else
-  oappend(SET_F("d.rsvd=[6,7,8,9,10,11"));
-  #endif
+  oappend(SET_F(rsvd));
 
   #ifdef WLED_ENABLE_DMX
   oappend(SET_F(",2")); // DMX hardcoded pin
@@ -244,18 +255,8 @@ void appendGPIOinfo() {
   oappend(SET_F("];"));
 
   // add info for read-only GPIO
-  oappend(SET_F("d.ro_gpio=["));
-  #if defined(CONFIG_IDF_TARGET_ESP32S2)
-  oappendi(46);
-  #elif defined(CONFIG_IDF_TARGET_ESP32S3)
-  // none for S3
-  #elif defined(CONFIG_IDF_TARGET_ESP32C3)
-  // none for C3
-  #elif defined(ESP32)
-  oappend(SET_F("34,35,36,37,38,39"));
-  #else
-  // none for ESP8266
-  #endif
+  //WLEDMM: use isPinOK instead of hardcoded pins
+  oappend(SET_F(ro_gpio));
   oappend(SET_F("];"));
 
   // add info about max. # of pins
@@ -704,31 +705,33 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
       // oappend(SET_F("numM="));
       // oappendi(usermods.getModCount());
       // oappend(";");
-      oappend(SET_F("d.getElementsByName(\"SDA:pin\")[1].value=")); oappendi(i2c_sda); oappend(";"); 
-      oappend(SET_F("d.getElementsByName(\"SCL:pin\")[1].value=")); oappendi(i2c_scl); oappend(";"); 
-      oappend(SET_F("d.getElementsByName(\"MOSI:pin\")[1].value=")); oappendi(spi_mosi); oappend(";"); 
-      oappend(SET_F("d.getElementsByName(\"MISO:pin\")[1].value=")); oappendi(spi_miso); oappend(";"); 
-      oappend(SET_F("d.getElementsByName(\"SCLK:pin\")[1].value=")); oappendi(spi_sclk); oappend(";"); 
+      oappend(SET_F("d.getElementsByName(\"if:SDA:pin\")[1].value=")); oappendi(i2c_sda); oappend(";"); 
+      oappend(SET_F("d.getElementsByName(\"if:SCL:pin\")[1].value=")); oappendi(i2c_scl); oappend(";"); 
+      oappend(SET_F("d.getElementsByName(\"if:MOSI:pin\")[1].value=")); oappendi(spi_mosi); oappend(";"); 
+      oappend(SET_F("d.getElementsByName(\"if:MISO:pin\")[1].value=")); oappendi(spi_miso); oappend(";"); 
+      oappend(SET_F("d.getElementsByName(\"if:SCLK:pin\")[1].value=")); oappendi(spi_sclk); oappend(";"); 
       //WLEDMM: add help info showing defaults
-      oappend(SET_F("addInfo('SDA:pin',0,'', 'SDA');"));
+      oappend(SET_F("addInfo('if:SDA:pin',0,'', 'SDA');"));
     #ifdef HW_PIN_SDA
-      oappend(SET_F("xOption('SDA:pin',1,' ⎌',")); oappendi(HW_PIN_SDA); oappend(");");
+      oappend(SET_F("xOption('if:SDA:pin',1,' ⎌',")); oappendi(HW_PIN_SDA); oappend(");");
     #endif
-      oappend(SET_F("addInfo('SCL:pin',0,'', 'SCL');"));
+      oappend(SET_F("addInfo('if:SCL:pin',0,'', 'SCL');"));
+      oappend(SET_F("disableROPins('if:SCL:pin',1);"));
     #ifdef HW_PIN_SCL
-      oappend(SET_F("xOption('SCL:pin',1,' ⎌',")); oappendi(HW_PIN_SCL); oappend(");"); 
+      oappend(SET_F("xOption('if:SCL:pin',1,' ⎌',")); oappendi(HW_PIN_SCL); oappend(");"); 
     #endif
-      oappend(SET_F("addInfo('MOSI:pin',0,'', 'MOSI');"));
+      oappend(SET_F("addInfo('if:MOSI:pin',0,'', 'MOSI');"));
     #ifdef HW_PIN_MOSISPI //WLEDMM renamed from HW_PIN_DATASPI
-      oappend(SET_F("xOption('MOSI:pin',1,' ⎌',")); oappendi(HW_PIN_MOSISPI); oappend(");"); 
+      oappend(SET_F("xOption('if:MOSI:pin',1,' ⎌',")); oappendi(HW_PIN_MOSISPI); oappend(");"); 
     #endif
-      oappend(SET_F("addInfo('MISO:pin',0,'', 'MISO');"));
+      oappend(SET_F("addInfo('if:MISO:pin',0,'', 'MISO');"));
     #ifdef HW_PIN_MISOSPI
-      oappend(SET_F("xOption('MISO:pin',1,' ⎌',")); oappendi(HW_PIN_MISOSPI); oappend(");"); 
+      oappend(SET_F("xOption('if:MISO:pin',1,' ⎌',")); oappendi(HW_PIN_MISOSPI); oappend(");"); 
     #endif
-      oappend(SET_F("addInfo('SCLK:pin',0,'', 'SCLK');"));
+      oappend(SET_F("addInfo('if:SCLK:pin',0,'', 'SCLK');"));
+      oappend(SET_F("disableROPins('if:SCLK:pin',1);"));
     #ifdef HW_PIN_CLOCKSPI
-      oappend(SET_F("xOption('SCLK:pin',1,' ⎌',")); oappendi(HW_PIN_CLOCKSPI); oappend(");"); 
+      oappend(SET_F("xOption('if:SCLK:pin',1,' ⎌',")); oappendi(HW_PIN_CLOCKSPI); oappend(");"); 
     #endif
     }
 
@@ -736,6 +739,8 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
       Usermod *usermod = usermods.lookupName(request->getParam("um")->value().c_str());
       if (usermod) usermod->appendConfigData();
     }
+      // oappend(SET_F("console.log('getSettingsJS fix ro pins', d.max_gpio, d.ro_pins, d.ro_gpio);")); 
+      oappend(SET_F("pinDropdownsPost();")); 
   }
 
   if (subPage == 9) // update
