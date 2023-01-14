@@ -68,6 +68,10 @@ void sendBytes(){
 }
 
 bool canUseSerial(void) {   // WLEDMM returns true if Serial can be used for debug output (i.e. not configured for other purpose)
+  #if defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(WLED_DEBUG_HOST)
+  //  on -C3, USB CDC blocks if disconnected! so check if Serial is active before printing to it.
+  if (!Serial) return false;
+  #endif
   if (pinManager.isPinAllocated(hardwareTX) && (pinManager.getPinOwner(hardwareTX) != PinOwner::DebugOut)) 
     return false;  // TX allocated to LEDs or other functions
   if ((realtimeMode == REALTIME_MODE_GENERIC) ||  (realtimeMode == REALTIME_MODE_ADALIGHT) || (realtimeMode == REALTIME_MODE_TPM2NET)) 

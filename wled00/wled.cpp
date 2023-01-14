@@ -299,7 +299,7 @@ void WLED::setup()
   Serial0.setDebugOutput(false);
   Serial.setDebugOutput(true);
   #else
-  Serial.setTimeout(50);
+  if (Serial) Serial.setTimeout(50);  // WLEDMM - only when serial is initialized
   #endif
 
   //Serial0.setDebugOutput(false);
