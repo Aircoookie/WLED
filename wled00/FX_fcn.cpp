@@ -549,7 +549,7 @@ class JMapC {
     void deletejVectorMap() {
       if (jVectorMap.size() > 0) {
         Serial.println("delete jVectorMap");
-        for (int i=0; i<jVectorMap.size(); i++)
+        for (size_t i=0; i<jVectorMap.size(); i++)
           delete jVectorMap[i].array; 
         jVectorMap.clear();
       }

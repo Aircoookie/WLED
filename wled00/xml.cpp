@@ -211,7 +211,7 @@ void appendGPIOinfo() {
   }
 
   // add reserved and usermod pins as d.um_p array
-  oappend(SET_F(rsvd));
+  oappend(rsvd);
 
   #ifdef WLED_ENABLE_DMX
   oappend(SET_F(",2")); // DMX hardcoded pin
@@ -256,7 +256,7 @@ void appendGPIOinfo() {
 
   // add info for read-only GPIO
   //WLEDMM: use isPinOK instead of hardcoded pins
-  oappend(SET_F(ro_gpio));
+  oappend(ro_gpio);
   oappend(SET_F("];"));
 
   // add info about max. # of pins
@@ -734,13 +734,13 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
       oappend(SET_F("xOption('if:SCLK:pin',1,' ⎌',")); oappendi(HW_PIN_CLOCKSPI); oappend(");"); 
     #endif
     }
-
     else {
       Usermod *usermod = usermods.lookupName(request->getParam("um")->value().c_str());
       if (usermod) usermod->appendConfigData();
     }
-      // oappend(SET_F("console.log('getSettingsJS fix ro pins', d.max_gpio, d.ro_pins, d.ro_gpio);")); 
-      oappend(SET_F("pinDropdownsPost();")); 
+
+    // oappend(SET_F("console.log('getSettingsJS fix ro pins', d.max_gpio, d.ro_pins, d.ro_gpio);")); 
+    oappend(SET_F("pinDropdownsPost();")); 
   }
 
   if (subPage == 9) // update
