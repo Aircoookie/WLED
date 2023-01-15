@@ -303,7 +303,7 @@ class BobLightUsermod : public Usermod {
     }
 
     void appendConfigData() {
-      oappend(SET_F("addHB('")); oappend(SET_F(_name)); oappend("');");
+      oappend(SET_F("addHB('")); oappend(_name); oappend("');");
 
       //oappend(SET_F("dd=addDropdown('usermod','selectfield');"));
       //oappend(SET_F("addOption(dd,'1st value',0);"));

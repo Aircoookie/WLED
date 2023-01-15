@@ -378,7 +378,7 @@ class UsermodBattery : public Usermod
 
     void appendConfigData()
     {
-      oappend(SET_F("addHB('")); oappend(SET_F(_name)); oappend("');");
+      oappend(SET_F("addHB('")); oappend(_name); oappend("');");
 
       oappend(SET_F("addInfo('Battery:min-voltage', 1, 'v');"));
       oappend(SET_F("addInfo('Battery:max-voltage', 1, 'v');"));

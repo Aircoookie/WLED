@@ -1044,7 +1044,7 @@ class FourLineDisplayUsermod : public Usermod {
     //}
 
     void appendConfigData() {
-      oappend(SET_F("addHB('")); oappend(SET_F(_name)); oappend("');");
+      oappend(SET_F("addHB('")); oappend(_name); oappend("');");
       
       oappend(SET_F("dd=addDropdown('4LineDisplay','type');"));
       oappend(SET_F("addOption(dd,'None',0);"));
@@ -1082,7 +1082,7 @@ class FourLineDisplayUsermod : public Usermod {
 
       //WLEDMM add errorMessage to um settings
       if (strcmp(errorMessage, "") != 0) {
-        oappend(SET_F("addInfo('errorMessage', 0, '<i>error: ")); oappend(SET_F(errorMessage)); oappend("! Correct and reboot</i>');");
+        oappend(SET_F("addInfo('errorMessage', 0, '<i>error: ")); oappend(errorMessage); oappend("! Correct and reboot</i>');");
       }
     }
 

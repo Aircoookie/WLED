@@ -414,7 +414,7 @@ public:
 
   void appendConfigData()
   {
-    oappend(SET_F("addHB('")); oappend(SET_F(_name)); oappend("');");
+    oappend(SET_F("addHB('")); oappend(_name); oappend("');");
 
     oappend(SET_F("addInfo('PIRsensorSwitch:HA-discovery',1,'HA=Home Assistant');"));     // 0 is field type, 1 is actual field
     oappend(SET_F("addInfo('PIRsensorSwitch:notifications',1,'Periodic WS updates');"));  // 0 is field type, 1 is actual field

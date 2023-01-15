@@ -418,13 +418,7 @@
 
 // HW_PIN_SCL & HW_PIN_SDA are used for information in usermods settings page and usermods themselves
 // which GPIO pins are actually used in a hardwarea layout (controller board)
-// you cannot change HW I2C pins on 8266
-#if defined(ESP8266) && defined(HW_PIN_SCL)
-  #undef HW_PIN_SCL
-#endif
-#if defined(ESP8266) && defined(HW_PIN_SDA)
-  #undef HW_PIN_SDA
-#endif
+//WLEDMM: unchangeable pins are not treated here by undef them, but elsewhere in the code 
 // defaults for 1st I2C on ESP32 (Wire global)
 #ifndef HW_PIN_SCL
   #define HW_PIN_SCL -1 //WLEDMM if not defined, -1 will be used (not SCL/22) (also for esp8266?)
@@ -435,16 +429,7 @@
 
 // HW_PIN_SCLKSPI & HW_PIN_MOSISPI & HW_PIN_MISOSPI are used for information in usermods settings page and usermods themselves
 // which GPIO pins are actually used in a hardwarea layout (controller board)
-// you cannot change HW SPI pins on 8266
-#if defined(ESP8266) && defined(HW_PIN_CLOCKSPI)
-  #undef HW_PIN_CLOCKSPI
-#endif
-#if defined(ESP8266) && defined(HW_PIN_MOSISPI)  //WLEDMM renamed from HW_PIN_DATASPI
-  #undef HW_PIN_MOSISPI
-#endif
-#if defined(ESP8266) && defined(HW_PIN_MISOSPI)
-  #undef HW_PIN_MISOSPI
-#endif
+//WLEDMM: unchangeable pins are not treated here by undef them, but elsewhere in the code 
 // defaults for VSPI on ESP32 (SPI global, SPI.cpp) as HSPI is used by WLED (bus_wrapper.h)
 #ifndef HW_PIN_CLOCKSPI
   #define HW_PIN_CLOCKSPI -1 //WLEDMM if not defined -1 will be used (not SCK/18)

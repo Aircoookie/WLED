@@ -616,8 +616,8 @@ public:
 
 
   void changeCustom(uint8_t par, bool increase) {
-    uint8_t val = 0;
   #ifdef USERMOD_FOUR_LINE_DISPLAY
+    uint8_t val = 0;
     if (display && display->wakeDisplay()) {
       display->redraw(true);
       // Throw away wake up input
@@ -629,11 +629,13 @@ public:
     if (applyToAll) {
       uint8_t id = strip.getFirstSelectedSegId();
       Segment& sid = strip.getSegment(id);
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
       switch (par) {
         case 3:  val = sid.custom3 = max(min((increase ? sid.custom3+fadeAmount : sid.custom3-fadeAmount), 255), 0); break;
         case 2:  val = sid.custom2 = max(min((increase ? sid.custom2+fadeAmount : sid.custom2-fadeAmount), 255), 0); break;
         default: val = sid.custom1 = max(min((increase ? sid.custom1+fadeAmount : sid.custom1-fadeAmount), 255), 0); break;
       }
+  #endif
       for (byte i=0; i<strip.getSegmentsNum(); i++) {
         Segment& seg = strip.getSegment(i);
         if (!seg.isActive() || i == id) continue;
@@ -644,12 +646,14 @@ public:
         }
       }
     } else {
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
       Segment& seg = strip.getMainSegment();
       switch (par) {
         case 3:  val = seg.custom3 = max(min((increase ? seg.custom3+fadeAmount : seg.custom3-fadeAmount), 255), 0); break;
         case 2:  val = seg.custom2 = max(min((increase ? seg.custom2+fadeAmount : seg.custom2-fadeAmount), 255), 0); break;
         default: val = seg.custom1 = max(min((increase ? seg.custom1+fadeAmount : seg.custom1-fadeAmount), 255), 0); break;
       }
+  #endif
     }
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
@@ -868,7 +872,7 @@ public:
   //WLEDMM: add appendConfigData
   void appendConfigData()
   {
-    oappend(SET_F("addHB('")); oappend(SET_F(_name)); oappend("');");
+    oappend(SET_F("addHB('")); oappend(_name); oappend("');");
 
     #ifdef ENCODER_DT_PIN
       oappend(SET_F("xOption('Rotary-Encoder:DT-pin',1,' ⎌',")); oappendi(ENCODER_DT_PIN); oappend(");"); 
