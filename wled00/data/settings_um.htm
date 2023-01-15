@@ -209,7 +209,7 @@
 			urows="";
 			if (isO(umCfg)) {
 				for (const [k,o] of Object.entries(umCfg)) {
-					urows += `<hr><h3>${k}</h3>`;
+					urows += `<hr><h3>${k}</h3><div name="${k}:help"></div>`;
 					addField(k,'unknown',o);
 				}
 			}

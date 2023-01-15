@@ -303,6 +303,8 @@ class BobLightUsermod : public Usermod {
     }
 
     void appendConfigData() {
+      oappend(SET_F("addInfo('BobLight:help',0,'<button onclick=\"location.href=&quot;https://kno.wled.ge/usermods/BobLight&quot;\" type=\"button\">?</button>');"));  // 0 is field type, 1 is actual field
+
       //oappend(SET_F("dd=addDropdown('usermod','selectfield');"));
       //oappend(SET_F("addOption(dd,'1st value',0);"));
       //oappend(SET_F("addOption(dd,'2nd value',1);"));
