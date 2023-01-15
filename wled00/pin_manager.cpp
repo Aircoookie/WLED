@@ -518,16 +518,7 @@ bool PinManagerClass::isPinAllocated(byte gpio, PinOwner tag)
 //
 
 bool PinManagerClass::joinWire() {    // shortcut in case no parameters provided
-  #ifdef ARDUINO_ARCH_ESP32
-    // ESP32 - i2c pins can be mapped to any GPIO
     return joinWire(i2c_sda, i2c_scl);
-  #else
-    // ESP8266: I2C pins are fixed
-    if ((i2c_sda < 0) || (i2c_scl < 0))
-      return joinWire(i2c_sda, i2c_scl);        // special case: -1 = disable i2c
-    else 
-      return joinWire(4, 5);                    // normal case - use HW pins -> SDA = 4, SCL = 5
-  #endif
 }
 
 bool PinManagerClass::joinWire(int8_t pinSDA, int8_t pinSCL) {
@@ -570,19 +561,22 @@ bool PinManagerClass::joinWire(int8_t pinSDA, int8_t pinSCL) {
   bool wireIsOK = true;
   #ifdef ARDUINO_ARCH_ESP32         // ESP32 - i2c pins can be mapped to any GPIO
     wireIsOK = Wire.setPins(pinSDA, pinSCL);   // this will fail if Wire is initialised already (i.e. Wire.begin() called prior)
-  #else // 8266 - I2C pins are fixed
-    if((pinSDA != 4) || (pinSCL != 5)) {     // fixed PINS: SDA = 4, SCL = 5
-      DEBUG_PRINT(F("PIN Manager: warning ESP8266 I2C pins are fixed. please use SDA="));
-      DEBUG_PRINTF("%d, SCL=%d !\n",4, 5);
-      return(false);
-    }
+  #else // 8266 - I2C pins are fixed -> actually they are not.
+    //if((pinSDA != 4) || (pinSCL != 5)) {     // fixed PINS: SDA = 4, SCL = 5
+    // DEBUG_PRINT(F("PIN Manager: warning ESP8266 I2C pins are fixed. please use SDA="));
+    //  DEBUG_PRINTF("%d, SCL=%d !\n",4, 5);
+    //  return(false);
+    //}
   #endif
   if (wireIsOK == false) {
     USER_PRINTLN(F("PIN Manager: warning - wire.setPins failed!"));
   }
 
-  //wireIsOK = Wire.begin();  // this will fail if wire is already running
-  Wire.begin();  // returns void on 8266
+  #ifdef ARDUINO_ARCH_ESP32
+    wireIsOK = Wire.begin(pinSDA, pinSCL);  // this will fail if wire is already running
+  #else
+    Wire.begin(pinSDA, pinSCL);  // returns void on 8266
+  #endif
 
   if (wireIsOK == false) {
     USER_PRINTLN(F("PIN Manager: warning - wire.begin failed!"));

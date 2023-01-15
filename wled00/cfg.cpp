@@ -310,6 +310,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     Wire.setPins(i2c_sda, i2c_scl); // this will fail if Wire is initilised (Wire.begin() called prior)
     #endif
     // Wire.begin(); // WLEDMM moved into pinManager
+    Serial.printf("pinmgr success for global i2c %d %d\n", i2c_sda, i2c_scl);
   } else {
     Serial.printf("pinmgr not success for global i2c %d %d\n", i2c_sda, i2c_scl);
   }
@@ -324,6 +325,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     #else
     SPI.begin();
     #endif
+    Serial.printf("pinmgr success for global spi %d %d %d\n", spi_mosi, spi_miso, spi_sclk);
   } else {
     Serial.printf("pinmgr not success for global spi %d %d %d\n", spi_mosi, spi_miso, spi_sclk);
   }

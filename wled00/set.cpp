@@ -532,10 +532,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   }
 
     #ifdef ESP8266
-    // cannot change pins on ESP8266
+    // cannot change pins on ESP8266 --> actually we can
     // WLEDMM: HW_PIN_xx could be set to -1 --> use pins as defined by the framework! SDA = 4, SCL = 5
-    if (hw_sda_pin >= 0 && hw_sda_pin != 4) hw_sda_pin = 4;
-    if (hw_scl_pin >= 0 && hw_scl_pin != 5) hw_scl_pin = 5;
+    //if (hw_sda_pin >= 0 && hw_sda_pin != 4) hw_sda_pin = 4;
+    //if (hw_scl_pin >= 0 && hw_scl_pin != 5) hw_scl_pin = 5;
     #endif
     PinManagerPinType i2c[2] = { { hw_sda_pin, true }, { hw_scl_pin, true } };
     if (hw_sda_pin >= 0 && hw_scl_pin >= 0 && pinManager.allocateMultiplePins(i2c, 2, PinOwner::HW_I2C)) {
