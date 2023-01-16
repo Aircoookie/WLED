@@ -56,7 +56,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
 
   uint16_t uni = 0, dmxChannels = 0;
   uint8_t* e131_data = nullptr;
-  uint8_t seq = 0, mde = REALTIME_MODE_E131, prio = 0;
+  uint8_t seq = 0, mde = REALTIME_MODE_E131;
 
   if (protocol == P_ARTNET)
   {
@@ -74,15 +74,13 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
     dmxChannels = htons(p->property_value_count) -1;
     e131_data = p->property_values;
     seq = p->sequence_number;
-    prio = p->priority;
+    // skip packages != config priority
+    if (e131Priority != 0 && p->priority != e131Priority) return;
   } else { //DDP
     realtimeIP = clientIP;
     handleDDPPacket(p);
     return;
   }
-
-  // when priority != 0: skip packages with priority != config priority
-  if ((e131Priority != 0 && prio != 0) && prio != e131Priority) return;
 
   #ifdef WLED_ENABLE_DMX
   // does not act on out-of-order packets yet
