@@ -69,6 +69,9 @@ void WLED::loop()
   handleAlexa();
   #endif
 
+  #ifdef WLED_ENABLE_OPC
+    handleOPCPacket();
+  #endif
   yield();
 
   if (doSerializeConfig) serializeConfig();
@@ -716,6 +719,9 @@ void WLED::initInterfaces()
   ddp.begin(false, DDP_DEFAULT_PORT);
   reconnectHue();
   initMqtt();
+#ifdef WLED_ENABLE_OPC
+  initOPCServer();
+#endif
   interfacesInited = true;
   wasConnected = true;
 }

@@ -187,6 +187,16 @@ void handleOverlayDraw();
 void _overlayAnalogCountdown();
 void _overlayAnalogClock();
 
+//opc.cpp
+void initOPCServer();
+void freeOPCClient(AsyncClient* client);
+void handleOPCClient(void* arg, AsyncClient* client);
+void handleOPCData(void* arg, AsyncClient* client, void *data, size_t len);
+void handleOPCTimeOut(void* arg, AsyncClient* client, uint32_t time);
+void handleOPCError(void* arg, AsyncClient* client, int8_t error);
+void handleOPCDisconnect(void* arg, AsyncClient* client);
+void handleOPCPacket();
+
 //playlist.cpp
 void shufflePlaylist();
 void unloadPlaylist();
