@@ -776,6 +776,8 @@ void WLED::initConnection()
   WiFi.begin(clientSSID, clientPass);
 
 #ifdef ARDUINO_ARCH_ESP32
+  // WLEDMM - if your board has issues connecting to WiFi, try uncommenting this
+  // WiFi.setTxPower(WIFI_POWER_5dBm);  // required for ESP32-C3FH4-RGB
   WiFi.setSleep(!noWifiSleep);
   WiFi.setHostname(hostname);
 #else
