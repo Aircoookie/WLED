@@ -2554,28 +2554,24 @@ function genPresets()
 	var result = '{"0":{}';
 
 	var effects = eJson;
-	var seq = 30;
 	var playlistPS = JSON.parse("{}");
 	var playlistSep = JSON.parse("{}");
 	var playlistDur = JSON.parse("{}");
 	var playlistTrans = JSON.parse("{}");
-	function addToPlaylist(m) {
+	function addToPlaylist(m, id) {
 		if (!playlistPS[m]) playlistPS[m] = "";
 		if (!playlistDur[m]) playlistDur[m] = "";
 		if (!playlistTrans[m]) playlistTrans[m] = "";
 		if (!playlistSep[m]) playlistSep[m] = "";
-		playlistPS[m] += playlistSep[m] + `${seq}`;
+		playlistPS[m] += playlistSep[m] + `${id}`;
 		playlistDur[m] += playlistSep[m] + "100";
 		playlistTrans[m] += playlistSep[m] + "7";
 		playlistSep[m] = ",";
 	}
 	for (let ef of effects) {
-		let id = ef.id;
-		let nm = ef.name+" ";
-		let fd = "";
 		if (ef.name.indexOf("RSVD") < 0) {
-			if (Array.isArray(fxdata) && fxdata.length>id) {
-				fd = fxdata[id];
+			if (Array.isArray(fxdata) && fxdata.length>ef.id) {
+				let fd = fxdata[ef.id];
 				let eP = (fd == '')?[]:fd.split(";"); // effect parameters
 				let m = (eP.length<4 || eP[3]==='')?'1':eP[3]; // flags
 				// console.log(ef, eP);
@@ -2596,22 +2592,21 @@ function genPresets()
 				if (!defaultString.includes("o1")) defaultString += ',"o1":0'; //Check 1
 				if (!defaultString.includes("o2")) defaultString += ',"o2":0'; //Check 2
 				if (!defaultString.includes("o3")) defaultString += ',"o3":0'; //Check 3
-				if (!defaultString.includes("pal")) defaultString += ',"pal":1'; //Random palette
-				if (!defaultString.includes("m12")) {
-					if (m.includes("1") && !m.includes("1.5")) defaultString += ',"rev":true,"mi":true,"rY":true,"mY":true,"m12":2'; //Arc expansion
-					else defaultString += ',"rev":false,"mi":false,"rY":false,"mY":false,"m12":0'; //pixels expansion
-				} 
-				result += `\n,"${seq}":{"n":"${ef.name}","mainseg":0,"seg":[{"id":0,"fx":${id}${defaultString}}]}`; //,"ql":"${seq}"
-				addToPlaylist(m);
-				addToPlaylist("All");
-				if (m.includes("1")) addToPlaylist("All1");
-				if (m.includes("2")) addToPlaylist("All2");
-				seq++;
+				if (!defaultString.includes("pal")) defaultString += ',"pal":1'; //Random palette if not set different
+				if (!defaultString.includes("m12") && m.includes("1") && !m.includes("1.5") && !m.includes("12")) 
+					defaultString += ',"rev":true,"mi":true,"rY":true,"mY":true,"m12":2'; //Arc expansion
+				else 
+					defaultString += ',"rev":false,"mi":false,"rY":false,"mY":false,"m12":0'; //pixels expansion
+				result += `\n,"${ef.id}":{"n":"${ef.name}","mainseg":0,"seg":[{"id":0,"fx":${ef.id}${defaultString}}]}`;
+				addToPlaylist(m, ef.id);
+				addToPlaylist("All", ef.id);
+				if (m.includes("1")) addToPlaylist("All1", ef.id);
+				if (m.includes("2")) addToPlaylist("All2", ef.id);
 			} //fxData is array
 		} //not RSVD
 	} //all effects
 
-	seq=10; //Playlist start here
+	var seq=230; //Playlist start here
 	// console.log(playlistPS, playlistDur, playlistTrans);
 	for (const m in playlistPS) {
 		let playListString = `\n,"${seq}":{"n":"${m}D Playlist","ql":"${seq}","on":true,"playlist":{"ps":[${playlistPS[m]}],"dur":[${playlistDur[m]}],"transition":[${playlistTrans[m]}],"repeat":0,"end":0,"r":1}}`;

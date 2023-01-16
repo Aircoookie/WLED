@@ -1285,7 +1285,7 @@ uint16_t mode_fire_flicker(void) {
   SEGENV.step = it;
   return FRAMETIME;
 }
-static const char _data_FX_MODE_FIRE_FLICKER[] PROGMEM = "Fire Flicker@!,!;!;!";
+static const char _data_FX_MODE_FIRE_FLICKER[] PROGMEM = "Fire Flicker@!,!;!;!;pal=0"; //WLEDMM pal=0
 
 
 /*
@@ -4802,7 +4802,7 @@ uint16_t mode_2Dfirenoise(void) {               // firenoise2d. By Andrew Tuline
 
   return FRAMETIME;
 } // mode_2Dfirenoise()
-static const char _data_FX_MODE_2DFIRENOISE[] PROGMEM = "Firenoise@X scale,Y scale;;!;2";
+static const char _data_FX_MODE_2DFIRENOISE[] PROGMEM = "Firenoise@X scale,Y scale;;!;2;pal=0"; //WLEDMM pal=0
 
 
 //////////////////////////////
