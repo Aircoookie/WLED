@@ -25,24 +25,43 @@
 #ifndef WLED_MAX_BUSSES
   #ifdef ESP8266
     #define WLED_MAX_BUSSES 3
+    #define WLED_MIN_VIRTUAL_BUSSES 2
   #else
     #if defined(CONFIG_IDF_TARGET_ESP32C3)    // 2 RMT, 6 LEDC, only has 1 I2S but NPB does not support it ATM
       #define WLED_MAX_BUSSES 3               // will allow 2 digital & 1 analog (or the other way around)
+      #define WLED_MIN_VIRTUAL_BUSSES 3
     #elif defined(CONFIG_IDF_TARGET_ESP32S2)  // 4 RMT, 8 LEDC, only has 1 I2S bus, supported in NPB
       #if defined(USERMOD_AUDIOREACTIVE)      // requested by @softhack007 https://github.com/blazoncek/WLED/issues/33
         #define WLED_MAX_BUSSES 6             // will allow 4 digital & 2 analog
+        #define WLED_MIN_VIRTUAL_BUSSES 4
       #else
         #define WLED_MAX_BUSSES 7             // will allow 5 digital & 2 analog
+        #define WLED_MIN_VIRTUAL_BUSSES 3
       #endif
     #elif defined(CONFIG_IDF_TARGET_ESP32S3)  // 4 RMT, 8 LEDC, has 2 I2S but NPB does not support them ATM
       #define WLED_MAX_BUSSES 6               // will allow 4 digital & 2 analog
+      #define WLED_MIN_VIRTUAL_BUSSES 4
     #else
       #if defined(USERMOD_AUDIOREACTIVE)      // requested by @softhack007 https://github.com/blazoncek/WLED/issues/33
         #define WLED_MAX_BUSSES 8
+        #define WLED_MIN_VIRTUAL_BUSSES 2
       #else
         #define WLED_MAX_BUSSES 10
+        #define WLED_MIN_VIRTUAL_BUSSES 0
       #endif
     #endif
+  #endif
+#else
+  #ifdef ESP8266
+    #if WLED_MAX_BUSES > 5
+      #error Maximum number of buses is 5.
+    #endif
+    #define WLED_MIN_VIRTUAL_BUSSES (5-WLED_MAX_BUSSES)
+  #else
+    #if WLED_MAX_BUSES > 10
+      #error Maximum number of buses is 10.
+    #endif
+    #define WLED_MIN_VIRTUAL_BUSSES (10-WLED_MAX_BUSSES)
   #endif
 #endif
 
@@ -79,7 +98,7 @@
 #define USERMOD_ID_RTC                   15     //Usermod "usermod_rtc.h"
 #define USERMOD_ID_ELEKSTUBE_IPS         16     //Usermod "usermod_elekstube_ips.h"
 #define USERMOD_ID_SN_PHOTORESISTOR      17     //Usermod "usermod_sn_photoresistor.h"
-#define USERMOD_ID_BATTERY_STATUS_BASIC  18     //Usermod "usermod_v2_battery_status_basic.h"
+#define USERMOD_ID_BATTERY               18     //Usermod "usermod_v2_battery.h"
 #define USERMOD_ID_PWM_FAN               19     //Usermod "usermod_PWM_fan.h"
 #define USERMOD_ID_BH1750                20     //Usermod "usermod_bh1750.h"
 #define USERMOD_ID_SEVEN_SEGMENT_DISPLAY 21     //Usermod "usermod_v2_seven_segment_display.h"
@@ -294,7 +313,7 @@
 
 #define NTP_PACKET_SIZE 48
 
-//maximum number of rendered LEDs - this does not have to match max. physical LEDs, e.g. if there are virtual busses 
+//maximum number of rendered LEDs - this does not have to match max. physical LEDs, e.g. if there are virtual busses
 #ifndef MAX_LEDS
 #ifdef ESP8266
 #define MAX_LEDS 1664 //can't rely on memory limit to limit this to 1600 LEDs
@@ -323,7 +342,7 @@
 #ifdef ESP8266
 #define SETTINGS_STACK_BUF_SIZE 2048
 #else
-#define SETTINGS_STACK_BUF_SIZE 3096 
+#define SETTINGS_STACK_BUF_SIZE 3096
 #endif
 
 #ifdef WLED_USE_ETHERNET

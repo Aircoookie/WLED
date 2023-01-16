@@ -136,7 +136,7 @@ private:
       }
     } else {
       if (m_offPreset) {
-        if (currentPreset==m_onPreset || currentPlaylist==m_onPreset) applyPreset(m_offPreset, NotifyUpdateMode);
+        applyPreset(m_offPreset, NotifyUpdateMode);
         return;
       } else if (prevPlaylist) {
         if (currentPreset==m_onPreset || currentPlaylist==m_onPreset) applyPreset(prevPlaylist, NotifyUpdateMode);

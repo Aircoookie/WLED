@@ -217,7 +217,7 @@ class Bus {
     static uint8_t _gAWM;     // definition in FX_fcn.cpp
     static int16_t _cct;      // definition in FX_fcn.cpp
 		static uint8_t _cctBlend; // definition in FX_fcn.cpp
-  
+
     uint32_t autoWhiteCalc(uint32_t c) {
       uint8_t aWM = _autoWhiteMode;
       if (_gAWM < 255) aWM = _gAWM;
@@ -271,7 +271,7 @@ class BusDigital : public Bus {
     //Fix for turning off onboard LED breaking bus
     #ifdef LED_BUILTIN
     if (_bri == 0 && b > 0) {
-      if (_pins[0] == LED_BUILTIN || _pins[1] == LED_BUILTIN) PolyBus::begin(_busPtr, _iType, _pins); 
+      if (_pins[0] == LED_BUILTIN || _pins[1] == LED_BUILTIN) PolyBus::begin(_busPtr, _iType, _pins);
     }
     #endif
     Bus::setBrightness(b);
@@ -343,7 +343,7 @@ class BusDigital : public Bus {
     cleanup();
   }
 
-  private: 
+  private:
   uint8_t _colorOrder = COL_ORDER_GRB;
   uint8_t _pins[2] = {255, 255};
   uint8_t _iType = I_NONE;
@@ -477,7 +477,7 @@ class BusPwm : public Bus {
     cleanup();
   }
 
-  private: 
+  private:
   uint8_t _pins[5] = {255, 255, 255, 255, 255};
   uint8_t _data[5] = {0};
   #ifdef ARDUINO_ARCH_ESP32
@@ -553,7 +553,7 @@ class BusOnOff : public Bus {
     cleanup();
   }
 
-  private: 
+  private:
   uint8_t _pin = 255;
   uint8_t _data = 0;
 };
@@ -684,9 +684,24 @@ class BusManager {
     if (type == 44 || type == 45) return len*4; //RGBW
     return len*3; //RGB
   }
-  
+
+/*
+  int      add(BusConfig &bc);
+  void     removeAll();  //do not call this method from system context (network callback)
+  void     setStatusPixel(uint32_t c);
+  void     setPixelColor(uint16_t pix, uint32_t c, int16_t cct=-1);
+  void     setBrightness(uint8_t b);
+  void     setSegmentCCT(int16_t cct, bool allowWBCorrection = false);
+  uint32_t getPixelColor(uint16_t pix);
+  bool     canAllShow();
+  Bus*     getBus(uint8_t busNr);
+  void     show();
+  uint16_t getTotalLength();  //semi-duplicate of strip.getLengthTotal() (though that just returns strip._length, calculated in finalizeInit())
+*/
+  // the following functions are inlined by compiler since they are defined within class definition
+  // they should be placed in cpp file instead
   int add(BusConfig &bc) {
-    if (numBusses >= WLED_MAX_BUSSES) return -1;
+    if (getNumBusses() - getNumVirtualBusses() >= WLED_MAX_BUSSES) return -1;
     if (bc.type >= TYPE_NET_DDP_RGB && bc.type < 96) {
       busses[numBusses] = new BusNetwork(bc);
     } else if (IS_DIGITAL(bc.type)) {
@@ -702,7 +717,7 @@ class BusManager {
   //do not call this method from system context (network callback)
   void removeAll() {
     DEBUG_PRINTLN(F("Removing all."));
-    //prevents crashes due to deleting busses while in use. 
+    //prevents crashes due to deleting busses while in use.
     while (!canAllShow()) yield();
     for (uint8_t i = 0; i < numBusses; i++) delete busses[i];
     numBusses = 0;
@@ -714,11 +729,11 @@ class BusManager {
     }
   }
 
-	void setStatusPixel(uint32_t c) {
+  void setStatusPixel(uint32_t c) {
     for (uint8_t i = 0; i < numBusses; i++) {
-			busses[i]->setStatusPixel(c);
-		}
-	}
+      busses[i]->setStatusPixel(c);
+    }
+  }
 
   void IRAM_ATTR setPixelColor(uint16_t pix, uint32_t c, int16_t cct=-1) {
     for (uint8_t i = 0; i < numBusses; i++) {
@@ -766,10 +781,6 @@ class BusManager {
     return busses[busNr];
   }
 
-  inline uint8_t getNumBusses() {
-    return numBusses;
-  }
-
   //semi-duplicate of strip.getLengthTotal() (though that just returns strip._length, calculated in finalizeInit())
   uint16_t getTotalLength() {
     uint16_t len = 0;
@@ -777,17 +788,27 @@ class BusManager {
     return len;
   }
 
-  void updateColorOrderMap(const ColorOrderMap &com) {
+  inline void updateColorOrderMap(const ColorOrderMap &com) {
     memcpy(&colorOrderMap, &com, sizeof(ColorOrderMap));
   }
 
-  const ColorOrderMap& getColorOrderMap() const {
+  inline const ColorOrderMap& getColorOrderMap() const {
     return colorOrderMap;
+  }
+
+  inline uint8_t getNumBusses() {
+    return numBusses;
   }
 
   private:
   uint8_t numBusses = 0;
-  Bus* busses[WLED_MAX_BUSSES];
+  Bus* busses[WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES];
   ColorOrderMap colorOrderMap;
+
+  inline uint8_t getNumVirtualBusses() {
+    int j = 0;
+    for (int i=0; i<numBusses; i++) if (busses[i]->getType() >= TYPE_NET_DDP_RGB && busses[i]->getType() < 96) j++;
+    return j;
+  }
 };
 #endif

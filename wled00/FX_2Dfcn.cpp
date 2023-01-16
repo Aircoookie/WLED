@@ -1,6 +1,6 @@
 /*
   FX_2Dfcn.cpp contains all 2D utility functions
-  
+
   LICENSE
   The MIT License (MIT)
   Copyright (c) 2022  Blaz Kristan (https://blaz.at/home)
@@ -43,49 +43,55 @@ void WS2812FX::setUpMatrix() {
 
   // isMatrix is set in cfg.cpp or set.cpp
   if (isMatrix) {
-    Segment::maxWidth  = hPanels * panelW;
-    Segment::maxHeight = vPanels * panelH;
+    // calculate width dynamically because it will have gaps
+    Segment::maxWidth = 1;
+    Segment::maxHeight = 1;
+    for (size_t i = 0; i < panel.size(); i++) {
+      Panel &p = panel[i];
+      if (p.xOffset + p.width > Segment::maxWidth) {
+        Segment::maxWidth = p.xOffset + p.width;
+      }
+      if (p.yOffset + p.height > Segment::maxHeight) {
+        Segment::maxHeight = p.yOffset + p.height;
+      }
+    }
 
     // safety check
-    if (Segment::maxWidth * Segment::maxHeight > MAX_LEDS || Segment::maxWidth == 1 || Segment::maxHeight == 1) {
+    if (Segment::maxWidth * Segment::maxHeight > MAX_LEDS || Segment::maxWidth <= 1 || Segment::maxHeight <= 1) {
+      DEBUG_PRINTLN(F("2D Bounds error."));
+      isMatrix = false;
       Segment::maxWidth = _length;
       Segment::maxHeight = 1;
-      isMatrix = false;
+      panels = 0;
+      panel.clear(); // release memory allocated by panels
       return;
     }
 
-    customMappingSize  = Segment::maxWidth * Segment::maxHeight;
-    customMappingTable = new uint16_t[customMappingSize];
+    customMappingTable = new uint16_t[Segment::maxWidth * Segment::maxHeight];
 
     if (customMappingTable != nullptr) {
-      uint16_t startL; // index in custom mapping array (logical strip)
-      uint16_t startP; // position of 1st pixel of panel on (virtual) strip
-      uint16_t x, y, offset;
-      uint8_t h = matrix.vertical ? vPanels : hPanels;
-      uint8_t v = matrix.vertical ? hPanels : vPanels;
+      customMappingSize = Segment::maxWidth * Segment::maxHeight;
 
-      for (uint8_t j=0, p=0; j<v; j++) {
-        for (uint8_t i=0; i<h; i++, p++) {
-          y = (matrix.vertical ? matrix.rightStart : matrix.bottomStart) ? v - j - 1 : j;
-          x = (matrix.vertical ? matrix.bottomStart : matrix.rightStart) ? h - i - 1 : i;
-          x = matrix.serpentine && j%2 ? h - x - 1 : x;
+      // fill with empty in case we don't fill the entire matrix
+      for (size_t i = 0; i< customMappingSize; i++) {
+        customMappingTable[i] = (uint16_t)-1;
+      }
 
-          startL = (matrix.vertical ? y : x) * panelW + (matrix.vertical ? x : y) * Segment::maxWidth * panelH; // logical index (top-left corner)
-          startP = p * panelW * panelH; // physical index (top-left corner)
-
-          uint8_t H = panel[h*j + i].vertical ? panelW : panelH;
-          uint8_t W = panel[h*j + i].vertical ? panelH : panelW;
-          for (uint16_t l=0, q=0; l<H; l++) {
-            for (uint16_t k=0; k<W; k++, q++) {
-              y = (panel[h*j + i].vertical ? panel[h*j + i].rightStart : panel[h*j + i].bottomStart) ? H - l - 1 : l;
-              x = (panel[h*j + i].vertical ? panel[h*j + i].bottomStart : panel[h*j + i].rightStart) ? W - k - 1 : k;
-              x = (panel[h*j + i].serpentine && l%2) ? (W - x - 1) : x;
-              offset = (panel[h*j + i].vertical ? y : x) + (panel[h*j + i].vertical ? x : y) * Segment::maxWidth;
-              customMappingTable[startL + offset] = startP + q;
-            }
+      uint16_t x, y, pix=0; //pixel
+      for (size_t pan = 0; pan < panel.size(); pan++) {
+        Panel &p = panel[pan];
+        uint16_t h = p.vertical ? p.height : p.width;
+        uint16_t v = p.vertical ? p.width  : p.height;
+        for (size_t j = 0; j < v; j++){
+          for(size_t i = 0; i < h; i++, pix++) {
+            y = (p.vertical?p.rightStart:p.bottomStart) ? v-j-1 : j;
+            x = (p.vertical?p.bottomStart:p.rightStart) ? h-i-1 : i;
+            x = p.serpentine && j%2 ? h-x-1 : x;
+            customMappingTable[(p.yOffset + (p.vertical?x:y)) * Segment::maxWidth + p.xOffset + (p.vertical?y:x)] = pix;
           }
         }
       }
+
       #ifdef WLED_DEBUG
       DEBUG_PRINT(F("Matrix ledmap:"));
       for (uint16_t i=0; i<customMappingSize; i++) {
@@ -94,18 +100,18 @@ void WS2812FX::setUpMatrix() {
       }
       DEBUG_PRINTLN();
       #endif
-    } else {
-      // memory allocation error
+    } else { // memory allocation error
+      DEBUG_PRINTLN(F("Ledmap alloc error."));
+      isMatrix = false;
+      panels = 0;
+      panel.clear();
       Segment::maxWidth = _length;
       Segment::maxHeight = 1;
-      isMatrix = false;
       return;
     }
-  } else { 
-    // not a matrix set up
-    Segment::maxWidth = _length;
-    Segment::maxHeight = 1;
   }
+#else
+  isMatrix = false; // no matter what config says
 #endif
 }
 
@@ -115,7 +121,7 @@ void IRAM_ATTR WS2812FX::setPixelColorXY(int x, int y, uint32_t col)
 #ifndef WLED_DISABLE_2D
   if (!isMatrix) return; // not a matrix set-up
   uint16_t index = y * Segment::maxWidth + x;
-  if (index >= customMappingSize) return; // customMappingSize is always W * H of matrix in 2D setup
+  if (index >= customMappingSize) return;
 #else
   uint16_t index = x;
   if (index >= _length) return;
@@ -158,6 +164,7 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
   if (leds) leds[XY(x,y)] = col;
 
   uint8_t _bri_t = currentBri(on ? opacity : 0);
+  if (!_bri_t && !transitional) return;
   if (_bri_t < 255) {
     byte r = scale8(R(col), _bri_t);
     byte g = scale8(G(col), _bri_t);
@@ -265,7 +272,7 @@ void Segment::addPixelColorXY(int x, int y, uint32_t color) {
 
 void Segment::fadePixelColorXY(uint16_t x, uint16_t y, uint8_t fade) {
   CRGB pix = CRGB(getPixelColorXY(x,y)).nscale8_video(fade);
-  setPixelColor(x, y, pix);
+  setPixelColorXY(x, y, pix);
 }
 
 // blurRow: perform a blur on a row of a rectangular matrix
@@ -422,6 +429,29 @@ void Segment::move(uint8_t dir, uint8_t delta) {
   }
 }
 
+void Segment::draw_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
+  // Bresenham’s Algorithm
+  int d = 3 - (2*radius);
+  int y = radius, x = 0;
+  while (y >= x) {
+    setPixelColorXY(cx+x, cy+y, col);
+    setPixelColorXY(cx-x, cy+y, col);
+    setPixelColorXY(cx+x, cy-y, col);
+    setPixelColorXY(cx-x, cy-y, col);
+    setPixelColorXY(cx+y, cy+x, col);
+    setPixelColorXY(cx-y, cy+x, col);
+    setPixelColorXY(cx+y, cy-x, col);
+    setPixelColorXY(cx-y, cy-x, col);
+    x++;
+    if (d > 0) {
+      y--;
+      d += 4 * (x - y) + 10;
+    } else {
+      d += 4 * x + 6;
+    }
+  }
+}
+
 // by stepko, taken from https://editor.soulmatelights.com/gallery/573-blobs
 void Segment::fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
   const uint16_t cols = virtualWidth();
@@ -431,7 +461,7 @@ void Segment::fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
       if (x * x + y * y <= radius * radius &&
           int16_t(cx)+x>=0 && int16_t(cy)+y>=0 &&
           int16_t(cx)+x<cols && int16_t(cy)+y<rows)
-        addPixelColorXY(cx + x, cy + y, col);
+        setPixelColorXY(cx + x, cy + y, col);
     }
   }
 }
@@ -450,10 +480,10 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
   const uint16_t rows = virtualHeight();
   if (x0 >= cols || x1 >= cols || y0 >= rows || y1 >= rows) return;
   const int16_t dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
-  const int16_t dy = abs(y1-y0), sy = y0<y1 ? 1 : -1; 
+  const int16_t dy = abs(y1-y0), sy = y0<y1 ? 1 : -1;
   int16_t err = (dx>dy ? dx : -dy)/2, e2;
   for (;;) {
-    addPixelColorXY(x0,y0,c);
+    setPixelColorXY(x0,y0,c);
     if (x0==x1 && y0==y1) break;
     e2 = err;
     if (e2 >-dx) { err -= dy; x0 += sx; }
