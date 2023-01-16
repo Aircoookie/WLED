@@ -74,7 +74,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
     dmxChannels = htons(p->property_value_count) -1;
     e131_data = p->property_values;
     seq = p->sequence_number;
-    // skip packages != config priority
+    // skip packages != e131 config priority
     if (e131Priority != 0 && p->priority != e131Priority) return;
   } else { //DDP
     realtimeIP = clientIP;
