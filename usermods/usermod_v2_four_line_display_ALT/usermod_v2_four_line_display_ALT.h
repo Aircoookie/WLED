@@ -1058,7 +1058,7 @@ class FourLineDisplayUsermod : public Usermod {
       bool isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64);
       // WLEDMM add defaults
       oappend(SET_F("addInfo('4LineDisplay:pin[]',0,'','I2C/SPI CLK');"));
-      oappend(SET_F("disableROPins('4LineDisplay::pin[]',0);")); 
+      oappend(SET_F("disableRO('4LineDisplay:pin[]',0);")); 
     #ifdef FLD_PIN_SCL
       oappend(SET_F("xOption('4LineDisplay:pin[]',0,' ⎌',")); oappendi(FLD_PIN_SCL); oappend(");"); 
     #endif

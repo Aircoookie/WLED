@@ -2105,17 +2105,17 @@ class AudioReactive : public Usermod {
       oappend(SET_F("xOption('AudioReactive:digitalmic:pin[]',0,' ⎌',")); oappendi(I2S_SDPIN); oappend(");"); 
     #endif
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',1,'<i>ws/clk/lrck</i>','I2S WS');"));
-      oappend(SET_F("disableROPins('AudioReactive:digitalmic:pin[]',1);")); 
+      oappend(SET_F("disableRO('AudioReactive:digitalmic:pin[]',1);")); 
     #ifdef I2S_WSPIN
       oappend(SET_F("xOption('AudioReactive:digitalmic:pin[]',1,' ⎌',")); oappendi(I2S_WSPIN); oappend(");"); 
     #endif
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',2,'<i>sck/bclk</i>','I2S SCK');"));
-      oappend(SET_F("disableROPins('AudioReactive:digitalmic:pin[]',2);")); 
+      oappend(SET_F("disableRO('AudioReactive:digitalmic:pin[]',2);")); 
     #ifdef I2S_CKPIN
       oappend(SET_F("xOption('AudioReactive:digitalmic:pin[]',2,' ⎌',")); oappendi(I2S_CKPIN); oappend(");"); 
     #endif
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'<i>master clock</i>','I2S MCLK');"));
-      oappend(SET_F("disableROPins('AudioReactive:digitalmic:pin[]',3);")); 
+      oappend(SET_F("disableRO('AudioReactive:digitalmic:pin[]',3);")); 
     #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
       oappend(SET_F("dOptions('AudioReactive:digitalmic:pin[]',3,2,2);")); //only use -1, 0, 1 or 3
       oappend(SET_F("dOptions('AudioReactive:digitalmic:pin[]',3,4,39);")); //only use -1, 0, 1 or 3
@@ -2124,7 +2124,7 @@ class AudioReactive : public Usermod {
       oappend(SET_F("rOption('AudioReactive:digitalmic:pin[]',4,'use global (")); oappendi(i2c_sda); oappend(")',-1);"); 
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',5,'','I2C SCL');"));
       oappend(SET_F("rOption('AudioReactive:digitalmic:pin[]',5,'use global (")); oappendi(i2c_scl); oappend(")',-1);"); 
-      oappend(SET_F("disableROPins('AudioReactive:digitalmic:pin[]',5);")); 
+      oappend(SET_F("disableRO('AudioReactive:digitalmic:pin[]',5);")); 
     }
 
 

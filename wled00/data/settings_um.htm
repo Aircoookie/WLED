@@ -134,7 +134,7 @@
 					if (j==-1) urows += `>undefined`; else urows += `>${j}`; // don't show -1
 					if (foundPin >=0) {// already reserved pin
 						urows += ` ${pinO[foundPin]=="if"?"global":pinO[foundPin]}`;
-						if (!k.includes(pinO[foundPin])) urows += " 🔴"; //add pins assigned here || pinO[foundPin] == "if" urows += " 🟢"; else 
+						if (!k.includes(pinO[foundPin])) urows += " 🔴"; else urows += " 🟢"; //add pins assigned here || pinO[foundPin] == "if"
 					}
 					urows += `</option>`;
 					// if (j==5) //exclude pin 6 to 11
@@ -219,14 +219,14 @@
 	}
 
 	//WLEDMM
-	function disableROPins(name,el) {
+	function disableRO(name,el) {
 		let obj = d.getElementsByName(name);
 		var select = obj;
 		if (obj[el]) select = obj[el];
-		// console.log("disableROPins", name, el, obj, "s", select, d.ro_gpio);
+		// console.log("disableRO", name, el, obj, "s", select, d.ro_gpio);
 		for (let i=0; i<select.options.length; i++) {
 			let c = select.options[i];
-			// console.log("disableROPins option", c, c.value, d.ro_gpio.includes(c.value));
+			// console.log("disableRO option", c, c.value, d.ro_gpio.includes(c.value));
 			for (let j=0; j<d.ro_gpio.length; j++) if (d.ro_gpio[j] == c.value) c.disabled=true; //if (d.ro_gpio.includes(c.value))
 		}
 	}
@@ -244,12 +244,14 @@
 					// console.log("pinDropdownsPost option", c, c.value, d.ro_gpio.includes(c.value));
 					for (let j=0; j<d.ro_gpio.length; j++) if (d.ro_gpio[j] == c.value) c.text += " read only 🟠"; //if (d.ro_gpio.includes(c.value)) not working ???
 					for (let j=0; j<d.rsvd.length; j++) if (d.rsvd[j] == c.value) {c.text += " reserved 🟣"; c.disabled=true;} //now always disabled as post is done last if (d.rsvd.includes(c.value))
+					//remove pins >= max_gpio
 					if (c.value > d.max_gpio) {
 						select.removeChild(c);
 						i--; //decrease i by one because the index has been adjusted
 					}
 					//https://www.javascripttutorial.net/javascript-dom/javascript-add-remove-options/
 					//https://www.javascripttutorial.net/javascript-dom/javascript-remove-items-from-a-select-conditionally/
+					if (c.text.length <= 2) c.text += " 🟢";
 				}
 			}
 		}
@@ -289,7 +291,7 @@
             const userMod = urlParams.get('um');
 			if (userMod == null) {
 				urows+="<h2>Usermods Global pins</h2>";
-				urows+="<button onclick=\"location.href=&quot;https://mm.kno.wled.ge/usermods/globalpins&quot;\" type=\"button\">?</button>";
+				urows+="<button onclick=\"location.href=\"https://mm.kno.wled.ge/usermods/globalpins\" type=\"button\">?</button>";
 				urows+="<hr class=\"sml\">";
 				urows+="<i style=\"color:orange\">(only changable on ESP32, change requires reboot!)</i>";
 				urows+="<hr class=\"sml\">";

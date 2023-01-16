@@ -718,7 +718,7 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
     #endif
       oappend(SET_F("addInfo('if:SCL:pin',0,'', 'SCL');"));
       oappend(SET_F("xOption('if:SCL:pin',1,' ⍼',")); oappendi(SCL); oappend(");");
-      oappend(SET_F("disableROPins('if:SCL:pin',1);"));
+      oappend(SET_F("disableRO('if:SCL:pin',1);"));
     #ifdef HW_PIN_SCL
       oappend(SET_F("xOption('if:SCL:pin',1,' ⎌',")); oappendi(HW_PIN_SCL); oappend(");"); 
     #endif
@@ -734,7 +734,7 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
     #endif
       oappend(SET_F("addInfo('if:SCLK:pin',0,'', 'SCLK');"));
       oappend(SET_F("xOption('if:SCLK:pin',1,' ⍼',")); oappendi(SCK); oappend(");");
-      oappend(SET_F("disableROPins('if:SCLK:pin',1);"));
+      oappend(SET_F("disableRO('if:SCLK:pin',1);"));
     #ifdef HW_PIN_CLOCKSPI
       oappend(SET_F("xOption('if:SCLK:pin',1,' ⎌',")); oappendi(HW_PIN_CLOCKSPI); oappend(");"); 
     #endif

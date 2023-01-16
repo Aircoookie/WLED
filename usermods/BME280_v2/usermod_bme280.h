@@ -400,6 +400,18 @@ public:
       return;
   }
 
+  void appendConfigData() {
+    oappend(SET_F("addHB('")); oappend(_name); oappend("');");
+
+    oappend(SET_F("addInfo('BME280/BMP280:pin[]',0,'','I2C/SPI CLK');"));
+    oappend(SET_F("disableRO('BME280/BMP280:pin[]',0);")); 
+    oappend(SET_F("rOption('BME280/BMP280:pin[]',0,'use global (")); oappendi(i2c_scl); oappend(")',-1);"); 
+
+    oappend(SET_F("addInfo('BME280/BMP280:pin[]',1,'','I2C/SPI DTA');"));
+    oappend(SET_F("rOption('BME280/BMP280:pin[]',1,'use global (")); oappendi(i2c_sda); oappend(")',-1);"); 
+  }
+      
+
   // Save Usermod Config Settings
   void addToConfig(JsonObject& root)
   {
@@ -417,7 +429,6 @@ public:
     //WLEDMM: avoid global pin hijacking
     io_pin.add((ioPin[0]==i2c_scl)?-1:ioPin[0]);
     io_pin.add((ioPin[1]==i2c_sda)?-1:ioPin[1]);
-    top[F("help4Pins")] = F("SCL,SDA"); // help for Settings page
     DEBUG_PRINTLN(F("BME280 config saved."));
   }
 

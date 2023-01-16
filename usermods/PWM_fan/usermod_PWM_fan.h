@@ -286,6 +286,10 @@ class PWMFanUsermod : public Usermod {
       }
     }
 
+    void appendConfigData() {
+      oappend(SET_F("addHB('")); oappend(_name); oappend("');");
+    }
+    
     /*
      * addToConfig() can be used to add custom persistent settings to the cfg.json file in the "um" (usermod) object.
      * It will be called by WLED when settings are actually saved (for example, LED settings are saved)
