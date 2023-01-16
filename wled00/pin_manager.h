@@ -15,7 +15,7 @@ typedef struct PinManagerPinType {
  * Allows PinManager to "lock" an allocation to a specific
  * owner, so someone else doesn't accidentally de-allocate
  * a pin it hasn't allocated.  Also enhances debugging.
- * 
+ *
  * RAM Cost:
  *     17 bytes on ESP8266
  *     40 bytes on ESP32
@@ -50,16 +50,17 @@ enum struct PinOwner : uint8_t {
   // #define USERMOD_ID_VL53L0X                         // 0x0C // Usermod "usermod_vl53l0x_gestures.h" -- Uses "standard" HW_I2C pins
   UM_MultiRelay        = USERMOD_ID_MULTI_RELAY,        // 0x0D // Usermod "usermod_multi_relay.h"
   UM_AnimatedStaircase = USERMOD_ID_ANIMATED_STAIRCASE, // 0x0E // Usermod "Animated_Staircase.h"
-  // #define USERMOD_ID_RTC                             // 0x0F // Usermod "usermod_rtc.h" -- Uses "standard" HW_I2C pins 
+  UM_Battery           = USERMOD_ID_BATTERY,            //
+  // #define USERMOD_ID_RTC                             // 0x0F // Usermod "usermod_rtc.h" -- Uses "standard" HW_I2C pins
   // #define USERMOD_ID_ELEKSTUBE_IPS                   // 0x10 // Usermod "usermod_elekstube_ips.h" -- Uses quite a few pins ... see Hardware.h and User_Setup.h
   // #define USERMOD_ID_SN_PHOTORESISTOR                // 0x11 // Usermod "usermod_sn_photoresistor.h" -- Uses hard-coded pin (PHOTORESISTOR_PIN == A0), but could be easily updated to use pinManager
+  UM_BH1750            = USERMOD_ID_BH1750,             // 0x14 // Usermod "usermod_bme280.h -- Uses "standard" HW_I2C pins
   UM_RGBRotaryEncoder  = USERMOD_RGB_ROTARY_ENCODER,    // 0x16 // Usermod "rgb-rotary-encoder.h"
   UM_QuinLEDAnPenta    = USERMOD_ID_QUINLED_AN_PENTA,   // 0x17 // Usermod "quinled-an-penta.h"
-  UM_BME280            = USERMOD_ID_BME280,             // 0x18 // Usermod "usermod_bme280.h -- Uses "standard" HW_I2C pins
-  UM_BH1750            = USERMOD_ID_BH1750,             // 0x19 // Usermod "usermod_bme280.h -- Uses "standard" HW_I2C pins
-  UM_Audioreactive     = USERMOD_ID_AUDIOREACTIVE,      // 0x1E // Usermod "audio_reactive.h"
-  UM_SdCard            = USERMOD_ID_SD_CARD,            // 0x24 // Usermod "usermod_sd_card.h"
-  UM_PWM_OUTPUTS       = USERMOD_ID_PWM_OUTPUTS         // 0x21 // Usermod "usermod_pwm_outputs.h"
+  UM_BME280            = USERMOD_ID_BME280,             // 0x1E // Usermod "usermod_bme280.h -- Uses "standard" HW_I2C pins
+  UM_Audioreactive     = USERMOD_ID_AUDIOREACTIVE,      // 0x20 // Usermod "audio_reactive.h"
+  UM_SdCard            = USERMOD_ID_SD_CARD,            // 0x25 // Usermod "usermod_sd_card.h"
+  UM_PWM_OUTPUTS       = USERMOD_ID_PWM_OUTPUTS         // 0x26 // Usermod "usermod_pwm_outputs.h"
 };
 static_assert(0u == static_cast<uint8_t>(PinOwner::None), "PinOwner::None must be zero, so default array initialization works as expected");
 
@@ -91,7 +92,7 @@ class PinManagerClass {
   // De-allocation requires the same owner tag (or override)
   bool allocatePin(byte gpio, bool output, PinOwner tag);
   // Allocates all the pins, or allocates none of the pins, with owner tag.
-  // Provided to simplify error condition handling in clients 
+  // Provided to simplify error condition handling in clients
   // using more than one pin, such as I2C, SPI, rotary encoders,
   // ethernet, etc..
   bool allocateMultiplePins(const managed_pin_type * mptArray, byte arrayElementCount, PinOwner tag );

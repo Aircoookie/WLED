@@ -92,7 +92,7 @@ void URL_response(AsyncWebServerRequest *request)
   for (int i = 0; i < 3; i++)
   {
    sprintf(s,"%02X", col[i]);
-   oappend(s); 
+   oappend(s);
   }
   oappend(SET_F("&C2=h"));
   for (int i = 0; i < 3; i++)
@@ -115,7 +115,7 @@ void URL_response(AsyncWebServerRequest *request)
   oappend(SET_F("<html><body><a href=\""));
   oappend(s2buf);
   oappend(SET_F("\" target=\"_blank\">"));
-  oappend(s2buf);  
+  oappend(s2buf);
   oappend(SET_F("</a></body></html>"));
 
   if (request != nullptr) request->send(200, "text/html", obuf);
@@ -287,6 +287,9 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == 0)
   {
+  #ifndef WLED_DISABLE_2D // include only if 2D is compiled in
+    oappend(PSTR("gId('2dbtn').style.display='';"));
+  #endif
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
     oappend(PSTR("gId('dmxbtn').style.display='';"));
   #endif
@@ -368,6 +371,7 @@ void getSettingsJS(byte subPage, char* dest)
     // set limits
     oappend(SET_F("bLimits("));
     oappend(itoa(WLED_MAX_BUSSES,nS,10));  oappend(",");
+    oappend(itoa(WLED_MIN_VIRTUAL_BUSSES,nS,10));  oappend(",");
     oappend(itoa(MAX_LEDS_PER_BUS,nS,10)); oappend(",");
     oappend(itoa(MAX_LED_MEMORY,nS,10));   oappend(",");
     oappend(itoa(MAX_LEDS,nS,10));
@@ -567,7 +571,7 @@ void getSettingsJS(byte subPage, char* dest)
       case HUE_ERROR_TIMEOUT      : strcpy_P(hueErrorString,PSTR("Timeout"));                 break;
       default: sprintf_P(hueErrorString,PSTR("Bridge Error %i"),hueError);
     }
-    
+
     sappends('m',SET_F("(\"sip\")[0]"),hueErrorString);
     #else
     oappend(SET_F("toggle('Hue');"));    // hide Hue Sync settings
@@ -659,17 +663,17 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(serverDescription);
     oappend(SET_F("\";"));
   }
-  
+
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
   if (subPage == 7)
   {
     sappend('v',SET_F("PU"),e131ProxyUniverse);
-    
+
     sappend('v',SET_F("CN"),DMXChannels);
     sappend('v',SET_F("CG"),DMXGap);
     sappend('v',SET_F("CS"),DMXStart);
     sappend('v',SET_F("SL"),DMXStartLED);
-    
+
     sappend('i',SET_F("CH1"),DMXFixtureMap[0]);
     sappend('i',SET_F("CH2"),DMXFixtureMap[1]);
     sappend('i',SET_F("CH3"),DMXFixtureMap[2]);
@@ -727,28 +731,37 @@ void getSettingsJS(byte subPage, char* dest)
   {
     sappend('v',SET_F("SOMP"),strip.isMatrix);
     #ifndef WLED_DISABLE_2D
+    oappend(SET_F("maxPanels=")); oappendi(WLED_MAX_PANELS); oappend(SET_F(";"));
     oappend(SET_F("resetPanels();"));
     if (strip.isMatrix) {
-      sappend('v',SET_F("PH"),strip.panelH);
-      sappend('v',SET_F("PW"),strip.panelW);
-      sappend('v',SET_F("MPH"),strip.hPanels);
-      sappend('v',SET_F("MPV"),strip.vPanels);
+      if(strip.panels>0){
+        sappend('v',SET_F("PW"),strip.panel[0].width); //Set generator Width and Height to first panel size for convenience
+        sappend('v',SET_F("PH"),strip.panel[0].height);
+      }
+      sappend('v',SET_F("MPC"),strip.panels);
       sappend('v',SET_F("PB"),strip.matrix.bottomStart);
       sappend('v',SET_F("PR"),strip.matrix.rightStart);
       sappend('v',SET_F("PV"),strip.matrix.vertical);
       sappend('c',SET_F("PS"),strip.matrix.serpentine);
       // panels
-      for (uint8_t i=0; i<strip.hPanels*strip.vPanels; i++) {
+      for (uint8_t i=0; i<strip.panels; i++) {
         char n[5];
         oappend(SET_F("addPanel("));
         oappend(itoa(i,n,10));
         oappend(SET_F(");"));
-        char pO[8]; sprintf_P(pO, PSTR("P%d"), i);
-        uint8_t l = strlen(pO); pO[l+1] = 0;
+        char pO[8] = { '\0' };
+        snprintf_P(pO, 7, PSTR("P%d"), i);       // MAX_PANELS is 64 so pO will always only be 4 characters or less
+        pO[7] = '\0';
+        uint8_t l = strlen(pO);
+        // create P0B, P1B, ..., P63B, etc for other PxxX
         pO[l] = 'B'; sappend('v',pO,strip.panel[i].bottomStart);
         pO[l] = 'R'; sappend('v',pO,strip.panel[i].rightStart);
         pO[l] = 'V'; sappend('v',pO,strip.panel[i].vertical);
         pO[l] = 'S'; sappend('c',pO,strip.panel[i].serpentine);
+        pO[l] = 'X'; sappend('v',pO,strip.panel[i].xOffset);
+        pO[l] = 'Y'; sappend('v',pO,strip.panel[i].yOffset);
+        pO[l] = 'W'; sappend('v',pO,strip.panel[i].width);
+        pO[l] = 'H'; sappend('v',pO,strip.panel[i].height);
       }
     }
     #else

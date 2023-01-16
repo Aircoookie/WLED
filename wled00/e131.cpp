@@ -12,7 +12,7 @@
 //handles RGB data only
 void handleDDPPacket(e131_packet_t* p) {
   int lastPushSeq = e131LastSequenceNumber[0];
-  
+
   //reject late packets belonging to previous frame (assuming 4 packets max. before push)
   if (e131SkipOutOfSequence && lastPushSeq) {
     int sn = p->sequenceNum & 0xF;
@@ -35,7 +35,7 @@ void handleDDPPacket(e131_packet_t* p) {
   if (p->flags & DDP_TIMECODE_FLAG) c = 4; //packet has timecode flag, we do not support it, but data starts 4 bytes later
 
   realtimeLock(realtimeTimeoutMs, REALTIME_MODE_DDP);
-  
+
   if (!realtimeOverride || (realtimeMode && useMainSegmentOnly)) {
     for (uint16_t i = start; i < stop; i++) {
       setRealtimePixel(i, data[c], data[c+1], data[c+2], ddpChannelsPerLed >3 ? data[c+3] : 0);
@@ -98,11 +98,11 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
 
   if (e131SkipOutOfSequence)
     if (seq < e131LastSequenceNumber[previousUniverses] && seq > 20 && e131LastSequenceNumber[previousUniverses] < 250){
-      DEBUG_PRINT("skipping E1.31 frame (last seq=");
+      DEBUG_PRINT(F("skipping E1.31 frame (last seq="));
       DEBUG_PRINT(e131LastSequenceNumber[previousUniverses]);
-      DEBUG_PRINT(", current seq=");
+      DEBUG_PRINT(F(", current seq="));
       DEBUG_PRINT(seq);
-      DEBUG_PRINT(", universe=");
+      DEBUG_PRINT(F(", universe="));
       DEBUG_PRINT(uni);
       DEBUG_PRINTLN(")");
       return;
@@ -283,7 +283,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
             strip.setBrightness(bri, true);
           }
         }
-        
+
         if (!is4Chan) {
           for (uint16_t i = previousLeds; i < ledsTotal; i++) {
             setRealtimePixel(i, e131_data[dmxOffset], e131_data[dmxOffset+1], e131_data[dmxOffset+2], 0);
@@ -489,8 +489,8 @@ void sendArtnetPollReply(ArtPollReply *reply, IPAddress ipAddress, uint16_t port
   reply->reply_sub_sw = (uint8_t)((portAddress >> 4) & 0x000F);
   reply->reply_sw_out[0] = (uint8_t)(portAddress & 0x000F);
 
-  sprintf((char *)reply->reply_node_report, "#0001 [%04u] OK - WLED v" TOSTRING(WLED_VERSION), pollReplyCount);
-  
+  snprintf_P((char *)reply->reply_node_report, sizeof(reply->reply_node_report)-1, PSTR("#0001 [%04u] OK - WLED v" TOSTRING(WLED_VERSION)), pollReplyCount);
+
   if (pollReplyCount < 9999) {
     pollReplyCount++;
   } else {

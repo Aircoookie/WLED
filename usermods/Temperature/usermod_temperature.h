@@ -134,6 +134,7 @@ class UsermodTemperature : public Usermod {
       return false;
     }
 
+#ifndef WLED_DISABLE_MQTT
     void publishHomeAssistantAutodiscovery() {
       if (!WLED_MQTT_CONNECTED) return;
 
@@ -155,6 +156,7 @@ class UsermodTemperature : public Usermod {
       mqtt->publish(buf, 0, true, json_str, payload_size);
       HApublished = true;
     }
+#endif
 
   public:
 
@@ -212,6 +214,7 @@ class UsermodTemperature : public Usermod {
         }
         errorCount = 0;
 
+#ifndef WLED_DISABLE_MQTT
         if (WLED_MQTT_CONNECTED) {
           char subuf[64];
           strcpy(subuf, mqttDeviceTopic);
@@ -227,6 +230,7 @@ class UsermodTemperature : public Usermod {
             // publish something else to indicate status?
           }
         }
+#endif
       }
     }
 
@@ -236,6 +240,7 @@ class UsermodTemperature : public Usermod {
      */
     //void connected() {}
 
+#ifndef WLED_DISABLE_MQTT
     /**
      * subscribe to MQTT topic if needed
      */
@@ -246,6 +251,7 @@ class UsermodTemperature : public Usermod {
         publishHomeAssistantAutodiscovery();
       }
     }
+#endif
 
     /*
      * API calls te enable data exchange between WLED modules

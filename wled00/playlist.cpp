@@ -55,7 +55,7 @@ void unloadPlaylist() {
 
 int16_t loadPlaylist(JsonObject playlistObj, byte presetId) {
   unloadPlaylist();
-  
+
   JsonArray presets = playlistObj["ps"];
   playlistLen = presets.size();
   if (playlistLen == 0) return -1;
