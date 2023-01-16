@@ -681,7 +681,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
   lastEditTime = millis();
   if (subPage != 2 && !doReboot) doSerializeConfig = true; //serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)
+  #ifndef WLED_DISABLE_ALEXA
   if (subPage == 4) alexaInit();
+  #endif
 }
 
 

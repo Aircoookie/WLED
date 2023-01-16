@@ -180,7 +180,9 @@ void handleTransitions()
 {
   //handle still pending interface update
   if (interfaceUpdateCallMode && millis() - lastInterfaceUpdate > INTERFACE_UPDATE_COOLDOWN) updateInterfaces(interfaceUpdateCallMode);
+#ifndef WLED_DISABLE_MQTT
   if (doPublishMqtt) publishMqtt();
+#endif
 
   if (transitionActive && transitionDelayTemp > 0)
   {

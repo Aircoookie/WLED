@@ -42,7 +42,9 @@ void WLED::loop()
   #endif
 
   handleTime();
+  #ifndef WLED_DISABLE_INFRARED
   handleIR();        // 2nd call to function needed for ESP32 to return valid results -- should be good for ESP8266, too
+  #endif
   handleConnection();
   handleSerial();
   handleNotifications();
@@ -64,7 +66,9 @@ void WLED::loop()
 
   yield();
   handleIO();
+  #ifndef WLED_DISABLE_INFRARED
   handleIR();
+  #endif
   #ifndef WLED_DISABLE_ALEXA
   handleAlexa();
   #endif
@@ -135,7 +139,9 @@ void WLED::loop()
   }
   if (millis() - lastMqttReconnectAttempt > 30000 || lastMqttReconnectAttempt == 0) { // lastMqttReconnectAttempt==0 forces immediate broadcast
     lastMqttReconnectAttempt = millis();
+    #ifndef WLED_DISABLE_MQTT
     initMqtt();
+    #endif
     yield();
     // refresh WLED nodes list
     refreshNodeList();
@@ -414,8 +420,10 @@ void WLED::setup()
 
   // fill in unique mdns default
   if (strcmp(cmDNS, "x") == 0) sprintf_P(cmDNS, PSTR("wled-%*s"), 6, escapedMac.c_str() + 6);
+#ifndef WLED_DISABLE_MQTT
   if (mqttDeviceTopic[0] == 0) sprintf_P(mqttDeviceTopic, PSTR("wled/%*s"), 6, escapedMac.c_str() + 6);
   if (mqttClientID[0] == 0)    sprintf_P(mqttClientID, PSTR("WLED-%*s"), 6, escapedMac.c_str() + 6);
+#endif
 
 #ifdef WLED_ENABLE_ADALIGHT
   if (Serial.available() > 0 && Serial.peek() == 'I') handleImprovPacket();
@@ -674,9 +682,11 @@ void WLED::initInterfaces()
   }
 #endif
 
+#ifndef WLED_DISABLE_ALEXA
   // init Alexa hue emulation
   if (alexaEnabled)
     alexaInit();
+#endif
 
 #ifndef WLED_DISABLE_OTA
   if (aOtaEnabled)
@@ -715,7 +725,9 @@ void WLED::initInterfaces()
   e131.begin(e131Multicast, e131Port, e131Universe, E131_MAX_UNIVERSE_COUNT);
   ddp.begin(false, DDP_DEFAULT_PORT);
   reconnectHue();
+#ifndef WLED_DISABLE_MQTT
   initMqtt();
+#endif
   interfacesInited = true;
   wasConnected = true;
 }
