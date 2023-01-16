@@ -2577,6 +2577,7 @@ function genPresets()
 				// console.log(ef, eP);
 				//transform key values in json format
 				var defaultString = "";
+				//if key/values defined, convert them to json in defaultString
 				if (eP.length>4) {
 					let defaults = (eP[4] == '')?[]:eP[4].split(",");
 					for (let i=0; i<defaults.length;i++) {
@@ -2584,6 +2585,7 @@ function genPresets()
 						defaultString += `,"${keyValue[0]}":${keyValue[1]}`;
 					}
 				}
+				//if not defined set to default
 				if (!defaultString.includes("sx")) defaultString += ',"sx":128'; //Speed
 				if (!defaultString.includes("ix")) defaultString += ',"ix":128'; //Intensity
 				if (!defaultString.includes("c1")) defaultString += ',"c1":128'; //Custom 1
@@ -2595,8 +2597,12 @@ function genPresets()
 				if (!defaultString.includes("pal")) defaultString += ',"pal":1'; //Random palette if not set different
 				if (!defaultString.includes("m12") && m.includes("1") && !m.includes("1.5") && !m.includes("12")) 
 					defaultString += ',"rev":true,"mi":true,"rY":true,"mY":true,"m12":2'; //Arc expansion
-				else 
-					defaultString += ',"rev":false,"mi":false,"rY":false,"mY":false,"m12":0'; //pixels expansion
+				else {
+					if (!defaultString.includes("rev")) defaultString += ',"rev":false';
+					if (!defaultString.includes("mi")) defaultString += ',"mi":false';
+					if (!defaultString.includes("rY")) defaultString += ',"rY":false';
+					if (!defaultString.includes("mY")) defaultString += ',"mY":false';
+				}
 				result += `\n,"${ef.id}":{"n":"${ef.name}","mainseg":0,"seg":[{"id":0,"fx":${ef.id}${defaultString}}]}`;
 				addToPlaylist(m, ef.id);
 				addToPlaylist("All", ef.id);
