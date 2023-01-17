@@ -103,8 +103,10 @@ typedef enum {
 
 class FourLineDisplayUsermod : public Usermod {
   public:
+#ifdef ARDUINO_ARCH_ESP32
     FourLineDisplayUsermod() { if (!instance) instance = this; }
     static FourLineDisplayUsermod* getInstance(void) { return instance; }
+#endif
 
   private:
 
@@ -1240,4 +1242,6 @@ const char FourLineDisplayUsermod::_showSeconds[]     PROGMEM = "showSeconds";
 const char FourLineDisplayUsermod::_busClkFrequency[] PROGMEM = "i2c-freq-kHz";
 const char FourLineDisplayUsermod::_contrastFix[]     PROGMEM = "contrastFix";
 
+#ifdef ARDUINO_ARCH_ESP32
 FourLineDisplayUsermod *FourLineDisplayUsermod::instance = nullptr;
+#endif
