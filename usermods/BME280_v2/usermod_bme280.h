@@ -1,6 +1,10 @@
 // force the compiler to show a warning to confirm that this file is included  WLEDMM: commented this warning as we want serious warnings ;-)
 // #warning **** Included USERMOD_BME280 version 2.0 ****
 
+#ifndef WLED_ENABLE_MQTT
+#error "This user mod requires MQTT to be enabled."
+#endif
+
 #pragma once
 
 #include "wled.h"

@@ -2551,7 +2551,8 @@ function rSegs()
 //WLEDMM generate presets.json file
 function genPresets()
 {
-	var result = '{"0":{}';
+	var result = "";
+	var sep = "{";
 
 	var effects = eJson;
 	var playlistPS = JSON.parse("{}");
@@ -2603,7 +2604,8 @@ function genPresets()
 					if (!defaultString.includes("rY")) defaultString += ',"rY":false';
 					if (!defaultString.includes("mY")) defaultString += ',"mY":false';
 				}
-				result += `\n,"${ef.id}":{"n":"${ef.name}","mainseg":0,"seg":[{"id":0,"fx":${ef.id}${defaultString}}]}`;
+				result += `${sep}"${ef.id}":{"n":"${ef.name}","mainseg":0,"seg":[{"id":0,"fx":${ef.id}${defaultString}}]}`;
+				sep = "\n,";
 				addToPlaylist(m, ef.id);
 				addToPlaylist("All", ef.id);
 				if (m.includes("1")) addToPlaylist("All1", ef.id);

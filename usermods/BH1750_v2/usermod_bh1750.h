@@ -1,6 +1,10 @@
 // force the compiler to show a warning to confirm that this file is included WLEDMM: commented this warning as we want serious warnings ;-)
 // #warning **** Included USERMOD_BH1750 ****
 
+#ifndef WLED_ENABLE_MQTT
+#error "This user mod requires MQTT to be enabled."
+#endif
+
 #pragma once
 
 #include <Arduino.h>   // WLEDMM: make sure that I2C drivers have the "right" Wire Object
@@ -179,6 +183,7 @@ public:
     {
       lastLux = lux;
       lastSend = millis();
+#ifndef WLED_DISABLE_MQTT
       if (WLED_MQTT_CONNECTED)
       {
         if (!mqttInitialized)
@@ -193,6 +198,7 @@ public:
       {
         DEBUG_PRINTLN(F("Missing MQTT connection. Not publishing data"));
       }
+#endif
     }
   }
 
