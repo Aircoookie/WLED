@@ -121,7 +121,7 @@
 			if (f.includes("pin")) {
 				var n = this.name.replace("[]","").substr(-3);
 				urows += `<select name="${k}:${f}${a?"[]":""}">`;
-				for (var j=-1; j<50; j++) { // all possible pins (d.max_gpio not working as it is set after addField during load and appendGPIOInfo)
+				for (var j=-1; j<=d.max_gpio; j++) { // all possible pins
 					let foundPin = -1;
 					for (var i=0; i<pins.length; i++) { // check if pin is reserved
 						if (pins[i] == j) foundPin = i;
@@ -290,10 +290,10 @@
 			const urlParams = new URLSearchParams(queryString);
             const userMod = urlParams.get('um');
 			if (userMod == null) {
-				urows+="<h2>Usermods Global pins</h2>";
-				urows+="<button onclick=\"location.href=\"https://mm.kno.wled.ge/usermods/globalpins\" type=\"button\">?</button>";
+				urows+="<h2>Usermods (Pin Manager)</h2>";
+				urows+="<button onclick=\"location.href=\"https://mm.kno.wled.ge/usermods/pinmanager\" type=\"button\">?</button>";
 				urows+="<hr class=\"sml\">";
-				urows+="<i style=\"color:orange\">(only changable on ESP32, change requires reboot!)</i>";
+				urows+="<i style=\"color:orange\">(change requires reboot!)</i>";
 				urows+="<hr class=\"sml\">";
 				urows+="<p><u>Global I2C GPIOs (HW)</u></p>";
 				addField("if:SDA", "pin", -1, false);

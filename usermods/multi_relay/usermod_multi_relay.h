@@ -571,6 +571,11 @@ class MultiRelay : public Usermod {
       DEBUG_PRINTLN(F("MultiRelay config saved."));
     }
 
+    void appendConfigData()
+    {
+      oappend(SET_F("addHB('MultiRelay');"));
+    }
+
     /**
      * restore the changeable values
      * readFromConfig() is called before setup() to populate properties from values stored in cfg.json

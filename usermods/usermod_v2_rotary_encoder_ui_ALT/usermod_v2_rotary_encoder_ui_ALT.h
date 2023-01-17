@@ -872,7 +872,7 @@ public:
   //WLEDMM: add appendConfigData
   void appendConfigData()
   {
-    oappend(SET_F("addHB('")); oappend(_name); oappend("');");
+    oappend(SET_F("addHB('Rotary-Encoder');"));
 
     #ifdef ENCODER_DT_PIN
       oappend(SET_F("xOption('Rotary-Encoder:DT-pin',1,' ⎌',")); oappendi(ENCODER_DT_PIN); oappend(");"); 

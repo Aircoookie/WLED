@@ -264,6 +264,7 @@ class Frame3D {
       points.push_back(voxel);
     }
     void drawLineXYZ(Voxel from, Voxel to, uint32_t col) {
+      //causes crash on ESP8266: StoreProhibited: A store referenced a page mapped with an attribute that does not permit stores, maybe not enough free heap
       for (float x=MIN(from.x, to.x); x<=MAX(from.x, to.x); x+=.05)
         for (float y=MIN(from.y, to.y); y<=MAX(from.y, to.y); y+=.05)
           for (float z=MIN(from.z, to.z); z<=MAX(from.z, to.z); z+=.05)
@@ -329,9 +330,9 @@ class GamesUsermod : public Usermod {
       strip.addEffect(255, &mode_pongGame, _data_FX_MODE_PONGGAME);
       #ifdef USERMOD_MPU6050_IMU
         IMU = (MPU6050Driver *)usermods.lookup(USERMOD_ID_IMU);
-        #ifdef WLED_DEBUG
+        // #ifdef WLED_DEBUG
           strip.addEffect(255, &mode_IMUTest, _data_FX_MODE_IMUTest);
-        #endif
+        // #endif
       #endif
       strip.addEffect(255, &mode_3DIMUCube, _data_FX_MODE_3DIMUCube); //works also without IMU
     }

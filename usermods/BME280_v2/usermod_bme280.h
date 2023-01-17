@@ -401,7 +401,7 @@ public:
   }
 
   void appendConfigData() {
-    oappend(SET_F("addHB('")); oappend(_name); oappend("');");
+    oappend(SET_F("addHB('BME280/BMP280');"));
 
     oappend(SET_F("addInfo('BME280/BMP280:pin[]',0,'','I2C/SPI CLK');"));
     oappend(SET_F("disableRO('BME280/BMP280:pin[]',0);")); 

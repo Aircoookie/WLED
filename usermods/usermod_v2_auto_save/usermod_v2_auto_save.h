@@ -205,7 +205,7 @@ class AutoSaveUsermod : public Usermod {
     }
 
     void appendConfigData() {
-      oappend(SET_F("addHB('")); oappend(_name); oappend("');");
+      oappend(SET_F("addHB('Autosave');"));
     }
 
     /*

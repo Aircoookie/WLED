@@ -1044,7 +1044,7 @@ class FourLineDisplayUsermod : public Usermod {
     //}
 
     void appendConfigData() {
-      oappend(SET_F("addHB('")); oappend(_name); oappend("');");
+      oappend(SET_F("addHB('4LineDisplay');"));
       
       oappend(SET_F("dd=addDropdown('4LineDisplay','type');"));
       oappend(SET_F("addOption(dd,'None',0);"));

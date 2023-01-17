@@ -414,7 +414,7 @@ class Animated_Staircase : public Usermod {
     }
 
     void appendConfigData() {
-      oappend(SET_F("addHB('")); oappend(_name); oappend("');");
+      oappend(SET_F("addHB('staircase');"));
       
       //oappend(SET_F("dd=addDropdown('staircase','selectfield');"));
       //oappend(SET_F("addOption(dd,'1st value',0);"));
