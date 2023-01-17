@@ -135,8 +135,12 @@ class FourLineDisplayUsermod : public Usermod {
     bool sleepMode = true;          // allow screen sleep?
     bool clockMode = false;         // display clock
     bool showSeconds = true;        // display clock with seconds
-#if defined(ARDUINO_ARCH_ESP32) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0)
+#if defined(ARDUINO_ARCH_ESP32) 
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0)
     bool enabled = false;  // WLEDMM workaround for I2C bugs in IDF v4.4.1
+#else
+    bool enabled = true;
+#endif
 #else
     bool enabled = true;
 #endif
