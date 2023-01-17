@@ -1185,7 +1185,7 @@ class FourLineDisplayUsermod : public Usermod {
         bool pinsChanged = false;
         for (byte i=0; i<5; i++) if (ioPin[i] != oldPin[i]) { pinsChanged = true; break; }
         if (pinsChanged || type!=newType) {
-          if (type != NONE) delete u8x8;
+          if (typeOK) delete u8x8;
           PinOwner po = PinOwner::UM_FourLineDisplay;
           bool isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64);
           if (isSPI) {
