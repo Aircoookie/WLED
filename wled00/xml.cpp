@@ -756,7 +756,7 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
       if (usermod) usermod->appendConfigData();
     }
 
-    // oappend(SET_F("console.log('getSettingsJS fix ro pins', d.max_gpio, d.ro_pins, d.ro_gpio);")); 
+    // oappend(SET_F("console.log('getSettingsJS fix ro pins', d.max_gpio, d.ro_gpio);")); 
     oappend(SET_F("pinDropdownsPost();")); 
   }
 
