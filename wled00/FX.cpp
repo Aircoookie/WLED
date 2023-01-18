@@ -7138,6 +7138,7 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
     band = constrain(band, 0, 15);
     uint16_t colorIndex = band * 17;
     uint16_t barHeight  = map(fftResult[band], 0, 255, 0, rows); // do not subtract -1 from rows here
+    if (barHeight > rows) barHeight = rows;                      // WLEDMM map() can "overshoot" due to rounding errors
     if (barHeight > previousBarHeight[x]) previousBarHeight[x] = barHeight; //drive the peak up
 
     uint32_t ledColor = BLACK;
@@ -7148,7 +7149,7 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
       ledColor = SEGMENT.color_from_palette(colorIndex, false, PALETTE_SOLID_WRAP, 0);
       SEGMENT.setPixelColorXY(x, rows-1 - y, ledColor);
     }
-    if (previousBarHeight[x] > 0)
+    if ((previousBarHeight[x] > 0) && (previousBarHeight[x] < rows))  // WLEDMM avoid "overshooting" into other segments
       SEGMENT.setPixelColorXY(x, rows - previousBarHeight[x], (SEGCOLOR(2) != BLACK) ? SEGCOLOR(2) : ledColor);
 
     if (rippleTime && previousBarHeight[x]>0) previousBarHeight[x]--;    //delay/ripple effect
