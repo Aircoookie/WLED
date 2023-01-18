@@ -820,7 +820,11 @@ class AudioReactive : public Usermod {
     };
 
     // set your config variables to their boot default value (this can also be done in readFromConfig() or a constructor if you prefer)
+  #ifdef SR_ENABLE_DEFAULT
+    bool     enabled = true;        // WLEDMM
+  #else
     bool     enabled = false;
+  #endif
     bool     initDone = false;
 
     // variables  for UDP sound sync
