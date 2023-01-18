@@ -252,6 +252,7 @@
 					//https://www.javascripttutorial.net/javascript-dom/javascript-add-remove-options/
 					//https://www.javascripttutorial.net/javascript-dom/javascript-remove-items-from-a-select-conditionally/
 					if (c.text.length <= 2) c.text += " 🟢";
+					for (let jj=0; jj<d.dt_pins.length; jj++) if (d.dt_pins[jj] == c.value) c.text += ((jj<9)?` D${jj}`:((jj==9)?` RX`:` TX`)); 
 				}
 			}
 		}

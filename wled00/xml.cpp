@@ -273,6 +273,14 @@ void appendGPIOinfo() {
   oappendi(16);
   #endif
   oappend(SET_F(";"));
+
+  char dt_pins[30];
+  #if defined(ESP8266)
+  sprintf(dt_pins, "d.dt_pins=[%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d];", D0, D1, D2, D3, D4, D5, D6, D7, D8, hardwareRX, hardwareTX);
+  #else
+  sprintf(dt_pins, "d.dt_pins=[%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d];", 99, 99, 99, 99, 99, 99, 99, 99, 99, hardwareRX, hardwareTX);
+  #endif
+  oappend(dt_pins);
 }
 
 //get values for settings form in javascript
