@@ -225,9 +225,9 @@ static float FFT_MajorPeak = 1.0f;              // FFT: strongest (peak) frequen
 static float FFT_Magnitude = 0.0f;              // FFT: volume (magnitude) of peak frequency
 static uint8_t fftResult[NUM_GEQ_CHANNELS]= {0};// Our calculated freq. channel result table to be used by effects
 #if defined(WLED_DEBUG) || defined(SR_DEBUG) || defined(SR_STATS)
-static uint64_t fftTaskCycle = 0;      // avg cycle time for FFT task
-static uint64_t fftTime = 0;           // avg time for single FFT
-static uint64_t sampleTime = 0;        // avg (blocked) time for reading I2S samples
+static float fftTaskCycle = 0;      // avg cycle time for FFT task
+static float fftTime = 0;           // avg time for single FFT
+static float sampleTime = 0;        // avg (blocked) time for reading I2S samples
 #endif
 
 // FFT Task variables (filtering and post-processing)
@@ -358,7 +358,7 @@ void FFTcode(void * parameter)
     static uint64_t lastLastTime = 0;
     if ((lastCycleStart > 0) && (lastCycleStart < start)) { // filter out overflows
       uint64_t taskTimeInMillis = ((start - lastCycleStart) +5ULL) / 10ULL; // "+5" to ensure proper rounding
-      fftTaskCycle = (((taskTimeInMillis + lastLastTime)/2) *4 + fftTime*6)/10; // smart smooth
+      fftTaskCycle = (((taskTimeInMillis + lastLastTime)/2) *4 + fftTaskCycle*6)/10.0; // smart smooth
       lastLastTime = taskTimeInMillis;
     }
     lastCycleStart = start;
@@ -370,7 +370,7 @@ void FFTcode(void * parameter)
 #if defined(WLED_DEBUG) || defined(SR_DEBUG)|| defined(SR_STATS)
     if (start < esp_timer_get_time()) { // filter out overflows
       uint64_t sampleTimeInMillis = (esp_timer_get_time() - start +5ULL) / 10ULL; // "+5" to ensure proper rounding
-      sampleTime = (sampleTimeInMillis*3 + sampleTime*7)/10; // smooth
+      sampleTime = (sampleTimeInMillis*3 + sampleTime*7)/10.0; // smooth
     }
     start = esp_timer_get_time(); // start measuring FFT time
 #endif
@@ -565,7 +565,7 @@ void FFTcode(void * parameter)
     static uint64_t lastLastFFT = 0;
     if (haveDoneFFT && (start < esp_timer_get_time())) { // filter out overflows
       uint64_t fftTimeInMillis = ((esp_timer_get_time() - start) +5ULL) / 10ULL; // "+5" to ensure proper rounding
-      fftTime  = (((fftTimeInMillis + lastLastFFT)/2) *3 + fftTime*7)/10; // smart smooth
+      fftTime  = (((fftTimeInMillis + lastLastFFT)/2) *3 + fftTime*7)/10.0; // smart smooth
       lastLastFFT = fftTimeInMillis;
     }
 #endif
@@ -1830,15 +1830,15 @@ class AudioReactive : public Usermod {
 
         #if defined(WLED_DEBUG) || defined(SR_DEBUG) || defined(SR_STATS)
         infoArr = user.createNestedArray(F("I2S cycle time"));
-        infoArr.add(float(fftTaskCycle)/100.0f);
+        infoArr.add(roundf(fftTaskCycle)/100.0f);
         infoArr.add(" ms");
 
         infoArr = user.createNestedArray(F("Sampling time"));
-        infoArr.add(float(sampleTime)/100.0f);
+        infoArr.add(roundf(sampleTime)/100.0f);
         infoArr.add(" ms");
 
         infoArr = user.createNestedArray(F("FFT time"));
-        infoArr.add(float(fftTime)/100.0f);
+        infoArr.add(roundf(fftTime)/100.0f);
         if ((fftTime/100) >= FFT_MIN_CYCLE) // FFT time over budget -> I2S buffer will overflow 
           infoArr.add("<b style=\"color:red;\">! ms</b>");
         else if ((fftTime/80 + sampleTime/80) >= FFT_MIN_CYCLE) // FFT time >75% of budget -> risk of instability
@@ -1846,9 +1846,9 @@ class AudioReactive : public Usermod {
         else
           infoArr.add(" ms");
 
-        DEBUGSR_PRINTF("AR I2S cycle time: %5.2f ms\n", float(fftTaskCycle)/100.0f);
-        DEBUGSR_PRINTF("AR Sampling time : %5.2f ms\n", float(sampleTime)/100.0f);
-        DEBUGSR_PRINTF("AR FFT time      : %5.2f ms\n", float(fftTime)/100.0f);
+        DEBUGSR_PRINTF("AR I2S cycle time: %5.2f ms\n", roundf(fftTaskCycle)/100.0f);
+        DEBUGSR_PRINTF("AR Sampling time : %5.2f ms\n", roundf(sampleTime)/100.0f);
+        DEBUGSR_PRINTF("AR FFT time      : %5.2f ms\n", roundf(fftTime)/100.0f);
         #endif
       }
     }
