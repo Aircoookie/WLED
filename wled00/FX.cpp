@@ -4902,6 +4902,8 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
         if (colorsCount[i].count > dominantColorCount.count) dominantColorCount = colorsCount[i];
       // assign the dominant color w/ a bit of randomness to avoid "gliders"
       if (dominantColorCount.count > 0 && random8(128)) SEGMENT.setPixelColorXY(x,y, dominantColorCount.color);
+    } else if ((col == bgc) && (neighbors == 2) && !random8(128)) {               // Mutation
+      SEGMENT.setPixelColorXY(x,y, SEGMENT.color_from_palette(random8(), false, PALETTE_SOLID_WRAP, 255));
     }
     // else do nothing!
   } //x,y
@@ -6702,9 +6704,8 @@ uint16_t mode_DJLight(void) {                   // Written by ??? Adapted by Wil
   if (SEGENV.aux0 != secondHand) {                        // Triggered millis timing.
     SEGENV.aux0 = secondHand;
 
-    SEGMENT.setPixelColor(mid, CRGB(fftResult[15]/2, fftResult[5]/2, fftResult[0]/2)); // 16-> 15 as 16 is out of bounds
-    CRGB color = SEGMENT.getPixelColor(mid);
-    SEGMENT.setPixelColor(mid, color.fadeToBlackBy(map(fftResult[1*4], 0, 255, 255, 10)));     // TODO - Update
+    CRGB color = CRGB(fftResult[15]/2, fftResult[5]/2, fftResult[0]/2); // 16-> 15 as 16 is out of bounds
+    SEGMENT.setPixelColor(mid, color.fadeToBlackBy(map(fftResult[4], 0, 255, 255, 4)));     // TODO - Update
 
     for (int i = SEGLEN - 1; i > mid; i--)   SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i-1)); // move to the left
     for (int i = 0; i < mid; i++)            SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i+1)); // move to the right
@@ -6727,8 +6728,8 @@ uint16_t mode_freqmap(void) {                   // Map FFT_MajorPeak to SEGLEN. 
     // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
-  float   my_magnitude  = *(float*)   um_data->u_data[5] / 4.0f;
+  float FFT_MajorPeak = *(float*)um_data->u_data[4];
+  float my_magnitude  = *(float*)um_data->u_data[5] / 4.0f;
   if (FFT_MajorPeak < 1) FFT_MajorPeak = 1;                                         // log10(0) is "forbidden" (throws exception)
 
   if (SEGENV.call == 0) SEGMENT.fill(BLACK);
@@ -6761,7 +6762,7 @@ uint16_t mode_freqmatrix(void) {                // Freqmatrix. By Andreas Plesch
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float FFT_MajorPeak = *(float*)um_data->u_data[4];
-  float volumeSmth    = *(float*)  um_data->u_data[0];
+  float volumeSmth    = *(float*)um_data->u_data[0];
 
   if (SEGENV.call == 0) {
     SEGMENT.setUpLeds();
@@ -6798,7 +6799,7 @@ uint16_t mode_freqmatrix(void) {                // Freqmatrix. By Andreas Plesch
 
     // shift the pixels one pixel up
     SEGMENT.setPixelColor(0, color);
-    for (int i = SEGLEN - 1; i > 0; i--)   SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i-1)); //move to the left
+    for (int i = SEGLEN - 1; i > 0; i--) SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i-1)); //move to the left
   }
 
   return FRAMETIME;
@@ -6819,8 +6820,8 @@ uint16_t mode_freqpixels(void) {                // Freqpixel. By Andrew Tuline.
     // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
-  float   my_magnitude  = *(float*)  um_data->u_data[5] / 16.0f;
+  float FFT_MajorPeak = *(float*)um_data->u_data[4];
+  float my_magnitude  = *(float*)um_data->u_data[5] / 16.0f;
   if (FFT_MajorPeak < 1) FFT_MajorPeak = 1;                                         // log10(0) is "forbidden" (throws exception)
 
   uint16_t fadeRate = 2*SEGMENT.speed - SEGMENT.speed*SEGMENT.speed/255;    // Get to 255 as quick as you can.
@@ -6862,8 +6863,8 @@ uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschun
     // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
-  float   volumeSmth   = *(float*)  um_data->u_data[0];
+  float FFT_MajorPeak = *(float*)um_data->u_data[4];
+  float volumeSmth    = *(float*)um_data->u_data[0];
 
   if (SEGENV.call == 0) {
     SEGMENT.setUpLeds();
@@ -6924,16 +6925,16 @@ uint16_t mode_gravfreq(void) {                  // Gravfreq. By Andrew Tuline.
     // add support for no audio
     um_data = simulateSound(SEGMENT.soundSim);
   }
-  float   FFT_MajorPeak = *(float*)  um_data->u_data[4];
-  float   volumeSmth   = *(float*)   um_data->u_data[0];
+  float   FFT_MajorPeak = *(float*)um_data->u_data[4];
+  float   volumeSmth    = *(float*)um_data->u_data[0];
   if (FFT_MajorPeak < 1) FFT_MajorPeak = 1;                                         // log10(0) is "forbidden" (throws exception)
 
   SEGMENT.fade_out(250);
 
-  float segmentSampleAvg = volumeSmth * (float)SEGMENT.intensity / 255.0;
+  float segmentSampleAvg = volumeSmth * (float)SEGMENT.intensity / 255.0f;
   segmentSampleAvg *= 0.125; // divide by 8,  to compensate for later "sensitivty" upscaling
 
-  float mySampleAvg = mapf(segmentSampleAvg*2.0, 0,32, 0, (float)SEGLEN/2.0); // map to pixels availeable in current segment
+  float mySampleAvg = mapf(segmentSampleAvg*2.0f, 0,32, 0, (float)SEGLEN/2.0); // map to pixels availeable in current segment
   int tempsamp = constrain(mySampleAvg,0,SEGLEN/2);     // Keep the sample from overflowing.
   uint8_t gravity = 8 - SEGMENT.speed/32;
 
