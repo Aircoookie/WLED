@@ -30,17 +30,17 @@ class UsermodBattery : public Usermod
 
     // auto shutdown/shutoff/master off feature
     bool autoOffEnabled = USERMOD_BATTERY_AUTO_OFF_ENABLED;
-    int8_t autoOffThreshold = USERMOD_BATTERY_AUTO_OFF_THRESHOLD;
+    uint8_t autoOffThreshold = USERMOD_BATTERY_AUTO_OFF_THRESHOLD;
 
     // low power indicator feature
     bool lowPowerIndicatorEnabled = USERMOD_BATTERY_LOW_POWER_INDICATOR_ENABLED;
-    int8_t lowPowerIndicatorPreset = USERMOD_BATTERY_LOW_POWER_INDICATOR_PRESET;
-    int8_t lowPowerIndicatorThreshold = USERMOD_BATTERY_LOW_POWER_INDICATOR_THRESHOLD;
-    int8_t lowPowerIndicatorReactivationThreshold = lowPowerIndicatorThreshold+10;
-    int8_t lowPowerIndicatorDuration = USERMOD_BATTERY_LOW_POWER_INDICATOR_DURATION;
+    uint8_t lowPowerIndicatorPreset = USERMOD_BATTERY_LOW_POWER_INDICATOR_PRESET;
+    uint8_t lowPowerIndicatorThreshold = USERMOD_BATTERY_LOW_POWER_INDICATOR_THRESHOLD;
+    uint8_t lowPowerIndicatorReactivationThreshold = lowPowerIndicatorThreshold+10;
+    uint8_t lowPowerIndicatorDuration = USERMOD_BATTERY_LOW_POWER_INDICATOR_DURATION;
     bool lowPowerIndicationDone = false;
     unsigned long lowPowerActivationTime = 0; // used temporary during active time
-    int8_t lastPreset = 0;
+    uint8_t lastPreset = 0;
 
     bool initDone = false;
     bool initializing = true;
@@ -128,7 +128,7 @@ class UsermodBattery : public Usermod
       if(bcfg.type == (batteryType)lion) {
         bat = new Lion();
       } else {
-        bat = new Unkown(); // nullObject
+        bat = new Unkown(); // nullObject pattern
       }
 
       bat->update(bcfg);
@@ -181,7 +181,6 @@ class UsermodBattery : public Usermod
 #else
       // read battery raw input
       rawValue = analogRead(batteryPin);
-
       // calculate the voltage     
       voltage = ((rawValue / getAdcPrecision()) * bat->getMaxVoltage()) + bat->getCalibration();
 #endif
@@ -252,17 +251,42 @@ class UsermodBattery : public Usermod
       infoVoltage.add(F(" V"));
     }
 
+    void addBatteryToJsonObject(JsonObject& battery, bool forJsonState)
+    {
+      if(forJsonState) { battery[F("type")] = bcfg.type; } else {battery[F("type")] = (String)bcfg.type; }  // has to be a String otherwise it won't get converted to a Dropdown
+      battery[F("min-voltage")] = bat->getMinVoltage();
+      battery[F("max-voltage")] = bat->getMaxVoltage();
+      battery[F("capacity")] = bat->getCapacity();
+      battery[F("calibration")] = bat->getCalibration();
+      battery[FPSTR(_readInterval)] = readingInterval;
+
+      JsonObject ao = battery.createNestedObject(F("auto-off"));  // auto off section
+      ao[FPSTR(_enabled)] = autoOffEnabled;
+      ao[FPSTR(_threshold)] = autoOffThreshold;
+
+      JsonObject lp = battery.createNestedObject(F("indicator")); // low power section
+      lp[FPSTR(_enabled)] = lowPowerIndicatorEnabled;
+      lp[FPSTR(_preset)] = lowPowerIndicatorPreset; // dropdown trickery (String)lowPowerIndicatorPreset; 
+      lp[FPSTR(_threshold)] = lowPowerIndicatorThreshold;
+      lp[FPSTR(_duration)] = lowPowerIndicatorDuration;
+    }
 
     /*
      * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    /*
     void addToJsonState(JsonObject& root)
     {
-      // TBD
+      JsonObject battery = root.createNestedObject(FPSTR(_name));
+
+      if (battery.isNull()) {
+        battery = root.createNestedObject(FPSTR(_name));
+      }
+      
+      addBatteryToJsonObject(battery, true);
+      
+      DEBUG_PRINTLN(F("Battery state exposed in JSON API."));
     }
-    */
 
 
     /*
@@ -314,48 +338,39 @@ class UsermodBattery : public Usermod
      */
     void addToConfig(JsonObject& root)
     {
-      JsonObject battery = root.createNestedObject(FPSTR(_name));           // usermodname
+      JsonObject battery = root.createNestedObject(FPSTR(_name));
+      
+      if (battery.isNull()) {
+        battery = root.createNestedObject(FPSTR(_name));
+      }
+
       #ifdef ARDUINO_ARCH_ESP32
         battery[F("pin")] = batteryPin;
       #endif
-
-      battery[F("type")] = (String)bcfg.type; // has to be a String otherwise it won't get converted to a Dropdown
-      battery[F("min-voltage")] = bat->getMinVoltage();
-      battery[F("max-voltage")] = bat->getMaxVoltage();
-      battery[F("capacity")] = bat->getCapacity();
-      battery[F("calibration")] = bat->getCalibration();
-      battery[FPSTR(_readInterval)] = readingInterval;
       
-      JsonObject ao = battery.createNestedObject(F("auto-off"));  // auto off section
-      ao[FPSTR(_enabled)] = autoOffEnabled;
-      ao[FPSTR(_threshold)] = autoOffThreshold;
-
-      JsonObject lp = battery.createNestedObject(F("indicator")); // low power section
-      lp[FPSTR(_enabled)] = lowPowerIndicatorEnabled;
-      lp[FPSTR(_preset)] = lowPowerIndicatorPreset; // dropdown trickery (String)lowPowerIndicatorPreset; 
-      lp[FPSTR(_threshold)] = lowPowerIndicatorThreshold;
-      lp[FPSTR(_duration)] = lowPowerIndicatorDuration;
+      addBatteryToJsonObject(battery, false);
 
       DEBUG_PRINTLN(F("Battery config saved."));
     }
 
     void appendConfigData()
     {
-      oappend(SET_F("td=addDropdown('Battery', 'type');"));
-      oappend(SET_F("addOption(td, 'Unkown', '0');"));
-      oappend(SET_F("addOption(td, 'LiPo', '1');"));
-      oappend(SET_F("addOption(td, 'LiOn', '2');"));
-      oappend(SET_F("addInfo('Battery:type',1,'<small style=\"color:orange\">requires reboot</small>');"));
-      oappend(SET_F("addInfo('Battery:min-voltage', 1, 'v');"));
-      oappend(SET_F("addInfo('Battery:max-voltage', 1, 'v');"));
-      oappend(SET_F("addInfo('Battery:capacity', 1, 'mAh');"));
-      oappend(SET_F("addInfo('Battery:interval', 1, 'ms');"));
-      oappend(SET_F("addInfo('Battery:auto-off:threshold', 1, '%');"));
-      oappend(SET_F("addInfo('Battery:indicator:threshold', 1, '%');"));
-      oappend(SET_F("addInfo('Battery:indicator:duration', 1, 's');"));
+      // Total: 501 Bytes
+      oappend(SET_F("td=addDropdown('Battery', 'type');"));               // 35 Bytes
+      oappend(SET_F("addOption(td, 'Unkown', '0');"));                    // 30 Bytes
+      oappend(SET_F("addOption(td, 'LiPo', '1');"));                      // 28 Bytes
+      oappend(SET_F("addOption(td, 'LiOn', '2');"));                      // 28 Bytes
+      oappend(SET_F("addInfo('Battery:type',1,'<small style=\"color:orange\">requires reboot</small>');")); // 81 Bytes
+      oappend(SET_F("addInfo('Battery:min-voltage', 1, 'v');"));          // 40 Bytes
+      oappend(SET_F("addInfo('Battery:max-voltage', 1, 'v');"));          // 40 Bytes
+      oappend(SET_F("addInfo('Battery:capacity', 1, 'mAh');"));           // 39 Bytes
+      oappend(SET_F("addInfo('Battery:interval', 1, 'ms');"));            // 38 Bytes
+      oappend(SET_F("addInfo('Battery:auto-off:threshold', 1, '%');"));   // 47 Bytes
+      oappend(SET_F("addInfo('Battery:indicator:threshold', 1, '%');"));  // 48 Bytes
+      oappend(SET_F("addInfo('Battery:indicator:duration', 1, 's');"));   // 47 Bytes
       
-      // cannot quite get this mf to work. its exeeding some buffer limit i think
-      // what i wanted is a list of all presets to select one from
+      // this option list would exeed the oappend() buffer
+      // a list of all presets to select one from
       // oappend(SET_F("bd=addDropdown('Battery:low-power-indicator', 'preset');"));
       // the loop generates: oappend(SET_F("addOption(bd, 'preset name', preset id);"));
       // for(int8_t i=1; i < 42; i++) {

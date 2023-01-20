@@ -34,6 +34,7 @@
  *
  */
 #ifndef USERMOD_BATTERY_UNKOWN_MIN_VOLTAGE
+  // Extra save defaults
   #define USERMOD_BATTERY_UNKOWN_MIN_VOLTAGE 3.3f
 #endif
 #ifndef USERMOD_BATTERY_UNKOWN_MAX_VOLTAGE
@@ -125,10 +126,10 @@ typedef struct bconfig_t
   batteryType type;
   float minVoltage;
   float maxVoltage;
-  unsigned int capacity; // current capacity
-  float voltage;                       // current voltage
-  int8_t level;                                     // current level
-  float calibration;        // offset or calibration value to fine tune the calculated voltage
+  unsigned int capacity;  // current capacity
+  float voltage;          // current voltage
+  int8_t level;           // current level
+  float calibration;      // offset or calibration value to fine tune the calculated voltage
 } batteryConfig;
 
 
