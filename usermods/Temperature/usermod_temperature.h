@@ -383,9 +383,9 @@ class UsermodTemperature : public Usermod {
 
     void appendConfigData()
     {
-      oappend(SET_F("addInfo('")); oappend(SET_F(FPSTR(_name))); oappend(SET_F(":")); oappend(SET_F(FPSTR(_parasite)));
+      oappend(SET_F("addInfo('")); oappend(String(FPSTR(_name)).c_str()); oappend(SET_F(":")); oappend(String(FPSTR(_parasite)).c_str());
       oappend(SET_F("',1,'<i>(if no Vcc connected)</i>');"));  // 0 is field type, 1 is actual field
-      oappend(SET_F("addInfo('")); oappend(SET_F(FPSTR(_name))); oappend(SET_F(":")); oappend(SET_F(FPSTR(_parasitePin)));
+      oappend(SET_F("addInfo('")); oappend(String(FPSTR(_name)).c_str()); oappend(SET_F(":")); oappend(String(FPSTR(_parasitePin)).c_str());
       oappend(SET_F("',1,'<i>(for external MOSFET)</i>');"));  // 0 is field type, 1 is actual field
     }
 
