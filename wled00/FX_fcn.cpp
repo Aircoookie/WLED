@@ -295,7 +295,8 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
     case 12: //Rainbow stripe colors
       targetPalette = RainbowStripeColors_p; break;
     case 71: //WLEDMM netmindz ar palette +1
-    case 72: //WLEDMM netmindz ar palette +1
+    case 72: //WLEDMM netmindz ar palette +2
+    case 73: //WLEDMM netmindz ar palette +3
         targetPalette.loadDynamicGradientPalette(getAudioPalette(pal)); break; 
     default: //progmem palettes
       if (pal>245) {
@@ -1959,5 +1960,5 @@ const char JSON_palette_names[] PROGMEM = R"=====([
 "Magenta","Magred","Yelmag","Yelblu","Orange & Teal","Tiamat","April Night","Orangery","C9","Sakura",
 "Aurora","Atlantica","C9 2","C9 New","Temperature","Aurora 2","Retro Clown","Candy","Toxy Reaf","Fairy Reaf",
 "Semi Blue","Pink Candy","Red Reaf","Aqua Flash","Yelblu Hot","Lite Light","Red Flash","Blink Red","Red Shift","Red Tide",
-"Candy2","Audio Responsive Ratio","Audio Responsive Hue"
+"Candy2","Audio Responsive Ratio","Audio Responsive Hue","Audio Responsive Ramp"
 ])=====";
