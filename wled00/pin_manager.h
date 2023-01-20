@@ -67,7 +67,7 @@ static_assert(0u == static_cast<uint8_t>(PinOwner::None), "PinOwner::None must b
 class PinManagerClass {
   private:
   #ifdef ESP8266
-  #define WLED_NUM_PINS 17
+  #define WLED_NUM_PINS 18                  // WLEDMM include A0 = gpio17
   uint8_t pinAlloc[3] = {0x00, 0x00, 0x00}; //24bit, 1 bit per pin, we use first 17bits
   PinOwner ownerTag[WLED_NUM_PINS] = { PinOwner::None };
   PinOwner ownerConflict[WLED_NUM_PINS] = { PinOwner::None }; // WLEDMM: record pin alloc conflicts
@@ -124,10 +124,22 @@ class PinManagerClass {
   bool isPinOk(byte gpio, bool output = true);
 
   PinOwner getPinOwner(byte gpio);
+
+  // WLEDMM begin
   String getOwnerText(PinOwner tag); // WLEDMM  - return PIN owner tag as text
   String getPinOwnerText(int gpio); // WLEDMM   - return PIN owner as text
   String getPinSpecialText(int gpio); // WLEDMM - return PIN special comments (if any)
   String getPinConflicts(int gpio); // WLEDMM   - return PIN alloc conflicts (if any)
+
+  bool isPinTouch(int gpio);                                   // true if gpio supports touch functions
+  bool isPinAnalog(int gpio);                                  // true if gpio supports analogRead
+  bool isPinADC1(int gpio);                                    // true if gpio supports analogRead, and it belongs to ADC unit 1
+  bool isPinADC2(int gpio);                                    // true if gpio supports analogRead, and it belongs to ADC unit 2 
+  #define PM_NO_PIN 255
+  typedef enum { ADC_none = 0, ADC1 = 1, ADC2 = 2 } AdcIdentifier;
+  uint8_t  getADCPin(AdcIdentifier adcUnit, uint8_t adcPort);   // get GPIO number for ADC unit x, channel y. 255 = no such pin
+  // WLEDMM end
+
   #ifdef ARDUINO_ARCH_ESP32
   byte allocateLedc(byte channels);
   void deallocateLedc(byte pos, byte channels);

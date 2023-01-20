@@ -597,6 +597,86 @@ bool PinManagerClass::joinWire(int8_t pinSDA, int8_t pinSCL) {
   return(true);
 }
 
+
+  // WLEDMM more additions
+
+  // returns true if gpio supports touch functions
+  bool PinManagerClass::isPinTouch(int gpio) {
+    #if defined(ARDUINO_ARCH_ESP32)
+      if (digitalPinToTouchChannel(gpio) >= 0) return true;
+    #endif
+    return false;  // fall-through case
+  }
+
+  // returns true if gpio supports analogRead
+  bool PinManagerClass::isPinAnalog(int gpio) {
+    #if !defined(ARDUINO_ARCH_ESP32)
+      if (gpio == A0) return true;   // for 8266
+    #else                            // for ESP32 variants
+      if (digitalPinToAnalogChannel(gpio) >= 0) return true;
+    #endif
+    return false;  // fall-through case
+  }
+
+  // returns true if gpio supports analogRead, and it belongs to ADC unit 1
+  bool PinManagerClass::isPinADC1(int gpio) {
+    if ((gpio < 0) || !isPinAnalog(gpio)) return false;
+
+    #if !defined(ARDUINO_ARCH_ESP32)
+      if (gpio == A0) return true;   // for 8266
+    #else                            // for ESP32 variants
+      #ifdef SOC_ADC_CHANNEL_NUM
+        if (digitalPinToAnalogChannel(gpio) < SOC_ADC_CHANNEL_NUM(0)) return true; // ADC1 on ESP32-S3, ESP32-S2, ESP32-C3 
+      #else
+        if (digitalPinToAnalogChannel(gpio) < 8) return true;   // ADC1 on classic ESP32
+      #endif
+    #endif
+    return false;  // fall-through case
+  }
+
+  // returns true if gpio supports analogRead, and it belongs to ADC unit 2
+  bool PinManagerClass::isPinADC2(int gpio) {
+    if ((gpio < 0) || !isPinAnalog(gpio)) return false; // catch errors
+
+    #if !defined(ARDUINO_ARCH_ESP32)
+      return false;   // for 8266 - no ADC2
+    #else             // for ESP32 variants
+      if (isPinADC1(gpio) == false) return true;   // analog but not ADC1 --> must be ADC2
+    #endif
+    return false;  // fall-through case
+  }
+
+  // returns GPIO number for ADC unit x, channel y. 255 = no such pin
+  // see https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/gpio.html#gpio-summary
+  uint8_t PinManagerClass::getADCPin(AdcIdentifier adcUnit, uint8_t adcPort)
+  {
+    #if !defined(ARDUINO_ARCH_ESP32)
+      if ((adcUnit == ADC1) && (adcPort == 0)) return A0;   // for 8266
+      else return(PM_NO_PIN);
+
+    #else                                                   // for ESP32 variants
+      if ((adcUnit != ADC1) && (adcUnit != ADC2)) return(PM_NO_PIN); // catch errors
+
+      #if defined(SOC_ADC_MAX_CHANNEL_NUM)                                   // for ESP32-S3, ESP32-S2, ESP32-C3
+      int8_t analogChannel = (adcUnit == ADC1) ? adcPort : (SOC_ADC_MAX_CHANNEL_NUM + adcPort);
+      if (adcPort >= SOC_ADC_MAX_CHANNEL_NUM) analogChannel = 255;
+      #else                                                                  // for classic ESP32
+      int8_t analogChannel = (adcUnit == ADC1) ? adcPort : (10 + adcPort);
+      if (adcPort >= 10) analogChannel = 255;
+      #endif
+
+      //int analogPin = analogChannelToDigitalPin(analogChannel);
+      int analogPin = analogInputToDigitalPin(analogChannel);
+      if (analogPin >= 0) return(analogPin);
+      else return(PM_NO_PIN);
+    #endif
+
+    return(PM_NO_PIN);  // fall-through case
+  }
+
+  // WLEDMM end
+
+
 /* see https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/api-reference/peripherals/gpio.html
  * The ESP32-S3 chip features 45 physical GPIO pins (GPIO0 ~ GPIO21 and GPIO26 ~ GPIO48). Each pin can be used as a general-purpose I/O
  * Strapping pins: GPIO0, GPIO3, GPIO45 and GPIO46 are strapping pins. For more infomation, please refer to ESP32-S3 datasheet.

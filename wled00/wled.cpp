@@ -575,6 +575,27 @@ void WLED::setup()
       USER_FLUSH();  // avoid lost lines (Serial buffer overflow)
     }
   }
+
+#if 0 // for testing
+  USER_PRINTLN(F("\n"));
+  USER_PRINTF("ADC1-0 = %d, ADC1-3 = %d, ADC1-7 = %d, ADC2-0 = %d, ADC2-1 = %d, ADC2-8 = %d, ADC2-10 = %d\n",
+    pinManager.getADCPin(PinManagerClass::ADC1, 0), pinManager.getADCPin(PinManagerClass::ADC1, 3), pinManager.getADCPin(PinManagerClass::ADC1, 7), 
+    pinManager.getADCPin(PinManagerClass::ADC2, 0), pinManager.getADCPin(PinManagerClass::ADC2, 1), pinManager.getADCPin(PinManagerClass::ADC2, 8),
+    pinManager.getADCPin(PinManagerClass::ADC2, 10)
+  );
+  USER_PRINTLN();
+  for(int p=0; p<12; p++) {
+    if(pinManager.getADCPin(PinManagerClass::ADC1, p) < 255)
+      USER_PRINTF("ADC1-%d = %d, ", p, pinManager.getADCPin(PinManagerClass::ADC1, p));
+  }
+  USER_PRINTLN();
+  for(int p=0; p<12; p++) {
+    if(pinManager.getADCPin(PinManagerClass::ADC2, p) < 255)
+      USER_PRINTF("ADC2-%d = %d, ", p, pinManager.getADCPin(PinManagerClass::ADC2, p));
+  }
+  USER_PRINTLN(F("\n"));
+#endif
+
   USER_PRINTLN(F("WLED initialization done.\n"));
   delay(50);
   // repeat Ada prompt
