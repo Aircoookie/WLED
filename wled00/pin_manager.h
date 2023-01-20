@@ -132,7 +132,7 @@ class PinManagerClass {
   String getPinConflicts(int gpio); // WLEDMM   - return PIN alloc conflicts (if any)
 
   bool isPinPWM(int gpio) {return(digitalPinHasPWM(gpio));}              // true if gpio supports PWM
-  bool isPinINT(int gpio) {return(digitalPinToInterrupt(gpio) >= 0);}    // true if gpio supports PWM
+  bool isPinINT(int gpio) {return(digitalPinToInterrupt(gpio) >= 0);}    // true if gpio supports Interrupts
   bool isPinTouch(int gpio);                                             // true if gpio supports touch functions
 
   bool isPinAnalog(int gpio);                                  // true if gpio supports analogRead
