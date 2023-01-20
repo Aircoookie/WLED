@@ -1233,27 +1233,31 @@ uint8_t * Segment::getAudioPalette(int pal) {
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
 
-  static uint8_t xyz[12];  // Needs to be 4 times however many colors are being used.
+  static uint8_t xyz[16];  // Needs to be 4 times however many colors are being used.
                            // 3 colors = 12, 4 colors = 16, etc.
 
-  CRGB rgb = getCRGBForBand(0, fftResult, pal);
-  
   xyz[0] = 0;  // anchor of first color - must be zero
-  xyz[1] = rgb.r;
-  xyz[2] = rgb.g;
-  xyz[3] = rgb.b;
-
-  rgb = getCRGBForBand(4, fftResult, pal);
-  xyz[4] = 128;
+  xyz[1] = 0;
+  xyz[2] = 0;
+  xyz[3] = 0;
+  
+  CRGB rgb = getCRGBForBand(1, fftResult, pal);
+  xyz[4] = 1;  // anchor of first color
   xyz[5] = rgb.r;
   xyz[6] = rgb.g;
   xyz[7] = rgb.b;
   
-  rgb = getCRGBForBand(8, fftResult, pal);
-  xyz[8] = 255;  // anchor of last color - must be 255
+  rgb = getCRGBForBand(4, fftResult, pal);
+  xyz[8] = 128;
   xyz[9] = rgb.r;
   xyz[10] = rgb.g;
   xyz[11] = rgb.b;
+  
+  rgb = getCRGBForBand(8, fftResult, pal);
+  xyz[12] = 255;  // anchor of last color - must be 255
+  xyz[13] = rgb.r;
+  xyz[14] = rgb.g;
+  xyz[15] = rgb.b;
 
   return xyz;
 }
