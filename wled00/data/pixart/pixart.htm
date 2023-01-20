@@ -7,22 +7,22 @@
     <title>WLED Pixel Art Converter</title>
     <link rel="stylesheet" href="pixart.css">
     <link rel="shortcut icon" href="favicon-16x16.png">
+    <script type="text/javascript">
+      var d = document;
+      function gId(e) {return d.getElementById(e);}
+      function cE(e) {return d.createElement(e);}
+    </script>
   </head>
   <body>
     <body>
       <div class="top-part" >
         <div style="display: flex; justify-content: center;">
           <h1 style="display: flex; align-items: center;">
-            <svg style="width:36px;height:36px" id="logomatrix" viewBox="0 0 24 24">
-              <path fill="#7e4c80" d="M6,5 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0" id="sc1"/>
-              <path fill="#7e4c80" d="M12,5 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0" id="sc2"/>
-              <path fill="#7e4c80" d="M18,5 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0" id="sc3"/>
-              <path fill="#7e4c80" d="M6,11 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0" id="sc4"/>
-              <path fill="#7e4c80" d="M12,11 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0" id="sc5"/>
-              <path fill="#7e4c80" d="M18,11 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0" id="sc6"/>
-              <path fill="#7e4c80" d="M6,17 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0" id="sc7"/>
-              <path fill="#7e4c80" d="M12,17 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0" id="sc8"/>
-              <path fill="#7e4c80" d="M18,17 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0" id="sc9"/>
+            <svg style="width:36px;height:36px;margin-right:6px;" viewBox="0 0 32 32">
+              <rect style="fill:#003FFF" x="6" y="22" width="8" height="4"/>
+              <rect style="fill:#003FFF" x="14" y="14" width="4" height="8"/>
+              <rect style="fill:#003FFF" x="18" y="10" width="4" height="8"/>
+              <rect style="fill:#003FFF" x="22" y="6" width="8" height="4"/>
             </svg>
             WLED Pixel Art Converter
           </h1>
@@ -82,8 +82,8 @@
                 <label for="brightnessNumber">Brightness:</label>
               </td>
               <td style="vertical-align: middle; display: flex; align-items: center;">
-                <input type="range" id="brightnessNumber" min="1" max="255" value="255">
-                <span id="brightnessValue">255</span>
+                <input type="range" id="brightnessNumber" min="1" max="255" value="128">
+                <span id="brightnessValue">128</span>
               </td>
             </tr>
             <tr>
@@ -141,12 +141,11 @@
             <tr>
               <td style="vertical-align: middle;">
                 <div id="scaleDiv">
-                  <svg id="scaleToggle" style="width:36px;height:36px" viewBox="0 0 24 24" onclick="switchScale()">
-                    <path id="scaleTogglePath" fill="currentColor" d="M17,7H7A5,5 0 0,0 2,12A5,5 0 0,0 7,17H17A5,5 0 0,0 22,12A5,5 0 0,0 17,7M7,15A3,3 0 0,1 4,12A3,3 0 0,1 7,9A3,3 0 0,1 10,12A3,3 0 0,1 7,15Z" />
+                  <svg style="width:36px;height:36px" viewBox="0 0 24 24" onclick="switchScale()">
+                    <path fill="currentColor" d="M17,7H7A5,5 0 0,0 2,12A5,5 0 0,0 7,17H17A5,5 0 0,0 22,12A5,5 0 0,0 17,7M7,15A3,3 0 0,1 4,12A3,3 0 0,1 7,9A3,3 0 0,1 10,12A3,3 0 0,1 7,15Z" />
                   </svg>
-                  &nbsp;&nbsp;&nbsp;
-                  <svg id="scaleSvg" style="width:36px;height:36px" viewBox="0 0 24 24" onclick="switchScale()">
-                    <path id="scalePath" fill="currentColor" d="M21,15H23V17H21V15M21,11H23V13H21V11M23,19H21V21C22,21 23,20 23,19M13,3H15V5H13V3M21,7H23V9H21V7M21,3V5H23C23,4 22,3 21,3M1,7H3V9H1V7M17,3H19V5H17V3M17,19H19V21H17V19M3,3C2,3 1,4 1,5H3V3M9,3H11V5H9V3M5,3H7V5H5V3M1,11V19A2,2 0 0,0 3,21H15V11H1M3,19L5.5,15.79L7.29,17.94L9.79,14.72L13,19H3Z" />
+                  <svg style="width:36px;height:36px;margin-left:20px;" viewBox="0 0 24 24" onclick="switchScale()">
+                    <path fill="currentColor" d="M21,15H23V17H21V15M21,11H23V13H21V11M23,19H21V21C22,21 23,20 23,19M13,3H15V5H13V3M21,7H23V9H21V7M21,3V5H23C23,4 22,3 21,3M1,7H3V9H1V7M17,3H19V5H17V3M17,19H19V21H17V19M3,3C2,3 1,4 1,5H3V3M9,3H11V5H9V3M5,3H7V5H5V3M1,11V19A2,2 0 0,0 3,21H15V11H1M3,19L5.5,15.79L7.29,17.94L9.79,14.72L13,19H3Z" />
                   </svg>
                 </div>
               </td>
@@ -173,8 +172,7 @@
         <p>
           <input type="file" id="file-picker" style="display: none;">
           <div style="width: 100%; text-align: center;">
-            <img id="preview" style="display: block; margin: 0 auto;">
-            <img id="newimage" style="display: block; margin: 0 auto;"><br>
+            <img id="preview" style="display: none; margin: 0 auto;">
           </div>
           
           <div id="submitConvertDiv" style="display: none;">

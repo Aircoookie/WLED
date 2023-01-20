@@ -1,7 +1,7 @@
 function drawBoxes(inputPixelArray, widthPixels, heightPixels) {
  
     // Get a reference to the canvas element
-    var canvas = document.getElementById('pixelCanvas');
+    var canvas = gId('pixelCanvas');
 
     // Get the canvas context
     var ctx = canvas.getContext('2d');
@@ -60,7 +60,7 @@ function drawBoxes(inputPixelArray, widthPixels, heightPixels) {
 }
 
 function drawBackground() {
-  const grid = document.createElement("div");
+  const grid = cE("div");
   grid.id = "grid";
   grid.classList.add("grid-class");
   grid.style.cssText = "";
@@ -69,23 +69,23 @@ function drawBackground() {
   const boxCount = Math.ceil(window.innerWidth / boxSize) * Math.ceil(window.innerHeight / boxSize);;
 
   for (let i = 0; i < boxCount; i++) {
-  const box = document.createElement("div");
-  box.classList.add("box");
-  box.style.backgroundColor = getRandomColor();
-  grid.appendChild(box);
+    const box = cE("div");
+    box.classList.add("box");
+    box.style.backgroundColor = getRandomColor();
+    grid.appendChild(box);
   }
   grid.style.zIndex = -1;
-  document.body.appendChild(grid);
+  d.body.appendChild(grid);
 }
 
 function getRandomColor() {
   const letters = "0123456789ABCDEF";
   let color = "rgba(";
   for (let i = 0; i < 3; i++) {
-  color += Math.floor(Math.random() * 256) + ",";
+    color += Math.floor(Math.random() * 256) + ",";
   }
   color += "0.05)";
   return color;
 }
 
-  window.drawBackground = drawBackground;
+window.drawBackground = drawBackground;

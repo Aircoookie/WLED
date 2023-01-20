@@ -1,30 +1,30 @@
 function getPixelRGBValues(base64Image) {
   httpArray = [];
-  fileJSON = JSONledStringStart + document.getElementById('brightnessNumber').value + JSONledStringMid1 + document.getElementById('targetSegment').value + JSONledStringMid2;
+  fileJSON = JSONledStringStart + gId('brightnessNumber').value + JSONledStringMid1 + gId('targetSegment').value + JSONledStringMid2;
 
-  //const copyJSONledbutton = document.getElementById('copyJSONledbutton');
-  const JSONled = document.getElementById('JSONled');
-  const maxNoOfColorsInCommandSting = document.getElementById('colorLimitNumber').value;
+  //const copyJSONledbutton = gId('copyJSONledbutton');
+  const JSONled = gId('JSONled');
+  const maxNoOfColorsInCommandSting = gId('colorLimitNumber').value;
   
   let hybridAddressing = false;
   let selectedIndex = -1;
 
-  let selector = document.getElementById("formatSelector");
+  let selector = gId("formatSelector");
   selectedIndex = selector.selectedIndex;
   const formatSelection = selector.options[selectedIndex].value;
 
-  selector = document.getElementById("ledSetupSelector");
+  selector = gId("ledSetupSelector");
   selectedIndex = selector.selectedIndex;
   const ledSetupSelection = selector.options[selectedIndex].value;
 
-  selector = document.getElementById("colorFormatSelector");
+  selector = gId("colorFormatSelector");
   selectedIndex = selector.selectedIndex;
   let hexValueCheck = true;
   if (selector.options[selectedIndex].value == 'dec'){
     hexValueCheck = false
   }
 
-  selector = document.getElementById("addressingSelector");
+  selector = gId("addressingSelector");
   selectedIndex = selector.selectedIndex;
   let segmentValueCheck = true; //If Range or Hybrid
   if (selector.options[selectedIndex].value == 'single'){
@@ -50,7 +50,7 @@ function getPixelRGBValues(base64Image) {
   let imageInfo = '';
   
   // Create an off-screen canvas
-  var canvas = document.createElement('canvas');
+  var canvas = cE('canvas');
   var context = canvas.getContext('2d');
 
   // Create an image element and set its src to the base64 image
@@ -60,10 +60,10 @@ function getPixelRGBValues(base64Image) {
   // Wait for the image to load before drawing it onto the canvas
   image.onload = function() {
     
-    let scalePath = document.getElementById("scalePath");
+    let scalePath = gId("scaleDiv").children[1].children[0];
     let color = scalePath.getAttribute("fill");
-    let sizeX = document.getElementById("sizeX").value;
-    let sizeY = document.getElementById("sizeY").value;
+    let sizeX = gId("sizeX").value;
+    let sizeY = gId("sizeY").value;
 
     if (color != accentColor || sizeX < 1 || sizeY < 1){
       //image will not be rezised Set desitred size to original size
@@ -258,10 +258,10 @@ function getPixelRGBValues(base64Image) {
 
     //For evry commandString in the  array
     for (let i = 0; i < commandArray.length; i++) {
-      let thisJSONledString = JSONledStringStart + document.getElementById('brightnessNumber').value + JSONledStringMid1 + document.getElementById('targetSegment').value + JSONledStringMid2 + commandArray[i] + JSONledStringEnd;
+      let thisJSONledString = JSONledStringStart + gId('brightnessNumber').value + JSONledStringMid1 + gId('targetSegment').value + JSONledStringMid2 + commandArray[i] + JSONledStringEnd;
       httpArray.push(thisJSONledString);
 
-      let thiscurlString = curlStart + document.getElementById('curlUrl').value + curlMid1 + thisJSONledString + curlEnd;
+      let thiscurlString = curlStart + gId('curlUrl').value + curlMid1 + thisJSONledString + curlEnd;
 
       //Aggregated Strings That should be returned to the user
       if (i > 0){
@@ -273,7 +273,7 @@ function getPixelRGBValues(base64Image) {
     }
 
     
-    haString = haStart + document.getElementById('haID').value + haMid1 + document.getElementById('haName').value + haMid2 + document.getElementById('haUID').value + haMid3 +curlString + haMid3 + document.getElementById('curlUrl').value + haEnd;
+    haString = haStart + gId('haID').value + haMid1 + gId('haName').value + haMid2 + gId('haUID').value + haMid3 +curlString + haMid3 + gId('curlUrl').value + haEnd;
 
     if (formatSelection == 'wled'){
       JSONled.value = JSONledString;
@@ -287,8 +287,8 @@ function getPixelRGBValues(base64Image) {
     
     fileJSON = fileJSON + JSONledStringEnd;
 
-    let infoDiv = document.getElementById('image-info');
-    let canvasDiv = document.getElementById('image-info');
+    let infoDiv = gId('image-info');
+    let canvasDiv = gId('image-info');
     if (hasTransparency){
       imageInfo = imageInfo + '<p><b>WARNING!</b> Transparency info detected in image. Transparency (alpha) has been ignored. To ensure you get the result you desire, use only solid colors in your image.</p>'
     }
