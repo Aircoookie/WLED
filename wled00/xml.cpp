@@ -275,7 +275,7 @@ void appendGPIOinfo() {
   oappend(SET_F(";"));
 
   char dt_pins[30];
-  #if defined(ESP8266)
+  #if defined(ESP8266) && !defined(ARDUINO_ESP8266_ESP01)
   sprintf(dt_pins, "d.dt_pins=[%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d];", D0, D1, D2, D3, D4, D5, D6, D7, D8, hardwareRX, hardwareTX);
   #else
   sprintf(dt_pins, "d.dt_pins=[%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d];", 99, 99, 99, 99, 99, 99, 99, 99, 99, hardwareRX, hardwareTX);
