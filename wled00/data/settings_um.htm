@@ -7,7 +7,10 @@
 	<title>Usermod Settings</title>
 	<script>
 	var d = document;
-	//WLEDMM no need to define d.max_gpio, d.um_p, d.rsvd here as created in getV
+	d.max_gpio = 39;
+	d.um_p = [];
+	d.rsvd = [];
+	d.ro_gpio = [];
 	var umCfg = {};
 	var pins = [], pinO = [], owner;
 	var loc = false, locip;

@@ -531,12 +531,15 @@ void Segment::drawArc(uint16_t x0, uint16_t y0, uint16_t radius, uint32_t color,
 
 // draws a raster font character on canvas
 // only supports: 4x6=24, 5x8=40, 5x12=60, 6x8=48 and 7x9=63 fonts ATM
-void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color) {
+void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2) {
   if (chr < 32 || chr > 126) return; // only ASCII 32-126 supported
   chr -= 32; // align with font table entries
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
   const int font = w*h;
+
+  CRGB col = CRGB(color);
+  CRGBPalette16 grad = CRGBPalette16(col, col2 ? CRGB(col2) : col);
 
   //if (w<5 || w>6 || h!=8) return;
   for (int i = 0; i<h; i++) { // character height
@@ -552,10 +555,11 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
       case 60: bits = pgm_read_byte_near(&console_font_5x12[(chr * h) + i]); break; // 5x12 font
       default: return;
     }
+    col = ColorFromPalette(grad, (i+1)*255/h, 255, NOBLEND);
     for (int j = 0; j<w; j++) { // character width
       int16_t x0 = x + (w-1) - j;
       if ((x0 >= 0 || x0 < cols) && ((bits>>(j+(8-w))) & 0x01)) { // bit set & drawing on-screen
-        addPixelColorXY(x0, y0, color);
+        addPixelColorXY(x0, y0, col);
       }
     }
   }
