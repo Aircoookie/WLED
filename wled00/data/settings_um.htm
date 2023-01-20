@@ -10,7 +10,7 @@
 	d.max_gpio = 39;
 	d.um_p = [];
 	d.rsvd = [];
-	d.ro_pins = [];
+	d.ro_gpio = [];
 	var umCfg = {};
 	var pins = [], pinO = [], owner;
 	var loc = false, locip;
@@ -102,8 +102,8 @@
 					break;
 				case "number":
 					c = `value="${o}"`;
-					if (f.substr(-3)==="pin") { //WLEDMM: this will not be used as pins are now dropdowns
-						c += ` max="${d.max_gpio}" min="-1" class="s"`;
+					if (f.substr(-3)==="pin") { //WLEDMM: this will not be used and should never happen as pins are now dropdowns
+						c += ` max="50" min="-1" class="s"`; //WLEDMM: hardcoded to 50 as d.max_gpio is not calculated yet here (done in appendGPIOinfo)
 						t = "int";
 					} else {
 						c += ' step="any" class="xxl"';
@@ -121,7 +121,7 @@
 			if (f.includes("pin")) {
 				var n = this.name.replace("[]","").substr(-3);
 				urows += `<select name="${k}:${f}${a?"[]":""}">`;
-				for (var j=-1; j<=d.max_gpio; j++) { // all possible pins
+				for (var j=-1; j<=50; j++) { // all possible pins WLEDMM: hardcoded to 50 as d.max_gpio is not calculated yet here (done in appendGPIOinfo)
 					let foundPin = -1;
 					for (var i=0; i<pins.length; i++) { // check if pin is reserved
 						if (pins[i] == j) foundPin = i;
@@ -233,7 +233,7 @@
 
 	//WLEDMM read only pins 🟠, reserved pins 🟣 and disabled, and remove pins > max_gpio
 	function pinDropdownsPost() {
-		// console.log('pinDropdownsPost', d.max_gpio, d.ro_pins, d.ro_gpio, d.rsvd);
+		// console.log('pinDropdownsPost', d.max_gpio, d.ro_gpio, d.rsvd);
 		var elements = gId("form_s").elements;
 
 		for (var i = 0, select; select = elements[i++];) {
@@ -244,14 +244,15 @@
 					// console.log("pinDropdownsPost option", c, c.value, d.ro_gpio.includes(c.value));
 					for (let j=0; j<d.ro_gpio.length; j++) if (d.ro_gpio[j] == c.value) c.text += " read only 🟠"; //if (d.ro_gpio.includes(c.value)) not working ???
 					for (let j=0; j<d.rsvd.length; j++) if (d.rsvd[j] == c.value) {c.text += " reserved 🟣"; c.disabled=true;} //now always disabled as post is done last if (d.rsvd.includes(c.value))
-					//remove pins >= max_gpio
+					//remove pins > max_gpio
 					if (c.value > d.max_gpio) {
 						select.removeChild(c);
 						i--; //decrease i by one because the index has been adjusted
 					}
 					//https://www.javascripttutorial.net/javascript-dom/javascript-add-remove-options/
 					//https://www.javascripttutorial.net/javascript-dom/javascript-remove-items-from-a-select-conditionally/
-					if (c.text.length <= 2) c.text += " 🟢";
+					if (c.text.length <= 4) c.text += " 🟢"; //2 digit number space and ⍼/⎌. If no reserved/read only/other um, then pin can be freely used (green)
+					for (let jj=0; jj<d.dt_pins.length; jj++) if (d.dt_pins[jj] == c.value) c.text += ((jj<9)?` D${jj}`:((jj==9)?` RX`:` TX`));  //WLEDMM: Add D0-D8, RX/TX to name
 				}
 			}
 		}

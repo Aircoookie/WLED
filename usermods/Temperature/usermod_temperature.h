@@ -29,6 +29,7 @@ class UsermodTemperature : public Usermod {
     bool degC = true;
     // using parasite power on the sensor
     bool parasite = false;
+    int8_t parasitePin = -1;
     // how often do we read from sensor?
     unsigned long readingInterval = USERMOD_DALLASTEMPERATURE_MEASUREMENT_INTERVAL;
     // set last reading as "40 sec before boot", so first reading is taken after 20 sec
@@ -53,6 +54,7 @@ class UsermodTemperature : public Usermod {
     static const char _enabled[];
     static const char _readInterval[];
     static const char _parasite[];
+    static const char _parasitePin[];
 
     //Dallas sensor quick (& dirty) reading. Credit to - Author: Peter Scargill, August 17th, 2013
     float readDallas() {
@@ -94,12 +96,14 @@ class UsermodTemperature : public Usermod {
       DEBUG_PRINTLN(F("Requesting temperature."));
       oneWire->reset();
       oneWire->skip();                        // skip ROM
-      oneWire->write(0x44,parasite);          // request new temperature reading (TODO: parasite would need special handling)
+      oneWire->write(0x44,parasite);          // request new temperature reading
+      if (parasite && parasitePin >=0 ) digitalWrite(parasitePin, HIGH); // has to happen within 10us (open MOSFET)
       lastTemperaturesRequest = millis();
       waitingForConversion = true;
     }
 
     void readTemperature() {
+      if (parasite && parasitePin >=0 ) digitalWrite(parasitePin, LOW); // deactivate power (close MOSFET)
       temperature = readDallas();
       lastMeasurement = millis();
       waitingForConversion = false;
@@ -174,6 +178,12 @@ class UsermodTemperature : public Usermod {
             while (!findSensor() && retries--) {
               delay(25); // try to find sensor
             }
+          }
+          if (parasite && pinManager.allocatePin(parasitePin, true, PinOwner::UM_Temperature)) {
+            pinMode(parasitePin, OUTPUT);
+            digitalWrite(parasitePin, LOW); // deactivate power (close MOSFET)
+          } else {
+            parasitePin = -1;
           }
         } else {
           if (temperaturePin >= 0) {
@@ -311,10 +321,6 @@ class UsermodTemperature : public Usermod {
     //  if (!initDone) return;  // prevent crash on boot applyPreset()
     //}
 
-    void appendConfigData() {
-      oappend(SET_F("addHB('Temperature');"));
-    }
-
     /**
      * addToConfig() (called from set.cpp) stores persistent properties to cfg.json
      */
@@ -326,6 +332,7 @@ class UsermodTemperature : public Usermod {
       top["degC"] = degC;  // usermodparam
       top[FPSTR(_readInterval)] = readingInterval / 1000;
       top[FPSTR(_parasite)] = parasite;
+      top[FPSTR(_parasitePin)] = parasitePin;
       DEBUG_PRINTLN(F("Temperature config saved."));
     }
 
@@ -351,6 +358,7 @@ class UsermodTemperature : public Usermod {
       readingInterval   = top[FPSTR(_readInterval)] | readingInterval/1000;
       readingInterval   = min(120,max(10,(int)readingInterval)) * 1000;  // convert to ms
       parasite          = top[FPSTR(_parasite)] | parasite;
+      parasitePin       = top[FPSTR(_parasitePin)] | parasitePin;
 
       if (!initDone) {
         // first run: reading from cfg.json
@@ -365,12 +373,22 @@ class UsermodTemperature : public Usermod {
           delete oneWire;
           pinManager.deallocatePin(temperaturePin, PinOwner::UM_Temperature);
           temperaturePin = newTemperaturePin;
+          pinManager.deallocatePin(parasitePin, PinOwner::UM_Temperature);
           // initialise
           setup();
         }
       }
       // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
-      return !top[FPSTR(_parasite)].isNull();
+      return !top[FPSTR(_parasitePin)].isNull();
+    }
+
+    void appendConfigData()
+    {
+      oappend(SET_F("addHB('Temperature');")); // WLEDMM
+      oappend(SET_F("addInfo('Temperature:parasite-pwr"));
+      oappend(SET_F("',1,'<i>(if no Vcc connected)</i>');"));  // 0 is field type, 1 is actual field
+      oappend(SET_F("addInfo('Temperature:parasite-pwr-pin"));
+      oappend(SET_F("',1,'<i>(for external MOSFET)</i>');"));  // 0 is field type, 1 is actual field
     }
 
     uint16_t getId()
@@ -384,3 +402,4 @@ const char UsermodTemperature::_name[]         PROGMEM = "Temperature";
 const char UsermodTemperature::_enabled[]      PROGMEM = "enabled";
 const char UsermodTemperature::_readInterval[] PROGMEM = "read-interval-s";
 const char UsermodTemperature::_parasite[]     PROGMEM = "parasite-pwr";
+const char UsermodTemperature::_parasitePin[]  PROGMEM = "parasite-pwr-pin";

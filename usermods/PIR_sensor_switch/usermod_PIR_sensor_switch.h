@@ -4,11 +4,7 @@
 
 #ifndef PIR_SENSOR_PIN
   // compatible with QuinLED-Dig-Uno
-  #ifdef ARDUINO_ARCH_ESP32
-    #define PIR_SENSOR_PIN 23 // Q4
-  #else //ESP8266 boards
-    #define PIR_SENSOR_PIN 13 // Q4 (D7 on D1 mini)
-  #endif
+  #define PIR_SENSOR_PIN -1 //WLEDMM not default 23 // Q4 for esp32 or otherwise 13 // Q4 (D7 on D1 mini)
 #endif
 
 #ifndef PIR_SENSOR_OFF_SEC

@@ -225,17 +225,20 @@ static float FFT_MajorPeak = 1.0f;              // FFT: strongest (peak) frequen
 static float FFT_Magnitude = 0.0f;              // FFT: volume (magnitude) of peak frequency
 static uint8_t fftResult[NUM_GEQ_CHANNELS]= {0};// Our calculated freq. channel result table to be used by effects
 #if defined(WLED_DEBUG) || defined(SR_DEBUG) || defined(SR_STATS)
-static uint64_t fftTime = 0;
-static uint64_t sampleTime = 0;
+static float fftTaskCycle = 0;      // avg cycle time for FFT task
+static float fftTime = 0;           // avg time for single FFT
+static float sampleTime = 0;        // avg (blocked) time for reading I2S samples
 #endif
 
 // FFT Task variables (filtering and post-processing)
+static float   lastFftCalc[NUM_GEQ_CHANNELS] = {0.0f};                // backup of last FFT channels (before postprocessing)
 static float   fftCalc[NUM_GEQ_CHANNELS] = {0.0f};                    // Try and normalize fftBin values to a max of 4096, so that 4096/16 = 256.
 static float   fftAvg[NUM_GEQ_CHANNELS] = {0.0f};                     // Calculated frequency channel results, with smoothing (used if dynamics limiter is ON)
 #ifdef SR_DEBUG
 static float   fftResultMax[NUM_GEQ_CHANNELS] = {0.0f};               // A table used for testing to determine how our post-processing is working.
 #endif
 
+#if !defined(CONFIG_IDF_TARGET_ESP32C3)
 // audio source parameters and constant
 constexpr SRate_t SAMPLE_RATE = 22050;        // Base sample rate in Hz - 22Khz is a standard rate. Physical sample time -> 23ms
 //constexpr SRate_t SAMPLE_RATE = 16000;        // 16kHz - use if FFTtask takes more than 20ms. Physical sample time -> 32ms
@@ -245,6 +248,16 @@ constexpr SRate_t SAMPLE_RATE = 22050;        // Base sample rate in Hz - 22Khz 
 //#define FFT_MIN_CYCLE 30                      // Use with 16Khz sampling
 //#define FFT_MIN_CYCLE 23                      // minimum time before FFT task is repeated. Use with 20Khz sampling
 //#define FFT_MIN_CYCLE 46                      // minimum time before FFT task is repeated. Use with 10Khz sampling
+#else
+// slightly lower the sampling rate for -C3, to improve stability
+//constexpr SRate_t SAMPLE_RATE = 20480;        // 20Khz; Physical sample time -> 25ms
+//#define FFT_MIN_CYCLE 23                      // minimum time before FFT task is repeated.
+constexpr SRate_t SAMPLE_RATE = 18000;          // 18Khz; Physical sample time -> 28ms
+#define FFT_MIN_CYCLE 25                        // minimum time before FFT task is repeated.
+// try 16Khz in case your device still lags and responds too slowly.
+//constexpr SRate_t SAMPLE_RATE = 16000;        // 16Khz -> Physical sample time -> 32ms
+//#define FFT_MIN_CYCLE 30                      // minimum time before FFT task is repeated.
+#endif
 
 // FFT Constants
 constexpr uint16_t samplesFFT = 512;            // Samples in an FFT batch - This value MUST ALWAYS be a power of 2
@@ -308,6 +321,11 @@ static float fftAddAvg(int from, int to) {
 }
 #endif
 
+#if defined(CONFIG_IDF_TARGET_ESP32C3)
+constexpr bool skipSecondFFT = true;
+#else
+constexpr bool skipSecondFFT = false;
+#endif
 //
 // FFT main task
 //
@@ -317,6 +335,8 @@ void FFTcode(void * parameter)
 
   // see https://www.freertos.org/vtaskdelayuntil.html
   const TickType_t xFrequency = FFT_MIN_CYCLE * portTICK_PERIOD_MS;  
+  const TickType_t xFrequencyDouble = FFT_MIN_CYCLE * portTICK_PERIOD_MS * 2;  
+  static bool isFirstRun = false;
 
   TickType_t xLastWakeTime = xTaskGetTickCount();
   for(;;) {
@@ -325,6 +345,7 @@ void FFTcode(void * parameter)
 
     // Don't run FFT computing code if we're in Receive mode or in realtime mode
     if (disableSoundProcessing || (audioSyncEnabled & 0x02)) {
+      isFirstRun = false;
       vTaskDelayUntil( &xLastWakeTime, xFrequency);        // release CPU, and let I2S fill its buffers
       continue;
     }
@@ -332,6 +353,15 @@ void FFTcode(void * parameter)
 #if defined(WLED_DEBUG) || defined(SR_DEBUG)|| defined(SR_STATS)
     uint64_t start = esp_timer_get_time();
     bool haveDoneFFT = false; // indicates if second measurement (FFT time) is valid
+
+    static uint64_t lastCycleStart = 0;
+    static uint64_t lastLastTime = 0;
+    if ((lastCycleStart > 0) && (lastCycleStart < start)) { // filter out overflows
+      uint64_t taskTimeInMillis = ((start - lastCycleStart) +5ULL) / 10ULL; // "+5" to ensure proper rounding
+      fftTaskCycle = (((taskTimeInMillis + lastLastTime)/2) *4 + fftTaskCycle*6)/10.0; // smart smooth
+      lastLastTime = taskTimeInMillis;
+    }
+    lastCycleStart = start;
 #endif
 
     // get a fresh batch of samples from I2S
@@ -340,12 +370,13 @@ void FFTcode(void * parameter)
 #if defined(WLED_DEBUG) || defined(SR_DEBUG)|| defined(SR_STATS)
     if (start < esp_timer_get_time()) { // filter out overflows
       uint64_t sampleTimeInMillis = (esp_timer_get_time() - start +5ULL) / 10ULL; // "+5" to ensure proper rounding
-      sampleTime = (sampleTimeInMillis*3 + sampleTime*7)/10; // smooth
+      sampleTime = (sampleTimeInMillis*3 + sampleTime*7)/10.0; // smooth
     }
     start = esp_timer_get_time(); // start measuring FFT time
 #endif
 
     xLastWakeTime = xTaskGetTickCount();       // update "last unblocked time" for vTaskDelay
+    isFirstRun = !isFirstRun; //  toggle throtte
 
 #ifdef MIC_LOGGER
     float datMin = 0.0f;
@@ -399,38 +430,41 @@ void FFTcode(void * parameter)
     // run FFT (takes 3-5ms on ESP32)
     //if (fabsf(sampleAvg) > 0.25f) { // noise gate open
     if (fabsf(volumeSmth) > 0.25f) { // noise gate open
+      if ((skipSecondFFT == false) || (isFirstRun == true)) {
+        // run FFT (takes 2-3ms on ESP32, ~12ms on ESP32-S2, ~30ms on -C3)
+        #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
+        FFT.dcRemoval();                                            // remove DC offset
+        #if !defined(FFT_PREFER_EXACT_PEAKS)
+          FFT.windowing( FFTWindow::Flat_top, FFTDirection::Forward);        // Weigh data using "Flat Top" function - better amplitude accuracy
+        #else
+          FFT.windowing(FFTWindow::Blackman_Harris, FFTDirection::Forward);  // Weigh data using "Blackman- Harris" window - sharp peaks due to excellent sideband rejection
+        #endif
+        FFT.compute( FFTDirection::Forward );                       // Compute FFT
+        FFT.complexToMagnitude();                                   // Compute magnitudes
+        #else
+        FFT.DCRemoval(); // let FFT lib remove DC component, so we don't need to care about this in getSamples()
 
-      // run FFT (takes 3-5ms on ESP32, ~12ms on ESP32-S2)
-#ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
-      FFT.dcRemoval();                                            // remove DC offset
-      #if !defined(FFT_PREFER_EXACT_PEAKS)
-        FFT.windowing( FFTWindow::Flat_top, FFTDirection::Forward);        // Weigh data using "Flat Top" function - better amplitude accuracy
-      #else
-        FFT.windowing(FFTWindow::Blackman_Harris, FFTDirection::Forward);  // Weigh data using "Blackman- Harris" window - sharp peaks due to excellent sideband rejection
-      #endif
-      FFT.compute( FFTDirection::Forward );                       // Compute FFT
-      FFT.complexToMagnitude();                                   // Compute magnitudes
-#else
-      FFT.DCRemoval(); // let FFT lib remove DC component, so we don't need to care about this in getSamples()
+        //FFT.Windowing( FFT_WIN_TYP_HAMMING, FFT_FORWARD );        // Weigh data - standard Hamming window
+        //FFT.Windowing( FFT_WIN_TYP_BLACKMAN, FFT_FORWARD );       // Blackman window - better side freq rejection
+        #if !defined(FFT_PREFER_EXACT_PEAKS)
+          FFT.Windowing( FFT_WIN_TYP_FLT_TOP, FFT_FORWARD );        // Flat Top Window - better amplitude accuracy
+        #else
+          FFT.Windowing( FFT_WIN_TYP_BLACKMAN_HARRIS, FFT_FORWARD );// Blackman-Harris - excellent sideband rejection
+        #endif
+        FFT.Compute( FFT_FORWARD );                             // Compute FFT
+        FFT.ComplexToMagnitude();                               // Compute magnitudes
+        #endif
 
-      //FFT.Windowing( FFT_WIN_TYP_HAMMING, FFT_FORWARD );        // Weigh data - standard Hamming window
-      //FFT.Windowing( FFT_WIN_TYP_BLACKMAN, FFT_FORWARD );       // Blackman window - better side freq rejection
-      #if !defined(FFT_PREFER_EXACT_PEAKS)
-        FFT.Windowing( FFT_WIN_TYP_FLT_TOP, FFT_FORWARD );        // Flat Top Window - better amplitude accuracy
-      #else
-        FFT.Windowing( FFT_WIN_TYP_BLACKMAN_HARRIS, FFT_FORWARD );// Blackman-Harris - excellent sideband rejection
-      #endif
-      FFT.Compute( FFT_FORWARD );                             // Compute FFT
-      FFT.ComplexToMagnitude();                               // Compute magnitudes
-#endif
+        #ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
+          FFT.majorPeak(FFT_MajorPeak, FFT_Magnitude);                // let the effects know which freq was most dominant
+        #else
+        FFT.MajorPeak(&FFT_MajorPeak, &FFT_Magnitude);              // let the effects know which freq was most dominant
+        #endif
+        FFT_MajorPeak = constrain(FFT_MajorPeak, 1.0f, 11025.0f);   // restrict value to range expected by effects
 
-#ifdef UM_AUDIOREACTIVE_USE_NEW_FFT
-      FFT.majorPeak(FFT_MajorPeak, FFT_Magnitude);                // let the effects know which freq was most dominant
-#else
-      FFT.MajorPeak(&FFT_MajorPeak, &FFT_Magnitude);              // let the effects know which freq was most dominant
-#endif
-      FFT_MajorPeak = constrain(FFT_MajorPeak, 1.0f, 11025.0f);   // restrict value to range expected by effects
-
+      } else { // skip second run --> clear fft results, keep peaks
+        memset(vReal, 0, sizeof(vReal)); 
+      }
 #if defined(WLED_DEBUG) || defined(SR_DEBUG) || defined(SR_STATS)
       haveDoneFFT = true;
 #endif
@@ -441,14 +475,16 @@ void FFTcode(void * parameter)
       FFT_Magnitude = 0.001;
     }
 
-    for (int i = 0; i < samplesFFT; i++) {
-      float t = fabsf(vReal[i]);                      // just to be sure - values in fft bins should be positive any way
-      vReal[i] = t / 16.0f;                           // Reduce magnitude. Want end result to be scaled linear and ~4096 max.
-    } // for()
+    if ((skipSecondFFT == false) || (isFirstRun == true)) {
 
-    // mapping of FFT result bins to frequency channels
-    //if (fabsf(sampleAvg) > 0.25f) { // noise gate open
-    if (fabsf(volumeSmth) > 0.25f) { // noise gate open
+      for (int i = 0; i < samplesFFT; i++) {
+        float t = fabsf(vReal[i]);                      // just to be sure - values in fft bins should be positive any way
+        vReal[i] = t / 16.0f;                           // Reduce magnitude. Want end result to be scaled linear and ~4096 max.
+      } // for()
+
+      // mapping of FFT result bins to frequency channels
+      //if (fabsf(sampleAvg) > 0.25f) { // noise gate open
+      if (fabsf(volumeSmth) > 0.25f) { // noise gate open
 #if 0
     /* This FFT post processing is a DIY endeavour. What we really need is someone with sound engineering expertise to do a great job here AND most importantly, that the animations look GREAT as a result.
     *
@@ -506,24 +542,34 @@ void FFTcode(void * parameter)
       fftCalc[13] = fftAddAvg(86,104);              // 18 3704 - 4479 high mid
       fftCalc[14] = fftAddAvg(104,165) * 0.88f;     // 61 4479 - 7106 high mid + high  -- with slight damping
 #endif
-    } else {  // noise gate closed - just decay old values
-      for (int i=0; i < NUM_GEQ_CHANNELS; i++) {
-        fftCalc[i] *= 0.85f;  // decay to zero
-        if (fftCalc[i] < 4.0f) fftCalc[i] = 0.0f;
+      } else {  // noise gate closed - just decay old values
+        isFirstRun = false;
+        for (int i=0; i < NUM_GEQ_CHANNELS; i++) {
+          fftCalc[i] *= 0.85f;  // decay to zero
+          if (fftCalc[i] < 4.0f) fftCalc[i] = 0.0f;
+        }
       }
+
+      memcpy(lastFftCalc, fftCalc, sizeof(lastFftCalc)); // make a backup of last "good" channels
+
+    } else { // if second run skipped
+      memcpy(fftCalc, lastFftCalc, sizeof(fftCalc)); // restore last "good" channels
     }
 
     // post-processing of frequency channels (pink noise adjustment, AGC, smooting, scaling)
     if (pinkIndex > MAX_PINK) pinkIndex = MAX_PINK;
     //postProcessFFTResults((fabsf(sampleAvg) > 0.25f)? true : false , NUM_GEQ_CHANNELS);
-    postProcessFFTResults((fabsf(volumeSmth)>0.25f)? true : false , NUM_GEQ_CHANNELS);
+    postProcessFFTResults((fabsf(volumeSmth)>0.25f)? true : false , NUM_GEQ_CHANNELS);    // this function modifies fftCalc, fftAvg and fftResult
 
 #if defined(WLED_DEBUG) || defined(SR_DEBUG)|| defined(SR_STATS)
+    static uint64_t lastLastFFT = 0;
     if (haveDoneFFT && (start < esp_timer_get_time())) { // filter out overflows
       uint64_t fftTimeInMillis = ((esp_timer_get_time() - start) +5ULL) / 10ULL; // "+5" to ensure proper rounding
-      fftTime  = (fftTimeInMillis*3 + fftTime*7)/10; // smooth
+      fftTime  = (((fftTimeInMillis + lastLastFFT)/2) *3 + fftTime*7)/10.0; // smart smooth
+      lastLastFFT = fftTimeInMillis;
     }
 #endif
+
     // run peak detection
     autoResetPeak();
     detectSamplePeak();
@@ -531,8 +577,13 @@ void FFTcode(void * parameter)
     #if !defined(I2S_GRAB_ADC1_COMPLETELY)    
     if ((audioSource == nullptr) || (audioSource->getType() != AudioSource::Type_I2SAdc))  // the "delay trick" does not help for analog ADC
     #endif
-      vTaskDelayUntil( &xLastWakeTime, xFrequency);        // release CPU, and let I2S fill its buffers
-
+    {
+      if ((skipSecondFFT == false) || (fabsf(volumeSmth) < 0.25f)) {
+        vTaskDelayUntil( &xLastWakeTime, xFrequency);        // release CPU, and let I2S fill its buffers
+      } else if (isFirstRun == true) {
+        vTaskDelayUntil( &xLastWakeTime, xFrequencyDouble);  // release CPU after performing FFT in "skip second run" mode
+      }
+    }
   } // for(;;)ever
 } // FFTcode() task end
 
@@ -769,7 +820,11 @@ class AudioReactive : public Usermod {
     };
 
     // set your config variables to their boot default value (this can also be done in readFromConfig() or a constructor if you prefer)
+  #ifdef SR_ENABLE_DEFAULT
+    bool     enabled = true;        // WLEDMM
+  #else
     bool     enabled = false;
+  #endif
     bool     initDone = false;
 
     // variables  for UDP sound sync
@@ -1774,12 +1829,16 @@ class AudioReactive : public Usermod {
         }
 
         #if defined(WLED_DEBUG) || defined(SR_DEBUG) || defined(SR_STATS)
+        infoArr = user.createNestedArray(F("I2S cycle time"));
+        infoArr.add(roundf(fftTaskCycle)/100.0f);
+        infoArr.add(" ms");
+
         infoArr = user.createNestedArray(F("Sampling time"));
-        infoArr.add(float(sampleTime)/100.0f);
+        infoArr.add(roundf(sampleTime)/100.0f);
         infoArr.add(" ms");
 
         infoArr = user.createNestedArray(F("FFT time"));
-        infoArr.add(float(fftTime)/100.0f);
+        infoArr.add(roundf(fftTime)/100.0f);
         if ((fftTime/100) >= FFT_MIN_CYCLE) // FFT time over budget -> I2S buffer will overflow 
           infoArr.add("<b style=\"color:red;\">! ms</b>");
         else if ((fftTime/80 + sampleTime/80) >= FFT_MIN_CYCLE) // FFT time >75% of budget -> risk of instability
@@ -1787,8 +1846,9 @@ class AudioReactive : public Usermod {
         else
           infoArr.add(" ms");
 
-        DEBUGSR_PRINTF("AR Sampling time: %5.2f ms\n", float(sampleTime)/100.0f);
-        DEBUGSR_PRINTF("AR FFT time     : %5.2f ms\n", float(fftTime)/100.0f);
+        DEBUGSR_PRINTF("AR I2S cycle time: %5.2f ms\n", roundf(fftTaskCycle)/100.0f);
+        DEBUGSR_PRINTF("AR Sampling time : %5.2f ms\n", roundf(sampleTime)/100.0f);
+        DEBUGSR_PRINTF("AR FFT time      : %5.2f ms\n", roundf(fftTime)/100.0f);
         #endif
       }
     }
