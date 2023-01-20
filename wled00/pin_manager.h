@@ -131,13 +131,19 @@ class PinManagerClass {
   String getPinSpecialText(int gpio); // WLEDMM - return PIN special comments (if any)
   String getPinConflicts(int gpio); // WLEDMM   - return PIN alloc conflicts (if any)
 
-  bool isPinTouch(int gpio);                                   // true if gpio supports touch functions
+  bool isPinPWM(int gpio) {return(digitalPinHasPWM(gpio));}              // true if gpio supports PWM
+  bool isPinINT(int gpio) {return(digitalPinToInterrupt(gpio) >= 0);}    // true if gpio supports PWM
+  bool isPinTouch(int gpio);                                             // true if gpio supports touch functions
+
   bool isPinAnalog(int gpio);                                  // true if gpio supports analogRead
   bool isPinADC1(int gpio);                                    // true if gpio supports analogRead, and it belongs to ADC unit 1
-  bool isPinADC2(int gpio);                                    // true if gpio supports analogRead, and it belongs to ADC unit 2 
-  #define PM_NO_PIN 255
+  bool isPinADC2(int gpio);                                    // true if gpio supports analogRead, and it belongs to ADC unit 2
+
   typedef enum { ADC_none = 0, ADC1 = 1, ADC2 = 2 } AdcIdentifier;
-  uint8_t  getADCPin(AdcIdentifier adcUnit, uint8_t adcPort);   // get GPIO number for ADC unit x, channel y. 255 = no such pin
+  #define PM_ADC1 PinManagerClass::ADC1                        // Alias for ADC1
+  #define PM_ADC2 PinManagerClass::ADC2                        // Alias for ADC2
+  #define PM_NO_PIN 255
+  uint8_t getADCPin(AdcIdentifier adcUnit, uint8_t adcPort);   // get GPIO number for ADC unit x, channel y. 255 = no such pin
   // WLEDMM end
 
   #ifdef ARDUINO_ARCH_ESP32

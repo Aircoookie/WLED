@@ -565,6 +565,14 @@ void WLED::setup()
     if(pinManager.isPinOk(pinNr, false)) {
       //if ((!pinManager.isPinAllocated(pinNr)) && (pinManager.getPinSpecialText(pinNr).length() == 0)) continue;      // un-comment to hide no-name,unused GPIO pins
       bool is_inOut = pinManager.isPinOk(pinNr, true);
+#if 0 // for testing
+      USER_PRINT(pinManager.isPinAnalog(pinNr) ? "A": " ");
+      USER_PRINT(pinManager.isPinADC1(pinNr) ? "1": " ");
+      USER_PRINT(pinManager.isPinADC2(pinNr) ? "2": " ");
+      USER_PRINT(pinManager.isPinTouch(pinNr) ? "T": " ");
+      USER_PRINT(pinManager.isPinPWM(pinNr) ? " P": "  ");
+      USER_PRINT(pinManager.isPinINT(pinNr) ? "I ": "  ");
+#endif
       USER_PRINTF("%s  %2d\t  %-17s %s\t  %s\n", 
           (is_inOut?"i/o":"in "), 
           pinNr, 
@@ -579,17 +587,17 @@ void WLED::setup()
 #if 0 // for testing
   USER_PRINTLN(F("\n"));
   USER_PRINTF("ADC1-0 = %d, ADC1-3 = %d, ADC1-7 = %d, ADC2-0 = %d, ADC2-1 = %d, ADC2-8 = %d, ADC2-10 = %d\n",
-    pinManager.getADCPin(PinManagerClass::ADC1, 0), pinManager.getADCPin(PinManagerClass::ADC1, 3), pinManager.getADCPin(PinManagerClass::ADC1, 7), 
-    pinManager.getADCPin(PinManagerClass::ADC2, 0), pinManager.getADCPin(PinManagerClass::ADC2, 1), pinManager.getADCPin(PinManagerClass::ADC2, 8),
-    pinManager.getADCPin(PinManagerClass::ADC2, 10)
+    pinManager.getADCPin(PM_ADC1, 0), pinManager.getADCPin(PM_ADC1, 3), pinManager.getADCPin(PM_ADC1, 7), 
+    pinManager.getADCPin(PM_ADC2, 0), pinManager.getADCPin(PM_ADC2, 1), pinManager.getADCPin(PM_ADC2, 8),
+    pinManager.getADCPin(PM_ADC2, 10)
   );
   USER_PRINTLN();
-  for(int p=0; p<12; p++) {
+  for(int p=0; p<11; p++) {
     if(pinManager.getADCPin(PinManagerClass::ADC1, p) < 255)
       USER_PRINTF("ADC1-%d = %d, ", p, pinManager.getADCPin(PinManagerClass::ADC1, p));
   }
   USER_PRINTLN();
-  for(int p=0; p<12; p++) {
+  for(int p=0; p<11; p++) {
     if(pinManager.getADCPin(PinManagerClass::ADC2, p) < 255)
       USER_PRINTF("ADC2-%d = %d, ", p, pinManager.getADCPin(PinManagerClass::ADC2, p));
   }

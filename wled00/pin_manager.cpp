@@ -662,7 +662,8 @@ bool PinManagerClass::joinWire(int8_t pinSDA, int8_t pinSCL) {
       if (adcPort >= SOC_ADC_MAX_CHANNEL_NUM) analogChannel = 255;
       #else                                                                  // for classic ESP32
       int8_t analogChannel = (adcUnit == ADC1) ? adcPort : (10 + adcPort);
-      if (adcPort >= 10) analogChannel = 255;
+      if ((adcUnit == ADC1) && (adcPort >= 8)) analogChannel = 127;
+      if (adcPort >= 10) analogChannel = 127;
       #endif
 
       //int analogPin = analogChannelToDigitalPin(analogChannel);
