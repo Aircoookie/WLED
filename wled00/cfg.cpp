@@ -64,7 +64,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   if (apHide > 1) apHide = 1;
 
   CJSON(apBehavior, ap[F("behav")]);
-  
+
   /*
   JsonArray ap_ip = ap["ip"];
   for (byte i = 0; i < 4; i++) {
@@ -136,7 +136,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   #endif
 
   JsonArray ins = hw_led["ins"];
-  
+
   if (fromFS || !ins.isNull()) {
     uint8_t s = 0;  // bus iterator
     if (fromFS) busses.removeAll(); // can't safely manipulate busses directly in network callback
@@ -210,14 +210,14 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
         btnPin[s] = pin;
       #ifdef ARDUINO_ARCH_ESP32
         // ESP32 only: check that analog button pin is a valid ADC gpio
-        if (((buttonType[s] == BTN_TYPE_ANALOG) || (buttonType[s] == BTN_TYPE_ANALOG_INVERTED)) && (digitalPinToAnalogChannel(btnPin[s]) < 0)) 
+        if (((buttonType[s] == BTN_TYPE_ANALOG) || (buttonType[s] == BTN_TYPE_ANALOG_INVERTED)) && (digitalPinToAnalogChannel(btnPin[s]) < 0))
         {
           // not an ADC analog pin
           DEBUG_PRINTF("PIN ALLOC error: GPIO%d for analog button #%d is not an analog pin!\n", btnPin[s], s);
           btnPin[s] = -1;
           pinManager.deallocatePin(pin,PinOwner::Button);
-        } 
-        else 
+        }
+        else
       #endif
         {
           if (disablePullUp) {
@@ -253,7 +253,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       // relies upon only being called once with fromFS == true, which is currently true.
       uint8_t s = 0;
       if (pinManager.allocatePin(btnPin[0], false, PinOwner::Button)) { // initialized to #define value BTNPIN, or zero if not defined(!)
-        ++s; // do not clear default button if allocated successfully 
+        ++s; // do not clear default button if allocated successfully
       }
       for (; s<WLED_MAX_BUTTONS; s++) {
         btnPin[s]           = -1;
@@ -404,6 +404,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(e131SkipOutOfSequence, if_live_dmx[F("seqskip")]);
   CJSON(DMXAddress, if_live_dmx[F("addr")]);
   if (!DMXAddress || DMXAddress > 510) DMXAddress = 1;
+  CJSON(DMXSegmentSpacing, if_live_dmx[F("dss")]);
+  if (DMXSegmentSpacing > 150) DMXSegmentSpacing = 0;
   CJSON(DMXMode, if_live_dmx["mode"]);
 
   tdd = if_live[F("timeout")] | -1;
@@ -497,7 +499,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   uint8_t it = 0;
   for (JsonObject timer : timers) {
     if (it > 9) break;
-    if (it<8 && timer[F("hour")]==255) it=8;  // hour==255 -> sunrise/sunset 
+    if (it<8 && timer[F("hour")]==255) it=8;  // hour==255 -> sunrise/sunset
     CJSON(timerHours[it], timer[F("hour")]);
     CJSON(timerMinutes[it], timer["min"]);
     CJSON(timerMacro[it], timer["macro"]);
@@ -864,6 +866,7 @@ void serializeConfig() {
   if_live_dmx[F("uni")] = e131Universe;
   if_live_dmx[F("seqskip")] = e131SkipOutOfSequence;
   if_live_dmx[F("addr")] = DMXAddress;
+  if_live_dmx[F("dss")] = DMXSegmentSpacing;
   if_live_dmx["mode"] = DMXMode;
 
   if_live[F("timeout")] = realtimeTimeoutMs / 100;

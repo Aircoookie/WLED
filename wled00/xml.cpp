@@ -92,7 +92,7 @@ void URL_response(AsyncWebServerRequest *request)
   for (int i = 0; i < 3; i++)
   {
    sprintf(s,"%02X", col[i]);
-   oappend(s); 
+   oappend(s);
   }
   oappend(SET_F("&C2=h"));
   for (int i = 0; i < 3; i++)
@@ -115,7 +115,7 @@ void URL_response(AsyncWebServerRequest *request)
   oappend(SET_F("<html><body><a href=\""));
   oappend(s2buf);
   oappend(SET_F("\" target=\"_blank\">"));
-  oappend(s2buf);  
+  oappend(s2buf);
   oappend(SET_F("</a></body></html>"));
 
   if (request != nullptr) request->send(200, "text/html", obuf);
@@ -287,6 +287,9 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == 0)
   {
+  #ifndef WLED_DISABLE_2D // include only if 2D is compiled in
+    oappend(PSTR("gId('2dbtn').style.display='';"));
+  #endif
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
     oappend(PSTR("gId('dmxbtn').style.display='';"));
   #endif
@@ -505,6 +508,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("EM"),e131Multicast);
     sappend('v',SET_F("EU"),e131Universe);
     sappend('v',SET_F("DA"),DMXAddress);
+    sappend('v',SET_F("XX"),DMXSegmentSpacing);
     sappend('v',SET_F("DM"),DMXMode);
     sappend('v',SET_F("ET"),realtimeTimeoutMs);
     sappend('c',SET_F("FB"),arlsForceMaxBri);
@@ -566,7 +570,7 @@ void getSettingsJS(byte subPage, char* dest)
       case HUE_ERROR_TIMEOUT      : strcpy_P(hueErrorString,PSTR("Timeout"));                 break;
       default: sprintf_P(hueErrorString,PSTR("Bridge Error %i"),hueError);
     }
-    
+
     sappends('m',SET_F("(\"sip\")[0]"),hueErrorString);
     #else
     oappend(SET_F("toggle('Hue');"));    // hide Hue Sync settings
@@ -658,17 +662,17 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(serverDescription);
     oappend(SET_F("\";"));
   }
-  
+
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
   if (subPage == 7)
   {
     sappend('v',SET_F("PU"),e131ProxyUniverse);
-    
+
     sappend('v',SET_F("CN"),DMXChannels);
     sappend('v',SET_F("CG"),DMXGap);
     sappend('v',SET_F("CS"),DMXStart);
     sappend('v',SET_F("SL"),DMXStartLED);
-    
+
     sappend('i',SET_F("CH1"),DMXFixtureMap[0]);
     sappend('i',SET_F("CH2"),DMXFixtureMap[1]);
     sappend('i',SET_F("CH3"),DMXFixtureMap[2]);

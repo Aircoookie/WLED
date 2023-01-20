@@ -9,6 +9,10 @@
     var d=document,laprev=55,maxB=1,maxV=0,maxM=4000,maxPB=4096,maxL=1333,maxLbquot=0; //maximum bytes for LED allocation: 4kB for 8266, 32kB for 32
 		var customStarts=false,startsDirty=[],maxCOOverrides=5;
     var loc = false, locip;
+    d.um_p = [];
+    d.rsvd = [];
+    d.ro_gpio = [];
+    d.max_gpio = 39;
     function H(){window.open("https://kno.wled.ge/features/settings/#led-settings");}
 		function B(){window.open("/settings","_self");}
     function gId(n){return d.getElementById(n);}
@@ -23,10 +27,6 @@
       // success event 
       scE.addEventListener("load", () => {
         //console.log("File loaded");
-        d.um_p = [];
-        d.rsvd = [];
-        d.ro_pins = [];
-        d.max_gpio = 39;
         GetV();checkSi();setABL();
         if (d.um_p[0]==-1) d.um_p.shift();
       });
@@ -66,7 +66,7 @@
             for (k=0;k<d.rsvd.length;k++) p.push(d.rsvd[k]); // fill with reservations
             for (k=0;k<d.um_p.length;k++) p.push(d.um_p[k]); // fill with usermod pins
             if (p.some((e)=>e==parseInt(LCs[i].value,10))) {alert(`Sorry, pins ${JSON.stringify(p)} can't be used.`);LCs[i].value="";LCs[i].focus();return false;}
-            else if (!(nm == "IR" || nm=="BT") && d.ro_pins.some((e)=>e==parseInt(LCs[i].value,10))) {alert(`Sorry, pins ${JSON.stringify(d.ro_gpio)} are input only.`);LCs[i].value="";LCs[i].focus();return false;}
+            else if (!(nm == "IR" || nm=="BT") && d.ro_gpio.some((e)=>e==parseInt(LCs[i].value,10))) {alert(`Sorry, pins ${JSON.stringify(d.ro_gpio)} are input only.`);LCs[i].value="";LCs[i].focus();return false;}
             for (j=i+1; j<LCs.length; j++)
             {
               var n2 = LCs[j].name.substring(0,2);

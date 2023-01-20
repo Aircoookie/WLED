@@ -699,7 +699,7 @@ class PolyBus {
     }
   };
   static uint32_t getPixelColor(void* busPtr, uint8_t busType, uint16_t pix, uint8_t co) {
-    RgbwColor col(0,0,0,0); 
+    RgbwColor col(0,0,0,0);
     switch (busType) {
       case I_NONE: break;
     #ifdef ESP8266
@@ -771,7 +771,7 @@ class PolyBus {
       case I_HS_P98_3: col = (static_cast<B_HS_P98_3*>(busPtr))->GetPixelColor(pix); break;
       case I_SS_P98_3: col = (static_cast<B_SS_P98_3*>(busPtr))->GetPixelColor(pix); break;
     }
-    
+
     // upper nibble contains W swap information
     uint8_t w = col.W;
     switch (co >> 4) {
@@ -866,7 +866,7 @@ class PolyBus {
     }
   }
 
-  //gives back the internal type index (I_XX_XXX_X above) for the input 
+  //gives back the internal type index (I_XX_XXX_X above) for the input
   static uint8_t getI(uint8_t busType, uint8_t* pins, uint8_t num = 0) {
     if (!IS_DIGITAL(busType)) return I_NONE;
     if (IS_2PIN(busType)) { //SPI LED chips

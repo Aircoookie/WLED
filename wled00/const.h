@@ -169,10 +169,14 @@
 #define DMX_MODE_DISABLED         0            //not used
 #define DMX_MODE_SINGLE_RGB       1            //all LEDs same RGB color (3 channels)
 #define DMX_MODE_SINGLE_DRGB      2            //all LEDs same RGB color and master dimmer (4 channels)
-#define DMX_MODE_EFFECT           3            //trigger standalone effects of WLED (11 channels)
+#define DMX_MODE_EFFECT           3            //trigger standalone effects of WLED (15 channels)
+#define DMX_MODE_EFFECT_W         7            //trigger standalone effects of WLED (18 channels)
 #define DMX_MODE_MULTIPLE_RGB     4            //every LED is addressed with its own RGB (ledCount * 3 channels)
 #define DMX_MODE_MULTIPLE_DRGB    5            //every LED is addressed with its own RGB and share a master dimmer (ledCount * 3 + 1 channels)
 #define DMX_MODE_MULTIPLE_RGBW    6            //every LED is addressed with its own RGBW (ledCount * 4 channels)
+#define DMX_MODE_EFFECT_SEGMENT   8            //trigger standalone effects of WLED (15 channels per segement)
+#define DMX_MODE_EFFECT_SEGMENT_W 9            //trigger standalone effects of WLED (18 channels per segement)
+#define DMX_MODE_PRESET           10           //apply presets (1 channel)
 
 //Light capability byte (unused) 0bRCCCTTTT
 //bits 0/1/2/3: specifies a type of LED driver. A single "driver" may have different chip models but must have the same protocol/behavior
@@ -309,7 +313,7 @@
 
 #define NTP_PACKET_SIZE 48
 
-//maximum number of rendered LEDs - this does not have to match max. physical LEDs, e.g. if there are virtual busses 
+//maximum number of rendered LEDs - this does not have to match max. physical LEDs, e.g. if there are virtual busses
 #ifndef MAX_LEDS
 #ifdef ESP8266
 #define MAX_LEDS 1664 //can't rely on memory limit to limit this to 1600 LEDs
@@ -338,7 +342,7 @@
 #ifdef ESP8266
 #define SETTINGS_STACK_BUF_SIZE 2048
 #else
-#define SETTINGS_STACK_BUF_SIZE 3096 
+#define SETTINGS_STACK_BUF_SIZE 3096
 #endif
 
 #ifdef WLED_USE_ETHERNET

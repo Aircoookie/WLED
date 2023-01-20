@@ -1,6 +1,6 @@
 /*
   FX_2Dfcn.cpp contains all 2D utility functions
-  
+
   LICENSE
   The MIT License (MIT)
   Copyright (c) 2022  Blaz Kristan (https://blaz.at/home)
@@ -164,6 +164,7 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
   if (leds) leds[XY(x,y)] = col;
 
   uint8_t _bri_t = currentBri(on ? opacity : 0);
+  if (!_bri_t && !transitional) return;
   if (_bri_t < 255) {
     byte r = scale8(R(col), _bri_t);
     byte g = scale8(G(col), _bri_t);
@@ -271,7 +272,7 @@ void Segment::addPixelColorXY(int x, int y, uint32_t color) {
 
 void Segment::fadePixelColorXY(uint16_t x, uint16_t y, uint8_t fade) {
   CRGB pix = CRGB(getPixelColorXY(x,y)).nscale8_video(fade);
-  setPixelColor(x, y, pix);
+  setPixelColorXY(x, y, pix);
 }
 
 // blurRow: perform a blur on a row of a rectangular matrix
@@ -428,6 +429,29 @@ void Segment::move(uint8_t dir, uint8_t delta) {
   }
 }
 
+void Segment::draw_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
+  // Bresenham’s Algorithm
+  int d = 3 - (2*radius);
+  int y = radius, x = 0;
+  while (y >= x) {
+    setPixelColorXY(cx+x, cy+y, col);
+    setPixelColorXY(cx-x, cy+y, col);
+    setPixelColorXY(cx+x, cy-y, col);
+    setPixelColorXY(cx-x, cy-y, col);
+    setPixelColorXY(cx+y, cy+x, col);
+    setPixelColorXY(cx-y, cy+x, col);
+    setPixelColorXY(cx+y, cy-x, col);
+    setPixelColorXY(cx-y, cy-x, col);
+    x++;
+    if (d > 0) {
+      y--;
+      d += 4 * (x - y) + 10;
+    } else {
+      d += 4 * x + 6;
+    }
+  }
+}
+
 // by stepko, taken from https://editor.soulmatelights.com/gallery/573-blobs
 void Segment::fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
   const uint16_t cols = virtualWidth();
@@ -437,7 +461,7 @@ void Segment::fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
       if (x * x + y * y <= radius * radius &&
           int16_t(cx)+x>=0 && int16_t(cy)+y>=0 &&
           int16_t(cx)+x<cols && int16_t(cy)+y<rows)
-        addPixelColorXY(cx + x, cy + y, col);
+        setPixelColorXY(cx + x, cy + y, col);
     }
   }
 }
@@ -456,10 +480,10 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
   const uint16_t rows = virtualHeight();
   if (x0 >= cols || x1 >= cols || y0 >= rows || y1 >= rows) return;
   const int16_t dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
-  const int16_t dy = abs(y1-y0), sy = y0<y1 ? 1 : -1; 
+  const int16_t dy = abs(y1-y0), sy = y0<y1 ? 1 : -1;
   int16_t err = (dx>dy ? dx : -dy)/2, e2;
   for (;;) {
-    addPixelColorXY(x0,y0,c);
+    setPixelColorXY(x0,y0,c);
     if (x0==x1 && y0==y1) break;
     e2 = err;
     if (e2 >-dx) { err -= dy; x0 += sx; }
@@ -475,12 +499,15 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
 
 // draws a raster font character on canvas
 // only supports: 4x6=24, 5x8=40, 5x12=60, 6x8=48 and 7x9=63 fonts ATM
-void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color) {
+void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2) {
   if (chr < 32 || chr > 126) return; // only ASCII 32-126 supported
   chr -= 32; // align with font table entries
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
   const int font = w*h;
+
+  CRGB col = CRGB(color);
+  CRGBPalette16 grad = CRGBPalette16(col, col2 ? CRGB(col2) : col);
 
   //if (w<5 || w>6 || h!=8) return;
   for (int i = 0; i<h; i++) { // character height
@@ -496,10 +523,11 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
       case 60: bits = pgm_read_byte_near(&console_font_5x12[(chr * h) + i]); break; // 5x12 font
       default: return;
     }
+    col = ColorFromPalette(grad, (i+1)*255/h, 255, NOBLEND);
     for (int j = 0; j<w; j++) { // character width
       int16_t x0 = x + (w-1) - j;
       if ((x0 >= 0 || x0 < cols) && ((bits>>(j+(8-w))) & 0x01)) { // bit set & drawing on-screen
-        addPixelColorXY(x0, y0, color);
+        addPixelColorXY(x0, y0, col);
       }
     }
   }
