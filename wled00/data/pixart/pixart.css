@@ -1,0 +1,266 @@
+
+.box {
+  border: 2px solid white;
+}
+body {
+  font-family: 'Arcade', Arial, sans-serif;
+  background-color: #151515;
+}
+
+.top-part {
+  width: 600px;
+  margin: 0 auto;
+}
+.container {
+  max-width: 100% -40px;
+  border-radius: 0px;
+  padding: 20px;
+  text-align: center;
+}
+h1 {
+  font-size: 2.3em;
+  color: rgb(126, 76, 128);
+  margin: 1px 0;
+  font-family: 'Arcade', Arial, sans-serif;
+  line-height: 0.5;
+  /*text-align: center;*/
+}
+h2 {
+  font-size: 1.1em;
+  color: rgba(126, 76, 128, 0.61);
+  margin: 1px 0;
+  font-family: 'Arcade', Arial, sans-serif;
+  line-height: 0.5;
+  text-align: center;
+}
+h3 {
+  font-size: 0.7em;
+  color: rgba(126, 76, 128, 0.61);
+  margin: 1px 0;
+  font-family: 'Arcade', Arial, sans-serif;
+  line-height: 1.4;
+  text-align: center;
+  align-items: center;
+  justify-content: center;
+  display: flex;
+}
+
+p {
+  font-size: 1.2em;
+  color: rgb(119, 119, 119);
+  line-height: 1.5;
+  font-family: 'Arcade', Arial, sans-serif;
+}
+
+#fieldTable {
+  font-size: 1  em;
+  color: #777;
+  line-height: 1;
+  font-family: 'Arcade', Arial, sans-serif;
+}
+
+#scaleTable {
+  font-size: 1  em;
+  color: #777;
+  line-height: 1;
+  font-family: 'Arcade', Arial, sans-serif;
+}
+
+#drop-zone {
+  display: block;
+  width: 100%-40px;
+  border: 3px dashed #7E4C80;
+  border-radius: 0px;
+  text-align: center;
+  padding: 20px;
+  margin: 0px;
+  cursor: pointer;
+  
+  font-family: 'Arcade', Arial, sans-serif;
+  font-size: 15px;
+  color: #777;
+}
+
+#file-picker {
+  display: none;
+}
+
+* select {
+  background-color: #333333;
+  color: #C0C0C0;
+  border: 1px solid #C0C0C0;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  padding: 0em;
+  width: 100%;
+  height: 27px;
+  font-size: 15px;
+  color: rgb(119, 119, 119);
+  border-radius: 0;
+}
+
+* input[type=range] {
+  -webkit-appearance:none;
+  flex-grow: 1;
+  border-radius: 0px;
+  background: linear-gradient(to right, #333333 0%, #333333 100%);
+  color: #C0C0C0;
+  border: 1px solid #C0C0C0; 
+  margin-top: 0.5em; 
+  margin-left: 0em;     
+}
+
+input[type="range"]::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  width: 25px;
+  height:25px;
+  background:#7E4C80;
+  position:relative;
+  z-index:3;
+}
+
+.rangeNumber{
+  width: 20px;
+  vertical-align: middle;
+}
+
+.fullTextField[type=text] {
+  background-color: #333333;
+  border: 1px solid #C0C0C0;
+  padding-inline-start: 5px;
+  margin-top: 10px;
+  width: 100%;
+  height: 24px;
+  border-radius: 0px;
+  font-family: 'Arcade', Arial, sans-serif;
+  font-size: 15px;
+  color: rgb(119, 119, 119);
+}
+
+* input[type=submit] {
+  background-color: #333333;
+  border: 1px solid #C0C0C0;
+  padding: 0.5em;
+  width: 100%;
+  border-radius: 0px;
+  font-family: 'Arcade', Arial, sans-serif;
+  font-size: 1.3em;
+  color: rgb(119, 119, 119);
+}
+
+* button {
+  background-color: #333333;
+  border: 1px solid #C0C0C0;
+  padding-inline: 5px;
+  width: 100%;
+  border-radius: 0px;
+  font-family: 'Arcade', Arial, sans-serif;
+  font-size: 1em;
+  color: rgb(119, 119, 119);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+textarea {
+  grid-row: 1 / 2;
+  width: 100%;
+  height: 200px;
+  background-color: #333333;
+  border: 1px solid #C0C0C0;
+  
+  color: #777;
+}
+.hide {
+    display: none;
+}
+.grids-class{
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 20px);
+  grid-template-rows: repeat(auto-fill, 20px);
+  grid-gap: 0px;
+}
+.svg-icon {
+  vertical-align: middle;
+}
+.buttondiv-class {
+  flex: 1;
+  display: inline-block;
+}
+
+.buttondivmid-class {
+  width: 10px;
+  display: inline-block;
+}
+#image-container {
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+}
+#button-container {
+  display: flex;
+  padding-bottom: 10px;
+  padding-top: 10px;
+}
+
+.buttonclass {
+  flex: 1;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+.gap {
+  width: 10px;
+}
+
+#submitConvert::before {
+  content: "";
+  display: inline-block;
+  background-image: url('data:image/svg+xml;utf8, <svg style="width:24px;height:24px" viewBox="0 0 24 24" <path fill="currentColor" d="M12,6V9L16,5L12,1V4A8,8 0 0,0 4,12C4,13.57 4.46,15.03 5.24,16.26L6.7,14.8C6.25,13.97 6,13 6,12A6,6 0 0,1 12,6M18.76,7.74L17.3,9.2C17.74,10.04 18,11 18,12A6,6 0 0,1 12,18V15L8,19L12,23V20A8,8 0 0,0 20,12C20,10.43 19.54,8.97 18.76,7.74Z" /></svg>');
+  width: 36px;
+  height: 36px;
+}
+
+#sizeDiv * {
+  display: inline-block;
+}
+.sizeInputFields{
+  width: 50px;
+  background-color: #333333;
+  border: 1px solid #C0C0C0;
+  padding-inline-start: 5px;
+  margin-top: -5px;
+  height: 24px;
+  border-radius: 0px;
+  font-family: 'Arcade', Arial, sans-serif;
+  font-size: 15px;
+  color: rgb(119, 119, 119);
+}
+a:link {
+  color: rgba(126, 76, 128, 0.61);
+  background-color: transparent;
+  text-decoration: none;
+}
+
+a:visited {
+  color: rgba(126, 76, 128, 0.61);
+  background-color: transparent;
+  text-decoration: none;
+}
+
+a:hover {
+  color: rgb(126, 76, 128);
+  background-color: transparent;
+  text-decoration: none;
+}
+
+a:active {
+  color: rgba(126, 76, 128, 0.61);
+  background-color: transparent;
+  text-decoration: none;
+}
