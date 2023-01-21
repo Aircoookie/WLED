@@ -17,6 +17,8 @@ function drawBoxes(inputPixelArray, widthPixels, heightPixels) {
 
     let pixelSize = Math.floor(canvas.width/widthPixels);
 
+    let xOffset = (window.innerWidth - (widthPixels * pixelSize))/2
+
     //Set the canvas height to fit the right number of pixelrows
     canvas.height = (pixelSize * heightPixels) + 10
     
@@ -57,35 +59,10 @@ function drawBoxes(inputPixelArray, widthPixels, heightPixels) {
             ctx.fillText((pos + 1), (x * pixelSize) + (pixelSize /2), (y * pixelSize) + (pixelSize /2));
         }
     }
+    var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.width = window.innerWidth;
+    ctx.putImageData(imageData, xOffset, 0);
+    console.log(xOffset);
 }
 
-function drawBackground() {
-  const grid = cE("div");
-  grid.id = "grid";
-  grid.classList.add("grid-class");
-  grid.style.cssText = "";
-
-  const boxSize = 20;
-  const boxCount = Math.ceil(window.innerWidth / boxSize) * Math.ceil(window.innerHeight / boxSize);;
-
-  for (let i = 0; i < boxCount; i++) {
-    const box = cE("div");
-    box.classList.add("box");
-    box.style.backgroundColor = getRandomColor();
-    grid.appendChild(box);
-  }
-  grid.style.zIndex = -1;
-  d.body.appendChild(grid);
-}
-
-function getRandomColor() {
-  const letters = "0123456789ABCDEF";
-  let color = "rgba(";
-  for (let i = 0; i < 3; i++) {
-    color += Math.floor(Math.random() * 256) + ",";
-  }
-  color += "0.05)";
-  return color;
-}
-
-window.drawBackground = drawBackground;
