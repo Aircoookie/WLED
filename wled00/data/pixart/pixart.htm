@@ -34,8 +34,8 @@
               <td style="vertical-align: middle;">
                 <label for="ledSetupSelector">Led setup:</label>
               </td>
-              <td style="vertical-align: middle;">
-                <select id="ledSetupSelector">
+              <td class="adaptiveTD">
+                <select id="ledSetupSelector" class="mainSelector">
                   <option value="matrix" selected>2D Matrix</option>
                   <option value="r2l">Serpentine, first row right to left &lt;-</option>
                   <option value="l2r">Serpentine, first row left to right -&gt;</option>
@@ -46,8 +46,8 @@
               <td style="vertical-align: middle;">
                 <label for="formatSelector">Output format:</label>
               </td>
-              <td style="vertical-align: middle;">
-                <select id="formatSelector">
+              <td class="adaptiveTD">
+                <select id="formatSelector" class="mainSelector">
                   <option value="wled" selected>WLED JSON</option>
                   <option value="curl">CURL</option>
                   <option value="ha">Home Assistant YAML</option>
@@ -58,8 +58,8 @@
               <td style="vertical-align: middle;">
                 <label for="colorFormatSelector">Color code format:</label>
               </td>
-              <td style="vertical-align: middle;">
-                <select id="colorFormatSelector">
+              <td class="adaptiveTD">
+                <select id="colorFormatSelector" class="mainSelector">
                   <option value="hex" selected>HEX (#f4f4f4)</option>
                   <option value="dec">DEC (244,244,244)</option>
                 </select>
@@ -69,8 +69,8 @@
               <td style="vertical-align: middle;">
                 <label for="addressingSelector">Addressing:</label>
               </td>
-              <td style="vertical-align: middle;">
-                <select id="addressingSelector">
+              <td class="adaptiveTD">
+                <select id="addressingSelector" class="mainSelector">
                   <option value="hybrid" selected>Hybrid (#f0f0f0,10, 17, #f4f4f4)</option>
                   <option value="range">Range (10, 17, #f4f4f4)</option>
                   <option value="single">Single (#f4f4f4)</option>
@@ -99,7 +99,7 @@
               <td style="vertical-align: middle;">
                 <label for="haID">HA Device ID:</label>
               </td>
-              <td style="vertical-align: middle;">
+              <td class="adaptiveTD">
                 <input class="fullTextField" type="text" id="haID" value="pixel_art_controller_001">
               </td>
             </tr>
@@ -107,7 +107,7 @@
               <td style="vertical-align: middle;">
                 <label for="haUID">HA Device Unique ID:</label>
               </td>
-              <td style="vertical-align: middle;">
+              <td class="adaptiveTD">
                 <input class="fullTextField" type="text" id="haUID" value="pixel_art_controller_001a">
               </td>
             </tr>
@@ -115,7 +115,7 @@
               <td style="vertical-align: middle;">
                 <label for="haName">HA Device Name:</label>
               </td>
-              <td style="vertical-align: middle;">
+              <td class="adaptiveTD">
                 <input class="fullTextField" type="text" id="haName" value="Pixel Art Kitchen">
               </td>
             </tr>
@@ -123,7 +123,7 @@
               <td style="vertical-align: middle;">
                 <label for="curlUrl">Device IP/host name:</label>
               </td>
-              <td style="vertical-align: middle;">
+              <td class="adaptiveTD">
                 <input class="fullTextField" type="text" id="curlUrl" value="">
               </td>
             </tr>
@@ -131,9 +131,11 @@
               <td style="vertical-align: middle;">
                 <label for="targetSegment">Target segment id:</label>
               </td>
-              <td style="vertical-align: middle;">
-                <select id="targetSegment">
+              <td class="adaptiveTD">
+                <input class="flxTFld" type="number" id="segID" value="0" min="0" max="63">
+                <select id="targetSegment" class="adaptiveSelector">
                 </select>
+                <div id="getSegmentsDiv" class="segmentsDiv"></div>
               </td>
             </tr>
           </table>
@@ -141,19 +143,17 @@
             <tr>
               <td style="vertical-align: middle;">
                 <div id="scaleDiv">
-                  <svg style="width:36px;height:36px" viewBox="0 0 24 24" onclick="switchScale()">
-                    <path fill="currentColor" d="M17,7H7A5,5 0 0,0 2,12A5,5 0 0,0 7,17H17A5,5 0 0,0 22,12A5,5 0 0,0 17,7M7,15A3,3 0 0,1 4,12A3,3 0 0,1 7,9A3,3 0 0,1 10,12A3,3 0 0,1 7,15Z" />
+                  <svg id="scaleToggle" style="width:36px;height:36px; cursor: pointer;" viewBox="0 0 24 24" onclick="switchScale()">
+                    <path id="scaleTogglePath" fill="currentColor" d="M17,7H7A5,5 0 0,0 2,12A5,5 0 0,0 7,17H17A5,5 0 0,0 22,12A5,5 0 0,0 17,7M7,15A3,3 0 0,1 4,12A3,3 0 0,1 7,9A3,3 0 0,1 10,12A3,3 0 0,1 7,15Z" />
                   </svg>
-                  <svg style="width:36px;height:36px;margin-left:20px;" viewBox="0 0 24 24" onclick="switchScale()">
-                    <path fill="currentColor" d="M21,15H23V17H21V15M21,11H23V13H21V11M23,19H21V21C22,21 23,20 23,19M13,3H15V5H13V3M21,7H23V9H21V7M21,3V5H23C23,4 22,3 21,3M1,7H3V9H1V7M17,3H19V5H17V3M17,19H19V21H17V19M3,3C2,3 1,4 1,5H3V3M9,3H11V5H9V3M5,3H7V5H5V3M1,11V19A2,2 0 0,0 3,21H15V11H1M3,19L5.5,15.79L7.29,17.94L9.79,14.72L13,19H3Z" />
-                  </svg>
+                   &nbsp;Scale image
                 </div>
               </td>
               <td style="vertical-align: middle;">
                 <div id="sizeDiv" style="display: none;">
-                  <label for="sizeX">X : </label> &nbsp;<input class="sizeInputFields" type="number" id="sizeX" value="0">
+                  <label for="sizeX">W : </label> &nbsp;<input class="sizeInputFields" type="number" id="sizeX" value="0">
                   &nbsp;&nbsp;&nbsp;
-                  <label for="sizeY">Y : </label> &nbsp;<input class="sizeInputFields" type="number" id="sizeY" value="0">
+                  <label for="sizeY">H : </label> &nbsp;<input class="sizeInputFields" type="number" id="sizeY" value="0">
                 </div>
               </td>
             </tr>
@@ -198,7 +198,7 @@
           <button id="fileJSONledbutton" class="buttonclass"></button>
         </div>
         <div>
-          <h3><div id="version">Version 1.0.4</div>&nbsp;-&nbsp; <a href="https://github.com/werkstrom/WLED-PixelArtConverter/blob/main/README.md" target="_blank">Help/About</a></h3>
+          <h3><div id="version">Version 1.0.5</div>&nbsp;-&nbsp; <a href="https://github.com/werkstrom/WLED-PixelArtConverter/blob/main/README.md" target="_blank">Help/About</a></h3>
         </div>
       </div>
       <div id=bottom-part style="display: none" class=bottom-part></div>

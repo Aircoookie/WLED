@@ -208,9 +208,9 @@ gId("formatSelector").addEventListener("change", () => {
 });
 
 function switchScale() {
-  let scalePath = gId("scaleDiv").children[1].children[0]
+  //let scalePath = gId("scaleDiv").children[1].children[0]
   let scaleTogglePath = gId("scaleDiv").children[0].children[0]
-  let color = scalePath.getAttribute("fill");
+  let color = scaleTogglePath.getAttribute("fill");
   let d = '';
   if (color === accentColor) {
     color = accentTextColor;
@@ -222,7 +222,7 @@ function switchScale() {
     d = scaleToggleOnd;
     gId("sizeDiv").style.display = "";
   }
-  scalePath.setAttribute("fill", color);
+  //scalePath.setAttribute("fill", color);
   scaleTogglePath.setAttribute("fill", color);
   scaleTogglePath.setAttribute("d", d);
 }
@@ -268,6 +268,42 @@ function generateSegmentOptions(array) {
   }
 }
 
+// Get segments from device
+async function getSegments() {
+  try {
+    var arr = [];
+    const response = await fetch('http://'+gId('curlUrl').value+'/json/state');
+    const json = await response.json();
+    console.log(json);
+    let ids = json.seg.map(segment => segment.id);
+    console.log(ids); 
+    for (var i = 0; i < ids.length; i++) {
+      arr.push({
+          value: ids[i],
+          text: "Segment index " + ids[i]
+      });
+    generateSegmentOptions(arr);
+    gId('targetSegment').style.display = "flex";
+    gId('segID').style.display = "none";
+    var svg = gId("getSegmentsSVGpath");
+
+    svg.setAttribute("fill", greenColor);
+    setTimeout(function(){ 
+      svg.setAttribute("fill", accentTextColor);
+    }, 1000);
+  }
+  } catch (error) {
+    console.error(error);
+    var svgr = gId("getSegmentsSVGpath");
+    svgr.setAttribute("fill", redColor);
+    setTimeout(function(){ 
+      svgr.setAttribute("fill", accentTextColor);
+    }, 1000);
+    gId('targetSegment').style.display = "none";
+    gId('segID').style.display = "flex";
+  }
+}
+
 //Initial population of segment selection
 function generateSegmentArray(noOfSegments) {
   var arr = [];
@@ -284,6 +320,8 @@ var segmentData = generateSegmentArray(10);
 
 generateSegmentOptions(segmentData);
 
+gId("getSegmentsDiv").innerHTML =
+'<svg id=getSegmentsSVG style="width:36px;height:36px;cursor:pointer" viewBox="0 0 24 24" onclick="getSegments()"><path id=getSegmentsSVGpath fill="currentColor" d="M6.5 20Q4.22 20 2.61 18.43 1 16.85 1 14.58 1 12.63 2.17 11.1 3.35 9.57 5.25 9.15 5.68 7.35 7.38 5.73 9.07 4.1 11 4.1 11.83 4.1 12.41 4.69 13 5.28 13 6.1V12.15L14.6 10.6L16 12L12 16L8 12L9.4 10.6L11 12.15V6.1Q9.1 6.45 8.05 7.94 7 9.43 7 11H6.5Q5.05 11 4.03 12.03 3 13.05 3 14.5 3 15.95 4.03 17 5.05 18 6.5 18H18.5Q19.55 18 20.27 17.27 21 16.55 21 15.5 21 14.45 20.27 13.73 19.55 13 18.5 13H17V11Q17 9.8 16.45 8.76 15.9 7.73 15 7V4.68Q16.85 5.55 17.93 7.26 19 9 19 11 20.73 11.2 21.86 12.5 23 13.78 23 15.5 23 17.38 21.69 18.69 20.38 20 18.5 20M12 11.05Z" /></svg>'
 gId("fileJSONledbutton").innerHTML = 
 '<svg style="width:36px;height:36px" viewBox="0 0 24 24"><path fill="currentColor" d="M20 18H4V8H20M20 6H12L10 4H4A2 2 0 0 0 2 6V18A2 2 0 0 0 4 20H20A2 2 0 0 0 22 18V8A2 2 0 0 0 20 6M16 17H14V13H11L15 9L19 13H16Z" /></svg>&nbsp; File to device'
 gId("convertbutton").innerHTML = 

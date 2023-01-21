@@ -1,6 +1,18 @@
 function getPixelRGBValues(base64Image) {
   httpArray = [];
   fileJSON = JSONledStringStart + gId('brightnessNumber').value + JSONledStringMid1 + gId('targetSegment').value + JSONledStringMid2;
+  
+  //Which object holds the secret to the segment ID
+  const segm = gId('targetSegment');
+  let segID = 0;
+  console.log(segm.style.display)
+  if(segm.style.display == "flex"){
+    segID = segm.value
+  } else {
+    segID = gId('segID').value;
+  }
+  console.log(segID)
+  
 
   //const copyJSONledbutton = gId('copyJSONledbutton');
   const JSONled = gId('JSONled');
@@ -60,7 +72,7 @@ function getPixelRGBValues(base64Image) {
   // Wait for the image to load before drawing it onto the canvas
   image.onload = function() {
     
-    let scalePath = gId("scaleDiv").children[1].children[0];
+    let scalePath = gId("scaleDiv").children[0].children[0];
     let color = scalePath.getAttribute("fill");
     let sizeX = gId("sizeX").value;
     let sizeY = gId("sizeY").value;
@@ -258,7 +270,7 @@ function getPixelRGBValues(base64Image) {
 
     //For evry commandString in the  array
     for (let i = 0; i < commandArray.length; i++) {
-      let thisJSONledString = JSONledStringStart + gId('brightnessNumber').value + JSONledStringMid1 + gId('targetSegment').value + JSONledStringMid2 + commandArray[i] + JSONledStringEnd;
+      let thisJSONledString = JSONledStringStart + gId('brightnessNumber').value + JSONledStringMid1 + segID + JSONledStringMid2 + commandArray[i] + JSONledStringEnd;
       httpArray.push(thisJSONledString);
 
       let thiscurlString = curlStart + gId('curlUrl').value + curlMid1 + thisJSONledString + curlEnd;
