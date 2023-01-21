@@ -271,6 +271,30 @@ class UsermodBattery : public Usermod
       lp[FPSTR(_duration)] = lowPowerIndicatorDuration;
     }
 
+    void getUsermodConfigFromJsonObject(JsonObject& battery)
+    {
+      getJsonValue(battery[F("type")], bcfg.type);
+      getJsonValue(battery[F("min-voltage")], bcfg.minVoltage);
+      getJsonValue(battery[F("max-voltage")], bcfg.maxVoltage);
+      getJsonValue(battery[F("capacity")], bcfg.capacity);
+      getJsonValue(battery[F("calibration")], bcfg.calibration);
+      setReadingInterval(battery[FPSTR(_readInterval)] | readingInterval);
+
+      JsonObject ao = battery[F("auto-off")];
+      setAutoOffEnabled(ao[FPSTR(_enabled)] | autoOffEnabled);
+      setAutoOffThreshold(ao[FPSTR(_threshold)] | autoOffThreshold);
+
+      JsonObject lp = battery[F("indicator")];
+      setLowPowerIndicatorEnabled(lp[FPSTR(_enabled)] | lowPowerIndicatorEnabled);
+      setLowPowerIndicatorPreset(lp[FPSTR(_preset)] | lowPowerIndicatorPreset);
+      setLowPowerIndicatorThreshold(lp[FPSTR(_threshold)] | lowPowerIndicatorThreshold);
+      lowPowerIndicatorReactivationThreshold = lowPowerIndicatorThreshold+10;
+      setLowPowerIndicatorDuration(lp[FPSTR(_duration)] | lowPowerIndicatorDuration);
+      
+      if(initDone) 
+        bat->update(bcfg);
+    }
+
     /*
      * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
@@ -296,7 +320,15 @@ class UsermodBattery : public Usermod
     /*
     void readFromJsonState(JsonObject& root)
     {
-      // TBD
+      if (!initDone) return;  // prevent crash on boot applyPreset()
+
+      JsonObject battery = root[FPSTR(_name)];
+
+      if (!battery.isNull()) {
+        getUsermodConfigFromJsonObject(battery);
+      
+        DEBUG_PRINTLN(F("Battery state read from JSON API."));
+      }
     }
     */
 
@@ -416,25 +448,7 @@ class UsermodBattery : public Usermod
         newBatteryPin     = battery[F("pin")] | newBatteryPin;
       #endif
 
-      getJsonValue(battery[F("type")], bcfg.type);
-      getJsonValue(battery[F("min-voltage")], bcfg.minVoltage);
-      getJsonValue(battery[F("max-voltage")], bcfg.maxVoltage);
-      getJsonValue(battery[F("capacity")], bcfg.capacity);
-      getJsonValue(battery[F("calibration")], bcfg.calibration);
-      setReadingInterval(battery[FPSTR(_readInterval)] | readingInterval);
-
-      JsonObject ao = battery[F("auto-off")];
-      setAutoOffEnabled(ao[FPSTR(_enabled)] | autoOffEnabled);
-      setAutoOffThreshold(ao[FPSTR(_threshold)] | autoOffThreshold);
-
-      JsonObject lp = battery[F("indicator")];
-      setLowPowerIndicatorEnabled(lp[FPSTR(_enabled)] | lowPowerIndicatorEnabled);
-      setLowPowerIndicatorPreset(lp[FPSTR(_preset)] | lowPowerIndicatorPreset); // dropdown trickery (int)lp["preset"]
-      setLowPowerIndicatorThreshold(lp[FPSTR(_threshold)] | lowPowerIndicatorThreshold);
-      lowPowerIndicatorReactivationThreshold = lowPowerIndicatorThreshold+10;
-      setLowPowerIndicatorDuration(lp[FPSTR(_duration)] | lowPowerIndicatorDuration);
-
-      DEBUG_PRINT(FPSTR(_name));
+      getUsermodConfigFromJsonObject(battery);
 
       #ifdef ARDUINO_ARCH_ESP32
         if (!initDone) 
@@ -458,9 +472,6 @@ class UsermodBattery : public Usermod
           }
         }
       #endif
-
-      if(initDone) 
-        bat->update(bcfg);
 
       return !battery[FPSTR(_readInterval)].isNull();
     }
@@ -578,7 +589,6 @@ class UsermodBattery : public Usermod
       autoOffThreshold  = lowPowerIndicatorEnabled /*&& autoOffEnabled*/ ? min(lowPowerIndicatorThreshold-1, (int)autoOffThreshold) : autoOffThreshold;
     }
 
-
     /*
      * Get low-power-indicator feature enabled status
      * is the low-power-indicator enabled, true/false
@@ -647,7 +657,6 @@ class UsermodBattery : public Usermod
     {
       lowPowerIndicatorDuration = duration;
     }
-
 
     /*
      * Get low-power-indicator status when the indication is done thsi returns true
