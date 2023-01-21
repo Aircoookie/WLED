@@ -1997,7 +1997,7 @@ uint16_t mode_fire_2012() {
       // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
       if (random8() <= SEGMENT.intensity) {
         uint8_t y = random8(ignition);
-        uint8_t boost = (32+SEGMENT.custom3) * (3*ignition-y) / (3*ignition);
+        uint8_t boost = (32+SEGMENT.custom3*2) * (2*ignition-y) / (2*ignition);
         heat[y] = qadd8(heat[y], random8(64+boost,128+boost));
       }
 
