@@ -1964,41 +1964,41 @@ static const char _data_FX_MODE_PALETTE[] PROGMEM = "Palette@Cycle speed;;!;;c3=
 // feel of your fire: COOLING (used in step 1 above) (Speed = COOLING), and SPARKING (used
 // in step 3 above) (Effect Intensity = Sparking).
 uint16_t mode_fire_2012() {
-  uint16_t strips = SEGMENT.nrOfVStrips();
+  const uint16_t strips = SEGMENT.nrOfVStrips();
   if (!SEGENV.allocateData(strips * SEGLEN)) return mode_static(); //allocation failed
   byte* heat = SEGENV.data;
 
-  uint32_t it = strip.now >> 5; //div 32
+  const uint32_t it = strip.now >> 6; //div 64
 
   struct virtualStrip {
     static void runStrip(uint16_t stripNr, byte* heat, uint32_t it) {
 
+      const uint8_t ignition = max(3,SEGLEN/10);  // ignition area: 10% of segment length or minimum 3 pixels
+
+      // Step 1.  Cool down every cell a little
+      for (int i = 0; i < SEGLEN; i++) {
+        uint8_t cool = (it != SEGENV.step) ? random8((((20 + SEGMENT.speed/3) * 16) / SEGLEN)+2) : random(8);
+        uint8_t minTemp = 0;
+        if (i<ignition) {
+          minTemp = (ignition-i)/4 + 16;  // and should not become black
+        }
+        uint8_t temp = qsub8(heat[i], cool);
+        heat[i] = temp<minTemp ? minTemp : temp;
+      }
+
       if (it != SEGENV.step)
       {
-        uint8_t ignition = max(3,SEGLEN/10);  // ignition area: 10% of segment length or minimum 3 pixels
-
-        // Step 1.  Cool down every cell a little
-        for (int i = 0; i < SEGLEN; i++) {
-          uint8_t cool = random8((((20 + SEGMENT.speed/3) * 16) / SEGLEN)+2);
-          uint8_t minTemp = 0;
-          if (i<ignition) {
-            //cool /= (ignition-i)/3 + 1;     // ignition area cools slower
-            minTemp = (ignition-i)/4 + 16;  // and should not become black
-          }
-          uint8_t temp = qsub8(heat[i], cool);
-          heat[i] = temp<minTemp ? minTemp : temp;
-        }
-
         // Step 2.  Heat from each cell drifts 'up' and diffuses a little
         for (int k = SEGLEN -1; k > 1; k--) {
           heat[k] = (heat[k - 1] + (heat[k - 2]<<1) ) / 3;  // heat[k-2] multiplied by 2
         }
+      }
 
-        // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
-        if (random8() <= SEGMENT.intensity) {
-          uint8_t y = random8(ignition);
-          heat[y] = qadd8(heat[y], random8(160,255));
-        }
+      // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
+      if (random8() <= SEGMENT.intensity) {
+        uint8_t y = random8(ignition);
+        uint8_t boost = (32+SEGMENT.custom3) * (3*ignition-y) / (3*ignition);
+        heat[y] = qadd8(heat[y], random8(64+boost,128+boost));
       }
 
       // Step 4.  Map from heat cells to LED colors
@@ -2011,12 +2011,14 @@ uint16_t mode_fire_2012() {
   for (int stripNr=0; stripNr<strips; stripNr++)
     virtualStrip::runStrip(stripNr, &heat[stripNr * SEGLEN], it);
 
+  if (SEGMENT.is2D()) SEGMENT.blur(32);
+
   if (it != SEGENV.step)
     SEGENV.step = it;
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_FIRE_2012[] PROGMEM = "Fire 2012@Cooling,Spark rate;;!;1;sx=120,ix=64,m12=1"; // bars
+static const char _data_FX_MODE_FIRE_2012[] PROGMEM = "Fire 2012@Cooling,Spark rate,,,Boost;;!;1;sx=120,ix=64,m12=1"; // bars
 
 
 // ColorWavesWithPalettes by Mark Kriegsman: https://gist.github.com/kriegsman/8281905786e8b2632aeb
