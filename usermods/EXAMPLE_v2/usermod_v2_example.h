@@ -20,6 +20,25 @@
  * 2. Register the usermod by adding #include "usermod_filename.h" in the top and registerUsermod(new MyUsermodClass()) in the bottom of usermods_list.cpp
  */
 
+
+/*
+ * Fade LEDs between two colors using testInt as which color is most shown
+ */
+ /*
+  *uint16_t mode_testint_fade(void) {
+  *  uint16_t counter = testInt;
+  *
+  *  for (int i = 0; i < SEGLEN; i++) {
+  *    SEGMENT.setPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0), counter));
+  *  }
+  *  return FRAMETIME;
+  *}
+  *static const char _data_fx_mode_testint_fade[] PROGMEM = "testInt Fade@!;!,!;!";
+  */
+
+
+
+
 //class name. Use something descriptive and leave the ": public Usermod" part :)
 class MyExampleUsermod : public Usermod {
   private:
@@ -46,6 +65,11 @@ class MyExampleUsermod : public Usermod {
      */
     void setup() {
       //Serial.println("Hello from my usermod!");
+
+      /*strip.addEffect(FX_MODE_TESTINT_FADE, &mode_testint_fade, _data_fx_mode_testint_fade);
+       *To use custom effects add      #define FX_MODE_TESTINT_FADE  187
+       *to the end of the list in wled00/FX.h around line 310 and update the MODE_COUNT
+       */
     }
 
 
@@ -108,7 +132,7 @@ class MyExampleUsermod : public Usermod {
 
     /*
      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
-     * Values in the state object may be modified by connected clients
+     * Values in  the state object may be modified by connected clients
      */
     void readFromJsonState(JsonObject& root)
     {
@@ -145,11 +169,11 @@ class MyExampleUsermod : public Usermod {
      *   - Tip: use int8_t to store the pin value in the Usermod, so a -1 value (pin not set) can be used
      *
      * See usermod_v2_auto_save.h for an example that saves Flash space by reusing ArduinoJson key name strings
-     * 
+     *
      * If you need a dedicated settings page with custom layout for your Usermod, that takes a lot more work.  
      * You will have to add the setting to the HTML, xml.cpp and set.cpp manually.
      * See the WLED Soundreactive fork (code and wiki) for reference.  https://github.com/atuline/WLED
-     * 
+     *
      * I highly recommend checking out the basics of ArduinoJson serialization and deserialization in order to use custom settings!
      */
     void addToConfig(JsonObject& root)
@@ -164,7 +188,7 @@ class MyExampleUsermod : public Usermod {
       top["testString"] = testString;
       JsonArray pinArray = top.createNestedArray("pin");
       pinArray.add(testPins[0]);
-      pinArray.add(testPins[1]); 
+      pinArray.add(testPins[1]);
     }
 
 
