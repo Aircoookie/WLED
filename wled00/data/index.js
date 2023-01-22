@@ -1662,19 +1662,23 @@ function toggleNodes()
 
 function makeSeg()
 {
-	var ns = 0;
+	var ns = 0, ct = 0;
 	var lu = lowestUnused;
 	let li = lastinfo;
 	if (lu > 0) {
-		var pend = parseInt(gId(`seg${lu -1}e`).value,10) + (cfg.comp.seglen?parseInt(gId(`seg${lu -1}s`).value,10):0);
-		if (pend < ledCount) ns = pend;
+		let xend = parseInt(gId(`seg${lu -1}e`).value,10) + (cfg.comp.seglen?parseInt(gId(`seg${lu -1}s`).value,10):0);
+		if (isM) {
+			ns = 0;
+			ct = mw;
+		} else {
+			if (xend < ledCount) ns = xend;
+			ct = ledCount-(cfg.comp.seglen?ns:0)
+		}
 	}
 	gId('segutil').scrollIntoView({
 		behavior: 'smooth',
 		block: 'start',
 	});
-	var ct = (isM?mw:ledCount)-(cfg.comp.seglen?ns:0);
-	//TODO: add calculation for Y in case of 2D matrix
 	var cn = `<div class="seg lstI expanded">
 	<div class="segin">
 		<input type="text" class="noslide" id="seg${lu}t" autocomplete="off" maxlength=32 value="" placeholder="New segment ${lu}"/>

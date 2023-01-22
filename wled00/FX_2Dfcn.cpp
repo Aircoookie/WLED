@@ -64,6 +64,7 @@ void WS2812FX::setUpMatrix() {
       Segment::maxHeight = 1;
       panels = 0;
       panel.clear(); // release memory allocated by panels
+      resetSegments();
       return;
     }
 
@@ -107,8 +108,8 @@ void WS2812FX::setUpMatrix() {
       panel.clear();
       Segment::maxWidth = _length;
       Segment::maxHeight = 1;
-      return;
     }
+    resetSegments();
   }
 #else
   isMatrix = false; // no matter what config says
