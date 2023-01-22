@@ -116,6 +116,14 @@ function writeHtmlGzipped(sourceFile, resultFile, page) {
     html = filter(html, "html-minify-ui");
     console.info("Minified to " + html.length + " characters");
 
+    //Set to true to output minified HTML to filename_minified.htm for testing and validation
+    //Will end up along side oroginal file
+    let outPureHTMLFile = false;
+    if(outPureHTMLFile){
+      let testFile = sourceFile.replace(/(\.[^.]+)$/, "_minified$1");
+      fs.writeFileSync(testFile,html);
+    }
+
     if (error) {
       console.warn(error);
       throw error;
