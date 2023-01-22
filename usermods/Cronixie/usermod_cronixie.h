@@ -271,7 +271,6 @@ class UsermodCronixie : public Usermod {
     {
       if (root["nx"].is<const char*>()) {
         strncpy(cronixieDisplay, root["nx"], 6);
-        setCronixie();
       }
     }
 

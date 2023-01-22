@@ -46,11 +46,11 @@ public:
 
   /*
    * loop() is called continuously. Here you can check for events, read sensors, etc.
-   * 
+   *
    * Tips:
    * 1. You can use "if (WLED_CONNECTED)" to check for a successful network connection.
    *    Additionally, "if (WLED_MQTT_CONNECTED)" is available to check for a connection to an MQTT broker.
-   * 
+   *
    * 2. Try to avoid using the delay() function. NEVER use delays longer than 10 milliseconds.
    *    Instead, use a timer check as shown here.
    */

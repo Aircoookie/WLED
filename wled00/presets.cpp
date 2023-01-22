@@ -79,12 +79,12 @@ static void doSaveState() {
   playlistSave = false;
 }
 
-bool getPresetName(byte index, String& name)
+bool getPresetName(byte index, String& name) 
 {
   if (!requestJSONBufferLock(9)) return false;
   bool presetExists = false;
   if (readObjectFromFileUsingId(getFileName(), index, &doc))
-  {
+  { 
     JsonObject fdo = doc.as<JsonObject>();
     if (fdo["n"]) {
       name = (const char*)(fdo["n"]);

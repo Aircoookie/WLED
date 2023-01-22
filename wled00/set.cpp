@@ -88,7 +88,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     strip.useLedsArray = request->hasArg(F("LD"));
 
     bool busesChanged = false;
-    for (uint8_t s = 0; s < WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES; s++) {
+    for (uint8_t s = 0; s < WLED_MAX_BUSSES; s++) {
       char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
       char lc[4] = "LC"; lc[2] = 48+s; lc[3] = 0; //strip length
       char co[4] = "CO"; co[2] = 48+s; co[3] = 0; //strip color order
@@ -171,14 +171,14 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         buttonType[i] = request->arg(be).toInt();
       #ifdef ARDUINO_ARCH_ESP32
         // ESP32 only: check that analog button pin is a valid ADC gpio
-        if (((buttonType[i] == BTN_TYPE_ANALOG) || (buttonType[i] == BTN_TYPE_ANALOG_INVERTED)) && (digitalPinToAnalogChannel(btnPin[i]) < 0))
+        if (((buttonType[i] == BTN_TYPE_ANALOG) || (buttonType[i] == BTN_TYPE_ANALOG_INVERTED)) && (digitalPinToAnalogChannel(btnPin[i]) < 0)) 
         {
           // not an ADC analog pin
           if (btnPin[i] >= 0) DEBUG_PRINTF("PIN ALLOC error: GPIO%d for analog button #%d is not an analog pin!\n", btnPin[i], i);
           btnPin[i] = -1;
           pinManager.deallocatePin(hw_btn_pin,PinOwner::Button);
-        }
-        else
+        } 
+        else 
       #endif
         {
           if (disablePullUp) {
@@ -200,7 +200,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     strip.ablMilliampsMax = request->arg(F("MA")).toInt();
     strip.milliampsPerLed = request->arg(F("LA")).toInt();
-
+    
     briS = request->arg(F("CA")).toInt();
 
     turnOnAtBoot = request->hasArg(F("BO"));
@@ -284,10 +284,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t >= 0  && t <= 63999) e131Universe = t;
     t = request->arg(F("DA")).toInt();
     if (t >= 0  && t <= 510) DMXAddress = t;
-    t = request->arg(F("XX")).toInt();
-    if (t >= 0  && t <= 150) DMXSegmentSpacing = t;
     t = request->arg(F("DM")).toInt();
-    if (t >= DMX_MODE_DISABLED && t <= DMX_MODE_PRESET) DMXMode = t;
+    if (t >= DMX_MODE_DISABLED && t <= DMX_MODE_MULTIPLE_RGBW) DMXMode = t;
     t = request->arg(F("ET")).toInt();
     if (t > 99  && t <= 65000) realtimeTimeoutMs = t;
     arlsForceMaxBri = request->hasArg(F("FB"));
@@ -364,7 +362,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     longitude = request->arg(F("LN")).toFloat();
     latitude = request->arg(F("LT")).toFloat();
     // force a sunrise/sunset re-calculation
-    calculateSunriseAndSunset();
+    calculateSunriseAndSunset(); 
 
     overlayCurrent = request->hasArg(F("OL")) ? 1 : 0;
 
@@ -645,37 +643,22 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   if (subPage == 10)
   {
     strip.isMatrix = request->arg(F("SOMP")).toInt();
-    // strip.panelH   = MAX(1,MIN(128,request->arg(F("PH")).toInt()));
-    // strip.panelW   = MAX(1,MIN(128,request->arg(F("PW")).toInt()));
-    strip.panel.clear(); // release memory if allocated
-    if (strip.isMatrix) {
-      strip.panels  = MAX(1,MIN(WLED_MAX_PANELS,request->arg(F("MPC")).toInt()));
-      strip.matrix.bottomStart = request->arg(F("PB")).toInt();
-      strip.matrix.rightStart  = request->arg(F("PR")).toInt();
-      strip.matrix.vertical    = request->arg(F("PV")).toInt();
-      strip.matrix.serpentine  = request->hasArg(F("PS"));
-      strip.panel.reserve(strip.panels); // pre-allocate memory
-      for (uint8_t i=0; i<strip.panels; i++) {
-        WS2812FX::Panel p;
-        char pO[8] = { '\0' };
-        snprintf_P(pO, 7, PSTR("P%d"), i);       // MAX_PANELS is 64 so pO will always only be 4 characters or less
-        pO[7] = '\0';
-        uint8_t l = strlen(pO);
-        // create P0B, P1B, ..., P63B, etc for other PxxX
-        pO[l] = 'B'; if (!request->hasArg(pO)) break;
-        pO[l] = 'B'; p.bottomStart = request->arg(pO).toInt();
-        pO[l] = 'R'; p.rightStart  = request->arg(pO).toInt();
-        pO[l] = 'V'; p.vertical    = request->arg(pO).toInt();
-        pO[l] = 'S'; p.serpentine  = request->hasArg(pO);
-        pO[l] = 'X'; p.xOffset     = request->arg(pO).toInt();
-        pO[l] = 'Y'; p.yOffset     = request->arg(pO).toInt();
-        pO[l] = 'W'; p.width       = request->arg(pO).toInt();
-        pO[l] = 'H'; p.height      = request->arg(pO).toInt();
-        strip.panel.push_back(p);
-      }
-    } else {
-      Segment::maxWidth  = strip.getLengthTotal();
-      Segment::maxHeight = 1;
+    strip.panelH   = MAX(1,MIN(128,request->arg(F("PH")).toInt()));
+    strip.panelW   = MAX(1,MIN(128,request->arg(F("PW")).toInt()));
+    strip.hPanels  = MAX(1,MIN(8,request->arg(F("MPH")).toInt()));
+    strip.vPanels  = MAX(1,MIN(8,request->arg(F("MPV")).toInt()));
+    strip.matrix.bottomStart = request->arg(F("PB")).toInt();
+    strip.matrix.rightStart  = request->arg(F("PR")).toInt();
+    strip.matrix.vertical    = request->arg(F("PV")).toInt();
+    strip.matrix.serpentine  = request->hasArg(F("PS"));
+    for (uint8_t i=0; i<WLED_MAX_PANELS; i++) {
+      char pO[8]; sprintf_P(pO, PSTR("P%d"), i);
+      uint8_t l = strlen(pO); pO[l+1] = 0;
+      pO[l] = 'B'; if (!request->hasArg(pO)) break;
+      pO[l] = 'B'; strip.panel[i].bottomStart = request->arg(pO).toInt();
+      pO[l] = 'R'; strip.panel[i].rightStart  = request->arg(pO).toInt();
+      pO[l] = 'V'; strip.panel[i].vertical    = request->arg(pO).toInt();
+      pO[l] = 'S'; strip.panel[i].serpentine  = request->hasArg(pO);
     }
     strip.setUpMatrix(); // will check limits
   }
@@ -683,9 +666,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
   lastEditTime = millis();
   if (subPage != 2 && !doReboot) doSerializeConfig = true; //serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)
-  #ifndef WLED_DISABLE_ALEXA
   if (subPage == 4) alexaInit();
-  #endif
 }
 
 
@@ -763,7 +744,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (pos > 0) {
     spcI = getNumVal(&req, pos);
   }
-  selseg.set(startI, stopI, grpI, spcI, UINT16_MAX, startY, stopY);
+  strip.setSegment(selectedSeg, startI, stopI, grpI, spcI, UINT16_MAX, startY, stopY);
 
   pos = req.indexOf(F("RV=")); //Segment reverse
   if (pos > 0) selseg.reverse = req.charAt(pos+3) != '0';

@@ -80,7 +80,7 @@
 <h3>WLED Broadcast</h3>
 UDP Port: <input name="UP" type="number" min="1" max="65535" class="d5" required><br>
 2nd Port: <input name="U2" type="number" min="1" max="65535" class="d5" required><br>
-<h3>Sync groups</h3>
+<h3>Sync grups</h3>
 <input name="GS" id="GS" type="number" style="display: none;"><!-- hidden inputs for bitwise group checkboxes -->
 <input name="GR" id="GR" type="number" style="display: none;">
 <table style="margin: 0 auto;">
@@ -148,20 +148,15 @@ Start universe: <input name="EU" type="number" min="0" max="63999" required><br>
 <i>Reboot required.</i> Check out <a href="https://github.com/LedFx/LedFx" target="_blank">LedFx</a>!<br>
 Skip out-of-sequence packets: <input type="checkbox" name="ES"><br>
 DMX start address: <input name="DA" type="number" min="1" max="510" required><br>
-DMX segment spacing: <input name="XX" type="number" min="0" max="150" required><br>
 DMX mode:
 <select name=DM>
 <option value=0>Disabled</option>
 <option value=1>Single RGB</option>
 <option value=2>Single DRGB</option>
 <option value=3>Effect</option>
-<option value=7>Effect + White</option>
-<option value=8>Effect Segment</option>
-<option value=9>Effect Segment + White</option>
 <option value=4>Multi RGB</option>
 <option value=5>Dimmer + Multi RGB</option>
 <option value=6>Multi RGBW</option>
-<option value=10>Preset</option>
 </select><br>
 <a href="https://kno.wled.ge/interfaces/e1.31-dmx/" target="_blank">E1.31 info</a><br>
 Timeout: <input name="ET" type="number" min="1" max="65000" required> ms<br>

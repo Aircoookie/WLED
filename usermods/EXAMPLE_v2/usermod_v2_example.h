@@ -20,25 +20,6 @@
  * 2. Register the usermod by adding #include "usermod_filename.h" in the top and registerUsermod(new MyUsermodClass()) in the bottom of usermods_list.cpp
  */
 
-
-/*
- * Fade LEDs between two colors using testInt as which color is most shown
- */
- /*
-  *uint16_t mode_testint_fade(void) {
-  *  uint16_t counter = testInt;
-  *
-  *  for (int i = 0; i < SEGLEN; i++) {
-  *    SEGMENT.setPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0), counter));
-  *  }
-  *  return FRAMETIME;
-  *}
-  *static const char _data_fx_mode_testint_fade[] PROGMEM = "testInt Fade@!;!,!;!";
-  */
-
-
-
-
 //class name. Use something descriptive and leave the ": public Usermod" part :)
 class MyExampleUsermod : public Usermod {
   private:
@@ -65,11 +46,6 @@ class MyExampleUsermod : public Usermod {
      */
     void setup() {
       //Serial.println("Hello from my usermod!");
-
-      /*strip.addEffect(FX_MODE_TESTINT_FADE, &mode_testint_fade, _data_fx_mode_testint_fade);
-       *To use custom effects add      #define FX_MODE_TESTINT_FADE  187
-       *to the end of the list in wled00/FX.h around line 310 and update the MODE_COUNT
-       */
     }
 
 
