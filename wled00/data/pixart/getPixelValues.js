@@ -5,13 +5,11 @@ function getPixelRGBValues(base64Image) {
   //Which object holds the secret to the segment ID
   const segm = gId('targetSegment');
   let segID = 0;
-  console.log(segm.style.display)
   if(segm.style.display == "flex"){
     segID = segm.value
   } else {
     segID = gId('segID').value;
   }
-  console.log(segID)
   
 
   //const copyJSONledbutton = gId('copyJSONledbutton');
@@ -63,7 +61,7 @@ function getPixelRGBValues(base64Image) {
   
   // Create an off-screen canvas
   var canvas = cE('canvas');
-  var context = canvas.getContext('2d');
+  var context = canvas.getContext('2d', { willReadFrequently: true });
 
   // Create an image element and set its src to the base64 image
   var image = new Image();
@@ -81,6 +79,12 @@ function getPixelRGBValues(base64Image) {
       //image will not be rezised Set desitred size to original size
       sizeX = image.width;
       sizeY = image.height;
+      //failsafe for not generating huge images automatically
+      if (image.width > 512 || image.height > 512)
+      {
+        sizeX = 16;
+        sizeY = 16;
+      }
     }
 
     // Set the canvas size to the same as the desired image size

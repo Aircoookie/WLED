@@ -19,6 +19,7 @@ const JSONledStringEnd = ']}}';
 
 var accentColor = '#eee';
 var accentTextColor = '#777';
+var prsCol = '#ccc';
 var greenColor = '#056b0a';
 var redColor = '#6b050c';
 

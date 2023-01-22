@@ -151,9 +151,9 @@
               </td>
               <td style="vertical-align: middle;">
                 <div id="sizeDiv" style="display: none;">
-                  <label for="sizeX">W : </label> &nbsp;<input class="sizeInputFields" type="number" id="sizeX" value="0">
+                  <label for="sizeX">W : </label> &nbsp;<input class="sizeInputFields" type="number" id="sizeX" min="1" value="16">
                   &nbsp;&nbsp;&nbsp;
-                  <label for="sizeY">H : </label> &nbsp;<input class="sizeInputFields" type="number" id="sizeY" value="0">
+                  <label for="sizeY">H : </label> &nbsp;<input class="sizeInputFields" type="number" id="sizeY" min="1" value="16">
                 </div>
               </td>
             </tr>
@@ -174,11 +174,11 @@
           <div style="width: 100%; text-align: center;">
             <img id="preview" style="display: none; margin: 0 auto;">
           </div>
-          
+          <!--
           <div id="submitConvertDiv" style="display: none;">
             <button id="convertbutton" class="buttonclass"></button>
           </div>
-          
+          -->
           <div id="raw-image-container" style="display: none">
             <img id="image" src="" alt="RawImage image">
           </div>
@@ -187,7 +187,7 @@
         
         <div id="image-container" style="display: none;">
           <div id="image-info" style="display: none"></div>
-          <textarea id="JSONled"></textarea>
+          <textarea id="JSONled" readonly></textarea>
         </div>
   
         <div id="button-container" style="display: none;">
@@ -198,7 +198,7 @@
           <button id="fileJSONledbutton" class="buttonclass"></button>
         </div>
         <div>
-          <h3><div id="version">Version 1.0.5</div>&nbsp;-&nbsp; <a href="https://github.com/werkstrom/WLED-PixelArtConverter/blob/main/README.md" target="_blank">Help/About</a></h3>
+          <h3><div id="version">Version 1.0.6</div>&nbsp;-&nbsp; <a href="https://github.com/werkstrom/WLED-PixelArtConverter/blob/main/README.md" target="_blank">Help/About</a></h3>
         </div>
       </div>
       <div id=bottom-part style="display: none" class=bottom-part></div>

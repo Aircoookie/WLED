@@ -4,7 +4,7 @@ function drawBoxes(inputPixelArray, widthPixels, heightPixels) {
     var canvas = gId('pixelCanvas');
 
     // Get the canvas context
-    var ctx = canvas.getContext('2d');
+    var ctx = canvas.getContext('2d', { willReadFrequently: true });
 
     // Set the width and height of the canvas
     if (window.innerHeight < window.innerWidth) {
@@ -63,6 +63,5 @@ function drawBoxes(inputPixelArray, widthPixels, heightPixels) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     canvas.width = window.innerWidth;
     ctx.putImageData(imageData, xOffset, 0);
-    console.log(xOffset);
 }
 
