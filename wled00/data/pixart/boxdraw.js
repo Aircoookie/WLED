@@ -1,5 +1,6 @@
 function drawBoxes(inputPixelArray, widthPixels, heightPixels) {
  
+    var w = window;
     // Get a reference to the canvas element
     var canvas = gId('pixelCanvas');
 
@@ -7,17 +8,17 @@ function drawBoxes(inputPixelArray, widthPixels, heightPixels) {
     var ctx = canvas.getContext('2d', { willReadFrequently: true });
 
     // Set the width and height of the canvas
-    if (window.innerHeight < window.innerWidth) {
-        canvas.width = Math.floor(window.innerHeight * 0.98);
+    if (w.innerHeight < w.innerWidth) {
+        canvas.width = Math.floor(w.innerHeight * 0.98);
     }
     else{
-        canvas.width = Math.floor(window.innerWidth * 0.98);
+        canvas.width = Math.floor(w.innerWidth * 0.98);
     }
-    //canvas.height = window.innerWidth;
+    //canvas.height = w.innerWidth;
 
     let pixelSize = Math.floor(canvas.width/widthPixels);
 
-    let xOffset = (window.innerWidth - (widthPixels * pixelSize))/2
+    let xOffset = (w.innerWidth - (widthPixels * pixelSize))/2
 
     //Set the canvas height to fit the right number of pixelrows
     canvas.height = (pixelSize * heightPixels) + 10
@@ -33,10 +34,6 @@ function drawBoxes(inputPixelArray, widthPixels, heightPixels) {
             let pixel = inputPixelArray[i];
 
             let pixelColor = 'rgb(' + pixel[0] + ', ' + pixel[1] + ', ' + pixel[2] + ')';
-            let r = pixel[0];
-            let g = pixel[1];
-            let b = pixel[2];
-            let pos = pixel[4];
 
             let textColor = 'rgb(128,128,128)';
 
@@ -56,12 +53,12 @@ function drawBoxes(inputPixelArray, widthPixels, heightPixels) {
             ctx.fillStyle = textColor;
             ctx.textAlign = "center";
             ctx.textBaseline = 'middle';
-            ctx.fillText((pos + 1), (x * pixelSize) + (pixelSize /2), (y * pixelSize) + (pixelSize /2));
+            ctx.fillText((pixel[4] + 1), (x * pixelSize) + (pixelSize /2), (y * pixelSize) + (pixelSize /2));
         }
     }
     var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    canvas.width = window.innerWidth;
+    canvas.width = w.innerWidth;
     ctx.putImageData(imageData, xOffset, 0);
 }
 

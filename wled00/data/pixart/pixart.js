@@ -1,4 +1,8 @@
 //Start up code
+//if (window.location.protocol == "file:") {
+//  let locip = prompt("File Mode. Please enter WLED IP!");
+//  gId('curlUrl').value = locip;
+//} else
 gId('curlUrl').value = location.host;
 
 let devMode = false;
@@ -78,72 +82,26 @@ gId("copyJSONledbutton").addEventListener('click', async () => {
 
 // Event listeners =======================
 
-gId("ledSetupSelector").addEventListener("change", () => {
-  gen();
-});
+gId("ledSetupSelector").addEventListener("change", gen);
+gId("sizeY").addEventListener("change", gen);
+gId("sizeX").addEventListener("change", gen);
+gId("formatSelector").addEventListener("change", gen);
+gId("colorFormatSelector").addEventListener("change", gen);
+gId("addressingSelector").addEventListener("change", gen);
+gId("brightnessNumber").addEventListener("change", gen);
+gId("colorLimitNumber").addEventListener("change", gen);
+gId("haID").addEventListener("change", gen);
+gId("haUID").addEventListener("change", gen);
+gId("haName").addEventListener("change", gen);
+gId("curlUrl").addEventListener("change", gen);
+gId("segID").addEventListener("change", gen);
+gId("preview").addEventListener("load", gen);
+//gId("convertbutton").addEventListener("click", gen);
 
-
-gId("sizeY").addEventListener("change", () => {
-  gen();
-});
-
-gId("sizeX").addEventListener("change", () => {
-  gen();
-});
-
-gId("formatSelector").addEventListener("change", () => {
-  gen();
-});
-
-gId("colorFormatSelector").addEventListener("change", () => {
-  gen();
-});
-
-gId("addressingSelector").addEventListener("change", () => {
-  gen();
-});
-
-gId("brightnessNumber").addEventListener("change", () => {
-  gen();
-});
-
-gId("colorLimitNumber").addEventListener("change", () => {
-  gen();
-});
-
-gId("haID").addEventListener("change", () => {
-  gen();
-});
-
-gId("haUID").addEventListener("change", () => {
-  gen();
-});
-
-gId("haName").addEventListener("change", () => {
-  gen();
-});
-
-gId("curlUrl").addEventListener("change", () => {
-  gen();
-});
-
-/*
-gId("convertbutton").addEventListener("click", () => {
-  gen();
-});
-*/
-gId("targetSegment").addEventListener("change", function() {
+gId("targetSegment").addEventListener("change", () => {
   sop = this.options[this.selectedIndex];
   gId("sizeX").value = sop.dataset.x;
   gId("sizeY").value = sop.dataset.y;
-  gen();
-});
-
-gId("segID").addEventListener("change", () => {
-  gen();
-});
-
-gId("preview").addEventListener("load", function() {
   gen();
 });
 

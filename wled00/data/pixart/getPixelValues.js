@@ -1,7 +1,7 @@
 function getPixelRGBValues(base64Image) {
   httpArray = [];
-  fileJSON = JSONledStringStart + gId('brightnessNumber').value + JSONledStringMid1 + gId('targetSegment').value + JSONledStringMid2;
-  
+  fileJSON = `{"on":true,"bri":${gId('brightnessNumber').value},"seg":{"id":${gId('targetSegment').value},"i":[`;
+
   //Which object holds the secret to the segment ID
   const segm = gId('targetSegment');
   let segID = 0;
@@ -14,7 +14,7 @@ function getPixelRGBValues(base64Image) {
 
   //const copyJSONledbutton = gId('copyJSONledbutton');
   const JSONled = gId('JSONled');
-  const maxNoOfColorsInCommandSting = gId('colorLimitNumber').value;
+  const maxNoOfColorsInCommandSting = parseInt(gId('colorLimitNumber').value);
   
   let hybridAddressing = false;
   let selectedIndex = -1;
@@ -43,14 +43,11 @@ function getPixelRGBValues(base64Image) {
     hybridAddressing = true;
   }
 
-  let segmentString = ''
   let curlString = ''
   let haString = ''
-  let haCommandCurlString = '';
-  
 
-  let colorSeparatorStart = '\'';
-  let colorSeparatorEnd = '\'';
+  let colorSeparatorStart = '"';
+  let colorSeparatorEnd = '"';
   if (!hexValueCheck){
     colorSeparatorStart = '[';
     colorSeparatorEnd = ']';
@@ -153,7 +150,6 @@ function getPixelRGBValues(base64Image) {
     
     //Generate JSON in WLED format
     let JSONledString = '';
-    let JSONledStringShort = '';
 
     //Set starting values for the segment check to something that is no color
     let segmentStart = -1;
@@ -250,7 +246,7 @@ function getPixelRGBValues(base64Image) {
 
         // Check if start and end is the same, in which case remove
 
-        JSONledString = JSONledString + segmentString + colorSeparatorStart + colorValueString + colorSeparatorEnd;
+        JSONledString += segmentString + colorSeparatorStart + colorValueString + colorSeparatorEnd;
         fileJSON = JSONledString + segmentString + colorSeparatorStart + colorValueString + colorSeparatorEnd;
 
         curentColorIndex = curentColorIndex + 1; // We've just added a new color to the string so up the count with one
@@ -272,24 +268,33 @@ function getPixelRGBValues(base64Image) {
     
     JSONledString = ''
 
-    //For evry commandString in the  array
+    //For every commandString in the array
     for (let i = 0; i < commandArray.length; i++) {
-      let thisJSONledString = JSONledStringStart + gId('brightnessNumber').value + JSONledStringMid1 + segID + JSONledStringMid2 + commandArray[i] + JSONledStringEnd;
+      let thisJSONledString = `{"on":true,"bri":${gId('brightnessNumber').value},"seg":{"id":${segID},"i":[${commandArray[i]}]}}`;
       httpArray.push(thisJSONledString);
 
-      let thiscurlString = curlStart + gId('curlUrl').value + curlMid1 + thisJSONledString + curlEnd;
-
+      let thiscurlString = `curl -X POST "http://${gId('curlUrl').value}/json/state" -d \'${thisJSONledString}\' -H "Content-Type: application/json"`;
+      
       //Aggregated Strings That should be returned to the user
       if (i > 0){
         JSONledString = JSONledString + '\n';
         curlString = curlString + ' && ';
       }
-      JSONledString = JSONledString + thisJSONledString;
-      curlString = curlString + thiscurlString;
+      JSONledString += thisJSONledString;
+      curlString += thiscurlString;
     }
 
     
-    haString = haStart + gId('haID').value + haMid1 + gId('haName').value + haMid2 + gId('haUID').value + haMid3 +curlString + haMid3 + gId('curlUrl').value + haEnd;
+    haString = `#Uncomment if you don\'t allready have these defined in your switch section of your configuration.yaml
+#- platform: command_line
+  #switches:
+    ${gId('haID').value}
+      friendly_name: ${gId('haName').value}
+      unique_id: ${gId('haUID').value}
+      command_on: >
+        ${curlString}
+      command_off: >
+        curl -X POST "http://${gId('curlUrl').value}/json/state" -d \'{"on":false}\' -H "Content-Type: application/json"`;
 
     if (formatSelection == 'wled'){
       JSONled.value = JSONledString;
@@ -301,7 +306,7 @@ function getPixelRGBValues(base64Image) {
       JSONled.value = 'ERROR!/n' + formatSelection + ' is an unknown format.'
     }
     
-    fileJSON = fileJSON + JSONledStringEnd;
+    fileJSON += ']}}';
 
     let infoDiv = gId('image-info');
     let canvasDiv = gId('image-info');
