@@ -235,9 +235,9 @@ public:
     oappend(SET_F("addHB('BH1750');"));
     // WLEDMM this usermod can ONLY use HW_I2C - so always use globals
     //oappend(SET_F("addInfo('BH1750:pin[]',0,'','I2C SCL');"));
-    //oappend(SET_F("rOption('BH1750:pin[]',0,'use global (")); oappendi(i2c_scl); oappend(")',-1);"); 
+    //oappend(SET_F("rOpt('BH1750:pin[]',0,'use global (")); oappendi(i2c_scl); oappend(")',-1);"); 
     //oappend(SET_F("addInfo('BH1750:pin[]',1,'','I2C SDA');"));
-    //oappend(SET_F("rOption('BH1750:pin[]',1,'use global (")); oappendi(i2c_sda); oappend(")',-1);"); 
+    //oappend(SET_F("rOpt('BH1750:pin[]',1,'use global (")); oappendi(i2c_sda); oappend(")',-1);"); 
   }    
 
   // (called from set.cpp) stores persistent properties to cfg.json

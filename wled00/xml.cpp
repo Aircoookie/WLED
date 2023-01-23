@@ -269,8 +269,8 @@ void appendGPIOinfo() {
   oappendi(21);
   #elif defined(ESP32)
   oappendi(39);
-  #else
-  oappendi(16);
+  #else //8266
+  oappendi(NUM_DIGITAL_PINS); //WLEDMM include pin 17 for Analog
   #endif
   oappend(SET_F(";"));
 
@@ -278,9 +278,13 @@ void appendGPIOinfo() {
   #if defined(ESP8266) && !defined(ARDUINO_ESP8266_ESP01)
   sprintf(dt_pins, "d.dt_pins=[%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d];", D0, D1, D2, D3, D4, D5, D6, D7, D8, hardwareRX, hardwareTX);
   #else
-  sprintf(dt_pins, "d.dt_pins=[%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d];", 99, 99, 99, 99, 99, 99, 99, 99, 99, hardwareRX, hardwareTX);
+  sprintf(dt_pins, "d.dt_pins=[%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d];", PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, hardwareRX, hardwareTX);
   #endif
   oappend(dt_pins);
+
+  char a_pins[48]; // fix warning: output 45 bytes into a destination of size 30
+  sprintf(a_pins, "d.a_pins=[%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d];", pinManager.getADCPin(PM_ADC1, 0), pinManager.getADCPin(PM_ADC1, 1), pinManager.getADCPin(PM_ADC1, 2), pinManager.getADCPin(PM_ADC1, 3), pinManager.getADCPin(PM_ADC1, 4), pinManager.getADCPin(PM_ADC1, 5), pinManager.getADCPin(PM_ADC1, 6), pinManager.getADCPin(PM_ADC1, 7), pinManager.getADCPin(PM_ADC1, 8), pinManager.getADCPin(PM_ADC1, 9), pinManager.getADCPin(PM_ADC1, 10));
+  oappend(a_pins);
 }
 
 //get values for settings form in javascript
@@ -724,31 +728,31 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
       oappend(SET_F("d.getElementsByName(\"if:SCLK:pin\")[1].value=")); oappendi(spi_sclk); oappend(";"); 
       //WLEDMM: add help info showing defaults
       oappend(SET_F("addInfo('if:SDA:pin',0,'', 'SDA');"));
-      oappend(SET_F("xOption('if:SDA:pin',1,' ⍼',")); oappendi(SDA); oappend(");");
+      oappend(SET_F("xOpt('if:SDA:pin',1,' ⍼',")); oappendi(SDA); oappend(");");
     #ifdef HW_PIN_SDA
-      oappend(SET_F("xOption('if:SDA:pin',1,' ⎌',")); oappendi(HW_PIN_SDA); oappend(");");
+      oappend(SET_F("xOpt('if:SDA:pin',1,' ⎌',")); oappendi(HW_PIN_SDA); oappend(");");
     #endif
       oappend(SET_F("addInfo('if:SCL:pin',0,'', 'SCL');"));
-      oappend(SET_F("xOption('if:SCL:pin',1,' ⍼',")); oappendi(SCL); oappend(");");
-      oappend(SET_F("disableRO('if:SCL:pin',1);"));
+      oappend(SET_F("xOpt('if:SCL:pin',1,' ⍼',")); oappendi(SCL); oappend(");");
+      oappend(SET_F("dRO('if:SCL:pin',1);"));
     #ifdef HW_PIN_SCL
-      oappend(SET_F("xOption('if:SCL:pin',1,' ⎌',")); oappendi(HW_PIN_SCL); oappend(");"); 
+      oappend(SET_F("xOpt('if:SCL:pin',1,' ⎌',")); oappendi(HW_PIN_SCL); oappend(");"); 
     #endif
       oappend(SET_F("addInfo('if:MOSI:pin',0,'', 'MOSI');"));
-      oappend(SET_F("xOption('if:MOSI:pin',1,' ⍼',")); oappendi(MOSI); oappend(");");
+      oappend(SET_F("xOpt('if:MOSI:pin',1,' ⍼',")); oappendi(MOSI); oappend(");");
     #ifdef HW_PIN_MOSISPI //WLEDMM renamed from HW_PIN_DATASPI
-      oappend(SET_F("xOption('if:MOSI:pin',1,' ⎌',")); oappendi(HW_PIN_MOSISPI); oappend(");"); 
+      oappend(SET_F("xOpt('if:MOSI:pin',1,' ⎌',")); oappendi(HW_PIN_MOSISPI); oappend(");"); 
     #endif
       oappend(SET_F("addInfo('if:MISO:pin',0,'', 'MISO');"));
-      oappend(SET_F("xOption('if:MISO:pin',1,' ⍼',")); oappendi(MISO); oappend(");");
+      oappend(SET_F("xOpt('if:MISO:pin',1,' ⍼',")); oappendi(MISO); oappend(");");
     #ifdef HW_PIN_MISOSPI
-      oappend(SET_F("xOption('if:MISO:pin',1,' ⎌',")); oappendi(HW_PIN_MISOSPI); oappend(");"); 
+      oappend(SET_F("xOpt('if:MISO:pin',1,' ⎌',")); oappendi(HW_PIN_MISOSPI); oappend(");"); 
     #endif
       oappend(SET_F("addInfo('if:SCLK:pin',0,'', 'SCLK');"));
-      oappend(SET_F("xOption('if:SCLK:pin',1,' ⍼',")); oappendi(SCK); oappend(");");
-      oappend(SET_F("disableRO('if:SCLK:pin',1);"));
+      oappend(SET_F("xOpt('if:SCLK:pin',1,' ⍼',")); oappendi(SCK); oappend(");");
+      oappend(SET_F("dRO('if:SCLK:pin',1);"));
     #ifdef HW_PIN_CLOCKSPI
-      oappend(SET_F("xOption('if:SCLK:pin',1,' ⎌',")); oappendi(HW_PIN_CLOCKSPI); oappend(");"); 
+      oappend(SET_F("xOpt('if:SCLK:pin',1,' ⎌',")); oappendi(HW_PIN_CLOCKSPI); oappend(");"); 
     #endif
     }
     else {
@@ -757,7 +761,7 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
     }
 
     // oappend(SET_F("console.log('getSettingsJS fix ro pins', d.max_gpio, d.ro_gpio);")); 
-    oappend(SET_F("pinDropdownsPost();")); 
+    oappend(SET_F("pinPost();")); 
   }
 
   if (subPage == 9) // update

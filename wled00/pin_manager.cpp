@@ -721,10 +721,10 @@ bool PinManagerClass::isPinOk(byte gpio, bool output)
     if (output) return digitalPinCanOutput(gpio);
     else        return true;
   }
-#else
+#else //8266
   if (gpio <  6) return true;
   if (gpio < 12) return false; //SPI flash pins
-  if (gpio < 17) return true;
+  if (gpio <= NUM_DIGITAL_PINS) return true; //WLEDMM: include pin 17 / A0 / Audio in
 #endif
   return false;
 }

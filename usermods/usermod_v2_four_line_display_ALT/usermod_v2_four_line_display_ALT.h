@@ -1064,23 +1064,23 @@ class FourLineDisplayUsermod : public Usermod {
       bool isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64);
       // WLEDMM add defaults
       oappend(SET_F("addInfo('4LineDisplay:pin[]',0,'','I2C/SPI CLK');"));
-      oappend(SET_F("disableRO('4LineDisplay:pin[]',0);")); 
+      oappend(SET_F("dRO('4LineDisplay:pin[]',0);")); 
     #ifdef FLD_PIN_SCL
-      oappend(SET_F("xOption('4LineDisplay:pin[]',0,' ⎌',")); oappendi(FLD_PIN_SCL); oappend(");"); 
+      oappend(SET_F("xOpt('4LineDisplay:pin[]',0,' ⎌',")); oappendi(FLD_PIN_SCL); oappend(");"); 
     #endif
       if (isSPI) {
-        oappend(SET_F("rOption('4LineDisplay:pin[]',0,'use global (")); oappendi(spi_sclk); oappend(")',-1);"); 
+        oappend(SET_F("rOpt('4LineDisplay:pin[]',0,'use global (")); oappendi(spi_sclk); oappend(")',-1);"); 
       } else {
-        oappend(SET_F("rOption('4LineDisplay:pin[]',0,'use global (")); oappendi(i2c_scl); oappend(")',-1);"); 
+        oappend(SET_F("rOpt('4LineDisplay:pin[]',0,'use global (")); oappendi(i2c_scl); oappend(")',-1);"); 
       }
       oappend(SET_F("addInfo('4LineDisplay:pin[]',1,'','I2C/SPI DTA');"));
     #ifdef FLD_PIN_SDA
-      oappend(SET_F("xOption('4LineDisplay:pin[]',1,' ⎌',")); oappendi(FLD_PIN_SDA); oappend(");"); 
+      oappend(SET_F("xOpt('4LineDisplay:pin[]',1,' ⎌',")); oappendi(FLD_PIN_SDA); oappend(");"); 
     #endif
       if (isSPI) {
-        oappend(SET_F("rOption('4LineDisplay:pin[]',1,'use global (")); oappendi(spi_mosi); oappend(")',-1);"); 
+        oappend(SET_F("rOpt('4LineDisplay:pin[]',1,'use global (")); oappendi(spi_mosi); oappend(")',-1);"); 
       } else {
-        oappend(SET_F("rOption('4LineDisplay:pin[]',1,'use global (")); oappendi(i2c_sda); oappend(")',-1);"); 
+        oappend(SET_F("rOpt('4LineDisplay:pin[]',1,'use global (")); oappendi(i2c_sda); oappend(")',-1);"); 
       }
       oappend(SET_F("addInfo('4LineDisplay:pin[]',2,'','SPI CS');"));
       oappend(SET_F("addInfo('4LineDisplay:pin[]',3,'','SPI DC');"));

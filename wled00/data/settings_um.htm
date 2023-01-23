@@ -183,7 +183,7 @@
 		}
 	}
 	//WLEDMM: replace Option to set globals
-	function rOption(name,el,txt,val) {
+	function rOpt(name,el,txt,val) {
 		let obj = d.getElementsByName(name);
 		var select = obj;
 		if (obj[el]) select = obj[el];
@@ -193,7 +193,7 @@
 		}
 	}
 	//WLEDMM: extend Option to set build flag defaults
-	function xOption(name,el,txt,val) {
+	function xOpt(name,el,txt,val) {
 		let obj = d.getElementsByName(name);
 		var select = obj;
 		if (obj[el]) select = obj[el];
@@ -203,7 +203,7 @@
 		}
 	}
 	//WLEDMM: delete Options to remove options e.g. mclk
-	function dOptions(name,el,valFrom,valTo) {
+	function dOpt(name,el,valFrom,valTo) {
 		let obj = d.getElementsByName(name);
 		var select = obj;
 		if (obj[el]) select = obj[el];
@@ -217,23 +217,40 @@
 			//https://www.javascripttutorial.net/javascript-dom/javascript-remove-items-from-a-select-conditionally/
 		}
 	}
-
-	//WLEDMM
-	function disableRO(name,el) {
+	//WLEDMM: analog options only
+	function aOpt(name,el) {
 		let obj = d.getElementsByName(name);
 		var select = obj;
 		if (obj[el]) select = obj[el];
-		// console.log("disableRO", name, el, obj, "s", select, d.ro_gpio);
 		for (let i=0; i<select.options.length; i++) {
 			let c = select.options[i];
-			// console.log("disableRO option", c, c.value, d.ro_gpio.includes(c.value));
+			found = false;
+			for (let jj=0; jj<d.a_pins.length; jj++) if (d.a_pins[jj] == c.value) found = true; //value -1 or analog pins
+			if (c.value != -1 && !found) {
+				select.removeChild(c);
+				i--; //decrease i by one because the index has been adjusted
+			}
+			//https://www.javascripttutorial.net/javascript-dom/javascript-add-remove-options/
+			//https://www.javascripttutorial.net/javascript-dom/javascript-remove-items-from-a-select-conditionally/
+		}
+	}
+
+	//WLEDMM disable read only pins
+	function dRO(name,el) {
+		let obj = d.getElementsByName(name);
+		var select = obj;
+		if (obj[el]) select = obj[el];
+		// console.log("dRO", name, el, obj, "s", select, d.ro_gpio);
+		for (let i=0; i<select.options.length; i++) {
+			let c = select.options[i];
+			// console.log("dRO option", c, c.value, d.ro_gpio.includes(c.value));
 			for (let j=0; j<d.ro_gpio.length; j++) if (d.ro_gpio[j] == c.value) c.disabled=true; //if (d.ro_gpio.includes(c.value))
 		}
 	}
 
 	//WLEDMM read only pins 🟠, reserved pins 🟣 and disabled, and remove pins > max_gpio
-	function pinDropdownsPost() {
-		// console.log('pinDropdownsPost', d.max_gpio, d.ro_gpio, d.rsvd);
+	function pinPost() {
+		// console.log('pinPost', d.max_gpio, d.ro_gpio, d.rsvd);
 		var elements = gId("form_s").elements;
 
 		for (var i = 0, select; select = elements[i++];) {
@@ -241,7 +258,7 @@
 				// console.log(element);
 				for (let i=0; i<select.options.length; i++) {
 					let c = select.options[i];
-					// console.log("pinDropdownsPost option", c, c.value, d.ro_gpio.includes(c.value));
+					// console.log("pinPost option", c, c.value, d.ro_gpio.includes(c.value));
 					for (let j=0; j<d.ro_gpio.length; j++) if (d.ro_gpio[j] == c.value) c.text += " read only 🟠"; //if (d.ro_gpio.includes(c.value)) not working ???
 					for (let j=0; j<d.rsvd.length; j++) if (d.rsvd[j] == c.value) {c.text += " reserved 🟣"; c.disabled=true;} //now always disabled as post is done last if (d.rsvd.includes(c.value))
 					//remove pins > max_gpio
@@ -253,6 +270,7 @@
 					//https://www.javascripttutorial.net/javascript-dom/javascript-remove-items-from-a-select-conditionally/
 					if (c.text.length <= 4) c.text += " 🟢"; //2 digit number space and ⍼/⎌. If no reserved/read only/other um, then pin can be freely used (green)
 					for (let jj=0; jj<d.dt_pins.length; jj++) if (d.dt_pins[jj] == c.value) c.text += ((jj<9)?` D${jj}`:((jj==9)?` RX`:` TX`));  //WLEDMM: Add D0-D8, RX/TX to name
+					for (let jj=0; jj<d.a_pins.length; jj++) if (d.a_pins[jj] == c.value) c.text += ` A${jj}`;  //WLEDMM: Add A0-A10
 				}
 			}
 		}

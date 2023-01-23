@@ -408,11 +408,11 @@ public:
     oappend(SET_F("addHB('BME280/BMP280');"));
 
     oappend(SET_F("addInfo('BME280/BMP280:pin[]',0,'','I2C/SPI CLK');"));
-    oappend(SET_F("disableRO('BME280/BMP280:pin[]',0);")); 
-    oappend(SET_F("rOption('BME280/BMP280:pin[]',0,'use global (")); oappendi(i2c_scl); oappend(")',-1);"); 
+    oappend(SET_F("dRO('BME280/BMP280:pin[]',0);")); 
+    oappend(SET_F("rOpt('BME280/BMP280:pin[]',0,'use global (")); oappendi(i2c_scl); oappend(")',-1);"); 
 
     oappend(SET_F("addInfo('BME280/BMP280:pin[]',1,'','I2C/SPI DTA');"));
-    oappend(SET_F("rOption('BME280/BMP280:pin[]',1,'use global (")); oappendi(i2c_sda); oappend(")',-1);"); 
+    oappend(SET_F("rOpt('BME280/BMP280:pin[]',1,'use global (")); oappendi(i2c_sda); oappend(")',-1);"); 
   }
       
 

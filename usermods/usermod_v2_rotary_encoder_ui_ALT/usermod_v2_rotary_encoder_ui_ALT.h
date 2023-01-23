@@ -875,13 +875,13 @@ public:
     oappend(SET_F("addHB('Rotary-Encoder');"));
 
     #ifdef ENCODER_DT_PIN
-      oappend(SET_F("xOption('Rotary-Encoder:DT-pin',1,' ⎌',")); oappendi(ENCODER_DT_PIN); oappend(");"); 
+      oappend(SET_F("xOpt('Rotary-Encoder:DT-pin',1,' ⎌',")); oappendi(ENCODER_DT_PIN); oappend(");"); 
     #endif
     #ifdef ENCODER_CLK_PIN
-      oappend(SET_F("xOption('Rotary-Encoder:CLK-pin',1,' ⎌',")); oappendi(ENCODER_CLK_PIN); oappend(");"); 
+      oappend(SET_F("xOpt('Rotary-Encoder:CLK-pin',1,' ⎌',")); oappendi(ENCODER_CLK_PIN); oappend(");"); 
     #endif
     #ifdef ENCODER_SW_PIN
-      oappend(SET_F("xOption('Rotary-Encoder:SW-pin',1,' ⎌',")); oappendi(ENCODER_SW_PIN); oappend(");"); 
+      oappend(SET_F("xOpt('Rotary-Encoder:SW-pin',1,' ⎌',")); oappendi(ENCODER_SW_PIN); oappend(");"); 
     #endif
   }
 
