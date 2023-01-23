@@ -1,8 +1,6 @@
 function drawBoxes(inputPixelArray, widthPixels, heightPixels) {
  
     var w = window;
-    // Get a reference to the canvas element
-    var canvas = gId('pixelCanvas');
 
     // Get the canvas context
     var ctx = canvas.getContext('2d', { willReadFrequently: true });

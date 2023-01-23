@@ -1,45 +1,41 @@
 function getPixelRGBValues(base64Image) {
   httpArray = [];
-  fileJSON = `{"on":true,"bri":${gId('brightnessNumber').value},"seg":{"id":${gId('targetSegment').value},"i":[`;
+  fileJSON = `{"on":true,"bri":${brgh.value},"seg":{"id":${tSg.value},"i":[`;
 
   //Which object holds the secret to the segment ID
-  const segm = gId('targetSegment');
+
   let segID = 0;
-  if(segm.style.display == "flex"){
-    segID = segm.value
+  if(tSg.style.display == "flex"){
+    segID = tSg.value
   } else {
-    segID = gId('segID').value;
+    segID = sID.value;
   }
   
 
   //const copyJSONledbutton = gId('copyJSONledbutton');
-  const JSONled = gId('JSONled');
-  const maxNoOfColorsInCommandSting = parseInt(gId('colorLimitNumber').value);
+  const maxNoOfColorsInCommandSting = parseInt(cLN.value);
   
   let hybridAddressing = false;
   let selectedIndex = -1;
 
-  let selector = gId("formatSelector");
-  selectedIndex = selector.selectedIndex;
-  const formatSelection = selector.options[selectedIndex].value;
+  selectedIndex = frm.selectedIndex;
+  const formatSelection = frm.options[selectedIndex].value;
 
-  selector = gId("ledSetupSelector");
-  selectedIndex = selector.selectedIndex;
-  const ledSetupSelection = selector.options[selectedIndex].value;
+  
+  selectedIndex = lSS.selectedIndex;
+  const ledSetupSelection = lSS.options[selectedIndex].value;
 
-  selector = gId("colorFormatSelector");
-  selectedIndex = selector.selectedIndex;
+  selectedIndex = cFS.selectedIndex;
   let hexValueCheck = true;
-  if (selector.options[selectedIndex].value == 'dec'){
+  if (cFS.options[selectedIndex].value == 'dec'){
     hexValueCheck = false
   }
 
-  selector = gId("addressingSelector");
-  selectedIndex = selector.selectedIndex;
+  selectedIndex = aS.selectedIndex;
   let segmentValueCheck = true; //If Range or Hybrid
-  if (selector.options[selectedIndex].value == 'single'){
+  if (aS.options[selectedIndex].value == 'single'){
     segmentValueCheck = false
-  } else if (selector.options[selectedIndex].value == 'hybrid'){
+  } else if (aS.options[selectedIndex].value == 'hybrid'){
     hybridAddressing = true;
   }
 
@@ -67,10 +63,10 @@ function getPixelRGBValues(base64Image) {
   // Wait for the image to load before drawing it onto the canvas
   image.onload = function() {
     
-    let scalePath = gId("scaleDiv").children[0].children[0];
+    let scalePath = scDiv.children[0].children[0];
     let color = scalePath.getAttribute("fill");
-    let sizeX = gId("sizeX").value;
-    let sizeY = gId("sizeY").value;
+    let sizeX = szX.value;
+    let sizeY = szY.value;
 
     if (color != accentColor || sizeX < 1 || sizeY < 1){
       //image will not be rezised Set desitred size to original size
@@ -270,10 +266,10 @@ function getPixelRGBValues(base64Image) {
 
     //For every commandString in the array
     for (let i = 0; i < commandArray.length; i++) {
-      let thisJSONledString = `{"on":true,"bri":${gId('brightnessNumber').value},"seg":{"id":${segID},"i":[${commandArray[i]}]}}`;
+      let thisJSONledString = `{"on":true,"bri":${brgh.value},"seg":{"id":${segID},"i":[${commandArray[i]}]}}`;
       httpArray.push(thisJSONledString);
 
-      let thiscurlString = `curl -X POST "http://${gId('curlUrl').value}/json/state" -d \'${thisJSONledString}\' -H "Content-Type: application/json"`;
+      let thiscurlString = `curl -X POST "http://${gurl.value}/json/state" -d \'${thisJSONledString}\' -H "Content-Type: application/json"`;
       
       //Aggregated Strings That should be returned to the user
       if (i > 0){
@@ -288,28 +284,28 @@ function getPixelRGBValues(base64Image) {
     haString = `#Uncomment if you don\'t allready have these defined in your switch section of your configuration.yaml
 #- platform: command_line
   #switches:
-    ${gId('haID').value}
-      friendly_name: ${gId('haName').value}
-      unique_id: ${gId('haUID').value}
+    ${haIDe.value}
+      friendly_name: ${haNe.value}
+      unique_id: ${haUe.value}
       command_on: >
         ${curlString}
       command_off: >
-        curl -X POST "http://${gId('curlUrl').value}/json/state" -d \'{"on":false}\' -H "Content-Type: application/json"`;
+        curl -X POST "http://${gurl.value}/json/state" -d \'{"on":false}\' -H "Content-Type: application/json"`;
 
     if (formatSelection == 'wled'){
-      JSONled.value = JSONledString;
+      JLD.value = JSONledString;
     } else if (formatSelection == 'curl'){
-      JSONled.value = curlString;
+      JLD.value = curlString;
     } else if (formatSelection == 'ha'){
-      JSONled.value = haString;
+      JLD.value = haString;
     } else {
-      JSONled.value = 'ERROR!/n' + formatSelection + ' is an unknown format.'
+      JLD.value = 'ERROR!/n' + formatSelection + ' is an unknown format.'
     }
     
     fileJSON += ']}}';
 
-    let infoDiv = gId('image-info');
-    let canvasDiv = gId('image-info');
+    let infoDiv = imin;
+    let canvasDiv = imin;
     if (hasTransparency){
       imageInfo = imageInfo + '<p><b>WARNING!</b> Transparency info detected in image. Transparency (alpha) has been ignored. To ensure you get the result you desire, use only solid colors in your image.</p>'
     }
