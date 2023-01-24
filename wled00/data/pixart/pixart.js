@@ -280,6 +280,8 @@ function generateSegmentOptions(array) {
     tSg.appendChild(option);
     if(i === 0) {
       option.selected = true;
+      szX.value = option.dataset.x;
+      szY.value = option.dataset.y;
     }
   }
 }
