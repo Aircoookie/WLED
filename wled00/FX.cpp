@@ -4853,7 +4853,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
 
     for (int y = 0; y < rows; y++) for (int x = 0; x < cols; x++) prevLeds[XY(x,y)] = CRGB::Black;
     memset(crcBuffer, 0, sizeof(uint16_t)*crcBufferLen);
-  } else if (strip.now - SEGENV.step < FRAMETIME_FIXED * map(SEGMENT.speed,0,255,64,4)) {   //  warning: comparison between signed and unsigned integer expressions
+  } else if (strip.now - SEGENV.step < FRAMETIME_FIXED * (uint32_t)map(SEGMENT.speed,0,255,64,4)) {
     // update only when appropriate time passes (in 42 FPS slots)
     return FRAMETIME;
   }
@@ -5876,10 +5876,8 @@ uint16_t mode_2Dscrollingtext(void) {
     ++SEGENV.aux1 &= 0xFF; // color shift
     SEGENV.step = millis() + map(SEGMENT.speed, 0, 255, 10*FRAMETIME_FIXED, 2*FRAMETIME_FIXED);
     if (!SEGMENT.check2) {
-      // we need it 3 times
-      SEGMENT.fade_out(255 - (SEGMENT.custom1>>5)); // fade to background color
-      SEGMENT.fade_out(255 - (SEGMENT.custom1>>5)); // fade to background color
-      SEGMENT.fade_out(255 - (SEGMENT.custom1>>5)); // fade to background color
+      for (int y = 0; y < rows; y++) for (int x = 0; x < cols; x++ )
+        SEGMENT.blendPixelColorXY(x, y, SEGCOLOR(1), 255 - (SEGMENT.custom1>>1));
     }
   }
   for (int i = 0; i < numberOfLetters; i++) {
