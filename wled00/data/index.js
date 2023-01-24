@@ -795,7 +795,7 @@ function populateSegments(s)
 		<tr>
 			<td><input class="noslide segn" id="seg${i}grp" type="number" min="1" max="255" value="${inst.grp}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
 			<td><input class="noslide segn" id="seg${i}spc" type="number" min="0" max="255" value="${inst.spc}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
-			<td><button class="btn btn-xs" onclick="setSeg(${i})"><i class="icons btn-icon" id="segc${i}">&#xe390;</i></button></td>
+			<td style="text-align:left;"><button class="btn btn-xs" onclick="setSeg(${i})"><i class="icons btn-icon" id="segc${i}">&#xe390;</i></button></td>
 		</tr>
 		</table>
 		<div class="h bp" id="seg${i}len"></div>
@@ -1072,13 +1072,13 @@ function updateLen(s)
 {
 	if (!gId(`seg${s}s`)) return;
 	var start = parseInt(gId(`seg${s}s`).value);
-	var stop = parseInt(gId(`seg${s}e`).value);
-	var len = stop - (cfg.comp.seglen?0:start);
+	var stop = parseInt(gId(`seg${s}e`).value) + (cfg.comp.seglen?start:0);
+	var len = stop - start;
 	if (isM) {
 		// matrix setup
 		let startY = parseInt(gId(`seg${s}sY`).value);
-		let stopY = parseInt(gId(`seg${s}eY`).value);
-		len *= (stopY-(cfg.comp.seglen?0:startY));
+		let stopY = parseInt(gId(`seg${s}eY`).value) + (cfg.comp.seglen?startY:0);
+		len *= (stopY-startY);
 		let tPL = gId(`seg${s}lbtm`);
 		if (stop-start>1 && stopY-startY>1) {
 			// 2D segment
@@ -1687,19 +1687,23 @@ function toggleNodes()
 
 function makeSeg()
 {
-	var ns = 0;
+	var ns = 0, ct = 0;
 	var lu = lowestUnused;
 	let li = lastinfo;
 	if (lu > 0) {
-		var pend = parseInt(gId(`seg${lu -1}e`).value,10) + (cfg.comp.seglen?parseInt(gId(`seg${lu -1}s`).value,10):0);
-		if (pend < ledCount) ns = pend;
+		let xend = parseInt(gId(`seg${lu -1}e`).value,10) + (cfg.comp.seglen?parseInt(gId(`seg${lu -1}s`).value,10):0);
+		if (isM) {
+			ns = 0;
+			ct = mw;
+		} else {
+			if (xend < ledCount) ns = xend;
+			ct = ledCount-(cfg.comp.seglen?ns:0)
+		}
 	}
 	gId('segutil').scrollIntoView({
 		behavior: 'smooth',
 		block: 'start',
 	});
-	var ct = (isM?mw:ledCount)-(cfg.comp.seglen?ns:0);
-	//TODO: add calculation for Y in case of 2D matrix
 	var cn = `<div class="seg lstI expanded">
 	<div class="segin">
 		<input type="text" class="noslide" id="seg${lu}t" autocomplete="off" maxlength=32 value="" placeholder="New segment ${lu}"/>
