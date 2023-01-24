@@ -1,11 +1,65 @@
 ## WLED changelog
 
+#### Build 2301240
+
+-   Version bump to v0.14.0-b2 "Hoshi"
+-   PixelArt converter (convert any image to pixel art and display it on a matrix) (PR #3042)
+-   various effect updates and optimisations
+    -   added Overlay option to some effects (allows overlapping segments)
+    -   added gradient text on Scrolling Text
+    -   added #DDMM, #MMDD & #HHMM date and time options for Scrolling Text effect (PR #2990)
+    -   deprecated: Dynamic Smooth, Dissolve Rnd, Solid Glitter
+    -   optimised & enhanced loading of default values
+    -   new effect: Distortion Waves (2D)
+    -   2D support for Ripple effect
+    -   slower minimum speed for Railway effect
+-   DMX effect mode & segment controls (PR #2891)
+-   Optimisations for conditional compiles (further reduction of code size)
+-   better UX with effect sliders (PR #3012)
+-   enhanced support for ESP32 variants: C3, S2 & S3
+-   usermod enhancements (PIR, Temperature, Battery (PR #2975), Analog Clock (PR #2993))
+-   new usermod SHT (PR #2963)
+-   2D matrix set up with gaps or irregular panels (breaking change!) (PR #2892)
+-   random palette smooth changes
+-   hex color notations in custom palettes
+-   allow more virtual buses
+-   plethora of bugfixes
+
 ### WLED release 0.14.0-b1
 
 #### Build 2212222
 
 -   Version bump to v0.14.0-b1 "Hoshi"
--   Full changelog TBD
+-   2D matrix support (including mapping 1D effects to 2D and 2D peek)
+-   [internal] completely rewritten Segment & WS2812FX handling code
+-   [internal] ability to add custom effects via usermods
+-   [internal] set of 2D drawing functions
+-   enhanced old and new 2D effects (metadata: default values)
+-   custom palettes (up to 10; upload palette0.json, palette1.json, ...)
+-   custom effect sliders and options, quick filters
+-   global I2C and SPI GPIO allocation (for usermods)
+-   usermod settings page enhancements (dropdown & info)
+-   asynchronous preset loading (and added "pd" JSON API call for direct preset apply)
+-   new usermod Boblight (PR #2917)
+-   new usermod PWM Outputs (PR #2912)
+-   new usermod Audioreactive
+-   new usermod Word Clock Matrix (PR #2743)
+-   new usermod Ping Pong Clock (PR #2746)
+-   new usermod ADS1115 (PR #2752)
+-   new usermod Analog Clock (PR #2736)
+-   various usermod enhancements and updates
+-   allow disabling pull-up resistors on buttons
+-   SD card support (PR #2877)
+-   enhanced HTTP API to support custom effect sliders & options (X1, X2, X3, M1, M2, M3)
+-   network debug printer (PR #2870)
+-   automatic UI PC mode on large displays
+-   removed support for upgrading from pre-0.10 (EEPROM)
+-   support for setting GPIO level when LEDs are off (RMT idle level, ESP32 only) (PR #2478)
+-   Pakistan time-zone (PKT)
+-   ArtPoll support
+-   TM1829 LED support
+-   experimental support for ESP32 S2, S3 and C3
+-   general improvements and bugfixes
 
 ### WLED release 0.13.3
 

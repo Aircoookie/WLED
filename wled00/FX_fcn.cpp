@@ -893,7 +893,7 @@ void Segment::blur(uint8_t blur_amount)
  * The colours are a transition r -> g -> b -> back to r
  * Inspired by the Adafruit examples.
  */
-uint32_t Segment::color_wheel(uint8_t pos) { // TODO
+uint32_t Segment::color_wheel(uint8_t pos) {
   if (palette) return color_from_palette(pos, false, true, 0);
   pos = 255 - pos;
   if(pos < 85) {
