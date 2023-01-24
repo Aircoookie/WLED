@@ -5887,10 +5887,8 @@ uint16_t mode_2Dscrollingtext(void) {
     ++SEGENV.aux1 &= 0xFF; // color shift
     SEGENV.step = millis() + map(SEGMENT.speed, 0, 255, 10*FRAMETIME_FIXED, 2*FRAMETIME_FIXED);
     if (!SEGMENT.check2) {
-      // we need it 3 times
-      SEGMENT.fade_out(255 - (SEGMENT.custom1>>5)); // fade to background color
-      SEGMENT.fade_out(255 - (SEGMENT.custom1>>5)); // fade to background color
-      SEGMENT.fade_out(255 - (SEGMENT.custom1>>5)); // fade to background color
+      for (int y = 0; y < rows; y++) for (int x = 0; x < cols; x++ )
+        SEGMENT.blendPixelColorXY(x, y, SEGCOLOR(1), 255 - (SEGMENT.custom1>>1));
     }
   }
   for (int i = 0; i < numberOfLetters; i++) {
