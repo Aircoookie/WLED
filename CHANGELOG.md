@@ -20,6 +20,7 @@
 -   usermod enhancements (PIR, Temperature, Battery (PR #2975), Analog Clock (PR #2993))
 -   new usermod SHT (PR #2963)
 -   2D matrix set up with gaps or irregular panels (breaking change!) (PR #2892)
+-   palette blending/transitions
 -   random palette smooth changes
 -   hex color notations in custom palettes
 -   allow more virtual buses
@@ -34,6 +35,7 @@
 -   [internal] completely rewritten Segment & WS2812FX handling code
 -   [internal] ability to add custom effects via usermods
 -   [internal] set of 2D drawing functions
+-   transitions on every segment (including ESP8266)
 -   enhanced old and new 2D effects (metadata: default values)
 -   custom palettes (up to 10; upload palette0.json, palette1.json, ...)
 -   custom effect sliders and options, quick filters
@@ -51,6 +53,7 @@
 -   allow disabling pull-up resistors on buttons
 -   SD card support (PR #2877)
 -   enhanced HTTP API to support custom effect sliders & options (X1, X2, X3, M1, M2, M3)
+-   multiple UDP sync message retries (PR #2830)
 -   network debug printer (PR #2870)
 -   automatic UI PC mode on large displays
 -   removed support for upgrading from pre-0.10 (EEPROM)
