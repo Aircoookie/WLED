@@ -31,35 +31,26 @@
 
 //The SCL and SDA pins are defined here. 
 #ifndef FLD_PIN_SCL
-  #define FLD_PIN_SCL i2c_scl
+  #define FLD_PIN_SCL -1
 #endif
 #ifndef FLD_PIN_SDA
-  #define FLD_PIN_SDA i2c_sda
+  #define FLD_PIN_SDA -1
 #endif
 #ifndef FLD_PIN_CLOCKSPI
-  #define FLD_PIN_CLOCKSPI spi_sclk
+  #define FLD_PIN_CLOCKSPI -1
 #endif
-  #ifndef FLD_PIN_MOSISPI //WLEDMM renamed from HW_PIN_DATASPI
-  #define FLD_PIN_MOSISPI spi_mosi
+#ifndef FLD_PIN_MOSISPI //WLEDMM renamed from HW_PIN_DATASPI
+  #define FLD_PIN_MOSISPI -1
 #endif   
 #ifndef FLD_PIN_CS
-  #define FLD_PIN_CS spi_cs
+  #define FLD_PIN_CS -1
 #endif
 
-#ifdef ARDUINO_ARCH_ESP32
-  #ifndef FLD_PIN_DC
-    #define FLD_PIN_DC 19
-  #endif
-  #ifndef FLD_PIN_RESET
-    #define FLD_PIN_RESET 26
-  #endif
-#else
-  #ifndef FLD_PIN_DC
-    #define FLD_PIN_DC 12
-  #endif
-  #ifndef FLD_PIN_RESET
-    #define FLD_PIN_RESET 16
-  #endif
+#ifndef FLD_PIN_DC
+  #define FLD_PIN_DC -1
+#endif
+#ifndef FLD_PIN_RESET
+  #define FLD_PIN_RESET -1
 #endif
 
 #ifndef FLD_TYPE
@@ -1064,27 +1055,42 @@ class FourLineDisplayUsermod : public Usermod {
       bool isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64);
       // WLEDMM add defaults
       oappend(SET_F("addInfo('4LineDisplay:pin[]',0,'','I2C/SPI CLK');"));
-      oappend(SET_F("dRO('4LineDisplay:pin[]',0);")); 
-    #ifdef FLD_PIN_SCL
-      oappend(SET_F("xOpt('4LineDisplay:pin[]',0,' ⎌',")); oappendi(FLD_PIN_SCL); oappend(");"); 
-    #endif
+      oappend(SET_F("dRO('4LineDisplay:pin[]',0);")); // disable read only pins
       if (isSPI) {
         oappend(SET_F("rOpt('4LineDisplay:pin[]',0,'use global (")); oappendi(spi_sclk); oappend(")',-1);"); 
+        #ifdef FLD_PIN_CLOCKSPI
+          oappend(SET_F("xOpt('4LineDisplay:pin[]',0,' ⎌',")); oappendi(FLD_PIN_CLOCKSPI); oappend(");"); 
+        #endif
       } else {
         oappend(SET_F("rOpt('4LineDisplay:pin[]',0,'use global (")); oappendi(i2c_scl); oappend(")',-1);"); 
+        #ifdef FLD_PIN_SCL
+          oappend(SET_F("xOpt('4LineDisplay:pin[]',0,' ⎌',")); oappendi(FLD_PIN_SCL); oappend(");"); 
+        #endif
       }
       oappend(SET_F("addInfo('4LineDisplay:pin[]',1,'','I2C/SPI DTA');"));
-    #ifdef FLD_PIN_SDA
-      oappend(SET_F("xOpt('4LineDisplay:pin[]',1,' ⎌',")); oappendi(FLD_PIN_SDA); oappend(");"); 
-    #endif
       if (isSPI) {
         oappend(SET_F("rOpt('4LineDisplay:pin[]',1,'use global (")); oappendi(spi_mosi); oappend(")',-1);"); 
+        #ifdef FLD_PIN_MOSISPI
+          oappend(SET_F("xOpt('4LineDisplay:pin[]',1,' ⎌',")); oappendi(FLD_PIN_MOSISPI); oappend(");"); 
+        #endif
       } else {
         oappend(SET_F("rOpt('4LineDisplay:pin[]',1,'use global (")); oappendi(i2c_sda); oappend(")',-1);"); 
+        #ifdef FLD_PIN_SDA
+          oappend(SET_F("xOpt('4LineDisplay:pin[]',1,' ⎌',")); oappendi(FLD_PIN_SDA); oappend(");"); 
+        #endif
       }
       oappend(SET_F("addInfo('4LineDisplay:pin[]',2,'','SPI CS');"));
+      #ifdef FLD_PIN_CS
+        oappend(SET_F("xOpt('4LineDisplay:pin[]',2,' ⎌',")); oappendi(FLD_PIN_CS); oappend(");"); 
+      #endif
       oappend(SET_F("addInfo('4LineDisplay:pin[]',3,'','SPI DC');"));
+      #ifdef FLD_PIN_DC
+        oappend(SET_F("xOpt('4LineDisplay:pin[]',3,' ⎌',")); oappendi(FLD_PIN_DC); oappend(");"); 
+      #endif
       oappend(SET_F("addInfo('4LineDisplay:pin[]',4,'','SPI RST');"));
+      #ifdef FLD_PIN_RESET
+        oappend(SET_F("xOpt('4LineDisplay:pin[]',4,' ⎌',")); oappendi(FLD_PIN_RESET); oappend(");"); 
+      #endif
 
       //WLEDMM add errorMessage to um settings
       if (strcmp(errorMessage, "") != 0) {
