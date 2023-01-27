@@ -350,6 +350,7 @@ void initServer()
   });
   #endif
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    USER_PRINTF("Client request\n"); //WLEDMM: want to see if client connects to wled
     if (captivePortal(request)) return;
     serveIndexOrWelcome(request);
   });

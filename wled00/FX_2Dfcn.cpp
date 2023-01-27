@@ -41,6 +41,7 @@ void WS2812FX::setUpMatrix(bool reset) {
     if (customMappingTable != nullptr) delete[] customMappingTable;
     customMappingTable = nullptr;
     customMappingSize = 0;
+    loadedLedmap = -1;
   }
 
   // isMatrix is set in cfg.cpp or set.cpp
@@ -58,34 +59,34 @@ void WS2812FX::setUpMatrix(bool reset) {
       }
     }
 
-    // safety check
-    if (Segment::maxWidth * Segment::maxHeight > MAX_LEDS || Segment::maxWidth <= 1 || Segment::maxHeight <= 1) {
-      DEBUG_PRINTLN(F("2D Bounds error."));
-      isMatrix = false;
-      Segment::maxWidth = _length;
-      Segment::maxHeight = 1;
-      panels = 0;
-      panel.clear(); // release memory allocated by panels
-      resetSegments();
-      return;
-    }
-
     if (reset) { //WLEDMM: add reset option to switch on/off reset of customMappingTable
-      customMappingTable = new uint16_t[Segment::maxWidth * Segment::maxHeight];
-      //WLEDMM: init customMappingTable with a 1:1 mapping (for customMappingTable[customMappingTable[x]])
-      for (uint16_t i=0; i<Segment::maxWidth * Segment::maxHeight; i++) {
-        customMappingTable[i] = i;
+      // safety check
+      if (Segment::maxWidth * Segment::maxHeight > MAX_LEDS || Segment::maxWidth <= 1 || Segment::maxHeight <= 1) {
+        DEBUG_PRINTLN(F("2D Bounds error."));
+        isMatrix = false;
+        Segment::maxWidth = _length;
+        Segment::maxHeight = 1;
+        panels = 0;
+        panel.clear(); // release memory allocated by panels
+        resetSegments();
+        return;
       }
+
+      customMappingTable = new uint16_t[Segment::maxWidth * Segment::maxHeight];
     }
 
     if (customMappingTable != nullptr) {
       customMappingSize = Segment::maxWidth * Segment::maxHeight;
 
-      //WLEDMM: Comment this as we initialize with cmt[i]=i
       // fill with empty in case we don't fill the entire matrix
-      // for (size_t i = 0; i< customMappingSize; i++) {
-      //   customMappingTable[i] = (uint16_t)-1;
-      // }
+      if (loadedLedmap <= 0) //WLEDMM: only if no ledmap
+        for (size_t i = 0; i< customMappingSize; i++) {
+          customMappingTable[i] = (uint16_t)-1;
+        }
+
+      uint16_t *customMappingTableLedMap = nullptr; //WLEDMM: Idea @Troy#2642
+      if (loadedLedmap > 0)
+        customMappingTableLedMap = new uint16_t[customMappingSize];
 
       uint16_t x, y, pix=0; //pixel
       for (size_t pan = 0; pan < panel.size(); pan++) {
@@ -97,10 +98,18 @@ void WS2812FX::setUpMatrix(bool reset) {
             y = (p.vertical?p.rightStart:p.bottomStart) ? v-j-1 : j;
             x = (p.vertical?p.bottomStart:p.rightStart) ? h-i-1 : i;
             x = p.serpentine && j%2 ? h-x-1 : x;
-            customMappingTable[customMappingTable[(p.yOffset + (p.vertical?x:y)) * Segment::maxWidth + p.xOffset + (p.vertical?y:x)]] = pix; //WLEDMM: allow for 2 transitions if reset = false (ledmap and logical to physical)
+            if (loadedLedmap > 0)
+              customMappingTableLedMap[customMappingTable[(p.yOffset + (p.vertical?x:y)) * Segment::maxWidth + p.xOffset + (p.vertical?y:x)]] = pix; //WLEDMM: allow for 2 transitions if reset = false (ledmap and logical to physical)
+            else
+              customMappingTable[(p.yOffset + (p.vertical?x:y)) * Segment::maxWidth + p.xOffset + (p.vertical?y:x)] = pix; //WLEDMM: allow for 2 transitions if reset = false (ledmap and logical to physical)
           }
         }
       }
+
+      if (loadedLedmap > 0)
+        for (size_t i = 0; i < customMappingSize; i++) {
+          customMappingTable[i] = customMappingTableLedMap[i];
+        }
 
       #ifdef WLED_DEBUG
       DEBUG_PRINT(F("Matrix ledmap:"));
@@ -118,7 +127,7 @@ void WS2812FX::setUpMatrix(bool reset) {
       Segment::maxWidth = _length;
       Segment::maxHeight = 1;
     }
-    resetSegments();
+    if (reset) resetSegments(); //WLEDMM: only if reset
   }
 #else
   isMatrix = false; // no matter what config says

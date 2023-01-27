@@ -1898,6 +1898,7 @@ void WS2812FX::deserializeMap(uint8_t n) {
         customMappingSize = 0;
         delete[] customMappingTable;
         customMappingTable = nullptr;
+        loadedLedmap = -1;
       }
     }
     return;
@@ -1918,6 +1919,7 @@ void WS2812FX::deserializeMap(uint8_t n) {
     customMappingSize = 0;
     delete[] customMappingTable;
     customMappingTable = nullptr;
+    loadedLedmap = -1;
   }
 
   JsonArray map = doc[F("map")];
@@ -1933,6 +1935,7 @@ void WS2812FX::deserializeMap(uint8_t n) {
     for (uint16_t i=0; i<MIN(map.size(),customMappingSize); i++) {
       customMappingTable[i] = (uint16_t) map[i];
     }
+    loadedLedmap = n;
     setUpMatrix(false); //WLEDMM: apply logical to physical mapping after the ledmap
   }
   else 
