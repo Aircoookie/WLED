@@ -74,8 +74,13 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
     dmxChannels = htons(p->property_value_count) -1;
     e131_data = p->property_values;
     seq = p->sequence_number;
-    // skip packages != e131 config priority
-    if (e131Priority != 0 && p->priority != e131Priority) return;
+    if (e131Priority != 0) {
+      // track lastest e131 package priority ..
+      if (p->priority >= lastPriority.get()) lastPriority.set(p->priority);
+      // skip packages < lastest priority or < e131 config priority
+      if (p->priority < lastPriority.get() || p->priority < e131Priority) return;
+      // Note: HTP for multiple senders with same priority is not implemented!
+    }
   } else { //DDP
     realtimeIP = clientIP;
     handleDDPPacket(p);
