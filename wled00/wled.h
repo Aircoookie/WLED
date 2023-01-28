@@ -404,7 +404,7 @@ WLED_GLOBAL uint16_t e131ProxyUniverse _INIT(0);                  // output this
 WLED_GLOBAL uint16_t e131Universe _INIT(1);                       // settings for E1.31 (sACN) protocol (only DMX_MODE_MULTIPLE_* can span over consequtive universes)
 WLED_GLOBAL uint16_t e131Port _INIT(5568);                        // DMX in port. E1.31 default is 5568, Art-Net is 6454
 WLED_GLOBAL byte e131Priority _INIT(0);                           // E1.31 port priority (if != 0 priority handling is active)
-WLED_GLOBAL E131Priority lastPriority _INIT(3);                   // E1.31 priority tracking timeout, init value = timeout in seconds
+WLED_GLOBAL E131Priority lastPriority _INIT(3);                   // E1.31 latest priority tracking, init = timeout in seconds
 WLED_GLOBAL byte DMXMode _INIT(DMX_MODE_MULTIPLE_RGB);            // DMX mode (s.a.)
 WLED_GLOBAL uint16_t DMXAddress _INIT(1);                         // DMX start address of fixture, a.k.a. first Channel [for E1.31 (sACN) protocol]
 WLED_GLOBAL uint16_t DMXSegmentSpacing _INIT(0);                  // Number of void/unused channels between each segments DMX channels
