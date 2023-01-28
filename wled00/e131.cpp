@@ -77,9 +77,8 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
     if (e131Priority != 0) {
       // track lastest e131 package priority ..
       if (p->priority >= lastPriority.get()) lastPriority.set(p->priority);
-      // skip packages < lastest priority or < e131 config priority
-      if (p->priority < lastPriority.get() || p->priority < e131Priority) return;
-      // Note: HTP for multiple senders with same priority is not implemented!
+      // skip packages < e131 config priority or < lastest priority
+      if (p->priority < e131Priority || p->priority < lastPriority.get()) return;
     }
   } else { //DDP
     realtimeIP = clientIP;

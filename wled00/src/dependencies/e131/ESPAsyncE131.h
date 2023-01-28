@@ -247,9 +247,9 @@ class E131Priority {
       priority = prio;
     }
 
-    // Get priority (+ reset to default if older timeout)
-    uint8_t get(uint8_t defaultPrio=0) {
-      if (time(0) > setupTime + seconds) priority = defaultPrio;
+    // Get priority (+ reset & return 0 if older timeout)
+    uint8_t get() {
+      if (time(0) > setupTime + seconds) priority = 0;
       return priority;
     }
 };
