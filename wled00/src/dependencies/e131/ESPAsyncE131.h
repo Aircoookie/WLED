@@ -233,10 +233,10 @@ class E131Priority {
   private:
     uint8_t priority;
     time_t setupTime;
-    uint16_t seconds;
+    uint8_t seconds;
   
   public:
-    E131Priority(uint16_t timeout=3) { 
+    E131Priority(uint8_t timeout=3) { 
       seconds = timeout;
       set(0);
     };
