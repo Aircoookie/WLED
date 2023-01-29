@@ -29,7 +29,11 @@
 #include "fcn_declare.h"
 
 #define IBN 5100
-#define PALETTE_SOLID_WRAP (strip.paletteBlend == 1 || strip.paletteBlend == 3)
+
+// paletteBlend: 0 - wrap when moving, 1 - always wrap, 2 - never wrap, 3 - none (undefined)
+#define PALETTE_SOLID_WRAP   (strip.paletteBlend == 1 || strip.paletteBlend == 3)
+#define PALETTE_MOVING_WRAP !(strip.paletteBlend == 2 || (strip.paletteBlend == 0 && SEGMENT.speed == 0))
+
 #define indexToVStrip(index, stripNr) ((index) | (int((stripNr)+1)<<16))
 
 // effect utility functions
@@ -1923,11 +1927,10 @@ uint16_t mode_palette() {
     counter = counter >> 8;
   }
 
-  bool noWrap = (strip.paletteBlend == 2 || (strip.paletteBlend == 0 && SEGMENT.speed == 0));
   for (int i = 0; i < SEGLEN; i++)
   {
     uint8_t colorIndex = (i * 255 / SEGLEN) - counter;
-    SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(colorIndex, false, noWrap, 255));
+    SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(colorIndex, false, PALETTE_MOVING_WRAP, 255));
   }
 
   return FRAMETIME;
