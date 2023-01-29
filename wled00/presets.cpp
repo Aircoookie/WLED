@@ -210,7 +210,7 @@ void savePreset(byte index, const char* pname, JsonObject sObj)
   } else {
     // this is a playlist or API call
     if (sObj[F("playlist")].isNull()) {
-      // we will save API call immediately
+      // we will save API call immediately (often causes presets.json corruption)
       presetToSave = 0;
       if (index > 250 || !fileDoc) return; // cannot save API calls to temporary preset (255)
       sObj.remove("o");
@@ -220,11 +220,12 @@ void savePreset(byte index, const char* pname, JsonObject sObj)
       sObj.remove(F("psave"));
       if (sObj["n"].isNull()) sObj["n"] = saveName;
       initPresetsFile(); // just in case if someone deleted presets.json using /edit
-      writeObjectToFileUsingId(getFileName(index), index, fileDoc);
+      writeObjectToFileUsingId(getFileName(index<255), index, fileDoc);
       presetsModifiedTime = toki.second(); //unix time
       updateFSInfo();
     } else {
       // store playlist
+      // WARNING: playlist will be loaded in json.cpp after this call and will have repeat counter increased by 1
       includeBri   = true; // !sObj["on"].isNull();
       playlistSave = true;
     }
