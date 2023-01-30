@@ -2051,7 +2051,7 @@ function setSeg(s)
 	var start = parseInt(sX.value);
 	var stop = parseInt(eX.value) + (cfg.comp.seglen?start:0);
 	if (start<sX.min || start>sX.max) {sX.value=sX.min; return;} // prevent out of bounds
-	if (stop<eX.min || stop>eX.max) {eX.value=eX.max; return;} // prevent out of bounds
+	if (stop<eX.min || stop-(cfg.comp.seglen?start:0)>eX.max) {eX.value=eX.max; return;} // prevent out of bounds
 	if ((cfg.comp.seglen && stop == 0) || (!cfg.comp.seglen && stop <= start)) {delSeg(s); return;}
 	var obj = {"seg": {"id": s, "n": name, "start": start, "stop": stop}};
 	if (isM && start<mw*mh) {
