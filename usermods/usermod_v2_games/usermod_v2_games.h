@@ -207,7 +207,7 @@ uint16_t mode_IMUTest(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_IMUTest[] PROGMEM = "🎮 IMUTest@;;;2d";
+static const char _data_FX_MODE_IMUTest[] PROGMEM = "🎮 IMUTest ☾@;;;2d";
 
 #endif
 
@@ -319,7 +319,7 @@ uint16_t mode_3DIMUCube(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_3DIMUCube[] PROGMEM = "🎮 3DIMUCube@,Perspective;!;!;2;pal=1"; //random cycle
+static const char _data_FX_MODE_3DIMUCube[] PROGMEM = "🎮 3DIMUCube ☾@,Perspective;!;!;2;pal=1"; //random cycle
 
 class GamesUsermod : public Usermod {
   private:

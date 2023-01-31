@@ -99,7 +99,7 @@ uint16_t mode_customEffect(void) {
   return FRAMETIME;
 }
 
-static const char _data_FX_MODE_CUSTOMEFFECT[] PROGMEM = "⚙️ Custom Effect@Speed,Intensity,Custom 1, Custom 2, Custom 3;!;!;1;mp12=0";
+static const char _data_FX_MODE_CUSTOMEFFECT[] PROGMEM = "⚙️ Custom Effect ☾@Speed,Intensity,Custom 1, Custom 2, Custom 3;!;!;1;mp12=0";
 
 class CustomEffectsUserMod : public Usermod {
   private:

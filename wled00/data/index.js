@@ -755,7 +755,7 @@ function populateSegments(s)
 		</div>`;
 		//WLEDMM Custom Effects
 		let fxName = eJson.find((o)=>{return o.id==selectedFx}).name;
-		let cusEff = `<button class="btn" onclick="toggleCEEditor('${inst.n?inst.n:"default"}', ${i})">Custom Effect Editor</button><br>`;
+		let cusEff = `<button class="btn" onclick="toggleCEEditor('${inst.n?inst.n:"default"}', ${i})">Custom Effect Editor ☾</button><br>`;
 		cn += `<div class="seg lstI ${i==s.mainseg ? 'selected' : ''} ${exp ? "expanded":""}" id="seg${i}">
 	<label class="check schkl">
 		<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>

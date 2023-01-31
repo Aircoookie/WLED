@@ -247,6 +247,26 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
         _lastPaletteChange = millis();
         timeSinceLastChange = 0;
       }
+
+      //WLEDMM: smooth transitions of palettes instead of every 5 sec with short transition
+      for (int i=0; i< 16; i++) {
+        targetPalette[i].r = prevRandomPalette[i].r*(5000-timeSinceLastChange)/5000 + randomPalette[i].r*timeSinceLastChange/5000;
+        targetPalette[i].g = prevRandomPalette[i].g*(5000-timeSinceLastChange)/5000 + randomPalette[i].g*timeSinceLastChange/5000;
+        targetPalette[i].b = prevRandomPalette[i].b*(5000-timeSinceLastChange)/5000 + randomPalette[i].b*timeSinceLastChange/5000;
+      }
+      break;}
+    case 73: {//periodically replace palette with a random one. Transition palette change in 500ms
+      uint32_t timeSinceLastChange = millis() - _lastPaletteChange;
+      if (timeSinceLastChange > 5000 /*+ ((uint32_t)(255-intensity))*100*/) {
+        prevRandomPalette = randomPalette;
+        randomPalette = CRGBPalette16(
+                        CHSV(random8(), random8(160, 255), random8(128, 255)),
+                        CHSV(random8(), random8(160, 255), random8(128, 255)),
+                        CHSV(random8(), random8(160, 255), random8(128, 255)),
+                        CHSV(random8(), random8(160, 255), random8(128, 255)));
+        _lastPaletteChange = millis();
+        timeSinceLastChange = 0;
+      }
       if (timeSinceLastChange <= 250) {
         targetPalette = prevRandomPalette;
         // there needs to be 255 palette blends (48) for full blend but that is too resource intensive
@@ -1955,12 +1975,12 @@ uint8_t Bus::_gAWM = 255;
 const char JSON_mode_names[] PROGMEM = R"=====(["FX names moved"])=====";
  //WLEDMM netmindz ar palette add Audio responsive
 const char JSON_palette_names[] PROGMEM = R"=====([
-"Default","* Random Cycle","* Color 1","* Colors 1&2","* Color Gradient","* Colors Only","Party","Cloud","Lava","Ocean",
+"Default","* Random Cycle ☾","* Color 1","* Colors 1&2","* Color Gradient","* Colors Only","Party","Cloud","Lava","Ocean",
 "Forest","Rainbow","Rainbow Bands","Sunset","Rivendell","Breeze","Red & Blue","Yellowout","Analogous","Splash",
 "Pastel","Sunset 2","Beach","Vintage","Departure","Landscape","Beech","Sherbet","Hult","Hult 64",
 "Drywet","Jul","Grintage","Rewhi","Tertiary","Fire","Icefire","Cyane","Light Pink","Autumn",
 "Magenta","Magred","Yelmag","Yelblu","Orange & Teal","Tiamat","April Night","Orangery","C9","Sakura",
 "Aurora","Atlantica","C9 2","C9 New","Temperature","Aurora 2","Retro Clown","Candy","Toxy Reaf","Fairy Reaf",
 "Semi Blue","Pink Candy","Red Reaf","Aqua Flash","Yelblu Hot","Lite Light","Red Flash","Blink Red","Red Shift","Red Tide",
-"Candy2","Audio Responsive Ratio","Audio Responsive Hue"
+"Candy2","Audio Responsive Ratio ☾","Audio Responsive Hue ☾","* Random Cycle 💡"
 ])=====";

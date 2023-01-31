@@ -1107,7 +1107,7 @@ uint16_t mode_running_random(void) {
   SEGENV.aux1 = it;
   return FRAMETIME;
 }
-static const char _data_FX_MODE_RUNNING_RANDOM[] PROGMEM = "Stream@!,Zone size;;!";
+static const char _data_FX_MODE_RUNNING_RANDOM[] PROGMEM = "Stream ☾@!,Zone size;;!";
 
 
 uint16_t larson_scanner(bool dual) {
@@ -1741,7 +1741,7 @@ uint16_t mode_random_chase(void) {
   random16_set_seed(prevSeed); // restore original seed so other effects can use "random" PRNG
   return FRAMETIME;
 }
-static const char _data_FX_MODE_RANDOM_CHASE[] PROGMEM = "Stream 2@!;;";
+static const char _data_FX_MODE_RANDOM_CHASE[] PROGMEM = "Stream 2 ☾@!;;";
 
 
 //7 bytes
@@ -4925,7 +4925,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
 
   return FRAMETIME;
 } // mode_2Dgameoflife()
-static const char _data_FX_MODE_2DGAMEOFLIFE[] PROGMEM = "Game Of Life@!,,,,,All colors=0;!,!;!;2"; //WLEDMM support all colors
+static const char _data_FX_MODE_2DGAMEOFLIFE[] PROGMEM = "Game Of Life@!,,,,,All colors ☾;!,!;!;2;c1=0"; //WLEDMM support all colors
 
 
 /////////////////////////
@@ -5092,7 +5092,7 @@ uint16_t mode_2DLissajous(void) {            // By: Andrew Tuline
 
   return FRAMETIME;
 } // mode_2DLissajous()
-static const char _data_FX_MODE_2DLISSAJOUS[] PROGMEM = "Lissajous@X frequency,Fade rate;!;!;2";
+static const char _data_FX_MODE_2DLISSAJOUS[] PROGMEM = "Lissajous ☾@X frequency,Fade rate;!;!;2";
 
 
 ///////////////////////
@@ -6144,7 +6144,7 @@ uint16_t mode_2DWaverly(void) {
 
   return FRAMETIME;
 } // mode_2DWaverly()
-static const char _data_FX_MODE_2DWAVERLY[] PROGMEM = "Waverly@Amplification,Sensitivity;;!;2v;ix=64,si=0"; // Beatsin
+static const char _data_FX_MODE_2DWAVERLY[] PROGMEM = "Waverly ☾@Amplification,Sensitivity;;!;2v;ix=64,si=0"; // Beatsin
 
 #endif // WLED_DISABLE_2D
 
@@ -7159,7 +7159,7 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
 #endif
   return FRAMETIME;
 } // mode_2DGEQ()
-static const char _data_FX_MODE_2DGEQ[] PROGMEM = "GEQ@Fade speed,Ripple decay,# of bands,,,Color bars;!,,Peaks;!;2f;c1=255,c2=64,pal=11,si=0"; // Beatsin
+static const char _data_FX_MODE_2DGEQ[] PROGMEM = "GEQ ☾@Fade speed,Ripple decay,# of bands,,,Color bars;!,,Peaks;!;2f;c1=255,c2=64,pal=11,si=0"; // Beatsin
 
 
 /////////////////////////

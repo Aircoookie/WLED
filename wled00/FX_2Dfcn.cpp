@@ -106,10 +106,12 @@ void WS2812FX::setUpMatrix(bool reset) {
         }
       }
 
-      if (loadedLedmap > 0)
+      if (loadedLedmap > 0) {
         for (size_t i = 0; i < customMappingSize; i++) {
           customMappingTable[i] = customMappingTableLedMap[i];
         }
+        delete[] customMappingTableLedMap;
+      }
 
       #ifdef WLED_DEBUG
       DEBUG_PRINT(F("Matrix ledmap:"));
