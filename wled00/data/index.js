@@ -713,7 +713,7 @@ function populateSegments(s)
 		let rvXck = `<label class="check revchkl">Reverse ${isM?'':'direction'}<input type="checkbox" id="seg${i}rev" onchange="setRev(${i})" ${inst.rev?"checked":""}><span class="checkmark"></span></label>`;
 		let miXck = `<label class="check revchkl">Mirror<input type="checkbox" id="seg${i}mi" onchange="setMi(${i})" ${inst.mi?"checked":""}><span class="checkmark"></span></label>`;
 		let rvYck = "", miYck ="";
-		if (isM) {
+		if (isM && staX<mw*mh) {
 			rvYck = `<label class="check revchkl">Reverse<input type="checkbox" id="seg${i}rY" onchange="setRevY(${i})" ${inst.rY?"checked":""}><span class="checkmark"></span></label>`;
 			miYck = `<label class="check revchkl">Mirror<input type="checkbox" id="seg${i}mY" onchange="setMiY(${i})" ${inst.mY?"checked":""}><span class="checkmark"></span></label>`;
 		}
@@ -749,19 +749,19 @@ function populateSegments(s)
 		<input type="text" class="ptxt noslide" id="seg${i}t" autocomplete="off" maxlength=32 value="${inst.n?inst.n:""}" placeholder="Enter name..."/>
 		<table class="infot segt">
 		<tr>
-			<td>${isM?'Start X':'Start LED'}</td>
-			<td>${isM?(cfg.comp.seglen?"Width":"Stop X"):(cfg.comp.seglen?"LED count":"Stop LED")}</td>
-			<td>${isM?'':'Offset'}</td>
+			<td>${isM&&staX<mw*mh?'Start X':'Start LED'}</td>
+			<td>${isM&&staX<mw*mh?(cfg.comp.seglen?"Width":"Stop X"):(cfg.comp.seglen?"LED count":"Stop LED")}</td>
+			<td>${isM&&staX<mw*mh?'':'Offset'}</td>
 		</tr>
 		<tr>
-			<td><input class="noslide segn" id="seg${i}s" type="number" min="0" max="${(isM?mw:ledCount)-1}" value="${staX}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
-			<td><input class="noslide segn" id="seg${i}e" type="number" min="0" max="${(isM?mw:ledCount)-(cfg.comp.seglen?staX:0)}" value="${stoX-(cfg.comp.seglen?staX:0)}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
-			<td style="text-align:revert;">${isM?miXck+'<br>'+rvXck:''}<input class="noslide segn ${isM?'hide':''}" id="seg${i}of" type="number" value="${inst.of}" oninput="updateLen(${i})"></td>
+			<td><input class="noslide segn" id="seg${i}s" type="number" min="0" max="${(isM&&staX<mw*mh?mw:ledCount)-1}" value="${staX}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
+			<td><input class="noslide segn" id="seg${i}e" type="number" min="0" max="${(isM&&staX<mw*mh?mw:ledCount)}" value="${stoX-(cfg.comp.seglen?staX:0)}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
+			<td style="text-align:revert;">${isM&&staX<mw*mh?miXck+'<br>'+rvXck:''}<input class="noslide segn ${isM&&staX<mw*mh?'hide':''}" id="seg${i}of" type="number" value="${inst.of}" oninput="updateLen(${i})"></td>
 		</tr>
-		${isM ? '<tr><td>Start Y</td><td>'+(cfg.comp.seglen?'Height':'Stop Y')+'</td><td></td></tr>'+
+		${isM&&staX<mw*mh ? '<tr><td>Start Y</td><td>'+(cfg.comp.seglen?'Height':'Stop Y')+'</td><td></td></tr>'+
 		'<tr>'+
 			'<td><input class="noslide segn" id="seg'+i+'sY" type="number" min="0" max="'+(mh-1)+'" value="'+staY+'" oninput="updateLen('+i+')" onkeydown="segEnter('+i+')"></td>'+
-			'<td><input class="noslide segn" id="seg'+i+'eY" type="number" min="0" max="'+(mh-(cfg.comp.seglen?staY:0))+'" value="'+(stoY-(cfg.comp.seglen?staY:0))+'" oninput="updateLen('+i+')" onkeydown="segEnter('+i+')"></td>'+
+			'<td><input class="noslide segn" id="seg'+i+'eY" type="number" min="0" max="'+mh+'" value="'+(stoY-(cfg.comp.seglen?staY:0))+'" oninput="updateLen('+i+')" onkeydown="segEnter('+i+')"></td>'+
 			'<td style="text-align:revert;">'+miYck+'<br>'+rvYck+'</td>'+
 		'</tr>':''}
 		<tr>
@@ -772,16 +772,17 @@ function populateSegments(s)
 		<tr>
 			<td><input class="noslide segn" id="seg${i}grp" type="number" min="1" max="255" value="${inst.grp}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
 			<td><input class="noslide segn" id="seg${i}spc" type="number" min="0" max="255" value="${inst.spc}" oninput="updateLen(${i})" onkeydown="segEnter(${i})"></td>
-			<td style="text-align:left;"><button class="btn btn-xs" onclick="setSeg(${i})"><i class="icons btn-icon" id="segc${i}">&#xe390;</i></button></td>
+			<td style="text-align:revert;"><button class="btn btn-xs" onclick="setSeg(${i})"><i class="icons btn-icon" id="segc${i}">&#xe390;</i></button></td>
 		</tr>
 		</table>
 		<div class="h bp" id="seg${i}len"></div>
-		${!isM?rvXck:''}
-		${isM&&stoY-staY>1&&stoX-staX>1?map2D:''}
+		${!(isM&&staX<mw*mh)?rvXck:''}
+		${isM&&staX<mw*mh&&stoY-staY>1&&stoX-staX>1?map2D:''}
 		${s.AudioReactive && s.AudioReactive.on ? "" : sndSim}
 		<label class="check revchkl" id="seg${i}lbtm">
-			${isM?'Transpose':'Mirror effect'}
-			<input type="checkbox" id="seg${i}${isM?'tp':'mi'}" onchange="${(isM?'setTp(':'setMi(')+i})" ${isM?(inst.tp?"checked":""):(inst.mi?"checked":"")}>
+			${isM&&staX<mw*mh?'Transpose':'Mirror effect'}${isM&&staX<mw*mh?
+			'<input type="checkbox" id="seg'+i+'tp" onchange="setTp('+i+')" '+(inst.tp?"checked":"")+'>':
+			'<input type="checkbox" id="seg'+i+'mi" onchange="setMi('+i+')" '+(inst.mi?"checked":"")+'>'}
 			<span class="checkmark"></span>
 		</label>
 		<div class="del">
@@ -1049,29 +1050,50 @@ function updateLen(s)
 	var start = parseInt(gId(`seg${s}s`).value);
 	var stop = parseInt(gId(`seg${s}e`).value) + (cfg.comp.seglen?start:0);
 	var len = stop - start;
+	let sY = gId(`seg${s}sY`);
+	let eY = gId(`seg${s}eY`);
+	let sX = gId(`seg${s}s`);
+	let eX = gId(`seg${s}e`);
+	let of = gId(`seg${s}of`);
+	let mySH = gId("mkSYH");
+	let mySD = gId("mkSYD");
 	if (isM) {
-		// matrix setup
-		let startY = parseInt(gId(`seg${s}sY`).value);
-		let stopY = parseInt(gId(`seg${s}eY`).value) + (cfg.comp.seglen?startY:0);
-		len *= (stopY-startY);
-		let tPL = gId(`seg${s}lbtm`);
-		if (stop-start>1 && stopY-startY>1) {
-			// 2D segment
-			if (tPL) tPL.classList.remove('hide'); // unhide transpose checkbox
-			let sE = gId('fxlist').querySelector(`.lstI[data-id="${selectedFx}"]`);
-			if (sE) {
-				let sN = sE.querySelector(".lstIname").innerText;
-				let seg = gId(`seg${s}map2D`);
-				if (seg) {
-					if(sN.indexOf("\u25A6")<0) seg.classList.remove('hide'); // unhide mapping for 1D effects (| in name)
-					else seg.classList.add('hide');	// hide mapping otherwise
-				}
-			}
+		// do we have 1D segment *after* the matrix?
+		if (start >= mw*mh) {
+			if (sY) { sY.value = 0; sY.max = 0; sY.min = 0; }
+			if (eY) { eY.value = 1; eY.max = 1; eY.min = 0; }
+			sX.min = mw*mh; sX.max = ledCount-1;
+			eX.min = mw*mh+1; eX.max = ledCount;
+			if (mySH) mySH.classList.add("hide");
+			if (mySD) mySD.classList.add("hide");
+			if (of) of.classList.remove("hide");
 		} else {
-			// 1D segment in 2D set-up
-			if (tPL) {
-				tPL.classList.add('hide'); // hide transpose checkbox
-				gId(`seg${s}tp`).checked = false;	// and uncheck it
+			// matrix setup
+			if (mySH) mySH.classList.remove("hide");
+			if (mySD) mySD.classList.remove("hide");
+			if (of) of.classList.add("hide");
+			let startY = parseInt(sY.value);
+			let stopY = parseInt(eY.value) + (cfg.comp.seglen?startY:0);
+			len *= (stopY-startY);
+			let tPL = gId(`seg${s}lbtm`);
+			if (stop-start>1 && stopY-startY>1) {
+				// 2D segment
+				if (tPL) tPL.classList.remove('hide'); // unhide transpose checkbox
+				let sE = gId('fxlist').querySelector(`.lstI[data-id="${selectedFx}"]`);
+				if (sE) {
+					let sN = sE.querySelector(".lstIname").innerText;
+					let seg = gId(`seg${s}map2D`);
+					if (seg) {
+						if(sN.indexOf("\u25A6")<0) seg.classList.remove('hide'); // unhide mapping for 1D effects (| in name)
+						else seg.classList.add('hide');	// hide mapping otherwise
+					}
+				}
+			} else {
+				// 1D segment in 2D set-up
+				if (tPL) {
+					tPL.classList.add('hide'); // hide transpose checkbox
+					gId(`seg${s}tp`).checked = false;	// and uncheck it
+				}
 			}
 		}
 	}
@@ -1090,6 +1112,7 @@ function updateLen(s)
 		var virt = Math.ceil(len/(grp + spc));
 		if (!isNaN(virt) && (grp > 1 || spc > 0)) out += ` (${virt} virtual)`;
 	}
+	if (isM && start >= mw*mh) out += " [strip]";
 
 	gId(`seg${s}len`).innerHTML = out;
 }
@@ -1692,11 +1715,11 @@ function makeSeg()
 				<td><input class="noslide segn" id="seg${lu}e" type="number" min="0" max="${ct}" value="${ct}" oninput="updateLen(${lu})" onkeydown="segEnter(${lu})"></td>
 				<td><button class="btn btn-xs" onclick="setSeg(${lu});"><i class="icons bth-icon" id="segc${lu}">&#xe390;</i></button></td>
 			</tr>
-			${isM ? '<tr><td>Start Y</td><td>'+(cfg.comp.seglen?'Height':'Stop Y')+'</td></tr>'+
-			'<tr>'+
-				'<td><input class="noslide segn" id="seg'+lu+'sY" type="number" min="0" max="'+(mh-1)+'" value="'+0+'" oninput="updateLen('+lu+')" onkeydown="segEnter('+lu+')"></td>'+
-				'<td><input class="noslide segn" id="seg'+lu+'eY" type="number" min="0" max="'+mh+'" value="'+mh+'" oninput="updateLen('+lu+')" onkeydown="segEnter('+lu+')"></td>'+
-			'</tr>':''}
+			<tr id="mkSYH" class="${isM?"":"hide"}"><td>Start Y</td><td>${cfg.comp.seglen?'Height':'Stop Y'}</td></tr>
+			<tr id="mkSYD" class="${isM?"":"hide"}">
+				<td><input class="noslide segn" id="seg${lu}sY" type="number" min="0" max="${mh-1}" value="0" oninput="updateLen(${lu})" onkeydown="segEnter(${lu})"></td>
+				<td><input class="noslide segn" id="seg${lu}eY" type="number" min="0" max="${mh}" value="${isM?mh:1}" oninput="updateLen(${lu})" onkeydown="segEnter(${lu})"></td>
+			</tr>
 		</table>
 		<div class="h" id="seg${lu}len">${ledCount - ns} LEDs</div>
 		<div class="c"><button class="btn btn-p" onclick="resetUtil()">Cancel</button></div>
@@ -2026,25 +2049,26 @@ function setSeg(s)
 	let sX = gId(`seg${s}s`);
 	let eX = gId(`seg${s}e`);
 	var start = parseInt(sX.value);
-	var stop = parseInt(eX.value);
+	var stop = parseInt(eX.value) + (cfg.comp.seglen?start:0);
 	if (start<sX.min || start>sX.max) {sX.value=sX.min; return;} // prevent out of bounds
-	if (stop<eX.min || stop>eX.max) {eX.value=eX.max; return;} // prevent out of bounds
+	if (stop<eX.min || stop-(cfg.comp.seglen?start:0)>eX.max) {eX.value=eX.max; return;} // prevent out of bounds
 	if ((cfg.comp.seglen && stop == 0) || (!cfg.comp.seglen && stop <= start)) {delSeg(s); return;}
-	var obj = {"seg": {"id": s, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop}};
-	if (isM) {
+	var obj = {"seg": {"id": s, "n": name, "start": start, "stop": stop}};
+	if (isM && start<mw*mh) {
 		let sY = gId(`seg${s}sY`);
 		let eY = gId(`seg${s}eY`);
 		var startY = parseInt(sY.value);
-		var stopY = parseInt(eY.value);
+		var stopY = parseInt(eY.value) + (cfg.comp.seglen?startY:0);
 		if (startY<sY.min || startY>sY.max) {sY.value=sY.min; return;} // prevent out of bounds
 		if (stopY<eY.min || stopY>eY.max) {eY.value=eY.max; return;} // prevent out of bounds
 		obj.seg.startY = startY;
-		obj.seg.stopY = (cfg.comp.seglen?startY:0)+stopY;
+		obj.seg.stopY = stopY;
 	}
-	if (gId(`seg${s}grp`)) { // advanced options, not present in new segment dialog (makeSeg())
-		var grp = parseInt(gId(`seg${s}grp`).value);
-		var spc = parseInt(gId(`seg${s}spc`).value);
-		var ofs = parseInt(gId(`seg${s}of` ).value);
+	let g = gId(`seg${s}grp`);
+	if (g) { // advanced options, not present in new segment dialog (makeSeg())
+		let grp = parseInt(g.value);
+		let spc = parseInt(gId(`seg${s}spc`).value);
+		let ofs = parseInt(gId(`seg${s}of` ).value);
 		obj.seg.grp = grp;
 		obj.seg.spc = spc;
 		obj.seg.of  = ofs;

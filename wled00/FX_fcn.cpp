@@ -393,8 +393,8 @@ void Segment::set(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t o
     markForReset();
     return;
   }
-  if (i1 < Segment::maxWidth) start = i1; // Segment::maxWidth equals strip.getLengthTotal() for 1D
-  stop = i2 > Segment::maxWidth ? Segment::maxWidth : MAX(1,i2);
+  if (i1 < Segment::maxWidth || (i1 >= Segment::maxWidth*Segment::maxHeight && i1 < strip.getLengthTotal())) start = i1; // Segment::maxWidth equals strip.getLengthTotal() for 1D
+  stop = i2 > Segment::maxWidth*Segment::maxHeight ? MIN(i2,strip.getLengthTotal()) : (i2 > Segment::maxWidth ? Segment::maxWidth : MAX(1,i2));
   startY = 0;
   stopY  = 1;
   #ifndef WLED_DISABLE_2D
@@ -600,12 +600,14 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
     }
     return;
   } else if (Segment::maxHeight!=1 && (width()==1 || height()==1)) {
-    // we have a vertical or horizontal 1D segment (WARNING: virtual...() may be transposed)
-    int x = 0, y = 0;
-    if (virtualHeight()>1) y = i;
-    if (virtualWidth() >1) x = i;
-    setPixelColorXY(x, y, col);
-    return;
+    if (start < Segment::maxWidth*Segment::maxHeight) {
+      // we have a vertical or horizontal 1D segment (WARNING: virtual...() may be transposed)
+      int x = 0, y = 0;
+      if (virtualHeight()>1) y = i;
+      if (virtualWidth() >1) x = i;
+      setPixelColorXY(x, y, col);
+      return;
+    }
   }
 #endif
 
@@ -1412,6 +1414,20 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
       _segments[i].spacing  = 0;
       _mainSegment = i;
     }
+    // do we have LEDs after the matrix? (ignore buses)
+    if (autoSegments && _length > Segment::maxWidth*Segment::maxHeight /*&& getActiveSegmentsNum() == 2*/) {
+      if (_segments.size() == getLastActiveSegmentId()+1)
+        _segments.push_back(Segment(Segment::maxWidth*Segment::maxHeight, _length));
+      else {
+        size_t i = getLastActiveSegmentId() + 1;
+        _segments[i].start  = Segment::maxWidth*Segment::maxHeight;
+        _segments[i].stop   = _length;
+        _segments[i].startY = 0;
+        _segments[i].stopY  = 1;
+        _segments[i].grouping = 1;
+        _segments[i].spacing  = 0;
+      }
+    }
     #endif
   } else if (autoSegments) { //make one segment per bus
     uint16_t segStarts[MAX_NUM_SEGMENTS] = {0};
@@ -1435,6 +1451,7 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
       s++;
     }
     _segments.clear();
+    _segments.reserve(s); // prevent reallocations
     for (size_t i = 0; i < s; i++) {
       Segment seg = Segment(segStarts[i], segStops[i]);
       seg.selected = true;
@@ -1482,8 +1499,7 @@ bool WS2812FX::checkSegmentAlignment() {
 //After this function is called, setPixelColor() will use that segment (offsets, grouping, ... will apply)
 //Note: If called in an interrupt (e.g. JSON API), original segment must be restored,
 //otherwise it can lead to a crash on ESP32 because _segment_index is modified while in use by the main thread
-uint8_t WS2812FX::setPixelSegment(uint8_t n)
-{
+uint8_t WS2812FX::setPixelSegment(uint8_t n) {
   uint8_t prevSegId = _segment_index;
   if (n < _segments.size()) {
     _segment_index = n;
@@ -1492,8 +1508,7 @@ uint8_t WS2812FX::setPixelSegment(uint8_t n)
   return prevSegId;
 }
 
-void WS2812FX::setRange(uint16_t i, uint16_t i2, uint32_t col)
-{
+void WS2812FX::setRange(uint16_t i, uint16_t i2, uint32_t col) {
   if (i2 >= i)
   {
     for (uint16_t x = i; x <= i2; x++) setPixelColor(x, col);
@@ -1503,14 +1518,12 @@ void WS2812FX::setRange(uint16_t i, uint16_t i2, uint32_t col)
   }
 }
 
-void WS2812FX::setTransitionMode(bool t)
-{
+void WS2812FX::setTransitionMode(bool t) {
   for (segment &seg : _segments) if (!seg.transitional) seg.startTransition(t ? _transitionDur : 0);
 }
 
 #ifdef WLED_DEBUG
-void WS2812FX::printSize()
-{
+void WS2812FX::printSize() {
   size_t size = 0;
   for (const Segment &seg : _segments) size += seg.getSize();
   DEBUG_PRINTF("Segments: %d -> %uB\n", _segments.size(), size);
@@ -1521,8 +1534,7 @@ void WS2812FX::printSize()
 }
 #endif
 
-void WS2812FX::loadCustomPalettes()
-{
+void WS2812FX::loadCustomPalettes() {
   byte tcp[72]; //support gradient palettes with up to 18 entries
   CRGBPalette16 targetPalette;
   customPalettes.clear(); // start fresh
