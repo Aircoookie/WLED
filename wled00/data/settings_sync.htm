@@ -1,74 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta name="viewport" content="width=500">
-  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
-  <meta charset="utf-8">
-  <title>Sync Settings</title>
-  <script>var d=document;
-  var loc = false, locip;
-  function gId(s){return d.getElementById(s);}
-  function toggle(el){gId(el).classList.toggle("hide"); gId('No'+el).classList.toggle("hide");}
-  function H(){window.open("https://kno.wled.ge/interfaces/udp-notifier/");}
-  function B(){window.open("/settings","_self");}
-  function adj(){if (d.Sf.DI.value == 6454) {if (d.Sf.EU.value == 1) d.Sf.EU.value = 0;}
-                else if (d.Sf.DI.value == 5568) {if (d.Sf.DA.value == 0) d.Sf.DA.value = 1; if (d.Sf.EU.value == 0) d.Sf.EU.value = 1;} }
-  // https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
-  function loadJS(FILE_URL, async = true) {
-    let scE = d.createElement("script");
-    scE.setAttribute("src", FILE_URL);
-    scE.setAttribute("type", "text/javascript");
-    scE.setAttribute("async", async);
-    d.body.appendChild(scE);
-    // success event 
-    scE.addEventListener("load", () => {
-      //console.log("File loaded");
-      GetV();SetVal();
-    });
-    // error event
-    scE.addEventListener("error", (ev) => {
-      console.log("Error on loading file", ev);
-      alert("Loading of configuration script failed.\nIncomplete page data!");
-    });
-  }
-  function FC()
-  {
-    for(j=0;j<8;j++)
-    {
-      gId("G"+(j+1)).checked=gId("GS").value>>j&1;
-      gId("R"+(j+1)).checked=gId("GR").value>>j&1;
-    }
-  }
-  function GC()
-  {
-    var a=0, b=0;
+	<meta name="viewport" content="width=500">
+	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+	<meta charset="utf-8">
+	<title>Sync Settings</title>
+	<script>var d=document;
+	var loc = false, locip;
+	function gId(s){return d.getElementById(s);}
+	function toggle(el){gId(el).classList.toggle("hide"); gId('No'+el).classList.toggle("hide");}
+	function H(){window.open("https://kno.wled.ge/interfaces/udp-notifier/");}
+	function B(){window.open("/settings","_self");}
+	function adj(){if (d.Sf.DI.value == 6454) {if (d.Sf.EU.value == 1) d.Sf.EU.value = 0;}
+					else if (d.Sf.DI.value == 5568) {if (d.Sf.DA.value == 0) d.Sf.DA.value = 1; if (d.Sf.EU.value == 0) d.Sf.EU.value = 1;} }
+	// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
+	function loadJS(FILE_URL, async = true) {
+		let scE = d.createElement("script");
+		scE.setAttribute("src", FILE_URL);
+		scE.setAttribute("type", "text/javascript");
+		scE.setAttribute("async", async);
+		d.body.appendChild(scE);
+		// success event 
+		scE.addEventListener("load", () => {
+			//console.log("File loaded");
+			GetV();SetVal();
+		});
+		// error event
+		scE.addEventListener("error", (ev) => {
+			console.log("Error on loading file", ev);
+			alert("Loading of configuration script failed.\nIncomplete page data!");
+		});
+	}
+	function FC()
+	{
+		for(j=0;j<8;j++)
+		{
+			gId("G"+(j+1)).checked=gId("GS").value>>j&1;
+			gId("R"+(j+1)).checked=gId("GR").value>>j&1;
+		}
+	}
+	function GC()
+	{
+		var a=0, b=0;
 
-    var m=1;
-    for(j=0;j<8;j++)
-    {
-      a+=gId("G"+(j+1)).checked*m;
-      b+=gId("R"+(j+1)).checked*m;
-      m*=2;
-    }
-    gId("GS").value=a;
-    gId("GR").value=b;
-  }
-  function SP(){var p = d.Sf.DI.value; gId("xp").style.display = (p > 0)?"none":"block"; if (p > 0) d.Sf.EP.value = p;}
-  function SetVal(){switch(parseInt(d.Sf.EP.value)){case 5568: d.Sf.DI.value = 5568; break; case 6454: d.Sf.DI.value = 6454; break; case 4048: d.Sf.DI.value = 4048; break; }; SP();FC();}
-  function S(){
-    if (window.location.protocol == "file:") {
-				loc = true;
-				locip = localStorage.getItem('locIp');
-				if (!locip) {
-					locip = prompt("File Mode. Please enter WLED IP!");
-					localStorage.setItem('locIp', locip);
-				}
+		var m=1;
+		for(j=0;j<8;j++)
+		{
+			a+=gId("G"+(j+1)).checked*m;
+			b+=gId("R"+(j+1)).checked*m;
+			m*=2;
+		}
+		gId("GS").value=a;
+		gId("GR").value=b;
+	}
+	function SP(){var p = d.Sf.DI.value; gId("xp").style.display = (p > 0)?"none":"block"; if (p > 0) d.Sf.EP.value = p;}
+	function SetVal(){switch(parseInt(d.Sf.EP.value)){case 5568: d.Sf.DI.value = 5568; break; case 6454: d.Sf.DI.value = 6454; break; case 4048: d.Sf.DI.value = 4048; break; }; SP();FC();}
+	function S(){
+		if (window.location.protocol == "file:") {
+			loc = true;
+			locip = localStorage.getItem('locIp');
+			if (!locip) {
+				locip = prompt("File Mode. Please enter WLED IP!");
+				localStorage.setItem('locIp', locip);
 			}
-			var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=4';
-			loadJS(url, false);	// If we set async false, file is loaded and executed, then next statement is processed
-  }
-  </script>
-<style>@import url("style.css");</style>
+		}
+		var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=4';
+		loadJS(url, false);	// If we set async false, file is loaded and executed, then next statement is processed
+	}
+	</script>
+	<style>@import url("style.css");</style>
 </head>
 <body onload="S()">
 <form id="form_s" name="Sf" method="post" onsubmit="GC()">
@@ -84,39 +84,39 @@ UDP Port: <input name="UP" type="number" min="1" max="65535" class="d5" required
 <input name="GS" id="GS" type="number" style="display: none;"><!-- hidden inputs for bitwise group checkboxes -->
 <input name="GR" id="GR" type="number" style="display: none;">
 <table style="margin: 0 auto;">
-    <tr>
-        <td></td>
-        <td>1</td>
-        <td>2</td>
-        <td>3</td>
-        <td>4</td>
-        <td>5</td>
-        <td>6</td>
-        <td>7</td>
-        <td>8</td>
-    </tr>
-    <tr>
-        <td>Send:</td>
-        <td><input type="checkbox" id="G1" name="G1"></td>
-        <td><input type="checkbox" id="G2" name="G2"></td>
-        <td><input type="checkbox" id="G3" name="G3"></td>
-        <td><input type="checkbox" id="G4" name="G4"></td>
-        <td><input type="checkbox" id="G5" name="G5"></td>
-        <td><input type="checkbox" id="G6" name="G6"></td>
-        <td><input type="checkbox" id="G7" name="G7"></td>
-        <td><input type="checkbox" id="G8" name="G8"></td>
-    </tr>
-    <tr>
-        <td>Receive:</td>
-        <td><input type="checkbox" id="R1" name="R1"></td>
-        <td><input type="checkbox" id="R2" name="R2"></td>
-        <td><input type="checkbox" id="R3" name="R3"></td>
-        <td><input type="checkbox" id="R4" name="R4"></td>
-        <td><input type="checkbox" id="R5" name="R5"></td>
-        <td><input type="checkbox" id="R6" name="R6"></td>
-        <td><input type="checkbox" id="R7" name="R7"></td>
-        <td><input type="checkbox" id="R8" name="R8"></td>
-    </tr>
+	<tr>
+		<td></td>
+		<td>1</td>
+		<td>2</td>
+		<td>3</td>
+		<td>4</td>
+		<td>5</td>
+		<td>6</td>
+		<td>7</td>
+		<td>8</td>
+	</tr>
+	<tr>
+		<td>Send:</td>
+		<td><input type="checkbox" id="G1" name="G1"></td>
+		<td><input type="checkbox" id="G2" name="G2"></td>
+		<td><input type="checkbox" id="G3" name="G3"></td>
+		<td><input type="checkbox" id="G4" name="G4"></td>
+		<td><input type="checkbox" id="G5" name="G5"></td>
+		<td><input type="checkbox" id="G6" name="G6"></td>
+		<td><input type="checkbox" id="G7" name="G7"></td>
+		<td><input type="checkbox" id="G8" name="G8"></td>
+	</tr>
+	<tr>
+		<td>Receive:</td>
+		<td><input type="checkbox" id="R1" name="R1"></td>
+		<td><input type="checkbox" id="R2" name="R2"></td>
+		<td><input type="checkbox" id="R3" name="R3"></td>
+		<td><input type="checkbox" id="R4" name="R4"></td>
+		<td><input type="checkbox" id="R5" name="R5"></td>
+		<td><input type="checkbox" id="R6" name="R6"></td>
+		<td><input type="checkbox" id="R7" name="R7"></td>
+		<td><input type="checkbox" id="R8" name="R8"></td>
+	</tr>
 </table><br>
 Receive: <nowrap><input type="checkbox" name="RB">Brightness,</nowrap> <nowrap><input type="checkbox" name="RC">Color,</nowrap> <nowrap>and <input type="checkbox" name="RX">Effects</nowrap><br>
 <input type="checkbox" name="SO"> Segment options, <input type="checkbox" name="SG"> bounds<br>
@@ -171,7 +171,7 @@ Realtime LED offset: <input name="WO" type="number" min="-255" max="255" require
 <hr class="sml">
 <h3>Alexa Voice Assistant</h3>
 <div id="NoAlexa" class="hide">
-  <em style="color:#fa0;">This firmware build does not include Alexa support.<br></em><br>
+	<em style="color:#fa0;">This firmware build does not include Alexa support.<br></em><br>
 </div>
 <div id="Alexa">
 Emulate Alexa device: <input type="checkbox" name="AL"><br>
@@ -187,7 +187,7 @@ For best results, only use one of these services at a time.<br>
 <hr class="sml">
 <h3>Blynk</h3>
 <div id="NoBlynk" class="hide">
-  <em style="color:#fa0;">This firmware build does not include Blynk support.<br></em>
+	<em style="color:#fa0;">This firmware build does not include Blynk support.<br></em>
 </div>
 <div id="Blynk">
 Host: <input type="text" name="BH" maxlength="32">
@@ -197,7 +197,7 @@ Device Auth token: <input name="BK" maxlength="33"><br>
 </div>
 <h3>MQTT</h3>
 <div id="NoMQTT" class="hide">
-  <em style="color:#fa0;">This firmware build does not include MQTT support.<br></em>
+	<em style="color:#fa0;">This firmware build does not include MQTT support.<br></em>
 </div>
 <div id="MQTT">
 Enable MQTT: <input type="checkbox" name="MQ"><br>
@@ -215,7 +215,7 @@ Publish on button press: <input type="checkbox" name="BM"><br>
 </div>
 <h3>Philips Hue</h3>
 <div id="NoHue" class="hide">
-  <em style="color:#fa0;">This firmware build does not include Philips Hue support.<br></em>
+	<em style="color:#fa0;">This firmware build does not include Philips Hue support.<br></em>
 </div>
 <div id="Hue">
 <i>You can find the bridge IP and the light number in the 'About' section of the hue app.</i><br>
