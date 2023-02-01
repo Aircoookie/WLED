@@ -143,7 +143,7 @@
 #define FX_MODE_SAW                     16
 #define FX_MODE_TWINKLE                 17
 #define FX_MODE_DISSOLVE                18
-#define FX_MODE_DISSOLVE_RANDOM         19
+#define FX_MODE_DISSOLVE_RANDOM         19  // candidate for removal (use Dissolve with with check 3)
 #define FX_MODE_SPARKLE                 20
 #define FX_MODE_FLASH_SPARKLE           21
 #define FX_MODE_HYPER_SPARKLE           22
@@ -227,7 +227,7 @@
 #define FX_MODE_HEARTBEAT              100
 #define FX_MODE_PACIFICA               101
 #define FX_MODE_CANDLE_MULTI           102
-#define FX_MODE_SOLID_GLITTER          103
+#define FX_MODE_SOLID_GLITTER          103  // candidate for removal (use glitter)
 #define FX_MODE_SUNRISE                104
 #define FX_MODE_PHASED                 105
 #define FX_MODE_TWINKLEUP              106
@@ -241,7 +241,7 @@
 // #define FX_MODE_CANDY_CANE             114  // removed in 0.14!
 #define FX_MODE_BLENDS                 115
 #define FX_MODE_TV_SIMULATOR           116
-#define FX_MODE_DYNAMIC_SMOOTH         117
+#define FX_MODE_DYNAMIC_SMOOTH         117 // candidate for removal (check3 in dynamic)
 
 // new 0.14 2D effects
 #define FX_MODE_2DSPACESHIPS           118 //gap fill
@@ -593,8 +593,9 @@ typedef struct Segment {
     void fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB c);
     void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint32_t c);
     void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c) { drawLine(x0, y0, x1, y1, RGBW32(c.r,c.g,c.b,0)); } // automatic inline
-    void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color);
+    void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2 = 0);
     void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB c) { drawCharacter(chr, x, y, w, h, RGBW32(c.r,c.g,c.b,0)); } // automatic inline
+    void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB c, CRGB c2) { drawCharacter(chr, x, y, w, h, RGBW32(c.r,c.g,c.b,0), RGBW32(c2.r,c2.g,c2.b,0)); } // automatic inline
     void wu_pixel(uint32_t x, uint32_t y, CRGB c);
     void blur1d(fract8 blur_amount); // blur all rows in 1 dimension
     void blur2d(fract8 blur_amount) { blur(blur_amount); }

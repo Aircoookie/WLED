@@ -404,6 +404,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(e131SkipOutOfSequence, if_live_dmx[F("seqskip")]);
   CJSON(DMXAddress, if_live_dmx[F("addr")]);
   if (!DMXAddress || DMXAddress > 510) DMXAddress = 1;
+  CJSON(DMXSegmentSpacing, if_live_dmx[F("dss")]);
+  if (DMXSegmentSpacing > 150) DMXSegmentSpacing = 0;
   CJSON(DMXMode, if_live_dmx["mode"]);
 
   tdd = if_live[F("timeout")] | -1;
@@ -864,6 +866,7 @@ void serializeConfig() {
   if_live_dmx[F("uni")] = e131Universe;
   if_live_dmx[F("seqskip")] = e131SkipOutOfSequence;
   if_live_dmx[F("addr")] = DMXAddress;
+  if_live_dmx[F("dss")] = DMXSegmentSpacing;
   if_live_dmx["mode"] = DMXMode;
 
   if_live[F("timeout")] = realtimeTimeoutMs / 100;

@@ -6,6 +6,9 @@
 #endif
 #include "html_settings.h"
 #include "html_other.h"
+#ifdef WLED_ENABLE_PIXART
+  #include "html_pixart.h"
+#endif
 
 /*
  * Integrated HTTP web server page declarations
@@ -344,6 +347,17 @@ void initServer()
     if (captivePortal(request)) return;
     serveIndexOrWelcome(request);
   });
+
+  #ifdef WLED_ENABLE_PIXART
+  server.on("/pixart.htm", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (handleFileRead(request, "/pixart.htm")) return;
+    if (handleIfNoneMatchCacheHeader(request)) return;
+    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_pixart, PAGE_pixart_L);
+    response->addHeader(FPSTR(s_content_enc),"gzip");
+    setStaticContentCacheHeaders(response);
+    request->send(response);
+  });
+  #endif
 
   #ifdef WLED_ENABLE_WEBSOCKETS
   server.addHandler(&ws);

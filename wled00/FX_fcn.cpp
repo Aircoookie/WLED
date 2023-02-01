@@ -893,7 +893,7 @@ void Segment::blur(uint8_t blur_amount)
  * The colours are a transition r -> g -> b -> back to r
  * Inspired by the Adafruit examples.
  */
-uint32_t Segment::color_wheel(uint8_t pos) { // TODO
+uint32_t Segment::color_wheel(uint8_t pos) {
   if (palette) return color_from_palette(pos, false, true, 0);
   pos = 255 - pos;
   if(pos < 85) {
@@ -1611,7 +1611,7 @@ void WS2812FX::deserializeMap(uint8_t n) {
     customMappingSize  = map.size();
     customMappingTable = new uint16_t[customMappingSize];
     for (uint16_t i=0; i<customMappingSize; i++) {
-      customMappingTable[i] = (uint16_t) map[i];
+      customMappingTable[i] = (uint16_t) (map[i]<0 ? 0xFFFFU : map[i]);
     }
   }
 
