@@ -29,7 +29,7 @@ void parseNumber(const char* str, byte* val, byte minv, byte maxv)
     } else {
       if (wrap && *val == maxv && out > 0) out = minv;
       else if (wrap && *val == minv && out < 0) out = maxv;
-      else { 
+      else {
         out += *val;
         if (out > maxv) out = maxv;
         if (out < minv) out = minv;
@@ -335,7 +335,7 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxL
         }
         // we have slider name (including default value) in the dest buffer
         for (size_t i=0; i<strlen(dest); i++) if (dest[i]=='=') { dest[i]='\0'; break; } // truncate default value
-        
+
       } else {
         // defaults to just speed and intensity since there is no slider data
         switch (slider) {
@@ -397,7 +397,7 @@ typedef enum UM_SoundSimulations {
   UMS_14_3
 } um_soundSimulations_t;
 
-um_data_t* simulateSound(uint8_t simulationId) 
+um_data_t* simulateSound(uint8_t simulationId)
 {
   static uint8_t samplePeak;
   static float   FFT_MajorPeak;
@@ -426,7 +426,7 @@ um_data_t* simulateSound(uint8_t simulationId)
     um_data->u_data = new void*[um_data->u_size];
     um_data->u_data[0] = &volumeSmth;
     um_data->u_data[1] = &volumeRaw;
-    um_data->u_data[2] = fftResult; 
+    um_data->u_data[2] = fftResult;
     um_data->u_data[3] = &samplePeak;
     um_data->u_data[4] = &FFT_MajorPeak;
     um_data->u_data[5] = &my_magnitude;

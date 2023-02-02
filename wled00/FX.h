@@ -143,7 +143,7 @@
 #define FX_MODE_SAW                     16
 #define FX_MODE_TWINKLE                 17
 #define FX_MODE_DISSOLVE                18
-#define FX_MODE_DISSOLVE_RANDOM         19
+#define FX_MODE_DISSOLVE_RANDOM         19  // candidate for removal (use Dissolve with with check 3)
 #define FX_MODE_SPARKLE                 20
 #define FX_MODE_FLASH_SPARKLE           21
 #define FX_MODE_HYPER_SPARKLE           22
@@ -172,14 +172,12 @@
 #define FX_MODE_FIRE_FLICKER            45
 #define FX_MODE_GRADIENT                46
 #define FX_MODE_LOADING                 47
-//#define FX_MODE_POLICE                  48  // candidate for removal (after below three)
-#define FX_MODE_WAVESINS                48  // was Police prior to 0.14 (use Two Dots with Red/Blue)
+// #define FX_MODE_POLICE                  48  // removed in 0.14!
 #define FX_MODE_FAIRY                   49  //was Police All prior to 0.13.0-b6 (use "Two Dots" with Red/Blue and full intensity)
 #define FX_MODE_TWO_DOTS                50
 #define FX_MODE_FAIRYTWINKLE            51  //was Two Areas prior to 0.13.0-b6 (use "Two Dots" with full intensity)
 #define FX_MODE_RUNNING_DUAL            52
-//#define FX_MODE_HALLOWEEN               53  // candidate for removal
-#define FX_MODE_PERLINMOVE              53 // was Halloween prior to 0.14 (use Cahse 2 with Purple/Orange)
+// #define FX_MODE_HALLOWEEN               53  // removed in 0.14!
 #define FX_MODE_TRICOLOR_CHASE          54
 #define FX_MODE_TRICOLOR_WIPE           55
 #define FX_MODE_TRICOLOR_FADE           56
@@ -229,7 +227,7 @@
 #define FX_MODE_HEARTBEAT              100
 #define FX_MODE_PACIFICA               101
 #define FX_MODE_CANDLE_MULTI           102
-#define FX_MODE_SOLID_GLITTER          103
+#define FX_MODE_SOLID_GLITTER          103  // candidate for removal (use glitter)
 #define FX_MODE_SUNRISE                104
 #define FX_MODE_PHASED                 105
 #define FX_MODE_TWINKLEUP              106
@@ -240,74 +238,82 @@
 #define FX_MODE_CHUNCHUN               111
 #define FX_MODE_DANCING_SHADOWS        112
 #define FX_MODE_WASHING_MACHINE        113
-//#define FX_MODE_CANDY_CANE             114  // candidate for removal
-#define FX_MODE_FLOWSTRIPE             114  // was Cany Cane prior to 0.14 (use Cahse 2 with Red/White)
+// #define FX_MODE_CANDY_CANE             114  // removed in 0.14!
 #define FX_MODE_BLENDS                 115
 #define FX_MODE_TV_SIMULATOR           116
-#define FX_MODE_DYNAMIC_SMOOTH         117
-#ifndef WLED_DISABLE_2D
-  // new 2D effects
-  #define FX_MODE_2DSPACESHIPS           118
-  #define FX_MODE_2DCRAZYBEES            119
-  #define FX_MODE_2DGHOSTRIDER           120
-  #define FX_MODE_2DBLOBS                121
-  #define FX_MODE_2DSCROLLTEXT           122
-  #define FX_MODE_2DDRIFTROSE            123
-  // WLED-SR effects (non SR compatible IDs)
-  #define FX_MODE_2DBLACKHOLE            124 // non audio
-  #define FX_MODE_2DDNASPIRAL            125 // non audio
-  #define FX_MODE_2DHIPHOTIC             126 // non audio
-  #define FX_MODE_2DPLASMABALL           127 // non audio
-  #define FX_MODE_2DSINDOTS              128 // non audio
-  #define FX_MODE_2DFRIZZLES             129 // non audio
-  #define FX_MODE_2DLISSAJOUS            130 // non audio
-  #define FX_MODE_2DPOLARLIGHTS          131 // non audio
-  #define FX_MODE_2DTARTAN               132 // non audio
-  #define FX_MODE_2DGAMEOFLIFE           133 // non audio
-  #define FX_MODE_2DJULIA                134 // non audio
-  #define FX_MODE_2DCOLOREDBURSTS        135 // non audio
-  #define FX_MODE_2DSUNRADIATION         136 // non audio
-  #define FX_MODE_2DNOISE                137 // non audio
-  #define FX_MODE_2DFIRENOISE            138 // non audio
-  #define FX_MODE_2DSQUAREDSWIRL         139 // non audio
-  #define FX_MODE_2DDNA                  140 // non audio
-  #define FX_MODE_2DMATRIX               141 // non audio
-  #define FX_MODE_2DMETABALLS            142 // non audio
-  #define FX_MODE_2DPULSER               143 // non audio
-  #define FX_MODE_2DDRIFT                144 // non audio
-  #define FX_MODE_2DWAVERLY              145 // audio enhanced
-  #define FX_MODE_2DSWIRL                146 // audio enhanced
-  #define FX_MODE_2DAKEMI                147 // audio enhanced
-  #define FX_MODE_2DGEQ                  148 // audio enhanced
-  #define FX_MODE_2DFUNKYPLANK           149 // audio enhanced
-#endif //WLED_DISABLE_2D
-#define FX_MODE_PIXELWAVE              150 // audio enhanced
-#define FX_MODE_JUGGLES                151 // audio enhanced
-#define FX_MODE_MATRIPIX               152 // audio enhanced
-#define FX_MODE_GRAVIMETER             153 // audio enhanced
-#define FX_MODE_PLASMOID               154 // audio enhanced
-#define FX_MODE_PUDDLES                155 // audio enhanced
-#define FX_MODE_MIDNOISE               156 // audio enhanced
-#define FX_MODE_NOISEMETER             157 // audio enhanced
-#define FX_MODE_NOISEFIRE              158 // audio enhanced
-#define FX_MODE_PUDDLEPEAK             159 // audio enhanced
-#define FX_MODE_RIPPLEPEAK             160 // audio enhanced
-#define FX_MODE_GRAVCENTER             161 // audio enhanced
-#define FX_MODE_GRAVCENTRIC            162 // audio enhanced
-#define FX_MODE_PIXELS                 163 // audio enhanced
-#define FX_MODE_FREQWAVE               164 // audio enhanced
-#define FX_MODE_FREQMATRIX             165 // audio enhanced
-#define FX_MODE_WATERFALL              166 // audio enhanced
-#define FX_MODE_FREQPIXELS             167 // audio enhanced
-#define FX_MODE_BINMAP                 168 // audio enhanced
-#define FX_MODE_NOISEMOVE              169 // audio enhanced
-#define FX_MODE_FREQMAP                170 // audio enhanced
-#define FX_MODE_GRAVFREQ               171 // audio enhanced
-#define FX_MODE_DJLIGHT                172 // audio enhanced
-#define FX_MODE_BLURZ                  173 // audio enhanced
-#define FX_MODE_ROCKTAVES              174 // audio enhanced
+#define FX_MODE_DYNAMIC_SMOOTH         117 // candidate for removal (check3 in dynamic)
 
-#define MODE_COUNT                     175
+// new 0.14 2D effects
+#define FX_MODE_2DSPACESHIPS           118 //gap fill
+#define FX_MODE_2DCRAZYBEES            119 //gap fill
+#define FX_MODE_2DGHOSTRIDER           120 //gap fill
+#define FX_MODE_2DBLOBS                121 //gap fill
+#define FX_MODE_2DSCROLLTEXT           122 //gap fill
+#define FX_MODE_2DDRIFTROSE            123 //gap fill
+#define FX_MODE_2DDISTORTIONWAVES      124
+
+// WLED-SR effects (SR compatible IDs !!!)
+#define FX_MODE_PIXELS                 128
+#define FX_MODE_PIXELWAVE              129
+#define FX_MODE_JUGGLES                130
+#define FX_MODE_MATRIPIX               131
+#define FX_MODE_GRAVIMETER             132
+#define FX_MODE_PLASMOID               133
+#define FX_MODE_PUDDLES                134
+#define FX_MODE_MIDNOISE               135
+#define FX_MODE_NOISEMETER             136
+#define FX_MODE_FREQWAVE               137
+#define FX_MODE_FREQMATRIX             138
+#define FX_MODE_2DGEQ                  139
+#define FX_MODE_WATERFALL              140
+#define FX_MODE_FREQPIXELS             141
+#define FX_MODE_BINMAP                 142
+#define FX_MODE_NOISEFIRE              143
+#define FX_MODE_PUDDLEPEAK             144
+#define FX_MODE_NOISEMOVE              145
+#define FX_MODE_2DNOISE                146
+#define FX_MODE_PERLINMOVE             147
+#define FX_MODE_RIPPLEPEAK             148
+#define FX_MODE_2DFIRENOISE            149
+#define FX_MODE_2DSQUAREDSWIRL         150
+#define FX_MODE_2DFIRE2012             151
+#define FX_MODE_2DDNA                  152
+#define FX_MODE_2DMATRIX               153
+#define FX_MODE_2DMETABALLS            154
+#define FX_MODE_FREQMAP                155
+#define FX_MODE_GRAVCENTER             156
+#define FX_MODE_GRAVCENTRIC            157
+#define FX_MODE_GRAVFREQ               158
+#define FX_MODE_DJLIGHT                159
+#define FX_MODE_2DFUNKYPLANK           160
+#define FX_MODE_2DCENTERBARS           161
+#define FX_MODE_2DPULSER               162
+#define FX_MODE_BLURZ                  163
+#define FX_MODE_2DDRIFT                164
+#define FX_MODE_2DWAVERLY              165
+#define FX_MODE_2DSUNRADIATION         166
+#define FX_MODE_2DCOLOREDBURSTS        167
+#define FX_MODE_2DJULIA                168
+// #define FX_MODE_2DPOOLNOISE            169 //have been removed in WLED SR in the past because of low mem but should be added back
+// #define FX_MODE_2DTWISTER              170 //have been removed in WLED SR in the past because of low mem but should be added back
+// #define FX_MODE_2DCAELEMENTATY         171 //have been removed in WLED SR in the past because of low mem but should be added back
+#define FX_MODE_2DGAMEOFLIFE           172
+#define FX_MODE_2DTARTAN               173
+#define FX_MODE_2DPOLARLIGHTS          174
+#define FX_MODE_2DSWIRL                175
+#define FX_MODE_2DLISSAJOUS            176
+#define FX_MODE_2DFRIZZLES             177
+#define FX_MODE_2DPLASMABALL           178
+#define FX_MODE_FLOWSTRIPE             179
+#define FX_MODE_2DHIPHOTIC             180
+#define FX_MODE_2DSINDOTS              181
+#define FX_MODE_2DDNASPIRAL            182
+#define FX_MODE_2DBLACKHOLE            183
+#define FX_MODE_WAVESINS               184
+#define FX_MODE_ROCKTAVES              185
+#define FX_MODE_2DAKEMI                186
+
+#define MODE_COUNT                     187
 
 typedef enum mapping1D2D {
   M12_Pixels = 0,
@@ -364,9 +370,10 @@ typedef struct Segment {
     uint32_t call;  // call counter
     uint16_t aux0;  // custom var
     uint16_t aux1;  // custom var
-    byte* data;
-    CRGB* leds;
-    static CRGB *_globalLeds;
+    byte* data;     // effect data pointer
+    CRGB* leds;     // local leds[] array (may be a pointer to global)
+    static CRGB *_globalLeds;             // global leds[] array
+    static uint16_t maxWidth, maxHeight;  // these define matrix width & height (max. segment dimensions)
 
   private:
     union {
@@ -498,6 +505,7 @@ typedef struct Segment {
     static uint16_t getUsedSegmentData(void)    { return _usedSegmentData; }
     static void     addUsedSegmentData(int len) { _usedSegmentData += len; }
 
+    void    set(uint16_t i1, uint16_t i2, uint8_t grp=1, uint8_t spc=0, uint16_t ofs=UINT16_MAX, uint16_t i1Y=0, uint16_t i2Y=1);
     bool    setColor(uint8_t slot, uint32_t c); //returns true if changed
     void    setCCT(uint16_t k);
     void    setOpacity(uint8_t o);
@@ -512,9 +520,9 @@ typedef struct Segment {
     bool allocateData(size_t len);
     void deallocateData(void);
     void resetIfRequired(void);
-    /** 
+    /**
       * Flags that before the next effect is calculated,
-      * the internal segment state should be reset. 
+      * the internal segment state should be reset.
       * Call resetIfRequired before calling the next effect function.
       * Safe to call from interrupts and network requests.
       */
@@ -581,11 +589,13 @@ typedef struct Segment {
     void moveX(int8_t delta);
     void moveY(int8_t delta);
     void move(uint8_t dir, uint8_t delta);
+    void draw_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB c);
     void fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB c);
     void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint32_t c);
     void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, CRGB c) { drawLine(x0, y0, x1, y1, RGBW32(c.r,c.g,c.b,0)); } // automatic inline
-    void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color);
+    void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2 = 0);
     void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB c) { drawCharacter(chr, x, y, w, h, RGBW32(c.r,c.g,c.b,0)); } // automatic inline
+    void drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, CRGB c, CRGB c2) { drawCharacter(chr, x, y, w, h, RGBW32(c.r,c.g,c.b,0), RGBW32(c2.r,c2.g,c2.b,0)); } // automatic inline
     void wu_pixel(uint32_t x, uint32_t y, CRGB c);
     void blur1d(fract8 blur_amount); // blur all rows in 1 dimension
     void blur2d(fract8 blur_amount) { blur(blur_amount); }
@@ -634,7 +644,7 @@ class WS2812FX {  // 96 bytes
   } mode_data_t;
 
   static WS2812FX* instance;
-  
+
   public:
 
     WS2812FX() :
@@ -648,14 +658,8 @@ class WS2812FX {  // 96 bytes
       timebase(0),
       isMatrix(false),
 #ifndef WLED_DISABLE_2D
-      hPanels(1),
-      vPanels(1),
-      panelH(8),
-      panelW(8),
-      matrixWidth(DEFAULT_LED_COUNT),
-      matrixHeight(1),
+      panels(1),
       matrix{0,0,0,0},
-      panel{{0,0,0,0}},
 #endif
       // semi-private (just obscured) used in effect functions through macros
       _currentPalette(CRGBPalette16(CRGB::Black)),
@@ -692,6 +696,9 @@ class WS2812FX {  // 96 bytes
       _mode.clear();
       _modeData.clear();
       _segments.clear();
+#ifndef WLED_DISABLE_2D
+      panel.clear();
+#endif
       customPalettes.clear();
       if (useLedsArray && Segment::_globalLeds) free(Segment::_globalLeds);
     }
@@ -762,7 +769,7 @@ class WS2812FX {  // 96 bytes
     inline uint8_t getSegmentsNum(void) { return _segments.size(); }  // returns currently present segments
     inline uint8_t getCurrSegmentId(void) { return _segment_index; }
     inline uint8_t getMainSegmentId(void) { return _mainSegment; }
-    inline uint8_t getPaletteCount() { return 13 + GRADIENT_PALETTE_COUNT; }
+    inline uint8_t getPaletteCount() { return 13 + GRADIENT_PALETTE_COUNT; }  // will only return built-in palette count
     inline uint8_t getTargetFps() { return _targetFps; }
     inline uint8_t getModeCount() { return _modeCount; }
 
@@ -804,24 +811,31 @@ class WS2812FX {  // 96 bytes
 #ifndef WLED_DISABLE_2D
     #define WLED_MAX_PANELS 64
     uint8_t
-      hPanels,
-      vPanels;
+      panels;
 
-    uint16_t
-      panelH,
-      panelW,
-      matrixWidth,
-      matrixHeight;
+    struct {
+      bool bottomStart : 1;
+      bool rightStart  : 1;
+      bool vertical    : 1;
+      bool serpentine  : 1;
+    } matrix;
 
-    typedef struct panel_bitfield_t {
-      bool bottomStart : 1; // starts at bottom?
-      bool rightStart  : 1; // starts on right?
-      bool vertical    : 1; // is vertical?
-      bool serpentine  : 1; // is serpentine?
+    typedef struct panel_t {
+      uint16_t xOffset; // x offset relative to the top left of matrix in LEDs
+      uint16_t yOffset; // y offset relative to the top left of matrix in LEDs
+      uint8_t  width;   // width of the panel
+      uint8_t  height;  // height of the panel
+      union {
+        uint8_t options;
+        struct {
+          bool bottomStart : 1; // starts at bottom?
+          bool rightStart  : 1; // starts on right?
+          bool vertical    : 1; // is vertical?
+          bool serpentine  : 1; // is serpentine?
+        };
+      };
     } Panel;
-    Panel
-      matrix,
-      panel[WLED_MAX_PANELS];
+    std::vector<Panel> panel;
 #endif
 
     void
@@ -874,9 +888,9 @@ class WS2812FX {  // 96 bytes
 
     uint16_t* customMappingTable;
     uint16_t  customMappingSize;
-    
+
     uint32_t _lastShow;
-    
+
     uint8_t _segment_index;
     uint8_t _mainSegment;
 

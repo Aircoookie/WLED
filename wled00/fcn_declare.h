@@ -1,18 +1,17 @@
 #ifndef WLED_FCN_DECLARE_H
 #define WLED_FCN_DECLARE_H
-#include <Arduino.h>
-#include "src/dependencies/espalexa/EspalexaDevice.h"
-#include "src/dependencies/e131/ESPAsyncE131.h"
 
 /*
  * All globally accessible functions are declared here
  */
 
 //alexa.cpp
+#ifndef WLED_DISABLE_ALEXA
 void onAlexaChange(EspalexaDevice* dev);
 void alexaInit();
 void handleAlexa();
 void onAlexaChange(EspalexaDevice* dev);
+#endif
 
 //blynk.cpp
 #ifndef WLED_DISABLE_BLYNK
@@ -172,7 +171,7 @@ void publishMqtt();
 void handleTime();
 void handleNetworkTime();
 void sendNTPPacket();
-bool checkNTPResponse();    
+bool checkNTPResponse();
 void updateLocalTime();
 void getTimeString(char* out);
 bool checkCountdown();
@@ -195,13 +194,14 @@ void handlePlaylist();
 void serializePlaylist(JsonObject obj);
 
 //presets.cpp
+void initPresetsFile();
 void handlePresets();
 bool applyPreset(byte index, byte callMode = CALL_MODE_DIRECT_CHANGE);
 inline bool applyTemporaryPreset() {return applyPreset(255);};
 void savePreset(byte index, const char* pname = nullptr, JsonObject saveobj = JsonObject());
 inline void saveTemporaryPreset() {savePreset(255);};
 void deletePreset(byte index);
-bool getPresetName(byte index, String& name); 
+bool getPresetName(byte index, String& name);
 
 //set.cpp
 bool isAsterisksOnly(const char* str, byte maxLen);

@@ -55,7 +55,7 @@ void unloadPlaylist() {
 
 int16_t loadPlaylist(JsonObject playlistObj, byte presetId) {
   unloadPlaylist();
-  
+
   JsonArray presets = playlistObj["ps"];
   playlistLen = presets.size();
   if (playlistLen == 0) return -1;
@@ -156,7 +156,7 @@ void serializePlaylist(JsonObject sObj) {
   JsonArray ps = playlist.createNestedArray("ps");
   JsonArray dur = playlist.createNestedArray("dur");
   JsonArray transition = playlist.createNestedArray(F("transition"));
-  playlist[F("repeat")] = playlistRepeat;
+  playlist[F("repeat")] = (playlistRepeat > 0) ? playlistRepeat - 1 : 0; // remove added repetition count
   playlist["end"] = playlistEndPreset;
   playlist["r"] = playlistOptions & PL_OPTION_SHUFFLE;
   for (int i=0; i<playlistLen; i++) {

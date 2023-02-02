@@ -64,7 +64,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   if (apHide > 1) apHide = 1;
 
   CJSON(apBehavior, ap[F("behav")]);
-  
+
   /*
   JsonArray ap_ip = ap["ip"];
   for (byte i = 0; i < 4; i++) {
@@ -97,32 +97,38 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonObject matrix = hw_led[F("matrix")];
   if (!matrix.isNull()) {
     strip.isMatrix = true;
-    CJSON(strip.panelH,  matrix[F("ph")]);
-    CJSON(strip.panelW,  matrix[F("pw")]);
-    CJSON(strip.hPanels, matrix[F("mph")]);
-    CJSON(strip.vPanels, matrix[F("mpv")]);
+    CJSON(strip.panels,             matrix[F("mpc")]);
     CJSON(strip.matrix.bottomStart, matrix[F("pb")]);
     CJSON(strip.matrix.rightStart,  matrix[F("pr")]);
     CJSON(strip.matrix.vertical,    matrix[F("pv")]);
-    CJSON(strip.matrix.serpentine,  matrix[F("ps")]);
+    CJSON(strip.matrix.serpentine,  matrix["ps"]);
 
+    strip.panel.clear();
     JsonArray panels = matrix[F("panels")];
     uint8_t s = 0;
     if (!panels.isNull()) {
+      strip.panel.reserve(max(1U,min((size_t)strip.panels,(size_t)WLED_MAX_PANELS)));  // pre-allocate memory for panels
       for (JsonObject pnl : panels) {
-        CJSON(strip.panel[s].bottomStart, pnl["b"]);
-        CJSON(strip.panel[s].rightStart, pnl["r"]);
-        CJSON(strip.panel[s].vertical, pnl["v"]);
-        CJSON(strip.panel[s].serpentine, pnl["s"]);
-        if (++s >= WLED_MAX_PANELS) break; // max panels reached
+        WS2812FX::Panel p;
+        CJSON(p.bottomStart, pnl["b"]);
+        CJSON(p.rightStart,  pnl["r"]);
+        CJSON(p.vertical,    pnl["v"]);
+        CJSON(p.serpentine,  pnl["s"]);
+        CJSON(p.xOffset,     pnl["x"]);
+        CJSON(p.yOffset,     pnl["y"]);
+        CJSON(p.height,      pnl["h"]);
+        CJSON(p.width,       pnl["w"]);
+        strip.panel.push_back(p);
+        if (++s >= WLED_MAX_PANELS || s >= strip.panels) break; // max panels reached
       }
-    }
-    // clear remaining panels
-    for (; s<WLED_MAX_PANELS; s++) {
-      strip.panel[s].bottomStart = 0;
-      strip.panel[s].rightStart = 0;
-      strip.panel[s].vertical = 0;
-      strip.panel[s].serpentine = 0;
+    } else {
+      // fallback
+      WS2812FX::Panel p;
+      strip.panels = 1;
+      p.height = p.width = 8;
+      p.xOffset = p.yOffset = 0;
+      p.options = 0;
+      strip.panel.push_back(p);
     }
 
     strip.setUpMatrix();
@@ -130,14 +136,14 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   #endif
 
   JsonArray ins = hw_led["ins"];
-  
+
   if (fromFS || !ins.isNull()) {
     uint8_t s = 0;  // bus iterator
     if (fromFS) busses.removeAll(); // can't safely manipulate busses directly in network callback
     uint32_t mem = 0;
     bool busesChanged = false;
     for (JsonObject elm : ins) {
-      if (s >= WLED_MAX_BUSSES) break;
+      if (s >= WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES) break;
       uint8_t pins[5] = {255, 255, 255, 255, 255};
       JsonArray pinArr = elm["pin"];
       if (pinArr.size() == 0) continue;
@@ -161,7 +167,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       if (fromFS) {
         BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode);
         mem += BusManager::memUsage(bc);
-        if (mem <= MAX_LED_MEMORY && busses.getNumBusses() <= WLED_MAX_BUSSES) busses.add(bc);  // finalization will be done in WLED::beginStrip()
+        if (mem <= MAX_LED_MEMORY) if (busses.add(bc) == -1) break;  // finalization will be done in WLED::beginStrip()
       } else {
         if (busConfigs[s] != nullptr) delete busConfigs[s];
         busConfigs[s] = new BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode);
@@ -192,6 +198,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   // read multiple button configuration
   JsonObject btn_obj = hw["btn"];
+  bool pull = btn_obj[F("pull")] | (!disablePullUp); // if true, pullup is enabled
+  disablePullUp = !pull;
   JsonArray hw_btn_ins = btn_obj[F("ins")];
   if (!hw_btn_ins.isNull()) {
     uint8_t s = 0;
@@ -200,11 +208,28 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       int8_t pin = btn["pin"][0] | -1;
       if (pin > -1 && pinManager.allocatePin(pin, false, PinOwner::Button)) {
         btnPin[s] = pin;
-        #ifdef ESP32
-        pinMode(btnPin[s], buttonType[s]==BTN_TYPE_PUSH_ACT_HIGH ? INPUT_PULLDOWN : INPUT_PULLUP);
-        #else
-        pinMode(btnPin[s], INPUT_PULLUP);
-        #endif
+      #ifdef ARDUINO_ARCH_ESP32
+        // ESP32 only: check that analog button pin is a valid ADC gpio
+        if (((buttonType[s] == BTN_TYPE_ANALOG) || (buttonType[s] == BTN_TYPE_ANALOG_INVERTED)) && (digitalPinToAnalogChannel(btnPin[s]) < 0))
+        {
+          // not an ADC analog pin
+          DEBUG_PRINTF("PIN ALLOC error: GPIO%d for analog button #%d is not an analog pin!\n", btnPin[s], s);
+          btnPin[s] = -1;
+          pinManager.deallocatePin(pin,PinOwner::Button);
+        }
+        else
+      #endif
+        {
+          if (disablePullUp) {
+            pinMode(btnPin[s], INPUT);
+          } else {
+            #ifdef ESP32
+            pinMode(btnPin[s], buttonType[s]==BTN_TYPE_PUSH_ACT_HIGH ? INPUT_PULLDOWN : INPUT_PULLUP);
+            #else
+            pinMode(btnPin[s], INPUT_PULLUP);
+            #endif
+          }
+        }
       } else {
         btnPin[s] = -1;
       }
@@ -228,7 +253,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       // relies upon only being called once with fromFS == true, which is currently true.
       uint8_t s = 0;
       if (pinManager.allocatePin(btnPin[0], false, PinOwner::Button)) { // initialized to #define value BTNPIN, or zero if not defined(!)
-        ++s; // do not clear default button if allocated successfully 
+        ++s; // do not clear default button if allocated successfully
       }
       for (; s<WLED_MAX_BUTTONS; s++) {
         btnPin[s]           = -1;
@@ -318,7 +343,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonObject light_tr = light["tr"];
   CJSON(fadeTransition, light_tr["mode"]);
   int tdd = light_tr["dur"] | -1;
-  if (tdd >= 0) transitionDelayDefault = tdd * 100;
+  if (tdd >= 0) transitionDelay = transitionDelayDefault = tdd * 100;
   CJSON(strip.paletteFade, light_tr["pal"]);
 
   JsonObject light_nl = light["nl"];
@@ -379,6 +404,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(e131SkipOutOfSequence, if_live_dmx[F("seqskip")]);
   CJSON(DMXAddress, if_live_dmx[F("addr")]);
   if (!DMXAddress || DMXAddress > 510) DMXAddress = 1;
+  CJSON(DMXSegmentSpacing, if_live_dmx[F("dss")]);
+  if (DMXSegmentSpacing > 150) DMXSegmentSpacing = 0;
   CJSON(DMXMode, if_live_dmx["mode"]);
 
   tdd = if_live[F("timeout")] | -1;
@@ -472,7 +499,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   uint8_t it = 0;
   for (JsonObject timer : timers) {
     if (it > 9) break;
-    if (it<8 && timer[F("hour")]==255) it=8;  // hour==255 -> sunrise/sunset 
+    if (it<8 && timer[F("hour")]==255) it=8;  // hour==255 -> sunrise/sunset
     CJSON(timerHours[it], timer[F("hour")]);
     CJSON(timerMinutes[it], timer["min"]);
     CJSON(timerMacro[it], timer["macro"]);
@@ -680,22 +707,23 @@ void serializeConfig() {
   // 2D Matrix Settings
   if (strip.isMatrix) {
     JsonObject matrix = hw_led.createNestedObject(F("matrix"));
-    matrix[F("ph")] = strip.panelH;
-    matrix[F("pw")] = strip.panelW;
-    matrix[F("mph")] = strip.hPanels;
-    matrix[F("mpv")] = strip.vPanels;
+    matrix[F("mpc")] = strip.panels;
     matrix[F("pb")] = strip.matrix.bottomStart;
     matrix[F("pr")] = strip.matrix.rightStart;
     matrix[F("pv")] = strip.matrix.vertical;
-    matrix[F("ps")] = strip.matrix.serpentine;
+    matrix["ps"] = strip.matrix.serpentine;
 
     JsonArray panels = matrix.createNestedArray(F("panels"));
-    for (uint8_t i=0; i<strip.hPanels*strip.vPanels; i++) {
+    for (uint8_t i=0; i<strip.panel.size(); i++) {
       JsonObject pnl = panels.createNestedObject();
       pnl["b"] = strip.panel[i].bottomStart;
       pnl["r"] = strip.panel[i].rightStart;
       pnl["v"] = strip.panel[i].vertical;
       pnl["s"] = strip.panel[i].serpentine;
+      pnl["x"] = strip.panel[i].xOffset;
+      pnl["y"] = strip.panel[i].yOffset;
+      pnl["h"] = strip.panel[i].height;
+      pnl["w"] = strip.panel[i].width;
     }
   }
   #endif
@@ -735,6 +763,7 @@ void serializeConfig() {
   // button(s)
   JsonObject hw_btn = hw.createNestedObject("btn");
   hw_btn["max"] = WLED_MAX_BUTTONS; // just information about max number of buttons (not actually used)
+  hw_btn[F("pull")] = !disablePullUp;
   JsonArray hw_btn_ins = hw_btn.createNestedArray("ins");
 
   // configuration for all buttons
@@ -837,6 +866,7 @@ void serializeConfig() {
   if_live_dmx[F("uni")] = e131Universe;
   if_live_dmx[F("seqskip")] = e131SkipOutOfSequence;
   if_live_dmx[F("addr")] = DMXAddress;
+  if_live_dmx[F("dss")] = DMXSegmentSpacing;
   if_live_dmx["mode"] = DMXMode;
 
   if_live[F("timeout")] = realtimeTimeoutMs / 100;
