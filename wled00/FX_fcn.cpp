@@ -749,7 +749,7 @@ uint8_t Segment::differs(Segment& b) const {
 }
 
 void Segment::refreshLightCapabilities() {
-  uint8_t capabilities = 0x01;
+  uint8_t capabilities = 0;
 
   for (uint8_t b = 0; b < busses.getNumBusses(); b++) {
     Bus *bus = busses.getBus(b);
@@ -759,19 +759,17 @@ void Segment::refreshLightCapabilities() {
     if (bus->getStart() + bus->getLength() <= start) continue;
 
     uint8_t type = bus->getType();
-    if (type == TYPE_ONOFF || type == TYPE_ANALOG_1CH || type == TYPE_WS2812_1CH_X3 || (!cctFromRgb && type == TYPE_ANALOG_2CH)) capabilities &= 0xFE; // does not support RGB
-    if (bus->isRgbw()) capabilities |= 0x02; // segment supports white channel
-    if (!cctFromRgb) {
-      switch (type) {
-        case TYPE_ANALOG_5CH:
-        case TYPE_ANALOG_2CH:
-          capabilities |= 0x04; //segment supports white CCT
-      }
+    if (bus->hasRGB() || (cctFromRgb && bus->hasCCT())) capabilities |= SEG_CAPABILITY_RGB;
+    if (!cctFromRgb && bus->hasCCT())                   capabilities |= SEG_CAPABILITY_CCT;
+    if (correctWB && (bus->hasRGB() || bus->hasCCT()))  capabilities |= SEG_CAPABILITY_CCT; //white balance correction (CCT slider)
+    if (bus->hasWhite()) {
+      uint8_t aWM = Bus::getGlobalAWMode() == AW_GLOBAL_DISABLED ? bus->getAutoWhiteMode() : Bus::getGlobalAWMode();
+      bool whiteSlider = (aWM == RGBW_MODE_DUAL || aWM == RGBW_MODE_MANUAL_ONLY); // white slider allowed
+      // if auto white calculation from RGB is active (Accurate/Brighter), force RGB controls even if there are no RGB busses
+      if (!whiteSlider) capabilities |= SEG_CAPABILITY_RGB;
+      // if auto white calculation from RGB is disabled/optional (None/Dual), allow white channel adjustments
+      if ( whiteSlider) capabilities |= SEG_CAPABILITY_W;
     }
-    if (correctWB && !(type == TYPE_ANALOG_1CH || type == TYPE_ONOFF || type == TYPE_WS2812_1CH_X3)) capabilities |= 0x04; //white balance correction (uses CCT slider)
-    uint8_t aWM = Bus::getAutoWhiteMode()<255 ? Bus::getAutoWhiteMode() : bus->getAWMode();
-    bool whiteSlider = (aWM == RGBW_MODE_DUAL || aWM == RGBW_MODE_MANUAL_ONLY); // white slider allowed
-    if (bus->isRgbw() && (whiteSlider || !(capabilities & 0x01))) capabilities |= 0x08; // allow white channel adjustments (AWM allows or is not RGB)
   }
   _capabilities = capabilities;
 }
@@ -1000,7 +998,7 @@ void WS2812FX::finalizeInit(void)
     if (bus == nullptr) continue;
     if (bus->getStart() + bus->getLength() > MAX_LEDS) break;
     //RGBW mode is enabled if at least one of the strips is RGBW
-    _hasWhiteChannel |= bus->isRgbw();
+    _hasWhiteChannel |= bus->hasWhite();
     //refresh is required to remain off if at least one of the strips requires the refresh.
     _isOffRefreshRequired |= bus->isOffRefreshRequired();
     uint16_t busEnd = bus->getStart() + bus->getLength();
@@ -1167,7 +1165,7 @@ void WS2812FX::estimateCurrentAndLimitBri() {
       }
     }
 
-    if (bus->isRgbw()) { //RGBW led total output with white LEDs enabled is still 50mA, so each channel uses less
+    if (bus->hasWhite()) { //RGBW led total output with white LEDs enabled is still 50mA, so each channel uses less
       busPowerSum *= 3;
       busPowerSum = busPowerSum >> 2; //same as /= 4
     }
@@ -1335,12 +1333,7 @@ bool WS2812FX::hasRGBWBus(void) {
   for (size_t b = 0; b < busses.getNumBusses(); b++) {
     Bus *bus = busses.getBus(b);
     if (bus == nullptr || bus->getLength()==0) break;
-    switch (bus->getType()) {
-      case TYPE_SK6812_RGBW:
-      case TYPE_TM1814:
-      case TYPE_ANALOG_4CH:
-        return true;
-    }
+    if (bus->hasRGB() && bus->hasWhite()) return true;
   }
   return false;
 }

@@ -370,7 +370,7 @@ ${i+1}:
 <div id="dig${i}r" style="display:inline"><br><span id="rev${i}">Reversed</span>: <input type="checkbox" name="CV${i}"></div>
 <div id="dig${i}s" style="display:inline"><br>Skip first LEDs: <input type="number" name="SL${i}" min="0" max="255" value="0" oninput="UI()"></div>
 <div id="dig${i}f" style="display:inline"><br>Off Refresh: <input id="rf${i}" type="checkbox" name="RF${i}"></div>
-<div id="dig${i}a" style="display:inline"><br>Auto-calculate white channel from RGB:<br><select name="AW${i}"><option value=0>None</option><option value=1>Brighter</option><option value=2>Accurate</option><option value=3>Dual</option></select>&nbsp;</div>
+<div id="dig${i}a" style="display:inline"><br>Auto-calculate white channel from RGB:<br><select name="AW${i}"><option value=0>None</option><option value=1>Brighter</option><option value=2>Accurate</option><option value=3>Dual</option><option value=4>Max</option></select>&nbsp;</div>
 </div>`;
 				f.insertAdjacentHTML("beforeend", cn);
 			}
@@ -668,6 +668,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
 				<option value=1>Brighter</option>
 				<option value=2>Accurate</option>
 				<option value=3>Dual</option>
+				<option value=4>Max</option>
 			</select>
 		<br>
 		Calculate CCT from RGB: <input type="checkbox" name="CR"> <br>

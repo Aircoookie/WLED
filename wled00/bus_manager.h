@@ -155,7 +155,7 @@ class Bus {
     {
       _type = type;
       _start = start;
-      _autoWhiteMode = Bus::isRgbw(_type) ? aw : RGBW_MODE_MANUAL_ONLY;
+      _autoWhiteMode = Bus::hasWhite(_type) ? aw : RGBW_MODE_MANUAL_ONLY;
     };
 
     virtual ~Bus() {} //throw the bus under the bus
@@ -179,20 +179,20 @@ class Bus {
     inline  bool     isOffRefreshRequired() { return _needsRefresh; }
             bool     containsPixel(uint16_t pix) { return pix >= _start && pix < _start+_len; }
 
-    virtual bool isRgbw() { return Bus::isRgbw(_type); }
-    static  bool isRgbw(uint8_t type) {
-      if (type == TYPE_WS2812_1CH_X3 || type == TYPE_SK6812_RGBW || type == TYPE_TM1814) return true;
-      if (type > TYPE_ONOFF && type <= TYPE_ANALOG_5CH && type != TYPE_ANALOG_3CH) return true;
-      if (type == TYPE_NET_DDP_RGBW) return true;
-      return false;
-    }
     virtual bool hasRGB() {
       if ((_type >= TYPE_WS2812_1CH && _type <= TYPE_WS2812_WWA) || _type == TYPE_ANALOG_1CH || _type == TYPE_ANALOG_2CH || _type == TYPE_ONOFF) return false;
       return true;
     }
-    virtual bool hasWhite() {
-      if (_type == TYPE_SK6812_RGBW || _type == TYPE_TM1814 || (_type >= TYPE_WS2812_1CH && _type <= TYPE_WS2812_WWA) ||
-          _type == TYPE_ANALOG_1CH || _type == TYPE_ANALOG_2CH || _type == TYPE_ANALOG_4CH || _type == TYPE_ANALOG_5CH || _type == TYPE_NET_DDP_RGBW) return true;
+    virtual bool hasWhite() { return Bus::hasWhite(_type); }
+    static  bool hasWhite(uint8_t type) {
+      if ((type >= TYPE_WS2812_1CH && type <= TYPE_WS2812_WWA) || type == TYPE_SK6812_RGBW || type == TYPE_TM1814) return true; // digital types with white channel
+      if (type > TYPE_ONOFF && type <= TYPE_ANALOG_5CH && type != TYPE_ANALOG_3CH) return true; // analog types with white channel
+      if (type == TYPE_NET_DDP_RGBW) return true; // network types with white channel
+      return false;
+    }
+    virtual bool hasCCT() {
+      if (_type == TYPE_WS2812_2CH_X3 || _type == TYPE_WS2812_WWA ||
+          _type == TYPE_ANALOG_2CH    || _type == TYPE_ANALOG_5CH) return true;
       return false;
     }
     static void setCCT(uint16_t cct) {
@@ -206,10 +206,10 @@ class Bus {
 				if (_cctBlend > WLED_MAX_CCT_BLEND) _cctBlend = WLED_MAX_CCT_BLEND;
 			#endif
 		}
-		inline        void    setAWMode(uint8_t m)        { if (m < 4) _autoWhiteMode = m; }
-		inline        uint8_t getAWMode()                 { return _autoWhiteMode; }
-    inline static void    setAutoWhiteMode(uint8_t m) { if (m < 4) _gAWM = m; else _gAWM = 255; }
-    inline static uint8_t getAutoWhiteMode()          { return _gAWM; }
+		inline        void    setAutoWhiteMode(uint8_t m) { if (m < 5) _autoWhiteMode = m; }
+		inline        uint8_t getAutoWhiteMode()          { return _autoWhiteMode; }
+    inline static void    setGlobalAWMode(uint8_t m)  { if (m < 5) _gAWM = m; else _gAWM = AW_GLOBAL_DISABLED; } //255 = use per-bus setting
+    inline static uint8_t getGlobalAWMode()           { return _gAWM; }
 
     bool reversed = false;
 
@@ -235,6 +235,7 @@ class Bus {
       uint8_t r = R(c);
       uint8_t g = G(c);
       uint8_t b = B(c);
+      if (aWM == RGBW_MODE_MAX) return RGBW32(r, g, b, r > g ? (r > b ? r : b) : (g > b ? g : b)); // brightest RGB channel
       w = r < g ? (r < b ? r : b) : (g < b ? g : b);
       if (aWM == RGBW_MODE_AUTO_ACCURATE) { r -= w; g -= w; b -= w; } //subtract w in ACCURATE mode
       return RGBW32(r, g, b, w);
@@ -328,6 +329,7 @@ class BusDigital : public Bus {
         case 1: c = RGBW32(R(c), R(c), R(c), R(c)); break;
         case 2: c = RGBW32(B(c), B(c), B(c), B(c)); break;
       }
+      return c;
     }
     return PolyBus::getPixelColor(_busPtr, _iType, pix, co);
   }
@@ -622,12 +624,12 @@ class BusNetwork : public Bus {
       _valid = true;
     };
 
-  bool hasRGB() { return true; }
-  bool hasWhite() { return _rgbw; }
+  inline bool hasRGB() { return true; }
+  inline bool hasWhite() { return _rgbw; }
 
   void setPixelColor(uint16_t pix, uint32_t c) {
     if (!_valid || pix >= _len) return;
-		if (isRgbw()) c = autoWhiteCalc(c);
+		if (hasWhite()) c = autoWhiteCalc(c);
     if (_cct >= 1900) c = colorBalanceFromKelvin(_cct, c); //color correction from CCT
     uint16_t offset = pix * _UDPchannels;
     _data[offset]   = R(c);
@@ -659,10 +661,6 @@ class BusNetwork : public Bus {
       pinArray[i] = _client[i];
     }
     return 4;
-  }
-
-  inline bool isRgbw() {
-    return _rgbw;
   }
 
   inline uint16_t getLength() {

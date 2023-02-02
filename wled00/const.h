@@ -143,11 +143,13 @@
 #define CALL_MODE_BUTTON_PRESET 12     //button/IR JSON preset/macro
 
 //RGB to RGBW conversion mode
-#define RGBW_MODE_MANUAL_ONLY     0            //No automatic white channel calculation. Manual white channel slider
-#define RGBW_MODE_AUTO_BRIGHTER   1            //New algorithm. Adds as much white as the darkest RGBW channel
-#define RGBW_MODE_AUTO_ACCURATE   2            //New algorithm. Adds as much white as the darkest RGBW channel and subtracts this amount from each RGB channel
-#define RGBW_MODE_DUAL            3            //Manual slider + auto calculation. Automatically calculates only if manual slider is set to off (0)
-#define RGBW_MODE_LEGACY          4            //Old floating algorithm. Too slow for realtime and palette support
+#define RGBW_MODE_MANUAL_ONLY     0    // No automatic white channel calculation. Manual white channel slider
+#define RGBW_MODE_AUTO_BRIGHTER   1    // New algorithm. Adds as much white as the darkest RGBW channel
+#define RGBW_MODE_AUTO_ACCURATE   2    // New algorithm. Adds as much white as the darkest RGBW channel and subtracts this amount from each RGB channel
+#define RGBW_MODE_DUAL            3    // Manual slider + auto calculation. Automatically calculates only if manual slider is set to off (0)
+#define RGBW_MODE_MAX             4    // Sets white to the value of the brightest RGB channel (good for white-only LEDs without any RGB)
+//#define RGBW_MODE_LEGACY        4    // Old floating algorithm. Too slow for realtime and palette support (unused)
+#define AW_GLOBAL_DISABLED      255    // Global auto white mode override disabled. Per-bus setting is used
 
 //realtime modes
 #define REALTIME_MODE_INACTIVE    0
@@ -291,6 +293,11 @@
 
 //Playlist option byte
 #define PL_OPTION_SHUFFLE      0x01
+
+// Segment capability byte
+#define SEG_CAPABILITY_RGB     0x01
+#define SEG_CAPABILITY_W       0x02
+#define SEG_CAPABILITY_CCT     0x04
 
 // WLED Error modes
 #define ERR_NONE         0  // All good :)
