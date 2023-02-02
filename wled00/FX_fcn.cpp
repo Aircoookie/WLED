@@ -759,7 +759,7 @@ void Segment::refreshLightCapabilities() {
     if (bus->getStart() + bus->getLength() <= start) continue;
 
     uint8_t type = bus->getType();
-    if (type == TYPE_ONOFF || type == TYPE_ANALOG_1CH || (!cctFromRgb && type == TYPE_ANALOG_2CH)) capabilities &= 0xFE; // does not support RGB
+    if (type == TYPE_ONOFF || type == TYPE_ANALOG_1CH || type == TYPE_WS2812_1CH_X3 || (!cctFromRgb && type == TYPE_ANALOG_2CH)) capabilities &= 0xFE; // does not support RGB
     if (bus->isRgbw()) capabilities |= 0x02; // segment supports white channel
     if (!cctFromRgb) {
       switch (type) {
@@ -768,7 +768,7 @@ void Segment::refreshLightCapabilities() {
           capabilities |= 0x04; //segment supports white CCT
       }
     }
-    if (correctWB && !(type == TYPE_ANALOG_1CH || type == TYPE_ONOFF)) capabilities |= 0x04; //white balance correction (uses CCT slider)
+    if (correctWB && !(type == TYPE_ANALOG_1CH || type == TYPE_ONOFF || type == TYPE_WS2812_1CH_X3)) capabilities |= 0x04; //white balance correction (uses CCT slider)
     uint8_t aWM = Bus::getAutoWhiteMode()<255 ? Bus::getAutoWhiteMode() : bus->getAWMode();
     bool whiteSlider = (aWM == RGBW_MODE_DUAL || aWM == RGBW_MODE_MANUAL_ONLY); // white slider allowed
     if (bus->isRgbw() && (whiteSlider || !(capabilities & 0x01))) capabilities |= 0x08; // allow white channel adjustments (AWM allows or is not RGB)

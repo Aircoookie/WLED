@@ -184,7 +184,7 @@
 						if (t > 31 && t < 48) d.getElementsByName("LC"+n)[0].value = 1; // for sanity change analog count just to 1 LED
 					}
 					gId("rf"+n).onclick = (t == 31) ? (()=>{return false}) : (()=>{});  // prevent change for TM1814
-					isRGBW = (t == 30 || t == 31 || (t > 40 && t < 46 && t != 43) || t == 88); // RGBW checkbox, TYPE_xxxx values from const.h
+					isRGBW = ((t > 17 && t < 22) || t == 30 || t == 31 || (t > 40 && t < 46 && t != 43) || t == 88); // RGBW checkbox, TYPE_xxxx values from const.h
 					gId("co"+n).style.display = ((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? "none":"inline";  // hide color order for PWM
 					gId("dig"+n+"w").style.display = (t == 30 || t == 31) ? "inline":"none";  // show swap channels dropdown
 					if (!(t == 30 || t == 31)) d.getElementsByName("WO"+n)[0].value = 0; // reset swapping
@@ -335,6 +335,7 @@ ${i+1}:
 <option value="52">LPD8806</option>\
 <option value="54">LPD6803</option>\
 <option value="53">P9813</option>\
+<option value="19">WS2811 White</option>\
 <option value="40">On/Off</option>\
 <option value="41">PWM White</option>\
 <option value="42">PWM CCT</option>\

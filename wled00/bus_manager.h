@@ -38,6 +38,13 @@ void colorRGBtoRGBW(byte* rgb);
 #define SET_BIT(var,bit)    ((var)|=(uint16_t)(0x0001<<(bit)))
 #define UNSET_BIT(var,bit)  ((var)&=(~(uint16_t)(0x0001<<(bit))))
 
+#define NUM_ICS_WS2812_1CH_3X(len) (((len)+2)/3)   // 1 WS2811 IC controls 3 zones (each zone has 1 LED, W)
+#define IC_INDEX_WS2812_1CH_3X(i)  ((i)/3)
+
+#define NUM_ICS_WS2812_2CH_3X(len) (((len)+1)*2/3) // 2 WS2811 ICs control 3 zones (each zone has 2 LEDs, CW and WW)
+#define IC_INDEX_WS2812_2CH_3X(i)  ((i)*2/3)
+#define WS2812_2CH_3X_SPANS_2_ICS(i) ((i)&0x01)    // every other LED zone is on two different ICs
+
 //color mangling macros
 #define RGBW32(r,g,b,w) (uint32_t((byte(w) << 24) | (byte(r) << 16) | (byte(g) << 8) | (byte(b))))
 #define R(c) (byte((c) >> 16))
@@ -174,17 +181,17 @@ class Bus {
 
     virtual bool isRgbw() { return Bus::isRgbw(_type); }
     static  bool isRgbw(uint8_t type) {
-      if (type == TYPE_SK6812_RGBW || type == TYPE_TM1814) return true;
+      if (type == TYPE_WS2812_1CH_X3 || type == TYPE_SK6812_RGBW || type == TYPE_TM1814) return true;
       if (type > TYPE_ONOFF && type <= TYPE_ANALOG_5CH && type != TYPE_ANALOG_3CH) return true;
       if (type == TYPE_NET_DDP_RGBW) return true;
       return false;
     }
     virtual bool hasRGB() {
-      if (_type == TYPE_WS2812_1CH || _type == TYPE_WS2812_WWA || _type == TYPE_ANALOG_1CH || _type == TYPE_ANALOG_2CH || _type == TYPE_ONOFF) return false;
+      if ((_type >= TYPE_WS2812_1CH && _type <= TYPE_WS2812_WWA) || _type == TYPE_ANALOG_1CH || _type == TYPE_ANALOG_2CH || _type == TYPE_ONOFF) return false;
       return true;
     }
     virtual bool hasWhite() {
-      if (_type == TYPE_SK6812_RGBW || _type == TYPE_TM1814 || _type == TYPE_WS2812_1CH || _type == TYPE_WS2812_WWA ||
+      if (_type == TYPE_SK6812_RGBW || _type == TYPE_TM1814 || (_type >= TYPE_WS2812_1CH && _type <= TYPE_WS2812_WWA) ||
           _type == TYPE_ANALOG_1CH || _type == TYPE_ANALOG_2CH || _type == TYPE_ANALOG_4CH || _type == TYPE_ANALOG_5CH || _type == TYPE_NET_DDP_RGBW) return true;
       return false;
     }
@@ -253,7 +260,9 @@ class BusDigital : public Bus {
     _len = bc.count + _skip;
     _iType = PolyBus::getI(bc.type, _pins, nr);
     if (_iType == I_NONE) return;
-    _busPtr = PolyBus::create(_iType, _pins, _len, nr);
+    uint16_t lenToCreate = _len;
+    if (bc.type == TYPE_WS2812_1CH_X3) lenToCreate = NUM_ICS_WS2812_1CH_3X(_len); // only needs a third of "RGB" LEDs for NeoPixelBus 
+    _busPtr = PolyBus::create(_iType, _pins, lenToCreate, nr);
     _valid = (_busPtr != nullptr);
     _colorOrder = bc.colorOrder;
     DEBUG_PRINTF("%successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u)\n", _valid?"S":"Uns", nr, _len, bc.type, _pins[0],_pins[1],_iType);
@@ -288,17 +297,39 @@ class BusDigital : public Bus {
   }
 
   void setPixelColor(uint16_t pix, uint32_t c) {
-    if (_type == TYPE_SK6812_RGBW || _type == TYPE_TM1814) c = autoWhiteCalc(c);
+    if (_type == TYPE_SK6812_RGBW || _type == TYPE_TM1814 || _type == TYPE_WS2812_1CH_X3) c = autoWhiteCalc(c);
     if (_cct >= 1900) c = colorBalanceFromKelvin(_cct, c); //color correction from CCT
     if (reversed) pix = _len - pix -1;
     else pix += _skip;
-    PolyBus::setPixelColor(_busPtr, _iType, pix, c, _colorOrderMap.getPixelColorOrder(pix+_start, _colorOrder));
+    uint8_t co = _colorOrderMap.getPixelColorOrder(pix+_start, _colorOrder);
+    if (_type == TYPE_WS2812_1CH_X3) { // map to correct IC, each controls 3 LEDs
+      uint16_t pOld = pix;
+      pix = IC_INDEX_WS2812_1CH_3X(pix);
+      uint32_t cOld = PolyBus::getPixelColor(_busPtr, _iType, pix, co);
+      switch (pOld % 3) { // change only the single channel (TODO: this can cause loss because of get/set)
+        case 0: c = RGBW32(R(cOld), W(c)   , B(cOld), 0); break;
+        case 1: c = RGBW32(W(c)   , G(cOld), B(cOld), 0); break;
+        case 2: c = RGBW32(R(cOld), G(cOld), W(c)   , 0); break;
+      }
+    }
+    PolyBus::setPixelColor(_busPtr, _iType, pix, c, co);
   }
 
   uint32_t getPixelColor(uint16_t pix) {
     if (reversed) pix = _len - pix -1;
     else pix += _skip;
-    return PolyBus::getPixelColor(_busPtr, _iType, pix, _colorOrderMap.getPixelColorOrder(pix+_start, _colorOrder));
+    uint8_t co = _colorOrderMap.getPixelColorOrder(pix+_start, _colorOrder);
+    if (_type == TYPE_WS2812_1CH_X3) { // map to correct IC, each controls 3 LEDs
+      uint16_t pOld = pix;
+      pix = IC_INDEX_WS2812_1CH_3X(pix);
+      uint32_t c = PolyBus::getPixelColor(_busPtr, _iType, pix, co);
+      switch (pOld % 3) { // get only the single channel
+        case 0: c = RGBW32(G(c), G(c), G(c), G(c)); break;
+        case 1: c = RGBW32(R(c), R(c), R(c), R(c)); break;
+        case 2: c = RGBW32(B(c), B(c), B(c), B(c)); break;
+      }
+    }
+    return PolyBus::getPixelColor(_busPtr, _iType, pix, co);
   }
 
   inline uint8_t getColorOrder() {
