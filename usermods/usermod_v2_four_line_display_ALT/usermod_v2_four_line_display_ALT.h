@@ -9,6 +9,10 @@
 #include <U8x8lib.h> // from https://github.com/olikraus/u8g2/
 #include "4LD_wled_fonts.c"
 
+#ifndef FLD_ESP32_NO_THREADS
+#define FLD_ESP32_USE_THREADS  // comment out to use 0.13.x behviour without parallel update task - slower, but more robust. May delay other tasks like LEDs or audioreactive!!
+#endif
+
 //
 // Insired by the usermod_v2_four_line_display
 //
@@ -103,7 +107,8 @@ class FourLineDisplayUsermod : public Usermod {
 
     static FourLineDisplayUsermod *instance;
     bool initDone = false;
-    volatile bool drawing = false;
+    volatile bool drawing = false;          // true of overlay drawing is active
+    volatile bool reDrawing = false;        // true if redraw ongoing (on esp32, this happens in a separate task)
 
     char errorMessage[100] = ""; //WLEDMM: show error in um settings if occurred
 
@@ -119,7 +124,7 @@ class FourLineDisplayUsermod : public Usermod {
     #endif
 
     DisplayType type = FLD_TYPE;    // display type
-    bool typeOK = true;             //WLEDMM: instead of type == NULL and type=NULL
+    bool typeOK = false;             //WLEDMM: instead of type == NULL and type=NULL. Intially false, as display was not initialized yet
     bool flip = false;              // flip display 180°
     uint8_t contrast = 10;          // screen contrast
     uint8_t lineHeight = 1;         // 1 row or 2 rows
@@ -187,6 +192,9 @@ class FourLineDisplayUsermod : public Usermod {
 
     // some displays need this to properly apply contrast
     void setVcomh(bool highContrast) {
+      if (!typeOK || !enabled) return;    // WLEDMM make sure the display is initialized before we try to draw on it
+      if (!canDraw()) return;              // don't interfere with ongoing draw
+
       u8x8_t *u8x8_struct = u8x8->getU8x8();
       u8x8_cad_StartTransfer(u8x8_struct);
       u8x8_cad_SendCmd(u8x8_struct, 0x0db); //address of value
@@ -198,17 +206,17 @@ class FourLineDisplayUsermod : public Usermod {
      * Wrappers for screen drawing
      */
     void setFlipMode(uint8_t mode) {
-      if (!typeOK || !enabled) return;
-      u8x8->setFlipMode(mode);
+      if (!typeOK || !enabled) return;    // WLEDMM make sure the display is initialized before we try to draw on it
+      if (canDraw()) u8x8->setFlipMode(mode);
     }
     void setContrast(uint8_t contrast) {
-      if (!typeOK || !enabled) return;
-      u8x8->setContrast(contrast);
+      if (!typeOK || !enabled) return;    // WLEDMM make sure the display is initialized before we try to draw on it
+      if (canDraw()) u8x8->setContrast(contrast);
     }
     void drawString(uint8_t col, uint8_t row, const char *string, bool ignoreLH=false) {
-      if (!typeOK || !enabled) return;
-      u8x8->setFont(u8x8_font_chroma48medium8_r);
-      if (!ignoreLH && lineHeight==2) u8x8->draw1x2String(col, row, string);
+      if (!typeOK || !enabled) return;    // WLEDMM make sure the display is initialized before we try to draw on it
+      u8x8->setFont(u8x8_font_chroma48medium8_r);  // crashes randomly on ESP32
+      if (!ignoreLH && lineHeight==2) u8x8->draw1x2String(col, row, string); // crashes randomly on ESP32
       else                            u8x8->drawString(col, row, string);
     }
     void draw2x2String(uint8_t col, uint8_t row, const char *string) {
@@ -233,10 +241,11 @@ class FourLineDisplayUsermod : public Usermod {
     }
     void clear() {
       if (!typeOK || !enabled) return;
-      u8x8->clear();
+      if (nullptr == u8x8) return;  // prevents some crashes
+      u8x8->clear();         // crashes randomly on ESP32
     }
     void setPowerSave(uint8_t save) {
-      if (!typeOK || !enabled) return;
+      if (!typeOK || !enabled) return;    // WLEDMM make sure the display is initialized before we try to draw on it
       u8x8->setPowerSave(save);
     }
 
@@ -247,6 +256,7 @@ class FourLineDisplayUsermod : public Usermod {
     }
 
     void draw2x2GlyphIcons() {
+      if (!typeOK || !enabled) return;    // WLEDMM make sure the display is initialized before we try to draw on it
       if (lineHeight == 2) {
         drawGlyph( 1,            0, 1, u8x8_4LineDisplay_WLED_icons_2x2, true); //brightness icon
         drawGlyph( 5,            0, 2, u8x8_4LineDisplay_WLED_icons_2x2, true); //speed icon
@@ -274,7 +284,7 @@ class FourLineDisplayUsermod : public Usermod {
       while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
       drawing = true;
 
-      char lineBuffer[LINE_BUFFER_SIZE];
+      char lineBuffer[LINE_BUFFER_SIZE] = { '\0' };
       static byte lastSecond;
       byte secondCurrent = second(localTime);
       byte minuteCurrent = minute(localTime);
@@ -290,10 +300,10 @@ class FourLineDisplayUsermod : public Usermod {
         }
         if (knownHour != hourCurrent) {
           // only update date when hour changes
-          sprintf_P(lineBuffer, PSTR("%s %2d "), monthShortStr(month(localTime)), day(localTime)); 
+          snprintf_P(lineBuffer, LINE_BUFFER_SIZE, PSTR("%s %2d "), monthShortStr(month(localTime)), day(localTime)); 
           draw2x2String(2, lineHeight==1 ? 0 : lineHeight, lineBuffer); // adjust for 8 line displays, draw month and day
         }
-        sprintf_P(lineBuffer,PSTR("%2d:%02d"), (useAMPM ? AmPmHour : hourCurrent), minuteCurrent);
+        snprintf_P(lineBuffer,LINE_BUFFER_SIZE, PSTR("%2d:%02d"), (useAMPM ? AmPmHour : hourCurrent), minuteCurrent);
         draw2x2String(2, lineHeight*2, lineBuffer); //draw hour, min. blink ":" depending on odd/even seconds
         if (useAMPM) drawString(12, lineHeight*2, (isitAM ? "AM" : "PM"), true); //draw am/pm if using 12 time
 
@@ -305,7 +315,7 @@ class FourLineDisplayUsermod : public Usermod {
       if (showSeconds && secondCurrent != lastSecond) {
         lastSecond = secondCurrent;
         draw2x2String(6, lineHeight*2, secondCurrent%2 ? " " : ":");
-        sprintf_P(lineBuffer, PSTR("%02d"), secondCurrent);
+        snprintf_P(lineBuffer, LINE_BUFFER_SIZE, PSTR("%02d"), secondCurrent);
         drawString(12, lineHeight*2+1, lineBuffer, true); // even with double sized rows print seconds in 1 line
       }
       drawing = false;
@@ -316,7 +326,7 @@ class FourLineDisplayUsermod : public Usermod {
     // gets called once at boot. Do all initialization that doesn't depend on
     // network here
     void setup() {
-      if (!typeOK || !enabled) return;
+      if (!enabled) return;   // typeOK = true will be set after successfull setup
 
       bool isHW, isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64);
       PinOwner po = PinOwner::UM_FourLineDisplay;
@@ -439,9 +449,16 @@ class FourLineDisplayUsermod : public Usermod {
       }
 
       lineHeight = u8x8->getRows() > 4 ? 2 : 1;
-      USER_PRINTLN(F("Starting display."));
+      if (isSPI) {
+        USER_PRINTLN(isHW ? F("Starting display (SPI HW).") : F("Starting display (SPI Soft)."));
+      } else {
+        USER_PRINTLN(isHW ? F("Starting display (I2C HW).") : F("Starting display (I2C Soft)."));
+      }
       u8x8->setBusClock(ioFrequency);  // can be used for SPI too
       u8x8->begin();
+      typeOK = true;
+      drawing = false;
+      reDrawing = false;
       setFlipMode(flip);
       setVcomh(contrastFix);
       setContrast(contrast); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
@@ -464,12 +481,17 @@ class FourLineDisplayUsermod : public Usermod {
      * Da loop.
      */
     void loop() {
-    #ifndef ARDUINO_ARCH_ESP32
-      if (!enabled || !typeOK || strip.isUpdating()) return;
+    #if !defined(ARDUINO_ARCH_ESP32) || !defined(FLD_ESP32_USE_THREADS)
+      static unsigned long lastRunTime = 0;
       unsigned long now = millis();
+      if (!enabled || !typeOK || (strip.isUpdating() && (now - lastRunTime < 50))) return;
+      lastRunTime = now;
+
       if (now < nextUpdate) return;
       nextUpdate = now + ((displayTurnedOff && clockMode && showSeconds) ? 1000 : refreshRate);
+      reDrawing = true;
       redraw(false);
+      reDrawing = false;
     #endif
     }
 
@@ -478,15 +500,47 @@ class FourLineDisplayUsermod : public Usermod {
       lastRedraw = millis();
     }
 
+    //function to to check if a redraw or overlay draw is active. Needed for UM Rotary, to avoid random/concurrent drawing
+    bool canDraw(void) {
+    #if defined(ARDUINO_ARCH_ESP32) && defined(FLD_ESP32_USE_THREADS) // only necessary on ESP32
+      if (drawing) return(false);          // overlay draws someting
+      if (reDrawing) return(false);        // redraw task draws something
+    #endif
+      return(true);
+    }
+
     /**
      * Redraw the screen (but only if things have changed
      * or if forceRedraw).
      */
     void redraw(bool forceRedraw) {
+    #if defined(ARDUINO_ARCH_ESP32) && defined(FLD_ESP32_USE_THREADS)
+        // use a wrapper onESP32, to ensure the functions is not running several times in parallel !
+        static bool doForceRedraw = false;  // for delaying "force redraw"
+
+        if ((overlayUntil > 0) && (millis() >= overlayUntil)) {
+          forceRedraw = true; // Time to display the overlay has elapsed, force redraw needed
+        }
+
+        if (forceRedraw) doForceRedraw = true;
+        if (reDrawing) return; // redraw already active
+        if (drawing) return;   // overlay draw active
+
+        reDrawing = true;    // set redraw lock
+        if (doForceRedraw) forceRedraw = true;
+        redraw_core(forceRedraw);
+        if (overlayUntil == 0) doForceRedraw = false;   // redraw was skipped if overlay is still visible
+        reDrawing = false;     // reset activity flag, as redraw has too many early returns that don't take care of this
+    }
+
+    void redraw_core(bool forceRedraw) {
+#endif
       bool needRedraw = false;
       unsigned long now = millis();
+
+      if (!typeOK || !enabled) return;    // WLEDMM make sure the display is initialized before we try to draw on it
+      if (nullptr == u8x8) return;        // prevent crash in case u8x8 is re-initialized (du to user changing setings)
  
-      if (!typeOK || !enabled) return;
       if (overlayUntil > 0) {
         if (now >= overlayUntil) {
           // Time to display the overlay has elapsed.
@@ -575,6 +629,8 @@ class FourLineDisplayUsermod : public Usermod {
       knownnightlight      = nightlightActive;
       wificonnected        = interfacesInited;
 
+      while (drawing && millis()-now < 150) delay(8); // wait if someone else is drawing
+
       // Do the actual drawing
       // First row: Icons
       draw2x2GlyphIcons();
@@ -598,7 +654,7 @@ class FourLineDisplayUsermod : public Usermod {
       if (overlayUntil == 0) {
         brightness100 = ((uint16_t)bri*100)/255;
         char lineBuffer[4];
-        sprintf_P(lineBuffer, PSTR("%-3d"), brightness100);
+        snprintf_P(lineBuffer, 4, PSTR("%-3d"), brightness100);
         drawString(1, lineHeight, lineBuffer);
         //lastRedraw = millis();
       }
@@ -609,7 +665,7 @@ class FourLineDisplayUsermod : public Usermod {
       if (overlayUntil == 0) {
         fxspeed100 = ((uint16_t)effectSpeed*100)/255;
         char lineBuffer[4];
-        sprintf_P(lineBuffer, PSTR("%-3d"), fxspeed100);
+        snprintf_P(lineBuffer, 4, PSTR("%-3d"), fxspeed100);
         drawString(5, lineHeight, lineBuffer);
         //lastRedraw = millis();
       }
@@ -620,7 +676,7 @@ class FourLineDisplayUsermod : public Usermod {
       if (overlayUntil == 0) {
         fxintensity100 = ((uint16_t)effectIntensity*100)/255;
         char lineBuffer[4];
-        sprintf_P(lineBuffer, PSTR("%-3d"), fxintensity100);
+        snprintf_P(lineBuffer, 4, PSTR("%-3d"), fxintensity100);
         drawString(9, lineHeight, lineBuffer);
         //lastRedraw = millis();
       }
@@ -654,10 +710,12 @@ class FourLineDisplayUsermod : public Usermod {
     //Display the current effect or palette (desiredEntry) 
     // on the appropriate line (row). 
     void showCurrentEffectOrPalette(int inputEffPal, const char *qstring, uint8_t row) {
-      char lineBuffer[MAX_JSON_CHARS];
+      char lineBuffer[MAX_JSON_CHARS] = { '\0' };
+      if (!typeOK || !enabled) return;    // WLEDMM make sure the display is initialized before we try to draw on it
       if (overlayUntil == 0) {
         // Find the mode name in JSON
         uint8_t printedChars = extractModeName(inputEffPal, qstring, lineBuffer, MAX_JSON_CHARS-1);
+        if (printedChars < 2) strcpy(lineBuffer, "invalid");  // catch possible error
         if (lineBuffer[0]=='*' && lineBuffer[1]==' ') {
           // remove "* " from dynamic palettes
           for (byte i=2; i<=printedChars; i++) lineBuffer[i-2] = lineBuffer[i]; //include '\0'
@@ -668,8 +726,8 @@ class FourLineDisplayUsermod : public Usermod {
           printedChars -= 5;
         }
         if (lineHeight == 2) {                                 // use this code for 8 line display
-          char smallBuffer1[MAX_MODE_LINE_SPACE];
-          char smallBuffer2[MAX_MODE_LINE_SPACE];
+          char smallBuffer1[MAX_MODE_LINE_SPACE+1] = { '\0' };
+          char smallBuffer2[MAX_MODE_LINE_SPACE+1] = { '\0' };
           uint8_t smallChars1 = 0;
           uint8_t smallChars2 = 0;
           if (printedChars < MAX_MODE_LINE_SPACE) {            // use big font if the text fits
@@ -696,13 +754,15 @@ class FourLineDisplayUsermod : public Usermod {
             }
             while (smallChars1 < (MAX_MODE_LINE_SPACE-1)) smallBuffer1[smallChars1++]=' ';
             smallBuffer1[smallChars1] = 0;
+            smallBuffer1[MAX_MODE_LINE_SPACE -1] = '\0';   // ensure the string ends where it should  (while loop avove can overshoot by 1)
             drawString(1, row*lineHeight, smallBuffer1, true);
             while (smallChars2 < (MAX_MODE_LINE_SPACE-1)) smallBuffer2[smallChars2++]=' '; 
             smallBuffer2[smallChars2] = 0;
+            smallBuffer2[MAX_MODE_LINE_SPACE -1] = '\0';   // ensure the string ends where it should  (while loop avove can overshoot by 1)
             drawString(1, row*lineHeight+1, smallBuffer2, true);
           }
         } else {                                             // use this code for 4 ling displays
-          char smallBuffer3[MAX_MODE_LINE_SPACE+1];          // uses 1x1 icon for mode/palette
+          char smallBuffer3[MAX_MODE_LINE_SPACE+1] = {'\0'}; // uses 1x1 icon for mode/palette
           uint8_t smallChars3 = 0;
           for (uint8_t i = 0; i < MAX_MODE_LINE_SPACE; i++) smallBuffer3[smallChars3++] = (i >= printedChars) ? ' ' : lineBuffer[i];
           smallBuffer3[smallChars3] = 0;
@@ -739,8 +799,10 @@ class FourLineDisplayUsermod : public Usermod {
      * Used in Rotary Encoder usermod.
      */
     void overlay(const char* line1, long showHowLong, byte glyphType) {
+      if (!typeOK || !enabled) return;   // WLEDMM make sure the display is initialized before we try to draw on it
       unsigned long now = millis();
       while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
+      while ((reDrawing && overlayUntil == 0) && (millis()-now < 250)) delay(10); // wait if someone else is re-drawing
       drawing = true;
       // Turn the display back on
       if (!wakeDisplay()) clear();
@@ -763,6 +825,7 @@ class FourLineDisplayUsermod : public Usermod {
      * Clears the screen and prints.
      */
     void overlayLogo(long showHowLong) {
+      if (!typeOK || !enabled) return;   // WLEDMM make sure the display is initialized before we try to draw on it
       unsigned long now = millis();
       while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
       drawing = true;
@@ -824,8 +887,10 @@ class FourLineDisplayUsermod : public Usermod {
      * Used in Auto Save usermod
      */
     void overlay(const char* line1, const char* line2, long showHowLong) {
+      if (!typeOK || !enabled) return;   // WLEDMM make sure the display is initialized before we try to draw on it
       unsigned long now = millis();
       while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
+      while ((reDrawing && overlayUntil == 0) && (millis()-now < 250)) delay(10); // wait if someone else is re-drawing
       drawing = true;
       // Turn the display back on
       if (!wakeDisplay()) clear();
@@ -845,6 +910,7 @@ class FourLineDisplayUsermod : public Usermod {
     }
 
     void networkOverlay(const char* line1, long showHowLong) {
+      if (!typeOK || !enabled) return;   // WLEDMM make sure the display is initialized before we try to draw on it
       unsigned long now = millis();
       while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
       drawing = true;
@@ -982,7 +1048,7 @@ class FourLineDisplayUsermod : public Usermod {
     #endif
     #endif
     void onUpdateBegin(bool init) {
-    #ifdef ARDUINO_ARCH_ESP32
+    #if defined(ARDUINO_ARCH_ESP32) && defined(FLD_ESP32_USE_THREADS)
       if (init && Display_Task) {
         vTaskSuspend(Display_Task);   // update is about to begin, disable task to prevent crash
       } else {
@@ -990,7 +1056,7 @@ class FourLineDisplayUsermod : public Usermod {
         if (Display_Task)
           vTaskResume(Display_Task);
         else
-          xTaskCreatePinnedToCore(
+          xTaskCreateUniversal(               // this is guaranteed to work on any ESP32 (single or dual core)
             [](void * par) {                  // Function to implement the task
               // see https://www.freertos.org/vtaskdelayuntil.html
               const TickType_t xFrequency = REFRESH_RATE_MS * portTICK_PERIOD_MS / 2;  
@@ -998,12 +1064,14 @@ class FourLineDisplayUsermod : public Usermod {
               for(;;) {
                 delay(1); // DO NOT DELETE THIS LINE! It is needed to give the IDLE(0) task enough time and to keep the watchdog happy.
                           // taskYIELD(), yield(), vTaskDelay() and esp_task_wdt_feed() didn't seem to work.
-                vTaskDelayUntil(&xLastWakeTime, xFrequency); // release CPU, by doing nothing for REFRESH_RATE_MS millis
+                xLastWakeTime = xTaskGetTickCount();         // workaround for vTaskDelayUntil bug: it does not always keep the last time so we refresh it explicitly
                 FourLineDisplayUsermod::getInstance()->redraw(false);
+                vTaskDelayUntil(&xLastWakeTime, xFrequency); // release CPU, by doing nothing until next REFRESH_RATE_MS millis
               }
             },
             "4LD",                // Name of the task
-            3072,                 // Stack size in words
+//            3072,                 // Stack size in words
+            4096,                 // bigger Stack size in words
             NULL,                 // Task input parameter
             1,                    // Priority of the task (not idle)
             &Display_Task,        // Task handle
@@ -1136,7 +1204,7 @@ class FourLineDisplayUsermod : public Usermod {
       top[FPSTR(_flip)]          = (bool) flip;
       top[FPSTR(_contrast)]      = contrast;
       top[FPSTR(_contrastFix)]   = (bool) contrastFix;
-      #ifndef ARDUINO_ARCH_ESP32
+      #if !defined(ARDUINO_ARCH_ESP32) || !defined(FLD_ESP32_USE_THREADS)
       top[FPSTR(_refreshRate)]   = refreshRate;
       #endif
       top[FPSTR(_screenTimeOut)] = screenTimeout/1000;
@@ -1172,7 +1240,7 @@ class FourLineDisplayUsermod : public Usermod {
       for (byte i=0; i<5; i++) ioPin[i] = top["pin"][i] | ioPin[i];
       flip          = top[FPSTR(_flip)] | flip;
       contrast      = top[FPSTR(_contrast)] | contrast;
-      #ifndef ARDUINO_ARCH_ESP32
+      #if !defined(ARDUINO_ARCH_ESP32) || !defined(FLD_ESP32_USE_THREADS)
       refreshRate   = top[FPSTR(_refreshRate)] | refreshRate;
       refreshRate   = min(5000, max(250, (int)refreshRate));
       #endif
@@ -1196,8 +1264,20 @@ class FourLineDisplayUsermod : public Usermod {
         // changing parameters from settings page
         bool pinsChanged = false;
         for (byte i=0; i<5; i++) if (ioPin[i] != oldPin[i]) { pinsChanged = true; break; }
+        #if defined(ARDUINO_ARCH_ESP32) && defined(FLD_ESP32_USE_THREADS)
+        unsigned long now = millis();
+        while ((drawing || reDrawing) && millis()-now < 300) delay(10); // wait if someone else is drawing
+        #endif
+        drawing = false;
+        reDrawing = false;
+
         if (pinsChanged || type!=newType) {
-          if (typeOK) delete u8x8;
+          if (typeOK) {
+            typeOK = false;
+            if (u8x8 != nullptr) delete u8x8;
+            u8x8 = nullptr;
+            USER_PRINTLN(F("Display terminated."));
+          }
           PinOwner po = PinOwner::UM_FourLineDisplay;
           bool isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64);
           if (isSPI) {
@@ -1213,10 +1293,12 @@ class FourLineDisplayUsermod : public Usermod {
           setup();
           needsRedraw |= true;
         } else {
-          u8x8->setBusClock(ioFrequency); // can be used for SPI too
-          setVcomh(contrastFix);
-          setContrast(contrast);
-          setFlipMode(flip);
+          if (enabled && typeOK && (nullptr != u8x8)) { // WLEDMM ensure we have a valid, active driver
+            u8x8->setBusClock(ioFrequency); // can be used for SPI too
+            setVcomh(contrastFix);
+            setContrast(contrast);
+            setFlipMode(flip);
+          }
         }
         knownHour = 99;
         if (needsRedraw && !wakeDisplay()) redraw(true);

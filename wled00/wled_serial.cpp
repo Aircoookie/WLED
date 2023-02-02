@@ -86,6 +86,7 @@ bool canUseSerial(void) {   // WLEDMM returns true if Serial can be used for deb
 void handleSerial()
 {
   if (pinManager.isPinAllocated(hardwareRX)) return;
+  if (!Serial) return;  // WLEDMM - serial not connected (USB CDC)
 
   #ifdef WLED_ENABLE_ADALIGHT
   static auto state = AdaState::Header_A;

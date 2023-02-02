@@ -383,7 +383,7 @@ public:
         buttonWaitTime = 0;
         char newState = select_state + 1;
         bool changedState = false;
-        char lineBuffer[64];
+        char lineBuffer[64] = { '\0' };
         do {
           // finde new state
           switch (newState) {
@@ -525,7 +525,8 @@ public:
     bri = max(min((increase ? bri+fadeAmount : bri-fadeAmount), 255), 0);
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
-    display->updateBrightness();
+    if (display->canDraw())   // only draw if nothing else is drawing
+      display->updateBrightness();
   #endif
   }
 
@@ -554,7 +555,8 @@ public:
     }
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
-    display->showCurrentEffectOrPalette(effectCurrent, JSON_mode_names, 3);
+    if (display->canDraw())   // only draw if nothing else is drawing
+      display->showCurrentEffectOrPalette(effectCurrent, JSON_mode_names, 3);
   #endif
   }
 
@@ -582,7 +584,8 @@ public:
     }
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
-    display->updateSpeed();
+    if (display->canDraw())   // only draw if nothing else is drawing
+      display->updateSpeed();
   #endif
   }
 
@@ -610,7 +613,8 @@ public:
     }
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
-    display->updateIntensity();
+    if (display->canDraw())   // only draw if nothing else is drawing
+      display->updateIntensity();
   #endif
   }
 
@@ -688,7 +692,8 @@ public:
     }
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
-    display->showCurrentEffectOrPalette(effectPalette, JSON_palette_names, 2);
+  if (display->canDraw())   // only draw if nothing else is drawing
+      display->showCurrentEffectOrPalette(effectPalette, JSON_palette_names, 2);
   #endif
   }
 
@@ -764,7 +769,7 @@ public:
     if (presetHigh && presetLow && presetHigh > presetLow) {
       StaticJsonDocument<64> root;
       char str[64] = { '\0' };
-      sprintf_P(str, PSTR("%d~%d~%s"), presetLow, presetHigh, increase?"":"-");
+      snprintf_P(str, 64, PSTR("%d~%d~%s"), presetLow, presetHigh, increase?"":"-");
       root["ps"] = str;
       deserializeState(root.as<JsonObject>(), CALL_MODE_BUTTON_PRESET);
 /*
