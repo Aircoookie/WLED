@@ -959,7 +959,7 @@ void setPaletteColors(JsonArray json, byte* tcp)
 
 void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
 {
-  byte tcp[13 + GRADIENT_PALETTE_COUNT]; //WLEDMM use real count instead of fixed number 72 (strip.getPaletteCount() not working on 8266)
+  byte tcp[72]; //WLEDMM use real count instead of fixed number 72 (strip.getPaletteCount() not working on 8266)
   #ifdef ESP8266
   int itemPerPage = 5;
   #else
@@ -990,7 +990,13 @@ void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
       case 0: //default palette
         setPaletteColors(curPalette, PartyColors_p);
         break;
-      case 1: //random
+      case 1: //WLEDMM random MM
+          curPalette.add("r");
+          curPalette.add("r");
+          curPalette.add("r");
+          curPalette.add("r");
+        break;
+      case 73: //WLEDMM random AC
           curPalette.add("r");
           curPalette.add("r");
           curPalette.add("r");
@@ -1054,7 +1060,7 @@ void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
         if (i>=palettesCount) {
           setPaletteColors(curPalette, strip.customPalettes[i - palettesCount]);
         } else {
-          memcpy_P(tcp, (byte*)pgm_read_dword(&(gGradientPalettes[i - 13])), 13 + GRADIENT_PALETTE_COUNT); //WLEDMM use real count instead of fixed number 72 (strip.getPaletteCount() not working on 8266)
+          memcpy_P(tcp, (byte*)pgm_read_dword(&(gGradientPalettes[i - 13])), 72); //WLEDMM use real count instead of fixed number 72 (strip.getPaletteCount() not working on 8266)
           setPaletteColors(curPalette, tcp);
         }
         }
