@@ -170,19 +170,17 @@ class BusDigital : public Bus {
 
     inline void show();
 
-    inline bool canShow();
+    bool canShow();
 
     void setBrightness(uint8_t b);
 
-    //If LEDs are skipped, it is possible to use the first as a status LED.
-    //TODO only show if no new show due in the next 50ms
     void setStatusPixel(uint32_t c);
 
     void setPixelColor(uint16_t pix, uint32_t c);
 
     uint32_t getPixelColor(uint16_t pix);
 
-    inline uint8_t getColorOrder() {
+    uint8_t getColorOrder() {
       return _colorOrder;
     }
 
@@ -194,7 +192,7 @@ class BusDigital : public Bus {
 
     void setColorOrder(uint8_t colorOrder);
 
-    inline uint8_t skippedLeds() {
+    uint8_t skippedLeds() {
       return _skip;
     }
 
@@ -287,18 +285,18 @@ class BusNetwork : public Bus {
 
     void show();
 
-    inline bool canShow() {
+    bool canShow() {
       // this should be a return value from UDP routine if it is still sending data out
       return !_broadcastLock;
     }
 
     uint8_t getPins(uint8_t* pinArray);
 
-    inline bool isRgbw() {
+    bool isRgbw() {
       return _rgbw;
     }
 
-    inline uint16_t getLength() {
+    uint16_t getLength() {
       return _len;
     }
 
