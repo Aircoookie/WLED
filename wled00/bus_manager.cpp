@@ -18,6 +18,7 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, byte 
 
 // enable additional debug output
 #if defined(WLED_DEBUG_HOST)
+  #include "net_debug.h"
   #define DEBUGOUT NetDebug
 #else
   #define DEBUGOUT Serial
