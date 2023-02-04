@@ -156,7 +156,7 @@ void serializePlaylist(JsonObject sObj) {
   JsonArray ps = playlist.createNestedArray("ps");
   JsonArray dur = playlist.createNestedArray("dur");
   JsonArray transition = playlist.createNestedArray(F("transition"));
-  playlist[F("repeat")] = (playlistRepeat > 0) ? playlistRepeat - 1 : 0; // remove added repetition count
+  playlist[F("repeat")] = (playlistIndex < 0) ? playlistRepeat - 1 : playlistRepeat; // remove added repetition count (if not yet running)
   playlist["end"] = playlistEndPreset;
   playlist["r"] = playlistOptions & PL_OPTION_SHUFFLE;
   for (int i=0; i<playlistLen; i++) {
