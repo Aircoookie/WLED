@@ -16,6 +16,7 @@ void colorRGBtoRGBW(byte* rgb);
 
 // enable additional debug output
 #if defined(WLED_DEBUG_HOST)
+  #include "net_debug.h"
   #define DEBUGOUT NetDebug
 #else
   #define DEBUGOUT Serial
