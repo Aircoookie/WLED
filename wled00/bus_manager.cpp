@@ -3,6 +3,7 @@
  */
 
 #include <Arduino.h>
+#include <IPAddress.h>
 #include "const.h"
 #include "pin_manager.h"
 #include "bus_wrapper.h"

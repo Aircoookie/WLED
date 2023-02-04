@@ -196,7 +196,7 @@ class BusDigital : public Bus {
       return _skip;
     }
 
-    inline void reinit();
+    void reinit();
 
     void cleanup();
 
