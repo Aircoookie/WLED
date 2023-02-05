@@ -533,3 +533,8 @@ uint16_t BusManager::getTotalLength() {
   for (uint8_t i=0; i<numBusses; i++) len += busses[i]->getLength();
   return len;
 }
+
+// Bus static member definition
+int16_t Bus::_cct = -1;
+uint8_t Bus::_cctBlend = 0;
+uint8_t Bus::_gAWM = 255;

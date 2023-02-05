@@ -1633,11 +1633,6 @@ void WS2812FX::deserializeMap(uint8_t n) {
 
 WS2812FX* WS2812FX::instance = nullptr;
 
-//Bus static member definition, would belong in bus_manager.cpp
-int16_t Bus::_cct = -1;
-uint8_t Bus::_cctBlend = 0;
-uint8_t Bus::_gAWM = 255;
-
 const char JSON_mode_names[] PROGMEM = R"=====(["FX names moved"])=====";
 const char JSON_palette_names[] PROGMEM = R"=====([
 "Default","* Random Cycle","* Color 1","* Colors 1&2","* Color Gradient","* Colors Only","Party","Cloud","Lava","Ocean",

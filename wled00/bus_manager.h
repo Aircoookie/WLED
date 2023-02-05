@@ -156,9 +156,9 @@ class Bus {
     bool     _valid;
     bool     _needsRefresh;
     uint8_t  _autoWhiteMode;
-    static uint8_t _gAWM;     // definition in FX_fcn.cpp
-    static int16_t _cct;      // definition in FX_fcn.cpp
-		static uint8_t _cctBlend; // definition in FX_fcn.cpp
+    static uint8_t _gAWM;
+    static int16_t _cct;
+    static uint8_t _cctBlend;
 
     uint32_t autoWhiteCalc(uint32_t c);
 };
