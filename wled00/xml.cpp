@@ -801,12 +801,17 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
         sappend('v',SET_F("PH"),strip.panel[0].height);
       }
       sappend('v',SET_F("MPC"),strip.panels);
-      sappend('v',SET_F("MPH"),strip.panelsH); //WLEDM quick fix
-      sappend('v',SET_F("MPV"),strip.panelsV); //WLEDM quick fix
+      sappend('v',SET_F("BA"),strip.bOrA); //WLEDMM basic or advanced
+      sappend('v',SET_F("MPH"),strip.panelsH); //WLEDMM needs to be stored as well
+      sappend('v',SET_F("MPV"),strip.panelsV); //WLEDMM needs to be stored as well
       sappend('v',SET_F("PB"),strip.matrix.bottomStart);
       sappend('v',SET_F("PR"),strip.matrix.rightStart);
       sappend('v',SET_F("PV"),strip.matrix.vertical);
       sappend('c',SET_F("PS"),strip.matrix.serpentine);
+      sappend('v',SET_F("PBL"),strip.panelO.bottomStart); //WLEDMM
+      sappend('v',SET_F("PRL"),strip.panelO.rightStart); //WLEDMM
+      sappend('v',SET_F("PVL"),strip.panelO.vertical); //WLEDMM
+      sappend('c',SET_F("PSL"),strip.panelO.serpentine); //WLEDMM
       // panels
       for (uint8_t i=0; i<strip.panels; i++) {
         char n[5];

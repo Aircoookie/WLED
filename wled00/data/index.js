@@ -740,9 +740,9 @@ function populateSegments(s)
 				<option value="1" ${inst.m12==1?' selected':''}>Bar</option>
 				<option value="2" ${inst.m12==2?' selected':''}>Arc</option>
 				<option value="3" ${inst.m12==3?' selected':''}>Corner</option>
-				<option value="4" ${inst.m12==4?' selected':''}>jMap</option>
-				<option value="5" ${inst.m12==5?' selected':''}>Circle</option>
-				<option value="6" ${inst.m12==6?' selected':''}>Block</option>
+				<option value="4" ${inst.m12==4?' selected':''}>jMap ☾</option>
+				<option value="5" ${inst.m12==5?' selected':''}>Circle ☾</option>
+				<option value="6" ${inst.m12==6?' selected':''}>Block ☾</option>
 			</select></div>
 		</div>`;
 		let sndSim = `<div data-snd="si" class="lbl-s hide">Sound sim<br>

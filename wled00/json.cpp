@@ -959,7 +959,7 @@ void setPaletteColors(JsonArray json, byte* tcp)
 
 void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
 {
-  byte tcp[72]; //WLEDMM use real count instead of fixed number 72 (strip.getPaletteCount() not working on 8266)
+  byte tcp[72];
   #ifdef ESP8266
   int itemPerPage = 5;
   #else
@@ -1060,7 +1060,7 @@ void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
         if (i>=palettesCount) {
           setPaletteColors(curPalette, strip.customPalettes[i - palettesCount]);
         } else {
-          memcpy_P(tcp, (byte*)pgm_read_dword(&(gGradientPalettes[i - 13])), 72); //WLEDMM use real count instead of fixed number 72 (strip.getPaletteCount() not working on 8266)
+          memcpy_P(tcp, (byte*)pgm_read_dword(&(gGradientPalettes[i - 13])), 72);
           setPaletteColors(curPalette, tcp);
         }
         }

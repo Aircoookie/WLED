@@ -172,7 +172,7 @@ uint16_t mode_pongGame(void) {
   return FRAMETIME;
 }
 
-static const char _data_FX_MODE_PONGGAME[] PROGMEM = "🎮 Pong@!;!;!;2";
+static const char _data_FX_MODE_PONGGAME[] PROGMEM = "🎮 Pong ☾@!;!;!;2";
 
 //https://howtomechatronics.com/tutorials/arduino/arduino-and-mpu6050-accelerometer-and-gyroscope-tutorial/
 

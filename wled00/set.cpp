@@ -679,12 +679,17 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     strip.panel.clear(); // release memory if allocated
     if (strip.isMatrix) {
       strip.panels  = MAX(1,MIN(WLED_MAX_PANELS,request->arg(F("MPC")).toInt()));
-      strip.panelsH  = request->arg(F("MPH")).toInt(); //WLEDM quick fix
-      strip.panelsV  = request->arg(F("MPV")).toInt(); //WLEDM quick fix
+      strip.bOrA  = request->arg(F("BA")).toInt(); //WLEDMM basic or advanced
+      strip.panelsH  = request->arg(F("MPH")).toInt(); //WLEDMM needs to be stored as well
+      strip.panelsV  = request->arg(F("MPV")).toInt(); //WLEDMM needs to be stored as well
       strip.matrix.bottomStart = request->arg(F("PB")).toInt();
       strip.matrix.rightStart  = request->arg(F("PR")).toInt();
       strip.matrix.vertical    = request->arg(F("PV")).toInt();
       strip.matrix.serpentine  = request->hasArg(F("PS"));
+      strip.panelO.bottomStart = request->arg(F("PBL")).toInt(); //WLEDMM
+      strip.panelO.rightStart  = request->arg(F("PRL")).toInt(); //WLEDMM
+      strip.panelO.vertical    = request->arg(F("PVL")).toInt(); //WLEDMM
+      strip.panelO.serpentine  = request->hasArg(F("PSL")); //WLEDMM
       strip.panel.reserve(strip.panels); // pre-allocate memory
       for (uint8_t i=0; i<strip.panels; i++) {
         WS2812FX::Panel p;

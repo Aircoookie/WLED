@@ -821,15 +821,24 @@ class WS2812FX {  // 96 bytes
     #define WLED_MAX_PANELS 64
     uint8_t
       panels,
-      panelsH, //WLEDMM quick fix
-      panelsV; //WLEDMM quick fix
+      panelsH, //WLEDMM needs to be stored as well
+      panelsV; //WLEDMM needs to be stored as well
 
+    bool
+      bOrA; //WLEDMM basic or advanced
+      
     struct {
       bool bottomStart : 1;
       bool rightStart  : 1;
       bool vertical    : 1;
       bool serpentine  : 1;
     } matrix;
+    struct {
+      bool bottomStart : 1;
+      bool rightStart  : 1;
+      bool vertical    : 1;
+      bool serpentine  : 1;
+    } panelO; //WLEDMM panelOrientation
 
     typedef struct panel_t {
       uint16_t xOffset; // x offset relative to the top left of matrix in LEDs
