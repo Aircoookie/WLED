@@ -114,6 +114,7 @@ private:
     if (m_offOnly && bri && (switchOn || (!PIRtriggered && !switchOn))) return; //if lights on and off only, do nothing
     if (PIRtriggered && switchOn) return; //if already on and triggered before, do nothing
     PIRtriggered = switchOn;
+    DEBUG_PRINT(F("PIR: strip=")); DEBUG_PRINTLN(switchOn?"on":"off");
     if (switchOn) {
       if (m_onPreset) {
         if (currentPlaylist>0 && !offMode) {
@@ -374,8 +375,10 @@ public:
    * onStateChanged() is used to detect WLED state change
    */
   void onStateChange(uint8_t mode) {
-    if (PIRtriggered) {
-      DEBUG_PRINTLN(F("PIR canceled."));
+    DEBUG_PRINT(F("PIR: offTimerStart=")); DEBUG_PRINTLN(offTimerStart);
+    if (PIRtriggered && offTimerStart) {
+      // checking PIRtriggered and offTimerStart will prevent cancellation upon On trigger
+      DEBUG_PRINTLN(F("PIR: Canceled."));
       offTimerStart = 0;
       PIRtriggered = false;
     }
