@@ -71,12 +71,10 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
     mde = REALTIME_MODE_ARTNET;
   } else if (protocol == P_E131) {
     // Ignore PREVIEW data (E1.31: 6.2.6)
-    if ((p->options & 0x80) != 0)
-      return;
-    dmxChannels = htons(p->property_value_count) -1;
+    if ((p->options & 0x80) != 0) return;
+    dmxChannels = htons(p->property_value_count) - 1;
     // DMX level data is zero start code. Ignore everything else. (E1.11: 8.5)
-    if (dmxChannels == 0 || p->property_values[0] != 0)
-      return;
+    if (dmxChannels == 0 || p->property_values[0] != 0) return;
     uni = htons(p->universe);
     e131_data = p->property_values;
     seq = p->sequence_number;
