@@ -524,7 +524,7 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
     sappend('c',SET_F("EM"),e131Multicast);
     sappend('v',SET_F("EU"),e131Universe);
 #ifdef WLED_ENABLE_DMX
-    oappend(SET_F("hideNoDMX();"));  // hide "not compiled in" message    
+    oappend(SET_F("hideNoDMX();"));  // WLEDMM hide "not compiled in" message    
 #endif    
     sappend('v',SET_F("DA"),DMXAddress);
     sappend('v',SET_F("XX"),DMXSegmentSpacing);
@@ -597,7 +597,7 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
     sappend('v',SET_F("BD"),serialBaud);
 
 #ifdef WLED_ENABLE_LOXONE
-    oappend(SET_F("hideNoLOX();"));  // hide "not compiled in" message    
+    oappend(SET_F("hideNoLOX();"));  // WLEDMM hide "not compiled in" message    
 #endif    
   }
 

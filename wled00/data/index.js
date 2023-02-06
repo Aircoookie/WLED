@@ -1144,7 +1144,7 @@ function updateLen(s)
 	if (isM && start >= mw*mh) out += " [strip]";
 
 	gId(`seg${s}len`).innerHTML = out;
-	draw();
+	if (isM) draw(); //WLEDMM
 }
 
 function draw() {
