@@ -9,7 +9,7 @@
 	var d=document;
     var loc = false, locip;
 	var maxPanels=64;
-	var ctx; // WLEDMM
+	var ctx = null; // WLEDMM
 	var ledIndex = 0; // WLEDMM
 	var wasAdvanced = -1; //WLEDMM
 	function H(){window.open("https://mm.kno.wled.ge/features/2D");}
@@ -48,16 +48,6 @@
         }
         var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=10';
 		loadJS(url, false);	// If we set async false, file is loaded and executed, then next statement is processed
-
-		//WLEDMM: add canvas, initialize and set UI
-		var c = gId("canvas");
-		c.width  = window.innerWidth > 800?800:400; //Mobile gets 400, pc 800
-		c.height = c.width;
-
-		ctx = c.getContext('2d');
-
-		// window.requestAnimationFrame(animate);
-
 	}
 
 	function UI() {
@@ -122,7 +112,7 @@ Y:<input id="P${i}Y" name="P${i}Y" type="number" min="0" max="256" value="0" oni
 
 	//WLEDMM
 	function baChange(radioElement=null) {
-		console.log("baChange", gId("form_s"), radioElement, gId("form_s").elements, d.Sf.BA.value);
+		// console.log("baChange", gId("form_s"), radioElement, gId("form_s").elements, d.Sf.BA.value);
 		if (radioElement) {
 			if (d.Sf.BA.value == 0 && wasAdvanced == 1) {
 				if (!confirm('Are you sure to go back to basic (advanced settings will be lost)?')) {
@@ -143,7 +133,7 @@ Y:<input id="P${i}Y" name="P${i}Y" type="number" min="0" max="256" value="0" oni
 
 	//WLEDMM
 	function fieldChange(force=false) { //Done on all fields of matrix setup area
-		console.log("fieldChange", force);
+		// console.log("fieldChange", force);
 		var pansH = parseInt(d.Sf.MPH.value);
 		var pansV = parseInt(d.Sf.MPV.value);
 		if ((pansH>0 && pansV>0 && d.Sf.BA.value == 0) || force) gen(); //Generate if basic or forced (in advanced by populate button)
@@ -193,6 +183,16 @@ Y:<input id="P${i}Y" name="P${i}Y" type="number" min="0" max="256" value="0" oni
 	//WLEDMM
 	function draw() {
 
+		if (!ctx) {
+			//WLEDMM: add canvas, initialize and set UI
+			var canvas = gId("canvas");
+			canvas.width  = window.innerWidth > 800?800:400; //Mobile gets 400, pc 800
+			canvas.height = canvas.width;
+			ctx = canvas.getContext('2d');
+
+			// window.requestAnimationFrame(animate);
+		}
+
 		//calc max height and width
 		var maxWidth = 0;
 		var maxHeight = 0;
@@ -205,9 +205,9 @@ Y:<input id="P${i}Y" name="P${i}Y" type="number" min="0" max="256" value="0" oni
 			maxHeight = Math.max(maxHeight, py + ph);
 		}
 
-		ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 		ctx.canvas.height = ctx.canvas.width / maxWidth * maxHeight;
-		var space=20; // space between panels + margin
+		ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+		var space=0; // space between panels + margin
 		var ppL = (ctx.canvas.width  - space * 2) / maxWidth; //pixels per led
 		// console.log("dim", ctx.canvas.width , maxWidth, ctx.canvas.height , maxHeight, ppL);
 
@@ -302,7 +302,7 @@ Y:<input id="P${i}Y" name="P${i}Y" type="number" min="0" max="256" value="0" oni
 
 			ctx.font = '40px Arial'; 
 			ctx.fillStyle = "orange";
-			ctx.fillText(p, topLeftX-ppL/2 + (pw*ppL+ppL)/2, topLeftY-ppL/2 + (ph*ppL+ppL)/2);
+			ctx.fillText(p, topLeftX + pw/2*ppL - 10, topLeftY + ph/2*ppL + 10);
 
 		}
 		gId("MD").innerHTML = "Matrix Dimensions (W*H=LC): " + maxWidth + " x " + maxHeight + " = " + maxWidth * maxHeight;

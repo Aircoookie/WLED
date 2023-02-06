@@ -36,6 +36,7 @@ var hol = [
 	[0,6,4,1,"https://initiate.alphacoders.com/download/wallpaper/516792/images/jpg/510921363292536"], // 4th of July
 	[0,0,1,1,"https://initiate.alphacoders.com/download/wallpaper/1198800/images/jpg/2522807481585600"] // new year
 ];
+var ctx = null; // WLEDMM
 
 function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson();}
 function sCol(na, col) {d.documentElement.style.setProperty(na, col);}
@@ -706,6 +707,7 @@ function populateSegments(s)
 	segCount = 0; lowestUnused = 0; lSeg = 0;
 
 	for (var inst of (s.seg||[])) {
+		console.log("inst", inst);
 		segCount++;
 
 		let i = parseInt(inst.id);
@@ -769,6 +771,7 @@ function populateSegments(s)
 	<i class="icons e-icon flr" id="sege${i}" onclick="expand(${i})">&#xe395;</i>
 	${cfg.comp.segpwr?segp:''}
 	<div class="segin" id="seg${i}in">
+		<input id="seg${i}fx" value="${inst.fx}" type="hidden"/>
 		<input type="text" class="ptxt noslide" id="seg${i}t" autocomplete="off" maxlength=32 value="${inst.n?inst.n:""}" placeholder="Enter name..."/>
 		<table class="infot segt">
 		<tr>
@@ -1070,6 +1073,7 @@ function toggleBubble(e)
 // updates segment length upon input of segment values
 function updateLen(s)
 {
+	console.log("updateLen", s);
 	if (!gId(`seg${s}s`)) return;
 	var start = parseInt(gId(`seg${s}s`).value);
 	var stop = parseInt(gId(`seg${s}e`).value) + (cfg.comp.seglen?start:0);
@@ -1117,6 +1121,125 @@ function updateLen(s)
 	}
 
 	gId(`seg${s}len`).innerHTML = out;
+	draw();
+}
+
+function draw() {
+
+	if (!ctx) {
+		console.log("init", window.innerWidth);
+		//WLEDMM: add canvas, initialize and set UI
+		var canvas = gId("canvas");
+		// c.width  = window.innerWidth > 800?300:300; //Mobile gets 400, pc 800
+		// c.height = c.width;
+		ctx = canvas.getContext('2d');
+	}
+
+	//calc max height and width
+	var maxWidth = 0;
+	var maxHeight = 0;
+	for (let p=0; p<gId("segcont").children.length; p++) {
+		var px = parseInt(gId("seg"+p+"s").value); //first led x
+		var py = parseInt(gId("seg"+p+"sY").value); //first led y
+		var pw = parseInt(gId("seg"+p+"e").value - gId("seg"+p+"s").value); //width
+		var ph = parseInt(gId("seg"+p+"eY").value - gId("seg"+p+"sY").value); //height
+
+		maxWidth = Math.max(maxWidth, px + pw);
+		maxHeight = Math.max(maxHeight, py + ph);
+	}
+
+	ctx.canvas.height = ctx.canvas.width / maxWidth * maxHeight;
+	ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+	var space=0; // space between panels + margin
+	var ppL = (ctx.canvas.width  - space * 2) / maxWidth; //pixels per led
+	// console.log("dim", ctx.canvas.width , maxWidth, ctx.canvas.height , maxHeight, ppL);
+
+	ctx.lineWidth = 1;
+	ctx.strokeStyle="yellow";
+	ctx.strokeRect(0, 0, ctx.canvas.width, ctx.canvas.height); // add space between panels
+
+	var colorArray = ["red", "green", "blue", "magenta", "orange", "yellow"];
+
+	for (let p=0; p<gId("segcont").children.length; p++) {
+		// console.log(gId("P"+p+"X").value, gId("P"+p+"Y").value, gId("P"+p+"W").value, gId("P"+p+"H").value, gId("P"+p+"B").value, gId("P"+p+"R").value, gId("P"+p+"V").value, gId("P"+p+"S").checked);
+
+		var px = parseInt(gId("seg"+p+"s").value); //first led x
+		var py = parseInt(gId("seg"+p+"sY").value); //first led y
+		var pw = parseInt(gId("seg"+p+"e").value - gId("seg"+p+"s").value); //width
+		var ph = parseInt(gId("seg"+p+"eY").value - gId("seg"+p+"sY").value); //height
+
+		// console.log("sergment", p, px, py, pw, ph);
+
+		var topLeftX = px*ppL + space; //left margin
+		var topLeftY = py*ppL + space; //top margin
+		// console.log("rect", p, topLeftX, topLeftY, pw*ppL, ph*ppL);
+		ctx.lineWidth = 3;
+		ctx.strokeStyle="white";
+		ctx.strokeRect(topLeftX, topLeftY, pw*ppL, ph*ppL); // add space between panels
+
+		var fx = parseInt(gId("seg"+p+"fx").value);
+
+		var grp = parseInt(gId("seg"+p+"grp").value); //reverseX
+		var spc = parseInt(gId("seg"+p+"spc").value); //reverseX
+
+		var rx = gId("seg"+p+"rev").checked; //reverseX
+		var ry = gId("seg"+p+"rY").checked; //reverseY
+		var mx = gId("seg"+p+"mi").checked; //mirrorX
+		var my = gId("seg"+p+"mY").checked; //mirrorY
+		var tp = gId("seg"+p+"tp").checked; //mirrorY
+
+		ctx.lineWidth = 1;
+		if (mx) {
+			ctx.beginPath();
+			ctx.moveTo(topLeftX + pw/2*ppL, topLeftY);
+			ctx.lineTo(topLeftX + pw/2*ppL, topLeftY + ph*ppL);
+			ctx.stroke();
+		}
+		if (my) {
+			ctx.beginPath();
+			ctx.moveTo(topLeftX, topLeftY + ph/2*ppL);
+			ctx.lineTo(topLeftX + pw*ppL, topLeftY + ph/2*ppL);
+			ctx.stroke();
+		}
+		if (ry) {
+			ctx.beginPath();
+			ctx.moveTo(topLeftX + pw/8*ppL, topLeftY);
+			ctx.lineTo(topLeftX + pw/8*ppL, topLeftY + ph*ppL);
+			ctx.stroke();
+		}
+		if (rx) {
+			ctx.beginPath();
+			ctx.moveTo(topLeftX, topLeftY + ph/8*ppL);
+			ctx.lineTo(topLeftX + pw*ppL, topLeftY + ph/8*ppL);
+			ctx.stroke();
+		}
+		if (tp) {
+			ctx.beginPath();
+			ctx.moveTo(topLeftX, topLeftY);
+			ctx.lineTo(topLeftX + pw*ppL, topLeftY + ph*ppL);
+			ctx.stroke();
+		}
+
+		for (let x=0; x<pw; x++)
+			for (let y=0; y<ph; y++) {
+				ctx.fillStyle = colorArray[p%colorArray.length];
+				ctx.beginPath();
+				ctx.arc(topLeftX + ppL/2 + x*ppL, topLeftY + ppL/2 + y * ppL, ppL*0.4, 0, 2 * Math.PI);
+				ctx.fill();
+			}
+
+		ctx.font = '40px Arial'; 
+		ctx.fillStyle = "orange";
+		ctx.fillText(p, topLeftX + pw/2*ppL - 10, topLeftY + ph/2*ppL + 10);
+
+		ctx.font = '20px Arial'; 
+		ctx.fillStyle = "white";
+		var name = eJson.find((o)=>{return o.id==fx}).name;
+		ctx.fillText(name, topLeftX + ppL, topLeftY + ph*ppL - 10);
+		
+	} // for each segment
+
+	gId("MD").innerHTML = "W*H=LC: " + maxWidth + " x " + maxHeight + " = " + maxWidth * maxHeight;
 }
 
 // updates background color of currently selected preset

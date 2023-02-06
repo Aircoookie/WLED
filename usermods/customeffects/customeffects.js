@@ -98,15 +98,17 @@ function populateCEEditor(name, segID)
             <textarea class="ceTextarea" id="ceProgramArea">${text}</textarea><br>
             <button class="btn infobtn" onclick="toggleCEEditor()">Close</button>
             <button class="btn infobtn" onclick="saveCE('${name}.wled', ${segID})">Save and Run</button><br>
-            <button class="btn infobtn" onclick="downloadCEFile('${name}.wled')">Download ${name}.wled</button>
+            <button class="btn infobtn" onclick="downloadCEFile('CE','${name}.wled')">Download ${name}.wled</button>
             <button class="btn infobtn" onclick="loadCETemplate('${name}')">Load template</button><br>
-            <button class="btn infobtn" onclick="downloadCEFile('wledv033.json')">Download wled json</button>
-            <button class="btn infobtn" onclick="downloadCEFile('presets.json')">Download presets.json</button><br>
+            <button class="btn infobtn" onclick="downloadCEFile('CE','wledv033.json')">Download wled json</button>
+            <button class="btn infobtn" onclick="downloadCEFile('CE','presets.json')">Download presets.json</button><br>
             <button class="btn infobtn" onclick="location.href='https://github.com/MoonModules/WLED-Effects/tree/master/CustomEffects/wled'" type="button">Custom Effects Library</button>
             <button class="btn infobtn btn-xs" onclick="location.href='https://mm.kno.wled.ge/moonmodules/custom-effects'" type="button">?</button><br>
             <br><i>Compile and Run Log</i><br>
             <textarea class="ceTextarea" id="ceLogArea"></textarea><br>
-            <i>Run log > 3 seconds is send to Serial Ouput.</i>`;
+            <i>Run log > 3 seconds is send to Serial Ouput.</i><br>
+            <a href="#" onclick="downloadCEFile('HBB','presets.json');return false;" title="Download HBaas Base presets">🥚</a>
+            <a href="#" onclick="downloadCEFile('HBE','presets.json');return false;" title="Download HBaas Effects presets">🥚</a>`;
 
     d.getElementById('kceEditor').innerHTML = cn;
 
@@ -117,8 +119,10 @@ function populateCEEditor(name, segID)
   });
 }
 
-function downloadCEFile(name) {
-    var url = "https://raw.githubusercontent.com/MoonModules/WLED-Effects/master/CustomEffects/wled/";
+function downloadCEFile(url, name) {
+    if (url == "CE") url = "https://raw.githubusercontent.com/MoonModules/WLED-Effects/master/CustomEffects/wled/";
+    if (url == "HBB") url = "https://raw.githubusercontent.com/MoonModules/WLED-Effects/master/Presets/HB_PresetPack210808_32x32_16seg/Base%20pack/";
+    if (url == "HBE") url = "https://raw.githubusercontent.com/MoonModules/WLED-Effects/master/Presets/HB_PresetPack210808_32x32_16seg/Effects%20pack/";
 
     fetchAndExecute(url, name, function(text) {
         if (name == "wledv033.json" || name == "presets.json") {
