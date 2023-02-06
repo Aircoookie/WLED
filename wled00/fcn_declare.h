@@ -264,19 +264,20 @@ class Usermod {
     virtual ~Usermod() { if (um_data) delete um_data; }
     virtual void setup() = 0; // pure virtual, has to be overriden
     virtual void loop() = 0;  // pure virtual, has to be overriden
-    virtual void handleOverlayDraw() {}
-    virtual bool handleButton(uint8_t b) { return false; }
-    virtual bool getUMData(um_data_t **data) { if (data) *data = nullptr; return false; };
-    virtual void connected() {}
-    virtual void appendConfigData() {}
-    virtual void addToJsonState(JsonObject& obj) {}
-    virtual void addToJsonInfo(JsonObject& obj) {}
-    virtual void readFromJsonState(JsonObject& obj) {}
-    virtual void addToConfig(JsonObject& obj) {}
+    virtual void handleOverlayDraw() {}                                      // called after all effects have been processed, just before strip.show()
+    virtual bool handleButton(uint8_t b) { return false; }                   // button overrides are possible here
+    virtual bool getUMData(um_data_t **data) { if (data) *data = nullptr; return false; }; // usermod data exchange [see examples for audio effects]
+    virtual void connected() {}                                              // called when WiFi is (re)connected
+    virtual void appendConfigData() {}                                       // helper function called from usermod settings page to add metadata for entry fields
+    virtual void addToJsonState(JsonObject& obj) {}                          // add JSON objects for WLED state
+    virtual void addToJsonInfo(JsonObject& obj) {}                           // add JSON objects for UI Info page
+    virtual void readFromJsonState(JsonObject& obj) {}                       // process JSON messages received from web server
+    virtual void addToConfig(JsonObject& obj) {}                             // add JSON entries that go to cfg.json
     virtual bool readFromConfig(JsonObject& obj) { return true; } // Note as of 2021-06 readFromConfig() now needs to return a bool, see usermod_v2_example.h
-    virtual void onMqttConnect(bool sessionPresent) {}
-    virtual bool onMqttMessage(char* topic, char* payload) { return false; }
-    virtual void onUpdateBegin(bool) {}
+    virtual void onMqttConnect(bool sessionPresent) {}                       // fired when MQTT connection is established (so usermod can subscribe)
+    virtual bool onMqttMessage(char* topic, char* payload) { return false; } // fired upon MQTT message received (wled topic)
+    virtual void onUpdateBegin(bool) {}                                      // fired prior to and after unsuccessful firmware update
+    virtual void onStateChange(uint8_t mode) {}                              // fired upon WLED state change
     virtual uint16_t getId() {return USERMOD_ID_UNSPECIFIED;}
 };
 
@@ -301,6 +302,7 @@ class UsermodManager {
     void onMqttConnect(bool sessionPresent);
     bool onMqttMessage(char* topic, char* payload);
     void onUpdateBegin(bool);
+    void onStateChange(uint8_t);
     bool add(Usermod* um);
     Usermod* lookup(uint16_t mod_id);
     Usermod* lookupName(const char *mod_name); //WLEDMM

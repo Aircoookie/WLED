@@ -129,6 +129,9 @@ void stateUpdated(byte callMode) {
   //deactivate nightlight if target brightness is reached
   if (bri == nightlightTargetBri && callMode != CALL_MODE_NO_NOTIFY && nightlightMode != NL_MODE_SUN) nightlightActive = false;
 
+  // notify usermods of state change
+  usermods.onStateChange(callMode);
+
   if (fadeTransition) {
     //set correct delay if not using notification delay
     if (callMode != CALL_MODE_NOTIFICATION && !jsonTransitionOnce) transitionDelayTemp = transitionDelay; // load actual transition duration

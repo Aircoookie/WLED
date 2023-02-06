@@ -15,6 +15,7 @@ class NetworkDebugPrinter : public Print {
     virtual void flush( bool txOnly) { return;} // WLEDMM
 };
 
+// use it on your linux/macOS with: nc -p 7868 -u -l -s <network ip>
 extern NetworkDebugPrinter NetDebug;
 
 #endif
