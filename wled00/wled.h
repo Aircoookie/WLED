@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2301290
+#define VERSION 2302050
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -94,10 +94,6 @@
 
 #ifdef WLED_USE_MY_CONFIG
   #include "my_config.h"
-#endif
-
-#ifdef WLED_DEBUG_HOST
-#include "net_debug.h"
 #endif
 
 #include <ESPAsyncWebServer.h>
@@ -724,6 +720,7 @@ WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
 
 // enable additional debug output
 #if defined(WLED_DEBUG_HOST)
+  #include "net_debug.h"
   // On the host side, use netcat to receive the log statements: nc -l 7868 -u
   // use -D WLED_DEBUG_HOST='"192.168.xxx.xxx"' or FQDN within quotes
   #define DEBUGOUT NetDebug
