@@ -1231,14 +1231,18 @@ function draw() {
 		}
 		if (ry) {
 			ctx.beginPath();
-			ctx.moveTo(topLeftX + pw/8*ppL, topLeftY);
+			ctx.moveTo(topLeftX + pw/8*ppL+10, topLeftY+10);
+			ctx.lineTo(topLeftX + pw/8*ppL, topLeftY);
 			ctx.lineTo(topLeftX + pw/8*ppL, topLeftY + ph*ppL);
+			ctx.lineTo(topLeftX + pw/8*ppL-10, topLeftY + ph*ppL-10);
 			ctx.stroke();
 		}
 		if (rx) {
 			ctx.beginPath();
-			ctx.moveTo(topLeftX, topLeftY + ph/8*ppL);
+			ctx.moveTo(topLeftX+10, topLeftY + ph/8*ppL+10);
+			ctx.lineTo(topLeftX, topLeftY + ph/8*ppL);
 			ctx.lineTo(topLeftX + pw*ppL, topLeftY + ph/8*ppL);
+			ctx.lineTo(topLeftX + pw*ppL-10, topLeftY + ph/8*ppL-10);
 			ctx.stroke();
 		}
 		if (tp) {
@@ -1248,12 +1252,20 @@ function draw() {
 			ctx.stroke();
 		}
 
-		for (let x=0; x<pw; x++)
-			for (let y=0; y<ph; y++) {
-				ctx.fillStyle = colorArray[p%colorArray.length];
-				ctx.beginPath();
-				ctx.arc(topLeftX + ppL/2 + x*ppL, topLeftY + ppL/2 + y * ppL, ppL*0.4, 0, 2 * Math.PI);
-				ctx.fill();
+		let groupLength = grp+spc;
+
+		for (let x=0; x<pw; x+=groupLength)
+			for (let y=0; y<ph; y+=groupLength) {
+				for (let j = 0; j < grp; j++) {   // grouping vertically
+					for (let g = 0; g < grp; g++) { // grouping horizontally
+						let xX = (x+g), yY = (y+j);
+					//   if (xX >= width() || yY >= height()) continue; // we have reached one dimension's end
+						ctx.fillStyle = colorArray[p%colorArray.length];
+						ctx.beginPath();
+						ctx.arc(topLeftX + ppL/2 + xX*ppL, topLeftY + ppL/2 + yY * ppL, ppL*0.4, 0, 2 * Math.PI);
+						ctx.fill();
+					}
+				}
 			}
 
 		ctx.font = '40px Arial'; 
