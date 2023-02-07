@@ -129,7 +129,13 @@ void WS2812FX::setUpMatrix(bool reset) {
       Segment::maxWidth = _length;
       Segment::maxHeight = 1;
     }
-    if (reset) resetSegments(); //WLEDMM: only if reset
+    if (reset) //resetSegments(); //WLEDMM: only if reset, and only update width and height, keep the fx in place
+      for (segment &seg : _segments) {
+        seg.start = 0;
+        seg.stop = Segment::maxWidth;
+        seg.startY = 0;
+        seg.stopY = Segment::maxHeight;
+      }
   }
 #else
   isMatrix = false; // no matter what config says

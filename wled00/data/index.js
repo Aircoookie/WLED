@@ -689,7 +689,7 @@ ${i.psram?inforow("Free PSRAM",(i.psram/1024).toFixed(1)," kB"):""}
 ${i.psusedram?((i.tpram-i.psusedram)>16383?inforow("Max Used PSRAM ☾",((i.tpram-i.psusedram)/1024).toFixed(1)," kB"):inforow("Max Used PSRAM",(i.tpram-i.psusedram)," B")):""}
 <tr><td colspan=2><hr style="height:1px;border-width:0;color:SeaGreen;background-color:SeaGreen"></td></tr>
 ${i.e32model?inforow(i.e32model + " ☾",i.e32cores +" core(s)"," "+i.e32speed+" Mhz"):""}
-${i.e32flash?inforow("Flash "+i.e32flash+" MB"+", mode "+i.e32flashmode+i.e32flashtext + " ☾",i.e32flashspeed," Mhz"):""}
+${i.e32flash?inforow("Flash "+i.e32flash+"MB"+" mode "+i.e32flashmode+i.e32flashtext + " ☾",i.e32flashspeed," Mhz"):""}
 ${i.e32core0code?inforow("Core0 rst reason ☾",i.e32core0code, " "+i.e32core0text):""}
 ${i.e32core1code?inforow("Core1 rst reason ☾",i.e32core1code, " "+i.e32core1text):""}
 <!-- WLEDMM end--> 

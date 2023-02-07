@@ -378,7 +378,7 @@ typedef struct Segment {
     CRGB* leds;     // local leds[] array (may be a pointer to global)
     static CRGB *_globalLeds;             // global leds[] array
     static uint16_t maxWidth, maxHeight;  // these define matrix width & height (max. segment dimensions)
-    void *jMap; //WLEDMM jMap
+    void *jMap = nullptr; //WLEDMM jMap
 
   private:
     union {
