@@ -679,17 +679,19 @@ ${inforow("Average FPS",i.leds.fps)}
 ${inforow("MAC address",i.mac)}
 ${inforow("Filesystem",i.fs.u + "/" + i.fs.t + " kB (" +Math.round(i.fs.u*100/i.fs.t) + "%)")}
 ${inforow("Environment",i.arch + " " + i.core + " (" + i.lwip + ")")}
-${theap>0?inforow("Total heap",theap," kB"):""}
-${theap>0?inforow("used heap",((i.totalheap-i.freeheap)/1000).toFixed(1)," kB"):inforow("Free heap",heap," kB")}
-${i.minfreeheap?inforow("Max used heap",((i.totalheap-i.minfreeheap)/1000).toFixed(1)," kB"):""}
-${i.tpram?inforow("Total PSRAM",(i.tpram/1024).toFixed(1)," kB"):""}
-${i.psram?((i.tpram-i.psram)>16383?inforow("Used PSRAM",((i.tpram-i.psram)/1024).toFixed(1)," kB"):inforow("Used PSRAM",(i.tpram-i.psram)," B")):""}
-${i.psusedram?((i.tpram-i.psusedram)>16383?inforow("Max Used PSRAM",((i.tpram-i.psusedram)/1024).toFixed(1)," kB"):inforow("Max Used PSRAM",(i.tpram-i.psusedram)," B")):""}
+${theap>0?inforow("Total heap ☾",theap," kB"):""}
+${theap>0?inforow("Used heap ☾",((i.totalheap-i.freeheap)/1000).toFixed(1)," kB"):inforow("Free heap",heap," kB")}
+${i.minfreeheap?inforow("Max used heap ☾",((i.totalheap-i.minfreeheap)/1000).toFixed(1)," kB"):""}
+${inforow("Free heap",heap," kB")}
+${i.tpram?inforow("Total PSRAM ☾",(i.tpram/1024).toFixed(1)," kB"):""}
+${i.psram?((i.tpram-i.psram)>16383?inforow("Used PSRAM ☾",((i.tpram-i.psram)/1024).toFixed(1)," kB"):inforow("Used PSRAM",(i.tpram-i.psram)," B")):""}
+${i.psram?inforow("Free PSRAM",(i.psram/1024).toFixed(1)," kB"):""}
+${i.psusedram?((i.tpram-i.psusedram)>16383?inforow("Max Used PSRAM ☾",((i.tpram-i.psusedram)/1024).toFixed(1)," kB"):inforow("Max Used PSRAM",(i.tpram-i.psusedram)," B")):""}
 <tr><td colspan=2><hr style="height:1px;border-width:0;color:SeaGreen;background-color:SeaGreen"></td></tr>
-${i.e32model?inforow(i.e32model,i.e32cores +" core(s)"," "+i.e32speed+" Mhz"):""}
-${i.e32flash?inforow("Flash "+i.e32flash+" MB"+", mode "+i.e32flashmode+i.e32flashtext,i.e32flashspeed," Mhz"):""}
-${i.e32core0code?inforow("Core0 rst reason",i.e32core0code, " "+i.e32core0text):""}
-${i.e32core1code?inforow("Core1 rst reason",i.e32core1code, " "+i.e32core1text):""}
+${i.e32model?inforow(i.e32model + " ☾",i.e32cores +" core(s)"," "+i.e32speed+" Mhz"):""}
+${i.e32flash?inforow("Flash "+i.e32flash+" MB"+", mode "+i.e32flashmode+i.e32flashtext + " ☾",i.e32flashspeed," Mhz"):""}
+${i.e32core0code?inforow("Core0 rst reason ☾",i.e32core0code, " "+i.e32core0text):""}
+${i.e32core1code?inforow("Core1 rst reason ☾",i.e32core1code, " "+i.e32core1text):""}
 <!-- WLEDMM end--> 
 </table>`;
 	gId('kv').innerHTML = cn;
@@ -1153,6 +1155,7 @@ function draw() {
 		console.log("init", window.innerWidth);
 		//WLEDMM: add canvas, initialize and set UI
 		var canvas = gId("canvas");
+		canvas.hidden = false;
 		// c.width  = window.innerWidth > 800?300:300; //Mobile gets 400, pc 800
 		// c.height = c.width;
 		ctx = canvas.getContext('2d');
@@ -1163,6 +1166,7 @@ function draw() {
 	var maxHeight = 0;
 	for (let p=0; p<gId("segcont").children.length; p++) {
 		var px = parseInt(gId("seg"+p+"s").value); //first led x
+		if (!gId("seg"+p+"sY")) break; //no draw for 1D segments (yet)
 		var py = parseInt(gId("seg"+p+"sY").value); //first led y
 		var pw = parseInt(gId("seg"+p+"e").value - gId("seg"+p+"s").value); //width
 		var ph = parseInt(gId("seg"+p+"eY").value - gId("seg"+p+"sY").value); //height
@@ -1187,6 +1191,7 @@ function draw() {
 		// console.log(gId("P"+p+"X").value, gId("P"+p+"Y").value, gId("P"+p+"W").value, gId("P"+p+"H").value, gId("P"+p+"B").value, gId("P"+p+"R").value, gId("P"+p+"V").value, gId("P"+p+"S").checked);
 
 		var px = parseInt(gId("seg"+p+"s").value); //first led x
+		if (!gId("seg"+p+"sY")) break; //no draw for 1D segments (yet)
 		var py = parseInt(gId("seg"+p+"sY").value); //first led y
 		var pw = parseInt(gId("seg"+p+"e").value - gId("seg"+p+"s").value); //width
 		var ph = parseInt(gId("seg"+p+"eY").value - gId("seg"+p+"sY").value); //height
@@ -1262,7 +1267,7 @@ function draw() {
 		
 	} // for each segment
 
-	gId("MD").innerHTML = "W*H=LC: " + maxWidth + " x " + maxHeight + " = " + maxWidth * maxHeight;
+	gId("MD").innerHTML = "☾ W*H=LC: " + maxWidth + " x " + maxHeight + " = " + maxWidth * maxHeight;
 }
 
 // updates background color of currently selected preset
