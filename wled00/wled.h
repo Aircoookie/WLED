@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2302050
+#define VERSION 2302080
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -726,11 +726,10 @@ WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
   #define DEBUGOUT NetDebug
   WLED_GLOBAL bool netDebugEnabled _INIT(true);
   WLED_GLOBAL char netDebugPrintHost[33] _INIT(WLED_DEBUG_HOST);
-  #if defined(WLED_DEBUG_NET_PORT)
-  WLED_GLOBAL int netDebugPrintPort _INIT(WLED_DEBUG_PORT);
-  #else
-  WLED_GLOBAL int netDebugPrintPort _INIT(7868);
+  #ifndef WLED_DEBUG_PORT
+    #define WLED_DEBUG_PORT 7868
   #endif
+  WLED_GLOBAL int netDebugPrintPort _INIT(WLED_DEBUG_PORT);
 #else
   #define DEBUGOUT Serial
 #endif
