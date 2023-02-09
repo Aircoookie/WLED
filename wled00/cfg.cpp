@@ -130,8 +130,6 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       p.options = 0;
       strip.panel.push_back(p);
     }
-
-    strip.setUpMatrix();
   }
   #endif
 

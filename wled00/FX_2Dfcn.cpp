@@ -71,11 +71,39 @@ void WS2812FX::setUpMatrix() {
     customMappingTable = new uint16_t[Segment::maxWidth * Segment::maxHeight];
 
     if (customMappingTable != nullptr) {
+      int gapSize = 0;
+      int8_t *gapTable = nullptr;
+
       customMappingSize = Segment::maxWidth * Segment::maxHeight;
 
       // fill with empty in case we don't fill the entire matrix
       for (size_t i = 0; i< customMappingSize; i++) {
         customMappingTable[i] = (uint16_t)-1;
+      }
+
+      char fileName[32];
+      strcpy_P(fileName, PSTR("/ledgap.json"));
+      bool isFile = WLED_FS.exists(fileName);
+
+      if (isFile && requestJSONBufferLock(20)) {
+        DEBUG_PRINT(F("Reading LED gap from "));
+        DEBUG_PRINTLN(fileName);
+
+        if (readObjectFromFile(fileName, nullptr, &doc)) {
+          // the array is similar to ledmap, except it has only 3 values:
+          // -1 ... missing pixel (do not increase pixel count)
+          //  0 ... inactive pixel (it does count, but should be mapped out)
+          //  1 ... active pixel
+          JsonArray map = doc.as<JsonArray>();
+          gapSize = map.size();
+          if (!map.isNull() && gapSize >= customMappingSize) {  // not an empty map
+            gapTable = new int8_t[gapSize];
+            for (size_t i = 0; i < gapSize; i++) {
+              gapTable[i] = constrain(map[i], -1, 1);
+            }
+          }
+        }
+        releaseJSONBufferLock();
       }
 
       uint16_t x, y, pix=0; //pixel
@@ -84,14 +112,18 @@ void WS2812FX::setUpMatrix() {
         uint16_t h = p.vertical ? p.height : p.width;
         uint16_t v = p.vertical ? p.width  : p.height;
         for (size_t j = 0; j < v; j++){
-          for(size_t i = 0; i < h; i++, pix++) {
+          for(size_t i = 0; i < h; i++) {
             y = (p.vertical?p.rightStart:p.bottomStart) ? v-j-1 : j;
             x = (p.vertical?p.bottomStart:p.rightStart) ? h-i-1 : i;
             x = p.serpentine && j%2 ? h-x-1 : x;
-            customMappingTable[(p.yOffset + (p.vertical?x:y)) * Segment::maxWidth + p.xOffset + (p.vertical?y:x)] = pix;
+            size_t index = (p.yOffset + (p.vertical?x:y)) * Segment::maxWidth + p.xOffset + (p.vertical?y:x);
+            if (!gapTable || (gapTable && gapTable[index] >  0)) customMappingTable[index] = pix;
+            if (!gapTable || (gapTable && gapTable[index] >= 0)) pix++;
           }
         }
       }
+
+      if (gapTable) delete[] gapTable;
 
       #ifdef WLED_DEBUG
       DEBUG_PRINT(F("Matrix ledmap:"));

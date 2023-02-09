@@ -1014,10 +1014,11 @@ void WS2812FX::finalizeInit(void)
     #endif
   }
 
-  if (!isMatrix) { // if 2D then max values defined in setUpMatrix() using panel set-up
+  if (isMatrix) setUpMatrix();
+  else {
     Segment::maxWidth  = _length;
     Segment::maxHeight = 1;
-   }
+  }
 
   //initialize leds array. TBD: realloc if nr of leds change
   if (Segment::_globalLeds) {
@@ -1583,7 +1584,7 @@ void WS2812FX::loadCustomPalettes() {
 
 //load custom mapping table from JSON file (called from finalizeInit() or deserializeState())
 void WS2812FX::deserializeMap(uint8_t n) {
-  if (isMatrix) return; // 2D support creates its own ledmap
+  //if (isMatrix) return; // 2D support creates its own ledmap
 
   char fileName[32];
   strcpy_P(fileName, PSTR("/ledmap"));
