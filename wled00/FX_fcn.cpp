@@ -1971,14 +1971,15 @@ void WS2812FX::deserializeMap(uint8_t n) {
         customMappingTable[i] = (uint16_t) 0xFFFFU; //fill the map entirely
     }
     loadedLedmap = n;
-          #ifdef WLED_DEBUG
+
+    #ifdef WLED_DEBUG
       DEBUG_PRINTF("Custom ledmap: %d\n", loadedLedmap);
       for (uint16_t i=0; i<customMappingSize; i++) {
         if (!(i%Segment::maxWidth)) DEBUG_PRINTLN();
         DEBUG_PRINTF("%4d,", customMappingTable[i]);
       }
       DEBUG_PRINTLN();
-      #endif
+    #endif
 
     setUpMatrix(false); //WLEDMM: apply logical to physical mapping after the ledmap
   }

@@ -95,8 +95,10 @@ void WS2812FX::setUpMatrix(bool reset) {
             x = p.serpentine && j%2 ? h-x-1 : x;
             uint16_t index = (p.yOffset + (p.vertical?x:y)) * Segment::maxWidth + p.xOffset + (p.vertical?y:x);
             if (loadedLedmap > 0) {
-              if (index < customMappingSizeLedmap)
-                customMappingTableCombi[customMappingTable[index]] = pix; //WLEDMM: allow for 2 transitions if reset = false (ledmap and logical to physical)
+              if (index < customMappingSizeLedmap) {
+                if (customMappingTable[index] < customMappingSize)
+                  customMappingTableCombi[customMappingTable[index]] = pix; //WLEDMM: allow for 2 transitions if reset = false (ledmap and logical to physical)
+              }
               else
                 customMappingTableCombi[index] = pix;
             }
