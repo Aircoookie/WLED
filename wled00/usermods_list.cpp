@@ -19,11 +19,16 @@
   #include "../usermods/Temperature/usermod_temperature.h"
 #endif
 
+#ifdef USERMOD_SHT
+#include "../usermods/sht/usermod_sht.h"
+#endif
+
 #ifdef USERMOD_SN_PHOTORESISTOR
   #include "../usermods/SN_Photoresistor/usermod_sn_photoresistor.h"
 #endif
 
 #ifdef USERMOD_PWM_FAN
+  // requires DALLASTEMPERATURE or SHT included before it
   #include "../usermods/PWM_fan/usermod_PWM_fan.h"
 #endif
 
@@ -178,10 +183,6 @@
 
 #ifdef USERMOD_PWM_OUTPUTS
 #include "../usermods/pwm_outputs/usermod_pwm_outputs.h"
-#endif
-
-#ifdef USERMOD_SHT
-#include "../usermods/sht/usermod_sht.h"
 #endif
 
 
