@@ -50,8 +50,9 @@
 						let lOf = Math.floor((c.width - pPL*mW)/2); //left offeset (to center matrix)
 						var i = 6;
 						ctx.clearRect(0, 0, c.width, c.height); //WLEDMM
+						function colorAdjust(color) {return 55+150*color/255;} //WLEDMM in range 55 - 205
 						for (y=0.5;y<mH;y++) for (x=0.5; x<mW; x++) {
-							ctx.fillStyle = `rgb(${leds[i]},${leds[i+1]},${leds[i+2]})`;
+							ctx.fillStyle = `rgb(${colorAdjust(leds[i])},${colorAdjust(leds[i+1])},${colorAdjust(leds[i+2])})`;
 							ctx.beginPath();
 							ctx.arc(x*pPL+lOf, y*pPL, pPL*0.4, 0, 2 * Math.PI);
 							ctx.fill();

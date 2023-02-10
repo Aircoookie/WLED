@@ -1930,7 +1930,7 @@ void WS2812FX::deserializeMap(uint8_t n) {
         customMappingSize = 0;
         delete[] customMappingTable;
         customMappingTable = nullptr;
-        loadedLedmap = -1;
+        loadedLedmap = 0;
       }
     }
     return;
@@ -1951,7 +1951,7 @@ void WS2812FX::deserializeMap(uint8_t n) {
     customMappingSize = 0;
     delete[] customMappingTable;
     customMappingTable = nullptr;
-    loadedLedmap = -1;
+    loadedLedmap = 0;
   }
 
   JsonArray map = doc[F("map")];
@@ -1959,15 +1959,27 @@ void WS2812FX::deserializeMap(uint8_t n) {
     //WLEDMM: if isMatrix then customMap size is whole matrix
 #ifndef WLED_DISABLE_2D
     if (isMatrix)
-      customMappingSize = Segment::maxWidth * Segment::maxHeight;
+      customMappingSize = Segment::maxWidth * Segment::maxHeight; //as whole matrix will be stored in setUpMatrix
     else
 #endif
       customMappingSize  = map.size();
     customMappingTable = new uint16_t[customMappingSize];
-    for (uint16_t i=0; i<MIN(map.size(),customMappingSize); i++) {
-      customMappingTable[i] = (uint16_t) (map[i]<0 ? 0xFFFFU : map[i]);
+    for (uint16_t i=0; i<customMappingSize; i++) {
+      if (i<map.size())
+        customMappingTable[i] = (uint16_t) (map[i]<0 ? 0xFFFFU : map[i]);
+      else
+        customMappingTable[i] = (uint16_t) 0xFFFFU; //fill the map entirely
     }
     loadedLedmap = n;
+          #ifdef WLED_DEBUG
+      DEBUG_PRINTF("Custom ledmap: %d\n", loadedLedmap);
+      for (uint16_t i=0; i<customMappingSize; i++) {
+        if (!(i%Segment::maxWidth)) DEBUG_PRINTLN();
+        DEBUG_PRINTF("%4d,", customMappingTable[i]);
+      }
+      DEBUG_PRINTLN();
+      #endif
+
     setUpMatrix(false); //WLEDMM: apply logical to physical mapping after the ledmap
   }
   else 

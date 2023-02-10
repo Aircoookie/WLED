@@ -41,7 +41,7 @@ void WS2812FX::setUpMatrix(bool reset) {
     if (customMappingTable != nullptr) delete[] customMappingTable;
     customMappingTable = nullptr;
     customMappingSize = 0;
-    loadedLedmap = -1;
+    loadedLedmap = 0;
   }
 
   // isMatrix is set in cfg.cpp or set.cpp
@@ -76,17 +76,12 @@ void WS2812FX::setUpMatrix(bool reset) {
     }
 
     if (customMappingTable != nullptr) {
+      uint16_t customMappingSizeLedmap = customMappingSize;
       customMappingSize = Segment::maxWidth * Segment::maxHeight;
 
-      // fill with empty in case we don't fill the entire matrix
-      if (loadedLedmap <= 0) //WLEDMM: only if no ledmap
-        for (size_t i = 0; i< customMappingSize; i++) {
-          customMappingTable[i] = (uint16_t)-1;
-        }
-
-      uint16_t *customMappingTableLedMap = nullptr; //WLEDMM: Idea @Troy#2642
+      uint16_t *customMappingTableCombi = nullptr; //WLEDMM: Idea @Troy#2642 
       if (loadedLedmap > 0)
-        customMappingTableLedMap = new uint16_t[customMappingSize];
+        customMappingTableCombi = new uint16_t[customMappingSize];
 
       uint16_t x, y, pix=0; //pixel
       for (size_t pan = 0; pan < panel.size(); pan++) {
@@ -98,23 +93,28 @@ void WS2812FX::setUpMatrix(bool reset) {
             y = (p.vertical?p.rightStart:p.bottomStart) ? v-j-1 : j;
             x = (p.vertical?p.bottomStart:p.rightStart) ? h-i-1 : i;
             x = p.serpentine && j%2 ? h-x-1 : x;
-            if (loadedLedmap > 0)
-              customMappingTableLedMap[customMappingTable[(p.yOffset + (p.vertical?x:y)) * Segment::maxWidth + p.xOffset + (p.vertical?y:x)]] = pix; //WLEDMM: allow for 2 transitions if reset = false (ledmap and logical to physical)
+            uint16_t index = (p.yOffset + (p.vertical?x:y)) * Segment::maxWidth + p.xOffset + (p.vertical?y:x);
+            if (loadedLedmap > 0) {
+              if (index < customMappingSizeLedmap)
+                customMappingTableCombi[customMappingTable[index]] = pix; //WLEDMM: allow for 2 transitions if reset = false (ledmap and logical to physical)
+              else
+                customMappingTableCombi[index] = pix;
+            }
             else
-              customMappingTable[(p.yOffset + (p.vertical?x:y)) * Segment::maxWidth + p.xOffset + (p.vertical?y:x)] = pix; //WLEDMM: allow for 2 transitions if reset = false (ledmap and logical to physical)
+              customMappingTable[index] = pix;
           }
         }
       }
 
       if (loadedLedmap > 0) {
         for (size_t i = 0; i < customMappingSize; i++) {
-          customMappingTable[i] = customMappingTableLedMap[i];
+          customMappingTable[i] = customMappingTableCombi[i];
         }
-        delete[] customMappingTableLedMap;
+        delete[] customMappingTableCombi;
       }
 
       #ifdef WLED_DEBUG
-      DEBUG_PRINT(F("Matrix ledmap:"));
+      DEBUG_PRINTF("Matrix ledmap: %d\n", loadedLedmap);
       for (uint16_t i=0; i<customMappingSize; i++) {
         if (!(i%Segment::maxWidth)) DEBUG_PRINTLN();
         DEBUG_PRINTF("%4d,", customMappingTable[i]);

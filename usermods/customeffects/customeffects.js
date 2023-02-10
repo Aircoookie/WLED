@@ -27,9 +27,7 @@ function fetchAndExecute(url, name, callback)
   })
   .catch(function (error) {
     showToast("Error getting " + name, true);
-    // showToast(error, true);
-    // console.log(error);
-    presetError(false);
+    console.log(error);
   })
   .finally(() => {
     // if (callback) setTimeout(callback,99);

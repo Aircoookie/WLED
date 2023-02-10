@@ -872,6 +872,7 @@ void serializeInfo(JsonObject root)
     default: root[F("e32flashtext")] = F(" (other)"); break;
   }
   #endif
+  root[F("ledmap")] = loadedLedmap; //WLEDMM ledmaps will be stored in json/info
   // end WLEDMM
 
   root[F("uptime")] = millis()/1000 + rolloverMillis*4294967;
