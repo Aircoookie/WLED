@@ -1584,7 +1584,7 @@ void WS2812FX::loadCustomPalettes() {
 
 //load custom mapping table from JSON file (called from finalizeInit() or deserializeState())
 void WS2812FX::deserializeMap(uint8_t n) {
-  //if (isMatrix) return; // 2D support creates its own ledmap
+  // 2D support creates its own ledmap (on the fly) if a ledmap.json exists it will overwrite built one.
 
   char fileName[32];
   strcpy_P(fileName, PSTR("/ledmap"));

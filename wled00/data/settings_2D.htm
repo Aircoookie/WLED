@@ -54,6 +54,29 @@
 		gId("mpdiv").style.display = "block";
 	}
 
+	var timeout;
+	function showToast(text, error = false)
+	{
+		var x = gId("toast");
+		x.innerHTML = text;
+		x.className = error ? "error":"show";
+		clearTimeout(timeout);
+		x.style.animation = 'none';
+		timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
+	}
+
+	function uploadFile(name) {
+		var req = new XMLHttpRequest();
+		req.addEventListener('load', function(){showToast(this.responseText,this.status >= 400)});
+		req.addEventListener('error', function(e){showToast(e.stack,true);});
+		req.open("POST", "/upload");
+		var formData = new FormData();
+		formData.append("data", d.Sf.data.files[0], name);
+		req.send(formData);
+		d.Sf.data.value = '';
+		return false;
+	}
+
 	function addPanels() {
 		let c = parseInt(d.Sf.MPC.value);
 		let i = gId("panels").children.length;
@@ -79,9 +102,9 @@ Orientation: <select name="P${i}V">
 	<option value="1">Vertical</option>
 </select><br>
 Serpentine: <input type="checkbox" name="P${i}S"><br>
-Dimensions (WxH): <input id="P${i}W" name="P${i}W" type="number" min="1" max="128" value="${pw}"> x <input id="P${i}H" name="P${i}H" type="number" min="1" max="128" value="${ph}"><br>
-Offset X:<input id="P${i}X" name="P${i}X" type="number" min="0" max="256" value="0">
-Y:<input id="P${i}Y" name="P${i}Y" type="number" min="0" max="256" value="0"><br><i>(offset from top-left corner in # LEDs)</i>
+Dimensions (WxH): <input name="P${i}W" type="number" min="1" max="128" value="${pw}"> x <input name="P${i}H" type="number" min="1" max="128" value="${ph}"><br>
+Offset X:<input name="P${i}X" type="number" min="0" max="256" value="0">
+Y:<input name="P${i}Y" type="number" min="0" max="256" value="0"><br><i>(offset from top-left corner in # LEDs)</i>
 </div>`;
 		p.insertAdjacentHTML("beforeend", b);
 	}
@@ -107,17 +130,17 @@ Y:<input id="P${i}Y" name="P${i}Y" type="number" min="0" max="256" value="0"><br
 	function gen() {
 		resetPanels();
 
-		var pansH = parseInt(d.Sf.MPH.value);
-		var pansV = parseInt(d.Sf.MPV.value);
+		var pansH = parseInt(Sf.MPH.value);
+		var pansV = parseInt(Sf.MPV.value);
 		var c = pansH*pansV;
-		d.Sf.MPC.value = c; // number of panels
+		Sf.MPC.value = c; // number of panels
 
-		var ps = d.Sf.PS.checked;
-		var pv = d.Sf.PV.value==="1";
-		var pb = d.Sf.PB.value==="1";
-		var pr = d.Sf.PR.value==="1";
-		var pw = parseInt(d.Sf.PW.value);
-		var ph = parseInt(d.Sf.PH.value);
+		var ps = Sf.PS.checked;
+		var pv = Sf.PV.value==="1";
+		var pb = Sf.PB.value==="1";
+		var pr = Sf.PR.value==="1";
+		var pw = parseInt(Sf.PW.value);
+		var ph = parseInt(Sf.PH.value);
 
 		var h = pv ? pansV : pansH;
 		var v = pv ? pansH : pansV;
@@ -127,12 +150,18 @@ Y:<input id="P${i}Y" name="P${i}Y" type="number" min="0" max="256" value="0"><br
 				var y = (pv?pr:pb) ? v-j-1: j;
 				var x = (pv?pb:pr) ? h-i-1 : i;
 				x = ps && j%2 ? h-x-1 : x;
-				gId("P"+p+"X").value = (pv?y:x) * pw;
-				gId("P"+p+"Y").value = (pv?x:y) * ph
-				gId("P"+p+"W").value = pw;
-				gId("P"+p+"H").value = ph;
+				Sf[`P${p}X`].value = (pv?y:x) * pw;
+				Sf[`P${p}Y`].value = (pv?x:y) * ph
+				Sf[`P${p}W`].value = pw;
+				Sf[`P${p}H`].value = ph;
 			}
 		}
+	}
+
+	function expand(o,i)
+	{
+		i.style.display = i.style.display!=="none" ? "none" : "";
+		o.innerHTML = i.style.display==="none" ? "&gt;" : "V";
 	}
 	</script>
 	<style>@import url("style.css");</style>
@@ -151,36 +180,43 @@ Y:<input id="P${i}Y" name="P${i}Y" type="number" min="0" max="256" value="0"><br
 	</select><br>
 	<div id="mpdiv" style="display:none;">
 		<hr class="sml">
-		<h3>Matrix Generator</h3>
-		Panel dimensions (WxH): <input name="PW" type="number" min="1" max="128" value="8"> x <input name="PH" type="number" min="1" max="128" value="8"><br>
-		Horizontal panels: <input name="MPH" type="number" min="1" max="8" value="1">
-		Vertical panels: <input name="MPV" type="number" min="1" max="8" value="1"><br>
-		1<sup>st</sup> panel: <select name="PB">
-			<option value="0">Top</option>
-			<option value="1">Bottom</option>
-		</select><select name="PR">
-			<option value="0">Left</option>
-			<option value="1">Right</option>
-		</select><br>
-		Orientation: <select name="PV">
-			<option value="0">Horizontal</option>
-			<option value="1">Vertical</option>
-		</select><br>
-		Serpentine: <input type="checkbox" name="PS"><br>
-		<i style="color:#fa0;">Can populate LED panel layout with pre-arranged matrix.<br>These values do not affect final layout.</i><br>
-		<button type="button" onclick="gen()">Populate</button>
+		<h3>Matrix Generator <button type="button" id="expGen" onclick="expand(this,gId('mxGen'));">&gt;</button></h3>
+		<div id="mxGen" style="display:none;">
+			Panel dimensions (WxH): <input name="PW" type="number" min="1" max="128" value="8"> x <input name="PH" type="number" min="1" max="128" value="8"><br>
+			Horizontal panels: <input name="MPH" type="number" min="1" max="8" value="1">
+			Vertical panels: <input name="MPV" type="number" min="1" max="8" value="1"><br>
+			1<sup>st</sup> panel: <select name="PB">
+				<option value="0">Top</option>
+				<option value="1">Bottom</option>
+			</select><select name="PR">
+				<option value="0">Left</option>
+				<option value="1">Right</option>
+			</select><br>
+			Orientation: <select name="PV">
+				<option value="0">Horizontal</option>
+				<option value="1">Vertical</option>
+			</select><br>
+			Serpentine: <input type="checkbox" name="PS"><br>
+			<i style="color:#fa0;">Can populate LED panel layout with pre-arranged matrix.<br>Values from above do not affect final layout.<br>
+				WARNING: You will need to update each panel parameters after they are generated.</i><br>
+			<button type="button" onclick="gen();expand(gId('expGen'),gId('mxGen'));">Populate</button>
+		</div>
 		<hr class="sml">
 		<h3>Panel set-up</h3>
-		Number of panels: <input name="MPC" type="number" min="1" max="64" value="1" oninput="addPanels()"><br>
+		Number of panels: <input name="MPC" type="number" min="1" max="64" value="1" oninput="addPanels();UI();"><br>
 		<i>A matrix is made of 1 or more physical LED panels.<br>
-		<!--Panels should be arranged from top-left to bottom-right order, starting with lower panel number on the left (or top if transposed).<br>-->
 		Each panel can be of different size and/or have different LED orientation and/or starting point and/or layout.</i><br>
 		<h3>LED panel layout</h3>
 		<div id="panels">
 		</div>
+		<hr class="sml">
+		<div id="json" >Gap file: <input type="file" name="data" accept=".json"><button type="button" class="sml" onclick="uploadFile('/2d-gaps.json')">Upload</button></div>
+		<i>Note: Gap file is a <b>.json</b> file containing an array with number of elements equal to the matrix size.<br>
+			A value of -1 means that pixel at that position is missing, a value of 0 means never paint that pixel, and 1 means regular pixel.</i>
 	</div>
 	<hr>
 	<button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 	</form>
+	<div id="toast"></div>
 </body>
 </html>
