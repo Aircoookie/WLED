@@ -332,7 +332,7 @@ class BusManager {
 
     void setStatusPixel(uint32_t c);
 
-    void IRAM_ATTR setPixelColor(uint16_t pix, uint32_t c, int16_t cct=-1);
+    void setPixelColor(uint16_t pix, uint32_t c, int16_t cct=-1);
 
     void setBrightness(uint8_t b);
 
