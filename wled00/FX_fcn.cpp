@@ -1417,7 +1417,7 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
     }
     // do we have LEDs after the matrix? (ignore buses)
     if (autoSegments && _length > Segment::maxWidth*Segment::maxHeight /*&& getActiveSegmentsNum() == 2*/) {
-      if (_segments.size() == getLastActiveSegmentId()+1)
+      if (_segments.size() == getLastActiveSegmentId()+1U)
         _segments.push_back(Segment(Segment::maxWidth*Segment::maxHeight, _length));
       else {
         size_t i = getLastActiveSegmentId() + 1;
@@ -1484,6 +1484,7 @@ void WS2812FX::fixInvalidSegments() {
 }
 
 //true if all segments align with a bus, or if a segment covers the total length
+//irrelevant in 2D set-up
 bool WS2812FX::checkSegmentAlignment() {
   bool aligned = false;
   for (segment &seg : _segments) {
@@ -1583,7 +1584,7 @@ void WS2812FX::loadCustomPalettes() {
 }
 
 //load custom mapping table from JSON file (called from finalizeInit() or deserializeState())
-void WS2812FX::deserializeMap(uint8_t n) {
+bool WS2812FX::deserializeMap(uint8_t n) {
   // 2D support creates its own ledmap (on the fly) if a ledmap.json exists it will overwrite built one.
 
   char fileName[32];
@@ -1599,18 +1600,18 @@ void WS2812FX::deserializeMap(uint8_t n) {
       delete[] customMappingTable;
       customMappingTable = nullptr;
     }
-    return;
+    return false;
   }
 
-  if (!requestJSONBufferLock(7)) return;
-
-  DEBUG_PRINT(F("Reading LED map from "));
-  DEBUG_PRINTLN(fileName);
+  if (!requestJSONBufferLock(7)) return false;
 
   if (!readObjectFromFile(fileName, nullptr, &doc)) {
     releaseJSONBufferLock();
-    return; //if file does not exist just exit
+    return false; //if file does not exist just exit
   }
+
+  DEBUG_PRINT(F("Reading LED map from "));
+  DEBUG_PRINTLN(fileName);
 
   // erase old custom ledmap
   if (customMappingTable != nullptr) {
@@ -1629,6 +1630,7 @@ void WS2812FX::deserializeMap(uint8_t n) {
   }
 
   releaseJSONBufferLock();
+  return true;
 }
 
 

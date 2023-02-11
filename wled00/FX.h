@@ -727,8 +727,7 @@ class WS2812FX {  // 96 bytes
       fixInvalidSegments(),
       setPixelColor(int n, uint32_t c),
       show(void),
-      setTargetFps(uint8_t fps),
-      deserializeMap(uint8_t n=0);
+      setTargetFps(uint8_t fps);
 
     void fill(uint32_t c) { for (int i = 0; i < _length; i++) setPixelColor(i, c); } // fill whole strip with color (inline)
     void addEffect(uint8_t id, mode_ptr mode_fn, const char *mode_name); // add effect to the list; defined in FX.cpp
@@ -748,6 +747,7 @@ class WS2812FX {  // 96 bytes
       hasCCTBus(void),
       // return true if the strip is being sent pixel updates
       isUpdating(void),
+      deserializeMap(uint8_t n=0),
       useLedsArray = false;
 
     inline bool isServicing(void) { return _isServicing; }

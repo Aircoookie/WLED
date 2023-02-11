@@ -87,7 +87,7 @@ void WS2812FX::setUpMatrix() {
       // allowed values are: -1 (missing pixel/no LED attached), 0 (inactive/unused pixel), 1 (active/used pixel)
       char    fileName[32]; strcpy_P(fileName, PSTR("/2d-gaps.json")); // reduce flash footprint
       bool    isFile = WLED_FS.exists(fileName);
-      int     gapSize = 0;
+      size_t  gapSize = 0;
       int8_t *gapTable = nullptr;
 
       if (isFile && requestJSONBufferLock(20)) {
@@ -108,6 +108,7 @@ void WS2812FX::setUpMatrix() {
             }
           }
         }
+        DEBUG_PRINTLN(F("Gaps loaded."));
         releaseJSONBufferLock();
       }
 
@@ -147,7 +148,6 @@ void WS2812FX::setUpMatrix() {
       Segment::maxWidth = _length;
       Segment::maxHeight = 1;
     }
-    resetSegments();
   }
 #else
   isMatrix = false; // no matter what config says
