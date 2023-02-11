@@ -62,7 +62,7 @@ void WS2812FX::setUpMatrix(bool reset) {
     if (reset) { //WLEDMM: add reset option to switch on/off reset of customMappingTable
       // safety check
       if (Segment::maxWidth * Segment::maxHeight > MAX_LEDS || Segment::maxWidth <= 1 || Segment::maxHeight <= 1) {
-        DEBUG_PRINTLN(F("2D Bounds error."));
+        DEBUG_PRINTF("2D Bounds error. %d x %d\n", Segment::maxWidth, Segment::maxHeight);
         isMatrix = false;
         Segment::maxWidth = _length;
         Segment::maxHeight = 1;

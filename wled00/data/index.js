@@ -37,6 +37,7 @@ var hol = [
 	[0,0,1,1,"https://initiate.alphacoders.com/download/wallpaper/1198800/images/jpg/2522807481585600"] // new year
 ];
 var ctx = null; // WLEDMM
+var ledmap = -1; //WLEDMM
 
 function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson();}
 function sCol(na, col) {d.documentElement.style.setProperty(na, col);}
@@ -709,7 +710,6 @@ function populateSegments(s)
 	segCount = 0; lowestUnused = 0; lSeg = 0;
 
 	for (var inst of (s.seg||[])) {
-		console.log("inst", inst);
 		segCount++;
 
 		let i = parseInt(inst.id);
@@ -828,7 +828,7 @@ function populateSegments(s)
 	resetUtil(noNewSegs);
 	if (gId('selall')) gId('selall').checked = true;
 	for (var i = 0; i <= lSeg; i++) {
-		updateLen(i);
+		updateLen(i, false);
 		updateTrail(gId(`seg${i}bri`));
 		gId(`segr${i}`).style.display = "none";
 		if (!gId(`seg${i}sel`).checked && gId('selall')) gId('selall').checked = false; // uncheck if at least one is unselected.
@@ -839,13 +839,14 @@ function populateSegments(s)
 
 	if (Array.isArray(li.maps) && li.maps.length>0) { //WLEDMM >0 instead of 1 to show also first ledmap. Attention: WLED AC has isM check, in MM Matrices are supported so do not check on isM
 		let cont = `Ledmap:&nbsp;<select class="sel-sg" onchange="requestJson({'ledmap':parseInt(this.value)})">`; //WLEDMM remove <option value="" selected>Unchanged</option>
-		for (const k of (li.maps||[])) cont += `<option value="${k}"${(i>0 && li.ledmap==k)?" selected":""}>${k==0?'Default':'ledmap'+k+'.json'}</option>`; //WLEDMM set ledmap selected
+		for (const k of (li.maps||[])) cont += `<option value="${k}"${(i>0 && ledmap==k)?" selected":""}>${k==0?'Default':'ledmap'+k+'.json'}</option>`; //WLEDMM set ledmap selected
 		cont += "</select></div>";
 		gId("ledmap").innerHTML = cont;
 		gId("ledmap").classList.remove('hide');
 	} else {
 		gId("ledmap").classList.add('hide');
 	}
+	if (isM) drawSegments(); //WLEDMM
 }
 
 function populateEffects()
@@ -1074,9 +1075,8 @@ function toggleBubble(e)
 }
 
 // updates segment length upon input of segment values
-function updateLen(s)
+function updateLen(s, draw=true) //WLEDMM conditonally draw segment visualisation
 {
-	console.log("updateLen", s);
 	if (!gId(`seg${s}s`)) return;
 	var start = parseInt(gId(`seg${s}s`).value);
 	var stop = parseInt(gId(`seg${s}e`).value) + (cfg.comp.seglen?start:0);
@@ -1146,14 +1146,14 @@ function updateLen(s)
 	if (isM && start >= mw*mh) out += " [strip]";
 
 	gId(`seg${s}len`).innerHTML = out;
-	if (isM) drawSegments(); //WLEDMM draw new segment graphic if something changes in a segment
+
+	if (draw && isM) drawSegments(); //WLEDMM draw new segment visualization if something changes in a segment
 }
 
 //WLEDMM
 function drawSegments() {
 
 	if (!ctx) {
-		console.log("init", window.innerWidth);
 		//WLEDMM: add canvas, initialize and set UI
 		var canvas = gId("canvas");
 		canvas.hidden = false;
@@ -1161,23 +1161,34 @@ function drawSegments() {
 	}
 	ctx.canvas.width  = ctx.canvas.parentElement.offsetWidth > 800?800:300; //Mobile and non pc mode gets 300, pc 800
 
+	var px, py, pw, ph;
+	var topLeftX, topLeftY;
+
+	var space=0; // space between panels + margin
+	function initSegmentVars(p) {
+		px = parseInt(gId("seg"+p+"s").value); //first led x
+		if (!gId("seg"+p+"sY")) return false; //no draw for 1D segments (yet)
+		py = parseInt(gId("seg"+p+"sY").value); //first led y
+		pw = parseInt(gId("seg"+p+"e").value - gId("seg"+p+"s").value); //width
+		ph = parseInt(gId("seg"+p+"eY").value - gId("seg"+p+"sY").value); //height
+		// console.log("sergment", p, px, py, pw, ph);
+		topLeftX = px*ppL + space; //left margin
+		topLeftY = py*ppL + space; //top margin
+		// console.log("rect", p, topLeftX, topLeftY, pw*ppL, ph*ppL);
+		return true;
+	}
+
 	//calc max height and width
 	var maxWidth = 0;
 	var maxHeight = 0;
 	for (let p=0; p<gId("segcont").children.length; p++) {
-		var px = parseInt(gId("seg"+p+"s").value); //first led x
-		if (!gId("seg"+p+"sY")) break; //no draw for 1D segments (yet)
-		var py = parseInt(gId("seg"+p+"sY").value); //first led y
-		var pw = parseInt(gId("seg"+p+"e").value - gId("seg"+p+"s").value); //width
-		var ph = parseInt(gId("seg"+p+"eY").value - gId("seg"+p+"sY").value); //height
-
+		if (!initSegmentVars(p)) break;
 		maxWidth = Math.max(maxWidth, px + pw);
 		maxHeight = Math.max(maxHeight, py + ph);
 	}
 
 	ctx.canvas.height = ctx.canvas.width / maxWidth * maxHeight;
 	ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-	var space=0; // space between panels + margin
 	var ppL = (ctx.canvas.width  - space * 2) / maxWidth; //pixels per led
 	// console.log("dim", ctx.canvas.width , maxWidth, ctx.canvas.height , maxHeight, ppL);
 
@@ -1191,17 +1202,8 @@ function drawSegments() {
 	for (let p=0; p<gId("segcont").children.length; p++) {
 		// console.log(gId("P"+p+"X").value, gId("P"+p+"Y").value, gId("P"+p+"W").value, gId("P"+p+"H").value, gId("P"+p+"B").value, gId("P"+p+"R").value, gId("P"+p+"V").value, gId("P"+p+"S").checked);
 
-		var px = parseInt(gId("seg"+p+"s").value); //first led x
-		if (!gId("seg"+p+"sY")) break; //no draw for 1D segments (yet)
-		var py = parseInt(gId("seg"+p+"sY").value); //first led y
-		var pw = parseInt(gId("seg"+p+"e").value - gId("seg"+p+"s").value); //width
-		var ph = parseInt(gId("seg"+p+"eY").value - gId("seg"+p+"sY").value); //height
+		if (!initSegmentVars(p)) break;
 
-		// console.log("sergment", p, px, py, pw, ph);
-
-		var topLeftX = px*ppL + space; //left margin
-		var topLeftY = py*ppL + space; //top margin
-		// console.log("rect", p, topLeftX, topLeftY, pw*ppL, ph*ppL);
 		ctx.lineWidth = 3;
 		ctx.strokeStyle="white";
 		ctx.strokeRect(topLeftX, topLeftY, pw*ppL, ph*ppL); // add space between panels
@@ -1278,35 +1280,58 @@ function drawSegments() {
 			}
 		}
 
-		ctx.font = '40px Arial'; 
-		ctx.fillStyle = "orange";
-		ctx.fillText(p, topLeftX + pw/2*ppL - 10, topLeftY + ph/2*ppL + 10);
-
-		ctx.font = '20px Arial'; 
-		ctx.fillStyle = "white";
-		var name = eJson.find((o)=>{return o.id==fx}).name;
-		ctx.fillText(name, topLeftX + ppL, topLeftY + ph*ppL - 10);
-		
 	} // for each segment
 
 	gId("MD").innerHTML = "☾ W*H=LC: " + maxWidth + " x " + maxHeight + " = " + maxWidth * maxHeight;
 
+	function post() {
+		for (let p=0; p<gId("segcont").children.length; p++) {
+			if (!initSegmentVars(p)) break;
+			
+			ctx.font = '40px Arial'; 
+			ctx.fillStyle = "orange";
+			ctx.fillText(p, topLeftX + pw/2*ppL - 10, topLeftY + ph/2*ppL + 10);
+	
+			ctx.font = '20px Arial'; 
+			ctx.fillStyle = "white";
+			var name = eJson.find((o)=>{return o.id==fx}).name;
+			ctx.fillText(name, topLeftX + ppL, topLeftY + ph*ppL - 10);
+		}	
+	}
+
 	//draw the ledmap
-	if (lastinfo.ledmap>0 && ctx) {
+	if (ledmap>0 && ctx) {
 		// console.log("Before fetch ledmap ", lastinfo.ledmap);
-		fetchAndExecute((loc?`http://${locip}`:'.') + "/", "ledmap"+lastinfo.ledmap+".json" , function(text) {
+		fetchAndExecute((loc?`http://${locip}`:'.') + "/", "ledmap"+ledmap+".json" , function(text) {
+			var noMap = [];
 			ledmapJson = JSON.parse(text);
 			var counter = 0;
 			for (let i=0;i<ledmapJson["map"].length;i++) {
-				ctx.font = parseInt(ppL/3) + 'px Arial'; 
-				ctx.fillStyle = "white";
-				x = ledmapJson["map"][i]%maxWidth;
-				y = parseInt(ledmapJson["map"][i]/maxWidth);
-				ctx.fillText(counter, topLeftX + ppL/2 + x*ppL-ppL*0.3, topLeftY + ppL/2 + y * ppL);
-				counter++;
+				let mapIndex = ledmapJson["map"][i];
+				if (mapIndex != -1) {
+					ctx.font = parseInt(ppL/3) + 'px Arial'; 
+					ctx.fillStyle = "white";
+					x = mapIndex%maxWidth;
+					y = parseInt(mapIndex/maxWidth);
+					ctx.fillText(counter, topLeftX + ppL/2 + x*ppL-ppL*0.3, topLeftY + ppL/2 + y * ppL);
+					counter++;
+				}
+				else 
+				noMap.push(i);
 			}
+			for (let i=0;i<noMap.length;i++) {
+				x = noMap[i]%maxWidth;
+				y = parseInt(noMap[i]/maxWidth);
+				ctx.fillStyle = "black";
+				ctx.beginPath();
+				ctx.arc(topLeftX + ppL/2 + x*ppL, topLeftY + ppL/2 + y * ppL, ppL*0.4, 0, 2 * Math.PI);
+				ctx.fill();
+			}
+			post();
 		});
 	}
+	else
+		post();
 }
 
 // updates background color of currently selected preset
@@ -1456,6 +1481,7 @@ function makeWS() {
 		clearErrorToast();
 		gId('connind').style.backgroundColor = "var(--c-l)";
 		// json object should contain json.info AND json.state (but may not)
+		// console.log("makeWS onmessage", json); //WLEDMM Debug
 		var i = json.info;
 		if (i) {
 			parseInfo(i);
@@ -1495,6 +1521,8 @@ function readState(s,command=false)
 
 	tr = s.transition;
 	gId('tt').value = tr/10;
+
+	ledmap = s.ledmap; //WLEDMM
 
 	populateSegments(s);
 	var selc=0;
@@ -1736,10 +1764,12 @@ function requestJson(command=null)
 	};
 
 	if (useWs) {
+		// console.log("requestJson ws.send", command); //WLEDMM Debug
 		ws.send(req?req:'{"v":true}');
 		return;
 	}
 
+	// console.log("requestJson url fetch", url, type); //WLEDMM Debug
 	fetch(url, {
 		method: type,
 		headers: {
@@ -1759,6 +1789,7 @@ function requestJson(command=null)
 		gId('connind').style.backgroundColor = "var(--c-g)";
 		if (!json) { showToast('Empty response', true); return; }
 		if (json.success) return;
+		// console.log("requestJson url return", json); //WLEDMM Debug
 		if (json.info) {
 			let i = json.info;
 			// append custom palettes (when loading for the 1st time)
@@ -3142,9 +3173,12 @@ function togglePcMode(fromB = false)
 	sCol('--bh', gId('bot').clientHeight + "px");
 	_C.style.width = (pcMode)?'100%':'400%';
 	lastw = wW;
-	//WLEDMM
-	gId("canvas").width = gId("canvas").parentElement.offsetWidth > 800?800:300; //WLEDMM Mobile and non pc mode gets 300, pc 800
-	drawSegments(); //WLEDMM
+
+	//WLEDMM resize segment visualization
+	if (isM) {
+		gId("canvas").width = gId("canvas").parentElement.offsetWidth > 800?800:300; //WLEDMM Mobile and non pc mode gets 300, pc 800
+		drawSegments();
+	}
 }
 
 function mergeDeep(target, ...sources)

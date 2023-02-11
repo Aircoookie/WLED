@@ -448,7 +448,9 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   usermods.readFromJsonState(root);
 
-  loadLedmap = root[F("ledmap")] | loadLedmap;
+  //WLEDMM
+  loadedLedmap = root[F("ledmap")] | loadedLedmap;
+  loadLedmap = loadedLedmap>=0; //WLEDMM included 0 to switch back to default
 
   byte ps = root[F("psave")];
   if (ps > 0 && ps < 251) savePreset(ps, nullptr, root);
@@ -617,6 +619,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
       seg0["stop"] = 0;
     }
   }
+  root[F("ledmap")] = loadedLedmap; //WLEDMM ledmaps will be stored in json
 }
 
 // begin WLEDMM
@@ -872,7 +875,6 @@ void serializeInfo(JsonObject root)
     default: root[F("e32flashtext")] = F(" (other)"); break;
   }
   #endif
-  root[F("ledmap")] = loadedLedmap; //WLEDMM ledmaps will be stored in json/info
   // end WLEDMM
 
   root[F("uptime")] = millis()/1000 + rolloverMillis*4294967;

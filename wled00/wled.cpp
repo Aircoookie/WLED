@@ -177,15 +177,15 @@ void WLED::loop()
       delete busConfigs[i]; busConfigs[i] = nullptr;
     }
     strip.finalizeInit();
-    loadLedmap = 0;
+    loadLedmap = true;
     if (aligned) strip.makeAutoSegments();
     else strip.fixInvalidSegments();
     yield();
     serializeConfig();
   }
-  if (loadLedmap >= 0) {
-    strip.deserializeMap(loadLedmap);
-    loadLedmap = -1;
+  if (loadLedmap) {
+    strip.deserializeMap(loadedLedmap);
+    loadLedmap = false;
   }
 
   yield();
@@ -800,7 +800,11 @@ void WLED::initConnection()
 
   USER_PRINT(F("Connecting to "));
   USER_PRINT(clientSSID);
-  USER_PRINTLN("...");
+  USER_PRINT(" / ");
+  for(int i = 0; i<strlen(clientPass); i++){
+      USER_PRINT("*");
+   }
+  USER_PRINTLN(" ...");
 
   // convert the "serverDescription" into a valid DNS hostname (alphanumeric)
   char hostname[25];

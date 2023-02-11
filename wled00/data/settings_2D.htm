@@ -72,6 +72,7 @@
 		if (p.children.length >= maxPanels) return;
 		var pw = parseInt(d.Sf.PW.value);
 		var ph = parseInt(d.Sf.PH.value);
+		//WLEDMM: change name to id
 		let b = `<div id="pnl${i}"><hr class="sml">Panel ${i}<br>
 1<sup>st</sup> LED: <select id="P${i}B" name="P${i}B" oninput="draw()">
 	<option value="0">Top</option>
@@ -84,10 +85,10 @@ Orientation: <select id="P${i}V" name="P${i}V" oninput="draw()">
 	<option value="0">Horizontal</option>
 	<option value="1">Vertical</option>
 </select><br>
-Serpentine: <input id="P${i}S" type="checkbox" name="P${i}S" onclick="draw()"><br>
-Dimensions (WxH): <input id="P${i}W" name="P${i}W" type="number" min="1" max="128" value="${pw}" oninput="draw()"> x <input id="P${i}H" name="P${i}H" type="number" min="1" max="128" value="${ph}" oninput="draw()"><br>
-Offset X:<input id="P${i}X" name="P${i}X" type="number" min="0" max="256" value="0" oninput="draw()">
-Y:<input id="P${i}Y" name="P${i}Y" type="number" min="0" max="256" value="0" oninput="draw()"><br><i>(offset from top-left corner in # LEDs)</i>
+Serpentine: <input id="P${i}S" name="P${i}S" type="checkbox" onclick="draw()"><br>
+Dimensions (WxH): <input id="P${i}W" name="P${i}W" type="number" min="1" max="255" value="${pw}" oninput="draw()"> x <input id="P${i}H" name="P${i}H" type="number" min="1" max="255" value="${ph}" oninput="draw()"><br>
+Offset X:<input id="P${i}X" name="P${i}X" type="number" min="0" max="255" value="0" oninput="draw()">
+Y:<input id="P${i}Y" name="P${i}Y" type="number" min="0" max="255" value="0" oninput="draw()"><br><i>(offset from top-left corner in # LEDs)</i>
 </div>`;
 		p.insertAdjacentHTML("beforeend", b);
 	}
@@ -364,7 +365,7 @@ Y:<input id="P${i}Y" name="P${i}Y" type="number" min="0" max="256" value="0" oni
 		<br>
 		<hr class="sml">
 		<h3 id="title">Matrix Generator</h3>
-		Panel dimensions (WxH): <input name="PW" type="number" min="1" max="128" value="8" oninput="fieldChange()"> x <input name="PH" type="number" min="1" max="128" value="8" oninput="fieldChange()"><br>
+		Panel dimensions (WxH): <input name="PW" type="number" min="1" max="255" value="8" oninput="fieldChange()"> x <input name="PH" type="number" min="1" max="255" value="8" oninput="fieldChange()"><br>
 		Horizontal panels: <input name="MPH" type="number" min="1" max="8" value="1" oninput="fieldChange()">
 		Vertical panels: <input name="MPV" type="number" min="1" max="8" value="1" oninput="fieldChange()"><br>
 		<div id="panelOrientationBlock">
@@ -397,8 +398,8 @@ Y:<input id="P${i}Y" name="P${i}Y" type="number" min="0" max="256" value="0" oni
 		<br>
 		<hr class="sml">
 		☾<br>
-		<canvas id="canvas"></canvas><br>
-		<div id="MD"></div> <!-- Matrix dimensions -->
+		<canvas id="canvas"></canvas><br> <!--WLEDMM panel visualization-->
+		<div id="MD"></div> <!-- WLEDMM Matrix dimensions -->
 		<br>
 		<div id="advancedBlock">
 		<i style="color:#fa0;">Can populate LED panel layout with pre-arranged matrix.<br>These values do not affect final layout.<br>WLEDMM: Populate will overwrite earlier saved panel layouts!</i><br>
