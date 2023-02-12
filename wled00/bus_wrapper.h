@@ -1,7 +1,7 @@
 #ifndef BusWrapper_h
 #define BusWrapper_h
 
-#include "NeoPixelBrightnessBus.h"
+#include "NeoPixelBusLg.h"
 
 // temporary - these defines should actually be set in platformio.ini
 // C3: I2S0 and I2S1 methods not supported (has one I2S bus)
@@ -125,143 +125,143 @@
 /*** ESP8266 Neopixel methods ***/
 #ifdef ESP8266
 //RGB
-#define B_8266_U0_NEO_3 NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart0Ws2813Method> //3 chan, esp8266, gpio1
-#define B_8266_U1_NEO_3 NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart1Ws2813Method> //3 chan, esp8266, gpio2
-#define B_8266_DM_NEO_3 NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Dma800KbpsMethod>  //3 chan, esp8266, gpio3
-#define B_8266_BB_NEO_3 NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266BitBang800KbpsMethod> //3 chan, esp8266, bb (any pin but 16)
+#define B_8266_U0_NEO_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp8266Uart0Ws2813Method, NeoGammaNullMethod> //3 chan, esp8266, gpio1
+#define B_8266_U1_NEO_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp8266Uart1Ws2813Method, NeoGammaNullMethod> //3 chan, esp8266, gpio2
+#define B_8266_DM_NEO_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp8266Dma800KbpsMethod, NeoGammaNullMethod>  //3 chan, esp8266, gpio3
+#define B_8266_BB_NEO_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp8266BitBang800KbpsMethod, NeoGammaNullMethod> //3 chan, esp8266, bb (any pin but 16)
 //RGBW
-#define B_8266_U0_NEO_4 NeoPixelBrightnessBus<NeoGrbwFeature, NeoEsp8266Uart0Ws2813Method>   //4 chan, esp8266, gpio1
-#define B_8266_U1_NEO_4 NeoPixelBrightnessBus<NeoGrbwFeature, NeoEsp8266Uart1Ws2813Method>   //4 chan, esp8266, gpio2
-#define B_8266_DM_NEO_4 NeoPixelBrightnessBus<NeoGrbwFeature, NeoEsp8266Dma800KbpsMethod>    //4 chan, esp8266, gpio3
-#define B_8266_BB_NEO_4 NeoPixelBrightnessBus<NeoGrbwFeature, NeoEsp8266BitBang800KbpsMethod> //4 chan, esp8266, bb (any pin)
+#define B_8266_U0_NEO_4 NeoPixelBusLg<NeoGrbwFeature, NeoEsp8266Uart0Ws2813Method, NeoGammaNullMethod>   //4 chan, esp8266, gpio1
+#define B_8266_U1_NEO_4 NeoPixelBusLg<NeoGrbwFeature, NeoEsp8266Uart1Ws2813Method, NeoGammaNullMethod>   //4 chan, esp8266, gpio2
+#define B_8266_DM_NEO_4 NeoPixelBusLg<NeoGrbwFeature, NeoEsp8266Dma800KbpsMethod, NeoGammaNullMethod>    //4 chan, esp8266, gpio3
+#define B_8266_BB_NEO_4 NeoPixelBusLg<NeoGrbwFeature, NeoEsp8266BitBang800KbpsMethod, NeoGammaNullMethod> //4 chan, esp8266, bb (any pin)
 //400Kbps
-#define B_8266_U0_400_3 NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart0400KbpsMethod>   //3 chan, esp8266, gpio1
-#define B_8266_U1_400_3 NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart1400KbpsMethod>   //3 chan, esp8266, gpio2
-#define B_8266_DM_400_3 NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Dma400KbpsMethod>     //3 chan, esp8266, gpio3
-#define B_8266_BB_400_3 NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266BitBang400KbpsMethod> //3 chan, esp8266, bb (any pin)
+#define B_8266_U0_400_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp8266Uart0400KbpsMethod, NeoGammaNullMethod>   //3 chan, esp8266, gpio1
+#define B_8266_U1_400_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp8266Uart1400KbpsMethod, NeoGammaNullMethod>   //3 chan, esp8266, gpio2
+#define B_8266_DM_400_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp8266Dma400KbpsMethod, NeoGammaNullMethod>     //3 chan, esp8266, gpio3
+#define B_8266_BB_400_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp8266BitBang400KbpsMethod, NeoGammaNullMethod> //3 chan, esp8266, bb (any pin)
 //TM1814 (RGBW)
-#define B_8266_U0_TM1_4 NeoPixelBrightnessBus<NeoWrgbTm1814Feature, NeoEsp8266Uart0Tm1814Method>
-#define B_8266_U1_TM1_4 NeoPixelBrightnessBus<NeoWrgbTm1814Feature, NeoEsp8266Uart1Tm1814Method>
-#define B_8266_DM_TM1_4 NeoPixelBrightnessBus<NeoWrgbTm1814Feature, NeoEsp8266DmaTm1814Method>
-#define B_8266_BB_TM1_4 NeoPixelBrightnessBus<NeoWrgbTm1814Feature, NeoEsp8266BitBangTm1814Method>
+#define B_8266_U0_TM1_4 NeoPixelBusLg<NeoWrgbTm1814Feature, NeoEsp8266Uart0Tm1814Method, NeoGammaNullMethod>
+#define B_8266_U1_TM1_4 NeoPixelBusLg<NeoWrgbTm1814Feature, NeoEsp8266Uart1Tm1814Method, NeoGammaNullMethod>
+#define B_8266_DM_TM1_4 NeoPixelBusLg<NeoWrgbTm1814Feature, NeoEsp8266DmaTm1814Method, NeoGammaNullMethod>
+#define B_8266_BB_TM1_4 NeoPixelBusLg<NeoWrgbTm1814Feature, NeoEsp8266BitBangTm1814Method, NeoGammaNullMethod>
 //TM1829 (RGB)
-#define B_8266_U0_TM2_4 NeoPixelBrightnessBus<NeoBrgFeature, NeoEsp8266Uart0Tm1829Method>
-#define B_8266_U1_TM2_4 NeoPixelBrightnessBus<NeoBrgFeature, NeoEsp8266Uart1Tm1829Method>
-#define B_8266_DM_TM2_4 NeoPixelBrightnessBus<NeoBrgFeature, NeoEsp8266DmaTm1829Method>
-#define B_8266_BB_TM2_4 NeoPixelBrightnessBus<NeoBrgFeature, NeoEsp8266BitBangTm1829Method>
+#define B_8266_U0_TM2_4 NeoPixelBusLg<NeoBrgFeature, NeoEsp8266Uart0Tm1829Method, NeoGammaNullMethod>
+#define B_8266_U1_TM2_4 NeoPixelBusLg<NeoBrgFeature, NeoEsp8266Uart1Tm1829Method, NeoGammaNullMethod>
+#define B_8266_DM_TM2_4 NeoPixelBusLg<NeoBrgFeature, NeoEsp8266DmaTm1829Method, NeoGammaNullMethod>
+#define B_8266_BB_TM2_4 NeoPixelBusLg<NeoBrgFeature, NeoEsp8266BitBangTm1829Method, NeoGammaNullMethod>
 //UCS8903
-#define B_8266_U0_UCS_3 NeoPixelBrightnessBus<NeoRgbUcs8903Feature, NeoEsp8266Uart0Ws2813Method> //3 chan, esp8266, gpio1
-#define B_8266_U1_UCS_3 NeoPixelBrightnessBus<NeoRgbUcs8903Feature, NeoEsp8266Uart1Ws2813Method> //3 chan, esp8266, gpio2
-#define B_8266_DM_UCS_3 NeoPixelBrightnessBus<NeoRgbUcs8903Feature, NeoEsp8266Dma800KbpsMethod>  //3 chan, esp8266, gpio3
-#define B_8266_BB_UCS_3 NeoPixelBrightnessBus<NeoRgbUcs8903Feature, NeoEsp8266BitBang800KbpsMethod> //3 chan, esp8266, bb (any pin but 16)
+#define B_8266_U0_UCS_3 NeoPixelBusLg<NeoRgbUcs8903Feature, NeoEsp8266Uart0Ws2813Method, NeoGammaNullMethod> //3 chan, esp8266, gpio1
+#define B_8266_U1_UCS_3 NeoPixelBusLg<NeoRgbUcs8903Feature, NeoEsp8266Uart1Ws2813Method, NeoGammaNullMethod> //3 chan, esp8266, gpio2
+#define B_8266_DM_UCS_3 NeoPixelBusLg<NeoRgbUcs8903Feature, NeoEsp8266Dma800KbpsMethod, NeoGammaNullMethod>  //3 chan, esp8266, gpio3
+#define B_8266_BB_UCS_3 NeoPixelBusLg<NeoRgbUcs8903Feature, NeoEsp8266BitBang800KbpsMethod, NeoGammaNullMethod> //3 chan, esp8266, bb (any pin but 16)
 //UCS8904 RGBW
-#define B_8266_U0_UCS_4 NeoPixelBrightnessBus<NeoRgbwUcs8904Feature, NeoEsp8266Uart0Ws2813Method>   //4 chan, esp8266, gpio1
-#define B_8266_U1_UCS_4 NeoPixelBrightnessBus<NeoRgbwUcs8904Feature, NeoEsp8266Uart1Ws2813Method>   //4 chan, esp8266, gpio2
-#define B_8266_DM_UCS_4 NeoPixelBrightnessBus<NeoRgbwUcs8904Feature, NeoEsp8266Dma800KbpsMethod>    //4 chan, esp8266, gpio3
-#define B_8266_BB_UCS_4 NeoPixelBrightnessBus<NeoRgbwUcs8904Feature, NeoEsp8266BitBang800KbpsMethod> //4 chan, esp8266, bb (any pin)
+#define B_8266_U0_UCS_4 NeoPixelBusLg<NeoRgbwUcs8904Feature, NeoEsp8266Uart0Ws2813Method, NeoGammaNullMethod>   //4 chan, esp8266, gpio1
+#define B_8266_U1_UCS_4 NeoPixelBusLg<NeoRgbwUcs8904Feature, NeoEsp8266Uart1Ws2813Method, NeoGammaNullMethod>   //4 chan, esp8266, gpio2
+#define B_8266_DM_UCS_4 NeoPixelBusLg<NeoRgbwUcs8904Feature, NeoEsp8266Dma800KbpsMethod, NeoGammaNullMethod>    //4 chan, esp8266, gpio3
+#define B_8266_BB_UCS_4 NeoPixelBusLg<NeoRgbwUcs8904Feature, NeoEsp8266BitBang800KbpsMethod, NeoGammaNullMethod> //4 chan, esp8266, bb (any pin)
 #endif
 
 /*** ESP32 Neopixel methods ***/
 #ifdef ARDUINO_ARCH_ESP32
 //RGB
-#define B_32_RN_NEO_3 NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp32RmtNWs2812xMethod>
+#define B_32_RN_NEO_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32RmtNWs2812xMethod, NeoGammaNullMethod>
 #ifndef WLED_NO_I2S0_PIXELBUS
-#define B_32_I0_NEO_3 NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp32I2s0800KbpsMethod>
+#define B_32_I0_NEO_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s0800KbpsMethod, NeoGammaNullMethod>
 #endif
 #ifndef WLED_NO_I2S1_PIXELBUS
-#define B_32_I1_NEO_3 NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp32I2s1800KbpsMethod>
+#define B_32_I1_NEO_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s1800KbpsMethod, NeoGammaNullMethod>
 #endif
-//#define B_32_BB_NEO_3 NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp32BitBang800KbpsMethod> // NeoEsp8266BitBang800KbpsMethod
+//#define B_32_BB_NEO_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32BitBang800KbpsMethod, NeoGammaNullMethod> // NeoEsp8266BitBang800KbpsMethod
 //RGBW
-#define B_32_RN_NEO_4 NeoPixelBrightnessBus<NeoGrbwFeature, NeoEsp32RmtNWs2812xMethod>
+#define B_32_RN_NEO_4 NeoPixelBusLg<NeoGrbwFeature, NeoEsp32RmtNWs2812xMethod, NeoGammaNullMethod>
 #ifndef WLED_NO_I2S0_PIXELBUS
-#define B_32_I0_NEO_4 NeoPixelBrightnessBus<NeoGrbwFeature, NeoEsp32I2s0800KbpsMethod>
+#define B_32_I0_NEO_4 NeoPixelBusLg<NeoGrbwFeature, NeoEsp32I2s0800KbpsMethod, NeoGammaNullMethod>
 #endif
 #ifndef WLED_NO_I2S1_PIXELBUS
-#define B_32_I1_NEO_4 NeoPixelBrightnessBus<NeoGrbwFeature, NeoEsp32I2s1800KbpsMethod>
+#define B_32_I1_NEO_4 NeoPixelBusLg<NeoGrbwFeature, NeoEsp32I2s1800KbpsMethod, NeoGammaNullMethod>
 #endif
-//#define B_32_BB_NEO_4 NeoPixelBrightnessBus<NeoGrbwFeature, NeoEsp32BitBang800KbpsMethod> // NeoEsp8266BitBang800KbpsMethod
+//#define B_32_BB_NEO_4 NeoPixelBusLg<NeoGrbwFeature, NeoEsp32BitBang800KbpsMethod, NeoGammaNullMethod> // NeoEsp8266BitBang800KbpsMethod
 //400Kbps
-#define B_32_RN_400_3 NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp32RmtN400KbpsMethod>
+#define B_32_RN_400_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32RmtN400KbpsMethod, NeoGammaNullMethod>
 #ifndef WLED_NO_I2S0_PIXELBUS
-#define B_32_I0_400_3 NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp32I2s0400KbpsMethod>
+#define B_32_I0_400_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s0400KbpsMethod, NeoGammaNullMethod>
 #endif
 #ifndef WLED_NO_I2S1_PIXELBUS
-#define B_32_I1_400_3 NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp32I2s1400KbpsMethod>
+#define B_32_I1_400_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32I2s1400KbpsMethod, NeoGammaNullMethod>
 #endif
-//#define B_32_BB_400_3 NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp32BitBang400KbpsMethod> // NeoEsp8266BitBang400KbpsMethod
+//#define B_32_BB_400_3 NeoPixelBusLg<NeoGrbFeature, NeoEsp32BitBang400KbpsMethod, NeoGammaNullMethod> // NeoEsp8266BitBang400KbpsMethod
 //TM1814 (RGBW)
-#define B_32_RN_TM1_4 NeoPixelBrightnessBus<NeoWrgbTm1814Feature, NeoEsp32RmtNTm1814Method>
+#define B_32_RN_TM1_4 NeoPixelBusLg<NeoWrgbTm1814Feature, NeoEsp32RmtNTm1814Method, NeoGammaNullMethod>
 #ifndef WLED_NO_I2S0_PIXELBUS
-#define B_32_I0_TM1_4 NeoPixelBrightnessBus<NeoWrgbTm1814Feature, NeoEsp32I2s0Tm1814Method>
+#define B_32_I0_TM1_4 NeoPixelBusLg<NeoWrgbTm1814Feature, NeoEsp32I2s0Tm1814Method, NeoGammaNullMethod>
 #endif
 #ifndef WLED_NO_I2S1_PIXELBUS
-#define B_32_I1_TM1_4 NeoPixelBrightnessBus<NeoWrgbTm1814Feature, NeoEsp32I2s1Tm1814Method>
+#define B_32_I1_TM1_4 NeoPixelBusLg<NeoWrgbTm1814Feature, NeoEsp32I2s1Tm1814Method, NeoGammaNullMethod>
 #endif
 //Bit Bang theoratically possible, but very undesirable and not needed (no pin restrictions on RMT and I2S)
 //TM1829 (RGB)
-#define B_32_RN_TM2_3 NeoPixelBrightnessBus<NeoBrgFeature, NeoEsp32RmtNTm1829Method>
+#define B_32_RN_TM2_3 NeoPixelBusLg<NeoBrgFeature, NeoEsp32RmtNTm1829Method, NeoGammaNullMethod>
 #ifndef WLED_NO_I2S0_PIXELBUS
-#define B_32_I0_TM2_3 NeoPixelBrightnessBus<NeoBrgFeature, NeoEsp32I2s0Tm1829Method>
+#define B_32_I0_TM2_3 NeoPixelBusLg<NeoBrgFeature, NeoEsp32I2s0Tm1829Method, NeoGammaNullMethod>
 #endif
 #ifndef WLED_NO_I2S1_PIXELBUS
-#define B_32_I1_TM2_3 NeoPixelBrightnessBus<NeoBrgFeature, NeoEsp32I2s1Tm1829Method>
+#define B_32_I1_TM2_3 NeoPixelBusLg<NeoBrgFeature, NeoEsp32I2s1Tm1829Method, NeoGammaNullMethod>
 #endif
 //Bit Bang theoratically possible, but very undesirable and not needed (no pin restrictions on RMT and I2S)
 //UCS9803
-#define B_32_RN_UCS_3 NeoPixelBrightnessBus<NeoRgbUcs8903Feature, NeoEsp32RmtNWs2812xMethod>
+#define B_32_RN_UCS_3 NeoPixelBusLg<NeoRgbUcs8903Feature, NeoEsp32RmtNWs2812xMethod, NeoGammaNullMethod>
 #ifndef WLED_NO_I2S0_PIXELBUS
-#define B_32_I0_UCS_3 NeoPixelBrightnessBus<NeoRgbUcs8903Feature, NeoEsp32I2s0800KbpsMethod>
+#define B_32_I0_UCS_3 NeoPixelBusLg<NeoRgbUcs8903Feature, NeoEsp32I2s0800KbpsMethod, NeoGammaNullMethod>
 #endif
 #ifndef WLED_NO_I2S1_PIXELBUS
-#define B_32_I1_UCS_3 NeoPixelBrightnessBus<NeoRgbUcs8903Feature, NeoEsp32I2s1800KbpsMethod>
+#define B_32_I1_UCS_3 NeoPixelBusLg<NeoRgbUcs8903Feature, NeoEsp32I2s1800KbpsMethod, NeoGammaNullMethod>
 #endif
 //Bit Bang theoratically possible, but very undesirable and not needed (no pin restrictions on RMT and I2S)
 //UCS9804
-#define B_32_RN_UCS_4 NeoPixelBrightnessBus<NeoRgbwUcs8904Feature, NeoEsp32RmtNWs2812xMethod>
+#define B_32_RN_UCS_4 NeoPixelBusLg<NeoRgbwUcs8904Feature, NeoEsp32RmtNWs2812xMethod, NeoGammaNullMethod>
 #ifndef WLED_NO_I2S0_PIXELBUS
-#define B_32_I0_UCS_4 NeoPixelBrightnessBus<NeoRgbwUcs8904Feature, NeoEsp32I2s0800KbpsMethod>
+#define B_32_I0_UCS_4 NeoPixelBusLg<NeoRgbwUcs8904Feature, NeoEsp32I2s0800KbpsMethod, NeoGammaNullMethod>
 #endif
 #ifndef WLED_NO_I2S1_PIXELBUS
-#define B_32_I1_UCS_4 NeoPixelBrightnessBus<NeoRgbwUcs8904Feature, NeoEsp32I2s1800KbpsMethod>
+#define B_32_I1_UCS_4 NeoPixelBusLg<NeoRgbwUcs8904Feature, NeoEsp32I2s1800KbpsMethod, NeoGammaNullMethod>
 #endif
 //Bit Bang theoratically possible, but very undesirable and not needed (no pin restrictions on RMT and I2S)
 
 #endif
 
 //APA102
-#define B_HS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarSpi5MhzMethod> //hardware SPI
-#define B_SS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarMethod>    //soft SPI
+#define B_HS_DOT_3 NeoPixelBusLg<DotStarBgrFeature, DotStarSpi5MhzMethod, NeoGammaNullMethod> //hardware SPI
+#define B_SS_DOT_3 NeoPixelBusLg<DotStarBgrFeature, DotStarMethod, NeoGammaNullMethod>    //soft SPI
 
 //LPD8806
-#define B_HS_LPD_3 NeoPixelBrightnessBus<Lpd8806GrbFeature, Lpd8806SpiMethod>
-#define B_SS_LPD_3 NeoPixelBrightnessBus<Lpd8806GrbFeature, Lpd8806Method>
+#define B_HS_LPD_3 NeoPixelBusLg<Lpd8806GrbFeature, Lpd8806SpiMethod, NeoGammaNullMethod>
+#define B_SS_LPD_3 NeoPixelBusLg<Lpd8806GrbFeature, Lpd8806Method, NeoGammaNullMethod>
 
 //LPD6803
-#define B_HS_LPO_3 NeoPixelBrightnessBus<Lpd6803GrbFeature, Lpd6803SpiMethod>
-#define B_SS_LPO_3 NeoPixelBrightnessBus<Lpd6803GrbFeature, Lpd6803Method>
+#define B_HS_LPO_3 NeoPixelBusLg<Lpd6803GrbFeature, Lpd6803SpiMethod, NeoGammaNullMethod>
+#define B_SS_LPO_3 NeoPixelBusLg<Lpd6803GrbFeature, Lpd6803Method, NeoGammaNullMethod>
 
 //WS2801
 #if defined(WLED_WS2801_SPEED_KHZ) && WLED_WS2801_SPEED_KHZ==40000
-#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801Spi40MhzMethod>    // fastest bus speed (not existing method?)
+#define B_HS_WS1_3 NeoPixelBusLg<NeoRbgFeature, NeoWs2801Spi40MhzMethod, NeoGammaNullMethod>    // fastest bus speed (not existing method?)
 #elif defined(WLED_WS2801_SPEED_KHZ) && WLED_WS2801_SPEED_KHZ==20000
-#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801Spi20MhzMethod>    // 20MHz
+#define B_HS_WS1_3 NeoPixelBusLg<NeoRbgFeature, NeoWs2801Spi20MhzMethod, NeoGammaNullMethod>    // 20MHz
 #elif defined(WLED_WS2801_SPEED_KHZ) && WLED_WS2801_SPEED_KHZ==10000
-#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801SpiMethod>         // 10MHz
+#define B_HS_WS1_3 NeoPixelBusLg<NeoRbgFeature, NeoWs2801SpiMethod, NeoGammaNullMethod>         // 10MHz
 #elif defined(WLED_WS2801_SPEED_KHZ) && WLED_WS2801_SPEED_KHZ==2000
-#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801Spi2MhzMethod>     //slower, more compatible
+#define B_HS_WS1_3 NeoPixelBusLg<NeoRbgFeature, NeoWs2801Spi2MhzMethod, NeoGammaNullMethod>     //slower, more compatible
 #elif defined(WLED_WS2801_SPEED_KHZ) && WLED_WS2801_SPEED_KHZ==1000
-#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801Spi1MhzMethod>     //slower, more compatible
+#define B_HS_WS1_3 NeoPixelBusLg<NeoRbgFeature, NeoWs2801Spi1MhzMethod, NeoGammaNullMethod>     //slower, more compatible
 #elif defined(WLED_WS2801_SPEED_KHZ) && WLED_WS2801_SPEED_KHZ==500
-#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801Spi500KhzMethod>   //slower, more compatible
+#define B_HS_WS1_3 NeoPixelBusLg<NeoRbgFeature, NeoWs2801Spi500KhzMethod, NeoGammaNullMethod>   //slower, more compatible
 #else
-#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801Spi2MhzMethod>     // 2MHz; slower, more compatible
+#define B_HS_WS1_3 NeoPixelBusLg<NeoRbgFeature, NeoWs2801Spi2MhzMethod, NeoGammaNullMethod>     // 2MHz; slower, more compatible
 #endif
-#define B_SS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801Method>
+#define B_SS_WS1_3 NeoPixelBusLg<NeoRbgFeature, NeoWs2801Method, NeoGammaNullMethod>
 
 //P9813
-#define B_HS_P98_3 NeoPixelBrightnessBus<P9813BgrFeature, P9813SpiMethod>
-#define B_SS_P98_3 NeoPixelBrightnessBus<P9813BgrFeature, P9813Method>
+#define B_HS_P98_3 NeoPixelBusLg<P9813BgrFeature, P9813SpiMethod, NeoGammaNullMethod>
+#define B_SS_P98_3 NeoPixelBusLg<P9813BgrFeature, P9813Method, NeoGammaNullMethod>
 
 // 48bit & 64bit to 24bit & 32bit RGB(W) conversion
 #define toRGBW32(c) (RGBW32((c>>40)&0xFF, (c>>24)&0xFF, (c>>8)&0xFF, (c>>56)&0xFF))
@@ -800,97 +800,97 @@ class PolyBus {
     switch (busType) {
       case I_NONE: break;
     #ifdef ESP8266
-      case I_8266_U0_NEO_3: (static_cast<B_8266_U0_NEO_3*>(busPtr))->SetBrightness(b); break;
-      case I_8266_U1_NEO_3: (static_cast<B_8266_U1_NEO_3*>(busPtr))->SetBrightness(b); break;
-      case I_8266_DM_NEO_3: (static_cast<B_8266_DM_NEO_3*>(busPtr))->SetBrightness(b); break;
-      case I_8266_BB_NEO_3: (static_cast<B_8266_BB_NEO_3*>(busPtr))->SetBrightness(b); break;
-      case I_8266_U0_NEO_4: (static_cast<B_8266_U0_NEO_4*>(busPtr))->SetBrightness(b); break;
-      case I_8266_U1_NEO_4: (static_cast<B_8266_U1_NEO_4*>(busPtr))->SetBrightness(b); break;
-      case I_8266_DM_NEO_4: (static_cast<B_8266_DM_NEO_4*>(busPtr))->SetBrightness(b); break;
-      case I_8266_BB_NEO_4: (static_cast<B_8266_BB_NEO_4*>(busPtr))->SetBrightness(b); break;
-      case I_8266_U0_400_3: (static_cast<B_8266_U0_400_3*>(busPtr))->SetBrightness(b); break;
-      case I_8266_U1_400_3: (static_cast<B_8266_U1_400_3*>(busPtr))->SetBrightness(b); break;
-      case I_8266_DM_400_3: (static_cast<B_8266_DM_400_3*>(busPtr))->SetBrightness(b); break;
-      case I_8266_BB_400_3: (static_cast<B_8266_BB_400_3*>(busPtr))->SetBrightness(b); break;
-      case I_8266_U0_TM1_4: (static_cast<B_8266_U0_TM1_4*>(busPtr))->SetBrightness(b); break;
-      case I_8266_U1_TM1_4: (static_cast<B_8266_U1_TM1_4*>(busPtr))->SetBrightness(b); break;
-      case I_8266_DM_TM1_4: (static_cast<B_8266_DM_TM1_4*>(busPtr))->SetBrightness(b); break;
-      case I_8266_BB_TM1_4: (static_cast<B_8266_BB_TM1_4*>(busPtr))->SetBrightness(b); break;
-      case I_8266_U0_TM2_3: (static_cast<B_8266_U0_TM2_4*>(busPtr))->SetBrightness(b); break;
-      case I_8266_U1_TM2_3: (static_cast<B_8266_U1_TM2_4*>(busPtr))->SetBrightness(b); break;
-      case I_8266_DM_TM2_3: (static_cast<B_8266_DM_TM2_4*>(busPtr))->SetBrightness(b); break;
-      case I_8266_BB_TM2_3: (static_cast<B_8266_BB_TM2_4*>(busPtr))->SetBrightness(b); break;
-      case I_8266_U0_UCS_3: (static_cast<B_8266_U0_UCS_3*>(busPtr))->SetBrightness(b); break;
-      case I_8266_U1_UCS_3: (static_cast<B_8266_U1_UCS_3*>(busPtr))->SetBrightness(b); break;
-      case I_8266_DM_UCS_3: (static_cast<B_8266_DM_UCS_3*>(busPtr))->SetBrightness(b); break;
-      case I_8266_BB_UCS_3: (static_cast<B_8266_BB_UCS_3*>(busPtr))->SetBrightness(b); break;
-      case I_8266_U0_UCS_4: (static_cast<B_8266_U0_UCS_4*>(busPtr))->SetBrightness(b); break;
-      case I_8266_U1_UCS_4: (static_cast<B_8266_U1_UCS_4*>(busPtr))->SetBrightness(b); break;
-      case I_8266_DM_UCS_4: (static_cast<B_8266_DM_UCS_4*>(busPtr))->SetBrightness(b); break;
-      case I_8266_BB_UCS_4: (static_cast<B_8266_BB_UCS_4*>(busPtr))->SetBrightness(b); break;
+      case I_8266_U0_NEO_3: (static_cast<B_8266_U0_NEO_3*>(busPtr))->SetLuminance(b); break;
+      case I_8266_U1_NEO_3: (static_cast<B_8266_U1_NEO_3*>(busPtr))->SetLuminance(b); break;
+      case I_8266_DM_NEO_3: (static_cast<B_8266_DM_NEO_3*>(busPtr))->SetLuminance(b); break;
+      case I_8266_BB_NEO_3: (static_cast<B_8266_BB_NEO_3*>(busPtr))->SetLuminance(b); break;
+      case I_8266_U0_NEO_4: (static_cast<B_8266_U0_NEO_4*>(busPtr))->SetLuminance(b); break;
+      case I_8266_U1_NEO_4: (static_cast<B_8266_U1_NEO_4*>(busPtr))->SetLuminance(b); break;
+      case I_8266_DM_NEO_4: (static_cast<B_8266_DM_NEO_4*>(busPtr))->SetLuminance(b); break;
+      case I_8266_BB_NEO_4: (static_cast<B_8266_BB_NEO_4*>(busPtr))->SetLuminance(b); break;
+      case I_8266_U0_400_3: (static_cast<B_8266_U0_400_3*>(busPtr))->SetLuminance(b); break;
+      case I_8266_U1_400_3: (static_cast<B_8266_U1_400_3*>(busPtr))->SetLuminance(b); break;
+      case I_8266_DM_400_3: (static_cast<B_8266_DM_400_3*>(busPtr))->SetLuminance(b); break;
+      case I_8266_BB_400_3: (static_cast<B_8266_BB_400_3*>(busPtr))->SetLuminance(b); break;
+      case I_8266_U0_TM1_4: (static_cast<B_8266_U0_TM1_4*>(busPtr))->SetLuminance(b); break;
+      case I_8266_U1_TM1_4: (static_cast<B_8266_U1_TM1_4*>(busPtr))->SetLuminance(b); break;
+      case I_8266_DM_TM1_4: (static_cast<B_8266_DM_TM1_4*>(busPtr))->SetLuminance(b); break;
+      case I_8266_BB_TM1_4: (static_cast<B_8266_BB_TM1_4*>(busPtr))->SetLuminance(b); break;
+      case I_8266_U0_TM2_3: (static_cast<B_8266_U0_TM2_4*>(busPtr))->SetLuminance(b); break;
+      case I_8266_U1_TM2_3: (static_cast<B_8266_U1_TM2_4*>(busPtr))->SetLuminance(b); break;
+      case I_8266_DM_TM2_3: (static_cast<B_8266_DM_TM2_4*>(busPtr))->SetLuminance(b); break;
+      case I_8266_BB_TM2_3: (static_cast<B_8266_BB_TM2_4*>(busPtr))->SetLuminance(b); break;
+      case I_8266_U0_UCS_3: (static_cast<B_8266_U0_UCS_3*>(busPtr))->SetLuminance(b); break;
+      case I_8266_U1_UCS_3: (static_cast<B_8266_U1_UCS_3*>(busPtr))->SetLuminance(b); break;
+      case I_8266_DM_UCS_3: (static_cast<B_8266_DM_UCS_3*>(busPtr))->SetLuminance(b); break;
+      case I_8266_BB_UCS_3: (static_cast<B_8266_BB_UCS_3*>(busPtr))->SetLuminance(b); break;
+      case I_8266_U0_UCS_4: (static_cast<B_8266_U0_UCS_4*>(busPtr))->SetLuminance(b); break;
+      case I_8266_U1_UCS_4: (static_cast<B_8266_U1_UCS_4*>(busPtr))->SetLuminance(b); break;
+      case I_8266_DM_UCS_4: (static_cast<B_8266_DM_UCS_4*>(busPtr))->SetLuminance(b); break;
+      case I_8266_BB_UCS_4: (static_cast<B_8266_BB_UCS_4*>(busPtr))->SetLuminance(b); break;
     #endif
     #ifdef ARDUINO_ARCH_ESP32
-      case I_32_RN_NEO_3: (static_cast<B_32_RN_NEO_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_RN_NEO_3: (static_cast<B_32_RN_NEO_3*>(busPtr))->SetLuminance(b); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
-      case I_32_I0_NEO_3: (static_cast<B_32_I0_NEO_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_I0_NEO_3: (static_cast<B_32_I0_NEO_3*>(busPtr))->SetLuminance(b); break;
       #endif
       #ifndef WLED_NO_I2S1_PIXELBUS
-      case I_32_I1_NEO_3: (static_cast<B_32_I1_NEO_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_I1_NEO_3: (static_cast<B_32_I1_NEO_3*>(busPtr))->SetLuminance(b); break;
       #endif
-//      case I_32_BB_NEO_3: (static_cast<B_32_BB_NEO_3*>(busPtr))->SetBrightness(b); break;
-      case I_32_RN_NEO_4: (static_cast<B_32_RN_NEO_4*>(busPtr))->SetBrightness(b); break;
+//      case I_32_BB_NEO_3: (static_cast<B_32_BB_NEO_3*>(busPtr))->SetLuminance(b); break;
+      case I_32_RN_NEO_4: (static_cast<B_32_RN_NEO_4*>(busPtr))->SetLuminance(b); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
-      case I_32_I0_NEO_4: (static_cast<B_32_I0_NEO_4*>(busPtr))->SetBrightness(b); break;
+      case I_32_I0_NEO_4: (static_cast<B_32_I0_NEO_4*>(busPtr))->SetLuminance(b); break;
       #endif
       #ifndef WLED_NO_I2S1_PIXELBUS
-      case I_32_I1_NEO_4: (static_cast<B_32_I1_NEO_4*>(busPtr))->SetBrightness(b); break;
+      case I_32_I1_NEO_4: (static_cast<B_32_I1_NEO_4*>(busPtr))->SetLuminance(b); break;
       #endif
-//      case I_32_BB_NEO_4: (static_cast<B_32_BB_NEO_4*>(busPtr))->SetBrightness(b); break;
-      case I_32_RN_400_3: (static_cast<B_32_RN_400_3*>(busPtr))->SetBrightness(b); break;
+//      case I_32_BB_NEO_4: (static_cast<B_32_BB_NEO_4*>(busPtr))->SetLuminance(b); break;
+      case I_32_RN_400_3: (static_cast<B_32_RN_400_3*>(busPtr))->SetLuminance(b); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
-      case I_32_I0_400_3: (static_cast<B_32_I0_400_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_I0_400_3: (static_cast<B_32_I0_400_3*>(busPtr))->SetLuminance(b); break;
       #endif
       #ifndef WLED_NO_I2S1_PIXELBUS
-      case I_32_I1_400_3: (static_cast<B_32_I1_400_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_I1_400_3: (static_cast<B_32_I1_400_3*>(busPtr))->SetLuminance(b); break;
       #endif
-//      case I_32_BB_400_3: (static_cast<B_32_BB_400_3*>(busPtr))->SetBrightness(b); break;
-      case I_32_RN_TM1_4: (static_cast<B_32_RN_TM1_4*>(busPtr))->SetBrightness(b); break;
-      case I_32_RN_TM2_3: (static_cast<B_32_RN_TM2_3*>(busPtr))->SetBrightness(b); break;
+//      case I_32_BB_400_3: (static_cast<B_32_BB_400_3*>(busPtr))->SetLuminance(b); break;
+      case I_32_RN_TM1_4: (static_cast<B_32_RN_TM1_4*>(busPtr))->SetLuminance(b); break;
+      case I_32_RN_TM2_3: (static_cast<B_32_RN_TM2_3*>(busPtr))->SetLuminance(b); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
-      case I_32_I0_TM1_4: (static_cast<B_32_I0_TM1_4*>(busPtr))->SetBrightness(b); break;
-      case I_32_I0_TM2_3: (static_cast<B_32_I0_TM2_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_I0_TM1_4: (static_cast<B_32_I0_TM1_4*>(busPtr))->SetLuminance(b); break;
+      case I_32_I0_TM2_3: (static_cast<B_32_I0_TM2_3*>(busPtr))->SetLuminance(b); break;
       #endif
       #ifndef WLED_NO_I2S1_PIXELBUS
-      case I_32_I1_TM1_4: (static_cast<B_32_I1_TM1_4*>(busPtr))->SetBrightness(b); break;
-      case I_32_I1_TM2_3: (static_cast<B_32_I1_TM2_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_I1_TM1_4: (static_cast<B_32_I1_TM1_4*>(busPtr))->SetLuminance(b); break;
+      case I_32_I1_TM2_3: (static_cast<B_32_I1_TM2_3*>(busPtr))->SetLuminance(b); break;
       #endif
-      case I_32_RN_UCS_3: (static_cast<B_32_RN_UCS_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_RN_UCS_3: (static_cast<B_32_RN_UCS_3*>(busPtr))->SetLuminance(b); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
-      case I_32_I0_UCS_3: (static_cast<B_32_I0_UCS_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_I0_UCS_3: (static_cast<B_32_I0_UCS_3*>(busPtr))->SetLuminance(b); break;
       #endif
       #ifndef WLED_NO_I2S1_PIXELBUS
-      case I_32_I1_UCS_3: (static_cast<B_32_I1_UCS_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_I1_UCS_3: (static_cast<B_32_I1_UCS_3*>(busPtr))->SetLuminance(b); break;
       #endif
-//      case I_32_BB_UCS_3: (static_cast<B_32_BB_UCS_3*>(busPtr))->SetBrightness(b); break;
-      case I_32_RN_UCS_4: (static_cast<B_32_RN_UCS_4*>(busPtr))->SetBrightness(b); break;
+//      case I_32_BB_UCS_3: (static_cast<B_32_BB_UCS_3*>(busPtr))->SetLuminance(b); break;
+      case I_32_RN_UCS_4: (static_cast<B_32_RN_UCS_4*>(busPtr))->SetLuminance(b); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
-      case I_32_I0_UCS_4: (static_cast<B_32_I0_UCS_4*>(busPtr))->SetBrightness(b); break;
+      case I_32_I0_UCS_4: (static_cast<B_32_I0_UCS_4*>(busPtr))->SetLuminance(b); break;
       #endif
       #ifndef WLED_NO_I2S1_PIXELBUS
-      case I_32_I1_UCS_4: (static_cast<B_32_I1_UCS_4*>(busPtr))->SetBrightness(b); break;
+      case I_32_I1_UCS_4: (static_cast<B_32_I1_UCS_4*>(busPtr))->SetLuminance(b); break;
       #endif
-//      case I_32_BB_UCS_4: (static_cast<B_32_BB_UCS_4*>(busPtr))->SetBrightness(b); break;
+//      case I_32_BB_UCS_4: (static_cast<B_32_BB_UCS_4*>(busPtr))->SetLuminance(b); break;
     #endif
-      case I_HS_DOT_3: (static_cast<B_HS_DOT_3*>(busPtr))->SetBrightness(b); break;
-      case I_SS_DOT_3: (static_cast<B_SS_DOT_3*>(busPtr))->SetBrightness(b); break;
-      case I_HS_LPD_3: (static_cast<B_HS_LPD_3*>(busPtr))->SetBrightness(b); break;
-      case I_SS_LPD_3: (static_cast<B_SS_LPD_3*>(busPtr))->SetBrightness(b); break;
-      case I_HS_LPO_3: (static_cast<B_HS_LPO_3*>(busPtr))->SetBrightness(b); break;
-      case I_SS_LPO_3: (static_cast<B_SS_LPO_3*>(busPtr))->SetBrightness(b); break;
-      case I_HS_WS1_3: (static_cast<B_HS_WS1_3*>(busPtr))->SetBrightness(b); break;
-      case I_SS_WS1_3: (static_cast<B_SS_WS1_3*>(busPtr))->SetBrightness(b); break;
-      case I_HS_P98_3: (static_cast<B_HS_P98_3*>(busPtr))->SetBrightness(b); break;
-      case I_SS_P98_3: (static_cast<B_SS_P98_3*>(busPtr))->SetBrightness(b); break;
+      case I_HS_DOT_3: (static_cast<B_HS_DOT_3*>(busPtr))->SetLuminance(b); break;
+      case I_SS_DOT_3: (static_cast<B_SS_DOT_3*>(busPtr))->SetLuminance(b); break;
+      case I_HS_LPD_3: (static_cast<B_HS_LPD_3*>(busPtr))->SetLuminance(b); break;
+      case I_SS_LPD_3: (static_cast<B_SS_LPD_3*>(busPtr))->SetLuminance(b); break;
+      case I_HS_LPO_3: (static_cast<B_HS_LPO_3*>(busPtr))->SetLuminance(b); break;
+      case I_SS_LPO_3: (static_cast<B_SS_LPO_3*>(busPtr))->SetLuminance(b); break;
+      case I_HS_WS1_3: (static_cast<B_HS_WS1_3*>(busPtr))->SetLuminance(b); break;
+      case I_SS_WS1_3: (static_cast<B_SS_WS1_3*>(busPtr))->SetLuminance(b); break;
+      case I_HS_P98_3: (static_cast<B_HS_P98_3*>(busPtr))->SetLuminance(b); break;
+      case I_SS_P98_3: (static_cast<B_SS_P98_3*>(busPtr))->SetLuminance(b); break;
     }
   };
   static uint32_t getPixelColor(void* busPtr, uint8_t busType, uint16_t pix, uint8_t co) {
