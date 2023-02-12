@@ -37,7 +37,8 @@ var hol = [
 	[0,0,1,1,"https://initiate.alphacoders.com/download/wallpaper/1198800/images/jpg/2522807481585600"] // new year
 ];
 var ctx = null; // WLEDMM
-var ledmap = -1; //WLEDMM
+var ledmapNr = -1; //WLEDMM
+var ledmapFileNames = []; //WLEDMM
 
 function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson();}
 function sCol(na, col) {d.documentElement.style.setProperty(na, col);}
@@ -709,6 +710,8 @@ function populateSegments(s)
 	let li = lastinfo;
 	segCount = 0; lowestUnused = 0; lSeg = 0;
 
+	ledmapFileNames = [];
+
 	for (var inst of (s.seg||[])) {
 		segCount++;
 
@@ -718,6 +721,8 @@ function populateSegments(s)
 
 		let sg = gId(`seg${i}`);
 		let exp = sg ? (sg.classList.contains('expanded') || (i===0 && cfg.comp.segexp)) : false;
+
+		ledmapFileNames.push("lm" + (inst.n?inst.n:"default") + ".json"); //WLEDMM
 
 		let segp = `<div id="segp${i}" class="sbs">
 		<i class="icons e-icon pwr ${inst.on ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})">&#xe08f;</i>
@@ -839,7 +844,7 @@ function populateSegments(s)
 
 	if (Array.isArray(li.maps) && li.maps.length>0) { //WLEDMM >0 instead of 1 to show also first ledmap. Attention: WLED AC has isM check, in MM Matrices are supported so do not check on isM
 		let cont = `Ledmap:&nbsp;<select class="sel-sg" onchange="requestJson({'ledmap':parseInt(this.value)})">`; //WLEDMM remove <option value="" selected>Unchanged</option>
-		for (const k of (li.maps||[])) cont += `<option value="${k}"${(i>0 && ledmap==k)?" selected":""}>${k==0?'Default':'ledmap'+k+'.json'}</option>`; //WLEDMM set ledmap selected
+		for (const k of (li.maps||[])) cont += `<option value="${k}"${(i>0 && ledmapNr==k)?" selected":""}>${k==0?'Default':(k<10?'ledmap'+k+'.json':ledmapFileNames[k-10])}</option>`; //WLEDMM set ledmap selected, use ledmapFileNames
 		cont += "</select></div>";
 		gId("ledmap").innerHTML = cont;
 		gId("ledmap").classList.remove('hide');
@@ -1300,11 +1305,16 @@ function drawSegments() {
 	}
 
 	//draw the ledmap
-	if (ledmap>0 && ctx) {
+	if (ledmapNr>0 && ctx) {
 		// console.log("Before fetch ledmap ", lastinfo.ledmap);
-		fetchAndExecute((loc?`http://${locip}`:'.') + "/", "ledmap"+ledmap+".json" , function(text) {
+		var fileName;
+		if (ledmapNr<10)
+			fileName = "ledmap"+ledmapNr+".json";
+		else
+			fileName = ledmapFileNames[ledmapNr-10];
+		fetchAndExecute((loc?`http://${locip}`:'.') + "/", fileName , function(text) {
 			var noMap = [];
-			ledmapJson = JSON.parse(text);
+			var ledmapJson = JSON.parse(text);
 			var counter = 0;
 			for (let i=0;i<ledmapJson["map"].length;i++) {
 				let mapIndex = ledmapJson["map"][i];
@@ -1522,7 +1532,7 @@ function readState(s,command=false)
 	tr = s.transition;
 	gId('tt').value = tr/10;
 
-	ledmap = s.ledmap; //WLEDMM
+	ledmapNr = s.ledmap; //WLEDMM
 
 	populateSegments(s);
 	var selc=0;
@@ -2100,7 +2110,7 @@ ${makePlSel(plJson[i].end?plJson[i].end:0, true)}
 </label>`;
 		if (Array.isArray(lastinfo.maps) && lastinfo.maps.length>0) { //WLEDMM >0 instead of 1 to show also first ledmap. Attention: WLED AC has isM check, in MM Matrices are supported so do not check on isM
 			content += `<div class="lbl-l">Ledmap:&nbsp;<div class="sel-p"><select class="sel-p" id="p${i}lmp"><option value="">Unchanged</option>`;
-			for (const k of (lastinfo.maps||[])) content += `<option value="${k}"${(i>0 && pJson[i].ledmap==k)?" selected":""}>${k==0?'Default':'ledmap'+k+'.json'}</option>`;
+			for (const k of (lastinfo.maps||[])) content += `<option value="${k}"${(i>0 && pJson[i].ledmap==k)?" selected":""}>${k==0?'Default':(k<10?'ledmap'+k+'.json':ledmapFileNames[k-10])}</option>`;
 			content += "</select></div></div>";
 		}
 	}

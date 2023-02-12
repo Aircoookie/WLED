@@ -737,7 +737,8 @@ class WS2812FX {  // 96 bytes
       setPixelColor(int n, uint32_t c),
       show(void),
       setTargetFps(uint8_t fps),
-      deserializeMap(uint8_t n=0);
+      deserializeMap(uint8_t n=0),
+      enumerateLedmaps(); //WLEDMM (from fcn_declare)
 
     void fill(uint32_t c) { for (int i = 0; i < _length; i++) setPixelColor(i, c); } // fill whole strip with color (inline)
     void addEffect(uint8_t id, mode_ptr mode_fn, const char *mode_name); // add effect to the list; defined in FX.cpp

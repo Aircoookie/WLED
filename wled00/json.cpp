@@ -767,7 +767,7 @@ void serializeInfo(JsonObject root)
   root[F("cpalcount")] = strip.customPalettes.size(); //number of custom palettes
 
   JsonArray ledmaps = root.createNestedArray(F("maps"));
-  for (size_t i=0; i<10; i++) {
+  for (size_t i=0; i<16; i++) { //WLEDMM include segment name ledmaps
     if ((ledMaps>>i) & 0x0001) ledmaps.add(i);
   }
 

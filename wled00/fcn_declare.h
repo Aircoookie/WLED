@@ -335,7 +335,7 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxL
 int16_t extractModeDefaults(uint8_t mode, const char *segVar);
 uint16_t crc16(const unsigned char* data_p, size_t length);
 um_data_t* simulateSound(uint8_t simulationId);
-void enumerateLedmaps();
+// WLEDMM enumerateLedmaps(); moved to FX.h
 CRGB getCRGBForBand(int x, uint8_t *fftResult, int pal); //WLEDMM netmindz ar palette
 
 #ifdef WLED_ADD_EEPROM_SUPPORT

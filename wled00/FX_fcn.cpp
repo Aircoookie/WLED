@@ -1289,6 +1289,29 @@ uint8_t * Segment::getAudioPalette(int pal) {
 // WS2812FX class implementation
 ///////////////////////////////////////////////////////////////////////////////
 
+//WLEDMM from 
+void WS2812FX::enumerateLedmaps() {
+  ledMaps = 1;
+  for (size_t i=1; i<10; i++) {
+    char fileName[16];
+    sprintf_P(fileName, PSTR("/ledmap%d.json"), i);
+    bool isFile = WLED_FS.exists(fileName);
+    if (isFile) ledMaps |= 1 << i;
+  }
+  uint8_t segment_index = 0;
+  for (segment &seg : _segments) {
+    if (strcmp(seg.name, "") != 0) {
+      char fileName[32];
+      sprintf_P(fileName, PSTR("/lm%s.json"), seg.name);
+      Serial.printf("Filename %s\n", fileName);
+      bool isFile = WLED_FS.exists(fileName);
+      if (isFile) ledMaps |= 1 << (10+segment_index);
+    }
+    segment_index++;
+  }
+}
+
+
 //do not call this method from system context (network callback)
 void WS2812FX::finalizeInit(void)
 {
@@ -1915,10 +1938,26 @@ void WS2812FX::deserializeMap(uint8_t n) {
   // WLEDMM: also supports isMatrix
 
   char fileName[32];
-  strcpy_P(fileName, PSTR("/ledmap"));
-  if (n) sprintf(fileName +7, "%d", n);
-  strcat(fileName, ".json");
-  bool isFile = WLED_FS.exists(fileName);
+  //WLEDMM: als support segment name ledmaps
+  bool isFile = false;;
+  if (n<10) {
+    strcpy_P(fileName, PSTR("/ledmap"));
+    if (n) sprintf(fileName +7, "%d", n);
+    strcat(fileName, ".json");
+    isFile = WLED_FS.exists(fileName);
+  } else {
+    Serial.printf("deserializeMap Filename search %d\n", n);
+    uint8_t segment_index = 0;
+    for (segment &seg : _segments) {
+      if (n == 10 + segment_index && !isFile) {
+        sprintf_P(fileName, PSTR("/lm%s.json"), seg.name);
+        isFile = WLED_FS.exists(fileName);
+        Serial.printf("deserializeMap Filename %s %d\n", fileName, isFile);
+      }
+      if (isFile) break;
+      segment_index++;
+    }
+  }
 
   if (!isFile) {
     // erase custom mapping if selecting nonexistent ledmap.json (n==0)

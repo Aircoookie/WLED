@@ -183,8 +183,10 @@ void WLED::loop()
     yield();
     serializeConfig();
   }
+  //WLEDMM refactored
   if (loadLedmap) {
     strip.deserializeMap(loadedLedmap);
+    strip.enumerateLedmaps(); //WLEDMM
     loadLedmap = false;
   }
 
