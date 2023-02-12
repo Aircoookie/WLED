@@ -208,6 +208,14 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t <= 250) bootPreset = t;
     gammaCorrectBri = request->hasArg(F("GB"));
     gammaCorrectCol = request->hasArg(F("GC"));
+    gammaCorrectVal = request->arg(F("GV")).toFloat();
+    if (gammaCorrectVal > 1.0f && gammaCorrectVal <= 3)
+      calcGammaTable(gammaCorrectVal);
+    else {
+      gammaCorrectVal = 1.0f; // no gamma correction
+      gammaCorrectBri = false;
+      gammaCorrectCol = false;
+    }
 
     fadeTransition = request->hasArg(F("TF"));
     t = request->arg(F("TD")).toInt();
@@ -240,6 +248,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
     simplifiedUI = request->hasArg(F("SU"));
   #endif
+    DEBUG_PRINTLN(F("Enumerating ledmaps"));
+    enumerateLedmaps();
+    DEBUG_PRINTLN(F("Loading custom palettes"));
+    strip.loadCustomPalettes(); // (re)load all custom palettes
   }
 
   //SYNC
@@ -648,10 +660,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     strip.panel.clear(); // release memory if allocated
     if (strip.isMatrix) {
       strip.panels  = MAX(1,MIN(WLED_MAX_PANELS,request->arg(F("MPC")).toInt()));
-      strip.matrix.bottomStart = request->arg(F("PB")).toInt();
-      strip.matrix.rightStart  = request->arg(F("PR")).toInt();
-      strip.matrix.vertical    = request->arg(F("PV")).toInt();
-      strip.matrix.serpentine  = request->hasArg(F("PS"));
       strip.panel.reserve(strip.panels); // pre-allocate memory
       for (uint8_t i=0; i<strip.panels; i++) {
         WS2812FX::Panel p;
@@ -673,6 +681,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       }
       strip.setUpMatrix(); // will check limits
       strip.makeAutoSegments(true);
+      strip.deserializeMap();
     } else {
       Segment::maxWidth  = strip.getLengthTotal();
       Segment::maxHeight = 1;

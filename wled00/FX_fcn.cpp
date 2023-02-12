@@ -1027,17 +1027,20 @@ void WS2812FX::finalizeInit(void)
     Segment::_globalLeds = nullptr;
   }
   if (useLedsArray) {
+    size_t arrSize = sizeof(CRGB) * MAX(_length, Segment::maxWidth*Segment::maxHeight);
     #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
     if (psramFound())
-      Segment::_globalLeds = (CRGB*) ps_malloc(sizeof(CRGB) * _length);
+      Segment::_globalLeds = (CRGB*) ps_malloc(arrSize);
     else
     #endif
-      Segment::_globalLeds = (CRGB*) malloc(sizeof(CRGB) * _length);
-    memset(Segment::_globalLeds, 0, sizeof(CRGB) * _length);
+      Segment::_globalLeds = (CRGB*) malloc(arrSize);
+    memset(Segment::_globalLeds, 0, arrSize);
   }
 
   //segments are created in makeAutoSegments();
+  DEBUG_PRINTLN(F("Loading custom palettes"));
   loadCustomPalettes(); // (re)load all custom palettes
+  DEBUG_PRINTLN(F("Loading custom ledmaps"));
   deserializeMap();     // (re)load default ledmap
 }
 
@@ -1595,7 +1598,7 @@ bool WS2812FX::deserializeMap(uint8_t n) {
 
   if (!isFile) {
     // erase custom mapping if selecting nonexistent ledmap.json (n==0)
-    if (!n && customMappingTable != nullptr) {
+    if (!isMatrix && !n && customMappingTable != nullptr) {
       customMappingSize = 0;
       delete[] customMappingTable;
       customMappingTable = nullptr;

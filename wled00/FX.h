@@ -659,7 +659,6 @@ class WS2812FX {  // 96 bytes
       isMatrix(false),
 #ifndef WLED_DISABLE_2D
       panels(1),
-      matrix{0,0,0,0},
 #endif
       // semi-private (just obscured) used in effect functions through macros
       _currentPalette(CRGBPalette16(CRGB::Black)),
@@ -812,13 +811,6 @@ class WS2812FX {  // 96 bytes
     #define WLED_MAX_PANELS 64
     uint8_t
       panels;
-
-    struct {
-      bool bottomStart : 1;
-      bool rightStart  : 1;
-      bool vertical    : 1;
-      bool serpentine  : 1;
-    } matrix;
 
     typedef struct panel_t {
       uint16_t xOffset; // x offset relative to the top left of matrix in LEDs

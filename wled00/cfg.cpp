@@ -97,12 +97,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonObject matrix = hw_led[F("matrix")];
   if (!matrix.isNull()) {
     strip.isMatrix = true;
-    CJSON(strip.panels,             matrix[F("mpc")]);
-    CJSON(strip.matrix.bottomStart, matrix[F("pb")]);
-    CJSON(strip.matrix.rightStart,  matrix[F("pr")]);
-    CJSON(strip.matrix.vertical,    matrix[F("pv")]);
-    CJSON(strip.matrix.serpentine,  matrix["ps"]);
-
+    CJSON(strip.panels, matrix[F("mpc")]);
     strip.panel.clear();
     JsonArray panels = matrix[F("panels")];
     uint8_t s = 0;
@@ -130,6 +125,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       p.options = 0;
       strip.panel.push_back(p);
     }
+    // cannot call strip.setUpMatrix() here due to already locked JSON buffer
   }
   #endif
 
@@ -331,12 +327,20 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(strip.paletteBlend, light[F("pal-mode")]);
   CJSON(autoSegments, light[F("aseg")]);
 
+  CJSON(gammaCorrectVal, light["gc"]["val"]); // default 2.8
   float light_gc_bri = light["gc"]["bri"];
-  float light_gc_col = light["gc"]["col"]; // 2.8
-  if      (light_gc_bri > 1.5) gammaCorrectBri = true;
-  else if (light_gc_bri > 0.5) gammaCorrectBri = false;
-  if      (light_gc_col > 1.5) gammaCorrectCol = true;
-  else if (light_gc_col > 0.5) gammaCorrectCol = false;
+  float light_gc_col = light["gc"]["col"];
+  if (light_gc_bri > 1.0f) gammaCorrectBri = true;
+  else                     gammaCorrectBri = false;
+  if (light_gc_col > 1.0f) gammaCorrectCol = true;
+  else                     gammaCorrectCol = false;
+  if (gammaCorrectVal > 1.0f && gammaCorrectVal <= 3) {
+    if (gammaCorrectVal != 2.8f) calcGammaTable(gammaCorrectVal);
+  } else {
+    gammaCorrectVal = 1.0f; // no gamma correction
+    gammaCorrectBri = false;
+    gammaCorrectCol = false;
+  }
 
   JsonObject light_tr = light["tr"];
   CJSON(fadeTransition, light_tr["mode"]);
@@ -706,11 +710,6 @@ void serializeConfig() {
   if (strip.isMatrix) {
     JsonObject matrix = hw_led.createNestedObject(F("matrix"));
     matrix[F("mpc")] = strip.panels;
-    matrix[F("pb")] = strip.matrix.bottomStart;
-    matrix[F("pr")] = strip.matrix.rightStart;
-    matrix[F("pv")] = strip.matrix.vertical;
-    matrix["ps"] = strip.matrix.serpentine;
-
     JsonArray panels = matrix.createNestedArray(F("panels"));
     for (uint8_t i=0; i<strip.panel.size(); i++) {
       JsonObject pnl = panels.createNestedObject();
@@ -808,8 +807,9 @@ void serializeConfig() {
   light[F("aseg")] = autoSegments;
 
   JsonObject light_gc = light.createNestedObject("gc");
-  light_gc["bri"] = (gammaCorrectBri) ? 2.8 : 1.0;
-  light_gc["col"] = (gammaCorrectCol) ? 2.8 : 1.0;
+  light_gc["bri"] = (gammaCorrectBri) ? gammaCorrectVal : 1.0;  // keep compatibility
+  light_gc["col"] = (gammaCorrectCol) ? gammaCorrectVal : 1.0;  // keep compatibility
+  light_gc["val"] = gammaCorrectVal;
 
   JsonObject light_tr = light.createNestedObject("tr");
   light_tr["mode"] = fadeTransition;
