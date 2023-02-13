@@ -714,6 +714,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       Segment::maxHeight = 1;
     }
     strip.setUpMatrix(); // will check limits
+    strip.resetSegments(true); //WLEDMM reset segments, boundsOnly!!
   }
   #endif
 

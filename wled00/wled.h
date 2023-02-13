@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2302120
+#define VERSION 2302130
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -681,7 +681,7 @@ WLED_GLOBAL BusManager busses _INIT(BusManager());
 WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
 WLED_GLOBAL BusConfig* busConfigs[WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES] _INIT({nullptr}); //temporary, to remember values from network callback until after
 WLED_GLOBAL bool doInitBusses _INIT(false);
-WLED_GLOBAL bool loadLedmap _INIT(false);
+WLED_GLOBAL bool loadLedmap _INIT(false); //WLEDMM use as bool and use loadedLedmap for Nr
 WLED_GLOBAL uint8_t loadedLedmap _INIT(0); //WLEDMM default 0
 WLED_GLOBAL uint16_t ledMaps _INIT(0); // bitfield representation of available ledmaps
 

@@ -1740,15 +1740,30 @@ void WS2812FX::restartRuntime() {
   for (segment &seg : _segments) seg.markForReset();
 }
 
-void WS2812FX::resetSegments() {
-  _segments.clear(); // destructs all Segment as part of clearing
-  #ifndef WLED_DISABLE_2D
-  segment seg = isMatrix ? Segment(0, Segment::maxWidth, 0, Segment::maxHeight) : Segment(0, _length);
-  #else
-  segment seg = Segment(0, _length);
-  #endif
-  _segments.push_back(seg);
-  _mainSegment = 0;
+void WS2812FX::resetSegments(bool boundsOnly) { //WLEDMM add boundsonly
+  if (!boundsOnly) {
+    _segments.clear(); // destructs all Segment as part of clearing
+    #ifndef WLED_DISABLE_2D
+    segment seg = isMatrix ? Segment(0, Segment::maxWidth, 0, Segment::maxHeight) : Segment(0, _length);
+    #else
+    segment seg = Segment(0, _length);
+    #endif
+    _segments.push_back(seg);
+    _mainSegment = 0;
+  } else { //WLEDMM boundsonly
+    for (segment &seg : _segments) {
+      #ifndef WLED_DISABLE_2D
+      seg.start = 0;
+      seg.stop = Segment::maxWidth;
+      seg.startY = 0;
+      seg.stopY = Segment::maxHeight;
+      #else
+      seg.start = 0;
+      seg.stop = _length;
+      #endif
+    }
+  }
+
 }
 
 void WS2812FX::makeAutoSegments(bool forceReset) {

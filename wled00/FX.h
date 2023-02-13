@@ -731,7 +731,7 @@ class WS2812FX {  // 96 bytes
       setSegment(uint8_t n, uint16_t start, uint16_t stop, uint8_t grouping = 1, uint8_t spacing = 0, uint16_t offset = UINT16_MAX, uint16_t startY=0, uint16_t stopY=1),
       setMainSegmentId(uint8_t n),
       restartRuntime(),
-      resetSegments(),
+      resetSegments(bool boundsOnly = false), //WLEDMM add boundsOnly
       makeAutoSegments(bool forceReset = false),
       fixInvalidSegments(),
       setPixelColor(int n, uint32_t c),

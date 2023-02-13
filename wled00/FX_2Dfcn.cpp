@@ -68,7 +68,7 @@ void WS2812FX::setUpMatrix(bool reset) {
         Segment::maxHeight = 1;
         panels = 0;
         panel.clear(); // release memory allocated by panels
-        resetSegments();
+        resetSegments(true); //WLEDMM bounds only
         return;
       }
 
@@ -131,13 +131,7 @@ void WS2812FX::setUpMatrix(bool reset) {
       Segment::maxWidth = _length;
       Segment::maxHeight = 1;
     }
-    if (reset) //resetSegments(); //WLEDMM: only if reset, and only update width and height, keep the fx in place
-      for (segment &seg : _segments) {
-        seg.start = 0;
-        seg.stop = Segment::maxWidth;
-        seg.startY = 0;
-        seg.stopY = Segment::maxHeight;
-      }
+    //WLEDMM: no resetSegments here, only do it in set.cpp/handleSettingsSet
   }
 #else
   isMatrix = false; // no matter what config says
