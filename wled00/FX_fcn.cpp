@@ -1298,12 +1298,12 @@ void WS2812FX::enumerateLedmaps() {
     bool isFile = WLED_FS.exists(fileName);
     if (isFile) ledMaps |= 1 << i;
   }
+  //WLEDMM add segment names to be used as ledmap names
   uint8_t segment_index = 0;
   for (segment &seg : _segments) {
-    if (strcmp(seg.name, "") != 0) {
+    if (seg.name != nullptr && strcmp(seg.name, "") != 0) {
       char fileName[32];
       sprintf_P(fileName, PSTR("/lm%s.json"), seg.name);
-      Serial.printf("Filename %s\n", fileName);
       bool isFile = WLED_FS.exists(fileName);
       if (isFile) ledMaps |= 1 << (10+segment_index);
     }
@@ -1945,14 +1945,12 @@ void WS2812FX::deserializeMap(uint8_t n) {
     if (n) sprintf(fileName +7, "%d", n);
     strcat(fileName, ".json");
     isFile = WLED_FS.exists(fileName);
-  } else {
-    Serial.printf("deserializeMap Filename search %d\n", n);
+  } else { //WLEDM add segment name as ledmap.name
     uint8_t segment_index = 0;
     for (segment &seg : _segments) {
-      if (n == 10 + segment_index && !isFile) {
+      if (n == 10 + segment_index && !isFile && seg.name != nullptr) {
         sprintf_P(fileName, PSTR("/lm%s.json"), seg.name);
         isFile = WLED_FS.exists(fileName);
-        Serial.printf("deserializeMap Filename %s %d\n", fileName, isFile);
       }
       if (isFile) break;
       segment_index++;

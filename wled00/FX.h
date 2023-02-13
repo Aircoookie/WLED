@@ -842,8 +842,8 @@ class WS2812FX {  // 96 bytes
     } panelO; //WLEDMM panelOrientation
 
     typedef struct panel_t {
-      uint16_t xOffset; // x offset relative to the top left of matrix in LEDs
-      uint16_t yOffset; // y offset relative to the top left of matrix in LEDs
+      uint8_t xOffset; // x offset relative to the top left of matrix in LEDs. WLEDMM 8 bits/256 is enough
+      uint8_t yOffset; // y offset relative to the top left of matrix in LEDs. WLEDMM 8 bits/256 is enough
       uint8_t  width;   // width of the panel
       uint8_t  height;  // height of the panel
       union {
