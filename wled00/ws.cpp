@@ -172,7 +172,7 @@ bool sendLiveLedsWs(uint32_t wsClient)
   {
     //WLEDMM: include ledmap in peek if default panel
     uint32_t c;
-    if (strip.panel.size()==1 && !strip.panel[0].vertical && !strip.panel[0].bottomStart && !strip.panel[0].rightStart) // one default panel
+    if (strip.panel.size()==1 && !strip.panel[0].vertical && !strip.panel[0].bottomStart && !strip.panel[0].rightStart && !strip.panel[0].serpentine) // one default panel
       c = busses.getPixelColor(i);
     else
       c = strip.getPixelColor(i);
