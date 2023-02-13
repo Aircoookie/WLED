@@ -1990,8 +1990,8 @@ void WS2812FX::deserializeMap(uint8_t n) {
 
   if (!requestJSONBufferLock(7)) return;
 
-  DEBUG_PRINT(F("Reading LED map from "));
-  DEBUG_PRINTLN(fileName);
+  USER_PRINT(F("Reading LED map from ")); //WLEDMM use USER_PRINT
+  USER_PRINTLN(fileName);
 
   if (!readObjectFromFile(fileName, nullptr, &doc)) {
     releaseJSONBufferLock();

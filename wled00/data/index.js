@@ -1305,10 +1305,12 @@ function drawSegments() {
 	}
 
 	//draw the ledmap
-	if (ledmapNr>0 && ctx) {
+	if (ledmapNr>=0 && ctx) { //WLEDMM: @Troy#2642 : include ledmap = 0 as default ledmap
 		// console.log("Before fetch ledmap ", lastinfo.ledmap);
 		var fileName;
-		if (ledmapNr<10)
+		if (ledmapNr==0)
+			fileName = "ledmap.json"; //0 is ledmap.json, not ledmap0.json
+		else if (ledmapNr<10)
 			fileName = "ledmap"+ledmapNr+".json";
 		else
 			fileName = ledmapFileNames[ledmapNr-10];

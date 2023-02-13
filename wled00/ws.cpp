@@ -170,7 +170,12 @@ bool sendLiveLedsWs(uint32_t wsClient)
 
   for (uint16_t i = 0; pos < bufSize -2; i += n)
   {
-    uint32_t c = strip.getPixelColor(i);
+    //WLEDMM: include ledmap in peek if default panel
+    uint32_t c;
+    if (strip.panel.size()==1 && !strip.panel[0].vertical && !strip.panel[0].bottomStart && !strip.panel[0].rightStart) // one default panel
+      c = busses.getPixelColor(i);
+    else
+      c = strip.getPixelColor(i);
     buffer[pos++] = qadd8(W(c), R(c)); //R, add white channel to RGB channels as a simple RGBW -> RGB map
     buffer[pos++] = qadd8(W(c), G(c)); //G
     buffer[pos++] = qadd8(W(c), B(c)); //B
