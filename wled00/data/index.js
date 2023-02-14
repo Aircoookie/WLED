@@ -1164,7 +1164,7 @@ function drawSegments() {
 		canvas.hidden = false;
 		ctx = canvas.getContext('2d');
 	}
-	ctx.canvas.width  = ctx.canvas.parentElement.offsetWidth > 800?800:300; //Mobile and non pc mode gets 300, pc 800
+	ctx.canvas.width  = ctx.canvas.parentElement.offsetWidth > 800?window.innerWidth*0.98:300; //Mobile and non pc mode gets 300, pc 800
 
 	var px, py, pw, ph;
 	var topLeftX, topLeftY;
@@ -1293,10 +1293,13 @@ function drawSegments() {
 		for (let p=0; p<gId("segcont").children.length; p++) {
 			if (!initSegmentVars(p)) break;
 			
-			ctx.font = '40px Arial'; 
-			ctx.fillStyle = "orange";
-			ctx.fillText(p, topLeftX + pw/2*ppL - 10, topLeftY + ph/2*ppL + 10);
+			if (gId("segcont").children.length>1) { //only show number if more than one segment
+				ctx.font = '40px Arial'; 
+				ctx.fillStyle = "orange";
+				ctx.fillText(p, topLeftX + pw/2*ppL - 10, topLeftY + ph/2*ppL + 10);
+			}
 	
+			//show name of fx
 			ctx.font = '20px Arial'; 
 			ctx.fillStyle = "white";
 			var name = eJson.find((o)=>{return o.id==fx}).name;
@@ -1315,22 +1318,34 @@ function drawSegments() {
 		else
 			fileName = ledmapFileNames[ledmapNr-10];
 		fetchAndExecute((loc?`http://${locip}`:'.') + "/", fileName , function(text) {
-			var noMap = [];
 			var ledmapJson = JSON.parse(text);
 			var counter = 0;
+			var noMap = [];
+			for (let i=0;i<maxWidth * maxHeight;i++) noMap.push(i); //initially add all pixels in array
+			var colorArray = ["yellow",     "green",     "magenta",   "orange"];
 			for (let i=0;i<ledmapJson["map"].length;i++) {
 				let mapIndex = ledmapJson["map"][i];
 				if (mapIndex != -1) {
 					ctx.font = parseInt(ppL/3) + 'px Arial'; 
 					ctx.fillStyle = "white";
+					if (lastinfo.outputs!=null) {
+						var ledcount = 0;
+						for (let o=0; o<lastinfo.outputs.length;o++) {
+							ledcount+=lastinfo.outputs[o];
+							if (counter >= ledcount)
+								ctx.fillStyle = colorArray[o%colorArray.length];
+						}
+					}
 					x = mapIndex%maxWidth;
 					y = parseInt(mapIndex/maxWidth);
 					ctx.fillText(counter, topLeftX + ppL/2 + x*ppL-ppL*0.3, topLeftY + ppL/2 + y * ppL);
-					counter++;
+					//remove the found pixels from noMap
+					const index = noMap.indexOf(mapIndex);
+					if (index > -1) noMap.splice(index, 1); // 2nd parameter means remove one item only
 				}
-				else 
-				noMap.push(i);
+				counter++;
 			}
+			//WLEDMM: make pixels not in ledmap black
 			for (let i=0;i<noMap.length;i++) {
 				x = noMap[i]%maxWidth;
 				y = parseInt(noMap[i]/maxWidth);
@@ -3188,7 +3203,7 @@ function togglePcMode(fromB = false)
 
 	//WLEDMM resize segment visualization
 	if (isM) {
-		gId("canvas").width = gId("canvas").parentElement.offsetWidth > 800?800:300; //WLEDMM Mobile and non pc mode gets 300, pc 800
+		gId("canvas").width = gId("canvas").parentElement.offsetWidth > 800?window.innerWidth*0.98:300; //WLEDMM Mobile and non pc mode gets 300, pc 800
 		drawSegments();
 	}
 }

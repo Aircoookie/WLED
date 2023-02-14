@@ -2016,12 +2016,8 @@ void WS2812FX::deserializeMap(uint8_t n) {
 #endif
       customMappingSize  = map.size();
     customMappingTable = new uint16_t[customMappingSize];
-    for (uint16_t i=0; i<customMappingSize; i++) {
-      if (i<map.size())
-        customMappingTable[i] = (uint16_t) (map[i]<0 ? 0xFFFFU : map[i]);
-      else
-        customMappingTable[i] = (uint16_t) 0xFFFFU; //fill the map entirely
-    }
+    for (uint16_t i=0; i<MIN(customMappingSize, map.size()); i++) 
+      customMappingTable[i] = (uint16_t) (map[i]<0 ? 0xFFFFU : map[i]);
     loadedLedmap = n;
 
     #ifdef WLED_DEBUG

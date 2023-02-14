@@ -771,6 +771,12 @@ void serializeInfo(JsonObject root)
     if ((ledMaps>>i) & 0x0001) ledmaps.add(i);
   }
 
+  //WLEDMM: add busses.length to outputs
+  JsonArray outputs = root.createNestedArray(F("outputs"));
+  for (int8_t b = 0; b < busses.getNumBusses(); b++) {
+    outputs.add(busses.getBus(b)->getLength());
+  }
+
   JsonObject wifi_info = root.createNestedObject("wifi");
   wifi_info[F("bssid")] = WiFi.BSSIDstr();
   int qrssi = WiFi.RSSI();

@@ -80,8 +80,10 @@ void WS2812FX::setUpMatrix(bool reset) {
       customMappingSize = Segment::maxWidth * Segment::maxHeight;
 
       uint16_t *customMappingTableCombi = nullptr; //WLEDMM: Idea @Troy#2642 
-      if (loadedLedmap >= 0) //WLEDMM: @Troy#2642 : include ledmap = 0 as default ledmap
+      if (loadedLedmap >= 0) { //WLEDMM: @Troy#2642 : include ledmap = 0 as default ledmap
         customMappingTableCombi = new uint16_t[customMappingSize];
+        for (int i=0; i<customMappingSize;i++) customMappingTableCombi[i] = (uint16_t)0xFFFFU; //WLEDMM: init with no show
+      }
 
       uint16_t x, y, pix=0; //pixel
       for (size_t pan = 0; pan < panel.size(); pan++) {
@@ -95,12 +97,8 @@ void WS2812FX::setUpMatrix(bool reset) {
             x = p.serpentine && j%2 ? h-x-1 : x;
             uint16_t index = (p.yOffset + (p.vertical?x:y)) * Segment::maxWidth + p.xOffset + (p.vertical?y:x);
             if (loadedLedmap >= 0) {  //WLEDMM: @Troy#2642 : include ledmap = 0 as default ledmap
-              if (index < customMappingSizeLedmap) {
-                if (customMappingTable[index] < customMappingSize)
+              if (index < customMappingSizeLedmap && customMappingTable[index] < customMappingSize)
                   customMappingTableCombi[customMappingTable[index]] = pix; //WLEDMM: allow for 2 transitions if reset = false (ledmap and logical to physical)
-              }
-              else
-                customMappingTableCombi[index] = pix;
             }
             else
               customMappingTable[index] = pix;
