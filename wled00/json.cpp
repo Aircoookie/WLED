@@ -648,7 +648,7 @@ void serializeInfo(JsonObject root)
       JsonObject ledmaps0 = ledmaps.createNestedObject();
       ledmaps0["id"] = i;
       #ifndef ESP8266
-      if (ledmapNames[i]) ledmaps0["n"] = ledmapNames[i];
+      if (i && ledmapNames[i-1]) ledmaps0["n"] = ledmapNames[i-1];
       #endif
     }
   }
