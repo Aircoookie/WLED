@@ -9,7 +9,7 @@ function toggleCEEditor(name, segID) {
     d.getElementById('ceEditor').style.transform = (isCEEditor) ? "translateY(0px)":"translateY(100%)";
 }
 
-function fetchAndExecute(url, name, callback)
+function fetchAndExecute(url, name, callback, toast=true)
 {
   fetch
   (url+name, {
@@ -17,7 +17,7 @@ function fetchAndExecute(url, name, callback)
   })
   .then(res => {
     if (!res.ok) {
-       showToast("File " + name + " not found", true);
+       if (toast) showToast("File " + name + " not found", true);
        return "";
     }
     return res.text();
@@ -26,7 +26,7 @@ function fetchAndExecute(url, name, callback)
     callback(text);
   })
   .catch(function (error) {
-    showToast("Error getting " + name, true);
+    if (toast) showToast("Error getting " + name, true);
     console.log(error);
   })
   .finally(() => {
