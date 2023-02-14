@@ -147,6 +147,7 @@ void WS2812FX::setUpMatrix() {
       panel.clear();
       Segment::maxWidth = _length;
       Segment::maxHeight = 1;
+      resetSegments();
     }
   }
 #else

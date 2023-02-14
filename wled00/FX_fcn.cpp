@@ -758,7 +758,7 @@ void Segment::refreshLightCapabilities() {
     if (bus->getStart() >= stop) continue;
     if (bus->getStart() + bus->getLength() <= start) continue;
 
-    uint8_t type = bus->getType();
+    //uint8_t type = bus->getType();
     if (bus->hasRGB() || (cctFromRgb && bus->hasCCT())) capabilities |= SEG_CAPABILITY_RGB;
     if (!cctFromRgb && bus->hasCCT())                   capabilities |= SEG_CAPABILITY_CCT;
     if (correctWB && (bus->hasRGB() || bus->hasCCT()))  capabilities |= SEG_CAPABILITY_CCT; //white balance correction (CCT slider)
@@ -1472,8 +1472,16 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
 void WS2812FX::fixInvalidSegments() {
   //make sure no segment is longer than total (sanity check)
   for (size_t i = getSegmentsNum()-1; i > 0; i--) {
-    if (_segments[i].start >= _length) { _segments.erase(_segments.begin()+i); continue; }
-    if (_segments[i].stop  >  _length) _segments[i].stop = _length;
+    if (isMatrix) {
+    #ifndef WLED_DISABLE_2D
+      if (_segments[i].start  >= Segment::maxWidth || _segments[i].startY >= Segment::maxHeight) { _segments.erase(_segments.begin()+i); continue; }
+      if (_segments[i].stop   >  Segment::maxWidth)  _segments[i].stop  = Segment::maxWidth;
+      if (_segments[i].stopY  >  Segment::maxHeight) _segments[i].stopY = Segment::maxHeight;
+    #endif
+    } else {
+      if (_segments[i].start >= _length) { _segments.erase(_segments.begin()+i); continue; }
+      if (_segments[i].stop  >  _length) _segments[i].stop = _length;
+    }
     // this is always called as the last step after finalizeInit(), update covered bus types
     _segments[i].refreshLightCapabilities();
   }
