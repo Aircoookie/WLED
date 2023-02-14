@@ -2907,7 +2907,7 @@ function fetchAndExecute(url, name, callback)
     callback(text);
   })
   .catch(function (error) {
-    showToast("Error getting " + name, true);
+    // showToast("Error getting " + name, true);
     console.log(error);
   })
   .finally(() => {
