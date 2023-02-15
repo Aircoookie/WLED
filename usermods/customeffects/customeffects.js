@@ -23,14 +23,12 @@ function fetchAndExecute(url, name, callback, callError)
     return res.text();
   })
   .then(text => {
-	console.log("text", text);
     callback(text);
   })
   .catch(function (error) {
-	callError("Error getting " + name);
+    callError("Error getting " + name);
   })
   .finally(() => {
-	console.log("finally");
     // if (callback) setTimeout(callback,99);
   });
 }

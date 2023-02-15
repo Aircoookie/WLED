@@ -2915,9 +2915,9 @@ function fetchAndExecute(url, name, callback, callError)
   })
   .catch(function (error) {
 	callError("Error getting " + name);
+	console.log(error);
   })
   .finally(() => {
-	console.log("finally");
     // if (callback) setTimeout(callback,99);
   });
 }
