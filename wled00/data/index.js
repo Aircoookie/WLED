@@ -2072,7 +2072,7 @@ function setSeg(s)
 		obj.seg.grp = grp;
 		obj.seg.spc = spc;
 		obj.seg.of  = ofs;
-		if (isM) obj.seg.tp = gId(`seg${s}tp`).checked;
+		if (isM && gId(`seg${s}tp`)) obj.seg.tp = gId(`seg${s}tp`).checked;
 	}
 	resetUtil(); // close add segment dialog just in case
 	requestJson(obj);

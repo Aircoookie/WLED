@@ -750,13 +750,31 @@ uint8_t Segment::differs(Segment& b) const {
 
 void Segment::refreshLightCapabilities() {
   uint8_t capabilities = 0;
+  uint16_t segStartIdx = 0xFFFFU;
+  uint16_t segStopIdx  = 0;
+
+  if (start < Segment::maxWidth * Segment::maxHeight) {
+    // we are withing 2D matrix (includes 1D segments)
+    for (int y = startY; y < stopY; y++) for (int x = start; x < stop; x++) {
+      uint16_t index = x + Segment::maxWidth * y;
+      if (index < strip.customMappingSize) index = strip.customMappingTable[index]; // convert logical address to physical
+      if (index < 0xFFFFU) {
+        if (segStartIdx > index) segStartIdx = index;
+        if (segStopIdx  < index) segStopIdx  = index;
+      }
+    }
+  } else {
+    // we are on the strip located after the matrix
+    segStartIdx = start;
+    segStopIdx  = stop;
+  }
 
   for (uint8_t b = 0; b < busses.getNumBusses(); b++) {
     Bus *bus = busses.getBus(b);
     if (bus == nullptr || bus->getLength()==0) break;
     if (!bus->isOk()) continue;
-    if (bus->getStart() >= stop) continue;
-    if (bus->getStart() + bus->getLength() <= start) continue;
+    if (bus->getStart() >= segStopIdx) continue;
+    if (bus->getStart() + bus->getLength() <= segStartIdx) continue;
 
     //uint8_t type = bus->getType();
     if (bus->hasRGB() || (cctFromRgb && bus->hasCCT())) capabilities |= SEG_CAPABILITY_RGB;
@@ -1413,9 +1431,9 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
     }
     // do we have LEDs after the matrix? (ignore buses)
     if (autoSegments && _length > Segment::maxWidth*Segment::maxHeight /*&& getActiveSegmentsNum() == 2*/) {
-      if (_segments.size() == getLastActiveSegmentId()+1U)
+      if (_segments.size() == getLastActiveSegmentId()+1U) {
         _segments.push_back(Segment(Segment::maxWidth*Segment::maxHeight, _length));
-      else {
+      } else {
         size_t i = getLastActiveSegmentId() + 1;
         _segments[i].start  = Segment::maxWidth*Segment::maxHeight;
         _segments[i].stop   = _length;
@@ -1474,17 +1492,24 @@ void WS2812FX::fixInvalidSegments() {
   for (size_t i = getSegmentsNum()-1; i > 0; i--) {
     if (isMatrix) {
     #ifndef WLED_DISABLE_2D
-      if (_segments[i].start  >= Segment::maxWidth || _segments[i].startY >= Segment::maxHeight) { _segments.erase(_segments.begin()+i); continue; }
-      if (_segments[i].stop   >  Segment::maxWidth)  _segments[i].stop  = Segment::maxWidth;
-      if (_segments[i].stopY  >  Segment::maxHeight) _segments[i].stopY = Segment::maxHeight;
+      if (_segments[i].start >= Segment::maxWidth * Segment::maxHeight) {
+        // 1D segment at the end of matrix
+        if (_segments[i].start >= _length || _segments[i].startY > 0 || _segments[i].stopY > 1) { _segments.erase(_segments.begin()+i); continue; }
+        if (_segments[i].stop  >  _length) _segments[i].stop = _length;
+        continue;
+      }
+      if (_segments[i].start >= Segment::maxWidth || _segments[i].startY >= Segment::maxHeight) { _segments.erase(_segments.begin()+i); continue; }
+      if (_segments[i].stop  >  Segment::maxWidth)  _segments[i].stop  = Segment::maxWidth;
+      if (_segments[i].stopY >  Segment::maxHeight) _segments[i].stopY = Segment::maxHeight;
     #endif
     } else {
       if (_segments[i].start >= _length) { _segments.erase(_segments.begin()+i); continue; }
       if (_segments[i].stop  >  _length) _segments[i].stop = _length;
     }
-    // this is always called as the last step after finalizeInit(), update covered bus types
-    _segments[i].refreshLightCapabilities();
   }
+  // this is always called as the last step after finalizeInit(), update covered bus types
+  for (segment &seg : _segments)
+    seg.refreshLightCapabilities();
 }
 
 //true if all segments align with a bus, or if a segment covers the total length
