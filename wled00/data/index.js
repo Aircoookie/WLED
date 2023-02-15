@@ -1360,7 +1360,10 @@ function drawSegments() {
 				ctx.fill();
 			}
 			post();
-		}, false); //false: no toast
+		}, function(error) { //error handling
+			console.log(error);
+			post();
+		});
 	}
 	else
 		post();
@@ -2893,7 +2896,7 @@ function genPresets()
 }
 
 //WLEDMM: utility function to load contents of file from FS (used in draw)
-function fetchAndExecute(url, name, callback, toast=true)
+function fetchAndExecute(url, name, callback, callError)
 {
   fetch
   (url+name, {
@@ -2901,10 +2904,9 @@ function fetchAndExecute(url, name, callback, toast=true)
   })
   .then(res => {
     if (!res.ok) {
-       if (toast) showToast("File " + name + " not found", true);
-       return "";
+		callError("File " + name + " not found");
+    	return "";
     }
-	console.log("res", res);
     return res.text();
   })
   .then(text => {
@@ -2912,8 +2914,7 @@ function fetchAndExecute(url, name, callback, toast=true)
     callback(text);
   })
   .catch(function (error) {
-    if (toast) showToast("Error getting " + name, true);
-    console.log(error);
+	callError("Error getting " + name);
   })
   .finally(() => {
 	console.log("finally");

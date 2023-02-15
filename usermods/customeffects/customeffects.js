@@ -9,7 +9,7 @@ function toggleCEEditor(name, segID) {
     d.getElementById('ceEditor').style.transform = (isCEEditor) ? "translateY(0px)":"translateY(100%)";
 }
 
-function fetchAndExecute(url, name, callback, toast=true)
+function fetchAndExecute(url, name, callback, callError)
 {
   fetch
   (url+name, {
@@ -17,19 +17,20 @@ function fetchAndExecute(url, name, callback, toast=true)
   })
   .then(res => {
     if (!res.ok) {
-       if (toast) showToast("File " + name + " not found", true);
-       return "";
+		callError("File " + name + " not found");
+    	return "";
     }
     return res.text();
   })
   .then(text => {
+	console.log("text", text);
     callback(text);
   })
   .catch(function (error) {
-    if (toast) showToast("Error getting " + name, true);
-    console.log(error);
+	callError("Error getting " + name);
   })
   .finally(() => {
+	console.log("finally");
     // if (callback) setTimeout(callback,99);
   });
 }
@@ -51,6 +52,9 @@ function loadLogFile(name, attempt) {
       }
       else
         ceLogArea.value = logtext;
+    }, function(error){
+      showToast(error);
+      console.log(error);
     });
 }
 
@@ -114,6 +118,9 @@ function populateCEEditor(name, segID)
     ceLogArea.value = ".";
     loadLogFile(name + ".wled.log", 1);
 
+  }, function(error){
+    showToast(error);
+    console.log(error);
   });
 }
 
@@ -133,6 +140,9 @@ function downloadCEFile(url, name) {
           var ceProgramArea = d.getElementById("ceProgramArea");
           ceProgramArea.value = text;
         }
+    }, function(error){
+      showToast(error);
+      console.log(error);
     });
 
     return;
