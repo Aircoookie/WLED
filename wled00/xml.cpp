@@ -395,8 +395,8 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
     sappend('c',SET_F("CR"),cctFromRgb);
     sappend('v',SET_F("CB"),strip.cctBlending);
     sappend('v',SET_F("FR"),strip.getTargetFps());
-    sappend('v',SET_F("AW"),Bus::getAutoWhiteMode());
-    sappend('c',SET_F("LD"),strip.useLedsArray);
+    sappend('v',SET_F("AW"),Bus::getGlobalAWMode());
+    sappend('v',SET_F("LD"),strip.useLedsArray);
 
     for (uint8_t s=0; s < busses.getNumBusses(); s++) {
       Bus* bus = busses.getBus(s);
@@ -425,7 +425,7 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
       sappend('c',cv,bus->reversed);
       sappend('v',sl,bus->skippedLeds());
       sappend('c',rf,bus->isOffRefreshRequired());
-      sappend('v',aw,bus->getAWMode());
+      sappend('v',aw,bus->getAutoWhiteMode());
       sappend('v',wo,bus->getColorOrder() >> 4);
     }
     sappend('v',SET_F("MA"),strip.ablMilliampsMax);

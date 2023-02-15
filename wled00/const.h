@@ -147,11 +147,13 @@
 #define CALL_MODE_BUTTON_PRESET 12     //button/IR JSON preset/macro
 
 //RGB to RGBW conversion mode
-#define RGBW_MODE_MANUAL_ONLY     0            //No automatic white channel calculation. Manual white channel slider
-#define RGBW_MODE_AUTO_BRIGHTER   1            //New algorithm. Adds as much white as the darkest RGBW channel
-#define RGBW_MODE_AUTO_ACCURATE   2            //New algorithm. Adds as much white as the darkest RGBW channel and subtracts this amount from each RGB channel
-#define RGBW_MODE_DUAL            3            //Manual slider + auto calculation. Automatically calculates only if manual slider is set to off (0)
-#define RGBW_MODE_LEGACY          4            //Old floating algorithm. Too slow for realtime and palette support
+#define RGBW_MODE_MANUAL_ONLY     0    // No automatic white channel calculation. Manual white channel slider
+#define RGBW_MODE_AUTO_BRIGHTER   1    // New algorithm. Adds as much white as the darkest RGBW channel
+#define RGBW_MODE_AUTO_ACCURATE   2    // New algorithm. Adds as much white as the darkest RGBW channel and subtracts this amount from each RGB channel
+#define RGBW_MODE_DUAL            3    // Manual slider + auto calculation. Automatically calculates only if manual slider is set to off (0)
+#define RGBW_MODE_MAX             4    // Sets white to the value of the brightest RGB channel (good for white-only LEDs without any RGB)
+//#define RGBW_MODE_LEGACY        4    // Old floating algorithm. Too slow for realtime and palette support (unused)
+#define AW_GLOBAL_DISABLED      255    // Global auto white mode override disabled. Per-bus setting is used
 
 //realtime modes
 #define REALTIME_MODE_INACTIVE    0
@@ -197,7 +199,9 @@
 #define TYPE_NONE                 0            //light is not configured
 #define TYPE_RESERVED             1            //unused. Might indicate a "virtual" light
 //Digital types (data pin only) (16-31)
-#define TYPE_WS2812_1CH          20            //white-only chips
+#define TYPE_WS2812_1CH          18            //white-only chips (1 channel per IC) (unused)
+#define TYPE_WS2812_1CH_X3       19            //white-only chips (3 channels per IC)
+#define TYPE_WS2812_2CH_X3       20            //CCT chips (1st IC controls WW + CW of 1st zone and CW of 2nd zone, 2nd IC controls WW of 2nd zone and WW + CW of 3rd zone)
 #define TYPE_WS2812_WWA          21            //amber + warm + cold white
 #define TYPE_WS2812_RGB          22
 #define TYPE_GS8608              23            //same driver as WS2812, but will require signal 2x per second (else displays test pattern)
@@ -293,6 +297,11 @@
 
 //Playlist option byte
 #define PL_OPTION_SHUFFLE      0x01
+
+// Segment capability byte
+#define SEG_CAPABILITY_RGB     0x01
+#define SEG_CAPABILITY_W       0x02
+#define SEG_CAPABILITY_CCT     0x04
 
 // WLED Error modes
 #define ERR_NONE         0  // All good :)

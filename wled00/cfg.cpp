@@ -87,7 +87,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   uint8_t autoWhiteMode = RGBW_MODE_MANUAL_ONLY;
   CJSON(strip.ablMilliampsMax, hw_led[F("maxpwr")]);
   CJSON(strip.milliampsPerLed, hw_led[F("ledma")]);
-  Bus::setAutoWhiteMode(hw_led[F("rgbwm")] | 255);
+  Bus::setGlobalAWMode(hw_led[F("rgbwm")] | 255);
   CJSON(correctWB, hw_led["cct"]);
   CJSON(cctFromRgb, hw_led[F("cr")]);
   CJSON(strip.cctBlending, hw_led[F("cb")]);
@@ -709,7 +709,7 @@ void serializeConfig() {
   hw_led[F("cr")] = cctFromRgb;
   hw_led[F("cb")] = strip.cctBlending;
   hw_led["fps"] = strip.getTargetFps();
-  hw_led[F("rgbwm")] = Bus::getAutoWhiteMode();    // global override
+  hw_led[F("rgbwm")] = Bus::getGlobalAWMode(); // global auto white mode override
   hw_led[F("ld")] = strip.useLedsArray;
 
   #ifndef WLED_DISABLE_2D
@@ -757,7 +757,7 @@ void serializeConfig() {
     ins[F("skip")] = bus->skippedLeds();
     ins["type"] = bus->getType() & 0x7F;
     ins["ref"] = bus->isOffRefreshRequired();
-    ins[F("rgbwm")] = bus->getAWMode();
+    ins[F("rgbwm")] = bus->getAutoWhiteMode();
   }
 
   JsonArray hw_com = hw.createNestedArray(F("com"));
