@@ -812,6 +812,13 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
       sappend('v',SET_F("PRL"),strip.panelO.rightStart); //WLEDMM
       sappend('v',SET_F("PVL"),strip.panelO.vertical); //WLEDMM
       sappend('c',SET_F("PSL"),strip.panelO.serpentine); //WLEDMM
+      //WLEDMM: add Total LEDs
+      uint16_t ledCount = 0;
+      for (int8_t b = 0; b < busses.getNumBusses(); b++) {
+        ledCount+=busses.getBus(b)->getLength();
+      }
+      sappend('v',SET_F("LC"),ledCount); //WLEDMM
+
       // panels
       for (uint8_t i=0; i<strip.panels; i++) {
         char n[5];

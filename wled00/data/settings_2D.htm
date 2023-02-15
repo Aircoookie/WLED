@@ -31,6 +31,7 @@
 			baChange(); //WLEDMM: Set Basic or advanced blocks
 			fieldChange(); //WLEDMM: Show or hide 1st Panel
 			draw(); //WLEDMM: draw graphics
+			gId("LC").innerHTML = d.Sf.LC.value; //WLEDMM: add Total LEDs
 		});
 		// error event
 		scE.addEventListener("error", (ev) => {
@@ -400,6 +401,7 @@ Y:<input id="P${i}Y" name="P${i}Y" type="number" min="0" max="255" value="0" oni
 		☾<br>
 		<canvas id="canvasPanels"></canvas><br> <!--WLEDMM panel visualization-->
 		<div id="MD"></div> <!-- WLEDMM Matrix dimensions -->
+		(Total LEDs: <input name="LC" hidden><span id="LC"></span>)<br> <!--WLEDMM: input is placeholder for d.Sf.LC.value-->
 		<br>
 		<div id="advancedBlock">
 		<i style="color:#fa0;">Can populate LED panel layout with pre-arranged matrix.<br>These values do not affect final layout.<br>WLEDMM: Populate will overwrite earlier saved panel layouts!</i><br>
