@@ -288,6 +288,14 @@ void initServer()
     request->send(response);
   });
 
+  //WLEDMM
+  server.on("/peek.js", HTTP_GET, [](AsyncWebServerRequest *request){
+    AsyncWebServerResponse *response = request->beginResponse_P(200, "application/javascript", PAGE_peekJs, PAGE_peekJs_length);
+    response->addHeader(FPSTR(s_content_enc),"gzip");
+    setStaticContentCacheHeaders(response);
+    request->send(response);
+  });
+
   createEditHandler(correctPIN);
 
 #ifndef WLED_DISABLE_OTA

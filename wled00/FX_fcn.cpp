@@ -1973,8 +1973,8 @@ void WS2812FX::deserializeMap(uint8_t n) {
   }
 
   if (!isFile) {
-    // erase custom mapping if selecting nonexistent ledmap.json (n==0)
-    if (!n && customMappingTable != nullptr) {
+    // erase custom mapping if selecting nonexistent ledmap.json (n==0) //WLEDM always erase if nonexistant
+    if (customMappingTable != nullptr) {
       //WLEDMM: if isMatrix then not erase but back to matrix default 
       if (isMatrix)
         setUpMatrix(true);

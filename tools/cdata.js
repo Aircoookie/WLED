@@ -400,6 +400,13 @@ const char PAGE_dmxmap[] PROGMEM = R"=====()=====";
       method: "gzip",
       filter: "html-minify",
     },
+    //WLEDMM
+    {
+      file: "peek.js",
+      name: "PAGE_peekJs",
+      method: "gzip",
+      filter: "js-minify",
+    },
     {
       file: "404.htm",
       name: "PAGE_404",

@@ -6,6 +6,7 @@
 	<meta name="theme-color" content="#222222">
 	<meta content="yes" name="apple-mobile-web-app-capable">
 	<link rel="shortcut icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAEAGACGAAAAFgAAAIlQTkcNChoKAAAADUlIRFIAAAAQAAAAEAgGAAAAH/P/YQAAAE1JREFUOI1j/P//PwOxgNGeAUMxE9G6cQCKDWAhpADZ2f8PMjBS3QW08QK20KaZC2gfC9hCnqouoNgARgY7zMxAyNlUdQHlXiAlO2MDAD63EVqNHAe0AAAAAElFTkSuQmCC"/>
+	<script src="peek.js"></script> <!--WLEDMM-->
 	<title>WLED</title>
 	<script>
 	function feedback(){}
@@ -313,7 +314,9 @@
 		</div>
 		<!--WLEDMM Segment graphics-->
 		<br>
-		<canvas id="canvas" hidden=true></canvas><br>
+		<canvas id="canvasSegments" hidden=true></canvas><br>
+		<br>
+		<canvas id="canvasPeek"></canvas><br>
 		<div id="MD"></div> <!-- Matrix dimensions -->
 		<br>
 		<p>Transition: <input id="tt" class="noslide" type="number" min="0" max="65.5" step="0.1" value="0.7">&nbsp;s</p>

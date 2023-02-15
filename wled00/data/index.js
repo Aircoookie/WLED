@@ -1158,18 +1158,9 @@ function updateLen(s, draw=true) //WLEDMM conditonally draw segment visualisatio
 //WLEDMM
 function drawSegments() {
 
-	if (!ctx) {
-		//WLEDMM: add canvas, initialize and set UI
-		var canvas = gId("canvas");
-		canvas.hidden = false;
-		ctx = canvas.getContext('2d');
-	}
-	ctx.canvas.width  = ctx.canvas.parentElement.offsetWidth > 800?window.innerWidth*0.98:300; //Mobile and non pc mode gets 300, pc 800
-
 	var px, py, pw, ph;
 	var topLeftX, topLeftY;
 
-	var space=0; // space between panels + margin
 	function initSegmentVars(p) {
 		px = parseInt(gId("seg"+p+"s").value); //first led x
 		if (!gId("seg"+p+"sY")) return false; //no draw for 1D segments (yet)
@@ -1177,8 +1168,8 @@ function drawSegments() {
 		pw = parseInt(gId("seg"+p+"e").value - gId("seg"+p+"s").value); //width
 		ph = parseInt(gId("seg"+p+"eY").value - gId("seg"+p+"sY").value); //height
 		// console.log("sergment", p, px, py, pw, ph);
-		topLeftX = px*ppL + space; //left margin
-		topLeftY = py*ppL + space; //top margin
+		topLeftX = px*ppL;
+		topLeftY = py*ppL;
 		// console.log("rect", p, topLeftX, topLeftY, pw*ppL, ph*ppL);
 		return true;
 	}
@@ -1192,14 +1183,28 @@ function drawSegments() {
 		maxHeight = Math.max(maxHeight, py + ph);
 	}
 
+	canvasPeek = gId("canvasPeek");
+	if (!ctx) {
+		//WLEDMM: add canvas, initialize and set UI
+		var canvas = gId("canvasSegments");
+		canvas.hidden = false;
+		ctx = canvas.getContext('2d');
+		peek(canvasPeek);
+	}
+
+	let windowWidth = Math.min(window.innerWidth*0.98, maxWidth*30);
+	ctx.canvas.width  = ctx.canvas.parentElement.offsetWidth > 800?windowWidth:300; //Mobile and non pc mode gets 300, pc 800
 	ctx.canvas.height = ctx.canvas.width / maxWidth * maxHeight;
+	canvasPeek.width = canvasPeek.parentElement.offsetWidth > 800?windowWidth:300;
+	canvasPeek.height = canvasPeek.width / maxWidth * maxHeight;
 	ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-	var ppL = (ctx.canvas.width  - space * 2) / maxWidth; //pixels per led
+
+	var ppL = ctx.canvas.width / maxWidth; //pixels per led
 	// console.log("dim", ctx.canvas.width , maxWidth, ctx.canvas.height , maxHeight, ppL);
 
 	ctx.lineWidth = 1;
 	ctx.strokeStyle="yellow";
-	ctx.strokeRect(0, 0, ctx.canvas.width, ctx.canvas.height); // add space between panels
+	ctx.strokeRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
 	var colorArray = [[255,0,0], [0,255,0], [0,0,255], [255,0,255], [255,165,0], [255,255,0]];
 	//               ["red",     "green",   "blue",    "magenta",   "orange",    "yellow"];
@@ -1211,7 +1216,7 @@ function drawSegments() {
 
 		ctx.lineWidth = 3;
 		ctx.strokeStyle="white";
-		ctx.strokeRect(topLeftX, topLeftY, pw*ppL, ph*ppL); // add space between panels
+		ctx.strokeRect(topLeftX, topLeftY, pw*ppL, ph*ppL);
 
 		var fx = parseInt(gId("seg"+p+"fx").value);
 
@@ -3202,10 +3207,7 @@ function togglePcMode(fromB = false)
 	lastw = wW;
 
 	//WLEDMM resize segment visualization
-	if (isM) {
-		gId("canvas").width = gId("canvas").parentElement.offsetWidth > 800?window.innerWidth*0.98:300; //WLEDMM Mobile and non pc mode gets 300, pc 800
-		drawSegments();
-	}
+	if (isM) drawSegments();
 }
 
 function mergeDeep(target, ...sources)

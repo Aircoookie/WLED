@@ -187,7 +187,7 @@ Y:<input id="P${i}Y" name="P${i}Y" type="number" min="0" max="255" value="0" oni
 
 		if (!ctx) {
 			//WLEDMM: add canvas, initialize and set UI
-			var canvas = gId("canvas");
+			var canvas = gId("canvasPanels");
 			canvas.width  = window.innerWidth > 800?800:400; //Mobile gets 400, pc 800
 			canvas.height = canvas.width;
 			ctx = canvas.getContext('2d');
@@ -398,7 +398,7 @@ Y:<input id="P${i}Y" name="P${i}Y" type="number" min="0" max="255" value="0" oni
 		<br>
 		<hr class="sml">
 		☾<br>
-		<canvas id="canvas"></canvas><br> <!--WLEDMM panel visualization-->
+		<canvas id="canvasPanels"></canvas><br> <!--WLEDMM panel visualization-->
 		<div id="MD"></div> <!-- WLEDMM Matrix dimensions -->
 		<br>
 		<div id="advancedBlock">
