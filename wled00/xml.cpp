@@ -445,7 +445,7 @@ void getSettingsJS(byte subPage, char* dest)
 
     sappend('c',SET_F("GB"),gammaCorrectBri);
     sappend('c',SET_F("GC"),gammaCorrectCol);
-    sprintf_P(nS, PSTR("d.Sf.GV.value='%.1f';"), (float)gammaCorrectVal); oappend(nS);
+    dtostrf(gammaCorrectVal,3,1,nS); sappends('s',SET_F("GV"),nS);
     sappend('c',SET_F("TF"),fadeTransition);
     sappend('v',SET_F("TD"),transitionDelayDefault);
     sappend('c',SET_F("PF"),strip.paletteFade);
