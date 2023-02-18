@@ -101,8 +101,11 @@ void initDMX() {}
 #ifdef WLED_ENABLE_DMX_INPUT
 void handleDMXInput() {
   dmx.update();
-  dmx.read(1); // TODO - handle code
-  handleDMXData(1, 512, e131_data, 1, REALTIME_MODE_DMX);
+  uint8_t data[512] = {};
+  for(int i=0; i < 512; i++) {
+    data[i] = dmx.read(i + 1);
+  }
+  handleDMXData(1, 512, data, 1, REALTIME_MODE_DMX, 0);
   DEBUG_PRINTF("DMX channel 1 = %u\n", dmx.read(1)); // TODO: remove from final code
 }
 #endif
