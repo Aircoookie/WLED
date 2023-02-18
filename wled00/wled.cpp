@@ -618,7 +618,6 @@ void WLED::setup()
   }
   #endif
 
-
   //#endif
   // WLEDMM end
 }
