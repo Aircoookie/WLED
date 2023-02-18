@@ -79,7 +79,9 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
     handleDDPPacket(p);
     return;
   }
-
+  handleDMXData(uni, dmxChannels, e131_data, seq, mde);
+}
+void handleDMXData(uint16_t uni, uint16_t dmxChannels, uint8_t* e131_data, uint8_t seq, uint8_t mde) {
   #ifdef WLED_ENABLE_DMX
   // does not act on out-of-order packets yet
   if (e131ProxyUniverse > 0 && uni == e131ProxyUniverse) {

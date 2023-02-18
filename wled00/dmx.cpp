@@ -102,6 +102,7 @@ void initDMX() {}
 void handleDMXInput() {
   dmx.update();
   dmx.read(1); // TODO - handle code
-  DEBUG_PRINTF("DMX channel 1 = %u", dmx.read(1)); // TODO: remove from final code
+  handleDMXData(1, 512, e131_data, 1, REALTIME_MODE_DMX);
+  DEBUG_PRINTF("DMX channel 1 = %u\n", dmx.read(1)); // TODO: remove from final code
 }
 #endif
