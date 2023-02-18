@@ -391,7 +391,7 @@ WLED_GLOBAL bool receiveDirect _INIT(true);                       // receive UDP
 WLED_GLOBAL bool arlsDisableGammaCorrection _INIT(true);          // activate if gamma correction is handled by the source
 WLED_GLOBAL bool arlsForceMaxBri _INIT(false);                    // enable to force max brightness if source has very dark colors that would be black
 
-#ifdef WLED_ENABLE_DMX
+#if defined(WLED_ENABLE_DMX) || defined(WLED_ENABLE_DMX_INPUT)
  #ifdef ESP8266
   WLED_GLOBAL DMXESPSerial dmx;
  #else //ESP32
