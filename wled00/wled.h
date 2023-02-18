@@ -124,7 +124,7 @@
   #include "src/dependencies/blynk/BlynkSimpleEsp.h"
 #endif
 
-#if defined(WLED_ENABLE_DMX) || defined(WLED_ENABLE_DMX_INPUT)
+#if defined(WLED_ENABLE_DMX)
  #ifdef ESP8266
   #include "src/dependencies/dmx/ESPDMX.h"
  #else //ESP32
@@ -133,6 +133,10 @@
   #endif
   #include "src/dependencies/dmx/SparkFunDMX.h"
  #endif
+#endif
+
+#ifdef WLED_ENABLE_DMX_INPUT
+#include <esp_dmx.h>
 #endif
 
 #include "src/dependencies/e131/ESPAsyncE131.h"
@@ -394,13 +398,16 @@ WLED_GLOBAL bool receiveDirect _INIT(true);                       // receive UDP
 WLED_GLOBAL bool arlsDisableGammaCorrection _INIT(true);          // activate if gamma correction is handled by the source
 WLED_GLOBAL bool arlsForceMaxBri _INIT(false);                    // enable to force max brightness if source has very dark colors that would be black
 
-#if defined(WLED_ENABLE_DMX) || defined(WLED_ENABLE_DMX_INPUT)
+#ifdef WLED_ENABLE_DMX
  #ifdef ESP8266
   WLED_GLOBAL DMXESPSerial dmx;
  #else //ESP32
   WLED_GLOBAL SparkFunDMX dmx;
  #endif
 WLED_GLOBAL uint16_t e131ProxyUniverse _INIT(0);                  // output this E1.31 (sACN) / ArtNet universe via MAX485 (0 = disabled)
+#endif
+#ifdef WLED_ENABLE_DMX_INPUT
+dmx_port_t dmxPort = 1;
 #endif
 WLED_GLOBAL uint16_t e131Universe _INIT(1);                       // settings for E1.31 (sACN) protocol (only DMX_MODE_MULTIPLE_* can span over consequtive universes)
 WLED_GLOBAL uint16_t e131Port _INIT(5568);                        // DMX in port. E1.31 default is 5568, Art-Net is 6454
