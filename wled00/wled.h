@@ -124,7 +124,7 @@
   #include "src/dependencies/blynk/BlynkSimpleEsp.h"
 #endif
 
-#if defined(WLED_ENABLE_DMX)
+#ifdef WLED_ENABLE_DMX
  #ifdef ESP8266
   #include "src/dependencies/dmx/ESPDMX.h"
  #else //ESP32
