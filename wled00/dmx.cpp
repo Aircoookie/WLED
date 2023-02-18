@@ -82,6 +82,11 @@ void handleDMX()
   dmx.update();        // update the DMX bus
 }
 
+#else
+void handleDMX() {}
+#endif
+
+#if defined(WLED_ENABLE_DMX) || defined(WLED_ENABLE_DMX_INPUT)
 void initDMX() {
  #ifdef ESP8266
   dmx.init(512);        // initialize with bus length
@@ -89,9 +94,7 @@ void initDMX() {
   dmx.initWrite(512);  // initialize with bus length
  #endif
 }
-
 #else
-void handleDMX() {}
 void initDMX() {}
 #endif
 
