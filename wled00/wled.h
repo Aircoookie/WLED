@@ -128,9 +128,6 @@
  #ifdef ESP8266
   #include "src/dependencies/dmx/ESPDMX.h"
  #else //ESP32
-  #ifndef WLED_ENABLE_DMX_INPUT
-  #define DMX_SEND_ONLY
-  #endif
   #include "src/dependencies/dmx/SparkFunDMX.h"
  #endif
 #endif
