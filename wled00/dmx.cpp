@@ -82,11 +82,6 @@ void handleDMX()
   dmx.update();        // update the DMX bus
 }
 
-#else
-void handleDMX() {}
-#endif
-
-#if defined(WLED_ENABLE_DMX) || defined(WLED_ENABLE_DMX_INPUT)
 void initDMX() {
  #ifdef ESP8266
   dmx.init(512);        // initialize with bus length
@@ -95,11 +90,22 @@ void initDMX() {
  #endif
 }
 #else
-void initDMX() {}
+void handleDMX() {}
 #endif
 
-#ifdef WLED_ENABLE_DMX_INPUT
 
+#ifdef WLED_ENABLE_DMX_INPUT
+void initDMX() {
+/* Set the DMX hardware pins to the pins that we want to use. */
+  dmx_set_pin(dmxPort, dmxTransmitPin, dmxReceivePin, dmxEnablePin);
+
+  /* Now we can install the DMX driver! We'll tell it which DMX port to use and
+    which interrupt priority it should have. If you aren't sure which interrupt
+    priority to use, you can use the macro `DMX_DEFAULT_INTR_FLAG` to set the
+    interrupt to its default settings.*/
+  dmx_driver_install(dmxPort, DMX_DEFAULT_INTR_FLAGS);
+}
+  
 bool dmxIsConnected = false;
 unsigned long dmxLastUpdate = 0;
 
@@ -154,4 +160,6 @@ void handleDMXInput() {
     handleDMXData(1, 512, data, 1, REALTIME_MODE_DMX, 0);
   }
 }
+#else
+void initDMX();
 #endif
