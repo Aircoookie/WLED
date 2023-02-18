@@ -19,7 +19,7 @@ Distributed as-is; no warranty is given.
 #ifndef SparkFunDMX_h
 #define SparkFunDMX_h
 
-#define DMX_SEND_ONLY // this disables DMX sending features, and saves us two GPIO pins
+//#define DMX_SEND_ONLY // this disables DMX sending features, and saves us two GPIO pins
 
 // ---- Methods ----
 
