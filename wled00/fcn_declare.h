@@ -78,6 +78,7 @@ uint32_t gamma32(uint32_t);
 //dmx.cpp
 void initDMX();
 void handleDMX();
+void handleDMXInput();
 
 //e131.cpp
 void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol);

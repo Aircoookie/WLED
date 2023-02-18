@@ -94,3 +94,11 @@ void initDMX() {
 void handleDMX() {}
 void initDMX() {}
 #endif
+
+#ifdef WLED_ENABLE_DMX_INPUT
+void handleDMXInput() {
+  dmx.update();
+  dmx.read(1); // TODO - handle code
+  DEBUG_PRINTF("DMX channel 1 = %u", dmx.read(1)); // TODO: remove from final code
+}
+#endif

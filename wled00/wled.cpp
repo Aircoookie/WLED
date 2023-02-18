@@ -57,6 +57,9 @@ void WLED::loop()
 #ifdef WLED_ENABLE_DMX
   handleDMX();
 #endif
+#ifdef WLED_ENABLE_DMX_INPUT
+  handleDMXInput();
+#endif
   userLoop();
 
   #ifdef WLED_DEBUG
