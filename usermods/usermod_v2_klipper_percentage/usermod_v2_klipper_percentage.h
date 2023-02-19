@@ -22,7 +22,7 @@ private:
     // is this the most compact way to do http get and put it in arduinojson object???
     // would like async response ... ???
     client.setTimeout(10000);
-    if (!client.connect("192.168.25.209", 80))
+    if (!client.connect(ip.c_str(), 80))
     {
       strcat(errorMessage, PSTR("Connection failed"));
     }
@@ -30,7 +30,7 @@ private:
     {
       // Send HTTP request
       client.println(F("GET /printer/objects/query?virtual_sdcard=progress HTTP/1.0"));
-      client.println(F("Host: 192.168.25.209"));
+      client.println("Host: " + ip);
       client.println(F("Connection: close"));
       if (client.println() == 0)
       {
@@ -86,11 +86,16 @@ public:
             strcat(errorMessage, error.c_str());
           }
           printPercent = (int)(klipperDoc["result"]["status"]["virtual_sdcard"]["progress"].as<float>() * 100);
-          //DEBUG_PRINTLN(errorMessage);
-          DEBUG_PRINT("Percent: " );
+
+          DEBUG_PRINT("Percent: ");
           DEBUG_PRINTLN((int)(klipperDoc["result"]["status"]["virtual_sdcard"]["progress"].as<float>() * 100));
-          DEBUG_PRINT("LEDs: " );
+          DEBUG_PRINT("LEDs: ");
           DEBUG_PRINTLN(strip.getLengthTotal() * printPercent / 100);
+        }
+        else
+        {
+          DEBUG_PRINTLN(errorMessage);
+          DEBUG_PRINTLN(ip);
         }
         lastTime = millis();
       }
@@ -103,7 +108,6 @@ public:
     top["Enabled"] = enabled;
     top["Klipper IP"] = ip;
     top["Direction"] = direction;
-    
   }
 
   bool readFromConfig(JsonObject &root)
@@ -125,6 +129,7 @@ public:
    * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
    * Below it is shown how this could be used for e.g. a light sensor
    */
+  /* TODO: NOT WORKING YET
   void addToJsonInfo(JsonObject &root)
   {
     JsonObject user = root["u"];
@@ -144,6 +149,7 @@ public:
     infoArr.add(uiDomString);
   }
 
+
   void addToJsonState(JsonObject &root)
   {
     JsonObject usermod = root[FPSTR(_name)];
@@ -153,15 +159,18 @@ public:
     }
     usermod["on"] = enabled;
   }
-  void readFromJsonState(JsonObject& root)
+  void readFromJsonState(JsonObject &root)
+  {
+    JsonObject usermod = root[FPSTR(_name)];
+    if (!usermod.isNull())
     {
-      JsonObject usermod = root[FPSTR(_name)];
-      if (!usermod.isNull()) {
-        if (usermod[FPSTR(_enabled)].is<bool>()) {
-          enabled = usermod[FPSTR(_enabled)].as<bool>();
-        }
+      if (usermod[FPSTR(_enabled)].is<bool>())
+      {
+        enabled = usermod[FPSTR(_enabled)].as<bool>();
       }
     }
+  }
+  */
 
   /*
    * handleOverlayDraw() is called just before every show() (LED strip update frame) after effects have set the colors.
@@ -198,5 +207,5 @@ public:
     return USERMOD_ID_KLIPPER;
   }
 };
-const char klipper_percentage::_name[] PROGMEM = "Klipper Percentage";
+const char klipper_percentage::_name[] PROGMEM = "Klipper_Percentage";
 const char klipper_percentage::_enabled[] PROGMEM = "enabled";

@@ -1,5 +1,7 @@
 # Klipper Percentage Usermod
 This usermod polls the Klipper API every 10s for the progressvalue.
+The leds are then filled with a solid color according to that progress percentage. 
+the solid color is the secondary color of the segment.
 
 A corresponding curl command would be:
 ```
@@ -12,8 +14,21 @@ You can also use the WLBD bot in the Discord by simply extending an exsisting bu
 ```
 [env:esp32klipper]
 extends = env:esp32dev
-build_flags = -D USERMOD_KLIPPER_PERCENTAGE
+build_flags = ${common.build_flags_esp32} -D USERMOD_KLIPPER_PERCENTAGE
 ```
+
+## Settings 
+
+### Enabled:
+Checkbox to enable or disable the overlay
+
+### Klipper IP: 
+IP adress of your Klipper instance you want to poll. ESP has to be restarted after change
+
+### Direction : 
+0 = normal
+
+1 = reversed
 
 -----
 Author:
