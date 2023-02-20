@@ -226,7 +226,7 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
     case FX_MODE_NOISE16_4  : pal = 26; break; // landscape 33
     case FX_MODE_GLITTER    : pal = 11; break; // rainbow colors
     case FX_MODE_SUNRISE    : pal = 35; break; // heat palette
-    case FX_MODE_FLOW       : pal =  6; break; // party
+    case FX_MODE_RAILWAY    : pal =  3; break; // prim + sec
   }
   switch (pal) {
     case 0: //default palette. Exceptions for specific effects above
