@@ -1,5 +1,9 @@
 ## WLED changelog
 
+#### Build 2302180
+
+-   Removed Blynk support (servers shut down on 31st Dec 2022)
+
 #### Build 2301240
 
 -   Version bump to v0.14.0-b2 "Hoshi"
