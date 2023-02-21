@@ -184,7 +184,7 @@
 						if (t > 31 && t < 48) d.getElementsByName("LC"+n)[0].value = 1; // for sanity change analog count just to 1 LED
 					}
 					gId("rf"+n).onclick = (t == 31) ? (()=>{return false}) : (()=>{});  // prevent change for TM1814
-					isRGBW = (t == 30 || t == 31 || (t > 40 && t < 46 && t != 43) || t == 88); // RGBW checkbox, TYPE_xxxx values from const.h
+					isRGBW = ((t > 17 && t < 22) || t == 30 || t == 31 || (t > 40 && t < 46 && t != 43) || t == 88); // RGBW checkbox, TYPE_xxxx values from const.h
 					gId("co"+n).style.display = ((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? "none":"inline";  // hide color order for PWM
 					gId("dig"+n+"w").style.display = (t == 30 || t == 31) ? "inline":"none";  // show swap channels dropdown
 					if (!(t == 30 || t == 31)) d.getElementsByName("WO"+n)[0].value = 0; // reset swapping
@@ -335,6 +335,7 @@ ${i+1}:
 <option value="52">LPD8806</option>\
 <option value="54">LPD6803</option>\
 <option value="53">P9813</option>\
+<option value="19">WS2811 White</option>\
 <option value="40">On/Off</option>\
 <option value="41">PWM White</option>\
 <option value="42">PWM CCT</option>\
@@ -369,7 +370,7 @@ ${i+1}:
 <div id="dig${i}r" style="display:inline"><br><span id="rev${i}">Reversed</span>: <input type="checkbox" name="CV${i}"></div>
 <div id="dig${i}s" style="display:inline"><br>Skip first LEDs: <input type="number" name="SL${i}" min="0" max="255" value="0" oninput="UI()"></div>
 <div id="dig${i}f" style="display:inline"><br>Off Refresh: <input id="rf${i}" type="checkbox" name="RF${i}"></div>
-<div id="dig${i}a" style="display:inline"><br>Auto-calculate white channel from RGB:<br><select name="AW${i}"><option value=0>None</option><option value=1>Brighter</option><option value=2>Accurate</option><option value=3>Dual</option></select>&nbsp;</div>
+<div id="dig${i}a" style="display:inline"><br>Auto-calculate white channel from RGB:<br><select name="AW${i}"><option value=0>None</option><option value=1>Brighter</option><option value=2>Accurate</option><option value=3>Dual</option><option value=4>Max</option></select>&nbsp;</div>
 </div>`;
 				f.insertAdjacentHTML("beforeend", cn);
 			}
@@ -641,7 +642,8 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
 		Apply preset <input name="BP" type="number" class="m" min="0" max="250" required> at boot (0 uses defaults)
 		<br><br>
 		Use Gamma correction for color: <input type="checkbox" name="GC"> (strongly recommended)<br>
-		Use Gamma correction for brightness: <input type="checkbox" name="GB"> (not recommended)<br><br>
+		Use Gamma correction for brightness: <input type="checkbox" name="GB"> (not recommended)<br>
+		Use Gamma value: <input name="GV" type="number" class="m" placeholder="2.8" min="1" max="3" step="0.1" required><br><br>
 		Brightness factor: <input name="BF" type="number" class="m" min="1" max="255" required> %
 		<h3>Transitions</h3>
 		Crossfade: <input type="checkbox" name="TF"><br>
@@ -667,6 +669,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
 				<option value=1>Brighter</option>
 				<option value=2>Accurate</option>
 				<option value=3>Dual</option>
+				<option value=4>Max</option>
 			</select>
 		<br>
 		Calculate CCT from RGB: <input type="checkbox" name="CR"> <br>

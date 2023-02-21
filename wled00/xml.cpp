@@ -364,7 +364,7 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == 2)
   {
-    char nS[8];
+    char nS[32];
 
     appendGPIOinfo();
 
@@ -382,7 +382,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("CR"),cctFromRgb);
     sappend('v',SET_F("CB"),strip.cctBlending);
     sappend('v',SET_F("FR"),strip.getTargetFps());
-    sappend('v',SET_F("AW"),Bus::getAutoWhiteMode());
+    sappend('v',SET_F("AW"),Bus::getGlobalAWMode());
     sappend('v',SET_F("LD"),strip.useLedsArray);
 
     for (uint8_t s=0; s < busses.getNumBusses(); s++) {
@@ -412,7 +412,7 @@ void getSettingsJS(byte subPage, char* dest)
       sappend('c',cv,bus->reversed);
       sappend('v',sl,bus->skippedLeds());
       sappend('c',rf,bus->isOffRefreshRequired());
-      sappend('v',aw,bus->getAWMode());
+      sappend('v',aw,bus->getAutoWhiteMode());
       sappend('v',wo,bus->getColorOrder() >> 4);
     }
     sappend('v',SET_F("MA"),strip.ablMilliampsMax);
@@ -445,6 +445,7 @@ void getSettingsJS(byte subPage, char* dest)
 
     sappend('c',SET_F("GB"),gammaCorrectBri);
     sappend('c',SET_F("GC"),gammaCorrectCol);
+    dtostrf(gammaCorrectVal,3,1,nS); sappends('s',SET_F("GV"),nS);
     sappend('c',SET_F("TF"),fadeTransition);
     sappend('v',SET_F("TD"),transitionDelayDefault);
     sappend('c',SET_F("PF"),strip.paletteFade);
@@ -738,10 +739,6 @@ void getSettingsJS(byte subPage, char* dest)
         sappend('v',SET_F("PH"),strip.panel[0].height);
       }
       sappend('v',SET_F("MPC"),strip.panels);
-      sappend('v',SET_F("PB"),strip.matrix.bottomStart);
-      sappend('v',SET_F("PR"),strip.matrix.rightStart);
-      sappend('v',SET_F("PV"),strip.matrix.vertical);
-      sappend('c',SET_F("PS"),strip.matrix.serpentine);
       // panels
       for (uint8_t i=0; i<strip.panels; i++) {
         char n[5];
