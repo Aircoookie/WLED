@@ -79,6 +79,17 @@
 #define WLED_MAX_COLOR_ORDER_MAPPINGS 10
 #endif
 
+#if defined(WLED_MAX_LEDMAPS) && (WLED_MAX_LEDMAPS > 32 || WLED_MAX_LEDMAPS < 10)
+  #undef WLED_MAX_LEDMAPS
+#endif
+#ifndef WLED_MAX_LEDMAPS
+  #ifdef ESP8266
+    #define WLED_MAX_LEDMAPS 10
+  #else
+    #define WLED_MAX_LEDMAPS 16
+  #endif
+#endif
+
 //Usermod IDs
 #define USERMOD_ID_RESERVED               0     //Unused. Might indicate no usermod present
 #define USERMOD_ID_UNSPECIFIED            1     //Default value for a general user mod that does not specify a custom ID

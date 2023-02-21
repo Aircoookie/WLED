@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2302120
+#define VERSION 2302150
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -319,6 +319,7 @@ WLED_GLOBAL bool correctWB       _INIT(false); // CCT color correction of RGB co
 WLED_GLOBAL bool cctFromRgb      _INIT(false); // CCT is calculated from RGB instead of using seg.cct
 WLED_GLOBAL bool gammaCorrectCol _INIT(true ); // use gamma correction on colors
 WLED_GLOBAL bool gammaCorrectBri _INIT(false); // use gamma correction on brightness
+WLED_GLOBAL float gammaCorrectVal _INIT(2.8f); // gamma correction value
 
 WLED_GLOBAL byte col[]    _INIT_N(({ 255, 160, 0, 0 }));  // current RGB(W) primary color. col[] should be updated if you want to change the color.
 WLED_GLOBAL byte colSec[] _INIT_N(({ 0, 0, 0, 0 }));      // current RGB(W) secondary color
@@ -677,7 +678,14 @@ WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
 WLED_GLOBAL BusConfig* busConfigs[WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES] _INIT({nullptr}); //temporary, to remember values from network callback until after
 WLED_GLOBAL bool doInitBusses _INIT(false);
 WLED_GLOBAL int8_t loadLedmap _INIT(-1);
+#ifndef ESP8266
+WLED_GLOBAL char  *ledmapNames[WLED_MAX_LEDMAPS-1] _INIT_N(({nullptr}));
+#endif
+#if WLED_MAX_LEDMAPS>16
+WLED_GLOBAL uint32_t ledMaps _INIT(0); // bitfield representation of available ledmaps
+#else
 WLED_GLOBAL uint16_t ledMaps _INIT(0); // bitfield representation of available ledmaps
+#endif
 
 // Usermod manager
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
