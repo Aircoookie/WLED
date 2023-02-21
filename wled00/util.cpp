@@ -503,12 +503,49 @@ um_data_t* simulateSound(uint8_t simulationId)
 }
 
 
+// enumerate all ledmapX.json files on FS and extract ledmap names if existing
 void enumerateLedmaps() {
   ledMaps = 1;
-  for (size_t i=1; i<10; i++) {
-    char fileName[16];
+  for (size_t i=1; i<WLED_MAX_LEDMAPS; i++) {
+    char fileName[33];
     sprintf_P(fileName, PSTR("/ledmap%d.json"), i);
     bool isFile = WLED_FS.exists(fileName);
-    if (isFile) ledMaps |= 1 << i;
+
+    #ifndef ESP8266
+    if (ledmapNames[i-1]) { //clear old name
+      delete[] ledmapNames[i-1];
+      ledmapNames[i-1] = nullptr;
+    }
+    #endif
+
+    if (isFile) {
+      ledMaps |= 1 << i;
+
+      #ifndef ESP8266
+      if (requestJSONBufferLock(21)) {
+        if (readObjectFromFile(fileName, nullptr, &doc)) {
+          size_t len = 0;
+          if (!doc["n"].isNull()) {
+            // name field exists
+            const char *name = doc["n"].as<const char*>();
+            if (name != nullptr) len = strlen(name);
+            if (len > 0 && len < 33) {
+              ledmapNames[i-1] = new char[len+1];
+              if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], name, 33);
+            }
+          }
+          if (!ledmapNames[i-1]) {
+            char tmp[33];
+            snprintf_P(tmp, 32, PSTR("ledmap%d.json"), i);
+            len = strlen(tmp);
+            ledmapNames[i-1] = new char[len+1];
+            if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], tmp, 33);
+          }
+        }
+        releaseJSONBufferLock();
+      }
+      #endif
+    }
+
   }
 }

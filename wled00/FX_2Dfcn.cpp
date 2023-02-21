@@ -78,20 +78,59 @@ void WS2812FX::setUpMatrix() {
         customMappingTable[i] = (uint16_t)-1;
       }
 
+      // we will try to load a "gap" array (a JSON file)
+      // the array has to have the same amount of values as mapping array (or larger)
+      // "gap" array is used while building ledmap (mapping array)
+      // and discarded afterwards as it has no meaning after the process
+      // content of the file is just raw JSON array in the form of [val1,val2,val3,...]
+      // there are no other "key":"value" pairs in it
+      // allowed values are: -1 (missing pixel/no LED attached), 0 (inactive/unused pixel), 1 (active/used pixel)
+      char    fileName[32]; strcpy_P(fileName, PSTR("/2d-gaps.json")); // reduce flash footprint
+      bool    isFile = WLED_FS.exists(fileName);
+      size_t  gapSize = 0;
+      int8_t *gapTable = nullptr;
+
+      if (isFile && requestJSONBufferLock(20)) {
+        DEBUG_PRINT(F("Reading LED gap from "));
+        DEBUG_PRINTLN(fileName);
+        // read the array into global JSON buffer
+        if (readObjectFromFile(fileName, nullptr, &doc)) {
+          // the array is similar to ledmap, except it has only 3 values:
+          // -1 ... missing pixel (do not increase pixel count)
+          //  0 ... inactive pixel (it does count, but should be mapped out (-1))
+          //  1 ... active pixel (it will count and will be mapped)
+          JsonArray map = doc.as<JsonArray>();
+          gapSize = map.size();
+          if (!map.isNull() && gapSize >= customMappingSize) { // not an empty map
+            gapTable = new int8_t[gapSize];
+            if (gapTable) for (size_t i = 0; i < gapSize; i++) {
+              gapTable[i] = constrain(map[i], -1, 1);
+            }
+          }
+        }
+        DEBUG_PRINTLN(F("Gaps loaded."));
+        releaseJSONBufferLock();
+      }
+
       uint16_t x, y, pix=0; //pixel
       for (size_t pan = 0; pan < panel.size(); pan++) {
         Panel &p = panel[pan];
         uint16_t h = p.vertical ? p.height : p.width;
         uint16_t v = p.vertical ? p.width  : p.height;
         for (size_t j = 0; j < v; j++){
-          for(size_t i = 0; i < h; i++, pix++) {
+          for(size_t i = 0; i < h; i++) {
             y = (p.vertical?p.rightStart:p.bottomStart) ? v-j-1 : j;
             x = (p.vertical?p.bottomStart:p.rightStart) ? h-i-1 : i;
             x = p.serpentine && j%2 ? h-x-1 : x;
-            customMappingTable[(p.yOffset + (p.vertical?x:y)) * Segment::maxWidth + p.xOffset + (p.vertical?y:x)] = pix;
+            size_t index = (p.yOffset + (p.vertical?x:y)) * Segment::maxWidth + p.xOffset + (p.vertical?y:x);
+            if (!gapTable || (gapTable && gapTable[index] >  0)) customMappingTable[index] = pix; // a useful pixel (otherwise -1 is retained)
+            if (!gapTable || (gapTable && gapTable[index] >= 0)) pix++; // not a missing pixel
           }
         }
       }
+
+      // delete gap array as we no longer need it
+      if (gapTable) delete[] gapTable;
 
       #ifdef WLED_DEBUG
       DEBUG_PRINT(F("Matrix ledmap:"));
@@ -108,8 +147,8 @@ void WS2812FX::setUpMatrix() {
       panel.clear();
       Segment::maxWidth = _length;
       Segment::maxHeight = 1;
+      resetSegments();
     }
-    resetSegments();
   }
 #else
   isMatrix = false; // no matter what config says

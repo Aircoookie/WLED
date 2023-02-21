@@ -166,15 +166,14 @@ void WLED::loop()
       }
       delete busConfigs[i]; busConfigs[i] = nullptr;
     }
-    strip.finalizeInit();
-    loadLedmap = 0;
+    strip.finalizeInit(); // also loads default ledmap if present
     if (aligned) strip.makeAutoSegments();
     else strip.fixInvalidSegments();
     yield();
     serializeConfig();
   }
   if (loadLedmap >= 0) {
-    strip.deserializeMap(loadLedmap);
+    if (!strip.deserializeMap(loadLedmap) && strip.isMatrix && loadLedmap == 0) strip.setUpMatrix();
     loadLedmap = -1;
   }
 

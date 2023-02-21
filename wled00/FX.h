@@ -460,7 +460,7 @@ typedef struct Segment {
       _dataLen(0),
       _t(nullptr)
     {
-      refreshLightCapabilities();
+      //refreshLightCapabilities();
     }
 
     Segment(uint16_t sStartX, uint16_t sStopX, uint16_t sStartY, uint16_t sStopY) : Segment(sStartX, sStopX) {
@@ -659,7 +659,6 @@ class WS2812FX {  // 96 bytes
       isMatrix(false),
 #ifndef WLED_DISABLE_2D
       panels(1),
-      matrix{0,0,0,0},
 #endif
       // semi-private (just obscured) used in effect functions through macros
       _currentPalette(CRGBPalette16(CRGB::Black)),
@@ -727,8 +726,7 @@ class WS2812FX {  // 96 bytes
       fixInvalidSegments(),
       setPixelColor(int n, uint32_t c),
       show(void),
-      setTargetFps(uint8_t fps),
-      deserializeMap(uint8_t n=0);
+      setTargetFps(uint8_t fps);
 
     void fill(uint32_t c) { for (int i = 0; i < _length; i++) setPixelColor(i, c); } // fill whole strip with color (inline)
     void addEffect(uint8_t id, mode_ptr mode_fn, const char *mode_name); // add effect to the list; defined in FX.cpp
@@ -748,6 +746,7 @@ class WS2812FX {  // 96 bytes
       hasCCTBus(void),
       // return true if the strip is being sent pixel updates
       isUpdating(void),
+      deserializeMap(uint8_t n=0),
       useLedsArray = false;
 
     inline bool isServicing(void) { return _isServicing; }
@@ -812,13 +811,6 @@ class WS2812FX {  // 96 bytes
     #define WLED_MAX_PANELS 64
     uint8_t
       panels;
-
-    struct {
-      bool bottomStart : 1;
-      bool rightStart  : 1;
-      bool vertical    : 1;
-      bool serpentine  : 1;
-    } matrix;
 
     typedef struct panel_t {
       uint16_t xOffset; // x offset relative to the top left of matrix in LEDs
