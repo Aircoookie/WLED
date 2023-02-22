@@ -504,7 +504,6 @@ um_data_t* simulateSound(uint8_t simulationId)
   return um_data;
 }
 
-
 //WLEDMM enumerateLedmaps moved to FX_fcn.cpp
 
 //WLEDMM netmindz ar palette

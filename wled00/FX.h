@@ -465,7 +465,7 @@ typedef struct Segment {
       _dataLen(0),
       _t(nullptr)
     {
-      refreshLightCapabilities();
+      //refreshLightCapabilities();
     }
 
     Segment(uint16_t sStartX, uint16_t sStopX, uint16_t sStartY, uint16_t sStopY) : Segment(sStartX, sStopX) {
@@ -668,7 +668,6 @@ class WS2812FX {  // 96 bytes
       isMatrix(false),
 #ifndef WLED_DISABLE_2D
       panels(1),
-      matrix{0,0,0,0},
 #endif
       // semi-private (just obscured) used in effect functions through macros
       _currentPalette(CRGBPalette16(CRGB::Black)),
@@ -737,7 +736,6 @@ class WS2812FX {  // 96 bytes
       setPixelColor(int n, uint32_t c),
       show(void),
       setTargetFps(uint8_t fps),
-      deserializeMap(uint8_t n=0),
       enumerateLedmaps(); //WLEDMM (from fcn_declare)
 
     void fill(uint32_t c) { for (int i = 0; i < _length; i++) setPixelColor(i, c); } // fill whole strip with color (inline)
@@ -758,7 +756,8 @@ class WS2812FX {  // 96 bytes
       hasCCTBus(void),
       // return true if the strip is being sent pixel updates
       isUpdating(void),
-      useLedsArray = true; //WLEDMM default true as recommended for overlapping segments
+      deserializeMap(uint8_t n=0),
+      useLedsArray = false;
 
     inline bool isServicing(void) { return _isServicing; }
     inline bool hasWhiteChannel(void) {return _hasWhiteChannel;}
@@ -825,9 +824,9 @@ class WS2812FX {  // 96 bytes
       panelsH, //WLEDMM needs to be stored as well
       panelsV; //WLEDMM needs to be stored as well
 
+    //WLEDMM: keep storing basic 2d setup
     bool
       bOrA; //WLEDMM basic or advanced
-      
     struct {
       bool bottomStart : 1;
       bool rightStart  : 1;
@@ -839,7 +838,7 @@ class WS2812FX {  // 96 bytes
       bool rightStart  : 1;
       bool vertical    : 1;
       bool serpentine  : 1;
-    } panelO; //WLEDMM panelOrientation
+    } panelO; //panelOrientation
 
     typedef struct panel_t {
       uint8_t xOffset; // x offset relative to the top left of matrix in LEDs. WLEDMM 8 bits/256 is enough

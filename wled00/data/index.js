@@ -843,8 +843,9 @@ function populateSegments(s)
 	gId('segutil2').style.display = (segCount > 1) ? "block":"none"; // rsbtn parent
 
 	if (Array.isArray(li.maps) && li.maps.length>0) { //WLEDMM >0 instead of 1 to show also first ledmap. Attention: WLED AC has isM check, in MM Matrices are supported so do not check on isM
+		console.log("ledmap dropdown", li.maps, ledmapFileNames);
 		let cont = `Ledmap:&nbsp;<select class="sel-sg" onchange="requestJson({'ledmap':parseInt(this.value)})">`; //WLEDMM remove <option value="" selected>Unchanged</option>
-		for (const k of (li.maps||[])) cont += `<option value="${k}"${(i>0 && ledmapNr==k)?" selected":""}>${k==0?'Default':(k<10?'ledmap'+k+'.json':ledmapFileNames[k-10])}</option>`; //WLEDMM set ledmap selected, use ledmapFileNames
+		for (const k of (li.maps||[])) cont += `<option value="${k.id}"${(i>0 && ledmapNr==k.id)?" selected":""}>${k.id==0?'Default':(k.id<10?'ledmap'+k.id+'.json':ledmapFileNames[k.id-10])}</option>`; //WLEDMM set ledmap selected, use ledmapFileNames
 		cont += "</select></div>";
 		gId("ledmap").innerHTML = cont;
 		gId("ledmap").classList.remove('hide');
@@ -2135,7 +2136,7 @@ ${makePlSel(plJson[i].end?plJson[i].end:0, true)}
 </label>`;
 		if (Array.isArray(lastinfo.maps) && lastinfo.maps.length>0) { //WLEDMM >0 instead of 1 to show also first ledmap. Attention: WLED AC has isM check, in MM Matrices are supported so do not check on isM
 			content += `<div class="lbl-l">Ledmap:&nbsp;<div class="sel-p"><select class="sel-p" id="p${i}lmp"><option value="">Unchanged</option>`;
-			for (const k of (lastinfo.maps||[])) content += `<option value="${k}"${(i>0 && pJson[i].ledmap==k)?" selected":""}>${k==0?'Default':(k<10?'ledmap'+k+'.json':ledmapFileNames[k-10])}</option>`;
+			for (const k of (lastinfo.maps||[])) content += `<option value="${k.id}"${(i>0 && pJson[i].ledmap==k.id)?" selected":""}>${k.id==0?'Default':(k.id<10?'ledmap'+k.id+'.json':ledmapFileNames[k.id-10])}</option>`;
 			content += "</select></div></div>";
 		}
 	}
@@ -2330,7 +2331,7 @@ function setSeg(s)
 		obj.seg.grp = grp;
 		obj.seg.spc = spc;
 		obj.seg.of  = ofs;
-		if (isM) obj.seg.tp = gId(`seg${s}tp`).checked;
+		if (isM && gId(`seg${s}tp`)) obj.seg.tp = gId(`seg${s}tp`).checked;
 	}
 	resetUtil(); // close add segment dialog just in case
 	requestJson(obj);

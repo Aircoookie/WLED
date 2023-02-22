@@ -339,11 +339,6 @@ void loadSettingsFromEEPROM()
   //custom macro memory (16 slots/ each 64byte)
   //1024-2047 reserved
 
-  #ifndef WLED_DISABLE_BLYNK
-  readStringFromEEPROM(2220, blynkApiKey, 35);
-  if (strlen(blynkApiKey) < 25) blynkApiKey[0] = 0;
-  #endif
-
   #ifdef WLED_ENABLE_DMX
   // DMX (2530 - 2549)2535
   DMXChannels = EEPROM.read(2530);

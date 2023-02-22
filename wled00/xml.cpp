@@ -377,7 +377,7 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
 
   if (subPage == 2)
   {
-    char nS[8];
+    char nS[32];
 
     appendGPIOinfo();
 
@@ -458,6 +458,7 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
 
     sappend('c',SET_F("GB"),gammaCorrectBri);
     sappend('c',SET_F("GC"),gammaCorrectCol);
+    dtostrf(gammaCorrectVal,3,1,nS); sappends('s',SET_F("GV"),nS);
     sappend('c',SET_F("TF"),fadeTransition);
     sappend('v',SET_F("TD"),transitionDelayDefault);
     sappend('c',SET_F("PF"),strip.paletteFade);
@@ -528,6 +529,7 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
 #endif    
     sappend('v',SET_F("DA"),DMXAddress);
     sappend('v',SET_F("XX"),DMXSegmentSpacing);
+    sappend('v',SET_F("PY"),e131Priority);
     sappend('v',SET_F("DM"),DMXMode);
     sappend('v',SET_F("ET"),realtimeTimeoutMs);
     sappend('c',SET_F("FB"),arlsForceMaxBri);
@@ -539,13 +541,6 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
     sappend('v',SET_F("AP"),alexaNumPresets);
     #ifdef WLED_DISABLE_ALEXA
     oappend(SET_F("toggle('Alexa');"));  // hide Alexa settings
-    #endif
-    sappends('s',SET_F("BK"),(char*)((blynkEnabled)?SET_F("Hidden"):""));
-    #ifndef WLED_DISABLE_BLYNK
-    sappends('s',SET_F("BH"),blynkHost);
-    sappend('v',SET_F("BP"),blynkPort);
-    #else
-    oappend(SET_F("toggle('Blynk');"));    // hide BLYNK settings
     #endif
 
     #ifdef WLED_ENABLE_MQTT
@@ -801,17 +796,20 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
         sappend('v',SET_F("PH"),strip.panel[0].height);
       }
       sappend('v',SET_F("MPC"),strip.panels);
+
+      //WLEDMM: keep storing basic 2d setup
       sappend('v',SET_F("BA"),strip.bOrA); //WLEDMM basic or advanced
-      sappend('v',SET_F("MPH"),strip.panelsH); //WLEDMM needs to be stored as well
-      sappend('v',SET_F("MPV"),strip.panelsV); //WLEDMM needs to be stored as well
+      sappend('v',SET_F("MPH"),strip.panelsH);
+      sappend('v',SET_F("MPV"),strip.panelsV);
       sappend('v',SET_F("PB"),strip.matrix.bottomStart);
       sappend('v',SET_F("PR"),strip.matrix.rightStart);
       sappend('v',SET_F("PV"),strip.matrix.vertical);
       sappend('c',SET_F("PS"),strip.matrix.serpentine);
-      sappend('v',SET_F("PBL"),strip.panelO.bottomStart); //WLEDMM
-      sappend('v',SET_F("PRL"),strip.panelO.rightStart); //WLEDMM
-      sappend('v',SET_F("PVL"),strip.panelO.vertical); //WLEDMM
-      sappend('c',SET_F("PSL"),strip.panelO.serpentine); //WLEDMM
+      sappend('v',SET_F("PBL"),strip.panelO.bottomStart);
+      sappend('v',SET_F("PRL"),strip.panelO.rightStart);
+      sappend('v',SET_F("PVL"),strip.panelO.vertical);
+      sappend('c',SET_F("PSL"),strip.panelO.serpentine);
+      
       //WLEDMM: add Total LEDs
       uint16_t ledCount = 0;
       for (int8_t b = 0; b < busses.getNumBusses(); b++) {
