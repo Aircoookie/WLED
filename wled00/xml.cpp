@@ -274,16 +274,16 @@ void appendGPIOinfo() {
   #endif
   oappend(SET_F(";"));
 
-  char dt_pins[48]; // fix warning: output 45 bytes into a destination of size 30
+  char dt_pins[64] = { '\0' }; // fix warning: output 45 bytes into a destination of size 30
   #if defined(ESP8266) && !defined(ARDUINO_ESP8266_ESP01)
-  sprintf(dt_pins, "d.dt_pins=[%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d];", D0, D1, D2, D3, D4, D5, D6, D7, D8, hardwareRX, hardwareTX);
+  snprintf(dt_pins, 64, "d.dt_pins=[%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d];", D0, D1, D2, D3, D4, D5, D6, D7, D8, hardwareRX, hardwareTX);
   #else
-  sprintf(dt_pins, "d.dt_pins=[%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d];", PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, hardwareRX, hardwareTX);
+  snprintf(dt_pins, 64, "d.dt_pins=[%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d];", PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, hardwareRX, hardwareTX);
   #endif
   oappend(dt_pins);
 
-  char a_pins[48]; // fix warning: output 45 bytes into a destination of size 30
-  sprintf(a_pins, "d.a_pins=[%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d];", pinManager.getADCPin(PM_ADC1, 0), pinManager.getADCPin(PM_ADC1, 1), pinManager.getADCPin(PM_ADC1, 2), pinManager.getADCPin(PM_ADC1, 3), pinManager.getADCPin(PM_ADC1, 4), pinManager.getADCPin(PM_ADC1, 5), pinManager.getADCPin(PM_ADC1, 6), pinManager.getADCPin(PM_ADC1, 7), pinManager.getADCPin(PM_ADC1, 8), pinManager.getADCPin(PM_ADC1, 9), pinManager.getADCPin(PM_ADC1, 10));
+  char a_pins[64]  = { '\0' }; // fix warning: output 45 bytes into a destination of size 30
+  snprintf(a_pins, 64, "d.a_pins=[%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d];", pinManager.getADCPin(PM_ADC1, 0), pinManager.getADCPin(PM_ADC1, 1), pinManager.getADCPin(PM_ADC1, 2), pinManager.getADCPin(PM_ADC1, 3), pinManager.getADCPin(PM_ADC1, 4), pinManager.getADCPin(PM_ADC1, 5), pinManager.getADCPin(PM_ADC1, 6), pinManager.getADCPin(PM_ADC1, 7), pinManager.getADCPin(PM_ADC1, 8), pinManager.getADCPin(PM_ADC1, 9), pinManager.getADCPin(PM_ADC1, 10));
   oappend(a_pins);
 }
 
