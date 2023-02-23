@@ -30,6 +30,8 @@ IP adress of your Klipper instance you want to poll. ESP has to be restarted aft
 
 1 = reversed
 
+2 = center
+
 -----
 Author:
 

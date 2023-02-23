@@ -70,34 +70,36 @@ public:
 
   void loop()
   {
-
-    if (WLED_CONNECTED)
+    if (enabled)
     {
-      if (millis() - lastTime > 10000)
+      if (WLED_CONNECTED)
       {
-        httpGet(wifiClient, errorMessage);
-        if (strcmp(errorMessage, "") == 0)
+        if (millis() - lastTime > 10000)
         {
-          PSRAMDynamicJsonDocument klipperDoc(4096); // in practive about 2673
-          DeserializationError error = deserializeJson(klipperDoc, wifiClient);
-          if (error)
+          httpGet(wifiClient, errorMessage);
+          if (strcmp(errorMessage, "") == 0)
           {
-            strcat(errorMessage, PSTR("deserializeJson() failed: "));
-            strcat(errorMessage, error.c_str());
-          }
-          printPercent = (int)(klipperDoc["result"]["status"]["virtual_sdcard"]["progress"].as<float>() * 100);
+            PSRAMDynamicJsonDocument klipperDoc(4096); // in practive about 2673
+            DeserializationError error = deserializeJson(klipperDoc, wifiClient);
+            if (error)
+            {
+              strcat(errorMessage, PSTR("deserializeJson() failed: "));
+              strcat(errorMessage, error.c_str());
+            }
+            printPercent = (int)(klipperDoc["result"]["status"]["virtual_sdcard"]["progress"].as<float>() * 100);
 
-          DEBUG_PRINT("Percent: ");
-          DEBUG_PRINTLN((int)(klipperDoc["result"]["status"]["virtual_sdcard"]["progress"].as<float>() * 100));
-          DEBUG_PRINT("LEDs: ");
-          DEBUG_PRINTLN(strip.getLengthTotal() * printPercent / 100);
+            DEBUG_PRINT("Percent: ");
+            DEBUG_PRINTLN((int)(klipperDoc["result"]["status"]["virtual_sdcard"]["progress"].as<float>() * 100));
+            DEBUG_PRINT("LEDs: ");
+            DEBUG_PRINTLN(direction == 2 ? (strip.getLengthTotal() / 2) * printPercent / 100 : strip.getLengthTotal() * printPercent / 100);
+          }
+          else
+          {
+            DEBUG_PRINTLN(errorMessage);
+            DEBUG_PRINTLN(ip);
+          }
+          lastTime = millis();
         }
-        else
-        {
-          DEBUG_PRINTLN(errorMessage);
-          DEBUG_PRINTLN(ip);
-        }
-        lastTime = millis();
       }
     }
   }
@@ -129,7 +131,6 @@ public:
    * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
    * Below it is shown how this could be used for e.g. a light sensor
    */
-  /* TODO: NOT WORKING YET
   void addToJsonInfo(JsonObject &root)
   {
     JsonObject user = root["u"];
@@ -148,7 +149,6 @@ public:
     uiDomString += F("</button>");
     infoArr.add(uiDomString);
   }
-
 
   void addToJsonState(JsonObject &root)
   {
@@ -170,7 +170,6 @@ public:
       }
     }
   }
-  */
 
   /*
    * handleOverlayDraw() is called just before every show() (LED strip update frame) after effects have set the colors.
@@ -188,12 +187,24 @@ public:
           strip.setPixelColor(i, strip.getSegment(0).colors[1]);
         }
       }
-      else // reversed
+      else if (direction == 1) // reversed
       {
         for (int i = 0; i < strip.getLengthTotal() * printPercent / 100; i++)
         {
           strip.setPixelColor(strip.getLengthTotal() - i, strip.getSegment(0).colors[1]);
         }
+      }
+      else if (direction == 2) // center
+      {
+        for (int i = 0; i < (strip.getLengthTotal() / 2) * printPercent / 100; i++)
+        {
+          strip.setPixelColor((strip.getLengthTotal() / 2) + i, strip.getSegment(0).colors[1]);
+          strip.setPixelColor((strip.getLengthTotal() / 2) - i, strip.getSegment(0).colors[1]);
+        }
+      }
+      else
+      {
+        direction = 0;
       }
     }
   }
