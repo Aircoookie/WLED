@@ -228,6 +228,7 @@ void WLED::loop()
     avgUsermodMillis = 0;
     avgStripMillis = 0;
     debugTime = millis();
+    DEBUG_PRINTLN(F("---END OF DEBUG INFO---"));
   }
   loops++;
 #endif        // WLED_DEBUG

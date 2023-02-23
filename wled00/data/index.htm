@@ -313,11 +313,13 @@
 			<button class="btn btn-s" id="rsbtn" onclick="rSegs()">Reset segments</button>
 		</div>
 		<!--WLEDMM Segment graphics-->
-		<br>
-		<canvas id="canvasSegments" hidden=true></canvas><br>
-		<br>
-		<canvas id="canvasPeek"></canvas><br>
-		<div id="MD"></div> <!-- Matrix dimensions -->
+		<div id="segvis">
+			<br>
+			<canvas id="canvasSegments"></canvas><br>
+			<br>
+			<canvas id="canvasPeek"></canvas><br>
+			<div id="MD"></div> <!-- Matrix dimensions -->
+		</div>
 		<br>
 		<p>Transition: <input id="tt" class="noslide" type="number" min="0" max="65.5" step="0.1" value="0.7">&nbsp;s</p>
 		<p id="ledmap" class="hide"></p>

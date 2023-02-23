@@ -826,7 +826,7 @@ class WS2812FX {  // 96 bytes
 
     //WLEDMM: keep storing basic 2d setup
     bool
-      bOrA; //WLEDMM basic or advanced
+      bOrA = false; //WLEDMM basic or advanced, default basic
     struct {
       bool bottomStart : 1;
       bool rightStart  : 1;

@@ -51,8 +51,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   //WLEDMM add USER_PRINT
   String temp;
   serializeJson(elem, temp);
-  USER_PRINT("deserializeSegment ");
-  USER_PRINTLN(temp);
+  USER_PRINTF("deserializeSegment %s\n", temp.c_str());
 
   byte id = elem["id"] | it;
   if (id >= strip.getMaxSegments()) return;
@@ -339,8 +338,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   //WLEDMM add USER_PRINT
   String temp;
   serializeJson(root, temp);
-  USER_PRINT("deserializeState ");
-  USER_PRINTLN(temp);
+  USER_PRINTF("deserializeState %s\n", temp.c_str());
 
   bool stateResponse = root[F("v")] | false;
 
@@ -512,6 +510,11 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
 void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset, bool segmentBounds)
 {
+  //WLEDMM add USER_PRINT
+  String temp;
+  serializeJson(root, temp);
+  DEBUG_PRINTF("serializeSegment %s\n", temp.c_str());
+
   root["id"] = id;
   if (segmentBounds) {
     root["start"] = seg.start;
@@ -577,6 +580,11 @@ void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset, b
 
 void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segmentBounds, bool selectedSegmentsOnly)
 {
+  //WLEDMM add USER_PRINT
+  String temp;
+  serializeJson(root, temp);
+  DEBUG_PRINTF("serializeState %s\n", temp.c_str());
+
   if (includeBri) {
     root["on"] = (bri > 0);
     root["bri"] = briLast;
@@ -1254,7 +1262,7 @@ void serveJson(AsyncWebServerRequest* request)
       //lDoc["m"] = lDoc.memoryUsage(); // JSON buffer usage, for remote debugging
   }
 
-  DEBUG_PRINTF("JSON buffer size: %u for request: %d\n", lDoc.memoryUsage(), subJson);
+  DEBUG_PRINTF("JSON buffer size: %u for request: %d (%s)\n", lDoc.memoryUsage(), subJson, url.c_str());
 
   response->setLength();
   request->send(response);
