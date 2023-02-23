@@ -133,6 +133,7 @@ void WS2812FX::setUpMatrix(bool reset) {
             if (customMappingSizeLedmap > 0) {  //WLEDMM: @Troy#2642 : include ledmap = 0 as default ledmap
               if (index < customMappingSizeLedmap && customMappingTable[index] < customMappingSize)
                   customMappingTableCombi[customMappingTable[index]] = pix; //WLEDMM: allow for 2 transitions if reset = false (ledmap and logical to physical)
+              pix++;
             }
             else {
               if (!gapTable || (gapTable && gapTable[index] >  0)) customMappingTable[index] = pix; // a useful pixel (otherwise -1 is retained)
@@ -140,6 +141,13 @@ void WS2812FX::setUpMatrix(bool reset) {
             }
           }
         }
+      }
+
+      if (customMappingSizeLedmap > 0) { //WLEDMM: @Troy#2642 : include ledmap = 0 as default ledmap
+        for (size_t i = 0; i < customMappingSize; i++) {
+          customMappingTable[i] = customMappingTableCombi[i];
+        }
+        delete[] customMappingTableCombi;
       }
 
       // delete gap array as we no longer need it
@@ -160,7 +168,7 @@ void WS2812FX::setUpMatrix(bool reset) {
       panel.clear();
       Segment::maxWidth = _length;
       Segment::maxHeight = 1;
-      resetSegments();
+      //WLEDMM: no resetSegments here, only do it in set.cpp/handleSettingsSet
     }
   }
 #else
