@@ -448,7 +448,7 @@ void WLED::setup()
   fsinit = WLED_FS.begin();
 #endif
   if (!fsinit) {
-    DEBUG_PRINTLN(F("FS failed!"));
+    USER_PRINTLN(F("Mount FS failed!"));  // WLEDMM
     errorFlag = ERR_FS_BEGIN;
   }
 #ifdef WLED_ADD_EEPROM_SUPPORT
@@ -652,7 +652,11 @@ void WLED::initAP(bool resetAP)
   USER_PRINT(F("Opening access point "));  // WLEDMM
   USER_PRINTLN(apSSID);                    // WLEDMM
   WiFi.softAPConfig(IPAddress(4, 3, 2, 1), IPAddress(4, 3, 2, 1), IPAddress(255, 255, 255, 0));
-  WiFi.softAP(apSSID, apPass, apChannel, apHide);
+  if (!WiFi.softAP(apSSID, apPass, apChannel, apHide)) {   // WLEDMM softAp() will return true in case of success and false in case of failure.
+    USER_PRINTLN(F("Access point creation failed."));
+    apActive = false;
+    return;
+  }
 
   if (!apActive) // start captive portal if AP active
   {
