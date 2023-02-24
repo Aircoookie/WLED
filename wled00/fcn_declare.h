@@ -52,6 +52,7 @@ bool getJsonValue(const JsonVariant& element, DestType& destination, const Defau
 //colors.cpp
 uint32_t color_blend(uint32_t,uint32_t,uint16_t,bool b16=false);
 uint32_t color_add(uint32_t,uint32_t);
+void colorFromRGB(uint8_t r, uint8_t g, uint8_t b, uint16_t* hsb);
 inline uint32_t colorFromRgbw(byte* rgbw) { return uint32_t((byte(rgbw[3]) << 24) | (byte(rgbw[0]) << 16) | (byte(rgbw[1]) << 8) | (byte(rgbw[2]))); }
 void colorHStoRGB(uint16_t hue, byte sat, byte* rgb); //hue, sat to rgb
 void colorKtoRGB(uint16_t kelvin, byte* rgb);
@@ -94,6 +95,10 @@ void onHueError(void* arg, AsyncClient* client, int8_t error);
 void onHueConnect(void* arg, AsyncClient* client);
 void sendHuePoll();
 void onHueData(void* arg, AsyncClient* client, void *data, size_t len);
+
+//homekit.cpp
+void homekitInit();
+void handleHomeKit();
 
 //improv.cpp
 void handleImprovPacket();

@@ -2,6 +2,8 @@
 
 #include "palettes.h"
 
+#include "my_config.h"
+
 #define JSON_PATH_STATE      1
 #define JSON_PATH_INFO       2
 #define JSON_PATH_STATE_INFO 3
@@ -743,6 +745,13 @@ void serializeInfo(JsonObject root)
     sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
   }
   root["ip"] = s;
+
+  // HomeKit
+  JsonObject homekit = root.createNestedObject("hk");
+  homekit[F("id")] = HK_SETUP_ID;
+  homekit[F("code")] = HK_PAIRING_CODE;
+  homekit[F("category")] = HK_CATEGORY;
+  homekit[F("flag")] = HK_FLAG;
 }
 
 void setPaletteColors(JsonArray json, CRGBPalette16 palette)

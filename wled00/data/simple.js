@@ -511,6 +511,7 @@ function populateInfo(i)
 
 	cn += `v${i.ver} "${vcn}"<br><br><table>
 ${urows}
+${inforow("HomeKit Code",i.hk.code)}
 ${inforow("Build",i.vid)}
 ${inforow("Signal strength",i.wifi.signal +"% ("+ i.wifi.rssi, " dBm)")}
 ${inforow("Uptime",getRuntimeStr(i.uptime))}

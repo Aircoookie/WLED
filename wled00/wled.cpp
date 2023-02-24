@@ -72,6 +72,9 @@ void WLED::loop()
   #ifndef WLED_DISABLE_ALEXA
   handleAlexa();
   #endif
+  #if !defined(WLED_DISABLE_HOMEKIT) && defined(ARDUINO_ARCH_ESP32)
+  handleHomeKit();
+  #endif
 
   yield();
 
@@ -680,6 +683,10 @@ void WLED::initInterfaces()
   // init Alexa hue emulation
   if (alexaEnabled)
     alexaInit();
+#endif
+
+#if !defined(WLED_DISABLE_HOMEKIT) && defined(ARDUINO_ARCH_ESP32)
+  homekitInit();
 #endif
 
 #ifndef WLED_DISABLE_OTA

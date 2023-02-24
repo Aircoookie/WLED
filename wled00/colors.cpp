@@ -372,3 +372,48 @@ uint32_t gamma32(uint32_t color)
   b = gammaT[b];
   return RGBW32(r, g, b, w);
 }
+
+// H {0, 360}
+// S {0, 255}
+// V {0, 255}
+void colorFromRGB(uint8_t r, uint8_t g, uint8_t b, uint16_t* hsb) {
+  uint8_t cmax = max(r, max(g, b));  // maximum of r, g, b
+  uint8_t cmin = min(r, min(g, b));  // minimum of r, g, b
+  uint8_t delta = cmax - cmin;        // diff of cmax and cmin.
+  int h = 0, s = 0;
+
+  if (delta == 0) {
+    h = 0;
+    s = 0;
+  } else {
+    if (cmax == cmin) {
+      h = 0;    
+    } else if (cmax == r) {
+      h = (60 * (g - b)) / delta;
+    } else if (cmax == g) {
+      h = ((60 * (b - r)) / delta) + 120;
+    } else if (cmax == b) {
+      h = ((60 * (r - g)) / delta) + 240;
+    }
+
+    while (h < 0) {
+      h += 360;
+    }
+
+    while (h > 360) {
+      h -= 360;
+    }
+
+    if (cmax == 0) {
+      s = 0;
+    } else {
+      s = ((delta * 255) / cmax);
+    }
+  }
+
+  uint16_t v = cmax;
+
+  hsb[0] = h;
+  hsb[1] = s;
+  hsb[2] = v;
+}

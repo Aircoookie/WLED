@@ -170,6 +170,20 @@ void updateInterfaces(uint8_t callMode)
     espalexaDevice->setColor(col[0], col[1], col[2]);
   }
   #endif
+  #if !defined(WLED_DISABLE_HOMEKIT) && defined(ARDUINO_ARCH_ESP32)
+  if (homekit_device != nullptr &&  callMode != CALL_MODE_HOMEKIT) {
+    uint16_t hsb[3]{0};
+    colorFromRGB(col[0], col[1], col[2], hsb);
+    uint16_t hue = hsb[0];
+    uint8_t saturation = map(hsb[1], 0, UINT8_MAX, 0, 100);
+    uint8_t brightness = map(bri, 0, UINT8_MAX, 0, 100);
+
+    homekit_device->set_on(bri > 0);
+    homekit_device->set_hue(hue);
+    homekit_device->set_saturation(saturation);
+    homekit_device->set_brightness(brightness);
+  }
+  #endif
   doPublishMqtt = true;
   interfaceUpdateCallMode = 0; //disable
 }
