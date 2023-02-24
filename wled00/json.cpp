@@ -342,8 +342,11 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   bool stateResponse = root[F("v")] | false;
 
+  //WLEDMM: store netDebug 
   #if defined(WLED_DEBUG_HOST)
-  netDebugEnabled = root[F("debug")] | netDebugEnabled;
+  bool oldValue = netDebugEnabled;
+  netDebugEnabled = root[F("netDebug")] | netDebugEnabled;
+  if (oldValue != netDebugEnabled) doSerializeConfig = true; //WLEDMM to make it will be stored in cfg.json! (tbd: check if this is the right approach)
   #endif
 
   bool onBefore = bri;
@@ -584,6 +587,11 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
   String temp;
   serializeJson(root, temp);
   DEBUG_PRINTF("serializeState %s\n", temp.c_str());
+
+  //WLEDMM: store netDebug 
+  #if defined(WLED_DEBUG_HOST)
+    root[F("netDebug")] = netDebugEnabled;
+  #endif
 
   if (includeBri) {
     root["on"] = (bri > 0);

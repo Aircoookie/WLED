@@ -17,6 +17,10 @@ void getStringFromJson(char* dest, const char* src, size_t len) {
 }
 
 bool deserializeConfig(JsonObject doc, bool fromFS) {
+
+  //WLEDMM add USER_PRINT
+  USER_PRINTF("deserializeConfig\n");
+
   bool needsSave = false;
   //int rev_major = doc["rev"][0]; // 1
   //int rev_minor = doc["rev"][1]; // 0
@@ -1021,6 +1025,9 @@ void serializeConfig() {
 
   JsonObject usermods_settings = doc.createNestedObject("um");
   usermods.addToConfig(usermods_settings);
+
+  //WLEDMM add USER_PRINT
+  USER_PRINTF("serializeConfig\n");
 
   File f = WLED_FS.open("/cfg.json", "w");
   if (f) serializeJson(doc, f);
