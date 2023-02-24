@@ -723,6 +723,7 @@ WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
 
 // enable additional debug output
 //WLEDMM: switch between netdebug and serial
+// cannot do this on -S2, due to buggy USBCDC serial driver: canUseSerial
 #if defined(WLED_DEBUG_HOST)
   #include "net_debug.h"
   // On the host side, use netcat to receive the log statements: nc -l 7868 -u
@@ -730,15 +731,15 @@ WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
   WLED_GLOBAL bool netDebugEnabled _INIT(false);
   WLED_GLOBAL int netDebugPrintPort _INIT(0);
   WLED_GLOBAL IPAddress netDebugPrintIP _INIT_N(((0, 0, 0, 0))); // IP address of the bridge
-  #define DEBUGOUT(x) netDebugEnabled?NetDebug.print(x):Serial.print(x)
-  #define DEBUGOUTLN(x) netDebugEnabled?NetDebug.println(x):Serial.println(x)
-  #define DEBUGOUTF(x...) netDebugEnabled?NetDebug.printf(x):Serial.printf(x)
-  #define DEBUGOUTFlush() netDebugEnabled?NetDebug.flush():Serial.flush()
+  #define DEBUGOUT(x) (netDebugEnabled || !canUseSerial())?NetDebug.print(x):Serial.print(x)
+  #define DEBUGOUTLN(x) (netDebugEnabled || !canUseSerial())?NetDebug.println(x):Serial.println(x)
+  #define DEBUGOUTF(x...) (netDebugEnabled || !canUseSerial())?NetDebug.printf(x):Serial.printf(x)
+  #define DEBUGOUTFlush() (netDebugEnabled || !canUseSerial())?NetDebug.flush():Serial.flush()
 #else
-  #define DEBUGOUT(x) Serial.print(x)
-  #define DEBUGOUTLN(x) Serial.println(x)
-  #define DEBUGOUTF(x...) Serial.printf(x)
-  #define DEBUGOUTFlush() Serial.flush()
+  #define DEBUGOUT(x) {if (canUseSerial()) Serial.print(x);}
+  #define DEBUGOUTLN(x) {if (canUseSerial()) Serial.println(x);}
+  #define DEBUGOUTF(x...) {if (canUseSerial()) Serial.printf(x);}
+  #define DEBUGOUTFlush() {if (canUseSerial()) Serial.flush();}
 #endif
 
 #ifdef WLED_DEBUG
@@ -754,25 +755,10 @@ WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
   #define DEBUG_PRINTF(x...)
 #endif
 
-// WLEDMM: macros to print "user messages" to Serial
-// cannot do this on -S2, due to buggy USBCDC serial driver
-#if defined(WLED_DEBUG) || defined(WLED_DEBUG_HOST)
-  // use DEBUG_PRINT
-  #define USER_PRINT(x) DEBUG_PRINT(x)
-  #define USER_PRINTLN(x) DEBUG_PRINTLN(x)
-  #define USER_PRINTF(x...) DEBUG_PRINTF(x)
-  #ifdef WLED_DEBUG_HOST
-    #define USER_FLUSH() {}
-  #else
-    #define USER_FLUSH() {DEBUGOUTFlush();}
-  #endif
-#else
-  // if serial is availeable, we use Serial.print directly
-  #define USER_PRINT(x)      { if (canUseSerial()) DEBUGOUT(x); }
-  #define USER_PRINTLN(x)    { if (canUseSerial()) DEBUGOUTLN(x); }
-  #define USER_PRINTF(x...)  { if (canUseSerial()) DEBUGOUTF(x); }
-  #define USER_FLUSH()       {DEBUGOUTFlush();}
-#endif
+#define USER_PRINT(x)      DEBUGOUT(x)
+#define USER_PRINTLN(x)    DEBUGOUTLN(x)
+#define USER_PRINTF(x...)  DEBUGOUTF(x)
+#define USER_FLUSH()       DEBUGOUTFlush()
 // WLEDMM end
 
 #ifdef WLED_DEBUG_FS

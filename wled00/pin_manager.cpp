@@ -450,7 +450,7 @@ bool PinManagerClass::allocatePin(byte gpio, bool output, PinOwner tag)
         DEBUG_PRINT(F("PIN ALLOC: FAIL for owner "));
         DebugPrintOwnerTag(tag);
         DEBUG_PRINT(F(": GPIO ")); DEBUG_PRINT(gpio);
-        if (output) DEBUG_PRINTLN(F(" cannot be used for i/o on this MCU."));
+        if (output) {DEBUG_PRINTLN(F(" cannot be used for i/o on this MCU."));}
         else DEBUG_PRINTLN(F(" cannot be used as input on this MCU."));
       } else {
         DEBUG_PRINT(F("PIN ALLOC: FAIL: GPIO ")); DEBUG_PRINT(gpio);

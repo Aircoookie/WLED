@@ -917,6 +917,7 @@ void serializeInfo(JsonObject root)
   #ifdef WLED_DEBUG
   os  = 0x80;
   #endif
+  //WLEDMM: WLED_DEBUG_HOST also if not WLED_DEBUG
   #ifdef WLED_DEBUG_HOST
   os |= 0x0100;
   if (!netDebugEnabled) os &= ~0x0080;
