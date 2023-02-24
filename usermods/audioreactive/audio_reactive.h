@@ -29,9 +29,9 @@
 // #define SR_DEBUG                     // generic SR DEBUG messages
 
 #ifdef SR_DEBUG
-  #define DEBUGSR_PRINT(x) DEBUGOUT.print(x)
-  #define DEBUGSR_PRINTLN(x) DEBUGOUT.println(x)
-  #define DEBUGSR_PRINTF(x...) DEBUGOUT.printf(x)
+  #define DEBUGSR_PRINT(x) DEBUGOUT(x)
+  #define DEBUGSR_PRINTLN(x) DEBUGOUTLN(x)
+  #define DEBUGSR_PRINTF(x...) DEBUGOUTF(x)
 #else
   #define DEBUGSR_PRINT(x)
   #define DEBUGSR_PRINTLN(x)
@@ -55,10 +55,10 @@
 #endif
 
 #if defined(MIC_LOGGER) || defined(FFT_SAMPLING_LOG)
-  #define PLOT_PRINT(x) DEBUGOUT.print(x)
-  #define PLOT_PRINTLN(x) DEBUGOUT.println(x)
-  #define PLOT_PRINTF(x...) DEBUGOUT.printf(x)
-  #define PLOT_FLUSH() DEBUGOUT.flush()
+  #define PLOT_PRINT(x) DEBUGOUT(x)
+  #define PLOT_PRINTLN(x) DEBUGOUTLN(x)
+  #define PLOT_PRINTF(x...) DEBUGOUTF(x)
+  #define PLOT_FLUSH() DEBUGOUTFlush()
 #else
   #define PLOT_PRINT(x)
   #define PLOT_PRINTLN(x)

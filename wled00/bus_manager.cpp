@@ -18,6 +18,7 @@ void colorRGBtoRGBW(byte* rgb);
 uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, byte *buffer, uint8_t bri=255, bool isRGBW=false);
 
 // enable additional debug output
+//WLEDMM: #define DEBUGOUT(x) netDebugEnabled?NetDebug.print(x):Serial.print(x) not supported in this file as netDebugEnabled not in scope
 #if defined(WLED_DEBUG_HOST)
   #include "net_debug.h"
   #define DEBUGOUT NetDebug

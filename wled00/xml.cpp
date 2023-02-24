@@ -589,11 +589,22 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
     #else
     oappend(SET_F("toggle('Hue');"));    // hide Hue Sync settings
     #endif
+
+    //WLEDMM: add netdebug variables
+    #ifdef WLED_DEBUG_HOST
+      sappend('v',SET_F("N0"),netDebugPrintIP[0]);
+      sappend('v',SET_F("N1"),netDebugPrintIP[1]);
+      sappend('v',SET_F("N2"),netDebugPrintIP[2]);
+      sappend('v',SET_F("N3"),netDebugPrintIP[3]);
+      sappend('v',SET_F("NP"),netDebugPrintPort);
+    #endif
+    
     sappend('v',SET_F("BD"),serialBaud);
 
 #ifdef WLED_ENABLE_LOXONE
     oappend(SET_F("hideNoLOX();"));  // WLEDMM hide "not compiled in" message    
-#endif    
+#endif
+
   }
 
   if (subPage == 5)
