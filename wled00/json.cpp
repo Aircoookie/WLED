@@ -125,7 +125,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   JsonArray colarr = elem["col"];
   if (!colarr.isNull())
   {
-    if (seg.getLightCapabilities() & 3) {
+    if (seg.hasRGB() || seg.hasWhite()) {
       // segment has RGB or White
       for (size_t i = 0; i < 3; i++)
       {
@@ -204,7 +204,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   getVal(elem["ix"], &seg.intensity);
 
   uint8_t pal = seg.palette;
-  if (seg.getLightCapabilities() & 1) {  // ignore palette for White and On/Off segments
+  if (seg.hasRGB()) {  // ignore palette for White and On/Off segments
     if (getVal(elem["pal"], &pal)) seg.setPalette(pal);
   }
 
