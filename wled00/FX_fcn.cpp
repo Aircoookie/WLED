@@ -1415,44 +1415,30 @@ void WS2812FX::resetSegments() {
 }
 
 void WS2812FX::makeAutoSegments(bool forceReset) {
-  if (isMatrix) {
-    #ifndef WLED_DISABLE_2D
-    // only create 1 2D segment
-    if (forceReset || getSegmentsNum() == 0) resetSegments(); // initialises 1 segment
-    else if (getActiveSegmentsNum() == 1) {
-      size_t i = getLastActiveSegmentId();
-      _segments[i].start  = 0;
-      _segments[i].stop   = Segment::maxWidth;
-      _segments[i].startY = 0;
-      _segments[i].stopY  = Segment::maxHeight;
-      _segments[i].grouping = 1;
-      _segments[i].spacing  = 0;
-      _mainSegment = i;
-    }
-    // do we have LEDs after the matrix? (ignore buses)
-    if (autoSegments && _length > Segment::maxWidth*Segment::maxHeight /*&& getActiveSegmentsNum() == 2*/) {
-      if (_segments.size() == getLastActiveSegmentId()+1U) {
-        _segments.push_back(Segment(Segment::maxWidth*Segment::maxHeight, _length));
-      } else {
-        size_t i = getLastActiveSegmentId() + 1;
-        _segments[i].start  = Segment::maxWidth*Segment::maxHeight;
-        _segments[i].stop   = _length;
-        _segments[i].startY = 0;
-        _segments[i].stopY  = 1;
-        _segments[i].grouping = 1;
-        _segments[i].spacing  = 0;
-      }
-    }
-    #endif
-  } else if (autoSegments) { //make one segment per bus
+  if (autoSegments) { //make one segment per bus
     uint16_t segStarts[MAX_NUM_SEGMENTS] = {0};
     uint16_t segStops [MAX_NUM_SEGMENTS] = {0};
-    uint8_t s = 0;
-    for (uint8_t i = 0; i < busses.getNumBusses(); i++) {
+    size_t s = 0;
+
+    #ifndef WLED_DISABLE_2D
+    // 2D segment is the 1st one using entire matrix
+    if (isMatrix) {
+      segStarts[0] = 0;
+      segStops[0]  = Segment::maxWidth*Segment::maxHeight;
+      s++;
+    }
+    #endif
+
+    for (size_t i = s; i < busses.getNumBusses(); i++) {
       Bus* b = busses.getBus(i);
 
       segStarts[s] = b->getStart();
       segStops[s]  = segStarts[s] + b->getLength();
+
+      #ifndef WLED_DISABLE_2D
+      if (isMatrix && segStops[s] < Segment::maxWidth*Segment::maxHeight) continue; // ignore buses comprising matrix
+      if (isMatrix && segStarts[s] < Segment::maxWidth*Segment::maxHeight) segStarts[s] = Segment::maxWidth*Segment::maxHeight;
+      #endif
 
       //check for overlap with previous segments
       for (size_t j = 0; j < s; j++) {
@@ -1465,24 +1451,40 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
       }
       s++;
     }
+
     _segments.clear();
     _segments.reserve(s); // prevent reallocations
-    for (size_t i = 0; i < s; i++) {
-      Segment seg = Segment(segStarts[i], segStops[i]);
-      seg.selected = true;
-      _segments.push_back(seg);
+    // there is always at least one segment (but we need to differentiate between 1D and 2D)
+    #ifndef WLED_DISABLE_2D
+    if (isMatrix)
+      _segments.push_back(Segment(0, Segment::maxWidth, 0, Segment::maxHeight));
+    else
+    #endif
+      _segments.push_back(Segment(segStarts[0], segStops[0]));
+    for (size_t i = 1; i < s; i++) {
+      _segments.push_back(Segment(segStarts[i], segStops[i]));
     }
-    _mainSegment = 0;
+
   } else {
+
     if (forceReset || getSegmentsNum() == 0) resetSegments();
     //expand the main seg to the entire length, but only if there are no other segments, or reset is forced
     else if (getActiveSegmentsNum() == 1) {
       size_t i = getLastActiveSegmentId();
+      #ifndef WLED_DISABLE_2D
+      _segments[i].start  = 0;
+      _segments[i].stop   = Segment::maxWidth;
+      _segments[i].startY = 0;
+      _segments[i].stopY  = Segment::maxHeight;
+      _segments[i].grouping = 1;
+      _segments[i].spacing  = 0;
+      #else
       _segments[i].start = 0;
       _segments[i].stop  = _length;
-      _mainSegment = 0;
+      #endif
     }
   }
+  _mainSegment = 0;
 
   fixInvalidSegments();
 }

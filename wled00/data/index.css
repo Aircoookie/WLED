@@ -398,6 +398,7 @@ button {
 	margin: 0 auto; /* add 5px; if you want some vertical space but looks ugly */
 	border-radius: 24px;
 	position: relative;
+	padding-bottom: 2px;
 }
 
 .filter, .option {
@@ -425,14 +426,14 @@ button {
 	box-shadow: 4px 4px 10px 4px var(--c-1);
 	color: var(--c-f);
 	text-align: center;
-	padding: 5px 10px;
+	padding: 4px 8px;
 	border-radius: 6px;
 
 	/* Position the tooltip text */
 	width: 160px;
 	position: absolute;
 	z-index: 1;
-	bottom: 100%;
+	bottom: 80%;
 	left: 50%;
 	margin-left: -92px;
 
@@ -731,7 +732,11 @@ input[type=range]::-moz-range-thumb {
 
 #Colors .sliderwrap {
 	width: 260px;
-	margin: 10px 0 0;
+	margin: 4px 0 0;
+}
+
+#Colors {
+	padding-top: 18px;
 }
 
 /* Dynamically hide brightness slider label */
@@ -747,10 +752,11 @@ input[type=range]::-moz-range-thumb {
 #picker, #rgbwrap, #kwrap, #wwrap, #wbal, #vwrap, #qcs-w, #hexw, #pall, #ledmap {
 	margin: 0 auto;
 	width: 260px;
+	background-color: unset;
 }
 
 #picker {
-	margin-top: 10px;
+	margin-top: -10px !important;
 }
 
 /* buttons */
@@ -1408,6 +1414,9 @@ TD .checkmark, TD .radiomark {
 .expanded .segin, .expanded .presin, .expanded .sbs,
 .expanded {
 	display: inline-block !important;
+}
+.expanded .segin.hide, .expanded .presin.hide, .expanded .sbs.hide {
+	display: none !important;
 }
 
 .m6 {
