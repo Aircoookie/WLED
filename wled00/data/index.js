@@ -843,7 +843,6 @@ function populateSegments(s)
 	gId('segutil2').style.display = (segCount > 1) ? "block":"none"; // rsbtn parent
 
 	if (Array.isArray(li.maps) && li.maps.length>0) { //WLEDMM >0 instead of 1 to show also first ledmap. Attention: WLED AC has isM check, in MM Matrices are supported so do not check on isM
-		console.log("ledmap dropdown", li.maps, ledmapFileNames);
 		let cont = `Ledmap:&nbsp;<select class="sel-sg" onchange="requestJson({'ledmap':parseInt(this.value)})">`; //WLEDMM remove <option value="" selected>Unchanged</option>
 		for (const k of (li.maps||[])) cont += `<option value="${k.id}"${(i>0 && ledmapNr==k.id)?" selected":""}>${k.id==0?'Default':(k.id<10?'ledmap'+k.id+'.json':ledmapFileNames[k.id-10])}</option>`; //WLEDMM set ledmap selected, use ledmapFileNames
 		cont += "</select></div>";
@@ -1081,7 +1080,7 @@ function toggleBubble(e)
 }
 
 // updates segment length upon input of segment values
-function updateLen(s, draw=true) //WLEDMM conditonally draw segment visualisation
+function updateLen(s, draw=true) //WLEDMM conditonally draw segment visualization
 {
 	if (!gId(`seg${s}s`)) return;
 	var start = parseInt(gId(`seg${s}s`).value);
@@ -1154,7 +1153,8 @@ function updateLen(s, draw=true) //WLEDMM conditonally draw segment visualisatio
 	gId(`seg${s}len`).innerHTML = out;
 
 	if (draw && isM) drawSegments(); //WLEDMM draw new segment visualization if something changes in a segment
-	gId("segvis").style.display = isM? "block":"none";
+	gId("segvis").style.display = isM? "inline":"none";
+	gId("peekvis").style.display = isM? "inline":"none";
 }
 
 //WLEDMM
@@ -1189,6 +1189,9 @@ function drawSegments() {
 	if (!ctx) {
 		//WLEDMM: add canvas, initialize and set UI
 		var canvas = gId("canvasSegments");
+		canvas.addEventListener('click', function() { gId("segvis").style.display = "none"; });
+		canvasPeek.addEventListener('click', function() { gId("peekvis").style.display = "none"; });
+		gId("segcont").addEventListener('click', function() { gId("segvis").style.display = "inline"; gId("peekvis").style.display = "inline";});
 		ctx = canvas.getContext('2d');
 		peek(canvasPeek);
 	}

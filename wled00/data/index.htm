@@ -304,6 +304,16 @@
 	</div>
 
 	<div id="Segments" class="tabcontent">
+		<!--WLEDMM Segment visualization-->
+		<div id="peekvis">
+			<p class="labels hd">Peek</p>
+			<canvas id="canvasPeek"></canvas><br>
+		</div>
+		<div id="segvis">
+			<p class="labels hd">Segment visualization</p>
+			<canvas id="canvasSegments"></canvas><br>
+			<div id="MD"></div> <!-- Matrix dimensions -->
+		</div>
 		<div id="segcont">
 			Loading...
 		</div>
@@ -311,14 +321,6 @@
 		</div>
 		<div id="segutil2">
 			<button class="btn btn-s" id="rsbtn" onclick="rSegs()">Reset segments</button>
-		</div>
-		<!--WLEDMM Segment graphics-->
-		<div id="segvis">
-			<br>
-			<canvas id="canvasSegments"></canvas><br>
-			<br>
-			<canvas id="canvasPeek"></canvas><br>
-			<div id="MD"></div> <!-- Matrix dimensions -->
 		</div>
 		<br>
 		<p>Transition: <input id="tt" class="noslide" type="number" min="0" max="65.5" step="0.1" value="0.7">&nbsp;s</p>
