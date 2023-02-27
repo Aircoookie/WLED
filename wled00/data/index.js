@@ -851,7 +851,7 @@ function populateSegments(s)
 	} else {
 		gId("ledmap").classList.add('hide');
 	}
-	if (isM) drawSegments(); //WLEDMM
+	if (isM) drawSegmentView(); //WLEDMM
 }
 
 function populateEffects()
@@ -1080,7 +1080,7 @@ function toggleBubble(e)
 }
 
 // updates segment length upon input of segment values
-function updateLen(s, draw=true) //WLEDMM conditonally draw segment visualization
+function updateLen(s, draw=true) //WLEDMM conditonally draw segment view
 {
 	if (!gId(`seg${s}s`)) return;
 	var start = parseInt(gId(`seg${s}s`).value);
@@ -1152,13 +1152,19 @@ function updateLen(s, draw=true) //WLEDMM conditonally draw segment visualizatio
 
 	gId(`seg${s}len`).innerHTML = out;
 
-	if (draw && isM) drawSegments(); //WLEDMM draw new segment visualization if something changes in a segment
-	gId("segvis").style.display = isM? "inline":"none";
-	gId("peekvis").style.display = isM? "inline":"none";
+	if (draw && isM) drawSegmentView(); //WLEDMM draw new segmentview if something changes in a segment
+	gId("segviews").style.display = isM? "inline":"none";
 }
 
 //WLEDMM
-function drawSegments() {
+function expandV(o,i)
+{
+	i.style.display = i.style.display!=="none" ? "none" : "";
+	o.style.rotate = i.style.display==="none" ? "-90deg" : "none";
+}
+
+//WLEDMM
+function drawSegmentView() {
 
 	var px, py, pw, ph;
 	var topLeftX, topLeftY;
@@ -1189,9 +1195,6 @@ function drawSegments() {
 	if (!ctx) {
 		//WLEDMM: add canvas, initialize and set UI
 		var canvas = gId("canvasSegments");
-		canvas.addEventListener('click', function() { gId("segvis").style.display = "none"; });
-		canvasPeek.addEventListener('click', function() { gId("peekvis").style.display = "none"; });
-		gId("segcont").addEventListener('click', function() { gId("segvis").style.display = "inline"; gId("peekvis").style.display = "inline";});
 		ctx = canvas.getContext('2d');
 		peek(canvasPeek);
 	}
@@ -3212,8 +3215,8 @@ function togglePcMode(fromB = false)
 	_C.style.width = (pcMode)?'100%':'400%';
 	lastw = wW;
 
-	//WLEDMM resize segment visualization
-	if (isM) drawSegments();
+	//WLEDMM resize segmentview
+	if (isM) drawSegmentView();
 }
 
 function mergeDeep(target, ...sources)

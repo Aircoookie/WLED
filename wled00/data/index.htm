@@ -304,15 +304,15 @@
 	</div>
 
 	<div id="Segments" class="tabcontent">
-		<!--WLEDMM Segment visualization-->
-		<div id="peekvis">
-			<p class="labels hd">Peek</p>
+		<!--WLEDMM Views-->
+		<div id="segviews">
+			<p class="labels hd">Peek <button class="btn infobtn btn-xs" onclick="expandV(this,gId('canvasPeek'));">v</button></p>
 			<canvas id="canvasPeek"></canvas><br>
-		</div>
-		<div id="segvis">
-			<p class="labels hd">Segment visualization</p>
-			<canvas id="canvasSegments"></canvas><br>
-			<div id="MD"></div> <!-- Matrix dimensions -->
+			<p class="labels hd">Segment view <button class="btn infobtn btn-xs" onclick="expandV(this,gId('segvis'));">v</button></p>
+			<div id="segvis">
+				<canvas id="canvasSegments"></canvas><br>
+				<div class="labels hd" id="MD"></div> <!-- Matrix dimensions -->
+			</div>
 		</div>
 		<div id="segcont">
 			Loading...
