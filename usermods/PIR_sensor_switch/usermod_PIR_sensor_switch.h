@@ -114,6 +114,7 @@ private:
     if (m_offOnly && bri && (switchOn || (!PIRtriggered && !switchOn))) return; //if lights on and off only, do nothing
     if (PIRtriggered && switchOn) return; //if already on and triggered before, do nothing
     PIRtriggered = switchOn;
+    DEBUG_PRINT(F("PIR: strip=")); DEBUG_PRINTLN(switchOn?"on":"off");
     if (switchOn) {
       if (m_onPreset) {
         if (currentPlaylist>0 && !offMode) {
@@ -136,7 +137,7 @@ private:
       }
     } else {
       if (m_offPreset) {
-        if (currentPreset==m_onPreset || currentPlaylist==m_onPreset) applyPreset(m_offPreset, NotifyUpdateMode);
+        applyPreset(m_offPreset, NotifyUpdateMode);
         return;
       } else if (prevPlaylist) {
         if (currentPreset==m_onPreset || currentPlaylist==m_onPreset) applyPreset(prevPlaylist, NotifyUpdateMode);
@@ -159,6 +160,7 @@ private:
 
   void publishMqtt(const char* state)
   {
+  #ifndef WLED_DISABLE_MQTT
     //Check if MQTT Connected, otherwise it will crash the 8266
     if (WLED_MQTT_CONNECTED) {
       char subuf[64];
@@ -166,11 +168,13 @@ private:
       strcat_P(subuf, PSTR("/motion"));
       mqtt->publish(subuf, 0, false, state);
     }
+  #endif
   }
 
   // Create an MQTT Binary Sensor for Home Assistant Discovery purposes, this includes a pointer to the topic that is published to in the Loop.
   void publishHomeAssistantAutodiscovery()
   {
+  #ifndef WLED_DISABLE_MQTT
     if (WLED_MQTT_CONNECTED) {
       StaticJsonDocument<600> doc;
       char uid[24], json_str[1024], buf[128];
@@ -200,6 +204,7 @@ private:
 
       mqtt->publish(buf, 0, true, json_str, payload_size); // do we really need to retain?
     }
+  #endif
   }
 
   /**
@@ -235,7 +240,7 @@ private:
     if (offTimerStart > 0 && millis() - offTimerStart > m_switchOffDelay) {
       offTimerStart = 0;
       if (enabled == true) {
-        if (!m_mqttOnly && (!m_nightTimeOnly || (m_nightTimeOnly && !isDayTime()))) switchStrip(false);
+        if (!m_mqttOnly && (!m_nightTimeOnly || (m_nightTimeOnly && !isDayTime()) || PIRtriggered)) switchStrip(false);
         else if (NotifyUpdateMode != CALL_MODE_NO_NOTIFY) updateInterfaces(CALL_MODE_WS_SEND);
         publishMqtt("off");
       }
@@ -364,6 +369,20 @@ public:
     JsonObject sensor = root[F("sensor")];
     if (sensor.isNull()) sensor = root.createNestedObject(F("sensor"));
     sensor[F("motion")] = sensorPinState || offTimerStart>0 ? true : false;
+  }
+
+  /**
+   * onStateChanged() is used to detect WLED state change
+   */
+  void onStateChange(uint8_t mode) {
+    if (!initDone) return;
+    DEBUG_PRINT(F("PIR: offTimerStart=")); DEBUG_PRINTLN(offTimerStart);
+    if (PIRtriggered && offTimerStart) {
+      // checking PIRtriggered and offTimerStart will prevent cancellation upon On trigger
+      DEBUG_PRINTLN(F("PIR: Canceled."));
+      offTimerStart = 0;
+      PIRtriggered = false;
+    }
   }
 
   /**

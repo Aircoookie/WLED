@@ -23,7 +23,6 @@ void notify(byte callMode, bool followUp)
     case CALL_MODE_NIGHTLIGHT:    if (!notifyDirect) return; break;
     case CALL_MODE_HUE:           if (!notifyHue)    return; break;
     case CALL_MODE_PRESET_CYCLE:  if (!notifyDirect) return; break;
-    case CALL_MODE_BLYNK:         if (!notifyDirect) return; break;
     case CALL_MODE_ALEXA:         if (!notifyAlexa)  return; break;
     default: return;
   }
@@ -41,7 +40,7 @@ void notify(byte callMode, bool followUp)
   udpOut[8] = mainseg.mode;
   udpOut[9] = mainseg.speed;
   udpOut[10] = W(col);
-  //compatibilityVersionByte: 
+  //compatibilityVersionByte:
   //0: old 1: supports white 2: supports secondary color
   //3: supports FX intensity, 24 byte packet 4: supports transitionDelay 5: sup palette
   //6: supports timebase syncing, 29 byte packet 7: supports tertiary color 8: supports sys time sync, 36 byte packet
@@ -62,7 +61,7 @@ void notify(byte callMode, bool followUp)
   udpOut[21] = G(col);
   udpOut[22] = B(col);
   udpOut[23] = W(col);
-  
+
   udpOut[24] = followUp;
   uint32_t t = millis() + strip.timebase;
   udpOut[25] = (t >> 24) & 0xFF;
@@ -219,7 +218,7 @@ void handleNotifications()
   if(udpConnected && (notificationCount < udpNumRetries) && ((millis()-notificationSentTime) > 250)){
     notify(notificationSentCallMode,true);
   }
-  
+
   if (e131NewData && millis() - strip.getLastShow() > 15)
   {
     e131NewData = false;
@@ -231,7 +230,7 @@ void handleNotifications()
 
   //receive UDP notifications
   if (!udpConnected) return;
-    
+
   bool isSupp = false;
   size_t packetSize = notifierUdp.parsePacket();
   if (!packetSize && udp2Connected) {
@@ -260,11 +259,11 @@ void handleNotifications()
       }
       if (!(realtimeMode && useMainSegmentOnly)) strip.show();
       return;
-    } 
+    }
   }
 
   if (!(receiveNotifications || receiveDirect)) return;
-  
+
   localIP = Network.localIP();
   //notifier and UDP realtime
   if (!packetSize || packetSize > UDP_IN_MAXSIZE) return;
@@ -313,7 +312,7 @@ void handleNotifications()
     if (millis() - notificationSentTime < 1000) return;
     if (udpIn[1] > 199) return; //do not receive custom versions
 
-    //compatibilityVersionByte: 
+    //compatibilityVersionByte:
     byte version = udpIn[11];
 
     // if we are not part of any sync group ignore message
@@ -321,7 +320,7 @@ void handleNotifications()
       // legacy senders are treated as if sending in sync group 1 only
       if (!(receiveGroups & 0x01)) return;
     } else if (!(receiveGroups & udpIn[36])) return;
-    
+
     bool someSel = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
 
     //apply colors from notification to main segment, only if not syncing full segments
@@ -336,7 +335,7 @@ void handleNotifications()
         if (version > 9 && version < 200 && udpIn[37] < 255) { // valid CCT/Kelvin value
           uint16_t cct = udpIn[38];
           if (udpIn[37] > 0) { //Kelvin
-            cct |= (udpIn[37] << 8); 
+            cct |= (udpIn[37] << 8);
           }
           strip.setCCT(cct);
         }
@@ -363,7 +362,7 @@ void handleNotifications()
           uint16_t stopY  = 1, stop   = (udpIn[3+ofs] << 8 | udpIn[4+ofs]);
           uint16_t offset = (udpIn[7+ofs] << 8 | udpIn[8+ofs]);
           if (!receiveSegmentOptions) {
-            strip.setSegment(id, start, stop, selseg.grouping, selseg.spacing, offset, startY, stopY);
+            selseg.set(start, stop, selseg.grouping, selseg.spacing, offset, startY, stopY);
             continue;
           }
           //for (size_t j = 1; j<4; j++) selseg.setOption(j, (udpIn[9 +ofs] >> j) & 0x01); //only take into account mirrored, on, reversed; ignore selected
@@ -396,25 +395,24 @@ void handleNotifications()
             startY = (udpIn[32+ofs] << 8 | udpIn[33+ofs]);
             stopY  = (udpIn[34+ofs] << 8 | udpIn[35+ofs]);
           }
-          //setSegment() also properly resets segments
           if (receiveSegmentBounds) {
-            strip.setSegment(id, start, stop, udpIn[5+ofs], udpIn[6+ofs], offset, startY, stopY);
+            selseg.set(start, stop, udpIn[5+ofs], udpIn[6+ofs], offset, startY, stopY);
           } else {
-            strip.setSegment(id, selseg.start, selseg.stop, udpIn[5+ofs], udpIn[6+ofs], selseg.offset, selseg.startY, selseg.stopY);
+            selseg.set(selseg.start, selseg.stop, udpIn[5+ofs], udpIn[6+ofs], selseg.offset, selseg.startY, selseg.stopY);
           }
         }
         stateChanged = true;
       }
-      
+
       // simple effect sync, applies to all selected segments
       if (applyEffects && (version < 11 || !receiveSegmentOptions)) {
         for (size_t i = 0; i < strip.getSegmentsNum(); i++) {
           Segment& seg = strip.getSegment(i);
           if (!seg.isActive() || !seg.isSelected()) continue;
-          if (udpIn[8] < strip.getModeCount()) strip.setMode(i, udpIn[8]);
+          seg.setMode(udpIn[8]);
           seg.speed = udpIn[9];
           if (version > 2) seg.intensity = udpIn[16];
-          if (version > 4 && udpIn[19] < strip.getPaletteCount()) seg.palette = udpIn[19];
+          if (version > 4) seg.setPalette(udpIn[19]);
         }
         stateChanged = true;
       }
@@ -451,7 +449,7 @@ void handleNotifications()
         }
       }
     }
-    
+
     if (version > 3)
     {
       transitionDelayTemp = ((udpIn[17] << 0) & 0xFF) + ((udpIn[18] << 8) & 0xFF00);
@@ -459,14 +457,14 @@ void handleNotifications()
 
     nightlightActive = udpIn[6];
     if (nightlightActive) nightlightDelayMins = udpIn[7];
-    
+
     if (receiveNotificationBrightness || !someSel) bri = udpIn[2];
     stateUpdated(CALL_MODE_NOTIFICATION);
     return;
   }
 
   if (!receiveDirect) return;
-  
+
   //TPM2.NET
   if (udpIn[0] == 0x9c)
   {
@@ -544,7 +542,7 @@ void handleNotifications()
       for (size_t i = 2; i < packetSize -3; i += 4)
       {
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
-        
+
         id++; if (id >= totalLen) break;
       }
     } else if (udpIn[0] == 4) //dnrgb
@@ -653,7 +651,7 @@ void sendSysInfoUDP()
   uint8_t data[44] = {0};
   data[0] = 255;
   data[1] = 1;
-  
+
   for (size_t x = 0; x < 4; x++) {
     data[x + 2] = ip[x];
   }
@@ -718,7 +716,7 @@ void sendSysInfoUDP()
 uint8_t sequenceNumber = 0; // this needs to be shared across all outputs
 
 uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8_t *buffer, uint8_t bri, bool isRGBW)  {
-  if (!(apActive || interfacesInited) || !client[0] || !length) return 1;  // network not initialised or dummy/unset IP address  031522 ajn added check for ap 
+  if (!(apActive || interfacesInited) || !client[0] || !length) return 1;  // network not initialised or dummy/unset IP address  031522 ajn added check for ap
 
   WiFiUDP ddpUdp;
 
@@ -731,7 +729,7 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8
 
       // there are 3 channels per RGB pixel
       uint32_t channel = 0; // TODO: allow specifying the start channel
-      // the current position in the buffer 
+      // the current position in the buffer
       size_t bufferOffset = 0;
 
       for (size_t currentPacket = 0; currentPacket < packetCount; currentPacket++) {
@@ -769,7 +767,7 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8
         /*8*/ddpUdp.write(0xFF & (packetSize >> 8));
         /*9*/ddpUdp.write(0xFF & (packetSize     ));
 
-        // write the colors, the write write(const uint8_t *buffer, size_t size) 
+        // write the colors, the write write(const uint8_t *buffer, size_t size)
         // function is just a loop internally too
         for (size_t i = 0; i < packetSize; i += 3) {
           ddpUdp.write(scale8(buffer[bufferOffset++], bri)); // R
@@ -778,7 +776,7 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8
           if (isRGBW) ddpUdp.write(scale8(buffer[bufferOffset++], bri)); // W
         }
 
-        if (!ddpUdp.endPacket()) {            
+        if (!ddpUdp.endPacket()) {
           DEBUG_PRINTLN(F("WiFiUDP.endPacket returned an error"));
           return 1; // problem
         }

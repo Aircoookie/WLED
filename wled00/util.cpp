@@ -29,7 +29,7 @@ void parseNumber(const char* str, byte* val, byte minv, byte maxv)
     } else {
       if (wrap && *val == maxv && out > 0) out = minv;
       else if (wrap && *val == minv && out < 0) out = maxv;
-      else { 
+      else {
         out += *val;
         if (out > maxv) out = maxv;
         if (out < minv) out = minv;
@@ -335,7 +335,7 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxL
         }
         // we have slider name (including default value) in the dest buffer
         for (size_t i=0; i<strlen(dest); i++) if (dest[i]=='=') { dest[i]='\0'; break; } // truncate default value
-        
+
       } else {
         // defaults to just speed and intensity since there is no slider data
         switch (slider) {
@@ -397,7 +397,7 @@ typedef enum UM_SoundSimulations {
   UMS_14_3
 } um_soundSimulations_t;
 
-um_data_t* simulateSound(uint8_t simulationId) 
+um_data_t* simulateSound(uint8_t simulationId)
 {
   static uint8_t samplePeak;
   static float   FFT_MajorPeak;
@@ -426,7 +426,7 @@ um_data_t* simulateSound(uint8_t simulationId)
     um_data->u_data = new void*[um_data->u_size];
     um_data->u_data[0] = &volumeSmth;
     um_data->u_data[1] = &volumeRaw;
-    um_data->u_data[2] = fftResult; 
+    um_data->u_data[2] = fftResult;
     um_data->u_data[3] = &samplePeak;
     um_data->u_data[4] = &FFT_MajorPeak;
     um_data->u_data[5] = &my_magnitude;
@@ -503,12 +503,49 @@ um_data_t* simulateSound(uint8_t simulationId)
 }
 
 
+// enumerate all ledmapX.json files on FS and extract ledmap names if existing
 void enumerateLedmaps() {
   ledMaps = 1;
-  for (size_t i=1; i<10; i++) {
-    char fileName[16];
+  for (size_t i=1; i<WLED_MAX_LEDMAPS; i++) {
+    char fileName[33];
     sprintf_P(fileName, PSTR("/ledmap%d.json"), i);
     bool isFile = WLED_FS.exists(fileName);
-    if (isFile) ledMaps |= 1 << i;
+
+    #ifndef ESP8266
+    if (ledmapNames[i-1]) { //clear old name
+      delete[] ledmapNames[i-1];
+      ledmapNames[i-1] = nullptr;
+    }
+    #endif
+
+    if (isFile) {
+      ledMaps |= 1 << i;
+
+      #ifndef ESP8266
+      if (requestJSONBufferLock(21)) {
+        if (readObjectFromFile(fileName, nullptr, &doc)) {
+          size_t len = 0;
+          if (!doc["n"].isNull()) {
+            // name field exists
+            const char *name = doc["n"].as<const char*>();
+            if (name != nullptr) len = strlen(name);
+            if (len > 0 && len < 33) {
+              ledmapNames[i-1] = new char[len+1];
+              if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], name, 33);
+            }
+          }
+          if (!ledmapNames[i-1]) {
+            char tmp[33];
+            snprintf_P(tmp, 32, PSTR("ledmap%d.json"), i);
+            len = strlen(tmp);
+            ledmapNames[i-1] = new char[len+1];
+            if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], tmp, 33);
+          }
+        }
+        releaseJSONBufferLock();
+      }
+      #endif
+    }
+
   }
 }

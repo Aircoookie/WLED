@@ -191,7 +191,7 @@ private:
     re_sortModes(modes_qstrings, modes_alpha_indexes, strip.getModeCount(), MODE_SORT_SKIP_COUNT);
 
     palettes_qstrings = re_findModeStrings(JSON_palette_names, strip.getPaletteCount());
-    palettes_alpha_indexes = re_initIndexArray(strip.getPaletteCount());
+    palettes_alpha_indexes = re_initIndexArray(strip.getPaletteCount());  // only use internal palettes
 
     // How many palette names start with '*' and should not be sorted?
     // (Also skipping the first one, 'Default').
@@ -750,7 +750,7 @@ public:
       StaticJsonDocument<64> root;
       char str[64];
       sprintf_P(str, PSTR("%d~%d~%s"), presetLow, presetHigh, increase?"":"-");
-      root[F("ps")] = str;
+      root["ps"] = str;
       deserializeState(root.as<JsonObject>(), CALL_MODE_BUTTON_PRESET);
 /*
       String apireq = F("win&PL=~");

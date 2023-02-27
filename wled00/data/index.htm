@@ -286,15 +286,15 @@
 			</div>
 			<div id="fxopt" class="option fade">
 				<label id="opt0" class="check ochkl hide"><i class="icons">&#xe2b3;</i><span class="tooltiptext" id="optLabel0">Check 1</span>
-					<input type="checkbox" onchange="setOption(1, this.checked)">
+					<input id="checkO1" type="checkbox" onchange="setOption(1, this.checked)">
 					<span class="checkmark"></span>
 				</label>
 				<label id="opt1" class="check ochkl hide"><i class="icons">&#xe34b;</i><span class="tooltiptext" id="optLabel1">Check 2</span>
-					<input type="checkbox" onchange="setOption(2, this.checked)">
+					<input id="checkO2" type="checkbox" onchange="setOption(2, this.checked)">
 					<span class="checkmark"></span>
 				</label>
 				<label id="opt2" class="check ochkl hide"><i class="icons">&#xe04c;</i><span class="tooltiptext" id="optLabel2">Check 3</span>
-					<input type="checkbox" onchange="setOption(3, this.checked)">
+					<input id="checkO3" type="checkbox" onchange="setOption(3, this.checked)">
 					<span class="checkmark"></span>
 				</label>
 			</div>
@@ -311,6 +311,7 @@
 			<button class="btn btn-s" id="rsbtn" onclick="rSegs()">Reset segments</button>
 		</div>
 		<p>Transition: <input id="tt" class="noslide" type="number" min="0" max="65.5" step="0.1" value="0.7">&nbsp;s</p>
+		<p id="ledmap" class="hide"></p>
 	</div>
 
 	<div id="Presets" class="tabcontent">
