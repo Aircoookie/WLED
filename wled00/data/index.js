@@ -1201,7 +1201,7 @@ function drawSegmentView() {
 
 	let windowWidth = Math.min(window.innerWidth*0.98, maxWidth*30);
 	let windowWidthFactor = maxWidth > maxHeight?1:maxWidth/maxHeight;
-	ctx.canvas.width = (ctx.canvas.parentElement.offsetWidth > 640?windowWidth:300) * windowWidthFactor; //Mobile and non pc mode gets 300, pc 800
+	ctx.canvas.width = (ctx.canvas.parentElement.offsetWidth > 800?windowWidth:300) * windowWidthFactor; //Mobile and non pc mode gets 300, pc 800
 	ctx.canvas.height = ctx.canvas.width / maxWidth * maxHeight;
 	canvasPeek.width = ctx.canvas.width;
 	canvasPeek.height = ctx.canvas.height;
