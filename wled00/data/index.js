@@ -1334,7 +1334,7 @@ function readState(s,command=false)
 			hasRGB   |= !!(lc & 0x01);
 			hasWhite |= !!(lc & 0x02);
 			hasCCT   |= !!(lc & 0x04);
-			let sLen = (s.seg[i].stop - s.seg[i].start)*(s.seg[i].stopY - s.seg[i].startY);
+			let sLen = (s.seg[i].stop - s.seg[i].start)*(s.seg[i].stopY?(s.seg[i].stopY - s.seg[i].startY):1);
 			segLmax = segLmax < sLen ? sLen : segLmax;
 		}
 	}
