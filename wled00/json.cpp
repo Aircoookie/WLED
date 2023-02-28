@@ -49,9 +49,11 @@
 void deserializeSegment(JsonObject elem, byte it, byte presetId)
 {
   //WLEDMM add USER_PRINT
-  String temp;
-  serializeJson(elem, temp);
-  USER_PRINTF("deserializeSegment %s\n", temp.c_str());
+  if (elem.size()!=1 || elem["stop"] != 0) { // not for {"stop":0}
+    String temp;
+    serializeJson(elem, temp);
+    USER_PRINTF("deserializeSegment %s\n", temp.c_str());
+  }
 
   byte id = elem["id"] | it;
   if (id >= strip.getMaxSegments()) return;

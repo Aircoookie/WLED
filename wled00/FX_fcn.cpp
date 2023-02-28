@@ -2019,6 +2019,8 @@ void WS2812FX::loadCustomPalettes() {
 bool WS2812FX::deserializeMap(uint8_t n) {
   // 2D support creates its own ledmap (on the fly) if a ledmap.json exists it will overwrite built one.
 
+  bool isPhysicalMap = false;
+
   char fileName[32];
   //WLEDMM: als support segment name ledmaps
   bool isFile = false;;
@@ -2033,6 +2035,7 @@ bool WS2812FX::deserializeMap(uint8_t n) {
       if (n == 10 + segment_index && !isFile && seg.name != nullptr) {
         sprintf_P(fileName, PSTR("/lm%s.json"), seg.name);
         isFile = WLED_FS.exists(fileName);
+        isPhysicalMap = seg.name[0] == 'P';
       }
       if (isFile) break;
       segment_index++;
@@ -2083,8 +2086,20 @@ bool WS2812FX::deserializeMap(uint8_t n) {
 #endif
       customMappingSize  = map.size();
     customMappingTable = new uint16_t[customMappingSize];
-    for (uint16_t i=0; i<MIN(customMappingSize, map.size()); i++) 
-      customMappingTable[i] = (uint16_t) (map[i]<0 ? 0xFFFFU : map[i]);
+
+    if (!isPhysicalMap) {
+      for (uint16_t i=0; i<MIN(customMappingSize, map.size()); i++) 
+        customMappingTable[i] = (uint16_t) (map[i]<0 ? 0xFFFFU : map[i]);
+    }
+    else {
+      for (int i=0; i<customMappingSize;i++) customMappingTable[i] = (uint16_t)0xFFFFU; //WLEDMM: init with no show
+      //assign all >=0 mappings to customMappingTable
+      for (uint16_t i=0; i<map.size(); i++) 
+        if (map[i]>=0)
+          customMappingTable[map[i].as<uint16_t>()] = i;
+    }
+        
+
     loadedLedmap = n;
 
     #ifdef WLED_DEBUG
