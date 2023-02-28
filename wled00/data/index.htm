@@ -117,24 +117,27 @@
 			<span class="tooltiptext">Kelvin/Temperature</span>
 		</div>
 		<div id="rgbwrap">
-			<p class="labels hd">RGB color</p>
-			<div id="rwrap" class="il">
+			<!--p class="labels hd">RGB color</p-->
+			<div id="rwrap" class="slider">
 				<div class="sliderwrap il">
 					<input id="sliderR" class="noslide" oninput="fromRgb()" onchange="setColor(0)" max="255" min="0" type="range" value="128" />
 					<div class="sliderdisplay"></div>
 				</div>
+				<span class="tooltiptext">Red channel</span>
 			</div>
-			<div id="gwrap" class="il">
+			<div id="gwrap" class="slider">
 				<div class="sliderwrap il">
 					<input id="sliderG" class="noslide" oninput="fromRgb()" onchange="setColor(0)" max="255" min="0" type="range" value="128" />
 					<div class="sliderdisplay"></div>
 				</div>
+				<span class="tooltiptext">Green channel</span>
 			</div>
-			<div id="bwrap" class="il">
+			<div id="bwrap" class="slider">
 				<div class="sliderwrap il">
 					<input id="sliderB" class="noslide" oninput="fromRgb()" onchange="setColor(0)" max="255" min="0" type="range" value="128" />
 					<div class="sliderdisplay"></div>
 				</div>
+				<span class="tooltiptext">Blue channel</span>
 			</div>
 		</div>
 		<div id="wwrap" class="slider">

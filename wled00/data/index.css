@@ -392,13 +392,16 @@ button {
 }
 
 .slider {
-	background-color: var(--c-2);
 	max-width: 300px;
-	min-width: 280px;
+	min-width: 260px;
 	margin: 0 auto; /* add 5px; if you want some vertical space but looks ugly */
 	border-radius: 24px;
 	position: relative;
 	padding-bottom: 2px;
+}
+
+#sliders .slider, #info .slider {
+	background-color: var(--c-2);
 }
 
 .filter, .option {
@@ -648,7 +651,7 @@ img {
 #wbal  .sliderdisplay { background: linear-gradient(90deg, #ff8f1f 0%, #fff 50%, #cbdbff); }
 
 /* wrapper divs hidden by default */
-#rgbwrap, #kwrap, #wwrap, #wbal, #qcs-w, #hexw {
+#rgbwrap, #swrap, #hwrap, #kwrap, #wwrap, #wbal, #qcs-w, #hexw {
 	display: none;
 }
 
@@ -749,10 +752,10 @@ input[type=range]::-moz-range-thumb {
 	margin-top: var(--bmt);
 }
 
-#picker, #rgbwrap, #kwrap, #wwrap, #wbal, #vwrap, #qcs-w, #hexw, #pall, #ledmap {
+#picker, #qcs-w, #hexw, #pall, #ledmap {
 	margin: 0 auto;
 	width: 260px;
-	background-color: unset;
+	/*background-color: unset;*/
 }
 
 #picker {
