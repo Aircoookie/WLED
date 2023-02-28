@@ -762,6 +762,7 @@ void Segment::refreshLightCapabilities() {
         if (segStartIdx > index) segStartIdx = index;
         if (segStopIdx  < index) segStopIdx  = index;
       }
+      if (segStartIdx == segStopIdx) segStopIdx++; // we only have 1 pixel segment
     }
   } else {
     // we are on the strip located after the matrix
