@@ -2019,8 +2019,6 @@ void WS2812FX::loadCustomPalettes() {
 bool WS2812FX::deserializeMap(uint8_t n) {
   // 2D support creates its own ledmap (on the fly) if a ledmap.json exists it will overwrite built one.
 
-  bool isPhysicalMap = false;
-
   char fileName[32];
   //WLEDMM: als support segment name ledmaps
   bool isFile = false;;
@@ -2035,7 +2033,6 @@ bool WS2812FX::deserializeMap(uint8_t n) {
       if (n == 10 + segment_index && !isFile && seg.name != nullptr) {
         sprintf_P(fileName, PSTR("/lm%s.json"), seg.name);
         isFile = WLED_FS.exists(fileName);
-        isPhysicalMap = seg.name[0] == 'P';
       }
       if (isFile) break;
       segment_index++;
@@ -2080,6 +2077,25 @@ bool WS2812FX::deserializeMap(uint8_t n) {
   if (!map.isNull() && map.size()) {  // not an empty map
     //WLEDMM: if isMatrix then customMap size is whole matrix
 #ifndef WLED_DISABLE_2D
+
+    //WLEDMM: support ledmap file properties width and height
+    if (doc[F("width")]>0 && doc[F("height")]>0) {
+      panels = 1;
+      panel.clear();
+      panel.reserve(1U);  // pre-allocate memory for panels
+      Panel p;
+      p.bottomStart = p.rightStart = p.vertical = p.serpentine = false;
+      p.xOffset = p.yOffset = 0;
+      p.width = doc[F("width")];
+      p.height = doc[F("height")];
+      strip.panel.push_back(p);
+
+      Segment::maxWidth = p.width;
+      Segment::maxHeight = p.height;
+
+      makeAutoSegments();
+    }
+
     if (isMatrix)
       customMappingSize = Segment::maxWidth * Segment::maxHeight; //as whole matrix will be stored in setUpMatrix
     else
@@ -2087,7 +2103,7 @@ bool WS2812FX::deserializeMap(uint8_t n) {
       customMappingSize  = map.size();
     customMappingTable = new uint16_t[customMappingSize];
 
-    if (!isPhysicalMap) {
+    if (!doc[F("physical")]) {
       for (uint16_t i=0; i<MIN(customMappingSize, map.size()); i++) 
         customMappingTable[i] = (uint16_t) (map[i]<0 ? 0xFFFFU : map[i]);
     }

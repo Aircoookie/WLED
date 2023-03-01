@@ -1324,16 +1324,14 @@ function drawSegmentView() {
 	if (ledmapNr>=0 && ctx) { //WLEDMM: @Troy#2642 : include ledmap = 0 as default ledmap
 		// console.log("Before fetch ledmap ", lastinfo.ledmap);
 		var fileName;
-		let isPhysicalMap = false;
 		if (ledmapNr==0)
 			fileName = "ledmap.json"; //0 is ledmap.json, not ledmap0.json
 		else if (ledmapNr<10)
 			fileName = "ledmap"+ledmapNr+".json";
-		else {
+		else
 			fileName = ledmapFileNames[ledmapNr-10];
-			isPhysicalMap = fileName.charAt(2) == "P";
-		}
-		fetchAndExecute((loc?`http://${locip}`:'.') + "/", fileName , function(text) {
+
+			fetchAndExecute((loc?`http://${locip}`:'.') + "/", fileName , function(text) {
 			var ledmapJson = JSON.parse(text);
 			var counter = 0;
 			var noMap = [];
@@ -1341,7 +1339,7 @@ function drawSegmentView() {
 			var colorArray = ["yellow",     "green",     "magenta",   "orange"];
 
 			var customMappingTable = [];
-			if (!isPhysicalMap) {
+			if (!ledmapJson["physical"]) {
 				customMappingTable = ledmapJson["map"];
 			} else {
 				for (let i=0;i<maxWidth * maxHeight;i++) customMappingTable.push(-1); //init with noshow
