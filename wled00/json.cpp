@@ -107,6 +107,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   if (stop > start && of > len -1) of = len -1;
   seg.set(start, stop, grp, spc, of, startY, stopY);
 
+  if (seg.reset && seg.stop == 0) return; // segment was deleted & is marked for reset, no need to change anything else
+
   byte segbri = seg.opacity;
   if (getVal(elem["bri"], &segbri)) {
     if (segbri > 0) seg.setOpacity(segbri);
@@ -125,43 +127,36 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   JsonArray colarr = elem["col"];
   if (!colarr.isNull())
   {
-    if (seg.hasRGB() || seg.hasWhite()) {
-      // segment has RGB or White
-      for (size_t i = 0; i < 3; i++)
-      {
-        int rgbw[] = {0,0,0,0};
-        bool colValid = false;
-        JsonArray colX = colarr[i];
-        if (colX.isNull()) {
-          byte brgbw[] = {0,0,0,0};
-          const char* hexCol = colarr[i];
-          if (hexCol == nullptr) { //Kelvin color temperature (or invalid), e.g 2400
-            int kelvin = colarr[i] | -1;
-            if (kelvin <  0) continue;
-            if (kelvin == 0) seg.setColor(i, 0);
-            if (kelvin >  0) colorKtoRGB(kelvin, brgbw);
-            colValid = true;
-          } else { //HEX string, e.g. "FFAA00"
-            colValid = colorFromHexString(brgbw, hexCol);
-          }
-          for (size_t c = 0; c < 4; c++) rgbw[c] = brgbw[c];
-        } else { //Array of ints (RGB or RGBW color), e.g. [255,160,0]
-          byte sz = colX.size();
-          if (sz == 0) continue; //do nothing on empty array
-
-          copyArray(colX, rgbw, 4);
+    for (size_t i = 0; i < 3; i++)
+    {
+      int rgbw[] = {0,0,0,0};
+      bool colValid = false;
+      JsonArray colX = colarr[i];
+      if (colX.isNull()) {
+        byte brgbw[] = {0,0,0,0};
+        const char* hexCol = colarr[i];
+        if (hexCol == nullptr) { //Kelvin color temperature (or invalid), e.g 2400
+          int kelvin = colarr[i] | -1;
+          if (kelvin <  0) continue;
+          if (kelvin == 0) seg.setColor(i, 0);
+          if (kelvin >  0) colorKtoRGB(kelvin, brgbw);
           colValid = true;
+        } else { //HEX string, e.g. "FFAA00"
+          colValid = colorFromHexString(brgbw, hexCol);
         }
+        for (size_t c = 0; c < 4; c++) rgbw[c] = brgbw[c];
+      } else { //Array of ints (RGB or RGBW color), e.g. [255,160,0]
+        byte sz = colX.size();
+        if (sz == 0) continue; //do nothing on empty array
 
-        if (!colValid) continue;
-
-        seg.setColor(i, RGBW32(rgbw[0],rgbw[1],rgbw[2],rgbw[3]));
-        if (seg.mode == FX_MODE_STATIC) strip.trigger(); //instant refresh
+        copyArray(colX, rgbw, 4);
+        colValid = true;
       }
-    } else {
-      // non RGB & non White segment (usually On/Off bus)
-      seg.setColor(0, ULTRAWHITE);
-      seg.setColor(1, BLACK);
+
+      if (!colValid) continue;
+
+      seg.setColor(i, RGBW32(rgbw[0],rgbw[1],rgbw[2],rgbw[3]));
+      if (seg.mode == FX_MODE_STATIC) strip.trigger(); //instant refresh
     }
   }
 

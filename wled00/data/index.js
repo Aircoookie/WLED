@@ -61,13 +61,10 @@ function setCSL(cs)
 	let w = cs.dataset.w ? parseInt(cs.dataset.w) : 0;
 	let hasShadow = getComputedStyle(cs).textShadow !== "none";
 	if (hasRGB && !isRgbBlack(cs.dataset)) {
-		cs.style.backgroundColor = rgbStr(cs.dataset);
 		if (!hasShadow) cs.style.color = rgbBri(cs.dataset) > 127 ? "#000":"#fff"; // if text has no CSS "shadow"
-		if (hasWhite && w > 0) {
-			cs.style.background = `linear-gradient(180deg, ${rgbStr(cs.dataset)} 30%, rgb(${w},${w},${w}))`;
-		}
+		cs.style.background = (hasWhite && w > 0) ? `linear-gradient(180deg, ${rgbStr(cs.dataset)} 30%, rgb(${w},${w},${w}))` : rgbStr(cs.dataset);
 	} else {
-		if (!hasWhite) w = 0;
+		if (hasRGB && !hasWhite) w = 0;
 		cs.style.background = `rgb(${w},${w},${w})`;
 		if (!hasShadow) cs.style.color = w > 127 ? "#000":"#fff";
 	}
@@ -1181,7 +1178,7 @@ function updateUI()
 	gId('kwrap').style.display   = (hasRGB && !hasCCT) ? "block":"none";      // Kelvin slider
 	gId('rgbwrap').style.display = (hasRGB && ccfg.rgb) ? "block":"none";     // RGB sliders
 	gId('qcs-w').style.display   = (hasRGB && ccfg.quick) ? "block":"none";   // quick selection
-	gId('csl').style.display     = (hasRGB || hasWhite) ? "block":"none";     // color selectors (hide for On/Off bus)
+	//gId('csl').style.display     = (hasRGB || hasWhite) ? "block":"none";     // color selectors (hide for On/Off bus)
 	//gId('palw').style.display    = (hasRGB) ? "inline-block":"none";          // palettes are shown/hidden in setEffectParameters()
 
 	updatePA();
@@ -1231,7 +1228,13 @@ function updateSelectedFx()
 		var fxs = parent.querySelectorAll('.lstI');
 		for (const fx of fxs) {
 			let opts = fx.dataset.opt.split(";");
-			if (fx.dataset.id>0 && segLmax<2 && (!opts[3] || opts[3].indexOf("0")<0)) fx.classList.add('hide'); else fx.classList.remove('hide');
+			if (fx.dataset.id>0) {
+				if (segLmax==0) fx.classList.add('hide'); // none of the segments selected (hide all effects)
+				else {
+					if (segLmax==1 && (!opts[3] || opts[3].indexOf("0")<0)) fx.classList.add('hide');
+					else fx.classList.remove('hide');
+				}
+			}
 		}
 		// hide 2D mapping and/or sound simulation options
 		var selectedName = selectedEffect.querySelector(".lstIname").innerText;
@@ -1356,7 +1359,7 @@ function readState(s,command=false)
 		cd[e].dataset.r = i.col[e][0];
 		cd[e].dataset.g = i.col[e][1];
 		cd[e].dataset.b = i.col[e][2];
-		if (hasWhite) { cd[e].dataset.w = i.col[e][3]; }
+		if (hasWhite || (!hasRGB && !hasWhite)) { cd[e].dataset.w = i.col[e][3]; }
 		setCSL(cd[e]);
 	}
 	selectSlot(csel);

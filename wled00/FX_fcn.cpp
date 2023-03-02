@@ -415,6 +415,10 @@ void Segment::set(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t o
 
 bool Segment::setColor(uint8_t slot, uint32_t c) { //returns true if changed
   if (slot >= NUM_COLORS || c == colors[slot]) return false;
+  if (!_isRGB && !_hasW) {
+    if (slot == 0 && c == BLACK) return false; // on/off segment cannot have primary color black
+    if (slot == 1 && c != BLACK) return false; // on/off segment cannot have secondary color non black
+  }
   if (fadeTransition) startTransition(strip.getTransition()); // start transition prior to change
   colors[slot] = c;
   stateChanged = true; // send UDP/WS broadcast
