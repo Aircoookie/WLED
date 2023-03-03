@@ -2252,7 +2252,7 @@ function setLor(i)
 function setPreset(i)
 {
 	var obj = {"ps":i};
-	if (pJson && pJson[i] && (!pJson[i].win || pJson[i].win.indexOf("Please") <= 0)) {
+	if (!isPlaylist(i) && pJson && pJson[i] && (!pJson[i].win || pJson[i].win.indexOf("Please") <= 0)) {
 		// we will send the complete preset content as to avoid delay introduced by
 		// async nature of applyPreset() and having to read the preset from file system.
 		obj = {"pd":i}; // use "pd" instead of "ps" to indicate that we are sending the preset content directly

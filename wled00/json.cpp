@@ -199,9 +199,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   getVal(elem["ix"], &seg.intensity);
 
   uint8_t pal = seg.palette;
-  if (seg.hasRGB()) {  // ignore palette for White and On/Off segments
-    if (getVal(elem["pal"], &pal)) seg.setPalette(pal);
-  }
+  if (getVal(elem["pal"], &pal)) seg.setPalette(pal);
 
   getVal(elem["c1"], &seg.custom1);
   getVal(elem["c2"], &seg.custom2);
