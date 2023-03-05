@@ -136,6 +136,15 @@ void serveJson(AsyncWebServerRequest* request);
 bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient = 0);
 #endif
 
+#ifdef ARDUINO_ARCH_ESP32
+#include <esp_system.h>
+int getCoreResetReason(int core);
+String resetCode2Info(int reason);
+esp_reset_reason_t getRestartReason();
+String restartCode2Info(esp_reset_reason_t reason);
+String restartCode2InfoLong(esp_reset_reason_t reason);
+#endif
+
 //led.cpp
 void setValuesFromSegment(uint8_t s);
 void setValuesFromMainSeg();

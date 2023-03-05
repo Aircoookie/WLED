@@ -654,7 +654,12 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
 
 // begin WLEDMM
 #ifdef ARDUINO_ARCH_ESP32
-static String resetCode2Info(int reason) {
+int getCoreResetReason(int core) {
+  if (core >= ESP.getChipCores()) return 0;
+  return((int)rtc_get_reset_reason(core));
+}
+
+String resetCode2Info(int reason) {
   switch(reason) {
 
     case 1 : //  1 =  Vbat power on reset
@@ -706,6 +711,42 @@ static String resetCode2Info(int reason) {
     default: 
       return F("unknown"); break;
   }
+}
+
+esp_reset_reason_t getRestartReason() {
+  return(esp_reset_reason());
+}
+String restartCode2InfoLong(esp_reset_reason_t reason) {
+    switch (reason) {
+      case ESP_RST_UNKNOWN:  return(F("Reset reason can not be determined")); break;
+      case ESP_RST_POWERON:  return(F("Restart due to power-on event")); break;
+      case ESP_RST_EXT:      return(F("Reset by external pin (not applicable for ESP32)")); break;
+      case ESP_RST_SW:       return(F("Software restart via esp_restart()")); break;
+      case ESP_RST_PANIC:    return(F("Software reset due to panic or unhandled exception (SW error)")); break;
+      case ESP_RST_INT_WDT:  return(F("Reset (software or hardware) due to interrupt watchdog")); break;
+      case ESP_RST_TASK_WDT: return(F("Reset due to task watchdog")); break;
+      case ESP_RST_WDT:      return(F("Reset due to other watchdogs")); break;
+      case ESP_RST_DEEPSLEEP:return(F("Restart after exiting deep sleep mode")); break;
+      case ESP_RST_BROWNOUT: return(F("Brownout Reset (software or hardware)")); break;
+      case ESP_RST_SDIO:     return(F("Reset over SDIO")); break;
+    }
+  return(F("unknown"));
+}
+String restartCode2Info(esp_reset_reason_t reason) {
+    switch (reason) {
+      case ESP_RST_UNKNOWN:  return(F("unknown reason")); break;
+      case ESP_RST_POWERON:  return(F("power-on event")); break;
+      case ESP_RST_EXT:      return(F("external pin reset")); break;
+      case ESP_RST_SW:       return(F("SW restart by esp_restart()")); break;
+      case ESP_RST_PANIC:    return(F("SW error (panic or exception)")); break;
+      case ESP_RST_INT_WDT:  return(F("interrupt watchdog")); break;
+      case ESP_RST_TASK_WDT: return(F("task watchdog")); break;
+      case ESP_RST_WDT:      return(F("other watchdog")); break;
+      case ESP_RST_DEEPSLEEP:return(F("exit from deep sleep")); break;
+      case ESP_RST_BROWNOUT: return(F("Brownout Reset")); break;
+      case ESP_RST_SDIO:     return(F("Reset over SDIO")); break;
+    }
+  return(F("unknown"));
 }
 #endif
 // end WLEDMM
@@ -882,6 +923,9 @@ void serializeInfo(JsonObject root)
     root[F("e32core1code")] = (int)rtc_get_reset_reason(1);
     root[F("e32core1text")] = resetCode2Info(rtc_get_reset_reason(1));
   }
+  root[F("e32code")] = (int)getRestartReason();
+  root[F("e32text")] = restartCode2Info(getRestartReason());
+
   static char msgbuf[32];
   snprintf(msgbuf, sizeof(msgbuf)-1, "%s rev.%d", ESP.getChipModel(), ESP.getChipRevision());
   root[F("e32model")] = msgbuf;

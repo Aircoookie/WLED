@@ -336,6 +336,18 @@ void WLED::setup()
   USER_PRINT(F(" rev.")); USER_PRINT(ESP.getChipRevision());
   USER_PRINT(F(", ")); USER_PRINT(ESP.getChipCores()); USER_PRINT(F(" core(s)"));
   USER_PRINT(F(", ")); USER_PRINT(ESP.getCpuFreqMHz()); USER_PRINTLN(F("MHz."));
+
+  // WLEDMM begin
+  USER_PRINT(F("CPU    "));
+  esp_reset_reason_t resetReason = getRestartReason();
+  USER_PRINT(restartCode2InfoLong(resetReason));
+  int core0code = getCoreResetReason(0);
+  int core1code = getCoreResetReason(1);
+  USER_PRINTF("Core#0 %s (%d)", resetCode2Info(core0code).c_str(), core0code);
+  if (core1code > 0) {USER_PRINTF("; Core#1 %s (%d)", resetCode2Info(core1code).c_str(), core1code);}
+  USER_PRINTLN(F("."));
+  // WLEDMM end
+
   USER_PRINT(F("FLASH: ")); USER_PRINT((ESP.getFlashChipSize()/1024)/1024);
   USER_PRINT(F("MB, Mode ")); USER_PRINT(ESP.getFlashChipMode());
   #ifdef WLED_DEBUG
