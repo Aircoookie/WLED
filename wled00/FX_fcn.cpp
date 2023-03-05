@@ -81,7 +81,7 @@ uint16_t Segment::maxHeight = 1;
 // copy constructor
 Segment::Segment(const Segment &orig) {
   //DEBUG_PRINTLN(F("-- Copy segment constructor --"));
-  memcpy(this, &orig, sizeof(Segment));
+  memcpy((void*)this, (void*)&orig, sizeof(Segment));
   name = nullptr;
   data = nullptr;
   _dataLen = 0;
@@ -96,7 +96,7 @@ Segment::Segment(const Segment &orig) {
 // move constructor
 Segment::Segment(Segment &&orig) noexcept {
   //DEBUG_PRINTLN(F("-- Move segment constructor --"));
-  memcpy(this, &orig, sizeof(Segment));
+  memcpy((void*)this, (void*)&orig, sizeof(Segment));
   orig.name = nullptr;
   orig.data = nullptr;
   orig._dataLen = 0;
@@ -114,7 +114,7 @@ Segment& Segment::operator= (const Segment &orig) {
     if (leds && !Segment::_globalLeds) free(leds);
     deallocateData();
     // copy source
-    memcpy(this, &orig, sizeof(Segment));
+    memcpy((void*)this, (void*)&orig, sizeof(Segment));
     // erase pointers to allocated data
     name = nullptr;
     data = nullptr;
@@ -138,7 +138,7 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
     deallocateData(); // free old runtime data
     if (_t) delete _t;
     if (leds && !Segment::_globalLeds) free(leds);
-    memcpy(this, &orig, sizeof(Segment));
+    memcpy((void*)this, (void*)&orig, sizeof(Segment));
     orig.name = nullptr;
     orig.data = nullptr;
     orig._dataLen = 0;

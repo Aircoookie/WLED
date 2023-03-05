@@ -72,7 +72,11 @@
   #ifndef MAX_NUM_SEGMENTS
     #define MAX_NUM_SEGMENTS  32
   #endif
-  #define MAX_SEGMENT_DATA  32767
+  #if defined(ARDUINO_ARCH_ESP32S2)
+    #define MAX_SEGMENT_DATA  24576
+  #else
+    #define MAX_SEGMENT_DATA  32767
+  #endif
 #endif
 
 /* How much data bytes each segment should max allocate to leave enough space for other segments,
@@ -829,6 +833,13 @@ class WS2812FX {  // 96 bytes
           bool serpentine  : 1; // is serpentine?
         };
       };
+      panel_t()
+        : xOffset(0)
+        , yOffset(0)
+        , width(8)
+        , height(8)
+        , options(0)
+      {}
     } Panel;
     std::vector<Panel> panel;
 #endif

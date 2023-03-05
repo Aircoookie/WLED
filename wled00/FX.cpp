@@ -1878,7 +1878,6 @@ uint16_t mode_pride_2015(void) {
   sPseudotime += duration * msmultiplier;
   sHue16 += duration * beatsin88( 400, 5,9);
   uint16_t brightnesstheta16 = sPseudotime;
-  CRGB fastled_col;
 
   for (int i = 0 ; i < SEGLEN; i++) {
     hue16 += hueinc16;
