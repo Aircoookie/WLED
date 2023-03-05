@@ -341,6 +341,9 @@ void WLED::setup()
   USER_PRINT(F("CPU    "));
   esp_reset_reason_t resetReason = getRestartReason();
   USER_PRINT(restartCode2InfoLong(resetReason));
+  USER_PRINT(F(" (code "));
+  USER_PRINT((int)resetReason);
+  USER_PRINT(F("). "));
   int core0code = getCoreResetReason(0);
   int core1code = getCoreResetReason(1);
   USER_PRINTF("Core#0 %s (%d)", resetCode2Info(core0code).c_str(), core0code);
