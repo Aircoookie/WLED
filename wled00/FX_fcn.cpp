@@ -640,10 +640,10 @@ class JMapC {
         do {
           DeserializationError err = deserializeJson(docChunk, jMapFile);
           // serializeJson(docChunk, Serial); USER_PRINTLN();
-          // USER_PRINTf("docChunk  %u / %u%% (%u %u %u) %u\n", (unsigned int)docChunk.memoryUsage(), 100 * docChunk.memoryUsage() / docChunk.capacity(), (unsigned int)docChunk.size(), docChunk.overflowed(), (unsigned int)docChunk.nesting(), jMapFile.size());
+          // USER_PRINTF("docChunk  %u / %u%% (%u %u %u) %u\n", (unsigned int)docChunk.memoryUsage(), 100 * docChunk.memoryUsage() / docChunk.capacity(), (unsigned int)docChunk.size(), docChunk.overflowed(), (unsigned int)docChunk.nesting(), jMapFile.size());
           if (err) 
           {
-            USER_PRINTf("deserializeJson() of parseTree failed with code %s\n", err.c_str());
+            USER_PRINTF("deserializeJson() of parseTree failed with code %s\n", err.c_str());
             delete[] SEGMENT.name; SEGMENT.name = nullptr; //need to clear the name as otherwise continuously loaded
             return;
           }
