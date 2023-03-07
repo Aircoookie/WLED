@@ -649,7 +649,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
       seg0["stop"] = 0;
     }
   }
-  root[F("ledmap")] = loadedLedmap; //WLEDMM ledmaps will be stored in json
+  root[F("ledmap")] = loadedLedmap; //WLEDMM ledmaps will be stored in json so dropdown can display it
 }
 
 // begin WLEDMM

@@ -575,12 +575,12 @@ class JMapC {
     char previousSegmentName[50] = "";
 
     ~JMapC() {
-      Serial.println("~JMapC");
+      USER_PRINTLN("~JMapC");
       deletejVectorMap();
     }
     void deletejVectorMap() {
       if (jVectorMap.size() > 0) {
-        Serial.println("delete jVectorMap");
+        USER_PRINTLN("delete jVectorMap");
         for (size_t i=0; i<jVectorMap.size(); i++)
           delete jVectorMap[i].array; 
         jVectorMap.clear();
@@ -624,7 +624,7 @@ class JMapC {
       else if (SEGMENT.name != nullptr && strcmp(SEGMENT.name, previousSegmentName) != 0) {
         uint32_t dataSize = 0;
         deletejVectorMap();
-        Serial.print("New "); Serial.println(SEGMENT.name);
+        USER_PRINT("New "); USER_PRINTLN(SEGMENT.name);
         char jMapFileName[50];
         strcpy(jMapFileName, "/");
         strcat(jMapFileName, SEGMENT.name);
@@ -639,11 +639,11 @@ class JMapC {
         jMapFile.find("[");
         do {
           DeserializationError err = deserializeJson(docChunk, jMapFile);
-          // serializeJson(docChunk, Serial); Serial.println();
-          // Serial.printf("docChunk  %u / %u%% (%u %u %u) %u\n", (unsigned int)docChunk.memoryUsage(), 100 * docChunk.memoryUsage() / docChunk.capacity(), (unsigned int)docChunk.size(), docChunk.overflowed(), (unsigned int)docChunk.nesting(), jMapFile.size());
+          // serializeJson(docChunk, Serial); USER_PRINTLN();
+          // USER_PRINTf("docChunk  %u / %u%% (%u %u %u) %u\n", (unsigned int)docChunk.memoryUsage(), 100 * docChunk.memoryUsage() / docChunk.capacity(), (unsigned int)docChunk.size(), docChunk.overflowed(), (unsigned int)docChunk.nesting(), jMapFile.size());
           if (err) 
           {
-            Serial.printf("deserializeJson() of parseTree failed with code %s\n", err.c_str());
+            USER_PRINTf("deserializeJson() of parseTree failed with code %s\n", err.c_str());
             delete[] SEGMENT.name; SEGMENT.name = nullptr; //need to clear the name as otherwise continuously loaded
             return;
           }
@@ -684,10 +684,10 @@ class JMapC {
         scale = MIN(SEGMENT.virtualWidth() / maxWidth, SEGMENT.virtualHeight() / maxHeight);
 
         dataSize += sizeof(jVectorMap);
-        Serial.print("dataSize ");
-        Serial.print(dataSize);
-        Serial.print(" scale ");
-        Serial.println(scale);
+        USER_PRINT("dataSize ");
+        USER_PRINT(dataSize);
+        USER_PRINT(" scale ");
+        USER_PRINTLN(scale);
         strcpy(previousSegmentName, SEGMENT.name);
       }
     } //updatejMapDoc
@@ -696,7 +696,7 @@ class JMapC {
 //WLEDMM jMap
 void Segment::createjMap() {
   if (!jMap) {
-    Serial.println("createjMap");
+    USER_PRINTLN("createjMap");
     jMap = new JMapC();
   }
 }
@@ -705,7 +705,7 @@ void Segment::createjMap() {
 void Segment::deletejMap() {
   //Should be called from ~Segment but causes crash (and ~Segment is called quite often...)
   if (jMap) {
-    Serial.println("deletejMap");
+    USER_PRINTLN("deletejMap");
     delete (JMapC *)jMap; jMap = nullptr;
   }
 }
@@ -2024,7 +2024,7 @@ bool WS2812FX::deserializeMap(uint8_t n) {
   bool isFile = false;;
   if (n<10) {
     strcpy_P(fileName, PSTR("/ledmap"));
-    if (n) sprintf(fileName +7, "%d", n);
+    if (n) sprintf(fileName +7, "%d", n); //WLEDMM: trick to not include 0 in ledmap.json
     strcat(fileName, ".json");
     isFile = WLED_FS.exists(fileName);
   } else { //WLEDM add segment name as ledmap.name
@@ -2040,18 +2040,13 @@ bool WS2812FX::deserializeMap(uint8_t n) {
   }
 
   if (!isFile) {
-    // erase custom mapping if selecting nonexistent ledmap.json (n==0) //WLEDM always erase if nonexistant
-    if (customMappingTable != nullptr) {
-      //WLEDMM: if isMatrix then not erase but back to matrix default 
-      if (isMatrix)
-        setUpMatrix(true);
-      else {
-        customMappingSize = 0;
-        delete[] customMappingTable;
-        customMappingTable = nullptr;
-        loadedLedmap = 0;
-      }
-    }
+    //WLEDMM: disable temporary!!!
+    // erase custom mapping if selecting nonexistent ledmap.json (n==0)
+    // if (!isMatrix && !n && customMappingTable != nullptr) {
+    //   customMappingSize = 0;
+    //   delete[] customMappingTable;
+    //   customMappingTable = nullptr;
+    // }
     return false;
   }
 
@@ -2075,45 +2070,40 @@ bool WS2812FX::deserializeMap(uint8_t n) {
 
   JsonArray map = doc[F("map")];
   if (!map.isNull() && map.size()) {  // not an empty map
-    //WLEDMM: if isMatrix then customMap size is whole matrix
-#ifndef WLED_DISABLE_2D
+     if (doc[F("physical")]) {
+      //WLEDMM: support ledmap file properties width and height
+      if (doc[F("width")]>0 && doc[F("height")]>0) {
+        panels = 1;
+        panel.clear();
+        panel.reserve(1U);  // pre-allocate memory for panels
+        Panel p;
+        p.bottomStart = p.rightStart = p.vertical = p.serpentine = false;
+        p.xOffset = p.yOffset = 0;
+        p.width = doc[F("width")];
+        p.height = doc[F("height")];
+        strip.panel.push_back(p);
 
-    //WLEDMM: support ledmap file properties width and height
-    if (doc[F("width")]>0 && doc[F("height")]>0) {
-      panels = 1;
-      panel.clear();
-      panel.reserve(1U);  // pre-allocate memory for panels
-      Panel p;
-      p.bottomStart = p.rightStart = p.vertical = p.serpentine = false;
-      p.xOffset = p.yOffset = 0;
-      p.width = doc[F("width")];
-      p.height = doc[F("height")];
-      strip.panel.push_back(p);
+        Segment::maxWidth = p.width;
+        Segment::maxHeight = p.height;
 
-      Segment::maxWidth = p.width;
-      Segment::maxHeight = p.height;
-
-      makeAutoSegments();
+        makeAutoSegments();
+      }
     }
 
-    if (isMatrix)
-      customMappingSize = Segment::maxWidth * Segment::maxHeight; //as whole matrix will be stored in setUpMatrix
-    else
-#endif
-      customMappingSize  = map.size();
+    customMappingSize  = map.size();
     customMappingTable = new uint16_t[customMappingSize];
 
-    if (!doc[F("physical")]) {
+    // if (!doc[F("physical")]) {
       for (uint16_t i=0; i<MIN(customMappingSize, map.size()); i++) 
         customMappingTable[i] = (uint16_t) (map[i]<0 ? 0xFFFFU : map[i]);
-    }
-    else {
-      for (int i=0; i<customMappingSize;i++) customMappingTable[i] = (uint16_t)0xFFFFU; //WLEDMM: init with no show
-      //assign all >=0 mappings to customMappingTable
-      for (uint16_t i=0; i<map.size(); i++) 
-        if (map[i]>=0)
-          customMappingTable[map[i].as<uint16_t>()] = i;
-    }
+    // }
+    // else {
+    //   for (int i=0; i<customMappingSize;i++) customMappingTable[i] = (uint16_t)0xFFFFU; //WLEDMM: init with no show
+    //   //assign all >=0 mappings to customMappingTable
+    //   for (uint16_t i=0; i<map.size(); i++) 
+    //     if (map[i]>=0)
+    //       customMappingTable[map[i].as<uint16_t>()] = i;
+    // }
         
 
     loadedLedmap = n;
@@ -2126,11 +2116,7 @@ bool WS2812FX::deserializeMap(uint8_t n) {
       }
       DEBUG_PRINTLN();
     #endif
-
-    setUpMatrix(false); //WLEDMM: apply logical to physical mapping after the ledmap
   }
-  else
-    setUpMatrix(true); //WLEDMM: if no map then back to matrix default 
 
   releaseJSONBufferLock();
   return true;
