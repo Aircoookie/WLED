@@ -7131,12 +7131,29 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
   int fadeoutDelay = (256 - SEGMENT.speed) / 64;
   if ((fadeoutDelay <= 1 ) || ((SEGENV.call % fadeoutDelay) == 0)) SEGMENT.fadeToBlackBy(SEGMENT.speed);
 
+  uint16_t lastBarHeight = 0;  // WLEDMM: for smoothing out bars
   for (int x=0; x < cols; x++) {
     uint8_t  band       = map(x, 0, cols-1, 0, NUM_BANDS - 1);
+    if(cols > 24) band = map(x+1, 0, cols-1, 0, NUM_BANDS - 1);     // WLEDMM fix for too-wide first band
     if (NUM_BANDS < 16) band = map(band, 0, NUM_BANDS - 1, 0, 15); // always use full range. comment out this line to get the previous behaviour.
     band = constrain(band, 0, 15);
     uint16_t colorIndex = band * 17;
     uint16_t barHeight  = map(fftResult[band], 0, 255, 0, rows); // do not subtract -1 from rows here
+
+    // WLEDMM begin - smooth out bars
+    if ((x > 0) && (x < (cols-1)) && (SEGMENT.check2)) {
+      // get height of next (right side) bar
+      uint8_t nextband = map(x+1, 0, cols-1, 0, NUM_BANDS - 1);
+      if(cols > 24) nextband = map(x+2, 0, cols-1, 0, NUM_BANDS - 1);
+      if (NUM_BANDS < 16) nextband = map(nextband, 0, NUM_BANDS - 1, 0, 15); // always use full range. comment out this line to get the previous behaviour.
+      nextband = constrain(nextband, 0, 15);
+      uint16_t nextbarHeight  = map(fftResult[nextband], 0, 255, 0, rows); // do not subtract -1 from rows here
+      // smooth height
+      barHeight = (7*barHeight + 3*lastBarHeight + 3*nextbarHeight) / 12;   // yeees, its 12 not 13 (10% amplification)
+    }
+    lastBarHeight = barHeight; // remember barheight (left side) for next iteration
+    // WLEDMM end
+
     if (barHeight > rows) barHeight = rows;                      // WLEDMM map() can "overshoot" due to rounding errors
     if (barHeight > previousBarHeight[x]) previousBarHeight[x] = barHeight; //drive the peak up
 
@@ -7148,7 +7165,7 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
       ledColor = SEGMENT.color_from_palette(colorIndex, false, PALETTE_SOLID_WRAP, 0);
       SEGMENT.setPixelColorXY(x, rows-1 - y, ledColor);
     }
-    if ((previousBarHeight[x] > 0) && (previousBarHeight[x] < rows))  // WLEDMM avoid "overshooting" into other segments
+    if ((SEGMENT.intensity < 255) && (previousBarHeight[x] > 0) && (previousBarHeight[x] < rows))  // WLEDMM avoid "overshooting" into other segments
       SEGMENT.setPixelColorXY(x, rows - previousBarHeight[x], (SEGCOLOR(2) != BLACK) ? SEGCOLOR(2) : ledColor);
 
     if (rippleTime && previousBarHeight[x]>0) previousBarHeight[x]--;    //delay/ripple effect
@@ -7156,13 +7173,13 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
 
 #ifdef SR_DEBUG
   // WLEDMM: abuse top left/right pixels for peak detection debugging
-  SEGMENT.setPixelColorXY(cols-1, rows-1, (samplePeak > 0) ? GREEN : BLACK);
-  if (samplePeak > 0) SEGMENT.setPixelColorXY(0, rows-1, GREEN);
+  SEGMENT.setPixelColorXY(cols-1, 0, (samplePeak > 0) ? GREEN : BLACK);
+  if (samplePeak > 0) SEGMENT.setPixelColorXY(0, 0, GREEN);
   // WLEDMM end
 #endif
   return FRAMETIME;
 } // mode_2DGEQ()
-static const char _data_FX_MODE_2DGEQ[] PROGMEM = "GEQ ☾@Fade speed,Ripple decay,# of bands,,,Color bars;!,,Peaks;!;2f;c1=255,c2=64,pal=11,si=0"; // Beatsin
+static const char _data_FX_MODE_2DGEQ[] PROGMEM = "GEQ ☾@Fade speed,Ripple decay,# of bands,,,Color bars,Smooth bars ☾;!,,Peaks;!;2f;c1=255,c2=64,pal=11,si=0"; // Beatsin
 
 
 /////////////////////////
