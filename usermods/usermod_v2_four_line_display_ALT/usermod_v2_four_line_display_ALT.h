@@ -347,19 +347,21 @@ class FourLineDisplayUsermod : public Usermod {
           return;
         }
       } else {
-        if (ioPin[0] < 0 || ioPin[1] < 0) {
-          ioPin[0] = i2c_scl;
-          ioPin[1] = i2c_sda;
-        }
+        //if (ioPin[0] < 0 || ioPin[1] < 0) { //WLEDMM do _not_ copy global pins !!
+        //  ioPin[0] = i2c_scl;
+        //  ioPin[1] = i2c_sda;
+        //}
         isHW = (ioPin[0]==i2c_scl && ioPin[1]==i2c_sda);
+        if ((ioPin[0] == -1) || (ioPin[1] == -1)) isHW = true;  // WLEDMM "use global" = hardware
         // isHW = true;
         if (isHW) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
         PinManagerPinType pins[2] = { {ioPin[0], true }, { ioPin[1], true } };
 
-        if (ioPin[0] < 0 || ioPin[1] < 0)  { typeOK=false; strcpy(errorMessage, PSTR("I2C No Pins defined")); return; }  //WLEDMM bugfix - ensure that "final" GPIO are valid
+        if ((ioPin[0] < 0 || ioPin[1] < 0) && (i2c_scl < 0 || i2c_sda < 0))  {        // invalid pins, or "use global" and global pins not defined
+          typeOK=false; strcpy(errorMessage, PSTR("I2C No Pins defined")); return; }  //WLEDMM bugfix - ensure that "final" GPIO are valid
 
         if (isHW) {
-          if (!pinManager.joinWire(ioPin[1], ioPin[0])) { typeOK=false; strcpy(errorMessage, PSTR("I2C init failed")); return; }  // WLEDMM join the HW bus
+          if (!pinManager.joinWire(i2c_sda, i2c_scl)) { typeOK=false; strcpy(errorMessage, PSTR("I2C HW init failed")); return; }  // WLEDMM join the HW bus
         } else {
           if (!pinManager.allocateMultiplePins(pins, 2, po)) { typeOK=false; strcpy(errorMessage, PSTR("I2C Alloc pins failed")); return; } // WLEDMM use software bus
         }
@@ -442,7 +444,7 @@ class FourLineDisplayUsermod : public Usermod {
 
       if (nullptr == u8x8) {
           USER_PRINTLN(F("Display init failed."));
-          pinManager.deallocateMultiplePins((const uint8_t*)ioPin, isSPI ? 5 : 2, po);
+          if (!isHW || !isSPI) pinManager.deallocateMultiplePins((const uint8_t*)ioPin, isSPI ? 5 : 2, po);   // WLEDMM do not de-alloc global pins
           typeOK=false;
           strcpy(errorMessage, PSTR("Display init failed"));
           return;
@@ -1285,8 +1287,9 @@ class FourLineDisplayUsermod : public Usermod {
             bool isHW = (oldPin[0]==spi_sclk && oldPin[1]==spi_mosi);
             if (isHW) po = PinOwner::HW_SPI;
           } else {
-            bool isHW = (oldPin[0]==i2c_scl && oldPin[1]==i2c_sda);
-            if (isHW) po = PinOwner::HW_I2C;
+            //bool isHW = (oldPin[0]==i2c_scl && oldPin[1]==i2c_sda);
+            //if ((ioPin[0] == -1) || (ioPin[1] == -1)) isHW = true;  // WLEDMM "use global" = hardware
+            //if (isHW) po = PinOwner::HW_I2C;                        // WLEDMM don't try to de-alloc HW pins.
           }
           pinManager.deallocateMultiplePins((const uint8_t *)oldPin, 2, po);
           type = newType;

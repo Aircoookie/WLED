@@ -523,12 +523,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (!requestJSONBufferLock(5)) return;
 
     // global I2C & SPI pins
-    int8_t hw_sda_pin  = -1;//!request->arg(F("SDApin")).length() ? -1 : (int)request->arg(F("SDApin")).toInt();
-    int8_t hw_scl_pin  = -1;//!request->arg(F("SCLpin")).length() ? -1 : (int)request->arg(F("SCLpin")).toInt();
+    int8_t hw_sda_pin  = -2;//!request->arg(F("SDApin")).length() ? -1 : (int)request->arg(F("SDApin")).toInt();  // WLEDMM: -2 = no value
+    int8_t hw_scl_pin  = -2;//!request->arg(F("SCLpin")).length() ? -1 : (int)request->arg(F("SCLpin")).toInt();  // WLEDMM: -2 = no value
 
-    int8_t hw_mosi_pin = -1;//!request->arg(F("MOSIpin")).length() ? -1 : (int)request->arg(F("MOSIpin")).toInt();
-    int8_t hw_miso_pin = -1;//!request->arg(F("MISOpin")).length() ? -1 : (int)request->arg(F("MISOpin")).toInt();
-    int8_t hw_sclk_pin = -1;//!request->arg(F("SCLKpin")).length() ? -1 : (int)request->arg(F("SCLKpin")).toInt();
+    int8_t hw_mosi_pin = -2;//!request->arg(F("MOSIpin")).length() ? -1 : (int)request->arg(F("MOSIpin")).toInt();
+    int8_t hw_miso_pin = -2;//!request->arg(F("MISOpin")).length() ? -1 : (int)request->arg(F("MISOpin")).toInt();
+    int8_t hw_sclk_pin = -2;//!request->arg(F("SCLKpin")).length() ? -1 : (int)request->arg(F("SCLKpin")).toInt();
 
     //WLEDMM: :pin values have 2 occurrences: the type and the value, we need the value
     int paramsNr = request->params();
@@ -556,17 +556,19 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (hw_sda_pin >= 0 && hw_scl_pin >= 0 && pinManager.allocateMultiplePins(i2c, 2, PinOwner::HW_I2C)) {
       i2c_sda = hw_sda_pin;
       i2c_scl = hw_scl_pin;
+      DEBUG_PRINTF("handleSettingsSet(): reserved I2C pins SDA=%d SCL=%d.\n", i2c_sda, i2c_scl);
       #ifdef ESP32
       Wire.setPins(i2c_sda, i2c_scl); // this will fail if Wire is initilised (Wire.begin() called)
       #endif
       // Wire.begin(); // WLEDMM moved into pinManager
     } else {
       // there is no Wire.end()
-      if (hw_sda_pin < 0 || hw_scl_pin < 0) { // WLEDMM bugfix allow pin = -1
+      if (hw_sda_pin == -1 || hw_scl_pin == -1) { // WLEDMM bugfix allow pin = -1
         i2c_sda = -1;
         i2c_scl = -1;
+        DEBUG_PRINTLN(F("handleSettingsSet(): reset I2C pins to -1"));
       }
-      DEBUG_PRINTLN(F("Could not allocate I2C pins."));
+      DEBUG_PRINTLN(F("handleSettingsSet(): Could not allocate I2C pins - deallocating."));
       uint8_t i2c[2] = { static_cast<uint8_t>(i2c_scl), static_cast<uint8_t>(i2c_sda) };
       pinManager.deallocateMultiplePins(i2c, 2, PinOwner::HW_I2C); // just in case deallocation of old pins
       Serial.printf("pinmgr not success for global i2c %d %d\n", i2c_sda, i2c_scl);
@@ -592,7 +594,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       #endif
     } else {
       //SPI.end();
-      if (hw_mosi_pin < 0 || hw_sclk_pin < 0) { // WLEDMM bugfix allow pin = -1
+      if (hw_mosi_pin == -1 || hw_sclk_pin == -1) { // WLEDMM bugfix allow pin = -1
         spi_mosi = hw_mosi_pin;
         spi_miso = hw_miso_pin;
         spi_sclk = hw_sclk_pin;
