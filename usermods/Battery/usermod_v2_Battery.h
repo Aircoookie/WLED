@@ -126,6 +126,8 @@ class UsermodBattery : public Usermod
           if (pinManager.allocatePin(batteryPin, false, PinOwner::UM_Battery)) {
             DEBUG_PRINTLN(F("Battery pin allocation succeeded."));
             success = true;
+            //initialize voltage again with analog read as that will give us faster precision
+            voltage = (analogReadMilliVolts(batteryPin) / 1000.0f + calibration / 2.0f) * 2.0f;
           }
 
         if (!success) {
@@ -178,9 +180,9 @@ class UsermodBattery : public Usermod
 
 #ifdef ARDUINO_ARCH_ESP32
       // use calibrated millivolts analogread on esp32 (150 mV ~ 2450 mV)
-      rawValue = analogReadMilliVolts(batteryPin);
-      // calculate the voltage
-      voltage = (rawValue / 1000.0f) + calibration;
+      rawValue = analogReadMilliVolts(batteryPin) / 1000.0f + calibration / 2.0f;
+      // calculate the voltage with a 1/20th weighted running average
+      voltage = ((voltage / 2.0f) * 19.0f + rawValue) / 20.0f;
       // usually a voltage divider (50%) is used on ESP32, so we need to multiply by 2
       voltage *= 2.0f;
 #else
@@ -191,8 +193,8 @@ class UsermodBattery : public Usermod
       voltage = ((rawValue / getAdcPrecision()) * maxBatteryVoltage) + calibration;
 #endif
       // check if voltage is within specified voltage range, allow 10% over/under voltage
-      voltage = ((voltage < minBatteryVoltage * 0.85f) || (voltage > maxBatteryVoltage * 1.1f)) ? -1.0f : voltage;
-
+      //voltage = ((voltage < minBatteryVoltage * 0.85f) || (voltage > maxBatteryVoltage * 1.1f)) ? -1.0f : voltage;
+      
       // translate battery voltage into percentage
       /*
         the standard "map" function doesn't work
