@@ -215,12 +215,14 @@ class FourLineDisplayUsermod : public Usermod {
     }
     void drawString(uint8_t col, uint8_t row, const char *string, bool ignoreLH=false) {
       if (!typeOK || !enabled) return;    // WLEDMM make sure the display is initialized before we try to draw on it
-      u8x8->setFont(u8x8_font_chroma48medium8_r);  // crashes randomly on ESP32
-      if (!ignoreLH && lineHeight==2) u8x8->draw1x2String(col, row, string); // crashes randomly on ESP32
+      if (u8x8 == nullptr) return;
+      u8x8->setFont(u8x8_font_chroma48medium8_r);
+      if (!ignoreLH && lineHeight==2) u8x8->draw1x2String(col, row, string);
       else                            u8x8->drawString(col, row, string);
     }
     void draw2x2String(uint8_t col, uint8_t row, const char *string) {
       if (!typeOK || !enabled) return;
+      if (u8x8 == nullptr) return;
       u8x8->setFont(u8x8_font_chroma48medium8_r);
       u8x8->draw2x2String(col, row, string);
     }
@@ -504,6 +506,7 @@ class FourLineDisplayUsermod : public Usermod {
 
     //function to to check if a redraw or overlay draw is active. Needed for UM Rotary, to avoid random/concurrent drawing
     bool canDraw(void) {
+      if (!typeOK || !enabled || !initDone) return(false);    // WLEDMM make sure the display is initialized before we try to draw on it
     #if defined(ARDUINO_ARCH_ESP32) && defined(FLD_ESP32_USE_THREADS) // only necessary on ESP32
       if (drawing) return(false);          // overlay draws someting
       if (reDrawing) return(false);        // redraw task draws something
@@ -781,6 +784,7 @@ class FourLineDisplayUsermod : public Usermod {
      */
     bool wakeDisplay() {
       if (!typeOK || !enabled) return false;
+      if (!initDone)  return false;
       if (displayTurnedOff) {
         unsigned long now = millis();
         while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
@@ -802,6 +806,7 @@ class FourLineDisplayUsermod : public Usermod {
      */
     void overlay(const char* line1, long showHowLong, byte glyphType) {
       if (!typeOK || !enabled) return;   // WLEDMM make sure the display is initialized before we try to draw on it
+      if (!initDone) return;             // WLEDMM bugfix
       unsigned long now = millis();
       while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
       while ((reDrawing && overlayUntil == 0) && (millis()-now < 250)) delay(10); // wait if someone else is re-drawing
@@ -828,6 +833,7 @@ class FourLineDisplayUsermod : public Usermod {
      */
     void overlayLogo(long showHowLong) {
       if (!typeOK || !enabled) return;   // WLEDMM make sure the display is initialized before we try to draw on it
+      if (!initDone) return;             // WLEDMM bugfix
       unsigned long now = millis();
       while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
       drawing = true;
@@ -890,6 +896,7 @@ class FourLineDisplayUsermod : public Usermod {
      */
     void overlay(const char* line1, const char* line2, long showHowLong) {
       if (!typeOK || !enabled) return;   // WLEDMM make sure the display is initialized before we try to draw on it
+      if (!initDone) return;             // WLEDMM bugfix
       unsigned long now = millis();
       while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
       while ((reDrawing && overlayUntil == 0) && (millis()-now < 250)) delay(10); // wait if someone else is re-drawing
@@ -913,6 +920,7 @@ class FourLineDisplayUsermod : public Usermod {
 
     void networkOverlay(const char* line1, long showHowLong) {
       if (!typeOK || !enabled) return;   // WLEDMM make sure the display is initialized before we try to draw on it
+      if (!initDone) return;             // WLEDMM bugfix
       unsigned long now = millis();
       while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
       drawing = true;

@@ -348,8 +348,10 @@ public:
       findCurrentEffectAndPalette();
     }
 
-    if (modes_alpha_indexes[effectCurrentIndex] != effectCurrent || palettes_alpha_indexes[effectPaletteIndex] != effectPalette) {
-      currentEffectAndPaletteInitialized = false;
+    if (modes_alpha_indexes != nullptr) {  // WLEDMM bugfix
+      if (modes_alpha_indexes[effectCurrentIndex] != effectCurrent || palettes_alpha_indexes[effectPaletteIndex] != effectPalette) {
+        currentEffectAndPaletteInitialized = false;
+      }
     }
 
     if (currentTime - loopTime >= 2) // 2ms since last check of encoder = 500Hz
@@ -469,11 +471,13 @@ public:
 
   void displayNetworkInfo() {
     #ifdef USERMOD_FOUR_LINE_DISPLAY
+    if (display != nullptr)
     display->networkOverlay(PSTR("NETWORK INFO"), 10000);
     #endif
   }
 
   void findCurrentEffectAndPalette() {
+    if (modes_alpha_indexes == nullptr) return; // WLEDMM bugfix
     currentEffectAndPaletteInitialized = true;
     for (uint8_t i = 0; i < strip.getModeCount(); i++) {
       if (modes_alpha_indexes[i] == effectCurrent) {
@@ -541,7 +545,7 @@ public:
     display->updateRedrawTime();
   #endif
     effectCurrentIndex = max(min((increase ? effectCurrentIndex+1 : effectCurrentIndex-1), strip.getModeCount()-1), 0);
-    effectCurrent = modes_alpha_indexes[effectCurrentIndex];
+    if (modes_alpha_indexes != nullptr) effectCurrent = modes_alpha_indexes[effectCurrentIndex];
     stateChanged = true;
     if (applyToAll) {
       for (byte i=0; i<strip.getSegmentsNum(); i++) {
@@ -936,7 +940,7 @@ public:
           enabled = false;
           return true;
         }
-        setup();
+        if (enabled) setup();   // WLEDMM no pin stealing!
       }
     }
     // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
