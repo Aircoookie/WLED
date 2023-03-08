@@ -1,3 +1,7 @@
+#ifndef WLED_ENABLE_MQTT
+#error "This user mod requires MQTT to be enabled."
+#endif
+
 #pragma once
 
 #include "SHT85.h"
@@ -58,9 +62,9 @@ class ShtUsermod : public Usermod
     bool isEnabled() { return enabled; }
 
     float getTemperature();
-    float getTemperatureC() { return shtCurrentTempC; }
-    float getTemperatureF() { return (shtCurrentTempC * 1.8f) + 32.0f; }
-    float getHumidity() { return shtCurrentHumidity; }
+    float getTemperatureC() { return roundf(shtCurrentTempC * 10.0f) / 10.0f; }
+    float getTemperatureF() { return (getTemperatureC() * 1.8f) + 32.0f; }
+    float getHumidity() { return roundf(shtCurrentHumidity * 10.0f) / 10.0f; }
     const char* getUnitString();
 
     uint16_t getId() { return USERMOD_ID_SHT; }

@@ -6,6 +6,9 @@
 #endif
 #include "html_settings.h"
 #include "html_other.h"
+#ifdef WLED_ENABLE_PIXART
+  #include "html_pixart.h"
+#endif
 
 /*
  * Integrated HTTP web server page declarations
@@ -88,7 +91,7 @@ bool captivePortal(AsyncWebServerRequest *request)
   String hostH;
   if (!request->hasHeader("Host")) return false;
   hostH = request->getHeader("Host")->value();
-  
+
   if (!isIp(hostH) && hostH.indexOf("wled.me") < 0 && hostH.indexOf(cmDNS) < 0) {
     DEBUG_PRINTLN("Captive portal");
     AsyncWebServerResponse *response = request->beginResponse(302);
@@ -135,14 +138,14 @@ void initServer()
     //request->send_P(200, "text/html", PAGE_liveview);
   });
 #endif
-  
+
   //settings page
   server.on("/settings", HTTP_GET, [](AsyncWebServerRequest *request){
     serveSettings(request);
   });
-  
+
   // "/settings/settings.js&p=x" request also handled by serveSettings()
-  
+
   server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
     if (handleIfNoneMatchCacheHeader(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/css", PAGE_settingsCss, PAGE_settingsCss_length);
@@ -150,27 +153,27 @@ void initServer()
     setStaticContentCacheHeaders(response);
     request->send(response);
   });
-  
+
   server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){
     if(!handleFileRead(request, "/favicon.ico"))
     {
       request->send_P(200, "image/x-icon", favicon, 156);
     }
   });
-  
+
   server.on("/sliders", HTTP_GET, [](AsyncWebServerRequest *request){
     serveIndex(request);
   });
-  
+
   server.on("/welcome", HTTP_GET, [](AsyncWebServerRequest *request){
     serveSettings(request);
   });
-  
+
   server.on("/reset", HTTP_GET, [](AsyncWebServerRequest *request){
     serveMessage(request, 200,F("Rebooting now..."),F("Please wait ~10 seconds..."),129);
     doReboot = true;
   });
-  
+
   server.on("/settings", HTTP_POST, [](AsyncWebServerRequest *request){
     serveSettings(request, true);
   });
@@ -214,7 +217,7 @@ void initServer()
       } else {
         doSerializeConfig = true; //serializeConfig(); //Save new settings to FS
       }
-    } 
+    }
     request->send(200, "application/json", F("{\"success\":true}"));
   });
   server.addHandler(handler);
@@ -222,15 +225,15 @@ void initServer()
   server.on("/version", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(200, "text/plain", (String)VERSION);
   });
-    
+
   server.on("/uptime", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(200, "text/plain", (String)millis());
   });
-    
+
   server.on("/freeheap", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(200, "text/plain", (String)ESP.getFreeHeap());
   });
-  
+
   server.on("/u", HTTP_GET, [](AsyncWebServerRequest *request){
     if (handleIfNoneMatchCacheHeader(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_usermod, PAGE_usermod_length);
@@ -239,12 +242,12 @@ void initServer()
     request->send(response);
     //request->send_P(200, "text/html", PAGE_usermod);
   });
-    
+
   //Deprecated, use of /json/state and presets recommended instead
   server.on("/url", HTTP_GET, [](AsyncWebServerRequest *request){
     URL_response(request);
   });
-    
+
   server.on("/teapot", HTTP_GET, [](AsyncWebServerRequest *request){
     serveMessage(request, 418, F("418. I'm a teapot."), F("(Tangible Embedded Advanced Project Of Twinkling)"), 254);
   });
@@ -271,14 +274,14 @@ void initServer()
     setStaticContentCacheHeaders(response);
     request->send(response);
   });
-  
+
   server.on("/rangetouch.js", HTTP_GET, [](AsyncWebServerRequest *request){
     AsyncWebServerResponse *response = request->beginResponse_P(200, "application/javascript", rangetouchJs, rangetouchJs_length);
     response->addHeader(FPSTR(s_content_enc),"gzip");
     setStaticContentCacheHeaders(response);
     request->send(response);
   });
-  
+
   createEditHandler(correctPIN);
 
 #ifndef WLED_DISABLE_OTA
@@ -289,7 +292,7 @@ void initServer()
     } else
       serveSettings(request); // checks for "upd" in URL and handles PIN
   });
-  
+
   server.on("/update", HTTP_POST, [](AsyncWebServerRequest *request){
     if (!correctPIN) {
       serveSettings(request, true); // handle PIN page POST request
@@ -298,7 +301,7 @@ void initServer()
     if (Update.hasError() || otaLock) {
       serveMessage(request, 500, F("Update failed!"), F("Please check your file and retry!"), 254);
     } else {
-      serveMessage(request, 200, F("Update successful!"), F("Rebooting..."), 131); 
+      serveMessage(request, 200, F("Update successful!"), F("Rebooting..."), 131);
       doReboot = true;
     }
   },[](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final){
@@ -345,10 +348,21 @@ void initServer()
     serveIndexOrWelcome(request);
   });
 
+  #ifdef WLED_ENABLE_PIXART
+  server.on("/pixart.htm", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (handleFileRead(request, "/pixart.htm")) return;
+    if (handleIfNoneMatchCacheHeader(request)) return;
+    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_pixart, PAGE_pixart_L);
+    response->addHeader(FPSTR(s_content_enc),"gzip");
+    setStaticContentCacheHeaders(response);
+    request->send(response);
+  });
+  #endif
+
   #ifdef WLED_ENABLE_WEBSOCKETS
   server.addHandler(&ws);
   #endif
-  
+
   //called when the url is not defined here, ajax-in; get-settings
   server.onNotFound([](AsyncWebServerRequest *request){
     DEBUG_PRINTLN("Not-Found HTTP call:");
@@ -363,7 +377,7 @@ void initServer()
       request->send(response);
       return;
     }
-    
+
     if(handleSet(request, request->url())) return;
     #ifndef WLED_DISABLE_ALEXA
     if(espalexa.handleAlexaApiCall(request)) return;
@@ -471,7 +485,7 @@ void serveMessage(AsyncWebServerRequest* request, uint16_t code, const String& h
   messageHead = headl;
   messageSub = subl;
   optionType = optionT;
-  
+
   request->send_P(code, "text/html", PAGE_msg, msgProcessor);
 }
 
@@ -493,7 +507,7 @@ String dmxProcessor(const String& var)
       mapJS += "0];";
     }
   #endif
-  
+
   return mapJS;
 }
 #endif
@@ -526,7 +540,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
   byte subPage = 0, originalSubPage = 0;
   const String& url = request->url();
 
-  if (url.indexOf("sett") >= 0) 
+  if (url.indexOf("sett") >= 0)
   {
     if      (url.indexOf(".js")  > 0) subPage = 254;
     else if (url.indexOf(".css") > 0) subPage = 253;
@@ -589,7 +603,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
       return;
     }
   }
-  
+
   AsyncWebServerResponse *response;
   switch (subPage)
   {
@@ -599,10 +613,14 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     case 4:   response = request->beginResponse_P(200, "text/html", PAGE_settings_sync, PAGE_settings_sync_length); break;
     case 5:   response = request->beginResponse_P(200, "text/html", PAGE_settings_time, PAGE_settings_time_length); break;
     case 6:   response = request->beginResponse_P(200, "text/html", PAGE_settings_sec,  PAGE_settings_sec_length);  break;
+#ifdef WLED_ENABLE_DMX
     case 7:   response = request->beginResponse_P(200, "text/html", PAGE_settings_dmx,  PAGE_settings_dmx_length);  break;
+#endif
     case 8:   response = request->beginResponse_P(200, "text/html", PAGE_settings_um,   PAGE_settings_um_length);   break;
     case 9:   response = request->beginResponse_P(200, "text/html", PAGE_update,        PAGE_update_length);        break;
+#ifndef WLED_DISABLE_2D
     case 10:  response = request->beginResponse_P(200, "text/html", PAGE_settings_2D,   PAGE_settings_2D_length);   break;
+#endif
     case 251: {
       correctPIN = !strlen(settingsPIN); // lock if a pin is set
       createEditHandler(correctPIN);

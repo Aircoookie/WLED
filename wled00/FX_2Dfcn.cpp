@@ -1,6 +1,6 @@
 /*
   FX_2Dfcn.cpp contains all 2D utility functions
-  
+
   LICENSE
   The MIT License (MIT)
   Copyright (c) 2022  Blaz Kristan (https://blaz.at/home)
@@ -41,57 +41,97 @@ void WS2812FX::setUpMatrix() {
   customMappingTable = nullptr;
   customMappingSize = 0;
 
-  // important if called from set.cpp, irrelevant if called from cfg.cpp
-  // fix limits if not a matrix set-up (no finalizeInit() called from set.cpp)
-  Segment::maxWidth  = _length;
-  Segment::maxHeight = 1;
-
   // isMatrix is set in cfg.cpp or set.cpp
   if (isMatrix) {
-    uint16_t maxWidth  = hPanels * panelW;
-    uint16_t maxHeight = vPanels * panelH;
+    // calculate width dynamically because it will have gaps
+    Segment::maxWidth = 1;
+    Segment::maxHeight = 1;
+    for (size_t i = 0; i < panel.size(); i++) {
+      Panel &p = panel[i];
+      if (p.xOffset + p.width > Segment::maxWidth) {
+        Segment::maxWidth = p.xOffset + p.width;
+      }
+      if (p.yOffset + p.height > Segment::maxHeight) {
+        Segment::maxHeight = p.yOffset + p.height;
+      }
+    }
 
     // safety check
-    if (maxWidth * maxHeight > MAX_LEDS || maxWidth == 1 || maxHeight == 1) {
+    if (Segment::maxWidth * Segment::maxHeight > MAX_LEDS || Segment::maxWidth <= 1 || Segment::maxHeight <= 1) {
+      DEBUG_PRINTLN(F("2D Bounds error."));
       isMatrix = false;
+      Segment::maxWidth = _length;
+      Segment::maxHeight = 1;
+      panels = 0;
+      panel.clear(); // release memory allocated by panels
+      resetSegments();
       return;
     }
 
-    customMappingTable = new uint16_t[maxWidth * maxHeight];
+    customMappingTable = new uint16_t[Segment::maxWidth * Segment::maxHeight];
 
     if (customMappingTable != nullptr) {
-      Segment::maxWidth  = maxWidth;
-      Segment::maxHeight = maxHeight;
-      customMappingSize  = maxWidth * maxHeight;
+      customMappingSize = Segment::maxWidth * Segment::maxHeight;
 
-      uint16_t startL; // index in custom mapping array (logical strip)
-      uint16_t startP; // position of 1st pixel of panel on (virtual) strip
-      uint16_t x, y, offset;
-      uint8_t h = matrix.vertical ? vPanels : hPanels;
-      uint8_t v = matrix.vertical ? hPanels : vPanels;
+      // fill with empty in case we don't fill the entire matrix
+      for (size_t i = 0; i< customMappingSize; i++) {
+        customMappingTable[i] = (uint16_t)-1;
+      }
 
-      for (uint8_t j=0, p=0; j<v; j++) {
-        for (uint8_t i=0; i<h; i++, p++) {
-          y = (matrix.vertical ? matrix.rightStart : matrix.bottomStart) ? v - j - 1 : j;
-          x = (matrix.vertical ? matrix.bottomStart : matrix.rightStart) ? h - i - 1 : i;
-          x = matrix.serpentine && j%2 ? h - x - 1 : x;
+      // we will try to load a "gap" array (a JSON file)
+      // the array has to have the same amount of values as mapping array (or larger)
+      // "gap" array is used while building ledmap (mapping array)
+      // and discarded afterwards as it has no meaning after the process
+      // content of the file is just raw JSON array in the form of [val1,val2,val3,...]
+      // there are no other "key":"value" pairs in it
+      // allowed values are: -1 (missing pixel/no LED attached), 0 (inactive/unused pixel), 1 (active/used pixel)
+      char    fileName[32]; strcpy_P(fileName, PSTR("/2d-gaps.json")); // reduce flash footprint
+      bool    isFile = WLED_FS.exists(fileName);
+      size_t  gapSize = 0;
+      int8_t *gapTable = nullptr;
 
-          startL = (matrix.vertical ? y : x) * panelW + (matrix.vertical ? x : y) * Segment::maxWidth * panelH; // logical index (top-left corner)
-          startP = p * panelW * panelH; // physical index (top-left corner)
-
-          uint8_t H = panel[h*j + i].vertical ? panelW : panelH;
-          uint8_t W = panel[h*j + i].vertical ? panelH : panelW;
-          for (uint16_t l=0, q=0; l<H; l++) {
-            for (uint16_t k=0; k<W; k++, q++) {
-              y = (panel[h*j + i].vertical ? panel[h*j + i].rightStart : panel[h*j + i].bottomStart) ? H - l - 1 : l;
-              x = (panel[h*j + i].vertical ? panel[h*j + i].bottomStart : panel[h*j + i].rightStart) ? W - k - 1 : k;
-              x = (panel[h*j + i].serpentine && l%2) ? (W - x - 1) : x;
-              offset = (panel[h*j + i].vertical ? y : x) + (panel[h*j + i].vertical ? x : y) * Segment::maxWidth;
-              customMappingTable[startL + offset] = startP + q;
+      if (isFile && requestJSONBufferLock(20)) {
+        DEBUG_PRINT(F("Reading LED gap from "));
+        DEBUG_PRINTLN(fileName);
+        // read the array into global JSON buffer
+        if (readObjectFromFile(fileName, nullptr, &doc)) {
+          // the array is similar to ledmap, except it has only 3 values:
+          // -1 ... missing pixel (do not increase pixel count)
+          //  0 ... inactive pixel (it does count, but should be mapped out (-1))
+          //  1 ... active pixel (it will count and will be mapped)
+          JsonArray map = doc.as<JsonArray>();
+          gapSize = map.size();
+          if (!map.isNull() && gapSize >= customMappingSize) { // not an empty map
+            gapTable = new int8_t[gapSize];
+            if (gapTable) for (size_t i = 0; i < gapSize; i++) {
+              gapTable[i] = constrain(map[i], -1, 1);
             }
           }
         }
+        DEBUG_PRINTLN(F("Gaps loaded."));
+        releaseJSONBufferLock();
       }
+
+      uint16_t x, y, pix=0; //pixel
+      for (size_t pan = 0; pan < panel.size(); pan++) {
+        Panel &p = panel[pan];
+        uint16_t h = p.vertical ? p.height : p.width;
+        uint16_t v = p.vertical ? p.width  : p.height;
+        for (size_t j = 0; j < v; j++){
+          for(size_t i = 0; i < h; i++) {
+            y = (p.vertical?p.rightStart:p.bottomStart) ? v-j-1 : j;
+            x = (p.vertical?p.bottomStart:p.rightStart) ? h-i-1 : i;
+            x = p.serpentine && j%2 ? h-x-1 : x;
+            size_t index = (p.yOffset + (p.vertical?x:y)) * Segment::maxWidth + p.xOffset + (p.vertical?y:x);
+            if (!gapTable || (gapTable && gapTable[index] >  0)) customMappingTable[index] = pix; // a useful pixel (otherwise -1 is retained)
+            if (!gapTable || (gapTable && gapTable[index] >= 0)) pix++; // not a missing pixel
+          }
+        }
+      }
+
+      // delete gap array as we no longer need it
+      if (gapTable) delete[] gapTable;
+
       #ifdef WLED_DEBUG
       DEBUG_PRINT(F("Matrix ledmap:"));
       for (uint16_t i=0; i<customMappingSize; i++) {
@@ -101,7 +141,13 @@ void WS2812FX::setUpMatrix() {
       DEBUG_PRINTLN();
       #endif
     } else { // memory allocation error
+      DEBUG_PRINTLN(F("Ledmap alloc error."));
       isMatrix = false;
+      panels = 0;
+      panel.clear();
+      Segment::maxWidth = _length;
+      Segment::maxHeight = 1;
+      resetSegments();
     }
   }
 #else
@@ -115,7 +161,7 @@ void IRAM_ATTR WS2812FX::setPixelColorXY(int x, int y, uint32_t col)
 #ifndef WLED_DISABLE_2D
   if (!isMatrix) return; // not a matrix set-up
   uint16_t index = y * Segment::maxWidth + x;
-  if (index >= customMappingSize) return; // customMappingSize is always W * H of matrix in 2D setup
+  if (index >= customMappingSize) return;
 #else
   uint16_t index = x;
   if (index >= _length) return;
@@ -158,6 +204,7 @@ void IRAM_ATTR Segment::setPixelColorXY(int x, int y, uint32_t col)
   if (leds) leds[XY(x,y)] = col;
 
   uint8_t _bri_t = currentBri(on ? opacity : 0);
+  if (!_bri_t && !transitional) return;
   if (_bri_t < 255) {
     byte r = scale8(R(col), _bri_t);
     byte g = scale8(G(col), _bri_t);
@@ -265,7 +312,7 @@ void Segment::addPixelColorXY(int x, int y, uint32_t color) {
 
 void Segment::fadePixelColorXY(uint16_t x, uint16_t y, uint8_t fade) {
   CRGB pix = CRGB(getPixelColorXY(x,y)).nscale8_video(fade);
-  setPixelColor(x, y, pix);
+  setPixelColorXY(x, y, pix);
 }
 
 // blurRow: perform a blur on a row of a rectangular matrix
@@ -422,6 +469,29 @@ void Segment::move(uint8_t dir, uint8_t delta) {
   }
 }
 
+void Segment::draw_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
+  // Bresenham’s Algorithm
+  int d = 3 - (2*radius);
+  int y = radius, x = 0;
+  while (y >= x) {
+    setPixelColorXY(cx+x, cy+y, col);
+    setPixelColorXY(cx-x, cy+y, col);
+    setPixelColorXY(cx+x, cy-y, col);
+    setPixelColorXY(cx-x, cy-y, col);
+    setPixelColorXY(cx+y, cy+x, col);
+    setPixelColorXY(cx-y, cy+x, col);
+    setPixelColorXY(cx+y, cy-x, col);
+    setPixelColorXY(cx-y, cy-x, col);
+    x++;
+    if (d > 0) {
+      y--;
+      d += 4 * (x - y) + 10;
+    } else {
+      d += 4 * x + 6;
+    }
+  }
+}
+
 // by stepko, taken from https://editor.soulmatelights.com/gallery/573-blobs
 void Segment::fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
   const uint16_t cols = virtualWidth();
@@ -431,7 +501,7 @@ void Segment::fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
       if (x * x + y * y <= radius * radius &&
           int16_t(cx)+x>=0 && int16_t(cy)+y>=0 &&
           int16_t(cx)+x<cols && int16_t(cy)+y<rows)
-        addPixelColorXY(cx + x, cy + y, col);
+        setPixelColorXY(cx + x, cy + y, col);
     }
   }
 }
@@ -450,10 +520,10 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
   const uint16_t rows = virtualHeight();
   if (x0 >= cols || x1 >= cols || y0 >= rows || y1 >= rows) return;
   const int16_t dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
-  const int16_t dy = abs(y1-y0), sy = y0<y1 ? 1 : -1; 
+  const int16_t dy = abs(y1-y0), sy = y0<y1 ? 1 : -1;
   int16_t err = (dx>dy ? dx : -dy)/2, e2;
   for (;;) {
-    addPixelColorXY(x0,y0,c);
+    setPixelColorXY(x0,y0,c);
     if (x0==x1 && y0==y1) break;
     e2 = err;
     if (e2 >-dx) { err -= dy; x0 += sx; }
@@ -469,12 +539,15 @@ void Segment::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint3
 
 // draws a raster font character on canvas
 // only supports: 4x6=24, 5x8=40, 5x12=60, 6x8=48 and 7x9=63 fonts ATM
-void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color) {
+void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, uint8_t h, uint32_t color, uint32_t col2) {
   if (chr < 32 || chr > 126) return; // only ASCII 32-126 supported
   chr -= 32; // align with font table entries
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
   const int font = w*h;
+
+  CRGB col = CRGB(color);
+  CRGBPalette16 grad = CRGBPalette16(col, col2 ? CRGB(col2) : col);
 
   //if (w<5 || w>6 || h!=8) return;
   for (int i = 0; i<h; i++) { // character height
@@ -490,10 +563,11 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
       case 60: bits = pgm_read_byte_near(&console_font_5x12[(chr * h) + i]); break; // 5x12 font
       default: return;
     }
+    col = ColorFromPalette(grad, (i+1)*255/h, 255, NOBLEND);
     for (int j = 0; j<w; j++) { // character width
       int16_t x0 = x + (w-1) - j;
       if ((x0 >= 0 || x0 < cols) && ((bits>>(j+(8-w))) & 0x01)) { // bit set & drawing on-screen
-        addPixelColorXY(x0, y0, color);
+        setPixelColorXY(x0, y0, col);
       }
     }
   }

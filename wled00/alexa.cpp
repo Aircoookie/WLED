@@ -2,7 +2,7 @@
 
 /*
  * Alexa Voice On/Off/Brightness/Color Control. Emulates a Philips Hue bridge to Alexa.
- * 
+ *
  * This was put together from these two excellent projects:
  * https://github.com/kakopappa/arduino-esp8266-alexa-wemo-switch
  * https://github.com/probonopd/ESP8266HueEmulator
@@ -21,11 +21,11 @@ void alexaInit()
   espalexaDevice = new EspalexaDevice(alexaInvocationName, onAlexaChange, EspalexaDeviceType::extendedcolor);
   espalexa.addDevice(espalexaDevice);
 
-  // up to 9 devices (added second, third, ... i.e. index 1 to 9) serve for switching on up to nine presets (preset IDs 1 to 9 in WLED), 
+  // up to 9 devices (added second, third, ... i.e. index 1 to 9) serve for switching on up to nine presets (preset IDs 1 to 9 in WLED),
   // names are identical as the preset names, switching off can be done by switching off any of them
   if (alexaNumPresets) {
     String name = "";
-    for (byte presetIndex = 1; presetIndex <= alexaNumPresets; presetIndex++) 
+    for (byte presetIndex = 1; presetIndex <= alexaNumPresets; presetIndex++)
     {
       if (!getPresetName(presetIndex, name)) break; // no more presets
       EspalexaDevice* dev = new EspalexaDevice(name.c_str(), onAlexaChange, EspalexaDeviceType::extendedcolor);
@@ -44,7 +44,7 @@ void handleAlexa()
 void onAlexaChange(EspalexaDevice* dev)
 {
   EspalexaDeviceProperty m = dev->getLastChangedProperty();
-  
+
   if (m == EspalexaDeviceProperty::on)
   {
     if (dev->getId() == 0) // Device 0 is for on/off or macros
@@ -56,7 +56,7 @@ void onAlexaChange(EspalexaDevice* dev)
           bri = briLast;
           stateUpdated(CALL_MODE_ALEXA);
         }
-      } else 
+      } else
       {
         applyPreset(macroAlexaOn, CALL_MODE_ALEXA);
         if (bri == 0) dev->setValue(briLast); //stop Alexa from complaining if macroAlexaOn does not actually turn on
@@ -82,7 +82,7 @@ void onAlexaChange(EspalexaDevice* dev)
         bri = 0;
         stateUpdated(CALL_MODE_ALEXA);
       }
-    } else 
+    } else
     {
       applyPreset(macroAlexaOff, CALL_MODE_ALEXA);
       // below for loop stops Alexa from complaining if macroAlexaOff does not actually turn off

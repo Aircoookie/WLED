@@ -7,6 +7,10 @@
 	<title>Usermod Settings</title>
 	<script>
 	var d = document;
+	d.max_gpio = 39;
+	d.um_p = [];
+	d.rsvd = [];
+	d.ro_gpio = [];
 	var umCfg = {};
 	var pins = [], pinO = [], owner;
 	var loc = false, locip;
@@ -25,11 +29,6 @@
 		d.body.appendChild(scE);
 		// success event 
 		scE.addEventListener("load", () => {
-			//console.log("File loaded");
-			d.um_p = [];
-			d.rsvd = [];
-			d.ro_pins = [];
-			d.max_gpio = 39;
 			GetV();
 			for (let k=0; k<d.rsvd.length; k++) { pins.push(d.rsvd[k]); pinO.push("rsvd"); }
 			if (d.um_p[0]==-1) d.um_p.shift();
@@ -38,6 +37,8 @@
 			d.Sf.MOSI.max = d.max_gpio;
 			d.Sf.SCLK.max = d.max_gpio;
 			d.Sf.MISO.max = d.max_gpio;
+			let inp = d.getElementsByTagName("input");
+			for (let i of inp) if (i.type === "number" && i.name.replace("[]","").substr(-3) === "pin") i.max = d.max_gpio;
 		});
 		// error event
 		scE.addEventListener("error", (ev) => {

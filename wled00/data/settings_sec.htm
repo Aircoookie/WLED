@@ -53,7 +53,7 @@
 			req.send(formData);
 			fO.value = '';
 			return false;
-	    }
+		}
 		function checkNum(o) {
 			const specialkeys = ["Backspace", "Tab", "Enter", "Shift", "Control", "Alt", "Pause", "CapsLock", "Escape", "Space", "PageUp", "PageDown", "End", "Home", "ArrowLeft", "ArrowUp", "ArrowRight", "ArrowDown", "Insert", "Delete"];
 			// true if key is a number or a special key
@@ -89,7 +89,7 @@
 		</div>
 		<h2>Security & Update setup</h2>
 		Settings PIN: <input type="password" id="PIN" name="PIN" size="4" maxlength="4" minlength="4" onkeydown="checkNum(this)" pattern="[0-9]*" inputmode="numeric" title="Please enter a 4 digit number"><br>
-		<div style="color: #fa0;">&#9888; Unencrypted transmission. Be prudent when selecting PIN, do NOT use your banking, door, SIM, etc. pin!</div><br><br>
+		<div style="color: #fa0;">&#9888; Unencrypted transmission. Be prudent when selecting PIN, do NOT use your banking, door, SIM, etc. pin!</div><br>
 		Lock wireless (OTA) software update: <input type="checkbox" name="NO"><br>
 		Passphrase: <input type="password" name="OP" maxlength="32"><br>
 		To enable OTA, for security reasons you need to also enter the correct password!<br>
@@ -118,7 +118,7 @@
 		<a href="https://github.com/Aircoookie/WLED/" target="_blank">WLED</a> version ##VERSION##<!-- Autoreplaced from package.json --><br><br>
 		<a href="https://github.com/Aircoookie/WLED/wiki/Contributors-and-credits" target="_blank">Contributors, dependencies and special thanks</a><br>
 		A huge thank you to everyone who helped me create WLED!<br><br>
-		(c) 2016-2022 Christian Schwinne <br>
+		(c) 2016-2023 Christian Schwinne <br>
 		<i>Licensed under the <a href="https://github.com/Aircoookie/WLED/blob/master/LICENSE" target="_blank">MIT license</a></i><br><br>
 		Server message: <span class="sip"> Response error! </span><hr>
 		<div id="toast"></div>

@@ -83,12 +83,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     cctFromRgb = request->hasArg(F("CR"));
     strip.cctBlending = request->arg(F("CB")).toInt();
     Bus::setCCTBlend(strip.cctBlending);
-    Bus::setAutoWhiteMode(request->arg(F("AW")).toInt());
+    Bus::setGlobalAWMode(request->arg(F("AW")).toInt());
     strip.setTargetFps(request->arg(F("FR")).toInt());
     strip.useLedsArray = request->hasArg(F("LD"));
 
     bool busesChanged = false;
-    for (uint8_t s = 0; s < WLED_MAX_BUSSES; s++) {
+    for (uint8_t s = 0; s < WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES; s++) {
       char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
       char lc[4] = "LC"; lc[2] = 48+s; lc[3] = 0; //strip length
       char co[4] = "CO"; co[2] = 48+s; co[3] = 0; //strip color order
@@ -171,14 +171,14 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         buttonType[i] = request->arg(be).toInt();
       #ifdef ARDUINO_ARCH_ESP32
         // ESP32 only: check that analog button pin is a valid ADC gpio
-        if (((buttonType[i] == BTN_TYPE_ANALOG) || (buttonType[i] == BTN_TYPE_ANALOG_INVERTED)) && (digitalPinToAnalogChannel(btnPin[i]) < 0)) 
+        if (((buttonType[i] == BTN_TYPE_ANALOG) || (buttonType[i] == BTN_TYPE_ANALOG_INVERTED)) && (digitalPinToAnalogChannel(btnPin[i]) < 0))
         {
           // not an ADC analog pin
           if (btnPin[i] >= 0) DEBUG_PRINTF("PIN ALLOC error: GPIO%d for analog button #%d is not an analog pin!\n", btnPin[i], i);
           btnPin[i] = -1;
           pinManager.deallocatePin(hw_btn_pin,PinOwner::Button);
-        } 
-        else 
+        }
+        else
       #endif
         {
           if (disablePullUp) {
@@ -200,7 +200,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     strip.ablMilliampsMax = request->arg(F("MA")).toInt();
     strip.milliampsPerLed = request->arg(F("LA")).toInt();
-    
+
     briS = request->arg(F("CA")).toInt();
 
     turnOnAtBoot = request->hasArg(F("BO"));
@@ -208,6 +208,14 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t <= 250) bootPreset = t;
     gammaCorrectBri = request->hasArg(F("GB"));
     gammaCorrectCol = request->hasArg(F("GC"));
+    gammaCorrectVal = request->arg(F("GV")).toFloat();
+    if (gammaCorrectVal > 1.0f && gammaCorrectVal <= 3)
+      calcGammaTable(gammaCorrectVal);
+    else {
+      gammaCorrectVal = 1.0f; // no gamma correction
+      gammaCorrectBri = false;
+      gammaCorrectCol = false;
+    }
 
     fadeTransition = request->hasArg(F("TF"));
     t = request->arg(F("TD")).toInt();
@@ -240,6 +248,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
     simplifiedUI = request->hasArg(F("SU"));
   #endif
+    DEBUG_PRINTLN(F("Enumerating ledmaps"));
+    enumerateLedmaps();
+    DEBUG_PRINTLN(F("Loading custom palettes"));
+    strip.loadCustomPalettes(); // (re)load all custom palettes
   }
 
   //SYNC
@@ -284,8 +296,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t >= 0  && t <= 63999) e131Universe = t;
     t = request->arg(F("DA")).toInt();
     if (t >= 0  && t <= 510) DMXAddress = t;
+    t = request->arg(F("XX")).toInt();
+    if (t >= 0  && t <= 150) DMXSegmentSpacing = t;
+    t = request->arg(F("PY")).toInt();
+    if (t >= 0  && t <= 200) e131Priority = t;
     t = request->arg(F("DM")).toInt();
-    if (t >= DMX_MODE_DISABLED && t <= DMX_MODE_MULTIPLE_RGBW) DMXMode = t;
+    if (t >= DMX_MODE_DISABLED && t <= DMX_MODE_PRESET) DMXMode = t;
     t = request->arg(F("ET")).toInt();
     if (t > 99  && t <= 65000) realtimeTimeoutMs = t;
     arlsForceMaxBri = request->hasArg(F("FB"));
@@ -297,16 +313,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     strlcpy(alexaInvocationName, request->arg(F("AI")).c_str(), 33);
     t = request->arg(F("AP")).toInt();
     if (t >= 0 && t <= 9) alexaNumPresets = t;
-
-    #ifndef WLED_DISABLE_BLYNK
-    strlcpy(blynkHost, request->arg("BH").c_str(), 33);
-    t = request->arg(F("BP")).toInt();
-    if (t > 0) blynkPort = t;
-
-    if (request->hasArg("BK") && !request->arg("BK").equals(F("Hidden"))) {
-      strlcpy(blynkApiKey, request->arg("BK").c_str(), 36); initBlynk(blynkApiKey, blynkHost, blynkPort);
-    }
-    #endif
 
     #ifdef WLED_ENABLE_MQTT
     mqttEnabled = request->hasArg(F("MQ"));
@@ -362,7 +368,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     longitude = request->arg(F("LN")).toFloat();
     latitude = request->arg(F("LT")).toFloat();
     // force a sunrise/sunset re-calculation
-    calculateSunriseAndSunset(); 
+    calculateSunriseAndSunset();
 
     overlayCurrent = request->hasArg(F("OL")) ? 1 : 0;
 
@@ -407,15 +413,15 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       k[0] = 'W'; //weekdays
       timerWeekday[i] = request->arg(k).toInt();
       if (i<8) {
-				k[0] = 'M'; //start month
-				timerMonth[i] = request->arg(k).toInt() & 0x0F;
-				timerMonth[i] <<= 4;
-				k[0] = 'P'; //end month
-				timerMonth[i] += (request->arg(k).toInt() & 0x0F);
-				k[0] = 'D'; //start day
-				timerDay[i] = request->arg(k).toInt();
-				k[0] = 'E'; //end day
-				timerDayEnd[i] = request->arg(k).toInt();
+        k[0] = 'M'; //start month
+        timerMonth[i] = request->arg(k).toInt() & 0x0F;
+        timerMonth[i] <<= 4;
+        k[0] = 'P'; //end month
+        timerMonth[i] += (request->arg(k).toInt() & 0x0F);
+        k[0] = 'D'; //start day
+        timerDay[i] = request->arg(k).toInt();
+        k[0] = 'E'; //end day
+        timerDayEnd[i] = request->arg(k).toInt();
       }
     }
   }
@@ -643,30 +649,43 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   if (subPage == 10)
   {
     strip.isMatrix = request->arg(F("SOMP")).toInt();
-    strip.panelH   = MAX(1,MIN(128,request->arg(F("PH")).toInt()));
-    strip.panelW   = MAX(1,MIN(128,request->arg(F("PW")).toInt()));
-    strip.hPanels  = MAX(1,MIN(8,request->arg(F("MPH")).toInt()));
-    strip.vPanels  = MAX(1,MIN(8,request->arg(F("MPV")).toInt()));
-    strip.matrix.bottomStart = request->arg(F("PB")).toInt();
-    strip.matrix.rightStart  = request->arg(F("PR")).toInt();
-    strip.matrix.vertical    = request->arg(F("PV")).toInt();
-    strip.matrix.serpentine  = request->hasArg(F("PS"));
-    for (uint8_t i=0; i<WLED_MAX_PANELS; i++) {
-      char pO[8]; sprintf_P(pO, PSTR("P%d"), i);
-      uint8_t l = strlen(pO); pO[l+1] = 0;
-      pO[l] = 'B'; if (!request->hasArg(pO)) break;
-      pO[l] = 'B'; strip.panel[i].bottomStart = request->arg(pO).toInt();
-      pO[l] = 'R'; strip.panel[i].rightStart  = request->arg(pO).toInt();
-      pO[l] = 'V'; strip.panel[i].vertical    = request->arg(pO).toInt();
-      pO[l] = 'S'; strip.panel[i].serpentine  = request->hasArg(pO);
+    strip.panel.clear(); // release memory if allocated
+    if (strip.isMatrix) {
+      strip.panels  = MAX(1,MIN(WLED_MAX_PANELS,request->arg(F("MPC")).toInt()));
+      strip.panel.reserve(strip.panels); // pre-allocate memory
+      for (uint8_t i=0; i<strip.panels; i++) {
+        WS2812FX::Panel p;
+        char pO[8] = { '\0' };
+        snprintf_P(pO, 7, PSTR("P%d"), i);       // MAX_PANELS is 64 so pO will always only be 4 characters or less
+        pO[7] = '\0';
+        uint8_t l = strlen(pO);
+        // create P0B, P1B, ..., P63B, etc for other PxxX
+        pO[l] = 'B'; if (!request->hasArg(pO)) break;
+        pO[l] = 'B'; p.bottomStart = request->arg(pO).toInt();
+        pO[l] = 'R'; p.rightStart  = request->arg(pO).toInt();
+        pO[l] = 'V'; p.vertical    = request->arg(pO).toInt();
+        pO[l] = 'S'; p.serpentine  = request->hasArg(pO);
+        pO[l] = 'X'; p.xOffset     = request->arg(pO).toInt();
+        pO[l] = 'Y'; p.yOffset     = request->arg(pO).toInt();
+        pO[l] = 'W'; p.width       = request->arg(pO).toInt();
+        pO[l] = 'H'; p.height      = request->arg(pO).toInt();
+        strip.panel.push_back(p);
+      }
+      strip.setUpMatrix(); // will check limits
+      strip.makeAutoSegments(true);
+      strip.deserializeMap();
+    } else {
+      Segment::maxWidth  = strip.getLengthTotal();
+      Segment::maxHeight = 1;
     }
-    strip.setUpMatrix(); // will check limits
   }
   #endif
 
   lastEditTime = millis();
   if (subPage != 2 && !doReboot) doSerializeConfig = true; //serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)
+  #ifndef WLED_DISABLE_ALEXA
   if (subPage == 4) alexaInit();
+  #endif
 }
 
 
@@ -781,7 +800,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   //apply preset
   if (updateVal(req.c_str(), "PL=", &presetCycCurr, presetCycMin, presetCycMax)) {
-		unloadPlaylist();
+    unloadPlaylist();
     applyPreset(presetCycCurr);
   }
 
