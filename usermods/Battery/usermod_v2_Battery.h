@@ -126,8 +126,8 @@ class UsermodBattery : public Usermod
           if (pinManager.allocatePin(batteryPin, false, PinOwner::UM_Battery)) {
             DEBUG_PRINTLN(F("Battery pin allocation succeeded."));
             success = true;
-            //initialize voltage again with analog read as that will give us faster precision
-            voltage = (analogReadMilliVolts(batteryPin) / 1000.0f + calibration / 2.0f) * 2.0f;
+            //initialize voltage with analog read
+            voltage = analogReadMilliVolts(batteryPin) / 500.0f + calibration;
           }
 
         if (!success) {
@@ -179,12 +179,10 @@ class UsermodBattery : public Usermod
       initializing = false;
 
 #ifdef ARDUINO_ARCH_ESP32
-      // use calibrated millivolts analogread on esp32 (150 mV ~ 2450 mV)
-      rawValue = analogReadMilliVolts(batteryPin) / 1000.0f + calibration / 2.0f;
-      // calculate the voltage with a 1/20th weighted running average
-      voltage = ((voltage / 2.0f) * 19.0f + rawValue) / 20.0f;
-      // usually a voltage divider (50%) is used on ESP32, so we need to multiply by 2
-      voltage *= 2.0f;
+      // use calibrated millivolts analogread on esp32 (150 mV ~ 2450 mV) and divide by 500 to fix to the right decimal place and multiply by 2 to account for the voltage divider
+      rawValue = analogReadMilliVolts(batteryPin) / 500.0f + calibration;
+      // calculate the voltage with a weighted running average because ADC in ESP32 is fluctuating too much for a good single readout
+      voltage = (voltage * 19.0f + rawValue) / 20.0f;
 #else
       // read battery raw input
       rawValue = analogRead(batteryPin);
@@ -192,9 +190,9 @@ class UsermodBattery : public Usermod
       // calculate the voltage     
       voltage = ((rawValue / getAdcPrecision()) * maxBatteryVoltage) + calibration;
 #endif
-      // check if voltage is within specified voltage range, allow 10% over/under voltage
+      // check if voltage is within specified voltage range, allow 10% over/under voltage - removed cause this just makes it hard for people to troubleshoot as the voltage in the web gui will say invalid instead of displaying a voltage
       //voltage = ((voltage < minBatteryVoltage * 0.85f) || (voltage > maxBatteryVoltage * 1.1f)) ? -1.0f : voltage;
-      
+
       // translate battery voltage into percentage
       /*
         the standard "map" function doesn't work
