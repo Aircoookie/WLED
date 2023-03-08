@@ -216,15 +216,36 @@ class FourLineDisplayUsermod : public Usermod {
     void drawString(uint8_t col, uint8_t row, const char *string, bool ignoreLH=false) {
       if (!typeOK || !enabled) return;    // WLEDMM make sure the display is initialized before we try to draw on it
       if (u8x8 == nullptr) return;
+#ifdef ARDUINO_ARCH_ESP32                 // WLEDMM use nicer 2x1 font on ESP32
+      if (!ignoreLH && lineHeight==2) { 
+        if(strlen(string) > 3)                    // WLEDMM little hack - less than 3 chars -> show in bold
+          u8x8->setFont(u8x8_font_7x14_1x2_r);    // normal
+        else
+          u8x8->setFont(u8x8_font_8x13B_1x2_r);   // bold
+        u8x8->drawString(col, row, string);
+      }
+      else {
+        u8x8->setFont(u8x8_font_chroma48medium8_r);  // crashes randomly on ESP32
+        u8x8->drawString(col, row, string);  // crashes randomly on ESP32
+      }
+#else
       u8x8->setFont(u8x8_font_chroma48medium8_r);
       if (!ignoreLH && lineHeight==2) u8x8->draw1x2String(col, row, string);
       else                            u8x8->drawString(col, row, string);
+#endif
     }
     void draw2x2String(uint8_t col, uint8_t row, const char *string) {
       if (!typeOK || !enabled) return;
       if (u8x8 == nullptr) return;
+#ifdef ARDUINO_ARCH_ESP32                 // WLEDMM use nicer 2x2 font on ESP32
+      //u8x8->setFont(u8x8_font_lucasarts_scumm_subtitle_o_2x2_r);
+      //u8x8->setFont(u8x8_font_lucasarts_scumm_subtitle_r_2x2_r);
+      u8x8->setFont(u8x8_font_px437wyse700b_2x2_r);
+      u8x8->drawString(col, row + row/8, string);
+#else
       u8x8->setFont(u8x8_font_chroma48medium8_r);
       u8x8->draw2x2String(col, row, string);
+#endif
     }
     void drawGlyph(uint8_t col, uint8_t row, char glyph, const uint8_t *font, bool ignoreLH=false) {
       if (!typeOK || !enabled) return;
