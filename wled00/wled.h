@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2303070
+#define VERSION 2303080
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -728,13 +728,13 @@ WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
   #include "net_debug.h"
   // On the host side, use netcat to receive the log statements: nc -l 7868 -u
   // use -D WLED_DEBUG_HOST='"192.168.xxx.xxx"' or FQDN within quotes
-  WLED_GLOBAL bool netDebugEnabled _INIT(false);
+  WLED_GLOBAL bool  _INIT(false);
   WLED_GLOBAL int netDebugPrintPort _INIT(0);
   WLED_GLOBAL IPAddress netDebugPrintIP _INIT_N(((0, 0, 0, 0))); // IP address of the bridge
-  #define DEBUGOUT(x) (netDebugEnabled || !canUseSerial())?NetDebug.print(x):Serial.print(x)
-  #define DEBUGOUTLN(x) (netDebugEnabled || !canUseSerial())?NetDebug.println(x):Serial.println(x)
-  #define DEBUGOUTF(x...) (netDebugEnabled || !canUseSerial())?NetDebug.printf(x):Serial.printf(x)
-  #define DEBUGOUTFlush() (netDebugEnabled || !canUseSerial())?NetDebug.flush():Serial.flush()
+  #define DEBUGOUT(x) ( || !canUseSerial())?NetDebug.print(x):Serial.print(x)
+  #define DEBUGOUTLN(x) ( || !canUseSerial())?NetDebug.println(x):Serial.println(x)
+  #define DEBUGOUTF(x...) ( || !canUseSerial())?NetDebug.printf(x):Serial.printf(x)
+  #define DEBUGOUTFlush() ( || !canUseSerial())?NetDebug.flush():Serial.flush()
 #else
   #define DEBUGOUT(x) {if (canUseSerial()) Serial.print(x);}
   #define DEBUGOUTLN(x) {if (canUseSerial()) Serial.println(x);}
