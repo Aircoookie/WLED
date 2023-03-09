@@ -710,7 +710,8 @@ function populateSegments(s)
 	let li = lastinfo;
 	segCount = 0; lowestUnused = 0; lSeg = 0;
 
-	ledmapFileNames = [];
+	ledmapNr = s.ledmap; //WLEDMM
+	ledmapFileNames = []; //WLEDMM
 
 	for (var inst of (s.seg||[])) {
 		segCount++;
@@ -833,7 +834,7 @@ function populateSegments(s)
 	resetUtil(noNewSegs);
 	if (gId('selall')) gId('selall').checked = true;
 	for (var i = 0; i <= lSeg; i++) {
-		updateLen(i, false);
+		updateLen(i, false); //WLEDMM: no draw
 		updateTrail(gId(`seg${i}bri`));
 		gId(`segr${i}`).style.display = "none";
 		if (!gId(`seg${i}sel`).checked && gId('selall')) gId('selall').checked = false; // uncheck if at least one is unselected.
@@ -1322,7 +1323,6 @@ function drawSegmentView() {
 
 	//draw the ledmap
 	if (ledmapNr>=0 && ctx) { //WLEDMM: @Troy#2642 : include ledmap = 0 as default ledmap
-		// console.log("Before fetch ledmap ", lastinfo.ledmap);
 		var fileName;
 		if (ledmapNr==0)
 			fileName = "ledmap.json"; //0 is ledmap.json, not ledmap0.json
@@ -1331,7 +1331,7 @@ function drawSegmentView() {
 		else
 			fileName = ledmapFileNames[ledmapNr-10];
 
-			fetchAndExecute((loc?`http://${locip}`:'.') + "/", fileName , function(text) {
+		fetchAndExecute((loc?`http://${locip}`:'.') + "/", fileName , function(text) {
 			var ledmapJson = JSON.parse(text);
 			var counter = 0;
 			var noMap = [];
@@ -1339,13 +1339,9 @@ function drawSegmentView() {
 			var colorArray = ["yellow",     "green",     "magenta",   "orange"];
 
 			var customMappingTable = [];
-			if (!ledmapJson["physical"]) {
-				customMappingTable = ledmapJson["map"];
-			} else {
-				for (let i=0;i<maxWidth * maxHeight;i++) customMappingTable.push(-1); //init with noshow
-				for (let i=0;i<maxWidth * maxHeight;i++)
-					if (ledmapJson["map"][i]>=0) customMappingTable[ledmapJson["map"][i]] = i;
-			}
+			for (let i=0;i<maxWidth * maxHeight;i++) customMappingTable.push(-1); //init with noshow
+			for (let i=0;i<maxWidth * maxHeight;i++)
+				if (ledmapJson["map"][i]>=0) customMappingTable[ledmapJson["map"][i]] = i;
 
 			for (let i=0;i<customMappingTable.length;i++) {
 				let mapIndex = customMappingTable[i];
@@ -1575,8 +1571,6 @@ function readState(s,command=false)
 
 	tr = s.transition;
 	gId('tt').value = tr/10;
-
-	ledmapNr = s.ledmap; //WLEDMM
 
 	populateSegments(s);
 	var selc=0;

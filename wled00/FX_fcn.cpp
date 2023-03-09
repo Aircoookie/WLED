@@ -1505,15 +1505,15 @@ void WS2812FX::service() {
 
 void IRAM_ATTR WS2812FX::setPixelColor(int i, uint32_t col)
 {
-  if (i >= _length) return;
   if (i < customMappingSize) i = customMappingTable[i];
+  if (i >= _length) return; //WLEDMM: check after mapping
   busses.setPixelColor(i, col);
 }
 
 uint32_t WS2812FX::getPixelColor(uint16_t i)
 {
-  if (i >= _length) return 0;
   if (i < customMappingSize) i = customMappingTable[i];
+  if (i >= _length) return 0; //WLEDMM: check after mapping
   return busses.getPixelColor(i);
 }
 
@@ -2040,13 +2040,14 @@ bool WS2812FX::deserializeMap(uint8_t n) {
   }
 
   if (!isFile) {
-    //WLEDMM: disable temporary!!!
     // erase custom mapping if selecting nonexistent ledmap.json (n==0)
-    // if (!isMatrix && !n && customMappingTable != nullptr) {
-    //   customMappingSize = 0;
-    //   delete[] customMappingTable;
-    //   customMappingTable = nullptr;
-    // }
+    //WLEDM: doubt this is necessary as return false causes setupMatrix to deal with this
+    if (!isMatrix && !n && customMappingTable != nullptr) {
+      customMappingSize = 0;
+      delete[] customMappingTable;
+      customMappingTable = nullptr;
+      loadedLedmap = 0; //WLEDMM
+    }
     return false;
   }
 
@@ -2070,41 +2071,29 @@ bool WS2812FX::deserializeMap(uint8_t n) {
 
   JsonArray map = doc[F("map")];
   if (!map.isNull() && map.size()) {  // not an empty map
-     if (doc[F("physical")]) {
-      //WLEDMM: support ledmap file properties width and height
-      if (doc[F("width")]>0 && doc[F("height")]>0) {
-        panels = 1;
-        panel.clear();
-        panel.reserve(1U);  // pre-allocate memory for panels
-        Panel p;
-        p.bottomStart = p.rightStart = p.vertical = p.serpentine = false;
-        p.xOffset = p.yOffset = 0;
-        p.width = doc[F("width")];
-        p.height = doc[F("height")];
-        strip.panel.push_back(p);
+    //WLEDMM: support ledmap file properties width and height
+    if (doc[F("width")]>0 && doc[F("height")]>0) {
+      panels = 1;
+      panel.clear();
+      panel.reserve(1U);  // pre-allocate memory for panels
+      Panel p;
+      p.bottomStart = p.rightStart = p.vertical = p.serpentine = false;
+      p.xOffset = p.yOffset = 0;
+      p.width = doc[F("width")];
+      p.height = doc[F("height")];
+      strip.panel.push_back(p);
 
-        Segment::maxWidth = p.width;
-        Segment::maxHeight = p.height;
+      Segment::maxWidth = p.width;
+      Segment::maxHeight = p.height;
 
-        makeAutoSegments();
-      }
+      makeAutoSegments();
     }
 
     customMappingSize  = map.size();
     customMappingTable = new uint16_t[customMappingSize];
 
-    // if (!doc[F("physical")]) {
-      for (uint16_t i=0; i<MIN(customMappingSize, map.size()); i++) 
-        customMappingTable[i] = (uint16_t) (map[i]<0 ? 0xFFFFU : map[i]);
-    // }
-    // else {
-    //   for (int i=0; i<customMappingSize;i++) customMappingTable[i] = (uint16_t)0xFFFFU; //WLEDMM: init with no show
-    //   //assign all >=0 mappings to customMappingTable
-    //   for (uint16_t i=0; i<map.size(); i++) 
-    //     if (map[i]>=0)
-    //       customMappingTable[map[i].as<uint16_t>()] = i;
-    // }
-        
+    for (uint16_t i=0; i<MIN(customMappingSize, map.size()); i++) 
+      customMappingTable[i] = (uint16_t) (map[i]<0 ? 0xFFFFU : map[i]);
 
     loadedLedmap = n;
 
