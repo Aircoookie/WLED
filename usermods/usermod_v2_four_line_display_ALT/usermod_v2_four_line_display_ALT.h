@@ -13,6 +13,8 @@
 #define FLD_ESP32_USE_THREADS  // comment out to use 0.13.x behviour without parallel update task - slower, but more robust. May delay other tasks like LEDs or audioreactive!!
 #endif
 
+//#define OLD_4LD_FONTS          // comment out if you prefer the "classic" look with blocky fonts (saves 1K flash)
+
 //
 // Insired by the usermod_v2_four_line_display
 //
@@ -193,7 +195,8 @@ class FourLineDisplayUsermod : public Usermod {
     // some displays need this to properly apply contrast
     void setVcomh(bool highContrast) {
       if (!typeOK || !enabled) return;    // WLEDMM make sure the display is initialized before we try to draw on it
-      if (!canDraw()) return;              // don't interfere with ongoing draw
+      //if (!canDraw()) return;              // don't interfere with ongoing draw
+      if (u8x8 == nullptr) return;
 
       u8x8_t *u8x8_struct = u8x8->getU8x8();
       u8x8_cad_StartTransfer(u8x8_struct);
@@ -207,16 +210,18 @@ class FourLineDisplayUsermod : public Usermod {
      */
     void setFlipMode(uint8_t mode) {
       if (!typeOK || !enabled) return;    // WLEDMM make sure the display is initialized before we try to draw on it
-      if (canDraw()) u8x8->setFlipMode(mode);
+      if (u8x8 == nullptr) return;
+      u8x8->setFlipMode(mode);
     }
     void setContrast(uint8_t contrast) {
       if (!typeOK || !enabled) return;    // WLEDMM make sure the display is initialized before we try to draw on it
-      if (canDraw()) u8x8->setContrast(contrast);
+      if (u8x8 == nullptr) return;
+      u8x8->setContrast(contrast);
     }
     void drawString(uint8_t col, uint8_t row, const char *string, bool ignoreLH=false) {
       if (!typeOK || !enabled) return;    // WLEDMM make sure the display is initialized before we try to draw on it
       if (u8x8 == nullptr) return;
-#ifdef ARDUINO_ARCH_ESP32                 // WLEDMM use nicer 2x1 font on ESP32
+#if  defined(ARDUINO_ARCH_ESP32) && !defined(OLD_4LD_FONTS) // WLEDMM use nicer 2x2 font on ESP32
       if (!ignoreLH && lineHeight==2) { 
         if(strlen(string) > 3)                    // WLEDMM little hack - less than 3 chars -> show in bold
           u8x8->setFont(u8x8_font_7x14_1x2_r);    // normal
@@ -237,14 +242,24 @@ class FourLineDisplayUsermod : public Usermod {
     void draw2x2String(uint8_t col, uint8_t row, const char *string) {
       if (!typeOK || !enabled) return;
       if (u8x8 == nullptr) return;
-#ifdef ARDUINO_ARCH_ESP32                 // WLEDMM use nicer 2x2 font on ESP32
-      //u8x8->setFont(u8x8_font_lucasarts_scumm_subtitle_o_2x2_r);
-      //u8x8->setFont(u8x8_font_lucasarts_scumm_subtitle_r_2x2_r);
-      u8x8->setFont(u8x8_font_px437wyse700b_2x2_r);
-      u8x8->drawString(col, row + row/8, string);
+#if  defined(ARDUINO_ARCH_ESP32) && !defined(OLD_4LD_FONTS)               // WLEDMM use nicer 2x2 font on ESP32
+      if (lineHeight==2) {                            // WLEDMM use 2x3 on 128x64 displays
+        //u8x8->setFont(u8x8_font_profont29_2x3_r);   // sans serif 2x3
+        u8x8->setFont(u8x8_font_courB18_2x3_r);       // courier bold 2x3
+        u8x8->drawString(col, row + (row >3? 1:0), string);
+      } else {
+        //u8x8->setFont(u8x8_font_lucasarts_scumm_subtitle_o_2x2_r);
+        //u8x8->setFont(u8x8_font_lucasarts_scumm_subtitle_r_2x2_r);
+        u8x8->setFont(u8x8_font_px437wyse700b_2x2_r);
+        u8x8->drawString(col, row, string);
+      }
 #else
       u8x8->setFont(u8x8_font_chroma48medium8_r);
-      u8x8->draw2x2String(col, row, string);
+      if (lineHeight==2) {                            // WLEDMM use 2x3 on 128x64 displays
+        u8x8->draw2x2String(col, row + (row >3? 1:0), string);
+      } else {
+        u8x8->draw2x2String(col, row, string);
+      }
 #endif
     }
     void drawGlyph(uint8_t col, uint8_t row, char glyph, const uint8_t *font, bool ignoreLH=false) {
@@ -269,6 +284,7 @@ class FourLineDisplayUsermod : public Usermod {
     }
     void setPowerSave(uint8_t save) {
       if (!typeOK || !enabled) return;    // WLEDMM make sure the display is initialized before we try to draw on it
+      if (u8x8 == nullptr) return;
       u8x8->setPowerSave(save);
     }
 
@@ -328,9 +344,20 @@ class FourLineDisplayUsermod : public Usermod {
         }
         snprintf_P(lineBuffer,LINE_BUFFER_SIZE, PSTR("%2d:%02d"), (useAMPM ? AmPmHour : hourCurrent), minuteCurrent);
         draw2x2String(2, lineHeight*2, lineBuffer); //draw hour, min. blink ":" depending on odd/even seconds
-        if (useAMPM) drawString(12, lineHeight*2, (isitAM ? "AM" : "PM"), true); //draw am/pm if using 12 time
+        if (useAMPM) drawString(12, lineHeight*2 + (lineHeight-1), (isitAM ? "AM" : "PM"), true); //draw am/pm if using 12 time
 
         drawStatusIcons(); //icons power, wifi, timer, etc
+
+        if (lineHeight > 1) {       // WLEDMM use extra space for useful information
+          strncpy_P(lineBuffer, PSTR("             "), LINE_BUFFER_SIZE);
+          if (apActive) strncpy_P(lineBuffer, PSTR(" AP mode     "), LINE_BUFFER_SIZE);
+          else if (!WLED_CONNECTED) strncpy_P(lineBuffer, PSTR(" NO NET      "), LINE_BUFFER_SIZE);
+          if (WLED_MQTT_CONNECTED) lineBuffer[9] = 'M'; // "MQTT"
+          if (realtimeMode && !realtimeOverride) lineBuffer[10] = 'X'; // "eXternal control"
+          //if (transitionActive) lineBuffer[11] = 'T';
+          //if (stateChanged) lineBuffer[12] = 'C';
+          drawString(1, 0, lineBuffer, false);
+        }
 
         knownMinute = minuteCurrent;
         knownHour   = hourCurrent;
@@ -339,7 +366,10 @@ class FourLineDisplayUsermod : public Usermod {
         lastSecond = secondCurrent;
         draw2x2String(6, lineHeight*2, secondCurrent%2 ? " " : ":");
         snprintf_P(lineBuffer, LINE_BUFFER_SIZE, PSTR("%02d"), secondCurrent);
-        drawString(12, lineHeight*2+1, lineBuffer, true); // even with double sized rows print seconds in 1 line
+        if (useAMPM)
+          drawString(12, lineHeight*2+1 + (lineHeight-1), lineBuffer, true); // even with double sized rows print seconds in 1 line // WLEDMM move it a bit lower
+        else
+          drawString(12, lineHeight*2+1, lineBuffer, true); // even with double sized rows print seconds in 1 line
       }
       drawing = false;
     }
@@ -482,15 +512,19 @@ class FourLineDisplayUsermod : public Usermod {
       u8x8->setBusClock(ioFrequency);  // can be used for SPI too
       u8x8->begin();
       typeOK = true;
-      drawing = false;
+
       reDrawing = false;
+      drawing = true;
       setFlipMode(flip);
       setVcomh(contrastFix);
       setContrast(contrast); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
       setPowerSave(0);
+      drawing = false;
+      onUpdateBegin(false);  // create Display task // WLEDMM bugfix: before drawing anything
+      delay(200);
+
       //drawString(0, 0, "Loading...");
       overlayLogo(3500);
-      onUpdateBegin(false);  // create Display task
       initDone = true;
     }
 
@@ -854,7 +888,6 @@ class FourLineDisplayUsermod : public Usermod {
      */
     void overlayLogo(long showHowLong) {
       if (!typeOK || !enabled) return;   // WLEDMM make sure the display is initialized before we try to draw on it
-      if (!initDone) return;             // WLEDMM bugfix
       unsigned long now = millis();
       while (drawing && millis()-now < 250) delay(1); // wait if someone else is drawing
       drawing = true;
@@ -983,8 +1016,8 @@ class FourLineDisplayUsermod : public Usermod {
     /**
      * Enable sleep (turn the display off) or clock mode.
      */
-    void sleepOrClock(bool enabled) {
-      if (enabled) {
+    void sleepOrClock(bool sleepEnable) {
+      if (sleepEnable) {
         displayTurnedOff = true;
         if (clockMode && ntpEnabled) {
           knownMinute = knownHour = 99;
