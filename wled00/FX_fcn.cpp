@@ -184,7 +184,8 @@ void Segment::deallocateData() {
 void Segment::resetIfRequired() {
   if (reset) {
     if (leds && !Segment::_globalLeds) { free(leds); leds = nullptr; }
-    //if (_t) { delete _t; _t = nullptr; transitional = false; }
+    if (transitional && _t) { transitional = false; delete _t; _t = nullptr; }
+    deallocateData();
     next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0;
     reset = false; // setOption(SEG_OPTION_RESET, false);
   }
@@ -1385,7 +1386,6 @@ void WS2812FX::purgeSegments(bool force) {
   if (_segments.size() <= 1) return;
   for (size_t i = _segments.size()-1; i > 0; i--)
     if (_segments[i].stop == 0 || force) {
-      DEBUG_PRINT(F("Purging segment segment: ")); DEBUG_PRINTLN(i);
       deleted++;
       _segments.erase(_segments.begin() + i);
     }
