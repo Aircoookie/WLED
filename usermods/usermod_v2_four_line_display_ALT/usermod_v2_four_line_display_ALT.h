@@ -3,7 +3,7 @@
 #include <Arduino.h>              // WLEDMM: make sure that I2C drivers have the "right" Wire Object
 #include <Wire.h>
 #undef U8X8_NO_HW_I2C             // WLEDMM: we do want I2C hardware drivers - if possible
-//#define WIRE_INTERFACES_COUNT 2   // experimental - tell U8x8Lib that there is a econd Wire unit
+//#define WIRE_INTERFACES_COUNT 2   // experimental - tell U8x8Lib that there is a second Wire unit
 
 #include "wled.h"
 #include <U8x8lib.h> // from https://github.com/olikraus/u8g2/
@@ -117,6 +117,23 @@ class FourLineDisplayUsermod : public Usermod {
     // HW interface & configuration
     U8X8 *u8x8 = nullptr;           // pointer to U8X8 display object
 
+#if defined(ARDUINO_ARCH_ESP32) && defined(FLD_ESP32_USE_THREADS)
+    // semaphores - needed on ESP32 only, as we use a separate task to update the display
+    SemaphoreHandle_t drawMux = xSemaphoreCreateBinary();      // for drawstring and drawglyph functions (to prevent concurrent access to HW)
+    SemaphoreHandle_t drawMuxBig = xSemaphoreCreateBinary();   // for draw2x2GlyphIcons() and showCurrentEffectOrPalette() - more complex and not thread-safe
+    const TickType_t maxWait =     300 * portTICK_PERIOD_MS;   // wait max. 300ms (drawstring semaphore)
+    const TickType_t maxWaitLong = 800 * portTICK_PERIOD_MS;   // wait max. 800ms (big drawing semaphore)
+    #define FLD_SemaphoreTake(x,t)  xSemaphoreTake((x),(t))
+    #define FLD_SemaphoreGive(x)    xSemaphoreGive(x)
+#else
+    // 8266 or no tasks - no semaphores
+    #define FLD_SemaphoreTake(x,t) pdTRUE
+    #define FLD_SemaphoreGive(x)
+    #if !defined(ARDUINO_ARCH_ESP32) && !defined(pdTRUE)
+      #define pdTRUE true
+    #endif
+#endif
+
     #ifndef FLD_SPI_DEFAULT
     int8_t ioPin[5] = {FLD_PIN_SCL, FLD_PIN_SDA, -1, -1, -1};        // I2C pins: SCL, SDA
     uint32_t ioFrequency = 400000;  // in Hz (minimum is 100000, baseline is 400000 and maximum should be 3400000)
@@ -126,7 +143,7 @@ class FourLineDisplayUsermod : public Usermod {
     #endif
 
     DisplayType type = FLD_TYPE;    // display type
-    bool typeOK = false;             //WLEDMM: instead of type == NULL and type=NULL. Intially false, as display was not initialized yet
+    bool typeOK = false;             //WLEDMM: instead of type == NULL and type=NULL. Initially false, as display was not initialized yet
     bool flip = false;              // flip display 180°
     uint8_t contrast = 10;          // screen contrast
     uint8_t lineHeight = 1;         // 1 row or 2 rows
@@ -195,7 +212,6 @@ class FourLineDisplayUsermod : public Usermod {
     // some displays need this to properly apply contrast
     void setVcomh(bool highContrast) {
       if (!typeOK || !enabled) return;    // WLEDMM make sure the display is initialized before we try to draw on it
-      //if (!canDraw()) return;              // don't interfere with ongoing draw
       if (u8x8 == nullptr) return;
 
       u8x8_t *u8x8_struct = u8x8->getU8x8();
@@ -221,6 +237,8 @@ class FourLineDisplayUsermod : public Usermod {
     void drawString(uint8_t col, uint8_t row, const char *string, bool ignoreLH=false) {
       if (!typeOK || !enabled) return;    // WLEDMM make sure the display is initialized before we try to draw on it
       if (u8x8 == nullptr) return;
+      if (FLD_SemaphoreTake(drawMux, maxWait) != pdTRUE) return;      // WLEDMM acquire draw mutex
+
 #if  defined(ARDUINO_ARCH_ESP32) && !defined(OLD_4LD_FONTS) // WLEDMM use nicer 2x2 font on ESP32
       if (!ignoreLH && lineHeight==2) { 
         if(strlen(string) > 3)                    // WLEDMM little hack - less than 3 chars -> show in bold
@@ -230,18 +248,20 @@ class FourLineDisplayUsermod : public Usermod {
         u8x8->drawString(col, row, string);
       }
       else {
-        u8x8->setFont(u8x8_font_chroma48medium8_r);  // crashes randomly on ESP32
-        u8x8->drawString(col, row, string);  // crashes randomly on ESP32
+        u8x8->setFont(u8x8_font_chroma48medium8_r);
+        u8x8->drawString(col, row, string);
       }
 #else
       u8x8->setFont(u8x8_font_chroma48medium8_r);
       if (!ignoreLH && lineHeight==2) u8x8->draw1x2String(col, row, string);
       else                            u8x8->drawString(col, row, string);
 #endif
+      FLD_SemaphoreGive(drawMux);                                     // WLEDMM release draw mutex
     }
     void draw2x2String(uint8_t col, uint8_t row, const char *string) {
       if (!typeOK || !enabled) return;
       if (u8x8 == nullptr) return;
+      if (FLD_SemaphoreTake(drawMux, maxWait) != pdTRUE) return;      // WLEDMM acquire draw mutex
 #if  defined(ARDUINO_ARCH_ESP32) && !defined(OLD_4LD_FONTS)               // WLEDMM use nicer 2x2 font on ESP32
       if (lineHeight==2) {                            // WLEDMM use 2x3 on 128x64 displays
         //u8x8->setFont(u8x8_font_profont29_2x3_r);   // sans serif 2x3
@@ -261,17 +281,22 @@ class FourLineDisplayUsermod : public Usermod {
         u8x8->draw2x2String(col, row, string);
       }
 #endif
+      FLD_SemaphoreGive(drawMux);                                     // WLEDMM release draw mutex
     }
     void drawGlyph(uint8_t col, uint8_t row, char glyph, const uint8_t *font, bool ignoreLH=false) {
       if (!typeOK || !enabled) return;
+      if (FLD_SemaphoreTake(drawMux, maxWait) != pdTRUE) return;      // WLEDMM acquire draw mutex
       u8x8->setFont(font);
       if (!ignoreLH && lineHeight==2) u8x8->draw1x2Glyph(col, row, glyph);
       else                            u8x8->drawGlyph(col, row, glyph);
+      FLD_SemaphoreGive(drawMux);                                     // WLEDMM release draw mutex
     }
     void draw2x2Glyph(uint8_t col, uint8_t row, char glyph, const uint8_t *font) {
       if (!typeOK || !enabled) return;
+      if (FLD_SemaphoreTake(drawMux, maxWait) != pdTRUE) return;      // WLEDMM acquire draw mutex
       u8x8->setFont(font);
       u8x8->draw2x2Glyph(col, row, glyph);
+      FLD_SemaphoreGive(drawMux);                                     // WLEDMM release draw mutex
     }
     uint8_t getCols() {
       if (!typeOK || !enabled) return 0;
@@ -280,7 +305,9 @@ class FourLineDisplayUsermod : public Usermod {
     void clear() {
       if (!typeOK || !enabled) return;
       if (nullptr == u8x8) return;  // prevents some crashes
+      if (FLD_SemaphoreTake(drawMux, maxWaitLong ) != pdTRUE) return; // WLEDMM acquire draw mutex - clear() can take very long in software I2C mode
       u8x8->clear();         // crashes randomly on ESP32
+      FLD_SemaphoreGive(drawMux);                                     // WLEDMM release draw mutex
     }
     void setPowerSave(uint8_t save) {
       if (!typeOK || !enabled) return;    // WLEDMM make sure the display is initialized before we try to draw on it
@@ -296,6 +323,7 @@ class FourLineDisplayUsermod : public Usermod {
 
     void draw2x2GlyphIcons() {
       if (!typeOK || !enabled) return;    // WLEDMM make sure the display is initialized before we try to draw on it
+      if (FLD_SemaphoreTake(drawMuxBig, maxWaitLong) != pdTRUE) return;      // WLEDMM acquire BIG draw mutex
       if (lineHeight == 2) {
         drawGlyph( 1,            0, 1, u8x8_4LineDisplay_WLED_icons_2x2, true); //brightness icon
         drawGlyph( 5,            0, 2, u8x8_4LineDisplay_WLED_icons_2x2, true); //speed icon
@@ -309,6 +337,7 @@ class FourLineDisplayUsermod : public Usermod {
         drawGlyph(15, 2, 4, u8x8_4LineDisplay_WLED_icons_1x1); //palette icon
         drawGlyph(15, 3, 5, u8x8_4LineDisplay_WLED_icons_1x1); //effect icon
       }
+      FLD_SemaphoreGive(drawMuxBig);                                   // WLEDMM release BIG draw mutex
     }
 
     /**
@@ -379,7 +408,7 @@ class FourLineDisplayUsermod : public Usermod {
     // gets called once at boot. Do all initialization that doesn't depend on
     // network here
     void setup() {
-      if (!enabled) return;   // typeOK = true will be set after successfull setup
+      if (!enabled) return;   // typeOK = true will be set after successful setup
 
       bool isHW, isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64);
       PinOwner po = PinOwner::UM_FourLineDisplay;
@@ -520,6 +549,11 @@ class FourLineDisplayUsermod : public Usermod {
       setContrast(contrast); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
       setPowerSave(0);
       drawing = false;
+
+      // init semaphores to enable drawing
+      FLD_SemaphoreGive(drawMux);
+      FLD_SemaphoreGive(drawMuxBig);
+
       onUpdateBegin(false);  // create Display task // WLEDMM bugfix: before drawing anything
       delay(200);
 
@@ -749,7 +783,7 @@ class FourLineDisplayUsermod : public Usermod {
       if (lineHeight==2) { col--; } else { row++; }
       drawGlyph(col, row,          (bri > 0 ? 9 : 0), u8x8_4LineDisplay_WLED_icons_1x1, true); // power icon
       if (lineHeight==2) { col--; } else { col = row = 0; }
-      drawGlyph(col, row, (nightlightActive ? 6 : 0), u8x8_4LineDisplay_WLED_icons_1x1, true); // moon icon for nighlight mode
+      drawGlyph(col, row, (nightlightActive ? 6 : 0), u8x8_4LineDisplay_WLED_icons_1x1, true); // moon icon for nightlight mode
     }
     
     /**
@@ -762,7 +796,7 @@ class FourLineDisplayUsermod : public Usermod {
       markColNum = newMarkColNum;
     }
 
-    //Draw the arrow for the current setting beiong changed
+    //Draw the arrow for the current setting being changed
     void drawArrow() {
       if (markColNum != 255 && markLineNum !=255) drawGlyph(markColNum, markLineNum*lineHeight, 21, u8x8_4LineDisplay_WLED_icons_1x1);
     }
@@ -772,6 +806,8 @@ class FourLineDisplayUsermod : public Usermod {
     void showCurrentEffectOrPalette(int inputEffPal, const char *qstring, uint8_t row) {
       char lineBuffer[MAX_JSON_CHARS] = { '\0' };
       if (!typeOK || !enabled) return;    // WLEDMM make sure the display is initialized before we try to draw on it
+      if (FLD_SemaphoreTake(drawMuxBig, maxWaitLong) != pdTRUE) return;      // WLEDMM acquire BIG draw mutex
+
       if (overlayUntil == 0) {
         // Find the mode name in JSON
         uint8_t printedChars = extractModeName(inputEffPal, qstring, lineBuffer, MAX_JSON_CHARS-1);
@@ -829,6 +865,8 @@ class FourLineDisplayUsermod : public Usermod {
           drawString(1, row*lineHeight, smallBuffer3, true);
         }
       }
+
+      FLD_SemaphoreGive(drawMuxBig);                                   // WLEDMM release BIG draw mutex
     }
 
     /**
@@ -1019,6 +1057,7 @@ class FourLineDisplayUsermod : public Usermod {
     void sleepOrClock(bool sleepEnable) {
       if (sleepEnable) {
         displayTurnedOff = true;
+        //setContrast(contrastFix? 2+ contrast/4 : 0);    // un-comment to dim display in "clock mode"
         if (clockMode && ntpEnabled) {
           knownMinute = knownHour = 99;
           showTime();
@@ -1027,6 +1066,7 @@ class FourLineDisplayUsermod : public Usermod {
       } else {
         displayTurnedOff = false;
         setPowerSave(0);
+        //setContrast(contrast);                        // un-comment to restore display brightness on wakeup
       }
     }
 
@@ -1398,3 +1438,8 @@ const char FourLineDisplayUsermod::_contrastFix[]     PROGMEM = "contrastFix";
 #ifdef ARDUINO_ARCH_ESP32
 FourLineDisplayUsermod *FourLineDisplayUsermod::instance = nullptr;
 #endif
+
+// WLEDMM clean up some macros, so they don't cause problems in other usermods
+#undef FLD_SemaphoreTake
+#undef FLD_SemaphoreGive
+
