@@ -29,6 +29,10 @@ class UsermodBattery : public Usermod
     float rawValue = 0.0f;
     // calculated voltage            
     float voltage = maxBatteryVoltage;
+    // between 0 and 1, to control strength of voltage smoothing filter
+    float alpha = 0.05f;
+    // multiplyer for the voltage divider that is in place between ADC pin and battery, default will be 2 but might be adapted to readout voltages over ~5v ESP32 or ~6.6v ESP8266
+    float voltageMultiplyer = 2.0f;
     // mapped battery level based on voltage
     int8_t batteryLevel = 100;
     // offset or calibration value to fine tune the calculated voltage
@@ -126,8 +130,8 @@ class UsermodBattery : public Usermod
           if (pinManager.allocatePin(batteryPin, false, PinOwner::UM_Battery)) {
             DEBUG_PRINTLN(F("Battery pin allocation succeeded."));
             success = true;
-            //initialize voltage with analog read
-            voltage = analogReadMilliVolts(batteryPin) / 500.0f + calibration;
+            //use calibrated millivolts analogread on esp32 (150 mV ~ 2450 mV default) and divide by 1000 to get from milivolts to volts and multiply by voltage divider and apply calibration value
+            voltage = (analogReadMilliVolts(batteryPin) / 1000.0f) * voltageMultiplyer  + calibration;
           }
 
         if (!success) {
@@ -137,8 +141,9 @@ class UsermodBattery : public Usermod
           pinMode(batteryPin, INPUT);
         }
       #else //ESP8266 boards have only one analog input pin A0
-
         pinMode(batteryPin, INPUT);
+        //use analog read on esp8266 ( 150 mV ~ 3000mV no attenuation options) and divide by ADC precision 1023 and multiply by 3v ADC max voltage and apply calibration value
+        voltage = (analogRead(batteryPin) / 1023.0f) * 3.3f * voltageMultiplyer + calibration;
       #endif
 
       nextReadTime = millis() + readingInterval;
@@ -179,16 +184,15 @@ class UsermodBattery : public Usermod
       initializing = false;
 
 #ifdef ARDUINO_ARCH_ESP32
-      // use calibrated millivolts analogread on esp32 (150 mV ~ 2450 mV) and divide by 500 to fix to the right decimal place and multiply by 2 to account for the voltage divider
-      rawValue = analogReadMilliVolts(batteryPin) / 500.0f + calibration;
-      // calculate the voltage with a weighted running average because ADC in ESP32 is fluctuating too much for a good single readout
-      voltage = (voltage * 19.0f + rawValue) / 20.0f;
+      // use calibrated millivolts analogread on esp32 (150 mV ~ 2450 mV default) and divide by 1000 to get from milivolts to volts and multiply by voltage divider and apply calibration value
+      rawValue = (analogReadMilliVolts(batteryPin) / 1000.0f) * voltageMultiplyer + calibration;
+      // filter with exponential smoothing because ADC in esp32 is fluctuating too much for a good single readout
+      voltage = voltage + alpha * (rawValue - voltage);
 #else
-      // read battery raw input
-      rawValue = analogRead(batteryPin);
-
-      // calculate the voltage     
-      voltage = ((rawValue / getAdcPrecision()) * maxBatteryVoltage) + calibration;
+      // use analog read on esp8266 ( 150 mV ~ 3000mV no attenuation options) and divide by ADC precision 1023 and multiply by 3v ADC max voltage and apply calibration value
+      rawValue = (analogRead(batteryPin) / 1023.0f) * 3.0f * voltageMultiplyer + calibration;
+      // filter with exponential smoothing 
+      voltage = voltage + alpha * (rawValue - voltage);
 #endif
       // check if voltage is within specified voltage range, allow 10% over/under voltage - removed cause this just makes it hard for people to troubleshoot as the voltage in the web gui will say invalid instead of displaying a voltage
       //voltage = ((voltage < minBatteryVoltage * 0.85f) || (voltage > maxBatteryVoltage * 1.1f)) ? -1.0f : voltage;
@@ -595,21 +599,7 @@ class UsermodBattery : public Usermod
       totalBatteryCapacity = capacity;
     }
 
-    /*
-     * Get the choosen adc precision
-     * esp8266 = 10bit resolution = 1024.0f 
-     * esp32 = 12bit resolution = 4095.0f
-     */
-    float getAdcPrecision()
-    {
-      #ifdef ARDUINO_ARCH_ESP32
-        // esp32
-        return 4096.0f;
-      #else
-        // esp8266
-        return 1024.0f;
-      #endif
-    }
+
 
     /*
      * Get the calculated voltage
