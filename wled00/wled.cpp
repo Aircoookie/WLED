@@ -868,7 +868,8 @@ void WLED::initInterfaces()
         WiFi.hostByName(WLED_DEBUG_HOST, netDebugPrintIP, 750);
       #else
         #ifdef WLED_USE_ETHERNET
-          ETH.hostByName(WLED_DEBUG_HOST, netDebugPrintIP);
+          // ETH.hostByName(WLED_DEBUG_HOST, netDebugPrintIP); WLEDMM: ETH.hostByName does not exist, WiFi.hostByName seems to do the same, but must be tested.
+          WiFi.hostByName(WLED_DEBUG_HOST, netDebugPrintIP);
         #else
           WiFi.hostByName(WLED_DEBUG_HOST, netDebugPrintIP);
         #endif
