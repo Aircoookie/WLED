@@ -340,7 +340,8 @@ void registerUsermods()
 
   #ifdef USERMOD_KLIPPER_PERCENTAGE
   usermods.add(new klipper_percentage());
-#endif
+  #endif
+
   #ifdef USERMOD_BOBLIGHT
   usermods.add(new BobLightUsermod());
   #endif
