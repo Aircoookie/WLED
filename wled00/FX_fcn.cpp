@@ -551,7 +551,9 @@ uint16_t Segment::virtualLength() const {
 
 void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
 {
+#ifndef WLED_DISABLE_2D
   int vStrip = i>>16; // hack to allow running on virtual strips (2D segment columns/rows)
+#endif
   i &= 0xFFFF;
 
   if (i >= virtualLength() || i<0) return;  // if pixel would fall out of segment just exit
@@ -691,7 +693,9 @@ void Segment::setPixelColor(float i, uint32_t col, bool aa)
 
 uint32_t Segment::getPixelColor(int i)
 {
+#ifndef WLED_DISABLE_2D
   int vStrip = i>>16;
+#endif
   i &= 0xFFFF;
 
 #ifndef WLED_DISABLE_2D
@@ -1049,7 +1053,7 @@ void WS2812FX::finalizeInit(void)
     Segment::_globalLeds = nullptr;
   }
   if (useLedsArray) {
-    size_t arrSize = sizeof(CRGB) * MAX(_length, Segment::maxWidth*Segment::maxHeight);
+    size_t arrSize = sizeof(CRGB) * getLengthTotal();
     #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
     if (psramFound())
       Segment::_globalLeds = (CRGB*) ps_malloc(arrSize);
@@ -1123,15 +1127,15 @@ void WS2812FX::service() {
 
 void IRAM_ATTR WS2812FX::setPixelColor(int i, uint32_t col)
 {
-  if (i >= _length) return;
   if (i < customMappingSize) i = customMappingTable[i];
+  if (i >= _length) return;
   busses.setPixelColor(i, col);
 }
 
 uint32_t WS2812FX::getPixelColor(uint16_t i)
 {
-  if (i >= _length) return 0;
   if (i < customMappingSize) i = customMappingTable[i];
+  if (i >= _length) return 0;
   return busses.getPixelColor(i);
 }
 
@@ -1342,6 +1346,12 @@ uint8_t WS2812FX::getActiveSegmentsNum(void) {
     if (_segments[i].isActive()) c++;
   }
   return c;
+}
+
+uint16_t WS2812FX::getLengthTotal(void) {
+  uint16_t len = Segment::maxWidth * Segment::maxHeight; // will be _length for 1D (see finalizeInit()) but should cover whole matrix for 2D
+  if (isMatrix && _length > len) len = _length; // for 2D with trailing strip
+  return len;
 }
 
 uint16_t WS2812FX::getLengthPhysical(void) {
@@ -1568,7 +1578,8 @@ void WS2812FX::printSize() {
   DEBUG_PRINTF("Modes: %d*%d=%uB\n", sizeof(mode_ptr), _mode.size(), (_mode.capacity()*sizeof(mode_ptr)));
   DEBUG_PRINTF("Data: %d*%d=%uB\n", sizeof(const char *), _modeData.size(), (_modeData.capacity()*sizeof(const char *)));
   DEBUG_PRINTF("Map: %d*%d=%uB\n", sizeof(uint16_t), (int)customMappingSize, customMappingSize*sizeof(uint16_t));
-  if (useLedsArray) DEBUG_PRINTF("Buffer: %d*%d=%uB\n", sizeof(CRGB), (int)_length, _length*sizeof(CRGB));
+  size = getLengthTotal();
+  if (useLedsArray) DEBUG_PRINTF("Buffer: %d*%u=%uB\n", sizeof(CRGB), size, size*sizeof(CRGB));
 }
 #endif
 
