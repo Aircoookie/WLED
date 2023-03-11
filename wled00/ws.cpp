@@ -148,7 +148,7 @@ bool sendLiveLedsWs(uint32_t wsClient)
   AsyncWebSocketClient * wsc = ws.client(wsClient);
   if (!wsc || wsc->queueLength() > 0) return false; //only send if queue free
 
-  uint16_t used = strip.getLengthTotal();
+  uint16_t used = Segment::maxWidth * Segment::maxHeight; //WLEDMM: not strip.getLengthTotal() as not working for ledmaps mapping to a smaller ledcount then width*height
   const uint16_t MAX_LIVE_LEDS_WS = strip.isMatrix ? 4096 : 256; //WLEDMM use 4096 as max matrix size
   uint16_t n = ((used -1)/MAX_LIVE_LEDS_WS) +1; //only serve every n'th LED if count over MAX_LIVE_LEDS_WS
   uint16_t pos = (strip.isMatrix ? 6 : 2); //WLEDMM 6 instead of 4

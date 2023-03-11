@@ -2092,7 +2092,7 @@ bool WS2812FX::deserializeMap(uint8_t n) {
     customMappingSize  = map.size();
     customMappingTable = new uint16_t[customMappingSize];
 
-    for (uint16_t i=0; i<MIN(customMappingSize, map.size()); i++) 
+    for (uint16_t i=0; i<customMappingSize; i++) 
       customMappingTable[i] = (uint16_t) (map[i]<0 ? 0xFFFFU : map[i]);
 
     loadedLedmap = n;

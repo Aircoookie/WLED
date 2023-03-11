@@ -7132,11 +7132,19 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
   if ((fadeoutDelay <= 1 ) || ((SEGENV.call % fadeoutDelay) == 0)) SEGMENT.fadeToBlackBy(SEGMENT.speed);
 
   uint16_t lastBarHeight = 0;  // WLEDMM: for smoothing out bars
+
+  //WLEDMM: evenly ditribut bands
+  float bandwidth = (float)cols / NUM_BANDS;
+  float remaining = bandwidth;
+  uint8_t band = 0;
   for (int x=0; x < cols; x++) {
-    uint8_t  band       = map(x, 0, cols-1, 0, NUM_BANDS - 1);
-    if(cols > 24) band = map(x+1, 0, cols-1, 0, NUM_BANDS - 1);     // WLEDMM fix for too-wide first band
+    //WLEDMM if not enough remaining
+    if (remaining < 1) {band++; remaining+= bandwidth;} //increase remaining but keep the current remaining
+    remaining--; //consume remaining
+    
+    // Serial.printf("x %d b %d n %d w %f %f\n", x, band, NUM_BANDS, bandwidth, remaining);
     if (NUM_BANDS < 16) band = map(band, 0, NUM_BANDS - 1, 0, 15); // always use full range. comment out this line to get the previous behaviour.
-    band = constrain(band, 0, 15);
+    // band = constrain(band, 0, 15); //WLEDMM can never be out of bounds (I think...)
     uint16_t colorIndex = band * 17;
     uint16_t barHeight  = map(fftResult[band], 0, 255, 0, rows); // do not subtract -1 from rows here
 

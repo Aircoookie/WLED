@@ -181,7 +181,7 @@ void WLED::loop()
 
   //WLEDMM refactored (to be done: setUpMatrix is called in finalizeInit and also in deserializeMap, deserializeMap is called in finalizeInit and also here)
   if (loadLedmap) {
-    if (!strip.deserializeMap(loadedLedmap) && strip.isMatrix && loadedLedmap == 0) strip.setUpMatrix();
+    if (!strip.deserializeMap(loadedLedmap) && strip.isMatrix) strip.setUpMatrix(); //WLEDMM: always if nonexistent:  && loadedLedmap == 0
     strip.enumerateLedmaps(); //WLEDMM
     loadLedmap = false;
   }
