@@ -7141,23 +7141,24 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
     //WLEDMM if not enough remaining
     if (remaining < 1) {band++; remaining+= bandwidth;} //increase remaining but keep the current remaining
     remaining--; //consume remaining
-    
+
     // Serial.printf("x %d b %d n %d w %f %f\n", x, band, NUM_BANDS, bandwidth, remaining);
-    if (NUM_BANDS < 16) band = map(band, 0, NUM_BANDS - 1, 0, 15); // always use full range. comment out this line to get the previous behaviour.
+    uint8_t frBand = (NUM_BANDS < 16)?map(band, 0, NUM_BANDS - 1, 0, 15):band; // always use full range. comment out this line to get the previous behaviour.
     // band = constrain(band, 0, 15); //WLEDMM can never be out of bounds (I think...)
-    uint16_t colorIndex = band * 17;
-    uint16_t barHeight  = map(fftResult[band], 0, 255, 0, rows); // do not subtract -1 from rows here
+    uint16_t colorIndex = frBand * 17; //WLEDMM 0.255
+    uint16_t barHeight  = map(fftResult[frBand], 0, 255, 0, rows); // do not subtract -1 from rows here
 
     // WLEDMM begin - smooth out bars
     if ((x > 0) && (x < (cols-1)) && (SEGMENT.check2)) {
       // get height of next (right side) bar
-      uint8_t nextband = map(x+1, 0, cols-1, 0, NUM_BANDS - 1);
-      if(cols > 24) nextband = map(x+2, 0, cols-1, 0, NUM_BANDS - 1);
-      if (NUM_BANDS < 16) nextband = map(nextband, 0, NUM_BANDS - 1, 0, 15); // always use full range. comment out this line to get the previous behaviour.
-      nextband = constrain(nextband, 0, 15);
-      uint16_t nextbarHeight  = map(fftResult[nextband], 0, 255, 0, rows); // do not subtract -1 from rows here
+      uint8_t nextband = (remaining < 1)? band +1: band;
+
+      frBand = (NUM_BANDS < 16)?map(nextband, 0, NUM_BANDS - 1, 0, 15):nextband; // always use full range. comment out this line to get the previous behaviour.
+      // nextband = constrain(nextband, 0, 15);
+      uint16_t nextbarHeight  = map(fftResult[frBand], 0, 255, 0, rows); // do not subtract -1 from rows here
       // smooth height
       barHeight = (7*barHeight + 3*lastBarHeight + 3*nextbarHeight) / 12;   // yeees, its 12 not 13 (10% amplification)
+      colorIndex = map(x, 0, cols-1, 0, 255); //WLEDMM
     }
     lastBarHeight = barHeight; // remember barheight (left side) for next iteration
     // WLEDMM end
