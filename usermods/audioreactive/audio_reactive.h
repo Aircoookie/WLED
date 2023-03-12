@@ -1786,7 +1786,7 @@ class AudioReactive : public Usermod {
           } else {
             // error during audio source setup
             infoArr.add(F("not initialized"));
-            infoArr.add(F(" - check GPIO config"));
+            infoArr.add(F(" - check pin settings"));
           }
         }
 
