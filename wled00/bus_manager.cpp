@@ -388,19 +388,15 @@ BusNetwork::BusNetwork(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
     case TYPE_NET_ARTNET_RGB:
       _rgbw = false;
       _UDPtype = 2;
-    break;
+      break;
     case TYPE_NET_E131_RGB:
       _rgbw = false;
       _UDPtype = 1;
-    break;
-    case TYPE_NET_DDP_RGB:
-      _rgbw = false;
-      _UDPtype = 0;
-    break;
+      break;
     default: // TYPE_NET_DDP_RGB / TYPE_NET_DDP_RGBW
       _rgbw = bc.type == TYPE_NET_DDP_RGBW;
       _UDPtype = 0;
-    break;
+      break;
   }
   _UDPchannels = _rgbw ? 4 : 3;
   _data = (byte *)malloc(bc.count * _UDPchannels);

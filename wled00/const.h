@@ -131,6 +131,7 @@
 #define USERMOD_ID_SD_CARD               37     //Usermod "usermod_sd_card.h"
 #define USERMOD_ID_PWM_OUTPUTS           38     //Usermod "usermod_pwm_outputs.h
 #define USERMOD_ID_SHT                   39     //Usermod "usermod_sht.h
+#define USERMOD_ID_KLIPPER               40     // Usermod Klipper percentage
 //WLEDMM
 #define USERMOD_ID_CUSTOMEFFECTS         90     //Usermod "usermod_v2_customeffects.h"
 #define USERMOD_ID_WEATHER               91     //Usermod "usermod_v2_weather.h"

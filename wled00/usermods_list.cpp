@@ -165,6 +165,10 @@
   #include "../usermods/ADS1115_v2/usermod_ads1115.h"
 #endif
 
+#ifdef USERMOD_KLIPPER_PERCENTAGE
+  #include "..\usermods\usermod_v2_klipper_percentage\usermod_v2_klipper_percentage.h"
+#endif
+
 #ifdef USERMOD_BOBLIGHT
   #include "../usermods/boblight/boblight.h"
 #endif
@@ -348,6 +352,10 @@ void registerUsermods()
 
   #ifdef USERMOD_ADS1115
   usermods.add(new ADS1115Usermod());
+  #endif
+
+  #ifdef USERMOD_KLIPPER_PERCENTAGE
+  usermods.add(new klipper_percentage());
   #endif
 
   #ifdef USERMOD_BOBLIGHT
