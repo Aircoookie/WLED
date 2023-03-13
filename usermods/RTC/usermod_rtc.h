@@ -6,6 +6,8 @@
 #include "src/dependencies/time/DS1307RTC.h"
 #include "wled.h"
 
+#define RTC_DELTA 2   // only modify RTC time if delta exceeds this number of seconds
+
 //Connect DS1307 to standard I2C pins (ESP32: GPIO 21 (SDA)/GPIO 22 (SCL))
 
 class RTCUsermod : public Usermod {
@@ -36,6 +38,7 @@ class RTCUsermod : public Usermod {
       if (rtcTime) {
         toki.setTime(rtcTime,TOKI_NO_MS_ACCURACY,TOKI_TS_RTC);
         updateLocalTime();
+			  USER_PRINTLN(F("Localtime updated from RTC."));
       } else {
         if (!RTC.chipPresent()) disabled = true; //don't waste time if H/W error
       }
@@ -45,7 +48,24 @@ class RTCUsermod : public Usermod {
       if (strip.isUpdating()) return;
       if (!disabled && toki.isTick()) {
         time_t t = toki.second();
-        if (abs(t - RTC.get())> 2) RTC.set(t); //set RTC to NTP/UI-provided value - WLEDMM allow up to 3 sec deviation
+
+        if (abs(t - RTC.get())> RTC_DELTA) {            // WLEDMM only consider time diffs > 2 seconds
+        	if (  (toki.getTimeSource() == TOKI_TS_NTP) 
+              ||(  (toki.getTimeSource() != TOKI_TS_NONE) && (toki.getTimeSource() != TOKI_TS_RTC) 
+                && (toki.getTimeSource() != TOKI_TS_BAD)  && (toki.getTimeSource() != TOKI_TS_UDP_SEC) && (toki.getTimeSource() != TOKI_TS_UDP))) 
+          { // WLEMM update RTC if we have a reliable time source
+        	  RTC.set(t); //set RTC to NTP/UI-provided value - WLEDMM allow up to 3 sec deviation
+			      USER_PRINTLN(F("RTC updated using localtime."));
+		      } else {
+            // WLEDMM if no reliable time -> update from RTC
+            time_t rtcTime = RTC.get();
+            if (rtcTime) {
+              toki.setTime(rtcTime,TOKI_NO_MS_ACCURACY,TOKI_TS_RTC);
+              updateLocalTime();
+			        USER_PRINTLN(F("Localtime updated from RTC."));
+            }
+          }
+        }
       }
     }
 
