@@ -390,6 +390,35 @@ void WLED::setup()
   }
 #endif
 
+  { // generate default led map
+    const char fileName[] = "/ledmap.json";
+    if (!WLED_FS.exists(fileName)) {
+      int16_t map[] = { LC_LEDMAP };
+      size_t len = sizeof(map) / sizeof(int16_t);
+      File f = WLED_FS.open(fileName, "w+");
+      f.print(F("{\"map\":["));
+      for (size_t i = 0; i < len; ++i) {
+        f.printf("%d", map[i]);
+        if (i < len - 1) {
+          f.print(',');
+        }
+      }
+      f.print(F("]}"));
+      f.close();
+    }
+  }
+
+  { // enable 2D mode by default
+      strip.isMatrix = true;
+      strip.panels = 1;
+      WS2812FX::Panel p;
+      p.width = LC_COLS;
+      p.height = LC_ROWS;
+      p.xOffset = p.yOffset = 0;
+      p.options = 0;
+      strip.panel.push_back(p);
+  }
+
   DEBUG_PRINTLN(F("Initializing strip"));
   beginStrip();
 
@@ -413,10 +442,10 @@ void WLED::setup()
   #endif
 
   // fill in unique mdns default
-  if (strcmp(cmDNS, "x") == 0) sprintf_P(cmDNS, PSTR("wled-%*s"), 6, escapedMac.c_str() + 6);
+  if (strcmp(cmDNS, "x") == 0) sprintf_P(cmDNS, PSTR(MDNS_PREFIX "-%*s"), 6, escapedMac.c_str() + 6);
 #ifndef WLED_DISABLE_MQTT
-  if (mqttDeviceTopic[0] == 0) sprintf_P(mqttDeviceTopic, PSTR("wled/%*s"), 6, escapedMac.c_str() + 6);
-  if (mqttClientID[0] == 0)    sprintf_P(mqttClientID, PSTR("WLED-%*s"), 6, escapedMac.c_str() + 6);
+  if (mqttDeviceTopic[0] == 0) sprintf_P(mqttDeviceTopic, PSTR(MQTT_DEVICE_TOPIC "/%*s"), 6, escapedMac.c_str() + 6);
+  if (mqttClientID[0] == 0)    sprintf_P(mqttClientID, PSTR(MQTT_CLIENT_ID "-%*s"), 6, escapedMac.c_str() + 6);
 #endif
 
 #ifdef WLED_ENABLE_ADALIGHT

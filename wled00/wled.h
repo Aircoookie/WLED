@@ -317,8 +317,8 @@ WLED_GLOBAL bool gammaCorrectCol _INIT(true ); // use gamma correction on colors
 WLED_GLOBAL bool gammaCorrectBri _INIT(false); // use gamma correction on brightness
 WLED_GLOBAL float gammaCorrectVal _INIT(2.8f); // gamma correction value
 
-WLED_GLOBAL byte col[]    _INIT_N(({ 255, 160, 0, 0 }));  // current RGB(W) primary color. col[] should be updated if you want to change the color.
-WLED_GLOBAL byte colSec[] _INIT_N(({ 0, 0, 0, 0 }));      // current RGB(W) secondary color
+WLED_GLOBAL byte col[]    _INIT_N(({ LC_R(DEFAULT_COLOR), LC_G(DEFAULT_COLOR), LC_B(DEFAULT_COLOR), LC_W(DEFAULT_COLOR) }));  // current RGB(W) primary color. col[] should be updated if you want to change the color.
+WLED_GLOBAL byte colSec[] _INIT_N(({ LC_R(DEFAULT_COLOR1), LC_G(DEFAULT_COLOR1), LC_B(DEFAULT_COLOR1), LC_W(DEFAULT_COLOR1) }));      // current RGB(W) secondary color
 WLED_GLOBAL byte briS     _INIT(128);                     // default brightness
 
 WLED_GLOBAL byte nightlightTargetBri _INIT(0);      // brightness after nightlight is over
@@ -432,9 +432,9 @@ WLED_GLOBAL bool hueApplyColor _INIT(true);
 WLED_GLOBAL uint16_t serialBaud _INIT(1152); // serial baud rate, multiply by 100
 
 // Time CONFIG
-WLED_GLOBAL bool ntpEnabled _INIT(false);    // get internet time. Only required if you use clock overlays or time-activated macros
+WLED_GLOBAL bool ntpEnabled _INIT(true);    // get internet time. Only required if you use clock overlays or time-activated macros
 WLED_GLOBAL bool useAMPM _INIT(false);       // 12h/24h clock format
-WLED_GLOBAL byte currentTimezone _INIT(0);   // Timezone ID. Refer to timezones array in wled10_ntp.ino
+WLED_GLOBAL byte currentTimezone _INIT(2);   // Timezone ID. Refer to timezones array in wled10_ntp.ino
 WLED_GLOBAL int utcOffsetSecs _INIT(0);      // Seconds to offset from UTC before timzone calculation
 
 WLED_GLOBAL byte overlayCurrent _INIT(0);    // 0: no overlay 1: analog clock 2: was single-digit clock 3: was cronixie
@@ -530,10 +530,10 @@ WLED_GLOBAL byte notificationSentCallMode _INIT(CALL_MODE_INIT);
 WLED_GLOBAL uint8_t notificationCount _INIT(0);
 
 // effects
-WLED_GLOBAL byte effectCurrent _INIT(0);
+WLED_GLOBAL byte effectCurrent _INIT(DEFAULT_MODE);
 WLED_GLOBAL byte effectSpeed _INIT(128);
 WLED_GLOBAL byte effectIntensity _INIT(128);
-WLED_GLOBAL byte effectPalette _INIT(0);
+WLED_GLOBAL byte effectPalette _INIT(DEFAULT_PALETTE);
 WLED_GLOBAL bool stateChanged _INIT(false);
 
 // network

@@ -1,84 +1,77 @@
+![LED Clock](/ledclock/images/ledclock-logo-github.svg)
 <p align="center">
-  <img src="/images/wled_logo_akemi.png">
-  <a href="https://github.com/Aircoookie/WLED/releases"><img src="https://img.shields.io/github/release/Aircoookie/WLED.svg?style=flat-square"></a>
-  <a href="https://raw.githubusercontent.com/Aircoookie/WLED/master/LICENSE"><img src="https://img.shields.io/github/license/Aircoookie/wled?color=blue&style=flat-square"></a>
-  <a href="https://wled.discourse.group"><img src="https://img.shields.io/discourse/topics?colorB=blue&label=forum&server=https%3A%2F%2Fwled.discourse.group%2F&style=flat-square"></a>
-  <a href="https://discord.gg/KuqP7NE"><img src="https://img.shields.io/discord/473448917040758787.svg?colorB=blue&label=discord&style=flat-square"></a>
-  <a href="https://kno.wled.ge"><img src="https://img.shields.io/badge/quick_start-wiki-blue.svg?style=flat-square"></a>
+  <a href="https://github.com/imeszaros/ledclock/releases"><img src="https://img.shields.io/github/release/imeszaros/ledclock.svg?style=flat-square"></a>
+  <a href="https://raw.githubusercontent.com/imeszaros/ledclock/master/LICENSE"><img src="https://img.shields.io/github/license/imeszaros/ledclock?color=blue&style=flat-square"></a>
   <a href="https://github.com/Aircoookie/WLED-App"><img src="https://img.shields.io/badge/app-wled-blue.svg?style=flat-square"></a>
-  <a href="https://gitpod.io/#https://github.com/Aircoookie/WLED"><img src="https://img.shields.io/badge/Gitpod-ready--to--code-blue?style=flat-square&logo=gitpod"></a>
+  <a href="https://www.printables.com/model/189433-wi-fi-connected-led-clock-powered-by-wled"><img src="https://img.shields.io/badge/models-printables-orange.svg?style=flat-square"></a>
+  <a href="https://www.thingiverse.com/thing:5365230"><img src="https://img.shields.io/badge/models-thingiverse-blue.svg?style=flat-square"></a>
+  <a href="https://ko-fi.com/imeszaros"><img src="https://img.shields.io/badge/support-ko--fi.com-gold"></a>
+  <a href="https://imeszaros.github.io/ledclock/"><img src="https://img.shields.io/badge/install-esp%20web%20tools-green"></a>
+</p>
 
-  </p>
+# LED Clock
 
-# Welcome to my project WLED! ✨
+A customizable 7-segment style Wi-Fi connected clock powered by [WLED](https://github.com/Aircoookie/WLED). This repository not only hosts the source code of the firmware but also serves as the documentation of this project providing all necessary files and information to replicate it.
 
-A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control NeoPixel (WS2812B, WS2811, SK6812) LEDs or also SPI based chipsets like the WS2801 and APA102!
+## Overview
 
-## ⚙️ Features
-- WS2812FX library with more than 100 special effects  
-- FastLED noise effects and 50 palettes  
-- Modern UI with color, effect and segment controls  
-- Segments to set different effects and colors to user defined parts of the LED string  
-- Settings page - configuration via the network  
-- Access Point and station mode - automatic failsafe AP  
-- Up to 10 LED outputs per instance
-- Support for RGBW strips  
-- Up to 250 user presets to save and load colors/effects easily, supports cycling through them.  
-- Presets can be used to automatically execute API calls  
-- Nightlight function (gradually dims down)  
-- Full OTA software updatability (HTTP + ArduinoOTA), password protectable  
-- Configurable analog clock (Cronixie, 7-segment and EleksTube IPS clock support via usermods) 
-- Configurable Auto Brightness limit for safe operation  
-- Filesystem-based config for easier backup of presets and settings  
+The clock has three essential parts: a 3D-printed enclosure, the electronics and the firmware.
 
-## 💡 Supported light control interfaces
-- WLED app for [Android](https://play.google.com/store/apps/details?id=com.aircoookie.WLED) and [iOS](https://apps.apple.com/us/app/wled/id1475695033)
-- JSON and HTTP request APIs  
-- MQTT   
-- E1.31, Art-Net, DDP and TPM2.net
-- [diyHue](https://github.com/diyhue/diyHue) (Wled is supported by diyHue, including Hue Sync Entertainment under udp. Thanks to [Gregory Mallios](https://github.com/gmallios))
-- [Hyperion](https://github.com/hyperion-project/hyperion.ng)
-- UDP realtime  
-- Alexa voice control (including dimming and color)  
-- Sync to Philips hue lights  
-- Adalight (PC ambilight via serial) and TPM2  
-- Sync color of multiple WLED devices (UDP notifier)  
-- Infrared remotes (24-key RGB, receiver required)  
-- Simple timers/schedules (time from NTP, timezones/DST supported)  
+**The enclosure** was designed in Fusion 360. 3D printing it requires two kinds of materials, an opaque and a translucent one. The clock is ~40 cm wide, so a 3D printer with a large build area is necessary to print the base platform and bottom plate.
 
-## 📲 Quick start guide and documentation
+**The electronics** are fairly simple: the heart of the project is an ESP32 chip which drives 58 pieces of WS2812b individually addressable LED chips. The LEDs form four 7-segment displays (each segment has two LEDs) and a separator consisting of two LEDs. An USB interface circuitry is also included for easy firmware upgrades. There's also an ambient light sensor for automatic brightness control, and a small piezo speaker for making some noise.
 
-See the [documentation on our official site](https://kno.wled.ge)!
+**The firmware** is powered by the awesome project [WLED](https://github.com/Aircoookie/WLED). It is pre-configured with all the correct parameters, hides all irrelevant settings and features but provides additional functionality specific to this project.
 
-[On this page](https://kno.wled.ge/basics/tutorials/) you can find excellent tutorials and tools to help you get your new project up and running!
+Here are two pictures of the completed project:
 
-## 🖼️ User interface
-<img src="/images/macbook-pro-space-gray-on-the-wooden-table.jpg" width="50%"><img src="/images/walking-with-iphone-x.jpg" width="50%">
-
-## 💾 Compatible hardware
-
-See [here](https://kno.wled.ge/basics/compatible-hardware)!
-
-## ✌️ Other
-
-Licensed under the MIT license  
-Credits [here](https://kno.wled.ge/about/contributors/)!
-
-Join the Discord server to discuss everything about WLED!
-
-<a href="https://discord.gg/KuqP7NE"><img src="https://discordapp.com/api/guilds/473448917040758787/widget.png?style=banner2" width="25%"></a>
-
-Check out the WLED [Discourse forum](https://wled.discourse.group)!  
-
-You can also send me mails to [dev.aircoookie@gmail.com](mailto:dev.aircoookie@gmail.com), but please, only do so if you want to talk to me privately.  
-
-If WLED really brightens up your day, you can [![](https://img.shields.io/badge/send%20me%20a%20small%20gift-paypal-blue.svg?style=flat-square)](https://paypal.me/aircoookie)
+![Photo 1](ledclock/images/photo1.jpg)
+![Photo 2](ledclock/images/photo2.jpg)
 
 
-*Disclaimer:*   
+YouTube video:
 
-If you are prone to photosensitive epilepsy, we recommended you do **not** use this software.  
-If you still want to try, don't use strobe, lighting or noise modes or high effect speed settings.
+[![Assembly video](https://img.youtube.com/vi/T4L4ywKFfpU/0.jpg)](https://www.youtube.com/watch?v=T4L4ywKFfpU)
 
-As per the MIT license, I assume no liability for any damage to you or any other person or equipment.  
+## Features
+
+- Clock function
+  - 12 or 24 hour format
+  - automatic time synchronization from the internet
+- Timer function
+- Stopwatch function
+  - Lap time recording
+- Control interface available on any device with a browser on the same wireless network
+- Android, iPhone, iPad applications (provided by the [WLED](https://github.com/Aircoookie/WLED-App) project)
+- Configurable display effects and colors
+- Automatic brightness control based on ambient light intensity
+- Configurable beeps
+
+See a couple of shots from the ui (click to enlarge):
+
+[<img src="https://github.com/imeszaros/ledclock/blob/master/ledclock/images/screenshot-palette.png?raw=true" width="200"/>](ledclock/images/screenshot-palette.png)
+[<img src="https://github.com/imeszaros/ledclock/blob/master/ledclock/images/screenshot-clock.png?raw=true" width="200"/>](ledclock/images/screenshot-clock.png)
+[<img src="https://github.com/imeszaros/ledclock/blob/master/ledclock/images/screenshot-timer.png?raw=true" width="200"/>](ledclock/images/screenshot-timer.png)
+[<img src="https://github.com/imeszaros/ledclock/blob/master/ledclock/images/screenshot-stopwatch.png?raw=true" width="200"/>](ledclock/images/screenshot-stopwatch.png)
+
+## How to use
+
+Please check the [user's guide](/ledclock/users-guide.md) to get an overview of the features and settings. You may also check the [WLED knowledgebase](https://kno.wled.ge/) for further information.
+
+## Would you like to make it?
+
+This repository has all information you need to make this project:
+
+- [CAD plans for the enclosure](/ledclock/models/cad/)
+- [3MF files to 3D print it](/ledclock/models/3d-print/)
+- [Schematic and PCB design](/ledclock/sch-pcb/)
+- [Gerber files for PCB production](/ledclock/gerber/)
+- [Bill of materials](/ledclock/bill-of-materials.md)
+- [Assembly video](/ledclock/assembly-guide.md)
+
+## Do you like it?
+
+You can buy me a coffee to support my work: https://ko-fi.com/imeszaros
+
+Do you need help? Have you built the clock? Feel free to [contact me](https://github.com/imeszaros).
 

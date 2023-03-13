@@ -189,6 +189,10 @@
 #include "../usermods/pwm_outputs/usermod_pwm_outputs.h"
 #endif
 
+#ifdef USERMOD_LEDCLOCK
+#include "um_ledclock.h"
+#endif
+
 
 void registerUsermods()
 {
@@ -356,5 +360,9 @@ void registerUsermods()
 
   #ifdef USERMOD_SHT
   usermods.add(new ShtUsermod());
+  #endif
+
+  #ifdef USERMOD_LEDCLOCK
+  usermods.add(new UsermodLedClock());
   #endif
 }

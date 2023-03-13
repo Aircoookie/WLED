@@ -5,7 +5,7 @@
 	<meta charset="utf-8">
 	<meta name="theme-color" content="#222222">
 	<meta content="yes" name="apple-mobile-web-app-capable">
-	<link rel="shortcut icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAEAGACGAAAAFgAAAIlQTkcNChoKAAAADUlIRFIAAAAQAAAAEAgGAAAAH/P/YQAAAE1JREFUOI1j/P//PwOxgNGeAUMxE9G6cQCKDWAhpADZ2f8PMjBS3QW08QK20KaZC2gfC9hCnqouoNgARgY7zMxAyNlUdQHlXiAlO2MDAD63EVqNHAe0AAAAAElFTkSuQmCC"/>
+	<link rel="icon" href="favicon.svg">
 	<title>WLED</title>
 	<script>
 	function feedback(){}
@@ -43,6 +43,7 @@
 					clearInterval(stateCheck);
 					// document ready, start processing UI
 					onLoad();
+					LC.onLoad();
 				}
 			}, 100);
 		});
@@ -51,6 +52,7 @@
 	setTimeout(()=>{h.appendChild(l)},100);
 	</script>
 	<link rel="stylesheet" href="index.css">
+	<link rel="stylesheet" href="index_ledclock.css">
 </head>
 <body>
 
@@ -62,6 +64,7 @@
 	<div class="tab top">
 		<div class="btnwrap">
 			<button id="buttonPower" onclick="togglePower()" class="tgl"><i class="icons">&#xe08f;</i><p class="tab-label">Power</p></button>
+			<button id="lc-buttonClock" onclick="LC.toggleClock()"><i class="icons">&#xe000;</i><p class="tab-label">Clock</p></button>
 			<button id="buttonNl" onclick="toggleNl()"><i class="icons">&#xe2a2;</i><p class="tab-label">Timer</p></button>
 			<button id="buttonSync" onclick="toggleSync()"><i class="icons">&#xe116;</i><p class="tab-label">Sync</p></button>
 			<button id="buttonSr" onclick="toggleLiveview()"><i class="icons">&#xe410;</i><p class="tab-label">Peek</p></button>
@@ -240,7 +243,7 @@
 				</label>
 			</div>
 			<div id="slider0" class="slider">
-				<i class="icons slider-icon" style="cursor: pointer;" onclick="tglFreeze()">&#xe325;</i>
+				<i class="icons slider-icon" style="cursor: pointer;">&#xe325;</i>
 				<div class="sliderwrap il">
 					<input id="sliderSpeed" class="noslide" onchange="setSpeed()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
 					<div class="sliderdisplay"></div>
@@ -249,7 +252,7 @@
 				<span id="sliderLabel0" class="tooltiptext">Effect speed</span>
 			</div>
 			<div id="slider1" class="slider">
-				<i class="icons slider-icon" style="cursor: pointer;" onclick="tglLabels()">&#xe409;</i>
+				<i class="icons slider-icon" style="cursor: pointer;">&#xe409;</i>
 				<div class="sliderwrap il">
 					<input id="sliderIntensity" class="noslide" onchange="setIntensity()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
 					<div class="sliderdisplay"></div>
@@ -349,12 +352,61 @@
 	<div id="kv">Loading...</div><br>
 	<div>
 		<button class="btn infobtn" onclick="requestJson()">Refresh</button>
+		<button class="btn infobtn" onclick="toggleInfo()">Close Info</button>
 		<button class="btn infobtn" onclick="toggleNodes()">Instance List</button>
+		<button class="btn infobtn" onclick="window.location.href='/settings/sec#about'">About</button>
 		<button class="btn infobtn" onclick="window.open('/update','_self');">Update WLED</button>
 		<button class="btn infobtn" id="resetbtn" onclick="cnfReset()">Reboot WLED</button>
 	</div>
-	<br>
-	<span class="h">Made with <span id="heart">&#10084;&#xFE0E;</span> by Aircoookie and the <a href="https://wled.discourse.group/" target="_blank">WLED community</a></span>
+</div>
+
+<div id="lc-clock" class="modal">
+	<div id="lc-header">
+		<h3>Clock Mode</h3>
+		<button class="btn infobtn lc-mode" onclick="LC.setMode(0)"><i class="icons no-margin">&#xe000;</i> Clock</button>
+		<button class="btn infobtn lc-mode" onclick="LC.setMode(1)"><i class="icons no-margin">&#xe001;</i> Timer</button>
+		<button class="btn infobtn lc-mode" onclick="LC.setMode(2)"><i class="icons no-margin">&#xe325;</i> Stopwatch</button>
+		<hr>
+	</div>
+	<div id="lc-modes">
+		<div>
+			<div id="lc-mode-clock">
+				<span>The device shows the current time.</span>
+				<button class="btn infobtn" onclick="location.href='/settings/time'"><i class="icons no-margin">&#xe0a2;</i> Time &amp; Macros</button>
+				<button class="btn infobtn" onclick="location.href='/settings/ledclock'"><i class="icons no-margin">&#xe0a2;</i> Clock Settings</button>
+			</div>
+			<div id="lc-mode-timer">
+				<div id="lc-timer-input">
+					<select id="lc-timer-h" oninput="LC.timerSet()"></select><small>h</small>
+					<select id="lc-timer-m" oninput="LC.timerSet()"></select><small>m</small>
+					<select id="lc-timer-s" oninput="LC.timerSet()"></select><small>s</small>
+				</div>
+				<div id="lc-timer-buttons">
+					<button id="lc-tm-reset" class="btn infobtn" onclick="LC.timerReset()"><i class="icons no-margin">&#xe116;</i> Reset</button>
+					<button id="lc-tm-toggle" class="btn infobtn" onclick="LC.timerToggle()"><i class="icons no-margin">&#xe002;</i> <span>Start</span></button>
+					<button id="lc-tm-incr" class="btn infobtn" onclick="LC.timerIncrease(60000)"><i class="icons no-margin">&#xe18a;</i> 1 Minute</button>
+				</div>
+				<button class="btn infobtn" onclick="location.href='/settings/ledclock#timer'"><i class="icons no-margin">&#xe0a2;</i> Timer Settings</button>
+			</div>
+			<div id="lc-mode-stopwatch">
+				<div id="lc-stopwatch-buttons">
+					<button id="lc-sw-reset" class="btn infobtn" onclick="LC.stopwatchReset()"><i class="icons no-margin">&#xe116;</i> Reset</button>
+					<button id="lc-sw-toggle" class="btn infobtn" onclick="LC.stopwatchToggle()"><i class="icons no-margin">&#xe002;</i> <span>Start</span></button>
+					<button id="lc-sw-laptime" class="btn infobtn" onclick="LC.stopwatchLapTime()"><i class="icons no-margin">&#xe004;</i> Lap Time</button>
+				</div>
+				<div class="fader">
+					<div id="lc-laptimes">
+						<h4>#</h4><h4>Lap Time</h4><h4>Split Time</h4>
+					</div>
+				</div>
+				<button class="btn infobtn" onclick="location.href='/settings/ledclock#stopwatch'"><i class="icons no-margin">&#xe0a2;</i> Stopwatch Settings</button>
+			</div>
+		</div>
+	</div>
+	<div id="lc-footer">
+		<hr>
+		<button class="btn infobtn" onclick="LC.toggleClock()">Close</button><br>
+	</div>
 </div>
 
 <div id="nodes" class="modal">
@@ -381,5 +433,6 @@
 </div>
 <i id="roverstar" class="icons huge" onclick="setLor(0)">&#xe410;</i><br>
 <script src="index.js"></script>
+<script src="ledclock.js"></script>
 </body>
 </html>

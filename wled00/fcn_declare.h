@@ -258,6 +258,7 @@ class Usermod {
     virtual void setup() = 0; // pure virtual, has to be overriden
     virtual void loop() = 0;  // pure virtual, has to be overriden
     virtual void handleOverlayDraw() {}                                      // called after all effects have been processed, just before strip.show()
+    virtual void rollbackOverlayDraw() {}
     virtual bool handleButton(uint8_t b) { return false; }                   // button overrides are possible here
     virtual bool getUMData(um_data_t **data) { if (data) *data = nullptr; return false; }; // usermod data exchange [see examples for audio effects]
     virtual void connected() {}                                              // called when WiFi is (re)connected
@@ -282,6 +283,7 @@ class UsermodManager {
   public:
     void loop();
     void handleOverlayDraw();
+    void rollbackOverlayDraw();
     bool handleButton(uint8_t b);
     bool getUMData(um_data_t **um_data, uint8_t mod_id = USERMOD_ID_RESERVED); // USERMOD_ID_RESERVED will poll all usermods
     void setup();

@@ -277,19 +277,19 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
       }
       break;}
     case 6: //Party colors
-      targetPalette = PartyColors_p; break;
+      LC_LOAD_FL_PAL(flPartyColors_gp) break;
     case 7: //Cloud colors
-      targetPalette = CloudColors_p; break;
+      LC_LOAD_FL_PAL(flCloudColors_gp) break;
     case 8: //Lava colors
-      targetPalette = LavaColors_p; break;
+      LC_LOAD_FL_PAL(flLavaColors_gp) break;
     case 9: //Ocean colors
-      targetPalette = OceanColors_p; break;
+      LC_LOAD_FL_PAL(flOceanColors_gp) break;
     case 10: //Forest colors
-      targetPalette = ForestColors_p; break;
+      LC_LOAD_FL_PAL(flForestColors_gp) break;
     case 11: //Rainbow colors
-      targetPalette = RainbowColors_p; break;
+      LC_LOAD_FL_PAL(flRainbowColors_gp) break;
     case 12: //Rainbow stripe colors
-      targetPalette = RainbowStripeColors_p; break;
+      LC_LOAD_FL_PAL(flRainbowStripeColors_gp) break;
     default: //progmem palettes
       if (pal>245) {
         targetPalette = strip.customPalettes[255-pal]; // we checked bounds above
@@ -1231,6 +1231,7 @@ void WS2812FX::show(void) {
   if (diff > 0) fpsCurr = 1000 / diff;
   _cumulativeFps = (3 * _cumulativeFps + fpsCurr) >> 2;
   _lastShow = now;
+  usermods.rollbackOverlayDraw();
 }
 
 /**

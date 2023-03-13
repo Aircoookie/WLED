@@ -154,10 +154,10 @@ void initServer()
     request->send(response);
   });
 
-  server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){
-    if(!handleFileRead(request, "/favicon.ico"))
+  server.on("/favicon.svg", HTTP_GET, [](AsyncWebServerRequest *request){
+    if(!handleFileRead(request, "/favicon.svg"))
     {
-      request->send_P(200, "image/x-icon", favicon, 156);
+      request->send_P(200, "image/svg+xml", favicon, favicon_length);
     }
   });
 
@@ -518,7 +518,7 @@ void serveSettingsJS(AsyncWebServerRequest* request)
   char buf[SETTINGS_STACK_BUF_SIZE+37];
   buf[0] = 0;
   byte subPage = request->arg(F("p")).toInt();
-  if (subPage > 10) {
+  if (subPage > 11) {
     strcpy_P(buf, PSTR("alert('Settings for this request are not implemented.');"));
     request->send(501, "application/javascript", buf);
     return;
@@ -542,7 +542,8 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
 
   if (url.indexOf("sett") >= 0)
   {
-    if      (url.indexOf(".js")  > 0) subPage = 254;
+    if      (url.indexOf("style_ledclock.css")  > 0) subPage = 250;
+    else if (url.indexOf(".js")  > 0) subPage = 254;
     else if (url.indexOf(".css") > 0) subPage = 253;
     else if (url.indexOf("wifi") > 0) subPage = 1;
     else if (url.indexOf("leds") > 0) subPage = 2;
@@ -553,6 +554,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     else if (url.indexOf("dmx")  > 0) subPage = 7;
     else if (url.indexOf("um")   > 0) subPage = 8;
     else if (url.indexOf("2D")   > 0) subPage = 10;
+    else if (url.indexOf("ledclock")  > 0) subPage = 11;
     else if (url.indexOf("lock") > 0) subPage = 251;
   }
   else if (url.indexOf("/update") >= 0) subPage = 9; // update page, for PIN check
@@ -586,6 +588,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
       case 7: strcpy_P(s, PSTR("DMX")); break;
       case 8: strcpy_P(s, PSTR("Usermods")); break;
       case 10: strcpy_P(s, PSTR("2D")); break;
+      case 11: strcpy_P(s, PSTR("Clock")); break;
       case 252: strcpy_P(s, correctPIN ? PSTR("PIN accepted") : PSTR("PIN rejected")); break;
     }
 
@@ -621,6 +624,8 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
 #ifndef WLED_DISABLE_2D
     case 10:  response = request->beginResponse_P(200, "text/html", PAGE_settings_2D,   PAGE_settings_2D_length);   break;
 #endif
+    case 11:  response = request->beginResponse_P(200, "text/html", PAGE_settings_ledclock, PAGE_settings_ledclock_length); break;
+    case 250: response = request->beginResponse_P(200, "text/css",  PAGE_ledClockSettingsCss, PAGE_ledClockSettingsCss_length); break;
     case 251: {
       correctPIN = !strlen(settingsPIN); // lock if a pin is set
       createEditHandler(correctPIN);

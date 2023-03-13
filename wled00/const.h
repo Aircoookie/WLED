@@ -1,6 +1,8 @@
 #ifndef WLED_CONST_H
 #define WLED_CONST_H
 
+#include "const_ledclock.h"
+
 /*
  * Readability defines and their associated numerical values + compile-time constants
  */
@@ -8,9 +10,9 @@
 #define GRADIENT_PALETTE_COUNT 58
 
 //Defaults
-#define DEFAULT_CLIENT_SSID "Your_Network"
-#define DEFAULT_AP_SSID     "WLED-AP"
-#define DEFAULT_AP_PASS     "wled1234"
+#define DEFAULT_CLIENT_SSID "Wi-Fi SSID"
+#define DEFAULT_AP_SSID     "LED Clock AP"
+#define DEFAULT_AP_PASS     ""
 #define DEFAULT_OTA_PASS    "wledota"
 
 //increase if you need more
@@ -132,6 +134,8 @@
 #define USERMOD_ID_PWM_OUTPUTS           38     //Usermod "usermod_pwm_outputs.h
 #define USERMOD_ID_SHT                   39     //Usermod "usermod_sht.h
 #define USERMOD_ID_KLIPPER               40     // Usermod Klipper percentage
+
+#define USERMOD_ID_LEDCLOCK              99
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot

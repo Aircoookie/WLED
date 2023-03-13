@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>LED Clock Installer</title>
+    <style>
+      body {
+        margin-top: 3rem;
+        font-family: sans-serif;
+        line-height: 1.5rem;
+        text-align: center;
+      }
+      .container {
+        width: 30%;
+        margin: auto;
+        text-align: left;
+      }
+      .version {
+        text-align: center;
+        padding: 1em;
+      }
+      .footer {
+        text-align: center;
+      }
+      esp-web-install-button {
+        margin-top: 1rem;
+      }
+    </style>
+    <script type="module" src="https://unpkg.com/esp-web-tools@9.0.3/dist/web/install-button.js?module"></script>
+  </head>
+  <body>
+    <div class="container">
+      <h1>LED Clock Installer</h1>
+      <p>If you can't install a firmware update over the air, you can use this tool to install it via USB.</p>
+      <ol>
+        <li>Connect your LED Clock to your computer with a USB cable.</li>
+        <li>Select the desired firmware version below.</li>
+        <li>Click the 'CONNECT' button.</li>
+        <li>Your browser should prompt to select the correct COM port.
+          <ul>
+            <li>Choose the port named 'CPN2102N ....'</li>
+            <li>If no port has been found, make sure the necessary <a href="https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers">driver</a> is installed.</li>
+          </ul>
+        </li>
+        <li>Click on 'INSTALL LED CLOCK'</li>
+        <li>Wait until the installation takes place.</li>
+        <li>Optionally configure Wireless connection.</li>
+        <li>Done!</li>
+      </ol>
+      <div class="version">
+        <label for="ver">Firmware version:</label><br>
+        <select>
+          <option value="">Please select</option>
+          <option value="manifest_v1.2.0.json">1.2.0</option>
+          <option value="manifest_v1.1.0.json">1.1.0</option>
+          <option value="manifest_v1.0.1.json">1.0.1</option>
+          <option value="manifest_v1.0.0.json">1.0.0</option>
+        </select><br>
+        <esp-web-install-button style="display: none"></esp-web-install-button>
+      </div>
+      <div class="footer">
+        <a href="https://github.com/imeszaros/ledclock">LED Clock</a> &mdash; Installer powered by <a href="https://esphome.github.io/esp-web-tools/">ESP Web Tools</a>.
+      </div>
+	</div>
+    <script>
+      var select = document.querySelector('select');
+      var button = document.querySelector('esp-web-install-button');
+      select.addEventListener('change', () => {
+        if (select.value) {
+          button.style.display = 'block';
+          button.manifest = select.value;
+        } else {
+          button.style.display = 'none';
+        }
+      });
+    </script>
+  </body>
+</html>

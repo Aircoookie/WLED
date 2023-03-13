@@ -15,8 +15,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     return;
   }
 
-  //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 7: DMX 8: usermods 9: N/A 10: 2D
-  if (subPage <1 || subPage >10 || !correctPIN) return;
+  //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 7: DMX 8: usermods 9: N/A 10: 2D 11: clock
+  if (subPage <1 || subPage >11 || !correctPIN) return;
 
   //WIFI SETTINGS
   if (subPage == 1)
@@ -435,7 +435,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       #ifdef WLED_ADD_EEPROM_SUPPORT
       clearEEPROM();
       #endif
-      serveMessage(request, 200, F("All Settings erased."), F("Connect to WLED-AP to setup again"),255);
+      serveMessage(request, 200, F("All Settings erased."), F("Connect to '" DEFAULT_AP_SSID "' to setup again"),255);
       doReboot = true;
     }
 
@@ -680,6 +680,80 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
   }
   #endif
+
+  // Clock
+  if (subPage == 11) {
+    LedClockSettings* settings = dynamic_cast<LedClockSettings *>(usermods.lookup(USERMOD_ID_LEDCLOCK));
+
+    // booleans
+    settings->autoBrightness = false;
+    settings->hideZero = false;
+    settings->muteBeeps = false;
+
+    size_t args = request->args();
+    for (size_t i=0; i<args; i++) {
+      String name = request->argName(i);
+      String value = request->arg(i);
+
+      if (name == LedClockSettingsKeys::Brightness::autom) {
+        settings->autoBrightness = true;
+      }
+
+      else if (name == LedClockSettingsKeys::Brightness::min) {
+        settings->minBrightness = constrain(value.toInt(), 1, 254);
+      }
+
+      else if (name == LedClockSettingsKeys::Brightness::max) {
+        settings->maxBrightness = constrain(value.toInt(), 2, 255);
+      }
+
+      else if (name == LedClockSettingsKeys::Display::separatorMode) {
+        settings->separatorMode = constrain((LedClockSettings::SeparatorMode) value.toInt(),
+            LedClockSettings::SeparatorMode::ON, LedClockSettings::SeparatorMode::BLINK);
+      }
+
+      else if (name == LedClockSettingsKeys::Display::hideZero) {
+        settings->hideZero = true;
+      }
+
+      else if (name == LedClockSettingsKeys::Beeps::mute) {
+        settings->muteBeeps = true;
+      }
+
+      else if (name == LedClockSettingsKeys::Beeps::startup) settings->beepStartup = LedClockSettings::constrainBeep(value.toInt());
+      else if (name == LedClockSettingsKeys::Beeps::wifi) settings->beepWiFi = LedClockSettings::constrainBeep(value.toInt());
+
+      else if (name == LedClockSettingsKeys::Beeps::Clock::hour) settings->clockBeepHour = LedClockSettings::constrainBeep(value.toInt());
+      else if (name == LedClockSettingsKeys::Beeps::Clock::minute) settings->clockBeepMinute = LedClockSettings::constrainBeep(value.toInt());
+
+      else if (name == LedClockSettingsKeys::Beeps::Timer::set) settings->timerBeepSet = LedClockSettings::constrainBeep(value.toInt());
+      else if (name == LedClockSettingsKeys::Beeps::Timer::start) settings->timerBeepStart = LedClockSettings::constrainBeep(value.toInt());
+      else if (name == LedClockSettingsKeys::Beeps::Timer::pause) settings->timerBeepPause = LedClockSettings::constrainBeep(value.toInt());
+      else if (name == LedClockSettingsKeys::Beeps::Timer::resume) settings->timerBeepResume = LedClockSettings::constrainBeep(value.toInt());
+      else if (name == LedClockSettingsKeys::Beeps::Timer::reset) settings->timerBeepReset = LedClockSettings::constrainBeep(value.toInt());
+      else if (name == LedClockSettingsKeys::Beeps::Timer::increase) settings->timerBeepIncrease = LedClockSettings::constrainBeep(value.toInt());
+      else if (name == LedClockSettingsKeys::Beeps::Timer::hour) settings->timerBeepHour = LedClockSettings::constrainBeep(value.toInt());
+      else if (name == LedClockSettingsKeys::Beeps::Timer::minute) settings->timerBeepMinute = LedClockSettings::constrainBeep(value.toInt());
+      else if (name == LedClockSettingsKeys::Beeps::Timer::second) settings->timerBeepSecond = LedClockSettings::constrainBeep(value.toInt());
+      else if (name == LedClockSettingsKeys::Beeps::Timer::timeout) settings->timerBeepTimeout = LedClockSettings::constrainBeep(value.toInt());
+
+      else if (name == LedClockSettingsKeys::Beeps::Stopwatch::start) settings->stopwatchBeepStart = LedClockSettings::constrainBeep(value.toInt());
+      else if (name == LedClockSettingsKeys::Beeps::Stopwatch::pause) settings->stopwatchBeepPause = LedClockSettings::constrainBeep(value.toInt());
+      else if (name == LedClockSettingsKeys::Beeps::Stopwatch::resume) settings->stopwatchBeepResume = LedClockSettings::constrainBeep(value.toInt());
+      else if (name == LedClockSettingsKeys::Beeps::Stopwatch::reset) settings->stopwatchBeepReset = LedClockSettings::constrainBeep(value.toInt());
+      else if (name == LedClockSettingsKeys::Beeps::Stopwatch::second) settings->stopwatchBeepSecond = LedClockSettings::constrainBeep(value.toInt());
+      else if (name == LedClockSettingsKeys::Beeps::Stopwatch::minute) settings->stopwatchBeepMinute = LedClockSettings::constrainBeep(value.toInt());
+      else if (name == LedClockSettingsKeys::Beeps::Stopwatch::hour) settings->stopwatchBeepHour = LedClockSettings::constrainBeep(value.toInt());
+      else if (name == LedClockSettingsKeys::Beeps::Stopwatch::lapTime) settings->stopwatchBeepLapTime = LedClockSettings::constrainBeep(value.toInt());
+    }
+
+    // make sure we have proper values
+    if (settings->maxBrightness <= settings->minBrightness) {
+      settings->maxBrightness = settings->minBrightness + 1;
+    }
+
+    settings->applySettings();
+  }
 
   lastEditTime = millis();
   if (subPage != 2 && !doReboot) doSerializeConfig = true; //serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)

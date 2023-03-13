@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta name="viewport" content="width=500">
+	<meta charset="utf-8">
+	<title>Clock Settings</title>
+	<script>
+		var d = document;
+		var loc = false, locip;
+		function B()
+		{
+			window.open("/settings","_self");
+		}
+    	function gId(s) { return d.getElementById(s); }
+		function showBrCtrlVal() {
+			gId('minbv').innerText = d.Sf.minb.value;
+			gId('maxbv').innerText = d.Sf.maxb.value;
+		}
+		function adjustRange(start) {
+			if (start) {
+				d.Sf.minb.value = Math.min(parseInt(d.Sf.minb.value), parseInt(d.Sf.maxb.value) - 1);
+			} else {
+				d.Sf.maxb.value = Math.max(parseInt(d.Sf.maxb.value), parseInt(d.Sf.minb.value) + 1);
+			}
+		}
+		function updateBrCtrl() {
+			var enabled = d.Sf.autb.checked;
+			gId('brctrl').style.opacity = enabled ? '1' : '.5';
+			d.Sf.minb.disabled = !enabled;
+			d.Sf.maxb.disabled = !enabled;
+			showBrCtrlVal();
+		}
+		function beep(beep) {
+			fetch('/json/state', {
+				method: 'post',
+				headers: {
+					'Content-type': 'application/json; charset=UTF-8'
+				},
+				body: JSON.stringify({
+					ledclock: {
+						cmd: 99,
+						beep: beep
+					}
+				})
+			}).catch(e => console.log(e));
+		}
+		function initBeepSelects(beeps) {
+			var selects = d.querySelectorAll('.beeptable select');
+			selects.forEach(s => s.insertAdjacentHTML('beforeend', `<option value="255">None</option>`));
+			for (var i in beeps) {
+				selects.forEach(s => s.insertAdjacentHTML('beforeend', `<option value="${i}">${beeps[i]}</option>`));
+			}
+			selects.forEach(s => s.addEventListener('input', e => {
+				var b = parseInt(e.target.value);
+				if (b != 255) beep(b);
+			}));
+		}
+		function loadJS(FILE_URL, async = true) {
+			let scE = d.createElement("script");
+			scE.setAttribute("src", FILE_URL);
+			scE.setAttribute("type", "text/javascript");
+			scE.setAttribute("async", async);
+			d.body.appendChild(scE);
+			// success event 
+			scE.addEventListener("load", () => {
+				GetV();
+				updateBrCtrl();
+			});
+			// error event
+			scE.addEventListener("error", (ev) => {
+				console.log("Error on loading file", ev);
+				alert("Loading of configuration script failed.\nIncomplete page data!");
+			});
+		}
+		function init() {
+			var h  = document.getElementsByTagName('head')[0];
+			var l  = document.createElement('script');
+			l.type = 'application/javascript';
+			l.src = '/rangetouch.js';
+			l.addEventListener('load', (e) => {
+				let stateCheck = setInterval(() => {
+					if (document.readyState === 'complete') {
+						clearInterval(stateCheck);
+
+						RangeTouch.setup('input[type="range"]', {});
+
+						if (window.location.protocol == "file:") {
+							loc = true;
+							locip = localStorage.getItem('locIp');
+							if (!locip) {
+								locip = prompt("File Mode. Please enter WLED IP!");
+								localStorage.setItem('locIp', locip);
+							}
+						}
+						var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=11';
+						loadJS(url);
+					}
+				}, 100);
+			});
+			h.appendChild(l);
+		}
+	</script>
+	<style>
+		@import url("style.css");
+		@import url("style_ledclock.css");
+	</style>
+</head>
+<body onload="init()">
+	<form id="form_s" name="Sf" method="post">
+		<button type="button" onclick="B()">Back</button><button type="submit">Save</button>
+		<hr>
+		<h2>LED Clock Settings</h2>
+
+		<h3>Brightness Control</h3>
+		<input type="checkbox" name="autb" onchange="updateBrCtrl()"> Automatic brightness control:<br>
+		<div id="brctrl" class="il">
+			Minimum brightness: <span id="minbv"></span><br>
+			<div class="sliderwrap il">
+				<input id="minb" name="minb" max="254" min="1" type="range" oninput="adjustRange(false);showBrCtrlVal()" />
+				<div class="sliderdisplay"></div>
+			</div><br>
+			Maximum brightness: <span id="maxbv"></span><br>
+			<div class="sliderwrap il">
+				<input id="maxb" name="maxb" max="255" min="2" type="range" oninput="adjustRange(true);showBrCtrlVal()" />
+				<div class="sliderdisplay"></div>
+			</div><br>
+		</div>
+
+		<h3>Display Settings</h3>
+		<input type="checkbox" name="hidzer"> Hide leading zero (hours)<br>
+		Hour-minute Separator:
+		<select name="sepm">
+			<option value="0">On</option>
+			<option value="1">Off</option>
+			<option value="2">Blink</option>
+		</select>
+
+		<h3>Beeps</h3>
+		<input type="checkbox" name="bmute"> Mute all beeps
+
+		<h4 id="clock">Beeps on events:</h4>
+		<div class="beeptable">
+			<span>Startup:</span><select name="bstartup"></select>
+			<span>Wi-Fi connected:</span><select name="bwifi"></select>
+		</div>
+
+		<h4 id="clock">Clock beeps on:</h4>
+		<div class="beeptable">
+			<span>Each minute:</span><select name="clbm"></select>
+			<span>Each hour:</span><select name="clbh"></select>
+		</div>
+
+		<h4 id="timer">Timer beeps on:</h4>
+		<div class="beeptable">
+			<span>Time setting:</span><select name="tmbset"></select>
+			<span>Start:</span><select name="tmbstart"></select>
+			<span>Pause:</span><select name="tmbpause"></select>
+			<span>Resume:</span><select name="tmbresume"></select>
+			<span>Reset:</span><select name="tmbreset"></select>
+			<span>Time addition:</span><select name="tmbtinc"></select>
+			<span>Each hour:</span><select name="tmbh"></select>
+			<span>Each minute:</span><select name="tmbm"></select>
+			<span>Secs. of last min.:</span><select name="tmbs"></select>
+			<span>Timeout:</span><select name="tmbto"></select>
+		</div>
+
+		<h4 id="stopwatch">Stopwatch beeps on:</h4>
+		<div class="beeptable">
+			<span>Start:</span><select name="swbstart"></select>
+			<span>Pause:</span><select name="swbpause"></select>
+			<span>Resume:</span><select name="swbresume"></select>
+			<span>Reset:</span><select name="swbreset"></select>
+			<span>Secs. of first min.:</span><select name="swbs"></select>
+			<span>Each minute:</span><select name="swbm"></select>
+			<span>Each hour:</span><select name="swbh"></select>
+			<span>Lap time:</span><select name="swblapt"></select>
+		</div>
+
+		<br>
+		<hr>
+		<div id="toast"></div>
+		<button type="button" onclick="B()">Back</button><button type="submit">Save</button>
+	</form>
+</body>
+</html>

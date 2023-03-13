@@ -38,6 +38,14 @@
 			var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=0';
 			loadJS(url, false);	// If we set async false, file is loaded and executed, then next statement is processed
 		}
+		function adv() {
+			if (confirm('Changing advanced settings may cause unwanted behavior, including the possibility of hardware damage. Only change settings you are familiar with! Continue?')) {
+				d.getElementById('advbtn').style.display='none';
+				Array.from(d.getElementsByClassName('adv')).forEach((el) => {
+					el.style.display='block';
+				})
+			}
+		}
 	</script>
 	<style>
 		body {
@@ -62,18 +70,27 @@
 			margin: 2vh auto 0;
 			cursor: pointer;
 		}
+		.adv {
+			display:none;
+		}
 	</style>
 </head>
 <body onload="S()">
 <button type=submit id="b" onclick="window.location='/'">Back</button>
+<button type="submit" onclick="window.location='./settings/ledclock'">Clock Settings</button>
 <button type="submit" onclick="window.location='./settings/wifi'">WiFi Setup</button>
+<div class="adv">
 <button type="submit" onclick="window.location='./settings/leds'">LED Preferences</button>
 <button id="2dbtn" style="display:none;" type="submit" onclick="window.location='./settings/2D'">2D Configuration</button>
+</div>
 <button type="submit" onclick="window.location='./settings/ui'">User Interface</button>
 <button id="dmxbtn" style="display:none;" type="submit" onclick="window.location='./settings/dmx'">DMX Output</button>
 <button type="submit" onclick="window.location='./settings/sync'">Sync Interfaces</button>
 <button type="submit" onclick="window.location='./settings/time'">Time & Macros</button>
+<div class="adv">
 <button type="submit" onclick="window.location='./settings/um'">Usermods</button>
+</div>
 <button type="submit" onclick="window.location='./settings/sec'">Security & Updates</button>
+<button id="advbtn" onclick="adv()">Advanced...</button>
 </body>
 </html>

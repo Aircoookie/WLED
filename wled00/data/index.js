@@ -660,11 +660,12 @@ function populateInfo(i)
 //	if (i.ver.includes("-bl")) vcn = "Supāku";
 	if (i.cn) vcn = i.cn;
 
-	cn += `v${i.ver} "${vcn}"<br><br><table>
+	cn += `<table>
 ${urows}
 ${urows===""?'':'<tr><td colspan=2><hr style="height:1px;border-width:0;color:gray;background-color:gray"></td></tr>'}
 ${i.opt&0x100?inforow("Debug","<button class=\"btn btn-xs\" onclick=\"requestJson({'debug':"+(i.opt&0x0080?"false":"true")+"});\"><i class=\"icons "+(i.opt&0x0080?"on":"off")+"\">&#xe08f;</i></button>"):''}
-${inforow("Build",i.vid)}
+${inforow("Led Clock version",'v##LEDCLOCKVERSION##')}
+${inforow("WLED version",`v${i.ver} ${i.vid}`)}
 ${inforow("Signal strength",i.wifi.signal +"% ("+ i.wifi.rssi, " dBm)")}
 ${inforow("Uptime",getRuntimeStr(i.uptime))}
 ${inforow("Free heap",heap," kB")}
@@ -1180,6 +1181,7 @@ function updateUI()
 
 	updatePA();
 	updatePSliders();
+	LC.updateUI();
 }
 
 function updateSelectedPalette(s)
@@ -1381,6 +1383,7 @@ function readState(s,command=false)
 	selectedPal = i.pal;
 	selectedFx = i.fx;
 	redrawPalPrev(); // if any color changed (random palette did at least)
+	LC.readState(s, command);
 	updateUI();
 	return true;
 }

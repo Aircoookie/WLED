@@ -39,10 +39,13 @@
 #define DEFAULT_MODE       (uint8_t)0
 #define DEFAULT_SPEED      (uint8_t)128
 #define DEFAULT_INTENSITY  (uint8_t)128
-#define DEFAULT_COLOR      (uint32_t)0xFFAA00
+#define DEFAULT_COLOR      (uint32_t)0xFF00CC
+#define DEFAULT_COLOR1     (uint32_t)0x00AAFF
+#define DEFAULT_COLOR2     (uint32_t)0x5900FF
 #define DEFAULT_C1         (uint8_t)128
 #define DEFAULT_C2         (uint8_t)128
 #define DEFAULT_C3         (uint8_t)16
+#define DEFAULT_PALETTE    (uint8_t)4
 
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
@@ -313,7 +316,11 @@
 #define FX_MODE_ROCKTAVES              185
 #define FX_MODE_2DAKEMI                186
 
-#define MODE_COUNT                     187
+#define FX_MODE_LC_2SOFIX              187
+#define FX_MODE_LC_VORTEX              188
+#define FX_MODE_LC_CONCENTRIC          189
+
+#define MODE_COUNT                     190
 
 typedef enum mapping1D2D {
   M12_Pixels = 0,
@@ -432,13 +439,13 @@ typedef struct Segment {
       offset(0),
       speed(DEFAULT_SPEED),
       intensity(DEFAULT_INTENSITY),
-      palette(0),
+      palette(DEFAULT_PALETTE),
       mode(DEFAULT_MODE),
       options(SELECTED | SEGMENT_ON),
       grouping(1),
       spacing(0),
       opacity(255),
-      colors{DEFAULT_COLOR,BLACK,BLACK},
+      colors{DEFAULT_COLOR,DEFAULT_COLOR1,DEFAULT_COLOR2},
       cct(127),
       custom1(DEFAULT_C1),
       custom2(DEFAULT_C2),
