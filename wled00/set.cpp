@@ -726,7 +726,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         strip.panel.push_back(p);
       }
       strip.setUpMatrix(); // will check limits
-      strip.makeAutoSegments(true);
+      strip.resetSegments(true);  //WLEDMM not makeAutoSegments(true) as we only want to change bounds
       strip.deserializeMap();
     } else {
       Segment::maxWidth  = strip.getLengthTotal();

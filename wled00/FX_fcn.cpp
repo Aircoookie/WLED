@@ -2097,7 +2097,7 @@ bool WS2812FX::deserializeMap(uint8_t n) {
       Segment::maxWidth = p.width;
       Segment::maxHeight = p.height;
 
-      makeAutoSegments();
+      resetSegments(true); //WLEDMM not makeAutoSegments() as we only want to change bounds
     }
 
     customMappingSize  = map.size();

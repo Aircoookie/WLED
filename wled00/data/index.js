@@ -1377,6 +1377,7 @@ function drawSegmentView() {
 			post();
 		}, function(error) { //error handling
 			console.log(error);
+			// downloadGHFile("LM", fileName, true, false); WLEDMM: remove as this has too much impact
 			post();
 		});
 	}
