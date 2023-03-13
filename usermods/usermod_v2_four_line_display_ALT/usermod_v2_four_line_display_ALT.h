@@ -703,7 +703,7 @@ class FourLineDisplayUsermod : public Usermod {
           // and turn it back on if it changed.
           clear();
           sleepOrClock(true);
-        } else if (displayTurnedOff && ntpEnabled) {
+        } else if (displayTurnedOff) {  // WLEDMM removed "&& ntpEnabled"
           showTime();
         }
         return;
@@ -1058,7 +1058,7 @@ class FourLineDisplayUsermod : public Usermod {
       if (sleepEnable) {
         displayTurnedOff = true;
         //setContrast(contrastFix? 2+ contrast/4 : 0);    // un-comment to dim display in "clock mode"
-        if (clockMode && ntpEnabled) {
+        if (clockMode) {                                  // WLEDMM removed " && ntpEnabled"
           knownMinute = knownHour = 99;
           showTime();
         } else
