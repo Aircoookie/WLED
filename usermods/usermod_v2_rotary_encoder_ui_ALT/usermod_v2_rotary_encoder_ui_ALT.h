@@ -514,7 +514,8 @@ public:
     // 6: fx changed 7: hue 8: preset cycle 9: blynk 10: alexa
     //setValuesFromFirstSelectedSeg(); //to make transition work on main segment (should no longer be required)
     stateUpdated(CALL_MODE_BUTTON);
-    updateInterfaces(CALL_MODE_BUTTON);
+    if ((millis() - lastInterfaceUpdate) > INTERFACE_UPDATE_COOLDOWN)   // WLEDMM respect cooldown times, to avoid crash in AsyncWebSocketMessageBuffer
+      updateInterfaces(CALL_MODE_BUTTON);
   }
 
   void changeBrightness(bool increase) {
