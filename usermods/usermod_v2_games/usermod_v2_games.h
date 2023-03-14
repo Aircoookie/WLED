@@ -183,7 +183,7 @@ uint16_t mode_IMUTest(void) {
 
   uint8_t y = 0;
 
-  if (IMU != nullptr) {
+  if ((IMU != nullptr) && (IMU->dmpReady)) {
     SEGMENT.setPixelColorXY(SEGMENT.virtualWidth() * (IMU->aa.x+INT16_MAX)/(2*INT16_MAX), y+=1, BLUE);
     SEGMENT.setPixelColorXY(SEGMENT.virtualWidth() * (IMU->aa.y+INT16_MAX)/(2*INT16_MAX), y+=1, BLUE);
     SEGMENT.setPixelColorXY(SEGMENT.virtualWidth() * (IMU->aa.z+INT16_MAX)/(2*INT16_MAX), y+=1, BLUE);
@@ -280,7 +280,7 @@ uint16_t mode_3DIMUCube(void) {
   float roll = 0;
 
   #ifdef USERMOD_MPU6050_IMU
-    if (IMU != nullptr) {
+    if ((IMU != nullptr) && (IMU->dmpReady)) {
       yaw = -IMU->ypr[0];
       pitch = IMU->ypr[1];
       roll = IMU->ypr[2];
