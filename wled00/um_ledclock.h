@@ -48,6 +48,8 @@ const char
     *LedClockStateKeys::command = "cmd",
     *LedClockStateKeys::mode = "mode",
     *LedClockStateKeys::beep = "beep",
+    *LedClockStateKeys::blendingMode = "blen",
+    *LedClockStateKeys::canvasColor = "cvcl",
 
     *LedClockStateKeys::Timer::root = "timer",
     *LedClockStateKeys::Timer::running = "runs",
@@ -238,6 +240,14 @@ static void outputPixel(uint8_t x, uint8_t y, uint8_t r, uint8_t g, uint8_t b) {
     strip.setPixelColorXY(x, y, RGBW32(r, g, b, 0));
 }
 
+inline static uint8_t screen(uint8_t a, uint8_t b) {
+    return 255 * (1.0f - ((1.0f - (a / 255.0f)) * (1.0f - (b / 255.0f))));
+}
+
+inline static CRGB lighter(CRGB a, CRGB b) {
+    return (a.r + a.g + a.b) > (b.r + b.g + b.b) ? a : b;
+}
+
 class UsermodLedClock : public Usermod, public LedClockSettings {
 
 private:
@@ -259,6 +269,14 @@ private:
         TimerSet,
 
         NoOp = 99
+    };
+
+    enum BlendingMode {
+        Normal,
+        Lighten,
+        Screen,
+        LinearDodge,
+        LighterColor
     };
 
     SevenSegmentDisplay dHoursT;
@@ -301,6 +319,9 @@ private:
     bool timerPaused = false;
     unsigned long timerLeft = 0;
     unsigned long timerValue = 0;
+
+    BlendingMode blendingMode = Lighten;
+    CRGB canvasColor = CRGB::DarkBlue;
 
 public:
 
@@ -491,7 +512,7 @@ public:
         } else {
             if (selfTestTimer.fire()) {
                 selfTestIdx++;
-                if (selfTestIdx >= strip.getLengthTotal()) {
+                if (selfTestIdx >= busses.getTotalLength()) {
                     selfTestIdx = 0;
                     selfTestCycle++;
                     if (selfTestCycle >= selfTestColorCount) {
@@ -517,6 +538,14 @@ public:
 
     void addToJsonState(JsonObject& root) {
         JsonObject state = root.createNestedObject(LedClockStateKeys::root);
+
+        state[LedClockStateKeys::blendingMode] = blendingMode;
+
+        auto cc = state.createNestedArray(LedClockStateKeys::canvasColor);
+        cc.add(canvasColor.r);
+        cc.add(canvasColor.g);
+        cc.add(canvasColor.b);
+
         state[LedClockStateKeys::mode] = mode;
         switch (mode) {
         case Mode::StopwatchMode: {
@@ -583,6 +612,14 @@ public:
             uint8_t b = state[LedClockStateKeys::beep] | 255;
             if (b < beepCount) {
                 beeper.play(beeps[b]);
+            }
+
+            blendingMode = state[LedClockStateKeys::blendingMode] | blendingMode;
+
+            if (state[LedClockStateKeys::canvasColor]) {
+                canvasColor.r = state[LedClockStateKeys::canvasColor][0];
+                canvasColor.g = state[LedClockStateKeys::canvasColor][1];
+                canvasColor.b = state[LedClockStateKeys::canvasColor][2];
             }
 
             Command c = state[LedClockStateKeys::command] | Command::NoOp;
@@ -675,6 +712,31 @@ public:
             }
             default:
                 break;
+            }
+        }
+    }
+
+    void addToPreset(JsonObject& root) {
+        JsonObject state = root.createNestedObject(LedClockStateKeys::root);
+
+        state[LedClockStateKeys::blendingMode] = blendingMode;
+
+        auto cc = state.createNestedArray(LedClockStateKeys::canvasColor);
+        cc.add(canvasColor.r);
+        cc.add(canvasColor.g);
+        cc.add(canvasColor.b);
+    }
+
+    void readFromPreset(JsonObject& root) {
+        JsonObject state = root[LedClockStateKeys::root];
+
+        if (!state.isNull()) {
+            blendingMode = state[LedClockStateKeys::blendingMode] | blendingMode;
+
+            if (state[LedClockStateKeys::canvasColor]) {
+                canvasColor.r = state[LedClockStateKeys::canvasColor][0];
+                canvasColor.g = state[LedClockStateKeys::canvasColor][1];
+                canvasColor.b = state[LedClockStateKeys::canvasColor][2];
             }
         }
     }
@@ -783,13 +845,43 @@ public:
     void handleOverlayDraw() {
         if (selfTestDone) {
             backupStrip();
+
+            if (canvasColor && blendingMode > BlendingMode::Normal) { 
+                for (uint8_t i = 0, n = busses.getTotalLength(); i < n; ++i) {
+                    CRGB rgb = CRGB(busses.getPixelColor(i));
+                    switch (blendingMode) {
+                    case Lighten:
+                        rgb.r = max(rgb.r, canvasColor.r);
+                        rgb.g = max(rgb.g, canvasColor.g);
+                        rgb.b = max(rgb.b, canvasColor.b);
+                        break;
+                    case Screen:
+                        rgb.r = screen(rgb.r, canvasColor.r);
+                        rgb.g = screen(rgb.g, canvasColor.g);
+                        rgb.b = screen(rgb.b, canvasColor.b);
+                        break;
+                    case LinearDodge:
+                        rgb += canvasColor;
+                        break;
+                    case LighterColor:
+                        rgb = lighter(rgb, canvasColor);
+                        break;
+                    case Normal:
+                    default:
+                        break;
+                    }
+                    busses.setPixelColor(i, RGBW32(rgb.r, rgb.g, rgb.b, 0));
+                }
+            }
+
             display.update();
+
             if (autoBrightness && bri > 0 && bri != br) {
                 bri = br;
                 stateUpdated(CALL_MODE_DIRECT_CHANGE);
             }
         } else {
-            for (uint8_t i = 0, n = strip.getLengthTotal(); i < n; ++i) {
+            for (uint8_t i = 0, n = busses.getTotalLength(); i < n; ++i) {
                 CRGB color = i <= selfTestIdx
                     ? selfTestColors[selfTestCycle]
                     : (selfTestCycle > 0
@@ -806,19 +898,19 @@ public:
     }
 
     void backupStrip() {
-        uint16_t length = strip.getLengthTotal();
+        uint16_t length = busses.getTotalLength();
         if (backupLength != length) {
             backupLength = length;
             backup = (uint32_t *) realloc(backup, sizeof(uint32_t) * length);
         }
         for (int i = 0; i < length; ++i) {
-            backup[i] = strip.getPixelColor(i);
+            backup[i] = busses.getPixelColor(i);
         }
     }
 
     void rollbackStrip() {
-        for (int i = 0, n = min(strip.getLengthTotal(), backupLength); i < n; ++i) {
-            strip.setPixelColor(i, backup[i]);
+        for (int i = 0, n = min(busses.getTotalLength(), backupLength); i < n; ++i) {
+            busses.setPixelColor(i, backup[i]);
         }
     }
 

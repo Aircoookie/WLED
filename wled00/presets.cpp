@@ -35,6 +35,7 @@ static void doSaveState() {
     if (includeBri) sObj["on"] = true;
   } else {
     serializeState(sObj, true, includeBri, segBounds, selectedOnly);
+    usermods.addToPreset(sObj);
   }
   sObj["n"] = saveName;
   if (quickLoad[0]) sObj[F("ql")] = quickLoad;
@@ -169,6 +170,7 @@ void handlePresets()
     if (!fdo["seg"].isNull() || !fdo["on"].isNull() || !fdo["bri"].isNull() || !fdo["nl"].isNull() || !fdo["ps"].isNull() || !fdo[F("playlist")].isNull()) changePreset = true;
     fdo.remove("ps"); //remove load request for presets to prevent recursive crash
     deserializeState(fdo, CALL_MODE_NO_NOTIFY, tmpPreset); // may change presetToApply by calling applyPreset()
+    usermods.readFromPreset(fdo);
   }
   if (!errorFlag && tmpPreset < 255 && changePreset) presetCycCurr = currentPreset = tmpPreset;
 

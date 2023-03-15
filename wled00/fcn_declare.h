@@ -272,6 +272,8 @@ class Usermod {
     virtual bool onMqttMessage(char* topic, char* payload) { return false; } // fired upon MQTT message received (wled topic)
     virtual void onUpdateBegin(bool) {}                                      // fired prior to and after unsuccessful firmware update
     virtual void onStateChange(uint8_t mode) {}                              // fired upon WLED state change
+    virtual void addToPreset(JsonObject& obj) {}                             // add values to a preset
+    virtual void readFromPreset(JsonObject& obj) {}                          // read values from a preset
     virtual uint16_t getId() {return USERMOD_ID_UNSPECIFIED;}
 };
 
@@ -298,6 +300,8 @@ class UsermodManager {
     bool onMqttMessage(char* topic, char* payload);
     void onUpdateBegin(bool);
     void onStateChange(uint8_t);
+    void addToPreset(JsonObject& obj);
+    void readFromPreset(JsonObject& obj);
     bool add(Usermod* um);
     Usermod* lookup(uint16_t mod_id);
     byte getModCount() {return numMods;};

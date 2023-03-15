@@ -131,7 +131,7 @@ public:
 
 class LedClockStateKeys {
 public:
-    static const char *root, *command, *mode, *beep;
+    static const char *root, *command, *mode, *beep, *blendingMode, *canvasColor;
 
     class Timer {
     public:

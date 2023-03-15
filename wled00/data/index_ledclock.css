@@ -158,3 +158,30 @@
     bottom: 0;
     background: linear-gradient(0deg, var(--c-2) 0%, rgba(0,0,0,0) 100%)
 }
+
+#lcblendw {
+    margin-top: .8rem;
+}
+
+#lcblendw select {
+    margin: .8rem 0 1rem 0;
+    padding: 9px;
+    text-align: center;
+    border: 1px solid var(--c-3);
+}
+
+#lcblendw select:hover {
+	border: 1px solid var(--c-5);
+	background-color: var(--c-5);
+}
+
+#lcblendcol {
+    margin-top: .8rem;
+    display: flex;
+    justify-content: center;
+    padding-bottom: 2rem;
+}
+
+#lcblendcol .IroSlider {
+    background: none !important;
+}

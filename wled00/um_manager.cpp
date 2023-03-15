@@ -43,6 +43,9 @@ bool UsermodManager::onMqttMessage(char* topic, char* payload) {
 void UsermodManager::onUpdateBegin(bool init) { for (byte i = 0; i < numMods; i++) ums[i]->onUpdateBegin(init); } // notify usermods that update is to begin
 void UsermodManager::onStateChange(uint8_t mode) { for (byte i = 0; i < numMods; i++) ums[i]->onStateChange(mode); } // notify usermods that WLED state changed
 
+void UsermodManager::addToPreset(JsonObject& obj)    { for (byte i = 0; i < numMods; i++) ums[i]->addToPreset(obj); }
+void UsermodManager::readFromPreset(JsonObject& obj) { for (byte i = 0; i < numMods; i++) ums[i]->readFromPreset(obj); }
+
 /*
  * Enables usermods to lookup another Usermod.
  */
