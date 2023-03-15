@@ -107,7 +107,7 @@ class MPU6050Driver : public Usermod {
     static const char _INT_pin[];
 
   public:
-    MPU6050Driver(const char *name):Usermod(name) {} //WLEDMM: this shouldn't be necessary (passthrough of constructor), maybe because Usermod is an abstract class
+    MPU6050Driver(const char *name, bool enabled):Usermod(name, enabled) {} //WLEDMM: this shouldn't be necessary (passthrough of constructor), maybe because Usermod is an abstract class
 
     bool dmpReady = false;  // set true if DMP init was successful  // WLEDMM expose this info in public interface
     // orientation/motion vars

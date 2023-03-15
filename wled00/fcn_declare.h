@@ -264,7 +264,7 @@ class Usermod {
     bool enabled = false; //WLEDMM
     const char *_name; //WLEDMM
   public:
-    Usermod(const char *name = nullptr) { um_data = nullptr; _name = name;}
+    Usermod(const char *_name = nullptr, bool enabled=false) { um_data = nullptr; this->_name = _name; this->enabled=enabled;}
     virtual ~Usermod() { if (um_data) delete um_data; }
     virtual void setup() = 0; // pure virtual, has to be overriden
     virtual void loop() = 0;  // pure virtual, has to be overriden

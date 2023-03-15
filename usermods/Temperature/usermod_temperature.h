@@ -159,7 +159,7 @@ class UsermodTemperature : public Usermod {
 #endif
 
   public:
-    UsermodTemperature(const char *name):Usermod(name) {} //WLEDMM: this shouldn't be necessary (passthrough of constructor), maybe because Usermod is an abstract class
+    UsermodTemperature(const char *name, bool enabled):Usermod(name, enabled) {} //WLEDMM: this shouldn't be necessary (passthrough of constructor), maybe because Usermod is an abstract class
 
     void setup() {
       int retries = 10;
