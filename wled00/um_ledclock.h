@@ -320,8 +320,8 @@ private:
     unsigned long timerLeft = 0;
     unsigned long timerValue = 0;
 
-    BlendingMode blendingMode = Lighten;
-    CRGB canvasColor = CRGB::DarkBlue;
+    BlendingMode blendingMode = LinearDodge;
+    CRGB canvasColor = CRGB(10, 0, 60);
 
 public:
 

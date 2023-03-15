@@ -7444,7 +7444,7 @@ uint16_t mode_lc2sofix() {
   return FRAMETIME;
 }
 
-static const char _data_FX_MODE_LC_2SOFIX[] PROGMEM = "2sofix@Speed,Scale;;!;2";
+static const char _data_FX_MODE_LC_2SOFIX[] PROGMEM = "2sofix@Speed,Scale;;;2";
 
 
 /*

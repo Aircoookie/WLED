@@ -36,7 +36,7 @@
 #include "FastLED.h"
 
 #define DEFAULT_BRIGHTNESS (uint8_t)127
-#define DEFAULT_MODE       (uint8_t)0
+#define DEFAULT_MODE       (uint8_t)FX_MODE_2DFRIZZLES
 #define DEFAULT_SPEED      (uint8_t)128
 #define DEFAULT_INTENSITY  (uint8_t)128
 #define DEFAULT_COLOR      (uint32_t)0xFF00CC
@@ -45,7 +45,7 @@
 #define DEFAULT_C1         (uint8_t)128
 #define DEFAULT_C2         (uint8_t)128
 #define DEFAULT_C3         (uint8_t)16
-#define DEFAULT_PALETTE    (uint8_t)4
+#define DEFAULT_PALETTE    (uint8_t)41
 
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
