@@ -366,7 +366,7 @@ class MPU6050Driver : public Usermod {
     //WLEDMM: add appendConfigData
     void appendConfigData()
     {
-      oappend(SET_F("addHB('MPU6050 Motion Sensor (IMU)');"));
+      oappend(SET_F("addHB('mpu6050-IMU');"));
   /*
       #ifdef MPU6050_INT_GPIO
         oappend(SET_F("xOpt('mpu6050-IMU:interrupt_pin',0,' ⎌',")); oappendi(MPU6050_INT_GPIO); oappend(");"); 
