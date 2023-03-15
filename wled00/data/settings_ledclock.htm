@@ -4,10 +4,9 @@
 	<meta name="viewport" content="width=500">
 	<meta charset="utf-8">
 	<title>Clock Settings</title>
-	<script src="rangetouch.js"></script>
 	<script>
-		var lcBeeps = [];
 		var d = document;
+		var loc = false, locip;
 		function B()
 		{
 			window.open("/settings","_self");
@@ -45,47 +44,68 @@
 				})
 			}).catch(e => console.log(e));
 		}
-		function init() {
+		function initBeepSelects(beeps) {
 			var selects = d.querySelectorAll('.beeptable select');
 			selects.forEach(s => s.insertAdjacentHTML('beforeend', `<option value="255">None</option>`));
-			for (var i in lcBeeps) {
-				selects.forEach(s => s.insertAdjacentHTML('beforeend', `<option value="${i}">${lcBeeps[i]}</option>`));
+			for (var i in beeps) {
+				selects.forEach(s => s.insertAdjacentHTML('beforeend', `<option value="${i}">${beeps[i]}</option>`));
 			}
 			selects.forEach(s => s.addEventListener('input', e => {
 				var b = parseInt(e.target.value);
 				if (b != 255) beep(b);
 			}));
-
-			RangeTouch.setup('input[type="range"]', {});
 		}
-		function GetV()
-		{
-			//values injected by server while sending HTML
+		function loadJS(FILE_URL, async = true) {
+			let scE = d.createElement("script");
+			scE.setAttribute("src", FILE_URL);
+			scE.setAttribute("type", "text/javascript");
+			scE.setAttribute("async", async);
+			d.body.appendChild(scE);
+			// success event 
+			scE.addEventListener("load", () => {
+				GetV();
+				updateBrCtrl();
+			});
+			// error event
+			scE.addEventListener("error", (ev) => {
+				console.log("Error on loading file", ev);
+				alert("Loading of configuration script failed.\nIncomplete page data!");
+			});
+		}
+		function init() {
+			var h  = document.getElementsByTagName('head')[0];
+			var l  = document.createElement('script');
+			l.type = 'application/javascript';
+			l.src = '/rangetouch.js';
+			l.addEventListener('load', (e) => {
+				let stateCheck = setInterval(() => {
+					if (document.readyState === 'complete') {
+						clearInterval(stateCheck);
+
+						RangeTouch.setup('input[type="range"]', {});
+
+						if (window.location.protocol == "file:") {
+							loc = true;
+							locip = localStorage.getItem('locIp');
+							if (!locip) {
+								locip = prompt("File Mode. Please enter WLED IP!");
+								localStorage.setItem('locIp', locip);
+							}
+						}
+						var url = (loc?`http://${locip}`:'') + '/settings/s.js?p=11';
+						loadJS(url);
+					}
+				}, 100);
+			});
+			h.appendChild(l);
 		}
 	</script>
 	<style>
-		/* will be removed by build script. */
 		@import url("style.css");
 		@import url("style_ledclock.css");
-		body {
-			line-height: 200%;
-		}
-	</style>
-	<style type="text/css">
-		#brctrl {
-			transition: opacity 0.4s;
-		}
-		.beeptable {
-			display: grid;
-			grid-template-columns: max-content max-content;
-			justify-items: end;
-			row-gap: .2rem;
-			column-gap: .3rem;
-			justify-content: center;
-		}
 	</style>
 </head>
-<body onload="init();GetV();updateBrCtrl()">
+<body onload="init()">
 	<form id="form_s" name="Sf" method="post">
 		<button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 		<hr>

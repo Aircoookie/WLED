@@ -30,13 +30,11 @@ SevenSegmentDisplay::SevenSegmentDisplay(LedBasedDisplayOutput output, uint8_t l
 
     _offColors = (CRGB*) malloc(7 * _ledsPerSegment * sizeof(CRGB));
     _onColors = (CRGB*) malloc(7 * _ledsPerSegment * sizeof(CRGB));
-    _indices = (uint8_t*) malloc(7 * _ledsPerSegment * sizeof(uint8_t));
 
     _showZero = true;
 }
 
 SevenSegmentDisplay::~SevenSegmentDisplay() {
-    delete _indices;
     delete _offColors;
     delete _onColors;
 }
@@ -49,14 +47,52 @@ uint8_t SevenSegmentDisplay::columnCount() {
     return _ledsPerSegment + 2;
 }
 
-uint8_t SevenSegmentDisplay::internalIndex(uint8_t row, uint8_t column) {
-    uint8_t lastRow = (_ledsPerSegment + 1) * 2;
+CRGB* SevenSegmentDisplay::getLedColor(uint8_t row, uint8_t column, bool state) {
+    uint8_t idx = _internalIndex(segmentOfCoords(row, column), row, column);
 
-    if (row < 0 || row > lastRow) {
-        return _7SEG_INDEX_UNDEF;
+    if (idx == _7SEG_UNDEF) {
+        return &dummy;
     }
 
+    return &(state ? _onColors : _offColors)[idx];
+}
+
+void SevenSegmentDisplay::setLedColor(uint8_t row, uint8_t column, bool state, CRGB color) {
+    uint8_t idx = _internalIndex(segmentOfCoords(row, column), row, column);
+
+    if (idx == _7SEG_UNDEF) {
+        return;
+    }
+
+    (state ? _onColors : _offColors)[idx] = color;
+}
+
+void SevenSegmentDisplay::update(uint8_t rowOffset, uint8_t columnOffset) {
+    for (uint8_t r = 0, rc = rowCount(); r < rc; ++r) {
+        for (uint8_t c = 0, cc = columnCount(); c < cc; ++c) {
+            uint8_t segment = segmentOfCoords(r, c);
+            if (segment != _7SEG_UNDEF) {
+                bool on = _value & _7SEG_MASK(segment);
+                if (_7SEG_MODE(_mode, on)) {
+                    CRGB crgb = (on ? _onColors : _offColors)[_internalIndex(segment, r, c)];
+                    (*_output)(c + columnOffset, r + rowOffset, crgb.red, crgb.green, crgb.blue);
+                }
+            }
+        }
+    }
+}
+
+void SevenSegmentDisplay::setMode(LedBasedDisplayMode mode) {
+    _mode = mode;
+}
+
+uint8_t SevenSegmentDisplay::segmentOfCoords(uint8_t row, uint8_t column) {
     uint8_t midRow = _ledsPerSegment + 1;
+    uint8_t lastRow = midRow * 2;
+
+    if (row < 0 || row > lastRow) {
+        return _7SEG_UNDEF;
+    }
 
     bool top = row == 0;
     bool mid = row == midRow;
@@ -65,116 +101,28 @@ uint8_t SevenSegmentDisplay::internalIndex(uint8_t row, uint8_t column) {
     if (top || mid || bot) {
         if (column >= 1 && column <= _ledsPerSegment) {
             if (top) {
-                return _7SEG_IDX(_7SEG_SEG_A, column - 1);
+                return _7SEG_SEG_A;
             } else if (mid) {
-                return _7SEG_IDX(_7SEG_SEG_G, column - 1);
+                return _7SEG_SEG_G;
             } else {
-                return _7SEG_IDX(_7SEG_SEG_D, column - 1);
+                return _7SEG_SEG_D;
             }
         }
     } else if (column == 0) {
         if (row < midRow) {
-            return _7SEG_IDX(_7SEG_SEG_F, row - 1);
+            return _7SEG_SEG_F;
         } else {
-            return _7SEG_IDX(_7SEG_SEG_E, row - midRow - 1);
+            return _7SEG_SEG_E;
         }
     } else if (column == _ledsPerSegment + 1) {
         if (row < midRow) {
-            return _7SEG_IDX(_7SEG_SEG_B, row - 1);
+            return _7SEG_SEG_B;
         } else {
-            return _7SEG_IDX(_7SEG_SEG_C, row - midRow - 1);
+            return _7SEG_SEG_C;
         }
     }
 
-    return _7SEG_INDEX_UNDEF;
-}
-
-uint8_t SevenSegmentDisplay::indexOfCoords(uint8_t row, uint8_t column) {
-    uint8_t idx = internalIndex(row, column);
-    return idx == _7SEG_INDEX_UNDEF ? idx : _indices[idx];
-}
-
-Coords SevenSegmentDisplay::coordsOfIndex(uint16_t index) {
-    Coords coords;
-    for (int i = 0, n = 7 * _ledsPerSegment; i < n; ++i) {
-        if (_indices[i] == index) {
-            uint8_t seg = i / _ledsPerSegment;
-            uint8_t idx = i % _ledsPerSegment;
-            switch (seg) {
-            case _7SEG_SEG_A: coords.row = 0; break;
-            case _7SEG_SEG_B:
-            case _7SEG_SEG_F: coords.row = idx + 1; break;
-            case _7SEG_SEG_C:
-            case _7SEG_SEG_E: coords.row = _ledsPerSegment + 1 + idx + 1; break;
-            case _7SEG_SEG_D: coords.row = _ledsPerSegment + 1 + _ledsPerSegment + 1; break;
-            case _7SEG_SEG_G: coords.row = _ledsPerSegment + 1; break;
-            }
-            switch (seg) {
-            case _7SEG_SEG_A:
-            case _7SEG_SEG_D:
-            case _7SEG_SEG_G: coords.col = idx + 1; break;
-            case _7SEG_SEG_B:
-            case _7SEG_SEG_C: coords.col = _ledsPerSegment + 1; break;
-            case _7SEG_SEG_E:
-            case _7SEG_SEG_F: coords.col = 0; break;
-            }
-            return coords;
-        }
-    }
-    return coords;
-}
-
-CRGB* SevenSegmentDisplay::getLedColor(uint8_t row, uint8_t column, bool state) {
-    uint8_t idx = internalIndex(row, column);
-
-    if (idx == _7SEG_INDEX_UNDEF) {
-        return &dummy;
-    }
-
-    return &(state ? _onColors : _offColors)[idx];
-}
-
-void SevenSegmentDisplay::setLedColor(uint8_t row, uint8_t column, bool state, CRGB color) {
-    uint8_t idx = internalIndex(row, column);
-
-    if (idx == _7SEG_INDEX_UNDEF) {
-        return;
-    }
-
-    (state ? _onColors : _offColors)[idx] = color;
-}
-
-void SevenSegmentDisplay::update() {
-    uint8_t mask = 0b00000001;
-
-    for (uint8_t seg = _7SEG_SEG_A; seg <= _7SEG_SEG_G; ++seg) {
-        bool on = _value & mask;
-
-        if (_7SEG_MODE(_mode, on)) {
-            for (uint8_t i = 0; i < _ledsPerSegment; ++i) {
-                uint8_t segmIdx = _7SEG_IDX(seg, i);
-                CRGB c = (on ? _onColors : _offColors)[segmIdx];
-                (*_output)(_indices[segmIdx], c.red, c.green, c.blue);
-            }
-        }
-
-        mask <<= 1;
-    }
-}
-
-void SevenSegmentDisplay::setMode(LedBasedDisplayMode mode) {
-    _mode = mode;
-}
-
-void SevenSegmentDisplay::mapSegment(uint8_t seg, ...) {
-    va_list ap;
-    va_start(ap, seg);
-
-    for (uint8_t i = 0; i < _ledsPerSegment; i++) {
-        _indices[_7SEG_IDX(seg, i)] = va_arg(ap, int);
-    }
-
-    va_end(ap);
+    return _7SEG_UNDEF;
 }
 
 void SevenSegmentDisplay::setSymbol(uint8_t symbol) {
@@ -241,12 +189,29 @@ void SevenSegmentDisplay::setShowZero(boolean showZero) {
     _showZero = showZero;
 }
 
-SeparatorDisplay::SeparatorDisplay(LedBasedDisplayOutput output):
+uint8_t SevenSegmentDisplay::_internalIndex(uint8_t segment, uint8_t row, uint8_t column) {
+    switch (segment) {
+    case _7SEG_SEG_A: return _7SEG_IDX(_7SEG_SEG_A, column - 1);
+    case _7SEG_SEG_B: return _7SEG_IDX(_7SEG_SEG_B, row - 1);
+    case _7SEG_SEG_C: return _7SEG_IDX(_7SEG_SEG_C, row - _ledsPerSegment - 2);
+    case _7SEG_SEG_D: return _7SEG_IDX(_7SEG_SEG_D, column - 1);
+    case _7SEG_SEG_E: return _7SEG_IDX(_7SEG_SEG_E, row - _ledsPerSegment - 2);
+    case _7SEG_SEG_F: return _7SEG_IDX(_7SEG_SEG_F, row - 1);
+    case _7SEG_SEG_G: return _7SEG_IDX(_7SEG_SEG_G, column - 1);
+    default: return _7SEG_UNDEF;
+    }
+}
+
+SeparatorDisplay::SeparatorDisplay(LedBasedDisplayOutput output, uint8_t ledCount):
     _output(output),
+    _maxLeds(ledCount),
     _ledCount(0),
     _mappings(NULL),
     _state(false),
-    _mode(LedBasedDisplayMode::SET_ALL_LEDS) {}
+    _mode(LedBasedDisplayMode::SET_ALL_LEDS) {
+
+        _mappings = (_Mapping*) malloc(sizeof(_Mapping) * ledCount);
+    }
 
 SeparatorDisplay::~SeparatorDisplay() {
     delete _mappings;
@@ -270,24 +235,6 @@ uint8_t SeparatorDisplay::columnCount() {
         }
     }
     return max + 1;
-}
-
-uint8_t SeparatorDisplay::indexOfCoords(uint8_t row, uint8_t column) {
-    for (uint8_t i = 0; i < _ledCount; ++i) {
-        if (_mappings[i].row == row && _mappings[i].column == column) {
-            return _mappings[i].index;
-        }
-    }
-    return _7SEG_INDEX_UNDEF;
-}
-
-Coords SeparatorDisplay::coordsOfIndex(uint16_t index) {
-    for (uint8_t i = 0; i < _ledCount; ++i) {
-        if (_mappings[i].index == index) {
-            return Coords(_mappings[i].row, _mappings[i].column);
-        }
-    }
-    return Coords();
 }
 
 CRGB* SeparatorDisplay::getLedColor(uint8_t row, uint8_t column, bool state) {
@@ -316,11 +263,11 @@ void SeparatorDisplay::setLedColor(uint8_t row, uint8_t column, bool state, CRGB
     }
 }
 
-void SeparatorDisplay::update() {
-    for (uint8_t i = 0; i < _ledCount; ++i) {
-        if (_7SEG_MODE(_mode, _state)) {
-            CRGB c = _state ? _mappings[i].onColor : _mappings[i].offColor;
-            (*_output)(_mappings[i].index, c.red, c.green, c.blue);
+void SeparatorDisplay::update(uint8_t rowOffset, uint8_t columnOffset) {
+    if (_7SEG_MODE(_mode, _state)) {
+        for (uint8_t i = 0; i < _ledCount; ++i) {
+            CRGB crgb = _state ? _mappings[i].onColor : _mappings[i].offColor;
+            (*_output)(_mappings[i].column + columnOffset, _mappings[i].row + rowOffset, crgb.red, crgb.green, crgb.blue);
         }
     }
 }
@@ -329,24 +276,10 @@ void SeparatorDisplay::setMode(LedBasedDisplayMode mode) {
     _mode = mode;
 }
 
-void SeparatorDisplay::map(uint8_t ledCount, ...) {
-    if (_mappings != NULL) {
-        delete _mappings;
-    }
-
-    _ledCount = ledCount;
-    _mappings = (struct _Mapping*) malloc(ledCount * sizeof(struct _Mapping));
-
-    va_list ap;
-    va_start(ap, ledCount);
-
-    for (uint8_t i = 0; i < ledCount; i++) {
-        _mappings[i].row = va_arg(ap, int);
-        _mappings[i].column = va_arg(ap, int);
-        _mappings[i].index = va_arg(ap, int);
-    }
-
-    va_end(ap);
+void SeparatorDisplay::addLed(uint8_t row, uint8_t column) {
+    _mappings[_ledCount].row = row;
+    _mappings[_ledCount].column = column;
+    _ledCount++;
 }
 
 void SeparatorDisplay::setState(bool state) {
@@ -387,33 +320,6 @@ uint8_t LedBasedRowDisplay::columnCount() {
     return columnCount;
 }
 
-uint8_t LedBasedRowDisplay::indexOfCoords(uint8_t row, uint8_t column) {
-    uint8_t c = column;
-    for (uint8_t i = 0; i < _displayCount; i++) {
-        uint8_t cc = _displays[i]->columnCount();
-        if (_displays[i]->columnCount() - 1 < c) {
-            c -= cc;
-        } else {
-            return _displays[i]->indexOfCoords(row, c);
-        }
-    }
-    return _7SEG_INDEX_UNDEF;
-}
-
-Coords LedBasedRowDisplay::coordsOfIndex(uint16_t index) {
-    uint8_t columnCount = 0;
-    for (uint8_t i = 0; i < _displayCount; i++) {
-        Coords coords = _displays[i]->coordsOfIndex(index);
-        if (coords.isValid()) {
-            coords.col += columnCount;
-            return coords;
-        } else {
-            columnCount += _displays[i]->columnCount();
-        }
-    }
-    return Coords();
-}
-
 CRGB* LedBasedRowDisplay::getLedColor(uint8_t row, uint8_t column, bool state) {
     uint8_t c = column;
     for (uint8_t i = 0; i < _displayCount; i++) {
@@ -440,9 +346,10 @@ void LedBasedRowDisplay::setLedColor(uint8_t row, uint8_t column, bool state, CR
     }
 }
 
-void LedBasedRowDisplay::update() {
+void LedBasedRowDisplay::update(uint8_t rowOffset, uint8_t columnOffset) {
     for (uint8_t i = 0; i < _displayCount; i++) {
-        _displays[i]->update();
+        _displays[i]->update(rowOffset, columnOffset);
+        columnOffset += _displays[i]->columnCount();
     }
 }
 

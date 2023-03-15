@@ -29,6 +29,7 @@ class UsermodTemperature : public Usermod {
     bool degC = true;
     // using parasite power on the sensor
     bool parasite = false;
+    int8_t parasitePin = -1;
     // how often do we read from sensor?
     unsigned long readingInterval = USERMOD_DALLASTEMPERATURE_MEASUREMENT_INTERVAL;
     // set last reading as "40 sec before boot", so first reading is taken after 20 sec
@@ -46,11 +47,14 @@ class UsermodTemperature : public Usermod {
 
     bool enabled = true;
 
+    bool HApublished = false;
+
     // strings to reduce flash memory usage (used more than twice)
     static const char _name[];
     static const char _enabled[];
     static const char _readInterval[];
     static const char _parasite[];
+    static const char _parasitePin[];
 
     //Dallas sensor quick (& dirty) reading. Credit to - Author: Peter Scargill, August 17th, 2013
     float readDallas() {
@@ -92,12 +96,14 @@ class UsermodTemperature : public Usermod {
       DEBUG_PRINTLN(F("Requesting temperature."));
       oneWire->reset();
       oneWire->skip();                        // skip ROM
-      oneWire->write(0x44,parasite);          // request new temperature reading (TODO: parasite would need special handling)
+      oneWire->write(0x44,parasite);          // request new temperature reading
+      if (parasite && parasitePin >=0 ) digitalWrite(parasitePin, HIGH); // has to happen within 10us (open MOSFET)
       lastTemperaturesRequest = millis();
       waitingForConversion = true;
     }
 
     void readTemperature() {
+      if (parasite && parasitePin >=0 ) digitalWrite(parasitePin, LOW); // deactivate power (close MOSFET)
       temperature = readDallas();
       lastMeasurement = millis();
       waitingForConversion = false;
@@ -132,6 +138,30 @@ class UsermodTemperature : public Usermod {
       return false;
     }
 
+#ifndef WLED_DISABLE_MQTT
+    void publishHomeAssistantAutodiscovery() {
+      if (!WLED_MQTT_CONNECTED) return;
+
+      char json_str[1024], buf[128];
+      size_t payload_size;
+      StaticJsonDocument<1024> json;
+
+      sprintf_P(buf, PSTR("%s Temperature"), serverDescription);
+      json[F("name")] = buf;
+      strcpy(buf, mqttDeviceTopic);
+      strcat_P(buf, PSTR("/temperature"));
+      json[F("state_topic")] = buf;
+      json[F("device_class")] = F("temperature");
+      json[F("unique_id")] = escapedMac.c_str();
+      json[F("unit_of_measurement")] = F("°C");
+      payload_size = serializeJson(json, json_str);
+
+      sprintf_P(buf, PSTR("homeassistant/sensor/%s/config"), escapedMac.c_str());
+      mqtt->publish(buf, 0, true, json_str, payload_size);
+      HApublished = true;
+    }
+#endif
+
   public:
 
     void setup() {
@@ -148,6 +178,12 @@ class UsermodTemperature : public Usermod {
             while (!findSensor() && retries--) {
               delay(25); // try to find sensor
             }
+          }
+          if (parasite && pinManager.allocatePin(parasitePin, true, PinOwner::UM_Temperature)) {
+            pinMode(parasitePin, OUTPUT);
+            digitalWrite(parasitePin, LOW); // deactivate power (close MOSFET)
+          } else {
+            parasitePin = -1;
           }
         } else {
           if (temperaturePin >= 0) {
@@ -188,6 +224,7 @@ class UsermodTemperature : public Usermod {
         }
         errorCount = 0;
 
+#ifndef WLED_DISABLE_MQTT
         if (WLED_MQTT_CONNECTED) {
           char subuf[64];
           strcpy(subuf, mqttDeviceTopic);
@@ -203,8 +240,28 @@ class UsermodTemperature : public Usermod {
             // publish something else to indicate status?
           }
         }
+#endif
       }
     }
+
+    /**
+     * connected() is called every time the WiFi is (re)connected
+     * Use it to initialize network interfaces
+     */
+    //void connected() {}
+
+#ifndef WLED_DISABLE_MQTT
+    /**
+     * subscribe to MQTT topic if needed
+     */
+    void onMqttConnect(bool sessionPresent) {
+      //(re)subscribe to required topics
+      //char subuf[64];
+      if (mqttDeviceTopic[0] != 0) {
+        publishHomeAssistantAutodiscovery();
+      }
+    }
+#endif
 
     /*
      * API calls te enable data exchange between WLED modules
@@ -229,7 +286,6 @@ class UsermodTemperature : public Usermod {
       if (user.isNull()) user = root.createNestedObject("u");
 
       JsonArray temp = user.createNestedArray(FPSTR(_name));
-      //temp.add(F("Loaded."));
 
       if (temperature <= -100.0f) {
         temp.add(0);
@@ -238,8 +294,13 @@ class UsermodTemperature : public Usermod {
       }
 
       temp.add(degC ? getTemperatureC() : getTemperatureF());
-      if (degC) temp.add(F("°C"));
-      else      temp.add(F("°F"));
+      temp.add(degC ? F("°C") : F("°F"));
+
+      JsonObject sensor = root[F("sensor")];
+      if (sensor.isNull()) sensor = root.createNestedObject(F("sensor"));
+      temp = sensor.createNestedArray(F("temp"));
+      temp.add(degC ? temperature : (float)temperature * 1.8f + 32);
+      temp.add(degC ? F("°C") : F("°F"));
     }
 
     /**
@@ -270,6 +331,7 @@ class UsermodTemperature : public Usermod {
       top["degC"] = degC;  // usermodparam
       top[FPSTR(_readInterval)] = readingInterval / 1000;
       top[FPSTR(_parasite)] = parasite;
+      top[FPSTR(_parasitePin)] = parasitePin;
       DEBUG_PRINTLN(F("Temperature config saved."));
     }
 
@@ -295,6 +357,7 @@ class UsermodTemperature : public Usermod {
       readingInterval   = top[FPSTR(_readInterval)] | readingInterval/1000;
       readingInterval   = min(120,max(10,(int)readingInterval)) * 1000;  // convert to ms
       parasite          = top[FPSTR(_parasite)] | parasite;
+      parasitePin       = top[FPSTR(_parasitePin)] | parasitePin;
 
       if (!initDone) {
         // first run: reading from cfg.json
@@ -309,12 +372,21 @@ class UsermodTemperature : public Usermod {
           delete oneWire;
           pinManager.deallocatePin(temperaturePin, PinOwner::UM_Temperature);
           temperaturePin = newTemperaturePin;
+          pinManager.deallocatePin(parasitePin, PinOwner::UM_Temperature);
           // initialise
           setup();
         }
       }
       // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
-      return !top[FPSTR(_parasite)].isNull();
+      return !top[FPSTR(_parasitePin)].isNull();
+    }
+
+    void appendConfigData()
+    {
+      oappend(SET_F("addInfo('")); oappend(String(FPSTR(_name)).c_str()); oappend(SET_F(":")); oappend(String(FPSTR(_parasite)).c_str());
+      oappend(SET_F("',1,'<i>(if no Vcc connected)</i>');"));  // 0 is field type, 1 is actual field
+      oappend(SET_F("addInfo('")); oappend(String(FPSTR(_name)).c_str()); oappend(SET_F(":")); oappend(String(FPSTR(_parasitePin)).c_str());
+      oappend(SET_F("',1,'<i>(for external MOSFET)</i>');"));  // 0 is field type, 1 is actual field
     }
 
     uint16_t getId()
@@ -328,3 +400,4 @@ const char UsermodTemperature::_name[]         PROGMEM = "Temperature";
 const char UsermodTemperature::_enabled[]      PROGMEM = "enabled";
 const char UsermodTemperature::_readInterval[] PROGMEM = "read-interval-s";
 const char UsermodTemperature::_parasite[]     PROGMEM = "parasite-pwr";
+const char UsermodTemperature::_parasitePin[]  PROGMEM = "parasite-pwr-pin";

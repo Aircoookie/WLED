@@ -48,6 +48,8 @@ const char
     *LedClockStateKeys::command = "cmd",
     *LedClockStateKeys::mode = "mode",
     *LedClockStateKeys::beep = "beep",
+    *LedClockStateKeys::blendingMode = "blen",
+    *LedClockStateKeys::canvasColor = "cvcl",
 
     *LedClockStateKeys::Timer::root = "timer",
     *LedClockStateKeys::Timer::running = "runs",
@@ -234,8 +236,16 @@ static TimeChange timeChangeMillis(unsigned long millis, bool clear = false) {
     return c;
 }
 
-static void outputPixel(uint8_t i, uint8_t r, uint8_t g, uint8_t b) {
-    strip.setPixelColor(i, r, g, b);
+static void outputPixel(uint8_t x, uint8_t y, uint8_t r, uint8_t g, uint8_t b) {
+    strip.setPixelColorXY(x, y, RGBW32(r, g, b, 0));
+}
+
+inline static uint8_t screen(uint8_t a, uint8_t b) {
+    return 255 * (1.0f - ((1.0f - (a / 255.0f)) * (1.0f - (b / 255.0f))));
+}
+
+inline static CRGB lighter(CRGB a, CRGB b) {
+    return (a.r + a.g + a.b) > (b.r + b.g + b.b) ? a : b;
 }
 
 class UsermodLedClock : public Usermod, public LedClockSettings {
@@ -259,6 +269,14 @@ private:
         TimerSet,
 
         NoOp = 99
+    };
+
+    enum BlendingMode {
+        Normal,
+        Lighten,
+        Screen,
+        LinearDodge,
+        LighterColor
     };
 
     SevenSegmentDisplay dHoursT;
@@ -302,14 +320,17 @@ private:
     unsigned long timerLeft = 0;
     unsigned long timerValue = 0;
 
+    BlendingMode blendingMode = LinearDodge;
+    CRGB canvasColor = CRGB(10, 0, 60);
+
 public:
 
     UsermodLedClock():
-        dHoursT(&outputPixel, 2),
-        dHoursO(&outputPixel, 2),
-        sep(&outputPixel),
-        dMinutesT(&outputPixel, 2),
-        dMinutesO(&outputPixel, 2),
+        dHoursT(&outputPixel, LC_LEDS_PER_SEGM),
+        dHoursO(&outputPixel, LC_LEDS_PER_SEGM),
+        sep(&outputPixel, LC_SEP_LEDS),
+        dMinutesT(&outputPixel, LC_LEDS_PER_SEGM),
+        dMinutesO(&outputPixel, LC_LEDS_PER_SEGM),
         display(5, &dHoursT, &dHoursO, &sep, &dMinutesT, &dMinutesO),
         beeper(0, BUZZER_PIN),
         selfTestTimer(10),
@@ -321,49 +342,13 @@ public:
     }
 
     void setup() {
-        // digit 1
         dHoursT.setShowZero(!hideZero);
-        dHoursT.mapSegment(_7SEG_SEG_A, 6, 7);
-        dHoursT.mapSegment(_7SEG_SEG_B, 8, 9);
-        dHoursT.mapSegment(_7SEG_SEG_C, 12, 13);
-        dHoursT.mapSegment(_7SEG_SEG_D, 1, 0);
-        dHoursT.mapSegment(_7SEG_SEG_E, 3, 2);
-        dHoursT.mapSegment(_7SEG_SEG_F, 5, 4);
-        dHoursT.mapSegment(_7SEG_SEG_G, 11, 10);
 
-        // digit 2
-        dHoursO.mapSegment(_7SEG_SEG_A, 20, 21);
-        dHoursO.mapSegment(_7SEG_SEG_B, 22, 23);
-        dHoursO.mapSegment(_7SEG_SEG_C, 26, 27);
-        dHoursO.mapSegment(_7SEG_SEG_D, 15, 14);
-        dHoursO.mapSegment(_7SEG_SEG_E, 17, 16);
-        dHoursO.mapSegment(_7SEG_SEG_F, 19, 18);
-        dHoursO.mapSegment(_7SEG_SEG_G, 25, 24);
-
-        sep.map(2,
-            2, 0, 29,
-            4, 0, 28);
-
-        // digit 3
-        dMinutesT.mapSegment(_7SEG_SEG_A, 36, 37);
-        dMinutesT.mapSegment(_7SEG_SEG_B, 38, 39);
-        dMinutesT.mapSegment(_7SEG_SEG_C, 42, 43);
-        dMinutesT.mapSegment(_7SEG_SEG_D, 31, 30);
-        dMinutesT.mapSegment(_7SEG_SEG_E, 33, 32);
-        dMinutesT.mapSegment(_7SEG_SEG_F, 35, 34);
-        dMinutesT.mapSegment(_7SEG_SEG_G, 41, 40);
-
-        // digit 4
-        dMinutesO.mapSegment(_7SEG_SEG_A, 50, 51);
-        dMinutesO.mapSegment(_7SEG_SEG_B, 52, 53);
-        dMinutesO.mapSegment(_7SEG_SEG_C, 56, 57);
-        dMinutesO.mapSegment(_7SEG_SEG_D, 45, 44);
-        dMinutesO.mapSegment(_7SEG_SEG_E, 47, 46);
-        dMinutesO.mapSegment(_7SEG_SEG_F, 49, 48);
-        dMinutesO.mapSegment(_7SEG_SEG_G, 55, 54);
+        // addLed must be called LC_SEP_LEDS times
+        sep.addLed(2, 0);
+        sep.addLed(4, 0);
 
         display.setColor(false, CRGB::Black);
-        display.setColor(true, CRGB::Red);
         display.setMode(LedBasedDisplayMode::SET_OFF_LEDS);
 
         pinMode(BRIGHTNESS_PIN, INPUT);
@@ -527,7 +512,7 @@ public:
         } else {
             if (selfTestTimer.fire()) {
                 selfTestIdx++;
-                if (selfTestIdx >= strip.getLengthTotal()) {
+                if (selfTestIdx >= busses.getTotalLength()) {
                     selfTestIdx = 0;
                     selfTestCycle++;
                     if (selfTestCycle >= selfTestColorCount) {
@@ -553,6 +538,14 @@ public:
 
     void addToJsonState(JsonObject& root) {
         JsonObject state = root.createNestedObject(LedClockStateKeys::root);
+
+        state[LedClockStateKeys::blendingMode] = blendingMode;
+
+        auto cc = state.createNestedArray(LedClockStateKeys::canvasColor);
+        cc.add(canvasColor.r);
+        cc.add(canvasColor.g);
+        cc.add(canvasColor.b);
+
         state[LedClockStateKeys::mode] = mode;
         switch (mode) {
         case Mode::StopwatchMode: {
@@ -619,6 +612,14 @@ public:
             uint8_t b = state[LedClockStateKeys::beep] | 255;
             if (b < beepCount) {
                 beeper.play(beeps[b]);
+            }
+
+            blendingMode = state[LedClockStateKeys::blendingMode] | blendingMode;
+
+            if (state[LedClockStateKeys::canvasColor]) {
+                canvasColor.r = state[LedClockStateKeys::canvasColor][0];
+                canvasColor.g = state[LedClockStateKeys::canvasColor][1];
+                canvasColor.b = state[LedClockStateKeys::canvasColor][2];
             }
 
             Command c = state[LedClockStateKeys::command] | Command::NoOp;
@@ -711,6 +712,31 @@ public:
             }
             default:
                 break;
+            }
+        }
+    }
+
+    void addToPreset(JsonObject& root) {
+        JsonObject state = root.createNestedObject(LedClockStateKeys::root);
+
+        state[LedClockStateKeys::blendingMode] = blendingMode;
+
+        auto cc = state.createNestedArray(LedClockStateKeys::canvasColor);
+        cc.add(canvasColor.r);
+        cc.add(canvasColor.g);
+        cc.add(canvasColor.b);
+    }
+
+    void readFromPreset(JsonObject& root) {
+        JsonObject state = root[LedClockStateKeys::root];
+
+        if (!state.isNull()) {
+            blendingMode = state[LedClockStateKeys::blendingMode] | blendingMode;
+
+            if (state[LedClockStateKeys::canvasColor]) {
+                canvasColor.r = state[LedClockStateKeys::canvasColor][0];
+                canvasColor.g = state[LedClockStateKeys::canvasColor][1];
+                canvasColor.b = state[LedClockStateKeys::canvasColor][2];
             }
         }
     }
@@ -819,20 +845,50 @@ public:
     void handleOverlayDraw() {
         if (selfTestDone) {
             backupStrip();
+
+            if (canvasColor && blendingMode > BlendingMode::Normal) { 
+                for (uint8_t i = 0, n = busses.getTotalLength(); i < n; ++i) {
+                    CRGB rgb = CRGB(busses.getPixelColor(i));
+                    switch (blendingMode) {
+                    case Lighten:
+                        rgb.r = max(rgb.r, canvasColor.r);
+                        rgb.g = max(rgb.g, canvasColor.g);
+                        rgb.b = max(rgb.b, canvasColor.b);
+                        break;
+                    case Screen:
+                        rgb.r = screen(rgb.r, canvasColor.r);
+                        rgb.g = screen(rgb.g, canvasColor.g);
+                        rgb.b = screen(rgb.b, canvasColor.b);
+                        break;
+                    case LinearDodge:
+                        rgb += canvasColor;
+                        break;
+                    case LighterColor:
+                        rgb = lighter(rgb, canvasColor);
+                        break;
+                    case Normal:
+                    default:
+                        break;
+                    }
+                    busses.setPixelColor(i, RGBW32(rgb.r, rgb.g, rgb.b, 0));
+                }
+            }
+
             display.update();
+
             if (autoBrightness && bri > 0 && bri != br) {
                 bri = br;
                 stateUpdated(CALL_MODE_DIRECT_CHANGE);
             }
         } else {
-            for (uint8_t i = 0, n = strip.getLengthTotal(); i < n; ++i) {
+            for (uint8_t i = 0, n = busses.getTotalLength(); i < n; ++i) {
                 CRGB color = i <= selfTestIdx
                     ? selfTestColors[selfTestCycle]
                     : (selfTestCycle > 0
                         ? selfTestColors[selfTestCycle - 1]
                         : CRGB::Black);
 
-                strip.setPixelColor(i, color.r, color.g, color.b);
+                busses.setPixelColor(i, RGBW32(color.r, color.g, color.b, 0));
             }
         }
     }
@@ -842,19 +898,19 @@ public:
     }
 
     void backupStrip() {
-        uint16_t length = strip.getLengthTotal();
+        uint16_t length = busses.getTotalLength();
         if (backupLength != length) {
             backupLength = length;
             backup = (uint32_t *) realloc(backup, sizeof(uint32_t) * length);
         }
         for (int i = 0; i < length; ++i) {
-            backup[i] = strip.getPixelColor(i);
+            backup[i] = busses.getPixelColor(i);
         }
     }
 
     void rollbackStrip() {
-        for (int i = 0, n = min(strip.getLengthTotal(), backupLength); i < n; ++i) {
-            strip.setPixelColor(i, backup[i]);
+        for (int i = 0, n = min(busses.getTotalLength(), backupLength); i < n; ++i) {
+            busses.setPixelColor(i, backup[i]);
         }
     }
 

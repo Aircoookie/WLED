@@ -77,14 +77,15 @@
 #define _7SEG_SYM_DASH        0b01000000
 #define _7SEG_SYM_UNDERSCORE  0b00001000
 
-#define _7SEG_IDX(seg, i) (seg * _ledsPerSegment + i)
+#define _7SEG_MASK(seg) (0b00000001 << seg)
+
+#define _7SEG_IDX(seg, i) ((seg) * _ledsPerSegment + (i))
 
 #define _7SEG_MODE(mode, state) (mode == LedBasedDisplayMode::SET_ALL_LEDS || (state && mode == LedBasedDisplayMode::SET_ON_LEDS) || (!state && mode == LedBasedDisplayMode::SET_OFF_LEDS))
 
-#define _7SEG_INDEX_UNDEF 255
-#define _7SEG_COORD_UNDEF 255
+#define _7SEG_UNDEF 255
 
-typedef void (*LedBasedDisplayOutput)(uint8_t, uint8_t, uint8_t, uint8_t);
+typedef void (*LedBasedDisplayOutput)(uint8_t x, uint8_t y, uint8_t r, uint8_t g, uint8_t b);
 
 enum LedBasedDisplayMode {
 
@@ -92,16 +93,6 @@ enum LedBasedDisplayMode {
     SET_OFF_LEDS,
     SET_ON_LEDS,
     SET_ALL_LEDS
-};
-
-struct Coords {
-    uint8_t row;
-    uint8_t col;
-    Coords(uint8_t _row, uint8_t _col) : row(_row), col(_col) {}
-    Coords() : row(_7SEG_COORD_UNDEF), col(_7SEG_COORD_UNDEF) {}
-    bool isValid() {
-        return row != _7SEG_COORD_UNDEF && col != _7SEG_COORD_UNDEF;
-    }
 };
 
 class LedBasedDisplay {
@@ -112,13 +103,10 @@ class LedBasedDisplay {
         virtual uint8_t rowCount() = 0;
         virtual uint8_t columnCount() = 0;
 
-        virtual uint8_t indexOfCoords(uint8_t row, uint8_t column) = 0;
-        virtual Coords coordsOfIndex(uint16_t index) = 0;
-
         virtual CRGB* getLedColor(uint8_t row, uint8_t column, bool state) = 0;
         virtual void setLedColor(uint8_t row, uint8_t column, bool state, CRGB color) = 0;
 
-        virtual void update() = 0;
+        virtual void update(uint8_t rowOffset = 0, uint8_t columnOffset = 0) = 0;
 
         virtual void setMode(LedBasedDisplayMode mode) = 0;
 
@@ -137,17 +125,15 @@ class SevenSegmentDisplay : public LedBasedDisplay {
         virtual uint8_t rowCount() override;
         virtual uint8_t columnCount() override;
 
-        virtual uint8_t indexOfCoords(uint8_t row, uint8_t column) override;
-        virtual Coords coordsOfIndex(uint16_t index) override;
-
         virtual CRGB* getLedColor(uint8_t row, uint8_t column, bool state) override;
         virtual void setLedColor(uint8_t row, uint8_t column, bool state, CRGB color) override;
 
-        virtual void update() override;
+        virtual void update(uint8_t rowOffset = 0, uint8_t columnOffset = 0) override;
 
         virtual void setMode(LedBasedDisplayMode mode) override;
 
-        void mapSegment(uint8_t seg, ...);
+        uint8_t segmentOfCoords(uint8_t row, uint8_t column);
+
         void setSymbol(uint8_t symbol);
         void setDigit(uint8_t digit);
         void setCharacter(char charcter);
@@ -160,48 +146,44 @@ class SevenSegmentDisplay : public LedBasedDisplay {
 
         uint8_t _ledsPerSegment;
         uint8_t _value;
-        uint8_t* _indices;
 
         boolean _showZero;
 
         LedBasedDisplayMode _mode;
 
-        uint8_t internalIndex(uint8_t row, uint8_t column);
+        uint8_t _internalIndex(uint8_t segment, uint8_t row, uint8_t column);
 };
 
 class SeparatorDisplay : public LedBasedDisplay {
 
     public:
-        SeparatorDisplay(LedBasedDisplayOutput output);
+        SeparatorDisplay(LedBasedDisplayOutput output, uint8_t ledCount);
 
         virtual ~SeparatorDisplay() override;
 
         virtual uint8_t rowCount() override;
         virtual uint8_t columnCount() override;
 
-        virtual uint8_t indexOfCoords(uint8_t row, uint8_t column) override;
-        virtual Coords coordsOfIndex(uint16_t index) override;
-
         virtual CRGB* getLedColor(uint8_t row, uint8_t column, bool state) override;
         virtual void setLedColor(uint8_t row, uint8_t column, bool state, CRGB color) override;
 
-        virtual void update() override;
+        virtual void update(uint8_t rowOffset = 0, uint8_t columnOffset = 0) override;
 
         virtual void setMode(LedBasedDisplayMode mode) override;
 
-        void map(uint8_t ledCount, ...);
+        void addLed(uint8_t row, uint8_t column);
         void setState(bool state);
 
     private:
         struct _Mapping {
             uint8_t row;
             uint8_t column;
-            uint8_t index;
             CRGB offColor;
             CRGB onColor;
         };
 
         LedBasedDisplayOutput _output;
+        uint8_t _maxLeds;
         uint8_t _ledCount;
         struct _Mapping* _mappings;
         bool _state;
@@ -218,13 +200,10 @@ class LedBasedRowDisplay : public LedBasedDisplay {
         virtual uint8_t rowCount() override;
         virtual uint8_t columnCount() override;
 
-        virtual uint8_t indexOfCoords(uint8_t row, uint8_t column) override;
-        virtual Coords coordsOfIndex(uint16_t index) override;
-
         virtual CRGB* getLedColor(uint8_t row, uint8_t column, bool state) override;
         virtual void setLedColor(uint8_t row, uint8_t column, bool state, CRGB color) override;
 
-        virtual void update() override;
+        virtual void update(uint8_t rowOffset = 0, uint8_t columnOffset = 0) override;
 
         virtual void setMode(LedBasedDisplayMode mode) override;
 

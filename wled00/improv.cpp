@@ -99,7 +99,7 @@ void handleImprovPacket() {
               uint8_t improvState = 0x02; //authorized
               if (WLED_WIFI_CONFIGURED) improvState = 0x03; //provisioning
               if (Network.isConnected()) improvState = 0x04; //provisioned
-              sendImprovStateResponse(improvState, false); 
+              sendImprovStateResponse(improvState, false);
               if (improvState == 0x04) sendImprovRPCResponse(ImprovRPCType::Request_State);
               break;
             }
@@ -166,7 +166,7 @@ void sendImprovRPCResponse(byte commandId) {
     out[11] = len;
     out[10] = 1 + len;
     out[8] = 3 + len; //RPC command type + data len + url len + url
-    packetLen = 13 + len; 
+    packetLen = 13 + len;
   }
 
   uint8_t checksum = 0;
@@ -189,7 +189,7 @@ void sendImprovInfoResponse() {
   out[11] = 4; //Firmware len ("WLED")
   out[12] = 'W'; out[13] = 'L'; out[14] = 'E'; out[15] = 'D';
   uint8_t lengthSum = 17;
-  uint8_t vlen = sprintf_P(out+lengthSum,PSTR("0.13.3/%i"),VERSION);
+  uint8_t vlen = sprintf_P(out+lengthSum,PSTR("0.14.0-b2/%i"),VERSION);
   out[16] = vlen; lengthSum += vlen;
   uint8_t hlen = 7;
   #ifdef ESP8266

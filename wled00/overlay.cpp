@@ -18,7 +18,7 @@ void _overlayAnalogClock()
   int hourPixel = floor(analogClock12pixel + overlaySize*hourP);
   if (hourPixel > overlayMax) hourPixel = overlayMin -1 + hourPixel - overlayMax;
   int minutePixel = floor(analogClock12pixel + overlaySize*minuteP);
-  if (minutePixel > overlayMax) minutePixel = overlayMin -1 + minutePixel - overlayMax; 
+  if (minutePixel > overlayMax) minutePixel = overlayMin -1 + minutePixel - overlayMax;
   int secondPixel = floor(analogClock12pixel + overlaySize*secondP);
   if (secondPixel > overlayMax) secondPixel = overlayMin -1 + secondPixel - overlayMax;
   if (analogClockSecondsTrail)

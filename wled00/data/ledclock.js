@@ -23,6 +23,9 @@ LC = {
     stateKeyTimerLeft: 'left',
     stateKeyTimerValue: 'val',
 
+    stateKeyBlendingMode: 'blen',
+    stateKeyCanvasColor: 'cvcl',
+
     commands: {
         stopwatchStart: 0,
         stopwatchPause: 1,
@@ -49,6 +52,11 @@ LC = {
     timerPaused: false,
     timerLeft: 0,
     timerValue: 0,
+
+    blendingMode: 0,
+    canvasColor: [0, 0, 0],
+
+    canvasColorPicker: null,
 
     issueCommand: function(cmd, params = {}) {
         requestJson({
@@ -80,7 +88,9 @@ LC = {
 
     readState: function(s, command = false) {
         var root = s[LC.stateKey];
+
         LC.mode = root[LC.stateKeyMode];
+
         if (root[LC.stateKeyStopwatch] != undefined) {
             var sw = root[LC.stateKeyStopwatch];
             LC.stopwatchRunning = sw[LC.stateKeyStopwatchRunning];
@@ -97,6 +107,7 @@ LC = {
             LC.stopwatchLapTimeNr = 0;
             LC.stopwatchLastLapTime = 0;
         }
+
         if (root[LC.stateKeyTimer] != undefined) {
             var tm = root[LC.stateKeyTimer];
             LC.timerRunning = tm[LC.stateKeyTimerRunning];
@@ -109,6 +120,9 @@ LC = {
             LC.timerLeft = 0;
             LC.timerValue = 0;
         }
+
+        LC.blendingMode = root[LC.stateKeyBlendingMode];
+        LC.canvasColor = root[LC.stateKeyCanvasColor];
     },
 
     formatMillis(millis) {
@@ -191,6 +205,13 @@ LC = {
         d.querySelector('#lc-timer-m').value = `${Math.trunc(val / 60000).toFixed(0)}`;
         val %= 60000;
         d.querySelector('#lc-timer-s').value = `${Math.trunc(val / 1000).toFixed(0)}`;
+
+        d.querySelector('#lcblendw select').value = LC.blendingMode;
+        LC.canvasColorPicker.color.rgb = {
+            r: LC.canvasColor[0],
+            g: LC.canvasColor[1],
+            b: LC.canvasColor[2]
+        };
     },
 
     setMode: function(mode) {
@@ -253,8 +274,54 @@ LC = {
         });
     },
 
+    initBlendingModeSelect: function() {
+        var blendingModeSelect = d.querySelector('#lcblendw select');
+        blendingModeSelect.addEventListener('change', () => {
+            requestJson({
+                [LC.stateKey]: {
+                    [LC.stateKeyBlendingMode]: parseInt(blendingModeSelect.value)
+                }
+            });
+        });
+    },
+
+    initCanvasColorPicker: function() {
+        LC.canvasColorPicker = new iro.ColorPicker("#lcblendcol", {
+            width: 250,
+            color: "rgb(255, 0, 0)",
+            borderWidth: 1,
+            borderColor: "#444",
+            layout: [{
+                component: iro.ui.Slider,
+                options: {
+                    sliderType: 'hue'
+                }
+            }, {
+                component: iro.ui.Slider,
+                options: {
+                    sliderType: 'saturation'
+                }
+            }, {
+                component: iro.ui.Slider,
+                options: {
+                    sliderType: 'value'
+                }
+            }]
+        });
+
+        LC.canvasColorPicker.on('input:end', (c) => {
+            requestJson({
+                [LC.stateKey]: {
+                    [LC.stateKeyCanvasColor]: [c.rgb.r, c.rgb.g, c.rgb.b]
+                }
+            });
+        });
+    },
+
     onLoad: function() {
         LC.initTimer();
+        LC.initBlendingModeSelect();
+        LC.initCanvasColorPicker();
     }
 };
 

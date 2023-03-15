@@ -101,6 +101,7 @@ void userLoop() {
   if (temptimer - lastMeasure > 60000) 
   {
     lastMeasure = temptimer;    
+#ifndef WLED_DISABLE_MQTT
 //Check if MQTT Connected, otherwise it will crash the 8266
     if (mqtt != nullptr)
     {
@@ -116,6 +117,7 @@ void userLoop() {
         t += "/temperature";
         mqtt->publish(t.c_str(), 0, true, String(board_temperature).c_str());
     }
+  #endif
   }
 
   // Check if we time interval for redrawing passes.
@@ -185,58 +187,14 @@ void userLoop() {
 
   // Third row with mode name
   u8x8.setCursor(2, 2);
-  uint8_t qComma = 0;
-  bool insideQuotes = false;
-  uint8_t printedChars = 0;
-  char singleJsonSymbol;
+  char lineBuffer[17];
+  extractModeName(knownMode, JSON_mode_names, lineBuffer, 16);
+  u8x8.print(lineBuffer);
 
-  // Find the mode name in JSON
-  for (size_t i = 0; i < strlen_P(JSON_mode_names); i++) {
-    singleJsonSymbol = pgm_read_byte_near(JSON_mode_names + i);
-    switch (singleJsonSymbol) {
-    case '"':
-      insideQuotes = !insideQuotes;
-      break;
-    case '[':
-    case ']':
-      break;
-    case ',':
-      qComma++;
-    default:
-      if (!insideQuotes || (qComma != knownMode))
-        break;
-      u8x8.print(singleJsonSymbol);
-      printedChars++;
-    }
-    if ((qComma > knownMode) || (printedChars > u8x8.getCols() - 2))
-      break;
-  }
   // Fourth row with palette name
   u8x8.setCursor(2, 3);
-  qComma = 0;
-  insideQuotes = false;
-  printedChars = 0;
-  // Looking for palette name in JSON.
-  for (size_t i = 0; i < strlen_P(JSON_palette_names); i++) {
-    singleJsonSymbol = pgm_read_byte_near(JSON_palette_names + i);
-    switch (singleJsonSymbol) {
-    case '"':
-      insideQuotes = !insideQuotes;
-      break;
-    case '[':
-    case ']':
-      break;
-    case ',':
-      qComma++;
-    default:
-      if (!insideQuotes || (qComma != knownPalette))
-        break;
-      u8x8.print(singleJsonSymbol);
-      printedChars++;
-    }
-    if ((qComma > knownMode) || (printedChars > u8x8.getCols() - 2))
-      break;
-  }
+  extractModeName(knownPalette, JSON_palette_names, lineBuffer, 16);
+  u8x8.print(lineBuffer);
 
   u8x8.setFont(u8x8_font_open_iconic_embedded_1x1);
   u8x8.drawGlyph(0, 0, 80); // wifi icon

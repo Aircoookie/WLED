@@ -8,7 +8,7 @@ void setValuesFromMainSeg()          { setValuesFromSegment(strip.getMainSegment
 void setValuesFromFirstSelectedSeg() { setValuesFromSegment(strip.getFirstSelectedSegId()); }
 void setValuesFromSegment(uint8_t s)
 {
-  WS2812FX::Segment& seg = strip.getSegment(s);
+  Segment& seg = strip.getSegment(s);
   col[0] = R(seg.colors[0]);
   col[1] = G(seg.colors[0]);
   col[2] = B(seg.colors[0]);
@@ -30,9 +30,9 @@ void applyValuesToSelectedSegs()
 {
   // copy of first selected segment to tell if value was updated
   uint8_t firstSel = strip.getFirstSelectedSegId();
-  WS2812FX::Segment selsegPrev = strip.getSegment(firstSel);
-  for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
-    WS2812FX::Segment& seg = strip.getSegment(i);
+  Segment selsegPrev = strip.getSegment(firstSel);
+  for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
+    Segment& seg = strip.getSegment(i);
     if (i != firstSel && (!seg.isActive() || !seg.isSelected())) continue;
 
     if (effectSpeed     != selsegPrev.speed)     {seg.speed     = effectSpeed;     stateChanged = true;}
@@ -41,8 +41,8 @@ void applyValuesToSelectedSegs()
     if (effectCurrent   != selsegPrev.mode)      {strip.setMode(i, effectCurrent); stateChanged = true;}
     uint32_t col0 = RGBW32(   col[0],    col[1],    col[2],    col[3]);
     uint32_t col1 = RGBW32(colSec[0], colSec[1], colSec[2], colSec[3]);
-    if (col0 != selsegPrev.colors[0])            {seg.setColor(0, col0, i);        stateChanged = true;}
-    if (col1 != selsegPrev.colors[1])            {seg.setColor(1, col1, i);        stateChanged = true;}
+    if (col0 != selsegPrev.colors[0])            {seg.setColor(0, col0);           stateChanged = true;}
+    if (col1 != selsegPrev.colors[1])            {seg.setColor(1, col1);           stateChanged = true;}
   }
 }
 
@@ -63,6 +63,7 @@ void toggleOnOff()
     briLast = bri;
     bri = 0;
   }
+  stateChanged = true;
 }
 
 
@@ -101,19 +102,19 @@ void stateUpdated(byte callMode) {
 
   if (bri != briOld || stateChanged) {
     if (stateChanged) currentPreset = 0; //something changed, so we are no longer in the preset
-        
+
     if (callMode != CALL_MODE_NOTIFICATION && callMode != CALL_MODE_NO_NOTIFY) notify(callMode);
-    
-    //set flag to update blynk, ws and mqtt
+
+    //set flag to update ws and mqtt
     interfaceUpdateCallMode = callMode;
     stateChanged = false;
   } else {
     if (nightlightActive && !nightlightActiveOld && callMode != CALL_MODE_NOTIFICATION && callMode != CALL_MODE_NO_NOTIFY) {
-      notify(CALL_MODE_NIGHTLIGHT); 
+      notify(CALL_MODE_NIGHTLIGHT);
       interfaceUpdateCallMode = CALL_MODE_NIGHTLIGHT;
     }
   }
-  
+
   if (callMode != CALL_MODE_NO_NOTIFY && nightlightActive && (nightlightMode == NL_MODE_FADE || nightlightMode == NL_MODE_COLORFADE)) {
     briNlT = bri;
     nightlightDelayMs -= (millis() - nightlightStartTime);
@@ -127,10 +128,13 @@ void stateUpdated(byte callMode) {
 
   //deactivate nightlight if target brightness is reached
   if (bri == nightlightTargetBri && callMode != CALL_MODE_NO_NOTIFY && nightlightMode != NL_MODE_SUN) nightlightActive = false;
-  
+
+  // notify usermods of state change
+  usermods.onStateChange(callMode);
+
   if (fadeTransition) {
     //set correct delay if not using notification delay
-    if (callMode != CALL_MODE_NOTIFICATION && !jsonTransitionOnce) transitionDelayTemp = transitionDelay;
+    if (callMode != CALL_MODE_NOTIFICATION && !jsonTransitionOnce) transitionDelayTemp = transitionDelay; // load actual transition duration
     jsonTransitionOnce = false;
     strip.setTransition(transitionDelayTemp);
     if (transitionDelayTemp == 0) {
@@ -143,7 +147,7 @@ void stateUpdated(byte callMode) {
       briOld = briT;
       tperLast = 0;
     }
-    strip.setTransitionMode(true);
+    strip.setTransitionMode(true); // force all segments to transition mode
     transitionActive = true;
     transitionStartTime = millis();
   } else {
@@ -159,31 +163,26 @@ void updateInterfaces(uint8_t callMode)
   sendDataWs();
   lastInterfaceUpdate = millis();
   if (callMode == CALL_MODE_WS_SEND) return;
-  
+
   #ifndef WLED_DISABLE_ALEXA
   if (espalexaDevice != nullptr && callMode != CALL_MODE_ALEXA) {
     espalexaDevice->setValue(bri);
     espalexaDevice->setColor(col[0], col[1], col[2]);
   }
   #endif
-  #ifndef WLED_DISABLE_BLYNK
-  if (callMode != CALL_MODE_BLYNK && 
-      callMode != CALL_MODE_NO_NOTIFY) updateBlynk();
-  #endif
   doPublishMqtt = true;
+  interfaceUpdateCallMode = 0; //disable
 }
 
 
 void handleTransitions()
 {
   //handle still pending interface update
-  if (interfaceUpdateCallMode && millis() - lastInterfaceUpdate > INTERFACE_UPDATE_COOLDOWN)
-  {
-    updateInterfaces(interfaceUpdateCallMode);
-    interfaceUpdateCallMode = 0; //disable
-  }
+  if (interfaceUpdateCallMode && millis() - lastInterfaceUpdate > INTERFACE_UPDATE_COOLDOWN) updateInterfaces(interfaceUpdateCallMode);
+#ifndef WLED_DISABLE_MQTT
   if (doPublishMqtt) publishMqtt();
-  
+#endif
+
   if (transitionActive && transitionDelayTemp > 0)
   {
     float tper = (millis() - transitionStartTime)/(float)transitionDelayTemp;
@@ -197,14 +196,14 @@ void handleTransitions()
     }
     if (tper - tperLast < 0.004) return;
     tperLast = tper;
-    briT    = briOld   +((bri    - briOld   )*tper);
-    
+    briT = briOld + ((bri - briOld) * tper);
+
     applyBri();
   }
 }
 
 
-//legacy method, applies values from col, effectCurrent, ... to selected segments
+// legacy method, applies values from col, effectCurrent, ... to selected segments
 void colorUpdated(byte callMode){
   applyValuesToSelectedSegs();
   stateUpdated(callMode);
@@ -213,13 +212,12 @@ void colorUpdated(byte callMode){
 
 void handleNightlight()
 {
-/*
   static unsigned long lastNlUpdate;
   unsigned long now = millis();
-  if (now < 100 && lastNlUpdate > 0) lastNlUpdate = 0; //take care of millis() rollover
-  if (now - lastNlUpdate < 100) return; //allow only 10 NL updates per second
+  if (now < 100 && lastNlUpdate > 0) lastNlUpdate = 0; // take care of millis() rollover
+  if (now - lastNlUpdate < 100) return; // allow only 10 NL updates per second
   lastNlUpdate = now;
-*/
+
   if (nightlightActive)
   {
     if (!nightlightActiveOld) //init
@@ -276,9 +274,7 @@ void handleNightlight()
           applyFinalBri();
         }
       }
-      #ifndef WLED_DISABLE_BLYNK
-      updateBlynk();
-      #endif
+
       if (macroNl > 0)
         applyPreset(macroNl);
       nightlightActiveOld = false;

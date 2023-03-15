@@ -78,3 +78,16 @@ input[type=range]:active + .sliderbubble {
 	display: inline-block;
 	vertical-align: middle;
 }
+
+#brctrl {
+	transition: opacity 0.4s;
+}
+
+.beeptable {
+	display: grid;
+	grid-template-columns: max-content max-content;
+	justify-items: end;
+	row-gap: .2rem;
+	column-gap: .3rem;
+	justify-content: center;
+}
