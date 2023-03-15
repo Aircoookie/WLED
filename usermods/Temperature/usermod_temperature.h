@@ -45,13 +45,9 @@ class UsermodTemperature : public Usermod {
     // temperature if flashed to a board without a sensor attached
     byte sensorFound;
 
-    bool enabled = true;
-
     bool HApublished = false;
 
     // strings to reduce flash memory usage (used more than twice)
-    static const char _name[];
-    static const char _enabled[];
     static const char _readInterval[];
     static const char _parasite[];
     static const char _parasitePin[];
@@ -163,6 +159,7 @@ class UsermodTemperature : public Usermod {
 #endif
 
   public:
+    UsermodTemperature(const char *name):Usermod(name) {} //WLEDMM: this shouldn't be necessary (passthrough of constructor), maybe because Usermod is an abstract class
 
     void setup() {
       int retries = 10;
@@ -327,7 +324,7 @@ class UsermodTemperature : public Usermod {
     void addToConfig(JsonObject &root) {
       // we add JSON object: {"Temperature": {"pin": 0, "degC": true}}
       JsonObject top = root.createNestedObject(FPSTR(_name)); // usermodname
-      top[FPSTR(_enabled)] = enabled;
+      top[FPSTR("enabled")] = enabled;
       top["pin"]  = temperaturePin;     // usermodparam
       top["degC"] = degC;  // usermodparam
       top[FPSTR(_readInterval)] = readingInterval / 1000;
@@ -352,7 +349,7 @@ class UsermodTemperature : public Usermod {
         return false;
       }
 
-      enabled           = top[FPSTR(_enabled)] | enabled;
+      enabled           = top[FPSTR("enabled")] | enabled;
       newTemperaturePin = top["pin"] | newTemperaturePin;
       degC              = top["degC"] | degC;
       readingInterval   = top[FPSTR(_readInterval)] | readingInterval/1000;
@@ -398,8 +395,6 @@ class UsermodTemperature : public Usermod {
 };
 
 // strings to reduce flash memory usage (used more than twice)
-const char UsermodTemperature::_name[]         PROGMEM = "Temperature";
-const char UsermodTemperature::_enabled[]      PROGMEM = "enabled";
 const char UsermodTemperature::_readInterval[] PROGMEM = "read-interval-s";
 const char UsermodTemperature::_parasite[]     PROGMEM = "parasite-pwr";
 const char UsermodTemperature::_parasitePin[]  PROGMEM = "parasite-pwr-pin";

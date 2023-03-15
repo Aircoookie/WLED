@@ -261,8 +261,10 @@ const unsigned int um_data_size = sizeof(um_data_t);  // 12 bytes
 class Usermod {
   protected:
     um_data_t *um_data; // um_data should be allocated using new in (derived) Usermod's setup() or constructor
+    bool enabled = false; //WLEDMM
+    const char *_name; //WLEDMM
   public:
-    Usermod() { um_data = nullptr; }
+    Usermod(const char *name = nullptr) { um_data = nullptr; _name = name;}
     virtual ~Usermod() { if (um_data) delete um_data; }
     virtual void setup() = 0; // pure virtual, has to be overriden
     virtual void loop() = 0;  // pure virtual, has to be overriden

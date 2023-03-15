@@ -332,6 +332,15 @@
                     }
                 }
                 if (userMod != null && urows==="") urows = "Usermods configuration not found.<br>Press <i>Save</i> to initialize defaults.";
+				if (userMod == null) {
+					urows += `<hr>`;
+					urows += `<table>`;
+					urows += `<tr><th>Usermod</th><th>Enabled</th></tr>`
+					for (const [k,o] of Object.entries(umCfg)) {
+						urows += `<tr><td>${k}</td><td>${o.enabled}</td></tr>`;
+					}
+					urows += `</table>`;
+				}
             }
 
             gId("um").innerHTML = urows;
@@ -361,6 +370,7 @@
 		<span id="lserr" style="color:red; display:none">&#9888; Could not load configuration.</span>
 		</div>
 		<!-- WLEDMM: no gpios here as it is generated -->
+		<hr>
 		<div id="um">Loading settings...</div>
 		<div name="errorMessage"></div>
 		<hr><button type="button" onclick="B()">Back</button><button type="submit">Save</button>

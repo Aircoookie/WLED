@@ -93,7 +93,6 @@ void IRAM_ATTR dmpDataReady() {
 class MPU6050Driver : public Usermod {
   private:
     MPU6050 mpu;
-    bool enabled = true;
     bool initDone = false;
     unsigned long lastUMRun = millis();
 
@@ -105,11 +104,11 @@ class MPU6050Driver : public Usermod {
     uint8_t fifoBuffer[64]; // FIFO storage buffer
 
     // strings to reduce flash memory usage (used more than twice)
-    static const char _name[];
-    static const char _enabled[];
     static const char _INT_pin[];
 
   public:
+    MPU6050Driver(const char *name):Usermod(name) {} //WLEDMM: this shouldn't be necessary (passthrough of constructor), maybe because Usermod is an abstract class
+
     bool dmpReady = false;  // set true if DMP init was successful  // WLEDMM expose this info in public interface
     // orientation/motion vars
     Quaternion qat;         // [w, x, y, z]         quaternion container
@@ -128,7 +127,7 @@ class MPU6050Driver : public Usermod {
     #endif
 
     void setup() {
-    // WLEDMM begin
+      // WLEDMM begin
       if (!enabled) {
         dmpReady = false;
         return;
@@ -358,7 +357,7 @@ class MPU6050Driver : public Usermod {
     void addToConfig(JsonObject& root)
     {
       JsonObject top = root.createNestedObject(FPSTR(_name));
-      top[FPSTR(_enabled)] = enabled;
+      top[FPSTR("enabled")] = enabled;
       //JsonObject interruptPin = top.createNestedObject(FPSTR(_INT_pin));
       //interruptPin["pin"] = INTERRUPT_PIN;
       DEBUG_PRINTLN(F("MPU6050 IMU config saved."));
@@ -390,7 +389,7 @@ class MPU6050Driver : public Usermod {
       }
 
       bool configComplete = !top.isNull();
-      configComplete &= getJsonValue(top[FPSTR(_enabled)], enabled);
+      configComplete &= getJsonValue(top[FPSTR("enabled")], enabled);
       //configComplete &= getJsonValue(top[FPSTR(_INT_pin)]["pin"], INTERRUPT_PIN);
 
       DEBUG_PRINT(FPSTR(_name));
@@ -416,6 +415,4 @@ class MPU6050Driver : public Usermod {
 };
 
 // strings to reduce flash memory usage (used more than twice)
-const char MPU6050Driver::_name[]       PROGMEM = "mpu6050-IMU";
-const char MPU6050Driver::_enabled[]    PROGMEM = "enabled";
 const char MPU6050Driver::_INT_pin[]     PROGMEM = "interrupt_pin";

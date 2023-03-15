@@ -219,7 +219,7 @@ void registerUsermods()
   #endif
 
   #ifdef USERMOD_DALLASTEMPERATURE
-  usermods.add(new UsermodTemperature());
+  usermods.add(new UsermodTemperature("Temperature"));
   #endif
 
   #ifdef USERMOD_SN_PHOTORESISTOR
@@ -385,7 +385,7 @@ void registerUsermods()
 
 
   #ifdef USERMOD_MPU6050_IMU
-  usermods.add(new MPU6050Driver());
+  usermods.add(new MPU6050Driver("mpu6050-IMU"));
   #endif
 
   #ifdef USERMOD_GAMES
