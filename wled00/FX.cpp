@@ -7444,7 +7444,7 @@ uint16_t mode_lc2sofix() {
   return FRAMETIME;
 }
 
-static const char _data_FX_MODE_LC_2SOFIX[] PROGMEM = "2sofix";
+static const char _data_FX_MODE_LC_2SOFIX[] PROGMEM = "2sofix@Speed,Scale;;!;2";
 
 
 /*
@@ -7519,7 +7519,7 @@ uint16_t mode_lcVortex() {
   return FRAMETIME;
 }
 
-static const char _data_FX_MODE_LC_VORTEX[] PROGMEM = "Vortex";
+static const char _data_FX_MODE_LC_VORTEX[] PROGMEM = "Vortex@Speed,Strength;;!;2";
 
 
 /*
@@ -7580,7 +7580,7 @@ uint16_t mode_lcConcentric() {
   return FRAMETIME;
 }
 
-static const char _data_FX_LC_CONCENTRIC[] PROGMEM = "Concentric";
+static const char _data_FX_LC_CONCENTRIC[] PROGMEM = "Concentric@Speed,Scale;;!;2";
 
 
 //////////////////////////////////////////////////////////////////////////////////////////
