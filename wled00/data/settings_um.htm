@@ -333,13 +333,15 @@
                 }
                 if (userMod != null && urows==="") urows = "Usermods configuration not found.<br>Press <i>Save</i> to initialize defaults.";
 				if (userMod == null) {
-					urows += `<hr>`;
-					urows += `<table>`;
+					urows += `<hr> `;
+					urows += `<div style="margin: auto;">`;
+					urows += `<table style="margin-left:auto; margin-right:auto;">`;
 					urows += `<tr><th>Usermod</th><th>Enabled</th></tr>`
 					for (const [k,o] of Object.entries(umCfg)) {
 						urows += `<tr><td>${k}</td><td>${o.enabled}</td></tr>`;
 					}
 					urows += `</table>`;
+					urows += `</div>`;
 				}
             }
 
