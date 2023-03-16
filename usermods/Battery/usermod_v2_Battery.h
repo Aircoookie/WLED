@@ -114,6 +114,17 @@ class UsermodBattery : public Usermod
       }      
     }
 
+    float readVoltage()
+    {
+      #ifdef ARDUINO_ARCH_ESP32
+        // use calibrated millivolts analogread on esp32 (150 mV ~ 2450 mV default attentuation) and divide by 1000 to get from milivolts to volts and multiply by voltage multiplier and apply calibration value
+        return (analogReadMilliVolts(batteryPin) / 1000.0f) * voltageMultiplier  + calibration;
+      #else
+        // use analog read on esp8266 ( 0V ~ 1V no attenuation options) and divide by ADC precision 1023 and multiply by voltage multiplier and apply calibration value
+        return (analogRead(batteryPin) / 1023.0f) * voltageMultiplier + calibration;
+      #endif
+    }
+
   public:
     //Functions called by WLED
 
@@ -130,8 +141,7 @@ class UsermodBattery : public Usermod
           if (pinManager.allocatePin(batteryPin, false, PinOwner::UM_Battery)) {
             DEBUG_PRINTLN(F("Battery pin allocation succeeded."));
             success = true;
-            //use calibrated millivolts analogread on esp32 (150 mV ~ 2450 mV default) and divide by 1000 to get from milivolts to volts and multiply by voltage divider ratio and apply calibration value
-            voltage = (analogReadMilliVolts(batteryPin) / 1000.0f) * voltageMultiplier  + calibration;
+            voltage = readVoltage();
           }
 
         if (!success) {
@@ -142,8 +152,7 @@ class UsermodBattery : public Usermod
         }
       #else //ESP8266 boards have only one analog input pin A0
         pinMode(batteryPin, INPUT);
-        //use analog read on esp8266 ( 150 mV ~ 3000mV no attenuation options) and divide by ADC precision 1023 and multiply by voltage divider ratio and apply calibration value
-        voltage = (analogRead(batteryPin) / 1023.0f) * voltageMultiplier + calibration;
+        voltage = readVoltage();
       #endif
 
       nextReadTime = millis() + readingInterval;
@@ -183,17 +192,10 @@ class UsermodBattery : public Usermod
 
       initializing = false;
 
-#ifdef ARDUINO_ARCH_ESP32
-      // use calibrated millivolts analogread on esp32 (150 mV ~ 2450 mV default) and divide by 1000 to get from milivolts to volts and multiply by voltage divider and apply calibration value
-      rawValue = (analogReadMilliVolts(batteryPin) / 1000.0f) * voltageMultiplier + calibration;
+      rawValue = readVoltage();
       // filter with exponential smoothing because ADC in esp32 is fluctuating too much for a good single readout
       voltage = voltage + alpha * (rawValue - voltage);
-#else
-      // use analog read on esp8266 ( 150 mV ~ 3000mV no attenuation options) and divide by ADC precision 1023 and multiply by 3v ADC max voltage and apply calibration value
-      rawValue = (analogRead(batteryPin) / 1023.0f) * voltageMultiplier + calibration;
-      // filter with exponential smoothing 
-      voltage = voltage + alpha * (rawValue - voltage);
-#endif
+
       // check if voltage is within specified voltage range, allow 10% over/under voltage - removed cause this just makes it hard for people to troubleshoot as the voltage in the web gui will say invalid instead of displaying a voltage
       //voltage = ((voltage < minBatteryVoltage * 0.85f) || (voltage > maxBatteryVoltage * 1.1f)) ? -1.0f : voltage;
 
@@ -379,6 +381,9 @@ class UsermodBattery : public Usermod
       lp[FPSTR(_preset)] = lowPowerIndicatorPreset; // dropdown trickery (String)lowPowerIndicatorPreset; 
       lp[FPSTR(_threshold)] = lowPowerIndicatorThreshold;
       lp[FPSTR(_duration)] = lowPowerIndicatorDuration;
+
+      // read voltage in case calibration or voltage multiplier changed to see immediate effect
+      voltage = readVoltage()
 
       DEBUG_PRINTLN(F("Battery config saved."));
     }
