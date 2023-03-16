@@ -93,7 +93,6 @@ void IRAM_ATTR dmpDataReady() {
 class MPU6050Driver : public Usermod {
   private:
     MPU6050 mpu;
-    bool initDone = false;
     unsigned long lastUMRun = millis();
 
     // MPU control/status vars
@@ -354,14 +353,14 @@ class MPU6050Driver : public Usermod {
     //{
     //}
 
-    void addToConfig(JsonObject& root)
-    {
-      JsonObject top = root.createNestedObject(FPSTR(_name));
-      top[FPSTR("enabled")] = enabled;
-      //JsonObject interruptPin = top.createNestedObject(FPSTR(_INT_pin));
-      //interruptPin["pin"] = INTERRUPT_PIN;
-      DEBUG_PRINTLN(F("MPU6050 IMU config saved."));
-    }
+    // void addToConfig(JsonObject& root)
+    // {
+    //   Usermod::addToConfig(root);
+    //   JsonObject top = root[FPSTR(_name)];
+    // //   //JsonObject interruptPin = top.createNestedObject(FPSTR(_INT_pin));
+    // //   //interruptPin["pin"] = INTERRUPT_PIN;
+    // //   DEBUG_PRINTLN(F("MPU6050 IMU config saved."));
+    // }
 
     //WLEDMM: add appendConfigData
     void appendConfigData()
@@ -380,6 +379,7 @@ class MPU6050Driver : public Usermod {
 
     bool readFromConfig(JsonObject& root)
     {
+      bool configComplete = Usermod::readFromConfig(root);
       JsonObject top = root[FPSTR(_name)];
 
       if (top.isNull()) {
@@ -388,8 +388,6 @@ class MPU6050Driver : public Usermod {
         return false;
       }
 
-      bool configComplete = !top.isNull();
-      configComplete &= getJsonValue(top[FPSTR("enabled")], enabled);
       //configComplete &= getJsonValue(top[FPSTR(_INT_pin)]["pin"], INTERRUPT_PIN);
 
       DEBUG_PRINT(FPSTR(_name));

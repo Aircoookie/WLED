@@ -21,7 +21,6 @@ class UsermodTemperature : public Usermod {
 
   private:
 
-    bool initDone = false;
     OneWire *oneWire;
     // GPIO pin used for sensor (with a default compile-time fallback)
     int8_t temperaturePin = TEMPERATURE_PIN;
@@ -322,9 +321,10 @@ class UsermodTemperature : public Usermod {
      * addToConfig() (called from set.cpp) stores persistent properties to cfg.json
      */
     void addToConfig(JsonObject &root) {
+      Usermod::addToConfig(root);
+      JsonObject top = root[FPSTR(_name)];
+
       // we add JSON object: {"Temperature": {"pin": 0, "degC": true}}
-      JsonObject top = root.createNestedObject(FPSTR(_name)); // usermodname
-      top[FPSTR("enabled")] = enabled;
       top["pin"]  = temperaturePin;     // usermodparam
       top["degC"] = degC;  // usermodparam
       top[FPSTR(_readInterval)] = readingInterval / 1000;
@@ -339,17 +339,18 @@ class UsermodTemperature : public Usermod {
      * The function should return true if configuration was successfully loaded or false if there was no configuration.
      */
     bool readFromConfig(JsonObject &root) {
+      bool configComplete = Usermod::readFromConfig(root);
+      JsonObject top = root[FPSTR(_name)];
+
       // we look for JSON object: {"Temperature": {"pin": 0, "degC": true}}
       int8_t newTemperaturePin = temperaturePin;
       DEBUG_PRINT(FPSTR(_name));
 
-      JsonObject top = root[FPSTR(_name)];
       if (top.isNull()) {
         DEBUG_PRINTLN(F(": No config found. (Using defaults.)"));
         return false;
       }
 
-      enabled           = top[FPSTR("enabled")] | enabled;
       newTemperaturePin = top["pin"] | newTemperaturePin;
       degC              = top["degC"] | degC;
       readingInterval   = top[FPSTR(_readInterval)] | readingInterval/1000;

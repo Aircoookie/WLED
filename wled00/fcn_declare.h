@@ -263,6 +263,7 @@ class Usermod {
     um_data_t *um_data; // um_data should be allocated using new in (derived) Usermod's setup() or constructor
     bool enabled = false; //WLEDMM
     const char *_name; //WLEDMM
+    bool initDone = false; //WLEDMM
   public:
     Usermod(const char *_name = nullptr, bool enabled=false) { um_data = nullptr; this->_name = _name; this->enabled=enabled;}
     virtual ~Usermod() { if (um_data) delete um_data; }
@@ -276,8 +277,14 @@ class Usermod {
     virtual void addToJsonState(JsonObject& obj) {}                          // add JSON objects for WLED state
     virtual void addToJsonInfo(JsonObject& obj) {}                           // add JSON objects for UI Info page
     virtual void readFromJsonState(JsonObject& obj) {}                       // process JSON messages received from web server
-    virtual void addToConfig(JsonObject& obj) {}                             // add JSON entries that go to cfg.json
-    virtual bool readFromConfig(JsonObject& obj) { return true; } // Note as of 2021-06 readFromConfig() now needs to return a bool, see usermod_v2_example.h
+    virtual void addToConfig(JsonObject& obj) {                              // add JSON entries that go to cfg.json
+      JsonObject top = obj.createNestedObject(FPSTR(_name));                 // WLEDMM: set enabled and _name
+      top[FPSTR("enabled")] = enabled;
+    }
+    virtual bool readFromConfig(JsonObject& obj) {                           // Note as of 2021-06 readFromConfig() now needs to return a bool, see usermod_v2_example.h
+      JsonObject top = obj[FPSTR(_name)];                                    // WLEDMM: get enabled and _name
+      return !top.isNull() && getJsonValue(top[FPSTR("enabled")], enabled); 
+    }
     virtual void onMqttConnect(bool sessionPresent) {}                       // fired when MQTT connection is established (so usermod can subscribe)
     virtual bool onMqttMessage(char* topic, char* payload) { return false; } // fired upon MQTT message received (wled topic)
     virtual void onUpdateBegin(bool) {}                                      // fired prior to and after unsuccessful firmware update
@@ -297,7 +304,7 @@ class UsermodManager {
     bool getUMData(um_data_t **um_data, uint8_t mod_id = USERMOD_ID_RESERVED); // USERMOD_ID_RESERVED will poll all usermods
     void setup();
     void connected();
-    void appendConfigData();
+    // void appendConfigData(); //WLEDMM not used
     void addToJsonState(JsonObject& obj);
     void addToJsonInfo(JsonObject& obj);
     void readFromJsonState(JsonObject& obj);

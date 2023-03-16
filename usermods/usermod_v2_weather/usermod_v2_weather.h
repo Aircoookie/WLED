@@ -142,7 +142,6 @@ void httpGet(WiFiClient &client, const char *url, char *errorMessage) {
 class WeatherUsermod : public Usermod {
   private:
     // strings to reduce flash memory usage (used more than twice)
-    static const char _name[]; //usermod name
     String apiKey = ""; //config var
 
     unsigned long lastTime = 0; //will be used to download new forecast every hour
@@ -150,6 +149,7 @@ class WeatherUsermod : public Usermod {
     bool isConnected = false; //only call openweathermap if connected
 
   public:
+    WeatherUsermod(const char *name, bool enabled):Usermod(name, enabled) {} //WLEDMM: this shouldn't be necessary (passthrough of constructor), maybe because Usermod is an abstract class
 
     void setup() {
       strip.addEffect(255, &mode_2DWeather, _data_FX_MODE_2DWEATHER);
@@ -256,7 +256,6 @@ class WeatherUsermod : public Usermod {
     /*
      * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
      * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
-     * Below it is shown how this could be used for e.g. a light sensor
      */
     void addToJsonInfo(JsonObject& root)
     {
@@ -292,7 +291,8 @@ class WeatherUsermod : public Usermod {
 
     void addToConfig(JsonObject& root)
     {
-      JsonObject top = root.createNestedObject(FPSTR(_name));
+      Usermod::addToConfig(root);
+      JsonObject top = root[FPSTR(_name)];
       top[F("apiKey")] = apiKey;
       top[F("units")]   = weather_units;
       top[F("minTemp")] = weather_minTemp;
@@ -302,9 +302,8 @@ class WeatherUsermod : public Usermod {
 
     bool readFromConfig(JsonObject& root)
     {
+      bool configComplete = Usermod::readFromConfig(root);
       JsonObject top = root[FPSTR(_name)];
-
-      bool configComplete = !top.isNull();
 
       configComplete &= getJsonValue(top[F("apiKey")], apiKey);
       configComplete &= getJsonValue(top[F("units")], weather_units);
@@ -317,8 +316,8 @@ class WeatherUsermod : public Usermod {
 
     void appendConfigData()
     {
-      oappend(SET_F("addInfo('Weather:help',0,'<button onclick=\"location.href=&quot;https://mm.kno.wled.ge/moonmodules/Weather&quot;\" type=\"button\">?</button>');"));
-      
+      oappend(SET_F("addHB('Weather');")); // WLEDMM
+
       oappend(SET_F("dd=addDropdown('Weather','units');"));
       oappend(SET_F("addOption(dd,'Kelvin',0);"));
       oappend(SET_F("addOption(dd,'Celcius',1);"));
@@ -348,9 +347,6 @@ class WeatherUsermod : public Usermod {
       return USERMOD_ID_WEATHER;
     }
 };
-
-// strings to reduce flash memory usage (used more than twice)
-const char WeatherUsermod::_name[]       PROGMEM = "Weather";
 
 // example openweathermap data
 // {"cod":"200","message":0,"cnt":40,"list":[

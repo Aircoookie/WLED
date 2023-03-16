@@ -380,7 +380,7 @@ void registerUsermods()
   #endif
   
   #ifdef USERMOD_WEATHER
-  usermods.add(new WeatherUsermod());
+  usermods.add(new WeatherUsermod("Weather", true));
   #endif
 
 
