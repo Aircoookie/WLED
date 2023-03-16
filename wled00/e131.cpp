@@ -174,10 +174,20 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
 
     case DMX_MODE_PRESET:       // 2 channel: [Dimmer,Preset]
       if (uni != e131Universe || availDMXLen < 2) return;
-      applyPreset(e131_data[dataOffset+1], CALL_MODE_NOTIFICATION);
-      if (bri != e131_data[dataOffset]) {
+
+      // only apply preset if value changed 
+      if (currentPreset != e131_data[dataOffset+1] && e131_data[dataOffset+1] != 0 && 
+          // only apply preset if not in playlist, or playlist changed
+          (currentPlaylist < 0 || currentPlaylist != e131_data[dataOffset+1])) { 
+        presetCycCurr = e131_data[dataOffset+1];
+        unloadPlaylist(); // applying a preset unloads the playlist
+        applyPreset(e131_data[dataOffset+1], CALL_MODE_NOTIFICATION);
+      }
+      // only change brightness if value changed
+      if (bri != e131_data[dataOffset]) {                                        
         bri = e131_data[dataOffset];
-        strip.setBrightness(bri, true);
+        strip.setBrightness(scaledBri(bri), false);
+        stateUpdated(CALL_MODE_WS_SEND);
       }
       return;
       break;
