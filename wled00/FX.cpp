@@ -7105,6 +7105,7 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
   const int NUM_BANDS = map(SEGMENT.custom1, 0, 255, 1, 16);
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
+  if ((cols <=1) || (rows <=1)) return mode_static(); // not really a 2D set-up
 
   if (!SEGENV.allocateData(cols*sizeof(uint16_t))) return mode_static(); //allocation failed
   uint16_t *previousBarHeight = reinterpret_cast<uint16_t*>(SEGENV.data); //array of previous bar heights per frequency band
@@ -7143,7 +7144,7 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
     remaining--; //consume remaining
 
     // Serial.printf("x %d b %d n %d w %f %f\n", x, band, NUM_BANDS, bandwidth, remaining);
-    uint8_t frBand = (NUM_BANDS < 16)?map(band, 0, NUM_BANDS - 1, 0, 15):band; // always use full range. comment out this line to get the previous behaviour.
+    uint8_t frBand = ((NUM_BANDS < 16) && (NUM_BANDS > 1)) ? map(band, 0, NUM_BANDS - 1, 0, 15):band; // always use full range. comment out this line to get the previous behaviour.
     // band = constrain(band, 0, 15); //WLEDMM can never be out of bounds (I think...)
     uint16_t colorIndex = frBand * 17; //WLEDMM 0.255
     uint16_t barHeight  = map(fftResult[frBand], 0, 255, 0, rows); // do not subtract -1 from rows here
@@ -7153,7 +7154,7 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
       // get height of next (right side) bar
       uint8_t nextband = (remaining < 1)? band +1: band;
 
-      frBand = (NUM_BANDS < 16)?map(nextband, 0, NUM_BANDS - 1, 0, 15):nextband; // always use full range. comment out this line to get the previous behaviour.
+      frBand = ((NUM_BANDS < 16) && (NUM_BANDS > 1)) ? map(nextband, 0, NUM_BANDS - 1, 0, 15):nextband; // always use full range. comment out this line to get the previous behaviour.
       // nextband = constrain(nextband, 0, 15);
       uint16_t nextbarHeight  = map(fftResult[frBand], 0, 255, 0, rows); // do not subtract -1 from rows here
       // smooth height
