@@ -2082,21 +2082,11 @@ bool WS2812FX::deserializeMap(uint8_t n) {
 
   JsonArray map = doc[F("map")];
   if (!map.isNull() && map.size()) {  // not an empty map
+
     //WLEDMM: support ledmap file properties width and height
     if (doc[F("width")]>0 && doc[F("height")]>0) {
-      panels = 1;
-      panel.clear();
-      panel.reserve(1U);  // pre-allocate memory for panels
-      Panel p;
-      p.bottomStart = p.rightStart = p.vertical = p.serpentine = false;
-      p.xOffset = p.yOffset = 0;
-      p.width = doc[F("width")];
-      p.height = doc[F("height")];
-      strip.panel.push_back(p);
-
-      Segment::maxWidth = p.width;
-      Segment::maxHeight = p.height;
-
+      Segment::maxWidth = doc[F("width")];;
+      Segment::maxHeight = doc[F("height")];;
       resetSegments(true); //WLEDMM not makeAutoSegments() as we only want to change bounds
     }
 
