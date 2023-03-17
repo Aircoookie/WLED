@@ -1,4 +1,5 @@
-function peek(c) {
+function peek(c, setOff=false) {
+	console.log("peek",c, setOff);
 	// Check for canvas support
 	var ctx = c.getContext('2d');
 	if (ctx) { // Access the rendering context
@@ -16,7 +17,8 @@ function peek(c) {
 			}
 		}
 		ws.binaryType = "arraybuffer";
-		ws.addEventListener('message',(e)=>{
+
+		function myFunction(e) {
 			try {
 				if (toString.call(e.data) === '[object ArrayBuffer]') {
 					let leds = new Uint8Array(e.data);
@@ -46,6 +48,11 @@ function peek(c) {
 			} catch (err) {
 				console.error("Peek WS error:",err);
 			} 
-		});
+		}
+		
+		if (!setOff)
+			ws.addEventListener('message', myFunction);
+		else
+			ws.removeEventListener('message', myFunction);
 	}
 }

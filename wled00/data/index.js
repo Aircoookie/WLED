@@ -25,7 +25,7 @@ var ws, cpick, ranges;
 var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false},
-          labels:true, pcmbot:false, pid:true, seglen:false, segpwr:false, segexp:true, css:true, hdays:false} //WLEDMM segexp true as default
+          labels:true, pcmbot:false, pid:true, seglen:false, segpwr:false, segexp:true, peekexp:true, segvexp: true, css:true, hdays:false} //WLEDMM segexp true as default, add peekexp and segvexp
 };
 var hol = [
 	[0,11,24,4,"https://aircoookie.github.io/xmas.png"], // christmas
@@ -1158,6 +1158,13 @@ function updateLen(s, draw=true) //WLEDMM conditonally draw segment view
 }
 
 //WLEDMM
+function eandp(o,i)
+{
+	expandV(o,i);
+	peek(i, i.style.display =="none");
+}
+
+//WLEDMM
 function expandV(o,i)
 {
 	i.style.display = i.style.display!=="none" ? "none" : "";
@@ -1301,7 +1308,7 @@ function drawSegmentView() {
 
 	} // for each segment
 
-	gId("MD").innerHTML = "☾ W*H=LC: " + maxWidth + " x " + maxHeight + " = " + maxWidth * maxHeight;
+	gId("MD").innerHTML = "W*H=LC: " + maxWidth + " x " + maxHeight + " = " + maxWidth * maxHeight;
 
 	function post() {
 		for (let p=0; p<gId("segcont").children.length; p++) {
