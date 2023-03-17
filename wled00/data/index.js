@@ -723,7 +723,7 @@ function populateSegments(s)
 		let sg = gId(`seg${i}`);
 		let exp = sg ? (sg.classList.contains('expanded') || (i===0 && cfg.comp.segexp)) : false;
 
-		ledmapFileNames.push("lm" + (inst.n?inst.n:"default") + ".json"); //WLEDMM
+		ledmapFileNames.push((inst.n?inst.n:"default") + ".json"); //WLEDMM
 
 		let segp = `<div id="segp${i}" class="sbs">
 		<i class="icons e-icon pwr ${inst.on ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})">&#xe08f;</i>

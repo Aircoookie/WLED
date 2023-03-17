@@ -628,7 +628,7 @@ class JMapC {
         char jMapFileName[50];
         strcpy(jMapFileName, "/");
         strcat(jMapFileName, SEGMENT.name);
-        strcat(jMapFileName, ".jmap");
+        strcat(jMapFileName, ".json");
         File jMapFile;
         jMapFile = WLED_FS.open(jMapFileName, "r");
 
@@ -2042,7 +2042,7 @@ bool WS2812FX::deserializeMap(uint8_t n) {
     uint8_t segment_index = 0;
     for (segment &seg : _segments) {
       if (n == 10 + segment_index && !isFile && seg.name != nullptr) {
-        sprintf_P(fileName, PSTR("/lm%s.json"), seg.name);
+        sprintf_P(fileName, PSTR("/%s.json"), seg.name);
         isFile = WLED_FS.exists(fileName);
       }
       if (isFile) break;
