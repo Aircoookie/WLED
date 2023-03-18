@@ -7132,7 +7132,7 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
   int fadeoutDelay = (256 - SEGMENT.speed) / 64;
   if ((fadeoutDelay <= 1 ) || ((SEGENV.call % fadeoutDelay) == 0)) SEGMENT.fadeToBlackBy(SEGMENT.speed);
 
-  uint16_t lastBarHeight = 0;  // WLEDMM: for smoothing out bars
+  uint16_t lastBandHeight = 0;  // WLEDMM: for smoothing out bars
 
   //WLEDMM: evenly ditribut bands
   float bandwidth = (float)cols / NUM_BANDS;
@@ -7145,23 +7145,24 @@ uint16_t mode_2DGEQ(void) { // By Will Tatam. Code reduction by Ewoud Wijma.
 
     // Serial.printf("x %d b %d n %d w %f %f\n", x, band, NUM_BANDS, bandwidth, remaining);
     uint8_t frBand = ((NUM_BANDS < 16) && (NUM_BANDS > 1)) ? map(band, 0, NUM_BANDS - 1, 0, 15):band; // always use full range. comment out this line to get the previous behaviour.
-    // band = constrain(band, 0, 15); //WLEDMM can never be out of bounds (I think...)
+    // frBand = constrain(frBand, 0, 15); //WLEDMM can never be out of bounds (I think...)
     uint16_t colorIndex = frBand * 17; //WLEDMM 0.255
-    uint16_t barHeight  = map(fftResult[frBand], 0, 255, 0, rows); // do not subtract -1 from rows here
+    uint16_t bandHeight = fftResult[frBand];  // WLEDMM we use the original ffResult, to preserve accuracy
 
     // WLEDMM begin - smooth out bars
     if ((x > 0) && (x < (cols-1)) && (SEGMENT.check2)) {
       // get height of next (right side) bar
       uint8_t nextband = (remaining < 1)? band +1: band;
-
+      nextband = constrain(nextband, 0, 15);  // just to be sure
       frBand = ((NUM_BANDS < 16) && (NUM_BANDS > 1)) ? map(nextband, 0, NUM_BANDS - 1, 0, 15):nextband; // always use full range. comment out this line to get the previous behaviour.
-      // nextband = constrain(nextband, 0, 15);
-      uint16_t nextbarHeight  = map(fftResult[frBand], 0, 255, 0, rows); // do not subtract -1 from rows here
-      // smooth height
-      barHeight = (7*barHeight + 3*lastBarHeight + 3*nextbarHeight) / 12;   // yeees, its 12 not 13 (10% amplification)
+      uint16_t nextBandHeight = fftResult[frBand];
+      // smooth Band height
+      bandHeight = (7*bandHeight + 3*lastBandHeight + 3*nextBandHeight) / 12;   // yeees, its 12 not 13 (10% amplification)
+      bandHeight = constrain(bandHeight, 0, 255);   // remove potential over/underflows
       colorIndex = map(x, 0, cols-1, 0, 255); //WLEDMM
     }
-    lastBarHeight = barHeight; // remember barheight (left side) for next iteration
+    lastBandHeight = bandHeight; // remember BandHeight (left side) for next iteration
+    uint16_t barHeight = map(bandHeight, 0, 255, 0, rows); // Now we map bandHeight to barHeight. do not subtract -1 from rows here
     // WLEDMM end
 
     if (barHeight > rows) barHeight = rows;                      // WLEDMM map() can "overshoot" due to rounding errors
