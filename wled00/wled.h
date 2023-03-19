@@ -31,7 +31,7 @@
   #define WLED_ENABLE_MQTT         // saves 12kb
 #endif
 #ifndef WLED_DISABLE_ADALIGHT      // can be used to disable reading commands from serial RX pin (see issue #3128). 
-  #define WLED_ENABLE_ADALIGHT     // disable saves 5Kb (uses GPIO3 (RX) for serial). Related serial protocols: APALIGHT/TPM2, IMPROV, Continuous Serial Streaming 
+  #define WLED_ENABLE_ADALIGHT     // disable saves 5Kb (uses GPIO3 (RX) for serial). Related serial protocols: Adalight/TPM2, Improv, Continuous Serial Streaming 
 #else
   #undef WLED_ENABLE_ADALIGHT      // disable has priority over enable
 #endif
