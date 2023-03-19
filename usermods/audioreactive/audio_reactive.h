@@ -136,7 +136,7 @@ static float    volumeSmth = 0.0f;   // either sampleAvg or sampleAgc depending 
 
 // peak detection
 static bool samplePeak = false;      // Boolean flag for peak - used in effects. Responding routine may reset this flag. Auto-reset after strip.getMinShowDelay()
-static uint8_t maxVol = 10;          // Reasonable value for constant volume for 'peak detector', as it won't always trigger (deprecated)
+static uint8_t maxVol = 31;          // (was 10) Reasonable value for constant volume for 'peak detector', as it won't always trigger  (deprecated)
 static uint8_t binNum = 8;           // Used to select the bin for FFT based beat detection  (deprecated)
 static bool udpSamplePeak = false;   // Boolean flag for peak. Set at the same tiem as samplePeak, but reset by transmitAudioData
 static unsigned long timeOfPeak = 0; // time of last sample peak detection.
@@ -1360,6 +1360,7 @@ class AudioReactive : public Usermod {
         case 0:  //ADC analog
         #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3)
         case 5:  //PDM Microphone
+        case 51: //legacy PDM Microphone
         #endif
       #endif
         case 1:
@@ -1394,6 +1395,13 @@ class AudioReactive : public Usermod {
           DEBUGSR_PRINT(F("AR: I2S PDM Microphone - ")); DEBUGSR_PRINTLN(F(I2S_PDM_MIC_CHANNEL_TEXT));
           audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, 1.0f/4.0f);
           useBandPassFilter = true;  // this reduces the noise floor on SPM1423 from 5% Vpp (~380) down to 0.05% Vpp (~5)
+          delay(100);
+          if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin);
+          break;
+        case 51:
+          DEBUGSR_PRINT(F("AR: Legacy PDM Microphone - ")); DEBUGSR_PRINTLN(F(I2S_PDM_MIC_CHANNEL_TEXT));
+          audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, 1.0f);
+          useBandPassFilter = false;
           delay(100);
           if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin);
           break;
@@ -1530,7 +1538,7 @@ class AudioReactive : public Usermod {
 
         #if defined(WLED_DEBUG) || defined(SR_DEBUG) || defined(SR_STATS)
           // complain when audio userloop has been delayed for long time. Currently we need userloop running between 500 and 1500 times per second. 
-          if ((userloopDelay > /*23*/ 30) && !disableSoundProcessing && (audioSyncEnabled == 0)) {
+          if ((userloopDelay > /*23*/ 65) && !disableSoundProcessing && (audioSyncEnabled == 0)) {
             USER_PRINTF("[AR userLoop] hickup detected -> was inactive for last %d millis!\n", userloopDelay);
           }
         #endif
@@ -1666,14 +1674,15 @@ class AudioReactive : public Usermod {
           connected(); // resume UDP
         } else
 //          xTaskCreatePinnedToCore(
-          xTaskCreate(                        // no need to "pin" this task to core #0
+//          xTaskCreate(                        // no need to "pin" this task to core #0
+          xTaskCreateUniversal(
             FFTcode,                          // Function to implement the task
             "FFT",                            // Name of the task
             5000,                             // Stack size in words
             NULL,                             // Task input parameter
             1,                                // Priority of the task
             &FFT_Task                         // Task handle
-//            , 0                                 // Core where the task should run
+            , 0                               // Core where the task should run
           );
       }
       micDataReal = 0.0f;                     // just to be sure
@@ -1773,7 +1782,10 @@ class AudioReactive : public Usermod {
             if (audioSource->getType() == AudioSource::Type_I2SAdc) {
               infoArr.add(F("ADC analog"));
             } else {
-              infoArr.add(F("I2S digital"));
+              if (dmType != 51)
+                infoArr.add(F("I2S digital"));
+              else
+                infoArr.add(F("legacy I2S PDM"));
             }
             // input level or "silence"
             if (maxSample5sec > 1.0) {
@@ -1998,7 +2010,11 @@ class AudioReactive : public Usermod {
       if (dmType == 0) dmType = SR_DMTYPE;   // MCU does not support analog
       #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3)
       if (dmType == 5) dmType = SR_DMTYPE;   // MCU does not support PDM
+      if (dmType == 51) dmType = SR_DMTYPE;  // MCU does not support legacy PDM
       #endif
+    #else
+      if (dmType == 5) useBandPassFilter = true;   // enable filter for PDM
+      if (dmType == 51) useBandPassFilter = false; // switch of filter for legacy PDM    
     #endif
 
       configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["pin"][0], i2ssdPin);
@@ -2069,6 +2085,11 @@ class AudioReactive : public Usermod {
           oappend(SET_F("addOption(dd,'Generic I2S PDM (⎌)',5);"));
         #else
           oappend(SET_F("addOption(dd,'Generic I2S PDM',5);"));
+        #endif
+        #if SR_DMTYPE==51
+          oappend(SET_F("addOption(dd,'.Legacy I2S PDM (⎌)',51);"));
+        #else
+          oappend(SET_F("addOption(dd,'.Legacy I2S PDM',51);"));
         #endif
       #endif
 
