@@ -221,10 +221,10 @@ void handleSerial()
 
     Serial.read(); //discard the byte
   }
-  #endif
   //#ifdef WLED_DEBUG
     if ((millis() - startTime) > SERIAL_MAXTIME_MILLIS) { USER_PRINTLN(F("handleSerial(): need a break after >100ms of activity.")); }
   //#endif
+  #endif
 
   // If Continuous Serial Streaming is enabled, send new LED data as bytes
   if (continuousSendLED && (lastUpdate != strip.getLastShow())){
