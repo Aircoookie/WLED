@@ -1401,7 +1401,7 @@ class AudioReactive : public Usermod {
         case 51:
           DEBUGSR_PRINT(F("AR: Legacy PDM Microphone - ")); DEBUGSR_PRINTLN(F(I2S_PDM_MIC_CHANNEL_TEXT));
           audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, 1.0f);
-          useBandPassFilter = false;
+          useBandPassFilter = true;
           delay(100);
           if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin);
           break;
@@ -2014,7 +2014,7 @@ class AudioReactive : public Usermod {
       #endif
     #else
       if (dmType == 5) useBandPassFilter = true;   // enable filter for PDM
-      if (dmType == 51) useBandPassFilter = false; // switch of filter for legacy PDM    
+      if (dmType == 51) useBandPassFilter = true /*false*/; // switch on filter for legacy PDM    
     #endif
 
       configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["pin"][0], i2ssdPin);
