@@ -228,11 +228,11 @@ Hue Bridge IP:<br>
 </div>
 Hue status: <span class="sip"> Disabled in this build </span>
 <div id="loxOnOff2"> <!--WLEDMM-->
-  <br><em style="color:darkorange">This firmware build does not include Loxone Lighting support. <br></em>
+  <em style="color:darkorange">This firmware build does not include Loxone Lighting support. <br></em>
 </div>
 <h3>Serial</h3>
 <div id="adaOnOff2"> <!--WLEDMM-->
-	<br><em style="color:darkorange">This firmware build does not include Serial Command support. <br>Adalight/TPM2, Serial JSON and serial streaming are not possible. <br></em>
+	<em style="color:darkorange">This firmware build does not include Serial Command support. <br>Adalight/TPM2, Serial JSON, Improv, and serial streaming are not possible. <br></em>
   </div>
   Baud rate:
 <select name=BD>
@@ -250,7 +250,7 @@ Hue status: <span class="sip"> Disabled in this build </span>
 <div id="NoNetDebug" class="hide">
 	<em style="color:#fa0;">This firmware build does not include Net Debug support.<br></em>
 </div>
-<div id="NetDebug">
+<div id="NetDebug"> <!--WLEDMM-->
 Netcat host IP:<br>
 <input name="N0" type="number" class="s" min="0" max="255" > .
 <input name="N1" type="number" class="s" min="0" max="255" > .
@@ -258,7 +258,7 @@ Netcat host IP:<br>
 <input name="N3" type="number" class="s" min="0" max="255" ><br>
 Netcat host Port:<br>
 <input name="NP" type="number" min="0" max="99999" > <i>If 0 default port 7868 will be used</i><br>
-<i>on host [ip] open command prompt and enter nc -l [port] -u</i>
+<i>on host [ip] open command prompt and enter <pre>nc -l [port] -u</pre></i>
 </div>
 <hr>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button>
