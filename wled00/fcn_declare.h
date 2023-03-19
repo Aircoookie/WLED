@@ -114,6 +114,7 @@ void decodeIR21(uint32_t code);
 void decodeIR6(uint32_t code);
 void decodeIR9(uint32_t code);
 void decodeIRJson(uint32_t code);
+void decodeIR24MC(uint32_t code); //WLEDMM
 
 void initIR();
 void handleIR();
