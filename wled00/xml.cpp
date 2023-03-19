@@ -604,6 +604,9 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
 #ifdef WLED_ENABLE_LOXONE
     oappend(SET_F("hideNoLOX();"));  // WLEDMM hide "not compiled in" message    
 #endif
+#ifdef WLED_ENABLE_ADALIGHT
+    oappend(SET_F("hideNoADA();"));  // WLEDMM hide "not compiled in" message    
+#endif
 
   }
 

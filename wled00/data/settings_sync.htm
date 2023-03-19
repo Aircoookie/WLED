@@ -11,6 +11,7 @@
 	function toggle(el){gId(el).classList.toggle("hide"); gId('No'+el).classList.toggle("hide");}
 	function hideNoDMX(){gId("dmxOnOff2").style.display="none";} //WLEDMM
 	function hideNoLOX(){gId("loxOnOff2").style.display="none";} //WLEDMM
+	function hideNoADA(){gId("adaOnOff2").style.display="none";} //WLEDMM
 	function H(){window.open("https://mm.kno.wled.ge/interfaces/udp-notifier/");}
 	function B(){window.open("/settings","_self");}
 	function adj(){if (d.Sf.DI.value == 6454) {if (d.Sf.EU.value == 1) d.Sf.EU.value = 0;}
@@ -230,7 +231,10 @@ Hue status: <span class="sip"> Disabled in this build </span>
   <br><em style="color:darkorange">This firmware build does not include Loxone Lighting support. <br></em>
 </div>
 <h3>Serial</h3>
-Baud rate:
+<div id="adaOnOff2"> <!--WLEDMM-->>
+	<br><em style="color:darkorange">This firmware build does not include Serial Command support. <br>Adalight/TPM2, Serial JSON and serial streaming are not possible. <br></em>
+  </div>
+  Baud rate:
 <select name=BD>
 <option value=1152>115200</option>
 <option value=2304>230400</option>
