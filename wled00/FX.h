@@ -72,7 +72,11 @@
   #ifndef MAX_NUM_SEGMENTS
     #define MAX_NUM_SEGMENTS  32
   #endif
-  #define MAX_SEGMENT_DATA  32767
+  #if defined(ARDUINO_ARCH_ESP32S2)
+    #define MAX_SEGMENT_DATA  24576
+  #else
+    #define MAX_SEGMENT_DATA  32767
+  #endif
 #endif
 
 /* How much data bytes each segment should max allocate to leave enough space for other segments,
@@ -496,6 +500,9 @@ typedef struct Segment {
     inline bool     isSelected(void)     const { return selected; }
     inline bool     isActive(void)       const { return stop > start; }
     inline bool     is2D(void)           const { return (width()>1 && height()>1); }
+    inline bool     hasRGB(void)         const { return _isRGB; }
+    inline bool     hasWhite(void)       const { return _hasW; }
+    inline bool     isCCT(void)          const { return _isCCT; }
     inline uint16_t width(void)          const { return stop - start; }       // segment width in physical pixels (length if 1D)
     inline uint16_t height(void)         const { return stopY - startY; }     // segment height (if 2D) in physical pixels
     inline uint16_t length(void)         const { return width() * height(); } // segment length (count) in physical pixels
@@ -711,7 +718,6 @@ class WS2812FX {  // 96 bytes
       finalizeInit(),
       service(void),
       setMode(uint8_t segid, uint8_t m),
-      setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       setColor(uint8_t slot, uint32_t c),
       setCCT(uint16_t k),
       setBrightness(uint8_t b, bool direct = false),
@@ -728,7 +734,8 @@ class WS2812FX {  // 96 bytes
       show(void),
       setTargetFps(uint8_t fps);
 
-    void fill(uint32_t c) { for (int i = 0; i < _length; i++) setPixelColor(i, c); } // fill whole strip with color (inline)
+    void setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0) { setColor(slot, RGBW32(r,g,b,w)); }
+    void fill(uint32_t c) { for (int i = 0; i < getLengthTotal(); i++) setPixelColor(i, c); } // fill whole strip with color (inline)
     void addEffect(uint8_t id, mode_ptr mode_fn, const char *mode_name); // add effect to the list; defined in FX.cpp
     void setupEffectData(void); // add default effects to the list; defined in FX.cpp
 
@@ -776,17 +783,17 @@ class WS2812FX {  // 96 bytes
       ablMilliampsMax,
       currentMilliamps,
       getLengthPhysical(void),
+      getLengthTotal(void), // will include virtual/nonexistent pixels in matrix
       getFps();
 
     inline uint16_t getFrameTime(void) { return _frametime; }
     inline uint16_t getMinShowDelay(void) { return MIN_SHOW_DELAY; }
-    inline uint16_t getLengthTotal(void) { return _length; }
+    inline uint16_t getLength(void) { return _length; } // 2D matrix may have less pixels than W*H
     inline uint16_t getTransition(void) { return _transitionDur; }
 
     uint32_t
       now,
       timebase,
-      currentColor(uint32_t colorNew, uint8_t tNr),
       getPixelColor(uint16_t);
 
     inline uint32_t getLastShow(void) { return _lastShow; }
@@ -826,6 +833,13 @@ class WS2812FX {  // 96 bytes
           bool serpentine  : 1; // is serpentine?
         };
       };
+      panel_t()
+        : xOffset(0)
+        , yOffset(0)
+        , width(8)
+        , height(8)
+        , options(0)
+      {}
     } Panel;
     std::vector<Panel> panel;
 #endif
