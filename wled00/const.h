@@ -363,7 +363,7 @@
 #define MAX_LEDS_PER_BUS 2048   // may not be enough for fast LEDs (i.e. APA102)
 #endif
 
-// string temp buffer (now stored in stack locally)
+// string temp buffer (now stored in stack locally) // WLEDMM ...which is actually not the greatest design choice on ESP32
 #ifdef ESP8266
 #define SETTINGS_STACK_BUF_SIZE 2048
 #else
