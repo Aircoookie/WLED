@@ -124,8 +124,8 @@ static volatile bool disableSoundProcessing = false;      // if true, sound proc
 static bool useBandPassFilter = false;                    // if true, enables a bandpass filter 80Hz-16Khz to remove noise. Applies before FFT.
 
 //WLEDMM add experimental settings
-static uint8_t micLevelMethod = 1;                        // 0=old "floating" miclev, 1=new  "freeze" mode
-#if defined(CONFIG_IDF_TARGET_ESP32S2) || !defined(CONFIG_IDF_TARGET_ESP32C3)
+static uint8_t micLevelMethod = 1;                        // 0=old "floating" miclev, 1=new  "freeze" mode, 2=fast freeze mode
+#if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3)
 static uint8_t averageByRMS = false;                      // false: use mean value, true: use RMS (root mean squared). use simpler method on slower MCUs.
 #else
 static uint8_t averageByRMS = true;                       // false: use mean value, true: use RMS (root mean squared). use better method on fast MCUs.
