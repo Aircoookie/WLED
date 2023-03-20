@@ -367,7 +367,7 @@
 #ifdef ESP8266
 #define SETTINGS_STACK_BUF_SIZE 2048
 #else
-#define SETTINGS_STACK_BUF_SIZE 3096
+#define SETTINGS_STACK_BUF_SIZE 3712   // WLEDMM added 512 bytes of margin (was 3096)
 #endif
 
 #ifdef WLED_USE_ETHERNET

@@ -123,6 +123,9 @@ static AudioSource *audioSource = nullptr;
 static volatile bool disableSoundProcessing = false;      // if true, sound processing (FFT, filters, AGC) will be suspended. "volatile" as its shared between tasks.
 static bool useBandPassFilter = false;                    // if true, enables a bandpass filter 80Hz-16Khz to remove noise. Applies before FFT.
 
+static uint8_t micLevelMethod = 0;                        // 0=old "floating" miclev, 1=new  "freeze" mode
+static uint8_t averageByRMS = false;                      // false: use mean value, true: use RMS (root mean squared)
+
 // audioreactive variables shared with FFT task
 static float    micDataReal = 0.0f;             // MicIn data with full 24bit resolution - lowest 8bit after decimal point
 static float    multAgc = 1.0f;                 // sample * multAgc = sampleAgc. Our AGC multiplier
@@ -264,7 +267,8 @@ constexpr uint16_t samplesFFT = 512;            // Samples in an FFT batch - Thi
 constexpr uint16_t samplesFFT_2 = 256;          // meaningfull part of FFT results - only the "lower half" contains useful information.
 // the following are observed values, supported by a bit of "educated guessing"
 //#define FFT_DOWNSCALE 0.65f                             // 20kHz - downscaling factor for FFT results - "Flat-Top" window @20Khz, old freq channels 
-#define FFT_DOWNSCALE 0.46f                             // downscaling factor for FFT results - for "Flat-Top" window @22Khz, new freq channels
+//#define FFT_DOWNSCALE 0.46f                             // downscaling factor for FFT results - for "Flat-Top" window @22Khz, new freq channels
+#define FFT_DOWNSCALE 0.40f                             // downscaling factor for FFT results, RMS averaging
 #define LOG_256  5.54517744f                            // log(256)
 
 // These are the input and output vectors.  Input vectors receive computed results from FFT.
@@ -303,23 +307,27 @@ static float mapf(float x, float in_min, float in_max, float out_min, float out_
 }
 
 // compute average of several FFT resut bins
-#if 1  // linear average
-static float fftAddAvg(int from, int to) {
+// linear average
+static float fftAddAvgLin(int from, int to) {
   float result = 0.0f;
   for (int i = from; i <= to; i++) {
     result += vReal[i];
   }
   return result / float(to - from + 1);
 }
-#else // RMS average
-static float fftAddAvg(int from, int to) {
+// RMS average
+static float fftAddAvgRMS(int from, int to) {
   double result = 0.0;
   for (int i = from; i <= to; i++) {
     result += vReal[i] * vReal[i];
   }
   return sqrtf(result / float(to - from + 1));
 }
-#endif
+
+static float fftAddAvg(int from, int to) {
+  if (averageByRMS) return fftAddAvgRMS(from, to);
+  else return fftAddAvgLin(from, to);
+}
 
 #if defined(CONFIG_IDF_TARGET_ESP32C3)
 constexpr bool skipSecondFFT = true;
@@ -1057,6 +1065,9 @@ class AudioReactive : public Usermod {
       const float weighting = 0.2f; // Exponential filter weighting. Will be adjustable in a future release.
       const float weighting2 = 0.073f; // Exponential filter weighting, for rising signal (a bit more robust against spikes)
       const int   AGC_preset = (soundAgc > 0)? (soundAgc-1): 0; // make sure the _compiler_ knows this value will not change while we are inside the function
+      static bool isFrozen = false;
+      static bool haveSilence = true;
+      static unsigned long lastSoundTime = 0; // for delaying un-freeze
 
       #ifdef WLED_DISABLE_SOUND
         micIn = inoise8(millis(), millis());          // Simulated analog read
@@ -1079,8 +1090,14 @@ class AudioReactive : public Usermod {
         #endif
       #endif
 
-      micLev += (micDataReal-micLev) / 12288.0f;
-      if(micIn < micLev) micLev = ((micLev * 31.0f) + micDataReal) / 32.0f; // align MicLev to lowest input signal
+      if ((micLevelMethod < 1) || !isFrozen) {
+        micLev += (micDataReal-micLev) / 12288.0f;
+      }
+
+      if(micIn < micLev) {
+      	micLev = ((micLev * 31.0f) + micDataReal) / 32.0f; // align MicLev to lowest input signal
+        if (!haveSilence) isFrozen = true;
+      }
 
       micIn -= micLev;                                  // Let's center it to 0 now
       // Using an exponential filter to smooth out the signal. We'll add controls for this in a future release.
@@ -1096,6 +1113,15 @@ class AudioReactive : public Usermod {
       //expAdjF = (micInNoDC <= soundSquelch) ? 0: expAdjF; // simple noise gate - experimental
       expAdjF = (expAdjF <= soundSquelch) ? 0: expAdjF; // simple noise gate
       if ((soundSquelch == 0) && (expAdjF < 0.25f)) expAdjF = 0; // do something meaningfull when "squelch = 0"
+
+      if (expAdjF <= 0.5f) 
+        haveSilence = true;
+      else {
+        lastSoundTime = millis();
+        haveSilence = false;
+      }
+      // un-freeze after 8 sec of silence
+      if (isFrozen && ((millis() - lastSoundTime) > 8000)) isFrozen = false;
 
       tmpSample = expAdjF;
       micIn = abs(micIn);                               // And get the absolute value of each sample
@@ -1962,6 +1988,10 @@ class AudioReactive : public Usermod {
       cfg[F("gain")] = sampleGain;
       cfg[F("AGC")] = soundAgc;
 
+      JsonObject poweruser = top.createNestedObject("experiments");
+      poweruser[F("freqRMS")] = averageByRMS;
+      poweruser[F("micLev")] = micLevelMethod;
+
       JsonObject dynLim = top.createNestedObject("dynamics");
       dynLim[F("limiter")] = limiterOn;
       dynLim[F("rise")] = attackTime;
@@ -2027,6 +2057,9 @@ class AudioReactive : public Usermod {
       configComplete &= getJsonValue(top["config"][F("squelch")], soundSquelch);
       configComplete &= getJsonValue(top["config"][F("gain")],    sampleGain);
       configComplete &= getJsonValue(top["config"][F("AGC")],     soundAgc);
+
+      configComplete &= getJsonValue(top["experiments"][F("freqRMS")],  averageByRMS);
+      configComplete &= getJsonValue(top["experiments"][F("micLev")], micLevelMethod);
 
       configComplete &= getJsonValue(top["dynamics"][F("limiter")], limiterOn);
       configComplete &= getJsonValue(top["dynamics"][F("rise")],  attackTime);
@@ -2105,6 +2138,13 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addOption(dd,'Normal',1);"));
       oappend(SET_F("addOption(dd,'Vivid',2);"));
       oappend(SET_F("addOption(dd,'Lazy',3);"));
+
+      oappend(SET_F("dd=addDropdown('AudioReactive','experiments:micLev');"));
+      oappend(SET_F("addOption(dd,'Floating  (⎌)',0);"));
+      oappend(SET_F("addOption(dd,'Freeze',1);"));
+      oappend(SET_F("dd=addDropdown('AudioReactive','experiments:freqRMS');"));
+      oappend(SET_F("addOption(dd,'Off  (⎌)',0);"));
+      oappend(SET_F("addOption(dd,'On',1);"));
 
       oappend(SET_F("dd=addDropdown('AudioReactive','dynamics:limiter');"));
       oappend(SET_F("addOption(dd,'Off',0);"));
