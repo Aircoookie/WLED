@@ -123,8 +123,10 @@ static AudioSource *audioSource = nullptr;
 static volatile bool disableSoundProcessing = false;      // if true, sound processing (FFT, filters, AGC) will be suspended. "volatile" as its shared between tasks.
 static bool useBandPassFilter = false;                    // if true, enables a bandpass filter 80Hz-16Khz to remove noise. Applies before FFT.
 
+//WLEDMM add experimental settings
 static uint8_t micLevelMethod = 0;                        // 0=old "floating" miclev, 1=new  "freeze" mode
 static uint8_t averageByRMS = false;                      // false: use mean value, true: use RMS (root mean squared)
+static uint8_t freqDist = 0;                              // 0=old 1=rightshift mode
 
 // audioreactive variables shared with FFT task
 static float    micDataReal = 0.0f;             // MicIn data with full 24bit resolution - lowest 8bit after decimal point
@@ -520,6 +522,8 @@ void FFTcode(void * parameter)
       fftCalc[14] = fftAddAvg(147,194);   // 2940 - 3900
       fftCalc[15] = fftAddAvg(194,250);   // 3880 - 5000 // avoid the last 5 bins, which are usually inaccurate
 #else
+  //WLEDMM: different distributions
+  if (freqDist == 0) {
       /* new mapping, optimized for 22050 Hz by softhack007 */
                                                     // bins frequency  range
       if (useBandPassFilter) {
@@ -549,6 +553,36 @@ void FFTcode(void * parameter)
       fftCalc[12] = fftAddAvg(70,86);               // 16 3015 - 3704 high mid
       fftCalc[13] = fftAddAvg(86,104);              // 18 3704 - 4479 high mid
       fftCalc[14] = fftAddAvg(104,165) * 0.88f;     // 61 4479 - 7106 high mid + high  -- with slight damping
+  }
+  else if (freqDist == 1) { //WLEDMM: Rightshft: note ewowi: frequencies in comments are not correct
+      if (useBandPassFilter) {
+        // skip frequencies below 100hz
+        fftCalc[ 0] = 0.8f * fftAddAvg(1,1);
+        fftCalc[ 1] = 0.9f * fftAddAvg(2,2);
+        fftCalc[ 2] = fftAddAvg(3,3);
+        fftCalc[ 3] = fftAddAvg(4,4);
+        // don't use the last bins from 206 to 255. 
+        fftCalc[15] = fftAddAvg(165,205) * 0.75f;   // 40 7106 - 8828 high             -- with some damping
+      } else {
+        fftCalc[ 0] = fftAddAvg(1,1);               // 1    43 - 86   sub-bass
+        fftCalc[ 1] = fftAddAvg(2,2);               // 1    86 - 129  bass
+        fftCalc[ 2] = fftAddAvg(3,3);               // 2   129 - 216  bass
+        fftCalc[ 3] = fftAddAvg(4,4);               // 2   216 - 301  bass + midrange
+        // don't use the last bins from 216 to 255. They are usually contaminated by aliasing (aka noise) 
+        fftCalc[15] = fftAddAvg(165,215) * 0.70f;   // 50 7106 - 9259 high             -- with some damping
+      }
+      fftCalc[ 4] = fftAddAvg(5,6);                // 3   301 - 430  midrange
+      fftCalc[ 5] = fftAddAvg(7,8);               // 3   430 - 560  midrange
+      fftCalc[ 6] = fftAddAvg(9,10);               // 5   560 - 818  midrange
+      fftCalc[ 7] = fftAddAvg(11,13);               // 7   818 - 1120 midrange -- 1Khz should always be the center !
+      fftCalc[ 8] = fftAddAvg(14,18);               // 7  1120 - 1421 midrange
+      fftCalc[ 9] = fftAddAvg(19,25);               // 9  1421 - 1895 midrange
+      fftCalc[10] = fftAddAvg(26,36);               // 12 1895 - 2412 midrange + high mid
+      fftCalc[11] = fftAddAvg(37,45);               // 14 2412 - 3015 high mid
+      fftCalc[12] = fftAddAvg(46,66);               // 16 3015 - 3704 high mid
+      fftCalc[13] = fftAddAvg(67,97);              // 18 3704 - 4479 high mid
+      fftCalc[14] = fftAddAvg(98,164) * 0.88f;     // 61 4479 - 7106 high mid + high  -- with slight damping
+  }
 #endif
       } else {  // noise gate closed - just decay old values
         isFirstRun = false;
@@ -1988,9 +2022,11 @@ class AudioReactive : public Usermod {
       cfg[F("gain")] = sampleGain;
       cfg[F("AGC")] = soundAgc;
 
+      //WLEDMM: experimental settings
       JsonObject poweruser = top.createNestedObject("experiments");
       poweruser[F("freqRMS")] = averageByRMS;
       poweruser[F("micLev")] = micLevelMethod;
+      poweruser[F("freqDist")] = freqDist;
 
       JsonObject dynLim = top.createNestedObject("dynamics");
       dynLim[F("limiter")] = limiterOn;
@@ -2058,8 +2094,10 @@ class AudioReactive : public Usermod {
       configComplete &= getJsonValue(top["config"][F("gain")],    sampleGain);
       configComplete &= getJsonValue(top["config"][F("AGC")],     soundAgc);
 
+      //WLEDMM: experimental settings
       configComplete &= getJsonValue(top["experiments"][F("freqRMS")],  averageByRMS);
       configComplete &= getJsonValue(top["experiments"][F("micLev")], micLevelMethod);
+      configComplete &= getJsonValue(top["experiments"][F("freqDist")], freqDist);
 
       configComplete &= getJsonValue(top["dynamics"][F("limiter")], limiterOn);
       configComplete &= getJsonValue(top["dynamics"][F("rise")],  attackTime);
@@ -2113,7 +2151,7 @@ class AudioReactive : public Usermod {
       #else
         oappend(SET_F("addOption(dd,'Generic I2S with Mclk',4);"));
       #endif
-      #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
+      #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
         #if SR_DMTYPE==5
           oappend(SET_F("addOption(dd,'Generic I2S PDM (⎌)',5);"));
         #else
@@ -2139,12 +2177,16 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addOption(dd,'Vivid',2);"));
       oappend(SET_F("addOption(dd,'Lazy',3);"));
 
+      //WLEDMM: experimental settings
       oappend(SET_F("dd=addDropdown('AudioReactive','experiments:micLev');"));
       oappend(SET_F("addOption(dd,'Floating  (⎌)',0);"));
       oappend(SET_F("addOption(dd,'Freeze',1);"));
       oappend(SET_F("dd=addDropdown('AudioReactive','experiments:freqRMS');"));
       oappend(SET_F("addOption(dd,'Off  (⎌)',0);"));
       oappend(SET_F("addOption(dd,'On',1);"));
+      oappend(SET_F("dd=addDropdown('AudioReactive','experiments:freqDist');"));
+      oappend(SET_F("addOption(dd,'Normal  (⎌)',0);"));
+      oappend(SET_F("addOption(dd,'RightShift',1);"));
 
       oappend(SET_F("dd=addDropdown('AudioReactive','dynamics:limiter');"));
       oappend(SET_F("addOption(dd,'Off',0);"));
