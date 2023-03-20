@@ -1107,6 +1107,7 @@ class AudioReactive : public Usermod {
       static bool isFrozen = false;
       static bool haveSilence = true;
       static unsigned long lastSoundTime = 0; // for delaying un-freeze
+      static unsigned long startuptime = 0;   // "fast freeze" mode: do not interfere during first 12 seconds (filter startup time) 
 
       #ifdef WLED_DISABLE_SOUND
         micIn = inoise8(millis(), millis());          // Simulated analog read
@@ -1129,13 +1130,14 @@ class AudioReactive : public Usermod {
         #endif
       #endif
 
-      if ((micLevelMethod < 1) || !isFrozen) {
+      if (startuptime == 0) startuptime = millis();   // fast freeze mode - remember filter startup time
+      if ((micLevelMethod < 1) || !isFrozen) {        // following the input level, UNLESS mic Level was frozen
         micLev += (micDataReal-micLev) / 12288.0f;
       }
 
-      if(micIn < micLev) {
-      	micLev = ((micLev * 31.0f) + micDataReal) / 32.0f; // align MicLev to lowest input signal
-        if (!haveSilence) isFrozen = true;
+      if(micDataReal < (micLev-0.24)) {                    // MicLev above input signal:
+        micLev = ((micLev * 31.0f) + micDataReal) / 32.0f; // always align MicLev to lowest input signal
+        if (!haveSilence) isFrozen = true;                 // freeze mode: freeze micLevel so it cannot rise again
       }
 
       micIn -= micLev;                                  // Let's center it to 0 now
@@ -1149,6 +1151,9 @@ class AudioReactive : public Usermod {
 
       expAdjF = fabsf(expAdjF);                         // Now (!) take the absolute value
 
+      if ((micLevelMethod == 2) && !haveSilence && (expAdjF >= (1.5f * float(soundSquelch)))) 
+        isFrozen = true;    // fast freeze mode: freeze micLevel once the volume rises 50% above squelch
+
       //expAdjF = (micInNoDC <= soundSquelch) ? 0: expAdjF; // simple noise gate - experimental
       expAdjF = (expAdjF <= soundSquelch) ? 0: expAdjF; // simple noise gate
       if ((soundSquelch == 0) && (expAdjF < 0.25f)) expAdjF = 0; // do something meaningfull when "squelch = 0"
@@ -1159,8 +1164,12 @@ class AudioReactive : public Usermod {
         lastSoundTime = millis();
         haveSilence = false;
       }
-      // un-freeze after 8 sec of silence
-      if (isFrozen && ((millis() - lastSoundTime) > 8000)) isFrozen = false;
+
+      // un-freeze micLev
+      if  (micLevelMethod == 0) isFrozen = false;
+      if ((micLevelMethod == 1) && isFrozen && haveSilence && ((millis() - lastSoundTime) > 4000)) isFrozen = false;  // normal freeze: 4 seconds silence needed
+      if ((micLevelMethod == 2) && isFrozen && haveSilence && ((millis() - lastSoundTime) > 6000)) isFrozen = false;  // fast freeze: 6 seconds silence needed
+      if ((micLevelMethod == 2) && (millis() - startuptime < 12000)) isFrozen = false;   // fast freeze: no freeze in first 12 seconds (filter startup phase)
 
       tmpSample = expAdjF;
       micIn = abs(micIn);                               // And get the absolute value of each sample
@@ -2186,6 +2195,7 @@ class AudioReactive : public Usermod {
       oappend(SET_F("dd=addDropdown('AudioReactive','experiments:micLev');"));
       oappend(SET_F("addOption(dd,'Floating  (⎌)',0);"));
       oappend(SET_F("addOption(dd,'Freeze',1);"));
+      oappend(SET_F("addOption(dd,'Fast Freeze',2);"));
       oappend(SET_F("dd=addDropdown('AudioReactive','experiments:freqDist');"));
       oappend(SET_F("addOption(dd,'Normal  (⎌)',0);"));
       oappend(SET_F("addOption(dd,'RightShift',1);"));
