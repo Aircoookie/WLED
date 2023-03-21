@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2302120
+#define VERSION 2303160
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -25,13 +25,16 @@
 
 // You can choose some of these features to disable:
 //#define WLED_DISABLE_ALEXA       // saves 11kb
-//#define WLED_DISABLE_BLYNK       // saves 6kb
 //#define WLED_DISABLE_HUESYNC     // saves 4kb
 //#define WLED_DISABLE_INFRARED    // saves 12kb, there is no pin left for this on ESP8266-01
 #ifndef WLED_DISABLE_MQTT
   #define WLED_ENABLE_MQTT         // saves 12kb
 #endif
-#define WLED_ENABLE_ADALIGHT       // saves 500b only (uses GPIO3 (RX) for serial)
+#ifndef WLED_DISABLE_ADALIGHT      // can be used to disable reading commands from serial RX pin (see issue #3128). 
+  #define WLED_ENABLE_ADALIGHT     // disable saves 5Kb (uses GPIO3 (RX) for serial). Related serial protocols: Adalight/TPM2, Improv, Serial JSON, Continuous Serial Streaming 
+#else
+  #undef WLED_ENABLE_ADALIGHT      // disable has priority over enable
+#endif
 //#define WLED_ENABLE_DMX          // uses 3.5kb (use LEDPIN other than 2)
 //#define WLED_ENABLE_JSONLIVE     // peek LED output via /json/live (WS binary peek is always enabled)
 #ifndef WLED_DISABLE_LOXONE
@@ -118,9 +121,6 @@
   // #define ESPALEXA_DEBUG
   #include "src/dependencies/espalexa/Espalexa.h"
   #include "src/dependencies/espalexa/EspalexaDevice.h"
-#endif
-#ifndef WLED_DISABLE_BLYNK
-  #include "src/dependencies/blynk/BlynkSimpleEsp.h"
 #endif
 
 #ifdef WLED_ENABLE_DMX
@@ -319,6 +319,7 @@ WLED_GLOBAL bool correctWB       _INIT(false); // CCT color correction of RGB co
 WLED_GLOBAL bool cctFromRgb      _INIT(false); // CCT is calculated from RGB instead of using seg.cct
 WLED_GLOBAL bool gammaCorrectCol _INIT(true ); // use gamma correction on colors
 WLED_GLOBAL bool gammaCorrectBri _INIT(false); // use gamma correction on brightness
+WLED_GLOBAL float gammaCorrectVal _INIT(2.8f); // gamma correction value
 
 WLED_GLOBAL byte col[]    _INIT_N(({ 255, 160, 0, 0 }));  // current RGB(W) primary color. col[] should be updated if you want to change the color.
 WLED_GLOBAL byte colSec[] _INIT_N(({ 0, 0, 0, 0 }));      // current RGB(W) secondary color
@@ -377,12 +378,6 @@ WLED_GLOBAL bool alexaEnabled _INIT(false);                       // enable devi
 WLED_GLOBAL char alexaInvocationName[33] _INIT("Light");          // speech control name of device. Choose something voice-to-text can understand
 WLED_GLOBAL byte alexaNumPresets _INIT(0);                        // number of presets to expose to Alexa, starting from preset 1, up to 9
 
-#ifndef WLED_DISABLE_BLYNK
-WLED_GLOBAL char blynkApiKey[36] _INIT("");                       // Auth token for Blynk server. If empty, no connection will be made
-WLED_GLOBAL char blynkHost[33] _INIT("blynk-cloud.com");          // Default Blynk host
-WLED_GLOBAL uint16_t blynkPort _INIT(80);                         // Default Blynk port
-#endif
-
 WLED_GLOBAL uint16_t realtimeTimeoutMs _INIT(2500);               // ms timeout of realtime mode before returning to normal mode
 WLED_GLOBAL int arlsOffset _INIT(0);                              // realtime LED offset
 WLED_GLOBAL bool receiveDirect _INIT(true);                       // receive UDP realtime
@@ -399,6 +394,8 @@ WLED_GLOBAL uint16_t e131ProxyUniverse _INIT(0);                  // output this
 #endif
 WLED_GLOBAL uint16_t e131Universe _INIT(1);                       // settings for E1.31 (sACN) protocol (only DMX_MODE_MULTIPLE_* can span over consequtive universes)
 WLED_GLOBAL uint16_t e131Port _INIT(5568);                        // DMX in port. E1.31 default is 5568, Art-Net is 6454
+WLED_GLOBAL byte e131Priority _INIT(0);                           // E1.31 port priority (if != 0 priority handling is active)
+WLED_GLOBAL E131Priority highPriority _INIT(3);                   // E1.31 highest priority tracking, init = timeout in seconds
 WLED_GLOBAL byte DMXMode _INIT(DMX_MODE_MULTIPLE_RGB);            // DMX mode (s.a.)
 WLED_GLOBAL uint16_t DMXAddress _INIT(1);                         // DMX start address of fixture, a.k.a. first Channel [for E1.31 (sACN) protocol]
 WLED_GLOBAL uint16_t DMXSegmentSpacing _INIT(0);                  // Number of void/unused channels between each segments DMX channels
@@ -576,9 +573,6 @@ WLED_GLOBAL byte timerMonth[]     _INIT_N(({28,28,28,28,28,28,28,28}));
 WLED_GLOBAL byte timerDay[]       _INIT_N(({1,1,1,1,1,1,1,1}));
 WLED_GLOBAL byte timerDayEnd[]		_INIT_N(({31,31,31,31,31,31,31,31}));
 
-// blynk
-WLED_GLOBAL bool blynkEnabled _INIT(false);
-
 //improv
 WLED_GLOBAL byte improvActive _INIT(0); //0: no improv packet received, 1: improv active, 2: provisioning
 WLED_GLOBAL byte improvError _INIT(0);
@@ -677,7 +671,14 @@ WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
 WLED_GLOBAL BusConfig* busConfigs[WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES] _INIT({nullptr}); //temporary, to remember values from network callback until after
 WLED_GLOBAL bool doInitBusses _INIT(false);
 WLED_GLOBAL int8_t loadLedmap _INIT(-1);
+#ifndef ESP8266
+WLED_GLOBAL char  *ledmapNames[WLED_MAX_LEDMAPS-1] _INIT_N(({nullptr}));
+#endif
+#if WLED_MAX_LEDMAPS>16
+WLED_GLOBAL uint32_t ledMaps _INIT(0); // bitfield representation of available ledmaps
+#else
 WLED_GLOBAL uint16_t ledMaps _INIT(0); // bitfield representation of available ledmaps
+#endif
 
 // Usermod manager
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());

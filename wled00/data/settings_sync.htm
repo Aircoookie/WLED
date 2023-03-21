@@ -149,6 +149,7 @@ Start universe: <input name="EU" type="number" min="0" max="63999" required><br>
 Skip out-of-sequence packets: <input type="checkbox" name="ES"><br>
 DMX start address: <input name="DA" type="number" min="1" max="510" required><br>
 DMX segment spacing: <input name="XX" type="number" min="0" max="150" required><br>
+E1.31 port priority: <input name="PY" type="number" min="0" max="200" required><br>
 DMX mode:
 <select name=DM>
 <option value=0>Disabled</option>
@@ -179,22 +180,12 @@ Alexa invocation name: <input type="text" name="AI" maxlength="32"><br>
 Also emulate devices to call the first <input name="AP" type="number" class="s" min="0" max="9" required> presets<br><br>
 </div>
 <hr class="sml">
-<div style="color: #fa0;">&#9888; <b>Blynk, MQTT and Hue sync all connect to external hosts!<br>
+<div style="color: #fa0;">&#9888; <b>MQTT and Hue sync all connect to external hosts!<br>
 This may impact the responsiveness of WLED.</b><br>
 </div>
 For best results, only use one of these services at a time.<br>
 (alternatively, connect a second ESP to them and use the UDP sync)
 <hr class="sml">
-<h3>Blynk</h3>
-<div id="NoBlynk" class="hide">
-	<em style="color:#fa0;">This firmware build does not include Blynk support.<br></em>
-</div>
-<div id="Blynk">
-Host: <input type="text" name="BH" maxlength="32">
-Port: <input name="BP" type="number" min="1" max="65535" value="80" class="d5"><br>
-Device Auth token: <input name="BK" maxlength="33"><br>
-<i>Clear the token field to disable. </i><a href="https://kno.wled.ge/interfaces/blynk/" target="_blank">Setup info</a>
-</div>
 <h3>MQTT</h3>
 <div id="NoMQTT" class="hide">
 	<em style="color:#fa0;">This firmware build does not include MQTT support.<br></em>

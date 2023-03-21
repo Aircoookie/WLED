@@ -140,16 +140,16 @@ class Bus {
     static void setCCT(uint16_t cct) {
       _cct = cct;
     }
-		static void setCCTBlend(uint8_t b) {
-			if (b > 100) b = 100;
-			_cctBlend = (b * 127) / 100;
-			//compile-time limiter for hardware that can't power both white channels at max
-			#ifdef WLED_MAX_CCT_BLEND
-				if (_cctBlend > WLED_MAX_CCT_BLEND) _cctBlend = WLED_MAX_CCT_BLEND;
-			#endif
-		}
-		inline        void    setAutoWhiteMode(uint8_t m) { if (m < 5) _autoWhiteMode = m; }
-		inline        uint8_t getAutoWhiteMode()          { return _autoWhiteMode; }
+    static void setCCTBlend(uint8_t b) {
+      if (b > 100) b = 100;
+      _cctBlend = (b * 127) / 100;
+      //compile-time limiter for hardware that can't power both white channels at max
+      #ifdef WLED_MAX_CCT_BLEND
+        if (_cctBlend > WLED_MAX_CCT_BLEND) _cctBlend = WLED_MAX_CCT_BLEND;
+      #endif
+    }
+    inline        void    setAutoWhiteMode(uint8_t m) { if (m < 5) _autoWhiteMode = m; }
+    inline        uint8_t getAutoWhiteMode()          { return _autoWhiteMode; }
     inline static void    setGlobalAWMode(uint8_t m)  { if (m < 5) _gAWM = m; else _gAWM = AW_GLOBAL_DISABLED; }
     inline static uint8_t getGlobalAWMode()           { return _gAWM; }
 

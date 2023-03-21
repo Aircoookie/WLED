@@ -364,7 +364,7 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == 2)
   {
-    char nS[8];
+    char nS[32];
 
     appendGPIOinfo();
 
@@ -383,7 +383,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("CB"),strip.cctBlending);
     sappend('v',SET_F("FR"),strip.getTargetFps());
     sappend('v',SET_F("AW"),Bus::getGlobalAWMode());
-    sappend('v',SET_F("LD"),strip.useLedsArray);
+    sappend('c',SET_F("LD"),strip.useLedsArray);
 
     for (uint8_t s=0; s < busses.getNumBusses(); s++) {
       Bus* bus = busses.getBus(s);
@@ -445,6 +445,7 @@ void getSettingsJS(byte subPage, char* dest)
 
     sappend('c',SET_F("GB"),gammaCorrectBri);
     sappend('c',SET_F("GC"),gammaCorrectCol);
+    dtostrf(gammaCorrectVal,3,1,nS); sappends('s',SET_F("GV"),nS);
     sappend('c',SET_F("TF"),fadeTransition);
     sappend('v',SET_F("TD"),transitionDelayDefault);
     sappend('c',SET_F("PF"),strip.paletteFade);
@@ -509,6 +510,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("EU"),e131Universe);
     sappend('v',SET_F("DA"),DMXAddress);
     sappend('v',SET_F("XX"),DMXSegmentSpacing);
+    sappend('v',SET_F("PY"),e131Priority);
     sappend('v',SET_F("DM"),DMXMode);
     sappend('v',SET_F("ET"),realtimeTimeoutMs);
     sappend('c',SET_F("FB"),arlsForceMaxBri);
@@ -520,13 +522,6 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("AP"),alexaNumPresets);
     #ifdef WLED_DISABLE_ALEXA
     oappend(SET_F("toggle('Alexa');"));  // hide Alexa settings
-    #endif
-    sappends('s',SET_F("BK"),(char*)((blynkEnabled)?SET_F("Hidden"):""));
-    #ifndef WLED_DISABLE_BLYNK
-    sappends('s',SET_F("BH"),blynkHost);
-    sappend('v',SET_F("BP"),blynkPort);
-    #else
-    oappend(SET_F("toggle('Blynk');"));    // hide BLYNK settings
     #endif
 
     #ifdef WLED_ENABLE_MQTT
@@ -738,10 +733,6 @@ void getSettingsJS(byte subPage, char* dest)
         sappend('v',SET_F("PH"),strip.panel[0].height);
       }
       sappend('v',SET_F("MPC"),strip.panels);
-      sappend('v',SET_F("PB"),strip.matrix.bottomStart);
-      sappend('v',SET_F("PR"),strip.matrix.rightStart);
-      sappend('v',SET_F("PV"),strip.matrix.vertical);
-      sappend('c',SET_F("PS"),strip.matrix.serpentine);
       // panels
       for (uint8_t i=0; i<strip.panels; i++) {
         char n[5];

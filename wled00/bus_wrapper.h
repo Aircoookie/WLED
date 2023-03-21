@@ -230,8 +230,13 @@
 #endif
 
 //APA102
-#define B_HS_DOT_3 NeoPixelBusLg<DotStarBgrFeature, DotStarSpi5MhzMethod, NeoGammaNullMethod> //hardware SPI
-#define B_SS_DOT_3 NeoPixelBusLg<DotStarBgrFeature, DotStarMethod, NeoGammaNullMethod>    //soft SPI
+#ifdef WLED_USE_ETHERNET
+// fix for #2542 (by @BlackBird77)
+#define B_HS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarEsp32DmaHspi5MhzMethod> //hardware HSPI with DMA (ESP32 only)
+#else
+#define B_HS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarSpi5MhzMethod> //hardware HSPI
+#endif
+#define B_SS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarMethod>    //soft SPI
 
 //LPD8806
 #define B_HS_LPD_3 NeoPixelBusLg<Lpd8806GrbFeature, Lpd8806SpiMethod, NeoGammaNullMethod>

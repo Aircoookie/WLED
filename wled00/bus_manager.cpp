@@ -361,7 +361,7 @@ void BusOnOff::setPixelColor(uint16_t pix, uint32_t c) {
   uint8_t b = B(c);
   uint8_t w = W(c);
 
-  _data = bool((r+g+b+w) && _bri) ? 0xFF : 0;
+  _data = bool(r|g|b|w) && bool(_bri) ? 0xFF : 0;
 }
 
 uint32_t BusOnOff::getPixelColor(uint16_t pix) {
@@ -383,24 +383,20 @@ uint8_t BusOnOff::getPins(uint8_t* pinArray) {
 
 BusNetwork::BusNetwork(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
   _valid = false;
-//      switch (bc.type) {
-//        case TYPE_NET_ARTNET_RGB:
-//          _rgbw = false;
-//          _UDPtype = 2;
-//          break;
-//        case TYPE_NET_E131_RGB:
-//          _rgbw = false;
-//          _UDPtype = 1;
-//          break;
-//        case TYPE_NET_DDP_RGB:
-//          _rgbw = false;
-//          _UDPtype = 0;
-//          break;
-//        default: // TYPE_NET_DDP_RGB / TYPE_NET_DDP_RGBW
+  switch (bc.type) {
+    case TYPE_NET_ARTNET_RGB:
+      _rgbw = false;
+      _UDPtype = 2;
+      break;
+    case TYPE_NET_E131_RGB:
+      _rgbw = false;
+      _UDPtype = 1;
+      break;
+    default: // TYPE_NET_DDP_RGB / TYPE_NET_DDP_RGBW
       _rgbw = bc.type == TYPE_NET_DDP_RGBW;
       _UDPtype = 0;
-//          break;
-//      }
+      break;
+  }
   _UDPchannels = _rgbw ? 4 : 3;
   _data = (byte *)malloc(bc.count * _UDPchannels);
   if (_data == nullptr) return;
