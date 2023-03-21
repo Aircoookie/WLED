@@ -1,5 +1,4 @@
 function peek(c, setOff=false) {
-	console.log("peek",c, setOff);
 	// Check for canvas support
 	var ctx = c.getContext('2d');
 	if (ctx) { // Access the rendering context
@@ -18,7 +17,7 @@ function peek(c, setOff=false) {
 		}
 		ws.binaryType = "arraybuffer";
 
-		function myFunction(e) {
+		function processWSData(e) {
 			try {
 				if (toString.call(e.data) === '[object ArrayBuffer]') {
 					let leds = new Uint8Array(e.data);
@@ -51,8 +50,8 @@ function peek(c, setOff=false) {
 		}
 		
 		if (!setOff)
-			ws.addEventListener('message', myFunction);
+			ws.addEventListener('message', processWSData);
 		else
-			ws.removeEventListener('message', myFunction);
+			ws.removeEventListener('message', processWSData);
 	}
 }
