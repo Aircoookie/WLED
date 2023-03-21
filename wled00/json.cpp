@@ -46,7 +46,7 @@
  * JSON API (De)serialization
  */
 
-void deserializeSegment(JsonObject elem, byte it, byte presetId)
+bool deserializeSegment(JsonObject elem, byte it, byte presetId)
 {
   //WLEDMM add USER_PRINT
   if (elem.size()!=1 || elem["stop"] != 0) { // not for {"stop":0}
@@ -56,7 +56,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   }
 
   byte id = elem["id"] | it;
-  if (id >= strip.getMaxSegments()) return;
+  if (id >= strip.getMaxSegments()) return false;
 
   //WLEDMM: add compatibility for SR presets
   #ifndef WLED_DISABLE_2D
@@ -80,7 +80,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   // if using vectors use this code to append segment
   if (id >= strip.getSegmentsNum()) {
-    if (stop <= 0) return; // ignore empty/inactive segments
+    if (stop <= 0) return false; // ignore empty/inactive segments
     strip.appendSegment(Segment(0, strip.getLengthTotal()));
     id = strip.getSegmentsNum()-1; // segments are added at the end of list
   }
@@ -113,7 +113,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
       elem["rev"]   = !elem["rev"]; // alternate reverse on even/odd segments
       deserializeSegment(elem, i, presetId); // recursive call with new id
     }
-    return;
+    return true;
   }
 
   if (elem["n"]) {
@@ -169,6 +169,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   }
   if (stop > start && of > len -1) of = len -1;
   seg.set(start, stop, grp, spc, of, startY, stopY);
+
+  if (seg.reset && seg.stop == 0) return true; // segment was deleted & is marked for reset, no need to change anything else
 
   byte segbri = seg.opacity;
   if (getVal(elem["bri"], &segbri)) {
@@ -331,6 +333,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   }
   // send UDP/WS if segment options changed (except selection; will also deselect current preset)
   if (seg.differs(prev) & 0x7F) stateChanged = true;
+
+  return true;
 }
 
 // deserializes WLED state (fileDoc points to doc object if called from web server)
@@ -454,11 +458,12 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       deserializeSegment(segVar, id, presetId); //apply only the segment with the specified ID
     }
   } else {
+    size_t deleted = 0;
     JsonArray segs = segVar.as<JsonArray>();
     for (JsonObject elem : segs) {
-      deserializeSegment(elem, it, presetId);
-      it++;
+      if (deserializeSegment(elem, it++, presetId) && !elem["stop"].isNull() && elem["stop"]==0) deleted++;
     }
+    if (strip.getSegmentsNum() > 3 && deleted >= strip.getSegmentsNum()/2U) strip.purgeSegments(); // batch deleting more than half segments
   }
 
   usermods.readFromJsonState(root);

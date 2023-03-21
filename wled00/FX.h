@@ -72,7 +72,11 @@
   #ifndef MAX_NUM_SEGMENTS
     #define MAX_NUM_SEGMENTS  32
   #endif
-  #define MAX_SEGMENT_DATA  32767
+  #if defined(ARDUINO_ARCH_ESP32S2)
+    #define MAX_SEGMENT_DATA  24576
+  #else
+    #define MAX_SEGMENT_DATA  32767
+  #endif
 #endif
 
 /* How much data bytes each segment should max allocate to leave enough space for other segments,
@@ -501,6 +505,9 @@ typedef struct Segment {
     inline bool     isSelected(void)     const { return selected; }
     inline bool     isActive(void)       const { return stop > start; }
     inline bool     is2D(void)           const { return (width()>1 && height()>1); }
+    inline bool     hasRGB(void)         const { return _isRGB; }
+    inline bool     hasWhite(void)       const { return _hasW; }
+    inline bool     isCCT(void)          const { return _isCCT; }
     inline uint16_t width(void)          const { return stop - start; }       // segment width in physical pixels (length if 1D)
     inline uint16_t height(void)         const { return stopY - startY; }     // segment height (if 2D) in physical pixels
     inline uint16_t length(void)         const { return width() * height(); } // segment length (count) in physical pixels
@@ -854,6 +861,13 @@ class WS2812FX {  // 96 bytes
           bool serpentine  : 1; // is serpentine?
         };
       };
+      panel_t()
+        : xOffset(0)
+        , yOffset(0)
+        , width(8)
+        , height(8)
+        , options(0)
+      {}
     } Panel;
     std::vector<Panel> panel;
 #endif

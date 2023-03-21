@@ -362,7 +362,7 @@ void BusOnOff::setPixelColor(uint16_t pix, uint32_t c) {
   uint8_t b = B(c);
   uint8_t w = W(c);
 
-  _data = bool((r+g+b+w) && _bri) ? 0xFF : 0;
+  _data = bool(r|g|b|w) && bool(_bri) ? 0xFF : 0;
 }
 
 uint32_t BusOnOff::getPixelColor(uint16_t pix) {
