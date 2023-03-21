@@ -240,6 +240,11 @@ void initServer()
     request->send(200, "text/plain", (String)ESP.getFreeHeap());
   });
 
+  //WLEDMM and Athom
+  server.on("/getflash", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(200, "text/plain", (String)ESP.getFlashChipSize());
+    });
+
   server.on("/u", HTTP_GET, [](AsyncWebServerRequest *request){
     if (handleIfNoneMatchCacheHeader(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_usermod, PAGE_usermod_length);
