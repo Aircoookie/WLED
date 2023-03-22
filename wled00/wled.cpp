@@ -194,6 +194,7 @@ void WLED::loop()
 #ifdef WLED_DEBUG
   if (millis() - debugTime > 29999) {
     DEBUG_PRINTLN(F("---DEBUG INFO---"));
+    DEBUG_PRINT(F("Name: "));       DEBUG_PRINTLN(serverDescription);
     DEBUG_PRINT(F("Runtime: "));       DEBUG_PRINTLN(millis());
     DEBUG_PRINT(F("Unix time: "));     toki.printTime(toki.getTime());
     DEBUG_PRINT(F("Free heap: "));     DEBUG_PRINTLN(ESP.getFreeHeap());

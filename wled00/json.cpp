@@ -348,7 +348,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   bool stateResponse = root[F("v")] | false;
 
-  //WLEDMM: store netDebug 
+  //WLEDMM: store netDebug, also if not WLED_DEBUG 
   #if defined(WLED_DEBUG_HOST)
   bool oldValue = netDebugEnabled;
   netDebugEnabled = root[F("netDebug")] | netDebugEnabled;
@@ -520,7 +520,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
 void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset, bool segmentBounds)
 {
-  //WLEDMM add USER_PRINT
+  //WLEDMM add DEBUG_PRINT (not USER_PRINT)
   String temp;
   serializeJson(root, temp);
   DEBUG_PRINTF("serializeSegment %s\n", temp.c_str());
@@ -590,15 +590,10 @@ void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset, b
 
 void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segmentBounds, bool selectedSegmentsOnly)
 {
-  //WLEDMM add USER_PRINT
+  //WLEDMM add DEBUG_PRINT (not USER_PRINT)
   String temp;
   serializeJson(root, temp);
-  DEBUG_PRINTF("serializeState %s\n", temp.c_str());
-
-  //WLEDMM: store netDebug 
-  #if defined(WLED_DEBUG_HOST)
-    root[F("netDebug")] = netDebugEnabled;
-  #endif
+  DEBUG_PRINTF("serializeState %d %s\n", forPreset, temp.c_str());
 
   if (includeBri) {
     root["on"] = (bri > 0);
@@ -607,6 +602,11 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
   }
 
   if (!forPreset) {
+    //WLEDMM: store netDebug 
+    #if defined(WLED_DEBUG_HOST)
+      root[F("netDebug")] = netDebugEnabled;
+    #endif
+
     if (errorFlag) {root[F("error")] = errorFlag; errorFlag = ERR_NONE;} //prevent error message to persist on screen
 
     root["ps"] = (currentPreset > 0) ? currentPreset : -1;

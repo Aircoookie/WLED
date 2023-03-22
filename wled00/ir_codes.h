@@ -212,7 +212,7 @@
 #define IR21_FADE          0xFF02FD
 #define IR21_SMOOTH        0xFFC23D
 
-//WLEDMM
+//WLEDMM and Athom
 #define IR24_MC_OFF        0xF7C03F // OFF
 #define IR24_MC_AUTO       0xF7E01F // AUTO
 #define IR24_MC_ON         0xF740BF // ON

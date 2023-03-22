@@ -2172,9 +2172,9 @@ class AudioReactive : public Usermod {
           oappend(SET_F("addOption(dd,'Generic I2S PDM',5);"));
         #endif
         #if SR_DMTYPE==51
-          oappend(SET_F("addOption(dd,'.Legacy I2S PDM (⎌)',51);"));
+          oappend(SET_F("addOption(dd,'.Legacy I2S PDM ☾ (⎌)',51);"));
         #else
-          oappend(SET_F("addOption(dd,'.Legacy I2S PDM',51);"));
+          oappend(SET_F("addOption(dd,'.Legacy I2S PDM ☾',51);"));
         #endif
       #endif
 
@@ -2196,12 +2196,17 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addOption(dd,'Floating  (⎌)',0);"));
       oappend(SET_F("addOption(dd,'Freeze',1);"));
       oappend(SET_F("addOption(dd,'Fast Freeze',2);"));
+      oappend(SET_F("addInfo('AudioReactive:experiments:micLev',1,'☾');"));
+
       oappend(SET_F("dd=addDropdown('AudioReactive','experiments:freqDist');"));
       oappend(SET_F("addOption(dd,'Normal  (⎌)',0);"));
       oappend(SET_F("addOption(dd,'RightShift',1);"));
+      oappend(SET_F("addInfo('AudioReactive:experiments:freqDist',1,'☾');"));
+
       oappend(SET_F("dd=addDropdown('AudioReactive','experiments:freqRMS');"));
       oappend(SET_F("addOption(dd,'Off  (⎌)',0);"));
       oappend(SET_F("addOption(dd,'On',1);"));
+      oappend(SET_F("addInfo('AudioReactive:experiments:freqRMS',1,'☾');"));
 
       oappend(SET_F("dd=addDropdown('AudioReactive','dynamics:limiter');"));
       oappend(SET_F("addOption(dd,'Off',0);"));
@@ -2273,6 +2278,7 @@ class AudioReactive : public Usermod {
       #else
         oappend(SET_F("addOption(dd,'userdefined #2',9);"));
       #endif
+      oappend(SET_F("addInfo('AudioReactive:frequency:profile',1,'☾');"));
 
       oappend(SET_F("dd=addDropdown('AudioReactive','sync:mode');"));
       oappend(SET_F("addOption(dd,'Off',0);"));
