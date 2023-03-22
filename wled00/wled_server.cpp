@@ -363,7 +363,7 @@ void initServer()
   });
   #endif
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-    USER_PRINTF("%s Client request %s\n", serverDescription, request->url()); //WLEDMM: want to see if client connects to wled, for netdebug also wants to know server
+    USER_PRINTF("%s Client request %s\n", serverDescription, request->url().c_str()); //WLEDMM: want to see if client connects to wled, for netdebug also wants to know server
     if (captivePortal(request)) return;
     serveIndexOrWelcome(request);
   });
