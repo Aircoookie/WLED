@@ -73,8 +73,10 @@ void decBrightness()
 // apply preset or fallback to a effect and palette if it doesn't exist
 void presetFallback(uint8_t presetID, uint8_t effectID, uint8_t paletteID)
 {
+  USER_PRINTF("presetFallback1 %d %d %d\n", presetID, effectID, paletteID);
   applyPreset(presetID, CALL_MODE_BUTTON_PRESET);
   //these two will be overwritten if preset exists in handlePresets()
+  USER_PRINTF("presetFallback2 %d %d %d\n", presetID, effectID, paletteID);
   effectCurrent = effectID;
   effectPalette = paletteID;
 }
@@ -612,12 +614,14 @@ void decodeIR9(uint32_t code)
 //WLEDMM
 void decodeIR24MC(uint32_t code)
 {
+  bool isSolid = strip.getMainSegment().mode==0;
+
   switch (code) {
     case IR24_MC_OFF        : if (bri > 0) briLast = bri; bri = 0; break;
     case IR24_MC_AUTO       : changeEffect(FX_MODE_FADE);          break;
     case IR24_MC_ON         : bri = briLast;                       break;
-    case IR24_MC_MODES      : changeEffect(relativeChange(effectCurrent,  1, 0, 118 -1)); break;
-    case IR24_MC_MODE       : changeEffect(relativeChange(effectCurrent, -1, 0, 118 -1)); break;
+    case IR24_MC_MODES      : changeEffect(relativeChange(effectCurrent,  1, 0, strip.getModeCount() -1)); break;
+    case IR24_MC_MODE       : changeEffect(relativeChange(effectCurrent, -1, 0, strip.getModeCount() -1)); break;
     case IR24_MC_BRIGHTER   : incBrightness();                     break;
     case IR24_MC_DARKER     : decBrightness();                     break;
     case IR24_MC_QUICK      : changeEffectSpeed( 16);              break;
@@ -625,18 +629,18 @@ void decodeIR24MC(uint32_t code)
     case IR24_MC_RED        : changeColor(COLOR_RED);              break;
     case IR24_MC_GREEN      : changeColor(COLOR_GREEN);            break;
     case IR24_MC_BLUE       : changeColor(COLOR_BLUE);             break;
-    case IR24_MC_R1         : changeColor(COLOR_YELLOW);           break;
-    case IR24_MC_G1         : changeColor(COLOR_DoderBlue);        break;
-    case IR24_MC_B1         : changeColor(COLOR_Indigo);           break;
-    case IR24_MC_R2         : changeColor(COLOR_Magenta);          break;
-    case IR24_MC_G2         : changeColor(COLOR_DarkBlue);         break;
-    case IR24_MC_B2         : changeColor(COLOR_Lime);             break;
-    case IR24_MC_R3         : changeColor(COLOR_Orange);           break;
-    case IR24_MC_G3         : changeColor(COLOR_WHITE);            break;
-    case IR24_MC_B3         : changeEffect(FX_MODE_RAINBOW_CYCLE); break;
-    case IR24_MC_MUSIC1     : changeEffect(relativeChange(effectCurrent,  1, 128, MODE_COUNT -1)); break;
+    case IR24_MC_R1         : isSolid?changeColor(COLOR_YELLOW):presetFallback(1, strip.isMatrix?FX_MODE_2DAKEMI:FX_MODE_PIXELS, effectPalette);           break;
+    case IR24_MC_G1         : isSolid?changeColor(COLOR_DoderBlue):presetFallback(2, strip.isMatrix?FX_MODE_2DWAVERLY:FX_MODE_GRAVIMETER, effectPalette);        break;
+    case IR24_MC_B1         : isSolid?changeColor(COLOR_Indigo):presetFallback(3, strip.isMatrix?FX_MODE_2DWAVERLY:FX_MODE_JUGGLES, effectPalette);           break;
+    case IR24_MC_R2         : isSolid?changeColor(COLOR_Magenta):presetFallback(4, strip.isMatrix?FX_MODE_2DGAMEOFLIFE:FX_MODE_PIXELWAVE, effectPalette);          break;
+    case IR24_MC_G2         : isSolid?changeColor(COLOR_DarkBlue):presetFallback(5, strip.isMatrix?FX_MODE_BOUNCINGBALLS:FX_MODE_FREQPIXELS, effectPalette);         break;
+    case IR24_MC_B2         : isSolid?changeColor(COLOR_Lime):presetFallback(6, strip.isMatrix?FX_MODE_2DDISTORTIONWAVES:FX_MODE_NOISEMOVE, effectPalette);             break;
+    case IR24_MC_R3         : isSolid?changeColor(COLOR_Orange):presetFallback(7, strip.isMatrix?FX_MODE_2DLISSAJOUS:FX_MODE_BLURZ, effectPalette);           break;
+    case IR24_MC_G3         : isSolid?changeColor(COLOR_WHITE):presetFallback(8, strip.isMatrix?FX_MODE_2DJULIA:FX_MODE_NOISEMETER, effectPalette);            break;
+    case IR24_MC_B3         : isSolid?changeEffect(FX_MODE_RAINBOW_CYCLE):presetFallback(9, strip.isMatrix?FX_MODE_2DSWIRL:FX_MODE_PUDDLES, effectPalette); break;
+    case IR24_MC_MUSIC1     : changeEffectIntensity(16); break; //WLEDMM: was sound modes but does not work in 0.14
     case IR24_MC_LOCK       : changeEffect(FX_MODE_STATIC);        break;
-    case IR24_MC_MUSIC2     : changeEffect(relativeChange(effectCurrent, -1, 128, MODE_COUNT -1)); break;
+    case IR24_MC_MUSIC2     : changeEffectIntensity(-16); break; //WLEDMM: was sound modes but does not work in 0.14
     default: return;
   }
   lastValidCode = code;
