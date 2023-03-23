@@ -348,8 +348,10 @@ public:
       findCurrentEffectAndPalette();
     }
 
-    if (modes_alpha_indexes[effectCurrentIndex] != effectCurrent || palettes_alpha_indexes[effectPaletteIndex] != effectPalette) {
-      currentEffectAndPaletteInitialized = false;
+    if (modes_alpha_indexes != nullptr) {  // WLEDMM bugfix
+      if (modes_alpha_indexes[effectCurrentIndex] != effectCurrent || palettes_alpha_indexes[effectPaletteIndex] != effectPalette) {
+        currentEffectAndPaletteInitialized = false;
+      }
     }
 
     if (currentTime - loopTime >= 2) // 2ms since last check of encoder = 500Hz
@@ -469,11 +471,13 @@ public:
 
   void displayNetworkInfo() {
     #ifdef USERMOD_FOUR_LINE_DISPLAY
+    if (display != nullptr)
     display->networkOverlay(PSTR("NETWORK INFO"), 10000);
     #endif
   }
 
   void findCurrentEffectAndPalette() {
+    if (modes_alpha_indexes == nullptr) return; // WLEDMM bugfix
     currentEffectAndPaletteInitialized = true;
     for (uint8_t i = 0; i < strip.getModeCount(); i++) {
       if (modes_alpha_indexes[i] == effectCurrent) {
@@ -510,7 +514,8 @@ public:
     // 6: fx changed 7: hue 8: preset cycle 9: blynk 10: alexa
     //setValuesFromFirstSelectedSeg(); //to make transition work on main segment (should no longer be required)
     stateUpdated(CALL_MODE_BUTTON);
-    updateInterfaces(CALL_MODE_BUTTON);
+    if ((millis() - lastInterfaceUpdate) > INTERFACE_UPDATE_COOLDOWN)   // WLEDMM respect cooldown times, to avoid crash in AsyncWebSocketMessageBuffer
+      updateInterfaces(CALL_MODE_BUTTON);
   }
 
   void changeBrightness(bool increase) {
@@ -522,7 +527,10 @@ public:
     }
     display->updateRedrawTime();
   #endif
-    bri = max(min((increase ? bri+fadeAmount : bri-fadeAmount), 255), 0);
+    byte lastBri = bri;
+    if (bri < 40) bri = max(min((increase ? bri+fadeAmount/2 : bri-fadeAmount/2), 255), 0);    // WLEDMM slower steps when brightness < 16%
+    else bri = max(min((increase ? bri+fadeAmount : bri-fadeAmount), 255), 0);
+    if (lastBri != bri) stateChanged = true;                                                   // WLEDMM bugfix
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
     if (display->canDraw())   // only draw if nothing else is drawing
@@ -541,7 +549,7 @@ public:
     display->updateRedrawTime();
   #endif
     effectCurrentIndex = max(min((increase ? effectCurrentIndex+1 : effectCurrentIndex-1), strip.getModeCount()-1), 0);
-    effectCurrent = modes_alpha_indexes[effectCurrentIndex];
+    if (modes_alpha_indexes != nullptr) effectCurrent = modes_alpha_indexes[effectCurrentIndex];
     stateChanged = true;
     if (applyToAll) {
       for (byte i=0; i<strip.getSegmentsNum(); i++) {
@@ -936,7 +944,7 @@ public:
           enabled = false;
           return true;
         }
-        setup();
+        if (enabled) setup();   // WLEDMM no pin stealing!
       }
     }
     // use "return !top["newestParameter"].isNull();" when updating Usermod with new features

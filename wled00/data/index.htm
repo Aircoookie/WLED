@@ -90,68 +90,73 @@
 <div class ="container">
 	<div id="Colors" class="tabcontent">
 		<div id="picker" class="noslide"></div>
-		<div id="hwrap">
-			<!--p class="labels hd">Hue</p-->
+		<div id="hwrap" class="slider">
 			<div class="sliderwrap il">
 				<input id="sliderH" class="noslide" oninput="fromH()" onchange="setColor(0)" max="359" min="0" type="range" value="0" step="any">
 				<div class="sliderdisplay" style="background: linear-gradient(90deg, #f00 2%, #ff0 19%, #0f0 35%, #0ff 52%, #00f 68%, #f0f 85%, #f00)"></div>
-			</div><br>
+			</div>
+			<span class="tooltiptext">Hue</span>
 		</div>
-		<div id="swrap">
-			<!--p class="labels hd">Saturation</p-->
+		<div id="swrap" class="slider">
 			<div class="sliderwrap il">
 				<input id="sliderS" class="noslide" oninput="fromS()" onchange="setColor(0)" max="100" min="0" type="range" value="100" step="any">
 				<div class="sliderdisplay" style="background: linear-gradient(90deg, #aaa 0%, #f00)"></div>
-			</div><br>
+			</div>
+			<span class="tooltiptext">Saturation</span>
 		</div>
-		<div id="vwrap">
-			<!--p class="labels hd">Value</p-->
+		<div id="vwrap" class="slider">
 			<div class="sliderwrap il">
 				<input id="sliderV" class="noslide" oninput="fromV()" onchange="setColor(0)" max="100" min="0" type="range" value="100" step="any" />
 				<div class="sliderdisplay"></div>
-			</div><br>
+			</div>
+			<span class="tooltiptext">Value/Brightness</span>
 		</div>
-		<div id="kwrap">
-			<!--p class="labels hd">Temperature</p-->
+		<div id="kwrap" class="slider">
 			<div class="sliderwrap il">
 				<input id="sliderK" class="noslide" oninput="fromK()" onchange="setColor(0)" max="10091" min="1900" type="range" value="6550" />
 				<div class="sliderdisplay"></div>
 			</div>
+			<span class="tooltiptext">Kelvin/Temperature</span>
 		</div>
 		<div id="rgbwrap">
-			<p class="labels hd">RGB color</p>
-			<div id="rwrap" class="il">
+			<!--p class="labels hd">RGB color</p-->
+			<div id="rwrap" class="slider">
 				<div class="sliderwrap il">
 					<input id="sliderR" class="noslide" oninput="fromRgb()" onchange="setColor(0)" max="255" min="0" type="range" value="128" />
 					<div class="sliderdisplay"></div>
 				</div>
+				<span class="tooltiptext">Red channel</span>
 			</div>
-			<div id="gwrap" class="il">
+			<div id="gwrap" class="slider">
 				<div class="sliderwrap il">
 					<input id="sliderG" class="noslide" oninput="fromRgb()" onchange="setColor(0)" max="255" min="0" type="range" value="128" />
 					<div class="sliderdisplay"></div>
 				</div>
+				<span class="tooltiptext">Green channel</span>
 			</div>
-			<div id="bwrap" class="il">
+			<div id="bwrap" class="slider">
 				<div class="sliderwrap il">
 					<input id="sliderB" class="noslide" oninput="fromRgb()" onchange="setColor(0)" max="255" min="0" type="range" value="128" />
 					<div class="sliderdisplay"></div>
 				</div>
+				<span class="tooltiptext">Blue channel</span>
 			</div>
 		</div>
-		<div id="wwrap">
-			<p class="labels hd">White channel</p>
+		<div id="wwrap" class="slider">
+			<!--p class="labels hd">White channel</p-->
 			<div id="whibri" class="sliderwrap il">
 				<input id="sliderW" class="noslide" oninput="fromW()" onchange="setColor(0)" max="255" min="0" type="range" value="128" />
 				<div class="sliderdisplay"></div>
 			</div>
+			<span class="tooltiptext">White channel</span>
 		</div>
-		<div id="wbal">
-			<p class="labels hd">White balance</p>
+		<div id="wbal" class="slider">
+			<!--p class="labels hd">White balance</p-->
 			<div class="sliderwrap il">
 				<input id="sliderA" class="noslide" onchange="setBalance(this.value)" max="255" min="0" type="range" value="128" />
 				<div class="sliderdisplay"></div>
 			</div>
+			<span class="tooltiptext">White balance</span>
 		</div>
 		<div id="qcs-w">
 			<div class="qcs" onclick="pC('#ff0000');" title="Red" style="background-color:#ff0000;"></div>
@@ -304,6 +309,16 @@
 	</div>
 
 	<div id="Segments" class="tabcontent">
+		<!--WLEDMM Views-->
+		<div id="segviews">
+			<p class="labels hd">Peek ☾ <button class="btn infobtn btn-xs" onclick="eandp(this,gId('canvasPeek'));">v</button></p>
+			<canvas id="canvasPeek"></canvas><br>
+			<p class="labels hd">Segment view ☾ <button class="btn infobtn btn-xs" onclick="expandV(this,gId('segvis'));">v</button></p>
+			<div id="segvis">
+				<canvas id="canvasSegments"></canvas><br>
+				<div class="labels hd" id="MD"></div> <!-- Matrix dimensions -->
+			</div>
+		</div>
 		<div id="segcont">
 			Loading...
 		</div>
@@ -312,14 +327,7 @@
 		<div id="segutil2">
 			<button class="btn btn-s" id="rsbtn" onclick="rSegs()">Reset segments</button>
 		</div>
-		<!--WLEDMM Segment graphics-->
-		<br>
-		<canvas id="canvasSegments" hidden=true></canvas><br>
-		<br>
-		<canvas id="canvasPeek"></canvas><br>
-		<div id="MD"></div> <!-- Matrix dimensions -->
-		<br>
-		<p>Transition: <input id="tt" class="noslide" type="number" min="0" max="65.5" step="0.1" value="0.7">&nbsp;s</p>
+		<p>Transition: <input id="tt" type="number" min="0" max="65.5" step="0.1" value="0.7">&nbsp;s</p>
 		<p id="ledmap" class="hide"></p>
 	</div>
 
@@ -366,7 +374,8 @@
 		<textarea id="presetsGen" hidden="true"></textarea><br>
 	</div>
 	<br>
-	<span class="h">Made with <span id="heart">&#10084;&#xFE0E;</span> by Aircoookie and the <a href="https://wled.discourse.group/" target="_blank">WLED community</a></span>
+	<span class="h">WLED made with <span id="heart">&#10084;&#xFE0E;</span> by Aircoookie and the <a href="https://wled.discourse.group/" target="_blank">WLED community</a></span><br>
+	<span class="h">WLED MM made with <span id="heart">&#10084;&#xFE0E;</span> by Softhack007 & Ewowi and the <a href="https://discord.gg/8P7wGuqT/" target="_blank">WLED 2D & Audio Dev</a> community</span>
 </div>
 
 <div id="nodes" class="modal">

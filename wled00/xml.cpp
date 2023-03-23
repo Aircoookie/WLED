@@ -218,7 +218,11 @@ void appendGPIOinfo() {
   #endif
 
   #ifdef WLED_DEBUG
-  oappend(SET_F(",")); oappend(itoa(hardwareTX,nS,10));// debug output (TX) pin
+    #if defined(WLED_DEBUG_HOST)
+      if (!netDebugEnabled) oappend(SET_F(",")); oappend(itoa(hardwareTX,nS,10));// debug output (TX) pin
+    #else
+      oappend(SET_F(",")); oappend(itoa(hardwareTX,nS,10));// debug output (TX) pin
+    #endif
   #endif
 
   //Note: Using pin 3 (RX) disables Adalight / Serial JSON
@@ -274,16 +278,16 @@ void appendGPIOinfo() {
   #endif
   oappend(SET_F(";"));
 
-  char dt_pins[48]; // fix warning: output 45 bytes into a destination of size 30
+  char dt_pins[64] = { '\0' }; // fix warning: output 45 bytes into a destination of size 30
   #if defined(ESP8266) && !defined(ARDUINO_ESP8266_ESP01)
-  sprintf(dt_pins, "d.dt_pins=[%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d];", D0, D1, D2, D3, D4, D5, D6, D7, D8, hardwareRX, hardwareTX);
+  snprintf(dt_pins, 64, "d.dt_pins=[%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d];", D0, D1, D2, D3, D4, D5, D6, D7, D8, hardwareRX, hardwareTX);
   #else
-  sprintf(dt_pins, "d.dt_pins=[%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d];", PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, hardwareRX, hardwareTX);
+  snprintf(dt_pins, 64, "d.dt_pins=[%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d];", PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, PM_NO_PIN, hardwareRX, hardwareTX);
   #endif
   oappend(dt_pins);
 
-  char a_pins[48]; // fix warning: output 45 bytes into a destination of size 30
-  sprintf(a_pins, "d.a_pins=[%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d];", pinManager.getADCPin(PM_ADC1, 0), pinManager.getADCPin(PM_ADC1, 1), pinManager.getADCPin(PM_ADC1, 2), pinManager.getADCPin(PM_ADC1, 3), pinManager.getADCPin(PM_ADC1, 4), pinManager.getADCPin(PM_ADC1, 5), pinManager.getADCPin(PM_ADC1, 6), pinManager.getADCPin(PM_ADC1, 7), pinManager.getADCPin(PM_ADC1, 8), pinManager.getADCPin(PM_ADC1, 9), pinManager.getADCPin(PM_ADC1, 10));
+  char a_pins[64]  = { '\0' }; // fix warning: output 45 bytes into a destination of size 30
+  snprintf(a_pins, 64, "d.a_pins=[%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d];", pinManager.getADCPin(PM_ADC1, 0), pinManager.getADCPin(PM_ADC1, 1), pinManager.getADCPin(PM_ADC1, 2), pinManager.getADCPin(PM_ADC1, 3), pinManager.getADCPin(PM_ADC1, 4), pinManager.getADCPin(PM_ADC1, 5), pinManager.getADCPin(PM_ADC1, 6), pinManager.getADCPin(PM_ADC1, 7), pinManager.getADCPin(PM_ADC1, 8), pinManager.getADCPin(PM_ADC1, 9), pinManager.getADCPin(PM_ADC1, 10));
   oappend(a_pins);
 }
 
@@ -377,7 +381,7 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
 
   if (subPage == 2)
   {
-    char nS[8];
+    char nS[32];
 
     appendGPIOinfo();
 
@@ -396,7 +400,7 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
     sappend('v',SET_F("CB"),strip.cctBlending);
     sappend('v',SET_F("FR"),strip.getTargetFps());
     sappend('v',SET_F("AW"),Bus::getGlobalAWMode());
-    sappend('v',SET_F("LD"),strip.useLedsArray);
+    sappend('c',SET_F("LD"),strip.useLedsArray);
 
     for (uint8_t s=0; s < busses.getNumBusses(); s++) {
       Bus* bus = busses.getBus(s);
@@ -458,6 +462,7 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
 
     sappend('c',SET_F("GB"),gammaCorrectBri);
     sappend('c',SET_F("GC"),gammaCorrectCol);
+    dtostrf(gammaCorrectVal,3,1,nS); sappends('s',SET_F("GV"),nS);
     sappend('c',SET_F("TF"),fadeTransition);
     sappend('v',SET_F("TD"),transitionDelayDefault);
     sappend('c',SET_F("PF"),strip.paletteFade);
@@ -528,6 +533,7 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
 #endif    
     sappend('v',SET_F("DA"),DMXAddress);
     sappend('v',SET_F("XX"),DMXSegmentSpacing);
+    sappend('v',SET_F("PY"),e131Priority);
     sappend('v',SET_F("DM"),DMXMode);
     sappend('v',SET_F("ET"),realtimeTimeoutMs);
     sappend('c',SET_F("FB"),arlsForceMaxBri);
@@ -539,13 +545,6 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
     sappend('v',SET_F("AP"),alexaNumPresets);
     #ifdef WLED_DISABLE_ALEXA
     oappend(SET_F("toggle('Alexa');"));  // hide Alexa settings
-    #endif
-    sappends('s',SET_F("BK"),(char*)((blynkEnabled)?SET_F("Hidden"):""));
-    #ifndef WLED_DISABLE_BLYNK
-    sappends('s',SET_F("BH"),blynkHost);
-    sappend('v',SET_F("BP"),blynkPort);
-    #else
-    oappend(SET_F("toggle('Blynk');"));    // hide BLYNK settings
     #endif
 
     #ifdef WLED_ENABLE_MQTT
@@ -594,11 +593,25 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
     #else
     oappend(SET_F("toggle('Hue');"));    // hide Hue Sync settings
     #endif
+
+    //WLEDMM: add netdebug variables
+    #ifdef WLED_DEBUG_HOST
+      sappend('v',SET_F("N0"),netDebugPrintIP[0]);
+      sappend('v',SET_F("N1"),netDebugPrintIP[1]);
+      sappend('v',SET_F("N2"),netDebugPrintIP[2]);
+      sappend('v',SET_F("N3"),netDebugPrintIP[3]);
+      sappend('v',SET_F("NP"),netDebugPrintPort);
+    #endif
+    
     sappend('v',SET_F("BD"),serialBaud);
 
 #ifdef WLED_ENABLE_LOXONE
     oappend(SET_F("hideNoLOX();"));  // WLEDMM hide "not compiled in" message    
-#endif    
+#endif
+#ifdef WLED_ENABLE_ADALIGHT
+    oappend(SET_F("hideNoADA();"));  // WLEDMM hide "not compiled in" message    
+#endif
+
   }
 
   if (subPage == 5)
@@ -801,17 +814,20 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
         sappend('v',SET_F("PH"),strip.panel[0].height);
       }
       sappend('v',SET_F("MPC"),strip.panels);
+
+      //WLEDMM: keep storing basic 2d setup
       sappend('v',SET_F("BA"),strip.bOrA); //WLEDMM basic or advanced
-      sappend('v',SET_F("MPH"),strip.panelsH); //WLEDMM needs to be stored as well
-      sappend('v',SET_F("MPV"),strip.panelsV); //WLEDMM needs to be stored as well
+      sappend('v',SET_F("MPH"),strip.panelsH);
+      sappend('v',SET_F("MPV"),strip.panelsV);
       sappend('v',SET_F("PB"),strip.matrix.bottomStart);
       sappend('v',SET_F("PR"),strip.matrix.rightStart);
       sappend('v',SET_F("PV"),strip.matrix.vertical);
       sappend('c',SET_F("PS"),strip.matrix.serpentine);
-      sappend('v',SET_F("PBL"),strip.panelO.bottomStart); //WLEDMM
-      sappend('v',SET_F("PRL"),strip.panelO.rightStart); //WLEDMM
-      sappend('v',SET_F("PVL"),strip.panelO.vertical); //WLEDMM
-      sappend('c',SET_F("PSL"),strip.panelO.serpentine); //WLEDMM
+      sappend('v',SET_F("PBL"),strip.panelO.bottomStart);
+      sappend('v',SET_F("PRL"),strip.panelO.rightStart);
+      sappend('v',SET_F("PVL"),strip.panelO.vertical);
+      sappend('c',SET_F("PSL"),strip.panelO.serpentine);
+      
       //WLEDMM: add Total LEDs
       uint16_t ledCount = 0;
       for (int8_t b = 0; b < busses.getNumBusses(); b++) {

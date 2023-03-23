@@ -11,6 +11,7 @@
 	function toggle(el){gId(el).classList.toggle("hide"); gId('No'+el).classList.toggle("hide");}
 	function hideNoDMX(){gId("dmxOnOff2").style.display="none";} //WLEDMM
 	function hideNoLOX(){gId("loxOnOff2").style.display="none";} //WLEDMM
+	function hideNoADA(){gId("adaOnOff2").style.display="none";} //WLEDMM
 	function H(){window.open("https://mm.kno.wled.ge/interfaces/udp-notifier/");}
 	function B(){window.open("/settings","_self");}
 	function adj(){if (d.Sf.DI.value == 6454) {if (d.Sf.EU.value == 1) d.Sf.EU.value = 0;}
@@ -151,6 +152,7 @@ Start universe: <input name="EU" type="number" min="0" max="63999" required><br>
 Skip out-of-sequence packets: <input type="checkbox" name="ES"><br>
 DMX start address: <input name="DA" type="number" min="1" max="510" required><br>
 DMX segment spacing: <input name="XX" type="number" min="0" max="150" required><br>
+E1.31 port priority: <input name="PY" type="number" min="0" max="200" required><br>
 DMX mode:
 <select name=DM>
 <option value=0>Disabled</option>
@@ -184,22 +186,12 @@ Alexa invocation name: <input type="text" name="AI" maxlength="32"><br>
 Also emulate devices to call the first <input name="AP" type="number" class="s" min="0" max="9" required> presets<br><br>
 </div>
 <hr class="sml">
-<div style="color: #fa0;">&#9888; <b>Blynk, MQTT and Hue sync all connect to external hosts!<br>
+<div style="color: #fa0;">&#9888; <b>MQTT and Hue sync all connect to external hosts!<br>
 This may impact the responsiveness of WLED.</b><br>
 </div>
 For best results, only use one of these services at a time.<br>
 (alternatively, connect a second ESP to them and use the UDP sync)
 <hr class="sml">
-<h3>Blynk</h3>
-<div id="NoBlynk" class="hide">
-	<em style="color:#fa0;">This firmware build does not include Blynk support.<br></em>
-</div>
-<div id="Blynk">
-Host: <input type="text" name="BH" maxlength="32">
-Port: <input name="BP" type="number" min="1" max="65535" value="80" class="d5"><br>
-Device Auth token: <input name="BK" maxlength="33"><br>
-<i>Clear the token field to disable. </i><a href="https://mm.kno.wled.ge/interfaces/blynk/" target="_blank">Setup info</a>
-</div>
 <h3>MQTT</h3>
 <div id="NoMQTT" class="hide">
 	<em style="color:#fa0;">This firmware build does not include MQTT support.<br></em>
@@ -235,11 +227,14 @@ Hue Bridge IP:<br>
 (when first connecting)<br>
 </div>
 Hue status: <span class="sip"> Disabled in this build </span>
-<div id="loxOnOff2"> <!--WLEDMM-->>
-  <br><em style="color:darkorange">This firmware build does not include Loxone Lighting support. <br></em>
+<div id="loxOnOff2"> <!--WLEDMM-->
+  <em style="color:darkorange">This firmware build does not include Loxone Lighting support. <br></em>
 </div>
 <h3>Serial</h3>
-Baud rate:
+<div id="adaOnOff2"> <!--WLEDMM-->
+	<em style="color:darkorange">This firmware build does not include Serial Command support. <br>Adalight/TPM2, Serial JSON, Improv, and serial streaming are not possible. <br></em>
+  </div>
+  Baud rate:
 <select name=BD>
 <option value=1152>115200</option>
 <option value=2304>230400</option>
@@ -251,6 +246,20 @@ Baud rate:
 <option value=15000>1500000</option>
 </select><br>
 <i>Keep at 115200 to use Improv. Some boards may not support high rates.</i>
+<h3>Net Serial ☾</h3>
+<div id="NoNetDebug" class="hide">
+	<em style="color:#fa0;">This firmware build does not include Net Serial support.<br></em> <!--WLEDMM we call it Net Serial-->
+</div>
+<div id="NetDebug"> <!--WLEDMM-->
+Netcat host IP:<br>
+<input name="N0" type="number" class="s" min="0" max="255" > .
+<input name="N1" type="number" class="s" min="0" max="255" > .
+<input name="N2" type="number" class="s" min="0" max="255" > .
+<input name="N3" type="number" class="s" min="0" max="255" ><br>
+Netcat host Port:<br>
+<input name="NP" type="number" min="0" max="99999" > <i>If 0 default port 7868 will be used</i><br>
+<i>on host [ip] open command prompt and enter <pre>nc -l [port] -u</pre></i>
+</div>
 <hr>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 </form>

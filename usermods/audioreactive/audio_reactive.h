@@ -29,9 +29,9 @@
 // #define SR_DEBUG                     // generic SR DEBUG messages
 
 #ifdef SR_DEBUG
-  #define DEBUGSR_PRINT(x) DEBUGOUT.print(x)
-  #define DEBUGSR_PRINTLN(x) DEBUGOUT.println(x)
-  #define DEBUGSR_PRINTF(x...) DEBUGOUT.printf(x)
+  #define DEBUGSR_PRINT(x) DEBUGOUT(x)
+  #define DEBUGSR_PRINTLN(x) DEBUGOUTLN(x)
+  #define DEBUGSR_PRINTF(x...) DEBUGOUTF(x)
 #else
   #define DEBUGSR_PRINT(x)
   #define DEBUGSR_PRINTLN(x)
@@ -55,10 +55,10 @@
 #endif
 
 #if defined(MIC_LOGGER) || defined(FFT_SAMPLING_LOG)
-  #define PLOT_PRINT(x) DEBUGOUT.print(x)
-  #define PLOT_PRINTLN(x) DEBUGOUT.println(x)
-  #define PLOT_PRINTF(x...) DEBUGOUT.printf(x)
-  #define PLOT_FLUSH() DEBUGOUT.flush()
+  #define PLOT_PRINT(x) DEBUGOUT(x)
+  #define PLOT_PRINTLN(x) DEBUGOUTLN(x)
+  #define PLOT_PRINTF(x...) DEBUGOUTF(x)
+  #define PLOT_FLUSH() DEBUGOUTFlush()
 #else
   #define PLOT_PRINT(x)
   #define PLOT_PRINTLN(x)
@@ -123,6 +123,15 @@ static AudioSource *audioSource = nullptr;
 static volatile bool disableSoundProcessing = false;      // if true, sound processing (FFT, filters, AGC) will be suspended. "volatile" as its shared between tasks.
 static bool useBandPassFilter = false;                    // if true, enables a bandpass filter 80Hz-16Khz to remove noise. Applies before FFT.
 
+//WLEDMM add experimental settings
+static uint8_t micLevelMethod = 0;                        // 0=old "floating" miclev, 1=new  "freeze" mode, 2=fast freeze mode (mode 2 may not work for you)
+#if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3)
+static uint8_t averageByRMS = false;                      // false: use mean value, true: use RMS (root mean squared). use simpler method on slower MCUs.
+#else
+static uint8_t averageByRMS = true;                       // false: use mean value, true: use RMS (root mean squared). use better method on fast MCUs.
+#endif
+static uint8_t freqDist = 0;                              // 0=old 1=rightshift mode
+
 // audioreactive variables shared with FFT task
 static float    micDataReal = 0.0f;             // MicIn data with full 24bit resolution - lowest 8bit after decimal point
 static float    multAgc = 1.0f;                 // sample * multAgc = sampleAgc. Our AGC multiplier
@@ -136,7 +145,7 @@ static float    volumeSmth = 0.0f;   // either sampleAvg or sampleAgc depending 
 
 // peak detection
 static bool samplePeak = false;      // Boolean flag for peak - used in effects. Responding routine may reset this flag. Auto-reset after strip.getMinShowDelay()
-static uint8_t maxVol = 10;          // Reasonable value for constant volume for 'peak detector', as it won't always trigger (deprecated)
+static uint8_t maxVol = 31;          // (was 10) Reasonable value for constant volume for 'peak detector', as it won't always trigger  (deprecated)
 static uint8_t binNum = 8;           // Used to select the bin for FFT based beat detection  (deprecated)
 static bool udpSamplePeak = false;   // Boolean flag for peak. Set at the same tiem as samplePeak, but reset by transmitAudioData
 static unsigned long timeOfPeak = 0; // time of last sample peak detection.
@@ -264,7 +273,8 @@ constexpr uint16_t samplesFFT = 512;            // Samples in an FFT batch - Thi
 constexpr uint16_t samplesFFT_2 = 256;          // meaningfull part of FFT results - only the "lower half" contains useful information.
 // the following are observed values, supported by a bit of "educated guessing"
 //#define FFT_DOWNSCALE 0.65f                             // 20kHz - downscaling factor for FFT results - "Flat-Top" window @20Khz, old freq channels 
-#define FFT_DOWNSCALE 0.46f                             // downscaling factor for FFT results - for "Flat-Top" window @22Khz, new freq channels
+//#define FFT_DOWNSCALE 0.46f                             // downscaling factor for FFT results - for "Flat-Top" window @22Khz, new freq channels
+#define FFT_DOWNSCALE 0.40f                             // downscaling factor for FFT results, RMS averaging
 #define LOG_256  5.54517744f                            // log(256)
 
 // These are the input and output vectors.  Input vectors receive computed results from FFT.
@@ -303,23 +313,28 @@ static float mapf(float x, float in_min, float in_max, float out_min, float out_
 }
 
 // compute average of several FFT resut bins
-#if 1  // linear average
-static float fftAddAvg(int from, int to) {
+// linear average
+static float fftAddAvgLin(int from, int to) {
   float result = 0.0f;
   for (int i = from; i <= to; i++) {
     result += vReal[i];
   }
   return result / float(to - from + 1);
 }
-#else // RMS average
-static float fftAddAvg(int from, int to) {
+// RMS average
+static float fftAddAvgRMS(int from, int to) {
   double result = 0.0;
   for (int i = from; i <= to; i++) {
     result += vReal[i] * vReal[i];
   }
   return sqrtf(result / float(to - from + 1));
 }
-#endif
+
+static float fftAddAvg(int from, int to) {
+  if (from == to) return vReal[from];              // small optimization
+  if (averageByRMS) return fftAddAvgRMS(from, to); // use SMS
+  else return fftAddAvgLin(from, to);              // use linear average
+}
 
 #if defined(CONFIG_IDF_TARGET_ESP32C3)
 constexpr bool skipSecondFFT = true;
@@ -512,35 +527,67 @@ void FFTcode(void * parameter)
       fftCalc[14] = fftAddAvg(147,194);   // 2940 - 3900
       fftCalc[15] = fftAddAvg(194,250);   // 3880 - 5000 // avoid the last 5 bins, which are usually inaccurate
 #else
-      /* new mapping, optimized for 22050 Hz by softhack007 */
+  //WLEDMM: different distributions
+  if (freqDist == 0) {
+      /* new mapping, optimized for 22050 Hz by softhack007 --- update: removed overlap */
                                                     // bins frequency  range
       if (useBandPassFilter) {
         // skip frequencies below 100hz
-        fftCalc[ 0] = 0.8f * fftAddAvg(3,4);
-        fftCalc[ 1] = 0.9f * fftAddAvg(4,5);
-        fftCalc[ 2] = fftAddAvg(5,6);
-        fftCalc[ 3] = fftAddAvg(6,7);
+        fftCalc[ 0] = 0.8f * fftAddAvg(3,3);
+        fftCalc[ 1] = 0.9f * fftAddAvg(4,4);
+        fftCalc[ 2] = fftAddAvg(5,5);
+        fftCalc[ 3] = fftAddAvg(6,6);
         // don't use the last bins from 206 to 255. 
         fftCalc[15] = fftAddAvg(165,205) * 0.75f;   // 40 7106 - 8828 high             -- with some damping
       } else {
-        fftCalc[ 0] = fftAddAvg(1,2);               // 1    43 - 86   sub-bass
-        fftCalc[ 1] = fftAddAvg(2,3);               // 1    86 - 129  bass
-        fftCalc[ 2] = fftAddAvg(3,5);               // 2   129 - 216  bass
-        fftCalc[ 3] = fftAddAvg(5,7);               // 2   216 - 301  bass + midrange
+        fftCalc[ 0] = fftAddAvg(1,1);               // 1    43 - 86   sub-bass
+        fftCalc[ 1] = fftAddAvg(2,2);               // 1    86 - 129  bass
+        fftCalc[ 2] = fftAddAvg(3,4);               // 2   129 - 216  bass
+        fftCalc[ 3] = fftAddAvg(5,6);               // 2   216 - 301  bass + midrange
         // don't use the last bins from 216 to 255. They are usually contaminated by aliasing (aka noise) 
         fftCalc[15] = fftAddAvg(165,215) * 0.70f;   // 50 7106 - 9259 high             -- with some damping
       }
-      fftCalc[ 4] = fftAddAvg(7,10);                // 3   301 - 430  midrange
-      fftCalc[ 5] = fftAddAvg(10,13);               // 3   430 - 560  midrange
-      fftCalc[ 6] = fftAddAvg(13,19);               // 5   560 - 818  midrange
-      fftCalc[ 7] = fftAddAvg(19,26);               // 7   818 - 1120 midrange -- 1Khz should always be the center !
-      fftCalc[ 8] = fftAddAvg(26,33);               // 7  1120 - 1421 midrange
-      fftCalc[ 9] = fftAddAvg(33,44);               // 9  1421 - 1895 midrange
-      fftCalc[10] = fftAddAvg(44,56);               // 12 1895 - 2412 midrange + high mid
-      fftCalc[11] = fftAddAvg(56,70);               // 14 2412 - 3015 high mid
-      fftCalc[12] = fftAddAvg(70,86);               // 16 3015 - 3704 high mid
-      fftCalc[13] = fftAddAvg(86,104);              // 18 3704 - 4479 high mid
-      fftCalc[14] = fftAddAvg(104,165) * 0.88f;     // 61 4479 - 7106 high mid + high  -- with slight damping
+      fftCalc[ 4] = fftAddAvg(7,9);                // 3   301 - 430  midrange
+      fftCalc[ 5] = fftAddAvg(10,12);               // 3   430 - 560  midrange
+      fftCalc[ 6] = fftAddAvg(13,18);               // 5   560 - 818  midrange
+      fftCalc[ 7] = fftAddAvg(19,25);               // 7   818 - 1120 midrange -- 1Khz should always be the center !
+      fftCalc[ 8] = fftAddAvg(26,32);               // 7  1120 - 1421 midrange
+      fftCalc[ 9] = fftAddAvg(33,43);               // 9  1421 - 1895 midrange
+      fftCalc[10] = fftAddAvg(44,55);               // 12 1895 - 2412 midrange + high mid
+      fftCalc[11] = fftAddAvg(56,69);               // 14 2412 - 3015 high mid
+      fftCalc[12] = fftAddAvg(70,85);               // 16 3015 - 3704 high mid
+      fftCalc[13] = fftAddAvg(86,103);              // 18 3704 - 4479 high mid
+      fftCalc[14] = fftAddAvg(104,164) * 0.88f;     // 61 4479 - 7106 high mid + high  -- with slight damping
+  }
+  else if (freqDist == 1) { //WLEDMM: Rightshft: note ewowi: frequencies in comments are not correct
+      if (useBandPassFilter) {
+        // skip frequencies below 100hz
+        fftCalc[ 0] = 0.8f * fftAddAvg(1,1);
+        fftCalc[ 1] = 0.9f * fftAddAvg(2,2);
+        fftCalc[ 2] = fftAddAvg(3,3);
+        fftCalc[ 3] = fftAddAvg(4,4);
+        // don't use the last bins from 206 to 255. 
+        fftCalc[15] = fftAddAvg(165,205) * 0.75f;   // 40 7106 - 8828 high             -- with some damping
+      } else {
+        fftCalc[ 0] = fftAddAvg(1,1);               // 1    43 - 86   sub-bass
+        fftCalc[ 1] = fftAddAvg(2,2);               // 1    86 - 129  bass
+        fftCalc[ 2] = fftAddAvg(3,3);               // 2   129 - 216  bass
+        fftCalc[ 3] = fftAddAvg(4,4);               // 2   216 - 301  bass + midrange
+        // don't use the last bins from 216 to 255. They are usually contaminated by aliasing (aka noise) 
+        fftCalc[15] = fftAddAvg(165,215) * 0.70f;   // 50 7106 - 9259 high             -- with some damping
+      }
+      fftCalc[ 4] = fftAddAvg(5,6);                // 3   301 - 430  midrange
+      fftCalc[ 5] = fftAddAvg(7,8);               // 3   430 - 560  midrange
+      fftCalc[ 6] = fftAddAvg(9,10);               // 5   560 - 818  midrange
+      fftCalc[ 7] = fftAddAvg(11,13);               // 7   818 - 1120 midrange -- 1Khz should always be the center !
+      fftCalc[ 8] = fftAddAvg(14,18);               // 7  1120 - 1421 midrange
+      fftCalc[ 9] = fftAddAvg(19,25);               // 9  1421 - 1895 midrange
+      fftCalc[10] = fftAddAvg(26,36);               // 12 1895 - 2412 midrange + high mid
+      fftCalc[11] = fftAddAvg(37,45);               // 14 2412 - 3015 high mid
+      fftCalc[12] = fftAddAvg(46,66);               // 16 3015 - 3704 high mid
+      fftCalc[13] = fftAddAvg(67,97);              // 18 3704 - 4479 high mid
+      fftCalc[14] = fftAddAvg(98,164) * 0.88f;     // 61 4479 - 7106 high mid + high  -- with slight damping
+  }
 #endif
       } else {  // noise gate closed - just decay old values
         isFirstRun = false;
@@ -1057,6 +1104,10 @@ class AudioReactive : public Usermod {
       const float weighting = 0.2f; // Exponential filter weighting. Will be adjustable in a future release.
       const float weighting2 = 0.073f; // Exponential filter weighting, for rising signal (a bit more robust against spikes)
       const int   AGC_preset = (soundAgc > 0)? (soundAgc-1): 0; // make sure the _compiler_ knows this value will not change while we are inside the function
+      static bool isFrozen = false;
+      static bool haveSilence = true;
+      static unsigned long lastSoundTime = 0; // for delaying un-freeze
+      static unsigned long startuptime = 0;   // "fast freeze" mode: do not interfere during first 12 seconds (filter startup time) 
 
       #ifdef WLED_DISABLE_SOUND
         micIn = inoise8(millis(), millis());          // Simulated analog read
@@ -1079,8 +1130,15 @@ class AudioReactive : public Usermod {
         #endif
       #endif
 
-      micLev += (micDataReal-micLev) / 12288.0f;
-      if(micIn < micLev) micLev = ((micLev * 31.0f) + micDataReal) / 32.0f; // align MicLev to lowest input signal
+      if (startuptime == 0) startuptime = millis();   // fast freeze mode - remember filter startup time
+      if ((micLevelMethod < 1) || !isFrozen) {        // following the input level, UNLESS mic Level was frozen
+        micLev += (micDataReal-micLev) / 12288.0f;
+      }
+
+      if(micDataReal < (micLev-0.24)) {                    // MicLev above input signal:
+        micLev = ((micLev * 31.0f) + micDataReal) / 32.0f; // always align MicLev to lowest input signal
+        if (!haveSilence) isFrozen = true;                 // freeze mode: freeze micLevel so it cannot rise again
+      }
 
       micIn -= micLev;                                  // Let's center it to 0 now
       // Using an exponential filter to smooth out the signal. We'll add controls for this in a future release.
@@ -1093,9 +1151,25 @@ class AudioReactive : public Usermod {
 
       expAdjF = fabsf(expAdjF);                         // Now (!) take the absolute value
 
+      if ((micLevelMethod == 2) && !haveSilence && (expAdjF >= (1.5f * float(soundSquelch)))) 
+        isFrozen = true;    // fast freeze mode: freeze micLevel once the volume rises 50% above squelch
+
       //expAdjF = (micInNoDC <= soundSquelch) ? 0: expAdjF; // simple noise gate - experimental
       expAdjF = (expAdjF <= soundSquelch) ? 0: expAdjF; // simple noise gate
       if ((soundSquelch == 0) && (expAdjF < 0.25f)) expAdjF = 0; // do something meaningfull when "squelch = 0"
+
+      if (expAdjF <= 0.5f) 
+        haveSilence = true;
+      else {
+        lastSoundTime = millis();
+        haveSilence = false;
+      }
+
+      // un-freeze micLev
+      if  (micLevelMethod == 0) isFrozen = false;
+      if ((micLevelMethod == 1) && isFrozen && haveSilence && ((millis() - lastSoundTime) > 4000)) isFrozen = false;  // normal freeze: 4 seconds silence needed
+      if ((micLevelMethod == 2) && isFrozen && haveSilence && ((millis() - lastSoundTime) > 6000)) isFrozen = false;  // fast freeze: 6 seconds silence needed
+      if ((micLevelMethod == 2) && (millis() - startuptime < 12000)) isFrozen = false;   // fast freeze: no freeze in first 12 seconds (filter startup phase)
 
       tmpSample = expAdjF;
       micIn = abs(micIn);                               // And get the absolute value of each sample
@@ -1360,6 +1434,7 @@ class AudioReactive : public Usermod {
         case 0:  //ADC analog
         #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3)
         case 5:  //PDM Microphone
+        case 51: //legacy PDM Microphone
         #endif
       #endif
         case 1:
@@ -1394,6 +1469,13 @@ class AudioReactive : public Usermod {
           DEBUGSR_PRINT(F("AR: I2S PDM Microphone - ")); DEBUGSR_PRINTLN(F(I2S_PDM_MIC_CHANNEL_TEXT));
           audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, 1.0f/4.0f);
           useBandPassFilter = true;  // this reduces the noise floor on SPM1423 from 5% Vpp (~380) down to 0.05% Vpp (~5)
+          delay(100);
+          if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin);
+          break;
+        case 51:
+          DEBUGSR_PRINT(F("AR: Legacy PDM Microphone - ")); DEBUGSR_PRINTLN(F(I2S_PDM_MIC_CHANNEL_TEXT));
+          audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, 1.0f);
+          useBandPassFilter = true;
           delay(100);
           if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin);
           break;
@@ -1530,7 +1612,7 @@ class AudioReactive : public Usermod {
 
         #if defined(WLED_DEBUG) || defined(SR_DEBUG) || defined(SR_STATS)
           // complain when audio userloop has been delayed for long time. Currently we need userloop running between 500 and 1500 times per second. 
-          if ((userloopDelay > /*23*/ 30) && !disableSoundProcessing && (audioSyncEnabled == 0)) {
+          if ((userloopDelay > /*23*/ 65) && !disableSoundProcessing && (audioSyncEnabled == 0)) {
             USER_PRINTF("[AR userLoop] hickup detected -> was inactive for last %d millis!\n", userloopDelay);
           }
         #endif
@@ -1666,14 +1748,15 @@ class AudioReactive : public Usermod {
           connected(); // resume UDP
         } else
 //          xTaskCreatePinnedToCore(
-          xTaskCreate(                        // no need to "pin" this task to core #0
+//          xTaskCreate(                        // no need to "pin" this task to core #0
+          xTaskCreateUniversal(
             FFTcode,                          // Function to implement the task
             "FFT",                            // Name of the task
             5000,                             // Stack size in words
             NULL,                             // Task input parameter
             1,                                // Priority of the task
             &FFT_Task                         // Task handle
-//            , 0                                 // Core where the task should run
+            , 0                               // Core where the task should run
           );
       }
       micDataReal = 0.0f;                     // just to be sure
@@ -1773,7 +1856,10 @@ class AudioReactive : public Usermod {
             if (audioSource->getType() == AudioSource::Type_I2SAdc) {
               infoArr.add(F("ADC analog"));
             } else {
-              infoArr.add(F("I2S digital"));
+              if (dmType != 51)
+                infoArr.add(F("I2S digital"));
+              else
+                infoArr.add(F("legacy I2S PDM"));
             }
             // input level or "silence"
             if (maxSample5sec > 1.0) {
@@ -1786,7 +1872,7 @@ class AudioReactive : public Usermod {
           } else {
             // error during audio source setup
             infoArr.add(F("not initialized"));
-            infoArr.add(F(" - check GPIO config"));
+            infoArr.add(F(" - check pin settings"));
           }
         }
 
@@ -1950,6 +2036,12 @@ class AudioReactive : public Usermod {
       cfg[F("gain")] = sampleGain;
       cfg[F("AGC")] = soundAgc;
 
+      //WLEDMM: experimental settings
+      JsonObject poweruser = top.createNestedObject("experiments");
+      poweruser[F("micLev")] = micLevelMethod;
+      poweruser[F("freqDist")] = freqDist;
+      poweruser[F("freqRMS")] = averageByRMS;
+
       JsonObject dynLim = top.createNestedObject("dynamics");
       dynLim[F("limiter")] = limiterOn;
       dynLim[F("rise")] = attackTime;
@@ -1998,7 +2090,11 @@ class AudioReactive : public Usermod {
       if (dmType == 0) dmType = SR_DMTYPE;   // MCU does not support analog
       #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3)
       if (dmType == 5) dmType = SR_DMTYPE;   // MCU does not support PDM
+      if (dmType == 51) dmType = SR_DMTYPE;  // MCU does not support legacy PDM
       #endif
+    #else
+      if (dmType == 5) useBandPassFilter = true;   // enable filter for PDM
+      if (dmType == 51) useBandPassFilter = true /*false*/; // switch on filter for legacy PDM    
     #endif
 
       configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["pin"][0], i2ssdPin);
@@ -2011,6 +2107,11 @@ class AudioReactive : public Usermod {
       configComplete &= getJsonValue(top["config"][F("squelch")], soundSquelch);
       configComplete &= getJsonValue(top["config"][F("gain")],    sampleGain);
       configComplete &= getJsonValue(top["config"][F("AGC")],     soundAgc);
+
+      //WLEDMM: experimental settings
+      configComplete &= getJsonValue(top["experiments"][F("micLev")], micLevelMethod);
+      configComplete &= getJsonValue(top["experiments"][F("freqDist")], freqDist);
+      configComplete &= getJsonValue(top["experiments"][F("freqRMS")],  averageByRMS);
 
       configComplete &= getJsonValue(top["dynamics"][F("limiter")], limiterOn);
       configComplete &= getJsonValue(top["dynamics"][F("rise")],  attackTime);
@@ -2064,11 +2165,16 @@ class AudioReactive : public Usermod {
       #else
         oappend(SET_F("addOption(dd,'Generic I2S with Mclk',4);"));
       #endif
-      #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
+      #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
         #if SR_DMTYPE==5
           oappend(SET_F("addOption(dd,'Generic I2S PDM (⎌)',5);"));
         #else
           oappend(SET_F("addOption(dd,'Generic I2S PDM',5);"));
+        #endif
+        #if SR_DMTYPE==51
+          oappend(SET_F("addOption(dd,'.Legacy I2S PDM ☾ (⎌)',51);"));
+        #else
+          oappend(SET_F("addOption(dd,'.Legacy I2S PDM ☾',51);"));
         #endif
       #endif
 
@@ -2084,6 +2190,23 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addOption(dd,'Normal',1);"));
       oappend(SET_F("addOption(dd,'Vivid',2);"));
       oappend(SET_F("addOption(dd,'Lazy',3);"));
+
+      //WLEDMM: experimental settings
+      oappend(SET_F("dd=addDropdown('AudioReactive','experiments:micLev');"));
+      oappend(SET_F("addOption(dd,'Floating  (⎌)',0);"));
+      oappend(SET_F("addOption(dd,'Freeze',1);"));
+      oappend(SET_F("addOption(dd,'Fast Freeze',2);"));
+      oappend(SET_F("addInfo('AudioReactive:experiments:micLev',1,'☾');"));
+
+      oappend(SET_F("dd=addDropdown('AudioReactive','experiments:freqDist');"));
+      oappend(SET_F("addOption(dd,'Normal  (⎌)',0);"));
+      oappend(SET_F("addOption(dd,'RightShift',1);"));
+      oappend(SET_F("addInfo('AudioReactive:experiments:freqDist',1,'☾');"));
+
+      oappend(SET_F("dd=addDropdown('AudioReactive','experiments:freqRMS');"));
+      oappend(SET_F("addOption(dd,'Off  (⎌)',0);"));
+      oappend(SET_F("addOption(dd,'On',1);"));
+      oappend(SET_F("addInfo('AudioReactive:experiments:freqRMS',1,'☾');"));
 
       oappend(SET_F("dd=addDropdown('AudioReactive','dynamics:limiter');"));
       oappend(SET_F("addOption(dd,'Off',0);"));
@@ -2155,6 +2278,7 @@ class AudioReactive : public Usermod {
       #else
         oappend(SET_F("addOption(dd,'userdefined #2',9);"));
       #endif
+      oappend(SET_F("addInfo('AudioReactive:frequency:profile',1,'☾');"));
 
       oappend(SET_F("dd=addDropdown('AudioReactive','sync:mode');"));
       oappend(SET_F("addOption(dd,'Off',0);"));

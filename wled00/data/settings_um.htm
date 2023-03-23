@@ -309,8 +309,8 @@
 			const urlParams = new URLSearchParams(queryString);
             const userMod = urlParams.get('um');
 			if (userMod == null) {
-				urows+="<h2>Usermods (Pin Manager)</h2>";
-				urows+="<button onclick=\"location.href=\"https://mm.kno.wled.ge/usermods/pinmanager\" type=\"button\">?</button>";
+				urows+="<hr><h2>Usermods (Pin Manager)</h2>";
+				urows+="<button onclick=\"location.href=&quot;https://mm.kno.wled.ge/usermods/pinmanager&quot;\" type=\"button\">?</button>";
 				urows+="<hr class=\"sml\">";
 				urows+="<i style=\"color:orange\">(change requires reboot!)</i>";
 				urows+="<hr class=\"sml\">";
@@ -332,6 +332,17 @@
                     }
                 }
                 if (userMod != null && urows==="") urows = "Usermods configuration not found.<br>Press <i>Save</i> to initialize defaults.";
+				if (userMod == null) {
+					urows += `<hr> `;
+					urows += `<div style="margin: auto;">`;
+					urows += `<table style="margin-left:auto; margin-right:auto;">`;
+					urows += `<tr><th>Usermod</th><th>Enabled</th></tr>`
+					for (const [k,o] of Object.entries(umCfg)) {
+						urows += `<tr><td>${k}</td><td>${o.enabled}</td></tr>`;
+					}
+					urows += `</table>`;
+					urows += `</div>`;
+				}
             }
 
             gId("um").innerHTML = urows;

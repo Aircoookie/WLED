@@ -18,6 +18,7 @@ void colorRGBtoRGBW(byte* rgb);
 uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, byte *buffer, uint8_t bri=255, bool isRGBW=false);
 
 // enable additional debug output
+//WLEDMM: #define DEBUGOUT(x) netDebugEnabled?NetDebug.print(x):Serial.print(x) not supported in this file as netDebugEnabled not in scope
 #if defined(WLED_DEBUG_HOST)
   #include "net_debug.h"
   #define DEBUGOUT NetDebug
@@ -361,7 +362,7 @@ void BusOnOff::setPixelColor(uint16_t pix, uint32_t c) {
   uint8_t b = B(c);
   uint8_t w = W(c);
 
-  _data = bool((r+g+b+w) && _bri) ? 0xFF : 0;
+  _data = bool(r|g|b|w) && bool(_bri) ? 0xFF : 0;
 }
 
 uint32_t BusOnOff::getPixelColor(uint16_t pix) {
@@ -387,19 +388,15 @@ BusNetwork::BusNetwork(BusConfig &bc) : Bus(bc.type, bc.start, bc.autoWhite) {
     case TYPE_NET_ARTNET_RGB:
       _rgbw = false;
       _UDPtype = 2;
-    break;
+      break;
     case TYPE_NET_E131_RGB:
       _rgbw = false;
       _UDPtype = 1;
-    break;
-    case TYPE_NET_DDP_RGB:
-      _rgbw = false;
-      _UDPtype = 0;
-    break;
+      break;
     default: // TYPE_NET_DDP_RGB / TYPE_NET_DDP_RGBW
       _rgbw = bc.type == TYPE_NET_DDP_RGBW;
       _UDPtype = 0;
-    break;
+      break;
   }
   _UDPchannels = _rgbw ? 4 : 3;
   _data = (byte *)malloc(bc.count * _UDPchannels);

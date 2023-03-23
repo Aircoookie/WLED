@@ -81,7 +81,7 @@ uint16_t Segment::maxHeight = 1;
 // copy constructor
 Segment::Segment(const Segment &orig) {
   //DEBUG_PRINTLN(F("-- Copy segment constructor --"));
-  memcpy(this, &orig, sizeof(Segment));
+  memcpy((void*)this, (void*)&orig, sizeof(Segment));
   name = nullptr;
   data = nullptr;
   _dataLen = 0;
@@ -97,7 +97,7 @@ Segment::Segment(const Segment &orig) {
 // move constructor
 Segment::Segment(Segment &&orig) noexcept {
   //DEBUG_PRINTLN(F("-- Move segment constructor --"));
-  memcpy(this, &orig, sizeof(Segment));
+  memcpy((void*)this, (void*)&orig, sizeof(Segment));
   orig.name = nullptr;
   orig.data = nullptr;
   orig._dataLen = 0;
@@ -116,7 +116,7 @@ Segment& Segment::operator= (const Segment &orig) {
     if (leds && !Segment::_globalLeds) free(leds);
     deallocateData();
     // copy source
-    memcpy(this, &orig, sizeof(Segment));
+    memcpy((void*)this, (void*)&orig, sizeof(Segment));
     // erase pointers to allocated data
     name = nullptr;
     data = nullptr;
@@ -141,7 +141,7 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
     deallocateData(); // free old runtime data
     if (_t) delete _t;
     if (leds && !Segment::_globalLeds) free(leds);
-    memcpy(this, &orig, sizeof(Segment));
+    memcpy((void*)this, (void*)&orig, sizeof(Segment));
     orig.name = nullptr;
     orig.data = nullptr;
     orig._dataLen = 0;
@@ -188,7 +188,8 @@ void Segment::deallocateData() {
 void Segment::resetIfRequired() {
   if (reset) {
     if (leds && !Segment::_globalLeds) { free(leds); leds = nullptr; }
-    //if (_t) { delete _t; _t = nullptr; transitional = false; }
+    if (transitional && _t) { transitional = false; delete _t; _t = nullptr; }
+    deallocateData();
     next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0;
     reset = false; // setOption(SEG_OPTION_RESET, false);
   }
@@ -230,7 +231,7 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
     case FX_MODE_NOISE16_4  : pal = 26; break; // landscape 33
     case FX_MODE_GLITTER    : pal = 11; break; // rainbow colors
     case FX_MODE_SUNRISE    : pal = 35; break; // heat palette
-    case FX_MODE_FLOW       : pal =  6; break; // party
+    case FX_MODE_RAILWAY    : pal =  3; break; // prim + sec
   }
   switch (pal) {
     case 0: //default palette. Exceptions for specific effects above
@@ -442,6 +443,10 @@ void Segment::set(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t o
 
 bool Segment::setColor(uint8_t slot, uint32_t c) { //returns true if changed
   if (slot >= NUM_COLORS || c == colors[slot]) return false;
+  if (!_isRGB && !_hasW) {
+    if (slot == 0 && c == BLACK) return false; // on/off segment cannot have primary color black
+    if (slot == 1 && c != BLACK) return false; // on/off segment cannot have secondary color non black
+  }
   if (fadeTransition) startTransition(strip.getTransition()); // start transition prior to change
   colors[slot] = c;
   stateChanged = true; // send UDP/WS broadcast
@@ -575,12 +580,12 @@ class JMapC {
     char previousSegmentName[50] = "";
 
     ~JMapC() {
-      Serial.println("~JMapC");
+      USER_PRINTLN("~JMapC");
       deletejVectorMap();
     }
     void deletejVectorMap() {
       if (jVectorMap.size() > 0) {
-        Serial.println("delete jVectorMap");
+        USER_PRINTLN("delete jVectorMap");
         for (size_t i=0; i<jVectorMap.size(); i++)
           delete jVectorMap[i].array; 
         jVectorMap.clear();
@@ -624,11 +629,11 @@ class JMapC {
       else if (SEGMENT.name != nullptr && strcmp(SEGMENT.name, previousSegmentName) != 0) {
         uint32_t dataSize = 0;
         deletejVectorMap();
-        Serial.print("New "); Serial.println(SEGMENT.name);
+        USER_PRINT("New "); USER_PRINTLN(SEGMENT.name);
         char jMapFileName[50];
         strcpy(jMapFileName, "/");
         strcat(jMapFileName, SEGMENT.name);
-        strcat(jMapFileName, ".jmap");
+        strcat(jMapFileName, ".json");
         File jMapFile;
         jMapFile = WLED_FS.open(jMapFileName, "r");
 
@@ -639,11 +644,11 @@ class JMapC {
         jMapFile.find("[");
         do {
           DeserializationError err = deserializeJson(docChunk, jMapFile);
-          // serializeJson(docChunk, Serial); Serial.println();
-          // Serial.printf("docChunk  %u / %u%% (%u %u %u) %u\n", (unsigned int)docChunk.memoryUsage(), 100 * docChunk.memoryUsage() / docChunk.capacity(), (unsigned int)docChunk.size(), docChunk.overflowed(), (unsigned int)docChunk.nesting(), jMapFile.size());
+          // serializeJson(docChunk, Serial); USER_PRINTLN();
+          // USER_PRINTF("docChunk  %u / %u%% (%u %u %u) %u\n", (unsigned int)docChunk.memoryUsage(), 100 * docChunk.memoryUsage() / docChunk.capacity(), (unsigned int)docChunk.size(), docChunk.overflowed(), (unsigned int)docChunk.nesting(), jMapFile.size());
           if (err) 
           {
-            Serial.printf("deserializeJson() of parseTree failed with code %s\n", err.c_str());
+            USER_PRINTF("deserializeJson() of parseTree failed with code %s\n", err.c_str());
             delete[] SEGMENT.name; SEGMENT.name = nullptr; //need to clear the name as otherwise continuously loaded
             return;
           }
@@ -684,10 +689,10 @@ class JMapC {
         scale = MIN(SEGMENT.virtualWidth() / maxWidth, SEGMENT.virtualHeight() / maxHeight);
 
         dataSize += sizeof(jVectorMap);
-        Serial.print("dataSize ");
-        Serial.print(dataSize);
-        Serial.print(" scale ");
-        Serial.println(scale);
+        USER_PRINT("dataSize ");
+        USER_PRINT(dataSize);
+        USER_PRINT(" scale ");
+        USER_PRINTLN(scale);
         strcpy(previousSegmentName, SEGMENT.name);
       }
     } //updatejMapDoc
@@ -696,7 +701,7 @@ class JMapC {
 //WLEDMM jMap
 void Segment::createjMap() {
   if (!jMap) {
-    Serial.println("createjMap");
+    USER_PRINTLN("createjMap");
     jMap = new JMapC();
   }
 }
@@ -705,7 +710,7 @@ void Segment::createjMap() {
 void Segment::deletejMap() {
   //Should be called from ~Segment but causes crash (and ~Segment is called quite often...)
   if (jMap) {
-    Serial.println("deletejMap");
+    USER_PRINTLN("deletejMap");
     delete (JMapC *)jMap; jMap = nullptr;
   }
 }
@@ -777,7 +782,9 @@ void xyFromBlock(uint16_t &x,uint16_t &y, uint16_t i, uint16_t vW, uint16_t vH, 
 
 void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col) //WLEDMM: IRAM_ATTR conditionaly
 {
+#ifndef WLED_DISABLE_2D
   int vStrip = i>>16; // hack to allow running on virtual strips (2D segment columns/rows)
+#endif
   i &= 0xFFFF;
 
   if (i >= virtualLength() || i<0) return;  // if pixel would fall out of segment just exit
@@ -952,7 +959,9 @@ void Segment::setPixelColor(float i, uint32_t col, bool aa)
 
 uint32_t Segment::getPixelColor(int i)
 {
+#ifndef WLED_DISABLE_2D
   int vStrip = i>>16;
+#endif
   i &= 0xFFFF;
 
 #ifndef WLED_DISABLE_2D
@@ -1040,15 +1049,34 @@ uint8_t Segment::differs(Segment& b) const {
 
 void Segment::refreshLightCapabilities() {
   uint8_t capabilities = 0;
+  uint16_t segStartIdx = 0xFFFFU;
+  uint16_t segStopIdx  = 0;
+
+  if (start < Segment::maxWidth * Segment::maxHeight) {
+    // we are withing 2D matrix (includes 1D segments)
+    for (int y = startY; y < stopY; y++) for (int x = start; x < stop; x++) {
+      uint16_t index = x + Segment::maxWidth * y;
+      if (index < strip.customMappingSize) index = strip.customMappingTable[index]; // convert logical address to physical
+      if (index < 0xFFFFU) {
+        if (segStartIdx > index) segStartIdx = index;
+        if (segStopIdx  < index) segStopIdx  = index;
+      }
+      if (segStartIdx == segStopIdx) segStopIdx++; // we only have 1 pixel segment
+    }
+  } else {
+    // we are on the strip located after the matrix
+    segStartIdx = start;
+    segStopIdx  = stop;
+  }
 
   for (uint8_t b = 0; b < busses.getNumBusses(); b++) {
     Bus *bus = busses.getBus(b);
     if (bus == nullptr || bus->getLength()==0) break;
     if (!bus->isOk()) continue;
-    if (bus->getStart() >= stop) continue;
-    if (bus->getStart() + bus->getLength() <= start) continue;
+    if (bus->getStart() >= segStopIdx) continue;
+    if (bus->getStart() + bus->getLength() <= segStartIdx) continue;
 
-    uint8_t type = bus->getType();
+    //uint8_t type = bus->getType();
     if (bus->hasRGB() || (cctFromRgb && bus->hasCCT())) capabilities |= SEG_CAPABILITY_RGB;
     if (!cctFromRgb && bus->hasCCT())                   capabilities |= SEG_CAPABILITY_CCT;
     if (correctWB && (bus->hasRGB() || bus->hasCCT()))  capabilities |= SEG_CAPABILITY_CCT; //white balance correction (CCT slider)
@@ -1287,14 +1315,50 @@ uint8_t * Segment::getAudioPalette(int pal) {
 // WS2812FX class implementation
 ///////////////////////////////////////////////////////////////////////////////
 
-//WLEDMM from 
+//WLEDMM from util.cpp
+// enumerate all ledmapX.json files on FS and extract ledmap names if existing
 void WS2812FX::enumerateLedmaps() {
   ledMaps = 1;
   for (size_t i=1; i<10; i++) {
-    char fileName[16];
+    char fileName[33];
     sprintf_P(fileName, PSTR("/ledmap%d.json"), i);
     bool isFile = WLED_FS.exists(fileName);
-    if (isFile) ledMaps |= 1 << i;
+
+        #ifndef ESP8266
+    if (ledmapNames[i-1]) { //clear old name
+      delete[] ledmapNames[i-1];
+      ledmapNames[i-1] = nullptr;
+    }
+    #endif
+
+    if (isFile) {
+      ledMaps |= 1 << i;
+
+      #ifndef ESP8266
+      if (requestJSONBufferLock(21)) {
+        if (readObjectFromFile(fileName, nullptr, &doc)) {
+          size_t len = 0;
+          if (!doc["n"].isNull()) {
+            // name field exists
+            const char *name = doc["n"].as<const char*>();
+            if (name != nullptr) len = strlen(name);
+            if (len > 0 && len < 33) {
+              ledmapNames[i-1] = new char[len+1];
+              if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], name, 33);
+            }
+          }
+          if (!ledmapNames[i-1]) {
+            char tmp[33];
+            snprintf_P(tmp, 32, PSTR("ledmap%d.json"), i);
+            len = strlen(tmp);
+            ledmapNames[i-1] = new char[len+1];
+            if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], tmp, 33);
+          }
+        }
+        releaseJSONBufferLock();
+      }
+      #endif
+    }
   }
   //WLEDMM add segment names to be used as ledmap names
   uint8_t segment_index = 0;
@@ -1364,10 +1428,11 @@ void WS2812FX::finalizeInit(void)
     #endif
   }
 
-  if (!isMatrix) { // if 2D then max values defined in setUpMatrix() using panel set-up
+  if (isMatrix) setUpMatrix();
+  else {
     Segment::maxWidth  = _length;
     Segment::maxHeight = 1;
-   }
+  }
 
   //initialize leds array. TBD: realloc if nr of leds change
   if (Segment::_globalLeds) {
@@ -1376,17 +1441,20 @@ void WS2812FX::finalizeInit(void)
     Segment::_globalLeds = nullptr;
   }
   if (useLedsArray) {
+    size_t arrSize = sizeof(CRGB) * getLengthTotal();
     #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
     if (psramFound())
-      Segment::_globalLeds = (CRGB*) ps_malloc(sizeof(CRGB) * _length);
+      Segment::_globalLeds = (CRGB*) ps_malloc(arrSize);
     else
     #endif
-      Segment::_globalLeds = (CRGB*) malloc(sizeof(CRGB) * _length);
-    memset(Segment::_globalLeds, 0, sizeof(CRGB) * _length);
+      Segment::_globalLeds = (CRGB*) malloc(arrSize);
+    memset(Segment::_globalLeds, 0, arrSize);
   }
 
   //segments are created in makeAutoSegments();
+  DEBUG_PRINTLN(F("Loading custom palettes"));
   loadCustomPalettes(); // (re)load all custom palettes
+  DEBUG_PRINTLN(F("Loading custom ledmaps"));
   deserializeMap();     // (re)load default ledmap
 }
 
@@ -1447,15 +1515,15 @@ void WS2812FX::service() {
 
 void IRAM_ATTR WS2812FX::setPixelColor(int i, uint32_t col)
 {
-  if (i >= _length) return;
   if (i < customMappingSize) i = customMappingTable[i];
+  if (i >= _length) return;
   busses.setPixelColor(i, col);
 }
 
 uint32_t WS2812FX::getPixelColor(uint16_t i)
 {
-  if (i >= _length) return 0;
   if (i < customMappingSize) i = customMappingTable[i];
+  if (i >= _length) return 0;
   return busses.getPixelColor(i);
 }
 
@@ -1668,6 +1736,12 @@ uint8_t WS2812FX::getActiveSegmentsNum(void) {
   return c;
 }
 
+uint16_t WS2812FX::getLengthTotal(void) {
+  uint16_t len = Segment::maxWidth * Segment::maxHeight; // will be _length for 1D (see finalizeInit()) but should cover whole matrix for 2D
+  if (isMatrix && _length > len) len = _length; // for 2D with trailing strip
+  return len;
+}
+
 uint16_t WS2812FX::getLengthPhysical(void) {
   uint16_t len = 0;
   for (size_t b = 0; b < busses.getNumBusses(); b++) {
@@ -1710,7 +1784,6 @@ void WS2812FX::purgeSegments(bool force) {
   if (_segments.size() <= 1) return;
   for (size_t i = _segments.size()-1; i > 0; i--)
     if (_segments[i].stop == 0 || force) {
-      DEBUG_PRINT(F("Purging segment segment: ")); DEBUG_PRINTLN(i);
       deleted++;
       _segments.erase(_segments.begin() + i);
     }
@@ -1760,44 +1833,30 @@ void WS2812FX::resetSegments(bool boundsOnly) { //WLEDMM add boundsonly
 }
 
 void WS2812FX::makeAutoSegments(bool forceReset) {
-  if (isMatrix) {
-    #ifndef WLED_DISABLE_2D
-    // only create 1 2D segment
-    if (forceReset || getSegmentsNum() == 0) resetSegments(); // initialises 1 segment
-    else if (getActiveSegmentsNum() == 1) {
-      size_t i = getLastActiveSegmentId();
-      _segments[i].start  = 0;
-      _segments[i].stop   = Segment::maxWidth;
-      _segments[i].startY = 0;
-      _segments[i].stopY  = Segment::maxHeight;
-      _segments[i].grouping = 1;
-      _segments[i].spacing  = 0;
-      _mainSegment = i;
-    }
-    // do we have LEDs after the matrix? (ignore buses)
-    if (autoSegments && _length > Segment::maxWidth*Segment::maxHeight /*&& getActiveSegmentsNum() == 2*/) {
-      if (_segments.size() == getLastActiveSegmentId()+1)
-        _segments.push_back(Segment(Segment::maxWidth*Segment::maxHeight, _length));
-      else {
-        size_t i = getLastActiveSegmentId() + 1;
-        _segments[i].start  = Segment::maxWidth*Segment::maxHeight;
-        _segments[i].stop   = _length;
-        _segments[i].startY = 0;
-        _segments[i].stopY  = 1;
-        _segments[i].grouping = 1;
-        _segments[i].spacing  = 0;
-      }
-    }
-    #endif
-  } else if (autoSegments) { //make one segment per bus
+  if (autoSegments) { //make one segment per bus
     uint16_t segStarts[MAX_NUM_SEGMENTS] = {0};
     uint16_t segStops [MAX_NUM_SEGMENTS] = {0};
-    uint8_t s = 0;
-    for (uint8_t i = 0; i < busses.getNumBusses(); i++) {
+    size_t s = 0;
+
+    #ifndef WLED_DISABLE_2D
+    // 2D segment is the 1st one using entire matrix
+    if (isMatrix) {
+      segStarts[0] = 0;
+      segStops[0]  = Segment::maxWidth*Segment::maxHeight;
+      s++;
+    }
+    #endif
+
+    for (size_t i = s; i < busses.getNumBusses(); i++) {
       Bus* b = busses.getBus(i);
 
       segStarts[s] = b->getStart();
       segStops[s]  = segStarts[s] + b->getLength();
+
+      #ifndef WLED_DISABLE_2D
+      if (isMatrix && segStops[s] < Segment::maxWidth*Segment::maxHeight) continue; // ignore buses comprising matrix
+      if (isMatrix && segStarts[s] < Segment::maxWidth*Segment::maxHeight) segStarts[s] = Segment::maxWidth*Segment::maxHeight;
+      #endif
 
       //check for overlap with previous segments
       for (size_t j = 0; j < s; j++) {
@@ -1810,24 +1869,40 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
       }
       s++;
     }
+
     _segments.clear();
     _segments.reserve(s); // prevent reallocations
-    for (size_t i = 0; i < s; i++) {
-      Segment seg = Segment(segStarts[i], segStops[i]);
-      seg.selected = true;
-      _segments.push_back(seg);
+    // there is always at least one segment (but we need to differentiate between 1D and 2D)
+    #ifndef WLED_DISABLE_2D
+    if (isMatrix)
+      _segments.push_back(Segment(0, Segment::maxWidth, 0, Segment::maxHeight));
+    else
+    #endif
+      _segments.push_back(Segment(segStarts[0], segStops[0]));
+    for (size_t i = 1; i < s; i++) {
+      _segments.push_back(Segment(segStarts[i], segStops[i]));
     }
-    _mainSegment = 0;
+
   } else {
+
     if (forceReset || getSegmentsNum() == 0) resetSegments();
     //expand the main seg to the entire length, but only if there are no other segments, or reset is forced
     else if (getActiveSegmentsNum() == 1) {
       size_t i = getLastActiveSegmentId();
+      #ifndef WLED_DISABLE_2D
+      _segments[i].start  = 0;
+      _segments[i].stop   = Segment::maxWidth;
+      _segments[i].startY = 0;
+      _segments[i].stopY  = Segment::maxHeight;
+      _segments[i].grouping = 1;
+      _segments[i].spacing  = 0;
+      #else
       _segments[i].start = 0;
       _segments[i].stop  = _length;
-      _mainSegment = 0;
+      #endif
     }
   }
+  _mainSegment = 0;
 
   fixInvalidSegments();
 }
@@ -1835,14 +1910,30 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
 void WS2812FX::fixInvalidSegments() {
   //make sure no segment is longer than total (sanity check)
   for (size_t i = getSegmentsNum()-1; i > 0; i--) {
-    if (_segments[i].start >= _length) { _segments.erase(_segments.begin()+i); continue; }
-    if (_segments[i].stop  >  _length) _segments[i].stop = _length;
-    // this is always called as the last step after finalizeInit(), update covered bus types
-    _segments[i].refreshLightCapabilities();
+    if (isMatrix) {
+    #ifndef WLED_DISABLE_2D
+      if (_segments[i].start >= Segment::maxWidth * Segment::maxHeight) {
+        // 1D segment at the end of matrix
+        if (_segments[i].start >= _length || _segments[i].startY > 0 || _segments[i].stopY > 1) { _segments.erase(_segments.begin()+i); continue; }
+        if (_segments[i].stop  >  _length) _segments[i].stop = _length;
+        continue;
+      }
+      if (_segments[i].start >= Segment::maxWidth || _segments[i].startY >= Segment::maxHeight) { _segments.erase(_segments.begin()+i); continue; }
+      if (_segments[i].stop  >  Segment::maxWidth)  _segments[i].stop  = Segment::maxWidth;
+      if (_segments[i].stopY >  Segment::maxHeight) _segments[i].stopY = Segment::maxHeight;
+    #endif
+    } else {
+      if (_segments[i].start >= _length) { _segments.erase(_segments.begin()+i); continue; }
+      if (_segments[i].stop  >  _length) _segments[i].stop = _length;
+    }
   }
+  // this is always called as the last step after finalizeInit(), update covered bus types
+  for (segment &seg : _segments)
+    seg.refreshLightCapabilities();
 }
 
 //true if all segments align with a bus, or if a segment covers the total length
+//irrelevant in 2D set-up
 bool WS2812FX::checkSegmentAlignment() {
   bool aligned = false;
   for (segment &seg : _segments) {
@@ -1890,7 +1981,8 @@ void WS2812FX::printSize() {
   DEBUG_PRINTF("Modes: %d*%d=%uB\n", sizeof(mode_ptr), _mode.size(), (_mode.capacity()*sizeof(mode_ptr)));
   DEBUG_PRINTF("Data: %d*%d=%uB\n", sizeof(const char *), _modeData.size(), (_modeData.capacity()*sizeof(const char *)));
   DEBUG_PRINTF("Map: %d*%d=%uB\n", sizeof(uint16_t), (int)customMappingSize, customMappingSize*sizeof(uint16_t));
-  if (useLedsArray) DEBUG_PRINTF("Buffer: %d*%d=%uB\n", sizeof(CRGB), (int)_length, _length*sizeof(CRGB));
+  size = getLengthTotal();
+  if (useLedsArray) DEBUG_PRINTF("Buffer: %d*%u=%uB\n", sizeof(CRGB), size, size*sizeof(CRGB));
 }
 #endif
 
@@ -1942,22 +2034,22 @@ void WS2812FX::loadCustomPalettes() {
 }
 
 //load custom mapping table from JSON file (called from finalizeInit() or deserializeState())
-void WS2812FX::deserializeMap(uint8_t n) {
-  // WLEDMM: also supports isMatrix
+bool WS2812FX::deserializeMap(uint8_t n) {
+  // 2D support creates its own ledmap (on the fly) if a ledmap.json exists it will overwrite built one.
 
   char fileName[32];
   //WLEDMM: als support segment name ledmaps
   bool isFile = false;;
   if (n<10) {
     strcpy_P(fileName, PSTR("/ledmap"));
-    if (n) sprintf(fileName +7, "%d", n);
+    if (n) sprintf(fileName +7, "%d", n); //WLEDMM: trick to not include 0 in ledmap.json
     strcat(fileName, ".json");
     isFile = WLED_FS.exists(fileName);
   } else { //WLEDM add segment name as ledmap.name
     uint8_t segment_index = 0;
     for (segment &seg : _segments) {
       if (n == 10 + segment_index && !isFile && seg.name != nullptr) {
-        sprintf_P(fileName, PSTR("/lm%s.json"), seg.name);
+        sprintf_P(fileName, PSTR("/%s.json"), seg.name);
         isFile = WLED_FS.exists(fileName);
       }
       if (isFile) break;
@@ -1966,30 +2058,26 @@ void WS2812FX::deserializeMap(uint8_t n) {
   }
 
   if (!isFile) {
-    // erase custom mapping if selecting nonexistent ledmap.json (n==0) //WLEDM always erase if nonexistant
-    if (customMappingTable != nullptr) {
-      //WLEDMM: if isMatrix then not erase but back to matrix default 
-      if (isMatrix)
-        setUpMatrix(true);
-      else {
-        customMappingSize = 0;
-        delete[] customMappingTable;
-        customMappingTable = nullptr;
-        loadedLedmap = 0;
-      }
+    // erase custom mapping if selecting nonexistent ledmap.json (n==0)
+    //WLEDM: doubt this is necessary as return false causes setupMatrix to deal with this
+    if (!isMatrix && !n && customMappingTable != nullptr) {
+      customMappingSize = 0;
+      delete[] customMappingTable;
+      customMappingTable = nullptr;
+      loadedLedmap = 0; //WLEDMM
     }
-    return;
+    return false;
   }
 
-  if (!requestJSONBufferLock(7)) return;
-
-  USER_PRINT(F("Reading LED map from ")); //WLEDMM use USER_PRINT
-  USER_PRINTLN(fileName);
+  if (!requestJSONBufferLock(7)) return false;
 
   if (!readObjectFromFile(fileName, nullptr, &doc)) {
     releaseJSONBufferLock();
-    return; //if file does not exist just exit
+    return false; //if file does not exist just exit
   }
+
+  USER_PRINT(F("Reading LED map from ")); //WLEDMM use USER_PRINT
+  USER_PRINTLN(fileName);
 
   // erase old custom ledmap
   if (customMappingTable != nullptr) {
@@ -2001,16 +2089,20 @@ void WS2812FX::deserializeMap(uint8_t n) {
 
   JsonArray map = doc[F("map")];
   if (!map.isNull() && map.size()) {  // not an empty map
-    //WLEDMM: if isMatrix then customMap size is whole matrix
-#ifndef WLED_DISABLE_2D
-    if (isMatrix)
-      customMappingSize = Segment::maxWidth * Segment::maxHeight; //as whole matrix will be stored in setUpMatrix
-    else
-#endif
-      customMappingSize  = map.size();
+
+    //WLEDMM: support ledmap file properties width and height
+    if (doc[F("width")]>0 && doc[F("height")]>0) {
+      Segment::maxWidth = doc[F("width")];;
+      Segment::maxHeight = doc[F("height")];;
+      resetSegments(true); //WLEDMM not makeAutoSegments() as we only want to change bounds
+    }
+
+    customMappingSize  = map.size();
     customMappingTable = new uint16_t[customMappingSize];
-    for (uint16_t i=0; i<MIN(customMappingSize, map.size()); i++) 
+
+    for (uint16_t i=0; i<customMappingSize; i++) 
       customMappingTable[i] = (uint16_t) (map[i]<0 ? 0xFFFFU : map[i]);
+
     loadedLedmap = n;
 
     #ifdef WLED_DEBUG
@@ -2021,13 +2113,10 @@ void WS2812FX::deserializeMap(uint8_t n) {
       }
       DEBUG_PRINTLN();
     #endif
-
-    setUpMatrix(false); //WLEDMM: apply logical to physical mapping after the ledmap
   }
-  else 
-    setUpMatrix(true); //WLEDMM: if no map then back to matrix default 
 
   releaseJSONBufferLock();
+  return true;
 }
 
 

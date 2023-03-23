@@ -108,11 +108,6 @@ void WLED::loop()
     yield();
     #endif
 
-    #ifndef WLED_DISABLE_BLYNK
-    handleBlynk();
-    yield();
-    #endif
-
     handlePresets();
     yield();
 
@@ -186,9 +181,10 @@ void WLED::loop()
     yield();
     serializeConfig();
   }
-  //WLEDMM refactored
+
+  //WLEDMM refactored (to be done: setUpMatrix is called in finalizeInit and also in deserializeMap, deserializeMap is called in finalizeInit and also here)
   if (loadLedmap) {
-    strip.deserializeMap(loadedLedmap);
+    if (!strip.deserializeMap(loadedLedmap) && strip.isMatrix) strip.setUpMatrix(); //WLEDMM: always if nonexistent:  && loadedLedmap == 0
     strip.enumerateLedmaps(); //WLEDMM
     loadLedmap = false;
   }
@@ -201,6 +197,7 @@ void WLED::loop()
 #ifdef WLED_DEBUG
   if (millis() - debugTime > 29999) {
     DEBUG_PRINTLN(F("---DEBUG INFO---"));
+    DEBUG_PRINT(F("Name: "));       DEBUG_PRINTLN(serverDescription);
     DEBUG_PRINT(F("Runtime: "));       DEBUG_PRINTLN(millis());
     DEBUG_PRINT(F("Unix time: "));     toki.printTime(toki.getTime());
     DEBUG_PRINT(F("Free heap: "));     DEBUG_PRINTLN(ESP.getFreeHeap());
@@ -235,6 +232,7 @@ void WLED::loop()
     avgUsermodMillis = 0;
     avgStripMillis = 0;
     debugTime = millis();
+    DEBUG_PRINTLN(F("---END OF DEBUG INFO---"));
   }
   loops++;
 #endif        // WLED_DEBUG
@@ -286,6 +284,9 @@ void WLED::setup()
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detection
   #endif
 
+  #ifdef ARDUINO_ARCH_ESP32
+  pinMode(hardwareRX, INPUT_PULLDOWN); delay(1);        // suppress noise in case RX pin is floating (at low noise energy) - see issue #3128
+  #endif
   Serial.begin(115200);
   if (!Serial) delay(1000); // WLEDMM make sure that Serial has initalized
 
@@ -342,6 +343,21 @@ void WLED::setup()
   USER_PRINT(F(" rev.")); USER_PRINT(ESP.getChipRevision());
   USER_PRINT(F(", ")); USER_PRINT(ESP.getChipCores()); USER_PRINT(F(" core(s)"));
   USER_PRINT(F(", ")); USER_PRINT(ESP.getCpuFreqMHz()); USER_PRINTLN(F("MHz."));
+
+  // WLEDMM begin
+  USER_PRINT(F("CPU    "));
+  esp_reset_reason_t resetReason = getRestartReason();
+  USER_PRINT(restartCode2InfoLong(resetReason));
+  USER_PRINT(F(" (code "));
+  USER_PRINT((int)resetReason);
+  USER_PRINT(F("). "));
+  int core0code = getCoreResetReason(0);
+  int core1code = getCoreResetReason(1);
+  USER_PRINTF("Core#0 %s (%d)", resetCode2Info(core0code).c_str(), core0code);
+  if (core1code > 0) {USER_PRINTF("; Core#1 %s (%d)", resetCode2Info(core1code).c_str(), core1code);}
+  USER_PRINTLN(F("."));
+  // WLEDMM end
+
   USER_PRINT(F("FLASH: ")); USER_PRINT((ESP.getFlashChipSize()/1024)/1024);
   USER_PRINT(F("MB, Mode ")); USER_PRINT(ESP.getFlashChipMode());
   #ifdef WLED_DEBUG
@@ -389,8 +405,7 @@ void WLED::setup()
   DEBUG_PRINT(F("esp8266 "));
   DEBUG_PRINTLN(ESP.getCoreVersion());
 #endif
-  DEBUG_PRINT(F("heap "));
-  DEBUG_PRINTLN(ESP.getFreeHeap());
+  DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
 
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
   if (psramFound()) {
@@ -416,9 +431,8 @@ void WLED::setup()
   //DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
   USER_FLUSH();  // WLEDMM flush buffer now, before anything time-critial is started.
 
-#ifdef WLED_DEBUG
-  pinManager.allocatePin(hardwareTX, true, PinOwner::DebugOut); // TX (GPIO1 on ESP32) reserved for debug output
-#endif
+  pinManager.manageDebugTXPin();
+
 #ifdef WLED_ENABLE_DMX //reserve GPIO2 as hardcoded DMX pin
   pinManager.allocatePin(2, true, PinOwner::DMX);
 #endif
@@ -444,6 +458,8 @@ void WLED::setup()
   DEBUG_PRINTLN(F("Registering usermods ..."));
   registerUsermods();
 
+  DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
+
   for (uint8_t i=1; i<WLED_MAX_BUTTONS; i++) btnPin[i] = -1;
 
   bool fsinit = false;
@@ -454,7 +470,7 @@ void WLED::setup()
   fsinit = WLED_FS.begin();
 #endif
   if (!fsinit) {
-    DEBUG_PRINTLN(F("FS failed!"));
+    USER_PRINTLN(F("Mount FS failed!"));  // WLEDMM
     errorFlag = ERR_FS_BEGIN;
   }
 #ifdef WLED_ADD_EEPROM_SUPPORT
@@ -486,10 +502,12 @@ void WLED::setup()
 
   DEBUG_PRINTLN(F("Initializing strip"));
   beginStrip();
+  DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
 
   USER_PRINTLN(F("Usermods setup ..."));
   userSetup();
   usermods.setup();
+  DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
 
   if (strcmp(clientSSID, DEFAULT_CLIENT_SSID) == 0)
     showWelcomePage = true;
@@ -545,7 +563,9 @@ void WLED::setup()
 #endif
 
   // HTTP server page init
+  DEBUG_PRINTLN(F("initServer"));
   initServer();
+  DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
 
   enableWatchdog();
 
@@ -658,7 +678,11 @@ void WLED::initAP(bool resetAP)
   USER_PRINT(F("Opening access point "));  // WLEDMM
   USER_PRINTLN(apSSID);                    // WLEDMM
   WiFi.softAPConfig(IPAddress(4, 3, 2, 1), IPAddress(4, 3, 2, 1), IPAddress(255, 255, 255, 0));
-  WiFi.softAP(apSSID, apPass, apChannel, apHide);
+  if (!WiFi.softAP(apSSID, apPass, apChannel, apHide)) {   // WLEDMM softAp() will return true in case of success and false in case of failure.
+    USER_PRINTLN(F("Access point creation failed."));
+    apActive = false;
+    return;
+  }
 
   if (!apActive) // start captive portal if AP active
   {
@@ -846,6 +870,36 @@ void WLED::initInterfaces()
   }
 #endif
 
+//WLEDMM: add netdebug variables
+#ifdef WLED_DEBUG_HOST
+  if (netDebugPrintIP[0] == 0) {
+    //WLEDMM: this code moved from net_debug.cpp as we store IP as IPAddress type
+    if (!netDebugPrintIP && !netDebugPrintIP.fromString(WLED_DEBUG_HOST)) {
+      #ifdef ESP8266
+        WiFi.hostByName(WLED_DEBUG_HOST, netDebugPrintIP, 750);
+      #else
+        #ifdef WLED_USE_ETHERNET
+          // ETH.hostByName(WLED_DEBUG_HOST, netDebugPrintIP); WLEDMM: ETH.hostByName does not exist, WiFi.hostByName seems to do the same, but must be tested.
+          WiFi.hostByName(WLED_DEBUG_HOST, netDebugPrintIP);
+        #else
+          WiFi.hostByName(WLED_DEBUG_HOST, netDebugPrintIP);
+        #endif
+      #endif
+    } else {
+      IPAddress ipAddress = Network.localIP();
+      netDebugPrintIP[0] = ipAddress[0];
+      netDebugPrintIP[1] = ipAddress[1];
+      netDebugPrintIP[2] = ipAddress[2];
+    }
+  }
+  if (netDebugPrintPort == 0) 
+    #ifdef WLED_DEBUG_PORT
+      netDebugPrintPort = WLED_DEBUG_PORT;
+    #else
+      netDebugPrintPort = 7868; //Default value
+    #endif
+#endif
+
 #ifndef WLED_DISABLE_ALEXA
   // init Alexa hue emulation
   if (alexaEnabled)
@@ -890,9 +944,6 @@ void WLED::initInterfaces()
   if (ntpEnabled)
     ntpConnected = ntpUdp.begin(ntpLocalPort);
 
-#ifndef WLED_DISABLE_BLYNK
-  initBlynk(blynkApiKey, blynkHost, blynkPort);
-#endif
   e131.begin(e131Multicast, e131Port, e131Universe, E131_MAX_UNIVERSE_COUNT);
   ddp.begin(false, DDP_DEFAULT_PORT);
   reconnectHue();
@@ -927,6 +978,8 @@ void WLED::handleConnection()
       DEBUG_PRINTLN(heap);
       forceReconnect = true;
       strip.purgeSegments(true); // remove all but one segments from memory
+    } else if (heap < MIN_HEAP_SIZE) {
+      strip.purgeSegments();
     }
     lastHeap = heap;
     heapTime = now;

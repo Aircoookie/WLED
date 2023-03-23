@@ -46,10 +46,17 @@
  * JSON API (De)serialization
  */
 
-void deserializeSegment(JsonObject elem, byte it, byte presetId)
+bool deserializeSegment(JsonObject elem, byte it, byte presetId)
 {
+  //WLEDMM add USER_PRINT
+  if (elem.size()!=1 || elem["stop"] != 0) { // not for {"stop":0}
+    String temp;
+    serializeJson(elem, temp);
+    USER_PRINTF("deserializeSegment %s\n", temp.c_str());
+  }
+
   byte id = elem["id"] | it;
-  if (id >= strip.getMaxSegments()) return;
+  if (id >= strip.getMaxSegments()) return false;
 
   //WLEDMM: add compatibility for SR presets
   #ifndef WLED_DISABLE_2D
@@ -73,7 +80,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   // if using vectors use this code to append segment
   if (id >= strip.getSegmentsNum()) {
-    if (stop <= 0) return; // ignore empty/inactive segments
+    if (stop <= 0) return false; // ignore empty/inactive segments
     strip.appendSegment(Segment(0, strip.getLengthTotal()));
     id = strip.getSegmentsNum()-1; // segments are added at the end of list
   }
@@ -106,7 +113,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
       elem["rev"]   = !elem["rev"]; // alternate reverse on even/odd segments
       deserializeSegment(elem, i, presetId); // recursive call with new id
     }
-    return;
+    return true;
   }
 
   if (elem["n"]) {
@@ -162,6 +169,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   }
   if (stop > start && of > len -1) of = len -1;
   seg.set(start, stop, grp, spc, of, startY, stopY);
+
+  if (seg.reset && seg.stop == 0) return true; // segment was deleted & is marked for reset, no need to change anything else
 
   byte segbri = seg.opacity;
   if (getVal(elem["bri"], &segbri)) {
@@ -324,16 +333,26 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   }
   // send UDP/WS if segment options changed (except selection; will also deselect current preset)
   if (seg.differs(prev) & 0x7F) stateChanged = true;
+
+  return true;
 }
 
 // deserializes WLED state (fileDoc points to doc object if called from web server)
 // presetId is non-0 if called from handlePreset()
 bool deserializeState(JsonObject root, byte callMode, byte presetId)
 {
+  //WLEDMM add USER_PRINT
+  String temp;
+  serializeJson(root, temp);
+  USER_PRINTF("deserializeState %s\n", temp.c_str());
+
   bool stateResponse = root[F("v")] | false;
 
-  #if defined(WLED_DEBUG) && defined(WLED_DEBUG_HOST)
-  netDebugEnabled = root[F("debug")] | netDebugEnabled;
+  //WLEDMM: store netDebug, also if not WLED_DEBUG 
+  #if defined(WLED_DEBUG_HOST)
+  bool oldValue = netDebugEnabled;
+  netDebugEnabled = root[F("netDebug")] | netDebugEnabled;
+  if (oldValue != netDebugEnabled) doSerializeConfig = true; //WLEDMM to make it will be stored in cfg.json! (tbd: check if this is the right approach)
   #endif
 
   bool onBefore = bri;
@@ -439,11 +458,12 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       deserializeSegment(segVar, id, presetId); //apply only the segment with the specified ID
     }
   } else {
+    size_t deleted = 0;
     JsonArray segs = segVar.as<JsonArray>();
     for (JsonObject elem : segs) {
-      deserializeSegment(elem, it, presetId);
-      it++;
+      if (deserializeSegment(elem, it++, presetId) && !elem["stop"].isNull() && elem["stop"]==0) deleted++;
     }
+    if (strip.getSegmentsNum() > 3 && deleted >= strip.getSegmentsNum()/2U) strip.purgeSegments(); // batch deleting more than half segments
   }
 
   usermods.readFromJsonState(root);
@@ -500,6 +520,11 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
 void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset, bool segmentBounds)
 {
+  //WLEDMM add DEBUG_PRINT (not USER_PRINT)
+  String temp;
+  serializeJson(root, temp);
+  DEBUG_PRINTF("serializeSegment %s\n", temp.c_str());
+
   root["id"] = id;
   if (segmentBounds) {
     root["start"] = seg.start;
@@ -565,6 +590,11 @@ void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset, b
 
 void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segmentBounds, bool selectedSegmentsOnly)
 {
+  //WLEDMM add DEBUG_PRINT (not USER_PRINT)
+  String temp;
+  serializeJson(root, temp);
+  DEBUG_PRINTF("serializeState %d %s\n", forPreset, temp.c_str());
+
   if (includeBri) {
     root["on"] = (bri > 0);
     root["bri"] = briLast;
@@ -572,6 +602,11 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
   }
 
   if (!forPreset) {
+    //WLEDMM: store netDebug 
+    #if defined(WLED_DEBUG_HOST)
+      root[F("netDebug")] = netDebugEnabled;
+    #endif
+
     if (errorFlag) {root[F("error")] = errorFlag; errorFlag = ERR_NONE;} //prevent error message to persist on screen
 
     root["ps"] = (currentPreset > 0) ? currentPreset : -1;
@@ -619,12 +654,17 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
       seg0["stop"] = 0;
     }
   }
-  root[F("ledmap")] = loadedLedmap; //WLEDMM ledmaps will be stored in json
+  root[F("ledmap")] = loadedLedmap; //WLEDMM ledmaps will be stored in json so dropdown can display it
 }
 
 // begin WLEDMM
 #ifdef ARDUINO_ARCH_ESP32
-static String resetCode2Info(int reason) {
+int getCoreResetReason(int core) {
+  if (core >= ESP.getChipCores()) return 0;
+  return((int)rtc_get_reset_reason(core));
+}
+
+String resetCode2Info(int reason) {
   switch(reason) {
 
     case 1 : //  1 =  Vbat power on reset
@@ -676,6 +716,42 @@ static String resetCode2Info(int reason) {
     default: 
       return F("unknown"); break;
   }
+}
+
+esp_reset_reason_t getRestartReason() {
+  return(esp_reset_reason());
+}
+String restartCode2InfoLong(esp_reset_reason_t reason) {
+    switch (reason) {
+      case ESP_RST_UNKNOWN:  return(F("Reset reason can not be determined")); break;
+      case ESP_RST_POWERON:  return(F("Restart due to power-on event")); break;
+      case ESP_RST_EXT:      return(F("Reset by external pin (not applicable for ESP32)")); break;
+      case ESP_RST_SW:       return(F("Software restart via esp_restart()")); break;
+      case ESP_RST_PANIC:    return(F("Software reset due to panic or unhandled exception (SW error)")); break;
+      case ESP_RST_INT_WDT:  return(F("Reset (software or hardware) due to interrupt watchdog")); break;
+      case ESP_RST_TASK_WDT: return(F("Reset due to task watchdog")); break;
+      case ESP_RST_WDT:      return(F("Reset due to other watchdogs")); break;
+      case ESP_RST_DEEPSLEEP:return(F("Restart after exiting deep sleep mode")); break;
+      case ESP_RST_BROWNOUT: return(F("Brownout Reset (software or hardware)")); break;
+      case ESP_RST_SDIO:     return(F("Reset over SDIO")); break;
+    }
+  return(F("unknown"));
+}
+String restartCode2Info(esp_reset_reason_t reason) {
+    switch (reason) {
+      case ESP_RST_UNKNOWN:  return(F("unknown reason")); break;
+      case ESP_RST_POWERON:  return(F("power-on event")); break;
+      case ESP_RST_EXT:      return(F("external pin reset")); break;
+      case ESP_RST_SW:       return(F("SW restart by esp_restart()")); break;
+      case ESP_RST_PANIC:    return(F("SW error (panic or exception)")); break;
+      case ESP_RST_INT_WDT:  return(F("interrupt watchdog")); break;
+      case ESP_RST_TASK_WDT: return(F("task watchdog")); break;
+      case ESP_RST_WDT:      return(F("other watchdog")); break;
+      case ESP_RST_DEEPSLEEP:return(F("exit from deep sleep")); break;
+      case ESP_RST_BROWNOUT: return(F("Brownout Reset")); break;
+      case ESP_RST_SDIO:     return(F("Reset over SDIO")); break;
+    }
+  return(F("unknown"));
 }
 #endif
 // end WLEDMM
@@ -768,8 +844,14 @@ void serializeInfo(JsonObject root)
   root[F("cpalcount")] = strip.customPalettes.size(); //number of custom palettes
 
   JsonArray ledmaps = root.createNestedArray(F("maps"));
-  for (size_t i=0; i<16; i++) { //WLEDMM include segment name ledmaps
-    if ((ledMaps>>i) & 0x0001) ledmaps.add(i);
+  for (size_t i=0; i<WLED_MAX_LEDMAPS; i++) {
+    if ((ledMaps>>i) & 0x00000001U) {
+      JsonObject ledmaps0 = ledmaps.createNestedObject();
+      ledmaps0["id"] = i;
+      #ifndef ESP8266
+      if (i && ledmapNames[i-1]) ledmaps0["n"] = ledmapNames[i-1];
+      #endif
+    }
   }
 
   //WLEDMM: add busses.length to outputs
@@ -811,6 +893,7 @@ void serializeInfo(JsonObject root)
   #endif
   root[F("lwip")] = 0; //deprecated
   root[F("totalheap")] = ESP.getHeapSize(); //WLEDMM
+  root[F("getflash")] = ESP.getFlashChipSize(); //WLEDMM and Athom
   #else
   root[F("arch")] = "esp8266";
   root[F("core")] = ESP.getCoreVersion();
@@ -847,6 +930,9 @@ void serializeInfo(JsonObject root)
     root[F("e32core1code")] = (int)rtc_get_reset_reason(1);
     root[F("e32core1text")] = resetCode2Info(rtc_get_reset_reason(1));
   }
+  root[F("e32code")] = (int)getRestartReason();
+  root[F("e32text")] = restartCode2Info(getRestartReason());
+
   static char msgbuf[32];
   snprintf(msgbuf, sizeof(msgbuf)-1, "%s rev.%d", ESP.getChipModel(), ESP.getChipRevision());
   root[F("e32model")] = msgbuf;
@@ -891,17 +977,19 @@ void serializeInfo(JsonObject root)
   uint16_t os = 0;
   #ifdef WLED_DEBUG
   os  = 0x80;
-    #ifdef WLED_DEBUG_HOST
-    os |= 0x0100;
-    if (!netDebugEnabled) os &= ~0x0080;
-    #endif
+  #endif
+  //WLEDMM: WLED_DEBUG_HOST independent from WLED_DEBUG
+  #ifdef WLED_DEBUG_HOST
+  os  = 0x80; //WLEDMM: also if not WLED_DEBUG (on off button Net Debug/Net Serial)
+  os |= 0x0100;
+  if (!netDebugEnabled) os &= ~0x0080;
   #endif
   #ifndef WLED_DISABLE_ALEXA
   os += 0x40;
   #endif
-  #ifndef WLED_DISABLE_BLYNK
-  os += 0x20;
-  #endif
+
+  //os += 0x20; // indicated now removed Blynk support, may be reused to indicate another build-time option
+
   #ifdef USERMOD_CRONIXIE
   os += 0x10;
   #endif
@@ -1237,7 +1325,7 @@ void serveJson(AsyncWebServerRequest* request)
       //lDoc["m"] = lDoc.memoryUsage(); // JSON buffer usage, for remote debugging
   }
 
-  DEBUG_PRINTF("JSON buffer size: %u for request: %d\n", lDoc.memoryUsage(), subJson);
+  DEBUG_PRINTF("JSON buffer size: %u for request: %d (%s)\n", lDoc.memoryUsage(), subJson, url.c_str());
 
   response->setLength();
   request->send(response);

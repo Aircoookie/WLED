@@ -144,7 +144,7 @@
 
 		function UI(change=false)
 		{
-			var isRGBW = false, memu = 0;
+			let isRGBW = false, gRGBW = false, memu = 0;
 
 			gId('ampwarning').style.display = (d.Sf.MA.value > 7200) ? 'inline':'none';
 
@@ -185,7 +185,7 @@
 						if (t > 31 && t < 48) d.getElementsByName("LC"+n)[0].value = 1; // for sanity change analog count just to 1 LED
 					}
 					gId("rf"+n).onclick = (t == 31) ? (()=>{return false}) : (()=>{});  // prevent change for TM1814
-					isRGBW = ((t > 17 && t < 22) || t == 30 || t == 31 || (t > 40 && t < 46 && t != 43) || t == 88); // RGBW checkbox, TYPE_xxxx values from const.h
+					gRGBW |= isRGBW = ((t > 17 && t < 22) || t == 30 || t == 31 || (t > 40 && t < 46 && t != 43) || t == 88); // RGBW checkbox, TYPE_xxxx values from const.h
 					gId("co"+n).style.display = ((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? "none":"inline";  // hide color order for PWM
 					gId("dig"+n+"w").style.display = (t == 30 || t == 31) ? "inline":"none";  // show swap channels dropdown
 					if (!(t == 30 || t == 31)) d.getElementsByName("WO"+n)[0].value = 0; // reset swapping
@@ -198,11 +198,11 @@
 					gId("psd"+n).innerHTML = (t >= 40 && t < 48) ? "Index:":"Start:";    // change analog start description
 				}
 			}
-			// display white channel calculation method
-			var myC = d.querySelectorAll('.wc'),
-			l = myC.length;
-			for (i = 0; i < l; i++) {
-				myC[i].style.display = (isRGBW) ? 'inline':'none';
+			// display global white channel overrides
+			gId("wc").style.display = (gRGBW) ? 'inline':'none';
+			if (!gRGBW) {
+				d.Sf.AW.selectedIndex = 0;
+				d.Sf.CR.checked = false;
 			}
 			// check for pin conflicts
 			var LCs = d.getElementsByTagName("input");
@@ -635,6 +635,7 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
 		<option value=6>6-key black</option>
 		<option value=7>9-key red</option>
 		<option value=8>JSON remote</option>
+		<option value=9>24-key music</option> <!--WLEDMM-->
 		</select><span style="cursor: pointer;" onclick="off('IR')">&nbsp;&#x2715;</span><br>
 		Apply IR change to main segment only: <input type="checkbox" name="MSO"><br>
 		<div id="json" style="display:none;">JSON file: <input type="file" name="data" accept=".json"><button type="button" class="sml" onclick="uploadFile('/ir.json')">Upload</button><br></div>
@@ -647,7 +648,8 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
 		Apply preset <input name="BP" type="number" class="m" min="0" max="250" required> at boot (0 uses defaults)
 		<br><br>
 		Use Gamma correction for color: <input type="checkbox" name="GC"> (strongly recommended)<br>
-		Use Gamma correction for brightness: <input type="checkbox" name="GB"> (not recommended)<br><br>
+		Use Gamma correction for brightness: <input type="checkbox" name="GB"> (not recommended)<br>
+		Use Gamma value: <input name="GV" type="number" class="m" placeholder="2.8" min="1" max="3" step="0.1" required><br><br>
 		Brightness factor: <input name="BF" type="number" class="m" min="1" max="255" required> %
 		<h3>Transitions</h3>
 		Crossfade: <input type="checkbox" name="TF"><br>
@@ -664,8 +666,8 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
 			<option value="3">Sunrise</option>
 		</select>
 		<h3>White management</h3>
-		White Balance correction: <input type="checkbox" name="CCT"> <br>
-		<span class="wc">
+		White Balance correction: <input type="checkbox" name="CCT"><br>
+		<div id="wc">
 			Global override for Auto-calculate white:<br>
 			<select name="AW">
 				<option value=255>Disabled</option>
@@ -675,9 +677,10 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
 				<option value=3>Dual</option>
 				<option value=4>Max</option>
 			</select>
-		<br>
-		Calculate CCT from RGB: <input type="checkbox" name="CR"> <br>
-		CCT additive blending: <input type="number" class="s" min="0" max="100" name="CB" required> %</span>
+			<br>
+			Calculate CCT from RGB: <input type="checkbox" name="CR"><br>
+			CCT additive blending: <input type="number" class="s" min="0" max="100" name="CB" required> %
+		</div>
 		<h3>Advanced</h3>
 		Palette blending:
 		<select name="PB">

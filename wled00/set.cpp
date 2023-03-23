@@ -211,6 +211,14 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t <= 250) bootPreset = t;
     gammaCorrectBri = request->hasArg(F("GB"));
     gammaCorrectCol = request->hasArg(F("GC"));
+    gammaCorrectVal = request->arg(F("GV")).toFloat();
+    if (gammaCorrectVal > 1.0f && gammaCorrectVal <= 3)
+      calcGammaTable(gammaCorrectVal);
+    else {
+      gammaCorrectVal = 1.0f; // no gamma correction
+      gammaCorrectBri = false;
+      gammaCorrectCol = false;
+    }
 
     fadeTransition = request->hasArg(F("TF"));
     t = request->arg(F("TD")).toInt();
@@ -243,6 +251,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
     simplifiedUI = request->hasArg(F("SU"));
   #endif
+    DEBUG_PRINTLN(F("Enumerating ledmaps"));
+    strip.enumerateLedmaps();
+    DEBUG_PRINTLN(F("Loading custom palettes"));
+    strip.loadCustomPalettes(); // (re)load all custom palettes
   }
 
   //SYNC
@@ -289,6 +301,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t >= 0  && t <= 510) DMXAddress = t;
     t = request->arg(F("XX")).toInt();
     if (t >= 0  && t <= 150) DMXSegmentSpacing = t;
+    t = request->arg(F("PY")).toInt();
+    if (t >= 0  && t <= 200) e131Priority = t;
     t = request->arg(F("DM")).toInt();
     if (t >= DMX_MODE_DISABLED && t <= DMX_MODE_PRESET) DMXMode = t;
     t = request->arg(F("ET")).toInt();
@@ -302,16 +316,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     strlcpy(alexaInvocationName, request->arg(F("AI")).c_str(), 33);
     t = request->arg(F("AP")).toInt();
     if (t >= 0 && t <= 9) alexaNumPresets = t;
-
-    #ifndef WLED_DISABLE_BLYNK
-    strlcpy(blynkHost, request->arg("BH").c_str(), 33);
-    t = request->arg(F("BP")).toInt();
-    if (t > 0) blynkPort = t;
-
-    if (request->hasArg("BK") && !request->arg("BK").equals(F("Hidden"))) {
-      strlcpy(blynkApiKey, request->arg("BK").c_str(), 36); initBlynk(blynkApiKey, blynkHost, blynkPort);
-    }
-    #endif
 
     #ifdef WLED_ENABLE_MQTT
     mqttEnabled = request->hasArg(F("MQ"));
@@ -344,6 +348,15 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     huePollingEnabled = request->hasArg(F("HP"));
     hueStoreAllowed = true;
     reconnectHue();
+    #endif
+
+    //WLEDMM: add netdebug variables
+    #ifdef WLED_DEBUG_HOST
+      for (int i=0;i<4;i++){
+        String a = "N"+String(i);
+        netDebugPrintIP[i] = request->arg(a).toInt();
+      }
+      netDebugPrintPort = request->arg("NP").toInt();
     #endif
 
     t = request->arg(F("BD")).toInt();
@@ -412,15 +425,15 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       k[0] = 'W'; //weekdays
       timerWeekday[i] = request->arg(k).toInt();
       if (i<8) {
-				k[0] = 'M'; //start month
-				timerMonth[i] = request->arg(k).toInt() & 0x0F;
-				timerMonth[i] <<= 4;
-				k[0] = 'P'; //end month
-				timerMonth[i] += (request->arg(k).toInt() & 0x0F);
-				k[0] = 'D'; //start day
-				timerDay[i] = request->arg(k).toInt();
-				k[0] = 'E'; //end day
-				timerDayEnd[i] = request->arg(k).toInt();
+        k[0] = 'M'; //start month
+        timerMonth[i] = request->arg(k).toInt() & 0x0F;
+        timerMonth[i] <<= 4;
+        k[0] = 'P'; //end month
+        timerMonth[i] += (request->arg(k).toInt() & 0x0F);
+        k[0] = 'D'; //start day
+        timerDay[i] = request->arg(k).toInt();
+        k[0] = 'E'; //end day
+        timerDayEnd[i] = request->arg(k).toInt();
       }
     }
   }
@@ -510,12 +523,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (!requestJSONBufferLock(5)) return;
 
     // global I2C & SPI pins
-    int8_t hw_sda_pin  = -1;//!request->arg(F("SDApin")).length() ? -1 : (int)request->arg(F("SDApin")).toInt();
-    int8_t hw_scl_pin  = -1;//!request->arg(F("SCLpin")).length() ? -1 : (int)request->arg(F("SCLpin")).toInt();
+    int8_t hw_sda_pin  = -2;//!request->arg(F("SDApin")).length() ? -1 : (int)request->arg(F("SDApin")).toInt();  // WLEDMM: -2 = no value
+    int8_t hw_scl_pin  = -2;//!request->arg(F("SCLpin")).length() ? -1 : (int)request->arg(F("SCLpin")).toInt();  // WLEDMM: -2 = no value
 
-    int8_t hw_mosi_pin = -1;//!request->arg(F("MOSIpin")).length() ? -1 : (int)request->arg(F("MOSIpin")).toInt();
-    int8_t hw_miso_pin = -1;//!request->arg(F("MISOpin")).length() ? -1 : (int)request->arg(F("MISOpin")).toInt();
-    int8_t hw_sclk_pin = -1;//!request->arg(F("SCLKpin")).length() ? -1 : (int)request->arg(F("SCLKpin")).toInt();
+    int8_t hw_mosi_pin = -2;//!request->arg(F("MOSIpin")).length() ? -1 : (int)request->arg(F("MOSIpin")).toInt();
+    int8_t hw_miso_pin = -2;//!request->arg(F("MISOpin")).length() ? -1 : (int)request->arg(F("MISOpin")).toInt();
+    int8_t hw_sclk_pin = -2;//!request->arg(F("SCLKpin")).length() ? -1 : (int)request->arg(F("SCLKpin")).toInt();
 
     //WLEDMM: :pin values have 2 occurrences: the type and the value, we need the value
     int paramsNr = request->params();
@@ -543,17 +556,19 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (hw_sda_pin >= 0 && hw_scl_pin >= 0 && pinManager.allocateMultiplePins(i2c, 2, PinOwner::HW_I2C)) {
       i2c_sda = hw_sda_pin;
       i2c_scl = hw_scl_pin;
+      DEBUG_PRINTF("handleSettingsSet(): reserved I2C pins SDA=%d SCL=%d.\n", i2c_sda, i2c_scl);
       #ifdef ESP32
       Wire.setPins(i2c_sda, i2c_scl); // this will fail if Wire is initilised (Wire.begin() called)
       #endif
       // Wire.begin(); // WLEDMM moved into pinManager
     } else {
       // there is no Wire.end()
-      if (hw_sda_pin < 0 || hw_scl_pin < 0) { // WLEDMM bugfix allow pin = -1
+      if (hw_sda_pin == -1 || hw_scl_pin == -1) { // WLEDMM bugfix allow pin = -1
         i2c_sda = -1;
         i2c_scl = -1;
+        DEBUG_PRINTLN(F("handleSettingsSet(): reset I2C pins to -1"));
       }
-      DEBUG_PRINTLN(F("Could not allocate I2C pins."));
+      DEBUG_PRINTLN(F("handleSettingsSet(): Could not allocate I2C pins - deallocating."));
       uint8_t i2c[2] = { static_cast<uint8_t>(i2c_scl), static_cast<uint8_t>(i2c_sda) };
       pinManager.deallocateMultiplePins(i2c, 2, PinOwner::HW_I2C); // just in case deallocation of old pins
       Serial.printf("pinmgr not success for global i2c %d %d\n", i2c_sda, i2c_scl);
@@ -579,7 +594,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       #endif
     } else {
       //SPI.end();
-      if (hw_mosi_pin < 0 || hw_sclk_pin < 0) { // WLEDMM bugfix allow pin = -1
+      if (hw_mosi_pin == -1 || hw_sclk_pin == -1) { // WLEDMM bugfix allow pin = -1
         spi_mosi = hw_mosi_pin;
         spi_miso = hw_miso_pin;
         spi_sclk = hw_sclk_pin;
@@ -674,22 +689,23 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   if (subPage == 10)
   {
     strip.isMatrix = request->arg(F("SOMP")).toInt();
-    // strip.panelH   = MAX(1,MIN(128,request->arg(F("PH")).toInt()));
-    // strip.panelW   = MAX(1,MIN(128,request->arg(F("PW")).toInt()));
     strip.panel.clear(); // release memory if allocated
     if (strip.isMatrix) {
       strip.panels  = MAX(1,MIN(WLED_MAX_PANELS,request->arg(F("MPC")).toInt()));
+
+      //WLEDMM: keep storing basic 2d setup
       strip.bOrA  = request->arg(F("BA")).toInt(); //WLEDMM basic or advanced
-      strip.panelsH  = request->arg(F("MPH")).toInt(); //WLEDMM needs to be stored as well
-      strip.panelsV  = request->arg(F("MPV")).toInt(); //WLEDMM needs to be stored as well
+      strip.panelsH  = request->arg(F("MPH")).toInt();
+      strip.panelsV  = request->arg(F("MPV")).toInt();
       strip.matrix.bottomStart = request->arg(F("PB")).toInt();
       strip.matrix.rightStart  = request->arg(F("PR")).toInt();
       strip.matrix.vertical    = request->arg(F("PV")).toInt();
       strip.matrix.serpentine  = request->hasArg(F("PS"));
-      strip.panelO.bottomStart = request->arg(F("PBL")).toInt(); //WLEDMM
-      strip.panelO.rightStart  = request->arg(F("PRL")).toInt(); //WLEDMM
-      strip.panelO.vertical    = request->arg(F("PVL")).toInt(); //WLEDMM
-      strip.panelO.serpentine  = request->hasArg(F("PSL")); //WLEDMM
+      strip.panelO.bottomStart = request->arg(F("PBL")).toInt();
+      strip.panelO.rightStart  = request->arg(F("PRL")).toInt();
+      strip.panelO.vertical    = request->arg(F("PVL")).toInt();
+      strip.panelO.serpentine  = request->hasArg(F("PSL"));
+
       strip.panel.reserve(strip.panels); // pre-allocate memory
       for (uint8_t i=0; i<strip.panels; i++) {
         WS2812FX::Panel p;
@@ -709,12 +725,13 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         pO[l] = 'H'; p.height      = request->arg(pO).toInt();
         strip.panel.push_back(p);
       }
+      strip.setUpMatrix(); // will check limits
+      strip.resetSegments(true);  //WLEDMM not makeAutoSegments(true) as we only want to change bounds
+      strip.deserializeMap();
     } else {
       Segment::maxWidth  = strip.getLengthTotal();
       Segment::maxHeight = 1;
     }
-    strip.setUpMatrix(); // will check limits
-    strip.resetSegments(true); //WLEDMM reset segments, boundsOnly!!
   }
   #endif
 
@@ -837,7 +854,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   //apply preset
   if (updateVal(req.c_str(), "PL=", &presetCycCurr, presetCycMin, presetCycMax)) {
-		unloadPlaylist();
+    unloadPlaylist();
     applyPreset(presetCycCurr);
   }
 

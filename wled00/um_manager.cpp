@@ -8,7 +8,7 @@ void UsermodManager::setup()             { for (byte i = 0; i < numMods; i++) um
 void UsermodManager::connected()         { for (byte i = 0; i < numMods; i++) ums[i]->connected(); }
 void UsermodManager::loop()              { for (byte i = 0; i < numMods; i++) ums[i]->loop();  }
 void UsermodManager::handleOverlayDraw() { for (byte i = 0; i < numMods; i++) ums[i]->handleOverlayDraw(); }
-void UsermodManager::appendConfigData()  { for (byte i = 0; i < numMods; i++) ums[i]->appendConfigData(); }
+// void UsermodManager::appendConfigData()  { for (byte i = 0; i < numMods; i++) ums[i]->appendConfigData(); } //WLEDMM not used
 bool UsermodManager::handleButton(uint8_t b) {
   bool overrideIO = false;
   for (byte i = 0; i < numMods; i++) {

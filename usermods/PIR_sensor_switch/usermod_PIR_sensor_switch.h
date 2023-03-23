@@ -371,6 +371,7 @@ public:
    * onStateChanged() is used to detect WLED state change
    */
   void onStateChange(uint8_t mode) {
+    if (!initDone) return;
     DEBUG_PRINT(F("PIR: offTimerStart=")); DEBUG_PRINTLN(offTimerStart);
     if (PIRtriggered && offTimerStart) {
       // checking PIRtriggered and offTimerStart will prevent cancellation upon On trigger

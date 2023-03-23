@@ -240,6 +240,11 @@ void initServer()
     request->send(200, "text/plain", (String)ESP.getFreeHeap());
   });
 
+  //WLEDMM and Athom
+  server.on("/getflash", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(200, "text/plain", (String)ESP.getFlashChipSize());
+    });
+
   server.on("/u", HTTP_GET, [](AsyncWebServerRequest *request){
     if (handleIfNoneMatchCacheHeader(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_usermod, PAGE_usermod_length);
@@ -358,7 +363,7 @@ void initServer()
   });
   #endif
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-    USER_PRINTF("Client request\n"); //WLEDMM: want to see if client connects to wled
+    USER_PRINTF("%s Client request %s\n", serverDescription, request->url().c_str()); //WLEDMM: want to see if client connects to wled, for netdebug also wants to know server
     if (captivePortal(request)) return;
     serveIndexOrWelcome(request);
   });
@@ -380,7 +385,7 @@ void initServer()
 
   //called when the url is not defined here, ajax-in; get-settings
   server.onNotFound([](AsyncWebServerRequest *request){
-    DEBUG_PRINTLN("Not-Found HTTP call:");
+    DEBUG_PRINT("Not-Found HTTP call: ");
     DEBUG_PRINTLN("URI: " + request->url());
     if (captivePortal(request)) return;
 

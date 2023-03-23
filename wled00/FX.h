@@ -72,7 +72,11 @@
   #ifndef MAX_NUM_SEGMENTS
     #define MAX_NUM_SEGMENTS  32
   #endif
-  #define MAX_SEGMENT_DATA  32767
+  #if defined(ARDUINO_ARCH_ESP32S2)
+    #define MAX_SEGMENT_DATA  24576
+  #else
+    #define MAX_SEGMENT_DATA  32767
+  #endif
 #endif
 
 /* How much data bytes each segment should max allocate to leave enough space for other segments,
@@ -322,8 +326,8 @@ typedef enum mapping1D2D {
   M12_pArc = 2,
   M12_pCorner = 3,
   M12_jMap = 4, //WLEDMM jMap
-  M12_sCircle = 5, //WLEDMM jMap
-  M12_sBlock = 6 //WLEDMM jMap
+  M12_sCircle = 5, //WLEDMM Circle
+  M12_sBlock = 6 //WLEDMM Block
 } mapping1D2D_t;
 
 // segment, 72 bytes
@@ -465,7 +469,7 @@ typedef struct Segment {
       _dataLen(0),
       _t(nullptr)
     {
-      refreshLightCapabilities();
+      //refreshLightCapabilities();
     }
 
     Segment(uint16_t sStartX, uint16_t sStopX, uint16_t sStartY, uint16_t sStopY) : Segment(sStartX, sStopX) {
@@ -501,6 +505,9 @@ typedef struct Segment {
     inline bool     isSelected(void)     const { return selected; }
     inline bool     isActive(void)       const { return stop > start; }
     inline bool     is2D(void)           const { return (width()>1 && height()>1); }
+    inline bool     hasRGB(void)         const { return _isRGB; }
+    inline bool     hasWhite(void)       const { return _hasW; }
+    inline bool     isCCT(void)          const { return _isCCT; }
     inline uint16_t width(void)          const { return stop - start; }       // segment width in physical pixels (length if 1D)
     inline uint16_t height(void)         const { return stopY - startY; }     // segment height (if 2D) in physical pixels
     inline uint16_t length(void)         const { return width() * height(); } // segment length (count) in physical pixels
@@ -668,7 +675,6 @@ class WS2812FX {  // 96 bytes
       isMatrix(false),
 #ifndef WLED_DISABLE_2D
       panels(1),
-      matrix{0,0,0,0},
 #endif
       // semi-private (just obscured) used in effect functions through macros
       _currentPalette(CRGBPalette16(CRGB::Black)),
@@ -721,7 +727,6 @@ class WS2812FX {  // 96 bytes
       finalizeInit(),
       service(void),
       setMode(uint8_t segid, uint8_t m),
-      setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       setColor(uint8_t slot, uint32_t c),
       setCCT(uint16_t k),
       setBrightness(uint8_t b, bool direct = false),
@@ -737,10 +742,10 @@ class WS2812FX {  // 96 bytes
       setPixelColor(int n, uint32_t c),
       show(void),
       setTargetFps(uint8_t fps),
-      deserializeMap(uint8_t n=0),
       enumerateLedmaps(); //WLEDMM (from fcn_declare)
 
-    void fill(uint32_t c) { for (int i = 0; i < _length; i++) setPixelColor(i, c); } // fill whole strip with color (inline)
+    void setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0) { setColor(slot, RGBW32(r,g,b,w)); }
+    void fill(uint32_t c) { for (int i = 0; i < getLengthTotal(); i++) setPixelColor(i, c); } // fill whole strip with color (inline)
     void addEffect(uint8_t id, mode_ptr mode_fn, const char *mode_name); // add effect to the list; defined in FX.cpp
     void setupEffectData(void); // add default effects to the list; defined in FX.cpp
 
@@ -758,7 +763,8 @@ class WS2812FX {  // 96 bytes
       hasCCTBus(void),
       // return true if the strip is being sent pixel updates
       isUpdating(void),
-      useLedsArray = true; //WLEDMM default true as recommended for overlapping segments
+      deserializeMap(uint8_t n=0),
+      useLedsArray = false;
 
     inline bool isServicing(void) { return _isServicing; }
     inline bool hasWhiteChannel(void) {return _hasWhiteChannel;}
@@ -787,17 +793,17 @@ class WS2812FX {  // 96 bytes
       ablMilliampsMax,
       currentMilliamps,
       getLengthPhysical(void),
+      getLengthTotal(void), // will include virtual/nonexistent pixels in matrix
       getFps();
 
     inline uint16_t getFrameTime(void) { return _frametime; }
     inline uint16_t getMinShowDelay(void) { return MIN_SHOW_DELAY; }
-    inline uint16_t getLengthTotal(void) { return _length; }
+    inline uint16_t getLength(void) { return _length; } // 2D matrix may have less pixels than W*H
     inline uint16_t getTransition(void) { return _transitionDur; }
 
     uint32_t
       now,
       timebase,
-      currentColor(uint32_t colorNew, uint8_t tNr),
       getPixelColor(uint16_t);
 
     inline uint32_t getLastShow(void) { return _lastShow; }
@@ -825,9 +831,9 @@ class WS2812FX {  // 96 bytes
       panelsH, //WLEDMM needs to be stored as well
       panelsV; //WLEDMM needs to be stored as well
 
+    //WLEDMM: keep storing basic 2d setup
     bool
-      bOrA; //WLEDMM basic or advanced
-      
+      bOrA = false; //WLEDMM basic or advanced, default basic
     struct {
       bool bottomStart : 1;
       bool rightStart  : 1;
@@ -839,7 +845,7 @@ class WS2812FX {  // 96 bytes
       bool rightStart  : 1;
       bool vertical    : 1;
       bool serpentine  : 1;
-    } panelO; //WLEDMM panelOrientation
+    } panelO; //panelOrientation
 
     typedef struct panel_t {
       uint8_t xOffset; // x offset relative to the top left of matrix in LEDs. WLEDMM 8 bits/256 is enough
@@ -855,12 +861,19 @@ class WS2812FX {  // 96 bytes
           bool serpentine  : 1; // is serpentine?
         };
       };
+      panel_t()
+        : xOffset(0)
+        , yOffset(0)
+        , width(8)
+        , height(8)
+        , options(0)
+      {}
     } Panel;
     std::vector<Panel> panel;
 #endif
 
     void
-      setUpMatrix(bool reset = true), //WLEDMM: add reset option to switch on/off reset of customMappingTable
+      setUpMatrix(),
       setPixelColorXY(int x, int y, uint32_t c);
 
     // outsmart the compiler :) by correctly overloading

@@ -144,8 +144,8 @@ void updateTimezone() {
       break;
     }
      case TZ_MX_CENTRAL : {
-      tcrDaylight = {First, Sun, Apr, 2, -300};  //CDT = UTC - 5 hours
-      tcrStandard = {Last,  Sun, Oct, 2, -360};  //CST = UTC - 6 hours
+      tcrDaylight = {First, Sun, Apr, 2, -360};  //CST = UTC - 6 hours
+      tcrStandard = tcrDaylight;
       break;
     }
     case TZ_PAKISTAN : {

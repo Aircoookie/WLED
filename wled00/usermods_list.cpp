@@ -165,6 +165,10 @@
   #include "../usermods/ADS1115_v2/usermod_ads1115.h"
 #endif
 
+#ifdef USERMOD_KLIPPER_PERCENTAGE
+  #include "..\usermods\usermod_v2_klipper_percentage\usermod_v2_klipper_percentage.h"
+#endif
+
 #ifdef USERMOD_BOBLIGHT
   #include "../usermods/boblight/boblight.h"
 #endif
@@ -215,7 +219,7 @@ void registerUsermods()
   #endif
 
   #ifdef USERMOD_DALLASTEMPERATURE
-  usermods.add(new UsermodTemperature());
+  usermods.add(new UsermodTemperature("Temperature", true));
   #endif
 
   #ifdef USERMOD_SN_PHOTORESISTOR
@@ -350,6 +354,10 @@ void registerUsermods()
   usermods.add(new ADS1115Usermod());
   #endif
 
+  #ifdef USERMOD_KLIPPER_PERCENTAGE
+  usermods.add(new klipper_percentage());
+  #endif
+
   #ifdef USERMOD_BOBLIGHT
   usermods.add(new BobLightUsermod());
   #endif
@@ -372,12 +380,12 @@ void registerUsermods()
   #endif
   
   #ifdef USERMOD_WEATHER
-  usermods.add(new WeatherUsermod());
+  usermods.add(new WeatherUsermod("Weather", true));
   #endif
 
 
   #ifdef USERMOD_MPU6050_IMU
-  usermods.add(new MPU6050Driver());
+  usermods.add(new MPU6050Driver("mpu6050-IMU", true));
   #endif
 
   #ifdef USERMOD_GAMES

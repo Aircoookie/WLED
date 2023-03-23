@@ -2,13 +2,12 @@
 // #warning **** Included USERMOD_BH1750 ****
 
 #ifndef WLED_ENABLE_MQTT
-#error "This user mod requires MQTT to be enabled."
+#warning "This user mod expects MQTT to be enabled."
 #endif
 
 #pragma once
 
 #include <Arduino.h>   // WLEDMM: make sure that I2C drivers have the "right" Wire Object
-#include <Wire.h>
 
 #include "wled.h"
 #include <BH1750.h>
@@ -20,7 +19,8 @@
 
 // the min frequency to check photoresistor, 500 ms
 #ifndef USERMOD_BH1750_MIN_MEASUREMENT_INTERVAL
-#define USERMOD_BH1750_MIN_MEASUREMENT_INTERVAL 500
+//#define USERMOD_BH1750_MIN_MEASUREMENT_INTERVAL 500
+#define USERMOD_BH1750_MIN_MEASUREMENT_INTERVAL 2500   // WLEDMM this makes more sense
 #endif
 
 // how many seconds after boot to take first measurement, 10 seconds
@@ -30,7 +30,7 @@
 
 // only report if differance grater than offset value
 #ifndef USERMOD_BH1750_OFFSET_VALUE
-#define USERMOD_BH1750_OFFSET_VALUE 1
+#define USERMOD_BH1750_OFFSET_VALUE 2                 // WLEDMM this makes more sense
 #endif
 
 class Usermod_BH1750 : public Usermod
@@ -91,14 +91,17 @@ private:
   // set up Home Assistant discovery entries
   void _mqttInitialize()
   {
+#ifdef WLED_ENABLED_MQTT
     mqttLuminanceTopic = String(mqttDeviceTopic) + F("/brightness");
 
     if (HomeAssistantDiscovery) _createMqttSensor(F("Brightness"), mqttLuminanceTopic, F("Illuminance"), F(" lx"));
+#endif
   }
 
   // Create an MQTT Sensor for Home Assistant Discovery purposes, this includes a pointer to the topic that is published to in the Loop.
   void _createMqttSensor(const String &name, const String &topic, const String &deviceClass, const String &unitOfMeasurement)
   {
+#ifdef WLED_ENABLED_MQTT
     String t = String(F("homeassistant/sensor/")) + mqttClientID + F("/") + name + F("/config");
     
     StaticJsonDocument<600> doc;
@@ -125,11 +128,13 @@ private:
     DEBUG_PRINTLN(temp);
 
     mqtt->publish(t.c_str(), 0, true, temp.c_str());
+#endif
   }
 
 public:
   void setup()
   {
+#if 0
     bool HW_Pins_Used = (ioPin[0]==i2c_scl && ioPin[1]==i2c_sda); // note whether architecture-based hardware SCL/SDA pins used
     PinOwner po = PinOwner::UM_BH1750; // defaults to being pinowner for SCL/SDA pins
     if (HW_Pins_Used) po = PinOwner::HW_I2C; // allow multiple allocations of HW I2C bus pins
@@ -147,13 +152,18 @@ public:
 #else
       //Wire.begin();  // WLEDMM - i2c pins on 8266 are fixed.
 #endif
+#endif
+    if (!enabled) return;
     if (!pinManager.joinWire()) {  // WLEDMM - this allocates global I2C pins, then starts Wire - if not started previously
       sensorFound = false;
-      enabled = false;
+      //enabled = false;
+      USER_PRINTLN(F("BH1750: failed to join I2C bus.")); 
       return;
     }
 
     sensorFound = lightMeter.begin();
+    if (sensorFound) { USER_PRINTLN(F("BH1750 sensor found.")); }
+    else{ USER_PRINTLN(F("BH1750 sensor not found.")); }
     initDone = true;
   }
 
@@ -226,7 +236,7 @@ public:
         lux_json.add(F(" sec until read"));
         return;
     } else {
-      lux_json.add(lastLux);
+      lux_json.add(round(lastLux));  // WLEDMM
       lux_json.add(F(" lx"));
     }
   }
@@ -295,6 +305,7 @@ public:
     } else {
       DEBUG_PRINTLN(F(" config (re)loaded."));
       // changing parameters from settings page
+#if 0
       bool pinsChanged = false;
       for (byte i=0; i<2; i++) if (ioPin[i] != newPin[i]) { pinsChanged = true; break; } // check if any pins changed
       if (pinsChanged) { //if pins changed, deallocate old pins and allocate new ones
@@ -305,6 +316,9 @@ public:
         for (byte i=0; i<2; i++) ioPin[i] = newPin[i];
         setup();
       }
+#else
+      if (enabled && !sensorFound) setup();
+#endif
       // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
       return !top[F("pin")].isNull();
     }
