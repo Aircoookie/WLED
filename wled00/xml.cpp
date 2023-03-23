@@ -217,7 +217,7 @@ void appendGPIOinfo() {
   oappend(SET_F(",2")); // DMX hardcoded pin
   #endif
 
-  #ifdef WLED_DEBUG
+  #if defined(WLED_DEBUG) && !defined(WLED_DEBUG_HOST) // WLEDMM don't need to protect TX if we have netDebug
   oappend(SET_F(",")); oappend(itoa(hardwareTX,nS,10));// debug output (TX) pin
   #endif
 
