@@ -416,8 +416,17 @@ class FourLineDisplayUsermod : public Usermod {
         if (ioPin[0] < 0 || ioPin[1] < 0) {
           ioPin[0] = spi_sclk;
           ioPin[1] = spi_mosi;
+        } else {
+          if ((spi_sclk < 0) && (spi_mosi < 0)) { // WLEDMM UM pins are valid, but global = -1 --> copy pins to "global"
+            spi_sclk = ioPin[0];
+            spi_mosi = ioPin[1];
+          }
         }
+        if ((ioPin[0] < 0 || ioPin[1] < 0) && (spi_sclk < 0 || spi_mosi < 0))  {      // invalid pins, or "use global" and global pins not defined
+          typeOK=false; strcpy(errorMessage, PSTR("SPI No Pins defined")); return; }  //WLEDMM bugfix - ensure that "final" GPIO are valid
+
         isHW = (ioPin[0]==spi_sclk && ioPin[1]==spi_mosi);
+        if ((ioPin[0] == -1) || (ioPin[1] == -1)) isHW = true;  // WLEDMM "use global" = hardware
         PinManagerPinType cspins[3] = { { ioPin[2], true }, { ioPin[3], true }, { ioPin[4], true } };
         if (!pinManager.allocateMultiplePins(cspins, 3, PinOwner::UM_FourLineDisplay)) { typeOK=false; strcpy(errorMessage, PSTR("SPI3 alloc pins failed")); return; }
         if (isHW) po = PinOwner::HW_SPI;  // allow multiple allocations of HW I2C bus pins
