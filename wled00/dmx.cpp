@@ -95,8 +95,10 @@ void handleDMX() {}
 
 
 #ifdef WLED_ENABLE_DMX_INPUT
+dmx_port_t dmxPort = 2;
 void initDMX() {
 /* Set the DMX hardware pins to the pins that we want to use. */
+  int dmxTransmitPin, dmxReceivePin, dmxEnablePin = -1;
   dmx_set_pin(dmxPort, dmxTransmitPin, dmxReceivePin, dmxEnablePin);
 
   /* Now we can install the DMX driver! We'll tell it which DMX port to use and
