@@ -495,6 +495,20 @@ bool PinManagerClass::allocatePin(byte gpio, bool output, PinOwner tag)
   return true;
 }
 
+void PinManagerClass::manageDebugTXPin()
+{
+  #ifdef WLED_DEBUG_HOST
+    if (netDebugEnabled) deallocatePin(hardwareTX, PinOwner::DebugOut);
+    #ifdef WLED_DEBUG
+      else                 allocatePin(hardwareTX, true, PinOwner::DebugOut);
+    #endif
+  #else
+    #ifdef WLED_DEBUG
+      pinManager.allocatePin(hardwareTX, true, PinOwner::DebugOut); // TX (GPIO1 on ESP32) reserved for debug output
+    #endif
+  #endif
+}
+
 // if tag is set to PinOwner::None, checks for ANY owner of the pin.
 // if tag is set to any other value, checks if that tag is the current owner of the pin.
 bool PinManagerClass::isPinAllocated(byte gpio, PinOwner tag)

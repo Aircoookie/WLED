@@ -979,7 +979,7 @@ void serializeInfo(JsonObject root)
   #endif
   //WLEDMM: WLED_DEBUG_HOST independent from WLED_DEBUG
   #ifdef WLED_DEBUG_HOST
-  os  = 0x80; //WLEDMM: also if not WLED_DEBUG (on off button Net Debug)
+  os  = 0x80; //WLEDMM: also if not WLED_DEBUG (on off button Net Debug/Net Serial)
   os |= 0x0100;
   if (!netDebugEnabled) os &= ~0x0080;
   #endif

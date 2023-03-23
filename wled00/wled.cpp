@@ -428,9 +428,8 @@ void WLED::setup()
   //DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
   USER_FLUSH();  // WLEDMM flush buffer now, before anything time-critial is started.
 
-#if defined(WLED_DEBUG) && !defined(WLED_DEBUG_HOST)            // WLEDMM don't need to protect TX if we have netDebug
-  pinManager.allocatePin(hardwareTX, true, PinOwner::DebugOut); // TX (GPIO1 on ESP32) reserved for debug output
-#endif
+  pinManager.manageDebugTXPin();
+
 #ifdef WLED_ENABLE_DMX //reserve GPIO2 as hardcoded DMX pin
   pinManager.allocatePin(2, true, PinOwner::DMX);
 #endif

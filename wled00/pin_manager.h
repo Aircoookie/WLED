@@ -98,6 +98,7 @@ class PinManagerClass {
   // Allocates a single pin, with an owner tag.
   // De-allocation requires the same owner tag (or override)
   bool allocatePin(byte gpio, bool output, PinOwner tag);
+  void manageDebugTXPin(); //WLEDMM
   // Allocates all the pins, or allocates none of the pins, with owner tag.
   // Provided to simplify error condition handling in clients
   // using more than one pin, such as I2C, SPI, rotary encoders,
