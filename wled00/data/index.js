@@ -540,7 +540,7 @@ function populateQL()
 {
 	var cn = "";
 	if (pQL.length > 0) {
-		pQL.sort((a,b) => (a[0]>b[0]));
+		pQL.sort((a,b) => (a[1]>b[1])); //WLEDMM do not sort on preset id but on ql name
 		cn += `<p class="labels hd">Quick load</p>`;
 		for (var key of (pQL||[])) {
 			cn += `<button class="btn btn-xs psts" id="p${key[0]}qlb" title="${key[2]?key[2]:''}" onclick="setPreset(${key[0]});">${key[1]}</button>`;
@@ -557,6 +557,7 @@ function populatePresets(fromls)
 	delete pJson["0"];
 	var cn = "";
 	var arr = Object.entries(pJson);
+	console.log(arr);
 	arr.sort(cmpP);
 	pQL = [];
 	var is = [];
@@ -571,7 +572,8 @@ function populatePresets(fromls)
 
 		cn += `<div class="pres lstI" id="p${i}o">`;
 		if (cfg.comp.pid) cn += `<div class="pid">${i}</div>`;
-		cn += `<div class="pname lstIname" onclick="setPreset(${i})">${isPlaylist(i)?"<i class='icons btn-icon'>&#xe139;</i>":""}${pName(i)}
+		//WLEDMM: show ql if defined
+		cn += `<div class="pname lstIname" onclick="setPreset(${i})">${isPlaylist(i)?"<i class='icons btn-icon'>&#xe139;</i>":""}${(pJson[i].ql?pJson[i].ql+' ':'') + pName(i)}
 	<i class="icons edit-icon flr" id="p${i}nedit" onclick="tglSegn(${i+100})">&#xe2c6;</i></div>
 	<i class="icons e-icon flr" id="sege${i+100}" onclick="expand(${i+100})">&#xe395;</i>
 	<div class="presin lstIcontent" id="seg${i+100}"></div>
@@ -1533,14 +1535,15 @@ function displayRover(i,s)
 
 function cmpP(a, b)
 {
-	if (!a[1].n) return (a[0] > b[0]);
-	// sort playlists first, followed by presets with characters and last presets with special 1st character
-	const c = a[1].n.charCodeAt(0);
-	const d = b[1].n.charCodeAt(0);
-	if ((c>47 && c<58) || (c>64 && c<91) || (c>96 && c<123) || c>255) x = '='; else x = '>';
-	if ((d>47 && d<58) || (d>64 && d<91) || (d>96 && d<123) || d>255) y = '='; else y = '>';
-	const n = (a[1].playlist ? '<' : x) + a[1].n;
-	return n.localeCompare((b[1].playlist ? '<' : y) + b[1].n, undefined, {numeric: true});
+	//WLEDMM: simplify sort to better align with quick load labels (sort first) and ir remotes using id (sort after presets)
+	//WLEDMM a[0] = id, a[1] = Object(n, ql)
+	//WLEDMM sort first on ql alphabetically then playlists, then id numerical
+
+	function toString(a) {
+		return a[1].ql?String(a[1].ql).padEnd(2,' '):'zz' + (a[1].playlist ? '<' : '=') + String(a[0]).padStart(3, '0');
+	}
+
+	return toString(a).localeCompare(toString(b));
 }
 
 function makeWS() {
