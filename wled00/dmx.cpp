@@ -98,7 +98,9 @@ void handleDMX() {}
 dmx_port_t dmxPort = 2;
 void initDMX() {
 /* Set the DMX hardware pins to the pins that we want to use. */
-  int dmxTransmitPin, dmxReceivePin, dmxEnablePin = -1;
+  int dmxTransmitPin = 2;
+  int dmxReceivePin = 27;
+  int dmxEnablePin = -1;
   dmx_set_pin(dmxPort, dmxTransmitPin, dmxReceivePin, dmxEnablePin);
 
   /* Now we can install the DMX driver! We'll tell it which DMX port to use and
@@ -112,9 +114,8 @@ bool dmxIsConnected = false;
 unsigned long dmxLastUpdate = 0;
 
 void handleDMXInput() {
-  byte data[DMX_PACKET_SIZE];
-  /* We need a place to store information about the DMX packets we receive. We
-    will use a dmx_packet_t to store that packet information.  */
+  byte dmxdata[DMX_PACKET_SIZE];
+
   dmx_packet_t packet;
 
   /* And now we wait! The DMX standard defines the amount of time until DMX
@@ -122,7 +123,6 @@ void handleDMXInput() {
     ticks using the constant `DMX_TIMEOUT_TICK`. If it takes longer than that
     amount of time to receive data, this if statement will evaluate to false. */
   if (dmx_receive(dmxPort, &packet, DMX_TIMEOUT_TICK)) {
-    /* If this code gets called, it means we've received DMX data! */
 
     /* Get the current time since boot in milliseconds so that we can find out
       how long it has been since we last updated data and printed to the Serial
@@ -137,14 +137,12 @@ void handleDMXInput() {
         dmxIsConnected = true;
       }
 
-      /* Don't forget we need to actually read the DMX data into our buffer so
-        that we can print it out. */
-      dmx_read(dmxPort, data, packet.size);
+      /*  read the DMX data into our buffer */
+      dmx_read(dmxPort, dmxdata, packet.size);
 
       if (now - dmxLastUpdate > 1000) {
         /* Print the received start code - it's usually 0. */
-        DEBUG_PRINTF("Start code is 0x%02X and slot 1 is 0x%02X\n", data[0],
-                      data[1]);
+        DEBUG_PRINTF("Start code is 0x%02X and slot 1 is 0x%02X and slot 2 is 0x%02X \n", dmxdata[0], dmxdata[1], dmxdata[2]);
         dmxLastUpdate = now;
       }
     } else {
@@ -155,11 +153,12 @@ void handleDMXInput() {
      DEBUG_PRINTLN("A DMX error occurred.");
     }
   } else if (dmxIsConnected) {
+    dmxIsConnected = false;
     DEBUG_PRINTLN("DMX was disconnected.");
   }
   if(dmxIsConnected) {
-    DEBUG_PRINTF("DMX channel 1 = %u\n", data(1)); // TODO: remove from final code
-    handleDMXData(1, 512, data, 1, REALTIME_MODE_DMX, 0);
+    // DEBUG_PRINTF("DMX channel 1 = %u\n", dmxdata[1]);
+    handleDMXData(1, 512, dmxdata, REALTIME_MODE_DMX, 0);
   }
 }
 #else

@@ -554,7 +554,7 @@ void WLED::setup()
       ArduinoOTA.setHostname(cmDNS);
   }
 #endif
-#ifdef WLED_ENABLE_DMX
+#if defined(WLED_ENABLE_DMX) || defined(WLED_ENABLE_DMX_INPUT)
   initDMX();
 #endif
 

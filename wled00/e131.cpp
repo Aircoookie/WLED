@@ -111,10 +111,10 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
   // update status info
   realtimeIP = clientIP;
 
-  handleDMXData(uni, dmxChannels, e131_data, seq, mde, previousUniverses);
+  handleDMXData(uni, dmxChannels, e131_data, mde, previousUniverses);
 }
 
-void handleDMXData(uint16_t uni, uint16_t dmxChannels, uint8_t* e131_data, uint8_t seq, uint8_t mde, uint8_t previousUniverses) {
+void handleDMXData(uint16_t uni, uint16_t dmxChannels, uint8_t* e131_data, uint8_t mde, uint8_t previousUniverses) {
   #ifdef WLED_ENABLE_DMX
   // does not act on out-of-order packets yet
   if (e131ProxyUniverse > 0 && uni == e131ProxyUniverse) {
