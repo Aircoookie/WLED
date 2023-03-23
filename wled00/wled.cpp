@@ -436,6 +436,10 @@ void WLED::setup()
 #ifdef WLED_ENABLE_DMX //reserve GPIO2 as hardcoded DMX pin
   pinManager.allocatePin(2, true, PinOwner::DMX);
 #endif
+#ifdef WLED_ENABLE_DMX_INPUT //reserve GPIO2 and 27 as hardcoded DMX pins
+  pinManager.allocatePin(2, true, PinOwner::DMX);
+  pinManager.allocatePin(27, true, PinOwner::DMX);
+#endif
 
 // WLEDMM experimental: support for single neoPixel on Adafruit boards
 #if 0
