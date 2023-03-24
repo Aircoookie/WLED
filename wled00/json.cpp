@@ -352,7 +352,11 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   #if defined(WLED_DEBUG_HOST)
   bool oldValue = netDebugEnabled;
   netDebugEnabled = root[F("netDebug")] | netDebugEnabled;
-  if (oldValue != netDebugEnabled) doSerializeConfig = true; //WLEDMM to make it will be stored in cfg.json! (tbd: check if this is the right approach)
+  // USER_PRINTF("deserializeState %d (%d)\n", netDebugEnabled, oldValue);
+  if (oldValue != netDebugEnabled) {
+    pinManager.manageDebugTXPin();
+    doSerializeConfig = true; //WLEDMM to make it will be stored in cfg.json! (tbd: check if this is the right approach)
+  }
   #endif
 
   bool onBefore = bri;
@@ -605,6 +609,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     //WLEDMM: store netDebug 
     #if defined(WLED_DEBUG_HOST)
       root[F("netDebug")] = netDebugEnabled;
+    // USER_PRINTF("serializeState %d\n", netDebugEnabled);
     #endif
 
     if (errorFlag) {root[F("error")] = errorFlag; errorFlag = ERR_NONE;} //prevent error message to persist on screen

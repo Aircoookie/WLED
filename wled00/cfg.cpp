@@ -484,6 +484,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     CJSON(netDebugPrintIP[i], if_ndb_ip[i]);
   CJSON(netDebugPrintPort, if_ndb["port"]);
   CJSON(netDebugEnabled, if_ndb["enabled"]);
+  // USER_PRINTF("deserializeConfig %d\n", netDebugEnabled);
+  pinManager.manageDebugTXPin();
 #endif
 
   JsonObject if_ntp = interfaces[F("ntp")];
@@ -953,6 +955,7 @@ void serializeConfig() {
   }
   if_ndb["port"] = netDebugPrintPort;
   if_ndb["enabled"] = netDebugEnabled;
+  // USER_PRINTF("serializeConfig %d\n", netDebugEnabled);
 #endif
 
   JsonObject if_ntp = interfaces.createNestedObject("ntp");
