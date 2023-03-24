@@ -667,8 +667,10 @@ function populateInfo(i)
 	if (i.cn) vcn = i.cn;
 
 	//WLEDMM: add total heap and total PSRAM, and build number, add bin name
-	if (i.ver.includes("0.14.1.")) vcn = "Sitting Ducks"; // easter egg
-	if (i.ver.includes("0.14.0.")) vcn = "Lupo";          // check for MM versioning scheme
+	if (i.ver.includes("0.14.1")) vcn = "Sitting Ducks"; // easter egg
+	if (i.ver.includes("0.14.0")) vcn = "Lupo";          // check for MM versioning scheme
+	if (i.ver.includes("0.14.0-b2.2")) vcn = "Sitting Ducks"; // early easter egg
+	if (i.ver.includes("0.14.0-b2.20")) vcn = "Lupo";
 	cn += `v${i.ver} &nbsp;<i>"${vcn}"</i><p>(WLEDMM_${i.ver} ${i.rel}.bin)</p><p><em>build ${i.vid}</em></p><table>
 ${urows}
 ${urows===""?'':'<tr><td colspan=2><hr style="height:1px;border-width:0;color:SeaGreen;background-color:Seagreen"></td></tr>'}
