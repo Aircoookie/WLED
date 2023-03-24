@@ -1,6 +1,6 @@
 //page js
 var loc = false, locip;
-var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true;
+var isOn = false, nlA = false, isLv = true, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true;
 var hasWhite = false, hasRGB = false, hasCCT = false;
 var nlDur = 60, nlTar = 0;
 var nlMode = false;
@@ -26,7 +26,7 @@ var ws, cpick, ranges;
 var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false},
-          labels:true, pcmbot:false, pid:true, seglen:false, segpwr:false, segexp:true, peekexp:true, segvexp: true, css:true, hdays:false} //WLEDMM segexp true as default, add peekexp and segvexp
+          labels:true, pcmbot:false, pid:true, seglen:false, segpwr:false, segexp:true, css:true, hdays:false} //WLEDMM segexp true as default
 };
 var hol = [
 	[0,11,24,4,"https://aircoookie.github.io/xmas.png"], // christmas
@@ -269,6 +269,8 @@ function onLoad()
 		sl.addEventListener('touchstart', toggleBubble);
 		sl.addEventListener('touchend', toggleBubble);
 	}
+
+	gId('buttonSr').className = "active"; //WLEDMM: on after load
 }
 
 function updateTablinks(tabI)
@@ -557,7 +559,6 @@ function populatePresets(fromls)
 	delete pJson["0"];
 	var cn = "";
 	var arr = Object.entries(pJson);
-	console.log(arr);
 	arr.sort(cmpP);
 	pQL = [];
 	var is = [];
@@ -1163,21 +1164,8 @@ function updateLen(s, draw=true) //WLEDMM conditonally draw segment view
 	gId(`seg${s}len`).innerHTML = out;
 
 	if (draw && isM) drawSegmentView(); //WLEDMM draw new segmentview if something changes in a segment
-	gId("segviews").style.display = isM? "inline":"none";
-}
-
-//WLEDMM
-function eandp(o,i)
-{
-	expandV(o,i);
-	peek(i, i.style.display =="none");
-}
-
-//WLEDMM
-function expandV(o,i)
-{
-	i.style.display = i.style.display!=="none" ? "none" : "";
-	o.style.rotate = i.style.display==="none" ? "-90deg" : "none";
+	gId("effectGFX").style.display = isM? "inline":"none";
+	gId("segGFX").style.display = isM? "inline":"none";
 }
 
 //WLEDMM
@@ -1216,9 +1204,10 @@ function drawSegmentView() {
 		peek(canvasPeek);
 	}
 
+	let segments = gId("Segments");
 	let windowWidth = Math.min(window.innerWidth*0.98, maxWidth*30);
 	let windowWidthFactor = maxWidth > maxHeight?1:maxWidth/maxHeight;
-	ctx.canvas.width = (ctx.canvas.parentElement.offsetWidth > 800?windowWidth:300) * windowWidthFactor; //Mobile and non pc mode gets 300, pc 800
+	ctx.canvas.width = (segments.offsetWidth > 800?windowWidth:300) * windowWidthFactor; //Mobile and non pc mode gets 300, pc 800
 	ctx.canvas.height = ctx.canvas.width / maxWidth * maxHeight;
 	canvasPeek.width = ctx.canvas.width;
 	canvasPeek.height = ctx.canvas.height;
@@ -1226,10 +1215,6 @@ function drawSegmentView() {
 
 	var ppL = ctx.canvas.width / maxWidth; //pixels per led
 	// console.log("dim", ctx.canvas.width , maxWidth, ctx.canvas.height , maxHeight, ppL);
-
-	ctx.lineWidth = 1;
-	ctx.strokeStyle="yellow";
-	ctx.strokeRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
 	var colorArray = [[255,0,0], [0,255,0], [0,0,255], [255,0,255], [255,165,0], [255,255,0]];
 	//               ["red",     "green",   "blue",    "magenta",   "orange",    "yellow"];
@@ -1239,9 +1224,11 @@ function drawSegmentView() {
 
 		if (!initSegmentVars(p)) break;
 
-		ctx.lineWidth = 3;
-		ctx.strokeStyle="white";
-		ctx.strokeRect(topLeftX, topLeftY, pw*ppL, ph*ppL);
+		if (gId("segcont").children.length > 1) { //Estetic: Don't draw surrounding box if only one segment
+			ctx.lineWidth = 3;
+			ctx.strokeStyle="white";
+			ctx.strokeRect(topLeftX, topLeftY, pw*ppL, ph*ppL);
+		}
 
 		var fx = parseInt(gId("seg"+p+"fx").value);
 
@@ -1317,7 +1304,10 @@ function drawSegmentView() {
 
 	} // for each segment
 
-	gId("MD").innerHTML = "W*H=LC: " + maxWidth + " x " + maxHeight + " = " + maxWidth * maxHeight;
+	if (gId("segcont").children.length > 0) { //Only show this if more then one segment
+		gId("MD").innerHTML = "total W*H=LC: " + maxWidth + " x " + maxHeight + " = " + maxWidth * maxHeight;
+	}
+	gId("MD").style.display = gId("segcont").children.length > 0?"inline":"none"
 
 	function post() {
 		for (let p=0; p<gId("segcont").children.length; p++) {
@@ -1333,7 +1323,7 @@ function drawSegmentView() {
 			ctx.font = '20px Arial'; 
 			ctx.fillStyle = "white";
 			var name = eJson.find((o)=>{return o.id==fx}).name;
-			ctx.fillText(name, topLeftX + ppL, topLeftY + ph*ppL - 10);
+			ctx.fillText(name, topLeftX+10, topLeftY + ph*ppL - 10);
 		}	
 	}
 
@@ -1944,34 +1934,47 @@ function toggleSync()
 
 function toggleLiveview()
 {
-	//WLEDMM adding liveview2D support
-	if (isInfo && isM) toggleInfo();
-	if (isNodes && isM) toggleNodes();
-	isLv = !isLv;
+	if (isM) {
+		isLv = !isLv;
+		gId("colorGFX").style.display = isLv? "inline":"none";
+		gId("effectGFX").style.display = isLv? "inline":"none";
+		gId("segGFX").style.display = isLv? "inline":"none";
 
-	var lvID = "liveview";
-	if (isM) {   
-		lvID = "liveview2D"
-		if (isLv) {
-		var cn = '<iframe id="liveview2D" src="about:blank"></iframe>';
-		d.getElementById('kliveview2D').innerHTML = cn;
-		}
+		canvasPeek = gId("canvasPeek");
+		peek(canvasPeek, !isLv); //set off if !isLv
 
-		gId('mliveview2D').style.transform = (isLv) ? "translateY(0px)":"translateY(100%)";
+		gId('buttonSr').className = (isLv) ? "active":"";
+
+	} else {
+		//WLEDMM adding liveview2D support
+		if (isInfo && isM) toggleInfo();
+		if (isNodes && isM) toggleNodes();
+		isLv = !isLv;
+
+		var lvID = "liveview";
+		// if (isM) {   
+		// 	lvID = "liveview2D"
+		// 	if (isLv) {
+		// 	var cn = '<iframe id="liveview2D" src="about:blank"></iframe>';
+		// 	d.getElementById('kliveview2D').innerHTML = cn;
+		// 	}
+
+		// 	gId('mliveview2D').style.transform = (isLv) ? "translateY(0px)":"translateY(100%)";
+		// }
+
+		gId(lvID).style.display = (isLv) ? "block":"none";
+		var url = (loc?`http://${locip}`:'') + "/" + lvID;
+		gId(lvID).src = (isLv) ? url:"about:blank";
+		gId('buttonSr').className = (isLv) ? "active":"";
+		if (!isLv && ws && ws.readyState === WebSocket.OPEN) ws.send('{"lv":false}');
+		size();
 	}
-
-	gId(lvID).style.display = (isLv) ? "block":"none";
-	var url = (loc?`http://${locip}`:'') + "/" + lvID;
-	gId(lvID).src = (isLv) ? url:"about:blank";
-	gId('buttonSr').className = (isLv) ? "active":"";
-	if (!isLv && ws && ws.readyState === WebSocket.OPEN) ws.send('{"lv":false}');
-	size();
 }
 
 function toggleInfo()
 {
 	if (isNodes) toggleNodes();
-	if (isLv && isM) toggleLiveview();
+	// if (isLv && isM) toggleLiveview(); //WLEDMM: not for GFX
 	isInfo = !isInfo;
 	if (isInfo) requestJson();
 	gId('info').style.transform = (isInfo) ? "translateY(0px)":"translateY(100%)";
@@ -1981,7 +1984,7 @@ function toggleInfo()
 function toggleNodes()
 {
 	if (isInfo) toggleInfo();
-	if (isLv && isM) toggleLiveview();
+	// if (isLv && isM) toggleLiveview(); //WLEDMM: not for GFX
 	isNodes = !isNodes;
 	if (isNodes) loadNodes();
 	gId('nodes').style.transform = (isNodes) ? "translateY(0px)":"translateY(100%)";
@@ -3242,10 +3245,10 @@ function togglePcMode(fromB = false)
 		localStorage.setItem('pcm', pcModeA);
 		pcMode = pcModeA;
 	}
-	if (wW < 1250 && !pcMode) return;
-	if (!fromB && ((wW < 1250 && lastw < 1250) || (wW >= 1250 && lastw >= 1250))) return;
+	if (wW < 798 && !pcMode) return;
+	if (!fromB && ((wW <= 798 && lastw <= 798) || (wW > 798 && lastw > 798))) return;
 	openTab(0, true);
-	if (wW < 1250) {pcMode = false;}
+	if (wW <= 798) {pcMode = false;}
 	else if (pcModeA && !fromB) pcMode = pcModeA;
 	updateTablinks(0);
 	gId('buttonPcm').className = (pcMode) ? "active":"";
