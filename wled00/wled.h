@@ -132,10 +132,6 @@
  #endif
 #endif
 
-#ifdef WLED_ENABLE_DMX_INPUT
-#include <esp_dmx.h>
-#endif
-
 #include "src/dependencies/e131/ESPAsyncE131.h"
 #ifdef WLED_ENABLE_MQTT
 #include "src/dependencies/async-mqtt-client/AsyncMqttClient.h"

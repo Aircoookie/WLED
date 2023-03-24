@@ -438,6 +438,7 @@ void WLED::setup()
 #endif
 #ifdef WLED_ENABLE_DMX_INPUT //reserve GPIO2 and 27 as hardcoded DMX pins
   pinManager.allocatePin(2, true, PinOwner::DMX);
+  pinManager.allocatePin(26, true, PinOwner::DMX);
   pinManager.allocatePin(27, true, PinOwner::DMX);
 #endif
 
