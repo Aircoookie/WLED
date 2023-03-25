@@ -676,6 +676,8 @@ function populateInfo(i)
 ${urows}
 ${urows===""?'':'<tr><td colspan=2><hr style="height:1px;border-width:0;color:SeaGreen;background-color:Seagreen"></td></tr>'}
 ${i.opt&0x100?inforow("Net Serial ☾","<button class=\"btn btn-xs\" onclick=\"requestJson({'netDebug':"+(i.opt&0x0080?"false":"true")+"});\"><i class=\"icons "+(i.opt&0x0080?"on":"off")+"\">&#xe08f;</i></button>"):''}
+${i.serialOnline?inforow(i.serialOnline,"TX="+i.sTX,"; RX="+i.sRX):""}
+${i.opt&0x100?'<tr><td colspan=2><hr style="height:1px;border-width:0;color:GoldenRod;background-color:GoldenRod"></td></tr>':''}
 ${inforow("Build",i.vid)}
 ${inforow("Estimated current",pwru)}
 ${inforow("Average FPS",i.leds.fps)}
