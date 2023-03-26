@@ -2,6 +2,7 @@
 
 #include <Arduino.h>              // WLEDMM: make sure that I2C drivers have the "right" Wire Object
 #include <Wire.h>
+#include <SPI.h>
 #undef U8X8_NO_HW_I2C             // WLEDMM: we do want I2C hardware drivers - if possible
 //#define WIRE_INTERFACES_COUNT 2   // experimental - tell U8x8Lib that there is a second Wire unit
 
@@ -427,6 +428,7 @@ class FourLineDisplayUsermod : public Usermod {
 
         isHW = (ioPin[0]==spi_sclk && ioPin[1]==spi_mosi);
         if ((ioPin[0] == -1) || (ioPin[1] == -1)) isHW = true;  // WLEDMM "use global" = hardware
+        if ((spi_sclk <0) || (spi_mosi < 0)) isHW = false;      // no global pins - use software emulation
         PinManagerPinType cspins[3] = { { ioPin[2], true }, { ioPin[3], true }, { ioPin[4], true } };
         if (!pinManager.allocateMultiplePins(cspins, 3, PinOwner::UM_FourLineDisplay)) { typeOK=false; strcpy(errorMessage, PSTR("SPI3 alloc pins failed")); return; }
         if (isHW) po = PinOwner::HW_SPI;  // allow multiple allocations of HW I2C bus pins
@@ -437,6 +439,13 @@ class FourLineDisplayUsermod : public Usermod {
           strcpy(errorMessage, PSTR("SPI2 alloc pins failed"));
           return;
         }
+        // start SPI now!
+#ifdef ARDUINO_ARCH_ESP32
+        if (isHW) SPI.begin(spi_sclk, spi_miso, spi_mosi);   // ESP32 - will silently fail if SPI alread active.
+#else
+        if (isHW) SPI.begin();                               // ESP8266 - SPI pins are fixed
+#endif
+
       } else {
         //if (ioPin[0] < 0 || ioPin[1] < 0) { //WLEDMM do _not_ copy global pins !!
         //  ioPin[0] = i2c_scl;
@@ -1172,7 +1181,7 @@ class FourLineDisplayUsermod : public Usermod {
           xTaskCreateUniversal(               // this is guaranteed to work on any ESP32 (single or dual core)
             [](void * par) {                  // Function to implement the task
               // see https://www.freertos.org/vtaskdelayuntil.html
-              const TickType_t xFrequency = REFRESH_RATE_MS * portTICK_PERIOD_MS / 2;  
+              const TickType_t xFrequency = REFRESH_RATE_MS * portTICK_PERIOD_MS / 2;
               TickType_t xLastWakeTime = xTaskGetTickCount();
               for(;;) {
                 delay(1); // DO NOT DELETE THIS LINE! It is needed to give the IDLE(0) task enough time and to keep the watchdog happy.
@@ -1396,6 +1405,8 @@ class FourLineDisplayUsermod : public Usermod {
           if (isSPI) {
             pinManager.deallocateMultiplePins((const uint8_t *)(&oldPin[2]), 3, po);
             bool isHW = (oldPin[0]==spi_sclk && oldPin[1]==spi_mosi);
+            if (oldPin[0]==-1 && oldPin[1]==-1) isHW = true;   // WLEDMM "use global" means hardware driver
+            if (spi_sclk==-1 && spi_mosi==-1) isHW = false;    // WLEDMM global pins not set -> software driver
             if (isHW) po = PinOwner::HW_SPI;
           } else {
             //bool isHW = (oldPin[0]==i2c_scl && oldPin[1]==i2c_sda);
