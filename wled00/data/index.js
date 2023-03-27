@@ -1306,26 +1306,26 @@ function drawSegmentView() {
 
 	} // for each segment
 
-	if (gId("segcont").children.length > 0) { //Only show this if more then one segment
+	if (gId("segcont").children.length > 1) { //Only show this if more then one segment
 		gId("MD").innerHTML = "total W*H=LC: " + maxWidth + " x " + maxHeight + " = " + maxWidth * maxHeight;
 	}
-	gId("MD").style.display = gId("segcont").children.length > 0?"inline":"none"
+	gId("MD").style.display = gId("segcont").children.length > 1?"inline":"none"
 
 	function post() {
 		for (let p=0; p<gId("segcont").children.length; p++) {
 			if (!initSegmentVars(p)) break;
 			
-			if (gId("segcont").children.length>1) { //only show number if more than one segment
+			if (gId("segcont").children.length>1) { //only show number and name if more than one segment
 				ctx.font = '40px Arial'; 
 				ctx.fillStyle = "orange";
 				ctx.fillText(p, topLeftX + pw/2*ppL - 10, topLeftY + ph/2*ppL + 10);
+
+				//show name of fx
+				ctx.font = '20px Arial'; 
+				ctx.fillStyle = "white";
+				var name = eJson.find((o)=>{return o.id==fx}).name;
+				ctx.fillText(name, topLeftX+10, topLeftY + ph*ppL - 10);
 			}
-	
-			//show name of fx
-			ctx.font = '20px Arial'; 
-			ctx.fillStyle = "white";
-			var name = eJson.find((o)=>{return o.id==fx}).name;
-			ctx.fillText(name, topLeftX+10, topLeftY + ph*ppL - 10);
 		}	
 	}
 

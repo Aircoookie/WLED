@@ -165,7 +165,7 @@ bool sendLiveLedsWs(uint32_t wsClient)
   const size_t MAX_LIVE_LEDS_WS = 1024U;  //WLEDMM use 4096 as max matrix size
 #endif
   size_t n = ((used -1)/MAX_LIVE_LEDS_WS) +1; //only serve every n'th LED if count over MAX_LIVE_LEDS_WS
-  size_t pos = (strip.isMatrix ? 6 : 2);  // start of data  WLEDMM 6 instead of 4
+  size_t pos = (strip.isMatrix ? 4 : 2);
   size_t bufSize = pos + (used/n)*3;
   size_t skipLines = 0;
 
@@ -179,8 +179,6 @@ bool sendLiveLedsWs(uint32_t wsClient)
     buffer[1] = 2; //version
     buffer[2] = Segment::maxWidth;
     buffer[3] = Segment::maxHeight;
-    buffer[4] = currentPreset; //WLEDMM
-    buffer[5] = currentPlaylist; //WLEDMM
     if (Segment::maxWidth * Segment::maxHeight > MAX_LIVE_LEDS_WS*4) {
       buffer[2] = Segment::maxWidth/4;
       buffer[3] = Segment::maxHeight/4;
