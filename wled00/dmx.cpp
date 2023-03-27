@@ -111,7 +111,7 @@ void initDMX() {
     which interrupt priority it should have. If you aren't sure which interrupt
     priority to use, you can use the macro `DMX_DEFAULT_INTR_FLAG` to set the
     interrupt to its default settings.*/
-  dmx_driver_install(dmxPort, DMX_DEFAULT_INTR_FLAGS);
+  dmx_driver_install(dmxPort, ESP_INTR_FLAG_LEVEL3);
 }
   
 bool dmxIsConnected = false;
@@ -119,19 +119,9 @@ unsigned long dmxLastUpdate = 0;
 
 void handleDMXInput() {
   byte dmxdata[DMX_PACKET_SIZE];
-
   dmx_packet_t packet;
-
-  /* And now we wait! The DMX standard defines the amount of time until DMX
-    officially times out. That amount of time is converted into ESP32 clock
-    ticks using the constant `DMX_TIMEOUT_TICK`. If it takes longer than that
-    amount of time to receive data, this if statement will evaluate to false. */
-  if (dmx_receive(dmxPort, &packet, DMX_TIMEOUT_TICK)) {
-
-    /* Get the current time since boot in milliseconds so that we can find out
-      how long it has been since we last updated data and printed to the Serial
-      Monitor. */
-    unsigned long now = millis();
+  unsigned long now = millis();
+  if (dmx_receive(dmxPort, &packet, 0)) {
 
     /* We should check to make sure that there weren't any DMX errors. */
     if (!packet.err) {
@@ -141,28 +131,22 @@ void handleDMXInput() {
         dmxIsConnected = true;
       }
 
-      /*  read the DMX data into our buffer */
       dmx_read(dmxPort, dmxdata, packet.size);
+      handleDMXData(1, 512, dmxdata, REALTIME_MODE_DMX, 0);
+      dmxLastUpdate = now;
 
-      if (now - dmxLastUpdate > 1000) {
-        /* Print the received start code - it's usually 0. */
-        DEBUG_PRINTF("Start code is 0x%02X and slot 1 is 0x%02X and slot 2 is 0x%02X \n", dmxdata[0], dmxdata[1], dmxdata[2]);
-        dmxLastUpdate = now;
-      }
     } else {
       /* Oops! A DMX error occurred! Don't worry, this can happen when you first
         connect or disconnect your DMX devices. If you are consistently getting
         DMX errors, then something may have gone wrong with your code or
         something is seriously wrong with your DMX transmitter. */
-     DEBUG_PRINTLN("A DMX error occurred.");
+     DEBUG_PRINT("A DMX error occurred - ");
+     DEBUG_PRINTLN(packet.err);
     }
-  } else if (dmxIsConnected) {
+  }
+  else if (dmxIsConnected && (now - dmxLastUpdate > 5000)) {
     dmxIsConnected = false;
     DEBUG_PRINTLN("DMX was disconnected.");
-  }
-  if(dmxIsConnected) {
-    // DEBUG_PRINTF("DMX channel 1 = %u\n", dmxdata[1]);
-    handleDMXData(1, 512, dmxdata, REALTIME_MODE_DMX, 0);
   }
 }
 #else
