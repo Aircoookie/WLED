@@ -675,7 +675,7 @@ function populateInfo(i)
 	cn += `v${i.ver} &nbsp;<i>"${vcn}"</i><p>(WLEDMM_${i.ver} ${i.rel}.bin)</p><p><em>build ${i.vid}</em></p><table>
 ${urows}
 ${urows===""?'':'<tr><td colspan=2><hr style="height:1px;border-width:0;color:SeaGreen;background-color:Seagreen"></td></tr>'}
-${i.opt&0x100?inforow("Net Serial ☾","<button class=\"btn btn-xs\" onclick=\"requestJson({'netDebug':"+(i.opt&0x0080?"false":"true")+"});\"><i class=\"icons "+(i.opt&0x0080?"on":"off")+"\">&#xe08f;</i></button>"):''}
+${i.opt&0x100?inforow("Net Print ☾","<button class=\"btn btn-xs\" onclick=\"requestJson({'netDebug':"+(i.opt&0x0080?"false":"true")+"});\"><i class=\"icons "+(i.opt&0x0080?"on":"off")+"\">&#xe08f;</i></button>"):''}
 ${i.serialOnline?inforow(i.serialOnline,"TX="+i.sTX,"; RX="+i.sRX):""}
 ${i.opt&0x100?'<tr><td colspan=2><hr style="height:1px;border-width:0;color:GoldenRod;background-color:GoldenRod"></td></tr>':''}
 ${inforow("Build",i.vid)}
@@ -3247,10 +3247,10 @@ function togglePcMode(fromB = false)
 		localStorage.setItem('pcm', pcModeA);
 		pcMode = pcModeA;
 	}
-	if (wW < 798 && !pcMode) return;
-	if (!fromB && ((wW <= 798 && lastw <= 798) || (wW > 798 && lastw > 798))) return;
+	if (wW < 1024 && !pcMode) return;
+	if (!fromB && ((wW <= 1024 && lastw <= 1024) || (wW > 1024 && lastw > 1024))) return;
 	openTab(0, true);
-	if (wW <= 798) {pcMode = false;}
+	if (wW <= 1024) {pcMode = false;}
 	else if (pcModeA && !fromB) pcMode = pcModeA;
 	updateTablinks(0);
 	gId('buttonPcm').className = (pcMode) ? "active":"";

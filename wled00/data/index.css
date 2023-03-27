@@ -1517,7 +1517,7 @@ TD .checkmark, TD .radiomark {
 	}
 }
 
-@media all and (max-width: 798px) {
+@media all and (max-width: 1024px) {
 	#buttonPcm {
 		display: none;
 	}
