@@ -363,9 +363,9 @@ void initServer()
   });
   #endif
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-    USER_PRINTF("%s Client request %s\n", serverDescription, request->url().c_str()); //WLEDMM: want to see if client connects to wled, for netdebug also wants to know server
+    USER_PRINTLN("Client request"); //WLEDMM: want to see if client connects to wled
     #ifdef ARDUINO_ARCH_ESP32
-    USER_PRINT(pcTaskGetTaskName(NULL)); USER_PRINT(F(" min free stack ")); USER_PRINTLN(uxTaskGetStackHighWaterMark(NULL));
+    DEBUG_PRINTF("%s min free stack %d\n", pcTaskGetTaskName(NULL), uxTaskGetStackHighWaterMark(NULL)); //WLEDMM
     #endif
     if (captivePortal(request)) return;
     serveIndexOrWelcome(request);
@@ -557,7 +557,7 @@ void serveSettingsJS(AsyncWebServerRequest* request)
 
   #ifdef ARDUINO_ARCH_ESP32
     DEBUG_PRINT(F("ServeSettingsJS: "));
-    DEBUG_PRINT(pcTaskGetTaskName(NULL)); DEBUG_PRINT(F(" min free stack ")); DEBUG_PRINT(uxTaskGetStackHighWaterMark(NULL));
+    DEBUG_PRINTF("%s min free stack %d\n", pcTaskGetTaskName(NULL), uxTaskGetStackHighWaterMark(NULL)); //WLEDMM
     DEBUG_PRINTF(PSTR(" bytes.\tString buffer usage: %4d of %d bytes\n"), strlen(buf)+1, SETTINGS_STACK_BUF_SIZE+37);
   #endif
 

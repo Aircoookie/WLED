@@ -118,7 +118,7 @@ void sendDataWs(AsyncWebSocketClient * client)
     return;
   }
   #else
-    //DEBUG_PRINT(pcTaskGetTaskName(NULL)); DEBUG_PRINT(F(" min free stack ")); DEBUG_PRINT(uxTaskGetStackHighWaterMark(NULL));
+    // DEBUG_PRINTF("%s min free stack %d\n", pcTaskGetTaskName(NULL), uxTaskGetStackHighWaterMark(NULL)); //WLEDMM
   #endif
   buffer = ws.makeBuffer(len); // will not allocate correct memory sometimes on ESP8266
   #ifdef ESP8266

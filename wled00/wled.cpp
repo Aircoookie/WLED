@@ -199,7 +199,7 @@ void WLED::loop()
     DEBUG_PRINT(F("Unix time: "));     toki.printTime(toki.getTime());
     DEBUG_PRINT(F("Free heap: "));     DEBUG_PRINTLN(ESP.getFreeHeap());
 	#ifdef ARDUINO_ARCH_ESP32
-    DEBUG_PRINT(pcTaskGetTaskName(NULL)); DEBUG_PRINT(F(" free stack ")); DEBUG_PRINTLN(uxTaskGetStackHighWaterMark(NULL));
+    DEBUG_PRINTF("%s min free stack %d\n", pcTaskGetTaskName(NULL), uxTaskGetStackHighWaterMark(NULL)); //WLEDMM
 	#endif
     #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
     if (psramFound()) {
@@ -410,7 +410,7 @@ void WLED::setup()
   #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0)  // unfortunately not availeable in older framework versions
   USER_PRINT(F("\nArduino  max stack  ")); USER_PRINTLN(getArduinoLoopTaskStackSize());
   #endif
-  USER_PRINT(pcTaskGetTaskName(NULL)); USER_PRINT(F(" free stack ")); USER_PRINTLN(uxTaskGetStackHighWaterMark(NULL));
+  DEBUG_PRINTF("%s min free stack %d\n", pcTaskGetTaskName(NULL), uxTaskGetStackHighWaterMark(NULL)); //WLEDMM
 #endif
 
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
@@ -466,7 +466,7 @@ void WLED::setup()
 
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
   #ifdef ARDUINO_ARCH_ESP32
-  DEBUG_PRINT(pcTaskGetTaskName(NULL)); DEBUG_PRINT(F(" free stack ")); DEBUG_PRINTLN(uxTaskGetStackHighWaterMark(NULL));
+    DEBUG_PRINTF("%s min free stack %d\n", pcTaskGetTaskName(NULL), uxTaskGetStackHighWaterMark(NULL)); //WLEDMM
   #endif
 
   for (uint8_t i=1; i<WLED_MAX_BUTTONS; i++) btnPin[i] = -1;
