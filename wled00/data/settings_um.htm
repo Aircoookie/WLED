@@ -120,7 +120,7 @@
 			// WLEDMM make a dropdown for pin variables
 			if (f.includes("pin")) {
 				var n = this.name.replace("[]","").substr(-3);
-				urows += `<select name="${k}:${f}${a?"[]":""}">`;
+				urows += `<select name="${k}:${f}${a?"[]":""}" style="width:200px;max-width:90%;">`; //WLEDMM width capped. to be moved to css one day
 				for (var j=-1; j<=50; j++) { // all possible pins WLEDMM: hardcoded to 50 as d.max_gpio is not calculated yet here (done in appendGPIOinfo)
 					let foundPin = -1;
 					for (var i=0; i<pins.length; i++) { // check if pin is reserved
