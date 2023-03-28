@@ -138,7 +138,7 @@ class MPU6050Driver : public Usermod {
         // (if it's going to break, usually the code will be 1)
         DEBUG_PRINT(F("DMP Initialization failed (code "));
         DEBUG_PRINT(devStatus);
-        DEBUG_PRINTLN(F(")"));
+        DEBUG_PRINTLN(")");
       }
     }
 
@@ -209,7 +209,7 @@ class MPU6050Driver : public Usermod {
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
 
-      JsonArray imu_meas = user.createNestedObject("IMU");
+      JsonObject imu_meas = user.createNestedObject("IMU");
       JsonArray quat_json = imu_meas.createNestedArray("Quat");
       quat_json.add(qat.w);
       quat_json.add(qat.x);

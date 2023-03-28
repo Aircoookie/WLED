@@ -228,4 +228,30 @@ class ESPAsyncE131 {
     bool begin(bool multicast, uint16_t port = E131_DEFAULT_PORT, uint16_t universe = 1, uint8_t n = 1);
 };
 
+// Class to track e131 package priority
+class E131Priority {
+  private:
+    uint8_t priority;
+    time_t setupTime;
+    uint8_t seconds;
+  
+  public:
+    E131Priority(uint8_t timeout=3) { 
+      seconds = timeout;
+      set(0);
+    };
+
+    // Set priority (+ remember time)
+    void set(uint8_t prio) {
+      setupTime = time(0);
+      priority = prio;
+    }
+
+    // Get priority (+ reset & return 0 if older timeout)
+    uint8_t get() {
+      if (time(0) > setupTime + seconds) priority = 0;
+      return priority;
+    }
+};
+
 #endif  // ESPASYNCE131_H_

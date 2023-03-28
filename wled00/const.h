@@ -25,24 +25,43 @@
 #ifndef WLED_MAX_BUSSES
   #ifdef ESP8266
     #define WLED_MAX_BUSSES 3
+    #define WLED_MIN_VIRTUAL_BUSSES 2
   #else
     #if defined(CONFIG_IDF_TARGET_ESP32C3)    // 2 RMT, 6 LEDC, only has 1 I2S but NPB does not support it ATM
       #define WLED_MAX_BUSSES 3               // will allow 2 digital & 1 analog (or the other way around)
+      #define WLED_MIN_VIRTUAL_BUSSES 3
     #elif defined(CONFIG_IDF_TARGET_ESP32S2)  // 4 RMT, 8 LEDC, only has 1 I2S bus, supported in NPB
       #if defined(USERMOD_AUDIOREACTIVE)      // requested by @softhack007 https://github.com/blazoncek/WLED/issues/33
         #define WLED_MAX_BUSSES 6             // will allow 4 digital & 2 analog
+        #define WLED_MIN_VIRTUAL_BUSSES 4
       #else
         #define WLED_MAX_BUSSES 7             // will allow 5 digital & 2 analog
+        #define WLED_MIN_VIRTUAL_BUSSES 3
       #endif
     #elif defined(CONFIG_IDF_TARGET_ESP32S3)  // 4 RMT, 8 LEDC, has 2 I2S but NPB does not support them ATM
       #define WLED_MAX_BUSSES 6               // will allow 4 digital & 2 analog
+      #define WLED_MIN_VIRTUAL_BUSSES 4
     #else
       #if defined(USERMOD_AUDIOREACTIVE)      // requested by @softhack007 https://github.com/blazoncek/WLED/issues/33
         #define WLED_MAX_BUSSES 8
+        #define WLED_MIN_VIRTUAL_BUSSES 2
       #else
         #define WLED_MAX_BUSSES 10
+        #define WLED_MIN_VIRTUAL_BUSSES 0
       #endif
     #endif
+  #endif
+#else
+  #ifdef ESP8266
+    #if WLED_MAX_BUSES > 5
+      #error Maximum number of buses is 5.
+    #endif
+    #define WLED_MIN_VIRTUAL_BUSSES (5-WLED_MAX_BUSSES)
+  #else
+    #if WLED_MAX_BUSES > 10
+      #error Maximum number of buses is 10.
+    #endif
+    #define WLED_MIN_VIRTUAL_BUSSES (10-WLED_MAX_BUSSES)
   #endif
 #endif
 
@@ -58,6 +77,17 @@
 #define WLED_MAX_COLOR_ORDER_MAPPINGS 5
 #else
 #define WLED_MAX_COLOR_ORDER_MAPPINGS 10
+#endif
+
+#if defined(WLED_MAX_LEDMAPS) && (WLED_MAX_LEDMAPS > 32 || WLED_MAX_LEDMAPS < 10)
+  #undef WLED_MAX_LEDMAPS
+#endif
+#ifndef WLED_MAX_LEDMAPS
+  #ifdef ESP8266
+    #define WLED_MAX_LEDMAPS 10
+  #else
+    #define WLED_MAX_LEDMAPS 16
+  #endif
 #endif
 
 //Usermod IDs
@@ -79,7 +109,7 @@
 #define USERMOD_ID_RTC                   15     //Usermod "usermod_rtc.h"
 #define USERMOD_ID_ELEKSTUBE_IPS         16     //Usermod "usermod_elekstube_ips.h"
 #define USERMOD_ID_SN_PHOTORESISTOR      17     //Usermod "usermod_sn_photoresistor.h"
-#define USERMOD_ID_BATTERY_STATUS_BASIC  18     //Usermod "usermod_v2_battery_status_basic.h"
+#define USERMOD_ID_BATTERY               18     //Usermod "usermod_v2_battery.h"
 #define USERMOD_ID_PWM_FAN               19     //Usermod "usermod_PWM_fan.h"
 #define USERMOD_ID_BH1750                20     //Usermod "usermod_bh1750.h"
 #define USERMOD_ID_SEVEN_SEGMENT_DISPLAY 21     //Usermod "usermod_v2_seven_segment_display.h"
@@ -97,8 +127,11 @@
 #define USERMOD_ID_ANALOG_CLOCK          33     //Usermod "Analog_Clock.h"
 #define USERMOD_ID_PING_PONG_CLOCK       34     //Usermod "usermod_v2_ping_pong_clock.h"
 #define USERMOD_ID_ADS1115               35     //Usermod "usermod_ads1115.h"
+#define USERMOD_ID_BOBLIGHT              36     //Usermod "boblight.h"
 #define USERMOD_ID_SD_CARD               37     //Usermod "usermod_sd_card.h"
 #define USERMOD_ID_PWM_OUTPUTS           38     //Usermod "usermod_pwm_outputs.h
+#define USERMOD_ID_SHT                   39     //Usermod "usermod_sht.h
+#define USERMOD_ID_KLIPPER               40     // Usermod Klipper percentage
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
@@ -116,17 +149,19 @@
 #define CALL_MODE_FX_CHANGED     6     //no longer used
 #define CALL_MODE_HUE            7
 #define CALL_MODE_PRESET_CYCLE   8
-#define CALL_MODE_BLYNK          9
+#define CALL_MODE_BLYNK          9     //no longer used
 #define CALL_MODE_ALEXA         10
 #define CALL_MODE_WS_SEND       11     //special call mode, not for notifier, updates websocket only
 #define CALL_MODE_BUTTON_PRESET 12     //button/IR JSON preset/macro
 
 //RGB to RGBW conversion mode
-#define RGBW_MODE_MANUAL_ONLY     0            //No automatic white channel calculation. Manual white channel slider
-#define RGBW_MODE_AUTO_BRIGHTER   1            //New algorithm. Adds as much white as the darkest RGBW channel
-#define RGBW_MODE_AUTO_ACCURATE   2            //New algorithm. Adds as much white as the darkest RGBW channel and subtracts this amount from each RGB channel
-#define RGBW_MODE_DUAL            3            //Manual slider + auto calculation. Automatically calculates only if manual slider is set to off (0)
-#define RGBW_MODE_LEGACY          4            //Old floating algorithm. Too slow for realtime and palette support
+#define RGBW_MODE_MANUAL_ONLY     0    // No automatic white channel calculation. Manual white channel slider
+#define RGBW_MODE_AUTO_BRIGHTER   1    // New algorithm. Adds as much white as the darkest RGBW channel
+#define RGBW_MODE_AUTO_ACCURATE   2    // New algorithm. Adds as much white as the darkest RGBW channel and subtracts this amount from each RGB channel
+#define RGBW_MODE_DUAL            3    // Manual slider + auto calculation. Automatically calculates only if manual slider is set to off (0)
+#define RGBW_MODE_MAX             4    // Sets white to the value of the brightest RGB channel (good for white-only LEDs without any RGB)
+//#define RGBW_MODE_LEGACY        4    // Old floating algorithm. Too slow for realtime and palette support (unused)
+#define AW_GLOBAL_DISABLED      255    // Global auto white mode override disabled. Per-bus setting is used
 
 //realtime modes
 #define REALTIME_MODE_INACTIVE    0
@@ -148,10 +183,14 @@
 #define DMX_MODE_DISABLED         0            //not used
 #define DMX_MODE_SINGLE_RGB       1            //all LEDs same RGB color (3 channels)
 #define DMX_MODE_SINGLE_DRGB      2            //all LEDs same RGB color and master dimmer (4 channels)
-#define DMX_MODE_EFFECT           3            //trigger standalone effects of WLED (11 channels)
+#define DMX_MODE_EFFECT           3            //trigger standalone effects of WLED (15 channels)
+#define DMX_MODE_EFFECT_W         7            //trigger standalone effects of WLED (18 channels)
 #define DMX_MODE_MULTIPLE_RGB     4            //every LED is addressed with its own RGB (ledCount * 3 channels)
 #define DMX_MODE_MULTIPLE_DRGB    5            //every LED is addressed with its own RGB and share a master dimmer (ledCount * 3 + 1 channels)
 #define DMX_MODE_MULTIPLE_RGBW    6            //every LED is addressed with its own RGBW (ledCount * 4 channels)
+#define DMX_MODE_EFFECT_SEGMENT   8            //trigger standalone effects of WLED (15 channels per segement)
+#define DMX_MODE_EFFECT_SEGMENT_W 9            //trigger standalone effects of WLED (18 channels per segement)
+#define DMX_MODE_PRESET           10           //apply presets (1 channel)
 
 //Light capability byte (unused) 0bRCCCTTTT
 //bits 0/1/2/3: specifies a type of LED driver. A single "driver" may have different chip models but must have the same protocol/behavior
@@ -168,7 +207,9 @@
 #define TYPE_NONE                 0            //light is not configured
 #define TYPE_RESERVED             1            //unused. Might indicate a "virtual" light
 //Digital types (data pin only) (16-31)
-#define TYPE_WS2812_1CH          20            //white-only chips
+#define TYPE_WS2812_1CH          18            //white-only chips (1 channel per IC) (unused)
+#define TYPE_WS2812_1CH_X3       19            //white-only chips (3 channels per IC)
+#define TYPE_WS2812_2CH_X3       20            //CCT chips (1st IC controls WW + CW of 1st zone and CW of 2nd zone, 2nd IC controls WW of 2nd zone and WW + CW of 3rd zone)
 #define TYPE_WS2812_WWA          21            //amber + warm + cold white
 #define TYPE_WS2812_RGB          22
 #define TYPE_GS8608              23            //same driver as WS2812, but will require signal 2x per second (else displays test pattern)
@@ -265,6 +306,11 @@
 //Playlist option byte
 #define PL_OPTION_SHUFFLE      0x01
 
+// Segment capability byte
+#define SEG_CAPABILITY_RGB     0x01
+#define SEG_CAPABILITY_W       0x02
+#define SEG_CAPABILITY_CCT     0x04
+
 // WLED Error modes
 #define ERR_NONE         0  // All good :)
 #define ERR_EEP_COMMIT   2  // Could not commit to EEPROM (wrong flash layout?)
@@ -288,7 +334,7 @@
 
 #define NTP_PACKET_SIZE 48
 
-//maximum number of rendered LEDs - this does not have to match max. physical LEDs, e.g. if there are virtual busses 
+//maximum number of rendered LEDs - this does not have to match max. physical LEDs, e.g. if there are virtual busses
 #ifndef MAX_LEDS
 #ifdef ESP8266
 #define MAX_LEDS 1664 //can't rely on memory limit to limit this to 1600 LEDs
@@ -317,7 +363,7 @@
 #ifdef ESP8266
 #define SETTINGS_STACK_BUF_SIZE 2048
 #else
-#define SETTINGS_STACK_BUF_SIZE 3096 
+#define SETTINGS_STACK_BUF_SIZE 3096
 #endif
 
 #ifdef WLED_USE_ETHERNET
@@ -358,8 +404,8 @@
   #define JSON_BUFFER_SIZE 24576
 #endif
 
-//#define MIN_HEAP_SIZE (MAX_LED_MEMORY+2048)
-#define MIN_HEAP_SIZE (8192)
+//#define MIN_HEAP_SIZE (8k for AsyncWebServer)
+#define MIN_HEAP_SIZE 8192
 
 // Maximum size of node map (list of other WLED instances)
 #ifdef ESP8266
@@ -391,12 +437,22 @@
 
 #define INTERFACE_UPDATE_COOLDOWN 2000 //time in ms to wait between websockets, alexa, and MQTT updates
 
+// HW_PIN_SCL & HW_PIN_SDA are used for information in usermods settings page and usermods themselves
+// which GPIO pins are actually used in a hardwarea layout (controller board)
+#if defined(I2CSCLPIN) && !defined(HW_PIN_SCL)
+  #define HW_PIN_SCL I2CSCLPIN
+#endif
+#if defined(I2CSDAPIN) && !defined(HW_PIN_SDA)
+  #define HW_PIN_SDA I2CSDAPIN
+#endif
+// you cannot change HW I2C pins on 8266
 #if defined(ESP8266) && defined(HW_PIN_SCL)
   #undef HW_PIN_SCL
 #endif
 #if defined(ESP8266) && defined(HW_PIN_SDA)
   #undef HW_PIN_SDA
 #endif
+// defaults for 1st I2C on ESP32 (Wire global)
 #ifndef HW_PIN_SCL
   #define HW_PIN_SCL SCL
 #endif
@@ -404,6 +460,18 @@
   #define HW_PIN_SDA SDA
 #endif
 
+// HW_PIN_SCLKSPI & HW_PIN_MOSISPI & HW_PIN_MISOSPI are used for information in usermods settings page and usermods themselves
+// which GPIO pins are actually used in a hardwarea layout (controller board)
+#if defined(SPISCLKPIN) && !defined(HW_PIN_CLOCKSPI)
+  #define HW_PIN_CLOCKSPI SPISCLKPIN
+#endif
+#if defined(SPIMOSIPIN) && !defined(HW_PIN_MOSISPI)
+  #define HW_PIN_MOSISPI SPIMOSIPIN
+#endif
+#if defined(SPIMISOPIN) && !defined(HW_PIN_MISOSPI)
+  #define HW_PIN_MISOSPI SPIMISOPIN
+#endif
+// you cannot change HW SPI pins on 8266
 #if defined(ESP8266) && defined(HW_PIN_CLOCKSPI)
   #undef HW_PIN_CLOCKSPI
 #endif
@@ -413,10 +481,7 @@
 #if defined(ESP8266) && defined(HW_PIN_MISOSPI)
   #undef HW_PIN_MISOSPI
 #endif
-#if defined(ESP8266) && defined(HW_PIN_CSSPI)
-  #undef HW_PIN_CSSPI
-#endif
-// defaults for VSPI
+// defaults for VSPI on ESP32 (SPI global, SPI.cpp) as HSPI is used by WLED (bus_wrapper.h)
 #ifndef HW_PIN_CLOCKSPI
   #define HW_PIN_CLOCKSPI SCK
 #endif
@@ -425,9 +490,6 @@
 #endif
 #ifndef HW_PIN_MISOSPI
   #define HW_PIN_MISOSPI MISO
-#endif
-#ifndef HW_PIN_CSSPI
-  #define HW_PIN_CSSPI SS
 #endif
 
 #endif

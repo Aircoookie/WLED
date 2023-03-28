@@ -14,16 +14,16 @@
  * JSON API (De)serialization
  */
 
-void deserializeSegment(JsonObject elem, byte it, byte presetId)
+bool deserializeSegment(JsonObject elem, byte it, byte presetId)
 {
   byte id = elem["id"] | it;
-  if (id >= strip.getMaxSegments()) return;
+  if (id >= strip.getMaxSegments()) return false;
 
   int stop = elem["stop"] | -1;
 
   // if using vectors use this code to append segment
   if (id >= strip.getSegmentsNum()) {
-    if (stop <= 0) return; // ignore empty/inactive segments
+    if (stop <= 0) return false; // ignore empty/inactive segments
     strip.appendSegment(Segment(0, strip.getLengthTotal()));
     id = strip.getSegmentsNum()-1; // segments are added at the end of list
   }
@@ -56,7 +56,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
       elem["rev"]   = !elem["rev"]; // alternate reverse on even/odd segments
       deserializeSegment(elem, i, presetId); // recursive call with new id
     }
-    return;
+    return true;
   }
 
   if (elem["n"]) {
@@ -105,7 +105,9 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     of = offsetAbs;
   }
   if (stop > start && of > len -1) of = len -1;
-  strip.setSegment(id, start, stop, grp, spc, of, startY, stopY);
+  seg.set(start, stop, grp, spc, of, startY, stopY);
+
+  if (seg.reset && seg.stop == 0) return true; // segment was deleted & is marked for reset, no need to change anything else
 
   byte segbri = seg.opacity;
   if (getVal(elem["bri"], &segbri)) {
@@ -170,13 +172,20 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   }
   #endif
 
+  #ifndef WLED_DISABLE_2D
+  bool reverse  = seg.reverse;
+  bool mirror   = seg.mirror;
+  #endif
   seg.selected  = elem["sel"] | seg.selected;
   seg.reverse   = elem["rev"] | seg.reverse;
   seg.mirror    = elem["mi"]  | seg.mirror;
   #ifndef WLED_DISABLE_2D
-  seg.reverse_y = elem["rY"]  | seg.reverse_y;
-  seg.mirror_y  = elem["mY"]  | seg.mirror_y;
-  seg.transpose = elem[F("tp")] | seg.transpose;
+  bool reverse_y = seg.reverse_y;
+  bool mirror_y  = seg.mirror_y;
+  seg.reverse_y  = elem["rY"]  | seg.reverse_y;
+  seg.mirror_y   = elem["mY"]  | seg.mirror_y;
+  seg.transpose  = elem[F("tp")] | seg.transpose;
+  if (seg.is2D() && seg.map1D2D == M12_pArc && (reverse != seg.reverse || reverse_y != seg.reverse_y || mirror != seg.mirror || mirror_y != seg.mirror_y)) seg.fill(BLACK); // clear entire segment (in case of Arc 1D to 2D expansion)
   #endif
 
   byte fx = seg.mode;
@@ -201,9 +210,12 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   seg.check1 = elem["o1"] | seg.check1;
   seg.check2 = elem["o2"] | seg.check2;
   seg.check3 = elem["o3"] | seg.check3;
-  
+
   JsonArray iarr = elem[F("i")]; //set individual LEDs
   if (!iarr.isNull()) {
+    uint8_t oldMap1D2D = seg.map1D2D;
+    seg.map1D2D = M12_Pixels; // no mapping
+
     // set brightness immediately and disable transition
     transitionDelayTemp = 0;
     jsonTransitionOnce = true;
@@ -221,11 +233,11 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     for (size_t i = 0; i < iarr.size(); i++) {
       if(iarr[i].is<JsonInteger>()) {
         if (!set) {
-          start = iarr[i];
-          set = 1;
+          start = abs(iarr[i].as<int>());
+          set++;
         } else {
-          stop = iarr[i];
-          set = 2;
+          stop = abs(iarr[i].as<int>());
+          set++;
         }
       } else { //color
         uint8_t rgbw[] = {0,0,0,0};
@@ -241,19 +253,19 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
           }
         }
 
-        if (set < 2) stop = start + 1;
+        if (set < 2 || stop <= start) stop = start + 1;
         uint32_t c = gamma32(RGBW32(rgbw[0], rgbw[1], rgbw[2], rgbw[3]));
-        for (int i = start; i < stop; i++) {
-          seg.setPixelColor(i, c);
-        }
-        if (!set) start++;
+        while (start < stop) seg.setPixelColor(start++, c);
         set = 0;
       }
     }
-    strip.trigger();
+    seg.map1D2D = oldMap1D2D; // restore mapping
+    strip.trigger(); // force segment update
   }
   // send UDP/WS if segment options changed (except selection; will also deselect current preset)
   if (seg.differs(prev) & 0x7F) stateChanged = true;
+
+  return true;
 }
 
 // deserializes WLED state (fileDoc points to doc object if called from web server)
@@ -369,11 +381,12 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       deserializeSegment(segVar, id, presetId); //apply only the segment with the specified ID
     }
   } else {
+    size_t deleted = 0;
     JsonArray segs = segVar.as<JsonArray>();
     for (JsonObject elem : segs) {
-      deserializeSegment(elem, it, presetId);
-      it++;
+      if (deserializeSegment(elem, it++, presetId) && !elem["stop"].isNull() && elem["stop"]==0) deleted++;
     }
+    if (strip.getSegmentsNum() > 3 && deleted >= strip.getSegmentsNum()/2U) strip.purgeSegments(); // batch deleting more than half segments
   }
 
   usermods.readFromJsonState(root);
@@ -394,28 +407,22 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     handleSet(nullptr, apireq, false);    // may set stateChanged
   }
 
-  // applying preset (2 cases: a) API call includes all preset values, b) API only specifies preset ID)
-  if (!root["ps"].isNull()) {
+  // applying preset (2 cases: a) API call includes all preset values ("pd"), b) API only specifies preset ID ("ps"))
+  byte presetToRestore = 0;
+  // a) already applied preset content (requires "seg" or "win" but will ignore the rest)
+  if (!root["pd"].isNull() && stateChanged) {
+    currentPreset = root[F("pd")] | currentPreset;
+    if (root["win"].isNull()) presetCycCurr = currentPreset;
+    presetToRestore = currentPreset; // stateUpdated() will clear the preset, so we need to restore it after
+    //unloadPlaylist(); // applying a preset unloads the playlist, may be needed here too?
+  } else if (!root["ps"].isNull()) {
     ps = presetCycCurr;
-    if (stateChanged) {
-      // a) already applied preset content (requires "seg" or "win" but will ignore the rest)
-      currentPreset = root["ps"] | currentPreset;
-      // if preset contains HTTP API call do not change presetCycCurr
-      if (root["win"].isNull()) presetCycCurr = currentPreset;
-      stateChanged = false; // cancel state change update (preset was set directly by applying values stored in UI JSON array)
-    } else if (root["win"].isNull() && getVal(root["ps"], &ps, 0, 0) && ps > 0 && ps < 251 && ps != currentPreset) {
+    if (root["win"].isNull() && getVal(root["ps"], &ps, 0, 0) && ps > 0 && ps < 251 && ps != currentPreset) {
       // b) preset ID only or preset that does not change state (use embedded cycling limits if they exist in getVal())
       presetCycCurr = ps;
-      presetId = ps;
-      root.remove("v");    // may be added in UI call
-      root.remove("time"); // may be added in UI call
-      root.remove("ps");
-      root.remove("on");   // some exetrnal calls add "on" to "ps" call
-      if (root.size() == 0) {
-        unloadPlaylist();  // we need to unload playlist
-        applyPreset(ps, callMode); // async load (only preset ID was specified)
-        return stateResponse;
-      }
+      unloadPlaylist();          // applying a preset unloads the playlist
+      applyPreset(ps, callMode); // async load from file system (only preset ID was specified)
+      return stateResponse;
     }
   }
 
@@ -427,6 +434,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   }
 
   stateUpdated(callMode);
+  if (presetToRestore) currentPreset = presetToRestore;
 
   return stateResponse;
 }
@@ -482,15 +490,17 @@ void serializeSegment(JsonObject& root, Segment& seg, byte id, bool forPreset, b
   root["sel"] = seg.isSelected();
   root["rev"] = seg.reverse;
   root["mi"]  = seg.mirror;
+  #ifndef WLED_DISABLE_2D
   if (strip.isMatrix) {
     root["rY"] = seg.reverse_y;
     root["mY"] = seg.mirror_y;
     root[F("tp")] = seg.transpose;
   }
-  root["o1"]   = seg.check1;
-  root["o2"]   = seg.check2;
-  root["o3"]   = seg.check3;
-  root["si"] = seg.soundSim;
+  #endif
+  root["o1"]  = seg.check1;
+  root["o2"]  = seg.check2;
+  root["o3"]  = seg.check3;
+  root["si"]  = seg.soundSim;
   root["m12"] = seg.map1D2D;
 }
 
@@ -570,8 +580,8 @@ void serializeInfo(JsonObject root)
   #ifndef WLED_DISABLE_2D
   if (strip.isMatrix) {
     JsonObject matrix = leds.createNestedObject("matrix");
-    matrix["w"] = strip.matrixWidth;
-    matrix["h"] = strip.matrixHeight;
+    matrix["w"] = Segment::maxWidth;
+    matrix["h"] = Segment::maxHeight;
   }
   #endif
 
@@ -638,8 +648,14 @@ void serializeInfo(JsonObject root)
   root[F("cpalcount")] = strip.customPalettes.size(); //number of custom palettes
 
   JsonArray ledmaps = root.createNestedArray(F("maps"));
-  for (size_t i=0; i<10; i++) {
-    if ((ledMaps>>i) & 0x0001) ledmaps.add(i);
+  for (size_t i=0; i<WLED_MAX_LEDMAPS; i++) {
+    if ((ledMaps>>i) & 0x00000001U) {
+      JsonObject ledmaps0 = ledmaps.createNestedObject();
+      ledmaps0["id"] = i;
+      #ifndef ESP8266
+      if (i && ledmapNames[i-1]) ledmaps0["n"] = ledmapNames[i-1];
+      #endif
+    }
   }
 
   JsonObject wifi_info = root.createNestedObject("wifi");
@@ -655,7 +671,7 @@ void serializeInfo(JsonObject root)
   fs_info[F("pmt")] = presetsModifiedTime;
 
   root[F("ndc")] = nodeListEnabled ? (int)Nodes.size() : -1;
-  
+
   #ifdef ARDUINO_ARCH_ESP32
   #ifdef WLED_DEBUG
     wifi_info[F("txPower")] = (int) WiFi.getTxPower();
@@ -702,9 +718,9 @@ void serializeInfo(JsonObject root)
   #ifndef WLED_DISABLE_ALEXA
   os += 0x40;
   #endif
-  #ifndef WLED_DISABLE_BLYNK
-  os += 0x20;
-  #endif
+
+  //os += 0x20; // indicated now removed Blynk support, may be reused to indicate another build-time option
+
   #ifdef USERMOD_CRONIXIE
   os += 0x10;
   #endif
@@ -805,7 +821,7 @@ void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
     JsonArray curPalette = palettes.createNestedArray(String(i>=palettesCount ? 255 - i + palettesCount : i));
     switch (i) {
       case 0: //default palette
-        setPaletteColors(curPalette, PartyColors_p); 
+        setPaletteColors(curPalette, PartyColors_p);
         break;
       case 1: //random
           curPalette.add("r");
