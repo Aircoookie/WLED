@@ -66,7 +66,7 @@
 			<button id="buttonPower" onclick="togglePower()" class="tgl"><i class="icons">&#xe08f;</i><p class="tab-label">Power</p></button>
 			<button id="buttonNl" onclick="toggleNl()"><i class="icons">&#xe2a2;</i><p class="tab-label">Timer</p></button>
 			<button id="buttonSync" onclick="toggleSync()"><i class="icons">&#xe116;</i><p class="tab-label">Sync</p></button>
-			<button id="buttonSr" onclick="toggleLiveview()"><i class="icons">&#xe410;</i><p class="tab-label">GFX ☾</p></button>
+			<button id="buttonSr" onclick="toggleLiveview()"><i class="icons">&#xe410;</i><p class="tab-label">GFX</p></button>
 			<button id="buttonI" onclick="toggleInfo()"><i class="icons">&#xe066;</i><p class="tab-label">Info</p></button>
 			<button id="buttonNodes" onclick="toggleNodes()"><i class="icons">&#xe22d;</i><p class="tab-label">Nodes</p></button>
 			<button onclick="window.location.href='/settings';"><i class="icons">&#xe0a2;</i><p class="tab-label">Config</p></button>
@@ -210,7 +210,7 @@
 		<div id="effectGFX"> <!--WLEDMM-->
 			<!-- <p class="labels hd">Peek ☾ <button class="btn infobtn btn-xs" onclick="eandp(this,gId('canvasPeek'));">v</button></p> -->
 			<br>
-			<canvas id="canvasPeek"></canvas><br>
+			<canvas id="canvasPeek" onclick="bigPeek(true)"></canvas><br>
 			<br>
 		</div>
 		<div id="fx">

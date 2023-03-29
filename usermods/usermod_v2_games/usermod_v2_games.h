@@ -330,9 +330,9 @@ class GamesUsermod : public Usermod {
       strip.addEffect(255, &mode_pongGame, _data_FX_MODE_PONGGAME);
       #ifdef USERMOD_MPU6050_IMU
         IMU = (MPU6050Driver *)usermods.lookup(USERMOD_ID_IMU);
-        // #ifdef WLED_DEBUG
+        #ifdef WLED_DEBUG
           strip.addEffect(255, &mode_IMUTest, _data_FX_MODE_IMUTest);
-        // #endif
+        #endif
       #endif
       strip.addEffect(255, &mode_3DIMUCube, _data_FX_MODE_3DIMUCube); //works also without IMU
     }

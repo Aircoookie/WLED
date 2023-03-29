@@ -1963,6 +1963,22 @@ function toggleLiveview()
 	if (ws && ws.readyState === WebSocket.OPEN) ws.send(`{"lv":${isLv}}`);
 }
 
+//WLEDMM create and delete iFrame for peek (isLv is true if create)
+function bigPeek(doCreate)
+{
+	let lvID = "liveview2D"
+	if (doCreate) {
+		var cn = '<iframe id="liveview2D" src="about:blank" onload="this.contentWindow.document.body.onclick=function(){bigPeek(false);}"></iframe>';
+		gId('kliveview2D').innerHTML = cn;
+	}
+
+	gId('mliveview2D').style.transform = (doCreate) ? "translateY(0px)":"translateY(100%)";
+
+	gId(lvID).style.display = (doCreate) ? "block":"none";
+	var url = (loc?`http://${locip}`:'') + "/" + lvID;
+	gId(lvID).src = (doCreate) ? url:"about:blank";
+}
+
 function toggleInfo()
 {
 	if (isNodes) toggleNodes();
