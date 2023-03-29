@@ -6740,8 +6740,23 @@ uint16_t mode_DJLight(void) {                   // Written by ??? Adapted by Wil
   if (SEGENV.aux0 != secondHand) {                        // Triggered millis timing.
     SEGENV.aux0 = secondHand;
 
-    CRGB color = CRGB(fftResult[15]/2, fftResult[5]/2, fftResult[0]/2); // 16-> 15 as 16 is out of bounds
-    SEGMENT.setPixelColor(mid, color.fadeToBlackBy(map(fftResult[4], 0, 255, 255, 4)));     // TODO - Update
+    //CRGB color = CRGB(fftResult[15]/2, fftResult[5]/2, fftResult[0]/2); // formula from 0.13.x (10Khz): R = 3880-5120, G=240-340, B=60-100
+    //CRGB color = CRGB(fftResult[12]/2, fftResult[3]/2, fftResult[1]/2); // formula for 0.14.x  (22Khz): R = 3015-3704, G=216-301, B=86-129
+    // an attempt to get colors more balanced
+    CRGB color = CRGB(fftResult[11]/2 + fftResult[12]/4 + fftResult[14]/4, // red  : 2412-3704 + 4479-7106 
+                      fftResult[4]/2 + fftResult[3]/4,                     // green: 216-430
+                      fftResult[1]/4 + fftResult[2]/4);                    // blue:  86-216
+    // make colors less "pastel", by turning up color saturation in HSV space
+    if (color.getLuma() > 32) {                                      // don't change "dark" pixels
+      CHSV hsvColor = rgb2hsv_approximate(color);
+      hsvColor.v = min(max(hsvColor.v, (uint8_t)48), (uint8_t)212);  // 48 < brightness < 212
+      hsvColor.s = max(hsvColor.s, (uint8_t)192);                    // turn up color saturation (> 192)
+      color = hsvColor;
+    }
+    //if (color.getLuma() > 12) color.maximizeBrightness();          // for testing
+
+    //SEGMENT.setPixelColor(mid, color.fadeToBlackBy(map(fftResult[4], 0, 255, 255, 4)));     // 0.13.x  fade -> 180hz-260hz
+    SEGMENT.setPixelColor(mid, color.fadeToBlackBy(map(fftResult[3], 0, 255, 255, 4)));       // 0.14.x  fade -> 216hz-301hz
 
     for (int i = SEGLEN - 1; i > mid; i--)   SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i-1)); // move to the left
     for (int i = 0; i < mid; i++)            SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i+1)); // move to the right
