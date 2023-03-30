@@ -103,6 +103,7 @@ dmx_port_t dmxPort = 2;
 void initDMX() {
 /* Set the DMX hardware pins to the pins that we want to use. */
   if(dmxReceivePin > 0) {
+    USER_PRINTF("Listening for DMX on pin %u\n", dmxReceivePin);
     dmx_set_pin(dmxPort, dmxTransmitPin, dmxReceivePin, dmxEnablePin);
   }
   else {
