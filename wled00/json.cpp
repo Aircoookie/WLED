@@ -352,7 +352,11 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   #if defined(WLED_DEBUG_HOST)
   bool oldValue = netDebugEnabled;
   netDebugEnabled = root[F("netDebug")] | netDebugEnabled;
-  if (oldValue != netDebugEnabled) doSerializeConfig = true; //WLEDMM to make it will be stored in cfg.json! (tbd: check if this is the right approach)
+  // USER_PRINTF("deserializeState %d (%d)\n", netDebugEnabled, oldValue);
+  if (oldValue != netDebugEnabled) {
+    pinManager.manageDebugTXPin();
+    doSerializeConfig = true; //WLEDMM to make it will be stored in cfg.json! (tbd: check if this is the right approach)
+  }
   #endif
 
   bool onBefore = bri;
@@ -605,6 +609,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     //WLEDMM: store netDebug 
     #if defined(WLED_DEBUG_HOST)
       root[F("netDebug")] = netDebugEnabled;
+    // USER_PRINTF("serializeState %d\n", netDebugEnabled);
     #endif
 
     if (errorFlag) {root[F("error")] = errorFlag; errorFlag = ERR_NONE;} //prevent error message to persist on screen
@@ -968,6 +973,12 @@ void serializeInfo(JsonObject root)
     default: root[F("e32flashtext")] = F(" (other)"); break;
   }
   #endif
+  #if defined(WLED_DEBUG) || defined(WLED_DEBUG_HOST) || defined(SR_DEBUG) || defined(SR_STATS)
+  // WLEDMM add status of Serial, incuding pin alloc
+  root[F("serialOnline")] = Serial ? (canUseSerial()?F("Serial ready"):F("Serial in use")) : F("Serial disconected");  // "Disconnected" may happen on boards with USB CDC
+  root[F("sRX")] = pinManager.isPinAllocated(hardwareRX) ? pinManager.getPinOwnerText(hardwareRX): F("free");
+  root[F("sTX")] = pinManager.isPinAllocated(hardwareTX) ? pinManager.getPinOwnerText(hardwareTX): F("free");
+  #endif
   // end WLEDMM
 
   root[F("uptime")] = millis()/1000 + rolloverMillis*4294967;
@@ -980,7 +991,7 @@ void serializeInfo(JsonObject root)
   #endif
   //WLEDMM: WLED_DEBUG_HOST independent from WLED_DEBUG
   #ifdef WLED_DEBUG_HOST
-  os  = 0x80; //WLEDMM: also if not WLED_DEBUG (on off button Net Debug/Net Serial)
+  os  = 0x80; //WLEDMM: also if not WLED_DEBUG (on off button Net Debug/Net Print)
   os |= 0x0100;
   if (!netDebugEnabled) os &= ~0x0080;
   #endif

@@ -139,8 +139,8 @@ void sappends(char stype, const char* key, char* val)
 
 bool oappendi(int i)
 {
-  char s[11];
-  sprintf(s, "%d", i);
+  char s[16];               // WLEDMM max 32bit integer needs 11 chars (sign + 10) not 10
+  snprintf(s, 15, "%d", i); // WLEDMM
   return oappend(s);
 }
 

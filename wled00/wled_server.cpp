@@ -363,7 +363,10 @@ void initServer()
   });
   #endif
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-    USER_PRINTF("%s Client request %s\n", serverDescription, request->url().c_str()); //WLEDMM: want to see if client connects to wled, for netdebug also wants to know server
+    USER_PRINTLN("Client request"); //WLEDMM: want to see if client connects to wled
+    #ifdef ARDUINO_ARCH_ESP32
+    DEBUG_PRINTF("%s min free stack %d\n", pcTaskGetTaskName(NULL), uxTaskGetStackHighWaterMark(NULL)); //WLEDMM
+    #endif
     if (captivePortal(request)) return;
     serveIndexOrWelcome(request);
   });
@@ -551,6 +554,13 @@ void serveSettingsJS(AsyncWebServerRequest* request)
   strcat_P(buf,PSTR("function GetV(){var d=document;"));
   getSettingsJS(request, subPage, buf+strlen(buf));  // this may overflow by 35bytes!!! WLEDMM add request
   strcat_P(buf,PSTR("}"));
+
+  #ifdef ARDUINO_ARCH_ESP32
+    DEBUG_PRINT(F("ServeSettingsJS: "));
+    DEBUG_PRINTF("%s min free stack %d\n", pcTaskGetTaskName(NULL), uxTaskGetStackHighWaterMark(NULL)); //WLEDMM
+    DEBUG_PRINTF(PSTR(" bytes.\tString buffer usage: %4d of %d bytes\n"), strlen(buf)+1, SETTINGS_STACK_BUF_SIZE+37);
+  #endif
+
   request->send(200, "application/javascript", buf);
 }
 

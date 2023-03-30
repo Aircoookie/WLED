@@ -2,37 +2,37 @@
 
 #include <Arduino.h>              // WLEDMM: make sure that I2C drivers have the "right" Wire Object
 #include <Wire.h>
+#include <SPI.h>
 #undef U8X8_NO_HW_I2C             // WLEDMM: we do want I2C hardware drivers - if possible
-//#define WIRE_INTERFACES_COUNT 2   // experimental - tell U8x8Lib that there is a second Wire unit
+//#define WIRE_INTERFACES_COUNT 2 // experimental - tell U8x8Lib that there is a second Wire unit
 
 #include "wled.h"
 #include <U8x8lib.h> // from https://github.com/olikraus/u8g2/
 #include "4LD_wled_fonts.c"
 
 #ifndef FLD_ESP32_NO_THREADS
-#define FLD_ESP32_USE_THREADS  // comment out to use 0.13.x behviour without parallel update task - slower, but more robust. May delay other tasks like LEDs or audioreactive!!
+#define FLD_ESP32_USE_THREADS    // comment out to use 0.13.x behaviour without parallel update task - slower, but more robust. May delay other tasks like LEDs or audioreactive!!
 #endif
 
 //#define OLD_4LD_FONTS          // comment out if you prefer the "classic" look with blocky fonts (saves 1K flash)
 
 //
-// Insired by the usermod_v2_four_line_display
+// Inspired by the usermod_v2_four_line_display
 //
 // v2 usermod for using 128x32 or 128x64 i2c
 // OLED displays to provide a four line display
 // for WLED.
 //
 // Dependencies
-// * This usermod REQURES the ModeSortUsermod
-// * This Usermod works best, by far, when coupled 
-//   with RotaryEncoderUIUsermod.
+// * This usermod does not REQUIRE the ModeSortUsermod any more
+// * This usermod works best, by far, when coupled 
+//   with RotaryEncoderUI_ALT usermod.
 //
 // Make sure to enable NTP and set your time zone in WLED Config | Time.
 //
 // REQUIREMENT: You must add the following requirements to
 // REQUIREMENT: "lib_deps" within platformio.ini / platformio_override.ini
-// REQUIREMENT: *  U8g2  (the version already in platformio.ini is fine)
-// REQUIREMENT: *  Wire
+// REQUIREMENT: olikraus/U8g2@ ^2.34.15 (the version already in platformio.ini is fine)
 //
 
 //The SCL and SDA pins are defined here. 
@@ -94,7 +94,9 @@ typedef enum {
   SSD1305,      // U8X8_SSD1305_128X32_ADAFRUIT_HW_I2C
   SSD1305_64,   // U8X8_SSD1305_128X64_ADAFRUIT_HW_I2C
   SSD1306_SPI,  // U8X8_SSD1306_128X32_NONAME_HW_SPI
-  SSD1306_SPI64 // U8X8_SSD1306_128X64_NONAME_HW_SPI
+  SSD1306_SPI64=7, // U8X8_SSD1306_128X64_NONAME_HW_SPI
+  SSD1309_SPI64=8, // U8X8_SSD1309_128X64_NONAME0_4W_HW_SPI
+  SSD1327_SPI128=9 // U8X8_SSD1327_WS_128X128_4W_SW_SPI
 } DisplayType;
 
 
@@ -162,6 +164,8 @@ class FourLineDisplayUsermod : public Usermod {
     bool enabled = true;
 #endif
     bool contrastFix = false;
+    bool driverHW = false;
+    bool driverSPI = false;
 
     // Next variables hold the previous known values to determine if redraw is
     // required.
@@ -239,8 +243,8 @@ class FourLineDisplayUsermod : public Usermod {
       if (u8x8 == nullptr) return;
       if (FLD_SemaphoreTake(drawMux, maxWait) != pdTRUE) return;      // WLEDMM acquire draw mutex
 
-#if  defined(ARDUINO_ARCH_ESP32) && !defined(OLD_4LD_FONTS) // WLEDMM use nicer 2x2 font on ESP32
-      if (!ignoreLH && lineHeight==2) { 
+#if  defined(ARDUINO_ARCH_ESP32) && !defined(OLD_4LD_FONTS)           // WLEDMM use nicer 2x2 font on ESP32
+      if (!ignoreLH && lineHeight>1) { 
         if(strlen(string) > 3)                    // WLEDMM little hack - less than 3 chars -> show in bold
           u8x8->setFont(u8x8_font_7x14_1x2_r);    // normal
         else
@@ -253,8 +257,8 @@ class FourLineDisplayUsermod : public Usermod {
       }
 #else
       u8x8->setFont(u8x8_font_chroma48medium8_r);
-      if (!ignoreLH && lineHeight==2) u8x8->draw1x2String(col, row, string);
-      else                            u8x8->drawString(col, row, string);
+      if (!ignoreLH && lineHeight>1) u8x8->draw1x2String(col, row, string);
+      else                           u8x8->drawString(col, row, string);
 #endif
       FLD_SemaphoreGive(drawMux);                                     // WLEDMM release draw mutex
     }
@@ -262,8 +266,8 @@ class FourLineDisplayUsermod : public Usermod {
       if (!typeOK || !enabled) return;
       if (u8x8 == nullptr) return;
       if (FLD_SemaphoreTake(drawMux, maxWait) != pdTRUE) return;      // WLEDMM acquire draw mutex
-#if  defined(ARDUINO_ARCH_ESP32) && !defined(OLD_4LD_FONTS)               // WLEDMM use nicer 2x2 font on ESP32
-      if (lineHeight==2) {                            // WLEDMM use 2x3 on 128x64 displays
+#if  defined(ARDUINO_ARCH_ESP32) && !defined(OLD_4LD_FONTS)           // WLEDMM use nicer 2x2 font on ESP32
+      if (lineHeight>1) {                            // WLEDMM use 2x3 on 128x64 displays
         //u8x8->setFont(u8x8_font_profont29_2x3_r);   // sans serif 2x3
         u8x8->setFont(u8x8_font_courB18_2x3_r);       // courier bold 2x3
         u8x8->drawString(col, row + (row >3? 1:0), string);
@@ -275,7 +279,7 @@ class FourLineDisplayUsermod : public Usermod {
       }
 #else
       u8x8->setFont(u8x8_font_chroma48medium8_r);
-      if (lineHeight==2) {                            // WLEDMM use 2x3 on 128x64 displays
+      if (lineHeight>1) {                            // WLEDMM use 2x3 on 128x64 displays
         u8x8->draw2x2String(col, row + (row >3? 1:0), string);
       } else {
         u8x8->draw2x2String(col, row, string);
@@ -287,7 +291,7 @@ class FourLineDisplayUsermod : public Usermod {
       if (!typeOK || !enabled) return;
       if (FLD_SemaphoreTake(drawMux, maxWait) != pdTRUE) return;      // WLEDMM acquire draw mutex
       u8x8->setFont(font);
-      if (!ignoreLH && lineHeight==2) u8x8->draw1x2Glyph(col, row, glyph);
+      if (!ignoreLH && lineHeight>1)  u8x8->draw1x2Glyph(col, row, glyph);
       else                            u8x8->drawGlyph(col, row, glyph);
       FLD_SemaphoreGive(drawMux);                                     // WLEDMM release draw mutex
     }
@@ -324,7 +328,7 @@ class FourLineDisplayUsermod : public Usermod {
     void draw2x2GlyphIcons() {
       if (!typeOK || !enabled) return;    // WLEDMM make sure the display is initialized before we try to draw on it
       if (FLD_SemaphoreTake(drawMuxBig, maxWaitLong) != pdTRUE) return;      // WLEDMM acquire BIG draw mutex
-      if (lineHeight == 2) {
+      if (lineHeight > 1) {
         drawGlyph( 1,            0, 1, u8x8_4LineDisplay_WLED_icons_2x2, true); //brightness icon
         drawGlyph( 5,            0, 2, u8x8_4LineDisplay_WLED_icons_2x2, true); //speed icon
         drawGlyph( 9,            0, 3, u8x8_4LineDisplay_WLED_icons_2x2, true); //intensity icon
@@ -378,7 +382,11 @@ class FourLineDisplayUsermod : public Usermod {
         drawStatusIcons(); //icons power, wifi, timer, etc
 
         if (lineHeight > 1) {       // WLEDMM use extra space for useful information
-          strncpy_P(lineBuffer, PSTR("             "), LINE_BUFFER_SIZE);
+          #if defined(WLED_DEBUG) || defined(SR_DEBUG)  || defined(SR_STATS)
+            snprintf_P(lineBuffer, LINE_BUFFER_SIZE, PSTR(" %-3.3s %-2.2s      "), driverSPI? "SPI" : "I2C", driverHW? "hw" : "sw"); // WLEDMM driver info
+          #else
+            strncpy_P(lineBuffer, PSTR("             "), LINE_BUFFER_SIZE);
+          #endif
           if (apActive) strncpy_P(lineBuffer, PSTR(" AP mode     "), LINE_BUFFER_SIZE);
           else if (!WLED_CONNECTED) strncpy_P(lineBuffer, PSTR(" NO NET      "), LINE_BUFFER_SIZE);
           if (WLED_MQTT_CONNECTED) lineBuffer[9] = 'M'; // "MQTT"
@@ -410,7 +418,7 @@ class FourLineDisplayUsermod : public Usermod {
     void setup() {
       if (!enabled) return;   // typeOK = true will be set after successful setup
 
-      bool isHW, isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64);
+      bool isHW, isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64 || type > 7);
       PinOwner po = PinOwner::UM_FourLineDisplay;
       if (isSPI) {
         if (ioPin[0] < 0 || ioPin[1] < 0) {
@@ -427,6 +435,7 @@ class FourLineDisplayUsermod : public Usermod {
 
         isHW = (ioPin[0]==spi_sclk && ioPin[1]==spi_mosi);
         if ((ioPin[0] == -1) || (ioPin[1] == -1)) isHW = true;  // WLEDMM "use global" = hardware
+        if ((spi_sclk <0) || (spi_mosi < 0)) isHW = false;      // no global pins - use software emulation
         PinManagerPinType cspins[3] = { { ioPin[2], true }, { ioPin[3], true }, { ioPin[4], true } };
         if (!pinManager.allocateMultiplePins(cspins, 3, PinOwner::UM_FourLineDisplay)) { typeOK=false; strcpy(errorMessage, PSTR("SPI3 alloc pins failed")); return; }
         if (isHW) po = PinOwner::HW_SPI;  // allow multiple allocations of HW I2C bus pins
@@ -437,6 +446,13 @@ class FourLineDisplayUsermod : public Usermod {
           strcpy(errorMessage, PSTR("SPI2 alloc pins failed"));
           return;
         }
+        // start SPI now!
+#ifdef ARDUINO_ARCH_ESP32
+        if (isHW) SPI.begin(spi_sclk, spi_miso, spi_mosi);   // ESP32 - will silently fail if SPI alread active.
+#else
+        if (isHW) SPI.begin();                               // ESP8266 - SPI pins are fixed
+#endif
+
       } else {
         //if (ioPin[0] < 0 || ioPin[1] < 0) { //WLEDMM do _not_ copy global pins !!
         //  ioPin[0] = i2c_scl;
@@ -458,6 +474,8 @@ class FourLineDisplayUsermod : public Usermod {
         }
       }
 
+      driverHW = isHW;
+      driverSPI= isSPI;
       DEBUG_PRINTLN(F("Allocating display."));
 /*
 // At some point it may be good to not new/delete U8X8 object but use this instead
@@ -529,6 +547,16 @@ class FourLineDisplayUsermod : public Usermod {
           if (!isHW) u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_4W_SW_SPI(ioPin[0], ioPin[1], ioPin[2], ioPin[3], ioPin[4]);
           else       u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_4W_HW_SPI(ioPin[2], ioPin[3], ioPin[4]); // Pins are cs, dc, reset
           break;
+        case SSD1309_SPI64:
+          // u8x8 uses global SPI variable that is attached to VSPI bus on ESP32
+          if (!isHW) u8x8 = (U8X8 *) new U8X8_SSD1309_128X64_NONAME0_4W_SW_SPI(ioPin[0], ioPin[1], ioPin[2], ioPin[3], ioPin[4]);
+          else       u8x8 = (U8X8 *) new U8X8_SSD1309_128X64_NONAME0_4W_HW_SPI(ioPin[2], ioPin[3], ioPin[4]); // Pins are cs, dc, reset
+          break;
+        case SSD1327_SPI128:
+          // u8x8 uses global SPI variable that is attached to VSPI bus on ESP32
+          if (!isHW) u8x8 = (U8X8 *) new U8X8_SSD1327_WS_128X128_4W_SW_SPI(ioPin[0], ioPin[1], ioPin[2], ioPin[3], ioPin[4]);
+          else       u8x8 = (U8X8 *) new U8X8_SSD1327_WS_128X128_4W_HW_SPI(ioPin[2], ioPin[3], ioPin[4]); // Pins are cs, dc, reset
+          break;
         default:
           u8x8 = nullptr;
       }
@@ -542,6 +570,8 @@ class FourLineDisplayUsermod : public Usermod {
       }
 
       lineHeight = u8x8->getRows() > 4 ? 2 : 1;
+      if (u8x8->getRows() > 8) lineHeight =3;
+      //if (u8x8->getRows() > 12) lineHeight =4;
       if (isSPI) {
         USER_PRINTLN(isHW ? F("Starting display (SPI HW).") : F("Starting display (SPI Soft)."));
       } else {
@@ -559,7 +589,7 @@ class FourLineDisplayUsermod : public Usermod {
       setPowerSave(0);
       drawing = false;
 
-      // init semaphores to enable drawing
+      // init semaphores to allow drawing
       FLD_SemaphoreGive(drawMux);
       FLD_SemaphoreGive(drawMuxBig);
 
@@ -789,9 +819,9 @@ class FourLineDisplayUsermod : public Usermod {
       uint8_t col = 15;
       uint8_t row = 0;
       drawGlyph(col, row,   (wificonnected ? 20 : 0), u8x8_4LineDisplay_WLED_icons_1x1, true); // wifi icon
-      if (lineHeight==2) { col--; } else { row++; }
+      if (lineHeight>1) { col--; } else { row++; }
       drawGlyph(col, row,          (bri > 0 ? 9 : 0), u8x8_4LineDisplay_WLED_icons_1x1, true); // power icon
-      if (lineHeight==2) { col--; } else { col = row = 0; }
+      if (lineHeight>1) { col--; } else { col = row = 0; }
       drawGlyph(col, row, (nightlightActive ? 6 : 0), u8x8_4LineDisplay_WLED_icons_1x1, true); // moon icon for nightlight mode
     }
     
@@ -830,7 +860,7 @@ class FourLineDisplayUsermod : public Usermod {
           for (byte i=5; i<=printedChars; i++) lineBuffer[i-5] = lineBuffer[i]; //include '\0'
           printedChars -= 5;
         }
-        if (lineHeight == 2) {                                 // use this code for 8 line display
+        if (lineHeight > 1) {                                 // use this code for 8 line display
           char smallBuffer1[MAX_MODE_LINE_SPACE+1] = { '\0' };
           char smallBuffer2[MAX_MODE_LINE_SPACE+1] = { '\0' };
           uint8_t smallChars1 = 0;
@@ -859,11 +889,11 @@ class FourLineDisplayUsermod : public Usermod {
             }
             while (smallChars1 < (MAX_MODE_LINE_SPACE-1)) smallBuffer1[smallChars1++]=' ';
             smallBuffer1[smallChars1] = 0;
-            smallBuffer1[MAX_MODE_LINE_SPACE -1] = '\0';   // ensure the string ends where it should  (while loop avove can overshoot by 1)
+            smallBuffer1[MAX_MODE_LINE_SPACE -1] = '\0';   // ensure the string ends where it should  (while loop above can overshoot by 1)
             drawString(1, row*lineHeight, smallBuffer1, true);
             while (smallChars2 < (MAX_MODE_LINE_SPACE-1)) smallBuffer2[smallChars2++]=' '; 
             smallBuffer2[smallChars2] = 0;
-            smallBuffer2[MAX_MODE_LINE_SPACE -1] = '\0';   // ensure the string ends where it should  (while loop avove can overshoot by 1)
+            smallBuffer2[MAX_MODE_LINE_SPACE -1] = '\0';   // ensure the string ends where it should  (while loop above can overshoot by 1)
             drawString(1, row*lineHeight+1, smallBuffer2, true);
           }
         } else {                                             // use this code for 4 ling displays
@@ -917,7 +947,7 @@ class FourLineDisplayUsermod : public Usermod {
       if (!wakeDisplay()) clear();
       // Print the overlay
       if (glyphType>0 && glyphType<255) {
-        if (lineHeight == 2) drawGlyph(5, 0, glyphType, u8x8_4LineDisplay_WLED_icons_6x6, true); // use 3x3 font with draw2x2Glyph() if flash runs short and comment out 6x6 font
+        if (lineHeight > 1)  drawGlyph(5, 0, glyphType, u8x8_4LineDisplay_WLED_icons_6x6, true); // use 3x3 font with draw2x2Glyph() if flash runs short and comment out 6x6 font
         else                 drawGlyph(6, 0, glyphType, u8x8_4LineDisplay_WLED_icons_3x3, true);
       }
       if (line1) {
@@ -941,7 +971,7 @@ class FourLineDisplayUsermod : public Usermod {
       // Turn the display back on
       if (!wakeDisplay()) clear();
       // Print the overlay
-      if (lineHeight == 2) {
+      if (lineHeight > 1) {
         //add a bit of randomness
         switch (millis()%3) {
           case 0:
@@ -1172,7 +1202,7 @@ class FourLineDisplayUsermod : public Usermod {
           xTaskCreateUniversal(               // this is guaranteed to work on any ESP32 (single or dual core)
             [](void * par) {                  // Function to implement the task
               // see https://www.freertos.org/vtaskdelayuntil.html
-              const TickType_t xFrequency = REFRESH_RATE_MS * portTICK_PERIOD_MS / 2;  
+              const TickType_t xFrequency = REFRESH_RATE_MS * portTICK_PERIOD_MS / 2;
               TickType_t xLastWakeTime = xTaskGetTickCount();
               for(;;) {
                 delay(1); // DO NOT DELETE THIS LINE! It is needed to give the IDLE(0) task enough time and to keep the watchdog happy.
@@ -1233,7 +1263,9 @@ class FourLineDisplayUsermod : public Usermod {
       oappend(SET_F("addOption(dd,'SSD1305 128x64',5);"));
       oappend(SET_F("addOption(dd,'SSD1306 SPI',6);"));
       oappend(SET_F("addOption(dd,'SSD1306 SPI 128x64',7);"));
-      bool isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64);
+      oappend(SET_F("addOption(dd,'SSD1309 SPI 128x64',8);"));
+      oappend(SET_F("addOption(dd,'SSD1327 SPI 128x128',9);"));
+      bool isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64 || type > 7);
       // WLEDMM add defaults
       oappend(SET_F("addInfo('4LineDisplay:pin[]',0,'','I2C/SPI CLK');"));
       oappend(SET_F("dRO('4LineDisplay:pin[]',0);")); // disable read only pins
@@ -1296,7 +1328,7 @@ class FourLineDisplayUsermod : public Usermod {
     void addToConfig(JsonObject& root) {
       // determine if we are using global HW pins (data & clock)
       int8_t hw_dta, hw_clk;
-      if ((type == SSD1306_SPI || type == SSD1306_SPI64)) {
+      if ((type == SSD1306_SPI || type == SSD1306_SPI64) || (type > 7)) {
         hw_clk = spi_sclk;
         hw_dta = spi_mosi;
       } else {
@@ -1362,7 +1394,7 @@ class FourLineDisplayUsermod : public Usermod {
       clockMode     = top[FPSTR(_clockMode)] | clockMode;
       showSeconds   = top[FPSTR(_showSeconds)] | showSeconds;
       contrastFix   = top[FPSTR(_contrastFix)] | contrastFix;
-      if (newType == SSD1306_SPI || newType == SSD1306_SPI64)
+      if (newType == SSD1306_SPI || newType == SSD1306_SPI64 || newType > 7)
         ioFrequency = min(20000, max(500, (int)(top[FPSTR(_busClkFrequency)] | ioFrequency/1000))) * 1000;  // limit frequency
       else
         ioFrequency = min(3400, max(100, (int)(top[FPSTR(_busClkFrequency)] | ioFrequency/1000))) * 1000;  // limit frequency
@@ -1392,10 +1424,12 @@ class FourLineDisplayUsermod : public Usermod {
             USER_PRINTLN(F("Display terminated."));
           }
           PinOwner po = PinOwner::UM_FourLineDisplay;
-          bool isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64);
+          bool isSPI = (type == SSD1306_SPI || type == SSD1306_SPI64 || type > 7);
           if (isSPI) {
             pinManager.deallocateMultiplePins((const uint8_t *)(&oldPin[2]), 3, po);
             bool isHW = (oldPin[0]==spi_sclk && oldPin[1]==spi_mosi);
+            if (oldPin[0]==-1 && oldPin[1]==-1) isHW = true;   // WLEDMM "use global" means hardware driver
+            if (spi_sclk==-1 && spi_mosi==-1) isHW = false;    // WLEDMM global pins not set -> software driver
             if (isHW) po = PinOwner::HW_SPI;
           } else {
             //bool isHW = (oldPin[0]==i2c_scl && oldPin[1]==i2c_sda);

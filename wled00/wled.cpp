@@ -201,6 +201,9 @@ void WLED::loop()
     DEBUG_PRINT(F("Runtime: "));       DEBUG_PRINTLN(millis());
     DEBUG_PRINT(F("Unix time: "));     toki.printTime(toki.getTime());
     DEBUG_PRINT(F("Free heap: "));     DEBUG_PRINTLN(ESP.getFreeHeap());
+	#ifdef ARDUINO_ARCH_ESP32
+    DEBUG_PRINTF("%s min free stack %d\n", pcTaskGetTaskName(NULL), uxTaskGetStackHighWaterMark(NULL)); //WLEDMM
+	#endif
     #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
     if (psramFound()) {
       //DEBUG_PRINT(F("Total PSRAM: "));    DEBUG_PRINT(ESP.getPsramSize()/1024); DEBUG_PRINTLN("kB");
@@ -295,17 +298,17 @@ void WLED::setup()
   #else
   #endif
   #if defined(WLED_DEBUG) && defined(ARDUINO_ARCH_ESP32) && (defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3) || ARDUINO_USB_CDC_ON_BOOT)
-  delay(2500);  // allow CDC USB serial to initialise
+  if (!Serial) delay(2500);  // WLEDMM allow CDC USB serial to initialise
   #endif
 
   #if ARDUINO_USB_CDC_ON_BOOT
-  delay(2500);  // WLEDMM: always allow CDC USB serial to initialise
+  if (!Serial) delay(2500);  // WLEDMM: always allow CDC USB serial to initialise
   Serial.println("wait 1");  // waiting a bit longer ensures that a  debug messages are shown in serial monitor
-  delay(2500);
+  if (!Serial) delay(2500);
   Serial.println("wait 2");
-  delay(2500);
+  if (!Serial) delay(2500);
 
-  Serial.flush();
+  if (Serial) Serial.flush(); // WLEDMM
   Serial.setTimeout(350); // WLEDMM: don't change timeout, as it causes crashes later
   // WLEDMM: redirect debug output to HWCDC
   Serial0.setDebugOutput(false);
@@ -406,6 +409,12 @@ void WLED::setup()
   DEBUG_PRINTLN(ESP.getCoreVersion());
 #endif
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
+#ifdef ARDUINO_ARCH_ESP32
+  #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0)  // unfortunately not availeable in older framework versions
+  USER_PRINT(F("\nArduino  max stack  ")); USER_PRINTLN(getArduinoLoopTaskStackSize());
+  #endif
+  DEBUG_PRINTF("%s min free stack %d\n", pcTaskGetTaskName(NULL), uxTaskGetStackHighWaterMark(NULL)); //WLEDMM
+#endif
 
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
   if (psramFound()) {
@@ -464,6 +473,9 @@ void WLED::setup()
   registerUsermods();
 
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
+  #ifdef ARDUINO_ARCH_ESP32
+    DEBUG_PRINTF("%s min free stack %d\n", pcTaskGetTaskName(NULL), uxTaskGetStackHighWaterMark(NULL)); //WLEDMM
+  #endif
 
   for (uint8_t i=1; i<WLED_MAX_BUTTONS; i++) btnPin[i] = -1;
 
@@ -571,6 +583,9 @@ void WLED::setup()
   DEBUG_PRINTLN(F("initServer"));
   initServer();
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
+  #ifdef ARDUINO_ARCH_ESP32
+  DEBUG_PRINT(pcTaskGetTaskName(NULL)); DEBUG_PRINT(F(" free stack ")); DEBUG_PRINTLN(uxTaskGetStackHighWaterMark(NULL));
+  #endif
 
   enableWatchdog();
 
@@ -835,9 +850,9 @@ void WLED::initConnection()
   USER_PRINT(F("Connecting to "));
   USER_PRINT(clientSSID);
   USER_PRINT(" / ");
-  for(int i = 0; i<strlen(clientPass); i++){
+  for(unsigned i = 0; i<strlen(clientPass); i++) {
       USER_PRINT("*");
-   }
+  }
   USER_PRINTLN(" ...");
 
   // convert the "serverDescription" into a valid DNS hostname (alphanumeric)

@@ -26,7 +26,7 @@ var ws, cpick, ranges;
 var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false},
-          labels:true, pcmbot:false, pid:true, seglen:false, segpwr:false, segexp:true, peekexp:true, segvexp: true, css:true, hdays:false} //WLEDMM segexp true as default, add peekexp and segvexp
+          labels:true, pcmbot:false, pid:true, seglen:false, segpwr:false, segexp:true, css:true, hdays:false} //WLEDMM segexp true as default
 };
 var hol = [
 	[0,11,24,4,"https://aircoookie.github.io/xmas.png"], // christmas
@@ -557,7 +557,6 @@ function populatePresets(fromls)
 	delete pJson["0"];
 	var cn = "";
 	var arr = Object.entries(pJson);
-	console.log(arr);
 	arr.sort(cmpP);
 	pQL = [];
 	var is = [];
@@ -612,7 +611,9 @@ function parseInfo(i) {
 	mw = i.leds.matrix ? i.leds.matrix.w : 0;
 	mh = i.leds.matrix ? i.leds.matrix.h : 0;
 	isM = mw>0 && mh>0;
-	if (!isM) {
+	if (isM) {
+		gId('buttonSr').className = "active"; isLv = true; //WLEDMM: on after load
+	} else {
 		gId("filter1D").classList.add('hide');
 		//gId("filter2D").classList.add('hide');
 		hideModes("2D");
@@ -667,12 +668,16 @@ function populateInfo(i)
 	if (i.cn) vcn = i.cn;
 
 	//WLEDMM: add total heap and total PSRAM, and build number, add bin name
-	if (i.ver.includes("0.14.1.")) vcn = "Sitting Ducks"; // easter egg
-	if (i.ver.includes("0.14.0.")) vcn = "Lupo";          // check for MM versioning scheme
+	if (i.ver.includes("0.14.1")) vcn = "Sitting Ducks"; // easter egg
+	if (i.ver.includes("0.14.0")) vcn = "Lupo";          // check for MM versioning scheme
+	if (i.ver.includes("0.14.0-b2.2")) vcn = "Sitting Ducks"; // early easter egg
+	if (i.ver.includes("0.14.0-b2.20")) vcn = "Lupo";
 	cn += `v${i.ver} &nbsp;<i>"${vcn}"</i><p>(WLEDMM_${i.ver} ${i.rel}.bin)</p><p><em>build ${i.vid}</em></p><table>
 ${urows}
 ${urows===""?'':'<tr><td colspan=2><hr style="height:1px;border-width:0;color:SeaGreen;background-color:Seagreen"></td></tr>'}
-${i.opt&0x100?inforow("Net Serial ☾","<button class=\"btn btn-xs\" onclick=\"requestJson({'netDebug':"+(i.opt&0x0080?"false":"true")+"});\"><i class=\"icons "+(i.opt&0x0080?"on":"off")+"\">&#xe08f;</i></button>"):''}
+${i.opt&0x100?inforow("Net Print ☾","<button class=\"btn btn-xs\" onclick=\"requestJson({'netDebug':"+(i.opt&0x0080?"false":"true")+"});\"><i class=\"icons "+(i.opt&0x0080?"on":"off")+"\">&#xe08f;</i></button>"):''}
+${i.serialOnline?inforow(i.serialOnline,"TX="+i.sTX,"; RX="+i.sRX):""}
+${i.opt&0x100?'<tr><td colspan=2><hr style="height:1px;border-width:0;color:GoldenRod;background-color:GoldenRod"></td></tr>':''}
 ${inforow("Build",i.vid)}
 ${inforow("Estimated current",pwru)}
 ${inforow("Average FPS",i.leds.fps)}
@@ -1161,21 +1166,8 @@ function updateLen(s, draw=true) //WLEDMM conditonally draw segment view
 	gId(`seg${s}len`).innerHTML = out;
 
 	if (draw && isM) drawSegmentView(); //WLEDMM draw new segmentview if something changes in a segment
-	gId("segviews").style.display = isM? "inline":"none";
-}
-
-//WLEDMM
-function eandp(o,i)
-{
-	expandV(o,i);
-	peek(i, i.style.display =="none");
-}
-
-//WLEDMM
-function expandV(o,i)
-{
-	i.style.display = i.style.display!=="none" ? "none" : "";
-	o.style.rotate = i.style.display==="none" ? "-90deg" : "none";
+	gId("effectGFX").style.display = isM? "inline":"none";
+	gId("segGFX").style.display = isM? "inline":"none";
 }
 
 //WLEDMM
@@ -1214,9 +1206,10 @@ function drawSegmentView() {
 		peek(canvasPeek);
 	}
 
+	let segments = gId("Segments");
 	let windowWidth = Math.min(window.innerWidth*0.98, maxWidth*30);
 	let windowWidthFactor = maxWidth > maxHeight?1:maxWidth/maxHeight;
-	ctx.canvas.width = (ctx.canvas.parentElement.offsetWidth > 800?windowWidth:300) * windowWidthFactor; //Mobile and non pc mode gets 300, pc 800
+	ctx.canvas.width = (segments.offsetWidth > 800?windowWidth:300) * windowWidthFactor; //Mobile and non pc mode gets 300, pc 800
 	ctx.canvas.height = ctx.canvas.width / maxWidth * maxHeight;
 	canvasPeek.width = ctx.canvas.width;
 	canvasPeek.height = ctx.canvas.height;
@@ -1224,10 +1217,6 @@ function drawSegmentView() {
 
 	var ppL = ctx.canvas.width / maxWidth; //pixels per led
 	// console.log("dim", ctx.canvas.width , maxWidth, ctx.canvas.height , maxHeight, ppL);
-
-	ctx.lineWidth = 1;
-	ctx.strokeStyle="yellow";
-	ctx.strokeRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
 	var colorArray = [[255,0,0], [0,255,0], [0,0,255], [255,0,255], [255,165,0], [255,255,0]];
 	//               ["red",     "green",   "blue",    "magenta",   "orange",    "yellow"];
@@ -1237,9 +1226,11 @@ function drawSegmentView() {
 
 		if (!initSegmentVars(p)) break;
 
-		ctx.lineWidth = 3;
-		ctx.strokeStyle="white";
-		ctx.strokeRect(topLeftX, topLeftY, pw*ppL, ph*ppL);
+		if (gId("segcont").children.length > 1) { //Estetic: Don't draw surrounding box if only one segment
+			ctx.lineWidth = 3;
+			ctx.strokeStyle="white";
+			ctx.strokeRect(topLeftX, topLeftY, pw*ppL, ph*ppL);
+		}
 
 		var fx = parseInt(gId("seg"+p+"fx").value);
 
@@ -1315,23 +1306,26 @@ function drawSegmentView() {
 
 	} // for each segment
 
-	gId("MD").innerHTML = "W*H=LC: " + maxWidth + " x " + maxHeight + " = " + maxWidth * maxHeight;
+	if (gId("segcont").children.length > 1) { //Only show this if more then one segment
+		gId("MD").innerHTML = "total W*H=LC: " + maxWidth + " x " + maxHeight + " = " + maxWidth * maxHeight;
+	}
+	gId("MD").style.display = gId("segcont").children.length > 1?"inline":"none"
 
 	function post() {
 		for (let p=0; p<gId("segcont").children.length; p++) {
 			if (!initSegmentVars(p)) break;
 			
-			if (gId("segcont").children.length>1) { //only show number if more than one segment
+			if (gId("segcont").children.length>1) { //only show number and name if more than one segment
 				ctx.font = '40px Arial'; 
 				ctx.fillStyle = "orange";
 				ctx.fillText(p, topLeftX + pw/2*ppL - 10, topLeftY + ph/2*ppL + 10);
+
+				//show name of fx
+				ctx.font = '20px Arial'; 
+				ctx.fillStyle = "white";
+				var name = eJson.find((o)=>{return o.id==fx}).name;
+				ctx.fillText(name, topLeftX+10, topLeftY + ph*ppL - 10);
 			}
-	
-			//show name of fx
-			ctx.font = '20px Arial'; 
-			ctx.fillStyle = "white";
-			var name = eJson.find((o)=>{return o.id==fx}).name;
-			ctx.fillText(name, topLeftX + ppL, topLeftY + ph*ppL - 10);
 		}	
 	}
 
@@ -1942,34 +1936,37 @@ function toggleSync()
 
 function toggleLiveview()
 {
-	//WLEDMM adding liveview2D support
-	if (isInfo && isM) toggleInfo();
-	if (isNodes && isM) toggleNodes();
-	isLv = !isLv;
+	if (isM) {
+		//WLEDMM adding liveview2D support on main ui
+		isLv = !isLv;
+		gId("colorGFX").style.display = isLv? "inline":"none";
+		gId("effectGFX").style.display = isLv? "inline":"none";
+		gId("segGFX").style.display = isLv? "inline":"none";
 
-	var lvID = "liveview";
-	if (isM) {   
-		lvID = "liveview2D"
-		if (isLv) {
-		var cn = '<iframe id="liveview2D" src="about:blank"></iframe>';
-		d.getElementById('kliveview2D').innerHTML = cn;
-		}
+		canvasPeek = gId("canvasPeek");
+		if (isLv) peek(canvasPeek); //W
+	} else {
+		//WLEDMM remove liveview2D support here
+		if (isInfo && isM) toggleInfo();
+		if (isNodes && isM) toggleNodes();
+		isLv = !isLv;
 
-		gId('mliveview2D').style.transform = (isLv) ? "translateY(0px)":"translateY(100%)";
+		var lvID = "liveview";
+
+		gId(lvID).style.display = (isLv) ? "block":"none";
+		var url = (loc?`http://${locip}`:'') + "/" + lvID;
+		gId(lvID).src = (isLv) ? url:"about:blank";
+		size();
 	}
 
-	gId(lvID).style.display = (isLv) ? "block":"none";
-	var url = (loc?`http://${locip}`:'') + "/" + lvID;
-	gId(lvID).src = (isLv) ? url:"about:blank";
 	gId('buttonSr').className = (isLv) ? "active":"";
-	if (!isLv && ws && ws.readyState === WebSocket.OPEN) ws.send('{"lv":false}');
-	size();
+	if (ws && ws.readyState === WebSocket.OPEN) ws.send(`{"lv":${isLv}}`);
 }
 
 function toggleInfo()
 {
 	if (isNodes) toggleNodes();
-	if (isLv && isM) toggleLiveview();
+	// if (isLv && isM) toggleLiveview(); //WLEDMM: not for GFX
 	isInfo = !isInfo;
 	if (isInfo) requestJson();
 	gId('info').style.transform = (isInfo) ? "translateY(0px)":"translateY(100%)";
@@ -1979,7 +1976,7 @@ function toggleInfo()
 function toggleNodes()
 {
 	if (isInfo) toggleInfo();
-	if (isLv && isM) toggleLiveview();
+	// if (isLv && isM) toggleLiveview(); //WLEDMM: not for GFX
 	isNodes = !isNodes;
 	if (isNodes) loadNodes();
 	gId('nodes').style.transform = (isNodes) ? "translateY(0px)":"translateY(100%)";
@@ -3228,7 +3225,7 @@ function size()
 	var h = gId('top').clientHeight;
 	sCol('--th', h + "px");
 	sCol('--bh', gId('bot').clientHeight + "px");
-	if (isLv) h -= 4;
+	if (isLv && !isM) h -= 4; //WLEDMM: no for matrices
 	sCol('--tp', h + "px");
 	togglePcMode();
 }
@@ -3240,10 +3237,10 @@ function togglePcMode(fromB = false)
 		localStorage.setItem('pcm', pcModeA);
 		pcMode = pcModeA;
 	}
-	if (wW < 1250 && !pcMode) return;
-	if (!fromB && ((wW < 1250 && lastw < 1250) || (wW >= 1250 && lastw >= 1250))) return;
+	if (wW <= 1024 && !pcMode) return;
+	if (!fromB && ((wW <= 1024 && lastw <= 1024) || (wW > 1024 && lastw > 1024))) return;
 	openTab(0, true);
-	if (wW < 1250) {pcMode = false;}
+	if (wW <= 1024) {pcMode = false;}
 	else if (pcModeA && !fromB) pcMode = pcModeA;
 	updateTablinks(0);
 	gId('buttonPcm').className = (pcMode) ? "active":"";

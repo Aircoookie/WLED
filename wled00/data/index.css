@@ -738,10 +738,10 @@ input[type=range]::-moz-range-thumb {
 	margin: 4px 0 0;
 }
 
-#Colors {
+/* #Colors {
 	padding-top: 18px;
 }
-
+ */
 /* Dynamically hide brightness slider label */
 .hd {
 	display: var(--bhd);
@@ -1517,7 +1517,7 @@ TD .checkmark, TD .radiomark {
 	}
 }
 
-@media all and (max-width: 1249px) {
+@media all and (max-width: 1024px) {
 	#buttonPcm {
 		display: none;
 	}
