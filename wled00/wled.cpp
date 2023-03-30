@@ -12,6 +12,56 @@
 #include "../tools/ESP32-Chip_info.hpp"
 #endif
 
+
+// WLEDMM some buildenv sanity checks
+
+#ifdef ARDUINO_ARCH_ESP32 // ESP32
+  #if !defined(ESP32)
+    #error please fix your build environment. ESP32 is not defined.
+  #endif
+  #if defined(ESP8266) || defined(ARDUINO_ARCH_ESP8266)
+    #error please fix your build environment. ESP32 and ESP8266 are both defined.
+  #endif
+  // only one of ARDUINO_ARCH_ESP32S2, ARDUINO_ARCH_ESP32S3, ARDUINO_ARCH_ESP32C3 allowed
+  #if defined(ARDUINO_ARCH_ESP32S3) && ( defined(ARDUINO_ARCH_ESP32S2) || defined(ARDUINO_ARCH_ESP32C3) )
+    #error please fix your build environment. only one of ARDUINO_ARCH_ESP32S3, ARDUINO_ARCH_ESP32S2, ARDUINO_ARCH_ESP32C3 may be defined
+  #endif
+  #if defined(ARDUINO_ARCH_ESP32S2) && ( defined(ARDUINO_ARCH_ESP32S3) || defined(ARDUINO_ARCH_ESP32C3) )
+    #error please fix your build environment. only one of ARDUINO_ARCH_ESP32S3, ARDUINO_ARCH_ESP32S2, ARDUINO_ARCH_ESP32C3 may be defined
+  #endif
+  #if defined(CONFIG_IDF_TARGET_ESP32) && ( defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3))
+    #error please fix your build environment. only one CONFIG_IDF_TARGET may be defined
+  #endif
+  // make sure we have a supported CONFIG_IDF_TARGET_
+  #if !defined(CONFIG_IDF_TARGET_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32S3) && !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
+    #error please fix your build environment. No supported CONFIG_IDF_TARGET was defined
+  #endif
+  #if CONFIG_IDF_TARGET_ESP32_SOLO || CONFIG_IDF_TARGET_ESP32SOLO
+    #warning ESP32 SOLO (single core) is not supported.
+  #endif
+  // only one of CONFIG_IDF_TARGET_ESP32, CONFIG_IDF_TARGET_ESP32S2, CONFIG_IDF_TARGET_ESP32S3, CONFIG_IDF_TARGET_ESP32C3 is allowed
+  #if defined(CONFIG_IDF_TARGET_ESP32) && ( defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3))
+    #error please fix your build environment. only one CONFIG_IDF_TARGET may be defined
+  #endif
+  #if defined(CONFIG_IDF_TARGET_ESP32S3) && ( defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3))
+    #error please fix your build environment. only one CONFIG_IDF_TARGET may be defined
+  #endif
+  #if defined(CONFIG_IDF_TARGET_ESP32C3) && ( defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32S2))
+    #error please fix your build environment. only one CONFIG_IDF_TARGET may be defined
+  #endif
+
+#else // 8266
+  #if !defined(ARDUINO_ARCH_ESP8266) && !defined(ARDUINO_ARCH_ESP8265)
+    #error please fix your build environment. Neither ARDUINO_ARCH_ESP8266 nor ARDUINO_ARCH_ESP32 are defined
+  #else
+    #if !defined(ESP8266) && !defined(ESP8265)
+      #error please fix your build environment. ESP8266 is not defined.
+    #endif
+  #endif
+#endif
+// WLEDMM end
+
+
 /*
  * Main WLED class implementation. Mostly initialization and connection logic
  */
