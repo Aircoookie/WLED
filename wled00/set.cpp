@@ -312,6 +312,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     t = request->arg(F("WO")).toInt();
     if (t >= -255  && t <= 255) arlsOffset = t;
 
+#ifdef WLED_ENABLE_DMX_INPUT
+    dmxTransmitPin = request->hasArg(F("DMR"));
+    dmxReceivePin = request->hasArg(F("DMT"));
+    dmxEnablePin= request->hasArg(F("DME"));
+#endif
+
     alexaEnabled = request->hasArg(F("AL"));
     strlcpy(alexaInvocationName, request->arg(F("AI")).c_str(), 33);
     t = request->arg(F("AP")).toInt();
