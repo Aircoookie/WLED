@@ -58,7 +58,7 @@
 #endif
 
 #ifdef USERMOD_FOUR_LINE_DISPLAY
-  #ifdef USE_ALT_DISPLAY
+  #if defined(USE_ALT_DISPLAY) || defined (USE_ALT_DISPlAY)
     #include "../usermods/usermod_v2_four_line_display_ALT/usermod_v2_four_line_display_ALT.h"
   #else
     #include "../usermods/usermod_v2_four_line_display/usermod_v2_four_line_display.h"
@@ -66,7 +66,7 @@
 #endif
 
 #ifdef USERMOD_ROTARY_ENCODER_UI
-  #ifdef USE_ALT_DISPLAY
+  #if defined(USE_ALT_DISPLAY) || defined (USE_ALT_DISPlAY)
     #include "../usermods/usermod_v2_rotary_encoder_ui_ALT/usermod_v2_rotary_encoder_ui_ALT.h"
   #else
     #include "../usermods/usermod_v2_rotary_encoder_ui/usermod_v2_rotary_encoder_ui.h"
