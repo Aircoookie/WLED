@@ -771,9 +771,9 @@ function populateSegments(s)
 				<option value="3" ${inst.si==3?' selected':''}>U14_3</option>
 			</select></div>
 		</div>`;
-		//WLEDMM Custom Effects
+		//WLEDMM ARTIFX
 		let fxName = eJson.find((o)=>{return o.id==selectedFx}).name;
-		let cusEff = `<button class="btn" onclick="toggleCEEditor('${inst.n?inst.n:"default"}', ${i})">Custom Effect Editor ☾</button><br>`;
+		let cusEff = `<button class="btn" onclick="toggleCEEditor('${inst.n?inst.n:"default"}', ${i})">ARTI-FX Editor ☾</button><br>`;
 		cn += `<div class="seg lstI ${i==s.mainseg ? 'selected' : ''} ${exp ? "expanded":""}" id="seg${i}">
 	<label class="check schkl">
 		<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>
@@ -821,7 +821,7 @@ function populateSegments(s)
 		${!(isM&&staX<mw*mh)?rvXck:''}
 		${isM&&staX<mw*mh&&stoY-staY>1&&stoX-staX>1?map2D:''}
 		${s.AudioReactive && s.AudioReactive.on ? "" : sndSim}
-		${s.CustomEffects && s.CustomEffects.on && fxName.includes("Custom Effect") ? cusEff : ""}
+		${s.ARTIFX && s.ARTIFX.on && fxName.includes("ARTI-FX") ? cusEff : ""}
 		<label class="check revchkl" id="seg${i}lbtm">
 			${isM&&staX<mw*mh?'Transpose':'Mirror effect'}${isM&&staX<mw*mh?
 			'<input type="checkbox" id="seg'+i+'tp" onchange="setTp('+i+')" '+(inst.tp?"checked":"")+'>':
@@ -1961,6 +1961,22 @@ function toggleLiveview()
 
 	gId('buttonSr').className = (isLv) ? "active":"";
 	if (ws && ws.readyState === WebSocket.OPEN) ws.send(`{"lv":${isLv}}`);
+}
+
+//WLEDMM create and delete iFrame for peek (isLv is true if create)
+function bigPeek(doCreate)
+{
+	let lvID = "liveview2D"
+	if (doCreate) {
+		var cn = '<iframe id="liveview2D" src="about:blank" onload="this.contentWindow.document.body.onclick=function(){bigPeek(false);}"></iframe>';
+		gId('kliveview2D').innerHTML = cn;
+	}
+
+	gId('mliveview2D').style.transform = (doCreate) ? "translateY(0px)":"translateY(100%)";
+
+	gId(lvID).style.display = (doCreate) ? "block":"none";
+	var url = (loc?`http://${locip}`:'') + "/" + lvID;
+	gId(lvID).src = (doCreate) ? url:"about:blank";
 }
 
 function toggleInfo()

@@ -182,7 +182,7 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
   if (elem["on"].is<const char*>() && elem["on"].as<const char*>()[0] == 't') on = !on;
   seg.setOption(SEG_OPTION_ON, on); // use transition
 
-  //WLEDMM Custom Effects (but general usable)
+  //WLEDMM ARTIFX (but general usable)
   bool reset = elem["reset"];
   if (reset)
     seg.markForReset();

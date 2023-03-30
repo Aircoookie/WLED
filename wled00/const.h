@@ -133,7 +133,7 @@
 #define USERMOD_ID_SHT                   39     //Usermod "usermod_sht.h
 #define USERMOD_ID_KLIPPER               40     // Usermod Klipper percentage
 //WLEDMM
-#define USERMOD_ID_CUSTOMEFFECTS         90     //Usermod "usermod_v2_customeffects.h"
+#define USERMOD_ID_ARTIFX                90     //Usermod "usermod_v2_artifx.h"
 #define USERMOD_ID_WEATHER               91     //Usermod "usermod_v2_weather.h"
 #define USERMOD_ID_GAMES                 92     //Usermod "usermod_v2_games.h"
 
