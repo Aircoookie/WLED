@@ -1,8 +1,27 @@
 ## WLED changelog
 
+#### Build 2303240
+-   Peek scaling of large 2D matrices
+-   Added 0D (1 pixel) metadata for effects & enhance 0D (analog strip) UI handling
+-   Added ability to disable ADAlight (-D WLED_DISABLE_ADALIGHT)
+-   Fixed APA102 output on Ethernet enabled controllers
+-   Added ArtNet virtual/network output (#3121)
+-   Klipper usermod (#3106)
+-   Remove DST from CST timezone
+-   various fixes and enhancements
+
 #### Build 2302180
 
 -   Removed Blynk support (servers shut down on 31st Dec 2022)
+-   Added `ledgap.json` to complement ledmaps for 2D matrices
+-   Added support for white addressable strips (#3073)
+-   Ability to use SHT temperature usermod with PWM fan usermod
+-   Added `onStateChange()` callback to usermods (#3081)
+-   Refactored `bus_manager` [internal]
+-   Dual 1D & 2D mode (add 1D strip after the matrix)
+-   Removed 1D -> 2D mapping for individual pixel control
+-   effect tweak: Fireworks 1D
+-   various bugfixes
 
 #### Build 2301240
 
