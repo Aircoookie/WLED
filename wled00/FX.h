@@ -316,7 +316,7 @@
 #define FX_MODE_WAVESINS               184
 #define FX_MODE_ROCKTAVES              185
 #define FX_MODE_2DAKEMI                186
-#define FX_MODE_CUSTOMEFFECT           187 //WLEDMM Custom Effects
+#define FX_MODE_ARTIFX                 187 //WLEDMM ARTIFX
 
 #define MODE_COUNT                     188
 

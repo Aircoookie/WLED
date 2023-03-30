@@ -190,9 +190,9 @@
 #endif
 
 
-//WLEDMM Custom Effects
-#ifdef USERMOD_CUSTOMEFFECTS
-#include "../usermods/customeffects/usermod_v2_customeffects.h"
+//WLEDMM ARTIFX
+#ifdef USERMOD_ARTIFX
+#include "../usermods/artifx/usermod_v2_artifx.h"
 #endif
 
 #ifdef USERMOD_WEATHER
@@ -374,9 +374,9 @@ void registerUsermods()
   usermods.add(new ShtUsermod());
   #endif
 
-  //WLEDMM Custom Effects
-  #ifdef USERMOD_CUSTOMEFFECTS
-  usermods.add(new CustomEffectsUserMod());
+  //WLEDMM ARTIFX
+  #ifdef USERMOD_ARTIFX
+  usermods.add(new ARTIFXUserMod());
   #endif
   
   #ifdef USERMOD_WEATHER

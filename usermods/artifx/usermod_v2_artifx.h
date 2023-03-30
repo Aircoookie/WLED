@@ -1,6 +1,6 @@
 /*
-   @title   Usermod Custom Effects (CE)
-   @file    usermod_v2_customeffects.h
+   @title   Usermod ARTIFX (AF)
+   @file    usermod_v2_artifx.h
    @date    20220818
    @author  Ewoud Wijma
    @Copyright (c) 2023 Ewoud Wijma
@@ -17,7 +17,7 @@
 ARTI * arti;
 
 //effect function
-uint16_t mode_customEffect(void) { 
+uint16_t mode_ARTIFX(void) { 
   //tbd: move statics to SEGMENT.data
   static bool succesful;
   static bool notEnoughHeap;
@@ -99,9 +99,9 @@ uint16_t mode_customEffect(void) {
   return FRAMETIME;
 }
 
-static const char _data_FX_MODE_CUSTOMEFFECT[] PROGMEM = "⚙️ Custom Effect ☾@Speed,Intensity,Custom 1, Custom 2, Custom 3;!;!;1;mp12=0";
+static const char _data_FX_MODE_ARTIFX[] PROGMEM = "⚙️ ARTI-FX ☾@Speed,Intensity,Custom 1, Custom 2, Custom 3;!;!;1;mp12=0";
 
-class CustomEffectsUserMod : public Usermod {
+class ARTIFXUserMod : public Usermod {
   private:
     // strings to reduce flash memory usage (used more than twice)
     static const char _name[]; //usermod name
@@ -115,7 +115,7 @@ class CustomEffectsUserMod : public Usermod {
 
     void setup() {
       if (!initDone)
-        strip.addEffect(FX_MODE_CUSTOMEFFECT, &mode_customEffect, _data_FX_MODE_CUSTOMEFFECT);
+        strip.addEffect(FX_MODE_ARTIFX, &mode_ARTIFX, _data_FX_MODE_ARTIFX);
       initDone = true;
       enabled = true;
     }
@@ -200,9 +200,9 @@ class CustomEffectsUserMod : public Usermod {
      */
     uint16_t getId()
     {
-      return USERMOD_ID_CUSTOMEFFECTS;
+      return USERMOD_ID_ARTIFX;
     }
 };
 
 // strings to reduce flash memory usage (used more than twice)
-const char CustomEffectsUserMod::_name[]       PROGMEM = "CustomEffects";
+const char ARTIFXUserMod::_name[]       PROGMEM = "ARTIFX";
