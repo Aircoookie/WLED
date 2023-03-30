@@ -134,7 +134,7 @@ void handleDMXInput() {
     if (!packet.err) {
       /* If this is the first DMX data we've received, lets log it! */
       if (!dmxIsConnected) {
-        DEBUG_PRINTLN("DMX is connected!");
+        USER_PRINTLN("DMX is connected!");
         dmxIsConnected = true;
       }
 
@@ -153,7 +153,7 @@ void handleDMXInput() {
   }
   else if (dmxIsConnected && (now - dmxLastUpdate > 5000)) {
     dmxIsConnected = false;
-    DEBUG_PRINTLN("DMX was disconnected.");
+    USER_PRINTLN("DMX was disconnected.");
   }
 }
 #else
