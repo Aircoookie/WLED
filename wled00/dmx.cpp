@@ -102,10 +102,13 @@ void handleDMX() {}
 dmx_port_t dmxPort = 2;
 void initDMX() {
 /* Set the DMX hardware pins to the pins that we want to use. */
-  int dmxTransmitPin = 2;
-  int dmxReceivePin = 27;
-  int dmxEnablePin = 26;
-  dmx_set_pin(dmxPort, dmxTransmitPin, dmxReceivePin, dmxEnablePin);
+  if(dmxReceivePin > 0) {
+    dmx_set_pin(dmxPort, dmxTransmitPin, dmxReceivePin, dmxEnablePin);
+  }
+  else {
+    USER_PRINTLN("DMX input disabled due to dmxReceivePin not being set");
+    return;
+  }
 
   /* Now we can install the DMX driver! We'll tell it which DMX port to use and
     which interrupt priority it should have. If you aren't sure which interrupt
@@ -118,6 +121,9 @@ bool dmxIsConnected = false;
 unsigned long dmxLastUpdate = 0;
 
 void handleDMXInput() {
+  if(dmxReceivePin < 1) {
+    return;
+  }
   byte dmxdata[DMX_PACKET_SIZE];
   dmx_packet_t packet;
   unsigned long now = millis();
