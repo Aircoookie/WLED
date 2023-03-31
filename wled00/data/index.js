@@ -2801,7 +2801,7 @@ function size()
 	if (isLv) h -= 4;
 	sCol('--tp', h + "px");
 	togglePcMode();
-	if (cpick && pcMode) cpick.resize(wW>1023 && wW<1250 ? 230 : 260); /* for tablet in landscape */
+	lastw = wW;
 }
 
 function togglePcMode(fromB = false)
@@ -2809,19 +2809,16 @@ function togglePcMode(fromB = false)
 	if (fromB) {
 		pcModeA = !pcModeA;
 		localStorage.setItem('pcm', pcModeA);
-		pcMode = pcModeA;
 	}
-	if (wW < 1024 && !pcMode) return;
-	if (!fromB && ((wW < 1024 && lastw < 1024) || (wW >= 1024 && lastw >= 1024))) return;
+	pcMode = (wW >= 1024) && pcModeA;
+	if (cpick) cpick.resize(pcMode && wW>1023 && wW<1250 ? 230 : 260); // for tablet in landscape
+	if (!fromB && ((wW < 1024 && lastw < 1024) || (wW >= 1024 && lastw >= 1024))) return; // no change in size and called from size()
 	openTab(0, true);
-	if (wW < 1024) {pcMode = false;}
-	else if (pcModeA && !fromB) pcMode = pcModeA;
 	updateTablinks(0);
 	gId('buttonPcm').className = (pcMode) ? "active":"";
 	gId('bot').style.height = (pcMode && !cfg.comp.pcmbot) ? "0":"auto";
 	sCol('--bh', gId('bot').clientHeight + "px");
 	_C.style.width = (pcMode)?'100%':'400%';
-	lastw = wW;
 }
 
 function mergeDeep(target, ...sources)
@@ -2845,7 +2842,7 @@ function mergeDeep(target, ...sources)
 size();
 _C.style.setProperty('--n', N);
 
-window.addEventListener('resize', size, false);
+window.addEventListener('resize', size, true);
 
 _C.addEventListener('mousedown', lock, false);
 _C.addEventListener('touchstart', lock, false);
