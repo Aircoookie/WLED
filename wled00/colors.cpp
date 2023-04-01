@@ -326,7 +326,7 @@ static byte gammaT[256] = {
 // https://github.com/Aircoookie/WLED/issues/2767#issuecomment-1310961308
 // unfortunately NepixelsBu has its own internal table, that kills low brightness values similar to the original WLED table.
 //   see https://github.com/Makuna/NeoPixelBus/blob/master/src/internal/NeoGamma.h
-static byte gammaT[256] = {
+static const byte gammaT[256] = {
   0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 
   2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4,
   4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 
@@ -354,9 +354,11 @@ uint8_t gamma8_cal(uint8_t b, float gamma)
 // re-calculates & fills gamma table
 void calcGammaTable(float gamma)
 {
+#if !defined(WLED_USE_CIE_BRIGHTNESS_TABLE)  // WLEDMM not possible when using the CIE table
   for (uint16_t i = 0; i < 256; i++) {
     gammaT[i] = gamma8_cal(i, gamma);
   }
+#endif
 }
 
 // used for individual channel or brightness gamma correction

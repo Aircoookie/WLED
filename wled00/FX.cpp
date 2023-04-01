@@ -6037,6 +6037,8 @@ uint16_t mode_ripplepeak(void) {                // * Ripple peak. By Andrew Tuli
     SEGMENT.custom1 = *binNum;
     SEGMENT.custom2 = *maxVol * 2;
   }
+  if (SEGMENT.custom1 < 2) SEGMENT.custom1 = 2; // WLEDMM prevent stupid settings
+  if (SEGMENT.custom2 < 48) SEGMENT.custom1 = 48; // WLEDMM prevent stupid settings
 
   *binNum = SEGMENT.custom1;                              // Select a bin.
   *maxVol = SEGMENT.custom2 / 2;                          // Our volume comparator.
@@ -6598,6 +6600,8 @@ uint16_t mode_puddlepeak(void) {                // Puddlepeak. By Andrew Tuline.
     SEGMENT.custom1 = *binNum;
     SEGMENT.custom2 = *maxVol * 2;
   }
+  if (SEGMENT.custom1 < 2) SEGMENT.custom1 = 2; // WLEDMM prevent stupid settings
+  if (SEGMENT.custom2 < 48) SEGMENT.custom1 = 48; // WLEDMM prevent stupid settings
 
   *binNum = SEGMENT.custom1;                              // Select a bin.
   *maxVol = SEGMENT.custom2 / 2;                          // Our volume comparator.
@@ -6794,9 +6798,17 @@ uint16_t mode_freqmap(void) {                   // Map FFT_MajorPeak to SEGLEN. 
   uint16_t pixCol = (log10f(FFT_MajorPeak) - 1.78f) * 255.0f/(MAX_FREQ_LOG10 - 1.78f);   // Scale log10 of frequency values to the 255 colour index.
   if (FFT_MajorPeak < 61.0f) pixCol = 0;                                                 // handle underflow
 
+#if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
+  uint16_t bright = (int) (sqrtf(my_magnitude)*16.0f);  // WLEDMM sqrt scaling, to make peaks more prominent
+#else
   uint16_t bright = (int)my_magnitude;
+#endif
 
   SEGMENT.setPixelColor(locn, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(SEGMENT.intensity+pixCol, false, PALETTE_SOLID_WRAP, 0), bright));
+  if (SEGMENT.speed > 228) {  // WLEDMM looks nice in 2D
+    SEGMENT.blur(5*(SEGMENT.speed - 224));
+    SEGMENT.setPixelColor(locn, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(SEGMENT.intensity+pixCol, false, PALETTE_SOLID_WRAP, 0), bright));
+  }
 
   return FRAMETIME;
 } // mode_freqmap()
@@ -7109,6 +7121,9 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
     SEGMENT.custom1 = *binNum;
     SEGMENT.custom2 = *maxVol * 2;
   }
+
+  if (SEGMENT.custom1 < 2) SEGMENT.custom1 = 2; // WLEDMM prevent stupid settings
+  if (SEGMENT.custom2 < 48) SEGMENT.custom1 = 48; // WLEDMM prevent stupid settings
 
   *binNum = SEGMENT.custom1;                              // Select a bin.
   *maxVol = SEGMENT.custom2 / 2;                          // Our volume comparator.
