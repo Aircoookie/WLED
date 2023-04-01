@@ -609,9 +609,13 @@ function parseInfo(i) {
 	mh = i.leds.matrix ? i.leds.matrix.h : 0;
 	isM = mw>0 && mh>0;
 	if (!isM) {
+		gId("filter0D").classList.remove('hide');
 		gId("filter1D").classList.add('hide');
-		//gId("filter2D").classList.add('hide');
-		//hideModes("2D");
+		gId("filter2D").classList.add('hide');
+	} else {
+		gId("filter0D").classList.add('hide');
+		gId("filter1D").classList.remove('hide');
+		gId("filter2D").classList.remove('hide');
 	}
 //	if (i.noaudio) {
 //		gId("filterVol").classList.add("hide");
