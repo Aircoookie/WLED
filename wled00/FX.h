@@ -349,8 +349,9 @@ typedef struct Segment {
         bool    reverse_y   : 1;  //     7 : reversed Y (2D)
         bool    mirror_y    : 1;  //     8 : mirrored Y (2D)
         bool    transpose   : 1;  //     9 : transposed (2D, swapped X & Y)
-        uint8_t map1D2D     : 3;  // 10-12 : mapping for 1D effect on 2D (0-use as strip, 1-expand vertically, 2-circular/arc, 3-rectangular/corner, ...)
-        uint8_t soundSim    : 3;  // 13-15 : 0-7 sound simulation types
+        uint8_t map1D2D     : 2;  // 10-11 : mapping for 1D effect on 2D (0-use as strip, 1-expand vertically, 2-circular/arc, 3-rectangular/corner, ...)
+        uint8_t soundSim    : 2;  // 12-13 : 0-3 sound simulation types
+        uint8_t group       : 2;  // 14-15 : 0-3 UI segment groups
       };
     };
     uint8_t  grouping, spacing;

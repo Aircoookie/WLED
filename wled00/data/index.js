@@ -697,6 +697,13 @@ function populateSegments(s)
 		let sg = gId(`seg${i}`);
 		let exp = sg ? (sg.classList.contains('expanded') || (i===0 && cfg.comp.segexp)) : false;
 
+		let cG = "var(--c-b)";
+		switch (inst.group) {
+			case 1: cG = "var(--c-r)"; break;
+			case 2: cG = "var(--c-g)";  break;
+			case 3: cG = "var(--c-b)";   break;
+		}
+
 		let segp = `<div id="segp${i}" class="sbs">
 		<i class="icons e-icon pwr ${inst.on ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})">&#xe08f;</i>
 		<div class="sliderwrap il">
@@ -731,15 +738,19 @@ function populateSegments(s)
 				<option value="3" ${inst.si==3?' selected':''}>U14_3</option>
 			</select></div>
 		</div>`;
-		cn += `<div class="seg lstI ${i==s.mainseg ? 'selected' : ''} ${exp ? "expanded":""}" id="seg${i}">
+		cn += `<div class="seg lstI ${i==s.mainseg ? 'selected' : ''} ${exp ? "expanded":""}" id="seg${i}" data-group="${inst.group?inst.group:0}">
 	<label class="check schkl">
 		<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>
 		<span class="checkmark"></span>
 	</label>
-	<i class="icons e-icon frz" id="seg${i}frz" onclick="event.preventDefault();tglFreeze(${i});">&#x${inst.frz ? (li.live && li.liveseg==i?'e410':'e0e8') : 'e325'};</i>
 	<div class="segname" onclick="selSegEx(${i})">
+		<i class="icons e-icon frz" id="seg${i}frz" onclick="event.preventDefault();tglFreeze(${i});">&#x${inst.frz ? (li.live && li.liveseg==i?'e410':'e0e8') : 'e325'};</i>
 		${inst.n ? inst.n : "Segment "+i}
 		<i class="icons edit-icon flr" id="seg${i}nedit" onclick="tglSegn(${i})">&#xe2c6;</i>
+		<div class="pop" onclick="event.preventDefault();event.stopPropagation();">
+			<i class="icons g-icon" style="color:${cG};" onclick="this.nextElementSibling.classList.toggle('hide');">&#x278${String.fromCharCode(inst.group+"A".charCodeAt(0))};</i>
+			<div class="pop-c hide"><span style="color:var(--c-b);" onclick="setGrp(${i},0);">&#x278A;</span><span style="color:var(--c-r);" onclick="setGrp(${i},1);">&#x278B;</span><span style="color:var(--c-g);" onclick="setGrp(${i},2);">&#x278C;</span><span style="color:var(--c-l);" onclick="setGrp(${i},3);">&#x278D;</span></div>
+		</div> 
 	</div>
 	<i class="icons e-icon flr" id="sege${i}" onclick="expand(${i})">&#xe395;</i>
 	${cfg.comp.segpwr?segp:''}
@@ -947,7 +958,7 @@ function genPalPrevCss(id)
 
 function generateListItemHtml(listName, id, name, clickAction, extraHtml = '', effectPar = '')
 {
-	return `<div class="lstI${id==0?' sticky':''}" data-id="${id}" ${effectPar===''?'':'data-opt="'+effectPar+'"'}onClick="${clickAction}(${id})">
+	return `<div class="lstI${id==0?' sticky':''}" data-id="${id}" ${effectPar===''?'':'data-opt="'+effectPar+'" '}onClick="${clickAction}(${id})">
 	<label class="radio schkl" onclick="event.preventDefault()">
 		<input type="radio" value="${id}" name="${listName}">
 		<span class="radiomark"></span>
@@ -1750,7 +1761,11 @@ function resetUtil(off=false)
 {
 	gId('segutil').innerHTML = `<div class="seg btn btn-s ${off?'off':''}" style="border-radius:24px;padding:0;">`
 	+ '<label class="check schkl"><input type="checkbox" id="selall" onchange="selSegAll(this)"><span class="checkmark"></span></label>'
-	+ `<div class="segname" ${off?'':'onclick="makeSeg()"'}><i class="icons btn-icon">&#xe18a;</i>Add segment</div></div>`;
+	+ `<div class="segname" ${off?'':'onclick="makeSeg()"'}><i class="icons btn-icon">&#xe18a;</i>Add segment</div>`
+	+ '<div class="pop" onclick="event.stopPropagation();">'
+	+ `<i class="icons g-icon" style="color:var(--c-0);" onclick="this.nextElementSibling.classList.toggle('hide');">&#x238B;</i>`
+	+ '<div class="pop-c hide"><span style="color:var(--c-b);" onclick="selGrp(0);">&#x278A;</span><span style="color:var(--c-r);" onclick="selGrp(1);">&#x278B;</span><span style="color:var(--c-g);" onclick="selGrp(2);">&#x278C;</span><span style="color:var(--c-l);" onclick="selGrp(3);">&#x278D;</span></div>'
+	+ '</div></div>';
 }
 
 function makePlSel(el, incPl=false)
@@ -2036,6 +2051,20 @@ function selSeg(s)
 	requestJson(obj);
 }
 
+function selGrp(g)
+{
+	event.preventDefault();
+	event.stopPropagation();
+	var sel = gId(`segcont`).querySelectorAll(`div[data-group="${g}"]`);
+	var obj = {"seg":[]};
+	for (let i=0; i<=lSeg; i++) obj.seg.push({"id":i,"sel":false});
+	if (sel) for (let s of sel||[]) {
+		let i = parseInt(s.id.substring(3));
+		obj.seg[i] = {"id":i,"sel":true};
+	}
+	if (obj.seg.length) requestJson(obj);
+}
+
 function rptSeg(s)
 {
 	//TODO: 2D support
@@ -2153,6 +2182,14 @@ function setTp(s)
 {
 	var tp = gId(`seg${s}tp`).checked;
 	var obj = {"seg": {"id": s, "tp": tp}};
+	requestJson(obj);
+}
+
+function setGrp(s, g)
+{
+	event.preventDefault();
+	event.stopPropagation();
+	var obj = {"seg": {"id": s, "group": g}};
 	requestJson(obj);
 }
 

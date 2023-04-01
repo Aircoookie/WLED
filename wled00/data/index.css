@@ -178,18 +178,49 @@ button {
 }
 
 .e-icon {
-	transform: translateY(3px);
+	/*transform: translateY(3px);*/
 }
 
 .sel-icon {
 	transform: translateX(3px);
 }
 
-.e-icon, .sel-icon, .slider-icon {
+.e-icon, .g-icon, .sel-icon, .slider-icon {
 	cursor: pointer;
 	color: var(--c-d);
 }
 
+.g-icon {
+	font-style: normal;
+	position: absolute;
+	top: 8px;
+	right: 8px;
+}
+
+/* pop-up container */
+.pop {
+	position: absolute;
+	display: inline-block;
+	top: 0;
+	right: 0;
+}
+
+/* pop-up content */
+.pop-c {
+	position: absolute;
+	background-color: var(--c-5);
+	border: 1px solid var(--c-e);
+	border-radius: 16px;
+	z-index: 1;
+	top: 3px;
+	left: -164px;
+	padding: 4px 8px 2px;
+	font-size: 24px;
+}
+.pop-c span {
+	padding: 2px 6px;
+}
+  
 .search-icon {
 	position: absolute;
 	top: 8px;
@@ -201,7 +232,6 @@ button {
 
 .clear-icon {
 	position: absolute;
-	display: none;
 	top: 8px;
 	right: 9px;
 	cursor: pointer;
@@ -229,14 +259,12 @@ button {
 
 #liveview {
 	height: 4px;
-	display: none;
 	width: 100%;
 	border: 0px;
 }
 
 #liveview2D {
 	height: 90%;
-	display: none;
 	width: 90%;
 	border: 0px;
 	position: absolute;
@@ -467,13 +495,6 @@ button {
 	opacity: 1;
 }
 
-#pql, .edit-icon {
-	display: none;
-}
-
-.hide {
-	display: none !important;
-}
 .fade {
 	visibility: hidden; /* hide it */
 	opacity: 0; /* make it transparent */
@@ -551,7 +572,6 @@ button {
 	position: fixed;
 	top: calc(var(--th) + 5px);
 	left: 1px;
-	display: none;
 	cursor: pointer;
 }
 
@@ -651,7 +671,9 @@ img {
 #wbal  .sliderdisplay { background: linear-gradient(90deg, #ff8f1f 0%, #fff 50%, #cbdbff); }
 
 /* wrapper divs hidden by default */
-#rgbwrap, #swrap, #hwrap, #kwrap, #wwrap, #wbal, #qcs-w, #hexw {
+#liveview, #liveview2D, #roverstar, #pql
+#rgbwrap, #swrap, #hwrap, #kwrap, #wwrap, #wbal, #qcs-w, #hexw,
+.clear-icon, .edit-icon, .ptxt {
 	display: none;
 }
 
@@ -984,8 +1006,7 @@ textarea {
 }
 
 .ptxt {
-  margin: -1px 4px 8px !important;
-	display: none;
+  	margin: -1px 4px 8px !important;
 }
 
 .stxt {
@@ -1088,16 +1109,12 @@ textarea {
 }
 
 .frz {
-	left: 32px;
+	left: 10px;
 	position: absolute;
-	top: -3px;
+	top: 8px;
 	cursor: pointer;
-	padding: 8px;
+	/*padding: 8px;*/
 	z-index: 1;
-}
-
-.expanded .frz {
-	display: none;
 }
 
 /* radiobuttons and checkmarks */
@@ -1412,13 +1429,13 @@ TD .checkmark, TD .radiomark {
 
 .check input:checked ~ .checkmark:after,
 .radio input:checked ~ .radiomark:after,
-.show,
+.show, .g-icon,
 .expanded .edit-icon,
 .expanded .segin, .expanded .presin, .expanded .sbs,
 .expanded {
 	display: inline-block !important;
 }
-.expanded .segin.hide, .expanded .presin.hide, .expanded .sbs.hide {
+.hide, .expanded .segin.hide, .expanded .presin.hide, .expanded .sbs.hide, .expanded .frz, .expanded .g-icon {
 	display: none !important;
 }
 
