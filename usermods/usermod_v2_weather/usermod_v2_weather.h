@@ -94,7 +94,7 @@ uint16_t mode_2DWeather(void) {
   return FRAMETIME;
 }
 
-static const char _data_FX_MODE_2DWEATHER[] PROGMEM = "Weather ☾@;!;!;2;pal=54"; //temperature palette
+static const char _data_FX_MODE_2DWEATHER[] PROGMEM = "🌦Weather ☾@;!;!;2;pal=54"; //temperature palette
 
 //utility function, move somewhere else???
 void epochToString(time_t time, char *timeString) {
@@ -144,7 +144,6 @@ class WeatherUsermod : public Usermod {
     // strings to reduce flash memory usage (used more than twice)
     String apiKey = ""; //config var
 
-    unsigned long lastTime = 0; //will be used to download new forecast every hour
     char errorMessage[100] = "";
     bool isConnected = false; //only call openweathermap if connected
 
