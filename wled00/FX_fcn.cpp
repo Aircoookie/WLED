@@ -81,7 +81,7 @@ uint16_t Segment::maxHeight = 1;
 // copy constructor
 Segment::Segment(const Segment &orig) {
   //DEBUG_PRINTLN(F("-- Copy segment constructor --"));
-  memcpy(this, &orig, sizeof(Segment));
+  memcpy((void*)this, (void*)&orig, sizeof(Segment));
   name = nullptr;
   data = nullptr;
   _dataLen = 0;
@@ -96,7 +96,7 @@ Segment::Segment(const Segment &orig) {
 // move constructor
 Segment::Segment(Segment &&orig) noexcept {
   //DEBUG_PRINTLN(F("-- Move segment constructor --"));
-  memcpy(this, &orig, sizeof(Segment));
+  memcpy((void*)this, (void*)&orig, sizeof(Segment));
   orig.name = nullptr;
   orig.data = nullptr;
   orig._dataLen = 0;
@@ -114,7 +114,7 @@ Segment& Segment::operator= (const Segment &orig) {
     if (leds && !Segment::_globalLeds) free(leds);
     deallocateData();
     // copy source
-    memcpy(this, &orig, sizeof(Segment));
+    memcpy((void*)this, (void*)&orig, sizeof(Segment));
     // erase pointers to allocated data
     name = nullptr;
     data = nullptr;
@@ -138,7 +138,7 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
     deallocateData(); // free old runtime data
     if (_t) delete _t;
     if (leds && !Segment::_globalLeds) free(leds);
-    memcpy(this, &orig, sizeof(Segment));
+    memcpy((void*)this, (void*)&orig, sizeof(Segment));
     orig.name = nullptr;
     orig.data = nullptr;
     orig._dataLen = 0;
@@ -184,7 +184,8 @@ void Segment::deallocateData() {
 void Segment::resetIfRequired() {
   if (reset) {
     if (leds && !Segment::_globalLeds) { free(leds); leds = nullptr; }
-    //if (_t) { delete _t; _t = nullptr; transitional = false; }
+    if (transitional && _t) { transitional = false; delete _t; _t = nullptr; }
+    deallocateData();
     next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0;
     reset = false; // setOption(SEG_OPTION_RESET, false);
   }
@@ -226,14 +227,14 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
     case FX_MODE_NOISE16_4  : pal = 26; break; // landscape 33
     case FX_MODE_GLITTER    : pal = 11; break; // rainbow colors
     case FX_MODE_SUNRISE    : pal = 35; break; // heat palette
-    case FX_MODE_FLOW       : pal =  6; break; // party
+    case FX_MODE_RAILWAY    : pal =  3; break; // prim + sec
   }
   switch (pal) {
     case 0: //default palette. Exceptions for specific effects above
       targetPalette = PartyColors_p; break;
     case 1: {//periodically replace palette with a random one. Transition palette change in 500ms
       uint32_t timeSinceLastChange = millis() - _lastPaletteChange;
-      if (timeSinceLastChange > 5000 /*+ ((uint32_t)(255-intensity))*100*/) {
+      if (timeSinceLastChange > randomPaletteChangeTime * 1000U) {
         prevRandomPalette = randomPalette;
         randomPalette = CRGBPalette16(
                         CHSV(random8(), random8(160, 255), random8(128, 255)),
@@ -393,8 +394,8 @@ void Segment::set(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t o
     markForReset();
     return;
   }
-  if (i1 < Segment::maxWidth) start = i1; // Segment::maxWidth equals strip.getLengthTotal() for 1D
-  stop = i2 > Segment::maxWidth ? Segment::maxWidth : MAX(1,i2);
+  if (i1 < Segment::maxWidth || (i1 >= Segment::maxWidth*Segment::maxHeight && i1 < strip.getLengthTotal())) start = i1; // Segment::maxWidth equals strip.getLengthTotal() for 1D
+  stop = i2 > Segment::maxWidth*Segment::maxHeight ? MIN(i2,strip.getLengthTotal()) : (i2 > Segment::maxWidth ? Segment::maxWidth : MAX(1,i2));
   startY = 0;
   stopY  = 1;
   #ifndef WLED_DISABLE_2D
@@ -415,6 +416,10 @@ void Segment::set(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t o
 
 bool Segment::setColor(uint8_t slot, uint32_t c) { //returns true if changed
   if (slot >= NUM_COLORS || c == colors[slot]) return false;
+  if (!_isRGB && !_hasW) {
+    if (slot == 0 && c == BLACK) return false; // on/off segment cannot have primary color black
+    if (slot == 1 && c != BLACK) return false; // on/off segment cannot have secondary color non black
+  }
   if (fadeTransition) startTransition(strip.getTransition()); // start transition prior to change
   colors[slot] = c;
   stateChanged = true; // send UDP/WS broadcast
@@ -546,7 +551,9 @@ uint16_t Segment::virtualLength() const {
 
 void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
 {
+#ifndef WLED_DISABLE_2D
   int vStrip = i>>16; // hack to allow running on virtual strips (2D segment columns/rows)
+#endif
   i &= 0xFFFF;
 
   if (i >= virtualLength() || i<0) return;  // if pixel would fall out of segment just exit
@@ -600,12 +607,14 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
     }
     return;
   } else if (Segment::maxHeight!=1 && (width()==1 || height()==1)) {
-    // we have a vertical or horizontal 1D segment (WARNING: virtual...() may be transposed)
-    int x = 0, y = 0;
-    if (virtualHeight()>1) y = i;
-    if (virtualWidth() >1) x = i;
-    setPixelColorXY(x, y, col);
-    return;
+    if (start < Segment::maxWidth*Segment::maxHeight) {
+      // we have a vertical or horizontal 1D segment (WARNING: virtual...() may be transposed)
+      int x = 0, y = 0;
+      if (virtualHeight()>1) y = i;
+      if (virtualWidth() >1) x = i;
+      setPixelColorXY(x, y, col);
+      return;
+    }
   }
 #endif
 
@@ -684,7 +693,9 @@ void Segment::setPixelColor(float i, uint32_t col, bool aa)
 
 uint32_t Segment::getPixelColor(int i)
 {
+#ifndef WLED_DISABLE_2D
   int vStrip = i>>16;
+#endif
   i &= 0xFFFF;
 
 #ifndef WLED_DISABLE_2D
@@ -747,29 +758,46 @@ uint8_t Segment::differs(Segment& b) const {
 }
 
 void Segment::refreshLightCapabilities() {
-  uint8_t capabilities = 0x01;
+  uint8_t capabilities = 0;
+  uint16_t segStartIdx = 0xFFFFU;
+  uint16_t segStopIdx  = 0;
+
+  if (start < Segment::maxWidth * Segment::maxHeight) {
+    // we are withing 2D matrix (includes 1D segments)
+    for (int y = startY; y < stopY; y++) for (int x = start; x < stop; x++) {
+      uint16_t index = x + Segment::maxWidth * y;
+      if (index < strip.customMappingSize) index = strip.customMappingTable[index]; // convert logical address to physical
+      if (index < 0xFFFFU) {
+        if (segStartIdx > index) segStartIdx = index;
+        if (segStopIdx  < index) segStopIdx  = index;
+      }
+      if (segStartIdx == segStopIdx) segStopIdx++; // we only have 1 pixel segment
+    }
+  } else {
+    // we are on the strip located after the matrix
+    segStartIdx = start;
+    segStopIdx  = stop;
+  }
 
   for (uint8_t b = 0; b < busses.getNumBusses(); b++) {
     Bus *bus = busses.getBus(b);
     if (bus == nullptr || bus->getLength()==0) break;
     if (!bus->isOk()) continue;
-    if (bus->getStart() >= stop) continue;
-    if (bus->getStart() + bus->getLength() <= start) continue;
+    if (bus->getStart() >= segStopIdx) continue;
+    if (bus->getStart() + bus->getLength() <= segStartIdx) continue;
 
-    uint8_t type = bus->getType();
-    if (type == TYPE_ONOFF || type == TYPE_ANALOG_1CH || (!cctFromRgb && type == TYPE_ANALOG_2CH)) capabilities &= 0xFE; // does not support RGB
-    if (bus->isRgbw()) capabilities |= 0x02; // segment supports white channel
-    if (!cctFromRgb) {
-      switch (type) {
-        case TYPE_ANALOG_5CH:
-        case TYPE_ANALOG_2CH:
-          capabilities |= 0x04; //segment supports white CCT
-      }
+    //uint8_t type = bus->getType();
+    if (bus->hasRGB() || (cctFromRgb && bus->hasCCT())) capabilities |= SEG_CAPABILITY_RGB;
+    if (!cctFromRgb && bus->hasCCT())                   capabilities |= SEG_CAPABILITY_CCT;
+    if (correctWB && (bus->hasRGB() || bus->hasCCT()))  capabilities |= SEG_CAPABILITY_CCT; //white balance correction (CCT slider)
+    if (bus->hasWhite()) {
+      uint8_t aWM = Bus::getGlobalAWMode() == AW_GLOBAL_DISABLED ? bus->getAutoWhiteMode() : Bus::getGlobalAWMode();
+      bool whiteSlider = (aWM == RGBW_MODE_DUAL || aWM == RGBW_MODE_MANUAL_ONLY); // white slider allowed
+      // if auto white calculation from RGB is active (Accurate/Brighter), force RGB controls even if there are no RGB busses
+      if (!whiteSlider) capabilities |= SEG_CAPABILITY_RGB;
+      // if auto white calculation from RGB is disabled/optional (None/Dual), allow white channel adjustments
+      if ( whiteSlider) capabilities |= SEG_CAPABILITY_W;
     }
-    if (correctWB && !(type == TYPE_ANALOG_1CH || type == TYPE_ONOFF)) capabilities |= 0x04; //white balance correction (uses CCT slider)
-    uint8_t aWM = Bus::getAutoWhiteMode()<255 ? Bus::getAutoWhiteMode() : bus->getAWMode();
-    bool whiteSlider = (aWM == RGBW_MODE_DUAL || aWM == RGBW_MODE_MANUAL_ONLY); // white slider allowed
-    if (bus->isRgbw() && (whiteSlider || !(capabilities & 0x01))) capabilities |= 0x08; // allow white channel adjustments (AWM allows or is not RGB)
   }
   _capabilities = capabilities;
 }
@@ -998,7 +1026,7 @@ void WS2812FX::finalizeInit(void)
     if (bus == nullptr) continue;
     if (bus->getStart() + bus->getLength() > MAX_LEDS) break;
     //RGBW mode is enabled if at least one of the strips is RGBW
-    _hasWhiteChannel |= bus->isRgbw();
+    _hasWhiteChannel |= bus->hasWhite();
     //refresh is required to remain off if at least one of the strips requires the refresh.
     _isOffRefreshRequired |= bus->isOffRefreshRequired();
     uint16_t busEnd = bus->getStart() + bus->getLength();
@@ -1012,10 +1040,11 @@ void WS2812FX::finalizeInit(void)
     #endif
   }
 
-  if (!isMatrix) { // if 2D then max values defined in setUpMatrix() using panel set-up
+  if (isMatrix) setUpMatrix();
+  else {
     Segment::maxWidth  = _length;
     Segment::maxHeight = 1;
-   }
+  }
 
   //initialize leds array. TBD: realloc if nr of leds change
   if (Segment::_globalLeds) {
@@ -1024,17 +1053,20 @@ void WS2812FX::finalizeInit(void)
     Segment::_globalLeds = nullptr;
   }
   if (useLedsArray) {
+    size_t arrSize = sizeof(CRGB) * getLengthTotal();
     #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
     if (psramFound())
-      Segment::_globalLeds = (CRGB*) ps_malloc(sizeof(CRGB) * _length);
+      Segment::_globalLeds = (CRGB*) ps_malloc(arrSize);
     else
     #endif
-      Segment::_globalLeds = (CRGB*) malloc(sizeof(CRGB) * _length);
-    memset(Segment::_globalLeds, 0, sizeof(CRGB) * _length);
+      Segment::_globalLeds = (CRGB*) malloc(arrSize);
+    memset(Segment::_globalLeds, 0, arrSize);
   }
 
   //segments are created in makeAutoSegments();
+  DEBUG_PRINTLN(F("Loading custom palettes"));
   loadCustomPalettes(); // (re)load all custom palettes
+  DEBUG_PRINTLN(F("Loading custom ledmaps"));
   deserializeMap();     // (re)load default ledmap
 }
 
@@ -1095,15 +1127,15 @@ void WS2812FX::service() {
 
 void IRAM_ATTR WS2812FX::setPixelColor(int i, uint32_t col)
 {
-  if (i >= _length) return;
   if (i < customMappingSize) i = customMappingTable[i];
+  if (i >= _length) return;
   busses.setPixelColor(i, col);
 }
 
 uint32_t WS2812FX::getPixelColor(uint16_t i)
 {
-  if (i >= _length) return 0;
   if (i < customMappingSize) i = customMappingTable[i];
+  if (i >= _length) return 0;
   return busses.getPixelColor(i);
 }
 
@@ -1165,7 +1197,7 @@ void WS2812FX::estimateCurrentAndLimitBri() {
       }
     }
 
-    if (bus->isRgbw()) { //RGBW led total output with white LEDs enabled is still 50mA, so each channel uses less
+    if (bus->hasWhite()) { //RGBW led total output with white LEDs enabled is still 50mA, so each channel uses less
       busPowerSum *= 3;
       busPowerSum = busPowerSum >> 2; //same as /= 4
     }
@@ -1316,6 +1348,12 @@ uint8_t WS2812FX::getActiveSegmentsNum(void) {
   return c;
 }
 
+uint16_t WS2812FX::getLengthTotal(void) {
+  uint16_t len = Segment::maxWidth * Segment::maxHeight; // will be _length for 1D (see finalizeInit()) but should cover whole matrix for 2D
+  if (isMatrix && _length > len) len = _length; // for 2D with trailing strip
+  return len;
+}
+
 uint16_t WS2812FX::getLengthPhysical(void) {
   uint16_t len = 0;
   for (size_t b = 0; b < busses.getNumBusses(); b++) {
@@ -1333,12 +1371,7 @@ bool WS2812FX::hasRGBWBus(void) {
   for (size_t b = 0; b < busses.getNumBusses(); b++) {
     Bus *bus = busses.getBus(b);
     if (bus == nullptr || bus->getLength()==0) break;
-    switch (bus->getType()) {
-      case TYPE_SK6812_RGBW:
-      case TYPE_TM1814:
-      case TYPE_ANALOG_4CH:
-        return true;
-    }
+    if (bus->hasRGB() && bus->hasWhite()) return true;
   }
   return false;
 }
@@ -1363,7 +1396,6 @@ void WS2812FX::purgeSegments(bool force) {
   if (_segments.size() <= 1) return;
   for (size_t i = _segments.size()-1; i > 0; i--)
     if (_segments[i].stop == 0 || force) {
-      DEBUG_PRINT(F("Purging segment segment: ")); DEBUG_PRINTLN(i);
       deleted++;
       _segments.erase(_segments.begin() + i);
     }
@@ -1398,30 +1430,30 @@ void WS2812FX::resetSegments() {
 }
 
 void WS2812FX::makeAutoSegments(bool forceReset) {
-  if (isMatrix) {
-    #ifndef WLED_DISABLE_2D
-    // only create 1 2D segment
-    if (forceReset || getSegmentsNum() == 0) resetSegments(); // initialises 1 segment
-    else if (getActiveSegmentsNum() == 1) {
-      size_t i = getLastActiveSegmentId();
-      _segments[i].start  = 0;
-      _segments[i].stop   = Segment::maxWidth;
-      _segments[i].startY = 0;
-      _segments[i].stopY  = Segment::maxHeight;
-      _segments[i].grouping = 1;
-      _segments[i].spacing  = 0;
-      _mainSegment = i;
-    }
-    #endif
-  } else if (autoSegments) { //make one segment per bus
+  if (autoSegments) { //make one segment per bus
     uint16_t segStarts[MAX_NUM_SEGMENTS] = {0};
     uint16_t segStops [MAX_NUM_SEGMENTS] = {0};
-    uint8_t s = 0;
-    for (uint8_t i = 0; i < busses.getNumBusses(); i++) {
+    size_t s = 0;
+
+    #ifndef WLED_DISABLE_2D
+    // 2D segment is the 1st one using entire matrix
+    if (isMatrix) {
+      segStarts[0] = 0;
+      segStops[0]  = Segment::maxWidth*Segment::maxHeight;
+      s++;
+    }
+    #endif
+
+    for (size_t i = s; i < busses.getNumBusses(); i++) {
       Bus* b = busses.getBus(i);
 
       segStarts[s] = b->getStart();
       segStops[s]  = segStarts[s] + b->getLength();
+
+      #ifndef WLED_DISABLE_2D
+      if (isMatrix && segStops[s] < Segment::maxWidth*Segment::maxHeight) continue; // ignore buses comprising matrix
+      if (isMatrix && segStarts[s] < Segment::maxWidth*Segment::maxHeight) segStarts[s] = Segment::maxWidth*Segment::maxHeight;
+      #endif
 
       //check for overlap with previous segments
       for (size_t j = 0; j < s; j++) {
@@ -1434,23 +1466,40 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
       }
       s++;
     }
+
     _segments.clear();
-    for (size_t i = 0; i < s; i++) {
-      Segment seg = Segment(segStarts[i], segStops[i]);
-      seg.selected = true;
-      _segments.push_back(seg);
+    _segments.reserve(s); // prevent reallocations
+    // there is always at least one segment (but we need to differentiate between 1D and 2D)
+    #ifndef WLED_DISABLE_2D
+    if (isMatrix)
+      _segments.push_back(Segment(0, Segment::maxWidth, 0, Segment::maxHeight));
+    else
+    #endif
+      _segments.push_back(Segment(segStarts[0], segStops[0]));
+    for (size_t i = 1; i < s; i++) {
+      _segments.push_back(Segment(segStarts[i], segStops[i]));
     }
-    _mainSegment = 0;
+
   } else {
+
     if (forceReset || getSegmentsNum() == 0) resetSegments();
     //expand the main seg to the entire length, but only if there are no other segments, or reset is forced
     else if (getActiveSegmentsNum() == 1) {
       size_t i = getLastActiveSegmentId();
+      #ifndef WLED_DISABLE_2D
+      _segments[i].start  = 0;
+      _segments[i].stop   = Segment::maxWidth;
+      _segments[i].startY = 0;
+      _segments[i].stopY  = Segment::maxHeight;
+      _segments[i].grouping = 1;
+      _segments[i].spacing  = 0;
+      #else
       _segments[i].start = 0;
       _segments[i].stop  = _length;
-      _mainSegment = 0;
+      #endif
     }
   }
+  _mainSegment = 0;
 
   fixInvalidSegments();
 }
@@ -1458,14 +1507,30 @@ void WS2812FX::makeAutoSegments(bool forceReset) {
 void WS2812FX::fixInvalidSegments() {
   //make sure no segment is longer than total (sanity check)
   for (size_t i = getSegmentsNum()-1; i > 0; i--) {
-    if (_segments[i].start >= _length) { _segments.erase(_segments.begin()+i); continue; }
-    if (_segments[i].stop  >  _length) _segments[i].stop = _length;
-    // this is always called as the last step after finalizeInit(), update covered bus types
-    _segments[i].refreshLightCapabilities();
+    if (isMatrix) {
+    #ifndef WLED_DISABLE_2D
+      if (_segments[i].start >= Segment::maxWidth * Segment::maxHeight) {
+        // 1D segment at the end of matrix
+        if (_segments[i].start >= _length || _segments[i].startY > 0 || _segments[i].stopY > 1) { _segments.erase(_segments.begin()+i); continue; }
+        if (_segments[i].stop  >  _length) _segments[i].stop = _length;
+        continue;
+      }
+      if (_segments[i].start >= Segment::maxWidth || _segments[i].startY >= Segment::maxHeight) { _segments.erase(_segments.begin()+i); continue; }
+      if (_segments[i].stop  >  Segment::maxWidth)  _segments[i].stop  = Segment::maxWidth;
+      if (_segments[i].stopY >  Segment::maxHeight) _segments[i].stopY = Segment::maxHeight;
+    #endif
+    } else {
+      if (_segments[i].start >= _length) { _segments.erase(_segments.begin()+i); continue; }
+      if (_segments[i].stop  >  _length) _segments[i].stop = _length;
+    }
   }
+  // this is always called as the last step after finalizeInit(), update covered bus types
+  for (segment &seg : _segments)
+    seg.refreshLightCapabilities();
 }
 
 //true if all segments align with a bus, or if a segment covers the total length
+//irrelevant in 2D set-up
 bool WS2812FX::checkSegmentAlignment() {
   bool aligned = false;
   for (segment &seg : _segments) {
@@ -1482,8 +1547,7 @@ bool WS2812FX::checkSegmentAlignment() {
 //After this function is called, setPixelColor() will use that segment (offsets, grouping, ... will apply)
 //Note: If called in an interrupt (e.g. JSON API), original segment must be restored,
 //otherwise it can lead to a crash on ESP32 because _segment_index is modified while in use by the main thread
-uint8_t WS2812FX::setPixelSegment(uint8_t n)
-{
+uint8_t WS2812FX::setPixelSegment(uint8_t n) {
   uint8_t prevSegId = _segment_index;
   if (n < _segments.size()) {
     _segment_index = n;
@@ -1492,8 +1556,7 @@ uint8_t WS2812FX::setPixelSegment(uint8_t n)
   return prevSegId;
 }
 
-void WS2812FX::setRange(uint16_t i, uint16_t i2, uint32_t col)
-{
+void WS2812FX::setRange(uint16_t i, uint16_t i2, uint32_t col) {
   if (i2 >= i)
   {
     for (uint16_t x = i; x <= i2; x++) setPixelColor(x, col);
@@ -1503,26 +1566,24 @@ void WS2812FX::setRange(uint16_t i, uint16_t i2, uint32_t col)
   }
 }
 
-void WS2812FX::setTransitionMode(bool t)
-{
+void WS2812FX::setTransitionMode(bool t) {
   for (segment &seg : _segments) if (!seg.transitional) seg.startTransition(t ? _transitionDur : 0);
 }
 
 #ifdef WLED_DEBUG
-void WS2812FX::printSize()
-{
+void WS2812FX::printSize() {
   size_t size = 0;
   for (const Segment &seg : _segments) size += seg.getSize();
   DEBUG_PRINTF("Segments: %d -> %uB\n", _segments.size(), size);
   DEBUG_PRINTF("Modes: %d*%d=%uB\n", sizeof(mode_ptr), _mode.size(), (_mode.capacity()*sizeof(mode_ptr)));
   DEBUG_PRINTF("Data: %d*%d=%uB\n", sizeof(const char *), _modeData.size(), (_modeData.capacity()*sizeof(const char *)));
   DEBUG_PRINTF("Map: %d*%d=%uB\n", sizeof(uint16_t), (int)customMappingSize, customMappingSize*sizeof(uint16_t));
-  if (useLedsArray) DEBUG_PRINTF("Buffer: %d*%d=%uB\n", sizeof(CRGB), (int)_length, _length*sizeof(CRGB));
+  size = getLengthTotal();
+  if (useLedsArray) DEBUG_PRINTF("Buffer: %d*%u=%uB\n", sizeof(CRGB), size, size*sizeof(CRGB));
 }
 #endif
 
-void WS2812FX::loadCustomPalettes()
-{
+void WS2812FX::loadCustomPalettes() {
   byte tcp[72]; //support gradient palettes with up to 18 entries
   CRGBPalette16 targetPalette;
   customPalettes.clear(); // start fresh
@@ -1570,8 +1631,8 @@ void WS2812FX::loadCustomPalettes()
 }
 
 //load custom mapping table from JSON file (called from finalizeInit() or deserializeState())
-void WS2812FX::deserializeMap(uint8_t n) {
-  if (isMatrix) return; // 2D support creates its own ledmap
+bool WS2812FX::deserializeMap(uint8_t n) {
+  // 2D support creates its own ledmap (on the fly) if a ledmap.json exists it will overwrite built one.
 
   char fileName[32];
   strcpy_P(fileName, PSTR("/ledmap"));
@@ -1581,23 +1642,23 @@ void WS2812FX::deserializeMap(uint8_t n) {
 
   if (!isFile) {
     // erase custom mapping if selecting nonexistent ledmap.json (n==0)
-    if (!n && customMappingTable != nullptr) {
+    if (!isMatrix && !n && customMappingTable != nullptr) {
       customMappingSize = 0;
       delete[] customMappingTable;
       customMappingTable = nullptr;
     }
-    return;
+    return false;
   }
 
-  if (!requestJSONBufferLock(7)) return;
-
-  DEBUG_PRINT(F("Reading LED map from "));
-  DEBUG_PRINTLN(fileName);
+  if (!requestJSONBufferLock(7)) return false;
 
   if (!readObjectFromFile(fileName, nullptr, &doc)) {
     releaseJSONBufferLock();
-    return; //if file does not exist just exit
+    return false; //if file does not exist just exit
   }
+
+  DEBUG_PRINT(F("Reading LED map from "));
+  DEBUG_PRINTLN(fileName);
 
   // erase old custom ledmap
   if (customMappingTable != nullptr) {
@@ -1611,20 +1672,16 @@ void WS2812FX::deserializeMap(uint8_t n) {
     customMappingSize  = map.size();
     customMappingTable = new uint16_t[customMappingSize];
     for (uint16_t i=0; i<customMappingSize; i++) {
-      customMappingTable[i] = (uint16_t) map[i];
+      customMappingTable[i] = (uint16_t) (map[i]<0 ? 0xFFFFU : map[i]);
     }
   }
 
   releaseJSONBufferLock();
+  return true;
 }
 
 
 WS2812FX* WS2812FX::instance = nullptr;
-
-//Bus static member definition, would belong in bus_manager.cpp
-int16_t Bus::_cct = -1;
-uint8_t Bus::_cctBlend = 0;
-uint8_t Bus::_gAWM = 255;
 
 const char JSON_mode_names[] PROGMEM = R"=====(["FX names moved"])=====";
 const char JSON_palette_names[] PROGMEM = R"=====([

@@ -182,7 +182,12 @@
 #endif
 
 //APA102
-#define B_HS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarSpi5MhzMethod> //hardware SPI
+#ifdef WLED_USE_ETHERNET
+// fix for #2542 (by @BlackBird77)
+#define B_HS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarEsp32DmaHspi5MhzMethod> //hardware HSPI with DMA (ESP32 only)
+#else
+#define B_HS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarSpi5MhzMethod> //hardware HSPI
+#endif
 #define B_SS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarMethod>    //soft SPI
 
 //LPD8806
@@ -894,6 +899,8 @@ class PolyBus {
       uint8_t offset = pins[0] -1; //for driver: 0 = uart0, 1 = uart1, 2 = dma, 3 = bitbang
       if (offset > 3) offset = 3;
       switch (busType) {
+        case TYPE_WS2812_1CH_X3:
+        case TYPE_WS2812_2CH_X3:
         case TYPE_WS2812_RGB:
         case TYPE_WS2812_WWA:
           return I_8266_U0_NEO_3 + offset;
@@ -926,6 +933,8 @@ class PolyBus {
       if (num > 7) offset = num -7;
       #endif
       switch (busType) {
+        case TYPE_WS2812_1CH_X3:
+        case TYPE_WS2812_2CH_X3:
         case TYPE_WS2812_RGB:
         case TYPE_WS2812_WWA:
           return I_32_RN_NEO_3 + offset;

@@ -84,7 +84,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   uint8_t autoWhiteMode = RGBW_MODE_MANUAL_ONLY;
   CJSON(strip.ablMilliampsMax, hw_led[F("maxpwr")]);
   CJSON(strip.milliampsPerLed, hw_led[F("ledma")]);
-  Bus::setAutoWhiteMode(hw_led[F("rgbwm")] | 255);
+  Bus::setGlobalAWMode(hw_led[F("rgbwm")] | 255);
   CJSON(correctWB, hw_led["cct"]);
   CJSON(cctFromRgb, hw_led[F("cr")]);
   CJSON(strip.cctBlending, hw_led[F("cb")]);
@@ -97,12 +97,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonObject matrix = hw_led[F("matrix")];
   if (!matrix.isNull()) {
     strip.isMatrix = true;
-    CJSON(strip.panels,             matrix[F("mpc")]);
-    CJSON(strip.matrix.bottomStart, matrix[F("pb")]);
-    CJSON(strip.matrix.rightStart,  matrix[F("pr")]);
-    CJSON(strip.matrix.vertical,    matrix[F("pv")]);
-    CJSON(strip.matrix.serpentine,  matrix["ps"]);
-
+    CJSON(strip.panels, matrix[F("mpc")]);
     strip.panel.clear();
     JsonArray panels = matrix[F("panels")];
     uint8_t s = 0;
@@ -130,8 +125,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       p.options = 0;
       strip.panel.push_back(p);
     }
-
-    strip.setUpMatrix();
+    // cannot call strip.setUpMatrix() here due to already locked JSON buffer
   }
   #endif
 
@@ -333,18 +327,27 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(strip.paletteBlend, light[F("pal-mode")]);
   CJSON(autoSegments, light[F("aseg")]);
 
+  CJSON(gammaCorrectVal, light["gc"]["val"]); // default 2.8
   float light_gc_bri = light["gc"]["bri"];
-  float light_gc_col = light["gc"]["col"]; // 2.8
-  if      (light_gc_bri > 1.5) gammaCorrectBri = true;
-  else if (light_gc_bri > 0.5) gammaCorrectBri = false;
-  if      (light_gc_col > 1.5) gammaCorrectCol = true;
-  else if (light_gc_col > 0.5) gammaCorrectCol = false;
+  float light_gc_col = light["gc"]["col"];
+  if (light_gc_bri > 1.0f) gammaCorrectBri = true;
+  else                     gammaCorrectBri = false;
+  if (light_gc_col > 1.0f) gammaCorrectCol = true;
+  else                     gammaCorrectCol = false;
+  if (gammaCorrectVal > 1.0f && gammaCorrectVal <= 3) {
+    if (gammaCorrectVal != 2.8f) calcGammaTable(gammaCorrectVal);
+  } else {
+    gammaCorrectVal = 1.0f; // no gamma correction
+    gammaCorrectBri = false;
+    gammaCorrectCol = false;
+  }
 
   JsonObject light_tr = light["tr"];
   CJSON(fadeTransition, light_tr["mode"]);
   int tdd = light_tr["dur"] | -1;
   if (tdd >= 0) transitionDelay = transitionDelayDefault = tdd * 100;
   CJSON(strip.paletteFade, light_tr["pal"]);
+  CJSON(randomPaletteChangeTime, light_tr[F("rpc")]);
 
   JsonObject light_nl = light["nl"];
   CJSON(nightlightMode, light_nl["mode"]);
@@ -406,6 +409,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   if (!DMXAddress || DMXAddress > 510) DMXAddress = 1;
   CJSON(DMXSegmentSpacing, if_live_dmx[F("dss")]);
   if (DMXSegmentSpacing > 150) DMXSegmentSpacing = 0;
+  CJSON(e131Priority, if_live_dmx[F("e131prio")]);
+  if (e131Priority > 200) e131Priority = 200;
   CJSON(DMXMode, if_live_dmx["mode"]);
 
   tdd = if_live[F("timeout")] | -1;
@@ -420,17 +425,6 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(macroAlexaOff, interfaces["va"]["macros"][1]);
 
   CJSON(alexaNumPresets, interfaces["va"]["p"]);
-
-#ifndef WLED_DISABLE_BLYNK
-  const char* apikey = interfaces["blynk"][F("token")] | "Hidden";
-  tdd = strnlen(apikey, 36);
-  if (tdd > 20 || tdd == 0)
-    getStringFromJson(blynkApiKey, apikey, 36); //normally not present due to security
-
-  JsonObject if_blynk = interfaces["blynk"];
-  getStringFromJson(blynkHost, if_blynk[F("host")], 33);
-  CJSON(blynkPort, if_blynk["port"]);
-#endif
 
 #ifdef WLED_ENABLE_MQTT
   JsonObject if_mqtt = interfaces["mqtt"];
@@ -700,7 +694,7 @@ void serializeConfig() {
   hw_led[F("cr")] = cctFromRgb;
   hw_led[F("cb")] = strip.cctBlending;
   hw_led["fps"] = strip.getTargetFps();
-  hw_led[F("rgbwm")] = Bus::getAutoWhiteMode();    // global override
+  hw_led[F("rgbwm")] = Bus::getGlobalAWMode(); // global auto white mode override
   hw_led[F("ld")] = strip.useLedsArray;
 
   #ifndef WLED_DISABLE_2D
@@ -708,11 +702,6 @@ void serializeConfig() {
   if (strip.isMatrix) {
     JsonObject matrix = hw_led.createNestedObject(F("matrix"));
     matrix[F("mpc")] = strip.panels;
-    matrix[F("pb")] = strip.matrix.bottomStart;
-    matrix[F("pr")] = strip.matrix.rightStart;
-    matrix[F("pv")] = strip.matrix.vertical;
-    matrix["ps"] = strip.matrix.serpentine;
-
     JsonArray panels = matrix.createNestedArray(F("panels"));
     for (uint8_t i=0; i<strip.panel.size(); i++) {
       JsonObject pnl = panels.createNestedObject();
@@ -745,7 +734,7 @@ void serializeConfig() {
     ins[F("skip")] = bus->skippedLeds();
     ins["type"] = bus->getType() & 0x7F;
     ins["ref"] = bus->isOffRefreshRequired();
-    ins[F("rgbwm")] = bus->getAWMode();
+    ins[F("rgbwm")] = bus->getAutoWhiteMode();
   }
 
   JsonArray hw_com = hw.createNestedArray(F("com"));
@@ -810,13 +799,15 @@ void serializeConfig() {
   light[F("aseg")] = autoSegments;
 
   JsonObject light_gc = light.createNestedObject("gc");
-  light_gc["bri"] = (gammaCorrectBri) ? 2.8 : 1.0;
-  light_gc["col"] = (gammaCorrectCol) ? 2.8 : 1.0;
+  light_gc["bri"] = (gammaCorrectBri) ? gammaCorrectVal : 1.0f;  // keep compatibility
+  light_gc["col"] = (gammaCorrectCol) ? gammaCorrectVal : 1.0f;  // keep compatibility
+  light_gc["val"] = gammaCorrectVal;
 
   JsonObject light_tr = light.createNestedObject("tr");
   light_tr["mode"] = fadeTransition;
   light_tr["dur"] = transitionDelayDefault / 100;
   light_tr["pal"] = strip.paletteFade;
+  light_tr[F("rpc")] = randomPaletteChangeTime;
 
   JsonObject light_nl = light.createNestedObject("nl");
   light_nl["mode"] = nightlightMode;
@@ -865,6 +856,7 @@ void serializeConfig() {
   JsonObject if_live_dmx = if_live.createNestedObject("dmx");
   if_live_dmx[F("uni")] = e131Universe;
   if_live_dmx[F("seqskip")] = e131SkipOutOfSequence;
+  if_live_dmx[F("e131prio")] = e131Priority;
   if_live_dmx[F("addr")] = DMXAddress;
   if_live_dmx[F("dss")] = DMXSegmentSpacing;
   if_live_dmx["mode"] = DMXMode;
@@ -882,13 +874,6 @@ void serializeConfig() {
   if_va_macros.add(macroAlexaOff);
 
   if_va["p"] = alexaNumPresets;
-
-#ifndef WLED_DISABLE_BLYNK
-  JsonObject if_blynk = interfaces.createNestedObject("blynk");
-  if_blynk[F("token")] = strlen(blynkApiKey) ? "Hidden":"";
-  if_blynk[F("host")] = blynkHost;
-  if_blynk["port"] = blynkPort;
-#endif
 
 #ifdef WLED_ENABLE_MQTT
   JsonObject if_mqtt = interfaces.createNestedObject("mqtt");
@@ -1020,13 +1005,6 @@ bool deserializeConfigSec() {
 
   JsonObject interfaces = doc["if"];
 
-#ifndef WLED_DISABLE_BLYNK
-  const char* apikey = interfaces["blynk"][F("token")] | "Hidden";
-  int tdd = strnlen(apikey, 36);
-  if (tdd > 20 || tdd == 0)
-    getStringFromJson(blynkApiKey, apikey, 36);
-#endif
-
 #ifdef WLED_ENABLE_MQTT
   JsonObject if_mqtt = interfaces["mqtt"];
   getStringFromJson(mqttPass, if_mqtt["psk"], 65);
@@ -1065,10 +1043,6 @@ void serializeConfigSec() {
   ap["psk"] = apPass;
 
   JsonObject interfaces = doc.createNestedObject("if");
-#ifndef WLED_DISABLE_BLYNK
-  JsonObject if_blynk = interfaces.createNestedObject("blynk");
-  if_blynk[F("token")] = blynkApiKey;
-#endif
 #ifdef WLED_ENABLE_MQTT
   JsonObject if_mqtt = interfaces.createNestedObject("mqtt");
   if_mqtt["psk"] = mqttPass;

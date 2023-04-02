@@ -34,8 +34,7 @@ A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control 
 ## 💡 Supported light control interfaces
 - WLED app for [Android](https://play.google.com/store/apps/details?id=com.aircoookie.WLED) and [iOS](https://apps.apple.com/us/app/wled/id1475695033)
 - JSON and HTTP request APIs  
-- MQTT  
-- Blynk IoT  
+- MQTT   
 - E1.31, Art-Net, DDP and TPM2.net
 - [diyHue](https://github.com/diyhue/diyHue) (Wled is supported by diyHue, including Hue Sync Entertainment under udp. Thanks to [Gregory Mallios](https://github.com/gmallios))
 - [Hyperion](https://github.com/hyperion-project/hyperion.ng)
