@@ -394,7 +394,7 @@ void registerUsermods()
   #ifdef USERMOD_GAMES
   usermods.add(new GamesUsermod());
   #endif
-  #ifdef USERMOD_GAMES
+  #ifdef USERMOD_FASTLED
   usermods.add(new FastledUsermod("Fastled", true));
   #endif
 }
