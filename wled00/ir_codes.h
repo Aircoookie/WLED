@@ -212,6 +212,32 @@
 #define IR21_FADE          0xFF02FD
 #define IR21_SMOOTH        0xFFC23D
 
+//WLEDMM and Athom
+#define IR24_MC_OFF        0xF7C03F // OFF
+#define IR24_MC_AUTO       0xF7E01F // AUTO
+#define IR24_MC_ON         0xF740BF // ON
+#define IR24_MC_MODES      0xF700FF // mode +
+#define IR24_MC_MODE       0xF7807F // mode -
+#define IR24_MC_BRIGHTER   0xF7D02F // BRI +
+#define IR24_MC_DARKER     0xF7609F // BRI -
+#define IR24_MC_QUICK      0xF720DF // SPEED +
+#define IR24_MC_SLOW       0xF7A05F // SPEED -
+#define IR24_MC_RED        0xF710EF // RED
+#define IR24_MC_GREEN      0xF7906F // GREEN
+#define IR24_MC_BLUE       0xF750AF // BLUE
+#define IR24_MC_R1         0xF730CF // R1
+#define IR24_MC_G1         0xF7B04F // G1
+#define IR24_MC_B1         0xF7708F // B1
+#define IR24_MC_R2         0xF708F7 // R2
+#define IR24_MC_G2         0xF78877 // G2
+#define IR24_MC_B2         0xF748B7 // B2
+#define IR24_MC_R3         0xF728D7 // R3
+#define IR24_MC_G3         0xF7A857 // G3
+#define IR24_MC_B3         0xF76897 // B3
+#define IR24_MC_MUSIC1     0xF7F00F // MUSIC1
+#define IR24_MC_LOCK       0xF7C837 // LOCK
+#define IR24_MC_MUSIC2     0xF7E817 // MUSIC2
+
 #define COLOR_RED            0xFF0000
 #define COLOR_REDDISH        0xFF7800
 #define COLOR_ORANGE         0xFFA000
@@ -233,6 +259,14 @@
 #define COLOR_NEUTRALWHITE   0xFFFFD4B4
 #define COLOR_COLDWHITE      0xFFFFE9D9
 #define COLOR_COLDWHITE2     0xFFFFFFFF
+
+//WLEDMM
+#define COLOR_DoderBlue      0x1E90FF
+#define COLOR_Indigo         0x4B0082
+#define COLOR_Magenta        0XFF00FF
+#define COLOR_DarkBlue       0X00008B
+#define COLOR_Lime           0X00FF00
+#define COLOR_Orange         0XFFA500
 
 #define ACTION_NONE             0
 #define ACTION_BRIGHT_UP        1

@@ -202,11 +202,11 @@ class MultiRelay : public Usermod {
     /**
      * Enable/Disable the usermod
      */
-    inline void enable(bool enable) { enabled = enable; }
+    // inline void enable(bool enable) { enabled = enable; }
     /**
      * Get usermod enabled/disabled state
      */
-    inline bool isEnabled() { return enabled; }
+    // inline bool isEnabled() { return enabled; }
 
     /**
      * switch relay on/off

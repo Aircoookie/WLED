@@ -10,11 +10,12 @@
 	var loc = false, locip;
 	var maxPanels=64;
 	var ctx = null; // WLEDMM
+	function H(){window.open("https://mm.kno.wled.ge/features/2D");}
 	var ledIndex = 0; // WLEDMM
 	var wasAdvanced = -1; //WLEDMM
-	function H(){window.open("https://mm.kno.wled.ge/features/2D");}
 	function B(){window.open("/settings","_self");}
 	function gId(n){return d.getElementById(n);}
+	function fS(){d.Sf.submit();} // <button type=submit> sometimes didn't work
 	// https://www.educative.io/edpresso/how-to-dynamically-load-a-js-file-in-javascript
 	function loadJS(FILE_URL, async = true) {
 		let scE = d.createElement("script");
@@ -59,6 +60,30 @@
 			return;
 		}
 		gId("mpdiv").style.display = "block";
+		draw();
+	}
+
+	var timeout;
+	function showToast(text, error = false)
+	{
+		var x = gId("toast");
+		x.innerHTML = text;
+		x.className = error ? "error":"show";
+		clearTimeout(timeout);
+		x.style.animation = 'none';
+		timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
+	}
+
+	function uploadFile(name) {
+		var req = new XMLHttpRequest();
+		req.addEventListener('load', function(){showToast(this.responseText,this.status >= 400)});
+		req.addEventListener('error', function(e){showToast(e.stack,true);});
+		req.open("POST", "/upload");
+		var formData = new FormData();
+		formData.append("data", d.Sf.data.files[0], name);
+		req.send(formData);
+		d.Sf.data.value = '';
+		return false;
 	}
 
 	function addPanels() {
@@ -118,10 +143,10 @@ Y:<input id="P${i}Y" name="P${i}Y" type="number" min="0" max="255" value="0" oni
 		// console.log("baChange", gId("form_s"), radioElement, gId("form_s").elements, d.Sf.BA.value);
 		if (radioElement) {
 			if (d.Sf.BA.value == 0 && wasAdvanced == 1) {
-				if (!confirm('Are you sure to go back to basic (advanced settings will be lost)?')) {
-					d.Sf.BA.value = 1;		
-					return;
-				}
+				// if (!confirm('Are you sure to go back to basic (advanced settings will be lost)?')) {
+				// 	d.Sf.BA.value = 1;		
+				// 	return;
+				// }
 				fieldChange(); //Create basic layout
 			}
 			// console.log("baChange", gId("form_s"), radioElement, gId("form_s").elements, d.Sf.BA.value, radioElement.value);
@@ -130,7 +155,12 @@ Y:<input id="P${i}Y" name="P${i}Y" type="number" min="0" max="255" value="0" oni
 
 		wasAdvanced = d.Sf.BA.value == 1;
 
-		gId("advancedBlock").style.display = wasAdvanced ? "inline":"none";
+		gId("blockMSetup").style.display = !wasAdvanced ? "inline":"none";
+		gId("mxGen").style.display = !wasAdvanced ? "inline":"none";
+		gId("blockMGen").style.display = wasAdvanced ? "inline":"none";
+		gId("blockPopulate").style.display = wasAdvanced ? "inline":"none";
+		gId("blockPanelSetup").style.display = wasAdvanced ? "inline":"none";
+		gId("blockGaps").style.display = wasAdvanced ? "inline":"none";
 		gId("title").innerHTML = !wasAdvanced ? "Matrix Setup":"Matrix Generator";
 	}
 
@@ -141,7 +171,7 @@ Y:<input id="P${i}Y" name="P${i}Y" type="number" min="0" max="255" value="0" oni
 		var pansV = parseInt(d.Sf.MPV.value);
 		if ((pansH>0 && pansV>0 && d.Sf.BA.value == 0) || force) gen(); //Generate if basic or forced (in advanced by populate button)
 		draw();
-		gId("panelOrientationBlock").style.display = pansH*pansV>1?"inline":"none"; //WLEDMM: panel orientation only needed when more than one panel
+		gId("blockPanelOrientation").style.display = pansH*pansV>1?"inline":"none"; //WLEDMM: panel orientation only needed when more than one panel
 		gId("popButton").disabled = force;
 		gId("popButton").style.color= force?"grey":"red";
 	}
@@ -149,17 +179,17 @@ Y:<input id="P${i}Y" name="P${i}Y" type="number" min="0" max="255" value="0" oni
 	function gen() {
 		resetPanels();
 
-		var pansH = parseInt(d.Sf.MPH.value);
-		var pansV = parseInt(d.Sf.MPV.value);
+		var pansH = parseInt(Sf.MPH.value);
+		var pansV = parseInt(Sf.MPV.value);
 		var c = pansH*pansV;
-		d.Sf.MPC.value = c; // number of panels
+		Sf.MPC.value = c; // number of panels
 
-		var ps = d.Sf.PS.checked;
-		var pv = d.Sf.PV.value==="1";
-		var pb = d.Sf.PB.value==="1";
-		var pr = d.Sf.PR.value==="1";
-		var pw = parseInt(d.Sf.PW.value);
-		var ph = parseInt(d.Sf.PH.value);
+		var ps = Sf.PS.checked;
+		var pv = Sf.PV.value==="1";
+		var pb = Sf.PB.value==="1";
+		var pr = Sf.PR.value==="1";
+		var pw = parseInt(Sf.PW.value);
+		var ph = parseInt(Sf.PH.value);
 
 		var h = pv ? pansV : pansH;
 		var v = pv ? pansH : pansV;
@@ -169,27 +199,31 @@ Y:<input id="P${i}Y" name="P${i}Y" type="number" min="0" max="255" value="0" oni
 				var y = (pv?pr:pb) ? v-j-1: j;
 				var x = (pv?pb:pr) ? h-i-1 : i;
 				x = ps && j%2 ? h-x-1 : x;
-				gId("P"+p+"X").value = (pv?y:x) * pw;
-				gId("P"+p+"Y").value = (pv?x:y) * ph;
-				gId("P"+p+"W").value = pw;
-				gId("P"+p+"H").value = ph;
+				Sf[`P${p}X`].value = (pv?y:x) * pw;
+				Sf[`P${p}Y`].value = (pv?x:y) * ph
+				Sf[`P${p}W`].value = pw;
+				Sf[`P${p}H`].value = ph;
 				//WLEDMM: also calculate orientation of panel !
-				gId("P"+p+"B").value = d.Sf.PBL.value;
-				gId("P"+p+"R").value = d.Sf.PRL.value;
-				gId("P"+p+"V").value = d.Sf.PVL.value;
-				gId("P"+p+"S").checked = d.Sf.PSL.checked;
-
+				Sf[`P${p}B`].value = d.Sf.PBL.value;
+				Sf[`P${p}R`].value = d.Sf.PRL.value;
+				Sf[`P${p}V`].value = d.Sf.PVL.value;
+				Sf[`P${p}S`].checked = d.Sf.PSL.checked;
 			}
 		}
 	}
 
-	//WLEDMM
+	function expand(o,i)
+	{
+		i.style.display = i.style.display!=="none" ? "none" : "";
+		o.style.rotate = i.style.display==="none" ? "none" : "90deg";
+	}
+
 	function draw() {
 
 		if (!ctx) {
 			//WLEDMM: add canvas, initialize and set UI
 			var canvas = gId("canvasPanels");
-			canvas.width  = window.innerWidth > 800?800:400; //Mobile gets 400, pc 800
+			canvas.width  = window.innerWidth > 640?640:400; //Mobile gets 400, pc 640
 			canvas.height = canvas.width;
 			ctx = canvas.getContext('2d');
 
@@ -200,10 +234,10 @@ Y:<input id="P${i}Y" name="P${i}Y" type="number" min="0" max="255" value="0" oni
 		var maxWidth = 0;
 		var maxHeight = 0;
 		for (let p=0; p<gId("panels").children.length; p++) {
-			var px = parseInt(gId("P"+p+"X").value); //first led x
-			var py = parseInt(gId("P"+p+"Y").value); //first led y
-			var pw = parseInt(gId("P"+p+"W").value); //width
-			var ph = parseInt(gId("P"+p+"H").value); //height
+			var px = parseInt(Sf[`P${p}X`].value); //first led x
+			var py = parseInt(Sf[`P${p}Y`].value); //first led y
+			var pw = parseInt(Sf[`P${p}W`].value); //width
+			var ph = parseInt(Sf[`P${p}H`].value); //height
 			maxWidth = Math.max(maxWidth, px + pw);
 			maxHeight = Math.max(maxHeight, py + ph);
 		}
@@ -212,29 +246,25 @@ Y:<input id="P${i}Y" name="P${i}Y" type="number" min="0" max="255" value="0" oni
 		ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 		var space=0; // space between panels + margin
 		var ppL = (ctx.canvas.width  - space * 2) / maxWidth; //pixels per led
-		// console.log("dim", ctx.canvas.width , maxWidth, ctx.canvas.height , maxHeight, ppL);
 
 		ctx.lineWidth = 1;
 		ctx.strokeStyle="yellow";
 		ctx.strokeRect(0, 0, ctx.canvas.width, ctx.canvas.height); // add space between panels
 
 		for (let p=0; p<gId("panels").children.length; p++) {
-			// console.log(gId("P"+p+"X").value, gId("P"+p+"Y").value, gId("P"+p+"W").value, gId("P"+p+"H").value, gId("P"+p+"B").value, gId("P"+p+"R").value, gId("P"+p+"V").value, gId("P"+p+"S").checked);
+			var px = parseInt(Sf[`P${p}X`].value); //first led x
+			var py = parseInt(Sf[`P${p}Y`].value); //first led y
+			var pw = parseInt(Sf[`P${p}W`].value); //width
+			var ph = parseInt(Sf[`P${p}H`].value); //height
 
-			var px = parseInt(gId("P"+p+"X").value); //first led x
-			var py = parseInt(gId("P"+p+"Y").value); //first led y
-			var pw = parseInt(gId("P"+p+"W").value); //width
-			var ph = parseInt(gId("P"+p+"H").value); //height
+			var pb = Sf[`P${p}B`].value == "1"; //bottom
+			var pr = Sf[`P${p}R`].value == "1"; //right
+			var pv = Sf[`P${p}V`].value == "1"; //vertical
+			var ps = Sf[`P${p}S`].checked; //serpentine
 
-			var pb = gId("P"+p+"B").value == "1"; //bottom
-			var pr = gId("P"+p+"R").value == "1"; //right
-			var pv = gId("P"+p+"V").value == "1"; //vertical
-			var ps = gId("P"+p+"S").checked; //serpentine
-
-			// console.log("panel", p, px,py,pw,ph);
 			var topLeftX = px*ppL + space; //left margin
 			var topLeftY = py*ppL + space; //top margin
-			// console.log("rect", p, topLeftX, topLeftY, pw*ppL, ph*ppL);
+
 			ctx.lineWidth = 3;
 			ctx.strokeStyle="white";
 			ctx.strokeRect(topLeftX, topLeftY, pw*ppL, ph*ppL); // add space between panels
@@ -306,7 +336,6 @@ Y:<input id="P${i}Y" name="P${i}Y" type="number" min="0" max="255" value="0" oni
 			ctx.font = '40px Arial'; 
 			ctx.fillStyle = "orange";
 			ctx.fillText(p, topLeftX + pw/2*ppL - 10, topLeftY + ph/2*ppL + 10);
-
 		}
 		gId("MD").innerHTML = "Matrix Dimensions (W*H=LC): " + maxWidth + " x " + maxHeight + " = " + maxWidth * maxHeight;
 	}
@@ -343,6 +372,7 @@ Y:<input id="P${i}Y" name="P${i}Y" type="number" min="0" max="255" value="0" oni
 
 	// 	window.requestAnimationFrame(animate);
 	// }
+
 	</script>
 	<style>@import url("style.css");</style>
 </head>
@@ -350,7 +380,7 @@ Y:<input id="P${i}Y" name="P${i}Y" type="number" min="0" max="255" value="0" oni
 	<form id="form_s" name="Sf" method="post">
 	<div class="toprow">
 		<div class="helpB"><button type="button" onclick="H()">?</button></div>
-		<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
+		<button type="button" onclick="B()">Back</button><button type="button" onclick="fS()">Save</button><hr>
 	</div>
 	<h2>2D setup</h2>
 	Strip or panel:
@@ -361,64 +391,76 @@ Y:<input id="P${i}Y" name="P${i}Y" type="number" min="0" max="255" value="0" oni
 	<div id="mpdiv" style="display:none;">
 		<hr class="sml">
 		Interface: 
-		<input type="radio" value="0" name="BA" onclick="baChange(this)"><label>Basic</label>
-		<input type="radio" value="1" name="BA" onclick="baChange(this)"><label>Advanced</label> ☾
+		<input type="radio" value="0" name="BA" onclick="baChange(this)"><label>Basic ☾</label>
+		<input type="radio" value="1" name="BA" onclick="baChange(this)"><label>Advanced</label>
 		<br>
 		<hr class="sml">
-		<h3 id="title">Matrix Generator</h3>
-		Panel dimensions (WxH): <input name="PW" type="number" min="1" max="255" value="8" oninput="fieldChange()"> x <input name="PH" type="number" min="1" max="255" value="8" oninput="fieldChange()"><br>
-		Horizontal panels: <input name="MPH" type="number" min="1" max="8" value="1" oninput="fieldChange()">
-		Vertical panels: <input name="MPV" type="number" min="1" max="8" value="1" oninput="fieldChange()"><br>
-		<div id="panelOrientationBlock">
-		1<sup>st</sup> panel: <select name="PB" oninput="fieldChange()">
-			<option value="0">Top</option>
-			<option value="1">Bottom</option>
-		</select><select name="PR" oninput="fieldChange()">
-			<option value="0">Left</option>
-			<option value="1">Right</option>
-		</select><br>
-		Orientation: <select name="PV" oninput="fieldChange()">
-			<option value="0">Horizontal</option>
-			<option value="1">Vertical</option>
-		</select><br>
-		Serpentine: <input type="checkbox" name="PS" onclick="fieldChange()"><br>
-		<br>
-		</div> <!--panelOrientationBlock-->
-		1<sup>st</sup> LED ☾: <select name="PBL" oninput="fieldChange()">
-			<option value="0">Top</option>
-			<option value="1">Bottom</option>
-		</select><select name="PRL" oninput="fieldChange()">
-			<option value="0">Left</option>
-			<option value="1">Right</option>
-		</select><br>
-		Orientation: <select name="PVL" oninput="fieldChange()">
-			<option value="0">Horizontal</option>
-			<option value="1">Vertical</option>
-		</select><br>
-		Serpentine: <input type="checkbox" name="PSL" onclick="fieldChange()"><br>
-		<br>
-		<hr class="sml">
-		☾<br>
-		<canvas id="canvasPanels"></canvas><br> <!--WLEDMM panel visualization-->
-		<div id="MD"></div> <!-- WLEDMM Matrix dimensions -->
-		(Total LEDs: <input name="LC" hidden><span id="LC"></span>)<br> <!--WLEDMM: input is placeholder for d.Sf.LC.value-->
-		<br>
-		<div id="advancedBlock">
-		<i style="color:#fa0;">Can populate LED panel layout with pre-arranged matrix.<br>These values do not affect final layout.<br>WLEDMM: Populate will overwrite earlier saved panel layouts!</i><br>
-		<button id="popButton" type="button" onclick="fieldChange(true)">Populate</button>
-		<hr class="sml">
-		<h3>Panel set-up</h3>
-		Number of panels: <input name="MPC" type="number" min="1" max="64" value="1" oninput="addPanels()"><br>
-		<i>A matrix is made of 1 or more physical LED panels.<br>
-		<!--Panels should be arranged from top-left to bottom-right order, starting with lower panel number on the left (or top if transposed).<br>-->
-		Each panel can be of different size and/or have different LED orientation and/or starting point and/or layout.</i><br>
-		<h3>LED panel layout</h3>
-		<div id="panels">
+		<div id="blockMSetup">
+			<h3 id="title">Matrix Setup</h3>
 		</div>
-		</div> <!--advancedBlock-->
-	</div>
+		<div id="blockMGen">
+			<h3 id="title">Matrix Generator <button type="button" id="expGen" onclick="expand(this,gId('mxGen'));">&gt;</button></h3>
+		</div>
+		<div id="mxGen" style="display:none;">
+			Panel dimensions (WxH): <input name="PW" type="number" min="1" max="255" value="8" oninput="fieldChange()"> x <input name="PH" type="number" min="1" max="255" value="8" oninput="fieldChange()"><br>
+			Horizontal panels: <input name="MPH" type="number" min="1" max="8" value="1" oninput="fieldChange()">
+			Vertical panels: <input name="MPV" type="number" min="1" max="8" value="1" oninput="fieldChange()"><br>
+			<div id="blockPanelOrientation">
+				1<sup>st</sup> panel: <select name="PB" oninput="fieldChange()">
+					<option value="0">Top</option>
+					<option value="1">Bottom</option>
+				</select><select name="PR" oninput="fieldChange()">
+					<option value="0">Left</option>
+					<option value="1">Right</option>
+				</select><br>
+				Orientation: <select name="PV" oninput="fieldChange()">
+					<option value="0">Horizontal</option>
+					<option value="1">Vertical</option>
+				</select><br>
+				Serpentine: <input type="checkbox" name="PS" onclick="fieldChange()"><br>
+				<br>
+			</div> <!--blockPanelOrientation-->
+			1<sup>st</sup> LED ☾: <select name="PBL" oninput="fieldChange()">
+				<option value="0">Top</option>
+				<option value="1">Bottom</option>
+			</select><select name="PRL" oninput="fieldChange()">
+				<option value="0">Left</option>
+				<option value="1">Right</option>
+			</select><br>
+			Orientation: <select name="PVL" oninput="fieldChange()">
+				<option value="0">Horizontal</option>
+				<option value="1">Vertical</option>
+			</select><br>
+			Serpentine: <input type="checkbox" name="PSL" onclick="fieldChange()"><br>
+			<div id="blockPopulate">
+				<i style="color:#fa0;">Pressing Populate will create LED panel layout with pre-arranged matrix.<br>Values above <i>will not</i> affect final layout.<br>WLEDMM: Populate will overwrite earlier saved panel layouts!</i><br>
+					WARNING: You may need to update each panel parameters after they are generated.</i><br>
+				<button id="popButton" type="button" onclick="fieldChange(true);expand(gId('expGen'),gId('mxGen'));">Populate</button> <!--WLEDMM fieldChange(true)-->
+			</div>
+		</div> <!--mxGen-->
+		<div id="blockPanelSetup">
+			<hr class="sml">
+			<h3>Panel set-up</h3>
+			Number of panels: <input name="MPC" type="number" min="1" max="64" value="1" oninput="addPanels();UI();"><br>
+			<i>A matrix is made of 1 or more physical LED panels.<br>
+			Each panel can be of different size and/or have different LED orientation and/or starting point and/or layout.</i><br>
+			<h3>LED panel layout</h3>
+			<div id="panels">
+			</div>
+		</div>
+		<hr class="sml">
+		<div id="MD"></div>
+		(Total LEDs: <input name="LC" hidden><span id="LC"></span>)<br> <!--WLEDMM: input is placeholder for d.Sf.LC.value-->
+		<canvas id="canvasPanels"></canvas><br>
+		<div id="blockGaps">
+			<hr class="sml">
+			<div id="json" >Gap file: <input type="file" name="data" accept=".json"><button type="button" class="sml" onclick="uploadFile('/2d-gaps.json')">Upload</button></div>
+			<i>Note: Gap file is a <b>.json</b> file containing an array with number of elements equal to the matrix size.<br>
+				A value of -1 means that pixel at that position is missing, a value of 0 means never paint that pixel, and 1 means regular pixel.</i>
+		</div>
 	<hr>
-	<button type="button" onclick="B()">Back</button><button type="submit">Save</button>
+	<button type="button" onclick="B()">Back</button><button type="button" onclick="fS()">Save</button>
 	</form>
+	<div id="toast"></div>
 </body>
 </html>

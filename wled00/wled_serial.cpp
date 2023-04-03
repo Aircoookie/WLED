@@ -4,6 +4,9 @@
  * Adalight and TPM2 handler
  */
 
+#define SERIAL_MAXTIME_MILLIS 100 // to avoid blocking other activities, do not spend more than 100ms with continouus reading
+// at 115200 baud, 100ms is enough to send/receive 1280 chars
+
 enum class AdaState {
   Header_A,
   Header_d,
@@ -86,7 +89,8 @@ bool canUseSerial(void) {   // WLEDMM returns true if Serial can be used for deb
 void handleSerial()
 {
   if (pinManager.isPinAllocated(hardwareRX)) return;
-  if (!Serial) return;  // WLEDMM - serial not connected (USB CDC)
+  if (!Serial) return;              // arduino docs: `if (Serial)` indicates whether or not the USB CDC serial connection is open. For all non-USB CDC ports, this will always return true
+  if (((pinManager.isPinAllocated(hardwareTX)) && (pinManager.getPinOwner(hardwareTX) != PinOwner::DebugOut))) return; // WLEDMM serial TX is necessary for adalight / TPM2
 
   #ifdef WLED_ENABLE_ADALIGHT
   static auto state = AdaState::Header_A;
@@ -96,7 +100,8 @@ void handleSerial()
   static byte red   = 0x00;
   static byte green = 0x00;
 
-  while (Serial.available() > 0)
+  unsigned long startTime = millis();
+  while ((Serial.available() > 0) && (millis() - startTime < SERIAL_MAXTIME_MILLIS))
   {
     yield();
     byte next = Serial.peek();
@@ -216,6 +221,9 @@ void handleSerial()
 
     Serial.read(); //discard the byte
   }
+  //#ifdef WLED_DEBUG
+    if ((millis() - startTime) > SERIAL_MAXTIME_MILLIS) { USER_PRINTLN(F("handleSerial(): need a break after >100ms of activity.")); }
+  //#endif
   #endif
 
   // If Continuous Serial Streaming is enabled, send new LED data as bytes

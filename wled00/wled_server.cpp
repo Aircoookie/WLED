@@ -240,6 +240,11 @@ void initServer()
     request->send(200, "text/plain", (String)ESP.getFreeHeap());
   });
 
+  //WLEDMM and Athom
+  server.on("/getflash", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(200, "text/plain", (String)ESP.getFlashChipSize());
+    });
+
   server.on("/u", HTTP_GET, [](AsyncWebServerRequest *request){
     if (handleIfNoneMatchCacheHeader(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_usermod, PAGE_usermod_length);
@@ -358,7 +363,10 @@ void initServer()
   });
   #endif
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-    USER_PRINTF("Client request\n"); //WLEDMM: want to see if client connects to wled
+    USER_PRINTLN("Client request"); //WLEDMM: want to see if client connects to wled
+    #ifdef ARDUINO_ARCH_ESP32
+    DEBUG_PRINTF("%s min free stack %d\n", pcTaskGetTaskName(NULL), uxTaskGetStackHighWaterMark(NULL)); //WLEDMM
+    #endif
     if (captivePortal(request)) return;
     serveIndexOrWelcome(request);
   });
@@ -380,7 +388,7 @@ void initServer()
 
   //called when the url is not defined here, ajax-in; get-settings
   server.onNotFound([](AsyncWebServerRequest *request){
-    DEBUG_PRINTLN("Not-Found HTTP call:");
+    DEBUG_PRINT("Not-Found HTTP call: ");
     DEBUG_PRINTLN("URI: " + request->url());
     if (captivePortal(request)) return;
 
@@ -546,6 +554,13 @@ void serveSettingsJS(AsyncWebServerRequest* request)
   strcat_P(buf,PSTR("function GetV(){var d=document;"));
   getSettingsJS(request, subPage, buf+strlen(buf));  // this may overflow by 35bytes!!! WLEDMM add request
   strcat_P(buf,PSTR("}"));
+
+  #ifdef ARDUINO_ARCH_ESP32
+    DEBUG_PRINT(F("ServeSettingsJS: "));
+    DEBUG_PRINTF("%s min free stack %d\n", pcTaskGetTaskName(NULL), uxTaskGetStackHighWaterMark(NULL)); //WLEDMM
+    DEBUG_PRINTF(PSTR(" bytes.\tString buffer usage: %4d of %d bytes\n"), strlen(buf)+1, SETTINGS_STACK_BUF_SIZE+37);
+  #endif
+
   request->send(200, "application/javascript", buf);
 }
 

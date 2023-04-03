@@ -23,7 +23,6 @@ void notify(byte callMode, bool followUp)
     case CALL_MODE_NIGHTLIGHT:    if (!notifyDirect) return; break;
     case CALL_MODE_HUE:           if (!notifyHue)    return; break;
     case CALL_MODE_PRESET_CYCLE:  if (!notifyDirect) return; break;
-    case CALL_MODE_BLYNK:         if (!notifyDirect) return; break;
     case CALL_MODE_ALEXA:         if (!notifyAlexa)  return; break;
     default: return;
   }
@@ -714,7 +713,9 @@ void sendSysInfoUDP()
 // buffer - a buffer of at least length*4 bytes long
 // isRGBW - true if the buffer contains 4 components per pixel
 
-uint8_t sequenceNumber = 0; // this needs to be shared across all outputs
+static       size_t sequenceNumber = 0; // this needs to be shared across all outputs
+static const size_t ART_NET_HEADER_SIZE = 12;
+static const byte   ART_NET_HEADER[] PROGMEM = {0x41,0x72,0x74,0x2d,0x4e,0x65,0x74,0x00,0x00,0x50,0x00,0x0e};
 
 uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8_t *buffer, uint8_t bri, bool isRGBW)  {
   if (!(apActive || interfacesInited) || !client[0] || !length) return 1;  // network not initialised or dummy/unset IP address  031522 ajn added check for ap
@@ -737,7 +738,7 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8
         if (sequenceNumber > 15) sequenceNumber = 0;
 
         if (!ddpUdp.beginPacket(client, DDP_DEFAULT_PORT)) {  // port defined in ESPAsyncE131.h
-          DEBUG_PRINTLN(F("WiFiUDP.beginPacket returned an error"));
+          DEBUG_PRINTLN(F("DDP WiFiUDP.beginPacket returned an error"));
           return 1; // problem
         }
 
@@ -778,7 +779,7 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8
         }
 
         if (!ddpUdp.endPacket()) {
-          DEBUG_PRINTLN(F("WiFiUDP.endPacket returned an error"));
+          DEBUG_PRINTLN(F("DDP WiFiUDP.endPacket returned an error"));
           return 1; // problem
         }
 
@@ -793,10 +794,10 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8
     case 2: //ArtNet
     {
       // calculate the number of UDP packets we need to send
-      size_t channelCount = length * (isRGBW?4:3); // 1 channel for every R,G,B,(W?) value
-      size_t ARTNET_CHANNELS_PER_PACKET = isRGBW?512:510; // 512/4=128 RGBW LEDs, 510/3=170 RGB LEDs
-      size_t packetCount = ((channelCount-1)/ARTNET_CHANNELS_PER_PACKET)+1;
-      
+      const size_t channelCount = length * (isRGBW?4:3); // 1 channel for every R,G,B,(W?) value
+      const size_t ARTNET_CHANNELS_PER_PACKET = isRGBW?512:510; // 512/4=128 RGBW LEDs, 510/3=170 RGB LEDs
+      const size_t packetCount = ((channelCount-1)/ARTNET_CHANNELS_PER_PACKET)+1;
+
       uint32_t channel = 0; 
       size_t bufferOffset = 0;
 
@@ -820,9 +821,9 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8
           }
         }
 
-        const byte ART_NET_HEADER[12] = {0x41,0x72,0x74,0x2d,0x4e,0x65,0x74,0x00,0x00,0x50,0x00,0x0e};
-
-        ddpUdp.write(ART_NET_HEADER,12); // This doesn't change. Hard coded ID, OpCode, and protocol version.
+        byte buffer[ART_NET_HEADER_SIZE];
+        memcpy_P(buffer, ART_NET_HEADER, ART_NET_HEADER_SIZE);
+        ddpUdp.write(buffer, ART_NET_HEADER_SIZE); // This doesn't change. Hard coded ID, OpCode, and protocol version.
         ddpUdp.write(sequenceNumber & 0xFF); // sequence number. 1..255
         ddpUdp.write(0x00); // physical - more an FYI, not really used for anything. 0..3
         ddpUdp.write((currentPacket) & 0xFF); // Universe LSB. 1 full packet == 1 full universe, so just use current packet number.

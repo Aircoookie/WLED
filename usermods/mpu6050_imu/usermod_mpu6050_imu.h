@@ -65,9 +65,9 @@
 #undef DEBUG_PRINTF
 
 #ifdef WLED_DEBUG
-  #define DEBUG_PRINT(x) DEBUGOUT.print(x)
-  #define DEBUG_PRINTLN(x) DEBUGOUT.println(x)
-  #define DEBUG_PRINTF(x...) DEBUGOUT.printf(x)
+  #define DEBUG_PRINT(x) DEBUGOUT(x)
+  #define DEBUG_PRINTLN(x) DEBUGOUTLN(x)
+  #define DEBUG_PRINTF(x...) DEBUGOUTF(x)
 #else
   #define DEBUG_PRINT(x)
   #define DEBUG_PRINTLN(x)
@@ -93,18 +93,22 @@ void IRAM_ATTR dmpDataReady() {
 class MPU6050Driver : public Usermod {
   private:
     MPU6050 mpu;
-    bool enabled = true;
     unsigned long lastUMRun = millis();
 
     // MPU control/status vars
-    bool dmpReady = false;  // set true if DMP init was successful
     uint8_t mpuIntStatus;   // holds actual interrupt status byte from MPU
     uint8_t devStatus;      // return status after each device operation (0 = success, !0 = error)
     uint16_t packetSize;    // expected DMP packet size (default is 42 bytes)
     uint16_t fifoCount;     // count of all bytes currently in FIFO
     uint8_t fifoBuffer[64]; // FIFO storage buffer
 
+    // strings to reduce flash memory usage (used more than twice)
+    static const char _INT_pin[];
+
   public:
+    MPU6050Driver(const char *name, bool enabled):Usermod(name, enabled) {} //WLEDMM: this shouldn't be necessary (passthrough of constructor), maybe because Usermod is an abstract class
+
+    bool dmpReady = false;  // set true if DMP init was successful  // WLEDMM expose this info in public interface
     // orientation/motion vars
     Quaternion qat;         // [w, x, y, z]         quaternion container
     VectorInt16 aa;         // [x, y, z]            accel sensor measurements
@@ -122,7 +126,11 @@ class MPU6050Driver : public Usermod {
     #endif
 
     void setup() {
-    // WLEDMM begin
+      // WLEDMM begin
+      if (!enabled) {
+        dmpReady = false;
+        return;
+      }
       USER_PRINTLN(F("mpu setup"));
       PinManagerPinType pins[2] = { { i2c_scl, true }, { i2c_sda, true } };
       if ((i2c_scl < 0) || (i2c_sda < 0)) {
@@ -171,16 +179,26 @@ class MPU6050Driver : public Usermod {
       // initialize device
       DEBUG_PRINT_IMULN(F("Initializing I2C devices..."));
       // WLEDMM begin
-      if (!pinManager.allocatePin(INTERRUPT_PIN, false, PinOwner::UM_Unspecified))
+      if ((INTERRUPT_PIN < 0) || (!pinManager.isPinINT(INTERRUPT_PIN))) {
+        //enabled = false;
+        USER_PRINTF("mpu6050: warning - interrupt GPIO %d does not support interrupts.\n", INTERRUPT_PIN);
+        //INTERRUPT_PIN = -1;
+        //return;
+      }
+      if ((INTERRUPT_PIN >= 0) && (pinManager.getPinOwner(INTERRUPT_PIN) != PinOwner::UM_IMU)  // only allocate pin if we don't ownn it already
+         && !pinManager.allocatePin(INTERRUPT_PIN, false, PinOwner::UM_IMU))
       {
         //enabled = false;
         USER_PRINTF("mpu6050: warning - failed to allocate interrupt GPIO %d\n", INTERRUPT_PIN);
+        //INTERRUPT_PIN = -1;
         //return;
       }
       // WLEDMM end
 
       mpu.initialize();
-      pinMode(INTERRUPT_PIN, INPUT);
+      if (INTERRUPT_PIN >= 0) {         // WLEDMM only if pin is valid
+        pinMode(INTERRUPT_PIN, INPUT);
+      }
 
       // verify connection
       DEBUG_PRINT_IMULN(F("Testing device connections..."));
@@ -214,11 +232,13 @@ class MPU6050Driver : public Usermod {
           DEBUG_PRINT_IMULN(F("Enabling DMP..."));
           mpu.setDMPEnabled(true);
 
-          // enable Arduino interrupt detection
-          DEBUG_PRINT_IMU(F("Enabling interrupt detection (Arduino external interrupt "));
-          DEBUG_PRINT_IMU(digitalPinToInterrupt(INTERRUPT_PIN));
-          DEBUG_PRINT_IMULN(F(")..."));
-          attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), dmpDataReady, RISING);
+          if (INTERRUPT_PIN >= 0) {
+            // enable Arduino interrupt detection
+            DEBUG_PRINT_IMU(F("Enabling interrupt detection (Arduino external interrupt "));
+            DEBUG_PRINT_IMU(digitalPinToInterrupt(INTERRUPT_PIN));
+            DEBUG_PRINT_IMULN(F(")..."));
+            attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), dmpDataReady, RISING);
+          }
           mpuIntStatus = mpu.getIntStatus();
 
           // set our DMP Ready flag so the main loop() function knows it's okay to use it
@@ -235,7 +255,9 @@ class MPU6050Driver : public Usermod {
         DEBUG_PRINT(F("DMP Initialization failed (code "));
         DEBUG_PRINT(devStatus);
         DEBUG_PRINTLN(")");
+        dmpReady = false;
       }
+      initDone = true;
     }
 
     void connected() {
@@ -244,6 +266,7 @@ class MPU6050Driver : public Usermod {
 
     void loop() {
       // if programming failed, don't try to do anything
+      if (!initDone) return;
       if (!enabled || (strip.isUpdating() && (millis() - lastUMRun < 2))) return;   // be nice, but not too nice
       lastUMRun = millis();                    // update time keeping
 
@@ -265,12 +288,15 @@ class MPU6050Driver : public Usermod {
 
     void addToJsonInfo(JsonObject& root)
     {
+      if (!initDone) return;
+      if (!enabled && !dmpReady) return;     // WLEDMM no info when usermod disabled
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
 
       StaticJsonDocument<800> doc; //measured 528  // WLEDMM added some margin (was 600)
 
       JsonObject imu_meas = doc.createNestedObject("IMU");
+      //JsonObject imu_meas = user.createNestedObject("IMU");
       #ifdef WLED_DEBUG
       JsonArray quat_json = imu_meas.createNestedArray("Quat");
       quat_json.add(qat.w);
@@ -328,25 +354,57 @@ class MPU6050Driver : public Usermod {
     //{
     //}
 
-  //  void addToConfig(JsonObject& root)
-  //  {
-  //   JsonObject top = root.createNestedObject("MPU6050");
-  //   top[FPSTR("enabled")] = enabled;
+    // void addToConfig(JsonObject& root)
+    // {
+    //   Usermod::addToConfig(root);
+    //   JsonObject top = root[FPSTR(_name)];
+    // //   //JsonObject interruptPin = top.createNestedObject(FPSTR(_INT_pin));
+    // //   //interruptPin["pin"] = INTERRUPT_PIN;
+    // //   DEBUG_PRINTLN(F("MPU6050 IMU config saved."));
+    // }
 
-  //   JsonObject interruptPin = top.createNestedObject(FPSTR("interruptPin"));
-  //   interruptPin["pin"] = interruptPin;
-  //  }
+    //WLEDMM: add appendConfigData
+    void appendConfigData()
+    {
+      oappend(SET_F("addHB('mpu6050-IMU');"));
+  /*
+      #ifdef MPU6050_INT_GPIO
+        oappend(SET_F("xOpt('mpu6050-IMU:interrupt_pin',0,' ⎌',")); oappendi(MPU6050_INT_GPIO); oappend(");"); 
+      #endif
+      //WLEDMM add errorMessage to um settings
+      if (strcmp(errorMessage, "") != 0) {
+        oappend(SET_F("addInfo('errorMessage', 0, '<i>error: ")); oappend(errorMessage); oappend("! Correct and reboot</i>');");
+      }
+  */
+    }
 
-  //   bool readFromConfig(JsonObject& root)
-  //   {
-  //     JsonObject top = root[FPSTR("MPU6050")];
-  //     bool configComplete = !top.isNull();
+    bool readFromConfig(JsonObject& root)
+    {
+      bool configComplete = Usermod::readFromConfig(root);
+      JsonObject top = root[FPSTR(_name)];
 
-  //     configComplete &= getJsonValue(top[FPSTR("enabled")], enabled);
-  //     configComplete &= getJsonValue(top[FPSTR("interruptPin")]["pin"], interruptPin);
+      if (top.isNull()) {
+        DEBUG_PRINT(FPSTR(_name));
+        DEBUG_PRINTLN(F(": No config found. (Using defaults.)"));
+        return false;
+      }
 
-  //     return configComplete;
-  //   }
+      //configComplete &= getJsonValue(top[FPSTR(_INT_pin)]["pin"], INTERRUPT_PIN);
+
+      DEBUG_PRINT(FPSTR(_name));
+      if (!initDone) {
+        // first run: reading from cfg.json
+        DEBUG_PRINTLN(F(" config loaded."));
+      } else {
+        DEBUG_PRINTLN(F(" config (re)loaded."));
+        if (enabled || dmpReady) setup();   // re-run setup if user has checked "enabled"
+        if (!enabled) dmpReady = false;     // not enabled inplies "no DMP data ready"
+      }
+
+      return configComplete;
+      // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
+      //return !top[FPSTR(_INT_pin)].isNull();
+    }
 
     uint16_t getId()
     {
@@ -354,3 +412,6 @@ class MPU6050Driver : public Usermod {
     }
 
 };
+
+// strings to reduce flash memory usage (used more than twice)
+const char MPU6050Driver::_INT_pin[]     PROGMEM = "interrupt_pin";
