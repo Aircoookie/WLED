@@ -9,7 +9,7 @@ function toggleCEEditor(name, segID) {
     d.getElementById('ceEditor').style.transform = (isCEEditor) ? "translateY(0px)":"translateY(100%)";
 }
 
-function fetchAndExecute(url, name, callback)
+function fetchAndExecute(url, name, callback, callError)
 {
   fetch
   (url+name, {
@@ -17,8 +17,8 @@ function fetchAndExecute(url, name, callback)
   })
   .then(res => {
     if (!res.ok) {
-       showToast("File " + name + " not found", true);
-       return "";
+		callError("File " + name + " not found");
+    	return "";
     }
     return res.text();
   })
@@ -26,10 +26,7 @@ function fetchAndExecute(url, name, callback)
     callback(text);
   })
   .catch(function (error) {
-    showToast("Error getting " + name, true);
-    // showToast(error, true);
-    // console.log(error);
-    presetError(false);
+    callError("Error getting " + name);
   })
   .finally(() => {
     // if (callback) setTimeout(callback,99);
@@ -53,6 +50,9 @@ function loadLogFile(name, attempt) {
       }
       else
         ceLogArea.value = logtext;
+    }, function(error){
+      showToast(error);
+      console.log(error);
     });
 }
 
@@ -98,15 +98,17 @@ function populateCEEditor(name, segID)
             <textarea class="ceTextarea" id="ceProgramArea">${text}</textarea><br>
             <button class="btn infobtn" onclick="toggleCEEditor()">Close</button>
             <button class="btn infobtn" onclick="saveCE('${name}.wled', ${segID})">Save and Run</button><br>
-            <button class="btn infobtn" onclick="downloadCEFile('${name}.wled')">Download ${name}.wled</button>
+            <button class="btn infobtn" onclick="downloadCEFile('CE','${name}.wled')">Download ${name}.wled</button>
             <button class="btn infobtn" onclick="loadCETemplate('${name}')">Load template</button><br>
-            <button class="btn infobtn" onclick="downloadCEFile('wledv032.json')">Download wled json</button>
-            <button class="btn infobtn" onclick="downloadCEFile('presets.json')">Download presets.json</button><br>
-            <a href="https://github.com/MoonModules/WLED-Effects/tree/master/CustomEffects/wled" target="_blank">Custom Effects Library</a><br>
-            <a href="https://github.com/atuline/WLED/wiki/WLED-Custom-effects" target="_blank">Custom Effects Help</a><br>
+            <button class="btn infobtn" onclick="downloadCEFile('CE','wledv033.json')">Download wled json</button>
+            <button class="btn infobtn" onclick="downloadCEFile('CE','presets.json')">Download presets.json</button><br>
+            <button class="btn infobtn" onclick="location.href='https://github.com/MoonModules/WLED-Effects/tree/master/CustomEffects/wled'" type="button">Custom Effects Library</button>
+            <button class="btn infobtn btn-xs" onclick="location.href='https://mm.kno.wled.ge/moonmodules/custom-effects'" type="button">?</button><br>
             <br><i>Compile and Run Log</i><br>
             <textarea class="ceTextarea" id="ceLogArea"></textarea><br>
-            <i>Run log > 3 seconds is send to Serial Ouput.</i>`;
+            <i>Run log > 3 seconds is send to Serial Ouput.</i><br>
+            <a href="#" onclick="downloadCEFile('HBB','presets.json');return false;" title="Download HBaas Base presets">🥚</a>
+            <a href="#" onclick="downloadCEFile('HBE','presets.json');return false;" title="Download HBaas Effects presets">🥚</a>`;
 
     d.getElementById('kceEditor').innerHTML = cn;
 
@@ -114,14 +116,19 @@ function populateCEEditor(name, segID)
     ceLogArea.value = ".";
     loadLogFile(name + ".wled.log", 1);
 
+  }, function(error){
+    showToast(error);
+    console.log(error);
   });
 }
 
-function downloadCEFile(name) {
-    var url = "https://raw.githubusercontent.com/MoonModules/WLED-Effects/master/CustomEffects/wled/";
+function downloadCEFile(url, name) {
+    if (url == "CE") url = "https://raw.githubusercontent.com/MoonModules/WLED-Effects/master/CustomEffects/wled/";
+    if (url == "HBB") url = "https://raw.githubusercontent.com/MoonModules/WLED-Effects/master/Presets/HB_PresetPack210808_32x32_16seg/Base%20pack/";
+    if (url == "HBE") url = "https://raw.githubusercontent.com/MoonModules/WLED-Effects/master/Presets/HB_PresetPack210808_32x32_16seg/Effects%20pack/";
 
     fetchAndExecute(url, name, function(text) {
-        if (name == "wledv032.json" || name == "presets.json") {
+        if (name == "wledv033.json" || name == "presets.json") {
             if (!confirm('Are you sure to download/overwrite ' + name + '?'))
               return;
             uploadFileWithText("/" + name, text);
@@ -131,13 +138,16 @@ function downloadCEFile(name) {
           var ceProgramArea = d.getElementById("ceProgramArea");
           ceProgramArea.value = text;
         }
+    }, function(error){
+      showToast(error);
+      console.log(error);
     });
 
     return;
   
     var request = new XMLHttpRequest();
     request.onload = function() {
-      if (name == "wledv032.json" || name == "presets.json") {
+      if (name == "wledv033.json" || name == "presets.json") {
           if (!confirm('Are you sure to download ' + name + '?'))
             return;
           uploadFileWithText("/" + name, request.response);

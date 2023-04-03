@@ -6,6 +6,7 @@
 	<meta name="theme-color" content="#222222">
 	<meta content="yes" name="apple-mobile-web-app-capable">
 	<link rel="shortcut icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAEAGACGAAAAFgAAAIlQTkcNChoKAAAADUlIRFIAAAAQAAAAEAgGAAAAH/P/YQAAAE1JREFUOI1j/P//PwOxgNGeAUMxE9G6cQCKDWAhpADZ2f8PMjBS3QW08QK20KaZC2gfC9hCnqouoNgARgY7zMxAyNlUdQHlXiAlO2MDAD63EVqNHAe0AAAAAElFTkSuQmCC"/>
+	<script src="peek.js"></script> <!--WLEDMM-->
 	<title>WLED</title>
 	<script>
 	function feedback(){}
@@ -287,15 +288,15 @@
 			</div>
 			<div id="fxopt" class="option fade">
 				<label id="opt0" class="check ochkl hide"><i class="icons">&#xe2b3;</i><span class="tooltiptext" id="optLabel0">Check 1</span>
-					<input type="checkbox" onchange="setOption(1, this.checked)">
+					<input id="checkO1" type="checkbox" onchange="setOption(1, this.checked)">
 					<span class="checkmark"></span>
 				</label>
 				<label id="opt1" class="check ochkl hide"><i class="icons">&#xe34b;</i><span class="tooltiptext" id="optLabel1">Check 2</span>
-					<input type="checkbox" onchange="setOption(2, this.checked)">
+					<input id="checkO2" type="checkbox" onchange="setOption(2, this.checked)">
 					<span class="checkmark"></span>
 				</label>
 				<label id="opt2" class="check ochkl hide"><i class="icons">&#xe04c;</i><span class="tooltiptext" id="optLabel2">Check 3</span>
-					<input type="checkbox" onchange="setOption(3, this.checked)">
+					<input id="checkO3" type="checkbox" onchange="setOption(3, this.checked)">
 					<span class="checkmark"></span>
 				</label>
 			</div>
@@ -311,6 +312,13 @@
 		<div id="segutil2">
 			<button class="btn btn-s" id="rsbtn" onclick="rSegs()">Reset segments</button>
 		</div>
+		<!--WLEDMM Segment graphics-->
+		<br>
+		<canvas id="canvasSegments" hidden=true></canvas><br>
+		<br>
+		<canvas id="canvasPeek"></canvas><br>
+		<div id="MD"></div> <!-- Matrix dimensions -->
+		<br>
 		<p>Transition: <input id="tt" class="noslide" type="number" min="0" max="65.5" step="0.1" value="0.7">&nbsp;s</p>
 		<p id="ledmap" class="hide"></p>
 	</div>
@@ -339,7 +347,7 @@
 	<button class="tablinks" onclick="openTab(3)"><i class="icons">&#xe04c;</i><p class="tab-label">Presets</p></button>
 </div>
 
-<div id="connind"></div>
+<div id="connind">&#9790;</div> <!-- WLEDMM add moon -->
 <div id="toast" onclick="clearErrorToast(100);"></div>
 <div id="namelabel" onclick="toggleNodes()"></div>
 <div id="info" class="modal">
@@ -353,6 +361,9 @@
 		<button class="btn infobtn" onclick="toggleNodes()">Instance List</button>
 		<button class="btn infobtn" onclick="window.open('/update','_self');">Update WLED</button>
 		<button class="btn infobtn" id="resetbtn" onclick="cnfReset()">Reboot WLED</button>
+		<button class="btn infobtn" id="genPresets" onclick="genPresets()">Generate presets ☾</button>
+		<button class="btn infobtn" id="savePresetsGen" onclick="savePresetsGen()" hidden="true">Save generated presets</button>
+		<textarea id="presetsGen" hidden="true"></textarea><br>
 	</div>
 	<br>
 	<span class="h">Made with <span id="heart">&#10084;&#xFE0E;</span> by Aircoookie and the <a href="https://wled.discourse.group/" target="_blank">WLED community</a></span>

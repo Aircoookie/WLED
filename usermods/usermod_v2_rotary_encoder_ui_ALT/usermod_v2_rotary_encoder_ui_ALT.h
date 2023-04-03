@@ -191,7 +191,7 @@ private:
     re_sortModes(modes_qstrings, modes_alpha_indexes, strip.getModeCount(), MODE_SORT_SKIP_COUNT);
 
     palettes_qstrings = re_findModeStrings(JSON_palette_names, strip.getPaletteCount());
-    palettes_alpha_indexes = re_initIndexArray(strip.getPaletteCount());
+    palettes_alpha_indexes = re_initIndexArray(strip.getPaletteCount());  // only use internal palettes
 
     // How many palette names start with '*' and should not be sorted?
     // (Also skipping the first one, 'Default').
@@ -267,6 +267,12 @@ public:
   {
     DEBUG_PRINTLN(F("Usermod Rotary Encoder init."));
     PinManagerPinType pins[3] = { { pinA, false }, { pinB, false }, { pinC, false } };
+    if ((pinA < 0) || (pinB < 0)) {                                               //WLEDMM catch error: [  1839][E][esp32-hal-gpio.c:102] __pinMode(): Invalid pin selected
+      enabled = false;
+      DEBUG_PRINTLN(F("Invalid GPIO pins for Usermod Rotary Encoder (ALT)."));   //WLEDMM add debug info
+      return;      
+    }
+    if (!enabled) return;     // WLEDMM don't allocated PINS if disabled
     if (!pinManager.allocateMultiplePins(pins, 3, PinOwner::UM_RotaryEncoderUI)) {
       // BUG: configuring this usermod with conflicting pins
       //      will cause it to de-allocate pins it does not own
@@ -284,7 +290,7 @@ public:
     #endif
     pinMode(pinA, USERMOD_ROTARY_ENCODER_GPIO);
     pinMode(pinB, USERMOD_ROTARY_ENCODER_GPIO);
-    pinMode(pinC, USERMOD_ROTARY_ENCODER_GPIO);
+    if (pinC >= 0) pinMode(pinC, USERMOD_ROTARY_ENCODER_GPIO);   // WLEDMM catch error
 
     loopTime = millis();
 
@@ -305,6 +311,7 @@ public:
     Enc_A = digitalRead(pinA); // Read encoder pins
     Enc_B = digitalRead(pinB);
     Enc_A_prev = Enc_A;
+    USER_PRINTLN(F("Rotary encoder (ALT) setup completed."));   // WLEDMM inform user
   }
 
   /*
@@ -349,7 +356,8 @@ public:
     {
       loopTime = currentTime; // Updates loopTime
 
-      bool buttonPressed = !digitalRead(pinC); //0=pressed, 1=released
+      bool buttonPressed = false;
+      if (pinC >= 0) buttonPressed = !digitalRead(pinC); //0=pressed, 1=released
       if (buttonPressed) {
         if (!buttonPressedBefore) buttonPressedTime = currentTime;
         buttonPressedBefore = true;
@@ -375,7 +383,7 @@ public:
         buttonWaitTime = 0;
         char newState = select_state + 1;
         bool changedState = false;
-        char lineBuffer[64];
+        char lineBuffer[64] = { '\0' };
         do {
           // finde new state
           switch (newState) {
@@ -517,7 +525,8 @@ public:
     bri = max(min((increase ? bri+fadeAmount : bri-fadeAmount), 255), 0);
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
-    display->updateBrightness();
+    if (display->canDraw())   // only draw if nothing else is drawing
+      display->updateBrightness();
   #endif
   }
 
@@ -546,7 +555,8 @@ public:
     }
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
-    display->showCurrentEffectOrPalette(effectCurrent, JSON_mode_names, 3);
+    if (display->canDraw())   // only draw if nothing else is drawing
+      display->showCurrentEffectOrPalette(effectCurrent, JSON_mode_names, 3);
   #endif
   }
 
@@ -574,7 +584,8 @@ public:
     }
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
-    display->updateSpeed();
+    if (display->canDraw())   // only draw if nothing else is drawing
+      display->updateSpeed();
   #endif
   }
 
@@ -602,14 +613,15 @@ public:
     }
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
-    display->updateIntensity();
+    if (display->canDraw())   // only draw if nothing else is drawing
+      display->updateIntensity();
   #endif
   }
 
 
   void changeCustom(uint8_t par, bool increase) {
-    uint8_t val = 0;
   #ifdef USERMOD_FOUR_LINE_DISPLAY
+    uint8_t val = 0;
     if (display && display->wakeDisplay()) {
       display->redraw(true);
       // Throw away wake up input
@@ -621,11 +633,13 @@ public:
     if (applyToAll) {
       uint8_t id = strip.getFirstSelectedSegId();
       Segment& sid = strip.getSegment(id);
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
       switch (par) {
         case 3:  val = sid.custom3 = max(min((increase ? sid.custom3+fadeAmount : sid.custom3-fadeAmount), 255), 0); break;
         case 2:  val = sid.custom2 = max(min((increase ? sid.custom2+fadeAmount : sid.custom2-fadeAmount), 255), 0); break;
         default: val = sid.custom1 = max(min((increase ? sid.custom1+fadeAmount : sid.custom1-fadeAmount), 255), 0); break;
       }
+  #endif
       for (byte i=0; i<strip.getSegmentsNum(); i++) {
         Segment& seg = strip.getSegment(i);
         if (!seg.isActive() || i == id) continue;
@@ -636,12 +650,14 @@ public:
         }
       }
     } else {
+  #ifdef USERMOD_FOUR_LINE_DISPLAY
       Segment& seg = strip.getMainSegment();
       switch (par) {
         case 3:  val = seg.custom3 = max(min((increase ? seg.custom3+fadeAmount : seg.custom3-fadeAmount), 255), 0); break;
         case 2:  val = seg.custom2 = max(min((increase ? seg.custom2+fadeAmount : seg.custom2-fadeAmount), 255), 0); break;
         default: val = seg.custom1 = max(min((increase ? seg.custom1+fadeAmount : seg.custom1-fadeAmount), 255), 0); break;
       }
+  #endif
     }
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
@@ -676,7 +692,8 @@ public:
     }
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
-    display->showCurrentEffectOrPalette(effectPalette, JSON_palette_names, 2);
+  if (display->canDraw())   // only draw if nothing else is drawing
+      display->showCurrentEffectOrPalette(effectPalette, JSON_palette_names, 2);
   #endif
   }
 
@@ -752,8 +769,8 @@ public:
     if (presetHigh && presetLow && presetHigh > presetLow) {
       StaticJsonDocument<64> root;
       char str[64] = { '\0' };
-      sprintf_P(str, PSTR("%d~%d~%s"), presetLow, presetHigh, increase?"":"-");
-      root[F("ps")] = str;
+      snprintf_P(str, 64, PSTR("%d~%d~%s"), presetLow, presetHigh, increase?"":"-");
+      root["ps"] = str;
       deserializeState(root.as<JsonObject>(), CALL_MODE_BUTTON_PRESET);
 /*
       String apireq = F("win&PL=~");
@@ -857,6 +874,22 @@ public:
     DEBUG_PRINTLN(F("Rotary Encoder config saved."));
   }
 
+  //WLEDMM: add appendConfigData
+  void appendConfigData()
+  {
+    oappend(SET_F("addHB('Rotary-Encoder');"));
+
+    #ifdef ENCODER_DT_PIN
+      oappend(SET_F("xOpt('Rotary-Encoder:DT-pin',1,' ⎌',")); oappendi(ENCODER_DT_PIN); oappend(");"); 
+    #endif
+    #ifdef ENCODER_CLK_PIN
+      oappend(SET_F("xOpt('Rotary-Encoder:CLK-pin',1,' ⎌',")); oappendi(ENCODER_CLK_PIN); oappend(");"); 
+    #endif
+    #ifdef ENCODER_SW_PIN
+      oappend(SET_F("xOpt('Rotary-Encoder:SW-pin',1,' ⎌',")); oappendi(ENCODER_SW_PIN); oappend(");"); 
+    #endif
+  }
+
   /**
    * readFromConfig() is called before setup() to populate properties from values stored in cfg.json
    *
@@ -899,7 +932,7 @@ public:
         pinA = newDTpin;
         pinB = newCLKpin;
         pinC = newSWpin;
-        if (pinA<0 || pinB<0 || pinC<0) {
+        if (pinA<0 || pinB<0) { // WLEDMM support for rotary without pushbutton
           enabled = false;
           return true;
         }

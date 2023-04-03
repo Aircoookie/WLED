@@ -3,12 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.14.0-b0
+   @version 0.14.0-b2
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2211242
+#define VERSION 2302152
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -71,6 +71,7 @@
   #include <user_interface.h>
   }
 #else // ESP32
+  #include <HardwareSerial.h>  // ensure we have the correct "Serial" on new MCUs (depends on ARDUINO_USB_MODE and ARDUINO_USB_CDC_ON_BOOT)
   #include <WiFi.h>
   #include <ETH.h>
   #include "esp_wifi.h"
@@ -95,10 +96,6 @@
   #include "my_config.h"
 #endif
 
-#ifdef WLED_DEBUG_HOST
-#include "net_debug.h"
-#endif
-
 #include <ESPAsyncWebServer.h>
 #ifdef WLED_ADD_EEPROM_SUPPORT
   #include <EEPROM.h>
@@ -120,6 +117,7 @@
   #define ESPALEXA_MAXDEVICES 10
   // #define ESPALEXA_DEBUG
   #include "src/dependencies/espalexa/Espalexa.h"
+  #include "src/dependencies/espalexa/EspalexaDevice.h"
 #endif
 #ifndef WLED_DISABLE_BLYNK
   #include "src/dependencies/blynk/BlynkSimpleEsp.h"
@@ -130,11 +128,13 @@
   #include "src/dependencies/dmx/ESPDMX.h"
  #else //ESP32
   #include "src/dependencies/dmx/SparkFunDMX.h"
- #endif  
+ #endif
 #endif
 
 #include "src/dependencies/e131/ESPAsyncE131.h"
+#ifdef WLED_ENABLE_MQTT
 #include "src/dependencies/async-mqtt-client/AsyncMqttClient.h"
+#endif
 
 #define ARDUINOJSON_DECODE_UNICODE 0
 #include "src/dependencies/json/AsyncJson-v6.h"
@@ -394,20 +394,26 @@ WLED_GLOBAL bool arlsForceMaxBri _INIT(false);                    // enable to f
  #ifdef ESP8266
   WLED_GLOBAL DMXESPSerial dmx;
  #else //ESP32
-  WLED_GLOBAL SparkFunDMX dmx; 
- #endif 
+  WLED_GLOBAL SparkFunDMX dmx;
+ #endif
 WLED_GLOBAL uint16_t e131ProxyUniverse _INIT(0);                  // output this E1.31 (sACN) / ArtNet universe via MAX485 (0 = disabled)
 #endif
 WLED_GLOBAL uint16_t e131Universe _INIT(1);                       // settings for E1.31 (sACN) protocol (only DMX_MODE_MULTIPLE_* can span over consequtive universes)
 WLED_GLOBAL uint16_t e131Port _INIT(5568);                        // DMX in port. E1.31 default is 5568, Art-Net is 6454
 WLED_GLOBAL byte DMXMode _INIT(DMX_MODE_MULTIPLE_RGB);            // DMX mode (s.a.)
 WLED_GLOBAL uint16_t DMXAddress _INIT(1);                         // DMX start address of fixture, a.k.a. first Channel [for E1.31 (sACN) protocol]
+WLED_GLOBAL uint16_t DMXSegmentSpacing _INIT(0);                  // Number of void/unused channels between each segments DMX channels
 WLED_GLOBAL byte e131LastSequenceNumber[E131_MAX_UNIVERSE_COUNT]; // to detect packet loss
 WLED_GLOBAL bool e131Multicast _INIT(false);                      // multicast or unicast
 WLED_GLOBAL bool e131SkipOutOfSequence _INIT(false);              // freeze instead of flickering
 WLED_GLOBAL uint16_t pollReplyCount _INIT(0);                     // count number of replies for ArtPoll node report
 
+// mqtt
+WLED_GLOBAL unsigned long lastMqttReconnectAttempt _INIT(0);  // used for other periodic tasks too
+#ifndef WLED_DISABLE_MQTT
+WLED_GLOBAL AsyncMqttClient *mqtt _INIT(NULL);
 WLED_GLOBAL bool mqttEnabled _INIT(false);
+WLED_GLOBAL char mqttStatusTopic[40] _INIT("");            // this must be global because of async handlers
 WLED_GLOBAL char mqttDeviceTopic[33] _INIT("");            // main MQTT topic (individual per device, default is wled/mac)
 WLED_GLOBAL char mqttGroupTopic[33] _INIT("wled/all");     // second MQTT topic (for example to group devices)
 WLED_GLOBAL char mqttServer[33] _INIT("");                 // both domains and IPs should work (no SSL)
@@ -415,6 +421,10 @@ WLED_GLOBAL char mqttUser[41] _INIT("");                   // optional: username
 WLED_GLOBAL char mqttPass[65] _INIT("");                   // optional: password for MQTT auth
 WLED_GLOBAL char mqttClientID[41] _INIT("");               // override the client ID
 WLED_GLOBAL uint16_t mqttPort _INIT(1883);
+#define WLED_MQTT_CONNECTED (mqtt != nullptr && mqtt->connected())
+#else
+#define WLED_MQTT_CONNECTED false
+#endif
 
 #ifndef WLED_DISABLE_HUESYNC
 WLED_GLOBAL bool huePollingEnabled _INIT(false);           // poll hue bridge for light state
@@ -457,7 +467,11 @@ WLED_GLOBAL byte macroDoublePress[WLED_MAX_BUTTONS]   _INIT({0});
 // Security CONFIG
 WLED_GLOBAL bool otaLock     _INIT(false);  // prevents OTA firmware updates without password. ALWAYS enable if system exposed to any public networks
 WLED_GLOBAL bool wifiLock    _INIT(false);  // prevents access to WiFi settings when OTA lock is enabled
+#ifdef ARDUINO_ARCH_ESP32
 WLED_GLOBAL bool aOtaEnabled _INIT(true);   // ArduinoOTA allows easy updates directly from the IDE. Careful, it does not auto-disable when OTA lock is on
+#else
+WLED_GLOBAL bool aOtaEnabled _INIT(false);   // WLEDMM: start with OTA disabled, as it seems to be unstable on 8266
+#endif
 WLED_GLOBAL char settingsPIN[5] _INIT("");  // PIN for settings pages
 WLED_GLOBAL bool correctPIN     _INIT(true);
 WLED_GLOBAL unsigned long lastEditTime _INIT(0);
@@ -517,6 +531,7 @@ WLED_GLOBAL bool buttonPressedBefore[WLED_MAX_BUTTONS]        _INIT({false});
 WLED_GLOBAL bool buttonLongPressed[WLED_MAX_BUTTONS]          _INIT({false});
 WLED_GLOBAL unsigned long buttonPressedTime[WLED_MAX_BUTTONS] _INIT({0});
 WLED_GLOBAL unsigned long buttonWaitTime[WLED_MAX_BUTTONS]    _INIT({0});
+WLED_GLOBAL bool disablePullUp                                _INIT(false);
 WLED_GLOBAL byte touchThreshold                               _INIT(TOUCH_THRESHOLD);
 
 // notifications
@@ -578,7 +593,7 @@ WLED_GLOBAL int16_t currentPlaylist _INIT(-1);
 //still used for "PL=~" HTTP API command
 WLED_GLOBAL byte presetCycCurr _INIT(0);
 WLED_GLOBAL byte presetCycMin _INIT(1);
-WLED_GLOBAL byte presetCycMax _INIT(5); 
+WLED_GLOBAL byte presetCycMax _INIT(5);
 
 // realtime
 WLED_GLOBAL byte realtimeMode _INIT(REALTIME_MODE_INACTIVE);
@@ -589,11 +604,8 @@ WLED_GLOBAL uint8_t tpmPacketCount _INIT(0);
 WLED_GLOBAL uint16_t tpmPayloadFrameSize _INIT(0);
 WLED_GLOBAL bool useMainSegmentOnly _INIT(false);
 
-// mqtt
-WLED_GLOBAL unsigned long lastMqttReconnectAttempt _INIT(0);
 WLED_GLOBAL unsigned long lastInterfaceUpdate _INIT(0);
 WLED_GLOBAL byte interfaceUpdateCallMode _INIT(CALL_MODE_INIT);
-WLED_GLOBAL char mqttStatusTopic[40] _INIT("");        // this must be global because of async handlers
 
 // alexa udp
 WLED_GLOBAL String escapedMac;
@@ -654,8 +666,7 @@ WLED_GLOBAL AsyncWebServer server _INIT_N(((80)));
 #ifdef WLED_ENABLE_WEBSOCKETS
 WLED_GLOBAL AsyncWebSocket ws _INIT_N((("/ws")));
 #endif
-WLED_GLOBAL AsyncClient* hueClient _INIT(NULL);
-WLED_GLOBAL AsyncMqttClient* mqtt _INIT(NULL);
+WLED_GLOBAL AsyncClient     *hueClient _INIT(NULL);
 WLED_GLOBAL AsyncWebHandler *editHandler _INIT(nullptr);
 
 // udp interface objects
@@ -668,19 +679,46 @@ WLED_GLOBAL bool e131NewData _INIT(false);
 // led fx library object
 WLED_GLOBAL BusManager busses _INIT(BusManager());
 WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
-WLED_GLOBAL BusConfig* busConfigs[WLED_MAX_BUSSES] _INIT({nullptr}); //temporary, to remember values from network callback until after
+WLED_GLOBAL BusConfig* busConfigs[WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES] _INIT({nullptr}); //temporary, to remember values from network callback until after
 WLED_GLOBAL bool doInitBusses _INIT(false);
-WLED_GLOBAL int8_t loadLedmap _INIT(-1);
+WLED_GLOBAL bool loadLedmap _INIT(false); //WLEDMM use as bool and use loadedLedmap for Nr
+WLED_GLOBAL uint8_t loadedLedmap _INIT(0); //WLEDMM default 0
 WLED_GLOBAL uint16_t ledMaps _INIT(0); // bitfield representation of available ledmaps
 
 // Usermod manager
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
 
-WLED_GLOBAL int8_t i2c_sda  _INIT(-1);      // global I2C SDA pin [HW_PIN_SDA] (used for usermods)
-WLED_GLOBAL int8_t i2c_scl  _INIT(-1);      // global I2C SCL pin [HW_PIN_SCL] (used for usermods)
-WLED_GLOBAL int8_t spi_mosi _INIT(-1);      // global SPI DATA/MOSI pin [HW_PIN_DATASPI] (used for usermods)
-WLED_GLOBAL int8_t spi_miso _INIT(-1);      // global SPI DATA/MISO pin [HW_PIN_MISOSPI] (used for usermods)
-WLED_GLOBAL int8_t spi_sclk _INIT(-1);      // global SPI CLOCK/SCLK pin [HW_PIN_CLOCKSPI] (used for usermods)
+// global I2C SDA pin (used for usermods)
+#ifndef HW_PIN_SDA //WLEDMM not I2CSDAPIN
+WLED_GLOBAL int8_t i2c_sda  _INIT(-1);
+#else
+WLED_GLOBAL int8_t i2c_sda  _INIT(HW_PIN_SDA);
+#endif
+// global I2C SCL pin (used for usermods)
+#ifndef HW_PIN_SCL //WLEDMM not I2CSCLPIN
+WLED_GLOBAL int8_t i2c_scl  _INIT(-1);
+#else
+WLED_GLOBAL int8_t i2c_scl  _INIT(HW_PIN_SCL);
+#endif
+
+// global SPI DATA/MOSI pin (used for usermods)
+#ifndef HW_PIN_MOSISPI // WLEDMM not SPIMOSIPIN
+WLED_GLOBAL int8_t spi_mosi  _INIT(-1);
+#else
+WLED_GLOBAL int8_t spi_mosi  _INIT(HW_PIN_MOSISPI);
+#endif
+// global SPI DATA/MISO pin (used for usermods)
+#ifndef HW_PIN_MISOSPI //WLEDMM not SPIMISOPIN
+WLED_GLOBAL int8_t spi_miso  _INIT(-1);
+#else
+WLED_GLOBAL int8_t spi_miso  _INIT(HW_PIN_MISOSPI);
+#endif
+// global SPI CLOCK/SCLK pin (used for usermods)
+#ifndef HW_PIN_CLOCKSPI //WLEDMM not SPISCLKPIN
+WLED_GLOBAL int8_t spi_sclk  _INIT(-1);
+#else
+WLED_GLOBAL int8_t spi_sclk  _INIT(HW_PIN_CLOCKSPI);
+#endif
 
 // global ArduinoJson buffer
 WLED_GLOBAL StaticJsonDocument<JSON_BUFFER_SIZE> doc;
@@ -688,16 +726,16 @@ WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
 
 // enable additional debug output
 #if defined(WLED_DEBUG_HOST)
+  #include "net_debug.h"
   // On the host side, use netcat to receive the log statements: nc -l 7868 -u
   // use -D WLED_DEBUG_HOST='"192.168.xxx.xxx"' or FQDN within quotes
   #define DEBUGOUT NetDebug
   WLED_GLOBAL bool netDebugEnabled _INIT(true);
   WLED_GLOBAL char netDebugPrintHost[33] _INIT(WLED_DEBUG_HOST);
-  #if defined(WLED_DEBUG_NET_PORT)
-  WLED_GLOBAL int netDebugPrintPort _INIT(WLED_DEBUG_PORT);
-  #else
-  WLED_GLOBAL int netDebugPrintPort _INIT(7868);
+  #ifndef WLED_DEBUG_PORT
+    #define WLED_DEBUG_PORT 7868
   #endif
+  WLED_GLOBAL int netDebugPrintPort _INIT(WLED_DEBUG_PORT);
 #else
   #define DEBUGOUT Serial
 #endif
@@ -714,6 +752,27 @@ WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
   #define DEBUG_PRINTLN(x)
   #define DEBUG_PRINTF(x...)
 #endif
+
+// WLEDMM: macros to print "user messages" to Serial
+// cannot do this on -S2, due to buggy USBCDC serial driver
+#if defined(WLED_DEBUG) || defined(WLED_DEBUG_HOST)
+  // use DEBUG_PRINT
+  #define USER_PRINT(x) DEBUG_PRINT(x)
+  #define USER_PRINTLN(x) DEBUG_PRINTLN(x)
+  #define USER_PRINTF(x...) DEBUG_PRINTF(x)
+  #ifdef WLED_DEBUG_HOST
+    #define USER_FLUSH() {}
+  #else
+    #define USER_FLUSH() {DEBUGOUT.flush();}
+  #endif
+#else
+  // if serial is availeable, we use Serial.print directly
+  #define USER_PRINT(x)      { if (canUseSerial()) DEBUGOUT.print(x); }
+  #define USER_PRINTLN(x)    { if (canUseSerial()) DEBUGOUT.println(x); }
+  #define USER_PRINTF(x...)  { if (canUseSerial()) DEBUGOUT.printf(x); }
+  #define USER_FLUSH()       {DEBUGOUT.flush();}
+#endif
+// WLEDMM end
 
 #ifdef WLED_DEBUG_FS
   #define DEBUGFS_PRINT(x) DEBUGOUT.print(x)
@@ -739,7 +798,6 @@ WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
   #define WLED_CONNECTED (WiFi.status() == WL_CONNECTED)
 #endif
 #define WLED_WIFI_CONFIGURED (strlen(clientSSID) >= 1 && strcmp(clientSSID, DEFAULT_CLIENT_SSID) != 0)
-#define WLED_MQTT_CONNECTED (mqtt != nullptr && mqtt->connected())
 
 #ifndef WLED_AP_SSID_UNIQUE
   #define WLED_SET_AP_SSID() do { \

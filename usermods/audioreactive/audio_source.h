@@ -24,14 +24,14 @@
 
 // see https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/hw-reference/chip-series-comparison.html#related-documents
 // and https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/api-reference/peripherals/i2s.html#overview-of-all-modes
-#if defined(CONFIG_IDF_TARGET_ESP32C2) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C5) || defined(CONFIG_IDF_TARGET_ESP32C6) || defined(CONFIG_IDF_TARGET_ESP32H2) || defined(ESP8266) || defined(ESP8265)
+#if defined(CONFIG_IDF_TARGET_ESP32C2) || defined(CONFIG_IDF_TARGET_ESP32C5) || defined(CONFIG_IDF_TARGET_ESP32C6) || defined(CONFIG_IDF_TARGET_ESP32H2) || defined(ESP8266) || defined(ESP8265)
   // there are two things in these MCUs that could lead to problems with audio processing:
   // * no floating point hardware (FPU) support - FFT uses float calculations. If done in software, a strong slow-down can be expected (between 8x and 20x)
   // * single core, so FFT task might slow down other things like LED updates
   #if !defined(SOC_I2S_NUM) || (SOC_I2S_NUM < 1)
-  #error This audio reactive usermod does not support ESP32-C2, ESP32-C3 or ESP32-S2.
+  #error This audio reactive usermod does not support ESP32-C2 or ESP32-C3.
   #else
-  #warning This audio reactive usermod does not support ESP32-C2, ESP32-C3 or ESP32-S2.
+  #warning This audio reactive usermod does not support ESP32-C2 and ESP32-C3.
   #endif
 #endif
 
@@ -219,10 +219,15 @@ class I2SSource : public AudioSource {
           #endif
         #endif
         #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
-        // example from espressif: https://github.com/espressif/esp-idf/blob/release/v4.4/examples/peripherals/i2s/i2s_audio_recorder_sdcard/main/i2s_recorder_main.c
         // This is an I2S PDM microphone, these microphones only use a clock and
-        // data line, to make it simpler to debug, use the WS pin as CLK and SD
-        // pin as DATA
+        // data line, to make it simpler to debug, use the WS pin as CLK and SD pin as DATA
+        // example from espressif: https://github.com/espressif/esp-idf/blob/release/v4.4/examples/peripherals/i2s/i2s_audio_recorder_sdcard/main/i2s_recorder_main.c
+
+        // note to self: PDM has known bugs on S3, and does not work on C3 
+        //  * S3: PDM sample rate only at 50% of expected rate: https://github.com/espressif/esp-idf/issues/9893
+        //  * S3: I2S PDM has very low amplitude: https://github.com/espressif/esp-idf/issues/8660
+        //  * C3: does not support PDM to PCM input. SoC would allow PDM RX, but there is no hardware to directly convert to PCM so it will not work. https://github.com/espressif/esp-idf/issues/8796
+
         _config.mode = i2s_mode_t(I2S_MODE_MASTER | I2S_MODE_RX | I2S_MODE_PDM); // Change mode to pdm if clock pin not provided. PDM is not supported on ESP32-S2. PDM RX not supported on ESP32-C3
         _config.channel_format =I2S_PDM_MIC_CHANNEL;                             // seems that PDM mono mode always uses left channel.
         _config.use_apll = true;                                                 // experimental - use aPLL clock source to improve sampling quality
@@ -425,7 +430,7 @@ class ES7243 : public I2SSource {
       Wire.write((uint8_t)val);
       uint8_t i2cErr = Wire.endTransmission();  // i2cErr == 0 means OK
       if (i2cErr != 0) {
-        DEBUGSR_PRINTF("AR: ES7243 I2C write failed with error=%d  (addr=0x%X, reg 0x%X, val 0x%X).\n", ES7243_ADDR, i2cErr, reg, val);
+        DEBUGSR_PRINTF("AR: ES7243 I2C write failed with error=%d  (addr=0x%X, reg 0x%X, val 0x%X).\n", i2cErr, ES7243_ADDR, reg, val);
       }
     }
 
@@ -605,7 +610,7 @@ class I2SAdcSource : public I2SSource {
       // Determine Analog channel. Only Channels on ADC1 are supported
       int8_t channel = digitalPinToAnalogChannel(_audioPin);
       if (channel > 9) {
-        ERRORSR_PRINTF("Incompatible GPIO used for analog audio input: %d\n", _audioPin);
+        USER_PRINTF("AR: Incompatible GPIO used for analog audio input: %d\n", _audioPin);
         return;
       } else {
         adc_gpio_init(ADC_UNIT_1, adc_channel_t(channel));
@@ -624,7 +629,7 @@ class I2SAdcSource : public I2SSource {
       // Enable I2S mode of ADC
       err = i2s_set_adc_mode(ADC_UNIT_1, adc1_channel_t(channel));
       if (err != ESP_OK) {
-        DEBUGSR_PRINTF("Failed to set i2s adc mode: %d\n", err);
+        USER_PRINTF("AR: Failed to set i2s adc mode: %d\n", err);
         return;
       }
 

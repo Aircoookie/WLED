@@ -1,11 +1,16 @@
 #pragma once
 
+#include <Arduino.h>   // WLEDMM: make sure that I2C drivers have the "right" Wire Object
+#include <Wire.h>
+
 #include "wled.h"
 
+  // #define MPU6050_INT_GPIO 13  // WLEDMM - better choice on ESP32
+
 #ifdef WLED_DEBUG
-  #define DEBUG_PRINT_IMU(x) Serial.print(x)
-  #define DEBUG_PRINT_IMULN(x) Serial.println(x)
-  #define DEBUG_PRINT_IMUF(x...) Serial.printf(x)
+  #define DEBUG_PRINT_IMU(x) DEBUG_PRINT(x)
+  #define DEBUG_PRINT_IMULN(x) DEBUG_PRINTLN(x)
+  #define DEBUG_PRINT_IMUF(x...) DEBUG_PRINTF(x)
 #else
   #define DEBUG_PRINT_IMU(x)
   #define DEBUG_PRINT_IMULN(x)
@@ -42,14 +47,37 @@
   5. Wire up the MPU6050 as detailed above.
 */
 
-#include "I2Cdev.h"
+// WLEDMM: make sure that the "standard" Wire object is used
+#define I2CDEV_IMPLEMENTATION       I2CDEV_ARDUINO_WIRE
 
-#include "MPU6050_6Axis_MotionApps20.h"
+// WLEDMM avoid stupid warnings
+#undef DEBUG_PRINT
+#undef DEBUG_PRINTLN
+#undef DEBUG_PRINTF
+
+#include <I2Cdev.h>
+
+#include <MPU6050_6Axis_MotionApps20.h>
+
+// WLEDMM - need to re-define WLED DEBUG_PRINT maros, because the were overwritten by MPU6050_6Axis_MotionApps20.h
+#undef DEBUG_PRINT
+#undef DEBUG_PRINTLN
+#undef DEBUG_PRINTF
+
+#ifdef WLED_DEBUG
+  #define DEBUG_PRINT(x) DEBUGOUT.print(x)
+  #define DEBUG_PRINTLN(x) DEBUGOUT.println(x)
+  #define DEBUG_PRINTF(x...) DEBUGOUT.printf(x)
+#else
+  #define DEBUG_PRINT(x)
+  #define DEBUG_PRINTLN(x)
+  #define DEBUG_PRINTF(x...)
+#endif
 
 // Arduino Wire library is required if I2Cdev I2CDEV_ARDUINO_WIRE implementation
 // is used in I2Cdev.h
 #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
-    #include "Wire.h"
+    //#include "Wire.h"        // WLEDMM not necessary
 #endif
 
 // ================================================================
@@ -84,19 +112,45 @@ class MPU6050Driver : public Usermod {
     VectorInt16 aaReal;     // [x, y, z]            gravity-free accel sensor measurements
     VectorInt16 aaWorld;    // [x, y, z]            world-frame accel sensor measurements
     VectorFloat gravity;    // [x, y, z]            gravity vector
-    float euler[3];         // [psi, theta, phi]    Euler angle container
-    float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
+    float euler[3] = {0.0f};// [psi, theta, phi]    Euler angle container
+    float ypr[3]  = {0.0f}; // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
 
-    static const int INTERRUPT_PIN = 15; // use pin 15 on ESP8266
+    #if !defined(ARDUINO_ARCH_ESP32) || !defined(MPU6050_INT_GPIO)
+    static const int INTERRUPT_PIN = -1; // WLEDMM: not use pin 15 (on ESP8266) as can and will cause conflict with other pins
+    #else
+    static const int INTERRUPT_PIN = MPU6050_INT_GPIO;       // WLEDMM
+    #endif
 
     void setup() {
-      DEBUG_PRINT_IMULN("mpu setup");
+    // WLEDMM begin
+      USER_PRINTLN(F("mpu setup"));
       PinManagerPinType pins[2] = { { i2c_scl, true }, { i2c_sda, true } };
-      if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) { enabled = false; return; }
+      if ((i2c_scl < 0) || (i2c_sda < 0)) {
+        //enabled = false;
+        USER_PRINTF("mpu6050: warning - ivalid I2C pins: sda=%d scl=%d\n", i2c_sda, i2c_scl);
+        //return;
+      }
+
+      if (pins[1].pin < 0 || pins[0].pin < 0)  { enabled=false; dmpReady = false; return; }  //WLEDMM bugfix - ensure that "final" GPIO are valid and no "-1" sneaks trough
+      //if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) {       
+
+      // WLEDMM join I2C HW wire
+      if (!pinManager.joinWire()) {
+        enabled = false;
+        dmpReady = false;
+        USER_PRINTF("mpu6050: failed to allocate I2C sda=%d scl=%d\n", i2c_sda, i2c_scl);
+        return;
+      }
+      // WLEDMM end
 
       // join I2C bus (I2Cdev library doesn't do this automatically)
       #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
-          Wire.begin();
+#if defined(ARDUINO_ARCH_ESP32)
+      //Wire.begin(pins[1].pin, pins[0].pin);        // WLEDMM fix - need to use proper pins, in case that Wire was not started yet. Call will silently fail if Wire is initialized already.
+#else
+      //Wire.begin();  // WLEDMM - i2c pins on 8266 are fixed.
+#endif
+
           Wire.setClock(400000); // 400kHz I2C clock. Comment this line if having compilation difficulties
       #elif I2CDEV_IMPLEMENTATION == I2CDEV_BUILTIN_FASTWIRE
           Fastwire::setup(400, true);
@@ -116,12 +170,21 @@ class MPU6050Driver : public Usermod {
 
       // initialize device
       DEBUG_PRINT_IMULN(F("Initializing I2C devices..."));
+      // WLEDMM begin
+      if (!pinManager.allocatePin(INTERRUPT_PIN, false, PinOwner::UM_Unspecified))
+      {
+        //enabled = false;
+        USER_PRINTF("mpu6050: warning - failed to allocate interrupt GPIO %d\n", INTERRUPT_PIN);
+        //return;
+      }
+      // WLEDMM end
+
       mpu.initialize();
       pinMode(INTERRUPT_PIN, INPUT);
 
       // verify connection
       DEBUG_PRINT_IMULN(F("Testing device connections..."));
-      DEBUG_PRINT_IMULN(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));
+      USER_PRINTLN(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));
 
       // // wait for ready
       // DEBUG_PRINT_IMULN(F("\nSend any character to begin DMP programming and demo: "));
@@ -165,13 +228,13 @@ class MPU6050Driver : public Usermod {
           // get expected DMP packet size for later comparison
           packetSize = mpu.dmpGetFIFOPacketSize();
       } else {
-          // ERROR!
-          // 1 = initial memory load failed
-          // 2 = DMP configuration updates failed
-          // (if it's going to break, usually the code will be 1)
-          DEBUG_PRINT_IMU(F("DMP Initialization failed (code "));
-          DEBUG_PRINT_IMU(devStatus);
-          DEBUG_PRINT_IMULN(F(")"));
+        // ERROR!
+        // 1 = initial memory load failed
+        // 2 = DMP configuration updates failed
+        // (if it's going to break, usually the code will be 1)
+        DEBUG_PRINT(F("DMP Initialization failed (code "));
+        DEBUG_PRINT(devStatus);
+        DEBUG_PRINTLN(")");
       }
     }
 
@@ -205,7 +268,7 @@ class MPU6050Driver : public Usermod {
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
 
-      StaticJsonDocument<600> doc; //measured 528
+      StaticJsonDocument<800> doc; //measured 528  // WLEDMM added some margin (was 600)
 
       JsonObject imu_meas = doc.createNestedObject("IMU");
       #ifdef WLED_DEBUG
@@ -243,12 +306,15 @@ class MPU6050Driver : public Usermod {
       orient_json.add(ypr[0] * 180/M_PI);
       orient_json.add(ypr[1] * 180/M_PI);
       orient_json.add(ypr[2] * 180/M_PI);
- 
-      char stringBuffer[300]; // measured 266
+      char stringBuffer[400]; // measured 266 // WLEDMM added some margin (was 300)
       serializeJson(imu_meas, stringBuffer);
       JsonArray mainObject = user.createNestedArray("IMU");
-      mainObject.add(stringBuffer);
-
+      if (!dmpReady || !enabled) {       // WLEDMM
+        if (!dmpReady) mainObject.add(F("Sensor Not Found"));
+        else if (!enabled) mainObject.add(F("usermod disabled"));
+      } else {
+        mainObject.add(stringBuffer);
+      }
       // Serial.printf("imu_meas %u (%u %u) stringBuffer %u\n", (unsigned int)imu_meas.memoryUsage(), (unsigned int)imu_meas.size(), (unsigned int)imu_meas.nesting(), strlen(stringBuffer));
 
     }

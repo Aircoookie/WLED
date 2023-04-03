@@ -1,5 +1,8 @@
 #pragma once
 
+#include <Arduino.h>   // WLEDMM: make sure that I2C drivers have the "right" Wire Object
+#include <Wire.h>
+
 #include "src/dependencies/time/DS1307RTC.h"
 #include "wled.h"
 
@@ -13,7 +16,21 @@ class RTCUsermod : public Usermod {
 
     void setup() {
       PinManagerPinType pins[2] = { { i2c_scl, true }, { i2c_sda, true } };
-      if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) { disabled = true; return; }
+      if (pins[1].pin < 0 || pins[0].pin < 0)  { disabled=true; return; }  //WLEDMM bugfix - ensure that "final" GPIO are valid and no "-1" sneaks trough
+
+      // WLEDMM join hardware I2C
+      if (!pinManager.joinWire()) {  // WLEDMM - this allocates global I2C pins, then starts Wire - if not started previously
+        disabled = true;
+        return;
+      }
+
+      //if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) { disabled = true; return; }
+#if defined(ARDUINO_ARCH_ESP32)
+      //Wire.begin(pins[1].pin, pins[0].pin);  // WLEDMM this might silently fail, which is OK as it just means that I2C bus is already running.
+#else
+      //Wire.begin();  // WLEDMM - i2c pins on 8266 are fixed.
+#endif
+
       RTC.begin();
       time_t rtcTime = RTC.get();
       if (rtcTime) {
@@ -28,7 +45,7 @@ class RTCUsermod : public Usermod {
       if (strip.isUpdating()) return;
       if (!disabled && toki.isTick()) {
         time_t t = toki.second();
-        if (t != RTC.get()) RTC.set(t); //set RTC to NTP/UI-provided value
+        if (abs(t - RTC.get())> 2) RTC.set(t); //set RTC to NTP/UI-provided value - WLEDMM allow up to 3 sec deviation
       }
     }
 

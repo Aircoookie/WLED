@@ -22,6 +22,7 @@
   5 Sep 2011 updated for Arduino 1.0
  */
 
+#include <Arduino.h>
 
 #if defined (__AVR_ATtiny84__) || defined(__AVR_ATtiny85__) || (__AVR_ATtiny2313__)
 #include <TinyWireM.h>
@@ -159,7 +160,7 @@ unsigned char DS1307RTC::isRunning()
 
 void DS1307RTC::setCalibration(char calValue)
 {
-  unsigned char calReg = abs(calValue) & 0x1f;
+  unsigned char calReg = abs(int(calValue)) & 0x1f;  // WLEDMM fix for strange compiler warning
   if (calValue >= 0) calReg |= 0x20; // S bit is positive to speed up the clock
   Wire.beginTransmission(DS1307_CTRL_ID);
 #if ARDUINO >= 100  

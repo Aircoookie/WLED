@@ -1,18 +1,17 @@
 #ifndef WLED_FCN_DECLARE_H
 #define WLED_FCN_DECLARE_H
-#include <Arduino.h>
-#include "src/dependencies/espalexa/EspalexaDevice.h"
-#include "src/dependencies/e131/ESPAsyncE131.h"
 
 /*
  * All globally accessible functions are declared here
  */
 
 //alexa.cpp
+#ifndef WLED_DISABLE_ALEXA
 void onAlexaChange(EspalexaDevice* dev);
 void alexaInit();
 void handleAlexa();
 void onAlexaChange(EspalexaDevice* dev);
+#endif
 
 //blynk.cpp
 #ifndef WLED_DISABLE_BLYNK
@@ -172,7 +171,7 @@ void publishMqtt();
 void handleTime();
 void handleNetworkTime();
 void sendNTPPacket();
-bool checkNTPResponse();    
+bool checkNTPResponse();
 void updateLocalTime();
 void getTimeString(char* out);
 bool checkCountdown();
@@ -202,7 +201,7 @@ inline bool applyTemporaryPreset() {return applyPreset(255);};
 void savePreset(byte index, const char* pname = nullptr, JsonObject saveobj = JsonObject());
 inline void saveTemporaryPreset() {savePreset(255);};
 void deletePreset(byte index);
-bool getPresetName(byte index, String& name); 
+bool getPresetName(byte index, String& name);
 
 //set.cpp
 bool isAsterisksOnly(const char* str, byte maxLen);
@@ -265,19 +264,20 @@ class Usermod {
     virtual ~Usermod() { if (um_data) delete um_data; }
     virtual void setup() = 0; // pure virtual, has to be overriden
     virtual void loop() = 0;  // pure virtual, has to be overriden
-    virtual void handleOverlayDraw() {}
-    virtual bool handleButton(uint8_t b) { return false; }
-    virtual bool getUMData(um_data_t **data) { if (data) *data = nullptr; return false; };
-    virtual void connected() {}
-    virtual void appendConfigData() {}
-    virtual void addToJsonState(JsonObject& obj) {}
-    virtual void addToJsonInfo(JsonObject& obj) {}
-    virtual void readFromJsonState(JsonObject& obj) {}
-    virtual void addToConfig(JsonObject& obj) {}
+    virtual void handleOverlayDraw() {}                                      // called after all effects have been processed, just before strip.show()
+    virtual bool handleButton(uint8_t b) { return false; }                   // button overrides are possible here
+    virtual bool getUMData(um_data_t **data) { if (data) *data = nullptr; return false; }; // usermod data exchange [see examples for audio effects]
+    virtual void connected() {}                                              // called when WiFi is (re)connected
+    virtual void appendConfigData() {}                                       // helper function called from usermod settings page to add metadata for entry fields
+    virtual void addToJsonState(JsonObject& obj) {}                          // add JSON objects for WLED state
+    virtual void addToJsonInfo(JsonObject& obj) {}                           // add JSON objects for UI Info page
+    virtual void readFromJsonState(JsonObject& obj) {}                       // process JSON messages received from web server
+    virtual void addToConfig(JsonObject& obj) {}                             // add JSON entries that go to cfg.json
     virtual bool readFromConfig(JsonObject& obj) { return true; } // Note as of 2021-06 readFromConfig() now needs to return a bool, see usermod_v2_example.h
-    virtual void onMqttConnect(bool sessionPresent) {}
-    virtual bool onMqttMessage(char* topic, char* payload) { return false; }
-    virtual void onUpdateBegin(bool) {}
+    virtual void onMqttConnect(bool sessionPresent) {}                       // fired when MQTT connection is established (so usermod can subscribe)
+    virtual bool onMqttMessage(char* topic, char* payload) { return false; } // fired upon MQTT message received (wled topic)
+    virtual void onUpdateBegin(bool) {}                                      // fired prior to and after unsuccessful firmware update
+    virtual void onStateChange(uint8_t mode) {}                              // fired upon WLED state change
     virtual uint16_t getId() {return USERMOD_ID_UNSPECIFIED;}
 };
 
@@ -302,8 +302,10 @@ class UsermodManager {
     void onMqttConnect(bool sessionPresent);
     bool onMqttMessage(char* topic, char* payload);
     void onUpdateBegin(bool);
+    void onStateChange(uint8_t);
     bool add(Usermod* um);
     Usermod* lookup(uint16_t mod_id);
+    Usermod* lookupName(const char *mod_name); //WLEDMM
     byte getModCount() {return numMods;};
 };
 
@@ -333,7 +335,7 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxL
 int16_t extractModeDefaults(uint8_t mode, const char *segVar);
 uint16_t crc16(const unsigned char* data_p, size_t length);
 um_data_t* simulateSound(uint8_t simulationId);
-void enumerateLedmaps();
+// WLEDMM enumerateLedmaps(); moved to FX.h
 CRGB getCRGBForBand(int x, uint8_t *fftResult, int pal); //WLEDMM netmindz ar palette
 
 #ifdef WLED_ADD_EEPROM_SUPPORT
@@ -369,6 +371,7 @@ void clearEEPROM();
 //wled_serial.cpp
 void handleSerial();
 void updateBaudRate(uint32_t rate);
+bool canUseSerial(void);   // WLEDMM returns true if Serial can be used for debug output (i.e. not configured for other purpose)
 
 //wled_server.cpp
 bool isIp(String str);
@@ -392,6 +395,6 @@ void sendDataWs(AsyncWebSocketClient * client = nullptr);
 //xml.cpp
 void XML_response(AsyncWebServerRequest *request, char* dest = nullptr);
 void URL_response(AsyncWebServerRequest *request);
-void getSettingsJS(byte subPage, char* dest);
+void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest); //WLEDMM add request
 
 #endif

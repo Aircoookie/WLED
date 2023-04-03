@@ -33,8 +33,8 @@
 #ifndef FLD_PIN_CLOCKSPI
   #define FLD_PIN_CLOCKSPI spi_sclk
 #endif
-  #ifndef FLD_PIN_DATASPI
-  #define FLD_PIN_DATASPI spi_mosi
+  #ifndef FLD_PIN_MOSISPI //WLEDMM renamed from HW_PIN_DATASPI
+  #define FLD_PIN_MOSISPI spi_mosi
 #endif   
 #ifndef FLD_PIN_CS
   #define FLD_PIN_CS spi_cs
@@ -109,7 +109,7 @@ class FourLineDisplayUsermod : public Usermod {
     int8_t ioPin[5] = {FLD_PIN_SCL, FLD_PIN_SDA, -1, -1, -1};        // I2C pins: SCL, SDA
     uint32_t ioFrequency = 400000;  // in Hz (minimum is 100000, baseline is 400000 and maximum should be 3400000)
     #else
-    int8_t ioPin[5] = {FLD_PIN_CLOCKSPI, FLD_PIN_DATASPI, FLD_PIN_CS, FLD_PIN_DC, FLD_PIN_RESET}; // SPI pins: CLK, MOSI, CS, DC, RST
+    int8_t ioPin[5] = {FLD_PIN_CLOCKSPI, FLD_PIN_MOSISPI, FLD_PIN_CS, FLD_PIN_DC, FLD_PIN_RESET}; // SPI pins: CLK, MOSI, CS, DC, RST
     uint32_t ioFrequency = 1000000;  // in Hz (minimum is 500kHz, baseline is 1MHz and maximum should be 20MHz)
     #endif
     DisplayType type = FLD_TYPE;    // display type
@@ -120,8 +120,11 @@ class FourLineDisplayUsermod : public Usermod {
     uint32_t screenTimeout = SCREEN_TIMEOUT_MS;       // in ms
     bool sleepMode = true;          // allow screen sleep?
     bool clockMode = false;         // display clock
+#if defined(ARDUINO_ARCH_ESP32) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0)
+    bool enabled = false;  // WLEDMM workaround for I2C bugs in IDF v4.4.1
+#else
     bool enabled = true;
-
+#endif
     // Next variables hold the previous known values to determine if redraw is
     // required.
     String knownSsid = "";
@@ -177,9 +180,9 @@ class FourLineDisplayUsermod : public Usermod {
         isHW = (ioPin[0]==i2c_scl && ioPin[1]==i2c_sda);
         //isHW = true;
         if (isHW) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
-        if (ioPin[0] < 0 || ioPin[1] < 0)  { type=NONE; return; }  //WLEDMM bugfix - ensure that "final" GPIO are valid
+        if (ioPin[0] < 0 || ioPin[1] < 0)  { type=NONE; enabled = false; return; }  //WLEDMM bugfix - ensure that "final" GPIO are valid
         PinManagerPinType pins[2] = { { ioPin[0], true }, { ioPin[1], true } };
-        if (!pinManager.allocateMultiplePins(pins, 2, po)) { type=NONE; return; }
+        if (!pinManager.allocateMultiplePins(pins, 2, po)) { type=NONE; enabled = false; return; }
       }
 
       DEBUG_PRINTLN(F("Allocating display."));
@@ -224,14 +227,14 @@ class FourLineDisplayUsermod : public Usermod {
       }
 
       if (nullptr == u8x8) {
-          DEBUG_PRINTLN(F("Display init failed."));
+          USER_PRINTLN(F("Display init failed."));
           pinManager.deallocateMultiplePins((const uint8_t*)ioPin, (type == SSD1306_SPI || type == SSD1306_SPI64) ? 5 : 2, po);
           type = NONE;
           return;
       }
 
       initDone = true;
-      DEBUG_PRINTLN(F("Starting display."));
+      USER_PRINTLN(F("Starting display."));
       /*if (!(type == SSD1306_SPI || type == SSD1306_SPI64))*/ u8x8->setBusClock(ioFrequency);  // can be used for SPI too
       u8x8->begin();
       setFlipMode(flip);
@@ -636,6 +639,7 @@ class FourLineDisplayUsermod : public Usermod {
       JsonObject top   = root.createNestedObject(FPSTR(_name));
       top[FPSTR(_enabled)]       = enabled;
       JsonArray io_pin = top.createNestedArray("pin");
+      #warning WLEDMM: this causes global pin hijacking
       for (byte i=0; i<5; i++) io_pin.add(ioPin[i]);
       top["help4Pins"]           = F("Clk,Data,CS,DC,RST"); // help for Settings page
       top["type"]                = type;

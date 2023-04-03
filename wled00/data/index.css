@@ -128,12 +128,13 @@ button {
 	display: inline-block;
 }
 
-.icons.on {
-	color: var(--c-g);
+.on {
+	color: var(--c-g) !important;
 }
 
-.icons.off {
-	color: var(--c-6);
+.off {
+	color: var(--c-6) !important;
+	cursor: default !important;
 }
 
 .top .icons, .bot .icons {
@@ -434,6 +435,9 @@ button {
 	bottom: 100%;
 	left: 50%;
 	margin-left: -92px;
+
+	/* Ensure tooltip goes away when mouse leaves control */
+	pointer-events: none;
 
 	/* Fade in tooltip */
 	opacity: 0;
@@ -864,8 +868,8 @@ select {
 	transition-duration: 0.5s;
 	-webkit-backface-visibility: hidden;
 	-webkit-transform:translate3d(0,0,0);
-    -webkit-appearance: none; 
-    -moz-appearance: none; 
+    -webkit-appearance: none;
+    -moz-appearance: none;
 	backface-visibility: hidden;
 	transform:translate3d(0,0,0);
 	text-overflow: ellipsis;
@@ -889,8 +893,8 @@ div.sel-p:after {
     position: absolute;
     right: 10px;
     top: 22px;
-    width: 0; 
-    height: 0; 
+    width: 0;
+    height: 0;
     border-left: 8px solid transparent;
     border-right: 8px solid transparent;
     border-top: 8px solid var(--c-f);
@@ -981,7 +985,7 @@ textarea {
 
 .segname, .pname {
 	white-space: nowrap;
-	cursor: pointer;
+	/*cursor: pointer;*/
 	text-align: center;
 	overflow: clip;
 	text-overflow: ellipsis;
@@ -1185,7 +1189,7 @@ TD .checkmark, TD .radiomark {
 }
 
 .bp {
-	margin-bottom: 5px;
+	margin-bottom: 8px;
 }
 
 /* segment & preset wrapper */
@@ -1220,7 +1224,7 @@ TD .checkmark, TD .radiomark {
 	line-height: 24px;
 	vertical-align: middle;
 	-webkit-filter: grayscale(100%); /* Safari 6.0 - 9.0 */
-	filter: grayscale(100%);  
+	filter: grayscale(100%);
 }
 
 .lbl-l {
@@ -1330,7 +1334,7 @@ TD .checkmark, TD .radiomark {
 	white-space: nowrap;
 	text-overflow: ellipsis;
 	-webkit-filter: grayscale(100%); /* Safari 6.0 - 9.0 */
-	filter: grayscale(100%);  
+	filter: grayscale(100%);
 }
 
 /* list item palette preview */
@@ -1361,7 +1365,7 @@ TD .checkmark, TD .radiomark {
 	background: var(--c-2);
 	border: 1px solid var(--c-3);
 	-webkit-filter: grayscale(100%); /* Safari 6.0 - 9.0 */
-	filter: grayscale(100%);  
+	filter: grayscale(100%);
 }
 
 .fnd input[type="text"]:focus {

@@ -1,3 +1,12 @@
+/*
+   @title   Usermod Custom Effects (CE)
+   @file    usermod_v2_customeffects.h
+   @date    20220818
+   @author  Ewoud Wijma
+   @Copyright (c) 2023 Ewoud Wijma
+   @repo    https://github.com/ewoudwijma/ARTI
+ */
+
 #pragma once
 
 #include "wled.h"
@@ -14,8 +23,10 @@ uint16_t mode_customEffect(void) {
   static bool notEnoughHeap;
 
   static char previousEffect[charLength];
-  if (SEGENV.call == 0)
+  if (SEGENV.call == 0) {
     strcpy(previousEffect, ""); //force init
+    SEGMENT.fill(BLACK); //in case not all leds used e.g. when using expand 1d Circle. Tbd: fill black should never be used to allow for blends/transitions
+  }
 
   char currentEffect[charLength];
   strcpy(currentEffect, (SEGMENT.name != nullptr)?SEGMENT.name:"default"); //note: switching preset with segment name to preset without does not clear the SEGMENT.name variable, but not gonna solve here ;-)
@@ -40,7 +51,7 @@ uint16_t mode_customEffect(void) {
     strcat(programFileName, currentEffect);
     strcat(programFileName, ".wled");
 
-    succesful = arti->setup("/wledv032.json", programFileName);
+    succesful = arti->setup("/wledv033.json", programFileName);
 
     if (!succesful)
       ERROR_ARTI("Setup not succesful\n");
@@ -88,7 +99,7 @@ uint16_t mode_customEffect(void) {
   return FRAMETIME;
 }
 
-static const char _data_FX_MODE_CUSTOMEFFECT[] PROGMEM = "⚙️ Custom Effect@Speed,Intensity,Custom 1, Custom 2, Custom 3;!;!;mp12=0,1d";
+static const char _data_FX_MODE_CUSTOMEFFECT[] PROGMEM = "⚙️ Custom Effect ☾@Speed,Intensity,Custom 1, Custom 2, Custom 3;!;!;1;mp12=0";
 
 class CustomEffectsUserMod : public Usermod {
   private:
@@ -122,12 +133,6 @@ class CustomEffectsUserMod : public Usermod {
      */
     void addToJsonInfo(JsonObject& root)
     {
-      JsonObject user = root["u"];
-      if (user.isNull()) user = root.createNestedObject("u");
-
-      JsonArray infoArr = user.createNestedArray(FPSTR(_name));
-      infoArr.add(errorMessage); //value
-      // infoArr.add(""); //unit
     }
 
 

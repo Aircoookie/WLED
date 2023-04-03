@@ -94,7 +94,7 @@ uint16_t mode_2DWeather(void) {
   return FRAMETIME;
 }
 
-static const char _data_FX_MODE_2DWEATHER[] PROGMEM = "Weather@;!;!;pal=54,2d"; //temperature palette
+static const char _data_FX_MODE_2DWEATHER[] PROGMEM = "Weather ☾@;!;!;2;pal=54"; //temperature palette
 
 //utility function, move somewhere else???
 void epochToString(time_t time, char *timeString) {
@@ -317,13 +317,15 @@ class WeatherUsermod : public Usermod {
 
     void appendConfigData()
     {
-      oappend(SET_F("dd=addDropdown('WeatherUserMod','units');"));
+      oappend(SET_F("addInfo('Weather:help',0,'<button onclick=\"location.href=&quot;https://mm.kno.wled.ge/moonmodules/Weather&quot;\" type=\"button\">?</button>');"));
+      
+      oappend(SET_F("dd=addDropdown('Weather','units');"));
       oappend(SET_F("addOption(dd,'Kelvin',0);"));
       oappend(SET_F("addOption(dd,'Celcius',1);"));
       oappend(SET_F("addOption(dd,'Fahrenheit',2);"));
-      oappend(SET_F("addInfo('WeatherUserMod:units',1,'<i>Set time and location in time settings</i>');"));
-      oappend(SET_F("addInfo('WeatherUserMod:apiKey',1,'<i>Create acount on openweathermap.org and copy the key</i>');"));
-      oappend(SET_F("addInfo('WeatherUserMod:minTemp',1,'<i>Changing values: Reboot to (re)load forecast</i>');"));
+      oappend(SET_F("addInfo('Weather:units',1,'<i>Set time and location in time settings</i>');"));
+      oappend(SET_F("addInfo('Weather:apiKey',1,'<i>Create acount on openweathermap.org and copy the key</i>');"));
+      oappend(SET_F("addInfo('Weather:minTemp',1,'<i>Changing values: Reboot to (re)load forecast</i>');"));
     }
 
     /*
@@ -348,7 +350,7 @@ class WeatherUsermod : public Usermod {
 };
 
 // strings to reduce flash memory usage (used more than twice)
-const char WeatherUsermod::_name[]       PROGMEM = "WeatherUserMod";
+const char WeatherUsermod::_name[]       PROGMEM = "Weather";
 
 // example openweathermap data
 // {"cod":"200","message":0,"cnt":40,"list":[

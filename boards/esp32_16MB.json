@@ -25,7 +25,7 @@
     "arduino",
     "espidf"
 ],
-"name": "TwilightLord-ESP32 16MB",
+"name": "ESP32 16MB",
 "upload": {
     "flash_size": "16MB",
     "maximum_ram_size": 327680,
@@ -34,5 +34,5 @@
     "speed": 2000000
 },
 "url": "https://en.wikipedia.org/wiki/ESP32",
-"vendor": "TwilightLord"
+"vendor": "Multiple"
 }

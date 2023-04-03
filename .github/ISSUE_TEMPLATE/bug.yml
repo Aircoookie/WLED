@@ -34,18 +34,21 @@ body:
     id: install_format
     attributes:
       label: Install Method
-      description: How did you install WLED?
+      description: How did you install MoonModules WLED?
       options:
+        - From MoonModules Release Page
+        - From srg74 firmware repository
+        - From https://wled-install.github.io/
         - Binary from WLED.me
-        - Self-Compiled
+        - Self-Compiled or other
     validations:
       required: true
   - type: input
     id: version
     attributes:
-      label: What version of WLED?
+      label: What version/release of MM WLED?
       description: You can find this in by going to Config -> Security & Updates -> Scroll to Bottom. Copy and paste the entire line after "Server message"
-      placeholder: "e.g. WLED 0.13.1 (build 2203150)"
+      placeholder: "e.g. WLEDMM_0.14.0.2.1_esp32_4MB_max (build 2212061)"
     validations:
       required: true
   - type: dropdown
@@ -56,6 +59,9 @@ body:
       options:
         - ESP8266
         - ESP32
+        - ESP32-S3
+        - ESP32-S2
+        - ESP32-C3
         - Other
     validations:
       required: true

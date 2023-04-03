@@ -66,12 +66,14 @@ class MultiRelay : public Usermod {
     static const char _HAautodiscovery[];
 
     void publishMqtt(int relay) {
+#ifndef WLED_DISABLE_MQTT
       //Check if MQTT Connected, otherwise it will crash the 8266
       if (WLED_MQTT_CONNECTED){
         char subuf[64];
         sprintf_P(subuf, PSTR("%s/relay/%d"), mqttDeviceTopic, relay);
         mqtt->publish(subuf, 0, false, _relay[relay].state ? "on" : "off");
       }
+#endif
     }
 
     /**
@@ -182,7 +184,7 @@ class MultiRelay : public Usermod {
      */
     MultiRelay() {
       const int8_t defPins[] = {MULTI_RELAY_PINS};
-      for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
+      for (size_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
         _relay[i].pin      = i<sizeof(defPins) ? defPins[i] : -1;
         _relay[i].delay    = 0;
         _relay[i].mode     = false;
@@ -232,6 +234,7 @@ class MultiRelay : public Usermod {
 
     //Functions called by WLED
 
+#ifndef WLED_DISABLE_MQTT
     /**
      * handling of MQTT message
      * topic only contains stripped topic (part after /wled/MAC)
@@ -313,6 +316,7 @@ class MultiRelay : public Usermod {
         mqtt->publish(buf, 0, true, json_str, payload_size);
       }
     }
+#endif
 
     /**
      * setup() is called once at boot. WiFi is not yet connected at this point.
@@ -569,6 +573,11 @@ class MultiRelay : public Usermod {
       }
       top[FPSTR(_HAautodiscovery)] = HAautodiscovery;
       DEBUG_PRINTLN(F("MultiRelay config saved."));
+    }
+
+    void appendConfigData()
+    {
+      oappend(SET_F("addHB('MultiRelay');"));
     }
 
     /**

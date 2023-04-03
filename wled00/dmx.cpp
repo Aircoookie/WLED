@@ -12,6 +12,20 @@
 
 #ifdef WLED_ENABLE_DMX
 
+// WLEDMM: seems that DMX output triggers watchdog resets when compiling for IDF 4.4.x
+#ifdef ARDUINO_ARCH_ESP32
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
+#warning DMX output support might cause watchdog reset when compiling with ESP-IDF V4.4.x
+// E (24101) task_wdt: Task watchdog got triggered. The following tasks did not reset the watchdog in time:
+// E (24101) task_wdt:  - IDLE (CPU 0)
+// E (24101) task_wdt: Tasks currently running:
+// E (24101) task_wdt: CPU 0: FFT
+// E (24101) task_wdt: CPU 1: IDLE
+// E (24101) task_wdt: Aborting.
+//abort() was called at PC 0x40143b6c on core 0
+#endif
+#endif
+
 void handleDMX()
 {
   // don't act, when in DMX Proxy mode
@@ -73,7 +87,7 @@ void initDMX() {
   dmx.init(512);        // initialize with bus length
  #else
   dmx.initWrite(512);  // initialize with bus length
- #endif  
+ #endif
 }
 
 #else

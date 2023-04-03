@@ -1,10 +1,16 @@
-// force the compiler to show a warning to confirm that this file is included
-#warning **** Included USERMOD_BH1750 ****
+// force the compiler to show a warning to confirm that this file is included WLEDMM: commented this warning as we want serious warnings ;-)
+// #warning **** Included USERMOD_BH1750 ****
+
+#ifndef WLED_ENABLE_MQTT
+#error "This user mod requires MQTT to be enabled."
+#endif
 
 #pragma once
 
-#include "wled.h"
+#include <Arduino.h>   // WLEDMM: make sure that I2C drivers have the "right" Wire Object
 #include <Wire.h>
+
+#include "wled.h"
 #include <BH1750.h>
 
 // the max frequency to check photoresistor, 10 seconds
@@ -53,14 +59,19 @@ private:
   static const char _HomeAssistantDiscovery[];
 
   // set the default pins based on the architecture, these get overridden by Usermod menu settings
-  #ifdef ARDUINO_ARCH_ESP32 // ESP32 boards
-    #define HW_PIN_SCL 22
-    #define HW_PIN_SDA 21
-  #else // ESP8266 boards
-    #define HW_PIN_SCL 5
-    #define HW_PIN_SDA 4
-  #endif
-  int8_t ioPin[2] = {HW_PIN_SCL, HW_PIN_SDA};        // I2C pins: SCL, SDA...defaults to Arch hardware pins but overridden at setup()
+  // #ifdef ARDUINO_ARCH_ESP32 // ESP32 boards -- WLEDMM: don't override already defined HW pins
+  //   #ifndef HW_PIN_SDA
+  //     #define HW_PIN_SCL 22
+  //   #endif
+  //   #ifndef HW_PIN_SDA
+  //     #define HW_PIN_SDA 21
+  //   #endif
+  // #else // ESP8266 boards
+  //   #define HW_PIN_SCL 5
+  //   #define HW_PIN_SDA 4
+  // #endif
+  //int8_t ioPin[2] = {HW_PIN_SCL, HW_PIN_SDA};        // I2C pins: SCL, SDA...defaults to Arch hardware pins but overridden at setup()
+  int8_t ioPin[2] = {-1, -1};        // WLEDMM - I2C pins: wait until hw pins get allocated
   bool initDone = false;
   bool sensorFound = false;
 
@@ -119,13 +130,28 @@ private:
 public:
   void setup()
   {
-    bool HW_Pins_Used = (ioPin[0]==HW_PIN_SCL && ioPin[1]==HW_PIN_SDA); // note whether architecture-based hardware SCL/SDA pins used
+    bool HW_Pins_Used = (ioPin[0]==i2c_scl && ioPin[1]==i2c_sda); // note whether architecture-based hardware SCL/SDA pins used
     PinOwner po = PinOwner::UM_BH1750; // defaults to being pinowner for SCL/SDA pins
-    PinManagerPinType pins[2] = { { ioPin[0], true }, { ioPin[1], true } };  // allocate pins
     if (HW_Pins_Used) po = PinOwner::HW_I2C; // allow multiple allocations of HW I2C bus pins
+    if ((i2c_scl >= 0) && (i2c_sda >=0)) { // WLEDMM: make sure that global HW pins are used if defined 
+      ioPin[0] = i2c_scl;
+      ioPin[1] = i2c_sda;
+      po = PinOwner::HW_I2C;
+    }
+    PinManagerPinType pins[2] = { { ioPin[0], true }, { ioPin[1], true } };  // allocate pins // WLEDMM: after selecting final pins
     if (!pinManager.allocateMultiplePins(pins, 2, po)) return;
     
-    Wire.begin(ioPin[1], ioPin[0]);
+#if defined(ARDUINO_ARCH_ESP32)
+      if (pins[1].pin < 0 || pins[0].pin < 0)  { sensorFound=false; enabled=false; return; }  //WLEDMM bugfix - ensure that "final" GPIO are valid and no "-1" sneaks trough
+      //Wire.begin(pins[1].pin, pins[0].pin);  // WLEDMM this might silently fail, which is OK as it just means that I2C bus is already running.
+#else
+      //Wire.begin();  // WLEDMM - i2c pins on 8266 are fixed.
+#endif
+    if (!pinManager.joinWire()) {  // WLEDMM - this allocates global I2C pins, then starts Wire - if not started previously
+      sensorFound = false;
+      enabled = false;
+      return;
+    }
 
     sensorFound = lightMeter.begin();
     initDone = true;
@@ -136,6 +162,7 @@ public:
     if ((!enabled) || strip.isUpdating())
       return;
 
+    if (!sensorFound) return;  // WLEDMM bugfix
     unsigned long now = millis();
 
     // check to see if we are due for taking a measurement
@@ -156,6 +183,7 @@ public:
     {
       lastLux = lux;
       lastSend = millis();
+#ifndef WLED_DISABLE_MQTT
       if (WLED_MQTT_CONNECTED)
       {
         if (!mqttInitialized)
@@ -164,12 +192,13 @@ public:
             mqttInitialized = true;
           }
         mqtt->publish(mqttLuminanceTopic.c_str(), 0, true, String(lux).c_str());
-        DEBUG_PRINTLN(F("Brightness: ") + String(lux) + F("lx"));
+        DEBUG_PRINTLN(String("Brightness: ") + String(lux) + String("lx"));  // WLEDMM fix compilation warning
       }
       else
       {
         DEBUG_PRINTLN(F("Missing MQTT connection. Not publishing data"));
       }
+#endif
     }
   }
 
@@ -179,6 +208,8 @@ public:
 
   void addToJsonInfo(JsonObject &root)
   {
+    if ((!enabled) || (!sensorFound)) return;  // WLEDMM bugfix
+
     JsonObject user = root[F("u")];
     if (user.isNull())
       user = root.createNestedObject(F("u"));
@@ -200,6 +231,15 @@ public:
     }
   }
 
+  void appendConfigData() {
+    oappend(SET_F("addHB('BH1750');"));
+    // WLEDMM this usermod can ONLY use HW_I2C - so always use globals
+    //oappend(SET_F("addInfo('BH1750:pin[]',0,'','I2C SCL');"));
+    //oappend(SET_F("rOpt('BH1750:pin[]',0,'use global (")); oappendi(i2c_scl); oappend(")',-1);"); 
+    //oappend(SET_F("addInfo('BH1750:pin[]',1,'','I2C SDA');"));
+    //oappend(SET_F("rOpt('BH1750:pin[]',1,'use global (")); oappendi(i2c_sda); oappend(")',-1);"); 
+  }    
+
   // (called from set.cpp) stores persistent properties to cfg.json
   void addToConfig(JsonObject &root)
   {
@@ -210,9 +250,14 @@ public:
     top[FPSTR(_minReadInterval)] = minReadingInterval;
     top[FPSTR(_HomeAssistantDiscovery)] = HomeAssistantDiscovery;
     top[FPSTR(_offset)] = offset;
-    JsonArray io_pin = top.createNestedArray(F("pin"));
-    for (byte i=0; i<2; i++) io_pin.add(ioPin[i]);
-    top[F("help4Pins")] = F("SCL,SDA"); // help for Settings page
+
+    // WLEDMM this usermod can ONLY use HW_I2C - so always use globals
+    //JsonArray io_pin = top.createNestedArray(F("pin"));
+    //WLEDMM: avoid global pin hijacking
+    //io_pin.add((ioPin[0]==i2c_scl)?-1:ioPin[0]);
+    //io_pin.add((ioPin[1]==i2c_sda)?-1:ioPin[1]);
+
+    // top[F("help4Pins")] = F("SCL,SDA"); // help for Settings page
 
     DEBUG_PRINTLN(F("BH1750 config saved."));
   }
@@ -220,7 +265,8 @@ public:
   // called before setup() to populate properties from values stored in cfg.json
   bool readFromConfig(JsonObject &root)
   {
-    int8_t newPin[2]; for (byte i=0; i<2; i++) newPin[i] = ioPin[i]; // prepare to note changed pins
+    int8_t newPin[2] = {-1, -1}; // WLEDMM this usermod can ONLY use HW_I2C - so always use globals
+    //for (byte i=0; i<2; i++) newPin[i] = ioPin[i]; // prepare to note changed pins
 
     // we look for JSON object.
     JsonObject top = root[FPSTR(_name)];
@@ -238,7 +284,8 @@ public:
     configComplete &= getJsonValue(top[FPSTR(_minReadInterval)], minReadingInterval, 500); //ms
     configComplete &= getJsonValue(top[FPSTR(_HomeAssistantDiscovery)], HomeAssistantDiscovery, false);
     configComplete &= getJsonValue(top[FPSTR(_offset)], offset, 1);
-    for (byte i=0; i<2; i++) configComplete &= getJsonValue(top[F("pin")][i], newPin[i], ioPin[i]);
+    // WLEDMM this usermod can ONLY use HW_I2C - so always use globals
+    //for (byte i=0; i<2; i++) configComplete &= getJsonValue(top[F("pin")][i], newPin[i], ioPin[i]);
 
     DEBUG_PRINT(FPSTR(_name));
     if (!initDone) {
@@ -252,7 +299,8 @@ public:
       for (byte i=0; i<2; i++) if (ioPin[i] != newPin[i]) { pinsChanged = true; break; } // check if any pins changed
       if (pinsChanged) { //if pins changed, deallocate old pins and allocate new ones
         PinOwner po = PinOwner::UM_BH1750;
-        if (ioPin[0]==HW_PIN_SCL && ioPin[1]==HW_PIN_SDA) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
+        if (ioPin[0]==i2c_scl && ioPin[1]==i2c_sda) po = PinOwner::HW_I2C;  // allow multiple allocations of HW I2C bus pins
+        if (ioPin[0]==-1 && ioPin[1]==-1) po = PinOwner::HW_I2C;            // WLEDMM global HW I2C bus pins
         pinManager.deallocateMultiplePins((const uint8_t *)ioPin, 2, po);  // deallocate pins
         for (byte i=0; i<2; i++) ioPin[i] = newPin[i];
         setup();

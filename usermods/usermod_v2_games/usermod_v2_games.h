@@ -172,7 +172,7 @@ uint16_t mode_pongGame(void) {
   return FRAMETIME;
 }
 
-static const char _data_FX_MODE_PONGGAME[] PROGMEM = "🎮 Pong@!;!;!;2d";
+static const char _data_FX_MODE_PONGGAME[] PROGMEM = "🎮 Pong ☾@!;!;!;2";
 
 //https://howtomechatronics.com/tutorials/arduino/arduino-and-mpu6050-accelerometer-and-gyroscope-tutorial/
 
@@ -207,7 +207,7 @@ uint16_t mode_IMUTest(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_IMUTest[] PROGMEM = "🎮 IMUTest@;;;2d";
+static const char _data_FX_MODE_IMUTest[] PROGMEM = "🎮 IMUTest ☾@;;;2d";
 
 #endif
 
@@ -264,6 +264,7 @@ class Frame3D {
       points.push_back(voxel);
     }
     void drawLineXYZ(Voxel from, Voxel to, uint32_t col) {
+      //causes crash on ESP8266: StoreProhibited: A store referenced a page mapped with an attribute that does not permit stores, maybe not enough free heap
       for (float x=MIN(from.x, to.x); x<=MAX(from.x, to.x); x+=.05)
         for (float y=MIN(from.y, to.y); y<=MAX(from.y, to.y); y+=.05)
           for (float z=MIN(from.z, to.z); z<=MAX(from.z, to.z); z+=.05)
@@ -318,7 +319,7 @@ uint16_t mode_3DIMUCube(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_3DIMUCube[] PROGMEM = "🎮 3DIMUCube@,Perspective;!;!;,pal=1,2d"; //random cycle
+static const char _data_FX_MODE_3DIMUCube[] PROGMEM = "🎮 3DIMUCube ☾@,Perspective;!;!;2;pal=1"; //random cycle
 
 class GamesUsermod : public Usermod {
   private:
@@ -329,9 +330,9 @@ class GamesUsermod : public Usermod {
       strip.addEffect(255, &mode_pongGame, _data_FX_MODE_PONGGAME);
       #ifdef USERMOD_MPU6050_IMU
         IMU = (MPU6050Driver *)usermods.lookup(USERMOD_ID_IMU);
-        #ifdef WLED_DEBUG
+        // #ifdef WLED_DEBUG
           strip.addEffect(255, &mode_IMUTest, _data_FX_MODE_IMUTest);
-        #endif
+        // #endif
       #endif
       strip.addEffect(255, &mode_3DIMUCube, _data_FX_MODE_3DIMUCube); //works also without IMU
     }

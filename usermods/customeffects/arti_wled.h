@@ -1,8 +1,9 @@
 /*
    @title   Arduino Real Time Interpreter (ARTI)
-   @file    arti_wled_plugin.h
+   @file    arti_wled.h
    @date    20220818
    @author  Ewoud Wijma
+   @Copyright (c) 2023 Ewoud Wijma
    @repo    https://github.com/ewoudwijma/ARTI
  */
 
@@ -55,7 +56,8 @@ enum Externals
   F_custom1Slider,
   F_custom2Slider,
   F_custom3Slider,
-  F_sampleAvg,
+  F_volume,
+  F_fftResult,
 
   F_shift,
   F_circle2D,
@@ -146,6 +148,18 @@ float ARTI::arti_external_function(uint8_t function, float par1, float par2, flo
       case F_segcolor:
         return SEGCOLOR((uint8_t)par1);
 
+      case F_fftResult:
+      {
+        um_data_t *um_data;
+        if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+          // add support for no audio
+          um_data = simulateSound(SEGMENT.soundSim);
+        }
+        uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
+
+        return fftResult[(uint8_t)par1%16];
+      }
+
       case F_shift: {
         uint32_t saveFirstPixel = SEGMENT.getPixelColor(0);
         for (uint16_t i=0; i<SEGLEN-1; i++)
@@ -156,13 +170,13 @@ float ARTI::arti_external_function(uint8_t function, float par1, float par2, flo
         return floatNull;
       }
       case F_circle2D: {
-        uint16_t circleLength = min(strip.matrixWidth, strip.matrixHeight);
+        uint16_t circleLength = min(Segment::maxWidth, Segment::maxHeight);
         uint16_t deltaWidth=0, deltaHeight=0;
 
-        if (circleLength < strip.matrixHeight) //portrait
-          deltaHeight = (strip.matrixHeight - circleLength) / 2;
-        if (circleLength < strip.matrixWidth) //portrait
-          deltaWidth = (strip.matrixWidth - circleLength) / 2;
+        if (circleLength < Segment::maxHeight) //portrait
+          deltaHeight = (Segment::maxHeight - circleLength) / 2;
+        if (circleLength < Segment::maxWidth) //portrait
+          deltaWidth = (Segment::maxWidth - circleLength) / 2;
 
         float halfLength = (circleLength-1)/2.0;
 
@@ -175,10 +189,12 @@ float ARTI::arti_external_function(uint8_t function, float par1, float par2, flo
         SEGMENT.drawLine(par1, par2, par3, par4, par5);
         return floatNull;
       case F_drawArc:
-        if (par5 == floatNull)
-          SEGMENT.drawArc(par1, par2, par3, par4);
-        else
-          SEGMENT.drawArc(par1, par2, par3, par4, par5); //fillColor
+        #ifndef WLED_DISABLE_2D
+          if (par5 == floatNull)
+            SEGMENT.drawArc(par1, par2, par3, par4);
+          else
+            SEGMENT.drawArc(par1, par2, par3, par4, par5); //fillColor
+        #endif
         return floatNull;
       case F_constrain:
         return constrain(par1, par2, par3);
@@ -229,6 +245,9 @@ float ARTI::arti_external_function(uint8_t function, float par1, float par2, flo
         return par1;
 
       case F_segcolor:
+        return par1;
+
+      case F_fftResult:
         return par1;
 
       case F_shift:
@@ -350,14 +369,14 @@ float ARTI::arti_get_external_variable(uint8_t variable, float par1, float par2,
         return SEGMENT.custom2;
       case F_custom3Slider:
         return SEGMENT.custom3;
-      case F_sampleAvg:
+      case F_volume:
       {
         um_data_t *um_data;
         if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
           // add support for no audio
           um_data = simulateSound(SEGMENT.soundSim);
         }
-        float   volumeSmth  = *(float*)   um_data->u_data[0]; //ewowi: use instead of sampleAvg???
+        float   volumeSmth  = *(float*)   um_data->u_data[0];
 
         return volumeSmth;
       }
@@ -400,8 +419,8 @@ float ARTI::arti_get_external_variable(uint8_t variable, float par1, float par2,
         return F_custom2Slider;
       case F_custom3Slider:
         return F_custom3Slider;
-      case F_sampleAvg:
-        return F_sampleAvg;
+      case F_volume:
+        return F_volume;
 
       case F_hour:
         return F_hour;
@@ -507,9 +526,12 @@ bool ARTI::loop()
 
       for (int i = 0; i< arti_get_external_variable(F_ledCount); i++)
       {
-        ar->set(function_symbol->function_scope->symbols[0]->scope_index, i%strip.matrixWidth); // set x
-        if (function_symbol->function_scope->nrOfFormals == 2) // 2D
-          ar->set(function_symbol->function_scope->symbols[1]->scope_index, i/strip.matrixWidth); // set y
+        if (function_symbol->function_scope->nrOfFormals == 2) {// 2D
+          ar->set(function_symbol->function_scope->symbols[0]->scope_index, i%Segment::maxWidth); // set x
+          ar->set(function_symbol->function_scope->symbols[1]->scope_index, i/Segment::maxWidth); // set y
+        }
+        else
+          ar->set(function_symbol->function_scope->symbols[0]->scope_index, i); // set x
 
         this->callStack->push(ar);
 
