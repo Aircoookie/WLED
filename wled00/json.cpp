@@ -92,8 +92,8 @@ bool deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   if ((spc>0 && spc!=seg.spacing) || seg.map1D2D!=map1D2D) seg.fill(BLACK); // clear spacing gaps
 
-  seg.map1D2D  = constrain(map1D2D, 0, 3);
-  seg.soundSim = constrain(soundSim, 0, 3);
+  seg.map1D2D  = constrain(map1D2D, 0, 7);
+  seg.soundSim = constrain(soundSim, 0, 1);
 
   uint8_t group = elem[F("group")] | seg.group;
   seg.group = constrain(group, 0, 3);
