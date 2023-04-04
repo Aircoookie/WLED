@@ -1484,9 +1484,9 @@ class AudioReactive : public Usermod {
         #endif
         case 6:
           DEBUGSR_PRINTLN(F("AR: ES8388 Source"));
-          audioSource = new ES8388Source(SAMPLE_RATE, BLOCK_SIZE, sdaPin, sclPin);
+          audioSource = new ES8388Source(SAMPLE_RATE, BLOCK_SIZE);
           delay(100);
-          if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin, i2sckPin, mclkPin);
+          if (audioSource) audioSource->initialize(sdaPin, sclPin, i2swsPin, i2ssdPin, i2sckPin, mclkPin);
           break;
 
         #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
