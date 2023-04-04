@@ -15,7 +15,6 @@
 #else
 #define SRate_t int
 #endif
-// #include "ES8388.h"
 
 //#include <driver/i2s_std.h>
 //#include <driver/i2s_pdm.h>
@@ -485,9 +484,9 @@ public:
     int8_t pin_ES7243_SCL;
 };
 
-/* ES8388 Microphone
-   This is an I2S microphone that requires ininitialization over
-   I2C before I2S data can be received
+/* ES8388 Sound Modude
+   This is an I2S sound processing unit that requires ininitialization over
+   I2C before I2S data can be received. 
 */
 class ES8388Source : public I2SSource {
   private:
@@ -504,7 +503,7 @@ class ES8388Source : public I2SSource {
       Wire.beginTransmission(0x10);
       #define ES8388_ADDR 0x10   // default address
 #else
-      Wire.beginTransmission(ES7243_ADDR);
+      Wire.beginTransmission(ES8388_ADDR);
 #endif
       Wire.write((uint8_t)reg);
       Wire.write((uint8_t)val);
@@ -517,58 +516,40 @@ class ES8388Source : public I2SSource {
     void _es8388InitAdc() {
       // This is by no means 100% figured but it's working for line-in
       // with a little too much noise for my liking...
+      // https://dl.radxa.com/rock2/docs/hw/ds/ES8388%20user%20Guide.pdf Section 10.1
+      // https://docs.google.com/spreadsheets/d/1CN3MvhkcPVESuxKyx1xRYqfUit5hOdsG45St9BCUm-g/edit#gid=0 generally
       _es8388I2cBegin();
-      _es8388I2cWrite(0x08,0x00);
-      _es8388I2cWrite(0x02,0xff);
-      _es8388I2cWrite(0x2b,0x80);
-      _es8388I2cWrite(0x00,0x05);
-      _es8388I2cWrite(0x01,0x40);
-      _es8388I2cWrite(0x03,0x00);
-      _es8388I2cWrite(0x0a,0x50);
-      _es8388I2cWrite(0x0b,0x80);
-      _es8388I2cWrite(0x09,0x77);
-      _es8388I2cWrite(0x0c,0x0c);
-      _es8388I2cWrite(0x0d,0x02);
-      _es8388I2cWrite(0x10,0x00);
-      _es8388I2cWrite(0x11,0x00);
-      _es8388I2cWrite(0x12,0xea);
-      _es8388I2cWrite(0x13,0xc0);
-      _es8388I2cWrite(0x14,0x12);
-      _es8388I2cWrite(0x15,0x06);
-      _es8388I2cWrite(0x16,0xc3);
-      _es8388I2cWrite(0x04,0x3c);
-      _es8388I2cWrite(0x17,0x18);
-      _es8388I2cWrite(0x18,0x02);
-      _es8388I2cWrite(0x19,0x00);
-      _es8388I2cWrite(0x1a,0x00);
-      _es8388I2cWrite(0x1b,0x00);
-      _es8388I2cWrite(0x26,0x09);
-      _es8388I2cWrite(0x27,0x50);
-      _es8388I2cWrite(0x28,0x38);
-      _es8388I2cWrite(0x29,0x38);
-      _es8388I2cWrite(0x2a,0x50);
-      _es8388I2cWrite(0x2e,0x00);
-      _es8388I2cWrite(0x2f,0x00);
-      _es8388I2cWrite(0x30,0x00);
-      _es8388I2cWrite(0x31,0x00);
-      _es8388I2cWrite(0x02,0x00);
-      _es8388I2cWrite(0x0a,0x50);
-      _es8388I2cWrite(0x09,0x00);
-      _es8388I2cWrite(0x04,0x0c);
-      _es8388I2cWrite(0x30,0x21);
-      _es8388I2cWrite(0x31,0x21);
-      _es8388I2cWrite(0x26,0x09);
-      _es8388I2cWrite(0x27,0x90);
-      _es8388I2cWrite(0x2a,0x90);
-      _es8388I2cWrite(0x12,0x38);
-      _es8388I2cWrite(0x13,0x30);
-      _es8388I2cWrite(0x14,0x57);
-      _es8388I2cWrite(0x15,0x06);
-      _es8388I2cWrite(0x16,0x89);
-      _es8388I2cWrite(0x26,0x09);
-      _es8388I2cWrite(0x27,0x50);
-      _es8388I2cWrite(0x2a,0x50);
-      _es8388I2cWrite(0x09,0x00);
+      _es8388I2cWrite(0x08,0x00); // I2S to slave
+      _es8388I2cWrite(0x02,0xf3); // Power down DEM and STM
+      _es8388I2cWrite(0x2b,0x80); // Set same LRCK
+      _es8388I2cWrite(0x00,0x05); // Set chip to Play & Record Mode
+      _es8388I2cWrite(0x01,0x40); // Power up Analog and lbias ... These 5 (to here) need to be done in order
+      _es8388I2cWrite(0x03,0x00); // Power up ADC, Analog Input, and Mic Bias
+      _es8388I2cWrite(0x04,0x3C); // ** In guide, not in working example tho. **
+      _es8388I2cWrite(0x0a,0x50); // Use Lin2/Rin2 for ADC input  
+      _es8388I2cWrite(0x09,0x00); // Select Analog Input PGA Gain for ADC to 0dB **
+      _es8388I2cWrite(0x0c,0x0c); // I2S format, 24-bit
+      _es8388I2cWrite(0x0d,0x02); // Set MCLK/LRCK ratio to 256
+      _es8388I2cWrite(0x10,0x00); // Set ADC digital volume attenuation to 0dB (left)
+      _es8388I2cWrite(0x11,0x00); // Set ADC digital volume attenuation to 0dB (right)
+      _es8388I2cWrite(0x17,0x18); // Set format for DAC (I2S, 24bit)
+      _es8388I2cWrite(0x18,0x02); // Set DAC MCLK/LRCK ratio to 256
+      _es8388I2cWrite(0x1a,0x00); // DAC Volume attenuation 0dB (left)
+      _es8388I2cWrite(0x1b,0x00); // DAC Volume attenuation 0dB (right)
+      _es8388I2cWrite(0x2e,0x00); // LOUT1 volume - 00 = -45dB
+      _es8388I2cWrite(0x2f,0x00); // ROUT1 volume - 00 = -45dB
+      _es8388I2cWrite(0x0C,0b00000001); // ADC digital format - I2S + Left Justified
+      _es8388I2cWrite(0x17,0b00000010); // DAC digital format - I2S + Left Justified
+      _es8388I2cWrite(0x02,0x00); // Power up DEM and STM
+      // end of guide init ^^^
+      _es8388I2cWrite(0x02,0b01000000); // Power. Guide says it's only 6 bits but that 1 means "turn on sometthing for line-out voltage"
+      _es8388I2cWrite(0x04,0x0c); // LOUT2 an ROUT2 powered
+      _es8388I2cWrite(0x30,0b00011110); // LOUT2VOL - 0 = -45dB, 0b00011110 = +0dB
+      _es8388I2cWrite(0x31,0b00011110); // ROUT2VOL - 0 = -45dB, 0b00011110 = +0dB
+      _es8388I2cWrite(0x26,0x09); // Mixer 
+      _es8388I2cWrite(0x27,0x50); // Mixer 
+      _es8388I2cWrite(0x2a,0x50); // Mixer 
+      _es8388I2cWrite(0x03,0x00); // Power
     }
 
   public:
