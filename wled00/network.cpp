@@ -20,27 +20,27 @@ const ethernet_settings ethernetBoards[] = {
   // None
   {
   },
-  
+
   // WT32-EHT01
   // Please note, from my testing only these pins work for LED outputs:
   //   IO2, IO4, IO12, IO14, IO15
   // These pins do not appear to work from my testing:
   //   IO35, IO36, IO39
   {
-    1,                 // eth_address, 
-    16,                // eth_power, 
-    23,                // eth_mdc, 
-    18,                // eth_mdio, 
+    1,                 // eth_address,
+    16,                // eth_power,
+    23,                // eth_mdc,
+    18,                // eth_mdio,
     ETH_PHY_LAN8720,   // eth_type,
     ETH_CLOCK_GPIO0_IN // eth_clk_mode
   },
 
   // ESP32-POE
   {
-     0,                  // eth_address, 
-    12,                  // eth_power, 
-    23,                  // eth_mdc, 
-    18,                  // eth_mdio, 
+     0,                  // eth_address,
+    12,                  // eth_power,
+    23,                  // eth_mdc,
+    18,                  // eth_mdio,
     ETH_PHY_LAN8720,     // eth_type,
     ETH_CLOCK_GPIO17_OUT // eth_clk_mode
   },
@@ -77,20 +77,20 @@ const ethernet_settings ethernetBoards[] = {
 
   // ESP3DEUXQuattro
   {
-    1,                    // eth_address, 
-    -1,                   // eth_power, 
-    23,                   // eth_mdc, 
-    18,                   // eth_mdio, 
+    1,                    // eth_address,
+    -1,                   // eth_power,
+    23,                   // eth_mdc,
+    18,                   // eth_mdio,
     ETH_PHY_LAN8720,      // eth_type,
     ETH_CLOCK_GPIO17_OUT  // eth_clk_mode
   },
 
   // ESP32-ETHERNET-KIT-VE
   {
-    0,                    // eth_address, 
-    5,                   // eth_power, 
-    23,                   // eth_mdc, 
-    18,                   // eth_mdio, 
+    0,                    // eth_address,
+    5,                   // eth_power,
+    23,                   // eth_mdc,
+    18,                   // eth_mdio,
     ETH_PHY_IP101,     // eth_type,
     ETH_CLOCK_GPIO0_IN  // eth_clk_mode
   },
@@ -135,7 +135,7 @@ void WiFiEvent(WiFiEvent_t event)
   #ifdef WLED_USE_ETHERNET
   char hostname[25];
   #endif
-  
+
   switch (event) {
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
     case SYSTEM_EVENT_ETH_START:

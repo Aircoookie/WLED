@@ -545,12 +545,16 @@ void showRealSpeed() {
   Serial.print("FLASH SIZE (magic byte): "); Serial.print(ESP.getFlashChipSize() / (1024.0 * 1024), 2); Serial.println(" MB");
   Serial.print("FLASH MODE (magic byte): "); Serial.print(ESP.getFlashChipMode()); Serial.println(" ;  0=QIO, 1=QOUT, 2=DIO, 3=DOUT or other\n");
 
+  Serial.flush();
   Serial.print("FLASH CHIP ID:   0x"); Serial.println(my_ESP_getFlashChipId(), HEX);
-  Serial.print("FLASH CHIP FREQ: "); Serial.print(my_ESP_getFlashChipSpeed() / 1000000.0, 1); Serial.println(" MHz");
+#if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
+  //Serial.print("FLASH CHIP FREQ: "); Serial.print(my_ESP_getFlashChipSpeed() / 1000000.0, 1); Serial.println(" MHz"); // this seems to crash on -S2
+#endif
   Serial.print("FLASH REAL SIZE: "); Serial.print(my_ESP_getFlashChipRealSize() / (1024.0 * 1024), 2); Serial.println(" MB");
   Serial.print("FLASH REAL MODE: "); Serial.println(my_ESP_getFlashChipMode());
 
   Serial.println(F("\n------------------------------------"));
+  Serial.flush();
   Serial.print(  "RAM HEAP SIZE:  "); Serial.print(ESP.getHeapSize() / 1024.0, 2); Serial.println(" KB");
   Serial.print(  " FREE RAM:      "); Serial.print(ESP.getFreeHeap() / 1024.0, 2); Serial.println(" KB");
   Serial.print(  " MAX RAM alloc: "); Serial.print(ESP.getMaxAllocHeap() / 1024.0, 2); Serial.println(" KB");
@@ -566,6 +570,7 @@ void showRealSpeed() {
     Serial.println();
     show_psram_info_part2();
   }
+  Serial.flush();
 #endif
 
   Serial.println();

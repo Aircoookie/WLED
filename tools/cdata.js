@@ -134,7 +134,7 @@ function writeHtmlGzipped(sourceFile, resultFile, page) {
  * Binary array for the Web UI.
  * gzip is used for smaller size and improved speeds.
  * 
- * Please see https://kno.wled.ge/advanced/custom-features/#changing-web-ui
+ * Please see https://mm.kno.wled.ge/advanced/custom-features/#changing-web-ui
  * to find out how to easily modify the web UI source!
  */
  
@@ -199,7 +199,7 @@ function writeChunks(srcDir, specs, resultFile) {
   let src = `/*
  * More web UI HTML source arrays.
  * This file is auto generated, please don't make any changes manually.
- * Instead, see https://kno.wled.ge/advanced/custom-features/#changing-web-ui
+ * Instead, see https://mm.kno.wled.ge/advanced/custom-features/#changing-web-ui
  * to find out how to easily modify the web UI source!
  */ 
 `;
@@ -220,6 +220,7 @@ function writeChunks(srcDir, specs, resultFile) {
 
 writeHtmlGzipped("wled00/data/index.htm", "wled00/html_ui.h", 'index');
 writeHtmlGzipped("wled00/data/simple.htm", "wled00/html_simple.h", 'simple');
+writeHtmlGzipped("wled00/data/pixart/pixart.htm", "wled00/html_pixart.h", 'pixart');
 /*
 writeChunks(
   "wled00/data",
@@ -398,6 +399,13 @@ const char PAGE_dmxmap[] PROGMEM = R"=====()=====";
       name: "PAGE_liveviewws2D",
       method: "gzip",
       filter: "html-minify",
+    },
+    //WLEDMM
+    {
+      file: "peek.js",
+      name: "PAGE_peekJs",
+      method: "gzip",
+      filter: "js-minify",
     },
     {
       file: "404.htm",

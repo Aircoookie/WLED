@@ -29,7 +29,7 @@ void parseNumber(const char* str, byte* val, byte minv, byte maxv)
     } else {
       if (wrap && *val == maxv && out > 0) out = minv;
       else if (wrap && *val == minv && out < 0) out = maxv;
-      else { 
+      else {
         out += *val;
         if (out > maxv) out = maxv;
         if (out < minv) out = minv;
@@ -139,8 +139,8 @@ void sappends(char stype, const char* key, char* val)
 
 bool oappendi(int i)
 {
-  char s[11];
-  sprintf(s, "%d", i);
+  char s[16];               // WLEDMM max 32bit integer needs 11 chars (sign + 10) not 10
+  snprintf(s, 15, "%d", i); // WLEDMM
   return oappend(s);
 }
 
@@ -337,7 +337,7 @@ uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxL
         }
         // we have slider name (including default value) in the dest buffer
         for (size_t i=0; i<strlen(dest); i++) if (dest[i]=='=') { dest[i]='\0'; break; } // truncate default value
-        
+
       } else {
         // defaults to just speed and intensity since there is no slider data
         switch (slider) {
@@ -399,7 +399,7 @@ typedef enum UM_SoundSimulations {
   UMS_14_3
 } um_soundSimulations_t;
 
-um_data_t* simulateSound(uint8_t simulationId) 
+um_data_t* simulateSound(uint8_t simulationId)
 {
   static uint8_t samplePeak;
   static float   FFT_MajorPeak;
@@ -428,7 +428,7 @@ um_data_t* simulateSound(uint8_t simulationId)
     um_data->u_data = new void*[um_data->u_size];
     um_data->u_data[0] = &volumeSmth;
     um_data->u_data[1] = &volumeRaw;
-    um_data->u_data[2] = fftResult; 
+    um_data->u_data[2] = fftResult;
     um_data->u_data[3] = &samplePeak;
     um_data->u_data[4] = &FFT_MajorPeak;
     um_data->u_data[5] = &my_magnitude;
@@ -504,23 +504,14 @@ um_data_t* simulateSound(uint8_t simulationId)
   return um_data;
 }
 
-
-void enumerateLedmaps() {
-  ledMaps = 1;
-  for (size_t i=1; i<10; i++) {
-    char fileName[16];
-    sprintf_P(fileName, PSTR("/ledmap%d.json"), i);
-    bool isFile = WLED_FS.exists(fileName);
-    if (isFile) ledMaps |= 1 << i;
-  }
-}
+//WLEDMM enumerateLedmaps moved to FX_fcn.cpp
 
 //WLEDMM netmindz ar palette
 CRGB getCRGBForBand(int x, uint8_t *fftResult, int pal) { 
   CRGB value;
   CHSV hsv;
   if(pal == 71) { // bit hacky to use palette id here, but don't want to litter the code with lots of different methods. TODO: add enum for palette creation type
-    if(x == 0) {
+    if(x == 1) {
       value = CRGB(fftResult[10]/2, fftResult[4]/2, fftResult[0]/2);
     }
     else if(x == 255) {

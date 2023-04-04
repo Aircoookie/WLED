@@ -24,12 +24,14 @@ void shortPressAction(uint8_t b)
     applyPreset(macroButton[b], CALL_MODE_BUTTON_PRESET);
   }
 
+#ifndef WLED_DISABLE_MQTT
   // publish MQTT message
   if (buttonPublishMqtt && WLED_MQTT_CONNECTED) {
     char subuf[64];
     sprintf_P(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
     mqtt->publish(subuf, 0, false, "short");
   }
+#endif
 }
 
 void longPressAction(uint8_t b)
@@ -43,12 +45,14 @@ void longPressAction(uint8_t b)
     applyPreset(macroLongPress[b], CALL_MODE_BUTTON_PRESET);
   }
 
+#ifndef WLED_DISABLE_MQTT
   // publish MQTT message
   if (buttonPublishMqtt && WLED_MQTT_CONNECTED) {
     char subuf[64];
     sprintf_P(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
     mqtt->publish(subuf, 0, false, "long");
   }
+#endif
 }
 
 void doublePressAction(uint8_t b)
@@ -62,12 +66,14 @@ void doublePressAction(uint8_t b)
     applyPreset(macroDoublePress[b], CALL_MODE_BUTTON_PRESET);
   }
 
+#ifndef WLED_DISABLE_MQTT
   // publish MQTT message
   if (buttonPublishMqtt && WLED_MQTT_CONNECTED) {
     char subuf[64];
     sprintf_P(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
     mqtt->publish(subuf, 0, false, "double");
   }
+#endif
 }
 
 bool isButtonPressed(uint8_t i)
@@ -105,20 +111,21 @@ void handleSwitch(uint8_t b)
   }
 
   if (buttonLongPressed[b] == buttonPressedBefore[b]) return;
-    
+
   if (millis() - buttonPressedTime[b] > WLED_DEBOUNCE_THRESHOLD) { //fire edge event only after 50ms without change (debounce)
     if (!buttonPressedBefore[b]) { // on -> off
       if (macroButton[b]) applyPreset(macroButton[b], CALL_MODE_BUTTON_PRESET);
       else { //turn on
         if (!bri) {toggleOnOff(); stateUpdated(CALL_MODE_BUTTON);}
-      } 
+      }
     } else {  // off -> on
       if (macroLongPress[b]) applyPreset(macroLongPress[b], CALL_MODE_BUTTON_PRESET);
       else { //turn off
         if (bri) {toggleOnOff(); stateUpdated(CALL_MODE_BUTTON);}
-      } 
+      }
     }
 
+#ifndef WLED_DISABLE_MQTT
     // publish MQTT message
     if (buttonPublishMqtt && WLED_MQTT_CONNECTED) {
       char subuf[64];
@@ -126,13 +133,14 @@ void handleSwitch(uint8_t b)
       else sprintf_P(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
       mqtt->publish(subuf, 0, false, !buttonPressedBefore[b] ? "off" : "on");
     }
+#endif
 
     buttonLongPressed[b] = buttonPressedBefore[b]; //save the last "long term" switch state
   }
 }
 
 #define ANALOG_BTN_READ_CYCLE 250   // min time between two analog reading cycles
-#define STRIP_WAIT_TIME 6           // max wait time in case of strip.isUpdating() 
+#define STRIP_WAIT_TIME 6           // max wait time in case of strip.isUpdating()
 #define POT_SMOOTHING 0.25f         // smoothing factor for raw potentiometer readings
 #define POT_SENSITIVITY 4           // changes below this amount are noise (POT scratching, or ADC noise)
 
@@ -165,7 +173,7 @@ void handleAnalog(uint8_t b)
   //while(strip.isUpdating() && (millis() - wait_started < STRIP_WAIT_TIME)) {
   //  delay(1);
   //}
-  //if (strip.isUpdating()) return; // give up 
+  //if (strip.isUpdating()) return; // give up
 
   oldRead[b] = aRead;
 
@@ -326,7 +334,7 @@ void esp32RMTInvertIdle()
 void handleIO()
 {
   handleButton();
-  
+
   //set relay when LEDs turn on
   if (strip.getBrightness())
   {

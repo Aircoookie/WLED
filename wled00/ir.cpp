@@ -71,11 +71,13 @@ void decBrightness()
 }
 
 // apply preset or fallback to a effect and palette if it doesn't exist
-void presetFallback(uint8_t presetID, uint8_t effectID, uint8_t paletteID) 
+void presetFallback(uint8_t presetID, uint8_t effectID, uint8_t paletteID)
 {
+  USER_PRINTF("presetFallback1 %d %d %d\n", presetID, effectID, paletteID);
   applyPreset(presetID, CALL_MODE_BUTTON_PRESET);
   //these two will be overwritten if preset exists in handlePresets()
-  effectCurrent = effectID;      
+  USER_PRINTF("presetFallback2 %d %d %d\n", presetID, effectID, paletteID);
+  effectCurrent = effectID;
   effectPalette = paletteID;
 }
 
@@ -110,7 +112,7 @@ void changePalette(uint8_t pal)
     for (uint8_t i = 0; i < strip.getSegmentsNum(); i++) {
       Segment& seg = strip.getSegment(i);
       if (!seg.isActive() || !seg.isSelected()) continue;
-      seg.palette = pal;
+      seg.setPalette(pal);
     }
     setValuesFromFirstSelectedSeg();
   } else {
@@ -282,7 +284,7 @@ void decodeIR(uint32_t code)
   if (code > 0xFFFFFF) return; //invalid code
 
   switch (irEnabled) {
-    case 1: 
+    case 1:
       if (code > 0xF80000) decodeIR24OLD(code); // white 24-key remote (old) - it sends 0xFF0000 values
       else                 decodeIR24(code);    // 24-key remote - 0xF70000 to 0xF80000
       break;
@@ -295,6 +297,7 @@ void decodeIR(uint32_t code)
                                        // sets bright plain white
     case 7: decodeIR9(code);    break;
     //case 8: return; // ir.json file, handled above switch statement
+    case 9: decodeIR24MC(code); break;
   }
 
   if (nightlightActive && bri == 0) nightlightActive = false;
@@ -419,7 +422,7 @@ void decodeIR24CT(uint32_t code)
     case IR24_CT_CTPLUS     : changeColor(COLOR_COLDWHITE, strip.getSegment(strip.getMainSegmentId()).cct+1); changeEffect(FX_MODE_STATIC); break;
     case IR24_CT_CTMINUS    : changeColor(COLOR_WARMWHITE, strip.getSegment(strip.getMainSegmentId()).cct-1); changeEffect(FX_MODE_STATIC); break;
     case IR24_CT_MEMORY     : changeColor(COLOR_NEUTRALWHITE,                                           127); changeEffect(FX_MODE_STATIC); break;
-    default: return; 
+    default: return;
   }
   lastValidCode = code;
 }
@@ -608,16 +611,51 @@ void decodeIR9(uint32_t code)
   lastValidCode = code;
 }
 
+//WLEDMM and Athom
+void decodeIR24MC(uint32_t code)
+{
+  bool isSolid = strip.getMainSegment().mode==0;
+
+  switch (code) {
+    case IR24_MC_OFF        : if (bri > 0) briLast = bri; bri = 0; break;
+    case IR24_MC_AUTO       : changeEffect(FX_MODE_FADE);          break;
+    case IR24_MC_ON         : bri = briLast;                       break;
+    case IR24_MC_MODES      : changeEffect(relativeChange(effectCurrent,  1, 0, strip.getModeCount() -1)); break; //WLEDMM: sound and non sound modes
+    case IR24_MC_MODE       : changeEffect(relativeChange(effectCurrent, -1, 0, strip.getModeCount() -1)); break; //WLEDMM: sound and non sound modes
+    case IR24_MC_BRIGHTER   : incBrightness();                     break;
+    case IR24_MC_DARKER     : decBrightness();                     break;
+    case IR24_MC_QUICK      : changeEffectSpeed( 16);              break;
+    case IR24_MC_SLOW       : changeEffectSpeed(-16);              break;
+    case IR24_MC_RED        : changeColor(COLOR_RED);              break;
+    case IR24_MC_GREEN      : changeColor(COLOR_GREEN);            break;
+    case IR24_MC_BLUE       : changeColor(COLOR_BLUE);             break;
+    //WLEDMM: change to presets (with fallbacks - not working !!) if mode is not solid
+    case IR24_MC_R1         : isSolid?changeColor(COLOR_YELLOW):presetFallback(1,strip.isMatrix?FX_MODE_2DAKEMI:FX_MODE_PIXELS,effectPalette);           break;
+    case IR24_MC_G1         : isSolid?changeColor(COLOR_DoderBlue):presetFallback(2,strip.isMatrix?FX_MODE_2DWAVERLY:FX_MODE_GRAVIMETER,effectPalette);        break;
+    case IR24_MC_B1         : isSolid?changeColor(COLOR_Indigo):presetFallback(3,strip.isMatrix?FX_MODE_2DWAVERLY:FX_MODE_JUGGLES,effectPalette);           break;
+    case IR24_MC_R2         : isSolid?changeColor(COLOR_Magenta):presetFallback(4,strip.isMatrix?FX_MODE_2DGAMEOFLIFE:FX_MODE_PIXELWAVE,effectPalette);          break;
+    case IR24_MC_G2         : isSolid?changeColor(COLOR_DarkBlue):presetFallback(5,strip.isMatrix?FX_MODE_BOUNCINGBALLS:FX_MODE_FREQPIXELS,effectPalette);         break;
+    case IR24_MC_B2         : isSolid?changeColor(COLOR_Lime):presetFallback(6,strip.isMatrix?FX_MODE_2DDISTORTIONWAVES:FX_MODE_NOISEMOVE,effectPalette);             break;
+    case IR24_MC_R3         : isSolid?changeColor(COLOR_Orange):presetFallback(7,strip.isMatrix?FX_MODE_2DLISSAJOUS:FX_MODE_BLURZ,effectPalette);           break;
+    case IR24_MC_G3         : isSolid?changeColor(COLOR_WHITE):presetFallback(8,strip.isMatrix?FX_MODE_2DJULIA:FX_MODE_NOISEMETER,effectPalette);            break;
+    case IR24_MC_B3         : isSolid?changeEffect(FX_MODE_RAINBOW_CYCLE):presetFallback(9,strip.isMatrix?FX_MODE_2DSWIRL:FX_MODE_PUDDLES,effectPalette); break;
+    case IR24_MC_MUSIC1     : changeEffectIntensity(16); break; //WLEDMM: was sound modes but does not work in 0.14
+    case IR24_MC_LOCK       : changeEffect(FX_MODE_STATIC);        break;
+    case IR24_MC_MUSIC2     : changeEffectIntensity(-16); break; //WLEDMM: was sound modes but does not work in 0.14
+    default: return;
+  }
+  lastValidCode = code;
+}
 
 /*
 This allows users to customize IR actions without the need to edit C code and compile.
-From the https://github.com/Aircoookie/WLED/wiki/Infrared-Control page, download the starter 
+From the https://github.com/Aircoookie/WLED/wiki/Infrared-Control page, download the starter
 ir.json file that corresponds to the number of buttons on your remote.
 Many of the remotes with the same number of buttons emit the same codes, but will have
 different labels or colors. Once you edit the ir.json file, upload it to your controller
 using the /edit page.
 
-Each key should be the hex encoded IR code. The "cmd" property should be the HTTP API 
+Each key should be the hex encoded IR code. The "cmd" property should be the HTTP API
 or JSON API command to execute on button press. If the command contains a relative change (SI=~16),
 it will register as a repeatable command. If the command doesn't contain a "~" but is repeatable, add "rpt" property
 set to true. Other properties are ignored but having labels and positions can assist with editing
@@ -632,7 +670,7 @@ Sample:
                "label": "Preset 1, fallback to Saw - Party if not found"},
 }
 */
-void decodeIRJson(uint32_t code) 
+void decodeIRJson(uint32_t code)
 {
   char objKey[10];
   String cmdStr;
@@ -720,10 +758,10 @@ void handleIR()
     if (irEnabled > 0)
     {
       if (irrecv == NULL)
-      { 
+      {
         initIR(); return;
       }
-      
+
       if (irrecv->decode(&results))
       {
         if (results.value != 0) // only print results if anything is received ( != 0 )

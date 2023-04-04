@@ -2,8 +2,8 @@
 
 By @bwente
 
-See https://www.hackster.io/bwente/word-clock-with-just-two-components-073834 for the hardware guide!
-Includes a customizable feature to lower the brightness at night.
+See https://www.hackster.io/bwente/word-clock-with-just-two-components-073834 for the hardware guide!<br/>
+Includes a customizable feature to reduce the brightness at night.
 
 ![image](https://user-images.githubusercontent.com/371964/197094071-f8ccaf59-1d85-4dd2-8e09-1389675291e1.png)
 
