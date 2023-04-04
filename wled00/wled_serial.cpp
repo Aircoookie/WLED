@@ -4,6 +4,9 @@
  * Adalight and TPM2 handler
  */
 
+#define SERIAL_MAXTIME_MILLIS 100 // to avoid blocking other activities, do not spend more than 100ms with continouus reading
+// at 115200 baud, 100ms is enough to send/receive 1280 chars
+
 enum class AdaState {
   Header_A,
   Header_d,
@@ -46,7 +49,7 @@ void sendJSON(){
       if (i != used-1) Serial.write(',');
     }
     Serial.println("]");
-  }   
+  }
 }
 
 // RGB LED data returned as bytes in TPM2 format. Faster, and slightly less easy to use on the other end.
@@ -64,13 +67,31 @@ void sendBytes(){
       Serial.write(qadd8(W(c), B(c))); //B
     }
     Serial.write(0x36); Serial.write('\n');
-  }  
+  }
 }
+
+bool canUseSerial(void) {   // WLEDMM returns true if Serial can be used for debug output (i.e. not configured for other purpose)
+  #if defined(CONFIG_IDF_TARGET_ESP32C3) && ARDUINO_USB_CDC_ON_BOOT && !defined(WLED_DEBUG_HOST)
+  //  on -C3, USB CDC blocks if disconnected! so check if Serial is active before printing to it.
+  if (!Serial) return false;
+  #endif
+  if (pinManager.isPinAllocated(hardwareTX) && (pinManager.getPinOwner(hardwareTX) != PinOwner::DebugOut)) 
+    return false;  // TX allocated to LEDs or other functions
+  if ((realtimeMode == REALTIME_MODE_GENERIC) ||  (realtimeMode == REALTIME_MODE_ADALIGHT) || (realtimeMode == REALTIME_MODE_TPM2NET)) 
+    return false;  // Serial in use for adaLight or other serial communication
+  //if ((improvActive == 1) || (improvActive == 2)) return false; // don't interfere when IMPROV communication is ongoing
+  if (improvActive > 0) return false;              // don't interfere when IMPROV communication is ongoing
+  if (continuousSendLED == true) return false;     // Continuous Serial Streaming
+
+  return true;
+} // WLEDMM end
 
 void handleSerial()
 {
   if (pinManager.isPinAllocated(hardwareRX)) return;
-  
+  if (!Serial) return;              // arduino docs: `if (Serial)` indicates whether or not the USB CDC serial connection is open. For all non-USB CDC ports, this will always return true
+  if (((pinManager.isPinAllocated(hardwareTX)) && (pinManager.getPinOwner(hardwareTX) != PinOwner::DebugOut))) return; // WLEDMM serial TX is necessary for adalight / TPM2
+
   #ifdef WLED_ENABLE_ADALIGHT
   static auto state = AdaState::Header_A;
   static uint16_t count = 0;
@@ -79,7 +100,8 @@ void handleSerial()
   static byte red   = 0x00;
   static byte green = 0x00;
 
-  while (Serial.available() > 0)
+  unsigned long startTime = millis();
+  while ((Serial.available() > 0) && (millis() - startTime < SERIAL_MAXTIME_MILLIS))
   {
     yield();
     byte next = Serial.peek();
@@ -94,7 +116,7 @@ void handleSerial()
           return;
         } else if (next == 'v') {
           Serial.print("WLED"); Serial.write(' '); Serial.println(VERSION);
-     
+
         } else if (next == 0xB0) {updateBaudRate( 115200);
         } else if (next == 0xB1) {updateBaudRate( 230400);
         } else if (next == 0xB2) {updateBaudRate( 460800);
@@ -103,11 +125,11 @@ void handleSerial()
         } else if (next == 0xB5) {updateBaudRate( 921600);
         } else if (next == 0xB6) {updateBaudRate(1000000);
         } else if (next == 0xB7) {updateBaudRate(1500000);
-               
+
         } else if (next == 'l') {sendJSON(); // Send LED data as JSON Array
         } else if (next == 'L') {sendBytes(); // Send LED data as TPM2 Data Packet
 
-        } else if (next == 'o') {continuousSendLED = false; // Disable Continuous Serial Streaming  
+        } else if (next == 'o') {continuousSendLED = false; // Disable Continuous Serial Streaming
         } else if (next == 'O') {continuousSendLED = true; // Enable Continuous Serial Streaming
 
         } else if (next == '{') { //JSON API
@@ -195,10 +217,13 @@ void handleSerial()
     // All other received bytes will disable Continuous Serial Streaming
     if (continuousSendLED && next != 'O'){
       continuousSendLED = false;
-      } 
-    
+      }
+
     Serial.read(); //discard the byte
   }
+  //#ifdef WLED_DEBUG
+    if ((millis() - startTime) > SERIAL_MAXTIME_MILLIS) { USER_PRINTLN(F("handleSerial(): need a break after >100ms of activity.")); }
+  //#endif
   #endif
 
   // If Continuous Serial Streaming is enabled, send new LED data as bytes

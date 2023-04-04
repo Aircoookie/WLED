@@ -128,12 +128,13 @@ button {
 	display: inline-block;
 }
 
-.icons.on {
-	color: var(--c-g);
+.on {
+	color: var(--c-g) !important;
 }
 
-.icons.off {
-	color: var(--c-6);
+.off {
+	color: var(--c-6) !important;
+	cursor: default !important;
 }
 
 .top .icons, .bot .icons {
@@ -391,12 +392,16 @@ button {
 }
 
 .slider {
-	background-color: var(--c-2);
 	max-width: 300px;
-	min-width: 280px;
+	min-width: 260px;
 	margin: 0 auto; /* add 5px; if you want some vertical space but looks ugly */
 	border-radius: 24px;
 	position: relative;
+	padding-bottom: 2px;
+}
+
+#sliders .slider, #info .slider {
+	background-color: var(--c-2);
 }
 
 .filter, .option {
@@ -424,16 +429,19 @@ button {
 	box-shadow: 4px 4px 10px 4px var(--c-1);
 	color: var(--c-f);
 	text-align: center;
-	padding: 5px 10px;
+	padding: 4px 8px;
 	border-radius: 6px;
 
 	/* Position the tooltip text */
 	width: 160px;
 	position: absolute;
 	z-index: 1;
-	bottom: 100%;
+	bottom: 80%;
 	left: 50%;
 	margin-left: -92px;
+
+	/* Ensure tooltip goes away when mouse leaves control */
+	pointer-events: none;
 
 	/* Fade in tooltip */
 	opacity: 0;
@@ -643,7 +651,7 @@ img {
 #wbal  .sliderdisplay { background: linear-gradient(90deg, #ff8f1f 0%, #fff 50%, #cbdbff); }
 
 /* wrapper divs hidden by default */
-#rgbwrap, #kwrap, #wwrap, #wbal, #qcs-w, #hexw {
+#rgbwrap, #swrap, #hwrap, #kwrap, #wwrap, #wbal, #qcs-w, #hexw {
 	display: none;
 }
 
@@ -727,9 +735,13 @@ input[type=range]::-moz-range-thumb {
 
 #Colors .sliderwrap {
 	width: 260px;
-	margin: 10px 0 0;
+	margin: 4px 0 0;
 }
 
+/* #Colors {
+	padding-top: 18px;
+}
+ */
 /* Dynamically hide brightness slider label */
 .hd {
 	display: var(--bhd);
@@ -740,13 +752,14 @@ input[type=range]::-moz-range-thumb {
 	margin-top: var(--bmt);
 }
 
-#picker, #rgbwrap, #kwrap, #wwrap, #wbal, #vwrap, #qcs-w, #hexw, #pall, #ledmap {
+#picker, #qcs-w, #hexw, #pall, #ledmap {
 	margin: 0 auto;
 	width: 260px;
+	/*background-color: unset;*/
 }
 
 #picker {
-	margin-top: 10px;
+	margin-top: -10px !important;
 }
 
 /* buttons */
@@ -864,8 +877,8 @@ select {
 	transition-duration: 0.5s;
 	-webkit-backface-visibility: hidden;
 	-webkit-transform:translate3d(0,0,0);
-    -webkit-appearance: none; 
-    -moz-appearance: none; 
+    -webkit-appearance: none;
+    -moz-appearance: none;
 	backface-visibility: hidden;
 	transform:translate3d(0,0,0);
 	text-overflow: ellipsis;
@@ -889,8 +902,8 @@ div.sel-p:after {
     position: absolute;
     right: 10px;
     top: 22px;
-    width: 0; 
-    height: 0; 
+    width: 0;
+    height: 0;
     border-left: 8px solid transparent;
     border-right: 8px solid transparent;
     border-top: 8px solid var(--c-f);
@@ -981,7 +994,7 @@ textarea {
 
 .segname, .pname {
 	white-space: nowrap;
-	cursor: pointer;
+	/*cursor: pointer;*/
 	text-align: center;
 	overflow: clip;
 	text-overflow: ellipsis;
@@ -1185,7 +1198,7 @@ TD .checkmark, TD .radiomark {
 }
 
 .bp {
-	margin-bottom: 5px;
+	margin-bottom: 8px;
 }
 
 /* segment & preset wrapper */
@@ -1220,7 +1233,7 @@ TD .checkmark, TD .radiomark {
 	line-height: 24px;
 	vertical-align: middle;
 	-webkit-filter: grayscale(100%); /* Safari 6.0 - 9.0 */
-	filter: grayscale(100%);  
+	filter: grayscale(100%);
 }
 
 .lbl-l {
@@ -1330,7 +1343,7 @@ TD .checkmark, TD .radiomark {
 	white-space: nowrap;
 	text-overflow: ellipsis;
 	-webkit-filter: grayscale(100%); /* Safari 6.0 - 9.0 */
-	filter: grayscale(100%);  
+	filter: grayscale(100%);
 }
 
 /* list item palette preview */
@@ -1361,7 +1374,7 @@ TD .checkmark, TD .radiomark {
 	background: var(--c-2);
 	border: 1px solid var(--c-3);
 	-webkit-filter: grayscale(100%); /* Safari 6.0 - 9.0 */
-	filter: grayscale(100%);  
+	filter: grayscale(100%);
 }
 
 .fnd input[type="text"]:focus {
@@ -1404,6 +1417,9 @@ TD .checkmark, TD .radiomark {
 .expanded .segin, .expanded .presin, .expanded .sbs,
 .expanded {
 	display: inline-block !important;
+}
+.expanded .segin.hide, .expanded .presin.hide, .expanded .sbs.hide {
+	display: none !important;
 }
 
 .m6 {
@@ -1501,7 +1517,7 @@ TD .checkmark, TD .radiomark {
 	}
 }
 
-@media all and (max-width: 1249px) {
+@media all and (max-width: 1024px) {
 	#buttonPcm {
 		display: none;
 	}

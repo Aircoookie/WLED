@@ -2,7 +2,7 @@
 
 This usermod will read from an ADS1115 ADC. The voltages are displayed in the Info section of the web UI.
 
-Configuration is all completed via the Usermod menu. There are no settings to set in code!
+Configuration is performed via the Usermod menu. There are no parameters to set in code!
 
 ## Installation 
 

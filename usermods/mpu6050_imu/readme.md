@@ -1,13 +1,13 @@
 # MPU-6050 Six-Axis (Gyro + Accelerometer) Driver
 
-This usermod-v2 modification allows the connection of a MPU-6050 IMU sensor to
-allow for effects that are controlled by the orientation or motion of the WLED Device.
+v2 of this usermod enables connection of a MPU-6050 IMU sensor to
+work with effects controlled by the orientation or motion of the WLED Device.
 
-The MPU6050 has a built in "Digital Motion Processor" which does a lot of the heavy
-lifting in integrating the gyro and accel measurements to get potentially more
+The MPU6050 has a built in "Digital Motion Processor" which does the "heavy lifting"
+integrating the gyro and accelerometer measurements to get potentially more
 useful gravity vector and orientation output.
 
-It is pretty straightforward to comment out some of the variables being read off the device if they're not needed to save CPU/Mem/Bandwidth.
+It is fairly straightforward to comment out variables being read from the device if they're not needed. Saves CPU/Memory/Bandwidth.
 
 _Story:_
 

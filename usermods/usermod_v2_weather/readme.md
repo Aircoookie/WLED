@@ -14,7 +14,7 @@ uint16_t mode_2DWeather(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_2DWEATHER[] PROGMEM = "Weather@;!;!;pal=54,2d"; //temperature palette
+static const char _data_FX_MODE_2DWEATHER[] PROGMEM = "Weather@;!;!;2;pal=54"; //temperature palette
 ```
 * then activated in the usermod setup function 
 ```c++

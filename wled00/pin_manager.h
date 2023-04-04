@@ -15,7 +15,7 @@ typedef struct PinManagerPinType {
  * Allows PinManager to "lock" an allocation to a specific
  * owner, so someone else doesn't accidentally de-allocate
  * a pin it hasn't allocated.  Also enhances debugging.
- * 
+ *
  * RAM Cost:
  *     17 bytes on ESP8266
  *     40 bytes on ESP32
@@ -41,7 +41,7 @@ enum struct PinOwner : uint8_t {
   UM_Temperature       = USERMOD_ID_TEMPERATURE,        // 0x03 // Usermod "usermod_temperature.h"
   // #define USERMOD_ID_FIXNETSERVICES                  // 0x04 // Usermod "usermod_Fix_unreachable_netservices.h" -- Does not allocate pins
   UM_PIR               = USERMOD_ID_PIRSWITCH,          // 0x05 // Usermod "usermod_PIR_sensor_switch.h"
-  // #define USERMOD_ID_IMU                             // 0x06 // Usermod "usermod_mpu6050_imu.h" -- Uses "standard" HW_I2C pins
+  UM_IMU               = USERMOD_ID_IMU,                // 0x06 // Usermod "usermod_mpu6050_imu.h" -- Uses "standard" HW_I2C pins
   UM_FourLineDisplay   = USERMOD_ID_FOUR_LINE_DISP,     // 0x07 // Usermod "usermod_v2_four_line_display.h -- May use "standard" HW_I2C pins
   UM_RotaryEncoderUI   = USERMOD_ID_ROTARY_ENC_UI,      // 0x08 // Usermod "usermod_v2_rotary_encoder_ui.h"
   // #define USERMOD_ID_AUTO_SAVE                       // 0x09 // Usermod "usermod_v2_auto_save.h" -- Does not allocate pins
@@ -50,35 +50,46 @@ enum struct PinOwner : uint8_t {
   // #define USERMOD_ID_VL53L0X                         // 0x0C // Usermod "usermod_vl53l0x_gestures.h" -- Uses "standard" HW_I2C pins
   UM_MultiRelay        = USERMOD_ID_MULTI_RELAY,        // 0x0D // Usermod "usermod_multi_relay.h"
   UM_AnimatedStaircase = USERMOD_ID_ANIMATED_STAIRCASE, // 0x0E // Usermod "Animated_Staircase.h"
-  // #define USERMOD_ID_RTC                             // 0x0F // Usermod "usermod_rtc.h" -- Uses "standard" HW_I2C pins 
+  UM_Battery           = USERMOD_ID_BATTERY,            //
+  // #define USERMOD_ID_RTC                             // 0x0F // Usermod "usermod_rtc.h" -- Uses "standard" HW_I2C pins
   // #define USERMOD_ID_ELEKSTUBE_IPS                   // 0x10 // Usermod "usermod_elekstube_ips.h" -- Uses quite a few pins ... see Hardware.h and User_Setup.h
   // #define USERMOD_ID_SN_PHOTORESISTOR                // 0x11 // Usermod "usermod_sn_photoresistor.h" -- Uses hard-coded pin (PHOTORESISTOR_PIN == A0), but could be easily updated to use pinManager
+  UM_BH1750            = USERMOD_ID_BH1750,             // 0x14 // Usermod "usermod_bme280.h -- Uses "standard" HW_I2C pins
   UM_RGBRotaryEncoder  = USERMOD_RGB_ROTARY_ENCODER,    // 0x16 // Usermod "rgb-rotary-encoder.h"
   UM_QuinLEDAnPenta    = USERMOD_ID_QUINLED_AN_PENTA,   // 0x17 // Usermod "quinled-an-penta.h"
-  UM_BME280            = USERMOD_ID_BME280,             // 0x18 // Usermod "usermod_bme280.h -- Uses "standard" HW_I2C pins
-  UM_BH1750            = USERMOD_ID_BH1750,             // 0x19 // Usermod "usermod_bme280.h -- Uses "standard" HW_I2C pins
-  UM_Audioreactive     = USERMOD_ID_AUDIOREACTIVE,      // 0x1E // Usermod "audio_reactive.h"
-  UM_SdCard            = USERMOD_ID_SD_CARD             // 0x24 // Usermod "usermod_sd_card.h"
+  UM_BME280            = USERMOD_ID_BME280,             // 0x1E // Usermod "usermod_bme280.h -- Uses "standard" HW_I2C pins
+  UM_Audioreactive     = USERMOD_ID_AUDIOREACTIVE,      // 0x20 // Usermod "audio_reactive.h"
+  UM_SdCard            = USERMOD_ID_SD_CARD,            // 0x25 // Usermod "usermod_sd_card.h"
+  UM_PWM_OUTPUTS       = USERMOD_ID_PWM_OUTPUTS         // 0x26 // Usermod "usermod_pwm_outputs.h"
 };
 static_assert(0u == static_cast<uint8_t>(PinOwner::None), "PinOwner::None must be zero, so default array initialization works as expected");
 
 class PinManagerClass {
   private:
   #ifdef ESP8266
+  #define WLED_NUM_PINS 18                  // WLEDMM include A0 = gpio17
   uint8_t pinAlloc[3] = {0x00, 0x00, 0x00}; //24bit, 1 bit per pin, we use first 17bits
-  PinOwner ownerTag[17] = { PinOwner::None };
+  PinOwner ownerTag[WLED_NUM_PINS] = { PinOwner::None };
+  PinOwner ownerConflict[WLED_NUM_PINS] = { PinOwner::None }; // WLEDMM: record pin alloc conflicts
   #else
-  uint8_t pinAlloc[5] = {0x00, 0x00, 0x00, 0x00, 0x00}; //40bit, 1 bit per pin, we use all bits
+  #define WLED_NUM_PINS 50
+  uint8_t pinAlloc[7] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; //WLEDMM bugfix - 56bit, 1 bit per pin, we use 50 bits on -S3
   uint8_t ledcAlloc[2] = {0x00, 0x00}; //16 LEDC channels
-  PinOwner ownerTag[40] = { PinOwner::None };
+  PinOwner ownerTag[WLED_NUM_PINS] = { PinOwner::None }; // new MCU's have up to 50 GPIO
+  PinOwner ownerConflict[WLED_NUM_PINS] = { PinOwner::None }; // WLEDMM: record pin alloc conflicts
   #endif
   struct {
     uint8_t i2cAllocCount : 4; // allow multiple allocation of I2C bus pins but keep track of allocations
     uint8_t spiAllocCount : 4; // allow multiple allocation of SPI bus pins but keep track of allocations
   };
 
+  // WLEDMM: central handling of Wire (only for first bus)
+  bool wire0isStarted = false;  // true is wire.begin() was done already
+  int8_t wire0PinSDA = -1;       // GPIO currently in use for SDA 
+  int8_t wire0PinSCL = -1;       // GPIO currently in use for SCL 
+
   public:
-  PinManagerClass() : i2cAllocCount(0), spiAllocCount(0) {}
+  PinManagerClass() : i2cAllocCount(0), spiAllocCount(0), wire0isStarted(false) {}  // WLEDMM: initialize wire0isStarted=false
   // De-allocates a single pin
   bool deallocatePin(byte gpio, PinOwner tag);
   // De-allocates multiple pins but only if all can be deallocated (PinOwner has to be specified)
@@ -87,8 +98,9 @@ class PinManagerClass {
   // Allocates a single pin, with an owner tag.
   // De-allocation requires the same owner tag (or override)
   bool allocatePin(byte gpio, bool output, PinOwner tag);
+  void manageDebugTXPin(); //WLEDMM
   // Allocates all the pins, or allocates none of the pins, with owner tag.
-  // Provided to simplify error condition handling in clients 
+  // Provided to simplify error condition handling in clients
   // using more than one pin, such as I2C, SPI, rotary encoders,
   // ethernet, etc..
   bool allocateMultiplePins(const managed_pin_type * mptArray, byte arrayElementCount, PinOwner tag );
@@ -102,12 +114,38 @@ class PinManagerClass {
   #endif
   inline void deallocatePin(byte gpio) { deallocatePin(gpio, PinOwner::None); }
 
+  // WLEDMM: central initialization of Wire  (Wire1 not supported yet)
+  bool joinWire();                                          // shortcut - use global pins when no parameters provided
+  bool joinWire(int8_t pinSDA, int8_t pinSCL);              // use this instead of Wire.begin(SDA, SCL)
+  // toDo: may need to add calls for Wire.setClock, Wire.setPins Wire.end 
+
   // will return true for reserved pins
   bool isPinAllocated(byte gpio, PinOwner tag = PinOwner::None);
   // will return false for reserved pins
   bool isPinOk(byte gpio, bool output = true);
 
   PinOwner getPinOwner(byte gpio);
+
+  // WLEDMM begin
+  String getOwnerText(PinOwner tag); // WLEDMM  - return PIN owner tag as text
+  String getPinOwnerText(int gpio); // WLEDMM   - return PIN owner as text
+  String getPinSpecialText(int gpio); // WLEDMM - return PIN special comments (if any)
+  String getPinConflicts(int gpio); // WLEDMM   - return PIN alloc conflicts (if any)
+
+  bool isPinPWM(int gpio) {return(digitalPinHasPWM(gpio));}              // true if gpio supports PWM
+  bool isPinINT(int gpio) {return(digitalPinToInterrupt(gpio) >= 0);}    // true if gpio supports Interrupts
+  bool isPinTouch(int gpio);                                             // true if gpio supports touch functions
+
+  bool isPinAnalog(int gpio);                                  // true if gpio supports analogRead
+  bool isPinADC1(int gpio);                                    // true if gpio supports analogRead, and it belongs to ADC unit 1
+  bool isPinADC2(int gpio);                                    // true if gpio supports analogRead, and it belongs to ADC unit 2
+
+  typedef enum { ADC_none = 0, ADC1 = 1, ADC2 = 2 } AdcIdentifier;
+  #define PM_ADC1 PinManagerClass::ADC1                        // Alias for ADC1
+  #define PM_ADC2 PinManagerClass::ADC2                        // Alias for ADC2
+  #define PM_NO_PIN 255
+  uint8_t getADCPin(AdcIdentifier adcUnit, uint8_t adcPort);   // get GPIO number for ADC unit x, channel y. 255 = no such pin
+  // WLEDMM end
 
   #ifdef ARDUINO_ARCH_ESP32
   byte allocateLedc(byte channels);

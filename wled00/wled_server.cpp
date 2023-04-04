@@ -6,6 +6,9 @@
 #endif
 #include "html_settings.h"
 #include "html_other.h"
+#ifdef WLED_ENABLE_PIXART
+  #include "html_pixart.h"
+#endif
 
 /*
  * Integrated HTTP web server page declarations
@@ -45,13 +48,15 @@ void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t
     request->_tempFile = WLED_FS.open(finalname, "w");
     DEBUG_PRINT(F("Uploading "));
     DEBUG_PRINTLN(finalname);
-    if (finalname.equals("/presets.json")) presetsModifiedTime = toki.second();  // WLEDMM
+    if (finalname.equals("/presets.json")) presetsModifiedTime = toki.second();
   }
   if (len) {
     request->_tempFile.write(data,len);
   }
   if (final) {
     request->_tempFile.close();
+    USER_PRINT(F("File uploaded: "));  // WLEDMM
+    USER_PRINTLN(filename);            // WLEDMM
     if (filename.equalsIgnoreCase("/cfg.json") || filename.equalsIgnoreCase("cfg.json")) { // WLEDMM
       request->send(200, "text/plain", F("Configuration restore successful.\nRebooting..."));
       doReboot = true;
@@ -75,7 +80,7 @@ void createEditHandler(bool enable) {
       editHandler = &server.addHandler(new SPIFFSEditor("","",WLED_FS));//http_username,http_password));
       #endif
     #else
-      editHandler = server.on("/edit", HTTP_GET, [](AsyncWebServerRequest *request){
+      editHandler = &server.on("/edit", HTTP_GET, [](AsyncWebServerRequest *request){
         serveMessage(request, 501, "Not implemented", F("The FS editor is disabled in this build."), 254);
       });
     #endif
@@ -92,7 +97,7 @@ bool captivePortal(AsyncWebServerRequest *request)
   String hostH;
   if (!request->hasHeader("Host")) return false;
   hostH = request->getHeader("Host")->value();
-  
+
   if (!isIp(hostH) && hostH.indexOf("wled.me") < 0 && hostH.indexOf(cmDNS) < 0) {
     DEBUG_PRINTLN("Captive portal");
     AsyncWebServerResponse *response = request->beginResponse(302);
@@ -139,14 +144,14 @@ void initServer()
     //request->send_P(200, "text/html", PAGE_liveview);
   });
 #endif
-  
+
   //settings page
   server.on("/settings", HTTP_GET, [](AsyncWebServerRequest *request){
     serveSettings(request);
   });
-  
+
   // "/settings/settings.js&p=x" request also handled by serveSettings()
-  
+
   server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
     if (handleIfNoneMatchCacheHeader(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/css", PAGE_settingsCss, PAGE_settingsCss_length);
@@ -154,27 +159,27 @@ void initServer()
     setStaticContentCacheHeaders(response);
     request->send(response);
   });
-  
+
   server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){
     if(!handleFileRead(request, "/favicon.ico"))
     {
       request->send_P(200, "image/x-icon", favicon, 156);
     }
   });
-  
+
   server.on("/sliders", HTTP_GET, [](AsyncWebServerRequest *request){
     serveIndex(request);
   });
-  
+
   server.on("/welcome", HTTP_GET, [](AsyncWebServerRequest *request){
     serveSettings(request);
   });
-  
+
   server.on("/reset", HTTP_GET, [](AsyncWebServerRequest *request){
     serveMessage(request, 200,F("Rebooting now..."),F("Please wait ~10 seconds..."),129);
     doReboot = true;
   });
-  
+
   server.on("/settings", HTTP_POST, [](AsyncWebServerRequest *request){
     serveSettings(request, true);
   });
@@ -218,7 +223,7 @@ void initServer()
       } else {
         doSerializeConfig = true; //serializeConfig(); //Save new settings to FS
       }
-    } 
+    }
     request->send(200, "application/json", F("{\"success\":true}"));
   });
   server.addHandler(handler);
@@ -226,15 +231,20 @@ void initServer()
   server.on("/version", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(200, "text/plain", (String)VERSION);
   });
-    
+
   server.on("/uptime", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(200, "text/plain", (String)millis());
   });
-    
+
   server.on("/freeheap", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(200, "text/plain", (String)ESP.getFreeHeap());
   });
-  
+
+  //WLEDMM and Athom
+  server.on("/getflash", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(200, "text/plain", (String)ESP.getFlashChipSize());
+    });
+
   server.on("/u", HTTP_GET, [](AsyncWebServerRequest *request){
     if (handleIfNoneMatchCacheHeader(request)) return;
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_usermod, PAGE_usermod_length);
@@ -243,12 +253,12 @@ void initServer()
     request->send(response);
     //request->send_P(200, "text/html", PAGE_usermod);
   });
-    
+
   //Deprecated, use of /json/state and presets recommended instead
   server.on("/url", HTTP_GET, [](AsyncWebServerRequest *request){
     URL_response(request);
   });
-    
+
   server.on("/teapot", HTTP_GET, [](AsyncWebServerRequest *request){
     serveMessage(request, 418, F("418. I'm a teapot."), F("(Tangible Embedded Advanced Project Of Twinkling)"), 254);
   });
@@ -275,14 +285,22 @@ void initServer()
     setStaticContentCacheHeaders(response);
     request->send(response);
   });
-  
+
   server.on("/rangetouch.js", HTTP_GET, [](AsyncWebServerRequest *request){
     AsyncWebServerResponse *response = request->beginResponse_P(200, "application/javascript", rangetouchJs, rangetouchJs_length);
     response->addHeader(FPSTR(s_content_enc),"gzip");
     setStaticContentCacheHeaders(response);
     request->send(response);
   });
-  
+
+  //WLEDMM
+  server.on("/peek.js", HTTP_GET, [](AsyncWebServerRequest *request){
+    AsyncWebServerResponse *response = request->beginResponse_P(200, "application/javascript", PAGE_peekJs, PAGE_peekJs_length);
+    response->addHeader(FPSTR(s_content_enc),"gzip");
+    setStaticContentCacheHeaders(response);
+    request->send(response);
+  });
+
   createEditHandler(correctPIN);
 
 #ifndef WLED_DISABLE_OTA
@@ -293,7 +311,7 @@ void initServer()
     } else
       serveSettings(request); // checks for "upd" in URL and handles PIN
   });
-  
+
   server.on("/update", HTTP_POST, [](AsyncWebServerRequest *request){
     if (!correctPIN) {
       serveSettings(request, true); // handle PIN page POST request
@@ -302,7 +320,7 @@ void initServer()
     if (Update.hasError() || otaLock) {
       serveMessage(request, 500, F("Update failed!"), F("Please check your file and retry!"), 254);
     } else {
-      serveMessage(request, 200, F("Update successful!"), F("Rebooting..."), 131); 
+      serveMessage(request, 200, F("Update successful!"), F("Rebooting..."), 131);
       doReboot = true;
     }
   },[](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final){
@@ -345,17 +363,32 @@ void initServer()
   });
   #endif
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    USER_PRINTLN("Client request"); //WLEDMM: want to see if client connects to wled
+    #ifdef ARDUINO_ARCH_ESP32
+    DEBUG_PRINTF("%s min free stack %d\n", pcTaskGetTaskName(NULL), uxTaskGetStackHighWaterMark(NULL)); //WLEDMM
+    #endif
     if (captivePortal(request)) return;
     serveIndexOrWelcome(request);
   });
 
+  #ifdef WLED_ENABLE_PIXART
+  server.on("/pixart.htm", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (handleFileRead(request, "/pixart.htm")) return;
+    if (handleIfNoneMatchCacheHeader(request)) return;
+    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_pixart, PAGE_pixart_L);
+    response->addHeader(FPSTR(s_content_enc),"gzip");
+    setStaticContentCacheHeaders(response);
+    request->send(response);
+  });
+  #endif
+
   #ifdef WLED_ENABLE_WEBSOCKETS
   server.addHandler(&ws);
   #endif
-  
+
   //called when the url is not defined here, ajax-in; get-settings
   server.onNotFound([](AsyncWebServerRequest *request){
-    DEBUG_PRINTLN("Not-Found HTTP call:");
+    DEBUG_PRINT("Not-Found HTTP call: ");
     DEBUG_PRINTLN("URI: " + request->url());
     if (captivePortal(request)) return;
 
@@ -367,7 +400,7 @@ void initServer()
       request->send(response);
       return;
     }
-    
+
     if(handleSet(request, request->url())) return;
     #ifndef WLED_DISABLE_ALEXA
     if(espalexa.handleAlexaApiCall(request)) return;
@@ -475,7 +508,7 @@ void serveMessage(AsyncWebServerRequest* request, uint16_t code, const String& h
   messageHead = headl;
   messageSub = subl;
   optionType = optionT;
-  
+
   request->send_P(code, "text/html", PAGE_msg, msgProcessor);
 }
 
@@ -497,7 +530,7 @@ String dmxProcessor(const String& var)
       mapJS += "0];";
     }
   #endif
-  
+
   return mapJS;
 }
 #endif
@@ -505,7 +538,7 @@ String dmxProcessor(const String& var)
 
 void serveSettingsJS(AsyncWebServerRequest* request)
 {
-  char buf[SETTINGS_STACK_BUF_SIZE+37];
+  char buf[SETTINGS_STACK_BUF_SIZE+37] = { '\0' }; // WLEDMM ensure buffer is cleared initially
   buf[0] = 0;
   byte subPage = request->arg(F("p")).toInt();
   if (subPage > 10) {
@@ -519,8 +552,15 @@ void serveSettingsJS(AsyncWebServerRequest* request)
     return;
   }
   strcat_P(buf,PSTR("function GetV(){var d=document;"));
-  getSettingsJS(subPage, buf+strlen(buf));  // this may overflow by 35bytes!!!
+  getSettingsJS(request, subPage, buf+strlen(buf));  // this may overflow by 35bytes!!! WLEDMM add request
   strcat_P(buf,PSTR("}"));
+
+  #ifdef ARDUINO_ARCH_ESP32
+    DEBUG_PRINT(F("ServeSettingsJS: "));
+    DEBUG_PRINTF("%s min free stack %d\n", pcTaskGetTaskName(NULL), uxTaskGetStackHighWaterMark(NULL)); //WLEDMM
+    DEBUG_PRINTF(PSTR(" bytes.\tString buffer usage: %4d of %d bytes\n"), strlen(buf)+1, SETTINGS_STACK_BUF_SIZE+37);
+  #endif
+
   request->send(200, "application/javascript", buf);
 }
 
@@ -530,7 +570,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
   byte subPage = 0, originalSubPage = 0;
   const String& url = request->url();
 
-  if (url.indexOf("sett") >= 0) 
+  if (url.indexOf("sett") >= 0)
   {
     if      (url.indexOf(".js")  > 0) subPage = 254;
     else if (url.indexOf(".css") > 0) subPage = 253;
@@ -593,7 +633,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
       return;
     }
   }
-  
+
   AsyncWebServerResponse *response;
   switch (subPage)
   {
@@ -603,10 +643,14 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     case 4:   response = request->beginResponse_P(200, "text/html", PAGE_settings_sync, PAGE_settings_sync_length); break;
     case 5:   response = request->beginResponse_P(200, "text/html", PAGE_settings_time, PAGE_settings_time_length); break;
     case 6:   response = request->beginResponse_P(200, "text/html", PAGE_settings_sec,  PAGE_settings_sec_length);  break;
+#ifdef WLED_ENABLE_DMX
     case 7:   response = request->beginResponse_P(200, "text/html", PAGE_settings_dmx,  PAGE_settings_dmx_length);  break;
+#endif
     case 8:   response = request->beginResponse_P(200, "text/html", PAGE_settings_um,   PAGE_settings_um_length);   break;
     case 9:   response = request->beginResponse_P(200, "text/html", PAGE_update,        PAGE_update_length);        break;
+#ifndef WLED_DISABLE_2D
     case 10:  response = request->beginResponse_P(200, "text/html", PAGE_settings_2D,   PAGE_settings_2D_length);   break;
+#endif
     case 251: {
       correctPIN = !strlen(settingsPIN); // lock if a pin is set
       createEditHandler(correctPIN);
