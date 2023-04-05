@@ -462,6 +462,120 @@ public:
     int8_t pin_ES7243_SCL;
 };
 
+/* ES8388 Sound Modude
+   This is an I2S sound processing unit that requires ininitialization over
+   I2C before I2S data can be received. 
+*/
+class ES8388Source : public I2SSource {
+  private:
+    // I2C initialization functions for ES8388
+    void _es8388I2cBegin() {
+      bool i2c_initialized = Wire.begin(pin_ES8388_SDA, pin_ES8388_SCL, 100000U);
+      if (i2c_initialized == false) {
+        ERRORSR_PRINTLN(F("AR: ES8388 failed to initialize I2C bus driver."));
+      }
+    }
+
+    void _es8388I2cWrite(uint8_t reg, uint8_t val) {
+#ifndef ES8388_ADDR
+      Wire.beginTransmission(0x10);
+      #define ES8388_ADDR 0x10   // default address
+#else
+      Wire.beginTransmission(ES8388_ADDR);
+#endif
+      Wire.write((uint8_t)reg);
+      Wire.write((uint8_t)val);
+      uint8_t i2cErr = Wire.endTransmission();  // i2cErr == 0 means OK
+      if (i2cErr != 0) {
+        DEBUGSR_PRINTF("AR: ES8388 I2C write failed with error=%d  (addr=0x%X, reg 0x%X, val 0x%X).\n", i2cErr, ES8388_ADDR, reg, val);
+      }
+    }
+
+    void _es8388InitAdc() {
+      // This is by no means 100% figured but it's working for line-in
+      // with a little too much noise for my liking...
+      // https://dl.radxa.com/rock2/docs/hw/ds/ES8388%20user%20Guide.pdf Section 10.1
+      // https://docs.google.com/spreadsheets/d/1CN3MvhkcPVESuxKyx1xRYqfUit5hOdsG45St9BCUm-g/edit#gid=0 generally
+      _es8388I2cBegin();
+      _es8388I2cWrite(0x08,0x00); // I2S to slave
+      _es8388I2cWrite(0x02,0xf3); // Power down DEM and STM
+      _es8388I2cWrite(0x2b,0x80); // Set same LRCK
+      _es8388I2cWrite(0x00,0x05); // Set chip to Play & Record Mode
+      _es8388I2cWrite(0x01,0x40); // Power up Analog and lbias ... These 5 (to here) need to be done in order
+      _es8388I2cWrite(0x03,0x00); // Power up ADC, Analog Input, and Mic Bias
+      _es8388I2cWrite(0x04,0x3C); // ** In guide, not in working example tho. **
+      _es8388I2cWrite(0x0a,0x50); // Use Lin2/Rin2 for ADC input  
+      _es8388I2cWrite(0x09,0x00); // Select Analog Input PGA Gain for ADC to 0dB **
+      _es8388I2cWrite(0x0c,0x0c); // I2S format, 24-bit
+      _es8388I2cWrite(0x0d,0x02); // Set MCLK/LRCK ratio to 256
+      _es8388I2cWrite(0x10,0x00); // Set ADC digital volume attenuation to 0dB (left)
+      _es8388I2cWrite(0x11,0x00); // Set ADC digital volume attenuation to 0dB (right)
+      _es8388I2cWrite(0x17,0x18); // Set format for DAC (I2S, 24bit)
+      _es8388I2cWrite(0x18,0x02); // Set DAC MCLK/LRCK ratio to 256
+      _es8388I2cWrite(0x1a,0x00); // DAC Volume attenuation 0dB (left)
+      _es8388I2cWrite(0x1b,0x00); // DAC Volume attenuation 0dB (right)
+      _es8388I2cWrite(0x2e,0x00); // LOUT1 volume - 00 = -45dB
+      _es8388I2cWrite(0x2f,0x00); // ROUT1 volume - 00 = -45dB
+      _es8388I2cWrite(0x0C,0b00000001); // ADC digital format - I2S + Left Justified
+      _es8388I2cWrite(0x17,0b00000010); // DAC digital format - I2S + Left Justified
+      _es8388I2cWrite(0x02,0x00); // Power up DEM and STM
+      // end of guide init ^^^
+      _es8388I2cWrite(0x02,0b01000000); // Power. Guide says it's only 6 bits but that 1 means "turn on sometthing for line-out voltage"
+      _es8388I2cWrite(0x04,0x0c); // LOUT2 an ROUT2 powered
+      _es8388I2cWrite(0x30,0b00011110); // LOUT2VOL - 0 = -45dB, 0b00011110 = +0dB
+      _es8388I2cWrite(0x31,0b00011110); // ROUT2VOL - 0 = -45dB, 0b00011110 = +0dB
+      _es8388I2cWrite(0x26,0x09); // Mixer 
+      _es8388I2cWrite(0x27,0x50); // Mixer 
+      _es8388I2cWrite(0x2a,0x50); // Mixer 
+      _es8388I2cWrite(0x03,0x00); // Power
+    }
+
+  public:
+    ES8388Source(SRate_t sampleRate, int blockSize, float sampleScale = 1.0f, bool i2sMaster=true) :
+      I2SSource(sampleRate, blockSize, sampleScale, i2sMaster) {
+      _config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
+    };
+
+    void initialize(int8_t sdaPin, int8_t sclPin, int8_t i2swsPin, int8_t i2ssdPin, int8_t i2sckPin, int8_t mclkPin) {
+
+      // check that pins are valid
+      if ((sdaPin < 0) || (sclPin < 0)) {
+        ERRORSR_PRINTF("\nAR: invalid ES8388 I2C pins: SDA=%d, SCL=%d\n", sdaPin, sclPin); 
+        return;
+      }
+
+      if ((i2sckPin < 0) || (mclkPin < 0)) {
+        ERRORSR_PRINTF("\nAR: invalid I2S pin: SCK=%d, MCLK=%d\n", i2sckPin, mclkPin); 
+        return;
+      }
+
+      // Reserve SDA and SCL pins of the I2C interface
+      PinManagerPinType es8388Pins[2] = { { sdaPin, true }, { sclPin, true } };
+      if (!pinManager.allocateMultiplePins(es8388Pins, 2, PinOwner::HW_I2C)) {
+        pinManager.deallocateMultiplePins(es8388Pins, 2, PinOwner::HW_I2C);
+        ERRORSR_PRINTF("\nAR: Failed to allocate ES8388 I2C pins: SDA=%d, SCL=%d\n", sdaPin, sclPin); 
+        return;
+      }
+
+      pin_ES8388_SDA = sdaPin;
+      pin_ES8388_SCL = sclPin;
+
+      // First route mclk, then configure ADC over I2C, then configure I2S
+      _es8388InitAdc();
+      I2SSource::initialize(i2swsPin, i2ssdPin, i2sckPin, mclkPin);
+    }
+
+    void deinitialize() {
+      // Release SDA and SCL pins of the I2C interface
+      PinManagerPinType es8388Pins[2] = { { pin_ES8388_SDA, true }, { pin_ES8388_SCL, true } };
+      pinManager.deallocateMultiplePins(es8388Pins, 2, PinOwner::HW_I2C);
+      I2SSource::deinitialize();
+    }
+
+  private:
+    int8_t pin_ES8388_SDA;
+    int8_t pin_ES8388_SCL;
+};
 
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
 #if !defined(SOC_I2S_SUPPORTS_ADC) && !defined(SOC_I2S_SUPPORTS_ADC_DAC)
