@@ -86,12 +86,15 @@ enum Externals
   F_square,
   F_clamp,
 
-  F_printf
+  F_print,
+  F_jsonToPixels, //reorder only when creating new wledvxyz.json
+  F_frameTime
 };
 
 #if ARTI_PLATFORM != ARTI_ARDUINO
   #define PI 3.141592654
 #endif
+uint32_t frameTime = 0;
 
 float ARTI::arti_external_function(uint8_t function, float par1, float par2, float par3, float par4, float par5)
 {
@@ -209,6 +212,10 @@ float ARTI::arti_external_function(uint8_t function, float par1, float par2, flo
       case F_millis:
         return millis();
 
+      case F_jsonToPixels:
+        SEGMENT.jsonToPixels(SEGMENT.name,(uint8_t)par1);
+        return floatNull;
+
       default: {}
     }
   #else // not arduino
@@ -273,6 +280,9 @@ float ARTI::arti_external_function(uint8_t function, float par1, float par2, flo
 
       case F_millis:
         return 1000;
+
+      case F_jsonToPixels:
+        return par1;
     }
   #endif
 
@@ -315,7 +325,7 @@ float ARTI::arti_external_function(uint8_t function, float par1, float par2, flo
       return t > par3 ? par3 : t;
     }
 
-    case F_printf: {
+    case F_print: {
       if (par3 == floatNull) {
         if (par2 == floatNull) {
           PRINT_ARTI("%f\n", par1);
@@ -454,6 +464,9 @@ void ARTI::arti_set_external_variable(float value, uint8_t variable, float par1,
           SEGMENT.setPixelColorXY((uint16_t)par1%SEGMENT.virtualWidth(), (uint16_t)par2%SEGMENT.virtualHeight(), value); //2D value!!
 
         return;
+      case F_frameTime:
+        frameTime = (uint16_t)value;
+        return;
     }
   #else
     switch (variable)
@@ -469,6 +482,9 @@ void ARTI::arti_set_external_variable(float value, uint8_t variable, float par1,
         else
           RUNLOG_ARTI("arti_set_external_variable: leds(%f, %f) := %f\n", par1, par2, value);
 
+        return;
+      case F_frameTime:
+        frameTime = (uint16_t)value;
         return;
     }
   #endif

@@ -2188,7 +2188,11 @@ class AudioReactive : public Usermod {
           oappend(SET_F("addOption(dd,'.Legacy I2S PDM ☾',51);"));
         #endif
       #endif
-      oappend(SET_F("addOption(dd,'ES8388',6);"));
+      #if SR_DMTYPE==6
+        oappend(SET_F("addOption(dd,'ES8388 ☾ (⎌)',6);"));
+      #else
+        oappend(SET_F("addOption(dd,'ES8388 ☾',6);"));
+      #endif
 
       #ifdef SR_SQUELCH
         oappend(SET_F("addInfo('AudioReactive:config:squelch',1,'<i>&#9100; ")); oappendi(SR_SQUELCH); oappend("</i>');");  // 0 is field type, 1 is actual field

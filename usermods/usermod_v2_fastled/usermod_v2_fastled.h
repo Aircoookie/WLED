@@ -2,10 +2,11 @@
 
 #include "wled.h"
 
-//WLEDMM usermod: CC BY-NC 3.0 licensed effects by Stefan Petrick, only include this usermod only if you accept the terms!
+#warning WLEDMM usermod: CC BY-NC 3.0 licensed effects by Stefan Petrick, include this usermod only if you accept the terms!
 //========================================================================================================================
 //========================================================================================================================
 //========================================================================================================================
+
 
 // Polar basics demo for the 
 // FastLED Podcast #2
