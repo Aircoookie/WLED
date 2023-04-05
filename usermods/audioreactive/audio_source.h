@@ -519,42 +519,28 @@ class ES8388Source : public I2SSource {
     }
 
     void _es8388InitAdc() {
-      // This is by no means 100% figured but it's working for line-in
-      // with a little too much noise for my liking...
       // https://dl.radxa.com/rock2/docs/hw/ds/ES8388%20user%20Guide.pdf Section 10.1
       // https://docs.google.com/spreadsheets/d/1CN3MvhkcPVESuxKyx1xRYqfUit5hOdsG45St9BCUm-g/edit#gid=0 generally
-      _es8388I2cBegin();
-      _es8388I2cWrite(0x08,0x00); // I2S to slave
-      _es8388I2cWrite(0x02,0xf3); // Power down DEM and STM
-      _es8388I2cWrite(0x2b,0x80); // Set same LRCK
-      _es8388I2cWrite(0x00,0x05); // Set chip to Play & Record Mode
-      _es8388I2cWrite(0x01,0x40); // Power up Analog and lbias ... These 5 (to here) need to be done in order
-      _es8388I2cWrite(0x03,0x00); // Power up ADC, Analog Input, and Mic Bias
-      _es8388I2cWrite(0x04,0x3C); // ** In guide, not in working example tho. **
-      _es8388I2cWrite(0x0a,0x50); // Use Lin2/Rin2 for ADC input  
-      _es8388I2cWrite(0x09,0x00); // Select Analog Input PGA Gain for ADC to 0dB **
-      _es8388I2cWrite(0x0c,0x0c); // I2S format, 24-bit
-      _es8388I2cWrite(0x0d,0x02); // Set MCLK/LRCK ratio to 256
-      _es8388I2cWrite(0x10,0x00); // Set ADC digital volume attenuation to 0dB (left)
-      _es8388I2cWrite(0x11,0x00); // Set ADC digital volume attenuation to 0dB (right)
-      _es8388I2cWrite(0x17,0x18); // Set format for DAC (I2S, 24bit)
-      _es8388I2cWrite(0x18,0x02); // Set DAC MCLK/LRCK ratio to 256
-      _es8388I2cWrite(0x1a,0x00); // DAC Volume attenuation 0dB (left)
-      _es8388I2cWrite(0x1b,0x00); // DAC Volume attenuation 0dB (right)
-      _es8388I2cWrite(0x2e,0x00); // LOUT1 volume - 00 = -45dB
-      _es8388I2cWrite(0x2f,0x00); // ROUT1 volume - 00 = -45dB
-      _es8388I2cWrite(0x0C,0b00000001); // ADC digital format - I2S + Left Justified
-      _es8388I2cWrite(0x17,0b00000010); // DAC digital format - I2S + Left Justified
-      _es8388I2cWrite(0x02,0x00); // Power up DEM and STM
-      // end of guide init ^^^
-      _es8388I2cWrite(0x02,0b01000000); // Power. Guide says it's only 6 bits but that 1 means "turn on sometthing for line-out voltage"
-      _es8388I2cWrite(0x04,0x0c); // LOUT2 an ROUT2 powered
+      // Sets ADC to around what AudioReactive expects, and loops line-in to line-out/headphone for monitoring.
+      _es8388I2cBegin(); 
+      _es8388I2cWrite(0x08,0x00);       // I2S to slave
+      _es8388I2cWrite(0x02,0xf3);       // Power down DEM and STM
+      _es8388I2cWrite(0x2b,0x80);       // Set same LRCK
+      _es8388I2cWrite(0x00,0x05);       // Set chip to Play & Record Mode
+      _es8388I2cWrite(0x0d,0x02);       // Set MCLK/LRCK ratio to 256
+      _es8388I2cWrite(0x01,0x40);       // Power up analog and lbias
+      _es8388I2cWrite(0x03,0x00);       // Power up ADC, Analog Input, and Mic Bias
+      _es8388I2cWrite(0x0a,0x50);       // Use Lin2/Rin2 for ADC input ("line-in")
+      _es8388I2cWrite(0x09,0x00);       // Select Analog Input PGA Gain for ADC to 0dB (L+R)
+      _es8388I2cWrite(0x10,0b01000000); // Set ADC digital volume attenuation to -32dB (left)
+      _es8388I2cWrite(0x11,0b01000000); // Set ADC digital volume attenuation to -32dB (right)
+      _es8388I2cWrite(0x04,0x0c);       // Turn on LOUT2 and ROUT2 power
+      _es8388I2cWrite(0x02,0b01000000); // Power up DEM and STM and undocumented bit for "turn on line-out amp"
+      _es8388I2cWrite(0x26,0x09);       // Mixer - route LIN2/RIN2 to output
+      _es8388I2cWrite(0x27,0b01010000); // Mixer - route LIN to left mixer, 0dB gain
+      _es8388I2cWrite(0x2a,0b01010000); // Mixer - route RIN to right mixer, 0dB gain
       _es8388I2cWrite(0x30,0b00011110); // LOUT2VOL - 0 = -45dB, 0b00011110 = +0dB
       _es8388I2cWrite(0x31,0b00011110); // ROUT2VOL - 0 = -45dB, 0b00011110 = +0dB
-      _es8388I2cWrite(0x26,0x09); // Mixer 
-      _es8388I2cWrite(0x27,0x50); // Mixer 
-      _es8388I2cWrite(0x2a,0x50); // Mixer 
-      _es8388I2cWrite(0x03,0x00); // Power
     }
 
   public:
