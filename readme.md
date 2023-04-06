@@ -21,7 +21,7 @@ This fork is created by members of the Atuline/WLED team to make development aga
 More info here: <a href="https://mm.kno.wled.ge/moonmodules/what-is-moonmodules/">what-is-moonmodules</a>
 
 <a href="https://www.paypal.com/donate?business=moonmodules@icloud.com"><img src="https://img.shields.io/badge/send%20me%20a%20small%20gift-paypal-blue.svg" alt="HTML tutorial" style="max-width: 100%;"></a>
-Donations will be used to buy WLED related hardware, software or drinks shared by the contributors of this repo.
+Donations will be used to buy WLED related hardware, software or drinks shared with the contributors of this repo.
 
 *Disclaimer:*   
 
