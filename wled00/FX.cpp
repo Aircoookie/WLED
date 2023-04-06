@@ -6158,8 +6158,13 @@ uint16_t mode_2DWaverly(void) {
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth  = *(float*)   um_data->u_data[0];
+  float soundPressure = *(float*)   um_data->u_data[9];
+  float agcSensitivity= *(float*)   um_data->u_data[10];
 
   SEGMENT.fadeToBlackBy(SEGMENT.speed);
+  if (SEGENV.check3 && SEGENV.check2) SEGENV.check2 = false;                 // only one of the two at anyy time
+  if ((SEGENV.check2) && (volumeSmth > 0.5f)) volumeSmth = soundPressure;    // show sound pressure instead of volume
+  if (SEGENV.check3) volumeSmth = 255.0 - agcSensitivity;                    // show AGC level instead of volume
 
   long t = millis() / 2;
   for (int i = 0; i < cols; i++) {
@@ -6167,7 +6172,8 @@ uint16_t mode_2DWaverly(void) {
     uint16_t thisMax = map(thisVal, 0, 512, 0, rows);
 
     for (int j = 0; j < thisMax; j++) {
-      SEGMENT.addPixelColorXY(i, j, ColorFromPalette(SEGPALETTE, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND));
+      if (!SEGENV.check1)
+        SEGMENT.addPixelColorXY(i, j, ColorFromPalette(SEGPALETTE, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND));
       SEGMENT.addPixelColorXY((cols - 1) - i, (rows - 1) - j, ColorFromPalette(SEGPALETTE, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND));
     }
   }
@@ -6175,7 +6181,7 @@ uint16_t mode_2DWaverly(void) {
 
   return FRAMETIME;
 } // mode_2DWaverly()
-static const char _data_FX_MODE_2DWAVERLY[] PROGMEM = "Waverly ☾@Amplification,Sensitivity;;!;2v;ix=64,si=0"; // Beatsin
+static const char _data_FX_MODE_2DWAVERLY[] PROGMEM = "Waverly ☾@Amplification,Sensitivity,,,,No Clouds,Sound Pressure,AGC debug;;!;2v;ix=64,si=0"; // Beatsin
 
 #endif // WLED_DISABLE_2D
 
@@ -6304,23 +6310,45 @@ uint16_t mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth  = *(float*)  um_data->u_data[0];
+  int16_t volumeRaw   = *(int16_t*)um_data->u_data[1];
+  float soundPressure = *(float*)  um_data->u_data[9];
+  float agcSensitivity= *(float*)  um_data->u_data[10];
   #ifdef SR_DEBUG
   uint8_t samplePeak = *(uint8_t*)um_data->u_data[3];
   #endif
 
-  //SEGMENT.fade_out(240);
-  SEGMENT.fade_out(249);  // 25%
+  if (SEGENV.call == 0) {
+    SEGMENT.setUpLeds();
+    SEGMENT.fill(BLACK);
+  }
 
-  float segmentSampleAvg = volumeSmth * (float)SEGMENT.intensity / 255.0;
-  segmentSampleAvg *= 0.25; // divide by 4, to compensate for later "sensitivty" upscaling
+  float realVolume = volumeSmth;
+  if (SEGENV.check3 && SEGENV.check2) SEGENV.check2 = false;  // only one option
+  if ((SEGENV.check2) && (realVolume >= 0.5f)) volumeSmth = soundPressure;
+  if (SEGENV.check3) volumeSmth = 255.0 - agcSensitivity; 
 
-  float mySampleAvg = mapf(segmentSampleAvg*2.0, 0, 64, 0, (SEGLEN-1)); // map to pixels availeable in current segment
+  SEGMENT.fade_out(253);
+  float sensGain = (float)(SEGMENT.intensity+2) / 257.0f; // min gain = 1/128
+  if (sensGain > 0.5f) sensGain = ((sensGain -0.5f) * 2.0f) +0.5f; // extend upper range to 3x 
+
+  float segmentSampleAvg = volumeSmth * sensGain;
+  segmentSampleAvg *= 0.25f; // divide by 4, to compensate for later "sensitivty" upscaling
+  float mySampleAvg = mapf(segmentSampleAvg*2.0f, 0, 64, 0, (SEGLEN-1)); // map to pixels availeable in current segment
   int tempsamp = constrain(mySampleAvg,0,SEGLEN-1);       // Keep the sample from overflowing.
   uint8_t gravity = 8 - SEGMENT.speed/32;
 
+  int blendVal;
+  if (SEGENV.check1) blendVal = 255 - roundf((segmentSampleAvg)*6.5f);   // reverse, min 48
+  else blendVal = roundf(segmentSampleAvg*8.0f);
+
+  //if ((realVolume > 1) && ((blendVal < 1) || (blendVal > 254))) blendVal = millis() % 192; // provides flickering when overtuned
+  //else 
+  blendVal = constrain(blendVal, 0, 255);                                                    // and saturation for all
+
+  if (realVolume > 0.5) // hide main "bar" in silence
   for (int i=0; i<tempsamp; i++) {
     uint8_t index = inoise8(i*segmentSampleAvg+millis(), 5000+i*segmentSampleAvg);
-    SEGMENT.setPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), segmentSampleAvg*8));
+    SEGMENT.setPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), (uint8_t)blendVal));
   }
 
   if (tempsamp >= gravcen->topLED)
@@ -6328,8 +6356,11 @@ uint16_t mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
   else if (gravcen->gravityCounter % gravity == 0)
     gravcen->topLED--;
 
-  if (gravcen->topLED > 0) {
-    SEGMENT.setPixelColor(gravcen->topLED, SEGMENT.color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0));
+  if ((gravcen->topLED > 0) && (SEGMENT.speed < 255)){  // hide top pixel if speed = 255
+    if (SEGENV.check2 || SEGENV.check3)
+      SEGMENT.setPixelColor(gravcen->topLED, SEGMENT.color_from_palette(max(uint16_t(millis()/16),(uint16_t)2), false, PALETTE_SOLID_WRAP, 0));  // flicker a bit slower
+    else
+      SEGMENT.setPixelColor(gravcen->topLED, SEGMENT.color_from_palette(max(uint16_t(millis()/2),(uint16_t)2), false, PALETTE_SOLID_WRAP, 0));   // normal flickering
   }
   gravcen->gravityCounter = (gravcen->gravityCounter + 1) % gravity;
 
@@ -6342,7 +6373,7 @@ uint16_t mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_gravimeter()
-static const char _data_FX_MODE_GRAVIMETER[] PROGMEM = "Gravimeter@Rate of fall,Sensitivity;!,!;!;1v;ix=128,m12=2,si=0"; // Arc, Beatsin
+static const char _data_FX_MODE_GRAVIMETER[] PROGMEM = "Gravimeter ☾@Rate of fall,Sensitivity,,,,Invert Palette,Sound Pressure,AGC debug;!,!;!;1v;ix=128,m12=2,si=0"; // Arc, Beatsin
 
 
 //////////////////////
