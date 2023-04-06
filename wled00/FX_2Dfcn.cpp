@@ -567,8 +567,6 @@ bool Segment::jsonToPixels(char * name, uint8_t fileNr) {
 
   if (!requestJSONBufferLock(23)) return false;
 
-  USER_PRINTF("file %s %d", fileName, isFile);
-
   if (!readObjectFromFile(fileName, nullptr, &doc)) {
     releaseJSONBufferLock();
     return false; //if file does not exist just exit
@@ -576,12 +574,9 @@ bool Segment::jsonToPixels(char * name, uint8_t fileNr) {
 
   JsonArray map = doc[F("seg")][F("i")];
 
-  // serializeJson(map, Serial);
-
   if (!map.isNull() && map.size()) {  // not an empty map
 
     for (uint16_t i=0; i<map.size(); i+=3) {
-      // USER_PRINTF("%s %s %s", map[i].as<String>().c_str(), map[i+1].as<String>().c_str(), map[i+2].as<String>().c_str());
       CRGB color = CRGB(map[i+2][0], map[i+2][1], map[i+2][2]);
       for (uint16_t j=map[i]; j<=map[i+1]; j++) {
         setPixelColor(j, color);
