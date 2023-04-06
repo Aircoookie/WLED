@@ -205,6 +205,9 @@
 #ifdef USERMOD_GAMES
 #include "../usermods/usermod_v2_games/usermod_v2_games.h"
 #endif
+#ifdef USERMOD_FASTLED
+#include "../usermods/usermod_v2_fastled/usermod_v2_fastled.h"
+#endif
 
 void registerUsermods()
 {
@@ -390,5 +393,8 @@ void registerUsermods()
 
   #ifdef USERMOD_GAMES
   usermods.add(new GamesUsermod());
+  #endif
+  #ifdef USERMOD_FASTLED
+  usermods.add(new FastledUsermod("Fastled", true));
   #endif
 }

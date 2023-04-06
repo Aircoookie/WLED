@@ -267,6 +267,7 @@ class Usermod {
     bool enabled = false; //WLEDMM
     const char *_name; //WLEDMM
     bool initDone = false; //WLEDMM
+    unsigned long lastTime = 0; //WLEDMM
   public:
     Usermod(const char *_name = nullptr, bool enabled=false) { um_data = nullptr; this->_name = _name; this->enabled=enabled;}
     virtual ~Usermod() { if (um_data) delete um_data; }

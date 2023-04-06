@@ -121,7 +121,7 @@ const float agcSampleSmooth[AGC_NUM_PRESETS]  = {  1/12.f,   1/6.f,  1/16.f}; //
 
 static AudioSource *audioSource = nullptr;
 static volatile bool disableSoundProcessing = false;      // if true, sound processing (FFT, filters, AGC) will be suspended. "volatile" as its shared between tasks.
-static bool useBandPassFilter = false;                    // if true, enables a bandpass filter 80Hz-16Khz to remove noise. Applies before FFT.
+static uint8_t useInputFilter = 0;                        // enables low-cut filtering. Applies before FFT.
 
 //WLEDMM add experimental settings
 static uint8_t micLevelMethod = 0;                        // 0=old "floating" miclev, 1=new  "freeze" mode, 2=fast freeze mode (mode 2 may not work for you)
@@ -183,7 +183,7 @@ static TaskHandle_t FFT_Task = nullptr;
 static const float fftResultPink[MAX_PINK+1][NUM_GEQ_CHANNELS] = { 
           { 1.70f, 1.71f, 1.73f, 1.78f, 1.68f, 1.56f, 1.55f, 1.63f, 1.79f, 1.62f, 1.80f, 2.06f, 2.47f, 3.35f, 6.83f, 9.55f },  //  0 default from SR WLED
       //  { 1.30f, 1.32f, 1.40f, 1.46f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 2.39f, 3.09f, 4.34f },  //  - Line-In Generic -> pink noise adjustment only
-          { 1.24f, 1.20f, 1.30f, 1.40f, 1.48f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.14f, 2.26f, 2.60f, 3.00f, 3.70f, 5.20f },  //  1 Line-In CS5343
+          { 2.35f, 1.32f, 1.32f, 1.40f, 1.48f, 1.57f, 1.68f, 1.80f, 1.89f, 1.95f, 2.14f, 2.26f, 2.50f, 2.90f, 4.20f, 6.50f },  //  1 Line-In CS5343 + DC blocker
 
           { 1.82f, 1.72f, 1.70f, 1.50f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 2.90f, 3.86f, 6.29f},   //  2 IMNP441 datasheet response profile * pink noise
           { 2.80f, 2.20f, 1.30f, 1.15f, 1.55f, 2.45f, 4.20f, 2.80f, 3.20f, 3.60f, 4.20f, 4.90f, 5.70f, 6.05f,10.50f,14.85f},   //  3 IMNP441 - big speaker, strong bass
@@ -232,6 +232,7 @@ static const float fftResultPink[MAX_PINK+1][NUM_GEQ_CHANNELS] = {
 // globals and FFT Output variables shared with animations
 static float FFT_MajorPeak = 1.0f;              // FFT: strongest (peak) frequency
 static float FFT_Magnitude = 0.0f;              // FFT: volume (magnitude) of peak frequency
+static float FFT_MajPeakSmth = 1.0f;            // FFT: (peak) frequency, smooth
 static uint8_t fftResult[NUM_GEQ_CHANNELS]= {0};// Our calculated freq. channel result table to be used by effects
 #if defined(WLED_DEBUG) || defined(SR_DEBUG) || defined(SR_STATS)
 static float fftTaskCycle = 0;      // avg cycle time for FFT task
@@ -341,6 +342,23 @@ constexpr bool skipSecondFFT = true;
 #else
 constexpr bool skipSecondFFT = false;
 #endif
+
+// High-Pass "DC blocker" filter
+// see https://www.dsprelated.com/freebooks/filters/DC_Blocker.html
+static void runDCBlocker(uint_fast16_t numSamples, float *sampleBuffer) {
+  constexpr float filterR = 0.990f;      // around 40hz
+  static float xm1 = 0.0f;
+  static float ym1 = 0.0f;
+
+  for (unsigned i=0; i < numSamples; i++) {
+    float value = sampleBuffer[i];
+    float filtered = value-xm1 + filterR*ym1;
+    xm1 = value;
+    ym1 = filtered;    
+    sampleBuffer[i] = filtered;
+  }  
+}
+
 //
 // FFT main task
 //
@@ -410,7 +428,12 @@ void FFTcode(void * parameter)
 
     // band pass filter - can reduce noise floor by a factor of 50
     // downside: frequencies below 100Hz will be ignored
-    if (useBandPassFilter) runMicFilter(samplesFFT, vReal);
+   if ((useInputFilter > 0) && (useInputFilter < 99)) {
+      switch(useInputFilter) {
+        case 1: runMicFilter(samplesFFT, vReal); break;                   // PDM microphone bandpass
+        case 2: runDCBlocker(samplesFFT, vReal); break;                   // generic Low-Cut + DC blocker (~40hz cut-off)
+      }
+    }
 
     // find highest sample in the batch
     float maxSample = 0.0f;                         // max sample from FFT batch
@@ -476,6 +499,7 @@ void FFTcode(void * parameter)
         FFT.MajorPeak(&FFT_MajorPeak, &FFT_Magnitude);              // let the effects know which freq was most dominant
         #endif
         FFT_MajorPeak = constrain(FFT_MajorPeak, 1.0f, 11025.0f);   // restrict value to range expected by effects
+        FFT_MajPeakSmth = FFT_MajPeakSmth + 0.42 * (FFT_MajorPeak - FFT_MajPeakSmth);   // I like this "swooping peak" look
 
       } else { // skip second run --> clear fft results, keep peaks
         memset(vReal, 0, sizeof(vReal)); 
@@ -531,7 +555,7 @@ void FFTcode(void * parameter)
   if (freqDist == 0) {
       /* new mapping, optimized for 22050 Hz by softhack007 --- update: removed overlap */
                                                     // bins frequency  range
-      if (useBandPassFilter) {
+      if (useInputFilter==1) {
         // skip frequencies below 100hz
         fftCalc[ 0] = 0.8f * fftAddAvg(3,3);
         fftCalc[ 1] = 0.9f * fftAddAvg(4,4);
@@ -560,7 +584,7 @@ void FFTcode(void * parameter)
       fftCalc[14] = fftAddAvg(104,164) * 0.88f;     // 61 4479 - 7106 high mid + high  -- with slight damping
   }
   else if (freqDist == 1) { //WLEDMM: Rightshft: note ewowi: frequencies in comments are not correct
-      if (useBandPassFilter) {
+      if (useInputFilter==1) {
         // skip frequencies below 100hz
         fftCalc[ 0] = 0.8f * fftAddAvg(1,1);
         fftCalc[ 1] = 0.9f * fftAddAvg(2,2);
@@ -896,6 +920,8 @@ class AudioReactive : public Usermod {
     // variables used in effects
     int16_t  volumeRaw = 0;       // either sampleRaw or rawSampleAgc depending on soundAgc
     float my_magnitude =0.0f;     // FFT_Magnitude, scaled by multAgc
+    float agcSensitivity = 128;   // AGC sensitivity estimation, based on agc gain (multAgc). calculated by getSensitivity(). range 0..255
+    float soundPressure = 0;      // Sound Pressure estimation, based on microphone raw readings. 0 ->5db, 255 ->105db
 
     // used to feed "Info" Page
     unsigned long last_UDPTime = 0;    // time of last valid UDP sound sync datapacket
@@ -1206,6 +1232,53 @@ class AudioReactive : public Usermod {
     } // getSample()
 
 
+    // current sensitivity, based on AGC gain (multAgc)
+    float getSensitivity()
+    {
+      // start with AGC gain factor
+      float tmpSound = multAgc;
+      // experimental: this gives you a calculated "real gain"
+      // if ((sampleAvg> 1.0) && (sampleReal > 0.05)) tmpSound = (float)sampleRaw / sampleReal;    // calculate gain from sampleReal 
+      // else tmpSound = ((float)sampleGain/40.0f * (float)inputLevel/128.0f) + 1.0f/16.0f;        // silence --> use values from user settings
+
+      if (soundAgc == 0)
+        tmpSound = ((float)sampleGain/40.0f * (float)inputLevel/128.0f) + 1.0f/16.0f;   // AGC off -> use non-AGC gain from presets
+      else
+        tmpSound /= (float)sampleGain/40.0f + 1.0f/16.0f;                               // AGC ON -> scale value so 1 = middle value
+
+      // scale to 0..255. Actually I'm not absolutely happy with this, but it works
+      if (tmpSound > 1.0) tmpSound = sqrtf(tmpSound);
+      if (tmpSound > 1.25) tmpSound = ((tmpSound-1.25f)/3.42f) +1.25f;
+      // we have a value now that should be between 0 and 4 (representing gain 1/16 ... 16.0)
+      return fminf(fmaxf(128.0*tmpSound -6.0f, 0), 255.0);        // return scaled non-inverted value // "-6" to ignore values below 1/24
+    }
+
+    // estimate sound pressure, based on some assumptions : 
+    //   * sample max = 32676 -> Acoustic overload point  --> 105db ==> 255
+    //   * sample < squelch   -> just above hearing level -->   5db ==> 0
+    // see https://en.wikipedia.org/wiki/Sound_pressure#Examples_of_sound_pressure
+    // use with I2S digital microphones. Expect stupid values for analog in, and with Line-In !!
+    float estimatePressure() {
+      // some constants
+      constexpr float logMinSample = 1.2237754316221f; // ln(3.4)
+      constexpr float sampleMin = 3.4f;
+      constexpr float logMaxSample = 10.1895683436f; // ln(32767 - 6144)
+      constexpr float sampleMax = 32767.0f - 6144.0f;
+
+      // take the max sample from last I2S batch.
+      float micSampleMax = fabsf(sampleReal);     // from getSample() - nice results, however distorted by MicLev processing
+      //float micSampleMax = fabsf(micDataReal);  // from FFTCode() - better source, but I'll do more testing before activating this
+      // make sure we are in expected ranges
+      if(micSampleMax <= sampleMin) return 0.0f;
+      if(micSampleMax >= sampleMax) return 255.0f;
+
+      // apply logarithmic scaling
+      float scaledvalue = logf(micSampleMax);
+      scaledvalue = (scaledvalue - logMinSample) / (logMaxSample - logMinSample); // 0...1
+      return fminf(fmaxf(256.0*scaledvalue, 0), 255.0);        // scaled value
+    }
+
+
     /* Limits the dynamics of volumeSmth (= sampleAvg or sampleAgc). 
      * does not affect FFTResult[] or volumeRaw ( = sample or rawSampleAgc) 
     */
@@ -1400,12 +1473,12 @@ class AudioReactive : public Usermod {
         // usermod exchangeable data
         // we will assign all usermod exportable data here as pointers to original variables or arrays and allocate memory for pointers
         um_data = new um_data_t;
-        um_data->u_size = 8;
+        um_data->u_size = 11;
         um_data->u_type = new um_types_t[um_data->u_size];
         um_data->u_data = new void*[um_data->u_size];
         um_data->u_data[0] = &volumeSmth;      //*used (New)
         um_data->u_type[0] = UMT_FLOAT;
-        um_data->u_data[1] = &volumeRaw;      // used (New)
+        um_data->u_data[1] = &volumeRaw;       // used (New)
         um_data->u_type[1] = UMT_UINT16;
         um_data->u_data[2] = fftResult;        //*used (Blurz, DJ Light, Noisemove, GEQ_base, 2D Funky Plank, Akemi)
         um_data->u_type[2] = UMT_BYTE_ARR;
@@ -1413,12 +1486,18 @@ class AudioReactive : public Usermod {
         um_data->u_type[3] = UMT_BYTE;
         um_data->u_data[4] = &FFT_MajorPeak;   //*used (Ripplepeak, Freqmap, Freqmatrix, Freqpixels, Freqwave, Gravfreq, Rocktaves, Waterfall)
         um_data->u_type[4] = UMT_FLOAT;
-        um_data->u_data[5] = &my_magnitude;   // used (New)
+        um_data->u_data[5] = &my_magnitude;    // used (New)
         um_data->u_type[5] = UMT_FLOAT;
         um_data->u_data[6] = &maxVol;          // assigned in effect function from UI element!!! (Puddlepeak, Ripplepeak, Waterfall)
         um_data->u_type[6] = UMT_BYTE;
         um_data->u_data[7] = &binNum;          // assigned in effect function from UI element!!! (Puddlepeak, Ripplepeak, Waterfall)
         um_data->u_type[7] = UMT_BYTE;
+        um_data->u_data[8] = &FFT_MajPeakSmth; // new
+        um_data->u_type[8] = UMT_FLOAT;
+        um_data->u_data[9]  = &soundPressure;  // used (New)
+        um_data->u_type[9]  = UMT_FLOAT;
+        um_data->u_data[10] = &agcSensitivity; // used (New)
+        um_data->u_type[10] = UMT_FLOAT;
       }
 
       // Reset I2S peripheral for good measure
@@ -1429,7 +1508,7 @@ class AudioReactive : public Usermod {
       #endif
       delay(100);         // Give that poor microphone some time to setup.
 
-      useBandPassFilter = false;
+      useInputFilter = 2; // default: DC blocker
       switch (dmType) {
       #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S3)
         // stub cases for not-yet-supported I2S modes on other ESP32 chips
@@ -1447,7 +1526,7 @@ class AudioReactive : public Usermod {
           break;
         case 2:
           DEBUGSR_PRINTLN(F("AR: ES7243 Microphone (right channel only)."));
-          //useBandPassFilter = true;
+          //useInputFilter = 0; // in case you need to disable low-cut software filtering
           audioSource = new ES7243(SAMPLE_RATE, BLOCK_SIZE);
           delay(100);
           if (audioSource) audioSource->initialize(sdaPin, sclPin, i2swsPin, i2ssdPin, i2sckPin, mclkPin);
@@ -1460,7 +1539,6 @@ class AudioReactive : public Usermod {
           break;
         case 4:
           DEBUGSR_PRINT(F("AR: Generic I2S Microphone with Master Clock - ")); DEBUGSR_PRINTLN(F(I2S_MIC_CHANNEL_TEXT));
-          //useBandPassFilter = true;
           audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, 1.0f/24.0f);
           //audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, 1.0f/24.0f, false);   // I2S SLAVE mode - does not work, unfortunately
           delay(100);
@@ -1470,24 +1548,32 @@ class AudioReactive : public Usermod {
         case 5:
           DEBUGSR_PRINT(F("AR: I2S PDM Microphone - ")); DEBUGSR_PRINTLN(F(I2S_PDM_MIC_CHANNEL_TEXT));
           audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, 1.0f/4.0f);
-          useBandPassFilter = true;  // this reduces the noise floor on SPM1423 from 5% Vpp (~380) down to 0.05% Vpp (~5)
+          useInputFilter = 1;  // PDM bandpass filter - this reduces the noise floor on SPM1423 from 5% Vpp (~380) down to 0.05% Vpp (~5)
           delay(100);
           if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin);
           break;
         case 51:
           DEBUGSR_PRINT(F("AR: Legacy PDM Microphone - ")); DEBUGSR_PRINTLN(F(I2S_PDM_MIC_CHANNEL_TEXT));
           audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, 1.0f);
-          useBandPassFilter = true;
+          useInputFilter = 1;  // PDM bandpass filter
           delay(100);
           if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin);
           break;
         #endif
+        case 6:
+          DEBUGSR_PRINTLN(F("AR: ES8388 Source"));
+          audioSource = new ES8388Source(SAMPLE_RATE, BLOCK_SIZE, 1.0f);
+          //useInputFilter = 0; // to disable low-cut software filtering and restore previous behaviour
+          delay(100);
+          if (audioSource) audioSource->initialize(sdaPin, sclPin, i2swsPin, i2ssdPin, i2sckPin, mclkPin);
+          break;
+
         #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
         // ADC over I2S is only possible on "classic" ESP32
         case 0:
         default:
           DEBUGSR_PRINTLN(F("AR: Analog Microphone (left channel only)."));
-          useBandPassFilter = true;
+          useInputFilter = 1;  // PDM bandpass filter seems to work well for analog, too
           audioSource = new I2SAdcSource(SAMPLE_RATE, BLOCK_SIZE);
           delay(100);
           if (audioSource) audioSource->initialize(audioPin);
@@ -1637,6 +1723,16 @@ class AudioReactive : public Usermod {
         if (soundAgc) my_magnitude *= multAgc;
         if (volumeSmth < 1 ) my_magnitude = 0.001f;  // noise gate closed - mute
 
+        // get AGC sensitivity and sound pressure
+        static unsigned long lastEstimate = 0;
+        if (millis() - lastEstimate > 12) {
+          lastEstimate = millis();
+          agcSensitivity = getSensitivity();
+          if (limiterOn)
+            soundPressure = soundPressure + 0.38f * (estimatePressure() - soundPressure);  // dynamics limiter on -> some smoothing
+          else
+            soundPressure = soundPressure + 0.95f * (estimatePressure() - soundPressure);  //  dynamics limiter on -> raw value
+        }
         limitSampleDynamics();
       }  // if (!disableSoundProcessing)
 
@@ -2095,8 +2191,8 @@ class AudioReactive : public Usermod {
       if (dmType == 51) dmType = SR_DMTYPE;  // MCU does not support legacy PDM
       #endif
     #else
-      if (dmType == 5) useBandPassFilter = true;   // enable filter for PDM
-      if (dmType == 51) useBandPassFilter = true /*false*/; // switch on filter for legacy PDM    
+      if (dmType == 5) useInputFilter = 1;      // enable filter for PDM
+      if (dmType == 51) useInputFilter = 1;     // switch on filter for legacy PDM    
     #endif
 
       configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["pin"][0], i2ssdPin);
@@ -2180,6 +2276,11 @@ class AudioReactive : public Usermod {
         #else
           oappend(SET_F("addOption(dd,'.Legacy I2S PDM ☾',51);"));
         #endif
+      #endif
+      #if SR_DMTYPE==6
+        oappend(SET_F("addOption(dd,'ES8388 ☾ (⎌)',6);"));
+      #else
+        oappend(SET_F("addOption(dd,'ES8388 ☾',6);"));
       #endif
 
       #ifdef SR_SQUELCH

@@ -5976,14 +5976,16 @@ static const char _data_FX_MODE_2DDRIFTROSE[] PROGMEM = "Drift Rose@Fade,Blur;;;
   um_data_t *um_data;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     volumeSmth    = *(float*)   um_data->u_data[0];
-    volumeRaw     = *(float*)   um_data->u_data[1];
+    volumeRaw     = *(int16_t*) um_data->u_data[1];
     fftResult     =  (uint8_t*) um_data->u_data[2];
     samplePeak    = *(uint8_t*) um_data->u_data[3];
     FFT_MajorPeak = *(float*)   um_data->u_data[4];
     my_magnitude  = *(float*)   um_data->u_data[5];
     maxVol        =  (uint8_t*) um_data->u_data[6];  // requires UI element (SEGMENT.customX?), changes source element
     binNum        =  (uint8_t*) um_data->u_data[7];  // requires UI element (SEGMENT.customX?), changes source element
-    fftBin        =  (float*)   um_data->u_data[8];
+    FFT_MajPeakSmth= *(float*)  um_data->u_data[8];   // FFT Majorpeak smoothed
+    soundPressure  = *(float*)  um_data->u_data[9];  // sound pressure ( = logarithmic scale microphone input). Range 0...255
+    agcSensitivity = *(float*)  um_data->u_data[10]; // current AGC gain, scaled to 0...255. use "255.0f - agcSensitivity" to get MIC input level
   } else {
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);
@@ -6037,6 +6039,8 @@ uint16_t mode_ripplepeak(void) {                // * Ripple peak. By Andrew Tuli
     SEGMENT.custom1 = *binNum;
     SEGMENT.custom2 = *maxVol * 2;
   }
+  if (SEGMENT.custom1 < 2) SEGMENT.custom1 = 2; // WLEDMM prevent stupid settings
+  if (SEGMENT.custom2 < 48) SEGMENT.custom1 = 48; // WLEDMM prevent stupid settings
 
   *binNum = SEGMENT.custom1;                              // Select a bin.
   *maxVol = SEGMENT.custom2 / 2;                          // Our volume comparator.
@@ -6154,8 +6158,13 @@ uint16_t mode_2DWaverly(void) {
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth  = *(float*)   um_data->u_data[0];
+  float soundPressure = *(float*)   um_data->u_data[9];
+  float agcSensitivity= *(float*)   um_data->u_data[10];
 
   SEGMENT.fadeToBlackBy(SEGMENT.speed);
+  if (SEGENV.check3 && SEGENV.check2) SEGENV.check2 = false;                 // only one of the two at anyy time
+  if ((SEGENV.check2) && (volumeSmth > 0.5f)) volumeSmth = soundPressure;    // show sound pressure instead of volume
+  if (SEGENV.check3) volumeSmth = 255.0 - agcSensitivity;                    // show AGC level instead of volume
 
   long t = millis() / 2;
   for (int i = 0; i < cols; i++) {
@@ -6163,7 +6172,8 @@ uint16_t mode_2DWaverly(void) {
     uint16_t thisMax = map(thisVal, 0, 512, 0, rows);
 
     for (int j = 0; j < thisMax; j++) {
-      SEGMENT.addPixelColorXY(i, j, ColorFromPalette(SEGPALETTE, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND));
+      if (!SEGENV.check1)
+        SEGMENT.addPixelColorXY(i, j, ColorFromPalette(SEGPALETTE, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND));
       SEGMENT.addPixelColorXY((cols - 1) - i, (rows - 1) - j, ColorFromPalette(SEGPALETTE, map(j, 0, thisMax, 250, 0), 255, LINEARBLEND));
     }
   }
@@ -6171,7 +6181,7 @@ uint16_t mode_2DWaverly(void) {
 
   return FRAMETIME;
 } // mode_2DWaverly()
-static const char _data_FX_MODE_2DWAVERLY[] PROGMEM = "Waverly ☾@Amplification,Sensitivity;;!;2v;ix=64,si=0"; // Beatsin
+static const char _data_FX_MODE_2DWAVERLY[] PROGMEM = "Waverly ☾@Amplification,Sensitivity,,,,No Clouds,Sound Pressure,AGC debug;;!;2v;ix=64,si=0"; // Beatsin
 
 #endif // WLED_DISABLE_2D
 
@@ -6300,23 +6310,45 @@ uint16_t mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth  = *(float*)  um_data->u_data[0];
+  int16_t volumeRaw   = *(int16_t*)um_data->u_data[1];
+  float soundPressure = *(float*)  um_data->u_data[9];
+  float agcSensitivity= *(float*)  um_data->u_data[10];
   #ifdef SR_DEBUG
   uint8_t samplePeak = *(uint8_t*)um_data->u_data[3];
   #endif
 
-  //SEGMENT.fade_out(240);
-  SEGMENT.fade_out(249);  // 25%
+  if (SEGENV.call == 0) {
+    SEGMENT.setUpLeds();
+    SEGMENT.fill(BLACK);
+  }
 
-  float segmentSampleAvg = volumeSmth * (float)SEGMENT.intensity / 255.0;
-  segmentSampleAvg *= 0.25; // divide by 4, to compensate for later "sensitivty" upscaling
+  float realVolume = volumeSmth;
+  if (SEGENV.check3 && SEGENV.check2) SEGENV.check2 = false;  // only one option
+  if ((SEGENV.check2) && (realVolume >= 0.5f)) volumeSmth = soundPressure;
+  if (SEGENV.check3) volumeSmth = 255.0 - agcSensitivity; 
 
-  float mySampleAvg = mapf(segmentSampleAvg*2.0, 0, 64, 0, (SEGLEN-1)); // map to pixels availeable in current segment
+  SEGMENT.fade_out(253);
+  float sensGain = (float)(SEGMENT.intensity+2) / 257.0f; // min gain = 1/128
+  if (sensGain > 0.5f) sensGain = ((sensGain -0.5f) * 2.0f) +0.5f; // extend upper range to 3x 
+
+  float segmentSampleAvg = volumeSmth * sensGain;
+  segmentSampleAvg *= 0.25f; // divide by 4, to compensate for later "sensitivty" upscaling
+  float mySampleAvg = mapf(segmentSampleAvg*2.0f, 0, 64, 0, (SEGLEN-1)); // map to pixels availeable in current segment
   int tempsamp = constrain(mySampleAvg,0,SEGLEN-1);       // Keep the sample from overflowing.
   uint8_t gravity = 8 - SEGMENT.speed/32;
 
+  int blendVal;
+  if (SEGENV.check1) blendVal = 255 - roundf((segmentSampleAvg)*6.5f);   // reverse, min 48
+  else blendVal = roundf(segmentSampleAvg*8.0f);
+
+  //if ((realVolume > 1) && ((blendVal < 1) || (blendVal > 254))) blendVal = millis() % 192; // provides flickering when overtuned
+  //else 
+  blendVal = constrain(blendVal, 0, 255);                                                    // and saturation for all
+
+  if (realVolume > 0.5) // hide main "bar" in silence
   for (int i=0; i<tempsamp; i++) {
     uint8_t index = inoise8(i*segmentSampleAvg+millis(), 5000+i*segmentSampleAvg);
-    SEGMENT.setPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), segmentSampleAvg*8));
+    SEGMENT.setPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), (uint8_t)blendVal));
   }
 
   if (tempsamp >= gravcen->topLED)
@@ -6324,8 +6356,11 @@ uint16_t mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
   else if (gravcen->gravityCounter % gravity == 0)
     gravcen->topLED--;
 
-  if (gravcen->topLED > 0) {
-    SEGMENT.setPixelColor(gravcen->topLED, SEGMENT.color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0));
+  if ((gravcen->topLED > 0) && (SEGMENT.speed < 255)){  // hide top pixel if speed = 255
+    if (SEGENV.check2 || SEGENV.check3)
+      SEGMENT.setPixelColor(gravcen->topLED, SEGMENT.color_from_palette(max(uint16_t(millis()/16),(uint16_t)2), false, PALETTE_SOLID_WRAP, 0));  // flicker a bit slower
+    else
+      SEGMENT.setPixelColor(gravcen->topLED, SEGMENT.color_from_palette(max(uint16_t(millis()/2),(uint16_t)2), false, PALETTE_SOLID_WRAP, 0));   // normal flickering
   }
   gravcen->gravityCounter = (gravcen->gravityCounter + 1) % gravity;
 
@@ -6338,7 +6373,7 @@ uint16_t mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_gravimeter()
-static const char _data_FX_MODE_GRAVIMETER[] PROGMEM = "Gravimeter@Rate of fall,Sensitivity;!,!;!;1v;ix=128,m12=2,si=0"; // Arc, Beatsin
+static const char _data_FX_MODE_GRAVIMETER[] PROGMEM = "Gravimeter ☾@Rate of fall,Sensitivity,,,,Invert Palette,Sound Pressure,AGC debug;!,!;!;1v;ix=128,m12=2,si=0"; // Arc, Beatsin
 
 
 //////////////////////
@@ -6598,6 +6633,8 @@ uint16_t mode_puddlepeak(void) {                // Puddlepeak. By Andrew Tuline.
     SEGMENT.custom1 = *binNum;
     SEGMENT.custom2 = *maxVol * 2;
   }
+  if (SEGMENT.custom1 < 2) SEGMENT.custom1 = 2; // WLEDMM prevent stupid settings
+  if (SEGMENT.custom2 < 48) SEGMENT.custom1 = 48; // WLEDMM prevent stupid settings
 
   *binNum = SEGMENT.custom1;                              // Select a bin.
   *maxVol = SEGMENT.custom2 / 2;                          // Our volume comparator.
@@ -6730,6 +6767,7 @@ uint16_t mode_DJLight(void) {                   // Written by ??? Adapted by Wil
     um_data = simulateSound(SEGMENT.soundSim);
   }
   uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
+  float volumeSmth    = *(float*)um_data->u_data[0];
 
   if (SEGENV.call == 0) {
     SEGMENT.setUpLeds();
@@ -6740,23 +6778,41 @@ uint16_t mode_DJLight(void) {                   // Written by ??? Adapted by Wil
   if (SEGENV.aux0 != secondHand) {                        // Triggered millis timing.
     SEGENV.aux0 = secondHand;
 
-    //CRGB color = CRGB(fftResult[15]/2, fftResult[5]/2, fftResult[0]/2); // formula from 0.13.x (10Khz): R = 3880-5120, G=240-340, B=60-100
-    //CRGB color = CRGB(fftResult[12]/2, fftResult[3]/2, fftResult[1]/2); // formula for 0.14.x  (22Khz): R = 3015-3704, G=216-301, B=86-129
-    // an attempt to get colors more balanced
-    CRGB color = CRGB(fftResult[11]/2 + fftResult[12]/4 + fftResult[14]/4, // red  : 2412-3704 + 4479-7106 
-                      fftResult[4]/2 + fftResult[3]/4,                     // green: 216-430
-                      fftResult[1]/4 + fftResult[2]/4);                    // blue:  86-216
+    CRGB color = CRGB(0,0,0);
+    // color = CRGB(fftResult[15]/2, fftResult[5]/2, fftResult[0]/2);   // formula from 0.13.x (10Khz): R = 3880-5120, G=240-340, B=60-100
+    if (!SEGENV.check1) {
+      color = CRGB(fftResult[12]/2, fftResult[3]/2, fftResult[1]/2);    // formula for 0.14.x  (22Khz): R = 3015-3704, G=216-301, B=86-129
+    } else {
+      // candy factory: an attempt to get more colors
+      color = CRGB(fftResult[11]/2 + fftResult[12]/4 + fftResult[14]/4, // red  : 2412-3704 + 4479-7106 
+                   fftResult[4]/2 + fftResult[3]/4,                     // green: 216-430
+                   fftResult[0]/4 + fftResult[1]/4 + fftResult[2]/4);   // blue:  46-216
+      if ((color.getLuma() < 96) && (volumeSmth >= 1.5f)) {             // enhance "almost dark" pixels with yellow, based on not-yet-used channels 
+        unsigned yello_g = (fftResult[5] + fftResult[6] + fftResult[7]) / 3;
+        unsigned yello_r = (fftResult[7] + fftResult[8] + fftResult[9] + fftResult[10]) / 4;
+        color.green += (uint8_t) yello_g / 2;
+        color.red += (uint8_t) yello_r / 2;
+      }
+    }
+
+    if (volumeSmth < 1.0f) color = CRGB(0,0,0); // silence = black
+
     // make colors less "pastel", by turning up color saturation in HSV space
     if (color.getLuma() > 32) {                                      // don't change "dark" pixels
       CHSV hsvColor = rgb2hsv_approximate(color);
-      hsvColor.v = min(max(hsvColor.v, (uint8_t)48), (uint8_t)212);  // 48 < brightness < 212
-      hsvColor.s = max(hsvColor.s, (uint8_t)192);                    // turn up color saturation (> 192)
+      hsvColor.v = min(max(hsvColor.v, (uint8_t)48), (uint8_t)204);  // 48 < brightness < 204
+      if (SEGENV.check1)
+        hsvColor.s = max(hsvColor.s, (uint8_t)204);                  // candy factory mode: strongly turn up color saturation (> 192)
+      else
+        hsvColor.s = max(hsvColor.s, (uint8_t)108);                  // normal mode: turn up color saturation to avoid pastels
       color = hsvColor;
     }
     //if (color.getLuma() > 12) color.maximizeBrightness();          // for testing
 
     //SEGMENT.setPixelColor(mid, color.fadeToBlackBy(map(fftResult[4], 0, 255, 255, 4)));     // 0.13.x  fade -> 180hz-260hz
-    SEGMENT.setPixelColor(mid, color.fadeToBlackBy(map(fftResult[3], 0, 255, 255, 4)));       // 0.14.x  fade -> 216hz-301hz
+    uint8_t fadeVal = map(fftResult[3], 0, 255, 255, 4);                                      // 0.14.x  fade -> 216hz-301hz
+    if (SEGENV.check1) fadeVal = constrain(fadeVal, 0, 176);  // "candy factory" mode - avoid complete fade-out
+    SEGMENT.setPixelColor(mid, color.fadeToBlackBy(fadeVal));
 
     for (int i = SEGLEN - 1; i > mid; i--)   SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i-1)); // move to the left
     for (int i = 0; i < mid; i++)            SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i+1)); // move to the right
@@ -6764,7 +6820,7 @@ uint16_t mode_DJLight(void) {                   // Written by ??? Adapted by Wil
 
   return FRAMETIME;
 } // mode_DJLight()
-static const char _data_FX_MODE_DJLIGHT[] PROGMEM = "DJ Light@Speed;;;1f;m12=2,si=0"; // Arc, Beatsin
+static const char _data_FX_MODE_DJLIGHT[] PROGMEM = "DJ Light@Speed,,,,,Candy Factory;;;1f;m12=2,si=0"; // Arc, Beatsin
 
 
 ////////////////////
@@ -6794,9 +6850,17 @@ uint16_t mode_freqmap(void) {                   // Map FFT_MajorPeak to SEGLEN. 
   uint16_t pixCol = (log10f(FFT_MajorPeak) - 1.78f) * 255.0f/(MAX_FREQ_LOG10 - 1.78f);   // Scale log10 of frequency values to the 255 colour index.
   if (FFT_MajorPeak < 61.0f) pixCol = 0;                                                 // handle underflow
 
+#if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
+  uint16_t bright = (int) (sqrtf(my_magnitude)*16.0f);  // WLEDMM sqrt scaling, to make peaks more prominent
+#else
   uint16_t bright = (int)my_magnitude;
+#endif
 
   SEGMENT.setPixelColor(locn, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(SEGMENT.intensity+pixCol, false, PALETTE_SOLID_WRAP, 0), bright));
+  if (SEGMENT.speed > 228) {  // WLEDMM looks nice in 2D
+    SEGMENT.blur(5*(SEGMENT.speed - 224));
+    SEGMENT.setPixelColor(locn, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(SEGMENT.intensity+pixCol, false, PALETTE_SOLID_WRAP, 0), bright));
+  }
 
   return FRAMETIME;
 } // mode_freqmap()
@@ -7109,6 +7173,9 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
     SEGMENT.custom1 = *binNum;
     SEGMENT.custom2 = *maxVol * 2;
   }
+
+  if (SEGMENT.custom1 < 2) SEGMENT.custom1 = 2; // WLEDMM prevent stupid settings
+  if (SEGMENT.custom2 < 48) SEGMENT.custom1 = 48; // WLEDMM prevent stupid settings
 
   *binNum = SEGMENT.custom1;                              // Select a bin.
   *maxVol = SEGMENT.custom2 / 2;                          // Our volume comparator.

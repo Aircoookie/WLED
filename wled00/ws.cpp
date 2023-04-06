@@ -162,12 +162,12 @@ bool sendLiveLedsWs(uint32_t wsClient)
 #ifdef ESP8266
   const size_t MAX_LIVE_LEDS_WS = 256U;
 #else
-  const size_t MAX_LIVE_LEDS_WS = 1024U;  //WLEDMM use 4096 as max matrix size
+  const size_t MAX_LIVE_LEDS_WS = 4096U;  //WLEDMM use 4096 as max matrix size
 #endif
   size_t n = ((used -1)/MAX_LIVE_LEDS_WS) +1; //only serve every n'th LED if count over MAX_LIVE_LEDS_WS
   size_t pos = (strip.isMatrix ? 4 : 2);
   size_t bufSize = pos + (used/n)*3;
-  size_t skipLines = 0;
+  //WLEDMM: no skipLines
 
   AsyncWebSocketMessageBuffer * wsBuf = ws.makeBuffer(bufSize);
   if (!wsBuf) return false; //out of memory
@@ -179,25 +179,13 @@ bool sendLiveLedsWs(uint32_t wsClient)
     buffer[1] = 2; //version
     buffer[2] = Segment::maxWidth;
     buffer[3] = Segment::maxHeight;
-    if (Segment::maxWidth * Segment::maxHeight > MAX_LIVE_LEDS_WS*4) {
-      buffer[2] = Segment::maxWidth/4;
-      buffer[3] = Segment::maxHeight/4;
-      skipLines = 3;
-    } else if (Segment::maxWidth * Segment::maxHeight > MAX_LIVE_LEDS_WS) {
-      buffer[2] = Segment::maxWidth/2;
-      buffer[3] = Segment::maxHeight/2;
-      skipLines = 1;
-    }
+    //WLEDMM: no skipLines
   }
 #endif
 
   for (size_t i = 0; pos < bufSize -2; i += n)
   {
-#ifndef WLED_DISABLE_2D
-    if (strip.isMatrix && skipLines) {
-      if ((i/Segment::maxWidth)%(skipLines+1)) i += Segment::maxWidth * skipLines;
-    }
-#endif
+  //WLEDMM: no skipLines
     uint32_t c = strip.getPixelColor(i);
     buffer[pos++] = qadd8(W(c), R(c)); //R, add white channel to RGB channels as a simple RGBW -> RGB map
     buffer[pos++] = qadd8(W(c), G(c)); //G

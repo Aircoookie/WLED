@@ -552,6 +552,43 @@ void Segment::drawArc(uint16_t x0, uint16_t y0, uint16_t radius, uint32_t color,
   }
 }
 
+bool Segment::jsonToPixels(char * name, uint8_t fileNr) {
+  char fileName[32];
+  //WLEDMM: als support segment name ledmaps
+  bool isFile = false;;
+  // strcpy_P(fileName, PSTR("/mario"));
+  sprintf(fileName, "/%s%d.json", name, fileNr); //WLEDMM: trick to not include 0 in ledmap.json
+  // strcat(fileName, ".json");
+  isFile = WLED_FS.exists(fileName);
+
+  if (!isFile) {
+    return false;
+  }
+
+  if (!requestJSONBufferLock(23)) return false;
+
+  if (!readObjectFromFile(fileName, nullptr, &doc)) {
+    releaseJSONBufferLock();
+    return false; //if file does not exist just exit
+  }
+
+  JsonArray map = doc[F("seg")][F("i")];
+
+  if (!map.isNull() && map.size()) {  // not an empty map
+
+    for (uint16_t i=0; i<map.size(); i+=3) {
+      CRGB color = CRGB(map[i+2][0], map[i+2][1], map[i+2][2]);
+      for (uint16_t j=map[i]; j<=map[i+1]; j++) {
+        setPixelColor(j, color);
+      }
+    }
+  }
+  USER_PRINTLN();
+
+  releaseJSONBufferLock();
+  return true;
+}
+
 #include "src/font/console_font_4x6.h"
 #include "src/font/console_font_5x8.h"
 #include "src/font/console_font_5x12.h"

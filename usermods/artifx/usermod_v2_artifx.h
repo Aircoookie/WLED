@@ -96,7 +96,7 @@ uint16_t mode_ARTIFX(void) {
     }
   }
 
-  return FRAMETIME;
+  return MAX(frameTime,FRAMETIME);
 }
 
 static const char _data_FX_MODE_ARTIFX[] PROGMEM = "⚙️ ARTI-FX ☾@Speed,Intensity,Custom 1, Custom 2, Custom 3;!;!;1;mp12=0";

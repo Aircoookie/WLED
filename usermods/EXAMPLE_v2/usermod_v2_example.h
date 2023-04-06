@@ -20,15 +20,32 @@
  * 2. Register the usermod by adding #include "usermod_filename.h" in the top and registerUsermod(new MyUsermodClass()) in the bottom of usermods_list.cpp
  */
 
+/* WLEDMM: move usermod variables to class. 
+
+As of March 2023 this is work in progress, more variables will be moved in the future.
+See Example v2, Temperature, MPU6050 and weather and fastled (rest to be done) as examples which has been converted using the steps below:
+
+Part 1
+- remove bool enabled = false/true (now default false)
+- remove static const char _name[] and _enabled[]
+- add constructor which calls superclass (temp?): XXXUsermod(const char *name, bool enabled):Usermod(name, enabled) {} 
+- replace _enabled with "enabled"
+- remove const char PROGMEM init for  _name[] and _enabled[]
+Part 2
+- Remove bool initDone = false;
+- addToConfig: replace createNestedObject with Usermod::addToConfig(root); JsonObject top = root[FPSTR(_name)];
+- readFromConfig: replace !top.isNull and enabled with bool configComplete = Usermod::readFromConfig(root);JsonObject top = root[FPSTR(_name)];
+Part 3
+- remove unsigned long lastTime = 0; //WLEDMM
+
+*/
+
 //class name. Use something descriptive and leave the ": public Usermod" part :)
 class MyExampleUsermod : public Usermod {
 
   private:
 
     // Private class members. You can declare variables and functions only accessible to your usermod here
-    bool enabled = false;
-    bool initDone = false;
-    unsigned long lastTime = 0;
 
     // set your config variables to their boot default value (this can also be done in readFromConfig() or a constructor if you prefer)
     bool testBool = false;
@@ -41,28 +58,25 @@ class MyExampleUsermod : public Usermod {
     long testLong;
     int8_t testPins[2];
 
-    // string that are used multiple time (this will save some flash memory)
-    static const char _name[];
-    static const char _enabled[];
-
-
     // any private methods should go here (non-inline methosd should be defined out of class)
     void publishMqtt(const char* state, bool retain = false); // example for publishing MQTT message
 
 
   public:
 
+    MyExampleUsermod(const char *name, bool enabled):Usermod(name, enabled) {} //WLEDMM
+
     // non WLED related methods, may be used for data exchange between usermods (non-inline methods should be defined out of class)
 
     /**
      * Enable/Disable the usermod
      */
-    inline void enable(bool enable) { enabled = enable; }
+    // inline void enable(bool enable) { enabled = enable; }
 
     /**
      * Get usermod enabled/disabled state
      */
-    inline bool isEnabled() { return enabled; }
+    // inline bool isEnabled() { return enabled; }
 
     // in such case add the following to another usermod:
     //  in private vars:
@@ -222,8 +236,8 @@ class MyExampleUsermod : public Usermod {
      */
     void addToConfig(JsonObject& root)
     {
-      JsonObject top = root.createNestedObject(FPSTR(_name));
-      top[FPSTR(_enabled)] = enabled;
+      Usermod::addToConfig(root); JsonObject top = root[FPSTR(_name)]; //WLEDMM
+
       //save these vars persistently whenever settings are saved
       top["great"] = userVar0;
       top["testBool"] = testBool;
@@ -258,9 +272,7 @@ class MyExampleUsermod : public Usermod {
       // default settings values could be set here (or below using the 3-argument getJsonValue()) instead of in the class definition or constructor
       // setting them inside readFromConfig() is slightly more robust, handling the rare but plausible use case of single value being missing after boot (e.g. if the cfg.json was manually edited and a value was removed)
 
-      JsonObject top = root[FPSTR(_name)];
-
-      bool configComplete = !top.isNull();
+      bool configComplete = Usermod::readFromConfig(root);JsonObject top = root[FPSTR(_name)]; //WLEDMM
 
       configComplete &= getJsonValue(top["great"], userVar0);
       configComplete &= getJsonValue(top["testBool"], testBool);
@@ -386,8 +398,6 @@ class MyExampleUsermod : public Usermod {
 
 
 // add more strings here to reduce flash memory usage
-const char MyExampleUsermod::_name[]    PROGMEM = "ExampleUsermod";
-const char MyExampleUsermod::_enabled[] PROGMEM = "enabled";
 
 
 // implementation of non-inline member methods
