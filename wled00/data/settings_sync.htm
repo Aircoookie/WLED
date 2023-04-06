@@ -12,6 +12,8 @@
 	function hideNoDMX(){gId("dmxOnOff2").style.display="none";} //WLEDMM
 	function hideNoLOX(){gId("loxOnOff2").style.display="none";} //WLEDMM
 	function hideNoADA(){gId("adaOnOff2").style.display="none";} //WLEDMM
+	function hideDMXInput(){gId("dmxInput").style.display="none";} //WLEDMM
+	function hideNoDMXInput(){gId("dmxInputOff").style.display="none";} //WLEDMM
 	function H(){window.open("https://mm.kno.wled.ge/interfaces/udp-notifier/");}
 	function B(){window.open("/settings","_self");}
 	function adj(){if (d.Sf.DI.value == 6454) {if (d.Sf.EU.value == 1) d.Sf.EU.value = 0;}
@@ -172,6 +174,15 @@ Timeout: <input name="ET" type="number" min="1" max="65000" required> ms<br>
 Force max brightness: <input type="checkbox" name="FB"><br>
 Disable realtime gamma correction: <input type="checkbox" name="RG"><br>
 Realtime LED offset: <input name="WO" type="number" min="-255" max="255" required>
+<div id="dmxInput"> <!--WLEDMM-->
+	<em>DMX Input Pins</em><br/>
+	DMX RX: <input name="DMR" type="number" min="-1" max="99"><br/>
+	DMX TX: <input name="DMT" type="number" min="-1" max="99"><br/>
+	DMX Enable: <input name="DME" type="number" min="-1" max="99"><br/>
+</div> 
+<div id="dmxInputOff"> <!--WLEDMM-->
+	<br><em style="color:darkorange">This firmware build does not include DMX Input support. <br></em>
+</div> 
 <div id="dmxOnOff2"> <!--WLEDMM-->
   <br><em style="color:darkorange">This firmware build does not include DMX output support. <br></em>
 </div> 

@@ -107,6 +107,9 @@ void WLED::loop()
 #ifdef WLED_ENABLE_DMX
   handleDMX();
 #endif
+#ifdef WLED_ENABLE_DMX_INPUT
+  handleDMXInput();
+#endif
   userLoop();
 
   #ifdef WLED_DEBUG
@@ -492,6 +495,11 @@ void WLED::setup()
 #ifdef WLED_ENABLE_DMX //reserve GPIO2 as hardcoded DMX pin
   pinManager.allocatePin(2, true, PinOwner::DMX);
 #endif
+#ifdef WLED_ENABLE_DMX_INPUT
+  if(dmxTransmitPin > 0) pinManager.allocatePin(dmxTransmitPin, true, PinOwner::DMX);
+  if(dmxReceivePin > 0) pinManager.allocatePin(dmxReceivePin, true, PinOwner::DMX);
+  if(dmxEnablePin > 0) pinManager.allocatePin(dmxEnablePin, true, PinOwner::DMX);
+#endif
 
 // WLEDMM experimental: support for single neoPixel on Adafruit boards
 #if 0
@@ -613,7 +621,7 @@ void WLED::setup()
       ArduinoOTA.setHostname(cmDNS);
   }
 #endif
-#ifdef WLED_ENABLE_DMX
+#if defined(WLED_ENABLE_DMX) || defined(WLED_ENABLE_DMX_INPUT)
   initDMX();
 #endif
 
