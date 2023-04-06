@@ -232,6 +232,7 @@ static const float fftResultPink[MAX_PINK+1][NUM_GEQ_CHANNELS] = {
 // globals and FFT Output variables shared with animations
 static float FFT_MajorPeak = 1.0f;              // FFT: strongest (peak) frequency
 static float FFT_Magnitude = 0.0f;              // FFT: volume (magnitude) of peak frequency
+static float FFT_MajPeakSmth = 1.0f;            // FFT: (peak) frequency, smooth
 static uint8_t fftResult[NUM_GEQ_CHANNELS]= {0};// Our calculated freq. channel result table to be used by effects
 #if defined(WLED_DEBUG) || defined(SR_DEBUG) || defined(SR_STATS)
 static float fftTaskCycle = 0;      // avg cycle time for FFT task
@@ -498,6 +499,7 @@ void FFTcode(void * parameter)
         FFT.MajorPeak(&FFT_MajorPeak, &FFT_Magnitude);              // let the effects know which freq was most dominant
         #endif
         FFT_MajorPeak = constrain(FFT_MajorPeak, 1.0f, 11025.0f);   // restrict value to range expected by effects
+        FFT_MajPeakSmth = FFT_MajPeakSmth + 0.42 * (FFT_MajorPeak - FFT_MajPeakSmth);   // I like this "swooping peak" look
 
       } else { // skip second run --> clear fft results, keep peaks
         memset(vReal, 0, sizeof(vReal)); 
@@ -918,6 +920,8 @@ class AudioReactive : public Usermod {
     // variables used in effects
     int16_t  volumeRaw = 0;       // either sampleRaw or rawSampleAgc depending on soundAgc
     float my_magnitude =0.0f;     // FFT_Magnitude, scaled by multAgc
+    float agcSensitivity = 128;   // AGC sensitivity estimation, based on agc gain (multAgc). calculated by getSensitivity(). range 0..255
+    float soundPressure = 0;      // Sound Pressure estimation, based on microphone raw readings. 0 ->5db, 255 ->105db
 
     // used to feed "Info" Page
     unsigned long last_UDPTime = 0;    // time of last valid UDP sound sync datapacket
@@ -1228,6 +1232,53 @@ class AudioReactive : public Usermod {
     } // getSample()
 
 
+    // current sensitivity, based on AGC gain (multAgc)
+    float getSensitivity()
+    {
+      // start with AGC gain factor
+      float tmpSound = multAgc;
+      // experimental: this gives you a calculated "real gain"
+      // if ((sampleAvg> 1.0) && (sampleReal > 0.05)) tmpSound = (float)sampleRaw / sampleReal;    // calculate gain from sampleReal 
+      // else tmpSound = ((float)sampleGain/40.0f * (float)inputLevel/128.0f) + 1.0f/16.0f;        // silence --> use values from user settings
+
+      if (soundAgc == 0)
+        tmpSound = ((float)sampleGain/40.0f * (float)inputLevel/128.0f) + 1.0f/16.0f;   // AGC off -> use non-AGC gain from presets
+      else
+        tmpSound /= (float)sampleGain/40.0f + 1.0f/16.0f;                               // AGC ON -> scale value so 1 = middle value
+
+      // scale to 0..255. Actually I'm not absolutely happy with this, but it works
+      if (tmpSound > 1.0) tmpSound = sqrtf(tmpSound);
+      if (tmpSound > 1.25) tmpSound = ((tmpSound-1.25f)/3.42f) +1.25f;
+      // we have a value now that should be between 0 and 4 (representing gain 1/16 ... 16.0)
+      return fminf(fmaxf(128.0*tmpSound -6.0f, 0), 255.0);        // return scaled non-inverted value // "-6" to ignore values below 1/24
+    }
+
+    // estimate sound pressure, based on some assumptions : 
+    //   * sample max = 32676 -> Acoustic overload point  --> 105db ==> 255
+    //   * sample < squelch   -> just above hearing level -->   5db ==> 0
+    // see https://en.wikipedia.org/wiki/Sound_pressure#Examples_of_sound_pressure
+    // use with I2S digital microphones. Expect stupid values for analog in, and with Line-In !!
+    float estimatePressure() {
+      // some constants
+      constexpr float logMinSample = 1.2237754316221f; // ln(3.4)
+      constexpr float sampleMin = 3.4f;
+      constexpr float logMaxSample = 10.1895683436f; // ln(32767 - 6144)
+      constexpr float sampleMax = 32767.0f - 6144.0f;
+
+      // take the max sample from last I2S batch.
+      float micSampleMax = fabsf(sampleReal);     // from getSample() - nice results, however distorted by MicLev processing
+      //float micSampleMax = fabsf(micDataReal);  // from FFTCode() - better source, but I'll do more testing before activating this
+      // make sure we are in expected ranges
+      if(micSampleMax <= sampleMin) return 0.0f;
+      if(micSampleMax >= sampleMax) return 255.0f;
+
+      // apply logarithmic scaling
+      float scaledvalue = logf(micSampleMax);
+      scaledvalue = (scaledvalue - logMinSample) / (logMaxSample - logMinSample); // 0...1
+      return fminf(fmaxf(256.0*scaledvalue, 0), 255.0);        // scaled value
+    }
+
+
     /* Limits the dynamics of volumeSmth (= sampleAvg or sampleAgc). 
      * does not affect FFTResult[] or volumeRaw ( = sample or rawSampleAgc) 
     */
@@ -1422,12 +1473,12 @@ class AudioReactive : public Usermod {
         // usermod exchangeable data
         // we will assign all usermod exportable data here as pointers to original variables or arrays and allocate memory for pointers
         um_data = new um_data_t;
-        um_data->u_size = 8;
+        um_data->u_size = 11;
         um_data->u_type = new um_types_t[um_data->u_size];
         um_data->u_data = new void*[um_data->u_size];
         um_data->u_data[0] = &volumeSmth;      //*used (New)
         um_data->u_type[0] = UMT_FLOAT;
-        um_data->u_data[1] = &volumeRaw;      // used (New)
+        um_data->u_data[1] = &volumeRaw;       // used (New)
         um_data->u_type[1] = UMT_UINT16;
         um_data->u_data[2] = fftResult;        //*used (Blurz, DJ Light, Noisemove, GEQ_base, 2D Funky Plank, Akemi)
         um_data->u_type[2] = UMT_BYTE_ARR;
@@ -1435,12 +1486,18 @@ class AudioReactive : public Usermod {
         um_data->u_type[3] = UMT_BYTE;
         um_data->u_data[4] = &FFT_MajorPeak;   //*used (Ripplepeak, Freqmap, Freqmatrix, Freqpixels, Freqwave, Gravfreq, Rocktaves, Waterfall)
         um_data->u_type[4] = UMT_FLOAT;
-        um_data->u_data[5] = &my_magnitude;   // used (New)
+        um_data->u_data[5] = &my_magnitude;    // used (New)
         um_data->u_type[5] = UMT_FLOAT;
         um_data->u_data[6] = &maxVol;          // assigned in effect function from UI element!!! (Puddlepeak, Ripplepeak, Waterfall)
         um_data->u_type[6] = UMT_BYTE;
         um_data->u_data[7] = &binNum;          // assigned in effect function from UI element!!! (Puddlepeak, Ripplepeak, Waterfall)
         um_data->u_type[7] = UMT_BYTE;
+        um_data->u_data[8] = &FFT_MajPeakSmth; // new
+        um_data->u_type[8] = UMT_FLOAT;
+        um_data->u_data[9]  = &soundPressure;  // used (New)
+        um_data->u_type[9]  = UMT_FLOAT;
+        um_data->u_data[10] = &agcSensitivity; // used (New)
+        um_data->u_type[10] = UMT_FLOAT;
       }
 
       // Reset I2S peripheral for good measure
@@ -1666,6 +1723,16 @@ class AudioReactive : public Usermod {
         if (soundAgc) my_magnitude *= multAgc;
         if (volumeSmth < 1 ) my_magnitude = 0.001f;  // noise gate closed - mute
 
+        // get AGC sensitivity and sound pressure
+        static unsigned long lastEstimate = 0;
+        if (millis() - lastEstimate > 12) {
+          lastEstimate = millis();
+          agcSensitivity = getSensitivity();
+          if (limiterOn)
+            soundPressure = soundPressure + 0.38f * (estimatePressure() - soundPressure);  // dynamics limiter on -> some smoothing
+          else
+            soundPressure = soundPressure + 0.95f * (estimatePressure() - soundPressure);  //  dynamics limiter on -> raw value
+        }
         limitSampleDynamics();
       }  // if (!disableSoundProcessing)
 

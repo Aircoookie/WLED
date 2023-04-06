@@ -5976,14 +5976,16 @@ static const char _data_FX_MODE_2DDRIFTROSE[] PROGMEM = "Drift Rose@Fade,Blur;;;
   um_data_t *um_data;
   if (usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     volumeSmth    = *(float*)   um_data->u_data[0];
-    volumeRaw     = *(float*)   um_data->u_data[1];
+    volumeRaw     = *(int16_t*) um_data->u_data[1];
     fftResult     =  (uint8_t*) um_data->u_data[2];
     samplePeak    = *(uint8_t*) um_data->u_data[3];
     FFT_MajorPeak = *(float*)   um_data->u_data[4];
     my_magnitude  = *(float*)   um_data->u_data[5];
     maxVol        =  (uint8_t*) um_data->u_data[6];  // requires UI element (SEGMENT.customX?), changes source element
     binNum        =  (uint8_t*) um_data->u_data[7];  // requires UI element (SEGMENT.customX?), changes source element
-    fftBin        =  (float*)   um_data->u_data[8];
+    FFT_MajPeakSmth= *(float*)  um_data->u_data[8];   // FFT Majorpeak smoothed
+    soundPressure  = *(float*)  um_data->u_data[9];  // sound pressure ( = logarithmic scale microphone input). Range 0...255
+    agcSensitivity = *(float*)  um_data->u_data[10]; // current AGC gain, scaled to 0...255. use "255.0f - agcSensitivity" to get MIC input level
   } else {
     // add support for no audio data
     um_data = simulateSound(SEGMENT.soundSim);

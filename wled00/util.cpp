@@ -423,7 +423,7 @@ um_data_t* simulateSound(uint8_t simulationId)
     // NOTE!!!
     // This may change as AudioReactive usermod may change
     um_data = new um_data_t;
-    um_data->u_size = 8;
+    um_data->u_size = 11;
     um_data->u_type = new um_types_t[um_data->u_size];
     um_data->u_data = new void*[um_data->u_size];
     um_data->u_data[0] = &volumeSmth;
@@ -434,6 +434,9 @@ um_data_t* simulateSound(uint8_t simulationId)
     um_data->u_data[5] = &my_magnitude;
     um_data->u_data[6] = &maxVol;
     um_data->u_data[7] = &binNum;
+    um_data->u_data[8]  = &FFT_MajorPeak; // dummy (samplePeak smoothed)
+    um_data->u_data[9]  = &volumeSmth;    // dummy (soundPressure)
+    um_data->u_data[10] = &volumeSmth;    // dummy (agcSensitivity)
   } else {
     // get arrays from um_data
     fftResult =  (uint8_t*)um_data->u_data[2];
