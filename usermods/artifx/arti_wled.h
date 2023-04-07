@@ -15,7 +15,8 @@
 
 #define ARTI_ARDUINO 1 
 #define ARTI_EMBEDDED 2
-#ifdef ESP32 //ESP32 is set in wled context: small trick to set WLED context
+// #ifdef ESP32 //ESP32 is set in wled context: small trick to set WLED context
+#if defined(ARDUINO_ARCH_ESP32) || defined(ARDUINO_ARCH_ESP8266) //ESP32 is set in wled context: small trick to set WLED context
   #define ARTI_PLATFORM ARTI_ARDUINO // else on Windows/Linux/Mac...
 #endif
 
@@ -88,7 +89,8 @@ enum Externals
 
   F_print,
   F_jsonToPixels, //reorder only when creating new wledvxyz.json
-  F_frameTime
+  F_frameTime,
+  F_soundPressure
 };
 
 #if ARTI_PLATFORM != ARTI_ARDUINO
@@ -380,15 +382,17 @@ float ARTI::arti_get_external_variable(uint8_t variable, float par1, float par2,
       case F_custom3Slider:
         return SEGMENT.custom3;
       case F_volume:
+      case F_soundPressure:
       {
         um_data_t *um_data;
         if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
           // add support for no audio
           um_data = simulateSound(SEGMENT.soundSim);
         }
-        float   volumeSmth  = *(float*)   um_data->u_data[0];
-
-        return volumeSmth;
+        if (variable == F_volume)
+          return *(float*)   um_data->u_data[0]; //volumeSmth
+        else
+          return *(float*)   um_data->u_data[9]; //soundPressure
       }
       case F_hour:
         return ((float)hour(localTime));
@@ -431,6 +435,8 @@ float ARTI::arti_get_external_variable(uint8_t variable, float par1, float par2,
         return F_custom3Slider;
       case F_volume:
         return F_volume;
+      case F_soundPressure:
+        return F_soundPressure;
 
       case F_hour:
         return F_hour;
@@ -449,7 +455,7 @@ float ARTI::arti_get_external_variable(uint8_t variable, float par1, float par2,
 void ARTI::arti_set_external_variable(float value, uint8_t variable, float par1, float par2, float par3)
 {
   #if ARTI_PLATFORM == ARTI_ARDUINO
-    // MEMORY_ARTI("%s %s %u %u (%u)\n", spaces+50-depth, variable_name, par1, par2, esp_get_free_heap_size());
+    // MEMORY_ARTI("%s %s %u %u (%u)\n", spaces+50-depth, variable_name, par1, par2, FREE_SIZE);
     switch (variable)
     {
       case F_leds:

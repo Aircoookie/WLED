@@ -1419,7 +1419,7 @@ class FourLineDisplayUsermod : public Usermod {
         if (pinsChanged || type!=newType) {
           if (typeOK) {
             typeOK = false;
-            if (u8x8 != nullptr) delete u8x8;
+            if (u8x8 != nullptr) delete u8x8; //WLEDMM warning: deleting object of polymorphic class type 'U8X8' which has non-virtual destructor might cause undefined behaviour [-Wdelete-non-virtual-dtor]
             u8x8 = nullptr;
             USER_PRINTLN(F("Display terminated."));
           }

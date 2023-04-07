@@ -339,12 +339,12 @@ class UsermodTemperature : public Usermod {
      * The function should return true if configuration was successfully loaded or false if there was no configuration.
      */
     bool readFromConfig(JsonObject &root) {
-      bool configComplete = Usermod::readFromConfig(root);
+      /*bool configComplete = */Usermod::readFromConfig(root); //WLEDMM: configComplete not implemented here (todo?)
       JsonObject top = root[FPSTR(_name)];
+      DEBUG_PRINT(FPSTR(_name));
 
       // we look for JSON object: {"Temperature": {"pin": 0, "degC": true}}
       int8_t newTemperaturePin = temperaturePin;
-      DEBUG_PRINT(FPSTR(_name));
 
       if (top.isNull()) {
         DEBUG_PRINTLN(F(": No config found. (Using defaults.)"));

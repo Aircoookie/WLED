@@ -6310,7 +6310,7 @@ uint16_t mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
     um_data = simulateSound(SEGMENT.soundSim);
   }
   float   volumeSmth  = *(float*)  um_data->u_data[0];
-  int16_t volumeRaw   = *(int16_t*)um_data->u_data[1];
+  // int16_t volumeRaw   = *(int16_t*)um_data->u_data[1]; //WLEDMM: this variable not used here
   float soundPressure = *(float*)  um_data->u_data[9];
   float agcSensitivity= *(float*)  um_data->u_data[10];
   #ifdef SR_DEBUG

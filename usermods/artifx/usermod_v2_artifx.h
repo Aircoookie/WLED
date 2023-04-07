@@ -60,9 +60,9 @@ uint16_t mode_ARTIFX(void) {
   {
     if (succesful) // && SEGENV.call < 250 for each frame
     {
-      if (esp_get_free_heap_size() <= 20000) 
+      if (FREE_SIZE <= 20000) 
       {
-        ERROR_ARTI("Not enough free heap (%u <= 30000)\n", esp_get_free_heap_size());
+        ERROR_ARTI("Not enough free heap (%u <= 30000)\n", FREE_SIZE);
         notEnoughHeap = true;
         succesful = false;
       }
@@ -72,7 +72,7 @@ uint16_t mode_ARTIFX(void) {
         // static int previousCall;
         // if (millis() - previousMillis > 5000) { //tried SEGENV.aux0 but that looks to be overwritten!!! (dangling pointer???)
         //   previousMillis = millis();
-        //   MEMORY_ARTI("Heap renderFrame %u %u fps\n", esp_get_free_heap_size(), (SEGENV.call - previousCall)/5);
+        //   MEMORY_ARTI("Heap renderFrame %u %u fps\n", FREE_SIZE, (SEGENV.call - previousCall)/5);
         //   previousCall = SEGENV.call;
         // }
         
@@ -82,8 +82,8 @@ uint16_t mode_ARTIFX(void) {
     else 
     {
       arti->closeLog();
-      if (notEnoughHeap && esp_get_free_heap_size() > 20000) {
-        ERROR_ARTI("Again enough free heap, restart effect (%u > 30000)\n", esp_get_free_heap_size());
+      if (notEnoughHeap && FREE_SIZE > 20000) {
+        ERROR_ARTI("Again enough free heap, restart effect (%u > 30000)\n", FREE_SIZE);
         succesful = true;
         notEnoughHeap = false;
         strcpy(previousEffect, ""); // force new create

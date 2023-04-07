@@ -583,7 +583,6 @@ bool Segment::jsonToPixels(char * name, uint8_t fileNr) {
       }
     }
   }
-  USER_PRINTLN();
 
   releaseJSONBufferLock();
   return true;
