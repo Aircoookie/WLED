@@ -96,59 +96,52 @@ void artiPrintf(char const * format, ...)
 
   va_start(argp, format);
 
-  if (!logToFile)
-  {
-    //WLEDMM: to be done, check if we can move to USER_PRINTF
-    #if ARTI_PLATFORM == ARTI_ARDUINO //defined in arti_definition.h e.g. arti_wled.h!
-      USER_PRINTF(format, argp); //WLEDMM also supporting netprint
-    #else
-      vprintf(format, argp);
-    #endif
-
-  }
-  else
-  {
-    #if ARTI_PLATFORM == ARTI_ARDUINO
-      // rocket science here! As logfile.printf causes crashes/wrong output we create our own printf here
-      // logFile.printf(format, argp);
-      for (size_t i = 0; i < strlen(format); i++) 
+  // if (!logToFile)
+  // {
+  //   //WLEDMM: not working to use USER_PRINTF here in case of arduino so moving to rocket science part
+  //   vprintf(format, argp);
+  // }
+  // else
+  #if ARTI_PLATFORM == ARTI_ARDUINO
+    // rocket science here! As logfile.printf causes crashes/wrong output we create our own printf here
+    // logFile.printf(format, argp);
+    for (size_t i = 0; i < strlen(format); i++) 
+    {
+      if (format[i] == '%') 
       {
-        if (format[i] == '%') 
+        switch (format[i+1]) 
         {
-          switch (format[i+1]) 
-          {
-            case 's':
-              logFile.print(va_arg(argp, const char *));
-              break;
-            case 'u':
-              logFile.print(va_arg(argp, unsigned int));
-              break;
-            case 'c':
-              logFile.print((char)va_arg(argp, int));
-              break;
-            case 'f':
-              logFile.print(va_arg(argp, double));
-              break;
-            case '%':
-              logFile.print("%"); // in case of %%
-              break;
-            default:
-              va_arg(argp, int);
-            // logFile.print(x);
-              logFile.print(format[i]);
-              logFile.print(format[i+1]);
-          }
-          i++;
-        } 
-        else 
-        {
-          logFile.print(format[i]);
+          case 's':
+            if (logToFile) logFile.print(va_arg(argp, const char *)); else USER_PRINT(va_arg(argp, const char *));
+            break;
+          case 'u':
+            if (logToFile) logFile.print(va_arg(argp, unsigned int)); else USER_PRINT(va_arg(argp, unsigned int));
+            break;
+          case 'c':
+            if (logToFile) logFile.print((char)va_arg(argp, int)); else USER_PRINT(va_arg(argp, int));
+            break;
+          case 'f':
+            if (logToFile) logFile.print(va_arg(argp, double)); else USER_PRINT(va_arg(argp, double));
+            break;
+          case '%':
+            if (logToFile) logFile.print("%");  else USER_PRINT("%"); // in case of %%
+            break;
+          default:
+            va_arg(argp, int);
+          // logFile.print(x);
+            if (logToFile) logFile.print(format[i]); else USER_PRINT(format[i]);
+            if (logToFile) logFile.print(format[i+1]); else USER_PRINT(format[i+1]);
         }
+        i++;
+      } 
+      else 
+      {
+        if (logToFile) logFile.print(format[i]); else USER_PRINT(format[i]);
       }
-    #else
-      vfprintf(logFile, format, argp);
-    #endif
-  }
+    }
+  #else
+    vfprintf(logFile, format, argp);
+  #endif
   va_end(argp);
 }
 
