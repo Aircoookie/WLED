@@ -2457,7 +2457,7 @@ public:
       #if ARTI_PLATFORM == ARTI_ARDUINO
         strcpy(logFileName, "/");
       #endif
-      strcpy(logFileName, programName);
+      strcat(logFileName, programName);
       strcat(logFileName, ".log");
 
       #if ARTI_PLATFORM == ARTI_ARDUINO
@@ -2526,17 +2526,24 @@ public:
       return false;
     }
 
+    char programFileName[fileNameLength];
+    #if ARTI_PLATFORM == ARTI_ARDUINO
+      strcpy(programFileName, "/");
+    #endif
+    strcat(programFileName, programName);
+    strcat(programFileName, ".wled");
+
     #if ARTI_PLATFORM == ARTI_ARDUINO
       File programFile;
-      programFile = WLED_FS.open(programName, "r");
+      programFile = WLED_FS.open(programFileName, "r");
     #else
       std::fstream programFile;
-      programFile.open(programName, std::ios::in);
+      programFile.open(programFileName, std::ios::in);
     #endif
-    MEMORY_ARTI("open %s %u ✓\n", programName, FREE_SIZE);
+    MEMORY_ARTI("open %s %u ✓\n", programFileName, FREE_SIZE);
     if (!programFile) 
     {
-      ERROR_ARTI("Program file %s not found\n", programName);
+      ERROR_ARTI("Program file %s not found\n", programFileName);
       return  false;
     }
 
@@ -2557,11 +2564,6 @@ public:
     #endif
     programFile.close();
 
-    char parseTreeName[fileNameLength];
-    strcpy(parseTreeName, programName);
-    // if (loadParseTreeFile)
-    //   strcpy(parseTreeName, "Gen");
-    strcat(parseTreeName, ".json");
     #if ARTI_PLATFORM == ARTI_ARDUINO
       parseTreeJsonDoc = new PSRAMDynamicJsonDocument(32768); //less memory on arduino: 32 vs 64 bit?
     #else
@@ -2573,6 +2575,15 @@ public:
     //parse
 
     #ifdef ARTI_DEBUG // only read write file if debug is on
+      char parseTreeName[fileNameLength];
+      #if ARTI_PLATFORM == ARTI_ARDUINO
+        strcpy(parseTreeName, "/");
+      #endif
+      strcat(parseTreeName, programName);
+      // if (loadParseTreeFile)
+      //   strcpy(parseTreeName, "Gen");
+      strcat(parseTreeName, ".json");
+
       #if ARTI_PLATFORM == ARTI_ARDUINO
         File parseTreeFile;
         parseTreeFile = WLED_FS.open(parseTreeName, loadParseTreeFile?"r":"w");

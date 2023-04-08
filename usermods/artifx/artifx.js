@@ -72,11 +72,11 @@ function uploadFileWithText(name, text)
 }
 
 function saveCE(name, segID) {
-    showToast("Saving " + name);
+    showToast("Saving " + name + ".wled");
 
     var ceProgramArea = d.getElementById("ceProgramArea");
 
-    uploadFileWithText("/" + name, ceProgramArea.value);
+    uploadFileWithText("/" + name + ".wled", ceProgramArea.value);
 
     var obj = {"seg": {"id": segID, "reset": true}};
     requestJson(obj);
@@ -97,7 +97,7 @@ function populateCEEditor(name, segID)
             <i>${name}.wled</i><br>
             <textarea class="ceTextarea" id="ceProgramArea">${text}</textarea><br>
             <button class="btn infobtn" onclick="toggleCEEditor()">Close</button>
-            <button class="btn infobtn" onclick="saveCE('${name}.wled', ${segID})">Save and Run</button><br>
+            <button class="btn infobtn" onclick="saveCE('${name}', ${segID})">Save and Run</button><br>
             <button class="btn infobtn" onclick="downloadGHFile('CE','${name}.wled')">Download ${name}.wled</button>
             <button class="btn infobtn" onclick="loadCETemplate('${name}')">Load template</button><br>
             <button class="btn infobtn" onclick="downloadGHFile('CE','wledv033.json',true,true)">Download wled json</button>
@@ -115,7 +115,7 @@ function populateCEEditor(name, segID)
 
     var ceLogArea = d.getElementById("ceLogArea");
     ceLogArea.value = ".";
-    loadLogFile(name + ".wled.log", 1);
+    loadLogFile(name + ".log", 1);
 
   }, function(error){
     showToast(error);

@@ -46,12 +46,7 @@ uint16_t mode_ARTIFX(void) {
     // artiWrapper = reinterpret_cast<ArtiWrapper*>(SEGENV.data);
     arti = new ARTI();
 
-    char programFileName[fileNameLength];
-    strcpy(programFileName, "/");
-    strcat(programFileName, currentEffect);
-    strcat(programFileName, ".wled");
-
-    succesful = arti->setup("/wledv033.json", programFileName);
+    succesful = arti->setup("/wledv033.json", currentEffect);
 
     if (!succesful)
       ERROR_ARTI("Setup not succesful\n");
