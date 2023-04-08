@@ -1072,7 +1072,9 @@ bool deserializeConfigSec() {
   JsonObject ap = doc["ap"];
   getStringFromJson(apPass, ap["psk"] , 65);
 
+#if defined(WLED_ENABLE_MQTT) || !defined(WLED_DISABLE_HUESYNC)
   JsonObject interfaces = doc["if"];
+#endif
 
 #ifdef WLED_ENABLE_MQTT
   JsonObject if_mqtt = interfaces["mqtt"];
@@ -1111,7 +1113,10 @@ void serializeConfigSec() {
   JsonObject ap = doc.createNestedObject("ap");
   ap["psk"] = apPass;
 
+#if defined(WLED_ENABLE_MQTT) || !defined(WLED_DISABLE_HUESYNC)
   JsonObject interfaces = doc.createNestedObject("if");
+#endif
+
 #ifdef WLED_ENABLE_MQTT
   JsonObject if_mqtt = interfaces.createNestedObject("mqtt");
   if_mqtt["psk"] = mqttPass;
