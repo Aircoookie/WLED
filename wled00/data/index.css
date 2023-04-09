@@ -1503,8 +1503,9 @@ TD .checkmark, TD .radiomark {
 		padding: 8px 0 4px 0;
 	}
 	#briwrap {
-		margin-top: 0px !important;
+		margin: 0 auto !important;
 		float: none;
+		display: inline-block;
 	}
 	.hd {
 		display: none !important;
