@@ -1510,7 +1510,7 @@ TD .checkmark, TD .radiomark {
 	}
 	#briwrap {
 		margin: 0 auto !important;
-		float: unset;
+		float: none;
 		display: inline-block;
 	}
 	.hd {
