@@ -212,7 +212,7 @@
       position = truePos;
     }
 
-    const thisColor = `#${Math.floor(Math.random()*16777215).toString(16)}`; // set random color as default
+    const thisColor = `#${(Math.random() * 0xFFFFFF << 0).toString(16).padStart(6, '0')}`;// set random color as default
       
     const colorMarker = cE('span'); // create a marker for the color position
     colorMarker.className = 'color-marker';
@@ -250,10 +250,8 @@
 
     colorMarker.style.backgroundColor = colorPicker.value; // set marker color to match color picker
     colorPickerMarker.style.backgroundColor = colorPicker.value;
-    //colorPicker.style.backgroundColor = colorPicker.value;
 
-    gradientBox.appendChild(colorPicker); // append the color picker to the row div
-    //colorPickerMarker.appendChild(colorPicker);
+    gradientBox.appendChild(colorPicker); 
     gradientBox.appendChild(colorMarker);
     gradientBox.appendChild(colorPickerMarker); 
     if(position != 0 && position != 255) {gradientBox.appendChild(deleteMarker)}; // append the marker if not start or end
@@ -274,7 +272,6 @@
     colorMarkers.forEach((colorMarker, index) => {
       const thisColorPicker = gId(colorMarkers[index].id.replace('colorMarker', 'colorPicker'));
       const colorToSet = thisColorPicker.value;
-      //thisColorPicker.style.backgroundColor = colorToSet;
       gId(colorMarkers[index].id.replace('colorMarker', 'colorPickerMarker')).style.backgroundColor = colorToSet; 
       colorMarkers[index].style.backgroundColor = colorToSet;
       colorMarkers[index].setAttribute("data-truecol", colorToSet);
@@ -421,15 +418,29 @@
       }
       
   function uploadJSON(jsonString, fileName) {
-      var req = new XMLHttpRequest();
-      var blob = new Blob([jsonString], {type: "application/json"});
-      req.addEventListener('load', function(){console.log(this.responseText, ' - ',  this.status)});
-      req.addEventListener('error', function(e){console.log('Error: ', e); console.log(' Status: ', this.status);});
-      req.open("POST", "/upload");
-      var formData = new FormData();
-      formData.append("data", blob, fileName);
-      req.send(formData);
-      return false;
+    const ss = gId('sendSvgP');
+    ss.setAttribute('fill', '#555');
+    var req = new XMLHttpRequest();
+    var blob = new Blob([jsonString], {type: "application/json"});
+    req.addEventListener('load', function(){
+      console.log(this.responseText, ' - ',  this.status)
+      ss.setAttribute('fill', '#056b0a');
+      setTimeout(function() {
+        ss.setAttribute('fill', '#fff');
+      }, 1000);
+    });
+    req.addEventListener('error', function(e){
+      console.log('Error: ', e); console.log(' Status: ', this.status);
+      ss.setAttribute('fill', '#6b050c');
+      setTimeout(function() {
+        ss.setAttribute('fill', '#fff');
+      }, 1000);
+    });
+    req.open("POST", "/upload");
+    var formData = new FormData();
+    formData.append("data", blob, fileName);
+    req.send(formData);
+    return false;
   }
 
   // Get segments from device
