@@ -1268,9 +1268,9 @@ class AudioReactive : public Usermod {
       // take the max sample from last I2S batch.
       float micSampleMax = fabsf(sampleReal);      // from getSample() - nice results, however a bit distorted by MicLev processing
       //float micSampleMax = fabsf(micDataReal);   // from FFTCode() - better source, but more flickering
-      if (dmType == 0) micSampleMax *= 4.0f;       // correction for ADC analog
+      if (dmType == 0) micSampleMax *= 2.0f;       // correction for ADC analog
       if (dmType == 4) micSampleMax *= 16.0f;      // correction for I2S Line-In
-      if (dmType == 5) micSampleMax *= 4.0f;       // correction for PDM
+      if (dmType == 5) micSampleMax *= 2.0f;       // correction for PDM
       // make sure we are in expected ranges
       if(micSampleMax <= sampleMin) return 0.0f;
       if(micSampleMax >= sampleMax) return 255.0f;
