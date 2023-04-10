@@ -1269,8 +1269,12 @@ class AudioReactive : public Usermod {
       float micSampleMax = fabsf(sampleReal);      // from getSample() - nice results, however a bit distorted by MicLev processing
       //float micSampleMax = fabsf(micDataReal);   // from FFTCode() - better source, but more flickering
       if (dmType == 0) micSampleMax *= 2.0f;       // correction for ADC analog
-      if (dmType == 4) micSampleMax *= 16.0f;      // correction for I2S Line-In
+      //if (dmType == 4) micSampleMax *= 16.0f;      // correction for I2S Line-In
       if (dmType == 5) micSampleMax *= 2.0f;       // correction for PDM
+      if (dmType == 4) {               // I2S Line-In. This is a dirty trick to make sound pressure look interesting for line-in (which doesn't have "sound pressure" as its not a microphone)
+        micSampleMax /= 11.0f;         // reduce to max 128
+        micSampleMax *= micSampleMax;  // blow up --> max 16000
+      }
       // make sure we are in expected ranges
       if(micSampleMax <= sampleMin) return 0.0f;
       if(micSampleMax >= sampleMax) return 255.0f;
