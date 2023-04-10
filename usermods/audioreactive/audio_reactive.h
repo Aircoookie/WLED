@@ -1260,14 +1260,17 @@ class AudioReactive : public Usermod {
     // use with I2S digital microphones. Expect stupid values for analog in, and with Line-In !!
     float estimatePressure() {
       // some constants
-      constexpr float logMinSample = 1.2237754316221f; // ln(3.4)
-      constexpr float sampleMin = 3.4f;
+      constexpr float logMinSample = 0.8329091229351f; // ln(2.3)
+      constexpr float sampleMin = 2.3f;
       constexpr float logMaxSample = 10.1895683436f; // ln(32767 - 6144)
       constexpr float sampleMax = 32767.0f - 6144.0f;
 
       // take the max sample from last I2S batch.
-      float micSampleMax = fabsf(sampleReal);     // from getSample() - nice results, however distorted by MicLev processing
-      //float micSampleMax = fabsf(micDataReal);  // from FFTCode() - better source, but I'll do more testing before activating this
+      float micSampleMax = fabsf(sampleReal);      // from getSample() - nice results, however a bit distorted by MicLev processing
+      //float micSampleMax = fabsf(micDataReal);   // from FFTCode() - better source, but more flickering
+      if (dmType == 0) micSampleMax *= 4.0f;       // correction for ADC analog
+      if (dmType == 4) micSampleMax *= 16.0f;      // correction for I2S Line-In
+      if (dmType == 5) micSampleMax *= 4.0f;       // correction for PDM
       // make sure we are in expected ranges
       if(micSampleMax <= sampleMin) return 0.0f;
       if(micSampleMax >= sampleMax) return 255.0f;

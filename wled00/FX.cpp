@@ -6162,7 +6162,7 @@ uint16_t mode_2DWaverly(void) {
   float agcSensitivity= *(float*)   um_data->u_data[10];
 
   SEGMENT.fadeToBlackBy(SEGMENT.speed);
-  if (SEGENV.check3 && SEGENV.check2) SEGENV.check2 = false;                 // only one of the two at anyy time
+  if (SEGENV.check3 && SEGENV.check2) SEGENV.check2 = false;                 // only one of the two at any time
   if ((SEGENV.check2) && (volumeSmth > 0.5f)) volumeSmth = soundPressure;    // show sound pressure instead of volume
   if (SEGENV.check3) volumeSmth = 255.0 - agcSensitivity;                    // show AGC level instead of volume
 
@@ -6324,14 +6324,16 @@ uint16_t mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
 
   float realVolume = volumeSmth;
   if (SEGENV.check3 && SEGENV.check2) SEGENV.check2 = false;  // only one option
-  if ((SEGENV.check2) && (realVolume >= 0.5f)) volumeSmth = soundPressure;
+  if (SEGENV.check2) volumeSmth = soundPressure;
   if (SEGENV.check3) volumeSmth = 255.0 - agcSensitivity; 
 
   SEGMENT.fade_out(253);
   float sensGain = (float)(SEGMENT.intensity+2) / 257.0f; // min gain = 1/128
-  if (sensGain > 0.5f) sensGain = ((sensGain -0.5f) * 2.0f) +0.5f; // extend upper range to 3x 
+  if (sensGain > 0.5f) sensGain = ((sensGain -0.5f) * 3.0f) +0.5f; // extend upper range to 3x 
+  float sensOffset = (SEGMENT.check2 && SEGMENT.intensity > 128) ? (float(SEGMENT.intensity - 128)*0.42f) : 0.0f; // slightly raise lower limit, to show more details (sound pressure only)
 
-  float segmentSampleAvg = volumeSmth * sensGain;
+  float segmentSampleAvg = (volumeSmth * sensGain) - sensOffset;
+  if (segmentSampleAvg < 0) segmentSampleAvg = 0;    // could be <0 due to sensOffset
   segmentSampleAvg *= 0.25f; // divide by 4, to compensate for later "sensitivty" upscaling
   float mySampleAvg = mapf(segmentSampleAvg*2.0f, 0, 64, 0, (SEGLEN-1)); // map to pixels availeable in current segment
   int tempsamp = constrain(mySampleAvg,0,SEGLEN-1);       // Keep the sample from overflowing.
@@ -6343,9 +6345,8 @@ uint16_t mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
 
   //if ((realVolume > 1) && ((blendVal < 1) || (blendVal > 254))) blendVal = millis() % 192; // provides flickering when overtuned
   //else 
-  blendVal = constrain(blendVal, 0, 255);                                                    // and saturation for all
-
-  if (realVolume > 0.5) // hide main "bar" in silence
+  blendVal = constrain(blendVal, 32, 255);                                                    // and saturation for all
+  if (realVolume > 0.85) // hide main "bar" in silence
   for (int i=0; i<tempsamp; i++) {
     uint8_t index = inoise8(i*segmentSampleAvg+millis(), 5000+i*segmentSampleAvg);
     SEGMENT.setPixelColor(i, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), (uint8_t)blendVal));
