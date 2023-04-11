@@ -1,5 +1,12 @@
 ## WLED changelog
 
+#### Build 2304090
+-   updated Arduino ESP8266 core to 4.1.0 (newer compiler)
+-   updated NeoPixelBus to 2.7.3 (with support for UCS890x chipset)
+-   better support for ESP32-C3, ESP32-S2 and ESP32-S3 (Arduino ESP32 core 5.2.0)
+-   iPad/tablet with 1024 pixels width in landscape orientation PC mode support (#3153)
+-   fix for Pixel Art Converter (#3155)
+
 #### Build 2303240
 -   Peek scaling of large 2D matrices
 -   Added 0D (1 pixel) metadata for effects & enhance 0D (analog strip) UI handling
