@@ -72,8 +72,8 @@
 		</div>
 		<div id="briwrap">
 			<p class="hd">Brightness</p>
-			<div class="il">
-				<i class="icons slider-icon" onclick="tglTheme()">&#xe2a6;</i>
+			<div class="slider" style="left:24px;">
+				<i class="icons slider-icon" onclick="tglTheme()" style="transform: translate(-32px,5px);">&#xe2a6;</i>
 				<div class="sliderwrap il">
 					<input id="sliderBri" onchange="setBri()" oninput="updateTrail(this)" max="255" min="1" type="range" value="128" />
 					<div class="sliderdisplay"></div>
@@ -227,6 +227,10 @@
 					<input type="checkbox" data-flt="&#x1F3A8;" onchange="filterFx(this)">
 					<span class="checkmark"></span>
 				</label>
+				<label id="filter0D" class="check fchkl hide">&#8226;
+					<input type="checkbox" data-flt="&#8226;" onchange="filterFx(this)">
+					<span class="checkmark"></span>
+				</label>
 				<label id="filter1D" class="check fchkl">&#8942;
 					<input type="checkbox" data-flt="&#8942;" onchange="filterFx(this)">
 					<span class="checkmark"></span>
@@ -245,7 +249,7 @@
 				</label>
 			</div>
 			<div id="slider0" class="slider">
-				<i class="icons slider-icon" style="cursor: pointer;" onclick="tglFreeze()">&#xe325;</i>
+				<i class="icons slider-icon" onclick="tglFreeze()">&#xe325;</i>
 				<div class="sliderwrap il">
 					<input id="sliderSpeed" class="noslide" onchange="setSpeed()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
 					<div class="sliderdisplay"></div>
@@ -254,7 +258,7 @@
 				<span id="sliderLabel0" class="tooltiptext">Effect speed</span>
 			</div>
 			<div id="slider1" class="slider">
-				<i class="icons slider-icon" style="cursor: pointer;" onclick="tglLabels()">&#xe409;</i>
+				<i class="icons slider-icon" onclick="tglLabels()">&#xe409;</i>
 				<div class="sliderwrap il">
 					<input id="sliderIntensity" class="noslide" onchange="setIntensity()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
 					<div class="sliderdisplay"></div>

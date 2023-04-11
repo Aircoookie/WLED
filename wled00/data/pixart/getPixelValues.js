@@ -273,7 +273,7 @@ function getPixelRGBValues(base64Image) {
       
       //Aggregated Strings That should be returned to the user
       if (i > 0){
-        JSONledString = JSONledString + '\n';
+        JSONledString = JSONledString + '\n<NEXT COMMAND (multiple commands not supported in API/preset setup)>\n';
         curlString = curlString + ' && ';
       }
       JSONledString += thisJSONledString;

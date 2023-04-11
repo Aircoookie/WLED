@@ -69,7 +69,6 @@ cjb.addEventListener('click', async () => {
 lSS.addEventListener("change", gen);
 szY.addEventListener("change", gen);
 szX.addEventListener("change", gen);
-//frm.addEventListener("change", gen);
 cFS.addEventListener("change", gen);
 aS.addEventListener("change", gen);
 brgh.addEventListener("change", gen);
@@ -115,6 +114,7 @@ cLN.oninput = () => {
 frm.addEventListener("change", () => {
   for (var i = 0; i < hideableRows.length; i++) {
     hideableRows[i].classList.toggle("hide", frm.value !== "ha");
+    gen();
   }
 });
 
