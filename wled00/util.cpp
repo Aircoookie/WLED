@@ -434,7 +434,7 @@ um_data_t* simulateSound(uint8_t simulationId)
     um_data->u_data[5] = &my_magnitude;
     um_data->u_data[6] = &maxVol;
     um_data->u_data[7] = &binNum;
-    um_data->u_data[8]  = &FFT_MajorPeak; // dummy (samplePeak smoothed)
+    um_data->u_data[8]  = &FFT_MajorPeak; // dummy (FFT Peak smoothed)
     um_data->u_data[9]  = &volumeSmth;    // dummy (soundPressure)
     um_data->u_data[10] = &volumeSmth;    // dummy (agcSensitivity)
   } else {
@@ -497,8 +497,8 @@ um_data_t* simulateSound(uint8_t simulationId)
   }
 
   samplePeak    = random8() > 250;
-  FFT_MajorPeak = volumeSmth;
-  maxVol        = 10;  // this gets feedback fro UI
+  FFT_MajorPeak = 21 + (volumeSmth*volumeSmth) / 8.0f; // WLEDMM 21hz...8200hz
+  maxVol        = 31;  // this gets feedback fro UI
   binNum        = 8;   // this gets feedback fro UI
   volumeRaw = volumeSmth;
   my_magnitude = 10000.0 / 8.0f; //no idea if 10000 is a good value for FFT_Magnitude ???
