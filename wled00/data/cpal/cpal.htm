@@ -26,11 +26,13 @@
         position: relative;
         width: 100%;
         height: 20px;
+       
       }
 
       #bottomContainer {
         position: absolute;
         margin-top: 50px;
+       
       }
 
       #gradient-box {
@@ -94,7 +96,7 @@
         vertical-align: middle;
       }
       #info {
-        display: block;
+        display: "";
         text-align: center;
         color: #fff; 
         font-family: Arial, sans-serif; 
@@ -102,10 +104,12 @@
         position: relative;
         margin-top: 100px;
         line-height: 1;
+       
       }
       </style>
   </head>
 <body>
+<div id="wrap" style="max-width: 800px;">
   <div style="display: flex; justify-content: center;">
     <h1 style="display: flex; align-items: center;">
       <svg style="width:36px;height:36px;margin-right:6px;" viewBox="0 0 32 32">
@@ -114,7 +118,7 @@
         <rect style="fill:#003FFF" x="18" y="10" width="4" height="8"/>
         <rect style="fill:#003FFF" x="22" y="6" width="8" height="4"/>
       </svg>
-      WLED Custom Palette Creator
+      <span id="head">WLED Custom Palette Creator</span>
     </h1>
   </div>
 
@@ -139,7 +143,7 @@
       Currently in use Custom Palette IDs are 0 to <span id="cpaltx">-1</span>. Note!, IDs <u>must</u> be in uninterupted sequece from 0 and cannot excede 9. This number will only be updated on WLED reboot (or equivalent).
     </div>
   <div style="display: flex; justify-content: center;"></div>
-  
+</div>  
   
 </body>
 
@@ -162,7 +166,8 @@
 
   //Initiation
   getInfo();
-  
+  window.addEventListener('load', chkW);
+  window.addEventListener('resize', chkW);
 
   gradientBox.addEventListener("click", clikOnGradient);
   gId("sendSpan").innerHTML = 
@@ -177,6 +182,7 @@
   updateGradient(); //Sets the gradient at startup
 
   function clikOnGradient(e){
+    removeTrashcan(e);
     addC(Math.round((e.offsetX/gradientLength)*256));
   }
 
@@ -238,7 +244,7 @@
     colorPickerMarker.style.left = colorMarker.style.left;
     colorPicker.style.left = colorMarker.style.left;
     
-    const deleteMarker = cE('span'); // create a marker for the color position
+    const deleteMarker = cE('span'); // create a delete marker for the color position
     if(position > 0 && position < 255){
       deleteMarker.className = 'delete-marker';
       deleteMarker.id = 'deleteMarker' + position.toString();
@@ -295,15 +301,18 @@
   }
 
   function colClk(e){
+    removeTrashcan(e)
     e.stopPropagation();
     let cp = gId(e.srcElement.id.replace("Marker",""));
     cp.click();
   }
 
   function cpClk(e){
+    removeTrashcan(event)
     e.stopPropagation();
     console.log(e);
   }
+
   //This neat little function makes any element draggable on the X-axis.
   //Just call: makeMeDrag(myElement); And you are good to go.
   function makeMeDrag(elmnt) {
@@ -318,6 +327,7 @@
     elmnt.onmousedown = dragMouseDown;
 
     function dragMouseDown(e) {
+      removeTrashcan(event)
       e = e || window.event;
       e.preventDefault();
       // get the mouse cursor position at startup:
@@ -400,6 +410,17 @@
     }
   }
 
+  function chkW() {
+  //Possibly add more code that recalculates the gradient... Massive job ;)
+  const wrap = gId('wrap');
+  const head = gId('head');
+    if (wrap.offsetWidth < 600) {
+      head.style.display = 'none';
+    } else {
+      head.style.display = 'inline';
+    }
+  }
+
   function calcJSON(){
       let rStr = '{"palette":['
     Object.entries(tCol).forEach(([p, c]) => { 
@@ -443,23 +464,22 @@
     return false;
   }
 
-  // Get segments from device
-async function getInfo() {
-  hst = location.host;
-  if (hst.length > 0 ){
-    try {
-      var arr = [];
-      const response = await fetch('http://'+hst+'/json/info');
-      const json = await response.json();
-      cpalc = json.cpalcount;
-      gId('cpaltx').innerHTML = cpalc-1;
-      console.log('cpalc: ', cpalc);
-    } catch (error) {
-      console.error(error);
+  async function getInfo() {
+    hst = location.host;
+    if (hst.length > 0 ){
+      try {
+        var arr = [];
+        const response = await fetch('http://'+hst+'/json/info');
+        const json = await response.json();
+        cpalc = json.cpalcount;
+        gId('cpaltx').innerHTML = cpalc-1;
+        console.log('cpalc: ', cpalc);
+      } catch (error) {
+        console.error(error);
+      }
+    } else{
+      console.error('cannot identify host');
     }
-  } else{
-    console.error('cannot identify host');
   }
-}
 </script>
 
