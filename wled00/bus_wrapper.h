@@ -184,9 +184,9 @@
 //APA102
 #ifdef WLED_USE_ETHERNET
 // fix for #2542 (by @BlackBird77)
-#define B_HS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarEsp32DmaHspi5MhzMethod> //hardware HSPI with DMA (ESP32 only)
+#define B_HS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarHspi5MhzMethod> //hardware HSPI (was DotStarEsp32DmaHspi5MhzMethod in NPB 2.6.9)
 #else
-#define B_HS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarSpi5MhzMethod> //hardware HSPI
+#define B_HS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarSpi5MhzMethod> //hardware VSPI
 #endif
 #define B_SS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarMethod>    //soft SPI
 
