@@ -156,6 +156,6 @@ class Toki {
     }
 
     void printTime(const Time& t) {
-      Serial.printf_P(PSTR("%u,%03u\n"),t.sec,t.ms);
+      if (Serial) Serial.printf_P(PSTR("%u,%03u\n"),t.sec,t.ms);
     }
 };

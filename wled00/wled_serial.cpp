@@ -32,10 +32,10 @@ void updateBaudRate(uint32_t rate){
   currentBaud = rate100;
 
   if (!pinManager.isPinAllocated(hardwareTX) || pinManager.getPinOwner(hardwareTX) == PinOwner::DebugOut){
-    Serial.print(F("Baud is now ")); Serial.println(rate);
+    if (Serial) { Serial.print(F("Baud is now ")); Serial.println(rate); }
   }
 
-  Serial.flush();
+  if (Serial) Serial.flush();
   Serial.begin(rate);
 }
 

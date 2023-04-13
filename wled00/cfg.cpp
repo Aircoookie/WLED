@@ -320,9 +320,9 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     Wire.setPins(i2c_sda, i2c_scl); // this will fail if Wire is initilised (Wire.begin() called prior)
     #endif
     // Wire.begin(); // WLEDMM moved into pinManager
-    Serial.printf("pinmgr success for global i2c %d %d\n", i2c_sda, i2c_scl);
+    DEBUG_PRINTF("pinmgr success for global i2c %d %d\n", i2c_sda, i2c_scl);
   } else {
-    Serial.printf("pinmgr not success for global i2c %d %d\n", i2c_sda, i2c_scl);
+    DEBUG_PRINTF("pinmgr not success for global i2c %d %d\n", i2c_sda, i2c_scl);
   }
   JsonArray hw_if_spi = hw[F("if")][F("spi-pin")];
   CJSON(spi_mosi, hw_if_spi[0]);
@@ -335,9 +335,9 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     #else
     SPI.begin();
     #endif
-    Serial.printf("pinmgr success for global spi %d %d %d\n", spi_mosi, spi_miso, spi_sclk);
+    DEBUG_PRINTF("pinmgr success for global spi %d %d %d\n", spi_mosi, spi_miso, spi_sclk);
   } else {
-    Serial.printf("pinmgr not success for global spi %d %d %d\n", spi_mosi, spi_miso, spi_sclk);
+    DEBUG_PRINTF("pinmgr not success for global spi %d %d %d\n", spi_mosi, spi_miso, spi_sclk);
   }
 
   //int hw_status_pin = hw[F("status")]["pin"]; // -1

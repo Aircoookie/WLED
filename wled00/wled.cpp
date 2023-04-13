@@ -343,27 +343,29 @@ void WLED::setup()
   Serial.begin(115200);
   if (!Serial) delay(1000); // WLEDMM make sure that Serial has initalized
 
-  #if !ARDUINO_USB_CDC_ON_BOOT
-  Serial.setTimeout(50);  // this causes troubles on new MCUs that have a "virtual" USB Serial (HWCDC)
-  #else
-  #endif
-  #if defined(WLED_DEBUG) && defined(ARDUINO_ARCH_ESP32) && (defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3) || ARDUINO_USB_CDC_ON_BOOT)
+  #ifdef ARDUINO_ARCH_ESP32
+  #if defined(WLED_DEBUG) && (defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3) || ARDUINO_USB_CDC_ON_BOOT)
   if (!Serial) delay(2500);  // WLEDMM allow CDC USB serial to initialise
   #endif
-
-  #if ARDUINO_USB_CDC_ON_BOOT
+  #if ARDUINO_USB_CDC_ON_BOOT || ARDUINO_USB_MODE
   if (!Serial) delay(2500);  // WLEDMM: always allow CDC USB serial to initialise
-  Serial.println("wait 1");  // waiting a bit longer ensures that a  debug messages are shown in serial monitor
+  if (Serial) Serial.println("wait 1");  // waiting a bit longer ensures that a  debug messages are shown in serial monitor
   if (!Serial) delay(2500);
-  Serial.println("wait 2");
+  if (Serial) Serial.println("wait 2");
   if (!Serial) delay(2500);
 
   if (Serial) Serial.flush(); // WLEDMM
-  Serial.setTimeout(350); // WLEDMM: don't change timeout, as it causes crashes later
+  //Serial.setTimeout(350); // WLEDMM: don't change timeout, as it causes crashes later
   // WLEDMM: redirect debug output to HWCDC
+  #if defined(WLED_DEBUG) || defined (SR_DEBUG)
   Serial0.setDebugOutput(false);
   Serial.setDebugOutput(true);
-  #else
+  #endif
+  // WLEDMM don't touch serial timeout when we use CDC USB or tinyUSB
+  #else // "standard" serial-to-USB chip
+  if (Serial) Serial.setTimeout(50);  // WLEDMM - only when serial is initialized
+  #endif
+  #else  // 8266
   if (Serial) Serial.setTimeout(50);  // WLEDMM - only when serial is initialized
   #endif
 
@@ -587,7 +589,7 @@ void WLED::setup()
   //Serial RX (Adalight, Improv, Serial JSON) only possible if GPIO3 unused
   //Serial TX (Debug, Improv, Serial JSON) only possible if GPIO1 unused
   if (!pinManager.isPinAllocated(hardwareRX) && !pinManager.isPinAllocated(hardwareTX)) {
-    Serial.println(F("Ada"));
+    if (Serial) Serial.println(F("Ada"));
   }
   #endif
 
@@ -599,7 +601,7 @@ void WLED::setup()
 #endif
 
 #ifdef WLED_ENABLE_ADALIGHT
-  if (Serial.available() > 0 && Serial.peek() == 'I') handleImprovPacket();
+  if (Serial && (Serial.available() > 0) && (Serial.peek() == 'I')) handleImprovPacket();
 #endif
 
   strip.service(); // why?
@@ -626,7 +628,7 @@ void WLED::setup()
 #endif
 
 #ifdef WLED_ENABLE_ADALIGHT
-  if (Serial.available() > 0 && Serial.peek() == 'I') handleImprovPacket();
+  if (Serial && (Serial.available() > 0) && (Serial.peek() == 'I')) handleImprovPacket();
 #endif
 
   // HTTP server page init
@@ -704,7 +706,7 @@ void WLED::setup()
   // repeat Ada prompt
   #ifdef WLED_ENABLE_ADALIGHT
   if (!pinManager.isPinAllocated(hardwareRX) && !pinManager.isPinAllocated(hardwareTX)) {
-    Serial.println(F("Ada"));
+    if (Serial) Serial.println(F("Ada"));
   }
   #endif
 
