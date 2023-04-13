@@ -630,7 +630,7 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
     sappend('c',SET_F("CF"),!useAMPM);
     sappend('i',SET_F("TZ"),currentTimezone);
     sappend('v',SET_F("UO"),utcOffsetSecs);
-    char tm[32];
+    char tm[48];
     dtostrf(longitude,4,2,tm);
     sappends('s',SET_F("LN"),tm);
     dtostrf(latitude,4,2,tm);
@@ -638,7 +638,7 @@ void getSettingsJS(AsyncWebServerRequest* request, byte subPage, char* dest) //W
     getTimeString(tm);
     sappends('m',SET_F("(\"times\")[0]"),tm);
     if ((int)(longitude*10.) || (int)(latitude*10.)) {
-      sprintf_P(tm, PSTR("Sunrise: %02d:%02d Sunset: %02d:%02d"), hour(sunrise), minute(sunrise), hour(sunset), minute(sunset));
+      snprintf_P(tm, sizeof(tm), PSTR("Sunrise: %02d:%02d Sunset: %02d:%02d"), hour(sunrise), minute(sunrise), hour(sunset), minute(sunset));
       sappends('m',SET_F("(\"times\")[1]"),tm);
     }
     sappend('c',SET_F("OL"),overlayCurrent);
