@@ -295,7 +295,7 @@ WLED_GLOBAL byte apBehavior _INIT(AP_BEHAVIOR_BOOT_NO_CONN);       // access poi
 WLED_GLOBAL IPAddress staticIP      _INIT_N(((  0,   0,  0,  0))); // static IP of ESP
 WLED_GLOBAL IPAddress staticGateway _INIT_N(((  0,   0,  0,  0))); // gateway (router) IP
 WLED_GLOBAL IPAddress staticSubnet  _INIT_N(((255, 255, 255, 0))); // most common subnet in home networks
-#if defined(ARDUINO_ARCH_ESP32) && !defined(ARDUINO_ESP32_PICO)
+#if defined(ARDUINO_ARCH_ESP32) && !defined(ARDUINO_ESP32_PICO) && !defined(WLEDMM_WIFI_POWERON_HACK)
 WLED_GLOBAL bool noWifiSleep _INIT(true);                          // disabling modem sleep modes will increase heat output and power usage, but may help with connection issues
 #else
 WLED_GLOBAL bool noWifiSleep _INIT(false);
@@ -325,7 +325,11 @@ WLED_GLOBAL float gammaCorrectVal _INIT(2.8f); // gamma correction value
 
 WLED_GLOBAL byte col[]    _INIT_N(({ 255, 160, 0, 0 }));  // current RGB(W) primary color. col[] should be updated if you want to change the color.
 WLED_GLOBAL byte colSec[] _INIT_N(({ 0, 0, 0, 0 }));      // current RGB(W) secondary color
+#if defined(ABL_MILLIAMPS_DEFAULT) && ABL_MILLIAMPS_DEFAULT < 600
+WLED_GLOBAL byte briS     _INIT(64);                      // WLEDMM reduce default brightness for low-power devices
+#else
 WLED_GLOBAL byte briS     _INIT(128);                     // default brightness
+#endif
 
 WLED_GLOBAL byte nightlightTargetBri _INIT(0);      // brightness after nightlight is over
 WLED_GLOBAL byte nightlightDelayMins _INIT(60);
