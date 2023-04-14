@@ -29,7 +29,7 @@ uint16_t mode_ARTIFX(void) {
   }
 
   char currentEffect[charLength];
-  strcpy(currentEffect, (SEGMENT.name != nullptr)?SEGMENT.name:"default"); //note: switching preset with segment name to preset without does not clear the SEGMENT.name variable, but not gonna solve here ;-)
+  strncpy(currentEffect, (SEGMENT.name != nullptr)?SEGMENT.name:"default", sizeof(currentEffect)-1); //note: switching preset with segment name to preset without does not clear the SEGMENT.name variable, but not gonna solve here ;-)
 
   if (strcmp(previousEffect, currentEffect) != 0) 
   {

@@ -2452,7 +2452,8 @@ public:
 
     // softhack007 check that programName has max 43 chars: fileNameLength -7 ("/" +Name + ".wled\0")
     if ((programName == NULL) || (strlen(programName) < 1) || (strlen(programName) > (fileNameLength-7))) {
-      ERROR_ARTI("Program name '%s' is invalid. Program Name must be less than %d chars.\n", programName, fileNameLength-7);
+      if (!logFile) logToFile = false;   // make sure this message gets to the user
+      ERROR_ARTI("ARTI-FX: Invalid program name '%s'. Name must be less than %u chars.\n", programName, (unsigned)fileNameLength-7);
       return false;
     }
 
@@ -2468,6 +2469,11 @@ public:
 
       #if ARTI_PLATFORM == ARTI_ARDUINO
         logFile = WLED_FS.open(logFileName,"w");
+        if (!logFile) {
+          logToFile = false;
+          ERROR_ARTI("ARTI-FX: Failed to create logfile '%s'\n", logFileName);
+          //ERROR_ARTI("ARTI-FX: Failed to create logfile '%s': %s\n", logFileName, strerror(errno));  // unfortunately, errno is not supported on older platforms
+        }
       #else
         logFile = fopen (logFileName,"w");
       #endif
@@ -2549,7 +2555,8 @@ public:
     MEMORY_ARTI("open %s %u ✓\n", programFileName, FREE_SIZE);
     if (!programFile) 
     {
-      ERROR_ARTI("Program file %s not found\n", programFileName);
+      ERROR_ARTI("Program file '%s' not found\n", programFileName);
+      //ERROR_ARTI("Program file '%s' not found: %s\n", programFileName, strerror(errno)); // errno is not supported on older platforms
       return  false;
     }
 
@@ -2740,7 +2747,7 @@ public:
     }
 
     if (parseTreeJsonDoc != nullptr) {
-      MEMORY_ARTI("parseTree       %u / %0u%% (%u %u %u)\n", (unsigned int)parseTreeJsonDoc->memoryUsage(), 100 * parseTreeJsonDoc->memoryUsage() / parseTreeJsonDoc->capacity(), (unsigned int)parseTreeJsonDoc->size(), parseTreeJsonDoc->overflowed(), (unsigned int)parseTreeJsonDoc->nesting());
+      MEMORY_ARTI("parseTree       %u / %u%% (%u %u %u)\n", (unsigned int)parseTreeJsonDoc->memoryUsage(), 100 * parseTreeJsonDoc->memoryUsage() / parseTreeJsonDoc->capacity(), (unsigned int)parseTreeJsonDoc->size(), parseTreeJsonDoc->overflowed(), (unsigned int)parseTreeJsonDoc->nesting());
       delete parseTreeJsonDoc; parseTreeJsonDoc = nullptr;
     }
 
