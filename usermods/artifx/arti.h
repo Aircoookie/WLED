@@ -2450,6 +2450,12 @@ public:
     errorOccurred = false;
     frameCounter = 0;
 
+    // softhack007 check that programName has max 43 chars: fileNameLength -7 ("/" +Name + ".wled\0")
+    if ((programName == NULL) || (strlen(programName) < 1) || (strlen(programName) > (fileNameLength-7))) {
+      ERROR_ARTI("Program name '%s' is invalid. Program Name must be less than %d chars.\n", programName, fileNameLength-7);
+      return false;
+    }
+
     logToFile = true;
     //open logFile
     if (logToFile)
@@ -2457,7 +2463,7 @@ public:
       #if ARTI_PLATFORM == ARTI_ARDUINO
         strcpy(logFileName, "/");
       #endif
-      strcat(logFileName, programName);
+      strcat(logFileName, programName);   // softhack007 this may overflow logFileName, in case programName has more than 44 chars
       strcat(logFileName, ".log");
 
       #if ARTI_PLATFORM == ARTI_ARDUINO
@@ -2530,7 +2536,7 @@ public:
     #if ARTI_PLATFORM == ARTI_ARDUINO
       strcpy(programFileName, "/");
     #endif
-    strcat(programFileName, programName);
+    strcat(programFileName, programName);    // softhack007 this may overflow programFileName, in case programName has more than 43 chars
     strcat(programFileName, ".wled");
 
     #if ARTI_PLATFORM == ARTI_ARDUINO
@@ -2548,7 +2554,7 @@ public:
     }
 
     //open programFile
-    char * programText;
+    char * programText = nullptr;
     uint16_t programFileSize;
     #if ARTI_PLATFORM == ARTI_ARDUINO
       programFileSize = programFile.size();
@@ -2593,7 +2599,11 @@ public:
       #endif
     #endif
 
-    if (stages < 1) {close(); return true;}
+    if (stages < 1) {
+      if (nullptr != programText) free(programText);  // softhack007 prevent memory leak
+      close(); 
+      return true;
+    }
 
     if (!loadParseTreeFile) 
     {
@@ -2602,18 +2612,24 @@ public:
       lexer = new Lexer(programText, definitionJson);
       lexer->get_next_token();
 
-      if (stages < 2) {close(); return true;}
+      if (stages < 2) {
+        //if (nullptr != programText) free(programText);  // softhack007 needed to prevent memory leak? lexer has a pointer to programText so its still in use maybe?
+        close(); 
+        return true;
+      }
 
       uint8_t result = parse(parseTreeJson, startNode, '&', lexer->definitionJson[startNode], 0);
 
       if (this->lexer->pos != strlen(this->lexer->text)) 
       {
         ERROR_ARTI("Node %s Program not entirely parsed (%u,%u) %u of %u\n", startNode, this->lexer->lineno, this->lexer->column, this->lexer->pos, (unsigned int)strlen(this->lexer->text));
+        //if (nullptr != programText) free(programText);  // softhack007 needed to prevent memory leak? lexer has a pointer to programText so its still in use maybe?
         return false;
       }
       else if (result == ResultFail) 
       {
         ERROR_ARTI("Node %s Program parsing failed (%u,%u) %u of %u\n", startNode, this->lexer->lineno, this->lexer->column, this->lexer->pos, (unsigned int)strlen(this->lexer->text));
+        //if (nullptr != programText) free(programText);  // softhack007 needed to prevent memory leak? lexer has a pointer to programText so its still in use maybe?
         return false;
       }
       else
