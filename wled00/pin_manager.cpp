@@ -49,6 +49,7 @@ String PinManagerClass::getOwnerText(PinOwner tag) {
     case PinOwner::UM_Audioreactive     : return(F("AudioReactive (UM)")); break;     // audioreative usermod - analog or digital audio input
     case PinOwner::UM_Temperature       : return(F("Temperature (UM)")); break;       // "usermod_temperature.h"
     case PinOwner::UM_PIR               : return(F("PIR (UM)")); break;               // "usermod_PIR_sensor_switch.h"
+    case PinOwner::UM_IMU               : return(F("IMU mpu6050 (UM)")); break;       // "usermod_mpu6050_imu.h"
     case PinOwner::UM_FourLineDisplay   : return(F("4Line Display (UM)")); break;     // "usermod_v2_four_line_display.h -- May use "standard" HW_I2C pins
     case PinOwner::UM_RotaryEncoderUI   : return(F("Rotary Enc. (UM)")); break;       // "usermod_v2_rotary_encoder_ui.h"
     case PinOwner::UM_MultiRelay        : return(F("Multi Relay (UM)")); break;       // "usermod_multi_relay.h"
@@ -450,7 +451,7 @@ bool PinManagerClass::allocatePin(byte gpio, bool output, PinOwner tag)
         DEBUG_PRINT(F("PIN ALLOC: FAIL for owner "));
         DebugPrintOwnerTag(tag);
         DEBUG_PRINT(F(": GPIO ")); DEBUG_PRINT(gpio);
-        if (output) DEBUG_PRINTLN(F(" cannot be used for i/o on this MCU."));
+        if (output) {DEBUG_PRINTLN(F(" cannot be used for i/o on this MCU."));}
         else DEBUG_PRINTLN(F(" cannot be used as input on this MCU."));
       } else {
         DEBUG_PRINT(F("PIN ALLOC: FAIL: GPIO ")); DEBUG_PRINT(gpio);
@@ -492,6 +493,20 @@ bool PinManagerClass::allocatePin(byte gpio, bool output, PinOwner tag)
   #endif
 
   return true;
+}
+
+void PinManagerClass::manageDebugTXPin()
+{
+  #ifdef WLED_DEBUG_HOST
+    if (netDebugEnabled) deallocatePin(hardwareTX, PinOwner::DebugOut);
+    #ifdef WLED_DEBUG
+      else                 allocatePin(hardwareTX, true, PinOwner::DebugOut);
+    #endif
+  #else
+    #ifdef WLED_DEBUG
+      pinManager.allocatePin(hardwareTX, true, PinOwner::DebugOut); // TX (GPIO1 on ESP32) reserved for debug output
+    #endif
+  #endif
 }
 
 // if tag is set to PinOwner::None, checks for ANY owner of the pin.
@@ -662,7 +677,8 @@ bool PinManagerClass::joinWire(int8_t pinSDA, int8_t pinSCL) {
       if (adcPort >= SOC_ADC_MAX_CHANNEL_NUM) analogChannel = 255;
       #else                                                                  // for classic ESP32
       int8_t analogChannel = (adcUnit == ADC1) ? adcPort : (10 + adcPort);
-      if (adcPort >= 10) analogChannel = 255;
+      if ((adcUnit == ADC1) && (adcPort >= 8)) analogChannel = 127;
+      if (adcPort >= 10) analogChannel = 127;
       #endif
 
       //int analogPin = analogChannelToDigitalPin(analogChannel);
@@ -720,10 +736,10 @@ bool PinManagerClass::isPinOk(byte gpio, bool output)
     if (output) return digitalPinCanOutput(gpio);
     else        return true;
   }
-#else
+#else //8266
   if (gpio <  6) return true;
   if (gpio < 12) return false; //SPI flash pins
-  if (gpio < 17) return true;
+  if (gpio <= NUM_DIGITAL_PINS) return true; //WLEDMM: include pin 17 / A0 / Audio in
 #endif
   return false;
 }

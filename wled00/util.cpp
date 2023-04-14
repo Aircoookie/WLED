@@ -139,8 +139,8 @@ void sappends(char stype, const char* key, char* val)
 
 bool oappendi(int i)
 {
-  char s[11];
-  sprintf(s, "%d", i);
+  char s[16];               // WLEDMM max 32bit integer needs 11 chars (sign + 10) not 10
+  snprintf(s, 15, "%d", i); // WLEDMM
   return oappend(s);
 }
 
@@ -423,7 +423,7 @@ um_data_t* simulateSound(uint8_t simulationId)
     // NOTE!!!
     // This may change as AudioReactive usermod may change
     um_data = new um_data_t;
-    um_data->u_size = 8;
+    um_data->u_size = 11;
     um_data->u_type = new um_types_t[um_data->u_size];
     um_data->u_data = new void*[um_data->u_size];
     um_data->u_data[0] = &volumeSmth;
@@ -434,6 +434,9 @@ um_data_t* simulateSound(uint8_t simulationId)
     um_data->u_data[5] = &my_magnitude;
     um_data->u_data[6] = &maxVol;
     um_data->u_data[7] = &binNum;
+    um_data->u_data[8]  = &FFT_MajorPeak; // dummy (FFT Peak smoothed)
+    um_data->u_data[9]  = &volumeSmth;    // dummy (soundPressure)
+    um_data->u_data[10] = &volumeSmth;    // dummy (agcSensitivity)
   } else {
     // get arrays from um_data
     fftResult =  (uint8_t*)um_data->u_data[2];
@@ -494,8 +497,8 @@ um_data_t* simulateSound(uint8_t simulationId)
   }
 
   samplePeak    = random8() > 250;
-  FFT_MajorPeak = volumeSmth;
-  maxVol        = 10;  // this gets feedback fro UI
+  FFT_MajorPeak = 21 + (volumeSmth*volumeSmth) / 8.0f; // WLEDMM 21hz...8200hz
+  maxVol        = 31;  // this gets feedback fro UI
   binNum        = 8;   // this gets feedback fro UI
   volumeRaw = volumeSmth;
   my_magnitude = 10000.0 / 8.0f; //no idea if 10000 is a good value for FFT_Magnitude ???
@@ -504,16 +507,7 @@ um_data_t* simulateSound(uint8_t simulationId)
   return um_data;
 }
 
-
-void enumerateLedmaps() {
-  ledMaps = 1;
-  for (size_t i=1; i<10; i++) {
-    char fileName[16];
-    sprintf_P(fileName, PSTR("/ledmap%d.json"), i);
-    bool isFile = WLED_FS.exists(fileName);
-    if (isFile) ledMaps |= 1 << i;
-  }
-}
+//WLEDMM enumerateLedmaps moved to FX_fcn.cpp
 
 //WLEDMM netmindz ar palette
 CRGB getCRGBForBand(int x, uint8_t *fftResult, int pal) { 

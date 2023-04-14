@@ -3,12 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.14.0-b1
+   @version 0.14.0-b2
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2301202
+#define VERSION 2304140
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -25,14 +25,18 @@
 
 // You can choose some of these features to disable:
 //#define WLED_DISABLE_ALEXA       // saves 11kb
-//#define WLED_DISABLE_BLYNK       // saves 6kb
 //#define WLED_DISABLE_HUESYNC     // saves 4kb
 //#define WLED_DISABLE_INFRARED    // saves 12kb, there is no pin left for this on ESP8266-01
 #ifndef WLED_DISABLE_MQTT
   #define WLED_ENABLE_MQTT         // saves 12kb
 #endif
-#define WLED_ENABLE_ADALIGHT       // saves 500b only (uses GPIO3 (RX) for serial)
+#ifndef WLED_DISABLE_ADALIGHT      // can be used to disable reading commands from serial RX pin (see issue #3128). 
+  #define WLED_ENABLE_ADALIGHT     // disable saves 5Kb (uses GPIO3 (RX) for serial). Related serial protocols: Adalight/TPM2, Improv, Serial JSON, Continuous Serial Streaming 
+#else
+  #undef WLED_ENABLE_ADALIGHT      // disable has priority over enable
+#endif
 //#define WLED_ENABLE_DMX          // uses 3.5kb (use LEDPIN other than 2)
+//#define WLED_ENABLE_DMX_INPUT      // Listen for DMX over Serial
 //#define WLED_ENABLE_JSONLIVE     // peek LED output via /json/live (WS binary peek is always enabled)
 #ifndef WLED_DISABLE_LOXONE
   #define WLED_ENABLE_LOXONE       // uses 1.2kb
@@ -96,10 +100,6 @@
   #include "my_config.h"
 #endif
 
-#ifdef WLED_DEBUG_HOST
-#include "net_debug.h"
-#endif
-
 #include <ESPAsyncWebServer.h>
 #ifdef WLED_ADD_EEPROM_SUPPORT
   #include <EEPROM.h>
@@ -122,9 +122,6 @@
   // #define ESPALEXA_DEBUG
   #include "src/dependencies/espalexa/Espalexa.h"
   #include "src/dependencies/espalexa/EspalexaDevice.h"
-#endif
-#ifndef WLED_DISABLE_BLYNK
-  #include "src/dependencies/blynk/BlynkSimpleEsp.h"
 #endif
 
 #ifdef WLED_ENABLE_DMX
@@ -298,7 +295,7 @@ WLED_GLOBAL byte apBehavior _INIT(AP_BEHAVIOR_BOOT_NO_CONN);       // access poi
 WLED_GLOBAL IPAddress staticIP      _INIT_N(((  0,   0,  0,  0))); // static IP of ESP
 WLED_GLOBAL IPAddress staticGateway _INIT_N(((  0,   0,  0,  0))); // gateway (router) IP
 WLED_GLOBAL IPAddress staticSubnet  _INIT_N(((255, 255, 255, 0))); // most common subnet in home networks
-#ifdef ARDUINO_ARCH_ESP32
+#if defined(ARDUINO_ARCH_ESP32) && !defined(ARDUINO_ESP32_PICO) && !defined(WLEDMM_WIFI_POWERON_HACK)
 WLED_GLOBAL bool noWifiSleep _INIT(true);                          // disabling modem sleep modes will increase heat output and power usage, but may help with connection issues
 #else
 WLED_GLOBAL bool noWifiSleep _INIT(false);
@@ -324,10 +321,15 @@ WLED_GLOBAL bool correctWB       _INIT(false); // CCT color correction of RGB co
 WLED_GLOBAL bool cctFromRgb      _INIT(false); // CCT is calculated from RGB instead of using seg.cct
 WLED_GLOBAL bool gammaCorrectCol _INIT(true ); // use gamma correction on colors
 WLED_GLOBAL bool gammaCorrectBri _INIT(false); // use gamma correction on brightness
+WLED_GLOBAL float gammaCorrectVal _INIT(2.8f); // gamma correction value
 
 WLED_GLOBAL byte col[]    _INIT_N(({ 255, 160, 0, 0 }));  // current RGB(W) primary color. col[] should be updated if you want to change the color.
 WLED_GLOBAL byte colSec[] _INIT_N(({ 0, 0, 0, 0 }));      // current RGB(W) secondary color
+#if defined(ABL_MILLIAMPS_DEFAULT) && ABL_MILLIAMPS_DEFAULT < 600
+WLED_GLOBAL byte briS     _INIT(64);                      // WLEDMM reduce default brightness for low-power devices
+#else
 WLED_GLOBAL byte briS     _INIT(128);                     // default brightness
+#endif
 
 WLED_GLOBAL byte nightlightTargetBri _INIT(0);      // brightness after nightlight is over
 WLED_GLOBAL byte nightlightDelayMins _INIT(60);
@@ -382,12 +384,6 @@ WLED_GLOBAL bool alexaEnabled _INIT(false);                       // enable devi
 WLED_GLOBAL char alexaInvocationName[33] _INIT("Light");          // speech control name of device. Choose something voice-to-text can understand
 WLED_GLOBAL byte alexaNumPresets _INIT(0);                        // number of presets to expose to Alexa, starting from preset 1, up to 9
 
-#ifndef WLED_DISABLE_BLYNK
-WLED_GLOBAL char blynkApiKey[36] _INIT("");                       // Auth token for Blynk server. If empty, no connection will be made
-WLED_GLOBAL char blynkHost[33] _INIT("blynk-cloud.com");          // Default Blynk host
-WLED_GLOBAL uint16_t blynkPort _INIT(80);                         // Default Blynk port
-#endif
-
 WLED_GLOBAL uint16_t realtimeTimeoutMs _INIT(2500);               // ms timeout of realtime mode before returning to normal mode
 WLED_GLOBAL int arlsOffset _INIT(0);                              // realtime LED offset
 WLED_GLOBAL bool receiveDirect _INIT(true);                       // receive UDP realtime
@@ -402,8 +398,16 @@ WLED_GLOBAL bool arlsForceMaxBri _INIT(false);                    // enable to f
  #endif
 WLED_GLOBAL uint16_t e131ProxyUniverse _INIT(0);                  // output this E1.31 (sACN) / ArtNet universe via MAX485 (0 = disabled)
 #endif
+#ifdef WLED_ENABLE_DMX_INPUT
+  WLED_GLOBAL int dmxTransmitPin _INIT(0);
+  WLED_GLOBAL int dmxReceivePin _INIT(0);
+  WLED_GLOBAL int dmxEnablePin _INIT(0);
+#endif
+
 WLED_GLOBAL uint16_t e131Universe _INIT(1);                       // settings for E1.31 (sACN) protocol (only DMX_MODE_MULTIPLE_* can span over consequtive universes)
 WLED_GLOBAL uint16_t e131Port _INIT(5568);                        // DMX in port. E1.31 default is 5568, Art-Net is 6454
+WLED_GLOBAL byte e131Priority _INIT(0);                           // E1.31 port priority (if != 0 priority handling is active)
+WLED_GLOBAL E131Priority highPriority _INIT(3);                   // E1.31 highest priority tracking, init = timeout in seconds
 WLED_GLOBAL byte DMXMode _INIT(DMX_MODE_MULTIPLE_RGB);            // DMX mode (s.a.)
 WLED_GLOBAL uint16_t DMXAddress _INIT(1);                         // DMX start address of fixture, a.k.a. first Channel [for E1.31 (sACN) protocol]
 WLED_GLOBAL uint16_t DMXSegmentSpacing _INIT(0);                  // Number of void/unused channels between each segments DMX channels
@@ -504,12 +508,13 @@ WLED_GLOBAL bool wasConnected _INIT(false);
 WLED_GLOBAL byte lastRandomIndex _INIT(0);        // used to save last random color so the new one is not the same
 
 // transitions
-WLED_GLOBAL bool          transitionActive       _INIT(false);
-WLED_GLOBAL uint16_t      transitionDelayDefault _INIT(transitionDelay); // default transition time (storec in cfg.json)
-WLED_GLOBAL uint16_t      transitionDelayTemp    _INIT(transitionDelay); // actual transition duration (overrides transitionDelay in certain cases)
+WLED_GLOBAL bool          transitionActive        _INIT(false);
+WLED_GLOBAL uint16_t      transitionDelayDefault  _INIT(transitionDelay); // default transition time (storec in cfg.json)
+WLED_GLOBAL uint16_t      transitionDelayTemp     _INIT(transitionDelay); // actual transition duration (overrides transitionDelay in certain cases)
 WLED_GLOBAL unsigned long transitionStartTime;
-WLED_GLOBAL float         tperLast               _INIT(0.0f);            // crossfade transition progress, 0.0f - 1.0f
-WLED_GLOBAL bool          jsonTransitionOnce     _INIT(false);           // flag to override transitionDelay (playlist, JSON API: "live" & "seg":{"i"} & "tt")
+WLED_GLOBAL float         tperLast                _INIT(0.0f);            // crossfade transition progress, 0.0f - 1.0f
+WLED_GLOBAL bool          jsonTransitionOnce      _INIT(false);           // flag to override transitionDelay (playlist, JSON API: "live" & "seg":{"i"} & "tt")
+WLED_GLOBAL uint8_t       randomPaletteChangeTime _INIT(5);               // amount of time [s] between random palette changes (min: 1s, max: 255s)
 
 // nightlight
 WLED_GLOBAL bool nightlightActive _INIT(false);
@@ -584,9 +589,6 @@ WLED_GLOBAL byte timerWeekday[]   _INIT_N(({ 255, 255, 255, 255, 255, 255, 255, 
 WLED_GLOBAL byte timerMonth[]     _INIT_N(({28,28,28,28,28,28,28,28}));
 WLED_GLOBAL byte timerDay[]       _INIT_N(({1,1,1,1,1,1,1,1}));
 WLED_GLOBAL byte timerDayEnd[]		_INIT_N(({31,31,31,31,31,31,31,31}));
-
-// blynk
-WLED_GLOBAL bool blynkEnabled _INIT(false);
 
 //improv
 WLED_GLOBAL byte improvActive _INIT(0); //0: no improv packet received, 1: improv active, 2: provisioning
@@ -685,8 +687,16 @@ WLED_GLOBAL BusManager busses _INIT(BusManager());
 WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
 WLED_GLOBAL BusConfig* busConfigs[WLED_MAX_BUSSES+WLED_MIN_VIRTUAL_BUSSES] _INIT({nullptr}); //temporary, to remember values from network callback until after
 WLED_GLOBAL bool doInitBusses _INIT(false);
-WLED_GLOBAL int8_t loadLedmap _INIT(-1);
+WLED_GLOBAL bool loadLedmap _INIT(false); //WLEDMM use as bool and use loadedLedmap for Nr
+WLED_GLOBAL uint8_t loadedLedmap _INIT(0); //WLEDMM default 0
+#ifndef ESP8266
+WLED_GLOBAL char  *ledmapNames[WLED_MAX_LEDMAPS-1] _INIT_N(({nullptr}));
+#endif
+#if WLED_MAX_LEDMAPS>16
+WLED_GLOBAL uint32_t ledMaps _INIT(0); // bitfield representation of available ledmaps
+#else
 WLED_GLOBAL uint16_t ledMaps _INIT(0); // bitfield representation of available ledmaps
+#endif
 
 // Usermod manager
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
@@ -728,59 +738,49 @@ WLED_GLOBAL StaticJsonDocument<JSON_BUFFER_SIZE> doc;
 WLED_GLOBAL volatile uint8_t jsonBufferLock _INIT(0);
 
 // enable additional debug output
+//WLEDMM: switch between netdebug and serial
+// cannot do this on -S2, due to buggy USBCDC serial driver: canUseSerial
 #if defined(WLED_DEBUG_HOST)
+  #include "net_debug.h"
   // On the host side, use netcat to receive the log statements: nc -l 7868 -u
   // use -D WLED_DEBUG_HOST='"192.168.xxx.xxx"' or FQDN within quotes
-  #define DEBUGOUT NetDebug
-  WLED_GLOBAL bool netDebugEnabled _INIT(true);
-  WLED_GLOBAL char netDebugPrintHost[33] _INIT(WLED_DEBUG_HOST);
-  #if defined(WLED_DEBUG_NET_PORT)
-  WLED_GLOBAL int netDebugPrintPort _INIT(WLED_DEBUG_PORT);
-  #else
-  WLED_GLOBAL int netDebugPrintPort _INIT(7868);
-  #endif
+  WLED_GLOBAL bool netDebugEnabled _INIT(false);
+  WLED_GLOBAL int netDebugPrintPort _INIT(0);
+  WLED_GLOBAL IPAddress netDebugPrintIP _INIT_N(((0, 0, 0, 0))); // IP address of the bridge
+  #define DEBUGOUT(x) (netDebugEnabled || !canUseSerial())?NetDebug.print(x):Serial.print(x)
+  #define DEBUGOUTLN(x) (netDebugEnabled || !canUseSerial())?NetDebug.println(x):Serial.println(x)
+  #define DEBUGOUTF(x...) (netDebugEnabled || !canUseSerial())?NetDebug.printf(x):Serial.printf(x)
+  #define DEBUGOUTFlush() (netDebugEnabled || !canUseSerial())?NetDebug.flush():Serial.flush()
 #else
-  #define DEBUGOUT Serial
+  #define DEBUGOUT(x) {if (canUseSerial()) Serial.print(x);}
+  #define DEBUGOUTLN(x) {if (canUseSerial()) Serial.println(x);}
+  #define DEBUGOUTF(x...) {if (canUseSerial()) Serial.printf(x);}
+  #define DEBUGOUTFlush() {if (canUseSerial()) Serial.flush();}
 #endif
 
 #ifdef WLED_DEBUG
   #ifndef ESP8266
   #include <rom/rtc.h>
   #endif
-  #define DEBUG_PRINT(x) DEBUGOUT.print(x)
-  #define DEBUG_PRINTLN(x) DEBUGOUT.println(x)
-  #define DEBUG_PRINTF(x...) DEBUGOUT.printf(x)
+  #define DEBUG_PRINT(x) DEBUGOUT(x)
+  #define DEBUG_PRINTLN(x) DEBUGOUTLN(x)
+  #define DEBUG_PRINTF(x...) DEBUGOUTF(x)
 #else
   #define DEBUG_PRINT(x)
   #define DEBUG_PRINTLN(x)
   #define DEBUG_PRINTF(x...)
 #endif
 
-// WLEDMM: macros to print "user messages" to Serial
-// cannot do this on -S2, due to buggy USBCDC serial driver
-#if defined(WLED_DEBUG) || defined(WLED_DEBUG_HOST)
-  // use DEBUG_PRINT
-  #define USER_PRINT(x) DEBUG_PRINT(x)
-  #define USER_PRINTLN(x) DEBUG_PRINTLN(x)
-  #define USER_PRINTF(x...) DEBUG_PRINTF(x)
-  #ifdef WLED_DEBUG_HOST
-    #define USER_FLUSH() {}
-  #else
-    #define USER_FLUSH() {DEBUGOUT.flush();}
-  #endif
-#else
-  // if serial is availeable, we use Serial.print directly
-  #define USER_PRINT(x)      { if (canUseSerial()) DEBUGOUT.print(x); }
-  #define USER_PRINTLN(x)    { if (canUseSerial()) DEBUGOUT.println(x); }
-  #define USER_PRINTF(x...)  { if (canUseSerial()) DEBUGOUT.printf(x); }
-  #define USER_FLUSH()       {DEBUGOUT.flush();}
-#endif
+#define USER_PRINT(x)      DEBUGOUT(x)
+#define USER_PRINTLN(x)    DEBUGOUTLN(x)
+#define USER_PRINTF(x...)  DEBUGOUTF(x)
+#define USER_FLUSH()       DEBUGOUTFlush()
 // WLEDMM end
 
 #ifdef WLED_DEBUG_FS
-  #define DEBUGFS_PRINT(x) DEBUGOUT.print(x)
-  #define DEBUGFS_PRINTLN(x) DEBUGOUT.println(x)
-  #define DEBUGFS_PRINTF(x...) DEBUGOUT.printf(x)
+  #define DEBUGFS_PRINT(x) DEBUGOUT(x)
+  #define DEBUGFS_PRINTLN(x) DEBUGOUTLN(x)
+  #define DEBUGFS_PRINTF(x...) DEBUGOUTF(x)
 #else
   #define DEBUGFS_PRINT(x)
   #define DEBUGFS_PRINTLN(x)

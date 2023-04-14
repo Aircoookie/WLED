@@ -29,9 +29,9 @@
 // #define SR_DEBUG                     // generic SR DEBUG messages
 
 #ifdef SR_DEBUG
-  #define DEBUGSR_PRINT(x) DEBUGOUT.print(x)
-  #define DEBUGSR_PRINTLN(x) DEBUGOUT.println(x)
-  #define DEBUGSR_PRINTF(x...) DEBUGOUT.printf(x)
+  #define DEBUGSR_PRINT(x) DEBUGOUT(x)
+  #define DEBUGSR_PRINTLN(x) DEBUGOUTLN(x)
+  #define DEBUGSR_PRINTF(x...) DEBUGOUTF(x)
 #else
   #define DEBUGSR_PRINT(x)
   #define DEBUGSR_PRINTLN(x)
@@ -55,10 +55,10 @@
 #endif
 
 #if defined(MIC_LOGGER) || defined(FFT_SAMPLING_LOG)
-  #define PLOT_PRINT(x) DEBUGOUT.print(x)
-  #define PLOT_PRINTLN(x) DEBUGOUT.println(x)
-  #define PLOT_PRINTF(x...) DEBUGOUT.printf(x)
-  #define PLOT_FLUSH() DEBUGOUT.flush()
+  #define PLOT_PRINT(x) DEBUGOUT(x)
+  #define PLOT_PRINTLN(x) DEBUGOUTLN(x)
+  #define PLOT_PRINTF(x...) DEBUGOUTF(x)
+  #define PLOT_FLUSH() DEBUGOUTFlush()
 #else
   #define PLOT_PRINT(x)
   #define PLOT_PRINTLN(x)
@@ -121,7 +121,16 @@ const float agcSampleSmooth[AGC_NUM_PRESETS]  = {  1/12.f,   1/6.f,  1/16.f}; //
 
 static AudioSource *audioSource = nullptr;
 static volatile bool disableSoundProcessing = false;      // if true, sound processing (FFT, filters, AGC) will be suspended. "volatile" as its shared between tasks.
-static bool useBandPassFilter = false;                    // if true, enables a bandpass filter 80Hz-16Khz to remove noise. Applies before FFT.
+static uint8_t useInputFilter = 0;                        // enables low-cut filtering. Applies before FFT.
+
+//WLEDMM add experimental settings
+static uint8_t micLevelMethod = 0;                        // 0=old "floating" miclev, 1=new  "freeze" mode, 2=fast freeze mode (mode 2 may not work for you)
+#if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3)
+static uint8_t averageByRMS = false;                      // false: use mean value, true: use RMS (root mean squared). use simpler method on slower MCUs.
+#else
+static uint8_t averageByRMS = true;                       // false: use mean value, true: use RMS (root mean squared). use better method on fast MCUs.
+#endif
+static uint8_t freqDist = 0;                              // 0=old 1=rightshift mode
 
 // audioreactive variables shared with FFT task
 static float    micDataReal = 0.0f;             // MicIn data with full 24bit resolution - lowest 8bit after decimal point
@@ -136,7 +145,7 @@ static float    volumeSmth = 0.0f;   // either sampleAvg or sampleAgc depending 
 
 // peak detection
 static bool samplePeak = false;      // Boolean flag for peak - used in effects. Responding routine may reset this flag. Auto-reset after strip.getMinShowDelay()
-static uint8_t maxVol = 10;          // Reasonable value for constant volume for 'peak detector', as it won't always trigger (deprecated)
+static uint8_t maxVol = 31;          // (was 10) Reasonable value for constant volume for 'peak detector', as it won't always trigger  (deprecated)
 static uint8_t binNum = 8;           // Used to select the bin for FFT based beat detection  (deprecated)
 static bool udpSamplePeak = false;   // Boolean flag for peak. Set at the same tiem as samplePeak, but reset by transmitAudioData
 static unsigned long timeOfPeak = 0; // time of last sample peak detection.
@@ -174,7 +183,7 @@ static TaskHandle_t FFT_Task = nullptr;
 static const float fftResultPink[MAX_PINK+1][NUM_GEQ_CHANNELS] = { 
           { 1.70f, 1.71f, 1.73f, 1.78f, 1.68f, 1.56f, 1.55f, 1.63f, 1.79f, 1.62f, 1.80f, 2.06f, 2.47f, 3.35f, 6.83f, 9.55f },  //  0 default from SR WLED
       //  { 1.30f, 1.32f, 1.40f, 1.46f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 2.39f, 3.09f, 4.34f },  //  - Line-In Generic -> pink noise adjustment only
-          { 1.24f, 1.20f, 1.30f, 1.40f, 1.48f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.14f, 2.26f, 2.60f, 3.00f, 3.70f, 5.20f },  //  1 Line-In CS5343
+          { 2.35f, 1.32f, 1.32f, 1.40f, 1.48f, 1.57f, 1.68f, 1.80f, 1.89f, 1.95f, 2.14f, 2.26f, 2.50f, 2.90f, 4.20f, 6.50f },  //  1 Line-In CS5343 + DC blocker
 
           { 1.82f, 1.72f, 1.70f, 1.50f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 2.90f, 3.86f, 6.29f},   //  2 IMNP441 datasheet response profile * pink noise
           { 2.80f, 2.20f, 1.30f, 1.15f, 1.55f, 2.45f, 4.20f, 2.80f, 3.20f, 3.60f, 4.20f, 4.90f, 5.70f, 6.05f,10.50f,14.85f},   //  3 IMNP441 - big speaker, strong bass
@@ -182,7 +191,7 @@ static const float fftResultPink[MAX_PINK+1][NUM_GEQ_CHANNELS] = {
           { 12.0f, 6.60f, 2.60f, 1.15f, 1.35f, 2.05f, 2.85f, 2.50f, 2.85f, 3.30f, 2.25f, 4.35f, 3.80f, 3.75f, 6.50f, 9.00f},   //  4 IMNP441 - voice, or small speaker
 
           { 2.75f, 1.60f, 1.40f, 1.46f, 1.52f, 1.57f, 1.68f, 1.80f, 1.89f, 2.00f, 2.11f, 2.21f, 2.30f, 1.75f, 2.55f, 3.60f },  //  5 ICS-43434 datasheet response * pink noise
-          { 2.25f, 1.20f, 1.00f, 1.20f, 1.80f, 3.20f, 5.10f, 5.50f, 4.00f, 4.80f, 6.70f, 6.40f, 5.80f, 3.90f, 6.00f, 5.10f },  //  6 ICS-43434 - big speaker, strong bass
+          { 2.90f, 1.25f, 0.75f, 1.08f, 2.35f, 3.55f, 3.60f, 3.40f, 2.75f, 3.45f, 4.40f, 6.35f, 6.80f, 6.80f, 8.50f,10.64f },  //  6 ICS-43434 - big speaker, strong bass
 
           { 1.65f, 1.00f, 1.05f, 1.30f, 1.48f, 1.30f, 1.80f, 3.00f, 1.50f, 1.65f, 2.56f, 3.00f, 2.60f, 2.30f, 5.00f, 3.00f },  //  7 SPM1423
           { 2.25f, 1.60f, 1.30f, 1.60f, 2.20f, 3.20f, 3.06f, 2.60f, 2.85f, 3.50f, 4.10f, 4.80f, 5.70f, 6.05f,10.50f,14.85f },  //  8 userdef #1 for ewowi (enhance median/high freqs)
@@ -223,6 +232,7 @@ static const float fftResultPink[MAX_PINK+1][NUM_GEQ_CHANNELS] = {
 // globals and FFT Output variables shared with animations
 static float FFT_MajorPeak = 1.0f;              // FFT: strongest (peak) frequency
 static float FFT_Magnitude = 0.0f;              // FFT: volume (magnitude) of peak frequency
+static float FFT_MajPeakSmth = 1.0f;            // FFT: (peak) frequency, smooth
 static uint8_t fftResult[NUM_GEQ_CHANNELS]= {0};// Our calculated freq. channel result table to be used by effects
 #if defined(WLED_DEBUG) || defined(SR_DEBUG) || defined(SR_STATS)
 static float fftTaskCycle = 0;      // avg cycle time for FFT task
@@ -264,7 +274,8 @@ constexpr uint16_t samplesFFT = 512;            // Samples in an FFT batch - Thi
 constexpr uint16_t samplesFFT_2 = 256;          // meaningfull part of FFT results - only the "lower half" contains useful information.
 // the following are observed values, supported by a bit of "educated guessing"
 //#define FFT_DOWNSCALE 0.65f                             // 20kHz - downscaling factor for FFT results - "Flat-Top" window @20Khz, old freq channels 
-#define FFT_DOWNSCALE 0.46f                             // downscaling factor for FFT results - for "Flat-Top" window @22Khz, new freq channels
+//#define FFT_DOWNSCALE 0.46f                             // downscaling factor for FFT results - for "Flat-Top" window @22Khz, new freq channels
+#define FFT_DOWNSCALE 0.40f                             // downscaling factor for FFT results, RMS averaging
 #define LOG_256  5.54517744f                            // log(256)
 
 // These are the input and output vectors.  Input vectors receive computed results from FFT.
@@ -303,29 +314,51 @@ static float mapf(float x, float in_min, float in_max, float out_min, float out_
 }
 
 // compute average of several FFT resut bins
-#if 1  // linear average
-static float fftAddAvg(int from, int to) {
+// linear average
+static float fftAddAvgLin(int from, int to) {
   float result = 0.0f;
   for (int i = from; i <= to; i++) {
     result += vReal[i];
   }
   return result / float(to - from + 1);
 }
-#else // RMS average
-static float fftAddAvg(int from, int to) {
+// RMS average
+static float fftAddAvgRMS(int from, int to) {
   double result = 0.0;
   for (int i = from; i <= to; i++) {
     result += vReal[i] * vReal[i];
   }
   return sqrtf(result / float(to - from + 1));
 }
-#endif
+
+static float fftAddAvg(int from, int to) {
+  if (from == to) return vReal[from];              // small optimization
+  if (averageByRMS) return fftAddAvgRMS(from, to); // use SMS
+  else return fftAddAvgLin(from, to);              // use linear average
+}
 
 #if defined(CONFIG_IDF_TARGET_ESP32C3)
 constexpr bool skipSecondFFT = true;
 #else
 constexpr bool skipSecondFFT = false;
 #endif
+
+// High-Pass "DC blocker" filter
+// see https://www.dsprelated.com/freebooks/filters/DC_Blocker.html
+static void runDCBlocker(uint_fast16_t numSamples, float *sampleBuffer) {
+  constexpr float filterR = 0.990f;      // around 40hz
+  static float xm1 = 0.0f;
+  static float ym1 = 0.0f;
+
+  for (unsigned i=0; i < numSamples; i++) {
+    float value = sampleBuffer[i];
+    float filtered = value-xm1 + filterR*ym1;
+    xm1 = value;
+    ym1 = filtered;    
+    sampleBuffer[i] = filtered;
+  }  
+}
+
 //
 // FFT main task
 //
@@ -395,7 +428,12 @@ void FFTcode(void * parameter)
 
     // band pass filter - can reduce noise floor by a factor of 50
     // downside: frequencies below 100Hz will be ignored
-    if (useBandPassFilter) runMicFilter(samplesFFT, vReal);
+   if ((useInputFilter > 0) && (useInputFilter < 99)) {
+      switch(useInputFilter) {
+        case 1: runMicFilter(samplesFFT, vReal); break;                   // PDM microphone bandpass
+        case 2: runDCBlocker(samplesFFT, vReal); break;                   // generic Low-Cut + DC blocker (~40hz cut-off)
+      }
+    }
 
     // find highest sample in the batch
     float maxSample = 0.0f;                         // max sample from FFT batch
@@ -461,6 +499,7 @@ void FFTcode(void * parameter)
         FFT.MajorPeak(&FFT_MajorPeak, &FFT_Magnitude);              // let the effects know which freq was most dominant
         #endif
         FFT_MajorPeak = constrain(FFT_MajorPeak, 1.0f, 11025.0f);   // restrict value to range expected by effects
+        FFT_MajPeakSmth = FFT_MajPeakSmth + 0.42 * (FFT_MajorPeak - FFT_MajPeakSmth);   // I like this "swooping peak" look
 
       } else { // skip second run --> clear fft results, keep peaks
         memset(vReal, 0, sizeof(vReal)); 
@@ -512,35 +551,67 @@ void FFTcode(void * parameter)
       fftCalc[14] = fftAddAvg(147,194);   // 2940 - 3900
       fftCalc[15] = fftAddAvg(194,250);   // 3880 - 5000 // avoid the last 5 bins, which are usually inaccurate
 #else
-      /* new mapping, optimized for 22050 Hz by softhack007 */
+  //WLEDMM: different distributions
+  if (freqDist == 0) {
+      /* new mapping, optimized for 22050 Hz by softhack007 --- update: removed overlap */
                                                     // bins frequency  range
-      if (useBandPassFilter) {
+      if (useInputFilter==1) {
         // skip frequencies below 100hz
-        fftCalc[ 0] = 0.8f * fftAddAvg(3,4);
-        fftCalc[ 1] = 0.9f * fftAddAvg(4,5);
-        fftCalc[ 2] = fftAddAvg(5,6);
-        fftCalc[ 3] = fftAddAvg(6,7);
+        fftCalc[ 0] = 0.8f * fftAddAvg(3,3);
+        fftCalc[ 1] = 0.9f * fftAddAvg(4,4);
+        fftCalc[ 2] = fftAddAvg(5,5);
+        fftCalc[ 3] = fftAddAvg(6,6);
         // don't use the last bins from 206 to 255. 
         fftCalc[15] = fftAddAvg(165,205) * 0.75f;   // 40 7106 - 8828 high             -- with some damping
       } else {
-        fftCalc[ 0] = fftAddAvg(1,2);               // 1    43 - 86   sub-bass
-        fftCalc[ 1] = fftAddAvg(2,3);               // 1    86 - 129  bass
-        fftCalc[ 2] = fftAddAvg(3,5);               // 2   129 - 216  bass
-        fftCalc[ 3] = fftAddAvg(5,7);               // 2   216 - 301  bass + midrange
+        fftCalc[ 0] = fftAddAvg(1,1);               // 1    43 - 86   sub-bass
+        fftCalc[ 1] = fftAddAvg(2,2);               // 1    86 - 129  bass
+        fftCalc[ 2] = fftAddAvg(3,4);               // 2   129 - 216  bass
+        fftCalc[ 3] = fftAddAvg(5,6);               // 2   216 - 301  bass + midrange
         // don't use the last bins from 216 to 255. They are usually contaminated by aliasing (aka noise) 
         fftCalc[15] = fftAddAvg(165,215) * 0.70f;   // 50 7106 - 9259 high             -- with some damping
       }
-      fftCalc[ 4] = fftAddAvg(7,10);                // 3   301 - 430  midrange
-      fftCalc[ 5] = fftAddAvg(10,13);               // 3   430 - 560  midrange
-      fftCalc[ 6] = fftAddAvg(13,19);               // 5   560 - 818  midrange
-      fftCalc[ 7] = fftAddAvg(19,26);               // 7   818 - 1120 midrange -- 1Khz should always be the center !
-      fftCalc[ 8] = fftAddAvg(26,33);               // 7  1120 - 1421 midrange
-      fftCalc[ 9] = fftAddAvg(33,44);               // 9  1421 - 1895 midrange
-      fftCalc[10] = fftAddAvg(44,56);               // 12 1895 - 2412 midrange + high mid
-      fftCalc[11] = fftAddAvg(56,70);               // 14 2412 - 3015 high mid
-      fftCalc[12] = fftAddAvg(70,86);               // 16 3015 - 3704 high mid
-      fftCalc[13] = fftAddAvg(86,104);              // 18 3704 - 4479 high mid
-      fftCalc[14] = fftAddAvg(104,165) * 0.88f;     // 61 4479 - 7106 high mid + high  -- with slight damping
+      fftCalc[ 4] = fftAddAvg(7,9);                // 3   301 - 430  midrange
+      fftCalc[ 5] = fftAddAvg(10,12);               // 3   430 - 560  midrange
+      fftCalc[ 6] = fftAddAvg(13,18);               // 5   560 - 818  midrange
+      fftCalc[ 7] = fftAddAvg(19,25);               // 7   818 - 1120 midrange -- 1Khz should always be the center !
+      fftCalc[ 8] = fftAddAvg(26,32);               // 7  1120 - 1421 midrange
+      fftCalc[ 9] = fftAddAvg(33,43);               // 9  1421 - 1895 midrange
+      fftCalc[10] = fftAddAvg(44,55);               // 12 1895 - 2412 midrange + high mid
+      fftCalc[11] = fftAddAvg(56,69);               // 14 2412 - 3015 high mid
+      fftCalc[12] = fftAddAvg(70,85);               // 16 3015 - 3704 high mid
+      fftCalc[13] = fftAddAvg(86,103);              // 18 3704 - 4479 high mid
+      fftCalc[14] = fftAddAvg(104,164) * 0.88f;     // 61 4479 - 7106 high mid + high  -- with slight damping
+  }
+  else if (freqDist == 1) { //WLEDMM: Rightshft: note ewowi: frequencies in comments are not correct
+      if (useInputFilter==1) {
+        // skip frequencies below 100hz
+        fftCalc[ 0] = 0.8f * fftAddAvg(1,1);
+        fftCalc[ 1] = 0.9f * fftAddAvg(2,2);
+        fftCalc[ 2] = fftAddAvg(3,3);
+        fftCalc[ 3] = fftAddAvg(4,4);
+        // don't use the last bins from 206 to 255. 
+        fftCalc[15] = fftAddAvg(165,205) * 0.75f;   // 40 7106 - 8828 high             -- with some damping
+      } else {
+        fftCalc[ 0] = fftAddAvg(1,1);               // 1    43 - 86   sub-bass
+        fftCalc[ 1] = fftAddAvg(2,2);               // 1    86 - 129  bass
+        fftCalc[ 2] = fftAddAvg(3,3);               // 2   129 - 216  bass
+        fftCalc[ 3] = fftAddAvg(4,4);               // 2   216 - 301  bass + midrange
+        // don't use the last bins from 216 to 255. They are usually contaminated by aliasing (aka noise) 
+        fftCalc[15] = fftAddAvg(165,215) * 0.70f;   // 50 7106 - 9259 high             -- with some damping
+      }
+      fftCalc[ 4] = fftAddAvg(5,6);                // 3   301 - 430  midrange
+      fftCalc[ 5] = fftAddAvg(7,8);               // 3   430 - 560  midrange
+      fftCalc[ 6] = fftAddAvg(9,10);               // 5   560 - 818  midrange
+      fftCalc[ 7] = fftAddAvg(11,13);               // 7   818 - 1120 midrange -- 1Khz should always be the center !
+      fftCalc[ 8] = fftAddAvg(14,18);               // 7  1120 - 1421 midrange
+      fftCalc[ 9] = fftAddAvg(19,25);               // 9  1421 - 1895 midrange
+      fftCalc[10] = fftAddAvg(26,36);               // 12 1895 - 2412 midrange + high mid
+      fftCalc[11] = fftAddAvg(37,45);               // 14 2412 - 3015 high mid
+      fftCalc[12] = fftAddAvg(46,66);               // 16 3015 - 3704 high mid
+      fftCalc[13] = fftAddAvg(67,97);              // 18 3704 - 4479 high mid
+      fftCalc[14] = fftAddAvg(98,164) * 0.88f;     // 61 4479 - 7106 high mid + high  -- with slight damping
+  }
 #endif
       } else {  // noise gate closed - just decay old values
         isFirstRun = false;
@@ -849,6 +920,8 @@ class AudioReactive : public Usermod {
     // variables used in effects
     int16_t  volumeRaw = 0;       // either sampleRaw or rawSampleAgc depending on soundAgc
     float my_magnitude =0.0f;     // FFT_Magnitude, scaled by multAgc
+    float agcSensitivity = 128;   // AGC sensitivity estimation, based on agc gain (multAgc). calculated by getSensitivity(). range 0..255
+    float soundPressure = 0;      // Sound Pressure estimation, based on microphone raw readings. 0 ->5db, 255 ->105db
 
     // used to feed "Info" Page
     unsigned long last_UDPTime = 0;    // time of last valid UDP sound sync datapacket
@@ -861,7 +934,9 @@ class AudioReactive : public Usermod {
     static const char _name[];
     static const char _enabled[];
     static const char _inputLvl[];
+#if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
     static const char _analogmic[];
+#endif
     static const char _digitalmic[];
     static const char UDP_SYNC_HEADER[];
     static const char UDP_SYNC_HEADER_v1[];
@@ -1057,6 +1132,10 @@ class AudioReactive : public Usermod {
       const float weighting = 0.2f; // Exponential filter weighting. Will be adjustable in a future release.
       const float weighting2 = 0.073f; // Exponential filter weighting, for rising signal (a bit more robust against spikes)
       const int   AGC_preset = (soundAgc > 0)? (soundAgc-1): 0; // make sure the _compiler_ knows this value will not change while we are inside the function
+      static bool isFrozen = false;
+      static bool haveSilence = true;
+      static unsigned long lastSoundTime = 0; // for delaying un-freeze
+      static unsigned long startuptime = 0;   // "fast freeze" mode: do not interfere during first 12 seconds (filter startup time) 
 
       #ifdef WLED_DISABLE_SOUND
         micIn = inoise8(millis(), millis());          // Simulated analog read
@@ -1079,8 +1158,15 @@ class AudioReactive : public Usermod {
         #endif
       #endif
 
-      micLev += (micDataReal-micLev) / 12288.0f;
-      if(micIn < micLev) micLev = ((micLev * 31.0f) + micDataReal) / 32.0f; // align MicLev to lowest input signal
+      if (startuptime == 0) startuptime = millis();   // fast freeze mode - remember filter startup time
+      if ((micLevelMethod < 1) || !isFrozen) {        // following the input level, UNLESS mic Level was frozen
+        micLev += (micDataReal-micLev) / 12288.0f;
+      }
+
+      if(micDataReal < (micLev-0.24)) {                    // MicLev above input signal:
+        micLev = ((micLev * 31.0f) + micDataReal) / 32.0f; // always align MicLev to lowest input signal
+        if (!haveSilence) isFrozen = true;                 // freeze mode: freeze micLevel so it cannot rise again
+      }
 
       micIn -= micLev;                                  // Let's center it to 0 now
       // Using an exponential filter to smooth out the signal. We'll add controls for this in a future release.
@@ -1093,9 +1179,25 @@ class AudioReactive : public Usermod {
 
       expAdjF = fabsf(expAdjF);                         // Now (!) take the absolute value
 
+      if ((micLevelMethod == 2) && !haveSilence && (expAdjF >= (1.5f * float(soundSquelch)))) 
+        isFrozen = true;    // fast freeze mode: freeze micLevel once the volume rises 50% above squelch
+
       //expAdjF = (micInNoDC <= soundSquelch) ? 0: expAdjF; // simple noise gate - experimental
       expAdjF = (expAdjF <= soundSquelch) ? 0: expAdjF; // simple noise gate
       if ((soundSquelch == 0) && (expAdjF < 0.25f)) expAdjF = 0; // do something meaningfull when "squelch = 0"
+
+      if (expAdjF <= 0.5f) 
+        haveSilence = true;
+      else {
+        lastSoundTime = millis();
+        haveSilence = false;
+      }
+
+      // un-freeze micLev
+      if  (micLevelMethod == 0) isFrozen = false;
+      if ((micLevelMethod == 1) && isFrozen && haveSilence && ((millis() - lastSoundTime) > 4000)) isFrozen = false;  // normal freeze: 4 seconds silence needed
+      if ((micLevelMethod == 2) && isFrozen && haveSilence && ((millis() - lastSoundTime) > 6000)) isFrozen = false;  // fast freeze: 6 seconds silence needed
+      if ((micLevelMethod == 2) && (millis() - startuptime < 12000)) isFrozen = false;   // fast freeze: no freeze in first 12 seconds (filter startup phase)
 
       tmpSample = expAdjF;
       micIn = abs(micIn);                               // And get the absolute value of each sample
@@ -1128,6 +1230,60 @@ class AudioReactive : public Usermod {
       sampleAvg = ((sampleAvg * 15.0f) + sampleAdj) / 16.0f;   // Smooth it out over the last 16 samples.
       sampleAvg = fabsf(sampleAvg);                            // make sure we have a positive value
     } // getSample()
+
+
+    // current sensitivity, based on AGC gain (multAgc)
+    float getSensitivity()
+    {
+      // start with AGC gain factor
+      float tmpSound = multAgc;
+      // experimental: this gives you a calculated "real gain"
+      // if ((sampleAvg> 1.0) && (sampleReal > 0.05)) tmpSound = (float)sampleRaw / sampleReal;    // calculate gain from sampleReal 
+      // else tmpSound = ((float)sampleGain/40.0f * (float)inputLevel/128.0f) + 1.0f/16.0f;        // silence --> use values from user settings
+
+      if (soundAgc == 0)
+        tmpSound = ((float)sampleGain/40.0f * (float)inputLevel/128.0f) + 1.0f/16.0f;   // AGC off -> use non-AGC gain from presets
+      else
+        tmpSound /= (float)sampleGain/40.0f + 1.0f/16.0f;                               // AGC ON -> scale value so 1 = middle value
+
+      // scale to 0..255. Actually I'm not absolutely happy with this, but it works
+      if (tmpSound > 1.0) tmpSound = sqrtf(tmpSound);
+      if (tmpSound > 1.25) tmpSound = ((tmpSound-1.25f)/3.42f) +1.25f;
+      // we have a value now that should be between 0 and 4 (representing gain 1/16 ... 16.0)
+      return fminf(fmaxf(128.0*tmpSound -6.0f, 0), 255.0);        // return scaled non-inverted value // "-6" to ignore values below 1/24
+    }
+
+    // estimate sound pressure, based on some assumptions : 
+    //   * sample max = 32676 -> Acoustic overload point  --> 105db ==> 255
+    //   * sample < squelch   -> just above hearing level -->   5db ==> 0
+    // see https://en.wikipedia.org/wiki/Sound_pressure#Examples_of_sound_pressure
+    // use with I2S digital microphones. Expect stupid values for analog in, and with Line-In !!
+    float estimatePressure() {
+      // some constants
+      constexpr float logMinSample = 0.8329091229351f; // ln(2.3)
+      constexpr float sampleMin = 2.3f;
+      constexpr float logMaxSample = 10.1895683436f; // ln(32767 - 6144)
+      constexpr float sampleMax = 32767.0f - 6144.0f;
+
+      // take the max sample from last I2S batch.
+      float micSampleMax = fabsf(sampleReal);      // from getSample() - nice results, however a bit distorted by MicLev processing
+      //float micSampleMax = fabsf(micDataReal);   // from FFTCode() - better source, but more flickering
+      if (dmType == 0) micSampleMax *= 2.0f;       // correction for ADC analog
+      //if (dmType == 4) micSampleMax *= 16.0f;      // correction for I2S Line-In
+      if (dmType == 5) micSampleMax *= 2.0f;       // correction for PDM
+      if (dmType == 4) {               // I2S Line-In. This is a dirty trick to make sound pressure look interesting for line-in (which doesn't have "sound pressure" as its not a microphone)
+        micSampleMax /= 11.0f;         // reduce to max 128
+        micSampleMax *= micSampleMax;  // blow up --> max 16000
+      }
+      // make sure we are in expected ranges
+      if(micSampleMax <= sampleMin) return 0.0f;
+      if(micSampleMax >= sampleMax) return 255.0f;
+
+      // apply logarithmic scaling
+      float scaledvalue = logf(micSampleMax);
+      scaledvalue = (scaledvalue - logMinSample) / (logMaxSample - logMinSample); // 0...1
+      return fminf(fmaxf(256.0*scaledvalue, 0), 255.0);        // scaled value
+    }
 
 
     /* Limits the dynamics of volumeSmth (= sampleAvg or sampleAgc). 
@@ -1324,12 +1480,12 @@ class AudioReactive : public Usermod {
         // usermod exchangeable data
         // we will assign all usermod exportable data here as pointers to original variables or arrays and allocate memory for pointers
         um_data = new um_data_t;
-        um_data->u_size = 8;
+        um_data->u_size = 11;
         um_data->u_type = new um_types_t[um_data->u_size];
         um_data->u_data = new void*[um_data->u_size];
         um_data->u_data[0] = &volumeSmth;      //*used (New)
         um_data->u_type[0] = UMT_FLOAT;
-        um_data->u_data[1] = &volumeRaw;      // used (New)
+        um_data->u_data[1] = &volumeRaw;       // used (New)
         um_data->u_type[1] = UMT_UINT16;
         um_data->u_data[2] = fftResult;        //*used (Blurz, DJ Light, Noisemove, GEQ_base, 2D Funky Plank, Akemi)
         um_data->u_type[2] = UMT_BYTE_ARR;
@@ -1337,12 +1493,18 @@ class AudioReactive : public Usermod {
         um_data->u_type[3] = UMT_BYTE;
         um_data->u_data[4] = &FFT_MajorPeak;   //*used (Ripplepeak, Freqmap, Freqmatrix, Freqpixels, Freqwave, Gravfreq, Rocktaves, Waterfall)
         um_data->u_type[4] = UMT_FLOAT;
-        um_data->u_data[5] = &my_magnitude;   // used (New)
+        um_data->u_data[5] = &my_magnitude;    // used (New)
         um_data->u_type[5] = UMT_FLOAT;
         um_data->u_data[6] = &maxVol;          // assigned in effect function from UI element!!! (Puddlepeak, Ripplepeak, Waterfall)
         um_data->u_type[6] = UMT_BYTE;
         um_data->u_data[7] = &binNum;          // assigned in effect function from UI element!!! (Puddlepeak, Ripplepeak, Waterfall)
         um_data->u_type[7] = UMT_BYTE;
+        um_data->u_data[8] = &FFT_MajPeakSmth; // new
+        um_data->u_type[8] = UMT_FLOAT;
+        um_data->u_data[9]  = &soundPressure;  // used (New)
+        um_data->u_type[9]  = UMT_FLOAT;
+        um_data->u_data[10] = &agcSensitivity; // used (New)
+        um_data->u_type[10] = UMT_FLOAT;
       }
 
       // Reset I2S peripheral for good measure
@@ -1353,13 +1515,14 @@ class AudioReactive : public Usermod {
       #endif
       delay(100);         // Give that poor microphone some time to setup.
 
-      useBandPassFilter = false;
+      useInputFilter = 2; // default: DC blocker
       switch (dmType) {
       #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S3)
         // stub cases for not-yet-supported I2S modes on other ESP32 chips
         case 0:  //ADC analog
         #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3)
         case 5:  //PDM Microphone
+        case 51: //legacy PDM Microphone
         #endif
       #endif
         case 1:
@@ -1370,7 +1533,7 @@ class AudioReactive : public Usermod {
           break;
         case 2:
           DEBUGSR_PRINTLN(F("AR: ES7243 Microphone (right channel only)."));
-          //useBandPassFilter = true;
+          //useInputFilter = 0; // in case you need to disable low-cut software filtering
           audioSource = new ES7243(SAMPLE_RATE, BLOCK_SIZE);
           delay(100);
           if (audioSource) audioSource->initialize(sdaPin, sclPin, i2swsPin, i2ssdPin, i2sckPin, mclkPin);
@@ -1383,7 +1546,6 @@ class AudioReactive : public Usermod {
           break;
         case 4:
           DEBUGSR_PRINT(F("AR: Generic I2S Microphone with Master Clock - ")); DEBUGSR_PRINTLN(F(I2S_MIC_CHANNEL_TEXT));
-          //useBandPassFilter = true;
           audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, 1.0f/24.0f);
           //audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, 1.0f/24.0f, false);   // I2S SLAVE mode - does not work, unfortunately
           delay(100);
@@ -1393,17 +1555,32 @@ class AudioReactive : public Usermod {
         case 5:
           DEBUGSR_PRINT(F("AR: I2S PDM Microphone - ")); DEBUGSR_PRINTLN(F(I2S_PDM_MIC_CHANNEL_TEXT));
           audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, 1.0f/4.0f);
-          useBandPassFilter = true;  // this reduces the noise floor on SPM1423 from 5% Vpp (~380) down to 0.05% Vpp (~5)
+          useInputFilter = 1;  // PDM bandpass filter - this reduces the noise floor on SPM1423 from 5% Vpp (~380) down to 0.05% Vpp (~5)
+          delay(100);
+          if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin);
+          break;
+        case 51:
+          DEBUGSR_PRINT(F("AR: Legacy PDM Microphone - ")); DEBUGSR_PRINTLN(F(I2S_PDM_MIC_CHANNEL_TEXT));
+          audioSource = new I2SSource(SAMPLE_RATE, BLOCK_SIZE, 1.0f);
+          useInputFilter = 1;  // PDM bandpass filter
           delay(100);
           if (audioSource) audioSource->initialize(i2swsPin, i2ssdPin);
           break;
         #endif
+        case 6:
+          DEBUGSR_PRINTLN(F("AR: ES8388 Source"));
+          audioSource = new ES8388Source(SAMPLE_RATE, BLOCK_SIZE, 1.0f);
+          //useInputFilter = 0; // to disable low-cut software filtering and restore previous behaviour
+          delay(100);
+          if (audioSource) audioSource->initialize(sdaPin, sclPin, i2swsPin, i2ssdPin, i2sckPin, mclkPin);
+          break;
+
         #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
         // ADC over I2S is only possible on "classic" ESP32
         case 0:
         default:
           DEBUGSR_PRINTLN(F("AR: Analog Microphone (left channel only)."));
-          useBandPassFilter = true;
+          useInputFilter = 1;  // PDM bandpass filter seems to work well for analog, too
           audioSource = new I2SAdcSource(SAMPLE_RATE, BLOCK_SIZE);
           delay(100);
           if (audioSource) audioSource->initialize(audioPin);
@@ -1530,7 +1707,7 @@ class AudioReactive : public Usermod {
 
         #if defined(WLED_DEBUG) || defined(SR_DEBUG) || defined(SR_STATS)
           // complain when audio userloop has been delayed for long time. Currently we need userloop running between 500 and 1500 times per second. 
-          if ((userloopDelay > /*23*/ 30) && !disableSoundProcessing && (audioSyncEnabled == 0)) {
+          if ((userloopDelay > /*23*/ 65) && !disableSoundProcessing && (audioSyncEnabled == 0)) {
             USER_PRINTF("[AR userLoop] hickup detected -> was inactive for last %d millis!\n", userloopDelay);
           }
         #endif
@@ -1553,6 +1730,16 @@ class AudioReactive : public Usermod {
         if (soundAgc) my_magnitude *= multAgc;
         if (volumeSmth < 1 ) my_magnitude = 0.001f;  // noise gate closed - mute
 
+        // get AGC sensitivity and sound pressure
+        static unsigned long lastEstimate = 0;
+        if (millis() - lastEstimate > 12) {
+          lastEstimate = millis();
+          agcSensitivity = getSensitivity();
+          if (limiterOn)
+            soundPressure = soundPressure + 0.38f * (estimatePressure() - soundPressure);  // dynamics limiter on -> some smoothing
+          else
+            soundPressure = soundPressure + 0.95f * (estimatePressure() - soundPressure);  //  dynamics limiter on -> raw value
+        }
         limitSampleDynamics();
       }  // if (!disableSoundProcessing)
 
@@ -1666,14 +1853,15 @@ class AudioReactive : public Usermod {
           connected(); // resume UDP
         } else
 //          xTaskCreatePinnedToCore(
-          xTaskCreate(                        // no need to "pin" this task to core #0
+//          xTaskCreate(                        // no need to "pin" this task to core #0
+          xTaskCreateUniversal(
             FFTcode,                          // Function to implement the task
             "FFT",                            // Name of the task
             5000,                             // Stack size in words
             NULL,                             // Task input parameter
             1,                                // Priority of the task
             &FFT_Task                         // Task handle
-//            , 0                                 // Core where the task should run
+            , 0                               // Core where the task should run
           );
       }
       micDataReal = 0.0f;                     // just to be sure
@@ -1773,7 +1961,10 @@ class AudioReactive : public Usermod {
             if (audioSource->getType() == AudioSource::Type_I2SAdc) {
               infoArr.add(F("ADC analog"));
             } else {
-              infoArr.add(F("I2S digital"));
+              if (dmType != 51)
+                infoArr.add(F("I2S digital"));
+              else
+                infoArr.add(F("legacy I2S PDM"));
             }
             // input level or "silence"
             if (maxSample5sec > 1.0) {
@@ -1786,7 +1977,7 @@ class AudioReactive : public Usermod {
           } else {
             // error during audio source setup
             infoArr.add(F("not initialized"));
-            infoArr.add(F(" - check GPIO config"));
+            infoArr.add(F(" - check pin settings"));
           }
         }
 
@@ -1950,6 +2141,12 @@ class AudioReactive : public Usermod {
       cfg[F("gain")] = sampleGain;
       cfg[F("AGC")] = soundAgc;
 
+      //WLEDMM: experimental settings
+      JsonObject poweruser = top.createNestedObject("experiments");
+      poweruser[F("micLev")] = micLevelMethod;
+      poweruser[F("freqDist")] = freqDist;
+      poweruser[F("freqRMS")] = averageByRMS;
+
       JsonObject dynLim = top.createNestedObject("dynamics");
       dynLim[F("limiter")] = limiterOn;
       dynLim[F("rise")] = attackTime;
@@ -1998,7 +2195,11 @@ class AudioReactive : public Usermod {
       if (dmType == 0) dmType = SR_DMTYPE;   // MCU does not support analog
       #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3)
       if (dmType == 5) dmType = SR_DMTYPE;   // MCU does not support PDM
+      if (dmType == 51) dmType = SR_DMTYPE;  // MCU does not support legacy PDM
       #endif
+    #else
+      if (dmType == 5) useInputFilter = 1;      // enable filter for PDM
+      if (dmType == 51) useInputFilter = 1;     // switch on filter for legacy PDM    
     #endif
 
       configComplete &= getJsonValue(top[FPSTR(_digitalmic)]["pin"][0], i2ssdPin);
@@ -2011,6 +2212,11 @@ class AudioReactive : public Usermod {
       configComplete &= getJsonValue(top["config"][F("squelch")], soundSquelch);
       configComplete &= getJsonValue(top["config"][F("gain")],    sampleGain);
       configComplete &= getJsonValue(top["config"][F("AGC")],     soundAgc);
+
+      //WLEDMM: experimental settings
+      configComplete &= getJsonValue(top["experiments"][F("micLev")], micLevelMethod);
+      configComplete &= getJsonValue(top["experiments"][F("freqDist")], freqDist);
+      configComplete &= getJsonValue(top["experiments"][F("freqRMS")],  averageByRMS);
 
       configComplete &= getJsonValue(top["dynamics"][F("limiter")], limiterOn);
       configComplete &= getJsonValue(top["dynamics"][F("rise")],  attackTime);
@@ -2031,58 +2237,88 @@ class AudioReactive : public Usermod {
       oappend(SET_F("addInfo('AudioReactive:help',0,'<button onclick=\"location.href=&quot;https://mm.kno.wled.ge/soundreactive/Sound-Settings&quot;\" type=\"button\">?</button>');"));
       
       //WLEDMM: add defaults
-    #ifdef AUDIOPIN
-      oappend(SET_F("xOption('AudioReactive:analogmic:pin',1,' ⎌',")); oappendi(AUDIOPIN); oappend(");"); 
-    #endif
+      #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)  // -S3/-S2/-C3 don't support analog audio
+      #ifdef AUDIOPIN
+        oappend(SET_F("xOpt('AudioReactive:analogmic:pin',1,' ⎌',")); oappendi(AUDIOPIN); oappend(");"); 
+      #endif
+      oappend(SET_F("aOpt('AudioReactive:analogmic:pin',1);")); //only analog options
+      #endif
 
       oappend(SET_F("dd=addDropdown('AudioReactive','digitalmic:type');"));
-    #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
-    #if SR_DMTYPE==0
-      oappend(SET_F("addOption(dd,'Generic Analog (⎌)',0);"));
-    #else
-      oappend(SET_F("addOption(dd,'Generic Analog',0);"));
-    #endif
-    #endif
-    #if SR_DMTYPE==1
-      oappend(SET_F("addOption(dd,'Generic I2S (⎌)',1);"));
-    #else
-      oappend(SET_F("addOption(dd,'Generic I2S',1);"));
-    #endif
-    #if SR_DMTYPE==2
-      oappend(SET_F("addOption(dd,'ES7243 (⎌)',2);"));
-    #else
-      oappend(SET_F("addOption(dd,'ES7243',2);"));
-    #endif
-    #if SR_DMTYPE==3
-      oappend(SET_F("addOption(dd,'SPH0654 (⎌)',3);"));
-    #else
-      oappend(SET_F("addOption(dd,'SPH0654',3);"));
-    #endif
-    #if SR_DMTYPE==4
-      oappend(SET_F("addOption(dd,'Generic I2S with Mclk (⎌)',4);"));
-    #else
-      oappend(SET_F("addOption(dd,'Generic I2S with Mclk',4);"));
-    #endif
-    #if  !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
-    #if SR_DMTYPE==5
-      oappend(SET_F("addOption(dd,'Generic I2S PDM (⎌)',5);"));
-    #else
-      oappend(SET_F("addOption(dd,'Generic I2S PDM',5);"));
-    #endif
-    #endif
+      #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
+        #if SR_DMTYPE==0
+          oappend(SET_F("addOption(dd,'Generic Analog (⎌)',0);"));
+        #else
+          oappend(SET_F("addOption(dd,'Generic Analog',0);"));
+        #endif
+      #endif
+      #if SR_DMTYPE==1
+        oappend(SET_F("addOption(dd,'Generic I2S (⎌)',1);"));
+      #else
+        oappend(SET_F("addOption(dd,'Generic I2S',1);"));
+      #endif
+      #if SR_DMTYPE==2
+        oappend(SET_F("addOption(dd,'ES7243 (⎌)',2);"));
+      #else
+        oappend(SET_F("addOption(dd,'ES7243',2);"));
+      #endif
+      #if SR_DMTYPE==3
+        oappend(SET_F("addOption(dd,'SPH0654 (⎌)',3);"));
+      #else
+        oappend(SET_F("addOption(dd,'SPH0654',3);"));
+      #endif
+      #if SR_DMTYPE==4
+        oappend(SET_F("addOption(dd,'Generic I2S with Mclk (⎌)',4);"));
+      #else
+        oappend(SET_F("addOption(dd,'Generic I2S with Mclk',4);"));
+      #endif
+      #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3)
+        #if SR_DMTYPE==5
+          oappend(SET_F("addOption(dd,'Generic I2S PDM (⎌)',5);"));
+        #else
+          oappend(SET_F("addOption(dd,'Generic I2S PDM',5);"));
+        #endif
+        #if SR_DMTYPE==51
+          oappend(SET_F("addOption(dd,'.Legacy I2S PDM ☾ (⎌)',51);"));
+        #else
+          oappend(SET_F("addOption(dd,'.Legacy I2S PDM ☾',51);"));
+        #endif
+      #endif
+      #if SR_DMTYPE==6
+        oappend(SET_F("addOption(dd,'ES8388 ☾ (⎌)',6);"));
+      #else
+        oappend(SET_F("addOption(dd,'ES8388 ☾',6);"));
+      #endif
 
-    #ifdef SR_SQUELCH
-      oappend(SET_F("addInfo('AudioReactive:config:squelch',1,'<i>&#9100; ")); oappendi(SR_SQUELCH); oappend("</i>');");  // 0 is field type, 1 is actual field
-    #endif
-    #ifdef SR_GAIN
-      oappend(SET_F("addInfo('AudioReactive:config:gain',1,'<i>&#9100; ")); oappendi(SR_GAIN); oappend("</i>');");  // 0 is field type, 1 is actual field
-    #endif
+      #ifdef SR_SQUELCH
+        oappend(SET_F("addInfo('AudioReactive:config:squelch',1,'<i>&#9100; ")); oappendi(SR_SQUELCH); oappend("</i>');");  // 0 is field type, 1 is actual field
+      #endif
+      #ifdef SR_GAIN
+        oappend(SET_F("addInfo('AudioReactive:config:gain',1,'<i>&#9100; ")); oappendi(SR_GAIN); oappend("</i>');");  // 0 is field type, 1 is actual field
+      #endif
 
       oappend(SET_F("dd=addDropdown('AudioReactive','config:AGC');"));
       oappend(SET_F("addOption(dd,'Off',0);"));
       oappend(SET_F("addOption(dd,'Normal',1);"));
       oappend(SET_F("addOption(dd,'Vivid',2);"));
       oappend(SET_F("addOption(dd,'Lazy',3);"));
+
+      //WLEDMM: experimental settings
+      oappend(SET_F("dd=addDropdown('AudioReactive','experiments:micLev');"));
+      oappend(SET_F("addOption(dd,'Floating  (⎌)',0);"));
+      oappend(SET_F("addOption(dd,'Freeze',1);"));
+      oappend(SET_F("addOption(dd,'Fast Freeze',2);"));
+      oappend(SET_F("addInfo('AudioReactive:experiments:micLev',1,'☾');"));
+
+      oappend(SET_F("dd=addDropdown('AudioReactive','experiments:freqDist');"));
+      oappend(SET_F("addOption(dd,'Normal  (⎌)',0);"));
+      oappend(SET_F("addOption(dd,'RightShift',1);"));
+      oappend(SET_F("addInfo('AudioReactive:experiments:freqDist',1,'☾');"));
+
+      oappend(SET_F("dd=addDropdown('AudioReactive','experiments:freqRMS');"));
+      oappend(SET_F("addOption(dd,'Off  (⎌)',0);"));
+      oappend(SET_F("addOption(dd,'On',1);"));
+      oappend(SET_F("addInfo('AudioReactive:experiments:freqRMS',1,'☾');"));
 
       oappend(SET_F("dd=addDropdown('AudioReactive','dynamics:limiter');"));
       oappend(SET_F("addOption(dd,'Off',0);"));
@@ -2099,92 +2335,108 @@ class AudioReactive : public Usermod {
 
       //WLEDMM add defaults
       oappend(SET_F("dd=addDropdown('AudioReactive','frequency:profile');"));
-    #if SR_FREQ_PROF==0
-      oappend(SET_F("addOption(dd,'Generic Microphone (⎌)',0);"));
-    #else
-      oappend(SET_F("addOption(dd,'Generic Microphone',0);"));
-    #endif
-    #if SR_FREQ_PROF==1
-      oappend(SET_F("addOption(dd,'Generic Line-In (⎌)',1);"));
-    #else
-      oappend(SET_F("addOption(dd,'Generic Line-In',1);"));
-    #endif
-    #if SR_FREQ_PROF==5
-      oappend(SET_F("addOption(dd,'ICS-43434 (⎌)',5);"));
-    #else
-      oappend(SET_F("addOption(dd,'ICS-43434',5);"));
-    #endif
-    #if SR_FREQ_PROF==6
-      oappend(SET_F("addOption(dd,'ICS-43434 - big speakers (⎌)',6);"));
-    #else
-      oappend(SET_F("addOption(dd,'ICS-43434 - big speakers',6);"));
-    #endif
-    #if SR_FREQ_PROF==7
-      oappend(SET_F("addOption(dd,'SPM1423 (⎌)',7);"));
-    #else
-      oappend(SET_F("addOption(dd,'SPM1423',7);"));
-    #endif
-    #if SR_FREQ_PROF==2
-      oappend(SET_F("addOption(dd,'IMNP441 (⎌)',2);"));
-    #else
-      oappend(SET_F("addOption(dd,'IMNP441',2);"));
-    #endif
-    #if SR_FREQ_PROF==3
-      oappend(SET_F("addOption(dd,'IMNP441 - big speakers (⎌)',3);"));
-    #else
-      oappend(SET_F("addOption(dd,'IMNP441 - big speakers',3);"));
-    #endif
-    #if SR_FREQ_PROF==4
-      oappend(SET_F("addOption(dd,'IMNP441 - small speakers (⎌)',4);"));
-    #else
-      oappend(SET_F("addOption(dd,'IMNP441 - small speakers',4);"));
-    #endif
-    #if SR_FREQ_PROF==10
-      oappend(SET_F("addOption(dd,'flat - no adjustments (⎌)',10);"));
-    #else
-      oappend(SET_F("addOption(dd,'flat - no adjustments',10);"));
-    #endif
-    #if SR_FREQ_PROF==8
-      oappend(SET_F("addOption(dd,'userdefined #1 (⎌)',8);"));
-    #else
-      oappend(SET_F("addOption(dd,'userdefined #1',8);"));
-    #endif
-    #if SR_FREQ_PROF==9
-      oappend(SET_F("addOption(dd,'userdefined #2 (⎌)',9);"));
-    #else
-      oappend(SET_F("addOption(dd,'userdefined #2',9);"));
-    #endif
+      #if SR_FREQ_PROF==0
+        oappend(SET_F("addOption(dd,'Generic Microphone (⎌)',0);"));
+      #else
+        oappend(SET_F("addOption(dd,'Generic Microphone',0);"));
+      #endif
+      #if SR_FREQ_PROF==1
+        oappend(SET_F("addOption(dd,'Generic Line-In (⎌)',1);"));
+      #else
+        oappend(SET_F("addOption(dd,'Generic Line-In',1);"));
+      #endif
+      #if SR_FREQ_PROF==5
+        oappend(SET_F("addOption(dd,'ICS-43434 (⎌)',5);"));
+      #else
+        oappend(SET_F("addOption(dd,'ICS-43434',5);"));
+      #endif
+      #if SR_FREQ_PROF==6
+        oappend(SET_F("addOption(dd,'ICS-43434 - big speakers (⎌)',6);"));
+      #else
+        oappend(SET_F("addOption(dd,'ICS-43434 - big speakers',6);"));
+      #endif
+      #if SR_FREQ_PROF==7
+        oappend(SET_F("addOption(dd,'SPM1423 (⎌)',7);"));
+      #else
+        oappend(SET_F("addOption(dd,'SPM1423',7);"));
+      #endif
+      #if SR_FREQ_PROF==2
+        oappend(SET_F("addOption(dd,'IMNP441 (⎌)',2);"));
+      #else
+        oappend(SET_F("addOption(dd,'IMNP441',2);"));
+      #endif
+      #if SR_FREQ_PROF==3
+        oappend(SET_F("addOption(dd,'IMNP441 - big speakers (⎌)',3);"));
+      #else
+        oappend(SET_F("addOption(dd,'IMNP441 - big speakers',3);"));
+      #endif
+      #if SR_FREQ_PROF==4
+        oappend(SET_F("addOption(dd,'IMNP441 - small speakers (⎌)',4);"));
+      #else
+        oappend(SET_F("addOption(dd,'IMNP441 - small speakers',4);"));
+      #endif
+      #if SR_FREQ_PROF==10
+        oappend(SET_F("addOption(dd,'flat - no adjustments (⎌)',10);"));
+      #else
+        oappend(SET_F("addOption(dd,'flat - no adjustments',10);"));
+      #endif
+      #if SR_FREQ_PROF==8
+        oappend(SET_F("addOption(dd,'userdefined #1 (⎌)',8);"));
+      #else
+        oappend(SET_F("addOption(dd,'userdefined #1',8);"));
+      #endif
+      #if SR_FREQ_PROF==9
+        oappend(SET_F("addOption(dd,'userdefined #2 (⎌)',9);"));
+      #else
+        oappend(SET_F("addOption(dd,'userdefined #2',9);"));
+      #endif
+      oappend(SET_F("addInfo('AudioReactive:frequency:profile',1,'☾');"));
 
       oappend(SET_F("dd=addDropdown('AudioReactive','sync:mode');"));
       oappend(SET_F("addOption(dd,'Off',0);"));
       oappend(SET_F("addOption(dd,'Send',1);"));
       oappend(SET_F("addOption(dd,'Receive',2);"));
       oappend(SET_F("addInfo('AudioReactive:digitalmic:type',1,'<i>requires reboot!</i>');"));  // 0 is field type, 1 is actual field
+
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',0,'<i>sd/data/dout</i>','I2S SD');"));
-    #ifdef I2S_SDPIN
-      oappend(SET_F("xOption('AudioReactive:digitalmic:pin[]',0,' ⎌',")); oappendi(I2S_SDPIN); oappend(");"); 
-    #endif
+      #ifdef I2S_SDPIN
+        oappend(SET_F("xOpt('AudioReactive:digitalmic:pin[]',0,' ⎌',")); oappendi(I2S_SDPIN); oappend(");"); 
+      #endif
+
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',1,'<i>ws/clk/lrck</i>','I2S WS');"));
-      oappend(SET_F("disableRO('AudioReactive:digitalmic:pin[]',1);")); 
-    #ifdef I2S_WSPIN
-      oappend(SET_F("xOption('AudioReactive:digitalmic:pin[]',1,' ⎌',")); oappendi(I2S_WSPIN); oappend(");"); 
-    #endif
+      oappend(SET_F("dRO('AudioReactive:digitalmic:pin[]',1);")); // disable read only pins
+      #ifdef I2S_WSPIN
+        oappend(SET_F("xOpt('AudioReactive:digitalmic:pin[]',1,' ⎌',")); oappendi(I2S_WSPIN); oappend(");"); 
+      #endif
+
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',2,'<i>sck/bclk</i>','I2S SCK');"));
-      oappend(SET_F("disableRO('AudioReactive:digitalmic:pin[]',2);")); 
-    #ifdef I2S_CKPIN
-      oappend(SET_F("xOption('AudioReactive:digitalmic:pin[]',2,' ⎌',")); oappendi(I2S_CKPIN); oappend(");"); 
-    #endif
+      oappend(SET_F("dRO('AudioReactive:digitalmic:pin[]',2);")); // disable read only pins
+      #ifdef I2S_CKPIN
+        oappend(SET_F("xOpt('AudioReactive:digitalmic:pin[]',2,' ⎌',")); oappendi(I2S_CKPIN); oappend(");"); 
+      #endif
+
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',3,'<i>master clock</i>','I2S MCLK');"));
-      oappend(SET_F("disableRO('AudioReactive:digitalmic:pin[]',3);")); 
-    #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
-      oappend(SET_F("dOptions('AudioReactive:digitalmic:pin[]',3,2,2);")); //only use -1, 0, 1 or 3
-      oappend(SET_F("dOptions('AudioReactive:digitalmic:pin[]',3,4,39);")); //only use -1, 0, 1 or 3
-    #endif
+      oappend(SET_F("dRO('AudioReactive:digitalmic:pin[]',3);")); // disable read only pins
+      #if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
+        oappend(SET_F("dOpt('AudioReactive:digitalmic:pin[]',3,2,2);")); //only use -1, 0, 1 or 3
+        oappend(SET_F("dOpt('AudioReactive:digitalmic:pin[]',3,4,39);")); //only use -1, 0, 1 or 3
+      #endif
+      #ifdef MCLK_PIN
+        oappend(SET_F("xOpt('AudioReactive:digitalmic:pin[]',3,' ⎌',")); oappendi(MCLK_PIN); oappend(");"); 
+      #endif
+
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',4,'','I2C SDA');"));
-      oappend(SET_F("rOption('AudioReactive:digitalmic:pin[]',4,'use global (")); oappendi(i2c_sda); oappend(")',-1);"); 
+      oappend(SET_F("rOpt('AudioReactive:digitalmic:pin[]',4,'use global (")); oappendi(i2c_sda); oappend(")',-1);"); 
+      #ifdef ES7243_SDAPIN
+        oappend(SET_F("xOpt('AudioReactive:digitalmic:pin[]',4,' ⎌',")); oappendi(ES7243_SDAPIN); oappend(");"); 
+      #endif
+
       oappend(SET_F("addInfo('AudioReactive:digitalmic:pin[]',5,'','I2C SCL');"));
-      oappend(SET_F("rOption('AudioReactive:digitalmic:pin[]',5,'use global (")); oappendi(i2c_scl); oappend(")',-1);"); 
-      oappend(SET_F("disableRO('AudioReactive:digitalmic:pin[]',5);")); 
+      oappend(SET_F("rOpt('AudioReactive:digitalmic:pin[]',5,'use global (")); oappendi(i2c_scl); oappend(")',-1);"); 
+      #ifdef ES7243_SCLPIN
+        oappend(SET_F("xOpt('AudioReactive:digitalmic:pin[]',5,' ⎌',")); oappendi(ES7243_SCLPIN); oappend(");"); 
+      #endif
+      oappend(SET_F("dRO('AudioReactive:digitalmic:pin[]',5);")); // disable read only pins
     }
 
 
@@ -2213,7 +2465,9 @@ class AudioReactive : public Usermod {
 const char AudioReactive::_name[]       PROGMEM = "AudioReactive";
 const char AudioReactive::_enabled[]    PROGMEM = "enabled";
 const char AudioReactive::_inputLvl[]   PROGMEM = "inputLevel";
+#if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
 const char AudioReactive::_analogmic[]  PROGMEM = "analogmic";
+#endif
 const char AudioReactive::_digitalmic[] PROGMEM = "digitalmic";
 const char AudioReactive::UDP_SYNC_HEADER[]    PROGMEM = "00002"; // new sync header version, as format no longer compatible with previous structure
 const char AudioReactive::UDP_SYNC_HEADER_v1[] PROGMEM = "00001"; // old sync header version - need to add backwards-compatibility feature

@@ -8,7 +8,7 @@ void UsermodManager::setup()             { for (byte i = 0; i < numMods; i++) um
 void UsermodManager::connected()         { for (byte i = 0; i < numMods; i++) ums[i]->connected(); }
 void UsermodManager::loop()              { for (byte i = 0; i < numMods; i++) ums[i]->loop();  }
 void UsermodManager::handleOverlayDraw() { for (byte i = 0; i < numMods; i++) ums[i]->handleOverlayDraw(); }
-void UsermodManager::appendConfigData()  { for (byte i = 0; i < numMods; i++) ums[i]->appendConfigData(); }
+// void UsermodManager::appendConfigData()  { for (byte i = 0; i < numMods; i++) ums[i]->appendConfigData(); } //WLEDMM not used
 bool UsermodManager::handleButton(uint8_t b) {
   bool overrideIO = false;
   for (byte i = 0; i < numMods; i++) {
@@ -40,6 +40,7 @@ bool UsermodManager::onMqttMessage(char* topic, char* payload) {
   return false;
 }
 void UsermodManager::onUpdateBegin(bool init) { for (byte i = 0; i < numMods; i++) ums[i]->onUpdateBegin(init); } // notify usermods that update is to begin
+void UsermodManager::onStateChange(uint8_t mode) { for (byte i = 0; i < numMods; i++) ums[i]->onStateChange(mode); } // notify usermods that WLED state changed
 
 /*
  * Enables usermods to lookup another Usermod.

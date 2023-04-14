@@ -1,44 +1,24 @@
 #include "wled.h"
 
-#ifdef WLED_DEBUG_HOST
+#ifdef WLED_DEBUG_HOST //WLEDMM: this looks unnecesarry as .h is not included anyway if no netdebug
 
 size_t NetworkDebugPrinter::write(uint8_t c) {
-  if (!WLED_CONNECTED) return 0;
+  if (!WLED_CONNECTED || !netDebugEnabled) return 0;
 
-  if (!debugPrintHostIP && !debugPrintHostIP.fromString(netDebugPrintHost)) {
-    #ifdef ESP8266
-      WiFi.hostByName(netDebugPrintHost, debugPrintHostIP, 750);
-    #else
-      #ifdef WLED_USE_ETHERNET
-        ETH.hostByName(netDebugPrintHost, debugPrintHostIP);
-      #else
-        WiFi.hostByName(netDebugPrintHost, debugPrintHostIP);
-      #endif
-    #endif
-  }
-
-  debugUdp.beginPacket(debugPrintHostIP, netDebugPrintPort);
+  //WLEDMM: init IP moved to initInterfaces
+  
+  debugUdp.beginPacket(netDebugPrintIP, netDebugPrintPort); //WLEDMM: using netDebugPrintIP instead of debugPrintHostIP
   debugUdp.write(c);
   debugUdp.endPacket();
   return 1;
 }
 
 size_t NetworkDebugPrinter::write(const uint8_t *buf, size_t size) {
-  if (!WLED_CONNECTED || buf == nullptr) return 0;
+  if (!WLED_CONNECTED || buf == nullptr || !netDebugEnabled) return 0;
 
-  if (!debugPrintHostIP && !debugPrintHostIP.fromString(netDebugPrintHost)) {
-    #ifdef ESP8266
-      WiFi.hostByName(netDebugPrintHost, debugPrintHostIP, 750);
-    #else
-      #ifdef WLED_USE_ETHERNET
-        ETH.hostByName(netDebugPrintHost, debugPrintHostIP);
-      #else
-        WiFi.hostByName(netDebugPrintHost, debugPrintHostIP);
-      #endif
-    #endif
-  }
+  //WLEDMM: init IP moved to initInterfaces
 
-  debugUdp.beginPacket(debugPrintHostIP, netDebugPrintPort);
+  debugUdp.beginPacket(netDebugPrintIP, netDebugPrintPort); //WLEDMM: using netDebugPrintIP instead of debugPrintHostIP
   size = debugUdp.write(buf, size);
   debugUdp.endPacket();
   return size;

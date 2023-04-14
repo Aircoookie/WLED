@@ -111,9 +111,19 @@ void sendDataWs(AsyncWebSocketClient * client)
   DEBUG_PRINTF("JSON buffer size: %u for WS request (%u).\n", doc.memoryUsage(), len);
 
   size_t heap1 = ESP.getFreeHeap();
+  DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
+  #ifdef ESP8266
+  if (len>heap1) {
+    DEBUG_PRINTLN(F("Out of memory (WS)!"));
+    return;
+  }
+  #else
+    // DEBUG_PRINTF("%s min free stack %d\n", pcTaskGetTaskName(NULL), uxTaskGetStackHighWaterMark(NULL)); //WLEDMM
+  #endif
   buffer = ws.makeBuffer(len); // will not allocate correct memory sometimes on ESP8266
   #ifdef ESP8266
   size_t heap2 = ESP.getFreeHeap();
+  DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
   #else
   size_t heap2 = 0; // ESP32 variants do not have the same issue and will work without checking heap allocation
   #endif
@@ -148,11 +158,17 @@ bool sendLiveLedsWs(uint32_t wsClient)
   AsyncWebSocketClient * wsc = ws.client(wsClient);
   if (!wsc || wsc->queueLength() > 0) return false; //only send if queue free
 
-  uint16_t used = strip.getLengthTotal();
-  const uint16_t MAX_LIVE_LEDS_WS = strip.isMatrix ? 4096 : 256; //WLEDMM use 4096 as max matrix size
-  uint16_t n = ((used -1)/MAX_LIVE_LEDS_WS) +1; //only serve every n'th LED if count over MAX_LIVE_LEDS_WS
-  uint16_t pos = (strip.isMatrix ? 6 : 2); //WLEDMM 6 instead of 4
-  uint16_t bufSize = pos + (used/n)*3;
+  size_t used = strip.getLengthTotal();
+#ifdef ESP8266
+  const size_t MAX_LIVE_LEDS_WS = 256U;
+#else
+  const size_t MAX_LIVE_LEDS_WS = 4096U;  //WLEDMM use 4096 as max matrix size
+#endif
+  size_t n = ((used -1)/MAX_LIVE_LEDS_WS) +1; //only serve every n'th LED if count over MAX_LIVE_LEDS_WS
+  size_t pos = (strip.isMatrix ? 4 : 2);
+  size_t bufSize = pos + (used/n)*3;
+  //WLEDMM: no skipLines
+
   AsyncWebSocketMessageBuffer * wsBuf = ws.makeBuffer(bufSize);
   if (!wsBuf) return false; //out of memory
   uint8_t* buffer = wsBuf->get();
@@ -163,13 +179,13 @@ bool sendLiveLedsWs(uint32_t wsClient)
     buffer[1] = 2; //version
     buffer[2] = Segment::maxWidth;
     buffer[3] = Segment::maxHeight;
-    buffer[4] = currentPreset; //WLEDMM
-    buffer[5] = currentPlaylist; //WLEDMM
+    //WLEDMM: no skipLines
   }
 #endif
 
-  for (uint16_t i = 0; pos < bufSize -2; i += n)
+  for (size_t i = 0; pos < bufSize -2; i += n)
   {
+  //WLEDMM: no skipLines
     uint32_t c = strip.getPixelColor(i);
     buffer[pos++] = qadd8(W(c), R(c)); //R, add white channel to RGB channels as a simple RGBW -> RGB map
     buffer[pos++] = qadd8(W(c), G(c)); //G

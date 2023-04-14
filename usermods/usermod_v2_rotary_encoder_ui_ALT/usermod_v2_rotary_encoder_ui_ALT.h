@@ -348,8 +348,10 @@ public:
       findCurrentEffectAndPalette();
     }
 
-    if (modes_alpha_indexes[effectCurrentIndex] != effectCurrent || palettes_alpha_indexes[effectPaletteIndex] != effectPalette) {
-      currentEffectAndPaletteInitialized = false;
+    if (modes_alpha_indexes != nullptr) {  // WLEDMM bugfix
+      if (modes_alpha_indexes[effectCurrentIndex] != effectCurrent || palettes_alpha_indexes[effectPaletteIndex] != effectPalette) {
+        currentEffectAndPaletteInitialized = false;
+      }
     }
 
     if (currentTime - loopTime >= 2) // 2ms since last check of encoder = 500Hz
@@ -383,7 +385,7 @@ public:
         buttonWaitTime = 0;
         char newState = select_state + 1;
         bool changedState = false;
-        char lineBuffer[64];
+        char lineBuffer[64] = { '\0' };
         do {
           // finde new state
           switch (newState) {
@@ -469,11 +471,13 @@ public:
 
   void displayNetworkInfo() {
     #ifdef USERMOD_FOUR_LINE_DISPLAY
+    if (display != nullptr)
     display->networkOverlay(PSTR("NETWORK INFO"), 10000);
     #endif
   }
 
   void findCurrentEffectAndPalette() {
+    if (modes_alpha_indexes == nullptr) return; // WLEDMM bugfix
     currentEffectAndPaletteInitialized = true;
     for (uint8_t i = 0; i < strip.getModeCount(); i++) {
       if (modes_alpha_indexes[i] == effectCurrent) {
@@ -510,7 +514,8 @@ public:
     // 6: fx changed 7: hue 8: preset cycle 9: blynk 10: alexa
     //setValuesFromFirstSelectedSeg(); //to make transition work on main segment (should no longer be required)
     stateUpdated(CALL_MODE_BUTTON);
-    updateInterfaces(CALL_MODE_BUTTON);
+    if ((millis() - lastInterfaceUpdate) > INTERFACE_UPDATE_COOLDOWN)   // WLEDMM respect cooldown times, to avoid crash in AsyncWebSocketMessageBuffer
+      updateInterfaces(CALL_MODE_BUTTON);
   }
 
   void changeBrightness(bool increase) {
@@ -522,10 +527,14 @@ public:
     }
     display->updateRedrawTime();
   #endif
-    bri = max(min((increase ? bri+fadeAmount : bri-fadeAmount), 255), 0);
+    byte lastBri = bri;
+    if (bri < 40) bri = max(min((increase ? bri+fadeAmount/2 : bri-fadeAmount/2), 255), 0);    // WLEDMM slower steps when brightness < 16%
+    else bri = max(min((increase ? bri+fadeAmount : bri-fadeAmount), 255), 0);
+    if (lastBri != bri) stateChanged = true;                                                   // WLEDMM bugfix
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
-    display->updateBrightness();
+    if (display->canDraw())   // only draw if nothing else is drawing
+      display->updateBrightness();
   #endif
   }
 
@@ -540,7 +549,7 @@ public:
     display->updateRedrawTime();
   #endif
     effectCurrentIndex = max(min((increase ? effectCurrentIndex+1 : effectCurrentIndex-1), strip.getModeCount()-1), 0);
-    effectCurrent = modes_alpha_indexes[effectCurrentIndex];
+    if (modes_alpha_indexes != nullptr) effectCurrent = modes_alpha_indexes[effectCurrentIndex];
     stateChanged = true;
     if (applyToAll) {
       for (byte i=0; i<strip.getSegmentsNum(); i++) {
@@ -554,7 +563,8 @@ public:
     }
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
-    display->showCurrentEffectOrPalette(effectCurrent, JSON_mode_names, 3);
+    if (display->canDraw())   // only draw if nothing else is drawing
+      display->showCurrentEffectOrPalette(effectCurrent, JSON_mode_names, 3);
   #endif
   }
 
@@ -582,7 +592,8 @@ public:
     }
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
-    display->updateSpeed();
+    if (display->canDraw())   // only draw if nothing else is drawing
+      display->updateSpeed();
   #endif
   }
 
@@ -610,7 +621,8 @@ public:
     }
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
-    display->updateIntensity();
+    if (display->canDraw())   // only draw if nothing else is drawing
+      display->updateIntensity();
   #endif
   }
 
@@ -688,7 +700,8 @@ public:
     }
     lampUdated();
   #ifdef USERMOD_FOUR_LINE_DISPLAY
-    display->showCurrentEffectOrPalette(effectPalette, JSON_palette_names, 2);
+  if (display->canDraw())   // only draw if nothing else is drawing
+      display->showCurrentEffectOrPalette(effectPalette, JSON_palette_names, 2);
   #endif
   }
 
@@ -764,7 +777,7 @@ public:
     if (presetHigh && presetLow && presetHigh > presetLow) {
       StaticJsonDocument<64> root;
       char str[64] = { '\0' };
-      sprintf_P(str, PSTR("%d~%d~%s"), presetLow, presetHigh, increase?"":"-");
+      snprintf_P(str, 64, PSTR("%d~%d~%s"), presetLow, presetHigh, increase?"":"-");
       root["ps"] = str;
       deserializeState(root.as<JsonObject>(), CALL_MODE_BUTTON_PRESET);
 /*
@@ -875,13 +888,13 @@ public:
     oappend(SET_F("addHB('Rotary-Encoder');"));
 
     #ifdef ENCODER_DT_PIN
-      oappend(SET_F("xOption('Rotary-Encoder:DT-pin',1,' ⎌',")); oappendi(ENCODER_DT_PIN); oappend(");"); 
+      oappend(SET_F("xOpt('Rotary-Encoder:DT-pin',1,' ⎌',")); oappendi(ENCODER_DT_PIN); oappend(");"); 
     #endif
     #ifdef ENCODER_CLK_PIN
-      oappend(SET_F("xOption('Rotary-Encoder:CLK-pin',1,' ⎌',")); oappendi(ENCODER_CLK_PIN); oappend(");"); 
+      oappend(SET_F("xOpt('Rotary-Encoder:CLK-pin',1,' ⎌',")); oappendi(ENCODER_CLK_PIN); oappend(");"); 
     #endif
     #ifdef ENCODER_SW_PIN
-      oappend(SET_F("xOption('Rotary-Encoder:SW-pin',1,' ⎌',")); oappendi(ENCODER_SW_PIN); oappend(");"); 
+      oappend(SET_F("xOpt('Rotary-Encoder:SW-pin',1,' ⎌',")); oappendi(ENCODER_SW_PIN); oappend(");"); 
     #endif
   }
 
@@ -931,7 +944,7 @@ public:
           enabled = false;
           return true;
         }
-        setup();
+        if (enabled) setup();   // WLEDMM no pin stealing!
       }
     }
     // use "return !top["newestParameter"].isNull();" when updating Usermod with new features

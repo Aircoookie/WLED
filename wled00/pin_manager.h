@@ -41,7 +41,7 @@ enum struct PinOwner : uint8_t {
   UM_Temperature       = USERMOD_ID_TEMPERATURE,        // 0x03 // Usermod "usermod_temperature.h"
   // #define USERMOD_ID_FIXNETSERVICES                  // 0x04 // Usermod "usermod_Fix_unreachable_netservices.h" -- Does not allocate pins
   UM_PIR               = USERMOD_ID_PIRSWITCH,          // 0x05 // Usermod "usermod_PIR_sensor_switch.h"
-  // #define USERMOD_ID_IMU                             // 0x06 // Usermod "usermod_mpu6050_imu.h" -- Uses "standard" HW_I2C pins
+  UM_IMU               = USERMOD_ID_IMU,                // 0x06 // Usermod "usermod_mpu6050_imu.h" -- Uses "standard" HW_I2C pins
   UM_FourLineDisplay   = USERMOD_ID_FOUR_LINE_DISP,     // 0x07 // Usermod "usermod_v2_four_line_display.h -- May use "standard" HW_I2C pins
   UM_RotaryEncoderUI   = USERMOD_ID_ROTARY_ENC_UI,      // 0x08 // Usermod "usermod_v2_rotary_encoder_ui.h"
   // #define USERMOD_ID_AUTO_SAVE                       // 0x09 // Usermod "usermod_v2_auto_save.h" -- Does not allocate pins
@@ -98,6 +98,7 @@ class PinManagerClass {
   // Allocates a single pin, with an owner tag.
   // De-allocation requires the same owner tag (or override)
   bool allocatePin(byte gpio, bool output, PinOwner tag);
+  void manageDebugTXPin(); //WLEDMM
   // Allocates all the pins, or allocates none of the pins, with owner tag.
   // Provided to simplify error condition handling in clients
   // using more than one pin, such as I2C, SPI, rotary encoders,
@@ -131,13 +132,19 @@ class PinManagerClass {
   String getPinSpecialText(int gpio); // WLEDMM - return PIN special comments (if any)
   String getPinConflicts(int gpio); // WLEDMM   - return PIN alloc conflicts (if any)
 
-  bool isPinTouch(int gpio);                                   // true if gpio supports touch functions
+  bool isPinPWM(int gpio) {return(digitalPinHasPWM(gpio));}              // true if gpio supports PWM
+  bool isPinINT(int gpio) {return(digitalPinToInterrupt(gpio) >= 0);}    // true if gpio supports Interrupts
+  bool isPinTouch(int gpio);                                             // true if gpio supports touch functions
+
   bool isPinAnalog(int gpio);                                  // true if gpio supports analogRead
   bool isPinADC1(int gpio);                                    // true if gpio supports analogRead, and it belongs to ADC unit 1
-  bool isPinADC2(int gpio);                                    // true if gpio supports analogRead, and it belongs to ADC unit 2 
-  #define PM_NO_PIN 255
+  bool isPinADC2(int gpio);                                    // true if gpio supports analogRead, and it belongs to ADC unit 2
+
   typedef enum { ADC_none = 0, ADC1 = 1, ADC2 = 2 } AdcIdentifier;
-  uint8_t  getADCPin(AdcIdentifier adcUnit, uint8_t adcPort);   // get GPIO number for ADC unit x, channel y. 255 = no such pin
+  #define PM_ADC1 PinManagerClass::ADC1                        // Alias for ADC1
+  #define PM_ADC2 PinManagerClass::ADC2                        // Alias for ADC2
+  #define PM_NO_PIN 255
+  uint8_t getADCPin(AdcIdentifier adcUnit, uint8_t adcPort);   // get GPIO number for ADC unit x, channel y. 255 = no such pin
   // WLEDMM end
 
   #ifdef ARDUINO_ARCH_ESP32

@@ -184,7 +184,7 @@ class MultiRelay : public Usermod {
      */
     MultiRelay() {
       const int8_t defPins[] = {MULTI_RELAY_PINS};
-      for (int i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
+      for (size_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
         _relay[i].pin      = i<sizeof(defPins) ? defPins[i] : -1;
         _relay[i].delay    = 0;
         _relay[i].mode     = false;
@@ -202,11 +202,11 @@ class MultiRelay : public Usermod {
     /**
      * Enable/Disable the usermod
      */
-    inline void enable(bool enable) { enabled = enable; }
+    // inline void enable(bool enable) { enabled = enable; }
     /**
      * Get usermod enabled/disabled state
      */
-    inline bool isEnabled() { return enabled; }
+    // inline bool isEnabled() { return enabled; }
 
     /**
      * switch relay on/off

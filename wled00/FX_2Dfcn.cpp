@@ -34,14 +34,12 @@
 // note: matrix may be comprised of multiple panels each with different orientation
 // but ledmap takes care of that. ledmap is constructed upon initialization
 // so matrix should disable regular ledmap processing
-void WS2812FX::setUpMatrix(bool reset) {
+void WS2812FX::setUpMatrix() {
 #ifndef WLED_DISABLE_2D
   // erase old ledmap, just in case.
-  if (reset) { //WLEDMM: add reset option to switch on/off reset of customMappingTable
-    if (customMappingTable != nullptr) delete[] customMappingTable;
-    customMappingTable = nullptr;
-    customMappingSize = 0;
-  }
+  if (customMappingTable != nullptr) delete[] customMappingTable;
+  customMappingTable = nullptr;
+  customMappingSize = 0;
 
   // isMatrix is set in cfg.cpp or set.cpp
   if (isMatrix) {
@@ -60,31 +58,59 @@ void WS2812FX::setUpMatrix(bool reset) {
 
     // safety check
     if (Segment::maxWidth * Segment::maxHeight > MAX_LEDS || Segment::maxWidth <= 1 || Segment::maxHeight <= 1) {
-      DEBUG_PRINTLN(F("2D Bounds error."));
+      DEBUG_PRINTF("2D Bounds error. %d x %d\n", Segment::maxWidth, Segment::maxHeight);
       isMatrix = false;
       Segment::maxWidth = _length;
       Segment::maxHeight = 1;
       panels = 0;
       panel.clear(); // release memory allocated by panels
+      resetSegments(true); //WLEDMM bounds only
       return;
     }
 
-    if (reset) { //WLEDMM: add reset option to switch on/off reset of customMappingTable
-      customMappingTable = new uint16_t[Segment::maxWidth * Segment::maxHeight];
-      //WLEDMM: init customMappingTable with a 1:1 mapping (for customMappingTable[customMappingTable[x]])
-      for (uint16_t i=0; i<Segment::maxWidth * Segment::maxHeight; i++) {
-        customMappingTable[i] = i;
-      }
-    }
+    customMappingTable = new uint16_t[Segment::maxWidth * Segment::maxHeight];
 
     if (customMappingTable != nullptr) {
       customMappingSize = Segment::maxWidth * Segment::maxHeight;
 
-      //WLEDMM: Comment this as we initialize with cmt[i]=i
       // fill with empty in case we don't fill the entire matrix
-      // for (size_t i = 0; i< customMappingSize; i++) {
-      //   customMappingTable[i] = (uint16_t)-1;
-      // }
+      for (size_t i = 0; i< customMappingSize; i++) {
+        customMappingTable[i] = (uint16_t)-1;
+      }
+
+      // we will try to load a "gap" array (a JSON file)
+      // the array has to have the same amount of values as mapping array (or larger)
+      // "gap" array is used while building ledmap (mapping array)
+      // and discarded afterwards as it has no meaning after the process
+      // content of the file is just raw JSON array in the form of [val1,val2,val3,...]
+      // there are no other "key":"value" pairs in it
+      // allowed values are: -1 (missing pixel/no LED attached), 0 (inactive/unused pixel), 1 (active/used pixel)
+      char    fileName[32]; strcpy_P(fileName, PSTR("/2d-gaps.json")); // reduce flash footprint
+      bool    isFile = WLED_FS.exists(fileName);
+      size_t  gapSize = 0;
+      int8_t *gapTable = nullptr;
+
+      if (isFile && requestJSONBufferLock(20)) {
+        USER_PRINT(F("Reading LED gap from "));
+        USER_PRINTLN(fileName);
+        // read the array into global JSON buffer
+        if (readObjectFromFile(fileName, nullptr, &doc)) {
+          // the array is similar to ledmap, except it has only 3 values:
+          // -1 ... missing pixel (do not increase pixel count)
+          //  0 ... inactive pixel (it does count, but should be mapped out (-1))
+          //  1 ... active pixel (it will count and will be mapped)
+          JsonArray map = doc.as<JsonArray>();
+          gapSize = map.size();
+          if (!map.isNull() && gapSize >= customMappingSize) { // not an empty map
+            gapTable = new int8_t[gapSize];
+            if (gapTable) for (size_t i = 0; i < gapSize; i++) {
+              gapTable[i] = constrain(map[i], -1, 1);
+            }
+          }
+        }
+        DEBUG_PRINTLN(F("Gaps loaded."));
+        releaseJSONBufferLock();
+      }
 
       uint16_t x, y, pix=0; //pixel
       for (size_t pan = 0; pan < panel.size(); pan++) {
@@ -92,17 +118,22 @@ void WS2812FX::setUpMatrix(bool reset) {
         uint16_t h = p.vertical ? p.height : p.width;
         uint16_t v = p.vertical ? p.width  : p.height;
         for (size_t j = 0; j < v; j++){
-          for(size_t i = 0; i < h; i++, pix++) {
+          for(size_t i = 0; i < h; i++) {
             y = (p.vertical?p.rightStart:p.bottomStart) ? v-j-1 : j;
             x = (p.vertical?p.bottomStart:p.rightStart) ? h-i-1 : i;
             x = p.serpentine && j%2 ? h-x-1 : x;
-            customMappingTable[customMappingTable[(p.yOffset + (p.vertical?x:y)) * Segment::maxWidth + p.xOffset + (p.vertical?y:x)]] = pix; //WLEDMM: allow for 2 transitions if reset = false (ledmap and logical to physical)
+            size_t index = (p.yOffset + (p.vertical?x:y)) * Segment::maxWidth + p.xOffset + (p.vertical?y:x);
+            if (!gapTable || (gapTable && gapTable[index] >  0)) customMappingTable[index] = pix; // a useful pixel (otherwise -1 is retained)
+            if (!gapTable || (gapTable && gapTable[index] >= 0)) pix++; // not a missing pixel
           }
         }
       }
 
+      // delete gap array as we no longer need it
+      if (gapTable) delete[] gapTable;
+
       #ifdef WLED_DEBUG
-      DEBUG_PRINT(F("Matrix ledmap:"));
+      DEBUG_PRINTF("Matrix ledmap: \n");
       for (uint16_t i=0; i<customMappingSize; i++) {
         if (!(i%Segment::maxWidth)) DEBUG_PRINTLN();
         DEBUG_PRINTF("%4d,", customMappingTable[i]);
@@ -116,7 +147,7 @@ void WS2812FX::setUpMatrix(bool reset) {
       panel.clear();
       Segment::maxWidth = _length;
       Segment::maxHeight = 1;
-      return;
+      //WLEDMM: no resetSegments here, only do it in set.cpp/handleSettingsSet - as we want t0 maintain the segment settings after setup has changed
     }
   }
 #else
@@ -130,12 +161,11 @@ void IRAM_ATTR_YN WS2812FX::setPixelColorXY(int x, int y, uint32_t col) //WLEDMM
 #ifndef WLED_DISABLE_2D
   if (!isMatrix) return; // not a matrix set-up
   uint16_t index = y * Segment::maxWidth + x;
-  if (index >= customMappingSize) return;
 #else
   uint16_t index = x;
-  if (index >= _length) return;
 #endif
   if (index < customMappingSize) index = customMappingTable[index];
+  if (index >= _length) return;
   busses.setPixelColor(index, col);
 }
 
@@ -143,12 +173,11 @@ void IRAM_ATTR_YN WS2812FX::setPixelColorXY(int x, int y, uint32_t col) //WLEDMM
 uint32_t WS2812FX::getPixelColorXY(uint16_t x, uint16_t y) {
 #ifndef WLED_DISABLE_2D
   uint16_t index = (y * Segment::maxWidth + x);
-  if (index >= customMappingSize) return 0; // customMappingSize is always W * H of matrix in 2D setup
 #else
   uint16_t index = x;
-  if (index >= _length) return 0;
 #endif
   if (index < customMappingSize) index = customMappingTable[index];
+  if (index >= _length) return 0;
   return busses.getPixelColor(index);
 }
 
@@ -523,6 +552,42 @@ void Segment::drawArc(uint16_t x0, uint16_t y0, uint16_t radius, uint32_t color,
   }
 }
 
+bool Segment::jsonToPixels(char * name, uint8_t fileNr) {
+  char fileName[32];
+  //WLEDMM: als support segment name ledmaps
+  bool isFile = false;;
+  // strcpy_P(fileName, PSTR("/mario"));
+  sprintf(fileName, "/%s%d.json", name, fileNr); //WLEDMM: trick to not include 0 in ledmap.json
+  // strcat(fileName, ".json");
+  isFile = WLED_FS.exists(fileName);
+
+  if (!isFile) {
+    return false;
+  }
+
+  if (!requestJSONBufferLock(23)) return false;
+
+  if (!readObjectFromFile(fileName, nullptr, &doc)) {
+    releaseJSONBufferLock();
+    return false; //if file does not exist just exit
+  }
+
+  JsonArray map = doc[F("seg")][F("i")];
+
+  if (!map.isNull() && map.size()) {  // not an empty map
+
+    for (uint16_t i=0; i<map.size(); i+=3) {
+      CRGB color = CRGB(map[i+2][0], map[i+2][1], map[i+2][2]);
+      for (uint16_t j=map[i]; j<=map[i+1]; j++) {
+        setPixelColor(j, color);
+      }
+    }
+  }
+
+  releaseJSONBufferLock();
+  return true;
+}
+
 #include "src/font/console_font_4x6.h"
 #include "src/font/console_font_5x8.h"
 #include "src/font/console_font_5x12.h"
@@ -559,7 +624,7 @@ void Segment::drawCharacter(unsigned char chr, int16_t x, int16_t y, uint8_t w, 
     for (int j = 0; j<w; j++) { // character width
       int16_t x0 = x + (w-1) - j;
       if ((x0 >= 0 || x0 < cols) && ((bits>>(j+(8-w))) & 0x01)) { // bit set & drawing on-screen
-        addPixelColorXY(x0, y0, col);
+        setPixelColorXY(x0, y0, col);
       }
     }
   }

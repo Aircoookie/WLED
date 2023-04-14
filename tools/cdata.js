@@ -220,6 +220,7 @@ function writeChunks(srcDir, specs, resultFile) {
 
 writeHtmlGzipped("wled00/data/index.htm", "wled00/html_ui.h", 'index');
 writeHtmlGzipped("wled00/data/simple.htm", "wled00/html_simple.h", 'simple');
+writeHtmlGzipped("wled00/data/pixart/pixart.htm", "wled00/html_pixart.h", 'pixart');
 /*
 writeChunks(
   "wled00/data",
@@ -398,6 +399,13 @@ const char PAGE_dmxmap[] PROGMEM = R"=====()=====";
       name: "PAGE_liveviewws2D",
       method: "gzip",
       filter: "html-minify",
+    },
+    //WLEDMM
+    {
+      file: "peek.js",
+      name: "PAGE_peekJs",
+      method: "gzip",
+      filter: "js-minify",
     },
     {
       file: "404.htm",

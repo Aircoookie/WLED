@@ -17,6 +17,10 @@ void getStringFromJson(char* dest, const char* src, size_t len) {
 }
 
 bool deserializeConfig(JsonObject doc, bool fromFS) {
+
+  //WLEDMM add USER_PRINT
+  USER_PRINTF("deserializeConfig\n");
+
   bool needsSave = false;
   //int rev_major = doc["rev"][0]; // 1
   //int rev_minor = doc["rev"][1]; // 0
@@ -87,7 +91,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   uint8_t autoWhiteMode = RGBW_MODE_MANUAL_ONLY;
   CJSON(strip.ablMilliampsMax, hw_led[F("maxpwr")]);
   CJSON(strip.milliampsPerLed, hw_led[F("ledma")]);
-  Bus::setAutoWhiteMode(hw_led[F("rgbwm")] | 255);
+  Bus::setGlobalAWMode(hw_led[F("rgbwm")] | 255);
   CJSON(correctWB, hw_led["cct"]);
   CJSON(cctFromRgb, hw_led[F("cr")]);
   CJSON(strip.cctBlending, hw_led[F("cb")]);
@@ -100,13 +104,20 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonObject matrix = hw_led[F("matrix")];
   if (!matrix.isNull()) {
     strip.isMatrix = true;
+
+    //WLEDMM: keep storing basic 2d setup
     CJSON(strip.panels,             matrix[F("mpc")]);
-    CJSON(strip.panelsV,            matrix[F("mpv")]); //WLEDMM quick fix
-    CJSON(strip.panelsH,            matrix[F("mph")]); //WLEDMM quick fix
+    CJSON(strip.bOrA,               matrix["ba"]); //WLEDMM basic or advanced
+    CJSON(strip.panelsV,            matrix[F("mpv")]);
+    CJSON(strip.panelsH,            matrix[F("mph")]);
     CJSON(strip.matrix.bottomStart, matrix[F("pb")]);
     CJSON(strip.matrix.rightStart,  matrix[F("pr")]);
     CJSON(strip.matrix.vertical,    matrix[F("pv")]);
     CJSON(strip.matrix.serpentine,  matrix["ps"]);
+    CJSON(strip.panelO.bottomStart, matrix[F("pbl")]);
+    CJSON(strip.panelO.rightStart,  matrix[F("prl")]);
+    CJSON(strip.panelO.vertical,    matrix[F("pvl")]);
+    CJSON(strip.panelO.serpentine,  matrix["psl"]);
 
     strip.panel.clear();
     JsonArray panels = matrix[F("panels")];
@@ -135,8 +146,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       p.options = 0;
       strip.panel.push_back(p);
     }
-
-    strip.setUpMatrix();
+    // cannot call strip.setUpMatrix() here due to already locked JSON buffer
   }
   #endif
 
@@ -310,9 +320,9 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     Wire.setPins(i2c_sda, i2c_scl); // this will fail if Wire is initilised (Wire.begin() called prior)
     #endif
     // Wire.begin(); // WLEDMM moved into pinManager
-    Serial.printf("pinmgr success for global i2c %d %d\n", i2c_sda, i2c_scl);
+    DEBUG_PRINTF("pinmgr success for global i2c %d %d\n", i2c_sda, i2c_scl);
   } else {
-    Serial.printf("pinmgr not success for global i2c %d %d\n", i2c_sda, i2c_scl);
+    DEBUG_PRINTF("pinmgr not success for global i2c %d %d\n", i2c_sda, i2c_scl);
   }
   JsonArray hw_if_spi = hw[F("if")][F("spi-pin")];
   CJSON(spi_mosi, hw_if_spi[0]);
@@ -325,9 +335,9 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     #else
     SPI.begin();
     #endif
-    Serial.printf("pinmgr success for global spi %d %d %d\n", spi_mosi, spi_miso, spi_sclk);
+    DEBUG_PRINTF("pinmgr success for global spi %d %d %d\n", spi_mosi, spi_miso, spi_sclk);
   } else {
-    Serial.printf("pinmgr not success for global spi %d %d %d\n", spi_mosi, spi_miso, spi_sclk);
+    DEBUG_PRINTF("pinmgr not success for global spi %d %d %d\n", spi_mosi, spi_miso, spi_sclk);
   }
 
   //int hw_status_pin = hw[F("status")]["pin"]; // -1
@@ -337,18 +347,27 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(strip.paletteBlend, light[F("pal-mode")]);
   CJSON(autoSegments, light[F("aseg")]);
 
+  CJSON(gammaCorrectVal, light["gc"]["val"]); // default 2.8
   float light_gc_bri = light["gc"]["bri"];
-  float light_gc_col = light["gc"]["col"]; // 2.8
-  if      (light_gc_bri > 1.5) gammaCorrectBri = true;
-  else if (light_gc_bri > 0.5) gammaCorrectBri = false;
-  if      (light_gc_col > 1.5) gammaCorrectCol = true;
-  else if (light_gc_col > 0.5) gammaCorrectCol = false;
+  float light_gc_col = light["gc"]["col"];
+  if (light_gc_bri > 1.0f) gammaCorrectBri = true;
+  else                     gammaCorrectBri = false;
+  if (light_gc_col > 1.0f) gammaCorrectCol = true;
+  else                     gammaCorrectCol = false;
+  if (gammaCorrectVal > 1.0f && gammaCorrectVal <= 3) {
+    if (gammaCorrectVal != 2.8f) calcGammaTable(gammaCorrectVal);
+  } else {
+    gammaCorrectVal = 1.0f; // no gamma correction
+    gammaCorrectBri = false;
+    gammaCorrectCol = false;
+  }
 
   JsonObject light_tr = light["tr"];
   CJSON(fadeTransition, light_tr["mode"]);
   int tdd = light_tr["dur"] | -1;
   if (tdd >= 0) transitionDelay = transitionDelayDefault = tdd * 100;
   CJSON(strip.paletteFade, light_tr["pal"]);
+  CJSON(randomPaletteChangeTime, light_tr[F("rpc")]);
 
   JsonObject light_nl = light["nl"];
   CJSON(nightlightMode, light_nl["mode"]);
@@ -410,10 +429,19 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   if (!DMXAddress || DMXAddress > 510) DMXAddress = 1;
   CJSON(DMXSegmentSpacing, if_live_dmx[F("dss")]);
   if (DMXSegmentSpacing > 150) DMXSegmentSpacing = 0;
+  CJSON(e131Priority, if_live_dmx[F("e131prio")]);
+  if (e131Priority > 200) e131Priority = 200;
   CJSON(DMXMode, if_live_dmx["mode"]);
 
   tdd = if_live[F("timeout")] | -1;
   if (tdd >= 0) realtimeTimeoutMs = tdd * 100;
+
+  #ifdef WLED_ENABLE_DMX_INPUT
+    CJSON(dmxTransmitPin, if_live_dmx[F("rxPin")]);
+    CJSON(dmxReceivePin, if_live_dmx[F("txPin")]);
+    CJSON(dmxEnablePin, if_live_dmx[F("enablePin")]);
+  #endif
+
   CJSON(arlsForceMaxBri, if_live[F("maxbri")]);
   CJSON(arlsDisableGammaCorrection, if_live[F("no-gc")]); // false
   CJSON(arlsOffset, if_live[F("offset")]); // 0
@@ -424,17 +452,6 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(macroAlexaOff, interfaces["va"]["macros"][1]);
 
   CJSON(alexaNumPresets, interfaces["va"]["p"]);
-
-#ifndef WLED_DISABLE_BLYNK
-  const char* apikey = interfaces["blynk"][F("token")] | "Hidden";
-  tdd = strnlen(apikey, 36);
-  if (tdd > 20 || tdd == 0)
-    getStringFromJson(blynkApiKey, apikey, 36); //normally not present due to security
-
-  JsonObject if_blynk = interfaces["blynk"];
-  getStringFromJson(blynkHost, if_blynk[F("host")], 33);
-  CJSON(blynkPort, if_blynk["port"]);
-#endif
 
 #ifdef WLED_ENABLE_MQTT
   JsonObject if_mqtt = interfaces["mqtt"];
@@ -465,6 +482,18 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   for (byte i = 0; i < 4; i++)
     CJSON(hueIP[i], if_hue_ip[i]);
+#endif
+
+//WLEDMM: add netdebug variables
+#ifdef WLED_DEBUG_HOST
+  JsonObject if_ndb = interfaces["ndb"];
+  JsonArray if_ndb_ip = if_ndb["ip"];
+  for (byte i = 0; i < 4; i++)
+    CJSON(netDebugPrintIP[i], if_ndb_ip[i]);
+  CJSON(netDebugPrintPort, if_ndb["port"]);
+  CJSON(netDebugEnabled, if_ndb["enabled"]);
+  // USER_PRINTF("deserializeConfig %d\n", netDebugEnabled);
+  pinManager.manageDebugTXPin();
 #endif
 
   JsonObject if_ntp = interfaces[F("ntp")];
@@ -704,7 +733,7 @@ void serializeConfig() {
   hw_led[F("cr")] = cctFromRgb;
   hw_led[F("cb")] = strip.cctBlending;
   hw_led["fps"] = strip.getTargetFps();
-  hw_led[F("rgbwm")] = Bus::getAutoWhiteMode();    // global override
+  hw_led[F("rgbwm")] = Bus::getGlobalAWMode(); // global auto white mode override
   hw_led[F("ld")] = strip.useLedsArray;
 
   #ifndef WLED_DISABLE_2D
@@ -712,8 +741,11 @@ void serializeConfig() {
   if (strip.isMatrix) {
     JsonObject matrix = hw_led.createNestedObject(F("matrix"));
     matrix[F("mpc")] = strip.panels;
-    matrix[F("mph")] = strip.panelsH; //WLEDMM quick fix
-    matrix[F("mpv")] = strip.panelsV; //WLEDMM quick fix
+    
+    //WLEDMM: keep storing basic 2d setup
+    matrix[F("ba")] = strip.bOrA; //WLEDMM basic or advanced
+    matrix[F("mph")] = strip.panelsH;
+    matrix[F("mpv")] = strip.panelsV;
     matrix[F("pb")] = strip.matrix.bottomStart;
     matrix[F("pr")] = strip.matrix.rightStart;
     matrix[F("pv")] = strip.matrix.vertical;
@@ -751,7 +783,7 @@ void serializeConfig() {
     ins[F("skip")] = bus->skippedLeds();
     ins["type"] = bus->getType() & 0x7F;
     ins["ref"] = bus->isOffRefreshRequired();
-    ins[F("rgbwm")] = bus->getAWMode();
+    ins[F("rgbwm")] = bus->getAutoWhiteMode();
   }
 
   JsonArray hw_com = hw.createNestedArray(F("com"));
@@ -816,13 +848,15 @@ void serializeConfig() {
   light[F("aseg")] = autoSegments;
 
   JsonObject light_gc = light.createNestedObject("gc");
-  light_gc["bri"] = (gammaCorrectBri) ? 2.8 : 1.0;
-  light_gc["col"] = (gammaCorrectCol) ? 2.8 : 1.0;
+  light_gc["bri"] = (gammaCorrectBri) ? gammaCorrectVal : 1.0f;  // keep compatibility
+  light_gc["col"] = (gammaCorrectCol) ? gammaCorrectVal : 1.0f;  // keep compatibility
+  light_gc["val"] = gammaCorrectVal;
 
   JsonObject light_tr = light.createNestedObject("tr");
   light_tr["mode"] = fadeTransition;
   light_tr["dur"] = transitionDelayDefault / 100;
   light_tr["pal"] = strip.paletteFade;
+  light_tr[F("rpc")] = randomPaletteChangeTime;
 
   JsonObject light_nl = light.createNestedObject("nl");
   light_nl["mode"] = nightlightMode;
@@ -871,9 +905,15 @@ void serializeConfig() {
   JsonObject if_live_dmx = if_live.createNestedObject("dmx");
   if_live_dmx[F("uni")] = e131Universe;
   if_live_dmx[F("seqskip")] = e131SkipOutOfSequence;
+  if_live_dmx[F("e131prio")] = e131Priority;
   if_live_dmx[F("addr")] = DMXAddress;
   if_live_dmx[F("dss")] = DMXSegmentSpacing;
   if_live_dmx["mode"] = DMXMode;
+  #ifdef WLED_ENABLE_DMX_INPUT
+    if_live_dmx[F("rxPin")] = dmxTransmitPin;
+    if_live_dmx[F("txPin")] = dmxReceivePin;
+    if_live_dmx[F("enablePin")] = dmxEnablePin;
+  #endif
 
   if_live[F("timeout")] = realtimeTimeoutMs / 100;
   if_live[F("maxbri")] = arlsForceMaxBri;
@@ -888,13 +928,6 @@ void serializeConfig() {
   if_va_macros.add(macroAlexaOff);
 
   if_va["p"] = alexaNumPresets;
-
-#ifndef WLED_DISABLE_BLYNK
-  JsonObject if_blynk = interfaces.createNestedObject("blynk");
-  if_blynk[F("token")] = strlen(blynkApiKey) ? "Hidden":"";
-  if_blynk[F("host")] = blynkHost;
-  if_blynk["port"] = blynkPort;
-#endif
 
 #ifdef WLED_ENABLE_MQTT
   JsonObject if_mqtt = interfaces.createNestedObject("mqtt");
@@ -925,6 +958,18 @@ void serializeConfig() {
   for (byte i = 0; i < 4; i++) {
     if_hue_ip.add(hueIP[i]);
   }
+#endif
+
+//WLEDMM: add netdebug variables
+#ifdef WLED_DEBUG_HOST
+  JsonObject if_ndb = interfaces.createNestedObject("ndb");
+  JsonArray if_ndb_ip = if_ndb.createNestedArray("ip");
+  for (byte i = 0; i < 4; i++) {
+    if_ndb_ip.add(netDebugPrintIP[i]);
+  }
+  if_ndb["port"] = netDebugPrintPort;
+  if_ndb["enabled"] = netDebugEnabled;
+  // USER_PRINTF("serializeConfig %d\n", netDebugEnabled);
 #endif
 
   JsonObject if_ntp = interfaces.createNestedObject("ntp");
@@ -998,6 +1043,9 @@ void serializeConfig() {
   JsonObject usermods_settings = doc.createNestedObject("um");
   usermods.addToConfig(usermods_settings);
 
+  //WLEDMM add USER_PRINT
+  USER_PRINTF("serializeConfig\n");
+
   File f = WLED_FS.open("/cfg.json", "w");
   if (f) serializeJson(doc, f);
   f.close();
@@ -1024,13 +1072,8 @@ bool deserializeConfigSec() {
   JsonObject ap = doc["ap"];
   getStringFromJson(apPass, ap["psk"] , 65);
 
+#if defined(WLED_ENABLE_MQTT) || !defined(WLED_DISABLE_HUESYNC)
   JsonObject interfaces = doc["if"];
-
-#ifndef WLED_DISABLE_BLYNK
-  const char* apikey = interfaces["blynk"][F("token")] | "Hidden";
-  int tdd = strnlen(apikey, 36);
-  if (tdd > 20 || tdd == 0)
-    getStringFromJson(blynkApiKey, apikey, 36);
 #endif
 
 #ifdef WLED_ENABLE_MQTT
@@ -1070,11 +1113,10 @@ void serializeConfigSec() {
   JsonObject ap = doc.createNestedObject("ap");
   ap["psk"] = apPass;
 
+#if defined(WLED_ENABLE_MQTT) || !defined(WLED_DISABLE_HUESYNC)
   JsonObject interfaces = doc.createNestedObject("if");
-#ifndef WLED_DISABLE_BLYNK
-  JsonObject if_blynk = interfaces.createNestedObject("blynk");
-  if_blynk[F("token")] = blynkApiKey;
 #endif
+
 #ifdef WLED_ENABLE_MQTT
   JsonObject if_mqtt = interfaces.createNestedObject("mqtt");
   if_mqtt["psk"] = mqttPass;

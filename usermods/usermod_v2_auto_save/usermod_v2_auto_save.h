@@ -79,6 +79,10 @@ class AutoSaveUsermod : public Usermod {
         month(localTime), day(localTime),
         hour(localTime), minute(localTime), second(localTime));
       cacheInvalidate++;  // force reload of presets
+      DEBUG_PRINT(F("UM autosave: saving preset "));
+      DEBUG_PRINT(autoSavePreset);
+      DEBUG_PRINT(F(" => "));
+      DEBUG_PRINTLN(presetNameBuffer);
       savePreset(autoSavePreset, presetNameBuffer);
     }
 
@@ -86,7 +90,7 @@ class AutoSaveUsermod : public Usermod {
       #ifdef USERMOD_FOUR_LINE_DISPLAY
       if (display != nullptr) {
         display->wakeDisplay();
-        display->overlay("Settings", "Auto Saved", 1500);
+        if (display->canDraw()) display->overlay("Settings", "Auto Saved", 1500);   // WLEDMM bugfix
       }
       #endif
     }

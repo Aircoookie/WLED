@@ -172,7 +172,7 @@ uint16_t mode_pongGame(void) {
   return FRAMETIME;
 }
 
-static const char _data_FX_MODE_PONGGAME[] PROGMEM = "🎮 Pong@!;!;!;2";
+static const char _data_FX_MODE_PONGGAME[] PROGMEM = "🎮 Pong ☾@!;!;!;2";
 
 //https://howtomechatronics.com/tutorials/arduino/arduino-and-mpu6050-accelerometer-and-gyroscope-tutorial/
 
@@ -183,7 +183,7 @@ uint16_t mode_IMUTest(void) {
 
   uint8_t y = 0;
 
-  if (IMU != nullptr) {
+  if ((IMU != nullptr) && (IMU->dmpReady)) {
     SEGMENT.setPixelColorXY(SEGMENT.virtualWidth() * (IMU->aa.x+INT16_MAX)/(2*INT16_MAX), y+=1, BLUE);
     SEGMENT.setPixelColorXY(SEGMENT.virtualWidth() * (IMU->aa.y+INT16_MAX)/(2*INT16_MAX), y+=1, BLUE);
     SEGMENT.setPixelColorXY(SEGMENT.virtualWidth() * (IMU->aa.z+INT16_MAX)/(2*INT16_MAX), y+=1, BLUE);
@@ -207,7 +207,7 @@ uint16_t mode_IMUTest(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_IMUTest[] PROGMEM = "🎮 IMUTest@;;;2d";
+static const char _data_FX_MODE_IMUTest[] PROGMEM = "🎮 IMUTest ☾@;;;2d";
 
 #endif
 
@@ -280,7 +280,7 @@ uint16_t mode_3DIMUCube(void) {
   float roll = 0;
 
   #ifdef USERMOD_MPU6050_IMU
-    if (IMU != nullptr) {
+    if ((IMU != nullptr) && (IMU->dmpReady)) {
       yaw = -IMU->ypr[0];
       pitch = IMU->ypr[1];
       roll = IMU->ypr[2];
@@ -319,7 +319,7 @@ uint16_t mode_3DIMUCube(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_3DIMUCube[] PROGMEM = "🎮 3DIMUCube@,Perspective;!;!;2;pal=1"; //random cycle
+static const char _data_FX_MODE_3DIMUCube[] PROGMEM = "🎮 3DIMUCube ☾@,Perspective;!;!;2;pal=1"; //WLEDMM random smooth
 
 class GamesUsermod : public Usermod {
   private:
@@ -330,9 +330,9 @@ class GamesUsermod : public Usermod {
       strip.addEffect(255, &mode_pongGame, _data_FX_MODE_PONGGAME);
       #ifdef USERMOD_MPU6050_IMU
         IMU = (MPU6050Driver *)usermods.lookup(USERMOD_ID_IMU);
-        // #ifdef WLED_DEBUG
+        #ifdef WLED_DEBUG
           strip.addEffect(255, &mode_IMUTest, _data_FX_MODE_IMUTest);
-        // #endif
+        #endif
       #endif
       strip.addEffect(255, &mode_3DIMUCube, _data_FX_MODE_3DIMUCube); //works also without IMU
     }
