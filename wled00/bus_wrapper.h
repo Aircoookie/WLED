@@ -184,45 +184,43 @@
 //APA102
 #ifdef WLED_USE_ETHERNET
 // fix for #2542 (by @BlackBird77)
-#define B_HS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarHspi5MhzMethod> //hardware HSPI (was DotStarEsp32DmaHspi5MhzMethod in NPB 2.6.9)
+#define B_HS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarHspiHzMethod> //hardware HSPI (was DotStarEsp32DmaHspi5MhzMethod in NPB 2.6.9)
 #else
-#define B_HS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarSpi5MhzMethod> //hardware VSPI
+#define B_HS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarSpiHzMethod> //hardware VSPI
 #endif
 #define B_SS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarMethod>    //soft SPI
 
 //LPD8806
-#define B_HS_LPD_3 NeoPixelBrightnessBus<Lpd8806GrbFeature, Lpd8806SpiMethod>
+#define B_HS_LPD_3 NeoPixelBrightnessBus<Lpd8806GrbFeature, Lpd8806SpiHzMethod>
 #define B_SS_LPD_3 NeoPixelBrightnessBus<Lpd8806GrbFeature, Lpd8806Method>
 
 //LPD6803
-#define B_HS_LPO_3 NeoPixelBrightnessBus<Lpd6803GrbFeature, Lpd6803SpiMethod>
+#define B_HS_LPO_3 NeoPixelBrightnessBus<Lpd6803GrbFeature, Lpd6803SpiHzMethod>
 #define B_SS_LPO_3 NeoPixelBrightnessBus<Lpd6803GrbFeature, Lpd6803Method>
 
 //WS2801
-#if defined(WLED_WS2801_SPEED_KHZ) && WLED_WS2801_SPEED_KHZ==40000
-#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801Spi40MhzMethod>    // fastest bus speed (not existing method?)
-#elif defined(WLED_WS2801_SPEED_KHZ) && WLED_WS2801_SPEED_KHZ==20000
-#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801Spi20MhzMethod>    // 20MHz
-#elif defined(WLED_WS2801_SPEED_KHZ) && WLED_WS2801_SPEED_KHZ==10000
-#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801SpiMethod>         // 10MHz
-#elif defined(WLED_WS2801_SPEED_KHZ) && WLED_WS2801_SPEED_KHZ==2000
-#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801Spi2MhzMethod>     //slower, more compatible
-#elif defined(WLED_WS2801_SPEED_KHZ) && WLED_WS2801_SPEED_KHZ==1000
-#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801Spi1MhzMethod>     //slower, more compatible
-#elif defined(WLED_WS2801_SPEED_KHZ) && WLED_WS2801_SPEED_KHZ==500
-#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801Spi500KhzMethod>   //slower, more compatible
-#else
-#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801Spi2MhzMethod>     // 2MHz; slower, more compatible
-#endif
+#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801SpiHzMethod>
 #define B_SS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801Method>
 
 //P9813
-#define B_HS_P98_3 NeoPixelBrightnessBus<P9813BgrFeature, P9813SpiMethod>
+#define B_HS_P98_3 NeoPixelBrightnessBus<P9813BgrFeature, P9813SpiHzMethod>
 #define B_SS_P98_3 NeoPixelBrightnessBus<P9813BgrFeature, P9813Method>
 
 //handles pointer type conversion for all possible bus types
 class PolyBus {
   public:
+  // initialize SPI bus speed for DotStar methods
+  template <class T>
+  static void beginDotStar(void* busPtr, int8_t sck, int8_t miso, int8_t mosi, int8_t ss, uint16_t clock_kHz = 0U) {
+    T dotStar_strip = static_cast<T>(busPtr);
+    #ifdef ESP8266
+    dotStar_strip->Begin();
+    #else
+    if (sck == -1 && mosi == -1) dotStar_strip->Begin();
+    else                         dotStar_strip->Begin(sck, miso, mosi, ss);
+    #endif
+    if (clock_kHz) dotStar_strip->SetMethodSettings(NeoSpiSettings((uint32_t)clock_kHz*1000));
+  }
   // Begin & initialize the PixelSettings for TM1814 strips.
   template <class T>
   static void beginTM1814(void* busPtr) {
@@ -231,7 +229,7 @@ class PolyBus {
     // Max current for each LED (22.5 mA).
     tm1814_strip->SetPixelSettings(NeoTm1814Settings(/*R*/225, /*G*/225, /*B*/225, /*W*/225));
   }
-  static void begin(void* busPtr, uint8_t busType, uint8_t* pins) {
+  static void begin(void* busPtr, uint8_t busType, uint8_t* pins, uint16_t clock_kHz = 0U) {
     switch (busType) {
       case I_NONE: break;
     #ifdef ESP8266
@@ -255,11 +253,11 @@ class PolyBus {
       case I_8266_U1_TM2_3: (static_cast<B_8266_U1_TM2_4*>(busPtr))->Begin(); break;
       case I_8266_DM_TM2_3: (static_cast<B_8266_DM_TM2_4*>(busPtr))->Begin(); break;
       case I_8266_BB_TM2_3: (static_cast<B_8266_BB_TM2_4*>(busPtr))->Begin(); break;
-      case I_HS_DOT_3: (static_cast<B_HS_DOT_3*>(busPtr))->Begin(); break;
-      case I_HS_LPD_3: (static_cast<B_HS_LPD_3*>(busPtr))->Begin(); break;
-      case I_HS_LPO_3: (static_cast<B_HS_LPO_3*>(busPtr))->Begin(); break;
-      case I_HS_WS1_3: (static_cast<B_HS_WS1_3*>(busPtr))->Begin(); break;
-      case I_HS_P98_3: (static_cast<B_HS_P98_3*>(busPtr))->Begin(); break;
+      case I_HS_DOT_3: beginDotStar<B_HS_DOT_3*>(busPtr, -1, -1, -1, -1, clock_kHz); break;
+      case I_HS_LPD_3: beginDotStar<B_HS_LPD_3*>(busPtr, -1, -1, -1, -1, clock_kHz); break;
+      case I_HS_LPO_3: beginDotStar<B_HS_LPO_3*>(busPtr, -1, -1, -1, -1, clock_kHz); break;
+      case I_HS_WS1_3: beginDotStar<B_HS_WS1_3*>(busPtr, -1, -1, -1, -1, clock_kHz); break;
+      case I_HS_P98_3: beginDotStar<B_HS_P98_3*>(busPtr, -1, -1, -1, -1, clock_kHz); break;
     #endif
     #ifdef ARDUINO_ARCH_ESP32
       case I_32_RN_NEO_3: (static_cast<B_32_RN_NEO_3*>(busPtr))->Begin(); break;
@@ -297,11 +295,11 @@ class PolyBus {
       case I_32_I1_TM2_3: (static_cast<B_32_I1_TM2_3*>(busPtr))->Begin(); break;
       #endif
       // ESP32 can (and should, to avoid inadvertantly driving the chip select signal) specify the pins used for SPI, but only in begin()
-      case I_HS_DOT_3: (static_cast<B_HS_DOT_3*>(busPtr))->Begin(pins[1], -1, pins[0], -1); break;
-      case I_HS_LPD_3: (static_cast<B_HS_LPD_3*>(busPtr))->Begin(pins[1], -1, pins[0], -1); break;
-      case I_HS_LPO_3: (static_cast<B_HS_LPO_3*>(busPtr))->Begin(pins[1], -1, pins[0], -1); break;
-      case I_HS_WS1_3: (static_cast<B_HS_WS1_3*>(busPtr))->Begin(pins[1], -1, pins[0], -1); break;
-      case I_HS_P98_3: (static_cast<B_HS_P98_3*>(busPtr))->Begin(pins[1], -1, pins[0], -1); break;
+      case I_HS_DOT_3: beginDotStar<B_HS_DOT_3*>(busPtr, pins[1], -1, pins[0], -1, clock_kHz); break;
+      case I_HS_LPD_3: beginDotStar<B_HS_LPD_3*>(busPtr, pins[1], -1, pins[0], -1, clock_kHz); break;
+      case I_HS_LPO_3: beginDotStar<B_HS_LPO_3*>(busPtr, pins[1], -1, pins[0], -1, clock_kHz); break;
+      case I_HS_WS1_3: beginDotStar<B_HS_WS1_3*>(busPtr, pins[1], -1, pins[0], -1, clock_kHz); break;
+      case I_HS_P98_3: beginDotStar<B_HS_P98_3*>(busPtr, pins[1], -1, pins[0], -1, clock_kHz); break;
     #endif
       case I_SS_DOT_3: (static_cast<B_SS_DOT_3*>(busPtr))->Begin(); break;
       case I_SS_LPD_3: (static_cast<B_SS_LPD_3*>(busPtr))->Begin(); break;
@@ -310,7 +308,7 @@ class PolyBus {
       case I_SS_P98_3: (static_cast<B_SS_P98_3*>(busPtr))->Begin(); break;
     }
   };
-  static void* create(uint8_t busType, uint8_t* pins, uint16_t len, uint8_t channel) {
+  static void* create(uint8_t busType, uint8_t* pins, uint16_t len, uint8_t channel, uint16_t clock_kHz = 0U) {
     void* busPtr = nullptr;
     switch (busType) {
       case I_NONE: break;
@@ -384,7 +382,7 @@ class PolyBus {
       case I_HS_P98_3: busPtr = new B_HS_P98_3(len, pins[1], pins[0]); break;
       case I_SS_P98_3: busPtr = new B_SS_P98_3(len, pins[1], pins[0]); break;
     }
-    begin(busPtr, busType, pins);
+    begin(busPtr, busType, pins, clock_kHz);
     return busPtr;
   };
   static void show(void* busPtr, uint8_t busType) {
