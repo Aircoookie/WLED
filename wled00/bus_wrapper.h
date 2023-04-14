@@ -248,21 +248,21 @@
 
 //WS2801
 #if defined(WLED_WS2801_SPEED_KHZ) && WLED_WS2801_SPEED_KHZ==40000
-#define B_HS_WS1_3 NeoPixelBusLg<NeoRbgFeature, NeoWs2801Spi40MhzMethod, NeoGammaNullMethod>    // fastest bus speed (not existing method?)
+#define B_HS_WS1_3 NeoPixelBusLg<NeoRbgFeature, Ws2801Spi40MhzMethod, NeoGammaNullMethod>    // fastest bus speed (not existing method?)
 #elif defined(WLED_WS2801_SPEED_KHZ) && WLED_WS2801_SPEED_KHZ==20000
-#define B_HS_WS1_3 NeoPixelBusLg<NeoRbgFeature, NeoWs2801Spi20MhzMethod, NeoGammaNullMethod>    // 20MHz
+#define B_HS_WS1_3 NeoPixelBusLg<NeoRbgFeature, Ws2801Spi20MhzMethod, NeoGammaNullMethod>    // 20MHz
 #elif defined(WLED_WS2801_SPEED_KHZ) && WLED_WS2801_SPEED_KHZ==10000
-#define B_HS_WS1_3 NeoPixelBusLg<NeoRbgFeature, NeoWs2801SpiMethod, NeoGammaNullMethod>         // 10MHz
+#define B_HS_WS1_3 NeoPixelBusLg<NeoRbgFeature, Ws2801SpiMethod, NeoGammaNullMethod>         // 10MHz
 #elif defined(WLED_WS2801_SPEED_KHZ) && WLED_WS2801_SPEED_KHZ==2000
-#define B_HS_WS1_3 NeoPixelBusLg<NeoRbgFeature, NeoWs2801Spi2MhzMethod, NeoGammaNullMethod>     //slower, more compatible
+#define B_HS_WS1_3 NeoPixelBusLg<NeoRbgFeature, Ws2801Spi2MhzMethod, NeoGammaNullMethod>     //slower, more compatible
 #elif defined(WLED_WS2801_SPEED_KHZ) && WLED_WS2801_SPEED_KHZ==1000
-#define B_HS_WS1_3 NeoPixelBusLg<NeoRbgFeature, NeoWs2801Spi1MhzMethod, NeoGammaNullMethod>     //slower, more compatible
+#define B_HS_WS1_3 NeoPixelBusLg<NeoRbgFeature, Ws2801Spi1MhzMethod, NeoGammaNullMethod>     //slower, more compatible
 #elif defined(WLED_WS2801_SPEED_KHZ) && WLED_WS2801_SPEED_KHZ==500
-#define B_HS_WS1_3 NeoPixelBusLg<NeoRbgFeature, NeoWs2801Spi500KhzMethod, NeoGammaNullMethod>   //slower, more compatible
+#define B_HS_WS1_3 NeoPixelBusLg<NeoRbgFeature, Ws2801Spi500KhzMethod, NeoGammaNullMethod>   //slower, more compatible
 #else
-#define B_HS_WS1_3 NeoPixelBusLg<NeoRbgFeature, NeoWs2801Spi2MhzMethod, NeoGammaNullMethod>     // 2MHz; slower, more compatible
+#define B_HS_WS1_3 NeoPixelBusLg<NeoRbgFeature, Ws2801Spi2MhzMethod, NeoGammaNullMethod>     // 2MHz; slower, more compatible
 #endif
-#define B_SS_WS1_3 NeoPixelBusLg<NeoRbgFeature, NeoWs2801Method, NeoGammaNullMethod>
+#define B_SS_WS1_3 NeoPixelBusLg<NeoRbgFeature, Ws2801Method, NeoGammaNullMethod>
 
 //P9813
 #define B_HS_P98_3 NeoPixelBusLg<P9813BgrFeature, P9813SpiMethod, NeoGammaNullMethod>
