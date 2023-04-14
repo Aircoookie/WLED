@@ -1319,9 +1319,9 @@ uint8_t * Segment::getAudioPalette(int pal) {
 // enumerate all ledmapX.json files on FS and extract ledmap names if existing
 void WS2812FX::enumerateLedmaps() {
   ledMaps = 1;
-  for (size_t i=1; i<10; i++) {
+  for (int i=1; i<10; i++) {
     char fileName[33];
-    sprintf_P(fileName, PSTR("/ledmap%d.json"), i);
+    snprintf_P(fileName, sizeof(fileName), PSTR("/ledmap%d.json"), i);
     bool isFile = WLED_FS.exists(fileName);
 
         #ifndef ESP8266
@@ -1364,8 +1364,8 @@ void WS2812FX::enumerateLedmaps() {
   uint8_t segment_index = 0;
   for (segment &seg : _segments) {
     if (seg.name != nullptr && strcmp(seg.name, "") != 0) {
-      char fileName[32];
-      sprintf_P(fileName, PSTR("/lm%s.json"), seg.name);
+      char fileName[33];
+      snprintf_P(fileName, sizeof(fileName), PSTR("/lm%s.json"), seg.name);
       bool isFile = WLED_FS.exists(fileName);
       if (isFile) ledMaps |= 1 << (10+segment_index);
     }
