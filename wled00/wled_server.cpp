@@ -58,8 +58,10 @@ void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t
     if (filename.indexOf(F("cfg.json")) >= 0) { // check for filename with or without slash
       doReboot = true;
       request->send(200, "text/plain", F("Configuration restore successful.\nRebooting..."));
-    } else
+    } else {
+      if (filename.indexOf(F("palette")) >= 0 && filename.indexOf(F(".json")) >= 0) strip.loadCustomPalettes();
       request->send(200, "text/plain", F("File Uploaded!"));
+    }
     cacheInvalidate++;
   }
 }
