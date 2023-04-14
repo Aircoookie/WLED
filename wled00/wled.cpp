@@ -958,10 +958,10 @@ void WLED::initInterfaces()
         #endif
       #endif
     } else {
-      IPAddress ipAddress = Network.localIP();
-      netDebugPrintIP[0] = ipAddress[0];
-      netDebugPrintIP[1] = ipAddress[1];
-      netDebugPrintIP[2] = ipAddress[2];
+      IPAddress ndIpAddress = Network.localIP();
+      netDebugPrintIP[0] = ndIpAddress[0];
+      netDebugPrintIP[1] = ndIpAddress[1];
+      netDebugPrintIP[2] = ndIpAddress[2];
     }
   }
   if (netDebugPrintPort == 0) 
