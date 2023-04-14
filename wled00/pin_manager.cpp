@@ -775,10 +775,10 @@ byte PinManagerClass::allocateLedc(byte channels)
     if (ca >= channels) { //enough free channels
       byte in = (i + 1) - ca;
       for (byte j = 0; j < ca; j++) {
-        byte b = in + j;
-        byte by = b >> 3;
-        byte bi = b - 8*by;
-        bitWrite(ledcAlloc[by], bi, true);
+        byte bChan = in + j;
+        byte byChan = bChan >> 3;
+        byte biChan = bChan - 8*byChan;
+        bitWrite(ledcAlloc[byChan], biChan, true);
       }
       return in;
     }

@@ -186,7 +186,7 @@
 // fix for #2542 (by @BlackBird77)
 #define B_HS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarEsp32DmaHspi5MhzMethod> //hardware HSPI with DMA (ESP32 only)
 #else
-#define B_HS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarSpi5MhzMethod> //hardware HSPI
+#define B_HS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarSpi5MhzMethod> //hardware VSPI
 #endif
 #define B_SS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarMethod>    //soft SPI
 
