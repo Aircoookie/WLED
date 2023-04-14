@@ -199,8 +199,8 @@
 #define B_SS_LPO_3 NeoPixelBrightnessBus<Lpd6803GrbFeature, Lpd6803Method>
 
 //WS2801
-#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801SpiHzMethod>
-#define B_SS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801Method>
+#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, Ws2801SpiHzMethod>
+#define B_SS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, Ws2801Method>
 
 //P9813
 #define B_HS_P98_3 NeoPixelBrightnessBus<P9813BgrFeature, P9813SpiHzMethod>
