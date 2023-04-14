@@ -256,7 +256,7 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
         targetPalette[i].b = prevRandomPalette[i].b*(5000-timeSinceLastChange)/5000 + randomPalette[i].b*timeSinceLastChange/5000;
       }
       break;}
-    case 73: {//periodically replace palette with a random one. Transition palette change in 500ms
+    case 74: {//periodically replace palette with a random one. Transition palette change in 500ms
       uint32_t timeSinceLastChange = millis() - _lastPaletteChange;
       if (timeSinceLastChange > randomPaletteChangeTime * 1000U) {
         prevRandomPalette = randomPalette;
@@ -316,7 +316,8 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
     case 12: //Rainbow stripe colors
       targetPalette = RainbowStripeColors_p; break;
     case 71: //WLEDMM netmindz ar palette +1
-    case 72: //WLEDMM netmindz ar palette +1
+    case 72: //WLEDMM netmindz ar palette +2
+    case 73: //WLEDMM netmindz ar palette +3
         targetPalette.loadDynamicGradientPalette(getAudioPalette(pal)); break; 
     default: //progmem palettes
       if (pal>245) {
@@ -1295,13 +1296,13 @@ uint8_t * Segment::getAudioPalette(int pal) {
   xyz[6] = rgb.g;
   xyz[7] = rgb.b;
   
-  rgb = getCRGBForBand(4, fftResult, pal);
+  rgb = getCRGBForBand(128, fftResult, pal);
   xyz[8] = 128;
   xyz[9] = rgb.r;
   xyz[10] = rgb.g;
   xyz[11] = rgb.b;
   
-  rgb = getCRGBForBand(8, fftResult, pal);
+  rgb = getCRGBForBand(255, fftResult, pal);
   xyz[12] = 255;  // anchor of last color - must be 255
   xyz[13] = rgb.r;
   xyz[14] = rgb.g;
@@ -2132,5 +2133,5 @@ const char JSON_palette_names[] PROGMEM = R"=====([
 "Magenta","Magred","Yelmag","Yelblu","Orange & Teal","Tiamat","April Night","Orangery","C9","Sakura",
 "Aurora","Atlantica","C9 2","C9 New","Temperature","Aurora 2","Retro Clown","Candy","Toxy Reaf","Fairy Reaf",
 "Semi Blue","Pink Candy","Red Reaf","Aqua Flash","Yelblu Hot","Lite Light","Red Flash","Blink Red","Red Shift","Red Tide",
-"Candy2","Audio Responsive Ratio ☾","Audio Responsive Hue ☾","* Random Cycle"
+"Candy2","Audio Responsive Ratio ☾","Audio Responsive Hue ☾","Audio Responsive Ramp","* Random Cycle"
 ])=====";
