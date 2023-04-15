@@ -357,7 +357,7 @@ void WLED::setup()
   if (Serial) Serial.flush(); // WLEDMM
   //Serial.setTimeout(350); // WLEDMM: don't change timeout, as it causes crashes later
   // WLEDMM: redirect debug output to HWCDC
-  #if defined(WLED_DEBUG) || defined (SR_DEBUG)
+  #if ARDUINO_USB_CDC_ON_BOOT && (defined(WLED_DEBUG) || defined(SR_DEBUG))
   Serial0.setDebugOutput(false);
   Serial.setDebugOutput(true);
   #endif
