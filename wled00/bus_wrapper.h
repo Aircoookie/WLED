@@ -708,44 +708,44 @@ class PolyBus {
     switch (busType) {
       case I_NONE: break;
     #ifdef ESP8266
-      case I_8266_U0_NEO_3: (static_cast<B_8266_U0_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
-      case I_8266_U1_NEO_3: (static_cast<B_8266_U1_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
-      case I_8266_DM_NEO_3: (static_cast<B_8266_DM_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
-      case I_8266_BB_NEO_3: (static_cast<B_8266_BB_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
+      case I_8266_U0_NEO_3: (static_cast<B_8266_U0_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
+      case I_8266_U1_NEO_3: (static_cast<B_8266_U1_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
+      case I_8266_DM_NEO_3: (static_cast<B_8266_DM_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
+      case I_8266_BB_NEO_3: (static_cast<B_8266_BB_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
       case I_8266_U0_NEO_4: (static_cast<B_8266_U0_NEO_4*>(busPtr))->SetPixelColor(pix, col); break;
       case I_8266_U1_NEO_4: (static_cast<B_8266_U1_NEO_4*>(busPtr))->SetPixelColor(pix, col); break;
       case I_8266_DM_NEO_4: (static_cast<B_8266_DM_NEO_4*>(busPtr))->SetPixelColor(pix, col); break;
       case I_8266_BB_NEO_4: (static_cast<B_8266_BB_NEO_4*>(busPtr))->SetPixelColor(pix, col); break;
-      case I_8266_U0_400_3: (static_cast<B_8266_U0_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
-      case I_8266_U1_400_3: (static_cast<B_8266_U1_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
-      case I_8266_DM_400_3: (static_cast<B_8266_DM_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
-      case I_8266_BB_400_3: (static_cast<B_8266_BB_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
+      case I_8266_U0_400_3: (static_cast<B_8266_U0_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
+      case I_8266_U1_400_3: (static_cast<B_8266_U1_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
+      case I_8266_DM_400_3: (static_cast<B_8266_DM_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
+      case I_8266_BB_400_3: (static_cast<B_8266_BB_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
       case I_8266_U0_TM1_4: (static_cast<B_8266_U0_TM1_4*>(busPtr))->SetPixelColor(pix, col); break;
       case I_8266_U1_TM1_4: (static_cast<B_8266_U1_TM1_4*>(busPtr))->SetPixelColor(pix, col); break;
       case I_8266_DM_TM1_4: (static_cast<B_8266_DM_TM1_4*>(busPtr))->SetPixelColor(pix, col); break;
       case I_8266_BB_TM1_4: (static_cast<B_8266_BB_TM1_4*>(busPtr))->SetPixelColor(pix, col); break;
-      case I_8266_U0_TM2_3: (static_cast<B_8266_U0_TM2_4*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
-      case I_8266_U1_TM2_3: (static_cast<B_8266_U1_TM2_4*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
-      case I_8266_DM_TM2_3: (static_cast<B_8266_DM_TM2_4*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
-      case I_8266_BB_TM2_3: (static_cast<B_8266_BB_TM2_4*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
-      case I_8266_U0_UCS_3: (static_cast<B_8266_U0_UCS_3*>(busPtr))->SetPixelColor(pix, Rgb48Color(col.R,col.G,col.B)); break;
-      case I_8266_U1_UCS_3: (static_cast<B_8266_U1_UCS_3*>(busPtr))->SetPixelColor(pix, Rgb48Color(col.R,col.G,col.B)); break;
-      case I_8266_DM_UCS_3: (static_cast<B_8266_DM_UCS_3*>(busPtr))->SetPixelColor(pix, Rgb48Color(col.R,col.G,col.B)); break;
-      case I_8266_BB_UCS_3: (static_cast<B_8266_BB_UCS_3*>(busPtr))->SetPixelColor(pix, Rgb48Color(col.R,col.G,col.B)); break;
-      case I_8266_U0_UCS_4: (static_cast<B_8266_U0_UCS_4*>(busPtr))->SetPixelColor(pix, Rgbw64Color(col.R,col.G,col.B,col.W)); break;
-      case I_8266_U1_UCS_4: (static_cast<B_8266_U1_UCS_4*>(busPtr))->SetPixelColor(pix, Rgbw64Color(col.R,col.G,col.B,col.W)); break;
-      case I_8266_DM_UCS_4: (static_cast<B_8266_DM_UCS_4*>(busPtr))->SetPixelColor(pix, Rgbw64Color(col.R,col.G,col.B,col.W)); break;
-      case I_8266_BB_UCS_4: (static_cast<B_8266_BB_UCS_4*>(busPtr))->SetPixelColor(pix, Rgbw64Color(col.R,col.G,col.B,col.W)); break;
+      case I_8266_U0_TM2_3: (static_cast<B_8266_U0_TM2_4*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
+      case I_8266_U1_TM2_3: (static_cast<B_8266_U1_TM2_4*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
+      case I_8266_DM_TM2_3: (static_cast<B_8266_DM_TM2_4*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
+      case I_8266_BB_TM2_3: (static_cast<B_8266_BB_TM2_4*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
+      case I_8266_U0_UCS_3: (static_cast<B_8266_U0_UCS_3*>(busPtr))->SetPixelColor(pix, Rgb48Color(RgbColor(col))); break;
+      case I_8266_U1_UCS_3: (static_cast<B_8266_U1_UCS_3*>(busPtr))->SetPixelColor(pix, Rgb48Color(RgbColor(col))); break;
+      case I_8266_DM_UCS_3: (static_cast<B_8266_DM_UCS_3*>(busPtr))->SetPixelColor(pix, Rgb48Color(RgbColor(col))); break;
+      case I_8266_BB_UCS_3: (static_cast<B_8266_BB_UCS_3*>(busPtr))->SetPixelColor(pix, Rgb48Color(RgbColor(col))); break;
+      case I_8266_U0_UCS_4: (static_cast<B_8266_U0_UCS_4*>(busPtr))->SetPixelColor(pix, Rgbw64Color(col)); break;
+      case I_8266_U1_UCS_4: (static_cast<B_8266_U1_UCS_4*>(busPtr))->SetPixelColor(pix, Rgbw64Color(col)); break;
+      case I_8266_DM_UCS_4: (static_cast<B_8266_DM_UCS_4*>(busPtr))->SetPixelColor(pix, Rgbw64Color(col)); break;
+      case I_8266_BB_UCS_4: (static_cast<B_8266_BB_UCS_4*>(busPtr))->SetPixelColor(pix, Rgbw64Color(col)); break;
     #endif
     #ifdef ARDUINO_ARCH_ESP32
-      case I_32_RN_NEO_3: (static_cast<B_32_RN_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
+      case I_32_RN_NEO_3: (static_cast<B_32_RN_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
-      case I_32_I0_NEO_3: (static_cast<B_32_I0_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
+      case I_32_I0_NEO_3: (static_cast<B_32_I0_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
       #endif
       #ifndef WLED_NO_I2S1_PIXELBUS
-      case I_32_I1_NEO_3: (static_cast<B_32_I1_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
+      case I_32_I1_NEO_3: (static_cast<B_32_I1_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
       #endif
-//      case I_32_BB_NEO_3: (static_cast<B_32_BB_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
+//      case I_32_BB_NEO_3: (static_cast<B_32_BB_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
       case I_32_RN_NEO_4: (static_cast<B_32_RN_NEO_4*>(busPtr))->SetPixelColor(pix, col); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_NEO_4: (static_cast<B_32_I0_NEO_4*>(busPtr))->SetPixelColor(pix, col); break;
@@ -754,51 +754,51 @@ class PolyBus {
       case I_32_I1_NEO_4: (static_cast<B_32_I1_NEO_4*>(busPtr))->SetPixelColor(pix, col); break;
       #endif
 //      case I_32_BB_NEO_4: (static_cast<B_32_BB_NEO_4*>(busPtr))->SetPixelColor(pix, col); break;
-      case I_32_RN_400_3: (static_cast<B_32_RN_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
+      case I_32_RN_400_3: (static_cast<B_32_RN_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
-      case I_32_I0_400_3: (static_cast<B_32_I0_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
+      case I_32_I0_400_3: (static_cast<B_32_I0_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
       #endif
       #ifndef WLED_NO_I2S1_PIXELBUS
-      case I_32_I1_400_3: (static_cast<B_32_I1_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
+      case I_32_I1_400_3: (static_cast<B_32_I1_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
       #endif
-//      case I_32_BB_400_3: (static_cast<B_32_BB_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
+//      case I_32_BB_400_3: (static_cast<B_32_BB_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(colB)); break;
       case I_32_RN_TM1_4: (static_cast<B_32_RN_TM1_4*>(busPtr))->SetPixelColor(pix, col); break;
-      case I_32_RN_TM2_3: (static_cast<B_32_RN_TM2_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
+      case I_32_RN_TM2_3: (static_cast<B_32_RN_TM2_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
       case I_32_I0_TM1_4: (static_cast<B_32_I0_TM1_4*>(busPtr))->SetPixelColor(pix, col); break;
-      case I_32_I0_TM2_3: (static_cast<B_32_I0_TM2_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
+      case I_32_I0_TM2_3: (static_cast<B_32_I0_TM2_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
       #endif
       #ifndef WLED_NO_I2S1_PIXELBUS
       case I_32_I1_TM1_4: (static_cast<B_32_I1_TM1_4*>(busPtr))->SetPixelColor(pix, col); break;
-      case I_32_I1_TM2_3: (static_cast<B_32_I1_TM2_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
+      case I_32_I1_TM2_3: (static_cast<B_32_I1_TM2_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
       #endif
-      case I_32_RN_UCS_3: (static_cast<B_32_RN_UCS_3*>(busPtr))->SetPixelColor(pix, Rgb48Color(col.R,col.G,col.B)); break;
+      case I_32_RN_UCS_3: (static_cast<B_32_RN_UCS_3*>(busPtr))->SetPixelColor(pix, Rgb48Color(RgbColor(col))); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
-      case I_32_I0_UCS_3: (static_cast<B_32_I0_UCS_3*>(busPtr))->SetPixelColor(pix, Rgb48Color(col.R,col.G,col.B)); break;
+      case I_32_I0_UCS_3: (static_cast<B_32_I0_UCS_3*>(busPtr))->SetPixelColor(pix, Rgb48Color(RgbColor(col))); break;
       #endif
       #ifndef WLED_NO_I2S1_PIXELBUS
-      case I_32_I1_UCS_3: (static_cast<B_32_I1_UCS_3*>(busPtr))->SetPixelColor(pix, Rgb48Color(col.R,col.G,col.B)); break;
+      case I_32_I1_UCS_3: (static_cast<B_32_I1_UCS_3*>(busPtr))->SetPixelColor(pix, Rgb48Color(RgbColor(col))); break;
       #endif
-//      case I_32_BB_UCS_3: (static_cast<B_32_BB_UCS_3*>(busPtr))->SetPixelColor(pix, Rgb48Color(col.R,col.G,col.B)); break;
-      case I_32_RN_UCS_4: (static_cast<B_32_RN_UCS_4*>(busPtr))->SetPixelColor(pix, Rgbw64Color(col.R,col.G,col.B,col.W)); break;
+//      case I_32_BB_UCS_3: (static_cast<B_32_BB_UCS_3*>(busPtr))->SetPixelColor(pix, Rgb48Color(RgbColor(col))); break;
+      case I_32_RN_UCS_4: (static_cast<B_32_RN_UCS_4*>(busPtr))->SetPixelColor(pix, Rgbw64Color(col)); break;
       #ifndef WLED_NO_I2S0_PIXELBUS
-      case I_32_I0_UCS_4: (static_cast<B_32_I0_UCS_4*>(busPtr))->SetPixelColor(pix, Rgbw64Color(col.R,col.G,col.B,col.W)); break;
+      case I_32_I0_UCS_4: (static_cast<B_32_I0_UCS_4*>(busPtr))->SetPixelColor(pix, Rgbw64Color(col)); break;
       #endif
       #ifndef WLED_NO_I2S1_PIXELBUS
-      case I_32_I1_UCS_4: (static_cast<B_32_I1_UCS_4*>(busPtr))->SetPixelColor(pix, Rgbw64Color(col.R,col.G,col.B,col.W)); break;
+      case I_32_I1_UCS_4: (static_cast<B_32_I1_UCS_4*>(busPtr))->SetPixelColor(pix, Rgbw64Color(col)); break;
       #endif
-//      case I_32_BB_UCS_4: (static_cast<B_32_BB_UCS_4*>(busPtr))->SetPixelColor(pix, Rgbw64Color(col.R,col.G,col.B,col.W)); break;
+//      case I_32_BB_UCS_4: (static_cast<B_32_BB_UCS_4*>(busPtr))->SetPixelColor(pix, Rgbw64Color(col)); break;
     #endif
-      case I_HS_DOT_3: (static_cast<B_HS_DOT_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
-      case I_SS_DOT_3: (static_cast<B_SS_DOT_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
-      case I_HS_LPD_3: (static_cast<B_HS_LPD_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
-      case I_SS_LPD_3: (static_cast<B_SS_LPD_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
-      case I_HS_LPO_3: (static_cast<B_HS_LPO_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
-      case I_SS_LPO_3: (static_cast<B_SS_LPO_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
-      case I_HS_WS1_3: (static_cast<B_HS_WS1_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
-      case I_SS_WS1_3: (static_cast<B_SS_WS1_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
-      case I_HS_P98_3: (static_cast<B_HS_P98_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
-      case I_SS_P98_3: (static_cast<B_SS_P98_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
+      case I_HS_DOT_3: (static_cast<B_HS_DOT_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
+      case I_SS_DOT_3: (static_cast<B_SS_DOT_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
+      case I_HS_LPD_3: (static_cast<B_HS_LPD_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
+      case I_SS_LPD_3: (static_cast<B_SS_LPD_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
+      case I_HS_LPO_3: (static_cast<B_HS_LPO_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
+      case I_SS_LPO_3: (static_cast<B_SS_LPO_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
+      case I_HS_WS1_3: (static_cast<B_HS_WS1_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
+      case I_SS_WS1_3: (static_cast<B_SS_WS1_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
+      case I_HS_P98_3: (static_cast<B_HS_P98_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
+      case I_SS_P98_3: (static_cast<B_SS_P98_3*>(busPtr))->SetPixelColor(pix, RgbColor(col)); break;
     }
   };
   static void setBrightness(void* busPtr, uint8_t busType, uint8_t b) {
@@ -923,14 +923,14 @@ class PolyBus {
       case I_8266_U1_TM2_3: col = (static_cast<B_8266_U1_TM2_4*>(busPtr))->GetPixelColor(pix); break;
       case I_8266_DM_TM2_3: col = (static_cast<B_8266_DM_TM2_4*>(busPtr))->GetPixelColor(pix); break;
       case I_8266_BB_TM2_3: col = (static_cast<B_8266_BB_TM2_4*>(busPtr))->GetPixelColor(pix); break;
-      case I_8266_U0_UCS_3: { Rgb48Color c = (static_cast<B_8266_U0_UCS_3*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,0); } break;
-      case I_8266_U1_UCS_3: { Rgb48Color c = (static_cast<B_8266_U1_UCS_3*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,0); } break;
-      case I_8266_DM_UCS_3: { Rgb48Color c = (static_cast<B_8266_DM_UCS_3*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,0); } break;
-      case I_8266_BB_UCS_3: { Rgb48Color c = (static_cast<B_8266_BB_UCS_3*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,0); } break;
-      case I_8266_U0_UCS_4: { Rgbw64Color c = (static_cast<B_8266_U0_UCS_4*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,c.W); } break;
-      case I_8266_U1_UCS_4: { Rgbw64Color c = (static_cast<B_8266_U1_UCS_4*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,c.W); } break;
-      case I_8266_DM_UCS_4: { Rgbw64Color c = (static_cast<B_8266_DM_UCS_4*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,c.W); } break;
-      case I_8266_BB_UCS_4: { Rgbw64Color c = (static_cast<B_8266_BB_UCS_4*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,c.W); } break;
+      case I_8266_U0_UCS_3: { Rgb48Color c = (static_cast<B_8266_U0_UCS_3*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R>>8,c.G>>8,c.B>>8,0); } break;
+      case I_8266_U1_UCS_3: { Rgb48Color c = (static_cast<B_8266_U1_UCS_3*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R>>8,c.G>>8,c.B>>8,0); } break;
+      case I_8266_DM_UCS_3: { Rgb48Color c = (static_cast<B_8266_DM_UCS_3*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R>>8,c.G>>8,c.B>>8,0); } break;
+      case I_8266_BB_UCS_3: { Rgb48Color c = (static_cast<B_8266_BB_UCS_3*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R>>8,c.G>>8,c.B>>8,0); } break;
+      case I_8266_U0_UCS_4: { Rgbw64Color c = (static_cast<B_8266_U0_UCS_4*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R>>8,c.G>>8,c.B>>8,c.W>>8); } break;
+      case I_8266_U1_UCS_4: { Rgbw64Color c = (static_cast<B_8266_U1_UCS_4*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R>>8,c.G>>8,c.B>>8,c.W>>8); } break;
+      case I_8266_DM_UCS_4: { Rgbw64Color c = (static_cast<B_8266_DM_UCS_4*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R>>8,c.G>>8,c.B>>8,c.W>>8); } break;
+      case I_8266_BB_UCS_4: { Rgbw64Color c = (static_cast<B_8266_BB_UCS_4*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R>>8,c.G>>8,c.B>>8,c.W>>8); } break;
     #endif
     #ifdef ARDUINO_ARCH_ESP32
       case I_32_RN_NEO_3: col = (static_cast<B_32_RN_NEO_3*>(busPtr))->GetPixelColor(pix); break;
@@ -967,20 +967,20 @@ class PolyBus {
       case I_32_I1_TM1_4: col = (static_cast<B_32_I1_TM1_4*>(busPtr))->GetPixelColor(pix); break;
       case I_32_I1_TM2_3: col = (static_cast<B_32_I1_TM2_3*>(busPtr))->GetPixelColor(pix); break;
       #endif
-      case I_32_RN_UCS_3: { Rgb48Color c = (static_cast<B_32_RN_UCS_3*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,0); } break;
+      case I_32_RN_UCS_3: { Rgb48Color c = (static_cast<B_32_RN_UCS_3*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R>>8,c.G>>8,c.B>>8,0); } break;
       #ifndef WLED_NO_I2S0_PIXELBUS
-      case I_32_I0_UCS_3: { Rgb48Color c = (static_cast<B_32_I0_UCS_3*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,0); } break;
+      case I_32_I0_UCS_3: { Rgb48Color c = (static_cast<B_32_I0_UCS_3*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R>>8,c.G>>8,c.B>>8,0); } break;
       #endif
       #ifndef WLED_NO_I2S1_PIXELBUS
-      case I_32_I1_UCS_3: { Rgb48Color c = (static_cast<B_32_I1_UCS_3*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,0); } break;
+      case I_32_I1_UCS_3: { Rgb48Color c = (static_cast<B_32_I1_UCS_3*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R>>8,c.G>>8,c.B>>8,0); } break;
       #endif
 //      case I_32_BB_UCS_3: col = (static_cast<B_32_BB_UCS_3*>(busPtr))->GetPixelColor(pix); break;
-      case I_32_RN_UCS_4: { Rgbw64Color c = (static_cast<B_32_RN_UCS_4*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,c.W); } break;
+      case I_32_RN_UCS_4: { Rgbw64Color c = (static_cast<B_32_RN_UCS_4*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R>>8,c.G>>8,c.B>>8,c.W>>8); } break;
       #ifndef WLED_NO_I2S0_PIXELBUS
-      case I_32_I0_UCS_4: { Rgbw64Color c = (static_cast<B_32_I0_UCS_4*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,c.W); } break;
+      case I_32_I0_UCS_4: { Rgbw64Color c = (static_cast<B_32_I0_UCS_4*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R>>8,c.G>>8,c.B>>8,c.W>>8); } break;
       #endif
       #ifndef WLED_NO_I2S1_PIXELBUS
-      case I_32_I1_UCS_4: { Rgbw64Color c = (static_cast<B_32_I1_UCS_4*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R,c.G,c.B,c.W); } break;
+      case I_32_I1_UCS_4: { Rgbw64Color c = (static_cast<B_32_I1_UCS_4*>(busPtr))->GetPixelColor(pix); col = RGBW32(c.R>>8,c.G>>8,c.B>>8,c.W>>8); } break;
       #endif
 //      case I_32_BB_UCS_4: col = (static_cast<B_32_BB_UCS_4*>(busPtr))->GetPixelColor(pix); break;
     #endif
