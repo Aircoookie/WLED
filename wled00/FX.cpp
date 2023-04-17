@@ -6723,6 +6723,7 @@ static const char _data_FX_MODE_PIXELS[] PROGMEM = "Pixels@Fade rate,# of pixels
 //////////////////////
 //    ** Blurz      //
 //////////////////////
+#if 0  // version from upstream 0.14.0
 uint16_t mode_blurz(void) {                    // Blurz. By Andrew Tuline.
   // even with 1D effect we have to take logic for 2D segments for allocation as fill_solid() fills whole segment
 
@@ -6755,6 +6756,47 @@ uint16_t mode_blurz(void) {                    // Blurz. By Andrew Tuline.
 } // mode_blurz()
 static const char _data_FX_MODE_BLURZ[] PROGMEM = "Blurz@Fade rate,Blur;!,Color mix;!;1f;m12=0,si=0"; // Pixels, Beatsin
 
+#else // original version from SR 0.13, with minor enhancements by @softhack007
+uint16_t mode_blurz(void) {                    // Blurz. By Andrew Tuline.
+                                               // Hint: Looks best with segment brightness set to max (use global brightness to reduce brightness)
+  // even with 1D effect we have to take logic for 2D segments for allocation as fill_solid() fills whole segment
+  um_data_t *um_data;
+  if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
+    // add support for no audio
+    um_data = simulateSound(SEGMENT.soundSim);
+  }
+  uint8_t *fftResult = (uint8_t*)um_data->u_data[2];
+  float volumeSmth   = *(float*)um_data->u_data[0];
+
+  if (SEGENV.call == 0) {
+    SEGMENT.fill(BLACK);
+    SEGENV.aux0 = 0;
+  }
+
+  int fadeoutDelay = (256 - SEGMENT.speed) / 24;
+  if ((fadeoutDelay <= 1 ) || ((SEGENV.call % fadeoutDelay) == 0))
+       SEGMENT.fade_out(SEGMENT.speed);
+  else SEGMENT.blur(32);
+
+  uint16_t segLoc = random16(SEGLEN);
+  unsigned pixColor = 2*fftResult[SEGENV.aux0%16]*240/(SEGLEN-1);                  // WLEDMM avoid uint8 overflow, and preserve pixel parameters for redraw
+  unsigned pixIntensity = min((unsigned)(1.5f*fftResult[SEGENV.aux0%16]), 255U);   // WLEDMM original effect had "2*fftResult" instead of 1.5
+
+  if (volumeSmth > 1.0f)
+    SEGMENT.setPixelColor(segLoc, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette((uint16_t)pixColor, false, PALETTE_SOLID_WRAP, 0),(uint8_t)pixIntensity));
+
+  SEGMENT.blur(SEGMENT.intensity);
+  SEGENV.aux0 ++;
+  SEGENV.aux0 %= 16; // make sure it doesn't cross 16
+
+  if (volumeSmth > 1.0f) {
+    SEGMENT.setPixelColor(segLoc, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette((uint16_t)pixColor, false, PALETTE_SOLID_WRAP, 0),(uint8_t)pixIntensity)); // repaint center pixel after blur
+  }
+
+  return FRAMETIME;
+} // mode_blurz()
+static const char _data_FX_MODE_BLURZ[] PROGMEM = "Blurz ☾@Fade rate,Blur;!,Color mix;!;1f;sx=196,ix=172,m12=0,si=0"; // Pixels, Beatsin
+#endif
 
 /////////////////////////
 //   ** DJLight        //
