@@ -407,7 +407,11 @@
 #ifdef ESP8266
   #define JSON_BUFFER_SIZE 10240
 #else
+ #if defined(BOARD_HAS_PSRAM) && (defined(WLED_USE_PSRAM) || defined(WLED_USE_PSRAM_JSON))
+  #define JSON_BUFFER_SIZE 60000
+ #else
   #define JSON_BUFFER_SIZE 24576
+ #endif
 #endif
 
 //#define MIN_HEAP_SIZE (8k for AsyncWebServer)
