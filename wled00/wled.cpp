@@ -755,6 +755,9 @@ void WLED::initAP(bool resetAP)
     apActive = false;
     return;
   }
+  #ifdef WLEDMM_WIFI_POWERON_HACK
+  WiFi.setTxPower(WIFI_POWER_8_5dBm);  // reduce TX power - required for C3 mini v1.0.0 (wemos), see https://www.wemos.cc/en/latest/c3/c3_mini_1_0_0.html#about-wifi
+  #endif
 
   if (!apActive) // start captive portal if AP active
   {
