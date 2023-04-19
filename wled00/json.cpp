@@ -1072,7 +1072,7 @@ void setPaletteColors(JsonArray json, byte* tcp)
 
 void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
 {
-  byte tcp[72];
+  byte tcp[72 +4] = { 255 }; // WLEDMM bugfix - use extra element as "stop" marker (=255) for setPaletteColors(). And no, I won't cry over 4 bytes wasted ;-)
   #ifdef ESP8266
   int itemPerPage = 5;
   #else
@@ -1173,7 +1173,16 @@ void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
         if (i>=palettesCount) {
           setPaletteColors(curPalette, strip.customPalettes[i - palettesCount]);
         } else {
-          memcpy_P(tcp, (byte*)pgm_read_dword(&(gGradientPalettes[i - 13])), 72);
+          // WLEDMM workaround for palettes index overflow at i=74 -> gGradientPalettes index=61 out of bounds.
+          int palIndex = i-13;
+          constexpr int palMax = sizeof(gGradientPalettes)/sizeof(gGradientPalettes[0]) -1;
+          if ((palIndex < 0) || (palIndex > palMax)) { 
+            DEBUG_PRINTF("WARNING gGradientPalettes[%d] is out of bounds! max=%d. (json.cpp)\n", palIndex, palMax);
+            palIndex = palMax;  // use last valid array item
+          }
+          memset(tcp, 255, sizeof(tcp));  // WLEDMM pre-fill buffer with dummy values, to avoid array overrun in setPaletteColors in case of "unterminated" palette entry
+          // WLEDMM end
+          memcpy_P(tcp, (byte*)pgm_read_dword(&(gGradientPalettes[palIndex])), 72);
           setPaletteColors(curPalette, tcp);
         }
         }
