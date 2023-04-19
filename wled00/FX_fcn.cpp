@@ -157,7 +157,7 @@ bool Segment::allocateData(size_t len) {
   deallocateData();
   if (Segment::getUsedSegmentData() + len > MAX_SEGMENT_DATA) return false; //not enough memory
   // if possible use SPI RAM on ESP32
-  #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
+  #if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
   if (psramFound())
     data = (byte*) ps_malloc(len);
   else
@@ -204,7 +204,7 @@ void Segment::setUpLeds() {
     leds = &Segment::_globalLeds[start];
     #endif
   else if (!leds) {
-    #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
+    #if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
     if (psramFound())
       leds = (CRGB*)ps_malloc(sizeof(CRGB)*length());
     else
@@ -1443,7 +1443,7 @@ void WS2812FX::finalizeInit(void)
   }
   if (useLedsArray) {
     size_t arrSize = sizeof(CRGB) * getLengthTotal();
-    #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
+    #if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
     if (psramFound())
       Segment::_globalLeds = (CRGB*) ps_malloc(arrSize);
     else
