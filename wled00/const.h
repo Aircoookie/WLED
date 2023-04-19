@@ -408,7 +408,11 @@
   #define JSON_BUFFER_SIZE 10240
 #else
  #if defined(BOARD_HAS_PSRAM) && (defined(WLED_USE_PSRAM) || defined(WLED_USE_PSRAM_JSON))
-  #define JSON_BUFFER_SIZE 60000
+  #if defined(ARDUINO_ARCH_ESP32S2) || defined(ARDUINO_ARCH_ESP32C3)
+  #define JSON_BUFFER_SIZE 48000 // WLEDMM
+  #else
+  #define JSON_BUFFER_SIZE 60000 // WLEDMM
+  #endif
  #else
   #define JSON_BUFFER_SIZE 24576
  #endif
