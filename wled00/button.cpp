@@ -225,7 +225,6 @@ void handleButton()
 {
   static unsigned long lastRead = 0UL;
   static unsigned long lastRun = 0UL;
-  bool analog = false;
   unsigned long now = millis();
 
   //if (strip.isUpdating()) return; // don't interfere with strip updates. Our button will still be there in 1ms (next cycle)
@@ -241,14 +240,18 @@ void handleButton()
 
     if (usermods.handleButton(b)) continue; // did usermod handle buttons
 
-    if ((buttonType[b] == BTN_TYPE_ANALOG || buttonType[b] == BTN_TYPE_ANALOG_INVERTED) && now - lastRead > ANALOG_BTN_READ_CYCLE) {   // button is not a button but a potentiometer
-      analog = true;
-      handleAnalog(b); continue;
+    if (buttonType[b] == BTN_TYPE_ANALOG || buttonType[b] == BTN_TYPE_ANALOG_INVERTED) {   // button is not a button but a potentiometer
+      if (now - lastRead > ANALOG_BTN_READ_CYCLE) {
+        handleAnalog(b);
+        lastRead = now;
+      }
+      continue;
     }
 
     //button is not momentary, but switch. This is only suitable on pins whose on-boot state does not matter (NOT gpio0)
     if (buttonType[b] == BTN_TYPE_SWITCH || buttonType[b] == BTN_TYPE_PIR_SENSOR) {
-      handleSwitch(b); continue;
+      handleSwitch(b);
+      continue;
     }
 
     //momentary button logic
@@ -305,7 +308,6 @@ void handleButton()
       shortPressAction(b);
     }
   }
-  if (analog) lastRead = now;
 }
 
 // If enabled, RMT idle level is set to HIGH when off
