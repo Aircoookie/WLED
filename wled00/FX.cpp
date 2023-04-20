@@ -4653,8 +4653,8 @@ uint16_t mode_2DColoredBursts() {              // By: ldirko   https://editor.so
     byte ysteps = abs8(x2 - y2) + 1;
     byte steps = xsteps >= ysteps ? xsteps : ysteps;
     //Draw gradient line
-    for (size_t i = 1; i <= steps; i++) {
-      uint8_t rate = i * 255 / steps;
+    for (size_t j = 1; j <= steps; j++) {
+      uint8_t rate = j * 255 / steps;
       byte dx = lerp8by8(x1, y1, rate);
       byte dy = lerp8by8(x2, y2, rate);
       //SEGMENT.setPixelColorXY(dx, dy, grad ? color.nscale8_video(255-rate) : color); // use addPixelColorXY for different look

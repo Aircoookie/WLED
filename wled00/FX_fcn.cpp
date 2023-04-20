@@ -1181,12 +1181,12 @@ void WS2812FX::estimateCurrentAndLimitBri() {
 
   uint32_t powerSum = 0;
 
-  for (uint8_t b = 0; b < busses.getNumBusses(); b++) {
-    Bus *bus = busses.getBus(b);
+  for (uint_fast8_t bNum = 0; bNum < busses.getNumBusses(); bNum++) {
+    Bus *bus = busses.getBus(bNum);
     if (bus->getType() >= TYPE_NET_DDP_RGB) continue; //exclude non-physical network busses
     uint16_t len = bus->getLength();
     uint32_t busPowerSum = 0;
-    for (uint16_t i = 0; i < len; i++) { //sum up the usage of each LED
+    for (uint_fast16_t i = 0; i < len; i++) { //sum up the usage of each LED
       uint32_t c = bus->getPixelColor(i);
       byte r = R(c), g = G(c), b = B(c), w = W(c);
 
