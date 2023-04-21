@@ -1650,8 +1650,9 @@ uint16_t WS2812FX::getFps() {
 }
 
 void WS2812FX::setTargetFps(uint8_t fps) {
-  if (fps > 0 && fps <= 120) _targetFps = fps;
+  if (fps > 0 && fps <= 251) _targetFps = fps;  // WLEDMM allow higher framerates
   _frametime = 1000 / _targetFps;
+  if (_frametime < 1) _frametime = 1;           // WLEDMM better safe than sorry
 }
 
 void WS2812FX::setMode(uint8_t segid, uint8_t m) {
