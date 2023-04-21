@@ -821,9 +821,9 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8
           }
         }
 
-        byte buffer[ART_NET_HEADER_SIZE];
-        memcpy_P(buffer, ART_NET_HEADER, ART_NET_HEADER_SIZE);
-        ddpUdp.write(buffer, ART_NET_HEADER_SIZE); // This doesn't change. Hard coded ID, OpCode, and protocol version.
+        byte header_buffer[ART_NET_HEADER_SIZE];
+        memcpy_P(header_buffer, ART_NET_HEADER, ART_NET_HEADER_SIZE);
+        ddpUdp.write(header_buffer, ART_NET_HEADER_SIZE); // This doesn't change. Hard coded ID, OpCode, and protocol version.
         ddpUdp.write(sequenceNumber & 0xFF); // sequence number. 1..255
         ddpUdp.write(0x00); // physical - more an FYI, not really used for anything. 0..3
         ddpUdp.write((currentPacket) & 0xFF); // Universe LSB. 1 full packet == 1 full universe, so just use current packet number.
