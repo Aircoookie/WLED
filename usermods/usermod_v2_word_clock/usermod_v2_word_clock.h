@@ -424,11 +424,11 @@ class WordClockUsermod : public Usermod
     void addToConfig(JsonObject& root)
     {
       JsonObject top = root.createNestedObject("WordClockUsermod");
-      top["Active"] = usermodActive;
-      top["Display it is"] = displayItIs;
-      top["LED offset"] = ledOffset;
-      top["Meander wiring"] = meander;
-      top["Viertel vor"] = nord;
+      top["active"] = usermodActive;
+      top["displayItIs"] = displayItIs;
+      top["ledOffset"] = ledOffset;
+      top["Meander wiring?"] = meander;
+      top["Norddeutsch"] = nord;
     }
 
     /*
@@ -455,11 +455,11 @@ class WordClockUsermod : public Usermod
 
       bool configComplete = !top.isNull();
 
-      configComplete &= getJsonValue(top["Active"], usermodActive);
-      configComplete &= getJsonValue(top["Display it is"], displayItIs);
-      configComplete &= getJsonValue(top["LED offset"], ledOffset);
-      configComplete &= getJsonValue(top["Meander wiring"], meander);
-      configComplete &= getJsonValue(top["Viertel vor"], nord);
+      configComplete &= getJsonValue(top["active"], usermodActive);
+      configComplete &= getJsonValue(top["displayItIs"], displayItIs);
+      configComplete &= getJsonValue(top["ledOffset"], ledOffset);
+      configComplete &= getJsonValue(top["Meander wiring?"], meander);
+      configComplete &= getJsonValue(top["Norddeutsch"], nord);
 
       return configComplete;
     }
