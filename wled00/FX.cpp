@@ -5999,8 +5999,12 @@ static const char _data_FX_MODE_2DDRIFTROSE[] PROGMEM = "Drift Rose@Fade,Blur;;;
 // a few constants needed for AudioReactive effects
 
 // for 22Khz sampling
-#define MAX_FREQUENCY   11025    // sample frequency / 2 (as per Nyquist criterion)
-#define MAX_FREQ_LOG10  4.04238f // log10(MAX_FREQUENCY)
+#define MIN_FREQUENCY   80             // 80 HZ - due to lower resolution
+#define MIN_FREQ_LOG10  1.90309f       // log10(MIN_FREQUENCY) 
+#define MIN_FREQ_LOG    4.38202663467f // log(MIN_FREQUENCY) 
+#define MAX_FREQUENCY   11025          // sample frequency / 2 (as per Nyquist criterion)
+#define MAX_FREQ_LOG10  4.04238f       // log10(MAX_FREQUENCY)
+#define MAX_FREQ_LOG    9.30792070f    // log(MAX_FREQUENCY)
 
 // for 20Khz sampling
 //#define MAX_FREQUENCY   10240
@@ -6406,7 +6410,7 @@ static const char _data_FX_MODE_JUGGLES[] PROGMEM = "Juggles@!,# of balls;!,!;!;
 //////////////////////
 //   * MATRIPIX     //
 //////////////////////
-uint16_t mode_matripix(void) {                  // Matripix. By Andrew Tuline.
+uint16_t mode_matripix(void) {                  // Matripix. By Andrew Tuline. With some enhancements by @softhack007
   // even with 1D effect we have to take logic for 2D segments for allocation as fill_solid() fills whole segment
 
   um_data_t *um_data;
@@ -6415,6 +6419,9 @@ uint16_t mode_matripix(void) {                  // Matripix. By Andrew Tuline.
     um_data = simulateSound(SEGMENT.soundSim);
   }
   int16_t volumeRaw    = *(int16_t*)um_data->u_data[1];
+  float volumeSmth     = *(float*)  um_data->u_data[0];
+  float soundPressure  = *(float*)  um_data->u_data[9];
+  float FFT_MajorPeak  = *(float*)  um_data->u_data[8]; // 8 = smooth 4=normal
 
   if (SEGENV.call == 0) {
     SEGMENT.setUpLeds();
@@ -6425,14 +6432,35 @@ uint16_t mode_matripix(void) {                  // Matripix. By Andrew Tuline.
   if((SEGMENT.speed > 254) || (SEGENV.aux0 != secondHand)) {   // WLEDMM allow run run at full speed
     SEGENV.aux0 = secondHand;
 
-    int pixBri = volumeRaw * SEGMENT.intensity / 64;
+    float rawPixel = (float)volumeRaw;
+    if (SEGENV.check2) rawPixel = soundPressure;     // WLEDMM use Sound Pressure
+    if ((volumeSmth < 1.0f) || (rawPixel < 1)) rawPixel = 0;
+    rawPixel = rawPixel*rawPixel / 256.0f;           // WLEDMM square scaling to emphasize peaks
+
+    float pixOffset = 0;
+    if (SEGMENT.check2 && SEGMENT.intensity > 159) pixOffset = float(SEGMENT.intensity - 160) * 0.45f; // slightly raise lower limit, to show more details (sound pressure only)
+    rawPixel -= pixOffset; if (rawPixel < 0) rawPixel = 0;
+
+    unsigned pixBri = (unsigned)rawPixel * (unsigned)(SEGMENT.intensity+1) / 160;
     for (int i = 0; i < SEGLEN-1; i++) SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i+1)); // shift left
-    SEGMENT.setPixelColor(SEGLEN-1, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), pixBri));
+
+    if (!SEGENV.check1) {
+      // classic mode: Use Volume for colors 
+      SEGMENT.setPixelColor(SEGLEN-1, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(millis()/10, false, PALETTE_SOLID_WRAP, 0), pixBri));
+    } else {
+      // Frequency Colors: select palette entry based on log(MajorPeak)
+      int16_t palLocn = (volumeSmth > 0.5f) ? 255 : 0;
+      if((volumeSmth > 0.5f) && (FFT_MajorPeak > MIN_FREQUENCY) && (FFT_MajorPeak < MAX_FREQUENCY)) { 
+        palLocn = (logf(FFT_MajorPeak) - MIN_FREQ_LOG) * (255.0f/(MAX_FREQ_LOG - MIN_FREQ_LOG)) *1.1f;   // Scale log frequency values to the 255 colour index. "* 1.1" for some overshoot
+        if (palLocn < 0) palLocn = 0; // just to be safe
+      }
+      SEGMENT.setPixelColor(SEGLEN-1, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette((uint16_t)palLocn, false, PALETTE_SOLID_WRAP, 0), pixBri));
+    }
   }
 
   return FRAMETIME;
 } // mode_matripix()
-static const char _data_FX_MODE_MATRIPIX[] PROGMEM = "Matripix@!,Brightness;!,!;!;1v;ix=64,m12=2,si=1"; //,rev=1,mi=1,rY=1,mY=1 Arc, WeWillRockYou, reverseX
+static const char _data_FX_MODE_MATRIPIX[] PROGMEM = "Matripix ☾@!,Brightness,,,,Frequency Colors,Sound Pressure;!,!;!;1v;ix=96,m12=2,si=1"; //,rev=1,mi=1,rY=1,mY=1 Arc, WeWillRockYou, reverseX
 
 
 //////////////////////
@@ -6467,7 +6495,7 @@ uint16_t mode_midnoise(void) {                  // Midnoise. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_midnoise()
-static const char _data_FX_MODE_MIDNOISE[] PROGMEM = "Midnoise@Fade rate,Max. length;!,!;!;1v;ix=128,m12=1,si=0"; // Bar, Beatsin
+static const char _data_FX_MODE_MIDNOISE[] PROGMEM = "Midnoise@Fade rate,Max. length;!,!;!;1v;sx=206,ix=128,m12=1,si=0"; // Bar, Beatsin
 
 
 //////////////////////
@@ -6535,7 +6563,7 @@ uint16_t mode_noisemeter(void) {                // Noisemeter. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_noisemeter()
-static const char _data_FX_MODE_NOISEMETER[] PROGMEM = "Noisemeter@Fade rate,Width;!,!;!;1v;ix=128,m12=2,si=0"; // Arc, Beatsin
+static const char _data_FX_MODE_NOISEMETER[] PROGMEM = "Noisemeter@Fade rate,Width;!,!;!;1v;;sx=248,ix=128,m12=2,si=0"; // Arc, Beatsin
 
 
 //////////////////////
@@ -6560,9 +6588,11 @@ uint16_t mode_pixelwave(void) {                 // Pixelwave. By Andrew Tuline.
   if((SEGMENT.speed > 254) || (SEGENV.aux0 != secondHand)) {   // WLEDMM allow run run at full speed
     SEGENV.aux0 = secondHand;
 
-    int pixBri = volumeRaw * SEGMENT.intensity / 64;
+    float rawPixel = (float)volumeRaw;
+    rawPixel = rawPixel*rawPixel / 256.0f;  // WLEDMM square scaling to emphasize peaks
+    int pixBri = rawPixel * (SEGMENT.intensity+1) / 96;
 
-    SEGMENT.setPixelColor(SEGLEN/2, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), pixBri));
+    SEGMENT.setPixelColor(SEGLEN/2, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(millis()/5, false, PALETTE_SOLID_WRAP, 0), pixBri));
     for (int i = SEGLEN - 1; i > SEGLEN/2; i--)   SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i-1)); //move to the left
     for (int i = 0; i < SEGLEN/2; i++)            SEGMENT.setPixelColor(i, SEGMENT.getPixelColor(i+1)); // move to the right
   }
@@ -6610,7 +6640,7 @@ uint16_t mode_plasmoid(void) {                  // Plasmoid. By Andrew Tuline.
 
   return FRAMETIME;
 } // mode_plasmoid()
-static const char _data_FX_MODE_PLASMOID[] PROGMEM = "Plasmoid@Phase,# of pixels;!,!;!;1v;sx=128,ix=128,m12=0,si=0"; // Pixels, Beatsin
+static const char _data_FX_MODE_PLASMOID[] PROGMEM = "Plasmoid@Phase,# of pixels;!,!;!;1v;sx=128,ix=80,pal=8,m12=0,si=0"; // Pixels, Beatsin, Lava Palette
 
 
 ///////////////////////
@@ -6759,7 +6789,7 @@ uint16_t mode_blurz(void) {                    // Blurz. By Andrew Tuline.
 } // mode_blurz()
 static const char _data_FX_MODE_BLURZ[] PROGMEM = "Blurz@Fade rate,Blur;!,Color mix;!;1f;m12=0,si=0"; // Pixels, Beatsin
 
-#else // original version from SR 0.13, with minor enhancements by @softhack007
+#else // original version from SR 0.13, with some enhancements by @softhack007
 uint16_t mode_blurz(void) {                    // Blurz. By Andrew Tuline.
                                                // Hint: Looks best with segment brightness set to max (use global brightness to reduce brightness)
   // even with 1D effect we have to take logic for 2D segments for allocation as fill_solid() fills whole segment
@@ -6772,33 +6802,39 @@ uint16_t mode_blurz(void) {                    // Blurz. By Andrew Tuline.
   float volumeSmth   = *(float*)um_data->u_data[0];
 
   if (SEGENV.call == 0) {
+    SEGMENT.setUpLeds(); // not sure if necessary
     SEGMENT.fill(BLACK);
     SEGENV.aux0 = 0;
+    SEGENV.aux1 = 65535; // last pixel postion. 65535 = none
+    SEGENV.step = 0;  // last pixel color
   }
 
   int fadeoutDelay = (256 - SEGMENT.speed) / 24;
   if ((fadeoutDelay <= 1 ) || ((SEGENV.call % fadeoutDelay) == 0))
-       SEGMENT.fade_out(SEGMENT.speed);
-  else SEGMENT.blur(32);
+       SEGMENT.fadeToBlackBy(max(SEGMENT.speed, (uint8_t)1));
+  else {
+    SEGMENT.blur(8 + SEGMENT.intensity/8 + fadeoutDelay*4);
+  }
+  if ((SEGENV.aux1 < SEGLEN) && (volumeSmth > 1.0f)) SEGMENT.setPixelColor(SEGENV.aux1,SEGENV.step); // "repaint" last pixel after blur
 
   uint16_t segLoc = random16(SEGLEN);
   unsigned pixColor = 2*fftResult[SEGENV.aux0%16]*240/(SEGLEN-1);                  // WLEDMM avoid uint8 overflow, and preserve pixel parameters for redraw
-  unsigned pixIntensity = min((unsigned)(1.5f*fftResult[SEGENV.aux0%16]), 255U);   // WLEDMM original effect had "2*fftResult" instead of 1.5
-
-  if (volumeSmth > 1.0f)
-    SEGMENT.setPixelColor(segLoc, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette((uint16_t)pixColor, false, PALETTE_SOLID_WRAP, 0),(uint8_t)pixIntensity));
-
-  SEGMENT.blur(SEGMENT.intensity);
-  SEGENV.aux0 ++;
-  SEGENV.aux0 %= 16; // make sure it doesn't cross 16
+  unsigned pixIntensity = min((unsigned)(2.0f*fftResult[SEGENV.aux0%16]), 255U);
 
   if (volumeSmth > 1.0f) {
+    SEGMENT.setPixelColor(segLoc, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette((uint16_t)pixColor, false, PALETTE_SOLID_WRAP, 0),(uint8_t)pixIntensity));
+    SEGENV.step = SEGMENT.getPixelColor(segLoc);  // remember last color
+    SEGENV.aux1 = segLoc;                         // remember last position
+
+    SEGMENT.blur(max(SEGMENT.intensity, (uint8_t)1));
+    SEGENV.aux0 ++;
+    SEGENV.aux0 %= 16; // make sure it doesn't cross 16
     SEGMENT.setPixelColor(segLoc, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette((uint16_t)pixColor, false, PALETTE_SOLID_WRAP, 0),(uint8_t)pixIntensity)); // repaint center pixel after blur
-  }
+  } else SEGMENT.blur(max(SEGMENT.intensity, (uint8_t)1));  // silence - just blur it again
 
   return FRAMETIME;
 } // mode_blurz()
-static const char _data_FX_MODE_BLURZ[] PROGMEM = "Blurz ☾@Fade rate,Blur;!,Color mix;!;1f;sx=196,ix=172,m12=0,si=0"; // Pixels, Beatsin
+static const char _data_FX_MODE_BLURZ[] PROGMEM = "Blurz ☾@Fade rate,Blur;!,Color mix;!;1f;sx=48,ix=127,m12=0,si=0"; // Pixels, Beatsin
 #endif
 
 /////////////////////////
@@ -7018,7 +7054,7 @@ static const char _data_FX_MODE_FREQPIXELS[] PROGMEM = "Freqpixels@Fade rate,Sta
 //
 // As a compromise between speed and accuracy we are currently sampling with 10240Hz, from which we can then determine with a 512bin FFT our max frequency is 5120Hz.
 // Depending on the music stream you have you might find it useful to change the frequency mapping.
-uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschung.
+uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschung. With some enhancements by @softhack007
   um_data_t *um_data;
   if (!usermods.getUMData(&um_data, USERMOD_ID_AUDIOREACTIVE)) {
     // add support for no audio
@@ -7036,11 +7072,11 @@ uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschun
   if((SEGMENT.speed > 254) || (SEGENV.aux0 != secondHand)) {   // WLEDMM allow run run at full speed
     SEGENV.aux0 = secondHand;
 
-    float sensitivity = mapf(SEGMENT.custom3, 1, 31, 1, 10); // reduced resolution slider
+    float sensitivity = 0.5f * mapf(SEGMENT.custom3, 1, 31, 0.5, 10); // reduced resolution slider
     float pixVal = volumeSmth * (float)SEGMENT.intensity / 256.0f * sensitivity;
     if (pixVal > 255) pixVal = 255;
 
-    float intensity = mapf(pixVal, 0, 255, 0, 100) / 100.0f;  // make a brightness from the last avg
+    float intensity = mapf(pixVal, 0, 255, 0, 100) / 100.0f;  // make a brightness from the last avg - softhack007 note: completely over-complicated mappings. simplify!
 
     CRGB color = 0;
 
@@ -7049,15 +7085,26 @@ uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschun
     // With our sampling rate of 10240Hz we have a usable freq range from roughtly 80Hz to 10240/2 Hz
     // we will treat everything with less than 65Hz as 0
 
-    if (FFT_MajorPeak < 80) {
+    if ((FFT_MajorPeak < 80) || (volumeSmth < 1.0f) || (FFT_MajorPeak > 10800)) { // silence or out-of-range --> black
       color = CRGB::Black;
     } else {
-      int upperLimit = 80 + 42 * SEGMENT.custom2;
-      int lowerLimit = 80 + 3 * SEGMENT.custom1;
-      uint8_t i =  lowerLimit!=upperLimit ? map(FFT_MajorPeak, lowerLimit, upperLimit, 0, 255) : FFT_MajorPeak; // may under/overflow - so we enforce uint8_t
+      uint8_t i = 0;
+      if (!SEGENV.check1) {
+        // direct frequency scaling
+        int upperLimit = 80 + 42 * SEGMENT.custom2; // max 80hz-10Khz
+        int lowerLimit = 80 + 3 * SEGMENT.custom1;  // min 80hz-850hz
+        i = lowerLimit!=upperLimit ? map(FFT_MajorPeak, lowerLimit, upperLimit, 0, 255) : FFT_MajorPeak; // may under/overflow - so we enforce uint8_t
+      } else {
+        // Musical Scale (logarythmic scaling)
+        float upperLimit = logf(80 + 42 * SEGMENT.custom2); // max 80hz-10Khz
+        float lowerLimit = logf(80 + 3 * SEGMENT.custom1);  // min 80hz-850hz
+        float peakMapped = fabsf(lowerLimit - upperLimit)>0.05f ? mapf(logf(FFT_MajorPeak), lowerLimit, upperLimit, 0, 255) : FFT_MajorPeak; // may under/overflow
+        if (peakMapped > 255) intensity = constrain((320-peakMapped), 0, intensity*100) / 100.0f; // too high: fade away
+        i = constrain(peakMapped, 0, 255);  // fix over / underflow
+      }
       uint16_t b = 255.0 * intensity;
       if (b > 255) b=255;
-      color = CHSV(i, 240, (uint8_t)b); // implicit conversion to RGB supplied by FastLED
+      color = CHSV(i, 176+(uint8_t)b/4, (uint8_t)b); // implicit conversion to RGB supplied by FastLED
     }
 
     SEGMENT.setPixelColor(SEGLEN/2, color);
@@ -7069,7 +7116,7 @@ uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschun
 
   return FRAMETIME;
 } // mode_freqwave()
-static const char _data_FX_MODE_FREQWAVE[] PROGMEM = "Freqwave@Time delay,Sound effect,Low bin,High bin,Pre-amp;;;1f;m12=2,si=0"; // Arc, Beatsin
+static const char _data_FX_MODE_FREQWAVE[] PROGMEM = "Freqwave@Time delay,Sound effect,Low bin,High bin,Pre-amp,Musical Scale ☾;;;1f;c1=18,c2=48,m12=2,si=0"; // notes range C3 to C7, Arc, Beatsin
 
 
 ///////////////////////
@@ -7090,7 +7137,11 @@ uint16_t mode_gravfreq(void) {                  // Gravfreq. By Andrew Tuline.
   float   volumeSmth    = *(float*)um_data->u_data[0];
   if (FFT_MajorPeak < 1) FFT_MajorPeak = 1;                                         // log10(0) is "forbidden" (throws exception)
 
-  SEGMENT.fade_out(250);
+  if (SEGENV.call == 0) {
+    SEGMENT.fill(BLACK);
+    SEGENV.aux0 = 0; // WLEDMM: last color index, to perform some color smoothing
+  }
+  SEGMENT.fadeToBlackBy(96);
 
   float segmentSampleAvg = volumeSmth * (float)SEGMENT.intensity / 255.0f;
   segmentSampleAvg *= 0.125; // divide by 8,  to compensate for later "sensitivty" upscaling
@@ -7099,13 +7150,13 @@ uint16_t mode_gravfreq(void) {                  // Gravfreq. By Andrew Tuline.
   int tempsamp = constrain(mySampleAvg,0,SEGLEN/2);     // Keep the sample from overflowing.
   uint8_t gravity = 8 - SEGMENT.speed/32;
 
+  int indexNew = (logf(FFT_MajorPeak) - MIN_FREQ_LOG) * 255.0f/(MAX_FREQ_LOG - MIN_FREQ_LOG);  // softhack007: previous formula was full of math accidents. this one works.
+  indexNew = constrain(indexNew, 0, 255);
+  int palIndex = (indexNew + SEGENV.aux0) / 2; // smooth it a bit
+
   for (int i=0; i<tempsamp; i++) {
-
-    //uint8_t index = (log10((int)FFT_MajorPeak) - (3.71-1.78)) * 255; //int? shouldn't it be floor() or similar
-    uint8_t index = (log10f(FFT_MajorPeak) - (MAX_FREQ_LOG10 - 1.78f)) * 255; //int? shouldn't it be floor() or similar
-
-    SEGMENT.setPixelColor(i+SEGLEN/2, SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0));
-    SEGMENT.setPixelColor(SEGLEN/2-i-1, SEGMENT.color_from_palette(index, false, PALETTE_SOLID_WRAP, 0));
+    SEGMENT.setPixelColor(i+SEGLEN/2, SEGMENT.color_from_palette((uint8_t)palIndex, false, PALETTE_SOLID_WRAP, 0));
+    SEGMENT.setPixelColor(SEGLEN/2-i-1, SEGMENT.color_from_palette((uint8_t)palIndex, false, PALETTE_SOLID_WRAP, 0));
   }
 
   if (tempsamp >= gravcen->topLED)
@@ -7113,15 +7164,16 @@ uint16_t mode_gravfreq(void) {                  // Gravfreq. By Andrew Tuline.
   else if (gravcen->gravityCounter % gravity == 0)
     gravcen->topLED--;
 
-  if (gravcen->topLED >= 0) {
+  if ((gravcen->topLED >= 0) && (SEGMENT.speed < 255)) {
     SEGMENT.setPixelColor(gravcen->topLED+SEGLEN/2, CRGB::Gray);
     SEGMENT.setPixelColor(SEGLEN/2-1-gravcen->topLED, CRGB::Gray);
   }
   gravcen->gravityCounter = (gravcen->gravityCounter + 1) % gravity;
 
+  SEGENV.aux0 = indexNew;
   return FRAMETIME;
 } // mode_gravfreq()
-static const char _data_FX_MODE_GRAVFREQ[] PROGMEM = "Gravfreq@Rate of fall,Sensivity;!,!;!;1f;ix=128,m12=0,si=0"; // Pixels, Beatsin
+static const char _data_FX_MODE_GRAVFREQ[] PROGMEM = "Gravfreq ☾@Rate of fall,Sensivity;!,!;!;1f;ix=128,m12=0,si=0"; // Pixels, Beatsin
 
 
 //////////////////////
