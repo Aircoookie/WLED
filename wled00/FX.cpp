@@ -5880,9 +5880,10 @@ uint16_t mode_2Dscrollingtext(void) {
   }
   const int yoffset = map(SEGMENT.intensity, 0, 255, -rows/2, rows/2) + (rows-letterHeight)/2;
   char text[33] = {'\0'};
-  if (SEGMENT.name) for (size_t i=0,j=0; i<strlen(SEGMENT.name); i++) if (SEGMENT.name[i]>31 && SEGMENT.name[i]<128) text[j++] = SEGMENT.name[i];
+  unsigned maxLen = (SEGMENT.name) ? min(32, (int)strlen(SEGMENT.name)) : 0;  // WLEDMM make it robust against too long segment names
+  if (SEGMENT.name) for (size_t i=0,j=0; i<maxLen; i++) if (SEGMENT.name[i]>31 && SEGMENT.name[i]<128) text[j++] = SEGMENT.name[i];
 
-  if (!strlen(text) || !strncmp_P(text,PSTR("#DATE"),5) || !strncmp_P(text,PSTR("#DDMM"),5) || !strncmp_P(text,PSTR("#MMDD"),5) || !strncmp_P(text,PSTR("#TIME"),5) || !strncmp_P(text,PSTR("#HHMM"),5)) { // fallback if empty segment name: display date and time
+  if (!strlen(text) || !strncmp_P(text,PSTR("#F"),2) || !strncmp_P(text,PSTR("#P"),2) || !strncmp_P(text,PSTR("#DATE"),5) || !strncmp_P(text,PSTR("#DDMM"),5) || !strncmp_P(text,PSTR("#MMDD"),5) || !strncmp_P(text,PSTR("#TIME"),5) || !strncmp_P(text,PSTR("#HHMM"),5)) { // fallback if empty segment name: display date and time
     char sec[5];
     byte AmPmHour = hour(localTime);
     boolean isitAM = true;
@@ -5897,10 +5898,10 @@ uint16_t mode_2Dscrollingtext(void) {
     else if (!strncmp_P(text,PSTR("#MMDD"),5)) sprintf_P(text, PSTR("%d/%d"), month(localTime), day(localTime));
     else if (!strncmp_P(text,PSTR("#TIME"),5)) sprintf_P(text, PSTR("%2d:%02d%s"), AmPmHour, minute(localTime), sec);
     else if (!strncmp_P(text,PSTR("#HHMM"),5)) sprintf_P(text, PSTR("%2d:%02d"), AmPmHour, minute(localTime));
+    else if (!strncmp_P(text,PSTR("#FPS"),4)) sprintf_P(text, PSTR("%2d"), (int) strip.getFps());                     // WLEDMM
+    else if (!strncmp_P(text,PSTR("#POW"),4)) sprintf_P(text, PSTR("%3.2fA"), float(strip.currentMilliamps)/1000.0f); // WLEDMM
     else sprintf_P(text, PSTR("%s %d, %d %2d:%02d%s"), monthShortStr(month(localTime)), day(localTime), year(localTime), AmPmHour, minute(localTime), sec);
   }
-  if (!strncmp_P(text,PSTR("#FPS"),4)) sprintf_P(text, PSTR("%2d"), strip.getFps());                               // WLEDMM
-  if (!strncmp_P(text,PSTR("#POW"),4)) sprintf_P(text, PSTR("%3.2fA"), float(strip.currentMilliamps)/1000.0f);     // WLEDMM
   const int numberOfLetters = strlen(text);
 
   if (SEGENV.step < millis()) {
