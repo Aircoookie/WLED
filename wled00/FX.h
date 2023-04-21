@@ -925,7 +925,7 @@ class WS2812FX {  // 96 bytes
     uint16_t* customMappingTable;
     uint16_t  customMappingSize;
 
-    uint32_t _lastShow;
+    /*uint32_t*/ unsigned long _lastShow; // WLEDMM avoid losing precision
 
     uint8_t _segment_index;
     uint8_t _mainSegment;
