@@ -26,6 +26,9 @@
 #include "wled.h"
 #include "FX.h"
 #include "palettes.h"
+#ifdef ARDUINO_ARCH_ESP32
+#include <esp_timer.h>     // WLEDMM to get esp_timer_get_time() 
+#endif
 
 /*
   Custom per-LED mapping has moved!
@@ -206,7 +209,7 @@ void Segment::setUpLeds() {
   else if (!leds) {
     #if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
     if (psramFound())
-      leds = (CRGB*)ps_malloc(sizeof(CRGB)*length());
+      leds = (CRGB*)ps_malloc(sizeof(CRGB)*length()); // WLEDMM: stupid - PSRAM is too slow for this !!!
     else
     #endif
       leds = (CRGB*)malloc(sizeof(CRGB)*length());
@@ -1631,6 +1634,16 @@ void WS2812FX::show(void) {
   if (diff > 0) fpsCurr = 1000 / diff;
   _cumulativeFps = (3 * _cumulativeFps + fpsCurr) >> 2;
   _lastShow = now;
+#ifdef ARDUINO_ARCH_ESP32                      // WLEDMM more accurate FPS measurement for ESP32
+  uint64_t now500 = esp_timer_get_time() / 2;  // native timer; micros /2 -> millis * 500
+  int64_t diff500 = now500 - _lastShow500;
+  if ((diff500 > 300) && (diff500 < 800000)) { // exclude stupid values (timer rollover, major hickups)
+    float fpcCurr500 = 500000.0f / float(diff500);
+    if (fpcCurr500 > 2)
+      _cumulativeFps500 = (3 * _cumulativeFps500 + (500.0 * fpcCurr500)) / 4;  // average for some smoothing
+  }
+  _lastShow500 = now500;
+#endif
 }
 
 /**
@@ -1647,7 +1660,11 @@ bool WS2812FX::isUpdating() {
  */
 uint16_t WS2812FX::getFps() {
   if (millis() - _lastShow > 2000) return 0;
+#ifdef ARDUINO_ARCH_ESP32
+  return ((_cumulativeFps500 + 250) / 500);  // +250 for proper rounding
+#else
   return _cumulativeFps +1;
+#endif
 }
 
 void WS2812FX::setTargetFps(uint8_t fps) {

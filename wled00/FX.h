@@ -689,6 +689,10 @@ class WS2812FX {  // 96 bytes
       _targetFps(WLED_FPS),
       _frametime(FRAMETIME_FIXED),
       _cumulativeFps(2),
+#ifdef ARDUINO_ARCH_ESP32
+      _cumulativeFps500(2*500),      // WLEDMM more accurate FPS measurement for ESP32
+      _lastShow500(0),
+#endif
       _isServicing(false),
       _isOffRefreshRequired(false),
       _hasWhiteChannel(false),
@@ -907,6 +911,10 @@ class WS2812FX {  // 96 bytes
     uint8_t  _targetFps;
     uint16_t _frametime;
     uint16_t _cumulativeFps;
+#ifdef ARDUINO_ARCH_ESP32
+    uint64_t _cumulativeFps500; // WLEDMM more accurate FPS measurement for ESP32
+    uint64_t _lastShow500;
+#endif
 
     // will require only 1 byte
     struct {
