@@ -423,12 +423,12 @@ class WordClockUsermod : public Usermod
      */
     void addToConfig(JsonObject& root)
     {
-      JsonObject top = root.createNestedObject("WordClockUsermod");
-      top["active"] = usermodActive;
-      top["displayItIs"] = displayItIs;
-      top["ledOffset"] = ledOffset;
-      top["Meander wiring?"] = meander;
-      top["Norddeutsch"] = nord;
+      JsonObject top = root.createNestedObject(F("WordClockUsermod"));
+      top[F("active")] = usermodActive;
+      top[F("displayItIs")] = displayItIs;
+      top[F("ledOffset")] = ledOffset;
+      top[F("Meander wiring?")] = meander;
+      top[F("Norddeutsch")] = nord;
     }
 
     /*
@@ -451,15 +451,15 @@ class WordClockUsermod : public Usermod
       // default settings values could be set here (or below using the 3-argument getJsonValue()) instead of in the class definition or constructor
       // setting them inside readFromConfig() is slightly more robust, handling the rare but plausible use case of single value being missing after boot (e.g. if the cfg.json was manually edited and a value was removed)
 
-      JsonObject top = root["WordClockUsermod"];
+      JsonObject top = root[F("WordClockUsermod")];
 
       bool configComplete = !top.isNull();
 
-      configComplete &= getJsonValue(top["active"], usermodActive);
-      configComplete &= getJsonValue(top["displayItIs"], displayItIs);
-      configComplete &= getJsonValue(top["ledOffset"], ledOffset);
-      configComplete &= getJsonValue(top["Meander wiring?"], meander);
-      configComplete &= getJsonValue(top["Norddeutsch"], nord);
+      configComplete &= getJsonValue(top[F("active")], usermodActive);
+      configComplete &= getJsonValue(top[F("displayItIs")], displayItIs);
+      configComplete &= getJsonValue(top[F("ledOffset")], ledOffset);
+      configComplete &= getJsonValue(top[F("Meander wiring?")], meander);
+      configComplete &= getJsonValue(top[F("Norddeutsch")], nord);
 
       return configComplete;
     }
