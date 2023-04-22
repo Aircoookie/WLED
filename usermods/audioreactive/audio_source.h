@@ -538,8 +538,8 @@ class ES8388Source : public I2SSource {
       _es8388I2cWrite( 4,0b00111100); // Turn on LOUT1 and ROUT1 and LOUT2 and ROUT2 power
       _es8388I2cWrite( 2,0b01000000); // Power up DEM and STM and undocumented bit for "turn on line-out amp"
       _es8388I2cWrite(38,0b00001001); // Mixer - route LIN2/RIN2 to output
-      _es8388I2cWrite(39,0b10010000); // Mixer - route LIN to mixL, 0dB gain was 01..
-      _es8388I2cWrite(42,0b10010000); // Mixer - route RIN to mixR, 0dB gain was 01..
+      _es8388I2cWrite(39,0b01010000); // Mixer - route LIN to mixL, 0dB gain
+      _es8388I2cWrite(42,0b01010000); // Mixer - route RIN to mixR, 0dB gain
       _es8388I2cWrite(46,0b00011110); // LOUT1VOL - 0 = -45dB, 0b00011110 = +0dB
       _es8388I2cWrite(47,0b00011110); // ROUT1VOL - 0 = -45dB, 0b00011110 = +0dB
       _es8388I2cWrite(48,0b00011110); // LOUT2VOL - 0 = -45dB, 0b00011110 = +0dB
