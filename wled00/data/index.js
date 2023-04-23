@@ -184,26 +184,18 @@ function loadBg(iUrl)
 	});
 }
 
-function loadSkinCSS(cId) {
+function loadSkinCSS(cId)
+{
 	if (!gId(cId))	// check if element exists
-	//This is called by if (cfg.comp.css) loadSkinCSS('skinCss'); but ideally this should return false if the file does not exist. Needs checking on the server side.
 	{
-		var url = (loc?`http://${locip}`:'.') + '/skin.css';
-		fetch(url)
-		.then(response => {
-			if (response.ok) {
-				var h  = d.getElementsByTagName('head')[0];
-				var l  = d.createElement('link');
-				l.id   = cId;
-				l.rel  = 'stylesheet';
-				l.type = 'text/css';
-				l.href = url;
-				l.media = 'all';
-				h.appendChild(l);
-			} else {
-				console.log('CSS file not found. You can disable CSS file usage in settings to remove this message.');
-			}
-		})
+		var h  = d.getElementsByTagName('head')[0];
+		var l  = d.createElement('link');
+		l.id   = cId;
+		l.rel  = 'stylesheet';
+		l.type = 'text/css';
+		l.href = (loc?`http://${locip}`:'.') + '/skin.css';
+		l.media = 'all';
+		h.appendChild(l);
 	}
 }
 
