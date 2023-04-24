@@ -34,6 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: get_default_envs
     strategy:
+      fail-fast: false
       matrix:
         environment: ${{ fromJSON(needs.get_default_envs.outputs.environments) }}
     steps:
