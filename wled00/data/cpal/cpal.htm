@@ -178,15 +178,15 @@
         <div id="palTop">
           Currently in use custom palettes
         </div>
-
     </div>
   </div>
 
   <div style="display: flex; justify-content: center;">
     <div id="info">
-      Click on the gradient to add new color slider. Click the colored box below the slider to change color. Click the red box below indicator (and confirm) to delete. Select palette number. Click the cloud icon to upload. 
-      <br>
-      Currently in use Custom Palette IDs are 0 to <span id="cpaltx">-1</span>. Note!, IDs <u>must</u> be in uninterupted sequece from 0 and cannot excede 9. This number will only be updated on WLED reboot (or equivalent).
+      Click on the gradient to add new color slider then the colored box below the slider to change its color.<br>
+      Click the red box below indicator (and confirm) to delete.<br>
+      Once finished click the arrow icon to upload into desired slot.<br>
+      To edit existing palette click pencil icon.
     </div>
 </div>  
 
@@ -514,7 +514,6 @@
         const response = await fetch('http://'+hst+'/json/info');
         const json = await response.json();
         cpalc = json.cpalcount;
-        gId('cpaltx').innerHTML = cpalc-1;
         fetchPalettes(cpalc-1);
         console.log('cpalc: ', cpalc);
         console.log(paletteArray);
@@ -623,13 +622,14 @@
     
     for (let j = 0; j < colArray.length; j += 2) {
       const position = colArray[j];
+      let hex;
       if (typeof(colArray[j+1]) === "string") {
-        const hex = `#${colArray[j+1]}`;
+        hex = `#${colArray[j+1]}`;
       } else {
         const red = colArray[j + 1];
         const green = colArray[j + 2];
         const blue = colArray[j + 3];
-        const hex = rgbToHex(red, green, blue);
+        hex = rgbToHex(red, green, blue);
         j += 2;
       }
       console.log(position, hex)
