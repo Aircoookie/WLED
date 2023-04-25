@@ -542,95 +542,105 @@
   }
 
   function generatePaletteDivs() {
-  const palettesDiv = document.getElementById("palettes");
-  const paletteDivs = Array.from(palettesDiv.children).filter((child) => {
-    return child.id.match(/^palette\d$/); // match only elements with id starting with "palette" followed by a single digit
-  });
-  if (paletteArray.length < 10){
-    //Room for one more :)
-    paletteArray.push({"palette":[0,70,70,70,255,70,70,70]});
+    const palettesDiv = document.getElementById("palettes");
+    const paletteDivs = Array.from(palettesDiv.children).filter((child) => {
+      return child.id.match(/^palette\d$/); // match only elements with id starting with "palette" followed by a single digit
+    });
+    if (paletteArray.length < 10){
+      //Room for one more :)
+      paletteArray.push({"palette":[0,70,70,70,255,70,70,70]});
+    }
+
+    for (const div of paletteDivs) {
+      palettesDiv.removeChild(div); // remove each div that matches the above selector
+    }
+
+    for (let i = 0; i < paletteArray.length; i++) {
+      const palette = paletteArray[i];
+      const paletteDiv = document.createElement("div");
+      paletteDiv.id = `palette${i}`;
+      paletteDiv.classList.add("palette");
+      paletteDiv.dataset.colarray = JSON.stringify(palette.palette);
+
+      const gradientDiv = document.createElement("div");
+      gradientDiv.id = `paletteGradient${i}`
+      const buttonsDiv = document.createElement("div");
+      buttonsDiv.id = `buttonsDiv${i}`;
+      buttonsDiv.classList.add("buttonsDiv")
+
+      const sendSpan = document.createElement("span");
+      sendSpan.id = `sendSpan${i}`;
+      sendSpan.onclick = function() {initiateUpload(i)};
+      sendSpan.setAttribute('title', `Send current editor to slot ${i}`); // perhaps Save instead of Send?
+      sendSpan.innerHTML = svgSave;
+      sendSpan.classList.add("sendSpan")
+      const editSpan = document.createElement("span");
+      editSpan.id = `editSpan${i}`;
+      editSpan.onclick = function() {loadForEdit(i)};
+      editSpan.setAttribute('title', `Copy slot ${i} palette to editor`);
+      editSpan.innerHTML = svgEdit;
+      editSpan.classList.add("editSpan")
+      
+      gradientDiv.classList.add("paletteGradients");
+      let gradientColors = "";
+      for (let j = 0; j < palette.palette.length; j += 2) {
+        const position = palette.palette[j];
+        if (typeOf(palette.palette[j+1]) === "string") {
+          gradientColors += `#${palette.palette[j+1]} ${position/255*100}%, `;
+        } else {
+          const red = palette.palette[j + 1];
+          const green = palette.palette[j + 2];
+          const blue = palette.palette[j + 3];
+          gradientColors += `rgba(${red}, ${green}, ${blue}, 1) ${position/255*100}%, `;
+          j += 2;
+        }
+      }
+
+      gradientColors = gradientColors.slice(0, -2); // remove the last comma and space
+      gradientDiv.style.backgroundImage = `linear-gradient(to right, ${gradientColors})`;
+      paletteDiv.className = "palGradientParent";
+      buttonsDiv.appendChild(sendSpan);
+      if(i<cpalc){
+        buttonsDiv.appendChild(editSpan); //Dont offer to edit the empty spot
+      }
+      paletteDiv.appendChild(gradientDiv);
+      paletteDiv.appendChild(buttonsDiv);
+
+      palettesDiv.appendChild(paletteDiv);
+    }
   }
 
-  for (const div of paletteDivs) {
-    palettesDiv.removeChild(div); // remove each div that matches the above selector
-  }
-
-  for (let i = 0; i < paletteArray.length; i++) {
-    const palette = paletteArray[i];
-    const paletteDiv = document.createElement("div");
-    paletteDiv.id = `palette${i}`;
-    paletteDiv.classList.add("palette");
-    paletteDiv.dataset.colarray = JSON.stringify(palette.palette);
-
-    const gradientDiv = document.createElement("div");
-    gradientDiv.id = `paletteGradient${i}`
-    const buttonsDiv = document.createElement("div");
-    buttonsDiv.id = `buttonsDiv${i}`;
-    buttonsDiv.classList.add("buttonsDiv")
-
-    const sendSpan = document.createElement("span");
-    sendSpan.id = `sendSpan${i}`;
-    sendSpan.onclick = function() {initiateUpload(i)};
-    sendSpan.setAttribute('title', `Send current editor to slot ${i}`);
-    sendSpan.innerHTML = svgSave;
-    sendSpan.classList.add("sendSpan")
-    const editSpan = document.createElement("span");
-    editSpan.id = `editSpan${i}`;
-    editSpan.onclick = function() {loadForEdit(i)};
-    editSpan.setAttribute('title', `Copy slot ${i} palette to editor`);
-    editSpan.innerHTML = svgEdit;
-    editSpan.classList.add("editSpan")
+  function loadForEdit(i){
+    console.log("Lets edit no: ", i);
+    document.querySelectorAll('input[id^="colorPicker"]').forEach((input) => {
+      input.parentNode.removeChild(input);
+    });
+    document.querySelectorAll('span[id^="colorMarker"], span[id^="colorPickerMarker"], span[id^="deleteMarker"]').forEach((span) => {
+      span.parentNode.removeChild(span);
+    });
     
-    gradientDiv.classList.add("paletteGradients");
-    let gradientColors = "";
-    for (let j = 0; j < palette.palette.length; j += 4) {
-      const position = palette.palette[j];
-      const red = palette.palette[j + 1];
-      const green = palette.palette[j + 2];
-      const blue = palette.palette[j + 3];
-      gradientColors += `rgba(${red}, ${green}, ${blue}, 1) ${position/255*100}%, `;
+    let colArray = JSON.parse(gId(`palette${i}`).getAttribute("data-colarray"));
+    
+    for (let j = 0; j < colArray.length; j += 2) {
+      const position = colArray[j];
+      if (typeof(colArray[j+1]) === "string") {
+        const hex = `#${colArray[j+1]}`;
+      } else {
+        const red = colArray[j + 1];
+        const green = colArray[j + 2];
+        const blue = colArray[j + 3];
+        const hex = rgbToHex(red, green, blue);
+        j += 2;
+      }
+      console.log(position, hex)
+      addC(position, hex);
     }
-
-    gradientColors = gradientColors.slice(0, -2); // remove the last comma and space
-    gradientDiv.style.backgroundImage = `linear-gradient(to right, ${gradientColors})`;
-    paletteDiv.className = "palGradientParent";
-    buttonsDiv.appendChild(sendSpan);
-    if(i<cpalc){
-      buttonsDiv.appendChild(editSpan); //Dont offer to edit the empty spot
-    }
-    paletteDiv.appendChild(gradientDiv);
-    paletteDiv.appendChild(buttonsDiv);
-
-    palettesDiv.appendChild(paletteDiv);
   }
-}
 
-function loadForEdit(i){
-  console.log("Lets edit no: ", i);
-  document.querySelectorAll('input[id^="colorPicker"]').forEach((input) => {
-    input.parentNode.removeChild(input);
-  });
-  document.querySelectorAll('span[id^="colorMarker"], span[id^="colorPickerMarker"], span[id^="deleteMarker"]').forEach((span) => {
-    span.parentNode.removeChild(span);
-  });
-  
-  let colArray = JSON.parse(gId(`palette${i}`).getAttribute("data-colarray"));
-  
-  for (let j = 0; j < colArray.length; j += 4) {
-    const position = colArray[j];
-    const red = colArray[j + 1];
-    const green = colArray[j + 2];
-    const blue = colArray[j + 3];
-    const hex = rgbToHex(red, green, blue);
-    console.log(position, hex)
-    addC(position, hex);
+  function rgbToHex(r, g, b) {
+    const hex = ((r << 16) | (g << 8) | b).toString(16);
+    return "#" + "0".repeat(6 - hex.length) + hex;
   }
-}
-
-function rgbToHex(r, g, b) {
-  const hex = ((r << 16) | (g << 8) | b).toString(16);
-  return "#" + "0".repeat(6 - hex.length) + hex;
-}
 
   function getLocalStorageData(){
     // Retrieve the "wledPalx" JSON from local storage
