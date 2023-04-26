@@ -7418,7 +7418,7 @@ uint16_t mode_2Dsoap() {
         int32_t joffset = *scale32_y * (j - rows / 2);
         uint8_t data = inoise16(*noise32_x + ioffset, *noise32_y + joffset, *noise32_z) >> 8;
         noise3d[i*cols + j] = scale8(noise3d[i*cols + j], SEGMENT.intensity) + scale8(data, 255 - SEGMENT.intensity);
-        SEGMENT.setPixelColorXY(i, j, CHSV(~noise3d[i*cols + j]*3, 255, 255));
+        SEGMENT.setPixelColorXY(i, j, CHSV(~noise3d[i*cols + j]*3, 255, 255)); //ColorFromPalette(SEGPALETTE,~noise3d[i*cols + j]*3));
       }
     }
   }
@@ -7444,7 +7444,7 @@ uint16_t mode_2Dsoap() {
   int8_t shiftY = 0; //(SEGMENT.custom2 - 128) / 4;
   CRGB ledsbuff[cols+rows];
 
-  amplitude = cols/8;
+  amplitude = (cols >= 16) ? (cols-8)/8 : 1;
   for (int y = 0; y < rows; y++) {
     int amount   = ((int)noise3d[y] - 128) * 2 * amplitude + 256*shiftX;
     int delta    = abs(amount) >> 8;
@@ -7470,7 +7470,7 @@ uint16_t mode_2Dsoap() {
     }
   }
 
-  amplitude = rows/8;
+  amplitude = (rows >= 16) ? (rows-8)/8 : 1;
   for (int x = 0; x < cols; x++) {
     int amount   = ((int)noise3d[x*cols] - 128) * 2 * amplitude + 256*shiftY;
     int delta    = abs(amount) >> 8;
@@ -7498,7 +7498,7 @@ uint16_t mode_2Dsoap() {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_2DSOAP[] PROGMEM = "Soap@!,Smoothness;;;2;";
+static const char _data_FX_MODE_2DSOAP[] PROGMEM = "Soap@!,Smoothness;;!;2;";
 
 #endif // WLED_DISABLE_2D
 
