@@ -771,7 +771,7 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8
 
         // write the colors, the write write(const uint8_t *buffer, size_t size)
         // function is just a loop internally too
-        for (size_t i = 0; i < packetSize; i += 3) {
+        for (size_t i = 0; i < packetSize; i += (isRGBW?4:3)) {
           ddpUdp.write(scale8(buffer[bufferOffset++], bri)); // R
           ddpUdp.write(scale8(buffer[bufferOffset++], bri)); // G
           ddpUdp.write(scale8(buffer[bufferOffset++], bri)); // B

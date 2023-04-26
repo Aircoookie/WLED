@@ -318,9 +318,6 @@ button {
 	height: 100%;
 	overscroll-behavior: none;
 	padding: 0 4px;
-}
-
-#Effects {
 	-webkit-overflow-scrolling: touch;
 }
 
