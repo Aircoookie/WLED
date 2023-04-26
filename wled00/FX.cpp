@@ -7418,7 +7418,8 @@ uint16_t mode_2Dsoap() {
         int32_t joffset = *scale32_y * (j - rows / 2);
         uint8_t data = inoise16(*noise32_x + ioffset, *noise32_y + joffset, *noise32_z) >> 8;
         noise3d[i*cols + j] = scale8(noise3d[i*cols + j], SEGMENT.intensity) + scale8(data, 255 - SEGMENT.intensity);
-        SEGMENT.setPixelColorXY(i, j, CHSV(~noise3d[i*cols + j]*3, 255, 255)); //ColorFromPalette(SEGPALETTE,~noise3d[i*cols + j]*3));
+        SEGMENT.setPixelColorXY(i, j, ColorFromPalette(SEGPALETTE,~noise3d[i*cols + j]*3));
+        SEGMENT.color_wheel(1);
       }
     }
   }
@@ -7459,10 +7460,10 @@ uint16_t mode_2Dsoap() {
       }
       CRGB PixelA = CRGB::Black;
       if ((zD >= 0) && (zD < cols)) PixelA = SEGMENT.getPixelColorXY(zD, y);
-      else                          PixelA = CHSV(~noise3d[(abs(zD)%cols)*cols + y]*3, 255, 255);
+      else                          PixelA = ColorFromPalette(SEGPALETTE, ~noise3d[(abs(zD)%cols)*cols + y]*3);
       CRGB PixelB = CRGB::Black;
       if ((zF >= 0) && (zF < cols)) PixelB = SEGMENT.getPixelColorXY(zF, y);
-      else                          PixelB = CHSV(~noise3d[(abs(zF)%cols)*cols + y]*3, 255, 255);
+      else                          PixelB = ColorFromPalette(SEGPALETTE, ~noise3d[(abs(zF)%cols)*cols + y]*3);
       ledsbuff[x] = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction))); // lerp8by8(PixelA, PixelB, fraction );
     }
     for (size_t x = 0; x < cols; x++) {
@@ -7485,10 +7486,10 @@ uint16_t mode_2Dsoap() {
       }
       CRGB PixelA = CRGB::Black;
       if ((zD >= 0) && (zD < rows)) PixelA = SEGMENT.getPixelColorXY(x, zD);
-      else                          PixelA = CHSV(~noise3d[x*cols + abs(zD)%rows]*3,255,255); 
+      else                          PixelA = ColorFromPalette(SEGPALETTE, ~noise3d[x*cols + abs(zD)%rows]*3); 
       CRGB PixelB = CRGB::Black;
       if ((zF >= 0) && (zF < rows)) PixelB = SEGMENT.getPixelColorXY(x, zF);
-      else                          PixelB = CHSV(~noise3d[x*cols + abs(zF)%rows]*3,255,255);
+      else                          PixelB = ColorFromPalette(SEGPALETTE, ~noise3d[x*cols + abs(zF)%rows]*3);
       ledsbuff[y] = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction)));
     }
     for (int y = 0; y < rows; y++) {
