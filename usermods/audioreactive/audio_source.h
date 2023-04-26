@@ -510,16 +510,16 @@ class ES8388Source : public I2SSource {
       // #define use_es8388_mic
 
     #ifdef use_es8388_mic
-      // Pick one. If you have to use the mics, use a Lyra-T over an AudioKit.
+      // Pick one. If you have to use the mics, use a LyraT over an AudioKit.
       //
       // The mics *and* line-in are BOTH connected to LIN2/RIN2 on the AudioKit
       // so there's no way to completely eliminate the mics. It's also hella noisy. 
       // Line-in works OK on the AudioKit, generally speaking, as the mics really need
       // amplification to be noticable.
       //
-      // The Lyra-T does a reasonable job with mic input as configured below.
+      // The LyraT does a reasonable job with mic input as configured below.
       //
-      _es8388I2cWrite(10,0b00000000); // Use Lin1/Rin1 for ADC input (mic on Lyra-T)
+      _es8388I2cWrite(10,0b00000000); // Use Lin1/Rin1 for ADC input (mic on LyraT)
       //_es8388I2cWrite(10,0b01010000); // Use Lin2/Rin2 for ADC input (mic *and* line-in on AudioKit)
       
       _es8388I2cWrite( 9,0b10001000); // Select Analog Input PGA Gain for ADC to +24dB (L+R)
@@ -551,7 +551,7 @@ class ES8388Source : public I2SSource {
 
       _es8388I2cWrite(39,0b01010000); // Mixer - route LIN to mixL, 0dB gain
       _es8388I2cWrite(42,0b01010000); // Mixer - route RIN to mixR, 0dB gain
-      _es8388I2cWrite(46,0b00011011); // LOUT1VOL - 0b00011110 = +0dB, 0b00011011 = Lyra-T balance fix
+      _es8388I2cWrite(46,0b00011011); // LOUT1VOL - 0b00011110 = +0dB, 0b00011011 = LyraT balance fix
       _es8388I2cWrite(47,0b00011110); // ROUT1VOL - 0b00011110 = +0dB
       _es8388I2cWrite(48,0b00011110); // LOUT2VOL - 0b00011110 = +0dB
       _es8388I2cWrite(49,0b00011110); // ROUT2VOL - 0b00011110 = +0dB
