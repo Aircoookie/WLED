@@ -584,7 +584,7 @@
       let gradientColors = "";
       for (let j = 0; j < palette.palette.length; j += 2) {
         const position = palette.palette[j];
-        if (typeOf(palette.palette[j+1]) === "string") {
+        if (typeof(palette.palette[j+1]) === "string") {
           gradientColors += `#${palette.palette[j+1]} ${position/255*100}%, `;
         } else {
           const red = palette.palette[j + 1];
