@@ -7382,7 +7382,7 @@ uint16_t mode_2Ddistortionwaves() {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_2DDISTORTIONWAVES[] PROGMEM = "Distortion Waves@!,Scale;;;2;";
+static const char _data_FX_MODE_2DDISTORTIONWAVES[] PROGMEM = "Distortion Waves@!,Scale;;;2";
 
 //Soap
 //@Stepko
@@ -7442,7 +7442,6 @@ uint16_t mode_2Dsoap() {
   int amplitude;
   int8_t shiftX = 0; //(SEGMENT.custom1 - 128) / 4;
   int8_t shiftY = 0; //(SEGMENT.custom2 - 128) / 4;
-  CRGB ledsbuff[cols+rows];
 
   amplitude = (cols >= 16) ? (cols-8)/8 : 1;
   for (int y = 0; y < rows; y++) {
@@ -7463,10 +7462,8 @@ uint16_t mode_2Dsoap() {
       CRGB PixelB = CRGB::Black;
       if ((zF >= 0) && (zF < cols)) PixelB = SEGMENT.getPixelColorXY(zF, y);
       else                          PixelB = ColorFromPalette(SEGPALETTE, ~noise3d[(abs(zF)%cols)*cols + y]*3);
-      ledsbuff[x] = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction)));
-    }
-    for (size_t x = 0; x < cols; x++) {
-      SEGMENT.setPixelColorXY(x, y, ledsbuff[x]);
+      CRGB pix = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction)));
+      SEGMENT.setPixelColorXY(x, y, pix);
     }
   }
 
@@ -7475,7 +7472,7 @@ uint16_t mode_2Dsoap() {
     int amount   = ((int)noise3d[x*cols] - 128) * 2 * amplitude + 256*shiftY;
     int delta    = abs(amount) >> 8;
     int fraction = abs(amount) & 255;
-    for (size_t y = 0; y < rows; y++) {
+    for (int y = 0; y < rows; y++) {
       if (amount < 0) {
         zD = y - delta;
         zF = zD - 1;
@@ -7489,16 +7486,14 @@ uint16_t mode_2Dsoap() {
       CRGB PixelB = CRGB::Black;
       if ((zF >= 0) && (zF < rows)) PixelB = SEGMENT.getPixelColorXY(x, zF);
       else                          PixelB = ColorFromPalette(SEGPALETTE, ~noise3d[x*cols + abs(zF)%rows]*3);
-      ledsbuff[y] = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction)));
-    }
-    for (int y = 0; y < rows; y++) {
-      SEGMENT.setPixelColorXY(x, y, ledsbuff[y]);
+      CRGB pix = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction)));
+      SEGMENT.setPixelColorXY(x, y, pix);
     }
   }
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_2DSOAP[] PROGMEM = "Soap@!,Smoothness;;!;2;pal=11";
+static const char _data_FX_MODE_2DSOAP[] PROGMEM = "Soap@!,Smoothness;;!;2";
 
 #endif // WLED_DISABLE_2D
 
