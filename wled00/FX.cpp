@@ -1247,10 +1247,10 @@ uint16_t mode_rain() {
   if (SEGENV.call && SEGENV.step > SPEED_FORMULA_L) {
     SEGENV.step = 1;
     if (strip.isMatrix) {
-      uint32_t ctemp[width];
-      for (int i = 0; i<width; i++) ctemp[i] = SEGMENT.getPixelColorXY(i, height-1);
-      SEGMENT.move(6,1);  // move all pixels down
-      for (int i = 0; i<width; i++) SEGMENT.setPixelColorXY(i, 0, ctemp[i]); // wrap around
+      //uint32_t ctemp[width];
+      //for (int i = 0; i<width; i++) ctemp[i] = SEGMENT.getPixelColorXY(i, height-1);
+      SEGMENT.move(6, 1, true);  // move all pixels down
+      //for (int i = 0; i<width; i++) SEGMENT.setPixelColorXY(i, 0, ctemp[i]); // wrap around
       SEGENV.aux0 = (SEGENV.aux0 % width) + (SEGENV.aux0 / width + 1) * width;
       SEGENV.aux1 = (SEGENV.aux1 % width) + (SEGENV.aux1 / width + 1) * width;
     } else {
@@ -7419,7 +7419,6 @@ uint16_t mode_2Dsoap() {
         uint8_t data = inoise16(*noise32_x + ioffset, *noise32_y + joffset, *noise32_z) >> 8;
         noise3d[i*cols + j] = scale8(noise3d[i*cols + j], SEGMENT.intensity) + scale8(data, 255 - SEGMENT.intensity);
         SEGMENT.setPixelColorXY(i, j, ColorFromPalette(SEGPALETTE,~noise3d[i*cols + j]*3));
-        SEGMENT.color_wheel(1);
       }
     }
   }
@@ -7464,7 +7463,7 @@ uint16_t mode_2Dsoap() {
       CRGB PixelB = CRGB::Black;
       if ((zF >= 0) && (zF < cols)) PixelB = SEGMENT.getPixelColorXY(zF, y);
       else                          PixelB = ColorFromPalette(SEGPALETTE, ~noise3d[(abs(zF)%cols)*cols + y]*3);
-      ledsbuff[x] = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction))); // lerp8by8(PixelA, PixelB, fraction );
+      ledsbuff[x] = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction)));
     }
     for (size_t x = 0; x < cols; x++) {
       SEGMENT.setPixelColorXY(x, y, ledsbuff[x]);
@@ -7499,7 +7498,7 @@ uint16_t mode_2Dsoap() {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_2DSOAP[] PROGMEM = "Soap@!,Smoothness;;!;2;";
+static const char _data_FX_MODE_2DSOAP[] PROGMEM = "Soap@!,Smoothness;;!;2;pal=11";
 
 #endif // WLED_DISABLE_2D
 
