@@ -453,21 +453,21 @@ void BusNetwork::cleanup() {
 uint32_t BusManager::memUsage(BusConfig &bc) {
   uint8_t type = bc.type;
   uint16_t len = bc.count + bc.skipAmount;
-  if (type > 15 && type < 32) {
+  if (type > 15 && type < 32) { // digital types
+    if (type == TYPE_UCS8903 || type == TYPE_UCS8904) len *= 2; // 16-bit LEDs
     #ifdef ESP8266
       if (bc.pins[0] == 3) { //8266 DMA uses 5x the mem
-        if (type > 29) return len*20; //RGBW
+        if (type > 28) return len*20; //RGBW
         return len*15;
       }
-      if (type > 29) return len*4; //RGBW
+      if (type > 28) return len*4; //RGBW
       return len*3;
     #else //ESP32 RMT uses double buffer?
-      if (type > 29) return len*8; //RGBW
+      if (type > 28) return len*8; //RGBW
       return len*6;
     #endif
   }
-  if (type > 31 && type < 48)   return 5;
-  if (type == 44 || type == 45) return len*4; //RGBW
+  if (type > 31 && type < 48) return 5;
   return len*3; //RGB
 }
 

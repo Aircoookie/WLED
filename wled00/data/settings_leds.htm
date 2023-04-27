@@ -125,19 +125,19 @@
 			let len = parseInt(d.getElementsByName("LC"+n)[0].value);
 			len += parseInt(d.getElementsByName("SL"+n)[0].value); // skipped LEDs are allocated too
 			if (t < 32) {
+				if (t==26 || t==29) len *= 2; // 16 bit LEDs
 				if (maxM < 10000 && d.getElementsByName("L0"+n)[0].value == 3) { //8266 DMA uses 5x the mem
-					if (t > 29) return len*20; //RGBW
+					if (t > 28) return len*20; //RGBW
 					return len*15;
 				} else if (maxM >= 10000) //ESP32 RMT uses double buffer?
 				{
-					if (t > 29) return len*8; //RGBW
+					if (t > 28) return len*8; //RGBW
 					return len*6;
 				}
-				if (t > 29) return len*4; //RGBW
+				if (t > 28) return len*4; //RGBW
 				return len*3;
 			}
 			if (t > 31 && t < 48) return 5;
-			if (t == 44 || t == 45) return len*4; //RGBW
 			return len*3;
 		}
 
@@ -184,10 +184,10 @@
 						if (t > 31 && t < 48) d.getElementsByName("LC"+n)[0].value = 1; // for sanity change analog count just to 1 LED
 					}
 					gId("rf"+n).onclick = (t == 31) ? (()=>{return false}) : (()=>{});  // prevent change for TM1814
-					gRGBW |= isRGBW = ((t > 17 && t < 22) || t == 30 || t == 31 || (t > 40 && t < 46 && t != 43) || t == 88); // RGBW checkbox, TYPE_xxxx values from const.h
+					gRGBW |= isRGBW = ((t > 17 && t < 22) || (t > 28 && t < 32) || (t > 40 && t < 46 && t != 43) || t == 88); // RGBW checkbox, TYPE_xxxx values from const.h
 					gId("co"+n).style.display = ((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? "none":"inline";  // hide color order for PWM
-					gId("dig"+n+"w").style.display = (t == 30 || t == 31) ? "inline":"none";  // show swap channels dropdown
-					if (!(t == 30 || t == 31)) d.getElementsByName("WO"+n)[0].value = 0; // reset swapping
+					gId("dig"+n+"w").style.display = (t > 28 && t < 32) ? "inline":"none";  // show swap channels dropdown
+					if (!(t > 28 && t < 32)) d.getElementsByName("WO"+n)[0].value = 0; // reset swapping
 					gId("dig"+n+"c").style.display = (t >= 40 && t < 48) ? "none":"inline";  // hide count for analog
 					gId("dig"+n+"r").style.display = (t >= 80 && t < 96) ? "none":"inline";  // hide reversed for virtual
 					gId("dig"+n+"s").style.display = ((t >= 80 && t < 96) || (t >= 40 && t < 48)) ? "none":"inline";  // hide skip 1st for virtual & analog
@@ -331,6 +331,8 @@ ${i+1}:
 <option value="31">TM1814</option>\
 <option value="24">400kHz</option>\
 <option value="25">TM1829</option>\
+<option value="26">UCS8903</option>\
+<option value="29">UCS8904 RGBW</option>\
 <option value="50">WS2801</option>\
 <option value="51">APA102</option>\
 <option value="52">LPD8806</option>\
