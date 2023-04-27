@@ -1247,10 +1247,10 @@ uint16_t mode_rain() {
   if (SEGENV.call && SEGENV.step > SPEED_FORMULA_L) {
     SEGENV.step = 1;
     if (strip.isMatrix) {
-      uint32_t ctemp[width];
-      for (int i = 0; i<width; i++) ctemp[i] = SEGMENT.getPixelColorXY(i, height-1);
-      SEGMENT.move(6,1);  // move all pixels down
-      for (int i = 0; i<width; i++) SEGMENT.setPixelColorXY(i, 0, ctemp[i]); // wrap around
+      //uint32_t ctemp[width];
+      //for (int i = 0; i<width; i++) ctemp[i] = SEGMENT.getPixelColorXY(i, height-1);
+      SEGMENT.move(6, 1, true);  // move all pixels down
+      //for (int i = 0; i<width; i++) SEGMENT.setPixelColorXY(i, 0, ctemp[i]); // wrap around
       SEGENV.aux0 = (SEGENV.aux0 % width) + (SEGENV.aux0 / width + 1) * width;
       SEGENV.aux1 = (SEGENV.aux1 % width) + (SEGENV.aux1 / width + 1) * width;
     } else {
@@ -7333,7 +7333,7 @@ static const char _data_FX_MODE_2DAKEMI[] PROGMEM = "Akemi@Color speed,Dance;Hea
 
 // Distortion waves - ldirko
 // https://editor.soulmatelights.com/gallery/1089-distorsion-waves
-// apated for WLD by @blazoncek
+// adapted for WLED by @blazoncek
 uint16_t mode_2Ddistortionwaves() {
   if (!strip.isMatrix) return mode_static(); // not a 2D set-up
 
@@ -7382,7 +7382,118 @@ uint16_t mode_2Ddistortionwaves() {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_2DDISTORTIONWAVES[] PROGMEM = "Distortion Waves@!,Scale;;;2;";
+static const char _data_FX_MODE_2DDISTORTIONWAVES[] PROGMEM = "Distortion Waves@!,Scale;;;2";
+
+//Soap
+//@Stepko
+//Idea from https://www.youtube.com/watch?v=DiHBgITrZck&ab_channel=StefanPetrick
+// adapted for WLED by @blazoncek
+uint16_t mode_2Dsoap() {
+  if (!strip.isMatrix) return mode_static(); // not a 2D set-up
+
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+
+  const size_t dataSize = SEGMENT.width() * SEGMENT.height() * sizeof(uint8_t); // prevent reallocation if mirrored or grouped
+  if (!SEGENV.allocateData(dataSize + sizeof(uint32_t)*5)) return mode_static(); //allocation failed
+
+  uint8_t  *noise3d   = reinterpret_cast<uint8_t*>(SEGENV.data);
+  uint32_t *noise32_x = reinterpret_cast<uint32_t*>(SEGENV.data + dataSize);
+  uint32_t *noise32_y = reinterpret_cast<uint32_t*>(SEGENV.data + dataSize + sizeof(uint32_t));
+  uint32_t *noise32_z = reinterpret_cast<uint32_t*>(SEGENV.data + dataSize + sizeof(uint32_t)*2);
+  uint32_t *scale32_x = reinterpret_cast<uint32_t*>(SEGENV.data + dataSize + sizeof(uint32_t)*3);
+  uint32_t *scale32_y = reinterpret_cast<uint32_t*>(SEGENV.data + dataSize + sizeof(uint32_t)*4);
+
+  // init
+  if (SEGENV.call == 0) {
+    SEGMENT.setUpLeds();
+    *noise32_x = random16();
+    *noise32_y = random16();
+    *noise32_z = random16();
+    *scale32_x = 160000/cols;
+    *scale32_y = 160000/rows;
+    for (int i = 0; i < cols; i++) {
+      int32_t ioffset = *scale32_x * (i - cols / 2);
+      for (int j = 0; j < rows; j++) {
+        int32_t joffset = *scale32_y * (j - rows / 2);
+        uint8_t data = inoise16(*noise32_x + ioffset, *noise32_y + joffset, *noise32_z) >> 8;
+        noise3d[i*cols + j] = scale8(noise3d[i*cols + j], SEGMENT.intensity) + scale8(data, 255 - SEGMENT.intensity);
+        SEGMENT.setPixelColorXY(i, j, ColorFromPalette(SEGPALETTE,~noise3d[i*cols + j]*3));
+      }
+    }
+  }
+
+  uint32_t mov = max(cols,rows)*SEGMENT.speed/4;
+  *noise32_x += mov;
+  *noise32_y += mov;
+  *noise32_z += mov;
+
+  for (int i = 0; i < cols; i++) {
+    int32_t ioffset = *scale32_x * (i - cols / 2);
+    for (int j = 0; j < rows; j++) {
+      int32_t joffset = *scale32_y * (j - rows / 2);
+      uint8_t data = inoise16(*noise32_x + ioffset, *noise32_y + joffset, *noise32_z) >> 8;
+      noise3d[i*cols + j] = scale8(noise3d[i*cols + j], SEGMENT.intensity) + scale8(data, 255 - SEGMENT.intensity);
+    }
+  }
+
+  int zD;
+  int zF;
+  int amplitude;
+  int8_t shiftX = 0; //(SEGMENT.custom1 - 128) / 4;
+  int8_t shiftY = 0; //(SEGMENT.custom2 - 128) / 4;
+
+  amplitude = (cols >= 16) ? (cols-8)/8 : 1;
+  for (int y = 0; y < rows; y++) {
+    int amount   = ((int)noise3d[y] - 128) * 2 * amplitude + 256*shiftX;
+    int delta    = abs(amount) >> 8;
+    int fraction = abs(amount) & 255;
+    for (int x = 0; x < cols; x++) {
+      if (amount < 0) {
+        zD = x - delta;
+        zF = zD - 1;
+      } else {
+        zD = x + delta;
+        zF = zD + 1;
+      }
+      CRGB PixelA = CRGB::Black;
+      if ((zD >= 0) && (zD < cols)) PixelA = SEGMENT.getPixelColorXY(zD, y);
+      else                          PixelA = ColorFromPalette(SEGPALETTE, ~noise3d[(abs(zD)%cols)*cols + y]*3);
+      CRGB PixelB = CRGB::Black;
+      if ((zF >= 0) && (zF < cols)) PixelB = SEGMENT.getPixelColorXY(zF, y);
+      else                          PixelB = ColorFromPalette(SEGPALETTE, ~noise3d[(abs(zF)%cols)*cols + y]*3);
+      CRGB pix = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction)));
+      SEGMENT.setPixelColorXY(x, y, pix);
+    }
+  }
+
+  amplitude = (rows >= 16) ? (rows-8)/8 : 1;
+  for (int x = 0; x < cols; x++) {
+    int amount   = ((int)noise3d[x*cols] - 128) * 2 * amplitude + 256*shiftY;
+    int delta    = abs(amount) >> 8;
+    int fraction = abs(amount) & 255;
+    for (int y = 0; y < rows; y++) {
+      if (amount < 0) {
+        zD = y - delta;
+        zF = zD - 1;
+      } else {
+        zD = y + delta;
+        zF = zD + 1;
+      }
+      CRGB PixelA = CRGB::Black;
+      if ((zD >= 0) && (zD < rows)) PixelA = SEGMENT.getPixelColorXY(x, zD);
+      else                          PixelA = ColorFromPalette(SEGPALETTE, ~noise3d[x*cols + abs(zD)%rows]*3); 
+      CRGB PixelB = CRGB::Black;
+      if ((zF >= 0) && (zF < rows)) PixelB = SEGMENT.getPixelColorXY(x, zF);
+      else                          PixelB = ColorFromPalette(SEGPALETTE, ~noise3d[x*cols + abs(zF)%rows]*3);
+      CRGB pix = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction)));
+      SEGMENT.setPixelColorXY(x, y, pix);
+    }
+  }
+
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_2DSOAP[] PROGMEM = "Soap@!,Smoothness;;!;2";
 
 #endif // WLED_DISABLE_2D
 
@@ -7617,6 +7728,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_2DSINDOTS, &mode_2DSindots, _data_FX_MODE_2DSINDOTS);
   addEffect(FX_MODE_2DDNASPIRAL, &mode_2DDNASpiral, _data_FX_MODE_2DDNASPIRAL);
   addEffect(FX_MODE_2DBLACKHOLE, &mode_2DBlackHole, _data_FX_MODE_2DBLACKHOLE);
+  addEffect(FX_MODE_2DSOAP, &mode_2Dsoap, _data_FX_MODE_2DSOAP);
 
   addEffect(FX_MODE_2DAKEMI, &mode_2DAkemi, _data_FX_MODE_2DAKEMI); // audio
 #endif // WLED_DISABLE_2D
