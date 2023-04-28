@@ -6840,7 +6840,7 @@ static const char _data_FX_MODE_BLURZ[] PROGMEM = "Blurz ☾@Fade rate,Blur;!,Co
 /////////////////////////
 //   ** DJLight        //
 /////////////////////////
-uint16_t mode_DJLight(void) {                   // Written by ??? Adapted by Will Tatam.
+uint16_t mode_DJLight(void) {                   // Written by Stefan Petrick, Adapted by Will Tatam.
   const int mid = SEGLEN / 2;
 
   um_data_t *um_data;
