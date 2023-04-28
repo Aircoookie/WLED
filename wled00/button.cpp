@@ -257,6 +257,14 @@ void handleButton()
     //momentary button logic
     if (isButtonPressed(b)) { //pressed
 
+      // no need to wait for release or another press
+      if(macroButton[b] && macroButton[b] == macroLongPress[b] && macroButton[b] == macroDoublePress[b]) {
+        if(!buttonPressedBefore[b])
+          shortPressAction(b);
+        buttonPressedBefore[b] = true;
+        return;
+      }
+
       if (!buttonPressedBefore[b]) buttonPressedTime[b] = now;
       buttonPressedBefore[b] = true;
 
@@ -270,6 +278,11 @@ void handleButton()
       }
 
     } else if (!isButtonPressed(b) && buttonPressedBefore[b]) { //released
+
+      if(macroButton[b] && macroButton[b] == macroLongPress[b] && macroButton[b] == macroDoublePress[b]) {
+        buttonPressedBefore[b] = false;
+        return;
+      }
 
       long dur = now - buttonPressedTime[b];
       if (dur < WLED_DEBOUNCE_THRESHOLD) {buttonPressedBefore[b] = false; continue;} //too short "press", debounce
