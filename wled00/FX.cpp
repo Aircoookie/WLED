@@ -7495,6 +7495,57 @@ uint16_t mode_2Dsoap() {
 }
 static const char _data_FX_MODE_2DSOAP[] PROGMEM = "Soap@!,Smoothness;;!;2";
 
+
+//Idea from https://www.youtube.com/watch?v=HsA-6KIbgto&ab_channel=GreatScott%21
+//Octopus (https://editor.soulmatelights.com/gallery/671-octopus)
+//Stepko and Sutaburosu
+// adapted for WLED by @blazoncek
+uint16_t mode_2Doctopus() {
+  if (!strip.isMatrix) return mode_static(); // not a 2D set-up
+
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+  const uint8_t C_X = cols / 2;
+  const uint8_t C_Y = rows / 2;
+  const uint8_t mapp = 255 / cols;
+
+  typedef struct {
+    uint8_t angle;
+    uint8_t radius;
+  } map_t;
+
+  const size_t dataSize = SEGMENT.width() * SEGMENT.height() * sizeof(map_t); // prevent reallocation if mirrored or grouped
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+
+  map_t *rMap = reinterpret_cast<map_t*>(SEGENV.data);
+
+  if (SEGENV.call == 0) {
+    SEGENV.aux0 = 0; // t
+    for (int x = -C_X; x < C_X + (cols % 2); x++) {
+      for (int y = -C_Y; y < C_Y + (rows % 2); y++) {
+        rMap[XY(x + C_X, y + C_Y)].angle = 128 * (atan2f(y, x) / PI);
+        rMap[XY(x + C_X, y + C_Y)].radius = hypotf(x, y) * mapp; //thanks Sutaburosu
+      }
+    }
+  }
+
+  SEGENV.aux0 += SEGMENT.speed / 32 + 1;  // 1-8 range
+  for (uint8_t x = 0; x < cols; x++) {
+    for (uint8_t y = 0; y < rows; y++) {
+      byte angle = rMap[XY(x,y)].angle;
+      byte radius = rMap[XY(x,y)].radius;
+      //CRGB c = CHSV(SEGENV.aux0 / 2 - radius, 255, sin8(sin8((angle * 4 - radius) / 4 + SEGENV.aux0) + radius - SEGENV.aux0 * 2 + angle * (SEGMENT.custom3/3+1)));
+      uint16_t intensity = sin8(sin8((angle * 4 - radius) / 4 + SEGENV.aux0/2) + radius - SEGENV.aux0 + angle * (SEGMENT.custom3/4+1));
+      intensity = map(intensity*intensity, 0, 65535, 0, SEGMENT.intensity); // add a bit of non-linearity to brightness
+      CRGB c = ColorFromPalette(SEGPALETTE, SEGENV.aux0 / 2 - radius, intensity);
+      SEGMENT.setPixelColorXY(x, y, c);
+    }
+  }
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_2DOCTOPUS[] PROGMEM = "Octopus@!,!,,,Legs;;!;2;ix=255";
+
+
 #endif // WLED_DISABLE_2D
 
 
@@ -7729,6 +7780,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_2DDNASPIRAL, &mode_2DDNASpiral, _data_FX_MODE_2DDNASPIRAL);
   addEffect(FX_MODE_2DBLACKHOLE, &mode_2DBlackHole, _data_FX_MODE_2DBLACKHOLE);
   addEffect(FX_MODE_2DSOAP, &mode_2Dsoap, _data_FX_MODE_2DSOAP);
+  addEffect(FX_MODE_2DOCTOPUS, &mode_2Doctopus, _data_FX_MODE_2DOCTOPUS);
 
   addEffect(FX_MODE_2DAKEMI, &mode_2DAkemi, _data_FX_MODE_2DAKEMI); // audio
 #endif // WLED_DISABLE_2D
