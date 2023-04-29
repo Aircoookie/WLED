@@ -257,6 +257,7 @@
 #define FX_MODE_2DDISTORTIONWAVES      124 //gap fill
 #define FX_MODE_2DSOAP                 125 //gap fill
 #define FX_MODE_2DOCTOPUS              126 //gap fill
+#define FX_MODE_2DWAVINGCELL           127 //gap fill
 
 // WLED-SR effects (SR compatible IDs !!!)
 #define FX_MODE_PIXELS                 128
