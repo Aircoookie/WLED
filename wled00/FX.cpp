@@ -7507,7 +7507,7 @@ uint16_t mode_2Doctopus() {
   const uint16_t rows = SEGMENT.virtualHeight();
   const uint8_t C_X = cols / 2;
   const uint8_t C_Y = rows / 2;
-  const uint8_t mapp = 255 / cols;
+  const uint8_t mapp = 255 / MAX(cols,rows);
 
   typedef struct {
     uint8_t angle;
