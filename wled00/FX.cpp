@@ -7395,14 +7395,14 @@ uint16_t mode_2Dsoap() {
   const uint16_t rows = SEGMENT.virtualHeight();
 
   const size_t dataSize = SEGMENT.width() * SEGMENT.height() * sizeof(uint8_t); // prevent reallocation if mirrored or grouped
-  if (!SEGENV.allocateData(dataSize + sizeof(uint32_t)*5)) return mode_static(); //allocation failed
+  if (!SEGENV.allocateData(dataSize + sizeof(uint32_t)*3)) return mode_static(); //allocation failed
 
   uint8_t  *noise3d   = reinterpret_cast<uint8_t*>(SEGENV.data);
   uint32_t *noise32_x = reinterpret_cast<uint32_t*>(SEGENV.data + dataSize);
   uint32_t *noise32_y = reinterpret_cast<uint32_t*>(SEGENV.data + dataSize + sizeof(uint32_t));
   uint32_t *noise32_z = reinterpret_cast<uint32_t*>(SEGENV.data + dataSize + sizeof(uint32_t)*2);
-  uint32_t *scale32_x = reinterpret_cast<uint32_t*>(SEGENV.data + dataSize + sizeof(uint32_t)*3);
-  uint32_t *scale32_y = reinterpret_cast<uint32_t*>(SEGENV.data + dataSize + sizeof(uint32_t)*4);
+  uint32_t scale32_x = 160000U/cols;
+  uint32_t scale32_y = 160000U/rows;
 
   // init
   if (SEGENV.call == 0) {
@@ -7410,14 +7410,12 @@ uint16_t mode_2Dsoap() {
     *noise32_x = random16();
     *noise32_y = random16();
     *noise32_z = random16();
-    *scale32_x = 160000/cols;
-    *scale32_y = 160000/rows;
     for (int i = 0; i < cols; i++) {
-      int32_t ioffset = *scale32_x * (i - cols / 2);
+      int32_t ioffset = scale32_x * (i - cols / 2);
       for (int j = 0; j < rows; j++) {
-        int32_t joffset = *scale32_y * (j - rows / 2);
+        int32_t joffset = scale32_y * (j - rows / 2);
         uint8_t data = inoise16(*noise32_x + ioffset, *noise32_y + joffset, *noise32_z) >> 8;
-        noise3d[i*cols + j] = scale8(noise3d[i*cols + j], SEGMENT.intensity) + scale8(data, 255 - SEGMENT.intensity);
+        noise3d[XY(i,j)] = scale8(noise3d[XY(i,j)], SEGMENT.intensity) + scale8(data, 255 - SEGMENT.intensity);
         SEGMENT.setPixelColorXY(i, j, ColorFromPalette(SEGPALETTE,~noise3d[i*cols + j]*3));
       }
     }
@@ -7429,11 +7427,11 @@ uint16_t mode_2Dsoap() {
   *noise32_z += mov;
 
   for (int i = 0; i < cols; i++) {
-    int32_t ioffset = *scale32_x * (i - cols / 2);
+    int32_t ioffset = scale32_x * (i - cols / 2);
     for (int j = 0; j < rows; j++) {
-      int32_t joffset = *scale32_y * (j - rows / 2);
+      int32_t joffset = scale32_y * (j - rows / 2);
       uint8_t data = inoise16(*noise32_x + ioffset, *noise32_y + joffset, *noise32_z) >> 8;
-      noise3d[i*cols + j] = scale8(noise3d[i*cols + j], SEGMENT.intensity) + scale8(data, 255 - SEGMENT.intensity);
+      noise3d[XY(i,j)] = scale8(noise3d[XY(i,j)], SEGMENT.intensity) + scale8(data, 255 - SEGMENT.intensity);
     }
   }
 
