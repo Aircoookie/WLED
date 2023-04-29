@@ -122,7 +122,7 @@
         margin-top: 50px;
         width: 100%;
       }
-      #palTop{
+      .palTop{
         height: fit-content;
         text-align: center;
         color: #fff; 
@@ -175,7 +175,7 @@
   </div>
   <div style="display: flex; justify-content: center;">
     <div id="palettes" class="palettesMain">
-        <div id="palTop">
+        <div id="palTop" class="palTop">
           Currently in use custom palettes
         </div>
     </div>
@@ -183,12 +183,19 @@
 
   <div style="display: flex; justify-content: center;">
     <div id="info">
-      Click on the gradient to add new color slider then the colored box below the slider to change its color.<br>
-      Click the red box below indicator (and confirm) to delete.<br>
-      Once finished click the arrow icon to upload into desired slot.<br>
-      To edit existing palette click pencil icon.
+      Click on the gradient editor to add new color slider, then the colored box below the slider to change its color. 
+      Click the red box below indicator (and confirm) to delete. 
+      Once finished, click the arrow icon to upload into the desired slot. 
+      To edit existing palette, click the pencil icon.
     </div>
-</div>  
+  </div>
+  <div style="display: flex; justify-content: center;">
+    <div id="staticPalettes" class="palettesMain">
+        <div id="statpalTop" class="palTop">
+          Available static palettes
+        </div>
+    </div>
+  </div>  
 
 </body>
 
@@ -515,8 +522,6 @@
         const json = await response.json();
         cpalc = json.cpalcount;
         fetchPalettes(cpalc-1);
-        console.log('cpalc: ', cpalc);
-        console.log(paletteArray);
       } catch (error) {
         console.error(error);
       }
@@ -537,18 +542,67 @@
         console.error(`Error fetching JSON from ${url}: `, error);
       }
     }
+    //If there is room for more custom palettes, add an empty, gray slot
+    if (paletteArray.length < 10){
+      //Room for one more :)
+      paletteArray.push({"palette":[0,70,70,70,255,70,70,70]});
+    }
+
+    //Get static palettes from localStorage and do some magic to reformat them into the same format as the pallete JSONs
+    //This code excludes any objects with "non valid integer colors", i.e. r, c1, c2, c3 and such
+    //This code also fixes potentially broken palettes which doesn't end on 255
+    //The code finally also removes any representations of the custom palettes, since we read them from file
+
+    const wledPalx = JSON.parse(localStorage.getItem('wledPalx'));
+    if(!wledPalx){
+      alert("The cache of palettes are missig from your browser. You should probably return to the main page and let it load properly for the palettes cache to regenerate before returning here.","Missing cached palettes!")
+    } else {
+      for (const key in wledPalx.p) {
+        if (key > 245) {
+          delete wledPalx.p[key];
+          continue;
+        }
+        const arr = wledPalx.p[key];
+        let valid = true;
+        for (const subArr of arr) {
+          if (!Array.isArray(subArr) || subArr.length !== 4) {
+            valid = false;
+            break;
+          }
+          for (const val of subArr) {
+            if (typeof val !== 'number' || val < 0 || val > 255 || !Number.isInteger(val)) {
+              valid = false;
+              break;
+            }
+          }
+        }
+        if (!valid) {
+          delete wledPalx.p[key];
+          continue;
+        }
+        const lastArr = arr[arr.length - 1];
+        if (lastArr[0] !== 255) {
+          const copyArr = [...lastArr];
+          copyArr[0] = 255;
+          arr.push(copyArr);
+        }
+      }
+
+      const pArray = Object.entries(wledPalx.p).map(([key, value]) => ({
+        [key]: value.flat()
+      }));
+
+      paletteArray.push( ...pArray);
+    }
     generatePaletteDivs();
   }
 
   function generatePaletteDivs() {
     const palettesDiv = document.getElementById("palettes");
+    const staticPalettesDiv = document.getElementById("staticPalettes");
     const paletteDivs = Array.from(palettesDiv.children).filter((child) => {
       return child.id.match(/^palette\d$/); // match only elements with id starting with "palette" followed by a single digit
     });
-    if (paletteArray.length < 10){
-      //Room for one more :)
-      paletteArray.push({"palette":[0,70,70,70,255,70,70,70]});
-    }
 
     for (const div of paletteDivs) {
       palettesDiv.removeChild(div); // remove each div that matches the above selector
@@ -559,7 +613,8 @@
       const paletteDiv = document.createElement("div");
       paletteDiv.id = `palette${i}`;
       paletteDiv.classList.add("palette");
-      paletteDiv.dataset.colarray = JSON.stringify(palette.palette);
+      const thisKey = Object.keys(palette)[0];
+      paletteDiv.dataset.colarray = JSON.stringify(palette[thisKey]);
 
       const gradientDiv = document.createElement("div");
       gradientDiv.id = `paletteGradient${i}`
@@ -582,14 +637,15 @@
       
       gradientDiv.classList.add("paletteGradients");
       let gradientColors = "";
-      for (let j = 0; j < palette.palette.length; j += 2) {
-        const position = palette.palette[j];
-        if (typeof(palette.palette[j+1]) === "string") {
-          gradientColors += `#${palette.palette[j+1]} ${position/255*100}%, `;
+      
+      for (let j = 0; j < palette[thisKey].length; j += 2) {
+        const position = palette[thisKey][j];
+        if (typeof(palette[thisKey][j+1]) === "string") {
+          gradientColors += `#${palette[thisKey][j+1]} ${position/255*100}%, `;
         } else {
-          const red = palette.palette[j + 1];
-          const green = palette.palette[j + 2];
-          const blue = palette.palette[j + 3];
+          const red = palette[thisKey][j + 1];
+          const green = palette[thisKey][j + 2];
+          const blue = palette[thisKey][j + 3];
           gradientColors += `rgba(${red}, ${green}, ${blue}, 1) ${position/255*100}%, `;
           j += 2;
         }
@@ -598,19 +654,25 @@
       gradientColors = gradientColors.slice(0, -2); // remove the last comma and space
       gradientDiv.style.backgroundImage = `linear-gradient(to right, ${gradientColors})`;
       paletteDiv.className = "palGradientParent";
-      buttonsDiv.appendChild(sendSpan);
-      if(i<cpalc){
+      if(thisKey == "palette"){
+        buttonsDiv.appendChild(sendSpan); //Only offer to send to custom palettes
+      } else{
+        editSpan.style.marginLeft = "25px";
+      }
+      if(i!=cpalc){
         buttonsDiv.appendChild(editSpan); //Dont offer to edit the empty spot
       }
       paletteDiv.appendChild(gradientDiv);
       paletteDiv.appendChild(buttonsDiv);
-
-      palettesDiv.appendChild(paletteDiv);
+      if(thisKey == "palette"){
+        palettesDiv.appendChild(paletteDiv);
+      } else {
+        staticPalettesDiv.appendChild(paletteDiv);
+      }
     }
   }
 
   function loadForEdit(i){
-    console.log("Lets edit no: ", i);
     document.querySelectorAll('input[id^="colorPicker"]').forEach((input) => {
       input.parentNode.removeChild(input);
     });
@@ -632,38 +694,14 @@
         hex = rgbToHex(red, green, blue);
         j += 2;
       }
-      console.log(position, hex)
       addC(position, hex);
+      window.scroll(0, 0);
     }
   }
 
   function rgbToHex(r, g, b) {
     const hex = ((r << 16) | (g << 8) | b).toString(16);
     return "#" + "0".repeat(6 - hex.length) + hex;
-  }
-
-  function getLocalStorageData(){
-    // Retrieve the "wledPalx" JSON from local storage
-    const wledPalx = JSON.parse(localStorage.getItem('wledPalx'));
-
-    // Initialize an empty array to store the extracted arrays
-    const result = [];
-
-    // Loop through the "p" object in the "wledPalx" JSON
-    for (const key in wledPalx.p) {
-      if (wledPalx.p.hasOwnProperty(key)) {
-        // Check if the key is between 246 and 255
-        const numKey = parseInt(key, 10);
-        if (numKey >= 246 && numKey <= 255) {
-          // Replace the key with a new key that follows the mapping
-          const newKey = 255 - numKey;
-          // Add the array to the result array with the new key as the index
-          result[newKey] = wledPalx.p[key];
-        }
-      }
-    }
-    // The "result" array now contains arrays with the new keys
-    console.log(result);
   }
 </script>
 
