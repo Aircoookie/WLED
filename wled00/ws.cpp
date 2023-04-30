@@ -5,8 +5,8 @@
  */
 #ifdef WLED_ENABLE_WEBSOCKETS
 
-uint16_t wsLiveClientId = 0;
-unsigned long wsLastLiveTime = 0;
+static volatile uint16_t wsLiveClientId = 0;        // WLEDMM added "static"
+static volatile unsigned long wsLastLiveTime = 0;   // WLEDMM
 //uint8_t* wsFrameBuffer = nullptr;
 
 #define WS_LIVE_INTERVAL 40
@@ -153,16 +153,20 @@ void sendDataWs(AsyncWebSocketClient * client)
   releaseJSONBufferLock();
 }
 
-bool sendLiveLedsWs(uint32_t wsClient)
+static bool sendLiveLedsWs(uint32_t wsClient)  // WLEDMM added "static"
 {
   AsyncWebSocketClient * wsc = ws.client(wsClient);
   if (!wsc || wsc->queueLength() > 0) return false; //only send if queue free
 
   size_t used = strip.getLengthTotal();
 #ifdef ESP8266
-  const size_t MAX_LIVE_LEDS_WS = 256U;
+  constexpr size_t MAX_LIVE_LEDS_WS = 256U;
 #else
-  const size_t MAX_LIVE_LEDS_WS = 4096U;  //WLEDMM use 4096 as max matrix size
+ #if !defined(WLEDMM_FASTPATH)
+  constexpr size_t MAX_LIVE_LEDS_WS = 4096U;  //WLEDMM use 4096 as max matrix size
+ #else
+  constexpr size_t MAX_LIVE_LEDS_WS = 2048U;  //WLEDMM use 2048 as max matrix size - reduce "effect hickups" due to long transmissions
+ #endif
 #endif
   size_t n = ((used -1)/MAX_LIVE_LEDS_WS) +1; //only serve every n'th LED if count over MAX_LIVE_LEDS_WS
   size_t pos = (strip.isMatrix ? 4 : 2);

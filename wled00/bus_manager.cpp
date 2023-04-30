@@ -505,9 +505,9 @@ void BusManager::setStatusPixel(uint32_t c) {
 }
 
 void IRAM_ATTR BusManager::setPixelColor(uint16_t pix, uint32_t c, int16_t cct) {
-  for (uint8_t i = 0; i < numBusses; i++) {
+  for (uint_fast8_t i = 0; i < numBusses; i++) {    // WLEDMM use fast native types
     Bus* b = busses[i];
-    uint16_t bstart = b->getStart();
+    uint_fast16_t bstart = b->getStart();
     if (pix < bstart || pix >= bstart + b->getLength()) continue;
     busses[i]->setPixelColor(pix - bstart, c);
   }
@@ -528,10 +528,10 @@ void BusManager::setSegmentCCT(int16_t cct, bool allowWBCorrection) {
   Bus::setCCT(cct);
 }
 
-uint32_t BusManager::getPixelColor(uint16_t pix) {
-  for (uint8_t i = 0; i < numBusses; i++) {
+uint32_t BusManager::getPixelColor(uint_fast16_t pix) {     // WLEDMM use fast native types
+  for (uint_fast8_t i = 0; i < numBusses; i++) {
     Bus* b = busses[i];
-    uint16_t bstart = b->getStart();
+    uint_fast16_t bstart = b->getStart();
     if (pix < bstart || pix >= bstart + b->getLength()) continue;
     return b->getPixelColor(pix - bstart);
   }
@@ -552,8 +552,8 @@ Bus* BusManager::getBus(uint8_t busNr) {
 
 //semi-duplicate of strip.getLengthTotal() (though that just returns strip._length, calculated in finalizeInit())
 uint16_t BusManager::getTotalLength() {
-  uint16_t len = 0;
-  for (uint8_t i=0; i<numBusses; i++) len += busses[i]->getLength();
+  uint_fast16_t len = 0;
+  for (uint_fast8_t i=0; i<numBusses; i++) len += busses[i]->getLength();      // WLEDMM use fast native types
   return len;
 }
 

@@ -220,7 +220,7 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
   static unsigned long _lastPaletteChange = 0; // perhaps it should be per segment
   static CRGBPalette16 randomPalette = CRGBPalette16(DEFAULT_COLOR);
   static CRGBPalette16 prevRandomPalette = CRGBPalette16(CRGB(BLACK));
-  byte tcp[72];
+  byte tcp[76] = { 255 };   //WLEDMM: prevent out-of-range access in loadDynamicGradientPalette()
   if (pal < 245 && pal > GRADIENT_PALETTE_COUNT+13) pal = 0;
   if (pal > 245 && (strip.customPalettes.size() == 0 || 255U-pal > strip.customPalettes.size()-1)) pal = 0;
   //default palette. Differs depending on effect
@@ -426,13 +426,13 @@ void Segment::set(uint16_t i1, uint16_t i2, uint8_t grp, uint8_t spc, uint16_t o
     return;
   }
   if (i1 < Segment::maxWidth || (i1 >= Segment::maxWidth*Segment::maxHeight && i1 < strip.getLengthTotal())) start = i1; // Segment::maxWidth equals strip.getLengthTotal() for 1D
-  stop = i2 > Segment::maxWidth*Segment::maxHeight ? MIN(i2,strip.getLengthTotal()) : (i2 > Segment::maxWidth ? Segment::maxWidth : MAX(1,i2));
+  stop = i2 > Segment::maxWidth*Segment::maxHeight ? min(i2,strip.getLengthTotal()) : (i2 > Segment::maxWidth ? Segment::maxWidth : max((uint16_t)1,i2));  // WLEDMM: use native min/max
   startY = 0;
   stopY  = 1;
   #ifndef WLED_DISABLE_2D
   if (Segment::maxHeight>1) { // 2D
     if (i1Y < Segment::maxHeight) startY = i1Y;
-    stopY = i2Y > Segment::maxHeight ? Segment::maxHeight : MAX(1,i2Y);
+    stopY = i2Y > Segment::maxHeight ? Segment::maxHeight : max((uint16_t)1,i2Y);         // WLEDMM: use native min/max
   }
   #endif
   if (grp) {
@@ -536,16 +536,16 @@ void Segment::setPalette(uint8_t pal) {
 }
 
 // 2D matrix
-uint16_t Segment::virtualWidth() const {
-  uint16_t groupLen = groupLength();
-  uint16_t vWidth = ((transpose ? height() : width()) + groupLen - 1) / groupLen;
+uint16_t Segment::virtualWidth() const {  // WLEDMM use fast types
+  uint_fast16_t groupLen = groupLength();
+  uint_fast16_t vWidth = ((transpose ? height() : width()) + groupLen - 1) / groupLen;
   if (mirror) vWidth = (vWidth + 1) /2;  // divide by 2 if mirror, leave at least a single LED
   return vWidth;
 }
 
-uint16_t Segment::virtualHeight() const {
-  uint16_t groupLen = groupLength();
-  uint16_t vHeight = ((transpose ? width() : height()) + groupLen - 1) / groupLen;
+uint16_t Segment::virtualHeight() const {  // WLEDMM use fast types
+  uint_fast16_t groupLen = groupLength();
+  uint_fast16_t vHeight = ((transpose ? width() : height()) + groupLen - 1) / groupLen;
   if (mirror_y) vHeight = (vHeight + 1) /2;  // divide by 2 if mirror, leave at least a single LED
   return vHeight;
 }
@@ -641,8 +641,8 @@ class JMapC {
         File jMapFile;
         jMapFile = WLED_FS.open(jMapFileName, "r");
 
-        uint8_t maxWidth = 0;
-        uint8_t maxHeight = 0;
+        uint_fast16_t maxWidth = 0;       // WLEDMM fix uint8 overflow for large width/height
+        uint_fast16_t maxHeight = 0;      // WLEDMM
 
         //https://arduinojson.org/v6/how-to/deserialize-a-very-large-document/
         jMapFile.find("[");
@@ -666,8 +666,8 @@ class JMapC {
             if (arrayChunk[0].is<JsonArray>()) { //if array of arrays
               arrayAndSize.array = new XandY[arrayChunk.size()];
               for (JsonVariant arrayElement: arrayChunk) {
-                maxWidth = MAX(maxWidth, arrayElement[0].as<uint8_t>());
-                maxHeight = MAX(maxHeight, arrayElement[1].as<uint8_t>());
+                maxWidth = max((uint16_t)maxWidth, arrayElement[0].as<uint16_t>());       // WLEDMM use native min/max
+                maxHeight = max((uint16_t)maxHeight, arrayElement[1].as<uint16_t>());     // WLEDMM
                 arrayAndSize.array[arrayAndSize.size].x = arrayElement[0].as<uint8_t>();
                 arrayAndSize.array[arrayAndSize.size].y = arrayElement[1].as<uint8_t>();
                 arrayAndSize.size++;
@@ -676,8 +676,8 @@ class JMapC {
             }
             else { // if array (of x and y)
               arrayAndSize.array = new XandY[1];
-              maxWidth = MAX(maxWidth, arrayChunk[0].as<uint8_t>());
-              maxHeight = MAX(maxHeight, arrayChunk[1].as<uint8_t>());
+              maxWidth = max((uint16_t)maxWidth, arrayChunk[0].as<uint16_t>());         // WLEDMM use native min/max
+              maxHeight = max((uint16_t)maxHeight, arrayChunk[1].as<uint16_t>());       // WLEDMM
               arrayAndSize.array[arrayAndSize.size].x = arrayChunk[0].as<uint8_t>();
               arrayAndSize.array[arrayAndSize.size].y = arrayChunk[1].as<uint8_t>();
               arrayAndSize.size++;
@@ -690,8 +690,7 @@ class JMapC {
         } while (jMapFile.findUntil(",", "]"));
 
         maxWidth++; maxHeight++;
-        scale = MIN(SEGMENT.virtualWidth() / maxWidth, SEGMENT.virtualHeight() / maxHeight);
-
+        scale = min(SEGMENT.virtualWidth() / maxWidth, SEGMENT.virtualHeight() / maxHeight);  // WLEDMM use native min/max
         dataSize += sizeof(jVectorMap);
         USER_PRINT("dataSize ");
         USER_PRINT(dataSize);
@@ -1130,8 +1129,8 @@ void Segment::fade_out(uint8_t rate) {
   const uint_fast16_t cols = is2D() ? virtualWidth() : virtualLength();           // WLEDMM use fast int types
   const uint_fast16_t rows = virtualHeight(); // will be 1 for 1D
 
-  rate = (255-rate) >> 1;
-  float mappedRate = float(rate) +1.1;
+  uint_fast8_t fadeRate = (255-rate) >> 1;
+  float mappedRate_r = 1.0f / (float(fadeRate) +1.1f); // WLEDMM use reciprocal  1/mappedRate -> faster on non-FPU chips
 
   uint32_t color = colors[1]; // SEGCOLOR(1); // target color
   int w2 = W(color);
@@ -1146,10 +1145,10 @@ void Segment::fade_out(uint8_t rate) {
     int g1 = G(color);
     int b1 = B(color);
 
-    int wdelta = (w2 - w1) / mappedRate;
-    int rdelta = (r2 - r1) / mappedRate;
-    int gdelta = (g2 - g1) / mappedRate;
-    int bdelta = (b2 - b1) / mappedRate;
+    int wdelta = mappedRate_r * (w2 - w1);  // WLEDMM use receprocal - its faster
+    int rdelta = mappedRate_r * (r2 - r1);
+    int gdelta = mappedRate_r * (g2 - g1);
+    int bdelta = mappedRate_r * (b2 - b1);
 
     // if fade isn't complete, make sure delta is at least 1 (fixes rounding issues)
     wdelta += (w2 == w1) ? 0 : (w2 > w1) ? 1 : -1;
@@ -1166,10 +1165,11 @@ void Segment::fade_out(uint8_t rate) {
 void Segment::fadeToBlackBy(uint8_t fadeBy) {
   const uint_fast16_t cols = is2D() ? virtualWidth() : virtualLength();      // WLEDMM use fast int types
   const uint_fast16_t rows = virtualHeight(); // will be 1 for 1D
+  const uint_fast8_t scaledown = 255-fadeBy;  // WLEDMM faster to pre-compute this
 
   for (uint_fast16_t y = 0; y < rows; y++) for (uint_fast16_t x = 0; x < cols; x++) {
-    if (is2D()) setPixelColorXY((uint16_t)x, (uint16_t)y, CRGB(getPixelColorXY(x,y)).nscale8(255-fadeBy));
-    else        setPixelColor((uint16_t)x, CRGB(getPixelColor(x)).nscale8(255-fadeBy));
+    if (is2D()) setPixelColorXY((uint16_t)x, (uint16_t)y, CRGB(getPixelColorXY(x,y)).nscale8(scaledown));
+    else        setPixelColor((uint16_t)x, CRGB(getPixelColor(x)).nscale8(scaledown));
   }
 }
 
@@ -1233,14 +1233,14 @@ uint32_t Segment::color_wheel(uint8_t pos) {
 /*
  * Returns a new, random wheel index with a minimum distance of 42 from pos.
  */
-uint8_t Segment::get_random_wheel_index(uint8_t pos) {
-  uint8_t r = 0, x = 0, y = 0, d = 0;
+uint8_t Segment::get_random_wheel_index(uint8_t pos) { // WLEDMM use fast int types, use native min/max
+  uint_fast8_t r = 0, x = 0, y = 0, d = 0;
 
   while(d < 42) {
     r = random8();
-    x = abs(pos - r);
+    x = abs(int(pos - r));
     y = 255 - x;
-    d = MIN(x, y);
+    d = min(x, y);
   }
   return r;
 }
@@ -1254,7 +1254,7 @@ uint8_t Segment::get_random_wheel_index(uint8_t pos) {
  * @param pbri Value to scale the brightness of the returned color by. Default is 255. (no scaling)
  * @returns Single color from palette
  */
-uint32_t Segment::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri)
+uint32_t Segment::color_from_palette(uint_fast16_t i, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri) // WLEDMM use fast int types
 {
   // default palette or no RGB support on segment
   if ((palette == 0 && mcol < NUM_COLORS) || !_isRGB) {
@@ -1265,7 +1265,8 @@ uint32_t Segment::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_
   }
 
   uint8_t paletteIndex = i;
-  if (mapping && virtualLength() > 1) paletteIndex = (i*255)/(virtualLength() -1);
+  uint_fast16_t vLen = mapping ? virtualLength() : 1;
+  if (mapping && vLen > 1) paletteIndex = (i*255)/(vLen -1);
   if (!wrap) paletteIndex = scale8(paletteIndex, 240); //cut off blend at palette "end"
   CRGB fastled_col;
   CRGBPalette16 curPal;
@@ -1525,7 +1526,7 @@ void IRAM_ATTR WS2812FX::setPixelColor(int i, uint32_t col)
   busses.setPixelColor(i, col);
 }
 
-uint32_t WS2812FX::getPixelColor(uint16_t i)
+uint32_t WS2812FX::getPixelColor(uint_fast16_t i) // WLEDMM fast int types
 {
   if (i < customMappingSize) i = customMappingTable[i];
   if (i >= _length) return 0;
@@ -1584,7 +1585,7 @@ void WS2812FX::estimateCurrentAndLimitBri() {
       byte r = R(c), g = G(c), b = B(c), w = W(c);
 
       if(useWackyWS2815PowerModel) { //ignore white component on WS2815 power calculation
-        busPowerSum += (MAX(MAX(r,g),b)) * 3;
+        busPowerSum += (max(max(r,g),b)) * 3; // WLEDMM use native min/max
       } else {
         busPowerSum += (r + g + b + w);
       }
@@ -1756,14 +1757,14 @@ uint8_t WS2812FX::getActiveSegmentsNum(void) {
   return c;
 }
 
-uint16_t WS2812FX::getLengthTotal(void) {
-  uint16_t len = Segment::maxWidth * Segment::maxHeight; // will be _length for 1D (see finalizeInit()) but should cover whole matrix for 2D
+uint16_t WS2812FX::getLengthTotal(void) {  // WLEDMM fast int types
+  uint_fast16_t len = Segment::maxWidth * Segment::maxHeight; // will be _length for 1D (see finalizeInit()) but should cover whole matrix for 2D
   if (isMatrix && _length > len) len = _length; // for 2D with trailing strip
   return len;
 }
 
-uint16_t WS2812FX::getLengthPhysical(void) {
-  uint16_t len = 0;
+uint16_t WS2812FX::getLengthPhysical(void) {  // WLEDMM fast int types
+  uint_fast16_t len = 0;
   for (unsigned b = 0; b < busses.getNumBusses(); b++) {   //  WLEDMM use native (fast) types
     Bus *bus = busses.getBus(b);
     if (bus->getType() >= TYPE_NET_DDP_RGB) continue; //exclude non-physical network busses
@@ -2024,7 +2025,7 @@ void WS2812FX::loadCustomPalettes() {
         if (!pal.isNull() && pal.size()>4) { // not an empty palette (at least 2 entries)
           if (pal[0].is<int>() && pal[1].is<const char *>()) {
             // we have an array of index & hex strings
-            size_t palSize = MIN(pal.size(), 36);
+            size_t palSize = min(pal.size(), (size_t)36);  // WLEDMM use native min/max
             palSize -= palSize % 2; // make sure size is multiple of 2
             for (size_t i=0, j=0; i<palSize && pal[i].as<int>()<256; i+=2, j+=4) {
               uint8_t rgbw[] = {0,0,0,0};
@@ -2034,7 +2035,7 @@ void WS2812FX::loadCustomPalettes() {
               DEBUG_PRINTF("%d(%d) : %d %d %d\n", i, int(tcp[j]), int(tcp[j+1]), int(tcp[j+2]), int(tcp[j+3]));
             }
           } else {
-            size_t palSize = MIN(pal.size(), 72);
+            size_t palSize = min(pal.size(), (size_t)72);    // WLEDMM use native min/max
             palSize -= palSize % 4; // make sure size is multiple of 4
             for (size_t i=0; i<palSize && pal[i].as<int>()<256; i+=4) {
               tcp[ i ] = (uint8_t) pal[ i ].as<int>(); // index

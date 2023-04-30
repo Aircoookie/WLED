@@ -7,11 +7,11 @@
 /*
  * color blend function
  */
-uint32_t color_blend(uint32_t color1, uint32_t color2, uint16_t blend, bool b16) {
+IRAM_ATTR_YN uint32_t color_blend(uint32_t color1, uint32_t color2, uint_fast16_t blend, bool b16) {
   if(blend == 0)   return color1;
-  uint16_t blendmax = b16 ? 0xFFFF : 0xFF;
+  uint_fast16_t blendmax = b16 ? 0xFFFF : 0xFF;
   if(blend == blendmax) return color2;
-  uint8_t shift = b16 ? 16 : 8;
+  uint_fast8_t shift = b16 ? 16 : 8;
 
   uint32_t w1 = W(color1);
   uint32_t r1 = R(color1);
@@ -41,7 +41,7 @@ uint32_t color_add(uint32_t c1, uint32_t c2)
   uint32_t g = G(c1) + G(c2);
   uint32_t b = B(c1) + B(c2);
   uint32_t w = W(c1) + W(c2);
-  uint16_t max = r;
+  uint_fast16_t max = r;
   if (g > max) max = g;
   if (b > max) max = b;
   if (w > max) max = w;
@@ -233,13 +233,13 @@ bool colorFromHexString(byte* rgb, const char* in) {
   return true;
 }
 
-float minf (float v, float w)
+static float minf (float v, float w)  // WLEDMM better use standard library fminf()
 {
   if (w > v) return v;
   return w;
 }
 
-float maxf (float v, float w)
+static float maxf (float v, float w)  // WLEDMM better use standard library fmaxf()
 {
   if (w > v) return w;
   return v;

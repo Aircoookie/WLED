@@ -50,8 +50,8 @@ bool getJsonValue(const JsonVariant& element, DestType& destination, const Defau
 
 
 //colors.cpp
-uint32_t color_blend(uint32_t,uint32_t,uint16_t,bool b16=false);
-uint32_t color_add(uint32_t,uint32_t);
+uint32_t __attribute__((const)) color_blend(uint32_t,uint32_t,uint_fast16_t,bool b16=false);  // WLEDMM: added attribute const
+uint32_t  __attribute__((const)) color_add(uint32_t,uint32_t);                                // WLEDMM: added attribute const
 inline uint32_t colorFromRgbw(byte* rgbw) { return uint32_t((byte(rgbw[3]) << 24) | (byte(rgbw[0]) << 16) | (byte(rgbw[1]) << 8) | (byte(rgbw[2]))); }
 void colorHStoRGB(uint16_t hue, byte sat, byte* rgb); //hue, sat to rgb
 void colorKtoRGB(uint16_t kelvin, byte* rgb);
@@ -61,12 +61,12 @@ void colorRGBtoXY(byte* rgb, float* xy); // only defined if huesync disabled TOD
 void colorFromDecOrHexString(byte* rgb, char* in);
 bool colorFromHexString(byte* rgb, const char* in);
 uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb);
-uint16_t approximateKelvinFromRGB(uint32_t rgb);
+uint16_t __attribute__((const)) approximateKelvinFromRGB(uint32_t rgb);                       // WLEDMM: added attribute const
 void setRandomColor(byte* rgb);
 uint8_t gamma8_cal(uint8_t b, float gamma);
 void calcGammaTable(float gamma);
-uint8_t gamma8(uint8_t b);
-uint32_t gamma32(uint32_t);
+uint8_t __attribute__((pure)) gamma8(uint8_t b);                                              // WLEDMM: added attribute pure
+uint32_t __attribute__((pure)) gamma32(uint32_t);                                             // WLEDMM: added attribute pure
 
 //dmx.cpp
 void initDMX();
@@ -162,7 +162,7 @@ void stateUpdated(byte callMode);
 void updateInterfaces(uint8_t callMode);
 void handleTransitions();
 void handleNightlight();
-byte scaledBri(byte in);
+byte __attribute__((pure)) scaledBri(byte in);                     // WLEDMM: added attribute pure
 
 //lx_parser.cpp
 bool parseLx(int lxValue, byte* rgbw);
@@ -348,7 +348,7 @@ void releaseJSONBufferLock();
 uint8_t extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLen);
 uint8_t extractModeSlider(uint8_t mode, uint8_t slider, char *dest, uint8_t maxLen, uint8_t *var = nullptr);
 int16_t extractModeDefaults(uint8_t mode, const char *segVar);
-uint16_t crc16(const unsigned char* data_p, size_t length);
+uint16_t  __attribute__((pure)) crc16(const unsigned char* data_p, size_t length);   // WLEDMM: added attribute pure
 um_data_t* simulateSound(uint8_t simulationId);
 // WLEDMM enumerateLedmaps(); moved to FX.h
 CRGB getCRGBForBand(int x, uint8_t *fftResult, int pal); //WLEDMM netmindz ar palette

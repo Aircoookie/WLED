@@ -2243,7 +2243,7 @@ uint16_t mode_colortwinkle() {
       }
     }
   }
-  return FRAMETIME_FIXED;
+  return FRAMETIME_FIXED_SLOW;
 }
 static const char _data_FX_MODE_COLORTWINKLE[] PROGMEM = "Colortwinkles@Fade speed,Spawn speed;;!;;m12=0"; //pixels
 
@@ -3096,7 +3096,7 @@ uint16_t candle(bool multi)
     }
   }
 
-  return FRAMETIME_FIXED;
+  return FRAMETIME_FIXED_SLOW;
 }
 
 
@@ -6832,7 +6832,7 @@ uint16_t mode_blurz(void) {                    // Blurz. By Andrew Tuline.
     SEGMENT.setPixelColor(segLoc, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette((uint16_t)pixColor, false, PALETTE_SOLID_WRAP, 0),(uint8_t)pixIntensity)); // repaint center pixel after blur
   } else SEGMENT.blur(max(SEGMENT.intensity, (uint8_t)1));  // silence - just blur it again
 
-  return FRAMETIME;
+  return FRAMETIME_FIXED;
 } // mode_blurz()
 static const char _data_FX_MODE_BLURZ[] PROGMEM = "Blurz ☾@Fade rate,Blur;!,Color mix;!;1f;sx=48,ix=127,m12=0,si=0"; // Pixels, Beatsin
 #endif
@@ -6944,7 +6944,7 @@ uint16_t mode_freqmap(void) {                   // Map FFT_MajorPeak to SEGLEN. 
     SEGMENT.setPixelColor(locn, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(SEGMENT.intensity+pixCol, false, PALETTE_SOLID_WRAP, 0), bright));
   }
 
-  return FRAMETIME;
+  return FRAMETIME_FIXED;
 } // mode_freqmap()
 static const char _data_FX_MODE_FREQMAP[] PROGMEM = "Freqmap@Fade rate,Starting color;!,!;!;1f;m12=0,si=0"; // Pixels, Beatsin
 
@@ -7069,7 +7069,7 @@ uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschun
   }
 
   uint8_t secondHand = micros()/(256-SEGMENT.speed)/500 % 16;
-  if((SEGMENT.speed > 254) || (SEGENV.aux0 != secondHand)) {   // WLEDMM allow run run at full speed
+  if((SEGMENT.speed > 254) || (SEGENV.aux0 != secondHand)) {   // WLEDMM allow to run at full speed
     SEGENV.aux0 = secondHand;
 
     float sensitivity = 0.5f * mapf(SEGMENT.custom3, 1, 31, 0.5, 10); // reduced resolution slider

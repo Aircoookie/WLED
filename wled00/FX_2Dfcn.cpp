@@ -160,7 +160,7 @@ void IRAM_ATTR_YN WS2812FX::setPixelColorXY(int x, int y, uint32_t col) //WLEDMM
 {
 #ifndef WLED_DISABLE_2D
   if (!isMatrix) return; // not a matrix set-up
-  uint16_t index = y * Segment::maxWidth + x;
+  uint_fast16_t index = y * Segment::maxWidth + x;
 #else
   uint16_t index = x;
 #endif
@@ -172,7 +172,7 @@ void IRAM_ATTR_YN WS2812FX::setPixelColorXY(int x, int y, uint32_t col) //WLEDMM
 // returns RGBW values of pixel
 uint32_t WS2812FX::getPixelColorXY(uint16_t x, uint16_t y) {
 #ifndef WLED_DISABLE_2D
-  uint16_t index = (y * Segment::maxWidth + x);
+  uint_fast16_t index = (y * Segment::maxWidth + x); //WLEDMM: use fast types
 #else
   uint16_t index = x;
 #endif
@@ -188,9 +188,9 @@ uint32_t WS2812FX::getPixelColorXY(uint16_t x, uint16_t y) {
 #ifndef WLED_DISABLE_2D
 
 // XY(x,y) - gets pixel index within current segment (often used to reference leds[] array element)
-uint16_t IRAM_ATTR_YN Segment::XY(uint16_t x, uint16_t y) { //WLEDMM: IRAM_ATTR conditionaly
-  uint16_t width  = virtualWidth();   // segment width in logical pixels
-  uint16_t height = virtualHeight();  // segment height in logical pixels
+uint16_t IRAM_ATTR_YN Segment::XY(uint16_t x, uint16_t y) { //WLEDMM: IRAM_ATTR conditionaly, use fast types
+  uint_fast16_t width  = virtualWidth();   // segment width in logical pixels
+  uint_fast16_t height = virtualHeight();  // segment height in logical pixels
   return (x%width) + (y%height) * width;
 }
 
@@ -221,7 +221,7 @@ void IRAM_ATTR_YN Segment::setPixelColorXY(int x, int y, uint32_t col) //WLEDMM:
 
   for (int j = 0; j < grouping; j++) {   // groupping vertically
     for (int g = 0; g < grouping; g++) { // groupping horizontally
-      uint16_t xX = (x+g), yY = (y+j);
+      uint_fast16_t xX = (x+g), yY = (y+j);    //WLEDMM: use fast types
       if (xX >= width() || yY >= height()) continue; // we have reached one dimension's end
 
       strip.setPixelColorXY(start + xX, startY + yY, col);
@@ -323,7 +323,7 @@ void Segment::blurRow(uint16_t row, fract8 blur_amount) {
   uint8_t keep = 255 - blur_amount;
   uint8_t seep = blur_amount >> 1;
   CRGB carryover = CRGB::Black;
-  for (uint16_t x = 0; x < cols; x++) {
+  for (uint_fast16_t x = 0; x < cols; x++) { //WLEDMM: use fast types
     CRGB cur = getPixelColorXY(x, row);
     CRGB part = cur;
     part.nscale8(seep);
@@ -348,7 +348,7 @@ void Segment::blurCol(uint16_t col, fract8 blur_amount) {
   uint8_t keep = 255 - blur_amount;
   uint8_t seep = blur_amount >> 1;
   CRGB carryover = CRGB::Black;
-  for (uint16_t i = 0; i < rows; i++) {
+  for (uint_fast16_t i = 0; i < rows; i++) { //WLEDMM: use fast types
     CRGB cur = getPixelColorXY(col, i);
     CRGB part = cur;
     part.nscale8(seep);
@@ -364,23 +364,23 @@ void Segment::blurCol(uint16_t col, fract8 blur_amount) {
 }
 
 // 1D Box blur (with added weight - blur_amount: [0=no blur, 255=max blur])
-void Segment::box_blur(uint16_t i, bool vertical, fract8 blur_amount) {
-  const uint16_t cols = virtualWidth();
-  const uint16_t rows = virtualHeight();
-  const uint16_t dim1 = vertical ? rows : cols;
-  const uint16_t dim2 = vertical ? cols : rows;
+void Segment::box_blur(uint16_t i, bool vertical, fract8 blur_amount) {  //WLEDMM: use fast types
+  const uint_fast16_t cols = virtualWidth();
+  const uint_fast16_t rows = virtualHeight();
+  const uint_fast16_t dim1 = vertical ? rows : cols;
+  const uint_fast16_t dim2 = vertical ? cols : rows;
   if (i >= dim2) return;
   const float seep = blur_amount/255.f;
   const float keep = 3.f - 2.f*seep;
   // 1D box blur
   CRGB tmp[dim1];
-  for (uint16_t j = 0; j < dim1; j++) {
-    uint16_t x = vertical ? i : j;
-    uint16_t y = vertical ? j : i;
-    uint16_t xp = vertical ? x : x-1;
-    uint16_t yp = vertical ? y-1 : y;
-    uint16_t xn = vertical ? x : x+1;
-    uint16_t yn = vertical ? y+1 : y;
+  for (uint_fast16_t j = 0; j < dim1; j++) {
+    uint_fast16_t x = vertical ? i : j;
+    uint_fast16_t y = vertical ? j : i;
+    uint_fast16_t xp = vertical ? x : x-1;
+    uint_fast16_t yp = vertical ? y-1 : y;
+    uint_fast16_t xn = vertical ? x : x+1;
+    uint_fast16_t yn = vertical ? y+1 : y;
     CRGB curr = getPixelColorXY(x,y);
     CRGB prev = (xp<0 || yp<0) ? CRGB::Black : getPixelColorXY(xp,yp);
     CRGB next = ((vertical && yn>=dim1) || (!vertical && xn>=dim1)) ? CRGB::Black : getPixelColorXY(xn,yn);
@@ -390,10 +390,10 @@ void Segment::box_blur(uint16_t i, bool vertical, fract8 blur_amount) {
     b = (curr.b*keep + (prev.b + next.b)*seep) / 3;
     tmp[j] = CRGB(r,g,b);
   }
-  for (uint16_t j = 0; j < dim1; j++) {
-    uint16_t x = vertical ? i : j;
-    uint16_t y = vertical ? j : i;
-    setPixelColorXY(x, y, tmp[j]);
+  for (uint_fast16_t j = 0; j < dim1; j++) {
+    uint_fast16_t x = vertical ? i : j;
+    uint_fast16_t y = vertical ? j : i;
+    setPixelColorXY((int)x, (int)y, tmp[j]);
   }
 }
 
@@ -411,9 +411,9 @@ void Segment::box_blur(uint16_t i, bool vertical, fract8 blur_amount) {
 //         eventually all the way to black; this is by design so that
 //         it can be used to (slowly) clear the LEDs to black.
 
-void Segment::blur1d(fract8 blur_amount) {
-  const uint16_t rows = virtualHeight();
-  for (uint16_t y = 0; y < rows; y++) blurRow(y, blur_amount);
+void Segment::blur1d(fract8 blur_amount) {   //WLEDMM: use fast types
+  const uint_fast16_t rows = virtualHeight();
+  for (uint_fast16_t y = 0; y < rows; y++) blurRow(y, blur_amount);
 }
 
 void Segment::moveX(int8_t delta) {
@@ -504,11 +504,11 @@ void Segment::fill_circle(uint16_t cx, uint16_t cy, uint8_t radius, CRGB col) {
   }
 }
 
-void Segment::nscale8(uint8_t scale) {
-  const uint16_t cols = virtualWidth();
-  const uint16_t rows = virtualHeight();
-  for(uint16_t y = 0; y < rows; y++) for (uint16_t x = 0; x < cols; x++) {
-    setPixelColorXY(x, y, CRGB(getPixelColorXY(x, y)).nscale8(scale));
+void Segment::nscale8(uint8_t scale) {  //WLEDMM: use fast types
+  const uint_fast16_t cols = virtualWidth();
+  const uint_fast16_t rows = virtualHeight();
+  for(uint_fast16_t y = 0; y < rows; y++) for (uint_fast16_t x = 0; x < cols; x++) {
+    setPixelColorXY((int)x, (int)y, CRGB(getPixelColorXY(x, y)).nscale8(scale));
   }
 }
 
