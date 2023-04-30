@@ -1978,7 +1978,7 @@ uint16_t mode_fire_2012() {
   if (!SEGENV.allocateData(strips * SEGLEN)) return mode_static(); //allocation failed
   byte* heat = SEGENV.data;
 
-  const uint32_t it = strip.now >> 6; //div 64
+  const uint32_t it = strip.now >> 5; //div 32
 
   struct virtualStrip {
     static void runStrip(uint16_t stripNr, byte* heat, uint32_t it) {
@@ -1987,28 +1987,24 @@ uint16_t mode_fire_2012() {
 
       // Step 1.  Cool down every cell a little
       for (int i = 0; i < SEGLEN; i++) {
-        uint8_t cool = (it != SEGENV.step) ? random8((((20 + SEGMENT.speed/3) * 16) / SEGLEN)+2) : random(8);
-        uint8_t minTemp = 0;
-        if (i<ignition) {
-          minTemp = (ignition-i)/4 + 16;  // and should not become black
-        }
+        uint8_t cool = (it != SEGENV.step) ? random8((((20 + SEGMENT.speed/3) * 16) / SEGLEN)+2) : random(4);
+        uint8_t minTemp = (i<ignition) ? (ignition-i)/4 + 16 : 0;  // should not become black in ignition area
         uint8_t temp = qsub8(heat[i], cool);
         heat[i] = temp<minTemp ? minTemp : temp;
       }
 
-      if (it != SEGENV.step)
-      {
+      if (it != SEGENV.step) {
         // Step 2.  Heat from each cell drifts 'up' and diffuses a little
         for (int k = SEGLEN -1; k > 1; k--) {
           heat[k] = (heat[k - 1] + (heat[k - 2]<<1) ) / 3;  // heat[k-2] multiplied by 2
         }
-      }
 
-      // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
-      if (random8() <= SEGMENT.intensity) {
-        uint8_t y = random8(ignition);
-        uint8_t boost = (32+SEGMENT.custom3*2) * (2*ignition-y) / (2*ignition);
-        heat[y] = qadd8(heat[y], random8(64+boost,128+boost));
+        // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
+        if (random8() <= SEGMENT.intensity) {
+          uint8_t y = random8(ignition);
+          uint8_t boost = (17+SEGMENT.custom3) * (ignition - y/2) / ignition; // integer math!
+          heat[y] = qadd8(heat[y], random8(96+2*boost,207+boost));
+        }
       }
 
       // Step 4.  Map from heat cells to LED colors
@@ -2028,7 +2024,7 @@ uint16_t mode_fire_2012() {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_FIRE_2012[] PROGMEM = "Fire 2012@Cooling,Spark rate,,,Boost;;!;1;sx=120,ix=64,m12=1"; // bars
+static const char _data_FX_MODE_FIRE_2012[] PROGMEM = "Fire 2012@Cooling,Spark rate,,,Boost;;!;1;sx=64,ix=160,m12=1"; // bars
 
 
 // ColorWavesWithPalettes by Mark Kriegsman: https://gist.github.com/kriegsman/8281905786e8b2632aeb
@@ -7416,12 +7412,12 @@ uint16_t mode_2Dsoap() {
         int32_t joffset = scale32_y * (j - rows / 2);
         uint8_t data = inoise16(*noise32_x + ioffset, *noise32_y + joffset, *noise32_z) >> 8;
         noise3d[XY(i,j)] = scale8(noise3d[XY(i,j)], SEGMENT.intensity) + scale8(data, 255 - SEGMENT.intensity);
-        SEGMENT.setPixelColorXY(i, j, ColorFromPalette(SEGPALETTE,~noise3d[i*cols + j]*3));
+        SEGMENT.setPixelColorXY(i, j, ColorFromPalette(SEGPALETTE,~noise3d[XY(i,j)]*3));
       }
     }
   }
 
-  uint32_t mov = max(cols,rows)*SEGMENT.speed/4;
+  uint32_t mov = MAX(cols,rows)*SEGMENT.speed/4;
   *noise32_x += mov;
   *noise32_y += mov;
   *noise32_z += mov;
@@ -7443,7 +7439,7 @@ uint16_t mode_2Dsoap() {
 
   amplitude = (cols >= 16) ? (cols-8)/8 : 1;
   for (int y = 0; y < rows; y++) {
-    int amount   = ((int)noise3d[y] - 128) * 2 * amplitude + 256*shiftX;
+    int amount   = ((int)noise3d[XY(0,y)] - 128) * 2 * amplitude + 256*shiftX;
     int delta    = abs(amount) >> 8;
     int fraction = abs(amount) & 255;
     for (int x = 0; x < cols; x++) {
@@ -7456,10 +7452,10 @@ uint16_t mode_2Dsoap() {
       }
       CRGB PixelA = CRGB::Black;
       if ((zD >= 0) && (zD < cols)) PixelA = SEGMENT.getPixelColorXY(zD, y);
-      else                          PixelA = ColorFromPalette(SEGPALETTE, ~noise3d[(abs(zD)%cols)*cols + y]*3);
+      else                          PixelA = ColorFromPalette(SEGPALETTE, ~noise3d[XY(abs(zD),y)]*3);
       CRGB PixelB = CRGB::Black;
       if ((zF >= 0) && (zF < cols)) PixelB = SEGMENT.getPixelColorXY(zF, y);
-      else                          PixelB = ColorFromPalette(SEGPALETTE, ~noise3d[(abs(zF)%cols)*cols + y]*3);
+      else                          PixelB = ColorFromPalette(SEGPALETTE, ~noise3d[XY(abs(zF),y)]*3);
       CRGB pix = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction)));
       SEGMENT.setPixelColorXY(x, y, pix);
     }
@@ -7467,7 +7463,7 @@ uint16_t mode_2Dsoap() {
 
   amplitude = (rows >= 16) ? (rows-8)/8 : 1;
   for (int x = 0; x < cols; x++) {
-    int amount   = ((int)noise3d[x*cols] - 128) * 2 * amplitude + 256*shiftY;
+    int amount   = ((int)noise3d[XY(x,0)] - 128) * 2 * amplitude + 256*shiftY;
     int delta    = abs(amount) >> 8;
     int fraction = abs(amount) & 255;
     for (int y = 0; y < rows; y++) {
@@ -7480,10 +7476,10 @@ uint16_t mode_2Dsoap() {
       }
       CRGB PixelA = CRGB::Black;
       if ((zD >= 0) && (zD < rows)) PixelA = SEGMENT.getPixelColorXY(x, zD);
-      else                          PixelA = ColorFromPalette(SEGPALETTE, ~noise3d[x*cols + abs(zD)%rows]*3); 
+      else                          PixelA = ColorFromPalette(SEGPALETTE, ~noise3d[XY(x,abs(zD))]*3); 
       CRGB PixelB = CRGB::Black;
       if ((zF >= 0) && (zF < rows)) PixelB = SEGMENT.getPixelColorXY(x, zF);
-      else                          PixelB = ColorFromPalette(SEGPALETTE, ~noise3d[x*cols + abs(zF)%rows]*3);
+      else                          PixelB = ColorFromPalette(SEGPALETTE, ~noise3d[XY(x,abs(zF))]*3);
       CRGB pix = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction)));
       SEGMENT.setPixelColorXY(x, y, pix);
     }
