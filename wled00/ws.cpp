@@ -9,7 +9,11 @@ static volatile uint16_t wsLiveClientId = 0;        // WLEDMM added "static"
 static volatile unsigned long wsLastLiveTime = 0;   // WLEDMM
 //uint8_t* wsFrameBuffer = nullptr;
 
+#ifdef WLEDMM_FASTPATH
+#define WS_LIVE_INTERVAL 120   // WLEDMM reduced update interval, to have more time for LEDs
+#else
 #define WS_LIVE_INTERVAL 40
+#endif
 
 void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len)
 {
