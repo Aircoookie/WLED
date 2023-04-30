@@ -7417,7 +7417,7 @@ uint16_t mode_2Dsoap() {
     }
   }
 
-  uint32_t mov = MAX(cols,rows)*SEGMENT.speed/4;
+  uint32_t mov = MAX(cols,rows)*(SEGMENT.speed+1)/2;
   *noise32_x += mov;
   *noise32_y += mov;
   *noise32_z += mov;
@@ -7427,7 +7427,7 @@ uint16_t mode_2Dsoap() {
     for (int j = 0; j < rows; j++) {
       int32_t joffset = scale32_y * (j - rows / 2);
       uint8_t data = inoise16(*noise32_x + ioffset, *noise32_y + joffset, *noise32_z) >> 8;
-      noise3d[XY(i,j)] = scale8(noise3d[XY(i,j)], SEGMENT.intensity) + scale8(data, 255 - SEGMENT.intensity);
+      noise3d[XY(i,j)] = scale8(noise3d[XY(i,j)], SEGMENT.intensity) + scale8(data, 256 - SEGMENT.intensity);
     }
   }
 
