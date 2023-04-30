@@ -338,7 +338,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     if (presetsModifiedTime == 0) presetsModifiedTime = timein;
   }
 
-  doReboot = root[F("rb")] | doReboot;
+  if (root[F("psave")].isNull()) doReboot = root[F("rb")] | doReboot;
 
   // do not allow changing main segment while in realtime mode (may get odd results else)
   if (!realtimeMode) strip.setMainSegmentId(root[F("mainseg")] | strip.getMainSegmentId()); // must be before realtimeLock() if "live"

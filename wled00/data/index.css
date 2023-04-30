@@ -318,9 +318,6 @@ button {
 	height: 100%;
 	overscroll-behavior: none;
 	padding: 0 4px;
-}
-
-#Effects {
 	-webkit-overflow-scrolling: touch;
 }
 
@@ -432,11 +429,11 @@ button {
 	position: relative;
 	opacity: 1;
 	transition: opacity 0.5s linear, height 0.5s, transform 0.5s;
-	overflow: hidden;
 }
 
 .filter {
 	z-index: 1;
+	overflow: hidden;
 }
 
 /* Tooltip text */
