@@ -147,7 +147,11 @@
 			let isRGBW = false, gRGBW = false, memu = 0;
 
 			gId('ampwarning').style.display = (d.Sf.MA.value > 7200) ? 'inline':'none';
+
 			gId('fpswarning').style.display = (d.Sf.FR.value > 69) ? 'block':'none'; // WLEDMM
+			gId('fpshelp1').style.display = ((d.Sf.FR.value > 80) && (d.Sf.FR.value < 132)) ? 'block':'none'; // WLEDMM
+			gId('fpshelp2').style.display = ((d.Sf.FR.value > 132) && (d.Sf.FR.value < 196)) ? 'block':'none'; // WLEDMM
+			gId('fpshelp3').style.display = (d.Sf.FR.value > 196) ? 'block':'none'; // WLEDMM
 
 			if (d.Sf.LA.value == 255) laprev = 12;
 			else if (d.Sf.LA.value > 0) laprev = d.Sf.LA.value;
@@ -697,6 +701,9 @@ Length: <input type="number" name="XC${i}" id="xc${i}" class="l" min="1" max="65
 			To protect your setup,
 			please make sure to backup WLED configuration and presets before raising target FPS above 70!<br>
 		</div>
+		<div id="fpshelp1" style="color: orange; display: none;">For a very smooth experience, use less than 300 LEDs per output!<br>      </div><!-- up to 120 fps on ws281x -->
+		<div id="fpshelp2" style="color: orange; display: none;">For an extremely smooth experience, use less than 180 LEDs per output!<br></div><!-- up to 180 fps on WS281x -->
+		<div id="fpshelp3" style="color: orange; display: none;">For a mega ultra smooth experience, use less than 132 LEDs per output!<br></div><!-- up to 240 fps on WS281x -->
 		<hr class="sml">
 		<div id="cfg">Config template: <input type="file" name="data2" accept=".json"><button type="button" class="sml" onclick="loadCfg(d.Sf.data2)">Apply</button><br></div>
 		<hr>

@@ -57,10 +57,21 @@
 #endif
 
 /* Not used in all effects yet */
-#define WLED_FPS         42
-#define FRAMETIME_FIXED  (1000/WLED_FPS)
+#if defined(ARDUINO_ARCH_ESP32) && defined(WLEDMM_FASTPATH)   // WLEDMM go faster on ESP32
+#define WLED_FPS         120
+#define FRAMETIME_FIXED  (strip.getFrameTime() < 10 ? 12 : 24)
+#define WLED_FPS_SLOW         60
+#define FRAMETIME_FIXED_SLOW  (15)    // = 66 FPS => 1000/66
 //#define FRAMETIME        _frametime
 #define FRAMETIME        strip.getFrameTime()
+#else
+#define WLED_FPS         42
+#define FRAMETIME_FIXED  (1000/WLED_FPS)
+#define WLED_FPS_SLOW         42
+#define FRAMETIME_FIXED_SLOW  (1000/WLED_FPS_SLOW)
+//#define FRAMETIME        _frametime
+#define FRAMETIME        strip.getFrameTime()
+#endif
 
 /* each segment uses 52 bytes of SRAM memory, so if you're application fails because of
   insufficient memory, decreasing MAX_NUM_SEGMENTS may help */
@@ -573,7 +584,7 @@ typedef struct Segment {
     void addPixelColor(int n, CRGB c)                             { addPixelColor(n, RGBW32(c.r,c.g,c.b,0)); } // automatically inline
     void fadePixelColor(uint16_t n, uint8_t fade);
     uint8_t get_random_wheel_index(uint8_t pos);
-    uint32_t color_from_palette(uint16_t, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri = 255);
+	uint32_t __attribute__((pure)) color_from_palette(uint_fast16_t, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri = 255);
     uint32_t color_wheel(uint8_t pos);
 
     // 2D matrix
@@ -686,11 +697,11 @@ class WS2812FX {  // 96 bytes
       _length(DEFAULT_LED_COUNT),
       _brightness(DEFAULT_BRIGHTNESS),
       _transitionDur(750),
-      _targetFps(WLED_FPS),
-      _frametime(FRAMETIME_FIXED),
+      _targetFps(WLED_FPS_SLOW),        // WLEDMM
+      _frametime(FRAMETIME_FIXED_SLOW), // WLEDMM
       _cumulativeFps(2),
 #ifdef ARDUINO_ARCH_ESP32
-      _cumulativeFps500(2*500),      // WLEDMM more accurate FPS measurement for ESP32
+      _cumulativeFps500(2*500),          // WLEDMM more accurate FPS measurement for ESP32
       _lastShow500(0),
 #endif
       _isServicing(false),
@@ -809,8 +820,8 @@ class WS2812FX {  // 96 bytes
 
     uint32_t
       now,
-      timebase,
-      getPixelColor(uint16_t);
+      timebase;
+    uint32_t __attribute__((pure)) getPixelColor(uint_fast16_t);   // WLEDMM attribute pure = does not have side-effects
 
     inline uint32_t getLastShow(void) { return _lastShow; }
     inline uint32_t segColor(uint8_t i) { return _colors_t[i]; }
