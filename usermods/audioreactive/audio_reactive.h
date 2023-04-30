@@ -254,7 +254,7 @@ constexpr SRate_t SAMPLE_RATE = 22050;        // Base sample rate in Hz - 22Khz 
 //constexpr SRate_t SAMPLE_RATE = 16000;        // 16kHz - use if FFTtask takes more than 20ms. Physical sample time -> 32ms
 //constexpr SRate_t SAMPLE_RATE = 20480;        // Base sample rate in Hz - 20Khz is experimental.    Physical sample time -> 25ms
 //constexpr SRate_t SAMPLE_RATE = 10240;        // Base sample rate in Hz - previous default.         Physical sample time -> 50ms
-#ifdef WLEDMM_FASTPATH
+#ifndef WLEDMM_FASTPATH
 #define FFT_MIN_CYCLE 21                      // minimum time before FFT task is repeated. Use with 22Khz sampling
 #else
 #define FFT_MIN_CYCLE 15                      // reduce min time, to allow faster catch-up when I2S is lagging 
