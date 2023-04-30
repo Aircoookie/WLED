@@ -7520,7 +7520,7 @@ uint16_t mode_2Doctopus() {
   map_t *rMap = reinterpret_cast<map_t*>(SEGENV.data);
 
   if (SEGENV.call == 0) {
-    SEGENV.aux0 = 0; // t
+    SEGENV.step = 0; // t
     for (int x = -C_X; x < C_X + (cols % 2); x++) {
       for (int y = -C_Y; y < C_Y + (rows % 2); y++) {
         rMap[XY(x + C_X, y + C_Y)].angle = 128 * (atan2f(y, x) / PI);
@@ -7529,15 +7529,15 @@ uint16_t mode_2Doctopus() {
     }
   }
 
-  SEGENV.aux0 += SEGMENT.speed / 32 + 1;  // 1-8 range
-  for (uint8_t x = 0; x < cols; x++) {
-    for (uint8_t y = 0; y < rows; y++) {
+  SEGENV.step += SEGMENT.speed / 32 + 1;  // 1-4 range
+  for (int x = 0; x < cols; x++) {
+    for (int y = 0; y < rows; y++) {
       byte angle = rMap[XY(x,y)].angle;
       byte radius = rMap[XY(x,y)].radius;
-      //CRGB c = CHSV(SEGENV.aux0 / 2 - radius, 255, sin8(sin8((angle * 4 - radius) / 4 + SEGENV.aux0) + radius - SEGENV.aux0 * 2 + angle * (SEGMENT.custom3/3+1)));
-      uint16_t intensity = sin8(sin8((angle * 4 - radius) / 4 + SEGENV.aux0/2) + radius - SEGENV.aux0 + angle * (SEGMENT.custom3/4+1));
-      intensity = map(intensity*intensity, 0, 65535, 0, SEGMENT.intensity); // add a bit of non-linearity to brightness
-      CRGB c = ColorFromPalette(SEGPALETTE, SEGENV.aux0 / 2 - radius, intensity);
+      //CRGB c = CHSV(SEGENV.step / 2 - radius, 255, sin8(sin8((angle * 4 - radius) / 4 + SEGENV.step) + radius - SEGENV.step * 2 + angle * (SEGMENT.custom3/3+1)));
+      uint16_t intensity = sin8(sin8((angle * 4 - radius) / 4 + SEGENV.step/2) + radius - SEGENV.step + angle * (SEGMENT.custom3/4+1));
+      intensity = map(intensity*intensity, 0, 65535, 0, SEGMENT.intensity); // add a bit of non-linearity for cleaner display
+      CRGB c = ColorFromPalette(SEGPALETTE, SEGENV.step / 2 - radius, intensity);
       SEGMENT.setPixelColorXY(x, y, c);
     }
   }
@@ -7555,13 +7555,16 @@ uint16_t mode_2Dwavingcell() {
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
 
-  uint32_t t = millis()/(256-SEGMENT.speed);
+  uint32_t t = millis()/(257-SEGMENT.speed);
+  uint8_t aX = SEGMENT.custom1/16 + 9;
+  uint8_t aY = SEGMENT.custom2/16 + 1;
+  uint8_t aZ = SEGMENT.custom3 + 1;
   for (int x = 0; x < cols; x++) for (int y = 0; y <rows; y++)
-    SEGMENT.setPixelColorXY(x, y, ColorFromPalette(SEGPALETTE, ((sin8((x*10)+sin8((y+t)*5))+cos8(y*10))+1)+t));
+    SEGMENT.setPixelColorXY(x, y, ColorFromPalette(SEGPALETTE, ((sin8((x*aX)+sin8((y+t)*aY))+cos8(y*aZ))+1)+t));
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_2DWAVINGCELL[] PROGMEM = "Waving Cell@!;;!;2";
+static const char _data_FX_MODE_2DWAVINGCELL[] PROGMEM = "Waving Cell@!,,Amplitude 1,Amplitude 2,Amplitude 3;;!;2";
 
 
 #endif // WLED_DISABLE_2D
