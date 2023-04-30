@@ -254,7 +254,11 @@ constexpr SRate_t SAMPLE_RATE = 22050;        // Base sample rate in Hz - 22Khz 
 //constexpr SRate_t SAMPLE_RATE = 16000;        // 16kHz - use if FFTtask takes more than 20ms. Physical sample time -> 32ms
 //constexpr SRate_t SAMPLE_RATE = 20480;        // Base sample rate in Hz - 20Khz is experimental.    Physical sample time -> 25ms
 //constexpr SRate_t SAMPLE_RATE = 10240;        // Base sample rate in Hz - previous default.         Physical sample time -> 50ms
+#ifdef WLEDMM_FASTPATH
 #define FFT_MIN_CYCLE 21                      // minimum time before FFT task is repeated. Use with 22Khz sampling
+#else
+#define FFT_MIN_CYCLE 15                      // reduce min time, to allow faster catch-up when I2S is lagging 
+#endif
 //#define FFT_MIN_CYCLE 30                      // Use with 16Khz sampling
 //#define FFT_MIN_CYCLE 23                      // minimum time before FFT task is repeated. Use with 20Khz sampling
 //#define FFT_MIN_CYCLE 46                      // minimum time before FFT task is repeated. Use with 10Khz sampling
@@ -1129,8 +1133,13 @@ class AudioReactive : public Usermod {
     {
       float    sampleAdj;           // Gain adjusted sample value
       float    tmpSample;           // An interim sample variable used for calculatioins.
+#ifdef WLEDMM_FASTPATH
+      constexpr float weighting = 0.35f;  // slightly reduced filter strength, to reduce audio latency
+      constexpr float weighting2 = 0.25f;
+#else
       const float weighting = 0.2f; // Exponential filter weighting. Will be adjustable in a future release.
       const float weighting2 = 0.073f; // Exponential filter weighting, for rising signal (a bit more robust against spikes)
+#endif
       const int   AGC_preset = (soundAgc > 0)? (soundAgc-1): 0; // make sure the _compiler_ knows this value will not change while we are inside the function
       static bool isFrozen = false;
       static bool haveSilence = true;
@@ -1732,7 +1741,11 @@ class AudioReactive : public Usermod {
 
         // get AGC sensitivity and sound pressure
         static unsigned long lastEstimate = 0;
+#ifdef WLEDMM_FASTPATH
+        if (millis() - lastEstimate > 7) {
+#else
         if (millis() - lastEstimate > 12) {
+#endif
           lastEstimate = millis();
           agcSensitivity = getSensitivity();
           if (limiterOn)

@@ -180,8 +180,13 @@ class I2SSource : public AudioSource {
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
         .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_STAND_I2S),
         //.intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
+#ifdef WLEDMM_FASTPATH
+        .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2|ESP_INTR_FLAG_LEVEL3,  // seems to reduce noise
+        .dma_buf_count = 28,                                            // 160ms buffer (128 * dma_buf_count / sampleRate)
+#else
         .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2,
         .dma_buf_count = 8,
+#endif
         .dma_buf_len = _blockSize,
         .use_apll = 0,
         //.fixed_mclk = 0,
