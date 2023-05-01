@@ -7406,12 +7406,11 @@ uint16_t mode_2Dsoap() {
     *noise32_x = random16();
     *noise32_y = random16();
     *noise32_z = random16();
-    for (int i = 0; i < cols; i++) {
-      int32_t ioffset = scale32_x * (i - cols / 2);
-      for (int j = 0; j < rows; j++) {
-        int32_t joffset = scale32_y * (j - rows / 2);
-        uint8_t data = inoise16(*noise32_x + ioffset, *noise32_y + joffset, *noise32_z) >> 8;
-        noise3d[XY(i,j)] = scale8(noise3d[XY(i,j)], SEGMENT.intensity) + scale8(data, 255 - SEGMENT.intensity);
+    for (int i = 0; i < SEGMENT.width(); i++) {
+      int32_t ioffset = scale32_x * (i - SEGMENT.width() / 2);
+      for (int j = 0; j < SEGMENT.height(); j++) {
+        int32_t joffset = scale32_y * (j - SEGMENT.height() / 2);
+        noise3d[XY(i,j)] = inoise16(*noise32_x + ioffset, *noise32_y + joffset, *noise32_z) >> 8;
         SEGMENT.setPixelColorXY(i, j, ColorFromPalette(SEGPALETTE,~noise3d[XY(i,j)]*3));
       }
     }
@@ -7499,8 +7498,6 @@ uint16_t mode_2Doctopus() {
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-  const uint8_t C_X = cols / 2;
-  const uint8_t C_Y = rows / 2;
   const uint8_t mapp = 255 / MAX(cols,rows);
 
   typedef struct {
@@ -7513,8 +7510,13 @@ uint16_t mode_2Doctopus() {
 
   map_t *rMap = reinterpret_cast<map_t*>(SEGENV.data);
 
-  if (SEGENV.call == 0) {
+  // re-init if SEGMENT dimensions changed
+  if (SEGENV.call == 0 || SEGMENT.aux0 != cols || SEGMENT.aux1 != rows) {
     SEGENV.step = 0; // t
+    SEGMENT.aux0 = cols;
+    SEGMENT.aux1 = rows;
+    const uint8_t C_X = cols / 2;
+    const uint8_t C_Y = rows / 2;
     for (int x = -C_X; x < C_X + (cols % 2); x++) {
       for (int y = -C_Y; y < C_Y + (rows % 2); y++) {
         rMap[XY(x + C_X, y + C_Y)].angle = 128 * (atan2f(y, x) / PI);
