@@ -219,7 +219,7 @@ void initServer()
       }
     }
     request->send(200, "application/json", F("{\"success\":true}"));
-  });
+  }, JSON_BUFFER_SIZE);
   server.addHandler(handler);
 
   server.on("/version", HTTP_GET, [](AsyncWebServerRequest *request){
