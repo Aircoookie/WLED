@@ -53,8 +53,8 @@ typedef struct ip_addr ip4_addr_t;
 #define DDP_PUSH_FLAG 0x01
 #define DDP_TIMECODE_FLAG 0x10
 
-#define DDP_TYPE_RGB24  0x0A
-#define DDP_TYPE_RGBW32 0x1A
+#define DDP_TYPE_RGB24  0x0D
+#define DDP_TYPE_RGBW32 0x1E
 
 #define ARTNET_OPCODE_OPDMX 0x5000
 #define ARTNET_OPCODE_OPPOLL 0x2000
