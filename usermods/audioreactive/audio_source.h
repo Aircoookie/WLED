@@ -493,9 +493,12 @@ class ES8388Source : public I2SSource {
 
     void _es8388InitAdc() {
       // https://dl.radxa.com/rock2/docs/hw/ds/ES8388%20user%20Guide.pdf Section 10.1
-      // http://www.everest-semi.com/pdf/ES8388%20DS.pdf Better spec sheet, more clear. Registries are decimal, settings are binary.
+      // http://www.everest-semi.com/pdf/ES8388%20DS.pdf Better spec sheet, more clear. 
       // https://docs.google.com/spreadsheets/d/1CN3MvhkcPVESuxKyx1xRYqfUit5hOdsG45St9BCUm-g/edit#gid=0 generally
       // Sets ADC to around what AudioReactive expects, and loops line-in to line-out/headphone for monitoring.
+      // Registries are decimal, settings are binary as that's how everything is listed in the docs
+      // ...which makes it easier to reference the docs.
+      //
       _es8388I2cBegin(); 
       _es8388I2cWrite( 8,0b00000000); // I2S to slave
       _es8388I2cWrite( 2,0b11110011); // Power down DEM and STM
