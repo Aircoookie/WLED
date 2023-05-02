@@ -7380,6 +7380,7 @@ uint16_t mode_2Ddistortionwaves() {
 }
 static const char _data_FX_MODE_2DDISTORTIONWAVES[] PROGMEM = "Distortion Waves@!,Scale;;;2";
 
+
 //Soap
 //@Stepko
 //Idea from https://www.youtube.com/watch?v=DiHBgITrZck&ab_channel=StefanPetrick
@@ -7397,8 +7398,10 @@ uint16_t mode_2Dsoap() {
   uint32_t *noise32_x = reinterpret_cast<uint32_t*>(SEGENV.data + dataSize);
   uint32_t *noise32_y = reinterpret_cast<uint32_t*>(SEGENV.data + dataSize + sizeof(uint32_t));
   uint32_t *noise32_z = reinterpret_cast<uint32_t*>(SEGENV.data + dataSize + sizeof(uint32_t)*2);
-  uint32_t scale32_x = 160000U/cols;
-  uint32_t scale32_y = 160000U/rows;
+  const uint32_t scale32_x = 160000U/cols;
+  const uint32_t scale32_y = 160000U/rows;
+  const uint32_t mov = MIN(cols,rows)*(SEGMENT.speed+2)/2;
+  const uint8_t  smoothness = MIN(250,SEGMENT.intensity); // limit as >250 produces very little changes
 
   // init
   if (SEGENV.call == 0) {
@@ -7406,27 +7409,28 @@ uint16_t mode_2Dsoap() {
     *noise32_x = random16();
     *noise32_y = random16();
     *noise32_z = random16();
-    for (int i = 0; i < SEGMENT.width(); i++) {
-      int32_t ioffset = scale32_x * (i - SEGMENT.width() / 2);
-      for (int j = 0; j < SEGMENT.height(); j++) {
-        int32_t joffset = scale32_y * (j - SEGMENT.height() / 2);
-        noise3d[XY(i,j)] = inoise16(*noise32_x + ioffset, *noise32_y + joffset, *noise32_z) >> 8;
-        SEGMENT.setPixelColorXY(i, j, ColorFromPalette(SEGPALETTE,~noise3d[XY(i,j)]*3));
-      }
-    }
+  } else {
+    *noise32_x += mov;
+    *noise32_y += mov;
+    *noise32_z += mov;
   }
-
-  uint32_t mov = MAX(cols,rows)*(SEGMENT.speed+1)/2;
-  *noise32_x += mov;
-  *noise32_y += mov;
-  *noise32_z += mov;
 
   for (int i = 0; i < cols; i++) {
     int32_t ioffset = scale32_x * (i - cols / 2);
     for (int j = 0; j < rows; j++) {
       int32_t joffset = scale32_y * (j - rows / 2);
       uint8_t data = inoise16(*noise32_x + ioffset, *noise32_y + joffset, *noise32_z) >> 8;
-      noise3d[XY(i,j)] = scale8(noise3d[XY(i,j)], SEGMENT.intensity) + scale8(data, 256 - SEGMENT.intensity);
+      noise3d[XY(i,j)] = scale8(noise3d[XY(i,j)], smoothness) + scale8(data, 255 - smoothness);
+    }
+  }
+  // init also if dimensions changed
+  if (SEGENV.call == 0 || SEGMENT.aux0 != cols || SEGMENT.aux1 != rows) {
+    SEGMENT.aux0 = cols;
+    SEGMENT.aux1 = rows;
+    for (int i = 0; i < cols; i++) {
+      for (int j = 0; j < rows; j++) {
+        SEGMENT.setPixelColorXY(i, j, ColorFromPalette(SEGPALETTE,~noise3d[XY(i,j)]*3));
+      }
     }
   }
 
@@ -7534,12 +7538,15 @@ uint16_t mode_2Doctopus() {
       uint16_t intensity = sin8(sin8((angle * 4 - radius) / 4 + SEGENV.step/2) + radius - SEGENV.step + angle * (SEGMENT.custom3/4+1));
       intensity = map(intensity*intensity, 0, 65535, 0, SEGMENT.intensity); // add a bit of non-linearity for cleaner display
       CRGB c = ColorFromPalette(SEGPALETTE, SEGENV.step / 2 - radius, intensity);
-      SEGMENT.setPixelColorXY(x, y, c);
+      int rX = SEGMENT.custom1 ? (strip.now / (320 - SEGMENT.custom1) + x) % cols : x;
+      int rY = SEGMENT.custom2 ? (strip.now / (320 - SEGMENT.custom2) + y) % rows : y;
+      SEGMENT.setPixelColorXY(rX, rY, c);
     }
   }
+
   return FRAMETIME;
 }
-static const char _data_FX_MODE_2DOCTOPUS[] PROGMEM = "Octopus@!,!,,,Legs;;!;2;ix=255";
+static const char _data_FX_MODE_2DOCTOPUS[] PROGMEM = "Octopus@!,!,Rotate X,Rotate Y,Legs;;!;2;ix=255,c1=0,c2=0";
 
 
 //Waving Cell
