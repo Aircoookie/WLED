@@ -43,8 +43,13 @@
       #define WLED_MIN_VIRTUAL_BUSSES 4
     #else
       #if defined(USERMOD_AUDIOREACTIVE)      // requested by @softhack007 https://github.com/blazoncek/WLED/issues/33
+      #ifndef WLEDMM_FASTPATH
         #define WLED_MAX_BUSSES 8
         #define WLED_MIN_VIRTUAL_BUSSES 2
+      #else
+        #define WLED_MAX_BUSSES 9           // WLEDMM I2S#1 is availeable for LEDs
+        #define WLED_MIN_VIRTUAL_BUSSES 1
+      #endif
       #else
         #define WLED_MAX_BUSSES 10
         #define WLED_MIN_VIRTUAL_BUSSES 0

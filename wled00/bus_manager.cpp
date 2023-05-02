@@ -9,6 +9,8 @@
 #include "bus_wrapper.h"
 #include "bus_manager.h"
 
+//WLEDMM: #define DEBUGOUT(x) netDebugEnabled?NetDebug.print(x):Serial.print(x) not supported in this file as netDebugEnabled not in scope
+#if 0
 //colors.cpp
 uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb);
 uint16_t approximateKelvinFromRGB(uint32_t rgb);
@@ -18,7 +20,6 @@ void colorRGBtoRGBW(byte* rgb);
 uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, byte *buffer, uint8_t bri=255, bool isRGBW=false);
 
 // enable additional debug output
-//WLEDMM: #define DEBUGOUT(x) netDebugEnabled?NetDebug.print(x):Serial.print(x) not supported in this file as netDebugEnabled not in scope
 #if defined(WLED_DEBUG_HOST)
   #include "net_debug.h"
   #define DEBUGOUT NetDebug
@@ -37,6 +38,10 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, byte 
   #define DEBUG_PRINT(x)
   #define DEBUG_PRINTLN(x)
   #define DEBUG_PRINTF(x...)
+#endif
+#else
+ // WLEDMM use wled.h
+#include "wled.h"
 #endif
 
 //color mangling macros
@@ -114,7 +119,11 @@ BusDigital::BusDigital(BusConfig &bc, uint8_t nr, const ColorOrderMap &com) : Bu
   _busPtr = PolyBus::create(_iType, _pins, lenToCreate, nr);
   _valid = (_busPtr != nullptr);
   _colorOrder = bc.colorOrder;
-  DEBUG_PRINTF("%successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u)\n", _valid?"S":"Uns", nr, _len, bc.type, _pins[0],_pins[1],_iType);
+  if (_pins[1] != 255) {  // WLEDMM USER_PRINTF
+    USER_PRINTF("%successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u)\n", _valid?"S":"Uns", nr, _len, bc.type, _pins[0],_pins[1],_iType);
+  } else {
+    USER_PRINTF("%successfully inited strip %u (len %u) with type %u and pin %u (itype %u)\n", _valid?"S":"Uns", nr, _len, bc.type, _pins[0],_iType);
+  }
 }
 
 void BusDigital::show() {
