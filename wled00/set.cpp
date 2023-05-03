@@ -23,7 +23,13 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   {
     strlcpy(clientSSID,request->arg(F("CS")).c_str(), 33);
 
+    wifiEncryptionType = request->arg(F("CT")).toInt();
+
     if (!isAsterisksOnly(request->arg(F("CP")).c_str(), 65)) strlcpy(clientPass, request->arg(F("CP")).c_str(), 65);
+
+    strlcpy(enterpriseAnonymousIdentity,request->arg(F("EA")).c_str(), 65);
+
+    strlcpy(enterpriseIdentity,request->arg(F("EI")).c_str(), 65);
 
     strlcpy(cmDNS, request->arg(F("CM")).c_str(), 33);
 

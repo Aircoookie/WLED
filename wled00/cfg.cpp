@@ -37,10 +37,13 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   JsonObject nw_ins_0 = doc["nw"]["ins"][0];
   getStringFromJson(clientSSID, nw_ins_0[F("ssid")], 33);
+  CJSON(wifiEncryptionType, nw_ins_0[F("enc_type")]);
   //int nw_ins_0_pskl = nw_ins_0[F("pskl")];
   //The WiFi PSK is normally not contained in the regular file for security reasons.
   //If it is present however, we will use it
   getStringFromJson(clientPass, nw_ins_0["psk"], 65);
+  getStringFromJson(enterpriseAnonymousIdentity, nw_ins_0["e_anon_ident"], 65);
+  getStringFromJson(enterpriseIdentity, nw_ins_0["e_ident"], 65);
 
   JsonArray nw_ins_0_ip = nw_ins_0["ip"];
   JsonArray nw_ins_0_gw = nw_ins_0["gw"];
@@ -632,7 +635,10 @@ void serializeConfig() {
 
   JsonObject nw_ins_0 = nw_ins.createNestedObject();
   nw_ins_0[F("ssid")] = clientSSID;
+  nw_ins_0[F("enc_type")] = wifiEncryptionType;
   nw_ins_0[F("pskl")] = strlen(clientPass);
+  nw_ins_0[F("e_anon_ident")] = enterpriseAnonymousIdentity;
+  nw_ins_0[F("e_ident")] = enterpriseIdentity;
 
   JsonArray nw_ins_0_ip = nw_ins_0.createNestedArray("ip");
   JsonArray nw_ins_0_gw = nw_ins_0.createNestedArray("gw");

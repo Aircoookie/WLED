@@ -133,6 +133,10 @@
 #define USERMOD_ID_SHT                   39     //Usermod "usermod_sht.h
 #define USERMOD_ID_KLIPPER               40     // Usermod Klipper percentage
 
+//Wifi encryption type
+#define WIFI_ENCRYPTION_TYPE_PSK          0     //None/WPA/WPA2
+#define WIFI_ENCRYPTION_TYPE_ENTERPRISE   1     //WPA/WPA2-Enterprise
+
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
 #define AP_BEHAVIOR_NO_CONN               1     //Open when no connection (either after boot or if connection is lost)

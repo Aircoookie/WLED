@@ -1,3 +1,4 @@
+#include "const.h"
 #define WLED_DEFINE_GLOBAL_VARS //only in one source file, wled.cpp!
 #include "wled.h"
 #include "wled_ethernet.h"
@@ -664,7 +665,26 @@ void WLED::initConnection()
   WiFi.hostname(hostname);
 #endif
 
-  WiFi.begin(clientSSID, clientPass);
+  if (wifiEncryptionType == WIFI_ENCRYPTION_TYPE_PSK) {
+    WiFi.begin(clientSSID, clientPass);
+  } else {
+    #ifndef WLED_DISABLE_WPA_ENTERPRISE
+    #ifdef ESP8266
+    struct station_config sta_conf;
+    os_memset(&sta_conf, 0, sizeof(sta_conf));
+    os_memcpy(sta_conf.ssid, clientSSID, 32);
+    os_memcpy(sta_conf.password, clientPass, 64);
+    wifi_station_set_config(&sta_conf);
+    wifi_station_set_wpa2_enterprise_auth(1);
+    wifi_station_set_enterprise_identity((u8*)(void*)enterpriseIdentity, os_strlen(enterpriseIdentity));
+    wifi_station_set_enterprise_password((u8*)(void*)clientPass, os_strlen(clientPass));
+    wifi_station_connect();
+    #else
+    WiFi.begin(clientSSID, WPA2_AUTH_PEAP, enterpriseAnonymousIdentity, enterpriseIdentity, clientPass);
+    #endif
+    #endif
+  }
+
 #ifdef ARDUINO_ARCH_ESP32
   #if defined(LOLIN_WIFI_FIX) && (defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32S2))
   WiFi.setTxPower(WIFI_POWER_8_5dBm);
