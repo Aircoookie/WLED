@@ -6042,6 +6042,7 @@ uint16_t mode_ripplepeak(void) {                // * Ripple peak. By Andrew Tuli
   // printUmData();
 
   if (SEGENV.call == 0) {
+    SEGMENT.setUpLeds();
     SEGENV.aux0 = 255;
     SEGMENT.custom1 = *binNum;
     SEGMENT.custom2 = *maxVol * 2;
@@ -6052,8 +6053,9 @@ uint16_t mode_ripplepeak(void) {                // * Ripple peak. By Andrew Tuli
   *binNum = SEGMENT.custom1;                              // Select a bin.
   *maxVol = SEGMENT.custom2 / 2;                          // Our volume comparator.
 
-  SEGMENT.fade_out(240);                                  // Lower frame rate means less effective fading than FastLED
-  SEGMENT.fade_out(240);
+  //SEGMENT.fade_out(240);                                  // Lower frame rate means less effective fading than FastLED
+  //SEGMENT.fade_out(240);
+  SEGMENT.fade_out(224);  // should be the same as 240 applied twice
 
   for (int i = 0; i < SEGMENT.intensity/16; i++) {   // Limit the number of ripples.
     if (samplePeak) ripples[i].state = 255;
@@ -6066,7 +6068,8 @@ uint16_t mode_ripplepeak(void) {                // * Ripple peak. By Andrew Tuli
         ripples[i].pos = random16(SEGLEN);
         #ifdef ESP32
           if (FFT_MajorPeak > 1)                          // log10(0) is "forbidden" (throws exception)
-          ripples[i].color = (int)(log10f(FFT_MajorPeak)*128);
+          //ripples[i].color = (int)(log10f(FFT_MajorPeak)*128);  // not to self: buggy !!
+          ripples[i].color = (int)(logf(FFT_MajorPeak)*32.0f);  // works up to 10025 hz
           else ripples[i].color = 0;
         #else
           ripples[i].color = random8();
@@ -6476,8 +6479,12 @@ uint16_t mode_midnoise(void) {                  // Midnoise. By Andrew Tuline.
   }
   float   volumeSmth   = *(float*)  um_data->u_data[0];
 
-  SEGMENT.fade_out(SEGMENT.speed);
-  SEGMENT.fade_out(SEGMENT.speed);
+  if (SEGENV.call == 0) {
+    SEGMENT.setUpLeds();
+    SEGMENT.fill(BLACK);
+  }
+  SEGMENT.fadeToBlackBy(SEGMENT.speed/2);
+  //SEGMENT.fade_out(SEGMENT.speed);
 
   float tmpSound2 = volumeSmth * (float)SEGMENT.intensity / 256.0;  // Too sensitive.
   tmpSound2 *= (float)SEGMENT.intensity / 128.0;              // Reduce sensitity/length.
@@ -6622,8 +6629,13 @@ uint16_t mode_plasmoid(void) {                  // Plasmoid. By Andrew Tuline.
   }
   float   volumeSmth   = *(float*)  um_data->u_data[0];
 
-  SEGMENT.fadeToBlackBy(32);
-
+  if (SEGENV.call == 0) {
+    SEGMENT.setUpLeds();
+    SEGMENT.fill(BLACK);
+  }
+  //SEGMENT.fadeToBlackBy(32);
+  SEGMENT.fadeToBlackBy(48);
+  
   plasmoip->thisphase += beatsin8(6,-4,4);                          // You can change direction and speed individually.
   plasmoip->thatphase += beatsin8(7,-4,4);                          // Two phase values to make a complex pattern. By Andrew Tuline.
 
@@ -6921,7 +6933,10 @@ uint16_t mode_freqmap(void) {                   // Map FFT_MajorPeak to SEGLEN. 
   float my_magnitude  = *(float*)um_data->u_data[5] / 4.0f;
   if (FFT_MajorPeak < 1) FFT_MajorPeak = 1;                                         // log10(0) is "forbidden" (throws exception)
 
-  if (SEGENV.call == 0) SEGMENT.fill(BLACK);
+  if (SEGENV.call == 0) {
+    SEGMENT.setUpLeds();
+    SEGMENT.fill(BLACK);
+  }
   int fadeoutDelay = (256 - SEGMENT.speed) / 32;
   if ((fadeoutDelay <= 1 ) || ((SEGENV.call % fadeoutDelay) == 0)) SEGMENT.fade_out(SEGMENT.speed);
 
@@ -7068,7 +7083,7 @@ uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschun
     SEGMENT.fill(BLACK);
   }
 
-  uint8_t secondHand = micros()/(256-SEGMENT.speed)/500 % 16;
+  uint8_t secondHand = (SEGMENT.speed < 255) ? (micros()/(256-SEGMENT.speed)/500 % 16) : 0;
   if((SEGMENT.speed > 254) || (SEGENV.aux0 != secondHand)) {   // WLEDMM allow to run at full speed
     SEGENV.aux0 = secondHand;
 

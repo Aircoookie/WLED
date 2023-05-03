@@ -288,7 +288,7 @@ class BusNetwork : public Bus {
 
     void setPixelColor(uint16_t pix, uint32_t c);
 
-    uint32_t getPixelColor(uint16_t pix);
+    uint32_t __attribute__((pure)) getPixelColor(uint16_t pix);  // WLEDMM attribute added
 
     void show();
 
@@ -341,7 +341,7 @@ class BusManager {
 
     void setSegmentCCT(int16_t cct, bool allowWBCorrection = false);
 
-    uint32_t getPixelColor(uint_fast16_t pix);
+    uint32_t __attribute__((pure)) getPixelColor(uint_fast16_t pix); // WLEDMM attribute added
 
     bool canAllShow();
 

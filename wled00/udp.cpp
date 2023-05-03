@@ -232,11 +232,12 @@ void handleNotifications()
   if (!udpConnected) return;
 
   bool isSupp = false;
-  size_t packetSize = notifierUdp.parsePacket();
-  if (!packetSize && udp2Connected) {
+  int packetSize = notifierUdp.parsePacket();    // WLEDMM function returns int, not size_t
+  if ((packetSize < 1) && udp2Connected) {
     packetSize = notifier2Udp.parsePacket();
     isSupp = true;
   }
+  if (packetSize < 1) packetSize = 0; // WLEDMM
 
   //hyperion / raw RGB
   if (!packetSize && udpRgbConnected) {

@@ -185,8 +185,8 @@ static bool sendLiveLedsWs(uint32_t wsClient)  // WLEDMM added "static"
 #ifndef WLED_DISABLE_2D
   if (strip.isMatrix) {
     buffer[1] = 2; //version
-    buffer[2] = Segment::maxWidth;
-    buffer[3] = Segment::maxHeight;
+    buffer[2] = min(Segment::maxWidth, (uint16_t) 255); // WLEDMM prevent overflow
+    buffer[3] = min(Segment::maxHeight, (uint16_t) 255);
     //WLEDMM: no skipLines
   }
 #endif

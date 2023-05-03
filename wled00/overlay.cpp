@@ -88,7 +88,9 @@ void _overlayAnalogCountdown()
 }
 
 void handleOverlayDraw() {
+#if !defined(WLEDMM_FASTPATH) // WLEDMM expensive operation, and most usermods don't draw overlays
   usermods.handleOverlayDraw();
+#endif
   if (overlayCurrent == 1) _overlayAnalogClock();
 }
 

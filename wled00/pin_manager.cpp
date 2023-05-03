@@ -588,7 +588,11 @@ bool PinManagerClass::joinWire(int8_t pinSDA, int8_t pinSCL) {
   }
 
   #ifdef ARDUINO_ARCH_ESP32
+  #if defined(WLEDMM_FASTPATH)  // wledMM set I2C to 400Khz, to minimize I2C communication delays
+    wireIsOK = Wire.begin(pinSDA, pinSCL, 400000UL);  // this will fail if wire is already running
+  #else
     wireIsOK = Wire.begin(pinSDA, pinSCL);  // this will fail if wire is already running
+  #endif
   #else
     Wire.begin(pinSDA, pinSCL);  // returns void on 8266
   #endif

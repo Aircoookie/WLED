@@ -1132,14 +1132,14 @@ void Segment::fade_out(uint8_t rate) {
   uint_fast8_t fadeRate = (255-rate) >> 1;
   float mappedRate_r = 1.0f / (float(fadeRate) +1.1f); // WLEDMM use reciprocal  1/mappedRate -> faster on non-FPU chips
 
-  uint32_t color = colors[1]; // SEGCOLOR(1); // target color
-  int w2 = W(color);
-  int r2 = R(color);
-  int g2 = G(color);
-  int b2 = B(color);
+  uint32_t color2 = colors[1]; // SEGCOLOR(1); // target color // WLEDMM minor optimization
+  int w2 = W(color2);
+  int r2 = R(color2);
+  int g2 = G(color2);
+  int b2 = B(color2);
 
   for (uint_fast16_t y = 0; y < rows; y++) for (uint_fast16_t x = 0; x < cols; x++) {
-    color = is2D() ? getPixelColorXY(x, y) : getPixelColor(x);
+    uint32_t color = is2D() ? getPixelColorXY(x, y) : getPixelColor(x);
     int w1 = W(color);
     int r1 = R(color);
     int g1 = G(color);
@@ -1156,6 +1156,7 @@ void Segment::fade_out(uint8_t rate) {
     gdelta += (g2 == g1) ? 0 : (g2 > g1) ? 1 : -1;
     bdelta += (b2 == b1) ? 0 : (b2 > b1) ? 1 : -1;
 
+    //if ((wdelta == 0) && (rdelta == 0) && (gdelta == 0) && (bdelta == 0)) continue; // WLEDMM delta = zero => no change // causes problem with text overlay
     if (is2D()) setPixelColorXY((uint16_t)x, (uint16_t)y, r1 + rdelta, g1 + gdelta, b1 + bdelta, w1 + wdelta);
     else        setPixelColor((uint16_t)x, r1 + rdelta, g1 + gdelta, b1 + bdelta, w1 + wdelta);
   }
@@ -1167,9 +1168,15 @@ void Segment::fadeToBlackBy(uint8_t fadeBy) {
   const uint_fast16_t rows = virtualHeight(); // will be 1 for 1D
   const uint_fast8_t scaledown = 255-fadeBy;  // WLEDMM faster to pre-compute this
 
-  for (uint_fast16_t y = 0; y < rows; y++) for (uint_fast16_t x = 0; x < cols; x++) {
-    if (is2D()) setPixelColorXY((uint16_t)x, (uint16_t)y, CRGB(getPixelColorXY(x,y)).nscale8(scaledown));
-    else        setPixelColor((uint16_t)x, CRGB(getPixelColor(x)).nscale8(scaledown));
+  // WLEDMM minor optimization
+  if(is2D()) {
+    for (uint_fast16_t y = 0; y < rows; y++) for (uint_fast16_t x = 0; x < cols; x++) {
+      setPixelColorXY((uint16_t)x, (uint16_t)y, CRGB(getPixelColorXY(x,y)).nscale8(scaledown));
+    }
+  } else {
+    for (uint_fast16_t x = 0; x < cols; x++) {
+      setPixelColor((uint16_t)x, CRGB(getPixelColor((uint16_t)x)).nscale8(scaledown));
+    }
   }
 }
 
@@ -1196,6 +1203,7 @@ void Segment::blur(uint8_t blur_amount)
   {
     CRGB cur = CRGB(getPixelColor(i));
     CRGB part = cur;
+    CRGB before = cur; // WLEDMM
     part.nscale8(seep);
     cur.nscale8(keep);
     cur += carryover;
@@ -1206,7 +1214,8 @@ void Segment::blur(uint8_t blur_amount)
       uint8_t b = B(c);
       setPixelColor((uint16_t)(i-1), qadd8(r, part.red), qadd8(g, part.green), qadd8(b, part.blue));
     }
-    setPixelColor((uint16_t)i,cur.red, cur.green, cur.blue);
+    if (before != cur) // WLEDMM optimization: don't write same color again
+      setPixelColor((uint16_t)i,cur.red, cur.green, cur.blue);
     carryover = part;
   }
 }

@@ -11,7 +11,7 @@ IRAM_ATTR_YN uint32_t color_blend(uint32_t color1, uint32_t color2, uint_fast16_
   if(blend == 0)   return color1;
   uint_fast16_t blendmax = b16 ? 0xFFFF : 0xFF;
   if(blend == blendmax) return color2;
-  uint_fast8_t shift = b16 ? 16 : 8;
+  const uint_fast8_t shift = b16 ? 16 : 8;
 
   uint32_t w1 = W(color1);
   uint32_t r1 = R(color1);
