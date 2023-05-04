@@ -540,15 +540,16 @@ class ES8388Source : public I2SSource {
       // #define use_es8388_mic
 
     #ifdef use_es8388_mic
-      // Pick one. If you have to use the mics, use a LyraT over an AudioKit.
-      //
       // The mics *and* line-in are BOTH connected to LIN2/RIN2 on the AudioKit
       // so there's no way to completely eliminate the mics. It's also hella noisy. 
       // Line-in works OK on the AudioKit, generally speaking, as the mics really need
-      // amplification to be noticable.
+      // amplification to be noticable in a quiet room. If you're in a very loud room, 
+      // the mics on the AudioKit WILL pick up sound even in line-in mode. 
+      // TL;DR: Don't use the AudioKit for anything, use the LyraT. 
       //
       // The LyraT does a reasonable job with mic input as configured below.
-      //
+
+      // Pick one of these. If you have to use the mics, use a LyraT over an AudioKit if you can:
       _es8388I2cWrite(10,0b00000000); // Use Lin1/Rin1 for ADC input (mic on LyraT)
       //_es8388I2cWrite(10,0b01010000); // Use Lin2/Rin2 for ADC input (mic *and* line-in on AudioKit)
       
