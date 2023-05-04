@@ -611,9 +611,7 @@ function parseInfo(i) {
 	mw = i.leds.matrix ? i.leds.matrix.w : 0;
 	mh = i.leds.matrix ? i.leds.matrix.h : 0;
 	isM = mw>0 && mh>0;
-	if (isM) {
-		gId('buttonSr').className = "active"; isLv = true; //WLEDMM: on after load
-	} else {
+	if (!isM) {
 		gId("filter1D").classList.add('hide');
 		//gId("filter2D").classList.add('hide');
 		hideModes("2D");
@@ -863,7 +861,6 @@ function populateSegments(s)
 	} else {
 		gId("ledmap").classList.add('hide');
 	}
-	if (isM) drawSegmentView(); //WLEDMM
 }
 
 function populateEffects()
@@ -1166,8 +1163,6 @@ function updateLen(s, draw=true) //WLEDMM conditonally draw segment view
 	gId(`seg${s}len`).innerHTML = out;
 
 	if (draw && isM) drawSegmentView(); //WLEDMM draw new segmentview if something changes in a segment
-	gId("effectGFX").style.display = isM? "inline":"none";
-	gId("segGFX").style.display = isM? "inline":"none";
 }
 
 //WLEDMM
@@ -1203,7 +1198,6 @@ function drawSegmentView() {
 		//WLEDMM: add canvas, initialize and set UI
 		var canvas = gId("canvasSegments");
 		ctx = canvas.getContext('2d');
-		peek(canvasPeek);
 	}
 
 	let segments = gId("Segments");
@@ -1885,6 +1879,12 @@ function requestJson(command=null)
 		}
 		var s = json.state ? json.state : json;
 		readState(s);
+
+		//WLEDMM init, gfx default on upon web page load
+		if (isM) {
+			drawSegmentView();
+			toggleLiveview();
+		}
 
 		//load presets and open websocket sequentially
 		if (!pJson || isEmpty(pJson)) setTimeout(()=>{

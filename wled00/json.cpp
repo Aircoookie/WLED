@@ -975,7 +975,7 @@ void serializeInfo(JsonObject root)
   #endif
   #if defined(WLED_DEBUG) || defined(WLED_DEBUG_HOST) || defined(SR_DEBUG) || defined(SR_STATS)
   // WLEDMM add status of Serial, incuding pin alloc
-  root[F("serialOnline")] = Serial ? (canUseSerial()?F("Serial ready"):F("Serial in use")) : F("Serial disconected");  // "Disconnected" may happen on boards with USB CDC
+  root[F("serialOnline")] = Serial ? (canUseSerial()?F("Serial ready ☾"):F("Serial in use ☾")) : F("Serial disconected ☾");  // "Disconnected" may happen on boards with USB CDC
   root[F("sRX")] = pinManager.isPinAllocated(hardwareRX) ? pinManager.getPinOwnerText(hardwareRX): F("free");
   root[F("sTX")] = pinManager.isPinAllocated(hardwareTX) ? pinManager.getPinOwnerText(hardwareTX): F("free");
   #endif
