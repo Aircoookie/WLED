@@ -66,6 +66,9 @@
 #include <Arduino.h>
 #ifdef ESP8266
   #include <ESP8266WiFi.h>
+  #ifndef WLED_DISABLE_WPA_ENTERPRISE
+    #include "wpa2_enterprise.h"
+  #endif
   #include <ESP8266mDNS.h>
   #include <ESPAsyncTCP.h>
   #include <LittleFS.h>
@@ -173,6 +176,14 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
 
 #ifndef CLIENT_PASS
   #define CLIENT_PASS ""
+#endif
+
+#ifndef ENTERPRISE_ANONYMOUS_IDENTITY
+  #define ENTERPRISE_ANONYMOUS_IDENTITY ""
+#endif
+
+#ifndef ENTERPRISE_IDENTITY
+  #define ENTERPRISE_IDENTITY ""
 #endif
 
 #if defined(WLED_AP_PASS) && !defined(WLED_AP_SSID)
@@ -284,7 +295,10 @@ WLED_GLOBAL char ntpServerName[33] _INIT("0.wled.pool.ntp.org");   // NTP server
 
 // WiFi CONFIG (all these can be changed via web UI, no need to set them here)
 WLED_GLOBAL char clientSSID[33] _INIT(CLIENT_SSID);
+WLED_GLOBAL byte wifiEncryptionType   _INIT(WIFI_ENCRYPTION_TYPE_PSK);
 WLED_GLOBAL char clientPass[65] _INIT(CLIENT_PASS);
+WLED_GLOBAL char enterpriseAnonymousIdentity[65] _INIT(ENTERPRISE_ANONYMOUS_IDENTITY);
+WLED_GLOBAL char enterpriseIdentity[65] _INIT(ENTERPRISE_IDENTITY);
 WLED_GLOBAL char cmDNS[33] _INIT("x");                             // mDNS address (placeholder, is replaced by wledXXXXXX.local)
 WLED_GLOBAL char apSSID[33] _INIT("");                             // AP off by default (unless setup)
 WLED_GLOBAL byte apChannel _INIT(1);                               // 2.4GHz WiFi AP channel (1-13)

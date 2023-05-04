@@ -299,11 +299,22 @@ void getSettingsJS(byte subPage, char* dest)
   {
     sappends('s',SET_F("CS"),clientSSID);
 
+    #ifndef WLED_DISABLE_WPA_ENTERPRISE
+      oappend(PSTR("gId('CT1').disabled = false;"));
+    #endif
+
+    sappend('v',SET_F("CT"),wifiEncryptionType);
+    oappend(PSTR("E();"));
+
     byte l = strlen(clientPass);
     char fpass[l+1]; //fill password field with ***
     fpass[l] = 0;
     memset(fpass,'*',l);
     sappends('s',SET_F("CP"),fpass);
+
+    sappends('s',SET_F("EA"),enterpriseAnonymousIdentity);
+
+    sappends('s',SET_F("EI"),enterpriseIdentity);
 
     char k[3]; k[2] = 0; //IP addresses
     for (int i = 0; i<4; i++)

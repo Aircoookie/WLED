@@ -133,6 +133,16 @@
 			let url = (loc?`http://${locip}`:'') + '/settings/s.js?p=1';
 			loadJS(url, false);	// If we set async false, file is loaded and executed, then next statement is processed
 		}
+		function E() {
+			const select = gId("CT");
+			if (select.value === "0") {
+				gId("EA").style.display = "none";
+				gId("EI").style.display = "none";
+			} else {
+				gId("EA").style.display = "";
+				gId("EI").style.display = "";
+			}
+		}
 	</script>
 	<style>@import url("style.css");</style>
 </head>
@@ -147,7 +157,23 @@
 		<button type="button" id="scan" onclick="N()">Scan</button><br>
 		Network name (SSID, empty to not connect):<br>
 		<input type="text" id="CS" name="CS" maxlength="32"><br>
-		Network password: <br> <input type="password" name="CP" maxlength="63"><br>
+		<div>
+			WiFi encryption type:<br>
+			<select id="CT" name="CT" onchange="E()">
+				<option value="0">None/WPA/WPA2</option>
+				<option id="CT1" value="1" disabled>WPA/WPA2-Enterprise</option>
+			</select>
+		</div>
+		<div id="EA" style="display: none">
+			Anonymous identity: <br> <input type="text" name="EA" maxlength="63"><br>
+		</div>
+		<div id="EI" style="display: none">
+			Identity: <br> <input type="text" name="EI" maxlength="63"><br>
+		</div>
+		<div id="CP">
+			Password: <br> <input type="password" name="CP" maxlength="63"><br>
+		</div>
+
 		Static IP (leave at 0.0.0.0 for DHCP):<br>
 		<input name="I0" type="number" class="s" min="0" max="255" required> .
 		<input name="I1" type="number" class="s" min="0" max="255" required> .
