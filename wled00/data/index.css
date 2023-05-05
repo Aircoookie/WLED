@@ -1245,7 +1245,7 @@ TD .checkmark, TD .radiomark {
 .list {
 	position: relative;
 	transition: background-color 0.5s;
-    margin: auto auto 20px;
+    margin: auto auto 10px;
 	line-height: 24px;
 }
 
