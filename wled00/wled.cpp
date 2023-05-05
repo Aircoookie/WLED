@@ -591,6 +591,24 @@ bool WLED::initEthernet()
     return false;
   }
 
+   /*
+  For LAN8720 the most correct way is to perform clean reset each time before init
+  applying LOW to power or nRST pin for at least 100 us (please refer to datasheet, page 59)
+  ESP_IDF > V4 implements it (150 us, lan87xx_reset_hw(esp_eth_phy_t *phy) function in 
+  /components/esp_eth/src/esp_eth_phy_lan87xx.c, line 280)
+  but ESP_IDF < V4 does not. Lets do it:
+  [not always needed, might be relevant in some EMI situations at startup and for hot resets]
+  */
+  #if ESP_IDF_VERSION_MAJOR==3
+  if(es.eth_power>0 && es.eth_type==ETH_PHY_LAN8720) {
+    pinMode(es.eth_power, OUTPUT);
+    digitalWrite(es.eth_power, 0);
+    delayMicroseconds(150);
+    digitalWrite(es.eth_power, 1);
+    delayMicroseconds(10);
+  }
+  #endif
+
   if (!ETH.begin(
                 (uint8_t) es.eth_address,
                 (int)     es.eth_power,

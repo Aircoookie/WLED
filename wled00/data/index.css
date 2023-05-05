@@ -741,10 +741,6 @@ input[type=range]::-moz-range-thumb {
 	margin: 4px 0 0;
 }
 
-#Colors {
-	padding-top: 18px;
-}
-
 /* Dynamically hide brightness slider label */
 .hd {
 	display: var(--bhd);
@@ -757,7 +753,7 @@ input[type=range]::-moz-range-thumb {
 }
 
 #picker {
-	margin-top: -10px !important;
+	margin-top: 8px !important;
 	max-width: 260px;
 }
 
