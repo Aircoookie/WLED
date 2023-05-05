@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
   <head>
@@ -19,47 +18,38 @@
         font-size: 16px;
         color: #ddd;
         margin: 0 10px;
-        font-family: Arial, sans-serif;
         line-height: 0.5;
       }
       #parent-container {
         position: relative;
         width: 100%;
         height: 20px;
-       
       }
-
       #bottomContainer {
         position: absolute;
         margin-top: 50px;
-       
       }
-
       #gradient-box {
         width: 100%;
         height: 100%;
       }
-
-      .color-marker {
+      .color-marker, .color-picker-marker {
         position: absolute;
-        height: 30px;
-        width: 7px;
         border-radius: 3px;
         background-color: rgb(192, 192, 192);
         border: 2px solid rgba(68, 68, 68, 0.5);
-        top: 50%;
-        transform: translateY(-50%);
         z-index: 2;
       }
+      .color-marker {
+        height: 30px;
+        width: 7px;
+        top: 50%;
+        transform: translateY(-50%);
+      }
       .color-picker-marker {
-        position: absolute;
         height: 7px;
         width: 7px;
-        border-radius: 3px;
-        background-color: rgb(192, 192, 192);
-        border: 2px solid rgba(68, 68, 68, 0.5);
         top: 150%;
-        z-index: 2;
       }
       .delete-marker {
         position: absolute;
@@ -71,7 +61,7 @@
         top: 220%;
         z-index: 2;
       }
-      .color-picker{
+      .color-picker {
         position: absolute;
         height: 1px;
         width: 1px;
@@ -82,8 +72,8 @@
         background-color: #111;
       }
       .buttonclass {
-        padding: 0,0,0,0px;
-        margin: 0,0,0,0px;
+        padding: 0;
+        margin: 0;
         vertical-align: bottom;
         background-color: #111;
       }
@@ -91,7 +81,6 @@
         display: inline-flex;
         align-items: center;
         color: #fff; 
-        font-family: Arial, sans-serif; 
         font-size: 12px;
         vertical-align: middle;
       }
@@ -99,21 +88,19 @@
         display: "";
         text-align: center;
         color: #fff; 
-        font-family: Arial, sans-serif; 
         font-size: 12px;
         position: relative;
         margin-top: 10px;
         line-height: 1;
-       
       }
-      .wrap{
+      .wrap {
         width: 800px;
         margin: 0 auto;
       }
-      .palette{
+      .palette {
         height: 20px;
       }
-      .paletteGradients{
+      .paletteGradients {
         flex: 1;
         height: 20px;
         border-radius: 3px;
@@ -122,39 +109,34 @@
         margin-top: 50px;
         width: 100%;
       }
-      .palTop{
+      .palTop {
         height: fit-content;
         text-align: center;
         color: #fff; 
-        font-family: Arial, sans-serif; 
         font-size: 12px;
         position: relative;
         line-height: 1;
       }
-      .palGradientParent{
+      .palGradientParent {
         display: flex;
         align-items: center; 
         height: fit-content;
         margin-top: 10px;
         text-align: center;
         color: #fff; 
-        font-family: Arial, sans-serif; 
         font-size: 12px;
         position: relative;
         line-height: 1;
       }
-      .buttonsDiv{
+      .buttonsDiv {
         display: inline-flex;
         margin-left: 5px;
         width: 50px;
       }
-      .sendSpan{
+      .sendSpan, .editSpan{
         cursor: pointer;
       }
-      .editSpan{
-        cursor: pointer;
-      }
-      </style>
+    </style>
   </head>
 <body>
 <div id="wrap" class="wrap">
@@ -231,13 +213,13 @@
 
   updateGradient(); //Sets the gradient at startup
 
-  function clikOnGradient(e){
+  function clikOnGradient(e) {
     removeTrashcan(e);
     addC(Math.round((e.offsetX/gradientLength)*256));
   }
 
   ///////// Add a new colorMarker
-  function addC(truePos, thisColor = ''){
+  function addC(truePos, thisColor = '') {
     let position = -1;
     let iExist = false;
     const colorMarkers = gradientBox.querySelectorAll('.color-marker');
@@ -322,7 +304,7 @@
     colorMarkers.forEach((colorMarker, index) => {
       const thisColorPicker = gId(colorMarkers[index].id.replace('colorMarker', 'colorPicker'));
       const colorToSet = thisColorPicker.value;
-      gId(colorMarkers[index].id.replace('colorMarker', 'colorPickerMarker')).style.backgroundColor = colorToSet; 
+      gId(colorMarkers[index].id.replace('colorMarker', 'colorPickerMarker')).style.backgroundColor = colorToSet;
       colorMarkers[index].style.backgroundColor = colorToSet;
       colorMarkers[index].setAttribute("data-truecol", colorToSet);
       const tPos = colorMarkers[index].getAttribute("data-truepos");
@@ -331,7 +313,7 @@
       tCol[tPos] = colorToSet;
     });
     gradientString = 'linear-gradient(to right';
-    Object.entries(pxCol).forEach(([p, c]) => {    
+    Object.entries(pxCol).forEach(([p, c]) => {
       gradientString += `, ${c} ${p}px`;
     });
     gradientString += ')';
@@ -339,8 +321,7 @@
     //gId("jsonstring").innerHTML = calcJSON();
   }
 
-
-  function stopFurtherProp(e){
+  function stopFurtherProp(e) {
     e.stopPropagation();
   }
 
@@ -351,7 +332,7 @@
     cp.click();
   }
 
-  function cpClk(e){
+  function cpClk(e) {
     removeTrashcan(event)
     e.stopPropagation();
   }
@@ -416,7 +397,7 @@
     }
   }
 
-  function setTooltipMarker(elmnt){
+  function setTooltipMarker(elmnt) {
     elmnt.setAttribute('title', `${elmnt.getAttribute("data-truepos")} : ${elmnt.getAttribute("data-truecol")}`)
   }
 
@@ -442,7 +423,7 @@
       thisDeleteMarker.parentNode.removeChild(thisDeleteMarker);
       thisColorPickerMarker.parentNode.removeChild(thisColorPickerMarker);
       thisColorMarker.parentNode.removeChild(thisColorMarker);
-      thisColorPicker.parentNode.removeChild(thisColorPicker);  
+      thisColorPicker.parentNode.removeChild(thisColorPicker);
       updateGradient();
     });
     e.stopPropagation();
@@ -460,9 +441,9 @@
   }
 
   function chkW() {
-  //Possibly add more code that recalculates the gradient... Massive job ;)
-  const wrap = gId('wrap');
-  const head = gId('head');
+    //Possibly add more code that recalculates the gradient... Massive job ;)
+    const wrap = gId('wrap');
+    const head = gId('head');
     if (wrap.offsetWidth < 600) {
       head.style.display = 'none';
     } else {
@@ -472,9 +453,10 @@
 
   function calcJSON() {
     let rStr = '{"palette":['
-    Object.entries(tCol).forEach(([p, c]) => { 
+    Object.entries(tCol).forEach(([p, c]) => {
       if (p > 0) rStr += ',';
-      rStr += `${p},${parseInt(c.slice(1, 3), 16)},${parseInt(c.slice(3, 5), 16)},${parseInt(c.slice(5, 7), 16)}`;
+      rStr += `${p},"${c.slice(1)}"`; // store in hex notation
+      //rStr += `${p},${parseInt(c.slice(1, 3), 16)},${parseInt(c.slice(3, 5), 16)},${parseInt(c.slice(5, 7), 16)}`;
     });
     rStr += ']}';
     return rStr;
@@ -485,7 +467,7 @@
     const fileName = `/palette${idx}.json`;
     uploadJSON(data, fileName);
   }
-      
+
   function uploadJSON(jsonString, fileName) {
     //Some indication on "I'm working"
     var req = new XMLHttpRequest();
@@ -515,7 +497,7 @@
 
   async function getInfo() {
     hst = location.host;
-    if (hst.length > 0 ){
+    if (hst.length > 0 ) {
       try {
         var arr = [];
         const response = await fetch('http://'+hst+'/json/info');
@@ -543,7 +525,7 @@
       }
     }
     //If there is room for more custom palettes, add an empty, gray slot
-    if (paletteArray.length < 10){
+    if (paletteArray.length < 10) {
       //Room for one more :)
       paletteArray.push({"palette":[0,70,70,70,255,70,70,70]});
     }
@@ -554,7 +536,7 @@
     //The code finally also removes any representations of the custom palettes, since we read them from file
 
     const wledPalx = JSON.parse(localStorage.getItem('wledPalx'));
-    if(!wledPalx){
+    if (!wledPalx) {
       alert("The cache of palettes are missig from your browser. You should probably return to the main page and let it load properly for the palettes cache to regenerate before returning here.","Missing cached palettes!")
     } else {
       for (const key in wledPalx.p) {
@@ -598,8 +580,8 @@
   }
 
   function generatePaletteDivs() {
-    const palettesDiv = document.getElementById("palettes");
-    const staticPalettesDiv = document.getElementById("staticPalettes");
+    const palettesDiv = d.getElementById("palettes");
+    const staticPalettesDiv = d.getElementById("staticPalettes");
     const paletteDivs = Array.from(palettesDiv.children).filter((child) => {
       return child.id.match(/^palette\d$/); // match only elements with id starting with "palette" followed by a single digit
     });
@@ -610,34 +592,34 @@
 
     for (let i = 0; i < paletteArray.length; i++) {
       const palette = paletteArray[i];
-      const paletteDiv = document.createElement("div");
+      const paletteDiv = d.createElement("div");
       paletteDiv.id = `palette${i}`;
       paletteDiv.classList.add("palette");
       const thisKey = Object.keys(palette)[0];
       paletteDiv.dataset.colarray = JSON.stringify(palette[thisKey]);
 
-      const gradientDiv = document.createElement("div");
+      const gradientDiv = d.createElement("div");
       gradientDiv.id = `paletteGradient${i}`
-      const buttonsDiv = document.createElement("div");
+      const buttonsDiv = d.createElement("div");
       buttonsDiv.id = `buttonsDiv${i}`;
       buttonsDiv.classList.add("buttonsDiv")
 
-      const sendSpan = document.createElement("span");
+      const sendSpan = d.createElement("span");
       sendSpan.id = `sendSpan${i}`;
       sendSpan.onclick = function() {initiateUpload(i)};
       sendSpan.setAttribute('title', `Send current editor to slot ${i}`); // perhaps Save instead of Send?
       sendSpan.innerHTML = svgSave;
       sendSpan.classList.add("sendSpan")
-      const editSpan = document.createElement("span");
+      const editSpan = d.createElement("span");
       editSpan.id = `editSpan${i}`;
       editSpan.onclick = function() {loadForEdit(i)};
       editSpan.setAttribute('title', `Copy slot ${i} palette to editor`);
       editSpan.innerHTML = svgEdit;
       editSpan.classList.add("editSpan")
-      
+
       gradientDiv.classList.add("paletteGradients");
       let gradientColors = "";
-      
+
       for (let j = 0; j < palette[thisKey].length; j += 2) {
         const position = palette[thisKey][j];
         if (typeof(palette[thisKey][j+1]) === "string") {
@@ -654,17 +636,17 @@
       gradientColors = gradientColors.slice(0, -2); // remove the last comma and space
       gradientDiv.style.backgroundImage = `linear-gradient(to right, ${gradientColors})`;
       paletteDiv.className = "palGradientParent";
-      if(thisKey == "palette"){
+      if (thisKey == "palette") {
         buttonsDiv.appendChild(sendSpan); //Only offer to send to custom palettes
       } else{
         editSpan.style.marginLeft = "25px";
       }
-      if(i!=cpalc){
+      if (i!=cpalc) {
         buttonsDiv.appendChild(editSpan); //Dont offer to edit the empty spot
       }
       paletteDiv.appendChild(gradientDiv);
       paletteDiv.appendChild(buttonsDiv);
-      if(thisKey == "palette"){
+      if (thisKey == "palette") {
         palettesDiv.appendChild(paletteDiv);
       } else {
         staticPalettesDiv.appendChild(paletteDiv);
@@ -672,11 +654,11 @@
     }
   }
 
-  function loadForEdit(i){
-    document.querySelectorAll('input[id^="colorPicker"]').forEach((input) => {
+  function loadForEdit(i) {
+    d.querySelectorAll('input[id^="colorPicker"]').forEach((input) => {
       input.parentNode.removeChild(input);
     });
-    document.querySelectorAll('span[id^="colorMarker"], span[id^="colorPickerMarker"], span[id^="deleteMarker"]').forEach((span) => {
+    d.querySelectorAll('span[id^="colorMarker"], span[id^="colorPickerMarker"], span[id^="deleteMarker"]').forEach((span) => {
       span.parentNode.removeChild(span);
     });
     
@@ -704,6 +686,4 @@
     return "#" + "0".repeat(6 - hex.length) + hex;
   }
 </script>
-
-
-
+</html>
