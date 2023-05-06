@@ -5522,22 +5522,30 @@ uint16_t mode_2Dtartan(void) {          // By: Elliott Kember  https://editor.so
     SEGMENT.fill(BLACK);
   }
 
-  uint8_t hue;
+  uint8_t hue, bri;
+  size_t intensity;
   int offsetX = beatsin16(3, -360, 360);
   int offsetY = beatsin16(2, -360, 360);
+  int sharpness = SEGMENT.custom3 / 8; // 0-3
 
   for (int x = 0; x < cols; x++) {
     for (int y = 0; y < rows; y++) {
       hue = x * beatsin16(10, 1, 10) + offsetY;
-      SEGMENT.setPixelColorXY(x, y, ColorFromPalette(SEGPALETTE, hue, sin8(x * SEGMENT.speed + offsetX) * sin8(x * SEGMENT.speed + offsetX) / 255, LINEARBLEND));
+      intensity = bri = sin8(x * SEGMENT.speed/2 + offsetX);
+      for (int i=0; i<sharpness; i++) intensity *= bri;
+      intensity >>= 8*sharpness;
+      SEGMENT.setPixelColorXY(x, y, ColorFromPalette(SEGPALETTE, hue, intensity, LINEARBLEND));
       hue = y * 3 + offsetX;
-      SEGMENT.addPixelColorXY(x, y, ColorFromPalette(SEGPALETTE, hue, sin8(y * SEGMENT.intensity + offsetY) * sin8(y * SEGMENT.intensity + offsetY) / 255, LINEARBLEND));
+      intensity = bri = sin8(y * SEGMENT.intensity/2 + offsetY);
+      for (int i=0; i<sharpness; i++) intensity *= bri;
+      intensity >>= 8*sharpness;
+      SEGMENT.addPixelColorXY(x, y, ColorFromPalette(SEGPALETTE, hue, intensity, LINEARBLEND));
     }
   }
 
   return FRAMETIME;
 } // mode_2DTartan()
-static const char _data_FX_MODE_2DTARTAN[] PROGMEM = "Tartan@X scale,Y scale;;!;2";
+static const char _data_FX_MODE_2DTARTAN[] PROGMEM = "Tartan@X scale,Y scale,,,Sharpness;;!;2";
 
 
 /////////////////////////

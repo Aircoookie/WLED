@@ -888,8 +888,21 @@ function populatePalettes()
 			`<div class="lstIprev" style="${genPalPrevCss(pa[0])}"></div>`
 		);
 	}
-
 	gId('pallist').innerHTML=html;
+	// append custom palettes (when loading for the 1st time)
+	if (!isEmpty(lastinfo) && lastinfo.cpalcount) {
+		for (let j = 0; j<lastinfo.cpalcount; j++) {
+			let div = d.createElement("div");
+			gId('pallist').appendChild(div);
+			div.outerHTML = generateListItemHtml(
+				'palette',
+				255-j,
+				'~ Custom '+j+' ~',
+				'setPalette',
+				`<div class="lstIprev" style="${genPalPrevCss(255-j)}"></div>`
+			);
+		}
+	}
 }
 
 function redrawPalPrev()
@@ -1588,21 +1601,8 @@ function requestJson(command=null)
 		if (json.success) return;
 		if (json.info) {
 			let i = json.info;
-			// append custom palettes (when loading for the 1st time)
-			if (!command && isEmpty(lastinfo) && i.cpalcount) {
-				for (let j = 0; j<i.cpalcount; j++) {
-					let div = d.createElement("div");
-					gId('pallist').appendChild(div);
-					div.outerHTML = generateListItemHtml(
-						'palette',
-						255-j,
-						'~ Custom '+j+' ~',
-						'setPalette',
-						`<div class="lstIprev" style="${genPalPrevCss(255-j)}"></div>`
-					);
-				}
-			}
 			parseInfo(i);
+			populatePalettes(i);
 			if (isInfo) populateInfo(i);
 		}
 		var s = json.state ? json.state : json;
