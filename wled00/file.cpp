@@ -10,8 +10,8 @@
 #endif
 #endif
 
-#if defined(WLEDMM_FASTPATH)  // WLEMM use bigger buffer when reading, to reduce number of file operations
-#define FS_BUFSIZE 512
+#if defined(WLEDMM_FASTPATH)  // WLEMM use smaller buffer when reading, to reduce delay (=effect stuttering) during file operations
+#define FS_BUFSIZE 128  // align with LittleFS read size (CONFIG_LITTLEFS_READ_SIZE=128)
 #else
 #define FS_BUFSIZE 256
 #endif
