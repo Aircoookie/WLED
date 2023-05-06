@@ -6966,15 +6966,14 @@ uint16_t mode_freqmatrix(void) {                // Freqmatrix. By Andreas Plesch
     SEGMENT.fill(BLACK);
   }
 
-  uint8_t secondHand = micros()/(256-SEGMENT.speed)/500 % 16;
+  uint8_t secondHand = (SEGMENT.speed < 255) ? (micros()/(256-SEGMENT.speed)/500 % 16) : 0;
   if((SEGMENT.speed > 254) || (SEGENV.aux0 != secondHand)) {   // WLEDMM allow run run at full speed
     SEGENV.aux0 = secondHand;
 
-    uint8_t sensitivity = map(SEGMENT.custom3, 0, 31, 1, 10); // reduced resolution slider
-    int pixVal = (volumeSmth * SEGMENT.intensity * sensitivity) / 256.0f;
-    if (pixVal > 255) pixVal = 255;
-
-    float intensity = map(pixVal, 0, 255, 0, 100) / 100.0f;  // make a brightness from the last avg
+    // Pixel brightness (value) based on volume * sensitivity * intensity
+    uint_fast8_t sensitivity10 = map(SEGMENT.custom3, 0, 31, 10, 100); // reduced resolution slider // WLEDMM sensitivity * 10, to avoid losing precision
+    int pixVal = volumeSmth * (float)SEGMENT.intensity * (float)sensitivity10 / 2560.0f; // WLEDMM 2560 due to sensitivity * 10
+    if (pixVal > 255) pixVal = 255;  // make a brightness from the last avg
 
     CRGB color = CRGB::Black;
 
@@ -6983,15 +6982,15 @@ uint16_t mode_freqmatrix(void) {                // Freqmatrix. By Andreas Plesch
     // With our sampling rate of 10240Hz we have a usable freq range from roughtly 80Hz to 10240/2 Hz
     // we will treat everything with less than 65Hz as 0
 
-    if (FFT_MajorPeak < 80) {
-      color = CRGB::Black;
-    } else {
+    if ((FFT_MajorPeak > 80.0f) && (volumeSmth > 0.25f)) { // WLEDMM
+      // Pixel color (hue) based on major frequency
       int upperLimit = 80 + 42 * SEGMENT.custom2;
       int lowerLimit = 80 + 3 * SEGMENT.custom1;
-      uint8_t i =  lowerLimit!=upperLimit ? map(FFT_MajorPeak, lowerLimit, upperLimit, 0, 255) : FFT_MajorPeak;  // may under/overflow - so we enforce uint8_t
-      uint16_t b = 255 * intensity;
-      if (b > 255) b = 255;
-      color = CHSV(i, 240, (uint8_t)b); // implicit conversion to RGB supplied by FastLED
+      //uint8_t i =  lowerLimit!=upperLimit ? map(FFT_MajorPeak, lowerLimit, upperLimit, 0, 255) : FFT_MajorPeak;  // (original formula) may under/overflow - so we enforce uint8_t
+      int freqMapped =  lowerLimit!=upperLimit ? mapf(FFT_MajorPeak, lowerLimit, upperLimit, 0, 255) : FFT_MajorPeak;  // WLEDMM preserve overflows
+      uint8_t i = abs(freqMapped) & 0xFF;  // WLEDMM we embrace overflow ;-) by "modulo 256"
+
+      color = CHSV(i, 240, (uint8_t)pixVal); // implicit conversion to RGB supplied by FastLED
     }
 
     // shift the pixels one pixel up
@@ -7001,7 +7000,7 @@ uint16_t mode_freqmatrix(void) {                // Freqmatrix. By Andreas Plesch
 
   return FRAMETIME;
 } // mode_freqmatrix()
-static const char _data_FX_MODE_FREQMATRIX[] PROGMEM = "Freqmatrix@Time delay,Sound effect,Low bin,High bin,Sensivity;;;1f;m12=3,si=0"; // Corner, Beatsin
+static const char _data_FX_MODE_FREQMATRIX[] PROGMEM = "Freqmatrix@Time delay,Sound effect,Low bin,High bin,Sensivity;;;1f;c1=18,c2=48,c3=6,m12=3,si=0"; // Corner, Beatsin; notes range C3 to C7
 
 
 //////////////////////
@@ -7093,7 +7092,7 @@ uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschun
         // direct frequency scaling
         int upperLimit = 80 + 42 * SEGMENT.custom2; // max 80hz-10Khz
         int lowerLimit = 80 + 3 * SEGMENT.custom1;  // min 80hz-850hz
-        i = lowerLimit!=upperLimit ? map(FFT_MajorPeak, lowerLimit, upperLimit, 0, 255) : FFT_MajorPeak; // may under/overflow - so we enforce uint8_t
+        i = lowerLimit!=upperLimit ? mapf(FFT_MajorPeak, lowerLimit, upperLimit, 0, 255) : FFT_MajorPeak; // may under/overflow - so we enforce uint8_t
       } else {
         // Musical Scale (logarythmic scaling)
         float upperLimit = logf(80 + 42 * SEGMENT.custom2); // max 80hz-10Khz
