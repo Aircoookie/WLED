@@ -26,6 +26,15 @@
   #endif
 #endif
 
+//the default ratio for the voltage divider
+#ifndef USERMOD_BATTERY_VOLTAGE_MULTIPLIER
+  #ifdef ARDUINO_ARCH_ESP32
+    #define USERMOD_BATTERY_VOLTAGE_MULTIPLIER 2.0f
+  #else //ESP8266 boards
+    #define USERMOD_BATTERY_VOLTAGE_MULTIPLIER 4.2f
+  #endif
+#endif
+
 #ifndef USERMOD_BATTERY_MAX_VOLTAGE
   #define USERMOD_BATTERY_MAX_VOLTAGE 4.2f
 #endif
