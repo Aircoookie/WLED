@@ -35,7 +35,7 @@ uint16_t mode_2DWeather(void) {
       // currentTime = localTime;
     }
     else
-      color = ColorFromPalette(SEGPALETTE, map((uint8_t)weather_temps[x%100], 0, 40, 0, 255), 255, LINEARBLEND);
+      color = ColorFromPalette(SEGPALETTE, map((uint8_t)weather_temps[x%100], 0, 40, 1, 255), 255, LINEARBLEND);
 
     for (int y=0; y<SEGMENT.virtualHeight() * (weather_temps[x%100]-weather_minTemp)/(weather_maxTemp - weather_minTemp); y++) {
       SEGMENT.setPixelColorXY(x, SEGMENT.virtualHeight() - y, color);
@@ -58,7 +58,7 @@ uint16_t mode_2DWeather(void) {
   snprintf(tempString, 5, "%5.2f", currentTemp); // snprintf will prevent overflow
   // Serial.println();
 
-  CRGB color = ColorFromPalette(SEGPALETTE, map((uint8_t)currentTemp, 0, 40, 0, 255), 255, LINEARBLEND);
+  CRGB color = ColorFromPalette(SEGPALETTE, map((uint8_t)currentTemp, 0, 40, 1, 255), 255, LINEARBLEND);
   //really don't understand why this is not working if width < 16 (only works when Serial.println is uncommented ???)
   // uint16_t x = 0;
   // const uint16_t xSpace = (SEGMENT.virtualWidth()<16)?4:5;
@@ -78,17 +78,17 @@ uint16_t mode_2DWeather(void) {
   // // Serial.printf("  %d %d\n", x, xSpace);
 
  if (SEGMENT.virtualWidth() < 16) {
-    SEGMENT.drawCharacter(tempString[0], 0, -2, 5, 8, color);
-    SEGMENT.drawCharacter(tempString[1], 4, -2, 5, 8, color);
+    SEGMENT.drawCharacter(tempString[0], 0, -2, 5, 8, uint32_t(color), BLACK);
+    SEGMENT.drawCharacter(tempString[1], 4, -2, 5, 8, uint32_t(color), BLACK);
     SEGMENT.setPixelColorXY(8, 4, color);
-    SEGMENT.drawCharacter(tempString[3], 9, -2, 5, 8, color);
+    SEGMENT.drawCharacter(tempString[3], 9, -2, 5, 8, uint32_t(color), BLACK);
   }
   else {
-    SEGMENT.drawCharacter(tempString[0], 0, -2, 5, 8, color);
-    SEGMENT.drawCharacter(tempString[1], 5, -2, 5, 8, color);
+    SEGMENT.drawCharacter(tempString[0], 0, -2, 5, 8, uint32_t(color), BLACK);
+    SEGMENT.drawCharacter(tempString[1], 5, -2, 5, 8, uint32_t(color), BLACK);
     SEGMENT.setPixelColorXY(10, 4, color);
-    SEGMENT.drawCharacter(tempString[3], 12, -2, 5, 8, color);
-    SEGMENT.drawCharacter(tempString[4], 17, -2, 5, 8, color);
+    SEGMENT.drawCharacter(tempString[3], 12, -2, 5, 8, uint32_t(color), BLACK);
+    SEGMENT.drawCharacter(tempString[4], 17, -2, 5, 8, uint32_t(color), BLACK);
   }
 
   return FRAMETIME;
