@@ -383,7 +383,7 @@ class UsermodBattery : public Usermod
       lp[FPSTR(_duration)] = lowPowerIndicatorDuration;
 
       // read voltage in case calibration or voltage multiplier changed to see immediate effect
-      voltage = readVoltage()
+      voltage = readVoltage();
 
       DEBUG_PRINTLN(F("Battery config saved."));
     }
