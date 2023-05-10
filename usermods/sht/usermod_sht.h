@@ -390,7 +390,7 @@ void ShtUsermod::addToConfig(JsonObject &root)
 {
   JsonObject top = root.createNestedObject(FPSTR(_name)); // usermodname
 
-  top[FPSTR("enabled")] = enabled;
+  top[F("enabled")] = enabled;
   top[FPSTR(_shtType)] = shtType;
   top[FPSTR(_unitOfTemp)] = unitOfTemp;
   top[FPSTR(_haMqttDiscovery)] = haMqttDiscovery;
@@ -421,7 +421,7 @@ bool ShtUsermod::readFromConfig(JsonObject &root)
   byte oldUnitOfTemp = unitOfTemp;
   bool oldHaMqttDiscovery = haMqttDiscovery;
 
-  getJsonValue(top[FPSTR("enabled")], enabled);
+  getJsonValue(top[F("enabled")], enabled);
   getJsonValue(top[FPSTR(_shtType)], shtType);
   getJsonValue(top[FPSTR(_unitOfTemp)], unitOfTemp);
   getJsonValue(top[FPSTR(_haMqttDiscovery)], haMqttDiscovery);

@@ -238,7 +238,7 @@ void registerUsermods()
   #endif
 
   #ifdef USERMOD_BH1750
-  usermods.add(new Usermod_BH1750());
+  usermods.add(new Usermod_BH1750("BH1750", false));
   #endif
 
   #ifdef USERMOD_BME280
