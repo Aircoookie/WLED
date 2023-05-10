@@ -22,7 +22,7 @@ class ShtUsermod : public Usermod
     bool haMqttDiscoveryDone = false; // Remembers if we already published the HA discovery topics
 
     // SHT vars
-    SHT *shtTempHumidSensor; // Instance of SHT lib
+    SHT *shtTempHumidSensor = nullptr; // Instance of SHT lib
     byte shtType = 0; // SHT sensor type to be used. Default: SHT30
     byte unitOfTemp = 0; // Temperature unit to be used. Default: Celsius (0 = Celsius, 1 = Fahrenheit)
     bool shtInitDone = false; // Remembers if SHT sensor has been initialised
@@ -37,7 +37,7 @@ class ShtUsermod : public Usermod
     void initShtTempHumiditySensor();
     void cleanupShtTempHumiditySensor();
     void cleanup();
-    bool isShtReady();
+    inline bool isShtReady() { return shtInitDone; } // Checks if the SHT sensor has been initialised.
 
     void publishTemperatureAndHumidityViaMqtt();
     void publishHomeAssistantAutodiscovery();
@@ -113,8 +113,11 @@ void ShtUsermod::initShtTempHumiditySensor()
  */
 void ShtUsermod::cleanupShtTempHumiditySensor()
 {
-  if (isShtReady()) shtTempHumidSensor->reset();
-  delete shtTempHumidSensor;
+  if (isShtReady()) {
+    shtTempHumidSensor->reset();
+    delete shtTempHumidSensor;
+    shtTempHumidSensor = nullptr;
+  }
   shtInitDone = false;
 }
 
@@ -137,16 +140,6 @@ void ShtUsermod::cleanup()
   }
 
   enabled = false;
-}
-
-/**
- * Checks if the SHT sensor has been initialised.
-  *
- * @return bool
- */
-bool ShtUsermod::isShtReady()
-{
-  return shtInitDone;
 }
 
 /**
@@ -463,7 +456,19 @@ void ShtUsermod::addToJsonInfo(JsonObject& root)
   jsonHumidity.add(F(" RH"));
 
   jsonTemp.add(getTemperature());
-  jsonTemp.add(unitOfTemp ? "°F" : "°C");
+  jsonTemp.add(getUnitString());
+
+  // sensor object
+  JsonObject sensor = root[F("sensor")];
+  if (sensor.isNull()) sensor = root.createNestedObject(F("sensor"));
+
+  jsonTemp = sensor.createNestedArray(F("temp"));
+  jsonTemp.add(getTemperature());
+  jsonTemp.add(getUnitString());
+
+  jsonHumidity = sensor.createNestedArray(F("humidity"));
+  jsonHumidity.add(getHumidity());
+  jsonHumidity.add(F(" RH"));
 }
 
 /**
