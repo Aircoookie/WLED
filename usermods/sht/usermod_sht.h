@@ -47,7 +47,7 @@ class ShtUsermod : public Usermod
     ShtUsermod(const char *name, bool enabled):Usermod(name, enabled) {} //WLEDMM
     // Strings to reduce flash memory usage (used more than twice)
     //static const char _name[]; //WLEDMM use public attribute of class UserMod
-    static const char _enabled[];
+    //static const char _enabled[]; //WLEDMM not needed
     static const char _shtType[];
     static const char _unitOfTemp[];
     static const char _haMqttDiscovery[];
@@ -73,7 +73,7 @@ class ShtUsermod : public Usermod
 
 // Strings to reduce flash memory usage (used more than twice)
 //const char ShtUsermod::_name[]            PROGMEM = "SHT-Sensor"; //WLEDMM use public attribute of class UserMod
-const char ShtUsermod::_enabled[]         PROGMEM = "Enabled";
+//const char ShtUsermod::_enabled[]         PROGMEM = "Enabled"; //WLEDMM not needed
 const char ShtUsermod::_shtType[]         PROGMEM = "SHT-Type";
 const char ShtUsermod::_unitOfTemp[]      PROGMEM = "Unit";
 const char ShtUsermod::_haMqttDiscovery[] PROGMEM = "Add-To-HA-MQTT-Discovery";
@@ -390,7 +390,7 @@ void ShtUsermod::addToConfig(JsonObject &root)
 {
   JsonObject top = root.createNestedObject(FPSTR(_name)); // usermodname
 
-  top[FPSTR(_enabled)] = enabled;
+  top[FPSTR("enabled")] = enabled;
   top[FPSTR(_shtType)] = shtType;
   top[FPSTR(_unitOfTemp)] = unitOfTemp;
   top[FPSTR(_haMqttDiscovery)] = haMqttDiscovery;
@@ -421,7 +421,7 @@ bool ShtUsermod::readFromConfig(JsonObject &root)
   byte oldUnitOfTemp = unitOfTemp;
   bool oldHaMqttDiscovery = haMqttDiscovery;
 
-  getJsonValue(top[FPSTR(_enabled)], enabled);
+  getJsonValue(top[FPSTR("enabled")], enabled);
   getJsonValue(top[FPSTR(_shtType)], shtType);
   getJsonValue(top[FPSTR(_unitOfTemp)], unitOfTemp);
   getJsonValue(top[FPSTR(_haMqttDiscovery)], haMqttDiscovery);
