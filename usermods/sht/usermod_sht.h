@@ -100,7 +100,7 @@ void ShtUsermod::initShtTempHumiditySensor()
   shtTempHumidSensor->begin((uint8_t)shtI2cAddress); // WLEDMM this connects to an existing Wire (I2C) object, instead starting a new driver
 #endif
   if (shtTempHumidSensor->readStatus() == 0xFFFF) {
-    DEBUG_PRINTF("[%s] SHT init failed!\n", _name);
+    USER_PRINTF("[%s] SHT init failed, Sensor not found!\n", _name);
     cleanup();
     return;
   }
@@ -282,6 +282,12 @@ void ShtUsermod::setup()
   }
 
   firstRunDone = true;
+
+  if (enabled && initDone && pinAllocDone && isShtReady()) {
+    USER_PRINTF(PSTR("[%s] SHT sensor ready.\n"), _name);
+  } else {
+    USER_PRINTF(PSTR("[%s] SHT sensor not ready.\n"), _name);
+  }
 }
 
 /**
