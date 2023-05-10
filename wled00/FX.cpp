@@ -7518,21 +7518,25 @@ uint16_t mode_2Doctopus() {
   } map_t;
 
   const size_t dataSize = SEGMENT.width() * SEGMENT.height() * sizeof(map_t); // prevent reallocation if mirrored or grouped
-  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  if (!SEGENV.allocateData(dataSize + 2)) return mode_static(); //allocation failed
 
   map_t *rMap = reinterpret_cast<map_t*>(SEGENV.data);
+  uint8_t *offsX = reinterpret_cast<uint8_t*>(SEGENV.data + dataSize);
+  uint8_t *offsY = reinterpret_cast<uint8_t*>(SEGENV.data + dataSize + 1);
 
-  // re-init if SEGMENT dimensions changed
-  if (SEGENV.call == 0 || SEGMENT.aux0 != cols || SEGMENT.aux1 != rows) {
+  // re-init if SEGMENT dimensions or offset changed
+  if (SEGENV.call == 0 || SEGENV.aux0 != cols || SEGENV.aux1 != rows || SEGMENT.custom1 != *offsX || SEGMENT.custom2 != *offsY) {
     SEGENV.step = 0; // t
-    SEGMENT.aux0 = cols;
-    SEGMENT.aux1 = rows;
-    const uint8_t C_X = cols / 2;
-    const uint8_t C_Y = rows / 2;
-    for (int x = -C_X; x < C_X + (cols % 2); x++) {
-      for (int y = -C_Y; y < C_Y + (rows % 2); y++) {
-        rMap[XY(x + C_X, y + C_Y)].angle = 128 * (atan2f(y, x) / PI);
-        rMap[XY(x + C_X, y + C_Y)].radius = hypotf(x, y) * mapp; //thanks Sutaburosu
+    SEGENV.aux0 = cols;
+    SEGENV.aux1 = rows;
+    *offsX = SEGMENT.custom1;
+    *offsY = SEGMENT.custom2;
+    const uint8_t C_X = cols / 2 + (SEGMENT.custom1 - 128)*cols/255;
+    const uint8_t C_Y = rows / 2 + (SEGMENT.custom2 - 128)*rows/255;
+    for (int x = 0; x < cols; x++) {
+      for (int y = 0; y < rows; y++) {
+        rMap[XY(x, y)].angle = 128 * (atan2f(y - C_Y, x - C_X) / PI);
+        rMap[XY(x, y)].radius = hypotf(x - C_X, y - C_Y) * mapp; //thanks Sutaburosu
       }
     }
   }
@@ -7544,17 +7548,14 @@ uint16_t mode_2Doctopus() {
       byte radius = rMap[XY(x,y)].radius;
       //CRGB c = CHSV(SEGENV.step / 2 - radius, 255, sin8(sin8((angle * 4 - radius) / 4 + SEGENV.step) + radius - SEGENV.step * 2 + angle * (SEGMENT.custom3/3+1)));
       uint16_t intensity = sin8(sin8((angle * 4 - radius) / 4 + SEGENV.step/2) + radius - SEGENV.step + angle * (SEGMENT.custom3/4+1));
-      intensity = map(intensity*intensity, 0, 65535, 0, SEGMENT.intensity); // add a bit of non-linearity for cleaner display
+      intensity = map(intensity*intensity, 0, 65535, 0, 255); // add a bit of non-linearity for cleaner display
       CRGB c = ColorFromPalette(SEGPALETTE, SEGENV.step / 2 - radius, intensity);
-      int rX = SEGMENT.custom1 ? (strip.now / (320 - SEGMENT.custom1) + x) % cols : x;
-      int rY = SEGMENT.custom2 ? (strip.now / (320 - SEGMENT.custom2) + y) % rows : y;
-      SEGMENT.setPixelColorXY(rX, rY, c);
+      SEGMENT.setPixelColorXY(x, y, c);
     }
   }
-
   return FRAMETIME;
 }
-static const char _data_FX_MODE_2DOCTOPUS[] PROGMEM = "Octopus@!,!,Rotate X,Rotate Y,Legs;;!;2;ix=255,c1=0,c2=0";
+static const char _data_FX_MODE_2DOCTOPUS[] PROGMEM = "Octopus@!,,Offset X,Offset Y,Legs;;!;2;";
 
 
 //Waving Cell
