@@ -1,5 +1,5 @@
 #ifndef WLED_ENABLE_MQTT
-#error "This user mod requires MQTT to be enabled."
+#warning "This user mod expects MQTT to be enabled."
 #endif
 
 #pragma once
@@ -14,7 +14,7 @@
 class ShtUsermod : public Usermod
 {
   private:
-    bool enabled = false; // Is usermod enabled or not
+    //bool enabled = false; // Is usermod enabled or not //WLEDMM use public attribute of class UserMod
     bool firstRunDone = false; // Remembers if the first config load run had been done
     bool pinAllocDone = true; // Remembers if we have allocated pins
     bool initDone = false; // Remembers if the mod has been completely initialised
@@ -44,8 +44,9 @@ class ShtUsermod : public Usermod
     void appendDeviceToMqttDiscoveryMessage(JsonDocument& root);
 
   public:
+    ShtUsermod(const char *name, bool enabled):Usermod(name, enabled) {} //WLEDMM
     // Strings to reduce flash memory usage (used more than twice)
-    static const char _name[];
+    //static const char _name[]; //WLEDMM use public attribute of class UserMod
     static const char _enabled[];
     static const char _shtType[];
     static const char _unitOfTemp[];
@@ -71,7 +72,7 @@ class ShtUsermod : public Usermod
 };
 
 // Strings to reduce flash memory usage (used more than twice)
-const char ShtUsermod::_name[]            PROGMEM = "SHT-Sensor";
+//const char ShtUsermod::_name[]            PROGMEM = "SHT-Sensor"; //WLEDMM use public attribute of class UserMod
 const char ShtUsermod::_enabled[]         PROGMEM = "Enabled";
 const char ShtUsermod::_shtType[]         PROGMEM = "SHT-Type";
 const char ShtUsermod::_unitOfTemp[]      PROGMEM = "Unit";
@@ -93,8 +94,11 @@ void ShtUsermod::initShtTempHumiditySensor()
     case USERMOD_SHT_TYPE_SHT35: shtTempHumidSensor = (SHT *) new SHT35(); break;
     case USERMOD_SHT_TYPE_SHT85: shtTempHumidSensor = (SHT *) new SHT85(); break;
   }
-
+#if 0
   shtTempHumidSensor->begin(shtI2cAddress, i2c_sda, i2c_scl);
+#else
+  shtTempHumidSensor->begin((uint8_t)shtI2cAddress); // WLEDMM this connects to an existing Wire (I2C) object, instead starting a new driver
+#endif
   if (shtTempHumidSensor->readStatus() == 0xFFFF) {
     DEBUG_PRINTF("[%s] SHT init failed!\n", _name);
     cleanup();
@@ -131,12 +135,15 @@ void ShtUsermod::cleanup()
   cleanupShtTempHumiditySensor();
 
   if (pinAllocDone) {
+#if 0  // WLEDMM not needed
     PinManagerPinType pins[2] = { { i2c_sda, true }, { i2c_scl, true } };
     pinManager.deallocateMultiplePins(pins, 2, PinOwner::HW_I2C);
+#endif
     pinAllocDone = false;
   }
 
   enabled = false;
+  shtInitDone = false; // WLEDMM bugfix
 }
 
 /**
@@ -158,6 +165,7 @@ bool ShtUsermod::isShtReady()
  * @return void
  */
 void ShtUsermod::publishTemperatureAndHumidityViaMqtt() {
+#ifdef WLED_ENABLED_MQTT
   if (!WLED_MQTT_CONNECTED) return;
   char buf[128];
 
@@ -165,6 +173,7 @@ void ShtUsermod::publishTemperatureAndHumidityViaMqtt() {
   mqtt->publish(buf, 0, false, String(getTemperature()).c_str());
   snprintf_P(buf, 127, PSTR("%s/humidity"), mqttDeviceTopic);
   mqtt->publish(buf, 0, false, String(getHumidity()).c_str());
+#endif
 }
 
 /**
@@ -177,6 +186,7 @@ void ShtUsermod::publishTemperatureAndHumidityViaMqtt() {
  * @return void
  */
 void ShtUsermod::publishHomeAssistantAutodiscovery() {
+#ifdef WLED_ENABLED_MQTT
   if (!WLED_MQTT_CONNECTED) return;
 
   char json_str[1024], buf[128];
@@ -214,6 +224,7 @@ void ShtUsermod::publishHomeAssistantAutodiscovery() {
   mqtt->publish(buf, 0, true, json_str, payload_size);
 
   haMqttDiscoveryDone = true;
+#endif
 }
 
 /**
@@ -221,6 +232,7 @@ void ShtUsermod::publishHomeAssistantAutodiscovery() {
  *
  * @return void
  */
+#ifdef WLED_ENABLED_MQTT
 void ShtUsermod::appendDeviceToMqttDiscoveryMessage(JsonDocument& root) {
   JsonObject device = root.createNestedObject(F("dev"));
   device[F("ids")] = escapedMac.c_str();
@@ -229,6 +241,7 @@ void ShtUsermod::appendDeviceToMqttDiscoveryMessage(JsonDocument& root) {
   device[F("mdl")] = ESP.getChipModel();
   device[F("mf")] = F("espressif");
 }
+#endif
 
 /**
  * Setup the mod.
@@ -246,16 +259,26 @@ void ShtUsermod::setup()
   if (enabled) {
     PinManagerPinType pins[2] = { { i2c_sda, true }, { i2c_scl, true } };
     // GPIOs can be set to -1 and allocateMultiplePins() will return true, so check they're gt zero
+#if 0  // WLEDMM done by pinManager.joinWire()
     if (i2c_sda < 0 || i2c_scl < 0 || !pinManager.allocateMultiplePins(pins, 2, PinOwner::HW_I2C)) {
+#else
+    if (i2c_sda < 0 || i2c_scl < 0) {
+#endif
       DEBUG_PRINTF("[%s] SHT pin allocation failed!\n", _name);
       cleanup();
       return;
     }
-    pinAllocDone = true;
+    // WLEDMM join hardware I2C
+    if (pinManager.joinWire()) {  // WLEDMM - this allocates global I2C pins, then starts Wire - if not started previously
+      pinAllocDone = true;
 
-    initShtTempHumiditySensor();
+      initShtTempHumiditySensor();
 
-    initDone = true;
+      initDone = true;
+    } else {
+      DEBUG_PRINTF("[%s] SHT I2C pin allocation failed!\n", _name);
+      return;
+    }
   }
 
   firstRunDone = true;
@@ -276,7 +299,9 @@ void ShtUsermod::setup()
  */
 void ShtUsermod::loop()
 {
-  if (!enabled || !initDone || strip.isUpdating()) return;
+  unsigned long last_runtime = 0; // WLEDMM ensure that strip.isUpdating() will not block longer that 1000ms
+  if (!enabled || !initDone || !pinAllocDone || (strip.isUpdating() && (millis()-last_runtime < 1000))) return; // WLEDMM be nice, but not too nice
+  last_runtime = millis();
 
   if (isShtReady()) {
     if (millis() - shtLastTimeUpdated > 30000 && !shtDataRequested) {
@@ -315,7 +340,9 @@ void ShtUsermod::loop()
  * @return void
  */
 void ShtUsermod::onMqttConnect(bool sessionPresent) {
+#ifdef WLED_ENABLED_MQTT
   if (haMqttDiscovery && !haMqttDiscoveryDone) publishHomeAssistantAutodiscovery();
+#endif
 }
 
 /**

@@ -374,7 +374,7 @@ void registerUsermods()
   #endif
 
   #ifdef USERMOD_SHT
-  usermods.add(new ShtUsermod());
+  usermods.add(new ShtUsermod("SHT-Sensor", false));
   #endif
 
   //WLEDMM ARTIFX
