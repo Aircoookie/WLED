@@ -575,8 +575,14 @@ button {
 	width: 200px;
 }
 
-#info table, #nodes table {
+#info table {
 	table-layout: fixed;
+	width: 100%;
+}
+
+/*WLEDMM nodes table auto*/
+#nodes table {
+	table-layout: auto;
 	width: 100%;
 }
 
@@ -590,8 +596,14 @@ button {
 #info table .btn, #nodes table .btn {
 	margin: 0;
 }
-#info div, #nodes div {
+#info div {
 	max-width: 490px;
+	margin: 0 auto;
+}
+
+/*WLEDMM nodes div width must be bigger*/
+#nodes div {
+	max-width: 980px;
 	margin: 0 auto;
 }
 

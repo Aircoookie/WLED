@@ -1023,17 +1023,76 @@ function bname(o)
 	return o.name;
 }
 
+//WLEDMM call a node with json api command
+function callNode(ip, json) {
+	console.log("callNode", ip, json);
+
+	fetch('http://'+ip+'/json/state', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+          //'Content-Type': 'text/html; charset=UTF-8'
+        },
+        body: JSON.stringify(json)
+    })
+	.then((res)=>{
+		console.log("then res", res);
+		loadNodes(); //reload nodes
+	})
+	.then((json)=>{
+		console.log("then json", json);
+	});
+}
+
 function populateNodes(i,n)
 {
+	//WLEDMM helper: add html to element
+	function addEl(element, html) {
+		let k  = d.createElement(element);
+		k.innerHTML = html;
+		return k;
+	}
+
 	var cn="";
 	var urows="";
 	var nnodes = 0;
 	if (n.nodes) {
+		//WLEDMM add this node to nodes
+		let thisNode = {};
+		thisNode["name"] = i.name;
+		thisNode["ip"] = i.ip;
+		n.nodes.push(thisNode);
+
 		n.nodes.sort((a,b) => (a.name).localeCompare(b.name));
+		// console.log("populateNodes",i,n, n.nodes);
+		//loop over nodes e.g. {name: "MM 32 L", type: 32, ip: "192.168.121.249", age: 1, vid: 2305080}
 		for (var o of n.nodes) {
 			if (o.name) {
 				var url = `<button class="btn" title="${o.ip}" onclick="location.assign('http://${o.ip}');">${bname(o)}</button>`;
-				urows += inforow(url,`${btype(o.type)}<br><i>${o.vid==0?"N/A":o.vid}</i>`);
+				// urows += inforow(url,`${btype(o.type)}<br><i id="node${nnodes}">${o.vid==0?"N/A":o.vid} ${o.mode}</i>`);
+
+				//WLEDMM fetch json from nodes and add in table rows
+				urows += `<tr id="node${nnodes}"><td class="keytd">${url}</td><td class="valtd">${btype(o.type)}<br><i>${o.vid==0?"N/A":o.vid}</i></td></tr>`;
+				// console.log("Node", o.name);
+				//fetch the rest of the nodes info
+				fetchAndExecute(`http://${o.ip}/`, "json", nnodes, function(nnodes,text) {
+					state = JSON.parse(text)["state"];
+					info = JSON.parse(text)["info"];
+					effects = JSON.parse(text)["effects"];
+					console.log(nnodes, state, info, effects);
+					//append to table row
+
+					// gId(`node${nnodes}`).appendChild(addEl('td', `<button class="btn btn-xs" onclick="callNode('${info["ip"]}');"><i class="icons on">&#xe08f;</i></button>`));
+					gId(`node${nnodes}`).appendChild(addEl('td', "<button class=\"btn btn-xs\" onclick=\"callNode('"+info["ip"]+"',{'on':"+(state["on"]?"false":"true")+"});\"><i class=\"icons "+(state["on"]?"on":"off")+"\">&#xe08f;</i></button>"));
+					// ${i.opt&0x100?inforow("Net Print ☾","<button class=\"btn btn-xs\" onclick=\"requestJson({'netDebug':"+(i.opt&0x0080?"false":"true")+"});\"><i class=\"icons "+(i.opt&0x0080?"on":"off")+"\">&#xe08f;</i></button>"):''}
+					gId(`node${nnodes}`).appendChild(addEl('td', info["ip"]));
+					gId(`node${nnodes}`).appendChild(addEl('td', info["rel"]));
+					gId(`node${nnodes}`).appendChild(addEl('td', info["ver"]));
+					gId(`node${nnodes}`).appendChild(addEl('td', info["leds"]["count"]));
+					gId(`node${nnodes}`).appendChild(addEl('td', effects[state["seg"][0]["fx"]]));
+					gId(`node${nnodes}`).appendChild(addEl('td', info["leds"]["matrix"]["w"] + "x" + info["leds"]["matrix"]["h"]));
+				});
+
 				nnodes++;
 			}
 		}
@@ -1041,10 +1100,10 @@ function populateNodes(i,n)
 	if (i.ndc < 0) cn += `Instance List is disabled.`;
 	else if (nnodes == 0) cn += `No other instances found.`;
 	cn += `<table>
-	${inforow("Current instance:",i.name)}
 	${urows}
 	</table>`;
 	gId('kn').innerHTML = cn;
+	// ${inforow("Current instance:",i.name)} //WLEDMM current instance is now also shown as node
 }
 
 function loadNodes()
@@ -1333,7 +1392,7 @@ function drawSegmentView() {
 		else
 			fileName = ledmapFileNames[ledmapNr-10];
 
-		fetchAndExecute((loc?`http://${locip}`:'.') + "/", fileName , function(text) {
+		fetchAndExecute((loc?`http://${locip}`:'.') + "/", fileName, null, function(parms,text) {
 			var ledmapJson = JSON.parse(text);
 			var counter = 0;
 			var noMap = [];
@@ -1377,7 +1436,7 @@ function drawSegmentView() {
 				ctx.fill();
 			}
 			post();
-		}, function(error) { //error handling
+		}, function(parms,error) { //error handling
 			console.log(error);
 			// downloadGHFile("LM", fileName, true, false); WLEDMM: remove as this has too much impact
 			post();
@@ -2954,7 +3013,7 @@ function genPresets()
 }
 
 //WLEDMM: utility function to load contents of file from FS (used in draw)
-function fetchAndExecute(url, name, callback, callError)
+function fetchAndExecute(url, name, parms, callback, callError = null)
 {
   fetch
   (url+name, {
@@ -2969,10 +3028,10 @@ function fetchAndExecute(url, name, callback, callError)
   })
   .then(text => {
 	console.log("text", text);
-    callback(text);
+    callback(parms, text);
   })
   .catch(function (error) {
-	callError("Error getting " + name);
+	if (callError) callError(parms, "Error getting " + name);
 	console.log(error);
   })
   .finally(() => {
