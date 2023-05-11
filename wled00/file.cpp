@@ -31,10 +31,10 @@
 
 // There are no consecutive spaces longer than this in the file, so if more space is required, findSpace() can return false immediately
 // Actual space may be lower
-constexpr size_t MAX_SPACE = UINT16_MAX * 2U;           // WLEDMM smallest supported config has 128Kb flash size
+constexpr size_t MAX_SPACE = UINT16_MAX * 2U;           // smallest supported config has 128Kb flash size
 static volatile size_t knownLargestSpace = MAX_SPACE;
 
-static File f; // WLEDMM
+static File f; // don't export to other cpp files
 
 //wrapper to find out how long closing takes
 void closeFile() {
@@ -64,8 +64,8 @@ static bool bufferedFind(const char *target, bool fromStart = true) {
   if (fromStart) f.seek(0);
 
   while (f.position() < f.size() -1) {
-    size_t bufsize = f.read(buf, FS_BUFSIZE); // WLEDMM size_t instead if uint16_t
-    size_t count = 0;                         // WLEDMM
+    size_t bufsize = f.read(buf, FS_BUFSIZE); // better to use size_t instead if uint16_t
+    size_t count = 0;
     while (count < bufsize) {
       if(buf[count] != target[index])
       index = 0; // reset index if any char does not match
@@ -100,20 +100,20 @@ static bool bufferedFindSpace(size_t targetLen, bool fromStart = true) {
 
   if (!f || !f.size()) return false;
 
-  size_t index = 0; // WLEDMM size_t instead if uint16_t
+  size_t index = 0; // better to use size_t instead if uint16_t
   byte buf[FS_BUFSIZE];
   if (fromStart) f.seek(0);
 
   while (f.position() < f.size() -1) {
-    size_t bufsize = f.read(buf, FS_BUFSIZE); // WLEDMM
-    size_t count = 0;                         // WLEDMM
+    size_t bufsize = f.read(buf, FS_BUFSIZE);
+    size_t count = 0;
 
     while (count < bufsize) {
       if(buf[count] == ' ') {
         if(++index >= targetLen) { // return true if space long enough
           if (fromStart) {
             f.seek((f.position() - bufsize) + count +1 - targetLen);
-            knownLargestSpace = MAX_SPACE; //there may be larger spaces after, so we don't know // WLEDMM smallest supported config has 128Kb flash size
+            knownLargestSpace = MAX_SPACE; //there may be larger spaces after, so we don't know
           }
           DEBUGFS_PRINTF("Found at pos %d, took %d ms", f.position(), millis() - s);
           return true;
@@ -121,7 +121,7 @@ static bool bufferedFindSpace(size_t targetLen, bool fromStart = true) {
       } else {
         if (!fromStart) return false;
         if (index) {
-          if (knownLargestSpace < index || (knownLargestSpace == MAX_SPACE)) knownLargestSpace = index; // WLEDMM
+          if (knownLargestSpace < index || (knownLargestSpace == MAX_SPACE)) knownLargestSpace = index;
           index = 0; // reset index if not space
         }
       }
@@ -147,8 +147,8 @@ static bool bufferedFindObjectEnd() {
   byte buf[FS_BUFSIZE];
 
   while (f.position() < f.size() -1) {
-    size_t bufsize = f.read(buf, FS_BUFSIZE); // WLEDMM size_t instead of uint16_t
-    size_t count = 0;                         // WLEDMM
+    size_t bufsize = f.read(buf, FS_BUFSIZE); // better to use size_t instead of uint16_t
+    size_t count = 0;
 
     while (count < bufsize) {
       if (buf[count] == '{') objDepth++;
@@ -172,7 +172,7 @@ static void writeSpace(size_t l)
   memset(buf, ' ', FS_BUFSIZE);
 
   while (l > 0) {
-    size_t block = (l>FS_BUFSIZE) ? FS_BUFSIZE : l; // WLEDMM size_t instead of uint16_t
+    size_t block = (l>FS_BUFSIZE) ? FS_BUFSIZE : l;
     f.write(buf, block);
     l -= block;
   }
@@ -294,7 +294,7 @@ bool writeObjectToFile(const char* file, const char* key, JsonDocument* content)
   pos = f.position();
   //measure out end of old object
   bufferedFindObjectEnd();
-  size_t pos2 = f.position();   // WLEDMM
+  size_t pos2 = f.position();
 
   uint32_t oldLen = pos2 - pos;
   DEBUGFS_PRINTF("Old obj len %d\n", oldLen);
@@ -305,7 +305,7 @@ bool writeObjectToFile(const char* file, const char* key, JsonDocument* content)
   //3. The new content is larger than the old, but smaller than old + trailing spaces, overwrite with new
   //4. The new content is larger than old + trailing spaces, delete old and append
 
-  size_t contentLen = 0;  // WLEDMM
+  size_t contentLen = 0;
   if (!content->isNull()) contentLen = measureJson(*content);
 
   if (contentLen && contentLen <= oldLen) { //replace and fill diff with spaces

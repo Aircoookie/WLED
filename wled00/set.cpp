@@ -102,6 +102,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char rf[4] = "RF"; rf[2] = 48+s; rf[3] = 0; //refresh required
       char aw[4] = "AW"; aw[2] = 48+s; aw[3] = 0; //auto white mode
       char wo[4] = "WO"; wo[2] = 48+s; wo[3] = 0; //channel swap
+      char sp[4] = "SP"; sp[2] = 48+s; sp[3] = 0; //bus clock speed (DotStar & PWM)
       if (!request->hasArg(lp)) {
         DEBUG_PRINT(F("No data for "));
         DEBUG_PRINTLN(s);
@@ -123,11 +124,33 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         break;  // no parameter
       }
       awmode = request->arg(aw).toInt();
+      uint16_t freqHz = request->arg(sp).toInt();
+      if (type > TYPE_ONOFF && type < 49) {
+        switch (freqHz) {
+          case 0 : freqHz = WLED_PWM_FREQ/3; break;
+          case 1 : freqHz = WLED_PWM_FREQ/2; break;
+          default:
+          case 2 : freqHz = WLED_PWM_FREQ;   break;
+          case 3 : freqHz = WLED_PWM_FREQ*2; break;
+          case 4 : freqHz = WLED_PWM_FREQ*3; break;
+        }
+      } else if (type > 48 && type < 64) {
+        switch (freqHz) {
+          default:
+          case 0 : freqHz =  1000; break;
+          case 1 : freqHz =  2000; break;
+          case 2 : freqHz =  5000; break;
+          case 3 : freqHz = 10000; break;
+          case 4 : freqHz = 20000; break;
+        }
+      } else {
+        freqHz = 0;
+      }
       channelSwap = (type == TYPE_SK6812_RGBW || type == TYPE_TM1814) ? request->arg(wo).toInt() : 0;
       // actual finalization is done in WLED::loop() (removing old busses and adding new)
       // this may happen even before this loop is finished so we do "doInitBusses" after the loop
       if (busConfigs[s] != nullptr) delete busConfigs[s];
-      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder | (channelSwap<<4), request->hasArg(cv), skip, awmode);
+      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder | (channelSwap<<4), request->hasArg(cv), skip, awmode); //WLEDMM to do bus, freqHz
       busesChanged = true;
     }
     //doInitBusses = busesChanged; // we will do that below to ensure all input data is processed

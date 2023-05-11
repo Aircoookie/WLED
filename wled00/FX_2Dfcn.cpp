@@ -304,8 +304,22 @@ void Segment::blendPixelColorXY(uint16_t x, uint16_t y, uint32_t color, uint8_t 
 }
 
 // Adds the specified color with the existing pixel color perserving color balance.
-void Segment::addPixelColorXY(int x, int y, uint32_t color) {
-  setPixelColorXY(x, y, color_add(getPixelColorXY(x,y), color));
+void Segment::addPixelColorXY(int x, int y, uint32_t color, bool fast) {
+  uint32_t col = getPixelColorXY(x,y);
+  uint8_t r = R(col);
+  uint8_t g = G(col);
+  uint8_t b = B(col);
+  uint8_t w = W(col);
+  if (fast) {
+    r = qadd8(r, R(color));
+    g = qadd8(g, G(color));
+    b = qadd8(b, B(color));
+    w = qadd8(w, W(color));
+    col = RGBW32(r,g,b,w);
+  } else {
+    col = color_add(col, color);
+  }
+  setPixelColorXY(x, y, col);
 }
 
 void Segment::fadePixelColorXY(uint16_t x, uint16_t y, uint8_t fade) {
@@ -416,54 +430,55 @@ void Segment::blur1d(fract8 blur_amount) {
   for (uint16_t y = 0; y < rows; y++) blurRow(y, blur_amount);
 }
 
-void Segment::moveX(int8_t delta) {
+void Segment::moveX(int8_t delta, bool wrap) {
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
-  if (!delta) return;
-  if (delta > 0) {
-    for (uint8_t y = 0; y < rows; y++) for (uint8_t x = 0; x < cols-1; x++) {
-      if (x + delta >= cols) break;
-      setPixelColorXY(x, y, getPixelColorXY((x + delta)%cols, y));
+  if (!delta || abs(delta) >= cols) return;
+  uint32_t newPxCol[cols];
+  for (int y = 0; y < rows; y++) {
+    if (delta > 0) {
+      for (int x = 0; x < cols-delta; x++)    newPxCol[x] = getPixelColorXY((x + delta), y);
+      for (int x = cols-delta; x < cols; x++) newPxCol[x] = getPixelColorXY(wrap ? (x + delta) - cols : x, y);
+    } else {
+      for (int x = cols-1; x >= -delta; x--) newPxCol[x] = getPixelColorXY((x + delta), y);
+      for (int x = -delta-1; x >= 0; x--)    newPxCol[x] = getPixelColorXY(wrap ? (x + delta) + cols : x, y);
     }
-  } else {
-    for (uint8_t y = 0; y < rows; y++) for (int16_t x = cols-1; x >= 0; x--) {
-      if (x + delta < 0) break;
-      setPixelColorXY(x, y, getPixelColorXY(x + delta, y));
-    }
+    for (int x = 0; x < cols; x++) setPixelColorXY(x, y, newPxCol[x]);
   }
 }
 
-void Segment::moveY(int8_t delta) {
+void Segment::moveY(int8_t delta, bool wrap) {
   const uint16_t cols = virtualWidth();
   const uint16_t rows = virtualHeight();
-  if (!delta) return;
-  if (delta > 0) {
-    for (uint8_t x = 0; x < cols; x++) for (uint8_t y = 0; y < rows-1; y++) {
-      if (y + delta >= rows) break;
-      setPixelColorXY(x, y, getPixelColorXY(x, (y + delta)));
+  if (!delta || abs(delta) >= rows) return;
+  uint32_t newPxCol[rows];
+  for (int x = 0; x < cols; x++) {
+    if (delta > 0) {
+      for (int y = 0; y < rows-delta; y++)    newPxCol[y] = getPixelColorXY(x, (y + delta));
+      for (int y = rows-delta; y < rows; y++) newPxCol[y] = getPixelColorXY(x, wrap ? (y + delta) - rows : y);
+    } else {
+      for (int y = rows-1; y >= -delta; y--) newPxCol[y] = getPixelColorXY(x, (y + delta));
+      for (int y = -delta-1; y >= 0; y--)    newPxCol[y] = getPixelColorXY(x, wrap ? (y + delta) + rows : y);
     }
-  } else {
-    for (uint8_t x = 0; x < cols; x++) for (int16_t y = rows-1; y >= 0; y--) {
-      if (y + delta < 0) break;
-      setPixelColorXY(x, y, getPixelColorXY(x, y + delta));
-    }
+    for (int y = 0; y < rows; y++) setPixelColorXY(x, y, newPxCol[y]);
   }
 }
 
 // move() - move all pixels in desired direction delta number of pixels
 // @param dir direction: 0=left, 1=left-up, 2=up, 3=right-up, 4=right, 5=right-down, 6=down, 7=left-down
 // @param delta number of pixels to move
-void Segment::move(uint8_t dir, uint8_t delta) {
+// @param wrap around
+void Segment::move(uint8_t dir, uint8_t delta, bool wrap) {
   if (delta==0) return;
   switch (dir) {
-    case 0: moveX( delta);                break;
-    case 1: moveX( delta); moveY( delta); break;
-    case 2:                moveY( delta); break;
-    case 3: moveX(-delta); moveY( delta); break;
-    case 4: moveX(-delta);                break;
-    case 5: moveX(-delta); moveY(-delta); break;
-    case 6:                moveY(-delta); break;
-    case 7: moveX( delta); moveY(-delta); break;
+    case 0: moveX( delta, wrap);                      break;
+    case 1: moveX( delta, wrap); moveY( delta, wrap); break;
+    case 2:                      moveY( delta, wrap); break;
+    case 3: moveX(-delta, wrap); moveY( delta, wrap); break;
+    case 4: moveX(-delta, wrap);                      break;
+    case 5: moveX(-delta, wrap); moveY(-delta, wrap); break;
+    case 6:                      moveY(-delta, wrap); break;
+    case 7: moveX( delta, wrap); moveY(-delta, wrap); break;
   }
 }
 

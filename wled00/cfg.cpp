@@ -177,10 +177,11 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       uint8_t ledType = elm["type"] | TYPE_WS2812_RGB;
       bool reversed = elm["rev"];
       bool refresh = elm["ref"] | false;
+      uint16_t freqkHz = elm[F("freq")] | 0;  // will be in kHz for DotStar and Hz for PWM (not yet implemented fully)
       ledType |= refresh << 7; // hack bit 7 to indicate strip requires off refresh
       uint8_t AWmode = elm[F("rgbwm")] | autoWhiteMode;
       if (fromFS) {
-        BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode);
+        BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, AWmode); //WLEDMM bus to do  , freqkHz
         mem += BusManager::memUsage(bc);
         if (mem <= MAX_LED_MEMORY) if (busses.add(bc) == -1) break;  // finalization will be done in WLED::beginStrip()
       } else {
@@ -784,6 +785,7 @@ void serializeConfig() {
     ins["type"] = bus->getType() & 0x7F;
     ins["ref"] = bus->isOffRefreshRequired();
     ins[F("rgbwm")] = bus->getAutoWhiteMode();
+    // ins[F("freq")] = bus->getFrequency(); WLEDMM bus to do
   }
 
   JsonArray hw_com = hw.createNestedArray(F("com"));
