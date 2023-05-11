@@ -238,7 +238,7 @@ void registerUsermods()
   #endif
 
   #ifdef USERMOD_BH1750
-  usermods.add(new Usermod_BH1750());
+  usermods.add(new Usermod_BH1750("BH1750", false));
   #endif
 
   #ifdef USERMOD_BME280
@@ -374,7 +374,7 @@ void registerUsermods()
   #endif
 
   #ifdef USERMOD_SHT
-  usermods.add(new ShtUsermod());
+  usermods.add(new ShtUsermod("SHT-Sensor", false));
   #endif
 
   //WLEDMM ARTIFX

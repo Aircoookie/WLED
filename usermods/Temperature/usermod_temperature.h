@@ -194,7 +194,9 @@ class UsermodTemperature : public Usermod {
     }
 
     void loop() {
-      if (!enabled || !sensorFound || strip.isUpdating()) return;
+      unsigned long last_runtime = 0; // WLEDMM ensure that strip.isUpdating() will not block longer that 4000ms
+      if (!enabled || !sensorFound || (strip.isUpdating() && (millis()-last_runtime < 4000))) return; // WLEDMM be nice, but not too nice
+      last_runtime = millis();
 
       static uint8_t errorCount = 0;
       unsigned long now = millis();

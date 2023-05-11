@@ -48,11 +48,11 @@ private:
   bool getLuminanceComplete = false;
 
   // flag set at startup
-  bool enabled = true;
+  //bool enabled = true;  //WLEDMM not needed as we use global attributes
 
   // strings to reduce flash memory usage (used more than twice)
-  static const char _name[];
-  static const char _enabled[];
+  //static const char _name[];    //WLEDMM not needed as we use global attributes
+  //static const char _enabled[]; //WLEDMM not needed as we use global attributes
   static const char _maxReadInterval[];
   static const char _minReadInterval[];
   static const char _offset[];
@@ -76,7 +76,7 @@ private:
   bool sensorFound = false;
 
   // Home Assistant and MQTT  
-  String mqttLuminanceTopic = F("");
+  String mqttLuminanceTopic = FPSTR("");
   bool mqttInitialized = false;
   bool HomeAssistantDiscovery = true; // Publish Home Assistant Discovery messages
 
@@ -132,6 +132,8 @@ private:
   }
 
 public:
+  Usermod_BH1750(const char *name, bool enabled):Usermod(name, enabled) {} //WLEDMM
+
   void setup()
   {
 #if 0
@@ -157,22 +159,22 @@ public:
     if (!pinManager.joinWire()) {  // WLEDMM - this allocates global I2C pins, then starts Wire - if not started previously
       sensorFound = false;
       //enabled = false;
-      USER_PRINTLN(F("BH1750: failed to join I2C bus.")); 
+      USER_PRINTLN(F("[BH1750]: failed to join I2C bus.")); 
       return;
     }
 
-    sensorFound = lightMeter.begin();
-    if (sensorFound) { USER_PRINTLN(F("BH1750 sensor found.")); }
-    else{ USER_PRINTLN(F("BH1750 sensor not found.")); }
+    sensorFound = lightMeter.begin(BH1750::CONTINUOUS_HIGH_RES_MODE);  // WLEDMM  set mode explicitly
+    if (sensorFound) { USER_PRINTLN(F("[BH1750] sensor found.")); }
+    else{ USER_PRINTLN(F("[BH1750] sensor not found.")); }
     initDone = true;
   }
 
   void loop()
   {
-    if ((!enabled) || strip.isUpdating())
+    if (!sensorFound || !initDone) return;  // WLEDMM bugfix
+    if ((!enabled) || (strip.isUpdating() && (millis() - lastMeasurement < 450)))  // WLEDMM be nice, but not too nice
       return;
 
-    if (!sensorFound) return;  // WLEDMM bugfix
     unsigned long now = millis();
 
     // check to see if we are due for taking a measurement
@@ -184,10 +186,12 @@ public:
     }
 
     bool shouldUpdate = now - lastSend > maxReadingInterval;
-
-    float lux = lightMeter.readLightLevel();
-    lastMeasurement = millis();
-    getLuminanceComplete = true;
+    float lux =  lastLux;
+    if (lightMeter.measurementReady()) {  //WLEDMM do not block in case the sensor is still busy
+      lux = lightMeter.readLightLevel();
+      lastMeasurement = millis();
+      getLuminanceComplete = true;
+    }
 
     if (shouldUpdate || checkBoundSensor(lux, lastLux, offset))
     {
@@ -255,7 +259,7 @@ public:
   {
     // we add JSON object.
     JsonObject top = root.createNestedObject(FPSTR(_name)); // usermodname
-    top[FPSTR(_enabled)] = enabled;
+    top[F("enabled")] = enabled;
     top[FPSTR(_maxReadInterval)] = maxReadingInterval;
     top[FPSTR(_minReadInterval)] = minReadingInterval;
     top[FPSTR(_HomeAssistantDiscovery)] = HomeAssistantDiscovery;
@@ -269,7 +273,7 @@ public:
 
     // top[F("help4Pins")] = F("SCL,SDA"); // help for Settings page
 
-    DEBUG_PRINTLN(F("BH1750 config saved."));
+    DEBUG_PRINTLN(F("[BH1750] config saved."));
   }
 
   // called before setup() to populate properties from values stored in cfg.json
@@ -283,13 +287,13 @@ public:
     if (top.isNull())
     {
       DEBUG_PRINT(FPSTR(_name));
-      DEBUG_PRINT(F("BH1750"));
+      DEBUG_PRINT(F("[BH1750]"));
       DEBUG_PRINTLN(F(": No config found. (Using defaults.)"));
       return false;
     }
     bool configComplete = !top.isNull();
 
-    configComplete &= getJsonValue(top[FPSTR(_enabled)], enabled, false);
+    configComplete &= getJsonValue(top[F("enabled")], enabled, false);
     configComplete &= getJsonValue(top[FPSTR(_maxReadInterval)], maxReadingInterval, 10000); //ms
     configComplete &= getJsonValue(top[FPSTR(_minReadInterval)], minReadingInterval, 500); //ms
     configComplete &= getJsonValue(top[FPSTR(_HomeAssistantDiscovery)], HomeAssistantDiscovery, false);
@@ -335,8 +339,8 @@ public:
 };
 
 // strings to reduce flash memory usage (used more than twice)
-const char Usermod_BH1750::_name[] PROGMEM = "BH1750";
-const char Usermod_BH1750::_enabled[] PROGMEM = "enabled";
+//const char Usermod_BH1750::_name[] PROGMEM = "BH1750";     //WLEDMM not needed as we use global attributes
+//const char Usermod_BH1750::_enabled[] PROGMEM = "enabled"; //WLEDMM not needed as we use global attributes
 const char Usermod_BH1750::_maxReadInterval[] PROGMEM = "max-read-interval-ms";
 const char Usermod_BH1750::_minReadInterval[] PROGMEM = "min-read-interval-ms";
 const char Usermod_BH1750::_HomeAssistantDiscovery[] PROGMEM = "HomeAssistantDiscoveryLux";
