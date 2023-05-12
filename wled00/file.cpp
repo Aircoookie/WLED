@@ -10,11 +10,8 @@
 #endif
 #endif
 
-#if defined(WLEDMM_FASTPATH)  // WLEMM use smaller buffer when reading, to reduce delay (=effect stuttering) during file operations
-#define FS_BUFSIZE 128  // align with LittleFS read size (CONFIG_LITTLEFS_READ_SIZE=128)
-#else
+//WLEDMM seems that 256 is indeed the optimal buffer length
 #define FS_BUFSIZE 256
-#endif
 
 /*
  * Structural requirements for files managed by writeObjectToFile() and readObjectFromFile() utilities:
