@@ -615,11 +615,11 @@ uint16_t mode_CircularBlobs(void) {
 static const char _data_FX_mode_CircularBlobs[] PROGMEM = "💡CircularBlobs ☾@AngleDist,AngleMult;;!;2;sx=51,ix=51,c1=0,c2=0,c3=0";
 
 
-class FastledUsermod : public Usermod {
+class AnimartrixUsermod : public Usermod {
 
   public:
 
-    FastledUsermod(const char *name, bool enabled):Usermod(name, enabled) {} //WLEDMM
+    AnimartrixUsermod(const char *name, bool enabled):Usermod(name, enabled) {} //WLEDMM
 
     void setup() {
       strip.addEffect(255, &mode_PolarBasics, _data_FX_mode_PolarBasics);
@@ -640,7 +640,7 @@ class FastledUsermod : public Usermod {
 
     uint16_t getId()
     {
-      return USERMOD_ID_FASTLED;
+      return USERMOD_ID_ANIMARTRIX;
     }
 
 };
