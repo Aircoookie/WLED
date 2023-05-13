@@ -7510,7 +7510,7 @@ uint16_t mode_2Doctopus() {
 
   const uint16_t cols = SEGMENT.virtualWidth();
   const uint16_t rows = SEGMENT.virtualHeight();
-  const uint8_t mapp = 255 / MAX(cols,rows);
+  const uint8_t mapp = 180 / MAX(cols,rows);
 
   typedef struct {
     uint8_t angle;
@@ -7535,7 +7535,7 @@ uint16_t mode_2Doctopus() {
     const uint8_t C_Y = rows / 2 + (SEGMENT.custom2 - 128)*rows/255;
     for (int x = 0; x < cols; x++) {
       for (int y = 0; y < rows; y++) {
-        rMap[XY(x, y)].angle = 128 * (atan2f(y - C_Y, x - C_X) / PI);
+        rMap[XY(x, y)].angle = 40.7436f * atan2f(y - C_Y, x - C_X); // avoid 128*atan2()/PI
         rMap[XY(x, y)].radius = hypotf(x - C_X, y - C_Y) * mapp; //thanks Sutaburosu
       }
     }
