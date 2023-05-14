@@ -40,6 +40,7 @@ var hol = [
 var ctx = null; // WLEDMM
 var ledmapNr = -1; //WLEDMM
 var ledmapFileNames = []; //WLEDMM
+let extendedNodes = []; //WLEDMM
 
 function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson();}
 function sCol(na, col) {d.documentElement.style.setProperty(na, col);}
@@ -1040,10 +1041,10 @@ function bname(o)
 }
 
 //WLEDMM call a node with json api command
-function callNode(ip, json) {
+function callNode(ip, type, json) {
 	console.log("callNode", ip, json);
 
-	fetch('http://'+ip+'/json/state', {
+	fetch('http://'+ip+'/json/'+type, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -1060,6 +1061,31 @@ function callNode(ip, json) {
 	});
 }
 
+function ddpAll() {
+	ins = [];
+	start = 0;
+	order = 0;
+	for (var node of extendedNodes) {
+		console.log(node);
+		output = {};
+		output.start = start; //increase with count
+		output.len =  node.count;
+		output.pin = node.ip.split(".");
+		output.order = order++;
+		output.rev = false;
+		output.skip = 0;
+		output.type = 80;
+		output.ref = false;
+		output.rgbm = 0;
+		// "ins":[{"start":0,"len":24,"pin":[2],"order":0,"rev":false,"skip":0,"type":22,"ref":false,"rgbwm":0},
+		//        {"start":24,"len":241,"pin":[192,168,121,57],"order":1,"rev":false,"skip":0,"type":80,"ref":false,"rgbwm":0}]
+		ins.push(output);
+		start+=node.count;
+	}
+	console.log("ins", ins);
+	callNode("4.3.2.1", "cfg", {"hw":{"led":{"ins":ins}}});
+}
+
 function populateNodes(i,n)
 {
 	//WLEDMM helper: add html to element
@@ -1072,15 +1098,16 @@ function populateNodes(i,n)
 	var cn="";
 	var urows="";
 	var nnodes = 0;
+	extendedNodes = []; //reset nodes
 	if (n.nodes) {
 		//WLEDMM add this node to nodes
 		let thisNode = {};
-		thisNode["name"] = i.name;
-		thisNode["ip"] = i.ip;
+		thisNode.name = i.name;
+		thisNode.ip = locip; //not working for ap node yet...
 		n.nodes.push(thisNode);
 
 		n.nodes.sort((a,b) => (a.name).localeCompare(b.name));
-		// console.log("populateNodes",i,n, n.nodes);
+		// console.log("populateNodes",i,n);
 		//loop over nodes e.g. {name: "MM 32 L", type: 32, ip: "192.168.121.249", age: 1, vid: 2305080}
 		for (var o of n.nodes) {
 			if (o.name) {
@@ -1089,25 +1116,34 @@ function populateNodes(i,n)
 
 				//WLEDMM fetch json from nodes and add in table rows
 				urows += `<tr id="node${nnodes}"><td class="keytd">${url}</td><td class="valtd">${btype(o.type)}<br><i>${o.vid==0?"N/A":o.vid}</i></td></tr>`;
-				// console.log("Node", o.name);
-				//fetch the rest of the nodes info
-				fetchAndExecute(`http://${o.ip}/`, "json", nnodes, function(nnodes,text) {
-					state = JSON.parse(text)["state"];
-					info = JSON.parse(text)["info"];
-					effects = JSON.parse(text)["effects"];
-					console.log(nnodes, state, info, effects);
-					//append to table row
+				// console.log("Node", o);
+				if (o.ip) { //in ap mode no ip...
+					//fetch the rest of the nodes info
+					fetchAndExecute(`http://${o.ip}/`, "json", nnodes, function(nnodes,text) {
+						// console.log(text);
+						let state = JSON.parse(text)["state"];
+						let info = JSON.parse(text)["info"];
+						let effects = JSON.parse(text)["effects"];
+						let nodeInfo = {};
+						// console.log(nnodes, state, info, effects);
+						nodeInfo.ip = info.ip;
+						nodeInfo.count = info.leds.count;
+						//append to table row
 
-					// gId(`node${nnodes}`).appendChild(addEl('td', `<button class="btn btn-xs" onclick="callNode('${info["ip"]}');"><i class="icons on">&#xe08f;</i></button>`));
-					gId(`node${nnodes}`).appendChild(addEl('td', "<button class=\"btn btn-xs\" onclick=\"callNode('"+info["ip"]+"',{'on':"+(state["on"]?"false":"true")+"});\"><i class=\"icons "+(state["on"]?"on":"off")+"\">&#xe08f;</i></button>"));
-					// ${i.opt&0x100?inforow("Net Print ☾","<button class=\"btn btn-xs\" onclick=\"requestJson({'netDebug':"+(i.opt&0x0080?"false":"true")+"});\"><i class=\"icons "+(i.opt&0x0080?"on":"off")+"\">&#xe08f;</i></button>"):''}
-					gId(`node${nnodes}`).appendChild(addEl('td', info["ip"]));
-					gId(`node${nnodes}`).appendChild(addEl('td', info["rel"]));
-					gId(`node${nnodes}`).appendChild(addEl('td', info["ver"]));
-					gId(`node${nnodes}`).appendChild(addEl('td', info["leds"]["count"]));
-					gId(`node${nnodes}`).appendChild(addEl('td', effects[state["seg"][0]["fx"]]));
-					gId(`node${nnodes}`).appendChild(addEl('td', info["leds"]["matrix"]["w"] + "x" + info["leds"]["matrix"]["h"]));
-				});
+						// gId(`node${nnodes}`).appendChild(addEl('td', `<button class="btn btn-xs" onclick="callNode('${info["ip"]}');"><i class="icons on">&#xe08f;</i></button>`));
+						gId(`node${nnodes}`).appendChild(addEl('td', "<button class=\"btn btn-xs\" onclick=\"callNode('"+info["ip"]+"','state',{'on':"+(state["on"]?"false":"true")+"});\"><i class=\"icons "+(state["on"]?"on":"off")+"\">&#xe08f;</i></button>"));
+						// ${i.opt&0x100?inforow("Net Print ☾","<button class=\"btn btn-xs\" onclick=\"requestJson({'netDebug':"+(i.opt&0x0080?"false":"true")+"});\"><i class=\"icons "+(i.opt&0x0080?"on":"off")+"\">&#xe08f;</i></button>"):''}
+						gId(`node${nnodes}`).appendChild(addEl('td', info["ip"]));
+						gId(`node${nnodes}`).appendChild(addEl('td', info["rel"]));
+						gId(`node${nnodes}`).appendChild(addEl('td', info["ver"]));
+						gId(`node${nnodes}`).appendChild(addEl('td', info["leds"]["count"]));
+						gId(`node${nnodes}`).appendChild(addEl('td', effects[state["seg"][0]["fx"]]));
+						if (info["leds"]["matrix"])
+							gId(`node${nnodes}`).appendChild(addEl('td', info["leds"]["matrix"]["w"] + "x" + info["leds"]["matrix"]["h"]));
+						if (nodeInfo.ip != thisNode.ip)
+							extendedNodes.push(nodeInfo);
+					});
+				}
 
 				nnodes++;
 			}
@@ -1118,6 +1154,7 @@ function populateNodes(i,n)
 	cn += `<table>
 	${urows}
 	</table>`;
+	cn += "<button class=\"btn\" onclick=\"ddpAll();\">DDP all</button>"
 	gId('kn').innerHTML = cn;
 	// ${inforow("Current instance:",i.name)} //WLEDMM current instance is now also shown as node
 }
