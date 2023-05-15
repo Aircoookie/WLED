@@ -124,7 +124,18 @@ void sendDataWs(AsyncWebSocketClient * client)
   #else
     // DEBUG_PRINTF("%s min free stack %d\n", pcTaskGetTaskName(NULL), uxTaskGetStackHighWaterMark(NULL)); //WLEDMM
   #endif
+  if (len < 1) return; // WLEDMM do not allocate 0 size buffer
+  
+  // WLEDMM use exceptions to catch out-of-memory errors
+  #if __cpp_exceptions
+  try{
+    buffer = ws.makeBuffer(len); // will not allocate correct memory sometimes on ESP8266
+  } catch(...) {
+    buffer = nullptr;
+  }
+  #else
   buffer = ws.makeBuffer(len); // will not allocate correct memory sometimes on ESP8266
+  #endif
   #ifdef ESP8266
   size_t heap2 = ESP.getFreeHeap();
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
@@ -181,9 +192,15 @@ static bool sendLiveLedsWs(uint32_t wsClient)  // WLEDMM added "static"
   //AsyncWebSocketMessageBuffer * wsBuf = ws.makeBuffer(bufSize);
   // WLEDMM protect against exceptions due to low memory 
   AsyncWebSocketMessageBuffer * wsBuf = nullptr;
+#if __cpp_exceptions
   try{
+#endif
     wsBuf = ws.makeBuffer(bufSize);
+#if __cpp_exceptions
   } catch(...) {
+#else
+  if (wsBuf == nullptr) {    // 8266 does not support exceptions
+#endif
     wsBuf = nullptr;
     DEBUG_PRINTLN(F("WS buffer allocation failed, dropping connections."));
     ws.closeAll(1013); //code 1013 = temporary overload, try again later
