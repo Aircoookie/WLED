@@ -935,7 +935,7 @@ class PolyBus {
       #else
       // ESP32 "audio_fastpath" - 8 RMT and 1 I2S channels. RMT 5-8 have sending delays, so use I2S#1 as 5th bus, before going for RMT 5-8
       if (num > 8) return I_NONE;
-      if (num == 4) offset = 2;  // use I2S channel 2 as 5th bus. Ladies and Gentlemen, _this_ is a dirty hack.
+      if (num == 2) offset = 2;  // use I2S channel 2 as 3rd bus - seems to be a good compromise for performance
       #endif
       #endif
       switch (busType) {
