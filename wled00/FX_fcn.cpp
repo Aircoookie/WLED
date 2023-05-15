@@ -623,7 +623,7 @@ void IRAM_ATTR Segment::setPixelColor(int i, uint32_t col)
 
   uint16_t len = length();
   uint8_t _bri_t = currentBri(on ? opacity : 0);
-  if (!_bri_t && !transitional) return;
+  if (!_bri_t && !transitional && fadeTransition) return; // if _bri_t == 0 && segment is not transitionig && transitions are enabled then save a few CPU cycles
   if (_bri_t < 255) {
     byte r = scale8(R(col), _bri_t);
     byte g = scale8(G(col), _bri_t);
