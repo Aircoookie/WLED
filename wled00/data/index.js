@@ -703,7 +703,7 @@ function populateSegments(s)
 		let exp = sg ? (sg.classList.contains('expanded') || (i===0 && cfg.comp.segexp)) : false;
 
 		let cG = "var(--c-f)";
-		switch (inst.group) {
+		switch (inst.set) {
 			case 1: cG = "var(--c-r)"; break;
 			case 2: cG = "var(--c-g)";  break;
 			case 3: cG = "var(--c-b)";   break;
@@ -741,7 +741,7 @@ function populateSegments(s)
 							`<option value="1" ${inst.si==1?' selected':''}>WeWillRockYou</option>`+
 						`</select></div>`+
 					`</div>`;
-		cn += `<div class="seg lstI ${i==s.mainseg ? 'selected' : ''} ${exp ? "expanded":""}" id="seg${i}" data-group="${inst.group}">`+
+		cn += `<div class="seg lstI ${i==s.mainseg ? 'selected' : ''} ${exp ? "expanded":""}" id="seg${i}" data-set="${inst.set}">`+
 				`<label class="check schkl">`+
 					`<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>`+
 					`<span class="checkmark"></span>`+
@@ -750,7 +750,7 @@ function populateSegments(s)
 					`<i class="icons e-icon frz" id="seg${i}frz" onclick="event.preventDefault();tglFreeze(${i});">&#x${inst.frz ? (li.live && li.liveseg==i?'e410':'e0e8') : 'e325'};</i>`+
 					(inst.n ? inst.n : "Segment "+i) +
 					`<div class="pop hide" onclick="event.preventDefault();event.stopPropagation();">`+
-						`<i class="icons g-icon" style="color:${cG};" onclick="this.nextElementSibling.classList.toggle('hide');">&#x278${String.fromCharCode(inst.group+"A".charCodeAt(0))};</i>`+
+						`<i class="icons g-icon" style="color:${cG};" onclick="this.nextElementSibling.classList.toggle('hide');">&#x278${String.fromCharCode(inst.set+"A".charCodeAt(0))};</i>`+
 						`<div class="pop-c hide"><span style="color:var(--c-f);" onclick="setGrp(${i},0);">&#x278A;</span><span style="color:var(--c-r);" onclick="setGrp(${i},1);">&#x278B;</span><span style="color:var(--c-g);" onclick="setGrp(${i},2);">&#x278C;</span><span style="color:var(--c-l);" onclick="setGrp(${i},3);">&#x278D;</span></div>`+
 					`</div> `+
 					`<i class="icons edit-icon flr" id="seg${i}nedit" onclick="tglSegn(${i})">&#xe2c6;</i>`+
@@ -2056,7 +2056,7 @@ function selGrp(g)
 {
 	event.preventDefault();
 	event.stopPropagation();
-	var sel = gId(`segcont`).querySelectorAll(`div[data-group="${g}"]`);
+	var sel = gId(`segcont`).querySelectorAll(`div[data-set="${g}"]`);
 	var obj = {"seg":[]};
 	for (let i=0; i<=lSeg; i++) obj.seg.push({"id":i,"sel":false});
 	if (sel) for (let s of sel||[]) {
@@ -2190,7 +2190,7 @@ function setGrp(s, g)
 {
 	event.preventDefault();
 	event.stopPropagation();
-	var obj = {"seg": {"id": s, "group": g}};
+	var obj = {"seg": {"id": s, "set": g}};
 	requestJson(obj);
 }
 
