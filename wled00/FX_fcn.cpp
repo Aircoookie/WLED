@@ -591,7 +591,8 @@ class JMapC {
       if (jVectorMap.size() > 0) {
         USER_PRINTLN("delete jVectorMap");
         for (size_t i=0; i<jVectorMap.size(); i++)
-          delete jVectorMap[i].array; 
+          // delete jVectorMap[i].array; // original code
+          if (jVectorMap[i].array) { delete[] jVectorMap[i].array; jVectorMap[i].array = nullptr; } // softhack007 quickfix for memory leak
         jVectorMap.clear();
       }
     }
@@ -653,7 +654,7 @@ class JMapC {
           if (err) 
           {
             USER_PRINTF("deserializeJson() of parseTree failed with code %s\n", err.c_str());
-            delete[] SEGMENT.name; SEGMENT.name = nullptr; //need to clear the name as otherwise continuously loaded
+            if (SEGMENT.name) delete[] SEGMENT.name; SEGMENT.name = nullptr; //need to clear the name as otherwise continuously loaded // softhack007 avoid deleting nullptr
             return;
           }
 
@@ -2092,7 +2093,8 @@ bool WS2812FX::deserializeMap(uint8_t n) {
     //WLEDM: doubt this is necessary as return false causes setupMatrix to deal with this
     if (!isMatrix && !n && customMappingTable != nullptr) {
       customMappingSize = 0;
-      delete[] customMappingTable;
+      //delete[] customMappingTable;
+      free(customMappingTable);
       customMappingTable = nullptr;
       loadedLedmap = 0; //WLEDMM
     }
@@ -2112,7 +2114,8 @@ bool WS2812FX::deserializeMap(uint8_t n) {
   // erase old custom ledmap
   if (customMappingTable != nullptr) {
     customMappingSize = 0;
-    delete[] customMappingTable;
+    //delete[] customMappingTable;
+    free(customMappingTable);   // softhack007 use calloc / free, as they behave better when heap is low
     customMappingTable = nullptr;
     loadedLedmap = 0;
   }
@@ -2122,13 +2125,22 @@ bool WS2812FX::deserializeMap(uint8_t n) {
 
     //WLEDMM: support ledmap file properties width and height
     if (doc[F("width")]>0 && doc[F("height")]>0) {
-      Segment::maxWidth = doc[F("width")];;
-      Segment::maxHeight = doc[F("height")];;
+      Segment::maxWidth = doc[F("width")];
+      Segment::maxHeight = doc[F("height")];
       resetSegments(true); //WLEDMM not makeAutoSegments() as we only want to change bounds
     }
 
     customMappingSize  = map.size();
-    customMappingTable = new uint16_t[customMappingSize];
+    if (nullptr != customMappingTable) free(customMappingTable);
+    //customMappingTable = new uint16_t[customMappingSize];
+    customMappingTable = (uint16_t *) calloc(customMappingSize+1, sizeof(uint16_t)); // softhack007 use calloc / free, as they behave better when heap is low
+    if (nullptr == customMappingTable) { // WLEDMM handle out-of-memory
+      USER_PRINTF("deserializeMap(): cannot alloate %d bytes for customMappingTable[]\n", sizeof(uint16_t) * (customMappingSize+1));
+      customMappingSize = 0;
+      loadedLedmap = 0;
+      releaseJSONBufferLock();
+      return false; //if not enough memory - just exit
+    }
 
     for (uint16_t i=0; i<customMappingSize; i++) 
       customMappingTable[i] = (uint16_t) (map[i]<0 ? 0xFFFFU : map[i]);

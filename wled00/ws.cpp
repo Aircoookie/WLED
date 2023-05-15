@@ -10,7 +10,7 @@ static volatile unsigned long wsLastLiveTime = 0;   // WLEDMM
 //uint8_t* wsFrameBuffer = nullptr;
 
 #ifdef WLEDMM_FASTPATH
-#define WS_LIVE_INTERVAL 120   // WLEDMM reduced update interval, to have more time for LEDs
+#define WS_LIVE_INTERVAL 80   // WLEDMM reduced update interval, to have more time for LEDs
 #else
 #define WS_LIVE_INTERVAL 40
 #endif
@@ -177,9 +177,25 @@ static bool sendLiveLedsWs(uint32_t wsClient)  // WLEDMM added "static"
   size_t bufSize = pos + (used/n)*3;
   //WLEDMM: no skipLines
 
-  AsyncWebSocketMessageBuffer * wsBuf = ws.makeBuffer(bufSize);
+  if (bufSize < 1) return(false); // WLEDMM should not happen
+  //AsyncWebSocketMessageBuffer * wsBuf = ws.makeBuffer(bufSize);
+  // WLEDMM protect against exceptions due to low memory 
+  AsyncWebSocketMessageBuffer * wsBuf = nullptr;
+  try{
+    wsBuf = ws.makeBuffer(bufSize);
+  } catch(...) {
+    wsBuf = nullptr;
+    DEBUG_PRINTLN(F("WS buffer allocation failed, dropping connections."));
+    ws.closeAll(1013); //code 1013 = temporary overload, try again later
+    ws.cleanupClients(0); //disconnect all clients to release memory
+    ws._cleanBuffers();
+  }
+  
   if (!wsBuf) return false; //out of memory
   uint8_t* buffer = wsBuf->get();
+  if (!buffer) return false; //out of memory
+
+  wsBuf->lock();  // protect buffer from being cleaned by another WS instance
   buffer[0] = 'L';
   buffer[1] = 1; //version
 #ifndef WLED_DISABLE_2D
@@ -201,6 +217,8 @@ static bool sendLiveLedsWs(uint32_t wsClient)  // WLEDMM added "static"
   }
 
   wsc->binary(wsBuf);
+  wsBuf->unlock();     // un-protect buffer
+  ws._cleanBuffers();  // cleans up if the message is not added to any clients.
   return true;
 }
 

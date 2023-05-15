@@ -37,7 +37,8 @@
 void WS2812FX::setUpMatrix() {
 #ifndef WLED_DISABLE_2D
   // erase old ledmap, just in case.
-  if (customMappingTable != nullptr) delete[] customMappingTable;
+  //if (customMappingTable != nullptr) delete[] customMappingTable;
+  if (customMappingTable != nullptr) free(customMappingTable);
   customMappingTable = nullptr;
   customMappingSize = 0;
 
@@ -68,7 +69,9 @@ void WS2812FX::setUpMatrix() {
       return;
     }
 
-    customMappingTable = new uint16_t[Segment::maxWidth * Segment::maxHeight];
+    //customMappingTable = new uint16_t[Segment::maxWidth * Segment::maxHeight];
+    if (nullptr != customMappingTable) free(customMappingTable);
+    customMappingTable = (uint16_t *) calloc(Segment::maxWidth * Segment::maxHeight, sizeof(uint16_t));
 
     if (customMappingTable != nullptr) {
       customMappingSize = Segment::maxWidth * Segment::maxHeight;
