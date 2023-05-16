@@ -4,7 +4,7 @@ In this usermod file you can find the documentation on how to take advantage of 
 
 ## Installation 
 
-Copy `usermod_v2_fastled.h` to the wled00 directory.  
+Copy `usermod_v2_animartrix.h` to the wled00 directory.  
 Uncomment the corresponding lines in `usermods_list.cpp` and compile!  
 _(You shouldn't need to actually install this, it does nothing useful)_
 

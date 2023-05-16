@@ -20,7 +20,7 @@
 
 //based on: https://gist.github.com/StefanPetrick/9c091d9a28a902af5a7b540e40442c64
 
-class StefanPetrickCore {
+class AnimartrixCore {
   private:
 
   public:
@@ -60,11 +60,11 @@ class StefanPetrickCore {
     float noise_angle_c, noise_angle_d, noise_angle_e, noise_angle_f;   // angles based on linear noise travel
     float dir_c, dir_d, dir_e, dir_f;                                   // direction multiplicators
 
-  StefanPetrickCore() {
-    USER_PRINTLN("StefanPetrickCore constructor");
+  AnimartrixCore() {
+    USER_PRINTLN("AnimartrixCore constructor");
   }
-  ~StefanPetrickCore() {
-    USER_PRINTLN("StefanPetrickCore destructor");
+  ~AnimartrixCore() {
+    USER_PRINTLN("AnimartrixCore destructor");
   }
 
   void init() {
@@ -177,7 +177,7 @@ class StefanPetrickCore {
   }
 };
 
-class PolarBasics:public StefanPetrickCore {
+class PolarBasics:public AnimartrixCore {
   private:
 
   public:
@@ -262,7 +262,7 @@ class PolarBasics:public StefanPetrickCore {
 
   void calculate_oscillators() {
 
-    StefanPetrickCore::calculate_oscillators();    
+    AnimartrixCore::calculate_oscillators();    
 
     uint16_t noi;
     noi =  inoise16(10000 + linear_c * 100000);    // some noise controlled angular offsets
@@ -369,7 +369,7 @@ class PolarBasics:public StefanPetrickCore {
 //based on https://gist.github.com/StefanPetrick/35ffd8467df22a77067545cfb889aa4f
 //and Fastled podcast nr 3: https://www.youtube.com/watch?v=3tfjP7GJnZo
 
-class CircularBlobs:public StefanPetrickCore {
+class CircularBlobs:public AnimartrixCore {
   private:
 
     float fade(float t){ return t * t * t * (t * (t * 6 - 15) + 10); }
@@ -498,7 +498,7 @@ class CircularBlobs:public StefanPetrickCore {
 
   void calculate_oscillators() {
 
-    StefanPetrickCore::calculate_oscillators();    
+    AnimartrixCore::calculate_oscillators();    
 
     float n;
       
@@ -615,11 +615,11 @@ uint16_t mode_CircularBlobs(void) {
 static const char _data_FX_mode_CircularBlobs[] PROGMEM = "💡CircularBlobs ☾@AngleDist,AngleMult;;!;2;sx=51,ix=51,c1=0,c2=0,c3=0";
 
 
-class FastledUsermod : public Usermod {
+class AnimartrixUsermod : public Usermod {
 
   public:
 
-    FastledUsermod(const char *name, bool enabled):Usermod(name, enabled) {} //WLEDMM
+    AnimartrixUsermod(const char *name, bool enabled):Usermod(name, enabled) {} //WLEDMM
 
     void setup() {
       strip.addEffect(255, &mode_PolarBasics, _data_FX_mode_PolarBasics);
@@ -640,7 +640,7 @@ class FastledUsermod : public Usermod {
 
     uint16_t getId()
     {
-      return USERMOD_ID_FASTLED;
+      return USERMOD_ID_ANIMARTRIX;
     }
 
 };

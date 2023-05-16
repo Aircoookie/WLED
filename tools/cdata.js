@@ -221,6 +221,7 @@ function writeChunks(srcDir, specs, resultFile) {
 writeHtmlGzipped("wled00/data/index.htm", "wled00/html_ui.h", 'index');
 writeHtmlGzipped("wled00/data/simple.htm", "wled00/html_simple.h", 'simple');
 writeHtmlGzipped("wled00/data/pixart/pixart.htm", "wled00/html_pixart.h", 'pixart');
+writeHtmlGzipped("wled00/data/cpal/cpal.htm", "wled00/html_cpal.h", 'cpal');
 /*
 writeChunks(
   "wled00/data",

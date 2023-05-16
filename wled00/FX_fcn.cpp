@@ -235,6 +235,7 @@ CRGBPalette16 &Segment::loadPalette(CRGBPalette16 &targetPalette, uint8_t pal) {
     case FX_MODE_GLITTER    : pal = 11; break; // rainbow colors
     case FX_MODE_SUNRISE    : pal = 35; break; // heat palette
     case FX_MODE_RAILWAY    : pal =  3; break; // prim + sec
+    case FX_MODE_2DSOAP     : pal = 11; break; // rainbow colors
   }
   switch (pal) {
     case 0: //default palette. Exceptions for specific effects above
@@ -591,7 +592,6 @@ class JMapC {
       if (jVectorMap.size() > 0) {
         USER_PRINTLN("delete jVectorMap");
         for (size_t i=0; i<jVectorMap.size(); i++)
-          // delete jVectorMap[i].array; // original code
           if (jVectorMap[i].array) { delete[] jVectorMap[i].array; jVectorMap[i].array = nullptr; } // softhack007 quickfix for memory leak
         jVectorMap.clear();
       }
@@ -647,7 +647,7 @@ class JMapC {
 
         //https://arduinojson.org/v6/how-to/deserialize-a-very-large-document/
         jMapFile.find("[");
-        do {
+        do { //for each element in the array
           DeserializationError err = deserializeJson(docChunk, jMapFile);
           // serializeJson(docChunk, Serial); USER_PRINTLN();
           // USER_PRINTF("docChunk  %u / %u%% (%u %u %u) %u\n", (unsigned int)docChunk.memoryUsage(), 100 * docChunk.memoryUsage() / docChunk.capacity(), (unsigned int)docChunk.size(), docChunk.overflowed(), (unsigned int)docChunk.nesting(), jMapFile.size());
@@ -689,6 +689,8 @@ class JMapC {
           }
 
         } while (jMapFile.findUntil(",", "]"));
+
+        jMapFile.close();
 
         maxWidth++; maxHeight++;
         scale = min(SEGMENT.virtualWidth() / maxWidth, SEGMENT.virtualHeight() / maxHeight);  // WLEDMM use native min/max
@@ -1114,8 +1116,22 @@ void Segment::blendPixelColor(int n, uint32_t color, uint8_t blend) {
 }
 
 // Adds the specified color with the existing pixel color perserving color balance.
-void Segment::addPixelColor(int n, uint32_t color) {
-  setPixelColor(n, color_add(getPixelColor(n), color));
+void Segment::addPixelColor(int n, uint32_t color, bool fast) {
+  uint32_t col = getPixelColor(n);
+  uint8_t r = R(col);
+  uint8_t g = G(col);
+  uint8_t b = B(col);
+  uint8_t w = W(col);
+  if (fast) {
+    r = qadd8(r, R(color));
+    g = qadd8(g, G(color));
+    b = qadd8(b, B(color));
+    w = qadd8(w, W(color));
+    col = RGBW32(r,g,b,w);
+  } else {
+    col = color_add(col, color);
+  }
+  setPixelColor(n, col);
 }
 
 void Segment::fadePixelColor(uint16_t n, uint8_t fade) {
@@ -1352,12 +1368,17 @@ void WS2812FX::enumerateLedmaps() {
 
       #ifndef ESP8266
       if (requestJSONBufferLock(21)) {
-        if (readObjectFromFile(fileName, nullptr, &doc)) {
+        //WLEDMM: upstream code loops over all ledmap files, read them all, every byte (!!!!) and only get the name of the file!!!
+        File f;
+        f = WLED_FS.open(fileName, "r");
+        if (f) {
+          f.find("\"n\":");
+          const char *name = f.readStringUntil('\n').c_str();
+          USER_PRINTF("enumerateLedmaps %s %s\n", fileName, name);
+
           size_t len = 0;
-          if (!doc["n"].isNull()) {
-            // name field exists
-            const char *name = doc["n"].as<const char*>();
-            if (name != nullptr) len = strlen(name);
+          if (name != nullptr) {
+            len = strlen(name);
             if (len > 0 && len < 33) {
               ledmapNames[i-1] = new char[len+1];
               if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], name, 33);
@@ -1371,6 +1392,7 @@ void WS2812FX::enumerateLedmaps() {
             if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], tmp, 33);
           }
         }
+        f.close();
         releaseJSONBufferLock();
       }
       #endif
@@ -2090,12 +2112,9 @@ bool WS2812FX::deserializeMap(uint8_t n) {
 
   if (!isFile) {
     // erase custom mapping if selecting nonexistent ledmap.json (n==0)
-    //WLEDM: doubt this is necessary as return false causes setupMatrix to deal with this
-    if (!isMatrix && !n && customMappingTable != nullptr) {
+    //WLEDM: doubt this is necessary as return false causes setupMatrix to deal with this !!!!
+    if (!isMatrix && !n) {
       customMappingSize = 0;
-      //delete[] customMappingTable;
-      free(customMappingTable);
-      customMappingTable = nullptr;
       loadedLedmap = 0; //WLEDMM
     }
     return false;
@@ -2103,7 +2122,11 @@ bool WS2812FX::deserializeMap(uint8_t n) {
 
   if (!requestJSONBufferLock(7)) return false;
 
-  if (!readObjectFromFile(fileName, nullptr, &doc)) {
+  //WLEDMM: change upstream code: do not load complete ledmaps in json as this blows up memory, use file read instead
+  //read the file
+  File f;
+  f = WLED_FS.open(fileName, "r");
+  if (!f) {
     releaseJSONBufferLock();
     return false; //if file does not exist just exit
   }
@@ -2111,41 +2134,46 @@ bool WS2812FX::deserializeMap(uint8_t n) {
   USER_PRINT(F("Reading LED map from ")); //WLEDMM use USER_PRINT
   USER_PRINTLN(fileName);
 
-  // erase old custom ledmap
-  if (customMappingTable != nullptr) {
-    customMappingSize = 0;
-    //delete[] customMappingTable;
-    free(customMappingTable);   // softhack007 use calloc / free, as they behave better when heap is low
-    customMappingTable = nullptr;
-    loadedLedmap = 0;
+  //WLEDMM: read width and height (mandatory in file!!)
+  f.find("\"width\":");
+  uint16_t maxWidth = f.readStringUntil('\n').toInt();
+
+  f.find("\"height\":");
+  uint16_t maxHeight = f.readStringUntil('\n').toInt();
+
+  USER_PRINTF("deserializeMap %d x %d\n", maxWidth, maxHeight);
+  if (maxWidth * maxHeight <= 0) {
+    releaseJSONBufferLock();
+    return false;
   }
 
-  JsonArray map = doc[F("map")];
-  if (!map.isNull() && map.size()) {  // not an empty map
+  //WLEDMM: support ledmap file properties width and height
+  Segment::maxWidth = maxWidth;
+  Segment::maxHeight = maxHeight;
+  resetSegments(true); //WLEDMM not makeAutoSegments() as we only want to change bounds
 
-    //WLEDMM: support ledmap file properties width and height
-    if (doc[F("width")]>0 && doc[F("height")]>0) {
-      Segment::maxWidth = doc[F("width")];
-      Segment::maxHeight = doc[F("height")];
-      resetSegments(true); //WLEDMM not makeAutoSegments() as we only want to change bounds
-    }
+  //WLEDMM recreate customMappingTable if more space needed
+  if (Segment::maxWidth * Segment::maxHeight > customMappingTableSize) {
+    USER_PRINTF("deserializemap customMappingTable alloc %d from %d\n", Segment::maxWidth * Segment::maxHeight, customMappingTableSize);
+    if (customMappingTable != nullptr) delete[] customMappingTable;
+    customMappingTable = new uint16_t[Segment::maxWidth * Segment::maxHeight];
+      if (customMappingTable != nullptr) customMappingTableSize = Segment::maxWidth * Segment::maxHeight;
+  }
 
-    customMappingSize  = map.size();
-    if (nullptr != customMappingTable) free(customMappingTable);
-    //customMappingTable = new uint16_t[customMappingSize];
-    customMappingTable = (uint16_t *) calloc(customMappingSize+1, sizeof(uint16_t)); // softhack007 use calloc / free, as they behave better when heap is low
-    if (nullptr == customMappingTable) { // WLEDMM handle out-of-memory
-      USER_PRINTF("deserializeMap(): cannot alloate %d bytes for customMappingTable[]\n", sizeof(uint16_t) * (customMappingSize+1));
-      customMappingSize = 0;
-      loadedLedmap = 0;
-      releaseJSONBufferLock();
-      return false; //if not enough memory - just exit
-    }
+  if (customMappingTable != nullptr) {
+    customMappingSize  = maxWidth * maxHeight;
 
-    for (uint16_t i=0; i<customMappingSize; i++) 
-      customMappingTable[i] = (uint16_t) (map[i]<0 ? 0xFFFFU : map[i]);
+    //WLEDMM: find the map values
+    f.find("\"map\":[");
+    uint16_t i=0;
+    do { //for each element in the array
+      int mapi = f.readStringUntil(',').toInt();
+      // USER_PRINTF(", %d", mapi);
+      customMappingTable[i++] = (uint16_t) (mapi<0 ? 0xFFFFU : mapi);
+    } while (f.available());
 
     loadedLedmap = n;
+    f.close();
 
     #ifdef WLED_DEBUG
       DEBUG_PRINTF("Custom ledmap: %d\n", loadedLedmap);
@@ -2155,6 +2183,8 @@ bool WS2812FX::deserializeMap(uint8_t n) {
       }
       DEBUG_PRINTLN();
     #endif
+  } else { // memory allocation error
+    DEBUG_PRINTLN(F("Deserializemap: Ledmap alloc error."));
   }
 
   releaseJSONBufferLock();

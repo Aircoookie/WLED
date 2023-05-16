@@ -40,6 +40,7 @@ var hol = [
 var ctx = null; // WLEDMM
 var ledmapNr = -1; //WLEDMM
 var ledmapFileNames = []; //WLEDMM
+let extendedNodes = []; //WLEDMM
 
 function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson();}
 function sCol(na, col) {d.documentElement.style.setProperty(na, col);}
@@ -217,6 +218,7 @@ function onLoad()
 
 	resetPUtil();
 
+	if (localStorage.getItem('pcm') == "true" || (!/Mobi/.test(navigator.userAgent) && localStorage.getItem('pcm') == null)) togglePcMode(true);
 	applyCfg();
 	if (cfg.comp.hdays) { //load custom holiday list
 		fetch((loc?`http://${locip}`:'.') + "/holidays.json", {	// may be loaded from external source
@@ -261,9 +263,8 @@ function onLoad()
 	resetUtil();
 
 	d.addEventListener("visibilitychange", handleVisibilityChange, false);
-	size();
+	//size();
 	gId("cv").style.opacity=0;
-	if (localStorage.getItem('pcm') == "true" || (!/Mobi/.test(navigator.userAgent) && localStorage.getItem('pcm') == null)) togglePcMode(true);
 	var sls = d.querySelectorAll('input[type="range"]');
 	for (var sl of sls) {
 		sl.addEventListener('touchstart', toggleBubble);
@@ -607,14 +608,19 @@ function parseInfo(i) {
 	syncTglRecv = i.str;
 	maxSeg      = i.leds.maxseg;
 	pmt         = i.fs.pmt;
+	gId('buttonNodes').style.display = lastinfo.ndc > 0 ? null:"none";
 	// do we have a matrix set-up
 	mw = i.leds.matrix ? i.leds.matrix.w : 0;
 	mh = i.leds.matrix ? i.leds.matrix.h : 0;
 	isM = mw>0 && mh>0;
 	if (!isM) {
+		gId("filter0D").classList.remove('hide');
 		gId("filter1D").classList.add('hide');
-		//gId("filter2D").classList.add('hide');
-		hideModes("2D");
+		gId("filter2D").classList.add('hide');
+	} else {
+		gId("filter0D").classList.add('hide');
+		gId("filter1D").classList.remove('hide');
+		gId("filter2D").classList.remove('hide');
 	}
 //	if (i.noaudio) {
 //		gId("filterVol").classList.add("hide");
@@ -731,13 +737,13 @@ function populateSegments(s)
 
 		ledmapFileNames.push((inst.n?inst.n:"default") + ".json"); //WLEDMM
 
-		let segp = `<div id="segp${i}" class="sbs">
-		<i class="icons e-icon pwr ${inst.on ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})">&#xe08f;</i>
-		<div class="sliderwrap il">
-			<input id="seg${i}bri" class="noslide" onchange="setSegBri(${i})" oninput="updateTrail(this)" max="255" min="1" type="range" value="${inst.bri}" />
-			<div class="sliderdisplay"></div>
-		</div>
-	</div>`;
+		let segp = `<div id="segp${i}" class="sbs">`+
+						`<i class="icons slider-icon pwr ${inst.on ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})">&#xe08f;</i>`+
+						`<div class="sliderwrap il">`+
+							`<input id="seg${i}bri" class="noslide" onchange="setSegBri(${i})" oninput="updateTrail(this)" max="255" min="1" type="range" value="${inst.bri}" />`+
+							`<div class="sliderdisplay"></div>`+
+						`</div>`+
+					`</div>`;
 		let staX = inst.start;
 		let stoX = inst.stop;
 		let staY = inst.startY;
@@ -927,8 +933,21 @@ function populatePalettes()
 			`<div class="lstIprev" style="${genPalPrevCss(pa[0])}"></div>`
 		);
 	}
-
 	gId('pallist').innerHTML=html;
+	// append custom palettes (when loading for the 1st time)
+	if (!isEmpty(lastinfo) && lastinfo.cpalcount) {
+		for (let j = 0; j<lastinfo.cpalcount; j++) {
+			let div = d.createElement("div");
+			gId('pallist').appendChild(div);
+			div.outerHTML = generateListItemHtml(
+				'palette',
+				255-j,
+				'~ Custom '+j+' ~',
+				'setPalette',
+				`<div class="lstIprev" style="${genPalPrevCss(255-j)}"></div>`
+			);
+		}
+	}
 }
 
 function redrawPalPrev()
@@ -991,18 +1010,16 @@ function genPalPrevCss(id)
 
 function generateListItemHtml(listName, id, name, clickAction, extraHtml = '', effectPar = '')
 {
-	return `<div class="lstI${id==0?' sticky':''}" data-id="${id}" ${effectPar===''?'':'data-opt="'+effectPar+'"'}onClick="${clickAction}(${id})">
-	<label class="radio schkl" onclick="event.preventDefault()">
-		<input type="radio" value="${id}" name="${listName}">
-		<span class="radiomark"></span>
-		<div class="lstIcontent">
-			<span class="lstIname">
-				${name}
-			</span>
-		</div>
-	</label>
-	${extraHtml}
-</div>`;
+	return `<div class="lstI${id==0?' sticky':''}" data-id="${id}" ${effectPar===''?'':'data-opt="'+effectPar+'"'}onClick="${clickAction}(${id})">`+
+		`<label class="radio schkl" onclick="event.preventDefault()">`+
+			`<input type="radio" value="${id}" name="${listName}">`+
+			`<span class="radiomark"></span>`+
+			`<div class="lstIcontent">`+
+				`<span class="lstIname">${name}</span>`+
+			`</div>`+
+		`</label>`+
+		extraHtml +
+	`</div>`;
 }
 
 function btype(b)
@@ -1023,17 +1040,111 @@ function bname(o)
 	return o.name;
 }
 
+//WLEDMM call a node with json api command
+function callNode(ip, type, json) {
+	console.log("callNode", ip, json);
+
+	fetch('http://'+ip+'/json/'+type, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+          //'Content-Type': 'text/html; charset=UTF-8'
+        },
+        body: JSON.stringify(json)
+    })
+	.then((res)=>{
+		console.log("then res", res);
+		loadNodes(); //reload nodes
+	})
+	.then((json)=>{
+		console.log("then json", json);
+	});
+}
+
+function ddpAll() {
+	ins = [];
+	start = 0;
+	order = 0;
+	for (var node of extendedNodes) {
+		console.log(node);
+		output = {};
+		output.start = start; //increase with count
+		output.len =  node.count;
+		output.pin = node.ip.split(".");
+		output.order = order++;
+		output.rev = false;
+		output.skip = 0;
+		output.type = 80;
+		output.ref = false;
+		output.rgbm = 0;
+		// "ins":[{"start":0,"len":24,"pin":[2],"order":0,"rev":false,"skip":0,"type":22,"ref":false,"rgbwm":0},
+		//        {"start":24,"len":241,"pin":[192,168,121,57],"order":1,"rev":false,"skip":0,"type":80,"ref":false,"rgbwm":0}]
+		ins.push(output);
+		start+=node.count;
+	}
+	console.log("ins", ins);
+	callNode("4.3.2.1", "cfg", {"hw":{"led":{"ins":ins}}});
+}
+
 function populateNodes(i,n)
 {
+	//WLEDMM helper: add html to element
+	function addEl(element, html) {
+		let k  = d.createElement(element);
+		k.innerHTML = html;
+		return k;
+	}
+
 	var cn="";
 	var urows="";
 	var nnodes = 0;
+	extendedNodes = []; //reset nodes
 	if (n.nodes) {
+		//WLEDMM add this node to nodes
+		let thisNode = {};
+		thisNode.name = i.name;
+		thisNode.ip = locip; //not working for ap node yet...
+		n.nodes.push(thisNode);
+
 		n.nodes.sort((a,b) => (a.name).localeCompare(b.name));
+		// console.log("populateNodes",i,n);
+		//loop over nodes e.g. {name: "MM 32 L", type: 32, ip: "192.168.121.249", age: 1, vid: 2305080}
 		for (var o of n.nodes) {
 			if (o.name) {
 				var url = `<button class="btn" title="${o.ip}" onclick="location.assign('http://${o.ip}');">${bname(o)}</button>`;
-				urows += inforow(url,`${btype(o.type)}<br><i>${o.vid==0?"N/A":o.vid}</i>`);
+				// urows += inforow(url,`${btype(o.type)}<br><i id="node${nnodes}">${o.vid==0?"N/A":o.vid} ${o.mode}</i>`);
+
+				//WLEDMM fetch json from nodes and add in table rows
+				urows += `<tr id="node${nnodes}"><td class="keytd">${url}</td><td class="valtd">${btype(o.type)}<br><i>${o.vid==0?"N/A":o.vid}</i></td></tr>`;
+				// console.log("Node", o);
+				if (o.ip) { //in ap mode no ip...
+					//fetch the rest of the nodes info
+					fetchAndExecute(`http://${o.ip}/`, "json", nnodes, function(nnodes,text) {
+						// console.log(text);
+						let state = JSON.parse(text)["state"];
+						let info = JSON.parse(text)["info"];
+						let effects = JSON.parse(text)["effects"];
+						let nodeInfo = {};
+						// console.log(nnodes, state, info, effects);
+						nodeInfo.ip = info.ip;
+						nodeInfo.count = info.leds.count;
+						//append to table row
+
+						// gId(`node${nnodes}`).appendChild(addEl('td', `<button class="btn btn-xs" onclick="callNode('${info["ip"]}');"><i class="icons on">&#xe08f;</i></button>`));
+						gId(`node${nnodes}`).appendChild(addEl('td', "<button class=\"btn btn-xs\" onclick=\"callNode('"+info["ip"]+"','state',{'on':"+(state["on"]?"false":"true")+"});\"><i class=\"icons "+(state["on"]?"on":"off")+"\">&#xe08f;</i></button>"));
+						// ${i.opt&0x100?inforow("Net Print ☾","<button class=\"btn btn-xs\" onclick=\"requestJson({'netDebug':"+(i.opt&0x0080?"false":"true")+"});\"><i class=\"icons "+(i.opt&0x0080?"on":"off")+"\">&#xe08f;</i></button>"):''}
+						gId(`node${nnodes}`).appendChild(addEl('td', info["ip"]));
+						gId(`node${nnodes}`).appendChild(addEl('td', info["rel"]));
+						gId(`node${nnodes}`).appendChild(addEl('td', info["ver"]));
+						gId(`node${nnodes}`).appendChild(addEl('td', info["leds"]["count"]));
+						gId(`node${nnodes}`).appendChild(addEl('td', effects[state["seg"][0]["fx"]]));
+						if (info["leds"]["matrix"])
+							gId(`node${nnodes}`).appendChild(addEl('td', info["leds"]["matrix"]["w"] + "x" + info["leds"]["matrix"]["h"]));
+						if (nodeInfo.ip != thisNode.ip)
+							extendedNodes.push(nodeInfo);
+					});
+				}
+
 				nnodes++;
 			}
 		}
@@ -1041,10 +1152,11 @@ function populateNodes(i,n)
 	if (i.ndc < 0) cn += `Instance List is disabled.`;
 	else if (nnodes == 0) cn += `No other instances found.`;
 	cn += `<table>
-	${inforow("Current instance:",i.name)}
 	${urows}
 	</table>`;
+	cn += "<button class=\"btn\" onclick=\"ddpAll();\">DDP all</button>"
 	gId('kn').innerHTML = cn;
+	// ${inforow("Current instance:",i.name)} //WLEDMM current instance is now also shown as node
 }
 
 function loadNodes()
@@ -1162,6 +1274,7 @@ function updateLen(s, draw=true) //WLEDMM conditonally draw segment view
 
 	gId(`seg${s}len`).innerHTML = out;
 
+	// console.log("drawSegmentView","updateLen");
 	if (draw && isM) drawSegmentView(); //WLEDMM draw new segmentview if something changes in a segment
 }
 
@@ -1333,7 +1446,7 @@ function drawSegmentView() {
 		else
 			fileName = ledmapFileNames[ledmapNr-10];
 
-		fetchAndExecute((loc?`http://${locip}`:'.') + "/", fileName , function(text) {
+		fetchAndExecute((loc?`http://${locip}`:'.') + "/", fileName, null, function(parms,text) {
 			var ledmapJson = JSON.parse(text);
 			var counter = 0;
 			var noMap = [];
@@ -1377,8 +1490,8 @@ function drawSegmentView() {
 				ctx.fill();
 			}
 			post();
-		}, function(error) { //error handling
-			console.log(error);
+		}, function(parms,error) { //error handling
+			// console.log("drawledmap error fetching " + fileName +": ", error);
 			// downloadGHFile("LM", fileName, true, false); WLEDMM: remove as this has too much impact
 			post();
 		});
@@ -1415,7 +1528,6 @@ function updateUI()
 	gId('buttonPower').className = (isOn) ? 'active':'';
 	gId('buttonNl').className = (nlA) ? 'active':'';
 	gId('buttonSync').className = (syncSend) ? 'active':'';
-	showNodes();
 
 	updateSelectedFx();
 	updateSelectedPalette(selectedPal); // must be after updateSelectedFx() to un-hide color slots for * palettes
@@ -1499,7 +1611,7 @@ function updateSelectedFx()
 			if (fx.dataset.id>0) {
 				if (segLmax==0) fx.classList.add('hide'); // none of the segments selected (hide all effects)
 				else {
-					if (segLmax==1 && (!opts[3] || opts[3].indexOf("0")<0)) fx.classList.add('hide');
+					if ((segLmax==1 && (!opts[3] || opts[3].indexOf("0")<0)) || (!isM && opts[3] && ((opts[3].indexOf("2")>=0 && opts[3].indexOf("1")<0)))) fx.classList.add('hide');
 					else fx.classList.remove('hide');
 				}
 			}
@@ -1552,13 +1664,14 @@ function makeWS() {
 		var i = json.info;
 		if (i) {
 			parseInfo(i);
-			showNodes();
 			if (isInfo) populateInfo(i);
 		} else
 			i = lastinfo;
 		var s = json.state ? json.state : json;
 		displayRover(i, s);
 		readState(s);
+		// console.log("drawSegmentView","websocket", json);
+		// if (isM) drawSegmentView();
 	};
 	ws.onclose = (e)=>{
 		gId('connind').style.backgroundColor = "var(--c-r)";
@@ -1860,21 +1973,8 @@ function requestJson(command=null)
 		// console.log("requestJson url return", json); //WLEDMM Debug
 		if (json.info) {
 			let i = json.info;
-			// append custom palettes (when loading for the 1st time)
-			if (!command && isEmpty(lastinfo) && i.cpalcount) {
-				for (let j = 0; j<i.cpalcount; j++) {
-					let div = d.createElement("div");
-					gId('pallist').appendChild(div);
-					div.outerHTML = generateListItemHtml(
-						'palette',
-						255-j,
-						'~ Custom '+j+' ~',
-						'setPalette',
-						`<div class="lstIprev" style="${genPalPrevCss(255-j)}"></div>`
-					);
-				}
-			}
 			parseInfo(i);
+			populatePalettes(i);
 			if (isInfo) populateInfo(i);
 		}
 		var s = json.state ? json.state : json;
@@ -1882,6 +1982,7 @@ function requestJson(command=null)
 
 		//WLEDMM init, gfx default on upon web page load
 		if (isM) {
+			// console.log("drawSegmentView","requestjson");
 			drawSegmentView();
 			toggleLiveview();
 		}
@@ -2018,29 +2119,29 @@ function makeSeg()
 		behavior: 'smooth',
 		block: 'start',
 	});
-	var cn = `<div class="seg lstI expanded">
-	<div class="segin">
-		<input type="text" id="seg${lu}t" autocomplete="off" maxlength=32 value="" placeholder="New segment ${lu}"/>
-		<table class="segt">
-			<tr>
-				<td width="38%">${isM?'Start X':'Start LED'}</td>
-				<td width="38%">${isM?(cfg.comp.seglen?"Width":"Stop X"):(cfg.comp.seglen?"LED count":"Stop LED")}</td>
-			</tr>
-			<tr>
-				<td><input class="segn" id="seg${lu}s" type="number" min="0" max="${isM?mw-1:ledCount-1}" value="${ns}" oninput="updateLen(${lu})" onkeydown="segEnter(${lu})"></td>
-				<td><input class="segn" id="seg${lu}e" type="number" min="0" max="${ct}" value="${ct}" oninput="updateLen(${lu})" onkeydown="segEnter(${lu})"></td>
-				<td><button class="btn btn-xs" onclick="setSeg(${lu});"><i class="icons bth-icon" id="segc${lu}">&#xe390;</i></button></td>
-			</tr>
-			<tr id="mkSYH" class="${isM?"":"hide"}"><td>Start Y</td><td>${cfg.comp.seglen?'Height':'Stop Y'}</td></tr>
-			<tr id="mkSYD" class="${isM?"":"hide"}">
-				<td><input class="segn" id="seg${lu}sY" type="number" min="0" max="${mh-1}" value="0" oninput="updateLen(${lu})" onkeydown="segEnter(${lu})"></td>
-				<td><input class="segn" id="seg${lu}eY" type="number" min="0" max="${mh}" value="${isM?mh:1}" oninput="updateLen(${lu})" onkeydown="segEnter(${lu})"></td>
-			</tr>
-		</table>
-		<div class="h" id="seg${lu}len">${ledCount - ns} LEDs</div>
-		<div class="c"><button class="btn btn-p" onclick="resetUtil()">Cancel</button></div>
-	</div>
-</div>`;
+	var cn = `<div class="seg lstI expanded">`+
+		`<div class="segin">`+
+			`<input type="text" id="seg${lu}t" autocomplete="off" maxlength=32 value="" placeholder="New segment ${lu}"/>`+
+			`<table class="segt">`+
+				`<tr>`+
+					`<td width="38%">${isM?'Start X':'Start LED'}</td>`+
+					`<td width="38%">${isM?(cfg.comp.seglen?"Width":"Stop X"):(cfg.comp.seglen?"LED count":"Stop LED")}</td>`+
+				`</tr>`+
+				`<tr>`+
+					`<td><input class="segn" id="seg${lu}s" type="number" min="0" max="${isM?mw-1:ledCount-1}" value="${ns}" oninput="updateLen(${lu})" onkeydown="segEnter(${lu})"></td>`+
+					`<td><input class="segn" id="seg${lu}e" type="number" min="0" max="${ct}" value="${ct}" oninput="updateLen(${lu})" onkeydown="segEnter(${lu})"></td>`+
+					`<td><button class="btn btn-xs" onclick="setSeg(${lu});"><i class="icons bth-icon" id="segc${lu}">&#xe390;</i></button></td>`+
+				`</tr>`+
+				`<tr id="mkSYH" class="${isM?"":"hide"}"><td>Start Y</td><td>${cfg.comp.seglen?'Height':'Stop Y'}</td></tr>`+
+				`<tr id="mkSYD" class="${isM?"":"hide"}">`+
+					`<td><input class="segn" id="seg${lu}sY" type="number" min="0" max="${mh-1}" value="0" oninput="updateLen(${lu})" onkeydown="segEnter(${lu})"></td>`+
+					`<td><input class="segn" id="seg${lu}eY" type="number" min="0" max="${mh}" value="${isM?mh:1}" oninput="updateLen(${lu})" onkeydown="segEnter(${lu})"></td>`+
+				`</tr>`+
+			`</table>`+
+			`<div class="h" id="seg${lu}len">${ledCount - ns} LEDs</div>`+
+			`<div class="c"><button class="btn btn-p" onclick="resetUtil()">Cancel</button></div>`+
+		`</div>`+
+	`</div>`;
 	gId('segutil').innerHTML = cn;
 }
 
@@ -2954,7 +3055,7 @@ function genPresets()
 }
 
 //WLEDMM: utility function to load contents of file from FS (used in draw)
-function fetchAndExecute(url, name, callback, callError)
+function fetchAndExecute(url, name, parms, callback, callError = null)
 {
   fetch
   (url+name, {
@@ -2968,11 +3069,10 @@ function fetchAndExecute(url, name, callback, callError)
     return res.text();
   })
   .then(text => {
-	console.log("text", text);
-    callback(text);
+    callback(parms, text);
   })
   .catch(function (error) {
-	callError("Error getting " + name);
+	if (callError) callError(parms, "Error getting " + name);
 	console.log(error);
   })
   .finally(() => {
@@ -3054,7 +3154,7 @@ function getPalettesData(page, callback)
 		showToast(error, true);
 	});
 }
-
+/*
 function hideModes(txt)
 {
 	for (let e of (gId('fxlist').querySelectorAll('.lstI')||[])) {
@@ -3065,7 +3165,7 @@ function hideModes(txt)
 		if (f) e.classList.add('hide'); //else e.classList.remove('hide');
 	}
 }
-
+*/
 function search(f,l=null)
 {
 	f.nextElementSibling.style.display=(f.value!=='')?'block':'none';
@@ -3230,20 +3330,16 @@ function move(e)
 	x0 = null;
 }
 
-function showNodes() {
-	gId('buttonNodes').style.display = (lastinfo.ndc > 0 && (wW > 797 || (wW > 539 && wW < 720))) ? "block":"none";
-}
-
 function size()
 {
 	wW = window.innerWidth;
-	showNodes();
 	var h = gId('top').clientHeight;
 	sCol('--th', h + "px");
 	sCol('--bh', gId('bot').clientHeight + "px");
 	if (isLv && !isM) h -= 4; //WLEDMM: no for matrices
 	sCol('--tp', h + "px");
 	togglePcMode();
+	lastw = wW;
 }
 
 function togglePcMode(fromB = false)
@@ -3251,21 +3347,18 @@ function togglePcMode(fromB = false)
 	if (fromB) {
 		pcModeA = !pcModeA;
 		localStorage.setItem('pcm', pcModeA);
-		pcMode = pcModeA;
 	}
-	if (wW <= 1024 && !pcMode) return;
-	if (!fromB && ((wW <= 1024 && lastw <= 1024) || (wW > 1024 && lastw > 1024))) return;
+	pcMode = (wW >= 1024) && pcModeA;
+	if (cpick) cpick.resize(pcMode && wW>1023 && wW<1250 ? 230 : 260); // for tablet in landscape
+	if (!fromB && ((wW < 1024 && lastw < 1024) || (wW >= 1024 && lastw >= 1024))) return; // no change in size and called from size()
 	openTab(0, true);
-	if (wW <= 1024) {pcMode = false;}
-	else if (pcModeA && !fromB) pcMode = pcModeA;
 	updateTablinks(0);
 	gId('buttonPcm').className = (pcMode) ? "active":"";
 	gId('bot').style.height = (pcMode && !cfg.comp.pcmbot) ? "0":"auto";
 	sCol('--bh', gId('bot').clientHeight + "px");
 	_C.style.width = (pcMode)?'100%':'400%';
-	lastw = wW;
-
 	//WLEDMM resize segmentview
+	// console.log("drawSegmentView","togglePCMode");
 	if (isM) drawSegmentView();
 }
 
@@ -3290,7 +3383,7 @@ function mergeDeep(target, ...sources)
 size();
 _C.style.setProperty('--n', N);
 
-window.addEventListener('resize', size, false);
+window.addEventListener('resize', size, true);
 
 _C.addEventListener('mousedown', lock, false);
 _C.addEventListener('touchstart', lock, false);

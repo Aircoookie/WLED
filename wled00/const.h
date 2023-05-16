@@ -141,7 +141,7 @@
 #define USERMOD_ID_ARTIFX                90     //Usermod "usermod_v2_artifx.h"
 #define USERMOD_ID_WEATHER               91     //Usermod "usermod_v2_weather.h"
 #define USERMOD_ID_GAMES                 92     //Usermod "usermod_v2_games.h"
-#define USERMOD_ID_FASTLED               93     //Usermod "usermod_v2_fastled.h"
+#define USERMOD_ID_ANIMARTRIX               93     //Usermod "usermod_v2_animartrix.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
@@ -226,6 +226,8 @@
 #define TYPE_GS8608              23            //same driver as WS2812, but will require signal 2x per second (else displays test pattern)
 #define TYPE_WS2811_400KHZ       24            //half-speed WS2812 protocol, used by very old WS2811 units
 #define TYPE_TM1829              25
+#define TYPE_UCS8903             26
+#define TYPE_UCS8904             29
 #define TYPE_SK6812_RGBW         30
 #define TYPE_TM1814              31
 //"Analog" types (PWM) (32-47)
@@ -274,7 +276,7 @@
 #define BTN_TYPE_ANALOG_INVERTED  8
 
 //Ethernet board types
-#define WLED_NUM_ETH_TYPES        9
+#define WLED_NUM_ETH_TYPES        10
 
 #define WLED_ETH_NONE             0
 #define WLED_ETH_WT32_ETH01       1
@@ -283,6 +285,7 @@
 #define WLED_ETH_QUINLED          4
 #define WLED_ETH_TWILIGHTLORD     5
 #define WLED_ETH_ESP32DEUX        6
+#define WLED_ETH_ABCWLEDV43ETH    9
 
 //Hue error codes
 #define HUE_ERROR_INACTIVE        0
