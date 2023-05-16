@@ -36,11 +36,6 @@
 // so matrix should disable regular ledmap processing
 void WS2812FX::setUpMatrix() {
 #ifndef WLED_DISABLE_2D
-  // erase old ledmap, just in case.
-  if (customMappingTable != nullptr) delete[] customMappingTable;
-  customMappingTable = nullptr;
-  customMappingSize = 0;
-
   // isMatrix is set in cfg.cpp or set.cpp
   if (isMatrix) {
     // calculate width dynamically because it will have gaps
@@ -68,13 +63,19 @@ void WS2812FX::setUpMatrix() {
       return;
     }
 
-    customMappingTable = new uint16_t[Segment::maxWidth * Segment::maxHeight];
+    //WLEDMM recreate customMappingTable if more space needed
+    if (Segment::maxWidth * Segment::maxHeight > customMappingTableSize) {
+      USER_PRINTF("setupmatrix customMappingTable alloc %d from %d\n", Segment::maxWidth * Segment::maxHeight, customMappingTableSize);
+      if (customMappingTable != nullptr) delete[] customMappingTable;
+      customMappingTable = new uint16_t[Segment::maxWidth * Segment::maxHeight];
+      if (customMappingTable != nullptr) customMappingTableSize = Segment::maxWidth * Segment::maxHeight;
+    }
 
     if (customMappingTable != nullptr) {
       customMappingSize = Segment::maxWidth * Segment::maxHeight;
 
       // fill with empty in case we don't fill the entire matrix
-      for (size_t i = 0; i< customMappingSize; i++) {
+      for (size_t i = 0; i< customMappingTableSize; i++) { //WLEDMM use customMappingTableSize
         customMappingTable[i] = (uint16_t)-1;
       }
 

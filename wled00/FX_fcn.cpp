@@ -2102,11 +2102,9 @@ bool WS2812FX::deserializeMap(uint8_t n) {
 
   if (!isFile) {
     // erase custom mapping if selecting nonexistent ledmap.json (n==0)
-    //WLEDM: doubt this is necessary as return false causes setupMatrix to deal with this
-    if (!isMatrix && !n && customMappingTable != nullptr) {
+    //WLEDM: doubt this is necessary as return false causes setupMatrix to deal with this !!!!
+    if (!isMatrix && !n) {
       customMappingSize = 0;
-      delete[] customMappingTable;
-      customMappingTable = nullptr;
       loadedLedmap = 0; //WLEDMM
     }
     return false;
@@ -2126,14 +2124,6 @@ bool WS2812FX::deserializeMap(uint8_t n) {
   USER_PRINT(F("Reading LED map from ")); //WLEDMM use USER_PRINT
   USER_PRINTLN(fileName);
 
-  // erase old custom ledmap
-  if (customMappingTable != nullptr) {
-    customMappingSize = 0;
-    delete[] customMappingTable;
-    customMappingTable = nullptr;
-    loadedLedmap = 0;
-  }
-
   //WLEDMM: read width and height (mandatory in file!!)
   f.find("\"width\":");
   uint16_t maxWidth = f.readStringUntil('\n').toInt();
@@ -2152,29 +2142,40 @@ bool WS2812FX::deserializeMap(uint8_t n) {
   Segment::maxHeight = maxHeight;
   resetSegments(true); //WLEDMM not makeAutoSegments() as we only want to change bounds
 
-  customMappingSize  = maxWidth * maxHeight;
-  customMappingTable = new uint16_t[customMappingSize];
+  //WLEDMM recreate customMappingTable if more space needed
+  if (Segment::maxWidth * Segment::maxHeight > customMappingTableSize) {
+    USER_PRINTF("deserializemap customMappingTable alloc %d from %d\n", Segment::maxWidth * Segment::maxHeight, customMappingTableSize);
+    if (customMappingTable != nullptr) delete[] customMappingTable;
+    customMappingTable = new uint16_t[Segment::maxWidth * Segment::maxHeight];
+      if (customMappingTable != nullptr) customMappingTableSize = Segment::maxWidth * Segment::maxHeight;
+  }
 
-  //WLEDMM: find the map values
-  f.find("\"map\":[");
-  uint16_t i=0;
-  do { //for each element in the array
-    int mapi = f.readStringUntil(',').toInt();
-    // USER_PRINTF(", %d", mapi);
-    customMappingTable[i++] = (uint16_t) (mapi<0 ? 0xFFFFU : mapi);
-  } while (f.available());
+  if (customMappingTable != nullptr) {
+    customMappingSize  = maxWidth * maxHeight;
 
-  loadedLedmap = n;
-  f.close();
+    //WLEDMM: find the map values
+    f.find("\"map\":[");
+    uint16_t i=0;
+    do { //for each element in the array
+      int mapi = f.readStringUntil(',').toInt();
+      // USER_PRINTF(", %d", mapi);
+      customMappingTable[i++] = (uint16_t) (mapi<0 ? 0xFFFFU : mapi);
+    } while (f.available());
 
-  #ifdef WLED_DEBUG
-    DEBUG_PRINTF("Custom ledmap: %d\n", loadedLedmap);
-    for (uint16_t i=0; i<customMappingSize; i++) {
-      if (!(i%Segment::maxWidth)) DEBUG_PRINTLN();
-      DEBUG_PRINTF("%4d,", customMappingTable[i]);
-    }
-    DEBUG_PRINTLN();
-  #endif
+    loadedLedmap = n;
+    f.close();
+
+    #ifdef WLED_DEBUG
+      DEBUG_PRINTF("Custom ledmap: %d\n", loadedLedmap);
+      for (uint16_t i=0; i<customMappingSize; i++) {
+        if (!(i%Segment::maxWidth)) DEBUG_PRINTLN();
+        DEBUG_PRINTF("%4d,", customMappingTable[i]);
+      }
+      DEBUG_PRINTLN();
+    #endif
+  } else { // memory allocation error
+    DEBUG_PRINTLN(F("Deserializemap: Ledmap alloc error."));
+  }
 
   releaseJSONBufferLock();
   return true;
