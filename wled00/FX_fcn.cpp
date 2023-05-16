@@ -592,7 +592,7 @@ class JMapC {
       if (jVectorMap.size() > 0) {
         USER_PRINTLN("delete jVectorMap");
         for (size_t i=0; i<jVectorMap.size(); i++)
-          delete jVectorMap[i].array; 
+          delete[] jVectorMap[i].array; 
         jVectorMap.clear();
       }
     }
@@ -647,7 +647,7 @@ class JMapC {
 
         //https://arduinojson.org/v6/how-to/deserialize-a-very-large-document/
         jMapFile.find("[");
-        do {
+        do { //for each element in the array
           DeserializationError err = deserializeJson(docChunk, jMapFile);
           // serializeJson(docChunk, Serial); USER_PRINTLN();
           // USER_PRINTF("docChunk  %u / %u%% (%u %u %u) %u\n", (unsigned int)docChunk.memoryUsage(), 100 * docChunk.memoryUsage() / docChunk.capacity(), (unsigned int)docChunk.size(), docChunk.overflowed(), (unsigned int)docChunk.nesting(), jMapFile.size());
@@ -689,6 +689,8 @@ class JMapC {
           }
 
         } while (jMapFile.findUntil(",", "]"));
+
+        jMapFile.close();
 
         maxWidth++; maxHeight++;
         scale = MIN(SEGMENT.virtualWidth() / maxWidth, SEGMENT.virtualHeight() / maxHeight);
@@ -1356,12 +1358,17 @@ void WS2812FX::enumerateLedmaps() {
 
       #ifndef ESP8266
       if (requestJSONBufferLock(21)) {
-        if (readObjectFromFile(fileName, nullptr, &doc)) {
+        //WLEDMM: upstream code loops over all ledmap files, read them all, every byte (!!!!) and only get the name of the file!!!
+        File f;
+        f = WLED_FS.open(fileName, "r");
+        if (f) {
+          f.find("\"n\":");
+          const char *name = f.readStringUntil('\n').c_str();
+          USER_PRINTF("enumerateLedmaps %s %s\n", fileName, name);
+
           size_t len = 0;
-          if (!doc["n"].isNull()) {
-            // name field exists
-            const char *name = doc["n"].as<const char*>();
-            if (name != nullptr) len = strlen(name);
+          if (name != nullptr) {
+            len = strlen(name);
             if (len > 0 && len < 33) {
               ledmapNames[i-1] = new char[len+1];
               if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], name, 33);
@@ -1375,6 +1382,7 @@ void WS2812FX::enumerateLedmaps() {
             if (ledmapNames[i-1]) strlcpy(ledmapNames[i-1], tmp, 33);
           }
         }
+        f.close();
         releaseJSONBufferLock();
       }
       #endif
@@ -2106,7 +2114,11 @@ bool WS2812FX::deserializeMap(uint8_t n) {
 
   if (!requestJSONBufferLock(7)) return false;
 
-  if (!readObjectFromFile(fileName, nullptr, &doc)) {
+  //WLEDMM: change upstream code: do not load complete ledmaps in json as this blows up memory, use file read instead
+  //read the file
+  File f;
+  f = WLED_FS.open(fileName, "r");
+  if (!f) {
     releaseJSONBufferLock();
     return false; //if file does not exist just exit
   }
@@ -2122,33 +2134,47 @@ bool WS2812FX::deserializeMap(uint8_t n) {
     loadedLedmap = 0;
   }
 
-  JsonArray map = doc[F("map")];
-  if (!map.isNull() && map.size()) {  // not an empty map
+  //WLEDMM: read width and height (mandatory in file!!)
+  f.find("\"width\":");
+  uint16_t maxWidth = f.readStringUntil('\n').toInt();
 
-    //WLEDMM: support ledmap file properties width and height
-    if (doc[F("width")]>0 && doc[F("height")]>0) {
-      Segment::maxWidth = doc[F("width")];;
-      Segment::maxHeight = doc[F("height")];;
-      resetSegments(true); //WLEDMM not makeAutoSegments() as we only want to change bounds
-    }
+  f.find("\"height\":");
+  uint16_t maxHeight = f.readStringUntil('\n').toInt();
 
-    customMappingSize  = map.size();
-    customMappingTable = new uint16_t[customMappingSize];
-
-    for (uint16_t i=0; i<customMappingSize; i++) 
-      customMappingTable[i] = (uint16_t) (map[i]<0 ? 0xFFFFU : map[i]);
-
-    loadedLedmap = n;
-
-    #ifdef WLED_DEBUG
-      DEBUG_PRINTF("Custom ledmap: %d\n", loadedLedmap);
-      for (uint16_t i=0; i<customMappingSize; i++) {
-        if (!(i%Segment::maxWidth)) DEBUG_PRINTLN();
-        DEBUG_PRINTF("%4d,", customMappingTable[i]);
-      }
-      DEBUG_PRINTLN();
-    #endif
+  USER_PRINTF("deserializeMap %d x %d\n", maxWidth, maxHeight);
+  if (maxWidth * maxHeight <= 0) {
+    releaseJSONBufferLock();
+    return false;
   }
+
+  //WLEDMM: support ledmap file properties width and height
+  Segment::maxWidth = maxWidth;
+  Segment::maxHeight = maxHeight;
+  resetSegments(true); //WLEDMM not makeAutoSegments() as we only want to change bounds
+
+  customMappingSize  = maxWidth * maxHeight;
+  customMappingTable = new uint16_t[customMappingSize];
+
+  //WLEDMM: find the map values
+  f.find("\"map\":[");
+  uint16_t i=0;
+  do { //for each element in the array
+    int mapi = f.readStringUntil(',').toInt();
+    // USER_PRINTF(", %d", mapi);
+    customMappingTable[i++] = (uint16_t) (mapi<0 ? 0xFFFFU : mapi);
+  } while (f.available());
+
+  loadedLedmap = n;
+  f.close();
+
+  #ifdef WLED_DEBUG
+    DEBUG_PRINTF("Custom ledmap: %d\n", loadedLedmap);
+    for (uint16_t i=0; i<customMappingSize; i++) {
+      if (!(i%Segment::maxWidth)) DEBUG_PRINTLN();
+      DEBUG_PRINTF("%4d,", customMappingTable[i]);
+    }
+    DEBUG_PRINTLN();
+  #endif
 
   releaseJSONBufferLock();
   return true;

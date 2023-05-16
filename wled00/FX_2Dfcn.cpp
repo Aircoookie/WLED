@@ -567,6 +567,7 @@ void Segment::drawArc(uint16_t x0, uint16_t y0, uint16_t radius, uint32_t color,
   }
 }
 
+//WLEDMM for artifx
 bool Segment::jsonToPixels(char * name, uint8_t fileNr) {
   char fileName[32];
   //WLEDMM: als support segment name ledmaps

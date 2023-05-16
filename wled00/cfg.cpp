@@ -19,9 +19,9 @@ void getStringFromJson(char* dest, const char* src, size_t len) {
 bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   //WLEDMM add USER_PRINT
-  String temp;
-  serializeJson(doc, temp);
-  USER_PRINTF("deserializeConfig %s\n", temp.c_str());
+  // String temp;
+  // serializeJson(doc, temp);
+  USER_PRINTF("deserializeConfig\n");
 
   bool needsSave = false;
   //int rev_major = doc["rev"][0]; // 1

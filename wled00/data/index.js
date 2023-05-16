@@ -1274,6 +1274,7 @@ function updateLen(s, draw=true) //WLEDMM conditonally draw segment view
 
 	gId(`seg${s}len`).innerHTML = out;
 
+	// console.log("drawSegmentView","updateLen");
 	if (draw && isM) drawSegmentView(); //WLEDMM draw new segmentview if something changes in a segment
 }
 
@@ -1490,7 +1491,7 @@ function drawSegmentView() {
 			}
 			post();
 		}, function(parms,error) { //error handling
-			console.log(error);
+			// console.log("drawledmap error fetching " + fileName +": ", error);
 			// downloadGHFile("LM", fileName, true, false); WLEDMM: remove as this has too much impact
 			post();
 		});
@@ -1669,6 +1670,8 @@ function makeWS() {
 		var s = json.state ? json.state : json;
 		displayRover(i, s);
 		readState(s);
+		// console.log("drawSegmentView","websocket", json);
+		// if (isM) drawSegmentView();
 	};
 	ws.onclose = (e)=>{
 		gId('connind').style.backgroundColor = "var(--c-r)";
@@ -1979,6 +1982,7 @@ function requestJson(command=null)
 
 		//WLEDMM init, gfx default on upon web page load
 		if (isM) {
+			// console.log("drawSegmentView","requestjson");
 			drawSegmentView();
 			toggleLiveview();
 		}
@@ -3065,7 +3069,6 @@ function fetchAndExecute(url, name, parms, callback, callError = null)
     return res.text();
   })
   .then(text => {
-	console.log("text", text);
     callback(parms, text);
   })
   .catch(function (error) {
@@ -3355,6 +3358,7 @@ function togglePcMode(fromB = false)
 	sCol('--bh', gId('bot').clientHeight + "px");
 	_C.style.width = (pcMode)?'100%':'400%';
 	//WLEDMM resize segmentview
+	// console.log("drawSegmentView","togglePCMode");
 	if (isM) drawSegmentView();
 }
 

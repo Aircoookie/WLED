@@ -339,6 +339,7 @@ bool readObjectFromFileUsingId(const char* file, uint16_t id, JsonDocument* dest
 }
 
 //if the key is a nullptr, deserialize entire object
+//WLEDMM: if key is not a nullptr, nothing seems to be done with it!!! (except check for existing), still whole json is loaded
 bool readObjectFromFile(const char* file, const char* key, JsonDocument* dest)
 {
   if (doCloseFile) closeFile();
