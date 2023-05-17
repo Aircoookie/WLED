@@ -62,6 +62,7 @@ class UsermodTemperature : public Usermod {
 
   public:
 
+    UsermodTemperature(const char *name, bool enabled):Usermod(name, enabled) {} //WLEDMM: this shouldn't be necessary (passthrough of constructor), maybe because Usermod is an abstract class
     /*
      * API calls te enable data exchange between WLED modules
      */
@@ -197,50 +198,40 @@ void UsermodTemperature::publishHomeAssistantAutodiscovery() {
 }
 #endif
 
-  public:
-    UsermodTemperature(const char *name, bool enabled):Usermod(name, enabled) {} //WLEDMM: this shouldn't be necessary (passthrough of constructor), maybe because Usermod is an abstract class
-
-    void setup() {
-      int retries = 10;
-      sensorFound = 0;
-      temperature = -127.0f; // default to -127, DS18B20 only goes down to -50C
-      if (enabled) {
-        // config says we are enabled
-        USER_PRINTLN(F("Finding temperature pin..."));
-        // pin retrieved from cfg.json (readFromConfig()) prior to running setup()
-        if (temperaturePin >= 0 && pinManager.allocatePin(temperaturePin, true, PinOwner::UM_Temperature)) {
-          oneWire = new OneWire(temperaturePin);
-          if (oneWire->reset()) {
-            while (!findSensor() && retries--) {
-              delay(25); // try to find sensor
-            }
-          }
-          if (parasite && pinManager.allocatePin(parasitePin, true, PinOwner::UM_Temperature)) {
-            pinMode(parasitePin, OUTPUT);
-            digitalWrite(parasitePin, LOW); // deactivate power (close MOSFET)
-          } else {
-            parasitePin = -1;
-          }
-        } else {
-          if (temperaturePin >= 0) {
-            USER_PRINTLN(F("Temperature pin allocation failed."));
-          }
-          temperaturePin = -1;  // allocation failed
+void UsermodTemperature::setup() {
+  int retries = 10;
+  sensorFound = 0;
+  temperature = -127.0f; // default to -127, DS18B20 only goes down to -50C
+  if (enabled) {
+    // config says we are enabled
+    DEBUG_PRINTLN(F("Allocating temperature pin..."));
+    // pin retrieved from cfg.json (readFromConfig()) prior to running setup()
+    if (temperaturePin >= 0 && pinManager.allocatePin(temperaturePin, true, PinOwner::UM_Temperature)) {
+      oneWire = new OneWire(temperaturePin);
+      if (oneWire->reset()) {
+        while (!findSensor() && retries--) {
+          delay(25); // try to find sensor
         }
       }
-      lastMeasurement = millis() - readingInterval + 10000;
-      initDone = true;
-      USER_PRINTLN(F("temperature usermod initialized."));
+      if (parasite && pinManager.allocatePin(parasitePin, true, PinOwner::UM_Temperature)) {
+        pinMode(parasitePin, OUTPUT);
+        digitalWrite(parasitePin, LOW); // deactivate power (close MOSFET)
+      } else {
+        parasitePin = -1;
+      }
+    } else {
+      if (temperaturePin >= 0) {
+        DEBUG_PRINTLN(F("Temperature pin allocation failed."));
+      }
+      temperaturePin = -1;  // allocation failed
     }
   }
   lastMeasurement = millis() - readingInterval + 10000;
   initDone = true;
 }
 
-    void loop() {
-      unsigned long last_runtime = 0; // WLEDMM ensure that strip.isUpdating() will not block longer that 4000ms
-      if (!enabled || !sensorFound || (strip.isUpdating() && (millis()-last_runtime < 4000))) return; // WLEDMM be nice, but not too nice
-      last_runtime = millis();
+void UsermodTemperature::loop() {
+  if (!enabled || !sensorFound || strip.isUpdating()) return;
 
   static uint8_t errorCount = 0;
   unsigned long now = millis();
@@ -358,8 +349,10 @@ void UsermodTemperature::addToJsonInfo(JsonObject& root) {
  */
 void UsermodTemperature::addToConfig(JsonObject &root) {
   // we add JSON object: {"Temperature": {"pin": 0, "degC": true}}
-  JsonObject top = root.createNestedObject(FPSTR(_name)); // usermodname
-  top[FPSTR(_enabled)] = enabled;
+  //WLEDMM: call superclass
+  Usermod::addToConfig(root);
+  JsonObject top = root[FPSTR(_name)];
+
   top["pin"]  = temperaturePin;     // usermodparam
   top["degC"] = degC;  // usermodparam
   top[FPSTR(_readInterval)] = readingInterval / 1000;
@@ -368,81 +361,61 @@ void UsermodTemperature::addToConfig(JsonObject &root) {
   DEBUG_PRINTLN(F("Temperature config saved."));
 }
 
-    /**
-     * addToConfig() (called from set.cpp) stores persistent properties to cfg.json
-     */
-    void addToConfig(JsonObject &root) {
-      Usermod::addToConfig(root);
-      JsonObject top = root[FPSTR(_name)];
+/**
+ * readFromConfig() is called before setup() to populate properties from values stored in cfg.json
+ *
+ * The function should return true if configuration was successfully loaded or false if there was no configuration.
+ */
+bool UsermodTemperature::readFromConfig(JsonObject &root) {
+  // we look for JSON object: {"Temperature": {"pin": 0, "degC": true}}
+  //WLEDMM call superclass
+  Usermod::readFromConfig(root); //WLEDMM: configComplete not implemented here (todo?)
+  JsonObject top = root[FPSTR(_name)];
+  DEBUG_PRINT(FPSTR(_name));
 
-      // we add JSON object: {"Temperature": {"pin": 0, "degC": true}}
-      top["pin"]  = temperaturePin;     // usermodparam
-      top["degC"] = degC;  // usermodparam
-      top[FPSTR(_readInterval)] = readingInterval / 1000;
-      top[FPSTR(_parasite)] = parasite;
-      top[FPSTR(_parasitePin)] = parasitePin;
-      DEBUG_PRINTLN(F("Temperature config saved."));
-    }
+  int8_t newTemperaturePin = temperaturePin;
 
-    /**
-     * readFromConfig() is called before setup() to populate properties from values stored in cfg.json
-     *
-     * The function should return true if configuration was successfully loaded or false if there was no configuration.
-     */
-    bool readFromConfig(JsonObject &root) {
-      /*bool configComplete = */Usermod::readFromConfig(root); //WLEDMM: configComplete not implemented here (todo?)
-      JsonObject top = root[FPSTR(_name)];
-      DEBUG_PRINT(FPSTR(_name));
+  if (top.isNull()) {
+    DEBUG_PRINTLN(F(": No config found. (Using defaults.)"));
+    return false;
+  }
 
-      // we look for JSON object: {"Temperature": {"pin": 0, "degC": true}}
-      int8_t newTemperaturePin = temperaturePin;
+  newTemperaturePin = top["pin"] | newTemperaturePin;
+  degC              = top["degC"] | degC;
+  readingInterval   = top[FPSTR(_readInterval)] | readingInterval/1000;
+  readingInterval   = min(120,max(10,(int)readingInterval)) * 1000;  // convert to ms
+  parasite          = top[FPSTR(_parasite)] | parasite;
+  parasitePin       = top[FPSTR(_parasitePin)] | parasitePin;
 
-      if (top.isNull()) {
-        DEBUG_PRINTLN(F(": No config found. (Using defaults.)"));
-        return false;
-      }
-
-      newTemperaturePin = top["pin"] | newTemperaturePin;
-      degC              = top["degC"] | degC;
-      readingInterval   = top[FPSTR(_readInterval)] | readingInterval/1000;
-      readingInterval   = min(120,max(10,(int)readingInterval)) * 1000;  // convert to ms
-      parasite          = top[FPSTR(_parasite)] | parasite;
-      parasitePin       = top[FPSTR(_parasitePin)] | parasitePin;
-
-      if (!initDone) {
-        // first run: reading from cfg.json
-        temperaturePin = newTemperaturePin;
-        DEBUG_PRINTLN(F(" config loaded."));
-      } else {
-        DEBUG_PRINTLN(F(" config (re)loaded."));
-        // changing paramters from settings page
-        if (newTemperaturePin != temperaturePin) {
-          DEBUG_PRINTLN(F("Re-init temperature."));
-          // deallocate pin and release memory
-          delete oneWire;
-          pinManager.deallocatePin(temperaturePin, PinOwner::UM_Temperature);
-          temperaturePin = newTemperaturePin;
-          pinManager.deallocatePin(parasitePin, PinOwner::UM_Temperature);
-          // initialise
-          setup();
-        }
-      }
-      // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
-      return !top[FPSTR(_parasitePin)].isNull();
+  if (!initDone) {
+    // first run: reading from cfg.json
+    temperaturePin = newTemperaturePin;
+    DEBUG_PRINTLN(F(" config loaded."));
+  } else {
+    DEBUG_PRINTLN(F(" config (re)loaded."));
+    // changing paramters from settings page
+    if (newTemperaturePin != temperaturePin) {
+      DEBUG_PRINTLN(F("Re-init temperature."));
+      // deallocate pin and release memory
+      delete oneWire;
+      pinManager.deallocatePin(temperaturePin, PinOwner::UM_Temperature);
+      temperaturePin = newTemperaturePin;
+      pinManager.deallocatePin(parasitePin, PinOwner::UM_Temperature);
+      // initialise
+      setup();
     }
   }
   // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
   return !top[FPSTR(_parasitePin)].isNull();
 }
 
-    void appendConfigData()
-    {
-      oappend(SET_F("addHB('Temperature');")); // WLEDMM
-      oappend(SET_F("addInfo('Temperature:parasite-pwr")); //WLEDMM use literals
-      oappend(SET_F("',1,'<i>(if no Vcc connected)</i>');"));  // 0 is field type, 1 is actual field
-      oappend(SET_F("addInfo('Temperature:parasite-pwr-pin")); //WLEDMM use literals
-      oappend(SET_F("',1,'<i>(for external MOSFET)</i>');"));  // 0 is field type, 1 is actual field
-    }
+void UsermodTemperature::appendConfigData() {
+  oappend(SET_F("addHB('Temperature');")); // WLEDMM
+  oappend(SET_F("addInfo('")); oappend(String(FPSTR(_name)).c_str()); oappend(SET_F(":")); oappend(String(FPSTR(_parasite)).c_str());
+  oappend(SET_F("',1,'<i>(if no Vcc connected)</i>');"));  // 0 is field type, 1 is actual field
+  oappend(SET_F("addInfo('")); oappend(String(FPSTR(_name)).c_str()); oappend(SET_F(":")); oappend(String(FPSTR(_parasitePin)).c_str());
+  oappend(SET_F("',1,'<i>(for external MOSFET)</i>');"));  // 0 is field type, 1 is actual field
+}
 
 float UsermodTemperature::getTemperature() {
   return degC ? getTemperatureC() : getTemperatureF();
