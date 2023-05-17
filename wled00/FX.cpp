@@ -7616,6 +7616,7 @@ uint16_t mode_2Ddistortionwaves() {
 }
 static const char _data_FX_MODE_2DDISTORTIONWAVES[] PROGMEM = "Distortion Waves@!,Scale;;;2";
 
+
 //Soap
 //@Stepko
 //Idea from https://www.youtube.com/watch?v=DiHBgITrZck&ab_channel=StefanPetrick
@@ -7633,8 +7634,10 @@ uint16_t mode_2Dsoap() {
   uint32_t *noise32_x = reinterpret_cast<uint32_t*>(SEGENV.data + dataSize);
   uint32_t *noise32_y = reinterpret_cast<uint32_t*>(SEGENV.data + dataSize + sizeof(uint32_t));
   uint32_t *noise32_z = reinterpret_cast<uint32_t*>(SEGENV.data + dataSize + sizeof(uint32_t)*2);
-  uint32_t scale32_x = 160000U/cols;
-  uint32_t scale32_y = 160000U/rows;
+  const uint32_t scale32_x = 160000U/cols;
+  const uint32_t scale32_y = 160000U/rows;
+  const uint32_t mov = MIN(cols,rows)*(SEGMENT.speed+2)/2;
+  const uint8_t  smoothness = MIN(250,SEGMENT.intensity); // limit as >250 produces very little changes
 
   // init
   if (SEGENV.call == 0) {
@@ -7642,28 +7645,28 @@ uint16_t mode_2Dsoap() {
     *noise32_x = random16();
     *noise32_y = random16();
     *noise32_z = random16();
-    for (int i = 0; i < cols; i++) {
-      int32_t ioffset = scale32_x * (i - cols / 2);
-      for (int j = 0; j < rows; j++) {
-        int32_t joffset = scale32_y * (j - rows / 2);
-        uint8_t data = inoise16(*noise32_x + ioffset, *noise32_y + joffset, *noise32_z) >> 8;
-        noise3d[XY(i,j)] = scale8(noise3d[XY(i,j)], SEGMENT.intensity) + scale8(data, 255 - SEGMENT.intensity);
-        SEGMENT.setPixelColorXY(i, j, ColorFromPalette(SEGPALETTE,~noise3d[XY(i,j)]*3));
-      }
-    }
+  } else {
+    *noise32_x += mov;
+    *noise32_y += mov;
+    *noise32_z += mov;
   }
-
-  uint32_t mov = MAX(cols,rows)*(SEGMENT.speed+1)/2;
-  *noise32_x += mov;
-  *noise32_y += mov;
-  *noise32_z += mov;
 
   for (int i = 0; i < cols; i++) {
     int32_t ioffset = scale32_x * (i - cols / 2);
     for (int j = 0; j < rows; j++) {
       int32_t joffset = scale32_y * (j - rows / 2);
       uint8_t data = inoise16(*noise32_x + ioffset, *noise32_y + joffset, *noise32_z) >> 8;
-      noise3d[XY(i,j)] = scale8(noise3d[XY(i,j)], SEGMENT.intensity) + scale8(data, 256 - SEGMENT.intensity);
+      noise3d[XY(i,j)] = scale8(noise3d[XY(i,j)], smoothness) + scale8(data, 255 - smoothness);
+    }
+  }
+  // init also if dimensions changed
+  if (SEGENV.call == 0 || SEGMENT.aux0 != cols || SEGMENT.aux1 != rows) {
+    SEGMENT.aux0 = cols;
+    SEGMENT.aux1 = rows;
+    for (int i = 0; i < cols; i++) {
+      for (int j = 0; j < rows; j++) {
+        SEGMENT.setPixelColorXY(i, j, ColorFromPalette(SEGPALETTE,~noise3d[XY(i,j)]*3));
+      }
     }
   }
 
@@ -7724,6 +7727,85 @@ uint16_t mode_2Dsoap() {
   return FRAMETIME;
 }
 static const char _data_FX_MODE_2DSOAP[] PROGMEM = "Soap@!,Smoothness;;!;2";
+
+
+//Idea from https://www.youtube.com/watch?v=HsA-6KIbgto&ab_channel=GreatScott%21
+//Octopus (https://editor.soulmatelights.com/gallery/671-octopus)
+//Stepko and Sutaburosu
+// adapted for WLED by @blazoncek
+uint16_t mode_2Doctopus() {
+  if (!strip.isMatrix) return mode_static(); // not a 2D set-up
+
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+  const uint8_t mapp = 180 / MAX(cols,rows);
+
+  typedef struct {
+    uint8_t angle;
+    uint8_t radius;
+  } map_t;
+
+  const size_t dataSize = SEGMENT.width() * SEGMENT.height() * sizeof(map_t); // prevent reallocation if mirrored or grouped
+  if (!SEGENV.allocateData(dataSize + 2)) return mode_static(); //allocation failed
+
+  map_t *rMap = reinterpret_cast<map_t*>(SEGENV.data);
+  uint8_t *offsX = reinterpret_cast<uint8_t*>(SEGENV.data + dataSize);
+  uint8_t *offsY = reinterpret_cast<uint8_t*>(SEGENV.data + dataSize + 1);
+
+  // re-init if SEGMENT dimensions or offset changed
+  if (SEGENV.call == 0 || SEGENV.aux0 != cols || SEGENV.aux1 != rows || SEGMENT.custom1 != *offsX || SEGMENT.custom2 != *offsY) {
+    SEGENV.step = 0; // t
+    SEGENV.aux0 = cols;
+    SEGENV.aux1 = rows;
+    *offsX = SEGMENT.custom1;
+    *offsY = SEGMENT.custom2;
+    const uint8_t C_X = cols / 2 + (SEGMENT.custom1 - 128)*cols/255;
+    const uint8_t C_Y = rows / 2 + (SEGMENT.custom2 - 128)*rows/255;
+    for (int x = 0; x < cols; x++) {
+      for (int y = 0; y < rows; y++) {
+        rMap[XY(x, y)].angle = 40.7436f * atan2f(y - C_Y, x - C_X); // avoid 128*atan2()/PI
+        rMap[XY(x, y)].radius = hypotf(x - C_X, y - C_Y) * mapp; //thanks Sutaburosu
+      }
+    }
+  }
+
+  SEGENV.step += SEGMENT.speed / 32 + 1;  // 1-4 range
+  for (int x = 0; x < cols; x++) {
+    for (int y = 0; y < rows; y++) {
+      byte angle = rMap[XY(x,y)].angle;
+      byte radius = rMap[XY(x,y)].radius;
+      //CRGB c = CHSV(SEGENV.step / 2 - radius, 255, sin8(sin8((angle * 4 - radius) / 4 + SEGENV.step) + radius - SEGENV.step * 2 + angle * (SEGMENT.custom3/3+1)));
+      uint16_t intensity = sin8(sin8((angle * 4 - radius) / 4 + SEGENV.step/2) + radius - SEGENV.step + angle * (SEGMENT.custom3/4+1));
+      intensity = map(intensity*intensity, 0, 65535, 0, 255); // add a bit of non-linearity for cleaner display
+      CRGB c = ColorFromPalette(SEGPALETTE, SEGENV.step / 2 - radius, intensity);
+      SEGMENT.setPixelColorXY(x, y, c);
+    }
+  }
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_2DOCTOPUS[] PROGMEM = "Octopus@!,,Offset X,Offset Y,Legs;;!;2;";
+
+
+//Waving Cell
+//@Stepko (https://editor.soulmatelights.com/gallery/1704-wavingcells)
+// adapted for WLED by @blazoncek
+uint16_t mode_2Dwavingcell() {
+  if (!strip.isMatrix) return mode_static(); // not a 2D set-up
+
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+
+  uint32_t t = millis()/(257-SEGMENT.speed);
+  uint8_t aX = SEGMENT.custom1/16 + 9;
+  uint8_t aY = SEGMENT.custom2/16 + 1;
+  uint8_t aZ = SEGMENT.custom3 + 1;
+  for (int x = 0; x < cols; x++) for (int y = 0; y <rows; y++)
+    SEGMENT.setPixelColorXY(x, y, ColorFromPalette(SEGPALETTE, ((sin8((x*aX)+sin8((y+t)*aY))+cos8(y*aZ))+1)+t));
+
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_2DWAVINGCELL[] PROGMEM = "Waving Cell@!,,Amplitude 1,Amplitude 2,Amplitude 3;;!;2";
+
 
 #endif // WLED_DISABLE_2D
 
@@ -7959,6 +8041,8 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_2DDNASPIRAL, &mode_2DDNASpiral, _data_FX_MODE_2DDNASPIRAL);
   addEffect(FX_MODE_2DBLACKHOLE, &mode_2DBlackHole, _data_FX_MODE_2DBLACKHOLE);
   addEffect(FX_MODE_2DSOAP, &mode_2Dsoap, _data_FX_MODE_2DSOAP);
+  addEffect(FX_MODE_2DOCTOPUS, &mode_2Doctopus, _data_FX_MODE_2DOCTOPUS);
+  addEffect(FX_MODE_2DWAVINGCELL, &mode_2Dwavingcell, _data_FX_MODE_2DWAVINGCELL);
 
   addEffect(FX_MODE_2DAKEMI, &mode_2DAkemi, _data_FX_MODE_2DAKEMI); // audio
 #endif // WLED_DISABLE_2D

@@ -52,109 +52,149 @@ class UsermodTemperature : public Usermod {
     static const char _parasitePin[];
 
     //Dallas sensor quick (& dirty) reading. Credit to - Author: Peter Scargill, August 17th, 2013
-    float readDallas() {
-      byte data[9];
-      int16_t result;                         // raw data from sensor
-      float retVal = -127.0f;
-      if (oneWire->reset()) {                 // if reset() fails there are no OneWire devices
-        oneWire->skip();                      // skip ROM
-        oneWire->write(0xBE);                 // read (temperature) from EEPROM
-        oneWire->read_bytes(data, 9);         // first 2 bytes contain temperature
-        #ifdef WLED_DEBUG
-        if (OneWire::crc8(data,8) != data[8]) {
-          DEBUG_PRINTLN(F("CRC error reading temperature."));
-          for (byte i=0; i < 9; i++) DEBUG_PRINTF("0x%02X ", data[i]);
-          DEBUG_PRINT(F(" => "));
-          DEBUG_PRINTF("0x%02X\n", OneWire::crc8(data,8));
-        }
-        #endif
-        switch(sensorFound) {
-          case 0x10:  // DS18S20 has 9-bit precision
-            result = (data[1] << 8) | data[0];
-            retVal = float(result) * 0.5f;
-            break;
-          case 0x22:  // DS18B20
-          case 0x28:  // DS1822
-          case 0x3B:  // DS1825
-          case 0x42:  // DS28EA00
-            result = (data[1]<<4) | (data[0]>>4);   // we only need whole part, we will add fraction when returning
-            if (data[1] & 0x80) result |= 0xF000;   // fix negative value
-            retVal = float(result) + ((data[0] & 0x08) ? 0.5f : 0.0f);
-            break;
-        }
+    float readDallas();
+    void requestTemperatures();
+    void readTemperature();
+    bool findSensor();
+#ifndef WLED_DISABLE_MQTT
+    void publishHomeAssistantAutodiscovery();
+#endif
+
+  public:
+
+    /*
+     * API calls te enable data exchange between WLED modules
+     */
+    inline float getTemperatureC() { return temperature; }
+    inline float getTemperatureF() { return temperature * 1.8f + 32.0f; }
+    float getTemperature();
+    const char *getTemperatureUnit();
+    uint16_t getId() { return USERMOD_ID_TEMPERATURE; }
+
+    void setup();
+    void loop();
+    //void connected();
+#ifndef WLED_DISABLE_MQTT
+    void onMqttConnect(bool sessionPresent);
+#endif
+    //void onUpdateBegin(bool init);
+
+    //bool handleButton(uint8_t b);
+    //void handleOverlayDraw();
+
+    void addToJsonInfo(JsonObject& root);
+    //void addToJsonState(JsonObject &root);
+    //void readFromJsonState(JsonObject &root);
+    void addToConfig(JsonObject &root);
+    bool readFromConfig(JsonObject &root);
+
+    void appendConfigData();
+};
+
+//Dallas sensor quick (& dirty) reading. Credit to - Author: Peter Scargill, August 17th, 2013
+float UsermodTemperature::readDallas() {
+  byte data[9];
+  int16_t result;                         // raw data from sensor
+  float retVal = -127.0f;
+  if (oneWire->reset()) {                 // if reset() fails there are no OneWire devices
+    oneWire->skip();                      // skip ROM
+    oneWire->write(0xBE);                 // read (temperature) from EEPROM
+    oneWire->read_bytes(data, 9);         // first 2 bytes contain temperature
+    #ifdef WLED_DEBUG
+    if (OneWire::crc8(data,8) != data[8]) {
+      DEBUG_PRINTLN(F("CRC error reading temperature."));
+      for (byte i=0; i < 9; i++) DEBUG_PRINTF("0x%02X ", data[i]);
+      DEBUG_PRINT(F(" => "));
+      DEBUG_PRINTF("0x%02X\n", OneWire::crc8(data,8));
+    }
+    #endif
+    switch(sensorFound) {
+      case 0x10:  // DS18S20 has 9-bit precision
+        result = (data[1] << 8) | data[0];
+        retVal = float(result) * 0.5f;
+        break;
+      case 0x22:  // DS18B20
+      case 0x28:  // DS1822
+      case 0x3B:  // DS1825
+      case 0x42:  // DS28EA00
+        result = (data[1]<<4) | (data[0]>>4);   // we only need whole part, we will add fraction when returning
+        if (data[1] & 0x80) result |= 0xF000;   // fix negative value
+        retVal = float(result) + ((data[0] & 0x08) ? 0.5f : 0.0f);
+        break;
+    }
+  }
+  for (byte i=1; i<9; i++) data[0] &= data[i];
+  return data[0]==0xFF ? -127.0f : retVal;
+}
+
+void UsermodTemperature::requestTemperatures() {
+  DEBUG_PRINTLN(F("Requesting temperature."));
+  oneWire->reset();
+  oneWire->skip();                        // skip ROM
+  oneWire->write(0x44,parasite);          // request new temperature reading
+  if (parasite && parasitePin >=0 ) digitalWrite(parasitePin, HIGH); // has to happen within 10us (open MOSFET)
+  lastTemperaturesRequest = millis();
+  waitingForConversion = true;
+}
+
+void UsermodTemperature::readTemperature() {
+  if (parasite && parasitePin >=0 ) digitalWrite(parasitePin, LOW); // deactivate power (close MOSFET)
+  temperature = readDallas();
+  lastMeasurement = millis();
+  waitingForConversion = false;
+  //DEBUG_PRINTF("Read temperature %2.1f.\n", temperature); // does not work properly on 8266
+  DEBUG_PRINT(F("Read temperature "));
+  DEBUG_PRINTLN(temperature);
+}
+
+bool UsermodTemperature::findSensor() {
+  DEBUG_PRINTLN(F("Searching for sensor..."));
+  uint8_t deviceAddress[8] = {0,0,0,0,0,0,0,0};
+  // find out if we have DS18xxx sensor attached
+  oneWire->reset_search();
+  delay(10);
+  while (oneWire->search(deviceAddress)) {
+    DEBUG_PRINTLN(F("Found something..."));
+    if (oneWire->crc8(deviceAddress, 7) == deviceAddress[7]) {
+      switch (deviceAddress[0]) {
+        case 0x10:  // DS18S20
+        case 0x22:  // DS18B20
+        case 0x28:  // DS1822
+        case 0x3B:  // DS1825
+        case 0x42:  // DS28EA00
+          DEBUG_PRINTLN(F("Sensor found."));
+          sensorFound = deviceAddress[0];
+          DEBUG_PRINTF("0x%02X\n", sensorFound);
+          return true;
       }
-      for (byte i=1; i<9; i++) data[0] &= data[i];
-      return data[0]==0xFF ? -127.0f : retVal;
     }
-
-    void requestTemperatures() {
-      DEBUG_PRINTLN(F("Requesting temperature."));
-      oneWire->reset();
-      oneWire->skip();                        // skip ROM
-      oneWire->write(0x44,parasite);          // request new temperature reading
-      if (parasite && parasitePin >=0 ) digitalWrite(parasitePin, HIGH); // has to happen within 10us (open MOSFET)
-      lastTemperaturesRequest = millis();
-      waitingForConversion = true;
-    }
-
-    void readTemperature() {
-      if (parasite && parasitePin >=0 ) digitalWrite(parasitePin, LOW); // deactivate power (close MOSFET)
-      temperature = readDallas();
-      lastMeasurement = millis();
-      waitingForConversion = false;
-      //DEBUG_PRINTF("Read temperature %2.1f.\n", temperature); // does not work properly on 8266
-      DEBUG_PRINT(F("Read temperature "));
-      DEBUG_PRINTLN(temperature);
-    }
-
-    bool findSensor() {
-      DEBUG_PRINTLN(F("Searching for sensor..."));
-      uint8_t deviceAddress[8] = {0,0,0,0,0,0,0,0};
-      // find out if we have DS18xxx sensor attached
-      oneWire->reset_search();
-      delay(10);
-      while (oneWire->search(deviceAddress)) {
-        DEBUG_PRINTLN(F("Found something..."));
-        if (oneWire->crc8(deviceAddress, 7) == deviceAddress[7]) {
-          switch (deviceAddress[0]) {
-            case 0x10:  // DS18S20
-            case 0x22:  // DS18B20
-            case 0x28:  // DS1822
-            case 0x3B:  // DS1825
-            case 0x42:  // DS28EA00
-              DEBUG_PRINTLN(F("Sensor found."));
-              sensorFound = deviceAddress[0];
-              DEBUG_PRINTF("0x%02X\n", sensorFound);
-              return true;
-          }
-        }
-      }
-      DEBUG_PRINTLN(F("Sensor NOT found."));
-      return false;
-    }
+  }
+  DEBUG_PRINTLN(F("Sensor NOT found."));
+  return false;
+}
 
 #ifndef WLED_DISABLE_MQTT
-    void publishHomeAssistantAutodiscovery() {
-      if (!WLED_MQTT_CONNECTED) return;
+void UsermodTemperature::publishHomeAssistantAutodiscovery() {
+  if (!WLED_MQTT_CONNECTED) return;
 
-      char json_str[1024], buf[128];
-      size_t payload_size;
-      StaticJsonDocument<1024> json;
+  char json_str[1024], buf[128];
+  size_t payload_size;
+  StaticJsonDocument<1024> json;
 
-      sprintf_P(buf, PSTR("%s Temperature"), serverDescription);
-      json[F("name")] = buf;
-      strcpy(buf, mqttDeviceTopic);
-      strcat_P(buf, PSTR("/temperature"));
-      json[F("state_topic")] = buf;
-      json[F("device_class")] = F("temperature");
-      json[F("unique_id")] = escapedMac.c_str();
-      json[F("unit_of_measurement")] = F("°C");
-      payload_size = serializeJson(json, json_str);
+  sprintf_P(buf, PSTR("%s Temperature"), serverDescription);
+  json[F("name")] = buf;
+  strcpy(buf, mqttDeviceTopic);
+  strcat_P(buf, PSTR("/temperature"));
+  json[F("state_topic")] = buf;
+  json[F("device_class")] = F("temperature");
+  json[F("unique_id")] = escapedMac.c_str();
+  json[F("unit_of_measurement")] = F("°C");
+  payload_size = serializeJson(json, json_str);
 
-      sprintf_P(buf, PSTR("homeassistant/sensor/%s/config"), escapedMac.c_str());
-      mqtt->publish(buf, 0, true, json_str, payload_size);
-      HApublished = true;
-    }
+  sprintf_P(buf, PSTR("homeassistant/sensor/%s/config"), escapedMac.c_str());
+  mqtt->publish(buf, 0, true, json_str, payload_size);
+  HApublished = true;
+}
 #endif
 
   public:
@@ -192,132 +232,141 @@ class UsermodTemperature : public Usermod {
       initDone = true;
       USER_PRINTLN(F("temperature usermod initialized."));
     }
+  }
+  lastMeasurement = millis() - readingInterval + 10000;
+  initDone = true;
+}
 
     void loop() {
       unsigned long last_runtime = 0; // WLEDMM ensure that strip.isUpdating() will not block longer that 4000ms
       if (!enabled || !sensorFound || (strip.isUpdating() && (millis()-last_runtime < 4000))) return; // WLEDMM be nice, but not too nice
       last_runtime = millis();
 
-      static uint8_t errorCount = 0;
-      unsigned long now = millis();
+  static uint8_t errorCount = 0;
+  unsigned long now = millis();
 
-      // check to see if we are due for taking a measurement
-      // lastMeasurement will not be updated until the conversion
-      // is complete the the reading is finished
-      if (now - lastMeasurement < readingInterval) return;
+  // check to see if we are due for taking a measurement
+  // lastMeasurement will not be updated until the conversion
+  // is complete the the reading is finished
+  if (now - lastMeasurement < readingInterval) return;
 
-      // we are due for a measurement, if we are not already waiting
-      // for a conversion to complete, then make a new request for temps
-      if (!waitingForConversion) {
-        requestTemperatures();
-        return;
-      }
+  // we are due for a measurement, if we are not already waiting
+  // for a conversion to complete, then make a new request for temps
+  if (!waitingForConversion) {
+    requestTemperatures();
+    return;
+  }
 
-      // we were waiting for a conversion to complete, have we waited log enough?
-      if (now - lastTemperaturesRequest >= 750 /* 93.75ms per the datasheet but can be up to 750ms */) {
-        readTemperature();
-        if (getTemperatureC() < -100.0f) {
-          if (++errorCount > 10) sensorFound = 0;
-          lastMeasurement = now - readingInterval + 300; // force new measurement in 300ms
-          return;
-        }
-        errorCount = 0;
-
-#ifndef WLED_DISABLE_MQTT
-        if (WLED_MQTT_CONNECTED) {
-          char subuf[64];
-          strcpy(subuf, mqttDeviceTopic);
-          if (temperature > -100.0f) {
-            // dont publish super low temperature as the graph will get messed up
-            // the DallasTemperature library returns -127C or -196.6F when problem
-            // reading the sensor
-            strcat_P(subuf, PSTR("/temperature"));
-            mqtt->publish(subuf, 0, false, String(getTemperatureC()).c_str());
-            strcat_P(subuf, PSTR("_f"));
-            mqtt->publish(subuf, 0, false, String(getTemperatureF()).c_str());
-          } else {
-            // publish something else to indicate status?
-          }
-        }
-#endif
-      }
+  // we were waiting for a conversion to complete, have we waited log enough?
+  if (now - lastTemperaturesRequest >= 750 /* 93.75ms per the datasheet but can be up to 750ms */) {
+    readTemperature();
+    if (getTemperatureC() < -100.0f) {
+      if (++errorCount > 10) sensorFound = 0;
+      lastMeasurement = now - readingInterval + 300; // force new measurement in 300ms
+      return;
     }
-
-    /**
-     * connected() is called every time the WiFi is (re)connected
-     * Use it to initialize network interfaces
-     */
-    //void connected() {}
+    errorCount = 0;
 
 #ifndef WLED_DISABLE_MQTT
-    /**
-     * subscribe to MQTT topic if needed
-     */
-    void onMqttConnect(bool sessionPresent) {
-      //(re)subscribe to required topics
-      //char subuf[64];
-      if (mqttDeviceTopic[0] != 0) {
-        publishHomeAssistantAutodiscovery();
+    if (WLED_MQTT_CONNECTED) {
+      char subuf[64];
+      strcpy(subuf, mqttDeviceTopic);
+      if (temperature > -100.0f) {
+        // dont publish super low temperature as the graph will get messed up
+        // the DallasTemperature library returns -127C or -196.6F when problem
+        // reading the sensor
+        strcat_P(subuf, PSTR("/temperature"));
+        mqtt->publish(subuf, 0, false, String(getTemperatureC()).c_str());
+        strcat_P(subuf, PSTR("_f"));
+        mqtt->publish(subuf, 0, false, String(getTemperatureF()).c_str());
+      } else {
+        // publish something else to indicate status?
       }
     }
 #endif
+  }
+}
 
-    /*
-     * API calls te enable data exchange between WLED modules
-     */
-    inline float getTemperatureC() {
-      return (float)temperature;
-    }
-    inline float getTemperatureF() {
-      return (float)temperature * 1.8f + 32;
-    }
+/**
+ * connected() is called every time the WiFi is (re)connected
+ * Use it to initialize network interfaces
+ */
+//void UsermodTemperature::connected() {}
 
-    /*
-     * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
-     * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
-     * Below it is shown how this could be used for e.g. a light sensor
-     */
-    void addToJsonInfo(JsonObject& root) {
-      // dont add temperature to info if we are disabled
-      if (!enabled) return;
+#ifndef WLED_DISABLE_MQTT
+/**
+ * subscribe to MQTT topic if needed
+ */
+void UsermodTemperature::onMqttConnect(bool sessionPresent) {
+  //(re)subscribe to required topics
+  //char subuf[64];
+  if (mqttDeviceTopic[0] != 0) {
+    publishHomeAssistantAutodiscovery();
+  }
+}
+#endif
 
-      JsonObject user = root["u"];
-      if (user.isNull()) user = root.createNestedObject("u");
+/*
+  * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
+  * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
+  * Below it is shown how this could be used for e.g. a light sensor
+  */
+void UsermodTemperature::addToJsonInfo(JsonObject& root) {
+  // dont add temperature to info if we are disabled
+  if (!enabled) return;
 
-      JsonArray temp = user.createNestedArray(FPSTR(_name));
+  JsonObject user = root["u"];
+  if (user.isNull()) user = root.createNestedObject("u");
 
-      if (temperature <= -100.0f) {
-        temp.add(0);
-        temp.add(F(" Sensor Error!"));
-        return;
-      }
+  JsonArray temp = user.createNestedArray(FPSTR(_name));
 
-      temp.add(degC ? getTemperatureC() : getTemperatureF());
-      temp.add(degC ? F("°C") : F("°F"));
+  if (temperature <= -100.0f) {
+    temp.add(0);
+    temp.add(F(" Sensor Error!"));
+    return;
+  }
 
-      JsonObject sensor = root[F("sensor")];
-      if (sensor.isNull()) sensor = root.createNestedObject(F("sensor"));
-      temp = sensor.createNestedArray(F("temp"));
-      temp.add(degC ? temperature : (float)temperature * 1.8f + 32);
-      temp.add(degC ? F("°C") : F("°F"));
-    }
+  temp.add(getTemperature());
+  temp.add(getTemperatureUnit());
 
-    /**
-     * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
-     * Values in the state object may be modified by connected clients
-     */
-    //void addToJsonState(JsonObject &root)
-    //{
-    //}
+  JsonObject sensor = root[F("sensor")];
+  if (sensor.isNull()) sensor = root.createNestedObject(F("sensor"));
+  temp = sensor.createNestedArray(F("temperature"));
+  temp.add(getTemperature());
+  temp.add(getTemperatureUnit());
+}
 
-    /**
-     * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
-     * Values in the state object may be modified by connected clients
-     * Read "<usermodname>_<usermodparam>" from json state and and change settings (i.e. GPIO pin) used.
-     */
-    //void readFromJsonState(JsonObject &root) {
-    //  if (!initDone) return;  // prevent crash on boot applyPreset()
-    //}
+/**
+ * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
+ * Values in the state object may be modified by connected clients
+ */
+//void UsermodTemperature::addToJsonState(JsonObject &root)
+//{
+//}
+
+/**
+ * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
+ * Values in the state object may be modified by connected clients
+ * Read "<usermodname>_<usermodparam>" from json state and and change settings (i.e. GPIO pin) used.
+ */
+//void UsermodTemperature::readFromJsonState(JsonObject &root) {
+//  if (!initDone) return;  // prevent crash on boot applyPreset()
+//}
+
+/**
+ * addToConfig() (called from set.cpp) stores persistent properties to cfg.json
+ */
+void UsermodTemperature::addToConfig(JsonObject &root) {
+  // we add JSON object: {"Temperature": {"pin": 0, "degC": true}}
+  JsonObject top = root.createNestedObject(FPSTR(_name)); // usermodname
+  top[FPSTR(_enabled)] = enabled;
+  top["pin"]  = temperaturePin;     // usermodparam
+  top["degC"] = degC;  // usermodparam
+  top[FPSTR(_readInterval)] = readingInterval / 1000;
+  top[FPSTR(_parasite)] = parasite;
+  top[FPSTR(_parasitePin)] = parasitePin;
+  DEBUG_PRINTLN(F("Temperature config saved."));
+}
 
     /**
      * addToConfig() (called from set.cpp) stores persistent properties to cfg.json
@@ -381,6 +430,10 @@ class UsermodTemperature : public Usermod {
       // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
       return !top[FPSTR(_parasitePin)].isNull();
     }
+  }
+  // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
+  return !top[FPSTR(_parasitePin)].isNull();
+}
 
     void appendConfigData()
     {
@@ -391,11 +444,13 @@ class UsermodTemperature : public Usermod {
       oappend(SET_F("',1,'<i>(for external MOSFET)</i>');"));  // 0 is field type, 1 is actual field
     }
 
-    uint16_t getId()
-    {
-      return USERMOD_ID_TEMPERATURE;
-    }
-};
+float UsermodTemperature::getTemperature() {
+  return degC ? getTemperatureC() : getTemperatureF();
+}
+
+const char *UsermodTemperature::getTemperatureUnit() {
+  return degC ? "°C" : "°F";
+}
 
 // strings to reduce flash memory usage (used more than twice)
 const char UsermodTemperature::_readInterval[] PROGMEM = "read-interval-s";
