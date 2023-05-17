@@ -93,7 +93,7 @@ Segment::Segment(const Segment &orig) {
   if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
   if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
   if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
-  if (orig.leds && !Segment::_globalLeds) { leds = (CRGB*)malloc(sizeof(CRGB)*length()); if (leds) memcpy(leds, orig.leds, sizeof(CRGB)*length()); }
+  if (orig.leds && !Segment::_globalLeds) { leds = (CRGB*)malloc(sizeof(CRGB)*10000); if (leds) memcpy(leds, orig.leds, sizeof(CRGB)*10000); }
   jMap = nullptr; //WLEDMM jMap
 }
 
@@ -130,7 +130,7 @@ Segment& Segment::operator= (const Segment &orig) {
     if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
     if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
     if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
-    if (orig.leds && !Segment::_globalLeds) { leds = (CRGB*)malloc(sizeof(CRGB)*length()); if (leds) memcpy(leds, orig.leds, sizeof(CRGB)*length()); }
+    if (orig.leds && !Segment::_globalLeds) { leds = (CRGB*)malloc(sizeof(CRGB)*10000); if (leds) memcpy(leds, orig.leds, sizeof(CRGB)*10000); }
     jMap = nullptr; //WLEDMM jMap
   }
   return *this;
@@ -209,10 +209,10 @@ void Segment::setUpLeds() {
   else if (!leds) {
     #if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
     if (psramFound())
-      leds = (CRGB*)ps_malloc(sizeof(CRGB)*length()); // WLEDMM: stupid - PSRAM is too slow for this !!!
+      leds = (CRGB*)ps_malloc(sizeof(CRGB)*10000); // WLEDMM: stupid - PSRAM is too slow for this !!!
     else
     #endif
-      leds = (CRGB*)malloc(sizeof(CRGB)*length());
+      leds = (CRGB*)malloc(sizeof(CRGB)*10000);
   }
 }
 
