@@ -502,7 +502,7 @@ typedef struct Segment {
     Segment& operator= (Segment &&orig) noexcept; // move assignment
 
 #ifdef WLED_DEBUG
-    size_t getSize() const { return sizeof(Segment) + (data?_dataLen:0) + (name?strlen(name):0) + (_t?sizeof(Transition):0) + (!Segment::_globalLeds && leds?sizeof(CRGB)*length():0); }
+    size_t getSize() const { return sizeof(Segment) + (data?_dataLen:0) + (name?strlen(name):0) + (_t?sizeof(Transition):0) + (!Segment::_globalLeds && ledsrgb?sizeof(CRGB)*length():0); }
 #endif
 
     inline bool     getOption(uint8_t n) const { return ((options >> n) & 0x01); }
