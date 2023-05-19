@@ -383,7 +383,7 @@ typedef struct Segment {
     uint16_t aux0;  // custom var
     uint16_t aux1;  // custom var
     byte* data;     // effect data pointer
-    CRGB* leds;     // local leds[] array (may be a pointer to global)
+    CRGB* ledsrgb;     // local leds[] array (may be a pointer to global) //WLEDMM rename to ledsrgb to search on them (temp?)
     static CRGB *_globalLeds;             // global leds[] array
     static uint16_t maxWidth, maxHeight;  // these define matrix width & height (max. segment dimensions)
     void *jMap = nullptr; //WLEDMM jMap
@@ -468,7 +468,7 @@ typedef struct Segment {
       aux0(0),
       aux1(0),
       data(nullptr),
-      leds(nullptr),
+      ledsrgb(nullptr),
       _capabilities(0),
       _dataLen(0),
       _t(nullptr)
@@ -492,7 +492,7 @@ typedef struct Segment {
       //if (leds) Serial.printf(" [%u]", length()*sizeof(CRGB));
       //Serial.println();
       //#endif
-      if (!Segment::_globalLeds && leds) free(leds);
+      if (!Segment::_globalLeds && ledsrgb) free(ledsrgb);
       if (name) delete[] name;
       if (_t) delete _t;
       deallocateData();

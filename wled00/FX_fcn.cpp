@@ -89,11 +89,11 @@ Segment::Segment(const Segment &orig) {
   data = nullptr;
   _dataLen = 0;
   _t = nullptr;
-  if (leds && !Segment::_globalLeds) leds = nullptr;
+  if (ledsrgb && !Segment::_globalLeds) ledsrgb = nullptr; //WLEDMM ledsrgb not freed as still used by orig!
   if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
   if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
   if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
-  if (orig.leds && !Segment::_globalLeds) { leds = (CRGB*)malloc(sizeof(CRGB)*length()); if (leds) memcpy(leds, orig.leds, sizeof(CRGB)*length()); }
+  if (orig.ledsrgb && !Segment::_globalLeds) { ledsrgb = (CRGB*)malloc(sizeof(CRGB)*length()); if (ledsrgb) memcpy(ledsrgb, orig.ledsrgb, sizeof(CRGB)*length()); }
   jMap = nullptr; //WLEDMM jMap
 }
 
@@ -105,7 +105,7 @@ Segment::Segment(Segment &&orig) noexcept {
   orig.data = nullptr;
   orig._dataLen = 0;
   orig._t   = nullptr;
-  orig.leds = nullptr;
+  orig.ledsrgb = nullptr; //WLEDMM: do not free as moved to here
   orig.jMap = nullptr; //WLEDMM jMap
 }
 
@@ -116,7 +116,7 @@ Segment& Segment::operator= (const Segment &orig) {
     // clean destination
     if (name) delete[] name;
     if (_t)   delete _t;
-    if (leds && !Segment::_globalLeds) free(leds);
+    if (ledsrgb && !Segment::_globalLeds) free(ledsrgb); //WLEDMM: nullify below!
     deallocateData();
     // copy source
     memcpy((void*)this, (void*)&orig, sizeof(Segment));
@@ -125,12 +125,12 @@ Segment& Segment::operator= (const Segment &orig) {
     data = nullptr;
     _dataLen = 0;
     _t = nullptr;
-    if (!Segment::_globalLeds) leds = nullptr;
+    if (!Segment::_globalLeds) ledsrgb = nullptr;
     // copy source data
     if (orig.name) { name = new char[strlen(orig.name)+1]; if (name) strcpy(name, orig.name); }
     if (orig.data) { if (allocateData(orig._dataLen)) memcpy(data, orig.data, orig._dataLen); }
     if (orig._t)   { _t = new Transition(orig._t->_dur, orig._t->_briT, orig._t->_cctT, orig._t->_colorT); }
-    if (orig.leds && !Segment::_globalLeds) { leds = (CRGB*)malloc(sizeof(CRGB)*length()); if (leds) memcpy(leds, orig.leds, sizeof(CRGB)*length()); }
+    if (orig.ledsrgb && !Segment::_globalLeds) { ledsrgb = (CRGB*)malloc(sizeof(CRGB)*length()); if (ledsrgb) memcpy(ledsrgb, orig.ledsrgb, sizeof(CRGB)*length()); }
     jMap = nullptr; //WLEDMM jMap
   }
   return *this;
@@ -143,13 +143,13 @@ Segment& Segment::operator= (Segment &&orig) noexcept {
     if (name) delete[] name; // free old name
     deallocateData(); // free old runtime data
     if (_t) delete _t;
-    if (leds && !Segment::_globalLeds) free(leds);
+    if (ledsrgb && !Segment::_globalLeds) free(ledsrgb); //WLEDMM: no need to nullify ledsrgb as it gets new value in memcpy
     memcpy((void*)this, (void*)&orig, sizeof(Segment));
     orig.name = nullptr;
     orig.data = nullptr;
     orig._dataLen = 0;
     orig._t   = nullptr;
-    orig.leds = nullptr;
+    orig.ledsrgb = nullptr;  //WLEDMM: do not free as moved to here
     orig.jMap = nullptr; //WLEDMM jMap
   }
   return *this;
@@ -190,7 +190,7 @@ void Segment::deallocateData() {
   */
 void Segment::resetIfRequired() {
   if (reset) {
-    if (leds && !Segment::_globalLeds) { free(leds); leds = nullptr; }
+    if (ledsrgb && !Segment::_globalLeds) { free(ledsrgb); ledsrgb = nullptr; }
     if (transitional && _t) { transitional = false; delete _t; _t = nullptr; }
     deallocateData();
     next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0;
@@ -202,17 +202,17 @@ void Segment::setUpLeds() {
   // deallocation happens in resetIfRequired() as it is called when segment changes or in destructor
   if (Segment::_globalLeds)
     #ifndef WLED_DISABLE_2D
-    leds = &Segment::_globalLeds[start + startY*Segment::maxWidth];
+    ledsrgb = &Segment::_globalLeds[start + startY*Segment::maxWidth];
     #else
     leds = &Segment::_globalLeds[start];
     #endif
-  else if (!leds) {
+  else if (!ledsrgb) {
     #if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
     if (psramFound())
-      leds = (CRGB*)ps_malloc(sizeof(CRGB)*length()); // WLEDMM: stupid - PSRAM is too slow for this !!!
+      ledsrgb = (CRGB*)ps_malloc(sizeof(CRGB)*length()); // WLEDMM: stupid - PSRAM is too slow for this !!!
     else
     #endif
-      leds = (CRGB*)malloc(sizeof(CRGB)*length());
+      ledsrgb = (CRGB*)malloc(sizeof(CRGB)*length());
   }
 }
 
@@ -891,7 +891,7 @@ void IRAM_ATTR_YN Segment::setPixelColor(int i, uint32_t col) //WLEDMM: IRAM_ATT
   }
 #endif
 
-  if (leds) leds[i] = col;
+  if (ledsrgb) ledsrgb[i] = col;
 
   uint16_t len = length();
   uint8_t _bri_t = currentBri(on ? opacity : 0);
@@ -1017,7 +1017,7 @@ uint32_t Segment::getPixelColor(int i)
   }
 #endif
 
-  if (leds) return RGBW32(leds[i].r, leds[i].g, leds[i].b, 0);
+  if (ledsrgb) return RGBW32(ledsrgb[i].r, ledsrgb[i].g, ledsrgb[i].b, 0);
 
   if (reverse) i = virtualLength() - i - 1;
   i *= groupLength();
