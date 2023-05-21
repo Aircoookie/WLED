@@ -105,8 +105,15 @@ void onAlexaChange(EspalexaDevice* dev)
 			uint16_t k = 1000000 / ct; //mireds to kelvin
 			
 			if (strip.hasCCTBus()) {
+				uint8_t aWM = Bus::getGlobalAWMode();
+
 				strip.setCCT(k);
-				rgbw[0]= 0; rgbw[1]= 0; rgbw[2]= 0; rgbw[3]= 255;
+				if (aWM != RGBW_MODE_DUAL && aWM != RGBW_MODE_MANUAL_ONLY && aWM != AW_GLOBAL_DISABLED) {
+				  rgbw[0]= 255; rgbw[1]= 255; rgbw[2]= 255; rgbw[3]= 0;
+				 dev->setValue(255);
+				} else {
+				  rgbw[0]= 0; rgbw[1]= 0; rgbw[2]= 0; rgbw[3]= 255;
+				}
 			} else if (strip.hasWhiteChannel()) {
         switch (ct) { //these values empirically look good on RGBW
           case 199: rgbw[0]=255; rgbw[1]=255; rgbw[2]=255; rgbw[3]=255; break;
