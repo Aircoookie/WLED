@@ -114,9 +114,9 @@ void sendDataWs(AsyncWebSocketClient * client)
   size_t len = measureJson(doc);
   DEBUG_PRINTF("JSON buffer size: %u for WS request (%u).\n", doc.memoryUsage(), len);
 
-  size_t heap1 = ESP.getFreeHeap();
-  DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
   #ifdef ESP8266
+  size_t heap1 = ESP.getFreeHeap();  // WLEDMM moved into 8266 specific section
+  DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
   if (len>heap1) {
     DEBUG_PRINTLN(F("Out of memory (WS)!"));
     return;
@@ -140,6 +140,7 @@ void sendDataWs(AsyncWebSocketClient * client)
   size_t heap2 = ESP.getFreeHeap();
   DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
   #else
+  size_t heap1 = len+16; // WLEDMM
   size_t heap2 = 0; // ESP32 variants do not have the same issue and will work without checking heap allocation
   #endif
   if (!buffer || heap1-heap2<len) {
@@ -188,7 +189,7 @@ static bool sendLiveLedsWs(uint32_t wsClient)  // WLEDMM added "static"
   size_t bufSize = pos + (used/n)*3;
   //WLEDMM: no skipLines
 
-  if (bufSize < 1) return(false); // WLEDMM should not happen
+  if ((bufSize < 1) || (used < 1)) return(false); // WLEDMM should not happen
   //AsyncWebSocketMessageBuffer * wsBuf = ws.makeBuffer(bufSize);
   // WLEDMM protect against exceptions due to low memory 
   AsyncWebSocketMessageBuffer * wsBuf = nullptr;
