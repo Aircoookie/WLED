@@ -1478,7 +1478,7 @@ void WS2812FX::finalizeInit(void)
     free(Segment::_globalLeds);
     Segment::_globalLeds = nullptr;
   }
-  if (useLedsArray) {
+  if (useLedsArray && getLengthTotal()>0) { // WLEDMM avoid malloc(0)
     size_t arrSize = sizeof(CRGB) * getLengthTotal();
     #if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
     if (psramFound())
@@ -1486,7 +1486,7 @@ void WS2812FX::finalizeInit(void)
     else
     #endif
       Segment::_globalLeds = (CRGB*) malloc(arrSize);
-    memset(Segment::_globalLeds, 0, arrSize);
+    if (Segment::_globalLeds != nullptr) memset(Segment::_globalLeds, 0, arrSize);  // WLEDMM avoid  dereferencing null pointer
   }
 
   //segments are created in makeAutoSegments();
@@ -2155,9 +2155,18 @@ bool WS2812FX::deserializeMap(uint8_t n) {
   //WLEDMM recreate customMappingTable if more space needed
   if (Segment::maxWidth * Segment::maxHeight > customMappingTableSize) {
     USER_PRINTF("deserializemap customMappingTable alloc %d from %d\n", Segment::maxWidth * Segment::maxHeight, customMappingTableSize);
-    if (customMappingTable != nullptr) delete[] customMappingTable;
-    customMappingTable = new uint16_t[Segment::maxWidth * Segment::maxHeight];
-      if (customMappingTable != nullptr) customMappingTableSize = Segment::maxWidth * Segment::maxHeight;
+    //if (customMappingTable != nullptr) delete[] customMappingTable;
+    //customMappingTable = new uint16_t[Segment::maxWidth * Segment::maxHeight];
+    // don't use new / delete
+    if (customMappingTable != nullptr) {
+      customMappingTable = (uint16_t*) reallocf(customMappingTable, sizeof(uint16_t) * Segment::maxWidth * Segment::maxHeight);  // reallocf will free memory if it cannot resize
+    }
+    if (customMappingTable == nullptr) { // second try
+      DEBUG_PRINTLN("deserializeMap: trying to get fresh memory block.");
+      customMappingTable = (uint16_t*) calloc(Segment::maxWidth * Segment::maxHeight, sizeof(uint16_t));
+      if (customMappingTable == nullptr) DEBUG_PRINTLN("deserializeMap: alloc failed!");
+    }
+    if (customMappingTable != nullptr) customMappingTableSize = Segment::maxWidth * Segment::maxHeight;
   }
 
   if (customMappingTable != nullptr) {
@@ -2184,6 +2193,7 @@ bool WS2812FX::deserializeMap(uint8_t n) {
       DEBUG_PRINTLN();
     #endif
   } else { // memory allocation error
+    customMappingTableSize = 0;
     DEBUG_PRINTLN(F("Deserializemap: Ledmap alloc error."));
   }
 
