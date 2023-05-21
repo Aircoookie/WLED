@@ -206,12 +206,12 @@ void Segment::setUpLeds() {
     #else
     leds = &Segment::_globalLeds[start];
     #endif
-  else if (!ledsrgb) {
-    #if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
-    if (psramFound())
-      ledsrgb = (CRGB*)ps_malloc(sizeof(CRGB)*length()); // WLEDMM: stupid - PSRAM is too slow for this !!!
-    else
-    #endif
+  else if ((ledsrgb == nullptr) && (length() > 0)) { //softhack007 quickfix - avoid malloc(0) which is undefined behaviour (should not happen, but i've seen it)
+    //#if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
+    //if (psramFound())
+    //  ledsrgb = (CRGB*)ps_malloc(sizeof(CRGB)*length()); // softhack007 disabled; putting leds into psram leads to horrible slowdown on WROVER boards
+    //else
+    //#endif
       ledsrgb = (CRGB*)malloc(sizeof(CRGB)*length());
   }
 }
