@@ -1480,13 +1480,14 @@ void WS2812FX::finalizeInit(void)
   }
   if (useLedsArray && getLengthTotal()>0) { // WLEDMM avoid malloc(0)
     size_t arrSize = sizeof(CRGB) * getLengthTotal();
-    #if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
-    if (psramFound())
-      Segment::_globalLeds = (CRGB*) ps_malloc(arrSize);
-    else
-    #endif
-      Segment::_globalLeds = (CRGB*) malloc(arrSize);
-    if (Segment::_globalLeds != nullptr) memset(Segment::_globalLeds, 0, arrSize);  // WLEDMM avoid  dereferencing null pointer
+    // softhack007 disabled; putting leds into psram leads to horrible slowdown on WROVER boards (see setUpLeds())
+    //#if defined(ARDUINO_ARCH_ESP32) && defined(BOARD_HAS_PSRAM) && defined(WLED_USE_PSRAM)
+    //if (psramFound())
+    //  Segment::_globalLeds = (CRGB*) ps_malloc(arrSize);
+    //else
+    //#endif
+      if (arrSize > 0) Segment::_globalLeds = (CRGB*) malloc(arrSize); // WLEDMM avoid malloc(0)
+    if (Segment::_globalLeds != nullptr) memset(Segment::_globalLeds, 0, arrSize); // WLEDMM avoid dereferencing nullptr
   }
 
   //segments are created in makeAutoSegments();
