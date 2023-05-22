@@ -158,7 +158,7 @@ void ShtUsermod::cleanup()
  * @return void
  */
 void ShtUsermod::publishTemperatureAndHumidityViaMqtt() {
-#ifdef WLED_ENABLED_MQTT
+#ifdef WLED_ENABLE_MQTT
   if (!WLED_MQTT_CONNECTED) return;
   char buf[128];
 
@@ -179,7 +179,7 @@ void ShtUsermod::publishTemperatureAndHumidityViaMqtt() {
  * @return void
  */
 void ShtUsermod::publishHomeAssistantAutodiscovery() {
-#ifdef WLED_ENABLED_MQTT
+#ifdef WLED_ENABLE_MQTT
   if (!WLED_MQTT_CONNECTED) return;
 
   char json_str[1024], buf[128];
@@ -225,7 +225,7 @@ void ShtUsermod::publishHomeAssistantAutodiscovery() {
  *
  * @return void
  */
-#ifdef WLED_ENABLED_MQTT
+#ifdef WLED_ENABLE_MQTT
 void ShtUsermod::appendDeviceToMqttDiscoveryMessage(JsonDocument& root) {
   JsonObject device = root.createNestedObject(F("dev"));
   device[F("ids")] = escapedMac.c_str();
@@ -339,7 +339,7 @@ void ShtUsermod::loop()
  * @return void
  */
 void ShtUsermod::onMqttConnect(bool sessionPresent) {
-#ifdef WLED_ENABLED_MQTT
+#ifdef WLED_ENABLE_MQTT
   if (haMqttDiscovery && !haMqttDiscoveryDone) publishHomeAssistantAutodiscovery();
 #endif
 }
