@@ -110,7 +110,7 @@ void onAlexaChange(EspalexaDevice* dev)
 				strip.setCCT(k);
 				if (aWM != RGBW_MODE_DUAL && aWM != RGBW_MODE_MANUAL_ONLY && aWM != AW_GLOBAL_DISABLED) {
 				  rgbw[0]= 255; rgbw[1]= 255; rgbw[2]= 255; rgbw[3]= 0;
-				 dev->setValue(255);
+				  dev->setValue(255);
 				} else {
 				  rgbw[0]= 0; rgbw[1]= 0; rgbw[2]= 0; rgbw[3]= 255;
 				}
