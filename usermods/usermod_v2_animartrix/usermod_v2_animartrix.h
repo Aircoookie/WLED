@@ -471,214 +471,277 @@ static const char _data_FX_mode_Waves[] PROGMEM = "💡Waves ☾";
 static const char _data_FX_mode_Chasing_Spirals[] PROGMEM = "💡Chasing_Spirals ☾";
 static const char _data_FX_mode_Rotating_Blob[] PROGMEM = "💡Rotating_Blob ☾";
 
-ANIMartRIX art;
+
+class ANIMartRIXMod:public ANIMartRIX {
+	public:
+	void output() {
+		for(int x = 0; x < num_x; x++) {
+			for(int y = 0; y < num_y; y++) {
+				SEGMENT.setPixelColorXY(x,y, buffer[xy(x,y)]);
+			}
+		}
+	}
+};
+ANIMartRIXMod anim;
 
 uint16_t mode_Module_Experiment10() { 
-	art.Module_Experiment10();
+	anim.Module_Experiment10();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Module_Experiment9() { 
-	art.Module_Experiment9();
+	anim.Module_Experiment9();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Module_Experiment8() { 
-	art.Module_Experiment8();
+	anim.Module_Experiment8();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Module_Experiment7() { 
-	art.Module_Experiment7();
+	anim.Module_Experiment7();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Module_Experiment6() { 
-	art.Module_Experiment6();
+	anim.Module_Experiment6();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Module_Experiment5() { 
-	art.Module_Experiment5();
+	anim.Module_Experiment5();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Module_Experiment4() { 
-	art.Module_Experiment4();
+	anim.Module_Experiment4();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Zoom2() { 
-	art.Zoom2();
+	anim.Zoom2();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Module_Experiment3() { 
-	art.Module_Experiment3();
+	anim.Module_Experiment3();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Module_Experiment2() { 
-	art.Module_Experiment2();
+	anim.Module_Experiment2();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Module_Experiment1() { 
-	art.Module_Experiment1();
+	anim.Module_Experiment1();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Parametric_Water() { 
-	art.Parametric_Water();
+	anim.Parametric_Water();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Water() { 
-	art.Water();
+	anim.Water();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Complex_Kaleido_6() { 
-	art.Complex_Kaleido_6();
+	anim.Complex_Kaleido_6();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Complex_Kaleido_5() { 
-	art.Complex_Kaleido_5();
+	anim.Complex_Kaleido_5();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Complex_Kaleido_4() { 
-	art.Complex_Kaleido_4();
+	anim.Complex_Kaleido_4();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Complex_Kaleido_3() { 
-	art.Complex_Kaleido_3();
+	anim.Complex_Kaleido_3();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Complex_Kaleido_2() { 
-	art.Complex_Kaleido_2();
+	anim.Complex_Kaleido_2();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Complex_Kaleido() { 
-	art.Complex_Kaleido();
+	anim.Complex_Kaleido();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_SM10() { 
-	art.SM10();
+	anim.SM10();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_SM9() { 
-	art.SM9();
+	anim.SM9();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_SM8() { 
-	art.SM8();
+	anim.SM8();
+	anim.output();
 	return FRAMETIME;
 }
 // uint16_t mode_SM7() { 
 // 	art.SM7();
-// 	return FRAMETIME;
+//	art.output();
+//	return FRAMETIME;
 // }
 uint16_t mode_SM6() { 
-	art.SM6();
+	anim.SM6();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_SM5() { 
-	art.SM5();
+	anim.SM5();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_SM4() { 
-	art.SM4();
+	anim.SM4();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_SM3() { 
-	art.SM3();
+	anim.SM3();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_SM2() { 
-	art.SM2();
+	anim.SM2();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_SM1() { 
-	art.SM1();
+	anim.SM1();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Big_Caleido() { 
-	art.Big_Caleido();
+	anim.Big_Caleido();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_RGB_Blobs5() { 
-	art.RGB_Blobs5();
+	anim.RGB_Blobs5();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_RGB_Blobs4() { 
-	art.RGB_Blobs4();
+	anim.RGB_Blobs4();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_RGB_Blobs3() { 
-	art.RGB_Blobs3();
+	anim.RGB_Blobs3();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_RGB_Blobs2() { 
-	art.RGB_Blobs2();
+	anim.RGB_Blobs2();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_RGB_Blobs() { 
-	art.RGB_Blobs();
+	anim.RGB_Blobs();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Polar_Waves() { 
-	art.Polar_Waves();
+	anim.Polar_Waves();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Slow_Fade() { 
-	art.Slow_Fade();
+	anim.Slow_Fade();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Zoom() { 
-	art.Zoom();
+	anim.Zoom();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Hot_Blob() { 
-	art.Hot_Blob();
+	anim.Hot_Blob();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Spiralus2() { 
-	art.Spiralus2();
+	anim.Spiralus2();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Spiralus() { 
-	art.Spiralus();
+	anim.Spiralus();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Yves() { 
-	art.Yves();
+	anim.Yves();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Scaledemo1() { 
-	art.Scaledemo1();
+	anim.Scaledemo1();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Lava1() { 
-	art.Lava1();
+	anim.Lava1();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Caleido3() { 
-	art.Caleido3();
+	anim.Caleido3();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Caleido2() { 
-	art.Caleido2();
+	anim.Caleido2();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Caleido1() { 
-	art.Caleido1();
+	anim.Caleido1();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Distance_Experiment() { 
-	art.Distance_Experiment();
+	anim.Distance_Experiment();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Center_Field() { 
-	art.Center_Field();
+	anim.Center_Field();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Waves() { 
-	art.Waves();
+	anim.Waves();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Chasing_Spirals() { 
-	art.Chasing_Spirals();
+	anim.Chasing_Spirals();
+	anim.output();
 	return FRAMETIME;
 }
 uint16_t mode_Rotating_Blob() { 
-	art.Rotating_Blob();
+	anim.Rotating_Blob();
+	anim.output();
 	return FRAMETIME;
 }
 
@@ -688,11 +751,12 @@ class AnimartrixUsermod : public Usermod {
   public:
 
     AnimartrixUsermod(const char *name, bool enabled):Usermod(name, enabled) {} //WLEDMM
+	CRGB buffer[256];
 
     void setup() {
 
-      bool serpentine = false; 
-      art.init(SEGMENT.virtualWidth(), SEGMENT.virtualHeight(), SEGMENT.leds, serpentine);
+      bool serpentine = false;
+      anim.init(SEGMENT.virtualWidth(), SEGMENT.virtualHeight(), buffer, serpentine);
 
       // strip.addEffect(255, &mode_PolarBasics, _data_FX_mode_PolarBasics);
       // strip.addEffect(255, &mode_CircularBlobs, _data_FX_mode_CircularBlobs);
