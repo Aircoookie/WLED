@@ -832,6 +832,18 @@ class AnimartrixUsermod : public Usermod {
       }
     }
 
+    void addToJsonInfo(JsonObject& root)
+    {
+      char myStringBuffer[16]; // buffer for snprintf()
+      JsonObject user = root["u"];
+      if (user.isNull()) user = root.createNestedObject("u");
+
+      JsonArray infoArr = user.createNestedArray(FPSTR(_name));
+
+      String uiDomString = F("Animartrix requires the Creative Commons Attribution License CC BY-NC 3.0");
+      infoArr.add(uiDomString);
+	}
+
     uint16_t getId()
     {
       return USERMOD_ID_ANIMARTRIX;
